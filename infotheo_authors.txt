@@ -1,0 +1,15 @@
+Reynald Affeldt, AIST
+Manabu Hagiwara, Chiba U. (previously AIST)
+Jonas Senizergues, ENS Cachan (internship at AIST)
+Jacques Garrigue, Nagoya U.
+Kazuhiko Sakaguchi, Tsukuba U.
+Taku Asai, Nagoya U. (M2)
+Takafumi Saikawa, Nagoya U.
+Naruomi Obata, Titech (M2)
+
+Acknowledgments:
+- The formalization of modern coding theory is a collaboration with
+K. Kasai, S. Kuzuoka, R. Obi
+- Y. Takahashi collaborated to the formalization of linear error-correcting codes
+- This work was partially supported by a JSPS Grant-in-Aid for Scientific
+Research (Project Number: 25289118).
