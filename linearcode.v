@@ -132,7 +132,7 @@ Qed.
 Lemma mem_kernel_syndrome0 y : (y \in kernel) = (syndrome y == 0).
 Proof. by rewrite memv_ker lfunE. Qed.
 
-Lemma dim_kernel (rankH : \rank H = m) (mn : m <= n) : \dim kernel = (n - m)%nat.
+Lemma dim_kernel (rankH : \rank H = m) (mn : m <= n) : \dim kernel = (n - m)%N.
 Proof.
 move: (limg_ker_dim hom_syndrome fullv).
 rewrite (_ : (fullv :&: _)%VS = kernel); last by apply/capv_idPr/subvf.
@@ -449,11 +449,11 @@ have Kcw : wH cw <= n - k + 1.
   have X : forall i : 'I_n, ~~ (i < k.-1) -> (cw ord0 i != 0) <= 1.
     move=> i Hi.
     by case: (_ != _).
-  apply: (leq_trans (@leq_sum _ _ _ _ (fun=> 1%nat) X)).
+  apply: (leq_trans (@leq_sum _ _ _ _ (fun=> 1%N) X)).
   set lhs := (X in X <= _).
-  rewrite (_ : lhs = (\sum_(k.-1 <= i < n) 1%nat))%N; last first.
+  rewrite (_ : lhs = (\sum_(k.-1 <= i < n) 1%N))%N; last first.
     rewrite /lhs.
-    rewrite -(big_mkord (fun i => ~~ (i < k.-1)) (fun=> 1%nat)).
+    rewrite -(big_mkord (fun i => ~~ (i < k.-1)) (fun=> 1%N)).
     rewrite {1}/index_iota subn0.
     rewrite {1}(_ : n = k.-1 + (n - k.-1))%N; last by rewrite subnKC // ltnW.
     rewrite iota_add big_cat /=.
@@ -512,7 +512,7 @@ rewrite /k linearB /=; case/boolP: (1 < size (rVpoly g)) => size_1g.
   apply/eqP; apply: contra g0; by rewrite rVpoly0.
 - rewrite -leqNgt in size_1g.
   (* this means that g is constant *)
-  have sz_g1 : size (rVpoly g) = 1%nat.
+  have sz_g1 : size (rVpoly g) = 1%N.
     have : size (rVpoly g) != O by rewrite size_poly_eq0 rVpoly0.
     case: (size _) size_1g => //; by case.
   rewrite (@size1_polyC_F2 _ sz_g1).

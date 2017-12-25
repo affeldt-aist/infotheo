@@ -23,16 +23,13 @@ Qed.
 
 Section AboutRingType.
 
-Variable F : ringType.
+Variable R : ringType.
 
-Lemma iter_addr0 : forall n x, iter n (+%R (0 : F)) x = x.
-Proof. elim=> //= n IH x. by rewrite (IH x) add0r. Qed.
+Lemma iter_addr0 : forall n x, iter n (+%R (0 : R)) x = x.
+Proof. elim=> //= n IH x. by rewrite IH add0r. Qed.
 
-Lemma iter_addr0_cV : forall r n (x : 'cV[F]_r), iter n (+%R 0) x = x.
-Proof. move=> r; elim=> //= n IH x; by rewrite (IH x) add0r. Qed.
-
-Lemma subr_add2r (p m n : F) : m + p - (n + p) = m - n.
-Proof. apply/eqP; by rewrite subr_eq -addrA (addrC (-n)) (addrC n) addrK. Qed.
+Lemma iter_addr0_cV r : forall n (x : 'cV[R]_r), iter n (+%R 0) x = x.
+Proof. elim=> //= n IH x; by rewrite IH add0r. Qed.
 
 End AboutRingType.
 
@@ -42,7 +39,7 @@ Local Open Scope vec_ext_scope.
 
 Section support_set.
 
-Variables (F : ringType) (n : nat) (e : 'rV[F]_n).
+Variables (R : ringType) (n : nat) (e : 'rV[R]_n).
 
 Definition supp : {set 'I_n} := [set i | e ``_ i != 0].
 
@@ -66,7 +63,7 @@ Qed.
 
 End support_set.
 
-Lemma supp0 n (F : ringType) : supp (0 : 'rV[F]_n) = set0.
+Lemma supp0 n (R : ringType) : supp (0 : 'rV[R]_n) = set0.
 Proof. apply/setP => i; by rewrite !inE mxE eqxx. Qed.
 
 Definition row_set B n (n0 : 'I_n) (x : B) (d : 'rV_n) :=

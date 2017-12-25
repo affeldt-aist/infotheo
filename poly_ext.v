@@ -58,21 +58,18 @@ elim=> [|n IHn] p sz_p.
   + by move: sz_p; case: (size _).
 Qed.
 
-Lemma size_sub : forall p q : {poly R}, p <> 0 -> size p = size q ->
+Lemma size_sub (p q : {poly R}) : p <> 0 -> size p = size q ->
   lead_coef p = lead_coef q -> size (p - q) < size p.
 Proof.
-move=> p q p0 sz_pq lc_pq.
-move: (size_add p (-q)); rewrite sz_pq size_opp (maxn_idPr _) //.
-rewrite leq_eqVlt; case/orP => // absurd.
-apply leq_ltn_trans with (size q).-1.
-- rewrite (poly_def_lead_coef p) {1}(poly_def_lead_coef q) lc_pq sz_pq subr_add2r.
-  rewrite (_ : _ - _ = \poly_(i < (size q).-1) (p`_i - q`_i) ); first by apply size_poly.
-  transitivity (\sum_(i < (size q).-1) (p`_i *: 'X^i - q`_i *: 'X^i)).
-  + rewrite big_split /=; f_equal.
-    apply big_morph; [exact: GRing.opprD | exact: GRing.oppr0].
-  + rewrite poly_def; apply eq_bigr => i _; by rewrite GRing.scalerBl.
-- case: (size q) sz_pq => //.
-  move/eqP; rewrite size_poly_eq0; by move/eqP.
+move=> p0 pq lc_pq.
+move: (size_add p (-q)); rewrite pq size_opp (maxn_idPr _) //.
+rewrite leq_eqVlt; case/orP => // abs.
+rewrite (@leq_ltn_trans (size q).-1) //; last first.
+  by rewrite -pq prednK // lt0n size_poly_eq0; apply/eqP.
+rewrite (poly_def_lead_coef p) {1}(poly_def_lead_coef q) lc_pq pq.
+rewrite opprD addrCA addrK addrC.
+rewrite (_ : _ - _ = \poly_(i < (size q).-1) (p`_i - q`_i)) ?size_poly //.
+rewrite -sumrB poly_def; apply eq_bigr => i _; by rewrite scalerBl.
 Qed.
 
 Lemma rVpoly0 n (p : 'rV[R]_n) : (rVpoly p == 0) = (p == 0).
