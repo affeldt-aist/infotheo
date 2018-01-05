@@ -40,7 +40,7 @@ apply/idP/idP => [|H].
   apply/eqP.
   apply Rmult_eq_reg_l with (P x); last by apply/eqP.
   rewrite mulR0 H2 // => /= x' _.
-  apply Rmult_le_pos; by [apply dist_nonneg | apply DMC_nonneg].
+  apply mulR_ge0; by [apply dist_nonneg | apply DMC_nonneg].
 - have : \rsum_(x in setT) P x * W ``(y | x) != 0.
     apply: contra H => /eqP H; apply/eqP.
     rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
@@ -94,12 +94,12 @@ Definition f x := P x * W ``(y | x) / den.
 Lemma den_nonneg : 0 <= den.
 Proof.
 apply Rle_big_0_P_g => x _.
-apply Rmult_le_pos; by [apply dist_nonneg | apply DMC_nonneg].
+apply mulR_ge0; by [apply dist_nonneg | apply DMC_nonneg].
 Qed.
 
 Lemma f0 x : 0 <= f x.
 Proof.
-apply Rle_mult_inv_pos; first by apply Rmult_le_pos; apply dist_nonneg.
+apply Rle_mult_inv_pos; first by apply mulR_ge0; apply dist_nonneg.
 apply/RltP.
 rewrite Rlt_neqAle eq_sym -receivableE receivable_y /=.
 apply/RleP/den_nonneg.
@@ -199,7 +199,7 @@ Definition f (i : 'I_n) a := Kmpp * \rsum_(t in 'rV_n | t ``_ i == a) f' t.
 
 Lemma f0 i a : 0 <= f i a.
 Proof.
-apply Rmult_le_pos.
+apply mulR_ge0.
 - rewrite /Kmpp.
   apply Rle_mult_inv_pos; [fourier|].
   apply Rlt_le_neq.

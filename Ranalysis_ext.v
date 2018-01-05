@@ -1,5 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path div fintype.
+From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq fintype.
 From mathcomp Require Import tuple finfun bigop.
 Require Import Reals Fourier.
 Require Import Reals_ext Rssr.
@@ -27,8 +27,7 @@ Proof.
 rewrite /derivable_pt /derivable_pt_abs /derivable_pt_lim.
 exists 0 => e He.
 exists (mkposreal _ He) => h Hh h0.
-rewrite (_ : c - c = 0); last by field.
-by rewrite Rminus_0_r /Rdiv mul0R Rabs_R0.
+by rewrite subRR /Rdiv mul0R subRR Rabs_R0.
 Defined.
 
 Lemma derive_pt_cst : forall x c, derive_pt (fun _ => c) x (derivable_pt_cst c x) = 0.
@@ -39,7 +38,7 @@ Proof.
 exists (-1) => eps Heps.
 exists (mkposreal _ Heps) => h Hh /= Hh'.
 rewrite (_ : (- (x + h) - - x) = - h); last by field.
-rewrite /Rdiv Ropp_mult_distr_l_reverse Rinv_r // (_ : -1 - -1 = 0); last by field.
+rewrite /Rdiv mulNR Rinv_r // (_ : -1 - -1 = 0); last by field.
 by rewrite Rabs_R0.
 Defined.
 
@@ -48,7 +47,7 @@ Proof.
 exists (-1) => eps Heps.
 exists (mkposreal _ Heps) => h Hh /= Hh'.
 rewrite (_ : (p - (x + h) - (p - x)) = - h); last by field.
-rewrite /Rdiv Ropp_mult_distr_l_reverse Rinv_r // (_ : -1 - -1 = 0); last by field.
+rewrite /Rdiv mulNR Rinv_r // (_ : -1 - -1 = 0); last by field.
 by rewrite Rabs_R0.
 Defined.
 
@@ -167,9 +166,7 @@ intros a b f pr H; split; intros H0 x y H1 H2 H3.
   case: (MVT_cor1_pderivable pr' H3); intros x0 [x1 [H7 H8]].
   unfold Rminus in H7.
   rewrite H7.
-  apply Rmult_lt_0_compat.
-  apply H0'.
-  fourier.
+  apply mulR_gt0; [by apply H0' | fourier].
 - set pr' := pderivable_restrict_left pr (proj1 H1) (proj2 H2) H3.
   have H0' : forall t (Ht : x <= t <= y), 0 <= derive_pt f t (pr' t Ht).
     move=> z /= [Hz0 Hz1].
@@ -178,7 +175,7 @@ intros a b f pr H; split; intros H0 x y H1 H2 H3.
   apply Rplus_le_reg_l with (- f x).
   unfold Rminus in H7.
   rewrite Rplus_opp_l addRC H7.
-  apply Rmult_le_pos; [by apply H0' | fourier].
+  apply mulR_ge0; [by apply H0' | fourier].
 Qed.
 
 Lemma derive_increasing_interv_ax_right :
@@ -199,7 +196,7 @@ intros a b f pr H; split; intros H0 x y H1 H2 H3.
   case: (MVT_cor1_pderivable pr' H3); intros x0 [x1 [H7 H8]].
   unfold Rminus in H7.
   rewrite H7.
-  apply Rmult_lt_0_compat; [by apply H0' | fourier].
+  apply mulR_gt0; [by apply H0' | fourier].
 - set pr' := pderivable_restrict_right pr (proj1 H1) (proj2 H2) H3.
   have H0' : forall t (Ht : x <= t <= y), 0 <= derive_pt f t (pr' t Ht).
     move=> z /= [Hz0 Hz1].
@@ -209,7 +206,7 @@ intros a b f pr H; split; intros H0 x y H1 H2 H3.
   apply Rplus_le_reg_l with (- f x).
   unfold Rminus in H7.
   rewrite Rplus_opp_l addRC H7.
-  apply Rmult_le_pos; [by apply H0' | fourier].
+  apply mulR_ge0; [by apply H0' | fourier].
 Qed.
 
 Lemma derive_increasing_interv_left :
@@ -275,10 +272,9 @@ have H0' : forall t (Ht : x <= t <= y), 0 < if t == y then 1 else derive_pt f t 
 case: (MVT_cor1_pderivable pr' H3); intros x0 [x1 [H7 H8]].
 unfold Rminus in H7.
 rewrite H7.
-apply Rmult_lt_0_compat.
-  have Hx0 : ~~ (x0 == y).
-    apply/eqP ; apply Rlt_not_eq, H8.
-  move/negbTE in Hx0.
-  move: (H0' x0) ; rewrite Hx0 ; apply.
-fourier.
+apply mulR_gt0; last by fourier.
+have Hx0 : ~~ (x0 == y).
+  apply/eqP ; apply Rlt_not_eq, H8.
+move/negbTE in Hx0.
+move: (H0' x0) ; rewrite Hx0 ; by apply.
 Qed.

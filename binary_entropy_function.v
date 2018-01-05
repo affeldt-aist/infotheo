@@ -105,15 +105,14 @@ suff : ln ( 1 - t) <= ln t.
 apply ln_increasing_le; fourier.
 Qed.
 
-Lemma H2ln_max : forall q, 0 < q < 1 -> - q * ln q - (1 - q) * ln (1 - q) <= ln 2.
+Lemma H2ln_max (q : R) : 0 < q < 1 -> - q * ln q - (1 - q) * ln (1 - q) <= ln 2.
 Proof.
-move=> q [Hq0 Hq1].
+move=> [Hq0 Hq1].
 apply Rle_trans with (H2ln (1/2)); last first.
   apply Req_le.
   rewrite /H2ln (_ : 1 - 1/2 = 1/2); last by field.
-  rewrite -Rmult_minus_distr_r (_ : - _ - _ = - 1); last by field.
-  rewrite /Rdiv mul1R ln_Rinv; last by fourier.
-  field.
+  rewrite -mulRBl (_ : - _ - _ = - 1); last by field.
+  rewrite /Rdiv mul1R ln_Rinv; [by field | by fourier].
 rewrite -/(H2ln q).
 case: (Rlt_le_dec q (1/2)) => H1.
 - apply increasing_on_0_to_half => //.
@@ -135,15 +134,15 @@ Definition H2 p := - (p * log p) + - ((1 - p) * log (1 - p)).
 Lemma bin_ent_0eq0 : H2 0 = 0.
 Proof.
 rewrite /H2.
-by rewrite !(log_1, mulR0, mul0R, Ropp_0, mul1R, mulR1,
-                       add0R, addR0, Rminus_0_r, Rplus_opp_r).
+by rewrite !(log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
+                       add0R, addR0, subR0, Rplus_opp_r).
 Qed.
 
 Lemma bin_ent_1eq0 : H2 1 = 0.
 Proof.
 rewrite /H2.
-by rewrite /Rminus !(log_1, mulR0, mul0R, Ropp_0, mul1R, mulR1,
-                       add0R, addR0, Rminus_0_r, Rplus_opp_r).
+by rewrite /Rminus !(log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
+                       add0R, addR0, subR0, Rplus_opp_r).
 Qed.
 
 (** The binary entropy function is bounded by 1: *)
@@ -153,8 +152,8 @@ Proof.
 move=> p [Hp0 Hp1].
 rewrite /H2.
 apply Rmult_le_reg_l with (ln 2); first by apply ln_2_pos.
-rewrite mulR1 mulRDr /log /Rdiv -!Ropp_mult_distr_l_reverse.
-rewrite !(mulRC (ln 2)) -!mulRA -(Rinv_l_sym (ln 2)); last by exact ln_2_neq0.
+rewrite mulR1 mulRDr /log /Rdiv -!mulNR.
+rewrite !(mulRC (ln 2)) -!mulRA -(Rinv_l_sym (ln 2)); last exact ln_2_neq0.
 rewrite !mulR1.
 apply Rle_trans with ( - p * ln p - (1 - p) * ln (1 - p) ).
 apply Req_le; by field.

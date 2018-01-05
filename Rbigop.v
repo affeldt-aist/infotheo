@@ -413,7 +413,7 @@ apply (Rplus_eq_reg_l (- (f i))).
 rewrite Rplus_opp_l Rplus_comm.
 move: i Hi.
 apply psumR_eq0P.
-- rewrite big_split /= -(big_morph _ morph_Ropp Ropp_0).
+- rewrite big_split /= -(big_morph _ morph_Ropp oppR0).
   by apply Rminus_diag_eq, H2.
 - move=> i Hi.
   apply (Rplus_le_reg_l (f i)).
@@ -878,7 +878,7 @@ Proof.
 move=> H.
 elim: (index_enum _) => [| hd tl IH].
 rewrite big_nil; fourier.
-rewrite big_cons; apply Rmult_lt_0_compat => //; by apply H.
+rewrite big_cons; apply mulR_gt0 => //; by apply H.
 Qed.
 
 Lemma Rle_0_big_mult {A : finType} F : (forall i, 0 <= F i) ->
@@ -886,8 +886,8 @@ Lemma Rle_0_big_mult {A : finType} F : (forall i, 0 <= F i) ->
 Proof.
 move=> H.
 elim: (index_enum _) => [| hd tl IH].
-rewrite big_nil; fourier.
-rewrite big_cons; apply Rmult_le_pos => //; by apply H.
+  rewrite big_nil; fourier.
+rewrite big_cons; apply mulR_ge0 => //; exact H.
 Qed.
 
 Local Open Scope vec_ext_scope.
@@ -1024,10 +1024,9 @@ have -> : \rmul_(i < n.+1) f ta ``_ (lift ord0 i) = \rmul_(i0<n.+1) f tl ``_ i0.
   apply eq_bigr => i _.
   congr (f _).
   by rewrite /tl mxE.
-rewrite Ropp_plus_distr [X in _ = X]big_ord_recl IH.
+rewrite oppRD [X in _ = X]big_ord_recl IH.
 congr (_ + _)%R.
-apply eq_bigr => i _.
-by rewrite /tl mxE.
+apply eq_bigr => i _; by rewrite /tl mxE.
 Qed.
 
 Local Close Scope tuple_ext_scope.

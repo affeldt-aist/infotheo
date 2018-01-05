@@ -155,11 +155,11 @@ apply Rle_trans with ((2 - 8 * t * (1 - t)) / (2 * (1 - t) * ln 2)); last first.
   case: Ht => ? ? ?; fourier.
 apply Rle_mult_inv_pos; last first.
   rewrite mulRC mulRA.
-  apply Rmult_lt_0_compat.
-    apply Rmult_lt_0_compat; by [apply ln_2_pos | fourier].
+  apply mulR_gt0.
+    apply mulR_gt0; by [apply ln_2_pos | fourier].
   case: Ht => ? ?; fourier.
 have H2 : -2 <= - 8 * t * (1 - t).
-  rewrite !Ropp_mult_distr_l_reverse -mulRA.
+  rewrite !mulNR -mulRA.
   apply Ropp_le_contravar.
   rewrite [X in _ <= X](_ : 2 = 8 * 1 / 4); last by field.
   rewrite /Rdiv mulR1.
@@ -167,7 +167,7 @@ have H2 : -2 <= - 8 * t * (1 - t).
   rewrite -[X in _ <= X]mul1R; by apply x_x2_max.
 apply Rle_trans with (2 - 2); first by fourier.
 apply Rplus_le_compat; first by apply Rle_refl.
-by rewrite -mulRA -Ropp_mult_distr_l_reverse mulRA.
+by rewrite -mulRA -mulNR mulRA.
 Qed.
 
 Lemma pinsker_function_spec_pos : forall c q,
@@ -177,7 +177,7 @@ Lemma pinsker_function_spec_pos : forall c q,
 Proof.
 move=> c q0 Hc Hq0.
 rewrite (_ : 0 = pinsker_function_spec c 0); last first.
-rewrite /pinsker_function_spec /= Rminus_0_r log_1; field.
+rewrite /pinsker_function_spec /= subR0 log_1; field.
 apply pinsker_fun_increasing_on_0_to_1 => //.
 by case: Hc.
 split; fourier.
@@ -193,11 +193,11 @@ Hypothesis Hq : 0 <= q <= 1.
 Lemma pinsker_fun_p c : pinsker_fun p c p = 0.
 Proof.
 rewrite /pinsker_fun /= /div_fct /comp (_ : p - p = 0); last by rewrite Rminus_diag_eq.
-rewrite mul0R mulR0 Rminus_0_r.
+rewrite mul0R mulR0 subR0.
 case: Hp => Hp1 Hp2.
 case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   subst p.
-  rewrite mul0R !Rminus_0_r add0R mul1R.
+  rewrite mul0R !subR0 add0R mul1R.
   by rewrite /Rdiv Rinv_1 mulR1 log_1.
 case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
   subst p.
@@ -244,17 +244,15 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
     rewrite mulRA.
     apply Rmult_le_compat_r => //; by fourier.
   rewrite Rinv_mult_distr; last 2 first.
-    apply nesym, Rlt_not_eq.
-    apply Rmult_lt_0_compat; fourier.
+    apply nesym, Rlt_not_eq, mulR_gt0; fourier.
     by apply ln_2_neq0.
   apply Rmult_le_compat_r => //.
   apply Rle_inv_conv; first by fourier.
-  apply Rinv_0_lt_compat, Rmult_lt_0_compat; fourier.
-  rewrite Rinv_involutive.
-  rewrite -[X in _ <= X]mul1R; by apply x_x2_max.
-  apply nesym, Rlt_not_eq, Rmult_lt_0_compat; fourier.
-rewrite /inv_fct -Ropp_mult_distr_l_reverse.
-apply Rmult_le_pos => //; fourier.
+  apply Rinv_0_lt_compat, mulR_gt0; fourier.
+  rewrite invRK.
+    rewrite -[X in _ <= X]mul1R; by apply x_x2_max.
+  apply nesym, Rlt_not_eq, mulR_gt0; fourier.
+rewrite /inv_fct -mulNR; apply mulR_ge0 => //; fourier.
 Qed.
 
 Lemma pinsker_fun_pderivable2 c (Hp' : 0 < p < 1) :
@@ -282,7 +280,7 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   have : forall a b, b <= a -> 0 <= a - b by move=> *; fourier.
   apply.
   have Hlocal : 0 <= / ln 2 by apply Rlt_le, Rinv_0_lt_compat, ln_2_pos.
-  have Hlocal2 : t * (1 - t) <> 0 by apply nesym, Rlt_not_eq, Rmult_lt_0_compat; fourier.
+  have Hlocal2 : t * (1 - t) <> 0 by apply nesym, Rlt_not_eq, mulR_gt0; fourier.
   apply Rle_trans with (4 / ln 2).
     apply Rle_trans with (8 * / (2 * ln 2)).
       apply/RleP.
@@ -297,11 +295,9 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   apply Rmult_le_compat_r => //.
   apply Rle_inv_conv.
   fourier.
-  apply Rinv_0_lt_compat, Rmult_lt_0_compat; fourier.
-  rewrite Rinv_involutive //.
-  rewrite -[X in _ <= X]mul1R; by apply x_x2_max.
-rewrite /inv_fct.
-apply Rmult_le_pos => //; fourier.
+  apply Rinv_0_lt_compat, mulR_gt0; fourier.
+  rewrite invRK // -[X in _ <= X]mul1R; by apply x_x2_max.
+rewrite /inv_fct; apply mulR_ge0 => //; fourier.
 Qed.
 
 End pinsker_function_analysis.
@@ -327,7 +323,7 @@ case: q01 => Hq0 Hq1.
 case/Rle_lt_or_eq_dec : Hp0 => Hp0; last first.
   subst p.
   rewrite /pinsker_fun /div_fct /comp.
-  rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l,Rminus_0_r).
+  rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l,subR0).
   case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
     subst q.
     move: P_dom_by_Q.

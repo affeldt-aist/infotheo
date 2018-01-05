@@ -651,7 +651,7 @@ pose d := fun b => (INR (f b) / INR N(a | ta))%R.
 have d0 : forall b, (0 <= d b)%R.
   move=> b.
   rewrite /d /=.
-  apply Rmult_le_pos; first by apply pos_INR.
+  apply mulR_ge0; first by apply pos_INR.
   apply Rlt_le, Rinv_0_lt_compat, lt_0_INR.
   apply/ltP; by rewrite lt0n.
 have d1 : \rsum_(b : B) d b = 1%R.
@@ -825,8 +825,8 @@ apply (@Rle_trans _ (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
   rewrite -exp2_pow mulRA.
   rewrite /card_type_of_row; destruct eqVneq.
     rewrite -[X in X <= _]exp2_0.
-    apply exp2_le_increasing, Rmult_le_pos.
-      apply Rmult_le_pos; by [apply pos_INR | apply dist_nonneg].
+    apply exp2_le_increasing, mulR_ge0.
+      apply mulR_ge0; by [apply pos_INR | apply dist_nonneg].
       by apply entropy_pos.
   set pta0 := type_of_row Hta Vctyp _.
   rewrite (_ : exp2 _ = exp2 (INR N(a | ta) * `H pta0)%R).

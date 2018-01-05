@@ -52,7 +52,7 @@ have {rhs}-> : rhs = \rsum_(m in M) (1 - e(W, c) m).
 set rhs := \rsum_(m | _ ) _.
 have {rhs}-> : rhs = INR #|M| - \rsum_(m in M) e(W, c) m.
   rewrite /rhs {rhs} big_split /= big_const iter_Rplus mulR1.
-  by rewrite -(big_morph _ morph_Ropp Ropp_0).
+  by rewrite -(big_morph _ morph_Ropp oppR0).
 rewrite Rmult_minus_distr_l /Rdiv -mulRA -Rinv_l_sym; last first.
   apply not_0_INR => abs; move: (Mnot0); by rewrite abs.
 by rewrite mul1R.
@@ -154,7 +154,7 @@ rewrite mul1R -iter_Rplus_Rmult -big_const /=.
 rewrite (_ : \rsum_(m | m \in M ) 1 = \rsum_(m : M) 1); last by apply eq_bigl.
 rewrite big_distrr /=.
 apply: Rle_big_P_f_g => m _.
-rewrite Ropp_mult_distr_l_reverse exp2_Ropp.
+rewrite mulNR exp2_Ropp.
 apply (Rmult_le_reg_l (exp2 (INR n * `H( V | P)))); first by apply exp2_pos.
 rewrite mulRA Rinv_r; last by apply exp2_not_0.
 rewrite mulR1 mul1R.
@@ -219,7 +219,7 @@ rewrite /success_factor -mulRA (mulRC (/ INR #|M|)) !mulRA.
 apply Rmult_le_compat_r; first by apply Rlt_le, Rinv_0_lt_compat, lt_0_INR; apply/ltP.
 rewrite /mut_info /Rminus addRC addRA.
 rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last by rewrite /cond_entropy; field.
-rewrite mulRDr Ropp_mult_distr_r_reverse -Ropp_mult_distr_l_reverse exp2_plus.
+rewrite mulRDr mulRN -mulNR exp2_plus.
 apply Rmult_le_compat_l; first by apply Rlt_le, exp2_pos.
 rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR Logic.eq_refl).
 apply (Rle_trans _ (INR #| T_{`tO( V )} |)); last first.
@@ -265,9 +265,9 @@ apply Rmax_case.
 - apply (Rle_trans _ (exp2(INR n * `I(P ; V)) / INR #|M|)); last first.
   + apply Req_le; symmetry.
     rewrite /Rminus mulRDr mulRC.
-    rewrite Rmult_opp_opp -mulRA Ropp_mult_distr_r_reverse Rinv_l; last first.
+    rewrite Rmult_opp_opp -mulRA mulRN Rinv_l; last first.
       apply not_0_INR => /eqP; by apply/negP.
-    rewrite Ropp_mult_distr_r_reverse mulR1 exp2_plus mulRC /Rdiv; f_equal.
+    rewrite mulRN mulR1 exp2_plus mulRC /Rdiv; f_equal.
     rewrite exp2_Ropp exp2_log //.
     apply lt_0_INR; by apply/ltP.
   + by apply success_factor_bound_part2.
@@ -332,8 +332,8 @@ apply (Rle_trans _ (\rsum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
   apply => //; by exists V.
 rewrite big_const iter_Rplus_Rmult /success_factor_bound.
 apply Rmult_le_compat_r.
-- apply Rmult_le_pos.
-  + rewrite /exp_cdiv; case : ifP => _; by [apply Rlt_le, exp2_pos | apply Rle_refl].
+- apply mulR_ge0.
+  + rewrite /exp_cdiv; case: ifP => _; by [apply/Rlt_le/exp2_pos | apply Rle_refl].
   + by apply Rlt_le, exp2_pos.
 - rewrite INR_pow_expn; apply le_INR; apply/leP.
   by apply card_nu.

@@ -231,8 +231,8 @@ apply/negPn/negPn.
   + apply Rplus_le_compat_r.
     rewrite -exp2_0.
     apply exp2_le_increasing.
-    apply Rmult_le_pos; first by apply pos_INR.
-    apply Rplus_le_le_0_compat; first by apply entropy_pos.
+    apply mulR_ge0; first by apply pos_INR.
+    apply addR_ge0; first by apply entropy_pos.
     apply Rlt_le; exact: halflambda0.
   + rewrite (_ : forall a, a + a = 2 * a)%R; last by move=> ?; field.
     rewrite {1}(_ : 2 = exp2 (log 2)); last by rewrite exp2_log //; fourier.

@@ -32,16 +32,6 @@ Qed.
 
 (** Various lemmas about reals *)
 
-Lemma Rlt_ne a b : a < b -> b <> a.
-Proof.
-move => Hb He.
-rewrite He in Hb.
-by apply (Rlt_irrefl a).
-Qed.
-
-Lemma Rmult_minus_distr_r (r1 r2 r3 : R) : (r2 - r3) * r1 = r2 * r1 - r3 * r1.
-Proof. field. Qed.
-
 Lemma Rlt_0_Rmult_inv a b : 0 < a * b -> 0 <= a -> 0 <= b -> 0 < a /\ 0 < b.
 Proof.
 move=> H Ha Hb.
@@ -91,8 +81,8 @@ Qed.
 Lemma Rle_inv_conv x y : 0 < x -> 0 < y -> / y <= / x -> x <= y.
 Proof.
 move=> x_pos y_pos H.
-rewrite -(Rinv_involutive x); last by apply not_eq_sym, Rlt_not_eq.
-rewrite -(Rinv_involutive y); last by apply not_eq_sym, Rlt_not_eq.
+rewrite -(invRK x); last by apply not_eq_sym, Rlt_not_eq.
+rewrite -(invRK y); last by apply not_eq_sym, Rlt_not_eq.
 apply Rle_Rinv => //; by apply Rinv_0_lt_compat.
 Qed.
 
@@ -106,7 +96,7 @@ Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
 Lemma Rmax_Rle_in r1 r2 r : Rmax r1 r2 <= r -> r1 <= r /\ r2 <= r.
 Proof.
 case: (Rlt_le_dec r1 r2).
-- move/Rlt_le => H1.
+- move/ltRW => H1.
   rewrite Rmax_right // => H2.
   split; [by apply Rle_trans with r2 | assumption].
 - move=> H1.
@@ -188,9 +178,9 @@ Qed.
 Lemma le_sq x : 0 <= x ^ 2.
 Proof.
 move=> /=; case: (Rle_dec 0 x) => H; rewrite mulR1.
-by apply Rmult_le_pos.
-rewrite -(Ropp_involutive x) Rmult_opp_opp.
-apply Rmult_le_pos; by apply Ropp_0_ge_le_contravar, Rgt_ge, Rnot_le_gt.
+by apply mulR_ge0.
+rewrite -(oppRK x) Rmult_opp_opp.
+apply mulR_ge0; by apply oppR_ge0, ltRW, Rnot_le_lt.
 Qed.
 
 Lemma pow0_inv : forall n x, x ^ n = 0 -> x = 0.
@@ -234,11 +224,11 @@ Proof.
 move=> H1 H2.
 rewrite /Rabs.
 case : Rcase_abs => _ //.
-apply Ropp_le_cancel; by rewrite Ropp_involutive.
+apply Ropp_le_cancel; by rewrite oppRK.
 Qed.
 
 Lemma id_rem a b : (a - b) ^ 2 = a ^ 2 - 2 * a * b + b ^ 2.
-Proof. rewrite /= !mulR1 !mulRDr !Rmult_minus_distr_r /=; field. Qed.
+Proof. rewrite /= !mulR1 !mulRDr !mulRBl /=; field. Qed.
 
 Lemma id_rem_plus a b : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2.
 Proof. rewrite /= !mulR1 !mulRDl !mul1R !mulRDr /=; field. Qed.
@@ -251,9 +241,7 @@ Proof.
 rewrite x_x2_eq.
 have : forall a b, 0 <= b -> a - b <= a. move=>  *; fourier.
 apply.
-apply Rmult_le_pos.
-fourier.
-by apply le_sq.
+apply mulR_ge0; [fourier | by apply le_sq].
 Qed.
 
 (** Lemmas about up / Int_part / frac_part *)
@@ -487,7 +475,7 @@ move H1 : (_ <b= _ ) => [|] /=.
 symmetry; apply/RleP; apply Ropp_le_contravar; by apply/RleP.
 move H2 : (_ <b= _ ) => [|] //=.
 move/RleP/Ropp_le_contravar/RleP : H2.
-by rewrite 2!Ropp_involutive H1.
+by rewrite 2!oppRK H1.
 Qed.
 
 Lemma Rle2_opp a b c : a <b= b <b= c = (- c <b= -b <b= -a).
@@ -546,7 +534,7 @@ Qed.
 Lemma pow_gt0 x : 0 < x -> forall n, 0 < x ^ n.
 Proof.
 move=> x_pos.
-elim => [/= | n IH]; by [apply Rlt_0_1 | apply Rmult_lt_0_compat].
+elim => [/= | n IH]; by [apply Rlt_0_1 | apply mulR_gt0].
 Qed.
 
 Lemma pow_ge0 x : 0 <= x -> forall n, 0 <= x ^ n.
@@ -611,8 +599,7 @@ elim => [r rpos | n IH r rpos].
   by apply Rgt_lt, Rgt_minus, Rlt_gt, exp_increasing.
 - apply: (Rlt_trans _ 1) ; first by fourier.
   rewrite (_ : 1 = exp_dev n.+1 0) ; last first.
-    rewrite /exp_dev exp_0 pow_i ; last by apply/ltP.
-    by rewrite mul0R /Rminus Ropp_0 addR0.
+    rewrite /exp_dev exp_0 pow_i ?mul0R ?subR0 //; by apply/ltP.
   move: derive_increasing_interv.
   move/(_ 0 r (exp_dev n.+1) (derivable_exp_dev n.+1) rpos).
   have Haux : forall t : R,
@@ -622,8 +609,8 @@ elim => [r rpos | n IH r rpos].
     by apply IH, Hx.
   move/(_ Haux 0 r) => {Haux}.
   apply => //.
-  - split; by [apply Rle_refl | apply Rlt_le].
-  - split; by [apply Rlt_le | apply Rle_refl].
+  - split; [exact: Rle_refl | exact: ltRW].
+  - split; [exact: ltRW | exact: Rle_refl].
 Qed.
 
 Lemma exp_strict_lb n x : 0 < x -> x ^ n * / INR (n`!) < exp x.

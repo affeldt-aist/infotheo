@@ -45,12 +45,12 @@ case/andP. move/RleP => H2. move/RleP => H3.
 apply/andP; split; apply/RleP.
 - eapply Rle_trans; last by apply H2.
   apply exp2_le_increasing.
-  rewrite !Ropp_mult_distr_l_reverse.
+  rewrite !mulNR.
   apply Ropp_le_contravar, Rmult_le_compat_l; first by apply pos_INR.
   apply Rplus_le_compat_l, Rdiv_le => //; fourier.
 - eapply Rle_trans; first by apply H3.
   apply exp2_le_increasing.
-  rewrite !Ropp_mult_distr_l_reverse.
+  rewrite !mulNR.
   apply Ropp_le_contravar, Rmult_le_compat_l; first by apply pos_INR.
   apply Rplus_le_compat_l, Ropp_le_contravar, Rdiv_le => //; fourier.
 Qed.
@@ -69,7 +69,7 @@ Proof.
 suff Htmp : 1 >= INR #| `TS P n epsilon | * exp2 (- INR n * (`H P + epsilon)).
   apply Rmult_le_reg_l with (exp2 (- INR n * (`H P + epsilon))).
   by apply exp2_pos.
-  rewrite -exp2_plus {2}Ropp_mult_distr_l_reverse Rplus_opp_l {2}/exp2 mul0R exp_0 mulRC.
+  rewrite -exp2_plus {2}mulNR Rplus_opp_l {2}/exp2 mul0R exp_0 mulRC.
   by apply Rge_le.
 rewrite -(pmf1 (P `^ n)).
 rewrite (_ : _ * _ = \rsum_(x in `TS P n epsilon) (exp2 (- INR n * (`H P + epsilon)))); last first.
@@ -96,25 +96,23 @@ rewrite inE /typ_seq.
 case/andP => H1 H2.
 split.
 - apply Rmult_le_reg_l with (INR n.+1); first by apply lt_0_INR; apply/ltP.
-  rewrite Ropp_mult_distr_l_reverse Ropp_mult_distr_r_reverse.
+  rewrite mulNR mulRN.
   rewrite /Rdiv mul1R mulRA Rinv_r_simpl_r; last by apply not_0_INR.
-  rewrite -(Ropp_involutive (INR n.+1 * (`H P - epsilon))).
+  rewrite -(oppRK (INR n.+1 * (`H P - epsilon))).
   apply Ropp_le_contravar, exp2_le_inv.
   rewrite exp2_log; last first.
     move/RleP in H1.
     by eapply Rlt_le_trans; by [apply exp2_pos | apply H1].
-  apply/RleP.
-  by rewrite -Ropp_mult_distr_l_reverse.
+  apply/RleP; by rewrite -mulNR.
 - apply Rmult_le_reg_l with (INR n.+1); first by apply lt_0_INR; apply/ltP.
-  rewrite Ropp_mult_distr_l_reverse Ropp_mult_distr_r_reverse.
+  rewrite mulNR mulRN.
   rewrite /Rdiv mul1R mulRA Rinv_r_simpl_r; last by apply not_0_INR.
-  rewrite -(Ropp_involutive (INR n.+1 * (`H P + epsilon))).
+  rewrite -(oppRK (INR n.+1 * (`H P + epsilon))).
   apply Ropp_le_contravar, exp2_le_inv.
   rewrite exp2_log; last first.
     move/RleP in H1.
     by eapply Rlt_le_trans; by [apply exp2_pos | apply H1].
-  apply/RleP.
-  by rewrite -Ropp_mult_distr_l_reverse.
+  apply/RleP; by rewrite -mulNR.
 Qed.
 
 End typ_seq_prop.
@@ -189,21 +187,20 @@ have -> : Pr P `^ n.+1 (~: p) =
             apply Rlt_mult_inv_pos => //.
             fourier.
             by apply/lt_0_INR/ltP.
-          rewrite mulRA Ropp_mult_distr_r_reverse {2}/Rdiv -mulRA -Rinv_l_sym in LHS; last first.
+          rewrite mulRA mulRN {2}/Rdiv -mulRA -Rinv_l_sym in LHS; last first.
             by apply not_0_INR.
           rewrite mulR1 in LHS.
           apply Ropp_gt_lt_contravar in LHS.
-          rewrite -Ropp_mult_distr_l_reverse Ropp_involutive mul1R in LHS.
+          rewrite -mulNR oppRK mul1R in LHS.
           have H2 : forall a b c, a + b < c -> b < c - a by move=> *; fourier.
           apply H2 in LHS.
           move/RltP in LHS.
-          rewrite Ropp_mult_distr_l_reverse.
+          rewrite mulNR.
           suff : Rabs (- (1 / INR n.+1 * log (P `^ n.+1 i)) - `H P) =
-            - (1 / INR n.+1 * log (P `^ n.+1 i)) - `H P.
-            by move=> ->.
+            - (1 / INR n.+1 * log (P `^ n.+1 i)) - `H P by move=> ->.
           apply Rabs_pos_eq.
-          move/RltP in LHS.
-          by move/Rlt_le: (Rlt_trans _ _ _ He LHS).
+          move/RltP : LHS.
+          by move/(Rlt_trans _ _ _ He)/ltRW.
         - rewrite RleNgt negbK in LHS.
           apply/esym/orP; right.
           apply/andP; split.
@@ -217,21 +214,20 @@ have -> : Pr P `^ n.+1 (~: p) =
             apply Rlt_mult_inv_pos => //.
             fourier.
             by apply/lt_0_INR/ltP.
-          rewrite mulRA Ropp_mult_distr_r_reverse {1}/Rdiv -mulRA -Rinv_l_sym in LHS; last first.
+          rewrite mulRA mulRN {1}/Rdiv -mulRA -Rinv_l_sym in LHS; last first.
             by apply not_0_INR.
-          rewrite mulR1 Rmult_minus_distr_l !Ropp_mult_distr_l_reverse !mul1R in LHS.
+          rewrite mulR1 Rmult_minus_distr_l !mulNR !mul1R in LHS.
           have H2 : forall a b c, - a  - - b < c -> - c - a < - b by move=> *; fourier.
           apply H2 in LHS.
           have -> : Rabs (- (1 / INR n.+1) * log (P `^ n.+1 i) - `H P) =
             - (- (1 / INR n.+1) * log (P `^ n.+1 i) - `H P).
             rewrite Rabs_left1 //.
             eapply Rle_trans.
-              apply Rlt_le.
-              rewrite !Ropp_mult_distr_l_reverse.
-              by apply LHS.
+              apply ltRW.
+              rewrite !mulNR; exact: LHS.
             fourier.
           apply/RltP/Ropp_lt_cancel.
-          by rewrite Ropp_involutive // !Ropp_mult_distr_l_reverse.
+          by rewrite oppRK !mulNR.
       * move/negbT : LHS.
         rewrite negb_or 2!negbK.
         case/andP => H1 H2.
@@ -252,9 +248,9 @@ have -> : Pr P `^ n.+1 (~: p) =
           apply Rle_mult_inv_pos => //.
           fourier.
           apply lt_0_INR; by apply/ltP.
-        rewrite mulRA Ropp_mult_distr_r_reverse {1}/Rdiv -mulRA -Rinv_l_sym in LHS; last first.
+        rewrite mulRA mulRN {1}/Rdiv -mulRA -Rinv_l_sym in LHS; last first.
             by apply not_0_INR.
-        rewrite mulR1 mulRDr !Ropp_mult_distr_l_reverse !mul1R in LHS.
+        rewrite mulR1 mulRDr !mulNR !mul1R in LHS.
         have H2 : forall a b c, - a + - b <= c -> - c - a <= b.
           move=> *; fourier.
         apply H2 in LHS.
@@ -265,15 +261,15 @@ have -> : Pr P `^ n.+1 (~: p) =
           apply Rle_mult_inv_pos => //.
           fourier.
           by apply/lt_0_INR/ltP.
-        rewrite mulRA Ropp_mult_distr_r_reverse {2}/Rdiv -mulRA -Rinv_l_sym in LHS'; last first.
+        rewrite mulRA mulRN {2}/Rdiv -mulRA -Rinv_l_sym in LHS'; last first.
             by apply not_0_INR.
-        rewrite mulR1 mulRDr !Ropp_mult_distr_l_reverse !mul1R Ropp_involutive in LHS'.
+        rewrite mulR1 mulRDr !mulNR !mul1R oppRK in LHS'.
         have H3 : forall a b c, a <= - c + b -> - b <= - a - c by move=> *; fourier.
         apply H3 in LHS'.
         move: (Rabs_le (- (1 / INR n.+1) * log (P `^ n.+1 i) - `H P) epsilon).
         rewrite /Rle_bool => ->.
         apply/andP; split;
-          apply/RleP; by rewrite !Ropp_mult_distr_l_reverse.
+          apply/RleP; by rewrite !mulNR.
   rewrite H1 Pr_union_disj; last first.
     apply disjoint_setI0.
     rewrite disjoints_subset.
@@ -293,17 +289,12 @@ have -> : Pr P `^ n.+1 [set x | P `^ n.+1 x == 0] = 0.
     by move/eqP.
   by rewrite big_const /= iter_Rplus mulR0.
 rewrite add0R.
-move: (@aep _ P n _ He k0_k) => H1.
-apply: Rle_trans _ H1.
-apply/Pr_incl/subsetP => t.
-rewrite inE /= -/(INR n.+1).
+apply: Rle_trans _ (@aep _ P n _ He k0_k).
+apply/Pr_incl/subsetP => /= t.
+rewrite inE /=.
 case/andP => H2 H3.
-rewrite inE.
-apply/andP; split => //.
-apply/RleP.
-move/RltP in H3.
-apply RltW.
-by rewrite Ropp_mult_distr_r_reverse -Ropp_mult_distr_l_reverse.
+rewrite inE H2 /=.
+apply/RltW; by rewrite mulRN -mulNR.
 Qed.
 
 Variable He1 : epsilon < 1.
@@ -350,7 +341,7 @@ have H2 :(forall x, x \in `TS P n.+1 epsilon ->
   exp2 (- INR n.+1 * (`H P + epsilon)) <= P `^ n.+1 x <= exp2 (- INR n.+1 * (`H P - epsilon))).
   move=> x; rewrite inE; by apply Rle2P.
 move: (@wolfowitz _ P _ (`TS _ _ _) _ _ _ _ (exp2_pos _) (exp2_pos _) H1 H2).
-rewrite Ropp_mult_distr_l_reverse exp2_Ropp {1}/Rdiv Rinv_involutive; last first.
+rewrite mulNR exp2_Ropp {1}/Rdiv invRK; last first.
   by apply nesym, Rlt_not_eq, exp2_pos.
 by case.
 Qed.

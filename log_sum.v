@@ -41,21 +41,21 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
   have Fspos : 0 < \rsum_{ C } f.
     suff Fpos : 0 <= \rsum_{ C } f.
       apply Rlt_le_neq => //; by apply not_eq_sym.
-    apply: Rle_big_0_P_g => a C_a; by apply Rlt_le, fspos.
+    apply: Rle_big_0_P_g => a C_a; exact/ltRW/fspos.
   have Gspos : 0 < \rsum_{ C } g.
     suff Gpocs : 0 <= \rsum_{ C } g.
       apply Rlt_le_neq => //; by apply not_eq_sym.
-    apply: Rle_big_0_P_g => a C_a; by apply Rlt_le, gspos.
+    apply: Rle_big_0_P_g => a C_a; exact/ltRW/gspos.
   have kspos : 0 < k by apply Rlt_mult_inv_pos.
   have kg_pos : forall a, 0 <= k * g a.
-    move=> a; apply Rmult_le_pos; by [apply Rlt_le | apply pos_f_nonneg].
+    move=> a; apply mulR_ge0; by [apply ltRW | apply pos_f_nonneg].
   have kabs_con : forall a, k * g a = 0 -> f a = 0.
     move=> a.
     case/Rmult_integral.
     - move=> Hk; rewrite Hk in kspos; by move/Rlt_irrefl : kspos.
     - by move/fg.
   have kgspos : forall a, a \in C -> 0 < k * g a.
-    move=> a a_C; apply Rmult_lt_0_compat => //; by apply gspos.
+    move=> a a_C; apply mulR_gt0 => //; by apply gspos.
   have Hkg : \rsum_(a | a \in C) k * g a = \rsum_{C} f.
     by rewrite -big_distrr /= /k /Rdiv -mulRA mulRC Rinv_l // mul1R.
   have Htmp : \rsum_{ C } {| pos_f := fun x : A => k * g x; pos_f_nonneg := kg_pos |} <> 0.
@@ -69,15 +69,15 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
     apply eq_bigr => a a_C.
     rewrite /Rdiv log_mult; last 2 first.
       by apply fspos.
-      apply Rinv_0_lt_compat, Rmult_lt_0_compat => //; by apply gspos.
+      apply Rinv_0_lt_compat, mulR_gt0 => //; by apply gspos.
     rewrite log_Rinv; last first.
-      apply Rmult_lt_0_compat => //; by apply gspos.
-    rewrite log_mult //; last by apply gspos.
+      apply mulR_gt0 => //; exact: gspos.
+    rewrite log_mult //; last exact: gspos.
     rewrite log_mult //; last 2 first.
       by apply fspos.
       apply Rinv_0_lt_compat; by [apply gspos | apply fspos].
     rewrite log_Rinv; by [field | apply gspos].
-  rewrite big_split /= -(big_morph _ morph_Ropp Ropp_0) -big_distrl /= in Hwlog.
+  rewrite big_split /= -(big_morph _ morph_Ropp oppR0) -big_distrl /= in Hwlog.
   have : forall a b, 0 <= a + - b -> b <= a by move=> *; fourier.
   by apply.
 move=> Htmp; rewrite Htmp.
@@ -91,35 +91,31 @@ suff : 0 <= \rsum_(a | a \in C) f a * ln (f a / g a).
     rewrite /rhs.
     apply eq_bigr => a a_C; by rewrite /Rdiv -mulRA.
   rewrite -big_distrl /=.
-  apply Rmult_le_pos => //; by apply Rlt_le, Rinv_0_lt_compat, ln_2_pos.
+  apply mulR_ge0 => //; by apply ltRW, Rinv_0_lt_compat, ln_2_pos.
 apply Rle_trans with (\rsum_(a | a \in C) f a * (1 - g a / f a)).
   apply Rle_trans with (\rsum_(a | a \in C) (f a - g a)).
-    rewrite big_split /= -(big_morph _ morph_Ropp Ropp_0); fourier.
+    rewrite big_split /= -(big_morph _ morph_Ropp oppR0); fourier.
   apply Req_le, eq_bigr => a a_C.
   rewrite Rmult_minus_distr_l mulR1.
   case: (Req_EM_T (g a) 0).
     move=> ->; by rewrite /Rdiv mul0R mulR0.
   move=> ga_not_0.
-  field.
-  move=> abs; move: (fspos _ a_C); rewrite abs; by move/Rlt_irrefl.
+  field; exact/gtR_eqF/(fspos _ a_C).
 apply: Rle_big_P_f_g => a C_a.
-apply Rmult_le_compat_l; first by apply Rlt_le, fspos.
+apply Rmult_le_compat_l; first by apply ltRW, fspos.
 apply Ropp_le_cancel.
 rewrite -ln_Rinv; last first.
   apply Rlt_mult_inv_pos; by [apply fspos | apply gspos].
 rewrite Rinv_mult_distr; last 2 first.
-  move=> abs. move: (fspos _ C_a). rewrite abs; by move/Rlt_irrefl.
-  apply Rinv_neq_0_compat.
-  move=> abs. move: (gspos _ C_a). rewrite abs; by move/Rlt_irrefl.
-rewrite Rinv_involutive; last first.
-  move=> abs. move: (gspos _ C_a). rewrite abs; by move/Rlt_irrefl.
+  exact/gtR_eqF/(fspos _ C_a).
+  apply Rinv_neq_0_compat; exact/gtR_eqF/(gspos _ C_a).
+rewrite invRK; last exact/gtR_eqF/(gspos _ C_a).
 rewrite mulRC.
 eapply Rle_trans.
   apply ln_id_cmp.
   apply Rlt_mult_inv_pos; by [apply gspos | apply fspos].
 apply Req_le.
-field.
-move=> abs; move: (fspos _ C_a); rewrite abs; by move/Rlt_irrefl.
+field; exact/gtR_eqF/(fspos _ C_a).
 Qed.
 
 (** * The log-sum Inequality *)
@@ -176,10 +172,10 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
       rewrite (rsum_union g DID' DUD').
       apply Rplus_le_lt_0_compat => //.
       apply: Rle_big_0_P_g => *; by apply pos_f_nonneg.
-    apply Rmult_le_compat_l; first by apply Rlt_le.
+    apply Rmult_le_compat_l; first exact/ltRW.
     apply log_increasing_le.
       apply Rlt_mult_inv_pos => //; by rewrite -HG.
-    apply Rmult_le_compat_l; first by apply Rlt_le.
+    apply Rmult_le_compat_l; first exact/ltRW.
     apply Rle_Rinv => //.
     rewrite setUC in DUD'.
     rewrite (rsum_union g DID' DUD').

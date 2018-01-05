@@ -49,10 +49,9 @@ Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
 
 Lemma echa_pos (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
-apply Rmult_le_pos.
-- apply Rle_mult_inv_pos.
-  + fourier.
-  + apply lt_0_INR; by apply/ltP.
+apply mulR_ge0.
+- apply Rle_mult_inv_pos; first by fourier.
+  apply lt_0_INR; by apply/ltP.
 - apply: Rle_big_0_P_g => j _.
   apply: Rle_big_0_P_g => k Hk /=; by apply DMC_nonneg.
 Qed.

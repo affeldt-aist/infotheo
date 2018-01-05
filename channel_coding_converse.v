@@ -53,11 +53,10 @@ apply (Rle_trans _ _ _ (typed_success_bound W Mnot0 (Pmax.-typed_code c))).
 apply Rmult_le_compat_l; first by apply pow_le, pos_INR.
 set Vmax := arg_rmax _ _ _.
 rewrite /success_factor_bound /exp_cdiv.
-case : ifP => Hcase; last first.
-  rewrite mul0R; by apply Rlt_le, exp2_pos.
+case : ifP => Hcase; last by rewrite mul0R; exact/ltRW/exp2_pos.
 rewrite -exp2_plus.
 apply exp2_le_increasing.
-rewrite -mulRDr 2!Ropp_mult_distr_l_reverse.
+rewrite -mulRDr 2!mulNR.
 apply Ropp_le_contravar, Rmult_le_compat_l; first by apply pos_INR.
 have {Hcase}Hcase : Vmax << W | Pmax.
   move=> a Hp b /eqP Hw.
@@ -95,11 +94,11 @@ exists n0 => n M c HM n0_n HminRate.
 have Rlt0n : 0 < INR n.
   apply: (Rlt_trans _ _ _ _ n0_n).
   rewrite /n0.
-  apply Rmult_lt_0_compat; last by apply Rinv_0_lt_compat.
+  apply mulR_gt0; last by apply Rinv_0_lt_compat.
   rewrite /Rdiv -mulRA.
-  apply Rmult_lt_0_compat; first by apply pow_gt0; fourier.
-  apply Rmult_lt_0_compat; first by apply lt_0_INR; apply /ltP; apply fact_gt0.
-  apply Rinv_0_lt_compat, pow_gt0, Rmult_lt_0_compat => //; by apply ln_2_pos.
+  apply mulR_gt0; first by apply pow_gt0; fourier.
+  apply mulR_gt0; first by apply lt_0_INR; apply /ltP; apply fact_gt0.
+  apply Rinv_0_lt_compat, pow_gt0, mulR_gt0 => //; by apply ln_2_pos.
 destruct n as [|n'].
   by apply Rlt_irrefl in Rlt0n.
 set n := n'.+1.
@@ -115,15 +114,15 @@ rewrite mulR1.
 apply Rge_le; rewrite mulRC -2!mulRA; apply Rle_ge.
 set aux := INR _ * (_ * _).
 have aux_gt0 : 0 < aux.
-  apply Rmult_lt_0_compat.
+  apply mulR_gt0.
     apply lt_0_INR; apply/ltP; by apply fact_gt0.
-  apply Rmult_lt_0_compat.
-  apply Rinv_0_lt_compat, pow_gt0, Rmult_lt_0_compat => //; by apply ln_2_pos.
+  apply mulR_gt0.
+  apply Rinv_0_lt_compat, pow_gt0, mulR_gt0 => //; by apply ln_2_pos.
   by apply Rinv_0_lt_compat.
 apply (Rle_trans _ ((INR n.+1 / INR n) ^ K * aux)); last first.
   apply Rmult_le_compat => //.
   - apply pow_ge0, Rle_mult_inv_pos => //; by apply pos_INR.
-  - by apply Rlt_le.
+  - by apply ltRW.
   - apply pow_incr; split.
     + apply Rle_mult_inv_pos => //; by apply pos_INR.
     + apply Rmult_le_reg_r with (INR n) => //.
@@ -137,19 +136,18 @@ apply (Rle_trans _ ((INR n.+1 / INR n) ^ K * aux)); last first.
   - by apply Rle_refl.
 rewrite pow_mult -mulRA.
 apply Rmult_le_compat.
-- apply pow_ge0, Rlt_le, lt_0_INR; by apply/ltP.
-- by apply Rlt_le, exp2_pos.
+- by apply/pow_ge0/ltRW/lt_0_INR/ltP.
+- exact/ltRW/exp2_pos.
 - by apply Rle_refl.
 - apply Rle_inv_conv.
   + by apply exp2_pos.
-  + apply Rmult_lt_0_compat; last by exact aux_gt0.
+  + apply mulR_gt0; last exact aux_gt0.
     rewrite pow_inv; last by apply not_eq_sym, Rlt_not_eq.
     by apply Rinv_0_lt_compat, pow_gt0.
-  + rewrite -exp2_Ropp Ropp_mult_distr_l_reverse Ropp_involutive /exp2.
+  + rewrite -exp2_Ropp mulNR oppRK /exp2.
     have nDeltaln2 : 0 <= INR n * Delta * ln 2.
-      apply Rmult_le_pos; last by apply Rlt_le, ln_2_pos.
-      apply Rmult_le_pos; last by apply Rlt_le.
-      by apply pos_INR.
+      apply mulR_ge0; last exact/ltRW/ln_2_pos.
+      apply mulR_ge0; [by apply pos_INR | exact/ltRW].
     apply: (Rle_trans _ _ _ _ (exp_lb (K.+1) nDeltaln2)) => {nDeltaln2}.
     apply Req_le.
     rewrite Rinv_mult_distr; last 2 first.
@@ -157,21 +155,20 @@ apply Rmult_le_compat.
       by apply not_eq_sym, Rlt_not_eq.
     rewrite mulRC Rinv_mult_distr; last 2 first.
       apply not_eq_sym, Rlt_not_eq, lt_0_INR; apply/ltP; by apply fact_gt0.
-      apply not_eq_sym, Rlt_not_eq, Rmult_lt_0_compat.
-        apply Rinv_0_lt_compat, pow_gt0, Rmult_lt_0_compat => //; by apply ln_2_pos.
+      apply not_eq_sym, Rlt_not_eq, mulR_gt0.
+        apply Rinv_0_lt_compat, pow_gt0, mulR_gt0 => //; by apply ln_2_pos.
       by apply Rinv_0_lt_compat.
     rewrite -mulRA mulRC.
     rewrite Rinv_mult_distr; last 2 first.
-    - apply not_eq_sym, Rlt_not_eq, Rinv_0_lt_compat, pow_gt0, Rmult_lt_0_compat => //; by apply ln_2_pos.
+    - apply not_eq_sym, Rlt_not_eq, Rinv_0_lt_compat, pow_gt0, mulR_gt0 => //; by apply ln_2_pos.
     - by apply not_eq_sym, Rlt_not_eq, Rinv_0_lt_compat.
-    - rewrite Rinv_involutive ; last first.
-        apply not_eq_sym, Rlt_not_eq, pow_gt0, Rmult_lt_0_compat => //; by apply ln_2_pos.
-      rewrite Rinv_involutive; last by apply not_eq_sym, Rlt_not_eq.
+    - rewrite invRK; last first.
+        apply not_eq_sym, Rlt_not_eq, pow_gt0, mulR_gt0 => //; by apply ln_2_pos.
+      rewrite invRK; last by apply not_eq_sym, Rlt_not_eq.
       rewrite (_ : / (/ INR n) ^ K = (INR n) ^ K); last first.
         rewrite -pow_inv; last first.
           by apply Rinv_neq_0_compat, not_eq_sym, Rlt_not_eq.
-        rewrite Rinv_involutive //.
-        by apply not_eq_sym, Rlt_not_eq.
+        rewrite invRK //; exact/not_eq_sym/Rlt_not_eq.
       rewrite /Rdiv; f_equal.
       rewrite !Rpow_mult_distr -(tech_pow_Rmult (INR n)).
       field.

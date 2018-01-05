@@ -181,7 +181,7 @@ Proof. rewrite /reflexive /ord_F_Rle => x ; apply/RleP ; apply Rle_refl. Qed.
 Let total_ord : total ord_F_Rle.
 Proof.
 rewrite /total /ord_F_Rle => x y. apply/orP.
-case (Rlt_le_dec (F x) (F y)) => [/(Rlt_le)|] /RleP H ; by [apply or_introl|apply or_intror].
+case (Rlt_le_dec (F x) (F y)) => [/ltRW|] /RleP H; by [left|right].
 Qed.
 
 Definition arg_rmax := arg_maxord i0 P ord_F_Rle.

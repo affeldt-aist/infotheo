@@ -187,11 +187,10 @@ apply Rplus_le_compat.
         apply Rlt_mult_inv_pos => //; first by fourier.
         by apply/lt_0_INR/ltP.
       * apply Rge_le.
-        rewrite -mulRA mul1R mulRA Ropp_mult_distr_r_reverse -Rinv_l_sym;
-          last by apply not_0_INR.
+        rewrite -mulRA mul1R mulRA mulRN -Rinv_l_sym; last by apply not_0_INR.
         apply Rle_ge, Ropp_le_cancel.
-        rewrite -Ropp_mult_distr_l_reverse (_ : - -1 = 1); last by field.
-        by rewrite mul1R -Ropp_mult_distr_l_reverse.
+        rewrite -mulNR (_ : - -1 = 1); last by field.
+        by rewrite mul1R -mulNR.
   rewrite big_const iter_Rplus; by apply Rle_refl.
 Qed.
 
@@ -231,7 +230,7 @@ have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
     + rewrite -mulRA /Rdiv mul1R Rinv_r; last first.
         apply Rminus_eq_contra; exact e0_delta.
       apply Ropp_le_cancel, Rge_le.
-      rewrite -Ropp_mult_distr_l_reverse Ropp_involutive.
+      rewrite -mulNR oppRK.
       apply Rle_ge.
       rewrite mulR1 /e0.
       by move: (proj2 (Rmax_Rle_in (proj1 (Rmax_Rle_in Hk)))).

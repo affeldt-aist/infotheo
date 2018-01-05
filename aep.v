@@ -1,6 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div choice fintype.
-From mathcomp Require Import finfun bigop prime binomial ssralg finset fingroup finalg matrix.
+From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
+From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
+From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import Reals_ext ssr_ext ssralg_ext log2 Rssr Rbigop proba entropy.
 
@@ -29,9 +30,8 @@ Variable P : dist A.
 
 Lemma E_map_mlog k i : `E ((map_mlog k.+1 P) ``_ i) = `H P.
 Proof.
-rewrite ExE /entropy (big_morph _ morph_Ropp Ropp_0).
-apply eq_bigr=> a _.
-by rewrite mxE /= Ropp_mult_distr_l_reverse mulRC.
+rewrite ExE /entropy (big_morph _ morph_Ropp oppR0).
+apply eq_bigr=> a _; by rewrite mxE /= mulNR mulRC.
 Qed.
 
 Definition aep_sigma2 := (\rsum_(a in A) P a * (log (P a))^2 - (`H P)^2)%R.
@@ -47,12 +47,11 @@ transitivity
 rewrite big_split /= big_split /= -big_distrr /= (pmf1 P) Rmult_1_r.
 set s := (\rsum_(a in A) - _)%R.
 have {s}-> : s = (- (2 * `H P ^ 2))%R.
-  rewrite /s -{1}(big_morph _ morph_Ropp Ropp_0).
+  rewrite /s -{1}(big_morph _ morph_Ropp oppR0).
   f_equal.
   rewrite [X in X = _](_ : _ = \rsum_(a in A) (2 * `H P) * (- (P a * log (P a))))%R; last first.
-    apply eq_bigr => a _.
-    by rewrite -!mulRA (mulRC (P a)) Ropp_mult_distr_l_reverse.
-  by rewrite -big_distrr /= -{1}(big_morph _ morph_Ropp Ropp_0) -/(entropy P) mulR1 mulRA.
+    apply eq_bigr => a _; by rewrite -!mulRA (mulRC (P a)) mulNR.
+  by rewrite -big_distrr /= -{1}(big_morph _ morph_Ropp oppR0) -/(entropy P) mulR1 mulRA.
 set s := \rsum_(a in A ) _.
 rewrite (_ : \rsum_(a in A) _ = s); last by rewrite /s; apply eq_bigr => a _; field.
 by field.
@@ -136,7 +135,7 @@ apply Rmult_le_compat_l; first by apply aep_sigma2_pos.
 apply Rle_Rinv.
 - by apply pow_lt.
 - apply pow_lt; by apply Rlt_le_trans with e'.
-- apply pow_incr => //; split; [by apply Rlt_le | exact e'e ].
+- apply pow_incr => //; split; [by apply ltRW | exact e'e ].
 Qed.
 
 End aep_k0_constant.
@@ -157,9 +156,7 @@ move=> Hbound.
 apply Rle_trans with (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R; last first.
   rewrite /aep_bound in Hbound.
   apply (Rmult_le_compat_r (epsilon / INR n.+1)) in Hbound; last first.
-    apply Rle_mult_inv_pos.
-    apply Rlt_le; exact: Hepsilon.
-    apply lt_0_INR; by apply/ltP.
+    apply Rle_mult_inv_pos; [exact/ltRW/Hepsilon | exact/lt_0_INR/ltP].
   rewrite {3}/Rdiv mulRA Rinv_r_simpl_m in Hbound; last by apply not_0_INR.
   eapply Rle_trans; last by apply Hbound.
   apply Req_le; field.

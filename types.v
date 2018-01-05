@@ -56,7 +56,7 @@ apply R1_neq_R0.
 rewrite -(pmf1 d).
 transitivity (\rsum_(a | a \in A) INR (t a) / 0); first by apply eq_bigr.
 rewrite -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-rewrite (_ : \sum_(a in A) _ = O); first by rewrite Rmult_0_l.
+rewrite (_ : \sum_(a in A) _ = O) ?mul0R //.
 transitivity (\sum_(a in A) 0); first by apply eq_bigr => a _; rewrite (ord1 (t a)).
 by rewrite big_const iter_addn.
 Qed.
@@ -500,12 +500,16 @@ rewrite /set_typ_seq inE /typ_seq tuple_dist_type_entropy; last first.
 by rewrite addR0 subR0 !leRR.
 Qed.
 
+(* TODO: move? *)
+Lemma row_of_tuple_inj {C : finType} {m} : injective (@row_of_tuple C m).
+Proof. move=> a b ab; by rewrite -(row_of_tupleK b) -ab row_of_tupleK. Qed.
+
 (** Upper-bound of the number of tuples representative of a type using the entropy: *)
 
 Lemma card_typed_tuples : INR #| T_{ P } | <= exp2 (INR n * `H P).
 Proof.
-rewrite -(Rinv_involutive (exp2 (INR n * `H P))%R); last by apply exp2_not_0.
-rewrite -exp2_Ropp -Ropp_mult_distr_l_reverse.
+rewrite -(invRK (exp2 (INR n * `H P))%R); last by apply exp2_not_0.
+rewrite -exp2_Ropp -mulNR.
 set aux := - INR n * `H P.
 apply (Rmult_le_reg_r (exp2 aux) _ _ (exp2_pos aux)).
 rewrite Rinv_l ; last by apply exp2_not_0.
@@ -525,12 +529,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
     case/imsetP : Hta' => x Hx ->. by rewrite row_of_tupleK.
   rewrite big_const iter_Rplus_Rmult tuple_dist_type_entropy //.
   do 2 f_equal.
-  rewrite card_imset //.
-
-Lemma row_of_tuple_inj {C : finType} {m} : injective (@row_of_tuple C m).
-Proof. move=> a b ab; by rewrite -(row_of_tupleK b) -ab row_of_tupleK. Qed.
-
-  exact row_of_tuple_inj.
+  rewrite card_imset //; exact row_of_tuple_inj.
 - rewrite (_ : (INR #| T_{P} | = 0)%R); first by fourier.
   rewrite (_ : 0%R = INR 0) //; f_equal; apply/eqP.
   rewrite cards_eq0; apply/negPn.

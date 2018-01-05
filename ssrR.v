@@ -70,18 +70,16 @@ From mathcomp Require Import ssrnum.
 Delimit Scope Rb_scope with Rb.
 Lemma addR_ge0 : (forall x y : R, 0 <b= x -> 0 <b= y -> 0 <b= x + y)%Rb.
 Proof.
-move=> x y /RleP Hx /RleP Hy. apply/RleP. by apply Rplus_le_le_0_compat.
+move=> x y /RleP Hx /RleP Hy. apply/RleP. by apply Rssr.addR_ge0.
 Qed.
 
 Lemma mulR_ge0 : (forall x y : R, 0 <b= x -> 0 <b= y -> 0 <b= x * y)%Rb.
 Proof.
-move=> x y /RleP Hx /RleP Hy. apply/RleP. by apply Rmult_le_pos.
+move=> x y /RleP Hx /RleP Hy. apply/RleP. by apply Rssr.mulR_ge0.
 Qed.
 
 Lemma le_ge_0 : (forall x : R, 0 <b= x -> x <b= 0 -> x = 0)%Rb.
-Proof.
-move=> x /RleP Hx /RleP Hy. by apply Rle_antisym.
-Qed.
+Proof. move=> x /RleP Hx /RleP Hy. by apply Rle_antisym. Qed.
 
 Require Import Fourier.
 
@@ -122,4 +120,4 @@ Canonical R_numFieldType := [numFieldType of R].
 Canonical R_realDomainType := RealDomainType R or_le0.
 Canonical R_realFieldType := [realFieldType of R].
 
-(* TODO: archimedian also correspond a une stucture *)
+(* TODO: archimedian also corresponds to a stucture *)

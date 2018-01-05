@@ -83,7 +83,7 @@ have -> : D(P || Q) = \rsum_(a in A_ 0) P a * log (P a / Q a) +
       rewrite log_mult //; last by apply Rinv_0_lt_compat.
     by rewrite log_Rinv.
     symmetry in Qa. rewrite (P_dom_by_Q Qa) in Pa. by apply Rlt_irrefl in Pa.
-  by rewrite -Pa 2!Rmult_0_l.
+  by rewrite -Pa 2!mul0R.
 have step2 :
   (\rsum_(a in A_ 0) P a) * log ((\rsum_(a in A_ 0) P a) / \rsum_(a in A_ 0) Q a) +
   (\rsum_(a in A_ 1) P a) * log ((\rsum_(a in A_ 1) P a) / \rsum_(a in A_ 1) Q a) <=
@@ -130,14 +130,14 @@ have [A0_P_neq0 | A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
           by apply Rinv_0_lt_compat.
         rewrite log_Rinv //.
         apply Req_le; by field.
-      - rewrite -A1_P_0 !Rmult_0_l Rplus_0_r; by apply Req_le.
+      - rewrite -A1_P_0 !mul0R addR0; by apply Req_le.
     * move/(Req_0_rmul_inv (dist_nonneg Q)) in A0_Q_0.
       have {A0_Q_0}A0_Q_0 : forall i : A, i \in A_ 0 -> 0%R = P i.
         move=> i Hi; by rewrite P_dom_by_Q // -A0_Q_0.
       have Habs : P_A 0 = 0%R.
         transitivity (\rsum_(H|H \in A_ 0) 0%R).
           apply eq_big => // i Hi; by rewrite -A0_Q_0.
-        by rewrite big_const iter_Rplus_Rmult Rmult_0_r.
+        by rewrite big_const iter_Rplus_Rmult mulR0.
       move: A0_P_neq0.
       rewrite Habs; by move/Rlt_irrefl.
   + have H2 : P_A 1 = 0%R.
@@ -145,7 +145,7 @@ have [A0_P_neq0 | A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       rewrite /P_A /bipart /= /bipart_pmf (eq_bigr (fun=> 0%R)).
       by rewrite big_const iter_Rplus mulR0.
       move=> a a_A_1; by rewrite P_dom_by_Q // -A1_Q_0.
-    rewrite H2 !Rmult_0_l !Rplus_0_r.
+    rewrite H2 !mul0R !addR0.
     have H3 : Q_A 0 = 1%R.
       rewrite -[X in X = _]Rplus_0_r [X in _ + X = _]A1_Q_0 -(pmf1 Q).
       symmetry.
@@ -165,7 +165,7 @@ have [A0_P_neq0 | A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
     by rewrite -setI_eq0 -dis setIC.
   have [A1_Q_neq0 | A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
     apply Rle_lt_or_eq_dec. apply: Rle_big_0_P_g => i _; by apply dist_nonneg.
-  + rewrite -A0_P_0 !Rmult_0_l !Rplus_0_l H1 !Rmult_1_l.
+  + rewrite -A0_P_0 !mul0R !add0R H1 !mul1R.
     rewrite /Rdiv log_mult; last 2 first.
       fourier.
       by apply Rinv_0_lt_compat.

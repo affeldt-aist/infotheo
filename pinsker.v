@@ -66,14 +66,14 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
   case: p01 => Hp1 Hp2.
   case: q01 => Hq1 Hq2.
   case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
-    rewrite -Hp1 !mul0R Rminus_0_r addR0 add0R !mul1R log_1 /Rdiv.
+    rewrite -Hp1 !mul0R subR0 addR0 add0R !mul1R log_1 /Rdiv.
     case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
       move: (@P_dom_by_Q (Two_set.val0 card_A)).
       rewrite -/pi -/qi => abs.
       rewrite Hqi Hq2 Rminus_diag_eq // in abs.
       move: {abs}(abs Logic.eq_refl).
-      rewrite Hpi -Hp1 Rminus_0_r.
-      move=> abs. suff : False by done. fourier.
+      rewrite Hpi -Hp1 subR0.
+      move=> abs. exfalso. fourier.
     rewrite log_mult; last 2 first.
       fourier.
       apply Rinv_0_lt_compat; fourier.
@@ -117,11 +117,8 @@ set rhs := D(_ || _).
 suff : 0 <= rhs - lhs by move=> ?; fourier.
 rewrite -pinsker_fun_p_eq.
 apply pinsker_fun_pos with p01 q01 A card_A => //.
-split.
-  apply Rlt_le, Rinv_0_lt_compat, Rmult_lt_0_compat.
-  fourier.
-  by apply ln_2_pos.
-by apply Rle_refl.
+split; last exact: Rle_refl.
+apply Rlt_le, Rinv_0_lt_compat, mulR_gt0; [fourier | by apply ln_2_pos].
 Qed.
 
 End Pinsker_2_bdist.
@@ -194,7 +191,7 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
           move=> ?; by fourier.
         apply: Rle_big_P_f_g => a.
         rewrite inE; by move/RleP.
-      rewrite -(big_morph _ morph_Ropp Ropp_0) //; by field.
+      rewrite -(big_morph _ morph_Ropp oppR0) //; by field.
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
         destruct (#|A1|); [tauto | by right].
@@ -204,11 +201,11 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
           apply eq_bigr => a; rewrite /A1 in_set => Ha.
           rewrite Rabs_left //.
           move/RltP in Ha; by fourier.
-        rewrite -(big_morph _  morph_Ropp Ropp_0) // big_split /= Rabs_left; last first.
+        rewrite -(big_morph _  morph_Ropp oppR0) // big_split /= Rabs_left; last first.
           suff : \rsum_(a | a \in A1) P a < \rsum_(a | a \in A1) Q a by move=> ?; fourier.
           apply: Rlt_big_f_g_X => // a.
           rewrite /A1 in_set; by move/RltP.
-        by rewrite -(big_morph _ morph_Ropp Ropp_0).
+        by rewrite -(big_morph _ morph_Ropp oppR0).
   rewrite /index_enum -enumT Two_set.enum /=.
     symmetry; by rewrite card_bool.
   move=> HX.
@@ -249,7 +246,7 @@ eapply Rle_trans; last by apply Pinsker_inequality.
 rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow; field.
 apply Rmult_le_compat_r; first by apply le_sq.
 apply Rle_Rinv; [ | fourier| ].
-- apply Rmult_lt_0_compat; [fourier | exact ln_2_pos].
+- apply mulR_gt0; [fourier | exact ln_2_pos].
 - rewrite -[X in _ <= X]mulR1.
   apply Rmult_le_compat_l; first by fourier.
   rewrite [X in _ <= X](_ : 1%R = ln (exp 1)); last by rewrite ln_exp.

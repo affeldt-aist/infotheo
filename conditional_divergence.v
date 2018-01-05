@@ -200,7 +200,7 @@ rewrite dmc_cdiv_cond_entropy_aux cond_entropy_single_sum.
 rewrite /cdiv /entropy -big_split /=.
 rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) (big_morph _ morph_exp2_plus exp2_0).
 apply eq_bigr => a _.
-rewrite (big_morph _ morph_Ropp Ropp_0).
+rewrite (big_morph _ morph_Ropp oppR0).
 rewrite /div /= -mulRDr mulRA -big_split /=.
 rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) (big_morph _ morph_exp2_plus exp2_0).
 apply eq_bigr => b _.
@@ -228,7 +228,7 @@ case/boolP : (W a b == 0) => Wab0.
   - move: (W0_V0 Pa0 Wab0) => nullV.
     rewrite nullV.
     suff : N(a, b| tuple_of_row x, tuple_of_row y) = 0%nat.
-      move=> ->; by rewrite 2!mul0R Ropp_0 addR0 mulR0 exp2_0.
+      move=> ->; by rewrite 2!mul0R oppR0 addR0 mulR0 exp2_0.
     move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
     by rewrite jtype_0_jtypef.
 - rewrite -{1}(@exp2_log (W a b)); last first.
@@ -236,7 +236,7 @@ case/boolP : (W a b == 0) => Wab0.
     move/eqP; apply/negP; by rewrite eqtype.eq_sym.
   rewrite -exp2_pow.
   f_equal.
-  rewrite -Ropp_mult_distr_r_reverse -mulRDr mulRA /Rminus addRC addRA Rplus_opp_l add0R Ropp_mult_distr_r_reverse -3!Ropp_mult_distr_l_reverse Ropp_involutive.
+  rewrite -mulRN -mulRDr mulRA /Rminus addRC addRA Rplus_opp_l add0R mulRN -3!mulNR oppRK.
   f_equal.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   move: (HV).

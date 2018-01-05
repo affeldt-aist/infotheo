@@ -162,11 +162,10 @@ have H01 : 0 < ((1 - p) * P (Two_set.val0 card_A) + p * P (Two_set.val1 card_A))
   split.
     case/Rle_lt_or_eq_dec : H1 => H1.
     - apply Rplus_lt_le_0_compat.
-      apply Rmult_lt_0_compat; fourier.
-      apply Rmult_le_pos; fourier.
-    - rewrite -H1 mulR0 add0R.
-      have -> : P (Two_set.val1 card_A) = 1 by rewrite -P1 -H1 add0R.
-      by rewrite mulR1.
+        by apply mulR_gt0; fourier.
+      by apply mulR_ge0; fourier.
+    - rewrite -H1 mulR0 add0R (_ : P (Two_set.val1 card_A) = 1) ?mulR1 //.
+      by rewrite -P1 -H1 add0R.
   rewrite -{2}P1.
   case: (Req_EM_T (P (Two_set.val0 card_A)) 0) => Hi.
     rewrite Hi mulR0 !add0R.
@@ -187,10 +186,10 @@ have H01 : 0 < ((1 - p) * P (Two_set.val0 card_A) + p * P (Two_set.val1 card_A))
       have -> : P (Two_set.val1 card_A) = 1 by rewrite -P1 -H1 add0R.
       by rewrite mulR1.
 rewrite (_ : forall a b, - (a + b) = - a - b); last by move=> *; field.
-rewrite -Ropp_mult_distr_l_reverse.
+rewrite -mulNR.
 set q := (1 - p) * P (Two_set.val0 card_A) + p * P (Two_set.val1 card_A).
 eapply (Rle_trans _ (H2 q)); last by apply H2_max.
-rewrite /H2 !Ropp_mult_distr_l; apply Req_le; field.
+rewrite /H2 !mulNR; apply Req_le; field.
 Qed.
 
 Lemma bsc_out_H_half' : 0 < INR 1 / INR 2 < 1.

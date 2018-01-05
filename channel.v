@@ -141,7 +141,7 @@ Variable W  : `Ch_1(A, B).
 Definition f (b : B) := \rsum_(a in A) W a b * P a.
 
 Lemma f0 (b : B) : 0 <= f b.
-Proof. apply: Rle_big_0_P_g => a _; apply: Rmult_le_pos; by apply dist_nonneg. Qed.
+Proof. apply: Rle_big_0_P_g => a _; apply: mulR_ge0; by apply dist_nonneg. Qed.
 
 Lemma f1 : \rsum_(b in B) f b = 1.
 Proof.
@@ -213,7 +213,7 @@ Variable W : `Ch_1(A, B).
 Definition f (ab : A * B) := W ab.1 ab.2 * P ab.1.
 
 Lemma f0 (ab : A * B) : 0 <= f ab.
-Proof. apply: Rmult_le_pos; by [apply ptm0 | apply dist_nonneg]. Qed.
+Proof. apply: mulR_ge0; by [apply ptm0 | apply dist_nonneg]. Qed.
 
 Lemma f1 : \rsum_(ab | ab \in {: A * B}) (W ab.1) ab.2 * P ab.1 = 1.
 Proof.
@@ -291,19 +291,19 @@ Proof.
 rewrite /cond_entropy /`H /=.
 rewrite (eq_bigr (fun x => (`J( P, W)) (x.1, x.2) * log ((`J( P, W)) (x.1, x.2)))); last by case.
 rewrite -(pair_big xpredT xpredT (fun a b => (`J( P, W)) (a, b) * log ((`J( P, W)) (a, b)))) /=.
-rewrite /Rminus -Ropp_plus_distr /=; f_equal.
-rewrite (big_morph _ morph_Ropp Ropp_0) -big_split /= (big_morph _ morph_Ropp Ropp_0).
+rewrite /Rminus -oppRD /=.
+rewrite (big_morph _ morph_Ropp oppR0) -big_split /= (big_morph _ morph_Ropp oppR0).
 apply eq_bigr => // a _.
 case/boolP : (P a == 0); move=> Hcase.
 - move/eqP in Hcase.
-  rewrite Hcase !(mul0R, addR0, Ropp_0).
+  rewrite Hcase !(mul0R, addR0, oppR0).
   transitivity (- \rsum_(b : B) 0).
     congr (- _).
     apply eq_bigr => // b _.
     by rewrite {1}JointDist.dE Hcase !(mul0R, mulR0).
-  by rewrite big_const iter_Rplus mulR0 Ropp_0.
+  by rewrite big_const iter_Rplus mulR0 oppR0.
 - rewrite Rmult_comm -(Rmult_1_r (-(log (P a) * P a))) -(pmf1 (W a)).
-  rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) Ropp_mult_distr_r_reverse; f_equal.
+  rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) mulRN; f_equal.
   rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) -big_split /=.
   apply eq_bigr => // b _.
   case/boolP : (W a b == 0); move=> Hcase2.

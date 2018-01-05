@@ -656,7 +656,7 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
       by apply Rinv_neq_0_compat.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
       apply/eqP; by rewrite -not_receivable_uniformE Hy.
-    rewrite Rinv_involutive // -mulRA mulRC Rinv_r_simpl_m //.
+    rewrite invRK // -mulRA mulRC Rinv_r_simpl_m //.
     set tmp1 := \rsum_(_ | _) _.
     rewrite -Rinv_l_sym //.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.

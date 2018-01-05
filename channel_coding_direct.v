@@ -87,7 +87,7 @@ have : \rsum_(f : encT A M n) Wght.d P f * epsilon <= x.
   rewrite /x.
   apply: Rle_big_P_Q_f_g => // i _.
   - apply Rmult_le_compat_l; by [apply dist_nonneg | apply Rnot_lt_le, abs].
-  - apply Rmult_le_pos; by [apply dist_nonneg | apply echa_pos].
+  - apply mulR_ge0; by [apply dist_nonneg | apply echa_pos].
 apply Rlt_not_le, Rlt_le_trans with epsilon => //.
 rewrite -big_distrl /= (pmf1 (Wght.d P)) mul1R; by apply Rle_refl.
 Qed.
@@ -807,8 +807,7 @@ have [k Hk] : exists k, (log (INR k.+1) / INR n = r)%R.
     rewrite INR_Zabs_nat.
       rewrite -Hn2; by apply exp2_pos.
     apply le_IZR.
-    rewrite -Hn2.
-    by apply Rlt_le, exp2_pos.
+    rewrite -Hn2; exact/ltRW/exp2_pos.
   apply Rmult_eq_reg_l with (INR n); last first.
     apply not_0_INR.
     apply/eqP; by rewrite -lt0n.
@@ -817,8 +816,7 @@ have [k Hk] : exists k, (log (INR k.+1) / INR n = r)%R.
     apply/eqP; by rewrite -lt0n.
   rewrite -(log_exp2 (INR n * r)) Hn2 INR_Zabs_nat //.
   apply le_IZR.
-  rewrite -Hn2 /=.
-  by apply Rlt_le, exp2_pos.
+  rewrite -Hn2; exact/ltRW/exp2_pos.
 set M := [finType of 'I_k.+1].
 exists [finType of 'I_k.+1].
 split; first by rewrite /= card_ord.
@@ -853,7 +851,7 @@ rewrite [X in X < _](_ : _ = (\rsum_(f : encT A M n) Wght.d P f * (e(W, mkCode f
     rewrite exchange_big /=.
     apply eq_bigr => m' _.
     apply: error_rate_symmetry.
-    apply Rlt_le; rewrite /epsilon0_condition in Hepsilon0; tauto.
+    apply ltRW; rewrite /epsilon0_condition in Hepsilon0; tauto.
   rewrite exchange_big /= big_const /= iter_Rplus !mulRA /Rdiv mul1R Rinv_l.
   by rewrite mul1R.
   apply not_0_INR; by rewrite card_ord.
@@ -918,7 +916,7 @@ apply Rlt_trans with (epsilon0 + epsilon0)%R.
   rewrite (_ : _ / _ = r)%R; last by rewrite -Hk card_ord.
   apply Rlt_trans with (exp2 (- INR n * epsilon0)).
     apply exp2_increasing.
-    rewrite !Ropp_mult_distr_l_reverse.
+    rewrite !mulNR.
     apply Ropp_lt_contravar, Rmult_lt_compat_l.
     - apply lt_0_INR; case: Hn => Hn _; by apply/ltP.
     - case: Hepsilon0 => _ [_ Hepsilon0].
@@ -930,7 +928,7 @@ apply Rlt_trans with (epsilon0 + epsilon0)%R.
     apply exp2_increasing, Rmult_lt_compat_r.
     - rewrite /epsilon0_condition in Hepsilon0; tauto.
     - apply Ropp_lt_contravar; by case: Hn => _ [Hn2 _].
-      rewrite -Ropp_mult_distr_l_reverse Ropp_involutive -mulRA -Rinv_l_sym; last first.
+      rewrite -mulNR oppRK -mulRA -Rinv_l_sym; last first.
         apply nesym, Rlt_not_eq.
         rewrite /epsilon0_condition in Hepsilon0; tauto.
       rewrite mulR1 exp2_log; last by rewrite /epsilon0_condition in Hepsilon0; tauto.
@@ -947,7 +945,7 @@ Variable W : `Ch_1(A, B).
 Variable cap : R.
 Hypothesis Hc : capacity W cap.
 
-(** * Channel Coding Theorem (direct part) #<a name="label_channel_coding_direct"> </a># *)
+(** * Channel Coding Theorem (direct part) *)
 
 Theorem channel_coding (r : CodeRateType) : r < cap ->
   forall epsilon, 0 < epsilon ->
@@ -969,9 +967,9 @@ have [epsilon0 Hepsilon0] : exists epsilon0,
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P ; W) - r) / 4.
   exists ((Rmin (epsilon/2) ((`I(P ; W) - r) / 4))/2).
   have Htmp : 0 < Rmin (epsilon / 2) (((`I(P ; W) - r) / 4)).
-    apply Rmin_pos; apply Rmult_lt_0_compat => //; fourier.
+    apply Rmin_pos; apply mulR_gt0 => //; fourier.
   split.
-    apply Rmult_lt_0_compat => //; fourier.
+    apply mulR_gt0 => //; fourier.
   split.
     apply Rlt_le_trans with (Rmin (epsilon / 2) ((`I(P ; W) - r) / 4)).
     by apply Rlt_eps2_eps.
@@ -1026,11 +1024,11 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
     apply Rlt_le_trans with (INR n1); first by tauto.
     apply le_INR; by apply/leP.
   apply leq_trans with n1 => //; tauto.
-case: (random_coding_good_code (Rlt_le _ _ Hepsilon) Hepsilon0 Hn) =>
+case: (random_coding_good_code (ltRW _ _ Hepsilon) Hepsilon0 Hn) =>
   M [HM [M_k H]].
 case: (good_code_sufficient_condition HM H) => f Hf.
 exists n, M, (mkCode f (jtdec P W epsilon0 f)); split; last by assumption.
-rewrite /CodeRate M_k INR_Zabs_nat; last by apply Int_part_pos, Rlt_le, exp2_pos.
+rewrite /CodeRate M_k INR_Zabs_nat; last by apply Int_part_pos, ltRW, exp2_pos.
 suff Htmp : IZR (Int_part (exp2 (INR n * r))) = exp2 (INR n * r).
   rewrite Htmp log_exp2 /Rdiv Rinv_r_simpl_m //.
   apply not_0_INR => abs; case: Hn => Hn _; by rewrite abs in Hn.
@@ -1038,4 +1036,3 @@ suff Htmp : IZR (Int_part (exp2 (INR n * r))) = exp2 (INR n * r).
 Qed.
 
 End channel_coding_theorem.
-

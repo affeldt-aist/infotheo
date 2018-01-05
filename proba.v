@@ -414,7 +414,7 @@ Variables (A B : finType) (P1 : dist A) (P2 : dist B).
 Definition f (ab : A * B) := (P1 ab.1 * P2 ab.2)%R.
 
 Lemma f0 (ab : A * B) : 0 <= f ab.
-Proof. apply Rmult_le_pos; by apply dist_nonneg. Qed.
+Proof. apply mulR_ge0; by apply dist_nonneg. Qed.
 
 Lemma f1 : \rsum_(ab in {: A * B}) f ab = 1%R.
 Proof.
@@ -711,7 +711,7 @@ Proof.
 move=> H.
 rewrite ExE.
 apply: Rle_big_0_P_g => i _.
-apply Rmult_le_pos; by [apply H | apply dist_nonneg].
+apply mulR_ge0; by [apply H | apply dist_nonneg].
 Qed.
 
 End expected_value_definition.
@@ -797,7 +797,7 @@ rewrite (bigID [pred a' | X a' >b= r]) /=.
 rewrite -[a in a <= _]Rplus_0_r.
 apply Rplus_le_compat; last first.
   apply Rle_big_0_P_g => a' _.
-  apply Rmult_le_pos; by [apply X_nonneg | apply dist_nonneg].
+  apply mulR_ge0; by [apply X_nonneg | apply dist_nonneg].
 apply (Rle_trans _ (\rsum_(i | X i >b= r) r * `p_ X i)).
   rewrite big_distrr /=.
   apply/Req_le/eq_bigl => a'; by rewrite inE.
@@ -889,7 +889,7 @@ rewrite (_ : `p_ ((X \-cst `E X) \^2) = `p_ X) //.
 apply Rle_trans with (\rsum_(a in A | Rabs (X a - `E X) >b= epsilon)
     (((X \-cst `E X) \^2) a  * `p_X a)%R); last first.
   apply Rle_big_P_true_f => a.
-  apply Rmult_le_pos; by [apply dist_nonneg | rewrite /= -/(_ ^2); apply le_sq].
+  apply mulR_ge0; by [apply dist_nonneg | rewrite /= -/(_ ^2); apply le_sq].
 rewrite /Pr big_distrr [_ \^2]lock /= -!lock.
 apply Rle_big_P_Q_f_g => // i Hi; rewrite /= -!/(_ ^ 2).
 - apply Rmult_le_compat_r; first by apply dist_nonneg.
@@ -899,7 +899,7 @@ apply Rle_big_P_Q_f_g => // i Hi; rewrite /= -!/(_ ^ 2).
   + by rewrite Rabs_sq in Hi.
   + by apply Rlt_le.
   + by apply Rabs_pos.
-- apply Rmult_le_pos; by [apply le_sq | apply dist_nonneg].
+- apply mulR_ge0; by [apply le_sq | apply dist_nonneg].
 - rewrite inE in Hi.
   move/RgeP in Hi.
   by apply/RgeP.

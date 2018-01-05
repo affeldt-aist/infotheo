@@ -152,7 +152,7 @@ have {H1}H1 : forall n, Pr (`J(P , W) `^ n) [set x | (tuple_prod x).1 \notin `TS
   Pr (P `^ n) [set x | x \notin `TS P n (epsilon / 3)].
   move=> m.
   have : 1 <= 3 by fourier.
-  move/(set_typ_seq_incl P m (Rlt_le _ _ He)) => Hincl.
+  move/(set_typ_seq_incl P m (ltRW _ _ He)) => Hincl.
   apply Rle_trans with (Pr (P `^ m) [set x | x \notin `TS P m epsilon]); last first.
     apply Pr_incl.
     apply/subsetP => i /=; rewrite !inE.
@@ -187,7 +187,7 @@ have {H1}HnP : forall n, (Zabs_nat (up (aep_bound P (epsilon / 3))) <= n)%nat ->
       rewrite INR_Zabs_nat; last first.
         apply Zlt_le_weak, up_pos, aep_bound_pos => //.
         apply Rlt_mult_inv_pos => //; fourier.
-      by apply Rlt_le, (proj1 (archimed _ )).
+      exact/ltRW/(proj1 (archimed _ )).
   rewrite Pr_to_cplt.
   set p1 := Pr _ _ in Htmp.
   rewrite (_ : Pr _ _ = p1); last first.
@@ -229,7 +229,7 @@ have {H1}H1 : forall n,
   Pr ( (`O( P , W) ) `^ n) (~: `TS ( `O( P , W) ) n (epsilon / 3)).
 move=> m.
 have : 1 <= 3 by fourier.
-move/(set_typ_seq_incl (`O(P , W)) m (Rlt_le _ _ He)) => Hincl.
+move/(set_typ_seq_incl (`O(P , W)) m (ltRW _ _ He)) => Hincl.
 apply Rle_trans with (Pr ((`O(P , W)) `^ m) (~: `TS (`O(P , W)) m epsilon)); last first.
   apply Pr_incl.
   apply/subsetP => i /=; rewrite !inE.
@@ -262,8 +262,7 @@ have {H1}HnPW : forall n, (Zabs_nat (up (aep_bound (`O(P , W)) (epsilon / 3))) <
       + rewrite INR_Zabs_nat; last first.
           apply Zlt_le_weak.
           apply up_pos, aep_bound_pos; fourier.
-        apply Rlt_le.
-        by apply (proj1 (archimed _ )).
+        exact/ltRW/(proj1 (archimed _ )).
       + by rewrite n0_prednK.
   rewrite Pr_to_cplt.
   set p1 := Pr _ _ in Htmp.
@@ -275,7 +274,7 @@ have H1 : forall n,
   Pr (( `J( P , W) ) `^ n) (~: `TS (`J( P , W)) n (epsilon / 3)).
   move=> m.
   have : 1 <= 3 by fourier.
-  move/(set_typ_seq_incl (`J( P , W)) m (Rlt_le _ _ He)) => Hincl.
+  move/(set_typ_seq_incl (`J( P , W)) m (ltRW _ _ He)) => Hincl.
   apply Rle_trans with (Pr ((`J( P , W)) `^ m) (~: `TS (`J( P , W)) m epsilon)); last first.
     apply Pr_incl.
     apply/subsetP => i /=; rewrite !inE.
@@ -307,7 +306,7 @@ have {H1}HnP_W : forall n, (Zabs_nat (up (aep_bound (`J(P , W)) (epsilon / 3))) 
       apply Rle_trans with (INR (Zabs_nat (up (aep_bound (`J(P , W)) (epsilon / 3))))) => //.
       rewrite INR_Zabs_nat; last first.
         apply Zlt_le_weak, up_pos, aep_bound_pos; fourier.
-      by apply Rlt_le, (proj1 (archimed _ )).
+      exact/Rlt_le/(proj1 (archimed _ )).
   rewrite Pr_to_cplt.
   set p1 := Pr _ _ in Htmp.
   rewrite (_ : Pr _ _ = p1); last first.
@@ -380,7 +379,7 @@ apply Rle_trans with
     by apply dist_nonneg.
     by apply (proj2 (typical_sequence1_JTS Hi)).
     by apply (typical_sequence1_JTS' Hi).
-  - apply Rmult_le_pos; by apply Rlt_le, exp2_pos.
+  - apply mulR_ge0; exact/ltRW/exp2_pos.
   - rewrite inE in Hi.
     by rewrite prod_tupleK eqxx andbC.
 rewrite (_ : \rsum_(_ | _) _ =
@@ -392,10 +391,10 @@ rewrite (_ : \rsum_(_ | _) _ =
 apply Rle_trans with (exp2 (INR n * (`H( P , W ) + epsilon)) *
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W ) - epsilon))).
   apply: Rmult_le_compat _ (Rle_refl _).
-  - apply: Rmult_le_pos (pos_INR _) _; by apply Rlt_le, exp2_pos.
-  - by apply Rlt_le, exp2_pos.
+  - apply: mulR_ge0 (pos_INR _) _; exact/ltRW/exp2_pos.
+  - exact/ltRW/exp2_pos.
   - apply: Rmult_le_compat _ (pos_INR _) _ _ (Rle_refl _).
-    by apply Rlt_le, exp2_pos.
+    exact/ltRW/exp2_pos.
     by apply JTS_sup.
 apply Req_le.
 rewrite -2!exp2_plus.
