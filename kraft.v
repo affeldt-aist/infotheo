@@ -129,44 +129,18 @@ Definition prefix_code (C : code_set T) :=
 
 End prefix_code.
 
-Section kraft_inequality_wip.
-
-Variables (T : finType).
-Variable C : code_set T.
-Let n := size C.
-Let ls := sizes C.
-Let lmin := nth O ls O.
-Let lmax := last O ls.
-
-Lemma leq_lmax c : c \in C -> size c <= lmax.
+Lemma sorted_leq_last s : sorted leq s -> forall i, i \in s -> i <= last 0 s.
 Proof.
-move=> cC.
-have : size c \in sizes C by rewrite /sizes mem_sort; apply/mapP; exists c.
-case/(nthP O) => i Hi <-.
-rewrite /lmax /ls -nth_last.
-apply sorted_nth; first by apply sort_sorted; exact: leq_total.
-move: Hi; case: (size _) => //= m; by rewrite ltnS => -> /=.
+move=> H /= m; case/(nthP O) => i Hi <-.
+rewrite -nth_last; apply sorted_nth => //.
+move: Hi; case: (size _) => //= k; by rewrite ltnS => -> /=.
 Qed.
 
-Definition subtree s :=
-  if s \in C then [set x : lmax.-tuple T | prefix s x] else set0.
+Definition kraft_cond (R : rcfType) (T : finType) (C' : seq nat) :=
+  let n := size C' in
+  (\sum_(i < n) #|T|%:R^-(nth O C' i) <= (1 : R))%R.
 
-Hypothesis Hprefix : prefix_code C.
-
-Lemma disjoint_subtree (a b : seq T) : a \in C -> b \in C -> a != b ->
-  subtree a :&: subtree b == set0.
-Proof.
-move=> aC bC ab; rewrite /subtree aC bC.
-apply/set0Pn => -[/= s]; rewrite !inE => /andP[sa sb].
-wlog : a b aC bC sa sb ab / prefix a b.
-  move=> H.
-  case: (prefix_common sa sb) => K; first exact: (H _ _ aC bC).
-  apply: (H _ _ bC aC sb sa _ K); by rewrite eq_sym.
-case/boolP : (size a <= size b); first by move/(Hprefix aC bC ab)/negP; auto.
-by rewrite -ltnNge => H /prefixW => /(_ ab); rewrite ltnNge leq_eqVlt H orbT.
-Qed.
-
-Program Definition prepend (c : seq T) (t : (lmax - size c).-tuple T)
+Program Definition prepend (T : finType) (lmax : nat) (c : seq T) (t : (lmax - size c).-tuple T)
   : lmax.-tuple T := @Tuple _ _ (take lmax c ++ t) _.
 Next Obligation.
 rewrite size_cat size_take size_tuple.
@@ -175,11 +149,32 @@ case: ifPn.
 rewrite -leqNgt => ?; by rewrite subnKC.
 Qed.
 
-Lemma injective_prepend (c : seq T) : injective (@prepend c).
+Lemma injective_prepend (T : finType) (lmax : nat) (c : seq T) : injective (@prepend T lmax c).
 Proof.
 move=> /= a b [] /eqP.
 rewrite eqseq_cat // => /andP[_ /eqP ab]; by apply val_inj.
 Qed.
+
+Import Num.Theory GRing.Theory.
+
+Section prefix_implies_kraft_cond.
+
+Variables (T : finType).
+Variable C : code_set T.
+Let n := size C.
+Let ls := sizes C.
+Let lmax := last O ls.
+
+Lemma leq_lmax c : c \in C -> size c <= lmax.
+Proof.
+move=> cC.
+apply sorted_leq_last.
+  rewrite /ls /sizes; apply sort_sorted; exact: leq_total.
+rewrite /ls /sizes mem_sort; apply/mapP; by exists c.
+Qed.
+
+Definition subtree s :=
+  if s \in C then [set x : lmax.-tuple T | prefix s x] else set0.
 
 Lemma subtree_not_empty (i : 'I_n) : 0 < #|T| -> subtree (nth [::] C i) <> set0.
 Proof.
@@ -187,7 +182,7 @@ move=> T0.
 rewrite /subtree mem_nth //.
 move/setP.
 have [t Ht] : exists t : T, t \in T by move/card_gt0P : T0.
-move/(_ (@prepend (nth [::] C i) [tuple of nseq _ t])).
+move/(_ (@prepend T lmax (nth [::] C i) [tuple of nseq _ t])).
 rewrite !inE /prepend /= take_oversize ?prefix_cat //.
 apply/leq_lmax/(nthP [::]); by exists i.
 Qed.
@@ -196,7 +191,7 @@ Lemma card_subtree (c : seq T) : c \in C ->
   #| subtree c | = #|T| ^ (lmax - size c).
 Proof.
 move=> cC.
-rewrite /subtree cC -card_tuple -(card_imset _ (@injective_prepend c)).
+rewrite /subtree cC -card_tuple -(card_imset _ (@injective_prepend T lmax c)).
 apply eq_card => /= t; rewrite !inE.
 apply/idP/imsetP => /= [ct|/= [x _ ->{t}]].
   have @x : (lmax - size c).-tuple T.
@@ -208,21 +203,35 @@ apply/idP/imsetP => /= [ct|/= [x _ ->{t}]].
 by rewrite /prepend /= take_oversize ?prefix_cat // leq_lmax.
 Qed.
 
-Import Num.Theory GRing.Theory.
-
-Lemma prefix_implies_kraft (R : rcfType) : 0 < #|T| ->
-  (\sum_(i < n) #|T|%:R^-(size (nth [::] C i)) <= (1 : R))%R.
+Lemma disjoint_subtree (a b : seq T) (Hprefix : prefix_code C) :
+  a \in C -> b \in C -> a != b ->
+  subtree a :&: subtree b == set0.
 Proof.
-move=> T0.
+move=> aC bC ab; rewrite /subtree aC bC.
+apply/set0Pn => -[/= s]; rewrite !inE => /andP[sa sb].
+wlog : a b aC bC sa sb ab / prefix a b.
+  move=> H.
+  case: (prefix_common sa sb) => K; first exact: (H _ _ aC bC).
+  apply: (H _ _ bC aC sb sa _ K); by rewrite eq_sym.
+case/boolP : (size a <= size b); first by move/(Hprefix _ _ aC bC ab)/negP; auto.
+by rewrite -ltnNge => H /prefixW => /(_ ab); rewrite ltnNge leq_eqVlt H orbT.
+Qed.
+
+Lemma prefix_implies_kraft_cond (R : rcfType) (Hprefix : prefix_code C) :
+  0 < #|T| -> kraft_cond R T (map size C).
+Proof.
+move=> T0; rewrite /kraft_cond.
 have : ((0 : R) < #|T|%:R ^+ lmax)%R .
   rewrite exprn_gt0 => //; by rewrite ltr0n.
 move/ler_pmul2l => <-.
 rewrite big_distrr /= mulr1.
 rewrite [X in (X <= _)%R](_ : _ = \sum_(i < n) #|subtree (nth [::] C i)|%:R)%R; last first.
+  rewrite (_ : size (map size C) = n) ?size_map //.
   apply/eq_bigr => i _.
   rewrite card_subtree; last by apply/(nthP [::]); exists i.
   rewrite natrX exprB // ?unitfE ?pnatr_eq0 -?lt0n //.
-    apply/leq_lmax/(nthP [::]); by exists i.
+  congr (_ ^+ _ / _ ^+ _)%R; by rewrite (nth_map [::]).
+  apply/leq_lmax/(nthP [::]); by exists i.
 rewrite [X in (X <= _)%R](_ : _ = #|\bigcup_(i < n) subtree (nth [::] C i)|%:R)%R; last first.
   set P := [set (subtree (nth [::] C (nat_of_ord i))) | i in 'I_n].
   rewrite (@card_partition _ P); last first.
@@ -233,16 +242,330 @@ rewrite [X in (X <= _)%R](_ : _ = #|\bigcup_(i < n) subtree (nth [::] C i)|%:R)%
       apply/(nthP [::]); by exists j.
       by apply: contra ij => /eqP ->.
     apply/imsetP => -[i _ /esym]; by apply: subtree_not_empty.
-  rewrite big_imset /=; last first.
-    move=> i j _ _ Hij.
-    apply/eqP/negPn/negP => ij.
-    have Hi : nth [::] C i \in C by apply/(nthP [::]); exists i.
-    have Hj : nth [::] C j \in C by apply/(nthP [::]); exists j.
-    have Kij : nth [::] C i != nth [::] C j by rewrite nth_uniq //; case: C.
-    move: (disjoint_subtree Hi Hj Kij).
-    rewrite Hij setIid => /eqP/subtree_not_empty; by apply.
-  rewrite (@big_morph _ _ (fun a => a%:R)%R 0%R (fun a b => a + b)%R O) //; exact: natrD.
+  rewrite big_imset /= ?natr_sum //.
+  move=> i j _ _ Hij.
+  apply/eqP/negPn/negP => ij.
+  have Hi : nth [::] C i \in C by apply/(nthP [::]); exists i.
+  have Hj : nth [::] C j \in C by apply/(nthP [::]); exists j.
+  have Kij : nth [::] C i != nth [::] C j by rewrite nth_uniq //; case: C.
+  move: (disjoint_subtree Hprefix Hi Hj Kij).
+  rewrite Hij setIid => /eqP/subtree_not_empty; by apply.
 by rewrite -natrX -card_tuple ler_nat max_card.
 Qed.
 
-End kraft_inequality_wip.
+End prefix_implies_kraft_cond.
+
+Section ary_of_nat.
+
+Variable t' : nat.
+Let t := t'.+2.
+
+Program Definition ary_of_nat'
+  (n : nat) (f : forall n', (n' < n)%coq_nat -> seq 'I_t) : seq 'I_t :=
+  match n with
+    | O => [:: ord0]
+    | n'.+1 =>
+      if n < t then
+        [:: inord n]
+      else
+        rcons (f (n %/ t) _) (inord (n %% t))
+  end.
+Next Obligation. exact/ltP/ltn_Pdiv. Qed.
+
+Definition ary_of_nat := Fix Wf_nat.lt_wf (fun _ => seq 'I_t) ary_of_nat'.
+
+Require FunctionalExtensionality.
+
+Lemma ary_of_nat_unfold n : ary_of_nat n =
+  if n < t then [:: inord n] else rcons (ary_of_nat (n %/ t)) (inord (n %% t)).
+Proof.
+rewrite {1}/ary_of_nat Fix_eq //.
+  destruct n => //=.
+  congr cons; apply val_inj => /=; by rewrite inordK.
+move=> m f f' H; congr ary_of_nat'.
+apply FunctionalExtensionality.functional_extensionality_dep => k.
+by apply FunctionalExtensionality.functional_extensionality.
+Qed.
+
+Lemma ary_of_nat0 : ary_of_nat 0 = [:: ord0].
+Proof. by []. Qed.
+
+Lemma ary_of_nat_head' n def : head def (ary_of_nat n.+1) != ord0.
+Proof.
+elim: n.+1 {-2}n (ltnSn n) def => {n}// n IH m; rewrite ltnS => mn def.
+rewrite ary_of_nat_unfold; case: ifPn => [nt /=|].
+  apply/eqP => /(congr1 val) /=; by rewrite inordK.
+rewrite -leqNgt => nt; rewrite headI /=.
+move: nt; rewrite leq_eqVlt => /orP[/eqP tm|].
+  rewrite (_ : _ %/ _ = 1); last by rewrite tm divnn.
+  apply/eqP => /(congr1 val) /=; by rewrite inordK.
+move=> nt.
+suff [k Hk] : exists k : 'I_n, m.+1 %/ t = k.+1 by rewrite Hk IH.
+move=> [:Hx].
+have @x : 'I_n.
+  apply: (@Ordinal _ (m.+1 %/ t).-1 _).
+  abstract: Hx.
+  rewrite prednK ?divn_gt0 //; [apply/ltnW | by rewrite ltnW].
+  rewrite ltn_divLR // -addn2 mulnS leq_add //.
+  destruct m as [|m] => //; destruct n as [|n] => //.
+  rewrite mulnS addSn ltnS.
+  destruct n as [|n]; by [destruct m | rewrite addSn ltnS].
+by exists x => /=; rewrite prednK // divn_gt0 // ltnW.
+Qed.
+
+Lemma ary_of_nat_head n def : (head def (ary_of_nat n) == ord0) = (n == O).
+Proof.
+apply/idP/idP => [|/eqP ->]; last by rewrite ary_of_nat0.
+apply: contraTT; destruct n as [|n] => // _; by apply ary_of_nat_head'.
+Qed.
+
+Definition nat_of_ary (s : seq 'I_t) : nat :=
+  \sum_(i < size s) nth ord0 s i * t ^ ((size s).-1 - i).
+
+Lemma nat_of_ary_nseq0 (n : nat) : nat_of_ary (nseq n ord0) = 0.
+Proof.
+rewrite /nat_of_ary (eq_bigr (fun=> O)) ?big1 //= => i _.
+rewrite nth_nseq; by case: ifPn.
+Qed.
+
+Lemma nat_of_ary1 (m : 'I_t) : nat_of_ary [:: m] = m.
+Proof. by rewrite /nat_of_ary big_ord_recl expn0 muln1 big_ord0 addn0. Qed.
+
+Lemma nat_of_ary_cat (s1 s2 : seq 'I_t) :
+  nat_of_ary (s1 ++ s2) = nat_of_ary s1 * #|'I_t| ^ size s2 + nat_of_ary s2.
+Proof.
+rewrite {1}/nat_of_ary size_cat (bigID (fun i : 'I__ => i < size s1)) /=.
+congr addn.
+  rewrite /nat_of_ary big_distrl /=.
+  transitivity (\sum_(i < size s1)
+    nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i)).
+    rewrite -(big_mkord (fun i => i < size s1)
+      (fun i => nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i))).
+    rewrite -(big_mkord xpredT
+      (fun i => nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i))).
+    rewrite -big_filter -[in RHS]big_filter; apply congr_big => //.
+    rewrite /index_iota !subn0 iota_add filter_cat add0n.
+    rewrite (@eq_in_filter _ _ predT) ?filter_predT; last first.
+      by move=> ?; rewrite mem_iota leq0n /= => ->.
+    rewrite (@eq_in_filter _ _ pred0) ?filter_pred0 ?cats0 //.
+    by move=> i; rewrite mem_iota leqNgt => /andP[/negbTE].
+  apply eq_bigr => i _.
+  rewrite nth_cat ltn_ord card_ord -mulnA -expnD; congr (_ * _ ^ _).
+  by rewrite [in RHS](addnC _ (size s2)) addnC -!subn1 -!subnDA addnBA.
+transitivity (\sum_(size s1 <= i < size s1 + size s2)
+    nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i)).
+  rewrite -(big_mkord (fun i => ~~ (i < size s1))
+    (fun i => nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i))).
+  rewrite -big_filter; apply congr_big => //.
+  rewrite /index_iota subn0 iota_add filter_cat add0n.
+  rewrite (@eq_in_filter _ _ pred0) ?filter_pred0 //; last first.
+      move=> i; by rewrite mem_iota leq0n /= add0n => ->.
+  rewrite cat0s addnC addnK (@eq_in_filter _ _ predT) ?filter_predT //.
+  move=> i; by rewrite mem_iota leqNgt => /andP[].
+rewrite -{1}(add0n (size s1)) big_addn addnC addnK big_mkord.
+apply eq_bigr => i _.
+rewrite nth_cat ifF; last by apply/negbTE; rewrite -leqNgt leq_addl.
+rewrite addnK; congr (_ * t ^ _).
+rewrite (addnC i) subnDA; congr (_ - _).
+by rewrite -subn1 -subnDA (addnC 1) subnDA addnK subn1.
+Qed.
+
+Lemma ary_of_natK n : nat_of_ary (ary_of_nat n) = n.
+Proof.
+elim: n.+1 {-2}n (ltnSn n) => {n}// n IH m mn.
+rewrite ary_of_nat_unfold.
+case: ifPn => [nt|]; first by rewrite nat_of_ary1 inordK.
+rewrite -leqNgt => tn.
+rewrite -cats1 nat_of_ary_cat /= expn1 card_ord IH //; last first.
+  rewrite ltn_divLR // (leq_trans mn) // ltn_Pmulr //.
+  destruct n => //; by destruct m.
+by rewrite nat_of_ary1 inordK // ?ltn_pmod // -divn_eq.
+Qed.
+
+Lemma injective_ary_of_nat : injective ary_of_nat.
+Proof. apply (@can_inj _ _ _ nat_of_ary) => i; by rewrite ary_of_natK. Qed.
+
+Lemma nat_of_ary_0' s : nat_of_ary s = 0 -> all (eq_op^~ ord0) s.
+Proof.
+elim: s => // a b IH.
+rewrite -cat1s nat_of_ary_cat => /eqP; rewrite addn_eq0 => /andP[/=].
+rewrite muln_eq0 card_ord expn_eq0 /= orbF nat_of_ary1 => /eqP H1 /eqP H2.
+by rewrite /= IH // andbT; apply/eqP/val_inj.
+Qed.
+
+Lemma nat_of_ary_0 s : (nat_of_ary s == 0) = (all (xpred1 ord0) s).
+Proof.
+apply/idP/idP => [/eqP|/all_pred1P H]; first exact: nat_of_ary_0'.
+apply/eqP/injective_ary_of_nat.
+by rewrite ary_of_nat0 H nat_of_ary_nseq0 ary_of_nat0.
+Qed.
+
+End ary_of_nat.
+
+Section kraft_cond_implies_prefix.
+
+Variable (n' : nat) (t' : nat).
+Let n := n'.+1.
+Let t := t'.+2.
+Let T := [finType of 'I_t].
+Variable ls : seq nat.
+Hypothesis ls_n : size ls = n.
+Hypothesis sorted_ls : sorted leq ls.
+Hypothesis Hls : forall i : 'I_n, nth O ls i != 0.
+Let lmax := last O ls.
+
+Variable R : rcfType.
+Hypothesis Hkraft : kraft_cond R T ls.
+
+Definition w (j : 'I_n) :=
+  if j == ord0 then O else \sum_(i < j) #|T| ^ (nth 0 ls j - nth 0 ls i).
+
+Lemma wE0 : w ord0 = 0.
+Proof. by rewrite /w eqxx. Qed.
+
+Lemma wE (j : 'I_n) : j != ord0 -> w j = \sum_(i < j) #|T| ^ (nth 0 ls j - nth 0 ls i).
+Proof. by rewrite /w; move/negbTE => ->. Qed.
+
+Lemma w_eq0 i : (w i == 0) = (i == ord0).
+Proof.
+apply/idP/idP => [|/eqP ->]; last by rewrite wE0.
+apply: contraTT => i0.
+rewrite (wE i0) sum_nat_eq0 negb_forall.
+have @zero : 'I_i by exists 0; rewrite lt0n.
+by apply/existsP; exists zero => /=; rewrite expn_eq0 card_ord.
+Qed.
+
+Lemma injective_w : injective w.
+Proof.
+move=> i j; case/boolP : (w i == 0); rewrite w_eq0 => i0.
+  rewrite (eqP i0) wE0.
+  case/boolP : (w j == 0); rewrite w_eq0 => j0; first by rewrite (eqP j0).
+  by move/esym/eqP; rewrite w_eq0 (negbTE j0).
+case/boolP : (w j == 0) => [|]; rewrite w_eq0 => j0.
+  by rewrite (eqP j0) wE0 => /eqP; rewrite w_eq0 (negbTE i0).
+case/boolP : (i == j) => [/eqP //|ij].
+wlog : i j i0 j0 ij / i < j.
+  move=> Hwlog H.
+  move: ij; rewrite neq_ltn => /orP[|] ij.
+  - apply Hwlog => //; by move/negbT : (ltn_eqF ij).
+  - apply/esym; apply Hwlog => //; by move/negbT : (ltn_eqF ij).
+move=> {ij}ij /esym.
+rewrite (wE i0) (wE j0) (bigID (fun i1 : 'I__ => i1 < i)) /=.
+set a := (X in X + _ = _ -> _). set b := (X in _ = X -> _).
+set c := (X in _ + X = _ -> _).
+have ab : a >= b.
+  rewrite {}/a {}/b big_ord_narrow; [by apply ltnW|move=> H].
+  apply: leq_sum => k _.
+  rewrite leq_exp2l ?card_ord // leq_sub //; apply sorted_nth => //.
+  by rewrite H /= ls_n.
+have c0 : 0 < c.
+  rewrite {}/c lt0n sum_nat_eq0 negb_forall.
+  apply/existsP; exists (Ordinal ij); by rewrite /= ltnn /= expn_eq0 card_ord.
+move=> acb; exfalso.
+move/eqP/negP : acb; apply; apply/negP/negbT/gtn_eqF; by rewrite -addn1 leq_add.
+Qed.
+
+Lemma injective_ary_of_nat_w : injective (fun j => ary_of_nat t' (w j)).
+Proof. by move=> i j /injective_ary_of_nat/injective_w. Qed.
+
+Definition sigma (j : 'I_n) :=
+  let x := ary_of_nat t' (w j) in
+  let sz := size x in
+  nseq (nth 0 ls j - sz) ord0 ++ x.
+
+Lemma sigmaE0 : sigma ord0 = nseq (nth O ls O) ord0 :> seq T.
+Proof.
+rewrite /sigma wE0 ary_of_nat0.
+have [k Hk] : exists k, nth 0 ls (@ord0 t) = k.+1.
+  move: (Hls ord0); case: (nth 0 ls ord0) => // k _; by exists k.
+by rewrite Hk subn1 cat_nseq -[RHS]cats0 cat_nseq /= /ncons -iterSr.
+Qed.
+
+Lemma injective_sigma : injective sigma.
+Proof.
+move=> i j; rewrite /sigma => /eqP ij; apply/eqP; move: ij.
+apply: contraTT => ij.
+apply/negP => /eqP.
+move/(congr1 (@nat_of_ary t')).
+rewrite !nat_of_ary_cat !(nat_of_ary_nseq0,mul0n,add0n).
+by rewrite !ary_of_natK => /injective_w/eqP; apply/negP.
+Qed.
+
+Definition kraft_code := [seq sigma i | i in 'I_n].
+
+Lemma uniq_kraft_code : uniq kraft_code.
+Proof. rewrite map_inj_uniq ?enum_uniq //; exact injective_sigma. Qed.
+
+Let C := CodeSet uniq_kraft_code.
+
+Lemma kraft_implies_prefix : prefix_code C.
+Proof.
+have step1 : forall j : 'I_n, (w j <= #|T|^(nth O ls j) - 1)%nat.
+  have step1 : (\sum_(i < n) #|T|%:R^-(nth O ls i) <= (1 : R))%R.
+    move: Hkraft; by rewrite /kraft_cond (_ : size ls = n).
+  move=> i.
+  rewrite -(@ler_nat R) -(@ler_pmul2l _ (#|T|%:R ^- nth O ls i))%R; last first.
+    by rewrite -exprVn exprn_gt0 // invr_gt0 ltr0n card_ord.
+  case/boolP : (i == ord0) => [/eqP i0|i0].
+    by rewrite i0 wE0 mulr0 mulr_ge0 // -exprVn exprn_ge0 // invr_ge0 ler0n.
+  rewrite !natrB ?expn_gt0 ?card_ord // -!natrX.
+  rewrite mulrBr mulVr ?unitfE ?mulr1 ?pnatr_eq0 ?expn_eq0 //.
+  rewrite wE // natr_sum big_distrr /=.
+  rewrite (eq_bigr (fun i1 => #|T|%:R ^- nth O ls (nat_of_ord i1)))%R; last first.
+    move=> i1 _.
+    rewrite !natrX card_ord exprB; last 2 first.
+      apply sorted_nth => //; by rewrite ltnW //= ls_n.
+      by rewrite unitfE pnatr_eq0.
+    by rewrite mulrA mulVr ?unitfE -?natrX ?pnatr_eq0 ?expn_eq0 // mul1r.
+  rewrite ler_subr_addr natrX (ler_trans _ step1) //.
+  rewrite [X in (X <= _)%R](_ : _ = \sum_(j < i.+1) #|T|%:R ^- nth O ls j)%R; last first.
+    by rewrite big_ord_recr /= card_ord.
+  rewrite (@big_ord_widen _ _ _ i.+1 n (fun i : nat => #|T|%:R ^- nth O ls i))%R //.
+  rewrite [in X in (_ <= X)%R](bigID (fun j : 'I_n => j < i.+1)) /= ler_addl.
+  rewrite sumr_ge0 // => j _; by rewrite invr_ge0 exprn_ge0 // ler0n.
+(* ab absurdo *)
+suff : ~ prefix_code C -> False.
+  admit.
+move=> abs.
+have [j [k [jk prefix_jk]]] : exists j k : 'I_n, j < k /\ prefix (sigma j) (sigma k).
+  admit.
+pose floorme_wj := ((w k)%:R / #|T|%:R^+(nth O ls k - nth O ls j) : R)%R.
+have step2 : (floorme_wj >= (w j)%:R + (1 : R))%R.
+  pose wj' := (\sum_(i < k) #|T|%:R^+(nth O ls j - nth O ls i) : R)%R.
+  have -> : floorme_wj = wj'.
+    rewrite /floorme_wj /wj' wE; last first.
+      by move: jk; rewrite ltnNge; apply: contra => /eqP ->.
+    rewrite natr_sum big_distrl /=; apply/eq_bigr => i _.
+    rewrite natrX.
+    apply: (@mulIr _ (#|'I_t|%:R ^+ (nth O ls k - nth O ls j))%R).
+      by rewrite unitfE expf_eq0 card_ord pnatr_eq0 andbF.
+    rewrite -mulrA mulVr ?mulr1; last first.
+      by rewrite unitfE expf_eq0 card_ord pnatr_eq0 andbF.
+    rewrite -exprD.
+    rewrite addnC.
+    admit.
+  pose wj'' := (\sum_(j <= i < k) #|T|%:R^+(nth O ls j - nth O ls i) : R)%R.
+  have -> :  (wj' = (w j)%:R + wj'' :> R)%R.
+    case/boolP : (j == ord0) => j0.
+      rewrite (eqP j0) wE0 add0r /wj'' (eqP j0) big_mkord /wj'.
+      apply/eq_bigr => i _; by rewrite (eqP j0).
+    rewrite /wj' /wj'' wE //.
+    rewrite -(big_mkord xpredT (fun i => #|T| ^ (nth 0 ls j - nth 0 ls i))).
+    rewrite (eq_bigr (fun i => (#|T| ^ (nth O ls j - nth O ls i))%:R))%R; last first.
+      move=> i _; by rewrite natrX.
+    rewrite natr_sum -big_cat_nat //=; last by rewrite ltnW.
+    rewrite big_mkord; apply eq_bigr => i _; by rewrite natrX.
+   rewrite ler_add // /wj''.
+   rewrite (_ : k = k.-1.+1 :> nat); last by rewrite prednK // (leq_ltn_trans _ jk).
+   rewrite big_nat_recr /=; last first.
+     by rewrite -(@leq_add2r 1) !addn1 prednK // (leq_ltn_trans _ jk).
+   rewrite addrC -{1}(addr0 (1 : R)%R) ler_add //; last first.
+     by rewrite sumr_ge0 // => i _; rewrite -natrX ler0n.
+   by rewrite card_ord -natrX ler1n expn_gt0.
+have : (floorme_wj - 1 < (w j)%:R)%R.
+  rewrite ltr_subl_addl.
+  admit.
+by rewrite ltr_subl_addl addrC ltrNge step2.
+Abort.
+
+End kraft_cond_implies_prefix.
