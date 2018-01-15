@@ -44,7 +44,6 @@ Definition E_leng_cw := `E (mkRvar (P `^ n) (INR \o size \o f)).
 
 End scode_vl_definition.
 
-
 Section scode_fl_definition.
 
 Variable A : finType.
@@ -57,7 +56,6 @@ Definition scode_fl := scode A 'rV[bool]_n k.
 Definition SrcRate (sc : scode_fl) := INR n / INR k.
 
 End scode_fl_definition.
-
 
 Section code_error_rate.
 
@@ -74,7 +72,6 @@ Definition SrcErrRate := Pr (P `^ k) [set ta | dec sc (enc sc ta) != ta].
 End code_error_rate.
 
 Notation "esrc( P , sc )" := (SrcErrRate P sc) (at level 40) : source_code_scope.
-
 
 Section extension.
 
