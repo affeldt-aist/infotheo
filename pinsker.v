@@ -21,36 +21,26 @@ Hypothesis q01 : 0 <= q <= 1.
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 
-Let P := bdist card_A p01.
-Let Q := bdist card_A q01.
+Let P := Binary.d card_A p01.
+Let Q := Binary.d card_A q01.
 
 Hypothesis P_dom_by_Q : P << Q.
 
 Lemma pinsker_fun_p_eq c : pinsker_fun p c q = D(P || Q) - c * d(P , Q) ^ 2.
 Proof.
-pose A_0 := Two_set.val0 card_A.
-pose A_1 := Two_set.val1 card_A.
-set pi := P A_0.
-set pj := P A_1.
-set qi := Q A_0.
-set qj := Q A_1.
-have Hpi : pi = 1 - p.
-  rewrite /pi /= ffunE.
-  case: ifP => //; by rewrite eqxx.
-have Hqi : qi = 1 - q.
-  rewrite /qi /= ffunE.
-  case: ifP => //; by rewrite eqxx.
+pose a := Set2.a card_A. pose b := Set2.b card_A.
+set pi := P a.
+set pj := P b.
+set qi := Q a.
+set qj := Q b.
+have Hpi : pi = 1 - p by rewrite /pi /= Binary.fxx.
+have Hqi : qi = 1 - q by rewrite /qi /= Binary.fxx.
 have Hpj : pj = p.
-  rewrite /pj /= ffunE /Two_set.val1.
-  case: ifP => //; by move/eqP/enum_val_inj.
+  by rewrite /pj /= /Binary.f eq_sym (negbTE (Set2.a_neq_b card_A)).
 have Hqj : qj = q.
-  rewrite /qj /= ffunE /Two_set.val1.
-  case: ifP => //; by move/eqP/enum_val_inj.
+  by rewrite /qj /= /Binary.f eq_sym (negbTE (Set2.a_neq_b card_A)).
 transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
-  rewrite /pinsker_fun /div /index_enum -enumT Two_set.enum big_cons big_cons big_nil addR0.
-  rewrite -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
-  have -> : Two_set.val0 card_A \in A by apply enum_valP.
-  have -> : Two_set.val1 card_A \in A by apply enum_valP.
+  rewrite /pinsker_fun /div Set2rsumE -/a -/b -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
   set tmp := (Rabs (_) + _) ^ 2.
   have -> : tmp = 4 * (p - q) ^ 2.
     rewrite /tmp (_ : 1 - p - (1 - q) = q - p); last by field.
@@ -68,24 +58,19 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
   case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
     rewrite -Hp1 !mul0R subR0 addR0 add0R !mul1R log_1 /Rdiv.
     case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
-      move: (@P_dom_by_Q (Two_set.val0 card_A)).
-      rewrite -/pi -/qi => abs.
-      rewrite Hqi Hq2 Rminus_diag_eq // in abs.
-      move: {abs}(abs Logic.eq_refl).
-      rewrite Hpi -Hp1 subR0.
-      move=> abs. exfalso. fourier.
+      move: (@P_dom_by_Q (Set2.a card_A)).
+      rewrite -/pi -/qi Hqi Hq2 Rminus_diag_eq // => /(_ erefl).
+      rewrite Hpi -Hp1 subR0 => ?. exfalso. fourier.
     rewrite log_mult; last 2 first.
       fourier.
       apply Rinv_0_lt_compat; fourier.
       rewrite log_Rinv; last by fourier.
       rewrite log_1; by field.
   case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
-    move: (@P_dom_by_Q (Two_set.val1 card_A)).
-    rewrite -/pj -/qj Hqj -Hq1.
-    move/(_ Logic.eq_refl).
+    move: (@P_dom_by_Q (Set2.b card_A)).
+    rewrite -/pj -/qj Hqj -Hq1 => /(_ erefl).
     rewrite Hpj => abs.
-    rewrite abs in Hp1.
-    by apply Rlt_irrefl in Hp1.
+    move: Hp1; by rewrite abs => /Rlt_irrefl.
   rewrite /div_fct /comp /= (_ : id q = q) //.
   case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
     rewrite Hp2 Rminus_diag_eq // !mul0R /Rdiv log_mult; last 2 first.
@@ -95,19 +80,16 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
   rewrite log_mult //; last by apply Rinv_0_lt_compat.
   rewrite log_Rinv //.
   case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
-    move: (@P_dom_by_Q (Two_set.val0 card_A)).
-    rewrite -/pi -/qi Hqi -Hq2 Rminus_diag_eq //.
-    move/(_ Logic.eq_refl).
-    rewrite Hpi => abs.
-    suff : False by done. fourier.
+    move: (@P_dom_by_Q (Set2.a card_A)).
+    rewrite -/pi -/qi Hqi -Hq2 Rminus_diag_eq // => /(_ erefl).
+    rewrite Hpi => abs. exfalso. fourier.
   rewrite /Rdiv log_mult; last 2 first.
     fourier.
     apply Rinv_0_lt_compat; fourier.
   rewrite log_Rinv; last by fourier.
   by field.
 do 2 f_equal.
-rewrite /var_dist /index_enum -enumT Two_set.enum big_cons big_cons big_nil addR0.
-by rewrite -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
+by rewrite /var_dist Set2rsumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
 Qed.
 
 Lemma Pinsker_2_inequality_bdist : / (2 * ln 2) * d(P , Q) ^ 2 <= D(P || Q).
@@ -206,23 +188,17 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
           apply: Rlt_big_f_g_X => // a.
           rewrite /A1 in_set; by move/RltP.
         by rewrite -(big_morph _ morph_Ropp oppR0).
-  rewrite /index_enum -enumT Two_set.enum /=.
-    symmetry; by rewrite card_bool.
-  move=> HX.
-  rewrite /bipart_pmf big_cons /= big_cons /= big_nil /= addR0.
-  set i0 := Two_set.val0 HX.
-  set i1 := Two_set.val1 HX.
-  have : i0 <> i1.
-    apply/eqP.
-    by apply Two_set.val0_neq_val1.
-  wlog : i0 i1 / (i0 == false) && (i1 == true).
-    move=> Hwlog i0i1.
-    have : ((i0, i1) == (true, false)) || ((i0, i1) == (false, true)).
-      move: i0 i1 i0i1; by case; case.
+  rewrite Set2rsumE ?card_bool //= => HX; rewrite /bipart_pmf /=.
+  set a := Set2.a HX. set b := Set2.b HX.
+  have : a <> b by apply/eqP/Set2.a_neq_b.
+  wlog : a b / (a == false) && (b == true).
+    move=> Hwlog ab.
+    have : ((a, b) == (true, false)) || ((a, b) == (false, true)).
+      move: a b ab; by case; case.
     case/orP; case/eqP => -> ->.
     - by rewrite (Hwlog false true) // addRC.
     - by apply Hwlog.
-  case/andP => /eqP ? /eqP ?; by subst i0 i1.
+  case/andP => /eqP ? /eqP ?; by subst a b.
 rewrite step2.
 apply (Pinsker_2_inequality card_bool) => /= b.
 rewrite /bipart_pmf => H.

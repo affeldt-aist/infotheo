@@ -14,8 +14,9 @@ Import Prenex Implicits.
 
 Local Open Scope channel_scope.
 
-Module BSC.
+(** Definition of the Binary Symmetric Channel (BSC) *)
 
+Module BSC.
 Section BSC_sect.
 
 Variable A : finType.
@@ -23,44 +24,12 @@ Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
 Hypothesis p_01 : 0 <= p <= 1.
 
-(** Definition of the Binary Symmetric Channel (BSC) *)
+Definition c : `Ch_1(A, A) :=
+  fun a => locked (makeDist (Binary.f0 p_01 a) (Binary.f1 card_A p a)).
 
-(* NB: bdist <-> BSC? *)
-
-Definition f (a : A) := fun a' => if a == a' then 1 - p else p.
-
-Lemma f0 (a a' : A) : 0 <= f a a'.
-Proof. rewrite /f. case: ifP => _; case: p_01 => ? ?; fourier. Qed.
-
-Lemma f1 (a : A) : \rsum_(a' | a' \in A) f a a' = 1.
-Proof.
-move: (enum_uniq A).
-move: (card_A).
-rewrite /index_enum -enumT.
-rewrite cardE.
-case: (enum A) => // h [] // h' [] //= _.
-rewrite inE andbC /= => h_h'.
-rewrite big_cons /= big_cons /= big_nil.
-rewrite /f.
-case: ifP.
-+ move/eqP => ?; subst h.
-  rewrite (negbTE h_h'); by field.
-+ move/negP/negP => a_h.
-  suff : a == h' by move=> ->; by field.
-  apply/negPn/negP => Habs.
-  have : (3 <= #|A|)%nat.
-    rewrite (cardD1 a) /= (cardD1 h) /= inE eqtype.eq_sym a_h /=.
-    by rewrite (cardD1 h') /= inE eq_sym h_h' /= inE eq_sym Habs.
-  by rewrite card_A.
-Qed.
-
-Definition c : `Ch_1(A, A) := fun a => locked (makeDist (f0 a) (f1 a)).
-
-Lemma cE a : c a =1 f a.
-Proof. rewrite /c; by unlock. Qed.
+Lemma cE a : c a =1 Binary.f p a. Proof. rewrite /c; by unlock. Qed.
 
 End BSC_sect.
-
 End BSC.
 
 Lemma closed p : 0 < p < 1 -> 0 <= p <= 1.
@@ -82,54 +51,43 @@ Let p_01 := closed p_01'.
 Lemma HP_HPW : `H P - `H(P , BSC.c card_A p_01) = - H2 p.
 Proof.
 rewrite {2}/entropy /=.
-rewrite (eq_bigr (fun a => (`J( P, (BSC.c card_A p_01))) (a.1, a.2) * log ((`J( P, (BSC.c card_A p_01))) (a.1, a.2)))); last by case.
-rewrite -(pair_big xpredT xpredT (fun a b => (`J( P, (BSC.c card_A p_01))) (a, b) * log ((`J( P, (BSC.c card_A p_01))) (a, b)))) /=.
+rewrite (eq_bigr (fun a => (`J( P, (BSC.c card_A p_01))) (a.1, a.2) *
+  log ((`J( P, (BSC.c card_A p_01))) (a.1, a.2)))); last by case.
+rewrite -(pair_big xpredT xpredT (fun a b => (`J( P, (BSC.c card_A p_01)))
+  (a, b) * log ((`J( P, (BSC.c card_A p_01))) (a, b)))) /=.
 rewrite {1}/entropy .
 set a := \rsum_(_ in _) _. set b := \rsum_(_ <- _) _.
 apply trans_eq with (- (a + (-1) * b)); first by field.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
-rewrite /index_enum -enumT Two_set.enum.
-rewrite big_cons /= big_cons /= big_cons /= big_cons /= big_nil /= big_cons /= big_cons /= big_nil /= big_nil /=.
-rewrite !addR0 !JointDist.dE !BSC.cE /BSC.f /= !eqxx.
-rewrite !(negbTE (Two_set.val0_neq_val1 card_A)).
-move: (Two_set.val0_neq_val1 card_A).
-rewrite eq_sym.
-move/negbTE => ->.
-rewrite /H2.
-have Hpmf1 : P (Two_set.val0 card_A) + P (Two_set.val1 card_A) = 1.
-  rewrite -(pmf1 P) /index_enum -enumT Two_set.enum big_cons /= big_cons /= big_nil /=; by field.
-case: (Req_EM_T (P (Two_set.val0 card_A)) 0) => H1.
-  rewrite H1.
-  rewrite !(mul0R, mulR0, addR0, add0R).
-  rewrite H1 add0R in Hpmf1.
-  rewrite Hpmf1 log_1.
-  rewrite !(mul0R, mulR0, addR0, add0R, mul1R, mulR1).
-  field.
+rewrite !Set2rsumE !JointDist.dE !BSC.cE /= !Binary.fxx.
+rewrite /Binary.f eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2.
+set a := Set2.a _. set b := Set2.b _.
+case: (Req_EM_T (P a) 0) => H1.
+  rewrite H1 !(mul0R, mulR0, addR0, add0R).
+  move: (pmf1 P); rewrite Set2rsumE -/a -/b.
+  rewrite H1 add0R => ->.
+  rewrite log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
   move/eqP in H1.
-Local Open Scope Rb_scope.
   by apply/RltP; rewrite Rlt_neqAle eq_sym H1 /=; apply/RleP/dist_nonneg.
 rewrite log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
   apply Rlt_le_neq; by [apply dist_nonneg | auto].
-case: (Req_EM_T (P (Two_set.val1 card_A)) 0) => H2.
-  rewrite H2.
-  rewrite !(mul0R, mulR0, addR0, add0R).
-  rewrite H2 addR0 in Hpmf1.
-  rewrite Hpmf1.
-  rewrite log_1.
-  rewrite !(mul0R, mulR0, addR0, add0R, mul1R, mulR1).
-  field.
+case: (Req_EM_T (P b) 0) => H2.
+  rewrite H2 !(mul0R, mulR0, addR0, add0R).
+  move: (pmf1 P); rewrite Set2rsumE -/a -/b.
+  rewrite H2 addR0 => ->.
+  rewrite log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
   apply Rlt_le_neq; by [apply dist_nonneg | auto].
 rewrite log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
   apply Rlt_le_neq; by [apply dist_nonneg | auto].
-transitivity (p * (P (Two_set.val0 card_A) + P (Two_set.val1 card_A)) * log p  + (1 - p) * (P (Two_set.val0 card_A) + P (Two_set.val1 card_A)) * log (1 - p) ).
+transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   by field.
-rewrite Hpmf1; by field.
+move: (pmf1 P); rewrite Set2rsumE -/a -/b => ->; by field.
 Qed.
 
 Lemma IPW : `I(P ; BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
@@ -142,52 +100,46 @@ Qed.
 
 Lemma H_out_max : `H(P `o BSC.c card_A p_01) <= 1.
 Proof.
-rewrite {1}/entropy /=.
-rewrite /index_enum -enumT Two_set.enum big_cons /= big_cons /= big_nil /= !addR0.
-rewrite !OutDist.dE.
-rewrite /index_enum -enumT Two_set.enum big_cons /= big_cons /= big_cons /=
-  big_cons /= big_nil /= big_nil /= !addR0.
-rewrite !BSC.cE /BSC.f !eqxx !(negbTE (Two_set.val0_neq_val1 card_A)).
-move: (Two_set.val0_neq_val1 card_A).
-rewrite eq_sym => /negbTE ->.
-have P1 : P (Two_set.val0 card_A) + P (Two_set.val1 card_A) = 1.
-  rewrite -(pmf1 P) /index_enum -enumT Two_set.enum big_cons /= big_cons /= big_nil /=; by field.
-have -> : p * P (Two_set.val0 card_A) + (1 - p) * P (Two_set.val1 card_A) = 1 - ((1 - p) * P (Two_set.val0 card_A) + p * P (Two_set.val1 card_A)).
+rewrite {1}/entropy /= Set2rsumE !OutDist.dE 2!Set2rsumE.
+set a := Set2.a _. set b := Set2.b _.
+rewrite !BSC.cE !Binary.fxx /Binary.f /= !(eq_sym _ a).
+rewrite (negbTE (Set2.a_neq_b card_A)).
+move: (pmf1 P); rewrite Set2rsumE -/a -/b => P1.
+have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
   rewrite -{2}P1; by field.
-have H01 : 0 < ((1 - p) * P (Two_set.val0 card_A) + p * P (Two_set.val1 card_A)) < 1.
-  move: (dist_nonneg P (Two_set.val0 card_A)) => H1.
-  move: (dist_max P (Two_set.val1 card_A)) => H4.
-  move: (dist_max P (Two_set.val0 card_A)) => H3.
+have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
+  move: (dist_nonneg P a) => H1.
+  move: (dist_max P b) => H4.
+  move: (dist_max P a) => H3.
   case: p_01' => Hp1 Hp2.
   split.
     case/Rle_lt_or_eq_dec : H1 => H1.
     - apply Rplus_lt_le_0_compat.
         by apply mulR_gt0; fourier.
       by apply mulR_ge0; fourier.
-    - rewrite -H1 mulR0 add0R (_ : P (Two_set.val1 card_A) = 1) ?mulR1 //.
+    - rewrite -H1 mulR0 add0R (_ : P b = 1) ?mulR1 //.
       by rewrite -P1 -H1 add0R.
   rewrite -{2}P1.
-  case: (Req_EM_T (P (Two_set.val0 card_A)) 0) => Hi.
+  case: (Req_EM_T (P a) 0) => Hi.
     rewrite Hi mulR0 !add0R.
     rewrite Hi add0R in P1.
     by rewrite P1 mulR1.
-  case: (Req_EM_T (P (Two_set.val1 card_A)) 0) => Hj.
+  case: (Req_EM_T (P b) 0) => Hj.
     rewrite Hj addR0 in P1.
     rewrite Hj mulR0 !addR0 P1 mulR1.
     fourier.
     case/Rle_lt_or_eq_dec : H1 => H1.
     - apply Rplus_le_lt_compat.
-      + rewrite -{2}(mul1R (P (Two_set.val0 card_A))).
-        apply Rmult_le_compat_r; fourier.
-      + rewrite -{2}(mul1R (P (Two_set.val1 card_A))).
+      + rewrite -{2}(mul1R (P a)); apply Rmult_le_compat_r; fourier.
+      + rewrite -{2}(mul1R (P b)).
         apply Rmult_lt_compat_r => //.
         apply Rlt_le_neq; by [apply dist_nonneg | auto].
     - rewrite -H1 mulR0 2!add0R.
-      have -> : P (Two_set.val1 card_A) = 1 by rewrite -P1 -H1 add0R.
+      have -> : P b = 1 by rewrite -P1 -H1 add0R.
       by rewrite mulR1.
 rewrite (_ : forall a b, - (a + b) = - a - b); last by move=> *; field.
 rewrite -mulNR.
-set q := (1 - p) * P (Two_set.val0 card_A) + p * P (Two_set.val1 card_A).
+set q := (1 - p) * P a + p * P b.
 eapply (Rle_trans _ (H2 q)); last by apply H2_max.
 rewrite /H2 !mulNR; apply Req_le; field.
 Qed.
@@ -198,18 +150,12 @@ Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; split; fourier. Qed.
 Lemma H_out_binary_uniform :
   `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
 Proof.
-rewrite {1}/entropy.
-rewrite /index_enum -enumT Two_set.enum.
-rewrite big_cons /= big_cons /= big_nil /= !addR0.
-rewrite !OutDist.dE.
-rewrite /index_enum -enumT Two_set.enum.
-(do 2 rewrite big_cons /= big_cons /= big_nil /=); rewrite !addR0.
-rewrite !BSC.cE /BSC.f !eqxx !(negbTE (Two_set.val0_neq_val1 card_A)).
-move: (Two_set.val0_neq_val1 card_A).
-rewrite eq_sym => /negbTE ->.
+rewrite {1}/entropy !Set2rsumE !OutDist.dE !Set2rsumE.
+rewrite !BSC.cE !Binary.fxx /Binary.f (eq_sym _ (Set2.a _)).
+rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.
 rewrite mul1R (_ : p + (1 - p) = 1); last by field.
-rewrite mul1R -!mulRDl /Uniform.f card_A.
+rewrite mul1R -!mulRDl /= /Uniform.f card_A /=.
 rewrite (_ : INR 1 = 1) // (_ : INR 2 = 2) // /Rdiv mul1R log_Rinv; last by fourier.
 rewrite log_2 /=; field.
 Qed.
@@ -267,8 +213,8 @@ transitivity ((\rmul_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
               (\rmul_(i < n | (f m) ``_ i != y ``_ i) p))%R.
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=.
   congr (_ * _).
-  by apply eq_bigr => // i /eqP ->; rewrite BSC.cE /BSC.f eqxx.
-  apply eq_bigr => //= i /negbTE Htmp; rewrite BSC.cE /BSC.f; by rewrite Htmp.
+  by apply eq_bigr => // i /eqP ->; rewrite BSC.cE Binary.fxx.
+  apply eq_bigr => //= i /negbTE Htmp; rewrite BSC.cE /Binary.f eq_sym; by rewrite Htmp.
 congr (_ * _).
 by rewrite big_const /= iter_Rmult /= card_dHC.
 by rewrite big_const /= iter_Rmult /= card_dH_vec.

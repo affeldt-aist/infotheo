@@ -117,6 +117,12 @@ apply eq_card => j /=.
 by rewrite !inE.
 Qed.
 
+Lemma Set2rsumE {A : finType} (f : A -> R) (card_A : #|A| = 2%nat) :
+ \rsum_(i in A) (f i) = f (Set2.a card_A) + f (Set2.b card_A).
+Proof.
+by rewrite /index_enum -enumT Set2.enumE !big_cons big_nil addR0 !enum_valP.
+Qed.
+
 (** Rle, Rlt lemmas for big sums of reals *)
 
 Section Rcomparison_rsum.

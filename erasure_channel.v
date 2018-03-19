@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice fintype.
-From mathcomp Require Import div finfun bigop prime binomial ssralg finset fingroup finalg.
-From mathcomp Require Import perm zmodp matrix.
+From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
+From mathcomp Require Import fintype div finfun bigop prime binomial ssralg.
+From mathcomp Require Import finset fingroup finalg perm zmodp matrix.
 Require Import Reals Fourier.
 Require Import Reals_ext ssr_ext ssralg_ext Rssr log2 Rbigop proba entropy.
 Require Import binary_entropy_function channel hamming channel_code.
@@ -56,24 +56,19 @@ Section EC_prob.
 Variable X : finType.
 Hypothesis card_X : #|X| = 2%nat.
 Variable P : dist X.
-Variable erp : R.
-Hypothesis erp_01 : 0 <= erp <= 1.
+Variable p : R. (* erasure probability *)
+Hypothesis p_01 : 0 <= p <= 1.
 
-Let BEC := @EC.c X erp erp_01.
-Local Notation X0 := (Two_set.val0 card_X).
-Local Notation X1 := (Two_set.val1 card_X).
-Let q := P(X0).
-Local Notation W := (EC.f erp).
+Let BEC := @EC.c X p p_01.
+Let q := P (Set2.a card_X).
+Local Notation W := (EC.f p).
 Local Notation P'W := (JointDist.f P BEC).
 Local Notation PW := (OutDist.f P BEC).
 
-Lemma EC_non_flip (a : X)(i : option_finType X):
-(i != None) && (i != Some a) -> 0 = EC.f erp a i.
+Lemma EC_non_flip (a : X) (i : option X):
+  (i != None) && (i != Some a) -> 0 = EC.f p a i.
 Proof.
-case i => a' //=.
-case: ifP => /eqP; last by [].
-move=> ->.
-by rewrite eqxx.
+case: i => //= x xa; case: ifP => // ax; move: xa; by rewrite (eqP ax) eqxx.
 Qed.
 
 End EC_prob.

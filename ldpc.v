@@ -89,43 +89,22 @@ Let P : dist A := Uniform.d card_A.
 Variable a' : A.
 Hypothesis Ha' : receivable (BSC.c card_A p_01) (dist2rV1 P) (\row_(i < 1) a').
 
-Lemma two_induction (C : A -> Type) :
-  C (Two_set.val0 card_A) -> C (Two_set.val1 card_A) -> forall a, C a.
-Proof.
-move => H1 H2 a.
-case e : (a == Two_set.val0 card_A).
-  by rewrite (eqP e).
-move/negbT/Two_set.neq_val0_val1 : e.
-by move/eqP => ->.
-Qed.
-
-Lemma binary_rsum_1 : \rsum_(i in A) (BSC.f p i a')%R = 1%R.
-Proof.
-rewrite /index_enum -enumT Two_set.enum.
-rewrite big_cons /= big_cons /= big_nil /=.
-rewrite Rplus_0_r.
-move/negbTE: (Two_set.val0_neq_val1 card_A) => e.
-elim/two_induction: a'; rewrite /BSC.f eqxx.
-  rewrite eq_sym e; by field.
-rewrite e; by field.
-Qed.
-
 Lemma bsc_post (a : A) :
   (dist2rV1 P) `^^ (BSC.c card_A p_01) , Ha' (\row_(i < 1) a | \row_(i < 1) a') =
   (if a == a' then 1 - p else p)%R.
 Proof.
-rewrite PosteriorProbability.dE.
-rewrite /= /PosteriorProbability.den /=.
+rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
 rewrite DMCE.
 rewrite /= /DMC.f /= /Uniform.f big_ord_recl big_ord0 -big_distrr /=.
 set tmp := \rsum_(_ | _) _.
 have Hsum : tmp = 1%R.
   rewrite /tmp.
-  transitivity (\rsum_(i in 'M_1) if i ``_ ord0 == a' then 1 - p else p)%R.
+  transitivity (\rsum_(i in 'M_1) Binary.f p (i ``_ ord0) a').
     apply eq_bigr => i _.
-    by rewrite DMCE big_ord_recl big_ord0 mulR1 /BSC.f mxE BSC.cE.
-  by apply (@big_singl_rV _ (fun i => if i == a' then (1 - p)%R else p)), binary_rsum_1.
-rewrite Hsum 2!mxE mulR1 BSC.cE /BSC.f /=; field.
+    by rewrite DMCE big_ord_recl big_ord0 mulR1 /Binary.f mxE BSC.cE.
+  apply/(@big_singl_rV _ (fun i => if a' == i then (1 - p)%R else p)).
+  by rewrite -Binary.f_sum_swap // Binary.f1.
+rewrite Hsum 2!mxE mulR1 BSC.cE /Binary.f /= eq_sym; field.
 split; apply not_0_INR => //; by rewrite card_A.
 Qed.
 

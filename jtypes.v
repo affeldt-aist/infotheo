@@ -1022,7 +1022,7 @@ case: (tuple_exist_perm_sort (@le_rank A) ta) => s /=.
 set ta' := Tuple _.
 move=> ta_ta'.
 have ta'ta : ta' = perm_tuple s^-1 ta by rewrite ta_ta' perm_tuple_comp mulVg perm_tuple_id.
-have sorted_ta' : sorted (@le_rank A) ta' by rewrite /ta' /=; apply sort_sorted; apply: total_le_rank.
+have sorted_ta' : sorted (@le_rank A) ta' by exact/sort_sorted/total_le_rank.
 have Hta' : ta' \in T_{P} by rewrite ta'ta; apply/perm_tuple_in_Ttuples.
 case: (shell_not_empty_sorted sorted_ta' Hrow_num_occ Hta') => tb Htb.
 exists (perm_tuple s tb).
@@ -1043,9 +1043,13 @@ Definition cond_type :=
 
 End cond_type_def.
 
-Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" := (@cond_type A n P B) (at level 50, n, A, B, P at next level, format "'\nu_' n '^{' A ',' B '}' '(' P ')'") : types_scope.
+Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" := (@cond_type A n P B)
+  (at level 50, n, A, B, P at next level,
+   format "'\nu_' n '^{' A ',' B '}' '(' P ')'") : types_scope.
 
-Notation "'\nu^{' B '}' '(' P ')'" := (@cond_type _ _ P B) (at level 50, B, P at next level, format "'\nu^{' B '}' '(' P ')'") : types_scope.
+Notation "'\nu^{' B '}' '(' P ')'" := (@cond_type _ _ P B)
+  (at level 50, B, P at next level,
+   format "'\nu^{' B '}' '(' P ')'") : types_scope.
 
 Section cond_type_prop.
 

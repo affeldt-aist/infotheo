@@ -56,6 +56,15 @@ Proof. move=> m n; by rewrite Rplus_comm. Qed.
 Lemma addRA : associative Rplus.
 Proof. move=> m n p; by rewrite Rplus_assoc. Qed.
 
+Lemma addRCA : left_commutative Rplus.
+Proof. move=> a b c; by field. Qed.
+
+Lemma addRAC : right_commutative Rplus.
+Proof. move=> a b c; by field. Qed.
+
+Lemma addRK (a : R) : cancel (Rplus^~ a) (Rminus^~ a).
+Proof. move=> b; by field. Qed.
+
 Definition subR0 : right_id 0 Rminus := Rminus_0_r.
 Lemma subRR a : a - a = 0. Proof. by rewrite Rminus_diag_eq. Qed.
 

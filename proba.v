@@ -196,8 +196,9 @@ Notation "'`U' HC " := (UniformSupport.d HC) (at level 10, HC at next level) : p
 
 Local Open Scope proba_scope.
 
-(** Distributions over sets with two elements *)
+(** Binary distributions (distributions over sets with two elements) *)
 
+Module Binary.
 Section bdist_sect.
 
 Variable A : finType.
@@ -205,54 +206,54 @@ Hypothesis HA : #|A| = 2%nat.
 Variable p : R.
 Hypothesis Hp : 0 <= p <= 1.
 
-Definition bdist : dist A.
-apply makeDist with [ffun x => if x == Two_set.val0 HA then 1 - p else p].
-- move=> a.
-  rewrite ffunE.
-  case: ifP => _.
-  case: Hp => ? ?; fourier.
-  by case: Hp.
-- rewrite /index_enum -enumT Two_set.enum /=.
-  rewrite big_cons /= big_cons /= big_nil addR0 2!ffunE eqxx.
-  move: (Two_set.val0_neq_val1 HA).
-  rewrite eqtype.eq_sym.
-  move/negbTE => ->; by field.
-Defined.
+Definition f (a : A) := fun a' => if a' == a then 1 - p else p.
+
+Lemma fxx a : f a a = 1 - p.
+Proof. by rewrite /f eqxx. Qed.
+
+Lemma f0 (a a' : A) : 0 <= f a a'.
+Proof. rewrite /f. case: ifP => _; case: Hp => ? ?; fourier. Qed.
+
+Lemma f1 (a : A) : \rsum_(a' in A) f a a' = 1.
+Proof.
+rewrite Set2rsumE /f.
+case: ifPn => [/eqP <-|].
+  by rewrite eq_sym (negbTE (Set2.a_neq_b HA)) subRK.
+by rewrite eq_sym; move/Set2.neq_a_b/eqP => <-; rewrite eqxx subRKC.
+Qed.
+
+Lemma f_sum_swap a : \rsum_(a' in A) f a a' = \rsum_(a' in A) f a' a.
+Proof. by rewrite 2!Set2rsumE /f !(eq_sym a). Qed.
+
+Definition d : dist A := makeDist (f0 (Set2.a HA)) (f1 (Set2.a HA)).
 
 End bdist_sect.
+End Binary.
 
-(** About distributions over sets with two elements *)
-
-Section charac_bdist_sect.
+Section bdist_prop.
 
 Variable A : finType.
 Variables P Q : dist A.
 Hypothesis card_A : #|A| = 2%nat.
 
-Lemma charac_bdist : {r1 | {Hr1 : 0 <= r1 <= 1 & P = bdist card_A Hr1 }}.
+Lemma charac_bdist : {r | {r01 : 0 <= r <= 1 & P = Binary.d card_A r01 }}.
 Proof.
 destruct P as [[pmf pmf0] pmf1].
-exists (1 - pmf (Two_set.val0 card_A)).
-have Hr1 : 0 <= 1 - pmf (Two_set.val0 card_A) <= 1.
-  move: (dist_max (mkDist pmf1) (Two_set.val0 card_A)) => /= H1.
-  move: (pmf0 (Two_set.val0 card_A)) => H2.
+exists (1 - pmf (Set2.a card_A)).
+have r01 : 0 <= 1 - pmf (Set2.a card_A) <= 1.
+  move: (dist_max (mkDist pmf1) (Set2.a card_A)) => /= H1.
+  move: (pmf0 (Set2.a card_A)) => H0.
   split; first by fourier.
-  have : forall a, a <= 1 -> 0 <= a -> 1 - a <= 1 by move=> *; fourier.
-  by apply.
-exists Hr1.
-apply dist_eq => /=.
-apply pos_fun_eq => /=.
+  suff : forall a, a <= 1 -> 0 <= a -> 1 - a <= 1 by apply.
+  move=> *; fourier.
+exists r01.
+apply/dist_eq/pos_fun_eq => /=.
 apply FunctionalExtensionality.functional_extensionality => a.
-rewrite ffunE.
-case: ifP => Ha.
-  move/eqP : Ha => ->; by field.
-rewrite -pmf1 /index_enum -enumT Two_set.enum.
-rewrite big_cons /= big_cons /= big_nil addR0.
-move/negbT/Two_set.neq_val0_val1/eqP : Ha => ->.
-by field.
+rewrite /Binary.f; case: ifPn => [/eqP ->|Ha]; first by field.
+by rewrite -pmf1 /= Set2rsumE addRC addRK; move/Set2.neq_a_b/eqP : Ha => ->.
 Qed.
 
-End charac_bdist_sect.
+End bdist_prop.
 
 Lemma dist2tuple1 : forall A, dist A -> {dist 1.-tuple A}.
 Proof.

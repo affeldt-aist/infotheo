@@ -313,34 +313,28 @@ Hypothesis q01 : 0 <= q <= 1.
 
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
-Hypothesis P_dom_by_Q : (bdist card_A p01) << (bdist card_A q01).
+Hypothesis P_dom_by_Q : (Binary.d card_A p01) << (Binary.d card_A q01).
 
 Lemma pinsker_fun_pos c : 0 <= c <= / (2 * ln 2) -> 0 <= pinsker_fun p c q.
 Proof.
 move=> Hc.
 case: p01 => Hp0 Hp1.
 case: q01 => Hq0 Hq1.
+set a := Set2.a card_A. set b := Set2.b card_A.
 case/Rle_lt_or_eq_dec : Hp0 => Hp0; last first.
   subst p.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l,subR0).
   case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
     subst q.
+    exfalso.
     move: P_dom_by_Q.
-    rewrite /dom_by /bdist /= => Habs.
-    move/Habs : (Two_set.val0 card_A) => {Habs}Habs.
-    rewrite !ffunE eqxx in Habs.
-    rewrite Rminus_diag_eq // in Habs.
-    move: (Habs (refl_equal _)) => H1.
-    fourier.
+    rewrite /dom_by /Binary.d /= => /(_ a).
+    rewrite /Binary.f eqxx Rminus_diag_eq // => /(_ erefl) ?; fourier.
   eapply Rle_trans; first by apply (pinsker_function_spec_pos Hc (conj Hq0 Hq1)).
   rewrite /pinsker_function_spec.
   apply Req_le.
-  rewrite mul1R /Rdiv mul1R log_Rinv; last by fourier.
-  by field.
-move: (Two_set.val0_neq_val1 card_A).
-rewrite eqtype.eq_sym.
-move/negbTE => Htmp.
+  rewrite mul1R /Rdiv mul1R log_Rinv; by [field | fourier].
 case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   subst p.
   rewrite /pinsker_fun /div_fct /comp.
@@ -348,15 +342,13 @@ case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   rewrite mul0R addR0.
   case/Rle_lt_or_eq_dec : Hq0 => Hq0; last first.
     subst q.
+    exfalso.
     move: P_dom_by_Q.
-    rewrite /dom_by /bdist /= => Habs.
-    move/Habs : (Two_set.val1 card_A) => {Habs}Habs.
-    rewrite !ffunE in Habs.
-    rewrite Htmp in Habs.
-    move: (Habs Logic.eq_refl) => ?; fourier.
-  eapply Rle_trans.
+    rewrite /dom_by /Binary.d /= => /(_ b); rewrite /Binary.f.
+    rewrite eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) ?; fourier.
+  apply: Rle_trans.
     have : 0 <= 1 - q < 1 by split; fourier.
-    by apply(pinsker_function_spec_pos Hc).
+    by apply: pinsker_function_spec_pos Hc.
   rewrite /pinsker_function_spec.
   apply Req_le.
   rewrite mul1R /Rdiv mul1R log_Rinv; last by rewrite /id.
@@ -365,22 +357,19 @@ case/Rle_lt_or_eq_dec : Hq0 => Hq0; last first.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite (_ : id 0 = 0) //.
+  exfalso.
   move: P_dom_by_Q.
-  rewrite /dom_by /bdist /= => Habs.
-  move/Habs : (Two_set.val1 card_A) => {Habs}Habs.
-  rewrite !ffunE in Habs.
-  rewrite Htmp in Habs.
-  move: (Habs Logic.eq_refl) => ?; subst p.
+  rewrite /dom_by /Binary.d /= => /(_ b); rewrite /Binary.f.
+  rewrite eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) ?; subst p.
   by move/Rlt_irrefl : Hp0.
 case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
+  exfalso.
   move: P_dom_by_Q.
-  rewrite /dom_by /bdist /= => Habs.
-  move/Habs : (Two_set.val0 card_A) => {Habs}Habs.
-  rewrite !ffunE eqxx Rminus_diag_eq // in Habs.
-  move: (Habs Logic.eq_refl) => H1.
-  have {H1}H1 : p = 1. fourier. subst p.
+  rewrite /dom_by /Binary.d /= => /(_ a).
+  rewrite /Binary.f eqxx Rminus_diag_eq // => /(_ erefl) H1.
+  have {H1}? : p = 1. fourier. subst p.
   by move/Rlt_irrefl : Hp1.
 rewrite -(pinsker_fun_p p01 c).
 case: (Rlt_le_dec q p) => qp.

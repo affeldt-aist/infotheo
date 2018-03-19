@@ -27,22 +27,16 @@ Definition bipart_pmf i := \rsum_(a in A_ i) P a.
 Definition bipart : dist [finType of bool].
 apply makeDist with bipart_pmf.
 - move=> a; apply: Rle_big_0_P_g. by move=> *; apply dist_nonneg.
-- rewrite /index_enum -enumT Two_set.enum /=.
-    symmetry; by rewrite card_bool.
-  move=> HX.
-  rewrite /bipart_pmf big_cons /= big_cons /= big_nil /= Rplus_0_r.
-  set b0 := Two_set.val0 HX.
-  set b1 := Two_set.val1 HX.
-  have : b0 <> b1.
-    apply/eqP.
-    by apply Two_set.val0_neq_val1.
-  wlog : b0 b1 / (b0 == false) && (b1 == true).
+  rewrite Set2rsumE ?card_bool // => HX; rewrite /bipart_pmf.
+  set a := Set2.a HX. set b := Set2.b HX.
+  have : a <> b by apply/eqP/Set2.a_neq_b.
+  wlog : a b / (a == false) && (b == true).
     move=> Hwlog b01.
-    have : ((b0, b1) == (true, false)) || ((b0, b1) == (false, true)).
-      move: b0 b1 b01; by case; case.
+    have : ((a, b) == (true, false)) || ((a, b) == (false, true)).
+      move: a b b01; by case; case.
     case/orP; case/eqP => -> ->.
-    - rewrite Rplus_comm; by apply Hwlog.
-    - by apply Hwlog.
+    - by rewrite addRC Hwlog.
+    - exact: Hwlog.
   case/andP => /eqP -> /eqP -> _.
   transitivity (\rsum_(a | (a \in A_ 0 :|: A_ 1)) P a).
     by rewrite [X in _ = X](@rsum_union _ (A_ 0) (A_ 1)) // -setI_eq0 setIC dis eqxx.
@@ -93,26 +87,21 @@ eapply Rle_trans; last by apply step2.
 clear step2.
 rewrite [X in _ <= X](_ : _ =
   P_A 0 * log ((P_A 0) / (Q_A 0)) + P_A 1 * log ((P_A 1) / (Q_A 1))) //.
-rewrite /div /index_enum -enumT Two_set.enum.
-  symmetry; by rewrite card_bool.
-move=> b.
-rewrite big_cons big_cons big_nil Rplus_0_r 2!(_ : _ \in _ = true) //.
-move: (Two_set.val0_neq_val1 b).
-set b0 := Two_set.val0 b.
-set b1 := Two_set.val1 b.
-wlog : b0 b1 / (b0 == 0) && (b1 == 1).
+rewrite /div Set2rsumE ?card_bool // => B.
+move: (Set2.a_neq_b B).
+set a := Set2.a B. set b := Set2.b B.
+wlog : a b / (a == 0) && (b == 1).
   move=> Hwlog i0i1.
-  have : ((b0, b1) == (1, 0)) || ((b0, b1) == (0, 1)).
-    destruct b0; destruct b1 => //.
-    move: b0 b1 i0i1.
+  have : ((a, b) == (1, 0)) || ((a, b) == (0, 1)).
+    destruct a; destruct b => //.
+    move: a b i0i1.
     case=> //.
       case=> // _ _.
       rewrite Rplus_comm.
       by apply Hwlog.
     case=> // _ _.
     by apply Hwlog.
-case/andP => /eqP -> /eqP -> _.
-clear b0 b1.
+case/andP => /eqP -> /eqP -> _ {a b}.
 have [A0_P_neq0 | A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
   apply Rle_lt_or_eq_dec; apply: Rle_big_0_P_g => i _; by apply dist_nonneg.
 - have [A1_Q_neq0 | A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
