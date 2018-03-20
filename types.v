@@ -129,12 +129,8 @@ apply/eqP/ffunP => a.
 move: {H}(H a).
 rewrite H1 H2.
 move/Rmult_eq_reg_r.
-have Htmp : / INR n.+1 <> 0.
-  apply Rinv_neq_0_compat.
-  apply not_0_INR; by apply/eqP.
-move/(_ Htmp).
-move/INR_eq => {Htmp}Htmp.
-by apply val_inj.
+have H : / INR n.+1 <> 0 by apply/Rinv_neq_0_compat/not_0_INR/eqP.
+move/(_ H)/INR_eq => {H}H; exact: val_inj.
 Qed.
 
 Definition pos_fun_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2}) : pos_fun A.
@@ -191,8 +187,7 @@ destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.
 f_equal.
 set d1 := dist_of_ffun _.
-suff ? : d1 = d.
-  subst d; f_equal; by apply proof_irrelevance.
+suff ? : d1 = d by subst d; f_equal; apply proof_irrelevance.
 apply dist_eq => /=.
 apply pos_fun_eq => /=.
 apply functional_extensionality => a.
@@ -312,17 +307,14 @@ Qed.
 
 Lemma type_empty1 n : #|A|= 0 -> #|P_ n(A)| = 0.
 Proof.
-move => Ais0.
-apply eq_card0; case=> d f df.
-suff : false by done.
-move: (dist_support_not_empty d).
-by rewrite Ais0.
+move=> A0; apply eq_card0; case=> d ? ?.
+move: (dist_domain_not_empty d); by rewrite A0.
 Qed.
 
 Lemma type_empty2 : #|P_ 0(A)| = 0.
 Proof.
 apply eq_card0; case=> d f Hf.
-suff : false by done.
+exfalso.
 by move/no_0_type in Hf.
 Qed.
 
@@ -722,4 +714,5 @@ Definition tcode : typed_code B M P := mkTypedCode tcode_typed_prop.
 
 End typed_code_of_code.
 
-Notation "P '.-typed_code' c" := (tcode P c) (at level 50, c at next level) : types_scope.
+Notation "P '.-typed_code' c" := (tcode P c)
+  (at level 50, c at next level) : types_scope.

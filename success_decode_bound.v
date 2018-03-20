@@ -86,7 +86,7 @@ Let Anot0 : (0 < #|A|)%nat. Proof. by case: W. Qed.
 
 Let Bnot0 : (0 < #|B|)%nat.
 Proof.
-case/card_gt0P : Anot0 => a _; exact (dist_support_not_empty (W a)).
+case/card_gt0P : Anot0 => a _; exact (dist_domain_not_empty (W a)).
 Qed.
 
 Lemma typed_success (tc : typed_code B M P) : scha(W, tc) =
@@ -160,13 +160,11 @@ rewrite mulRA Rinv_r; last by apply exp2_not_0.
 rewrite mulR1 mul1R.
 apply (Rle_trans _ (INR #| V.-shell (tuple_of_row (enc tc m)) |) _); last first.
   apply card_shelled_tuples => //.
-  by apply typed_prop.
+    by apply typed_prop.
   case: (jtype.c V) => _ Anot0.
   case/card_gt0P : (Anot0) => a _.
-  by move: (dist_support_not_empty (V a)) => Bnot0.
-apply le_INR; apply/leP.
-apply subset_leq_card.
-apply/setIidPl/setP => tb.
+  exact: (dist_domain_not_empty (V a)).
+apply/le_INR/leP/subset_leq_card/setIidPl/setP => tb.
 by rewrite in_set in_set andbC andbA andbb.
 Qed.
 
@@ -286,21 +284,14 @@ Let n := n'.+1.
 Variable P : P_ n ( A ).
 Variable tc : typed_code B M P.
 
-Let Anot0 : (0 < #|A|)%nat.
-Proof.
-by case: (W) => _ Anot0.
-Qed.
+Let Anot0 : (0 < #|A|)%nat. Proof. by case: (W). Qed.
 
 Let Bnot0 : (0 < #|B|)%nat.
-Proof.
-case/card_gt0P : Anot0 => a _.
-by move: (dist_support_not_empty (W a)) => Bnot0.
-Qed.
+Proof. case/card_gt0P : Anot0 => a _; exact: (dist_domain_not_empty (W a)). Qed.
 
 Let V0 : P_ n (A, B).
 Proof.
-move: (jtype_not_empty n Anot0 Bnot0) => H.
-exact (enum_val (Ordinal H)).
+move: (jtype_not_empty n Anot0 Bnot0) => H; exact (enum_val (Ordinal H)).
 Qed.
 
 Let exp_cdiv_bound := fun V => exp_cdiv P V W * success_factor_bound M V P.
@@ -351,15 +342,11 @@ Variable n' : nat.
 Let n := n'.+1.
 Variable c : code A B M n.
 
-Lemma Anot0 : (0 < #|A|)%nat.
-Proof.
-by case: (W) => _ Anot0.
-Qed.
+Lemma Anot0 : (0 < #|A|)%nat. Proof. by case: (W) => _ Anot0. Qed.
 
 Let P0 : P_ n ( A ).
 Proof.
-move: (type_not_empty n' Anot0) => H.
-exact (enum_val (Ordinal H)).
+move: (type_not_empty n' Anot0) => H; exact (enum_val (Ordinal H)).
 Defined.
 
 Local Open Scope num_occ_scope.
@@ -401,8 +388,7 @@ apply (Rle_trans _ (\rsum_(m | m \in enc_pre_img c P)
   apply Req_le, eq_big => tb // _.
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
-- apply: Rle_big_f_X_Y => m //.
-  apply: Rle_big_0_P_g => tb _; by apply dist_nonneg.
+- apply: Rle_big_f_X_Y => ? //; apply: Rle0_prsum => ? _; exact/dist_nonneg.
 Qed.
 
 End success_bound_sect.

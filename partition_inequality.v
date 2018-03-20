@@ -26,7 +26,7 @@ Definition bipart_pmf i := \rsum_(a in A_ i) P a.
 
 Definition bipart : dist [finType of bool].
 apply makeDist with bipart_pmf.
-- move=> a; apply: Rle_big_0_P_g. by move=> *; apply dist_nonneg.
+- move=> a; apply: Rle0_prsum. by move=> *; apply dist_nonneg.
   rewrite Set2rsumE ?card_bool // => HX; rewrite /bipart_pmf.
   set a := Set2.a HX. set b := Set2.b HX.
   have : a <> b by apply/eqP/Set2.a_neq_b.
@@ -102,27 +102,27 @@ wlog : a b / (a == 0) && (b == 1).
     case=> // _ _.
     by apply Hwlog.
 case/andP => /eqP -> /eqP -> _ {a b}.
-have [A0_P_neq0 | A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
-  apply Rle_lt_or_eq_dec; apply: Rle_big_0_P_g => i _; by apply dist_nonneg.
-- have [A1_Q_neq0 | A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
-    apply Rle_lt_or_eq_dec; apply: Rle_big_0_P_g => i _; by apply dist_nonneg.
-  + have [A0_Q__neq0 | A0_Q_0] : {0 < Q_A 0} + {0%R = Q_A 0}.
-      apply Rle_lt_or_eq_dec. apply: Rle_big_0_P_g => i _; by apply dist_nonneg.
+have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
+  apply Rle_lt_or_eq_dec; apply: Rle0_prsum => i _; by apply dist_nonneg.
+- have [A1_Q_neq0 | /esym A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
+    apply Rle_lt_or_eq_dec; apply: Rle0_prsum => i _; by apply dist_nonneg.
+  + have [A0_Q__neq0 | /esym A0_Q_0] : {0 < Q_A 0} + {0%R = Q_A 0}.
+      apply Rle_lt_or_eq_dec. apply: Rle0_prsum => i _; by apply dist_nonneg.
     * rewrite /Rdiv log_mult; last 2 first.
         assumption.
         by apply Rinv_0_lt_compat.
       rewrite log_Rinv //.
-      have [ A1_P_neq0 | A1_P_0] : {0 < P_A 1} + {0%R = P_A 1}.
-        apply Rle_lt_or_eq_dec. apply: Rle_big_0_P_g => i _; by apply dist_nonneg.
+      have [A1_P_neq0 | /esym A1_P_0] : {0 < P_A 1} + {0%R = P_A 1}.
+        apply Rle_lt_or_eq_dec. apply: Rle0_prsum => i _; by apply dist_nonneg.
       - rewrite log_mult; last 2 first.
           assumption.
           by apply Rinv_0_lt_compat.
         rewrite log_Rinv //.
         apply Req_le; by field.
-      - rewrite -A1_P_0 !mul0R addR0; by apply Req_le.
-    * move/(Req_0_rmul_inv (dist_nonneg Q)) in A0_Q_0.
-      have {A0_Q_0}A0_Q_0 : forall i : A, i \in A_ 0 -> 0%R = P i.
-        move=> i Hi; by rewrite P_dom_by_Q // -A0_Q_0.
+      - rewrite A1_P_0 !mul0R addR0; by apply Req_le.
+    * move/(prsum_eq0PW _ (dist_nonneg Q)) in A0_Q_0.
+      have {A0_Q_0}A0_Q_0 : forall i : A, i \in A_ 0 -> P i = 0%R.
+        move=> i Hi; by rewrite P_dom_by_Q // A0_Q_0.
       have Habs : P_A 0 = 0%R.
         transitivity (\rsum_(H|H \in A_ 0) 0%R).
           apply eq_big => // i Hi; by rewrite -A0_Q_0.
@@ -130,13 +130,13 @@ have [A0_P_neq0 | A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       move: A0_P_neq0.
       rewrite Habs; by move/Rlt_irrefl.
   + have H2 : P_A 1 = 0%R.
-      move/(Req_0_rmul_inv (dist_nonneg Q)) in A1_Q_0.
+      move/(prsum_eq0PW _ (dist_nonneg Q)) in A1_Q_0.
       rewrite /P_A /bipart /= /bipart_pmf (eq_bigr (fun=> 0%R)).
       by rewrite big_const iter_Rplus mulR0.
-      move=> a a_A_1; by rewrite P_dom_by_Q // -A1_Q_0.
+      move=> a a_A_1; by rewrite P_dom_by_Q // A1_Q_0.
     rewrite H2 !mul0R !addR0.
     have H3 : Q_A 0 = 1%R.
-      rewrite -[X in X = _]Rplus_0_r [X in _ + X = _]A1_Q_0 -(pmf1 Q).
+      rewrite -[X in X = _]addR0 -[X in _ + X = _]A1_Q_0 -(pmf1 Q).
       symmetry.
       rewrite -(@rsum_union _ _ _ [set: A]) //.
       apply eq_bigl => i; by rewrite in_set inE.
@@ -147,24 +147,24 @@ have [A0_P_neq0 | A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
     rewrite log_Rinv; last by fourier.
     apply Req_le; by field.
 - have H1 : P_A 1 = 1%R.
-    rewrite -[X in X = _]Rplus_0_l [X in X + _ = _]A0_P_0 -(pmf1 P).
+    rewrite -[X in X = _]add0R -[X in X + _ = _]A0_P_0 -(pmf1 P).
     symmetry.
     rewrite -(@rsum_union _ _ _ [set: A]) //.
     apply eq_bigl => i; by rewrite in_set inE.
     by rewrite -setI_eq0 -dis setIC.
-  have [A1_Q_neq0 | A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
-    apply Rle_lt_or_eq_dec. apply: Rle_big_0_P_g => i _; by apply dist_nonneg.
-  + rewrite -A0_P_0 !mul0R !add0R H1 !mul1R.
+  have [A1_Q_neq0 | /esym A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
+    apply Rle_lt_or_eq_dec. apply: Rle0_prsum => i _; by apply dist_nonneg.
+  + rewrite A0_P_0 !mul0R !add0R H1 !mul1R.
     rewrite /Rdiv log_mult; last 2 first.
       fourier.
       by apply Rinv_0_lt_compat.
     rewrite log_Rinv //; apply Req_le; by field.
   + (* contradiction H1 / Bi_true_Q_0 *)
-    move/(Req_0_rmul_inv (dist_nonneg Q)) in A1_Q_0.
+    move/(prsum_eq0PW _ (dist_nonneg Q)) in A1_Q_0.
     have : P_A 1 = 0%R.
       rewrite /P_A /bipart /= /bipart_pmf (eq_bigr (fun=> 0%R)).
       by rewrite big_const iter_Rplus mulR0.
-      move=> a a_A_1; by rewrite P_dom_by_Q // -A1_Q_0.
+      move=> a a_A_1; by rewrite P_dom_by_Q // A1_Q_0.
     move=> abs; rewrite abs in H1. fourier.
 Qed.
 

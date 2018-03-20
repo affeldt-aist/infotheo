@@ -27,21 +27,23 @@ Record dist := mkDist {
   pmf :> A -> R+ ;
   pmf1 : \rsum_(a in A) pmf a = 1 }.
 
-Lemma dist_support_not_empty (P : dist) : (0 < #| A |)%nat.
+Lemma dist_domain_not_empty (P : dist) : (0 < #| A |)%nat.
 Proof.
-move : (leq0n #|A|).
-rewrite leq_eqVlt.
-case/orP => // /eqP => abs.
-suff : False by done.
-apply R1_neq_R0.
-rewrite -(pmf1 P).
-transitivity (\rsum_(a| false) P a).
-  apply eq_bigl => a.
-  apply/negP => abs'.
-  have : exists a, a \in A by exists a.
-  move/card_gt0P.
-  by rewrite -abs.
-by rewrite big_pred0_eq.
+apply/negPn/negP => abs; apply R1_neq_R0.
+rewrite -(pmf1 P) (eq_bigl xpred0) ?big_pred0_eq // => a.
+apply/negP => aA.
+move/card_gt0P : abs; apply; by exists a.
+Qed.
+
+Definition dist_supp (d : dist) := [set a | d a != 0].
+
+Lemma rsum_dist_supp (g : A -> R) (X : dist) (P : pred A):
+  \rsum_(a in A | P a) g a * X a = \rsum_(a | P a && (a \in dist_supp X)) g a * X a.
+Proof.
+rewrite (bigID (mem (dist_supp X))) /= addRC (eq_bigr (fun=> 0)); last first.
+  move=> i; rewrite inE negbK => /andP[_ /eqP] ->; by rewrite mulR0.
+rewrite big_const iter_Rplus mulR0 add0R [in RHS]big_seq_cond.
+apply eq_bigl => a; by rewrite !inE andbC /index_enum -enumT mem_enum inE.
 Qed.
 
 Definition makeDist (pmf : A -> R) (H0 : forall a, 0 <= pmf a)
@@ -53,7 +55,7 @@ Proof. by apply pos_f_nonneg. Qed.
 Lemma dist_max (P : dist) a : P a <= 1.
 Proof.
 rewrite -(pmf1 P) (_ : P a = \rsum_(a' in A | a' == a) P a').
-  by apply Rle_big_P_true_f, pos_f_nonneg.
+  apply: (@Rle_prsum_restrict _ _ _ predT) => //; exact/pos_f_nonneg.
 by rewrite big_pred1_eq.
 Qed.
 
@@ -81,33 +83,34 @@ Module Uniform.
 Section Uniform_sect.
 
 Variables (A : finType) (n : nat).
-Hypothesis Anot0 : #|A| = n.+1.
+Hypothesis domain_not_empty : #|A| = n.+1.
 
 Definition f (a : A) := INR 1 / INR #|A|.
 
 Lemma f0 a : 0 <= f a.
 Proof.
-apply/(Rle_mult_inv_pos _ _ (pos_INR _))/lt_0_INR; rewrite Anot0; by apply/ltP.
+apply/(Rle_mult_inv_pos _ _ (pos_INR _))/lt_0_INR.
+rewrite domain_not_empty; by apply/ltP.
 Qed.
 
 Lemma f1 : \rsum_(a | a \in A) f a = 1.
 Proof.
 rewrite /f /Rdiv -big_distrr /= mul1R big_const iter_Rplus Rinv_r //.
-apply/not_0_INR/eqP; by rewrite Anot0.
+apply/not_0_INR/eqP; by rewrite domain_not_empty.
 Qed.
 
 Definition d : dist A := makeDist f0 f1.
 
 End Uniform_sect.
 
-Lemma d_neq0 (C : finType) (support_non_empty : { m : nat | #| C | = m.+1 }) :
-  forall x, d (projT2 support_non_empty) x != 0.
+Lemma d_neq0 (C : finType) (domain_non_empty : { m : nat | #| C | = m.+1 }) :
+  forall x, d (projT2 domain_non_empty) x != 0.
 Proof.
 move=> x.
 rewrite /d /= /f /=.
 apply/eqP/Rmult_integral_contrapositive; split; first by apply not_0_INR.
 apply/Rinv_neq_0_compat/not_0_INR/eqP.
-by case: support_non_empty => x' ->.
+by case: domain_non_empty => x' ->.
 Qed.
 
 End Uniform.
@@ -126,7 +129,7 @@ Module UniformSupport.
 Section UniformSupport_sect.
 
 Variables (A : finType) (C : {set A}).
-Hypothesis HC : (0 < #|C|)%nat.
+Hypothesis support_not_empty : (0 < #|C|)%nat.
 
 Definition f a := if a \in C then 1 / INR #|C| else 0%R.
 
@@ -199,7 +202,7 @@ Local Open Scope proba_scope.
 (** Binary distributions (distributions over sets with two elements) *)
 
 Module Binary.
-Section bdist_sect.
+Section binary.
 
 Variable A : finType.
 Hypothesis HA : #|A| = 2%nat.
@@ -227,10 +230,10 @@ Proof. by rewrite 2!Set2rsumE /f !(eq_sym a). Qed.
 
 Definition d : dist A := makeDist (f0 (Set2.a HA)) (f1 (Set2.a HA)).
 
-End bdist_sect.
+End binary.
 End Binary.
 
-Section bdist_prop.
+Section binary_distribution_prop.
 
 Variable A : finType.
 Variables P Q : dist A.
@@ -253,7 +256,99 @@ rewrite /Binary.f; case: ifPn => [/eqP ->|Ha]; first by field.
 by rewrite -pmf1 /= Set2rsumE addRC addRK; move/Set2.neq_a_b/eqP : Ha => ->.
 Qed.
 
-End bdist_prop.
+End binary_distribution_prop.
+
+Module BinarySupport.
+Section binary_support.
+
+Variables (A : finType) (d : dist A).
+Hypothesis Hd : #|dist_supp d| = 2%nat.
+
+Definition a := enum_val (cast_ord (esym Hd) ord0).
+
+Definition b := enum_val (cast_ord (esym Hd) (lift ord0 ord0)).
+
+Lemma enumE : enum (dist_supp d) = a :: b :: [::].
+Proof.
+apply (@eq_from_nth _ a); first by rewrite -cardE Hd.
+case=> [_ |]; first by rewrite [X in _ = X]/= {2}/a (enum_val_nth a).
+case=> [_ |i]; last by rewrite -cardE Hd.
+by rewrite [X in _ = X]/= {1}/b (enum_val_nth a).
+Qed.
+
+Lemma rsumE (f : A -> R) : \rsum_(i in dist_supp d) f i = f a + f b.
+Proof.
+transitivity (\rsum_(i <- enum (dist_supp d)) f i); last first.
+  by rewrite enumE 2!big_cons big_nil addR0.
+rewrite big_filter; apply eq_bigl => ?; by rewrite !inE.
+Qed.
+
+End binary_support.
+End BinarySupport.
+
+(* construction of a distribution from another by removing one element from the support *)
+Module D1Dist.
+Section d1dist.
+
+Variables (B : finType) (X : dist B) (b : B).
+
+Definition f : B -> R := fun a => if a == b then 0 else X a / (1 - X b).
+
+Hypothesis Xb1 : X b != 1.
+
+Lemma f0 : forall a, 0 <= f a.
+Proof.
+move=> a; rewrite /f.
+case: ifPn => [_ |ab]; first by apply Rle_refl.
+apply mulR_ge0; first by apply dist_nonneg.
+apply/RleP/RltW/RltP/invR_gt0/Rlt_Rminus.
+move/RleP: (dist_max X b).
+by rewrite Rle_eqVlt (negbTE Xb1) /= => /RltP.
+Qed.
+
+Lemma f1 : \rsum_(a in B) f a = 1.
+Proof.
+rewrite (bigD1 b) //= {1}/f eqxx add0R.
+rewrite (eq_bigr (fun c => X c / (1 - X b))); last first.
+  by move=> ? cb; rewrite /f (negbTE cb).
+rewrite -big_distrl /=.
+move: (pmf1 X); rewrite (bigD1 b) //=.
+move=> /eqP; rewrite eq_sym addRC -subR_eq => /eqP H.
+apply Rmult_eq_reg_r with (1 - X b); last first.
+  by apply/eqP; apply: contra Xb1; rewrite subR_eq0 eq_sym.
+rewrite mul1R -mulRA mulVR ?mulR1; first by rewrite H.
+by apply/eqP; apply: contra Xb1; rewrite subR_eq0 eq_sym.
+Qed.
+
+Definition d := makeDist f0 f1.
+
+Lemma card_dist_supp (Xb0 : X b != 0) : #|dist_supp d| = #|dist_supp X|.-1.
+Proof.
+rewrite /dist_supp (cardsD1 b [set a | X a != 0]) !inE Xb0 add1n /=.
+apply eq_card => i; rewrite !inE /f.
+case: ifPn => //= ib; first by rewrite eqxx.
+apply/idP/idP; first by apply: contra => /eqP ->; rewrite /Rdiv mul0R.
+apply: contra; rewrite /Rdiv => /eqP.
+case/Rmult_integral => [/eqP //| H].
+exfalso.
+move/eqP/negPn/negP : H; apply.
+apply/eqP/Rinv_neq_0_compat/eqP.
+by apply: contra Xb1; rewrite subR_eq0 eq_sym.
+Qed.
+
+Lemma f_eq0 a (Xa0 : X a != 0) : (f a == 0) = (b == a).
+Proof.
+rewrite /f; case: ifPn => [/eqP ->|ab]; first by rewrite !eqxx.
+apply/idP/idP => [|]; last by rewrite eq_sym (negbTE ab).
+rewrite mulR_eq0 => /orP[]; first by rewrite (negbTE Xa0).
+by move/eqP/invR_eq0/eqP; rewrite subR_eq0 eq_sym (negbTE Xb1).
+Qed.
+
+Lemma f_0 a : X a = 0 -> f a = 0.
+Proof. move=> Xa0; rewrite /f Xa0 /Rdiv mul0R; by case: ifP. Qed.
+
+End d1dist.
+End D1Dist.
 
 Lemma dist2tuple1 : forall A, dist A -> {dist 1.-tuple A}.
 Proof.
@@ -428,18 +523,14 @@ Definition d : {dist A * B} := makeDist f0 f1.
 
 Definition proj1 (P : {dist A * B}) : dist A.
 apply makeDist with (fun a => \rsum_(b in B) P (a, b)).
-- move=> a.
-  apply Rle_big_0_P_g => ? _; by apply dist_nonneg.
-- rewrite -(pmf1 P) pair_big /=.
-  apply eq_bigr; by case.
+- move=> a; apply Rle0_prsum => ? _; by apply dist_nonneg.
+- rewrite -(pmf1 P) pair_big /=; apply eq_bigr; by case.
 Defined.
 
 Definition proj2 (P : {dist A * B}) : dist B.
 apply makeDist with (fun b => \rsum_(a in A) P (a, b)).
-- move=> a.
-  apply: Rle_big_0_P_g => ? _; by apply dist_nonneg.
-- rewrite exchange_big /= -(pmf1 P) pair_big /=.
-  apply eq_big; by case.
+- move=> a; apply: Rle0_prsum => ? _; by apply dist_nonneg.
+- rewrite exchange_big /= -(pmf1 P) pair_big /=; apply eq_big; by case.
 Defined.
 
 End ProdDist_sect.
@@ -487,10 +578,12 @@ Definition Pr (E : {set A}) := \rsum_(a in E) P a.
 (** Basic properties about probabilities *)
 
 Lemma le_0_Pr E : 0 <= Pr E.
-Proof. apply Rle_big_0_P_g => *; by apply dist_nonneg. Qed.
+Proof. apply Rle0_prsum => *; by apply dist_nonneg. Qed.
 
 Lemma Pr_1 E : Pr E <= 1.
-Proof. rewrite -(pmf1 P); apply: Rle_big_P_true_f => a; by apply dist_nonneg. Qed.
+Proof.
+rewrite -(pmf1 P); apply: Rle_prsum_restrict => // a; by apply dist_nonneg.
+Qed.
 
 Lemma Pr_ext E F : E :=: F -> Pr E = Pr F.
 Proof. move=> H; apply eq_bigl => x; by rewrite H. Qed.
@@ -544,10 +637,7 @@ Lemma Pr_bigcup (B : finType) (E : pred B) F :
 Proof.
 rewrite /Pr.
 elim: (index_enum _) => [| hd tl IH].
-  rewrite big_nil.
-  apply: Rle_big_0_P_g => i Hi.
-  rewrite big_nil.
-  by apply Rle_refl.
+  rewrite big_nil; apply: Rle0_prsum => i _; rewrite big_nil; by apply Rle_refl.
 rewrite big_cons.
 case: ifP => H1.
   move: IH.
@@ -709,9 +799,7 @@ Qed.
 
 Lemma Ex_nonneg : (forall a, 0 <= X a) -> 0 <= Ex.
 Proof.
-move=> H.
-rewrite ExE.
-apply: Rle_big_0_P_g => i _.
+move=> H; rewrite ExE; apply: Rle0_prsum => i _.
 apply mulR_ge0; by [apply H | apply dist_nonneg].
 Qed.
 
@@ -797,13 +885,11 @@ rewrite ExE.
 rewrite (bigID [pred a' | X a' >b= r]) /=.
 rewrite -[a in a <= _]Rplus_0_r.
 apply Rplus_le_compat; last first.
-  apply Rle_big_0_P_g => a' _.
+  apply Rle0_prsum => a _.
   apply mulR_ge0; by [apply X_nonneg | apply dist_nonneg].
 apply (Rle_trans _ (\rsum_(i | X i >b= r) r * `p_ X i)).
-  rewrite big_distrr /=.
-  apply/Req_le/eq_bigl => a'; by rewrite inE.
-apply Rle_big_P_f_g.
-move=> a' Xa'r.
+  rewrite big_distrr /=;  apply/Req_le/eq_bigl => a; by rewrite inE.
+apply Rle_big_P_f_g => a Xar.
 apply/Rmult_le_compat_r; by [apply dist_nonneg | apply/RleP].
 Qed.
 
@@ -889,7 +975,7 @@ rewrite /`V [in X in _ <= X]ExE.
 rewrite (_ : `p_ ((X \-cst `E X) \^2) = `p_ X) //.
 apply Rle_trans with (\rsum_(a in A | Rabs (X a - `E X) >b= epsilon)
     (((X \-cst `E X) \^2) a  * `p_X a)%R); last first.
-  apply Rle_big_P_true_f => a.
+  apply Rle_prsum_restrict => // a.
   apply mulR_ge0; by [apply dist_nonneg | rewrite /= -/(_ ^2); apply le_sq].
 rewrite /Pr big_distrr [_ \^2]lock /= -!lock.
 apply Rle_big_P_Q_f_g => // i Hi; rewrite /= -!/(_ ^ 2).
@@ -1251,7 +1337,7 @@ Section sum_n_independent_rand_var_def.
 
 Variable A : finType.
 
-(** The sum of #n >= 1#%$n \geq 1$% independent random variables: *)
+(** The sum of n >= 1 independent random variables: *)
 
 Reserved Notation "X '\=isum' Xs" (at level 50).
 

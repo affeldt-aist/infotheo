@@ -52,18 +52,16 @@ Proof.
 apply mulR_ge0.
 - apply Rle_mult_inv_pos; first by fourier.
   apply lt_0_INR; by apply/ltP.
-- apply: Rle_big_0_P_g => j _.
-  apply: Rle_big_0_P_g => k Hk /=; by apply DMC_nonneg.
+- apply: Rle0_prsum => ? _; apply: Rle0_prsum => ? _; exact: DMC_nonneg.
 Qed.
 
 Lemma echa1 (HM : (0 < #| M |)%nat) W (c : code) : echa(W , c) <= 1.
 Proof.
-rewrite /CodeErrRate /Rdiv Rmult_1_l.
+rewrite /CodeErrRate /Rdiv mul1R.
 apply (Rmult_le_reg_l (INR #|M|)); first by apply lt_0_INR; apply/ltP.
-rewrite mulRA Rinv_r; last by apply nesym, Rlt_not_eq, lt_0_INR; apply/ltP.
-rewrite Rmult_1_l -iter_Rplus_Rmult -big_const.
-apply: Rle_big_P_f_g => m _.
-apply Pr_1.
+rewrite mulRA mulRV ?mul1R; last by apply/nesym/Rlt_not_eq/lt_0_INR/ltP.
+rewrite -iter_Rplus_Rmult -big_const.
+apply: Rle_big_P_f_g => m _; exact: Pr_1.
 Qed.
 
 End code_definition.

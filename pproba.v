@@ -36,7 +36,7 @@ Lemma receivableE y :
 Proof.
 apply/idP/idP => [|H].
 - case/existsP => x /andP [] H1.
-  apply: contra => /eqP/psumR_eq0P => H2.
+  apply: contra => /eqP/prsum_eq0P => H2.
   apply/eqP.
   apply Rmult_eq_reg_l with (P x); last by apply/eqP.
   rewrite mulR0 H2 // => /= x' _.
@@ -72,10 +72,10 @@ apply/idP/idP => [|/eqP].
   by rewrite -(negbK (_ == _)) UniformSupport.neq0 iC.
 - have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%R.
     move=> ? ?; by apply DMC_nonneg.
-  move/psumR_eq0P => K1 /K1 {K1} K1.
+  move/prsum_eq0P => H /H {H} H.
   rewrite /receivable; apply/negP.
   case/existsP => z /andP[].
-  rewrite UniformSupport.neq0 => /K1 ->; by rewrite eqxx.
+  rewrite UniformSupport.neq0 => /H ->; by rewrite eqxx.
 Qed.
 
 End receivable_uniform.
@@ -93,7 +93,7 @@ Definition f x := P x * W ``(y | x) / den.
 
 Lemma den_nonneg : 0 <= den.
 Proof.
-apply Rle_big_0_P_g => x _.
+apply Rle0_prsum => x _.
 apply mulR_ge0; by [apply dist_nonneg | apply DMC_nonneg].
 Qed.
 
@@ -203,9 +203,9 @@ apply mulR_ge0.
 - rewrite /Kmpp.
   apply Rle_mult_inv_pos; [fourier|].
   apply Rlt_le_neq.
-    apply Rle_big_0_P_g => /= ta _; exact: dist_nonneg.
+    apply Rle0_prsum => /= ? _; exact: dist_nonneg.
   by apply nesym, f'_neq0.
-- apply Rle_big_0_P_g => /= ta _; exact: dist_nonneg.
+- apply Rle0_prsum => /= ? _; exact: dist_nonneg.
 Qed.
 
 Lemma f1 i : \rsum_(a in A) f i a = 1.

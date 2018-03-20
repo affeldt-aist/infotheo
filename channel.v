@@ -141,7 +141,7 @@ Variable W  : `Ch_1(A, B).
 Definition f (b : B) := \rsum_(a in A) W a b * P a.
 
 Lemma f0 (b : B) : 0 <= f b.
-Proof. apply: Rle_big_0_P_g => a _; apply: mulR_ge0; by apply dist_nonneg. Qed.
+Proof. apply: Rle0_prsum => a _; apply: mulR_ge0; by apply dist_nonneg. Qed.
 
 Lemma f1 : \rsum_(b in B) f b = 1.
 Proof.

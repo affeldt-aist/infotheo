@@ -133,17 +133,14 @@ Defined.
 Lemma jtype_choice_pcancel (A B : finType) n : pcancel (@jtype.f A B n) (@jtype_choice_f A B n).
 Proof.
 case=> d f Hf H /=.
-rewrite /jtype_choice_f /=; f_equal.
+rewrite /jtype_choice_f /=.
 destruct d as [d Hd].
+destruct Sumbool.sumbool_of_bool; last by rewrite Hd in e.
 destruct Sumbool.sumbool_of_bool; last first.
-  by rewrite Hd in e.
-destruct Sumbool.sumbool_of_bool; last first.
-  suff : False by done.
+  exfalso.
   case/card_gt0P : e => a Ha.
-  move: (d a).
-  move/dist_support_not_empty => abs.
-  by rewrite abs in e0.
-f_equal.
+  move: e0.
+  by rewrite (dist_domain_not_empty (d a)).
 set d1 := chan_of_jtype _ _ _.
 set d2 := Channel1.mkChan d Hd.
 have d12 : d1 = d2.
@@ -151,8 +148,7 @@ have d12 : d1 = d2.
   apply dist_eq, pos_fun_eq, functional_extensionality => b.
   by rewrite H.
 destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
-f_equal.
-by apply/jtype_eqP => /=.
+congr Some; by apply/jtype_eqP => /=.
 Qed.
 
 Lemma jtype_choiceMixin A B n : choiceMixin (P_ n ( A , B )).
@@ -194,22 +190,18 @@ Proof.
 move=> V.
 rewrite /jtype_unpickle /jtype_pickle /=.
 destruct V as [[c Anot0] f Hf H].
-destruct Sumbool.sumbool_of_bool; last first.
-  by rewrite Anot0 in e.
+destruct Sumbool.sumbool_of_bool; last by rewrite Anot0 in e.
 case/card_gt0P : (e) => a Ha.
-move: (dist_support_not_empty (c a)) => Bnot0.
-destruct Sumbool.sumbool_of_bool; last first.
-  by rewrite Bnot0 in e0.
+move: (dist_domain_not_empty (c a)) => Bnot0.
+destruct Sumbool.sumbool_of_bool; last by rewrite Bnot0 in e0.
 rewrite pcan_pickleK; last by apply valK.
-f_equal.
 set d1 := chan_of_jtype _ _ _.
 have ? : d1 = Channel1.mkChan c Anot0.
   apply Channel1.chan_star_eq, functional_extensionality => a1.
   apply dist_eq, pos_fun_eq, functional_extensionality => b /=.
   by rewrite H.
 destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
-f_equal.
-by apply/jtype_eqP => /=.
+congr Some; by apply/jtype_eqP => /=.
 Qed.
 
 Definition jtype_countMixin A B n := CountMixin (@jtype_count_pcancel A B n).
@@ -246,7 +238,7 @@ rewrite /jtype_enum /=.
 rewrite /jtype_enum_f /=.
 destruct d as [d Anot0].
 case/card_gt0P : (Anot0) => a _.
-move: (dist_support_not_empty (d a)) => Bnot0.
+move: (dist_domain_not_empty (d a)) => Bnot0.
 set tmp := pmap _ _.
 have -> : tmp = pmap (fun f =>
                         Some {|

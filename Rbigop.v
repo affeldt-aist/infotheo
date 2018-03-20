@@ -60,8 +60,6 @@ Qed.
 
 End Abelian.
 
-(** Instantiation of big sums for reals *)
-
 Canonical addR_monoid := Monoid.Law addRA add0R addR0.
 Canonical addR_comoid := Monoid.ComLaw addRC.
 Canonical mulR_monoid := Monoid.Law mulRA mul1R mulR1.
@@ -298,20 +296,55 @@ elim: (index_enum _) => //.
     by apply IH.
 Qed.
 
-Lemma Rle_big_P_true_f : (forall i : A, 0 <= f i) ->
-  \rsum_(i in A | P i) f i <= \rsum_(i in A) f i.
+End Rcomparison_rsum.
+
+Lemma Rle0_prsum (A : finType) (P : pred A) f (H : forall i, P i -> 0 <= f i) :
+  0 <= \rsum_(i in A | P i) f i.
 Proof.
-move=> H.
-elim: (index_enum _) => [| hd tl IH].
-- rewrite !big_nil; by apply Rle_refl.
-- rewrite !big_cons.
-  case/orP : (orbN (P hd)) => P_hd.
-  + rewrite P_hd /=.
-    apply Rplus_le_compat => //; by apply Rle_refl.
-  + rewrite (negbTE P_hd) inE /= -[X in X <= _]add0R; by apply Rplus_le_compat.
+apply Rle_trans with (\rsum_(i | (i \in A) && P i) (fun=> 0) i).
+rewrite big_const iter_Rplus mulR0 /=; by apply Rle_refl.
+by apply Rle_big_P_f_g.
 Qed.
 
-End Rcomparison_rsum.
+Lemma Rle_prsum_restrict {A : finType} (f : A -> R) (P Q : pred A) (H : forall a, 0 <= f a) :
+  (forall i, P i -> Q i) ->
+  \rsum_(i | P i) f i <= \rsum_(i | Q i) f i.
+Proof.
+move=> R_T.
+apply: Rle_trans; last by apply (@Rle_big_P_Q_f_X A f P Q xpredT).
+by apply Req_le.
+Qed.
+
+Lemma Req_0_rmul_inv' {A : finType} (P Q : pred A) f (H : forall i, 0 <= f i) :
+  forall j, P j -> f j <= \rsum_(i | P i) f i.
+Proof.
+move=> j Hj.
+rewrite (_ : f j = \rsum_(i | i == j) f i); last by rewrite big_pred1_eq.
+apply: Rle_prsum_restrict => // i /eqP ?; by subst j.
+Qed.
+
+Lemma prsum_eq0P {A : finType} (P : pred A) f (Hf : forall a, P a -> 0 <= f a) :
+  \rsum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
+Proof.
+split=> [H a Ha|h]; last first.
+  by rewrite (eq_bigr (fun=> 0)) // big_const iter_Rplus mulR0.
+suff : f a = 0 /\ \rsum_(i | P i && (i != a)) f i = 0 by case.
+apply: Rplus_eq_R0.
+- exact/Hf/Ha.
+- apply: Rle0_prsum => ? /andP[? ?]; by apply Hf.
+- rewrite -bigD1 /=; [exact H | exact Ha].
+Qed.
+
+Lemma prsum_eq0PW {A : finType} (P : pred A) f (Hf : forall a, 0 <= f a) :
+  \rsum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
+Proof.
+split => [H a Pa | H]; last first.
+  by rewrite (eq_bigr (fun=> 0)) // big_const iter_Rplus mulR0.
+case/Rle_lt_or_eq_dec : (Hf a) => // fa.
+exfalso.
+have : f a <= \rsum_(i | P i) f i by apply Req_0_rmul_inv'.
+rewrite H => ?; fourier.
+Qed.
 
 Lemma Rlt_big_0_g (A : finType) (g : A -> R) (HA : (0 < #|A|)%nat) :
   (forall i, 0 < g i) -> 0 < \rsum_(i in A) g i.
@@ -323,73 +356,6 @@ eapply Rle_lt_trans; last first.
   apply Rlt_big_f_g_X with (f := fun x => 0) => //.
   by rewrite cardsT.
 rewrite big_const_seq iter_Rplus mulR0; by apply Rle_refl.
-Qed.
-
-Lemma Rle_big_0_P_g (A : finType) (P : pred A) (g : A -> R) :
-  (forall i, P i -> 0 <= g i) -> 0 <= \rsum_(i in A | P i) g i.
-Proof.
-move=> H.
-apply Rle_trans with (\rsum_(i|(i \in A) && P i) (fun x => 0) i).
-rewrite big_const iter_Rplus mulR0 /=; by apply Rle_refl.
-by apply Rle_big_P_f_g.
-Qed.
-
-Lemma Rle_big_P_Q_f_X_new {A : finType} (f : A -> R) (P Q : pred A) :
-  (forall a, 0 <= f a) -> (forall i, P i -> Q i) ->
-  \rsum_(i | P i) f i <= \rsum_(i | Q i) f i.
-Proof.
-move=> Hf R_T.
-eapply Rle_trans; last by apply (@Rle_big_P_Q_f_X A f P Q xpredT).
-by apply Req_le.
-Qed.
-
-Lemma Req_0_rmul_inv' {A : finType} (f : A -> R) (P Q : pred A) : (forall i, 0 <= f i) ->
-  forall j, P j -> f j <= \rsum_(i | P i) f i.
-Proof.
-move=> HF j Hj.
-rewrite (_ : f j = \rsum_(i | i == j) f i); last by rewrite big_pred1_eq.
-apply: Rle_big_P_Q_f_X_new => //.
-move=> i /eqP ?; by subst j.
-Qed.
-
-Lemma Req_0_rmul_inv {C : finType} (R : pred C) F (HF : forall a, 0 <= F a) :
-  0 = \rsum_(i | R i) F i -> (forall i, R i -> 0 = F i).
-Proof.
-move=> abs i Hi.
-case/Rle_lt_or_eq_dec : (HF i) => // Fi.
-suff : False by done.
-have : F i <= \rsum_(i|R i) F i.
-  by apply Req_0_rmul_inv'.
-rewrite -abs => ?.
-fourier.
-Qed.
-
-(* old lemmas that better not be used *)
-Section old.
-
-Lemma Req_0_rmul {C : finType} (R : pred C) F:
-  (forall i, R i -> 0 = F i) ->
-  0 = \rsum_(i | R i) F i.
-Proof.
-move=> HF.
-rewrite (eq_bigr (fun=> 0)); first by rewrite big_const iter_Rplus mulR0.
-move=> i Ri; by rewrite -HF.
-Qed.
-
-End old.
-
-Lemma psumR_eq0P {B : finType} (g : B -> R) (U : pred B) :
-  \rsum_(i|U i) g i = 0 ->
-  (forall i : B, U i -> 0 <= g i) ->
-  (forall i : B, U i -> g i = 0).
-Proof.
-move=> H2 H1 i Hi.
-suff H : g i = 0 /\ (\rsum_(j|(U j && (j != i))) g j) = 0 by case: H.
-apply Rplus_eq_R0.
-- apply H1 ; exact Hi.
-- apply: Rle_big_0_P_g => i0 Hi0; apply H1.
-  move/andP in Hi0; by apply Hi0.
-- rewrite -bigD1 /=; [exact H2 | exact Hi].
 Qed.
 
 Lemma rsum_neq0 {A : finType} (P : {set A}) (g : A -> R) :
@@ -418,12 +384,12 @@ move=> H1 H2 i Hi.
 apply (Rplus_eq_reg_l (- (f i))).
 rewrite Rplus_opp_l Rplus_comm.
 move: i Hi.
-apply psumR_eq0P.
-- rewrite big_split /= -(big_morph _ morph_Ropp oppR0).
-  by apply Rminus_diag_eq, H2.
+apply prsum_eq0P.
 - move=> i Hi.
   apply (Rplus_le_reg_l (f i)).
   rewrite addR0 subRKC; by apply H1.
+- rewrite big_split /= -(big_morph _ morph_Ropp oppR0).
+  by apply Rminus_diag_eq, H2.
 Qed.
 
 (* TODO: generalize to any bigop *)

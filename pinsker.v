@@ -201,12 +201,10 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
   case/andP => /eqP ? /eqP ?; by subst a b.
 rewrite step2.
 apply (Pinsker_2_inequality card_bool) => /= b.
-rewrite /bipart_pmf => H.
-have {H}H : 0%R = bipart_pmf A_ Q b. done.
-move: (@Req_0_rmul_inv A (mem (A_ b)) (pmf Q) (dist_nonneg Q) H) => {H}H.
+rewrite /bipart_pmf.
+move/(prsum_eq0PW _ (dist_nonneg Q)) => H.
 transitivity (\rsum_(a | a \in A_ b) 0%R).
-  apply eq_bigr => // a Ha.
-  apply P_dom_by_Q; by rewrite -H.
+  apply eq_bigr => // a Ha; apply P_dom_by_Q; by rewrite H.
 by rewrite big_const iter_Rplus mulR0.
 Qed.
 

@@ -334,14 +334,13 @@ move=> M.
 have M_prednK : #|M|.-1.+1 = #|M| by rewrite card_ord.
 set E_F_N := @cal_E M n epsilon0.
 rewrite {1}/Wght.d {1}/E_F_N {1}/cal_E.
-case/card_gt0P : (dist_support_not_empty P) => xdef _.
+case/card_gt0P : (dist_domain_not_empty P) => xdef _.
 pose zero := @enum_rank M ord0.
-move: (@sum_rV_ffun R mulR_muloid addR_addoid M ([finType of 'rV[A]_n])
+move: (@sum_rV_ffun _ mulR_muloid addR_addoid M [finType of 'rV[A]_n]
   (fun f => \rmul_(m : M) P `^ n (f m))
   (fun r => fun ta => (r * Pr ( W ``(| ta ) )
     (~: [set tb | prod_tuple (ta, tb) \in `JTS P W n epsilon0]))%R)
-  ord0 zero
-).
+  ord0 zero).
 rewrite (_ : nth ord0 (enum M) 0 = ord0); last by rewrite enum_ordS.
 move=> <-.
 transitivity (\rsum_(ta : 'rV['rV[A]_n]_#|M|) (
@@ -349,19 +348,10 @@ transitivity (\rsum_(ta : 'rV['rV[A]_n]_#|M|) (
     \rsum_(tb | tb \in ~: cal_E epsilon0 [ffun x => ta ord0 x] zero)
     (W ``(| [ffun x => ta ord0 x] zero)) tb))%R.
   apply eq_bigr => ta _.
-  f_equal.
-    apply eq_big.
-    - done.
-    - move=> tb _.
-      f_equal.
-      by rewrite !ffunE.
-  rewrite /Pr.
+  congr (_ * _); first by apply eq_bigr => m _; rewrite 2!ffunE.
   apply eq_big.
-    move=> x /=.
-    by rewrite !inE ffunE.
-  - move=> tb.
-    rewrite in_setC inE => Hy.
-    by rewrite ffunE.
+  - move=> /= vb; by rewrite !inE ffunE.
+  - move=> cb _; by rewrite ffunE.
 rewrite /cal_E.
 transitivity (\rsum_(ta : 'rV[A]_n)
   (\rsum_(y in ~: [set y0 | prod_tuple (ta, y0) \in `JTS P W n epsilon0])
@@ -369,25 +359,22 @@ transitivity (\rsum_(ta : 'rV[A]_n)
   \rsum_(j in {: #|M|.-1.-tuple ('rV[A]_n)})
   (\rmul_(m : M) P `^ _ (Finfun (tcast M_prednK [tuple of ta :: j]) m))).
 Local Open Scope ring_scope.
-  rewrite (reindex_onto (fun y : {ffun _ -> _} => \row_(i < _) y (enum_val i)) (fun p : 'rV_ _ => [ffun x => p ord0 (enum_rank x)])) //=; last first.
+  rewrite (reindex_onto (fun y : {ffun _ -> _} => \row_(i < _) y (enum_val i))
+                        (fun p : 'rV_ _ => [ffun x => p ord0 (enum_rank x)])) //=; last first.
     move=> i _.
     by apply/matrixP => a b; rewrite {a}(ord1 a) mxE ffunE enum_valK.
   apply trans_eq with (\rsum_(j : {ffun M -> _})
     ((\rmul_(m < k.+1) P `^ n (j m)) *
       (\rsum_(y in ~: [set y0 | prod_tuple (j ord0, y0) \in `JTS P W n epsilon0])
       W ``(y | j ord0))))%R.
-    apply eq_big => //= x.
-    - apply/eqP/ffunP => i'.
-      by rewrite ffunE mxE enum_rankK.
-    - move=> Hx.
+    apply eq_big => //= f.
+    - apply/eqP/ffunP => m; by rewrite ffunE mxE enum_rankK.
+    - move/eqP => Hf.
       congr (_ * _)%R.
-        apply eq_bigr => i _.
-        by rewrite -[in X in _ = X](eqP Hx) 2!ffunE.
-      apply eq_big.
-        rewrite /= => y.
-        by rewrite !inE -[in RHS](eqP Hx) !ffunE mxE.
-      move=> i _.
-      by rewrite -[in RHS](eqP Hx) !ffunE mxE.
+        apply eq_bigr => i _; by rewrite -[in RHS]Hf 2!ffunE.
+      apply eq_big => /=.
+        move=> vb; by rewrite !inE -[in RHS]Hf !ffunE mxE.
+      move=> vb _; by rewrite -[in RHS]Hf !ffunE mxE.
   rewrite (_ : ord0 = nth ord0 (enum M) 0); last by rewrite enum_ordS.
   rewrite -(sum_tuple_ffun _ (fun f => \rmul_(m : M) P `^ n (f m))
     (fun r => fun yn => r *
@@ -400,15 +387,14 @@ Local Open Scope ring_scope.
       W ``(y | nth (\row_(i < n) xdef) j 0))))%R.
     rewrite (@big_tcast _ _ _ _ _ M_prednK) //.
     apply eq_bigr => i _.
-    f_equal.
+    congr (_ * _)%R.
     have Hcst : nth (\row_(i < n) xdef) (tcast M_prednK i) 0 =
       nth (\row_(i < n) xdef) i 0.
       move: M_prednK i; rewrite card_ord => M_prednK i.
       rewrite -(tnth_nth _ i ord0) -(tnth_nth _ (tcast M_prednK i) ord0).
       by rewrite tcastE /= cast_ord_id.
     apply eq_big.
-    - move=> j.
-      by rewrite !inE Hcst.
+    - move=> vb; by rewrite !inE Hcst.
     - move=> *; by rewrite Hcst.
   rewrite -(@big_head_behead_P_tuple _ #|M|.-1
    (fun j => ((\rmul_(m : M) P `^ n (Finfun (tcast M_prednK j) m)) *
@@ -460,9 +446,7 @@ transitivity (\rsum_(ta in 'rV[A]_n)
   by rewrite JointDist.dE -fst_tnth_prod_tuple -snd_tnth_prod_tuple /= mulRC.
 rewrite /Pr rsum_rV_prod pair_big_dep /=.
 apply eq_bigl; case=> /= ta tb; by rewrite !inE.
-have Hzero : 0%nat = zero.
-  by rewrite /zero enum_rank_ord. (* TODO: ?! *)
-done.
+by rewrite /zero enum_rank_ord.
 Qed.
 
 

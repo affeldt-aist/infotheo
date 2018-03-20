@@ -65,7 +65,7 @@ apply Rabs_xlnx => //.
       apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
     apply: Rle_big_P_f_g => a _.
     rewrite (bigD1 b) //= Rabs_minus_sym /Rminus -[X in X <= _]addR0.
-    rewrite 2!JointDist.dE /=; apply Rplus_le_compat_l; apply: Rle_big_0_P_g => b1 _; by apply Rabs_pos.
+    rewrite 2!JointDist.dE /=; apply/Rplus_le_compat_l/Rle0_prsum => ? _; exact/Rabs_pos.
   + rewrite cdiv_is_div_joint_dist => //.
     by apply Pinsker_inequality_weak, joint_dom.
 Qed.
@@ -92,7 +92,7 @@ apply Rabs_xlnx => //.
 - apply (Rle_trans _ (d(`J(P , V) , `J(P , W)))).
     rewrite /var_dist /R_dist (bigD1 (a, b)) //= Rabs_minus_sym /Rminus.
     rewrite -[X in X <= _]addR0.
-    apply Rplus_le_compat_l; apply: Rle_big_0_P_g => b1 _; by apply Rabs_pos.
+    apply/Rplus_le_compat_l/Rle0_prsum => ? _; exact/Rabs_pos.
   rewrite cdiv_is_div_joint_dist => //.
   by apply Pinsker_inequality_weak, joint_dom.
 Qed.

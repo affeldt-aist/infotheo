@@ -72,6 +72,17 @@ Lemma subRKC m n : m + (n - m) = n. Proof. ring. Qed.
 
 Lemma subRK m n : n - m + m = n. Proof. ring. Qed.
 
+Lemma subR_eq0 (x y : R) : (x - y == 0) = (x == y).
+Proof.
+apply/idP/idP => [|/eqP ->]; last by rewrite subRR.
+by move/eqP/Rminus_diag_uniq => ->.
+Qed.
+
+Lemma subR_eq x y z : (x - z == y) = (x == y + z).
+Proof.
+apply/idP/idP => [/eqP <-|/eqP ->]; by [rewrite subRK | rewrite addRK].
+Qed.
+
 Definition mul0R : left_zero 0 Rmult := Rmult_0_l.
 Definition mulR0 : right_zero 0 Rmult := Rmult_0_r.
 Definition mul1R : ssrfun.left_id 1%R Rmult := Rmult_1_l.
@@ -81,6 +92,11 @@ Definition mulNR := Ropp_mult_distr_l_reverse.
 
 Definition mulRC : commutative Rmult := Rmult_comm.
 
+Lemma mulRA : associative Rmult.
+Proof. move=> m n p; by rewrite Rmult_assoc. Qed.
+
+Lemma mulRCA : left_commutative Rmult. Proof. move=> a b c; by field. Qed.
+
 Lemma mulRDl : left_distributive Rmult Rplus.
 Proof. move=> *; by rewrite Rmult_plus_distr_r. Qed.
 Lemma mulRDr : right_distributive Rmult Rplus.
@@ -89,8 +105,11 @@ Proof. move=> *; by rewrite Rmult_plus_distr_l. Qed.
 Lemma mulRBl : left_distributive Rmult Rminus.
 Proof. move=> *; field. Qed.
 
-Lemma mulRA : associative Rmult.
-Proof. move=> m n p; by rewrite Rmult_assoc. Qed.
+Lemma mulR_eq0 (x y : R) : (x * y == 0) = ((x == 0) || (y == 0)).
+Proof.
+apply/idP/idP => [/eqP/Rmult_integral[] ->| ]; try by rewrite eqxx // orbC.
+case/orP => /eqP ->; by rewrite ?mulR0 ?mul0R.
+Qed.
 
 (* was Rlt_ne *)
 Lemma gtR_eqF a b : a < b -> b <> a.
@@ -195,5 +214,27 @@ move/RleP/(Rmult_le_compat_r m); by move/ltRW : Hm => Hm /(_ Hm)/RleP.
 Qed.
 
 (* Rinv_l_sym*)
+
+Lemma invR_gt0 x : 0 < x -> 0 < / x.
+Proof. move=> x0; by apply Rinv_0_lt_compat. Qed.
+
+Lemma invR_eq0 (x : R) : (/ x = 0) -> (x = 0).
+Proof.
+move/eqP => H; apply/eqP; apply: contraTT H => H.
+by apply/eqP/Rinv_neq_0_compat/eqP.
+Qed.
+
+Definition invR1 : / 1 = 1 := Rinv_1.
+
+Definition divRR (x : R) : x <> 0 -> x / x = 1.
+Proof. by move=> x0; rewrite /Rdiv Rinv_r. Qed.
+
+Lemma divR1 (x : R) : x / 1 = x.
+Proof. by rewrite /Rdiv invR1 mulR1. Qed.
+
+Definition mulRV (x : R) : x <> 0 -> x * / x = 1 := divRR x.
+
+Lemma mulVR (x : R) : x <> 0 -> / x * x = 1.
+Proof. by move=> x0; rewrite mulRC mulRV. Qed.
 
 Definition invRK := Rinv_involutive.

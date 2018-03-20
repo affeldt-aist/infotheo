@@ -23,7 +23,7 @@ Proof.
 rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))); last first.
   apply eq_bigl => i /=; by rewrite inE.
-apply Rle_big_0_P_g => i _.
+apply Rle0_prsum => i _.
 case: (Req_EM_T (P i) 0).
   (* NB: this step in a standard textbook would be handled as a
      consequence of lim x->0 x log x = 0 *)
@@ -44,7 +44,7 @@ Lemma entropy_pos_P_pos : 0 <= `H.
 Proof.
 rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))).
-  apply Rle_big_0_P_g => i _.
+  apply Rle0_prsum => i _.
   rewrite mulRC -mulNR.
   apply mulR_ge0; last by apply dist_nonneg.
   apply oppR_ge0.
@@ -91,7 +91,7 @@ Local Open Scope reals_ext_scope.
 Lemma entropy_max {A : finType} (P : dist A) : `H P <= log (INR #|A|).
 Proof.
 have [n HA] : exists n, #|A| = n.+1.
-  exists (#|A|.-1); rewrite prednK //; by apply (dist_support_not_empty P).
+  exists (#|A|.-1); rewrite prednK //; by apply (dist_domain_not_empty P).
 have : P << (Uniform.d HA) by apply dom_by_uniform.
 move/leq0div => H.
 rewrite /div in H.

@@ -24,28 +24,26 @@ have gspos : forall a, a \in C -> 0 < g a.
   case/Rle_lt_or_eq_dec : ((pos_f_nonneg g) a) => // abs; symmetry in abs; apply fg in abs.
   move: (fspos _ a_C); by rewrite abs; move/Rlt_irrefl.
 have Fnot0 : \rsum_{ C } f <> 0.
-  move=> abs; symmetry in abs.
-  move/(@Req_0_rmul_inv _ (mem C) (pos_f f) (pos_f_nonneg f)) in abs.
+  move/(prsum_eq0PW _ (pos_f_nonneg f)) => abs.
   case/set0Pn : Hc => a a_C.
   move: (fspos _ a_C).
-  rewrite -abs //; by move/Rlt_irrefl.
+  by rewrite abs // => /Rlt_irrefl.
 have Gnot0 : \rsum_{ C } g <> 0.
-  move=> abs; symmetry in abs.
-  move/(@Req_0_rmul_inv _ (mem C) (pos_f g) (pos_f_nonneg g)) in abs.
+  move/(prsum_eq0PW _ (pos_f_nonneg g)) => abs.
   case/set0Pn : Hc => a a_C.
   move: (gspos _ a_C).
-  rewrite -abs //; by move/Rlt_irrefl.
+  by rewrite abs // => /Rlt_irrefl.
 wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
   move=> Hwlog.
   set k := \rsum_{ C } f / \rsum_{ C } g.
   have Fspos : 0 < \rsum_{ C } f.
     suff Fpos : 0 <= \rsum_{ C } f.
       apply Rlt_le_neq => //; by apply not_eq_sym.
-    apply: Rle_big_0_P_g => a C_a; exact/ltRW/fspos.
+    apply: Rle0_prsum => a C_a; exact/ltRW/fspos.
   have Gspos : 0 < \rsum_{ C } g.
     suff Gpocs : 0 <= \rsum_{ C } g.
       apply Rlt_le_neq => //; by apply not_eq_sym.
-    apply: Rle_big_0_P_g => a C_a; exact/ltRW/gspos.
+    apply: Rle0_prsum => a C_a; exact/ltRW/gspos.
   have kspos : 0 < k by apply Rlt_mult_inv_pos.
   have kg_pos : forall a, 0 <= k * g a.
     move=> a; apply mulR_ge0; by [apply ltRW | apply pos_f_nonneg].
@@ -152,26 +150,25 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
     by rewrite big_const iter_Rplus mulR0 add0R.
   rewrite -H1 in H.
   have pos_F : 0 <= \rsum_{C} f.
-    apply Rle_big_0_P_g => ? ?; by apply pos_f_nonneg.
+    apply Rle0_prsum => ? ?; by apply pos_f_nonneg.
   apply Rle_trans with (\rsum_{C} f * log (\rsum_{C} f / \rsum_{D} g)).
     case/Rle_lt_or_eq_dec : pos_F => pos_F; last first.
       rewrite -pos_F !mul0R; by apply Rle_refl.
     have H2 : 0 <= \rsum_(a | a \in D) g a.
-      apply: Rle_big_0_P_g => a _; by apply pos_f_nonneg.
+      apply: Rle0_prsum => a _; by apply pos_f_nonneg.
     case/Rle_lt_or_eq_dec : H2 => H2; last first.
       have : 0 = \rsum_{D} f.
         transitivity (\rsum_(a | a \in D) 0).
           by rewrite big_const iter_Rplus Rmult_0_r.
         apply eq_bigr => a a_C1.
-        rewrite fg //.
-        by rewrite -(@Req_0_rmul_inv _ (mem D) (pos_f g) (pos_f_nonneg g) H2) //.
+        by rewrite fg // (proj1 (prsum_eq0PW (mem D) (pos_f_nonneg g))).
       move=> abs; rewrite -abs in H1; rewrite H1 in pos_F.
       by move/Rlt_irrefl : pos_F.
     have H3 : 0 < \rsum_(a | a \in C) g a.
       rewrite setUC in DUD'.
       rewrite (rsum_union g DID' DUD').
       apply Rplus_le_lt_0_compat => //.
-      apply: Rle_big_0_P_g => *; by apply pos_f_nonneg.
+      apply: Rle0_prsum => *; by apply pos_f_nonneg.
     apply Rmult_le_compat_l; first exact/ltRW.
     apply log_increasing_le.
       apply Rlt_mult_inv_pos => //; by rewrite -HG.
@@ -181,17 +178,15 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
     rewrite (rsum_union g DID' DUD').
     rewrite -[X in X <= _]add0R.
     apply Rplus_le_compat_r.
-    apply: Rle_big_0_P_g => a C2_a; by apply pos_f_nonneg.
+    apply: Rle0_prsum => a C2_a; by apply pos_f_nonneg.
   eapply Rle_trans; first by apply H.
   rewrite setUC in DUD'.
   rewrite (rsum_union (fun a => f a * log (f a / g a)) DID' DUD').
   rewrite (_ : \rsum_(_ | _ \in D') _ = 0); last first.
     transitivity (\rsum_(a | a \in D') 0).
       apply eq_bigr => a.
-      rewrite /D' in_set.
-      case/andP => a_C /eqP fa0.
-      by rewrite fa0 mul0R.
-    by rewrite big_const iter_Rplus Rmult_0_r.
+      rewrite /D' in_set => /andP[a_C /eqP ->]; by rewrite mul0R.
+    by rewrite big_const iter_Rplus mulR0.
   rewrite add0R; by apply Rle_refl.
 apply log_sum1 => // a.
 rewrite /C1 in_set.

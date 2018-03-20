@@ -38,12 +38,13 @@ Qed.
 
 Lemma f1 (a : A) : \rsum_(a' : {:option A}) f a a' = 1.
 Proof.
-rewrite (bigD1 None) //=.
-rewrite (bigD1 (Some a)) //=.
-rewrite eqxx /=.
-rewrite -Req_0_rmul. field.
-rewrite /f; case=> [a'| //].
-by case: ifP => /= [/eqP -> | //]; rewrite eqxx.
+rewrite (bigD1 None) //= (bigD1 (Some a)) //= eqxx /= (proj2 (prsum_eq0PW _ _)).
+- by field.
+- rewrite /f; case => [a'|]; last by case: p_01.
+  case: ifPn => [_ |?]; last by apply Rle_refl.
+  case: p_01 => ? ?; fourier.
+- case => //= a' aa'; case: ifPn => // /eqP ?; subst a'.
+  move: aa'; by rewrite eqxx.
 Qed.
 
 Definition c : `Ch_1(A, [finType of option A]) :=

@@ -194,10 +194,10 @@ case/boolP : (dec tb == None) => dectb.
     apply/imsetP; by exists m.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite Htb'.
   rewrite big_const iter_Rplus mulR0.
-  apply Rle_big_0_P_g => ? _; by apply DMC_nonneg.
+  apply Rle0_prsum => ? _; by apply DMC_nonneg.
 case/boolP : (phi tb == None) => [|phi_tb].
   move/eqP => ->.
-  rewrite big_pred0 //; apply Rle_big_0_P_g => ? _; by apply DMC_nonneg.
+  rewrite big_pred0 //; apply Rle0_prsum => ? _; exact/DMC_nonneg.
 have [m1 Hm1] : exists m', dec tb = Some m'.
   destruct (dec tb) => //; by exists s.
 have [m2 Hm2] : exists m', phi tb = Some m'.

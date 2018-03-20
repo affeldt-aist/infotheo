@@ -34,7 +34,7 @@ Let Anot0 : (0 < #|A|)%nat. Proof. by case: W. Qed.
 
 Let Bnot0 : (0 < #|B|)%nat.
 Proof.
-case/card_gt0P : Anot0 => a _; exact (dist_support_not_empty (W a)).
+case/card_gt0P : Anot0 => a _; exact: (dist_domain_not_empty (W a)).
 Qed.
 
 Lemma channel_coding_converse_gen : exists Delta, 0 < Delta /\ forall n',
