@@ -105,12 +105,12 @@ refine (@Channel1.mkChan A B _ Anot0) => a.
 refine (@mkDist _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a) _).
 rewrite /=.
 case/boolP : (\sum_(b1 in B) (f a b1) == O) => Hcase.
-- rewrite /Rle big_const iter_Rplus_Rmult Rinv_r; first reflexivity.
-  apply not_eq_sym, Rlt_not_eq, lt_0_INR; apply/ltP; exact Bnot0.
+- rewrite /Rle big_const iter_Rplus_Rmult mulRV //.
+  exact/not_eq_sym/Rlt_not_eq/lt_0_INR/ltP/Bnot0.
 - rewrite (@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  rewrite /Rdiv -big_distrl /= Rinv_r //.
+  rewrite /Rdiv -big_distrl /= mulRV //.
   rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  rewrite (_ : 0 = INR 0) //; apply not_INR; by apply/eqP.
+  rewrite (_ : 0 = INR 0) //; exact/not_INR/eqP.
 Defined.
 
 Definition jtype_choice_f (A B : finType) n (f : {ffun A -> {ffun B -> 'I_n.+1}}) : option (P_ n ( A , B )).
@@ -649,9 +649,7 @@ have d0 : forall b, (0 <= d b)%R.
 have d1 : \rsum_(b : B) d b = 1%R.
   rewrite /d -big_distrl /= -(@big_morph _ _ _ 0%R _ O _ morph_plus_INR) //.
   set lhs := \sum_i _.
-  suff -> : lhs = N(a | ta).
-    rewrite Rinv_r //.
-    apply not_0_INR; by apply/eqP.
+  suff -> : lhs = N(a | ta) by rewrite mulRV //; exact/not_0_INR/eqP.
   rewrite /lhs /f /= -[in X in _ = X](Hrow_num_occ Hta a).
   apply eq_bigr => b _; by rewrite ffunE.
 by apply (@type.mkType _ _ (makeDist d0 d1) f).
@@ -809,11 +807,11 @@ apply (@Rle_trans _ (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
     move=> a b /=; rewrite -!exp2_pow mulRDr !exp2_plus; by field.
     rewrite -exp2_pow mulR0 /exp2 mul0R; exact exp_0.
   rewrite (reindex_onto (fun x => enum_rank x) (fun y => enum_val y)) => [|i _]; last by rewrite enum_valK.
-  rewrite (_ : \big[Rmult/1]_(j | enum_val (enum_rank j) == j) _ =
-               \big[Rmult/1]_(j : A) INR (card_type_of_row Hta Vctyp (enum_rank j))); last first.
+  rewrite (_ : \rprod_(j | enum_val (enum_rank j) == j) _ =
+               \rprod_(j : A) INR (card_type_of_row Hta Vctyp (enum_rank j))); last first.
       apply eq_bigl => a; rewrite enum_rankK; by apply/eqP.
-  apply Rle_big_mult => a.
-  split; first by apply pos_INR.
+  apply ler_rprod => a.
+  split; first exact/pos_INR.
   rewrite -exp2_pow mulRA.
   rewrite /card_type_of_row; destruct eqVneq.
     rewrite -[X in X <= _]exp2_0.
@@ -1128,7 +1126,7 @@ Proof.
 rewrite /f -big_distrl /= -(@big_morph _ _ _ 0%R _ 0 _ morph_plus_INR) //.
 rewrite exchange_big /=.
 move/eqP : (jtype.sum_f V) => ->.
-rewrite Rinv_r //; apply not_0_INR; by apply/eqP.
+rewrite mulRV //; exact/not_0_INR/eqP.
 Qed.
 
 Definition d : dist B := makeDist f0 f1.
@@ -1182,7 +1180,7 @@ case: ifP => [/eqP |] Hcase.
   rewrite Hcase in sum_V.
   rewrite in_set in Hta.
   move/forallP/(_ a) : Hta.
-  rewrite -sum_V /Rdiv mul0R.
+  rewrite -sum_V div0R.
   move/eqP => ->; rewrite mulR0.
   move/eqP in Hcase.
   rewrite sum_nat_eq0 in Hcase.
@@ -1384,10 +1382,8 @@ rewrite big_mkcond /=.
 transitivity (\rsum_(V | V \in \nu^{B}(P)) \rsum_(tb in V.-shell ta) if F tb then f tb else 0).
   by apply sum_tuples_ctypes'.
 apply eq_bigr => s _.
-rewrite big_mkcond /=.
-symmetry.
-rewrite big_mkcond /=.
-apply eq_bigr => tb _.
+rewrite [in LHS]big_mkcond /= [in RHS]big_mkcond /=.
+apply/esym/eq_bigr => tb _.
 by case/boolP : (tb \in s.-shell ta).
 Qed.
 

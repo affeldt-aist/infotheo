@@ -50,18 +50,17 @@ Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
 Lemma echa_pos (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
 apply mulR_ge0.
-- apply Rle_mult_inv_pos; first by fourier.
-  apply lt_0_INR; by apply/ltP.
-- apply: Rle0_prsum => ? _; apply: Rle0_prsum => ? _; exact: DMC_nonneg.
+- apply Rle_mult_inv_pos; by [fourier | exact/lt_0_INR/ltP].
+- apply: rsumr_ge0 => ? _; apply: rsumr_ge0 => ? _; exact: DMC_nonneg.
 Qed.
 
 Lemma echa1 (HM : (0 < #| M |)%nat) W (c : code) : echa(W , c) <= 1.
 Proof.
-rewrite /CodeErrRate /Rdiv mul1R.
-apply (Rmult_le_reg_l (INR #|M|)); first by apply lt_0_INR; apply/ltP.
-rewrite mulRA mulRV ?mul1R; last by apply/nesym/Rlt_not_eq/lt_0_INR/ltP.
+rewrite /CodeErrRate div1R.
+apply (Rmult_le_reg_l (INR #|M|)); first exact/lt_0_INR/ltP.
+rewrite mulRA mulRV ?mul1R; last exact/nesym/Rlt_not_eq/lt_0_INR/ltP.
 rewrite -iter_Rplus_Rmult -big_const.
-apply: Rle_big_P_f_g => m _; exact: Pr_1.
+apply: ler_rsum => m _; exact: Pr_1.
 Qed.
 
 End code_definition.

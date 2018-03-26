@@ -237,11 +237,11 @@ apply/bigcupP => /=.
 have : inl m1 \in cover ([set inr n0] |: subgraph_succ (tanner_rel H) (inr n0)).
 move: (cover_subgraph_succ (tanner_rel H) (inr n0)) => /setP/(_ (inl m1)) ->.
   by rewrite inE Hconnect.
-case/bigcupP => /= E [HE m1_in_E].
+case/bigcupP => /= E HE m1_in_E.
 rewrite in_setU1 in HE.
 move/orP: HE => [HE | ].
   by rewrite (eqP HE) in_set1 in m1_in_E.
-case/imsetP => /= p [Hp HE].
+case/imsetP => /= p Hp HE.
 rewrite HE in_set in m1_in_E.
 rewrite in_set in Hp.
 case: p HE Hp m1_in_E => p HE /= Hp m1_in_E; last by done.
@@ -605,10 +605,10 @@ Qed.
 
 Local Open Scope R_scope.
 
-Lemma rmul_Fgraph_part_fnode g n0:
-  \rmul_(m0 < m) g m0 = \rmul_(m0 in `F n0) \rmul_(m1 in `F(m0, n0)) g m1.
+Lemma rprod_Fgraph_part_fnode g n0:
+  \rprod_(m0 < m) g m0 = \rprod_(m0 in `F n0) \rprod_(m1 in `F(m0, n0)) g m1.
 Proof.
-transitivity (\rmul_(m0 in [set: 'I_m]) g m0).
+transitivity (\rprod_(m0 in [set: 'I_m]) g m0).
   apply eq_bigl => /= ?; by rewrite in_set.
 rewrite -(cover_Fgraph_part_fnode n0).
 rewrite big_trivIset /=; last by apply trivIset_Fgraph_part_fnode.

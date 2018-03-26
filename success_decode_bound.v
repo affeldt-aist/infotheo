@@ -92,7 +92,7 @@ Qed.
 Lemma typed_success (tc : typed_code B M P) : scha(W, tc) =
   \rsum_ (V | V \in \nu^{B}(P)) exp_cdiv P V W * success_factor tc V.
 Proof.
-rewrite success_decode // /Rdiv mul1R; f_equal.
+rewrite success_decode // div1R.
 symmetry.
 transitivity (/ INR #|M| * \rsum_(m : M) \rsum_(V | V \in \nu^{B}(P))
     exp_cdiv P V W * INR #| V.-shell (tuple_of_row (enc tc m)) :&:
@@ -148,19 +148,18 @@ Hypothesis Vctyp : V \in \nu^{B}(P).
 Lemma success_factor_bound_part1 : success_factor tc V <= 1.
 Proof.
 apply (Rmult_le_reg_l (INR #|M|)); first by apply lt_0_INR; apply/ltP.
-rewrite /success_factor /Rdiv -(mulRC (/ INR #|M|)) 2!mulRA Rinv_r; last first.
+rewrite /success_factor /Rdiv -(mulRC (/ INR #|M|)) 2!mulRA mulRV ?mul1R; last first.
   apply not_0_INR => /eqP; apply/negP; by rewrite -lt0n.
-rewrite mul1R -iter_Rplus_Rmult -big_const /=.
-rewrite (_ : \rsum_(m | m \in M ) 1 = \rsum_(m : M) 1); last by apply eq_bigl.
+rewrite -iter_Rplus_Rmult -big_const /=.
+rewrite (_ : \rsum_(m | m \in M ) 1 = \rsum_(m : M) 1); last exact/eq_bigl.
 rewrite big_distrr /=.
-apply: Rle_big_P_f_g => m _.
+apply: ler_rsum => m _.
 rewrite mulNR exp2_Ropp.
 apply (Rmult_le_reg_l (exp2 (INR n * `H( V | P)))); first by apply exp2_pos.
-rewrite mulRA Rinv_r; last by apply exp2_not_0.
-rewrite mulR1 mul1R.
+rewrite mulR1 mulRA mulRV ?mul1R; last exact/exp2_not_0.
 apply (Rle_trans _ (INR #| V.-shell (tuple_of_row (enc tc m)) |) _); last first.
   apply card_shelled_tuples => //.
-    by apply typed_prop.
+    exact/typed_prop.
   case: (jtype.c V) => _ Anot0.
   case/card_gt0P : (Anot0) => a _.
   exact: (dist_domain_not_empty (V a)).
@@ -307,17 +306,15 @@ move=> Vmax.
 rewrite (typed_success W Mnot0 tc).
 apply (Rle_trans _ ( \rsum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
   exp2 (- INR n *  +| log (INR #|M|) * / INR n - `I(P ; V) |))).
-  apply: Rle_big_P_f_g => V HV.
+  apply: ler_rsum => V HV.
   rewrite -mulRA; apply Rmult_le_compat_l.
     rewrite /exp_cdiv.
-    case : ifP => _.
-    by apply Rlt_le, exp2_pos.
-    by apply Rle_refl.
+    case : ifP => _; [exact/Rlt_le/exp2_pos | exact/Rle_refl].
   rewrite /success_factor mulRA.
-  apply: success_factor_ub => //.
+  exact: success_factor_ub.
 apply (Rle_trans _ (\rsum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
                     exp2 (- INR n * +| log (INR #|M|) * / INR n - `I(P ; Vmax)|))).
-  apply: Rle_big_P_f_g => V HV.
+  apply ler_rsum => V HV.
   move: (@arg_rmax2 [finType of (P_ n (A, B))] V0 [pred V | V \in \nu^{B}(P) ]
                     (fun V => exp_cdiv P V W * success_factor_bound M V P)).
   apply => //; by exists V.
@@ -325,9 +322,8 @@ rewrite big_const iter_Rplus_Rmult /success_factor_bound.
 apply Rmult_le_compat_r.
 - apply mulR_ge0.
   + rewrite /exp_cdiv; case: ifP => _; by [apply/Rlt_le/exp2_pos | apply Rle_refl].
-  + by apply Rlt_le, exp2_pos.
-- rewrite INR_pow_expn; apply le_INR; apply/leP.
-  by apply card_nu.
+  + exact/Rlt_le/exp2_pos.
+- rewrite INR_pow_expn; exact/le_INR/leP/card_nu.
 Qed.
 
 End typed_success_bound_sect.
@@ -366,29 +362,25 @@ apply (Rle_trans _ (\rsum_(P : P_ n ( A )) scha W (P.-typed_code c))); last firs
   rewrite (_ : INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c) =
              \rsum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)); last first.
     by rewrite big_const iter_Rplus_Rmult.
-  apply: Rle_big_P_f_g => P _.
-  apply: (@arg_rmax2 _ P0 xpredT (fun P1 : P_ n (A) => scha(W, P1.-typed_code c))).
-  by exists P.
-  reflexivity.
+  apply ler_rsum => P _.
+  exact: (@arg_rmax2 _ P0 xpredT (fun P1 : P_ n (A) => scha(W, P1.-typed_code c))).
 rewrite success_decode // -(sum_messages_types c).
-rewrite /Rdiv mul1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
-apply: Rle_big_P_f_g => P _.
-apply (Rmult_le_reg_l (INR #|M|)).
-  apply lt_0_INR; by apply/ltP.
-rewrite mulRA Rinv_r; last first.
+rewrite div1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
+apply ler_rsum => P _.
+apply (Rmult_le_reg_l (INR #|M|)); first exact/lt_0_INR/ltP.
+rewrite mulRA mulRV ?mul1R; last first.
   apply not_0_INR => /eqP; apply/negP; by rewrite -lt0n.
-rewrite mul1R success_decode //.
-rewrite /Rdiv mul1R mulRA Rinv_r; last first.
+rewrite success_decode // div1R mulRA mulRV ?mul1R; last first.
   apply not_0_INR => /eqP; apply/negP; by rewrite -lt0n.
-rewrite mul1R.
 apply (Rle_trans _ (\rsum_(m | m \in enc_pre_img c P)
                      \rsum_(y | (dec (P.-typed_code c)) y == Some m)
                      (W ``(|(enc (P.-typed_code c)) m)) y)).
-  apply: Rle_big_P_f_g => m Hm.
+  apply ler_rsum => m Hm.
   apply Req_le, eq_big => tb // _.
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
-- apply: Rle_big_f_X_Y => ? //; apply: Rle0_prsum => ? _; exact/dist_nonneg.
+- apply ler_rsum_l => //= i Hi; first exact/Rle_refl.
+  apply: rsumr_ge0 => ? _; exact/dist_nonneg.
 Qed.
 
 End success_bound_sect.

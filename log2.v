@@ -40,10 +40,10 @@ Qed.
 Definition log x := ln x / ln 2.
 
 Lemma log_1 : log 1 = 0.
-Proof. by rewrite /log ln_1 /Rdiv mul0R. Qed.
+Proof. by rewrite /log ln_1 div0R. Qed.
 
 Lemma log_2 : log 2 = 1.
-Proof. rewrite /log /Rdiv -Rinv_r_sym //; exact: ln_2_neq0. Qed.
+Proof. rewrite /log /Rdiv mulRV //; exact: ln_2_neq0. Qed.
 
 Lemma log_exp1_Rle_0 : 0 <= log (exp 1).
 Proof.
@@ -137,7 +137,7 @@ Proof. by rewrite /exp2 mulRDl exp_plus. Qed.
 Lemma exp2_pow2 : forall m, exp2 (INR m) = INR (expn 2 m).
 Proof.
 elim => [|m IH]; first by rewrite /exp2 mul0R exp_0.
-rewrite S_INR exp2_plus expnS mult_INR IH /exp2 Rmult_1_l exp_ln; [by rewrite mulRC | fourier].
+rewrite S_INR exp2_plus expnS mult_INR IH /exp2 mul1R exp_ln; by [rewrite mulRC | fourier].
 Qed.
 
 Lemma exp2_pow n k : exp2 (INR k * n) = (exp2 n) ^ k.
@@ -171,13 +171,13 @@ Qed.
 Lemma exp2_log x : 0 < x -> exp2 (log x) = x.
 Proof.
 move=> Hx.
-rewrite /exp2 /log /Rdiv mulRC mulRA Rinv_r_simpl_m ?exp_ln //.
+rewrite /exp2 /log /Rdiv -mulRA mulVR ?mulR1 ?exp_ln //.
 exact: ln_2_neq0.
 Qed.
 
 Lemma log_exp2 x : log (exp2 x) = x.
 Proof.
-rewrite /log /exp2 ln_exp /Rdiv -mulRA mulRC Rinv_r_simpl_r //.
+rewrite /log /exp2 ln_exp /Rdiv -mulRA mulRV ?mulR1 //.
 exact: ln_2_neq0.
 Qed.
 
@@ -237,9 +237,9 @@ exists (n * den)%nat.
 split.
   apply H with n => //.
   by rewrite -{1}(muln1 n) leq_mul2l HP orbC.
-rewrite mult_INR -mulRA (mulRA (INR den)) Rinv_r_simpl_m; last first.
+rewrite mult_INR -mulRA (mulRCA (INR den)) mulRV // ?mulR1; last first.
   apply not_0_INR.
   move=> ?; by subst den.
-rewrite exp2_pow exp2_log; last by apply lt_0_INR; exact/ltP.
-by apply frac_part_pow, frac_part_INR.
+rewrite exp2_pow exp2_log; last exact/lt_0_INR/ltP.
+exact/frac_part_pow/frac_part_INR.
 Qed.

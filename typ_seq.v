@@ -74,12 +74,9 @@ suff Htmp : 1 >= INR #| `TS P n epsilon | * exp2 (- INR n * (`H P + epsilon)).
 rewrite -(pmf1 (P `^ n)).
 rewrite (_ : _ * _ = \rsum_(x in `TS P n epsilon) (exp2 (- INR n * (`H P + epsilon)))); last first.
   by rewrite big_const iter_Rplus.
-apply Rle_ge.
-apply: Rle_big_P_true_f_g.
-- move=> a; by apply dist_nonneg.
-- move=> i.
-  rewrite inE.
-  by case/andP => /RleP.
+apply/Rle_ge/ler_rsum_l => //=.
+- move=> i; rewrite inE; by case/andP => /RleP.
+- move=> a _; exact/dist_nonneg.
 Qed.
 
 Lemma typ_seq_definition_equiv x : x \in `TS P n epsilon ->
@@ -97,21 +94,21 @@ case/andP => H1 H2.
 split.
 - apply Rmult_le_reg_l with (INR n.+1); first by apply lt_0_INR; apply/ltP.
   rewrite mulNR mulRN.
-  rewrite /Rdiv mul1R mulRA Rinv_r_simpl_r; last by apply not_0_INR.
+  rewrite div1R mulRA mulRV ?mul1R; last exact/not_0_INR.
   rewrite -(oppRK (INR n.+1 * (`H P - epsilon))).
   apply Ropp_le_contravar, exp2_le_inv.
   rewrite exp2_log; last first.
     move/RleP in H1.
-    by eapply Rlt_le_trans; by [apply exp2_pos | apply H1].
+    by eapply Rlt_le_trans; [apply exp2_pos | apply H1].
   apply/RleP; by rewrite -mulNR.
 - apply Rmult_le_reg_l with (INR n.+1); first by apply lt_0_INR; apply/ltP.
   rewrite mulNR mulRN.
-  rewrite /Rdiv mul1R mulRA Rinv_r_simpl_r; last by apply not_0_INR.
+  rewrite div1R mulRA mulRV ?mul1R; last exact/not_0_INR.
   rewrite -(oppRK (INR n.+1 * (`H P + epsilon))).
-  apply Ropp_le_contravar, exp2_le_inv.
+  apply/Ropp_le_contravar/exp2_le_inv.
   rewrite exp2_log; last first.
     move/RleP in H1.
-    by eapply Rlt_le_trans; by [apply exp2_pos | apply H1].
+    by eapply Rlt_le_trans; [apply exp2_pos | apply H1].
   apply/RleP; by rewrite -mulNR.
 Qed.
 

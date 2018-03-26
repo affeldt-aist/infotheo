@@ -40,7 +40,7 @@ have Hpj : pj = p.
 have Hqj : qj = q.
   by rewrite /qj /= /Binary.f eq_sym (negbTE (Set2.a_neq_b card_A)).
 transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
-  rewrite /pinsker_fun /div Set2rsumE -/a -/b -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
+  rewrite /pinsker_fun /div Set2sumE -/a -/b -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
   set tmp := (Rabs (_) + _) ^ 2.
   have -> : tmp = 4 * (p - q) ^ 2.
     rewrite /tmp (_ : 1 - p - (1 - q) = q - p); last by field.
@@ -76,7 +76,7 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
     rewrite Hp2 Rminus_diag_eq // !mul0R /Rdiv log_mult; last 2 first.
       fourier.
       apply Rinv_0_lt_compat; fourier.
-    rewrite log_1 Rmult_1_l log_Rinv //; by field.
+    rewrite log_1 mul1R log_Rinv //; by field.
   rewrite log_mult //; last by apply Rinv_0_lt_compat.
   rewrite log_Rinv //.
   case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
@@ -89,7 +89,7 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
   rewrite log_Rinv; last by fourier.
   by field.
 do 2 f_equal.
-by rewrite /var_dist Set2rsumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
+by rewrite /var_dist Set2sumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
 Qed.
 
 Lemma Pinsker_2_inequality_bdist : / (2 * ln 2) * d(P , Q) ^ 2 <= D(P || Q).
@@ -159,20 +159,18 @@ suff : / (2 * ln 2) * d(P , Q) ^2 <= D(P_A || Q_A).
 have step2 : d( P , Q ) = d( P_A , Q_A ).
   rewrite /var_dist.
   transitivity (\rsum_(a | a \in A0) Rabs (P a - Q a) + \rsum_(a | a \in A1) Rabs (P a - Q a)).
-    rewrite -(@rsum_union _ _ _ (A0 :|: A1)) //; last by rewrite -setI_eq0 -dis /A_ setIC.
+    rewrite -big_union //; last by rewrite -setI_eq0 -dis /A_ setIC.
     apply eq_bigl => a; by rewrite cov in_set.
   transitivity (Rabs (P_A 0 - Q_A 0) + Rabs (P_A 1 - Q_A 1)).
-    f_equal.
+    congr (_ + _).
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       transitivity (\rsum_(a | a \in A0) (P a - Q a)).
-        apply eq_bigr => a; rewrite /A0 in_set => Ha.
-        rewrite Rabs_pos_eq //.
-        move/RleP in Ha; by fourier.
+        apply eq_bigr => a; rewrite /A0 in_set => /RleP Ha.
+        rewrite Rabs_pos_eq //; by fourier.
       rewrite big_split /= Rabs_pos_eq; last first.
-        suff : \rsum_(a | a \in A0)Q a <= \rsum_(a | a \in A0) P a.
+        suff : \rsum_(a | a \in A0) Q a <= \rsum_(a | a \in A0) P a.
           move=> ?; by fourier.
-        apply: Rle_big_P_f_g => a.
-        rewrite inE; by move/RleP.
+        apply ler_rsum => a; by rewrite inE => /RleP.
       rewrite -(big_morph _ morph_Ropp oppR0) //; by field.
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
@@ -185,10 +183,10 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
           move/RltP in Ha; by fourier.
         rewrite -(big_morph _  morph_Ropp oppR0) // big_split /= Rabs_left; last first.
           suff : \rsum_(a | a \in A1) P a < \rsum_(a | a \in A1) Q a by move=> ?; fourier.
-          apply: Rlt_big_f_g_X => // a.
+          apply ltr_rsum_support => // a.
           rewrite /A1 in_set; by move/RltP.
         by rewrite -(big_morph _ morph_Ropp oppR0).
-  rewrite Set2rsumE ?card_bool //= => HX; rewrite /bipart_pmf /=.
+  rewrite Set2sumE ?card_bool // => HX; rewrite /bipart_pmf.
   set a := Set2.a HX. set b := Set2.b HX.
   have : a <> b by apply/eqP/Set2.a_neq_b.
   wlog : a b / (a == false) && (b == true).
@@ -196,15 +194,15 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
     have : ((a, b) == (true, false)) || ((a, b) == (false, true)).
       move: a b ab; by case; case.
     case/orP; case/eqP => -> ->.
-    - by rewrite (Hwlog false true) // addRC.
+    - by rewrite (Hwlog false true) //= addRC.
     - by apply Hwlog.
   case/andP => /eqP ? /eqP ?; by subst a b.
 rewrite step2.
 apply (Pinsker_2_inequality card_bool) => /= b.
 rewrite /bipart_pmf.
-move/(prsum_eq0PW _ (dist_nonneg Q)) => H.
+move/prsumr_eq0P => H.
 transitivity (\rsum_(a | a \in A_ b) 0%R).
-  apply eq_bigr => // a Ha; apply P_dom_by_Q; by rewrite H.
+  apply eq_bigr => // a ?; apply P_dom_by_Q; rewrite H // => c ?; exact/pos_f_nonneg.
 by rewrite big_const iter_Rplus mulR0.
 Qed.
 
@@ -215,7 +213,7 @@ apply sqrt_le_1_alt.
 apply (Rmult_le_reg_l (/ 2)); first by apply Rinv_0_lt_compat; fourier.
 apply Rle_trans with (D(P || Q)); last first.
   rewrite mulRA Rinv_l; last by move=> ?; fourier.
-  rewrite mul1R; by apply Rle_refl.
+  rewrite mul1R; exact/Rle_refl.
 eapply Rle_trans; last by apply Pinsker_inequality.
 rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow; field.
 apply Rmult_le_compat_r; first by apply le_sq.

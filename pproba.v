@@ -36,15 +36,15 @@ Lemma receivableE y :
 Proof.
 apply/idP/idP => [|H].
 - case/existsP => x /andP [] H1.
-  apply: contra => /eqP/prsum_eq0P => H2.
+  apply: contra => /eqP/prsumr_eq0P => H2.
   apply/eqP.
-  apply Rmult_eq_reg_l with (P x); last by apply/eqP.
+  apply Rmult_eq_reg_l with (P x); last exact/eqP.
   rewrite mulR0 H2 // => /= x' _.
   apply mulR_ge0; by [apply dist_nonneg | apply DMC_nonneg].
 - have : \rsum_(x in setT) P x * W ``(y | x) != 0.
     apply: contra H => /eqP H; apply/eqP.
     rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
-  case/rsum_neq0/existsP => /= x /andP[_ H1].
+  case/big_neq0/existsP => /= x /andP[_ H1].
   rewrite /receivable; apply/existsP; exists x; rewrite -negb_or.
   apply: contra H1 => /orP[|] /eqP ->; by rewrite ?mul0R ?mulR0.
 Qed.
@@ -72,7 +72,7 @@ apply/idP/idP => [|/eqP].
   by rewrite -(negbK (_ == _)) UniformSupport.neq0 iC.
 - have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%R.
     move=> ? ?; by apply DMC_nonneg.
-  move/prsum_eq0P => H /H {H} H.
+  move/prsumr_eq0P => H /H {H} H.
   rewrite /receivable; apply/negP.
   case/existsP => z /andP[].
   rewrite UniformSupport.neq0 => /H ->; by rewrite eqxx.
@@ -93,16 +93,15 @@ Definition f x := P x * W ``(y | x) / den.
 
 Lemma den_nonneg : 0 <= den.
 Proof.
-apply Rle0_prsum => x _.
-apply mulR_ge0; by [apply dist_nonneg | apply DMC_nonneg].
+apply rsumr_ge0 => x _; apply mulR_ge0; [exact/dist_nonneg | exact/DMC_nonneg].
 Qed.
 
 Lemma f0 x : 0 <= f x.
 Proof.
-apply Rle_mult_inv_pos; first by apply mulR_ge0; apply dist_nonneg.
+apply Rle_mult_inv_pos; first by apply mulR_ge0; exact/dist_nonneg.
 apply/RltP.
 rewrite Rlt_neqAle eq_sym -receivableE receivable_y /=.
-apply/RleP/den_nonneg.
+exact/RleP/den_nonneg.
 Qed.
 
 Lemma f1 : \rsum_(x in 'rV_n) f x = 1.
@@ -149,13 +148,13 @@ rewrite PosteriorProbability.dE UniformSupport.E // mulRC {1}/Rdiv -mulRA [in RH
 rewrite /PosteriorProbability.den UniformSupport.restrict.
 have Htmp : INR #|C| <> 0.
   apply/not_0_INR/eqP; rewrite cards_eq0; apply/set0Pn; by exists x.
-rewrite {1}/Rdiv mul1R -Rinv_mult_distr //.
+rewrite div1R -Rinv_mult_distr //.
   rewrite /Kppu; congr Rinv; rewrite big_distrr /=; apply eq_bigr => i iC.
-  by rewrite UniformSupport.E // /Rdiv mul1R mulRA Rinv_r // ?mul1R.
+  by rewrite UniformSupport.E // div1R mulRA mulRV // mul1R.
 rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
   move=> i iC; by rewrite UniformSupport.E.
 rewrite -big_distrr /=; apply Rmult_integral_contrapositive; split.
-  rewrite /Rdiv mul1R; by apply Rinv_neq_0_compat.
+  by rewrite div1R => /invR_eq0.
 by apply/eqP; rewrite -not_receivable_uniformE Hy.
 Qed.
 
@@ -203,18 +202,18 @@ apply mulR_ge0.
 - rewrite /Kmpp.
   apply Rle_mult_inv_pos; [fourier|].
   apply Rlt_le_neq.
-    apply Rle0_prsum => /= ? _; exact: dist_nonneg.
-  by apply nesym, f'_neq0.
-- apply Rle0_prsum => /= ? _; exact: dist_nonneg.
+    apply rsumr_ge0 => /= ? _; exact: dist_nonneg.
+  exact/nesym/f'_neq0.
+- apply rsumr_ge0 => /= ? _; exact: dist_nonneg.
 Qed.
 
 Lemma f1 i : \rsum_(a in A) f i a = 1.
 Proof.
-rewrite /f /= -big_distrr /= /Kmpp /Rdiv Rmult_1_l.
+rewrite /f /= -big_distrr /= /Kmpp div1R.
 set tmp1 := \rsum_( _ | _ ) _.
 set tmp2 := \rsum_( _ | _ ) _.
 suff : tmp1 = tmp2.
-  move=> tp12; rewrite -tp12 (Rinv_l_sym tmp1) //; by apply f'_neq0.
+  move=> tp12; rewrite -tp12 mulVR //; exact: f'_neq0.
 by rewrite {}/tmp1 {}/tmp2 (partition_big (fun x : 'rV_n => x ``_ i) xpredT).
 Qed.
 

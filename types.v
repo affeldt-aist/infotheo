@@ -41,8 +41,7 @@ Local Open Scope types_scope.
 Lemma type_fun_type A n (_ : n != O) (P : P_ n ( A )) a : INR ((type.f P) a) = INR n * P a.
 Proof.
 destruct P => /=.
-rewrite d_f mulRA Rinv_r_simpl_m //.
-apply not_0_INR; by apply/eqP.
+rewrite d_f mulRCA mulRV ?mulR1 //; exact/not_0_INR/eqP.
 Qed.
 
 Lemma INR_type_fun A n (P : P_ n ( A )) a : INR ((type.f P) a) / INR n = P a.
@@ -69,7 +68,7 @@ assert (H1 : forall a, (0 <= f a)%R).
   apply Rle_mult_inv_pos; by [apply pos_INR | apply lt_0_INR; apply/ltP].
 assert (H2 : \rsum_(a in A) f a = 1%R).
   rewrite /f -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  rewrite sum_num_occ_alt Rinv_r //; apply not_0_INR; by apply/eqP.
+  rewrite sum_num_occ_alt mulRV //; exact/not_0_INR/eqP.
 have H : forall a, (N(a | ta) < n.+2)%nat.
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
 refine (@type.mkType _ n.+1 (@mkDist _ (@mkPosFun _ f H1) H2)
@@ -145,7 +144,7 @@ set pf := pos_fun_of_ffun f.
 assert (H : \rsum_(a in A) pf a = 1).
   rewrite /pf /= /Rdiv -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
   move/eqP : Hf => ->.
-  rewrite Rinv_r //; by apply not_0_INR.
+  rewrite mulRV //; exact/not_0_INR.
 exact (mkDist H).
 Defined.
 
@@ -172,8 +171,8 @@ suff : INR (\sum_(a in A) t a) == INR n.+1 * \rsum_(a | a \in A) d a.
 apply/eqP.
 transitivity (INR n.+1 * (\rsum_(a|a \in A) INR (t a) / INR n.+1)).
   rewrite -big_distrl -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  rewrite mulRA Rinv_r_simpl_m //; by apply not_0_INR.
-f_equal; by apply eq_bigr.
+  rewrite mulRCA mulRV ?mulR1 //; exact/not_0_INR.
+f_equal; exact/eq_bigr.
 Qed.
 
 Lemma type_choice_pcancel A n : pcancel (@type.f A n) (@type_choice_f A n).
@@ -418,20 +417,20 @@ Local Open Scope tuple_ext_scope.
 Local Open Scope vec_ext_scope.
 
 Lemma tuple_dist_type t : tuple_of_row t \in T_{P} ->
-  P `^ n t = \rmul_(a : A) P a ^ (type.f P a).
+  P `^ n t = \rprod_(a : A) P a ^ (type.f P a).
 Proof.
 move=> Hx.
 rewrite TupleDist.dE.
-rewrite (_ : \rmul_(i < n) P (t ``_ i) =
-  \rmul_(a : A) (\rmul_(i < n) (if a == t ``_ i then P t ``_ i else 1))); last first.
+rewrite (_ : \rprod_(i < n) P (t ``_ i) =
+  \rprod_(a : A) (\rprod_(i < n) (if a == t ``_ i then P t ``_ i else 1))); last first.
   rewrite exchange_big ; apply eq_big ; first done.
   move=> i _.
   rewrite (bigID (fun y => y == t ``_ i)) /=.
-  rewrite -/(INR n.+1) big_pred1_eq eqxx big1 ; first by rewrite Rmult_1_r.
+  rewrite -/(INR n.+1) big_pred1_eq eqxx big1 ?mulR1 //.
   by move=> i0 /negbTE ->.
 apply eq_bigr => a _.
 rewrite -big_mkcond /= -/(INR n.+1).
-transitivity (\big[Rmult/1]_(i < n | t ``_ i == a) (INR (type.f P a) / INR n)).
+transitivity (\rprod_(i < n | t ``_ i == a) (INR (type.f P a) / INR n)).
   apply eq_big => // i.
   move/eqP => ->.
   by rewrite INR_type_fun.
@@ -456,8 +455,8 @@ Lemma tuple_dist_type_entropy t : tuple_of_row t \in T_{P} ->
   P `^ n t = exp2 (- INR n * `H P).
 Proof.
 move/(@tuple_dist_type t) => ->.
-rewrite (_ : \rmul_(a : A) P a ^ (type.f P) a =
-             \rmul_(a : A) exp2 (P a * log (P a) * INR n)); last first.
+rewrite (_ : \rprod_(a : A) P a ^ (type.f P) a =
+             \rprod_(a : A) exp2 (P a * log (P a) * INR n)); last first.
   apply eq_bigr => a _.
   case/boolP : (0 == P a) => H; last first.
     have {H}H : 0 < P a.

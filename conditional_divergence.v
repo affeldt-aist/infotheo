@@ -153,9 +153,9 @@ Variable y : 'rV[B]_n.
 Local Open Scope vec_ext_scope.
 
 Lemma dmc_cdiv_cond_entropy_aux : W ``(y | x) =
-  \rmul_(a : A) \rmul_(b : B) W a b ^ N(a, b | tuple_of_row x, tuple_of_row y).
+  \rprod_(a : A) \rprod_(b : B) W a b ^ N(a, b | tuple_of_row x, tuple_of_row y).
 Proof.
-transitivity (\rmul_(a : A) \rmul_(b : B) \rmul_(i < n)
+transitivity (\rprod_(a : A) \rprod_(b : B) \rprod_(i < n)
   if (a == x ``_ i) && (b == y ``_ i) then W `(y ``_ i | x ``_ i) else 1).
   rewrite pair_big exchange_big /= DMCE.
   apply eq_bigr => i _.
@@ -247,19 +247,16 @@ case/boolP : (W a b == 0) => Wab0.
   rewrite (jtype.c_f V) /=.
   case: ifP.
   - move/eqP => HP.
-    rewrite Htmp -Htmp' HP /Rdiv !(mul0R, mulR0).
+    rewrite Htmp -Htmp' HP div0R mulR0 mul0R.
     move/eqP : HP.
     rewrite sum_nat_eq0.
     move/forallP.
     by move/(_ b)/implyP/(_ Logic.eq_refl)/eqP => ->.
   - move/negP/negP => HP.
-    rewrite Htmp Htmp' !mulRA Rinv_r_simpl_m; last by apply not_0_INR; apply/eqP.
-    rewrite Rinv_r_simpl_m // -Htmp'.
-    apply/eqP.
-    move: HP; apply contra.
-    move/eqP.
-    rewrite (_ : 0 = INR 0) //.
-    by move/INR_eq => ->.
+    rewrite Htmp -Htmp' (mulRCA (INR n)) mulRV ?mulR1; last by apply not_0_INR; apply/eqP.
+    rewrite mulRCA mulRV ?mulR1 //.
+    apply/eqP; apply: contra HP => /eqP.
+    by rewrite (_ : 0 = INR 0) // => /INR_eq ->.
 Qed.
 
 End dmc_cdiv_cond_entropy_sect.
@@ -334,14 +331,12 @@ case : ifP => Hcase.
   move/cond_type_equiv => /(_ _ Hta a) ->.
   move: Hta; rewrite in_set => /forallP/(_ a)/eqP => Htmp.
   case: ifP => Hcase.
-    suff : False by done.
+    exfalso.
     move/eqP : Pa; apply.
     rewrite Htmp.
     move/eqP : Hcase => ->.
-    by rewrite /Rdiv mul0R.
-  apply contra.
-  move/eqP => ->.
-  by rewrite /Rdiv mul0R.
+    by rewrite div0R.
+  apply: contra => /eqP ->; by rewrite div0R.
 Qed.
 
 End dmc_cdiv_cond_entropy_spec_sect.

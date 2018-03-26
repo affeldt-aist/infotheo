@@ -79,9 +79,8 @@ rewrite -ln_1.
 apply ln_increasing_le.
 fourier.
 apply Rmult_le_reg_l with t => //.
-rewrite mulRA Rinv_r; last first.
-  move=> ?; fourier.
-rewrite mul1R mulR1; fourier.
+rewrite mulRA mulRV ?mulR1 ?mul1R; last by move=> ?; fourier.
+fourier.
 Qed.
 
 Lemma decreasing_on_half_to_1 : forall x y : R,
@@ -112,7 +111,7 @@ apply Rle_trans with (H2ln (1/2)); last first.
   apply Req_le.
   rewrite /H2ln (_ : 1 - 1/2 = 1/2); last by field.
   rewrite -mulRBl (_ : - _ - _ = - 1); last by field.
-  rewrite /Rdiv mul1R ln_Rinv; [by field | by fourier].
+  rewrite div1R ln_Rinv; [by field | by fourier].
 rewrite -/(H2ln q).
 case: (Rlt_le_dec q (1/2)) => H1.
 - apply increasing_on_0_to_half => //.
@@ -152,7 +151,7 @@ Proof.
 move=> p [Hp0 Hp1].
 rewrite /H2.
 apply Rmult_le_reg_l with (ln 2); first by apply ln_2_pos.
-rewrite mulR1 mulRDr /log /Rdiv -!mulNR.
+rewrite mulR1 mulRDr /log -!mulNR.
 rewrite !(mulRC (ln 2)) -!mulRA -(Rinv_l_sym (ln 2)); last exact ln_2_neq0.
 rewrite !mulR1.
 apply Rle_trans with ( - p * ln p - (1 - p) * ln (1 - p) ).

@@ -153,7 +153,7 @@ Lemma summary_powersetE (s : {set 'I_n}) (d : 'rV['F_2]_n) (e : 'rV['F_2]_n -> R
   \rsum_(t # s , d) e t = summary_powerset s d e.
 Proof.
 rewrite /summary_powerset.
-transitivity (\big[Rplus/R0]_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
+transitivity (\rsum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
   e (\row_(k0 < n) if k0 \in s then (fgraph f) \_ (cast_ord (esym (@card_ord n)) k0)
     else d ``_ k0)).
   rewrite (reindex_onto (fun p => [ffun x => p \_ (cast_ord (esym (@card_ord n)) x)])
@@ -223,7 +223,7 @@ transitivity (\rsum_(f in {set 'I_n} | freeon s d (\row_i F2_of_bool (i \in f)))
   apply/setP => /= k0.
   rewrite inE.
   by rewrite SetDef.pred_of_setE.
-transitivity (\big[Rplus/R0]_(f in {set 'I_n} | f \subset s) e (\row_(k0 < n) if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0)); last first.
+transitivity (\rsum_(f in {set 'I_n} | f \subset s) e (\row_(k0 < n) if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0)); last first.
   apply eq_bigl => /= s0.
   by rewrite powersetE.
 rewrite (reindex_onto (fun f => f :|: [set j | (j \notin s) && bool_of_F2 (d ``_ j)])

@@ -203,8 +203,8 @@ case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
   subst p.
   rewrite /Rdiv Rinv_1 mulR1 log_1 mulR0.
   rewrite !Rminus_diag_eq // mul0R; field.
-rewrite /Rdiv Rinv_r; last by move=> ?; fourier.
-rewrite log_1 Rinv_r; last by move=> ?; fourier.
+rewrite divRR; last by move=> ?; fourier.
+rewrite log_1 divRR; last by move=> ?; fourier.
 rewrite log_1; by field.
 Qed.
 
@@ -334,7 +334,7 @@ case/Rle_lt_or_eq_dec : Hp0 => Hp0; last first.
   eapply Rle_trans; first by apply (pinsker_function_spec_pos Hc (conj Hq0 Hq1)).
   rewrite /pinsker_function_spec.
   apply Req_le.
-  rewrite mul1R /Rdiv mul1R log_Rinv; by [field | fourier].
+  rewrite mul1R div1R log_Rinv; by [field | fourier].
 case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   subst p.
   rewrite /pinsker_fun /div_fct /comp.
@@ -351,7 +351,7 @@ case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
     by apply: pinsker_function_spec_pos Hc.
   rewrite /pinsker_function_spec.
   apply Req_le.
-  rewrite mul1R /Rdiv mul1R log_Rinv; last by rewrite /id.
+  rewrite mul1R div1R log_Rinv; last by rewrite /id.
   rewrite /id (_ : 1 - (1 - q) = q) //; by field.
 case/Rle_lt_or_eq_dec : Hq0 => Hq0; last first.
   subst q.

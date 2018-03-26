@@ -12,7 +12,7 @@ Import Prenex Implicits.
 Import GRing.Theory.
 Local Open Scope ring_scope.
 
-(** * Additional lemmas about algebraic datatypes *)
+(** Additional lemmas about algebraic datatypes *)
 
 Lemma sum_char2 (F : fieldType) (_ : 2 \in [char F]) k (f : 'I_k -> F) :
   (\sum_(i < k) (f i)) ^+ 2 = \sum_(i < k) (f i) ^+ 2.
@@ -267,25 +267,6 @@ rewrite /tnth nth_cat size_tuple (_ : (n0 < n1 = false)%nat); last first.
 Qed.
 
 Local Close Scope tuple_ext_scope.
-
-Section rsum_row_of_tuple_sect.
-
-Variables (A : finType) (R : Type) (idx : R).
-Variable op : Monoid.com_law idx.
-Variable n : nat.
-Variable C : {set 'rV[A]_n}.
-
-Lemma rsum_row_of_tuple cst :
-  \big[op/idx]_(i | row_of_tuple i \in C) cst = \big[op/idx]_(i | i \in C) cst.
-Proof.
-rewrite (reindex_onto (fun p => row_of_tuple p) (fun y => tuple_of_row y)) /=.
-apply eq_bigl => i.
-by rewrite row_of_tupleK eqxx andbC.
-move=> v v_C.
-by rewrite tuple_of_rowK.
-Qed.
-
-End rsum_row_of_tuple_sect.
 
 Lemma row_to_seq_0 n : tuple_of_row 0 = [tuple of nseq n ( 0 : 'F_2)].
 Proof.

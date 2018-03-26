@@ -57,15 +57,18 @@ Hypothesis P_dom_by_Q : P << Q.
 
 Lemma leq0div : 0 <= D(P || Q).
 Proof.
-apply Rge_le.
-rewrite /div [X in X >= 0](_ : _ = - \rsum_(a | a \in A) P a * (log (Q a) - log (P a))); last first.
+apply Rge_le; rewrite /div.
+rewrite [X in X >= _](_ : _ = - \rsum_(a | a \in A) P a * (log (Q a) - log (P a))); last first.
   rewrite (big_morph _ morph_Ropp oppR0); apply eq_bigr => a _; by field.
-rewrite -{2}oppR0; apply Ropp_le_ge_contravar.
+rewrite -[X in _ >= X]oppR0; apply Ropp_le_ge_contravar.
 apply (Rle_trans _ ((\rsum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
-  apply: Rle_big_P_f_g => a _; apply div_diff_ub; by [apply dist_nonneg | apply Rle0 | apply P_dom_by_Q].
-rewrite -{2}(mul0R (log (exp 1))); apply Rmult_le_compat_r; first by apply log_exp1_Rle_0.
-rewrite big_split /= -(big_morph _ morph_Ropp oppR0) !pmf1 Rplus_opp_r; by apply Rle_refl.
+  apply ler_rsum => a _; apply div_diff_ub; by
+    [apply dist_nonneg | apply Rle0 | apply P_dom_by_Q].
+rewrite -{1}(mul0R (log (exp 1))).
+apply Rmult_le_compat_r; first exact/log_exp1_Rle_0.
+rewrite big_split /= -(big_morph _ morph_Ropp oppR0).
+rewrite !pmf1 Rplus_opp_r; exact/Rle_refl.
 Qed.
 
 (* TODO: move? *)
@@ -79,13 +82,9 @@ case/boolP : (y == 0) => [y0 | y_not_0].
   have y_pos : 0 < y by apply Rlt_le_neq => // /esym.
   case/boolP : (x == 0) => [/eqP x0 | /eqP x_not_0].
   - move/esym : Hxy2; rewrite x0 mul0R subR0 => /Rmult_integral => Hxy2.
-    have y0 : y = 0.
-      apply (@or_ind (y=0) (log (exp 1) = 0) (y=0)).
-      - done.
-      - move=> abs ; contradict abs.
-        rewrite /log ln_exp /Rdiv mul1R; apply Rinv_neq_0_compat, ln_2_neq0.
-      - exact Hxy2.
-    by rewrite y0.
+    case : Hxy2 => //.
+    rewrite /log ln_exp div1R.
+    by move: (ln_2_neq0) => /Rinv_neq_0_compat.
   - have x_pos : 0 < x by apply Rlt_le_neq => // /esym.
     symmetry.
     apply (Rmult_eq_reg_l (/ x)); last by apply not_eq_sym, Rlt_not_eq, Rinv_0_lt_compat.
@@ -118,7 +117,7 @@ split => [HPQ | ->].
       by apply P_dom_by_Q.
   - transitivity 0; last first.
       symmetry.
-      rewrite -{2}oppR0 -{2}HPQ (big_morph _ morph_Ropp oppR0); apply eq_bigr => a _; by field.
+      rewrite -{1}oppR0 -{1}HPQ (big_morph _ morph_Ropp oppR0); apply eq_bigr => a _; by field.
   - rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
     by rewrite -(big_morph _ morph_Ropp oppR0) !pmf1 Rplus_opp_r mul0R.
 - by rewrite /div; apply big1=> a _; rewrite subRR mulR0.

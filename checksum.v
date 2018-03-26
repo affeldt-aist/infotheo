@@ -169,7 +169,7 @@ Qed.
 Local Open Scope R_scope.
 
 Lemma checksubsum_in_kernel (x : 'rV['F_2]_n) :
-  \rmul_(i < m) INR (\delta ('V i) x) = INR (x \in kernel H).
+  \rprod_(i < m) INR (\delta ('V i) x) = INR (x \in kernel H).
 Proof.
 rewrite kernel_checksubsum.
 transitivity (INR (\prod_m1 (nat_of_bool (\delta ('V m1) x)))).

@@ -59,12 +59,12 @@ rewrite {1}/entropy .
 set a := \rsum_(_ in _) _. set b := \rsum_(_ <- _) _.
 apply trans_eq with (- (a + (-1) * b)); first by field.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
-rewrite !Set2rsumE !JointDist.dE !BSC.cE /= !Binary.fxx.
+rewrite !Set2sumE /= !JointDist.dE !BSC.cE /= !Binary.fxx.
 rewrite /Binary.f eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2.
 set a := Set2.a _. set b := Set2.b _.
 case: (Req_EM_T (P a) 0) => H1.
   rewrite H1 !(mul0R, mulR0, addR0, add0R).
-  move: (pmf1 P); rewrite Set2rsumE -/a -/b.
+  move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H1 add0R => ->.
   rewrite log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite log_mult; last 2 first.
@@ -76,7 +76,7 @@ rewrite log_mult; last 2 first.
   apply Rlt_le_neq; by [apply dist_nonneg | auto].
 case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 !(mul0R, mulR0, addR0, add0R).
-  move: (pmf1 P); rewrite Set2rsumE -/a -/b.
+  move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H2 addR0 => ->.
   rewrite log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite log_mult; last 2 first.
@@ -87,7 +87,7 @@ rewrite log_mult; last 2 first.
   apply Rlt_le_neq; by [apply dist_nonneg | auto].
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   by field.
-move: (pmf1 P); rewrite Set2rsumE -/a -/b => ->; by field.
+move: (pmf1 P); rewrite Set2sumE /= -/a -/b => ->; by field.
 Qed.
 
 Lemma IPW : `I(P ; BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
@@ -100,11 +100,11 @@ Qed.
 
 Lemma H_out_max : `H(P `o BSC.c card_A p_01) <= 1.
 Proof.
-rewrite {1}/entropy /= Set2rsumE !OutDist.dE 2!Set2rsumE.
+rewrite {1}/entropy /= Set2sumE /= !OutDist.dE 2!Set2sumE /=.
 set a := Set2.a _. set b := Set2.b _.
 rewrite !BSC.cE !Binary.fxx /Binary.f /= !(eq_sym _ a).
 rewrite (negbTE (Set2.a_neq_b card_A)).
-move: (pmf1 P); rewrite Set2rsumE -/a -/b => P1.
+move: (pmf1 P); rewrite Set2sumE /= -/a -/b => P1.
 have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
   rewrite -{2}P1; by field.
 have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
@@ -150,13 +150,13 @@ Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; split; fourier. Qed.
 Lemma H_out_binary_uniform :
   `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
 Proof.
-rewrite {1}/entropy !Set2rsumE !OutDist.dE !Set2rsumE.
+rewrite {1}/entropy !Set2sumE /= !OutDist.dE !Set2sumE /=.
 rewrite !BSC.cE !Binary.fxx /Binary.f (eq_sym _ (Set2.a _)).
 rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.
 rewrite mul1R (_ : p + (1 - p) = 1); last by field.
 rewrite mul1R -!mulRDl /= /Uniform.f card_A /=.
-rewrite (_ : INR 1 = 1) // (_ : INR 2 = 2) // /Rdiv mul1R log_Rinv; last by fourier.
+rewrite (_ : INR 1 = 1) // (_ : INR 2 = 2) // div1R log_Rinv; last by fourier.
 rewrite log_2 /=; field.
 Qed.
 
@@ -209,8 +209,8 @@ Lemma DMC_BSC_prop : forall m y,
 Proof.
 move=> m y d.
 rewrite DMCE.
-transitivity ((\rmul_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
-              (\rmul_(i < n | (f m) ``_ i != y ``_ i) p))%R.
+transitivity ((\rprod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
+              (\rprod_(i < n | (f m) ``_ i != y ``_ i) p))%R.
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=.
   congr (_ * _).
   by apply eq_bigr => // i /eqP ->; rewrite BSC.cE Binary.fxx.

@@ -193,8 +193,7 @@ rewrite /lhs {lhs}.
 apply eq_bigl => // i.
 rewrite inE /=.
 apply/negPn/negPn.
-- suff H : def \in S.
-    move/eqP/phi_f; tauto.
+- suff H : def \in S by move/eqP/phi_f; tauto.
   exact: (TS_0_is_typ_seq halflambda0 halflambda1 k_k0).
 - suff S_2n : (#| S | < expn 2 n)%nat.
     by move/(f_phi def S_2n)/eqP.
@@ -203,10 +202,9 @@ apply/negPn/negPn.
     rewrite -exp2_pow2.
     suff : INR n = (INR k * r)%R by move=> ->.
     rewrite /n /k /r (mult_INR _ den.+1) /Rdiv -mulRA.
-    rewrite (mulRA (INR den.+1)) Rinv_r_simpl_m; first by rewrite mult_INR.
-    by apply not_0_INR.
-  suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * r).
-    by fourier.
+    rewrite (mulRCA (INR den.+1)) mulRV ?mulR1 ?mult_INR //.
+    exact/not_0_INR.
+  suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * r) by fourier.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * (`H P + lambda)).
     eapply Rle_trans; first by apply card_S_bound.
     apply exp2_le_increasing, Rmult_le_compat_l; [by apply pos_INR | exact Hlambdar].
@@ -223,9 +221,8 @@ apply/negPn/negPn.
     rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
       apply nesym, Rlt_not_eq; exact lambda0.
       move=> ?; fourier.
-    rewrite -(Rinv_r_sym); first by rewrite mulR1.
-    apply nesym, Rlt_not_eq; exact halflambda0.
-  eapply Rle_trans; first by apply Rplus_le_compat_l, TS_sup.
+      rewrite mulRV ?mulR1 //; exact/nesym/Rlt_not_eq/halflambda0.
+  eapply Rle_trans; first exact/Rplus_le_compat_l/TS_sup.
   apply Rle_trans with (exp2 (INR k* (`H P + lambda / 2)) +
                         exp2 (INR k * (`H P + lambda / 2)))%R.
   + apply Rplus_le_compat_r.

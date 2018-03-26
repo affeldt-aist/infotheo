@@ -23,7 +23,7 @@ Proof.
 rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))); last first.
   apply eq_bigl => i /=; by rewrite inE.
-apply Rle0_prsum => i _.
+apply rsumr_ge0 => i _.
 case: (Req_EM_T (P i) 0).
   (* NB: this step in a standard textbook would be handled as a
      consequence of lim x->0 x log x = 0 *)
@@ -31,10 +31,10 @@ case: (Req_EM_T (P i) 0).
   rewrite mul0R oppR0; exact: Rle_refl.
 move=> Hi.
 rewrite mulRC -mulNR.
-apply mulR_ge0; last by apply dist_nonneg.
+apply mulR_ge0; last exact: dist_nonneg.
 apply oppR_ge0.
 rewrite -log_1.
-apply log_increasing_le; last by apply dist_max.
+apply log_increasing_le; last exact: dist_max.
 apply Rlt_le_neq; by [apply dist_nonneg | auto].
 Qed.
 
@@ -44,7 +44,7 @@ Lemma entropy_pos_P_pos : 0 <= `H.
 Proof.
 rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))).
-  apply Rle0_prsum => i _.
+  apply rsumr_ge0 => i _.
   rewrite mulRC -mulNR.
   apply mulR_ge0; last by apply dist_nonneg.
   apply oppR_ge0.
@@ -81,9 +81,9 @@ Lemma entropy_uniform {A : finType} n (HA : #|A| = n.+1) :
   `H (Uniform.d HA) = log (INR #|A|).
 Proof.
 rewrite /entropy /Uniform.d /Uniform.f /=.
-rewrite big_const iter_Rplus /Rdiv mul1R mulRA Rinv_r; last first.
+rewrite big_const iter_Rplus div1R mulRA mulRV ?mul1R; last first.
   rewrite HA; by apply not_0_INR.
-rewrite mul1R log_Rinv ?oppRK //; by rewrite HA; apply/lt_0_INR/ltP.
+rewrite log_Rinv ?oppRK //; by rewrite HA; apply/lt_0_INR/ltP.
 Qed.
 
 Local Open Scope reals_ext_scope.
@@ -100,9 +100,7 @@ eapply Rle_trans; first by apply H.
 apply Req_le.
 transitivity (\rsum_(a|a \in A) P a * log (P a) + \rsum_(a|a \in A) P a * - log ((Uniform.d HA) a)).
   rewrite -big_split /=.
-  apply eq_bigr => a _.
-  by rewrite mulRDr.
-rewrite /= /Uniform.f /= /Rdiv mul1R.
-rewrite -[in X in _ + X = _]big_distrl /= pmf1 mul1R.
+  apply eq_bigr => a _; by rewrite mulRDr.
+rewrite /= /Uniform.f /= div1R -[in X in _ + X = _]big_distrl /= pmf1 mul1R.
 rewrite /entropy oppRK log_Rinv ?oppRK // HA; by apply/lt_0_INR/ltP.
 Qed.

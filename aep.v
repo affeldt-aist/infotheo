@@ -44,7 +44,7 @@ rewrite mxE /= -/(_ ^ 2).
 transitivity
   (\rsum_(a in A) ((- log (P a))^2 * P a - 2 * `H P * - log (P a) * P a + `H P ^ 2 * P a))%R.
   apply eq_bigr => a _; by field.
-rewrite big_split /= big_split /= -big_distrr /= (pmf1 P) Rmult_1_r.
+rewrite big_split /= big_split /= -big_distrr /= (pmf1 P) mulR1.
 set s := (\rsum_(a in A) - _)%R.
 have {s}-> : s = (- (2 * `H P ^ 2))%R.
   rewrite /s -{1}(big_morph _ morph_Ropp oppR0).
@@ -157,10 +157,10 @@ apply Rle_trans with (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R; last first.
   rewrite /aep_bound in Hbound.
   apply (Rmult_le_compat_r (epsilon / INR n.+1)) in Hbound; last first.
     apply Rle_mult_inv_pos; [exact/ltRW/Hepsilon | exact/lt_0_INR/ltP].
-  rewrite {3}/Rdiv mulRA Rinv_r_simpl_m in Hbound; last by apply not_0_INR.
+  rewrite [in X in _ <= X]mulRCA mulRV ?mulR1 in Hbound; last by apply not_0_INR.
   eapply Rle_trans; last by apply Hbound.
   apply Req_le; field.
-  split; first by apply not_0_INR.
+  split; first exact: not_0_INR.
   apply nesym, Rlt_not_eq; exact Hepsilon.
 move: (sum_mlog_prod_isum_map_mlog P n) => Hisum.
 move: (wlln (@E_map_mlog _ P n) (@V_map_mlog _ P n) Hisum Hepsilon) => law_large.
@@ -175,7 +175,7 @@ rewrite /p1 /p2 {p1 p2}.
 congr (_ * _)%R.
 rewrite /map_mlog /=.
 rewrite TupleDist.dE.
-apply log_rmul_rsum_mlog, (Rlt_0_rmul_inv (dist_nonneg P)).
+apply log_rmul_rsum_mlog, (rprodr_gt0_inv (dist_nonneg P)).
 move: H1; by rewrite TupleDist.dE => /RltP.
 Qed.
 

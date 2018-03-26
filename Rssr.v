@@ -232,6 +232,12 @@ Proof. by move=> x0; rewrite /Rdiv Rinv_r. Qed.
 Lemma divR1 (x : R) : x / 1 = x.
 Proof. by rewrite /Rdiv invR1 mulR1. Qed.
 
+Lemma div1R (x : R) : 1 / x = / x.
+Proof. by rewrite /Rdiv mul1R. Qed.
+
+Lemma div0R (x : R) : 0 / x = 0.
+Proof. by rewrite /Rdiv mul0R. Qed.
+
 Definition mulRV (x : R) : x <> 0 -> x * / x = 1 := divRR x.
 
 Lemma mulVR (x : R) : x <> 0 -> / x * x = 1.

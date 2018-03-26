@@ -27,7 +27,7 @@ Proof.
 rewrite /derivable_pt /derivable_pt_abs /derivable_pt_lim.
 exists 0 => e He.
 exists (mkposreal _ He) => h Hh h0.
-by rewrite subRR /Rdiv mul0R subRR Rabs_R0.
+by rewrite subRR div0R subRR Rabs_R0.
 Defined.
 
 Lemma derive_pt_cst : forall x c, derive_pt (fun _ => c) x (derivable_pt_cst c x) = 0.
@@ -38,7 +38,7 @@ Proof.
 exists (-1) => eps Heps.
 exists (mkposreal _ Heps) => h Hh /= Hh'.
 rewrite (_ : (- (x + h) - - x) = - h); last by field.
-rewrite /Rdiv mulNR Rinv_r // (_ : -1 - -1 = 0); last by field.
+rewrite /Rdiv mulNR mulRV // (_ : -1 - -1 = 0); last by field.
 by rewrite Rabs_R0.
 Defined.
 
@@ -47,7 +47,7 @@ Proof.
 exists (-1) => eps Heps.
 exists (mkposreal _ Heps) => h Hh /= Hh'.
 rewrite (_ : (p - (x + h) - (p - x)) = - h); last by field.
-rewrite /Rdiv mulNR Rinv_r // (_ : -1 - -1 = 0); last by field.
+rewrite /Rdiv mulNR mulRV // (_ : -1 - -1 = 0); last by field.
 by rewrite Rabs_R0.
 Defined.
 

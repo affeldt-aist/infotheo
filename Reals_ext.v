@@ -151,14 +151,14 @@ apply Rmult_eq_reg_l in abs => //.
 apply Hb'.
 apply Rmult_eq_reg_r with (/ b); last first.
   by apply Rinv_neq_0_compat.
-by rewrite Rinv_r // mul1R.
+by rewrite mulRV // mul1R.
 Qed.
 
 Lemma Rdiv_le a : 0 <= a -> forall r, 1 <= r -> a / r <= a.
 Proof.
 move=> Ha r Hr.
 apply Rmult_le_reg_l with r; first by fourier.
-rewrite /Rdiv mulRA Rinv_r_simpl_m; last by move=> *; fourier.
+rewrite /Rdiv mulRCA mulRV // ?mulR1; last by move=> *; fourier.
 rewrite -{1}(mul1R a).
 apply Rmult_le_compat_r => //; fourier.
 Qed.
@@ -427,14 +427,12 @@ move H1 : (_ <b= _ ) => [|] /=.
 - move/RleP in H1.
   have H2 : a <= b / k.
     apply Rmult_le_reg_l with k => //.
-    rewrite /Rdiv mulRA -(mulRC b) Rinv_r_simpl_l //.
-    by apply nesym, Rlt_not_eq.
+    rewrite /Rdiv mulRCA mulRV ?mulR1 //; exact/nesym/Rlt_not_eq.
   by symmetry; apply/RleP.
 - move H2 : (_ <b= _ ) => [|] //=.
   move/RleP in H2.
   apply (Rmult_le_compat_l k) in H2; last by fourier.
-    rewrite /Rdiv mulRA -(mulRC b) Rinv_r_simpl_l // in H2;
-      last by apply nesym, Rlt_not_eq.
+    rewrite /Rdiv mulRCA mulRV ?mulR1 // in H2; last exact/nesym/Rlt_not_eq.
   move/RleP in H2.
   by rewrite H2 in H1.
 Qed.
@@ -446,14 +444,12 @@ move H1 : (_ <b= _ ) => [|] /=.
 - move/RleP in H1.
   have H2 : b / k <= c.
     apply Rmult_le_reg_l with k => //.
-    rewrite /Rdiv mulRA -(mulRC b) Rinv_r_simpl_l //.
-    by apply nesym, Rlt_not_eq.
-  symmetry; by apply/RleP.
+    rewrite /Rdiv mulRCA mulRV ?mulR1 //; exact/nesym/Rlt_not_eq.
+  exact/esym/RleP.
 - move H2 : (_ <b= _ ) => [|] //=.
   move/RleP in H2.
   apply (Rmult_le_compat_l k) in H2; last by fourier.
-    rewrite /Rdiv mulRA -(mulRC b) Rinv_r_simpl_l // in H2;
-      last by apply nesym, Rlt_not_eq.
+    rewrite /Rdiv mulRCA mulRV ?mulR1 // in H2; last exact/nesym/Rlt_not_eq.
   move/RleP in H2.
   by rewrite H2 in H1.
 Qed.
@@ -588,8 +584,8 @@ rewrite factS mult_INR Rinv_mult_distr ; last 2 first.
 - apply not_0_INR => /eqP ; apply/negP ; by rewrite -lt0n.
 - apply not_eq_sym, Rlt_not_eq, lt_0_INR.
   apply/ltP ; by apply fact_gt0.
-rewrite mulRC mulRA Rinv_r ; first by rewrite mul1R.
-apply not_0_INR => /eqP ; apply/negP ; by rewrite -lt0n.
+rewrite mulRC mulRA mulRV; first by rewrite mul1R.
+apply not_0_INR => /eqP; apply/negP; by rewrite -lt0n.
 Qed.
 
 Let exp_dev_gt0 : forall n r, 0 < r -> 0 < exp_dev n r.

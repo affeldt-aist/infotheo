@@ -114,9 +114,8 @@ apply exp2_le_increasing.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply Rmult_le_reg_r with (1 / r) => //.
 apply Rlt_mult_inv_pos; [fourier | tauto].
-rewrite -mulRA {2}/Rdiv mul1R Rinv_r; last first.
-  case: Hr => ? ? ?; fourier.
-rewrite mulR1 /Rdiv mul1R; exact: proj2 (Rmax_Rle_in Hk).
+rewrite -mulRA div1R mulRV; last by case: Hr => ? ? ?; fourier.
+rewrite mulR1; exact: proj2 (Rmax_Rle_in Hk).
 Qed.
 
 Local Open Scope proba_scope.
@@ -152,10 +151,10 @@ Lemma step3 : 1 - (esrc(P , sc)) <=
   \rsum_(x in 'rV[A]_k.+1 | x \in ~: `TS P k.+1 delta) P `^ k.+1 x +
   \rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) P `^ k.+1 x.
 Proof.
-rewrite step2.
-apply Rplus_le_compat_r, Rle_big_P_Q_f_X => [a | i].
-  by apply dist_nonneg.
-rewrite in_setI; by case/andP.
+rewrite step2; apply/Rplus_le_compat_r/ler_rsum_l => /= i Hi.
+exact/Rle_refl.
+exact/dist_nonneg.
+by move: Hi; rewrite in_setI => /andP[].
 Qed.
 
 Lemma step4 : 1 - (esrc(P , sc)) <= delta +
@@ -171,27 +170,23 @@ apply Rplus_le_compat.
 - apply Rle_trans with
   (\rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
     exp2 (-INR k.+1 * (`H P - delta))).
-    apply Rle_big_P_f_g => i.
-    rewrite in_setI.
-    case/andP => _ /andP [] i_B i_TS.
+    apply ler_rsum => /= i.
+    rewrite in_setI => /andP[i_B i_TS].
     move: (typ_seq_definition_equiv2 i_TS) => [H1 _].
     apply log_le_inv.
-    + rewrite /`TS inE /typ_seq in i_TS.
-      case/andP : i_TS.
-      move/RleP => i_TS _.
-      eapply Rlt_le_trans; by [apply exp2_pos | apply i_TS].
+    + move: i_TS.
+      rewrite /`TS inE /typ_seq => /andP[/RleP i_TS _].
+      apply: Rlt_le_trans; by [apply exp2_pos | apply i_TS].
     + by apply exp2_pos.
     + rewrite log_exp2.
-      apply Rmult_le_reg_l with (1 / INR k.+1) => //.
-      * rewrite /Rdiv.
-        apply Rlt_mult_inv_pos => //; first by fourier.
-        by apply/lt_0_INR/ltP.
+      apply Rmult_le_reg_l with (1 / INR k.+1).
+      * rewrite div1R; exact/invR_gt0/lt_0_INR/ltP.
       * apply Rge_le.
-        rewrite -mulRA mul1R mulRA mulRN -Rinv_l_sym; last by apply not_0_INR.
+        rewrite -mulRA mul1R mulRA mulRN mulVR; last by apply not_0_INR.
         apply Rle_ge, Ropp_le_cancel.
         rewrite -mulNR (_ : - -1 = 1); last by field.
         by rewrite mul1R -mulNR.
-  rewrite big_const iter_Rplus; by apply Rle_refl.
+  rewrite big_const iter_Rplus; exact/Rle_refl.
 Qed.
 
 Lemma step5 : 1 - (esrc(P , sc)) <= delta + exp2 (- INR k.+1 * (e0 - delta)).
@@ -227,8 +222,7 @@ have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
         fourier.
       apply Rmin_case_strong => H2 //.
       eapply Rle_lt_trans; [by apply H2 | exact H1].
-    + rewrite -mulRA /Rdiv mul1R Rinv_r; last first.
-        apply Rminus_eq_contra; exact e0_delta.
+    + rewrite -mulRA div1R mulRV; last exact/Rminus_eq_contra/e0_delta.
       apply Ropp_le_cancel, Rge_le.
       rewrite -mulNR oppRK.
       apply Rle_ge.

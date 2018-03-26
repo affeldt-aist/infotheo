@@ -83,7 +83,7 @@ Proof. move=> Hx ; apply Rminus_le ; apply ln_idgt0 ; exact Hx. Qed.
 
 Lemma log_id_cmp x : 0 < x -> log x <= (x - 1) * log (exp 1).
 Proof.
-move=> Hx ; rewrite /log ln_exp /Rdiv mul1R.
+move=> Hx ; rewrite /log ln_exp div1R.
 apply Rmult_le_compat_r;
   by [apply/ltRW/Rinv_0_lt_compat/ln_2_pos | apply ln_id_cmp].
 Qed.
@@ -100,8 +100,8 @@ Qed.
 
 Lemma log_id_eq x : 0 < x -> log x = (x - 1) * log (exp 1) -> x = 1.
 Proof.
-move=> Hx' Hx ; rewrite /log ln_exp /Rdiv mul1R in Hx.
-apply Rmult_eq_reg_r in Hx; last by apply not_eq_sym, Rlt_not_eq, Rinv_0_lt_compat, ln_2_pos.
+move=> Hx'; rewrite /log ln_exp div1R => Hx.
+apply Rmult_eq_reg_r in Hx; last exact/not_eq_sym/Rlt_not_eq/Rinv_0_lt_compat/ln_2_pos.
 apply ln_id_eq; by [apply Hx' | apply Hx].
 Qed.
 
@@ -180,8 +180,8 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
         apply Rmult_lt_compat_l => // ; by apply exp_pos.
        rewrite -mulRN.
       apply (Rmult_lt_reg_r (/ - X)); first by apply Rinv_0_lt_compat, oppR_gt0.
-      rewrite -mulRA Rinv_r; last by apply not_eq_sym, Rlt_not_eq, oppR_gt0.
-      rewrite mulR1 -(invRK 2); last by apply not_eq_sym, Rlt_not_eq, Rlt_R0_R2.
+      rewrite -mulRA mulRV ?mulR1; last exact/not_eq_sym/Rlt_not_eq/oppR_gt0.
+      rewrite -(invRK 2); last exact/not_eq_sym/Rlt_not_eq/Rlt_R0_R2.
       rewrite -mulRA ( _ : forall r, r * r = r ^ 2); last by move=> ?; rewrite /pow mulR1.
       rewrite pow_inv; last by apply not_eq_sym, Rlt_not_eq, oppR_gt0.
       rewrite -Rinv_mult_distr; last 2 first.
@@ -256,7 +256,7 @@ Proof. by rewrite -derive_pt_f_eq_g. Qed.
 Lemma derive_xlnx_aux2 x (x_pos : 0 < x) : derive_pt xlnx x (derivable_pt_xlnx x_pos) = ln x + 1.
 Proof.
 rewrite derive_xlnx_aux1 /f derive_pt_mult derive_pt_ln.
-rewrite Rinv_r; last by apply not_eq_sym, Rlt_not_eq.
+rewrite mulRV; last exact/not_eq_sym/Rlt_not_eq.
 rewrite (_ : derive_pt ssrfun.id x (derivable_id x) = 1) ; first by rewrite mul1R.
 rewrite -(derive_pt_id x).
 by apply proof_derive_irrelevance.

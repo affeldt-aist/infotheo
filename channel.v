@@ -83,15 +83,15 @@ Local Notation "'`Ch_' n" := (channel_ext n) (at level 9, n at next level, forma
 
 Local Open Scope vec_ext_scope.
 
-Definition f (x y : 'rV_n) := \rmul_(i < n) W `(y ``_ i | x ``_ i).
+Definition f (x y : 'rV_n) := \rprod_(i < n) W `(y ``_ i | x ``_ i).
 
 Lemma f0 x y : 0 <= f x y.
-Proof. apply Rle_0_big_mult => /= i; by apply dist_nonneg. Qed.
+Proof. apply rprodr_ge0 => ?; exact: dist_nonneg. Qed.
 
 Lemma f1 x : \rsum_(y in 'rV_n) f x y = 1%R.
 Proof.
 set f' := fun i b => W (x ``_ i) b.
-suff H : \rsum_(g : {ffun 'I_n -> B}) \rmul_(i < n) f' i (g i) = 1%R.
+suff H : \rsum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1%R.
   rewrite -{}[RHS]H /f'.
   rewrite (reindex_onto (fun vb : 'rV_n => [ffun x => vb ``_ x])
     (fun g  => \row_(k < n) g k)) /=; last first.
@@ -101,7 +101,7 @@ suff H : \rsum_(g : {ffun 'I_n -> B}) \rmul_(i < n) f' i (g i) = 1%R.
     apply/esym/eqP/matrixP => a b; by rewrite {a}(ord1 a) mxE ffunE.
   - move=> _; apply eq_bigr => i _; by rewrite ffunE.
 rewrite -bigA_distr_bigA /= /f'.
-transitivity (\rmul_(i < n) 1%R); first by apply eq_bigr => i _; rewrite pmf1.
+transitivity (\rprod_(i < n) 1%R); first by apply eq_bigr => i _; rewrite pmf1.
 by rewrite big_const_ord iter_Rmult pow1.
 Qed.
 
@@ -122,7 +122,7 @@ Notation "W '``(' y '|' x ')'" := (@DMC.c _ _ W _ x y) (at level 10, y, x at nex
 Local Open Scope proba_scope.
 
 Lemma DMCE {A B : finType} n (W : `Ch_1(A, B)) b a :
-  W ``(b | a) = \rmul_(i < n) W (a ord0 i) (b ord0 i).
+  W ``(b | a) = \rprod_(i < n) W (a ord0 i) (b ord0 i).
 Proof. rewrite /DMC.c; by unlock. Qed.
 
 Lemma DMC_nonneg {A B : finType} n (W : `Ch_1(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
@@ -141,12 +141,12 @@ Variable W  : `Ch_1(A, B).
 Definition f (b : B) := \rsum_(a in A) W a b * P a.
 
 Lemma f0 (b : B) : 0 <= f b.
-Proof. apply: Rle0_prsum => a _; apply: mulR_ge0; by apply dist_nonneg. Qed.
+Proof. apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/dist_nonneg. Qed.
 
 Lemma f1 : \rsum_(b in B) f b = 1.
 Proof.
 rewrite exchange_big /= -(pmf1 P).
-apply eq_bigr => a _; by rewrite -big_distrl /= (pmf1 (W a)) Rmult_1_l.
+apply eq_bigr => a _; by rewrite -big_distrl /= (pmf1 (W a)) mul1R.
 Qed.
 
 Definition d : dist B := locked (makeDist f0 f1).
@@ -172,7 +172,7 @@ Local Open Scope ring_scope.
 
 Lemma tuple_pmf_out_dist (W : `Ch_1(A, B)) (P : dist A) n (b : 'rV_ _):
    \rsum_(j0 : 'rV[A]_n)
-      ((\rmul_(i < n) W j0 ``_ i b ``_ i) * P `^ _ j0)%R =
+      ((\rprod_(i < n) W j0 ``_ i b ``_ i) * P `^ _ j0)%R =
    (`O(P , W)) `^ _ b.
 Proof.
 rewrite TupleDist.dE.
@@ -218,7 +218,7 @@ Proof. apply: mulR_ge0; by [apply ptm0 | apply dist_nonneg]. Qed.
 Lemma f1 : \rsum_(ab | ab \in {: A * B}) (W ab.1) ab.2 * P ab.1 = 1.
 Proof.
 rewrite -(pair_big xpredT xpredT (fun a b => (W a) b * P a)) /= -(pmf1 P).
-apply eq_bigr => /= t Ht; by rewrite -big_distrl /= pmf1 Rmult_1_l.
+apply eq_bigr => /= t Ht; by rewrite -big_distrl /= pmf1 mul1R.
 Qed.
 
 Definition d : dist [finType of A * B] := locked (makeDist f0 f1).
@@ -242,12 +242,8 @@ Variable n : nat.
 Lemma Pr_tuple_prod Q : Pr (`J(P `^ n, (W ``^ n))) [set x | Q x] =
   Pr (`J(P, W)) `^ n [set x | Q (tuple_prod x)].
 Proof.
-rewrite /Pr.
-rewrite rsum_rV_prod /=.
-apply eq_big.
-  move=> tab /=.
-  by rewrite !inE prod_tupleK.
-move=> tab.
+rewrite /Pr big_rV_prod /=.
+apply eq_big => tab; first by rewrite !inE prod_tupleK.
 rewrite inE => Htab.
 rewrite JointDist.dE DMCE TupleDist.dE -big_split /= TupleDist.dE.
 apply eq_bigr => i /= _.
@@ -302,7 +298,7 @@ case/boolP : (P a == 0); move=> Hcase.
     apply eq_bigr => // b _.
     by rewrite {1}JointDist.dE Hcase !(mul0R, mulR0).
   by rewrite big_const iter_Rplus mulR0 oppR0.
-- rewrite Rmult_comm -(Rmult_1_r (-(log (P a) * P a))) -(pmf1 (W a)).
+- rewrite mulRC -(mulR1 (-(log (P a) * P a))) -(pmf1 (W a)).
   rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) mulRN; f_equal.
   rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) -big_split /=.
   apply eq_bigr => // b _.

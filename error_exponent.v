@@ -51,23 +51,23 @@ rewrite -mulRA; apply Rmult_le_compat_l.
   rewrite -(mul1R (/ ln 2)); apply Rle_mult_inv_pos;
   by [apply Rle_0_1 | apply ln_2_pos].
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
-eapply Rle_trans; first by apply big_Rabs.
+apply: Rle_trans; first exact: ler_rsum_Rabs.
 rewrite -iter_Rplus_Rmult -big_const.
-apply: Rle_big_P_f_g => b _; rewrite addRC.
+apply ler_rsum => b _; rewrite addRC.
 apply Rabs_xlnx => //.
-- split; by [apply dist_nonneg | apply dist_max].
-- split; by [apply dist_nonneg | apply dist_max].
+- split; [exact/dist_nonneg | exact/dist_max].
+- split; [exact/dist_nonneg | exact/dist_max].
 - rewrite 2!OutDist.dE /Rminus (big_morph _ morph_Ropp oppR0) -big_split /=.
-  eapply Rle_trans; first by apply big_Rabs.
+  apply: Rle_trans; first exact: ler_rsum_Rabs.
   apply (Rle_trans _ (d(`J(P , V), `J(P , W)))).
   + rewrite /var_dist /=.
     apply (Rle_trans _ (\rsum_(a : A) \rsum_(b : B) Rabs ((`J(P, V)) (a, b) - (`J(P, W)) (a, b)))); last first.
       apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
-    apply: Rle_big_P_f_g => a _.
+    apply: ler_rsum => a _.
     rewrite (bigD1 b) //= Rabs_minus_sym /Rminus -[X in X <= _]addR0.
-    rewrite 2!JointDist.dE /=; apply/Rplus_le_compat_l/Rle0_prsum => ? _; exact/Rabs_pos.
+    rewrite 2!JointDist.dE /=; apply/Rplus_le_compat_l/rsumr_ge0 => ? _; exact/Rabs_pos.
   + rewrite cdiv_is_div_joint_dist => //.
-    by apply Pinsker_inequality_weak, joint_dom.
+    exact/Pinsker_inequality_weak/joint_dom.
 Qed.
 
 (** Distance from the joint entropy of one channel to another: *)
@@ -83,18 +83,18 @@ rewrite -2!mulRA; apply Rmult_le_compat_l.
   rewrite -(mul1R (/ ln 2)); apply Rle_mult_inv_pos;
   by [apply Rle_0_1 | apply ln_2_pos].
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
-eapply Rle_trans; first apply big_Rabs.
+apply: Rle_trans; first exact: ler_rsum_Rabs.
 rewrite -2!iter_Rplus_Rmult -2!big_const pair_bigA /=.
-apply: Rle_big_P_f_g; case => a b _; rewrite addRC /=.
+apply: ler_rsum; case => a b _; rewrite addRC /=.
 apply Rabs_xlnx => //.
-- split; [exact (dist_nonneg (`J(P, W)) (a, b)) | by apply (dist_max (`J(P, W)) (a, b))].
-- split; [exact (dist_nonneg (`J(P, V)) (a, b)) | by apply (dist_max (`J(P, V)) (a, b))].
+- split; [exact: dist_nonneg | exact: dist_max].
+- split; [exact: dist_nonneg | exact: dist_max].
 - apply (Rle_trans _ (d(`J(P , V) , `J(P , W)))).
     rewrite /var_dist /R_dist (bigD1 (a, b)) //= Rabs_minus_sym /Rminus.
     rewrite -[X in X <= _]addR0.
-    apply/Rplus_le_compat_l/Rle0_prsum => ? _; exact/Rabs_pos.
+    apply/Rplus_le_compat_l/rsumr_ge0 => ? _; exact/Rabs_pos.
   rewrite cdiv_is_div_joint_dist => //.
-  by apply Pinsker_inequality_weak, joint_dom.
+  exact/Pinsker_inequality_weak/joint_dom.
 Qed.
 
 (** * Distance from the mutual information of one channel to another *)
@@ -219,12 +219,11 @@ suff Htmp : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   apply Rge_le.
   rewrite addRA Rplus_opp_l add0R.
   apply Ropp_le_ge_contravar; rewrite -mulRA.
-  apply (Rmult_le_reg_l (ln 2)); first by apply ln_2_pos.
-  rewrite mulRA Rinv_r; last by apply not_eq_sym, Rlt_not_eq, ln_2_pos.
-  rewrite mul1R.
+  apply (Rmult_le_reg_l (ln 2)); first exact: ln_2_pos.
+  rewrite mulRA mulRV ?mul1R; last exact/not_eq_sym/Rlt_not_eq/ln_2_pos.
   apply (Rmult_le_reg_l (/ (INR #|B| + INR #|A| * INR #|B|))).
     apply Rinv_0_lt_compat, Rplus_lt_le_0_compat.
-    - apply lt_0_INR; by apply/ltP.
+    - exact/lt_0_INR/ltP.
     - apply mulR_ge0; by apply pos_INR.
   rewrite -/gamma mulRA Rinv_l ?mul1R //.
   apply not_eq_sym, Rlt_not_eq, Rplus_lt_le_0_compat.

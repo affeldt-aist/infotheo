@@ -174,7 +174,7 @@ apply Rplus_ge_compat_l.
 rewrite -2!(big_morph _ morph_Ropp oppR0).
 apply Ropp_le_ge_contravar.
 rewrite /Pr (exchange_big_dep xpredT) //= [in X in (_ <= X)%R](exchange_big_dep xpredT) //=.
-apply Rle_big_P_f_g => /= tb _.
+apply ler_rsum => /= tb _.
 apply (@Rle_trans _ (\rsum_(m| phi tb == Some m) (W ``(tb | enc m)))).
   apply Req_le, eq_bigl => m; by rewrite inE.
 apply (@Rle_trans _ (\rsum_(m| dec tb == Some m) (W ``(tb | enc m)))); last first.
@@ -194,10 +194,10 @@ case/boolP : (dec tb == None) => dectb.
     apply/imsetP; by exists m.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite Htb'.
   rewrite big_const iter_Rplus mulR0.
-  apply Rle0_prsum => ? _; by apply DMC_nonneg.
+  apply rsumr_ge0 => ? _; exact/DMC_nonneg.
 case/boolP : (phi tb == None) => [|phi_tb].
   move/eqP => ->.
-  rewrite big_pred0 //; apply Rle0_prsum => ? _; exact/DMC_nonneg.
+  rewrite big_pred0 //; apply rsumr_ge0 => ? _; exact/DMC_nonneg.
 have [m1 Hm1] : exists m', dec tb = Some m'.
   destruct (dec tb) => //; by exists s.
 have [m2 Hm2] : exists m', phi tb = Some m'.
@@ -246,11 +246,11 @@ apply (Rmult_le_reg_l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
   apply mulR_gt0; apply Rinv_0_lt_compat, pow_lt.
   by fourier.
   exact Hp.
-rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA Rinv_r; last first.
+rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
   apply pow_not0 => ?; fourier.
-rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA Rinv_l; last first.
+rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
   apply pow_not0 => ?; fourier.
-rewrite mul1R -pow_inv; last by move=> ?; fourier.
+rewrite -pow_inv; last by move=> ?; fourier.
 rewrite -pow_inv; last by move=> ?; fourier.
 rewrite mulRC Rmult_pow_inv; last 2 first.
   move=> ?; fourier.
@@ -349,8 +349,7 @@ Proof.
 move=> HMAP.
 rewrite /ML_decoding => /= tb Htb.
 have Hunpos : INR 1 / INR #| [set cw in C] | > 0.
-  rewrite (_ : INR 1 = R1) // /Rdiv mul1R.
-  by apply/Rinv_0_lt_compat/lt_0_INR/ltP/vspace_not_empty.
+  rewrite div1R; by apply/Rinv_0_lt_compat/lt_0_INR/ltP/vspace_not_empty.
 move: (HMAP _ Htb) => H.
 rewrite /PosteriorProbability.d in H.
 unlock in H.

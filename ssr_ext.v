@@ -8,7 +8,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-(** * Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
+(** Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
 
 Section ssrnat_ext.
 

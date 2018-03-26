@@ -561,7 +561,6 @@ Definition CSM :=
 
 Lemma PCM_A_1 : PCM = castmx (erefl, subnK (Hamming.dim_len m')) (row_mx CSM 1).
 Proof.
-Check  subnK (Hamming.dim_len m').
 apply/matrixP => i j.
 rewrite mxE castmxE /=.
 case/boolP : (j < n - m) => Hcond.
@@ -1043,11 +1042,12 @@ rewrite mul1R.
 have toleft A B C D : A + C + D = B -> A = B - C - D by move => <-; ring.
 apply toleft.
 rewrite -addRA -(hamming_01 n p) //.
-rewrite -(@rsum_union _ _ _ [set: 'rV_n]).
+rewrite -big_union //.
+  rewrite (_ : _ :|: _ = [set: 'rV_n]).
     by apply binomial_theorem.
-  rewrite -setI_eq0.
-  apply/eqP/setP => /= x; by rewrite !inE leqNgt andNb.
-apply/setP => /= x; by rewrite !inE leqNgt orNb.
+  apply/setP => /= x; by rewrite !inE leqNgt orNb.
+rewrite -setI_eq0.
+apply/eqP/setP => /= x; by rewrite !inE leqNgt andNb.
 Qed.
 
 End hamming_code_error_rate.

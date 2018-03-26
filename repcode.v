@@ -281,8 +281,7 @@ Qed.
 Lemma non_0_codeword_rep : non_0_cw not_trivial_rep_code = (const_mx 1)%R.
 Proof.
 rewrite /non_0_cw.
-case: (xchooseP not_trivial_rep_code).
-case/andP => H1 H2.
+case/andP: (xchooseP not_trivial_rep_code) => H1 H2.
 move: repcode_codewords.
 move/setP/(_ (xchoose not_trivial_rep_code)).
 rewrite inE => Htmp.
@@ -422,8 +421,7 @@ rewrite (_ : num_occ _ _ = r.+1 - num_occ 1%R (tuple_of_row v)); last first.
     by rewrite -{2}(odd_double_half r.+1) addnC addnK.
   rewrite subnBA //; last first.
     by case: (odd r.+1).
-  rewrite -addnn -addnA addnC addnK.
-  by rewrite ltn_addr.
+  by rewrite -addnn -addnA addnC addnK ltn_addr.
 Qed.
 
 End repair_function.

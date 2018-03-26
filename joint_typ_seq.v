@@ -125,13 +125,12 @@ have H1 m :
   Pr (`J(P , W) `^ m) [set x | (tuple_prod x).1 \notin `TS P m epsilon ] =
   Pr (P `^ m) [set x | x \notin `TS P m epsilon].
   rewrite {1}/Pr.
-  rewrite rsum_rV_prod /=.
-  rewrite -(@pair_big_fst _ _ _ _ [pred x | x \notin `TS P m epsilon]) //; last first.
+  rewrite big_rV_prod /=.
+  rewrite -(@pair_big_fst _ _ _ _ _ _ _ [pred x | x \notin `TS P m epsilon]) //; last first.
     move=> t /=.
     rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE.
     do 2 f_equal.
-    apply/matrixP => a b; rewrite {a}(ord1 a).
-    by rewrite !mxE.
+    apply/matrixP => a b; by rewrite {a}(ord1 a) !mxE.
   rewrite /=.
   transitivity (\rsum_(i | i \notin `TS P m epsilon)
     (P `^ m i * (\rsum_(y in 'rV[B]_m) W ``(y | i)))).
@@ -196,8 +195,8 @@ have {H1}HnP : forall n, (Zabs_nat (up (aep_bound P (epsilon / 3))) <= n)%nat ->
 have H1 m :
   Pr (`J(P , W) `^ m) [set x | (tuple_prod x).2 \notin `TS ( `O(P , W) ) m epsilon] =
   Pr (( `O(P , W) ) `^ m) (~: `TS ( `O(P , W) ) m epsilon).
-  rewrite {1}/Pr rsum_rV_prod /=.
-  rewrite -(@pair_big_snd _ _ _ _ [pred x | x \notin `TS (`O(P , W)) m epsilon]) //; last first.
+  rewrite {1}/Pr big_rV_prod /=.
+  rewrite -(@pair_big_snd _ _ _ _ _ _ _ [pred x | x \notin `TS (`O(P , W)) m epsilon]) //; last first.
     move=> tab /=.
     rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE. (* NB: clean *)
     do 3 f_equal.
@@ -372,12 +371,12 @@ apply Rle_trans with
     (exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W ) - epsilon)))) => /=.
   rewrite (reindex_onto (fun y => prod_tuple y) (fun x => tuple_prod x)) /=; last first.
     move=> ? ?; by rewrite tuple_prodK.
-  apply: Rle_big_P_Q_f_g => i Hi.
+  apply: ler_rsum_l => i Hi.
   - rewrite inE in Hi.
     apply Rmult_le_compat.
-    by apply dist_nonneg.
-    by apply dist_nonneg.
-    by apply (proj2 (typical_sequence1_JTS Hi)).
+    exact: dist_nonneg.
+    exact: dist_nonneg.
+    exact: (proj2 (typical_sequence1_JTS Hi)).
     by apply (typical_sequence1_JTS' Hi).
   - apply mulR_ge0; exact/ltRW/exp2_pos.
   - rewrite inE in Hi.
