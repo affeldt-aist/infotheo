@@ -368,6 +368,49 @@ Qed.
 
 End bigop_com_law.
 
+Section MyPartitions.
+
+Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
+
+Variables T I : finType.
+
+Lemma big_bigcup_partition (F : I -> {set T}) E (V : {set I}):
+  (forall i j, i != j -> [disjoint F i & F j]) ->
+  \big[op/idx]_(x in \bigcup_(i in V) F i) E x =
+    \big[op/idx]_(i in V) \big[op/idx]_(x in F i) E x.
+Proof.
+move=> disjF; pose Q := [set F i | i in V & F i != set0].
+have trivP: trivIset Q.
+  apply/trivIsetP=> _ _ /imsetP[i _ ->] /imsetP[j _ ->] neqFij.
+  by apply: disjF; apply: contraNneq neqFij => ->.
+have ->: \bigcup_(i in V) F i = cover Q.
+  apply/esym.
+  rewrite cover_imset big_mkcond /=.
+  apply/esym.
+  rewrite big_mkcond /=.
+  apply: eq_bigr => i _.
+  case: ifP.
+    rewrite inE => -> /=.
+    by case: ifP => // /eqP.
+  by rewrite inE => ->.
+rewrite big_trivIset // big_imset => [|i j _ /setIdP[_ notFj0] eqFij].
+  rewrite big_mkcond [in X in _ = X]big_mkcond.
+  apply: eq_bigr => i _.
+  rewrite inE.
+  case: ifP.
+    by case/andP=> ->.
+  move/negbT.
+  rewrite negb_and.
+  case/orP.
+    by move/negbTE => ->.
+  rewrite negbK => /eqP Fi.
+  case: ifP => //.
+  by rewrite Fi big_set0.
+by apply: contraNeq (disjF _ _) _; rewrite -setI_eq0 eqFij setIid.
+Qed.
+
+End MyPartitions.
+
 Section big_tuple_ffun.
 
 Import Monoid.Theory.

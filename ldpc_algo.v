@@ -7,13 +7,6 @@ Require Import Reals_ext Rssr Rbigop f2 subgraph_partition tanner.
 Require Import proba channel pproba linearcode ssralg_ext.
 Require Import tanner_partition summary ldpc checksum.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-Open Scope seq_scope.
-Open Scope vec_ext_scope.
-
 (** * Sum-Product Decoder *)
 
 (** OUTLINE:
@@ -23,6 +16,13 @@ Open Scope vec_ext_scope.
 - Section BuildTree.
 - Section Specification.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Open Scope seq_scope.
+Local Open Scope vec_ext_scope.
 
 Section Tree.
 Variable id : Type.

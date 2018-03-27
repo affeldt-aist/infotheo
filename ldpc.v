@@ -14,8 +14,6 @@ Require Import channel_code summary checksum summary_tanner.
 (** OUTLINE:
 - Section regular_ldpc.
 - Section post_proba_bsc_unif.
-- Section MPM_condition.
-- Section MyPartitions.
 - Section sub_vec_channel.
 - Section alpha_beta.
 - Section sum_prod_correctness.
@@ -108,116 +106,12 @@ Qed.
 
 End post_proba_bsc_unif.
 
-(* TODO: move to decoding.v? *)
-Section MPM_condition.
-
-(** In the special case of a binary code: *)
-Variables (W : `Ch_1('F_2, [finType of 'F_2])).
-Variables (n m : nat).
-Variable C : Lcode.t [finFieldType of 'F_2] [finFieldType of 'F_2] n [finType of 'rV['F_2]_(m - n)].
-Let enc := Lcode.enc C.
-Let dec := Lcode.dec C.
-
-Definition MPM_condition := let P := `U (Lcode0.not_empty C) in
-  forall y (Hy : receivable W P y),
-  forall x, Decoder.dec (Lcode.dec C) y = Some x -> let cw := Encoder.enc (Lcode.enc C) x in
-  forall n0,
-    P '_ n0 `^^ W , Hy (cw ``_ n0 | y) = \rmax_(b in 'F_2) P '_ n0 `^^ W , Hy (b | y).
-
-End MPM_condition.
-
-Section MyPartitions.
-
-Variables T I : finType.
-Implicit Types (x y z : T) (A B D X : {set T}) (P Q : {set {set T}}).
-Implicit Types (J : pred I) (F : I -> {set T}).
-
-Section MyBigOps.
-
-Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
-Let rhs_cond P K E := \big[op/idx]_(A in P) \big[op/idx]_(x in A | K x) E x.
-Let rhs P E := \big[op/idx]_(A in P) \big[op/idx]_(x in A) E x.
-
-Lemma mypartition_disjoint_bigcup (F : I -> {set T}) E (V : {set I}):
-    (forall i j, i != j -> [disjoint F i & F j]) ->
-  \big[op/idx]_(x in \bigcup_(i in V) F i) E x =
-    \big[op/idx]_(i in V) \big[op/idx]_(x in F i) E x.
-Proof.
-move=> disjF; pose Q := [set F i | i in V & F i != set0].
-have trivP: trivIset Q.
-  apply/trivIsetP=> _ _ /imsetP[i _ ->] /imsetP[j _ ->] neqFij.
-  by apply: disjF; apply: contraNneq neqFij => ->.
-have ->: \bigcup_(i in V) F i = cover Q.
-  apply/esym.
-  rewrite cover_imset big_mkcond /=.
-  apply/esym.
-  rewrite big_mkcond /=.
-  apply: eq_bigr => i _.
-  case: ifP.
-    rewrite inE => -> /=.
-    by case: ifP => // /eqP.
-  by rewrite inE => ->.
-rewrite big_trivIset // /rhs big_imset => [|i j _ /setIdP[_ notFj0] eqFij].
-  rewrite big_mkcond [in X in _ = X]big_mkcond.
-  apply: eq_bigr => i _.
-  rewrite inE.
-  case: ifP.
-    by case/andP=> ->.
-  move/negbT.
-  rewrite negb_and.
-  case/orP.
-    by move/negbTE => ->.
-  rewrite negbK => /eqP Fi.
-  case: ifP => //.
-  by rewrite Fi big_set0.
-by apply: contraNeq (disjF _ _) _; rewrite -setI_eq0 eqFij setIid.
-Qed.
-
-End MyBigOps.
-
-End MyPartitions.
-
-Local Open Scope sub_vec_scope.
-
-Section sub_vec_channel.
+Section DMC_sub_vec_Fnext_Vgraph.
 
 Variables (B : finType) (W : `Ch_1('F_2, B)).
 Variable n' : nat.
 Let n := n'.+1.
 Variable tb : 'rV[B]_n.
-
-Lemma rprod_sub_vec (D : {set 'I_n}) (t : 'rV_n) :
-  \rprod_(i < #|D|) W ((t # D) ``_ i) ((tb # D) ``_ i) =
-  \rprod_(i in D) W (t ``_ i) (tb ``_ i).
-Proof.
-case/boolP : (D == set0) => [/eqP -> |].
-  rewrite big_set0 big_hasC //.
-  apply/hasPn => /=.
-  rewrite cards0; by case.
-case/set0Pn => /= i iD.
-pose f : 'I_n -> 'I_#|D| :=
-  fun i => match Bool.bool_dec (i \in D) true with
-             | left H => enum_rank_in H i
-             | _ => enum_rank_in iD i
-           end.
-rewrite (reindex_onto (fun i : 'I_#|D| => enum_val i) f) /=.
-  apply eq_big => j.
-    rewrite /f /=.
-    case: Bool.bool_dec => [a|].
-      by rewrite enum_valK_in a eqxx.
-    by rewrite enum_valP.
-  by rewrite /sub_vec 2!mxE.
-move=> j jD.
-rewrite /f /=.
-case: Bool.bool_dec => [a| //].
-by rewrite enum_rankK_in.
-Qed.
-
-(* TODO: useless? *)
-Lemma DMC_sub_vec (V : {set 'I_n}) (t : 'rV_n) :
-  W ``(tb # V | t # V) = \rprod_(i in V) W (t ``_ i) (tb ``_ i).
-Proof. by rewrite DMCE -rprod_sub_vec. Qed.
-
 Variable m : nat.
 Variable H : 'M['F_2]_(m, n).
 Local Notation "'`V(' x ',' y ')'" := (Vgraph H x y).
@@ -310,7 +204,7 @@ rewrite {}/body bigU /=; last first.
   apply bigcup_disjoint => m1 Hm1.
   rewrite (@eq_disjoint1 _ n1) //.
   by rewrite !inE eqxx /=.
-rewrite (@mypartition_disjoint_bigcup _ _ _ _ mulR_comoid (fun x => (`V(x, n1) :\ n1)) (fun x => (W (t ``_ x)) (tb ``_ x)) (`F n1 :\ m0)) /=; last first.
+rewrite (@big_bigcup_partition _ _ _ _ _ (fun x => (`V(x, n1) :\ n1)) (fun x => (W (t ``_ x)) (tb ``_ x)) (`F n1 :\ m0)) /=; last first.
   move=> i j ij.
   rewrite -setI_eq0.
   apply/set0Pn; case=> n2.
@@ -330,7 +224,7 @@ apply eq_bigr => m1 Hm1.
 by rewrite DMCE -rprod_sub_vec.
 Qed.
 
-End sub_vec_channel.
+End DMC_sub_vec_Fnext_Vgraph.
 
 Local Open Scope summary_scope.
 
@@ -684,7 +578,7 @@ transitivity (\rsum_(ta : 'rV_n)
   congr (_ * _).
   rewrite -DMC_sub_vec_Fnext // (bigID (pred1 n0)) /= (big_pred1 n0) //.
   congr (_ * _).
-  rewrite DMC_sub_vec.
+  rewrite DMC_sub_vecE.
   apply eq_bigl => ? /=.
   by rewrite in_setC in_set1.
 (* 4 -> 5 *)
@@ -854,7 +748,7 @@ transitivity (\rsum_(x # `V(m0, n0) :\ n0 , d)
     move=> n1 /andP [] H1 /eqP ->; by rewrite !big_set0.
   apply eq_big => /= n1; first by rewrite !inE.
   move=> Hn1.
-  rewrite mypartition_disjoint_bigcup //= => m1 m2 m1m2.
+  rewrite big_bigcup_partition //= => m1 m2 m1m2.
   apply: contraNT m1m2.
   rewrite -setI_eq0 => /set0Pn[m3]; rewrite inE => /andP[H1 H2].
   by apply/eqP/(Fgraph_disjoint (Tanner.acyclic tanner) H1 H2).

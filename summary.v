@@ -5,38 +5,27 @@ From mathcomp Require Import ssralg finset fingroup finalg zmodp matrix.
 Require Import Reals.
 Require Import ssr_ext ssralg_ext Rssr Rbigop f2.
 
+(** * The Summary Operator *)
+
+(** OUTLINE:
+- Section free_on.
+- Section rsum_freeon.
+- Section alternative_definitions_of_summary.
+*)
+
+Reserved Notation "\rsum_ ( x '#' s ',' d ) F" (at level 41,
+  F at level 41, x, s, d at level 50,
+    format "'[' \rsum_ ( x  '#'  s  ','  d ) '/  '  F ']'").
+Reserved Notation "\rsum_ ( x '#' s ',' d '|' P ) F" (at level 41,
+  F at level 41, x, s, d at level 50,
+    format "'[' \rsum_ ( x  '#'  s  ','  d   '|'  P ) '/  '  F ']'").
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
-
-(** * The Summary Operator *)
-
-(** OUTLINE:
-- Section sub_vec_sect.
-- Section free_on.
-- Section rsum_freeon.
-- Section alternative_definitions_of_summary.
-*)
-
-(* TODO: move? *)
-Lemma inj_row_set (A : ringType) n n0 (d : 'rV_n) :
-  {in A &, injective ((row_set n0)^~ d)}.
-Proof. move=> a b _ _ /= /rowP /(_ n0); by rewrite mxE eqxx mxE eqxx. Qed.
-
-Section sub_vec_sect.
-
-Variables (A : Type) (n : nat).
-
-Definition sub_vec (t : 'rV[A]_n) (S : {set 'I_n}) : 'rV[A]_#| S | :=
-  \row_(j < #|S|) (t ``_ (enum_val j)).
-(* NB: enum_val j is the jth item of enum S *)
-
-End sub_vec_sect.
-
-Notation "t # V" := (sub_vec t V) (at level 55, V at next level) : sub_vec_scope.
 
 Section free_on.
 
@@ -99,14 +88,12 @@ Qed.
 Local Open Scope R_scope.
 
 (** sum over vectors t whose V projection is free and its complemented fixed by d *)
-Notation "\rsum_ ( x '#' s ',' d ) F" := (\rsum_( x | freeon s d x ) F)
-  (at level 41, F at level 41, x, s, d at level 50,
-    format "'[' \rsum_ ( x  '#'  s  ','  d ) '/  '  F ']'") : summary_scope.
-Notation "\rsum_ ( x '#' s ',' d '|' P ) F" := (\rsum_( x | freeon s d x && P x) F)
-  (at level 41, F at level 41, x, s, d at level 50,
-    format "'[' \rsum_ ( x  '#'  s  ','  d   '|'  P ) '/  '  F ']'") : summary_scope.
-Local Close Scope R_scope.
+Notation "\rsum_ ( x '#' s ',' d ) F" :=
+  (\rsum_( x | freeon s d x ) F) : summary_scope.
+Notation "\rsum_ ( x '#' s ',' d '|' P ) F" :=
+  (\rsum_( x | freeon s d x && P x) F) : summary_scope.
 
+Local Close Scope R_scope.
 Local Open Scope summary_scope.
 
 Section rsum_freeon.

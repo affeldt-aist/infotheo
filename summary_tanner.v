@@ -8,10 +8,6 @@ Require Import ssr_ext ssralg_ext Reals_ext Rssr Rbigop f2 summary.
 Require Import subgraph_partition tanner tanner_partition proba channel.
 Require Import checksum.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
 (** * Technical lemmas about the summary operator *)
 
 (** OUTLINE
@@ -22,6 +18,10 @@ Import Prenex Implicits.
 - Section dprojs_subsubgraph.
 - Section dprojs_subsubgraph_acyclic.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
@@ -37,14 +37,12 @@ Implicit Types A : finType.
 Definition dproj d s t :=
   locked (\row_(j < n) if j \in s then t ``_ j else d ``_ j).
 
-Local Open Scope sub_vec_scope.
 Lemma sub_vec_dproj d t s' s : s \subset s' -> (dproj d s' t) # s = t # s.
 Proof.
 move=> s's.
 rewrite /dproj; unlock; apply/rowP => i; rewrite !mxE; case: ifPn => //.
 move/subsetP: s's => /(_ (enum_val i)); by rewrite enum_valP => ->.
 Qed.
-Local Close Scope sub_vec_scope.
 
 Lemma dproj_out d t s i : i \notin s -> (dproj d s t) ``_ i = d ``_i.
 Proof. move=> H; by rewrite /dproj; unlock; rewrite mxE (negbTE H). Qed.
@@ -73,11 +71,9 @@ Qed.
 Definition dprojs d A (g : A -> {set 'I_n}) t :=
   locked [ffun a => dproj d (g a) t].
 
-Local Open Scope sub_vec_scope.
 Lemma sub_vec_dprojs d t A (g : A -> {set 'I_n}) s a :
   s \subset g a -> ((dprojs d g t) a) # s = t # s.
 Proof. rewrite /dprojs; unlock => H0; by rewrite ffunE sub_vec_dproj. Qed.
-Local Close Scope sub_vec_scope.
 
 Lemma freeon_dprojs d t A (g : A -> {set 'I_n}) a : freeon (g a) d ((dprojs d g t) a).
 Proof. rewrite /dprojs; unlock; rewrite ffunE; by rewrite freeon_dproj. Qed.
@@ -296,7 +292,6 @@ rewrite inE.
 by move/freeon_notin => ->.
 Qed.
 
-Local Open Scope sub_vec_scope.
 Local Open Scope summary_scope.
 Local Open Scope R_scope.
 
@@ -332,8 +327,6 @@ apply/esym/eq_big.
     by rewrite HF // -(freeon_notin Ht') //= !inE eqxx.
 Qed.
 
-Local Close Scope sub_vec_scope.
-
 End dprojs_subgraph_acyclic.
 
 Section dprojs_subsubgraph.
@@ -355,7 +348,6 @@ Definition dprojs_V2 d m0 n0 t : {ffun 'I_n -> 'rV_n} := dprojs d (ssgraph m0 n0
 
 Definition comb_V2 d m0 n0 (f : {ffun 'I_n -> 'rV_n}) := comb d f (ssgraph m0 n0).
 
-Local Open Scope sub_vec_scope.
 Lemma sub_vec_dprojs_V2 d m0 n0 t n1 m1 : n1 \in 'V m0 :\ n0 -> m1 \in `F n1 :\ m0 ->
   (dprojs_V2 d m0 n0 t) n1 # `V(m1, n1) :\ n1 = t # `V(m1, n1) :\ n1.
 Proof.
@@ -364,7 +356,6 @@ apply/subsetP => n2 Hn2.
 rewrite inE /ssgraph Hn1 /=; apply/existsP; exists m1; rewrite Hm1.
 by move: Hn2; rewrite in_setD1 => /andP[].
 Qed.
-Local Close Scope sub_vec_scope.
 
 Lemma checksubsum_dprojs_V2 d m0 n0 (t' t : 'rV_n) n1 m1 m2
   (Hn1 : n1 \in 'V m0 :\ n0) (Hm1 : m1 \in `F n1 :\ m0) (Hm2 : m2 \in `F(m1, n1)) :
@@ -732,8 +723,6 @@ Qed.
 
 Local Open Scope channel_scope.
 Local Open Scope proba_scope.
-
-Local Open Scope sub_vec_scope.
 
 Lemma rprod_rsum_commute d (B : finType) (x : 'rV_n) (W: `Ch_1('F_2, B)) m0 n0 (m0n0 : n0 \in 'V m0) :
   let pr n1 t := (dprojs_V H d n1 t \in pfamily d (`F n1 :\ m0)

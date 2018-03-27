@@ -16,6 +16,7 @@ Require Import channel_code channel binary_symmetric_channel hamming pproba.
 - Section MD_ML_decoding.
 - Section MAP_decoding.
 - Section MAP_decoding_prop.
+- Section MPM_condition.
 *)
 
 Reserved Notation "t .-BDD f" (at level 2, format "t  .-BDD  f").
@@ -378,3 +379,22 @@ move/Rmult_eq_reg_l : H => -> //; exact: gtR_eqF.
 Qed.
 
 End MAP_decoding_prop.
+
+Section MPM_condition.
+
+(* in the special case of a binary code... *)
+Variable W : `Ch_1('F_2, [finType of 'F_2]).
+Variable n : nat.
+Variable C : {vspace 'rV['F_2]_n}.
+Hypothesis C_not_empty : (0 < #|[set cw in C]|)%nat.
+Variable m : nat.
+Variable enc : encT [finFieldType of 'F_2] [finType of 'rV['F_2]_(n - m)] n.
+Variable dec : decT [finFieldType of 'F_2] [finType of 'rV['F_2]_(n - m)] n.
+
+Definition MPM_condition := let P := `U C_not_empty in
+  forall y (Hy : receivable W P y),
+  forall x, dec y = Some x ->
+  forall n0,
+    P '_ n0 `^^ W , Hy ((enc x) ``_ n0 | y) = \rmax_(b in 'F_2) P '_ n0 `^^ W , Hy (b | y).
+
+End MPM_condition.

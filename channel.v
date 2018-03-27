@@ -20,7 +20,7 @@ Reserved Notation "'`Ch_' n '(' A ',' B ')'" (at level 10,
   A, B, n at next level, format "'`Ch_'  n  '(' A ','  B ')'").
 Reserved Notation "W '``^' n" (at level 10).
 Reserved Notation "W '``(|' x ')'" (at level 10, x at next level).
-Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level).
+Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level, only parsing).
 Reserved Notation "'`O(' P , W )" (at level 10, P, W at next level).
 Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level).
 Reserved Notation "'`J(' P , W )" (at level 10, P, W at next level).
@@ -130,6 +130,46 @@ Proof. rewrite /DMC.c; by unlock. Qed.
 
 Lemma DMC_nonneg {A B : finType} n (W : `Ch_1(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
 Proof. by apply dist_nonneg. Qed.
+
+Section DMC_sub_vec.
+
+Variables (A B : finType) (W : `Ch_1(A, B)).
+Variable n' : nat.
+Let n := n'.+1.
+Variable tb : 'rV[B]_n.
+
+Lemma rprod_sub_vec (D : {set 'I_n}) (t : 'rV_n) :
+  \rprod_(i < #|D|) W ((t # D) ``_ i) ((tb # D) ``_ i) =
+  \rprod_(i in D) W (t ``_ i) (tb ``_ i).
+Proof.
+case/boolP : (D == set0) => [/eqP -> |].
+  rewrite big_set0 big_hasC //.
+  apply/hasPn => /=.
+  rewrite cards0; by case.
+case/set0Pn => /= i iD.
+pose f : 'I_n -> 'I_#|D| :=
+  fun i => match Bool.bool_dec (i \in D) true with
+             | left H => enum_rank_in H i
+             | _ => enum_rank_in iD i
+           end.
+rewrite (reindex_onto (fun i : 'I_#|D| => enum_val i) f) /=.
+  apply eq_big => j.
+    rewrite /f /=.
+    case: Bool.bool_dec => [a|].
+      by rewrite enum_valK_in a eqxx.
+    by rewrite enum_valP.
+  by rewrite /sub_vec 2!mxE.
+move=> j jD.
+rewrite /f /=.
+case: Bool.bool_dec => [a| //].
+by rewrite enum_rankK_in.
+Qed.
+
+Lemma DMC_sub_vecE (V : {set 'I_n}) (t : 'rV_n) :
+  W ``(tb # V | t # V) = \rprod_(i in V) W (t ``_ i) (tb ``_ i).
+Proof. by rewrite DMCE -rprod_sub_vec. Qed.
+
+End DMC_sub_vec.
 
 Module OutDist.
 

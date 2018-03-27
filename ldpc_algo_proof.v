@@ -7,12 +7,6 @@ Require Import Reals_ext Rssr Rbigop f2 subgraph_partition tanner.
 Require Import proba channel pproba linearcode ssralg_ext.
 Require Import tanner_partition summary ldpc checksum ldpc_algo.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-Open Scope seq_scope.
-
 (** * Verification of the Sum-Product decoder *)
 
 (** OUTLINE:
@@ -22,6 +16,12 @@ Open Scope seq_scope.
 - Section BuildTreeTest.
 - Section AlgoProof.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Open Scope seq_scope.
 
 Section Extras.
 
@@ -104,11 +104,6 @@ apply (leq_trans (IH Hl)).
 by rewrite leq_maxr.
 Qed.
 
-Lemma in_seq_set {B : finType} (x : B) (s : seq B) :
-  (x \in s) = (x \in finset (mem s)).
-by rewrite in_set.
-Qed.
-
 Lemma rev_path_rcons a b p :
   symmetric g ->
   path g a (rcons p b) = path g b (rcons (rev p) a).
@@ -131,16 +126,6 @@ Proof. by move=> a b []. Qed.
 Lemma inl_inj A' B : injective (@inl A' B).
 Proof. by move=> a b []. Qed.
 
-Lemma mem_fin_enum {T:finType} x : x \in enum T.
-Proof.
-rewrite enumT.
-move: (enumP (T:=T) x).
-rewrite count_uniq_mem /=.
-  by case Hx: (x \in _).
-rewrite -enumT.
-apply enum_uniq.
-Qed.
-
 Lemma eq_in_map_seqs {B : eqType} (f1 f2 : A -> B) l1 l2 :
   l1 = l2 -> {in l1, f1 =1 f2} -> map f1 l1 = map f2 l2.
 Proof. by move=> <-; apply eq_in_map. Qed.
@@ -156,17 +141,13 @@ elim: l => [|a l IH] //= Hun Hx Hy.
 move: Hx.
 rewrite in_cons => /orP [] Hx.
   have ->: flatten (map f l) = [::].
-    apply/nilP.
-    rewrite /nilp size_flatten.
-    apply/sumn_eq0P => i Hi.
-    rewrite /shape -map_comp in Hi.
-    move/mapP: Hi => [j Hj Hij].
-    case Hi: (i == 0%N) => //.
-    rewrite /= (Hy j) in Hij.
-        by rewrite Hij eqxx in Hi.
-      by rewrite in_cons Hj orbT.
-    case Hjx: (j == x) => //.
-    by rewrite -(eqP Hx) -(eqP Hjx) Hj in Hun.
+    apply/eqP; rewrite -size_eq0 -sum1_size big_flatten /= big_map big_seq_cond.
+    rewrite (eq_bigr (fun=> 0)).
+      by rewrite big_const_seq iter_addn mul0n add0n.
+    move=> b /andP[bl _].
+    rewrite Hy ?big_nil // ?inE ?bl ?orbT //.
+    case/andP: Hun => al _; apply: contra al.
+    by rewrite (eqP Hx) => /eqP <-.
   by rewrite cats0 (eqP Hx).
 rewrite (Hy a) => //=.
     apply IH => //.
@@ -589,8 +570,7 @@ have Hs: finset (mem s) = [set: A].
   rewrite eqEcard subsetT /=.
   rewrite cardsT cardsE.
   by rewrite /leq subn0 in Hh.
-rewrite in_seq_set Hs.
-by apply in_setT.
+by move/setP : Hs => /(_ a); rewrite !inE.
 Qed.
 
 Definition lastE := (last_cat, last_rcons, last_cons).
@@ -1298,9 +1278,7 @@ rewrite IH.
 by rewrite !mulRA.
 Qed.
 
-Open Scope sub_vec_scope.
-
-Open Scope R_scope.
+Local Open Scope R_scope.
 
 Lemma rmul_foldr_rsum {I A} {X : finType} (a : R) (g : I -> X -> A -> A)
   (F0 : A -> R) l d :

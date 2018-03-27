@@ -13,6 +13,7 @@ Import Prenex Implicits.
 
 Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
 Reserved Notation "v `[ i := x ]" (at level 20).
+Reserved Notation "t # V" (at level 55, V at next level).
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
@@ -108,6 +109,22 @@ Definition row_set B n (n0 : 'I_n) (x : B) (d : 'rV_n) :=
 
 Notation "v `[ i := x ]" := (row_set i x v) : vec_ext_scope.
 
+Lemma inj_row_set (A : ringType) n n0 (d : 'rV_n) :
+  {in A &, injective ((row_set n0)^~ d)}.
+Proof. move=> a b _ _ /= /rowP /(_ n0); by rewrite mxE eqxx mxE eqxx. Qed.
+
+Section sub_vec_sect.
+
+Variables (A : Type) (n : nat).
+
+Definition sub_vec (t : 'rV[A]_n) (S : {set 'I_n}) : 'rV[A]_#| S | :=
+  \row_(j < #|S|) (t ``_ (enum_val j)).
+(* NB: enum_val j is the jth item of enum S *)
+
+End sub_vec_sect.
+
+Notation "t # V" := (sub_vec t V) : vec_ext_scope.
+
 Lemma row_set_comm n A (i1 i2 : 'I_n) (x1 x2 : A) d :
   i1 != i2 -> d `[ i2 := x2 ] `[ i1 := x1 ] = (d `[ i1 := x1 ]) `[ i2 := x2 ].
 Proof.
@@ -117,8 +134,6 @@ case Hi1: (i == i1); case Hi2: (i == i2) => //=.
 by rewrite -(eqP Hi1) (eqP Hi2) eqxx in Hneq.
 Qed.
 
-(** Big sums lemmas for row vectors *)
-
 Section row_mx_ext.
 
 Context {A : Type}.
@@ -127,41 +142,25 @@ Definition rbehead {n} (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (lift ord0 i).
 
 Lemma rbehead_row_mx {n} (x : 'rV_n) (i : A) : rbehead (row_mx (\row_(j < 1) i) x) = x.
 Proof.
-rewrite /rbehead.
 apply/matrixP => a b; rewrite {a}(ord1 a) !mxE.
-case: splitP.
-  move=> j; rewrite {j}(ord1 j); by rewrite lift0.
-move=> n0; rewrite lift0 add1n => bn0.
-f_equal.
-by case: bn0 => /ord_inj.
+case: splitP; first by move=> j; rewrite {j}(ord1 j) lift0.
+by move=> n0; rewrite lift0 add1n => -[] /val_inj ->.
 Qed.
 
-Lemma row_mx_row_ord0 {n} (x : 'rV_n) (i : A) : (row_mx (\row_(k < 1) i) x) ord0 ord0 = i.
+Lemma row_mx_row_ord0 {n} (x : 'rV_n) (i : A) : (row_mx (\row_(k < 1) i) x) ``_ ord0 = i.
 Proof.
-rewrite mxE.
-case: splitP.
-  move=> k.
-  rewrite {k}(ord1 k) => _; by rewrite mxE.
-move=> /= k.
+rewrite mxE; case: splitP => [|/=] k; first by rewrite {k}(ord1 k) mxE.
 by rewrite add1n.
 Qed.
 
 Lemma row_mx_rbehead {n} (x : 'rV_(1 + n)) (i : A) (b : 'I_(1 + n)) :
-  x ``_ ord0 = i ->
-  (row_mx (\row__ i) (rbehead x)) ord0 b = x ``_ b.
+  x ``_ ord0 = i -> (row_mx (\row__ i) (rbehead x)) ``_ b = x ``_ b.
 Proof.
 move=> xi.
-rewrite /rbehead mxE.
-case: splitP.
-  move=> j; rewrite {j}(ord1 j) => Hb.
-  rewrite mxE -xi.
-  f_equal.
-  rewrite /= in Hb.
-  by apply val_inj.
-move=> k bk.
-rewrite mxE.
-f_equal.
-by apply val_inj.
+rewrite mxE; case: splitP => [j|k bk].
+  rewrite {j}(ord1 j) => -[] Hb; rewrite mxE -xi; congr (_ ``_ _).
+  exact/val_inj.
+rewrite mxE; congr (_ ``_ _); exact/val_inj.
 Qed.
 
 End row_mx_ext.

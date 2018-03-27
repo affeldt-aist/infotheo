@@ -1,7 +1,10 @@
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice fintype.
-From mathcomp Require Import div bigop ssralg binomial finset fingroup zmodp poly ssrnum matrix tuple finfun.
-From mathcomp Require Import path ssrnum binomial perm.
+From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
+From mathcomp Require Import fintype div bigop ssralg binomial finset fingroup.
+From mathcomp Require Import zmodp poly ssrnum matrix tuple finfun path ssrnum.
+From mathcomp Require Import binomial perm.
 Require Import ssr_ext ssralg_ext proba.
+
+(** * wip *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -9,8 +12,6 @@ Unset Printing Implicit Defensive.
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
-
-(** * wip *)
 
 Section SumCoef.
 Variable K : numFieldType.
@@ -1963,8 +1964,8 @@ Qed.
 Definition ksets (A : finType) k := [set x : {set A} | #|x| == k].
 Definition ksetsP (A : finType) k (P : pred {set A}) :=
   [set x : {set A} | (#|x| == k) && P x ].
-Notation "[ 'node' x '#' k | P ]" := (ksetsP k (fun x => P%B))
-  (at level 2, x at level 99, format "[ 'node'  x  '#'  k  |  P ]") : set_scope.
+Notation "[ 'node' x '$' k | P ]" := (ksetsP k (fun x => P%B))
+  (at level 2, x at level 99, format "[ 'node'  x  '$'  k  |  P ]") : set_scope.
 
 Section prob_tree_like_neighbor.
 
@@ -2016,7 +2017,7 @@ Qed.
 
 (* How to choose k ports among E ports excluding this of P *)
 Lemma card_nodes k (P : {set port}) :
-  #| [node x # k | [disjoint x & P] ] | = 'C(#|port| - #|P|, k).
+  #| [node x $ k | [disjoint x & P] ] | = 'C(#|port| - #|P|, k).
 (*was  #|[set x : {set port} | #|x| == k & [disjoint x & P]]| = 'C(#|port| - #|P|, k).*)
 Proof.
 set A := (X in #|pred_of_set X| = _).
@@ -2096,7 +2097,7 @@ Qed.
 
 Lemma dest_port_out :
   [set x in dest_port | x.1 == p & #|x.2| == k.+1] =
-  [set (p, p |: x) | x in [node x # k | [disjoint x & p |: known_coports c] ]
+  [set (p, p |: x) | x in [node x $ k | [disjoint x & p |: known_coports c] ]
 (*    [set x : {set port} | #|x| == k & [disjoint x & p |: known_coports c]]*)
   ].
 Proof.
@@ -2303,7 +2304,7 @@ Let U := (#|port| - #|known_coports c|).+1.
 Lemma card_nodes3 (k : 'I_U) : k <> 0 ->
   (forall j : {set port},
       i \in j -> trivIset (j |: conodes c) -> (#|j| < U)%nat) ->
-  #| [node x # k | (i \in x) && trivIset (x |: conodes c)] |
+  #| [node x $ k | (i \in x) && trivIset (x |: conodes c)] |
 (* was #|[set x:{set port} | [&& i \in x, trivIset (x |: conodes c) & #|x| == k]]| *)
   = 'C(#|port|.-1 - #|known_coports c|, k.-1).
 Proof.
@@ -4739,7 +4740,7 @@ Variable lam : NormalizedDegreeDistribution.L K.
 (* number of ports belonging to a node of arity k+1 not yet connected
    to the graph *)
 Definition remaining_ports k :=
-  Num.max 0 ((#|port|%:R * lam `_ k) - (k.+1 * #| [node n # k.+1 | n \in h] |
+  Num.max 0 ((#|port|%:R * lam `_ k) - (k.+1 * #| [node n $ k.+1 | n \in h] |
                                              (*#|[set en in h | #|en| == k.+1]|*))%:R).
 
 Lemma rem_ports_ge0 i : 0 <= remaining_ports i.
@@ -4758,7 +4759,7 @@ Qed.
 Lemma natrD_morph : {morph GRing.natmul (1:K) : x y / (x + y)%nat >-> x + y}.
 Proof. move=> x y; by rewrite natrD. Qed.
 
-Lemma temp1 : (\sum_(i < #|port|.+1) i * #| [node x # i | x \in h] |)%:R = (\sum_(x in h) #| x |)%:R :> K.
+Lemma temp1 : (\sum_(i < #|port|.+1) i * #| [node x $ i | x \in h] |)%:R = (\sum_(x in h) #| x |)%:R :> K.
 Proof.
 rewrite !(@big_morph _ _ _ 0 _ _ _ natrD_morph) //.
 rewrite (@partition_big_nodes_arities K port (fun x : {set port} => #|x|%:R)).
@@ -4784,7 +4785,7 @@ rewrite horner_poly [LHS](_ : _ = \sum_i f i); last first.
   apply eq_bigr => /= i _; rewrite expr1n mulr1 mulrC /f; reflexivity.
 rewrite {}/f -big_distrr /= mulVr // unitfE psumr_eq0 /=; last first.
   move=> i _; exact: rem_ports_ge0.
-suff [i Hi] : exists i : 'I_(size lam), #|port|%:R * lam `_ i > (i.+1 * #| [node x # i.+1 | x \in h] |)%:R.
+suff [i Hi] : exists i : 'I_(size lam), #|port|%:R * lam `_ i > (i.+1 * #| [node x $ i.+1 | x \in h] |)%:R.
   apply/allPn; exists i; first by rewrite mem_index_enum.
   by rewrite /remaining_ports eqr_maxl -ltrNge subr_gt0.
 Admitted.
