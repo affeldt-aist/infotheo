@@ -4,16 +4,7 @@ From mathcomp Require Import choice fintype tuple finfun bigop prime ssralg.
 From mathcomp Require Import poly polydiv finset finalg zmodp matrix mxalgebra.
 From mathcomp Require Import mxpoly vector fieldext finfield.
 Require Import ssralg_ext hamming linearcode decoding cyclic_code poly_decoding.
-Require Import vandermonde dft euclid grs.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Import GRing.Theory.
-Local Open Scope ring_scope.
-
-Local Open Scope vec_ext_scope.
+Require Import vandermonde dft euclid grs f2.
 
 (** * Binary BCH Codes *)
 
@@ -33,6 +24,18 @@ Local Open Scope vec_ext_scope.
 - Section decoding_using_euclid.
 - Section BCH_cyclic.
 *)
+
+Reserved Notation "'\BCHsynp_(' a , e , t )" (at level 3).
+Reserved Notation "'\BCHomega_(' a , e )" (at level 3).
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Import GRing.Theory.
+Local Open Scope ring_scope.
+
+Local Open Scope vec_ext_scope.
 
 Local Open Scope dft_scope.
 
@@ -164,8 +167,7 @@ End BCH_syndromep.
 
 End BCH.
 
-Notation "'\BCHsynp_(' a , e , t )" :=
-  (BCH.syndromep a e t) (at level 3) : bch_scope.
+Notation "'\BCHsynp_(' a , e , t )" := (BCH.syndromep a e t) : bch_scope.
 
 Local Open Scope bch_scope.
 
@@ -443,7 +445,7 @@ Definition BCH_erreval := erreval (const_mx 1) a.
 
 End BCH_erreval.
 
-Notation "'\BCHomega_(' a , e )" := (BCH_erreval a e) (at level 3).
+Notation "'\BCHomega_(' a , e )" := (BCH_erreval a e) : bch_scope.
 
 Section BCH_key_equation_old.
 
@@ -563,8 +565,6 @@ Definition BCH_repair : repairT [finType of 'F_2] [finType of 'F_2] n :=
     let ret := y + poly_rV (BCH_err y) in
     if \BCHsynp_(rVexp a n, ret, t) == 0 then Some ret else None].
 
-Require Import f2.
-
 Lemma BCH_err_is_correct (a_not_uroot : not_uroot_on a n) l (e y : 'rV_n) :
   let r0 := 'X^t.*2 : {poly F} in
   let r1 := \BCHsynp_(rVexp a n, y, t) in
@@ -592,6 +592,8 @@ rewrite mulf_eq0 !invr_eq0 (negbTE l0) /= orbF horner_errloc_0 oner_eq0 /=.
 move: (errloc_zero (supp (F2_to_GF2 m e)) i H1); rewrite mxE => ->.
 by rewrite supp_F2_to_GF2 inE negbK => /eqP ->.
 Qed.
+
+Local Open Scope ecc_scope.
 
 Lemma BCH_repair_is_correct (C : BCH.code (rVexp a n) t) : not_uroot_on a n ->
   t.-BDD (C, BCH_repair).
@@ -653,6 +655,8 @@ Let F := GF2 m.
 Variable a : F.
 Variable t : nat.
 Hypothesis tn : t <= n.-1./2.
+
+Local Open Scope cyclic_code_scope.
 
 Lemma rcsP_BCH_cyclic (C : BCH.code (rVexp a n) t) : a ^+ n = 1 ->
   rcsP [set cw in C].

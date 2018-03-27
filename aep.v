@@ -5,6 +5,8 @@ From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import Reals_ext ssr_ext ssralg_ext log2 Rssr Rbigop proba entropy.
 
+(** * Asymptotic Equipartition Property (AEP) *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -15,8 +17,6 @@ Local Open Scope tuple_ext_scope.
 Local Open Scope Rb_scope.
 
 Local Open Scope ring_scope.
-
-(** * Asymptotic Equipartition Property (AEP) *)
 
 Definition map_mlog A n (P : dist A) : 'rV[rvar A]_n :=
   \row_(i < n) --log P.

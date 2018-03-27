@@ -3,15 +3,30 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext ssralg_ext log2 Rssr Rbigop proba entropy.
+Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop proba.
+Require Import entropy.
+
+(** * Definition of channels and of the capacity *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-(** * Definition of channels and of the capacity *)
-
-(*Local Open Scope tuple_ext_scope.*)
+Reserved Notation "'`Ch_1(' A ',' B ')'" (at level 10, A, B at next level).
+Reserved Notation "'`Ch_1*(' A ',' B ')'" (at level 10, A, B at next level).
+Reserved Notation "W '`(' b '|' a ')'"
+  (at level 10, b, a at next level, only parsing).
+Reserved Notation "'`Ch_' n '(' A ',' B ')'" (at level 10,
+  A, B, n at next level, format "'`Ch_'  n  '(' A ','  B ')'").
+Reserved Notation "W '``^' n" (at level 10).
+Reserved Notation "W '``(|' x ')'" (at level 10, x at next level).
+Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level).
+Reserved Notation "'`O(' P , W )" (at level 10, P, W at next level).
+Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level).
+Reserved Notation "'`J(' P , W )" (at level 10, P, W at next level).
+Reserved Notation "`H( P , W )" (at level 10, P, W at next level).
+Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
+Reserved Notation "`I( P ; W )" (at level 50).
 
 Module Channel1.
 
@@ -50,14 +65,13 @@ End Channel1.
 Definition chan_star_coercion := Channel1.c.
 Coercion chan_star_coercion : Channel1.chan_star >-> Funclass.
 
-Notation "'`Ch_1(' A ',' B ')'" := (A -> dist B) (at level 10, A, B at next level) : channel_scope.
-
-Notation "'`Ch_1*(' A ',' B ')'" := (@Channel1.chan_star A B) (at level 10, A, B at next level) : channel_scope.
-
+Notation "'`Ch_1(' A ',' B ')'" := (A -> dist B) : channel_scope.
+Notation "'`Ch_1*(' A ',' B ')'" := (@Channel1.chan_star A B) : channel_scope.
+Notation "W '`(' b '|' a ')'" := (W a b) : channel_scope.
 Local Open Scope channel_scope.
-
-Notation "W '`(' b '|' a ')'" := (W a b)
-  (at level 10, b, a at next level, only parsing) : channel_scope.
+Local Open Scope proba_scope.
+Local Open Scope vec_ext_scope.
+Local Open Scope entropy_scope.
 
 Module DMC.
 
@@ -69,18 +83,13 @@ Variable n : nat.
 
 (** nth extension of the discrete memoryless channel (DMC): *)
 
-Local Open Scope proba_scope.
 Local Open Scope ring_scope.
 
 Definition channel_ext n := 'rV[A]_n -> {dist 'rV[B]_n}.
 
-Local Notation "'`Ch_' n" := (channel_ext n) (at level 9, n at next level, format "'`Ch_'  n").
-
 (** Definition of a discrete memoryless channel (DMC).
     W(y|x) = \Pi_i W_0(y_i|x_i) where W_0 is a probability
     transition matrix. *)
-
-Local Open Scope vec_ext_scope.
 
 Definition f (x y : 'rV_n) := \rprod_(i < n) W `(y ``_ i | x ``_ i).
 
@@ -104,24 +113,19 @@ transitivity (\rprod_(i < n) 1%R); first by apply eq_bigr => i _; rewrite pmf1.
 by rewrite big_const_ord iter_Rmult pow1.
 Qed.
 
-Definition c : `Ch_n := locked (fun x => makeDist (f0 x) (f1 x)).
+Definition c : channel_ext n := locked (fun x => makeDist (f0 x) (f1 x)).
 
 End DMC_sect.
 
 End DMC.
 
-Notation "'`Ch_' n '(' A ',' B ')'" := (@DMC.channel_ext A B n) (at level 10, A, B, n at next level, format "'`Ch_'  n  '(' A ','  B ')'") : channel_scope.
-
+Notation "'`Ch_' n '(' A ',' B ')'" := (@DMC.channel_ext A B n) : channel_scope.
 Notation "W '``^' n" := (@DMC.c _ _ W n) (at level 10) : channel_scope.
-
-Notation "W '``(|' x ')'" := (@DMC.c _ _ W _ x) (at level 10, x at next level) : channel_scope.
-
-Notation "W '``(' y '|' x ')'" := (@DMC.c _ _ W _ x y) (at level 10, y, x at next level) : channel_scope.
-
-Local Open Scope proba_scope.
+Notation "W '``(|' x ')'" := (@DMC.c _ _ W _ x) : channel_scope.
+Notation "W '``(' y '|' x ')'" := (@DMC.c _ _ W _ x y) : channel_scope.
 
 Lemma DMCE {A B : finType} n (W : `Ch_1(A, B)) b a :
-  W ``(b | a) = \rprod_(i < n) W (a ord0 i) (b ord0 i).
+  W ``(b | a) = \rprod_(i < n) W (a ``_ i) (b ``_ i).
 Proof. rewrite /DMC.c; by unlock. Qed.
 
 Lemma DMC_nonneg {A B : finType} n (W : `Ch_1(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
@@ -157,7 +161,7 @@ End OutDist_sect.
 
 End OutDist.
 
-Notation "'`O(' P , W )" := (OutDist.d P W) (at level 10, P, W at next level) : channel_scope.
+Notation "'`O(' P , W )" := (OutDist.d P W) : channel_scope.
 
 Section OutDist_prop.
 
@@ -166,7 +170,6 @@ Variables A B : finType.
 (** Equivalence between both definition when n = 1: *)
 
 Local Open Scope reals_ext_scope.
-Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
 Lemma tuple_pmf_out_dist (W : `Ch_1(A, B)) (P : dist A) n (b : 'rV_ _):
@@ -195,9 +198,7 @@ End OutDist_prop.
 
 (** Output entropy: *)
 
-Local Open Scope entropy_scope.
-
-Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ))) (at level 10, P, W at next level) : channel_scope.
+Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ))) : channel_scope.
 
 Module JointDist.
 
@@ -229,7 +230,7 @@ End JointDist_sect.
 
 End JointDist.
 
-Notation "'`J(' P , W )" := (JointDist.d P W) (at level 10, P, W at next level) : channel_scope.
+Notation "'`J(' P , W )" := (JointDist.d P W) : channel_scope.
 
 Section Pr_rV_prod_sect.
 
@@ -253,7 +254,7 @@ End Pr_rV_prod_sect.
 
 (** Mutual entropy: *)
 
-Notation "`H( P , W )" := (`H ( `J(P , W))) (at level 10, P, W at next level) : channel_scope.
+Notation "`H( P , W )" := (`H ( `J(P , W))) : channel_scope.
 
 Section conditional_entropy.
 
@@ -267,16 +268,13 @@ Definition cond_entropy := `H(P , W) - `H P.
 
 End conditional_entropy.
 
-Notation "`H( W | P )" := (cond_entropy W P) (at level 10, W, P at next level) : channel_scope.
-
-Local Open Scope channel_scope.
+Notation "`H( W | P )" := (cond_entropy W P) : channel_scope.
 
 Section conditional_entropy_prop.
 
 Variables A B : finType.
 Variable W : `Ch_1(A, B).
 Variable P : dist A.
-Local Open Scope channel_scope.
 Local Open Scope Rb_scope.
 
 (** Equivalent expression of the conditional entropy (cf. Lemma 6.23) *)
@@ -329,7 +327,7 @@ Definition mut_info P (W : `Ch_1(A, B)) := `H P + `H(P `o W) - `H(P , W).
 
 End mutual_information_section.
 
-Notation "`I( P ; W )" := (mut_info P W) (at level 50) : channel_scope.
+Notation "`I( P ; W )" := (mut_info P W) : channel_scope.
 
 Section capacity_definition.
 

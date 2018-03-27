@@ -4,6 +4,10 @@ From mathcomp Require Import tuple finfun bigop.
 Require Import Reals Fourier.
 Require Import Reals_ext Rssr ln_facts log2 Rbigop proba.
 
+(** * The Kullback-Leibler divergence *)
+
+Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level).
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -13,13 +17,11 @@ Section divergence_def.
 Variable A : finType.
 Variables P Q : dist A.
 
-(** * The Kullback-Leibler divergence *)
-
 Definition div := \rsum_(a in A) P a * (log (P a) - log (Q a)).
 
 End divergence_def.
 
-Notation "'D(' P '||' Q ')' " := (div P Q) (at level 50, P, Q at next level) : divergence_scope.
+Notation "'D(' P '||' Q ')' " := (div P Q) : divergence_scope.
 
 Local Open Scope divergence_scope.
 Local Open Scope proba_scope.

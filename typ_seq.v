@@ -5,11 +5,13 @@ From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import Reals_ext Rssr log2 Rbigop proba entropy aep.
 
+(** * Typical Sequences *)
+
+Reserved Notation "'`TS'".
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(** * Typical Sequences *)
 
 Local Open Scope Rb_scope.
 Local Open Scope entropy_scope.

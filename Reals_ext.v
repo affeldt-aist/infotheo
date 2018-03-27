@@ -5,11 +5,18 @@ From mathcomp Require Import binomial.
 Require Import ProofIrrelevance Reals Fourier.
 Require Import Rssr.
 
+(** * Additional lemmas about Coq Reals *)
+
+Reserved Notation "T '->' 'R+' " (at level 10, format "'[' T  ->  R+ ']'").
+Reserved Notation "'min(' x ',' y ')'".
+Reserved Notation "'max(' x ',' y ')'".
+Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
+Reserved Notation "P '<<' Q" (at level 10, Q at next level).
+Reserved Notation "P '<<b' Q" (at level 10).
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(** * Additional lemmas about Coq Reals *)
 
 Arguments INR : simpl never.
 
@@ -17,7 +24,7 @@ Record pos_fun (T : Type) := mkPosFun {
   pos_f :> T -> R ;
   pos_f_nonneg : forall a, 0 <= pos_f a }.
 
-Notation "T '->' 'R+' " := (pos_fun T) (at level 10, format "'[' T  ->  R+ ']'") : reals_ext_scope.
+Notation "T '->' 'R+' " := (pos_fun T) : reals_ext_scope.
 
 Local Open Scope reals_ext_scope.
 
@@ -130,10 +137,9 @@ Definition RmaxC : commutative Rmax := Rmax_comm.
 
 Notation "'min(' x ',' y ')'" := (Rmin x y) : reals_ext_scope.
 Notation "'max(' x ',' y ')'" := (Rmax x y) : reals_ext_scope.
+Notation "+| r |" := (Rmax 0 r) : reals_ext_scope.
 
-Notation "+| r |" := (Rmax 0 r) (at level 0, r at level 99, format "+| r |") : reals_ext_scope.
-
-(** Notation for positive rationals: *)
+(** non-negative rationals: *)
 
 Record Qplus := mkRrat { num : nat ; den : nat }.
 
@@ -356,9 +362,8 @@ Definition dom_byb {A : finType} (P Q : A -> R) := [forall b, (Q b == 0) ==> (P 
 
 End dominance.
 
-Notation "P '<<' Q" := (dom_by P Q) (at level 10) : reals_ext_scope.
-
-Notation "P '<<b' Q" := (dom_byb P Q) (at level 10) : reals_ext_scope.
+Notation "P '<<' Q" := (dom_by P Q) : reals_ext_scope.
+Notation "P '<<b' Q" := (dom_byb P Q) : reals_ext_scope.
 
 Local Open Scope Rb_scope.
 

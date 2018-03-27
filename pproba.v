@@ -3,14 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg zmodp matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext ssralg_ext Rssr Rbigop proba channel.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-Local Open Scope channel_scope.
-Local Open Scope proba_scope.
+Require Import Rssr Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop proba channel.
 
 (** * Posterior Probability *)
 
@@ -22,6 +15,18 @@ Local Open Scope proba_scope.
 - Module MarginalPosteriorProbabiliy.
 - Section marginal_post_proba_prop.
 *)
+
+Reserved Notation "P '`^^' W ',' H '(' x '|' y ')'" (at level 10,
+  W, y, x, H at next level).
+Reserved Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" (at level 10,
+  n0, W, H, a, y at next level).
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Open Scope channel_scope.
+Local Open Scope proba_scope.
 
 Section receivable_def.
 
@@ -118,8 +123,7 @@ End PosteriorProbability_sect.
 End PosteriorProbability.
 
 Notation "P '`^^' W ',' H '(' x '|' y ')'" :=
-  (@PosteriorProbability.d _ _ W _ P y H x)
-  (at level 10, W, y, x, H at next level) : proba_scope.
+  (@PosteriorProbability.d _ _ W _ P y H x) : proba_scope.
 
 Section post_proba_prop.
 
@@ -222,8 +226,7 @@ End marginal_post_proba.
 End MarginalPosteriorProbabiliy.
 
 Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" :=
-  (@MarginalPosteriorProbabiliy.d _ _ P _ W y H n0 a)
-  (at level 10, n0, W, H, a, y at next level) : proba_scope.
+  (@MarginalPosteriorProbabiliy.d _ _ P _ W y H n0 a) : proba_scope.
 
 Section marginal_post_proba_prop.
 

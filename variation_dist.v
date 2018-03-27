@@ -4,6 +4,10 @@ From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier Rpower.
 Require Import Reals_ext Ranalysis_ext log2 Rbigop proba ln_facts.
 
+(** * The Variation Distance *)
+
+Reserved Notation "'d(' P ',' Q ')' ".
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -11,8 +15,6 @@ Import Prenex Implicits.
 Section variation_distance.
 
 Variable A : finType.
-
-(** * The Variation Distance *)
 
 (** The variation distance of two distributions P and Q on X: *)
 

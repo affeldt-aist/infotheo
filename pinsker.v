@@ -2,8 +2,9 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype tuple finfun bigop finset.
 Require Import Reals Fourier.
-Require Import Reals_ext Ranalysis_ext ssr_ext Rssr log2 ln_facts Rbigop proba.
-Require Import divergence variation_dist pinsker_function partition_inequality.
+Require Import Rssr Reals_ext Ranalysis_ext ssr_ext log2 ln_facts bigop_ext.
+Require Import Rbigop proba divergence variation_dist pinsker_function.
+Require Import partition_inequality.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

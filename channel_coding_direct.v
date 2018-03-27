@@ -3,8 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix perm.
 Require Import Reals Fourier Classical.
-Require Import Reals_ext ssr_ext Rssr log2 ssralg_ext Rbigop proba entropy.
-Require Import aep typ_seq joint_typ_seq channel channel_code.
+Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop proba.
+Require Import entropy aep typ_seq joint_typ_seq channel channel_code.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -19,9 +19,7 @@ Module Wght.
 
 Section Wght_sect.
 
-Variables A M : finType.
-Variable P : dist A.
-Variable n : nat.
+Variables (A M : finType) (P : dist A) (n : nat).
 
 Definition pmf := fun f : encT A M n => \rprod_(m in M) P `^ n (f m).
 

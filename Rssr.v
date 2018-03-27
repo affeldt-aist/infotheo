@@ -2,9 +2,16 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
 Require Import Reals.
 
-Local Open Scope R_scope.
-
 (** * SSReflect-like lemmas for Coq Reals *)
+
+Reserved Notation "a '>b=' b" (at level 70).
+Reserved Notation "a '<b=' b" (at level 70).
+Reserved Notation "a '<b' b" (at level 70).
+Reserved Notation "a '>b' b" (at level 70).
+Reserved Notation "a '<b=' b '<b=' c" (at level 70, b at next level).
+Reserved Notation "a '<b' b '<b' c" (at level 70, b at next level).
+
+Local Open Scope R_scope.
 
 (** eqType for Coq Reals *)
 Definition Req_bool (a b : R) : bool :=
@@ -17,22 +24,20 @@ Canonical R_eqMixin := EqMixin eqRP.
 Canonical R_eqType := Eval hnf in EqType R R_eqMixin.
 
 Definition Rge_bool (a b : R) := if Rge_dec a b is left _ then true else false.
-Notation "a '>b=' b" := (Rge_bool a b) (at level 70) : Rb_scope.
+Notation "a '>b=' b" := (Rge_bool a b) : Rb_scope.
 Local Open Scope Rb_scope.
 
 Definition Rle_bool a b := b >b= a.
-Notation "a '<b=' b" := (Rle_bool a b) (at level 70) : Rb_scope.
+Notation "a '<b=' b" := (Rle_bool a b) : Rb_scope.
 
 Definition Rlt_bool (a b : R) := if Rlt_dec a b is left _ then true else false.
-Notation "a '<b' b" := (Rlt_bool a b) (at level 70) : Rb_scope.
+Notation "a '<b' b" := (Rlt_bool a b) : Rb_scope.
 
 Definition Rgt_bool a b := b <b a.
-Notation "a '>b' b" := (Rgt_bool a b) (at level 70) : Rb_scope.
+Notation "a '>b' b" := (Rgt_bool a b) : Rb_scope.
 
-Notation "a '<b=' b '<b=' c" := (Rle_bool a b && Rle_bool b c)
-  (at level 70, b at next level) : Rb_scope.
-Notation "a '<b' b '<b' c" := (Rlt_bool a b && Rlt_bool b c)
-  (at level 70, b at next level) : Rb_scope.
+Notation "a '<b=' b '<b=' c" := (Rle_bool a b && Rle_bool b c) : Rb_scope.
+Notation "a '<b' b '<b' c" := (Rlt_bool a b && Rlt_bool b c) : Rb_scope.
 
 Lemma RgeP (a b : R) : reflect (a >= b) (a >b= b).
 Proof. apply: (iffP idP); by rewrite /Rge_bool; case: Rge_dec. Qed.

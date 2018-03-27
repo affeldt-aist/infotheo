@@ -5,399 +5,6 @@ From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-(** Additional lemmas about bigop (in particular, instantiation to Coq reals) *)
-
-Section bigop_no_law.
-
-Variables (R : Type) (idx : R) (op : R -> R -> R).
-
-Lemma big_tcast n m (n_m : m = n) (A : finType) F (P : pred {: n.-tuple A}) :
-  \big[op/idx]_(p in {: n.-tuple A} | P p) (F p) =
-  \big[op/idx]_(p in {: m.-tuple A} | P (tcast n_m p)) (F (tcast n_m p)).
-Proof. subst m; apply eq_bigr => ta => /andP[_ H]; by rewrite tcast_id. Qed.
-
-End bigop_no_law.
-
-Section bigop_law.
-
-Variables (R : eqType) (idx : R) (op : Monoid.law idx) .
-Variable (A : finType).
-
-Lemma big_neq0 (X : {set A}) (f : A -> R) :
-  \big[op/idx]_(t | t \in X) f t != idx -> [exists t, (t \in X) && (f t != idx)].
-Proof.
-move=> H.
-apply negbNE.
-rewrite negb_exists.
-apply/negP => /forallP abs.
-move/negP : H; apply.
-rewrite big_mkcond /=.
-apply/eqP.
-transitivity (\big[op/idx]_(a : A) idx); last by rewrite big1_eq.
-apply eq_bigr => a _.
-case: ifP => // Hcond.
-move: (abs a); by rewrite Hcond /= negbK => /eqP.
-Qed.
-
-End bigop_law.
-
-Section removeme.
-
-Variable op : Monoid.com_law 1.
-
-Local Notation "'*%M'" := op (at level 0).
-Local Notation "x * y" := (op x y).
-
-Lemma mybig_index_uniq (I : eqType) (i : R) (r : seq I) (E : 'I_(size r) -> R) :
-  uniq r ->
-  \big[*%M/1]_i E i = \big[*%M/1]_(x <- r) oapp E i (insub (seq.index x r)).
-Proof.
-move=> Ur.
-apply/esym.
-rewrite big_tnth.
-apply: eq_bigr => j _.
-by rewrite index_uniq // valK.
-Qed.
-
-End removeme.
-
-Section bigop_add_law.
-
-Variables (R : Type) (idx : R) (op : R -> R -> R) (M : Monoid.add_law idx op).
-Variable A : finType.
-
-Lemma Set2sumE (f : A -> R) (card_A : #|A| = 2%nat) :
- \big[M/idx]_(i in A) (f i) = M (f (Set2.a card_A)) (f (Set2.b card_A)).
-Proof.
-by rewrite /index_enum -enumT Set2.enumE !big_cons big_nil (Monoid.addm0 M) !enum_valP.
-Qed.
-
-Lemma big_rV_0 f (P : pred _) : \big[M/idx]_(v in 'rV[A]_0 | P v) f v =
-  if P (row_of_tuple [tuple]) then f (row_of_tuple [tuple]) else idx.
-Proof.
-rewrite -big_map /= /index_enum -enumT /=.
-set e := enum _.
-rewrite (_ : e = [:: row_of_tuple [tuple]]).
-  by rewrite /= big_cons big_nil Monoid.addm0.
-rewrite /e.
-apply (@eq_from_nth _ (row_of_tuple [tuple])).
-  by rewrite -cardE card_matrix muln0 expn0.
-move=> i.
-rewrite -cardE card_matrix muln0 expn0 ltnS leqn0 => /eqP ->{i}.
-rewrite -/e.
-destruct e => //.
-apply val_inj => /=.
-by apply/ffunP => /= -[? []].
-Qed.
-
-End bigop_add_law.
-
-Section bigop_add_law_eqtype.
-
-Variable A : finType.
-
-(** Switching from a sum on the domain to a sum on the image of function *)
-
-Definition fin_img (B : eqType) (f : A -> B) : seq B :=
-  undup (map f (enum A)).
-
-Variables (R : eqType) (idx : R) (op : R -> R -> R) (M : Monoid.add_law idx op).
-
-Lemma sum_parti (p : seq A) (f : A -> R) : forall g, uniq p ->
-  \big[M/idx]_(i <- p) (g i) =
-  \big[M/idx]_(r <- undup (map f p)) \big[M/idx]_(i <- p | f i == r) (g i).
-Proof.
-move Hn : (undup (map f (p))) => n.
-move: n p f Hn.
-elim => [p f HA F Hp | h t IH p f H F Hp].
-- rewrite big_nil.
-  move/undup_nil_inv : HA.
-  move/map_nil_inv => ->.
-  by rewrite big_nil.
-- rewrite big_cons.
-  have [preh [pret [H1 [H2 H3]]]] : exists preh pret,
-    perm_eq p (preh ++ pret) /\ undup (map f preh) = [:: h] /\ undup (map f pret) = t.
-    by apply undup_perm.
-  apply (@trans_eq _ _ (\big[M/idx]_(i <- preh ++ pret) F i)); first exact: eq_big_perm.
-  apply trans_eq with
-   (M (\big[M/idx]_(i <- preh ++ pret | f i == h) F i)
-   (\big[M/idx]_(j <- t) \big[M/idx]_(i <- preh ++ pret | f i == j) F i)); last first.
-    congr (M _ _).
-      apply: eq_big_perm; by rewrite perm_eq_sym.
-    apply eq_bigr => i _ /=; apply: eq_big_perm; by rewrite perm_eq_sym.
-  have -> :
-    \big[M/idx]_(j <- t) \big[M/idx]_(i <- (preh ++ pret) | f i == j) F i =
-    \big[M/idx]_(j <- t) \big[M/idx]_(i <- pret | f i == j) F i.
-    rewrite [in LHS]big_seq_cond [in RHS]big_seq_cond /=.
-    apply/esym/eq_bigr => i Hi.
-    rewrite big_cat /=.
-    rewrite (_ : \big[M/idx]_(i0 <- preh | f i0 == i) F i0 = idx) ?Monoid.add0m //.
-    transitivity (\big[M/idx]_(i0 <- preh | false) F i0); last by rewrite big_pred0.
-    rewrite big_seq_cond.
-    apply eq_bigl => /= j.
-    apply/negP.
-    case/andP; move=> Xj_i; move/eqP=> j_preh.
-    subst i.
-    have Xj_h : f j \in [:: h].
-      have H4 : f j \in map f preh by apply/mapP; exists j.
-      have : f j \in undup (map f preh) by rewrite mem_undup.
-      by rewrite H2.
-    have : uniq (h :: t).
-      rewrite -H.
-      by apply undup_uniq.
-    rewrite /= in_cons in_nil orbC /= in Xj_h.
-    move/eqP : Xj_h => Xj_h.
-    subst h.
-    rewrite andbC /= in Hi.
-    by rewrite /= Hi.
-  rewrite -IH //; last first.
-    have : uniq (preh ++ pret) by rewrite -(@perm_eq_uniq _ _ _ H1).
-    rewrite cat_uniq.
-    case/andP => _; by case/andP.
-  have -> : \big[M/idx]_(i <- (preh ++ pret) | f i == h) F i =
-    \big[M/idx]_(i <- preh) F i.
-    rewrite big_cat /=.
-    have -> : \big[M/idx]_(i <- pret | f i == h) F i = idx.
-      transitivity (\big[M/idx]_(i0 <- pret | false) F i0); last by rewrite big_pred0.
-      rewrite big_seq_cond.
-      apply eq_bigl => /= j.
-      apply/negP.
-      case/andP; move => j_pret; move/eqP => Xj_h.
-      subst h.
-      have Xj_t : f j \in t.
-        have H4 : f j \in map f pret.
-        apply/mapP; by exists j.
-        have H5 : f j \in undup (map f pret).
-        by rewrite mem_undup.
-        by rewrite H3 in H5.
-      have : uniq (f j :: t) by rewrite -H undup_uniq.
-      by rewrite /= Xj_t.
-    rewrite Monoid.addm0 big_seq_cond /=.
-    symmetry.
-    rewrite big_seq_cond /=.
-    apply congr_big => //= x.
-    case/boolP : (x \in preh) => Y //=.
-    symmetry.
-    have : f x \in [:: h].
-      rewrite -H2 mem_undup.
-      apply/mapP; by exists x.
-    by rewrite in_cons /= in_nil orbC.
-  by rewrite big_cat.
-Qed.
-
-(* NB: use finset.partition_big_imset? *)
-Lemma sum_parti_finType (f : A -> R) g :
-   \big[M/idx]_(i in A) (g i) =
-   \big[M/idx]_(r <- fin_img f) \big[M/idx]_(i in A | f i == r) (g i).
-Proof.
-move: (@sum_parti (enum A) f g) => /=.
-rewrite enum_uniq.
-move/(_ (refl_equal _)) => IH.
-transitivity (\big[M/idx]_(i <- enum A) g i).
-  apply congr_big => //.
-  by rewrite enumT.
-rewrite IH.
-apply eq_bigr => i _.
-apply congr_big => //; by rewrite enumT.
-Qed.
-
-End bigop_add_law_eqtype.
-
-Section bigop_com_law.
-
-Variables (R : Type) (idx : R) (M : Monoid.com_law idx).
-Variable A : finType.
-
-Lemma big_union (X1 X2 : {set A}) f :
-  [disjoint X2 & X1] ->
-  \big[M/idx]_(a | a \in X1 :|: X2) f a =
-  M (\big[M/idx]_(a | a \in X1) f a) (\big[M/idx]_(a | a \in X2) f a).
-Proof.
-move=> Hdisj.
-rewrite (@big_setID _ _ _ _ _ X1) /= setUK setDUl setDv set0U.
-suff : X2 :\: X1 = X2 by move=> ->.
-by apply/setDidPl.
-Qed.
-
-Variable B : finType.
-
-(** Big sums lemmas for cartesian products *)
-
-Lemma pair_big_fst (F : {: A * B} -> R) P Q :
-  P =1 Q \o fst ->
-  \big[M/idx]_(i in A | Q i) \big[M/idx]_(j in B) F (i, j) =
-  \big[M/idx]_(i in {: A * B} | P i) F i.
-Proof.
-move=> /= PQ; rewrite pair_big /=.
-apply eq_big.
-- case=> /= i1 i2; by rewrite inE andbC PQ.
-- by case.
-Qed.
-
-Lemma pair_big_snd (F : {: A * B} -> R) P Q :
-  P =1 Q \o snd ->
-  \big[M/idx]_(i in A) \big[M/idx]_(j in B | Q j) F (i, j) =
-  \big[M/idx]_(i in {: A * B} | P i) F i.
-Proof.
-move=> /= PQ; rewrite pair_big /=.
-apply eq_big.
-- case=> /= i1 i2; by rewrite PQ.
-- by case.
-Qed.
-
-Lemma big_rV_prod n f (X : {set 'rV[A * B]_n}) :
-  \big[M/idx]_(a in 'rV[A * B]_n | a \in X) f a =
-  \big[M/idx]_(a in {: 'rV[A]_n * 'rV[B]_n} | (prod_rV a) \in X) f (prod_rV a).
-Proof.
-rewrite (reindex_onto (@rV_prod _ _ _) (@prod_rV _ _ _)) //=; last first.
-  move=> ? _; by rewrite prod_rVK.
-apply eq_big => [?|? _]; by rewrite rV_prodK // eqxx andbC.
-Qed.
-
-Local Open Scope vec_ext_scope.
-Local Open Scope ring_scope.
-
-Lemma big_rV_1 f g (P : pred _) (Q : pred _):
-  (forall i : 'rV[A]_1, f i = g (i ``_ ord0)) ->
-  (forall i : 'rV[A]_1, P i = Q (i ``_ ord0)) ->
-  \big[M/idx]_(i in 'rV[A]_1 | P i) f i = \big[M/idx]_(i in A | Q i) g i.
-Proof.
-move=> FG PQ.
-rewrite (reindex_onto (fun i => \row_(j < 1) i) (fun p => p ``_ ord0)) /=; last first.
-  move=> m Pm.
-  apply/matrixP => a b; rewrite {a}(ord1 a) {b}(ord1 b); by rewrite mxE.
-apply eq_big => a.
-  by rewrite PQ mxE eqxx andbT.
-by rewrite FG !mxE.
-Qed.
-
-Lemma big_singl_rV (f : A -> R) k :
-  \big[M/idx]_(i in A) f i = k -> \big[M/idx]_(i in 'rV[A]_1) f (i ``_ ord0) = k.
-Proof.
-move=> <-.
-rewrite (reindex_onto (fun j => \row_(i < 1) j) (fun p => p ``_ ord0)) /=.
-- apply eq_big => a; first by rewrite mxE eqxx inE.
-  move=> _; by rewrite mxE.
-- move=> t _; apply/matrixP => a b; by rewrite (ord1 a) (ord1 b) mxE.
-Qed.
-
-Lemma big_1_tuple F G P Q :
-  (forall i : 1.-tuple A, F i = G (thead i)) ->
-  (forall i : 1.-tuple A, P i = Q (thead i)) ->
-  \big[M/idx]_(i in {: 1.-tuple A} | P i) F i = \big[M/idx]_(i in A | Q i) G i.
-Proof.
-move=> FG PQ.
-rewrite (reindex_onto (fun i => [tuple of [:: i]]) (fun p => thead p)) /=; last first.
-  case/tupleP => h t X; by rewrite theadE (tuple0 t).
-apply eq_big => x //.
-by rewrite (PQ [tuple x]) /= theadE eqxx andbC.
-move=> X; by rewrite FG.
-Qed.
-
-Local Open Scope vec_ext_scope.
-Local Open Scope ring_scope.
-
-Lemma big_rV_cons n (F : 'rV[A]_n.+1 -> R) (a : A) :
-  \big[M/idx]_(v in 'rV[A]_n) (F (row_mx (\row_(k < 1) a) v)) =
-  \big[M/idx]_(v in 'rV[A]_n.+1 | v ``_ ord0 == a) (F v).
-Proof.
-symmetry.
-rewrite (reindex_onto (fun j : 'rV[A]_n => row_mx (\row_(k < 1) a) j)
-  (fun p : 'rV[A]_n.+1 => rbehead p)) /=; last first.
-  move=> m Hm.
-  apply/matrixP => i j; rewrite {i}(ord1 i).
-  rewrite row_mx_rbehead //.
-  by apply/eqP.
-apply eq_bigl => /= x.
-by rewrite rbehead_row_mx eqxx andbT row_mx_row_ord0 eqxx.
-Qed.
-
-Lemma big_rV_behead n (F : 'rV[A]_n.+1 -> R) (w : 'rV[A]_n) :
-  \big[M/idx]_(a in A) (F (row_mx (\row_(k < 1) a) w)) =
-  \big[M/idx]_(v in 'rV[A]_n.+1 | rbehead v == w) (F v).
-Proof.
-apply/esym.
-rewrite (reindex_onto (fun p => row_mx (\row_(k < 1) p) w) (fun p => p ``_ ord0) ) /=; last first.
-  move=> i /eqP <-.
-  apply/matrixP => a b; rewrite {a}(ord1 a).
-  by rewrite row_mx_rbehead.
-apply eq_bigl => /= a.
-by rewrite rbehead_row_mx eqxx /= row_mx_row_ord0 eqxx.
-Qed.
-
-Lemma big_rV_cons_behead_support n (F : 'rV[A]_n.+1 -> R) (X1 : {set A}) (X2 : {set {: 'rV[A]_n}}) :
-  \big[M/idx]_(a in X1) \big[M/idx]_(v in X2) (F (row_mx (\row_(k < 1) a) v))
-  =
-  \big[M/idx]_(w in 'rV[A]_n.+1 | (w ``_ ord0 \in X1) && (rbehead w \in X2)) (F w).
-Proof.
-apply/esym.
-rewrite (@partition_big _ _ _ _ _ _ (fun x : 'rV[A]_n.+1 => x ``_ ord0) (mem X1)) //=.
-- apply eq_bigr => i Hi.
-  rewrite (reindex_onto (fun j : 'rV[A]_n => row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
-    move=> j Hj.
-    case/andP : Hj => Hj1 /eqP => <-.
-    apply/matrixP => a b; rewrite {a}(ord1 a).
-    by rewrite row_mx_rbehead.
-  apply congr_big => // x /=.
-  by rewrite rbehead_row_mx eqxx andbT row_mx_row_ord0 eqxx Hi andbT.
-move=> i; by case/andP.
-Qed.
-
-Lemma big_rV_cons_behead n (F : 'rV[A]_n.+1 -> R) (P1 : pred A) (P2 : pred 'rV[A]_n) :
-  \big[M/idx]_(i in A | P1 i) \big[M/idx]_(j in 'rV[A]_n | P2 j) (F (row_mx (\row_(k < 1) i) j))
-  =
-  \big[M/idx]_(p in 'rV[A]_n.+1 | (P1 (p ``_ ord0)) && (P2 (rbehead p)) ) (F p).
-Proof.
-symmetry.
-rewrite (@partition_big _ _ _ _ _ _ (fun x : 'rV[A]_n.+1 => x ``_ ord0)
-  (fun x : A => P1 x)) //=.
-- apply eq_bigr => i Hi.
-  rewrite (reindex_onto (fun j : 'rV[A]_n => row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
-    move=> j Hj.
-    case/andP : Hj => Hj1 /eqP => <-.
-    apply/matrixP => a b; rewrite {a}(ord1 a).
-    by rewrite row_mx_rbehead.
-  apply congr_big => // x /=.
-  by rewrite row_mx_row_ord0 rbehead_row_mx 2!eqxx Hi !andbT.
-move=> i; by case/andP.
-Qed.
-
-End bigop_com_law.
-
-Section big_tuple_ffun.
-
-Import Monoid.Theory.
-
-Variable R : Type.
-Variable times : Monoid.mul_law 0.
-Local Notation "*%M" := times (at level 0).
-Variable plus : Monoid.add_law 0 *%M.
-Local Notation "+%M" := plus (at level 0).
-
-Lemma big_tuple_ffun (I J : finType) (F : {ffun I -> J} -> R)
-  (G : _ -> _ -> _) (jdef : J) (idef : I) :
-  \big[+%M/0]_(j : #|I|.-tuple J) G (F (Finfun j)) (nth jdef j 0)
-    = \big[+%M/0]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
-Proof.
-rewrite (reindex_onto (fun y => fgraph y) (fun p => Finfun p)) //.
-apply eq_big; first by case => t /=; by rewrite eqxx.
-move=> i _.
-congr (G _ _).
-  by case: i.
-case: i => [ [tval Htval] ].
-rewrite [fgraph _]/= -(nth_map idef jdef); last first.
-  rewrite -cardE; apply/card_gt0P; by exists idef.
-by rewrite -codomE codom_ffun.
-Qed.
-
-End big_tuple_ffun.
-
-Local Open Scope reals_ext_scope.
-
 (** * Instantiation of canonical big operators with Coq reals *)
 
 Notation "\rsum_ ( i <- r | P ) F" := (\big[Rplus/R0]_(i <- r | P%B) F)
@@ -468,6 +75,37 @@ Notation "\rprod_ ( i 'in' A ) F" := (\big[Rmult/R1]_(i in A) F)
   (at level 41, F at level 41, i, A at level 50,
            format "'[' \rprod_ ( i  'in'  A ) '/  '  F ']'").
 
+Notation "\rmax_ ( i <- r | P ) F" := (\big[Rmax/R0]_(i <- r | P%B) F)
+  (at level 41, F at level 41, i, r at level 50,
+           format "'[' \rmax_ ( i  <-  r  |  P ) '/  '  F ']'").
+Notation "\rmax_ ( i <- r ) F" :=  (\big[Rmax/R0]_(i <- r) F)
+  (at level 41, F at level 41, i, r at level 50,
+           format "'[' \rmax_ ( i  <-  r ) '/  '  F ']'").
+Notation "\rmax_ ( i | P ) F" := (\big[Rmax/R0]_(i | P%B) F)
+  (at level 41, F at level 41, i at level 50,
+           format "'[' \rmax_ ( i  |  P ) '/  '  F ']'").
+Notation "\rmax_ ( i : t | P ) F" := (\big[Rmax/R0]_(i : t | P%B) F)
+  (at level 41, F at level 41, i at level 50,
+           only parsing).
+Notation "\rmax_ ( i : t ) F" := (\big[Rmax/R0]_(i : t) F)
+  (at level 41, F at level 41, i at level 50,
+           only parsing).
+Notation "\rmax_ ( i 'in' A | P ) F" := (\big[Rmax/R0]_(i in A | P%B) F)
+  (at level 41, F at level 41, i, A at level 50,
+           format "'[' \rmax_ ( i  'in'  A  |  P ) '/  '  F ']'").
+Notation "\rmax_ ( i 'in' A ) F" := (\big[Rmax/R0]_(i in A) F)
+  (at level 41, F at level 41, i, A at level 50,
+           format "'[' \rmax_ ( i  'in'  A ) '/  '  F ']'").
+Reserved Notation "\min^ b '_(' a 'in' A ) F" (at level 41,
+  F at level 41, a, A at level 50,
+   format "'[' \min^ b '_(' a  'in'  A ) '/  '  F ']'").
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Open Scope reals_ext_scope.
+
 Canonical addR_monoid := Monoid.Law addRA add0R addR0.
 Canonical addR_comoid := Monoid.ComLaw addRC.
 Canonical mulR_monoid := Monoid.Law mulRA mul1R mulR1.
@@ -501,6 +139,9 @@ Proof. move=> x y /=; by rewrite mulRDl. Qed.
 
 Lemma morph_exp2_plus : {morph [eta exp2] : x y / x + y >-> x * y}.
 Proof. move=> ? ? /=; by rewrite -exp2_plus. Qed.
+
+Lemma iter_Rmax a b (Hb : b <= a) k : ssrnat.iter k (Rmax b) a = a.
+Proof. elim: k => // k Hk; by rewrite iterS Hk Rmax_right. Qed.
 
 (** Rle, Rlt lemmas for big sums of reals *)
 
@@ -852,4 +493,346 @@ have -> : \rprod_(i < n.+1) f ta ``_ (lift ord0 i) = \rprod_(i < n.+1) f tl ``_ 
 rewrite oppRD [X in _ = X]big_ord_recl IH.
 congr (_ + _)%R.
 apply eq_bigr => i _; by rewrite mxE.
+Qed.
+
+Section bigrmax_sect.
+
+Variables (A : eqType) (F : A -> R) (s : seq A).
+
+Lemma Rle_bigRmax : forall m, m \in s -> F m <= \rmax_(m <- s) (F m).
+Proof.
+elim: s => // hd tl IH m; rewrite in_cons; case/orP.
+- move/eqP => ->; rewrite big_cons; by apply Rmax_l.
+- move/IH => H; rewrite big_cons.
+  eapply Rle_trans; by [apply H | apply Rmax_r].
+Qed.
+
+Lemma Rle_0_bigRmax : (forall r, r \in s -> 0 <= F r) -> 0 <= \rmax_(m <- s) (F m).
+Proof.
+case: s => [_ | hd tl Hr].
+- rewrite big_nil; by apply Rle_refl.
+- apply Rle_trans with (F hd); last by rewrite big_cons; apply Rmax_l.
+  apply Hr; by rewrite in_cons eqxx.
+Qed.
+
+End bigrmax_sect.
+
+Lemma bigrmax_undup (I : eqType) g : forall (s : seq I),
+   \rmax_(c <- s) g c = \rmax_(c <- undup s) g c.
+Proof.
+elim=> // hd tl IH /=.
+rewrite big_cons.
+case: ifP => Hcase.
+- rewrite -IH Rmax_right //; by apply Rle_bigRmax.
+- by rewrite big_cons IH.
+Qed.
+
+Lemma bigrmax_cat (I : eqType) g : forall (s1 s2 : seq I),
+  (forall x, x \in s1 ++ s2 -> 0 <= g x) ->
+  \rmax_(c <- s1 ++ s2) g c = Rmax (\rmax_(c <- s1) g c) (\rmax_(c <- s2) g c).
+Proof.
+elim => [s2 Hg /= | h1 t1 IH s2 Hg /=].
+  rewrite big_nil Rmax_right //.
+  by apply Rle_0_bigRmax.
+rewrite 2!big_cons IH; last first.
+  move=> x Hx; apply Hg.
+  by rewrite /= in_cons Hx orbC.
+by rewrite RmaxA.
+Qed.
+
+Lemma bigrmax_perm (I : eqType) g : forall (s1 s2 : seq I),
+  (forall r, r \in s2 -> 0 <= g r) ->
+  perm_eq s1 s2 -> uniq s1 -> uniq s2 ->
+  \rmax_(c0 <- s1) g c0 = \rmax_(c0 <- s2) g c0.
+Proof.
+move=> s1.
+move H : (size s1) => n1.
+elim: n1 s1 H => //.
+  case=> // _ s _ Hs.
+  suff -> : s = [::].
+    move=> _ _; by rewrite !big_nil.
+  destruct s => //.
+  move/allP : Hs.
+  move/(_ s).
+  by rewrite /= inE eqxx /= => /(_ Logic.eq_refl) /= add1n.
+move=> n1 IH1 [|h1 t1] // [] H1 s2 Hg Hs2 K1 K2.
+rewrite big_cons.
+have [h2 [t2 ht2]] : exists h2 t2, s2 = h2 ++ h1 :: t2.
+  apply in_cat; by rewrite -(perm_eq_mem Hs2) in_cons eqxx.
+have Hs2' : perm_eq t1 (h2 ++ t2).
+  rewrite ht2 in Hs2.
+  rewrite -(perm_cons h1).
+  eapply perm_eq_trans; first by apply Hs2.
+  by rewrite perm_catC /= perm_cons perm_catC.
+have Hg' r : r \in h2 ++ t2 -> 0 <= g r.
+  move=> rs2; apply Hg.
+  rewrite ht2 mem_cat in_cons.
+  rewrite mem_cat in rs2.
+  case/orP : rs2 => [-> // | -> /=].
+  by rewrite orbA orbC.
+rewrite (IH1 _ H1 _ Hg' Hs2'); last 2 first.
+  by case/andP : K1.
+  rewrite ht2 cat_uniq /= in K2.
+  case/andP : K2 => K2 /andP [] K4 /andP [] _ K3.
+  rewrite cat_uniq K2 K3 /= andbC /=.
+  rewrite negb_or in K4.
+  by case/andP : K4.
+rewrite bigrmax_cat // RmaxA (RmaxC (g h1)) -RmaxA ht2 bigrmax_cat; last first.
+  move=> x Hx; apply Hg; by rewrite ht2.
+by rewrite big_cons.
+Qed.
+
+Lemma bigrmax_eqi (I : finType) g : forall (s1 s2 : seq I),
+  (forall r : I, r \in s1 -> 0 <= g r) -> s1 =i s2 ->
+  \rmax_(c0 <- s1) g c0 = \rmax_(c0 <- s2) g c0.
+Proof.
+move=> s1 s2 Hg s1s2.
+rewrite (bigrmax_undup _ s1) (bigrmax_undup g s2).
+apply bigrmax_perm; [ | | by rewrite undup_uniq | by rewrite undup_uniq].
+- move=> r Hr; apply Hg.
+  rewrite mem_undup in Hr.
+  by rewrite s1s2.
+- apply uniq_perm_eq; [by rewrite undup_uniq | by rewrite undup_uniq | ].
+  move=> i; by rewrite !mem_undup.
+Qed.
+
+Lemma rmax_imset' {M : finType} (I : finType) h (g : I -> R) (s : seq M) :
+  (forall r : I, r \in enum [set h x | x in s] -> 0 <= g r) ->
+  \rmax_(c0 <- enum [set h x | x in s]) g c0 = \rmax_(m <- s) g (h m).
+Proof.
+elim: s.
+  rewrite big_nil.
+  set tmp := enum _.
+  suff -> : tmp = [::] by rewrite big_nil.
+  rewrite /tmp -[in X in _ = X]enum0.
+  apply eq_enum => a.
+  rewrite !inE.
+  apply/imsetP. case => m.
+  by rewrite in_nil.
+move=> hd tl IH Hg /=.
+rewrite big_cons -IH; last first.
+  move=> r Hr.
+  apply Hg.
+  rewrite mem_enum.
+  apply/imsetP.
+  rewrite mem_enum in Hr.
+  case/imsetP : Hr => x xtl Hr.
+  exists x => //.
+  by rewrite in_cons xtl orbC.
+transitivity (\rmax_(c0 <- h hd :: enum [set h x | x in tl]) g c0).
+apply bigrmax_eqi => // x.
+rewrite inE !mem_enum.
+move Hlhs : (x \in [set _ _ | _ in _]) => lhs.
+destruct lhs.
+  - case/imsetP : Hlhs => x0 Hx0 H.
+    rewrite in_cons in Hx0.
+    case/orP : Hx0 => Hx0.
+      move/eqP : Hx0 => ?; subst x0.
+      by rewrite H eqxx.
+    symmetry.
+    apply/orP; right.
+    apply/imsetP; by exists x0.
+  - symmetry.
+    apply/negbTE.
+    move/negbT : Hlhs.
+    apply contra.
+    case/orP => Hcase.
+    + move/eqP in Hcase; subst x.
+      apply/imsetP.
+      exists hd => //.
+      by rewrite inE eqxx.
+    + apply/imsetP.
+      case/imsetP : Hcase => x0 Hx0 ?; subst x.
+      exists x0 => //.
+      by rewrite inE Hx0 orbC.
+by rewrite big_cons.
+Qed.
+
+Lemma rmax_imset {M : finType} (I : finType) h (g : I -> R) :
+  (forall r : I, r \in [set h x | x in M] -> 0 <= g r) ->
+  \rmax_(c0 in [set h x | x in M]) g c0 = \rmax_(m in M) g (h m).
+Proof.
+move=> Hg.
+eapply trans_eq.
+  eapply trans_eq; last first.
+    apply (@rmax_imset' _ I h g (enum M)).
+    move=> r; rewrite mem_enum; case/imsetP => x; rewrite mem_enum => Hx ->.
+    apply Hg; apply/imsetP; by exists x.
+  rewrite big_filter /=.
+  apply congr_big => //.
+  move=> i /=.
+  move Hlhs : (i \in _) => lhs.
+  destruct lhs.
+  - case/imsetP : Hlhs => x Hx ?; subst i.
+    symmetry; apply/imsetP.
+    exists x => //.
+    by rewrite mem_enum.
+  - symmetry.
+    apply/negbTE.
+    move/negbT : Hlhs; apply contra.
+    case/imsetP => m Hm ?; subst i.
+    apply/imsetP.
+    by exists m.
+apply congr_big => //; by rewrite enumT.
+Qed.
+
+Lemma Rle_bigrmax_R {A : finType} (h : A -> R) (tl : seq A) hd :
+  (forall r, 0 <= h r) ->
+  (forall c : A, c \in tl -> h c <= h hd) ->
+  \rmax_(j <- tl) h j <= h hd.
+Proof.
+elim: tl hd => [hd Hh _ | hd1 tl2 IH hd Hhpos Hh].
+  rewrite big_nil; by apply Hh.
+rewrite big_cons.
+apply Rmax_lub.
+- apply Hh.
+  by rewrite in_cons eqxx.
+- apply IH => // c0 Hc0; apply Hh.
+  by rewrite in_cons Hc0 orbC.
+Qed.
+
+Lemma bigrmax_max_seq {A : finType} (h : A -> R) (s : seq A) a :
+  a \in s ->
+  (forall r, 0 <= h r) ->
+  (forall c, c \in s -> h c <= h a) ->
+  h a = \rmax_(c <- s) h c.
+Proof.
+elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
+- move/eqP => -> Hhpos Hh.
+  rewrite big_cons.
+  rewrite Rmax_left //.
+  apply Rle_bigrmax_R => //.
+  move=> c0 Hc0; apply Hh.
+  by rewrite in_cons Hc0 orbC.
+- move=> atl Hhpos Hh.
+  rewrite big_cons Rmax_right //.
+  + apply IH => //.
+    move=> c0 Hc0; apply Hh.
+    by rewrite in_cons Hc0 orbC.
+  + rewrite -(IH a) //.
+    * apply Hh.
+      by rewrite in_cons eqxx.
+    * move=> c0 Hc0.
+      apply Hh.
+      by rewrite in_cons Hc0 orbC.
+Qed.
+
+Lemma bigrmax_max {A : finType} (C : {set A}) a (h : A -> R):
+  a \in C ->
+  (forall r, 0 <= h r) ->
+  (forall c, c \in C -> h c <= h a) ->
+  h a = \rmax_(c | c \in C) h c.
+Proof.
+move=> aC Hhpos Hh.
+rewrite -big_filter.
+apply bigrmax_max_seq => //.
+- by rewrite mem_filter aC /= mem_index_enum.
+- move=> c0.
+  rewrite mem_filter.
+  case/andP => ? ?.
+  by apply Hh.
+Qed.
+
+Local Open Scope R_scope.
+
+Lemma rmax_distrr I a (apos: 0 <= a) r (Q:pred I) F :
+  ((a * \rmax_(i <- r | Q i) F i) = \rmax_(i <- r | Q i) (a * F i)).
+Proof.
+elim: r => [| h t IH].
+  by rewrite 2!big_nil mulR0.
+rewrite 2!big_cons.
+case: ifP => Qh //.
+by rewrite -IH RmaxRmult.
+Qed.
+
+Lemma rmax_distrl I a (apos: 0 <= a) r (Q:pred I) F :
+  ((\rmax_(i <- r | Q i) F i) * a = \rmax_(i <- r | Q i) (F i * a)).
+Proof.
+rewrite mulRC rmax_distrr //.
+by apply congr_big; auto using mulRC.
+Qed.
+
+Notation "\min^ b '_(' a 'in' A ) F" :=
+((fun a => F) (arg_min b (fun x => x \in A) (fun a => F))) : min_scope.
+
+Local Open Scope min_scope.
+
+Lemma bigminn_min {A : finType} (C : {set A}) (cnot0 : {c0 | c0 \in C}) a (Ha : a \in C) (h : A -> nat) :
+  (\min^ (sval cnot0) _(c in C) h c <= h a)%nat.
+Proof.
+case: arg_minP.
+by destruct cnot0.
+move=> a0 a0C H.
+by apply H.
+Qed.
+
+(* TODO: useless ? *)
+Lemma big_rmax_bigminn_helper {A : finType} n (g : nat -> R) :
+  (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
+  (forall r, 0 <= g r) ->
+  forall (C : {set n.-tuple A}) c'' (_ : c'' \in C) (d : n.-tuple A -> nat)
+  (_ : forall c, c \in C -> (d c <= n)%nat)
+  (cnot0 : {c0 | c0 \in C}),
+  d c'' = \min^ (sval cnot0) _(c in C) d c ->
+  g (d c'') = \rmax_(c in C) g (d c).
+Proof.
+move=> Hdecr Hr C c'' Hcc' d Hd cnot0 H.
+apply (@bigrmax_max _ C c'' (fun a => g (d a))) => //.
+move=> /= c0 c0C.
+apply Hdecr.
+apply/andP; split.
+  rewrite H.
+  by apply bigminn_min.
+by apply Hd.
+Qed.
+
+Lemma big_rmax_bigminn {A M : finType} n (f : {ffun M -> n.-tuple A}) (g : nat -> R)
+  (cnot0 : {c0 | c0 \in f @: M } ) :
+  (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
+  (forall r, 0 <= g r) ->
+  forall m'' (d : n.-tuple A -> nat)
+  (_ : forall c0 : n.-tuple A, c0 \in [set f x | x : M] -> (d c0 <= n)%nat),
+  d (f m'') = \min^ (sval cnot0) _(c in [set f x | x in M]) d c ->
+  g (d (f m'')) = \rmax_(m | m \in M) g (d (f m)).
+Proof.
+move=> n1n2 Hg m'' d H Hd.
+transitivity (\rmax_(c in [set f x | x in M]) g (d c)); last by rewrite rmax_imset.
+apply big_rmax_bigminn_helper with cnot0 => //.
+apply/imsetP.
+by exists m''.
+Qed.
+
+Lemma big_rmax_bigminn_helper_vec {A : finType} n (g : nat -> R) :
+  (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
+  (forall r, 0 <= g r) ->
+  forall (C : {set 'rV[A]_n}) c'' (_ : c'' \in C) (d : 'rV[A]_n -> nat)
+  (_ : forall c, c \in C -> (d c <= n)%nat)
+  (cnot0 : {c0 | c0 \in C}),
+  d c'' = \min^ (sval cnot0) _(c in C) d c ->
+  g (d c'') = \rmax_(c in C) g (d c).
+Proof.
+move=> Hdecr Hr C c'' Hcc' d Hd cnot0 H.
+apply (@bigrmax_max _ C c'' (fun a => g (d a))) => //.
+move=> /= c0 c0C.
+apply Hdecr.
+apply/andP; split.
+  rewrite H.
+  by apply bigminn_min.
+by apply Hd.
+Qed.
+
+Lemma big_rmax_bigminn_vec {A M : finType} n (f : {ffun M -> 'rV[A]_n}) (g : nat -> R)
+  (cnot0 : {c0 | c0 \in f @: M } ) :
+  (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
+  (forall r, 0 <= g r) ->
+  forall m'' (d : 'rV[A]_n -> nat)
+  (_ : forall c0 : 'rV[A]_n, c0 \in f @: M -> (d c0 <= n)%nat),
+  d (f m'') = \min^ (sval cnot0) _(c in f @: M) d c ->
+  g (d (f m'')) = \rmax_(m in M) g (d (f m)).
+Proof.
+move=> n1n2 Hg m'' d H Hd.
+transitivity (\rmax_(c in f @: M) g (d c)); last by rewrite rmax_imset.
+apply big_rmax_bigminn_helper_vec with cnot0 => //.
+apply/imsetP.
+by exists m''.
 Qed.

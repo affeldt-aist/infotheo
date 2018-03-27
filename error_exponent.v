@@ -22,7 +22,7 @@ Section mutinfo_distance_bound.
 Variable A B : finType.
 Variables V W : `Ch_1(A, B).
 Variable P : dist A.
-Hypothesis V_dom_by_W : V << W | P.
+Hypothesis V_dom_by_W : P|- V << W.
 Hypothesis cdiv_ub : D(V || W | P) <= (exp(-2)) ^ 2 * / 2.
 
 Let cdiv_bounds : 0 <= sqrt (2 * D(V || W | P)) <= exp (-2).
@@ -129,7 +129,7 @@ Hypothesis minRate_cap : minRate > cap.
 
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
   forall P : dist A, forall V : `Ch_1(A, B),
-    V << W | P ->
+    P |- V << W ->
     Delta <= D(V || W | P) +  +| minRate - `I(P ; V) |.
 Proof.
 set gamma := / (INR #|B| + INR #|A| * INR #|B|) * (ln 2 * ((minRate - cap) / 2)).

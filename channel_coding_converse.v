@@ -19,6 +19,7 @@ Local Open Scope tuple_ext_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope types_scope.
+Local Open Scope divergence_scope.
 
 Section channel_coding_converse_intermediate_lemma.
 
@@ -58,7 +59,7 @@ rewrite -exp2_plus.
 apply exp2_le_increasing.
 rewrite -mulRDr 2!mulNR.
 apply Ropp_le_contravar, Rmult_le_compat_l; first by apply pos_INR.
-have {Hcase}Hcase : Vmax << W | Pmax.
+have {Hcase}Hcase : Pmax |- Vmax << W.
   move=> a Hp b /eqP Hw.
   move/forallP : Hcase.
   by move/(_ a)/implyP/(_ Hp)/forallP/(_ b)/implyP/(_ Hw)/eqP.
@@ -169,7 +170,7 @@ apply Rmult_le_compat.
         rewrite -pow_inv; last first.
           by apply Rinv_neq_0_compat, not_eq_sym, Rlt_not_eq.
         rewrite invRK //; exact/not_eq_sym/Rlt_not_eq.
-      rewrite /Rdiv; f_equal.
+      rewrite /Rdiv; congr (_ * _).
       rewrite !Rpow_mult_distr -(tech_pow_Rmult (INR n)).
       field.
 Qed.

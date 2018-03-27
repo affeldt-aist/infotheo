@@ -3,16 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg perm zmodp matrix vector.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext ssralg_ext Rssr Rbigop Rbigop_max f2 proba.
+Require Import Rssr Reals_ext ssr_ext ssralg_ext Rbigop f2 proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-Local Close Scope R_scope.
-Import GRing.Theory.
-Local Open Scope ring_scope.
 
 (** * The variety of decoders *)
 
@@ -25,6 +17,16 @@ Local Open Scope ring_scope.
 - Section MAP_decoding.
 - Section MAP_decoding_prop.
 *)
+
+Reserved Notation "t .-BDD f" (at level 2, format "t  .-BDD  f").
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Close Scope R_scope.
+Import GRing.Theory.
+Local Open Scope ring_scope.
 
 Definition repairT (B A : finType) n := {ffun 'rV[B]_n -> option 'rV[A]_n}.
 
@@ -90,8 +92,7 @@ Definition BD_decoding t :=
 
 End bounded_distance_decoding.
 
-Notation "t .-BDD f" := (BD_decoding (fst f) (snd f) t)
-  (at level 2, format "t  .-BDD  f") : type_scope.
+Notation "t .-BDD f" := (BD_decoding (fst f) (snd f) t) : ecc_scope.
 
 Local Open Scope proba_scope.
 Local Open Scope channel_scope.

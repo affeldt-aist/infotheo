@@ -4,15 +4,6 @@ From mathcomp Require Import poly polydiv finset finalg zmodp matrix mxalgebra.
 From mathcomp Require Import mxpoly vector cyclic perm.
 Require Import ssr_ext ssralg_ext hamming cyclic_code.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Import GRing.Theory.
-Local Open Scope ring_scope.
-
-Local Open Scope vec_ext_scope.
-
 (** * Discrete Fourier transform and BCH argument *)
 
 (** OUTLINE
@@ -27,6 +18,17 @@ Local Open Scope vec_ext_scope.
 - Section shifts.
 - Section BCH_argument.
 *)
+
+Reserved Notation "v ^`_( f , i )" (at level 9).
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Import GRing.Theory.
+Local Open Scope ring_scope.
+
+Local Open Scope vec_ext_scope.
 
 Section not_nth_root_of_unity.
 
@@ -119,8 +121,7 @@ Qed.
 
 End frequency_domain_coordinates.
 
-Notation "v ^`_( f , i )" := (fdcoor f v i) (at level 9) : dft_scope.
-
+Notation "v ^`_( f , i )" := (fdcoor f v i) : dft_scope.
 Local Open Scope dft_scope.
 
 Section fdcoor_cyclic.

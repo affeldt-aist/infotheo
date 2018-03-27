@@ -6,6 +6,10 @@ Require Import Reals Fourier FunctionalExtensionality ProofIrrelevance.
 Require Import Reals_ext ssr_ext ssralg_ext Rssr log2 Rbigop proba entropy.
 Require Import num_occ channel_code channel typ_seq.
 
+Reserved Notation "'P_' n '(' A ')'" (at level 9, n, A at next level).
+Reserved Notation "'T_{' P '}'" (at level 9).
+Reserved Notation "P '.-typed_code' c" (at level 50, c at next level).
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -34,7 +38,7 @@ End type.
 
 Coercion type_coercion := type.d.
 
-Notation "'P_' n '(' A ')'" := (type.type A n) (at level 9, n, A at next level) : types_scope.
+Notation "'P_' n '(' A ')'" := (type.type A n) : types_scope.
 
 Local Open Scope types_scope.
 
@@ -336,7 +340,7 @@ Definition typed_tuples :=
 
 End typed_tuples.
 
-Notation "'T_{' P '}'" := (typed_tuples P) (at level 9) : types_scope.
+Notation "'T_{' P '}'" := (typed_tuples P) : types_scope.
 
 Section typed_tuples_facts.
 
@@ -713,5 +717,4 @@ Definition tcode : typed_code B M P := mkTypedCode tcode_typed_prop.
 
 End typed_code_of_code.
 
-Notation "P '.-typed_code' c" := (tcode P c)
-  (at level 50, c at next level) : types_scope.
+Notation "P '.-typed_code' c" := (tcode P c) : types_scope.

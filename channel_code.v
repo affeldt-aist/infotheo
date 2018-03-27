@@ -5,14 +5,17 @@ From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import Reals_ext Rssr log2 Rbigop proba channel.
 
+(** * Definition of a channel code *)
+
+Reserved Notation "e( W , c )" (at level 50).
+Reserved Notation "echa( W , c )" (at level 50).
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope proba_scope.
 Local Open Scope channel_scope.
-
-(** * Definition of a channel code *)
 
 Section code_definition.
 
@@ -65,9 +68,8 @@ Qed.
 
 End code_definition.
 
-Notation "e( W , c )" := (ErrRateCond W c) (at level 50) : channel_code_scope.
-
-Notation "echa( W , c )" := (CodeErrRate W c) (at level 50) : channel_code_scope.
+Notation "e( W , c )" := (ErrRateCond W c) : channel_code_scope.
+Notation "echa( W , c )" := (CodeErrRate W c) : channel_code_scope.
 
 (** Definition of the set of (code) rates (unit: bits per transmission): *)
 

@@ -5,14 +5,6 @@ From mathcomp Require Import prime ssralg poly polydiv finset fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
 Require Import ssr_ext ssralg_ext poly_ext f2 hamming decoding channel_code.
 
-Import GRing.Theory.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-Local Open Scope ring_scope.
-
 (** * Definition of Linear Codes and Basic Properties *)
 
 (**
@@ -31,6 +23,14 @@ OUTLINE:
 - Module Syslcode: linear codes in systematic form
 - Section syslcode_properties
 *)
+
+Import GRing.Theory.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Open Scope ring_scope.
 
 (* TODO: move? *)
 Section AboutFinSet.
@@ -784,6 +784,8 @@ Variable (f : repairT F F n).
 Hypothesis C_not_trivial : not_trivial C.
 
 (** MD-decoding is BD-decoding *)
+
+Local Open Scope ecc_scope.
 
 Lemma MD_BDD (Himg : oimg f \subset C) :
   (forall x, f x != None) (* f does not fail *) ->

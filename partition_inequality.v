@@ -2,8 +2,8 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype finfun bigop finset.
 Require Import Reals Fourier.
-Require Import Reals_ext Ranalysis_ext ssr_ext log2 ln_facts Rbigop Rssr proba.
-Require Import divergence log_sum variation_dist.
+Require Import Rssr Reals_ext Ranalysis_ext ssr_ext log2 ln_facts bigop_ext.
+Require Import Rbigop proba divergence log_sum variation_dist.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

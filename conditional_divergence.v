@@ -6,6 +6,13 @@ Require Import Reals Fourier Rpower.
 Require Import Reals_ext ssr_ext ssralg_ext Rssr log2 Rbigop ln_facts.
 Require Import num_occ proba entropy channel divergence types jtypes.
 
+(** * Conditional divergence *)
+
+Reserved Notation "P '|-' V '<<' W" (at level 5, V, W at next level).
+Reserved Notation "P '|-' V '<<b' W" (at level 5, V, W at next level).
+Reserved Notation "'D(' V '||' W '|' P ')'"
+  (at level 50, V, W, P at next level).
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -17,8 +24,6 @@ Local Open Scope channel_scope.
 Local Open Scope divergence_scope.
 Local Open Scope num_occ_scope.
 Local Open Scope types_scope.
-
-(** * Conditional divergence *)
 
 Section condition_equivalence.
 
@@ -51,10 +56,10 @@ Qed.
 
 End condition_equivalence.
 
-Notation "V '<<' W '|' P" := (cdom_by V W P) (at level 5, P at next level) : channel_scope.
+Notation "P '|-' V '<<' W" := (cdom_by V W P) : divergence_scope.
 
-Notation "V '<<b' W '|' P" := ([forall a, (P a != 0) ==> (V a) <<b (W a)])
-  (at level 5) : channel_scope.
+Notation "P '|-' V '<<b' W" := ([forall a, (P a != 0) ==> (V a) <<b (W a)])
+  : divergence_scope.
 
 Section joint_dom_sect.
 
@@ -62,7 +67,7 @@ Variable A B : finType.
 Variables V W : `Ch_1(A, B).
 Variable P : dist A.
 
-Lemma joint_dom : V << W | P -> dom_by (`J(P, V)) (`J(P, W)) (*NB: notation issue*).
+Lemma joint_dom : P |- V << W -> dom_by (`J(P, V)) (`J(P, W)) (*NB: notation issue*).
 Proof.
 move => V_dom_by_W => ab /= Hab.
 case: (Rle_lt_or_eq_dec _ _ (dist_nonneg P ab.1)) => Hab1.
@@ -88,8 +93,7 @@ Definition cdiv := \rsum_(a : A) P a * D(V a || W a).
 
 End conditional_divergence_def.
 
-Notation "'D(' V '||' W '|' P ')'" := (cdiv V W P)
-  (at level 50, V, W, P at next level) : divergence_scope.
+Notation "'D(' V '||' W '|' P ')'" := (cdiv V W P) : divergence_scope.
 
 Section conditional_divergence_prop.
 
@@ -97,7 +101,7 @@ Variables A B : finType.
 Variables V W : `Ch_1(A, B).
 Variable P : dist A.
 
-Hypothesis V_dom_by_W : V << W | P.
+Hypothesis V_dom_by_W : P |- V << W.
 
 Lemma cdiv_is_div_joint_dist : D(V || W | P) =  D(`J(P , V) || `J(P , W)).
 Proof.
@@ -184,7 +188,7 @@ Qed.
 
 Local Close Scope tuple_ext_scope.
 
-Hypothesis W0_V0 : V << W | P.
+Hypothesis W0_V0 : P |- V << W.
 Hypothesis Hx : tuple_of_row x \in T_{P}.
 Hypothesis HV : V \in \nu^{B}(P).
 Hypothesis Hy : tuple_of_row y \in V.-shell (tuple_of_row x).
@@ -270,14 +274,14 @@ Variable V : P_ n ( A , B ).
 Variable W : `Ch_1*(A, B).
 
 Definition exp_cdiv :=
-  if V <<b W | P
+  if P |- V <<b W
   then exp2 (- INR n * D(V || W | P))
   else 0.
 
-Lemma exp_cdiv_left (H : V << W | P) : exp_cdiv = exp2 (-INR n * D(V || W | P)).
+Lemma exp_cdiv_left (H : P |- V << W) : exp_cdiv = exp2 (-INR n * D(V || W | P)).
 Proof.
 rewrite /exp_cdiv.
-suff : V <<b W | P by move=> ->.
+suff : P |- V <<b W by move=> ->.
 apply/forallP => a.
 apply/implyP => Pa0.
 apply/forall_inP => b /eqP Wab.

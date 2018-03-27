@@ -4,9 +4,10 @@ Ranalysis_ext.v
 log2.v
 ln_facts.v
 ssr_ext.v
+bigop_ext.v
 Rbigop.v
-Rbigop_max.v
 proba.v
+jensen.v
 natbin.v
 ssralg_ext.v
 divergence.v

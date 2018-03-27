@@ -5,14 +5,17 @@ From mathcomp Require Import finset fingroup perm finalg zmodp matrix mxalgebra.
 From mathcomp Require Import mxrepresentation vector.
 Require Import ssr_ext f2.
 
+(** Additional lemmas about algebraic datatypes *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
+Reserved Notation "v `[ i := x ]" (at level 20).
+
 Import GRing.Theory.
 Local Open Scope ring_scope.
-
-(** Additional lemmas about algebraic datatypes *)
 
 Lemma sum_char2 (F : fieldType) (_ : 2 \in [char F]) k (f : 'I_k -> F) :
   (\sum_(i < k) (f i)) ^+ 2 = \sum_(i < k) (f i) ^+ 2.
@@ -32,8 +35,6 @@ Lemma iter_addr0_cV r : forall n (x : 'cV[R]_r), iter n (+%R 0) x = x.
 Proof. elim=> //= n IH x; by rewrite IH add0r. Qed.
 
 End AboutRingType.
-
-Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
 
 Local Open Scope vec_ext_scope.
 
@@ -105,7 +106,7 @@ Proof. apply/setP => i; by rewrite !inE mxE eqxx. Qed.
 Definition row_set B n (n0 : 'I_n) (x : B) (d : 'rV_n) :=
   \row_(i < n) if i == n0 then x else d ``_ i.
 
-Notation "v `[ i := x ]" := (row_set i x v) (at level 20) : vec_ext_scope.
+Notation "v `[ i := x ]" := (row_set i x v) : vec_ext_scope.
 
 Lemma row_set_comm n A (i1 i2 : 'I_n) (x1 x2 : A) d :
   i1 != i2 -> d `[ i2 := x2 ] `[ i1 := x1 ] = (d `[ i1 := x1 ]) `[ i2 := x2 ].

@@ -4,11 +4,11 @@ From mathcomp Require Import tuple finfun bigop.
 Require Import Reals Fourier.
 Require Import Reals_ext Rssr.
 
+(** * Additional lemmas about real analysis *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(** * Additional lemmas about real analysis *)
 
 (** Small extension to the mean value theorem to handle partially derivable functions *)
 
@@ -18,8 +18,8 @@ move : derg1 derg2.
 case => l Hl.
 case => m Hm.
 move: Hl Hm ; rewrite /derivable_pt_abs => Hl Hm.
-have ml : l = m by apply (uniqueness_limite g x) => //.
-subst m ; by rewrite /derive_pt /=.
+have ml : l = m by exact: (uniqueness_limite g x).
+by subst m.
 Qed.
 
 Lemma derivable_pt_cst : forall c x, derivable_pt (fun _ => c) x.

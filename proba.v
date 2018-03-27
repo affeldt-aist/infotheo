@@ -3,11 +3,37 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
-Require Import Reals_ext ssr_ext ssralg_ext log2 Rssr Rbigop.
+Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop.
+
+(** formalization of discrete probabilities *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Reserved Notation "{ 'dist' T }" (at level 0, format "{ 'dist'  T }").
+Reserved Notation "'`U' HC " (at level 10, HC at next level).
+Reserved Notation "P `^ n" (at level 5).
+Reserved Notation "P1 `x P2" (at level 6).
+Reserved Notation "{ 'rvar' T }" (at level 0, format "{ 'rvar'  T }").
+Reserved Notation "`p_ X" (at level 5).
+Reserved Notation "'Pr[' X '=' r ']'"
+  (at level 5, X at next level, r at next level).
+Reserved Notation "k \cst* X" (at level 49).
+Reserved Notation "X ''/' n" (at level 49, format "X  ''/'  n").
+Reserved Notation "X \+_( H ) Y" (at level 50).
+Reserved Notation "X \-_( H ) Y" (at level 50).
+Reserved Notation "X '\+cst' m" (at level 50).
+Reserved Notation "X '\-cst' m" (at level 50).
+Reserved Notation "X '\^2' " (at level 49).
+Reserved Notation "'`E'" (at level 5).
+Reserved Notation "X '\=sum' Xs" (at level 50).
+Reserved Notation "X '\=isum' Xs" (at level 50).
+Reserved Notation "'Pr[' X '>=' r ']'" (at level 5,
+  X at next level, r at next level, format "Pr[  X  >=  r  ]").
+Reserved Notation "'`V'" (at level 5).
+Reserved Notation "X _| P |_ Y" (at level 50).
+Reserved Notation "Z \= X '@+' Y" (at level 50).
 
 Local Open Scope reals_ext_scope.
 Local Open Scope tuple_ext_scope.
@@ -73,8 +99,7 @@ End distribution_definition.
 
 Definition dist_of (A : finType) := fun phT : phant (Finite.sort A) => dist A.
 
-Notation "{ 'dist' T }" := (dist_of (Phant T))
-  (at level 0, format "{ 'dist'  T }") : proba_scope.
+Notation "{ 'dist' T }" := (dist_of (Phant T)) : proba_scope.
 
 (** Uniform distribution *)
 
@@ -158,7 +183,7 @@ Definition d : dist A := locked (makeDist f0 f1).
 
 End UniformSupport_sect.
 
-Local Notation "'`U' HC " := (d HC) (at level 10, HC at next level).
+Local Notation "'`U' HC " := (d HC).
 
 Section UniformSupport_prop.
 
@@ -194,7 +219,7 @@ End UniformSupport_prop.
 
 End UniformSupport.
 
-Notation "'`U' HC " := (UniformSupport.d HC) (at level 10, HC at next level) : proba_scope.
+Notation "'`U' HC " := (UniformSupport.d HC) : proba_scope.
 
 Local Open Scope proba_scope.
 
@@ -413,7 +438,8 @@ End TupleDist_sect.
 
 End TupleDist.
 
-Notation "P `^ n" := (TupleDist.d P n) (at level 5) : proba_scope.
+Notation "P `^ n" := (TupleDist.d P n) : proba_scope.
+
 Local Open Scope proba_scope.
 
 Local Open Scope vec_ext_scope.
@@ -536,7 +562,7 @@ End ProdDist_sect.
 
 End ProdDist.
 
-Notation "P1 `x P2" := (ProdDist.d P1 P2) (at level 6) : proba_scope.
+Notation "P1 `x P2" := (ProdDist.d P1 P2) : proba_scope.
 
 Section tuple_prod_cast.
 
@@ -700,18 +726,17 @@ End Pr_tuple_prod.
 
 (** * Random Variable *)
 
-(** Definition of a random variable (#R#%$\mathbb{R}$%-valued) with a distribution: *)
+(** Definition of a random variable (R-valued) with a distribution: *)
 
 Record rvar A := mkRvar {rv_dist : dist A ; rv_fun :> A -> R }.
 
 Definition rvar_of (A : finType) := fun phT : phant (Finite.sort A) => rvar A.
 
-Notation "{ 'rvar' T }" := (rvar_of (Phant T))
-  (at level 0, format "{ 'rvar'  T }") : proba_scope.
+Notation "{ 'rvar' T }" := (rvar_of (Phant T)) : proba_scope.
 
-Notation "`p_ X" := (rv_dist X) (at level 5) : proba_scope.
+Notation "`p_ X" := (rv_dist X) : proba_scope.
 
-(** Probability that a random variable evaluates to #r \in R#%$r \in \mathbb{R}$%:*)
+(** Probability that a random variable evaluates to r \in R: *)
 
 Section pr_def.
 
@@ -721,7 +746,7 @@ Definition pr (X : rvar A) r := Pr `p_X [set x | X x == r].
 
 End pr_def.
 
-Notation "'Pr[' X '=' r ']'" := (pr X r) (at level 5, X at next level, r at next level) : proba_scope.
+Notation "'Pr[' X '=' r ']'" := (pr X r) : proba_scope.
 
 (** Some changes of variables: *)
 
@@ -743,13 +768,13 @@ Definition comp_rv A (X : rvar A) f :=
   mkRvar `p_X (fun x => f (X x)).
 Definition sq_rv A (X : rvar A) := comp_rv X (fun x => x ^ 2).
 
-Notation "k \cst* X" := (@scale_rv _ k X) (at level 49).
-Notation "X ''/' n" := (@scale_rv _ (1 / INR n) X) (at level 49, format "X  ''/'  n").
-Notation "X \+_( H ) Y" := (@add_rv _ X Y H) (at level 50).
-Notation "X \-_( H ) Y" := (@sub_rv _ X Y H) (at level 50).
-Notation "X '\+cst' m" := (trans_add_rv X m) (at level 50).
-Notation "X '\-cst' m" := (trans_min_rv X m) (at level 50).
-Notation "X '\^2' " := (sq_rv X) (at level 49).
+Notation "k \cst* X" := (@scale_rv _ k X) : proba_scope.
+Notation "X ''/' n" := (@scale_rv _ (1 / INR n) X) : proba_scope.
+Notation "X \+_( H ) Y" := (@add_rv _ X Y H) : proba_scope.
+Notation "X \-_( H ) Y" := (@sub_rv _ X Y H) : proba_scope.
+Notation "X '\+cst' m" := (trans_add_rv X m) : proba_scope.
+Notation "X '\-cst' m" := (trans_min_rv X m) : proba_scope.
+Notation "X '\^2' " := (sq_rv X) : proba_scope.
 
 (** The ``- log P'' random variable: *)
 
@@ -766,7 +791,6 @@ move=> A [d f]; apply mkRvar.
 - exact (d `^ 1).
 - exact (fun x => f (x ``_ ord0)).
 Defined.
-
 
 Definition cast_rv A : 'rV[rvar A]_1 -> {rvar 'rV[A]_1}.
 move=> t.
@@ -806,7 +830,7 @@ Qed.
 
 End expected_value_definition.
 
-Notation "'`E'" := (Ex) (at level 5) : proba_scope.
+Notation "'`E'" := (Ex) : proba_scope.
 
 Section expected_value_for_standard_random_variables.
 
@@ -877,7 +901,7 @@ Hypothesis X_nonneg : forall a, 0 <= X a.
 
 Definition pr_geq (X : rvar A) r := Pr `p_X [set x | X x >b= r].
 
-Notation "'Pr[' X '>=' r ']'" := (pr_geq X r) (at level 5, X at next level, r at next level, format "Pr[  X  >=  r  ]") : proba_scope.
+Local Notation "'Pr[' X '>=' r ']'" := (pr_geq X r).
 
 Lemma Ex_lb (r : R) : r * Pr[ X >= r] <= `E X.
 Proof.
@@ -904,6 +928,8 @@ Qed.
 
 End markov_inquality.
 
+Notation "'Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
+
 (** * Variance *)
 
 Section variance_definition.
@@ -923,7 +949,7 @@ Proof. rewrite /Var E_trans_id_rem E_trans_add_rv E_num_int_sub E_scale; field. 
 
 End variance_definition.
 
-Notation "'`V'" := (Var) (at level 5) : proba_scope.
+Notation "'`V'" := (Var) : proba_scope.
 
 Section variance_properties.
 
@@ -1066,7 +1092,7 @@ Definition inde_rv := forall x y,
 
 End independent_random_variables.
 
-Notation "X _| P |_ Y" := (inde_rv X Y P) (at level 50) : proba_scope.
+Notation "X _| P |_ Y" := (inde_rv X Y P) : proba_scope.
 
 (** Independent random variables over the tuple distribution: *)
 
@@ -1115,7 +1141,7 @@ Definition sum := joint `p_X1 `p_X2 `p_X /\
 
 End sum_two_rand_var_def.
 
-Notation "Z \= X '@+' Y" := (sum X Y Z) (at level 50) : proba_scope.
+Notation "Z \= X '@+' Y" := (sum X Y Z) : proba_scope.
 
 Section sum_two_rand_var.
 
@@ -1268,9 +1294,7 @@ Section sum_n_rand_var_def.
 
 Variable A : finType.
 
-(** The sum of #n >= 1#%$n \geq 1$% random variable(s): *)
-
-Reserved Notation "X '\=sum' Xs" (at level 50).
+(** The sum of n >= 1 random variable(s): *)
 
 Inductive sum_n : forall n,
   {rvar 'rV[A]_n} -> 'rV[rvar A]_n -> Prop :=
@@ -1281,7 +1305,7 @@ where "X '\=sum' Xs" := (sum_n X Xs) : proba_scope.
 
 End sum_n_rand_var_def.
 
-Notation "X '\=sum' Xs" := (sum_n X Xs) (at level 50) : proba_scope.
+Notation "X '\=sum' Xs" := (sum_n X Xs) : proba_scope.
 
 Section sum_n_rand_var.
 
@@ -1329,8 +1353,6 @@ Variable A : finType.
 
 (** The sum of n >= 1 independent random variables: *)
 
-Reserved Notation "X '\=isum' Xs" (at level 50).
-
 Inductive isum_n : forall n,
   {rvar 'rV[A]_n} -> 'rV[rvar A]_n -> Prop :=
 | isum_n_1 : forall X, cast_rv X \=isum X
@@ -1341,7 +1363,7 @@ where "X '\=isum' Xs" := (isum_n X Xs) : proba_scope.
 
 End sum_n_independent_rand_var_def.
 
-Notation "X '\=isum' Xs" := (isum_n X Xs) (at level 50) : proba_scope.
+Notation "X '\=isum' Xs" := (isum_n X Xs) : proba_scope.
 
 Section sum_n_independent_rand_var.
 

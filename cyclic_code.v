@@ -5,14 +5,6 @@ From mathcomp Require Import poly polydiv finset fingroup perm finalg zmodp.
 From mathcomp Require Import matrix mxalgebra mxpoly polydiv vector.
 Require Import ssralg_ext poly_ext f2 hamming linearcode.
 
-Import GRing.Theory.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-Local Open Scope ring_scope.
-
 (** * Cyclic codes *)
 
 (** OUTLINE:
@@ -24,6 +16,18 @@ Local Open Scope ring_scope.
 - Section cyclic_code_properties.
 - Section polynomial_cyclic_equivalence_condition.
 *)
+
+Reserved Notation "'`[' P ']_' n" (at level 4).
+Reserved Notation "''pgen[' C ]" (at level 8, format "''pgen[' C ]").
+Reserved Notation "''cgen[' C ]" (at level 8, format "''cgen[' C ]").
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Import GRing.Theory.
+
+Local Open Scope ring_scope.
 
 Section right_cyclic_shift.
 
@@ -194,7 +198,7 @@ Definition rcsP (F: finFieldType) n (C : {set 'rV[F]_n}) :=
 
 End right_cyclic_shift.
 
-Notation "'`[' P ']_' n" := (P %% ('X^n - 1)) (at level 4).
+Notation "'`[' P ']_' n" := (P %% ('X^n - 1)) : cyclic_code_scope.
 
 Section polynomial_code_generator.
 
@@ -206,7 +210,8 @@ Canonical is_pgen_keyed := KeyedQualifier is_pgen_key.
 
 End polynomial_code_generator.
 
-Notation "''pgen[' C ]" := (is_pgen C) (at level 8, format "''pgen[' C ]") : ring_scope.
+Notation "''pgen[' C ]" := (is_pgen C) : cyclic_code_scope.
+Local Open Scope cyclic_code_scope.
 
 Module Pcode.
 Section polynomial_code.
@@ -252,7 +257,7 @@ Definition is_cgen := [qualify x | non0_codeword_lowest_deg C x].
 Fact is_cgen_key : pred_key is_cgen. Proof. by []. Qed.
 Canonical is_cgen_keyed := KeyedQualifier is_cgen_key.
 
-Local Notation "''cgen'" := (is_cgen) (at level 8, format "''cgen'").
+Local Notation "''cgen'" := (is_cgen).
 
 Lemma is_cgenE g : g \is 'cgen = non0_codeword_lowest_deg C g.
 Proof. by []. Qed.
@@ -275,7 +280,7 @@ Definition parity_check : {poly F} := ('X^n - 1) %/ rVpoly canonical_cgen.
 
 End cyclic_code_generator.
 
-Notation "''cgen[' C ]" := (is_cgen C) (at level 8, format "''cgen[' C ]") : ring_scope.
+Notation "''cgen[' C ]" := (is_cgen C) : cyclic_code_scope.
 
 Section cyclic_code_properties.
 

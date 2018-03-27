@@ -4,11 +4,13 @@ From mathcomp Require Import fintype tuple div path bigop prime finset fingroup.
 From mathcomp Require Import perm.
 Require Import Reals.
 
+(** Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-(** Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
+Notation "t '\_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
 
 Section ssrnat_ext.
 
@@ -606,13 +608,11 @@ Qed.
 End set2.
 End Set2.
 
-Notation "t '\_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
-
-Local Open Scope tuple_ext_scope.
-
 Section tuple_ext.
 
 Variable A : Type.
+
+Local Open Scope tuple_ext_scope.
 
 Lemma tcast_take_simpl n m k (H : minn n k = m) (nk : n = k) (t v : k.-tuple A) :
   tcast H [tuple of take n t] = tcast H [tuple of take n v] -> t = v.
@@ -677,6 +677,7 @@ Section perm_tuples.
 
 Local Open Scope nat_scope.
 Local Open Scope group_scope.
+Local Open Scope tuple_ext_scope.
 
 Variables A : finType.
 Variable n : nat.

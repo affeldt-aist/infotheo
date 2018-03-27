@@ -6,13 +6,6 @@ From mathcomp Require Import mxpoly vector mxalgebra zmodp.
 Require Import ssr_ext ssralg_ext poly_ext linearcode decoding.
 Require Import hamming dft poly_decoding euclid grs.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Import GRing.Theory.
-Local Open Scope ring_scope.
-
 (** * Reed-Solomon Codes *)
 
 (** OUTLINE
@@ -32,6 +25,13 @@ Local Open Scope ring_scope.
 - Module RS_encoder.
 - Section RS_cyclic.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Import GRing.Theory.
+Local Open Scope ring_scope.
 
 Local Open Scope dft_scope.
 
@@ -542,6 +542,8 @@ rewrite Hg.
 by move : (addnK d%N (size m - 1)%N) => ->.
 Qed.
 
+Local Open Scope cyclic_code_scope.
+
 Lemma rs_gen_is_pgen : \gen_(a, r) \is 'pgen[RS.codebook a n' r].
 Proof.
 apply/forallP => cw; apply/eqP; apply/idP/idP.
@@ -622,6 +624,8 @@ Hypothesis rn : RS.redundancy_ub r n.
 Hypothesis qn : coprime q n.
 
 Let t := r./2.
+
+Local Open Scope ecc_scope.
 
 Lemma RS_repair_is_correct : n.-primitive_root a ->
   t.-BDD (RS.code a n r, RS_repair a n' r).
@@ -917,6 +921,8 @@ apply fdcoor_rcs; first exact: prim_expr_order.
 move/eqP: H.
 by rewrite mulf_eq0 expf_eq0 i0 (negbTE a0) /= => /eqP.
 Qed.
+
+Local Open Scope cyclic_code_scope.
 
 Lemma rs_gen_is_gen : poly_rV \gen_(a, r) \is 'cgen[Ccode.mk RS_cyclic].
 Proof.

@@ -3,7 +3,7 @@ From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
-Require Import Reals_ext ssr_ext ssralg_ext log2 Rssr tuple_prod Rbigop.
+Require Import Rssr Reals_ext ssr_ext ssralg_ext log2 Rbigop.
 Require Import proba.
 
 Set Implicit Arguments.
@@ -65,7 +65,7 @@ have [b Hb] : exists b : A, X b != 0.
 case/boolP : (X b == 1) => [/eqP |] Xb1.
   (* NB: lemma? *)
   have H : forall a : A, a != b -> X a = 0.
-    apply/(@prsum_eq0P _ [pred x | x != b] X).
+    apply/(@prsumr_eq0P _ [pred x | x != b] X).
       move=> ? _; exact/dist_nonneg.
       move/eqP : (pmf1 X).
       by rewrite (bigD1 b) //= Xb1 eq_sym addRC -subR_eq subRR => /eqP <-.

@@ -4,14 +4,17 @@ From mathcomp Require Import choice fintype tuple finfun bigop finset binomial.
 From mathcomp Require Import fingroup perm.
 Require Import ssr_ext.
 
+(** * Number of occurrence$s *)
+
+Reserved Notation "'N(' a '|' t ')'".
+Reserved Notation "'N(' a ',' b '|' ta ',' tb ')'".
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope tuple_ext_scope.
 Local Open Scope nat_scope.
-
-(** * Number of occurrence$s *)
 
 Lemma count_true_negb r s (rs : size s = r) :
   count (pred1 true) s = r - count (pred1 false) s.

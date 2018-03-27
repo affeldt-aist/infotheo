@@ -10,6 +10,15 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Reserved Notation "'P_' n '(' A ',' B ')'" (at level 9,
+  n at next level, A at next level, B at next level).
+Reserved Notation "V '.-shell' ta" (at level 5).
+Reserved Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" (at level 50,
+  n, A, B, P at next level, format "'\nu_' n '^{' A ',' B '}' '(' P ')'").
+Reserved Notation "'\nu^{' B '}' '(' P ')'" (at level 50,
+  B, P at next level, format "'\nu^{' B '}' '(' P ')'").
+Reserved Notation "'`tO(' V )" (at level 10).
+
 Local Open Scope channel_scope.
 
 Module jtype.
@@ -37,8 +46,7 @@ End jtype.
 
 Coercion jtype_coercion := jtype.c.
 
-Notation "'P_' n '(' A ',' B ')'" := (jtype.jtype A B n) (at level 9, n at next level, A at next level, B at next level) : types_scope.
-
+Notation "'P_' n '(' A ',' B ')'" := (jtype.jtype A B n) : types_scope.
 Local Open Scope types_scope.
 
 Definition ffun_of_jtype A B n (i : P_ n ( A , B )) := let: jtype.mkJtype _ f _ _ := i in f.
@@ -363,7 +371,7 @@ Definition shell :=
 
 End shell_def.
 
-Notation "V '.-shell' ta" := (shell ta V) (at level 5) : types_scope.
+Notation "V '.-shell' ta" := (shell ta V) : types_scope.
 
 Section shelled_tuples_facts.
 
@@ -1033,13 +1041,9 @@ Definition cond_type :=
 
 End cond_type_def.
 
-Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" := (@cond_type A n P B)
-  (at level 50, n, A, B, P at next level,
-   format "'\nu_' n '^{' A ',' B '}' '(' P ')'") : types_scope.
-
-Notation "'\nu^{' B '}' '(' P ')'" := (@cond_type _ _ P B)
-  (at level 50, B, P at next level,
-   format "'\nu^{' B '}' '(' P ')'") : types_scope.
+Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" :=
+  (@cond_type A n P B) : types_scope.
+Notation "'\nu^{' B '}' '(' P ')'" := (@cond_type _ _ P B) : types_scope.
 
 Section cond_type_prop.
 
@@ -1140,7 +1144,7 @@ End OutType_sect.
 
 End OutType.
 
-Notation "'`tO(' V )" := (OutType.P V) (at level 10) : types_scope.
+Notation "'`tO(' V )" := (OutType.P V) : types_scope.
 
 Section output_type_facts.
 

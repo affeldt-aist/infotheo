@@ -3,8 +3,12 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext Rssr log2 ssralg_ext Rbigop proba entropy aep.
-Require Import typ_seq channel.
+Require Import Rssr Reals_ext ssr_ext log2 ssralg_ext bigop_ext Rbigop proba.
+Require Import  entropy aep typ_seq channel.
+
+(** * Jointly typical sequences *)
+
+Reserved Notation "'`JTS'".
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -14,9 +18,6 @@ Local Open Scope typ_seq_scope.
 Local Open Scope channel_scope.
 Local Open Scope entropy_scope.
 Local Open Scope proba_scope.
-(*Local Open Scope tuple_ext_scope.*)
-
-(** * Jointly typical sequences *)
 
 (** Definition of jointly typical sequences: *)
 

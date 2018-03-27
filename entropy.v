@@ -4,11 +4,13 @@ From mathcomp Require Import fintype tuple finfun bigop.
 Require Import Reals Fourier.
 Require Import Reals_ext Rssr Rbigop log2 ln_facts proba divergence.
 
+(** * Entropy of a distribution *)
+
+Reserved Notation "'`H'" (at level 5).
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(** * Entropy of a distribution *)
 
 Section entropy_definition.
 
@@ -16,7 +18,7 @@ Variable A : finType.
 Variable P : dist A.
 
 Definition entropy := - \rsum_(a in A) P a * log (P a).
-Local Notation "'`H'" := (entropy) (at level 5).
+Local Notation "'`H'" := (entropy).
 
 Lemma entropy_pos : 0 <= `H.
 Proof.
@@ -55,7 +57,7 @@ Qed.
 
 End entropy_definition.
 
-Notation "'`H'" := (entropy) (at level 5) : entropy_scope.
+Notation "'`H'" := (entropy) : entropy_scope.
 
 Local Open Scope entropy_scope.
 Local Open Scope proba_scope.

@@ -5,14 +5,6 @@ From mathcomp Require Import poly polydiv finset fingroup perm finalg zmodp.
 From mathcomp Require Import matrix mxalgebra mxpoly mxrepresentation vector.
 Require Import ssralg_ext hamming linearcode decoding channel_code.
 
-Import GRing.Theory.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-Local Open Scope ring_scope.
-
 (** * McEliece Cryptographic Scheme
 
    The McEliece cryptographic scheme can be defined for any linear
@@ -23,7 +15,13 @@ Local Open Scope ring_scope.
 
 *)
 
-From mathcomp Require Import vector.
+Import GRing.Theory.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Open Scope ring_scope.
 
 Module McEliece.
 
@@ -51,6 +49,9 @@ Definition C := Syslcode.t repair_img encode_discard.
 Let decode := Decoder.dec (Lcode.dec C).
 
 Parameter t : nat.
+
+Local Open Scope ecc_scope.
+
 Variable bdd : t.-BDD (C, repair).
 
 (** Alice chooses

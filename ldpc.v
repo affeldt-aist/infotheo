@@ -2,18 +2,12 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
-From mathcomp Require Import path fingraph.
+From mathcomp Require Import path fingraph vector.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext ssralg_ext Rssr num_occ Rbigop Rbigop_max.
+Require Import Rssr Reals_ext ssr_ext ssralg_ext num_occ bigop_ext Rbigop.
 Require Import proba channel pproba f2 linearcode subgraph_partition tanner.
 Require Import tanner_partition hamming binary_symmetric_channel decoding.
 Require Import channel_code summary checksum summary_tanner.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-From mathcomp Require Import vector.
 
 (** * LDPC Codes and Sum-Product Decoding *)
 
@@ -27,6 +21,10 @@ From mathcomp Require Import vector.
 - Section sum_prod_correctness.
 - Section ldpc_approx_algo.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Local Open Scope num_occ_scope.
 Local Open Scope channel_scope.
