@@ -89,14 +89,6 @@ Qed.
 
 End HammingBitstring.
 
-(* TODO: move *)
-Lemma enum_inord (m : nat) : enum 'I_m.+1 = [seq inord i | i <- iota 0 m.+1].
-Proof.
-rewrite -val_enum_ord -map_comp.
-transitivity ([seq i | i <- enum 'I_m.+1]); first by rewrite map_id.
-apply eq_map => i /=; by rewrite inord_val.
-Qed.
-
 Open Scope vec_ext_scope.
 
 Local Open Scope ring_scope.

@@ -4,14 +4,14 @@ From mathcomp Require Import fintype tuple finfun bigop fingroup perm ssralg.
 From mathcomp Require Import zmodp matrix mxalgebra poly polydiv mxpoly.
 Require Import ssralg_ext.
 
+(** * Additional lemmas about polynomials *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
-
-(** * Additional lemmas about polynomials *)
 
 Section AboutPoly.
 

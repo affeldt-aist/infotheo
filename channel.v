@@ -20,7 +20,7 @@ Reserved Notation "'`Ch_' n '(' A ',' B ')'" (at level 10,
   A, B, n at next level, format "'`Ch_'  n  '(' A ','  B ')'").
 Reserved Notation "W '``^' n" (at level 10).
 Reserved Notation "W '``(|' x ')'" (at level 10, x at next level).
-Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level, only parsing).
+Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level).
 Reserved Notation "'`O(' P , W )" (at level 10, P, W at next level).
 Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level).
 Reserved Notation "'`J(' P , W )" (at level 10, P, W at next level).
@@ -66,9 +66,9 @@ Definition chan_star_coercion := Channel1.c.
 Coercion chan_star_coercion : Channel1.chan_star >-> Funclass.
 
 Notation "'`Ch_1(' A ',' B ')'" := (A -> dist B) : channel_scope.
-Notation "'`Ch_1*(' A ',' B ')'" := (@Channel1.chan_star A B) : channel_scope.
-Notation "W '`(' b '|' a ')'" := (W a b) : channel_scope.
 Local Open Scope channel_scope.
+Notation "'`Ch_1*(' A ',' B ')'" := (@Channel1.chan_star A B) : channel_scope.
+Notation "W '`(' b '|' a ')'" := ((W : `Ch_1(_, _)) a b) : channel_scope.
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
 Local Open Scope entropy_scope.

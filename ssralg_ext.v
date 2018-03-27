@@ -383,6 +383,10 @@ rewrite -!mulmxA mulmxV in Hab; last by apply: col_ebase_unit.
 by rewrite !mulmx1 in Hab.
 Qed.
 
+Lemma mxrank_castmx a a' b b' (M : 'M[F]_(a, b)) (H1 : a = a') (H2 : b = b') :
+  \rank (castmx (H1, H2) M) = \rank M.
+Proof. by subst a' b'. Qed.
+
 End AboutRank.
 
 Section non_trivial_vspace.

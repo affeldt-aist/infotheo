@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
 From mathcomp Require Import fintype tuple div path bigop prime finset fingroup.
-From mathcomp Require Import perm.
+From mathcomp Require Import finfun perm.
 Require Import Reals.
 
 (** Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
@@ -512,6 +512,10 @@ apply IH.
 - apply/setD1P; by rewrite eq_sym.
 Qed.
 
+Lemma inj_card (B : finType) (f : {ffun A -> B}) :
+  injective f -> #| A | <= #| B |.
+Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
+
 Lemma sorted_enum : sorted (@le_rank A) (enum A).
 Proof.
 rewrite /sorted.
@@ -571,11 +575,34 @@ rewrite !inE eq_sym in Hb.
 case/andP : Hb => -> ->; by rewrite Ha.
 Qed.
 
+Variables (C : {set A}).
+
+Lemma set1_set2 a : a \in C -> C != set1 a -> exists i, (i \in C) && (i != a).
+Proof.
+move/setD1K => aC Ca.
+have /set0Pn[b] : C :\ a != set0.
+  apply: contra Ca; rewrite setD_eq0 subset1 => /orP[//|].
+  by rewrite -aC => /eqP/setP/(_ a); rewrite !inE eqxx.
+rewrite !inE => /andP[ba bC]; exists b; by rewrite bC.
+Qed.
+
+Lemma set2_set1 a : (exists i, (i \in C) && (i != a)) -> C != set1 a.
+Proof.
+case=> b /andP[bC]; apply: contra => /eqP Ca; move: bC; by rewrite Ca !inE.
+Qed.
+
 End finset_ext.
 
 Lemma ord0_false (i : 'I_0 ) : False. Proof. by case: i => [[]]. Qed.
 
 Lemma ord1 (i : 'I_1) : i = ord0. Proof. case: i => [[]] // ?; exact/eqP. Qed.
+
+Lemma enum_inord (m : nat) : enum 'I_m.+1 = [seq inord i | i <- iota 0 m.+1].
+Proof.
+rewrite -val_enum_ord -map_comp.
+transitivity ([seq i | i <- enum 'I_m.+1]); first by rewrite map_id.
+apply eq_map => i /=; by rewrite inord_val.
+Qed.
 
 Module Set2.
 Section set2.
@@ -614,69 +641,53 @@ Variable A : Type.
 
 Local Open Scope tuple_ext_scope.
 
-Lemma tcast_take_simpl n m k (H : minn n k = m) (nk : n = k) (t v : k.-tuple A) :
+Lemma tcast2tval m n (H : m = n) :
+  forall (v : m.-tuple A) (w : n.-tuple A), tcast H v = w -> tval v = tval w.
+Proof. subst n. by move=> [v Hv] [w Hw] <- /=. Qed.
+
+Lemma tcast_take_inj n m k (H : minn n k = m) (nk : n = k) (t v : k.-tuple A) :
   tcast H [tuple of take n t] = tcast H [tuple of take n v] -> t = v.
 Proof.
-subst m => /=.
-subst n; case => /= Htv.
+subst m n => /=.
+case => /= tv.
 apply eq_from_tnth => i.
-by rewrite (tnth_nth t\_i) [in X in _ = X](tnth_nth t\_i) -(@nth_take k) // -[in X in _ = X](@nth_take k) // Htv.
+rewrite (tnth_nth t\_i) [in X in _ = X](tnth_nth t\_i).
+by rewrite -(@nth_take k) // -[in X in _ = X](@nth_take k) // tv.
 Qed.
 
-End tuple_ext.
+Lemma eq_tcast n (t : n.-tuple A) m (v : m.-tuple A) (H : m = n) :
+  tval t = tval v -> t = tcast H v.
+Proof. subst m; rewrite tcast_id => tt'; exact: val_inj. Qed.
 
-Section tuple_ext_finType.
+Lemma eq_tcast2 n (t : seq A) m (v : m.-tuple A) (H : m = n) :
+  t = tval v -> t = tval (tcast H v).
+Proof. subst m. by rewrite tcast_id. Qed.
 
-Variables A B : finType.
-Variable n : nat.
-
-Lemma tnth_zip_1 (x1 : n.-tuple A) (x2 : n.-tuple B) i:
+Lemma tnth_zip_1 (B : finType) n (x1 : n.-tuple A) (x2 : n.-tuple B) i:
   (tnth [tuple of zip x1 x2] i).1 = tnth x1 i.
 Proof.
-rewrite /tnth.
-set def := tnth_default _ _.
-destruct def as [def1 def2].
+rewrite /tnth; set def := tnth_default _ _; case: def => ? ?.
 rewrite nth_zip /=; last by rewrite !size_tuple.
-apply set_nth_default.
-by rewrite size_tuple.
+apply set_nth_default; by rewrite size_tuple.
 Qed.
 
-Lemma tnth_zip_2 (x1 : n.-tuple A) (x2 : n.-tuple B) i:
+Lemma tnth_zip_2 (B : finType) n (x1 : n.-tuple A) (x2 : n.-tuple B) i:
   (tnth [tuple of zip x1 x2] i).2 = tnth x2 i.
 Proof.
-rewrite /tnth.
-set def := tnth_default _ _.
-destruct def as [def1 def2].
+rewrite /tnth; set def := tnth_default _ _; case: def => ? ?.
 rewrite nth_zip /=; last by rewrite !size_tuple.
-apply set_nth_default.
-by rewrite size_tuple.
+apply set_nth_default; by rewrite size_tuple.
 Qed.
 
 Lemma thead_tuple1 : forall (i : 1.-tuple A), [tuple thead i] = i.
 Proof. move=> [ [|h []] H] //. by apply val_inj. Qed.
 
-Lemma eq_tcast (t : {:n.-tuple A}) m (t' : {:m.-tuple A}) (H' : m = n) :
-  tval t = tval t' -> t = tcast H' t'.
-Proof.
-subst m.
-rewrite tcast_id.
-move=> tt'.
-by apply val_inj.
-Qed.
+Definition tbehead n (t : n.+1.-tuple A) : n.-tuple A := [tuple of behead t].
 
-Lemma eq_tcast2 (t : seq A) m (t' : {:m.-tuple A}) (H : m = n) :
-  t = tval t' -> t = tval (tcast H t').
-Proof. subst m. by rewrite tcast_id. Qed.
-
-End tuple_ext_finType.
-
-Definition tbehead (n : nat) (T : Type) (t : (n.+1).-tuple T) : n.-tuple T :=
-  [tuple of behead t].
+End tuple_ext.
 
 Section perm_tuples.
 
-Local Open Scope nat_scope.
-Local Open Scope group_scope.
 Local Open Scope tuple_ext_scope.
 
 Variables A : finType.
@@ -691,8 +702,6 @@ End perm_tuples.
 Section perm_tuples_facts.
 
 Variable A : finType.
-
-Local Open Scope group_scope.
 
 Lemma perm_tuple_id {m} (b : m.-tuple A) : perm_tuple 1 b = b.
 Proof.
@@ -758,7 +767,3 @@ by rewrite (tnth_nth (thead ta)) (tnth_nth (thead tb)).
 Qed.
 
 End perm_tuples_facts.
-
-Lemma tcast2tval (T : Type) (m n0 : nat) (H : m = n0) : forall (v : m.-tuple T) w,
-  tcast H v = w -> tval v = tval w.
-Proof. subst n0. by move=> [v Hv] [w Hw] <- /=. Qed.

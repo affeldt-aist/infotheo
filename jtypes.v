@@ -602,11 +602,8 @@ Definition take_shell (k : nat) : {set (sum_num_occ ta k).-tuple B} :=
 
 Lemma full_take_shell : #| take_shell #|A| | = #| V.-shell ta |.
 Proof.
-rewrite /take_shell.
-apply card_imset.
-rewrite /injective => /= tb tb' tb'tb.
-move: (full_sum_num_occ_n ta (leqnn #|A|)) => Hn.
-by apply (@tcast_take_simpl _ _ _ _ (minn_sum_num_occ_n ta #|A|) (full_sum_num_occ_n ta (leqnn #|A|)) tb tb').
+apply card_imset; rewrite /injective => /= v v' vv'.
+exact: (tcast_take_inj (full_sum_num_occ_n ta (leqnn #|A|)) vv').
 Qed.
 
 End take_shell_def.

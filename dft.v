@@ -424,7 +424,7 @@ Qed.
 Lemma time_shift (an1 : a ^+ n = 1) (v : 'rV[F]_n) (m : nat) :
   dft (rVexp a n) n (phase_shift v m) = \row_i ((dft (rVexp a n) n v)``_(inord ((m + i) %% n))).
 Proof.
-apply/rowP => i. 
+  apply/rowP => i.
 rewrite !mxE /fdcoor !horner_poly.
 apply/eq_bigr => /= j _.
 rewrite insubT // => jn.

@@ -32,37 +32,6 @@ Import Prenex Implicits.
 
 Local Open Scope ring_scope.
 
-(* TODO: move? *)
-Section AboutFinSet.
-
-Variables (A : finType) (C : {set A}).
-
-Lemma set1_set2 a : a \in C -> C != set1 a -> exists i, (i \in C) && (i != a).
-Proof.
-move/setD1K => aC Ca.
-have /set0Pn[b] : C :\ a != set0.
-  apply: contra Ca; rewrite setD_eq0 subset1 => /orP[//|].
-  by rewrite -aC => /eqP/setP/(_ a); rewrite !inE eqxx.
-rewrite !inE => /andP[ba bC]; exists b; by rewrite bC.
-Qed.
-
-Lemma set2_set1 a : (exists i, (i \in C) && (i != a)) -> C != set1 a.
-Proof.
-case=> b /andP[bC]; apply: contra => /eqP Ca; move: bC; by rewrite Ca !inE.
-Qed.
-
-End AboutFinSet.
-
-(* TODO: move? *)
-Lemma mxrank_castmx a a' b b' (R : fieldType) (M : 'M[R]_(a, b)) (H1 : a = a') (H2 : b = b') :
-  \rank (castmx (H1, H2) M) = \rank M.
-Proof. by subst a' b'. Qed.
-
-(* TODO: move? *)
-Lemma inj_card (A B : finType) (f : {ffun A -> B}) :
-  injective f -> #| A | <= #| B |.
-Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
-
 Module Lcode0.
 
 Definition t (F : finFieldType) n := {vspace 'rV[F]_n}.
