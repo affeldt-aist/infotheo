@@ -9,7 +9,6 @@ Rbigop_max.v
 proba.v
 natbin.v
 ssralg_ext.v
-tuple_prod.v
 divergence.v
 entropy.v
 aep.v

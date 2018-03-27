@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext tuple_prod.
+Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -251,13 +251,11 @@ Qed.
 
 Lemma big_rV_prod n f (X : {set 'rV[A * B]_n}) :
   \big[M/idx]_(a in 'rV[A * B]_n | a \in X) f a =
-  \big[M/idx]_(a in {: 'rV[A]_n * 'rV[B]_n} | (prod_tuple a) \in X) f (prod_tuple a).
+  \big[M/idx]_(a in {: 'rV[A]_n * 'rV[B]_n} | (prod_rV a) \in X) f (prod_rV a).
 Proof.
-rewrite (reindex_onto (@tuple_prod _ _ _) (@prod_tuple _ _ _)) //=; last first.
-  move=> ? _; by rewrite prod_tupleK.
-apply eq_big => [?|? _].
-  by rewrite tuple_prodK eqxx andbC.
-by rewrite tuple_prodK.
+rewrite (reindex_onto (@rV_prod _ _ _) (@prod_rV _ _ _)) //=; last first.
+  move=> ? _; by rewrite prod_rVK.
+apply eq_big => [?|? _]; by rewrite rV_prodK // eqxx andbC.
 Qed.
 
 Local Open Scope vec_ext_scope.

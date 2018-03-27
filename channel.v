@@ -3,8 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext ssralg_ext log2 Rssr tuple_prod Rbigop.
-Require Import proba entropy.
+Require Import Reals_ext ssr_ext ssralg_ext log2 Rssr Rbigop proba entropy.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -232,25 +231,25 @@ End JointDist.
 
 Notation "'`J(' P , W )" := (JointDist.d P W) (at level 10, P, W at next level) : channel_scope.
 
-Section Pr_tuple_prod_sect.
+Section Pr_rV_prod_sect.
 
 Variable A B : finType.
 Variable P : dist A.
 Variable W : `Ch_1(A, B).
 Variable n : nat.
 
-Lemma Pr_tuple_prod Q : Pr (`J(P `^ n, (W ``^ n))) [set x | Q x] =
-  Pr (`J(P, W)) `^ n [set x | Q (tuple_prod x)].
+Lemma Pr_rV_prod Q : Pr (`J(P `^ n, (W ``^ n))) [set x | Q x] =
+  Pr (`J(P, W)) `^ n [set x | Q (rV_prod x)].
 Proof.
 rewrite /Pr big_rV_prod /=.
-apply eq_big => tab; first by rewrite !inE prod_tupleK.
+apply eq_big => tab; first by rewrite !inE prod_rVK.
 rewrite inE => Htab.
 rewrite JointDist.dE DMCE TupleDist.dE -big_split /= TupleDist.dE.
 apply eq_bigr => i /= _.
-by rewrite JointDist.dE -snd_tnth_prod_tuple -fst_tnth_prod_tuple.
+by rewrite JointDist.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
 
-End Pr_tuple_prod_sect.
+End Pr_rV_prod_sect.
 
 (** Mutual entropy: *)
 

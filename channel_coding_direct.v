@@ -3,8 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix perm.
 Require Import Reals Fourier Classical.
-Require Import Reals_ext ssr_ext Rssr log2 Rbigop tuple_prod.
-Require Import proba entropy aep typ_seq joint_typ_seq channel channel_code.
+Require Import Reals_ext ssr_ext Rssr log2 ssralg_ext Rbigop proba entropy.
+Require Import aep typ_seq joint_typ_seq channel channel_code.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -53,18 +53,18 @@ Variable n : nat.
 
 Definition jtdec P W epsilon (f : encT A M n) : decT B M n :=
   [ffun tb => [pick m |
-    (prod_tuple (f m, tb) \in `JTS P W n epsilon) &&
-    [forall m', (m' != m) ==> (prod_tuple (f m', tb) \notin `JTS P W n epsilon)]]].
+    (prod_rV (f m, tb) \in `JTS P W n epsilon) &&
+    [forall m', (m' != m) ==> (prod_rV (f m', tb) \notin `JTS P W n epsilon)]]].
 
 Lemma jtdec_map epsilon (P : dist A) (W : `Ch_1(A, B)) (f : encT A M n) tb m0 m1 :
-  (prod_tuple (f m0, tb) \in `JTS P W n epsilon) &&
-  [forall m', (m' != m0) ==> (prod_tuple (f m', tb) \notin `JTS P W n epsilon)] ->
-  (prod_tuple (f m1, tb) \in `JTS P W n epsilon) &&
-  [forall m', (m' != m1) ==> (prod_tuple (f m', tb) \notin `JTS P W n epsilon)] ->
+  (prod_rV (f m0, tb) \in `JTS P W n epsilon) &&
+  [forall m', (m' != m0) ==> (prod_rV (f m', tb) \notin `JTS P W n epsilon)] ->
+  (prod_rV (f m1, tb) \in `JTS P W n epsilon) &&
+  [forall m', (m' != m1) ==> (prod_rV (f m', tb) \notin `JTS P W n epsilon)] ->
   m0 = m1.
 Proof.
 case/andP.
-rewrite /prod_tuple /= => H1 H2.
+rewrite /prod_rV /= => H1 H2.
 case/andP => H1'.
 move/forallP/(_ m0).
 rewrite implybE.
@@ -143,8 +143,8 @@ apply/idP/idP.
     rewrite inE ffunE.
     case: (pickP _) => [m1 Hm1 | Hm1].
     * apply/eqP; f_equal.
-      have Hm' : (prod_tuple (g m', tb) \in `JTS P W n epsilon) &&
-        [forall m'0, (m'0 != m') ==> (prod_tuple (g m'0, tb) \notin `JTS P W n epsilon)].
+      have Hm' : (prod_rV (g m', tb) \in `JTS P W n epsilon) &&
+        [forall m'0, (m'0 != m') ==> (prod_rV (g m'0, tb) \notin `JTS P W n epsilon)].
         apply/andP; split.
         - rewrite {1}/o_PI ffunE tpermL in Hm0. by case/andP : Hm0.
         - apply/forallP => m_. apply/implyP => m__m'.
@@ -182,9 +182,9 @@ apply/idP/idP.
     rewrite ffunE.
     case: (pickP _) => [m1 Hm1 | Hm1].
     * f_equal.
-      have {Hm0}Hm0 : (prod_tuple ((o_PI m m' g) m, tb) \in `JTS P W n epsilon) &&
+      have {Hm0}Hm0 : (prod_rV ((o_PI m m' g) m, tb) \in `JTS P W n epsilon) &&
         [forall m'0, (m'0 != m) ==>
-           (prod_tuple ((o_PI m m' g) m'0, tb) \notin `JTS P W n epsilon)].
+           (prod_rV ((o_PI m m' g) m'0, tb) \notin `JTS P W n epsilon)].
         apply/andP; split.
         - rewrite /o_PI ffunE tpermL. by case/andP: Hm0.
         - apply/forallP => m_.
@@ -274,7 +274,7 @@ Definition n_condition r epsilon0 n :=
 (** the set of output tb such that (f m, tb) is jointly typical: *)
 
 Definition cal_E M n epsilon (f : encT A M n) m :=
-  [set tb | prod_tuple (f m, tb) \in `JTS P W n epsilon].
+  [set tb | prod_rV (f m, tb) \in `JTS P W n epsilon].
 
 Local Open Scope tuple_ext_scope.
 
@@ -339,7 +339,7 @@ pose zero := @enum_rank M ord0.
 move: (@sum_rV_ffun _ mulR_muloid addR_addoid M [finType of 'rV[A]_n]
   (fun f => \rprod_(m : M) P `^ n (f m))
   (fun r => fun ta => (r * Pr ( W ``(| ta ) )
-    (~: [set tb | prod_tuple (ta, tb) \in `JTS P W n epsilon0]))%R)
+    (~: [set tb | prod_rV (ta, tb) \in `JTS P W n epsilon0]))%R)
   ord0 zero).
 rewrite (_ : nth ord0 (enum M) 0 = ord0); last by rewrite enum_ordS.
 rewrite /Wght.d -lock /= => <-.
@@ -354,7 +354,7 @@ transitivity (\rsum_(ta : 'rV['rV[A]_n]_#|M|) (
   - move=> cb _; by rewrite ffunE.
 rewrite /cal_E.
 transitivity (\rsum_(ta : 'rV[A]_n)
-  (\rsum_(y in ~: [set y0 | prod_tuple (ta, y0) \in `JTS P W n epsilon0])
+  (\rsum_(y in ~: [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
     ((W ``(| ta)) y)) *
   \rsum_(j in {: #|M|.-1.-tuple ('rV[A]_n)})
   (\rprod_(m : M) P `^ _ (Finfun (tcast M_prednK [tuple of ta :: j]) m))).
@@ -365,7 +365,7 @@ Local Open Scope ring_scope.
     by apply/matrixP => a b; rewrite {a}(ord1 a) mxE ffunE enum_valK.
   apply trans_eq with (\rsum_(j : {ffun M -> _})
     ((\rprod_(m < k.+1) P `^ n (j m)) *
-      (\rsum_(y in ~: [set y0 | prod_tuple (j ord0, y0) \in `JTS P W n epsilon0])
+      (\rsum_(y in ~: [set y0 | prod_rV (j ord0, y0) \in `JTS P W n epsilon0])
       W ``(y | j ord0))))%R.
     apply eq_big => //= f.
     - apply/eqP/ffunP => m; by rewrite ffunE mxE enum_rankK.
@@ -378,11 +378,11 @@ Local Open Scope ring_scope.
   rewrite (_ : ord0 = nth ord0 (enum M) 0); last by rewrite enum_ordS.
   rewrite -(big_tuple_ffun _ (fun f => \rprod_(m : M) P `^ n (f m))
     (fun r => fun yn => r *
-      (\rsum_(y in ~: [set y0 | prod_tuple (yn, y0) \in `JTS P W n epsilon0])
+      (\rsum_(y in ~: [set y0 | prod_rV (yn, y0) \in `JTS P W n epsilon0])
       W ``(y | yn))) (\row_(i < n) xdef) ord0)%R.
   transitivity (\rsum_(j : _)
     ((\rprod_(m : M) P `^ n (Finfun (tcast M_prednK j) m)) *
-      (\rsum_(y in ~: [set y0 | prod_tuple (nth (\row_(i < n) xdef) j 0, y0) \in
+      (\rsum_(y in ~: [set y0 | prod_rV (nth (\row_(i < n) xdef) j 0, y0) \in
           `JTS P W n epsilon0])
       W ``(y | nth (\row_(i < n) xdef) j 0))))%R.
     rewrite (big_tcast _ _ M_prednK) //.
@@ -398,13 +398,13 @@ Local Open Scope ring_scope.
     - move=> *; by rewrite Hcst.
   rewrite -(@big_head_behead_P_tuple _ #|M|.-1
    (fun j => ((\rprod_(m : M) P `^ n (Finfun (tcast M_prednK j) m)) *
-     (\rsum_(y in ~: [set y0 | prod_tuple (nth (\row_(i < n) xdef) j 0, y0) \in
+     (\rsum_(y in ~: [set y0 | prod_rV (nth (\row_(i < n) xdef) j 0, y0) \in
          `JTS P W n epsilon0]) W ``(y | nth (\row_(i < n) xdef) j 0)))) xpredT xpredT)%R.
   apply eq_bigr => ta _ /=.
   by rewrite -big_distrl /= mulRC.
 transitivity (
   (\rsum_(ta in 'rV[A]_n) P `^ _ ta *
-    (\rsum_(y in ~: [set y0 | prod_tuple (ta, y0) \in `JTS P W n epsilon0])
+    (\rsum_(y in ~: [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
     (W ``(| ta ) ) y)) *
     (\rsum_(j in {:k.-tuple ('rV[A]_n)}) \rprod_(m < k) (P `^ _ (j \_ m))))%R.
   rewrite big_distrl /=.
@@ -435,15 +435,15 @@ transitivity (
   by rewrite FunFinfun.fun_of_finE tcastE enum_rank_ord.
 rewrite rsum_rmul_tuple_pmf_tnth mulR1.
 transitivity (\rsum_(ta in 'rV[A]_n)
-  (\rsum_(y in ~: [set y0 | prod_tuple (ta, y0) \in `JTS P W n epsilon0])
-  ((`J(P , W)) `^ n (prod_tuple (ta, y))))).
+  (\rsum_(y in ~: [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
+  ((`J(P , W)) `^ n (prod_rV (ta, y))))).
   apply eq_bigr => ta _.
   rewrite big_distrr /=.
   apply eq_bigr => // tb Htb.
   rewrite DMCE.
   rewrite 2!TupleDist.dE.
   rewrite -big_split /=; apply eq_bigr => /= i _.
-  by rewrite JointDist.dE -fst_tnth_prod_tuple -snd_tnth_prod_tuple /= mulRC.
+  by rewrite JointDist.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
 rewrite /Pr big_rV_prod pair_big_dep /=.
 apply eq_bigl; case=> /= ta tb; by rewrite !inE.
 by rewrite /zero enum_rank_ord.
@@ -531,7 +531,7 @@ Lemma second_summand n k epsilon0 :
     forall i, i != ord0 ->
       (\rsum_(f : encT A M n) Wght.d P f *
         Pr (W ``(| f ord0)) (cal_E epsilon0 f i))%R =
-   Pr ((P `^ n) `x ((`O( P , W )) `^ n)) [set x | prod_tuple x \in `JTS P W n epsilon0].
+   Pr ((P `^ n) `x ((`O( P , W )) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0].
 Proof.
 move=> M.
 have M_prednK : #|M|.-1.+1 = #|M| by rewrite card_ord.
@@ -546,7 +546,7 @@ transitivity (
   \rsum_(j0 in 'rV[A]_n)
   \rsum_(ji in 'rV[A]_n)
   Wght.d P (Finfun (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])) *
-  \rsum_( y | y \in [set y0 | prod_tuple (ji, y0) \in `JTS P W n epsilon0])
+  \rsum_( y | y \in [set y0 | prod_rV (ji, y0) \in `JTS P W n epsilon0])
   (W ``(| j0)) y)%R.
   transitivity (
     \rsum_(j0 in 'rV[A]_n)
@@ -554,7 +554,7 @@ transitivity (
     \rsum_(ji in 'rV[A]_n)
     \rsum_(j2 in {: (#|M| - i.+1).-tuple ('rV[A]_n)})
     Wght.d P (Finfun (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])) *
-    \rsum_( y | y \in [set y0 | prod_tuple (ji, y0) \in `JTS P W n epsilon0])
+    \rsum_( y | y \in [set y0 | prod_rV (ji, y0) \in `JTS P W n epsilon0])
     (W ``(| j0) ) y)%R.
     rewrite (reindex_onto (fun p => Finfun p) (fun y => fgraph y)) /=; last by case.
     transitivity ( \rsum_(j : _)
@@ -631,7 +631,7 @@ transitivity (
     \rsum_(ji in 'rV[A]_n)
     ((P `^ n) j0) * ((P `^ n) ji) *
     (\rsum_( y | y \in
-      [set y0 | prod_tuple (ji , y0) \in `JTS P W n epsilon0])
+      [set y0 | prod_rV (ji , y0) \in `JTS P W n epsilon0])
     (W ``(| j0) ) y)))%R.
   rewrite !big_distrl /=.
   apply eq_bigr => j1 _.
@@ -670,7 +670,7 @@ transitivity (
   by rewrite /= j_M ltn_ord.
 transitivity (\rsum_(j0 : 'rV[A]_n) \rsum_(ji : 'rV[A]_n)
   ((P `^ n) j0) * ((P `^ n) ji) * (\rsum_( y | y \in
-    [set y0 in 'rV[B]_n | prod_tuple (ji , y0) \in `JTS P W n epsilon0])
+    [set y0 in 'rV[B]_n | prod_rV (ji , y0) \in `JTS P W n epsilon0])
   (W ``(| j0)) y))%R.
   set lhs := \rsum_(_ <- _) _.
   suff : lhs = 1%R by move=> ->; rewrite mul1R.
@@ -678,13 +678,13 @@ transitivity (\rsum_(j0 : 'rV[A]_n) \rsum_(ji : 'rV[A]_n)
   rewrite (@big_cat_tuple_seq _ i.-1 (#|M| - i.+1)
     (fun x => \rprod_(i0 <- x) (P `^ n) i0))%R.
   by rewrite rsum_rmul_tuple_pmf.
-transitivity (\rsum_(ji : 'rV[A]_n)((P `^ n) ji) *
-  (\rsum_(y | y \in [set y0 | prod_tuple (ji , y0) \in `JTS P W n epsilon0])
+transitivity (\rsum_(ji : 'rV[A]_n) ((P `^ n) ji) *
+  (\rsum_(y | y \in [set y0 | prod_rV (ji , y0) \in `JTS P W n epsilon0])
   \rsum_(j0 : 'rV[A]_n) ((W ``(| j0) ) y) * ((P `^ n) j0)))%R.
   rewrite exchange_big /=.
   apply eq_bigr => ta _.
   transitivity (\rsum_(i1 : 'rV[A]_n) P `^ _ ta * P `^ _ i1 *
-    (\rsum_(y in [set y0 | prod_tuple (ta, y0) \in `JTS P W n epsilon0])
+    (\rsum_(y in [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
        W ``(y | i1)))%R.
     apply eq_bigr => i1 _.
     rewrite -!mulRA mulRC -!mulRA.
@@ -696,7 +696,7 @@ transitivity (\rsum_(ji : 'rV[A]_n)((P `^ n) ji) *
   f_equal.
   by rewrite mulRC big_distrl.
 transitivity (\rsum_(ji : 'rV[A]_n) ((P `^ n) ji) *
-  \rsum_( y | y \in [set y0 | prod_tuple (ji , y0) \in `JTS P W n epsilon0])
+  \rsum_( y | y \in [set y0 | prod_rV (ji , y0) \in `JTS P W n epsilon0])
   ((`O(P , W)) `^ n) y)%R.
   apply eq_bigr => ta _.
   f_equal.
@@ -705,10 +705,10 @@ transitivity (\rsum_(ji : 'rV[A]_n) ((P `^ n) ji) *
   apply eq_bigr => i0 _; by rewrite DMCE.
 transitivity (\rsum_(ji : 'rV[A]_n)
   (\rsum_( y | y \in
-    [set y0 | prod_tuple (ji , y0) \in `JTS P W n epsilon0])
+    [set y0 | prod_rV (ji , y0) \in `JTS P W n epsilon0])
     ((P `^ n) `x ((`O(P , W)) `^ n)) (ji, y))).
   apply eq_bigr => // i0 _; by rewrite /= big_distrr.
-transitivity (\rsum_( jiy | prod_tuple jiy \in `JTS P W n epsilon0 )
+transitivity (\rsum_( jiy | prod_rV jiy \in `JTS P W n epsilon0)
   ((P `^ n) `x ((`O(P , W)) `^ n)) jiy).
   symmetry.
   rewrite pair_big_dep /=.
@@ -852,10 +852,10 @@ apply Rle_lt_trans with
   by apply Rplus_le_compat_l, Pr_bigcup.
 rewrite first_summand //.
 set lhs := \rsum_(_ < _ | _) _.
-have -> : lhs = (INR #| M |.-1 * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | prod_tuple x \in `JTS P W n epsilon0])%R.
+have -> : lhs = (INR #| M |.-1 * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0])%R.
   rewrite {}/lhs.
   rewrite [RHS](_ : _ = \rsum_(H0 < k.+1 | H0 != ord0)
-    Pr ((P `^ n) `x ((`O( P , W )) `^ n)) [set x | prod_tuple x \in `JTS P W n epsilon0])%R; last first.
+    Pr ((P `^ n) `x ((`O( P , W )) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0])%R; last first.
     rewrite big_const /= iter_Rplus.
     do 2 f_equal.
     rewrite card_ord /=.
@@ -869,7 +869,7 @@ have -> : lhs = (INR #| M |.-1 * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | pr
     apply eq_big => //; by apply: second_summand.
 rewrite card_ord /=.
 apply Rle_lt_trans with (epsilon0 + INR k *
-   Pr P `^ n `x (`O(P , W)) `^ n [set x | prod_tuple x \in `JTS P W n epsilon0])%R.
+   Pr P `^ n `x (`O(P , W)) `^ n [set x | prod_rV x \in `JTS P W n epsilon0])%R.
   apply Rplus_le_compat_r.
   rewrite Pr_of_cplt.
   have : forall a b, a >= 1 - b -> 1 - a <= b by move=> *; fourier.

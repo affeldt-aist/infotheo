@@ -37,6 +37,42 @@ Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
 
 Local Open Scope vec_ext_scope.
 
+(** * (A^n x B^n) <-> (A x B)^n *)
+
+(** Technical lemmas to switch between products of vectors (A^n x B^n) and
+   vectors of products (A x B)^n: *)
+
+Section prod_rV.
+
+Variables A B : finType.
+
+Definition prod_rV n (x : 'rV[A]_n * 'rV[B]_n) : 'rV[A * B]_n :=
+  \row_(k < n) (x.1 ``_ k, x.2 ``_ k).
+
+Definition rV_prod n (x : 'rV[A * B]_n) : {: 'rV[A]_n * 'rV[B]_n} :=
+  (\row_(k < n) (x ``_ k).1, \row_(k < n) (x ``_ k).2).
+
+Lemma prod_rVK n (x : 'rV[A]_n * 'rV[B]_n) : rV_prod (prod_rV x) = x.
+Proof.
+case: x => x1 x2.
+congr (_ , _); apply/matrixP => a b; rewrite {a}(ord1 a); by rewrite !mxE /=.
+Qed.
+
+Lemma rV_prodK n (x : 'rV[A * B]_n) : prod_rV (rV_prod x) = x.
+Proof.
+apply/matrixP => a b; rewrite {a}(ord1 a); rewrite !mxE; by case: (x ``_ b).
+Qed.
+
+Lemma fst_tnth_prod_rV n (x : {: 'rV[A]_n * 'rV[B]_n}) i :
+  x.1 ``_ i = ((prod_rV x) ``_ i).1.
+Proof. by rewrite mxE. Qed.
+
+Lemma snd_tnth_prod_rV n (x : {: 'rV[A]_n * 'rV[B]_n}) i :
+  x.2 ``_ i = ((prod_rV x) ``_ i).2.
+Proof. by rewrite mxE. Qed.
+
+End prod_rV.
+
 Section support_set.
 
 Variables (R : ringType) (n : nat) (e : 'rV[R]_n).
