@@ -27,11 +27,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-(* TODO: move *)
-Lemma col_matrix (R : ringType) m n (A : 'I_m -> 'cV[R]_(n.+1)) (i : 'I_m) :
-  col i (\matrix_(a < n.+1, b < m) (A b) a ord0) = A i.
-Proof. apply/matrixP => a b; by rewrite !mxE (ord1 b). Qed.
-
 Import GRing.Theory.
 Local Open Scope ring_scope.
 
@@ -131,12 +126,12 @@ Lemma weight_3_cw : syndrome H (rV_of_nat n (7 * 2 ^ (n - 3))) = 0.
 Proof.
 have two_m := Hamming.two_len m'.
 apply/matrixP => y x; rewrite {y}(ord1 y) !mxE.
-have Hn' : size (N2bitseq (bin_of_nat (7 * 2 ^ (n - 3)))) = n.
+have Hn' : size (bitseq_of_N (bin_of_nat (7 * 2 ^ (n - 3)))) = n.
   apply/eqP.
-  rewrite eqn_leq size_N2bitseq_ub /=; last 2 first.
-    by apply rev7_neq0.
-    by apply rev7_ub.
-  move: (@size_N2bitseq_lb (7 * 2 ^ (n - 3)) n.-1 (rev7_lb _ two_m)).
+  rewrite eqn_leq size_bitseq_of_N_ub /=; last 2 first.
+    exact/rev7_neq0.
+    exact/rev7_ub.
+  move: (@size_bitseq_of_N_lb (7 * 2 ^ (n - 3)) n.-1 (rev7_lb two_m)).
   by rewrite -ltnS prednK.
 (* the first term of the sum *)
 rewrite (bigD1 0) //= !mxE.
@@ -409,7 +404,7 @@ rewrite in_set; apply/esym.
 case HwH : (wH i^T == _).
   apply/imsetP.
   move: HwH.
-  rewrite wH_oldE /wH_old num_occ.num_occ_alt => /cards1P[x Hx].
+  rewrite wH_num_occ num_occ.num_occ_alt => /cards1P[x Hx].
   exists x => //.
   apply/colP => j.
   rewrite !mxE /=.

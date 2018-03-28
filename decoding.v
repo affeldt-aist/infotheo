@@ -391,6 +391,8 @@ Variable m : nat.
 Variable enc : encT [finFieldType of 'F_2] [finType of 'rV['F_2]_(n - m)] n.
 Variable dec : decT [finFieldType of 'F_2] [finType of 'rV['F_2]_(n - m)] n.
 
+Local Open Scope vec_ext_scope.
+
 Definition MPM_condition := let P := `U C_not_empty in
   forall y (Hy : receivable W P y),
   forall x, dec y = Some x ->

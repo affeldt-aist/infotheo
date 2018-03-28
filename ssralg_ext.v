@@ -165,6 +165,10 @@ Qed.
 
 End row_mx_ext.
 
+Lemma col_matrix (R : ringType) m n (A : 'I_m -> 'cV[R]_(n.+1)) (i : 'I_m) :
+  col i (\matrix_(a < n.+1, b < m) (A b) a ord0) = A i.
+Proof. apply/matrixP => a b; by rewrite !mxE (ord1 b). Qed.
+
 Section AboutPermPid.
 
 Variable R : comRingType.
@@ -283,6 +287,9 @@ End AboutRowTuple.
 
 Arguments row_of_seq {A} {B} _ _ l n.
 Arguments col_of_seq {A} {B} _ _ l n.
+
+Lemma tuple_of_row_ord0 (F : Type) (y : 'rV[F]_0) : tuple_of_row y = [tuple of [::]].
+Proof. apply eq_from_tnth; by case. Qed.
 
 Local Open Scope tuple_ext_scope.
 

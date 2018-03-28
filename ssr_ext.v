@@ -12,6 +12,9 @@ Import Prenex Implicits.
 
 Notation "t '\_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
 
+Lemma addb_tri_ine a b c : a (+) b <= (a (+) c) + (c (+) b).
+Proof. move: a b c; by case; case; case. Qed.
+
 Section ssrnat_ext.
 
 Lemma nat_of_pos_not_0 : forall p, nat_of_pos p <> O.
@@ -60,7 +63,7 @@ have : nat_of_bin (bin_of_nat a) = nat_of_bin (bin_of_nat b) by rewrite X.
 by rewrite 2!bin_of_natK.
 Qed.
 
-Lemma bin_of_nat_nat_of_pos_not_0 : forall i, bin_of_nat (nat_of_pos i) <> 0%num.
+Lemma bin_of_nat_nat_of_pos_not_0 : forall i, bin_of_nat (nat_of_pos i) <> 0%N.
 Proof.
 elim=> // a Ha /=.
 rewrite NatTrec.doubleE.
@@ -74,7 +77,7 @@ set x := (_ * _)%N.
 by rewrite -(nat_of_binK x) {}/x nat_of_mul_bin bin_of_natK expnS.
 Qed.
 
-Lemma N_bin_to_nat x : N.to_nat x = nat_of_bin x.
+Lemma Nto_natE x : N.to_nat x = nat_of_bin x.
 Proof.
 case x => //=.
 elim => [ | | //] p Hp /=.
@@ -372,6 +375,35 @@ split.
 Qed.
 
 End seq_eqType_ext.
+
+
+Lemma addb_nseq b : forall r v, size v = r ->
+  [seq x.1 (+) x.2 | x <- zip (nseq r b) v] = map (pred1 (negb b)) v.
+Proof.
+elim=> [ [] // | r IH [|h t] //= [] r_t].
+rewrite {}IH //; move: b h; by case; case.
+Qed.
+
+Definition addb_seq a b := [seq x.1 (+) x.2 | x <- zip a b].
+
+Lemma addb_seq_com : forall n a b, size a = n -> size b = n ->
+  addb_seq a b = addb_seq b a.
+Proof.
+elim => [ [] // [] // | n IH [|ha ta] // [|hb tb] // ] [Ha] [Hb].
+by rewrite /addb_seq /= -!/(addb_seq _ _) IH // addbC.
+Qed.
+
+Lemma addb_seq_cat a b c d : size a = size c ->
+  addb_seq (a ++ b) (c ++ d) = addb_seq a c ++ addb_seq b d.
+Proof. move=> a_c; by rewrite /addb_seq /= -map_cat zip_cat. Qed.
+
+Lemma addb_seq_map {A : Type} : forall n (a b : seq A) f,
+  size a = n -> size b = n ->
+  addb_seq (map f a) (map f b) = map (fun x => f x.1 (+) f x.2) (zip a b).
+Proof.
+elim => [[] // [] //| n IH [|ha ta] // [|hb tb] //= f [Ha] [Hb]].
+by rewrite /addb_seq /= -IH.
+Qed.
 
 Section ordered_ranks.
 

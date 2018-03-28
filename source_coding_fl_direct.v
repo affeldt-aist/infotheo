@@ -44,7 +44,7 @@ rewrite (_ : tuple_of_row _ = [tuple of nseq n false]); last first.
   rewrite -[RHS]row_of_tupleK; congr tuple_of_row.
   apply/matrixP => a b.
   by rewrite !mxE /tnth nth_nseq ltn_ord.
-rewrite /tuple2N /= /bitseq2N /= -{1}(cats0 (nseq n false)) rem_lea_false_nseq /=.
+rewrite /tuple2N /= /N_of_bitseq /= -{1}(cats0 (nseq n false)) rem_lea_false_nseq /=.
 move=> Hi; by rewrite -Hi Hdef in H1.
 Qed.
 
@@ -63,10 +63,10 @@ move Heq1 : (tuple2N _) => eq1.
 case: eq1 Heq1 => [|i0] Heq1.
 - case/tuple2N_0 : Heq1 => Heq1.
   have H1 : (seq.index i (enum S)).+1 <> O by done.
-  move: (bitseq_of_nat_nseq_false _ _ H1 H); by rewrite Heq1.
+  move: (bitseq_of_nat_nseq_false H1 H); by rewrite Heq1.
 - move Heq : ((Npos i0).-1 < #| S |)%nat => [].
-  - by rewrite -Heq1 /= bitseq2N_bitseq_of_nat // nth_index // mem_enum.
-  - rewrite -Heq1 /tuple2N bitseq2N_bitseq_of_nat //= (@seq_index_enum_card _ (enum S) S i) // in Heq.
+  - by rewrite -Heq1 /= N_of_bitseq_bitseq_of_nat // nth_index // mem_enum.
+  - rewrite -Heq1 /tuple2N N_of_bitseq_bitseq_of_nat //= (@seq_index_enum_card _ (enum S) S i) // in Heq.
     by rewrite enum_uniq.
 Qed.
 

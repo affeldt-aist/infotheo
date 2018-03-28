@@ -11,41 +11,11 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+(* TODO: move? *)
 Lemma num_occ_sum : forall (t : seq 'F_2), num_occ 1%R t = \sum_(i <- t) i.
 Proof.
 elim => [ /= | /= h t ->]; first by rewrite big_nil.
 rewrite big_cons; by case/F2P: h.
-Qed.
-
-Lemma addb_nseq b : forall r v, size v = r ->
-  [seq x.1 (+) x.2 | x <- zip (nseq r b) v] = map (pred1 (negb b)) v.
-Proof.
-elim=> [ [] // | r IH [|h t] //= [] r_t].
-rewrite {}IH //; move: b h; by case; case.
-Qed.
-
-Definition addb_seq a b := [seq x.1 (+) x.2 | x <- zip a b].
-
-Lemma addb_seq_com : forall n a b, size a = n -> size b = n ->
-  addb_seq a b = addb_seq b a.
-Proof.
-elim => [ [] // [] // | n IH [|ha ta] // [|hb tb] // ] [Ha] [Hb].
-by rewrite /addb_seq /= -!/(addb_seq _ _) IH // addbC.
-Qed.
-
-Lemma addb_tri_ine a b c : a (+) b <= (a (+) c) + (c (+) b).
-Proof. move: a b c; by case; case; case. Qed.
-
-Lemma addb_seq_cat a b c d : size a = size c ->
-  addb_seq (a ++ b) (c ++ d) = addb_seq a c ++ addb_seq b d.
-Proof. move=> a_c; by rewrite /addb_seq /= -map_cat zip_cat. Qed.
-
-Lemma addb_seq_map {A : Type} : forall n (a b : seq A) f,
-  size a = n -> size b = n ->
-  addb_seq (map f a) (map f b) = map (fun x => f x.1 (+) f x.2) (zip a b).
-Proof.
-elim => [[] // [] //| n IH [|ha ta] // [|hb tb] //= f [Ha] [Hb]].
-by rewrite /addb_seq /= -IH.
 Qed.
 
 Module HammingBitstring.
@@ -89,62 +59,16 @@ Qed.
 
 End HammingBitstring.
 
-Open Scope vec_ext_scope.
-
-Local Open Scope ring_scope.
-
-(* TODO: move *)
-Lemma seq_of_poly_rV (F : ringType) m (p : {poly F}) (_ : size p < m) :
-  [seq (poly_rV p) ``_ i | i <- enum 'I_m] =
-  [seq (poly_rV p) ``_ i | i <- enum ('I_(size p))] ++ nseq (m - size p) 0.
-Proof.
-case: m H => // m pm.
-rewrite (_ : enum _ = map inord (iota 0 (size p) ++ iota (size p) (m.+1 - size p))); last first.
-  by rewrite -iota_add subnKC ?enum_inord // ltnW.
-rewrite 2!map_cat; congr (_ ++ _).
-  rewrite -val_enum_ord -!map_comp; apply eq_map => i /=.
-  by rewrite !mxE inordK // (ltn_trans (ltn_ord i)).
-rewrite -map_comp.
-apply (@eq_from_nth _ 0); first by rewrite size_map size_iota size_nseq.
-move=> i.
-rewrite size_map size_iota => Hi.
-rewrite (nth_map O) ?size_iota //= mxE nth_nseq Hi nth_iota //.
-move/leq_sizeP: (leq_addr i (size p)); apply.
-by rewrite inordK // -ltn_subRL.
-Qed.
-
-Local Close Scope ring_scope.
+Local Open Scope vec_ext_scope.
 
 Section hamming_weight_distance.
+
+Local Open Scope ring_scope.
 
 Variables (F : ringType) (n : nat).
 Implicit Types u v : 'rV[F]_n.
 
-Local Open Scope ring_scope.
-
 Definition wH v := count (fun x => x != 0) (tuple_of_row v).
-
-Lemma wH_rVpoly u : wH u = count (fun i : 'I_n => (rVpoly u)`_i != 0) (enum 'I_n).
-Proof.
-rewrite /wH count_map; apply eq_in_count => /= i _.
-rewrite coef_poly insubT // => ni.
-rewrite ltn_ord; congr (u _ _ != _); by apply val_inj.
-Qed.
-
-Lemma wH_poly_rV (p : {poly F}) : wH (poly_rV p) <= size p.
-Proof.
-rewrite /wH /=.
-case/boolP : (size p < n) => pn; last first.
-  rewrite -leqNgt in pn; rewrite (leq_trans _ pn) //.
-  by rewrite (leq_trans (count_size _ _)) // size_map size_enum_ord.
-have -> : [seq (poly_rV p) ``_ i | i <- enum 'I_n] =
-  [seq (poly_rV p) ``_ i | i <- enum ('I_(size p))] ++ nseq (n - size p) 0.
-  by rewrite seq_of_poly_rV.
-rewrite count_cat [X in _ + X <= _](_ : count _ _ = O) ?addn0; last first.
-  rewrite (@eq_in_count _ _ pred0) ?count_pred0 //.
-  move=> i; case/nseqP => -> /= _; by rewrite eqxx.
-by rewrite count_map (leq_trans (count_size _ _)) // size_enum_ord.
-Qed.
 
 Lemma max_wH u : wH u <= n.
 Proof. by rewrite /wH (leq_trans (count_size _ _)) // size_tuple. Qed.
@@ -177,6 +101,47 @@ rewrite {1}/wH [X in tval X](_ : _ = [tuple of map (fun x => - x) (tuple_of_row 
 rewrite count_map; apply eq_count => i /=; by rewrite oppr_eq0.
 Qed.
 
+Lemma wH_rVpoly u : wH u = count (fun i : 'I_n => (rVpoly u)`_i != 0) (enum 'I_n).
+Proof.
+rewrite /wH count_map; apply eq_in_count => /= i _.
+rewrite coef_poly insubT // => ni.
+rewrite ltn_ord; congr (u _ _ != _); by apply val_inj.
+Qed.
+
+Lemma wH_poly_rV (p : {poly F}) : wH (poly_rV p) <= size p.
+Proof.
+rewrite /wH /=.
+case/boolP : (size p < n) => pn; last first.
+  rewrite -leqNgt in pn; rewrite (leq_trans _ pn) //.
+  by rewrite (leq_trans (count_size _ _)) // size_map size_enum_ord.
+have -> : [seq (poly_rV p) ``_ i | i <- enum 'I_n] =
+  [seq (poly_rV p) ``_ i | i <- enum ('I_(size p))] ++ nseq (n - size p) 0.
+  apply (@eq_from_nth _ 0) => [|i].
+    by rewrite size_cat 2!size_map !size_enum_ord size_nseq subnKC // ltnW.
+  rewrite size_map size_enum_ord => ni.
+  rewrite (nth_map (Ordinal ni)) ?size_enum_ord // mxE nth_enum_ord //.
+  rewrite nth_cat size_map size_enum_ord; case: ifPn => [pi|].
+    by rewrite (nth_map (Ordinal pi)) ?size_enum_ord // mxE nth_enum_ord.
+  rewrite -leqNgt => /leq_sizeP/(_ _ (leqnn i)) ->; by rewrite nth_nseq ltn_sub2r.
+rewrite count_cat [X in _ + X <= _](_ : count _ _ = O) ?addn0; last first.
+  rewrite (@eq_in_count _ _ pred0) ?count_pred0 //.
+  move=> i; case/nseqP => -> /= _; by rewrite eqxx.
+by rewrite count_map (leq_trans (count_size _ _)) // size_enum_ord.
+Qed.
+
+Local Open Scope nat_scope.
+Lemma wH_sum v : wH v = \sum_(n0 < n) (v ``_ n0 != 0)%R.
+Proof.
+rewrite /wH 1!count_map -sum1_count /= big_mkcond /=.
+apply congr_big => //=; by rewrite /index_enum -enumT.
+Qed.
+Local Close Scope nat_scope.
+
+Lemma wH_card_supp u : wH u = #|supp u|%N.
+Proof.
+rewrite wH_sum /supp -sum1dep_card [in RHS]big_mkcond; by apply/eq_bigr.
+Qed.
+
 Definition dH u v := wH (u - v).
 
 Lemma dHE u v : dH u v = wH (u - v). Proof. by []. Qed.
@@ -187,26 +152,13 @@ Proof. by rewrite /dH opprD addrA subrr add0r wH_opp. Qed.
 Lemma dH0x x : dH 0 x = wH x.
 Proof. by rewrite /dH add0r wH_opp. Qed.
 
+Local Open Scope nat_scope.
 Lemma max_dH u v : dH u v <= n.
 Proof. rewrite /dH. apply max_wH. Qed.
+Local Close Scope nat_scope.
 
 Lemma dH_sym u v : dH u v = dH v u.
 Proof. by rewrite {1}/dH -wH_opp opprB. Qed.
-
-Local Open Scope nat_scope.
-
-Lemma wH_sum v : wH v = \sum_(n0 < n) (v ``_ n0 != 0)%R.
-Proof.
-rewrite /wH 1!count_map -sum1_count /= big_mkcond /=.
-apply congr_big => //=; by rewrite /index_enum -enumT.
-Qed.
-
-Local Close Scope nat_scope.
-
-Lemma wH_card_supp u : wH u = #|supp u|%N.
-Proof.
-rewrite wH_sum /supp -sum1dep_card [in RHS]big_mkcond; by apply/eq_bigr.
-Qed.
 
 End hamming_weight_distance.
 
@@ -220,15 +172,114 @@ apply congr_big => //.
 Qed.
 
 Lemma sum_wH_row (F : ringType) n m (H : 'M[F]_(m, n)) :
-  \sum_(m0 : 'I_m) wH (row m0 H) = \sum_(n0 : 'I_n) wH (col n0 H)^T.
+  (\sum_(m0 : 'I_m) wH (row m0 H) = \sum_(n0 : 'I_n) wH (col n0 H)^T)%nat.
 Proof.
-transitivity (\sum_(m0 < m) \sum_(n0 < n) (H m0 n0 != 0)%R).
+transitivity (\sum_(m0 < m) \sum_(n0 < n) (H m0 n0 != 0)%R)%nat.
   apply eq_bigr => m0 _.
   rewrite wH_sum; apply eq_bigr => n0 _; by rewrite mxE.
 rewrite exchange_big /=.
 apply eq_bigr => n0 _.
 rewrite wH_sum; apply eq_bigr => m0 _; by rewrite 2!mxE.
 Qed.
+
+Section wH_num_occ_bitstring.
+
+Local Open Scope ring_scope.
+
+Lemma wH_col_1 n (i : 'I_n) : @wH [fieldType of 'F_2] _ (col i 1%:M)^T = 1%N.
+Proof.
+rewrite wH_sum (bigD1 i) //= !mxE eqxx /= add1n (eq_bigr (fun=> O)).
+by rewrite big_const iter_addn mul0n.
+move=> j ji; by rewrite !mxE (negbTE ji).
+Qed.
+
+Local Open Scope num_occ_scope.
+Lemma wH_num_occ n (v : 'rV['F_2]_n) : wH v = N(1 | tuple_of_row v).
+Proof. rewrite /wH /num_occ; apply eq_count => i; by rewrite -F2_eq1. Qed.
+Local Close Scope num_occ_scope.
+
+Lemma wH_bitstring n (x : 'rV_n) :
+  wH x = HammingBitstring.wH (tval (rowF2_tuplebool x)).
+Proof.
+rewrite wH_num_occ /HammingBitstring.wH /= /num_occ /= [in RHS]count_map.
+apply eq_in_count => /= b Hb; by rewrite -(F2_eq1 b) eqb_id.
+Qed.
+
+(*Lemma dH_dH_bitseq n (a b : 'rV_n) :
+  dH a b = HammingBitstring.dH (tval (rowF2_tuplebool a)) (tval (rowF2_tuplebool b)).
+Proof.
+rewrite /dH wH_oldE /wH_old.
+rewrite /HammingBitstring.dH /HammingBitstring.wH.
+transitivity (N(true | map bool_of_F2 (tuple_of_row (a - b)))).
+  rewrite num_occ_sum_bool big_map num_occ_sum.
+  apply eq_bigr; by case/F2P.
+congr (N(true | _)).
+apply/(@eq_from_nth _ true) => [|i Hi].
+  by rewrite size_map /addb_seq size_map size_zip !size_tuple minnn.
+rewrite size_map size_tuple in Hi.
+rewrite (nth_map (0 : 'F_2)); last by rewrite size_tuple.
+rewrite /addb_seq.
+rewrite (nth_map (true, true)); last by rewrite size_zip 2!size_tuple minnn.
+rewrite nth_zip /=; last by rewrite 2!size_map 2!size_tuple.
+rewrite /bool_of_F2.
+rewrite (_ : _ `_ i = [tuple (a - b) ``_ x | x < n] \_ (Ordinal Hi)); last first.
+  rewrite tnth_mktuple.
+  rewrite (nth_map (Ordinal Hi)) //; last by rewrite size_enum_ord.
+  congr (_ ord0 _).
+  by rewrite -[RHS](@nth_ord_enum n (Ordinal Hi)).
+rewrite tnth_mktuple !mxE.
+rewrite (nth_map (0 : 'F_2)); last by rewrite size_map size_enum_ord.
+rewrite (nth_map (0 : 'F_2)); last by rewrite size_map size_enum_ord.
+rewrite (_ : _ `_ i = (tuple_of_row a) \_ (Ordinal Hi)); last first.
+  rewrite tnth_mktuple (nth_map (Ordinal Hi)); last by rewrite size_enum_ord.
+  congr (_ ord0 _).
+  apply val_inj => /=.
+  by rewrite nth_enum_ord.
+rewrite (_ : _ `_ i = (tuple_of_row b) \_ (Ordinal Hi)); last first.
+  rewrite tnth_mktuple (nth_map (Ordinal Hi)); last by rewrite size_enum_ord.
+  congr (_ ord0 _).
+  apply val_inj => /=.
+  by rewrite nth_enum_ord.
+by rewrite 2!tnth_mktuple oppr_char2 // -bool_of_F2_add_xor.
+Qed.*)
+
+End wH_num_occ_bitstring.
+
+Lemma wH_castmx n (F : ringType) (x : 'rV[F]_n) n' (H : (1 = 1)%N * (n = n')) :
+  wH (castmx H x) = wH x.
+Proof.
+case: H => H1 H2; subst n'.
+rewrite /wH !count_map /=; apply eq_in_count => /= i _.
+by rewrite castmxE /= !cast_ord_id.
+Qed.
+
+Local Open Scope ring_scope.
+Lemma wH_row_mx n (F : ringType) r (rn : (r <= n)%N) :
+  wH (row_mx (const_mx 1) 0 : 'rV[F]_(r + (n - r))) = r.
+Proof.
+rewrite wH_sum (bigID (fun x : 'I__ => (x < r)%N)) /=.
+rewrite (eq_bigr (fun=> 1%N)); last first.
+  move=> i ir.
+  rewrite (_ : i = lshift _ (Ordinal ir)) ?row_mxEl ?mxE ?oner_neq0 //.
+  by apply val_inj.
+rewrite sum1dep_card (eq_bigr (fun=> O)) //; last first.
+  move=> i ir.
+  have ir' : (i - r < n - r)%N.
+    destruct r as [|r].
+      rewrite subn0.
+      move/leq_trans: (ltn_ord i); apply; by rewrite subn0 add0n.
+    rewrite subnS prednK // ?subn_gt0 // ?ltnNge; last by rewrite ltnS in ir.
+    rewrite /= [in X in (_ <= X)%N]subnS.
+    destruct n as [|n'] => //.
+    rewrite subSKn leq_sub2r //.
+    move: (ltn_ord i); by rewrite [in X in (_ < X)%N -> _]subnKC ltnS.
+  rewrite (_ : i = rshift _ (Ordinal ir')); last first.
+    apply val_inj => /=; by rewrite [in RHS]subnKC // leqNgt.
+  by rewrite row_mxEr mxE eqxx.
+rewrite big_const iter_addn_0 mul0n addn0 -sum1dep_card.
+by rewrite big_ord_narrow ?subnKC // sum1_card card_ord.
+Qed.
+Local Close Scope ring_scope.
 
 Section hamming_triangular_inequality.
 
@@ -304,123 +355,15 @@ move=> kn yD j jk; rewrite mem_wH_supp -mem_enum; apply/mem_nth.
 by rewrite -cardE card_wH_supp yD.
 Qed.
 
-Section wH_old.
-
-Local Open Scope num_occ_scope.
-Local Open Scope ring_scope.
-
-Definition wH_old n (v : 'rV['F_2]_n) := N(1 | tuple_of_row v).
-
-Lemma wH_oldE n (v : 'rV['F_2]_n) : wH v = wH_old v.
-Proof.
-rewrite /wH /wH_old /num_occ; apply eq_count => i; by rewrite -F2_eq1.
-Qed.
-
-Lemma wH_old_wH_b n (x : 'rV_n) :
-  wH_old x = HammingBitstring.wH (tval (rowF2_tuplebool x)).
-Proof.
-rewrite /wH_old /HammingBitstring.wH /= /num_occ /= [in RHS]count_map.
-apply eq_in_count => /= b Hb; by rewrite -(F2_eq1 b) eqb_id.
-Qed.
-
-Lemma wH_col_1 n (i : 'I_n) : @wH [fieldType of 'F_2] _ (col i 1%:M)^T = 1%N.
-Proof.
-rewrite wH_oldE /wH_old.
-rewrite num_occ_alt.
-apply/eqP/cards1P.
-exists i.
-apply/setP => n0.
-rewrite in_set1 in_set tnth_mktuple 3!mxE.
-by case (_ == i).
-Qed.
-
-Local Open Scope tuple_ext_scope.
-
-Lemma dH_dH_bitseq n (a b : 'rV_n) :
-  dH a b = HammingBitstring.dH (tval (rowF2_tuplebool a)) (tval (rowF2_tuplebool b)).
-Proof.
-rewrite /dH wH_oldE /wH_old.
-rewrite /HammingBitstring.dH /HammingBitstring.wH.
-transitivity (N(true | map bool_of_F2 (tuple_of_row (a - b)))).
-  rewrite num_occ_sum_bool big_map num_occ_sum.
-  apply eq_bigr; by case/F2P.
-congr (N(true | _)).
-apply/(@eq_from_nth _ true) => [|i Hi].
-  by rewrite size_map /addb_seq size_map size_zip !size_tuple minnn.
-rewrite size_map size_tuple in Hi.
-rewrite (nth_map (0 : 'F_2)); last by rewrite size_tuple.
-rewrite /addb_seq.
-rewrite (nth_map (true, true)); last by rewrite size_zip 2!size_tuple minnn.
-rewrite nth_zip /=; last by rewrite 2!size_map 2!size_tuple.
-rewrite /bool_of_F2.
-rewrite (_ : _ `_ i = [tuple (a - b) ``_ x | x < n] \_ (Ordinal Hi)); last first.
-  rewrite tnth_mktuple.
-  rewrite (nth_map (Ordinal Hi)) //; last by rewrite size_enum_ord.
-  congr (_ ord0 _).
-  by rewrite -[RHS](@nth_ord_enum n (Ordinal Hi)).
-rewrite tnth_mktuple !mxE.
-rewrite (nth_map (0 : 'F_2)); last by rewrite size_map size_enum_ord.
-rewrite (nth_map (0 : 'F_2)); last by rewrite size_map size_enum_ord.
-rewrite (_ : _ `_ i = (tuple_of_row a) \_ (Ordinal Hi)); last first.
-  rewrite tnth_mktuple (nth_map (Ordinal Hi)); last by rewrite size_enum_ord.
-  congr (_ ord0 _).
-  apply val_inj => /=.
-  by rewrite nth_enum_ord.
-rewrite (_ : _ `_ i = (tuple_of_row b) \_ (Ordinal Hi)); last first.
-  rewrite tnth_mktuple (nth_map (Ordinal Hi)); last by rewrite size_enum_ord.
-  congr (_ ord0 _).
-  apply val_inj => /=.
-  by rewrite nth_enum_ord.
-by rewrite 2!tnth_mktuple oppr_char2 // -bool_of_F2_add_xor.
-Qed.
-
-End wH_old.
-
-Lemma wH_castmx n (F : ringType) (x : 'rV[F]_n) n' (H : (1 = 1)%N * (n = n')) :
-  wH (castmx H x) = wH x.
-Proof.
-case: H => H1 H2; subst n'.
-rewrite /wH !count_map /=; apply eq_in_count => /= i _.
-by rewrite castmxE /= !cast_ord_id.
-Qed.
-
-Local Open Scope ring_scope.
-
-Lemma wH_row_mx n (F : ringType) r (rn : (r <= n)%N) :
-  wH (row_mx (const_mx 1) 0 : 'rV[F]_(r + (n - r))) = r.
-Proof.
-rewrite wH_sum (bigID (fun x : 'I__ => (x < r)%N)) /=.
-rewrite (eq_bigr (fun=> 1%N)); last first.
-  move=> i ir.
-  rewrite (_ : i = lshift _ (Ordinal ir)) ?row_mxEl ?mxE ?oner_neq0 //.
-  by apply val_inj.
-rewrite sum1dep_card (eq_bigr (fun=> O)) //; last first.
-  move=> i ir.
-  have ir' : (i - r < n - r)%N.
-    destruct r as [|r].
-      rewrite subn0.
-      move/leq_trans: (ltn_ord i); apply; by rewrite subn0 add0n.
-    rewrite subnS prednK // ?subn_gt0 // ?ltnNge; last by rewrite ltnS in ir.
-    rewrite /= [in X in (_ <= X)%N]subnS.
-    destruct n as [|n'] => //.
-    rewrite subSKn leq_sub2r //.
-    move: (ltn_ord i); by rewrite [in X in (_ < X)%N -> _]subnKC ltnS.
-  rewrite (_ : i = rshift _ (Ordinal ir')); last first.
-    apply val_inj => /=; by rewrite [in RHS]subnKC // leqNgt.
-  by rewrite row_mxEr mxE eqxx.
-rewrite big_const iter_addn_0 mul0n addn0 -sum1dep_card.
-by rewrite big_ord_narrow ?subnKC // sum1_card card_ord.
-Qed.
-
-Local Close Scope ring_scope.
-
 Section wH_permutation.
 
 Variable n : nat.
 
+(* TODO: move? *)
 Lemma perm_on_Sn (s : 'S_n) : perm_on [set x | x \in enum 'I_n] s.
 Proof. apply/subsetP=> /= x _; by rewrite !in_set mem_enum. Qed.
 
+(* TODO: move? *)
 Lemma perm_eq_enum (s : 'S_n) : perm_eq (enum 'I_n) (map (s^-1)%g (enum 'I_n)).
 Proof.
 apply uniq_perm_eq.
@@ -439,7 +382,7 @@ Qed.
 
 Lemma wH_perm_mx (s : 'S_n) (z : 'rV['F_2]_n) : wH (z *m perm_mx s) = wH z.
 Proof.
-rewrite !wH_oldE /wH_old.
+rewrite !wH_num_occ.
 suff -> : tuple_of_row (z *m perm_mx s) = perm_tuple (s^-1)%g (tuple_of_row z).
   by apply: num_occ_perm.
 apply eq_from_tnth => n0; by rewrite 3!tnth_mktuple vec_perm_mx !mxE.
@@ -450,7 +393,6 @@ End wH_permutation.
 Section wH_binomial.
 
 Local Open Scope ring_scope.
-
 Lemma wH_m_card n k : #|[set a in 'rV['F_2]_n | wH a == k]| = 'C(n, k).
 Proof.
 rewrite -[in X in _ = X](card_ord n) -card_draws -2!sum1dep_card.
@@ -460,15 +402,12 @@ have h'h (i : 'rV_n) : h' [set i0 | i ``_ i0 == 1%R] == i.
   case: ifP => [/eqP -> // | /negbT]; by rewrite -F2_eq0 => /eqP.
 rewrite (reindex_onto (fun x : 'rV_n => [set i | x ``_ i == 1%R]) h') /=.
 - apply eq_bigl => i.
-  rewrite wH_oldE /wH_old num_occ_alt h'h andbC /=; congr (_ == _).
+  rewrite wH_num_occ num_occ_alt h'h andbC /=; congr (_ == _).
   apply eq_card => t; by rewrite !inE tnth_mktuple.
 - move=> s Hs.
   apply/setP => /= i; rewrite !inE /h' mxE; by case: ifP.
 Qed.
-
 Local Close Scope ring_scope.
-
-Local Open Scope nat_scope.
 
 Lemma card_Fp_F2 p n' k : let n := n'.+1 in prime p -> k <= n ->
   (\sum_(x : 'rV['F_p]_n | [forall j : 'I_n, (k <= j) ==> (x ``_ j == 0%R)] &&
@@ -536,11 +475,7 @@ transitivity (p.-1 ^ k); last first.
 by apply: card_rV_wo_zeros.
 Qed.
 
-Local Close Scope nat_scope.
-
 Local Open Scope ring_scope.
-Local Open Scope nat_scope.
-
 Lemma wH_m_card_gen p n k : prime p -> k <= n ->
   #|[set a in 'rV['F_p]_n | wH a == k]| = ('C(n, k) * p.-1 ^ k)%N.
 Proof.
@@ -560,7 +495,7 @@ transitivity (#|[set a in 'rV['F_2]_n | wH a == k]| * p.-1 ^ k)%N; last first.
   by rewrite wH_m_card.
 rewrite -!sum1dep_card big_distrl /=.
 transitivity (\sum_(i : 'rV['F_2]_n | wH i == k)
-  (\sum_(x : 'rV['F_p]_k | [forall j, x ``_ j != 0%R]) 1)); last first.
+  (\sum_(x : 'rV['F_p]_k | [forall j, x ``_ j != 0%R]) 1))%nat; last first.
   apply eq_bigr => x Hx.
   by rewrite card_rV_wo_zeros ?mul1n.
 rewrite exchange_big /=.
@@ -637,7 +572,7 @@ by rewrite wH_supp_h nth_index // mem_enum -wH_supp_h inE.
 Qed.
 
 Lemma card_sphere q n k x : k <= n -> prime q ->
-  #|[set a in 'rV['F_q]_n | dH x a == k]| = 'C(n, k) * q.-1 ^ k.
+  #|[set a in 'rV['F_q]_n | dH x a == k]| = ('C(n, k) * q.-1 ^ k)%nat.
 Proof.
 move=> n0m0 primeq.
 rewrite /dH.
@@ -691,7 +626,7 @@ Local Open Scope tuple_ext_scope.
 Lemma card_dH (x y : n.-tuple 'F_2) :
   (#| [pred i | y \_ i != x \_ i ] |)%N = dH (row_of_tuple x) (row_of_tuple y).
 Proof.
-rewrite /dH wH_oldE /wH_old num_occ_alt /=.
+rewrite /dH wH_num_occ num_occ_alt /=.
 apply eq_card => /= i.
 rewrite inE.
 move H : (_ \in _) => [|].
@@ -711,7 +646,7 @@ Qed.
 Lemma card_dH_vec (x y : 'rV['F_2]_n) :
   (#| [pred i | y ``_ i != x ``_ i ] |)%N = dH x y.
 Proof.
-rewrite /dH wH_oldE /wH_old num_occ_alt /=.
+rewrite /dH wH_num_occ num_occ_alt /=.
 apply eq_card => /= i.
 rewrite inE.
 move H : (_ \in _) => [|].
@@ -737,232 +672,11 @@ Qed.
 
 End card_dH.
 
-(** Encoding of Naturals as Vectors *)
-
-(** Function that transforms natural numbers into their binary encodings, e.g.:
-  nat2bin 3 1 = [ 0 0 1 ],
-  nat2bin 3 2 = [ 0 1 0 ],
-  nat2bin 3 3 = [ 0 1 1 ]. *)
-
-Section rV_and_nat_def.
-
-Variable n : nat.
-
-Definition rV_of_nat (i : nat) : 'rV['F_2]_n :=
-  row_of_bitseq (size_bitseq_of_nat i n).
-
-Definition nat_of_rV (y : 'rV['F_2]_n) : nat :=
-  BinNat.N.to_nat (bitseq2N (map bool_of_F2 (tuple_of_row y))).
-
-End rV_and_nat_def.
-
-(* TODO: clean *)
-Section rV_and_nat_prop.
-
-Variable n : nat.
-
 Local Open Scope ring_scope.
-
-Lemma rV_of_nat_neq0 i : i <> O -> (i < expn 2 n)%N -> rV_of_nat n i <> 0%R.
-Proof.
-move=> Hi W.
-move: (bitseq_of_nat_nseq_false i n Hi W) => H.
-contradict H.
-apply eq_from_nth with false.
-- by rewrite /= size_pad_seqL size_nseq.
-- move=> j Hj.
-  rewrite (_ : size _ = n) in Hj; last by apply/eqP; rewrite size_bitseq_of_nat.
-  move/rowP : H => /(_ (Ordinal Hj)).
-  rewrite !mxE /= => Hj'.
-  rewrite nth_nseq Hj.
-  by apply F2_of_bool_0_inv.
-Qed.
-
-(* TODO: move? *)
-Lemma row_nth (i j : bitseq) : (size i <= n)%nat -> size j = size i ->
-  \row_(i0 < n) F2_of_bool (nth false i i0) =
-  \row_(i0 < n) F2_of_bool (nth false j i0) -> i = j.
-Proof.
-move=> Hi Hj /matrixP Heq.
-apply/esym.
-apply (@eq_from_nth _ false _ _ Hj) => i0 Hi0.
-rewrite Hj in Hi0.
-have {Hi0}Hi0 : (i0 < n)%nat.
-  apply leq_ltn_trans with ((size i).-1)%nat;
-    rewrite -ltnS prednK //; by apply leq_ltn_trans with i0.
-move: (Heq 0 (Ordinal Hi0)).
-rewrite !mxE /=; by do 2 case: nth.
-Qed.
-
-Lemma rV_of_nat_inj i j : (nat_of_pos i < expn 2 n)%N -> (nat_of_pos j < expn 2 n)%N ->
-  rV_of_nat n (nat_of_pos i) = rV_of_nat n (nat_of_pos j) -> i = j.
-Proof.
-move=> Hi Hj.
-rewrite /rV_of_nat.
-move/row_nth => X.
-have Htmp : (size (bitseq_of_nat (nat_of_pos i) n) <= n)%N.
-  by move/eqP: (size_bitseq_of_nat (nat_of_pos i) n) ->.
-apply X in Htmp => //; last first.
-  apply (@trans_eq _ _ n).
-  - exact/eqP/size_bitseq_of_nat.
-  - exact/esym/eqP/size_bitseq_of_nat.
-rewrite /bitseq_of_nat in Htmp.
-move: (N2bitseq_leading_bit (bin_of_nat (nat_of_pos i))) => U.
-lapply U; last by apply bin_of_nat_nat_of_pos_not_0.
-case=> ik Hik.
-rewrite Hik in Htmp.
-move: (N2bitseq_leading_bit (bin_of_nat (nat_of_pos j))) => V.
-lapply V; last by apply bin_of_nat_nat_of_pos_not_0.
-case=> jk Hjk.
-rewrite Hjk in Htmp.
-destruct n as [|n0].
-- rewrite expn0 in Hi.
-  move: (@nat_of_pos_not_0 i) => W.
-  by destruct (nat_of_pos i).
-- apply pad_seqL_leading_true_inj in Htmp; last 2 first.
-    have H : (size (true :: ik) <= n0.+1)%N.
-      rewrite -Hik size_rev.
-      apply size_N2bitseq_ub => //.
-      by apply nat_of_pos_not_0.
-    by rewrite /= ltnS in H.
-  have H : (size (true :: jk) <= n0.+1)%N.
-    rewrite -Hjk size_rev.
-    apply size_N2bitseq_ub => //.
-    by apply nat_of_pos_not_0.
-    by rewrite /= ltnS in H.
-  subst ik.
-  apply/nat_of_pos_inj/bin_of_nat_inj/N2bitseq_inj.
-  by rewrite -[RHS]revK Hjk -Hik revK.
-Qed.
-
-Local Open Scope nat_scope.
-Local Open Scope ring_scope.
-
-Lemma rV_of_natD_neq0 i j : i <> j -> i <> O -> j <> O ->
-  (i < expn 2 n)%N -> (j < expn 2 n)%N -> rV_of_nat n i + rV_of_nat n j <> 0.
-Proof.
-move=> Hij Hi Hj Hin Hjn.
-destruct i => //.
-destruct j => //.
-contradict Hij.
-apply F2_addmx0 in Hij.
-have [ii Hii] : exists ii, i.+1 = nat_of_pos ii.
-  exists (BinPos.P_of_succ_nat i).
-  rewrite -Pnat.nat_of_P_o_P_of_succ_nat_eq_succ.
-  by rewrite BinPos_nat_of_P_nat_of_pos.
-have [jj Hjj] : exists jj, j.+1 = nat_of_pos jj.
-  exists (BinPos.P_of_succ_nat j).
-  rewrite -Pnat.nat_of_P_o_P_of_succ_nat_eq_succ.
-  by rewrite BinPos_nat_of_P_nat_of_pos.
-rewrite Hii Hjj in Hij.
-apply rV_of_nat_inj in Hij; last 2 first.
-  by rewrite -Hii.
-  by rewrite -Hjj.
-rewrite Hjj; by subst ii.
-Qed.
-
-Lemma mulmx_rV_of_nat_row n' (M : 'M_(n, n')) (k : 'I_n) :
-  rV_of_nat n (expn 2 k) *m M = row (Ordinal (rev_ord_proof k)) M.
-Proof.
-rewrite /rV_of_nat.
-apply/rowP => i.
-rewrite !mxE /=.
-transitivity (\sum_(j < n) (F2_of_bool (nth false (bitseq_of_nat (expn 2 k) n) j) * M j i)).
-  apply eq_bigr => l _; by rewrite mxE.
-rewrite bitseq_of_nat_expn2 //.
-pose mk := Ordinal (rev_ord_proof k).
-rewrite -/mk (bigID (pred1 mk)) /= big_pred1_eq.
-set x := nth _ _ _.
-have -> : x = true.
-  by rewrite {}/x nth_cat size_nseq {1}/mk ltnn subnn.
-rewrite mul1r.
-set lhs := \sum_ (_ | _) _.
-suff -> : lhs = 0 by rewrite addr0.
-transitivity (\sum_(i | i != mk) (0 : 'F_2)).
-  apply eq_bigr => l lmk.
-  set rhs := nth _ _ _.
-  suff -> : rhs = false by rewrite mul0r.
-  rewrite /rhs nth_cat size_nseq.
-  case: ifP => Hcase; first by rewrite nth_nseq Hcase.
-  rewrite (_ : true :: _ = [:: true] ++ nseq k false) // nth_cat /=.
-  case: ifP => lnk.
-    suff : False by done.
-    clear -lnk lmk Hcase.
-    have {lnk} : l <= n - k.+1 by rewrite ltnS leqn0 in lnk.
-    rewrite leq_eqVlt Hcase orbC /=; by apply/negP.
-  rewrite nth_nseq; by case: ifP.
-by rewrite big_const iter_addr0.
-Qed.
-
-Lemma rV_of_nat_0 : rV_of_nat n 0 = 0.
-Proof.
-rewrite /rV_of_nat /row_of_bitseq /row_of_seq bitseq_of_nat_0.
-apply/rowP => b /=.
-rewrite 2!mxE nth_nseq; by case: ifP.
-Qed.
-
-Lemma nat_of_rV_up (y : 'rV_n) : nat_of_rV y < expn 2 n.
-Proof. by rewrite /nat_of_rV bitseq2N_up // size_map size_tuple. Qed.
-
-Lemma nat_of_rV_0 : nat_of_rV (0 : 'rV_n) = O.
-Proof.
-rewrite /nat_of_rV.
-set tmp := map _ _.
-have -> : tmp = nseq n false.
-  rewrite {}/tmp  /= (_ : false = bool_of_F2 0) // -map_nseq.
-  congr ([seq _ | i <- _]).
-  apply eq_from_nth with 0.
-  - by rewrite size_map size_enum_ord size_nseq.
-  - move=> i Hi.
-    rewrite size_map size_enum_ord in Hi.
-    rewrite nth_nseq Hi (nth_map (Ordinal Hi)); last by rewrite size_enum_ord.
-    by rewrite mxE.
-by rewrite bitseq2N_nseq_false.
-Qed.
-
-Lemma tuple_of_row_ord0 (F : Type) (y : 'rV[F]_0) : tuple_of_row y = [tuple of [::]].
-Proof. apply eq_from_tnth; by case. Qed.
-
-Lemma nat_of_rV_ord0 (y : 'rV_0) : nat_of_rV y = O.
-Proof. by rewrite /nat_of_rV N_bin_to_nat tuple_of_row_ord0. Qed.
-
-Lemma nat_of_rV_eq0 (y : 'rV_n) : (nat_of_rV y == O) = (y == 0).
-Proof.
-case Hlhs : (nat_of_rV _ == O); last first.
-  symmetry; apply/negP => /eqP abs; subst y.
-  by rewrite nat_of_rV_0 eqxx in Hlhs.
-symmetry; apply/eqP.
-move/eqP : Hlhs.
-rewrite /nat_of_rV [X in _ = X -> _](_ : O = BinNat.N.to_nat 0) //.
-move/Nnat.N2Nat.inj/bitseq2N_0.
-rewrite size_map size_tuple.
-move/(_ _ erefl) => Htmp.
-apply tuple_of_row_inj, val_inj.
-rewrite -(map_id (val (tuple_of_row y))).
-transitivity (map (F2_of_bool \o bool_of_F2) (val (tuple_of_row y))).
-  apply eq_in_map => i /= _; by rewrite bool_of_F2K.
-by rewrite map_comp Htmp row_to_seq_0 (_ : 0 = F2_of_bool false) // map_nseq.
-Qed.
-
-Lemma nat_of_rVK (y : 'rV_n) : rV_of_nat n (nat_of_rV y) = y.
-Proof.
-destruct n as [|n0].
-  apply/rowP; by case.
-apply/rowP => i.
-rewrite mxE /nat_of_rV.
-set tmp := [seq bool_of_F2 i | i <- _].
-rewrite [X in bitseq_of_nat _ X](_ : _ = size tmp); last by rewrite size_map size_tuple.
-rewrite bitseq2NK; last by rewrite size_tuple.
-rewrite /tmp (nth_map (0 : 'F_2)); last by rewrite size_tuple.
-rewrite bool_of_F2K (_ : _ `_ _ = tnth (tuple_of_row y) i); last first.
-  apply set_nth_default; by rewrite size_tuple.
-by rewrite tnth_mktuple.
-Qed.
-
-Lemma wH_two_pow p  : p < n -> wH (rV_of_nat n (expn 2 p)) = 1%nat.
+Lemma wH_two_pow n p : p < n -> wH (rV_of_nat n (expn 2 p)) = 1%nat.
 Proof.
 move=> pn.
-rewrite wH_oldE wH_old_wH_b /rV_of_nat /row_of_bitseq /row_of_seq /rowF2_tuplebool /=.
+rewrite wH_bitstring /rV_of_nat /row_of_bitseq /row_of_seq /rowF2_tuplebool /=.
 rewrite /HammingBitstring.wH /num_occ count_map.
 rewrite (eq_count (a2 := pred1 1)); last by move=> ? /=; rewrite eqb_id F2_eq1.
 rewrite -sum1_count big_map /=.
@@ -979,24 +693,7 @@ rewrite (eq_bigl (pred1 (Ordinal (rev_ord_proof (Ordinal pn))))); last first.
   apply/negbTE; by rewrite neq_ltn npi orbC.
 by rewrite /= big_filter_cond /= big_pred1_eq.
 Qed.
-
-End rV_and_nat_prop.
-
-Section cV_and_nat.
-
-Local Open Scope ring_scope.
-
-Definition cV_of_nat (n i : nat) : 'cV['F_2]_n := (rV_of_nat n i)^T.
-
-Definition nat_of_cV n (y : 'cV['F_2]_n) : nat := nat_of_rV y^T.
-
-Lemma nat_of_cV_0 k : nat_of_cV (0 : 'cV_k) = O.
-Proof. by rewrite /nat_of_cV trmx0 nat_of_rV_0. Qed.
-
-Lemma nat_of_rV_tr n (y : 'rV_n) : nat_of_rV y = nat_of_cV (y^T).
-Proof. by rewrite /nat_of_cV trmxK. Qed.
-
-End cV_and_nat.
+Local Close Scope ring_scope.
 
 (* TODO: clean *)
 Section AboutwH123.
@@ -1042,7 +739,7 @@ Qed.
 Lemma wH_1 n (x : 'rV['F_2]_n) : wH x = 1%nat ->
   exists i : 'I_n, x ``_ i = 1%R /\ (forall j : 'I_n, i <> j -> x ``_ j = 0%R).
 Proof.
-rewrite wH_oldE wH_old_wH_b.
+rewrite wH_bitstring.
 move/wHb_1.
 move/(_ n).
 rewrite size_tuple.
@@ -1110,11 +807,11 @@ Lemma wH_2 n (x : 'rV['F_2]_n) : wH x = 2%nat ->
   exists i j : 'I_n, i <> j /\ x ``_ i = 1%R /\ x ``_ j = 1%R /\
   (forall k : 'I_n, i <> k -> j <> k -> x ``_ k = 0%R).
 Proof.
-rewrite wH_oldE wH_old_wH_b.
+rewrite wH_bitstring.
 move/wHb_2.
 move/(_ n).
 rewrite size_tuple.
-case/(_ erefl) => i [] k [] [] H1 [] H2 [] [] H3 [] H4 [] H5 H6.
+case/(_ erefl) => i [] k [] [] H1 H2 [] [] H3 H4 [] H5 H6.
 exists (Ordinal H1), (Ordinal H3); split.
   by case.
 split.
@@ -1186,56 +883,11 @@ rewrite -(@eq_in_count _ pred0) ?count_pred0 //.
 by move=> /= b; rewrite rev_nseq => /nseqP[->].
 Qed.
 
-(* TODO: move? *)
-Lemma rev7_bin : forall m, (2 < m)%N ->
-  rev (N2bitseq (BinNums.Npos (xOs (m - 3) (BinNums.xI 3)))) =
-  true :: true :: true :: nseq (m - 3) false.
-Proof.
-elim=> //.
-case=> //.
-case=> //.
-case=> // m /(_ isT).
-rewrite -{1}addn3 -addnBA // subnn addn0 => IH _.
-rewrite -{1}addn4 -addnBA //= (_ : 4 - 3 = 1)%nat // addn1 /=.
-by rewrite rev_cons IH /= -{1}addn3 -addnBA // subnn addn0 -nseq_S.
-Qed.
-
-(* TODO: move? *)
-Lemma rev_bitseq_of_nat_7 n : (2 < n)%N ->
-  rev (bitseq_of_nat 7 n) = bitseq_of_nat (7 * expn 2 (n - 3)) n.
-Proof.
-move=>Hn.
-rewrite /bitseq_of_nat.
-rewrite (bin_of_nat_rev7 _ Hn).
-rewrite (@bin_of_nat_7 n) //=.
-rewrite (rev7_bin Hn) /=.
-rewrite {1}/pad_seqL /=.
-rewrite Hn.
-rewrite rev_cat /=.
-rewrite /pad_seqL /=.
-rewrite size_nseq.
-case: ifP => H //.
-  rewrite (_ : n - (n - 3).+3 = 0)%nat //; last first.
-  destruct n => //.
-  destruct n => //.
-  destruct n => //.
-  rewrite -addn3.
-  by rewrite -(@addnBA n 3 3) // subnn addn0 addn3 subnn.
-by rewrite rev_nseq.
-exfalso.
-move/negbT in H.
-rewrite -leqNgt in H.
-destruct n => //.
-destruct n => //.
-destruct n => //.
-by rewrite -{2}addn3 -addnBA // subnn addn0 ltnn in H.
-Qed.
-
 Lemma wH_7_rev7 n : (2 < n)%N ->
   wH (rV_of_nat n 7) = wH (rV_of_nat n (7 * expn 2 (n - 3))).
 Proof.
 move=> Hn.
-rewrite 2!wH_oldE /wH_old /rV_of_nat.
+rewrite 2!wH_num_occ /rV_of_nat.
 set lhs := tuple_of_row _.
 set rhs := tuple_of_row _.
 suff <- : rev lhs = rhs by apply num_occ_rev.
@@ -1285,7 +937,7 @@ by rewrite big_const iter_Rplus pow_1 /= -(mulRC p) mulRA -cardsE wH_m_card bin1
 Qed.
 
 Lemma binomial_theorem m p :
-  (\rsum_(b|b \in [set: 'rV['F_2]_m]) (1 - p) ^ (m - wH b) * p ^ wH b = 1)%R.
+  (\rsum_(b | b \in [set: 'rV['F_2]_m]) (1 - p) ^ (m - wH b) * p ^ wH b = 1)%R.
 Proof.
 transitivity (((1 - p) + p) ^ m); last first.
   rewrite addRC (_ : (p + (1 - p) = 1)%R); last by field.
