@@ -14,9 +14,6 @@ Notation "t '\_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
 
 Section ssrnat_ext.
 
-Lemma mul2_inj a b : a.*2 = b.*2 -> a = b.
-Proof. rewrite -!muln2; move/eqP; rewrite eqn_pmul2r //; by move/eqP. Qed.
-
 Lemma nat_of_pos_not_0 : forall p, nat_of_pos p <> O.
 Proof.
 elim => // p H.
@@ -28,27 +25,25 @@ Qed.
 Lemma nat_of_pos_inj : forall i j, nat_of_pos i = nat_of_pos j -> i = j.
 Proof.
 elim=> [i Hi [] | i Hi [] | j /=].
-- move=> j /= [].
-  rewrite !NatTrec.doubleE => Hj; f_equal.
-  by apply Hi, mul2_inj.
+- move=> j /= [] /eqP.
+  by rewrite !NatTrec.doubleE -!muln2 eqn_mul2r /= => /eqP/Hi ->.
 - move=> j /=.
   rewrite !NatTrec.doubleE => Hj.
   have absurd : odd ((nat_of_pos j).*2) by rewrite -Hj /= odd_double.
   by rewrite odd_double in absurd.
 - rewrite /= NatTrec.doubleE.
   case => Habsurd.
-  suff : False by done.
+  exfalso.
   move: (@nat_of_pos_not_0 i).
   by destruct (nat_of_pos i).
 - move=> j /=.
   rewrite !NatTrec.doubleE => Hj.
   have absurd : odd ((nat_of_pos i).*2) by rewrite Hj /= odd_double.
   by rewrite odd_double in absurd.
-- move=> j /= [].
-  rewrite !NatTrec.doubleE => Hj; f_equal.
-  by apply Hi, mul2_inj.
+- move=> j /= [] /eqP.
+  by rewrite !NatTrec.doubleE -!muln2 eqn_mul2r /= => /eqP/Hi ->.
 - rewrite /= NatTrec.doubleE => absurd.
-  suff : False by done.
+  exfalso.
   move: (@nat_of_pos_not_0 i).
   by destruct (nat_of_pos i).
   destruct j => //=;
@@ -73,25 +68,35 @@ contradict Ha.
 by destruct (nat_of_pos a).
 Qed.
 
-Lemma expn_2 : forall r, r <= (expn 2 r).-1.
+Lemma bin_of_nat_expn2 m : bin_of_nat (expn 2 m.+1) = (2 * bin_of_nat (expn 2 m))%N.
 Proof.
-case=> // r; rewrite -subn1 ltn_subRL addnC addn1; by apply ltn_expl.
+set x := (_ * _)%N.
+by rewrite -(nat_of_binK x) {}/x nat_of_mul_bin bin_of_natK expnS.
 Qed.
+
+Lemma N_bin_to_nat x : N.to_nat x = nat_of_bin x.
+Proof.
+case x => //=.
+elim => [ | | //] p Hp /=.
+by rewrite Pos2Nat.inj_xI NatTrec.trecE Hp -mul2n.
+by rewrite Pos2Nat.inj_xO NatTrec.trecE Hp -mul2n.
+Qed.
+
+Lemma BinPos_nat_of_P_nat_of_pos : forall i, BinPos.nat_of_P i = nat_of_pos i.
+Proof.
+elim=> // i /= Hi.
+- by rewrite Pnat.nat_of_P_xI NatTrec.doubleE Hi multE mul2n.
+- by rewrite Pnat.nat_of_P_xO NatTrec.doubleE Hi multE mul2n.
+Qed.
+
+Lemma nat_of_posK k : bin_of_nat (nat_of_pos k) = Npos k.
+Proof. by rewrite -(nat_of_binK (Npos k)). Qed.
 
 End ssrnat_ext.
 
 Section seq_ext.
 
 Variables A B : Type.
-
-Lemma behead_zip : forall n (a : seq A) (b : seq B),
-  size a = n.+1 -> size b = n.+1 ->
-  zip (behead a) (behead b) = behead (zip a b).
-Proof.
-elim.
-by case=> // h1 [] // [].
-by move=> m IH [|h1 t1] // [|h2 t2].
-Qed.
 
 Lemma zip_swap : forall (a : seq A) (b : seq B),
   zip a b = map (fun x => (x.2, x.1)) (zip b a).
@@ -157,62 +162,31 @@ elim=> // h t IH [|a1 a2] [|b1 b2] //=.
 - destruct h => /=; by rewrite IH.
 Qed.
 
-Lemma nseq_add : forall n (a : A) m, nseq (n + m) a = nseq n a ++ nseq m a.
-Proof. elim=> // n0 IH a m; by rewrite addSn /= IH. Qed.
+Lemma nseq_add n (a : A) m :nseq (n + m) a = nseq n a ++ nseq m a.
+Proof. rewrite cat_nseq; elim: n => // n ih; by rewrite addSn /= ih. Qed.
 
-Variable def : A.
+Variable a : A.
 
-Lemma nseq_S : forall n, nseq n.+1 def = nseq n def ++ [:: def].
+Lemma nseq_S : forall n, nseq n.+1 a = rcons (nseq n a) a(* ++ [:: a]*).
 Proof. by elim=> //= n <-. Qed.
 
-Lemma rev_nseq : forall n, rev (nseq n def) = nseq n def.
-Proof. elim=> // n H; by rewrite nseq_S rev_cat H /= -nseq_S. Qed.
+Lemma rev_nseq : forall n, rev (nseq n a) = nseq n a.
+Proof. elim => // n ih; by rewrite /= rev_cons ih -nseq_S. Qed.
 
-Lemma nseq_cat : forall (l1 l2 : seq A) n n1, size l1 = n1 ->
-  l1 ++ l2 = nseq n def ->
-  l1 = nseq n1 def /\ l2 = nseq (n - n1) def.
+Lemma nseq_cat (l k : seq A) n : l ++ k = nseq n a -> k = nseq (n - size l) a.
 Proof.
-elim/last_ind => [l2 n [] // _ /= ? | h1 t1 IH l2 n []].
-- by rewrite subn0.
-- by rewrite size_rcons.
-- move=> n1; rewrite size_rcons; move=> [] Hh1.
-  rewrite cat_rcons => X.
-  destruct n.
-  * by destruct h1.
-  * have [i Hi] : exists i, n.+1 - n1 = i.+1.
-      rewrite subSn; last first.
-        match goal with | X : ?a = ?b |- _ =>
-          have {X}X : (size a = size b) by rewrite X
-        end.
-        rewrite size_nseq size_cat /= addnS Hh1 in X.
-        move/eqP : X; rewrite eqSS; move/eqP => <-.
-        by apply leq_addr.
-      by exists (n - n1).
-   case: (IH (t1 :: l2) _ _ Hh1 X) => IH1.
-   rewrite Hi; case=> IH2 IH3; subst t1.
-   rewrite nseq_S IH1 -cat_rcons cats0 subSS.
-   split; first by done.
-   rewrite subSn in Hi; last first.
-     have -> : n = (size (nseq n.+1 def)).-1.
-       by rewrite size_nseq.
-     rewrite -X size_cat /= addnS /= Hh1; by apply leq_addr.
-   by case: Hi => ->.
+move=> H2; move/(congr1 (drop (size l))) : (H2).
+rewrite drop_cat ltnn subnn drop0 => ->.
+move: (nseq_add (size l) a (n - size l)).
+rewrite subnKC; last by rewrite -(size_nseq n a) -H2 size_cat leq_addr.
+move=> ->; by rewrite drop_cat size_nseq ltnn subnn drop0.
 Qed.
-
-Lemma map_nil_inv : forall (f : A -> B) (l : seq A), map f l = [::] -> l = [::].
-Proof. by move=> f; case. Qed.
 
 End seq_ext.
 
 Section seq_eqType_ext.
 
 Variables A B : eqType.
-
-Lemma mem_nseq (l : A) k (i : A) : l \in nseq k i -> (l == i).
-Proof.
-have : nseq k i = nseq (size (nseq k i)) i by rewrite size_nseq.
-by move/all_pred1P/allP/(_ l).
-Qed.
 
 Lemma in_cat (s : seq A) x : x \in s -> exists hd tl, s = hd ++ x :: tl.
 Proof.
@@ -222,16 +196,6 @@ elim: s => // h t IH; rewrite in_cons; case/orP.
 - case/IH => h1 [] t1 ht1.
   exists (h ::h1), t1 => /=.
   congruence.
-Qed.
-
-Lemma rev_inj : forall (a b : seq A), rev a = rev b -> a = b.
-Proof.
-elim => [ [] // hb tb | ta ha IH [| hb tb] //].
-- rewrite rev_cons -cats1; by destruct (rev tb).
-- rewrite rev_cons -cats1; by destruct (rev ha).
-- rewrite !rev_cons.
-  move/eqseqP; rewrite eqseqE eqseq_rcons.
-  case/andP; move/eqP; move/IH => ->; by move/eqP => ->.
 Qed.
 
 Lemma sorted_cat (l1 l2 : seq A) (Rel : @rel A) :
@@ -315,41 +279,26 @@ rewrite (IH tl (filter (predC (pred1 hd)) v) lst_sz tl_uniq).
   by rewrite eqxx in Hi.
 Qed.
 
-Lemma filter_zip_L m (al : seq A) (bl : seq B) a :
-  size al = m -> size bl = m ->
-  filter (fun x => x.1 == a) (zip al bl) =
-  zip (filter (pred1 a) al) (mask (map (pred1 a) al) bl).
+Lemma filter_zip_L m (l : seq A) (k : seq B) a :
+  size l = m -> size k = m ->
+  filter (fun x => x.1 == a) (zip l k) =
+  zip (filter (pred1 a) l) (mask (map (pred1 a) l) k).
 Proof.
-move=> mal mbl.
-rewrite filter_mask.
-symmetry. rewrite filter_mask zip_mask. symmetry.
-f_equal.
-elim: m al bl mal mbl a.
-  case=> //; by case.
-move=> m IHm [|a1 a2] // [|b1 b2] // [sza2] [szb2] a /=; by rewrite IHm.
+move=> Hl Hk.
+rewrite filter_mask [in RHS]filter_mask zip_mask; congr mask.
+elim: m l k Hl Hk a => [[] // [] //|n ih].
+move=> [|a1 a2] // [|b1 b2] // [sza2] [szb2] a /=; by rewrite ih.
 Qed.
 
-Lemma filter_zip_R m (al : seq A) (bl : seq B) b :
-  size al = m -> size bl = m ->
-  filter (fun x => x.2 == b) (zip al bl) =
-  zip (mask (map (pred1 b) bl) al)
-     (filter (pred1 b) bl).
+Lemma filter_zip_R m (l : seq A) (k : seq B) b :
+  size l = m -> size k = m ->
+  filter (fun x => x.2 == b) (zip l k) =
+  zip (mask (map (pred1 b) k) l) (filter (pred1 b) k).
 Proof.
-move=> mal mbl.
-rewrite filter_mask.
-symmetry. rewrite filter_mask zip_mask. symmetry.
-f_equal.
-elim: m al bl mal mbl b.
-  case=> //; by case.
-move=> m IHm [|a1 a2] // [|b1 b2] // [sza2] [szb2] b /=; by rewrite IHm.
-Qed.
-
-Lemma undup_nil_inv : forall (l : seq A), undup l = [::] -> l = [::].
-Proof.
-elim=> // h t IH /=.
-case/orP : (orbN (h \in t)) => X.
-rewrite X; move/IH => ?; by subst t.
-by rewrite (negbTE X).
+move=> Hl Hk.
+rewrite filter_mask [in RHS]filter_mask zip_mask; congr mask.
+elim: m l k Hl Hk b => [[] // [] // | n ih].
+move=> [|a1 a2] // [|b1 b2] // [sza2] [szb2] b /=; by rewrite ih.
 Qed.
 
 Lemma undup_filter : forall (P : pred B) x, undup (filter P x) = filter P (undup x).

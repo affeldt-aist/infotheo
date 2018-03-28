@@ -22,7 +22,8 @@ Variable S : {set 'rV[A]_k.+1}.
 
 Definition f : encT A 'rV_n k.+1 := fun x =>
   if x \in S then
-    let i := seq.index x (enum S) in row_of_tuple (Tuple (size_nat2bin i.+1 n))
+    let i := seq.index x (enum S) in
+    row_of_tuple (Tuple (size_bitseq_of_nat i.+1 n))
   else
     \row_(j < n) false.
 
@@ -62,10 +63,10 @@ move Heq1 : (tuple2N _) => eq1.
 case: eq1 Heq1 => [|i0] Heq1.
 - case/tuple2N_0 : Heq1 => Heq1.
   have H1 : (seq.index i (enum S)).+1 <> O by done.
-  move: (nat2bin_nseq_false _ _ H1 H); by rewrite Heq1.
+  move: (bitseq_of_nat_nseq_false _ _ H1 H); by rewrite Heq1.
 - move Heq : ((Npos i0).-1 < #| S |)%nat => [].
-  - by rewrite -Heq1 /= bitseq2N_nat2bin // nth_index // mem_enum.
-  - rewrite -Heq1 /tuple2N bitseq2N_nat2bin //= (@seq_index_enum_card _ (enum S) S i) // in Heq.
+  - by rewrite -Heq1 /= bitseq2N_bitseq_of_nat // nth_index // mem_enum.
+  - rewrite -Heq1 /tuple2N bitseq2N_bitseq_of_nat //= (@seq_index_enum_card _ (enum S) S i) // in Heq.
     by rewrite enum_uniq.
 Qed.
 

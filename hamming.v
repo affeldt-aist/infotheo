@@ -748,7 +748,8 @@ Section rV_and_nat_def.
 
 Variable n : nat.
 
-Definition rV_of_nat (i : nat) : 'rV['F_2]_n := bitseq_F2row (size_nat2bin i n).
+Definition rV_of_nat (i : nat) : 'rV['F_2]_n :=
+  row_of_bitseq (size_bitseq_of_nat i n).
 
 Definition nat_of_rV (y : 'rV['F_2]_n) : nat :=
   BinNat.N.to_nat (bitseq2N (map bool_of_F2 (tuple_of_row y))).
@@ -765,15 +766,12 @@ Local Open Scope ring_scope.
 Lemma rV_of_nat_neq0 i : i <> O -> (i < expn 2 n)%N -> rV_of_nat n i <> 0%R.
 Proof.
 move=> Hi W.
-rewrite /rV_of_nat /bitseq_F2row /bitseq_to_row.
-move: (nat2bin_nseq_false i n Hi W) => H.
+move: (bitseq_of_nat_nseq_false i n Hi W) => H.
 contradict H.
 apply eq_from_nth with false.
 - by rewrite /= size_pad_seqL size_nseq.
 - move=> j Hj.
-  rewrite (_ : size _ = n) in Hj; last first.
-    (* TODO: lemma? *)
-    apply/eqP. by apply size_nat2bin.
+  rewrite (_ : size _ = n) in Hj; last by apply/eqP; rewrite size_bitseq_of_nat.
   move/rowP : H => /(_ (Ordinal Hj)).
   rewrite !mxE /= => Hj'.
   rewrite nth_nseq Hj.
@@ -800,16 +798,15 @@ Lemma rV_of_nat_inj i j : (nat_of_pos i < expn 2 n)%N -> (nat_of_pos j < expn 2 
   rV_of_nat n (nat_of_pos i) = rV_of_nat n (nat_of_pos j) -> i = j.
 Proof.
 move=> Hi Hj.
-rewrite /rV_of_nat /bitseq_F2row /bitseq_to_row.
+rewrite /rV_of_nat.
 move/row_nth => X.
-have Htmp : (size (nat2bin (nat_of_pos i) n) <= n)%N.
-  move: (size_nat2bin (nat_of_pos i) n).
-  by move/eqP => ->.
+have Htmp : (size (bitseq_of_nat (nat_of_pos i) n) <= n)%N.
+  by move/eqP: (size_bitseq_of_nat (nat_of_pos i) n) ->.
 apply X in Htmp => //; last first.
   apply (@trans_eq _ _ n).
-  - by apply/eqP/size_nat2bin.
-  - by apply/esym/eqP/size_nat2bin.
-rewrite /nat2bin in Htmp.
+  - exact/eqP/size_bitseq_of_nat.
+  - exact/esym/eqP/size_bitseq_of_nat.
+rewrite /bitseq_of_nat in Htmp.
 move: (N2bitseq_leading_bit (bin_of_nat (nat_of_pos i))) => U.
 lapply U; last by apply bin_of_nat_nat_of_pos_not_0.
 case=> ik Hik.
@@ -834,9 +831,8 @@ destruct n as [|n0].
     by apply nat_of_pos_not_0.
     by rewrite /= ltnS in H.
   subst ik.
-  rewrite -Hjk in Hik.
-  move/rev_inj : Hik.
-  by move/N2bitseq_inj/bin_of_nat_inj/nat_of_pos_inj.
+  apply/nat_of_pos_inj/bin_of_nat_inj/N2bitseq_inj.
+  by rewrite -[RHS]revK Hjk -Hik revK.
 Qed.
 
 Local Open Scope nat_scope.
@@ -871,9 +867,9 @@ Proof.
 rewrite /rV_of_nat.
 apply/rowP => i.
 rewrite !mxE /=.
-transitivity (\sum_(j < n) (F2_of_bool (nth false (nat2bin (expn 2 k) n) j) * M j i)).
+transitivity (\sum_(j < n) (F2_of_bool (nth false (bitseq_of_nat (expn 2 k) n) j) * M j i)).
   apply eq_bigr => l _; by rewrite mxE.
-rewrite nat2bin_two_pow //.
+rewrite bitseq_of_nat_expn2 //.
 pose mk := Ordinal (rev_ord_proof k).
 rewrite -/mk (bigID (pred1 mk)) /= big_pred1_eq.
 set x := nth _ _ _.
@@ -900,7 +896,7 @@ Qed.
 
 Lemma rV_of_nat_0 : rV_of_nat n 0 = 0.
 Proof.
-rewrite /rV_of_nat /bitseq_F2row /bitseq_to_row nat2bin_0_n.
+rewrite /rV_of_nat /row_of_bitseq /row_of_seq bitseq_of_nat_0.
 apply/rowP => b /=.
 rewrite 2!mxE nth_nseq; by case: ifP.
 Qed.
@@ -955,7 +951,7 @@ destruct n as [|n0].
 apply/rowP => i.
 rewrite mxE /nat_of_rV.
 set tmp := [seq bool_of_F2 i | i <- _].
-rewrite [X in nat2bin _ X](_ : _ = size tmp); last by rewrite size_map size_tuple.
+rewrite [X in bitseq_of_nat _ X](_ : _ = size tmp); last by rewrite size_map size_tuple.
 rewrite bitseq2NK; last by rewrite size_tuple.
 rewrite /tmp (nth_map (0 : 'F_2)); last by rewrite size_tuple.
 rewrite bool_of_F2K (_ : _ `_ _ = tnth (tuple_of_row y) i); last first.
@@ -966,13 +962,13 @@ Qed.
 Lemma wH_two_pow p  : p < n -> wH (rV_of_nat n (expn 2 p)) = 1%nat.
 Proof.
 move=> pn.
-rewrite wH_oldE wH_old_wH_b /rV_of_nat /bitseq_F2row /bitseq_to_row /rowF2_tuplebool /=.
+rewrite wH_oldE wH_old_wH_b /rV_of_nat /row_of_bitseq /row_of_seq /rowF2_tuplebool /=.
 rewrite /HammingBitstring.wH /num_occ count_map.
 rewrite (eq_count (a2 := pred1 1)); last by move=> ? /=; rewrite eqb_id F2_eq1.
 rewrite -sum1_count big_map /=.
 rewrite (eq_bigl (pred1 (Ordinal (rev_ord_proof (Ordinal pn))))); last first.
   move=> i /=; symmetry; rewrite -[in X in X = _]val_eqE /=.
-  rewrite mxE nat2bin_two_pow // nth_cat size_nseq.
+  rewrite mxE bitseq_of_nat_expn2 // nth_cat size_nseq.
   case: ifP => [ i_m | /negbT ].
     rewrite nth_nseq i_m /=.
     apply/negbTE; by rewrite neq_ltn i_m.
@@ -1153,19 +1149,18 @@ rewrite /wH /num_occ /rV_of_nat.
 set tmp := tuple_of_row _.
 have -> : tmp = [tuple of rev (1 :: 1 :: nseq n.+1 0)]%R.
   apply eq_from_tnth => i.
-  rewrite tnth_mktuple /bitseq_F2row /bitseq_to_row /nat2bin mxE.
-  rewrite (tnth_nth 0%R).
+  rewrite tnth_mktuple mxE.
   rewrite -(nth_map _ 0%R); last by rewrite size_cat size_nseq /= addn2.
-  congr (_ `_ i)%R.
-  rewrite /= map_cat /= -!cat_rcons cats0 (_ : 0 :: nseq n 0 = nseq n.+1 0)%R //.
-  by rewrite 2!rev_cons nseq_S -cat_rcons cats0 rev_rcons /= rev_nseq map_nseq.
+  rewrite (tnth_nth 0%R); congr ( _ `_ i)%R.
+  rewrite /= (_ : 0 :: nseq n 0 = nseq n.+1 0)%R //.
+  rewrite nseq_S -[in RHS]cat1s -[in RHS](cat1s _ (rcons _ _)) catA rev_cat.
+  rewrite [in RHS]rev_rcons /=; congr cons.
+  by rewrite rev_nseq map_cat map_nseq.
 rewrite /=.
 set y := _ :: _.
 rewrite (_ : y = [:: 1; 1; 0] ++ nseq n 0)%R // rev_cat count_cat /= -(@eq_in_count _ pred0).
   by rewrite count_pred0.
-move=> a /=.
-rewrite rev_nseq.
-by move/mem_nseq/eqP => ->.
+move=> /= b; by rewrite rev_nseq => /nseqP[->].
 Qed.
 
 Lemma wH_7 : forall n, (3 <= n)%N -> wH (rV_of_nat n 7) = 3%N.
@@ -1176,21 +1171,19 @@ set x := tuple_of_row _.
 have -> : x =[tuple of rev (1 :: 1 :: 1 :: nseq n 0)]%R.
   rewrite /x {x}.
   apply eq_from_tnth => i.
-  rewrite tnth_mktuple /bitseq_F2row /bitseq_to_row /nat2bin mxE (tnth_nth 0%R).
+  rewrite tnth_mktuple mxE (tnth_nth 0%R).
   rewrite -(nth_map _ ord0); last first.
     rewrite /pad_seqL /=.
     destruct n => //=.
     by rewrite size_cat size_nseq /= addn3.
   congr (_ `_ i)%R.
-  rewrite /= !rev_cons /= /pad_seqL /= -addn3 addnK map_cat /= map_nseq /=.
+  rewrite /bitseq_of_nat /= !rev_cons /= /pad_seqL /= -addn3 addnK map_cat /= map_nseq /=.
   by rewrite rev_nseq -!cats1 /= -!catA.
 rewrite /=.
 set y := _ :: _.
 rewrite (_ : y = [:: 1; 1; 1] ++ nseq n 0)%R // rev_cat count_cat /=.
 rewrite -(@eq_in_count _ pred0) ?count_pred0 //.
-move=> a /=.
-rewrite rev_nseq.
-by move/mem_nseq/eqP => ->.
+by move=> /= b; rewrite rev_nseq => /nseqP[->].
 Qed.
 
 (* TODO: move? *)
@@ -1204,18 +1197,15 @@ case=> //.
 case=> // m /(_ isT).
 rewrite -{1}addn3 -addnBA // subnn addn0 => IH _.
 rewrite -{1}addn4 -addnBA //= (_ : 4 - 3 = 1)%nat // addn1 /=.
-rewrite rev_cons IH /=.
-rewrite -{1}addn3 -addnBA // subnn addn0.
-rewrite -cats1.
-by rewrite -nseq_S.
+by rewrite rev_cons IH /= -{1}addn3 -addnBA // subnn addn0 -nseq_S.
 Qed.
 
 (* TODO: move? *)
-Lemma rev_nat2bin_7 n : (2 < n)%N ->
-  rev (nat2bin 7 n) = nat2bin (7 * expn 2 (n - 3)) n.
+Lemma rev_bitseq_of_nat_7 n : (2 < n)%N ->
+  rev (bitseq_of_nat 7 n) = bitseq_of_nat (7 * expn 2 (n - 3)) n.
 Proof.
 move=>Hn.
-rewrite /nat2bin.
+rewrite /bitseq_of_nat.
 rewrite (bin_of_nat_rev7 _ Hn).
 rewrite (@bin_of_nat_7 n) //=.
 rewrite (rev7_bin Hn) /=.
@@ -1250,10 +1240,10 @@ set lhs := tuple_of_row _.
 set rhs := tuple_of_row _.
 suff <- : rev lhs = rhs by apply num_occ_rev.
 rewrite /lhs /rhs.
-rewrite /bitseq_F2row.
-rewrite -!bitseq_to_rowK.
+rewrite /row_of_bitseq.
+rewrite -!row_of_seqK.
 rewrite -map_rev.
-by rewrite rev_nat2bin_7.
+by rewrite rev_bitseq_of_nat_7.
 Qed.
 
 End AboutwH123.

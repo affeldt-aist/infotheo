@@ -394,7 +394,7 @@ rewrite (bigD1 a) // big1 /= => [|a' Ha'].
 - transitivity (size (@List.nil A)) => //.
   congr (size _).
   apply/eqP/negPn; rewrite -has_filter; apply/hasPn => l Hl.
-  by move/mem_nseq/eqP : Hl => ->.
+  by case/nseqP : Hl => ->.
 Qed.
 
 Lemma typed_tuples_not_empty : { t | t \in T_{P} }.

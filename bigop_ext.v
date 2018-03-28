@@ -115,9 +115,9 @@ move Hn : (undup (map f (p))) => n.
 move: n p f Hn.
 elim => [p f HA F Hp | h t IH p f H F Hp].
 - rewrite big_nil.
-  move/undup_nil_inv : HA.
-  move/map_nil_inv => ->.
-  by rewrite big_nil.
+  suff : p = [::] by move=> ->; rewrite big_nil.
+  move/undup_nil : HA => /(congr1 size) /=; rewrite size_map.
+  by move/eqP; rewrite size_eq0 => /eqP.
 - rewrite big_cons.
   have [preh [pret [H1 [H2 H3]]]] : exists preh pret,
     perm_eq p (preh ++ pret) /\ undup (map f preh) = [:: h] /\ undup (map f pret) = t.

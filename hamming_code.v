@@ -142,7 +142,7 @@ have Hn' : size (N2bitseq (bin_of_nat (7 * 2 ^ (n - 3)))) = n.
 rewrite (bigD1 0) //= !mxE.
 set i := nth _ _ 0.
 have {i} -> : i = true.
-  rewrite /i /nat2bin /pad_seqL size_rev Hn'.
+  rewrite /i /bitseq_of_nat /pad_seqL size_rev Hn'.
   by rewrite leqnn subnn cat0s bin_of_nat_rev7 // rev7_bin.
 rewrite mulr1.
 (* the second term of the sum *)
@@ -150,16 +150,16 @@ pose i1 := Ordinal (ltnW two_m); pose i2 := Ordinal two_m.
 rewrite (bigD1 i1) // (bigD1 i2) //= !mxE.
 set i := nth _ _ i1.
 have {i} -> : i = true.
-  rewrite /i /nat2bin /pad_seqL size_rev Hn'.
+  rewrite /i /bitseq_of_nat /pad_seqL size_rev Hn'.
   by rewrite leqnn subnn cat0s bin_of_nat_rev7 // rev7_bin.
 rewrite mulr1.
 (* the third term of the sum *)
 set i := nth _ _ i2.
 have {i} -> : i = true.
-  rewrite /i /nat2bin /pad_seqL size_rev Hn'.
+  rewrite /i /bitseq_of_nat /pad_seqL size_rev Hn'.
   by rewrite  leqnn subnn cat0s bin_of_nat_rev7 // rev7_bin.
 rewrite mulr1 big1 ?addr0 => [|i i_gt2]; last first.
-  rewrite /rV_of_nat /bitseq_F2row /bitseq_to_row /nat2bin.
+  rewrite /rV_of_nat /bitseq_of_nat.
   rewrite !mxE /= /pad_seqL size_rev Hn' leqnn subnn /=.
   rewrite bin_of_nat_rev7 //= rev7_bin //=.
   set j := nth _ _ i.
@@ -168,7 +168,7 @@ rewrite mulr1 big1 ?addr0 => [|i i_gt2]; last first.
   clear -i_gt2.
   case: i i_gt2 => -[//|[//|[//|m0]]] /=.
   by rewrite nth_nseq ltn_subRL addnC addn3 => ->.
-rewrite /nat2bin.
+rewrite /bitseq_of_nat.
 destruct x as [x Hx] => /=.
 set p0 := pad_seqL _ _ _.
 set p1 := pad_seqL _ _ _.
@@ -190,8 +190,8 @@ have [X|[X|X]] : (x = m.-1 \/ x = m.-2 \/ x < m.-2)%N.
   rewrite /p2 /pad_seqL /= nth_cat size_nseq subn2 ltnn subnn /=.
   by rewrite addrr_char2 // addr0.
 - (* false false false *)
- rewrite /p0 /p1 /p2 /= /pad_seqL /=.
- rewrite -!cat_cons -[_::_]/(nseq _.+1 _) nseq_S -catA nth_cat size_nseq X nth_nseq X /=.
+  rewrite /p0 /p1 /p2 /= /pad_seqL /=.
+  rewrite -cat_cons -[_::_]/(nseq _.+1 _) cats1 nth_rcons size_nseq ltnW // nth_nseq ltnW //.
   rewrite nth_cat size_nseq subn2 X /= nth_nseq X /=.
   by rewrite nth_cat size_nseq X /= nth_nseq X /= !addr0.
 Qed.
@@ -1034,10 +1034,9 @@ eapply eq_trans.
 rewrite mulRA /=.
 set den := INR _.
 have -> : 1 / den * den = 1.
-  field.
-  rewrite /den card_matrix /= -INR_pow_expn.
-  apply/pow_nonzero/not_0_INR.
-  by rewrite card_F2.
+  rewrite div1R mulVR //.
+  apply/not_0_INR/eqP.
+  by rewrite card_matrix /= mul1n expn_eq0 negb_and card_F2.
 rewrite mul1R.
 have toleft A B C D : A + C + D = B -> A = B - C - D by move => <-; ring.
 apply toleft.

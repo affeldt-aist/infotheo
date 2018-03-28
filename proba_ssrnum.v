@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat div seq.
 From mathcomp Require Import path choice fintype tuple finfun finset bigop.
 From mathcomp Require Import matrix.
 Require Import ProofIrrelevance FunctionalExtensionality.
-Require Import ssr_ext tuple_prod.
+Require Import ssr_ext ssralg_ext.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -78,18 +78,18 @@ Variable p : R.
 Hypothesis Hp : 0 <= p <= 1.
 
 Definition bdist : dist A.
-apply makeDist with [ffun x => if x == Two_set.val0 HA then 1 - p else p].
+apply makeDist with [ffun x => if x == Set2.a HA then 1 - p else p].
 - move=> a.
   rewrite ffunE.
   case: ifP => _; last by case/andP : Hp.
   rewrite -(GRing.subrr 1).
   apply ler_sub => //.
   by case/andP: Hp.
-- rewrite /index_enum -enumT Two_set.enum /=.
+- rewrite /index_enum -enumT Set2.enumE /=.
   rewrite big_cons /= big_cons /= big_nil.
   rewrite addr0 2!ffunE.
   rewrite eqxx.
-  move: (Two_set.val0_neq_val1 HA).
+  move: (Set2.a_neq_b HA).
   rewrite eqtype.eq_sym.
   move/negbTE => ->.
   by rewrite subrK.
@@ -117,10 +117,10 @@ Hypothesis card_A : #|A| = 2%nat.
 Lemma charac_bdist : {r1 | {Hr1 : 0 <= r1 <= 1 & P = bdist card_A Hr1 }}.
 Proof.
 destruct P as [[pmf pmf0] pmf1].
-exists (1 - pmf (Two_set.val0 card_A)).
-have Hr1 : 0 <= 1 - pmf (Two_set.val0 card_A) <= 1.
-  move: (dist_max (@mkDist _ (mkPosFun pmf0) pmf1) (Two_set.val0 card_A)) => /= H1.
-  move: (pmf0 (Two_set.val0 card_A)) => H2.
+exists (1 - pmf (Set2.a card_A)).
+have Hr1 : 0 <= 1 - pmf (Set2.a card_A) <= 1.
+  move: (dist_max (@mkDist _ (mkPosFun pmf0) pmf1) (Set2.a card_A)) => /= H1.
+  move: (pmf0 (Set2.a card_A)) => H2.
   apply/andP; split.
     by rewrite -(subrr 1) ler_sub.
   by rewrite -{2}(subr0 1) ler_sub.
@@ -133,10 +133,10 @@ case: ifP => Ha.
   move/eqP : Ha => ->.
   by rewrite opprB addrC subrK.
 rewrite -pmf1.
-rewrite /index_enum -enumT Two_set.enum.
+rewrite /index_enum -enumT Set2.enumE.
 rewrite big_cons /= big_cons /= big_nil.
 rewrite addr0 -addrA addrC subrK.
-by move/negbT/Two_set.neq_val0_val1/eqP : Ha => ->.
+by move/negbT/Set2.neq_a_b/eqP : Ha => ->.
 Qed.
 
 End charac_bdist_sect.
@@ -405,16 +405,16 @@ Variable P : dist [finType of 'rV[A * B]_n].
 
 Definition dist_tuple_prod_cast : dist [finType of 'rV[A]_n * 'rV[B]_n].
 (* begin hide *)
-apply makeDist with (fun xy => P (prod_tuple xy)).
+apply makeDist with (fun xy => P (prod_rV xy)).
 (* end hide *)
 move=> a; by apply Rle0f.
 rewrite -(pmf1 P).
-rewrite (reindex_onto (fun x => tuple_prod x) (fun y => prod_tuple y)); last first.
-  move=> i _; by rewrite prod_tupleK.
+rewrite (reindex_onto (fun x => rV_prod x) (fun y => prod_rV y)); last first.
+  move=> i _; by rewrite prod_rVK.
 rewrite /=.
 apply eq_big => /= i.
-- by rewrite inE tuple_prodK eqxx.
-- move=> _; by rewrite tuple_prodK.
+- by rewrite inE rV_prodK eqxx.
+- move=> _; by rewrite rV_prodK.
 Defined.
 
 End tuple_prod_cast.
@@ -707,16 +707,16 @@ Variable n : nat.
 Variable P : dist [finType of 'rV[A * B]_n].
 Variable Q : {set [finType of 'rV[A * B]_n]}.
 
-Lemma Pr_tuple_prod_cast : Pr (@dist_tuple_prod_cast A B n P) [set x | prod_tuple x \in Q] =
+Lemma Pr_tuple_prod_cast : Pr (@dist_tuple_prod_cast A B n P) [set x | prod_rV x \in Q] =
   Pr P Q.
 Proof.
 rewrite /Pr.
-rewrite (reindex_onto (fun x => tuple_prod x) (fun y => prod_tuple y)) /=; last first.
-  move=> i _; by rewrite prod_tupleK.
+rewrite (reindex_onto (fun x => rV_prod x) (fun y => prod_rV y)) /=; last first.
+  move=> i _; by rewrite prod_rVK.
 apply eq_big.
 move=> i /=.
-  by rewrite !inE tuple_prodK eqxx andbC.
-move=> i /= Hi; by rewrite tuple_prodK.
+  by rewrite !inE rV_prodK eqxx andbC.
+move=> i /= Hi; by rewrite rV_prodK.
 Qed.
 
 End Pr_tuple_prod.
@@ -807,9 +807,9 @@ move Hn : (undup (map X (p))) => n.
 move: n p X Hn.
 elim => [p X HA F Hp | h t IH p X H F Hp].
 - rewrite big_nil.
-  move/undup_nil_inv : HA.
-  move/map_nil_inv => ->.
-  by rewrite big_nil.
+  suff : p = [::] by move=> ->; rewrite big_nil.
+  move/undup_nil_inv : HA => /(congr1 size) /=; rewrite size_map.
+  by move/eqP; rewrite size_eq0 => /eqP.
 - rewrite big_cons.
   have [preh [pret [H1 [H2 H3]]]] : exists preh pret,
     perm_eq p (preh ++ pret) /\ undup (map X preh) = [:: h] /\ undup (map X pret) = t.

@@ -859,9 +859,8 @@ elim=> // h t IH p n0 H /=.
 rewrite IH.
 - rewrite cats0.
   transitivity (filter xpred0 (nseq (n0 h) h)).
-    apply eq_in_filter => i /mem_nseq/eqP => ->.
-    apply/negP/negP.
-    apply H; by rewrite in_cons eqxx.
+    apply eq_in_filter => a /nseqP[-> _].
+    apply/negP/negP/H; by rewrite in_cons eqxx.
   by rewrite filter_pred0.
 move=> x0 Hx0.
 apply H; by rewrite in_cons Hx0 orbC.
@@ -881,13 +880,12 @@ case/orP.
     apply/eqP => ?; subst x0.
     by rewrite x0_t in H1.
   rewrite (_ : filter _ _ = filter xpredT (nseq (n0 h) h)); last first.
-    apply eq_in_filter => i /mem_nseq/eqP => -> /=; by rewrite eqxx.
+    apply eq_in_filter => i /nseqP[-> /= ]; by rewrite eqxx.
   by rewrite filter_predT /= cats0.
 move=> a_t.
 rewrite IH // (_ : filter _ _ = filter xpred0 (nseq (n0 h) h)); last first.
-  apply eq_in_filter => i /mem_nseq/eqP => -> /=.
-  apply/eqP => ?; subst a.
-  by rewrite a_t in H1.
+  apply eq_in_filter => i /nseqP[-> /= _].
+  by apply: contraNF H1 => /eqP  ->.
 by rewrite filter_pred0.
 Qed.
 
@@ -974,10 +972,10 @@ rewrite (@filter_zip_R _ _ N(a | ta)) //; last first.
   rewrite /dom filter_flatten size_flatten /shape -!map_comp sumn_big_addn.
   rewrite big_map (bigD1 a) // big1 /= => [|a1 Ha1].
   - rewrite (_ : filter _ _ = filter (xpredT) (nseq N(a | ta) a)); last first.
-      apply eq_in_filter => i /mem_nseq/eqP => ->; by rewrite /pred1 /= eqxx.
+      apply eq_in_filter => i /nseqP[-> _]; by rewrite /pred1 /= eqxx.
     by rewrite addn0 filter_predT size_nseq.
   - rewrite (_ : filter _ _ = filter (xpred0) (nseq N(a1 | ta) a1)); last first.
-      apply eq_in_filter => j /mem_nseq/eqP => ->.
+      apply eq_in_filter => j /nseqP[-> _].
       by rewrite /pred1 /= (negbTE Ha1).
     by rewrite filter_pred0.
 rewrite size_zip size_mask; last first.

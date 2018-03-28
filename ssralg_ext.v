@@ -113,6 +113,15 @@ Lemma inj_row_set (A : ringType) n n0 (d : 'rV_n) :
   {in A &, injective ((row_set n0)^~ d)}.
 Proof. move=> a b _ _ /= /rowP /(_ n0); by rewrite mxE eqxx mxE eqxx. Qed.
 
+Lemma row_set_comm n A (i1 i2 : 'I_n) (x1 x2 : A) d :
+  i1 != i2 -> d `[ i2 := x2 ] `[ i1 := x1 ] = (d `[ i1 := x1 ]) `[ i2 := x2 ].
+Proof.
+move=> Hneq.
+apply/rowP => i; rewrite !mxE.
+case Hi1: (i == i1); case Hi2: (i == i2) => //=.
+by rewrite -(eqP Hi1) (eqP Hi2) eqxx in Hneq.
+Qed.
+
 Section sub_vec_sect.
 
 Variables (A : Type) (n : nat).
@@ -124,15 +133,6 @@ Definition sub_vec (t : 'rV[A]_n) (S : {set 'I_n}) : 'rV[A]_#| S | :=
 End sub_vec_sect.
 
 Notation "t # V" := (sub_vec t V) : vec_ext_scope.
-
-Lemma row_set_comm n A (i1 i2 : 'I_n) (x1 x2 : A) d :
-  i1 != i2 -> d `[ i2 := x2 ] `[ i1 := x1 ] = (d `[ i1 := x1 ]) `[ i2 := x2 ].
-Proof.
-move=> Hneq.
-apply/rowP => i; rewrite !mxE.
-case Hi1: (i == i1); case Hi2: (i == i2) => //=.
-by rewrite -(eqP Hi1) (eqP Hi2) eqxx in Hneq.
-Qed.
 
 Section row_mx_ext.
 
@@ -254,26 +254,26 @@ Local Close Scope tuple_ext_scope.
 Lemma tuple_of_rowK n (v : 'rV[A]_n) : row_of_tuple (tuple_of_row v) = v.
 Proof. apply tuple_of_row_inj; by rewrite row_of_tupleK. Qed.
 
-Definition bitseq_to_row
+Definition row_of_seq
   (f : B -> A) (b : B) (l : seq B) n (H : size l == n) : 'rV[A]_n.
 Proof.
 exact (matrix_of_fun matrix_key (fun i j => f (nth b l j))).
 Defined.
 
-Lemma bitseq_to_rowK n l H f b :
-  map f l = tuple_of_row (@bitseq_to_row f b l n H).
+Lemma row_of_seqK n l H f b :
+  map f l = tuple_of_row (@row_of_seq f b l n H).
 Proof.
 apply/(@eq_from_nth _ (f b)) => [|i Hi].
   by rewrite size_map size_tuple (eqP H).
 rewrite size_map in Hi.
 rewrite (nth_map b) //.
 rewrite (eqP H) in Hi.
-transitivity (tnth (tuple_of_row (bitseq_to_row f b H)) (Ordinal Hi)).
+transitivity (tnth (tuple_of_row (row_of_seq f b H)) (Ordinal Hi)).
   by rewrite tnth_mktuple mxE.
 apply set_nth_default; by rewrite size_tuple.
 Qed.
 
-Definition bitseq_to_col
+Definition col_of_seq
   (f : B -> A) (b : B) (l : seq B) n (H : size l == n) : 'cV[A]_n.
 Proof.
 exact (matrix_of_fun matrix_key (fun i j => f (nth b l i))).
@@ -281,8 +281,8 @@ Defined.
 
 End AboutRowTuple.
 
-Arguments bitseq_to_row {A} {B} _ _ l n.
-Arguments bitseq_to_col {A} {B} _ _ l n.
+Arguments row_of_seq {A} {B} _ _ l n.
+Arguments col_of_seq {A} {B} _ _ l n.
 
 Local Open Scope tuple_ext_scope.
 
@@ -312,8 +312,8 @@ Qed.
 
 Definition rowF2_tuplebool {n : nat} (M : 'rV['F_2]_n) : n.-tuple bool :=
   [tuple of map (fun x => x != 0) (tuple_of_row M)].
-Definition bitseq_F2row := bitseq_to_row F2_of_bool false.
-Definition bitseq_F2col := bitseq_to_col F2_of_bool false.
+Definition row_of_bitseq := row_of_seq F2_of_bool false.
+Definition col_of_bitseq := col_of_seq F2_of_bool false.
 
 Lemma trmx_cV_0 {k} (x : 'cV['F_2]_k) : (x ^T == 0) = (x == 0).
 Proof.
