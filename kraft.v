@@ -59,21 +59,6 @@ Qed.
 
 End prefix.
 
-Lemma sorted_nth (l : seq nat) : sorted leq l -> forall i j,
-  i <= j < size l -> nth O l i <= nth O l j.
-Proof.
-elim: l => [/= _ i j|h t IH Ht]; first by rewrite ltn0 andbF.
-move/pathP : (Ht) => H; move/path_sorted in Ht.
-case => [/= [// | j /=] | i /= [// | j]].
-  rewrite ltnS => jt.
-  eapply leq_trans; last by apply: (IH Ht O); rewrite leq0n jt.
-  eapply leq_trans; last by apply H; rewrite (leq_ltn_trans _ jt).
-  done.
-rewrite !ltnS => ijt.
-eapply leq_trans; first by apply: (IH _ _ j).
-done.
-Qed.
-
 Lemma empty_finType_nil (T : finType) : (#|T| = 0) -> forall c : seq T, c = [::].
 Proof. move/card0_eq => T0; by case=> // h; move: (T0 h); rewrite !inE. Qed.
 

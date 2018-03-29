@@ -423,18 +423,21 @@ Local Notation "+%M" := plus (at level 0).
 
 Lemma big_tuple_ffun (I J : finType) (F : {ffun I -> J} -> R)
   (G : _ -> _ -> _) (jdef : J) (idef : I) :
-  \big[+%M/0]_(j : #|I|.-tuple J) G (F (Finfun j)) (nth jdef j 0)
+  \big[+%M/0]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
     = \big[+%M/0]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
 Proof.
-rewrite (reindex_onto (fun y => fgraph y) (fun p => Finfun p)) //.
-apply eq_big; first by case => t /=; by rewrite eqxx.
-move=> i _.
-congr (G _ _).
-  by case: i.
-case: i => [ [tval Htval] ].
-rewrite [fgraph _]/= -(nth_map idef jdef); last first.
-  rewrite -cardE; apply/card_gt0P; by exists idef.
-by rewrite -codomE codom_ffun.
+rewrite (reindex_onto (fun y => fgraph y) (fun p => [ffun x => tnth p (enum_rank x)])); last first.
+  move=> t _; by apply/eq_from_tnth => i; rewrite tnth_fgraph ffunE enum_valK.
+apply eq_big.
+  move=> f /=; apply/eqP/ffunP => i; by rewrite ffunE tnth_fgraph enum_rankK.
+move=> f _.
+congr (G (F _) _).
+  apply/ffunP => i; by rewrite ffunE tnth_fgraph enum_rankK.
+have @zero : 'I_#|I| by exists O; apply/card_gt0P; exists idef.
+transitivity (tnth (fgraph f) zero).
+  apply set_nth_default; by rewrite size_tuple ltn_ord.
+rewrite tnth_fgraph; congr (f _).
+by apply enum_val_nth.
 Qed.
 
 End big_tuple_ffun.

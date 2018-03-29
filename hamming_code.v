@@ -389,7 +389,7 @@ rewrite -(Pnat.Nat2Pos.id i.+1) // in Hij Hi.
 rewrite -(Pnat.Nat2Pos.id j.+1) // in Hij Hj.
 rewrite !BinPos_nat_of_P_nat_of_pos in Hij Hi Hj.
 move/trmx_inj in Hij.
-have Hpos := rV_of_nat_inj Hi Hj Hij.
+have Hpos := nat_of_pos_inj (rV_of_nat_inj Hi Hj Hij).
 have Hij' : i.+1 = j.+1 by apply Pnat.Nat2Pos.inj.
 apply/eqP.
 rewrite -(addn1 i) -(addn1 j) in Hij'.

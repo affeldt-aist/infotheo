@@ -14,6 +14,7 @@ Local Open Scope proba_scope.
 Local Open Scope jtyp_seq_scope.
 Local Open Scope channel_code_scope.
 Local Open Scope channel_scope.
+Local Open Scope vec_ext_scope.
 
 Module Wght.
 
@@ -221,6 +222,7 @@ Qed.
 
 End joint_typicality_decoding.
 
+(* TODO: move? *)
 Section sum_rV_ffun.
 
 Import Monoid.Theory.
@@ -233,8 +235,8 @@ Local Notation "+%M" := plus (at level 0).
 
 Lemma sum_rV_ffun (I J : finType) (F : {ffun I -> J} -> R)
   (G : _ -> _ -> _) (idef : I) (zero : 'I_ _) : O = zero ->
-  \big[+%M/0]_(j : 'rV[J]_#|I|) G (F [ffun x => j ord0 (enum_rank x)]) (j ord0 zero)
-    = \big[+%M/0]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
+  \big[+%M/0]_(j : 'rV[J]_#|I|) G (F [ffun x => j ord0 (enum_rank x)]) (j ord0 zero) =
+  \big[+%M/0]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
 Proof.
 Local Open Scope ring_scope.
 move=> Hzero.
@@ -276,252 +278,206 @@ Definition cal_E M n epsilon (f : encT A M n) m :=
 
 Local Open Scope tuple_ext_scope.
 
-(* TODO: clean *)
-Lemma big_head_behead_P_tuple {C:finType} n (F : n.+1.-tuple C -> R) (P1 : pred C) (P2 : pred ({: n.-tuple C})) :
+(* TODO: move? *) (* NB: similar to big_rV_cons_behead *)
+Lemma big_tuple_cons_behead {C : finType} n (F : n.+1.-tuple C -> R)
+  (P1 : pred C) (P2 : pred {: n.-tuple C}) :
   \rsum_(i in C | P1 i) \rsum_(j in {: n.-tuple C} | P2 j) (F [tuple of (i :: j)])
   =
   \rsum_(p in {: n.+1.-tuple C} | (P1 (thead p)) && (P2 (tbehead p)) ) (F p).
 Proof.
-symmetry.
-rewrite (@partition_big _ _ _ _ _ _ (fun x : {: n.+1.-tuple C} => thead x)
-  (fun x : C => P1 x)) //=.
-- apply eq_bigr => i Hi.
-  rewrite (reindex_onto (fun j : {: n.-tuple C} => [tuple of (i :: j)])
-    (fun p => [tuple of (behead p)])) /=; last first.
-    move=> j Hj.
-    case/andP : Hj => Hj1 /eqP => <-.
-    symmetry.
-    by apply tuple_eta.
-  apply congr_big => // x /=.
-  rewrite !theadE eqxx /= Hi /= -andbA /=.
-  set tmp := _ == x.
-  have Htmp : tmp = true.
-    rewrite /tmp tupleE /behead_tuple /=.
-    apply/eqP => /=.
-    by apply val_inj.
-  rewrite Htmp andbC /=.
-  f_equal.
-  by apply/eqP.
-move=> i; by case/andP.
+apply/esym.
+rewrite (@partition_big _ _ _ _ _ _ (fun x => thead x) (fun x => P1 x)) //=; last first.
+  move=> i; by case/andP.
+apply eq_bigr => i Hi.
+rewrite (reindex_onto (fun j : {: n.-tuple C} => [tuple of (i :: j)])
+  (fun p => [tuple of (behead p)])) /=; last first.
+  move=> j /andP[Hj1 /eqP <-]; exact/esym/tuple_eta.
+apply congr_big => // x /=.
+rewrite !theadE eqxx /= Hi /= -andbA /=.
+rewrite (_ : _ == x = true) ?andbT; last first.
+  rewrite tupleE /behead_tuple /=; exact/eqP/val_inj.
+congr P2; rewrite /tbehead tupleE /behead_tuple; exact: val_inj.
 Qed.
 
-(* NB: similar lemma in proba2.v *)
+(* TODO: move? *) (* NB: similar lemma in proba2.v *)
 Lemma rsum_rmul_tuple_pmf_tnth {C : finType} n k (Q : dist C) :
   \rsum_(t : {:k.-tuple ('rV[C]_n)}) \rprod_(m < k) (Q `^ n) t \_ m = 1%R.
 Proof.
 transitivity (\rsum_(j : {ffun 'I_k -> 'rV[_]_n})
   \rprod_(m < k) Q `^ _ (j m)).
-  rewrite (reindex_onto (fun p => Finfun p) (fun x => fgraph x)) //=; last by case.
+  rewrite (reindex_onto (fun p => [ffun x => p\_(enum_rank x)])
+                        (fun x => fgraph x)) //=; last first.
+    by move=> f _; apply/ffunP => /= i; rewrite ffunE tnth_fgraph enum_rankK.
   rewrite (big_tcast _ _ (card_ord k)) //.
   apply eq_big => //.
-  - move=> i /=; by rewrite eqxx.
-  - move=> i _.
-    apply eq_bigr => j _; by rewrite FunFinfun.fun_of_finE tcastE enum_rank_ord.
+  - move=> i /=; apply/esym/eqP/eq_from_tnth => j.
+    by rewrite tnth_fgraph ffunE enum_valK.
+  - move=> i _; apply eq_bigr => j _; by rewrite ffunE /= tcastE -enum_rank_ord.
 rewrite -(bigA_distr_bigA (fun m xn => Q `^ _ xn)) /= big_const.
 rewrite (_ : \rsum_(_ <- _) _ = 1%R); last by rewrite pmf1.
 by rewrite iter_Rmult pow1.
 Qed.
 
-Lemma first_summand k n epsilon0 :
-  let M := [finType of 'I_k.+1] in
-  \rsum_(f : encT A M n) Wght.d P f *
-    Pr (W ``(| f ord0)) (~: cal_E epsilon0 f ord0) =
-  Pr (`J(P , W) `^ n) (~: `JTS P W n epsilon0).
-Proof.
-move=> M.
-have M_prednK : #|M|.-1.+1 = #|M| by rewrite card_ord.
-set E_F_N := @cal_E M n epsilon0.
-rewrite {1}/E_F_N {1}/cal_E.
-case/card_gt0P : (dist_domain_not_empty P) => xdef _.
-pose zero := @enum_rank M ord0.
-move: (@sum_rV_ffun _ mulR_muloid addR_addoid M [finType of 'rV[A]_n]
-  (fun f => \rprod_(m : M) P `^ n (f m))
-  (fun r => fun ta => (r * Pr ( W ``(| ta ) )
-    (~: [set tb | prod_rV (ta, tb) \in `JTS P W n epsilon0]))%R)
-  ord0 zero).
-rewrite (_ : nth ord0 (enum M) 0 = ord0); last by rewrite enum_ordS.
-rewrite /Wght.d -lock /= => <-.
-transitivity (\rsum_(ta : 'rV['rV[A]_n]_#|M|) (
-    (\rprod_(m : M) P `^ n ([ffun x => ta ord0 x] (enum_rank m))) *
-    \rsum_(tb | tb \in ~: cal_E epsilon0 [ffun x => ta ord0 x] zero)
-    (W ``(| [ffun x => ta ord0 x] zero)) tb))%R.
-  apply eq_bigr => ta _.
-  congr (_ * _); first by apply eq_bigr => m _; rewrite 2!ffunE.
-  apply eq_big.
-  - move=> /= vb; by rewrite !inE ffunE.
-  - move=> cb _; by rewrite ffunE.
-rewrite /cal_E.
-transitivity (\rsum_(ta : 'rV[A]_n)
-  (\rsum_(y in ~: [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
-    ((W ``(| ta)) y)) *
-  \rsum_(j in {: #|M|.-1.-tuple ('rV[A]_n)})
-  (\rprod_(m : M) P `^ _ (Finfun (tcast M_prednK [tuple of ta :: j]) m))).
-Local Open Scope ring_scope.
-  rewrite (reindex_onto (fun y : {ffun _ -> _} => \row_(i < _) y (enum_val i))
-                        (fun p : 'rV_ _ => [ffun x => p ord0 (enum_rank x)])) //=; last first.
-    move=> i _.
-    by apply/matrixP => a b; rewrite {a}(ord1 a) mxE ffunE enum_valK.
-  apply trans_eq with (\rsum_(j : {ffun M -> _})
-    ((\rprod_(m < k.+1) P `^ n (j m)) *
-      (\rsum_(y in ~: [set y0 | prod_rV (j ord0, y0) \in `JTS P W n epsilon0])
-      W ``(y | j ord0))))%R.
-    apply eq_big => //= f.
-    - apply/eqP/ffunP => m; by rewrite ffunE mxE enum_rankK.
-    - move/eqP => Hf.
-      congr (_ * _)%R.
-        apply eq_bigr => i _; by rewrite -[in RHS]Hf 2!ffunE.
-      apply eq_big => /=.
-        move=> vb; by rewrite !inE -[in RHS]Hf !ffunE mxE.
-      move=> vb _; by rewrite -[in RHS]Hf !ffunE mxE.
-  rewrite (_ : ord0 = nth ord0 (enum M) 0); last by rewrite enum_ordS.
-  rewrite -(big_tuple_ffun _ (fun f => \rprod_(m : M) P `^ n (f m))
-    (fun r => fun yn => r *
-      (\rsum_(y in ~: [set y0 | prod_rV (yn, y0) \in `JTS P W n epsilon0])
-      W ``(y | yn))) (\row_(i < n) xdef) ord0)%R.
-  transitivity (\rsum_(j : _)
-    ((\rprod_(m : M) P `^ n (Finfun (tcast M_prednK j) m)) *
-      (\rsum_(y in ~: [set y0 | prod_rV (nth (\row_(i < n) xdef) j 0, y0) \in
-          `JTS P W n epsilon0])
-      W ``(y | nth (\row_(i < n) xdef) j 0))))%R.
-    rewrite (big_tcast _ _ M_prednK) //.
-    apply eq_bigr => i _.
-    congr (_ * _)%R.
-    have Hcst : nth (\row_(i < n) xdef) (tcast M_prednK i) 0 =
-      nth (\row_(i < n) xdef) i 0.
-      move: M_prednK i; rewrite card_ord => M_prednK i.
-      rewrite -(tnth_nth _ i ord0) -(tnth_nth _ (tcast M_prednK i) ord0).
-      by rewrite tcastE /= cast_ord_id.
-    apply eq_big.
-    - move=> vb; by rewrite !inE Hcst.
-    - move=> *; by rewrite Hcst.
-  rewrite -(@big_head_behead_P_tuple _ #|M|.-1
-   (fun j => ((\rprod_(m : M) P `^ n (Finfun (tcast M_prednK j) m)) *
-     (\rsum_(y in ~: [set y0 | prod_rV (nth (\row_(i < n) xdef) j 0, y0) \in
-         `JTS P W n epsilon0]) W ``(y | nth (\row_(i < n) xdef) j 0)))) xpredT xpredT)%R.
-  apply eq_bigr => ta _ /=.
-  by rewrite -big_distrl /= mulRC.
-transitivity (
-  (\rsum_(ta in 'rV[A]_n) P `^ _ ta *
-    (\rsum_(y in ~: [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
-    (W ``(| ta ) ) y)) *
-    (\rsum_(j in {:k.-tuple ('rV[A]_n)}) \rprod_(m < k) (P `^ _ (j \_ m))))%R.
-  rewrite big_distrl /=.
-  apply eq_bigr => ta _.
-  rewrite -mulRA [X in _ = X]mulRC -mulRA.
-  f_equal.
-  transitivity (\rsum_(j in {: #|'I_k|.-tuple ('rV[A]_n) })
-    P `^ _ ta * \rprod_(m < k) P `^ _ (Finfun j m))%R.
-    have k_prednK : #|'I_k.+1|.-1 = #|'I_k| by rewrite !card_ord.
-    rewrite (big_tcast _ _ k_prednK) //.
-    apply eq_bigr => i0 Hi0.
-    rewrite big_ord_recl /=.
-    f_equal.
-      by rewrite FunFinfun.fun_of_finE tcastE enum_rank_ord cast_ord_comp.
-    apply eq_bigr => i1 _.
-    f_equal.
-    symmetry.
-    rewrite {1}FunFinfun.fun_of_finE tcastE enum_rank_ord cast_ord_comp.
-    symmetry.
-    rewrite FunFinfun.fun_of_finE tcastE enum_rank_ord cast_ord_comp /tnth /=.
-    apply set_nth_default.
-    by rewrite size_tuple card_ord /= (ltn_ord i1).
-  rewrite -big_distrr /= [X in _ = X]mulRC; congr (_ * _)%R.
-  rewrite (big_tcast _ _ (card_ord k)) //.
-  apply eq_bigr => i0 Hi0.
-  apply eq_bigr => i1 Hi1.
-  congr (P `^ _ _).
-  by rewrite FunFinfun.fun_of_finE tcastE enum_rank_ord.
-rewrite rsum_rmul_tuple_pmf_tnth mulR1.
-transitivity (\rsum_(ta in 'rV[A]_n)
-  (\rsum_(y in ~: [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
-  ((`J(P , W)) `^ n (prod_rV (ta, y))))).
-  apply eq_bigr => ta _.
-  rewrite big_distrr /=.
-  apply eq_bigr => // tb Htb.
-  rewrite DMCE.
-  rewrite 2!TupleDist.dE.
-  rewrite -big_split /=; apply eq_bigr => /= i _.
-  by rewrite JointDist.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
-rewrite /Pr big_rV_prod pair_big_dep /=.
-apply eq_bigl; case=> /= ta tb; by rewrite !inE.
-by rewrite /zero enum_rank_ord.
-Qed.
-
-
-Lemma big_head_behead_tuple {C:finType} n (F : n.+1.-tuple C -> R) :
-  \rsum_(i in C) \rsum_(j in {: n.-tuple C}) (F [tuple of (i :: j)]) =
-  \rsum_(p in {: n.+1.-tuple C}) (F p).
-Proof. by rewrite big_head_behead_P_tuple. Qed.
-
-Lemma big_cat_tuple {C:finType} m n (F : (m + n)%nat.-tuple C -> R) :
-  \rsum_(i in {:m.-tuple C} ) \rsum_(j in {: n.-tuple C})
-  F [tuple of (i ++ j)] = \rsum_(p in {: (m + n)%nat.-tuple C}) (F p).
-Proof.
-move: m n F.
-elim.
-- move=> m2 F /=.
-  transitivity ( \rsum_(i <- [tuple] :: [::])
-    \rsum_(j in tuple_finType m2 C) F [tuple of i ++ j] ).
-    apply congr_big => //=.
-    symmetry.
-    rewrite /index_enum /=.
-    rewrite Finite.EnumDef.enumDef /=.
-    apply eq_from_nth with [tuple] => //=.
-    by rewrite FinTuple.size_enum expn0.
-    case=> //= _.
-    destruct (FinTuple.enum 0 C) => //.
-    by rewrite (tuple0 t).
-  rewrite big_cons /= big_nil /= addR0.
-  apply eq_bigr => // i _.
-  f_equal.
-  by apply val_inj.
-- move=> m IH n F.
-  symmetry.
-  transitivity (\rsum_(p in tuple_finType (m + n).+1 C) F p); first by apply congr_big.
-  rewrite -big_head_behead_tuple -big_head_behead_tuple.
-  apply eq_bigr => i _.
-  symmetry.
-  move: {IH}(IH n (fun x => F [tuple of i :: x])) => <-.
-  apply eq_bigr => i0 _.
-  apply eq_bigr => i1 _.
-  f_equal.
-  by apply val_inj.
-Qed.
-
-
-Lemma big_cat_tuple_seq {C:finType} m n (F : seq C -> R) :
-  \rsum_(i in {:m.-tuple C} ) \rsum_(j in {: n.-tuple C}) (F (i ++ j)) =
-  \rsum_(p in {: (m + n)%nat.-tuple C}) (F p).
-Proof.
-move: (@big_cat_tuple _ m n (fun l => if size l == (m + n)%nat then F l else 0%R)) => IH.
-set lhs := \rsum_(i in _) _ in IH.
-apply trans_eq with lhs.
-rewrite /lhs.
-apply eq_bigr => i _.
-apply eq_bigr => j _.
-set test := _ == _.
-have Htest : test = true by rewrite /test size_tuple eqxx.
-case: ifP => // abs.
-by rewrite abs in Htest.
-rewrite IH.
-apply eq_bigr => i _.
-by rewrite size_tuple eqxx.
-Qed.
-
+(* TODO: move? *)
 Lemma rsum_rmul_tuple_pmf {C} n k (Q : dist C) :
   (\rsum_(t in {:k.-tuple ('rV[C]_n)}) \rprod_(x <- t) (Q `^ n) x = 1)%R.
 Proof.
 rewrite -[X in _ = X](rsum_rmul_tuple_pmf_tnth n k Q).
 apply eq_bigr => t _.
-rewrite big_tnth /=.
-rewrite (reindex_onto (cast_ord (size_tuple t))
+rewrite big_tnth /= (reindex_onto (cast_ord (size_tuple t))
   (cast_ord (esym (size_tuple t)))) //=; last first.
-  move=> i _; by apply val_inj.
+  move=> i _; exact/val_inj.
 apply eq_big => //= i.
+- by rewrite cast_ordK eqxx.
+- move=> _; by rewrite tvalK tcastE esymK.
+Qed.
+
+Local Open Scope ring_scope.
+
+Lemma first_summand k n epsilon0 :
+  let M := [finType of 'I_k.+1] in
+  (\rsum_(f : encT A M n) Wght.d P f *
+    Pr (W ``(| f ord0)) (~: cal_E epsilon0 f ord0))%R =
+  Pr (`J(P , W) `^ n) (~: `JTS P W n epsilon0).
+Proof.
+move=> M.
+have M_prednK : #|M|.-1.+1 = #|M| by rewrite card_ord.
+pose E_F_N := @cal_E M n epsilon0.
+rewrite {1}/cal_E.
+case/card_gt0P : (dist_domain_not_empty P) => a _.
+pose zero := @enum_rank M ord0.
+have : 0%N = zero :> nat by rewrite /zero enum_rank_ord.
+move/(@sum_rV_ffun _ _ _ _ _ (fun f => \rprod_(m : M) P `^ n (f m))
+  (fun r v => (r * Pr (W ``(| v )) (~: [set w | prod_rV (v, w) \in `JTS P W n epsilon0]))%R)
+  ord0 zero).
+rewrite (_ : nth ord0 (enum M) 0 = ord0); last by rewrite enum_ordS.
+rewrite /Wght.d -lock /= => <- /=.
+transitivity (\rsum_(v : 'rV['rV[A]_n]_#|M|) (
+    (\rprod_(m : M) P `^ n ([ffun x => v ``_ x] (enum_rank m))) *
+    \rsum_(w | w \in ~: cal_E epsilon0 [ffun x => v ``_ x] zero)
+    (W ``(| [ffun x => v ``_ x] zero)) w))%R.
+  apply eq_bigr => v _; congr (_ * _)%R.
+    by apply eq_bigr => m _; rewrite 2!ffunE.
+  apply eq_big.
+  - move=> /= ?; by rewrite !inE ffunE.
+  - move=> ? _; by rewrite ffunE.
+rewrite /cal_E.
+transitivity (\rsum_(v : 'rV[A]_n)
+  (\rsum_(y in ~: [set w | prod_rV (v, w) \in `JTS P W n epsilon0])
+  (W ``(| v)) y) *
+    \rsum_(j in {: #|M|.-1.-tuple ('rV[A]_n)})
+      (\rprod_(m : M) P `^ _ ((tcast M_prednK [tuple of v :: j]) \_ (enum_rank m))))%R.
+  rewrite (reindex_onto (fun y : {ffun _ -> _} => \row_(i < _) y (enum_val i))
+      (fun p : 'rV_ _ => [ffun x => p ``_ (enum_rank x)])) //=; last first.
+    move=> v _; by apply/rowP => i; rewrite mxE ffunE enum_valK.
+  apply trans_eq with (\rsum_(f : {ffun M -> _})
+    ((\rprod_(m < k.+1) P `^ n (f m)) *
+      \rsum_(y in ~: [set y0 | prod_rV (f ord0, y0) \in `JTS P W n epsilon0])
+      W ``(y | f ord0)))%R.
+    apply eq_big => //= f.
+    - apply/eqP/ffunP => m; by rewrite ffunE mxE enum_rankK.
+    - move/eqP => Hf;  congr (_ * _)%R.
+        apply eq_bigr => i _; by rewrite -[in RHS]Hf 2!ffunE.
+      apply eq_big => /=.
+        move=> ?; by rewrite !inE -[in RHS]Hf !ffunE mxE.
+      move=> ? _; by rewrite -[in RHS]Hf !ffunE mxE.
+  rewrite (_ : ord0 = nth ord0 (enum M) 0); last by rewrite enum_ordS.
+  rewrite -(big_tuple_ffun _ (fun f => \rprod_(m : M) P `^ n (f m))
+    (fun r => fun yn => r *
+      (\rsum_(y in ~: [set y0 | prod_rV (yn, y0) \in `JTS P W n epsilon0])
+      W ``(y | yn))) (\row_(i < n) a) ord0)%R.
+  transitivity (\rsum_(j : _)
+    (\rprod_(m : M) P `^ n ((tcast M_prednK j) \_ (enum_rank m))) *
+      (\rsum_(y in ~: [set y0 | prod_rV (nth (\row_(i < n) a) j 0, y0) \in
+          `JTS P W n epsilon0])
+      W ``(y | nth (\row_(i < n) a) j 0)))%R.
+    rewrite (big_tcast _ _ M_prednK) //.
+    apply eq_bigr => i _; congr (_ * _)%R.
+      apply eq_bigr => m _; by rewrite ffunE.
+    have H : nth (\row_(i < n) a) (tcast M_prednK i) 0 = nth (\row_(i < n) a) i 0.
+      move: M_prednK i; rewrite card_ord => M_prednK i.
+      rewrite -(tnth_nth _ i ord0) -(tnth_nth _ (tcast M_prednK i) ord0).
+      by rewrite tcastE /= cast_ord_id.
+    apply eq_big => m; by rewrite !inE H.
+  rewrite -(@big_tuple_cons_behead _ #|M|.-1
+   (fun j => ((\rprod_(m : M) P `^ n ((tcast M_prednK j) \_ (enum_rank m))) *
+     (\rsum_(y in ~: [set y0 | prod_rV (nth (\row_(i < n) a) j 0, y0) \in
+         `JTS P W n epsilon0]) W ``(y | nth (\row_(i < n) a) j 0)))) xpredT xpredT)%R.
+  apply eq_bigr => ta _ /=; by rewrite -big_distrl /= mulRC.
+transitivity ((\rsum_(ta in 'rV[A]_n) P `^ _ ta *
+    (\rsum_(y in ~: [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
+    (W ``(| ta ) ) y)) *
+    \rsum_(j in {:k.-tuple ('rV[A]_n)}) \rprod_(m < k) (P `^ _ (j \_ m)))%R.
+  rewrite big_distrl /=.
+  apply eq_bigr => ta _.
+  rewrite -mulRA mulRCA; congr Rmult.
+  transitivity (\rsum_(j in {: #|'I_k|.-tuple ('rV[A]_n) })
+    P `^ _ ta * \rprod_(m < k) P `^ _ (j \_ (enum_rank m)))%R.
+    have k_prednK : #|'I_k.+1|.-1 = #|'I_k| by rewrite !card_ord.
+    rewrite (big_tcast _ _ k_prednK) //.
+    apply eq_bigr => i0 Hi0.
+    rewrite big_ord_recl /=.
+    congr (P `^ _ _ * _)%R; first by rewrite tcastE // enum_rank_ord.
+    apply eq_bigr => i1 _; congr (P `^ _ _).
+    rewrite !tcastE {1}/tnth /=.
+    rewrite (_ : enum_rank _ = (enum_rank i1).+1 :> nat) /=; last by rewrite !enum_rank_ord.
+    apply set_nth_default; by rewrite size_tuple /= enum_rank_ord /= card_ord.
+  rewrite -big_distrr /=; congr (_ * _)%R.
+  rewrite (big_tcast _ _ (card_ord k)) //.
+  apply eq_bigr => i0 _.
+  apply eq_bigr => i1 _.
+  by rewrite tcastE -enum_rank_ord.
+rewrite rsum_rmul_tuple_pmf_tnth mulR1.
+transitivity (\rsum_(v in 'rV[A]_n)
+  \rsum_(y in ~: [set w | prod_rV (v, w) \in `JTS P W n epsilon0])
+    (`J(P , W) `^ n (prod_rV (v, y)))).
+  apply eq_bigr => /= v _.
+  rewrite big_distrr /=.
+  apply eq_bigr => // w _.
+  rewrite DMCE 2!TupleDist.dE -big_split /=.
+  apply eq_bigr => /= i _.
+  by rewrite JointDist.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
+rewrite /Pr big_rV_prod pair_big_dep /=.
+apply eq_bigl; case=> /= ? ?; by rewrite !inE.
+Qed.
+
+Lemma big_cat_tuple {C : finType} m n (F : (m + n)%nat.-tuple C -> R) :
+  \rsum_(i in {:m.-tuple C}) \rsum_(j in {: n.-tuple C})
+  F [tuple of (i ++ j)] = \rsum_(p in {: (m + n)%nat.-tuple C}) (F p).
+Proof.
+elim: m n F => [m2 F /=|m IH n F].
+- transitivity ( \rsum_(i <- [tuple] :: [::])
+    \rsum_(j in {: m2.-tuple C}) F [tuple of i ++ j] ).
+    apply congr_big => //=.
+    apply (@eq_from_nth _ [tuple]);
+      rewrite /index_enum -enumT /= (eqP (enum_tupleP _)) card_tuple expn0 //.
+    move=> i; rewrite ltnS leqn0 => /eqP ->.
+    rewrite tupleE /=.
+    case: (enum _) => //= t.
+    by rewrite (tuple0 t).
+  rewrite big_cons /= big_nil /= addR0.
+  apply eq_bigr => // i _; congr F.
+  exact/val_inj.
 - symmetry.
-  apply/val_eqP.
-  by apply val_inj.
-- move=> _; by rewrite !tvalK tcastE esymK.
+  transitivity (\rsum_(p in tuple_finType (m + n).+1 C) F p); first by apply congr_big.
+  rewrite -(@big_tuple_cons_behead _ _ _ xpredT xpredT).
+  rewrite -(@big_tuple_cons_behead _ _ _ xpredT xpredT).
+  apply eq_bigr => i _.
+  move: {IH}(IH n (fun x => F [tuple of i :: x])) => <-.
+  apply eq_bigr => /= t _; apply eq_bigr => /= t' _; congr F.
+  exact/val_inj.
+Qed.
+
+Lemma big_cat_tuple_seq {C : finType} m n (F : seq C -> R) :
+  \rsum_(i in {:m.-tuple C} ) \rsum_(j in {: n.-tuple C}) (F (i ++ j)) =
+  \rsum_(p in {: (m + n)%nat.-tuple C}) (F p).
+Proof.
+move: (@big_cat_tuple _ m n (fun l => if size l == (m + n)%nat then F l else R0)).
+set lhs := \rsum_(i in _) _ => H.
+apply trans_eq with lhs.
+  apply eq_bigr => /= t _; apply eq_bigr => /= t' _.
+  case: ifP => //; by rewrite size_tuple eqxx.
+rewrite H; apply eq_bigr => /= t _; by rewrite size_tuple eqxx.
 Qed.
 
 Lemma second_summand n k epsilon0 :
@@ -529,7 +485,7 @@ Lemma second_summand n k epsilon0 :
     forall i, i != ord0 ->
       (\rsum_(f : encT A M n) Wght.d P f *
         Pr (W ``(| f ord0)) (cal_E epsilon0 f i))%R =
-   Pr ((P `^ n) `x ((`O( P , W )) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0].
+   Pr ((P `^ n) `x `O( P , W ) `^ n) [set x | prod_rV x \in `JTS P W n epsilon0].
 Proof.
 move=> M.
 have M_prednK : #|M|.-1.+1 = #|M| by rewrite card_ord.
@@ -543,83 +499,69 @@ transitivity (
   \rsum_(j2 in {: (#|M| - i.+1).-tuple ('rV[A]_n)})
   \rsum_(j0 in 'rV[A]_n)
   \rsum_(ji in 'rV[A]_n)
-  Wght.d P (Finfun (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])) *
-  \rsum_( y | y \in [set y0 | prod_rV (ji, y0) \in `JTS P W n epsilon0])
+  Wght.d P [ffun x => (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])\_x] *
+  \rsum_(y | y \in [set w | prod_rV (ji, w) \in `JTS P W n epsilon0])
   (W ``(| j0)) y)%R.
   transitivity (
     \rsum_(j0 in 'rV[A]_n)
     \rsum_(j1 in {: i.-1.-tuple ('rV[A]_n)})
     \rsum_(ji in 'rV[A]_n)
     \rsum_(j2 in {: (#|M| - i.+1).-tuple ('rV[A]_n)})
-    Wght.d P (Finfun (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])) *
-    \rsum_( y | y \in [set y0 | prod_rV (ji, y0) \in `JTS P W n epsilon0])
+    Wght.d P [ffun x => (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])\_x] *
+    \rsum_( y | y \in [set w | prod_rV (ji, w) \in `JTS P W n epsilon0])
     (W ``(| j0) ) y)%R.
-    rewrite (reindex_onto (fun p => Finfun p) (fun y => fgraph y)) /=; last by case.
+    rewrite (reindex_onto (fun p => [ffun x => p\_(enum_rank x)]) (fun y => fgraph y)) /=; last first.
+      move=> f _; apply/ffunP => m; by rewrite ffunE tnth_fgraph enum_rankK.
     transitivity ( \rsum_(j : _)
-      (Wght.d P (Finfun j) * Pr (W ``(| Finfun j ord0)) (E_F_N (Finfun j) i)))%R.
-      apply eq_big => //= x; by rewrite eqxx.
+      (Wght.d P [ffun x => j\_(enum_rank x)] *
+        Pr (W ``(| [ffun x => j\_(enum_rank x)] ord0)) (E_F_N [ffun x => j\_(enum_rank x)] i)))%R.
+      apply eq_big => //= x; apply/eqP/eq_from_tnth => j.
+      by rewrite tnth_fgraph ffunE enum_valK.
     rewrite (big_tcast _ _ (esym (card_ord k.+1))) //.
-    rewrite -big_head_behead_tuple.
+    rewrite -(big_tuple_cons_behead _ xpredT xpredT).
     apply eq_bigr => i0 _.
     have [Hq i_q] : (i.-1 + (k - i.-1) = k /\ i <= k)%nat.
       split.
-        rewrite addnBA; last first.
-          apply leq_trans with i; last by rewrite -ltnS; apply ltn_ord.
-          by apply leq_pred.
-        by rewrite addnC -addnBA // subnn addn0.
-      by apply (ltn_ord i).
+        by rewrite subnKC // -(leq_add2r 1) !addn1 (leq_ltn_trans _ (ltn_ord i)) // leq_pred.
+      by rewrite -(leq_add2r 1) !addn1 ltn_ord.
     rewrite (big_tcast _ _ Hq) //.
     rewrite -big_cat_tuple /=.
     apply eq_bigr => /= i1 _.
     have Hs : ((k-i).+1 = k - i.-1)%nat.
-      rewrite -subn1 subnBA; last by rewrite lt0n.
-      by rewrite addnC -addnBA.
-    rewrite (big_tcast _ _ Hs) // -big_head_behead_tuple.
+      by rewrite -subn1 subnBA ?lt0n // addnC -addnBA.
+    rewrite (big_tcast _ _ Hs) // -(big_tuple_cons_behead _ xpredT xpredT).
     apply eq_bigr => i2 _.
-    have Ht : (k - i)%nat = (#|'I_k.+1| - i.+1)%nat by rewrite card_ord /= subSS.
+    have Ht : (k - i = #|'I_k.+1| - i.+1)%nat by rewrite card_ord /= subSS.
     rewrite (big_tcast _ _ Ht) //.
     apply eq_bigr => i3 _.
-    rewrite /Wght.d -lock /Wght.pmf /=.
-    f_equal.
-    - f_equal.
-      apply FunctionalExtensionality.functional_extensionality => i4 /=.
-      do 4 f_equal.
+    rewrite /Wght.d -!lock /Wght.pmf /=.
+    congr (_ * _)%R.
+    - rewrite (reindex_onto enum_rank enum_val); last by move=> *; rewrite enum_valK.
+      apply eq_big => /=; first by move=> x; rewrite enum_rankK eqxx inE.
+      move=> i4 _; congr (P `^ _ _).
+      rewrite !ffunE; congr (_ \_ _).
       apply: eq_tcast => /=.
-      symmetry.
-      apply: eq_tcast2 => /=.
-      f_equal.
-      apply: eq_tcast2 => /=.
-      f_equal.
-      apply: eq_tcast2 => /=.
-      f_equal.
-      symmetry.
-      by apply: eq_tcast2.
-    - rewrite /Pr.
-      apply eq_big.
+      apply/esym/eq_tcast2 => /=; congr (_ :: _).
+      apply: eq_tcast2 => /=; congr (_ ++ _).
+      apply: eq_tcast2 => /=; congr (_ :: _).
+      exact/esym/eq_tcast2.
+    - apply eq_big.
       + move=> x /=.
-        rewrite !inE.
-        set f1 := (Finfun _) _.
-        suff : f1 = i2 by move=> ->.
-        rewrite /f1 {f1} !FunFinfun.fun_of_finE /= enum_rank_ord /= tcastE !cast_ord_comp.
-        rewrite (tnth_nth i0) /=.
-        rewrite (_ : tval (tcast Hq [tuple of i1 ++ tcast Hs [tuple of i2 :: i3]]) = i1 ++ i2 :: i3); last first.
-          symmetry.
-          apply eq_tcast2 => /=.
-          f_equal.
-          by apply eq_tcast2.
-        rewrite -cat_cons nth_cat /= size_tuple prednK; last by rewrite lt0n.
-        by rewrite ltnn subnn.
+        rewrite !inE ffunE.
+        rewrite (_ : (_ \_ _) = i2) //=.
+        rewrite enum_rank_ord /= tcastE !cast_ord_comp (tnth_nth i0) /=.
+        rewrite (_ : tval (tcast Hq _) = i1 ++ i2 :: i3); last first.
+          apply/esym/eq_tcast2 => /=; congr cat; exact/eq_tcast2.
+        by rewrite -cat_cons nth_cat /= size_tuple prednK ?lt0n // ltnn subnn.
       + move=> i4 Hi4.
         rewrite 2!DMCE.
-        apply eq_bigr => i5 /= _.
-        f_equal.
-        by rewrite !FunFinfun.fun_of_finE tcastE /= enum_rank_ord /= cast_ordK.
+        apply eq_bigr => i5 /= _; congr (W _ _).
+        by rewrite ffunE tcastE /= enum_rank_ord /= cast_ordK.
   rewrite exchange_big /=.
   apply eq_bigr => /= i1 _.
-  symmetry.
-  rewrite exchange_big /=.
+  rewrite [in RHS]exchange_big /=.
   apply eq_bigr => /= i2 _.
-  rewrite exchange_big /=.
+  rewrite [in RHS]exchange_big /=.
   by apply eq_bigr.
 transitivity (
   (\rsum_(j1 in {: i.-1.-tuple ('rV[A]_n)})
@@ -639,33 +581,23 @@ transitivity (
   apply eq_bigr => j0 _.
   rewrite !big_distrr /=.
   apply eq_bigr => j3 _.
-  rewrite !mulRA /Wght.d -lock /Wght.pmf /=.
-  congr (_ * _)%R.
+  rewrite !mulRA /Wght.d -lock /Wght.pmf /=; congr (_ * _)%R.
   transitivity (\rprod_( i <- j0 :: j1 ++ j3 :: j2) P `^ _ i)%R; last first.
-    rewrite big_cons -mulRA [in X in _ = X]mulRC -mulRA.
-    congr (_ * _)%R.
-    rewrite big_cat /= big_cons mulRC -[in X in X = _]mulRA.
-    congr (_ * _)%R.
+    rewrite big_cons -mulRA mulRCA; congr (_ * _)%R.
+    rewrite big_cat /= big_cons [in RHS]mulRC mulRCA; congr (_ * _)%R.
     by rewrite big_cat /= mulRC.
-  symmetry.
-  rewrite (big_nth j0) /= big_mkord.
-  symmetry.
-  rewrite (reindex_onto enum_val enum_rank) /=; last first.
-    move=> i0 _; by rewrite enum_rankK.
+  rewrite [in RHS](big_nth j0) /= big_mkord.
   transitivity (\rprod_(j < #|@predT M|)
-    P `^ _ ((Finfun (tcast Hcast [tuple of j0 :: j1 ++ j3 :: j2])) (enum_val j)))%R.
-    apply eq_bigl => i0 /=.
-    by rewrite enum_valK eqxx.
+    P `^ _ ([ffun x => (tcast Hcast [tuple of j0 :: j1 ++ j3 :: j2])\_(enum_rank x)] (enum_val j)))%R.
+    apply eq_big => ? //= _.
+    by rewrite !ffunE enum_valK.
   have j_M : (size (j1 ++ j3 :: j2)).+1 = #|M|.
     rewrite size_cat (size_tuple j1) /= (size_tuple j2) card_ord.
-    rewrite <- (card_ord k.+1).
-    by rewrite -Hcast card_ord.
+    by rewrite -[RHS](card_ord k.+1) -Hcast card_ord.
   rewrite j_M.
-  apply eq_bigr => i0 _.
-  f_equal.
-  rewrite !FunFinfun.fun_of_finE /= enum_valK tcastE /tnth /=.
-  apply set_nth_default.
-  by rewrite /= j_M ltn_ord.
+  apply eq_bigr => i0 _; congr (P `^ n _).
+  rewrite ffunE /= enum_valK tcastE /tnth /=.
+  apply set_nth_default; by rewrite /= j_M ltn_ord.
 transitivity (\rsum_(j0 : 'rV[A]_n) \rsum_(ji : 'rV[A]_n)
   ((P `^ n) j0) * ((P `^ n) ji) * (\rsum_( y | y \in
     [set y0 in 'rV[B]_n | prod_rV (ji , y0) \in `JTS P W n epsilon0])
@@ -673,8 +605,7 @@ transitivity (\rsum_(j0 : 'rV[A]_n) \rsum_(ji : 'rV[A]_n)
   set lhs := \rsum_(_ <- _) _.
   suff : lhs = 1%R by move=> ->; rewrite mul1R.
   rewrite /lhs {lhs}.
-  rewrite (@big_cat_tuple_seq _ i.-1 (#|M| - i.+1)
-    (fun x => \rprod_(i0 <- x) (P `^ n) i0))%R.
+  rewrite (@big_cat_tuple_seq _ i.-1 (#|M| - i.+1) (fun x => \rprod_(i0 <- x) (P `^ n) i0))%R.
   by rewrite rsum_rmul_tuple_pmf.
 transitivity (\rsum_(ji : 'rV[A]_n) ((P `^ n) ji) *
   (\rsum_(y | y \in [set y0 | prod_rV (ji , y0) \in `JTS P W n epsilon0])
@@ -685,20 +616,16 @@ transitivity (\rsum_(ji : 'rV[A]_n) ((P `^ n) ji) *
     (\rsum_(y in [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
        W ``(y | i1)))%R.
     apply eq_bigr => i1 _.
-    rewrite -!mulRA mulRC -!mulRA.
-    f_equal.
-    by rewrite mulRC.
+    by rewrite -mulRA mulRCA mulRA.
   rewrite exchange_big /= big_distrr /=.
   apply eq_bigr => ta' _.
-  rewrite -!mulRA.
-  f_equal.
-  by rewrite mulRC big_distrl.
+  rewrite -[in X in _ = (_ * X)%R]big_distrl /= -mulRA; congr Rmult.
+  by rewrite mulRC.
 transitivity (\rsum_(ji : 'rV[A]_n) ((P `^ n) ji) *
   \rsum_( y | y \in [set y0 | prod_rV (ji , y0) \in `JTS P W n epsilon0])
   ((`O(P , W)) `^ n) y)%R.
-  apply eq_bigr => ta _.
-  f_equal.
-  apply eq_bigr => tb _.
+  apply eq_bigr => ta _; congr (_ * _)%R.
+  apply eq_bigr => /= tb _.
   rewrite -tuple_pmf_out_dist.
   apply eq_bigr => i0 _; by rewrite DMCE.
 transitivity (\rsum_(ji : 'rV[A]_n)
@@ -708,10 +635,9 @@ transitivity (\rsum_(ji : 'rV[A]_n)
   apply eq_bigr => // i0 _; by rewrite /= big_distrr.
 transitivity (\rsum_( jiy | prod_rV jiy \in `JTS P W n epsilon0)
   ((P `^ n) `x ((`O(P , W)) `^ n)) jiy).
-  symmetry.
-  rewrite pair_big_dep /=.
+  rewrite [in LHS]pair_big_dep /=.
   apply eq_big => //.
-  case=> ta tb; by rewrite !inE.
+  case=> ? ?; by rewrite !inE.
 apply eq_bigl => tab; by rewrite !inE.
 Qed.
 
@@ -933,10 +859,10 @@ have [P HP] : exists P : dist A, r < `I(P ; W).
   have {abs}abs : forall P : dist A, r >= `I(P ; W).
     move/not_ex_all_not in abs.
     move=> P.
-    by apply Rnot_lt_ge, abs.
+    exact/Rnot_lt_ge/abs.
   have Hcap : r >= cap.
-    apply Rle_ge, H2 => P.
-    by apply Rge_le, abs.
+    apply/Rle_ge/H2 => P.
+    exact/Rge_le/abs.
   fourier.
 have [epsilon0 Hepsilon0] : exists epsilon0,
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P ; W) - r) / 4.
@@ -947,10 +873,10 @@ have [epsilon0 Hepsilon0] : exists epsilon0,
     apply mulR_gt0 => //; fourier.
   split.
     apply Rlt_le_trans with (Rmin (epsilon / 2) ((`I(P ; W) - r) / 4)).
-    by apply Rlt_eps2_eps.
+      by apply Rlt_eps2_eps.
     by apply Rmin_l.
     apply Rlt_le_trans with (Rmin (epsilon / 2) ((`I(P ; W) - r) / 4)).
-    by apply Rlt_eps2_eps.
+      by apply Rlt_eps2_eps.
     by apply Rmin_r.
 have [n Hn] : exists n, n_condition W P r epsilon0 n.
   destruct r as [r [num [den [Hnum [Hden Hr]]]]].
@@ -983,8 +909,7 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
       apply le_INR.
       rewrite /supermax maxnA.
       apply/leP.
-      rewrite leq_max.
-      apply/orP; left; by rewrite leq_max leqnn orbC.
+      by rewrite leq_max leq_max leqnn orbT.
     by rewrite [X in (_ <= X)%nat]maxnA leq_maxr.
   lapply (exists_frac_part Hn Hnum Hden); last move=> n1 n2 n1_n2 Pn1.
     case=> n [[Hn1 [Hn3 Hn4]] Hn2].
@@ -993,8 +918,7 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
     intuition.
     congruence.
   split.
-    apply/ltP.
-    apply lt_le_trans with n1; [apply/ltP; tauto | by apply/leP].
+    apply/(@leq_trans n1) => //; tauto.
   split.
     apply Rlt_le_trans with (INR n1); [tauto | exact/le_INR/leP].
   apply leq_trans with n1 => //; tauto.

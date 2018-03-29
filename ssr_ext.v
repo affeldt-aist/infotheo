@@ -201,37 +201,50 @@ elim: s => // h t IH; rewrite in_cons; case/orP.
   congruence.
 Qed.
 
-Lemma sorted_cat (l1 l2 : seq A) (Rel : @rel A) :
-  sorted Rel l1 -> sorted Rel l2 ->
-  (forall a, a \in l1 -> forall b, b \in l2 -> Rel a b) ->
-  sorted Rel (l1 ++ l2).
+Lemma sorted_nth (l : seq nat) : sorted leq l -> forall i j,
+  i <= j < size l -> nth O l i <= nth O l j.
 Proof.
-move=> Hl1 Hl2 H.
-destruct l1 => //.
+elim: l => [/= _ i j|h t IH Ht]; first by rewrite ltn0 andbF.
+move/pathP : (Ht) => H; move/path_sorted in Ht.
+case => [/= [// | j /=] | i /= [// | j]].
+  rewrite ltnS => jt.
+  apply: leq_trans; [|by apply: (IH Ht O); rewrite leq0n jt].
+  apply: leq_trans; last by apply H; rewrite (leq_ltn_trans _ jt).
+  done.
+rewrite !ltnS => ijt.
+eapply leq_trans; first by apply: (IH _ _ j).
+done.
+Qed.
+
+Lemma sorted_cat (l k : seq A) (Rel : @rel A) :
+  sorted Rel l -> sorted Rel k ->
+  (forall a, a \in l -> forall b, b \in k -> Rel a b) ->
+  sorted Rel (l ++ k).
+Proof.
+move=> Hl Hk H.
+destruct l => //.
 rewrite /sorted /= cat_path.
-rewrite /sorted in Hl1.
+rewrite /sorted in Hl.
 apply/andP; split => //.
-destruct l2 => //.
-rewrite /sorted in Hl2.
-rewrite /= Hl2 andbC /=.
+destruct k => //.
+rewrite /sorted in Hk.
+rewrite /= Hk andbC /=.
 apply H.
 by rewrite mem_last.
 by rewrite in_cons eqxx.
 Qed.
 
-Lemma sorted_is_flattened leT (Htrans : transitive leT) (Hanti : antisymmetric leT) (Hrefl : reflexive leT) : forall n (lst v : seq A),
-  n = size lst -> uniq lst -> sorted leT lst ->
-  sorted leT v -> (forall i, i \in v -> i \in lst) ->
-  v = flatten (map (fun elt => filter (pred1 elt) v) lst).
+Lemma sorted_is_flattened leT (Htrans : transitive leT)
+  (Hanti : antisymmetric leT) (Hrefl : reflexive leT) :
+  forall n (l k : seq A), n = size l -> uniq l -> sorted leT l ->
+  sorted leT k -> {subset k <= l} ->
+  k = flatten (map (fun elt => filter (pred1 elt) k) l).
 Proof.
-elim=> /=.
-  case=> //.
-  move=> v _ _ _ Hv H.
-  destruct v => //.
-  suff : false by done.
+elim=> [[]// k _ _ _ Hk H|] /=.
+  destruct k => //.
+  exfalso.
   move: (H s).
-  rewrite in_cons eqxx /= in_nil.
-  by apply.
+  by rewrite !inE eqxx orTb in_nil => /(_ isT).
 move=> n0 IH [|hd tl] // v [lst_sz] lst_uniq lst_sorted v_sorted Hincl.
 have X1 : v = filter (pred1 hd) v ++ filter (predC (pred1 hd)) v.
   apply eq_sorted with leT => //.
@@ -239,13 +252,9 @@ have X1 : v = filter (pred1 hd) v ++ filter (predC (pred1 hd)) v.
     + by apply sorted_filter.
     + by apply sorted_filter.
     + move=> a.
-      rewrite mem_filter.
-      case/andP => /= /eqP ?; subst hd => av b.
-      rewrite mem_filter.
-      case/andP => /= ba bv.
-      apply Hincl in bv.
-      rewrite in_cons in bv.
-      case/orP : bv.
+      rewrite mem_filter => /andP[/= /eqP ?]; subst hd => av b.
+      rewrite mem_filter => /andP[/= ba /Hincl].
+      rewrite inE => /orP[|].
       * move/eqP => ?; by subst b.
       * move=> btl.
         rewrite /sorted in lst_sorted.
@@ -254,32 +263,23 @@ have X1 : v = filter (pred1 hd) v ++ filter (predC (pred1 hd)) v.
         apply => //; by rewrite sub1seq.
   - rewrite perm_eq_sym; by apply perm_eqlE, perm_filterC.
 rewrite {1}X1 {X1} /=.
-f_equal.
-simpl in lst_uniq. case/andP : lst_uniq => hdtl tl_uniq.
+congr (_ ++ _).
+move: lst_uniq => /= /andP[hdtl tl_uniq].
 rewrite (IH tl (filter (predC (pred1 hd)) v) lst_sz tl_uniq).
-- f_equal.
+- congr flatten.
   apply eq_in_map => i i_tl.
   rewrite -filter_predI.
   apply eq_in_filter => j j_v /=.
-  case/orP : (orbN ( j == i)) => ij.
-  + rewrite ij /=.
-    apply/negP.
-    move/eqP => ?; subst j.
-    move/eqP : ij => ?; subst i.
-    by rewrite i_tl in hdtl.
-  + move/negbTE in ij;  by rewrite ij.
+  case/boolP: (j == i) => ij //=.
+  apply/negP => /eqP ?; subst j.
+  move/eqP : ij => ?; subst i.
+  by rewrite i_tl in hdtl.
 - destruct tl => //=.
-  rewrite /= in lst_sorted.
   by case/andP : lst_sorted.
-- apply sorted_filter => //.
+- exact: sorted_filter.
 - move=> i.
-  rewrite mem_filter.
-  case/andP => /= Hi.
-  move/Hincl.
-  rewrite in_cons.
-  case/orP => // /eqP.
-  move=> ?; subst i.
-  by rewrite eqxx in Hi.
+  rewrite mem_filter /= => /andP[ihd] /Hincl.
+  rewrite inE => /orP[|//]; by rewrite (negbTE ihd).
 Qed.
 
 Lemma filter_zip_L m (l : seq A) (k : seq B) a :
@@ -304,30 +304,22 @@ elim: m l k Hl Hk b => [[] // [] // | n ih].
 move=> [|a1 a2] // [|b1 b2] // [sza2] [szb2] b /=; by rewrite ih.
 Qed.
 
-Lemma undup_filter : forall (P : pred B) x, undup (filter P x) = filter P (undup x).
-move=> P; elim=> // h t IH /=.
-case/orP : (orbN (P h)) => X.
-- rewrite X /=.
-  case/orP : (orbN (h \in t)) => Y.
-  + rewrite Y /=.
-    have -> : h \in filter P t by rewrite mem_filter X Y.
-    done.
-  + rewrite (negbTE Y).
-    have -> : h \in filter P t = false by rewrite mem_filter (negbTE Y) andbC.
-    by rewrite IH /= X.
-- rewrite (negbTE X) IH.
-  case/orP : (orbN (h \in t)) => Y.
-  + by rewrite Y.
-  + by rewrite (negbTE Y) /= (negbTE X).
+Lemma undup_filter (P : pred B) l : undup (filter P l) = filter P (undup l).
+Proof.
+elim: l => // h t IH /=; case/boolP : (P h) => /= Ph.
+- case/boolP: (h \in t) => ht.
+  + by rewrite mem_filter Ph ht.
+  + by rewrite mem_filter (negbTE ht) andbF /= Ph IH.
+- rewrite IH; case: ifPn => //= ?; by rewrite (negbTE Ph).
 Qed.
 
-Lemma undup_perm : forall (f : A -> B) p h t, undup (map f p) = h :: t ->
+Lemma undup_perm (f : A -> B) p h t : undup (map f p) = h :: t ->
   exists preh : seq A,
     exists pret : seq A,
       perm_eq p (preh ++ pret) /\
       undup (map f preh) = [:: h] /\ undup (map f pret) = t.
 Proof.
-move=> f p h t p_t.
+move=> p_t.
 exists (filter (preim f [pred x | x == h]) p), (filter (preim f [pred x | x \in t]) p).
 split.
 - apply/perm_eqlP => x.
@@ -375,7 +367,6 @@ split.
 Qed.
 
 End seq_eqType_ext.
-
 
 Lemma addb_nseq b : forall r v, size v = r ->
   [seq x.1 (+) x.2 | x <- zip (nseq r b) v] = map (pred1 (negb b)) v.
