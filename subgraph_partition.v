@@ -1,11 +1,10 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div choice fintype.
-From mathcomp Require Import finfun bigop prime binomial ssralg finset fingroup finalg.
-From mathcomp Require Import perm zmodp matrix path fingraph.
+From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
+From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
+From mathcomp Require Import finset fingroup finalg perm zmodp matrix path.
+From mathcomp Require Import fingraph.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
+Require Import ssr_ext.
 
 (** * Bipartite/acyclic graphs, cover/partition properties *)
 
@@ -22,24 +21,9 @@ Import Prenex Implicits.
 - Section third_partition.
 *)
 
-Section about_take.
-
-Variables (A : eqType).
-
-Lemma take_index (a : A) l : a \notin take (index a l) l.
-Proof.
-elim: l => // h t IH /=; case: ifPn => //.
-by rewrite inE negb_or eq_sym IH andbT.
-Qed.
-
-Lemma uniq_take i (l : seq A) :  i < size l -> uniq l -> uniq (take i l).
-Proof.
-elim: i l => [l _ _ |i IH [| h t] //=]; first by rewrite take0.
-rewrite ltnS => nt /andP[ht ut].
-rewrite (IH _ nt ut) andbT; apply: contra ht; exact: mem_take.
-Qed.
-
-End about_take.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Section colorable.
 

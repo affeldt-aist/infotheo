@@ -37,8 +37,6 @@ suff : Hf = Hg by move=> ->.
 by apply proof_irrelevance.
 Qed.
 
-(** Various lemmas about reals *)
-
 Lemma Rlt_0_Rmult_inv a b : 0 < a * b -> 0 <= a -> 0 <= b -> 0 < a /\ 0 < b.
 Proof.
 move=> H Ha Hb.

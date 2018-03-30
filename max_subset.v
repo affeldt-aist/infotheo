@@ -11,7 +11,6 @@ Unset Printing Implicit Defensive.
 (** OUTLINE:
 - Module maxsubset.
 - Section max_subset_satisfying_P.
-
 *)
 
 Module maxsubset.

@@ -6,6 +6,8 @@ Require Import Reals Fourier Classical.
 Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy aep typ_seq joint_typ_seq channel channel_code.
 
+(** * Channel Coding Theorem (direct part) *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -846,7 +848,7 @@ Variable W : `Ch_1(A, B).
 Variable cap : R.
 Hypothesis Hc : capacity W cap.
 
-(** * Channel Coding Theorem (direct part) *)
+(** Channel Coding Theorem (direct part) *)
 
 Theorem channel_coding (r : CodeRateType) : r < cap ->
   forall epsilon, 0 < epsilon ->

@@ -6,6 +6,8 @@ Require Import Rssr Reals_ext Ranalysis_ext ssr_ext log2 ln_facts bigop_ext.
 Require Import Rbigop proba divergence variation_dist pinsker_function.
 Require Import partition_inequality.
 
+(** * Pinsker's Inequality *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -134,8 +136,6 @@ Local Open Scope Rb_scope.
 
 Local Notation "0" := (false).
 Local Notation "1" := (true).
-
-(** * Pinsker's Inequality *)
 
 Lemma Pinsker_inequality : / (2 * ln 2) * d(P , Q) ^ 2 <= D(P || Q).
 Proof.

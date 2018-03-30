@@ -4,13 +4,13 @@ From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier.
 Require Import Rssr Reals_ext ssr_ext num_occ.
 
+(** * Variation of the SSReflect standard library *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope Rb_scope.
-
-(** * Variation of the SSReflect standard library *)
 
 Section MinFintype.
 
@@ -27,40 +27,30 @@ CoInductive minimum_spec_ord : I -> Type :=
     : minimum_spec_ord i.
 
 Hypothesis P_not_pred0 : {i | P i}.
-Hypothesis transitive_ord : transitive ord.
-Hypothesis reflexive_ord : reflexive ord.
-Hypothesis total_ord : total ord.
+Hypothesis ord_trans : transitive ord.
+Hypothesis ord_refl : reflexive ord.
+Hypothesis ord_total : total ord.
 
 Lemma in_sort a s : a \in (sort ord s) = (a \in s).
-Proof.
-rewrite -2!has_pred1.
-apply eq_has_r, mem_sort.
-Qed.
+Proof. rewrite -2!has_pred1; exact/eq_has_r/mem_sort. Qed.
 
 Lemma all_sort s : all P (sort ord s) = all P s.
-Proof.
-apply eq_all_r, mem_sort.
-Qed.
+Proof. exact/eq_all_r/mem_sort. Qed.
 
-Lemma in_sorted a s: sorted ord s -> a \in s -> ord (head a s) a.
+Lemma in_sorted a s : sorted ord s -> a \in s -> ord (head a s) a.
 Proof.
-case : s ; first by rewrite in_nil.
+case: s; first by rewrite in_nil.
 move=> hd tl Hs a_in_s.
 rewrite -nth0.
-rewrite {2}(_ : a = nth a (hd :: tl) (find (pred1 a) (hd :: tl))) ; last first.
-  symmetry.
-  apply/eqP.
-  rewrite (_ : nth a (hd :: tl) (find (pred1 a) (hd :: tl)) == a = pred1 a (nth a (hd :: tl) (find (pred1 a) (hd :: tl)))) ; last done.
-  apply nth_find.
-  by rewrite has_pred1.
-case/orP : (orbN (find (pred1 a) (hd :: tl) == 0)) ; first by move/eqP => ->.
-move => H.
-apply sorted_inv => //.
-apply/andP ; split.
-- rewrite ltn_neqAle.
-  apply/andP ; split.
-  - apply/negP => /eqP abs ; contradict H ; rewrite abs ; by apply/negP/negPn/eqP.
-  - by apply leq0n.
+rewrite {2}(_ : a = nth a (hd :: tl) (find (pred1 a) (hd :: tl))); last first.
+  apply/esym/eqP.
+  rewrite (_ : nth a (hd :: tl) (find (pred1 a) (hd :: tl)) == a = pred1 a (nth a (hd :: tl) (find (pred1 a) (hd :: tl)))) //.
+  by rewrite nth_find // has_pred1.
+case/boolP : (find (pred1 a) (hd :: tl) == 0) => [/eqP -> //|H].
+apply sorted_of_nth => //.
+apply/andP; split.
+- rewrite ltn_neqAle leq0n andbT.
+  apply/negP => /eqP abs; contradict H; rewrite abs; exact/negP/negPn/eqP.
 by rewrite -has_find has_pred1.
 Qed.
 
@@ -72,22 +62,19 @@ exists (head j0 (sort ord (filter P (enum I)))).
   case: s Hs ; first by move=> _ /=.
   move=> hd tl hd_tl /=.
   have : all P (hd :: tl) ; last move=> /allP Hs.
-    rewrite -hd_tl.
-    rewrite all_sort.
-    apply filter_all.
+    by rewrite -hd_tl all_sort filter_all.
   apply Hs.
   by rewrite in_cons eqxx.
 - move=> i Pi.
   move Hs : (sort _ _) => s.
   have i_in_s: i \in s.
     by rewrite -Hs in_sort mem_filter Pi /= mem_enum.
-  rewrite (_ : head j0 s = head i s) ; last first.
+  rewrite (_ : head j0 s = head i s); last first.
     clear Hs.
-    case: s i_in_s ; first by rewrite in_nil.
-    by move=> hd tl _ /=.
+    case: s i_in_s => //; by rewrite in_nil.
   apply in_sorted => //.
   rewrite -Hs.
-  by apply sort_sorted.
+  exact/sort_sorted.
 Qed.
 
 Definition ex_minord := s2val find_ex_minord.
@@ -120,8 +107,7 @@ apply/forallP=> j.
 apply/implyP=> Pj.
 move/eqP in def_n.
 rewrite def_n.
-apply min_i.
-exact Pj.
+exact/min_i/Pj.
 Qed.
 
 End MinFintype.
@@ -139,26 +125,26 @@ CoInductive maximum_spec_ord : I -> Type :=
     : maximum_spec_ord i.
 
 Hypothesis P_not_pred0 : {i | P i}.
-Hypothesis transitive_ord : transitive ord.
+Hypothesis ord_trans : transitive ord.
 
-Let transitive_ord_inv : transitive ord_inv.
-Proof. rewrite /ord_inv /transitive => x y z Hxy Hzx ; apply (transitive_ord Hzx Hxy). Qed.
+Let ord_inv_trans : transitive ord_inv.
+Proof. move => x y z Hxy Hzx; apply (ord_trans Hzx Hxy). Qed.
 
-Hypothesis reflexive_ord : reflexive ord.
+Hypothesis ord_refl : reflexive ord.
 
-Let reflexive_ord_inv : reflexive ord_inv.
+Let ord_inv_refl : reflexive ord_inv.
 Proof. by rewrite /reflexive /ord_inv. Qed.
 
-Hypothesis total_ord : total ord.
+Hypothesis ord_total : total ord.
 
-Let total_ord_inv : total ord_inv.
-Proof. rewrite /total => x y ; apply total_ord. Qed.
+Let ord_inv_total : total ord_inv.
+Proof. rewrite /total => x y ; apply ord_total. Qed.
 
 Lemma arg_maxordP : maximum_spec_ord arg_maxord.
 Proof.
 rewrite /arg_maxord.
-move: (@arg_minordP _ i0 P ord_inv P_not_pred0 transitive_ord_inv reflexive_ord_inv total_ord_inv) => Harg.
-constructor ; move: Harg ; by case.
+move: (@arg_minordP _ i0 P ord_inv P_not_pred0 ord_inv_trans ord_inv_refl ord_inv_total) => Harg.
+constructor; move: Harg ; by case.
 Qed.
 
 End MaxFintype.
@@ -169,16 +155,16 @@ Variables (I : finType) (i0 : I) (P : pred I) (F : I -> R).
 
 Let ord_F_Rle i j := (F i) <b= (F j).
 
-Let transitive_ord : transitive ord_F_Rle.
+Let ord_trans : transitive ord_F_Rle.
 Proof.
 rewrite /transitive /ord_F_Rle => x y z /RleP Hyx /RleP Hxz ; apply/RleP.
 by apply (Rle_trans _ (F x) _).
 Qed.
 
-Let reflexive_ord : reflexive ord_F_Rle.
+Let ord_refl : reflexive ord_F_Rle.
 Proof. rewrite /reflexive /ord_F_Rle => x ; apply/RleP ; apply Rle_refl. Qed.
 
-Let total_ord : total ord_F_Rle.
+Let ord_total : total ord_F_Rle.
 Proof.
 rewrite /total /ord_F_Rle => x y. apply/orP.
 case (Rlt_le_dec (F x) (F y)) => [/ltRW|] /RleP H; by [left|right].
@@ -199,18 +185,15 @@ Hypothesis P_not_pred0 : {i | P i}.
 Lemma arg_rmaxP : maximum_spec_r arg_rmax.
 Proof.
 rewrite /arg_rmax.
-move: (@arg_maxordP _ i0 P ord_F_Rle P_not_pred0 transitive_ord reflexive_ord total_ord) => Harg.
-constructor ; move: Harg ; by case.
+move: (@arg_maxordP _ i0 P ord_F_Rle P_not_pred0 ord_trans ord_refl ord_total) => Harg.
+constructor; move: Harg ; by case.
 Qed.
 
 Lemma arg_rmax2 : forall j, P j -> F j <= F arg_rmax.
 Proof.
-move: arg_rmaxP.
-case => i1 Pi1.
-rewrite /ord_F_Rle => H.
-move=> j Pj.
-apply/RleP.
-by apply H.
+case: arg_rmaxP => i1 Pi1.
+rewrite /ord_F_Rle => H j Pj.
+exact/RleP/H.
 Qed.
 
 End rExtrema.

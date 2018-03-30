@@ -4,7 +4,7 @@ From mathcomp Require Import fintype tuple div path bigop prime finset fingroup.
 From mathcomp Require Import finfun perm.
 Require Import Reals.
 
-(** Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
+(** * Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -100,9 +100,10 @@ End ssrnat_ext.
 Section seq_ext.
 
 Variables A B : Type.
+Implicit Types l : seq A.
 
-Lemma zip_swap : forall (a : seq A) (b : seq B),
-  zip a b = map (fun x => (x.2, x.1)) (zip b a).
+Lemma zip_swap : forall l (k : seq B),
+  zip l k = map (fun x => (x.2, x.1)) (zip k l).
 Proof. elim => [ [] // | h t IH [|hd tl] //=]; by rewrite IH. Qed.
 
 Lemma sumn_big_addn s : sumn s = \sum_ ( i <- s ) i.
@@ -139,15 +140,15 @@ move=> l.
 by rewrite mem_iota /f (subnKC Hab).
 Qed.
 
-Lemma take_take : forall (n m :nat) (s : seq A), take n (take (n + m) s) = take n s.
+Lemma take_take : forall (n m :nat) l, take n (take (n + m) l) = take n l.
 Proof.
 elim=> [* | n0 IH m0 z0].
 - by rewrite !take0.
 - destruct z0 => //=; by rewrite IH.
 Qed.
 
-Lemma take_drop_take : forall m n (z : seq A),
-  m + n <= size z -> take n (drop m (take (m + n) z)) = (drop m (take (m + n) z)).
+Lemma take_drop_take : forall m n l,
+  m + n <= size l -> take n (drop m (take (m + n) l)) = (drop m (take (m + n) l)).
 Proof.
 elim=> [n0 z Hsz | m IH n1 [|hd tl] //=].
 - rewrite drop0 add0n take_oversize // size_take.
@@ -156,8 +157,8 @@ elim=> [n0 z Hsz | m IH n1 [|hd tl] //=].
 rewrite addnC addnS => ?; by rewrite IH // addnC.
 Qed.
 
-Lemma zip_mask : forall bs (al : seq A) (bl : seq B),
-  zip (mask bs al) (mask bs bl) = mask bs (zip al bl).
+Lemma zip_mask : forall bs l (k : seq B),
+  zip (mask bs l) (mask bs k) = mask bs (zip l k).
 Proof.
 elim=> // h t IH [|a1 a2] [|b1 b2] //=.
 - destruct h => //=; by case: mask.
@@ -165,18 +166,25 @@ elim=> // h t IH [|a1 a2] [|b1 b2] //=.
 - destruct h => /=; by rewrite IH.
 Qed.
 
-Lemma nseq_add n (a : A) m :nseq (n + m) a = nseq n a ++ nseq m a.
+Lemma nseq_add n (a : A) m : nseq (n + m) a = nseq n a ++ nseq m a.
 Proof. rewrite cat_nseq; elim: n => // n ih; by rewrite addSn /= ih. Qed.
 
 Variable a : A.
 
-Lemma nseq_S : forall n, nseq n.+1 a = rcons (nseq n a) a(* ++ [:: a]*).
+Lemma map_nth_iota_id l : map (nth a l) (iota 0 (size l)) = l.
+Proof.
+apply: (@eq_from_nth _ a); first by rewrite size_map size_iota.
+rewrite size_map; move=> i; rewrite size_iota => Hi.
+by rewrite (@nth_map _ 0 _ _ _ _ _) // ?size_iota // nth_iota.
+Qed.
+
+Lemma nseq_S : forall n, nseq n.+1 a = rcons (nseq n a) a.
 Proof. by elim=> //= n <-. Qed.
 
 Lemma rev_nseq : forall n, rev (nseq n a) = nseq n a.
 Proof. elim => // n ih; by rewrite /= rev_cons ih -nseq_S. Qed.
 
-Lemma nseq_cat (l k : seq A) n : l ++ k = nseq n a -> k = nseq (n - size l) a.
+Lemma nseq_cat l l' n : l ++ l' = nseq n a -> l' = nseq (n - size l) a.
 Proof.
 move=> H2; move/(congr1 (drop (size l))) : (H2).
 rewrite drop_cat ltnn subnn drop0 => ->.
@@ -201,7 +209,20 @@ elim: s => // h t IH; rewrite in_cons; case/orP.
   congruence.
 Qed.
 
-Lemma sorted_nth (l : seq nat) : sorted leq l -> forall i j,
+Lemma take_index (a : A) l : a \notin take (index a l) l.
+Proof.
+elim: l => // h t IH /=; case: ifPn => //.
+by rewrite inE negb_or eq_sym IH andbT.
+Qed.
+
+Lemma uniq_take i (l : seq A) :  i < size l -> uniq l -> uniq (take i l).
+Proof.
+elim: i l => [l _ _ |i IH [| h t] //=]; first by rewrite take0.
+rewrite ltnS => nt /andP[ht ut].
+rewrite (IH _ nt ut) andbT; apply: contra ht; exact: mem_take.
+Qed.
+
+Lemma nth_of_sorted (l : seq nat) : sorted leq l -> forall i j,
   i <= j < size l -> nth O l i <= nth O l j.
 Proof.
 elim: l => [/= _ i j|h t IH Ht]; first by rewrite ltn0 andbF.
@@ -214,6 +235,22 @@ case => [/= [// | j /=] | i /= [// | j]].
 rewrite !ltnS => ijt.
 eapply leq_trans; first by apply: (IH _ _ j).
 done.
+Qed.
+
+Lemma sorted_of_nth (r : rel A) s (r_trans : transitive r) (r_sorted : sorted r s) :
+  forall x0 a b, a < b < size s -> r (nth x0 s a) (nth x0 s b).
+Proof.
+move=> a0 a b /= /andP [Hab Hbs].
+set f := nth a0 s.
+have Has : a < size s by exact/(leq_ltn_trans _ Hbs)/ltnW.
+have H : subseq [:: f a ; f b] s.
+  rewrite -(map_nth_iota_id a0 s) (_ : [:: f a; f b] = map f [:: a ; b]) //.
+  apply: map_subseq.
+  rewrite -(subnK Has) addnC iota_add add0n (_ : [:: a; b] = [::a] ++ [::b]) //.
+  apply cat_subseq; rewrite sub1seq mem_iota.
+  - by rewrite add0n leq0n ltnSn.
+  - by rewrite Hab subnKC.
+by case/andP : (subseq_sorted r_trans H r_sorted).
 Qed.
 
 Lemma sorted_cat (l k : seq A) (Rel : @rel A) :
@@ -396,66 +433,6 @@ elim => [[] // [] //| n IH [|ha ta] // [|hb tb] //= f [Ha] [Hb]].
 by rewrite /addb_seq /= -IH.
 Qed.
 
-Section ordered_ranks.
-
-Variable X : finType.
-
-Definition le_rank (x y : X) := enum_rank x <= enum_rank y.
-
-Definition lt_rank x y := le_rank x y && (x != y).
-
-Lemma lt_rank_alt x y : lt_rank x y = (enum_rank x < enum_rank y).
-Proof.
-rewrite /lt_rank /le_rank ltn_neqAle andbC; apply andb_id2r => _.
-case/boolP : (x == y) => [/eqP ->|xy]; first by rewrite eqxx.
-apply/esym => /=; apply: contra xy => /eqP H.
-by apply/eqP/enum_rank_inj/ord_inj.
-Qed.
-
-Definition sort_le_rank : seq X -> seq X := sort le_rank.
-
-Definition sort_le_rank_tuple n (y : n.-tuple X) : n.-tuple X.
-apply Tuple with (sort_le_rank y).
-by rewrite size_sort size_tuple.
-Defined.
-
-Lemma transitive_le_rank : transitive le_rank.
-Proof. rewrite /le_rank /transitive => a b c /leq_trans; by apply. Qed.
-
-Lemma reflexive_le_rank : reflexive le_rank.
-Proof. by rewrite /le_rank /reflexive => a. Qed.
-
-Lemma antisymmetric_le_rank : antisymmetric le_rank.
-Proof.
-rewrite /le_rank /antisymmetric => a b H; apply enum_rank_inj.
-rewrite -eqn_leq in H; by apply/eqP.
-Qed.
-
-Lemma total_le_rank : total le_rank.
-Proof. by rewrite /total => a b; rewrite /le_rank leq_total. Qed.
-
-Lemma lt_le_rank_trans u v w : lt_rank u v -> le_rank v w -> lt_rank u w.
-Proof.
-rewrite /lt_rank => /andP [uv H] vw.
-rewrite (transitive_le_rank uv vw) /=; apply: contra H => /eqP ?.
-subst w; by rewrite (@antisymmetric_le_rank u v) // uv.
-Qed.
-
-Lemma le_lt_rank_trans u v w : le_rank u v -> lt_rank v w -> lt_rank u w.
-Proof.
-rewrite /lt_rank => uv /andP[vw H].
-rewrite (transitive_le_rank uv vw) /=; apply: contra H => /eqP ?.
-subst w. by rewrite (@antisymmetric_le_rank u v) // uv.
-Qed.
-
-Lemma lt_le_rank_weak u v : lt_rank u v -> le_rank u v.
-Proof. by rewrite /lt_rank => /andP [H _]. Qed.
-
-Lemma lt_neq_rank u v : lt_rank u v -> u != v.
-Proof. by rewrite /lt_rank => /andP [_ H]. Qed.
-
-End ordered_ranks.
-
 Section finset_ext.
 
 Variable A : finType.
@@ -487,21 +464,6 @@ Qed.
 Lemma inj_card (B : finType) (f : {ffun A -> B}) :
   injective f -> #| A | <= #| B |.
 Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
-
-Lemma sorted_enum : sorted (@le_rank A) (enum A).
-Proof.
-rewrite /sorted.
-move HA : (enum A) => Alst.
-destruct Alst => //.
-apply/(pathP s) => i Hi.
-rewrite /le_rank -HA.
-destruct Alst => //.
-have iA : i < #|A| by rewrite cardE HA (ltn_trans Hi).
-rewrite -(@enum_val_nth A (xpredT) s (Ordinal iA)).
-have i1A : i.+1 < #|A| by rewrite cardE HA (leq_ltn_trans Hi).
-have -> : (nth s (s0 :: Alst) i) = (nth s (enum A) i.+1) by rewrite /= HA.
-by rewrite -(@enum_val_nth A (xpredT) s (Ordinal i1A)) 2!enum_valK leqnSn.
-Qed.
 
 Lemma cardsltn1P (s : {set A}) :
   (1 < #| s |) = [exists a, exists b, (a \in s) && (b \in s) && (a != b)].
@@ -656,32 +618,134 @@ Proof. move=> [ [|h []] H] //. by apply val_inj. Qed.
 
 Definition tbehead n (t : n.+1.-tuple A) : n.-tuple A := [tuple of behead t].
 
+Lemma sorted_of_tnth {C : eqType} (r : rel C) k (t : k.-tuple C) :
+  transitive r -> sorted r t -> forall a b : 'I_k, a < b -> r (t \_ a) (t \_ b).
+Proof.
+move=> r_trans r_sorted a b ab.
+rewrite (tnth_nth t\_b) {2}(tnth_nth t\_b).
+apply sorted_of_nth => //; by rewrite ab size_tuple /=.
+Qed.
+
+Lemma sorted_of_tnth_leq (X : finType) (n : nat) (r : rel X) (t : n.-tuple X)
+  (r_trans : transitive r) (r_refl : reflexive r) (Hx : sorted r t) :
+  forall (l p : 'I_n), l <= p -> r t\_l t\_p.
+Proof.
+move=> l p leqlp.
+case/boolP : (l == p) => Hcase.
+- move/eqP in Hcase; rewrite Hcase; apply r_refl.
+- apply sorted_of_tnth => //; by rewrite ltn_neqAle leqlp Hcase.
+Qed.
+
+Definition sort_tuple (X : eqType) n (r : rel X) (t : n.-tuple X) : n.-tuple X.
+apply Tuple with (sort r t).
+by rewrite size_sort size_tuple.
+Defined.
+
 End tuple_ext.
+
+Section ordered_ranks.
+
+Variable X : finType.
+
+Definition le_rank (x y : X) := enum_rank x <= enum_rank y.
+
+Definition lt_rank x y := le_rank x y && (x != y).
+
+Lemma lt_rank_alt x y : lt_rank x y = (enum_rank x < enum_rank y).
+Proof.
+rewrite /lt_rank /le_rank ltn_neqAle andbC; apply andb_id2r => _.
+case/boolP : (x == y) => [/eqP ->|xy]; first by rewrite eqxx.
+apply/esym => /=; apply: contra xy => /eqP H.
+by apply/eqP/enum_rank_inj/ord_inj.
+Qed.
+
+Lemma le_rank_trans : transitive le_rank.
+Proof. rewrite /le_rank /transitive => a b c /leq_trans; by apply. Qed.
+
+Lemma le_rank_refl : reflexive le_rank.
+Proof. by rewrite /le_rank /reflexive => a. Qed.
+
+Lemma le_rank_asym : antisymmetric le_rank.
+Proof. move=> a b H; apply enum_rank_inj; rewrite -eqn_leq in H; exact/eqP. Qed.
+
+Lemma le_rank_total : total le_rank.
+Proof. by rewrite /total => a b; rewrite /le_rank leq_total. Qed.
+
+Lemma lt_le_rank_trans u v w : lt_rank u v -> le_rank v w -> lt_rank u w.
+Proof.
+rewrite /lt_rank => /andP [uv H] vw.
+rewrite (le_rank_trans uv vw) /=; apply: contra H => /eqP ?.
+subst w; by rewrite (@le_rank_asym u v) // uv.
+Qed.
+
+Lemma le_lt_rank_trans u v w : le_rank u v -> lt_rank v w -> lt_rank u w.
+Proof.
+rewrite /lt_rank => uv /andP[vw H].
+rewrite (le_rank_trans uv vw) /=; apply: contra H => /eqP ?.
+subst w. by rewrite (@le_rank_asym u v) // uv.
+Qed.
+
+Lemma lt_le_rank_weak u v : lt_rank u v -> le_rank u v.
+Proof. by rewrite /lt_rank => /andP [H _]. Qed.
+
+Lemma lt_neq_rank u v : lt_rank u v -> u != v.
+Proof. by rewrite /lt_rank => /andP [_ H]. Qed.
+
+Lemma sorted_enum : sorted le_rank (enum X).
+Proof.
+rewrite /sorted.
+move HX : (enum X) => Alst.
+destruct Alst => //.
+apply/(pathP s) => i Hi.
+rewrite /le_rank -HX.
+destruct Alst => //.
+have iA : i < #|X| by rewrite cardE HX (ltn_trans Hi).
+rewrite -(@enum_val_nth X (xpredT) s (Ordinal iA)).
+have i1A : i.+1 < #|X| by rewrite cardE HX (leq_ltn_trans Hi).
+have -> : (nth s (s0 :: Alst) i) = (nth s (enum X) i.+1) by rewrite /= HX.
+by rewrite -(@enum_val_nth X (xpredT) s (Ordinal i1A)) 2!enum_valK leqnSn.
+Qed.
+
+End ordered_ranks.
 
 Section perm_tuples.
 
 Local Open Scope tuple_ext_scope.
 
-Variables A : finType.
+Variables A : eqType.
 Variable n : nat.
 Variable s : 'S_n.
 
-Definition perm_tuple (t : n.-tuple A) : n.-tuple A := [tuple (t \_ (s i)) | i < n].
-Definition perm_tuple_set (E : {set n.-tuple A}) := perm_tuple @: E.
+Definition perm_tuple (t : n.-tuple A) := [tuple (t \_ (s i)) | i < n].
 
 End perm_tuples.
 
 Section perm_tuples_facts.
 
-Variable A : finType.
-
-Lemma perm_tuple_id {m} (b : m.-tuple A) : perm_tuple 1 b = b.
+Lemma perm_tuple_id {A : finType} {m} (b : m.-tuple A) : perm_tuple 1 b = b.
 Proof.
 apply eq_from_tnth => i.
 by rewrite /perm_tuple /= tnth_map /= perm1 tnth_ord_tuple.
 Qed.
 
+Lemma tuple_exist_perm_sort (X : eqType) n (r : rel X) (t : n.-tuple X) :
+  exists s : 'S_n, t = perm_tuple s (sort_tuple r t).
+Proof.
+rewrite /perm_tuple.
+have : perm_eq t (sort_tuple r t) by rewrite perm_eq_sym perm_sort perm_eq_refl.
+case/tuple_perm_eqP => u Hu; exists u.
+case: t Hu => t /= Ht Hu.
+apply eq_from_tnth => i /=.
+rewrite /tnth /= -Hu.
+apply: set_nth_default.
+move/eqP : {Hu}Ht => ->; by case: i.
+Qed.
+
+Variable A : finType.
 Variable n : nat.
+
+Definition perm_tuple_set (s : 'S_n) (E : {set n.-tuple A}) :=
+  perm_tuple s @: E.
 
 Lemma perm_tuple_comp (s1 s2 : 'S_n) (b : n.-tuple A) :
   perm_tuple s1 (perm_tuple s2 b) = perm_tuple (s1 * s2) b.

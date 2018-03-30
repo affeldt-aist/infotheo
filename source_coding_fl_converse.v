@@ -5,6 +5,8 @@ From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import Rssr Reals_ext log2 Rbigop proba entropy aep typ_seq source_code.
 
+(** * Source coding theorem (converse part) *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -258,7 +260,7 @@ Section source_coding_converse.
 Variable A : finType.
 Variable P : dist A.
 
-(** * Source coding theorem (converse part) #<a name="label_source_coding_converse"> </a># *)
+(** Source coding theorem (converse part) #<a name="label_source_coding_converse"> </a># *)
 
 Theorem source_coding_converse : forall epsilon, 0 < epsilon < 1 ->
   forall r : Qplus, 0 < r < `H P ->

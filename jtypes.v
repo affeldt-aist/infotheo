@@ -927,8 +927,8 @@ apply/forallP => a.
 apply/forallP => b.
 rewrite /num_co_occ /num_occ /=.
 apply/eqP.
-rewrite (@sorted_is_flattened _ (@le_rank _) (@transitive_le_rank _)
-  (@antisymmetric_le_rank _) (@reflexive_le_rank _) #|A| (enum A) ta) //; last 4 first.
+rewrite (@sorted_is_flattened _ _ (@le_rank_trans _)
+  (@le_rank_asym _) (@le_rank_refl _) #|A| (enum A) ta) //; last 4 first.
   by rewrite cardE.
   by apply enum_uniq.
   by apply sorted_enum.
@@ -1012,14 +1012,15 @@ Local Open Scope nat_scope.
 Lemma shell_not_empty : exists tb, tb \in V.-shell ta.
 Proof.
 case: (tuple_exist_perm_sort (@le_rank A) ta) => s /=.
-set ta' := Tuple _.
-move=> ta_ta'.
-have ta'ta : ta' = perm_tuple s^-1 ta by rewrite ta_ta' perm_tuple_comp mulVg perm_tuple_id.
-have sorted_ta' : sorted (@le_rank A) ta' by exact/sort_sorted/total_le_rank.
-have Hta' : ta' \in T_{P} by rewrite ta'ta; apply/perm_tuple_in_Ttuples.
-case: (shell_not_empty_sorted sorted_ta' Hrow_num_occ Hta') => tb Htb.
+rewrite /sort_tuple /=.
+set t' := Tuple _.
+move=> ta_t'.
+have t'ta : t' = perm_tuple s^-1 ta by rewrite ta_t' perm_tuple_comp mulVg perm_tuple_id.
+have sorted_t' : sorted (@le_rank A) t' by exact/sort_sorted/le_rank_total.
+have Ht' : t' \in T_{P} by rewrite t'ta; apply/perm_tuple_in_Ttuples.
+case: (shell_not_empty_sorted sorted_t' Hrow_num_occ Ht') => tb Htb.
 exists (perm_tuple s tb).
-rewrite ta_ta' perm_Stuples_Stuples_perm; by apply mem_imset.
+rewrite ta_t' perm_Stuples_Stuples_perm; by apply mem_imset.
 Qed.
 
 End shell_not_empty.
@@ -1221,8 +1222,9 @@ Hypothesis Bnot0 : (0 < #|B|)%nat.
 Lemma card_shelled_tuples : INR #| V.-shell ta | <= exp2 (INR n * `H(V | P )).
 Proof.
 case: (tuple_exist_perm_sort (@le_rank A) ta) => /= s Hta'.
-have H : sort_le_rank ta = perm_tuple (s^-1) ta by rewrite {2}Hta' perm_tuple_comp mulVg perm_tuple_id.
-have {Hta'}Hta': ta = perm_tuple s (sort_le_rank_tuple ta) by rewrite {1}Hta'.
+have H : sort (@le_rank _) ta =
+  perm_tuple (s^-1) ta by rewrite {2}Hta' perm_tuple_comp mulVg perm_tuple_id.
+have {Hta'}Hta': ta = perm_tuple s (sort_tuple (@le_rank _) ta) by rewrite {1}Hta'.
 rewrite (card_shelled_tuples_perm V ta (s^-1)).
 rewrite Hta' perm_tuple_comp mulVg perm_tuple_id.
 apply card_shell_leq_exp_entropy => //.
@@ -1233,7 +1235,7 @@ apply card_shell_leq_exp_entropy => //.
   move: Hta; by rewrite in_set.
 - apply cond_type_equiv.
   move: (Vctyp); by rewrite in_set.
-- by apply sort_sorted, total_le_rank.
+- exact/sort_sorted/le_rank_total.
 Qed.
 
 End card_perm_shell.

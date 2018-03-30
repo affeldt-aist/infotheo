@@ -5,7 +5,57 @@ From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
 Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop.
 
-(** formalization of discrete probabilities *)
+(** * Formalization of discrete probabilities *)
+
+(** OUTLINE
+  1. Section distribution_definition.
+     Distribution over sample space A
+     (numerically-valued distribution function p : A -> R;
+      for any a \in A, 0 <= p(a); \sum_{i \in A} p(i) = 1)
+  2. Module Uniform.
+     Uniform distribution
+  3. Module UniformSupport.
+     Uniform distribution with a restricted support
+  4. Module Binary.
+     Binary distributions (distributions over sets with two elements)
+  5. Section binary_distribution_prop.
+  6. Module BinarySupport.
+  7. Module D1Dist.
+     construction of a distribution from another by removing one element from the support
+  8. Module TupleDist.
+  9. Section wolfowitz_counting.
+     Wolfowitz's counting principle
+  10. Module ProdDist.
+  11. Section tuple_prod_cast.
+  12. Section probability.
+      Probability of an event P with distribution p (Pr_p[P] = \sum_{i \in A, P\,i} \, p(i))
+  13. Section Pr_tuple_prod.
+  14. Section random_variable.
+      Definition of a random variable (R-valued) with a distribution
+      pr: Probability that a random variable evaluates to r \in R
+  15. Section expected_value_definition.
+      Expected value of a random variable
+  16. Section expected_value_for_standard_random_variables.
+      Properties of the expected value of standard random variables:
+  17. Section markov_inequality.
+  18. Section variance_definition.
+  19. Section variance_properties.
+  20. Section chebyshev.
+      Chebyshev's Inequality
+  21. Section joint_dist.
+      Joint Distribution
+  22. Section identically_distributed.
+      Identically Distributed Random Variables
+  23. Section independent_random_variables.
+  24. Section sum_two_rand_var_def.
+      The sum of two random variables
+  25. Section sum_two_rand_var.
+  26. Section sum_n_rand_var_def.
+  27. Section sum_n_rand_var.
+  28. Section sum_n_independent_rand_var_def.
+  29. Section sum_n_independent_rand_var.
+  20. Section weak_law_of_large_numbers.
+*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -38,12 +88,6 @@ Reserved Notation "Z \= X '@+' Y" (at level 50).
 Local Open Scope reals_ext_scope.
 Local Open Scope tuple_ext_scope.
 Local Open Scope Rb_scope.
-
-(** * Distribution *)
-
-(** Distribution over sample space A
-   (numerically-valued distribution function p : A -> R;
-   for any a \in A, 0 <= p(a); \sum_{i \in A} p(i) = 1) *)
 
 Section distribution_definition.
 
@@ -101,8 +145,6 @@ Definition dist_of (A : finType) := fun phT : phant (Finite.sort A) => dist A.
 
 Notation "{ 'dist' T }" := (dist_of (Phant T)) : proba_scope.
 
-(** Uniform distribution *)
-
 Module Uniform.
 
 Section Uniform_sect.
@@ -147,8 +189,6 @@ move=> a; rewrite /Uniform.d /= /Uniform.f /= HA div1R => /esym abs.
 exfalso.
 move: abs; exact/Rlt_not_eq/Rinv_0_lt_compat/lt_0_INR/ltP.
 Qed.
-
-(** Uniform distribution with a restricted support *)
 
 Module UniformSupport.
 Section UniformSupport_sect.
@@ -222,8 +262,6 @@ End UniformSupport.
 Notation "'`U' HC " := (UniformSupport.d HC) : proba_scope.
 
 Local Open Scope proba_scope.
-
-(** Binary distributions (distributions over sets with two elements) *)
 
 Module Binary.
 Section binary.
@@ -310,7 +348,6 @@ Qed.
 End binary_support.
 End BinarySupport.
 
-(* construction of a distribution from another by removing one element from the support *)
 Module D1Dist.
 Section d1dist.
 
@@ -475,8 +512,6 @@ rewrite -(bigA_distr_bigA (fun m => P `^ _)) /= big_const.
 by rewrite iter_Rmult pmf1 pow1.
 Qed.
 
-(** Wolfowitz's counting principle: *)
-
 Section wolfowitz_counting.
 
 Variable B : finType.
@@ -572,9 +607,7 @@ Variable P : {dist 'rV[A * B]_n}.
 
 (*
 Definition dist_tuple_prod_cast : dist [finType of n.-tuple A * n.-tuple B].
-(* begin hide *)
 apply makeDist with (fun xy => P (prod_tuple xy)).
-(* end hide *)
 move=> a; by apply Rle0f.
 rewrite -(pmf1 P).
 rewrite (reindex_onto (fun x => tuple_prod x) (fun y => prod_tuple y)); last first.
@@ -588,19 +621,12 @@ Defined.
 
 End tuple_prod_cast.
 
-(** * Probability *)
-
 Section probability.
 
 Variable A : finType.
 Variable P : dist A.
 
-(** Probability of an event #P#%$P$% with distribution #p#%$p$%
-   %($Pr_p[P] = \sum_{i \in A, P\,i} \, p(i)$)%: *)
-
 Definition Pr (E : {set A}) := \rsum_(a in E) P a.
-
-(** Basic properties about probabilities *)
 
 Lemma le_0_Pr E : 0 <= Pr E.
 Proof. apply rsumr_ge0 => *; exact: dist_nonneg. Qed.
@@ -724,19 +750,15 @@ Qed.
 
 End Pr_tuple_prod.
 
-(** * Random Variable *)
+Local Open Scope R_scope.
 
-(** Definition of a random variable (R-valued) with a distribution: *)
+Section random_variable.
 
 Record rvar A := mkRvar {rv_dist : dist A ; rv_fun :> A -> R }.
 
 Definition rvar_of (A : finType) := fun phT : phant (Finite.sort A) => rvar A.
 
-Notation "{ 'rvar' T }" := (rvar_of (Phant T)) : proba_scope.
-
-Notation "`p_ X" := (rv_dist X) : proba_scope.
-
-(** Probability that a random variable evaluates to r \in R: *)
+Local Notation "`p_ X" := (rv_dist X).
 
 Section pr_def.
 
@@ -745,12 +767,6 @@ Variable A : finType.
 Definition pr (X : rvar A) r := Pr `p_X [set x | X x == r].
 
 End pr_def.
-
-Notation "'Pr[' X '=' r ']'" := (pr X r) : proba_scope.
-
-(** Some changes of variables: *)
-
-Local Open Scope R_scope.
 
 Definition scale_rv A k (X : rvar A) :=
   mkRvar `p_X (fun x => k * X x).
@@ -768,6 +784,12 @@ Definition comp_rv A (X : rvar A) f :=
   mkRvar `p_X (fun x => f (X x)).
 Definition sq_rv A (X : rvar A) := comp_rv X (fun x => x ^ 2).
 
+End random_variable.
+
+Notation "{ 'rvar' T }" := (rvar_of (Phant T)) : proba_scope.
+Notation "`p_ X" := (rv_dist X) : proba_scope.
+Notation "'Pr[' X '=' r ']'" := (pr X r) : proba_scope.
+
 Notation "k \cst* X" := (@scale_rv _ k X) : proba_scope.
 Notation "X ''/' n" := (@scale_rv _ (1 / INR n) X) : proba_scope.
 Notation "X \+_( H ) Y" := (@add_rv _ X Y H) : proba_scope.
@@ -776,8 +798,7 @@ Notation "X '\+cst' m" := (trans_add_rv X m) : proba_scope.
 Notation "X '\-cst' m" := (trans_min_rv X m) : proba_scope.
 Notation "X '\^2' " := (sq_rv X) : proba_scope.
 
-(** The ``- log P'' random variable: *)
-
+(** The ``- log P'' random variable *)
 Definition mlog_rv A (P : dist A) : rvar A := mkRvar P (fun x => - log (P x))%R.
 
 Notation "'--log' P" := (mlog_rv P) (at level 5) : proba_scope.
@@ -797,19 +818,14 @@ move=> t.
 exact (rvar2tuple1 (t ``_ ord0)).
 Defined.
 
-(** * Expected Value *)
-
 Section expected_value_definition.
 
 Variable A : finType.
 Variable X : rvar A.
 
-(** Expected value of a random variable: *)
-
 Definition Ex := \rsum_(r <- fin_img X) r * Pr[ X = r ].
 
 (** Alternative (simpler) definition of the expected value: *)
-
 Lemma ExE : Ex = \rsum_(a in A) X a * `p_X a.
 Proof.
 rewrite /Ex.
@@ -836,8 +852,6 @@ Section expected_value_for_standard_random_variables.
 
 Variable A : finType.
 Variables X Y : rvar A.
-
-(** Properties of the expected value of standard random variables: *)
 
 Lemma E_scale k : `E (k \cst* X) = k * `E X.
 Proof.
@@ -893,7 +907,7 @@ rewrite 2!ExE /rvar2tuple1 /=; apply big_rV_1 => // m.
 by rewrite -TupleDist1E.
 Qed.
 
-Section markov_inquality.
+Section markov_inequality.
 
 Variable A : finType.
 Variable X : rvar A.
@@ -926,26 +940,24 @@ rewrite mulRCA mulRV ?mulR1; last exact/not_eq_sym/Rlt_not_eq.
 exact: Ex_lb.
 Qed.
 
-End markov_inquality.
+End markov_inequality.
 
 Notation "'Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
-
-(** * Variance *)
 
 Section variance_definition.
 
 Variable A : finType.
 Variable X : rvar A.
 
-(** Variance of a random variable %($\sigma^2(X) = V(X) = E (X^2) - (E X)^2$)%: *)
-
+(** Variance of a random variable (\sigma^2(X) = V(X) = E (X^2) - (E X)^2): *)
 Definition Var := let miu := `E X in `E ((X \-cst miu) \^2).
 
 (** Alternative form for computing the variance
-   %($V(X) = E(X^2) - E(X)^2$ \cite[Theorem 6.6]{probook})%: *)
-
+   (V(X) = E(X^2) - E(X)^2 \cite[Theorem 6.6]{probook}): *)
 Lemma V_alt : Var = `E (X \^2)  - (`E X) ^ 2.
-Proof. rewrite /Var E_trans_id_rem E_trans_add_rv E_num_int_sub E_scale; field. Qed.
+Proof.
+rewrite /Var E_trans_id_rem E_trans_add_rv E_num_int_sub E_scale; field.
+Qed.
 
 End variance_definition.
 
@@ -956,8 +968,7 @@ Section variance_properties.
 Variable A : finType.
 Variable X : rvar A.
 
-(** The variance is not linear %$V (k X) = k^2 V (X)$ \cite[Theorem 6.7]{probook}%: *)
-
+(** The variance is not linear V (k X) = k^2 V (X) \cite[Theorem 6.7]{probook}: *)
 Lemma V_scale k : `V (k \cst* X) = k ^ 2 * `V X.
 Proof.
 rewrite {1}/`V [in X in X = _]/= E_scale.
@@ -976,12 +987,9 @@ rewrite /`V !E_rvar2tuple1 !ExE; apply: big_rV_1 => // i.
 by rewrite TupleDist1E.
 Qed.
 
-(** * Chebyshev's Inequality *)
-
 (** (Probabilistic statement.)
  In any data sample, "nearly all" the values are "close to" the mean value:
- %$Pr[ |X - E X| \geq \epsilon] \leq V(X) / \epsilon^2$% *)
-
+ Pr[ |X - E X| \geq \epsilon] \leq V(X) / \epsilon^2 *)
 Section chebyshev.
 
 Variable A : finType.
@@ -1010,8 +1018,6 @@ Qed.
 
 End chebyshev.
 
-(** * Joint Distribution *)
-
 Section joint_dist.
 
 Variable A : finType.
@@ -1026,7 +1032,6 @@ Definition joint :=
 
 End joint_dist.
 
-(* begin hide *)
 Lemma joint_prod_n_base_case A (P : dist A) : joint P (P `^ O) (P `^ 1).
 Proof.
 rewrite /joint; split => x.
@@ -1042,10 +1047,8 @@ rewrite /joint; split => x.
   rewrite /rbehead.
   by apply/matrixP => a [].
 Qed.
-(* end hide *)
 
 (** The tuple distribution is a joint distribution: *)
-
 Lemma joint_prod_n : forall n A (P : dist A), joint P (P `^ n) (P `^ n.+1).
 Proof.
 case; first by apply joint_prod_n_base_case.
@@ -1061,22 +1064,17 @@ move=> n B d; split => x.
   by rewrite [in X in _ = X]TupleDistSE row_mx_row_ord0 rbehead_row_mx.
 Qed.
 
-(** * Identically Distributed Random Variables *)
-
 Section identically_distributed.
 
 Variable A : finType.
 Variable P : dist A.
 Variable n : nat.
 
-(** The random variables %$Xs$%#Xs# are identically distributed with distribution %$P$%#P#: *)
-
+(** The random variables Xs are identically distributed with distribution P: *)
 (*Definition id_dist (Xs : n.-tuple (rvar A)) := forall i, `p_(Xs \_ i) = P.*)
 Definition id_dist (Xs : 'rV[rvar A]_n) := forall i, `p_(Xs ``_ i) = P.
 
 End identically_distributed.
-
-(** * Independent random variables *)
 
 Section independent_random_variables.
 
@@ -1095,7 +1093,6 @@ End independent_random_variables.
 Notation "X _| P |_ Y" := (inde_rv X Y P) : proba_scope.
 
 (** Independent random variables over the tuple distribution: *)
-
 Lemma inde_rv_tuple_pmf_dist A (P : dist A) n (x y : R) (Xs : 'rV[rvar A]_n.+2) :
   id_dist P Xs ->
     Pr (P `^ n.+2) [set xy : 'rV__ | (- log (P (xy ``_ ord0)) == x)%R &&
@@ -1124,10 +1121,6 @@ rewrite big_distrl /=.
 apply eq_bigr => a _; by rewrite -big_distrr.
 Qed.
 
-(** * Sum of Random Variables *)
-
-(** The sum of two random variables: *)
-
 Section sum_two_rand_var_def.
 
 Variable A : finType.
@@ -1153,8 +1146,7 @@ Variable X : {rvar 'rV[A]_n.+2}.
 
 (** The expected value of a sum is the sum of expected values,
    whether or not the summands are mutually independent
-   (the ``First Fundamental Mystery of Probability''% \cite[Theorem 6.2]{probook}%): *)
-
+   (the ``First Fundamental Mystery of Probability'' \cite[Theorem 6.2]{probook}): *)
 Lemma E_linear_2 : X \= X1 @+ X2 -> `E X = (`E X1 + `E X2)%R.
 Proof.
 case=> Hjoint Hsum.
@@ -1238,7 +1230,6 @@ apply eq_bigl => ta /=; by rewrite !inE.
 Qed.
 
 (** Expected Value of the Square (requires mutual independence): *)
-
 Lemma E_id_rem : X \= X1 @+ X2 -> X1 _| `p_X |_ X2 ->
   `E (X \^2) = (`E (X1 \^2) + 2 * `E X1 * `E X2 + `E (X2 \^2))%R.
 Proof.
@@ -1281,7 +1272,6 @@ Qed.
 
 (** The variance of the sum is the sum of variances for any two
   independent random variables %(\cite[Theorem 6.8]{probook})%: *)
-
 Lemma V_linear_2 : X \= X1 @+ X2 -> X1 _| `p_X |_ X2  -> `V X = (`V X1 + `V X2)%R.
 Proof.
 move=> Hsum Hinde.
@@ -1295,7 +1285,6 @@ Section sum_n_rand_var_def.
 Variable A : finType.
 
 (** The sum of n >= 1 random variable(s): *)
-
 Inductive sum_n : forall n,
   {rvar 'rV[A]_n} -> 'rV[rvar A]_n -> Prop :=
 | sum_n_1 : forall X, cast_rv X \=sum X
@@ -1429,8 +1418,6 @@ rewrite (V_scale X) // (V_linearity_isum sum_Xs Hs) //; field; by apply not_0_IN
 Qed.
 
 End sum_n_independent_rand_var.
-
-(** * The Weak Law of Large Numbers *)
 
 Section weak_law_of_large_numbers.
 

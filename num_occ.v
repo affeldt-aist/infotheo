@@ -1,10 +1,22 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import choice fintype tuple finfun bigop finset binomial.
-From mathcomp Require Import fingroup perm.
-Require Import ssr_ext.
+From mathcomp Require Import fingroup perm zmodp ssralg.
+Require Import ssr_ext f2.
 
-(** * Number of occurrence$s *)
+(** * Number of occurrences *)
+
+(** OUTLINE:
+  1. Section num_occ_def (Number of symbol occurrences)
+  2. Section num_occ_prop.
+  3. Section num_occ_tuple.
+  4. Section num_occ_tuple_prop.
+  5. Section num_co_occ_def. (Number of pair of symbols occurrences)
+  6. Section num_co_occ_prop.
+  7. Section num_co_occ_tuple.
+  8. Section num_co_occ_tuple_prop.
+  9. Section cansort.
+*)
 
 Reserved Notation "'N(' a '|' t ')'".
 Reserved Notation "'N(' a ',' b '|' ta ',' tb ')'".
@@ -16,19 +28,6 @@ Import Prenex Implicits.
 Local Open Scope tuple_ext_scope.
 Local Open Scope nat_scope.
 
-Lemma count_true_negb r s (rs : size s = r) :
-  count (pred1 true) s = r - count (pred1 false) s.
-Proof.
-rewrite -rs -(count_predC (pred1 false) s) addnC addnK.
-by apply/eq_count => -[].
-Qed.
-
-Lemma count_map_negb r s (rs : size s = r) b :
-  count (pred1 false) [seq (pred1 (~~ b)) i | i <- s] =
-  count (pred1 true) [seq (pred1 b) i | i <- s].
-Proof. rewrite 2!count_map; apply/eq_count => -[] /=; by case: b. Qed.
-
-(** Number of symbol occurrences: *)
 Section num_occ_def.
 
 Variables (A : eqType) (a : A) (t : seq A).
@@ -72,6 +71,12 @@ Qed.
 
 End num_occ_prop.
 
+Lemma num_occ_sum : forall (t : seq 'F_2), num_occ 1%R t = \sum_(i <- t) i.
+Proof.
+elim => [ /= | /= h t ->]; first by rewrite big_nil.
+rewrite big_cons; by case/F2P: h.
+Qed.
+
 Lemma num_occ_sum_bool : forall t : seq bool, N(true | t) = \sum_(i <- t) i.
 Proof.
 elim => [|hd tl IH]; first by rewrite big_nil num_occ0.
@@ -107,7 +112,7 @@ Qed.
 
 End num_occ_tuple.
 
-Section num_occ_tuple_facts.
+Section num_occ_tuple_prop.
 
 Variable (A : finType) (n : nat) (t : n.-tuple A).
 
@@ -152,9 +157,8 @@ Qed.
 
 Local Close Scope group_scope.
 
-End num_occ_tuple_facts.
+End num_occ_tuple_prop.
 
-(** Number of pair of symbols occurrences: *)
 Section num_co_occ_def.
 
 Variables (A B : eqType) (a : A) (b : B) (ta : seq A) (tb : seq B).
@@ -172,9 +176,7 @@ Section num_co_occ_prop.
 Variables (A B : eqType) (a : A) (b : B) (ta : seq A) (tb : seq B).
 
 Lemma num_co_occ1 (a' : A) : N(a, b | [:: a'], [:: b]) = N(a | [:: a']).
-Proof.
-by rewrite /num_co_occ /num_occ /= !addn0 xpair_eqE eqxx andbC.
-Qed.
+Proof. by rewrite /num_co_occ /num_occ /= !addn0 xpair_eqE eqxx andbC. Qed.
 
 Lemma num_co_occ_sym : N(a, b | ta, tb) = N(b, a | tb, ta).
 Proof.
@@ -210,7 +212,7 @@ Qed.
 
 End num_co_occ_tuple.
 
-Section num_co_occ_facts.
+Section num_co_occ_tuple_prop.
 
 Variables (A B : finType) (n : nat) (ta : n.-tuple A) (tb : n.-tuple B).
 
@@ -286,7 +288,7 @@ Proof.
 by rewrite /num_co_occ -(@num_occ_perm _ n (zip_tuple ta tb) (a, b) s) -zip_perm_tuple.
 Qed.
 
-End num_co_occ_facts.
+End num_co_occ_tuple_prop.
 
 Lemma num_co_occ_num_occ1 {A B : finType} a' b' (a : A) :
   \sum_(i in B) N(a, i | [tuple of [:: a']], [tuple of [:: b']]) = (a' == a).
@@ -315,86 +317,6 @@ rewrite (eq_bigr (fun b =>
   by rewrite big_split /= IH num_co_occ_num_occ1.
 move=> b' _; by rewrite /num_co_occ num_occ_thead.
 Qed.
-
-Section tuple_sort.
-
-Variables X : finType.
-Variable n : nat.
-Variable myrel : X -> X -> bool.
-Hypothesis transitive_myrel : transitive myrel.
-Hypothesis reflexive_myrel : reflexive myrel.
-Hypothesis antisymmetric_myrel : antisymmetric myrel.
-Hypothesis total_myrel : total myrel.
-
-Let mysort : seq X -> seq X := sort myrel.
-
-Let mysort_tuple (y : n.-tuple X) : n.-tuple X.
-apply Tuple with (mysort y).
-by rewrite size_sort size_tuple.
-Defined.
-
-Lemma tuple_exist_perm_sort (t : n.-tuple X) : exists s : 'S_n, t = perm_tuple s (mysort_tuple t).
-Proof.
-rewrite /perm_tuple.
-have : perm_eq t (mysort_tuple t) by rewrite perm_eq_sym perm_sort perm_eq_refl.
-case/tuple_perm_eqP => s Hs; exists s.
-case: t Hs => t /= Ht Hs.
-apply eq_from_tnth => i /=.
-rewrite /tnth /= -Hs.
-apply: set_nth_default.
-move/eqP : {Hs}Ht => ->; by case: i.
-Qed.
-
-Lemma map_nth_iota_id {A : eqType} (s : seq A) (x0 : A) : map (nth x0 s) (iota 0 (size s)) = s.
-Proof.
-apply: (@eq_from_nth _ x0); first by rewrite size_map size_iota.
-rewrite size_map; move=> i Hi.
-rewrite (@nth_map _ 0 _ _ _ _ _) //.
-rewrite nth_iota; last by rewrite size_iota in Hi.
-by rewrite add0n.
-Qed.
-
-Lemma sorted_inv {A : eqType} (leT : rel A) s (Htrans : transitive leT) (Hsorted : sorted leT s) :
-  forall x0, forall a b, a < b < size s -> leT (nth x0 s a) (nth x0 s b).
-Proof.
-move=> x0 a b /= /andP [Hab Hbs].
-set f := nth x0 s.
-have Has : a < size s ; first by [apply: (leq_ltn_trans _ Hbs) ; apply ltnW].
-have : subseq [:: f a ; f b] s.
-  rewrite -(map_nth_iota_id s x0).
-  rewrite (_ : [:: (f a);(f b)] = map f [:: a ; b]) ; last done.
-  apply: map_subseq.
-  rewrite -(subnK Has) addnC.
-  rewrite iota_add add0n.
-  rewrite (_ : [:: a; b] = [::a] ++ [::b]) ; last done.
-  apply cat_subseq ; rewrite sub1seq mem_iota.
-  - by rewrite add0n leq0n ltnSn.
-  - by rewrite Hab subnKC.
-move=> H.
-have : sorted leT [:: f a; f b].
-apply subseq_sorted with s => //.
-rewrite /sorted; by case/andP.
-Qed.
-
-Lemma sorted_tuple_inv {A : eqType} (leT : rel A) k (t : k.-tuple A) (Htrans : transitive leT)
-  (Hsorted : sorted leT t) (a b : 'I_k) : a < b -> leT (t \_ a) (t \_ b).
-Proof.
-move=> Hab.
-rewrite (tnth_nth t\_b) {2}(tnth_nth t\_b).
-apply sorted_inv => //.
-by rewrite Hab size_tuple /=.
-Qed.
-
-Lemma sorted_tuple_sorted (x : n.-tuple X) (Hx : sorted myrel x) :
-  forall (l p : 'I_n), l <= p -> (myrel x\_l x\_p).
-Proof.
-move=> l p leqlp.
-case/boolP : (l == p) => Hcase.
-- move/eqP in Hcase; rewrite Hcase; apply reflexive_myrel.
-- apply sorted_tuple_inv => //; by rewrite ltn_neqAle leqlp Hcase.
-Qed.
-
-End tuple_sort.
 
 Section cansort.
 
@@ -466,6 +388,7 @@ Section order_surgery.
 
 Hypothesis ta_cansorted : sorted (@le_rank A) ta.
 
+(* TODO: move? *)
 Lemma set_predleq_size r k l : k + l <= r -> #|[set i : 'I_r | nat_of_ord i \in iota k l]| = l.
 Proof.
 elim: l => [kr | l IH HSl].
@@ -554,7 +477,7 @@ case/boolP : (lt_rank ta\_l (enum_val k)) => Hcase.
     case/boolP : (l <= i) => Hcase3.
     + rewrite eq_sym; apply lt_neq_rank.
       eapply lt_le_rank_trans; first by apply Hcase.
-      by apply sorted_tuple_sorted, Hcase3 => //; [apply transitive_le_rank | apply reflexive_le_rank].
+      apply sorted_of_tnth_leq => //; [exact/le_rank_trans | exact/le_rank_refl].
     + rewrite -ltnNge in Hcase3.
       rewrite Hcase3 andbT -ltnNge {Hcase3} in Hcase2.
       apply lt_neq_rank.
@@ -614,9 +537,8 @@ Lemma sum_num_occ_is_enum_val (k : 'I_#|A|) (l : 'I_n) :
   sum_num_occ k <= l < sum_num_occ k.+1 = (ta\_l == enum_val k).
 Proof.
 case/boolP : (sum_num_occ k <= l < sum_num_occ k.+1) => Hcase.
-- symmetry; apply/eqP; by apply sum_num_occ_enum_val.
-- symmetry; apply/negbTE.
-  apply: contra Hcase => /eqP; by apply enum_val_sum_num_occ.
+- exact/esym/eqP/sum_num_occ_enum_val.
+- apply/esym/negbTE;apply: contra Hcase => /eqP; exact: enum_val_sum_num_occ.
 Qed.
 
 End order_surgery.

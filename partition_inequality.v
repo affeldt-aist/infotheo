@@ -5,6 +5,8 @@ Require Import Reals Fourier.
 Require Import Rssr Reals_ext Ranalysis_ext ssr_ext log2 ln_facts bigop_ext.
 Require Import Rbigop proba divergence log_sum variation_dist.
 
+(** * Partition inequality (special case for distributions other sets with two elements) *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -45,8 +47,6 @@ apply makeDist with bipart_pmf.
 Defined.
 
 End bipart_sect.
-
-(** * Partition inequality (special case for distributions other sets with two elements) *)
 
 Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.

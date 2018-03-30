@@ -4,13 +4,13 @@ From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier.
 Require Import Reals_ext Ranalysis_ext Rssr log2.
 
+(** * Some Results about the Analysis of ln *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope Rb_scope.
-
-(** * Some Results about the Analysis of ln *)
 
 Section ln_id_sect.
 

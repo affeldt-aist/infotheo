@@ -2,7 +2,6 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
 From mathcomp Require Import fintype tuple finfun bigop fingroup perm ssralg.
 From mathcomp Require Import zmodp matrix mxalgebra poly polydiv mxpoly.
-Require Import num_occ.
 
 Import GRing.Theory.
 

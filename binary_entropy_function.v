@@ -4,11 +4,11 @@ From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier.
 Require Import Reals_ext Rssr Ranalysis_ext log2.
 
+(** * The "natural entropy function" *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(** * The "natural entropy function" *)
 
 (** We first find the maximum of the "natural entropy function"
     (the same the binary entropy function except that we replace

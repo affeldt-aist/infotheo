@@ -4,6 +4,8 @@ From mathcomp Require Import choice fintype finfun bigop finset.
 Require Import Reals Fourier Rpower.
 Require Import Rssr Reals_ext Ranalysis_ext log2 ln_facts bigop_ext Rbigop.
 
+(** * The log-sum Inequality *)
+
 Local Open Scope reals_ext_scope.
 
 Local Notation "'\rsum_{' C '}' f" :=
@@ -115,8 +117,6 @@ eapply Rle_trans.
 apply Req_le.
 field; exact/gtR_eqF/(fspos _ C_a).
 Qed.
-
-(** * The log-sum Inequality *)
 
 Lemma log_sum {A : finType} (C : {set A}) (f g : A -> R+) :
   log_sum_stmt C f g.

@@ -5,11 +5,11 @@ From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext.
 
+(** * Additional lemmas about bigops *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(** additional lemmas about bigop *)
 
 Section bigop_no_law.
 
@@ -441,3 +441,17 @@ by apply enum_val_nth.
 Qed.
 
 End big_tuple_ffun.
+
+Lemma bigcup_set0 n i (T T' : finType) (D : 'I_n -> {set T'}) (A : T' -> 'I_n -> {set T}) :
+  (exists t', (t' \in D i) && (A t' i != set0)) ->
+  \bigcup_(t' in D i) A t' i == set0 -> D i == set0.
+Proof.
+move=> abs.
+move/set0Pn => Hset0.
+apply/set0Pn.
+move=> abs'; apply Hset0 => {Hset0}.
+case: abs' => t' t'i.
+case: abs => t'' /andP[t''i].
+case/set0Pn => t tA.
+exists t; apply/bigcupP; by exists t''.
+Qed.

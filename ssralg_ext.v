@@ -5,7 +5,7 @@ From mathcomp Require Import finset fingroup perm finalg zmodp matrix mxalgebra.
 From mathcomp Require Import mxrepresentation vector.
 Require Import ssr_ext f2.
 
-(** Additional lemmas about algebraic datatypes *)
+(** * Additional lemmas about algebraic datatypes *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

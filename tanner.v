@@ -3,11 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import fintype fingraph div choice finfun bigop prime.
 From mathcomp Require Import binomial ssralg finset fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
-Require Import subgraph_partition.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
+Require Import bigop_ext ssralg_ext f2 subgraph_partition.
 
 (** * Tanner Graphs *)
 
@@ -18,20 +15,9 @@ Import Prenex Implicits.
 - Section subscript_set.
 *)
 
-(* TODO: move? *)
-Lemma bigcup_set0 n i (T T' : finType) (D : 'I_n -> {set T'}) (A : T' -> 'I_n -> {set T}) :
-  (exists t', (t' \in D i) && (A t' i != set0)) ->
-  \bigcup_(t' in D i) A t' i == set0 -> D i == set0.
-Proof.
-move=> abs.
-move/set0Pn => Hset0.
-apply/set0Pn.
-move=> abs'; apply Hset0 => {Hset0}.
-case: abs' => t' t'i.
-case: abs => t'' /andP[t''i].
-case/set0Pn => t tA.
-exists t; apply/bigcupP; by exists t''.
-Qed.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Module Tanner.
 Section tanner.
@@ -245,8 +231,6 @@ Section subscript_set.
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Open Scope ring_scope.
-
-Require Import ssralg_ext f2.
 
 Local Open Scope vec_ext_scope.
 

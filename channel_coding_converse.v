@@ -8,6 +8,8 @@ Require Import num_occ proba entropy types jtypes divergence.
 Require Import conditional_divergence error_exponent channel_code channel.
 Require Import success_decode_bound.
 
+(** * Converse of the Channel Coding Theorem *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -82,7 +84,7 @@ Hypothesis eps_gt0 : 0 < epsilon.
 Variable minRate : R.
 Hypothesis minRate_cap : minRate > cap.
 
-(** * Converse of the Channel Coding Theorem #<a name="label_channel_coding_converse"> </a># *)
+(** Converse of the Channel Coding Theorem #<a name="label_channel_coding_converse"> </a># *)
 
 Theorem channel_coding_converse : exists n0,
   forall n M (c : code A B M n),

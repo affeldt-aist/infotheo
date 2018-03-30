@@ -5,18 +5,13 @@ From mathcomp Require Import ssralg perm matrix tuple poly finalg mxalgebra.
 From mathcomp Require Import mxpoly mxrepresentation binomial.
 Require Import ssr_ext ssralg_ext f2 num_occ natbin.
 
-Import GRing.Theory.
+(** * Hamming weight and Hamming distance *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-(* TODO: move? *)
-Lemma num_occ_sum : forall (t : seq 'F_2), num_occ 1%R t = \sum_(i <- t) i.
-Proof.
-elim => [ /= | /= h t ->]; first by rewrite big_nil.
-rewrite big_cons; by case/F2P: h.
-Qed.
+Import GRing.Theory.
 
 Module HammingBitstring.
 

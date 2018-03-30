@@ -6,6 +6,8 @@ Require Import Reals Fourier.
 Require Import Reals_ext ssr_ext ssralg_ext Rssr log2 natbin Rbigop proba.
 Require Import entropy aep typ_seq source_code.
 
+(** * Source coding theorem (direct part) *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -244,7 +246,7 @@ Section source_coding_direct.
 Variable A : finType.
 Variable P : dist A.
 
-(** * Source coding theorem (direct part) #<a name="label_source_coding_direct"> </a># *)
+(** Source coding theorem (direct part) #<a name="label_source_coding_direct"> </a># *)
 
 Theorem source_coding_direct : forall epsilon, 0 < epsilon < 1 ->
   forall r : Qplus, `H P < r ->

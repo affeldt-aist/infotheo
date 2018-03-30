@@ -6,11 +6,11 @@ Require Import Reals Fourier.
 Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy binary_entropy_function channel hamming channel_code.
 
+(** * Capacity of the binary symmetric channel *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(** * Capacity of the binary symmetric channel *)
 
 Local Open Scope channel_scope.
 

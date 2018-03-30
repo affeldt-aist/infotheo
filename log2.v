@@ -3,13 +3,13 @@ From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat.
 Require Import Reals Fourier.
 Require Import Reals_ext Ranalysis_ext Rssr.
 
+(** * Log base 2 *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
-
-(** * Log base 2 *)
 
 Lemma ln_2_pos : 0 < ln 2.
 Proof. rewrite -ln_1; apply ln_increasing; fourier. Qed.
@@ -118,7 +118,7 @@ rewrite mulR0 addR0.
 reflexivity.
 Defined.
 
-(** * 2 ^ x *)
+(** 2 ^ x *)
 
 Definition exp2 (x : R) := exp (x * ln 2).
 

@@ -8,6 +8,25 @@ Require Import entropy.
 
 (** * Definition of channels and of the capacity *)
 
+(** OUTLINE:
+  1. Module Channel1.
+     Probability transition matrix
+  2. Module DMC.
+     nth extension of the discrete memoryless channel (DMC)
+  3. Section DMC_sub_vec.
+  4. Module OutDist.
+     Output distribution for the discrete channel
+  5. Section OutDist_prop.
+     Output entropy
+  6. Module JointDist.
+     Joint distribution
+  7. Section Pr_rV_prod_sect.
+  8. Section conditional_entropy.
+  9. Section conditional_entropy_prop.
+  10. Section mutual_information.
+  11. Section capacity_definition.
+*)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -34,15 +53,11 @@ Section Channel1_sect.
 
 Variables A B : finType.
 
-(** Probability transition matrix: *)
-
 (** Definition of a discrete channel of input alphabet A and output alphabet B.
     It is a collection of probability mass functions, one for each a in A: *)
-
 Local Notation "'`Ch_1'" := (A -> dist B).
 
 (** Channels with non-empty alphabet: *)
-
 Record chan_star := mkChan {
   c :> `Ch_1 ;
   input_not_0 : (0 < #|A|)%nat }.
@@ -81,8 +96,6 @@ Variables A B : finType.
 Variable W : `Ch_1(A, B).
 Variable n : nat.
 
-(** nth extension of the discrete memoryless channel (DMC): *)
-
 Local Open Scope ring_scope.
 
 Definition channel_ext n := 'rV[A]_n -> {dist 'rV[B]_n}.
@@ -90,7 +103,6 @@ Definition channel_ext n := 'rV[A]_n -> {dist 'rV[B]_n}.
 (** Definition of a discrete memoryless channel (DMC).
     W(y|x) = \Pi_i W_0(y_i|x_i) where W_0 is a probability
     transition matrix. *)
-
 Definition f (x y : 'rV_n) := \rprod_(i < n) W `(y ``_ i | x ``_ i).
 
 Lemma f0 x y : 0 <= f x y.
@@ -179,8 +191,6 @@ Variables A B : finType.
 Variable P : dist A.
 Variable W  : `Ch_1(A, B).
 
-(** Output distribution for the discrete channel: *)
-
 Definition f (b : B) := \rsum_(a in A) W a b * P a.
 
 Lemma f0 (b : B) : 0 <= f b.
@@ -236,8 +246,6 @@ Qed.
 
 End OutDist_prop.
 
-(** Output entropy: *)
-
 Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ))) : channel_scope.
 
 Module JointDist.
@@ -247,8 +255,6 @@ Section JointDist_sect.
 Variables A B : finType.
 Variable P : dist A.
 Variable W : `Ch_1(A, B).
-
-(** Joint distribution: *)
 
 Definition f (ab : A * B) := W ab.1 ab.2 * P ab.1.
 
@@ -303,7 +309,6 @@ Variable W : `Ch_1(A, B).
 Variable P : dist A.
 
 (** Definition of conditional entropy *)
-
 Definition cond_entropy := `H(P , W) - `H P.
 
 End conditional_entropy.
@@ -318,7 +323,6 @@ Variable P : dist A.
 Local Open Scope Rb_scope.
 
 (** Equivalent expression of the conditional entropy (cf. Lemma 6.23) *)
-
 Lemma cond_entropy_single_sum : `H( W | P ) = \rsum_(a in A) P a * `H (W a).
 Proof.
 rewrite /cond_entropy /`H /=.
@@ -352,7 +356,7 @@ Qed.
 
 End conditional_entropy_prop.
 
-Section mutual_information_section.
+Section mutual_information.
 
 Variables A B : finType.
 
@@ -365,7 +369,7 @@ Definition mut_info_dist (P : dist [finType of A * B]) :=
 
 Definition mut_info P (W : `Ch_1(A, B)) := `H P + `H(P `o W) - `H(P , W).
 
-End mutual_information_section.
+End mutual_information.
 
 Notation "`I( P ; W )" := (mut_info P W) : channel_scope.
 
