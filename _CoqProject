@@ -68,4 +68,5 @@ erasure_channel.v
 degree_profile.v
 vandermonde.v
 alternant.v
+kraft.v
 -R . infotheo

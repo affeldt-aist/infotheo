@@ -2,6 +2,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype tuple bigop finset path ssralg.
 From mathcomp Require Import fingroup zmodp poly ssrnum.
 
+Require Import ssr_ext.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -132,7 +134,7 @@ End prefix_code.
 Lemma sorted_leq_last s : sorted leq s -> forall i, i \in s -> i <= last 0 s.
 Proof.
 move=> H /= m; case/(nthP O) => i Hi <-.
-rewrite -nth_last; apply sorted_nth => //.
+rewrite -nth_last; apply nth_of_sorted => //.
 move: Hi; case: (size _) => //= k; by rewrite ltnS => -> /=.
 Qed.
 
@@ -483,7 +485,7 @@ set c := (X in _ + X = _ -> _).
 have ab : a >= b.
   rewrite {}/a {}/b big_ord_narrow; [by apply ltnW|move=> H].
   apply: leq_sum => k _.
-  rewrite leq_exp2l ?card_ord // leq_sub //; apply sorted_nth => //.
+  rewrite leq_exp2l ?card_ord // leq_sub //; apply nth_of_sorted => //.
   by rewrite H /= ls_n.
 have c0 : 0 < c.
   rewrite {}/c lt0n sum_nat_eq0 negb_forall.
@@ -545,7 +547,7 @@ rewrite mulrBr mulVr ?unitfE ?mulr1 ?pnatr_eq0 ?expn_eq0 //.
 rewrite wE // natr_sum big_distrr /=.
 rewrite (eq_bigr (fun j : 'I__ => #|T|%:R ^-nth O ls j))%R; last first.
   move=> i _; rewrite !natrX card_ord exprB; last 2 first.
-    by apply sorted_nth => //; rewrite ltnW //= ls_n.
+    by apply nth_of_sorted => //; rewrite ltnW //= ls_n.
     by rewrite unitfE pnatr_eq0.
   by rewrite mulrA mulVr ?unitfE -?natrX ?pnatr_eq0 ?expn_eq0 // mul1r.
 rewrite ler_subr_addr natrX (ler_trans _ H') //.
@@ -574,7 +576,7 @@ rewrite size_sigma //; last first.
   rewrite (leq_ltn_trans (w_ub b)) //; by rewrite subn1 card_ord prednK // expn_gt0.
 rewrite size_sigma //; last first.
   rewrite (leq_ltn_trans (w_ub a)) //; by rewrite subn1 card_ord prednK // expn_gt0.
-by rewrite sorted_nth // ba ls_n /=.
+by rewrite nth_of_sorted // ba ls_n /=.
 Qed.
 
 Lemma kraft_implies_prefix (H : kraft_cond R T ls) : prefix_code C.
@@ -594,10 +596,10 @@ have wk_div_wj : (wk_div >= (w j)%:R + (1 : R))%R.
     rewrite -mulrA mulVr ?mulr1; last first.
       by rewrite unitfE expf_eq0 card_ord pnatr_eq0 andbF.
     rewrite exprB; last 2 first.
-      by rewrite sorted_nth // ltnW //= ls_n.
+      by rewrite nth_of_sorted // ltnW //= ls_n.
       by rewrite unitfE pnatr_eq0 card_ord.
     rewrite exprB; last 2 first.
-      by rewrite sorted_nth // ltnW //= ls_n.
+      by rewrite nth_of_sorted // ltnW //= ls_n.
       by rewrite unitfE pnatr_eq0 card_ord.
     rewrite mulrCA; congr (_ * _)%R; rewrite mulrAC mulrV ?mul1r //.
     by rewrite unitfE -natrX pnatr_eq0 expn_eq0 card_ord.
@@ -611,7 +613,7 @@ have wk_div_wj : (wk_div >= (w j)%:R + (1 : R))%R.
     rewrite natr_sum.
     rewrite (eq_bigr (fun i : 'I__ => #|T|%:R^+nth O ls j * #|T|%:R^-nth O ls i))%R; last first.
       move=> i _.
-      by rewrite natrX exprB // ?unitfE ?pnatr_eq0 ?card_ord // sorted_nth // ltnW //= ls_n.
+      by rewrite natrX exprB // ?unitfE ?pnatr_eq0 ?card_ord // nth_of_sorted // ltnW //= ls_n.
    rewrite -(big_mkord xpredT (fun i => #|T|%:R^+(nth O ls j) * #|T|%:R^-(nth O ls i)))%R.
    rewrite -big_cat_nat //=; last by rewrite ltnW.
    rewrite ler_add // /wj'.
