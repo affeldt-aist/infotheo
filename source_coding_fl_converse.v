@@ -184,10 +184,9 @@ apply Rplus_le_compat.
       apply Rmult_le_reg_l with (1 / INR k.+1).
       * rewrite div1R; exact/invR_gt0/lt_0_INR/ltP.
       * apply Rge_le.
-        rewrite -mulRA mul1R mulRA mulRN mulVR; last by apply not_0_INR.
+        rewrite -mulRA mul1R mulRA mulRN mulVR ?INR_eq0 //.
         apply Rle_ge, Ropp_le_cancel.
-        rewrite -mulNR (_ : - -1 = 1); last by field.
-        by rewrite mul1R -mulNR.
+        by rewrite -mulNR oppRK mul1R -mulNR.
   rewrite big_const iter_Rplus; exact/Rle_refl.
 Qed.
 

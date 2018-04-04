@@ -264,8 +264,6 @@ case: Hp' => Hp'1 Hp'2.
 fourier.
 Defined.
 
-Local Open Scope Rb_scope.
-
 Lemma pinsker_fun_increasing_on_p_to_1 (c : R) (Hc : c <= / (2 * ln 2)) (Hp' : 0 < p < 1) :
   forall x y, p <= x < 1 -> p <= y < 1 -> x <= y -> pinsker_fun p c x <= pinsker_fun p c y.
 Proof.

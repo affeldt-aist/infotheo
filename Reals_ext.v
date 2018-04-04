@@ -37,6 +37,7 @@ suff : Hf = Hg by move=> ->.
 by apply proof_irrelevance.
 Qed.
 
+(* TODO: move *)
 Lemma Rlt_0_Rmult_inv a b : 0 < a * b -> 0 <= a -> 0 <= b -> 0 < a /\ 0 < b.
 Proof.
 move=> H Ha Hb.
@@ -64,6 +65,7 @@ elim; first by rewrite mul0R.
 move=> n Hn; by rewrite iterS Hn -{1}(mul1R x) -mulRDl addRC -S_INR.
 Qed.
 
+(* TODO: move *)
 Lemma exp_not_0 l : (exp l <> 0)%R.
 Proof. apply not_eq_sym, Rlt_not_eq ; exact (exp_pos l). Qed.
 
@@ -153,9 +155,8 @@ move=> Ha Hb Hb' abs.
 rewrite -{1}[X in X = _]mulR1 in abs.
 apply Rmult_eq_reg_l in abs => //.
 apply Hb'.
-apply Rmult_eq_reg_r with (/ b); last first.
-  by apply Rinv_neq_0_compat.
-by rewrite mulRV // mul1R.
+apply Rmult_eq_reg_r with (/ b); last exact: Rinv_neq_0_compat.
+rewrite mulRV ?mul1R //; exact/eqP.
 Qed.
 
 Lemma Rdiv_le a : 0 <= a -> forall r, 1 <= r -> a / r <= a.
@@ -344,6 +345,7 @@ by rewrite /frac_part (_ : 1 = INR 1) // Int_part_INR  Rminus_diag_eq.
 move=> n IH; by apply frac_part_mult.
 Qed.
 
+(* TODO: move *)
 Lemma Rabs_eq_0 r : Rabs r = 0 -> r = 0.
 Proof.
 move=> H.
@@ -362,8 +364,6 @@ End dominance.
 
 Notation "P '<<' Q" := (dom_by P Q) : reals_ext_scope.
 Notation "P '<<b' Q" := (dom_byb P Q) : reals_ext_scope.
-
-Local Open Scope Rb_scope.
 
 Lemma Rabs_lt a b : Rabs a <b b = (- b <b a <b b).
 Proof.
@@ -544,24 +544,10 @@ rewrite -(mulR0 0).
 apply Rmult_le_compat => //; by apply Rle_refl.
 Qed.
 
-Lemma pow_not0 x : x <> 0 -> forall n, x ^ n <> 0.
-Proof.
-move=> x_not0.
-elim => [/= | n IH]; first by apply not_eq_sym, Rlt_not_eq, Rlt_0_1.
-by apply Rmult_integral_contrapositive.
-Qed.
-
-Lemma pow_inv x : x <> 0 -> forall n, (/ x) ^ n = / x ^ n.
-Proof.
-move=> x_not0.
-elim=> /= [ | n IH]; first by rewrite Rinv_1.
-rewrite Rinv_mult_distr //; by [ rewrite IH | apply pow_not0].
-Qed.
-
 Lemma Rmult_pow_inv r a b : r <> 0 -> (b <= a)%nat -> r ^ a * (/ r) ^ b = r ^ (a - b).
 Proof.
 move=> Hr ab; symmetry.
-by rewrite (pow_RN_plus r _ b) // plusE -minusE subnK // pow_inv.
+rewrite (pow_RN_plus r _ b) // plusE -minusE subnK // expRV //; exact/eqP.
 Qed.
 
 End pow_sect.
@@ -580,15 +566,13 @@ Defined.
 
 Let exp_dev_rec n x : derive_pt (exp_dev n.+1) x (derivable_exp_dev n.+1 x) = exp_dev n x.
 Proof.
-rewrite /exp_dev derive_pt_minus derive_pt_exp ; f_equal.
+rewrite /exp_dev derive_pt_minus derive_pt_exp; congr (_ - _).
 rewrite derive_pt_mult derive_pt_const mulR0 addR0 derive_pt_pow.
-rewrite mulRC mulRA mulRC; f_equal.
-rewrite factS mult_INR Rinv_mult_distr ; last 2 first.
-- apply not_0_INR => /eqP ; apply/negP ; by rewrite -lt0n.
-- apply not_eq_sym, Rlt_not_eq, lt_0_INR.
-  apply/ltP ; by apply fact_gt0.
-rewrite mulRC mulRA mulRV; first by rewrite mul1R.
-apply not_0_INR => /eqP; apply/negP; by rewrite -lt0n.
+rewrite mulRC mulRA mulRC; congr (_ * _).
+rewrite factS mult_INR Rinv_mult_distr; last 2 first.
+  by apply/eqP; rewrite INR_eq0.
+  by apply/eqP; rewrite INR_eq0 -lt0n fact_gt0.
+rewrite mulRC mulRA mulRV ?mul1R //; by apply/eqP; rewrite INR_eq0.
 Qed.
 
 Let exp_dev_gt0 : forall n r, 0 < r -> 0 < exp_dev n r.
@@ -637,6 +621,7 @@ Proof. move=> xpos; by apply Rge_le, Rminus_ge, Rle_ge, exp_dev_ge0. Qed.
 
 End exp_lb_sect.
 
+(* TODO: rename, move *)
 Lemma fact_Coq_SSR n0 : fact n0 = n0 `!.
 Proof. elim: n0 => // n0 IH /=. by rewrite IH factS mulSn -multE. Qed.
 
@@ -646,11 +631,9 @@ move=> ?.
 rewrite /C.
 apply Rmult_eq_reg_r with (INR (fact m0) * INR (fact (n0 - m0)%coq_nat)).
 set tmp := INR (fact m0) * _.
-rewrite /Rdiv -mulRA Rinv_l; last first.
-  rewrite /tmp.
-  apply Rmult_integral_contrapositive.
-  split; by apply not_0_INR, fact_neq_0.
-by rewrite mulR1 /tmp -!mult_INR !fact_Coq_SSR !multE !minusE bin_fact.
+rewrite -mulRA mulVR ?mulR1; last first.
+  by rewrite /tmp mulR_eq0 negb_or !INR_eq0 !fact_Coq_SSR -!lt0n !fact_gt0.
+by rewrite/tmp -!mult_INR !fact_Coq_SSR !multE !minusE bin_fact.
 apply Rmult_integral_contrapositive.
-split; by apply not_0_INR, fact_neq_0.
+split; apply/eqP; rewrite INR_eq0; exact/eqP/fact_neq_0.
 Qed.

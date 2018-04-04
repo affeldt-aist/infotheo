@@ -251,9 +251,9 @@ apply (Rmult_le_reg_l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
   apply pow_not0 => ?; fourier.
 rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
-  apply pow_not0 => ?; fourier.
-rewrite -pow_inv; last by move=> ?; fourier.
-rewrite -pow_inv; last by move=> ?; fourier.
+  apply/eqP/pow_not0 => ?; fourier.
+rewrite -expRV; last by apply/eqP/gtR_eqF.
+rewrite -expRV; last by rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
 rewrite mulRC Rmult_pow_inv; last 2 first.
   move=> ?; fourier.
   by case/andP : d1d2.

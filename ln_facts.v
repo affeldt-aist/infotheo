@@ -10,8 +10,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope Rb_scope.
-
 Section ln_id_sect.
 
 Definition ln_id x := ln x - (x - 1).
@@ -180,10 +178,10 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
         apply Rmult_lt_compat_l => // ; by apply exp_pos.
        rewrite -mulRN.
       apply (Rmult_lt_reg_r (/ - X)); first by apply Rinv_0_lt_compat, oppR_gt0.
-      rewrite -mulRA mulRV ?mulR1; last exact/not_eq_sym/Rlt_not_eq/oppR_gt0.
+      rewrite -mulRA mulRV ?mulR1; last by apply/eqP; rewrite oppR_eq0; apply/eqP/ltR_eqF.
       rewrite -(invRK 2); last exact/not_eq_sym/Rlt_not_eq/Rlt_R0_R2.
       rewrite -mulRA ( _ : forall r, r * r = r ^ 2); last by move=> ?; rewrite /pow mulR1.
-      rewrite pow_inv; last by apply not_eq_sym, Rlt_not_eq, oppR_gt0.
+      rewrite expRV; last exact/eqP/not_eq_sym/Rlt_not_eq/oppR_gt0.
       rewrite -Rinv_mult_distr; last 2 first.
         by apply Rinv_neq_0_compat, not_eq_sym, Rlt_not_eq, Rlt_R0_R2.
         by apply pow_nonzero, Ropp_neq_0_compat, Rlt_not_eq.

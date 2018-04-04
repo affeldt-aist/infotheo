@@ -13,7 +13,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope Rb_scope.
 Local Open Scope entropy_scope.
 Local Open Scope proba_scope.
 

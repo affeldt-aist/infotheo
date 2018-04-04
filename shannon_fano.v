@@ -1,9 +1,9 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
-From mathcomp Require Import choice fintype tuple bigop finset path ssralg.
-From mathcomp Require Import fingroup zmodp poly ssrnum.
+From mathcomp Require Import finfun choice fintype tuple bigop finset path.
+From mathcomp Require Import ssralg fingroup zmodp poly ssrnum.
 
 Require Import Reals Fourier.
-Require Import Rssr Reals_ext proba kraft.
+Require Import Rssr Reals_ext ssr_ext proba kraft.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -52,9 +52,10 @@ Require Import Rbigop.
 
 (* NB(rei): redefine kraft_cond in R instead of with an rcfType *)
 (* TODO: use mathcomp.analysis? or build an ad-hoc interface to bridge R and rcfType as a temporary fix? *)
+
 Definition kraft_cond_in_R (T : finType) (l : seq nat) :=
   let n := size l in
-  (\rsum_(i < n) (INR #|T|) ^ (nth O l i) <= (1 : R))%R.
+  (\rsum_(i < n) ((INR #|T|) ^- nth O l i) <= (1 : R))%R.
 
 Local Open Scope proba_scope.
 
@@ -80,20 +81,25 @@ Let t := t'.+2.
 Let T := [finType of 'I_t].
 Variable P : {dist T}.
 Variable c : code_set T.
+
 Hypothesis shannon_fano_sizes : forall s : T,
   size (nth [::] c s) = Zabs_nat (ceil (Log #|T| (1 / P s)%R)).
 
 Let sizes := map size c.
 
+Hypothesis H : size sizes = t.
+
 Lemma shannon_fano_meets_kraft : kraft_cond_in_R T sizes.
 Proof.
-(* TODO *)
+rewrite /kraft_cond_in_R -(pmf1 P).
+rewrite H.
+apply ler_rsum => i _.
+rewrite (@nth_map _ [::]); last first.
+  move: H; by rewrite size_map => ->.
+rewrite shannon_fano_sizes -expRV ?INR_eq0 ?card_ord //.
 Abort.
 
-Definition f (i : T) : seq T := nth [::] c i.
-
-Lemma f_inj : injective f.
-Admitted.
+Variable f : T -> seq T.
 
 Lemma shannon_fano_average_entropy : average P f < `H P  + 1.
 Proof.

@@ -14,7 +14,6 @@ Import Prenex Implicits.
 Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
 Local Open Scope tuple_ext_scope.
-Local Open Scope Rb_scope.
 
 Local Open Scope ring_scope.
 
@@ -160,8 +159,7 @@ apply Rle_trans with (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R; last first.
   rewrite [in X in _ <= X]mulRCA mulRV ?mulR1 in Hbound; last by apply not_0_INR.
   eapply Rle_trans; last by apply Hbound.
   apply Req_le; field.
-  split; first exact: not_0_INR.
-  apply nesym, Rlt_not_eq; exact Hepsilon.
+  split; [exact: not_0_INR | exact: gtR_eqF].
 move: (sum_mlog_prod_isum_map_mlog P n) => Hisum.
 move: (wlln (@E_map_mlog _ P n) (@V_map_mlog _ P n) Hisum Hepsilon) => law_large.
 eapply Rle_trans; last by apply law_large.

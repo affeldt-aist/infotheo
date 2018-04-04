@@ -87,7 +87,6 @@ Reserved Notation "Z \= X '@+' Y" (at level 50).
 
 Local Open Scope reals_ext_scope.
 Local Open Scope tuple_ext_scope.
-Local Open Scope Rb_scope.
 
 Section distribution_definition.
 
@@ -378,7 +377,7 @@ move=> /eqP; rewrite eq_sym addRC -subR_eq => /eqP H.
 apply Rmult_eq_reg_r with (1 - X b); last first.
   by apply/eqP; apply: contra Xb1; rewrite subR_eq0 eq_sym.
 rewrite mul1R -mulRA mulVR ?mulR1; first by rewrite H.
-by apply/eqP; apply: contra Xb1; rewrite subR_eq0 eq_sym.
+by apply: contra Xb1; rewrite subR_eq0 eq_sym.
 Qed.
 
 Definition d := makeDist f0 f1.

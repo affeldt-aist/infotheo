@@ -320,7 +320,6 @@ Section conditional_entropy_prop.
 Variables A B : finType.
 Variable W : `Ch_1(A, B).
 Variable P : dist A.
-Local Open Scope Rb_scope.
 
 (** Equivalent expression of the conditional entropy (cf. Lemma 6.23) *)
 Lemma cond_entropy_single_sum : `H( W | P ) = \rsum_(a in A) P a * `H (W a).

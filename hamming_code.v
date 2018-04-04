@@ -1029,9 +1029,7 @@ eapply eq_trans.
 rewrite mulRA /=.
 set den := INR _.
 have -> : 1 / den * den = 1.
-  rewrite div1R mulVR //.
-  apply/not_0_INR/eqP.
-  by rewrite card_matrix /= mul1n expn_eq0 negb_and card_F2.
+  by rewrite div1R mulVR // ?INR_eq0 card_matrix /= mul1n expn_eq0 negb_and card_F2.
 rewrite mul1R.
 have toleft A B C D : A + C + D = B -> A = B - C - D by move => <-; ring.
 apply toleft.

@@ -13,6 +13,8 @@ Reserved Notation "a '<b' b '<b' c" (at level 70, b at next level).
 
 Local Open Scope R_scope.
 
+Notation "x ^- n" := (/ (x ^ n)) : R_scope.
+
 (** eqType for Coq Reals *)
 Definition Req_bool (a b : R) : bool :=
   match Req_EM_T a b with left _ => true | _ => false end.
@@ -24,20 +26,19 @@ Canonical R_eqMixin := EqMixin eqRP.
 Canonical R_eqType := Eval hnf in EqType R R_eqMixin.
 
 Definition Rge_bool (a b : R) := if Rge_dec a b is left _ then true else false.
-Notation "a '>b=' b" := (Rge_bool a b) : Rb_scope.
-Local Open Scope Rb_scope.
+Notation "a '>b=' b" := (Rge_bool a b) : R_scope.
 
 Definition Rle_bool a b := b >b= a.
-Notation "a '<b=' b" := (Rle_bool a b) : Rb_scope.
+Notation "a '<b=' b" := (Rle_bool a b) : R_scope.
 
 Definition Rlt_bool (a b : R) := if Rlt_dec a b is left _ then true else false.
-Notation "a '<b' b" := (Rlt_bool a b) : Rb_scope.
+Notation "a '<b' b" := (Rlt_bool a b) : R_scope.
 
 Definition Rgt_bool a b := b <b a.
-Notation "a '>b' b" := (Rgt_bool a b) : Rb_scope.
+Notation "a '>b' b" := (Rgt_bool a b) : R_scope.
 
-Notation "a '<b=' b '<b=' c" := (Rle_bool a b && Rle_bool b c) : Rb_scope.
-Notation "a '<b' b '<b' c" := (Rlt_bool a b && Rlt_bool b c) : Rb_scope.
+Notation "a '<b=' b '<b=' c" := (Rle_bool a b && Rle_bool b c) : R_scope.
+Notation "a '<b' b '<b' c" := (Rlt_bool a b && Rlt_bool b c) : R_scope.
 
 Lemma RgeP (a b : R) : reflect (a >= b) (a >b= b).
 Proof. apply: (iffP idP); by rewrite /Rge_bool; case: Rge_dec. Qed.
@@ -130,6 +131,12 @@ Definition oppRK := Ropp_involutive.
 
 Definition oppRD := Ropp_plus_distr.
 
+Lemma oppR_eq0 x : (- x == 0) = (x == 0).
+Proof.
+apply/idP/idP => [|/eqP ->]; last by rewrite oppR0.
+apply: contraTT; by move/eqP/Ropp_neq_0_compat/eqP.
+Qed.
+
 Lemma oppR_ge0 x : x <= 0 -> 0 <= - x.
 Proof. move/Rle_ge; exact: Ropp_0_ge_le_contravar. Qed.
 
@@ -175,6 +182,21 @@ Qed.
 
 Lemma Rlt_neqAle m n : (m <b n) = (m != n) && (m <b= n).
 Proof. by rewrite RltNge Rle_eqVlt negb_or -RleNgt eq_sym. Qed.
+
+Lemma INR_eq0 n : (INR n == 0) = (n == O).
+Proof.
+apply/idP/idP => [/eqP|/eqP -> //].
+by rewrite (_ : 0 = INR 0) // => /INR_eq ->.
+Qed.
+
+Lemma leR0n n : (0 <b= INR n) = (O <= n)%nat.
+Proof. exact/idP/idP/RleP/pos_INR. Qed.
+
+Lemma ltR0n n : (0 <b INR n) = (O < n)%nat.
+Proof.
+apply/idP/idP => [/RltP|/ltP/lt_0_INR/RltP //].
+by rewrite (_ : 0 = INR O) // => /INR_lt/ltP.
+Qed.
 
 (* Rplus_le_compat_r
      : forall r r1 r2 : R, r1 <= r2 -> r1 + r <= r2 + r*)
@@ -245,7 +267,22 @@ Proof. by rewrite /Rdiv mul0R. Qed.
 
 Definition mulRV (x : R) : x <> 0 -> x * / x = 1 := divRR x.
 
-Lemma mulVR (x : R) : x <> 0 -> / x * x = 1.
-Proof. by move=> x0; rewrite mulRC mulRV. Qed.
+Lemma mulVR (x : R) : x != 0 -> / x * x = 1.
+Proof. by move=> /eqP x0; rewrite mulRC mulRV. Qed.
+
+(* TODO: rename *)
+Lemma pow_not0 x : x <> 0 -> forall n, x ^ n <> 0.
+Proof.
+move=> x_not0.
+elim => [/= | n IH]; first by apply not_eq_sym, Rlt_not_eq, Rlt_0_1.
+by apply Rmult_integral_contrapositive.
+Qed.
+
+Lemma expRV x n : x != 0 -> (/ x ) ^ n = x ^- n.
+Proof.
+move/eqP => x_not0.
+elim : n => /= [ | n IH]; first by rewrite Rinv_1.
+rewrite Rinv_mult_distr //; by [ rewrite IH | apply pow_not0].
+Qed.
 
 Definition invRK := Rinv_involutive.

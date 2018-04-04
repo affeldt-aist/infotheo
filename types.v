@@ -16,7 +16,6 @@ Import Prenex Implicits.
 
 Local Open Scope entropy_scope.
 Local Open Scope num_occ_scope.
-Local Open Scope Rb_scope.
 
 Module type.
 

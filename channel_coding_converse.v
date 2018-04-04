@@ -145,8 +145,7 @@ apply Rmult_le_compat.
 - apply Rle_inv_conv.
   + by apply exp2_pos.
   + apply mulR_gt0; last exact aux_gt0.
-    rewrite pow_inv; last by apply not_eq_sym, Rlt_not_eq.
-    by apply Rinv_0_lt_compat, pow_gt0.
+    rewrite expRV ?INR_eq0 //; exact/invR_gt0/pow_gt0.
   + rewrite -exp2_Ropp mulNR oppRK /exp2.
     have nDeltaln2 : 0 <= INR n * Delta * ln 2.
       apply mulR_ge0; last exact/ltRW/ln_2_pos.
@@ -169,9 +168,7 @@ apply Rmult_le_compat.
         apply not_eq_sym, Rlt_not_eq, pow_gt0, mulR_gt0 => //; by apply ln_2_pos.
       rewrite invRK; last by apply not_eq_sym, Rlt_not_eq.
       rewrite (_ : / (/ INR n) ^ K = (INR n) ^ K); last first.
-        rewrite -pow_inv; last first.
-          by apply Rinv_neq_0_compat, not_eq_sym, Rlt_not_eq.
-        rewrite invRK //; exact/not_eq_sym/Rlt_not_eq.
+        rewrite expRV ?INR_eq0 // invRK //; apply/pow_not0/eqP; by rewrite INR_eq0.
       rewrite /Rdiv; congr (_ * _).
       rewrite !Rpow_mult_distr -(tech_pow_Rmult (INR n)).
       field.

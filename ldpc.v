@@ -27,7 +27,6 @@ Import Prenex Implicits.
 Local Open Scope num_occ_scope.
 Local Open Scope channel_scope.
 Local Open Scope R_scope.
-Local Open Scope Rb_scope.
 
 Section regular_ldpc.
 
@@ -530,7 +529,7 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
     rewrite invRK // -mulRA mulRC mulVR ?mulR1 ?mulRV //.
     set tmp1 := \rsum_(_ | _) _.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
-    apply/eqP; by rewrite -not_receivable_uniformE Hy.
+    by rewrite -not_receivable_uniformE Hy.
   by rewrite PosteriorProbability.dE UniformSupport.E0 /Rdiv ?mul0R // inE HtH.
 rewrite -big_mkcond /=.
 rewrite /alpha.

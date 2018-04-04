@@ -172,7 +172,7 @@ Lemma exp2_log x : 0 < x -> exp2 (log x) = x.
 Proof.
 move=> Hx.
 rewrite /exp2 /log /Rdiv -mulRA mulVR ?mulR1 ?exp_ln //.
-exact: ln_2_neq0.
+exact/eqP/ln_2_neq0.
 Qed.
 
 Lemma log_exp2 x : log (exp2 x) = x.
@@ -180,8 +180,6 @@ Proof.
 rewrite /log /exp2 ln_exp /Rdiv -mulRA mulRV ?mulR1 //.
 exact: ln_2_neq0.
 Qed.
-
-Local Open Scope Rb_scope.
 
 Lemma Rle_exp2_log1_L a b : 0 < b -> exp2 a <b= b = (a <b= log b).
 Proof.

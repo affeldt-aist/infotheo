@@ -717,10 +717,8 @@ have [k Hk] : exists k, (log (INR k.+1) / INR n = r)%R.
       rewrite -Hn2; by apply exp2_pos.
     apply le_IZR.
     rewrite -Hn2; exact/ltRW/exp2_pos.
-  apply Rmult_eq_reg_l with (INR n); last first.
-    apply/not_0_INR/eqP; by rewrite -lt0n.
- rewrite mulRCA mulRV ?mulR1; last first.
-    apply/not_0_INR/eqP; by rewrite -lt0n.
+  apply Rmult_eq_reg_l with (INR n); last by apply/eqP; rewrite INR_eq0 -lt0n.
+ rewrite mulRCA mulRV ?mulR1; last by apply/eqP; rewrite INR_eq0 -lt0n.
   rewrite -(log_exp2 (INR n * r)) Hn2 INR_Zabs_nat //.
   apply le_IZR.
   rewrite -Hn2; exact/ltRW/exp2_pos.
@@ -757,8 +755,7 @@ rewrite [X in X < _](_ : _ = (\rsum_(f : encT A M n) Wght.d P f * (e(W, mkCode f
     apply eq_bigr => m' _.
     apply error_rate_symmetry.
     by move: Hepsilon0; rewrite /epsilon0_condition; case => /ltRW.
-  rewrite exchange_big /= big_const /= iter_Rplus !mulRA div1R mulVR ?mul1R //.
-  apply not_0_INR; by rewrite card_ord.
+  by rewrite exchange_big /= big_const /= iter_Rplus div1R mulRA mulVR ?mul1R // INR_eq0 card_ord.
 set Cal_E := @cal_E M n epsilon0.
 apply Rle_lt_trans with
 (\rsum_(f : encT A M n) Wght.d P f * Pr (W ``(| f ord0)) (~: Cal_E f ord0) +

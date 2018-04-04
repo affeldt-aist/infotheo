@@ -216,7 +216,7 @@ rewrite /f /= -big_distrr /= /Kmpp div1R.
 set tmp1 := \rsum_( _ | _ ) _.
 set tmp2 := \rsum_( _ | _ ) _.
 suff : tmp1 = tmp2.
-  move=> tp12; rewrite -tp12 mulVR //; exact: f'_neq0.
+  move=> tp12; rewrite -tp12 mulVR //; exact/eqP/f'_neq0.
 by rewrite {}/tmp1 {}/tmp2 (partition_big (fun x : 'rV_n => x ``_ i) xpredT).
 Qed.
 

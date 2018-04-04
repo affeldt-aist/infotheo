@@ -113,8 +113,6 @@ Qed.
 
 End mutinfo_distance_bound.
 
-Local Open Scope Rb_scope.
-
 Section error_exponent_lower_bound.
 
 Variables A B : finType.

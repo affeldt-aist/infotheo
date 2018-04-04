@@ -132,8 +132,6 @@ Variable A : finType.
 Variables P Q : dist A.
 Hypothesis P_dom_by_Q : P << Q.
 
-Local Open Scope Rb_scope.
-
 Local Notation "0" := (false).
 Local Notation "1" := (true).
 

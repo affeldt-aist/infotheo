@@ -76,12 +76,12 @@ Record code_set := CodeSet {
 Definition mem_code_set (C : code_set) := fun x => x \in codeset C.
 Canonical code_set_predType := Eval hnf in @mkPredType _ code_set mem_code_set.
 
-Definition sizes (C : code_set) : seq nat := sort leq (map size C).
+Definition sort_sizes (C : code_set) : seq nat := sort leq (map size C).
 
-Lemma sorted_sizes C : sorted leq (sizes C).
+Lemma sorted_sort_sizes C : sorted leq (sort_sizes C).
 Proof. apply sort_sorted; exact: leq_total. Qed.
 
-Lemma size_sizes C : size (sizes C) = size C.
+Lemma size_sort_sizes C : size (sort_sizes C) = size C.
 Proof. by rewrite size_sort size_map. Qed.
 
 Lemma empty_finType_code_set (C : code_set) : (#|T| = 0) ->
@@ -138,9 +138,9 @@ rewrite -nth_last; apply nth_of_sorted => //.
 move: Hi; case: (size _) => //= k; by rewrite ltnS => -> /=.
 Qed.
 
-Definition kraft_cond (R : rcfType) (T : finType) (C' : seq nat) :=
-  let n := size C' in
-  (\sum_(i < n) #|T|%:R^-(nth O C' i) <= (1 : R))%R.
+Definition kraft_cond (R : rcfType) (T : finType) (sizes : seq nat) :=
+  let n := size sizes in
+  (\sum_(i < n) #|T|%:R^-(nth O sizes i) <= (1 : R))%R.
 
 Program Definition prepend (T : finType) (lmax : nat) (c : seq T) (t : (lmax - size c).-tuple T)
   : lmax.-tuple T := @Tuple _ _ (take lmax c ++ t) _.
@@ -164,15 +164,15 @@ Section prefix_implies_kraft_cond.
 Variables (T : finType).
 Variable C : code_set T.
 Let n := size C.
-Let ls := sizes C.
+Let ls := sort_sizes C.
 Let lmax := last O ls.
 
 Lemma leq_lmax c : c \in C -> size c <= lmax.
 Proof.
 move=> cC.
 apply sorted_leq_last.
-  rewrite /ls /sizes; apply sort_sorted; exact: leq_total.
-rewrite /ls /sizes mem_sort; apply/mapP; by exists c.
+  rewrite /ls /sort_sizes; apply sort_sorted; exact: leq_total.
+rewrite mem_sort; apply/mapP; by exists c.
 Qed.
 
 Definition subtree s :=
@@ -446,6 +446,7 @@ Hypothesis sorted_ls : sorted leq ls.
 Hypothesis Hls : forall i : 'I_n, nth O ls i != 0.
 Let lmax := last O ls.
 
+(* see mceliece sect. 11.2, theorem 11.2 *)
 Definition w (j : 'I_n) :=
   if j == ord0 then O else \sum_(i < j) #|T| ^ (nth 0 ls j - nth 0 ls i).
 

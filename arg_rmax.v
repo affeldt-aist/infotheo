@@ -10,8 +10,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope Rb_scope.
-
 Section MinFintype.
 
 Local Open Scope nat_scope.
