@@ -393,7 +393,7 @@ apply Rle_trans with (exp2 (INR n * (`H( P , W ) + epsilon)) *
     exact/ltRW/exp2_pos.
     exact/JTS_sup.
 apply Req_le.
-rewrite -2!exp2_plus.
+rewrite -2!ExpD.
 congr (exp2 _).
 rewrite /mut_info !mulRDr 2!Rmult_opp_opp (_ : 3 * epsilon = epsilon + epsilon + epsilon); by field.
 Qed.

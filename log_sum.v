@@ -62,27 +62,27 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
     by rewrite /= Hkg.
   symmetry in Hkg.
   move: {Hwlog}(Hwlog Fnot0 (@mkPosFun _ (fun x => (k * g x)) kg_pos) Htmp kabs_con kgspos Hkg) => /= Hwlog.
-  rewrite Hkg {1}/Rdiv mulRV // log_1 mulR0 in Hwlog.
+  rewrite Hkg {1}/Rdiv mulRV // /log Log_1 mulR0 in Hwlog.
   set rhs := \rsum_(_ | _) _ in Hwlog.
   rewrite (_ : rhs = \rsum_(a | a \in C) (f a * log (f a / g a) - f a * log k)) in Hwlog; last first.
     rewrite /rhs.
     apply eq_bigr => a a_C.
-    rewrite /Rdiv log_mult; last 2 first.
+    rewrite /Rdiv /log Log_mult; last 2 first.
       by apply fspos.
       apply Rinv_0_lt_compat, mulR_gt0 => //; by apply gspos.
-    rewrite log_Rinv; last first.
+    rewrite LogV; last first.
       apply mulR_gt0 => //; exact: gspos.
-    rewrite log_mult //; last exact: gspos.
-    rewrite log_mult //; last 2 first.
+    rewrite Log_mult //; last exact: gspos.
+    rewrite Log_mult //; last 2 first.
       by apply fspos.
       apply Rinv_0_lt_compat; by [apply gspos | apply fspos].
-    rewrite log_Rinv; by [field | apply gspos].
+    rewrite LogV; by [field | apply gspos].
   rewrite big_split /= -(big_morph _ morph_Ropp oppR0) -big_distrl /= in Hwlog.
   have : forall a b, 0 <= a + - b -> b <= a by move=> *; fourier.
   by apply.
 move=> Htmp; rewrite Htmp.
 rewrite /Rdiv mulRV; last by rewrite -Htmp.
-rewrite log_1 mulR0.
+rewrite /log Log_1 mulR0.
 suff : 0 <= \rsum_(a | a \in C) f a * ln (f a / g a).
   move=> H.
   rewrite /log /Rdiv.
@@ -170,7 +170,7 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
       apply Rplus_le_lt_0_compat => //.
       apply: rsumr_ge0 => *; exact/pos_f_nonneg.
     apply Rmult_le_compat_l; first exact/ltRW.
-    apply log_increasing_le.
+    apply Log_increasing_le => //.
       apply Rlt_mult_inv_pos => //; by rewrite -HG.
     apply Rmult_le_compat_l; first exact/ltRW.
     apply Rle_Rinv => //.

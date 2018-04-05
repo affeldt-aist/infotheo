@@ -30,7 +30,7 @@ apply derivable_pt_minus.
       apply derivable_pt_inv.
       by apply nesym, Rlt_not_eq.
       apply derivable_pt_id.
-    apply derivable_pt_log.
+    apply derivable_pt_Log.
     by apply Rlt_mult_inv_pos.
   apply derivable_pt_mult.
     apply derivable_pt_const.
@@ -39,7 +39,7 @@ apply derivable_pt_minus.
       apply derivable_pt_const.
       apply derivable_pt_Rminus.
       move=> abs; fourier.
-  apply derivable_pt_log.
+  apply derivable_pt_Log.
   apply Rlt_mult_inv_pos => //; fourier.
 apply derivable_pt_mult.
   apply derivable_pt_const.
@@ -103,7 +103,7 @@ apply derivable_pt_minus.
   apply derivable_pt_opp.
   apply derivable_pt_comp.
     apply derivable_pt_Rminus.
-  apply derivable_pt_log.
+  apply derivable_pt_Log.
   rewrite /= in Hq0.
   decompose [and] Hq0; clear Hq0; fourier.
 apply derivable_pt_mult.
@@ -177,7 +177,7 @@ Lemma pinsker_function_spec_pos : forall c q,
 Proof.
 move=> c q0 Hc Hq0.
 rewrite (_ : 0 = pinsker_function_spec c 0); last first.
-rewrite /pinsker_function_spec /= subR0 log_1; field.
+rewrite /pinsker_function_spec /= subR0 /log Log_1; field.
 apply pinsker_fun_increasing_on_0_to_1 => //.
 by case: Hc.
 split; fourier.
@@ -198,14 +198,14 @@ case: Hp => Hp1 Hp2.
 case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   subst p.
   rewrite mul0R !subR0 add0R mul1R.
-  by rewrite /Rdiv Rinv_1 mulR1 log_1.
+  by rewrite /Rdiv Rinv_1 mulR1 /log Log_1.
 case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
   subst p.
-  rewrite /Rdiv Rinv_1 mulR1 log_1 mulR0.
+  rewrite /Rdiv Rinv_1 mulR1 /log Log_1 mulR0.
   rewrite !Rminus_diag_eq // mul0R; field.
 rewrite divRR; last by move=> ?; fourier.
-rewrite log_1 divRR; last by move=> ?; fourier.
-rewrite log_1; by field.
+rewrite /log Log_1 divRR; last by move=> ?; fourier.
+rewrite /log Log_1; by field.
 Qed.
 
 Lemma pinsker_fun_pderivable1 c (Hp' : 0 < p < 1) :
@@ -332,7 +332,7 @@ case/Rle_lt_or_eq_dec : Hp0 => Hp0; last first.
   eapply Rle_trans; first by apply (pinsker_function_spec_pos Hc (conj Hq0 Hq1)).
   rewrite /pinsker_function_spec.
   apply Req_le.
-  rewrite mul1R div1R log_Rinv; by [field | fourier].
+  rewrite mul1R div1R /log LogV; by [field | fourier].
 case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   subst p.
   rewrite /pinsker_fun /div_fct /comp.
@@ -349,7 +349,7 @@ case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
     by apply: pinsker_function_spec_pos Hc.
   rewrite /pinsker_function_spec.
   apply Req_le.
-  rewrite mul1R div1R log_Rinv; last by rewrite /id.
+  rewrite mul1R div1R /log LogV; last by rewrite /id.
   rewrite /id (_ : 1 - (1 - q) = q) //; by field.
 case/Rle_lt_or_eq_dec : Hq0 => Hq0; last first.
   subst q.

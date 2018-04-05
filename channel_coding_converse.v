@@ -57,8 +57,8 @@ apply Rmult_le_compat_l; first by apply pow_le, pos_INR.
 set Vmax := arg_rmax _ _ _.
 rewrite /success_factor_bound /exp_cdiv.
 case : ifP => Hcase; last by rewrite mul0R; exact/ltRW/exp2_pos.
-rewrite -exp2_plus.
-apply exp2_le_increasing.
+rewrite -ExpD.
+apply Exp_le_increasing => //.
 rewrite -mulRDr 2!mulNR.
 apply Ropp_le_contravar, Rmult_le_compat_l; first by apply pos_INR.
 have {Hcase}Hcase : Pmax |- Vmax << W.

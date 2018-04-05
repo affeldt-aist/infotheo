@@ -132,15 +132,15 @@ Definition H2 p := - (p * log p) + - ((1 - p) * log (1 - p)).
 
 Lemma bin_ent_0eq0 : H2 0 = 0.
 Proof.
-rewrite /H2.
-by rewrite !(log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
+rewrite /H2 /log.
+by rewrite !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
                        add0R, addR0, subR0, Rplus_opp_r).
 Qed.
 
 Lemma bin_ent_1eq0 : H2 1 = 0.
 Proof.
-rewrite /H2.
-by rewrite /Rminus !(log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
+rewrite /H2 /log.
+by rewrite /Rminus !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
                        add0R, addR0, subR0, Rplus_opp_r).
 Qed.
 

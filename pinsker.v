@@ -59,16 +59,16 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
   case: p01 => Hp1 Hp2.
   case: q01 => Hq1 Hq2.
   case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
-    rewrite -Hp1 !mul0R subR0 addR0 add0R !mul1R log_1 /Rdiv.
+    rewrite -Hp1 !mul0R subR0 addR0 add0R !mul1R /log Log_1 /Rdiv.
     case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
       move: (@P_dom_by_Q (Set2.a card_A)).
       rewrite -/pi -/qi Hqi Hq2 Rminus_diag_eq // => /(_ erefl).
       rewrite Hpi -Hp1 subR0 => ?. exfalso. fourier.
-    rewrite log_mult; last 2 first.
+    rewrite /log Log_mult; last 2 first.
       fourier.
-      apply Rinv_0_lt_compat; fourier.
-      rewrite log_Rinv; last by fourier.
-      rewrite log_1; by field.
+      apply/invR_gt0; fourier.
+      rewrite LogV; last by fourier.
+      rewrite Log_1; by field.
   case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
     move: (@P_dom_by_Q (Set2.b card_A)).
     rewrite -/pj -/qj Hqj -Hq1 => /(_ erefl).
@@ -76,20 +76,20 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
     move: Hp1; by rewrite abs => /Rlt_irrefl.
   rewrite /div_fct /comp /= (_ : id q = q) //.
   case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
-    rewrite Hp2 Rminus_diag_eq // !mul0R /Rdiv log_mult; last 2 first.
+    rewrite Hp2 Rminus_diag_eq // !mul0R /Rdiv /log Log_mult; last 2 first.
       fourier.
-      apply Rinv_0_lt_compat; fourier.
-    rewrite log_1 mul1R log_Rinv //; by field.
-  rewrite log_mult //; last by apply Rinv_0_lt_compat.
-  rewrite log_Rinv //.
+      exact/invR_gt0.
+    rewrite Log_1 mul1R LogV //; by field.
+  rewrite /log Log_mult //; last exact/invR_gt0.
+  rewrite LogV //.
   case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
     move: (@P_dom_by_Q (Set2.a card_A)).
     rewrite -/pi -/qi Hqi -Hq2 Rminus_diag_eq // => /(_ erefl).
     rewrite Hpi => abs. exfalso. fourier.
-  rewrite /Rdiv log_mult; last 2 first.
+  rewrite /Rdiv Log_mult; last 2 first.
     fourier.
-    apply Rinv_0_lt_compat; fourier.
-  rewrite log_Rinv; last by fourier.
+    apply/invR_gt0; fourier.
+  rewrite LogV; last by fourier.
   by field.
 do 2 f_equal.
 by rewrite /var_dist Set2sumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.

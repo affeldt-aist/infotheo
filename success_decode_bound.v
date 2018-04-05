@@ -216,7 +216,7 @@ rewrite /success_factor -mulRA (mulRC (/ INR #|M|)) !mulRA.
 apply Rmult_le_compat_r; first by apply Rlt_le, Rinv_0_lt_compat, lt_0_INR; apply/ltP.
 rewrite /mut_info /Rminus addRC addRA.
 rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last by rewrite /cond_entropy; field.
-rewrite mulRDr mulRN -mulNR exp2_plus.
+rewrite mulRDr mulRN -mulNR /exp2 ExpD.
 apply Rmult_le_compat_l; first by apply Rlt_le, exp2_pos.
 rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR Logic.eq_refl).
 apply (Rle_trans _ (INR #| T_{`tO( V )} |)); last first.
@@ -264,10 +264,9 @@ apply Rmax_case.
     rewrite /Rminus mulRDr mulRC.
     rewrite Rmult_opp_opp -mulRA mulRN Rinv_l; last first.
       apply not_0_INR => /eqP; by apply/negP.
-    rewrite mulRN mulR1 exp2_plus mulRC /Rdiv; f_equal.
-    rewrite exp2_Ropp exp2_log //.
-    apply lt_0_INR; by apply/ltP.
-  + by apply success_factor_bound_part2.
+    rewrite mulRN mulR1 /exp2 ExpD mulRC /Rdiv; f_equal.
+    rewrite Exp_Ropp LogK //; exact/lt_0_INR/ltP.
+  + exact/success_factor_bound_part2.
 Qed.
 
 End typed_success_factor_bound_sect.

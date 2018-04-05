@@ -112,7 +112,7 @@ apply Rle_trans with (exp2 (INR n)).
   apply Rle_trans with (INR #| [set: 'rV[bool]_n] |).
     apply/le_INR/leP/leq_imset_card.
     rewrite cardsT card_matrix /= card_bool exp2_pow2 mul1n; by apply Rle_refl.
-apply exp2_le_increasing.
+apply Exp_le_increasing => //.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply Rmult_le_reg_r with (1 / r) => //.
 apply Rlt_mult_inv_pos; [fourier | tauto].
@@ -175,12 +175,12 @@ apply Rplus_le_compat.
     apply ler_rsum => /= i.
     rewrite in_setI => /andP[i_B i_TS].
     move: (typ_seq_definition_equiv2 i_TS) => [H1 _].
-    apply log_le_inv.
+    apply (@Log_le_inv 2) => //.
     + move: i_TS.
       rewrite /`TS inE /typ_seq => /andP[/RleP i_TS _].
       apply: Rlt_le_trans; by [apply exp2_pos | apply i_TS].
     + by apply exp2_pos.
-    + rewrite log_exp2.
+    + rewrite /exp2 ExpK //. 
       apply Rmult_le_reg_l with (1 / INR k.+1).
       * rewrite div1R; exact/invR_gt0/lt_0_INR/ltP.
       * apply Rge_le.
@@ -200,18 +200,18 @@ apply Rle_trans with (delta + INR #| no_failure | * exp2 (- INR k.+1 * (`H P - d
 - apply Rplus_le_compat_l.
   apply Rle_trans with (exp2 (INR k.+1 * (`H P - e0)) * exp2 (- INR k.+1 * (`H P - delta)));
     last first.
-    rewrite -exp2_plus.
-    apply exp2_le_increasing, Req_le; by field.
+    rewrite -ExpD.
+    apply Exp_le_increasing => //; apply Req_le; by field.
   apply Rmult_le_compat_r; [by apply Rlt_le, exp2_pos | exact no_failure_sup].
 Qed.
 
 Lemma step6 : (esrc(P , sc)) >= 1 - 2 * delta.
 Proof.
 have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
-  apply log_le_inv.
-  - by apply exp2_pos.
+  apply (@Log_le_inv 2) => //.
+  - exact/exp2_pos.
   - exact Hdelta.
-  - rewrite log_exp2.
+  - rewrite /exp2 ExpK //.
     apply Rmult_le_reg_r with (1 / (e0 - delta)) => //.
     + apply Rlt_mult_inv_pos; first by fourier.
       rewrite /e0 /delta /r.

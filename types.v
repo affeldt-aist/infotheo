@@ -466,10 +466,10 @@ rewrite (_ : \rprod_(a : A) P a ^ (type.f P) a =
       have := dist_nonneg P a.
       case/Rle_lt_or_eq_dec => // abs.
       by rewrite abs eqxx in H.
-    rewrite -{1}(exp2_log H) -exp2_pow.
-    f_equal.
+    rewrite -{1}(logK H) -exp2_pow.
+    congr exp2.
     rewrite -mulRA [X in _ = X]mulRC -mulRA mulRC.
-    f_equal.
+    congr (_ * _).
     by rewrite type_fun_type.
   - move/eqP : (H) => <-.
     rewrite -(_ : O = type.f P a); first by rewrite !mul0R exp2_0 /pow.

@@ -210,14 +210,14 @@ apply/negPn/negPn.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * r) by fourier.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * (`H P + lambda)).
     eapply Rle_trans; first by apply card_S_bound.
-    apply exp2_le_increasing, Rmult_le_compat_l; [by apply pos_INR | exact Hlambdar].
+    apply Exp_le_increasing => //; apply Rmult_le_compat_l; [exact/pos_INR | exact/Hlambdar].
   apply Rle_trans with (exp2 (INR k * (lambda / 2) +
                               INR k * (`H P + lambda / 2))); last first.
     rewrite -mulRDr addRC -addRA.
     rewrite (_ : forall a, a / 2 + a / 2 = a)%R; last by move=> ?; field.
     by apply Rle_refl.
   apply Rle_trans with (exp2 (1 + INR k * (`H P + lambda / 2))); last first.
-   apply exp2_le_increasing, Rplus_le_compat_r.
+   apply Exp_le_increasing => //; apply Rplus_le_compat_r.
     apply Rmax_Rle_in in Hk.
     case: Hk => _ Hk.
     apply Rmult_le_reg_r with (2 / lambda)%R; first by exact lambdainv2.
@@ -230,13 +230,13 @@ apply/negPn/negPn.
                         exp2 (INR k * (`H P + lambda / 2)))%R.
   + apply Rplus_le_compat_r.
     rewrite -exp2_0.
-    apply exp2_le_increasing.
-    apply mulR_ge0; first by apply pos_INR.
-    apply addR_ge0; first by apply entropy_pos.
+    apply Exp_le_increasing => //.
+    apply mulR_ge0; first exact: pos_INR.
+    apply addR_ge0; first exact: entropy_pos.
     apply Rlt_le; exact: halflambda0.
   + rewrite (_ : forall a, a + a = 2 * a)%R; last by move=> ?; field.
-    rewrite {1}(_ : 2 = exp2 (log 2)); last by rewrite exp2_log //; fourier.
-    rewrite -exp2_plus log_2; by apply Rle_refl.
+    rewrite {1}(_ : 2 = exp2 (log 2)); last by rewrite logK //; fourier.
+    rewrite -ExpD {1}/log Log_n //; exact/Rle_refl.
 Qed.
 
 End source_coding_direct'.

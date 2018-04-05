@@ -345,10 +345,10 @@ case/boolP : (P a == 0); move=> Hcase.
   case/boolP : (W a b == 0); move=> Hcase2.
   - move/eqP in Hcase2.
     by rewrite {1}JointDist.dE Hcase2 !(mul0R, mulR0, addR0).
-  - rewrite {2}JointDist.dE log_mult; last 2 first.
-    + apply Rlt_le_neq; first by apply dist_nonneg.
+  - rewrite {2}JointDist.dE /log Log_mult; last 2 first.
+    + apply Rlt_le_neq; first exact: dist_nonneg.
       move=> abs; by rewrite -abs eqxx in Hcase2.
-    + apply Rlt_le_neq; first by apply dist_nonneg.
+    + apply Rlt_le_neq; first exact: dist_nonneg.
       move=> abs; by rewrite -abs eqxx in Hcase.
     + rewrite {1}JointDist.dE /=; by field.
 Qed.

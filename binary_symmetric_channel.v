@@ -66,28 +66,28 @@ case: (Req_EM_T (P a) 0) => H1.
   rewrite H1 !(mul0R, mulR0, addR0, add0R).
   move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H1 add0R => ->.
-  rewrite log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
-rewrite log_mult; last 2 first.
+  rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
+rewrite /log Log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
   move/eqP in H1.
   by apply/RltP; rewrite Rlt_neqAle eq_sym H1 /=; apply/RleP/dist_nonneg.
-rewrite log_mult; last 2 first.
+rewrite /log Log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
   apply Rlt_le_neq; by [apply dist_nonneg | auto].
 case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 !(mul0R, mulR0, addR0, add0R).
   move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H2 addR0 => ->.
-  rewrite log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
-rewrite log_mult; last 2 first.
+  rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
+rewrite /log Log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
   apply Rlt_le_neq; by [apply dist_nonneg | auto].
-rewrite log_mult; last 2 first.
+rewrite /log Log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
   apply Rlt_le_neq; by [apply dist_nonneg | auto].
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
-  by field.
-move: (pmf1 P); rewrite Set2sumE /= -/a -/b => ->; by field.
+  rewrite /log; by field.
+move: (pmf1 P); rewrite Set2sumE /= -/a -/b => ->; rewrite /log; by field.
 Qed.
 
 Lemma IPW : `I(P ; BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
@@ -156,8 +156,8 @@ rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.
 rewrite mul1R (_ : p + (1 - p) = 1); last by field.
 rewrite mul1R -!mulRDl /= /Uniform.f card_A /=.
-rewrite (_ : INR 1 = 1) // (_ : INR 2 = 2) // div1R log_Rinv; last by fourier.
-rewrite log_2 /=; field.
+rewrite (_ : INR 1 = 1) // (_ : INR 2 = 2) // div1R /log LogV; last by fourier.
+rewrite Log_n //=; field.
 Qed.
 
 End bsc_capacity_proof.
@@ -223,3 +223,4 @@ Qed.
 Local Close Scope vec_ext_scope.
 
 End dH_BSC.
+

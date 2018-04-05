@@ -3,7 +3,7 @@ From mathcomp Require Import finfun choice fintype tuple bigop finset path.
 From mathcomp Require Import ssralg fingroup zmodp poly ssrnum.
 
 Require Import Reals Fourier.
-Require Import Rssr Reals_ext ssr_ext proba kraft.
+Require Import Rssr log2 Reals_ext ssr_ext proba kraft.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -28,9 +28,6 @@ Fixpoint prefix_from_sizes (i : nat) : seq T :=
 End prefix_code_build.
 
 Local Open Scope R_scope.
-
-(* generalization of log2, TODO: generalize lemmas in log2.v? *)
-Definition Log (n : nat) x := (ln x / ln (INR n))%R.
 
 Definition ceil (r : R) : Z := if frac_part r == 0 then Int_part r else up r.
 
@@ -83,11 +80,33 @@ Variable P : {dist T}.
 Variable c : code_set T.
 
 Hypothesis shannon_fano_sizes : forall s : T,
-  size (nth [::] c s) = Zabs_nat (ceil (Log #|T| (1 / P s)%R)).
+  size (nth [::] c s) = Zabs_nat (ceil (Log (INR #|T|) (1 / P s)%R)).
 
 Let sizes := map size c.
 
 Hypothesis H : size sizes = t.
+
+Lemma leR_wiexpn2l x :
+  0 <= x -> x <= 1 -> {homo (pow x) : m n / (n <= m)%nat >-> m <= n}.
+Proof.
+move/RleP; rewrite Rle_eqVlt => /orP[/eqP/esym -> _ m n|/RltP x0 x1 m n /leP nm].
+  case: n => [|n nm].
+    case: m => [_ |m _]; first exact: Rle_refl.
+    rewrite pow_ne_zero //=; exact/Rle_0_1.
+  rewrite pow_ne_zero; last by case: m nm.
+  rewrite pow_ne_zero //; exact/Rle_refl.
+apply Rle_inv_conv => //.
+exact/pow_gt0.
+exact/pow_gt0.
+rewrite -expRV; last by apply/eqP/gtR_eqF.
+rewrite -expRV; last by apply/eqP/gtR_eqF.
+apply Rle_pow => //.
+rewrite -invR1; apply Rle_Rinv => //; exact/Rlt_0_1.
+Qed.
+
+Lemma leR_weexpn2l x :
+  1 <= x -> {homo (pow x) : m n / (m <= n)%nat >-> m <= n}.
+Proof. move=> x1 m n /leP nm; exact/Rle_pow. Qed.
 
 Lemma shannon_fano_meets_kraft : kraft_cond_in_R T sizes.
 Proof.
@@ -96,7 +115,14 @@ rewrite H.
 apply ler_rsum => i _.
 rewrite (@nth_map _ [::]); last first.
   move: H; by rewrite size_map => ->.
-rewrite shannon_fano_sizes -expRV ?INR_eq0 ?card_ord //.
+rewrite shannon_fano_sizes.
+apply Rle_trans with (Exp (INR #|T|) (- Log (INR #|T|) (1 / P i))).
+  admit.
+rewrite div1R LogV.
+  rewrite oppRK.
+  rewrite LogK.
+  exact/Rle_refl.
+  by rewrite (_ : 1 = INR 1) //; apply/lt_INR/ltP; rewrite card_ord.
 Abort.
 
 Variable f : T -> seq T.

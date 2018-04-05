@@ -81,8 +81,7 @@ Proof. move=> Hx ; apply Rminus_le ; apply ln_idgt0 ; exact Hx. Qed.
 
 Lemma log_id_cmp x : 0 < x -> log x <= (x - 1) * log (exp 1).
 Proof.
-move=> Hx ; rewrite /log ln_exp div1R.
-apply Rmult_le_compat_r;
+move=> Hx; rewrite logexp1E; apply Rmult_le_compat_r;
   by [apply/ltRW/Rinv_0_lt_compat/ln_2_pos | apply ln_id_cmp].
 Qed.
 
@@ -98,7 +97,7 @@ Qed.
 
 Lemma log_id_eq x : 0 < x -> log x = (x - 1) * log (exp 1) -> x = 1.
 Proof.
-move=> Hx'; rewrite /log ln_exp div1R => Hx.
+move=> Hx'; rewrite logexp1E => Hx.
 apply Rmult_eq_reg_r in Hx; last exact/not_eq_sym/Rlt_not_eq/Rinv_0_lt_compat/ln_2_pos.
 apply ln_id_eq; by [apply Hx' | apply Hx].
 Qed.

@@ -809,8 +809,8 @@ apply (@Rle_trans _ (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
 - rewrite exp2_pow.
   rewrite (big_morph _ mult_INR Logic.eq_refl).
   rewrite (@big_morph _ _ (fun r : R => ((exp2 r) ^ n)%R) 1%R Rmult _ Rplus _); last 2 first.
-    move=> a b /=; rewrite -!exp2_pow mulRDr !exp2_plus; by field.
-    rewrite -exp2_pow mulR0 /exp2 mul0R; exact exp_0.
+    move=> a b /=; rewrite -!exp2_pow mulRDr /exp2 !ExpD; by field.
+    by rewrite -exp2_pow mulR0 /exp2 Exp_0.
   rewrite (reindex_onto (fun x => enum_rank x) (fun y => enum_val y)) => [|i _]; last by rewrite enum_valK.
   rewrite (_ : \rprod_(j | enum_val (enum_rank j) == j) _ =
                \rprod_(j : A) INR (card_type_of_row Hta Vctyp (enum_rank j))); last first.
@@ -820,7 +820,7 @@ apply (@Rle_trans _ (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
   rewrite -exp2_pow mulRA.
   rewrite /card_type_of_row; destruct eqVneq.
     rewrite -[X in X <= _]exp2_0.
-    apply exp2_le_increasing, mulR_ge0.
+    apply Exp_le_increasing, mulR_ge0 => //.
       apply mulR_ge0; by [apply pos_INR | apply dist_nonneg].
       by apply entropy_pos.
   set pta0 := type_of_row Hta Vctyp _.

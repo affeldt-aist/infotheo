@@ -138,7 +138,7 @@ Lemma morph_mulRDl a : {morph Rmult^~ a : x y / x + y}.
 Proof. move=> x y /=; by rewrite mulRDl. Qed.
 
 Lemma morph_exp2_plus : {morph [eta exp2] : x y / x + y >-> x * y}.
-Proof. move=> ? ? /=; by rewrite -exp2_plus. Qed.
+Proof. move=> ? ? /=; by rewrite -ExpD. Qed.
 
 Lemma iter_Rmax a b (Hb : b <= a) k : ssrnat.iter k (Rmax b) a = a.
 Proof. elim: k => // k Hk; by rewrite iterS Hk Rmax_right. Qed.
@@ -474,14 +474,15 @@ End pascal.
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-Lemma log_rmul_rsum_mlog {A : finType} (f : A -> R+) : forall n (ta : 'rV[A]_n.+1),
+(* TODO: rename *)
+Lemma log_rmul_rsum_mlog {A : finType} k (f : A -> R+) : forall n (ta : 'rV[A]_n.+1),
   (forall i, 0 < f ta ``_ i) ->
-  (- log (\rprod_(i < n.+1) f ta ``_ i) = \rsum_(i < n.+1) - log (f ta ``_ i))%R.
+  (- Log k (\rprod_(i < n.+1) f ta ``_ i) = \rsum_(i < n.+1) - Log k (f ta ``_ i))%R.
 Proof.
 elim => [i Hi | n IH].
   by rewrite big_ord_recl big_ord0 mulR1 big_ord_recl big_ord0 addR0.
 move=> ta Hi.
-rewrite big_ord_recl /= log_mult; last 2 first.
+rewrite big_ord_recl /= Log_mult; last 2 first.
   by apply Hi.
   apply rprodr_gt0 => i; by apply Hi.
 set tl := \row_(i < n.+1) ta ``_ (lift ord0 i).

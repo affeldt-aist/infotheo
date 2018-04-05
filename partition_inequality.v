@@ -72,8 +72,8 @@ have -> : D(P || Q) = \rsum_(a in A_ 0) P a * log (P a / Q a) +
   move=> _.
   case/Rle_lt_or_eq_dec: (dist_nonneg P a) => Pa.
     case/Rle_lt_or_eq_dec: (dist_nonneg Q a) => Qa.
-      rewrite log_mult //; last exact/Rinv_0_lt_compat.
-    by rewrite log_Rinv.
+      rewrite /log Log_mult //; last exact/Rinv_0_lt_compat.
+    by rewrite LogV.
     symmetry in Qa. rewrite (P_dom_by_Q Qa) in Pa. by apply Rlt_irrefl in Pa.
   by rewrite -Pa 2!mul0R.
 have step2 :
@@ -107,16 +107,16 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
     apply Rle_lt_or_eq_dec; apply: rsumr_ge0 => i _; exact/dist_nonneg.
   + have [A0_Q__neq0 | /esym A0_Q_0] : {0 < Q_A 0} + {0%R = Q_A 0}.
       apply Rle_lt_or_eq_dec; apply: rsumr_ge0 => i _; exact/dist_nonneg.
-    * rewrite /Rdiv log_mult; last 2 first.
+    * rewrite /Rdiv /log Log_mult; last 2 first.
         assumption.
-        by apply Rinv_0_lt_compat.
-      rewrite log_Rinv //.
+        exact/invR_gt0.
+      rewrite LogV //.
       have [A1_P_neq0 | /esym A1_P_0] : {0 < P_A 1} + {0%R = P_A 1}.
         apply Rle_lt_or_eq_dec; apply: rsumr_ge0 => i _; exact/dist_nonneg.
-      - rewrite log_mult; last 2 first.
+      - rewrite /log Log_mult; last 2 first.
           assumption.
-          by apply Rinv_0_lt_compat.
-        rewrite log_Rinv //.
+          exact/invR_gt0.
+        rewrite LogV //.
         apply Req_le; by field.
       - rewrite A1_P_0 !mul0R addR0; exact/Req_le.
     * move/prsumr_eq0P in A0_Q_0.
@@ -139,10 +139,10 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       rewrite -big_union //.
       apply eq_bigl => i; by rewrite cov in_set inE.
       by rewrite -setI_eq0 -dis setIC.
-    rewrite H3 /Rdiv log_mult; last 2 first.
+    rewrite H3 /Rdiv /log Log_mult; last 2 first.
       assumption.
       fourier.
-    rewrite log_Rinv; last by fourier.
+    rewrite LogV; last by fourier.
     apply Req_le; by field.
 - have H1 : P_A 1 = 1%R.
     rewrite -[X in X = _]add0R -[X in X + _ = _]A0_P_0 -(pmf1 P).
@@ -152,10 +152,10 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
   have [A1_Q_neq0 | /esym A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
     apply Rle_lt_or_eq_dec; apply: rsumr_ge0 => i _; exact/dist_nonneg.
   + rewrite A0_P_0 !mul0R !add0R H1 !mul1R.
-    rewrite /Rdiv log_mult; last 2 first.
+    rewrite /Rdiv /log Log_mult; last 2 first.
       fourier.
-      by apply Rinv_0_lt_compat.
-    rewrite log_Rinv //; apply Req_le; by field.
+      exact/invR_gt0.
+    rewrite /log LogV //; apply Req_le; by field.
   + (* contradiction H1 / Bi_true_Q_0 *)
     move/prsumr_eq0P in A1_Q_0.
     have : P_A 1 = 0%R.

@@ -35,8 +35,8 @@ move=> Hi.
 rewrite mulRC -mulNR.
 apply mulR_ge0; last exact: dist_nonneg.
 apply oppR_ge0.
-rewrite -log_1.
-apply log_increasing_le; last exact: dist_max.
+rewrite /log -(Log_1 2).
+apply Log_increasing_le => //; last exact: dist_max.
 apply Rlt_le_neq; by [apply dist_nonneg | auto].
 Qed.
 
@@ -50,8 +50,8 @@ rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))).
   rewrite mulRC -mulNR.
   apply mulR_ge0; last by apply dist_nonneg.
   apply oppR_ge0.
-  rewrite -log_1.
-  apply log_increasing_le; by [apply P_pos | apply dist_max].
+  rewrite /log -(Log_1 2).
+  apply Log_increasing_le => //; by [by apply P_pos | exact: dist_max].
 apply eq_bigl => i /=; by rewrite inE.
 Qed.
 
@@ -85,7 +85,7 @@ Proof.
 rewrite /entropy /Uniform.d /Uniform.f /=.
 rewrite big_const iter_Rplus div1R mulRA mulRV ?mul1R; last first.
   rewrite HA; by apply not_0_INR.
-rewrite log_Rinv ?oppRK //; by rewrite HA; apply/lt_0_INR/ltP.
+rewrite /log LogV ?oppRK //; by rewrite HA; apply/lt_0_INR/ltP.
 Qed.
 
 Local Open Scope reals_ext_scope.
@@ -104,5 +104,5 @@ transitivity (\rsum_(a|a \in A) P a * log (P a) + \rsum_(a|a \in A) P a * - log 
   rewrite -big_split /=.
   apply eq_bigr => a _; by rewrite mulRDr.
 rewrite /= /Uniform.f /= div1R -[in X in _ + X = _]big_distrl /= pmf1 mul1R.
-rewrite /entropy oppRK log_Rinv ?oppRK // HA; by apply/lt_0_INR/ltP.
+rewrite /entropy oppRK /log LogV ?oppRK // HA; apply/RltP; by rewrite ltR0n.
 Qed.

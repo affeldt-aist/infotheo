@@ -45,12 +45,12 @@ rewrite /typ_seq !inE /typ_seq.
 case/andP. move/RleP => H2. move/RleP => H3.
 apply/andP; split; apply/RleP.
 - eapply Rle_trans; last by apply H2.
-  apply exp2_le_increasing.
+  apply Exp_le_increasing => //.
   rewrite !mulNR.
   apply Ropp_le_contravar, Rmult_le_compat_l; first by apply pos_INR.
   apply Rplus_le_compat_l, Rdiv_le => //; fourier.
 - eapply Rle_trans; first by apply H3.
-  apply exp2_le_increasing.
+  apply Exp_le_increasing => //.
   rewrite !mulNR.
   apply Ropp_le_contravar, Rmult_le_compat_l; first by apply pos_INR.
   apply Rplus_le_compat_l, Ropp_le_contravar, Rdiv_le => //; fourier.
@@ -70,8 +70,7 @@ Proof.
 suff Htmp : 1 >= INR #| `TS P n epsilon | * exp2 (- INR n * (`H P + epsilon)).
   apply Rmult_le_reg_l with (exp2 (- INR n * (`H P + epsilon))).
   by apply exp2_pos.
-  rewrite -exp2_plus {2}mulNR Rplus_opp_l {2}/exp2 mul0R exp_0 mulRC.
-  by apply Rge_le.
+  rewrite -ExpD {2}mulNR Rplus_opp_l Exp_0 mulRC; exact/Rge_le.
 rewrite -(pmf1 (P `^ n)).
 rewrite (_ : _ * _ = \rsum_(x in `TS P n epsilon) (exp2 (- INR n * (`H P + epsilon)))); last first.
   by rewrite big_const iter_Rplus.
@@ -97,8 +96,8 @@ split.
   rewrite mulNR mulRN.
   rewrite div1R mulRA mulRV ?mul1R; last exact/not_0_INR.
   rewrite -(oppRK (INR n.+1 * (`H P - epsilon))).
-  apply Ropp_le_contravar, exp2_le_inv.
-  rewrite exp2_log; last first.
+  apply/Ropp_le_contravar/(@Exp_le_inv 2) => //.
+  rewrite LogK //; last first.
     move/RleP in H1.
     by eapply Rlt_le_trans; [apply exp2_pos | apply H1].
   apply/RleP; by rewrite -mulNR.
@@ -106,8 +105,8 @@ split.
   rewrite mulNR mulRN.
   rewrite div1R mulRA mulRV ?mul1R; last exact/not_0_INR.
   rewrite -(oppRK (INR n.+1 * (`H P + epsilon))).
-  apply/Ropp_le_contravar/exp2_le_inv.
-  rewrite exp2_log; last first.
+  apply/Ropp_le_contravar/(@Exp_le_inv 2) => //.
+  rewrite LogK //; last first.
     move/RleP in H1.
     by eapply Rlt_le_trans; [apply exp2_pos | apply H1].
   apply/RleP; by rewrite -mulNR.
@@ -175,12 +174,12 @@ have -> : Pr P `^ n.+1 (~: p) =
             apply: contra H1 => H1.
             apply/eqP/Rle_antisym; by [apply/RleP | apply dist_nonneg].
           move/RltP in LHS.
-          apply log_increasing in LHS; last first.
+          apply (@Log_increasing 2) in LHS => //; last first.
             apply/RltP.
             rewrite RltNge.
             apply: contra H1 => /RleP H1.
-            apply/eqP/Rle_antisym => //; by apply dist_nonneg.
-          rewrite log_exp2 in LHS.
+            apply/eqP/Rle_antisym => //; exact: dist_nonneg.
+          rewrite /exp2 ExpK // in LHS.
           apply (Rmult_lt_compat_l (1 / INR n.+1)) in LHS; last first.
             apply Rlt_mult_inv_pos => //.
             fourier.
@@ -206,8 +205,8 @@ have -> : Pr P `^ n.+1 (~: p) =
             move/RltP in LHS.
             apply: Rlt_trans _ LHS; by apply exp2_pos.
           move/RltP in LHS.
-          apply log_increasing in LHS; last by apply exp2_pos.
-          rewrite log_exp2 in LHS.
+          apply (@Log_increasing 2) in LHS => //; last exact/exp2_pos.
+          rewrite /exp2 ExpK // in LHS.
           apply (Rmult_lt_compat_l (1 / INR n.+1)) in LHS; last first.
             apply Rlt_mult_inv_pos => //.
             fourier.
@@ -240,8 +239,8 @@ have -> : Pr P `^ n.+1 (~: p) =
         apply/orP; right.
         rewrite /Rgt_bool RltNge negbK.
         case/andP : H2 => /RleP LHS LHS'.
-        apply log_increasing_le in LHS; last by apply exp2_pos.
-        rewrite log_exp2 in LHS.
+        apply (@Log_increasing_le 2) in LHS => //; last exact/exp2_pos.
+        rewrite /exp2 ExpK // in LHS.
         apply (Rmult_le_compat_l (1 / INR n.+1)) in LHS; last first.
           apply Rle_mult_inv_pos => //.
           fourier.
@@ -253,14 +252,13 @@ have -> : Pr P `^ n.+1 (~: p) =
           move=> *; fourier.
         apply H2 in LHS.
         move/RleP in LHS'.
-        apply log_increasing_le in LHS'; last by apply/RltP.
-        rewrite log_exp2 in LHS'.
+        apply (@Log_increasing_le 2) in LHS' => //; last exact/RltP.
+        rewrite /exp2 ExpK // in LHS'.
         apply (Rmult_le_compat_l (1 / INR n.+1)) in LHS'; last first.
           apply Rle_mult_inv_pos => //.
           fourier.
-          by apply/lt_0_INR/ltP.
-        rewrite mulRA mulRN {2}/Rdiv -mulRA -Rinv_l_sym in LHS'; last first.
-            by apply not_0_INR.
+          exact/lt_0_INR/ltP.
+        rewrite mulRA mulRN {2}/Rdiv -mulRA -Rinv_l_sym in LHS'; last exact/not_0_INR.
         rewrite mulR1 mulRDr !mulNR !mul1R oppRK in LHS'.
         have H3 : forall a b c, a <= - c + b -> - b <= - a - c by move=> *; fourier.
         apply H3 in LHS'.
