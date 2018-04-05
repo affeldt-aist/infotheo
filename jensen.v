@@ -24,15 +24,15 @@ Definition strictly_convex (f : R -> R) := forall x y t : R,
 End convex.
 
 Lemma dist_ind (A : finType) (P : dist A -> Prop) :
-  (forall a, #|dist_supp a| = 2%nat -> P a) ->
+  (forall a, #|dist_supp a| = 1%nat -> P a) ->
   (forall n : nat, (forall a, #|dist_supp a| = n -> P a) ->
     forall a, #|dist_supp a| = n.+1 -> P a) ->
-  forall d, (1 < #|dist_supp d|)%nat -> P d.
+  forall d, (0 < #|dist_supp d|)%nat -> P d.
 Proof.
 move=> H0 H1 d.
 move: {-2}(#|dist_supp d|) (erefl (#|dist_supp d|)) => n; move: n d.
-elim=> // -[//=| [_ d A2 _ | n IH d A3 n13]]; first by apply H0.
-apply (H1 n.+2) => // d' A2; by apply IH.
+elim=> // -[_ d A2 _ | n IH d A3 n13]; first by apply H0.
+apply (H1 n.+1) => // d' A2; by apply IH.
 Qed.
 
 Section jensen_inequality.
@@ -41,7 +41,19 @@ Variable f : R -> R.
 Hypothesis convex_f : convex f.
 Variable A : finType.
 
-Lemma jensen_dist (r : A -> R) (X : dist A) : (1 < #|dist_supp X|)%nat ->
+Lemma dist_supp_single X (a:A) : dist_supp X = [set a] -> X a = 1. 
+Proof.
+move=> Ha.
+rewrite -(pmf1 X) (bigID (mem (dist_supp X))) /= Ha big_set1.
+rewrite (eq_bigr(fun=>0)); first by rewrite big1 // addR0.
+move=> i.
+move: Ha.
+rewrite /dist_supp => /setP /(_ i).
+rewrite !inE.
+by case: (i == a) => // /eqP.
+Qed.
+
+Lemma jensen_dist (r : A -> R) (X : dist A) : (0 < #|dist_supp X|)%nat ->
   f (\rsum_(a in A) r a * X a) <= \rsum_(a in A) f (r a) * X a.
 Proof.
 move=> A1.
@@ -49,15 +61,9 @@ rewrite [in X in _ <= X]rsum_dist_supp [in X in X <= _]rsum_dist_supp /=.
 apply: (@dist_ind A (fun X => f (\rsum_(a in dist_supp X) r a * X a) <=
                               \rsum_(a in dist_supp X) f (r a) * X a)) => //.
   move=> {X A1}X A2.
-  rewrite 2!BinarySupport.rsumE.
-  set a := BinarySupport.a A2. set b := BinarySupport.b A2.
-  have -> : X b = 1 - X a.
-    rewrite -(pmf1 X).
-    rewrite (eq_bigr (fun i => 1 * X i)); last by move=> *; rewrite mul1R.
-    by rewrite rsum_dist_supp BinarySupport.rsumE 2!mul1R addRC addRK.
-  have : 0 <= X a <= 1 by split; [exact/dist_nonneg|exact/dist_max].
-  move/(@convex_f (r a) (r b) (X a)); rewrite /convex_leq.
-  by rewrite -(mulRC (f (r b))) -(mulRC (f (r a))) -(mulRC (r b)) -(mulRC (r a)).
+  move/eqP/cards1P: A2 => [b Hb].
+  rewrite Hb !big_set1 dist_supp_single // !mulR1.
+  by apply Rle_refl.
 move=> n IH {X A1} X cardA.
 have [b Hb] : exists b : A, X b != 0.
   suff : {x | x \in dist_supp X} by case => a; rewrite inE => ?; exists a.
@@ -120,7 +126,7 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Lemma Jensen (X : rvar A) : (1 < #|dist_supp (`p_ X)|)%nat ->
+Lemma Jensen (X : rvar A) : (0 < #|dist_supp (`p_ X)|)%nat ->
   f (`E X) <= `E (mkRvar (`p_ X) (fun x => f (X x))).
 Proof. move=> A1; rewrite !ExE /=; by apply jensen_dist. Qed.
 
