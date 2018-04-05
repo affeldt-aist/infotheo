@@ -152,8 +152,7 @@ Lemma convex_g : convex g.
 Proof.
 move=> x y t Ht.
 rewrite /convex_leq /g.
-rewrite -!Ropp_mult_distr_r. 
-rewrite -Ropp_plus_distr. 
+rewrite !mulRN -oppRD.
 apply Ropp_le_contravar.
 by apply concave_f.
 Qed.
@@ -168,9 +167,9 @@ move: (jensen_dist convex_g r HX).
 rewrite /g.
 rewrite [in X in _ <= X](eq_bigr (fun a => -1 * (f (r a) * X a))).
   rewrite -[in X in _ <= X]big_distrr /=.
-  by rewrite -Ropp_mult_distr_l mul1R.
+  by rewrite mulNR mul1R.
 move=> i _.
-by rewrite mulRA -(Ropp_mult_distr_l 1) mul1R.
+by rewrite !mulNR mul1R.
 Qed.
 
 End jensen_concave.

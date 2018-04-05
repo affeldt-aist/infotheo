@@ -45,6 +45,9 @@ case: (floorP r); rewrite /floor => H1 /Rle_lt_or_eq_dec[] H2.
 exfalso; apply/r0/eqP; rewrite subR_eq0; by apply/eqP.
 Qed.
 
+Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.
+Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(Rle_trans _ _ _ _ K). Qed.
+
 Require Import Rbigop.
 
 (* NB(rei): redefine kraft_cond in R instead of with an rcfType *)
@@ -78,6 +81,7 @@ Let t := t'.+2.
 Let T := [finType of 'I_t].
 Variable P : {dist T}.
 Variable c : code_set T.
+Hypothesis Pr_pos : forall s, P s != 0.
 
 Hypothesis shannon_fano_sizes : forall s : T,
   size (nth [::] c s) = Zabs_nat (ceil (Log (INR #|T|) (1 / P s)%R)).
@@ -101,12 +105,20 @@ exact/pow_gt0.
 rewrite -expRV; last by apply/eqP/gtR_eqF.
 rewrite -expRV; last by apply/eqP/gtR_eqF.
 apply Rle_pow => //.
-rewrite -invR1; apply Rle_Rinv => //; exact/Rlt_0_1.
+rewrite -invR1; apply Rinv_le_contravar => //; exact/Rlt_0_1.
 Qed.
 
 Lemma leR_weexpn2l x :
   1 <= x -> {homo (pow x) : m n / (m <= n)%nat >-> m <= n}.
 Proof. move=> x1 m n /leP nm; exact/Rle_pow. Qed.
+
+Lemma invR_gt1 x : 0 < x -> (1 <b / x) = (x <b 1).
+Proof.
+move=> x0; apply/idP/idP => [|] /RltP x1; apply/RltP; last first.
+  rewrite -invR1; apply Rinv_lt_contravar => //; by rewrite mulR1.
+move/Rinv_lt_contravar : x1; rewrite mul1R invR1 invRK; last exact/gtR_eqF.
+apply; exact/invR_gt0.
+Qed.
 
 Lemma shannon_fano_meets_kraft : kraft_cond_in_R T sizes.
 Proof.
@@ -116,14 +128,28 @@ apply ler_rsum => i _.
 rewrite (@nth_map _ [::]); last first.
   move: H; by rewrite size_map => ->.
 rewrite shannon_fano_sizes.
-apply Rle_trans with (Exp (INR #|T|) (- Log (INR #|T|) (1 / P i))).
-  admit.
-rewrite div1R LogV.
-  rewrite oppRK.
-  rewrite LogK.
+have Pi0 : 0 < P i.
+  by apply/RltP; rewrite Rlt_neqAle eq_sym Pr_pos /=; apply/RleP/dist_nonneg.
+apply Rle_trans with (Exp (INR #|T|) (- Log (INR #|T|) (1 / P i))); last first.
+  rewrite div1R LogV //.
+  rewrite oppRK LogK //.
   exact/Rle_refl.
-  by rewrite (_ : 1 = INR 1) //; apply/lt_INR/ltP; rewrite card_ord.
-Abort.
+  by apply/RltP; rewrite (_ : 1 = INR 1) // ltR_nat card_ord.
+rewrite powE; last by apply/RltP; rewrite ltR0n card_ord.
+rewrite Exp_Ropp.
+apply/leR_inv => //.
+  rewrite inE; exact/RltP/Exp_pos.
+apply Exp_le_increasing.
+  by apply/RltP; rewrite (_ : 1 = INR 1) // ltR_nat card_ord.
+rewrite INR_Zabs_nat; last first.
+  case/boolP : (P i == 1) => [/eqP ->|Pi1].
+    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_pos/Rle_refl.
+  apply/leR0ceil/ltRW/ltR0Log.
+  by apply/RltP; rewrite (_ : 1 = INR 1) // ltR_nat card_ord.
+  rewrite div1R.
+  apply/RltP; rewrite invR_gt1 // Rlt_neqAle Pi1 /=; exact/RleP/dist_max.
+by set x := Log _ _; case: (ceilP x).
+Qed.
 
 Variable f : T -> seq T.
 

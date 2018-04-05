@@ -216,7 +216,7 @@ apply Rle_trans with (D(P || Q)); last first.
 eapply Rle_trans; last by apply Pinsker_inequality.
 rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow; field.
 apply Rmult_le_compat_r; first by apply le_sq.
-apply Rle_Rinv; [ | fourier| ].
+apply Rinv_le_contravar.
 - apply mulR_gt0; [fourier | exact ln_2_pos].
 - rewrite -[X in _ <= X]mulR1.
   apply Rmult_le_compat_l; first by fourier.

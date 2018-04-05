@@ -198,6 +198,12 @@ apply/idP/idP => [/RltP|/ltP/lt_0_INR/RltP //].
 by rewrite (_ : 0 = INR O) // => /INR_lt/ltP.
 Qed.
 
+Lemma leR_nat m n : (INR m <b= INR n) = (m <= n)%nat.
+Proof. by apply/idP/idP => [/RleP/INR_le/leP//|/leP/le_INR/RleP]. Qed.
+
+Lemma ltR_nat m n : (INR m <b INR n) = (m < n)%nat.
+Proof. by apply/idP/idP => [/RltP/INR_lt/ltP//|/ltP/lt_INR/RltP]. Qed.
+
 (* Rplus_le_compat_r
      : forall r r1 r2 : R, r1 <= r2 -> r1 + r <= r2 + r*)
 
@@ -240,8 +246,6 @@ apply/idP/idP; first by move/RleP/Rmult_le_reg_r  => /(_ Hm)/RleP.
 move/RleP/(Rmult_le_compat_r m); by move/ltRW : Hm => Hm /(_ Hm)/RleP.
 Qed.
 
-(* Rinv_l_sym*)
-
 Lemma invR_gt0 x : 0 < x -> 0 < / x.
 Proof. move=> x0; by apply Rinv_0_lt_compat. Qed.
 
@@ -252,6 +256,9 @@ by apply/eqP/Rinv_neq_0_compat/eqP.
 Qed.
 
 Definition invR1 : / 1 = 1 := Rinv_1.
+
+Lemma leR_inv : {in [pred x | true] & [pred x | 0 <b x], {homo Rinv : a b /~ a <= b}}.
+Proof. move=> a b; rewrite !inE => _ /RltP b0 ba; exact/Rinv_le_contravar. Qed.
 
 Definition divRR (x : R) : x <> 0 -> x / x = 1.
 Proof. by move=> x0; rewrite /Rdiv Rinv_r. Qed.
@@ -267,6 +274,7 @@ Proof. by rewrite /Rdiv mul0R. Qed.
 
 Definition mulRV (x : R) : x <> 0 -> x * / x = 1 := divRR x.
 
+(* Rinv_l_sym*)
 Lemma mulVR (x : R) : x != 0 -> / x * x = 1.
 Proof. by move=> /eqP x0; rewrite mulRC mulRV. Qed.
 

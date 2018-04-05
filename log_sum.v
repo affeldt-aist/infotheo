@@ -173,7 +173,7 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
     apply Log_increasing_le => //.
       apply Rlt_mult_inv_pos => //; by rewrite -HG.
     apply Rmult_le_compat_l; first exact/ltRW.
-    apply Rle_Rinv => //.
+    apply Rinv_le_contravar => //.
     rewrite setUC in DUD'.
     rewrite DUD' (big_union _ g DID') /=.
     rewrite -[X in X <= _]add0R; apply Rplus_le_compat_r.

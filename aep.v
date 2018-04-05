@@ -131,10 +131,9 @@ Lemma aep_bound_decreasing e e' : 0 < e' <= e -> aep_bound e <= aep_bound e'.
 Proof.
 case=> Oe' e'e.
 apply Rmult_le_compat_l; first by apply aep_sigma2_pos.
-apply Rle_Rinv.
-- by apply pow_lt.
-- apply pow_lt; by apply Rlt_le_trans with e'.
-- apply pow_incr => //; split; [by apply ltRW | exact e'e ].
+apply leR_inv => //.
+- rewrite inE; exact/RltP/pow_lt.
+- apply pow_incr => //; split; [exact/ltRW | exact/e'e ].
 Qed.
 
 End aep_k0_constant.

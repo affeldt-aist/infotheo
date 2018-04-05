@@ -197,9 +197,8 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       rewrite -Rinv_mult_distr ; last 2 first.
         by apply not_eq_sym, Rlt_not_eq, Rinv_0_lt_compat.
         by apply not_eq_sym, Rlt_not_eq, Rlt_R0_R2.
-      apply Rle_Rinv.
+      apply Rinv_le_contravar.
       - apply mulR_gt0; by [apply Rinv_0_lt_compat | apply Rlt_R0_R2].
-      - by apply oppR_gt0.
       - rewrite -(oppRK (/ eps * 2)); apply Ropp_le_contravar.
         rewrite mulRC -mulNR.
         apply/exp_le_inv/ltRW; subst X; by rewrite exp_ln.

@@ -8,11 +8,14 @@ Require Import Rssr.
 (** * Additional lemmas about Coq Reals *)
 
 Reserved Notation "T '->' 'R+' " (at level 10, format "'[' T  ->  R+ ']'").
-Reserved Notation "'min(' x ',' y ')'".
-Reserved Notation "'max(' x ',' y ')'".
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
 Reserved Notation "P '<<' Q" (at level 10, Q at next level).
 Reserved Notation "P '<<b' Q" (at level 10).
+
+Notation "'min(' x ',' y ')'" := (Rmin x y) : reals_ext_scope.
+Notation "'max(' x ',' y ')'" := (Rmax x y)
+  (format "'max(' x ','  y ')'") : reals_ext_scope.
+Notation "+| r |" := (Rmax 0 r) : reals_ext_scope.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -90,17 +93,17 @@ Proof.
 move=> x_pos y_pos H.
 rewrite -(invRK x); last by apply not_eq_sym, Rlt_not_eq.
 rewrite -(invRK y); last by apply not_eq_sym, Rlt_not_eq.
-apply Rle_Rinv => //; by apply Rinv_0_lt_compat.
+apply Rinv_le_contravar => //; exact/invR_gt0.
 Qed.
 
-(* NB: see Rplus_le_lt_reg_pos_r in the standard library *)
+(* NB: see Rplus_lt_reg_pos_r in the standard library *)
 Lemma Rplus_le_lt_reg_pos_r r1 r2 r3 : 0 < r2 -> r1 + r2 <= r3 -> r1 < r3.
 Proof. move=> *. fourier. Qed.
 
 Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Zabs_nat x) = IZR x.
 Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
 
-Lemma Rmax_Rle_in r1 r2 r : Rmax r1 r2 <= r -> r1 <= r /\ r2 <= r.
+Lemma Rmax_Rle_in r1 r2 r : max(r1, r2) <= r -> r1 <= r /\ r2 <= r.
 Proof.
 case: (Rlt_le_dec r1 r2).
 - move/ltRW => H1.
@@ -134,10 +137,6 @@ apply Rmax_case_strong.
 Qed.
 
 Definition RmaxC : commutative Rmax := Rmax_comm.
-
-Notation "'min(' x ',' y ')'" := (Rmin x y) : reals_ext_scope.
-Notation "'max(' x ',' y ')'" := (Rmax x y) : reals_ext_scope.
-Notation "+| r |" := (Rmax 0 r) : reals_ext_scope.
 
 (** non-negative rationals: *)
 
@@ -178,6 +177,14 @@ apply Rinv_1_lt_contravar => //.
 by apply Rle_refl.
 Qed.
 
+Lemma Rabs_Rle (x a : R) : x <= a -> - a <= x -> Rabs x <= a.
+Proof.
+move=> H1 H2.
+rewrite /Rabs.
+case : Rcase_abs => _ //.
+apply Ropp_le_cancel; by rewrite oppRK.
+Qed.
+
 (** Lemmas about power *)
 
 Lemma le_sq x : 0 <= x ^ 2.
@@ -186,13 +193,6 @@ move=> /=; case: (Rle_dec 0 x) => H; rewrite mulR1.
 by apply mulR_ge0.
 rewrite -(oppRK x) Rmult_opp_opp.
 apply mulR_ge0; by apply oppR_ge0, ltRW, Rnot_le_lt.
-Qed.
-
-Lemma pow0_inv : forall n x, x ^ n = 0 -> x = 0.
-Proof.
-elim => [x /= H | n IH x /= H].
-fourier.
-case/Rmult_integral : H => //; by move/IH.
 Qed.
 
 Lemma sq_incr a b : 0 <= a -> 0 <= b -> a <= b -> a^2 <= b^2.
@@ -224,14 +224,6 @@ apply le_sq.
 by rewrite /= mulR1.
 Qed.
 
-Lemma Rabs_Rle (x a : R) : x <= a -> - a <= x -> Rabs x <= a.
-Proof.
-move=> H1 H2.
-rewrite /Rabs.
-case : Rcase_abs => _ //.
-apply Ropp_le_cancel; by rewrite oppRK.
-Qed.
-
 Lemma id_rem a b : (a - b) ^ 2 = a ^ 2 - 2 * a * b + b ^ 2.
 Proof. rewrite /= !mulR1 !mulRDr !mulRBl /=; field. Qed.
 
@@ -248,6 +240,51 @@ have : forall a b, 0 <= b -> a - b <= a. move=>  *; fourier.
 apply.
 apply mulR_ge0; [fourier | by apply le_sq].
 Qed.
+
+Section pow_sect.
+
+Lemma pow0_inv : forall n x, x ^ n = 0 -> x = 0.
+Proof.
+elim => [x /= H | n IH x /= H].
+fourier.
+case/Rmult_integral : H => //; by move/IH.
+Qed.
+
+Lemma INR_pow_expn (r : nat) : forall n, INR r ^ n = INR (expn r n).
+Proof.
+elim => // n IH.
+by rewrite (expnSr r n) mult_INR -addn1 pow_add /= mulR1 IH.
+Qed.
+
+Lemma pow_mult x y : forall n, (x * y) ^ n = x ^ n * y ^ n.
+Proof.
+elim=> /= [|n IH]; first by rewrite mul1R.
+rewrite -2!mulRA; f_equal.
+rewrite [in X in _ = X]mulRC -mulRA; f_equal.
+by rewrite IH mulRC.
+Qed.
+
+Lemma pow_gt0 x : 0 < x -> forall n, 0 < x ^ n.
+Proof.
+move=> x_pos.
+elim => [/= | n IH]; by [apply Rlt_0_1 | apply mulR_gt0].
+Qed.
+
+Lemma pow_ge0 x : 0 <= x -> forall n, 0 <= x ^ n.
+Proof.
+move=> x_pos.
+elim => [/= | n IH]; first by apply Rlt_le, Rlt_0_1.
+rewrite -(mulR0 0).
+apply Rmult_le_compat => //; by apply Rle_refl.
+Qed.
+
+Lemma Rmult_pow_inv r a b : r <> 0 -> (b <= a)%nat -> r ^ a * (/ r) ^ b = r ^ (a - b).
+Proof.
+move=> Hr ab; symmetry.
+rewrite (pow_RN_plus r _ b) // plusE -minusE subnK // expRV //; exact/eqP.
+Qed.
+
+End pow_sect.
 
 (** Lemmas about up / Int_part / frac_part *)
 
@@ -514,43 +551,6 @@ move/RleP in H1.
 by move/RleP.
 Qed.
 
-Section pow_sect.
-
-Lemma INR_pow_expn (r : nat) : forall n, INR r ^ n = INR (expn r n).
-Proof.
-elim => // n IH.
-by rewrite (expnSr r n) mult_INR -addn1 pow_add /= mulR1 IH.
-Qed.
-
-Lemma pow_mult x y : forall n, (x * y) ^ n = x ^ n * y ^ n.
-Proof.
-elim=> /= [|n IH]; first by rewrite mul1R.
-rewrite -2!mulRA; f_equal.
-rewrite [in X in _ = X]mulRC -mulRA; f_equal.
-by rewrite IH mulRC.
-Qed.
-
-Lemma pow_gt0 x : 0 < x -> forall n, 0 < x ^ n.
-Proof.
-move=> x_pos.
-elim => [/= | n IH]; by [apply Rlt_0_1 | apply mulR_gt0].
-Qed.
-
-Lemma pow_ge0 x : 0 <= x -> forall n, 0 <= x ^ n.
-Proof.
-move=> x_pos.
-elim => [/= | n IH]; first by apply Rlt_le, Rlt_0_1.
-rewrite -(mulR0 0).
-apply Rmult_le_compat => //; by apply Rle_refl.
-Qed.
-
-Lemma Rmult_pow_inv r a b : r <> 0 -> (b <= a)%nat -> r ^ a * (/ r) ^ b = r ^ (a - b).
-Proof.
-move=> Hr ab; symmetry.
-rewrite (pow_RN_plus r _ b) // plusE -minusE subnK // expRV //; exact/eqP.
-Qed.
-
-End pow_sect.
 
 Section exp_lb_sect.
 

@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat.
 Require Import Reals Fourier.
 Require Import Reals_ext Ranalysis_ext Rssr.
 
-(** * Log base 2 *)
+(** * log_2 x / 2 ^ x *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -40,6 +40,9 @@ by rewrite S_INR mulRDl mul1R exp_plus IH mulRC.
 Qed.
 
 Definition Log (n : R) x := ln x / ln n.
+
+Lemma ltR0Log n x : 1 < n -> 1 < x -> 0 < Log n x.
+Proof. move=> ? ?; apply mulR_gt0; [exact/ln_pos | exact/invR_gt0/ln_pos]. Qed.
 
 Lemma Log_1 (n : R) : Log n 1 = 0.
 Proof. by rewrite /Log ln_1 div0R. Qed.
@@ -131,6 +134,9 @@ Proof. rewrite logexp1E; exact/RleP/RltW/RltP/invR_gt0/ln_2_pos. Qed.
 
 Definition Exp (n : R) x := exp (x * ln n).
 
+Lemma powE x n : 0 < x -> x ^ n = Exp x (INR n).
+Proof. by move=> x0; rewrite /Exp exp_pow exp_ln. Qed.
+
 Lemma LogK n x : 1 < n -> 0 < x -> Exp n (Log n x) = x.
 Proof.
 move=> n1 x0.
@@ -150,8 +156,6 @@ rewrite -ln_1 => /ln_inv H.
 have : 0 < n by fourier.
 move/H => /(_ Rlt_0_1) ?; fourier.
 Qed.
-
-(** 2 ^ x *)
 
 Lemma Exp_pos n x : 0 < Exp n x.
 Proof. rewrite /Exp; exact: exp_pos. Qed.
@@ -196,6 +200,8 @@ Qed.
 
 Lemma Exp_Ropp n x : Exp n (- x) = / Exp n x.
 Proof. by rewrite /Exp mulNR exp_Ropp. Qed.
+
+(** 2 ^ x *)
 
 Definition exp2 (x : R) := Exp 2 x.
 
