@@ -23,6 +23,19 @@ Definition strictly_convex (f : R -> R) := forall x y t : R,
 
 End convex.
 
+Section concave.
+
+Definition concave_leq (f : R -> R) (x y t : R) :=
+  t * f x + (1 - t) * f y <=  f (t * x + (1 - t) * y).
+
+Definition concave (f : R -> R) := forall x y t : R,
+  0 <= t <= 1 -> concave_leq f x y t.
+
+Definition strictly_concave (f : R -> R) := forall x y t : R,
+  x != y -> 0 < t < 1 -> concave_leq f x y t.
+
+End concave.
+
 Lemma dist_ind (A : finType) (P : dist A -> Prop) :
   (forall a, #|dist_supp a| = 1%nat -> P a) ->
   (forall n : nat, (forall a, #|dist_supp a| = n -> P a) ->
@@ -126,3 +139,38 @@ Lemma Jensen (X : rvar A) : (0 < #|dist_supp (`p_ X)|)%nat ->
 Proof. move=> A1; rewrite !ExE /=; by apply jensen_dist. Qed.
 
 End jensen_inequality.
+
+Section jensen_concave.
+
+Variable f : R -> R.
+Hypothesis concave_f : concave f.
+Variable A : finType.
+
+Let g x := - f x.
+
+Lemma convex_g : convex g.
+Proof.
+move=> x y t Ht.
+rewrite /convex_leq /g.
+rewrite -!Ropp_mult_distr_r. 
+rewrite -Ropp_plus_distr. 
+apply Ropp_le_contravar.
+by apply concave_f.
+Qed.
+
+Lemma jensen_dist_concave (r : A -> R) (X : dist A) :
+  (0 < #|dist_supp X|)%nat ->
+  \rsum_(a in A) f (r a) * X a <= f (\rsum_(a in A) r a * X a).
+Proof.
+move=> HX.
+apply Ropp_le_cancel.
+move: (jensen_dist convex_g r HX).
+rewrite /g.
+rewrite [in X in _ <= X](eq_bigr (fun a => -1 * (f (r a) * X a))).
+  rewrite -[in X in _ <= X]big_distrr /=.
+  by rewrite -Ropp_mult_distr_l mul1R.
+move=> i _.
+by rewrite mulRA -(Ropp_mult_distr_l 1) mul1R.
+Qed.
+
+End jensen_concave.
