@@ -60,8 +60,7 @@ move=> A1.
 rewrite [in X in _ <= X]rsum_dist_supp [in X in X <= _]rsum_dist_supp /=.
 apply: (@dist_ind A (fun X => f (\rsum_(a in dist_supp X) r a * X a) <=
                               \rsum_(a in dist_supp X) f (r a) * X a)) => //.
-  move=> {X A1}X A2.
-  move/eqP/cards1P: A2 => [b Hb].
+  move=> {X A1}X /eqP/cards1P [b Hb].
   rewrite Hb !big_set1 dist_supp_single // !mulR1.
   by apply Rle_refl.
 move=> n IH {X A1} X cardA.
