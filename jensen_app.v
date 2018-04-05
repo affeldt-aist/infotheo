@@ -62,7 +62,9 @@ Proof. rewrite mulRC. apply mulRV. Qed.
 
 Lemma a_eq_true : Set2.a card_bool = true.
 Proof.
-Admitted.
+rewrite /Set2.a /enum_val /enum_mem.
+by rewrite Finite.EnumDef.enumDef /=.
+Qed.
 
 Theorem concat_entropy s1 s2 :
   INR (size s1) * Hs s1 + INR (size s2) * Hs s2
@@ -122,12 +124,6 @@ case: ifP => Hs2.
   by apply leq_addr.
 case: ifP => Hs12.
   by rewrite addn_eq0 Hs1 in Hs12.
-(* Then we should use jensen_dist *)
-(*have sz_12_gt0: 0 < INR (size s1 + size s2).
-  apply (Rlt_le_trans _ _ _ sz_s1_gt0).
-  apply le_INR.
-  apply/leP.
-  by apply leq_addr.*)
 have cnt_s2_gt0: 0 < INR (count_mem i s2).
   apply lt_0_INR.
   apply /leP.
@@ -137,6 +133,7 @@ have cnt_12_gt0: 0 < INR (count_mem i s1 + count_mem i s2).
   apply le_INR.
   apply/leP.
   by apply leq_addr.
+(* Then we should use jensen_dist *)
 have Hp: 0 <= INR (count_mem i s2) / INR (count_mem i (s1 ++ s2)) <= 1.
   rewrite count_cat.
   split.
@@ -152,15 +149,6 @@ have Hp: 0 <= INR (count_mem i s2) / INR (count_mem i (s1 ++ s2)) <= 1.
   move=> Hn.
   move: cnt_12_gt0.
   by rewrite Hn; apply Rlt_irrefl.
-have Hdist: (0 < #|dist_supp (Binary.d card_bool Hp)|)%nat.
-  rewrite /dist_supp card_gt0.
-  apply/eqP => /setP /(_ true).
-  rewrite !inE /= a_eq_true /= /Binary.f eqxx.
-  admit.
-move: (jensen_dist_concave log_concave
-       (fun b => if b then INR (size s1) / INR (count_mem i s1)
-                      else INR (size s2) / INR (count_mem i s2))
-       Hdist).
 have H1m: 1 - INR (count_mem i s2) / INR (count_mem i (s1 ++ s2)) =
           INR (count_mem i s1) / INR (count_mem i (s1 ++ s2)).
   rewrite count_cat -(divRR (INR (count_mem i s1 + count_mem i s2))).
@@ -171,6 +159,22 @@ have H1m: 1 - INR (count_mem i s2) / INR (count_mem i (s1 ++ s2)) =
   move=> Hn.
   move: cnt_12_gt0.
   by rewrite Hn; apply Rlt_irrefl.
+have Hdist: (0 < #|dist_supp (Binary.d card_bool Hp)|)%nat.
+  rewrite /dist_supp card_gt0.
+  apply/eqP => /setP /(_ true).
+  rewrite !inE /= a_eq_true /= /Binary.f eqxx.
+  rewrite H1m.
+  move/eqP.
+  apply Rmult_integral_contrapositive.
+  split.
+    by apply Rgt_not_eq.
+  apply Rinv_neq_0_compat.
+  apply Rgt_not_eq.
+  by rewrite count_cat.
+move: (jensen_dist_concave log_concave
+       (fun b => if b then INR (size s1) / INR (count_mem i s1)
+                      else INR (size s2) / INR (count_mem i s2))
+       Hdist).
 rewrite (bigD1 true) ?inE // (bigD1 false) ?inE // big_pred0 /=;
   last by move=> j /=; case: j.
 rewrite (bigD1 true) ?inE // (bigD1 false) ?inE // big_pred0 /Binary.f /=;
@@ -184,7 +188,6 @@ rewrite mulVR ?mulR1; last first.
   by rewrite Hn; apply Rlt_irrefl.
 rewrite mulVR ?mulR1; last first.
   move=> Hn.
-  Search _ "INR".
   move: cnt_s1_gt0.
   by rewrite Hn; apply Rlt_irrefl.
 rewrite -2!Rmult_plus_distr_r.
@@ -199,4 +202,4 @@ rewrite ![_ * INR (count_mem _ _)]mulRC.
 apply.
 apply Rlt_le.
 by rewrite count_cat.
-Admitted.
+Qed.
