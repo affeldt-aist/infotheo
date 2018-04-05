@@ -44,13 +44,9 @@ Variable A : finType.
 Lemma dist_supp_single X (a:A) : dist_supp X = [set a] -> X a = 1. 
 Proof.
 move=> Ha.
-rewrite -(pmf1 X) (bigID (mem (dist_supp X))) /= Ha big_set1.
-rewrite (eq_bigr(fun=>0)); first by rewrite big1 // addR0.
-move=> i.
-move: Ha.
-rewrite /dist_supp => /setP /(_ i).
-rewrite !inE.
-by case: (i == a) => // /eqP.
+rewrite -(pmf1 X).
+rewrite (eq_bigr (fun i => 1 * X i)); last by move=> *; rewrite mul1R.
+by rewrite rsum_dist_supp Ha big_set1 mul1R.
 Qed.
 
 Lemma jensen_dist (r : A -> R) (X : dist A) : (0 < #|dist_supp X|)%nat ->
