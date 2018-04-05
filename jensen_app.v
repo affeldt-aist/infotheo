@@ -57,6 +57,13 @@ move=> x y t Ht.
 rewrite /concave_leq.
 Admitted.
 
+Lemma mulVR x: x <> 0 -> /x * x = 1.
+Proof. rewrite mulRC. apply mulRV. Qed.
+
+Lemma a_eq_true : Set2.a card_bool = true.
+Proof.
+Admitted.
+
 Theorem concat_entropy s1 s2 :
   INR (size s1) * Hs s1 + INR (size s2) * Hs s2
   <= INR (size (s1 ++ s2)) * Hs (s1 ++ s2).
@@ -116,32 +123,80 @@ case: ifP => Hs2.
 case: ifP => Hs12.
   by rewrite addn_eq0 Hs1 in Hs12.
 (* Then we should use jensen_dist *)
-have sz_12_gt0: 0 < INR (size s1 + size s2).
+(*have sz_12_gt0: 0 < INR (size s1 + size s2).
   apply (Rlt_le_trans _ _ _ sz_s1_gt0).
   apply le_INR.
   apply/leP.
+  by apply leq_addr.*)
+have cnt_s2_gt0: 0 < INR (count_mem i s2).
+  apply lt_0_INR.
+  apply /leP.
+  by rewrite lt0n Hs2.
+have cnt_12_gt0: 0 < INR (count_mem i s1 + count_mem i s2).
+  apply (Rlt_le_trans _ _ _ cnt_s1_gt0).
+  apply le_INR.
+  apply/leP.
   by apply leq_addr.
-have Hp: 0 <= INR (size s1) / INR (size (s1 ++ s2)) <= 1.
-  rewrite size_cat.
+have Hp: 0 <= INR (count_mem i s2) / INR (count_mem i (s1 ++ s2)) <= 1.
+  rewrite count_cat.
   split.
     apply Rlt_le.
     apply mulR_gt0 => //.
     by apply invR_gt0.
-  apply (Rmult_le_reg_r (INR (size s1 + size s2))) => //.
-  rewrite /Rinv -mulRA (mulRC (/ _)) mulRV.
+  apply (Rmult_le_reg_r _ _ _ cnt_12_gt0).
+  rewrite -mulRA (mulRC (/ _)) mulRV.
     rewrite mulR1 mul1R.
     apply le_INR.
     apply/leP.
-    by apply leq_addr.
+    by apply leq_addl.
   move=> Hn.
-  rewrite Hn in sz_12_gt0.
-  by apply (Rlt_irrefl _ sz_12_gt0).
+  move: cnt_12_gt0.
+  by rewrite Hn; apply Rlt_irrefl.
 have Hdist: (0 < #|dist_supp (Binary.d card_bool Hp)|)%nat.
-  rewrite /dist_supp.
+  rewrite /dist_supp card_gt0.
+  apply/eqP => /setP /(_ true).
+  rewrite !inE /= a_eq_true /= /Binary.f eqxx.
   admit.
 move: (jensen_dist_concave log_concave
        (fun b => if b then INR (size s1) / INR (count_mem i s1)
                       else INR (size s2) / INR (count_mem i s2))
        Hdist).
-rewrite /index_enum.
-Abort.
+have H1m: 1 - INR (count_mem i s2) / INR (count_mem i (s1 ++ s2)) =
+          INR (count_mem i s1) / INR (count_mem i (s1 ++ s2)).
+  rewrite count_cat -(divRR (INR (count_mem i s1 + count_mem i s2))).
+    rewrite -Rdiv_minus_distr -minus_INR.
+      by rewrite minusE addnK.
+    apply/leP.
+    by apply leq_addl.
+  move=> Hn.
+  move: cnt_12_gt0.
+  by rewrite Hn; apply Rlt_irrefl.
+rewrite (bigD1 true) ?inE // (bigD1 false) ?inE // big_pred0 /=;
+  last by move=> j /=; case: j.
+rewrite (bigD1 true) ?inE // (bigD1 false) ?inE // big_pred0 /Binary.f /=;
+  last by move=> j /=; case: j.
+rewrite a_eq_true eqxx eqb_id /=.
+rewrite H1m !addR0.
+rewrite /Rdiv 4!mulRA -2![_ * / _ * _]mulRA.
+rewrite mulVR ?mulR1; last first.
+  move=> Hn.
+  move: cnt_s2_gt0.
+  by rewrite Hn; apply Rlt_irrefl.
+rewrite mulVR ?mulR1; last first.
+  move=> Hn.
+  Search _ "INR".
+  move: cnt_s1_gt0.
+  by rewrite Hn; apply Rlt_irrefl.
+rewrite -2!Rmult_plus_distr_r.
+rewrite mulRC.
+move/(Rmult_le_compat_l (INR ((count_mem i) (s1 ++ s2)))).
+rewrite mulRA mulRV ?mul1R; last first.
+  rewrite count_cat => Hn.
+  move: cnt_12_gt0.
+  by rewrite Hn; apply Rlt_irrefl.
+rewrite -count_cat plus_INR.
+rewrite ![_ * INR (count_mem _ _)]mulRC.
+apply.
+apply Rlt_le.
+by rewrite count_cat.
+Admitted.
