@@ -51,6 +51,12 @@ move: (count_size (pred1 i) s).
 by rewrite Hsz leqn0 Hnum.
 Qed.
 
+Lemma log_concave : concave log.
+Proof.
+move=> x y t Ht.
+rewrite /concave_leq.
+Admitted.
+
 Theorem concat_entropy s1 s2 :
   INR (size s1) * Hs s1 + INR (size s2) * Hs s2
   <= INR (size (s1 ++ s2)) * Hs (s1 ++ s2).
@@ -76,7 +82,8 @@ case: ifP => Hs1.
     by apply cnt_lt_size.
   apply Rmult_le_compat_l.
     by apply Rlt_le.
-  apply log_increasing_le.
+  apply Log_increasing_le.
+      by apply Rlt_1_2.
     by apply Rlt_mult_inv_pos.
   apply Rmult_le_compat_r.
     by apply Rlt_le, invR_gt0, cnt_s2_gt0.
@@ -98,7 +105,8 @@ case: ifP => Hs2.
   rewrite (eqP Hs2) !addn0 addR0 Hs1.
   apply Rmult_le_compat_l.
     by apply Rlt_le.
-  apply log_increasing_le.
+  apply Log_increasing_le.
+      by apply Rlt_1_2.
     by apply Rlt_mult_inv_pos.
   apply Rmult_le_compat_r.
     by apply Rlt_le, invR_gt0, cnt_s1_gt0.
@@ -108,4 +116,32 @@ case: ifP => Hs2.
 case: ifP => Hs12.
   by rewrite addn_eq0 Hs1 in Hs12.
 (* Then we should use jensen_dist *)
+have sz_12_gt0: 0 < INR (size s1 + size s2).
+  apply (Rlt_le_trans _ _ _ sz_s1_gt0).
+  apply le_INR.
+  apply/leP.
+  by apply leq_addr.
+have Hp: 0 <= INR (size s1) / INR (size (s1 ++ s2)) <= 1.
+  rewrite size_cat.
+  split.
+    apply Rlt_le.
+    apply mulR_gt0 => //.
+    by apply invR_gt0.
+  apply (Rmult_le_reg_r (INR (size s1 + size s2))) => //.
+  rewrite /Rinv -mulRA (mulRC (/ _)) mulRV.
+    rewrite mulR1 mul1R.
+    apply le_INR.
+    apply/leP.
+    by apply leq_addr.
+  move=> Hn.
+  rewrite Hn in sz_12_gt0.
+  by apply (Rlt_irrefl _ sz_12_gt0).
+have Hdist: (0 < #|dist_supp (Binary.d card_bool Hp)|)%nat.
+  rewrite /dist_supp.
+  admit.
+move: (jensen_dist_concave log_concave
+       (fun b => if b then INR (size s1) / INR (count_mem i s1)
+                      else INR (size s2) / INR (count_mem i s2))
+       Hdist).
+rewrite /index_enum.
 Abort.
