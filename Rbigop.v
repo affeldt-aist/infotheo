@@ -145,29 +145,32 @@ Proof. elim: k => // k Hk; by rewrite iterS Hk Rmax_right. Qed.
 
 (** Rle, Rlt lemmas for big sums of reals *)
 
+Lemma rsum_setT (A : finType) (f : A -> R) (P : pred A) :
+  \rsum_(i in A | P i) f i = \rsum_(i in [set: A] | P i) f i.
+Proof. apply eq_bigl => x /=; by rewrite !inE. Qed.
+
 Section ler_ltr_rsum.
 
 Variables (A : finType) (f g : A -> R) (P Q : pred A).
-
-Lemma ler_rsum : (forall i, P i -> f i <= g i) ->
-  \rsum_(i | P i) f i <= \rsum_(i | P i) g i.
-Proof.
-move=> H; elim: (index_enum _) => [|h t IH].
-- rewrite !big_nil; exact/Rle_refl.
-- rewrite !big_cons; case: ifP => // Ph; apply Rplus_le_compat => //; exact/H.
-Qed.
 
 Lemma ler_rsum_support (X : {set A}) :
   (forall i, i \in X -> P i -> f i <= g i) ->
   \rsum_(i in X | P i) f i <= \rsum_(i in X | P i) g i.
 Proof.
 move=> H.
-elim: (index_enum _) => [| hd tl IH].
+elim: (index_enum _) => [|h t IH].
 - rewrite !big_nil; exact/Rle_refl.
 - rewrite !big_cons.
-  set cond := _ && _; move Hcond : cond => []; subst cond => //.
+  set K := _ && _; move HK : K => []; subst K => //.
   apply Rplus_le_compat => //.
-  case/andP : Hcond; exact: H.
+  case/andP : HK; exact: H.
+Qed.
+
+Lemma ler_rsum : (forall i, P i -> f i <= g i) ->
+  \rsum_(i | P i) f i <= \rsum_(i | P i) g i.
+Proof.
+move=> H; rewrite rsum_setT [in X in _ <= X]rsum_setT.
+apply ler_rsum_support => a _; exact: H.
 Qed.
 
 Lemma ler_rsum_l : (forall i, P i -> f i <= g i) ->
@@ -218,6 +221,17 @@ apply Rplus_lt_compat; first exact/H.
 apply IH => //.
 - move: Hn; rewrite (cardsD1 a0) Ha0 /= add1n; by case.
 - move=> a; rewrite in_setD inE => /andP[_ ?]; exact: H.
+Qed.
+
+Lemma ltR_rsum : (O < #|A|)%nat -> (forall i, f i < g i) ->
+  \rsum_(i in A) f i < \rsum_(i in A) g i.
+Proof.
+move=> A0 H0.
+have : forall i : A, i \in [set: A] -> f i < g i by move=> a _; exact/H0.
+move/ltr_rsum_support; rewrite cardsT => /(_ A0).
+rewrite big_mkcond /= [in X in _ < X]big_mkcond /=.
+rewrite (eq_bigr f) //; last by move=> *; rewrite inE.
+rewrite [in X in _ < X](eq_bigr g) //; by move=> *; rewrite inE.
 Qed.
 
 End ler_ltr_rsum.

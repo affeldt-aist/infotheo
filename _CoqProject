@@ -69,4 +69,5 @@ degree_profile.v
 vandermonde.v
 alternant.v
 kraft.v
+shannon_fano.v
 -R . infotheo
