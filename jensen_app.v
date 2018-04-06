@@ -74,9 +74,6 @@ apply Rlt_le_neq.
 by apply/eqP; rewrite Ht1.
 Admitted.
 
-Lemma mulVR x: x <> 0 -> /x * x = 1.
-Proof. rewrite mulRCrefl. apply mulRV. Qed.
-
 Lemma a_eq_true : Set2.a card_bool = true.
 Proof.
 rewrite /Set2.a /enum_val /enum_mem.
@@ -188,10 +185,18 @@ have Hdist: (0 < #|dist_supp (Binary.d card_bool Hp)|)%nat.
   apply Rinv_neq_0_compat.
   apply Rgt_not_eq.
   by rewrite count_cat.
-move: (jensen_dist_concave log_concave
-       (fun b => if b then INR (size s1) / INR (count_mem i s1)
-                      else INR (size s2) / INR (count_mem i s2))
-       Hdist).
+set r := (fun b => if b then INR (size s1) / INR (count_mem i s1)
+                   else INR (size s2) / INR (count_mem i s2)).
+have Hr: dist_covered (fun x => 0 < x) r (Binary.d card_bool Hp).
+  move=> [|] _ /=.
+    by apply Rdiv_lt_0_compat.
+  apply Rdiv_lt_0_compat => //.
+  apply lt_0_INR.
+  apply/leP.
+  apply (@leq_trans (count_mem i s2)).
+    by rewrite lt0n Hs2.
+  by apply count_size.
+move: (jensen_dist_concave log_concave Hdist Hr).
 rewrite (bigD1 true) ?inE // (bigD1 false) ?inE // big_pred0 /=;
   last by move=> j /=; case: j.
 rewrite (bigD1 true) ?inE // (bigD1 false) ?inE // big_pred0 /Binary.f /=;
@@ -200,13 +205,9 @@ rewrite a_eq_true eqxx eqb_id /=.
 rewrite H1m !addR0.
 rewrite /Rdiv 4!mulRA -2![_ * / _ * _]mulRA.
 rewrite mulVR ?mulR1; last first.
-  move=> Hn.
-  move: cnt_s2_gt0.
-  by rewrite Hn; apply Rlt_irrefl.
+  by rewrite INR_eq0 Hs2.
 rewrite mulVR ?mulR1; last first.
-  move=> Hn.
-  move: cnt_s1_gt0.
-  by rewrite Hn; apply Rlt_irrefl.
+  by rewrite INR_eq0 Hs1.
 rewrite -2!Rmult_plus_distr_r.
 rewrite mulRC.
 move/(Rmult_le_compat_l (INR ((count_mem i) (s1 ++ s2)))).
