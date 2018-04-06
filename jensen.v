@@ -98,14 +98,11 @@ case/boolP : (X b == 1) => [/eqP |] Xb1.
       move/eqP : (pmf1 X).
       by rewrite (bigD1 b) //= Xb1 eq_sym addRC -subR_eq subRR => /eqP <-.
   rewrite (bigD1 b) //=; last by rewrite inE Xb1; exact/eqP/R1_neq_R0.
-  rewrite (eq_bigr (fun=> 0)); last by move=> a /andP[? ?]; rewrite H // ?mulR0.
-  rewrite big_const iter_Rplus mulR0 addR0 (bigD1 b) //=; last first.
-    rewrite inE Xb1; apply/eqP; exact: R1_neq_R0.
-  rewrite (eq_bigr (fun=> 0)); last by move=> a /andP[? ?]; rewrite H // ?mulR0.
-  split.
-    by rewrite big_const iter_Rplus mulR0 addR0 Xb1 !mulR1; apply Rle_refl.
-  rewrite Xb1 mulR1; apply HDX.
-  by rewrite /dist_supp inE.
+  rewrite Xb1 big1; last by move=> a /andP[? ?]; rewrite H // ?mulR0.
+  rewrite (bigD1 b) //=; last by rewrite inE Xb1; exact/eqP/R1_neq_R0.
+  rewrite Xb1 big1; last by move=> a /andP[? ?]; rewrite H // ?mulR0.
+  rewrite !addR0 !mulR1.
+  by split; [apply Rle_refl | apply HDX; rewrite inE].
 have HXb1: 1 - X b <> 0.
   by apply/eqP; apply: contra Xb1; rewrite subR_eq0 eq_sym.
 set d := D1Dist.d Xb1.
