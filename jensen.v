@@ -74,19 +74,17 @@ Definition dist_covered (r : A -> R) (X : dist A) :=
 
 Lemma jensen_dist (r : A -> R) (X : dist A) :
   (0 < #|dist_supp X|)%nat -> dist_covered r X ->
-  f (\rsum_(a in A) r a * X a) <= \rsum_(a in A) f (r a) * X a /\
-  D (\rsum_(a in A) r a * X a).
+  f (\rsum_(a in A) r a * X a) <= \rsum_(a in A) f (r a) * X a.
 Proof.
-move=> A1.
-rewrite [in X in _ <= X]rsum_dist_supp [in X in X <= _]rsum_dist_supp /=
-        [in X in _ /\ X]rsum_dist_supp.
+move=> A1 HDX.
+apply (@proj1 _ (D (\rsum_(a in dist_supp X) r a * X a))).
+rewrite [in X in _ <= X]rsum_dist_supp [in X in X <= _]rsum_dist_supp /=.
 apply: (@dist_ind A (fun X => dist_covered r X ->
    f (\rsum_(a in dist_supp X) r a * X a) <=
-   \rsum_(a in dist_supp X) f (r a) * X a /\ _)) => //.
+   \rsum_(a in dist_supp X) f (r a) * X a /\ _)) HDX => //.
   move=> {X A1}X /eqP/cards1P [b Hb] HDX.
   rewrite Hb !big_set1 dist_supp_single // !mulR1.
-  split.
-    by apply Rle_refl.
+  split. by apply Rle_refl.
   by apply HDX; rewrite Hb inE eqxx.
 move=> n IH {X A1} X cardA HDX.
 have [b Hb] : exists b : A, X b != 0.
@@ -108,89 +106,50 @@ case/boolP : (X b == 1) => [/eqP |] Xb1.
     by rewrite big_const iter_Rplus mulR0 addR0 Xb1 !mulR1; apply Rle_refl.
   rewrite Xb1 mulR1; apply HDX.
   by rewrite /dist_supp inE.
-rewrite [in X in _ <= X](bigD1 b) //=; last by rewrite !inE.
-set d := D1Dist.f X b.
-have -> : \rsum_(i in dist_supp X | i != b) f (r i) * X i =
-  (1 - X b) * \rsum_(i in dist_supp X | i != b) f (r i) * d i.
-  rewrite big_distrr /=; apply eq_bigr => a /andP[Ha ab].
-  rewrite mulRCA; congr (_ * _).
-  rewrite /d /D1Dist.f (negbTE ab) mulRCA mulRV ?mulR1 //.
+have HXb1: 1 - X b <> 0.
   by apply/eqP; apply: contra Xb1; rewrite subR_eq0 eq_sym.
-have /IH H : #|dist_supp (D1Dist.d Xb1)| = n.
+set d := D1Dist.d Xb1.
+have HsumD1 q:
+  \rsum_(a in dist_supp d) q a * d a =
+  /(1 - X b) * \rsum_(a in dist_supp d) q a * X a.
+  rewrite (eq_bigr (fun a => /(1-X b) * (q a * X a))); last first.
+    move=> i.
+    rewrite inE /= /d /D1Dist.f /=.
+    case: ifP => Hi; first by rewrite eqxx.
+    by rewrite /Rdiv (mulRC (/ _)) mulRA.
+  by rewrite -big_distrr.
+have {HsumD1}HsumXD1 q:
+  \rsum_(a in dist_supp X) q a * X a =
+  q b * X b + (1 - X b) * (\rsum_(a in dist_supp d) q a * d a).
+  rewrite HsumD1 /d /D1Dist.f /= mulRA mulRV // mul1R (bigD1 b) ?inE //=.
+  rewrite (eq_bigl (fun a : A => a \in dist_supp d)) //= => i.
+  rewrite !inE /=.
+  case HXi: (X i == 0) => //=.
+    by rewrite (D1Dist.f_0 _ (eqP HXi)) eqxx.
+  by rewrite D1Dist.f_eq0 // ?HXi // eq_sym.
+rewrite 2!{}HsumXD1.
+have /IH H : #|dist_supp d| = n.
   by rewrite D1Dist.card_dist_supp // cardA.
-have /H {H}[H HDX1] : dist_covered r (D1Dist.d Xb1).
+have /H {IH H}[IH HDX1] : dist_covered r d.
   move=> a Ha.
-  apply HDX.
-  move: Ha; rewrite /dist_supp !inE.
-  rewrite /D1Dist.d /D1Dist.f /=.
-  case: ifP => Ha.
-    by rewrite eqxx.
-  move/eqP => HX.
-  apply/eqP => HXa.
+  apply HDX; move: Ha.
+  rewrite /dist_supp !inE /d /D1Dist.d /D1Dist.f /=.
+  case: ifP => Ha; first by rewrite eqxx.
+  move/eqP => HX; apply/eqP => HXa.
   by apply HX; rewrite HXa /Rdiv mul0R.
 have HXb: 0 <= X b <= 1 by split; [exact/dist_nonneg|exact/dist_max].
 split; last first.
-  have HDb: D (r b).
-    by apply HDX; rewrite inE.
-  move/proj2: (convex_f HDb HDX1 HXb).
-  rewrite /= /D1Dist.f /=.
-  rewrite (eq_bigr (fun a => /(1-X b) * (r a * X a))); last first.
-    move=> i.
-    rewrite inE /= /D1Dist.f /=.
-    case: ifP => Hi.
-      by rewrite eqxx.
-    by rewrite /Rdiv  (mulRC (/ _)) mulRA.
-  rewrite -big_distrr /= mulRA mulRV.
-    rewrite mul1R mulRC => HDXb.
-    rewrite (bigD1 b) /=; last by rewrite inE.
-    rewrite (eq_bigl (fun a : A => a \in dist_supp (D1Dist.d Xb1))) //= => i.
-    rewrite !inE /=.
-    case HXi: (X i == 0) => //=.
-      by rewrite (D1Dist.f_0 _ (eqP HXi)) eqxx.
-    by rewrite D1Dist.f_eq0 // ?HXi // eq_sym.
-  move/(Rplus_eq_compat_l (X b)).
-  rewrite addR0 Rplus_minus => HXb1.
-  move: (Xb1).
-  by rewrite HXb1 eqxx.
-apply (@Rle_trans _ (f (r b) * X b +
-                     (1 - X b) * f (\rsum_(i in A | i != b) (r i) * d i))); last first.
-  apply/Rplus_le_compat_l/Rmult_le_compat_l.
-    move: (dist_max X b) => ?; fourier.
-  set x := (X in _ <= X) in H. set x' := (X in _ <= X).
-  have <- : x = x'.
-    rewrite /x /x' /D1Dist.d /d /=.
-    rewrite big_seq_cond big_mkcond [in RHS]big_seq_cond [in RHS]big_mkcond /=.
-    apply eq_bigr => a _.
-    rewrite !inE /= mem_index_enum /=.
-    case/boolP : (X a == 0) => [/eqP/D1Dist.f_0|/(D1Dist.f_eq0 Xb1)] -> /=;
-      by [rewrite eqxx | rewrite eq_sym].
-  apply/(Rle_trans _ _ _ _ H)/Req_le; congr f.
-  rewrite big_seq_cond big_mkcond /= [in RHS]big_mkcond; apply eq_bigr => a _.
-  rewrite mem_index_enum inE /d /=.
-  case/boolP : (X a == 0) => [/eqP/D1Dist.f_0|/(D1Dist.f_eq0 Xb1)] -> /=;
-    by [rewrite eqxx /= /d mulR0; case: ifP | rewrite eq_sym].
-apply (@Rle_trans _ (f (X b * r b +
-                    (1 - X b) * (\rsum_(i in A | i != b) (r i) * d i)))); last first.
-  refine (Rle_trans _ _ _ 
-    (proj1 (@convex_f (r b) (\rsum_(i in A | i != b) r i * d i) _ _ _ HXb)) _).
-      by apply HDX; rewrite inE.
-    rewrite (bigID (fun a => d a == 0)) /=.
-    rewrite big1; last first.
-      by move=> i /andP [_ /eqP ->]; rewrite mulR0.
-    rewrite add0R.
-    rewrite (eq_bigl (fun a : A => a \in dist_supp (D1Dist.d Xb1))) //= => i.
-    case Hi: (i == b).
-      by rewrite (eqP Hi) inE D1Dist.f_eq0 // eqxx.
-    by rewrite inE.
-  rewrite mulRC; exact/Rle_refl.
-rewrite [in X in X <= _](bigD1 b) //=; last by rewrite !inE.
-rewrite mulRC big_distrr /= [in X in _ <= X](eq_bigr (fun i => r i * X i)).
-  apply Req_le; congr (f (_ + _)).
-  rewrite [in RHS]rsum_dist_supp; by apply eq_bigl => i; rewrite andbC.
-move=> a ab.
-rewrite mulRCA; congr (_ * _).
-rewrite /d /D1Dist.f (negbTE ab) mulRCA mulRV ?mulR1 //.
-apply/eqP; apply: contra (Xb1); by rewrite subR_eq0 eq_sym.
+  have HDb: D (r b) by apply HDX; rewrite inE.
+  by rewrite mulRC; apply convex_f.
+rewrite mulRC.
+refine (Rle_trans _ _ _ 
+ (proj1 (@convex_f (r b) (\rsum_(i in dist_supp d) r i * d i) _ _ HDX1 HXb)) _).
+  by apply HDX; rewrite inE.
+rewrite mulRC.
+apply /Rplus_le_compat_l /Rmult_le_compat_l => //.
+apply (Rplus_le_reg_l (X b)).
+rewrite addR0 Rplus_minus.
+by apply HXb.
 Qed.
 
 Local Open Scope proba_scope.
@@ -228,7 +187,7 @@ Lemma jensen_dist_concave (r : A -> R) (X : dist A) :
 Proof.
 move=> HX HDX.
 apply Ropp_le_cancel.
-move: (proj1 (jensen_dist convex_g HX HDX)).
+move: (jensen_dist convex_g HX HDX).
 rewrite /g.
 rewrite [in X in _ <= X](eq_bigr (fun a => -1 * (f (r a) * X a))).
   rewrite -[in X in _ <= X]big_distrr /=.
