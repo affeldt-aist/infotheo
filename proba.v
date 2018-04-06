@@ -161,8 +161,7 @@ Qed.
 
 Lemma f1 : \rsum_(a | a \in A) f a = 1.
 Proof.
-rewrite /f -big_distrr /= mul1R big_const iter_Rplus mulRV //.
-apply/not_0_INR/eqP; by rewrite domain_not_empty.
+by rewrite /f -big_distrr /= mul1R big_const iter_Rplus mulRV // INR_eq0 domain_not_empty.
 Qed.
 
 Definition d : dist A := makeDist f0 f1.
@@ -208,11 +207,10 @@ Qed.
 Lemma f1 : \rsum_(a in A) f a = 1%R.
 Proof.
 rewrite /f.
-have HC' : INR #|C| <> 0%R.
-  apply/not_0_INR/eqP; by rewrite -lt0n.
+have HC' : INR #|C| != 0%R by rewrite INR_eq0 -lt0n.
 transitivity (\rsum_(a in A) (if a \in C then 1 else 0) / INR #|C|)%R.
 apply eq_bigr => a _.
-  case aC : (a \in C); [reflexivity | by field].
+  case aC : (a \in C); [reflexivity | by move/eqP in HC'; field].
 have HC'' : \rsum_(a in A) (if a \in C then 1 else 0)%R = INR #|C|.
   by rewrite -big_mkcondr /= big_const iter_Rplus mulR1.
 by rewrite /Rdiv -big_distrl HC'' /= mulRV.
@@ -359,11 +357,10 @@ Hypothesis Xb1 : X b != 1.
 Lemma f0 : forall a, 0 <= f a.
 Proof.
 move=> a; rewrite /f.
-case: ifPn => [_ |ab]; first by apply Rle_refl.
-apply mulR_ge0; first by apply dist_nonneg.
+case: ifPn => [_ |ab]; first exact/Rle_refl.
+apply mulR_ge0; first exact/dist_nonneg.
 apply/RleP/RltW/RltP/invR_gt0/Rlt_Rminus.
-move/RleP: (dist_max X b).
-by rewrite Rle_eqVlt (negbTE Xb1) /= => /RltP.
+apply/RltP; rewrite ltR_neqAle Xb1; exact/RleP/dist_max.
 Qed.
 
 Lemma f1 : \rsum_(a in B) f a = 1.
@@ -551,10 +548,10 @@ have H4 : INR #|A| * alpha <= \rsum_(x in A) P `^ _ x.
 case: H1 => H1 H1'.
 split.
   apply Rmult_le_reg_l with beta => //.
-  rewrite mulRCA mulRV ?mulR1; last exact/nesym/Rlt_not_eq.
+  rewrite mulRCA mulRV // ?mulR1; last exact/eqP/nesym/Rlt_not_eq.
   rewrite mulRC; by eapply Rle_trans; eauto.
 apply Rmult_le_reg_l with alpha => //.
-rewrite mulRCA mulRV ?mulR1; last exact/nesym/Rlt_not_eq.
+rewrite mulRCA mulRV // ?mulR1; last exact/eqP/nesym/Rlt_not_eq.
 rewrite mulRC; by eapply Rle_trans; eauto.
 Qed.
 
@@ -935,7 +932,7 @@ Proof.
 move=> r0.
 rewrite /Rdiv.
 apply: (Rmult_le_reg_l r) => //.
-rewrite mulRCA mulRV ?mulR1; last exact/not_eq_sym/Rlt_not_eq.
+rewrite mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
 exact: Ex_lb.
 Qed.
 

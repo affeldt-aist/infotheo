@@ -205,8 +205,7 @@ apply/negPn/negPn.
     rewrite -exp2_pow2.
     suff : INR n = (INR k * r)%R by move=> ->.
     rewrite /n /k /r (mult_INR _ den.+1) /Rdiv -mulRA.
-    rewrite (mulRCA (INR den.+1)) mulRV ?mulR1 ?mult_INR //.
-    exact/not_0_INR.
+    by rewrite (mulRCA (INR den.+1)) mulRV ?INR_eq0 // mulR1 ?mult_INR.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * r) by fourier.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * (`H P + lambda)).
     eapply Rle_trans; first by apply card_S_bound.
@@ -224,7 +223,7 @@ apply/negPn/negPn.
     rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
       apply nesym, Rlt_not_eq; exact lambda0.
       move=> ?; fourier.
-      rewrite mulRV ?mulR1 //; exact/nesym/Rlt_not_eq/halflambda0.
+      rewrite mulRV ?mulR1 //; exact/eqP/nesym/Rlt_not_eq/halflambda0.
   eapply Rle_trans; first exact/Rplus_le_compat_l/TS_sup.
   apply Rle_trans with (exp2 (INR k* (`H P + lambda / 2)) +
                         exp2 (INR k * (`H P + lambda / 2)))%R.

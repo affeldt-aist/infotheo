@@ -221,7 +221,7 @@ apply Rinv_le_contravar.
 - rewrite -[X in _ <= X]mulR1.
   apply Rmult_le_compat_l; first by fourier.
   rewrite [X in _ <= X](_ : 1%R = ln (exp 1)); last by rewrite ln_exp.
-  apply ln_increasing_le; [fourier | exact two_e].
+  apply ln_increasing_le; [fourier | exact leR2e].
 Qed.
 
 End Pinsker.

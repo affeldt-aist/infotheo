@@ -94,8 +94,8 @@ case/andP => H1 H2.
 split.
 - apply Rmult_le_reg_l with (INR n.+1); first by apply lt_0_INR; apply/ltP.
   rewrite mulNR mulRN.
-  rewrite div1R mulRA mulRV ?mul1R; last exact/not_0_INR.
-  rewrite -(oppRK (INR n.+1 * (`H P - epsilon))).
+  rewrite div1R mulRA mulRV ?INR_eq0 // mul1R.
+  rewrite -[X in X <= _]oppRK.
   apply/Ropp_le_contravar/(@Exp_le_inv 2) => //.
   rewrite LogK //; last first.
     move/RleP in H1.
@@ -103,8 +103,8 @@ split.
   apply/RleP; by rewrite -mulNR.
 - apply Rmult_le_reg_l with (INR n.+1); first by apply lt_0_INR; apply/ltP.
   rewrite mulNR mulRN.
-  rewrite div1R mulRA mulRV ?mul1R; last exact/not_0_INR.
-  rewrite -(oppRK (INR n.+1 * (`H P + epsilon))).
+  rewrite div1R mulRA mulRV ?INR_eq0 // mul1R.
+  rewrite -[X in _ <= X]oppRK.
   apply/Ropp_le_contravar/(@Exp_le_inv 2) => //.
   rewrite LogK //; last first.
     move/RleP in H1.

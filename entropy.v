@@ -26,18 +26,16 @@ rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))); last first.
   apply eq_bigl => i /=; by rewrite inE.
 apply rsumr_ge0 => i _.
-case: (Req_EM_T (P i) 0).
+case/boolP : (P i == 0) => [/eqP ->|Hi].
   (* NB: this step in a standard textbook would be handled as a
      consequence of lim x->0 x log x = 0 *)
-  move=> ->.
   rewrite mul0R oppR0; exact: Rle_refl.
-move=> Hi.
 rewrite mulRC -mulNR.
 apply mulR_ge0; last exact: dist_nonneg.
 apply oppR_ge0.
 rewrite /log -(Log_1 2).
 apply Log_increasing_le => //; last exact: dist_max.
-apply Rlt_le_neq; by [apply dist_nonneg | auto].
+apply/RltP; rewrite lt0R Hi; exact/RleP/dist_nonneg.
 Qed.
 
 Hypothesis P_pos : forall b, 0 < P b.
@@ -83,9 +81,8 @@ Lemma entropy_uniform {A : finType} n (HA : #|A| = n.+1) :
   `H (Uniform.d HA) = log (INR #|A|).
 Proof.
 rewrite /entropy /Uniform.d /Uniform.f /=.
-rewrite big_const iter_Rplus div1R mulRA mulRV ?mul1R; last first.
-  rewrite HA; by apply not_0_INR.
-rewrite /log LogV ?oppRK //; by rewrite HA; apply/lt_0_INR/ltP.
+rewrite big_const iter_Rplus div1R mulRA mulRV; last by rewrite INR_eq0 HA.
+rewrite mul1R /log LogV ?oppRK //; by rewrite HA; apply/lt_0_INR/ltP.
 Qed.
 
 Local Open Scope reals_ext_scope.

@@ -155,7 +155,7 @@ apply Rle_trans with (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R; last first.
   rewrite /aep_bound in Hbound.
   apply (Rmult_le_compat_r (epsilon / INR n.+1)) in Hbound; last first.
     apply Rle_mult_inv_pos; [exact/ltRW/Hepsilon | exact/lt_0_INR/ltP].
-  rewrite [in X in _ <= X]mulRCA mulRV ?mulR1 in Hbound; last by apply not_0_INR.
+  rewrite [in X in _ <= X]mulRCA mulRV ?INR_eq0 // ?mulR1 in Hbound.
   eapply Rle_trans; last by apply Hbound.
   apply Req_le; field.
   split; [exact: not_0_INR | exact: gtR_eqF].

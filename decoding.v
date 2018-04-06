@@ -249,7 +249,7 @@ apply (Rmult_le_reg_l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
   by fourier.
   exact Hp.
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
-  apply pow_not0 => ?; fourier.
+  apply/eqP/pow_not0 => ?; fourier.
 rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
   apply/eqP/pow_not0 => ?; fourier.
 rewrite -expRV; last by apply/eqP/gtR_eqF.
@@ -358,9 +358,9 @@ unlock in H.
 simpl in H.
 set tmp := \rmax_(_ <- _ | _) _ in H.
 rewrite /tmp -rmax_distrl in H; last first.
-  apply ltRW, Rinv_0_lt_compat, Rlt_le_neq.
-    by apply PosteriorProbability.den_nonneg.
-  apply/nesym/eqP; by rewrite -receivableE.
+  apply/ltRW/Rinv_0_lt_compat/RltP; rewrite ltR_neqAle; apply/andP; split; last first.
+    exact/RleP/PosteriorProbability.den_nonneg.
+  by rewrite eq_sym -receivableE.
 rewrite /P /UniformSupport.d /UniformSupport.f /= in H.
 case: H => [m' [Hm' H]].
 set r := index_enum _ in H.

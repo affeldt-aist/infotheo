@@ -61,10 +61,10 @@ have {Htmp}Htmp : (lam * n = rho * m)%nat.
     by rewrite big_const iter_addn addn0 card_ord.
   apply eq_bigr => i _; exact/esym/Hlam.
 apply Rmult_eq_reg_l with (INR n); last exact/not_0_INR.
-rewrite mulRCA mulRV ?mulR1; last exact/not_0_INR.
+rewrite mulRCA mulRV ?INR_eq0 ?mulR1; last exact/eqP.
 apply Rmult_eq_reg_l with (INR rho); last exact/not_0_INR.
 rewrite mulRA [in X in _ = X](mulRC (INR rho)).
-rewrite -mulRA (mulRCA (INR rho)) mulRV ?mulR1; last exact/not_0_INR.
+rewrite -mulRA (mulRCA (INR rho)) mulRV ?INR_eq0 ?mulR1; last exact/eqP.
 by rewrite -mult_INR multE -Htmp mult_INR mulRC.
 Qed.
 
@@ -526,7 +526,7 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
       by apply Rinv_neq_0_compat.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
       apply/eqP; by rewrite -not_receivable_uniformE Hy.
-    rewrite invRK // -mulRA mulRC mulVR ?mulR1 ?mulRV //.
+    rewrite invRK // -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.
     set tmp1 := \rsum_(_ | _) _.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
     by rewrite -not_receivable_uniformE Hy.

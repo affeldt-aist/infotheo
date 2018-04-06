@@ -93,13 +93,10 @@ pose pf := fun a => (fun b : B =>
 move=> a.
 refine (@mkPosFun _ (pf a) _) => b.
 rewrite /pf.
-case: ifP => [_ | /eqP Hcase].
+case: ifP => [_ | Hcase].
 - apply Rlt_le, Rinv_0_lt_compat, lt_0_INR; by apply/ltP.
 - apply Rle_mult_inv_pos; first by apply pos_INR.
-  apply Rlt_le_neq; first by apply pos_INR.
-  contradict Hcase.
-  apply INR_eq.
-  by rewrite -Hcase.
+  by apply/RltP; rewrite lt0R INR_eq0 Hcase /= leR0n.
 Defined.
 
 Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat) (Bnot0 : (0 < #|B|)%nat)
@@ -113,12 +110,10 @@ refine (@Channel1.mkChan A B _ Anot0) => a.
 refine (@mkDist _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a) _).
 rewrite /=.
 case/boolP : (\sum_(b1 in B) (f a b1) == O) => Hcase.
-- rewrite /Rle big_const iter_Rplus_Rmult mulRV //.
-  exact/not_eq_sym/Rlt_not_eq/lt_0_INR/ltP/Bnot0.
+- by rewrite /Rle big_const iter_Rplus_Rmult mulRV // INR_eq0 -lt0n.
 - rewrite (@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
   rewrite /Rdiv -big_distrl /= mulRV //.
-  rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  rewrite (_ : 0 = INR 0) //; exact/not_INR/eqP.
+  by rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) // INR_eq0.
 Defined.
 
 Definition jtype_choice_f (A B : finType) n (f : {ffun A -> {ffun B -> 'I_n.+1}}) : option (P_ n ( A , B )).
@@ -654,7 +649,7 @@ have d0 : forall b, (0 <= d b)%R.
 have d1 : \rsum_(b : B) d b = 1%R.
   rewrite /d -big_distrl /= -(@big_morph _ _ _ 0%R _ O _ morph_plus_INR) //.
   set lhs := \sum_i _.
-  suff -> : lhs = N(a | ta) by rewrite mulRV //; exact/not_0_INR/eqP.
+  suff -> : lhs = N(a | ta) by rewrite mulRV // INR_eq0.
   rewrite /lhs /f /= -[in X in _ = X](Hrow_num_occ Hta a).
   apply eq_bigr => b _; by rewrite ffunE.
 by apply (@type.mkType _ _ (makeDist d0 d1) f).
@@ -1126,7 +1121,7 @@ Proof.
 rewrite /f -big_distrl /= -(@big_morph _ _ _ 0%R _ 0 _ morph_plus_INR) //.
 rewrite exchange_big /=.
 move/eqP : (jtype.sum_f V) => ->.
-rewrite mulRV //; exact/not_0_INR/eqP.
+by rewrite mulRV // INR_eq0.
 Qed.
 
 Definition d : dist B := makeDist f0 f1.

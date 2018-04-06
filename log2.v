@@ -48,7 +48,7 @@ Lemma Log_1 (n : R) : Log n 1 = 0.
 Proof. by rewrite /Log ln_1 div0R. Qed.
 
 Lemma Log_n (n : R) : 1 < n -> Log n n = 1.
-Proof. move=> n1; rewrite /Log /Rdiv mulRV //; exact/gtR_eqF/ln_pos. Qed.
+Proof. move=> n1; rewrite /Log /Rdiv mulRV //; exact/eqP/gtR_eqF/ln_pos. Qed.
 
 Lemma LogV n x : 0 < x -> Log n (/ x) = - Log n x.
 Proof.
@@ -152,7 +152,7 @@ Lemma ExpK n x : 1 < n -> Log n (Exp n x) = x.
 Proof.
 move=> n1.
 rewrite /Log /Exp ln_exp /Rdiv -mulRA mulRV ?mulR1 //.
-rewrite -ln_1 => /ln_inv H.
+rewrite -ln_1; apply/eqP => /ln_inv H.
 have : 0 < n by fourier.
 move/H => /(_ Rlt_0_1) ?; fourier.
 Qed.
@@ -287,8 +287,7 @@ split.
   apply H with n => //.
   by rewrite -{1}(muln1 n) leq_mul2l HP orbC.
 rewrite mult_INR -mulRA (mulRCA (INR den)) mulRV // ?mulR1; last first.
-  apply not_0_INR.
-  move=> ?; by subst den.
+  by rewrite INR_eq0 -lt0n.
 rewrite exp2_pow logK; last exact/lt_0_INR/ltP.
 exact/frac_part_pow/frac_part_INR.
 Qed.

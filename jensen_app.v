@@ -45,8 +45,8 @@ apply eq_bigr => i _ /=.
 case: ifP => Hnum.
   by rewrite mulR0.
 rewrite /Rdiv (mulRC (INR (num_occ i s))) 2!(mulRA (INR _)).
-rewrite !mulRV ?mul1R //.
-apply not_0_INR => Hsz.
+rewrite !mulRV ?mul1R // ?INR_eq0.
+apply/eqP => Hsz.
 move: (count_size (pred1 i) s).
 by rewrite Hsz leqn0 Hnum.
 Qed.
@@ -69,9 +69,7 @@ apply Rplus_le_lt_0_compat.
 apply mulR_gt0 => //.
 apply (Rplus_lt_reg_l t).
 rewrite addR0 Rplus_minus.
-apply Rlt_le_neq.
-  exact/(proj2 Ht).
-by apply/eqP; rewrite Ht1.
+apply/RltP; rewrite ltR_neqAle Ht1 /=; apply/RleP; by case: Ht.
 Admitted.
 
 Lemma a_eq_true : Set2.a card_bool = true.
@@ -155,14 +153,11 @@ have Hp: 0 <= INR (count_mem i s2) / INR (count_mem i (s1 ++ s2)) <= 1.
     apply mulR_gt0 => //.
     by apply invR_gt0.
   apply (Rmult_le_reg_r _ _ _ cnt_12_gt0).
-  rewrite -mulRA (mulRC (/ _)) mulRV.
-    rewrite mulR1 mul1R.
+  rewrite -mulRA (mulRC (/ _)) mulRV ?(mulR1,mul1R).
     apply le_INR.
     apply/leP.
     by apply leq_addl.
-  move=> Hn.
-  move: cnt_12_gt0.
-  by rewrite Hn; apply Rlt_irrefl.
+  rewrite INR_eq0 -lt0n -ltR0n; exact/RltP.
 have H1m: 1 - INR (count_mem i s2) / INR (count_mem i (s1 ++ s2)) =
           INR (count_mem i s1) / INR (count_mem i (s1 ++ s2)).
   rewrite count_cat -(divRR (INR (count_mem i s1 + count_mem i s2))).
@@ -170,9 +165,7 @@ have H1m: 1 - INR (count_mem i s2) / INR (count_mem i (s1 ++ s2)) =
       by rewrite minusE addnK.
     apply/leP.
     by apply leq_addl.
-  move=> Hn.
-  move: cnt_12_gt0.
-  by rewrite Hn; apply Rlt_irrefl.
+  rewrite INR_eq0 -lt0n -ltR0n; exact/RltP.
 have Hdist: (0 < #|dist_supp (Binary.d card_bool Hp)|)%nat.
   rewrite /dist_supp card_gt0.
   apply/eqP => /setP /(_ true).
@@ -211,13 +204,13 @@ rewrite mulVR ?mulR1; last first.
 rewrite -2!Rmult_plus_distr_r.
 rewrite mulRC.
 move/(Rmult_le_compat_l (INR ((count_mem i) (s1 ++ s2)))).
-rewrite mulRA mulRV ?mul1R; last first.
-  rewrite count_cat => Hn.
-  move: cnt_12_gt0.
-  by rewrite Hn; apply Rlt_irrefl.
+rewrite mulRA mulRV ?INR_eq0 ?mul1R; last first.
+  rewrite -?lt0n count_cat -ltR0n; exact/RltP.
 rewrite -count_cat plus_INR.
 rewrite ![_ * INR (count_mem _ _)]mulRC.
 apply.
 apply Rlt_le.
 by rewrite count_cat.
 Qed.
+
+End string_concat.

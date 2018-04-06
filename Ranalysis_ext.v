@@ -36,7 +36,7 @@ Proof. done. Defined.
 Lemma derivable_pt_Ropp x : derivable_pt Ropp x.
 Proof.
 exists (-1) => eps Heps.
-exists (mkposreal _ Heps) => h Hh /= Hh'.
+exists (mkposreal _ Heps) => h /eqP Hh /= Hh'.
 rewrite (_ : (- (x + h) - - x) = - h); last by field.
 rewrite /Rdiv mulNR mulRV // (_ : -1 - -1 = 0); last by field.
 by rewrite Rabs_R0.
@@ -45,7 +45,7 @@ Defined.
 Lemma derivable_pt_Rminus p x : derivable_pt (Rminus p) x.
 Proof.
 exists (-1) => eps Heps.
-exists (mkposreal _ Heps) => h Hh /= Hh'.
+exists (mkposreal _ Heps) => h /eqP Hh /= Hh'.
 rewrite (_ : (p - (x + h) - (p - x)) = - h); last by field.
 rewrite /Rdiv mulNR mulRV // (_ : -1 - -1 = 0); last by field.
 by rewrite Rabs_R0.

@@ -95,6 +95,8 @@ Definition mul1R : ssrfun.left_id 1%R Rmult := Rmult_1_l.
 Definition mulR1 : ssrfun.right_id 1%R Rmult := Rmult_1_r.
 Definition mulRN := Ropp_mult_distr_r_reverse.
 Definition mulNR := Ropp_mult_distr_l_reverse.
+Lemma mulRN1 x : x * -1 = -x. Proof. by rewrite mulRN mulR1. Qed.
+Lemma mulN1R x : -1 * x = -x. Proof. by rewrite mulNR mul1R. Qed.
 
 Definition mulRC : commutative Rmult := Rmult_comm.
 
@@ -172,7 +174,7 @@ Definition ltRW m n : m < n -> m <= n := Rlt_le m n.
 Lemma RltW (a b : R) : a <b b -> a <b= b.
 Proof. by move/RltP/Rlt_le/RleP. Qed.
 
-Lemma Rle_eqVlt m n : (m <b= n) = (m == n) || (m <b n).
+Lemma leR_eqVlt m n : (m <b= n) = (m == n) || (m <b n).
 Proof.
 apply/idP/idP => [/RleP|/orP[/eqP ->|]].
   case/Rle_lt_or_eq_dec => ?; apply/orP; by [right; apply/RltP|left; apply/eqP].
@@ -180,8 +182,14 @@ by rewrite leRR.
 by move/RltW.
 Qed.
 
-Lemma Rlt_neqAle m n : (m <b n) = (m != n) && (m <b= n).
-Proof. by rewrite RltNge Rle_eqVlt negb_or -RleNgt eq_sym. Qed.
+Lemma ltR_neqAle m n : (m <b n) = (m != n) && (m <b= n).
+Proof. by rewrite RltNge leR_eqVlt negb_or -RleNgt eq_sym. Qed.
+
+Lemma lt0R x : (0 <b x) = (x != 0) && (0 <b= x).
+Proof. by rewrite ltR_neqAle eq_sym. Qed.
+
+Lemma le0R x : (0 <b= x) = (x == 0) || (0 <b x).
+Proof. by rewrite leR_eqVlt eq_sym. Qed.
 
 Lemma INR_eq0 n : (INR n == 0) = (n == O).
 Proof.
@@ -260,8 +268,8 @@ Definition invR1 : / 1 = 1 := Rinv_1.
 Lemma leR_inv : {in [pred x | true] & [pred x | 0 <b x], {homo Rinv : a b /~ a <= b}}.
 Proof. move=> a b; rewrite !inE => _ /RltP b0 ba; exact/Rinv_le_contravar. Qed.
 
-Definition divRR (x : R) : x <> 0 -> x / x = 1.
-Proof. by move=> x0; rewrite /Rdiv Rinv_r. Qed.
+Definition divRR (x : R) : x != 0 -> x / x = 1.
+Proof. move=> x0; rewrite /Rdiv Rinv_r //; exact/eqP. Qed.
 
 Lemma divR1 (x : R) : x / 1 = x.
 Proof. by rewrite /Rdiv invR1 mulR1. Qed.
@@ -272,11 +280,11 @@ Proof. by rewrite /Rdiv mul1R. Qed.
 Lemma div0R (x : R) : 0 / x = 0.
 Proof. by rewrite /Rdiv mul0R. Qed.
 
-Definition mulRV (x : R) : x <> 0 -> x * / x = 1 := divRR x.
+Definition mulRV (x : R) : x != 0 -> x * / x = 1 := divRR x.
 
 (* Rinv_l_sym*)
 Lemma mulVR (x : R) : x != 0 -> / x * x = 1.
-Proof. by move=> /eqP x0; rewrite mulRC mulRV. Qed.
+Proof. by move=> x0; rewrite mulRC mulRV. Qed.
 
 (* TODO: rename *)
 Lemma pow_not0 x : x <> 0 -> forall n, x ^ n <> 0.

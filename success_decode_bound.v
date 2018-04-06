@@ -148,15 +148,15 @@ Hypothesis Vctyp : V \in \nu^{B}(P).
 Lemma success_factor_bound_part1 : success_factor tc V <= 1.
 Proof.
 apply (Rmult_le_reg_l (INR #|M|)); first by apply lt_0_INR; apply/ltP.
-rewrite /success_factor /Rdiv -(mulRC (/ INR #|M|)) 2!mulRA mulRV ?mul1R; last first.
-  apply not_0_INR => /eqP; apply/negP; by rewrite -lt0n.
+rewrite /success_factor /Rdiv -(mulRC (/ INR #|M|)) 2!mulRA.
+rewrite mulRV ?INR_eq0 -?lt0n // mul1R.
 rewrite -iter_Rplus_Rmult -big_const /=.
 rewrite (_ : \rsum_(m | m \in M ) 1 = \rsum_(m : M) 1); last exact/eq_bigl.
 rewrite big_distrr /=.
 apply: ler_rsum => m _.
 rewrite mulNR exp2_Ropp.
 apply (Rmult_le_reg_l (exp2 (INR n * `H( V | P)))); first by apply exp2_pos.
-rewrite mulR1 mulRA mulRV ?mul1R; last exact/exp2_not_0.
+rewrite mulR1 mulRA mulRV ?mul1R; last exact/eqP/exp2_not_0.
 apply (Rle_trans _ (INR #| V.-shell (tuple_of_row (enc tc m)) |) _); last first.
   apply card_shelled_tuples => //.
     exact/typed_prop.
@@ -367,10 +367,8 @@ rewrite success_decode // -(sum_messages_types c).
 rewrite div1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply ler_rsum => P _.
 apply (Rmult_le_reg_l (INR #|M|)); first exact/lt_0_INR/ltP.
-rewrite mulRA mulRV ?mul1R; last first.
-  apply not_0_INR => /eqP; apply/negP; by rewrite -lt0n.
-rewrite success_decode // div1R mulRA mulRV ?mul1R; last first.
-  apply not_0_INR => /eqP; apply/negP; by rewrite -lt0n.
+rewrite mulRA mulRV ?INR_eq0 -?lt0n // mul1R.
+rewrite success_decode // div1R mulRA mulRV ?INR_eq0 -?lt0n // ?mul1R.
 apply (Rle_trans _ (\rsum_(m | m \in enc_pre_img c P)
                      \rsum_(y | (dec (P.-typed_code c)) y == Some m)
                      (W ``(|(enc (P.-typed_code c)) m)) y)).

@@ -116,7 +116,7 @@ apply Exp_le_increasing => //.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply Rmult_le_reg_r with (1 / r) => //.
 apply Rlt_mult_inv_pos; [fourier | tauto].
-rewrite -mulRA div1R mulRV; last by case: Hr => ? ? ?; fourier.
+rewrite -mulRA div1R mulRV; last by case: Hr => /RltP; rewrite lt0R => /andP[].
 rewrite mulR1; exact: proj2 (Rmax_Rle_in Hk).
 Qed.
 
@@ -223,7 +223,7 @@ have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
         fourier.
       apply Rmin_case_strong => H2 //.
       eapply Rle_lt_trans; [by apply H2 | exact H1].
-    + rewrite -mulRA div1R mulRV; last exact/Rminus_eq_contra/e0_delta.
+    + rewrite -mulRA div1R mulRV; last exact/eqP/Rminus_eq_contra/e0_delta.
       apply Ropp_le_cancel, Rge_le.
       rewrite -mulNR oppRK.
       apply Rle_ge.

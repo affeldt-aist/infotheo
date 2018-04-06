@@ -410,10 +410,10 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
   have Hprodf : 0 < \rprod_(i : A) f i.
     apply rprodr_gt0 => a.
     move: (Hf a) (Hfg a) => {Hf}Hf {Hfg}[Hf2 _].
-    apply/RltP; rewrite Rlt_neqAle eq_sym Hf /=; by apply/RleP.
+    apply/RltP; rewrite lt0R Hf /=; exact/RleP.
   apply (Rmult_le_reg_r (1 * / \rprod_(i : A) f i) _ _).
     apply Rlt_mult_inv_pos => //; fourier.
-  rewrite mul1R mulRV; last exact/not_eq_sym/Rlt_not_eq.
+  rewrite mul1R mulRV; last exact/eqP/not_eq_sym/Rlt_not_eq.
   set inv_spec := fun r => if r == 0 then 0 else / r.
   rewrite (_ : / (\rprod_(a : A) f a) = inv_spec (\rprod_(a : A) f a)) ; last first.
     rewrite /inv_spec (_ : \rprod_(a : A) f a == 0 = false) //.
@@ -426,7 +426,7 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
       have : (a * b)%R == 0 = false ; last move=> ->.
       apply/negP => /eqP Habs.
         apply (Rmult_eq_compat_r (/ b)) in Habs ; move: Habs.
-        rewrite -mulRA mul0R mulRV ?mulR1; move/eqP; exact/negP.
+        rewrite -mulRA mul0R mulRV // ?mulR1; move/eqP; exact/negP.
       apply Rinv_mult_distr; move/eqP; exact/negP.
     - rewrite negb_and => Hab.
       case/orP : (orbN (a != 0)) => Ha.
@@ -444,11 +444,10 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
   move: Hfg => /(_ a) [Hf2 Hfg].
   rewrite /inv_spec.
   move/negbTE in Hf; rewrite Hf; move/negbT in Hf.
-  rewrite -(mulRV (f a)); last by move/eqP; apply/negP.
+  rewrite -(mulRV (f a)) //.
   apply Rmult_le_compat_r => //.
   rewrite -(mul1R (/ f a)).
-  apply Rle_mult_inv_pos; first fourier.
-  apply/RltP; rewrite Rlt_neqAle eq_sym Hf /=; exact/RleP.
+  apply Rle_mult_inv_pos; [fourier | apply/RltP; rewrite lt0R Hf; exact/RleP].
 Qed.
 
 End ler_ltr_rprod.

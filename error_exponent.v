@@ -165,15 +165,14 @@ move=> /(_ Htmp) {Htmp}.
 rewrite /R_dist /Rminus {2}/xlnx ltRR oppR0 addR0 Rabs_left; last first.
   apply xlnx_neg.
   split => //; subst x.
-  apply (Rle_lt_trans _ (exp (-2))); first by apply Rmin_r.
-  by apply exp_opp_2_lt_1.
+  exact: Rle_lt_trans (Rmin_r _ _) ltRinve21.
 move=> Hx.
 set Delta := min((minRate - cap) / 2, x ^ 2 / 2).
 exists Delta; split.
   apply Rmin_case.
     apply mulR_gt0; last by apply Rinv_0_lt_compat, Rlt_R0_R2.
     apply (Rplus_lt_reg_r cap).
-    by rewrite addRC -addRA Rplus_opp_l 2!addR0.
+    by rewrite subRK add0R.
   apply mulR_gt0; by [apply pow_gt0 | apply Rinv_0_lt_compat, Rlt_R0_R2].
 move=> P V v_dom_by_w.
 case/boolP : (Delta <b= D(V || W | P)).
@@ -218,7 +217,7 @@ suff Htmp : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite addRA Rplus_opp_l add0R.
   apply Ropp_le_ge_contravar; rewrite -mulRA.
   apply (Rmult_le_reg_l (ln 2)); first exact: ln_2_pos.
-  rewrite mulRA mulRV ?mul1R; last exact/not_eq_sym/Rlt_not_eq/ln_2_pos.
+  rewrite mulRA mulRV ?mul1R; last exact/eqP/ln_2_neq0.
   apply (Rmult_le_reg_l (/ (INR #|B| + INR #|A| * INR #|B|))).
     apply Rinv_0_lt_compat, Rplus_lt_le_0_compat.
     - exact/lt_0_INR/ltP.

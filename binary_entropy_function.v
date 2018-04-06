@@ -79,8 +79,8 @@ rewrite -ln_1.
 apply ln_increasing_le.
 fourier.
 apply Rmult_le_reg_l with t => //.
-rewrite mulRA mulRV ?mulR1 ?mul1R; last by move=> ?; fourier.
-fourier.
+rewrite mulRA mulRV; last exact/eqP/gtR_eqF.
+rewrite mulR1 mul1R; fourier.
 Qed.
 
 Lemma decreasing_on_half_to_1 : forall x y : R,

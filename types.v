@@ -43,8 +43,7 @@ Local Open Scope types_scope.
 
 Lemma type_fun_type A n (_ : n != O) (P : P_ n ( A )) a : INR ((type.f P) a) = INR n * P a.
 Proof.
-destruct P => /=.
-rewrite d_f mulRCA mulRV ?mulR1 //; exact/not_0_INR/eqP.
+destruct P => /=; by rewrite d_f mulRCA mulRV ?INR_eq0 // mulR1.
 Qed.
 
 Lemma INR_type_fun A n (P : P_ n ( A )) a : INR ((type.f P) a) / INR n = P a.
@@ -71,7 +70,7 @@ assert (H1 : forall a, (0 <= f a)%R).
   apply Rle_mult_inv_pos; by [apply pos_INR | apply lt_0_INR; apply/ltP].
 assert (H2 : \rsum_(a in A) f a = 1%R).
   rewrite /f -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  rewrite sum_num_occ_alt mulRV //; exact/not_0_INR/eqP.
+  by rewrite sum_num_occ_alt mulRV // INR_eq0.
 have H : forall a, (N(a | ta) < n.+2)%nat.
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
 refine (@type.mkType _ n.+1 (@mkDist _ (@mkPosFun _ f H1) H2)
@@ -147,7 +146,7 @@ set pf := pos_fun_of_ffun f.
 assert (H : \rsum_(a in A) pf a = 1).
   rewrite /pf /= /Rdiv -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
   move/eqP : Hf => ->.
-  rewrite mulRV //; exact/not_0_INR.
+  by rewrite mulRV // INR_eq0.
 exact (mkDist H).
 Defined.
 
@@ -174,7 +173,7 @@ suff : INR (\sum_(a in A) t a) == INR n.+1 * \rsum_(a | a \in A) d a.
 apply/eqP.
 transitivity (INR n.+1 * (\rsum_(a|a \in A) INR (t a) / INR n.+1)).
   rewrite -big_distrl -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  rewrite mulRCA mulRV ?mulR1 //; exact/not_0_INR.
+  by rewrite mulRCA mulRV ?mulR1 // INR_eq0.
 f_equal; exact/eq_bigr.
 Qed.
 

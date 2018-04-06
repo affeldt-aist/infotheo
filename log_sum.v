@@ -25,13 +25,13 @@ have gspos : forall a, a \in C -> 0 < g a.
   move=> a a_C.
   case/Rle_lt_or_eq_dec : ((pos_f_nonneg g) a) => // abs; symmetry in abs; apply fg in abs.
   move: (fspos _ a_C); by rewrite abs; move/Rlt_irrefl.
-have Fnot0 : \rsum_{ C } f <> 0.
-  move/prsumr_eq0P => abs.
+have Fnot0 : \rsum_{ C } f != 0.
+  apply/eqP => /prsumr_eq0P abs.
   case/set0Pn : Hc => a aC.
   move: (fspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/fspos.
   by move/Rlt_irrefl.
-have Gnot0 : \rsum_{ C } g <> 0.
-  move/prsumr_eq0P => abs.
+have Gnot0 : \rsum_{ C } g != 0.
+  apply/eqP => /prsumr_eq0P abs.
   case/set0Pn : Hc => a aC.
   move: (gspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/gspos.
   by move/Rlt_irrefl.
@@ -39,12 +39,10 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
   move=> Hwlog.
   set k := \rsum_{ C } f / \rsum_{ C } g.
   have Fspos : 0 < \rsum_{ C } f.
-    suff Fpos : 0 <= \rsum_{ C } f.
-      apply Rlt_le_neq => //; exact/ not_eq_sym.
+    suff Fpos : 0 <= \rsum_{ C } f by apply/RltP; rewrite lt0R Fnot0; exact/RleP.
     apply: rsumr_ge0 => ? ?; exact/ltRW/fspos.
   have Gspos : 0 < \rsum_{ C } g.
-    suff Gpocs : 0 <= \rsum_{ C } g.
-      apply Rlt_le_neq => //; exact/not_eq_sym.
+    suff Gpocs : 0 <= \rsum_{ C } g by apply/RltP; rewrite lt0R Gnot0; exact/RleP.
     apply: rsumr_ge0 => ? ?; exact/ltRW/gspos.
   have kspos : 0 < k by apply Rlt_mult_inv_pos.
   have kg_pos : forall a, 0 <= k * g a.
@@ -57,8 +55,8 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
   have kgspos : forall a, a \in C -> 0 < k * g a.
     move=> a a_C; apply mulR_gt0 => //; by apply gspos.
   have Hkg : \rsum_(a | a \in C) k * g a = \rsum_{C} f.
-    by rewrite -big_distrr /= /k /Rdiv -mulRA mulRC Rinv_l // mul1R.
-  have Htmp : \rsum_{ C } {| pos_f := fun x : A => k * g x; pos_f_nonneg := kg_pos |} <> 0.
+    by rewrite -big_distrr /= /k /Rdiv -mulRA mulRC mulVR // mul1R.
+  have Htmp : \rsum_{ C } {| pos_f := fun x : A => k * g x; pos_f_nonneg := kg_pos |} != 0.
     by rewrite /= Hkg.
   symmetry in Hkg.
   move: {Hwlog}(Hwlog Fnot0 (@mkPosFun _ (fun x => (k * g x)) kg_pos) Htmp kabs_con kgspos Hkg) => /= Hwlog.

@@ -103,8 +103,8 @@ case/boolP : (X b == 1) => [/eqP |] Xb1.
   rewrite Xb1 big1; last by move=> a /andP[? ?]; rewrite H // ?mulR0.
   rewrite !addR0 !mulR1.
   by split; [apply Rle_refl | apply HDX; rewrite inE].
-have HXb1: 1 - X b <> 0.
-  by apply/eqP; apply: contra Xb1; rewrite subR_eq0 eq_sym.
+have HXb1: 1 - X b != 0.
+  by apply: contra Xb1; rewrite subR_eq0 eq_sym.
 set d := D1Dist.d Xb1.
 have HsumD1 q:
   \rsum_(a in dist_supp d) q a * d a =
@@ -139,7 +139,7 @@ split; last first.
   have HDb: D (r b) by apply HDX; rewrite inE.
   by rewrite mulRC; apply convex_f.
 rewrite mulRC.
-refine (Rle_trans _ _ _ 
+refine (Rle_trans _ _ _
  (proj1 (@convex_f (r b) (\rsum_(i in dist_supp d) r i * d i) _ _ HDX1 HXb)) _).
   by apply HDX; rewrite inE.
 rewrite mulRC.

@@ -61,8 +61,7 @@ Lemma echa1 (HM : (0 < #| M |)%nat) W (c : code) : echa(W , c) <= 1.
 Proof.
 rewrite /CodeErrRate div1R.
 apply (Rmult_le_reg_l (INR #|M|)); first exact/lt_0_INR/ltP.
-rewrite mulRA mulRV ?mul1R; last exact/nesym/Rlt_not_eq/lt_0_INR/ltP.
-rewrite -iter_Rplus_Rmult -big_const.
+rewrite mulRA mulRV ?INR_eq0 -?lt0n // mul1R -iter_Rplus_Rmult -big_const.
 apply: ler_rsum => m _; exact: Pr_1.
 Qed.
 

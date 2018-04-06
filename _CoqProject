@@ -70,4 +70,5 @@ vandermonde.v
 alternant.v
 kraft.v
 shannon_fano.v
+jensen_app.v
 -R . infotheo

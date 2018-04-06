@@ -718,8 +718,7 @@ have [k Hk] : exists k, (log (INR k.+1) / INR n = r)%R.
     apply le_IZR.
     rewrite -Hn2; exact/ltRW/exp2_pos.
   apply Rmult_eq_reg_l with (INR n); last by apply/eqP; rewrite INR_eq0 -lt0n.
- rewrite mulRCA mulRV ?mulR1; last by apply/eqP; rewrite INR_eq0 -lt0n.
-  rewrite -(exp2K (INR n * r)) Hn2 INR_Zabs_nat //.
+  rewrite mulRCA mulRV ?INR_eq0 -?lt0n // mulR1 -(exp2K (INR n * r)) Hn2 INR_Zabs_nat //.
   apply le_IZR.
   rewrite -Hn2; exact/ltRW/exp2_pos.
 set M := [finType of 'I_k.+1].
@@ -727,9 +726,7 @@ exists [finType of 'I_k.+1].
 split; first by rewrite /= card_ord.
 split.
   have -> : (INR n * r)%R = log (INR k.+1).
-    rewrite -Hk mulRCA mulRV ?mulR1 //.
-    apply not_0_INR.
-    by case: Hn => Hn _ ?; subst n.
+    rewrite -Hk mulRCA mulRV ?INR_eq0 -?lt0n ?mulR1 //; by case: Hn.
   rewrite logK; last exact/lt_0_INR/ltP.
   by rewrite Int_part_INR Zabs_nat_Z_of_nat card_ord.
 move=> Jtdec.
@@ -822,7 +819,7 @@ apply Rlt_trans with (epsilon0 + epsilon0)%R.
     - apply lt_0_INR; case: Hn => Hn _; by apply/ltP.
     - case: Hepsilon0 => _ [_ Hepsilon0].
       apply (Rmult_lt_compat_l 4) in Hepsilon0; last by fourier.
-      rewrite mulRCA mulRV // mulR1 in Hepsilon0.
+      rewrite mulRCA mulRV ?mulR1 in Hepsilon0; last by apply/eqP.
       clear Hk; fourier.
   apply Rlt_le_trans with (exp2 (- (- (log epsilon0) / epsilon0) * epsilon0)).
     apply Exp_increasing => //; apply Rmult_lt_compat_r.
@@ -927,9 +924,8 @@ case: (good_code_sufficient_condition HM H) => f Hf.
 exists n, M, (mkCode f (jtdec P W epsilon0 f)); split; last assumption.
 rewrite /CodeRate M_k INR_Zabs_nat; last by apply Int_part_pos, ltRW, exp2_pos.
 suff Htmp : IZR (Int_part (exp2 (INR n * r))) = exp2 (INR n * r).
-  rewrite Htmp exp2K /Rdiv -mulRA mulRCA mulRV ?mulR1 //.
-  apply not_0_INR => abs; case: Hn => Hn _; by rewrite abs in Hn.
-  apply frac_Int_part; by case: Hn => _ [_ []].
+  rewrite Htmp exp2K /Rdiv -mulRA mulRCA mulRV ?INR_eq0 -?lt0n ?mulR1 //; by case: Hn.
+apply frac_Int_part; by case: Hn => _ [_ []].
 Qed.
 
 End channel_coding_theorem.

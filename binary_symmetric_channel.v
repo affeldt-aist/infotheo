@@ -70,10 +70,10 @@ case: (Req_EM_T (P a) 0) => H1.
 rewrite /log Log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
   move/eqP in H1.
-  by apply/RltP; rewrite Rlt_neqAle eq_sym H1 /=; apply/RleP/dist_nonneg.
+  apply/RltP; rewrite lt0R H1; exact/RleP/dist_nonneg.
 rewrite /log Log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
-  apply Rlt_le_neq; by [apply dist_nonneg | auto].
+  apply/RltP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/RleP/dist_nonneg].
 case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 !(mul0R, mulR0, addR0, add0R).
   move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
@@ -81,10 +81,10 @@ case: (Req_EM_T (P b) 0) => H2.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log Log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
-  apply Rlt_le_neq; by [apply dist_nonneg | auto].
+  apply/RltP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/RleP/dist_nonneg].
 rewrite /log Log_mult; last 2 first.
   case: p_01' => ? ?; fourier.
-  apply Rlt_le_neq; by [apply dist_nonneg | auto].
+  apply/RltP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/RleP/dist_nonneg].
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   rewrite /log; by field.
 move: (pmf1 P); rewrite Set2sumE /= -/a -/b => ->; rewrite /log; by field.
@@ -133,7 +133,7 @@ have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
       + rewrite -{2}(mul1R (P a)); apply Rmult_le_compat_r; fourier.
       + rewrite -{2}(mul1R (P b)).
         apply Rmult_lt_compat_r => //.
-        apply Rlt_le_neq; by [apply dist_nonneg | auto].
+        apply/RltP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/RleP/dist_nonneg].
     - rewrite -H1 mulR0 2!add0R.
       have -> : P b = 1 by rewrite -P1 -H1 add0R.
       by rewrite mulR1.
@@ -223,4 +223,3 @@ Qed.
 Local Close Scope vec_ext_scope.
 
 End dH_BSC.
-

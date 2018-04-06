@@ -117,7 +117,8 @@ case/boolP : (V a b == 0) => [/eqP -> | Vneq0]; first by rewrite !mul0R.
 case/boolP : (W a b == 0) => [/eqP Weq0| Wneq0].
   contradict Vneq0.
   apply/negP. rewrite negbK. apply/eqP. by apply V_dom_by_W.
-rewrite JointDist.dE /= /log !Log_mult; first field; apply Rlt_le_neq; by [exact: dist_nonneg | apply/eqP; rewrite eq_sym].
+rewrite JointDist.dE /= /log !Log_mult; first field;
+  apply/RltP; rewrite lt0R; apply/andP; split => //; exact/RleP/dist_nonneg.
 Qed.
 
 Lemma leq0cdiv : 0 <= D(V || W | P).
@@ -236,8 +237,7 @@ case/boolP : (W a b == 0) => Wab0.
     move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
     by rewrite jtype_0_jtypef.
 - rewrite -{1}(@logK (W a b)); last first.
-    apply Rlt_le_neq; first by apply dist_nonneg.
-    move/eqP; apply/negP; by rewrite eqtype.eq_sym.
+    apply/RltP; rewrite lt0R Wab0; exact/RleP/dist_nonneg.
   rewrite -exp2_pow.
   f_equal.
   rewrite -mulRN -mulRDr mulRA /Rminus addRC addRA Rplus_opp_l add0R mulRN -3!mulNR oppRK.
@@ -257,10 +257,8 @@ case/boolP : (W a b == 0) => Wab0.
     move/forallP.
     by move/(_ b)/implyP/(_ Logic.eq_refl)/eqP => ->.
   - move/negP/negP => HP.
-    rewrite Htmp -Htmp' (mulRCA (INR n)) mulRV ?mulR1; last by apply not_0_INR; apply/eqP.
-    rewrite mulRCA mulRV ?mulR1 //.
-    apply/eqP; apply: contra HP => /eqP.
-    by rewrite (_ : 0 = INR 0) // => /INR_eq ->.
+    rewrite Htmp -Htmp' (mulRCA (INR n)) mulRV ?INR_eq0 // mulR1.
+    by rewrite mulRCA mulRV ?mulR1 // INR_eq0.
 Qed.
 
 End dmc_cdiv_cond_entropy_sect.

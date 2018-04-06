@@ -40,7 +40,7 @@ suff : Hf = Hg by move=> ->.
 by apply proof_irrelevance.
 Qed.
 
-(* TODO: move *)
+(* TODO: move? *)
 Lemma Rlt_0_Rmult_inv a b : 0 < a * b -> 0 <= a -> 0 <= b -> 0 < a /\ 0 < b.
 Proof.
 move=> H Ha Hb.
@@ -68,25 +68,17 @@ elim; first by rewrite mul0R.
 move=> n Hn; by rewrite iterS Hn -{1}(mul1R x) -mulRDl addRC -S_INR.
 Qed.
 
-(* TODO: move *)
-Lemma exp_not_0 l : (exp l <> 0)%R.
-Proof. apply not_eq_sym, Rlt_not_eq ; exact (exp_pos l). Qed.
+(*Lemma exp_not_0 l : (exp l <> 0)%R.
+Proof. apply not_eq_sym, Rlt_not_eq ; exact (exp_pos l). Qed.*)
 
-Lemma two_e : 2 <= exp 1.
+Lemma leR2e : 2 <= exp 1.
 Proof. apply Rlt_le, exp_ineq1; fourier. Qed.
 
-Lemma exp_opp_1_lt_1 : exp (-1) < 1.
+Lemma ltRinve1 : exp (-1) < 1.
 Proof. rewrite -[X in _ < X]exp_0. apply exp_increasing. fourier. Qed.
 
-Lemma exp_opp_2_lt_1 : exp (-2) < 1.
+Lemma ltRinve21 : exp (-2) < 1.
 Proof. rewrite -[X in _ < X]exp_0. apply exp_increasing. fourier. Qed.
-
-(* NB: try to use Rltn_neqAle instead? *)
-Lemma Rlt_le_neq a b : a <= b -> a <> b -> a < b.
-move=> H1 H2.
-apply Rnot_le_lt => abs.
-by move: (Rle_antisym _ _ H1 abs).
-Qed.
 
 Lemma Rle_inv_conv x y : 0 < x -> 0 < y -> / y <= / x -> x <= y.
 Proof.
@@ -162,9 +154,8 @@ Lemma Rdiv_le a : 0 <= a -> forall r, 1 <= r -> a / r <= a.
 Proof.
 move=> Ha r Hr.
 apply Rmult_le_reg_l with r; first by fourier.
-rewrite /Rdiv mulRCA mulRV // ?mulR1; last by move=> *; fourier.
-rewrite -{1}(mul1R a).
-apply Rmult_le_compat_r => //; fourier.
+rewrite /Rdiv mulRCA mulRV; last by apply/negP => /eqP ?; subst r; fourier.
+rewrite -mulRC; apply Rmult_le_compat_r => //; fourier.
 Qed.
 
 Lemma Rdiv_lt a : 0 < a -> forall r : R, 1 < r -> a / r < a.
@@ -172,9 +163,9 @@ Proof.
 move=> Ha r0 Hr0.
 rewrite -[X in _ < X]mulR1.
 apply Rmult_lt_compat_l => //.
-rewrite -Rinv_1.
+rewrite -invR1.
 apply Rinv_1_lt_contravar => //.
-by apply Rle_refl.
+exact/Rle_refl.
 Qed.
 
 Lemma Rabs_Rle (x a : R) : x <= a -> - a <= x -> Rabs x <= a.
@@ -467,12 +458,12 @@ move H1 : (_ <b= _ ) => [|] /=.
 - move/RleP in H1.
   have H2 : a <= b / k.
     apply Rmult_le_reg_l with k => //.
-    rewrite /Rdiv mulRCA mulRV ?mulR1 //; exact/nesym/Rlt_not_eq.
-  by symmetry; apply/RleP.
+    rewrite /Rdiv mulRCA mulRV ?mulR1 //; exact/eqP/gtR_eqF.
+  exact/esym/RleP.
 - move H2 : (_ <b= _ ) => [|] //=.
   move/RleP in H2.
   apply (Rmult_le_compat_l k) in H2; last by fourier.
-    rewrite /Rdiv mulRCA mulRV ?mulR1 // in H2; last exact/nesym/Rlt_not_eq.
+    rewrite /Rdiv mulRCA mulRV ?mulR1 // in H2; last exact/eqP/gtR_eqF.
   move/RleP in H2.
   by rewrite H2 in H1.
 Qed.
@@ -484,12 +475,12 @@ move H1 : (_ <b= _ ) => [|] /=.
 - move/RleP in H1.
   have H2 : b / k <= c.
     apply Rmult_le_reg_l with k => //.
-    rewrite /Rdiv mulRCA mulRV ?mulR1 //; exact/nesym/Rlt_not_eq.
+    rewrite /Rdiv mulRCA mulRV ?mulR1 //; exact/eqP/gtR_eqF.
   exact/esym/RleP.
 - move H2 : (_ <b= _ ) => [|] //=.
   move/RleP in H2.
   apply (Rmult_le_compat_l k) in H2; last by fourier.
-    rewrite /Rdiv mulRCA mulRV ?mulR1 // in H2; last exact/nesym/Rlt_not_eq.
+    rewrite /Rdiv mulRCA mulRV ?mulR1 // in H2; last exact/eqP/gtR_eqF.
   move/RleP in H2.
   by rewrite H2 in H1.
 Qed.
@@ -572,7 +563,7 @@ rewrite mulRC mulRA mulRC; congr (_ * _).
 rewrite factS mult_INR Rinv_mult_distr; last 2 first.
   by apply/eqP; rewrite INR_eq0.
   by apply/eqP; rewrite INR_eq0 -lt0n fact_gt0.
-rewrite mulRC mulRA mulRV ?mul1R //; by apply/eqP; rewrite INR_eq0.
+by rewrite mulRC mulRA mulRV ?mul1R // INR_eq0. 
 Qed.
 
 Let exp_dev_gt0 : forall n r, 0 < r -> 0 < exp_dev n r.
@@ -604,9 +595,8 @@ Proof.
 move=> Hr.
 case/orP : (orbN (r == 0)) ; last first.
 - move=> Hr2.
-  have {Hr Hr2}R_pos : 0 < r.
-    apply/RltP; rewrite Rlt_neqAle eq_sym Hr2 /=; by apply/RleP.
-  by apply Rlt_le, exp_dev_gt0.
+  have {Hr Hr2}R_pos : 0 < r by apply/RltP; rewrite lt0R Hr2 /=; exact/RleP.
+  exact/ltRW/exp_dev_gt0.
 - move=> /eqP ->.
   move:n ; case.
   - rewrite /exp_dev exp_0 /= Rinv_1 mul1R /Rminus Rplus_opp_r; by apply Rle_refl.

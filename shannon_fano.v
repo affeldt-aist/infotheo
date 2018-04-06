@@ -33,7 +33,7 @@ Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(Rle_trans _ _ _ _ K). Qed
 Lemma leR_wiexpn2l x :
   0 <= x -> x <= 1 -> {homo (pow x) : m n / (n <= m)%nat >-> m <= n}.
 Proof.
-move/RleP; rewrite Rle_eqVlt => /orP[/eqP/esym -> _ m n|/RltP x0 x1 m n /leP nm].
+move/RleP; rewrite le0R => /orP[/eqP -> _ m n|/RltP x0 x1 m n /leP nm].
   case: n => [|n nm].
     case: m => [_ |m _]; first exact: Rle_refl.
     rewrite pow_ne_zero //=; exact/Rle_0_1.
@@ -105,8 +105,7 @@ rewrite (@nth_map _ [::]); last first.
 rewrite {1}(_ : i = enum_rank (enum_val (cast_ord (esym (card_ord _)) i)) :> nat); last first.
   by rewrite enum_valK.
 rewrite shannon_fano.
-have Pi0 : 0 < P i.
-  by apply/RltP; rewrite Rlt_neqAle eq_sym Pr_pos /=; apply/RleP/dist_nonneg.
+have Pi0 : 0 < P i by apply/RltP; rewrite lt0R Pr_pos; exact/RleP/dist_nonneg.
 apply Rle_trans with (Exp (INR #|T|) (- Log (INR #|T|) (1 / P i))); last first.
   rewrite div1R LogV //.
   rewrite oppRK LogK //.
@@ -128,7 +127,7 @@ rewrite INR_Zabs_nat; last first.
   apply/leR0ceil/ltRW/ltR0Log.
   by apply/RltP; rewrite (_ : 1 = INR 1) // ltR_nat card_ord.
   rewrite div1R.
-  apply/RltP; rewrite invR_gt1 // Rlt_neqAle Pj1 /=; exact/RleP/dist_max.
+  apply/RltP; rewrite invR_gt1 // ltR_neqAle Pj1 /=; exact/RleP/dist_max.
 set x := Log _ _; case: (ceilP x).
 rewrite (_ : enum_val _ = i) // enum_val_ord; exact/val_inj.
 Qed.
@@ -154,15 +153,14 @@ rewrite /average.
 apply Rlt_le_trans with (\rsum_(x in T) P x * (- Log (INR #|T|) (P x) + 1)).
   apply ltR_rsum; [by rewrite card_ord|move=> i].
   apply Rmult_lt_compat_l.
-    apply/RltP; rewrite Rlt_neqAle eq_sym Pr_pos /=; exact/RleP/dist_nonneg.
+    apply/RltP; rewrite lt0R Pr_pos /=; exact/RleP/dist_nonneg.
   rewrite /f.
   rewrite {1}(_ : i = enum_rank (enum_val (cast_ord (esym (card_ord _)) i)) :> nat); last first.
     by rewrite enum_valK.
   rewrite shannon_fano.
   rewrite (_ : INR #|T| = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
-  have Pi0 : 0 < P i.
-    by apply/RltP; rewrite Rlt_neqAle eq_sym Pr_pos /=; apply/RleP/dist_nonneg.
+  have Pi0 : 0 < P i by apply/RltP; rewrite lt0R Pr_pos /=; exact/RleP/dist_nonneg.
   rewrite INR_Zabs_nat; last first.
     apply/leR0ceil.
     rewrite /x div1R /log LogV; last first.

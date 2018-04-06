@@ -203,8 +203,8 @@ case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
   subst p.
   rewrite /Rdiv Rinv_1 mulR1 /log Log_1 mulR0.
   rewrite !Rminus_diag_eq // mul0R; field.
-rewrite divRR; last by move=> ?; fourier.
-rewrite /log Log_1 divRR; last by move=> ?; fourier.
+rewrite divRR; last by rewrite subR_eq0; apply/eqP/gtR_eqF.
+rewrite /log Log_1 divRR; last exact/eqP/gtR_eqF.
 rewrite /log Log_1; by field.
 Qed.
 

@@ -103,9 +103,7 @@ Qed.
 Lemma f0 x : 0 <= f x.
 Proof.
 apply Rle_mult_inv_pos; first by apply mulR_ge0; exact/dist_nonneg.
-apply/RltP.
-rewrite Rlt_neqAle eq_sym -receivableE receivable_y /=.
-exact/RleP/den_nonneg.
+apply/RltP; rewrite lt0R {1}/den -receivableE receivable_y; exact/RleP/den_nonneg.
 Qed.
 
 Lemma f1 : \rsum_(x in 'rV_n) f x = 1.
@@ -149,15 +147,15 @@ Proof.
 move=> Ht.
 rewrite PosteriorProbability.dE UniformSupport.E // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
 rewrite /PosteriorProbability.den UniformSupport.restrict.
-have Htmp : INR #|C| <> 0.
-  apply/not_0_INR/eqP; rewrite cards_eq0; apply/set0Pn; by exists x.
+have Htmp : INR #|C| != 0 by rewrite INR_eq0 -lt0n.
 rewrite div1R -Rinv_mult_distr //.
   rewrite /Kppu; congr Rinv; rewrite big_distrr /=; apply eq_bigr => i iC.
   by rewrite UniformSupport.E // div1R mulRA mulRV // mul1R.
+exact/eqP.
 rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
   move=> i iC; by rewrite UniformSupport.E.
 rewrite -big_distrr /=; apply Rmult_integral_contrapositive; split.
-  by rewrite div1R => /invR_eq0.
+  rewrite div1R => /invR_eq0; exact/eqP.
 by apply/eqP; rewrite -not_receivable_uniformE Hy.
 Qed.
 
@@ -204,9 +202,9 @@ Proof.
 apply mulR_ge0.
 - rewrite /Kmpp.
   apply Rle_mult_inv_pos; [fourier|].
-  apply Rlt_le_neq.
+  apply/RltP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/RleP]; last first.
     apply rsumr_ge0 => /= ? _; exact: dist_nonneg.
-  exact/nesym/f'_neq0.
+  exact/f'_neq0.
 - apply rsumr_ge0 => /= ? _; exact: dist_nonneg.
 Qed.
 

@@ -36,16 +36,14 @@ Lemma div_diff_ub x y : 0 <= x -> 0 <= y -> (y = 0 -> x = 0) ->
                         x * (log y - log x) <= (y - x) * log (exp 1).
 Proof.
 move=> Hx Hy Hxy.
-case/boolP : (y == 0) => [ /eqP y0 | /eqP y0].
-- move: (Hxy y0) => ->.
-  rewrite y0 subRR mul0R subRR mul0R; exact: Rle_refl.
-- have y_pos : 0 < y by apply Rlt_le_neq => // aux; symmetry in aux.
-  case/boolP : (x == 0) => [/eqP -> | /eqP x_not_0].
+case/boolP : (y == 0) => [/eqP y0 | y0].
+- move: (Hxy y0) => ->; by rewrite y0 2!subRR 2!mul0R; exact/Rle_refl.
+- have y_pos : 0 < y by apply/RltP; rewrite lt0R y0; exact/RleP.
+  case/boolP : (x == 0) => [/eqP -> | x_not_0].
   + rewrite mul0R subR0; apply mulR_ge0 => //; exact: log_exp1_Rle_0.
-  + have x_pos : 0 < x by apply Rlt_le_neq => // /esym.
+  + have x_pos : 0 < x by apply/RltP; rewrite lt0R x_not_0; exact/RleP.
     rewrite (_ : y - x = x * (y / x - 1) ); last first.
-      rewrite mulRDr /Rdiv mulRC -mulRA Rinv_l; last by apply not_eq_sym, Rlt_not_eq, x_pos.
-      by rewrite mulRN 2!mulR1.
+      rewrite mulRDr mulRCA mulRV ?mulR1 ?mulRN1 //; exact/eqP.
     rewrite -mulRA; apply Rmult_le_compat_l; first exact/ltRW/x_pos.
     rewrite /Rminus -LogV; last by apply x_pos.
     rewrite -Log_mult; last 2 first.
@@ -78,27 +76,25 @@ Lemma log_id_diff x y : 0 <= x -> 0 <= y ->
   (y = 0 -> x = 0) -> x * (log y - log x) = (y - x) * log (exp 1) -> x = y.
 Proof.
 move=> Hx Hy Hxy Hxy2.
-case/boolP : (y == 0) => [y0 | y_not_0].
-- move/eqP in y0 ; have x0 : x = 0 ; first apply Hxy, y0 ; by rewrite x0 y0.
-- move/eqP in y_not_0.
-  have y_pos : 0 < y by apply Rlt_le_neq => // /esym.
-  case/boolP : (x == 0) => [/eqP x0 | /eqP x_not_0].
-  - move/esym : Hxy2; rewrite x0 mul0R subR0 => /Rmult_integral => Hxy2.
-    case : Hxy2 => //.
+case/boolP : (y == 0) => [/eqP y0 | y_not_0].
+- by rewrite y0 Hxy.
+- have y_pos : 0 < y by apply/RltP; rewrite lt0R y_not_0; exact/RleP.
+  case/boolP : (x == 0) => [/eqP x0 | x_not_0].
+  - move/esym : Hxy2; rewrite x0 mul0R subR0 => /Rmult_integral.
+    case => //.
     by rewrite logexp1E => /invR_eq0/ln_2_neq0.
-  - have x_pos : 0 < x by apply Rlt_le_neq => // /esym.
+  - have x_pos : 0 < x by apply/RltP; rewrite lt0R x_not_0; exact/RleP.
     symmetry.
     apply (Rmult_eq_reg_l (/ x)); last by apply not_eq_sym, Rlt_not_eq, Rinv_0_lt_compat.
-    rewrite Rinv_l ; last by apply not_eq_sym, Rlt_not_eq, x_pos.
+    rewrite mulVR //.
     apply log_id_eq.
       by rewrite mulRC; apply Rlt_mult_inv_pos ; [apply y_pos | apply x_pos].
-    rewrite {1}/log Log_mult; last 2 first.
+    rewrite {1}/log Log_mult //; last first.
       by apply Rinv_0_lt_compat, x_pos.
-      assumption.
     apply (Rmult_eq_reg_l x); last by apply not_eq_sym, Rlt_not_eq.
     rewrite LogV // addRC Hxy2 mulRA /Rminus mulRDr; apply Rmult_eq_compat_r.
     field.
-    exact/gtR_eqF.
+    exact/eqP.
 Qed.
 
 Lemma eq0div : D(P || Q) = 0 <-> P = Q.
