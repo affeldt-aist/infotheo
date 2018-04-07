@@ -95,40 +95,18 @@ Proof. move=> *. fourier. Qed.
 Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Zabs_nat x) = IZR x.
 Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
 
-Lemma Rmax_Rle_in r1 r2 r : max(r1, r2) <= r -> r1 <= r /\ r2 <= r.
+Lemma leR_maxl x y z : (max(y, z) <b= x) = (y <b= x) && (z <b= x).
 Proof.
-case: (Rlt_le_dec r1 r2).
-- move/ltRW => H1.
-  rewrite Rmax_right // => H2.
-  split; [by apply Rle_trans with r2 | assumption].
-- move=> H1.
-  rewrite Rmax_left // => H2.
-  split; [assumption | by apply Rle_trans with r1].
+apply/idP/idP => [/RleP|/andP[/RleP H1 /RleP H2]]; last first.
+  apply/RleP; by apply Rmax_case_strong.
+apply Rmax_case_strong => /RleP H1 /RleP H2.
+  rewrite H2; apply/RleP/Rle_trans; apply/RleP; by eauto.
+rewrite H2 andbC; apply/RleP/Rle_trans; apply/RleP; by eauto.
 Qed.
 
-Lemma RmaxA : associative Rmax.
-Proof.
-move=> a b c.
-apply Rmax_case_strong.
-- case/Rmax_Rle_in => H1 H2.
-  rewrite Rmax_left; last first.
-    apply Rmax_Rle; tauto.
-  by rewrite Rmax_left.
-- case/Rmax_Rle => H.
-  by rewrite [in X in _ = Rmax X _]Rmax_right.
-  apply Rmax_case_strong => H'.
-  rewrite [in X in _ = Rmax X _]Rmax_right; last first.
-    by apply Rle_trans with c.
-  by rewrite Rmax_left.
-  apply Rmax_case_strong => //.
-  case/Rmax_Rle => H''.
-  have ? : a = c by apply Rle_antisym. subst c.
-  by rewrite Rmax_left.
-  have ? : b = c by apply Rle_antisym. subst c.
-  by rewrite Rmax_right.
-Qed.
+Definition maxRA : associative Rmax := Rmax_assoc.
 
-Definition RmaxC : commutative Rmax := Rmax_comm.
+Definition maxRC : commutative Rmax := Rmax_comm.
 
 (** non-negative rationals: *)
 
@@ -168,13 +146,11 @@ apply Rinv_1_lt_contravar => //.
 exact/Rle_refl.
 Qed.
 
-Lemma Rabs_Rle (x a : R) : x <= a -> - a <= x -> Rabs x <= a.
-Proof.
-move=> H1 H2.
-rewrite /Rabs.
-case : Rcase_abs => _ //.
-apply Ropp_le_cancel; by rewrite oppRK.
-Qed.
+Lemma leR_subr_addr x y z : (x <b= y - z) = (x + z <b= y).
+Proof. apply/idP/idP => /RleP ?; apply/RleP; fourier. Qed.
+
+Lemma leR_subl_addr x y z : (x - y <b= z) = (x <b= z + y).
+Proof. apply/idP/idP => /RleP ?; apply/RleP; fourier. Qed.
 
 (** Lemmas about power *)
 
@@ -373,14 +349,6 @@ by rewrite /frac_part (_ : 1 = INR 1) // Int_part_INR  Rminus_diag_eq.
 move=> n IH; by apply frac_part_mult.
 Qed.
 
-(* TODO: move *)
-Lemma Rabs_eq_0 r : Rabs r = 0 -> r = 0.
-Proof.
-move=> H.
-apply/eqP/negPn/negP => abs; move: H.
-apply Rabs_no_R0 => /eqP; by apply/negP.
-Qed.
-
 (** P is dominated by Q: *)
 Section dominance.
 
@@ -393,155 +361,26 @@ End dominance.
 Notation "P '<<' Q" := (dom_by P Q) : reals_ext_scope.
 Notation "P '<<b' Q" := (dom_byb P Q) : reals_ext_scope.
 
-Lemma Rabs_lt a b : Rabs a <b b = (- b <b a <b b).
+Lemma Rabs_eq0 r : Rabs r = 0 -> r = 0.
+Proof. move: (Rabs_no_R0 r); tauto. Qed.
+
+Lemma ltR_Rabsl a b : Rabs a <b b = (- b <b a <b b).
 Proof.
+apply/idP/idP => [/RltP/Rabs_def2[? ?]|/andP[]/RltP ? /RltP ?].
+apply/andP; split; exact/RltP.
+exact/RltP/Rabs_def1.
+Qed.
+
+Lemma leR_Rabsl a b : Rabs a <b= b = (- b <b= a <b= b).
+Proof.
+apply/idP/idP => [/RleP|]; last first.
+  case/andP => /RleP H1 /RleP H2; exact/RleP/Rabs_le.
 case: (Rlt_le_dec a 0) => h.
-  rewrite Rabs_left //.
-  rewrite /Rlt_bool.
-  move H1 : (Rlt_dec (- a) b) => h1.
-  move H2 : (Rlt_dec (- b) a) => h2.
-  move H3 : (Rlt_dec a b) => h3.
-  rewrite {H1 H2 H3}.
-  case: h1; case: h2; case: h3 => h1 h2 h3 //.
-  apply Rnot_lt_le in h1.
-  fourier.
-  apply Rnot_lt_le in h2.
-  fourier.
-  apply Rnot_lt_le in h1.
-  apply Rnot_lt_le in h2.
-  fourier.
-  apply Rnot_lt_le in h3.
-  fourier.
-rewrite /Rlt_bool.
-rewrite Rabs_pos_eq //.
-move H1 : (Rlt_dec a b) => h1.
-move H2 : (Rlt_dec (- b) a) => h2.
-rewrite {H1 H2}.
-case: h1; case: h2 => h1 h2 //.
-apply Rnot_lt_le in h1.
-fourier.
+  rewrite Rabs_left // => ?.
+  apply/andP; split; apply/RleP; fourier.
+rewrite Rabs_right; last by apply Rle_ge.
+move=> ?; apply/andP; split; apply/RleP; fourier.
 Qed.
-
-Lemma Rabs_le a b : Rabs a <b= b = (- b <b= a <b= b).
-Proof.
-case: (Rlt_le_dec a 0) => h.
-  rewrite Rabs_left //.
-  rewrite /Rle_bool /Rge_bool.
-  move H1 : (Rge_dec b (- a)) => h1.
-  move H2 : (Rge_dec a (- b)) => h2.
-  move H3 : (Rge_dec b a) => h3.
-  rewrite {H1 H2 H3}.
-  case: h1; case: h2; case: h3 => h1 h2 h3 //.
-  apply Rnot_ge_lt in h1.
-  fourier.
-  apply Rnot_ge_lt in h2.
-  fourier.
-  apply Rnot_ge_lt in h1.
-  apply Rnot_ge_lt in h2.
-  fourier.
-  apply Rnot_ge_lt in h3.
-  fourier.
-rewrite /Rle_bool /Rge_bool.
-rewrite Rabs_pos_eq //.
-move H1 : (Rge_dec b a) => h1.
-move H2 : (Rge_dec a (- b)) => h2.
-rewrite {H1 H2}.
-case: h1; case: h2 => h1 h2 //.
-apply Rnot_ge_lt in h1.
-fourier.
-Qed.
-
-Lemma Rle_mult_div_L k a b : 0 < k -> k * a <b= b = (a <b= b / k).
-Proof.
-move=> Hk.
-move H1 : (_ <b= _ ) => [|] /=.
-- move/RleP in H1.
-  have H2 : a <= b / k.
-    apply Rmult_le_reg_l with k => //.
-    rewrite /Rdiv mulRCA mulRV ?mulR1 //; exact/eqP/gtR_eqF.
-  exact/esym/RleP.
-- move H2 : (_ <b= _ ) => [|] //=.
-  move/RleP in H2.
-  apply (Rmult_le_compat_l k) in H2; last by fourier.
-    rewrite /Rdiv mulRCA mulRV ?mulR1 // in H2; last exact/eqP/gtR_eqF.
-  move/RleP in H2.
-  by rewrite H2 in H1.
-Qed.
-
-Lemma Rle_mult_div_R k b c : 0 < k -> b <b= k * c = (b / k <b= c).
-Proof.
-move=> Hk.
-move H1 : (_ <b= _ ) => [|] /=.
-- move/RleP in H1.
-  have H2 : b / k <= c.
-    apply Rmult_le_reg_l with k => //.
-    rewrite /Rdiv mulRCA mulRV ?mulR1 //; exact/eqP/gtR_eqF.
-  exact/esym/RleP.
-- move H2 : (_ <b= _ ) => [|] //=.
-  move/RleP in H2.
-  apply (Rmult_le_compat_l k) in H2; last by fourier.
-    rewrite /Rdiv mulRCA mulRV ?mulR1 // in H2; last exact/eqP/gtR_eqF.
-  move/RleP in H2.
-  by rewrite H2 in H1.
-Qed.
-
-Lemma Rle2_mult_div k a b c : 0 < k -> k * a <b= b <b= k * c = (a <b= b / k <b= c).
-Proof.
-move=> Hk.
-move H1 : (_ <b= _ ) => [|] /=.
-- rewrite Rle_mult_div_L // in H1.
-  rewrite H1 /=.
-  by apply Rle_mult_div_R.
-- rewrite Rle_mult_div_L // in H1.
-  by rewrite H1.
-Qed.
-
-Lemma Rle_opp a b : a <b= b = (-b <b= -a).
-Proof.
-move H1 : (_ <b= _ ) => [|] /=.
-symmetry; apply/RleP; apply Ropp_le_contravar; by apply/RleP.
-move H2 : (_ <b= _ ) => [|] //=.
-move/RleP/Ropp_le_contravar/RleP : H2.
-by rewrite 2!oppRK H1.
-Qed.
-
-Lemma Rle2_opp a b c : a <b= b <b= c = (- c <b= -b <b= -a).
-Proof.
-move H1 : (_ <b= _ ) => [|] /=.
-- rewrite Rle_opp in H1.
-  by rewrite H1 andbC /= Rle_opp.
-- move H2 : (_ <b= _ ) => [|] //=.
-  by rewrite -Rle_opp.
-Qed.
-
-Lemma Rleb_trans_minus k a b : a <b= b = ((a - k) <b= (b - k)).
-Proof.
-move H1 : (_ <b= _ ) => [|] /=.
-- move/RleP in H1.
-  apply (Rplus_le_compat_r (-k)) in H1.
-  symmetry; apply/RleP; fourier.
-- symmetry.
-  apply/negP.
-  move/negP in H1.
-  contradict H1.
-  move/RleP in H1.
-  apply/RleP; fourier.
-Qed.
-
-Lemma Rle2_trans_minus k a b c :  (a <b= b <b= c) = ((a - k) <b= (b - k) <b= (c - k)).
-Proof.
-rewrite (Rleb_trans_minus k).
-move H1 : (_ <b= _ ) => [|] //=.
-by rewrite -Rleb_trans_minus.
-Qed.
-
-Lemma Rle2P a b c : a <b= b <b= c -> a <= b <= c.
-Proof.
-move H1 : (_ <b= _) => [|] //=.
-move/RleP in H1.
-by move/RleP.
-Qed.
-
 
 Section exp_lb_sect.
 
@@ -563,7 +402,7 @@ rewrite mulRC mulRA mulRC; congr (_ * _).
 rewrite factS mult_INR Rinv_mult_distr; last 2 first.
   by apply/eqP; rewrite INR_eq0.
   by apply/eqP; rewrite INR_eq0 -lt0n fact_gt0.
-by rewrite mulRC mulRA mulRV ?mul1R // INR_eq0. 
+by rewrite mulRC mulRA mulRV ?mul1R // INR_eq0.
 Qed.
 
 Let exp_dev_gt0 : forall n r, 0 < r -> 0 < exp_dev n r.

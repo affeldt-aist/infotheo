@@ -262,10 +262,7 @@ have -> : Pr P `^ n.+1 (~: p) =
         rewrite mulR1 mulRDr !mulNR !mul1R oppRK in LHS'.
         have H3 : forall a b c, a <= - c + b -> - b <= - a - c by move=> *; fourier.
         apply H3 in LHS'.
-        move: (Rabs_le (- (1 / INR n.+1) * log (P `^ n.+1 i) - `H P) epsilon).
-        rewrite /Rle_bool => ->.
-        apply/andP; split;
-          apply/RleP; by rewrite !mulNR.
+        rewrite leR_Rabsl; apply/andP; split; apply/RleP; by rewrite mulNR.
   rewrite H1 Pr_union_disj; last first.
     apply disjoint_setI0.
     rewrite disjoints_subset.
@@ -333,9 +330,9 @@ Proof.
 move=> k0_k.
 have H1 : 1 - epsilon <= Pr (P `^ n.+1) (`TS P n.+1 epsilon) <= 1.
   split; by [apply Rge_le, Pr_TS_1 | apply Pr_1].
-have H2 :(forall x, x \in `TS P n.+1 epsilon ->
+have H2 : (forall x, x \in `TS P n.+1 epsilon ->
   exp2 (- INR n.+1 * (`H P + epsilon)) <= P `^ n.+1 x <= exp2 (- INR n.+1 * (`H P - epsilon))).
-  move=> x; rewrite inE; by apply Rle2P.
+  by move=> x; rewrite inE /typ_seq => /andP[/RleP ? /RleP].
 move: (@wolfowitz _ P _ (`TS _ _ _) _ _ _ _ (exp2_pos _) (exp2_pos _) H1 H2).
 rewrite mulNR exp2_Ropp {1}/Rdiv invRK; last first.
   by apply nesym, Rlt_not_eq, exp2_pos.

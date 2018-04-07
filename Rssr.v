@@ -265,6 +265,8 @@ Qed.
 
 Definition invR1 : / 1 = 1 := Rinv_1.
 
+Definition invRK := Rinv_involutive.
+
 Lemma leR_inv : {in [pred x | true] & [pred x | 0 <b x], {homo Rinv : a b /~ a <= b}}.
 Proof. move=> a b; rewrite !inE => _ /RltP b0 ba; exact/Rinv_le_contravar. Qed.
 
@@ -286,6 +288,28 @@ Definition mulRV (x : R) : x != 0 -> x * / x = 1 := divRR x.
 Lemma mulVR (x : R) : x != 0 -> / x * x = 1.
 Proof. by move=> x0; rewrite mulRC mulRV. Qed.
 
+Lemma leR_pdivl_mulr z x y : 0 < z -> (x <b= y / z) = (x * z <b= y).
+Proof.
+move=> z0.
+apply/idP/idP=> [|]/RleP.
+  move/(Rmult_le_compat_l z) => /(_ (ltRW _ _ z0)).
+  rewrite mulRC mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
+  by move/RleP.
+move=> H; apply/RleP/(Rmult_le_reg_r z) => //.
+rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+Qed.
+
+Lemma leR_pdivr_mulr z x y : 0 < z -> (y / z <b= x) = (y <b= x * z).
+Proof.
+move=> z0.
+apply/idP/idP => [|]/RleP.
+  move/(Rmult_le_compat_r z) => /(_ (ltRW _ _ z0)).
+  rewrite -mulRA mulVR ?mulR1; first by move/RleP.
+  exact/eqP/gtR_eqF.
+move=> H; apply/RleP/(Rmult_le_reg_r z) => //.
+rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+Qed.
+
 (* TODO: rename *)
 Lemma pow_not0 x : x <> 0 -> forall n, x ^ n <> 0.
 Proof.
@@ -300,5 +324,3 @@ move/eqP => x_not0.
 elim : n => /= [ | n IH]; first by rewrite Rinv_1.
 rewrite Rinv_mult_distr //; by [ rewrite IH | apply pow_not0].
 Qed.
-
-Definition invRK := Rinv_involutive.

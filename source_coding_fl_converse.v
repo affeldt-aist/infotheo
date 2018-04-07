@@ -116,8 +116,8 @@ apply Exp_le_increasing => //.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply Rmult_le_reg_r with (1 / r) => //.
 apply Rlt_mult_inv_pos; [fourier | tauto].
-rewrite -mulRA div1R mulRV; last by case: Hr => /RltP; rewrite lt0R => /andP[].
-rewrite mulR1; exact: proj2 (Rmax_Rle_in Hk).
+rewrite -mulRA div1R mulRV ?mulR1; last by case: Hr => /RltP; rewrite lt0R => /andP[].
+by move/RleP : Hk; rewrite leR_maxl => /andP[_ /RleP].
 Qed.
 
 Local Open Scope proba_scope.
@@ -164,10 +164,11 @@ Lemma step4 : 1 - (esrc(P , sc)) <= delta +
 Proof.
 eapply Rle_trans; first by apply step3.
 apply Rplus_le_compat.
-- move: (Pr_TS_1 Hdelta (proj1 (Rmax_Rle_in (proj1 (Rmax_Rle_in Hk))))) => H2.
+- move/RleP : Hk; rewrite 2!leR_maxl -andbA => /andP[/RleP].
+  move/(Pr_TS_1 Hdelta) => H2 _.
   set p1 := Pr _ _ in H2.
   rewrite -/(Pr (P `^ k.+1) _) Pr_to_cplt /= (_ : Pr _ _ = p1); last first.
-    rewrite /p1; apply Pr_ext; apply/setP => i /=; by rewrite !inE negbK.
+    rewrite /p1; apply/Pr_ext/setP => i /=; by rewrite !inE negbK.
   fourier.
 - apply Rle_trans with
   (\rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
@@ -228,7 +229,7 @@ have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
       rewrite -mulNR oppRK.
       apply Rle_ge.
       rewrite mulR1 /e0.
-      by move: (proj2 (Rmax_Rle_in (proj1 (Rmax_Rle_in Hk)))).
+      by move/RleP : Hk; rewrite 2!leR_maxl => /andP[/andP[_ /RleP]].
 suff : 1 - (esrc(P , sc)) <= delta + delta by move=> *; fourier.
 eapply Rle_trans; by [apply step5 | apply Rplus_le_compat_l].
 Qed.

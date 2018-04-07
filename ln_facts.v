@@ -554,24 +554,24 @@ Lemma xlnx_delta_bound eps : 0 < eps <= exp (-2) ->
   forall x, 0 <= x <= 1 - eps -> Rabs (xlnx_delta eps x) <= - xlnx eps.
 Proof.
 move=> [Heps1 Heps2] x [Hx1 Hx2].
-apply Rabs_Rle.
+apply/RleP; rewrite leR_Rabsl oppRK; apply/andP; split; apply/RleP.
+- rewrite (_ : xlnx eps = xlnx_delta eps 0); last first.
+    by rewrite /xlnx_delta add0R xlnx_0 subR0.
+  case/boolP : (0 == x) => [/eqP <-|xnot0]; first exact/Rle_refl.
+  apply ltRW, increasing_xlnx_delta => //.
+  + exact: (conj Heps1 (Rle_lt_trans _ _ _ Heps2 ltRinve21)).
+  + split ; by [apply (Rle_trans _ x) | apply Rle_refl].
+  + apply/RltP; rewrite ltR_neqAle xnot0; exact/RleP.
 - apply (Rle_trans _ (xlnx_delta eps (1 - eps))).
     case/boolP : (x == 1 - eps) => [/eqP ->|xnot0]; first exact/Rle_refl.
     apply ltRW, increasing_xlnx_delta => //.
-    - exact: (conj Heps1 (Rle_lt_trans _ _ _ Heps2 ltRinve21)).
-    - split; by [apply (Rle_trans _ x) | apply Rle_refl].
-    - apply/RltP; rewrite ltR_neqAle xnot0; exact/RleP.
+    + exact: (conj Heps1 (Rle_lt_trans _ _ _ Heps2 ltRinve21)).
+    + split; by [apply (Rle_trans _ x) | apply Rle_refl].
+    + apply/RltP; rewrite ltR_neqAle xnot0; exact/RleP.
   rewrite /xlnx_delta /Rminus -addRA Rplus_opp_l addR0 xlnx_1 add0R.
   apply Ropp_le_cancel ; rewrite 2!oppRK.
   apply xlnx_ineq.
   split => //; exact: ltRW.
-rewrite oppRK (_ : xlnx eps = xlnx_delta eps 0); last first.
-  by rewrite /xlnx_delta add0R xlnx_0 subR0.
-case/boolP : (0 == x) => [/eqP <-|xnot0]; first exact/Rle_refl.
-apply ltRW, increasing_xlnx_delta => //.
-- exact: (conj Heps1 (Rle_lt_trans _ _ _ Heps2 ltRinve21)).
-- split ; by [apply (Rle_trans _ x) | apply Rle_refl].
-- apply/RltP; rewrite ltR_neqAle xnot0; exact/RleP.
 Qed.
 
 Lemma Rabs_xlnx a (Ha : 0 <= a <= exp(-2)) x y :

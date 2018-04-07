@@ -548,10 +548,9 @@ Proof.
 elim => [s2 Hg /= | h1 t1 IH s2 Hg /=].
   rewrite big_nil Rmax_right //.
   by apply Rle_0_bigRmax.
-rewrite 2!big_cons IH; last first.
-  move=> x Hx; apply Hg.
-  by rewrite /= in_cons Hx orbC.
-by rewrite RmaxA.
+rewrite 2!big_cons IH ?maxRA //.
+move=> x Hx; apply Hg.
+by rewrite /= in_cons Hx orbC.
 Qed.
 
 Lemma bigrmax_perm (I : eqType) g : forall (s1 s2 : seq I),
@@ -591,7 +590,7 @@ rewrite (IH1 _ H1 _ Hg' Hs2'); last 2 first.
   rewrite cat_uniq K2 K3 /= andbC /=.
   rewrite negb_or in K4.
   by case/andP : K4.
-rewrite bigrmax_cat // RmaxA (RmaxC (g h1)) -RmaxA ht2 bigrmax_cat; last first.
+rewrite bigrmax_cat // maxRA (maxRC (g h1)) -maxRA ht2 bigrmax_cat; last first.
   move=> x Hx; apply Hg; by rewrite ht2.
 by rewrite big_cons.
 Qed.

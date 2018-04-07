@@ -217,8 +217,7 @@ apply/negPn/negPn.
     by apply Rle_refl.
   apply Rle_trans with (exp2 (1 + INR k * (`H P + lambda / 2))); last first.
    apply Exp_le_increasing => //; apply Rplus_le_compat_r.
-    apply Rmax_Rle_in in Hk.
-    case: Hk => _ Hk.
+    move/RleP : Hk; rewrite leR_maxl => /andP[_ /RleP Hk].
     apply Rmult_le_reg_r with (2 / lambda)%R; first by exact lambdainv2.
     rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
       apply nesym, Rlt_not_eq; exact lambda0.
