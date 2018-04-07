@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div choice fintype tuple finfun bigop prime.
 From mathcomp Require Import binomial ssralg finset fingroup finalg matrix.
-Require Import Reals Fourier Rpower.
+Require Import Reals Fourier.
 Require Import Reals_ext Ranalysis_ext Rssr log2 ln_facts Rbigop proba entropy.
 Require Import channel_code channel divergence conditional_divergence.
 Require Import variation_dist pinsker.
@@ -31,9 +31,9 @@ split; first by apply sqrt_pos.
 apply pow2_Rle_inv; [ by apply sqrt_pos | exact/ltRW/exp_pos | ].
 rewrite [in X in X <= _]/= mulR1 sqrt_sqrt; last first.
   apply mulR_ge0; by [fourier | apply leq0cdiv].
-apply (Rmult_le_reg_r (/ 2)); first by by apply Rinv_0_lt_compat, Rlt_R0_R2.
-rewrite mulRC mulRA Rinv_l; first by rewrite mul1R.
-by apply not_eq_sym, Rlt_not_eq, Rlt_R0_R2.
+apply/RleP; rewrite -(Rle_pmul2r (/ 2)); last exact/RltP/invR_gt0.
+rewrite -mulRA mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
+exact/RleP.
 Qed.
 
 Local Open Scope variation_distance_scope.
@@ -45,11 +45,9 @@ Lemma out_entropy_dist_ub : Rabs (`H(P `o V) - `H(P `o W)) <=
 Proof.
 rewrite 2!xlnx_entropy /Rminus.
 rewrite -mulRN -mulRDr Rabs_mult Rabs_right; last first.
-  rewrite -(mul1R (/ ln 2)); apply Rle_ge, Rle_mult_inv_pos;
-  by [apply Rle_0_1 | apply ln_2_pos].
+  rewrite -(mul1R (/ ln 2)); exact/Rle_ge/Rle_mult_inv_pos.
 rewrite -mulRA; apply Rmult_le_compat_l.
-  rewrite -(mul1R (/ ln 2)); apply Rle_mult_inv_pos;
-  by [apply Rle_0_1 | apply ln_2_pos].
+  by rewrite -(mul1R (/ ln 2)); apply Rle_mult_inv_pos.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
 apply: Rle_trans; first exact: ler_rsum_Rabs.
 rewrite -iter_Rplus_Rmult -big_const.
@@ -77,11 +75,9 @@ Lemma joint_entropy_dist_ub : Rabs (`H(P , V) - `H(P , W)) <=
 Proof.
 rewrite 2!xlnx_entropy.
 rewrite /Rminus -mulRN -mulRDr Rabs_mult Rabs_right; last first.
-  rewrite -(mul1R (/ ln 2)); apply Rle_ge, Rle_mult_inv_pos;
-  by [apply Rle_0_1 | apply ln_2_pos].
+  by rewrite -(mul1R (/ ln 2)); apply Rle_ge, Rle_mult_inv_pos.
 rewrite -2!mulRA; apply Rmult_le_compat_l.
-  rewrite -(mul1R (/ ln 2)); apply Rle_mult_inv_pos;
-  by [apply Rle_0_1 | apply ln_2_pos].
+  by rewrite -(mul1R (/ ln 2)); apply Rle_mult_inv_pos.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
 apply: Rle_trans; first exact: ler_rsum_Rabs.
 rewrite -2!iter_Rplus_Rmult -2!big_const pair_bigA /=.
@@ -138,11 +134,11 @@ have Htmp : min(exp (-2), gamma) > 0.
   apply Rmin_Rgt_r ; split ; apply Rlt_gt.
   - by apply exp_pos.
   - subst gamma ; apply mulR_gt0.
-      apply Rinv_0_lt_compat, Rplus_lt_le_0_compat.
-      - apply lt_0_INR; by apply/ltP.
-      - apply mulR_ge0; by apply pos_INR.
-    apply mulR_gt0; first by apply ln_2_pos.
-    apply mulR_gt0; last by apply Rinv_0_lt_compat, Rlt_R0_R2.
+      apply/invR_gt0/Rplus_lt_le_0_compat.
+      - exact/lt_0_INR/ltP.
+      - apply mulR_ge0; exact/pos_INR.
+    apply mulR_gt0 => //.
+    apply mulR_gt0; last exact: invR_gt0.
     rewrite -(Rplus_opp_r cap) /Rminus; by apply Rplus_lt_compat_r.
 move=> /(_ Htmp) {Htmp} [] /= mu [mu_pos mu_cond].
 set x := min(mu / 2, exp (-2)).
@@ -150,17 +146,14 @@ move: {mu_cond}(mu_cond x).
 have x_pos : 0 < x.
   subst x.
   apply Rmin_pos; last by apply exp_pos.
-  apply mulR_gt0 => //.
-  by apply Rinv_0_lt_compat, Rlt_R0_R2.
+  apply mulR_gt0 => //; exact: invR_gt0.
 have Htmp : D_x no_cond 0 x /\ R_dist x 0 < mu.
   split.
   - split => //; by apply Rlt_not_eq.
   - rewrite /R_dist subR0 Rabs_right; last exact/Rle_ge/ltRW.
     subst x.
     apply (Rle_lt_trans _ (mu * / 2)); first by apply Rmin_l.
-    apply (Rmult_lt_reg_r 2); first by apply Rlt_R0_R2.
-    rewrite -mulRA Rinv_l; last by apply not_eq_sym, Rlt_not_eq, Rlt_R0_R2.
-    apply Rmult_lt_compat_l => //; fourier.
+    apply/RltP; rewrite ltR_pdivr_mulr //; apply/RltP; fourier.
 move=> /(_ Htmp) {Htmp}.
 rewrite /R_dist /Rminus {2}/xlnx ltRR oppR0 addR0 Rabs_left; last first.
   apply xlnx_neg.
@@ -170,10 +163,8 @@ move=> Hx.
 set Delta := min((minRate - cap) / 2, x ^ 2 / 2).
 exists Delta; split.
   apply Rmin_case.
-    apply mulR_gt0; last by apply Rinv_0_lt_compat, Rlt_R0_R2.
-    apply (Rplus_lt_reg_r cap).
-    by rewrite subRK add0R.
-  apply mulR_gt0; by [apply pow_gt0 | apply Rinv_0_lt_compat, Rlt_R0_R2].
+    apply mulR_gt0; [exact: Rlt_Rminus | exact/invR_gt0].
+  apply mulR_gt0; [exact: pow_gt0 | exact: invR_gt0].
 move=> P V v_dom_by_w.
 case/boolP : (Delta <b= D(V || W | P)).
   move/RleP => Hcase.
@@ -202,7 +193,7 @@ have Htmp : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
     clear -Hcase x_pos.
     apply/ltRW/(Rlt_le_trans _ _ _ Hcase).
     apply (Rle_trans _ (x ^ 2 * / 2)); first by apply Rmin_r.
-    apply Rmult_le_compat_r; first exact/ltRW/Rinv_0_lt_compat/Rlt_R0_R2.
+    apply Rmult_le_compat_r; first exact/ltRW/invR_gt0.
     apply pow_incr.
     split; [exact: ltRW | exact: Rmin_r].
   by apply mut_info_dist_ub.
@@ -216,16 +207,10 @@ suff Htmp : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   apply Rge_le.
   rewrite addRA Rplus_opp_l add0R.
   apply Ropp_le_ge_contravar; rewrite -mulRA.
-  apply (Rmult_le_reg_l (ln 2)); first exact: ln_2_pos.
-  rewrite mulRA mulRV ?mul1R; last exact/eqP/ln_2_neq0.
-  apply (Rmult_le_reg_l (/ (INR #|B| + INR #|A| * INR #|B|))).
-    apply Rinv_0_lt_compat, Rplus_lt_le_0_compat.
-    - exact/lt_0_INR/ltP.
-    - apply mulR_ge0; by apply pos_INR.
-  rewrite -/gamma mulRA Rinv_l ?mul1R //.
-  apply not_eq_sym, Rlt_not_eq, Rplus_lt_le_0_compat.
-  - apply lt_0_INR; by apply/ltP.
-  - apply mulR_ge0; by apply pos_INR.
+  apply/RleP; rewrite mulRC leR_pdivr_mulr //.
+  rewrite mulRC -leR_pdivl_mulr; last first.
+    by apply/RltP; rewrite -mult_INR -plus_INR plusE multE ltR0n addn_gt0 Bnot0.
+  apply/RleP; by rewrite [in X in _ <= X]mulRC /Rdiv (mulRC _ (/ (_ + _))).
 suff Htmp : xlnx x <= xlnx (sqrt (2 * (D(V || W | P)))).
   clear -Hx Htmp.
   apply Ropp_le_cancel; rewrite oppRK.
@@ -237,11 +222,10 @@ apply/ltRW/Rgt_lt.
 have Htmp : sqrt (2 * D(V || W | P)) < x.
   apply pow2_Rlt_inv; [exact: sqrt_pos | exact: ltRW | ].
   rewrite [in X in X < _]/= mulR1 sqrt_sqrt; last first.
-    apply mulR_ge0; first exact/ltRW/Rlt_R0_R2.
+    apply mulR_ge0; first exact/ltRW.
     apply leq0cdiv=> a Ha ? ?; by apply v_dom_by_w.
-  apply (Rmult_lt_reg_r (/ 2)); first by apply Rinv_0_lt_compat, Rlt_R0_R2.
-  rewrite mulRC mulRA Rinv_l; last by apply not_eq_sym, Rlt_not_eq, Rlt_R0_R2.
-  rewrite mul1R; apply (Rlt_le_trans _ _ _ Hcase); by apply Rmin_r.
+  apply/RltP; rewrite mulRC -ltR_pdivl_mulr //.
+  exact/RltP/(Rlt_le_trans _ _ _ Hcase)/Rmin_r.
 apply xlnx_sdecreasing_0_Rinv_e => //.
 - split; first by apply sqrt_pos.
   apply: (Rle_trans _ x _ (ltRW _ _ _)) => //.

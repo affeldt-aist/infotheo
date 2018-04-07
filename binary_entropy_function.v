@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier.
-Require Import Reals_ext Rssr Ranalysis_ext log2.
+Require Import Rssr Reals_ext Ranalysis_ext log2.
 
 (** * The "natural entropy function" *)
 
@@ -73,7 +73,7 @@ apply Rle_trans with (- ln t + ln (1 - t)); last first.
   apply Req_le; field.
   split=> ?; fourier.
 rewrite -ln_Rinv // -ln_mult; last 2 first.
-  by apply Rinv_0_lt_compat.
+  exact/invR_gt0.
   fourier.
 rewrite -ln_1.
 apply ln_increasing_le.
@@ -150,21 +150,15 @@ Lemma H2_max : forall p, 0 < p < 1 -> H2 p <= 1.
 Proof.
 move=> p [Hp0 Hp1].
 rewrite /H2.
-apply Rmult_le_reg_l with (ln 2); first by apply ln_2_pos.
-rewrite mulR1 mulRDr /log -!mulNR.
-rewrite !(mulRC (ln 2)) -!mulRA -(Rinv_l_sym (ln 2)); last exact ln_2_neq0.
-rewrite !mulR1.
-apply Rle_trans with ( - p * ln p - (1 - p) * ln (1 - p) ).
-apply Req_le; by field.
-by apply H2ln_max.
+apply Rmult_le_reg_l with (ln 2) => //.
+rewrite mulR1 mulRDr /log -!mulNR !(mulRC (ln 2)) -!mulRA.
+rewrite (mulVR _ ln2_neq0) !mulR1 (mulNR (1 - p)); exact/H2ln_max.
 Qed.
 
 Lemma H2_max' (x : R): 0 <= x <= 1 -> H2 x <= 1.
 Proof.
 move=> [x_0 x_1].
-case: x_0 => [?|<-]
-    ; last rewrite bin_ent_0eq0; last by apply: Rle_0_1.
-case: x_1 => [?|->]
-    ; last rewrite bin_ent_1eq0; last by apply: Rle_0_1.
-by apply: H2_max.
+case: x_0 => [?|<-]; last by rewrite bin_ent_0eq0.
+case: x_1 => [?|->]; last by rewrite bin_ent_1eq0.
+exact: H2_max.
 Qed.

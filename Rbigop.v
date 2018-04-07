@@ -427,17 +427,10 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
       apply/negP => /eqP Habs.
         apply (Rmult_eq_compat_r (/ b)) in Habs ; move: Habs.
         rewrite -mulRA mul0R mulRV // ?mulR1; move/eqP; exact/negP.
-      apply Rinv_mult_distr; move/eqP; exact/negP.
-    - rewrite negb_and => Hab.
-      case/orP : (orbN (a != 0)) => Ha.
-      - rewrite Ha /= in Hab; move/negPn/eqP in Hab; rewrite Hab mulR0 /inv_spec.
-        by rewrite (_ : 0 == 0 ) // mulR0.
-      - move/negPn/eqP in Ha ; rewrite Ha mul0R /inv_spec.
-        by rewrite (_ : 0 == 0 ) // mul0R.
-  - rewrite /inv_spec.
-    have : ~~ (1 == 0).
-      apply/eqP => H01; symmetry in H01; move: H01; apply Rlt_not_eq; fourier.
-    move/negbTE => -> ; by rewrite Rinv_1.
+      rewrite invRM //; exact/eqP.
+    - rewrite negb_and !negbK => /orP[|]/eqP ->;
+        by rewrite /inv_spec !(eqxx,mul0R,mulR0).
+  - rewrite /inv_spec ifF ?invR1 //; exact/negbTE/eqP/R1_neq_R0.
   rewrite -big_split /=.
   apply rprodr_ge1 => a.
   move/(_ a) in Hf.
@@ -495,9 +488,9 @@ Proof.
 elim => [i Hi | n IH].
   by rewrite big_ord_recl big_ord0 mulR1 big_ord_recl big_ord0 addR0.
 move=> ta Hi.
-rewrite big_ord_recl /= Log_mult; last 2 first.
-  by apply Hi.
-  apply rprodr_gt0 => i; by apply Hi.
+rewrite big_ord_recl /= LogM; last 2 first.
+  exact/Hi.
+  apply rprodr_gt0 => ?; exact/Hi.
 set tl := \row_(i < n.+1) ta ``_ (lift ord0 i).
 have : forall i0 : 'I_n.+1, 0 < f tl ``_ i0.
   move=> i; rewrite mxE; exact/Hi.

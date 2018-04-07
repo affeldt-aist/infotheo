@@ -111,7 +111,7 @@ apply Rle_trans with (exp2 (INR n)).
     by rewrite inE.
   apply Rle_trans with (INR #| [set: 'rV[bool]_n] |).
     apply/le_INR/leP/leq_imset_card.
-    rewrite cardsT card_matrix /= card_bool exp2_pow2 mul1n; by apply Rle_refl.
+    rewrite cardsT card_matrix /= card_bool exp2_INR mul1n; exact/Rle_refl.
 apply Exp_le_increasing => //.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply Rmult_le_reg_r with (1 / r) => //.
@@ -179,15 +179,11 @@ apply Rplus_le_compat.
     apply (@Log_le_inv 2) => //.
     + move: i_TS.
       rewrite /`TS inE /typ_seq => /andP[/RleP i_TS _].
-      apply: Rlt_le_trans; by [apply exp2_pos | apply i_TS].
-    + by apply exp2_pos.
-    + rewrite /exp2 ExpK //. 
-      apply Rmult_le_reg_l with (1 / INR k.+1).
-      * rewrite div1R; exact/invR_gt0/lt_0_INR/ltP.
-      * apply Rge_le.
-        rewrite -mulRA mul1R mulRA mulRN mulVR ?INR_eq0 //.
-        apply Rle_ge, Ropp_le_cancel.
-        by rewrite -mulNR oppRK mul1R -mulNR.
+      apply: Rlt_le_trans; by [apply exp2_gt0 | apply i_TS].
+    + rewrite /exp2 ExpK //.
+      apply/RleP; rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/RltP/ltR0n.
+      apply/RleP/Ropp_le_cancel.
+      rewrite oppRK /Rdiv mulRC; by rewrite div1R mulNR in H1.
   rewrite big_const iter_Rplus; exact/Rle_refl.
 Qed.
 
@@ -195,22 +191,20 @@ Lemma step5 : 1 - (esrc(P , sc)) <= delta + exp2 (- INR k.+1 * (e0 - delta)).
 Proof.
 apply Rle_trans with (delta + INR #| no_failure | * exp2 (- INR k.+1 * (`H P - delta))).
 - eapply Rle_trans; first by apply step4.
-  apply Rplus_le_compat_l, Rmult_le_compat_r.
-  by apply Rlt_le, exp2_pos.
-  by apply/le_INR/leP/subset_leqif_cards/subsetIl.
+  apply Rplus_le_compat_l, Rmult_le_compat_r => //.
+  exact/le_INR/leP/subset_leqif_cards/subsetIl.
 - apply Rplus_le_compat_l.
   apply Rle_trans with (exp2 (INR k.+1 * (`H P - e0)) * exp2 (- INR k.+1 * (`H P - delta)));
     last first.
     rewrite -ExpD.
     apply Exp_le_increasing => //; apply Req_le; by field.
-  apply Rmult_le_compat_r; [by apply Rlt_le, exp2_pos | exact no_failure_sup].
+  apply Rmult_le_compat_r => //; exact no_failure_sup.
 Qed.
 
 Lemma step6 : (esrc(P , sc)) >= 1 - 2 * delta.
 Proof.
 have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
   apply (@Log_le_inv 2) => //.
-  - exact/exp2_pos.
   - exact Hdelta.
   - rewrite /exp2 ExpK //.
     apply Rmult_le_reg_r with (1 / (e0 - delta)) => //.
@@ -243,8 +237,8 @@ apply Rplus_le_reg_l with 1.
 rewrite addRC (_ : 2 * delta - _ + _ = 2 * delta); last by field.
 rewrite (_ : 1 + - epsilon = 1 - epsilon); last by field.
 apply Rmult_le_reg_l with (/ 2); first by fourier.
-rewrite mulRA Rinv_l; last by move=> ?; fourier.
-rewrite mul1R /delta.
+rewrite mulRA mulVR ?mul1R; last exact/eqP/gtR_eqF.
+rewrite /delta.
 have H1 : lambda / 2 <= / 2 * (1 - epsilon).
   apply Rle_trans with lambda.
   apply Rdiv_le; [apply Rlt_le; exact Hlambda | fourier].

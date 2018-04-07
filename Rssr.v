@@ -13,7 +13,12 @@ Reserved Notation "a '<b' b '<b' c" (at level 70, b at next level).
 
 Local Open Scope R_scope.
 
+(* "^" = pow : R -> nat -> R *)
 Notation "x ^- n" := (/ (x ^ n)) : R_scope.
+
+Hint Resolve Rlt_R0_R2.
+Hint Resolve Rlt_0_1.
+Hint Resolve Rle_0_1.
 
 (** eqType for Coq Reals *)
 Definition Req_bool (a b : R) : bool :=
@@ -109,7 +114,6 @@ Lemma mulRDl : left_distributive Rmult Rplus.
 Proof. move=> *; by rewrite Rmult_plus_distr_r. Qed.
 Lemma mulRDr : right_distributive Rmult Rplus.
 Proof. move=> *; by rewrite Rmult_plus_distr_l. Qed.
-(* was Rmult_minus_distr_r *)
 Lemma mulRBl : left_distributive Rmult Rminus.
 Proof. move=> *; field. Qed.
 
@@ -119,7 +123,6 @@ apply/idP/idP => [/eqP/Rmult_integral[] ->| ]; try by rewrite eqxx // orbC.
 case/orP => /eqP ->; by rewrite ?mulR0 ?mul0R.
 Qed.
 
-(* was Rlt_ne *)
 Lemma gtR_eqF a b : a < b -> b <> a.
 Proof. move=> Hb He; rewrite He in Hb; by apply (Rlt_irrefl a). Qed.
 
@@ -127,6 +130,14 @@ Definition ltR_eqF := Rlt_not_eq.
 
 Lemma leRR r : r <b= r.
 Proof. apply/RleP. by apply Rle_refl. Qed.
+
+Lemma ltR_subRL m n p : (n <b p - m) = (m + n <b p).
+Proof.
+apply/idP/idP => /RltP H; apply/RltP.
+  move/(Rplus_lt_compat_l m) : H.
+  by rewrite addRCA Rplus_opp_r addR0.
+by apply: (Rplus_lt_reg_l m); rewrite addRCA Rplus_opp_r addR0.
+Qed.
 
 Definition oppR0 := Ropp_0.
 Definition oppRK := Ropp_involutive.
@@ -248,24 +259,26 @@ Qed.
      : forall r r1 r2 : R, 0 < r -> r1 * r <= r2 * r -> r1 <= r2 *)
 
 Lemma Rle_pmul2r m n1 n2 : 0 <b m -> (n1 * m <b= n2 * m) = (n1 <b= n2).
-Proof.
-move=> /RltP Hm.
-apply/idP/idP; first by move/RleP/Rmult_le_reg_r  => /(_ Hm)/RleP.
-move/RleP/(Rmult_le_compat_r m); by move/ltRW : Hm => Hm /(_ Hm)/RleP.
-Qed.
+Proof. move=> Hm; by rewrite -!(mulRC m) Rle_pmul2l. Qed.
 
 Lemma invR_gt0 x : 0 < x -> 0 < / x.
 Proof. move=> x0; by apply Rinv_0_lt_compat. Qed.
 
-Lemma invR_eq0 (x : R) : (/ x = 0) -> (x = 0).
+(* Rinv_neq_0_compat : forall r : R, r <> 0 -> / r <> 0 *)
+Lemma invR_neq0 (x : R) : x != 0 -> / x != 0.
+Proof. by move/eqP/Rinv_neq_0_compat/eqP. Qed.
+
+Lemma invR_eq0 (x : R) : / x == 0 -> x == 0.
 Proof.
-move/eqP => H; apply/eqP; apply: contraTT H => H.
-by apply/eqP/Rinv_neq_0_compat/eqP.
+move => H; apply: contraTT H => H.
+exact/invR_neq0.
 Qed.
 
 Definition invR1 : / 1 = 1 := Rinv_1.
 
 Definition invRK := Rinv_involutive.
+
+Definition invRM := Rinv_mult_distr.
 
 Lemma leR_inv : {in [pred x | true] & [pred x | 0 <b x], {homo Rinv : a b /~ a <= b}}.
 Proof. move=> a b; rewrite !inE => _ /RltP b0 ba; exact/Rinv_le_contravar. Qed.
@@ -284,7 +297,7 @@ Proof. by rewrite /Rdiv mul0R. Qed.
 
 Definition mulRV (x : R) : x != 0 -> x * / x = 1 := divRR x.
 
-(* Rinv_l_sym*)
+(* Rinv_l_sym *)
 Lemma mulVR (x : R) : x != 0 -> / x * x = 1.
 Proof. by move=> x0; rewrite mulRC mulRV. Qed.
 
@@ -299,6 +312,17 @@ move=> H; apply/RleP/(Rmult_le_reg_r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
+Lemma ltR_pdivl_mulr z x y : 0 < z -> (x <b y / z) = (x * z <b y).
+Proof.
+move=> z0.
+apply/idP/idP=> [|]/RltP.
+  move/(Rmult_lt_compat_l z) => /(_ z0).
+  rewrite mulRC mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
+  by move/RltP.
+move=> H; apply/RltP/(Rmult_lt_reg_r z) => //.
+rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+Qed.
+
 Lemma leR_pdivr_mulr z x y : 0 < z -> (y / z <b= x) = (y <b= x * z).
 Proof.
 move=> z0.
@@ -310,17 +334,35 @@ move=> H; apply/RleP/(Rmult_le_reg_r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
-(* TODO: rename *)
-Lemma pow_not0 x : x <> 0 -> forall n, x ^ n <> 0.
+Lemma ltR_pdivr_mulr z x y : 0 < z -> (y / z <b x) = (y <b x * z).
 Proof.
-move=> x_not0.
-elim => [/= | n IH]; first by apply not_eq_sym, Rlt_not_eq, Rlt_0_1.
-by apply Rmult_integral_contrapositive.
+move=> z0.
+apply/idP/idP => [|]/RltP.
+  move/(Rmult_lt_compat_r z) => /(_ z0).
+  rewrite -mulRA mulVR ?mulR1; first by move/RltP.
+  exact/eqP/gtR_eqF.
+move=> H; apply/RltP/(Rmult_lt_reg_r z) => //.
+rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
-Lemma expRV x n : x != 0 -> (/ x ) ^ n = x ^- n.
+Lemma invR_le1 x : 0 < x -> (/ x <b= 1) = (1 <b= x).
+Proof. move=> x0; by rewrite -(div1R x) leR_pdivr_mulr // mul1R. Qed.
+
+Lemma pow_eq0 x (n : nat) : (x ^ n.+1 == 0) = (x == 0).
+Proof.
+apply/idP/idP => [/eqP H|/eqP ->]; apply/eqP; last by rewrite pow_ne_zero.
+move: (pow_nonzero x n.+1); tauto.
+Qed.
+
+Lemma pow_not0 x (n : nat) : x != 0 -> x ^ n != 0.
+Proof. by move/eqP/(pow_nonzero _ n)/eqP. Qed.
+
+Lemma powRV x (n : nat) : x != 0 -> (/ x ) ^ n = x ^- n.
 Proof.
 move/eqP => x_not0.
 elim : n => /= [ | n IH]; first by rewrite Rinv_1.
-rewrite Rinv_mult_distr //; by [ rewrite IH | apply pow_not0].
+rewrite invRM //; by [rewrite IH | apply/eqP/pow_not0/eqP].
 Qed.
+
+(*Rpow_mult_distr : forall (x y : R) (n : nat), (x * y) ^ n = x ^ n * y ^ n*)
+Definition powRM := Rpow_mult_distr.

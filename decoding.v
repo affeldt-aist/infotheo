@@ -156,8 +156,7 @@ Lemma ML_smallest_err_rate phi :
 Proof.
 move=> dec.
 apply Rmult_ge_compat_l.
-  apply Rle_ge, mulR_ge0; first by exact Rle_0_1.
-  apply ltRW, Rinv_0_lt_compat, lt_0_INR; by apply/ltP.
+  apply/Rle_ge/mulR_ge0 => //; exact/ltRW/invR_gt0/lt_0_INR/ltP.
 rewrite /ErrRateCond /=.
 apply (@Rge_trans _ (\rsum_(m in M) (1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m]))).
   apply Req_ge, eq_bigr => m _.
@@ -245,15 +244,13 @@ case/Rle_lt_or_eq_dec: (proj1 p_01) => [Hp | <-]; last first.
     rewrite subn0 mulR1 pow1; fourier.
   rewrite !mul0R !mulR0; by apply Rle_refl.
 apply (Rmult_le_reg_l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
-  apply mulR_gt0; apply Rinv_0_lt_compat, pow_lt.
-  by fourier.
-  exact Hp.
+  apply mulR_gt0; apply/invR_gt0/pow_lt => //; by fourier.
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
-  apply/eqP/pow_not0 => ?; fourier.
+  apply/pow_not0; rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
 rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
-  apply/eqP/pow_not0 => ?; fourier.
-rewrite -expRV; last by apply/eqP/gtR_eqF.
-rewrite -expRV; last by rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
+  exact/pow_not0/eqP/gtR_eqF.
+rewrite -powRV; last by apply/eqP/gtR_eqF.
+rewrite -powRV; last by rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
 rewrite mulRC Rmult_pow_inv; last 2 first.
   move=> ?; fourier.
   by case/andP : d1d2.
@@ -351,14 +348,14 @@ Proof.
 move=> HMAP.
 rewrite /ML_decoding => /= tb Htb.
 have Hunpos : INR 1 / INR #| [set cw in C] | > 0.
-  rewrite div1R; by apply/Rinv_0_lt_compat/lt_0_INR/ltP/vspace_not_empty.
+  rewrite div1R; by apply/invR_gt0/lt_0_INR/ltP/vspace_not_empty.
 move: (HMAP _ Htb) => H.
 rewrite /PosteriorProbability.d in H.
 unlock in H.
 simpl in H.
 set tmp := \rmax_(_ <- _ | _) _ in H.
 rewrite /tmp -rmax_distrl in H; last first.
-  apply/ltRW/Rinv_0_lt_compat/RltP; rewrite ltR_neqAle; apply/andP; split; last first.
+  apply/ltRW/invR_gt0/RltP; rewrite ltR_neqAle; apply/andP; split; last first.
     exact/RleP/PosteriorProbability.den_nonneg.
   by rewrite eq_sym -receivableE.
 rewrite /P /UniformSupport.d /UniformSupport.f /= in H.
@@ -369,9 +366,7 @@ rewrite (eq_bigr (fun i => 1 / INR #|[set cw in C]| * W ``(tb | i))) in H; last 
 rewrite -rmax_distrr in H; last exact/ltRW/Hunpos.
 exists m'; split.
   exact Hm'.
-apply Rmult_eq_reg_r in H; last first.
-  apply Rinv_neq_0_compat; apply/eqP.
-  by rewrite -receivableE.
+apply Rmult_eq_reg_r in H; last by apply/eqP/invR_neq0; rewrite -receivableE.
 rewrite /= UniformSupport.E ?inE // in H; last first.
   move/subsetP : dec_img; apply.
   rewrite inE; apply/existsP; by exists tb; apply/eqP.

@@ -174,10 +174,8 @@ have Hdist: (0 < #|dist_supp (Binary.d card_bool Hp)|)%nat.
   move/eqP.
   apply Rmult_integral_contrapositive.
   split.
-    by apply Rgt_not_eq.
-  apply Rinv_neq_0_compat.
-  apply Rgt_not_eq.
-  by rewrite count_cat.
+    exact/gtR_eqF.
+  apply/eqP/invR_neq0/eqP/gtR_eqF; by rewrite count_cat.
 set r := (fun b => if b then INR (size s1) / INR (count_mem i s1)
                    else INR (size s2) / INR (count_mem i s2)).
 have Hr: dist_covered (fun x => 0 < x) r (Binary.d card_bool Hp).
@@ -299,7 +297,7 @@ have Hdist: (0 < #|dist_supp d|)%nat.
   destruct ss' => //.
   apply/eqP => /setP /(_ ord0).
   rewrite !inE /d /= => /negbFE /eqP.
-  by apply Rgt_not_eq.
+  exact/gtR_eqF.
 have Hr: dist_covered (fun x => 0 < x) r d.
   move=> i Hi.
   rewrite /r /=.
@@ -325,7 +323,7 @@ rewrite (eq_bigr
      (fun i => log (INR (size i) / INR (num_occ a i)) * INR (num_occ a i)));
   last first.
   move=> i _; rewrite !mulRA -mulRA mulVR ?mulR1 //.
-  by apply/eqP/Rgt_not_eq.
+  exact/eqP/gtR_eqF.
 (* LHS do match *)
 move/Rle_trans; apply.
 rewrite mulRC -num_occ_flatten big_filter.

@@ -713,14 +713,10 @@ have [k Hk] : exists k, (log (INR k.+1) / INR n = r)%R.
   exists (Zabs_nat k).-1.
   rewrite prednK; last first.
     apply/ltP/INR_lt.
-    rewrite INR_Zabs_nat.
-      rewrite -Hn2; by apply exp2_pos.
-    apply le_IZR.
-    rewrite -Hn2; exact/ltRW/exp2_pos.
+    rewrite INR_Zabs_nat; [by rewrite -Hn2 | apply le_IZR; by rewrite -Hn2].
   apply Rmult_eq_reg_l with (INR n); last by apply/eqP; rewrite INR_eq0 -lt0n.
   rewrite mulRCA mulRV ?INR_eq0 -?lt0n // mulR1 -(exp2K (INR n * r)) Hn2 INR_Zabs_nat //.
-  apply le_IZR.
-  rewrite -Hn2; exact/ltRW/exp2_pos.
+  apply le_IZR; by rewrite -Hn2.
 set M := [finType of 'I_k.+1].
 exists [finType of 'I_k.+1].
 split; first by rewrite /= card_ord.
@@ -802,35 +798,33 @@ apply Rle_lt_trans with (epsilon0 + INR #| M | * exp2 (- INR n * (`I( P ; W ) - 
     rewrite (_ : 0 = INR 0)%R //. apply le_INR. by apply/leP.
     apply le_0_Pr. apply le_INR. apply/leP. by rewrite card_ord.
     by apply non_typical_sequences.
-apply Rlt_trans with (epsilon0 + epsilon0)%R.
-  apply Rplus_lt_compat_l.
-  have -> : INR #| M | = exp2 (log (INR #| M |)).
-    rewrite logK // (_ : 0 = INR 0)%R //.
-    apply lt_INR. rewrite card_ord. by apply/ltP.
-  rewrite -ExpD.
-  rewrite (_ : _ + _ = - INR n * (`I(P ; W) - log (INR #| M |) / INR n - 3 * epsilon0))%R; last first.
-    field.
-    apply not_0_INR => abs. case: Hn => Hn _; by rewrite abs in Hn.
-  rewrite (_ : _ / _ = r)%R; last by rewrite -Hk card_ord.
-  apply Rlt_trans with (exp2 (- INR n * epsilon0)).
-    apply Exp_increasing => //.
-    rewrite !mulNR.
-    apply Ropp_lt_contravar, Rmult_lt_compat_l.
-    - apply lt_0_INR; case: Hn => Hn _; by apply/ltP.
-    - case: Hepsilon0 => _ [_ Hepsilon0].
-      apply (Rmult_lt_compat_l 4) in Hepsilon0; last by fourier.
-      rewrite mulRCA mulRV ?mulR1 in Hepsilon0; last by apply/eqP.
-      clear Hk; fourier.
-  apply Rlt_le_trans with (exp2 (- (- (log epsilon0) / epsilon0) * epsilon0)).
-    apply Exp_increasing => //; apply Rmult_lt_compat_r.
-    - rewrite /epsilon0_condition in Hepsilon0; tauto.
-    - apply Ropp_lt_contravar; by case: Hn => _ [Hn2 _].
-      rewrite -mulNR oppRK -mulRA -Rinv_l_sym; last first.
-        apply nesym, Rlt_not_eq.
-        rewrite /epsilon0_condition in Hepsilon0; tauto.
-      rewrite mulR1 logK; last by rewrite /epsilon0_condition in Hepsilon0; tauto.
-      by apply Rle_refl.
-case: Hepsilon0 => ? [? ?]; fourier.
+apply Rlt_trans with (epsilon0 + epsilon0)%R; last first.
+  case: Hepsilon0 => ? [? ?]; fourier.
+apply Rplus_lt_compat_l.
+have -> : INR #| M | = exp2 (log (INR #| M |)).
+  rewrite logK // (_ : 0 = INR 0)%R //.
+  apply lt_INR. rewrite card_ord. by apply/ltP.
+rewrite -ExpD.
+rewrite (_ : _ + _ = - INR n * (`I(P ; W) - log (INR #| M |) / INR n - 3 * epsilon0))%R; last first.
+  field.
+  apply/eqP; rewrite INR_eq0 gtn_eqF //; by case: Hn.
+rewrite (_ : _ / _ = r)%R; last by rewrite -Hk card_ord.
+apply Rlt_trans with (exp2 (- INR n * epsilon0)).
+  apply Exp_increasing => //.
+  rewrite !mulNR.
+  apply Ropp_lt_contravar, Rmult_lt_compat_l.
+  - apply lt_0_INR; case: Hn => Hn _; by apply/ltP.
+  - case: Hepsilon0 => _ [_ Hepsilon0].
+    apply (Rmult_lt_compat_l 4) in Hepsilon0; last by fourier.
+    rewrite mulRCA mulRV ?mulR1 in Hepsilon0; last by apply/eqP.
+    clear Hk; fourier.
+apply Rlt_le_trans with (exp2 (- (- (log epsilon0) / epsilon0) * epsilon0)).
+  apply Exp_increasing => //; apply Rmult_lt_compat_r.
+  - rewrite /epsilon0_condition in Hepsilon0; tauto.
+  - apply Ropp_lt_contravar; by case: Hn => _ [Hn2 _].
+    rewrite !mulNR -mulRA mulVR ?mulR1 ?oppRK; last first.
+      apply/eqP/gtR_eqF; by case: Hepsilon0.
+    rewrite logK; [exact/Rle_refl|by case: Hepsilon0].
 Qed.
 
 End random_coding_good_code_existence.
@@ -921,8 +915,8 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
 case: (random_coding_good_code (ltRW _ _ Hepsilon) Hepsilon0 Hn) =>
   M [HM [M_k H]].
 case: (good_code_sufficient_condition HM H) => f Hf.
-exists n, M, (mkCode f (jtdec P W epsilon0 f)); split; last assumption.
-rewrite /CodeRate M_k INR_Zabs_nat; last by apply Int_part_pos, ltRW, exp2_pos.
+exists n, M, (mkCode f (jtdec P W epsilon0 f)); split => //.
+rewrite /CodeRate M_k INR_Zabs_nat; last exact/Int_part_pos.
 suff Htmp : IZR (Int_part (exp2 (INR n * r))) = exp2 (INR n * r).
   rewrite Htmp exp2K /Rdiv -mulRA mulRCA mulRV ?INR_eq0 -?lt0n ?mulR1 //; by case: Hn.
 apply frac_Int_part; by case: Hn => _ [_ []].

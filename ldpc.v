@@ -501,10 +501,9 @@ Definition K949 (n0 : 'I_n) df := 1 /
 
 Lemma K949_lemma df n0 : K949 n0 df = Kmpp Hy * Kppu W [set cw in C] y.
 Proof.
-rewrite /K949 /Kmpp /Kppu /Rdiv 2!mul1R -Rinv_mult_distr; last 2 first.
+rewrite /K949 /Kmpp /Kppu /Rdiv 2!mul1R -invRM; last 2 first.
   rewrite pmf1 => ?; fourier.
-  apply/eqP.
-  by rewrite -not_receivable_uniformE Hy.
+  apply/eqP; by rewrite -not_receivable_uniformE Hy.
 congr (/ _).
 transitivity (\rsum_(t in 'rV['F_2]_n)
   if t \in kernel H then W ``(y | t) else 0); last first.
@@ -522,8 +521,8 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
     rewrite -!mulRA.
     congr (_ * _).
     rewrite mul1R UniformSupport.restrict /= UniformSupport.big_distrr /=; last first.
-    rewrite /Rdiv Rinv_mult_distr; last 2 first.
-      by apply Rinv_neq_0_compat.
+    rewrite /Rdiv invRM; last 2 first.
+      exact/eqP/invR_neq0/eqP.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
       apply/eqP; by rewrite -not_receivable_uniformE Hy.
     rewrite invRK // -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.

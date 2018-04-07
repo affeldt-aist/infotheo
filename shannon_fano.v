@@ -36,16 +36,16 @@ Proof.
 move/RleP; rewrite le0R => /orP[/eqP -> _ m n|/RltP x0 x1 m n /leP nm].
   case: n => [|n nm].
     case: m => [_ |m _]; first exact: Rle_refl.
-    rewrite pow_ne_zero //=; exact/Rle_0_1.
+    by rewrite pow_ne_zero.
   rewrite pow_ne_zero; last by case: m nm.
   rewrite pow_ne_zero //; exact/Rle_refl.
 apply Rle_inv_conv => //.
 exact/pow_gt0.
 exact/pow_gt0.
-rewrite -expRV; last by apply/eqP/gtR_eqF.
-rewrite -expRV; last by apply/eqP/gtR_eqF.
+rewrite -powRV; last exact/eqP/gtR_eqF.
+rewrite -powRV; last exact/eqP/gtR_eqF.
 apply Rle_pow => //.
-rewrite -invR1; apply Rinv_le_contravar => //; exact/Rlt_0_1.
+rewrite -invR1; exact: Rinv_le_contravar.
 Qed.
 
 Lemma leR_weexpn2l x :
@@ -111,10 +111,10 @@ apply Rle_trans with (Exp (INR #|T|) (- Log (INR #|T|) (1 / P i))); last first.
   rewrite oppRK LogK //.
   exact/Rle_refl.
   by apply/RltP; rewrite (_ : 1 = INR 1) // ltR_nat card_ord.
-rewrite powE; last by apply/RltP; rewrite ltR0n card_ord.
+rewrite pow_Exp; last by apply/RltP; rewrite ltR0n card_ord.
 rewrite Exp_Ropp.
 apply/leR_inv => //.
-  rewrite inE; exact/RltP/Exp_pos.
+  rewrite inE; exact/RltP/Exp_gt0.
 apply Exp_le_increasing.
   by apply/RltP; rewrite (_ : 1 = INR 1) // ltR_nat card_ord.
 rewrite INR_Zabs_nat; last first.

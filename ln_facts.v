@@ -82,7 +82,7 @@ Proof. move=> Hx ; apply Rminus_le ; apply ln_idgt0 ; exact Hx. Qed.
 Lemma log_id_cmp x : 0 < x -> log x <= (x - 1) * log (exp 1).
 Proof.
 move=> Hx; rewrite logexp1E; apply Rmult_le_compat_r;
-  by [apply/ltRW/Rinv_0_lt_compat/ln_2_pos | apply ln_id_cmp].
+  [exact/ltRW/invR_gt0 | exact/ln_id_cmp].
 Qed.
 
 Lemma ln_id_eq x : 0 < x -> ln x = x - 1 -> x = 1.
@@ -98,7 +98,7 @@ Qed.
 Lemma log_id_eq x : 0 < x -> log x = (x - 1) * log (exp 1) -> x = 1.
 Proof.
 move=> Hx'; rewrite logexp1E => Hx.
-apply Rmult_eq_reg_r in Hx; last exact/not_eq_sym/Rlt_not_eq/Rinv_0_lt_compat/ln_2_pos.
+apply Rmult_eq_reg_r in Hx; last exact/nesym/ltR_eqF/invR_gt0.
 apply ln_id_eq; by [apply Hx' | apply Hx].
 Qed.
 
@@ -170,20 +170,20 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       apply (Rlt_trans _ (-2 * / eps)).
       by apply exp_lt_inv ; subst X ; rewrite exp_ln.
       rewrite mulNR.
-      apply oppR_lt0, Rlt_mult_inv_pos => // ; by apply Rlt_R0_R2.
+      exact/oppR_lt0/Rlt_mult_inv_pos.
     apply: (Rlt_le_trans _ (2 * / (- X)) _).
     * rewrite Rabs_left ; last first.
         rewrite -(mulR0 (exp X)).
         apply Rmult_lt_compat_l => // ; by apply exp_pos.
        rewrite -mulRN.
-      apply (Rmult_lt_reg_r (/ - X)); first by apply Rinv_0_lt_compat, oppR_gt0.
+      apply (Rmult_lt_reg_r (/ - X)); first by exact/invR_gt0/oppR_gt0.
       rewrite -mulRA mulRV ?mulR1; last by rewrite oppR_eq0; apply/eqP/ltR_eqF.
-      rewrite -(invRK 2); last exact/not_eq_sym/Rlt_not_eq/Rlt_R0_R2.
+      rewrite -(invRK 2) //.
       rewrite -mulRA ( _ : forall r, r * r = r ^ 2); last by move=> ?; rewrite /pow mulR1.
-      rewrite expRV; last exact/eqP/not_eq_sym/Rlt_not_eq/oppR_gt0.
-      rewrite -Rinv_mult_distr; last 2 first.
-        by apply Rinv_neq_0_compat, not_eq_sym, Rlt_not_eq, Rlt_R0_R2.
-        by apply pow_nonzero, Ropp_neq_0_compat, Rlt_not_eq.
+      rewrite powRV; last exact/eqP/not_eq_sym/Rlt_not_eq/oppR_gt0.
+      rewrite -invRM; last 2 first.
+        apply/eqP; rewrite invR_neq0 //; exact/eqP/gtR_eqF.
+        apply/eqP; rewrite pow_eq0 oppR_eq0; exact/eqP/ltR_eqF.
       rewrite -(invRK (exp X)); last by apply not_eq_sym, Rlt_not_eq, exp_pos.
       apply Rinv_lt_contravar.
         rewrite -mulRA mulRC; apply Rlt_mult_inv_pos; last fourier.
@@ -191,14 +191,13 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
         apply pow_gt0; by fourier.
         rewrite -exp_Ropp mulRC (_ : 2 = INR 2`!) //.
         by apply exp_strict_lb, oppR_gt0.
-    * apply (Rmult_le_reg_r (/ 2)); first by apply Rinv_0_lt_compat, Rlt_R0_R2.
-      rewrite mulRC mulRA Rinv_l; last by apply not_eq_sym, Rlt_not_eq, Rlt_R0_R2.
-      rewrite mul1R -(invRK eps); last by apply not_eq_sym, Rlt_not_eq.
-      rewrite -Rinv_mult_distr ; last 2 first.
-        by apply not_eq_sym, Rlt_not_eq, Rinv_0_lt_compat.
-        by apply not_eq_sym, Rlt_not_eq, Rlt_R0_R2.
+    * apply (Rmult_le_reg_r (/ 2)); first exact/invR_gt0.
+      rewrite mulRC mulRA mulVR ?mul1R //; last exact/eqP/gtR_eqF.
+      rewrite -(invRK eps); last by apply not_eq_sym, Rlt_not_eq.
+      rewrite -invRM //; last first.
+        exact/gtR_eqF/invR_gt0.
       apply Rinv_le_contravar.
-      - apply mulR_gt0; by [apply Rinv_0_lt_compat | apply Rlt_R0_R2].
+      - apply mulR_gt0 => //; exact: invR_gt0.
       - rewrite -(oppRK (/ eps * 2)); apply Ropp_le_contravar.
         rewrite mulRC -mulNR.
         apply/exp_le_inv/ltRW; subst X; by rewrite exp_ln.
@@ -273,7 +272,7 @@ Lemma xlnx_sdecreasing_0_Rinv_e_helper : forall (t : R) (Ht : 0 < t <= exp (-1))
   0 < (if t == exp (-1) then 1 else derive_pt (fun x => - xlnx x) t (pderivable_Ropp_xlnx Ht)).
 Proof.
 move=> t [Ht1 Ht2].
-case : ifP => [|/negbT] Hcase ; first apply Rlt_0_1.
+case : ifP => [//|/negbT] Hcase.
 rewrite derive_pt_opp derive_pt_xlnx //.
 apply Ropp_lt_cancel ; rewrite oppRK oppR0.
 apply (Rplus_lt_reg_r (- 1)).

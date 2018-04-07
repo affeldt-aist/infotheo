@@ -201,11 +201,10 @@ apply/negPn/negPn.
 - suff S_2n : (#| S | < expn 2 n)%nat.
     by move/(f_phi def S_2n)/eqP.
   suff card_S_bound : INR #| S | < exp2 (INR k * r).
-    apply/ltP/INR_lt.
-    rewrite -exp2_pow2.
+    apply/ltP/INR_lt; rewrite -exp2_INR.
     suff : INR n = (INR k * r)%R by move=> ->.
     rewrite /n /k /r (mult_INR _ den.+1) /Rdiv -mulRA.
-    by rewrite (mulRCA (INR den.+1)) mulRV ?INR_eq0 // mulR1 ?mult_INR.
+    by rewrite (mulRCA (INR den.+1)) mulRV ?INR_eq0 // mulR1 mult_INR.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * r) by fourier.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * (`H P + lambda)).
     eapply Rle_trans; first by apply card_S_bound.

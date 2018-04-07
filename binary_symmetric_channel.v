@@ -67,11 +67,11 @@ case: (Req_EM_T (P a) 0) => H1.
   move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H1 add0R => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
-rewrite /log Log_mult; last 2 first.
+rewrite /log LogM; last 2 first.
   case: p_01' => ? ?; fourier.
   move/eqP in H1.
   apply/RltP; rewrite lt0R H1; exact/RleP/dist_nonneg.
-rewrite /log Log_mult; last 2 first.
+rewrite /log LogM; last 2 first.
   case: p_01' => ? ?; fourier.
   apply/RltP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/RleP/dist_nonneg].
 case: (Req_EM_T (P b) 0) => H2.
@@ -79,10 +79,10 @@ case: (Req_EM_T (P b) 0) => H2.
   move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H2 addR0 => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
-rewrite /log Log_mult; last 2 first.
+rewrite /log LogM; last 2 first.
   case: p_01' => ? ?; fourier.
   apply/RltP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/RleP/dist_nonneg].
-rewrite /log Log_mult; last 2 first.
+rewrite /log LogM; last 2 first.
   case: p_01' => ? ?; fourier.
   apply/RltP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/RleP/dist_nonneg].
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).

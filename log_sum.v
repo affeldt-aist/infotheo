@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype finfun bigop finset.
-Require Import Reals Fourier Rpower.
+Require Import Reals Fourier.
 Require Import Rssr Reals_ext Ranalysis_ext log2 ln_facts bigop_ext Rbigop.
 
 (** * The log-sum Inequality *)
@@ -65,15 +65,15 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
   rewrite (_ : rhs = \rsum_(a | a \in C) (f a * log (f a / g a) - f a * log k)) in Hwlog; last first.
     rewrite /rhs.
     apply eq_bigr => a a_C.
-    rewrite /Rdiv /log Log_mult; last 2 first.
-      by apply fspos.
-      apply Rinv_0_lt_compat, mulR_gt0 => //; by apply gspos.
+    rewrite /Rdiv /log LogM; last 2 first.
+      exact/fspos.
+      apply/invR_gt0/mulR_gt0 => //; exact/gspos.
     rewrite LogV; last first.
       apply mulR_gt0 => //; exact: gspos.
-    rewrite Log_mult //; last exact: gspos.
-    rewrite Log_mult //; last 2 first.
-      by apply fspos.
-      apply Rinv_0_lt_compat; by [apply gspos | apply fspos].
+    rewrite LogM //; last exact: gspos.
+    rewrite LogM //; last 2 first.
+      exact/fspos.
+      apply invR_gt0; by [apply gspos | apply fspos].
     rewrite LogV; by [field | apply gspos].
   rewrite big_split /= -(big_morph _ morph_Ropp oppR0) -big_distrl /= in Hwlog.
   have : forall a b, 0 <= a + - b -> b <= a by move=> *; fourier.
@@ -89,7 +89,7 @@ suff : 0 <= \rsum_(a | a \in C) f a * ln (f a / g a).
     rewrite /rhs.
     apply eq_bigr => a a_C; by rewrite /Rdiv -mulRA.
   rewrite -big_distrl /=.
-  apply mulR_ge0 => //; by apply ltRW, Rinv_0_lt_compat, ln_2_pos.
+  apply mulR_ge0 => //; exact/ltRW/invR_gt0.
 apply Rle_trans with (\rsum_(a | a \in C) f a * (1 - g a / f a)).
   apply Rle_trans with (\rsum_(a | a \in C) (f a - g a)).
     rewrite big_split /= -(big_morph _ morph_Ropp oppR0); fourier.
@@ -104,9 +104,9 @@ apply Rmult_le_compat_l; first exact/ltRW/fspos.
 apply Ropp_le_cancel.
 rewrite -ln_Rinv; last first.
   apply Rlt_mult_inv_pos; by [apply fspos | apply gspos].
-rewrite Rinv_mult_distr; last 2 first.
+rewrite invRM; last 2 first.
   exact/gtR_eqF/(fspos _ C_a).
-  apply Rinv_neq_0_compat; exact/gtR_eqF/(gspos _ C_a).
+  exact/eqP/invR_neq0/eqP/gtR_eqF/(gspos _ C_a).
 rewrite invRK; last exact/gtR_eqF/(gspos _ C_a).
 rewrite mulRC.
 eapply Rle_trans.

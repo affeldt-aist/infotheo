@@ -94,7 +94,7 @@ move=> a.
 refine (@mkPosFun _ (pf a) _) => b.
 rewrite /pf.
 case: ifP => [_ | Hcase].
-- apply Rlt_le, Rinv_0_lt_compat, lt_0_INR; by apply/ltP.
+- exact/ltRW/invR_gt0/lt_0_INR/ltP.
 - apply Rle_mult_inv_pos; first by apply pos_INR.
   by apply/RltP; rewrite lt0R INR_eq0 Hcase /= leR0n.
 Defined.
@@ -294,11 +294,9 @@ case: ifP => [| H'].
   rewrite sum_nat_eq0.
   move/forallP/(_ b)/implyP/(_ Logic.eq_refl)/eqP => H _; by apply val_inj.
 rewrite /Rdiv => /(Rmult_integral _); case => [| abs].
-  rewrite (_ : 0%R = INR 0) //; move/INR_eq => H; by apply val_inj.
-  suff : False by done.
-  move: abs; apply Rinv_neq_0_compat.
-  rewrite (_ : 0%R = INR 0) //.
-  apply not_INR; by apply/eqP/negbT.
+  move/eqP; rewrite INR_eq0 => /eqP ?; exact/val_inj.
+exfalso.
+by move: abs; apply/eqP/invR_neq0; rewrite INR_eq0 H'.
 Qed.
 
 (** Upper-bound of the number of conditional types: *)
@@ -644,8 +642,7 @@ have d0 : forall b, (0 <= d b)%R.
   move=> b.
   rewrite /d /=.
   apply mulR_ge0; first by apply pos_INR.
-  apply Rlt_le, Rinv_0_lt_compat, lt_0_INR.
-  apply/ltP; by rewrite lt0n.
+  apply/ltRW/invR_gt0/lt_0_INR/ltP; by rewrite lt0n.
 have d1 : \rsum_(b : B) d b = 1%R.
   rewrite /d -big_distrl /= -(@big_morph _ _ _ 0%R _ O _ morph_plus_INR) //.
   set lhs := \sum_i _.
@@ -1182,16 +1179,9 @@ case: ifP => [/eqP |] Hcase.
   move/forallP/(_ b) : Hcase.
   move/implyP/(_ Logic.eq_refl)/eqP => ->.
   by rewrite mul0R.
-- rewrite -mulRA sum_V; f_equal.
-  rewrite in_set in Hta.
-  move/forallP/(_ a)/eqP : Hta => ->.
-  rewrite mulRA -{1}(mul1R (/ INR n)); f_equal.
-  rewrite Rinv_l // -sum_V.
-  apply/eqP.
-  move/negbT: Hcase.
-  apply contra.
-  rewrite (_ : 0 = INR 0) //.
-  by move/eqP/INR_eq => ->.
+- rewrite -mulRA sum_V; congr (_ * _).
+  move: Hta; rewrite in_set => /forallP/(_ a)/eqP ->.
+  by rewrite mulRA -{1}(mul1R (/ INR n)) mulVR // INR_eq0 -sum_V Hcase.
 Qed.
 
 Lemma output_type_out_entropy : `H (`tO( V )) = `H(P `o V).
@@ -1301,13 +1291,11 @@ exists (num_co_occ_jtype ta tb).-shell ta.
     move/forallP/(_ a)/eqP => Hta_.
     move: Hta'; rewrite in_set => /forallP/(_ a)/eqP => Hta'.
     rewrite Hta' in Hta_.
-    move/Rmult_eq_reg_r : Hta_.
-    have Hn : / INR n <> R0.
-      apply Rinv_neq_0_compat, not_0_INR; by apply/eqP.
-    by move/(_ Hn)/INR_eq.
+    apply/INR_eq/esym.
+    move/Rmult_eq_reg_r : Hta_; apply.
+    apply/eqP/invR_neq0; by rewrite INR_eq0.
 - rewrite in_set.
-  apply/forallP => a.
-  apply/forallP => b.
+  apply/forallP => a. apply/forallP => b.
   by rewrite /num_co_occ_jtype /= 2!ffunE.
 Qed.
 

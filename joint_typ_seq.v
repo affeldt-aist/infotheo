@@ -375,7 +375,7 @@ apply Rle_trans with
     exact: dist_nonneg.
     exact: (proj2 (typical_sequence1_JTS Hi)).
     by apply (typical_sequence1_JTS' Hi).
-  - apply mulR_ge0; exact/ltRW/exp2_pos.
+  - exact/mulR_ge0.
   - rewrite inE in Hi.
     by rewrite prod_rVK eqxx andbC.
 rewrite (_ : \rsum_(_ | _) _ =
@@ -386,11 +386,9 @@ rewrite (_ : \rsum_(_ | _) _ =
   by rewrite iter_Rplus -mulRA.
 apply Rle_trans with (exp2 (INR n * (`H( P , W ) + epsilon)) *
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W ) - epsilon))).
-  apply: Rmult_le_compat _ (Rle_refl _).
-  - apply: mulR_ge0 (pos_INR _) _; exact/ltRW/exp2_pos.
-  - exact/ltRW/exp2_pos.
-  - apply: Rmult_le_compat _ (pos_INR _) _ _ (Rle_refl _).
-    exact/ltRW/exp2_pos.
+  apply: Rmult_le_compat _ (Rle_refl _) => //.
+  - exact: mulR_ge0 (pos_INR _) _.
+  - apply: Rmult_le_compat _ (pos_INR _) _ _ (Rle_refl _) => //.
     exact/JTS_sup.
 apply Req_le.
 rewrite -2!ExpD.

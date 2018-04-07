@@ -107,10 +107,7 @@ apply/RltP; rewrite lt0R {1}/den -receivableE receivable_y; exact/RleP/den_nonne
 Qed.
 
 Lemma f1 : \rsum_(x in 'rV_n) f x = 1.
-Proof.
-rewrite /f /Rdiv -big_distrl /= mulRC.
-apply/Rinv_l/eqP; by rewrite -receivableE.
-Qed.
+Proof. by rewrite /f /Rdiv -big_distrl /= mulRC mulVR // -receivableE. Qed.
 
 Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
 
@@ -148,14 +145,14 @@ move=> Ht.
 rewrite PosteriorProbability.dE UniformSupport.E // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
 rewrite /PosteriorProbability.den UniformSupport.restrict.
 have Htmp : INR #|C| != 0 by rewrite INR_eq0 -lt0n.
-rewrite div1R -Rinv_mult_distr //.
+rewrite div1R -invRM.
   rewrite /Kppu; congr Rinv; rewrite big_distrr /=; apply eq_bigr => i iC.
   by rewrite UniformSupport.E // div1R mulRA mulRV // mul1R.
-exact/eqP.
+  exact/eqP.
 rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
-  move=> i iC; by rewrite UniformSupport.E.
+  move=> *; by rewrite UniformSupport.E.
 rewrite -big_distrr /=; apply Rmult_integral_contrapositive; split.
-  rewrite div1R => /invR_eq0; exact/eqP.
+  apply/eqP; rewrite div1R; exact/invR_neq0.
 by apply/eqP; rewrite -not_receivable_uniformE Hy.
 Qed.
 
@@ -191,7 +188,7 @@ rewrite (eq_bigr x); last first.
   move=> i _; rewrite /f' PosteriorProbability.dE /Rdiv /x; reflexivity.
 rewrite -big_distrl { x} /=.
 apply Rmult_integral_contrapositive_currified; last first.
-  apply/Rinv_neq_0_compat/eqP; by rewrite -receivableE.
+  apply/eqP/invR_neq0; by rewrite -receivableE.
 apply/eqP; by rewrite -receivableE.
 Qed.
 

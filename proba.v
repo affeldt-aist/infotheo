@@ -173,9 +173,8 @@ Lemma d_neq0 (C : finType) (domain_non_empty : { m : nat | #| C | = m.+1 }) :
 Proof.
 move=> x.
 rewrite /d /= /f /=.
-apply/eqP/Rmult_integral_contrapositive; split; first by apply not_0_INR.
-apply/Rinv_neq_0_compat/not_0_INR/eqP.
-by case: domain_non_empty => x' ->.
+apply/eqP/Rmult_integral_contrapositive; split; first by apply/eqP; rewrite INR_eq0.
+apply/eqP/invR_neq0; rewrite INR_eq0; by case: domain_non_empty => x' ->.
 Qed.
 
 End Uniform.
@@ -185,7 +184,7 @@ Lemma dom_by_uniform {A : finType} (P : dist A) n (HA : #|A| = n.+1) :
 Proof.
 move=> a; rewrite /Uniform.d /= /Uniform.f /= HA div1R => /esym abs.
 exfalso.
-move: abs; exact/Rlt_not_eq/Rinv_0_lt_compat/lt_0_INR/ltP.
+move: abs; exact/ltR_eqF/invR_gt0/lt_0_INR/ltP.
 Qed.
 
 Module UniformSupport.
@@ -247,9 +246,7 @@ Qed.
 Lemma neq0 z : ((`U HC) z != 0) = (z \in C).
 Proof.
 case/boolP : (z \in C) => [/E ->|/E0 ->//]; last by rewrite eqxx.
-rewrite div1R.
-apply/eqP/Rinv_neq_0_compat/not_0_INR.
-move: HC; by rewrite lt0n => /eqP.
+rewrite div1R; by apply/invR_neq0; rewrite INR_eq0 -lt0n.
 Qed.
 
 End UniformSupport_prop.
@@ -389,8 +386,7 @@ apply: contra; rewrite /Rdiv => /eqP.
 case/Rmult_integral => [/eqP //| H].
 exfalso.
 move/eqP/negPn/negP : H; apply.
-apply/eqP/Rinv_neq_0_compat/eqP.
-by apply: contra Xb1; rewrite subR_eq0 eq_sym.
+apply/invR_neq0; by apply: contra Xb1; rewrite subR_eq0 eq_sym.
 Qed.
 
 Lemma f_eq0 a (Xa0 : X a != 0) : (f a == 0) = (b == a).
@@ -398,7 +394,7 @@ Proof.
 rewrite /f; case: ifPn => [/eqP ->|ab]; first by rewrite !eqxx.
 apply/idP/idP => [|]; last by rewrite eq_sym (negbTE ab).
 rewrite mulR_eq0 => /orP[]; first by rewrite (negbTE Xa0).
-by move/eqP/invR_eq0/eqP; rewrite subR_eq0 eq_sym (negbTE Xb1).
+by move/invR_eq0; rewrite subR_eq0 eq_sym (negbTE Xb1).
 Qed.
 
 Lemma f_0 a : X a = 0 -> f a = 0.
@@ -546,13 +542,9 @@ have H4 : INR #|A| * alpha <= \rsum_(x in A) P `^ _ x.
   apply: Rle_trans; first exact: H4.
   apply Req_le, eq_bigl => i; by rewrite andbC.
 case: H1 => H1 H1'.
-split.
-  apply Rmult_le_reg_l with beta => //.
-  rewrite mulRCA mulRV // ?mulR1; last exact/eqP/nesym/Rlt_not_eq.
-  rewrite mulRC; by eapply Rle_trans; eauto.
-apply Rmult_le_reg_l with alpha => //.
-rewrite mulRCA mulRV // ?mulR1; last exact/eqP/nesym/Rlt_not_eq.
-rewrite mulRC; by eapply Rle_trans; eauto.
+split; apply/RleP.
+- rewrite leR_pdivr_mulr //; apply/RleP; move/Rle_trans : H1; exact.
+- rewrite leR_pdivl_mulr //; apply/RleP; exact: (Rle_trans _ _ _ H4).
 Qed.
 
 End wolfowitz_counting.
@@ -917,7 +909,7 @@ Lemma Ex_lb (r : R) : r * Pr[ X >= r] <= `E X.
 Proof.
 rewrite ExE.
 rewrite (bigID [pred a' | X a' >b= r]) /=.
-rewrite -[a in a <= _]Rplus_0_r.
+rewrite -[a in a <= _]addR0.
 apply Rplus_le_compat; last first.
   apply rsumr_ge0 => a _.
   apply mulR_ge0; by [apply X_nonneg | apply dist_nonneg].
@@ -929,11 +921,8 @@ Qed.
 
 Lemma markov (r : R) : 0 < r -> Pr[X >= r] <= `E X / r.
 Proof.
-move=> r0.
-rewrite /Rdiv.
-apply: (Rmult_le_reg_l r) => //.
-rewrite mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
-exact: Ex_lb.
+move=> ?; apply/RleP.
+rewrite /Rdiv leR_pdivl_mulr // mulRC; exact/RleP/Ex_lb.
 Qed.
 
 End markov_inequality.
@@ -994,21 +983,20 @@ Variable X : rvar A.
 Lemma chebyshev_inequality epsilon : 0 < epsilon ->
   Pr `p_X [set a | Rabs (X a - `E X) >b= epsilon] <= `V X / epsilon ^ 2.
 Proof.
-move=> He.
-apply (Rmult_le_reg_l _ _ _ (pow_gt0 He 2)).
-rewrite [in X in _ <= X]mulRC /Rdiv -(mulRA _ (/ epsilon ^ 2) (epsilon ^ 2)) -Rinv_l_sym; [rewrite mulR1 | by apply Rgt_not_eq, pow_gt0].
-rewrite /`V [in X in _ <= X]ExE.
+move=> He; apply/RleP.
+rewrite leR_pdivl_mulr; last exact/pow_gt0.
+apply/RleP; rewrite mulRC /`V [in X in _ <= X]ExE.
 rewrite (_ : `p_ ((X \-cst `E X) \^2) = `p_ X) //.
 apply Rle_trans with (\rsum_(a in A | Rabs (X a - `E X) >b= epsilon)
     (((X \-cst `E X) \^2) a  * `p_X a)%R); last first.
   apply ler_rsum_l_support with (Q := xpredT) => // a .
-  apply mulR_ge0; by [apply dist_nonneg | rewrite /= -/(_ ^2); apply le_sq].
+  apply mulR_ge0; [exact: pow_even_ge0| exact: dist_nonneg].
 rewrite /Pr big_distrr [_ \^2]lock /= -!lock.
 apply ler_rsum_l => i Hi; rewrite /= -!/(_ ^ 2).
 - apply Rmult_le_compat_r; first exact: dist_nonneg.
-  move: Hi; rewrite inE => /RgeP/Rge_le/sq_incr.
-  rewrite Rabs_sq; apply; [exact: ltRW | exact: Rabs_pos].
-- apply mulR_ge0; [exact: le_sq | exact: dist_nonneg].
+  move: Hi; rewrite inE -(Rabs_sq (X i - _)) => /RgeP/Rge_le H.
+  apply/pow_incr; split => //; exact/ltRW.
+- apply mulR_ge0; [exact: pow_even_ge0 | exact: dist_nonneg].
 - move: Hi; by rewrite inE.
 Qed.
 
@@ -1235,12 +1223,13 @@ apply trans_eq with (\rsum_(i in 'rV[A]_n.+2)
       ((X1 (i ``_ ord0) + X2 (rbehead i)) ^ 2%N * `p_X i))%R.
   apply eq_bigr => i _; by rewrite /sq_rv /= Hsum2.
 apply trans_eq with (\rsum_(i in 'rV[A]_n.+2)
-      ((X1 (i ``_ ord0)) ^ 2 + 2 * X1 (i ``_ ord0) * X2 (rbehead i) + (X2 (rbehead i)) ^ 2) * `p_X i)%R.
-  apply eq_bigr => i _; by rewrite id_rem_plus.
+  ((X1 (i ``_ ord0)) ^ 2 + 2 * X1 (i ``_ ord0) * X2 (rbehead i) + (X2 (rbehead i)) ^ 2) *
+    `p_X i)%R.
+  apply eq_bigr => ? _; by rewrite sqrRD.
 apply trans_eq with (\rsum_(i in 'rV[A]_n.+2)
-      ((X1 (i ``_ ord0)) ^ 2 * `p_X i +  2 * X1 (i ``_ ord0) * X2 (rbehead i) * `p_X i +
-        (X2 (rbehead i)) ^ 2 * `p_X i))%R.
-  apply eq_bigr => i Hi; by field.
+  ((X1 (i ``_ ord0)) ^ 2 * `p_X i +  2 * X1 (i ``_ ord0) * X2 (rbehead i) * `p_X i +
+   (X2 (rbehead i)) ^ 2 * `p_X i))%R.
+  apply eq_bigr => ? ?; by field.
 rewrite !big_split [pow]lock /= -lock.
 f_equal.
 - f_equal.
@@ -1270,8 +1259,7 @@ Qed.
   independent random variables %(\cite[Theorem 6.8]{probook})%: *)
 Lemma V_linear_2 : X \= X1 @+ X2 -> X1 _| `p_X |_ X2  -> `V X = (`V X1 + `V X2)%R.
 Proof.
-move=> Hsum Hinde.
-rewrite !V_alt E_id_rem // (E_linear_2 Hsum) id_rem_plus; by field.
+move=> H ?; rewrite !V_alt E_id_rem // (E_linear_2 H) sqrRD; by field.
 Qed.
 
 End sum_two_rand_var.
@@ -1432,9 +1420,9 @@ Proof.
 move=> He.
 have HV : `V (X '/ n.+1) = sigma2 / INR n.+1.
   rewrite -(V_average_isum X_Xs V_Xs) V_scale //; by field; exact/not_0_INR.
-rewrite /Rdiv Rinv_mult_distr; last 2 first.
-  exact/not_0_INR.
-  exact/Rgt_not_eq/pow_gt0.
+rewrite /Rdiv invRM; last 2 first.
+  by apply/eqP; rewrite INR_eq0.
+  exact/gtR_eqF/pow_gt0.
 rewrite mulRA (_ : sigma2 * / INR n.+1 = sigma2 / INR n.+1)%R // -{}HV.
 have HE : `E (X '/ n.+1) = miu.
   rewrite E_scale (E_linear_n (sum_n_i_sum_n X_Xs)).

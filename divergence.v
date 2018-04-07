@@ -46,9 +46,9 @@ case/boolP : (y == 0) => [/eqP y0 | y0].
       rewrite mulRDr mulRCA mulRV ?mulR1 ?mulRN1 //; exact/eqP.
     rewrite -mulRA; apply Rmult_le_compat_l; first exact/ltRW/x_pos.
     rewrite /Rminus -LogV; last by apply x_pos.
-    rewrite -Log_mult; last 2 first.
-      exact y_pos.
-      by apply Rinv_0_lt_compat, x_pos.
+    rewrite -LogM; last 2 first.
+      exact/y_pos.
+      exact/invR_gt0/x_pos.
     apply log_id_cmp.
     by apply (Rlt_mult_inv_pos _ _ y_pos x_pos).
 Qed.
@@ -82,15 +82,14 @@ case/boolP : (y == 0) => [/eqP y0 | y_not_0].
   case/boolP : (x == 0) => [/eqP x0 | x_not_0].
   - move/esym : Hxy2; rewrite x0 mul0R subR0 => /Rmult_integral.
     case => //.
-    by rewrite logexp1E => /invR_eq0/ln_2_neq0.
+    rewrite logexp1E => /eqP/invR_eq0; by rewrite (negbTE ln2_neq0).
   - have x_pos : 0 < x by apply/RltP; rewrite lt0R x_not_0; exact/RleP.
     symmetry.
-    apply (Rmult_eq_reg_l (/ x)); last by apply not_eq_sym, Rlt_not_eq, Rinv_0_lt_compat.
+    apply (Rmult_eq_reg_l (/ x)); last by exact/nesym/ltR_eqF/invR_gt0.
     rewrite mulVR //.
     apply log_id_eq.
       by rewrite mulRC; apply Rlt_mult_inv_pos ; [apply y_pos | apply x_pos].
-    rewrite {1}/log Log_mult //; last first.
-      by apply Rinv_0_lt_compat, x_pos.
+    rewrite {1}/log LogM //; last exact/invR_gt0/x_pos.
     apply (Rmult_eq_reg_l x); last by apply not_eq_sym, Rlt_not_eq.
     rewrite LogV // addRC Hxy2 mulRA /Rminus mulRDr; apply Rmult_eq_compat_r.
     field.

@@ -75,18 +75,15 @@ rewrite Rinv_Rdiv; last 2 first.
 have -> : p * (q / p * / ln 2 * (p * (-1 / q²)) ) = - (p / q) * / ln 2.
   rewrite !mulRA /Rsqr.
   field.
-  split; first by apply ln_2_neq0.
-  split => ?; fourier.
+  split; [exact/eqP/ln2_neq0 | split => ?; fourier].
 have -> : (1 - p) * ((1 - q) / (1 - p) * / ln 2 * (- (-1 * (1 - p)) / (1 - q)²)) =
   (((1 - p) / (1 - q))) * / ln 2.
   rewrite /Rsqr.
   field.
-  split; first by apply ln_2_neq0.
-  split => ?; fourier.
+  split; [exact/eqP/ln2_neq0 | split => ?; fourier].
 rewrite /inv_fct.
 field.
-  split; first by apply ln_2_neq0.
-  split => ?; fourier.
+split; [exact/eqP/ln2_neq0 | split => ?; fourier].
 Qed.
 
 Definition pinsker_function_spec c q := - log (1 - q) - 4 * c * q ^ 2.
@@ -120,14 +117,13 @@ rewrite /pinsker_function_spec.
 rewrite derive_pt_minus.
 rewrite derive_pt_opp.
 rewrite derive_pt_comp.
-rewrite derive_pt_log.
+rewrite derive_pt_Log.
 rewrite derive_pt_mult.
 rewrite derive_pt_pow.
 rewrite derive_pt_const.
 rewrite mul0R add0R /= /pinsker_function_spec' (_ : INR 2 = 2) //.
 field.
-split; first by apply ln_2_neq0.
-case: Hq0 => ? ? ?; fourier.
+split; [exact/eqP/ln2_neq0|case: Hq0 => ? ? ?; fourier].
 Defined.
 
 Lemma pinsker_fun_increasing_on_0_to_1 (c : R) (Hc : c <= / (2 * ln 2)) : forall x y,
@@ -151,20 +147,17 @@ apply Rle_trans with (/ ((1 - t) * ln 2) - 8 * t / (2 * ln 2)); last first.
 apply Rle_trans with ((2 - 8 * t * (1 - t)) / (2 * (1 - t) * ln 2)); last first.
   apply Req_le.
   field.
-  split; first by apply ln_2_neq0.
-  case: Ht => ? ? ?; fourier.
+  split; [exact/eqP/ln2_neq0 | case: Ht => ? ? ?; fourier].
 apply Rle_mult_inv_pos; last first.
   rewrite mulRC mulRA.
   apply mulR_gt0.
-    apply mulR_gt0; by [apply ln_2_pos | fourier].
+    apply mulR_gt0 => //; fourier.
   case: Ht => ? ?; fourier.
 have H2 : -2 <= - 8 * t * (1 - t).
   rewrite !mulNR -mulRA.
   apply Ropp_le_contravar.
-  rewrite [X in _ <= X](_ : 2 = 8 * 1 / 4); last by field.
-  rewrite /Rdiv mulR1.
-  apply Rmult_le_compat_l; first by fourier.
-  rewrite -[X in _ <= X]mul1R; by apply x_x2_max.
+  rewrite [X in _ <= X](_ : 2 = 8 * / 4); last by field.
+  apply Rmult_le_compat_l; [by fourier | exact: x_x2_max].
 apply Rle_trans with (2 - 2); first by fourier.
 apply Rplus_le_compat; first by apply Rle_refl.
 by rewrite -mulRA -mulNR mulRA.
@@ -232,26 +225,24 @@ rewrite derive_pt_opp.
 destruct Hp' as [Hp'1 Hp'2].
 rewrite derive_pt_pinsker_fun //; last by split; fourier.
 rewrite /pinsker_fun' /div_fct.
-have Hlocal : 0 <= / ln 2 by apply Rlt_le, Rinv_0_lt_compat, ln_2_pos.
+have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
 have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   have : forall a b, b <= a -> 0 <= a - b. move=> *; fourier. apply.
   apply Rle_trans with (4 / ln 2).
     apply Rle_trans with (8 * / (2 * ln 2)).
     apply Rmult_le_compat_l => //; fourier.
-    rewrite Rinv_mult_distr; last 2 first.
+    rewrite invRM; last 2 first.
       move=> ?; fourier.
-      by apply ln_2_neq0.
+      exact/eqP/ln2_neq0.
     rewrite mulRA.
     apply Rmult_le_compat_r => //; by fourier.
-  rewrite Rinv_mult_distr; last 2 first.
-    apply nesym, Rlt_not_eq, mulR_gt0; fourier.
-    by apply ln_2_neq0.
+  rewrite invRM; last 2 first.
+    apply/gtR_eqF/mulR_gt0; fourier.
+    exact/eqP/ln2_neq0.
   apply Rmult_le_compat_r => //.
-  apply Rle_inv_conv; first by fourier.
-  apply Rinv_0_lt_compat, mulR_gt0; fourier.
-  rewrite invRK.
-    rewrite -[X in _ <= X]mul1R; by apply x_x2_max.
-  apply nesym, Rlt_not_eq, mulR_gt0; fourier.
+  rewrite -(invRK 4) //; apply Rinv_le_contravar.
+    apply mulR_gt0 => //; by fourier.
+  exact: x_x2_max.
 rewrite /inv_fct -mulNR; apply mulR_ge0 => //; fourier.
 Qed.
 
@@ -277,24 +268,23 @@ rewrite /pinsker_fun' /div_fct.
 have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   have : forall a b, b <= a -> 0 <= a - b by move=> *; fourier.
   apply.
-  have Hlocal : 0 <= / ln 2 by apply Rlt_le, Rinv_0_lt_compat, ln_2_pos.
+  have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
   have Hlocal2 : t * (1 - t) <> 0 by apply nesym, Rlt_not_eq, mulR_gt0; fourier.
   apply Rle_trans with (4 / ln 2).
     apply Rle_trans with (8 * / (2 * ln 2)).
       apply/RleP.
       rewrite Rle_pmul2l; last by apply/RltP; fourier.
       by apply/RleP.
-    rewrite Rinv_mult_distr; last 2 first.
+    rewrite invRM; last 2 first.
       move=> ?; fourier.
-      by apply ln_2_neq0.
+      exact/eqP/ln2_neq0.
     rewrite mulRA.
     apply Rmult_le_compat_r => //; by fourier.
-  rewrite Rinv_mult_distr //; last by apply ln_2_neq0.
+  rewrite invRM //; last exact/eqP/ln2_neq0.
   apply Rmult_le_compat_r => //.
-  apply Rle_inv_conv.
-  fourier.
-  apply Rinv_0_lt_compat, mulR_gt0; fourier.
-  rewrite invRK // -[X in _ <= X]mul1R; by apply x_x2_max.
+  rewrite -(invRK 4) //; apply Rinv_le_contravar.
+    apply mulR_gt0; fourier.
+  exact: x_x2_max.
 rewrite /inv_fct; apply mulR_ge0 => //; fourier.
 Qed.
 
