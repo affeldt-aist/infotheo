@@ -51,26 +51,23 @@ move: (count_size (pred1 i) s).
 by rewrite Hsz leqn0 Hnum.
 Qed.
 
+Lemma log_concave_gt0 x y t :
+  0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
+Admitted.
+
+Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
+
 Lemma log_concave : concave_in (fun x => 0 < x) log.
 Proof.
 move=> x y t Hx Hy Ht.
-split; last first.
-case Ht1: (t == 1).
-  rewrite (eqP Ht1).
-Search (0 < _ + _).
-  apply Rplus_lt_le_0_compat.
-    by rewrite mul1R.
-  rewrite subRR mul0R.
-  by apply Rle_refl.
-apply Rplus_le_lt_0_compat.
-  apply Rmult_le_pos.
-    exact/(proj1 Ht).
-  by apply Rlt_le.
-apply mulR_gt0 => //.
-apply (Rplus_lt_reg_l t).
-rewrite addR0 Rplus_minus.
-apply/RltP; rewrite ltR_neqAle Ht1 /=; apply/RleP; by case: Ht.
-Admitted.
+split; first by apply log_concave_gt0.
+case Ht0: (t == 0); first by rewrite (eqP Ht0) !simplR.
+apply Rplus_lt_le_0_compat.
+  apply mulR_gt0 => //.
+  case/proj1: Ht Ht0 => // ->; by rewrite eqxx.
+apply Rmult_le_pos; [apply (Rplus_le_reg_l t) | by apply Rlt_le].
+rewrite addR0 Rplus_minus; exact/(proj2 Ht).
+Qed.
 
 Lemma a_eq_true : Set2.a card_bool = true.
 Proof.
