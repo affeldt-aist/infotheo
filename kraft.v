@@ -648,3 +648,92 @@ by rewrite ltr_subl_addl addrC ltrNge wk_div_wj.
 Qed.
 
 End kraft_cond_implies_prefix.
+
+Section cw.
+
+Variables (n : nat) (T : Type).
+
+Structure cw_of : Type := Cw {cwval :> seq T; _ : size cwval <= n}.
+
+Lemma cwval_inj : injective cwval.
+Proof.
+move=> [a Ha] [b Hb] /= H.
+move: Ha Hb; rewrite H => Ha Hb.
+congr Cw.
+exact: eq_irrelevance.
+Qed.
+
+Canonical cw_subType := Eval hnf in [subType for cwval].
+
+End cw.
+
+Notation "n .-cw" := (cw_of n) (at level 2, format "n .-cw") : type_scope.
+
+Section canonical.
+
+Variable n : nat.
+
+Definition cw_eqMixin (T : eqType) := Eval hnf in [eqMixin of n.-cw T by <:].
+Canonical cw_eqType (T : eqType) := Eval hnf in EqType (n.-cw T) (cw_eqMixin T).
+Canonical cw_predType (T : eqType) := Eval hnf in mkPredType (fun t : n.-cw T => mem_seq t).
+Definition cw_choiceMixin (T : choiceType) := [choiceMixin of n.-cw T by <:].
+Canonical cw_choiceType (T : choiceType) :=
+  Eval hnf in ChoiceType (n.-cw T) (cw_choiceMixin T).
+Definition cw_countMixin (T : countType) := [countMixin of n.-cw T by <:].
+Canonical cw_countType (T : countType) :=
+  Eval hnf in CountType (n.-cw T) (cw_countMixin T).
+Canonical cw_subCountType (T : countType) := Eval hnf in [subCountType of n.-cw T].
+
+End canonical.
+
+Program Definition cw0 n (T : finType) : n.-cw T := @Cw n T [::] _.
+
+Definition cw_of_tuple n (T : finType) (t : seq T) : n.-cw T :=
+  match Bool.bool_dec (size t <= n) true with
+    left H => Cw H | right _ => @cw0 n T
+  end.
+
+Lemma enumP n (T : finType) : Finite.axiom
+  (flatten (map (fun m => map (@cw_of_tuple n _) (map (@tval _ _) (enum {: m.-tuple T}))) (iota 0 n.+1))).
+Proof.
+case=> x xn.
+rewrite count_uniq_mem.
+  rewrite -/(nat_of_bool true); congr (nat_of_bool _).
+  apply/flattenP.
+  exists ([seq cw_of_tuple n i | i <- map (@tval _ _) (enum {:(size x).-tuple T})]) => //.
+    apply/mapP; exists (size x) => //; by rewrite mem_iota leq0n add0n ltnS.
+  apply/mapP; exists x.
+    apply/mapP; exists (in_tuple x) => //; by rewrite mem_enum inE.
+  rewrite /cw_of_tuple; case: Bool.bool_dec => // ?; congr Cw; exact: eq_irrelevance.
+Admitted.
+
+Canonical cw_finMixin n (T : finType) := Eval hnf in FinMixin (@enumP n T).
+Canonical cw_finType n (T : finType) := Eval hnf in FinType (n.-cw T) (cw_finMixin n T).
+Canonical cw_subFinType n (T: finType) := Eval hnf in [subFinType of n.-cw T].
+
+Section code_cw.
+
+Variable T : finType.
+
+Record code_set_cw M := CodeSetCw {
+  codesetcw :> {set M.-cw T}
+}.
+
+Definition code_set_cw_of_code_set (c : code_set T) : code_set_cw (foldr maxn O (map size c)).
+Proof.
+set M := foldr maxn O (map size c).
+pose l : seq (M.-cw T) := map (@cw_of_tuple M T) (codeset c).
+apply CodeSetCw.
+exact: [set x | x in l].
+Defined.
+
+Definition code_set_of_code_set_cw M (c : code_set_cw M) : code_set T.
+set x := enum (codesetcw c).
+pose l : seq (seq T) := map (@cwval _ _) x.
+apply CodeSet with l.
+rewrite map_inj_uniq.
+by rewrite enum_uniq.
+exact: cwval_inj.
+Defined.
+
+End code_cw.

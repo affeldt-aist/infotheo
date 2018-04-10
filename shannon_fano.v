@@ -68,10 +68,6 @@ Definition kraft_cond_in_R (T : finType) (l : seq nat) :=
 
 Local Open Scope proba_scope.
 
-Definition is_shannon_fano_code (T : finType) (P : {dist T}) (c : code_set T) :=
-  forall s : T, size (nth [::] c (enum_rank s)) =
-    Zabs_nat (ceil (Log (INR #|T|) (1 / P s)%R)).
-
 Section average_length.
 
 Variables (T : finType) (P : {dist T}).
@@ -81,6 +77,52 @@ Hypothesis f_inj : injective f.
 Definition average := \rsum_(x in T) P x * INR (size (f x)).
 
 End average_length.
+
+Section shannon_fano_def.
+
+Variables (T : finType) (P : {dist T}).
+Variables (c : code_set T) (f : T -> seq T).
+Hypothesis f_inj : injective f.
+Hypothesis f_size : #|T| = size c.
+
+Definition is_shannon_fano_code :=
+  forall s, size (f s(*nth [::] c (enum_rank s)*)) =
+    Zabs_nat (ceil (Log (INR #|T|) (1 / P s)%R)).
+
+End shannon_fano_def.
+
+Section kraft_equiv.
+
+Definition kraft_cond_new_in_R (T : finType) (f : T -> seq T) (c : code_set T) :=
+  (\rsum_(i : T) ((INR #|T|) ^- size (f i)) <= (1 : R))%R.
+
+Variables (T : finType) (f : T -> seq T) (c : code_set T).
+Hypothesis f_inj : injective f.
+Hypothesis f_size : #|T| = size c.
+
+Lemma nth_f :
+  \rsum_(i < #|T|) INR #|T| ^- size (nth [::] c i) = \rsum_(i | true) INR #|T| ^- size (f i).
+Proof.
+Admitted.
+
+
+Lemma kraft_cond_new_in_RP : kraft_cond_new_in_R f c <-> kraft_cond_in_R T (map size c).
+Proof.
+split => H.
+  rewrite /kraft_cond_in_R.
+  rewrite /kraft_cond_new_in_R in H.
+  rewrite size_map.
+  rewrite -f_size.
+  apply: (Rle_trans _ _ _ _ H).
+  apply Req_le.
+  transitivity (\rsum_(i < #|T|) INR #|T| ^- size (nth [::] c i)).
+    apply eq_bigr => i _.
+    congr (_ ^- _).
+    by rewrite (nth_map [::]) // -f_size.
+  exact: nth_f.
+Abort.
+
+End kraft_equiv.
 
 Section ShannonFano.
 
@@ -93,7 +135,10 @@ Hypothesis Pr_pos : forall s, P s != 0.
 Variable c : code_set T.
 Let sizes := map size c.
 Hypothesis H : size sizes = t.
-Hypothesis shannon_fano : is_shannon_fano_code P c.
+
+Variable (f : T -> seq T).
+Hypothesis f_inj : {on c, injective f}.
+Hypothesis shannon_fano : is_shannon_fano_code P f (*c*) (*f*).
 
 Lemma shannon_fano_meets_kraft : kraft_cond_in_R T sizes.
 Proof.
@@ -104,6 +149,7 @@ rewrite (@nth_map _ [::]); last first.
   move: H; by rewrite size_map => ->.
 rewrite {1}(_ : i = enum_rank (enum_val (cast_ord (esym (card_ord _)) i)) :> nat); last first.
   by rewrite enum_valK.
+rewrite enum_valK -enum_rank_ord.
 rewrite shannon_fano.
 have Pi0 : 0 < P i by apply/RltP; rewrite lt0R Pr_pos; exact/RleP/dist_nonneg.
 apply Rle_trans with (Exp (INR #|T|) (- Log (INR #|T|) (1 / P i))); last first.
