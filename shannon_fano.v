@@ -70,20 +70,19 @@ Local Open Scope proba_scope.
 
 Section average_length.
 
-Variables (T : finType) (P : {dist T}).
-Variable f : T -> seq T. (* encoding function *)
+Variables (A T : finType) (P : {dist A}).
+Variable f : A -> seq T. (* encoding function *)
 Hypothesis f_inj : injective f.
 
-Definition average := \rsum_(x in T) P x * INR (size (f x)).
+Definition average := \rsum_(x in A) P x * INR (size (f x)).
 
 End average_length.
 
 Section shannon_fano_def.
 
-Variables (T : finType) (P : {dist T}).
-Variables (c : code_set T) (f : T -> seq T).
+Variables (A T : finType) (P : {dist A}).
+Variables (f : A -> seq T).
 Hypothesis f_inj : injective f.
-Hypothesis f_size : #|T| = size c.
 
 Definition is_shannon_fano_code :=
   forall s, size (f s(*nth [::] c (enum_rank s)*)) =
@@ -91,14 +90,14 @@ Definition is_shannon_fano_code :=
 
 End shannon_fano_def.
 
+Definition kraft_cond_new_in_R (T : finType) (c : code_set T) :=
+  (\rsum_(i < size c) ((INR #|T|) ^- nth O (map size c) i) <= (1 : R))%R.
+
+(*
 Section kraft_equiv.
 
-Definition kraft_cond_new_in_R (T : finType) (f : T -> seq T) (c : code_set T) :=
-  (\rsum_(i : T) ((INR #|T|) ^- size (f i)) <= (1 : R))%R.
-
-Variables (T : finType) (f : T -> seq T) (c : code_set T).
+Variables (A T : finType) (f : T -> seq T).
 Hypothesis f_inj : injective f.
-Hypothesis f_size : #|T| = size c.
 
 Lemma nth_f :
   \rsum_(i < #|T|) INR #|T| ^- size (nth [::] c i) = \rsum_(i | true) INR #|T| ^- size (f i).
@@ -123,33 +122,42 @@ split => H.
 Abort.
 
 End kraft_equiv.
+*)
 
 Section ShannonFano.
 
+Variable A : finType.
 Variable t' : nat.
 Let t := t'.+2.
 Let T := [finType of 'I_t].
-Variable P : {dist T}.
+Variable P : {dist A}.
 Hypothesis Pr_pos : forall s, P s != 0.
 
-Variable c : code_set T.
-Let sizes := map size c.
-Hypothesis H : size sizes = t.
+Let a : A.
+by move/card_gt0P: (dist_domain_not_empty P) => /sigW [i].
+Qed.
 
-Variable (f : T -> seq T).
-Hypothesis f_inj : {on c, injective f}.
+Variable (f : A -> seq T).
+Hypothesis f_inj : injective f.
 Hypothesis shannon_fano : is_shannon_fano_code P f (*c*) (*f*).
+
+Lemma uniq_c : uniq (map f (enum A)).
+Proof. by rewrite map_inj_uniq ?enum_uniq. Qed.
+
+Let c := CodeSet uniq_c.
+Let sizes := map size c.
 
 Lemma shannon_fano_meets_kraft : kraft_cond_in_R T sizes.
 Proof.
 rewrite /kraft_cond_in_R -(pmf1 P).
-rewrite H.
+rewrite /sizes size_map /= size_map.
+rewrite (eq_bigr (fun i:'I_(size(enum A)) => INR #|'I_t| ^- size (f (nth a (enum A) i)))); last first.
+  move=> i _.
+  by rewrite -map_comp (nth_map a).
+rewrite -(big_mkord xpredT (fun i => INR #|T| ^- size (f (nth a (enum A) i)))).
+rewrite -(big_nth a xpredT (fun i => INR #|'I_t| ^- size (f i))).
+rewrite enumT.
 apply ler_rsum => i _.
-rewrite (@nth_map _ [::]); last first.
-  move: H; by rewrite size_map => ->.
-rewrite {1}(_ : i = enum_rank (enum_val (cast_ord (esym (card_ord _)) i)) :> nat); last first.
-  by rewrite enum_valK.
-rewrite enum_valK -enum_rank_ord.
 rewrite shannon_fano.
 have Pi0 : 0 < P i by apply/RltP; rewrite lt0R Pr_pos; exact/RleP/dist_nonneg.
 apply Rle_trans with (Exp (INR #|T|) (- Log (INR #|T|) (1 / P i))); last first.
@@ -164,61 +172,50 @@ apply/leR_inv => //.
 apply Exp_le_increasing.
   by apply/RltP; rewrite (_ : 1 = INR 1) // ltR_nat card_ord.
 rewrite INR_Zabs_nat; last first.
-  set j := enum_val _.
-  have Pj0 : 0 < P j.
-    rewrite (_ : j = i) //.
-    rewrite /j enum_val_ord; exact/val_inj.
-  case/boolP : (P j == 1) => [/eqP ->|Pj1].
+  case/boolP : (P i == 1) => [/eqP ->|Pj1].
     by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_pos/Rle_refl.
   apply/leR0ceil/ltRW/ltR0Log.
   by apply/RltP; rewrite (_ : 1 = INR 1) // ltR_nat card_ord.
   rewrite div1R.
   apply/RltP; rewrite invR_gt1 // ltR_neqAle Pj1 /=; exact/RleP/dist_max.
-set x := Log _ _; case: (ceilP x).
-rewrite (_ : enum_val _ = i) // enum_val_ord; exact/val_inj.
+by set x := Log _ _; case: (ceilP x).
 Qed.
 
 End ShannonFano.
 
 Section BinaryShannonFano.
 
-Let T := [finType of 'I_2].
-Variable P : {dist T}.
+Variable A : finType.
+Variable P : {dist A}.
 Hypothesis Pr_pos : forall s, P s != 0.
 
-Variable c : code_set T.
-Hypothesis shannon_fano : is_shannon_fano_code P c.
-
-Let f (s : T) := nth [::] c s (* encoding function *).
+Let T := [finType of 'I_2].
+Variable (f : A -> seq T).
+Hypothesis f_inj : injective f.
+Hypothesis shannon_fano : is_shannon_fano_code P f (*c*) (*f*).
 
 Local Open Scope entropy_scope.
 
 Lemma shannon_fano_average_entropy : average P f < `H P  + 1.
 Proof.
 rewrite /average.
-apply Rlt_le_trans with (\rsum_(x in T) P x * (- Log (INR #|T|) (P x) + 1)).
-  apply ltR_rsum; [by rewrite card_ord|move=> i].
+apply Rlt_le_trans with (\rsum_(x in A) P x * (- Log (INR #|T|) (P x) + 1)).
+  apply ltR_rsum; [by apply dist_domain_not_empty|move=> i].
   apply Rmult_lt_compat_l.
     apply/RltP; rewrite lt0R Pr_pos /=; exact/RleP/dist_nonneg.
-  rewrite /f.
-  rewrite {1}(_ : i = enum_rank (enum_val (cast_ord (esym (card_ord _)) i)) :> nat); last first.
-    by rewrite enum_valK.
   rewrite shannon_fano.
   rewrite (_ : INR #|T| = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
   have Pi0 : 0 < P i by apply/RltP; rewrite lt0R Pr_pos /=; exact/RleP/dist_nonneg.
   rewrite INR_Zabs_nat; last first.
     apply/leR0ceil.
-    rewrite /x div1R /log LogV; last first.
-      rewrite (_ : enum_val _ = i) // enum_val_ord; exact/val_inj.
+    rewrite /x div1R /log LogV //.
     apply oppR_ge0.
     rewrite -(Log_1 2); apply Log_increasing_le => //.
-    rewrite (_ : enum_val _ = i) // enum_val_ord; exact/val_inj.
     exact/dist_max.
   case: (ceilP x) => _.
-  rewrite -LogV // -/(log _) -(div1R _) /x.
-  rewrite (_ : enum_val _ = i) // enum_val_ord; exact/val_inj.
-evar (h : T -> R).
+  by rewrite -LogV // -/(log _) -(div1R _) /x.
+evar (h : A -> R).
 rewrite (eq_bigr h); last first.
   move=> i _; rewrite mulRDr mulR1 mulRN  /h; reflexivity.
 rewrite {}/h big_split /=; apply Rplus_le_compat.
