@@ -85,8 +85,7 @@ Variables (f : A -> seq T).
 Hypothesis f_inj : injective f.
 
 Definition is_shannon_fano_code :=
-  forall s, size (f s(*nth [::] c (enum_rank s)*)) =
-    Zabs_nat (ceil (Log (INR #|T|) (1 / P s)%R)).
+  forall s, size (f s) = Zabs_nat (ceil (Log (INR #|T|) (1 / P s)%R)).
 
 End shannon_fano_def.
 
@@ -229,18 +228,44 @@ End BinaryShannonFano.
 
 Section shannon_fano_code_build.
 
-Variable t' : nat.
-Let t := t'.+2.
-Let T := [finType of 'I_t].
-Variables sizes : seq nat.
+Let T := [finType of 'I_2].
 
-(* TODO: relation with sigma in kraft.v? *)
-(* NB: use the prepend function of kraft.v instead of nseq/cat? *)
-Fixpoint prefix_from_sizes (i : nat) : seq T :=
+Fixpoint shannon_fano_f (l : seq nat) (i : nat) : seq T :=
   if i isn't i'.+1 then
-    nseq (nth O sizes O) ord0
+    nseq (nth O l O) ord0
   else
-    nseq (nth O sizes i - nth O sizes i') ord0 ++
-    ary_of_nat _ (nat_of_ary (prefix_from_sizes i')).+1.
+    nseq (nth O l i - nth O l i') ord0 ++
+    ary_of_nat _ (nat_of_ary (shannon_fano_f l i')).+1.
+
+Variables (A : finType) (P : {dist A}).
+
+Let sizes := sort leq
+  (map (fun a => Zabs_nat (ceil (Log (INR #|T|) (1 / P a)%R))) (enum A)).
+
+Lemma shannon_fano_f_sizes i : (i < size sizes)%nat ->
+  size (shannon_fano_f sizes i) = nth O sizes i.
+Proof.
+elim: i => [_ |i IH Hi]; first by rewrite /shannon_fano_f size_nseq.
+rewrite /shannon_fano_f size_cat size_nseq -/(shannon_fano_f _ _ ).
+suff -> : size (ary_of_nat 0 (nat_of_ary (shannon_fano_f sizes i)).+1) = nth O sizes i.
+  rewrite subnK // nth_of_sorted // ?leqnSn //=; exact/sort_sorted/leq_total.
+rewrite ary_of_nat_unfold; case: ifPn.
+  rewrite 2!ltnS leqn0 nat_of_ary_0 /=.
+  admit.
+rewrite -ltnNge 2!ltnS => H.
+rewrite size_rcons /=.
+Abort.
+
+Lemma nat_of_aryK t' l : @ary_of_nat t' (nat_of_ary l) = l.
+Proof.
+Abort.
+
+Lemma shannon_fano_f_is_shannon_fano :
+  is_shannon_fano_code P (shannon_fano_f sizes \o enum_rank).
+Proof.
+move=> a.
+rewrite /=.
+rewrite card_ord -/(log _).
+Abort.
 
 End shannon_fano_code_build.
