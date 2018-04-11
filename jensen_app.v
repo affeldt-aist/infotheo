@@ -33,12 +33,12 @@ Qed.
 Definition Hs (s : seq A) :=
  \rsum_(a in A)
   if N(a|s) == 0%nat then 0 else
-  INR (N(a|s)) / INR (size s) * log (INR (size s) / INR (N(a|s))).
+  INR N(a|s) / INR (size s) * log (INR (size s) / INR N(a|s)).
 
 Definition nHs (s : seq A) :=
  \rsum_(a in A)
   if N(a|s) == 0%nat then 0 else
-  INR (N(a|s)) * log (INR (size s) / INR (N(a|s))).
+  INR N(a|s) * log (INR (size s) / INR N(a|s)).
 
 Lemma szHs_is_nHs s : INR (size s) * Hs s = nHs s.
 Proof.
@@ -46,7 +46,7 @@ rewrite /Hs /nHs big_distrr.
 apply eq_bigr => i _ /=.
 case: ifP => Hnum.
   by rewrite mulR0.
-rewrite /Rdiv (mulRC (INR (N(i|s)))) 2!(mulRA (INR _)).
+rewrite /Rdiv (mulRC (INR N(i|s))) 2!(mulRA (INR _)).
 rewrite !mulRV ?mul1R // ?INR_eq0.
 apply/eqP => Hsz.
 move: (count_size (pred1 i) s).
@@ -82,7 +82,7 @@ Qed.
 
 Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl (INR 0)).
 
-Hint Resolve Rle_refl.
+Hint Resolve Rle_refl pos_INR.
 
 Theorem concats_entropy ss :
   \rsum_(s <- ss) INR (size s) * Hs s
@@ -99,7 +99,7 @@ rewrite num_occ_flatten add0R.
 rewrite [in X in _ <= X](bigID (fun s => N(a|s) == O)).
 rewrite [in X in _ <= X]big1 //=; last by move=> i /eqP.
 rewrite (eq_bigr
-       (fun i => log (INR (size i) / INR (N(a|i))) * INR (N(a|i))));
+       (fun i => log (INR (size i) / INR N(a|i)) * INR N(a|i)));
   last by move=> i /negbTE ->; rewrite mulRC.
 rewrite -big_filter -[in X in _ <= X]big_filter add0n.
 (* ss' contains only strings with ocurrences *)
@@ -108,7 +108,7 @@ case Hss': (ss' == [::]).
   by rewrite (eqP Hss') !big_nil eqxx.
 have Hnum (s : seq A) : s \in ss' -> (N(a|s) > 0)%nat.
   by rewrite /ss' mem_filter lt0n => /andP [->].
-have Hnum': 0 < INR (N(a|flatten ss')).
+have Hnum': 0 < INR N(a|flatten ss').
   apply /lt_0_INR /leP.
   destruct ss' => //=.
   rewrite /num_occ count_cat ltn_addr //.
@@ -124,8 +124,8 @@ apply (Rle_trans _ (INR (\sum_(i <- ss') N(a|i)) *
      Works thanks to monotonicity of log. *)
   case: ifP => Hsum.
     by rewrite (eqP Hsum) mul0R.
-  apply Rmult_le_compat_l; first by apply pos_INR.
-  apply Log_increasing_le; first by apply Rlt_1_2.
+  apply Rmult_le_compat_l => //.
+  apply Log_increasing_le => //.
     apply Rlt_mult_inv_pos => //.
     apply/lt_0_INR/ltP.
     by rewrite lt0n Hsum.
@@ -138,9 +138,9 @@ apply (Rle_trans _ (INR (\sum_(i <- ss') N(a|i)) *
   by apply leq_addl.
 (* Prepare to use jensen_dist_concave *)
 set f := fun x =>
-  INR (N(a|tnth (in_tuple ss') x)) / INR (N(a|flatten ss')).
+  INR N(a|tnth (in_tuple ss') x) / INR N(a|flatten ss').
 set r := fun x =>
-  INR (size (tnth (in_tuple ss') x)) / INR (N(a|tnth (in_tuple ss') x)).
+  INR (size (tnth (in_tuple ss') x)) / INR N(a|tnth (in_tuple ss') x).
 have f_pos x : 0 < f x.
   apply Rlt_mult_inv_pos => //.
   apply /lt_0_INR /ltP.
@@ -157,25 +157,24 @@ set d := mkDist f_1.
 have Hr: forall i, r i > 0.
   rewrite /r /= => i.
   apply Rlt_mult_inv_pos.
-    apply /lt_0_INR /ltP /(@leq_trans (N(a|tnth (in_tuple ss') i))).
+    apply /lt_0_INR /ltP /(@leq_trans N(a|tnth (in_tuple ss') i)).
       by rewrite Hnum // mem_tnth.
     by apply count_size.
-  apply /lt_0_INR /ltP.
-  by rewrite Hnum // mem_tnth.
+  by apply /lt_0_INR /ltP; rewrite Hnum // mem_tnth.
 move: (jensen_dist_concave log_concave d Hr).
 rewrite /d /f /r /=.
 rewrite -(big_tuple _ _ _ xpredT
   (fun s =>
-     log (INR (size s) / INR (N(a|s))) *
-     (INR (N(a|s)) / INR (N(a|flatten ss'))))).
+     log (INR (size s) / INR N(a|s)) *
+     (INR N(a|s) / INR N(a|flatten ss')))).
 rewrite -(big_tuple _ _ _ xpredT
   (fun s =>
-     INR (size s) / INR (N(a|s)) *
-     (INR (N(a|s)) / INR (N(a|flatten ss'))))) /=.
-move/(Rmult_le_compat_r (INR (N(a|flatten ss'))) _ _ (pos_INR _)).
+     INR (size s) / INR N(a|s) *
+     (INR N(a|s) / INR N(a|flatten ss')))) /=.
+move/(Rmult_le_compat_r (INR N(a|flatten ss')) _ _ (pos_INR _)).
 rewrite !big_distrl /=.
 rewrite (eq_bigr
-     (fun i => log (INR (size i) / INR (N(a|i))) * INR (N(a|i))));
+     (fun i => log (INR (size i) / INR N(a|i)) * INR N(a|i)));
   last first.
   move=> i _; rewrite !mulRA -mulRA mulVR ?mulR1 //.
   exact/eqP/gtR_eqF.
@@ -183,7 +182,7 @@ rewrite (eq_bigr
 move/Rle_trans; apply.
 rewrite mulRC -num_occ_flatten big_filter.
 rewrite (eq_bigr
-     (fun i => INR (size i) * / INR (N(a|flatten ss'))));
+     (fun i => INR (size i) * / INR N(a|flatten ss')));
   last first.
   by move=> i Hi; rewrite !mulRA -(mulRA _ (/ _)) mulVR ?mulR1 // INR_eq0.
 rewrite -big_filter -/ss' -big_distrl -big_morph_plus_INR /=.
