@@ -94,8 +94,8 @@ apply ler_rsum=> a _.
 rewrite (bigID (fun s => num_occ a s == O)) /=.
 rewrite big1; last by move=> i ->.
 rewrite num_occ_flatten add0R.
-rewrite [in X in _ <= X](bigID (fun s => num_occ a s == O)) /=.
-rewrite [in X in _ <= X]big1 //; last by move=> i /eqP.
+rewrite [in X in _ <= X](bigID (fun s => num_occ a s == O)).
+rewrite [in X in _ <= X]big1 //=; last by move=> i /eqP.
 rewrite (eq_bigr
        (fun i => log (INR (size i) / INR (num_occ a i)) * INR (num_occ a i)));
   last by move=> i /negbTE ->; rewrite mulRC.
@@ -152,22 +152,15 @@ have f_1 : \rsum_(a < size ss') (mkPosFun f_nonneg) a = 1.
   rewrite big_ord_recl /= (tnth_nth [::]) /=.
   by rewrite addn_eq0 negb_and -lt0n Hnum // in_cons eqxx.
 set d := mkDist f_1.
-have Hdist: (0 < #|dist_supp d|)%nat.
-  rewrite /dist_supp card_gt0.
-  destruct ss' => //.
-  apply/eqP => /setP /(_ ord0).
-  rewrite !inE /d /= => /negbFE /eqP.
-  exact/gtR_eqF.
 have Hr: forall i, r i > 0.
-  move=> i.
-  rewrite /r /=.
+  rewrite /r /= => i.
   apply Rlt_mult_inv_pos.
     apply /lt_0_INR /ltP /(@leq_trans (num_occ a (tnth (in_tuple ss') i))).
       by rewrite Hnum // mem_tnth.
     by apply count_size.
   apply /lt_0_INR /ltP.
   by rewrite Hnum // mem_tnth.
-move: (jensen_dist_concave log_concave Hdist Hr).
+move: (jensen_dist_concave log_concave d Hr).
 rewrite /d /f /r /=.
 rewrite -(big_tuple _ _ _ xpredT
   (fun s =>

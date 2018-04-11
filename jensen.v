@@ -46,12 +46,18 @@ Lemma dist_ind (A : finType) (P : dist A -> Prop) :
   (forall a, #|dist_supp a| = 1%nat -> P a) ->
   (forall n : nat, (forall a, #|dist_supp a| = n -> P a) ->
     forall a, #|dist_supp a| = n.+1 -> P a) ->
-  forall d, (0 < #|dist_supp d|)%nat -> P d.
+  forall d, P d.
 Proof.
 move=> H0 H1 d.
 move: {-2}(#|dist_supp d|) (erefl (#|dist_supp d|)) => n; move: n d.
-elim=> // -[_ d A2 _ | n IH d A3 n13]; first by apply H0.
-apply (H1 n.+1) => // d' A2; by apply IH.
+elim=> [d /esym /card0_eq Hd0|].
+  move: (pmf1 d).
+  rewrite -[X in X = _]mul1R big_distrr rsum_dist_supp.
+  rewrite big1 => [H01|a].
+    by elim: (gtR_eqF _ _ Rlt_0_1).
+  by rewrite Hd0.
+move=> n IH d n13.
+apply (H1 n) => // d' A2; by apply IH.
 Qed.
 
 Section jensen_inequality.
@@ -59,7 +65,7 @@ Section jensen_inequality.
 Variable f : R -> R.
 Variable D : R -> Prop.
 Hypothesis convex_f : convex_in D f.
-Variable A : finType.
+Variables A : finType.
 
 Lemma dist_supp_single X (a:A) : dist_supp X = [set a] -> X a = 1. 
 Proof.
@@ -72,18 +78,18 @@ Qed.
 Hint Resolve Rle_refl.
 
 Lemma jensen_dist (r : A -> R) (X : dist A) :
-  (0 < #|dist_supp X|)%nat -> (forall a, D (r a)) ->
+  (forall a, D (r a)) ->
   f (\rsum_(a in A) r a * X a) <= \rsum_(a in A) f (r a) * X a.
 Proof.
-move=> A1 HDr.
+move=> HDr.
 apply (@proj1 _ (D (\rsum_(a in dist_supp X) r a * X a))).
 rewrite [in X in _ <= X]rsum_dist_supp [in X in X <= _]rsum_dist_supp /=.
 apply: (@dist_ind A (fun X =>
    f (\rsum_(a in dist_supp X) r a * X a) <=
    \rsum_(a in dist_supp X) f (r a) * X a /\ _)) => //.
-  move=> {X A1}X /eqP/cards1P [b Hb].
+  move=> {X}X /eqP/cards1P [b Hb].
   by rewrite Hb !big_set1 dist_supp_single // !mulR1.
-move=> n IH {X A1} X cardA.
+move=> n IH {X}X cardA.
 have [b Hb] : exists b : A, X b != 0.
   suff : {x | x \in dist_supp X} by case => a; rewrite inE => ?; exists a.
   apply/sigW/set0Pn; by rewrite -cards_eq0 cardA.
@@ -138,10 +144,9 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Lemma Jensen (X : rvar A) : (0 < #|dist_supp (`p_ X)|)%nat ->
-  (forall x, D (X x)) ->
+Lemma Jensen (X : rvar A) : (forall x, D (X x)) ->
   f (`E X) <= `E (mkRvar (`p_ X) (fun x => f (X x))).
-Proof. move=> A1 HDX; rewrite !ExE /=; by apply jensen_dist. Qed.
+Proof. move=> HDX; rewrite !ExE /=; by apply jensen_dist. Qed.
 
 End jensen_inequality.
 
@@ -166,12 +171,12 @@ by apply concave_f.
 Qed.
 
 Lemma jensen_dist_concave (r : A -> R) (X : dist A) :
-  (0 < #|dist_supp X|)%nat -> (forall x, D (r x)) ->
+  (forall x, D (r x)) ->
   \rsum_(a in A) f (r a) * X a <= f (\rsum_(a in A) r a * X a).
 Proof.
-move=> HX HDr.
+move=> HDr.
 apply Ropp_le_cancel.
-move: (jensen_dist convex_g HX HDr).
+move: (jensen_dist convex_g X HDr).
 rewrite /g.
 rewrite [in X in _ <= X](eq_bigr (fun a => -1 * (f (r a) * X a))).
   rewrite -[in X in _ <= X]big_distrr /=.
