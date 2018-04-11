@@ -69,24 +69,21 @@ rewrite (eq_bigr (fun i => 1 * X i)); last by move=> *; rewrite mul1R.
 by rewrite rsum_dist_supp Ha big_set1 mul1R.
 Qed.
 
-Definition dist_covered (r : A -> R) (X : dist A) :=
-  forall a, a \in dist_supp X -> D (r a).
+Hint Resolve Rle_refl.
 
 Lemma jensen_dist (r : A -> R) (X : dist A) :
-  (0 < #|dist_supp X|)%nat -> dist_covered r X ->
+  (0 < #|dist_supp X|)%nat -> (forall a, D (r a)) ->
   f (\rsum_(a in A) r a * X a) <= \rsum_(a in A) f (r a) * X a.
 Proof.
-move=> A1 HDX.
+move=> A1 HDr.
 apply (@proj1 _ (D (\rsum_(a in dist_supp X) r a * X a))).
 rewrite [in X in _ <= X]rsum_dist_supp [in X in X <= _]rsum_dist_supp /=.
-apply: (@dist_ind A (fun X => dist_covered r X ->
+apply: (@dist_ind A (fun X =>
    f (\rsum_(a in dist_supp X) r a * X a) <=
-   \rsum_(a in dist_supp X) f (r a) * X a /\ _)) HDX => //.
-  move=> {X A1}X /eqP/cards1P [b Hb] HDX.
-  rewrite Hb !big_set1 dist_supp_single // !mulR1.
-  split. by apply Rle_refl.
-  by apply HDX; rewrite Hb inE eqxx.
-move=> n IH {X A1} X cardA HDX.
+   \rsum_(a in dist_supp X) f (r a) * X a /\ _)) => //.
+  move=> {X A1}X /eqP/cards1P [b Hb].
+  by rewrite Hb !big_set1 dist_supp_single // !mulR1.
+move=> n IH {X A1} X cardA.
 have [b Hb] : exists b : A, X b != 0.
   suff : {x | x \in dist_supp X} by case => a; rewrite inE => ?; exists a.
   apply/sigW/set0Pn; by rewrite -cards_eq0 cardA.
@@ -101,8 +98,7 @@ case/boolP : (X b == 1) => [/eqP |] Xb1.
   rewrite Xb1 big1; last by move=> a /andP[? ?]; rewrite H // ?mulR0.
   rewrite (bigD1 b) //=; last by rewrite inE Xb1; exact/eqP/R1_neq_R0.
   rewrite Xb1 big1; last by move=> a /andP[? ?]; rewrite H // ?mulR0.
-  rewrite !addR0 !mulR1.
-  by split; [apply Rle_refl | apply HDX; rewrite inE].
+  by rewrite !addR0 !mulR1.
 have HXb1: 1 - X b != 0.
   by apply: contra Xb1; rewrite subR_eq0 eq_sym.
 set d := D1Dist.d Xb1.
@@ -125,23 +121,14 @@ have {HsumD1}HsumXD1 q:
     by rewrite (D1Dist.f_0 _ (eqP HXi)) eqxx.
   by rewrite D1Dist.f_eq0 // ?HXi // eq_sym.
 rewrite 2!{}HsumXD1.
-have /IH H : #|dist_supp d| = n.
+have /IH {IH}[IH HDd] : #|dist_supp d| = n.
   by rewrite D1Dist.card_dist_supp // cardA.
-have /H {IH H}[IH HDX1] : dist_covered r d.
-  move=> a Ha.
-  apply HDX; move: Ha.
-  rewrite /dist_supp !inE /d /D1Dist.d /D1Dist.f /=.
-  case: ifP => Ha; first by rewrite eqxx.
-  move/eqP => HX; apply/eqP => HXa.
-  by apply HX; rewrite HXa /Rdiv mul0R.
 have HXb: 0 <= X b <= 1 by split; [exact/dist_nonneg|exact/dist_max].
-split; last first.
-  have HDb: D (r b) by apply HDX; rewrite inE.
-  by rewrite mulRC; apply convex_f.
+split; last by rewrite mulRC; apply convex_f.
 rewrite mulRC.
 refine (Rle_trans _ _ _
- (proj1 (@convex_f (r b) (\rsum_(i in dist_supp d) r i * d i) _ _ HDX1 HXb)) _).
-  by apply HDX; rewrite inE.
+ (proj1 (@convex_f (r b) (\rsum_(i in dist_supp d) r i * d i) _ _ HDd HXb)) _).
+  done.
 rewrite mulRC.
 apply /Rplus_le_compat_l /Rmult_le_compat_l => //.
 apply (Rplus_le_reg_l (X b)).
@@ -152,7 +139,7 @@ Qed.
 Local Open Scope proba_scope.
 
 Lemma Jensen (X : rvar A) : (0 < #|dist_supp (`p_ X)|)%nat ->
-  dist_covered (fun x => X x) (rv_dist X) ->
+  (forall x, D (X x)) ->
   f (`E X) <= `E (mkRvar (`p_ X) (fun x => f (X x))).
 Proof. move=> A1 HDX; rewrite !ExE /=; by apply jensen_dist. Qed.
 
@@ -179,12 +166,12 @@ by apply concave_f.
 Qed.
 
 Lemma jensen_dist_concave (r : A -> R) (X : dist A) :
-  (0 < #|dist_supp X|)%nat -> dist_covered D r X ->
+  (0 < #|dist_supp X|)%nat -> (forall x, D (r x)) ->
   \rsum_(a in A) f (r a) * X a <= f (\rsum_(a in A) r a * X a).
 Proof.
-move=> HX HDX.
+move=> HX HDr.
 apply Ropp_le_cancel.
-move: (jensen_dist convex_g HX HDX).
+move: (jensen_dist convex_g HX HDr).
 rewrite /g.
 rewrite [in X in _ <= X](eq_bigr (fun a => -1 * (f (r a) * X a))).
   rewrite -[in X in _ <= X]big_distrr /=.
