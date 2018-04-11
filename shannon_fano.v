@@ -234,8 +234,8 @@ Fixpoint shannon_fano_f (l : seq nat) (i : nat) : seq T :=
   if i isn't i'.+1 then
     nseq (nth O l O) ord0
   else
-    nseq (nth O l i - nth O l i') ord0 ++
-    ary_of_nat _ (nat_of_ary (shannon_fano_f l i')).+1.
+    ary_of_nat _ (nat_of_ary (shannon_fano_f l i')).+1 ++
+    nseq (nth O l i - nth O l i') ord0.
 
 Variables (A : finType) (P : {dist A}).
 
@@ -248,7 +248,7 @@ Proof.
 elim: i => [_ |i IH Hi]; first by rewrite /shannon_fano_f size_nseq.
 rewrite /shannon_fano_f size_cat size_nseq -/(shannon_fano_f _ _ ).
 suff -> : size (ary_of_nat 0 (nat_of_ary (shannon_fano_f sizes i)).+1) = nth O sizes i.
-  rewrite subnK // nth_of_sorted // ?leqnSn //=; exact/sort_sorted/leq_total.
+  rewrite subnKC // nth_of_sorted // ?leqnSn //=; exact/sort_sorted/leq_total.
 rewrite ary_of_nat_unfold; case: ifPn.
   rewrite 2!ltnS leqn0 nat_of_ary_0 /=.
   admit.

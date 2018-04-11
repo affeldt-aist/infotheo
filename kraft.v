@@ -59,6 +59,9 @@ case: c => [|x y]; first by rewrite cats0.
 by rewrite size_cat /= -{2}(addn0 (size a)) leq_add2l ltn0.
 Qed.
 
+Lemma prefix_leq_size a b : prefix a b -> size a <= size b.
+Proof. by move/prefixP => [c /eqP  <-]; rewrite size_cat leq_addr. Qed.
+
 End prefix.
 
 Lemma empty_finType_nil (T : finType) : (#|T| = 0) -> forall c : seq T, c = [::].
@@ -118,15 +121,29 @@ Section prefix_code.
 Variable T : finType.
 
 Definition prefix_code (C : code_set T) :=
+  forall c c', c \in C -> c' \in C -> c != c' -> ~~ prefix c c'.
+
+Definition prefix_code_strong (C : code_set T) :=
   forall c c', c \in C -> c' \in C -> c != c' ->
   size c <= size c' -> ~~ prefix c c'.
+
+Lemma prefix_codeP C : prefix_code C <-> prefix_code_strong C.
+Proof.
+split.
+  move=> H c c' cC c'C cc' _.
+  by apply H.
+move=> H c c' cC c'C cc'.
+  case/boolP : (size c <= size c') => [K|]; first exact: H.
+  apply: contra => /eqP K.
+  by rewrite -(cat_take_drop (size c) c') {1}K size_cat leq_addr.
+Qed.
 
 Lemma nnpp_prefix_code (C : code_set T) :
   (~ prefix_code C -> False) -> prefix_code C.
 Proof.
-move=> H c c' cC c'C cc' size_cc'.
+move=> H c c' cC c'C cc'.
 apply/negP => prefix_cc'; apply H => abs.
-move: (abs _ _ cC c'C cc' size_cc'); by rewrite prefix_cc'.
+move: (abs _ _ cC c'C cc'); by rewrite prefix_cc'.
 Qed.
 
 End prefix_code.
@@ -215,8 +232,7 @@ wlog : a b aC bC sa sb ab / prefix a b.
   move=> H.
   case: (prefix_common sa sb) => K; first exact: (H _ _ aC bC).
   apply: (H _ _ bC aC sb sa _ K); by rewrite eq_sym.
-case/boolP : (size a <= size b); first by move/(Hprefix _ _ aC bC ab)/negP; auto.
-by rewrite -ltnNge => H /prefixW => /(_ ab); rewrite ltnNge leq_eqVlt H orbT.
+move/negP : (Hprefix _ _ aC bC ab); exact.
 Qed.
 
 Lemma prefix_implies_kraft_cond (R : rcfType) (Hprefix : prefix_code C) :
@@ -562,7 +578,7 @@ Qed.
 Lemma kraft_not_prefix_code (H : kraft_cond R T ls) : ~ prefix_code C ->
   [exists j : 'I_n, [exists k : 'I_n, (j < k) && prefix (sigma j) (sigma k)]].
 Proof.
-move=> abs; move: (kraft_w_ub H) => w_ub.
+move/prefix_codeP => abs; move: (kraft_w_ub H) => w_ub.
 rewrite -(negbK ([exists j, _])) negb_exists.
 apply/negP => /forallP /= H'.
 apply abs => c c'.
