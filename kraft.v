@@ -420,18 +420,26 @@ rewrite !nat_of_ary_cat !(nat_of_ary_nseq0,mul0n,add0n).
 by rewrite !ary_of_natK => /injective_w/eqP; apply/negP.
 Qed.
 
-Definition kraft_code := [seq sigma i | i in 'I_n].
+Definition acode := [seq sigma i | i in 'I_n].
 
-Lemma uniq_kraft_code : uniq kraft_code.
+Lemma uniq_acode : uniq acode.
 Proof. rewrite map_inj_uniq ?enum_uniq //; exact injective_sigma. Qed.
 
-Definition KraftCode := CodeSet uniq_kraft_code.
+Definition ACode := CodeSet uniq_acode.
 
 End example_of_code.
 
-Definition kraft_cond (R : rcfType) (T : finType) (sizes : seq nat) :=
-  let n := size sizes in
-  (\sum_(i < n) #|T|%:R^-(nth O sizes i) <= (1 : R))%R.
+Section kraft_condition.
+
+Local Notation "s ``_ i" := (nth O s i) (at level 4).
+
+Variable R : rcfType.
+
+Definition kraft_cond (T : finType) (l : seq nat) :=
+  let n := size l in
+  (\sum_(i < n) #|T|%:R ^- l``_i <= (1 : R))%R.
+
+End kraft_condition.
 
 Program Definition prepend (T : finType) (lmax : nat) (c : seq T) (t : (lmax - size c).-tuple T)
   : lmax.-tuple T := @Tuple _ _ (take lmax c ++ t) _.
@@ -516,37 +524,35 @@ Lemma prefix_implies_kraft_cond : prefix_code C ->
   0 < #|T| -> kraft_cond R T (map size C).
 Proof.
 move=> prefixC T_gt0; rewrite /kraft_cond size_map -/n.
-(* \framebox{\color{comment}{the goal is $\sum_{i < n} |T|^{-\ell_i} \leq 1$}} *)
+(*\color{comment}{\framebox{at this point, the goal is $\sum_{i < n} |T|^{-\ell_i} \leq 1$}} *)
 have /ler_pmul2l <- : ((0 : R) < #|T|%:R ^+ lmax)%R.
   by rewrite exprn_gt0 // ltr0n.
 rewrite mulr1 big_distrr /=.
-(* \framebox{\color{comment}{the goal is $\sum_{i < n}|T|^{\ell_{\mathrm{max}} - \ell(i)} \leq |T|^{\ell_{\mathrm{max}}}$}} *)
-rewrite (eq_bigr (fun i : 'I_n => #|subtree (C ``_ i)|%:R)%R); last first.
-  move=> i _.
-  rewrite card_subtree; last by apply/(nthP [::]); exists i.
-  rewrite natrX exprB // ?unitfE ?pnatr_eq0 -?lt0n //; last first.
-    by apply/leq_lmax/(nthP [::]); exists i.
-  by rewrite (nth_map [::]).
-(* \framebox{\color{comment}{the goal is $\bigcup_{i < n} \{ x | \prefix{c_i}{x} \} \leq |T|^{\ell_{\mathrm{max}}}$}} *)
-apply ler_trans with (#|\bigcup_(i < n) subtree (C ``_ i)|%:R)%R.
-  set P := [set (subtree (nth [::] C (nat_of_ord i))) | i in 'I_n].
+(*\color{comment}{\framebox{the goal is now $\sum_{i < n}\frac{|T|^{\ell_{\mathrm{max}}}}{#|T|^{\ell(i)}} \leq |T|^{\ell_{\mathrm{max}}}$}} *)
+rewrite (eq_bigr (fun i : 'I_n => #|subtree C``_i|%:R)%R); last first.
+  move=> i _; rewrite card_subtree; last by apply/nthP; exists i.
+  rewrite natrX exprB // ?(nth_map [::]) //.
+  by apply/leq_lmax/nthP; exists i.
+  by rewrite unitfE pnatr_eq0 -lt0n.
+(*\color{comment}{\framebox{the goal is now $\sum_{i < n} | \{ x | \prefix{c_i}{x} \} | \leq |T|^{\ell_{\mathrm{max}}}$}} *)
+apply (@ler_trans _ (#|\bigcup_(i < n) subtree (C ``_ i)|%:R)%R).
+  set P := [set (subtree C``_(nat_of_ord i)) | i in 'I_n].
   rewrite (@card_partition _ P); last first.
     rewrite /partition cover_imset eqxx /=; apply/andP; split.
       apply/trivIsetP => /= x y /imsetP[i _ ->] /imsetP[j _ ->] ij.
       rewrite -setI_eq0 disjoint_subtree //.
-      apply/(nthP [::]); by exists i.
-      apply/(nthP [::]); by exists j.
+      apply/nthP; by exists i.
+      apply/nthP; by exists j.
       by apply: contra ij => /eqP ->.
     apply/imsetP => -[i _ /esym]; by apply: subtree_not_empty.
-  rewrite big_imset /= ?natr_sum //.
-  move=> i j _ _ Hij.
+  rewrite big_imset /= ?natr_sum // => i j _ _ Hij.
   apply/eqP/negPn/negP => ij.
-  have Hi : C ``_ i \in C by apply/(nthP [::]); exists i.
-  have Hj : C ``_ j \in C by apply/(nthP [::]); exists j.
-  have Kij : C ``_ i != C ``_ j by rewrite nth_uniq //; case: C.
-  move: (disjoint_subtree prefixC Hi Hj Kij).
+  have Ci : C ``_ i \in C by apply/nthP; exists i.
+  have Cj : C ``_ j \in C by apply/nthP; exists j.
+  have Cij : C ``_ i != C ``_ j by rewrite nth_uniq //; case: C.
+  move: (disjoint_subtree prefixC Ci Cj Cij).
   rewrite Hij setIid => /eqP/subtree_not_empty; by apply.
-(* \framebox{\color{comment}{the goal is $\left| \bigcup_{i < n} \{ x | \prefix{c_i}{x} \} \right| \leq |T|^{\ell_{\mathrm{max}}}$}} *)
+(*\color{comment}{\framebox{the goal is now $\left| \bigcup_{i < n} \{ x | \prefix{c_i}{x} \} \right| \leq |T|^{\ell_{\mathrm{max}}}$}} *)
 by rewrite -natrX -card_tuple ler_nat max_card.
 Qed.
 
@@ -597,7 +603,7 @@ Proof.
 by rewrite (leq_ltn_trans (w_ub H j)) // subn1 card_ord prednK // expn_gt0.
 Qed.
 
-Local Notation "'C'" := (@KraftCode n' t' _ l_n sorted_l).
+Local Notation "'C'" := (@ACode n' t' _ l_n sorted_l).
 Local Notation "'sigma'" := (@sigma n' t' l).
 
 Lemma if_not_prefix (H : kraft_cond R T l) : ~ prefix_code C ->
@@ -642,21 +648,21 @@ Local Notation "s ``_ i" := (nth O s i) (at level 4).
 Lemma kraft_implies_prefix : kraft_cond R T l ->
   exists C : code_set T, prefix_code C.
 Proof.
-move=> H; exists (KraftCode t' l_n sorted_l).
+move=> H; exists (ACode _ l_n sorted_l).
 apply nnpp_prefix_code.
 move=> /(if_not_prefix Hl H) /existsP[j /existsP[ k /andP[jk pre]]].
-(* \framebox{\color{comment}{the goal is $\forall j, k. i < k \to \neg prefix \sigma_j \sigma_k$}} *)
+(*\color{comment}{\framebox{at this point, the goal is $\forall j, k. i < k \to \neg \prefix{\sigma_j}{\sigma_k$}}} *)
 pose r := ((w k)%:R / #|T|%:R^+(l``_k - l``_j) : R)%R.
-(* \framebox{\color{comment}{let $r = \frac{w_k}{|T|^{\ell_k - \ell_j}}$}} *)
-have abs : (r >= (w j)%:R + (1 : R))%R. (* \framebox{\color{comment}{we prove $ r \geq w_j + 1$}} *)
+(*\color{comment}{\framebox{let $r = \frac{w_k}{|T|^{\ell_k - \ell_j}}$}} *)
+have H1 : (r >= (w j)%:R + (1 : R))%R. (*\color{comment}{\framebox{here we prove $ r \geq w_j + 1$}} *)
   pose r' := (\sum_(i < k) #|T|%:R ^+ l``_j * #|T|%:R ^- l``_i : R)%R.
-  (* \framebox{\color{comment}{let $r' = \sum_{i < k} |T|^{\ell_j}|T|^{-\ell_i}$ }} *)
-  have -> : r = r'. (* \framebox{\color{comment}{we prove $r = r'$}} *)
-    rewrite /r /r' natr_sum big_distrl /=; apply/eq_bigr => i _; rewrite natrX.
+  (*\color{comment}{\framebox{let $r' = \sum_{i < k} |T|^{\ell_j}|T|^{-\ell_i}$ }} *)
+  have -> : r = r'. (*\color{comment}{\framebox{here we prove $r = r'$, see Equation (\ref{eqn:kraft_converse1}) }} *)
+    rewrite /r /r' natr_sum big_distrl /=; apply/eq_bigr => i _.
     have ? : (#|T|%:R ^+ (l ``_ k - l ``_ j) : R)%R \is a GRing.unit.
       by rewrite unitfE expf_eq0 card_ord pnatr_eq0 andbF.
     apply: (@mulIr _ (#|T|%:R ^+ (l``_k - l``_j))%R) => //.
-    rewrite -mulrA mulVr // mulr1 exprB; last 2 first.
+    rewrite natrX -mulrA mulVr // mulr1 exprB; last 2 first.
       by rewrite nth_of_sorted // ltnW //= l_n.
       by rewrite unitfE pnatr_eq0 card_ord.
     rewrite exprB; last 2 first.
@@ -664,48 +670,50 @@ have abs : (r >= (w j)%:R + (1 : R))%R. (* \framebox{\color{comment}{we prove $ 
       by rewrite unitfE pnatr_eq0 card_ord.
     rewrite mulrCA mulrAC mulrV // ?mul1r //.
     by rewrite unitfE -natrX pnatr_eq0 expn_eq0 card_ord.
-  pose wj' := (\sum_(j <= i < k) #|T|%:R ^+ l``_j * #|T|%:R ^- l``_i : R)%R.
-  (* \framebox{\color{comment}{let $w_j' = \sum_{j \leq i < k} |T|^{\ell_j}|T|^{-\ell_i}$}} *)
-  have -> : (r' = (w j)%:R + wj' :> R)%R. (* \framebox{\color{comment}{we prove $r' = w_j + w_j'$}} *)
+  pose u := (\sum_(j<=i<k) #|T|%:R ^+ l``_j * #|T|%:R ^- l``_i : R)%R.
+  (*\framebox{\color{comment}{let $u = \sum_{j \leq i < k} |T|^{\ell_j}|T|^{-\ell_i}$}} *)
+  have -> : (r' = (w j)%:R + u :> R)%R. (* \color{comment}{\framebox{$r' = w_j + u$, Equation (\ref{eqn:kraft_converse2})}} *)
     pose f := (fun i : nat => #|T|%:R^+l``_j * #|T|%:R^-l``_i : R)%R.
     case/boolP : (j == ord0) => j0.
-      rewrite /wj' (eqP j0) wE0 add0r big_mkord /r'.
+      rewrite /u (eqP j0) wE0 add0r big_mkord /r'.
       apply/eq_bigr => i _; by rewrite (eqP j0).
-    rewrite /r' /wj' -(big_mkord xpredT f)%R natr_sum.
+    rewrite /r' /u -(big_mkord xpredT f)%R natr_sum.
     rewrite (eq_bigr (fun i : 'I__ => f i)); last first.
       move=> i _; rewrite natrX exprB //.
       by rewrite nth_of_sorted // ltnW //= l_n.
       by rewrite unitfE pnatr_eq0 card_ord.
    rewrite -(big_mkord xpredT f)%R -big_cat_nat //=; last by rewrite ltnW.
-   rewrite ler_add // (* \framebox{\color{comment}{we prove $1 \leq w_j'$}} *) /wj' -(@prednK k); last by rewrite (leq_ltn_trans _ jk).
+   rewrite ler_add //.
+   (*\color{comment}{\framebox{at this point, the subgoal is $1 \leq u$, for the step (\ref{eqn:kraft_converse2})-(\ref{eqn:kraft_converse3})}} *)
+   rewrite /u -(@prednK k); last by rewrite (leq_ltn_trans _ jk).
    rewrite big_nat_recl; last by move/(leq_sub2r 1) : jk; rewrite !subn1.
    rewrite divrr ?unitfE -?natrX ?pnatr_eq0 ?expn_eq0 ?card_ord //.
    rewrite ler_addl sumr_ge0 // => i _.
    by rewrite natrX divr_ge0 // exprn_ge0 // ?card_ord ?ler0n.
-suff : (r - 1 < (w j)%:R)%R. (* \framebox{\color{comment}{$r - 1 < w_j$ contradicts $r \geq w_j + 1$}} *)
-  by rewrite ltr_subl_addl addrC ltrNge abs.
-(* \framebox{\color{comment}{we prove $r - 1 < w_j $}} *)
-have /(congr1 (fun x => x%:R : R)%R) : w k =
-  w j * #|T| ^ (l``_k - l``_j) + w k %% #|T| ^ (l``_k - l``_j).
-  (* \framebox{\color{comment}{we prove $w_k = w_j |T|^{\ell_k - \ell_j} +w_k \bmod |T|^{\ell_k-\ell_j}$}} *)
-  have := prefix_modn pre.
-  do 2 rewrite nat_of_ary_cat nat_of_ary_nseq0 mul0n add0n ary_of_natK.
-  by rewrite !size_cat !size_nseq !subnK // size_ary_of_nat // -/t
-   -(card_ord t) (w_sub l_n sorted_l H).
-rewrite natrD => /(congr1 (fun x => x / #|T|%:R^+(l``_k - l``_j)))%R.
-rewrite -/r mulrDl natrM natrX mulrK; last first.
-  by rewrite unitfE expf_eq0 card_ord pnatr_eq0 andbF.
-move=> wkE.
-have : ((w k %% #|T| ^ (l``_k - l``_j))%:R /
-        #|T|%:R ^+ (l``_k - l``_j) < (1 : R))%R.
-  (* \framebox{\color{comment}{we prove $\frac{w_k \bmod |T|^{\ell_k-\ell_j}}{|T|^{\ell_k - \ell_j}} < 1$}} *)
-  rewrite ltr_pdivr_mulr; last by rewrite -natrX ltr0n expn_gt0 card_ord.
-  by rewrite mul1r -natrX ltr_nat ltn_mod expn_gt0 card_ord.
-by rewrite {}wkE ltr_sub_addl addrC ltr_add2r.
+have H2 : (r - 1 < (w j)%:R)%R. (* \color{comment}{\framebox{here we prove $r - 1 < w_j$}} *)
+  have /(congr1 (fun x => x%:R : R)%R) : w k =
+    w j * #|T| ^ (l``_k - l``_j) + w k %% #|T| ^ (l``_k - l``_j).
+    (*\color{comment}{\framebox{here we prove $w_k = w_j |T|^{\ell_k - \ell_j} +w_k \bmod |T|^{\ell_k-\ell_j}$, leading to (\ref{eqn:kraft_converse5})}} *)
+    have := prefix_modn pre.
+    do 2 rewrite nat_of_ary_cat nat_of_ary_nseq0 mul0n add0n ary_of_natK.
+    by rewrite !size_cat !size_nseq !subnK // size_ary_of_nat // -/t
+     -(card_ord t) (w_sub l_n sorted_l H).
+  rewrite natrD => /(congr1 (fun x => x / #|T|%:R^+(l``_k - l``_j)))%R.
+  rewrite -/r mulrDl natrM natrX mulrK; last first.
+    by rewrite unitfE expf_eq0 card_ord pnatr_eq0 andbF.
+  move=> wkE.
+  have : ((w k %% #|T| ^ (l``_k - l``_j))%:R /
+          #|T|%:R ^+ (l``_k - l``_j) < (1 : R))%R.
+    (*\color{comment}{\framebox{here we prove $\frac{w_k \bmod |T|^{\ell_k-\ell_j}}{|T|^{\ell_k - \ell_j}} < 1$, leading to (\ref{eqn:kraft_converse6})}} *)
+    rewrite ltr_pdivr_mulr; last by rewrite -natrX ltr0n expn_gt0 card_ord.
+    by rewrite mul1r -natrX ltr_nat ltn_mod expn_gt0 card_ord.
+  by rewrite {}wkE ltr_sub_addl addrC ltr_add2r.
+by rewrite ltr_subl_addl addrC ltrNge H1 in H2.
 Qed.
 
 End kraft_cond_implies_prefix.
 
+(* wip *)
 Section cw.
 
 Variables (n : nat) (T : Type).
