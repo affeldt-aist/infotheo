@@ -99,7 +99,7 @@ Proof.
 (* (1) First simplify formula *)
 rewrite szHs_is_nHs.
 rewrite (eq_bigr _ (fun i _ => szHs_is_nHs i)).
-rewrite exchange_big /=.
+rewrite exchange_big /nHs /=.
 (* (2) Move to per-character inequalities *)
 apply ler_rsum=> a _.
 (* Remove strings containing no occurrences *)
@@ -152,24 +152,24 @@ apply (Rle_trans _ ((\sum_(i <- ss') N(a|i))%:R *
     (bigID (fun s => N(a|s) == O)) /=.
   by apply leq_addl.
 (* (4) Prepare to use jensen_dist_concave *)
-set f := fun x =>
-  N(a|tnth (in_tuple ss') x) / N(a|flatten ss').
-set r := fun x =>
-  (size (tnth (in_tuple ss') x)) / N(a|tnth (in_tuple ss') x).
-have f_pos x : 0 < f x.
+set f := fun i =>
+  N(a|tnth (in_tuple ss') i) / N(a|flatten ss').
+set r := fun i =>
+  (size (tnth (in_tuple ss') i)) / N(a|tnth (in_tuple ss') i).
+have f_pos i : 0 < f i.
   apply Rlt_mult_inv_pos => //.
   apply /lt_0_INR /ltP.
   by rewrite Hnum // mem_tnth.
-have f_nonneg x : 0 <= f x by apply Rlt_le.
+have f_nonneg i : 0 <= f i by apply Rlt_le.
 have f_1 : \rsum_(a < size ss')
     (mkPosFun f_nonneg) a = 1.
   rewrite /= /f -big_distrl /= num_occ_flatten.
-  rewrite big_morph_plus_INR mulRC big_tnth /=.
-  rewrite mulVR // -big_morph_plus_INR INR_eq0.
+  rewrite -big_morph_plus_INR.
+  rewrite -(big_tnth _ _ _ xpredT).
+  rewrite mulRV // INR_eq0.
   destruct ss' => //=.
-  rewrite big_ord_recl /= (tnth_nth [::]) /=.
-  rewrite addn_eq0 negb_and -lt0n Hnum //.
-  by rewrite in_cons eqxx.
+  rewrite big_cons addn_eq0 negb_and -lt0n.
+  by rewrite Hnum // in_cons eqxx.
 set d := mkDist f_1.
 have Hr: forall i, Rpos_interval (r i).
   rewrite /r /= => i.
@@ -181,19 +181,19 @@ have Hr: forall i, Rpos_interval (r i).
 (* (5) Apply Jensen *)
 move: (jensen_dist_concave log_concave d Hr).
 rewrite /d /f /r /=.
-rewrite -(big_tuple _ _ _ xpredT
+rewrite -(big_tnth _ _ _ xpredT
   (fun s =>
      log ((size s) / N(a|s)) *
      (N(a|s) / N(a|flatten ss')))).
-rewrite -(big_tuple _ _ _ xpredT
+rewrite -(big_tnth _ _ _ xpredT
   (fun s =>
      (size s) / N(a|s) *
-     (N(a|s) / N(a|flatten ss')))) /=.
+     (N(a|s) / N(a|flatten ss')))).
 (* (6) Transform the statement to match the goal *)
-move/(Rmult_le_compat_r (INR N(a|flatten ss')) _ _ (pos_INR _)).
+move/(Rmult_le_compat_r N(a|flatten ss') _ _ (pos_INR _)).
 rewrite !big_distrl /=.
 rewrite (eq_bigr
-     (fun i => log (INR (size i) / INR N(a|i)) * INR N(a|i)));
+     (fun i => log (size i / N(a|i)) * N(a|i)));
   last first.
   move=> i _; rewrite !mulRA -mulRA mulVR ?mulR1 //.
   exact/eqP/gtR_eqF.
