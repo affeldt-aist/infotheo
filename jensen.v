@@ -10,6 +10,17 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Section interval.
+
+Definition convex_interval (D : R -> Prop) := forall x y t,
+  D x -> D y -> 0 <= t <= 1 -> D (t * x + (1-t) * y).
+
+Record interval := mkInterval {
+  mem_interval :> R -> Prop;
+  interval_convex : convex_interval mem_interval }.
+
+End interval.
+
 Section convex.
 
 Definition convex_leq (f : R -> R) (x y t : R) :=
@@ -18,8 +29,8 @@ Definition convex_leq (f : R -> R) (x y t : R) :=
 Definition convex (f : R -> R) := forall x y t : R,
   0 <= t <= 1 -> convex_leq f x y t.
 
-Definition convex_in (D : R -> Prop) (f : R -> R) := forall x y t : R,
-  D x -> D y -> 0 <= t <= 1 -> convex_leq f x y t /\ D (t * x + (1 - t) * y).
+Definition convex_in (D : interval) (f : R -> R) := forall x y t : R,
+  D x -> D y -> 0 <= t <= 1 -> convex_leq f x y t.
 
 Definition strictly_convex (f : R -> R) := forall x y t : R,
   x != y -> 0 < t < 1 -> convex_leq f x y t.
@@ -34,8 +45,8 @@ Definition concave_leq (f : R -> R) (x y t : R) :=
 Definition concave (f : R -> R) := forall x y t : R,
   0 <= t <= 1 -> concave_leq f x y t.
 
-Definition concave_in (D : R -> Prop) (f : R -> R) := forall x y t : R,
-  D x -> D y -> 0 <= t <= 1 -> concave_leq f x y t /\ D (t * x + (1 - t) * y).
+Definition concave_in (D : interval) (f : R -> R) := forall x y t : R,
+  D x -> D y -> 0 <= t <= 1 -> concave_leq f x y t.
 
 Definition strictly_concave (f : R -> R) := forall x y t : R,
   x != y -> 0 < t < 1 -> concave_leq f x y t.
@@ -63,7 +74,7 @@ Qed.
 Section jensen_inequality.
 
 Variable f : R -> R.
-Variable D : R -> Prop.
+Variable D : interval.
 Hypothesis convex_f : convex_in D f.
 Variables A : finType.
 
@@ -130,11 +141,10 @@ rewrite 2!{}HsumXD1.
 have /IH {IH}[IH HDd] : #|dist_supp d| = n.
   by rewrite D1Dist.card_dist_supp // cardA.
 have HXb: 0 <= X b <= 1 by split; [exact/dist_nonneg|exact/dist_max].
-split; last by rewrite mulRC; apply convex_f.
+split; last by rewrite mulRC; apply interval_convex.
 rewrite mulRC.
 refine (Rle_trans _ _ _
- (proj1 (@convex_f (r b) (\rsum_(i in dist_supp d) r i * d i) _ _ HDd HXb)) _).
-  done.
+  (@convex_f (r b) (\rsum_(i in dist_supp d) r i * d i) _ _ HDd HXb) _) => //.
 rewrite mulRC.
 apply /Rplus_le_compat_l /Rmult_le_compat_l => //.
 apply (Rplus_le_reg_l (X b)).
@@ -153,7 +163,7 @@ End jensen_inequality.
 Section jensen_concave.
 
 Variable f : R -> R.
-Variable D : R -> Prop.
+Variable D : interval.
 Hypothesis concave_f : concave_in D f.
 Variable A : finType.
 
@@ -164,9 +174,7 @@ Proof.
 move=> x y t Hx Hy Ht.
 rewrite /convex_leq /g.
 rewrite !mulRN -oppRD.
-split.
-  apply Ropp_le_contravar.
-  by apply concave_f.
+apply Ropp_le_contravar.
 by apply concave_f.
 Qed.
 

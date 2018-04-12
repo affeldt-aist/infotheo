@@ -63,10 +63,9 @@ Admitted.
 
 Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
 
-Lemma log_concave : concave_in (fun x => 0 < x) log.
+Lemma Rpos_convex : convex_interval (fun x =>  0 < x).
 Proof.
 move=> x y t Hx Hy Ht.
-split; first by apply log_concave_gt0.
 case Ht0: (t == 0); first by rewrite (eqP Ht0) !simplR.
 apply Rplus_lt_le_0_compat.
   apply mulR_gt0 => //.
@@ -74,6 +73,11 @@ apply Rplus_lt_le_0_compat.
 apply Rmult_le_pos; [apply (Rplus_le_reg_l t) | by apply Rlt_le].
 rewrite addR0 Rplus_minus; exact/(proj2 Ht).
 Qed.
+
+Definition Rpos_interval := mkInterval Rpos_convex.
+
+Lemma log_concave : concave_in Rpos_interval log.
+Proof. by move=> x; apply log_concave_gt0. Qed.
 
 Lemma num_occ_flatten (a:A) ss :
   N(a|flatten ss) = \sum_(s <- ss) N(a|s).
@@ -103,12 +107,12 @@ rewrite (bigID (fun s => N(a|s) == O)) /=.
 rewrite big1; last by move=> i ->.
 rewrite num_occ_flatten add0R.
 rewrite [in X in _ <= X](bigID (fun s => N(a|s) == O)).
-rewrite [in X in _ <= X]big1 //=; last by move=> i /eqP.
+rewrite [in X in _ <= X]big1 //= ?add0n;
+  last by move=> i /eqP.
 rewrite (eq_bigr
        (fun i => log (size i / N(a|i)) * N(a|i)));
   last by move=> i /negbTE ->; rewrite mulRC.
 rewrite -big_filter -[in X in _ <= X]big_filter.
-rewrite add0n.
 (* ss' contains only strings with ocurrences *)
 set ss' := [seq s <- ss | N(a|s) != O].
 case Hss': (ss' == [::]).
@@ -147,7 +151,7 @@ apply (Rle_trans _ ((\sum_(i <- ss') N(a|i))%:R *
   rewrite [in X in (_ <= X)%nat]
     (bigID (fun s => N(a|s) == O)) /=.
   by apply leq_addl.
-(* Prepare to use jensen_dist_concave *)
+(* (4) Prepare to use jensen_dist_concave *)
 set f := fun x =>
   N(a|tnth (in_tuple ss') x) / N(a|flatten ss').
 set r := fun x =>
@@ -167,13 +171,14 @@ have f_1 : \rsum_(a < size ss')
   rewrite addn_eq0 negb_and -lt0n Hnum //.
   by rewrite in_cons eqxx.
 set d := mkDist f_1.
-have Hr: forall i, r i > 0.
+have Hr: forall i, Rpos_interval (r i).
   rewrite /r /= => i.
   apply Rlt_mult_inv_pos.
     apply /lt_0_INR /ltP /(@leq_trans N(a|tnth (in_tuple ss') i)).
       by rewrite Hnum // mem_tnth.
     by apply count_size.
   by apply /lt_0_INR /ltP; rewrite Hnum // mem_tnth.
+(* (5) Apply Jensen *)
 move: (jensen_dist_concave log_concave d Hr).
 rewrite /d /f /r /=.
 rewrite -(big_tuple _ _ _ xpredT
@@ -184,6 +189,7 @@ rewrite -(big_tuple _ _ _ xpredT
   (fun s =>
      (size s) / N(a|s) *
      (N(a|s) / N(a|flatten ss')))) /=.
+(* (6) Transform the statement to match the goal *)
 move/(Rmult_le_compat_r (INR N(a|flatten ss')) _ _ (pos_INR _)).
 rewrite !big_distrl /=.
 rewrite (eq_bigr
