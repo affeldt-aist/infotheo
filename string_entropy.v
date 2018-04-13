@@ -86,9 +86,9 @@ Hypothesis S_nonempty : size S != O.
 
 Definition pchar c := N(c|S) / size S.
 
-Definition pchar_dist := seq_nat_dist (sum_num_occ S) S_nonempty.
+Definition num_occ_dist := seq_nat_dist (sum_num_occ S) S_nonempty.
 
-Definition Hs0 := `H pchar_dist.
+Definition Hs0 := `H num_occ_dist.
 End entropy.
 
 Section string_concat.
@@ -104,6 +104,27 @@ Definition nHs (s : seq A) :=
  \rsum_(a in A)
   if N(a|s) == 0%nat then 0 else
   N(a|s) * log (size s / N(a|s)).
+
+Lemma szHs_is_nHs s (H : size s != O) :
+  size s * `H (@num_occ_dist s H) = nHs s.
+Proof.
+rewrite /entropy /nHs /num_occ_dist /=.
+rewrite -mulRN1 big_distrl big_distrr /=.
+apply eq_bigr => a _ /=.
+case: ifP => [/eqP -> | Hnum].
+  by rewrite !mulRA !simplR.
+rewrite /Rdiv (mulRC N(a|s)) 3!(mulRA _%:R).
+rewrite !mulRV ?mul1R // ?INR_eq0 //.
+rewrite -mulRA mulRN1 /log /Log -mulNR.
+rewrite -ln_Rinv.
+  rewrite invRM ?invRK //.
+  + by apply /eqP; rewrite INR_eq0.
+  + by apply /eqP /invR_neq0; rewrite INR_eq0.
+  + by apply /eqP; rewrite INR_eq0 Hnum.
+apply mulR_gt0.
+  by apply /invR_gt0 /lt_0_INR /ltP; rewrite lt0n.
+by apply /lt_0_INR /ltP; rewrite lt0n Hnum.
+Qed.
 
 Definition mulnRdep (x : nat) (y : x != O -> R) : R.
 case/boolP: (x == O) => Hx.
@@ -124,29 +145,14 @@ do 2!f_equal.
 apply eq_irrelevance.
 Qed.
 
-Lemma szHs_is_nHs s : mulnRdep (size s) (fun H => Hs0 H) = nHs s.
+Lemma szHs_is_nHs_full s : mulnRdep (size s) (fun H => Hs0 H) = nHs s.
 Proof.
 rewrite /mulnRdep; destruct boolP.
   rewrite /nHs (eq_bigr (fun a => 0)); first by rewrite big1.
   move=> a _.
   suff -> : N(a|s) == O. done.
   by rewrite /num_occ -leqn0 -(eqP i) count_size.
-rewrite /Hs0 /entropy /nHs /pchar_dist /=.
-rewrite -mulRN1 big_distrl big_distrr /=.
-apply eq_bigr => a _ /=.
-case: ifP => [/eqP -> | Hnum].
-  by rewrite !mulRA !simplR.
-rewrite /Rdiv (mulRC N(a|s)) 3!(mulRA _%:R).
-rewrite !mulRV ?mul1R // ?INR_eq0 //.
-rewrite -mulRA mulRN1 /log /Log -mulNR.
-rewrite -ln_Rinv.
-  rewrite invRM ?invRK //.
-  + by apply /eqP; rewrite INR_eq0.
-  + by apply /eqP /invR_neq0; rewrite INR_eq0.
-  + by apply /eqP; rewrite INR_eq0 Hnum.
-apply mulR_gt0.
-  by apply /invR_gt0 /lt_0_INR /ltP; rewrite lt0n.
-by apply /lt_0_INR /ltP; rewrite lt0n Hnum.
+by apply szHs_is_nHs.
 Qed.
 
 Lemma Rpos_convex : convex_interval (fun x =>  0 < x).
@@ -165,15 +171,33 @@ Definition Rpos_interval := mkInterval Rpos_convex.
 Lemma log_concave : concave_in Rpos_interval log.
 Proof. by move=> x; apply log_concave_gt0. Qed.
 
+Lemma concats_f_1 a ss' :
+  ss' != [::] ->
+ (forall s : seq_eqType A, s \in ss' -> (0 < N( a | s))%nat) ->
+ let f := fun i => N(a|tnth (in_tuple ss') i) / N(a|flatten ss') in
+ forall f_nonneg,
+ \rsum_(j < size ss') (@mkPosFun _ f f_nonneg) j = 1.
+Proof.
+move=> Hss' Hnum f f_nonneg.
+rewrite /= /f -big_distrl /= num_occ_flatten.
+rewrite -big_morph_plus_INR.
+rewrite -(big_tnth _ _ _ xpredT).
+rewrite mulRV // INR_eq0.
+destruct ss' => //=.
+rewrite big_cons addn_eq0 negb_and -lt0n.
+by rewrite Hnum // in_cons eqxx.
+Qed.
+
 Theorem concats_entropy ss :
 (*  \rsum_(s <- ss) size s * Hs s
        <= size (flatten ss) * Hs (flatten ss). *)
-  \rsum_(s <- ss) mulnRdep (size s) (fun H => Hs0 H)
-       <= mulnRdep (size (flatten ss)) (fun H => Hs0 H).
+(* \rsum_(s <- ss) mulnRdep (size s) (fun H => Hs0 H)
+       <= mulnRdep (size (flatten ss)) (fun H => Hs0 H). *)
+  \rsum_(s <- ss) nHs s <= nHs (flatten ss).
 Proof.
 (* (1) First simplify formula *)
-rewrite szHs_is_nHs.
-rewrite (eq_bigr _ (fun i _ => szHs_is_nHs i)).
+(*rewrite szHs_is_nHs.
+rewrite (eq_bigr _ (fun i _ => szHs_is_nHs i)).*)
 rewrite exchange_big /nHs /=.
 (* (2) Move to per-character inequalities *)
 apply ler_rsum=> a _.
@@ -190,7 +214,7 @@ rewrite (eq_bigr
 rewrite -big_filter -[in X in _ <= X]big_filter.
 (* ss' contains only strings with ocurrences *)
 set ss' := [seq s <- ss | N(a|s) != O].
-case Hss': (ss' == [::]).
+case/boolP: (ss' == [::]) => Hss'.
   by rewrite (eqP Hss') !big_nil eqxx.
 have Hnum s : s \in ss' -> (N(a|s) > 0)%nat.
   by rewrite /ss' mem_filter lt0n => /andP [->].
@@ -236,16 +260,7 @@ have f_pos i : 0 < f i.
   apply /lt_0_INR /ltP.
   by rewrite Hnum // mem_tnth.
 have f_nonneg i : 0 <= f i by apply Rlt_le.
-have f_1 : \rsum_(a < size ss')
-    (mkPosFun f_nonneg) a = 1.
-  rewrite /= /f -big_distrl /= num_occ_flatten.
-  rewrite -big_morph_plus_INR.
-  rewrite -(big_tnth _ _ _ xpredT).
-  rewrite mulRV // INR_eq0.
-  destruct ss' => //=.
-  rewrite big_cons addn_eq0 negb_and -lt0n.
-  by rewrite Hnum // in_cons eqxx.
-set d := mkDist f_1.
+set d := mkDist (concats_f_1 Hss' Hnum f_nonneg).
 have Hr: forall i, Rpos_interval (r i).
   rewrite /r /= => i.
   apply Rlt_mult_inv_pos.
