@@ -4,13 +4,14 @@ From mathcomp Require Import ssralg finset fingroup finalg matrix.
 
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
 Require Import Rssr Reals_ext ssr_ext ssralg_ext log2 Rbigop.
-Require Import proba jensen num_occ.
+Require Import proba entropy jensen num_occ.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope num_occ_scope.
+Local Open Scope entropy_scope.
 Local Coercion INR : nat >-> R.
 
 Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
@@ -20,12 +21,6 @@ Section string_concat.
 
 Variable A : finType.
 
-Definition minlen (s : seq A) :=
-  \rsum_(c <- s) log (size s / N(c|s)).
-
-Definition Hs0 (s : seq A) :=
-  / (size s) * minlen s.
-
 Lemma sum_num_occ (s : seq A) : \sum_(a in A) N(a|s) = size s.
 Proof.
 elim: s => [|a s IH] /=.
@@ -33,6 +28,33 @@ elim: s => [|a s IH] /=.
 + rewrite big_split /= IH -big_mkcond /= (big_pred1 a) //.
   by move=> i; rewrite eq_sym.
 Qed.
+
+Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl 0%:R).
+
+Hint Resolve Rle_refl pos_INR.
+
+Section entropy.
+Variable S : seq A.
+Hypothesis S_nonempty : size S != O.
+
+Definition pchar c := N(c|S) / size S.
+
+Lemma pchar_pos c : 0 <= pchar c.
+Proof.
+apply mulR_ge0 => //.
+apply /Rlt_le /invR_gt0.
+apply /lt_0_INR /ltP.
+by rewrite lt0n.
+Qed.
+
+Lemma pchar_1 : \rsum_(a in A) (mkPosFun pchar_pos) a = 1.
+Proof.
+rewrite /pchar -big_distrl -big_morph_plus_INR.
+by rewrite sum_num_occ /= mulRV // INR_eq0.
+Qed.
+
+Definition Hs0 := `H (mkDist pchar_1).
+End entropy.
 
 Definition Hs (s : seq A) :=
  \rsum_(a in A)
@@ -88,10 +110,6 @@ elim: ss => [|s ss IH] /=.
   by rewrite big_nil.
 by rewrite big_cons /= count_cat IH.
 Qed.
-
-Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl 0%:R).
-
-Hint Resolve Rle_refl pos_INR.
 
 Theorem concats_entropy ss :
   \rsum_(s <- ss) size s * Hs s
