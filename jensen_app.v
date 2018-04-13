@@ -39,6 +39,7 @@ Definition Hs (s : seq A) :=
   if N(a|s) == 0%nat then 0 else
   N(a|s) / size s * log (size s / N(a|s)).
 
+
 Definition nHs (s : seq A) :=
  \rsum_(a in A)
   if N(a|s) == 0%nat then 0 else
@@ -209,3 +210,39 @@ by rewrite size_flatten sumn_big_addn big_map.
 Qed.
 
 End string_concat.
+
+Section zero_order_empirical_entropy.
+
+Local Open Scope proba_scope.
+
+Variable A : finType.
+Hypothesis A0 : (0 < #|A|)%nat.
+
+Definition dist_of_seq (s : seq A) : {dist A}.
+Proof.
+case/card_gt0P/sigW : A0 => a _.
+pose f := fun a => if a \in s then N(a|s)%:R / (size s)%:R else 0.
+have f0 : forall a : A, 0 <= f a.
+  move=> b; rewrite /f; case: ifPn => _; last exact/Rle_refl.
+  apply mulR_ge0; first by apply/RleP; rewrite leR0n.
+  apply/ltRW/invR_gt0.
+  admit.
+pose fpos := mkPosFun f0.
+have f1 : \rsum_(a in A) f a = 1.
+  rewrite (bigID [pred x | a \in s]) /=.
+  admit.
+exact: (makeDist f0 f1).
+Admitted.
+
+Require Import entropy.
+Local Open Scope entropy_scope.
+
+Definition H0 (s : seq A) := `H (dist_of_seq s).
+
+Lemma H0E (s : seq A) : H0 s = Hs s.
+Proof.
+rewrite /H0 /entropy /Hs (big_morph _ morph_Ropp oppR0); apply/eq_bigr => a _.
+(* TODO *)
+Abort.
+
+End zero_order_empirical_entropy.
