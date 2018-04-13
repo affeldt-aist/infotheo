@@ -17,11 +17,23 @@ Local Coercion INR : nat >-> R.
 Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
 Local Notation "n %:R" := (INR n).
 
-Section string_concat.
+Lemma log_concave_gt0 x y t :
+  0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
+Admitted.
+
+Section string.
 
 Variable A : finType.
 
-Lemma sum_num_occ (s : seq A) : \sum_(a in A) N(a|s) = size s.
+Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
+
+Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl 0%:R).
+
+Hint Resolve Rle_refl pos_INR.
+
+Section num_occ.
+
+Lemma sum_num_occ s : \sum_(a in A) N(a|s) = size s.
 Proof.
 elim: s => [|a s IH] /=.
 + by apply big1_eq.
@@ -29,17 +41,27 @@ elim: s => [|a s IH] /=.
   by move=> i; rewrite eq_sym.
 Qed.
 
-Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl 0%:R).
+Lemma num_occ_flatten (a:A) ss :
+  N(a|flatten ss) = \sum_(s <- ss) N(a|s).
+Proof.
+rewrite /num_occ.
+elim: ss => [|s ss IH] /=.
+  by rewrite big_nil.
+by rewrite big_cons /= count_cat IH.
+Qed.
 
-Hint Resolve Rle_refl pos_INR.
+End num_occ.
 
-Section entropy.
-Variable S : seq A.
-Hypothesis S_nonempty : size S != O.
+Section seq_nat_dist.
 
-Definition pchar c := N(c|S) / size S.
+Variable f : A -> nat.
+Variable total : nat.
+Hypothesis sum_f_total : \sum_(a in A) f a = total.
+Hypothesis total_gt0 : total != O.
 
-Lemma pchar_pos c : 0 <= pchar c.
+Let f_div_total (a : A) := f a / total.
+
+Lemma f_div_total_pos c : 0 <= f_div_total c.
 Proof.
 apply mulR_ge0 => //.
 apply /Rlt_le /invR_gt0.
@@ -47,44 +69,85 @@ apply /lt_0_INR /ltP.
 by rewrite lt0n.
 Qed.
 
-Lemma pchar_1 : \rsum_(a in A) (mkPosFun pchar_pos) a = 1.
+Lemma f_div_total_1 : \rsum_(a in A) (mkPosFun f_div_total_pos) a = 1.
 Proof.
-rewrite /pchar -big_distrl -big_morph_plus_INR.
-by rewrite sum_num_occ /= mulRV // INR_eq0.
+rewrite /f_div_total -big_distrl -big_morph_plus_INR.
+by rewrite sum_f_total /= mulRV // INR_eq0.
 Qed.
 
-Definition Hs0 := `H (mkDist pchar_1).
+Definition seq_nat_dist := mkDist f_div_total_1.
+
+End seq_nat_dist.
+
+Section entropy.
+
+Variable S : seq A.
+Hypothesis S_nonempty : size S != O.
+
+Definition pchar c := N(c|S) / size S.
+
+Definition pchar_dist := seq_nat_dist (sum_num_occ S) S_nonempty.
+
+Definition Hs0 := `H pchar_dist.
 End entropy.
 
+Section string_concat.
+
+(*
 Definition Hs (s : seq A) :=
  \rsum_(a in A)
   if N(a|s) == 0%nat then 0 else
   N(a|s) / size s * log (size s / N(a|s)).
-
+*)
 
 Definition nHs (s : seq A) :=
  \rsum_(a in A)
   if N(a|s) == 0%nat then 0 else
   N(a|s) * log (size s / N(a|s)).
 
-Lemma szHs_is_nHs s : size s * Hs s = nHs s.
+Definition mulnRdep (x : nat) (y : x != O -> R) : R.
+case/boolP: (x == O) => Hx.
++ exact 0.  
++ exact (x * y Hx).
+Defined.
+Arguments mulnRdep x y : clear implicits.
+
+Lemma mulnRdep_0 y : mulnRdep 0 y = 0.
+Proof. rewrite /mulnRdep /=. by destruct boolP. Qed.
+
+Lemma mulnRdep_nz x y (Hx : x != O) : mulnRdep x y = x * y Hx.
 Proof.
-rewrite /Hs /nHs big_distrr.
-apply eq_bigr => i _ /=.
-case: ifP => Hnum.
-  by rewrite mulR0.
-rewrite /Rdiv (mulRC N(i|s)) 2!(mulRA _%:R).
-rewrite !mulRV ?mul1R // ?INR_eq0.
-apply/eqP => Hsz.
-move: (count_size (pred1 i) s).
-by rewrite Hsz leqn0 Hnum.
+rewrite /mulnRdep /=.
+destruct boolP.
+  by elimtype False; rewrite i in Hx.
+do 2!f_equal.
+apply eq_irrelevance.
 Qed.
 
-Lemma log_concave_gt0 x y t :
-  0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
-Admitted.
-
-Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
+Lemma szHs_is_nHs s : mulnRdep (size s) (fun H => Hs0 H) = nHs s.
+Proof.
+rewrite /mulnRdep; destruct boolP.
+  rewrite /nHs (eq_bigr (fun a => 0)); first by rewrite big1.
+  move=> a _.
+  suff -> : N(a|s) == O. done.
+  by rewrite /num_occ -leqn0 -(eqP i) count_size.
+rewrite /Hs0 /entropy /nHs /pchar_dist /=.
+rewrite -mulRN1 big_distrl big_distrr /=.
+apply eq_bigr => a _ /=.
+case: ifP => [/eqP -> | Hnum].
+  by rewrite !mulRA !simplR.
+rewrite /Rdiv (mulRC N(a|s)) 3!(mulRA _%:R).
+rewrite !mulRV ?mul1R // ?INR_eq0 //.
+rewrite -mulRA mulRN1 /log /Log -mulNR.
+rewrite -ln_Rinv.
+  rewrite invRM ?invRK //.
+  + by apply /eqP; rewrite INR_eq0.
+  + by apply /eqP /invR_neq0; rewrite INR_eq0.
+  + by apply /eqP; rewrite INR_eq0 Hnum.
+apply mulR_gt0.
+  by apply /invR_gt0 /lt_0_INR /ltP; rewrite lt0n.
+by apply /lt_0_INR /ltP; rewrite lt0n Hnum.
+Qed.
 
 Lemma Rpos_convex : convex_interval (fun x =>  0 < x).
 Proof.
@@ -102,18 +165,11 @@ Definition Rpos_interval := mkInterval Rpos_convex.
 Lemma log_concave : concave_in Rpos_interval log.
 Proof. by move=> x; apply log_concave_gt0. Qed.
 
-Lemma num_occ_flatten (a:A) ss :
-  N(a|flatten ss) = \sum_(s <- ss) N(a|s).
-Proof.
-rewrite /num_occ.
-elim: ss => [|s ss IH] /=.
-  by rewrite big_nil.
-by rewrite big_cons /= count_cat IH.
-Qed.
-
 Theorem concats_entropy ss :
-  \rsum_(s <- ss) size s * Hs s
-       <= size (flatten ss) * Hs (flatten ss).
+(*  \rsum_(s <- ss) size s * Hs s
+       <= size (flatten ss) * Hs (flatten ss). *)
+  \rsum_(s <- ss) mulnRdep (size s) (fun H => Hs0 H)
+       <= mulnRdep (size (flatten ss)) (fun H => Hs0 H).
 Proof.
 (* (1) First simplify formula *)
 rewrite szHs_is_nHs.
@@ -228,39 +284,3 @@ by rewrite size_flatten sumn_big_addn big_map.
 Qed.
 
 End string_concat.
-
-Section zero_order_empirical_entropy.
-
-Local Open Scope proba_scope.
-
-Variable A : finType.
-Hypothesis A0 : (0 < #|A|)%nat.
-
-Definition dist_of_seq (s : seq A) : {dist A}.
-Proof.
-case/card_gt0P/sigW : A0 => a _.
-pose f := fun a => if a \in s then N(a|s)%:R / (size s)%:R else 0.
-have f0 : forall a : A, 0 <= f a.
-  move=> b; rewrite /f; case: ifPn => _; last exact/Rle_refl.
-  apply mulR_ge0; first by apply/RleP; rewrite leR0n.
-  apply/ltRW/invR_gt0.
-  admit.
-pose fpos := mkPosFun f0.
-have f1 : \rsum_(a in A) f a = 1.
-  rewrite (bigID [pred x | a \in s]) /=.
-  admit.
-exact: (makeDist f0 f1).
-Admitted.
-
-Require Import entropy.
-Local Open Scope entropy_scope.
-
-Definition H0 (s : seq A) := `H (dist_of_seq s).
-
-Lemma H0E (s : seq A) : H0 s = Hs s.
-Proof.
-rewrite /H0 /entropy /Hs (big_morph _ morph_Ropp oppR0); apply/eq_bigr => a _.
-(* TODO *)
-Abort.
-
-End zero_order_empirical_entropy.
