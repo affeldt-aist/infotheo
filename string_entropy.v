@@ -17,19 +17,46 @@ Local Coercion INR : nat >-> R.
 Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
 Local Notation "n %:R" := (INR n).
 
-Lemma log_concave_gt0 x y t :
-  0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
-Admitted.
-
-Section string.
-
-Variable A : finType.
-
 Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
 
 Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl 0%:R).
 
 Hint Resolve Rle_refl pos_INR.
+
+Lemma log_concave_gt0 x y t :
+  0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
+Admitted.
+
+Section seq_nat_dist.
+
+Variable A : finType.
+Variable f : A -> nat.
+Variable total : nat.
+Hypothesis sum_f_total : \sum_(a in A) f a = total.
+Hypothesis total_gt0 : total != O.
+
+Let f_div_total (a : A) := f a / total.
+
+Lemma f_div_total_pos c : 0 <= f_div_total c.
+Proof.
+apply mulR_ge0 => //.
+apply /Rlt_le /invR_gt0 /lt_0_INR /ltP.
+by rewrite lt0n.
+Qed.
+
+Lemma f_div_total_1 : \rsum_(a in A) (mkPosFun f_div_total_pos) a = 1.
+Proof.
+rewrite /f_div_total -big_distrl -big_morph_plus_INR.
+by rewrite sum_f_total /= mulRV // INR_eq0.
+Qed.
+
+Definition seq_nat_dist := mkDist f_div_total_1.
+
+End seq_nat_dist.
+
+Section string.
+
+Variable A : finType.
 
 Section num_occ.
 
@@ -45,42 +72,13 @@ Lemma num_occ_flatten (a:A) ss :
   N(a|flatten ss) = \sum_(s <- ss) N(a|s).
 Proof.
 rewrite /num_occ.
-elim: ss => [|s ss IH] /=.
-  by rewrite big_nil.
+elim: ss => [|s ss IH] /=; first by rewrite big_nil.
 by rewrite big_cons /= count_cat IH.
 Qed.
 
 End num_occ.
 
-Section seq_nat_dist.
-
-Variable f : A -> nat.
-Variable total : nat.
-Hypothesis sum_f_total : \sum_(a in A) f a = total.
-Hypothesis total_gt0 : total != O.
-
-Let f_div_total (a : A) := f a / total.
-
-Lemma f_div_total_pos c : 0 <= f_div_total c.
-Proof.
-apply mulR_ge0 => //.
-apply /Rlt_le /invR_gt0.
-apply /lt_0_INR /ltP.
-by rewrite lt0n.
-Qed.
-
-Lemma f_div_total_1 : \rsum_(a in A) (mkPosFun f_div_total_pos) a = 1.
-Proof.
-rewrite /f_div_total -big_distrl -big_morph_plus_INR.
-by rewrite sum_f_total /= mulRV // INR_eq0.
-Qed.
-
-Definition seq_nat_dist := mkDist f_div_total_1.
-
-End seq_nat_dist.
-
 Section entropy.
-
 Variable S : seq A.
 Hypothesis S_nonempty : size S != O.
 
@@ -113,14 +111,12 @@ rewrite -mulRN1 big_distrl big_distrr /=.
 apply eq_bigr => a _ /=.
 case: ifP => [/eqP -> | Hnum].
   by rewrite !mulRA !simplR.
-rewrite /Rdiv (mulRC N(a|s)) 3!(mulRA _%:R).
-rewrite !mulRV ?mul1R // ?INR_eq0 //.
-rewrite -mulRA mulRN1 /log /Log -mulNR.
-rewrite -ln_Rinv.
-  rewrite invRM ?invRK //.
-  + by apply /eqP; rewrite INR_eq0.
-  + by apply /eqP /invR_neq0; rewrite INR_eq0.
-  + by apply /eqP; rewrite INR_eq0 Hnum.
+rewrite /Rdiv (mulRC N(a|s)) 3!(mulRA _%:R) !mulRV ?mul1R // ?INR_eq0 //.
+rewrite -mulRA mulRN1 /log /Log -mulNR -ln_Rinv.
+  rewrite invRM ?invRK //; apply /eqP.
+  + by rewrite INR_eq0.
+  + by apply /invR_neq0; rewrite INR_eq0.
+  + by rewrite INR_eq0 Hnum.
 apply mulR_gt0.
   by apply /invR_gt0 /lt_0_INR /ltP; rewrite lt0n.
 by apply /lt_0_INR /ltP; rewrite lt0n Hnum.
@@ -128,7 +124,7 @@ Qed.
 
 Definition mulnRdep (x : nat) (y : x != O -> R) : R.
 case/boolP: (x == O) => Hx.
-+ exact 0.  
++ exact 0.
 + exact (x * y Hx).
 Defined.
 Arguments mulnRdep x y : clear implicits.
@@ -141,18 +137,15 @@ Proof.
 rewrite /mulnRdep /=.
 destruct boolP.
   by elimtype False; rewrite i in Hx.
-do 2!f_equal.
-apply eq_irrelevance.
+do 2!f_equal; apply eq_irrelevance.
 Qed.
 
 Lemma szHs_is_nHs_full s : mulnRdep (size s) (fun H => Hs0 H) = nHs s.
 Proof.
-rewrite /mulnRdep; destruct boolP.
-  rewrite /nHs (eq_bigr (fun a => 0)); first by rewrite big1.
-  move=> a _.
-  suff -> : N(a|s) == O. done.
-  by rewrite /num_occ -leqn0 -(eqP i) count_size.
-by apply szHs_is_nHs.
+rewrite /mulnRdep; destruct boolP; last by apply szHs_is_nHs.
+rewrite /nHs (eq_bigr (fun a => 0)); first by rewrite big1.
+move=> a _; suff -> : N(a|s) == O by [].
+by rewrite /num_occ -leqn0 -(eqP i) count_size.
 Qed.
 
 Lemma Rpos_convex : convex_interval (fun x =>  0 < x).
@@ -170,23 +163,6 @@ Definition Rpos_interval := mkInterval Rpos_convex.
 
 Lemma log_concave : concave_in Rpos_interval log.
 Proof. by move=> x; apply log_concave_gt0. Qed.
-
-Lemma concats_f_1 a ss' :
-  ss' != [::] ->
- (forall s : seq_eqType A, s \in ss' -> (0 < N( a | s))%nat) ->
- let f := fun i => N(a|tnth (in_tuple ss') i) / N(a|flatten ss') in
- forall f_nonneg,
- \rsum_(j < size ss') (@mkPosFun _ f f_nonneg) j = 1.
-Proof.
-move=> Hss' Hnum f f_nonneg.
-rewrite /= /f -big_distrl /= num_occ_flatten.
-rewrite -big_morph_plus_INR.
-rewrite -(big_tnth _ _ _ xpredT).
-rewrite mulRV // INR_eq0.
-destruct ss' => //=.
-rewrite big_cons addn_eq0 negb_and -lt0n.
-by rewrite Hnum // in_cons eqxx.
-Qed.
 
 Theorem concats_entropy ss :
 (*  \rsum_(s <- ss) size s * Hs s
@@ -251,26 +227,23 @@ apply (Rle_trans _ ((\sum_(i <- ss') N(a|i))%:R *
     (bigID (fun s => N(a|s) == O)) /=.
   by apply leq_addl.
 (* (4) Prepare to use jensen_dist_concave *)
-set f := fun i =>
-  N(a|tnth (in_tuple ss') i) / N(a|flatten ss').
+have Htotal := esym (num_occ_flatten a ss').
+rewrite big_tnth in Htotal.
+have Hnum2 : N(a|flatten ss') != O.
+  rewrite -lt0n -ltR0n; exact/RltP.
+set d := seq_nat_dist Htotal Hnum2.
 set r := fun i =>
   (size (tnth (in_tuple ss') i)) / N(a|tnth (in_tuple ss') i).
-have f_pos i : 0 < f i.
-  apply Rlt_mult_inv_pos => //.
-  apply /lt_0_INR /ltP.
-  by rewrite Hnum // mem_tnth.
-have f_nonneg i : 0 <= f i by apply Rlt_le.
-set d := mkDist (concats_f_1 Hss' Hnum f_nonneg).
 have Hr: forall i, Rpos_interval (r i).
   rewrite /r /= => i.
-  apply Rlt_mult_inv_pos.
-    apply /lt_0_INR /ltP /(@leq_trans N(a|tnth (in_tuple ss') i)).
+  apply Rlt_mult_inv_pos; apply /lt_0_INR /ltP.
+    apply (@leq_trans N(a|tnth (in_tuple ss') i)).
       by rewrite Hnum // mem_tnth.
     by apply count_size.
-  by apply /lt_0_INR /ltP; rewrite Hnum // mem_tnth.
+  by apply /Hnum /mem_tnth.
 (* (5) Apply Jensen *)
 move: (jensen_dist_concave log_concave d Hr).
-rewrite /d /f /r /=.
+rewrite /d /r /=.
 rewrite -(big_tnth _ _ _ xpredT
   (fun s =>
      log ((size s) / N(a|s)) *
