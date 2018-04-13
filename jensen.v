@@ -54,12 +54,11 @@ Definition strictly_concave (f : R -> R) := forall x y t : R,
 End concave.
 
 Lemma dist_ind (A : finType) (P : dist A -> Prop) :
-  (forall a, #|dist_supp a| = 1%nat -> P a) ->
   (forall n : nat, (forall a, #|dist_supp a| = n -> P a) ->
-    forall a, #|dist_supp a| = n.+1 -> P a) ->
+    forall a b, #|dist_supp a| = n.+1 -> a b != 0 -> P a) ->
   forall d, P d.
 Proof.
-move=> H0 H1 d.
+move=> H1 d.
 move: {-2}(#|dist_supp d|) (erefl (#|dist_supp d|)) => n; move: n d.
 elim=> [d /esym /card0_eq Hd0|].
   move: (pmf1 d).
@@ -68,7 +67,10 @@ elim=> [d /esym /card0_eq Hd0|].
     by elim: (gtR_eqF _ _ Rlt_0_1).
   by rewrite Hd0.
 move=> n IH d n13.
-apply (H1 n) => // d' A2; by apply IH.
+have [b Hb] : exists b : A, d b != 0.
+  suff : {x | x \in dist_supp d} by case => a; rewrite inE => ?; exists a.
+  apply/sigW/set0Pn; by rewrite -cards_eq0 -n13.
+by refine (H1 n _ _ _ _ Hb) => // d' A2; apply IH.
 Qed.
 
 Section jensen_inequality.
@@ -78,12 +80,27 @@ Variable D : interval.
 Hypothesis convex_f : convex_in D f.
 Variables A : finType.
 
-Lemma dist_supp_single X (a:A) : dist_supp X = [set a] -> X a = 1. 
+Lemma dist_supp_singleP (X : dist A) a :
+  reflect (X a = 1) (dist_supp X == [set a]).
 Proof.
-move=> Ha.
-rewrite -(pmf1 X).
-rewrite (eq_bigr (fun i => 1 * X i)); last by move=> *; rewrite mul1R.
-by rewrite rsum_dist_supp Ha big_set1 mul1R.
+apply: (iffP idP).
+  move/eqP => Ha.
+  rewrite -(pmf1 X).
+  rewrite (eq_bigr (fun i => 1 * X i)); last by move=> *; rewrite mul1R.
+  by rewrite rsum_dist_supp Ha big_set1 mul1R.
+move=> Xa1.
+have H : forall b : A, b != a -> X b = 0.
+  apply/(@prsumr_eq0P _ [pred x | x != a] X).
+    move=> ? _; exact/dist_nonneg.
+  move/eqP : (pmf1 X).
+  by rewrite (bigD1 a) //= Xa1 eq_sym addRC -subR_eq subRR => /eqP <-.
+apply/eqP/setP => b.
+rewrite !inE.
+case/boolP: (b == a) => Hb.
+  rewrite (eqP Hb) Xa1; apply/eqP => Hb'.
+  apply (Rlt_irrefl 1).
+  by rewrite {1}Hb'.
+by rewrite H // eqxx.
 Qed.
 
 Hint Resolve Rle_refl.
@@ -98,24 +115,10 @@ rewrite [in X in _ <= X]rsum_dist_supp [in X in X <= _]rsum_dist_supp /=.
 apply: (@dist_ind A (fun X =>
    f (\rsum_(a in dist_supp X) r a * X a) <=
    \rsum_(a in dist_supp X) f (r a) * X a /\ _)) => //.
-  move=> {X}X /eqP/cards1P [b Hb].
-  by rewrite Hb !big_set1 dist_supp_single // !mulR1.
-move=> n IH {X}X cardA.
-have [b Hb] : exists b : A, X b != 0.
-  suff : {x | x \in dist_supp X} by case => a; rewrite inE => ?; exists a.
-  apply/sigW/set0Pn; by rewrite -cards_eq0 cardA.
-case/boolP : (X b == 1) => [/eqP |] Xb1.
-  (* NB: lemma? *)
-  have H : forall a : A, a != b -> X a = 0.
-    apply/(@prsumr_eq0P _ [pred x | x != b] X).
-      move=> ? _; exact/dist_nonneg.
-      move/eqP : (pmf1 X).
-      by rewrite (bigD1 b) //= Xb1 eq_sym addRC -subR_eq subRR => /eqP <-.
-  rewrite (bigD1 b) //=; last by rewrite inE Xb1; exact/eqP/R1_neq_R0.
-  rewrite Xb1 big1; last by move=> a /andP[? ?]; rewrite H // ?mulR0.
-  rewrite (bigD1 b) //=; last by rewrite inE Xb1; exact/eqP/R1_neq_R0.
-  rewrite Xb1 big1; last by move=> a /andP[? ?]; rewrite H // ?mulR0.
-  by rewrite !addR0 !mulR1.
+move=> n IH {X}X b cardA Hb.
+case/boolP : (X b == 1) => Xb1.
+  move/dist_supp_singleP: (eqP Xb1) => /eqP ->.
+  by rewrite !big_set1 (eqP Xb1) !mulR1.
 have HXb1: 1 - X b != 0.
   by apply: contra Xb1; rewrite subR_eq0 eq_sym.
 set d := D1Dist.d Xb1.
