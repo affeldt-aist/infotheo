@@ -54,9 +54,9 @@ Definition strictly_concave (f : R -> R) := forall x y t : R,
 End concave.
 
 Lemma dist_ind (A : finType) (P : dist A -> Prop) :
-  (forall n : nat, (forall a, #|dist_supp a| = n -> P a) ->
-    forall a b, #|dist_supp a| = n.+1 -> a b != 0 -> P a) ->
-  forall d, P d.
+  (forall n : nat, (forall X, #|dist_supp X| = n -> P X) ->
+    forall X b, #|dist_supp X| = n.+1 -> X b != 0 -> P X) ->
+  forall X, P X.
 Proof.
 move=> H1 d.
 move: {-2}(#|dist_supp d|) (erefl (#|dist_supp d|)) => n; move: n d.
