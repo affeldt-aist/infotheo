@@ -272,3 +272,5 @@ by rewrite size_flatten sumn_big_addn big_map.
 Qed.
 
 End string_concat.
+
+End string.
