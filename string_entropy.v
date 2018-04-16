@@ -274,3 +274,40 @@ Qed.
 End string_concat.
 
 End string.
+
+(* tentative definition *)
+Section higher_order_empirical_entropy.
+
+Variables (A : finType) (l : seq A).
+Hypothesis A0 : (O < #|A|)%nat.
+Let n := size l.
+Let def : A. Proof. move/card_gt0P : A0 => /sigW[def _]; exact def. Defined.
+Hypothesis l0 : n != O.
+
+(* the string consisting of the concatenation of the symbols following w in s *)
+Fixpoint takes {k : nat} (w : k.-tuple A) (s : seq A) {struct s} : seq A :=
+  if s is _ :: t then
+    let s' := takes w t in
+    if take k s == w then nth def (drop k s) O :: s' else s'
+  else
+    [::].
+
+Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
+Local Notation "n %:R" := (INR n).
+
+(* sample ref: https://www.dcc.uchile.cl/~gnavarro/ps/jea08.2.pdf *)
+Definition hoH (k : nat) := / n%:R *
+  \rsum_(w in {: k.-tuple A}) #|takes w l|%:R *
+    match Bool.bool_dec (size w != O) true with
+      | left H => `H (num_occ_dist H)
+      | _ => 0
+    end.
+
+Lemma hoH_decr (k : nat) : hoH k.+1 <= hoH k.
+Proof.
+rewrite /hoH; apply/RleP; rewrite Rle_pmul2l; last first.
+  by apply/RltP/invR_gt0/RltP; rewrite ltR0n lt0n.
+(* TODO *)
+Abort.
+
+End higher_order_empirical_entropy.
