@@ -2047,7 +2047,7 @@ have Hh': (#|id'| - #|id_of_kind k i :: s| <= h)%nat.
 rewrite /t /=.
 case Has: (Some a == prec_node s).
   destruct s; first done.
-  rewrite /= (inj_eq Some_inj) in Has.
+  rewrite /= (inj_eq (@Some_inj _)) in Has.
   (* Upper node is a. Just have to check that current node is b,
      since we know the down message by hypothesis. *)
   case Hb0: (b == id_of_kind k i).

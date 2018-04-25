@@ -51,7 +51,7 @@ elim=> [i Hi [] | i Hi [] | j /=].
   by destruct (nat_of_pos i).
   destruct j => //=;
     rewrite NatTrec.doubleE => absurd ;
-      have [//] : False ;
+      exfalso ;
         move: (@nat_of_pos_not_0 j) => H' ;
           by destruct (nat_of_pos j).
 Qed.
