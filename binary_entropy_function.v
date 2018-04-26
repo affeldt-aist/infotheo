@@ -69,7 +69,7 @@ destruct (Rlt_le_dec 0 t) => /=; last first.
   suff : False by done.
   fourier.
 rewrite derive_pt_comp /= mulRA.
-apply Rle_trans with (- ln t + ln (1 - t)); last first.
+apply (@leR_trans (- ln t + ln (1 - t))); last first.
   apply Req_le; field.
   split=> ?; fourier.
 rewrite -ln_Rinv // -ln_mult; last 2 first.
@@ -96,7 +96,7 @@ destruct (Rlt_le_dec 0 t) => /=; last first.
   suff : False by done.
   fourier.
 rewrite derive_pt_comp /= mulRA.
-apply Rle_trans with (ln t - ln (1 - t)); last first.
+apply (@leR_trans (ln t - ln (1 - t))); last first.
   apply Req_le; field.
   split => abs; fourier.
 suff : ln ( 1 - t) <= ln t.
@@ -107,7 +107,7 @@ Qed.
 Lemma H2ln_max (q : R) : 0 < q < 1 -> - q * ln q - (1 - q) * ln (1 - q) <= ln 2.
 Proof.
 move=> [Hq0 Hq1].
-apply Rle_trans with (H2ln (1/2)); last first.
+apply (@leR_trans (H2ln (1/2))); last first.
   apply Req_le.
   rewrite /H2ln (_ : 1 - 1/2 = 1/2); last by field.
   rewrite -mulRBl (_ : - _ - _ = - 1); last by field.

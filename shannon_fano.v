@@ -28,17 +28,17 @@ exfalso; apply/r0/eqP; rewrite subR_eq0; by apply/eqP.
 Qed.
 
 Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.
-Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(Rle_trans _ _ _ _ K). Qed.
+Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(leR_trans _ K). Qed.
 
 Lemma leR_wiexpn2l x :
   0 <= x -> x <= 1 -> {homo (pow x) : m n / (n <= m)%nat >-> m <= n}.
 Proof.
-move/RleP; rewrite le0R => /orP[/eqP -> _ m n|/RltP x0 x1 m n /leP nm].
+move/leRP; rewrite le0R => /orP[/eqP -> _ m n|/ltRP x0 x1 m n /leP nm].
   case: n => [|n nm].
-    case: m => [_ |m _]; first exact: Rle_refl.
+    case: m => [_ |m _]; first exact/leRR.
     by rewrite pow_ne_zero.
   rewrite pow_ne_zero; last by case: m nm.
-  rewrite pow_ne_zero //; exact/Rle_refl.
+  rewrite pow_ne_zero //; exact/leRR.
 apply Rle_inv_conv => //.
 exact/pow_gt0.
 exact/pow_gt0.
@@ -54,7 +54,7 @@ Proof. move=> x1 m n /leP nm; exact/Rle_pow. Qed.
 
 Lemma invR_gt1 x : 0 < x -> (1 <b / x) = (x <b 1).
 Proof.
-move=> x0; apply/idP/idP => [|] /RltP x1; apply/RltP; last first.
+move=> x0; apply/idP/idP => [|] /ltRP x1; apply/ltRP; last first.
   rewrite -invR1; apply Rinv_lt_contravar => //; by rewrite mulR1.
 move/Rinv_lt_contravar : x1; rewrite mul1R invR1 invRK; last exact/gtR_eqF.
 apply; exact/invR_gt0.
@@ -85,7 +85,7 @@ Section shannon_fano_def.
 Variables (A T : finType) (P : {dist A}).
 
 Definition is_shannon_fano (f : Encoding.t A T) :=
-  forall s, size (f s) = Zabs_nat (ceil (Log (INR #|T|) (1 / P s)%R)).
+  forall s, size (f s) = Z.abs_nat (ceil (Log (INR #|T|) (1 / P s)%R)).
 
 End shannon_fano_def.
 
@@ -114,25 +114,24 @@ rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
 apply ler_rsum => i _.
 rewrite H.
-have Pi0 : 0 < P i by apply/RltP; rewrite lt0R Pr_pos; exact/RleP/dist_nonneg.
-apply Rle_trans with (Exp #|T|%:R (- Log #|T|%:R (1 / P i))); last first.
+have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos; exact/leRP/dist_nonneg.
+apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
   rewrite div1R LogV //.
-  rewrite oppRK LogK //.
-  exact/Rle_refl.
-  by apply/RltP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
-rewrite pow_Exp; last by apply/RltP; rewrite ltR0n card_ord.
+  rewrite oppRK LogK //; first exact/leRR.
+  by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
+rewrite pow_Exp; last by apply/ltRP; rewrite ltR0n card_ord.
 rewrite Exp_Ropp.
 apply/leR_inv => //.
-  rewrite inE; exact/RltP/Exp_gt0.
+  rewrite inE; exact/ltRP/Exp_gt0.
 apply Exp_le_increasing.
-  by apply/RltP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
+  by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite INR_Zabs_nat; last first.
   case/boolP : (P i == 1) => [/eqP ->|Pj1].
-    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_pos/Rle_refl.
+    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_pos/leRR.
   apply/leR0ceil/ltRW/ltR0Log.
-  by apply/RltP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
+  by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
   rewrite div1R.
-  apply/RltP; rewrite invR_gt1 // ltR_neqAle Pj1 /=; exact/RleP/dist_max.
+  apply/ltRP; rewrite invR_gt1 // ltR_neqAle Pj1 /=; exact/leRP/dist_max.
 by set x := Log _ _; case: (ceilP x).
 Qed.
 
@@ -162,14 +161,14 @@ Lemma shannon_fano_average_entropy : is_shannon_fano P f ->
   average P f < `H P  + 1.
 Proof.
 move=> H; rewrite /average.
-apply Rlt_le_trans with (\rsum_(x in A) P x * (- Log (INR #|T|) (P x) + 1)).
-  apply ltR_rsum; [by apply dist_domain_not_empty|move=> i].
+apply (@ltR_leR_trans (\rsum_(x in A) P x * (- Log (INR #|T|) (P x) + 1))).
+  apply ltR_rsum; [exact: dist_domain_not_empty|move=> i].
   apply Rmult_lt_compat_l.
-    apply/RltP; rewrite lt0R Pr_pos /=; exact/RleP/dist_nonneg.
+    apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_nonneg.
   rewrite H.
   rewrite (_ : INR #|T| = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
-  have Pi0 : 0 < P i by apply/RltP; rewrite lt0R Pr_pos /=; exact/RleP/dist_nonneg.
+  have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_nonneg.
   rewrite INR_Zabs_nat; last first.
     apply/leR0ceil.
     rewrite /x div1R /log LogV //.
@@ -185,7 +184,7 @@ rewrite {}/h big_split /=; apply Rplus_le_compat.
   apply Req_le.
   rewrite /entropy (big_morph _ morph_Ropp oppR0); apply eq_bigr => i _.
   by rewrite card_ord (_ : INR 2 = 2).
-rewrite pmf1; exact/Rle_refl.
+rewrite pmf1; exact/leRR.
 Qed.
 
 End shannon_fano_suboptimal.

@@ -92,18 +92,18 @@ Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
 
 (* TODO: move the following to ssrR.v? *)
 Lemma leR_subr_addr x y z : (x <b= y - z) = (x + z <b= y).
-Proof. apply/idP/idP => /RleP ?; apply/RleP; fourier. Qed.
+Proof. apply/idP/idP => /leRP ?; apply/leRP; fourier. Qed.
 
 Lemma leR_subl_addr x y z : (x - y <b= z) = (x <b= z + y).
-Proof. apply/idP/idP => /RleP ?; apply/RleP; fourier. Qed.
+Proof. apply/idP/idP => /leRP ?; apply/leRP; fourier. Qed.
 
 Lemma leR_maxl x y z : (max(y, z) <b= x) = (y <b= x) && (z <b= x).
 Proof.
-apply/idP/idP => [/RleP|/andP[/RleP H1 /RleP H2]]; last first.
-  apply/RleP; by apply Rmax_case_strong.
-apply Rmax_case_strong => /RleP H1 /RleP H2.
-  rewrite H2; apply/RleP/Rle_trans; apply/RleP; by eauto.
-rewrite H2 andbC; apply/RleP/Rle_trans; apply/RleP; by eauto.
+apply/idP/idP => [/leRP|/andP[/leRP H1 /leRP H2]]; last first.
+  apply/leRP; by apply Rmax_case_strong.
+apply Rmax_case_strong => /leRP H1 /leRP H2.
+  rewrite H2; apply/leRP/leR_trans; apply/leRP; by eauto.
+rewrite H2 andbC; apply/leRP/leR_trans; apply/leRP; by eauto.
 Qed.
 
 Definition maxRA : associative Rmax := Rmax_assoc.
@@ -145,7 +145,7 @@ rewrite -[X in _ < X]mulR1.
 apply Rmult_lt_compat_l => //.
 rewrite -invR1.
 apply Rinv_1_lt_contravar => //.
-exact/Rle_refl.
+exact/leRR.
 Qed.
 
 (** Lemmas about power *)
@@ -214,7 +214,7 @@ Proof.
 move=> x_pos.
 elim => [/= | n IH] => //.
 rewrite -(mulR0 0).
-apply Rmult_le_compat => //; exact/Rle_refl.
+apply Rmult_le_compat => //; exact/leRR.
 Qed.
 
 (* TODO: rename *)
@@ -233,7 +233,7 @@ Proof.
 move=> Hr.
 apply lt_IZR => /=.
 move/Rgt_lt : (proj1 (archimed r)) => Hr'.
-by apply Rle_lt_trans with r.
+exact: (leR_ltR_trans Hr).
 Qed.
 
 Lemma Rle_up_pos r : 0 <= r -> r <= IZR (Zabs (up r)).
@@ -249,8 +249,8 @@ Qed.
 Lemma Rle_up a : a <= IZR (Zabs (up a)).
 Proof.
 case: (Rlt_le_dec a 0) => Ha; last by apply Rle_up_pos.
-apply Rle_trans with 0; first by fourier.
-by apply IZR_le, Zabs_pos.
+apply (@leR_trans  0); first by fourier.
+exact/IZR_le/Zabs_pos.
 Qed.
 
 Lemma up_Int_part r : (up r = Int_part r + 1)%Z.
@@ -272,7 +272,7 @@ Lemma frac_part_INR m : frac_part (INR m) = 0.
 Proof.
 rewrite /frac_part /Int_part -(up_tech _ (Z_of_nat m)).
 rewrite minus_IZR plus_IZR /= -INR_IZR_INZ; by field.
-rewrite -INR_IZR_INZ; by apply Rle_refl.
+rewrite -INR_IZR_INZ; exact/leRR.
 rewrite {1}INR_IZR_INZ; apply IZR_lt.
 by apply Z.lt_add_pos_r.
 Qed.
@@ -312,7 +312,7 @@ rewrite -(tech_up _ ((up a - 1) * (up b - 1) + 1)).
   rewrite ?plus_IZR ?minus_IZR ?mult_IZR ?minus_IZR // Ha Hb.
   rewrite (_ : forall a, a + 1 - 1 = a); last by move=> *; field.
   rewrite (_ : forall a, a + 1 - 1 = a); last by move=> *; field.
-  by apply Rle_refl.
+  exact/leRR.
 Qed.
 
 Lemma frac_part_pow a : frac_part a = 0 -> forall n : nat, frac_part (a ^ n) = 0.
@@ -339,20 +339,20 @@ Proof. move: (Rabs_no_R0 r); tauto. Qed.
 
 Lemma ltR_Rabsl a b : Rabs a <b b = (- b <b a <b b).
 Proof.
-apply/idP/idP => [/RltP/Rabs_def2[? ?]|/andP[]/RltP ? /RltP ?].
-apply/andP; split; exact/RltP.
-exact/RltP/Rabs_def1.
+apply/idP/idP => [/ltRP/Rabs_def2[? ?]|/andP[]/ltRP ? /ltRP ?].
+apply/andP; split; exact/ltRP.
+exact/ltRP/Rabs_def1.
 Qed.
 
 Lemma leR_Rabsl a b : Rabs a <b= b = (- b <b= a <b= b).
 Proof.
-apply/idP/idP => [/RleP|]; last first.
-  case/andP => /RleP H1 /RleP H2; exact/RleP/Rabs_le.
+apply/idP/idP => [/leRP|]; last first.
+  case/andP => /leRP H1 /leRP H2; exact/leRP/Rabs_le.
 case: (Rlt_le_dec a 0) => h.
   rewrite Rabs_left // => ?.
-  apply/andP; split; apply/RleP; fourier.
+  apply/andP; split; apply/leRP; fourier.
 rewrite Rabs_right; last by apply Rle_ge.
-move=> ?; apply/andP; split; apply/RleP; fourier.
+move=> ?; apply/andP; split; apply/leRP; fourier.
 Qed.
 
 Lemma Rabs_sq x : Rabs x ^ 2 = x ^ 2.

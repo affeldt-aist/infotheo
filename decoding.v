@@ -176,9 +176,9 @@ rewrite -2!(big_morph _ morph_Ropp oppR0).
 apply Ropp_le_ge_contravar.
 rewrite /Pr (exchange_big_dep xpredT) //= [in X in (_ <= X)%R](exchange_big_dep xpredT) //=.
 apply ler_rsum => /= tb _.
-apply (@Rle_trans _ (\rsum_(m| phi tb == Some m) (W ``(tb | enc m)))).
+apply (@leR_trans (\rsum_(m| phi tb == Some m) (W ``(tb | enc m)))).
   apply Req_le, eq_bigl => m; by rewrite inE.
-apply (@Rle_trans _ (\rsum_(m| dec tb == Some m) (W ``(tb | enc m)))); last first.
+apply (@leR_trans (\rsum_(m| dec tb == Some m) (W ``(tb | enc m)))); last first.
   apply Req_le, eq_bigl => m; by rewrite inE.
 (* show that phi_ML succeeds more often than phi *)
 case/boolP : (dec tb == None) => dectb.
@@ -204,9 +204,9 @@ have [m1 Hm1] : exists m', dec tb = Some m'.
 have [m2 Hm2] : exists m', phi tb = Some m'.
   destruct (phi tb) => //; by exists s.
 rewrite Hm1 {}Hm2.
-apply (@Rle_trans _ (\rsum_(m| m == m2) W ``(tb | enc m))).
+apply (@leR_trans (\rsum_(m| m == m2) W ``(tb | enc m))).
   by apply Req_le, eq_bigl => m; rewrite eq_sym.
-apply (@Rle_trans _ (\rsum_(m| m == m1) W ``(tb | enc m))); last first.
+apply (@leR_trans (\rsum_(m| m == m1) W ``(tb | enc m))); last first.
   by apply Req_le, eq_bigl => m; rewrite eq_sym.
 rewrite 2!big_pred1_eq.
 apply ML_err_rate.
@@ -237,12 +237,11 @@ Proof.
 move=> p05 d1 d2 d1d2.
 case/Rle_lt_or_eq_dec: (proj1 p_01) => [Hp | <-]; last first.
   destruct d2 as [|d2].
-    destruct d1 as [|d1]; last by done.
-    rewrite /=; by apply Rle_refl.
+    destruct d1 as [|d1]; [exact/leRR | by []].
   rewrite !subR0 /= !mul0R !mulR0.
   destruct d1 as [|d1] => /=.
     rewrite subn0 mulR1 pow1; fourier.
-  rewrite !mul0R !mulR0; by apply Rle_refl.
+  rewrite !mul0R !mulR0; exact/leRR.
 apply (Rmult_le_reg_l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
   apply mulR_gt0; apply/invR_gt0/pow_lt => //; by fourier.
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
@@ -355,8 +354,8 @@ unlock in H.
 simpl in H.
 set tmp := \rmax_(_ <- _ | _) _ in H.
 rewrite /tmp -rmax_distrl in H; last first.
-  apply/ltRW/invR_gt0/RltP; rewrite ltR_neqAle; apply/andP; split; last first.
-    exact/RleP/PosteriorProbability.den_nonneg.
+  apply/ltRW/invR_gt0/ltRP; rewrite ltR_neqAle; apply/andP; split; last first.
+    exact/leRP/PosteriorProbability.den_nonneg.
   by rewrite eq_sym -receivableE.
 rewrite /P /UniformSupport.d /UniformSupport.f /= in H.
 case: H => [m' [Hm' H]].

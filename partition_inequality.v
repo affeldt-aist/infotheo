@@ -80,8 +80,7 @@ have step2 :
   (\rsum_(a in A_ 1) P a) * log ((\rsum_(a in A_ 1) P a) / \rsum_(a in A_ 1) Q a) <=
   \rsum_(a in A_ 0) P a * log (P a / Q a) + \rsum_(a in A_ 1) P a * log (P a / Q a).
   apply Rplus_le_compat; by apply log_sum.
-eapply Rle_trans; last by apply step2.
-clear step2.
+apply: (leR_trans _ step2) => {step2}.
 rewrite [X in _ <= X](_ : _ =
   P_A 0 * log ((P_A 0) / (Q_A 0)) + P_A 1 * log ((P_A 1) / (Q_A 1))) //.
 rewrite /div Set2sumE ?card_bool // => B.
@@ -95,10 +94,10 @@ wlog : a b / (a == 0) && (b == 1).
     move: a b i0i1.
     case=> //.
       case=> // _ _.
-      rewrite Rplus_comm.
-      by apply Hwlog.
+      rewrite addRC.
+      exact: Hwlog.
     case=> // _ _.
-    by apply Hwlog.
+    exact: Hwlog.
 case/andP => /eqP -> /eqP -> _ {a b}.
 have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
   apply Rle_lt_or_eq_dec; apply: rsumr_ge0 => i _; exact/dist_nonneg.

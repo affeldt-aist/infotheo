@@ -103,7 +103,7 @@ Qed.
 Lemma f0 x : 0 <= f x.
 Proof.
 apply Rle_mult_inv_pos; first by apply mulR_ge0; exact/dist_nonneg.
-apply/RltP; rewrite lt0R {1}/den -receivableE receivable_y; exact/RleP/den_nonneg.
+apply/ltRP; rewrite lt0R {1}/den -receivableE receivable_y; exact/leRP/den_nonneg.
 Qed.
 
 Lemma f1 : \rsum_(x in 'rV_n) f x = 1.
@@ -199,7 +199,7 @@ Proof.
 apply mulR_ge0.
 - rewrite /Kmpp.
   apply Rle_mult_inv_pos; [fourier|].
-  apply/RltP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/RleP]; last first.
+  apply/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
     apply rsumr_ge0 => /= ? _; exact: dist_nonneg.
   exact/f'_neq0.
 - apply rsumr_ge0 => /= ? _; exact: dist_nonneg.

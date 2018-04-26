@@ -155,17 +155,17 @@ Let ord_F_Rle i j := (F i) <b= (F j).
 
 Let ord_trans : transitive ord_F_Rle.
 Proof.
-rewrite /transitive /ord_F_Rle => x y z /RleP Hyx /RleP Hxz ; apply/RleP.
-by apply (Rle_trans _ (F x) _).
+rewrite /transitive /ord_F_Rle => x y z /leRP Hyx /leRP Hxz; apply/leRP.
+exact/(@leR_trans (F x)).
 Qed.
 
 Let ord_refl : reflexive ord_F_Rle.
-Proof. rewrite /reflexive /ord_F_Rle => x ; apply/RleP ; apply Rle_refl. Qed.
+Proof. rewrite /reflexive /ord_F_Rle => x ; exact/leRP/leRR. Qed.
 
 Let ord_total : total ord_F_Rle.
 Proof.
 rewrite /total /ord_F_Rle => x y. apply/orP.
-case (Rlt_le_dec (F x) (F y)) => [/ltRW|] /RleP H; by [left|right].
+case (Rlt_le_dec (F x) (F y)) => [/ltRW|] /leRP H; by [left|right].
 Qed.
 
 Definition arg_rmax := arg_maxord i0 P ord_F_Rle.
@@ -191,7 +191,7 @@ Lemma arg_rmax2 : forall j, P j -> F j <= F arg_rmax.
 Proof.
 case: arg_rmaxP => i1 Pi1.
 rewrite /ord_F_Rle => H j Pj.
-exact/RleP/H.
+exact/leRP/H.
 Qed.
 
 End rExtrema.

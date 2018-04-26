@@ -20,7 +20,7 @@ Lemma log_sum1 {A : finType} (C : {set A}) (f g : A -> R+) :
 Proof.
 move=> fspos fg.
 case/boolP : (C == set0) => [ /eqP -> | Hc].
-  rewrite !big_set0 mul0R; by apply Rle_refl.
+  rewrite !big_set0 mul0R; exact/leRR.
 have gspos : forall a, a \in C -> 0 < g a.
   move=> a a_C.
   case/Rle_lt_or_eq_dec : ((pos_f_nonneg g) a) => // abs; symmetry in abs; apply fg in abs.
@@ -39,10 +39,10 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
   move=> Hwlog.
   set k := \rsum_{ C } f / \rsum_{ C } g.
   have Fspos : 0 < \rsum_{ C } f.
-    suff Fpos : 0 <= \rsum_{ C } f by apply/RltP; rewrite lt0R Fnot0; exact/RleP.
+    suff Fpos : 0 <= \rsum_{ C } f by apply/ltRP; rewrite lt0R Fnot0; exact/leRP.
     apply: rsumr_ge0 => ? ?; exact/ltRW/fspos.
   have Gspos : 0 < \rsum_{ C } g.
-    suff Gpocs : 0 <= \rsum_{ C } g by apply/RltP; rewrite lt0R Gnot0; exact/RleP.
+    suff Gpocs : 0 <= \rsum_{ C } g by apply/ltRP; rewrite lt0R Gnot0; exact/leRP.
     apply: rsumr_ge0 => ? ?; exact/ltRW/gspos.
   have kspos : 0 < k by apply Rlt_mult_inv_pos.
   have kg_pos : forall a, 0 <= k * g a.
@@ -90,8 +90,8 @@ suff : 0 <= \rsum_(a | a \in C) f a * ln (f a / g a).
     apply eq_bigr => a a_C; by rewrite /Rdiv -mulRA.
   rewrite -big_distrl /=.
   apply mulR_ge0 => //; exact/ltRW/invR_gt0.
-apply Rle_trans with (\rsum_(a | a \in C) f a * (1 - g a / f a)).
-  apply Rle_trans with (\rsum_(a | a \in C) (f a - g a)).
+apply (@leR_trans (\rsum_(a | a \in C) f a * (1 - g a / f a))).
+  apply (@leR_trans (\rsum_(a | a \in C) (f a - g a))).
     rewrite big_split /= -(big_morph _ morph_Ropp oppR0); fourier.
   apply Req_le, eq_bigr => a a_C.
   rewrite Rmult_minus_distr_l mulR1.
@@ -109,7 +109,7 @@ rewrite invRM; last 2 first.
   exact/eqP/invR_neq0/eqP/gtR_eqF/(gspos _ C_a).
 rewrite invRK; last exact/gtR_eqF/(gspos _ C_a).
 rewrite mulRC.
-eapply Rle_trans.
+apply: leR_trans.
   apply ln_id_cmp.
   apply Rlt_mult_inv_pos; by [apply gspos | apply fspos].
 apply Req_le.
@@ -149,9 +149,9 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
   rewrite -H1 in H.
   have pos_F : 0 <= \rsum_{C} f.
     apply rsumr_ge0 => ? ?; exact: pos_f_nonneg.
-  apply Rle_trans with (\rsum_{C} f * log (\rsum_{C} f / \rsum_{D} g)).
+  apply (@leR_trans (\rsum_{C} f * log (\rsum_{C} f / \rsum_{D} g))).
     case/Rle_lt_or_eq_dec : pos_F => pos_F; last first.
-      rewrite -pos_F !mul0R; exact: Rle_refl.
+      rewrite -pos_F !mul0R; exact/leRR.
     have H2 : 0 <= \rsum_(a | a \in D) g a.
       apply: rsumr_ge0 => ? _; exact: pos_f_nonneg.
     case/Rle_lt_or_eq_dec : H2 => H2; last first.
@@ -176,7 +176,7 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
     rewrite DUD' (big_union _ g DID') /=.
     rewrite -[X in X <= _]add0R; apply Rplus_le_compat_r.
     apply: rsumr_ge0 => ? ?; exact/pos_f_nonneg.
-  eapply Rle_trans; first exact: H.
+  apply: (leR_trans H).
   rewrite setUC in DUD'.
   rewrite DUD' (big_union _ (fun a => f a * log (f a / g a)) DID') /=.
   rewrite (_ : \rsum_(_ | _ \in D') _ = 0); last first.
@@ -184,7 +184,7 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
       apply eq_bigr => a.
       rewrite /D' in_set => /andP[a_C /eqP ->]; by rewrite mul0R.
     by rewrite big_const iter_Rplus mulR0.
-  rewrite add0R; exact/Rle_refl.
+  rewrite add0R; exact/leRR.
 apply log_sum1 => // a.
 rewrite /C1 in_set.
 case/andP => a_C fa_not_0.

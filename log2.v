@@ -25,14 +25,14 @@ Proof. exact/eqP/nesym/Rlt_not_eq. Qed.
 Lemma ln_increasing_le a b : 0 < a -> a <= b -> ln a <= ln b.
 Proof.
 move=> Ha.
-case/Rle_lt_or_eq_dec; last by move=> ->; exact: Rle_refl.
+case/Rle_lt_or_eq_dec; last by move=> ->; exact/leRR.
 by move/(ln_increasing _ _ Ha)/ltRW.
 Qed.
 
 Lemma exp_le_inv x y : exp x <= exp y -> x <= y.
 Proof.
 case/Rle_lt_or_eq_dec; [move/exp_lt_inv => ?; exact/ltRW |
-  move/exp_inv => ->; exact: Rle_refl].
+  move/exp_inv => ->; exact/leRR].
 Qed.
 
 Lemma exp_pow n : forall k, exp (INR k * n) = (exp n) ^ k.
@@ -78,7 +78,7 @@ Proof.
 elim => [r rpos | n IH r rpos].
 - rewrite /exp_dev /= mul1R Rinv_1 -exp_0.
   by apply Rgt_lt, Rgt_minus, Rlt_gt, exp_increasing.
-- apply: (Rlt_trans _ 1) ; first by fourier.
+- apply: (@ltR_trans 1) ; first by fourier.
   rewrite (_ : 1 = exp_dev n.+1 0) ; last first.
     rewrite /exp_dev exp_0 pow_i ?mul0R ?subR0 //; by apply/ltP.
   move: derive_increasing_interv.
@@ -90,8 +90,8 @@ elim => [r rpos | n IH r rpos].
     by apply IH, Hx.
   move/(_ Haux 0 r) => {Haux}.
   apply => //.
-  - split; [exact: Rle_refl | exact: ltRW].
-  - split; [exact: ltRW | exact: Rle_refl].
+  - split; [exact/leRR | exact: ltRW].
+  - split; [exact: ltRW | exact/leRR].
 Qed.
 
 Lemma exp_strict_lb (n : nat) x : 0 < x -> x ^ n * / INR (n`!) < exp x.
@@ -102,10 +102,10 @@ Proof.
 move=> Hr.
 case/boolP : (r == 0) => [/eqP ->|]; last first.
 - move=> Hr2.
-  have {Hr Hr2}R_pos : 0 < r by apply/RltP; rewrite lt0R Hr2 /=; exact/RleP.
+  have {Hr Hr2}R_pos : 0 < r by apply/ltRP; rewrite lt0R Hr2 /=; exact/leRP.
   exact/ltRW/exp_dev_gt0.
 - case: n.
-  + rewrite /exp_dev exp_0 mul1R invR1 subRR; exact: Rle_refl.
+  + rewrite /exp_dev exp_0 mul1R invR1 subRR; exact/leRR.
   - move=> n.
     rewrite -(_ : 1 = exp_dev n.+1 0) //.
     rewrite /exp_dev exp_0 pow_i ?mul0R ?subR0 //; exact/ltP.
@@ -143,8 +143,8 @@ Proof. move=> *; by rewrite /Log -mulRDl ln_mult. Qed.
 Lemma Log_increasing_le n x y : 1 < n -> 0 < x -> x <= y -> Log n x <= Log n y.
 Proof.
 move=> n1 x0 xy.
-apply Rmult_le_compat_r; [exact/RleP/RltW/RltP/invR_gt0/ln_pos|].
-by apply ln_increasing_le.
+apply Rmult_le_compat_r; [exact/leRP/ltRW'/ltRP/invR_gt0/ln_pos|].
+exact: ln_increasing_le.
 Qed.
 
 Lemma Log_increasing n a b : 1 < n -> 0 < a -> a < b -> Log n a < Log n b.
@@ -177,7 +177,7 @@ Lemma Log_le_inv n x y : 1 < n -> 0 < x -> 0 < y -> Log n x <= Log n y -> x <= y
 Proof.
 move=> n1 Hx Hy.
 case/Rle_lt_or_eq_dec; first by move/(Log_lt_inv n1 Hx Hy)/ltRW.
-move/(Log_inv n1 Hx Hy) => ->; exact: Rle_refl.
+move/(Log_inv n1 Hx Hy) => ->; exact/leRR.
 Qed.
 
 Lemma derivable_pt_Log n : forall x : R, 0 < x -> derivable_pt (Log n) x.
@@ -209,7 +209,7 @@ Lemma logexp1E : log (exp 1) = / ln 2.
 Proof. by rewrite /log /Log ln_exp div1R. Qed.
 
 Lemma log_exp1_Rle_0 : 0 <= log (exp 1).
-Proof. rewrite logexp1E; exact/RleP/RltW/RltP/invR_gt0. Qed.
+Proof. rewrite logexp1E; exact/leRP/ltRW'/ltRP/invR_gt0. Qed.
 
 (** n ^ x *)
 Definition Exp (n : R) x := exp (x * ln n).
@@ -253,7 +253,7 @@ Proof.
 move=> n0.
 elim=> [|m IH]; first by rewrite /Exp mul0R exp_0.
 rewrite S_INR ExpD expnS mult_INR IH /Exp mul1R exp_ln; [ by rewrite mulRC | ].
-by apply/RltP; rewrite ltR0n.
+by apply/ltRP; rewrite ltR0n.
 Qed.
 
 Lemma Exp_increasing n x y : 1 < n -> x < y -> Exp n x < Exp n y.
@@ -267,8 +267,8 @@ Qed.
 Lemma Exp_le_inv n x y : 1 < n -> Exp n x <= Exp n y -> x <= y.
 Proof.
 rewrite /Exp => n1 /exp_le_inv H.
-apply/RleP; rewrite -(Rle_pmul2l (ln n)); last exact/RltP/ln_pos.
-rewrite mulRC -(mulRC y); exact/RleP.
+apply/leRP; rewrite -(Rle_pmul2l (ln n)); last exact/ltRP/ln_pos.
+rewrite mulRC -(mulRC y); exact/leRP.
 Qed.
 
 Lemma Exp_le_increasing n x y : 1 < n -> x <= y -> Exp n x <= Exp n y.
@@ -276,7 +276,7 @@ Proof.
 move=> n1; rewrite /Exp.
 case/Rle_lt_or_eq_dec.
 move/Exp_increasing => x_y; exact/ltRW/x_y.
-move=> ->; exact: Rle_refl.
+move=> ->; exact/leRR.
 Qed.
 
 Lemma Exp_Ropp n x : Exp n (- x) = / Exp n x.
@@ -315,32 +315,32 @@ Proof. by rewrite /exp2 -/(Exp 2 x) /log -/(Log 2 _) ExpK. Qed.
 Lemma Rle_exp2_log1_L a b : 0 < b -> exp2 a <b= b = (a <b= log b).
 Proof.
 move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
-- move/RleP in H1.
+- move/leRP in H1.
   have {H1}H1 : a <= log b.
     rewrite (_ : a = log (exp2 a)); last by rewrite exp2K.
     exact: Log_increasing_le.
-  move/RleP in H1; by rewrite H1.
+  move/leRP in H1; by rewrite H1.
 - move H2 : (_ <b= _ ) => [|] //=.
-  move/RleP in H2.
+  move/leRP in H2.
   rewrite -(@ExpK 2 a _) // in H2.
   apply Log_le_inv in H2 => //.
-  move/RleP in H2.
+  move/leRP in H2.
   by rewrite H2 in H1.
 Qed.
 
 Lemma Rle_exp2_log2_R b c : 0 < b -> b <b= exp2 c = (log b <b= c).
 Proof.
 move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
-- move/RleP in H1.
+- move/leRP in H1.
   have {H1}H1 : log b <= c.
     rewrite (_ : c = log (exp2 c)); last by rewrite exp2K.
     apply Log_increasing_le => //; exact: exp2_pos.
-  by move/RleP in H1.
+  by move/leRP in H1.
 - move H2 : (_ <b= _ ) => [|] //=.
-  move/RleP in H2.
+  move/leRP in H2.
   rewrite -(exp2K c) in H2.
   apply Log_le_inv in H2 => //.
-  move/RleP in H2.
+  move/leRP in H2.
   by rewrite H2 in H1.
 Qed.
 

@@ -31,9 +31,9 @@ split; first by apply sqrt_pos.
 apply pow2_Rle_inv; [ by apply sqrt_pos | exact/ltRW/exp_pos | ].
 rewrite [in X in X <= _]/= mulR1 sqrt_sqrt; last first.
   apply mulR_ge0; by [fourier | apply leq0cdiv].
-apply/RleP; rewrite -(Rle_pmul2r (/ 2)); last exact/RltP/invR_gt0.
+apply/leRP; rewrite -(Rle_pmul2r (/ 2)); last exact/ltRP/invR_gt0.
 rewrite -mulRA mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
-exact/RleP.
+exact/leRP.
 Qed.
 
 Local Open Scope variation_distance_scope.
@@ -49,17 +49,17 @@ rewrite -mulRN -mulRDr Rabs_mult Rabs_right; last first.
 rewrite -mulRA; apply Rmult_le_compat_l.
   by rewrite -(mul1R (/ ln 2)); apply Rle_mult_inv_pos.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
-apply: Rle_trans; first exact: ler_rsum_Rabs.
+apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -iter_Rplus_Rmult -big_const.
 apply ler_rsum => b _; rewrite addRC.
 apply Rabs_xlnx => //.
 - split; [exact/dist_nonneg | exact/dist_max].
 - split; [exact/dist_nonneg | exact/dist_max].
 - rewrite 2!OutDist.dE /Rminus (big_morph _ morph_Ropp oppR0) -big_split /=.
-  apply: Rle_trans; first exact: ler_rsum_Rabs.
-  apply (Rle_trans _ (d(`J(P , V), `J(P , W)))).
+  apply: leR_trans; first exact: ler_rsum_Rabs.
+  apply (@leR_trans (d(`J(P , V), `J(P , W)))).
   + rewrite /var_dist /=.
-    apply (Rle_trans _ (\rsum_(a : A) \rsum_(b : B) Rabs ((`J(P, V)) (a, b) - (`J(P, W)) (a, b)))); last first.
+    apply (@leR_trans (\rsum_(a : A) \rsum_(b : B) Rabs ((`J(P, V)) (a, b) - (`J(P, W)) (a, b)))); last first.
       apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
     apply: ler_rsum => a _.
     rewrite (bigD1 b) //= Rabs_minus_sym /Rminus -[X in X <= _]addR0.
@@ -79,13 +79,13 @@ rewrite /Rminus -mulRN -mulRDr Rabs_mult Rabs_right; last first.
 rewrite -2!mulRA; apply Rmult_le_compat_l.
   by rewrite -(mul1R (/ ln 2)); apply Rle_mult_inv_pos.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
-apply: Rle_trans; first exact: ler_rsum_Rabs.
+apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -2!iter_Rplus_Rmult -2!big_const pair_bigA /=.
 apply: ler_rsum; case => a b _; rewrite addRC /=.
 apply Rabs_xlnx => //.
 - split; [exact: dist_nonneg | exact: dist_max].
 - split; [exact: dist_nonneg | exact: dist_max].
-- apply (Rle_trans _ (d(`J(P , V) , `J(P , W)))).
+- apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
     rewrite /var_dist /R_dist (bigD1 (a, b)) //= Rabs_minus_sym /Rminus.
     rewrite -[X in X <= _]addR0.
     apply/Rplus_le_compat_l/rsumr_ge0 => ? _; exact/Rabs_pos.
@@ -100,7 +100,7 @@ Lemma mut_info_dist_ub : Rabs (`I(P ; V) - `I(P ; W)) <=
 Proof.
 rewrite /mut_info.
 rewrite (_ : _ - _ = `H(P `o V) - `H(P `o W) + (`H(P , W) - `H(P , V))); last by field.
-eapply Rle_trans; first by apply Rabs_triang.
+apply: leR_trans; first exact: Rabs_triang.
 rewrite -mulRA mulRDl mulRDr.
 apply Rplus_le_compat.
 - by rewrite mulRA; apply out_entropy_dist_ub.
@@ -152,13 +152,13 @@ have Htmp : D_x no_cond 0 x /\ R_dist x 0 < mu.
   - split => //; by apply Rlt_not_eq.
   - rewrite /R_dist subR0 Rabs_right; last exact/Rle_ge/ltRW.
     subst x.
-    apply (Rle_lt_trans _ (mu * / 2)); first by apply Rmin_l.
-    apply/RltP; rewrite ltR_pdivr_mulr //; apply/RltP; fourier.
+    apply (@leR_ltR_trans (mu * / 2)); first exact/Rmin_l.
+    apply/ltRP; rewrite ltR_pdivr_mulr //; apply/ltRP; fourier.
 move=> /(_ Htmp) {Htmp}.
 rewrite /R_dist /Rminus {2}/xlnx ltRR oppR0 addR0 Rabs_left; last first.
   apply xlnx_neg.
   split => //; subst x.
-  exact: Rle_lt_trans (Rmin_r _ _) ltRinve21.
+  exact: leR_ltR_trans (Rmin_r _ _) ltRinve21.
 move=> Hx.
 set Delta := min((minRate - cap) / 2, x ^ 2 / 2).
 exists Delta; split.
@@ -167,38 +167,38 @@ exists Delta; split.
   apply mulR_gt0; [exact: pow_gt0 | exact: invR_gt0].
 move=> P V v_dom_by_w.
 case/boolP : (Delta <b= D(V || W | P)).
-  move/RleP => Hcase.
-  apply (Rle_trans _ (D(V || W | P))) => //.
+  move/leRP => Hcase.
+  apply (@leR_trans (D(V || W | P))) => //.
   rewrite -{1}(addR0 (D(V || W | P))).
-  by apply Rplus_le_compat_l, Rmax_l.
-move/RleP/(Rnot_le_lt _) => Hcase.
+  exact/Rplus_le_compat_l/Rmax_l.
+move/leRP/(Rnot_le_lt _) => Hcase.
 suff Htmp : (minRate - cap) / 2 <= minRate - (`I(P; V)).
   clear -Hcase v_dom_by_w Htmp.
-  apply (Rle_trans _ +| minRate - `I(P ; V) |); last first.
+  apply (@leR_trans +| minRate - `I(P ; V) |); last first.
     rewrite -[X in X <= _]add0R.
-    apply Rplus_le_compat_r, leq0cdiv => b Hb ? ?; by apply v_dom_by_w.
-  eapply Rle_trans; last by apply Rmax_r.
-  eapply Rle_trans; first by apply Rmin_l.
+    apply Rplus_le_compat_r, leq0cdiv => b Hb ? ?; exact: v_dom_by_w.
+  apply: leR_trans; last exact: Rmax_r.
+  apply: leR_trans; first exact: Rmin_l.
   done.
 have Htmp : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
                                (- xlnx (sqrt (2 * D(V || W | P)))).
-  apply (Rle_trans _ (`I(P ; W) + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
-                                  - xlnx (sqrt (2 * D(V || W | P))))); last first.
+  apply (@leR_trans (`I(P ; W) + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
+                               - xlnx (sqrt (2 * D(V || W | P))))); last first.
     apply Rplus_le_compat_r.
     move: W_cap; rewrite /capacity /lub; case; by move/(_ P).
   apply (Rplus_le_reg_l (- `I(P ; W))).
   rewrite addRA Rplus_opp_l add0R addRC.
-  apply (Rle_trans _ (Rabs (`I(P ; V) + - `I(P ; W)))); first apply Rle_abs.
+  apply (@leR_trans (Rabs (`I(P ; V) + - `I(P ; W)))); first apply Rle_abs.
   have Htmp : D(V || W | P) <= exp (-2) ^ 2 * / 2.
     clear -Hcase x_pos.
-    apply/ltRW/(Rlt_le_trans _ _ _ Hcase).
-    apply (Rle_trans _ (x ^ 2 * / 2)); first by apply Rmin_r.
+    apply/ltRW/(ltR_leR_trans Hcase).
+    apply (@leR_trans (x ^ 2 * / 2)); first exact: Rmin_r.
     apply Rmult_le_compat_r; first exact/ltRW/invR_gt0.
     apply pow_incr.
     split; [exact: ltRW | exact: Rmin_r].
   by apply mut_info_dist_ub.
 apply Ropp_le_contravar, (Rplus_le_compat_l minRate) in Htmp.
-eapply Rle_trans; last by apply Htmp.
+apply: leR_trans; last exact: Htmp.
 clear Htmp.
 suff Htmp : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite oppRD addRA.
@@ -207,16 +207,16 @@ suff Htmp : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   apply Rge_le.
   rewrite addRA Rplus_opp_l add0R.
   apply Ropp_le_ge_contravar; rewrite -mulRA.
-  apply/RleP; rewrite mulRC leR_pdivr_mulr //.
+  apply/leRP; rewrite mulRC leR_pdivr_mulr //.
   rewrite mulRC -leR_pdivl_mulr; last first.
-    by apply/RltP; rewrite -mult_INR -plus_INR plusE multE ltR0n addn_gt0 Bnot0.
-  apply/RleP; by rewrite [in X in _ <= X]mulRC /Rdiv (mulRC _ (/ (_ + _))).
+    by apply/ltRP; rewrite -mult_INR -plus_INR plusE multE ltR0n addn_gt0 Bnot0.
+  apply/leRP; by rewrite [in X in _ <= X]mulRC /Rdiv (mulRC _ (/ (_ + _))).
 suff Htmp : xlnx x <= xlnx (sqrt (2 * (D(V || W | P)))).
   clear -Hx Htmp.
   apply Ropp_le_cancel; rewrite oppRK.
-  apply (Rle_trans _ (xlnx x)) => //.
+  apply (@leR_trans (xlnx x)) => //.
   apply Ropp_le_cancel; rewrite oppRK.
-  apply/ltRW/(Rlt_le_trans _ _ _ Hx).
+  apply/ltRW/(ltR_leR_trans Hx).
   subst gamma; by apply Rmin_r.
 apply/ltRW/Rgt_lt.
 have Htmp : sqrt (2 * D(V || W | P)) < x.
@@ -224,16 +224,16 @@ have Htmp : sqrt (2 * D(V || W | P)) < x.
   rewrite [in X in X < _]/= mulR1 sqrt_sqrt; last first.
     apply mulR_ge0; first exact/ltRW.
     apply leq0cdiv=> a Ha ? ?; by apply v_dom_by_w.
-  apply/RltP; rewrite mulRC -ltR_pdivl_mulr //.
-  exact/RltP/(Rlt_le_trans _ _ _ Hcase)/Rmin_r.
+  apply/ltRP; rewrite mulRC -ltR_pdivl_mulr //.
+  exact/ltRP/(ltR_leR_trans Hcase)/Rmin_r.
 apply xlnx_sdecreasing_0_Rinv_e => //.
 - split; first by apply sqrt_pos.
-  apply: (Rle_trans _ x _ (ltRW _ _ _)) => //.
+  apply: (@leR_trans x _ _ (ltRW _ _ _)) => //.
   subst x.
-  apply (Rle_trans _ (exp (-2))); first by apply Rmin_r.
+  apply (@leR_trans (exp (-2))); first exact: Rmin_r.
   apply ltRW, exp_increasing, Ropp_lt_contravar; fourier.
 - split; first exact: ltRW.
-  apply (Rle_trans _ (exp (-2))); first by apply Rmin_r.
+  apply (@leR_trans (exp (-2))); first exact: Rmin_r.
   apply ltRW, exp_increasing, Ropp_lt_contravar; fourier.
 Qed.
 

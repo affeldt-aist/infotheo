@@ -429,7 +429,7 @@ Let C := kernel H.
 Let C_not_empty := Lcode0.not_empty C.
 Hypothesis Hy : receivable W (`U C_not_empty) y.
 
-Let f := fun n0 (x : 'F_2) => (`U C_not_empty) '_ n0 `^^ W , Hy (x | y).
+(*Let g := fun n0 (x : 'F_2) => (`U C_not_empty) '_ n0 `^^ W , Hy (x | y).*)
 
 Local Notation "'`V'" := (Vnext H).
 Local Notation "'`F'" := (Fnext H).

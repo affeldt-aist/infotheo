@@ -70,9 +70,8 @@ Lemma ln_idgt0 x : 0 < x -> ln_id x <= 0.
 Proof.
 move=> Hx.
 case (total_order_T x 1).
-- case => Hx2.
-  + exact/ltRW/ln_idlt0_xlt1.
-  + subst x; rewrite /ln_id ln_1 /Rminus 2!Rplus_opp_r; by apply Rle_refl.
+- case => Hx2; first exact/ltRW/ln_idlt0_xlt1.
+  + subst x; rewrite /ln_id ln_1 /Rminus 2!Rplus_opp_r; exact/leRR.
 - move=> Hx2; apply/ltRW/ln_idlt0_xgt1; by [apply Hx | apply Rgt_lt, Hx2].
 Qed.
 
@@ -120,7 +119,7 @@ Lemma xlnx_neg x : 0 < x < 1 -> xlnx x < 0.
 Proof.
 case => lt0x ltx1.
 rewrite /xlnx.
-have -> : 0 <b x ; first by apply/RltP.
+have -> : 0 <b x ; first by apply/ltRP.
 apply Ropp_lt_cancel.
 rewrite oppR0 -mulRN.
 apply mulR_gt0 => //.
@@ -143,35 +142,34 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
   - move=> x ; rewrite /D_x ; move => [[_ Hx1] Hx2].
     rewrite /xlnx.
     have -> : 0 <b x.
-      apply/RltP.
+      apply/ltRP.
       rewrite -(addR0 x) -{2}(Rplus_opp_l r) addRA.
-      apply (Rle_lt_trans _ ((x + - r) + Rabs (x + - r))).
+      apply (@leR_ltR_trans ((x + - r) + Rabs (x + - r))).
         rewrite -(Rplus_opp_r (x + -r)); apply Rplus_le_compat_l.
         rewrite -Rabs_Ropp; by apply Rle_abs.
       apply Rplus_lt_compat_l.
       rewrite /R_dist /Rminus in Hx2.
-      apply (Rlt_le_trans _ (Rmin k r)) => //; by apply Rmin_r.
-    have -> : 0 <b r by apply/RltP.
+      apply (@ltR_leR_trans (Rmin k r)) => //; exact: Rmin_r.
+    have -> : 0 <b r by apply/ltRP.
     apply Hk.
     split => //.
-    by apply (@Rlt_le_trans _ _ _ Hx2), Rmin_l.
+    exact/(ltR_leR_trans Hx2)/Rmin_l.
 - subst r.
   exists (exp (- 2 * / eps)).
-  split ; first by apply exp_pos.
+  split ; first exact: exp_pos.
   move=> x; rewrite /R_dist subR0; case=> Hx1 Hx2.
-  rewrite /xlnx.
-  have -> : Rlt_bool 0 0 = false by apply/RltP/Rlt_irrefl.
+  rewrite /xlnx ltRR.
   case (Rlt_le_dec 0 x) => Hcase.
   + rewrite Rabs_pos_eq in Hx2 ; last exact/ltRW.
-    have -> : 0 <b x by apply/RltP.
+    have -> : 0 <b x by apply/ltRP.
     rewrite subR0 -{1}(exp_ln _ Hcase).
     set X := ln x.
     have X_neg : X < 0.
-      apply (Rlt_trans _ (-2 * / eps)).
-      by apply exp_lt_inv ; subst X ; rewrite exp_ln.
+      apply (@ltR_trans (-2 * / eps)).
+      by apply exp_lt_inv; subst X; rewrite exp_ln.
       rewrite mulNR.
       exact/oppR_lt0/Rlt_mult_inv_pos.
-    apply: (Rlt_le_trans _ (2 * / (- X)) _).
+    apply: (@ltR_leR_trans (2 * / (- X))).
     * rewrite Rabs_left ; last first.
         rewrite -(mulR0 (exp X)).
         apply Rmult_lt_compat_l => // ; by apply exp_pos.
@@ -201,23 +199,22 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       - rewrite -(oppRK (/ eps * 2)); apply Ropp_le_contravar.
         rewrite mulRC -mulNR.
         apply/exp_le_inv/ltRW; subst X; by rewrite exp_ln.
-  + have -> : 0 <b x = false by apply/RltP; apply RIneq.Rle_not_lt.
+  + have -> : 0 <b x = false by apply/ltRP; apply RIneq.Rle_not_lt.
     by rewrite subRR Rabs_R0.
 - exists (- r); split; first exact: oppR_gt0.
   move=> x [[_ Hx1] Hx2].
   rewrite /R_dist /xlnx.
   have -> : 0 <b x = false.
-    apply/RltP ; apply Rge_not_lt, Rle_ge.
+    apply/ltRP ; apply Rge_not_lt, Rle_ge.
     rewrite -(addR0 x) -{1}(Rplus_opp_l r) addRA.
-    apply (Rle_trans _ ((x + - r) - Rabs (x + - r))).
-      apply Rplus_le_compat_l, ltRW.
-      rewrite -{1}(oppRK r).
-      by apply Ropp_lt_contravar.
+    apply (@leR_trans ((x + - r) - Rabs (x + - r))).
+      apply/Rplus_le_compat_l/ltRW.
+      rewrite -{1}(oppRK r); exact: Ropp_lt_contravar.
     rewrite -(Rplus_opp_r (x + -r)); apply Rplus_le_compat_l.
-    by apply Ropp_le_contravar, Rle_abs.
+    exact/Ropp_le_contravar/Rle_abs.
   have -> : Rlt_bool 0 r = false.
-    by apply/RltP; apply Rge_not_lt, Rle_ge, ltRW.
-  rewrite subRR Rabs_R0; by apply Rgt_lt.
+    by apply/negbTE; rewrite -leRNgt; apply/leRP/ltRW.
+  by rewrite subRR Rabs_R0.
 Qed.
 
 (* TODO: not used *)
@@ -238,7 +235,7 @@ by apply derivable_pt_ln.
 Defined.
 
 Lemma xlnx_total_xlnx x : 0 < x -> xlnx x = xlnx_total x.
-Proof. by rewrite /xlnx /f => /RltP ->. Qed.
+Proof. by rewrite /xlnx /f => /ltRP ->. Qed.
 
 Lemma derivable_pt_xlnx x (x_pos : 0 < x) : derivable_pt xlnx x.
 Proof. apply (@derivable_f_eq_g _ _ x 0 xlnx_total_xlnx x_pos (derivable_xlnx_total x_pos)). Defined.
@@ -279,7 +276,7 @@ apply (Rplus_lt_reg_r (- 1)).
 rewrite -addRA Rplus_opp_r addR0 add0R.
 apply exp_lt_inv.
 rewrite exp_ln //.
-apply/RltP; rewrite ltR_neqAle Hcase; exact/RleP.
+apply/ltRP; rewrite ltR_neqAle Hcase; exact/leRP.
 Qed.
 
 Lemma xlnx_sdecreasing_0_Rinv_e x y :
@@ -288,10 +285,10 @@ Proof.
 move=> [x1 x2] [y1 y2] xy.
 case/boolP : (x == 0) => [/eqP ->|x0].
 - rewrite xlnx_0; apply xlnx_neg.
-  exact: (conj (Rle_lt_trans _ x _ _ _) (Rle_lt_trans _ _ _ y2 ltRinve1)).
+  exact: (conj (@leR_ltR_trans x _ _ _ _) (leR_ltR_trans y2 ltRinve1)).
 - apply Ropp_lt_cancel.
-  have {x0}x0 : 0 < x by apply/RltP; rewrite lt0R x0; exact/RleP.
-  have {x1 y1}y0 : 0 < y by exact: (Rlt_trans _ x).
+  have {x0}x0 : 0 < x by apply/ltRP; rewrite lt0R x0; exact/leRP.
+  have {x1 y1}y0 : 0 < y by exact: (@ltR_trans x).
   exact: (derive_increasing_ad_hoc (exp_pos _) xlnx_sdecreasing_0_Rinv_e_helper).
 Qed.
 
@@ -299,9 +296,9 @@ Lemma xlnx_decreasing_0_Rinv_e x y :
   0 <= x <= exp (-1) -> 0 <= y <= exp (-1) -> x <= y -> xlnx y <= xlnx x.
 Proof.
 move=> Hx Hy Hxy.
-case/boolP : (x == y) => [/eqP ->|H]; first exact/Rle_refl.
-- apply ltRW, xlnx_sdecreasing_0_Rinv_e => //.
-  apply/RltP; rewrite ltR_neqAle H; exact/RleP.
+case/boolP : (x == y) => [/eqP ->|H]; first exact/leRR.
+- apply/ltRW/xlnx_sdecreasing_0_Rinv_e => //.
+  apply/ltRP; rewrite ltR_neqAle H; exact/leRP.
 Qed.
 
 End xlnx.
@@ -348,7 +345,7 @@ apply exp_lt_inv.
 rewrite exp_ln ; last first.
   apply mulR_gt0 => //.
   apply (Rplus_lt_reg_r x); by rewrite addRC -addRA Rplus_opp_l 2!addR0.
-apply (Rlt_trans _ ( (exp (-2)) * (1 - x))).
+apply (@ltR_trans ((exp (-2)) * (1 - x))).
   apply Rmult_lt_compat_r => //.
   apply (Rplus_lt_reg_r x); by rewrite addRC -addRA Rplus_opp_l 2!addR0.
 rewrite -{2}(mulR1 (exp (-2))).
@@ -404,9 +401,9 @@ have prc : forall x (Hx : a <= x <= b), continuity_pt f x.
   case/boolP : (x == a) => [/eqP -> //|xnota].
   case/boolP : (x == b) => [/eqP -> //|xnotb].
   apply derivable_continuous_pt, prd.
-  split; apply/RltP; rewrite ltR_neqAle.
-  - rewrite eq_sym xnota; exact/RleP/(proj1 Hx).
-  - rewrite xnotb; exact/RleP/(proj2 Hx).
+  split; apply/ltRP; rewrite ltR_neqAle.
+  - rewrite eq_sym xnota; exact/leRP/(proj1 Hx).
+  - rewrite xnotb; exact/leRP/(proj2 Hx).
 have H0 : forall c : R, a < c < b -> derivable_pt f c.
   move=> c Hc.
   apply prd.
@@ -441,19 +438,19 @@ rewrite Rplus_opp_r.
 have prd' : pderivable f (fun z => x < z < y).
   move=> z /= [Hz1 Hz2] ; apply pr.
   split.
-  - apply (Rle_lt_trans _ x) => // ; by apply H1.
-  - apply (Rlt_le_trans _ y) => // ; by apply H2.
+  - apply (@leR_ltR_trans x) => // ; by apply H1.
+  - apply (@ltR_leR_trans y) => // ; by apply H2.
 have H0' : forall t (Ht : x < t < y), 0 < derive_pt f t (prd' t Ht).
   move=> z /= [Hz0 Hz1].
   apply H0.
   split.
-  - apply (Rle_lt_trans _ x) => // ; by apply H1.
-  - apply (Rlt_le_trans _ y) => // ; by apply H2.
+  - apply (@leR_ltR_trans x) => // ; by apply H1.
+  - apply (@ltR_leR_trans y) => // ; by apply H2.
 have prcx : continuity_pt f x by apply prc; split; apply H1.
 have prcy : continuity_pt f y by apply prc; split; apply H2.
 have aux : a < b.
-  apply (Rle_lt_trans _ x) ; first by apply H1.
-  apply (Rlt_le_trans _ y) => // ; by apply H2.
+  apply (@leR_ltR_trans x) ; first by apply H1.
+  apply (@ltR_leR_trans y) => // ; by apply H2.
 case: (MVT_cor1_pderivable_new_var prd' prcx prcy H3); intros x0 [x1 [H7 H8]].
 unfold Rminus in H7.
 rewrite H7.
@@ -469,7 +466,7 @@ apply derive_sincreasing_interv.
 - move=> x /= [Hx1 Hx2].
   apply derivable_pt_diff_xlnx.
   split => //.
-  exact: (Rlt_trans _ _ _ Hx2 ltRinve21).
+  exact: (ltR_trans Hx2 ltRinve21).
 - move=> x /= Hx.
   rewrite /diff_xlnx.
   apply continuity_pt_minus ; last by apply continue_xlnx.
@@ -482,7 +479,7 @@ apply derive_sincreasing_interv.
 - by apply exp_pos.
 - move => t prt [Ht1 Ht2].
   apply derive_diff_xlnx_pos => //.
-  exact: (conj Ht1 (Rlt_trans _ _ _ Ht2 ltRinve21)).
+  exact: (conj Ht1 (ltR_trans Ht2 ltRinve21)).
 Qed.
 
 Lemma xlnx_ineq x : 0 <= x <= exp (-2) -> xlnx x <= xlnx (1-x).
@@ -490,10 +487,10 @@ Proof.
 move=> [Hx1 Hx2].
 apply Rge_le, Rminus_ge, Rle_ge.
 rewrite -diff_xlnx_0 -/(diff_xlnx x).
-case/boolP : (0 == x) => [/eqP ->|xnot0]; first exact/Rle_refl.
-apply ltRW, diff_xlnx_sincreasing_0_Rinv_e2 => //.
-  split; [exact/Rle_refl | exact/ltRW/exp_pos].
-apply/RltP; rewrite ltR_neqAle xnot0; exact/RleP.
+case/boolP : (0 == x) => [/eqP ->|xnot0]; first exact/leRR.
+apply/ltRW/diff_xlnx_sincreasing_0_Rinv_e2 => //.
+  split; [exact/leRR | exact/ltRW/exp_pos].
+apply/ltRP; rewrite ltR_neqAle xnot0; exact/leRP.
 Qed.
 
 End diff_xlnx.
@@ -553,20 +550,20 @@ Lemma xlnx_delta_bound eps : 0 < eps <= exp (-2) ->
   forall x, 0 <= x <= 1 - eps -> Rabs (xlnx_delta eps x) <= - xlnx eps.
 Proof.
 move=> [Heps1 Heps2] x [Hx1 Hx2].
-apply/RleP; rewrite leR_Rabsl oppRK; apply/andP; split; apply/RleP.
+apply/leRP; rewrite leR_Rabsl oppRK; apply/andP; split; apply/leRP.
 - rewrite (_ : xlnx eps = xlnx_delta eps 0); last first.
     by rewrite /xlnx_delta add0R xlnx_0 subR0.
-  case/boolP : (0 == x) => [/eqP <-|xnot0]; first exact/Rle_refl.
-  apply ltRW, increasing_xlnx_delta => //.
-  + exact: (conj Heps1 (Rle_lt_trans _ _ _ Heps2 ltRinve21)).
-  + split ; by [apply (Rle_trans _ x) | apply Rle_refl].
-  + apply/RltP; rewrite ltR_neqAle xnot0; exact/RleP.
-- apply (Rle_trans _ (xlnx_delta eps (1 - eps))).
-    case/boolP : (x == 1 - eps) => [/eqP ->|xnot0]; first exact/Rle_refl.
-    apply ltRW, increasing_xlnx_delta => //.
-    + exact: (conj Heps1 (Rle_lt_trans _ _ _ Heps2 ltRinve21)).
-    + split; by [apply (Rle_trans _ x) | apply Rle_refl].
-    + apply/RltP; rewrite ltR_neqAle xnot0; exact/RleP.
+  case/boolP : (0 == x) => [/eqP <-|xnot0]; first exact/leRR.
+  apply/ltRW/increasing_xlnx_delta => //.
+  + exact: (conj Heps1 (leR_ltR_trans Heps2 ltRinve21)).
+  + split ; by [apply (@leR_trans x) | exact: leRR].
+  + apply/ltRP; rewrite ltR_neqAle xnot0; exact/leRP.
+- apply (@leR_trans (xlnx_delta eps (1 - eps))).
+    case/boolP : (x == 1 - eps) => [/eqP ->|xnot0]; first exact/leRR.
+    apply/ltRW/increasing_xlnx_delta => //.
+    + exact: (conj Heps1 (leR_ltR_trans Heps2 ltRinve21)).
+    + split; by [apply (@leR_trans x) | exact: leRR].
+    + apply/ltRP; rewrite ltR_neqAle xnot0; exact/leRP.
   rewrite /xlnx_delta /Rminus -addRA Rplus_opp_l addR0 xlnx_1 add0R.
   apply Ropp_le_cancel ; rewrite 2!oppRK.
   apply xlnx_ineq.
@@ -584,52 +581,50 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
       by rewrite oppRD oppRK addRA Rplus_opp_r add0R.
     apply Ropp_le_cancel; rewrite oppR0 oppRK; exact/Rle_minus/ltRW.
   rewrite Haux -Rabs_Ropp oppRD oppRK addRC.
-  apply (Rle_trans _ (- xlnx (Rabs (x - y)))).
+  apply (@leR_trans (- xlnx (Rabs (x - y)))).
     apply xlnx_delta_bound.
     - split.
-      - by apply Rabs_pos_lt, Rlt_not_eq, Rlt_minus.
-      - apply (Rle_trans _ a) => //; by apply Ha.
+      - exact/Rabs_pos_lt/Rlt_not_eq/Rlt_minus.
+      - apply (@leR_trans a) => //; by apply Ha.
     - split => //.
       apply (Rplus_le_reg_r (Rabs (x - y))); by rewrite /Rminus -addRA Rplus_opp_l addR0 -Haux.
   apply Ropp_le_cancel ; rewrite 2!oppRK.
   apply xlnx_decreasing_0_Rinv_e => //.
   - split; first by apply Rabs_pos.
-    apply (Rle_trans _ a) => //.
-    apply (Rle_trans _ (exp (- 2))); first by apply Ha.
-    apply ltRW, exp_increasing, Ropp_lt_contravar; fourier.
+    apply (@leR_trans a) => //.
+    apply (@leR_trans (exp (- 2))); first by apply Ha.
+    apply/ltRW/exp_increasing/Ropp_lt_contravar; fourier.
   - split; first by apply Ha.
-    apply (Rle_trans _ (exp (-2))); first by apply Ha.
-    apply ltRW, exp_increasing, Ropp_lt_contravar; fourier.
+    apply (@leR_trans (exp (-2))); first by apply Ha.
+    apply/ltRW/exp_increasing/Ropp_lt_contravar; fourier.
 - subst x ; rewrite subRR Rabs_R0.
   apply Ropp_le_cancel ; rewrite oppRK oppR0.
   case/orP : (orbN (0 == a)); last move=> anot0.
-    by [move=> /eqP <- ; rewrite xlnx_0 ; apply Rle_refl].
-  apply ltRW, xlnx_neg.
-  split.
-  - apply/RltP; rewrite lt0R eq_sym anot0; exact/RleP/(proj1 Ha).
-  - exact: (Rle_lt_trans _ _ _ (proj2 Ha) ltRinve21).
+    by move=> /eqP <-; rewrite xlnx_0; exact: leRR.
+  apply/ltRW/xlnx_neg; split.
+  - apply/ltRP; rewrite lt0R eq_sym anot0; exact/leRP/(proj1 Ha).
+  - exact: (leR_ltR_trans (proj2 Ha) ltRinve21).
 - apply Rgt_lt in Hcase.
   have Haux : x = y + Rabs (x - y).
-    rewrite Rabs_pos_eq ?subRKC //.
-    by apply Rge_le, Rge_minus, Rle_ge, ltRW.
+    rewrite Rabs_pos_eq ?subRKC //; exact/Rge_le/Rge_minus/Rle_ge/ltRW.
   rewrite Rabs_minus_sym in H Haux.
   rewrite Haux.
-  apply (Rle_trans _ (- xlnx (Rabs (y - x)))).
+  apply (@leR_trans (- xlnx (Rabs (y - x)))).
     apply xlnx_delta_bound.
     - split.
       - by apply Rabs_pos_lt, Rlt_not_eq, Rlt_minus.
-      - apply (Rle_trans _ a) => //; by apply Ha.
+      - apply (@leR_trans a) => //; by apply Ha.
     - split => //.
       apply (Rplus_le_reg_r (Rabs (y - x))); by rewrite /Rminus -addRA Rplus_opp_l addR0 -Haux.
   apply Ropp_le_cancel ; rewrite 2!oppRK.
   apply xlnx_decreasing_0_Rinv_e => //.
   + split; first by apply Rabs_pos.
-    apply (Rle_trans _ a) => //.
-    apply (Rle_trans _ (exp (-2))); first by apply Ha.
-    apply ltRW, exp_increasing, Ropp_lt_contravar; fourier.
+    apply (@leR_trans a) => //.
+    apply (@leR_trans (exp (-2))); first by apply Ha.
+    apply/ltRW/exp_increasing/Ropp_lt_contravar; fourier.
   - split; first by apply Ha.
-    apply (Rle_trans _ (exp (-2))); first by apply Ha.
-    apply ltRW, exp_increasing, Ropp_lt_contravar; fourier.
+    apply (@leR_trans (exp (-2))); first by apply Ha.
+    apply/ltRW/exp_increasing/Ropp_lt_contravar; fourier.
 Qed.
 
 End xlnx_sect.

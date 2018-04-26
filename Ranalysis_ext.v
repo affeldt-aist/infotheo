@@ -77,13 +77,13 @@ rewrite Hfg ; last first.
   rewrite -addRA Rplus_opp_r addR0; apply Rlt_gt.
   apply (Rplus_lt_reg_r (- r)).
   rewrite (addRC r) -addRA Rplus_opp_r addR0 addRC.
-  apply (Rle_lt_trans _ (Rabs h)) ; first by [rewrite -Rabs_Ropp ; apply Rle_abs].
-  apply (Rlt_le_trans _ (Rmin (- r + x) delt)) => //.
+  apply (@leR_ltR_trans (Rabs h)); first by rewrite -Rabs_Ropp; apply Rle_abs.
+  apply (@ltR_leR_trans (Rmin (- r + x) delt)) => //.
   by rewrite addRC.
   by apply Rmin_l.
 rewrite Hfg //.
 apply Hdelt => //=.
-apply (Rlt_le_trans _ (Rmin (x - r) delt)) => // ; by apply Rmin_r.
+apply (@ltR_leR_trans (Rmin (x - r) delt)) => // ; exact: Rmin_r.
 Defined.
 
 Lemma derive_pt_f_eq_g f g x r (Hfg : forall y, r < y -> g y = f y)
@@ -252,15 +252,15 @@ have H0' : forall t (Ht : x <= t <= y), 0 < if t == y then 1 else derive_pt f t 
   - move/negbTE in Hcase ; rewrite Hcase.
   have Hz : a < z <= b.
     split.
-    - apply (Rlt_le_trans _ x _) ; [apply H1 | exact Hz0].
-    - apply (Rle_trans _ y _) ; [exact Hz1 | apply H2].
+    - apply: (ltR_leR_trans _ Hz0); by apply H1.
+    - apply: (leR_trans Hz1); by apply H2.
   move: (H0 z) => H02.
   have Hz2 : ~~ (z == b).
     apply/eqP.
     apply Rlt_not_eq.
     clear Hz0 H1 H3 pr' H H0 x.
     move/eqP in Hcase.
-    apply (Rlt_le_trans _ y _).
+    apply (@ltR_leR_trans y).
     - case (total_order_T z y) ; first case ; move=> Hzy.
       - exact Hzy.
       - contradict Hcase ; exact Hzy.

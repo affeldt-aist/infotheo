@@ -37,11 +37,11 @@ Lemma div_diff_ub x y : 0 <= x -> 0 <= y -> (y = 0 -> x = 0) ->
 Proof.
 move=> Hx Hy Hxy.
 case/boolP : (y == 0) => [/eqP y0 | y0].
-- move: (Hxy y0) => ->; by rewrite y0 2!subRR 2!mul0R; exact/Rle_refl.
-- have y_pos : 0 < y by apply/RltP; rewrite lt0R y0; exact/RleP.
+- move: (Hxy y0) => ->; by rewrite y0 2!subRR 2!mul0R; exact/leRR.
+- have y_pos : 0 < y by apply/ltRP; rewrite lt0R y0; exact/leRP.
   case/boolP : (x == 0) => [/eqP -> | x_not_0].
   + rewrite mul0R subR0; apply mulR_ge0 => //; exact: log_exp1_Rle_0.
-  + have x_pos : 0 < x by apply/RltP; rewrite lt0R x_not_0; exact/RleP.
+  + have x_pos : 0 < x by apply/ltRP; rewrite lt0R x_not_0; exact/leRP.
     rewrite (_ : y - x = x * (y / x - 1) ); last first.
       rewrite mulRDr mulRCA mulRV ?mulR1 ?mulRN1 //; exact/eqP.
     rewrite -mulRA; apply Rmult_le_compat_l; first exact/ltRW/x_pos.
@@ -61,14 +61,14 @@ apply Rge_le; rewrite /div.
 rewrite [X in X >= _](_ : _ = - \rsum_(a | a \in A) P a * (log (Q a) - log (P a))); last first.
   rewrite (big_morph _ morph_Ropp oppR0); apply eq_bigr => a _; by field.
 rewrite -[X in _ >= X]oppR0; apply Ropp_le_ge_contravar.
-apply (Rle_trans _ ((\rsum_(a | a \in A) (Q a - P a)) * log (exp 1))).
+apply (@leR_trans ((\rsum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
   apply ler_rsum => a _; apply div_diff_ub; by
     [apply dist_nonneg | apply Rle0 | apply P_dom_by_Q].
 rewrite -{1}(mul0R (log (exp 1))).
 apply Rmult_le_compat_r; first exact/log_exp1_Rle_0.
 rewrite big_split /= -(big_morph _ morph_Ropp oppR0).
-rewrite !pmf1 Rplus_opp_r; exact/Rle_refl.
+rewrite !pmf1 Rplus_opp_r; exact/leRR.
 Qed.
 
 (* TODO: move? *)
@@ -78,12 +78,12 @@ Proof.
 move=> Hx Hy Hxy Hxy2.
 case/boolP : (y == 0) => [/eqP y0 | y_not_0].
 - by rewrite y0 Hxy.
-- have y_pos : 0 < y by apply/RltP; rewrite lt0R y_not_0; exact/RleP.
+- have y_pos : 0 < y by apply/ltRP; rewrite lt0R y_not_0; exact/leRP.
   case/boolP : (x == 0) => [/eqP x0 | x_not_0].
   - move/esym : Hxy2; rewrite x0 mul0R subR0 => /Rmult_integral.
     case => //.
     rewrite logexp1E => /eqP/invR_eq0; by rewrite (negbTE ln2_neq0).
-  - have x_pos : 0 < x by apply/RltP; rewrite lt0R x_not_0; exact/RleP.
+  - have x_pos : 0 < x by apply/ltRP; rewrite lt0R x_not_0; exact/leRP.
     symmetry.
     apply (Rmult_eq_reg_l (/ x)); last by exact/nesym/ltR_eqF/invR_gt0.
     rewrite mulVR //.

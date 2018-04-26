@@ -98,7 +98,7 @@ set rhs := D(_ || _).
 suff : 0 <= rhs - lhs by move=> ?; fourier.
 rewrite -pinsker_fun_p_eq.
 apply pinsker_fun_pos with p01 q01 A card_A => //.
-split; [exact/ltRW/invR_gt0/mulR_gt0 | exact: Rle_refl].
+split; [exact/ltRW/invR_gt0/mulR_gt0 | exact/leRR].
 Qed.
 
 End Pinsker_2_bdist.
@@ -138,18 +138,18 @@ pose A_ := fun b => match b with 0 => A0 | 1 => A1 end.
 have cov : A_ 0 :|: A_ 1 = setT.
   rewrite /= /A0 /A1.
   have -> : [set x | P x <b Q x] = ~: [set x | Q x <b= P x].
-    apply/setP => a; by rewrite in_set in_setC in_set RltNge.
+    apply/setP => a; by rewrite in_set in_setC in_set ltRNge.
   by rewrite setUCr.
 have dis : A_ 0 :&: A_ 1 = set0.
   rewrite /A_ /A0 /A1.
   have -> : [set x | P x <b Q x] = ~: [set x | Q x <b= P x].
-    apply/setP => a; by rewrite in_set in_setC in_set RltNge.
+    apply/setP => a; by rewrite in_set in_setC in_set ltRNge.
   by rewrite setICr.
 pose P_A := bipart dis cov P.
 pose Q_A := bipart dis cov Q.
 have step1 : D(P_A || Q_A) <= D(P || Q) by apply partition_inequality; exact P_dom_by_Q.
 suff : / (2 * ln 2) * d(P , Q) ^2 <= D(P_A || Q_A).
-  move=> ?; apply Rle_trans with (D(P_A || Q_A)) => //; by apply Rge_le.
+  move=> ?; apply (@leR_trans (D(P_A || Q_A))) => //; exact/Rge_le.
 have step2 : d( P , Q ) = d( P_A , Q_A ).
   rewrite /var_dist.
   transitivity (\rsum_(a | a \in A0) Rabs (P a - Q a) + \rsum_(a | a \in A1) Rabs (P a - Q a)).
@@ -159,12 +159,12 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
     congr (_ + _).
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       transitivity (\rsum_(a | a \in A0) (P a - Q a)).
-        apply eq_bigr => a; rewrite /A0 in_set => /RleP Ha.
+        apply eq_bigr => a; rewrite /A0 in_set => /leRP Ha.
         rewrite Rabs_pos_eq //; by fourier.
       rewrite big_split /= Rabs_pos_eq; last first.
         suff : \rsum_(a | a \in A0) Q a <= \rsum_(a | a \in A0) P a.
           move=> ?; by fourier.
-        apply ler_rsum => a; by rewrite inE => /RleP.
+        apply ler_rsum => a; by rewrite inE => /leRP.
       rewrite -(big_morph _ morph_Ropp oppR0) //; by field.
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
@@ -174,11 +174,11 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
       + transitivity (\rsum_(a | a \in A1) - (P a - Q a)).
           apply eq_bigr => a; rewrite /A1 in_set => Ha.
           rewrite Rabs_left //.
-          move/RltP in Ha; by fourier.
+          move/ltRP in Ha; by fourier.
         rewrite -(big_morph _  morph_Ropp oppR0) // big_split /= Rabs_left; last first.
           suff : \rsum_(a | a \in A1) P a < \rsum_(a | a \in A1) Q a by move=> ?; fourier.
           apply ltr_rsum_support => // a.
-          rewrite /A1 in_set; by move/RltP.
+          rewrite /A1 in_set; by move/ltRP.
         by rewrite -(big_morph _ morph_Ropp oppR0).
   rewrite Set2sumE ?card_bool // => HX; rewrite /bipart_pmf.
   set a := Set2.a HX. set b := Set2.b HX.
@@ -202,13 +202,12 @@ Qed.
 
 Lemma Pinsker_inequality_weak : d(P , Q) <= sqrt (2 * D(P || Q)).
 Proof.
-rewrite -(sqrt_Rsqr (d(P , Q))); last by apply pos_var_dist.
+rewrite -(sqrt_Rsqr (d(P , Q))); last exact/pos_var_dist.
 apply sqrt_le_1_alt.
 apply (Rmult_le_reg_l (/ 2)); first by apply invR_gt0; fourier.
-apply Rle_trans with (D(P || Q)); last first.
-  rewrite mulRA mulVR // ?mul1R; last exact/eqP/gtR_eqF.
-  exact/Rle_refl.
-eapply Rle_trans; last by apply Pinsker_inequality.
+apply (@leR_trans (D(P || Q))); last first.
+  rewrite mulRA mulVR // ?mul1R; [exact/leRR | exact/eqP/gtR_eqF].
+apply: (leR_trans _ Pinsker_inequality).
 rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow; field.
 apply Rmult_le_compat_r; first exact: pow_even_ge0.
 apply Rinv_le_contravar.

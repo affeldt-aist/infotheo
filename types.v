@@ -483,7 +483,7 @@ apply/subsetP => t Ht.
 rewrite /set_typ_seq inE /typ_seq tuple_dist_type_entropy; last first.
   case/imsetP : Ht => x Hx ->.
   by rewrite row_of_tupleK.
-by rewrite addR0 subR0 !leRR.
+by rewrite addR0 subR0 !leRR'.
 Qed.
 
 (* TODO: move? *)
@@ -497,7 +497,7 @@ Proof.
 rewrite -(invRK (exp2 (INR n * `H P))%R) => //.
 rewrite -exp2_Ropp -mulNR.
 set aux := - INR n * `H P.
-apply/RleP; rewrite -div1R leR_pdivl_mulr //; apply/RleP; rewrite {}/aux.
+apply/leRP; rewrite -div1R leR_pdivl_mulr //; apply/leRP; rewrite {}/aux.
 case/boolP : [exists x, x \in T_{P}] => x_T_P.
 - case/existsP : x_T_P => ta Hta.
   rewrite -(row_of_tupleK ta) in Hta.
@@ -522,16 +522,15 @@ Qed.
 
 Lemma card_typed_tuples_alt : INR #| T_{P} | <= exp2 (INR n * `H P).
 Proof.
-apply Rle_trans with (INR #| `TS P n 0 |).
-  apply le_INR; apply/leP.
-  eapply leq_trans; last first.
+apply (@leR_trans (INR #| `TS P n 0 |)).
+  apply/le_INR/leP.
+  apply: leq_trans; last first.
     apply subset_leq_card.
-    by apply typed_tuples_are_typ_seq.
+    exact: typed_tuples_are_typ_seq.
   rewrite card_imset //.
   exact row_of_tuple_inj.
-eapply Rle_trans; first by apply TS_sup.
-rewrite addR0.
-apply Rle_refl.
+apply: (leR_trans (TS_sup _ _ _)).
+rewrite addR0; exact/leRR.
 Qed.
 
 Lemma perm_tuple_in_Ttuples ta (s : 'S_n) :

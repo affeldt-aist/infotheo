@@ -41,7 +41,7 @@ Proof.
 rewrite (bigD1 None) //= (bigD1 (Some a)) //= eqxx /= (proj2 (prsumr_eq0P _)).
 - by field.
 - rewrite /f; case => [a'|]; last by case: p_01.
-  case: ifPn => [_ |*]; last by apply Rle_refl.
+  case: ifPn => [_ |*]; last exact/leRR.
   case: p_01 => ? ? _; fourier.
 - case => //= a' aa'; case: ifPn => // /eqP ?; subst a'.
   move: aa'; by rewrite eqxx.

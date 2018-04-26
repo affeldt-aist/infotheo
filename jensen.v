@@ -103,7 +103,7 @@ case/boolP: (b == a) => Hb.
 by rewrite H // eqxx.
 Qed.
 
-Hint Resolve Rle_refl.
+Local Hint Resolve leRR.
 
 Lemma jensen_dist (r : A -> R) (X : dist A) :
   (forall a, D (r a)) ->
@@ -146,7 +146,7 @@ have /IH {IH}[IH HDd] : #|dist_supp d| = n.
 have HXb: 0 <= X b <= 1 by split; [exact/dist_nonneg|exact/dist_max].
 split; last by rewrite mulRC; apply interval_convex.
 rewrite mulRC.
-refine (Rle_trans _ _ _
+refine (leR_trans
   (@convex_f (r b) (\rsum_(i in dist_supp d) r i * d i) _ _ HDd HXb) _) => //.
 rewrite mulRC.
 apply /Rplus_le_compat_l /Rmult_le_compat_l => //.

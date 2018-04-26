@@ -130,7 +130,7 @@ Proof.
 case=> Oe' e'e.
 apply Rmult_le_compat_l; first by apply aep_sigma2_pos.
 apply leR_inv => //.
-- rewrite inE; exact/RltP/pow_lt.
+- rewrite inE; exact/ltRP/pow_lt.
 - apply pow_incr => //; split; [exact/ltRW | exact/e'e ].
 Qed.
 
@@ -149,17 +149,17 @@ Lemma aep : aep_bound P epsilon <= INR n.+1 ->
     (Rabs ((--log (P `^ n.+1) '/ n.+1) t - `H P) >b= epsilon) ] <= epsilon.
 Proof.
 move=> Hbound.
-apply Rle_trans with (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R; last first.
+apply (@leR_trans (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R); last first.
   rewrite /aep_bound in Hbound.
   apply (Rmult_le_compat_r (epsilon / INR n.+1)) in Hbound; last first.
     apply Rle_mult_inv_pos; [exact/ltRW/Hepsilon | exact/lt_0_INR/ltP].
   rewrite [in X in _ <= X]mulRCA mulRV ?INR_eq0 // ?mulR1 in Hbound.
-  eapply Rle_trans; last by apply Hbound.
+  apply: leR_trans; last by apply Hbound.
   apply Req_le; field.
   split; [exact: not_0_INR | exact: gtR_eqF].
 move: (sum_mlog_prod_isum_map_mlog P n) => Hisum.
 move: (wlln (@E_map_mlog _ P n) (@V_map_mlog _ P n) Hisum Hepsilon) => law_large.
-eapply Rle_trans; last by apply law_large.
+apply: leR_trans; last exact: law_large.
 apply Pr_incl; apply/subsetP => ta; rewrite 2!inE.
 case/andP => H1.
 rewrite [--log _]lock /= -lock.
@@ -171,7 +171,7 @@ congr (_ * _)%R.
 rewrite /map_mlog /=.
 rewrite TupleDist.dE.
 apply log_rmul_rsum_mlog, (rprodr_gt0_inv (dist_nonneg P)).
-move: H1; by rewrite TupleDist.dE => /RltP.
+move: H1; by rewrite TupleDist.dE => /ltRP.
 Qed.
 
 End AEP.

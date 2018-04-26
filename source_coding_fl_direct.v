@@ -76,12 +76,11 @@ End encoder_and_decoder.
 
 Lemma SrcDirectBound' d D : { k | D <= INR (k * (d.+1)) }.
 Proof.
-exists (Zabs_nat (up D)).
-rewrite -multE (mult_INR (Zabs_nat (up D)) d.+1).
-apply Rle_trans with (IZR (Zabs (up D))); first by apply Rle_up.
+exists (Z.abs_nat (up D)).
+rewrite -multE (mult_INR (Z.abs_nat (up D)) d.+1).
+apply (@leR_trans (IZR (Z.abs (up D)))); first exact: Rle_up.
 rewrite INR_IZR_INZ inj_Zabs_nat -{1}(mulR1 (IZR _)).
-apply Rmult_le_compat_l.
-  by apply IZR_le, Zabs_pos.
+apply Rmult_le_compat_l; first exact/IZR_le/Zabs_pos.
 rewrite -addn1 plus_INR /= (_ : INR 1 = 1%R) //; move: (pos_INR d) => ?; fourier.
 Qed.
 
@@ -90,7 +89,7 @@ Proof.
 case: (SrcDirectBound' d D) => k Hk.
 destruct k as [|k]; last by exists k.
 exists O; rewrite mul1n.
-apply Rle_trans with 0%R; by [assumption | apply pos_INR].
+apply (@leR_trans 0%R); by [assumption | apply pos_INR].
 Qed.
 
 Local Open Scope source_code_scope.
@@ -129,7 +128,7 @@ Qed.
 
 Lemma halflambdaepsilon : lambda / 2 <= epsilon.
 Proof.
-apply Rle_trans with lambda.
+apply (@leR_trans lambda).
   apply Rdiv_le; [apply Rlt_le; exact lambda0 | fourier].
 rewrite /lambda.
 case: (Rlt_le_dec (r - `H P) epsilon) => ?.
@@ -141,9 +140,7 @@ Lemma halflambda0 : 0 < lambda / 2.
 Proof. apply Rlt_mult_inv_pos; [exact lambda0 | fourier]. Qed.
 
 Lemma halflambda1 : lambda / 2 < 1.
-Proof.
-eapply Rle_lt_trans; by [apply halflambdaepsilon | apply (proj2 Hepsilon)].
-Qed.
+Proof. exact (leR_ltR_trans halflambdaepsilon (proj2 Hepsilon)). Qed.
 
 Lemma lambdainv2 : 0 < 2 / lambda.
 Proof. apply Rlt_mult_inv_pos; [fourier | exact lambda0]. Qed.
@@ -164,7 +161,7 @@ Theorem source_coding' : exists sc : scode_fl A k n,
 Proof.
 move: (proj2_sig (SrcDirectBound den delta)) => Hk.
 have k_k0 : aep_bound P (lambda / 2) <= INR k.
-  eapply Rle_trans; by [apply Rmax_l | apply Hk].
+  apply: leR_trans; by [apply Rmax_l | apply Hk].
 set S := `TS P k (lambda / 2).
 set def := TS_0 halflambda0 halflambda1 k_k0.
 set F := f n S.
@@ -207,24 +204,24 @@ apply/negPn/negPn.
     by rewrite (mulRCA (INR den.+1)) mulRV ?INR_eq0 // mulR1 mult_INR.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * r) by fourier.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * (`H P + lambda)).
-    eapply Rle_trans; first by apply card_S_bound.
+    apply: leR_trans; first exact: card_S_bound.
     apply Exp_le_increasing => //; apply Rmult_le_compat_l; [exact/pos_INR | exact/Hlambdar].
-  apply Rle_trans with (exp2 (INR k * (lambda / 2) +
-                              INR k * (`H P + lambda / 2))); last first.
+  apply (@leR_trans (exp2 (INR k * (lambda / 2) +
+                              INR k * (`H P + lambda / 2)))); last first.
     rewrite -mulRDr addRC -addRA.
     rewrite (_ : forall a, a / 2 + a / 2 = a)%R; last by move=> ?; field.
-    by apply Rle_refl.
-  apply Rle_trans with (exp2 (1 + INR k * (`H P + lambda / 2))); last first.
+    exact/leRR.
+  apply (@leR_trans (exp2 (1 + INR k * (`H P + lambda / 2)))); last first.
    apply Exp_le_increasing => //; apply Rplus_le_compat_r.
-    move/RleP : Hk; rewrite leR_maxl => /andP[_ /RleP Hk].
-    apply Rmult_le_reg_r with (2 / lambda)%R; first by exact lambdainv2.
+    move/leRP : Hk; rewrite leR_maxl => /andP[_ /leRP Hk].
+    apply Rmult_le_reg_r with (2 / lambda)%R; first exact lambdainv2.
     rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
       apply nesym, Rlt_not_eq; exact lambda0.
       move=> ?; fourier.
       rewrite mulRV ?mulR1 //; exact/eqP/nesym/Rlt_not_eq/halflambda0.
-  eapply Rle_trans; first exact/Rplus_le_compat_l/TS_sup.
-  apply Rle_trans with (exp2 (INR k* (`H P + lambda / 2)) +
-                        exp2 (INR k * (`H P + lambda / 2)))%R.
+  apply: leR_trans; first exact/Rplus_le_compat_l/TS_sup.
+  apply (@leR_trans (exp2 (INR k* (`H P + lambda / 2)) +
+                        exp2 (INR k * (`H P + lambda / 2)))%R).
   + apply Rplus_le_compat_r.
     rewrite -exp2_0.
     apply Exp_le_increasing => //.
@@ -233,7 +230,7 @@ apply/negPn/negPn.
     apply Rlt_le; exact: halflambda0.
   + rewrite (_ : forall a, a + a = 2 * a)%R; last by move=> ?; field.
     rewrite {1}(_ : 2 = exp2 (log 2)); last by rewrite logK //; fourier.
-    rewrite -ExpD {1}/log Log_n //; exact/Rle_refl.
+    rewrite -ExpD {1}/log Log_n //; exact/leRR.
 Qed.
 
 End source_coding_direct'.
@@ -251,8 +248,7 @@ Theorem source_coding_direct : forall epsilon, 0 < epsilon < 1 ->
 Proof.
 move=> eps Heps re HP_r.
 destruct re as [num den].
-exists (k P num den eps), (n P num den eps).
-by apply source_coding'.
+exists (k P num den eps), (n P num den eps); exact: source_coding'.
 Qed.
 
 End source_coding_direct.

@@ -133,7 +133,7 @@ apply derive_increasing_interv_right with (pderivable_pinsker_function_spec c).
 fourier.
 move=> t Ht.
 rewrite derive_pt_pinsker_function_spec // /pinsker_function_spec'.
-apply Rle_trans with (/ ((1 - t) * ln 2) - 8 * t / (2 * ln 2)); last first.
+apply (@leR_trans (/ ((1 - t) * ln 2) - 8 * t / (2 * ln 2))); last first.
   apply Rplus_le_compat_l.
   apply Ropp_le_contravar. (* NB:
                              Ropp_ge_le_contravar  forall r1 r2 : R, r1 >= r2 -> - r1 <= - r2
@@ -144,7 +144,7 @@ apply Rle_trans with (/ ((1 - t) * ln 2) - 8 * t / (2 * ln 2)); last first.
   rewrite mulRC.
   apply Rmult_le_compat_l => //.
   by case: Ht.
-apply Rle_trans with ((2 - 8 * t * (1 - t)) / (2 * (1 - t) * ln 2)); last first.
+apply (@leR_trans ((2 - 8 * t * (1 - t)) / (2 * (1 - t) * ln 2))); last first.
   apply Req_le.
   field.
   split; [exact/eqP/ln2_neq0 | case: Ht => ? ? ?; fourier].
@@ -158,8 +158,8 @@ have H2 : -2 <= - 8 * t * (1 - t).
   apply Ropp_le_contravar.
   rewrite [X in _ <= X](_ : 2 = 8 * / 4); last by field.
   apply Rmult_le_compat_l; [by fourier | exact: x_x2_max].
-apply Rle_trans with (2 - 2); first by fourier.
-apply Rplus_le_compat; first by apply Rle_refl.
+apply (@leR_trans (2 - 2)); first by fourier.
+apply Rplus_le_compat; first exact/leRR.
 by rewrite -mulRA -mulNR mulRA.
 Qed.
 
@@ -228,8 +228,8 @@ rewrite /pinsker_fun' /div_fct.
 have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
 have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   have : forall a b, b <= a -> 0 <= a - b. move=> *; fourier. apply.
-  apply Rle_trans with (4 / ln 2).
-    apply Rle_trans with (8 * / (2 * ln 2)).
+  apply (@leR_trans (4 / ln 2)).
+    apply (@leR_trans  (8 * / (2 * ln 2))).
     apply Rmult_le_compat_l => //; fourier.
     rewrite invRM; last 2 first.
       move=> ?; fourier.
@@ -270,11 +270,11 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   apply.
   have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
   have Hlocal2 : t * (1 - t) <> 0 by apply nesym, Rlt_not_eq, mulR_gt0; fourier.
-  apply Rle_trans with (4 / ln 2).
-    apply Rle_trans with (8 * / (2 * ln 2)).
-      apply/RleP.
-      rewrite Rle_pmul2l; last by apply/RltP; fourier.
-      by apply/RleP.
+  apply (@leR_trans (4 / ln 2)).
+    apply (@leR_trans (8 * / (2 * ln 2))).
+      apply/leRP.
+      rewrite Rle_pmul2l; last by apply/ltRP; fourier.
+      exact/leRP.
     rewrite invRM; last 2 first.
       move=> ?; fourier.
       exact/eqP/ln2_neq0.
@@ -319,7 +319,7 @@ case/Rle_lt_or_eq_dec : Hp0 => Hp0; last first.
     move: P_dom_by_Q.
     rewrite /dom_by /Binary.d /= => /(_ a).
     rewrite /Binary.f eqxx Rminus_diag_eq // => /(_ erefl) ?; fourier.
-  eapply Rle_trans; first by apply (pinsker_function_spec_pos Hc (conj Hq0 Hq1)).
+  apply: leR_trans; first exact: (pinsker_function_spec_pos Hc (conj Hq0 Hq1)).
   rewrite /pinsker_function_spec.
   apply Req_le.
   rewrite mul1R div1R /log LogV; by [field | fourier].
@@ -334,9 +334,9 @@ case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
     move: P_dom_by_Q.
     rewrite /dom_by /Binary.d /= => /(_ b); rewrite /Binary.f.
     rewrite eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) ?; fourier.
-  apply: Rle_trans.
+  apply: leR_trans.
     have : 0 <= 1 - q < 1 by split; fourier.
-    by apply: pinsker_function_spec_pos Hc.
+    exact: pinsker_function_spec_pos Hc.
   rewrite /pinsker_function_spec.
   apply Req_le.
   rewrite mul1R div1R /log LogV; last by rewrite /id.

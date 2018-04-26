@@ -96,7 +96,7 @@ rewrite /pf.
 case: ifP => [_ | Hcase].
 - exact/ltRW/invR_gt0/lt_0_INR/ltP.
 - apply Rle_mult_inv_pos; first by apply pos_INR.
-  by apply/RltP; rewrite lt0R INR_eq0 Hcase /= leR0n.
+  by apply/ltRP; rewrite lt0R INR_eq0 Hcase /= leR0n.
 Defined.
 
 Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat) (Bnot0 : (0 < #|B|)%nat)
@@ -795,9 +795,8 @@ Lemma card_shell_leq_exp_entropy :
   INR #| V.-shell ta | <= exp2 (INR n * `H(V | P)).
 Proof.
 rewrite cond_entropy_single_sum.
-apply (@Rle_trans _ (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
-- apply le_INR.
-  apply/leP; by apply card_shelled_tuples_leq_prod_card.
+apply (@leR_trans (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
+- exact/le_INR/leP/card_shelled_tuples_leq_prod_card.
 - rewrite exp2_pow.
   rewrite (big_morph _ mult_INR Logic.eq_refl).
   rewrite (@big_morph _ _ (fun r : R => ((exp2 r) ^ n)%R) 1%R Rmult _ Rplus _); last 2 first.
@@ -866,7 +865,7 @@ elim=> // h t IH n0 /=.
 case/andP=> H1 H2.
 rewrite in_cons.
 case/orP.
-  case/eqP => ?; subst a.
+  move/eqP => ?; subst a.
   rewrite {IH} map_filter_nseq_nil //; last first.
     move=> x0 x0_t /=.
     apply/eqP => ?; subst x0.

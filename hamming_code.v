@@ -874,9 +874,7 @@ move=> ->.
 - case: arg_minP.
     by destruct C_not_empty.
   move => /= i Hi; by apply.
-- move: Hy.
-  case=> <-.
-  by rewrite /Decoder.repair /= /hamming_repair ffunE.
+- by rewrite -Hy /Decoder.repair /= /hamming_repair ffunE.
 Defined.
 
 Lemma encode_decode c y : c \in lcode ->

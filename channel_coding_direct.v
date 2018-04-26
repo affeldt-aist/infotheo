@@ -89,8 +89,8 @@ have : \rsum_(f : encT A M n) Wght.d P f * epsilon <= x.
   apply ler_rsum_l => //= i _.
   - apply Rmult_le_compat_l; [exact/dist_nonneg | exact/Rnot_lt_le/abs].
   - apply mulR_ge0; [exact/dist_nonneg | exact/echa_pos].
-apply Rlt_not_le, Rlt_le_trans with epsilon => //.
-rewrite -big_distrl /= (pmf1 (Wght.d P)) mul1R; exact/Rle_refl.
+apply/Rlt_not_le/(@ltR_leR_trans epsilon) => //.
+rewrite -big_distrl /= (pmf1 (Wght.d P)) mul1R; exact/leRR.
 Qed.
 
 Definition o_PI (m m' : M) := fun g : encT A M n => [ffun x => g (tperm m m' x)].
@@ -692,7 +692,7 @@ apply/idP/idP.
     by rewrite Hm2 in Hy.
   + apply/eqP. case => ?; subst m2.
     case/andP : Hm2 => _ /forallP Hm2.
-    case/bigcupP : Hy => m [Hm m_tb].
+    case/bigcupP : Hy => m Hm m_tb.
     rewrite /cal_E inE inE in m_tb.
     move: {Hm2}(Hm2 m).
     by rewrite !inE m_tb Hm.
@@ -702,7 +702,7 @@ Lemma random_coding_good_code epsilon : 0 <= epsilon ->
   forall (r : CodeRateType),
     forall epsilon0, epsilon0_condition r epsilon epsilon0 ->
     forall n, n_condition r epsilon0 n ->
-  exists M : finType, (0 < #|M|)%nat /\ #|M| = Zabs_nat (Int_part (exp2 (INR n * r))) /\
+  exists M : finType, (0 < #|M|)%nat /\ #|M| = Z.abs_nat (Int_part (exp2 (INR n * r))) /\
   let Jtdec := jtdec P W epsilon0 in
   \rsum_(f : encT A M n) (Wght.d P f * echa(W , mkCode f (Jtdec f)))%R < epsilon.
 Proof.
@@ -710,7 +710,7 @@ move=> Hepsilon r epsilon0 Hepsilon0 n Hn.
 have [k Hk] : exists k, (log (INR k.+1) / INR n = r)%R.
   case: Hn => ? [? [Hn2 ?]].
   case/fp_nat : Hn2 => k Hn2.
-  exists (Zabs_nat k).-1.
+  exists (Z.abs_nat k).-1.
   rewrite prednK; last first.
     apply/ltP/INR_lt.
     rewrite INR_Zabs_nat; [by rewrite -Hn2 | apply le_IZR; by rewrite -Hn2].
@@ -750,10 +750,10 @@ rewrite [X in X < _](_ : _ = (\rsum_(f : encT A M n) Wght.d P f * (e(W, mkCode f
     by move: Hepsilon0; rewrite /epsilon0_condition; case => /ltRW.
   by rewrite exchange_big /= big_const /= iter_Rplus div1R mulRA mulVR ?mul1R // INR_eq0 card_ord.
 set Cal_E := @cal_E M n epsilon0.
-apply Rle_lt_trans with
+apply (@leR_ltR_trans
 (\rsum_(f : encT A M n) Wght.d P f * Pr (W ``(| f ord0)) (~: Cal_E f ord0) +
   \rsum_(i | i != ord0)
-  \rsum_(f : encT A M n) Wght.d P f * Pr (W ``(| f ord0)) (Cal_E f i))%R.
+  \rsum_(f : encT A M n) Wght.d P f * Pr (W ``(| f ord0)) (Cal_E f i))%R).
   rewrite exchange_big /= -big_split /=.
   apply ler_rsum => /= i _.
   rewrite -big_distrr /= -mulRDr.
@@ -762,10 +762,10 @@ apply Rle_lt_trans with
     (~: Cal_E i ord0 :|: \bigcup_(i0 : M | i0 != ord0) Cal_E i i0)); last first.
     apply Pr_ext; apply/setP => tb /=.
     move: (preimC_Cal_E epsilon0 i tb); by rewrite inE.
-  apply Rle_trans with (Pr (W ``(| i ord0)) (~: Cal_E i ord0) +
-    Pr (W ``(| i ord0)) (\bigcup_(i0 | i0 != ord0) (Cal_E i i0)))%R.
-    by apply Pr_union.
-  by apply Rplus_le_compat_l, Pr_bigcup.
+  apply (@leR_trans (Pr (W ``(| i ord0)) (~: Cal_E i ord0) +
+    Pr (W ``(| i ord0)) (\bigcup_(i0 | i0 != ord0) (Cal_E i i0)))%R).
+    exact: Pr_union.
+  exact/Rplus_le_compat_l/Pr_bigcup.
 rewrite first_summand //.
 set lhs := \rsum_(_ < _ | _) _.
 have -> : lhs = (INR #| M |.-1 * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0])%R.
@@ -784,8 +784,8 @@ have -> : lhs = (INR #| M |.-1 * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | pr
     by rewrite -!topredE /= !in_set andbC.
     apply eq_big => //; by apply: second_summand.
 rewrite card_ord /=.
-apply Rle_lt_trans with (epsilon0 + INR k *
-   Pr P `^ n `x (`O(P , W)) `^ n [set x | prod_rV x \in `JTS P W n epsilon0])%R.
+apply (@leR_ltR_trans (epsilon0 + INR k *
+   Pr P `^ n `x (`O(P , W)) `^ n [set x | prod_rV x \in `JTS P W n epsilon0])%R).
   apply Rplus_le_compat_r.
   rewrite Pr_of_cplt.
   have : forall a b, a >= 1 - b -> 1 - a <= b by move=> *; fourier.
@@ -793,12 +793,12 @@ apply Rle_lt_trans with (epsilon0 + INR k *
   apply JTS_1 => //.
   rewrite /epsilon0_condition in Hepsilon0; tauto.
   by case: Hn => _ [_ []].
-apply Rle_lt_trans with (epsilon0 + INR #| M | * exp2 (- INR n * (`I( P ; W ) - 3 * epsilon0)))%R.
-  apply Rplus_le_compat_l, Rmult_le_compat.
-    rewrite (_ : 0 = INR 0)%R //. apply le_INR. by apply/leP.
-    apply le_0_Pr. apply le_INR. apply/leP. by rewrite card_ord.
-    by apply non_typical_sequences.
-apply Rlt_trans with (epsilon0 + epsilon0)%R; last first.
+apply (@leR_ltR_trans (epsilon0 + INR #| M | * exp2 (- INR n * (`I( P ; W ) - 3 * epsilon0)))%R).
+  apply/Rplus_le_compat_l/Rmult_le_compat.
+    rewrite (_ : 0 = INR 0)%R //; exact/le_INR/leP.
+    apply le_0_Pr. apply/le_INR/leP. by rewrite card_ord.
+    exact: non_typical_sequences.
+apply (@ltR_trans (epsilon0 + epsilon0)%R); last first.
   case: Hepsilon0 => ? [? ?]; fourier.
 apply Rplus_lt_compat_l.
 have -> : INR #| M | = exp2 (log (INR #| M |)).
@@ -809,7 +809,7 @@ rewrite (_ : _ + _ = - INR n * (`I(P ; W) - log (INR #| M |) / INR n - 3 * epsil
   field.
   apply/eqP; rewrite INR_eq0 gtn_eqF //; by case: Hn.
 rewrite (_ : _ / _ = r)%R; last by rewrite -Hk card_ord.
-apply Rlt_trans with (exp2 (- INR n * epsilon0)).
+apply (@ltR_trans (exp2 (- INR n * epsilon0))).
   apply Exp_increasing => //.
   rewrite !mulNR.
   apply Ropp_lt_contravar, Rmult_lt_compat_l.
@@ -818,13 +818,13 @@ apply Rlt_trans with (exp2 (- INR n * epsilon0)).
     apply (Rmult_lt_compat_l 4) in Hepsilon0; last by fourier.
     rewrite mulRCA mulRV ?mulR1 in Hepsilon0; last by apply/eqP.
     clear Hk; fourier.
-apply Rlt_le_trans with (exp2 (- (- (log epsilon0) / epsilon0) * epsilon0)).
+apply (@ltR_leR_trans (exp2 (- (- (log epsilon0) / epsilon0) * epsilon0))).
   apply Exp_increasing => //; apply Rmult_lt_compat_r.
   - rewrite /epsilon0_condition in Hepsilon0; tauto.
   - apply Ropp_lt_contravar; by case: Hn => _ [Hn2 _].
     rewrite !mulNR -mulRA mulVR ?mulR1 ?oppRK; last first.
       apply/eqP/gtR_eqF; by case: Hepsilon0.
-    rewrite logK; [exact/Rle_refl|by case: Hepsilon0].
+    rewrite logK; [exact/leRR | by case: Hepsilon0].
 Qed.
 
 End random_coding_good_code_existence.
@@ -861,41 +861,34 @@ have [epsilon0 Hepsilon0] : exists epsilon0,
     apply Rmin_pos; apply mulR_gt0 => //; fourier.
   split.
     apply mulR_gt0 => //; fourier.
-  split.
-    apply Rlt_le_trans with (Rmin (epsilon / 2) ((`I(P ; W) - r) / 4)).
-      by apply Rlt_eps2_eps.
-    by apply Rmin_l.
-    apply Rlt_le_trans with (Rmin (epsilon / 2) ((`I(P ; W) - r) / 4)).
-      by apply Rlt_eps2_eps.
-    by apply Rmin_r.
+  split; [exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/Rmin_l |
+          exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/Rmin_r ].
 have [n Hn] : exists n, n_condition W P r epsilon0 n.
   destruct r as [r [num [den [Hnum [Hden Hr]]]]].
   have Hn : exists n, (0 < n)%nat /\
     - log epsilon0 / epsilon0 < INR n /\
-    (maxn (Zabs_nat (up (aep_bound P (epsilon0 / 3))))
-    (maxn (Zabs_nat (up (aep_bound (`O(P , W)) (epsilon0 / 3))))
-          (Zabs_nat (up (aep_bound (`J(P , W)) (epsilon0 / 3))))) <= n)%nat.
+    (maxn (Z.abs_nat (up (aep_bound P (epsilon0 / 3))))
+    (maxn (Z.abs_nat (up (aep_bound (`O(P , W)) (epsilon0 / 3))))
+          (Z.abs_nat (up (aep_bound (`J(P , W)) (epsilon0 / 3))))) <= n)%nat.
     set supermax := maxn 1
-      (maxn (Zabs_nat (up (- log epsilon0 / epsilon0)))
-      (maxn (Zabs_nat (up (aep_bound P (epsilon0 / 3))))
-      (maxn (Zabs_nat (up (aep_bound (`O(P , W)) (epsilon0 / 3))))
-            (Zabs_nat (up (aep_bound (`J(P , W)) (epsilon0 / 3))))))).
+      (maxn (Z.abs_nat (up (- log epsilon0 / epsilon0)))
+      (maxn (Z.abs_nat (up (aep_bound P (epsilon0 / 3))))
+      (maxn (Z.abs_nat (up (aep_bound (`O(P , W)) (epsilon0 / 3))))
+            (Z.abs_nat (up (aep_bound (`J(P , W)) (epsilon0 / 3))))))).
     exists supermax.
     split; first by rewrite leq_max.
     split.
-      apply Rlt_le_trans with (IZR (up (- log epsilon0 / epsilon0))).
+      apply (@ltR_leR_trans (IZR (up (- log epsilon0 / epsilon0)))).
         rewrite up_Int_part.
         case: (base_Int_part (- log epsilon0 / epsilon0)) => H1 H2.
         rewrite plus_IZR //.
         move: H2.
         set eps := - log epsilon0 / epsilon0.
         move=> ?; fourier.
-      apply Rle_trans with (INR (Zabs_nat (up (- log epsilon0 / epsilon0)))).
+      apply (@leR_trans (INR (Z.abs_nat (up (- log epsilon0 / epsilon0))))).
         case: (Z_lt_le_dec (up (- log epsilon0 / epsilon0)) 0) => H1.
-          apply Rle_trans with 0.
-            by apply IZR_le, Zlt_le_weak.
-          by apply pos_INR.
-        rewrite INR_Zabs_nat //; by apply Rle_refl.
+          apply (@leR_trans 0); [exact/IZR_le/Zlt_le_weak | exact: pos_INR].
+        rewrite INR_Zabs_nat //; exact/leRR.
       apply le_INR.
       rewrite /supermax maxnA.
       apply/leP.
@@ -910,7 +903,7 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
   split.
     apply/(@leq_trans n1) => //; tauto.
   split.
-    apply Rlt_le_trans with (INR n1); [tauto | exact/le_INR/leP].
+    apply (@ltR_leR_trans (INR n1)); [tauto | exact/le_INR/leP].
   apply leq_trans with n1 => //; tauto.
 case: (random_coding_good_code (ltRW _ _ Hepsilon) Hepsilon0 Hn) =>
   M [HM [M_k H]].

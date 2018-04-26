@@ -43,7 +43,7 @@ elim=> [i Hi [] | i Hi [] | j /=].
   rewrite !NatTrec.doubleE => Hj.
   have absurd : odd ((nat_of_pos i).*2) by rewrite Hj /= odd_double.
   by rewrite odd_double in absurd.
-- move=> j /= [] /eqP.
+- move=> j /= /eqP.
   by rewrite !NatTrec.doubleE -!muln2 eqn_mul2r /= => /eqP/Hi ->.
 - rewrite /= NatTrec.doubleE => absurd.
   exfalso.

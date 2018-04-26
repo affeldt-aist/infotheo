@@ -46,17 +46,17 @@ Notation "a '>b' b" := (Rgt_bool a b) : R_scope.
 Notation "a '<b=' b '<b=' c" := (Rle_bool a b && Rle_bool b c) : R_scope.
 Notation "a '<b' b '<b' c" := (Rlt_bool a b && Rlt_bool b c) : R_scope.
 
-Lemma RgeP (a b : R) : reflect (a >= b) (a >b= b).
+Lemma geRP (a b : R) : reflect (a >= b) (a >b= b).
 Proof. apply: (iffP idP); by rewrite /Rge_bool; case: Rge_dec. Qed.
 
-Lemma RleP (a b : R) : reflect (a <= b) (a <b= b).
+Lemma leRP (a b : R) : reflect (a <= b) (a <b= b).
 Proof.
 apply: (iffP idP); rewrite /Rle_bool /Rge_bool; case: Rge_dec => //.
 by move/Rge_le.
 by move/Rnot_ge_gt/Rgt_not_le.
 Qed.
 
-Lemma RltP (a b : R) : reflect (a < b) (a <b b).
+Lemma ltRP (a b : R) : reflect (a < b) (a <b b).
 Proof. apply: (iffP idP); by rewrite /Rlt_bool; case: Rlt_dec. Qed.
 
 Definition add0R : left_id 0 Rplus := Rplus_0_l.
@@ -129,12 +129,29 @@ Proof. move=> Hb He; rewrite He in Hb; by apply (Rlt_irrefl a). Qed.
 
 Definition ltR_eqF := Rlt_not_eq.
 
-Lemma leRR r : r <b= r.
-Proof. apply/RleP. by apply Rle_refl. Qed.
+Definition leRR := Rle_refl.
+
+Lemma leRR' r : r <b= r. Proof. exact/leRP/leRR. Qed.
+
+Lemma ltR_trans y x z : x < y -> y < z -> x < z.
+Proof. exact: Rlt_trans. Qed.
+Arguments ltR_trans [_] [_] [_].
+
+Lemma leR_trans y x z : x <= y -> y <= z -> x <= z.
+Proof. exact: Rle_trans. Qed.
+Arguments leR_trans [_] [_] [_].
+
+Lemma leR_ltR_trans y x z : x <= y -> y < z -> x < z.
+Proof. exact: Rle_lt_trans. Qed.
+Arguments leR_ltR_trans [_] [_] [_].
+
+Lemma ltR_leR_trans y x z : x < y -> y <= z -> x < z.
+Proof. exact: Rlt_le_trans. Qed.
+Arguments ltR_leR_trans [_] [_] [_].
 
 Lemma ltR_subRL m n p : (n <b p - m) = (m + n <b p).
 Proof.
-apply/idP/idP => /RltP H; apply/RltP.
+apply/idP/idP => /ltRP H; apply/ltRP.
   move/(Rplus_lt_compat_l m) : H.
   by rewrite addRCA Rplus_opp_r addR0.
 by apply: (Rplus_lt_reg_l m); rewrite addRCA Rplus_opp_r addR0.
@@ -164,38 +181,40 @@ Proof. exact: Ropp_0_gt_lt_contravar. Qed.
      : forall r1 r2 : R, ~ r1 < r2 -> r2 <= r1 *)
 (* Rlt_not_le
      : forall r1 r2 : R, r2 < r1 -> ~ r1 <= r2 *)
-Lemma RleNgt m n : (m <b= n) = ~~ (n <b m).
+Lemma leRNlt m n : (m <b= n) = ~~ (n <b m).
 Proof.
 apply/idP/idP.
-move/RleP => ?; by apply/RltP/Rle_not_gt.
-move/RltP/Rnot_lt_le => ?; by apply/RleP.
+move/leRP => ?; exact/ltRP/Rle_not_gt.
+move/ltRP/Rnot_lt_le => ?; exact/leRP.
 Qed.
 
-Lemma RltNge m n : (m <b n) = ~~ (n <b= m).
-Proof. by rewrite RleNgt negbK. Qed.
+Lemma ltRNge m n : (m <b n) = ~~ (n <b= m).
+Proof. by rewrite leRNlt negbK. Qed.
+
+Lemma leRNgt (x y : R) : (x <b= y) = ~~ (x >b y).
+Proof. by rewrite /Rgt_bool ltRNge negbK. Qed.
 
 Lemma ltRR n : n <b n = false.
-Proof. by apply/RltP/Rlt_irrefl. Qed.
+Proof. by apply/ltRP/Rlt_irrefl. Qed.
 
-(* Rplus_le_compat. *)
-Lemma Rle_add m1 m2 n1 n2 : m1 <b= n1 -> m2 <b= n2 -> m1 + m2 <b= n1 + n2.
-Proof. move=> ? ?; apply/RleP/Rplus_le_compat; by apply/RleP. Qed.
+Lemma leR_add m1 m2 n1 n2 : m1 <b= n1 -> m2 <b= n2 -> m1 + m2 <b= n1 + n2.
+Proof. move=> ? ?; apply/leRP/Rplus_le_compat; exact/leRP. Qed.
 
 Definition ltRW m n : m < n -> m <= n := Rlt_le m n.
 
-Lemma RltW (a b : R) : a <b b -> a <b= b.
-Proof. by move/RltP/Rlt_le/RleP. Qed.
+Lemma ltRW' (a b : R) : a <b b -> a <b= b.
+Proof. by move/ltRP/Rlt_le/leRP. Qed.
 
 Lemma leR_eqVlt m n : (m <b= n) = (m == n) || (m <b n).
 Proof.
-apply/idP/idP => [/RleP|/orP[/eqP ->|]].
-  case/Rle_lt_or_eq_dec => ?; apply/orP; by [right; apply/RltP|left; apply/eqP].
-by rewrite leRR.
-by move/RltW.
+apply/idP/idP => [/leRP|/orP[/eqP ->|]].
+  case/Rle_lt_or_eq_dec => ?; apply/orP; by [right; apply/ltRP|left; apply/eqP].
+exact: leRR'.
+exact: ltRW'.
 Qed.
 
 Lemma ltR_neqAle m n : (m <b n) = (m != n) && (m <b= n).
-Proof. by rewrite RltNge leR_eqVlt negb_or -RleNgt eq_sym. Qed.
+Proof. by rewrite ltRNge leR_eqVlt negb_or ltRNge negbK eq_sym. Qed.
 
 Lemma lt0R x : (0 <b x) = (x != 0) && (0 <b= x).
 Proof. by rewrite ltR_neqAle eq_sym. Qed.
@@ -210,33 +229,33 @@ by rewrite (_ : 0 = INR 0) // => /INR_eq ->.
 Qed.
 
 Lemma leR0n n : (0 <b= INR n) = (O <= n)%nat.
-Proof. exact/idP/idP/RleP/pos_INR. Qed.
+Proof. exact/idP/idP/leRP/pos_INR. Qed.
 
 Lemma ltR0n n : (0 <b INR n) = (O < n)%nat.
 Proof.
-apply/idP/idP => [/RltP|/ltP/lt_0_INR/RltP //].
+apply/idP/idP => [/ltRP|/ltP/lt_0_INR/ltRP //].
 by rewrite (_ : 0 = INR O) // => /INR_lt/ltP.
 Qed.
 
 Lemma leR_nat m n : (INR m <b= INR n) = (m <= n)%nat.
-Proof. by apply/idP/idP => [/RleP/INR_le/leP//|/leP/le_INR/RleP]. Qed.
+Proof. by apply/idP/idP => [/leRP/INR_le/leP//|/leP/le_INR/leRP]. Qed.
 
 Lemma ltR_nat m n : (INR m <b INR n) = (m < n)%nat.
-Proof. by apply/idP/idP => [/RltP/INR_lt/ltP//|/ltP/lt_INR/RltP]. Qed.
+Proof. by apply/idP/idP => [/ltRP/INR_lt/ltP//|/ltP/lt_INR/ltRP]. Qed.
 
 (* Rplus_le_compat_r
      : forall r r1 r2 : R, r1 <= r2 -> r1 + r <= r2 + r*)
 
 Lemma Rle_add2r p m n : (m + p <b= n + p) = (m <b= n).
 Proof.
-apply/idP/idP => [/RleP/Rplus_le_reg_r/RleP //|].
-by move/RleP/(Rplus_le_compat_r p)/RleP.
+apply/idP/idP => [/leRP/Rplus_le_reg_r/leRP //|].
+by move/leRP/(Rplus_le_compat_r p)/leRP.
 Qed.
 
 Lemma Rlt_add2r (p m n : R) : (m + p <b n + p) = (m <b n).
 Proof.
-apply/idP/idP => [/RltP/Rplus_lt_reg_r/RltP // | ].
-by move/RltP/(Rplus_lt_compat_r p)/RltP.
+apply/idP/idP => [/ltRP/Rplus_lt_reg_r/ltRP // | ].
+by move/ltRP/(Rplus_lt_compat_r p)/ltRP.
 Qed.
 
 Definition mulR_ge0 := Rmult_le_pos.
@@ -249,9 +268,9 @@ Definition addR_ge0 := Rplus_le_le_0_compat.
      : forall r r1 r2 : R, 0 < r -> r * r1 <= r * r2 -> r1 <= r2 *)
 Lemma Rle_pmul2l m n1 n2 : 0 <b m -> (m * n1 <b= m * n2) = (n1 <b= n2).
 Proof.
-move=> /RltP Hm.
-apply/idP/idP; first by move/RleP/Rmult_le_reg_l => /(_ Hm)/RleP.
-move/RleP/(Rmult_le_compat_l m); by move/ltRW : Hm => Hm /(_ Hm)/RleP.
+move=> /ltRP Hm.
+apply/idP/idP; first by move/leRP/Rmult_le_reg_l => /(_ Hm)/leRP.
+move/leRP/(Rmult_le_compat_l m); by move/ltRW : Hm => Hm /(_ Hm)/leRP.
 Qed.
 
 (* Rmult_le_compat_r
@@ -282,7 +301,7 @@ Definition invRK := Rinv_involutive.
 Definition invRM := Rinv_mult_distr.
 
 Lemma leR_inv : {in [pred x | true] & [pred x | 0 <b x], {homo Rinv : a b /~ a <= b}}.
-Proof. move=> a b; rewrite !inE => _ /RltP b0 ba; exact/Rinv_le_contravar. Qed.
+Proof. move=> a b; rewrite !inE => _ /ltRP b0 ba; exact/Rinv_le_contravar. Qed.
 
 Definition divRR (x : R) : x != 0 -> x / x = 1.
 Proof. move=> x0; rewrite /Rdiv Rinv_r //; exact/eqP. Qed.
@@ -305,44 +324,44 @@ Proof. by move=> x0; rewrite mulRC mulRV. Qed.
 Lemma leR_pdivl_mulr z x y : 0 < z -> (x <b= y / z) = (x * z <b= y).
 Proof.
 move=> z0.
-apply/idP/idP=> [|]/RleP.
+apply/idP/idP=> [|]/leRP.
   move/(Rmult_le_compat_l z) => /(_ (ltRW _ _ z0)).
   rewrite mulRC mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
-  by move/RleP.
-move=> H; apply/RleP/(Rmult_le_reg_r z) => //.
+  by move/leRP.
+move=> H; apply/leRP/(Rmult_le_reg_r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
 Lemma ltR_pdivl_mulr z x y : 0 < z -> (x <b y / z) = (x * z <b y).
 Proof.
 move=> z0.
-apply/idP/idP=> [|]/RltP.
+apply/idP/idP=> [|]/ltRP.
   move/(Rmult_lt_compat_l z) => /(_ z0).
   rewrite mulRC mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
-  by move/RltP.
-move=> H; apply/RltP/(Rmult_lt_reg_r z) => //.
+  by move/ltRP.
+move=> H; apply/ltRP/(Rmult_lt_reg_r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
 Lemma leR_pdivr_mulr z x y : 0 < z -> (y / z <b= x) = (y <b= x * z).
 Proof.
 move=> z0.
-apply/idP/idP => [|]/RleP.
+apply/idP/idP => [|]/leRP.
   move/(Rmult_le_compat_r z) => /(_ (ltRW _ _ z0)).
-  rewrite -mulRA mulVR ?mulR1; first by move/RleP.
+  rewrite -mulRA mulVR ?mulR1; first by move/leRP.
   exact/eqP/gtR_eqF.
-move=> H; apply/RleP/(Rmult_le_reg_r z) => //.
+move=> H; apply/leRP/(Rmult_le_reg_r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
 Lemma ltR_pdivr_mulr z x y : 0 < z -> (y / z <b x) = (y <b x * z).
 Proof.
 move=> z0.
-apply/idP/idP => [|]/RltP.
+apply/idP/idP => [|]/ltRP.
   move/(Rmult_lt_compat_r z) => /(_ z0).
-  rewrite -mulRA mulVR ?mulR1; first by move/RltP.
+  rewrite -mulRA mulVR ?mulR1; first by move/ltRP.
   exact/eqP/gtR_eqF.
-move=> H; apply/RltP/(Rmult_lt_reg_r z) => //.
+move=> H; apply/ltRP/(Rmult_lt_reg_r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 

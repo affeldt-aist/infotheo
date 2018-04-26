@@ -158,7 +158,7 @@ Lemma row_mx_rbehead {n} (x : 'rV_(1 + n)) (i : A) (b : 'I_(1 + n)) :
 Proof.
 move=> xi.
 rewrite mxE; case: splitP => [j|k bk].
-  rewrite {j}(ord1 j) => -[] Hb; rewrite mxE -xi; congr (_ ``_ _).
+  rewrite {j}(ord1 j) => Hb; rewrite mxE -xi; congr (_ ``_ _).
   exact/val_inj.
 rewrite mxE; congr (_ ``_ _); exact/val_inj.
 Qed.

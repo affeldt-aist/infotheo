@@ -1,3 +1,4 @@
+Require FunctionalExtensionality.
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype tuple bigop finset path ssralg.
 From mathcomp Require Import fingroup zmodp poly ssrnum.
@@ -92,8 +93,6 @@ Program Definition ary_of_nat'
 Next Obligation. exact/ltP/ltn_Pdiv. Qed.
 
 Definition ary_of_nat := Fix Wf_nat.lt_wf (fun _ => seq 'I_t) ary_of_nat'.
-
-Require FunctionalExtensionality.
 
 Lemma ary_of_nat_unfold n : ary_of_nat n =
   if n < t then [:: inord n] else rcons (ary_of_nat (n %/ t)) (inord (n %% t)).

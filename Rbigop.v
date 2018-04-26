@@ -160,7 +160,7 @@ Lemma ler_rsum_support (X : {set A}) :
 Proof.
 move=> H.
 elim: (index_enum _) => [|h t IH].
-- rewrite !big_nil; exact/Rle_refl.
+- rewrite !big_nil; exact/leRR.
 - rewrite !big_cons.
   set K := _ && _; move HK : K => []; subst K => //.
   apply Rplus_le_compat => //.
@@ -181,10 +181,10 @@ Lemma ler_rsum_l : (forall i, P i -> f i <= g i) ->
 Proof.
 move=> f_g Qg H.
 elim: (index_enum _) => [| h t IH].
-- rewrite !big_nil; by apply Rle_refl.
+- rewrite !big_nil; exact/leRR.
 - rewrite !big_cons /=; case: ifP => [Ph|Ph].
     rewrite (H _ Ph); apply Rplus_le_compat => //; exact: f_g.
-  case: ifP => // Qh; apply: Rle_trans; [apply IH|].
+  case: ifP => // Qh; apply: (leR_trans IH).
   rewrite -{1}[X in X <= _](add0R _); exact/Rplus_le_compat_r/Qg.
 Qed.
 
@@ -194,7 +194,7 @@ Lemma ler_rsum_l_support (R : pred A) :
 Proof.
 move=> Hf P_Q.
 elim: (index_enum _) => [|h t IH].
-- rewrite !big_nil; exact/Rle_refl.
+- rewrite !big_nil; exact/leRR.
 - rewrite !big_cons.
   set cond := _ \in _; move Hcond : cond => []; subst cond => //=.
   case: ifP => // HP.
@@ -240,9 +240,9 @@ End ler_ltr_rsum.
 Lemma ler_rsum_Rabs (A : finType) f : Rabs (\rsum_(a : A) f a) <= \rsum_(a : A) Rabs (f a).
 Proof.
 elim: (index_enum _) => [|h t IH].
-  rewrite 2!big_nil Rabs_R0; by apply Rle_refl.
+  rewrite 2!big_nil Rabs_R0; exact/leRR.
 rewrite 2!big_cons.
-apply (Rle_trans _ (Rabs (f h) + Rabs (\rsum_(j <- t) f j)));
+apply (@leR_trans (Rabs (f h) + Rabs (\rsum_(j <- t) f j)));
   [exact/Rabs_triang |exact/Rplus_le_compat_l].
 Qed.
 
@@ -258,21 +258,19 @@ case: ifPn => /=.
   + move: hP; rewrite unfold_in => ->.
     case: ifP => // Qh.
     * rewrite -addRA; apply Rplus_le_compat_l.
-      eapply Rle_trans; first exact/IH.
+      apply (leR_trans IH).
       have : forall a b c, 0 <= c -> a + b <= a + (c + b) by move=> *; fourier.
       apply; by apply Hf.
     * rewrite -addRA; apply Rplus_le_compat_l.
-      eapply Rle_trans; first exact/IH.
-      by apply Req_le.
+      exact/(leR_trans IH)/Req_le.
   + move: hQ; rewrite unfold_in => ->.
     case: ifP => // Ph.
-    * rewrite -addRA; apply Rplus_le_compat_l.
-      eapply Rle_trans; first exact/IH.
+    * rewrite -addRA; apply/Rplus_le_compat_l/(leR_trans IH).
       have : forall a b c, 0 <= c -> a + b <= a + (c + b) by move=> *; fourier.
       apply; by apply Hf.
-    * rewrite -(Rplus_comm (f h + _)) -addRA; apply Rplus_le_compat_l.
-      eapply Rle_trans; first exact/IH.
-      by rewrite Rplus_comm; apply Req_le.
+    * rewrite -(addRC (f h + _)) -addRA; apply Rplus_le_compat_l.
+      apply (leR_trans IH).
+      by rewrite addRC; apply Req_le.
 - rewrite negb_or.
   case/andP.
   rewrite !unfold_in; move/negbTE => -> /negbTE ->.
@@ -282,8 +280,8 @@ Qed.
 Lemma rsumr_ge0 (A : finType) (P : pred A) f (H : forall i, P i -> 0 <= f i) :
   0 <= \rsum_(i in A | P i) f i.
 Proof.
-apply Rle_trans with (\rsum_(i | (i \in A) && P i) (fun=> 0) i).
-rewrite big_const iter_Rplus mulR0 /=; exact/Rle_refl.
+apply (@leR_trans (\rsum_(i | (i \in A) && P i) (fun=> 0) i)).
+rewrite big_const iter_Rplus mulR0 /=; exact/leRR.
 exact/ler_rsum.
 Qed.
 
@@ -293,10 +291,9 @@ Proof.
 move=> H.
 rewrite (_ : \rsum_(i in A) f i = \rsum_(i in [set: A]) f i); last first.
   apply eq_bigl => x /=; by rewrite !inE.
-eapply Rle_lt_trans; last first.
-  apply ltr_rsum_support with (f := fun=> 0) => //.
-  by rewrite cardsT.
-rewrite big_const_seq iter_Rplus mulR0; exact/Rle_refl.
+apply: leR_ltR_trans; last first.
+  apply ltr_rsum_support with (f := fun=> 0) => //; by rewrite cardsT.
+rewrite big_const_seq iter_Rplus mulR0; exact/leRR.
 Qed.
 
 Lemma prsumr_eq0P (A : finType) (P : pred A) f :
@@ -392,7 +389,7 @@ Lemma rprodr_ge1 {A : finType}  f : (forall i, 1 <= f i) ->
 Proof.
 move=> Hf.
 elim: (index_enum _) => [| hd tl IH].
-- rewrite big_nil; by apply Rle_refl.
+- rewrite big_nil; exact/leRR.
 - rewrite big_cons -{1}(mulR1 1%R); apply Rmult_le_compat => // ; fourier.
 Qed.
 
@@ -406,12 +403,12 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
 - rewrite negb_forall => /existsP Hf.
   case: Hf => i0 /negPn/eqP Hi0.
   rewrite (bigD1 i0) //= Hi0 mul0R; apply rprodr_ge0.
-  move=> i ; move: (Hfg i) => [Hi1 Hi2] ; by apply (Rle_trans _ _ _ Hi1 Hi2).
+  move=> i ; move: (Hfg i) => [Hi1 Hi2] ; exact: (leR_trans Hi1 Hi2).
 - move=> /forallP Hf.
   have Hprodf : 0 < \rprod_(i : A) f i.
     apply rprodr_gt0 => a.
     move: (Hf a) (Hfg a) => {Hf}Hf {Hfg}[Hf2 _].
-    apply/RltP; rewrite lt0R Hf /=; exact/RleP.
+    apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
   apply (Rmult_le_reg_r (1 * / \rprod_(i : A) f i) _ _).
     apply Rlt_mult_inv_pos => //; fourier.
   rewrite mul1R mulRV; last exact/eqP/not_eq_sym/Rlt_not_eq.
@@ -441,7 +438,7 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
   rewrite -(mulRV (f a)) //.
   apply Rmult_le_compat_r => //.
   rewrite -(mul1R (/ f a)).
-  apply Rle_mult_inv_pos; [fourier | apply/RltP; rewrite lt0R Hf; exact/RleP].
+  apply Rle_mult_inv_pos; [fourier | apply/ltRP; rewrite lt0R Hf; exact/leRP].
 Qed.
 
 End ler_ltr_rprod.
@@ -511,15 +508,14 @@ Lemma Rle_bigRmax : forall m, m \in s -> F m <= \rmax_(m <- s) (F m).
 Proof.
 elim: s => // hd tl IH m; rewrite in_cons; case/orP.
 - move/eqP => ->; rewrite big_cons; by apply Rmax_l.
-- move/IH => H; rewrite big_cons.
-  eapply Rle_trans; by [apply H | apply Rmax_r].
+- move/IH => H; rewrite big_cons; exact/(leR_trans H)/Rmax_r.
 Qed.
 
 Lemma Rle_0_bigRmax : (forall r, r \in s -> 0 <= F r) -> 0 <= \rmax_(m <- s) (F m).
 Proof.
 case: s => [_ | hd tl Hr].
-- rewrite big_nil; by apply Rle_refl.
-- apply Rle_trans with (F hd); last by rewrite big_cons; apply Rmax_l.
+- rewrite big_nil; exact/leRR.
+- apply (@leR_trans (F hd)); last by rewrite big_cons; exact: Rmax_l.
   apply Hr; by rewrite in_cons eqxx.
 Qed.
 
@@ -531,7 +527,7 @@ Proof.
 elim=> // hd tl IH /=.
 rewrite big_cons.
 case: ifP => Hcase.
-- rewrite -IH Rmax_right //; by apply Rle_bigRmax.
+- rewrite -IH Rmax_right //; exact: Rle_bigRmax.
 - by rewrite big_cons IH.
 Qed.
 

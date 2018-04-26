@@ -21,7 +21,8 @@ Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
 
 Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl 0%:R).
 
-Hint Resolve Rle_refl pos_INR.
+Local Hint Resolve leRR.
+Local Hint Resolve pos_INR.
 
 Lemma log_concave_gt0 x y t :
   0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
@@ -200,9 +201,9 @@ have Hnum': 0 < N(a|flatten ss').
   rewrite /num_occ count_cat ltn_addr //.
   by rewrite Hnum // in_cons eqxx.
 have Hsz: 0 < size (flatten ss').
-  apply (Rlt_le_trans _ _ _ Hnum').
+  apply (ltR_leR_trans Hnum').
   by apply /le_INR /leP /count_size.
-apply (Rle_trans _ ((\sum_(i <- ss') N(a|i))%:R *
+apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
     log (size (flatten ss') /
       \sum_(i <- ss') N(a|i))));
   last first.
@@ -230,7 +231,7 @@ apply (Rle_trans _ ((\sum_(i <- ss') N(a|i))%:R *
 have Htotal := esym (num_occ_flatten a ss').
 rewrite big_tnth in Htotal.
 have Hnum2 : N(a|flatten ss') != O.
-  rewrite -lt0n -ltR0n; exact/RltP.
+  rewrite -lt0n -ltR0n; exact/ltRP.
 set d := seq_nat_dist Htotal Hnum2.
 set r := fun i =>
   (size (tnth (in_tuple ss') i)) / N(a|tnth (in_tuple ss') i).
@@ -260,7 +261,7 @@ rewrite (eq_bigr
   last first.
   move=> i _; rewrite !mulRA -mulRA mulVR ?mulR1 //.
   exact/eqP/gtR_eqF.
-move/Rle_trans; apply. (* LHS matches *)
+move/leR_trans; apply. (* LHS matches *)
 rewrite mulRC -num_occ_flatten big_filter.
 rewrite (eq_bigr
      (fun i => size i * / N(a|flatten ss')));
@@ -305,8 +306,8 @@ Definition hoH (k : nat) := / n%:R *
 
 Lemma hoH_decr (k : nat) : hoH k.+1 <= hoH k.
 Proof.
-rewrite /hoH; apply/RleP; rewrite Rle_pmul2l; last first.
-  by apply/RltP/invR_gt0/RltP; rewrite ltR0n lt0n.
+rewrite /hoH; apply/leRP; rewrite Rle_pmul2l; last first.
+  by apply/ltRP/invR_gt0/ltRP; rewrite ltR0n lt0n.
 (* TODO *)
 Abort.
 

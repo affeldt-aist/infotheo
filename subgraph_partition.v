@@ -1101,7 +1101,7 @@ suff : ucycle g [:: m, n2, m'2 & l1] by apply acyclic_g.
 apply/andP; split.
   rewrite [m'2 :: _]lock /= -lock rcons_path Hn2 /=.
   rewrite cat_path in Hl'.
-  case/andP : Hl' => H1 /= [/andP[/andP[/andP[H2 _] _ ] _]].
+  case/andP : Hl' => H1 /= /andP[/andP[/andP[H2 _] _ ] _].
   by rewrite (@except_path _ _ n2) // andbT n2m'2 /=.
 rewrite [m'2 :: _]lock /= -lock.
 move: (Hun) => Hun'.

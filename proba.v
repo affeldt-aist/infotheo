@@ -198,7 +198,7 @@ Definition f a := if a \in C then 1 / INR #|C| else 0%R.
 Lemma f0 a : 0 <= f a.
 Proof.
 rewrite /f.
-case e : (a \in C); last by apply/Rle_refl.
+case e : (a \in C); last exact/leRR.
 apply Rle_mult_inv_pos; first by fourier.
 rewrite -/(INR 0); by apply/lt_INR/ltP.
 Qed.
@@ -354,10 +354,10 @@ Hypothesis Xb1 : X b != 1.
 Lemma f0 : forall a, 0 <= f a.
 Proof.
 move=> a; rewrite /f.
-case: ifPn => [_ |ab]; first exact/Rle_refl.
+case: ifPn => [_ |ab]; first exact/leRR.
 apply mulR_ge0; first exact/dist_nonneg.
-apply/RleP/RltW/RltP/invR_gt0/Rlt_Rminus.
-apply/RltP; rewrite ltR_neqAle Xb1; exact/RleP/dist_max.
+apply/ltRW/invR_gt0/Rlt_Rminus.
+apply/ltRP; rewrite ltR_neqAle Xb1; exact/leRP/dist_max.
 Qed.
 
 Lemma f1 : \rsum_(a in B) f a = 1.
@@ -519,7 +519,7 @@ Proof.
 move=> Halpha Hbeta H1 H2.
 have H3 : \rsum_(x in A) P `^ _ x <= INR #|A| * beta.
   have H3 : \rsum_(x in A | predT A ) P `^ _ x <= INR #|A| * beta.
-  apply Rle_trans with (\rsum_(x in A | predT A) [fun _ => beta] x).
+  apply (@leR_trans (\rsum_(x in A | predT A) [fun _ => beta] x)).
       apply ler_rsum_support => /= i iA _; by apply H2.
     rewrite -big_filter /= big_const_seq /= iter_Rplus /=.
     apply Rmult_le_compat_r; first by fourier.
@@ -527,11 +527,11 @@ have H3 : \rsum_(x in A) P `^ _ x <= INR #|A| * beta.
     rewrite filter_index_enum count_predT cardE.
     congr (INR (size _)).
     apply eq_enum => i; by rewrite /in_mem /= andbC.
-  eapply Rle_trans; last by apply H3.
+  apply: leR_trans; last exact: H3.
   apply Req_le, eq_bigl => i; by rewrite andbC.
 have H4 : INR #|A| * alpha <= \rsum_(x in A) P `^ _ x.
   have H4 : INR #|A| * alpha <= \rsum_(x in A | predT A) P `^ _ x.
-    apply Rle_trans with (\rsum_(x in A | predT A) [fun _ => alpha] x); last first.
+    apply (@leR_trans (\rsum_(x in A | predT A) [fun _ => alpha] x)); last first.
       apply ler_rsum_support => i Hi _; by case: (H2 i Hi).
     rewrite -big_filter /= big_const_seq /= iter_Rplus /=.
     apply Rmult_le_compat_r; first by fourier.
@@ -539,12 +539,12 @@ have H4 : INR #|A| * alpha <= \rsum_(x in A) P `^ _ x.
     rewrite filter_index_enum count_predT cardE.
     congr (INR (size _)).
     apply eq_enum => i; by rewrite /in_mem /= andbC.
-  apply: Rle_trans; first exact: H4.
+  apply: leR_trans; first exact: H4.
   apply Req_le, eq_bigl => i; by rewrite andbC.
 case: H1 => H1 H1'.
-split; apply/RleP.
-- rewrite leR_pdivr_mulr //; apply/RleP; move/Rle_trans : H1; exact.
-- rewrite leR_pdivl_mulr //; apply/RleP; exact: (Rle_trans _ _ _ H4).
+split; apply/leRP.
+- rewrite leR_pdivr_mulr //; apply/leRP; move/leR_trans : H1; exact.
+- rewrite leR_pdivl_mulr //; apply/leRP; exact: (leR_trans H4).
 Qed.
 
 End wolfowitz_counting.
@@ -622,7 +622,7 @@ Proof. apply rsumr_ge0 => *; exact: dist_nonneg. Qed.
 Lemma Pr_1 E : Pr E <= 1.
 Proof.
 rewrite -(pmf1 P); apply ler_rsum_l => // a _;
-  [exact/Rle_refl|exact/dist_nonneg].
+  [exact/leRR | exact/dist_nonneg].
 Qed.
 
 Lemma Pr_ext E F : E :=: F -> Pr E = Pr F.
@@ -672,7 +672,7 @@ Qed.
 Lemma Pr_incl (E E' : {set A}) : (E \subset E') -> Pr E <= Pr E'.
 Proof.
 move=> H; apply ler_rsum_l => a Ha;
-  [exact/Rle_refl | exact/dist_nonneg | move/subsetP : H; exact].
+  [exact/leRR | exact/dist_nonneg | move/subsetP : H; exact].
 Qed.
 
 Lemma Pr_bigcup (B : finType) (E : pred B) F :
@@ -680,13 +680,13 @@ Lemma Pr_bigcup (B : finType) (E : pred B) F :
 Proof.
 rewrite /Pr.
 elim: (index_enum _) => [| hd tl IH].
-  rewrite big_nil; apply: rsumr_ge0 => i _; rewrite big_nil; exact/Rle_refl.
+  rewrite big_nil; apply: rsumr_ge0 => i _; rewrite big_nil; exact/leRR.
 rewrite big_cons.
 case: ifP => H1.
   move: IH.
   set lhs := \rsum_(_ <- _ | _) _.
   move=> IH.
-  eapply Rle_trans.
+  apply: leR_trans.
     eapply Rplus_le_compat_l; by apply IH.
   rewrite [X in _ <= X](exchange_big_dep (fun hd => (hd \in A) && [pred x in \bigcup_(i | E i) F i] hd)) /=; last first.
     move=> b j Pi Fj; apply/bigcupP; by exists b.
@@ -705,12 +705,10 @@ case: ifP => H1.
   case/bigcupP : H1 => b E_b H1'.
   exists b.
   by rewrite -topredE /= E_b.
-apply: Rle_trans; [exact: IH|].
-apply ler_rsum => b Eb.
+apply/(leR_trans IH)/ler_rsum => b Eb.
 rewrite big_cons.
-case: ifPn => hFb.
-- rewrite -[X in X <= _]add0R; exact/Rplus_le_compat_r/dist_nonneg.
-- exact/Rle_refl.
+case: ifPn => hFb; last exact/leRR.
+rewrite -[X in X <= _]add0R; exact/Rplus_le_compat_r/dist_nonneg.
 Qed.
 
 End probability.
@@ -913,16 +911,16 @@ rewrite -[a in a <= _]addR0.
 apply Rplus_le_compat; last first.
   apply rsumr_ge0 => a _.
   apply mulR_ge0; by [apply X_nonneg | apply dist_nonneg].
-apply (Rle_trans _ (\rsum_(i | X i >b= r) r * `p_ X i)).
+apply (@leR_trans (\rsum_(i | X i >b= r) r * `p_ X i)).
   rewrite big_distrr /=;  apply/Req_le/eq_bigl => a; by rewrite inE.
 apply ler_rsum => a Xar.
-apply/Rmult_le_compat_r; [exact/dist_nonneg | exact/RleP].
+apply/Rmult_le_compat_r; [exact/dist_nonneg | exact/leRP].
 Qed.
 
 Lemma markov (r : R) : 0 < r -> Pr[X >= r] <= `E X / r.
 Proof.
-move=> ?; apply/RleP.
-rewrite /Rdiv leR_pdivl_mulr // mulRC; exact/RleP/Ex_lb.
+move=> ?; apply/leRP.
+rewrite /Rdiv leR_pdivl_mulr // mulRC; exact/leRP/Ex_lb.
 Qed.
 
 End markov_inequality.
@@ -983,18 +981,18 @@ Variable X : rvar A.
 Lemma chebyshev_inequality epsilon : 0 < epsilon ->
   Pr `p_X [set a | Rabs (X a - `E X) >b= epsilon] <= `V X / epsilon ^ 2.
 Proof.
-move=> He; apply/RleP.
+move=> He; apply/leRP.
 rewrite leR_pdivl_mulr; last exact/pow_gt0.
-apply/RleP; rewrite mulRC /`V [in X in _ <= X]ExE.
+apply/leRP; rewrite mulRC /`V [in X in _ <= X]ExE.
 rewrite (_ : `p_ ((X \-cst `E X) \^2) = `p_ X) //.
-apply Rle_trans with (\rsum_(a in A | Rabs (X a - `E X) >b= epsilon)
-    (((X \-cst `E X) \^2) a  * `p_X a)%R); last first.
+apply (@leR_trans (\rsum_(a in A | Rabs (X a - `E X) >b= epsilon)
+    (((X \-cst `E X) \^2) a  * `p_X a)%R)); last first.
   apply ler_rsum_l_support with (Q := xpredT) => // a .
   apply mulR_ge0; [exact: pow_even_ge0| exact: dist_nonneg].
 rewrite /Pr big_distrr [_ \^2]lock /= -!lock.
 apply ler_rsum_l => i Hi; rewrite /= -!/(_ ^ 2).
 - apply Rmult_le_compat_r; first exact: dist_nonneg.
-  move: Hi; rewrite inE -(Rabs_sq (X i - _)) => /RgeP/Rge_le H.
+  move: Hi; rewrite inE -(Rabs_sq (X i - _)) => /geRP/Rge_le H.
   apply/pow_incr; split => //; exact/ltRW.
 - apply mulR_ge0; [exact: pow_even_ge0 | exact: dist_nonneg].
 - move: Hi; by rewrite inE.

@@ -145,7 +145,7 @@ Hypothesis Vctyp : V \in \nu^{B}(P).
 
 Lemma success_factor_bound_part1 : success_factor tc V <= 1.
 Proof.
-apply/RleP; rewrite -(Rle_pmul2l (INR #|M|)) ?ltR0n //; apply/RleP.
+apply/leRP; rewrite -(Rle_pmul2l (INR #|M|)) ?ltR0n //; apply/leRP.
 rewrite /success_factor /Rdiv -(mulRC (/ INR #|M|)) 2!mulRA.
 rewrite mulRV ?INR_eq0 -?lt0n // mul1R.
 rewrite -iter_Rplus_Rmult -big_const /=.
@@ -153,8 +153,8 @@ rewrite (_ : \rsum_(m | m \in M ) 1 = \rsum_(m : M) 1); last exact/eq_bigl.
 rewrite big_distrr /=.
 apply: ler_rsum => m _.
 rewrite mulNR exp2_Ropp.
-apply/RleP; rewrite mulRC leR_pdivr_mulr // ?mul1R.
-apply/RleP/(Rle_trans _ (INR #| V.-shell (tuple_of_row (enc tc m)) |) _); last first.
+apply/leRP; rewrite mulRC leR_pdivr_mulr // ?mul1R.
+apply/leRP/(@leR_trans (INR #| V.-shell (tuple_of_row (enc tc m)) |) _); last first.
   apply card_shelled_tuples => //.
     exact/typed_prop.
   case: (jtype.c V) => _ Anot0.
@@ -216,9 +216,9 @@ rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last by rewrite /cond_entropy;
 rewrite mulRDr mulRN -mulNR /exp2 ExpD.
 apply Rmult_le_compat_l => //.
 rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR Logic.eq_refl).
-apply (Rle_trans _ (INR #| T_{`tO( V )} |)); last first.
-  rewrite -output_type_out_entropy //; by apply card_typed_tuples.
-apply le_INR; apply/leP.
+apply (@leR_trans (INR #| T_{`tO( V )} |)); last first.
+  rewrite -output_type_out_entropy //; exact: card_typed_tuples.
+apply/le_INR/leP.
 apply: (@leq_trans (\sum_m #| T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-1: [set Some m]))|)).
 - apply leq_sum => m _.
   by apply subset_leq_card, setSI, shell_subset_output_type.
@@ -256,8 +256,8 @@ Proof.
 rewrite /success_factor_bound.
 apply Rmax_case.
 - rewrite mulR0 exp2_0; by apply success_factor_bound_part1.
-- apply (Rle_trans _ (exp2(INR n * `I(P ; V)) / INR #|M|)); last first.
-  + apply Req_le; symmetry.
+- apply (@leR_trans (exp2(INR n * `I(P ; V)) / INR #|M|)); last first.
+  + apply/Req_le/esym.
     rewrite /Rminus mulRDr mulRC.
     rewrite Rmult_opp_opp -mulRA mulRN mulVR ?INR_eq0 //.
     rewrite mulRN mulR1 /exp2 ExpD mulRC /Rdiv; f_equal.
@@ -299,15 +299,14 @@ Lemma typed_success_bound :
 Proof.
 move=> Vmax.
 rewrite (typed_success W Mnot0 tc).
-apply (Rle_trans _ ( \rsum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
+apply (@leR_trans ( \rsum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
   exp2 (- INR n *  +| log (INR #|M|) * / INR n - `I(P ; V) |))).
   apply: ler_rsum => V HV.
   rewrite -mulRA; apply Rmult_le_compat_l.
     rewrite /exp_cdiv.
-    case : ifP => _ //; exact/Rle_refl.
-  rewrite /success_factor mulRA.
-  exact: success_factor_ub.
-apply (Rle_trans _ (\rsum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
+    case : ifP => _ //; exact/leRR.
+  rewrite /success_factor mulRA; exact: success_factor_ub.
+apply (@leR_trans (\rsum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
                     exp2 (- INR n * +| log (INR #|M|) * / INR n - `I(P ; Vmax)|))).
   apply ler_rsum => V HV.
   move: (@arg_rmax2 [finType of (P_ n (A, B))] V0 [pred V | V \in \nu^{B}(P) ]
@@ -316,7 +315,7 @@ apply (Rle_trans _ (\rsum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
 rewrite big_const iter_Rplus_Rmult /success_factor_bound.
 apply Rmult_le_compat_r.
 - apply mulR_ge0; last exact/exp2_ge0.
-  rewrite /exp_cdiv; case: ifP => _ //; exact/Rle_refl.
+  rewrite /exp_cdiv; case: ifP => _ //; exact/leRR.
 - rewrite INR_pow_expn; exact/le_INR/leP/card_nu.
 Qed.
 
@@ -348,11 +347,11 @@ Lemma success_bound :
   scha(W, c) <= (INR n.+1) ^ #|A| * scha(W, Pmax.-typed_code c).
 Proof.
 move=> Pmax.
-apply (Rle_trans _ (INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c))); last first.
-  apply Rmult_le_compat_r; first by apply scha_pos.
+apply (@leR_trans (INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c))); last first.
+  apply Rmult_le_compat_r; first exact: scha_pos.
   rewrite INR_pow_expn; apply le_INR; apply/leP.
   exact: (type_counting A n).
-apply (Rle_trans _ (\rsum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
+apply (@leR_trans (\rsum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
   rewrite (_ : INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c) =
              \rsum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)); last first.
     by rewrite big_const iter_Rplus_Rmult.
@@ -361,16 +360,16 @@ apply (Rle_trans _ (\rsum_(P : P_ n ( A )) scha W (P.-typed_code c))); last firs
 rewrite success_decode // -(sum_messages_types c).
 rewrite div1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply ler_rsum => P _.
-apply/RleP; rewrite mulRC leR_pdivr_mulr; last by apply/RltP; rewrite ltR0n.
+apply/leRP; rewrite mulRC leR_pdivr_mulr; last by apply/ltRP; rewrite ltR0n.
 rewrite success_decode // div1R -mulRA mulRCA mulVR ?INR_eq0 -?lt0n // mulR1.
-apply/RleP/(Rle_trans _ (\rsum_(m | m \in enc_pre_img c P)
+apply/leRP/(@leR_trans (\rsum_(m | m \in enc_pre_img c P)
                      \rsum_(y | (dec (P.-typed_code c)) y == Some m)
                      (W ``(|(enc (P.-typed_code c)) m)) y)).
   apply ler_rsum => m Hm.
   apply Req_le, eq_big => tb // _.
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
-- apply ler_rsum_l => //= i Hi; first exact/Rle_refl.
+- apply ler_rsum_l => //= i Hi; first exact/leRR.
   apply: rsumr_ge0 => ? _; exact/dist_nonneg.
 Qed.
 

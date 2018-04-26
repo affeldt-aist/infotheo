@@ -1,5 +1,5 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-Require Import Wf Recdef Reals.
+Require Import Wf_nat Wf Recdef Reals.
 From mathcomp Require Import ssreflect seq ssrbool eqtype ssrnat ssrfun path.
 From mathcomp Require Import fintype bigop finset fingraph perm zmodp matrix.
 From mathcomp Require Import ssralg.
@@ -272,8 +272,6 @@ Fixpoint tn_tree_eq_bool k (a b : tn_tree i k U V) : bool :=
   (length (children a) == length (children b)) &&
   let eqch := map (@tn_tree_eq_bool (negk k)) (children a) in
   all (fun p => fst p (snd p)) (zip eqch (children b)).
-
-Require Import Wf_nat.
 
 Lemma tn_tree_eq_bool_refl k x : @tn_tree_eq_bool k x x = true.
 Proof.
