@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg perm zmodp matrix vector.
 Require Import Reals.
-Require Import ssralg_ext Reals_ext Rssr f2 proba channel tanner linearcode.
+Require Import ssralg_ext ssrR Reals_ext f2 proba channel tanner linearcode.
 Require Import Rbigop pproba.
 
 Set Implicit Arguments.

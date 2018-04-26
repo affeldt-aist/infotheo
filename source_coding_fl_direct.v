@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext ssralg_ext Rssr log2 natbin Rbigop proba.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 natbin Rbigop proba.
 Require Import entropy aep typ_seq source_code.
 
 (** * Source coding theorem (direct part) *)

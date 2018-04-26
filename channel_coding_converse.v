@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext ssralg_ext log2 ln_facts Rssr Rbigop arg_rmax.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 ln_facts Rbigop arg_rmax.
 Require Import num_occ proba entropy types jtypes divergence.
 Require Import conditional_divergence error_exponent channel_code channel.
 Require Import success_decode_bound.

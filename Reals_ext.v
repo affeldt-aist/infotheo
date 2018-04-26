@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop prime finset.
 From mathcomp Require Import binomial.
 Require Import ProofIrrelevance Reals Fourier.
-Require Import Rssr.
+Require Import ssrR.
 
 (** * Additional lemmas about Coq Reals *)
 
@@ -90,7 +90,7 @@ Proof. move=> *. fourier. Qed.
 Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Zabs_nat x) = IZR x.
 Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
 
-(* TODO: move the following to Rssr.v? *)
+(* TODO: move the following to ssrR.v? *)
 Lemma leR_subr_addr x y z : (x <b= y - z) = (x + z <b= y).
 Proof. apply/idP/idP => /RleP ?; apply/RleP; fourier. Qed.
 

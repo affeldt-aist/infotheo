@@ -696,7 +696,7 @@ Hypothesis RofK1 : RofK 1 = 1.
 Hypothesis RofKadd : forall x y : K, RofK (x + y) = RofK x + RofK y.
 Hypothesis RofKmul : forall x y : K, RofK (x * y) = RofK x * RofK y.
 
-Require Import Rssr.
+Require Import ssrR.
 
 Lemma f0R l t : (0 <= RofK (@fintree_dist l t))%R.
 Proof. apply RofKpos, f0. Qed.

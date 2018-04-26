@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
 Require Import Reals Fourier FunctionalExtensionality ProofIrrelevance.
-Require Import Reals_ext ssr_ext ssralg_ext Rssr log2 Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop proba entropy.
 Require Import num_occ channel_code channel typ_seq.
 
 Reserved Notation "'P_' n '(' A ')'" (at level 9, n, A at next level).

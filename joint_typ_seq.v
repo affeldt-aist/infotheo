@@ -3,8 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Rssr Reals_ext ssr_ext log2 ssralg_ext bigop_ext Rbigop proba.
-Require Import  entropy aep typ_seq channel.
+Require Import ssrR Reals_ext ssr_ext log2 ssralg_ext bigop_ext Rbigop proba.
+Require Import entropy aep typ_seq channel.
 
 (** * Jointly typical sequences *)
 

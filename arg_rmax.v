@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier.
-Require Import Rssr Reals_ext ssr_ext num_occ.
+Require Import ssrR Reals_ext ssr_ext num_occ.
 
 (** * Variation of the SSReflect standard library *)
 

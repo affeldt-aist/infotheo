@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
-Require Import Rssr Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import ssrR Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop.
 
 (** * Formalization of discrete probabilities *)
 

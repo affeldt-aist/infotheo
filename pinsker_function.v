@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext Ranalysis_ext log2 Rssr Rbigop proba.
+Require Import ssrR Reals_ext ssr_ext Ranalysis_ext log2 Rbigop proba.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

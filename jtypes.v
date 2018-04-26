@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import choice fintype tuple finfun bigop finset binomial.
 From mathcomp Require Import fingroup perm.
 Require Import Reals Fourier FunctionalExtensionality ProofIrrelevance.
-Require Import Reals_ext ssr_ext ssralg_ext Rssr log2 Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop proba entropy.
 Require Import num_occ channel types.
 
 Set Implicit Arguments.

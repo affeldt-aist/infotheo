@@ -3,7 +3,7 @@ From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
-Require Import Rssr Reals_ext ssr_ext ssralg_ext log2 Rbigop.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop.
 Require Import proba.
 
 Set Implicit Arguments.

@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext Rssr log2 Rbigop proba channel.
+Require Import Reals_ext ssrR log2 Rbigop proba channel.
 
 (** * Definition of a channel code *)
 

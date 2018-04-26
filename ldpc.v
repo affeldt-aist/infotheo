@@ -4,7 +4,7 @@ From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
 From mathcomp Require Import path fingraph vector.
 Require Import Reals Fourier.
-Require Import Rssr Reals_ext ssr_ext ssralg_ext num_occ bigop_ext Rbigop.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext num_occ bigop_ext Rbigop.
 Require Import proba channel pproba f2 linearcode subgraph_partition tanner.
 Require Import tanner_partition hamming binary_symmetric_channel decoding.
 Require Import channel_code summary checksum summary_tanner.

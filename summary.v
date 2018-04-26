@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg zmodp matrix.
 Require Import Reals.
-Require Import ssr_ext ssralg_ext Rssr Rbigop f2.
+Require Import ssr_ext ssralg_ext ssrR Rbigop f2.
 
 (** * The Summary Operator *)
 

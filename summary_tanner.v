@@ -4,7 +4,7 @@ From mathcomp Require Import div choice fintype fingraph tuple finfun bigop.
 From mathcomp Require Import prime binomial ssralg finset fingroup finalg zmodp.
 From mathcomp Require Import matrix.
 Require Import Reals.
-Require Import ssr_ext ssralg_ext Reals_ext Rssr Rbigop f2 summary.
+Require Import ssr_ext ssralg_ext ssrR Reals_ext Rbigop f2 summary.
 Require Import subgraph_partition tanner tanner_partition proba channel.
 Require Import checksum.
 

@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat.
 Require Import Reals Fourier.
-Require Import Reals_ext Ranalysis_ext Rssr.
+Require Import ssrR Reals_ext Ranalysis_ext.
 
 (** * log_n x and n ^ x *)
 

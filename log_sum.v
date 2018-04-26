@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype finfun bigop finset.
 Require Import Reals Fourier.
-Require Import Rssr Reals_ext Ranalysis_ext log2 ln_facts bigop_ext Rbigop.
+Require Import ssrR Reals_ext Ranalysis_ext log2 ln_facts bigop_ext Rbigop.
 
 (** * The log-sum Inequality *)
 

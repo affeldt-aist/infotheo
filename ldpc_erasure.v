@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
-Require Import Rssr ssr_ext ssralg_ext num_occ f2 hamming tanner linearcode.
+Require Import ssr_ext ssralg_ext num_occ f2 ssrR hamming tanner linearcode.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

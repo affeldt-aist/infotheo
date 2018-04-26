@@ -896,7 +896,7 @@ Qed.
 End AboutwH123.
 
 (* TODO: move? *)
-Require Import Reals Reals_ext Rbigop Rssr.
+Require Import Reals ssrR Reals_ext Rbigop.
 
 Local Open Scope R_scope.
 Local Open Scope ring_scope.

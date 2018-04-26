@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq.
 From mathcomp Require Import fintype tuple finfun bigop.
 Require Import Reals Fourier.
-Require Import Reals_ext Rssr Rbigop log2 ln_facts proba divergence.
+Require Import ssrR Reals_ext Rbigop log2 ln_facts proba divergence.
 
 (** * Entropy of a distribution *)
 

@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq fintype.
 From mathcomp Require Import tuple finfun bigop.
 Require Import Reals Fourier.
-Require Import Reals_ext Rssr ln_facts log2 Rbigop proba.
+Require Import ssrR Reals_ext ln_facts log2 Rbigop proba.
 
 (** * The Kullback-Leibler divergence *)
 

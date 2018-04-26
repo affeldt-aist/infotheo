@@ -3,7 +3,7 @@ From mathcomp Require Import finfun choice fintype tuple bigop finset path.
 From mathcomp Require Import ssralg fingroup zmodp poly ssrnum.
 
 Require Import Reals Fourier.
-Require Import Rssr log2 Reals_ext Rbigop ssr_ext proba entropy kraft.
+Require Import ssrR log2 Reals_ext Rbigop ssr_ext proba entropy kraft.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

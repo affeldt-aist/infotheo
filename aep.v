@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext ssr_ext ssralg_ext log2 Rssr Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop proba entropy.
 
 (** * Asymptotic Equipartition Property (AEP) *)
 
