@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq fintype.
 From mathcomp Require Import tuple finfun bigop.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext ln_facts log2 Rbigop proba.
+Require Import ssrR Reals_ext ln_facts logb Rbigop proba.
 
 (** * The Kullback-Leibler divergence *)
 
@@ -44,8 +44,8 @@ case/boolP : (y == 0) => [/eqP y0 | y0].
   + have x_pos : 0 < x by apply/ltRP; rewrite lt0R x_not_0; exact/leRP.
     rewrite (_ : y - x = x * (y / x - 1) ); last first.
       rewrite mulRDr mulRCA mulRV ?mulR1 ?mulRN1 //; exact/eqP.
-    rewrite -mulRA; apply Rmult_le_compat_l; first exact/ltRW/x_pos.
-    rewrite /Rminus -LogV; last by apply x_pos.
+    rewrite -mulRA; apply (leR_wpmul2l (ltRW x_pos)).
+    rewrite /Rminus -LogV; last exact: x_pos.
     rewrite -LogM; last 2 first.
       exact/y_pos.
       exact/invR_gt0/x_pos.
@@ -57,16 +57,16 @@ Hypothesis P_dom_by_Q : P << Q.
 
 Lemma leq0div : 0 <= D(P || Q).
 Proof.
-apply Rge_le; rewrite /div.
-rewrite [X in X >= _](_ : _ = - \rsum_(a | a \in A) P a * (log (Q a) - log (P a))); last first.
+rewrite /div.
+rewrite [X in _ <= X](_ : _ = - \rsum_(a | a \in A) P a * (log (Q a) - log (P a))); last first.
   rewrite (big_morph _ morph_Ropp oppR0); apply eq_bigr => a _; by field.
-rewrite -[X in _ >= X]oppR0; apply Ropp_le_ge_contravar.
+rewrite leR_oppr oppR0.
 apply (@leR_trans ((\rsum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
   apply ler_rsum => a _; apply div_diff_ub; by
     [apply dist_nonneg | apply Rle0 | apply P_dom_by_Q].
 rewrite -{1}(mul0R (log (exp 1))).
-apply Rmult_le_compat_r; first exact/log_exp1_Rle_0.
+apply (leR_wpmul2r log_exp1_Rle_0).
 rewrite big_split /= -(big_morph _ morph_Ropp oppR0).
 rewrite !pmf1 Rplus_opp_r; exact/leRR.
 Qed.
@@ -84,13 +84,12 @@ case/boolP : (y == 0) => [/eqP y0 | y_not_0].
     case => //.
     rewrite logexp1E => /eqP/invR_eq0; by rewrite (negbTE ln2_neq0).
   - have x_pos : 0 < x by apply/ltRP; rewrite lt0R x_not_0; exact/leRP.
-    symmetry.
-    apply (Rmult_eq_reg_l (/ x)); last by exact/nesym/ltR_eqF/invR_gt0.
+    apply/esym; rewrite -(@eqR_mul2l (/ x)) //; last by exact/nesym/ltR_eqF/invR_gt0.
     rewrite mulVR //.
     apply log_id_eq.
       by rewrite mulRC; apply Rlt_mult_inv_pos ; [apply y_pos | apply x_pos].
     rewrite {1}/log LogM //; last exact/invR_gt0/x_pos.
-    apply (Rmult_eq_reg_l x); last by apply not_eq_sym, Rlt_not_eq.
+    rewrite -(@eqR_mul2l x); last by apply not_eq_sym, Rlt_not_eq.
     rewrite LogV // addRC Hxy2 mulRA /Rminus mulRDr; apply Rmult_eq_compat_r.
     field.
     exact/eqP.

@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext Ranalysis_ext log2 Rbigop proba ln_facts.
+Require Import ssrR Reals_ext Ranalysis_ext logb Rbigop proba ln_facts.
 
 (** * The Variation Distance *)
 
@@ -40,7 +40,7 @@ Qed.
 Lemma leq_var_dist (p q : dist A) x : Rabs (p x - q x ) <= d( p , q ).
 Proof.
 rewrite /var_dist (bigD1 x) //= -{1}(addR0 (Rabs (p x - q x))).
-apply/Rplus_le_compat_l/rsumr_ge0 => ? _; exact/Rabs_pos.
+apply/leR_add2l/rsumr_ge0 => ? _; exact/Rabs_pos.
 Qed.
 
 End variation_distance.

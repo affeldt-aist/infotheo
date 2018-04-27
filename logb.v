@@ -143,7 +143,7 @@ Proof. move=> *; by rewrite /Log -mulRDl ln_mult. Qed.
 Lemma Log_increasing_le n x y : 1 < n -> 0 < x -> x <= y -> Log n x <= Log n y.
 Proof.
 move=> n1 x0 xy.
-apply Rmult_le_compat_r; [exact/leRP/ltRW'/ltRP/invR_gt0/ln_pos|].
+apply leR_wpmul2r; [exact/leRP/ltRW'/ltRP/invR_gt0/ln_pos|].
 exact: ln_increasing_le.
 Qed.
 
@@ -151,26 +151,23 @@ Lemma Log_increasing n a b : 1 < n -> 0 < a -> a < b -> Log n a < Log n b.
 Proof.
 move=> n1 Ha a_b.
 rewrite /Log.
-apply Rmult_lt_compat_r; last exact: ln_increasing.
-by apply/invR_gt0/ln_pos.
+apply ltR_pmul2r; last exact: ln_increasing.
+exact/invR_gt0/ln_pos.
 Qed.
 
 Lemma Log_inv n x y : 1 < n -> 0 < x -> 0 < y -> Log n x = Log n y -> x = y.
 Proof.
 move=> n1 Hx Hy.
-rewrite /Log /Rdiv.
-move/Rmult_eq_reg_r => H.
-apply ln_inv => //; apply H.
-exact/eqP/invR_neq0/eqP/gtR_eqF/ln_pos.
+rewrite /Log /Rdiv eqR_mul2r; last exact/eqP/invR_neq0/eqP/gtR_eqF/ln_pos.
+apply ln_inv => //; exact: H.
 Qed.
 
 Lemma Log_lt_inv n x y : 1 < n -> 0 < x -> 0 < y -> Log n x < Log n y -> x < y.
 Proof.
 move=> n1 Hx Hy.
 rewrite /Log /Rdiv.
-have H : 0 < / ln n by apply/invR_gt0/ln_pos.
-move/(Rmult_lt_reg_r _ _ _ H) => {H}?.
-by apply ln_lt_inv.
+have H : 0 < / ln n by exact/invR_gt0/ln_pos.
+move/(ltR_pmul2r H); exact: ln_lt_inv.
 Qed.
 
 Lemma Log_le_inv n x y : 1 < n -> 0 < x -> 0 < y -> Log n x <= Log n y -> x <= y.
@@ -260,21 +257,20 @@ Lemma Exp_increasing n x y : 1 < n -> x < y -> Exp n x < Exp n y.
 Proof.
 move=> n1 x_y.
 rewrite /Exp.
-apply exp_increasing, Rmult_lt_compat_r => //.
+apply/exp_increasing/ltR_pmul2r => //.
 exact/ln_pos.
 Qed.
 
 Lemma Exp_le_inv n x y : 1 < n -> Exp n x <= Exp n y -> x <= y.
 Proof.
 rewrite /Exp => n1 /exp_le_inv H.
-apply/leRP; rewrite -(Rle_pmul2l (ln n)); last exact/ltRP/ln_pos.
+apply/leRP; rewrite -(leR_pmul2l' (ln n)); last exact/ltRP/ln_pos.
 rewrite mulRC -(mulRC y); exact/leRP.
 Qed.
 
 Lemma Exp_le_increasing n x y : 1 < n -> x <= y -> Exp n x <= Exp n y.
 Proof.
-move=> n1; rewrite /Exp.
-case/Rle_lt_or_eq_dec.
+move=> n1; rewrite /Exp; case/Rle_lt_or_eq_dec.
 move/Exp_increasing => x_y; exact/ltRW/x_y.
 move=> ->; exact/leRR.
 Qed.

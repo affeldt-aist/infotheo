@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype finfun bigop finset.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext Ranalysis_ext log2 ln_facts bigop_ext Rbigop.
+Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts bigop_ext Rbigop.
 
 (** * The log-sum Inequality *)
 
@@ -100,9 +100,8 @@ apply (@leR_trans (\rsum_(a | a \in C) f a * (1 - g a / f a))).
   move=> ga_not_0.
   field; exact/gtR_eqF/(fspos _ a_C).
 apply: ler_rsum => a C_a.
-apply Rmult_le_compat_l; first exact/ltRW/fspos.
-apply Ropp_le_cancel.
-rewrite -ln_Rinv; last first.
+apply leR_wpmul2l; first exact/ltRW/fspos.
+rewrite -[X in _ <= X]oppRK leR_oppr -ln_Rinv; last first.
   apply Rlt_mult_inv_pos; by [apply fspos | apply gspos].
 rewrite invRM; last 2 first.
   exact/gtR_eqF/(fspos _ C_a).
@@ -165,16 +164,13 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
     have H3 : 0 < \rsum_(a | a \in C) g a.
       rewrite setUC in DUD'.
       rewrite DUD' (big_union _ g DID') /=.
-      apply Rplus_le_lt_0_compat => //.
+      apply addR_gt0wr => //.
       apply: rsumr_ge0 => *; exact/pos_f_nonneg.
-    apply Rmult_le_compat_l; first exact/ltRW.
-    apply Log_increasing_le => //.
+    apply/(leR_wpmul2l (ltRW pos_F))/Log_increasing_le => //.
       apply Rlt_mult_inv_pos => //; by rewrite -HG.
-    apply Rmult_le_compat_l; first exact/ltRW.
-    apply Rinv_le_contravar => //.
+    apply/(leR_wpmul2l (ltRW pos_F))/leR_inv => //.
     rewrite setUC in DUD'.
-    rewrite DUD' (big_union _ g DID') /=.
-    rewrite -[X in X <= _]add0R; apply Rplus_le_compat_r.
+    rewrite DUD' (big_union _ g DID') /= -[X in X <= _]add0R; apply leR_add2r.
     apply: rsumr_ge0 => ? ?; exact/pos_f_nonneg.
   apply: (leR_trans H).
   rewrite setUC in DUD'.

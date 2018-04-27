@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
 From mathcomp Require Import fintype div finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg perm zmodp matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 Require Import binary_entropy_function channel hamming channel_code.
 
 Set Implicit Arguments.

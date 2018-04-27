@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext ssr_ext Ranalysis_ext log2 Rbigop proba.
+Require Import ssrR Reals_ext ssr_ext Ranalysis_ext logb Rbigop proba.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -134,15 +134,10 @@ fourier.
 move=> t Ht.
 rewrite derive_pt_pinsker_function_spec // /pinsker_function_spec'.
 apply (@leR_trans (/ ((1 - t) * ln 2) - 8 * t / (2 * ln 2))); last first.
-  apply Rplus_le_compat_l.
-  apply Ropp_le_contravar. (* NB:
-                             Ropp_ge_le_contravar  forall r1 r2 : R, r1 >= r2 -> - r1 <= - r2
-                             Ropp_le_contravar  forall r1 r2 : R, r2 <= r1 -> - r1 <= - r2
-                             almost identical *)
-  rewrite -mulRA /Rdiv -[X in _ <= X]mulRA.
-  apply Rmult_le_compat_l; first by fourier.
-  rewrite mulRC.
-  apply Rmult_le_compat_l => //.
+  apply leR_add2l.
+  rewrite leR_oppr oppRK -mulRA /Rdiv -[X in _ <= X]mulRA.
+  apply leR_wpmul2l; first by fourier.
+  rewrite mulRC; apply leR_wpmul2l => //.
   by case: Ht.
 apply (@leR_trans ((2 - 8 * t * (1 - t)) / (2 * (1 - t) * ln 2))); last first.
   apply Req_le.
@@ -155,12 +150,10 @@ apply Rle_mult_inv_pos; last first.
   case: Ht => ? ?; fourier.
 have H2 : -2 <= - 8 * t * (1 - t).
   rewrite !mulNR -mulRA.
-  apply Ropp_le_contravar.
-  rewrite [X in _ <= X](_ : 2 = 8 * / 4); last by field.
-  apply Rmult_le_compat_l; [by fourier | exact: x_x2_max].
+  rewrite leR_oppr oppRK [X in _ <= X](_ : 2 = 8 * / 4); last by field.
+  apply leR_wpmul2l; [by fourier | exact: x_x2_max].
 apply (@leR_trans (2 - 2)); first by fourier.
-apply Rplus_le_compat; first exact/leRR.
-by rewrite -mulRA -mulNR mulRA.
+apply leR_add; [exact/leRR | by rewrite -mulRA -mulNR mulRA].
 Qed.
 
 Lemma pinsker_function_spec_pos : forall c q,
@@ -215,7 +208,7 @@ Lemma pinsker_fun_decreasing_on_0_to_p (c : R) (Hc : c <= / (2 * ln 2)) (Hp' : 0
   forall x y, 0 < x <= p -> 0 < y <= p -> x <= y -> pinsker_fun p c y <= pinsker_fun p c x.
 Proof.
 move=> x y Hx Hy xy.
-apply Ropp_le_cancel.
+rewrite -[X in _ <= X]oppRK leR_oppr.
 move: x y Hx Hy xy.
 apply derive_increasing_interv_left with (pinsker_fun_pderivable1 c Hp').
 by case: Hp'.
@@ -230,18 +223,19 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   have : forall a b, b <= a -> 0 <= a - b. move=> *; fourier. apply.
   apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans  (8 * / (2 * ln 2))).
-    apply Rmult_le_compat_l => //; fourier.
+      apply leR_wpmul2l => //; fourier.
     rewrite invRM; last 2 first.
       move=> ?; fourier.
       exact/eqP/ln2_neq0.
     rewrite mulRA.
-    apply Rmult_le_compat_r => //; by fourier.
+    apply leR_wpmul2r => //; by fourier.
   rewrite invRM; last 2 first.
     apply/gtR_eqF/mulR_gt0; fourier.
     exact/eqP/ln2_neq0.
-  apply Rmult_le_compat_r => //.
-  rewrite -(invRK 4) //; apply Rinv_le_contravar.
-    apply mulR_gt0 => //; by fourier.
+  apply leR_wpmul2r => //.
+  rewrite -(invRK 4) //.
+  apply leR_inv => //.
+    apply/mulR_gt0 => //; by fourier.
   exact: x_x2_max.
 rewrite /inv_fct -mulNR; apply mulR_ge0 => //; fourier.
 Qed.
@@ -273,17 +267,16 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans (8 * / (2 * ln 2))).
       apply/leRP.
-      rewrite Rle_pmul2l; last by apply/ltRP; fourier.
-      exact/leRP.
+      rewrite leR_pmul2l'; [exact/leRP | by apply/ltRP; fourier].
     rewrite invRM; last 2 first.
       move=> ?; fourier.
       exact/eqP/ln2_neq0.
     rewrite mulRA.
-    apply Rmult_le_compat_r => //; by fourier.
+    apply leR_wpmul2r => //; by fourier.
   rewrite invRM //; last exact/eqP/ln2_neq0.
-  apply Rmult_le_compat_r => //.
-  rewrite -(invRK 4) //; apply Rinv_le_contravar.
-    apply mulR_gt0; fourier.
+  apply leR_wpmul2r => //.
+  rewrite -(invRK 4) //=; apply leR_inv => //.
+    apply/mulR_gt0; fourier.
   exact: x_x2_max.
 rewrite /inv_fct; apply mulR_ge0 => //; fourier.
 Qed.

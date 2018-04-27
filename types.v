@@ -3,8 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
 Require Import Reals Fourier FunctionalExtensionality ProofIrrelevance.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop proba entropy.
-Require Import num_occ channel_code channel typ_seq.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
+Require Import proba entropy num_occ channel_code channel typ_seq.
 
 Reserved Notation "'P_' n '(' A ')'" (at level 9, n, A at next level).
 Reserved Notation "'T_{' P '}'" (at level 9).
@@ -128,7 +128,7 @@ rewrite /= in H.
 apply/type_eqP => /=.
 apply/eqP/ffunP => a.
 apply/val_inj/INR_eq.
-move: {H}(H a); rewrite H1 H2=> /Rmult_eq_reg_r; apply.
+move: {H}(H a); rewrite H1 H2 eqR_mul2r //.
 apply/eqP/invR_neq0; by rewrite INR_eq0.
 Qed.
 
@@ -352,8 +352,7 @@ rewrite in_set.
 move/forallP/(_ a)/eqP.
 destruct P as [d f H] => /= Htmp.
 apply/INR_eq/esym; move: Htmp.
-rewrite H.
-move/Rmult_eq_reg_r; apply.
+rewrite H eqR_mul2r //.
 apply/eqP/invR_neq0; by rewrite INR_eq0.
 Qed.
 
@@ -435,11 +434,10 @@ transitivity (\rprod_(i < n | t ``_ i == a) (INR (type.f P a) / INR n)).
 rewrite big_const iter_Rmult_pow INR_type_fun.
 congr (_ ^ _).
 rewrite /typed_tuples inE in Hx.
-move/forallP/(_ a)/eqP : Hx => Hx.
-rewrite -INR_type_fun in Hx.
-apply Rmult_eq_reg_r in Hx; last by apply/eqP/invR_neq0; rewrite INR_eq0.
-move/INR_eq in Hx.
-rewrite Hx num_occ_alt cardsE /=.
+move/forallP/(_ a)/eqP : Hx.
+rewrite -INR_type_fun eqR_mul2r; last by apply/eqP/invR_neq0; rewrite INR_eq0.
+move/INR_eq => ->.
+rewrite num_occ_alt cardsE /=.
 apply eq_card => /= n0.
 by rewrite /in_mem /= tnth_mktuple.
 Qed.
@@ -469,7 +467,7 @@ rewrite (_ : \rprod_(a : A) P a ^ (type.f P) a =
     rewrite -(_ : O = type.f P a); first by rewrite !mul0R exp2_0 /pow.
     apply INR_eq.
     rewrite {1}/INR.
-    apply (Rmult_eq_reg_r ( / INR n)); last by apply/eqP/invR_neq0; rewrite INR_eq0.
+    rewrite -(@eqR_mul2r ( / INR n)); last by apply/eqP/invR_neq0; rewrite INR_eq0.
     by rewrite type_fun_type // -(eqP H) mulR0.
 rewrite -(big_morph _ morph_exp2_plus exp2_0) -(big_morph _ (morph_mulRDl _) (mul0R _)).
 by rewrite /entropy Rmult_opp_opp mulRC.
@@ -642,7 +640,7 @@ apply/type_eqP => /=.
 apply/eqP.
 apply ffunP => a.
 apply/val_inj/INR_eq.
-move: {HPQ}(HPQ a); rewrite HP HQ; move/Rmult_eq_reg_r; apply.
+move: {HPQ}(HPQ a); rewrite HP HQ eqR_mul2r //.
 apply/eqP/invR_neq0; by rewrite INR_eq0.
 Qed.
 

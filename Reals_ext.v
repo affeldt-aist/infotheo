@@ -72,30 +72,12 @@ move=> abs'; rewrite abs' mulR0 in H.
 by move/Rlt_irrefl : H.
 Qed.
 
-(* NB: don't use Rle_Rinv instead of Rinv_le_contravar *)
-
-(* TODO: rename *)
-Lemma Rle_inv_conv x y : 0 < x -> 0 < y -> / y <= / x -> x <= y.
-Proof.
-move=> x0 y0 H.
-rewrite -(invRK x); last by apply not_eq_sym, Rlt_not_eq.
-rewrite -(invRK y); last by apply not_eq_sym, Rlt_not_eq.
-apply Rinv_le_contravar => //; exact/invR_gt0.
-Qed.
-
 (* NB: see Rplus_lt_reg_pos_r in the standard library *)
 Lemma Rplus_le_lt_reg_pos_r r1 r2 r3 : 0 < r2 -> r1 + r2 <= r3 -> r1 < r3.
 Proof. move=> *. fourier. Qed.
 
-Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Zabs_nat x) = IZR x.
+Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Z.abs_nat x) = IZR x.
 Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
-
-(* TODO: move the following to ssrR.v? *)
-Lemma leR_subr_addr x y z : (x <b= y - z) = (x + z <b= y).
-Proof. apply/idP/idP => /leRP ?; apply/leRP; fourier. Qed.
-
-Lemma leR_subl_addr x y z : (x - y <b= z) = (x <b= z + y).
-Proof. apply/idP/idP => /leRP ?; apply/leRP; fourier. Qed.
 
 Lemma leR_maxl x y z : (max(y, z) <b= x) = (y <b= x) && (z <b= x).
 Proof.
@@ -124,28 +106,27 @@ Lemma neq_Rdiv a b : a <> 0 -> b <> 0 -> b <> 1 -> a <> a / b.
 Proof.
 move=> Ha Hb Hb' abs.
 rewrite -{1}[X in X = _]mulR1 in abs.
-apply Rmult_eq_reg_l in abs => //.
+move/(eqR_mul2l Ha) in abs.
 apply Hb'.
-apply Rmult_eq_reg_r with (/ b); last exact/eqP/invR_neq0/eqP.
+apply (@eqR_mul2r (/ b)); first exact/eqP/invR_neq0/eqP.
 rewrite mulRV ?mul1R //; exact/eqP.
 Qed.
 
 Lemma Rdiv_le a : 0 <= a -> forall r, 1 <= r -> a / r <= a.
 Proof.
 move=> Ha r Hr.
-apply Rmult_le_reg_l with r; first by fourier.
+apply (@leR_pmul2l r); first by fourier.
 rewrite /Rdiv mulRCA mulRV; last by apply/negP => /eqP ?; subst r; fourier.
-rewrite -mulRC; apply Rmult_le_compat_r => //; fourier.
+rewrite -mulRC; exact: leR_wpmul2r.
 Qed.
 
 Lemma Rdiv_lt a : 0 < a -> forall r : R, 1 < r -> a / r < a.
 Proof.
 move=> Ha r0 Hr0.
 rewrite -[X in _ < X]mulR1.
-apply Rmult_lt_compat_l => //.
+apply ltR_pmul2l => //.
 rewrite -invR1.
-apply Rinv_1_lt_contravar => //.
-exact/leRR.
+apply ltR_inv => //; fourier.
 Qed.
 
 (** Lemmas about power *)
@@ -213,8 +194,7 @@ Lemma pow_ge0 x : 0 <= x -> forall n : nat, 0 <= x ^ n.
 Proof.
 move=> x_pos.
 elim => [/= | n IH] => //.
-rewrite -(mulR0 0).
-apply Rmult_le_compat => //; exact/leRR.
+rewrite -(mulR0 0); apply leR_pmul => //; exact/leRR.
 Qed.
 
 (* TODO: rename *)
@@ -236,17 +216,17 @@ move/Rgt_lt : (proj1 (archimed r)) => Hr'.
 exact: (leR_ltR_trans Hr).
 Qed.
 
-Lemma Rle_up_pos r : 0 <= r -> r <= IZR (Zabs (up r)).
+Lemma Rle_up_pos r : 0 <= r -> r <= IZR (Z.abs (up r)).
 Proof.
 move=> Hr.
-rewrite Zabs_eq; last first.
+rewrite Z.abs_eq; last first.
   apply up_pos in Hr.
   by apply Z.lt_le_incl.
 case: (base_Int_part r).
 rewrite /Int_part minus_IZR => _ ?; fourier.
 Qed.
 
-Lemma Rle_up a : a <= IZR (Zabs (up a)).
+Lemma Rle_up a : a <= IZR (Z.abs (up a)).
 Proof.
 case: (Rlt_le_dec a 0) => Ha; last by apply Rle_up_pos.
 apply (@leR_trans  0); first by fourier.
@@ -370,11 +350,11 @@ Lemma combinaison_Coq_SSR n0 m0 : (m0 <= n0)%nat -> C n0 m0 = INR 'C(n0, m0).
 Proof.
 move=> ?.
 rewrite /C.
-apply Rmult_eq_reg_r with (INR (fact m0) * INR (fact (n0 - m0)%coq_nat)).
+apply (@eqR_mul2r (INR (fact m0) * INR (fact (n0 - m0)%coq_nat))).
+  apply Rmult_integral_contrapositive.
+  split; apply/eqP; rewrite INR_eq0; exact/eqP/fact_neq_0.
 set tmp := INR (fact m0) * _.
 rewrite -mulRA mulVR ?mulR1; last first.
   by rewrite /tmp mulR_eq0 negb_or !INR_eq0 !fact_Coq_SSR -!lt0n !fact_gt0.
 by rewrite/tmp -!mult_INR !fact_Coq_SSR !multE !minusE bin_fact.
-apply Rmult_integral_contrapositive.
-split; apply/eqP; rewrite INR_eq0; exact/eqP/fact_neq_0.
 Qed.

@@ -3,7 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext log2 Rbigop proba entropy aep.
+Require Import ssrR Reals_ext logb Rbigop.
+Require Import proba entropy aep.
 
 (** * Typical Sequences *)
 
@@ -46,13 +47,13 @@ case/andP. move/leRP => H2. move/leRP => H3.
 apply/andP; split; apply/leRP.
 - apply/(leR_trans _ H2)/Exp_le_increasing => //.
   rewrite !mulNR.
-  apply Ropp_le_contravar, Rmult_le_compat_l; first exact: pos_INR.
-  apply Rplus_le_compat_l, Rdiv_le => //; fourier.
+  rewrite leR_oppr oppRK; apply leR_wpmul2l; first exact: pos_INR.
+  apply leR_add2l, Rdiv_le => //; fourier.
 - eapply Rle_trans; first by apply H3.
   apply Exp_le_increasing => //.
   rewrite !mulNR.
-  apply Ropp_le_contravar, Rmult_le_compat_l; first exact: pos_INR.
-  apply Rplus_le_compat_l, Ropp_le_contravar, Rdiv_le => //; fourier.
+  rewrite leR_oppr oppRK; apply leR_wpmul2l; first exact: pos_INR.
+  apply leR_add2l; rewrite leR_oppr oppRK; apply Rdiv_le => //; fourier.
 Qed.
 
 Section typ_seq_prop.
@@ -89,14 +90,14 @@ Lemma typ_seq_definition_equiv2 x : x \in `TS P n.+1 epsilon ->
 Proof.
 rewrite inE /typ_seq.
 case/andP => H1 H2; split;
-  apply/leRP; rewrite -(Rle_pmul2l (INR n.+1)) ?ltR0n //;
+  apply/leRP; rewrite -(leR_pmul2l' (INR n.+1)) ?ltR0n //;
   rewrite div1R mulRA mulRN mulRV ?INR_eq0 // mulN1R; apply/leRP.
-- rewrite -[X in X <= _]oppRK.
-  apply/Ropp_le_contravar/(@Exp_le_inv 2) => //.
+- rewrite leR_oppr.
+  apply/(@Exp_le_inv 2) => //.
   rewrite LogK //; last by apply/(ltR_leR_trans (exp2_gt0 _)); apply/leRP: H1.
   apply/leRP; by rewrite -mulNR.
-- rewrite -[X in _ <= X]oppRK.
-  apply/Ropp_le_contravar/(@Exp_le_inv 2) => //.
+- rewrite leR_oppl.
+  apply/(@Exp_le_inv 2) => //.
   rewrite LogK //; last by apply/(ltR_leR_trans (exp2_gt0 _)); apply/leRP: H1.
   apply/leRP; by rewrite -mulNR.
 Qed.
@@ -112,7 +113,7 @@ Variable n : nat.
 
 Hypothesis He : 0 < epsilon.
 
-Lemma Pr_TS_1 : aep_bound P epsilon <= INR n.+1 -> Pr (P `^ n.+1) (`TS P n.+1 epsilon) >= 1 - epsilon.
+Lemma Pr_TS_1 : aep_bound P epsilon <= INR n.+1 -> 1 - epsilon <= Pr (P `^ n.+1) (`TS P n.+1 epsilon).
 Proof.
 move=> k0_k.
 have -> : Pr P `^ n.+1 (`TS P n.+1 epsilon) =
@@ -128,8 +129,7 @@ have -> : Pr P `^ n.+1 (`TS P n.+1 epsilon) =
 set p := [set _ | _].
 move: (Pr_cplt (P `^ n.+1) p) => Htmp.
 rewrite Pr_to_cplt.
-suff ? : Pr (P `^ n.+1) (~: p) <= epsilon.
-  by apply Rplus_ge_compat_l, Ropp_ge_contravar, Rle_ge.
+suff ? : Pr (P `^ n.+1) (~: p) <= epsilon by apply leR_add2l; rewrite leR_oppl oppRK.
 have -> : Pr P `^ n.+1 (~: p) =
   Pr P `^ n.+1 [set x | P `^ n.+1 x == 0]
   +
@@ -161,8 +161,8 @@ have -> : Pr P `^ n.+1 (~: p) =
           move/ltRP : LHS.
           rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivr_mulr; last first.
             by apply/ltRP; rewrite ltR0n.
-          rewrite /Rdiv mulRC => /ltRP/Ropp_gt_lt_contravar/ltRP.
-          rewrite oppRK mulNR -ltR_subRL => LHS.
+          rewrite /Rdiv mulRC => /ltRP; rewrite ltR_oppr => /ltRP.
+          rewrite mulNR -ltR_subRL => LHS.
           rewrite mul1R Rabs_pos_eq //.
           by move/ltRP : LHS; move/(ltR_trans He)/ltRW.
         - rewrite leRNgt negbK in LHS.
@@ -176,8 +176,8 @@ have -> : Pr P `^ n.+1 (~: p) =
           have H2 : forall a b c, - a + b < c -> - c - a < - b by move=> *; fourier.
           move/ltRP/H2 in LHS.
           rewrite div1R mulRC mulRN -/(Rdiv _ _) Rabs_left1.
-          + apply/ltRP/Ropp_lt_cancel; by rewrite oppRK.
-          + apply: (leR_trans (ltRW _ _ LHS)); by fourier.
+          + apply/ltRP; by rewrite ltR_oppr.
+          + apply: (leR_trans (ltRW LHS)); by fourier.
       * move/negbT : LHS.
         rewrite negb_or 2!negbK /typ_seq => /andP[H1 /andP[/leRP H2 /leRP H3]].
         apply/esym/negbTE.
@@ -263,7 +263,7 @@ Lemma TS_inf : aep_bound P epsilon <= INR n.+1 ->
 Proof.
 move=> k0_k.
 have H1 : 1 - epsilon <= Pr (P `^ n.+1) (`TS P n.+1 epsilon) <= 1.
-  split; by [apply Rge_le, Pr_TS_1 | apply Pr_1].
+  split; by [apply Pr_TS_1 | apply Pr_1].
 have H2 : (forall x, x \in `TS P n.+1 epsilon ->
   exp2 (- INR n.+1 * (`H P + epsilon)) <= P `^ n.+1 x <= exp2 (- INR n.+1 * (`H P - epsilon))).
   by move=> x; rewrite inE /typ_seq => /andP[/leRP ? /leRP].

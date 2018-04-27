@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import choice fintype tuple finfun bigop finset binomial.
 From mathcomp Require Import fingroup perm.
 Require Import Reals Fourier FunctionalExtensionality ProofIrrelevance.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 Require Import num_occ channel types.
 
 Set Implicit Arguments.
@@ -1285,14 +1285,11 @@ exists (num_co_occ_jtype ta tb).-shell ta.
   - apply eq_bigr => b _.
     by rewrite /num_co_occ_jtype /= 2!ffunE.
   - rewrite num_co_occ_partial_sum_alt.
-    move: Hta.
-    rewrite in_set.
-    move/forallP/(_ a)/eqP => Hta_.
     move: Hta'; rewrite in_set => /forallP/(_ a)/eqP => Hta'.
-    rewrite Hta' in Hta_.
-    apply/INR_eq/esym.
-    move/Rmult_eq_reg_r : Hta_; apply.
-    apply/eqP/invR_neq0; by rewrite INR_eq0.
+    move: Hta.
+    rewrite in_set => /forallP/(_ a)/eqP.
+    rewrite Hta' eqR_mul2r; last by apply/eqP/invR_neq0; rewrite INR_eq0.
+    by move/INR_eq.
 - rewrite in_set.
   apply/forallP => a. apply/forallP => b.
   by rewrite /num_co_occ_jtype /= 2!ffunE.

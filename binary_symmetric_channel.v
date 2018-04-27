@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg perm zmodp matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop proba.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy binary_entropy_function channel hamming channel_code.
 
 (** * Capacity of the binary symmetric channel *)
@@ -114,11 +114,8 @@ have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
   case: p_01' => Hp1 Hp2.
   split.
     case/Rle_lt_or_eq_dec : H1 => H1.
-    - apply Rplus_lt_le_0_compat.
-        by apply mulR_gt0; fourier.
-      by apply mulR_ge0; fourier.
-    - rewrite -H1 mulR0 add0R (_ : P b = 1) ?mulR1 //.
-      by rewrite -P1 -H1 add0R.
+    - apply addR_gt0wl; by [apply mulR_gt0; fourier | apply mulR_ge0; fourier].
+    - by rewrite -H1 mulR0 add0R (_ : P b = 1) ?mulR1 // -P1 -H1 add0R.
   rewrite -{2}P1.
   case: (Req_EM_T (P a) 0) => Hi.
     rewrite Hi mulR0 !add0R.
@@ -129,10 +126,9 @@ have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
     rewrite Hj mulR0 !addR0 P1 mulR1.
     fourier.
     case/Rle_lt_or_eq_dec : H1 => H1.
-    - apply Rplus_le_lt_compat.
-      + rewrite -{2}(mul1R (P a)); apply Rmult_le_compat_r; fourier.
-      + rewrite -{2}(mul1R (P b)).
-        apply Rmult_lt_compat_r => //.
+    - apply leR_lt_add.
+      + rewrite -{2}(mul1R (P a)); apply leR_wpmul2r; fourier.
+      + rewrite -{2}(mul1R (P b)); apply ltR_pmul2r => //.
         apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_nonneg].
     - rewrite -H1 mulR0 2!add0R.
       have -> : P b = 1 by rewrite -P1 -H1 add0R.

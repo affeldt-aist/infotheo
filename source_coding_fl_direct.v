@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 natbin Rbigop proba.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb natbin Rbigop proba.
 Require Import entropy aep typ_seq source_code.
 
 (** * Source coding theorem (direct part) *)
@@ -80,7 +80,7 @@ exists (Z.abs_nat (up D)).
 rewrite -multE (mult_INR (Z.abs_nat (up D)) d.+1).
 apply (@leR_trans (IZR (Z.abs (up D)))); first exact: Rle_up.
 rewrite INR_IZR_INZ inj_Zabs_nat -{1}(mulR1 (IZR _)).
-apply Rmult_le_compat_l; first exact/IZR_le/Zabs_pos.
+apply leR_wpmul2l; first exact/IZR_le/Zabs_pos.
 rewrite -addn1 plus_INR /= (_ : INR 1 = 1%R) //; move: (pos_INR d) => ?; fourier.
 Qed.
 
@@ -172,12 +172,9 @@ split.
   split; by apply not_0_INR.
 set lhs := esrc(_, _).
 suff -> : lhs = (1 - Pr (P `^ k) (`TS P k (lambda / 2)))%R.
-  apply Ropp_le_cancel.
-  rewrite Ropp_minus_distr.
-  apply (Rplus_le_reg_l 1).
-  rewrite Rplus_minus.
-  apply Rge_le, Rge_trans with (1 - lambda / 2)%R; last first.
-    apply Rle_ge, Rplus_le_compat_l, Ropp_ge_le_contravar, Rle_ge; exact halflambdaepsilon.
+  rewrite leR_subl_addr addRC -leR_subl_addr.
+  apply Rle_trans with (1 - lambda / 2)%R.
+    apply leR_add2l; rewrite leR_oppr oppRK; exact halflambdaepsilon.
   by move: (Pr_TS_1 halflambda0 k_k0).
 rewrite /lhs {lhs} /SrcErrRate /Pr /=.
 set lhs := \rsum_(_ | _ ) _.
@@ -205,24 +202,24 @@ apply/negPn/negPn.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * r) by fourier.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * (`H P + lambda)).
     apply: leR_trans; first exact: card_S_bound.
-    apply Exp_le_increasing => //; apply Rmult_le_compat_l; [exact/pos_INR | exact/Hlambdar].
+    apply Exp_le_increasing => //; apply leR_wpmul2l; [exact/pos_INR | exact/Hlambdar].
   apply (@leR_trans (exp2 (INR k * (lambda / 2) +
                               INR k * (`H P + lambda / 2)))); last first.
     rewrite -mulRDr addRC -addRA.
     rewrite (_ : forall a, a / 2 + a / 2 = a)%R; last by move=> ?; field.
     exact/leRR.
   apply (@leR_trans (exp2 (1 + INR k * (`H P + lambda / 2)))); last first.
-   apply Exp_le_increasing => //; apply Rplus_le_compat_r.
+   apply Exp_le_increasing => //; apply leR_add2r.
     move/leRP : Hk; rewrite leR_maxl => /andP[_ /leRP Hk].
-    apply Rmult_le_reg_r with (2 / lambda)%R; first exact lambdainv2.
+    apply (@leR_pmul2r (2 / lambda)%R); first exact lambdainv2.
     rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
       apply nesym, Rlt_not_eq; exact lambda0.
       move=> ?; fourier.
       rewrite mulRV ?mulR1 //; exact/eqP/nesym/Rlt_not_eq/halflambda0.
-  apply: leR_trans; first exact/Rplus_le_compat_l/TS_sup.
+  apply: leR_trans; first exact/leR_add2l/TS_sup.
   apply (@leR_trans (exp2 (INR k* (`H P + lambda / 2)) +
                         exp2 (INR k * (`H P + lambda / 2)))%R).
-  + apply Rplus_le_compat_r.
+  + apply leR_add2r.
     rewrite -exp2_0.
     apply Exp_le_increasing => //.
     apply mulR_ge0; first exact: pos_INR.

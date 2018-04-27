@@ -51,9 +51,9 @@ case/orP : (orbN (size lst <= n)) => X.
 Qed.
 
 End Pad.
-Implicit Arguments pad_seq [A].
-Implicit Arguments pad_seqL [A].
-Implicit Arguments size_pad_seq [A].
+Arguments pad_seq [A].
+Arguments pad_seqL [A].
+Arguments size_pad_seq [A].
 
 Lemma pad_seqL_leading_true_inj : forall n i j,
   size i <= n -> size j <= n ->
@@ -323,7 +323,7 @@ Lemma Npos_pos_of_bitseq_rev' : forall x y,
   Npos (pos_of_bitseq (rev y)) = nat_of_bin x :> nat.
 Proof.
 elim/Nind => // x IH y.
-move Heq : (Nsucc x) => eq.
+move Heq : (N.succ x) => eq.
 destruct eq => //= H.
 f_equal.
 by apply pos_of_bitseq_rev in H.

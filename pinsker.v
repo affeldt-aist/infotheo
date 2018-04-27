@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype tuple finfun bigop finset.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext Ranalysis_ext ssr_ext log2 ln_facts bigop_ext.
+Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
 Require Import Rbigop proba divergence variation_dist pinsker_function.
 Require Import partition_inequality.
 
@@ -204,18 +204,17 @@ Lemma Pinsker_inequality_weak : d(P , Q) <= sqrt (2 * D(P || Q)).
 Proof.
 rewrite -(sqrt_Rsqr (d(P , Q))); last exact/pos_var_dist.
 apply sqrt_le_1_alt.
-apply (Rmult_le_reg_l (/ 2)); first by apply invR_gt0; fourier.
+apply (@leR_pmul2l (/ 2)); first by apply invR_gt0; fourier.
 apply (@leR_trans (D(P || Q))); last first.
   rewrite mulRA mulVR // ?mul1R; [exact/leRR | exact/eqP/gtR_eqF].
 apply: (leR_trans _ Pinsker_inequality).
 rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow; field.
-apply Rmult_le_compat_r; first exact: pow_even_ge0.
-apply Rinv_le_contravar.
-- exact/mulR_gt0.
-- rewrite -[X in _ <= X]mulR1.
-  apply Rmult_le_compat_l; first by fourier.
-  rewrite [X in _ <= X](_ : 1%R = ln (exp 1)); last by rewrite ln_exp.
-  apply ln_increasing_le; [fourier | exact leR2e].
+apply leR_wpmul2r; first exact: pow_even_ge0.
+apply leR_inv => //; first exact/mulR_gt0.
+rewrite -[X in _ <= X]mulR1.
+apply leR_wpmul2l; first by fourier.
+rewrite [X in _ <= X](_ : 1%R = ln (exp 1)); last by rewrite ln_exp.
+apply ln_increasing_le; [fourier | exact leR2e].
 Qed.
 
 End Pinsker.

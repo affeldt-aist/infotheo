@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext log2 ssr_ext ssralg_ext.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
 (** * Instantiation of canonical big operators with Coq reals *)
 
@@ -163,8 +163,7 @@ elim: (index_enum _) => [|h t IH].
 - rewrite !big_nil; exact/leRR.
 - rewrite !big_cons.
   set K := _ && _; move HK : K => []; subst K => //.
-  apply Rplus_le_compat => //.
-  case/andP : HK; exact: H.
+  apply leR_add => //; case/andP : HK; exact: H.
 Qed.
 
 Lemma ler_rsum : (forall i, P i -> f i <= g i) ->
@@ -183,9 +182,9 @@ move=> f_g Qg H.
 elim: (index_enum _) => [| h t IH].
 - rewrite !big_nil; exact/leRR.
 - rewrite !big_cons /=; case: ifP => [Ph|Ph].
-    rewrite (H _ Ph); apply Rplus_le_compat => //; exact: f_g.
+    rewrite (H _ Ph); apply leR_add => //; exact: f_g.
   case: ifP => // Qh; apply: (leR_trans IH).
-  rewrite -{1}[X in X <= _](add0R _); exact/Rplus_le_compat_r/Qg.
+  rewrite -{1}[X in X <= _](add0R _); exact/leR_add2r/Qg.
 Qed.
 
 Lemma ler_rsum_l_support (R : pred A) :
@@ -199,10 +198,10 @@ elim: (index_enum _) => [|h t IH].
   set cond := _ \in _; move Hcond : cond => []; subst cond => //=.
   case: ifP => // HP.
   + case: ifP => [HQ|].
-    * exact: Rplus_le_compat_l.
+    * by apply leR_add2l.
     * by rewrite (P_Q _ HP).
   + case: ifP => // HQ.
-    rewrite -[X in X <= _]add0R; exact/Rplus_le_compat.
+    rewrite -[X in X <= _]add0R; exact/leR_add.
 Qed.
 
 Lemma ltr_rsum_support (X : {set A}) : (0 < #|X|)%nat ->
@@ -218,7 +217,7 @@ case: n => [|n] in IH Hn.
     move: Hn.
     by rewrite (cardsD1 a0) Ha0 /= add1n => -[] /eqP; rewrite cards_eq0 => /eqP.
   rewrite !big_set0 2!addR0; exact: H.
-apply Rplus_lt_compat; first exact/H.
+apply ltR_add; first exact/H.
 apply IH => //.
 - move: Hn; rewrite (cardsD1 a0) Ha0 /= add1n; by case.
 - move=> a; rewrite in_setD inE => /andP[_ ?]; exact: H.
@@ -243,7 +242,7 @@ elim: (index_enum _) => [|h t IH].
   rewrite 2!big_nil Rabs_R0; exact/leRR.
 rewrite 2!big_cons.
 apply (@leR_trans (Rabs (f h) + Rabs (\rsum_(j <- t) f j)));
-  [exact/Rabs_triang |exact/Rplus_le_compat_l].
+  [exact/Rabs_triang |exact/leR_add2l].
 Qed.
 
 Lemma ler_rsum_predU (A : finType) (f : A -> R) (P Q : pred A) :
@@ -257,19 +256,18 @@ case: ifPn => /=.
 - case/orP => [hP | hQ].
   + move: hP; rewrite unfold_in => ->.
     case: ifP => // Qh.
-    * rewrite -addRA; apply Rplus_le_compat_l.
+    * rewrite -addRA; apply leR_add2l.
       apply (leR_trans IH).
       have : forall a b c, 0 <= c -> a + b <= a + (c + b) by move=> *; fourier.
       apply; by apply Hf.
-    * rewrite -addRA; apply Rplus_le_compat_l.
+    * rewrite -addRA; apply leR_add2l.
       exact/(leR_trans IH)/Req_le.
   + move: hQ; rewrite unfold_in => ->.
     case: ifP => // Ph.
-    * rewrite -addRA; apply/Rplus_le_compat_l/(leR_trans IH).
+    * rewrite -addRA; apply/leR_add2l/(leR_trans IH).
       have : forall a b c, 0 <= c -> a + b <= a + (c + b) by move=> *; fourier.
       apply; by apply Hf.
-    * rewrite -(addRC (f h + _)) -addRA; apply Rplus_le_compat_l.
-      apply (leR_trans IH).
+    * rewrite -(addRC (f h + _)) -addRA; apply/leR_add2l/(leR_trans IH).
       by rewrite addRC; apply Req_le.
 - rewrite negb_or.
   case/andP.
@@ -320,8 +318,7 @@ apply/eqP; rewrite -subR_eq0; apply/eqP.
 move: i Hi.
 apply prsumr_eq0P.
 - move=> i Hi.
-  apply (Rplus_le_reg_l (f i)).
-  rewrite addR0 subRKC; by apply H1.
+  rewrite leR_subr_addr add0R; exact: H1.
 - rewrite big_split /= -(big_morph _ morph_Ropp oppR0).
   by apply/eqP; rewrite subR_eq0 H2.
 Qed.
@@ -390,7 +387,7 @@ Proof.
 move=> Hf.
 elim: (index_enum _) => [| hd tl IH].
 - rewrite big_nil; exact/leRR.
-- rewrite big_cons -{1}(mulR1 1%R); apply Rmult_le_compat => // ; fourier.
+- rewrite big_cons -{1}(mulR1 1%R); apply leR_pmul => // ; fourier.
 Qed.
 
 Local Open Scope R_scope.
@@ -409,7 +406,7 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
     apply rprodr_gt0 => a.
     move: (Hf a) (Hfg a) => {Hf}Hf {Hfg}[Hf2 _].
     apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
-  apply (Rmult_le_reg_r (1 * / \rprod_(i : A) f i) _ _).
+  apply (@leR_pmul2r (1 * / \rprod_(i : A) f i) _ _).
     apply Rlt_mult_inv_pos => //; fourier.
   rewrite mul1R mulRV; last exact/eqP/not_eq_sym/Rlt_not_eq.
   set inv_spec := fun r => if r == 0 then 0 else / r.
@@ -436,7 +433,7 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
   rewrite /inv_spec.
   move/negbTE in Hf; rewrite Hf; move/negbT in Hf.
   rewrite -(mulRV (f a)) //.
-  apply Rmult_le_compat_r => //.
+  apply leR_wpmul2r => //.
   rewrite -(mul1R (/ f a)).
   apply Rle_mult_inv_pos; [fourier | apply/ltRP; rewrite lt0R Hf; exact/leRP].
 Qed.

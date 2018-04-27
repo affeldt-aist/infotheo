@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 
 (** * Asymptotic Equipartition Property (AEP) *)
 
@@ -78,8 +78,8 @@ elim.
     rewrite [X in _ \=isum X](_ : _ = \row_i --log P); last by apply val_inj.
     by apply isum_n_1.
   rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_rv /=.
-  rewrite /rvar2tuple1 /= mxE /=.
-  f_equal.
+  rewrite mxE /=.
+  congr mkRvar.
   apply FunctionalExtensionality.functional_extensionality => ta.
   by rewrite big_ord_recl big_ord0 addR0.
 - move=> n IHn.
@@ -128,10 +128,9 @@ Proof. apply Rle_mult_inv_pos; by [apply aep_sigma2_pos | apply pow_lt]. Qed.
 Lemma aep_bound_decreasing e e' : 0 < e' <= e -> aep_bound e <= aep_bound e'.
 Proof.
 case=> Oe' e'e.
-apply Rmult_le_compat_l; first by apply aep_sigma2_pos.
-apply leR_inv => //.
-- rewrite inE; exact/ltRP/pow_lt.
-- apply pow_incr => //; split; [exact/ltRW | exact/e'e ].
+apply leR_wpmul2l; first exact: aep_sigma2_pos.
+apply leR_inv => //; first exact/pow_lt.
+apply pow_incr => //; split; [exact/ltRW | exact/e'e ].
 Qed.
 
 End aep_k0_constant.
@@ -151,11 +150,10 @@ Proof.
 move=> Hbound.
 apply (@leR_trans (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R); last first.
   rewrite /aep_bound in Hbound.
-  apply (Rmult_le_compat_r (epsilon / INR n.+1)) in Hbound; last first.
+  apply (@leR_wpmul2r (epsilon / INR n.+1)) in Hbound; last first.
     apply Rle_mult_inv_pos; [exact/ltRW/Hepsilon | exact/lt_0_INR/ltP].
   rewrite [in X in _ <= X]mulRCA mulRV ?INR_eq0 // ?mulR1 in Hbound.
-  apply: leR_trans; last by apply Hbound.
-  apply Req_le; field.
+  apply/(leR_trans _ Hbound)/Req_le; field.
   split; [exact: not_0_INR | exact: gtR_eqF].
 move: (sum_mlog_prod_isum_map_mlog P n) => Hisum.
 move: (wlln (@E_map_mlog _ P n) (@V_map_mlog _ P n) Hisum Hepsilon) => law_large.

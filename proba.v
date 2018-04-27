@@ -1,9 +1,10 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
-Require Import ssrR Reals_ext log2 ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 
 (** * Formalization of discrete probabilities *)
 
@@ -368,10 +369,9 @@ rewrite (eq_bigr (fun c => X c / (1 - X b))); last first.
 rewrite -big_distrl /=.
 move: (pmf1 X); rewrite (bigD1 b) //=.
 move=> /eqP; rewrite eq_sym addRC -subR_eq => /eqP H.
-apply Rmult_eq_reg_r with (1 - X b); last first.
-  by apply/eqP; apply: contra Xb1; rewrite subR_eq0 eq_sym.
-rewrite mul1R -mulRA mulVR ?mulR1; first by rewrite H.
-by apply: contra Xb1; rewrite subR_eq0 eq_sym.
+have ? : 1 - X b != 0 by apply: contra Xb1; rewrite subR_eq0 eq_sym.
+rewrite -(@eqR_mul2r (1 - X b)); last exact/eqP.
+by rewrite mul1R -mulRA mulVR ?mulR1 // H.
 Qed.
 
 Definition d := makeDist f0 f1.
@@ -522,7 +522,7 @@ have H3 : \rsum_(x in A) P `^ _ x <= INR #|A| * beta.
   apply (@leR_trans (\rsum_(x in A | predT A) [fun _ => beta] x)).
       apply ler_rsum_support => /= i iA _; by apply H2.
     rewrite -big_filter /= big_const_seq /= iter_Rplus /=.
-    apply Rmult_le_compat_r; first by fourier.
+    apply leR_wpmul2r; first by fourier.
     apply Req_le.
     rewrite filter_index_enum count_predT cardE.
     congr (INR (size _)).
@@ -534,7 +534,7 @@ have H4 : INR #|A| * alpha <= \rsum_(x in A) P `^ _ x.
     apply (@leR_trans (\rsum_(x in A | predT A) [fun _ => alpha] x)); last first.
       apply ler_rsum_support => i Hi _; by case: (H2 i Hi).
     rewrite -big_filter /= big_const_seq /= iter_Rplus /=.
-    apply Rmult_le_compat_r; first by fourier.
+    apply leR_wpmul2r; first by fourier.
     apply Req_le.
     rewrite filter_index_enum count_predT cardE.
     congr (INR (size _)).
@@ -687,17 +687,17 @@ case: ifP => H1.
   set lhs := \rsum_(_ <- _ | _) _.
   move=> IH.
   apply: leR_trans.
-    eapply Rplus_le_compat_l; by apply IH.
+    eapply leR_add2l; by apply IH.
   rewrite [X in _ <= X](exchange_big_dep (fun hd => (hd \in A) && [pred x in \bigcup_(i | E i) F i] hd)) /=; last first.
     move=> b j Pi Fj; apply/bigcupP; by exists b.
   rewrite big_cons /=.
   rewrite H1 big_const iter_Rplus -exchange_big_dep //; last first.
     move=> b j Pi Fj; apply/bigcupP; by exists b.
-  apply Rplus_le_compat_r.
+  apply/leR_add2r.
   set inr := INR _.
   suff H : 1 <= inr.
     rewrite -{1}(mul1R (P hd)).
-    apply Rmult_le_compat_r => //; by apply dist_nonneg.
+    apply leR_wpmul2r => //; exact: dist_nonneg.
   rewrite /inr {inr} (_ : 1 = INR 1) //.
   apply le_INR.
   apply/leP => /=.
@@ -708,7 +708,7 @@ case: ifP => H1.
 apply/(leR_trans IH)/ler_rsum => b Eb.
 rewrite big_cons.
 case: ifPn => hFb; last exact/leRR.
-rewrite -[X in X <= _]add0R; exact/Rplus_le_compat_r/dist_nonneg.
+rewrite -[X in X <= _]add0R; exact/leR_add2r/dist_nonneg.
 Qed.
 
 End probability.
@@ -791,8 +791,7 @@ Notation "'--log' P" := (mlog_rv P) (at level 5) : proba_scope.
 
 (** Cast operation: *)
 
-(* TODO: rename *)
-Lemma rvar2tuple1 : forall A, rvar A -> {rvar 'rV[A]_1}.
+Lemma tuple1_of_rvar : forall A, rvar A -> {rvar 'rV[A]_1}.
 Proof.
 move=> A [d f]; apply mkRvar.
 - exact (d `^ 1).
@@ -801,7 +800,7 @@ Defined.
 
 Definition cast_rv A : 'rV[rvar A]_1 -> {rvar 'rV[A]_1}.
 move=> t.
-exact (rvar2tuple1 (t ``_ ord0)).
+exact (tuple1_of_rvar (t ``_ ord0)).
 Defined.
 
 Section expected_value_definition.
@@ -886,10 +885,10 @@ Proof. move=> H1 H2; by rewrite 2!ExE /comp_rv /= H1 H2. Qed.
 
 End expected_value_for_standard_random_variables.
 
-Lemma E_rvar2tuple1 A : forall (X : rvar A), `E (rvar2tuple1 X) = `E X.
+Lemma E_tuple1_of_rvar A : forall (X : rvar A), `E (tuple1_of_rvar X) = `E X.
 Proof.
 case=> d f.
-rewrite 2!ExE /rvar2tuple1 /=; apply big_rV_1 => // m.
+rewrite 2!ExE /tuple1_of_rvar /=; apply big_rV_1 => // m.
 by rewrite -TupleDist1E.
 Qed.
 
@@ -908,13 +907,13 @@ Proof.
 rewrite ExE.
 rewrite (bigID [pred a' | X a' >b= r]) /=.
 rewrite -[a in a <= _]addR0.
-apply Rplus_le_compat; last first.
+apply leR_add; last first.
   apply rsumr_ge0 => a _.
   apply mulR_ge0; by [apply X_nonneg | apply dist_nonneg].
 apply (@leR_trans (\rsum_(i | X i >b= r) r * `p_ X i)).
   rewrite big_distrr /=;  apply/Req_le/eq_bigl => a; by rewrite inE.
 apply ler_rsum => a Xar.
-apply/Rmult_le_compat_r; [exact/dist_nonneg | exact/leRP].
+apply/leR_wpmul2r; [exact/dist_nonneg | exact/leRP].
 Qed.
 
 Lemma markov (r : R) : 0 < r -> Pr[X >= r] <= `E X / r.
@@ -963,10 +962,10 @@ Qed.
 
 End variance_properties.
 
-Lemma V_rvar2tuple1 A : forall (X : rvar A), `V (rvar2tuple1 X) = `V X.
+Lemma V_tuple1_of_rvar A : forall (X : rvar A), `V (tuple1_of_rvar X) = `V X.
 Proof.
 case=> d f.
-rewrite /`V !E_rvar2tuple1 !ExE; apply: big_rV_1 => // i.
+rewrite /`V !E_tuple1_of_rvar !ExE; apply: big_rV_1 => // i.
 by rewrite TupleDist1E.
 Qed.
 
@@ -991,9 +990,9 @@ apply (@leR_trans (\rsum_(a in A | Rabs (X a - `E X) >b= epsilon)
   apply mulR_ge0; [exact: pow_even_ge0| exact: dist_nonneg].
 rewrite /Pr big_distrr [_ \^2]lock /= -!lock.
 apply ler_rsum_l => i Hi; rewrite /= -!/(_ ^ 2).
-- apply Rmult_le_compat_r; first exact: dist_nonneg.
-  move: Hi; rewrite inE -(Rabs_sq (X i - _)) => /geRP/Rge_le H.
-  apply/pow_incr; split => //; exact/ltRW.
+- apply leR_wpmul2r; first exact: dist_nonneg.
+  move: Hi; rewrite inE -(Rabs_sq (X i - _)) => H.
+  apply/pow_incr; split => //; [exact/ltRW | exact/leRP].
 - apply mulR_ge0; [exact: pow_even_ge0 | exact: dist_nonneg].
 - move: Hi; by rewrite inE.
 Qed.
@@ -1292,7 +1291,7 @@ elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
   apply Eqdep_dec.inj_pair2_eq_dec in H1; last by exact eq_nat_dec.
   subst Xs Xbar.
   rewrite big_ord_recl big_ord0 addR0 /cast_rv.
-  by rewrite E_rvar2tuple1.
+  by rewrite E_tuple1_of_rvar.
 - inversion 1; subst.
   apply Eqdep_dec.inj_pair2_eq_dec in H1; last by exact eq_nat_dec.
   apply Eqdep_dec.inj_pair2_eq_dec in H2; last by exact eq_nat_dec.
@@ -1364,8 +1363,8 @@ case=> [_ | n IH] Xsum Xs Hsum s Hs.
   apply Eqdep_dec.inj_pair2_eq_dec in H; last by exact eq_nat_dec.
   apply Eqdep_dec.inj_pair2_eq_dec in H0; last by exact eq_nat_dec.
   subst Xs Xsum.
-  rewrite /cast_rv V_rvar2tuple1 /= mul1R.
-  by apply Hs.
+  rewrite /cast_rv V_tuple1_of_rvar /= mul1R.
+  exact: Hs.
 have {IH}IH : forall Xsum (Xs : 'rV[rvar A]_n.+1),
   Xsum \=isum Xs ->
   forall sigma2, (forall i, `V (Xs ``_ i) = sigma2) ->

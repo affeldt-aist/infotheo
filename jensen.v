@@ -1,9 +1,8 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
-
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba.
 
 Set Implicit Arguments.
@@ -149,10 +148,8 @@ rewrite mulRC.
 refine (leR_trans
   (@convex_f (r b) (\rsum_(i in dist_supp d) r i * d i) _ _ HDd HXb) _) => //.
 rewrite mulRC.
-apply /Rplus_le_compat_l /Rmult_le_compat_l => //.
-apply (Rplus_le_reg_l (X b)).
-rewrite addR0 Rplus_minus.
-by apply HXb.
+apply /leR_add2l /leR_wpmul2l => //.
+rewrite leR_subr_addr add0R; by apply HXb.
 Qed.
 
 Local Open Scope proba_scope.
@@ -176,9 +173,8 @@ Lemma convex_g : convex_in D g.
 Proof.
 move=> x y t Hx Hy Ht.
 rewrite /convex_leq /g.
-rewrite !mulRN -oppRD.
-apply Ropp_le_contravar.
-by apply concave_f.
+rewrite !mulRN -oppRD leR_oppr oppRK.
+exact: concave_f.
 Qed.
 
 Lemma jensen_dist_concave (r : A -> R) (X : dist A) :
@@ -186,7 +182,7 @@ Lemma jensen_dist_concave (r : A -> R) (X : dist A) :
   \rsum_(a in A) f (r a) * X a <= f (\rsum_(a in A) r a * X a).
 Proof.
 move=> HDr.
-apply Ropp_le_cancel.
+rewrite -[X in _ <= X]oppRK leR_oppr.
 move: (jensen_dist convex_g X HDr).
 rewrite /g.
 rewrite [in X in _ <= X](eq_bigr (fun a => -1 * (f (r a) * X a))).

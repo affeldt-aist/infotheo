@@ -31,33 +31,26 @@ Proof. move=> a b; apply: (iffP idP); rewrite /Req_bool; by case: Req_EM_T. Qed.
 Canonical R_eqMixin := EqMixin eqRP.
 Canonical R_eqType := Eval hnf in EqType R R_eqMixin.
 
-Definition Rge_bool (a b : R) := if Rge_dec a b is left _ then true else false.
-Notation "a '>b=' b" := (Rge_bool a b) : R_scope.
+Definition leR_bool a b := if Rle_dec a b is left _ then true else false.
+Notation "a '<b=' b" := (leR_bool a b) : R_scope.
 
-Definition Rle_bool a b := b >b= a.
-Notation "a '<b=' b" := (Rle_bool a b) : R_scope.
+Definition geR_bool (a b : R) := leR_bool b a.
+Notation "a '>b=' b" := (geR_bool a b) : R_scope.
 
-Definition Rlt_bool (a b : R) := if Rlt_dec a b is left _ then true else false.
-Notation "a '<b' b" := (Rlt_bool a b) : R_scope.
+Definition ltR_bool (a b : R) := if Rlt_dec a b is left _ then true else false.
+Notation "a '<b' b" := (ltR_bool a b) : R_scope.
 
-Definition Rgt_bool a b := b <b a.
-Notation "a '>b' b" := (Rgt_bool a b) : R_scope.
+Definition gtR_bool a b := b <b a.
+Notation "a '>b' b" := (gtR_bool a b) : R_scope.
 
-Notation "a '<b=' b '<b=' c" := (Rle_bool a b && Rle_bool b c) : R_scope.
-Notation "a '<b' b '<b' c" := (Rlt_bool a b && Rlt_bool b c) : R_scope.
-
-Lemma geRP (a b : R) : reflect (a >= b) (a >b= b).
-Proof. apply: (iffP idP); by rewrite /Rge_bool; case: Rge_dec. Qed.
+Notation "a '<b=' b '<b=' c" := (leR_bool a b && leR_bool b c) : R_scope.
+Notation "a '<b' b '<b' c" := (ltR_bool a b && ltR_bool b c) : R_scope.
 
 Lemma leRP (a b : R) : reflect (a <= b) (a <b= b).
-Proof.
-apply: (iffP idP); rewrite /Rle_bool /Rge_bool; case: Rge_dec => //.
-by move/Rge_le.
-by move/Rnot_ge_gt/Rgt_not_le.
-Qed.
+Proof. by apply: (iffP idP); rewrite /leR_bool; case: Rle_dec. Qed.
 
 Lemma ltRP (a b : R) : reflect (a < b) (a <b b).
-Proof. apply: (iffP idP); by rewrite /Rlt_bool; case: Rlt_dec. Qed.
+Proof. apply: (iffP idP); by rewrite /ltR_bool; case: Rlt_dec. Qed.
 
 Definition add0R : left_id 0 Rplus := Rplus_0_l.
 Definition addR0 : right_id 0 Rplus := Rplus_0_r.
@@ -124,6 +117,12 @@ apply/idP/idP => [/eqP/Rmult_integral[] ->| ]; try by rewrite eqxx // orbC.
 case/orP => /eqP ->; by rewrite ?mulR0 ?mul0R.
 Qed.
 
+Lemma eqR_mul2l {r r1 r2} : r <> 0 -> (r * r1 = r * r2) <-> (r1 = r2).
+Proof. by move=> r0; split => [/Rmult_eq_reg_l/(_ r0) | ->]. Qed.
+
+Lemma eqR_mul2r {r r1 r2} : r <> 0 -> (r1 * r = r2 * r) <-> (r1 = r2).
+Proof. by move=> r0; split => [/Rmult_eq_reg_r/(_ r0)|->]. Qed.
+
 Lemma gtR_eqF a b : a < b -> b <> a.
 Proof. move=> Hb He; rewrite He in Hb; by apply (Rlt_irrefl a). Qed.
 
@@ -149,18 +148,11 @@ Lemma ltR_leR_trans y x z : x < y -> y <= z -> x < z.
 Proof. exact: Rlt_le_trans. Qed.
 Arguments ltR_leR_trans [_] [_] [_].
 
-Lemma ltR_subRL m n p : (n <b p - m) = (m + n <b p).
-Proof.
-apply/idP/idP => /ltRP H; apply/ltRP.
-  move/(Rplus_lt_compat_l m) : H.
-  by rewrite addRCA Rplus_opp_r addR0.
-by apply: (Rplus_lt_reg_l m); rewrite addRCA Rplus_opp_r addR0.
-Qed.
-
 Definition oppR0 := Ropp_0.
 Definition oppRK := Ropp_involutive.
 
 Definition oppRD := Ropp_plus_distr.
+Definition oppRB := Ropp_minus_distr.
 
 Lemma oppR_eq0 x : (- x == 0) = (x == 0).
 Proof.
@@ -192,17 +184,13 @@ Lemma ltRNge m n : (m <b n) = ~~ (n <b= m).
 Proof. by rewrite leRNlt negbK. Qed.
 
 Lemma leRNgt (x y : R) : (x <b= y) = ~~ (x >b y).
-Proof. by rewrite /Rgt_bool ltRNge negbK. Qed.
+Proof. by rewrite /gtR_bool ltRNge negbK. Qed.
 
 Lemma ltRR n : n <b n = false.
 Proof. by apply/ltRP/Rlt_irrefl. Qed.
 
-Lemma leR_add m1 m2 n1 n2 : m1 <b= n1 -> m2 <b= n2 -> m1 + m2 <b= n1 + n2.
-Proof. move=> ? ?; apply/leRP/Rplus_le_compat; exact/leRP. Qed.
-
-Definition ltRW m n : m < n -> m <= n := Rlt_le m n.
-
-Lemma ltRW' (a b : R) : a <b b -> a <b= b.
+Definition ltRW {m n} : m < n -> m <= n := Rlt_le m n.
+Lemma ltRW' {a b : R} : a <b b -> a <b= b.
 Proof. by move/ltRP/Rlt_le/leRP. Qed.
 
 Lemma leR_eqVlt m n : (m <b= n) = (m == n) || (m <b n).
@@ -222,6 +210,7 @@ Proof. by rewrite ltR_neqAle eq_sym. Qed.
 Lemma le0R x : (0 <b= x) = (x == 0) || (0 <b x).
 Proof. by rewrite leR_eqVlt eq_sym. Qed.
 
+(* Lemma pnatr_eq0 n : (n%:R == 0 :> R) = (n == 0)%N. *)
 Lemma INR_eq0 n : (INR n == 0) = (n == O).
 Proof.
 apply/idP/idP => [/eqP|/eqP -> //].
@@ -243,43 +232,128 @@ Proof. by apply/idP/idP => [/leRP/INR_le/leP//|/leP/le_INR/leRP]. Qed.
 Lemma ltR_nat m n : (INR m <b INR n) = (m < n)%nat.
 Proof. by apply/idP/idP => [/ltRP/INR_lt/ltP//|/ltP/lt_INR/ltRP]. Qed.
 
-(* Rplus_le_compat_r
-     : forall r r1 r2 : R, r1 <= r2 -> r1 + r <= r2 + r*)
+Lemma leR_oppr x y : (x <= - y) <-> (y <= - x).
+Proof. split; move/Ropp_le_contravar; by rewrite oppRK. Qed.
 
-Lemma Rle_add2r p m n : (m + p <b= n + p) = (m <b= n).
+Lemma leR_oppl x y : (- x <= y) <-> (- y <= x).
+Proof. split; move/Ropp_le_contravar; by rewrite oppRK. Qed.
+
+Lemma ltR_oppr x y : (x < - y) <-> (y < - x).
+Proof. split; move/Ropp_lt_contravar; by rewrite oppRK. Qed.
+
+Lemma ltR_oppl x y : (- x < y) <-> (- y < x).
+Proof. split; move/Ropp_lt_contravar; by rewrite oppRK. Qed.
+
+(* not interesting lemmas? *)
+(* NB: Ropp_gt_lt_contravar *)
+(* NB: Ropp_le_ge_contravar *)
+(* NB: Ropp_le_cancel *)
+(* NB: Ropp_ll_cancel *)
+
+(*****************************************)
+(* inequalities and addition/subtraction *)
+(*****************************************)
+
+Definition addR_ge0 := Rplus_le_le_0_compat.   (* 0 <= r1 -> 0 <= r2 -> 0 <= r1 + r2 *)
+Definition addR_gt0 := Rplus_lt_0_compat.      (* 0 < r1  -> 0 < r2  -> 0 < r1 + r2 *)
+Definition addR_gt0wr := Rplus_le_lt_0_compat. (* 0 <= r1 -> 0 < r2  -> 0 < r1 + r2 *)
+Definition addR_gt0wl := Rplus_lt_le_0_compat. (* 0 < r1  -> 0 <= r2 -> 0 < r1 + r2 *)
+
+Definition leR_add := Rplus_le_compat. (* r1 <= r2 -> r3 <= r4 -> r1 + r3 <= r2 + r4 *)
+Lemma leR_add' m1 m2 n1 n2 : m1 <b= n1 -> m2 <b= n2 -> m1 + m2 <b= n1 + n2.
+Proof. move=> ? ?; apply/leRP/Rplus_le_compat; exact/leRP. Qed.
+
+Lemma leR_add2r {p m n} : m + p <= n + p <-> m <= n.
+Proof. split; [exact: Rplus_le_reg_r | exact: Rplus_le_compat_r]. Qed.
+Lemma leR_add2r' p m n : (m + p <b= n + p) = (m <b= n).
+Proof. by apply/idP/idP => [/leRP/leR_add2r/leRP //|/leRP/leR_add2r/leRP]. Qed.
+
+Lemma leR_add2l {p m n} : p + m <= p + n <-> m <= n.
+Proof. split; [exact: Rplus_le_reg_l | exact: Rplus_le_compat_l]. Qed.
+
+Definition ltR_add := Rplus_lt_compat. (* r1 < r2 -> r3 < r4 -> r1 + r3 < r2 + r4 *)
+
+Lemma ltR_add2r {p m n} : m + p < n + p <-> m < n.
+Proof. split; [exact: Rplus_lt_reg_r | exact: Rplus_lt_compat_r]. Qed.
+Lemma ltR_add2r' (p m n : R) : (m + p <b n + p) = (m <b n).
+ by apply/idP/idP => [/ltRP/ltR_add2r/ltRP // | /ltRP/ltR_add2r/ltRP]. Qed.
+
+Lemma ltR_add2l {p m n} : p + m < p + n <-> m < n.
+Proof. split; [exact: Rplus_lt_reg_l | exact: Rplus_lt_compat_l]. Qed.
+
+Definition leR_lt_add := Rplus_le_lt_compat. (* x <= y -> z < t -> x + z < y + t *)
+
+Lemma ltR_subRL m n p : (n <b p - m) = (m + n <b p).
 Proof.
-apply/idP/idP => [/leRP/Rplus_le_reg_r/leRP //|].
-by move/leRP/(Rplus_le_compat_r p)/leRP.
+apply/idP/idP => /ltRP H; apply/ltRP.
+  move/(@ltR_add2l m) : H; by rewrite addRCA Rplus_opp_r addR0.
+by apply (@ltR_add2l m); rewrite addRCA Rplus_opp_r addR0.
 Qed.
 
-Lemma Rlt_add2r (p m n : R) : (m + p <b n + p) = (m <b n).
+Lemma leR_subr_addr x y z : (x <= y - z) <-> (x + z <= y).
 Proof.
-apply/idP/idP => [/ltRP/Rplus_lt_reg_r/ltRP // | ].
-by move/ltRP/(Rplus_lt_compat_r p)/ltRP.
+split => [|H]; first by move/leRP; rewrite -(leR_add2r' z) subRK => /leRP.
+apply/leRP; rewrite -(leR_add2r' z) subRK; exact/leRP.
 Qed.
+Lemma leR_subr_addr' x y z : (x <b= y - z) = (x + z <b= y).
+Proof. by apply/idP/idP => /leRP/leR_subr_addr/leRP. Qed.
 
-Definition mulR_ge0 := Rmult_le_pos.
-Definition mulR_gt0 := Rmult_lt_0_compat.
-Definition addR_ge0 := Rplus_le_le_0_compat.
+Lemma leR_subl_addr x y z : (x - y <= z) <-> (x <= z + y).
+Proof.
+split => [|H]; first by move/leRP; rewrite -(leR_add2r' y) subRK => /leRP.
+apply/leRP; rewrite -(leR_add2r' y) subRK; exact/leRP.
+Qed.
+Lemma leR_subl_addr' x y z : (x - y <b= z) = (x <b= z + y).
+Proof. by apply/idP/idP => /leRP/leR_subl_addr/leRP. Qed.
 
-(* Rmult_le_compat_l
-     : forall r r1 r2 : R, 0 <= r -> r1 <= r2 -> r * r1 <= r * r2 *)
-(* Rmult_le_reg_l
-     : forall r r1 r2 : R, 0 < r -> r * r1 <= r * r2 -> r1 <= r2 *)
-Lemma Rle_pmul2l m n1 n2 : 0 <b m -> (m * n1 <b= m * n2) = (n1 <b= n2).
+(***********************************)
+(* inequalities and multiplication *)
+(***********************************)
+
+Definition mulR_ge0 := Rmult_le_pos.         (* 0 <= r1 -> 0 <= r2  -> 0 <= r1 * r2 *)
+Definition mulR_gt0 := Rmult_lt_0_compat.    (* 0 < r1  -> 0 < r2   -> 0 < r1 * r2 *)
+
+Definition leR_wpmul2l := Rmult_le_compat_l. (* 0 <= r  -> r1 <= r2 -> r * r1 <= r * r2 *)
+Definition leR_wpmul2r := Rmult_le_compat_r. (* 0 <= r  -> r1 <= r2 -> r1 * r <= r2 * r *)
+Definition leR_pmul    := Rmult_le_compat.   (* 0 <= r1 -> 0 <= r3  -> r1 <= r2 -> r3 <= r4 -> r1 * r3 <= r2 * r4 *)
+Arguments leR_wpmul2l [_] [_] [_].
+Arguments leR_wpmul2r [_] [_] [_].
+Arguments leR_pmul [_] [_] [_] [_].
+
+(* NB: Rmult_ge_compat_l? *)
+
+Lemma leR_pmul2l m n1 n2 : 0 < m -> (m * n1 <= m * n2) <-> (n1 <= n2).
+Proof.
+move=> m0; split; [exact: Rmult_le_reg_l | exact/Rmult_le_compat_l/ltRW].
+Qed.
+Lemma leR_pmul2l' m n1 n2 : 0 <b m -> (m * n1 <b= m * n2) = (n1 <b= n2).
 Proof.
 move=> /ltRP Hm.
-apply/idP/idP; first by move/leRP/Rmult_le_reg_l => /(_ Hm)/leRP.
-move/leRP/(Rmult_le_compat_l m); by move/ltRW : Hm => Hm /(_ Hm)/leRP.
+apply/idP/idP; first by move/leRP/leR_pmul2l => /(_ Hm)/leRP.
+by move/leRP/(leR_wpmul2l (ltRW Hm))/leRP.
 Qed.
 
-(* Rmult_le_compat_r
-     : forall r r1 r2 : R, 0 <= r -> r1 <= r2 -> r1 * r <= r2 * r *)
-(* Rmult_le_reg_r
-     : forall r r1 r2 : R, 0 < r -> r1 * r <= r2 * r -> r1 <= r2 *)
+Lemma leR_pmul2r m n1 n2 : 0 < m -> (n1 * m <= n2 * m) <-> (n1 <= n2).
+Proof.
+move=> m0; split; [exact: Rmult_le_reg_r | exact/Rmult_le_compat_r/ltRW].
+Qed.
 
-Lemma Rle_pmul2r m n1 n2 : 0 <b m -> (n1 * m <b= n2 * m) = (n1 <b= n2).
-Proof. move=> Hm; by rewrite -!(mulRC m) Rle_pmul2l. Qed.
+Lemma ltR_pmul2l m n1 n2 : 0 < m -> (m * n1 < m * n2) <-> (n1 < n2).
+Proof. move=> m0; split; [exact: Rmult_lt_reg_l | exact/Rmult_lt_compat_l]. Qed.
+
+Lemma ltR_pmul2r m n1 n2 : 0 < m -> (n1 * m < n2 * m) <-> (n1 < n2).
+Proof. move=> m0; split; [exact: Rmult_lt_reg_r | exact/Rmult_lt_compat_r]. Qed.
+Lemma leR_pmul2r' m n1 n2 : 0 <b m -> (n1 * m <b= n2 * m) = (n1 <b= n2).
+Proof. move=> Hm; by rewrite -!(mulRC m) leR_pmul2l'. Qed.
+
+Arguments leR_pmul2l [_] [_] [_].
+Arguments leR_pmul2r [_] [_] [_].
+Arguments ltR_pmul2l [_] [_] [_].
+Arguments ltR_pmul2r [_] [_] [_].
+
+(*************)
+(* invR/divR *)
+(*************)
 
 Lemma invR_gt0 x : 0 < x -> 0 < / x.
 Proof. move=> x0; by apply Rinv_0_lt_compat. Qed.
@@ -300,8 +374,22 @@ Definition invRK := Rinv_involutive.
 
 Definition invRM := Rinv_mult_distr.
 
-Lemma leR_inv : {in [pred x | true] & [pred x | 0 <b x], {homo Rinv : a b /~ a <= b}}.
+Lemma leR_inv x y : 0 < y -> y <= x -> / x <= / y.
+Proof. by move=> x0 y0; apply/Rinv_le_contravar. Qed.
+(* NB: Rle_Rinv does the same as Rinv_le_contravar with one more hypothesis *)
+Lemma leR_inv' : {in [pred x | true] & [pred x | 0 <b x], {homo Rinv : a b /~ a <= b}}.
 Proof. move=> a b; rewrite !inE => _ /ltRP b0 ba; exact/Rinv_le_contravar. Qed.
+
+Lemma invR_le x y : 0 < x -> 0 < y -> / y <= / x -> x <= y.
+Proof.
+move=> x0 y0 H.
+rewrite -(invRK x); last by apply not_eq_sym, Rlt_not_eq.
+rewrite -(invRK y); last by apply not_eq_sym, Rlt_not_eq.
+apply leR_inv => //; exact/invR_gt0.
+Qed.
+
+Lemma ltR_inv x y : 0 < x -> 0 < y -> y < x -> / x < / y.
+Proof. by move=> xo y0; apply/Rinv_lt_contravar/mulR_gt0. Qed.
 
 Definition divRR (x : R) : x != 0 -> x / x = 1.
 Proof. move=> x0; rewrite /Rdiv Rinv_r //; exact/eqP. Qed.
@@ -323,50 +411,46 @@ Proof. by move=> x0; rewrite mulRC mulRV. Qed.
 
 Lemma leR_pdivl_mulr z x y : 0 < z -> (x <b= y / z) = (x * z <b= y).
 Proof.
-move=> z0.
-apply/idP/idP=> [|]/leRP.
-  move/(Rmult_le_compat_l z) => /(_ (ltRW _ _ z0)).
-  rewrite mulRC mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
-  by move/leRP.
-move=> H; apply/leRP/(Rmult_le_reg_r z) => //.
+move=> z0; apply/idP/idP=> [|]/leRP.
+  move/(leR_wpmul2l (ltRW z0)).
+  rewrite mulRC mulRCA mulRV ?mulR1; by [move/leRP | exact/eqP/gtR_eqF].
+move=> H; apply/leRP/(@leR_pmul2r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
 Lemma ltR_pdivl_mulr z x y : 0 < z -> (x <b y / z) = (x * z <b y).
 Proof.
-move=> z0.
-apply/idP/idP=> [|]/ltRP.
-  move/(Rmult_lt_compat_l z) => /(_ z0).
-  rewrite mulRC mulRCA mulRV ?mulR1; last exact/eqP/gtR_eqF.
-  by move/ltRP.
-move=> H; apply/ltRP/(Rmult_lt_reg_r z) => //.
+move=> z0; apply/idP/idP=> [|]/ltRP.
+  move/(@ltR_pmul2l z) => /(_ z0).
+  rewrite mulRC mulRCA mulRV ?mulR1; by [move/ltRP | exact/eqP/gtR_eqF].
+move=> H; apply/ltRP/(@ltR_pmul2r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
 Lemma leR_pdivr_mulr z x y : 0 < z -> (y / z <b= x) = (y <b= x * z).
 Proof.
-move=> z0.
-apply/idP/idP => [|]/leRP.
-  move/(Rmult_le_compat_r z) => /(_ (ltRW _ _ z0)).
-  rewrite -mulRA mulVR ?mulR1; first by move/leRP.
-  exact/eqP/gtR_eqF.
-move=> H; apply/leRP/(Rmult_le_reg_r z) => //.
+move=> z0; apply/idP/idP => [|]/leRP.
+  move/(leR_wpmul2r (ltRW z0)).
+  rewrite -mulRA mulVR ?mulR1; [by move/leRP | exact/eqP/gtR_eqF].
+move=> H; apply/leRP/(@leR_pmul2r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
 Lemma ltR_pdivr_mulr z x y : 0 < z -> (y / z <b x) = (y <b x * z).
 Proof.
-move=> z0.
-apply/idP/idP => [|]/ltRP.
-  move/(Rmult_lt_compat_r z) => /(_ z0).
-  rewrite -mulRA mulVR ?mulR1; first by move/ltRP.
-  exact/eqP/gtR_eqF.
-move=> H; apply/ltRP/(Rmult_lt_reg_r z) => //.
+move=> z0; apply/idP/idP => [|]/ltRP.
+  move/(@ltR_pmul2r z) => /(_ z0).
+  rewrite -mulRA mulVR ?mulR1; by [move/ltRP | exact/eqP/gtR_eqF].
+move=> H; apply/ltRP/(@ltR_pmul2r z) => //.
 rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
 Qed.
 
 Lemma invR_le1 x : 0 < x -> (/ x <b= 1) = (1 <b= x).
 Proof. move=> x0; by rewrite -(div1R x) leR_pdivr_mulr // mul1R. Qed.
+
+(*******)
+(* pow *)
+(*******)
 
 Lemma pow_eq0 x (n : nat) : (x ^ n.+1 == 0) = (x == 0).
 Proof.

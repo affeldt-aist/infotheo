@@ -1,7 +1,7 @@
 ssrR.v
 Reals_ext.v
 Ranalysis_ext.v
-log2.v
+logb.v
 ln_facts.v
 ssr_ext.v
 bigop_ext.v

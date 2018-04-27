@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 Require Import ln_facts arg_rmax num_occ types jtypes divergence.
 Require Import conditional_divergence entropy channel_code channel.
 
@@ -145,7 +145,7 @@ Hypothesis Vctyp : V \in \nu^{B}(P).
 
 Lemma success_factor_bound_part1 : success_factor tc V <= 1.
 Proof.
-apply/leRP; rewrite -(Rle_pmul2l (INR #|M|)) ?ltR0n //; apply/leRP.
+apply/leRP; rewrite -(leR_pmul2l' (INR #|M|)) ?ltR0n //; apply/leRP.
 rewrite /success_factor /Rdiv -(mulRC (/ INR #|M|)) 2!mulRA.
 rewrite mulRV ?INR_eq0 -?lt0n // mul1R.
 rewrite -iter_Rplus_Rmult -big_const /=.
@@ -210,11 +210,11 @@ Lemma success_factor_bound_part2 :
   success_factor tc V <=  exp2(INR n * `I(P ; V)) / INR #|M|.
 Proof.
 rewrite /success_factor -mulRA (mulRC (/ INR #|M|)) !mulRA.
-apply Rmult_le_compat_r; first exact/ltRW/invR_gt0/lt_0_INR/ltP.
+apply leR_wpmul2r; first exact/ltRW/invR_gt0/lt_0_INR/ltP.
 rewrite /mut_info /Rminus addRC addRA.
 rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last by rewrite /cond_entropy; field.
 rewrite mulRDr mulRN -mulNR /exp2 ExpD.
-apply Rmult_le_compat_l => //.
+apply leR_wpmul2l => //.
 rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR Logic.eq_refl).
 apply (@leR_trans (INR #| T_{`tO( V )} |)); last first.
   rewrite -output_type_out_entropy //; exact: card_typed_tuples.
@@ -302,7 +302,7 @@ rewrite (typed_success W Mnot0 tc).
 apply (@leR_trans ( \rsum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
   exp2 (- INR n *  +| log (INR #|M|) * / INR n - `I(P ; V) |))).
   apply: ler_rsum => V HV.
-  rewrite -mulRA; apply Rmult_le_compat_l.
+  rewrite -mulRA; apply leR_wpmul2l.
     rewrite /exp_cdiv.
     case : ifP => _ //; exact/leRR.
   rewrite /success_factor mulRA; exact: success_factor_ub.
@@ -313,7 +313,7 @@ apply (@leR_trans (\rsum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
                     (fun V => exp_cdiv P V W * success_factor_bound M V P)).
   apply => //; by exists V.
 rewrite big_const iter_Rplus_Rmult /success_factor_bound.
-apply Rmult_le_compat_r.
+apply leR_wpmul2r.
 - apply mulR_ge0; last exact/exp2_ge0.
   rewrite /exp_cdiv; case: ifP => _ //; exact/leRR.
 - rewrite INR_pow_expn; exact/le_INR/leP/card_nu.
@@ -348,7 +348,7 @@ Lemma success_bound :
 Proof.
 move=> Pmax.
 apply (@leR_trans (INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c))); last first.
-  apply Rmult_le_compat_r; first exact: scha_pos.
+  apply leR_wpmul2r; first exact: scha_pos.
   rewrite INR_pow_expn; apply le_INR; apply/leP.
   exact: (type_counting A n).
 apply (@leR_trans (\rsum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.

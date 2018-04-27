@@ -60,9 +60,9 @@ have {Htmp}Htmp : (lam * n = rho * m)%nat.
   transitivity (\sum_(n0 < n) lam).
     by rewrite big_const iter_addn addn0 card_ord.
   apply eq_bigr => i _; exact/esym/Hlam.
-apply Rmult_eq_reg_l with (INR n); last exact/not_0_INR.
+rewrite -(@eqR_mul2l (INR n)); last exact/not_0_INR.
 rewrite mulRCA mulRV ?INR_eq0 ?mulR1; last exact/eqP.
-apply Rmult_eq_reg_l with (INR rho); last exact/not_0_INR.
+rewrite -(@eqR_mul2l (INR rho)); last exact/not_0_INR.
 rewrite mulRA [in X in _ = X](mulRC (INR rho)).
 rewrite -mulRA (mulRCA (INR rho)) mulRV ?INR_eq0 ?mulR1; last exact/eqP.
 by rewrite -mult_INR multE -Htmp mult_INR mulRC.

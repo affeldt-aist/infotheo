@@ -1,9 +1,8 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import finfun choice fintype tuple bigop finset path.
 From mathcomp Require Import ssralg fingroup zmodp poly ssrnum.
-
 Require Import Reals Fourier.
-Require Import ssrR log2 Reals_ext Rbigop ssr_ext proba entropy kraft.
+Require Import ssrR logb Reals_ext Rbigop ssr_ext proba entropy kraft.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -39,13 +38,13 @@ move/leRP; rewrite le0R => /orP[/eqP -> _ m n|/ltRP x0 x1 m n /leP nm].
     by rewrite pow_ne_zero.
   rewrite pow_ne_zero; last by case: m nm.
   rewrite pow_ne_zero //; exact/leRR.
-apply Rle_inv_conv => //.
+apply invR_le => //.
 exact/pow_gt0.
 exact/pow_gt0.
 rewrite -powRV; last exact/eqP/gtR_eqF.
 rewrite -powRV; last exact/eqP/gtR_eqF.
 apply Rle_pow => //.
-rewrite -invR1; exact: Rinv_le_contravar.
+rewrite -invR1; apply leR_inv => //; exact/ltRP.
 Qed.
 
 Lemma leR_weexpn2l x :
@@ -55,9 +54,9 @@ Proof. move=> x1 m n /leP nm; exact/Rle_pow. Qed.
 Lemma invR_gt1 x : 0 < x -> (1 <b / x) = (x <b 1).
 Proof.
 move=> x0; apply/idP/idP => [|] /ltRP x1; apply/ltRP; last first.
-  rewrite -invR1; apply Rinv_lt_contravar => //; by rewrite mulR1.
-move/Rinv_lt_contravar : x1; rewrite mul1R invR1 invRK; last exact/gtR_eqF.
-apply; exact/invR_gt0.
+  by rewrite -invR1; apply ltR_inv.
+move/ltR_inv : x1; rewrite invRK ?invR1; last exact/gtR_eqF.
+apply => //; exact/invR_gt0.
 Qed.
 
 (* TODO: move up? *)
@@ -121,9 +120,7 @@ apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
   by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite pow_Exp; last by apply/ltRP; rewrite ltR0n card_ord.
 rewrite Exp_Ropp.
-apply/leR_inv => //.
-  rewrite inE; exact/ltRP/Exp_gt0.
-apply Exp_le_increasing.
+apply/leR_inv/Exp_le_increasing => //.
   by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite INR_Zabs_nat; last first.
   case/boolP : (P i == 1) => [/eqP ->|Pj1].
@@ -163,7 +160,7 @@ Proof.
 move=> H; rewrite /average.
 apply (@ltR_leR_trans (\rsum_(x in A) P x * (- Log (INR #|T|) (P x) + 1))).
   apply ltR_rsum; [exact: dist_domain_not_empty|move=> i].
-  apply Rmult_lt_compat_l.
+  apply ltR_pmul2l.
     apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_nonneg.
   rewrite H.
   rewrite (_ : INR #|T| = 2) // ?card_ord // -!/(log _).
@@ -180,7 +177,7 @@ apply (@ltR_leR_trans (\rsum_(x in A) P x * (- Log (INR #|T|) (P x) + 1))).
 evar (h : A -> R).
 rewrite (eq_bigr h); last first.
   move=> i _; rewrite mulRDr mulR1 mulRN  /h; reflexivity.
-rewrite {}/h big_split /=; apply Rplus_le_compat.
+rewrite {}/h big_split /=; apply leR_add.
   apply Req_le.
   rewrite /entropy (big_morph _ morph_Ropp oppR0); apply eq_bigr => i _.
   by rewrite card_ord (_ : INR 2 = 2).

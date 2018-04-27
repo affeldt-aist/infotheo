@@ -3,7 +3,7 @@ From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 Rbigop.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba entropy jensen num_occ.
 
 Set Implicit Arguments.
@@ -153,11 +153,11 @@ Lemma Rpos_convex : convex_interval (fun x =>  0 < x).
 Proof.
 move=> x y t Hx Hy Ht.
 case Ht0: (t == 0); first by rewrite (eqP Ht0) !simplR.
-apply Rplus_lt_le_0_compat.
+apply addR_gt0wl.
   apply mulR_gt0 => //.
   case/proj1: Ht Ht0 => // ->; by rewrite eqxx.
-apply Rmult_le_pos; [apply (Rplus_le_reg_l t) | by apply Rlt_le].
-rewrite addR0 Rplus_minus; exact/(proj2 Ht).
+apply mulR_ge0; last exact: ltRW.
+rewrite leR_subr_addr add0R; by case: Ht.
 Qed.
 
 Definition Rpos_interval := mkInterval Rpos_convex.
@@ -213,12 +213,12 @@ apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
   (* (3) Compensate for removed strings *)
   case: ifP => Hsum.
     by rewrite (eqP Hsum) mul0R.
-  apply Rmult_le_compat_l => //.
+  apply leR_wpmul2l => //.
   apply Log_increasing_le => //.
     apply Rlt_mult_inv_pos => //.
     apply/lt_0_INR/ltP.
     by rewrite lt0n Hsum.
-  apply Rmult_le_compat_r.
+  apply leR_wpmul2r.
     apply /Rlt_le /invR_gt0 /lt_0_INR /ltP.
     by rewrite lt0n Hsum.
   apply /le_INR /leP.
@@ -254,7 +254,7 @@ rewrite -(big_tnth _ _ _ xpredT
      (size s) / N(a|s) *
      (N(a|s) / N(a|flatten ss')))).
 (* (6) Transform the statement to match the goal *)
-move/(Rmult_le_compat_r N(a|flatten ss') _ _ (pos_INR _)).
+move/(@leR_wpmul2r N(a|flatten ss') _ _ (pos_INR _)).
 rewrite !big_distrl /=.
 rewrite (eq_bigr
      (fun i => log (size i / N(a|i)) * N(a|i)));
@@ -306,7 +306,7 @@ Definition hoH (k : nat) := / n%:R *
 
 Lemma hoH_decr (k : nat) : hoH k.+1 <= hoH k.
 Proof.
-rewrite /hoH; apply/leRP; rewrite Rle_pmul2l; last first.
+rewrite /hoH; apply/leRP; rewrite leR_pmul2l'; last first.
   by apply/ltRP/invR_gt0/ltRP; rewrite ltR0n lt0n.
 (* TODO *)
 Abort.

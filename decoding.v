@@ -151,29 +151,27 @@ Hypothesis discard_cancel : forall y x, repair y = Some x -> enc (discard x) = x
 
 Lemma ML_smallest_err_rate phi :
   let dec := [ffun x => omap discard (repair x)] in
-  echa(W, mkCode enc phi) >=
-  echa(W, mkCode enc dec).
+  echa(W, mkCode enc dec) <= echa(W, mkCode enc phi).
 Proof.
 move=> dec.
-apply Rmult_ge_compat_l.
-  apply/Rle_ge/mulR_ge0 => //; exact/ltRW/invR_gt0/lt_0_INR/ltP.
+apply leR_wpmul2l.
+  apply/mulR_ge0 => //; exact/ltRW/invR_gt0/lt_0_INR/ltP.
 rewrite /ErrRateCond /=.
-apply (@Rge_trans _ (\rsum_(m in M) (1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m]))).
-  apply Req_ge, eq_bigr => m _.
-  rewrite Pr_to_cplt.
+apply (@leR_trans (\rsum_(m in M) (1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m]))); last first.
+  apply Req_le, eq_bigr => m _.
+  rewrite [in RHS]Pr_to_cplt.
   set lhs := ~: _. set rhs := [set _ | _].
-  suff -> : lhs = rhs by done.
+  suff -> : lhs = rhs by [].
   apply/setP => t; by rewrite !inE negbK.
-apply (@Rge_trans _ (\rsum_(m in M) (1 - Pr (W ``(|enc m)) [set tb | dec tb == Some m]))); last first.
-  apply Req_ge, eq_bigr => m _.
-  rewrite [in X in _ = X]Pr_to_cplt.
+apply (@leR_trans (\rsum_(m in M) (1 - Pr (W ``(|enc m)) [set tb | dec tb == Some m]))).
+  apply Req_le, eq_bigr => m _.
+  rewrite [LHS]Pr_to_cplt.
   set lhs := ~: _. set rhs := [set _ | _].
-  suff -> : lhs = rhs by done.
+  suff -> : lhs = rhs by [].
   apply/setP => t; by rewrite !inE negbK.
 rewrite 2!big_split /=.
-apply Rplus_ge_compat_l.
-rewrite -2!(big_morph _ morph_Ropp oppR0).
-apply Ropp_le_ge_contravar.
+apply Rplus_le_compat_l.
+rewrite -2!(big_morph _ morph_Ropp oppR0) leR_oppr oppRK.
 rewrite /Pr (exchange_big_dep xpredT) //= [in X in (_ <= X)%R](exchange_big_dep xpredT) //=.
 apply ler_rsum => /= tb _.
 apply (@leR_trans (\rsum_(m| phi tb == Some m) (W ``(tb | enc m)))).
@@ -196,8 +194,7 @@ case/boolP : (dec tb == None) => dectb.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite Htb'.
   rewrite big_const iter_Rplus mulR0.
   apply rsumr_ge0 => ? _; exact/DMC_nonneg.
-case/boolP : (phi tb == None) => [|phi_tb].
-  move/eqP => ->.
+case/boolP : (phi tb == None) => [/eqP ->|phi_tb].
   rewrite big_pred0 //; apply rsumr_ge0 => ? _; exact/DMC_nonneg.
 have [m1 Hm1] : exists m', dec tb = Some m'.
   destruct (dec tb) => //; by exists s.
@@ -242,7 +239,7 @@ case/Rle_lt_or_eq_dec: (proj1 p_01) => [Hp | <-]; last first.
   destruct d1 as [|d1] => /=.
     rewrite subn0 mulR1 pow1; fourier.
   rewrite !mul0R !mulR0; exact/leRR.
-apply (Rmult_le_reg_l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
+apply (@leR_pmul2l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
   apply mulR_gt0; apply/invR_gt0/pow_lt => //; by fourier.
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
   apply/pow_not0; rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
@@ -363,13 +360,15 @@ set r := index_enum _ in H.
 rewrite (eq_bigr (fun i => 1 / INR #|[set cw in C]| * W ``(tb | i))) in H; last first.
   move=> i iC; by rewrite UniformSupport.E // inE.
 rewrite -rmax_distrr in H; last exact/ltRW/Hunpos.
-exists m'; split.
-  exact Hm'.
-apply Rmult_eq_reg_r in H; last by apply/eqP/invR_neq0; rewrite -receivableE.
+exists m'; split; first exact Hm'.
+set x := PosteriorProbability.den _ _ _ in H.
+have x0 : / x <> 0 by apply/eqP/invR_neq0; rewrite -receivableE.
+move/(eqR_mul2r x0) in H.
 rewrite /= UniformSupport.E ?inE // in H; last first.
   move/subsetP : dec_img; apply.
   rewrite inE; apply/existsP; by exists tb; apply/eqP.
-move/Rmult_eq_reg_l : H => -> //; exact: gtR_eqF.
+move/eqR_mul2l :  H => -> //.
+exact: gtR_eqF.
 Qed.
 
 End MAP_decoding_prop.

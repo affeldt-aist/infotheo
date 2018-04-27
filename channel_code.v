@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext ssrR log2 Rbigop proba channel.
+Require Import Reals_ext ssrR logb Rbigop proba channel.
 
 (** * Definition of a channel code *)
 
@@ -60,7 +60,7 @@ Qed.
 Lemma echa1 (HM : (0 < #| M |)%nat) W (c : code) : echa(W , c) <= 1.
 Proof.
 rewrite /CodeErrRate div1R.
-apply (Rmult_le_reg_l (INR #|M|)); first exact/lt_0_INR/ltP.
+apply (@leR_pmul2l (INR #|M|)); first exact/lt_0_INR/ltP.
 rewrite mulRA mulRV ?INR_eq0 -?lt0n // mul1R -iter_Rplus_Rmult -big_const.
 apply: ler_rsum => m _; exact: Pr_1.
 Qed.

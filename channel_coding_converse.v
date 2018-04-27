@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext log2 ln_facts Rbigop arg_rmax.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb ln_facts Rbigop arg_rmax.
 Require Import num_occ proba entropy types jtypes divergence.
 Require Import conditional_divergence error_exponent channel_code channel.
 Require Import success_decode_bound.
@@ -51,22 +51,22 @@ apply: (leR_trans (success_bound W Mnot0 c)).
 set Pmax := arg_rmax _ _ _.
 set tc :=  _.-typed_code _.
 rewrite pow_add -mulRA.
-apply Rmult_le_compat_l; first by apply pow_le, pos_INR.
+apply leR_wpmul2l; first exact/pow_le/pos_INR.
 apply (leR_trans (typed_success_bound W Mnot0 (Pmax.-typed_code c))).
-apply Rmult_le_compat_l; first by apply pow_le, pos_INR.
+apply leR_wpmul2l; first exact/pow_le/pos_INR.
 set Vmax := arg_rmax _ _ _.
 rewrite /success_factor_bound /exp_cdiv.
 case : ifP => Hcase; last by rewrite mul0R.
 rewrite -ExpD.
 apply Exp_le_increasing => //.
 rewrite -mulRDr 2!mulNR.
-apply Ropp_le_contravar, Rmult_le_compat_l; first by apply pos_INR.
+rewrite leR_oppr oppRK; apply/leR_wpmul2l; first exact/pos_INR.
 have {Hcase}Hcase : Pmax |- Vmax << W.
   move=> a Hp b /eqP Hw.
   move/forallP : Hcase.
   by move/(_ a)/implyP/(_ Hp)/forallP/(_ b)/implyP/(_ Hw)/eqP.
 apply (leR_trans (HDelta Pmax Vmax Hcase)) => /=.
-exact/Rplus_le_compat_l/Rle_max_compat_l/Rplus_le_compat_r.
+exact/leR_add2l/Rle_max_compat_l/leR_add2r.
 Qed.
 
 End channel_coding_converse_intermediate_lemma.
@@ -107,9 +107,9 @@ destruct n as [|n'].
 set n := n'.+1.
 apply: (@leR_ltR_trans (INR n.+1 ^ K * exp2 (- INR n * Delta))).
   exact: HDelta.
-move: (n0_n) => /(Rmult_lt_compat_l (/ INR n) _) => /(_ (invR_gt0 (INR n) Rlt0n)).
+move: (n0_n) => /(@ltR_pmul2l (/ INR n) _) => /(_ (invR_gt0 (INR n) Rlt0n)).
 rewrite mulVR ?INR_eq0 //.
-move/(Rmult_lt_compat_l epsilon _) => /(_ eps_gt0); rewrite mulR1 => H1'.
+move/(@ltR_pmul2l epsilon) => /(_ eps_gt0); rewrite mulR1 => H1'.
 apply: (leR_ltR_trans _ H1') => {H1'}.
 rewrite /n0 [in X in _ <= X]mulRC -2![in X in _ <= X]mulRA.
 rewrite mulVR ?mulR1; last exact/eqP/gtR_eqF.
@@ -117,24 +117,22 @@ apply Rge_le; rewrite mulRC -2!mulRA; apply Rle_ge.
 set aux := INR _ * (_ * _).
 have aux_gt0 : 0 < aux.
   apply mulR_gt0.
-    apply lt_0_INR; apply/ltP; by apply fact_gt0.
-  apply mulR_gt0.
-  exact/invR_gt0/pow_gt0/mulR_gt0.
-  exact/invR_gt0.
+    apply/lt_0_INR/ltP; exact/fact_gt0.
+  apply mulR_gt0; [exact/invR_gt0/pow_gt0/mulR_gt0 | exact/invR_gt0].
 apply (@leR_trans ((INR n.+1 / INR n) ^ K * aux)); last first.
-  apply Rmult_le_compat => //.
-  - apply pow_ge0, Rle_mult_inv_pos => //; by apply pos_INR.
-  - by apply ltRW.
+  apply leR_pmul => //.
+  - apply pow_ge0, Rle_mult_inv_pos => //; exact: pos_INR.
+  - exact: ltRW.
   - apply pow_incr; split.
-    + apply Rle_mult_inv_pos => //; by apply pos_INR.
-    + apply Rmult_le_reg_r with (INR n) => //.
+    + apply Rle_mult_inv_pos => //; exact: pos_INR.
+    + apply (@leR_pmul2r (INR n)) => //.
       rewrite -mulRA mulVR // ?mulR1 ?INR_eq0 ?gtn_eqF // (_ : 2 = INR 2) //.
       rewrite -mult_INR; apply/le_INR/leP; by rewrite multE -{1}(mul1n n) ltn_pmul2r.
   - exact/leRR.
-rewrite powRM -mulRA; apply Rmult_le_compat => //.
+rewrite powRM -mulRA; apply leR_pmul => //.
 - exact/pow_ge0/ltRW/lt_0_INR/ltP.
 - exact/leRR.
-- apply Rle_inv_conv => //.
+- apply invR_le => //.
   + apply mulR_gt0; last exact aux_gt0.
     rewrite powRV ?INR_eq0 //; exact/invR_gt0/pow_gt0.
   + rewrite -exp2_Ropp mulNR oppRK /exp2.

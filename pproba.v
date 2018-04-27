@@ -42,7 +42,7 @@ apply/idP/idP => [|H].
 - case/existsP => x /andP [] H1.
   apply: contra => /eqP/prsumr_eq0P => H2.
   apply/eqP.
-  apply Rmult_eq_reg_l with (P x); last exact/eqP.
+  rewrite -(@eqR_mul2l (P x)); last exact/eqP.
   rewrite mulR0 H2 // => /= x' _.
   apply mulR_ge0; by [apply dist_nonneg | apply DMC_nonneg].
 - have : \rsum_(x in setT) P x * W ``(y | x) != 0.

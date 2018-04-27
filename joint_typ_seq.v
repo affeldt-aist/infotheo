@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext ssr_ext log2 ssralg_ext bigop_ext Rbigop proba.
+Require Import ssrR Reals_ext ssr_ext logb ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy aep typ_seq channel.
 
 (** * Jointly typical sequences *)
@@ -86,11 +86,9 @@ have H : INR #|`JTS P W n epsilon| <= INR #|`TS (`J(P , W)) n epsilon|.
     rewrite /set_jtyp_seq inE /jtyp_seq.
     case/andP => /andP [] _ _.
     by rewrite inE.
-  apply le_INR.
-  apply/leP.
-  by apply subset_leq_card.
+  exact/le_INR/leP/subset_leq_card.
 apply: leR_trans; first exact: H.
-by apply (@TS_sup _ (`J(P , W)) epsilon n).
+exact (@TS_sup _ (`J(P , W)) epsilon n).
 Qed.
 
 End jtyp_seq_upper.
@@ -152,7 +150,7 @@ have : (JTS_1_bound <= n)%nat ->
     Pr (P `^ n) [set x | x \notin `TS P n (epsilon / 3)].
     move=> m.
     have : 1 <= 3 by fourier.
-    move/(set_typ_seq_incl P m (ltRW _ _ He)) => Hincl.
+    move/(set_typ_seq_incl P m (ltRW He)) => Hincl.
     apply (@leR_trans (Pr (P `^ m) [set x | x \notin `TS P m epsilon])); last first.
       apply Pr_incl.
       apply/subsetP => i /=; rewrite !inE.
@@ -176,7 +174,7 @@ have : (JTS_1_bound <= n)%nat ->
       split; first by done.
       apply up_pos, aep_bound_pos.
       fourier.
-    have Htmp : Pr (P `^ n0) (`TS P n0 (epsilon/3)) >= 1 - (epsilon / 3).
+    have Htmp : 1 - (epsilon / 3) <= Pr (P `^ n0) (`TS P n0 (epsilon/3)).
       rewrite -n0_prednK.
       apply Pr_TS_1 => //.
       - apply Rlt_mult_inv_pos => //; fourier.
@@ -229,7 +227,7 @@ have : (JTS_1_bound <= n)%nat ->
     Pr ( (`O( P , W) ) `^ n) (~: `TS ( `O( P , W) ) n (epsilon / 3)).
     move=> m.
     have : 1 <= 3 by fourier.
-    move/(set_typ_seq_incl (`O(P , W)) m (ltRW _ _ He)) => Hincl.
+    move/(set_typ_seq_incl (`O(P , W)) m (ltRW He)) => Hincl.
     apply (@leR_trans (Pr ((`O(P , W)) `^ m) (~: `TS (`O(P , W)) m epsilon))); last first.
       apply Pr_incl.
       apply/subsetP => i /=; rewrite !inE.
@@ -251,8 +249,8 @@ have : (JTS_1_bound <= n)%nat ->
       apply Zabs_nat_lt.
       split; first by done.
       apply up_pos, aep_bound_pos; fourier.
-    have Htmp : Pr ((`O(P , W)) `^ n0) (`TS (`O(P , W)) n0 (epsilon / 3)) >=
-      1 - epsilon / 3.
+    have Htmp : 1 - epsilon / 3 <=
+      Pr ((`O(P , W)) `^ n0) (`TS (`O(P , W)) n0 (epsilon / 3)).
       rewrite -n0_prednK.
       apply Pr_TS_1 => //.
       - apply Rlt_mult_inv_pos => //; fourier.
@@ -273,7 +271,7 @@ have : (JTS_1_bound <= n)%nat ->
     Pr (( `J( P , W) ) `^ n) (~: `TS (`J( P , W)) n (epsilon / 3)).
     move=> m.
     have : 1 <= 3 by fourier.
-    move/(set_typ_seq_incl (`J( P , W)) m (ltRW _ _ He)) => Hincl.
+    move/(set_typ_seq_incl (`J( P , W)) m (ltRW He)) => Hincl.
     apply (@leR_trans (Pr ((`J( P , W)) `^ m) (~: `TS (`J( P , W)) m epsilon))); last first.
       apply Pr_incl.
       apply/subsetP => i /=; rewrite !inE.
@@ -295,7 +293,7 @@ have : (JTS_1_bound <= n)%nat ->
       apply Zabs_nat_lt.
       split; first by [].
       apply up_pos, aep_bound_pos; fourier.
-    have Htmp : Pr ((`J( P , W)) `^ n0) (`TS (`J( P , W)) n0 (epsilon / 3)) >= 1 - epsilon / 3.
+    have Htmp : 1 - epsilon / 3 <= Pr ((`J( P , W)) `^ n0) (`TS (`J( P , W)) n0 (epsilon / 3)).
       rewrite -n0_prednK.
       apply Pr_TS_1 => //.
       - apply Rlt_mult_inv_pos => //; fourier.
@@ -316,8 +314,7 @@ have : (JTS_1_bound <= n)%nat ->
   rewrite 2!geq_max in Hn.
   case/andP : Hn => Hn1; case/andP => Hn2 Hn3.
   rewrite !Pr_rV_prod.
-  apply Rplus_le_compat.
-    apply Rplus_le_compat; [exact: HnP | exact: HnPW].
+  apply leR_add; first by apply leR_add; [exact: HnP | exact: HnPW].
   apply: leR_trans; last exact/HnP_W/Hn3.
   apply/Req_le/Pr_ext/setP => /= tab.
   by rewrite !inE rV_prodK.
@@ -339,8 +336,7 @@ apply (@leR_trans (
                (~: `TS (`J( P , W)) n epsilon)))%R).
   exact: Pr_union.
 rewrite -addRA !Pr_rV_prod.
-apply Rplus_le_compat_l.
-apply: leR_trans; last exact: Pr_union.
+apply/leR_add2l; apply: leR_trans; last exact: Pr_union.
 apply/Req_le/Pr_ext/setP => t.
 by rewrite !inE rV_prodK.
 Qed.
@@ -368,7 +364,7 @@ apply (@leR_trans (\rsum_(i | i \in `JTS P W n epsilon)
     move=> ? ?; by rewrite rV_prodK.
   apply: ler_rsum_l => i Hi.
   - rewrite inE in Hi.
-    apply Rmult_le_compat.
+    apply leR_pmul.
     exact: dist_nonneg.
     exact: dist_nonneg.
     exact: (proj2 (typical_sequence1_JTS Hi)).
@@ -384,10 +380,8 @@ rewrite (_ : \rsum_(_ | _) _ =
   by rewrite iter_Rplus -mulRA.
 apply (@leR_trans (exp2 (INR n * (`H( P , W ) + epsilon)) *
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W ) - epsilon)))).
-  apply: Rmult_le_compat _ (leRR _) => //.
-  - exact: mulR_ge0 (pos_INR _) _.
-  - apply: Rmult_le_compat _ (pos_INR _) _ _ (leRR _) => //.
-    exact/JTS_sup.
+  do 2 apply leR_wpmul2r => //.
+  exact/JTS_sup.
 apply Req_le.
 rewrite -2!ExpD.
 congr (exp2 _).

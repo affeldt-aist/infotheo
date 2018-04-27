@@ -2,10 +2,10 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype finfun bigop finset.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext Ranalysis_ext ssr_ext log2 ln_facts bigop_ext.
+Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
 Require Import Rbigop proba divergence log_sum variation_dist.
 
-(** * Partition inequality (special case for distributions other sets with two elements) *)
+(** * Partition inequality (special case for distributions other sets with 2 elements) *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -79,7 +79,7 @@ have step2 :
   (\rsum_(a in A_ 0) P a) * log ((\rsum_(a in A_ 0) P a) / \rsum_(a in A_ 0) Q a) +
   (\rsum_(a in A_ 1) P a) * log ((\rsum_(a in A_ 1) P a) / \rsum_(a in A_ 1) Q a) <=
   \rsum_(a in A_ 0) P a * log (P a / Q a) + \rsum_(a in A_ 1) P a * log (P a / Q a).
-  apply Rplus_le_compat; by apply log_sum.
+  apply leR_add; by apply log_sum.
 apply: (leR_trans _ step2) => {step2}.
 rewrite [X in _ <= X](_ : _ =
   P_A 0 * log ((P_A 0) / (Q_A 0)) + P_A 1 * log ((P_A 1) / (Q_A 1))) //.

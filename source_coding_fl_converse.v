@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext log2 Rbigop proba entropy aep typ_seq source_code.
+Require Import ssrR Reals_ext logb Rbigop proba entropy aep typ_seq source_code.
 
 (** * Source coding theorem (converse part) *)
 
@@ -111,7 +111,7 @@ apply (@leR_trans (exp2 (INR n))).
     rewrite cardsT card_matrix /= card_bool exp2_INR mul1n; exact/leRR.
 apply Exp_le_increasing => //.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
-apply Rmult_le_reg_r with (1 / r) => //.
+apply (@leR_pmul2r (1 / r)) => //.
 apply Rlt_mult_inv_pos; [fourier | tauto].
 rewrite -mulRA div1R mulRV ?mulR1; last by case: Hr => /ltRP; rewrite lt0R => /andP[].
 by move/leRP : Hk; rewrite leR_maxl => /andP[_ /leRP].
@@ -150,7 +150,7 @@ Lemma step3 : 1 - (esrc(P , sc)) <=
   \rsum_(x in 'rV[A]_k.+1 | x \in ~: `TS P k.+1 delta) P `^ k.+1 x +
   \rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) P `^ k.+1 x.
 Proof.
-rewrite step2; apply/Rplus_le_compat_r/ler_rsum_l => /= i Hi.
+rewrite step2; apply/leR_add2r/ler_rsum_l => /= i Hi.
 exact/leRR.
 exact/dist_nonneg.
 by move: Hi; rewrite in_setI => /andP[].
@@ -159,7 +159,7 @@ Qed.
 Lemma step4 : 1 - (esrc(P , sc)) <= delta +
   INR #| no_failure :&: `TS P k.+1 delta| * exp2 (- INR k.+1 * (`H P - delta)).
 Proof.
-apply/(leR_trans step3)/Rplus_le_compat.
+apply/(leR_trans step3)/leR_add.
 - move/leRP : Hk; rewrite 2!leR_maxl -andbA => /andP[/leRP].
   move/(Pr_TS_1 Hdelta) => H2 _.
   set p1 := Pr _ _ in H2.
@@ -178,58 +178,49 @@ apply/(leR_trans step3)/Rplus_le_compat.
       exact: (ltR_leR_trans (exp2_gt0 _) i_TS).
     + rewrite /exp2 ExpK //.
       apply/leRP; rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltRP/ltR0n.
-      apply/leRP/Ropp_le_cancel.
-      rewrite oppRK /Rdiv mulRC; by rewrite div1R mulNR in H1.
+      apply/leRP; rewrite leR_oppr /Rdiv mulRC; by rewrite div1R mulNR in H1.
   rewrite big_const iter_Rplus; exact/leRR.
 Qed.
 
 Lemma step5 : 1 - (esrc(P , sc)) <= delta + exp2 (- INR k.+1 * (e0 - delta)).
 Proof.
 apply (@leR_trans (delta + INR #| no_failure | * exp2 (- INR k.+1 * (`H P - delta)))).
-- apply/(leR_trans step4)/Rplus_le_compat_l/Rmult_le_compat_r => //.
+- apply/(leR_trans step4)/leR_add2l/leR_wpmul2r => //.
   exact/le_INR/leP/subset_leqif_cards/subsetIl.
-- apply Rplus_le_compat_l.
+- apply leR_add2l.
   apply (@leR_trans (exp2 (INR k.+1 * (`H P - e0)) * exp2 (- INR k.+1 * (`H P - delta))));
     last first.
     rewrite -ExpD; apply Exp_le_increasing => //; apply Req_le; by field.
-  apply Rmult_le_compat_r => //; exact no_failure_sup.
+  apply leR_wpmul2r => //; exact no_failure_sup.
 Qed.
 
-Lemma step6 : (esrc(P , sc)) >= 1 - 2 * delta.
+Lemma step6 : 1 - 2 * delta <= esrc(P , sc).
 Proof.
 have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
   apply (@Log_le_inv 2) => //.
   - exact Hdelta.
   - rewrite /exp2 ExpK //.
-    apply Rmult_le_reg_r with (1 / (e0 - delta)) => //.
+    apply (@leR_pmul2r (1 / (e0 - delta))) => //.
     + apply Rlt_mult_inv_pos; first by fourier.
       rewrite /e0 /delta /r.
       apply Rlt_Rminus.
       have H1 : (`H P - r) / 2 < `H P - r.
         rewrite -[X in _ < X]mulR1.
-        apply Rmult_lt_compat_l.
-        case: Hr => ? ?; fourier.
-        fourier.
+        apply ltR_pmul2l; last by fourier.
+        apply/ltRP; rewrite ltR_subRL addR0; apply/ltRP; by case: Hr.
       apply Rmin_case_strong => H2 //; exact: (leR_ltR_trans H2 H1).
     + rewrite -mulRA div1R mulRV; last exact/eqP/Rminus_eq_contra/e0_delta.
-      apply Ropp_le_cancel, Rge_le.
-      rewrite -mulNR oppRK.
-      apply Rle_ge.
-      rewrite mulR1 /e0.
+      rewrite mulNR mulR1 leR_oppl.
       by move/leRP : Hk; rewrite 2!leR_maxl => /andP[/andP[_ /leRP]].
 suff : 1 - (esrc(P , sc)) <= delta + delta by move=> *; fourier.
-exact/(leR_trans step5)/Rplus_le_compat_l.
+exact/(leR_trans step5)/leR_add2l.
 Qed.
 
-Theorem source_coding_converse' : esrc(P , sc) >= epsilon.
+Theorem source_coding_converse' : epsilon <= esrc(P , sc).
 Proof.
-eapply Rge_trans; first by apply step6.
-apply Rle_ge, Ropp_le_cancel.
-rewrite Ropp_minus_distr.
-apply Rplus_le_reg_l with 1.
-rewrite addRC (_ : 2 * delta - _ + _ = 2 * delta); last by field.
-rewrite (_ : 1 + - epsilon = 1 - epsilon); last by field.
-apply Rmult_le_reg_l with (/ 2); first by fourier.
+apply: (leR_trans _ step6).
+rewrite -[X in _ <= X]oppRK leR_oppr oppRB leR_subl_addr addRC.
+apply (@leR_pmul2l (/ 2)); first by fourier.
 rewrite mulRA mulVR ?mul1R; last exact/eqP/gtR_eqF.
 rewrite /delta.
 have H1 : lambda / 2 <= / 2 * (1 - epsilon).
@@ -253,10 +244,10 @@ Theorem source_coding_converse : forall epsilon, 0 < epsilon < 1 ->
     forall n k (sc : scode_fl A k.+1 n),
       SrcRate sc = r ->
       SrcConverseBound P (num r) (den r) n epsilon <= INR k.+1 ->
-      esrc(P , sc) >= epsilon.
+      epsilon <= esrc(P , sc).
 Proof.
 move=> epsilon Hespilon r r_HP n k sc r_sc Hk_bound.
-by apply source_coding_converse' with (num := num r) (den := den r).
+exact: (@source_coding_converse' _ _ (num r) (den r)).
 Qed.
 
 End source_coding_converse.

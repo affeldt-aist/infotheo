@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
 Require Import Reals Fourier.
-Require Import ssrR Reals_ext Ranalysis_ext log2.
+Require Import ssrR Reals_ext Ranalysis_ext logb.
 
 (** * The "natural entropy function" *)
 
@@ -78,7 +78,7 @@ rewrite -ln_Rinv // -ln_mult; last 2 first.
 rewrite -ln_1.
 apply ln_increasing_le.
 fourier.
-apply Rmult_le_reg_l with t => //.
+apply (@leR_pmul2l t) => //.
 rewrite mulRA mulRV; last exact/eqP/gtR_eqF.
 rewrite mulR1 mul1R; fourier.
 Qed.
@@ -87,7 +87,7 @@ Lemma decreasing_on_half_to_1 : forall x y : R,
   1/2 <= x < 1 -> 1/2 <= y < 1 -> x <= y -> H2ln y <= H2ln x.
 Proof.
 move=> x y Hx Hy xy.
-apply Ropp_le_cancel.
+rewrite -[X in _ <= X]oppRK leR_oppr.
 move: x y Hx Hy xy.
 apply derive_increasing_interv_right with (pr := pderivable_Ropp_H2ln); first by fourier.
 move=> t [Ht1 Ht2].
@@ -150,7 +150,7 @@ Lemma H2_max : forall p, 0 < p < 1 -> H2 p <= 1.
 Proof.
 move=> p [Hp0 Hp1].
 rewrite /H2.
-apply Rmult_le_reg_l with (ln 2) => //.
+apply (@leR_pmul2l (ln 2)) => //.
 rewrite mulR1 mulRDr /log -!mulNR !(mulRC (ln 2)) -!mulRA.
 rewrite (mulVR _ ln2_neq0) !mulR1 (mulNR (1 - p)); exact/H2ln_max.
 Qed.
