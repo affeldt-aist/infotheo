@@ -39,11 +39,11 @@ Local Open Scope variation_distance_scope.
 
 (** Distance from the output entropy of one channel to another: *)
 
-Lemma out_entropy_dist_ub : Rabs (`H(P `o V) - `H(P `o W)) <=
+Lemma out_entropy_dist_ub : `| `H(P `o V) - `H(P `o W) | <=
   / ln 2 * INR #|B| * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy /Rminus.
-rewrite -mulRN -mulRDr Rabs_mult Rabs_right; last first.
+rewrite -mulRN -mulRDr normRM Rabs_right; last first.
   rewrite -(mul1R (/ ln 2)); exact/Rle_ge/Rle_mult_inv_pos.
 rewrite -mulRA; apply leR_wpmul2l.
   by rewrite -(mul1R (/ ln 2)); exact: Rle_mult_inv_pos.
@@ -58,7 +58,7 @@ apply Rabs_xlnx => //.
   apply: leR_trans; first exact: ler_rsum_Rabs.
   apply (@leR_trans (d(`J(P , V), `J(P , W)))).
   + rewrite /var_dist /=.
-    apply (@leR_trans (\rsum_(a : A) \rsum_(b : B) Rabs ((`J(P, V)) (a, b) - (`J(P, W)) (a, b)))); last first.
+    apply (@leR_trans (\rsum_(a : A) \rsum_(b : B) `| (`J(P, V)) (a, b) - (`J(P, W)) (a, b) |)); last first.
       apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
     apply: ler_rsum => a _.
     rewrite (bigD1 b) //= Rabs_minus_sym /Rminus -[X in X <= _]addR0.
@@ -69,11 +69,11 @@ Qed.
 
 (** Distance from the joint entropy of one channel to another: *)
 
-Lemma joint_entropy_dist_ub : Rabs (`H(P , V) - `H(P , W)) <=
+Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
   / ln 2 * INR #|A| * INR #|B| * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
-rewrite /Rminus -mulRN -mulRDr Rabs_mult Rabs_right; last first.
+rewrite /Rminus -mulRN -mulRDr normRM Rabs_right; last first.
   by rewrite -(mul1R (/ ln 2)); apply Rle_ge, Rle_mult_inv_pos.
 rewrite -2!mulRA; apply leR_wpmul2l.
   by rewrite -(mul1R (/ ln 2)); exact: Rle_mult_inv_pos.
@@ -94,7 +94,7 @@ Qed.
 
 (** * Distance from the mutual information of one channel to another *)
 
-Lemma mut_info_dist_ub : Rabs (`I(P ; V) - `I(P ; W)) <=
+Lemma mut_info_dist_ub : `| `I(P ; V) - `I(P ; W) | <=
   / ln 2 * (INR #|B| + INR #|A| * INR #|B|) * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite /mut_info.
@@ -150,13 +150,13 @@ have Htmp : D_x no_cond 0 x /\ R_dist x 0 < mu.
   - split => //; by apply Rlt_not_eq.
   - rewrite /R_dist subR0 Rabs_right; last exact/Rle_ge/ltRW.
     subst x.
-    apply (@leR_ltR_trans (mu * / 2)); first exact/Rmin_l.
+    apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
     apply/ltRP; rewrite ltR_pdivr_mulr //; apply/ltRP; fourier.
 move=> /(_ Htmp) {Htmp}.
-rewrite /R_dist /Rminus {2}/xlnx ltRR oppR0 addR0 Rabs_left; last first.
+rewrite /R_dist /Rminus {2}/xlnx ltRR oppR0 addR0 ltR0_norm; last first.
   apply xlnx_neg.
   split => //; subst x.
-  exact: leR_ltR_trans (Rmin_r _ _) ltRinve21.
+  exact: leR_ltR_trans (geR_minr _ _) ltRinve21.
 move=> Hx.
 set Delta := min((minRate - cap) / 2, x ^ 2 / 2).
 exists Delta; split.
@@ -167,15 +167,15 @@ move=> P V v_dom_by_w.
 case/boolP : (Delta <b= D(V || W | P)).
   move/leRP => Hcase.
   apply (@leR_trans (D(V || W | P))) => //.
-  rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/Rmax_l.
+  rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.
 move/leRP/(Rnot_le_lt _) => Hcase.
 suff Htmp : (minRate - cap) / 2 <= minRate - (`I(P; V)).
   clear -Hcase v_dom_by_w Htmp.
   apply (@leR_trans +| minRate - `I(P ; V) |); last first.
     rewrite -[X in X <= _]add0R.
     apply/leR_add2r/leq0cdiv => b Hb ? ?; exact: v_dom_by_w.
-  apply: leR_trans; last exact: Rmax_r.
-  apply: leR_trans; first exact: Rmin_l.
+  apply: leR_trans; last exact: leR_maxr.
+  apply: leR_trans; first exact: geR_minl.
   done.
 have Htmp : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
                                (- xlnx (sqrt (2 * D(V || W | P)))).
@@ -184,14 +184,14 @@ have Htmp : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
     apply/leR_add2r.
     move: W_cap; rewrite /capacity /lub; case; by move/(_ P).
   rewrite addRC -leR_subl_addr.
-  apply (@leR_trans (Rabs (`I(P ; V) + - `I(P ; W)))); first exact: Rle_abs.
+  apply (@leR_trans `| `I(P ; V) + - `I(P ; W) |); first exact: Rle_abs.
   have Htmp : D(V || W | P) <= exp (-2) ^ 2 * / 2.
     clear -Hcase x_pos.
     apply/ltRW/(ltR_leR_trans Hcase).
-    apply (@leR_trans (x ^ 2 * / 2)); first exact: Rmin_r.
+    apply (@leR_trans (x ^ 2 * / 2)); first exact: geR_minr.
     apply leR_wpmul2r; first exact/ltRW/invR_gt0.
     apply pow_incr.
-    split; [exact: ltRW | exact: Rmin_r].
+    split; [exact: ltRW | exact: geR_minr].
   by apply mut_info_dist_ub.
 rewrite -[X in _ <= X]oppRK in Htmp.
 apply leR_oppr in Htmp.
@@ -211,7 +211,7 @@ suff Htmp : xlnx x <= xlnx (sqrt (2 * (D(V || W | P)))).
   apply (@leR_trans (xlnx x)) => //.
   rewrite leR_oppl.
   apply/ltRW/(ltR_leR_trans Hx).
-  subst gamma; exact: Rmin_r.
+  subst gamma; exact: geR_minr.
 apply/ltRW/Rgt_lt.
 have Htmp : sqrt (2 * D(V || W | P)) < x.
   apply pow2_Rlt_inv; [exact: sqrt_pos | exact: ltRW | ].
@@ -219,15 +219,15 @@ have Htmp : sqrt (2 * D(V || W | P)) < x.
     apply mulR_ge0; first exact/ltRW.
     apply leq0cdiv=> a Ha ? ?; by apply v_dom_by_w.
   apply/ltRP; rewrite mulRC -ltR_pdivl_mulr //.
-  exact/ltRP/(ltR_leR_trans Hcase)/Rmin_r.
+  exact/ltRP/(ltR_leR_trans Hcase)/geR_minr.
 apply xlnx_sdecreasing_0_Rinv_e => //.
-- split; first by apply sqrt_pos.
+- split; first exact/sqrt_pos.
   apply: (@leR_trans x _ _ (ltRW _)) => //.
   subst x.
-  apply (@leR_trans (exp (-2))); first exact: Rmin_r.
+  apply (@leR_trans (exp (-2))); first exact: geR_minr.
   apply/ltRW/exp_increasing; fourier.
 - split; first exact: ltRW.
-  apply (@leR_trans (exp (-2))); first exact: Rmin_r.
+  apply (@leR_trans (exp (-2))); first exact: geR_minr.
   apply/ltRW/exp_increasing; fourier.
 Qed.
 

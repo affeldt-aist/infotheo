@@ -178,8 +178,7 @@ Hypothesis Hq : 0 <= q <= 1.
 
 Lemma pinsker_fun_p c : pinsker_fun p c p = 0.
 Proof.
-rewrite /pinsker_fun /= /div_fct /comp (_ : p - p = 0); last by rewrite Rminus_diag_eq.
-rewrite mul0R mulR0 subR0.
+rewrite /pinsker_fun /= /div_fct /comp subRR mul0R mulR0 subR0.
 case: Hp => Hp1 Hp2.
 case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   subst p.
@@ -187,8 +186,7 @@ case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   by rewrite /Rdiv Rinv_1 mulR1 /log Log_1.
 case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
   subst p.
-  rewrite /Rdiv Rinv_1 mulR1 /log Log_1 mulR0.
-  rewrite !Rminus_diag_eq // mul0R; field.
+  rewrite /Rdiv Rinv_1 mulR1 /log Log_1 mulR0 !subRR // mul0R; field.
 rewrite divRR; last by rewrite subR_eq0; apply/eqP/gtR_eqF.
 rewrite /log Log_1 divRR; last exact/eqP/gtR_eqF.
 rewrite /log Log_1; by field.
@@ -311,16 +309,14 @@ case/Rle_lt_or_eq_dec : Hp0 => Hp0; last first.
     exfalso.
     move: P_dom_by_Q.
     rewrite /dom_by /Binary.d /= => /(_ a).
-    rewrite /Binary.f eqxx Rminus_diag_eq // => /(_ erefl) ?; fourier.
+    rewrite /Binary.f eqxx subRR // => /(_ erefl) ?; fourier.
   apply: leR_trans; first exact: (pinsker_function_spec_pos Hc (conj Hq0 Hq1)).
   rewrite /pinsker_function_spec.
   apply Req_le.
   rewrite mul1R div1R /log LogV; by [field | fourier].
 case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   subst p.
-  rewrite /pinsker_fun /div_fct /comp.
-  rewrite (Rminus_diag_eq 1) //.
-  rewrite mul0R addR0.
+  rewrite /pinsker_fun /div_fct /comp subRR mul0R addR0.
   case/Rle_lt_or_eq_dec : Hq0 => Hq0; last first.
     subst q.
     exfalso.
@@ -349,7 +345,7 @@ case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
   exfalso.
   move: P_dom_by_Q.
   rewrite /dom_by /Binary.d /= => /(_ a).
-  rewrite /Binary.f eqxx Rminus_diag_eq // => /(_ erefl) H1.
+  rewrite /Binary.f eqxx subRR // => /(_ erefl) H1.
   have {H1}? : p = 1. fourier. subst p.
   by move/Rlt_irrefl : Hp1.
 rewrite -(pinsker_fun_p p01 c).

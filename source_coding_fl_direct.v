@@ -159,11 +159,10 @@ Local Open Scope typ_seq_scope.
 Theorem source_coding' : exists sc : scode_fl A k n,
   SrcRate sc = r /\ esrc(P , sc) <= epsilon.
 Proof.
-move: (proj2_sig (SrcDirectBound den delta)) => Hk.
-have k_k0 : aep_bound P (lambda / 2) <= INR k.
-  apply: leR_trans; by [apply Rmax_l | apply Hk].
+move: (proj2_sig (SrcDirectBound den delta)) => Hdelta.
+have Hk : aep_bound P (lambda / 2) <= INR k by exact/(leR_trans _ Hdelta)/leR_maxl.
 set S := `TS P k (lambda / 2).
-set def := TS_0 halflambda0 halflambda1 k_k0.
+set def := TS_0 halflambda0 halflambda1 Hk.
 set F := f n S.
 set PHI := @phi _ n _ S def.
 exists (mkScode F PHI).
@@ -175,7 +174,7 @@ suff -> : lhs = (1 - Pr (P `^ k) (`TS P k (lambda / 2)))%R.
   rewrite leR_subl_addr addRC -leR_subl_addr.
   apply Rle_trans with (1 - lambda / 2)%R.
     apply leR_add2l; rewrite leR_oppr oppRK; exact halflambdaepsilon.
-  by move: (Pr_TS_1 halflambda0 k_k0).
+  by move: (Pr_TS_1 halflambda0 Hk).
 rewrite /lhs {lhs} /SrcErrRate /Pr /=.
 set lhs := \rsum_(_ | _ ) _.
 suff -> : lhs = \rsum_(x in 'rV[A]_k | x \notin S) P `^ k x.
@@ -191,7 +190,7 @@ apply eq_bigl => // i.
 rewrite inE /=.
 apply/negPn/negPn.
 - suff H : def \in S by move/eqP/phi_f; tauto.
-  exact: (TS_0_is_typ_seq halflambda0 halflambda1 k_k0).
+  exact: (TS_0_is_typ_seq halflambda0 halflambda1 Hk).
 - suff S_2n : (#| S | < expn 2 n)%nat.
     by move/(f_phi def S_2n)/eqP.
   suff card_S_bound : INR #| S | < exp2 (INR k * r).
@@ -210,7 +209,7 @@ apply/negPn/negPn.
     exact/leRR.
   apply (@leR_trans (exp2 (1 + INR k * (`H P + lambda / 2)))); last first.
    apply Exp_le_increasing => //; apply leR_add2r.
-    move/leRP : Hk; rewrite leR_maxl => /andP[_ /leRP Hk].
+    move/leRP : Hdelta; rewrite leR_max => /andP[_ /leRP Hlambda].
     apply (@leR_pmul2r (2 / lambda)%R); first exact lambdainv2.
     rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
       apply nesym, Rlt_not_eq; exact lambda0.

@@ -17,7 +17,7 @@ Section variation_distance.
 Variable A : finType.
 
 (** The variation distance of two distributions P and Q on X: *)
-Definition var_dist (P Q : dist A) := \rsum_(a : A) Rabs (P a - Q a).
+Definition var_dist (P Q : dist A) := \rsum_(a : A) `| P a - Q a |.
 
 Local Notation "'d(' P ',' Q ')' " := (var_dist P Q).
 
@@ -37,9 +37,9 @@ apply Rplus_eq_0_l; first exact/Rabs_pos.
 apply: rsumr_ge0 => ? _ ; exact/Rabs_pos.
 Qed.
 
-Lemma leq_var_dist (p q : dist A) x : Rabs (p x - q x ) <= d( p , q ).
+Lemma leq_var_dist (p q : dist A) x : `| p x - q x | <= d( p , q ).
 Proof.
-rewrite /var_dist (bigD1 x) //= -{1}(addR0 (Rabs (p x - q x))).
+rewrite /var_dist (bigD1 x) //= -{1}(addR0 `| p x - q x |).
 apply/leR_add2l/rsumr_ge0 => ? _; exact/Rabs_pos.
 Qed.
 

@@ -42,12 +42,12 @@ have Hpj : pj = p.
   by rewrite /pj /= /Binary.f eq_sym (negbTE (Set2.a_neq_b card_A)).
 have Hqj : qj = q.
   by rewrite /qj /= /Binary.f eq_sym (negbTE (Set2.a_neq_b card_A)).
-transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
+transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   rewrite /pinsker_fun /div Set2sumE -/a -/b -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
-  set tmp := (Rabs (_) + _) ^ 2.
+  set tmp := (`| _ | + _) ^ 2.
   have -> : tmp = 4 * (p - q) ^ 2.
     rewrite /tmp (_ : 1 - p - (1 - q) = q - p); last by field.
-    rewrite sqrRD (Rabs_minus_sym q p) -mulRA -{3}(pow_1 (Rabs (p - q))).
+    rewrite sqrRD (Rabs_minus_sym q p) -mulRA -{3}(pow_1 `| p - q |).
     rewrite -powS Rabs_sq; by field.
   rewrite [X in _ = _ + _ - X]mulRA.
   rewrite [in X in _ = _ + _ - X](mulRC c).
@@ -58,7 +58,7 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
     rewrite -Hp1 !mul0R subR0 addR0 add0R !mul1R /log Log_1 /Rdiv.
     case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
       move: (@P_dom_by_Q (Set2.a card_A)).
-      rewrite -/pi -/qi Hqi Hq2 Rminus_diag_eq // => /(_ erefl).
+      rewrite -/pi -/qi Hqi Hq2 subRR => /(_ erefl).
       rewrite Hpi -Hp1 subR0 => ?. exfalso. fourier.
     rewrite /log LogM; last 2 first.
       fourier.
@@ -72,7 +72,7 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
     move: Hp1; by rewrite abs => /Rlt_irrefl.
   rewrite /div_fct /comp /= (_ : id q = q) //.
   case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
-    rewrite Hp2 Rminus_diag_eq // !mul0R /Rdiv /log LogM; last 2 first.
+    rewrite Hp2 subRR !mul0R /Rdiv /log LogM; last 2 first.
       fourier.
       exact/invR_gt0.
     rewrite Log_1 mul1R LogV //; by field.
@@ -80,13 +80,12 @@ transitivity (D(P || Q) - c * (Rabs (p - q) + Rabs ((1 - p) - (1 - q))) ^ 2).
   rewrite LogV //.
   case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
     move: (@P_dom_by_Q (Set2.a card_A)).
-    rewrite -/pi -/qi Hqi -Hq2 Rminus_diag_eq // => /(_ erefl).
+    rewrite -/pi -/qi Hqi -Hq2 subRR => /(_ erefl).
     rewrite Hpi => abs. exfalso. fourier.
   rewrite /Rdiv LogM; last 2 first.
     fourier.
     apply/invR_gt0; fourier.
-  rewrite LogV; last by fourier.
-  by field.
+  rewrite LogV; [by field | by fourier].
 do 2 f_equal.
 by rewrite /var_dist Set2sumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
 Qed.
@@ -152,10 +151,10 @@ suff : / (2 * ln 2) * d(P , Q) ^2 <= D(P_A || Q_A).
   move=> ?; apply (@leR_trans (D(P_A || Q_A))) => //; exact/Rge_le.
 have step2 : d( P , Q ) = d( P_A , Q_A ).
   rewrite /var_dist.
-  transitivity (\rsum_(a | a \in A0) Rabs (P a - Q a) + \rsum_(a | a \in A1) Rabs (P a - Q a)).
+  transitivity (\rsum_(a | a \in A0) `| P a - Q a | + \rsum_(a | a \in A1) `| P a - Q a |).
     rewrite -big_union //; last by rewrite -setI_eq0 -dis /A_ setIC.
     apply eq_bigl => a; by rewrite cov in_set.
-  transitivity (Rabs (P_A 0 - Q_A 0) + Rabs (P_A 1 - Q_A 1)).
+  transitivity (`| P_A 0 - Q_A 0 | + `| P_A 1 - Q_A 1 |).
     congr (_ + _).
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       transitivity (\rsum_(a | a \in A0) (P a - Q a)).
@@ -173,9 +172,9 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
         rewrite A1_card !big_set0 Rabs_pos_eq //; [by field | fourier].
       + transitivity (\rsum_(a | a \in A1) - (P a - Q a)).
           apply eq_bigr => a; rewrite /A1 in_set => Ha.
-          rewrite Rabs_left //.
+          rewrite ltR0_norm //.
           move/ltRP in Ha; by fourier.
-        rewrite -(big_morph _  morph_Ropp oppR0) // big_split /= Rabs_left; last first.
+        rewrite -(big_morph _  morph_Ropp oppR0) // big_split /= ltR0_norm; last first.
           suff : \rsum_(a | a \in A1) P a < \rsum_(a | a \in A1) Q a by move=> ?; fourier.
           apply ltr_rsum_support => // a.
           rewrite /A1 in_set; by move/ltRP.

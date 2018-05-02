@@ -643,6 +643,100 @@ Defined.
 
 End tuple_ext.
 
+Section bseq.
+
+Variables (n : nat) (T : Type).
+
+Structure bseq_of : Type := Bseq {bseqval :> seq T; _ : size bseqval <= n}.
+
+Lemma bseqval_inj : injective bseqval.
+Proof.
+move=> [a Ha] [b Hb] /= H.
+move: Ha Hb; rewrite H => Ha Hb.
+congr Bseq.
+exact: eq_irrelevance.
+Qed.
+
+Canonical bseq_subType := Eval hnf in [subType for bseqval].
+
+End bseq.
+
+Notation "n .-bseq" := (bseq_of n) (at level 2, format "n .-bseq") : type_scope.
+
+Section canonical.
+
+Variable n : nat.
+
+Definition bseq_eqMixin (T : eqType) := Eval hnf in [eqMixin of n.-bseq T by <:].
+Canonical bseq_eqType (T : eqType) := Eval hnf in EqType (n.-bseq T) (bseq_eqMixin T).
+Canonical bseq_predType (T : eqType) :=
+  Eval hnf in mkPredType (fun t : n.-bseq T => mem_seq t). (* TODO: warning *)
+Definition bseq_choiceMixin (T : choiceType) := [choiceMixin of n.-bseq T by <:].
+Canonical bseq_choiceType (T : choiceType) :=
+  Eval hnf in ChoiceType (n.-bseq T) (bseq_choiceMixin T).
+Definition bseq_countMixin (T : countType) := [countMixin of n.-bseq T by <:].
+Canonical bseq_countType (T : countType) :=
+  Eval hnf in CountType (n.-bseq T) (bseq_countMixin T).
+Canonical bseq_subCountType (T : countType) := Eval hnf in [subCountType of n.-bseq T].
+
+End canonical.
+
+Program Definition bseq0 n (T : finType) : n.-bseq T := @Bseq n T [::] _.
+
+Definition bseq_of_tuple n (T : finType) (t : seq T) : n.-bseq T :=
+  match Bool.bool_dec (size t <= n) true with
+    left H => Bseq H | right _ => @bseq0 n T
+  end.
+
+Definition bseq_enum n (T : finType) : seq (n.-bseq T) :=
+  flatten (map (fun m => map (@bseq_of_tuple n _) (map (@tval _ _) (enum {: m.-tuple T}))) (iota 0 n.+1)).
+
+Lemma bseq_of_tuple_inj n (T : finType) m (mn : m <= n) :
+  injective (bseq_of_tuple n (T:=T) \o @tval m T).
+Proof.
+move=> /= [a Ha] [b Hb] /=.
+rewrite /bseq_of_tuple.
+case: Bool.bool_dec; last by rewrite (eqP Ha) mn.
+move=> Ha'.
+case: Bool.bool_dec => [Hb'|]; last by rewrite (eqP Hb) mn.
+case => ?; subst a.
+congr Tuple; exact: eq_irrelevance.
+Qed.
+
+Lemma bseq_enumP n (T : finType) : Finite.axiom (bseq_enum n T).
+Proof.
+case=> s sn.
+rewrite count_flatten -[in iota _ _](subnKC sn) -addnS iota_add !map_cat.
+rewrite sumn_cat add0n /= addnCA -sumn_cat -!map_cat count_uniq_mem; last first.
+  rewrite -map_comp map_inj_uniq //; by [rewrite enum_uniq | exact: bseq_of_tuple_inj].
+rewrite -map_comp (_ : _ \in _); last first.
+  apply/mapP => /=.
+  exists (in_tuple s); first by rewrite mem_enum inE.
+  rewrite /bseq_of_tuple.
+  case: Bool.bool_dec; last by rewrite size_tuple sn.
+  move=> sn'; congr Bseq; exact: eq_irrelevance.
+rewrite add1n; congr S; apply/eqP/natnseq0P/all_pred1P/allP => /= m.
+rewrite -map_comp; case/mapP => /= l Hl ->.
+move: Hl; rewrite mem_cat => /orP[|].
+  rewrite mem_iota add0n leq0n /= => ls.
+  apply/eqP/count_memPn/mapP => /= -[s' /mapP[t' _ ->]].
+  rewrite /bseq_of_tuple.
+  case: Bool.bool_dec => ln; case => ?; subst s.
+  by rewrite size_tuple ltnn in ls.
+  by rewrite ltn0 in ls.
+rewrite mem_iota => /andP[sl].
+rewrite addSn subnKC // ltnS => ln.
+apply/eqP/count_memPn/mapP => /= -[s' /mapP[t' _ ->]].
+rewrite /bseq_of_tuple.
+case: Bool.bool_dec; last by rewrite size_tuple ln.
+move=> _ln'; case => ?; subst s.
+by rewrite size_tuple ltnn in sl.
+Qed.
+
+Canonical bseq_finMixin n (T : finType) := Eval hnf in FinMixin (@bseq_enumP n T).
+Canonical bseq_finType n (T : finType) := Eval hnf in FinType (n.-bseq T) (bseq_finMixin n T).
+Canonical bseq_subFinType n (T: finType) := Eval hnf in [subFinType of n.-bseq T].
+
 Section ordered_ranks.
 
 Variable X : finType.

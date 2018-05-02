@@ -236,12 +236,12 @@ Qed.
 
 End ler_ltr_rsum.
 
-Lemma ler_rsum_Rabs (A : finType) f : Rabs (\rsum_(a : A) f a) <= \rsum_(a : A) Rabs (f a).
+Lemma ler_rsum_Rabs (A : finType) f : `| \rsum_(a : A) f a | <= \rsum_(a : A) `| f a |.
 Proof.
 elim: (index_enum _) => [|h t IH].
   rewrite 2!big_nil Rabs_R0; exact/leRR.
 rewrite 2!big_cons.
-apply (@leR_trans (Rabs (f h) + Rabs (\rsum_(j <- t) f j)));
+apply (@leR_trans (`| f h | + `| \rsum_(j <- t) f j |));
   [exact/Rabs_triang |exact/leR_add2l].
 Qed.
 
@@ -504,15 +504,15 @@ Variables (A : eqType) (F : A -> R) (s : seq A).
 Lemma Rle_bigRmax : forall m, m \in s -> F m <= \rmax_(m <- s) (F m).
 Proof.
 elim: s => // hd tl IH m; rewrite in_cons; case/orP.
-- move/eqP => ->; rewrite big_cons; by apply Rmax_l.
-- move/IH => H; rewrite big_cons; exact/(leR_trans H)/Rmax_r.
+- move/eqP => ->; rewrite big_cons; exact/leR_maxl.
+- move/IH => H; rewrite big_cons; exact/(leR_trans H)/leR_maxr.
 Qed.
 
 Lemma Rle_0_bigRmax : (forall r, r \in s -> 0 <= F r) -> 0 <= \rmax_(m <- s) (F m).
 Proof.
 case: s => [_ | hd tl Hr].
 - rewrite big_nil; exact/leRR.
-- apply (@leR_trans (F hd)); last by rewrite big_cons; exact: Rmax_l.
+- apply (@leR_trans (F hd)); last by rewrite big_cons; exact: leR_maxl.
   apply Hr; by rewrite in_cons eqxx.
 Qed.
 

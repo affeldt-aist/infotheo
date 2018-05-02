@@ -79,10 +79,10 @@ rewrite Hfg ; last first.
   apply (@leR_ltR_trans (Rabs h)); first by rewrite -Rabs_Ropp; apply Rle_abs.
   apply (@ltR_leR_trans (Rmin (- r + x) delt)) => //.
   by rewrite addRC.
-  by apply Rmin_l.
+  exact/geR_minl.
 rewrite Hfg //.
 apply Hdelt => //=.
-apply (@ltR_leR_trans (Rmin (x - r) delt)) => // ; exact: Rmin_r.
+apply (@ltR_leR_trans (Rmin (x - r) delt)) => // ; exact/geR_minr.
 Defined.
 
 Lemma derive_pt_f_eq_g f g x r (Hfg : forall y, r < y -> g y = f y)

@@ -13,7 +13,8 @@ Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
 Reserved Notation "P '<<' Q" (at level 10, Q at next level).
 Reserved Notation "P '<<b' Q" (at level 10).
 
-Notation "'min(' x ',' y ')'" := (Rmin x y) : reals_ext_scope.
+Notation "'min(' x ',' y ')'" := (Rmin x y)
+  (format "'min(' x ','  y ')'") : reals_ext_scope.
 Notation "'max(' x ',' y ')'" := (Rmax x y)
   (format "'max(' x ','  y ')'") : reals_ext_scope.
 Notation "+| r |" := (Rmax 0 r) : reals_ext_scope.
@@ -78,19 +79,6 @@ Proof. move=> *. fourier. Qed.
 
 Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Z.abs_nat x) = IZR x.
 Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
-
-Lemma leR_maxl x y z : (max(y, z) <b= x) = (y <b= x) && (z <b= x).
-Proof.
-apply/idP/idP => [/leRP|/andP[/leRP H1 /leRP H2]]; last first.
-  apply/leRP; by apply Rmax_case_strong.
-apply Rmax_case_strong => /leRP H1 /leRP H2.
-  rewrite H2; apply/leRP/leR_trans; apply/leRP; by eauto.
-rewrite H2 andbC; apply/leRP/leR_trans; apply/leRP; by eauto.
-Qed.
-
-Definition maxRA : associative Rmax := Rmax_assoc.
-
-Definition maxRC : commutative Rmax := Rmax_comm.
 
 (** non-negative rationals: *)
 
@@ -298,8 +286,8 @@ Qed.
 Lemma frac_part_pow a : frac_part a = 0 -> forall n : nat, frac_part (a ^ n) = 0.
 Proof.
 move=> Ha; elim=> /=.
-by rewrite /frac_part (_ : 1 = INR 1) // Int_part_INR  Rminus_diag_eq.
-move=> n IH; by apply frac_part_mult.
+by rewrite /frac_part (_ : 1 = INR 1) // Int_part_INR  subRR.
+move=> n IH; exact: frac_part_mult.
 Qed.
 
 (** P is dominated by Q: *)
@@ -314,31 +302,29 @@ End dominance.
 Notation "P '<<' Q" := (dom_by P Q) : reals_ext_scope.
 Notation "P '<<b' Q" := (dom_byb P Q) : reals_ext_scope.
 
-Lemma Rabs_eq0 r : Rabs r = 0 -> r = 0.
+Lemma Rabs_eq0 r : `| r | = 0 -> r = 0.
 Proof. move: (Rabs_no_R0 r); tauto. Qed.
 
-Lemma ltR_Rabsl a b : Rabs a <b b = (- b <b a <b b).
+Lemma ltR_Rabsl a b : `| a  | <b b = (- b <b a <b b).
 Proof.
 apply/idP/idP => [/ltRP/Rabs_def2[? ?]|/andP[]/ltRP ? /ltRP ?].
 apply/andP; split; exact/ltRP.
 exact/ltRP/Rabs_def1.
 Qed.
 
-Lemma leR_Rabsl a b : Rabs a <b= b = (- b <b= a <b= b).
+Lemma leR_Rabsl a b : `| a | <b= b = (- b <b= a <b= b).
 Proof.
 apply/idP/idP => [/leRP|]; last first.
   case/andP => /leRP H1 /leRP H2; exact/leRP/Rabs_le.
 case: (Rlt_le_dec a 0) => h.
-  rewrite Rabs_left // => ?.
-  apply/andP; split; apply/leRP; fourier.
-rewrite Rabs_right; last by apply Rle_ge.
-move=> ?; apply/andP; split; apply/leRP; fourier.
+  rewrite ltR0_norm // => ?; apply/andP; split; apply/leRP; fourier.
+rewrite geR0_norm // => ?; apply/andP; split; apply/leRP; fourier.
 Qed.
 
-Lemma Rabs_sq x : Rabs x ^ 2 = x ^ 2.
+Lemma Rabs_sq x : `| x | ^ 2 = x ^ 2.
 Proof.
-move=> /=.
-rewrite !mulR1 -Rabs_mult Rabs_pos_eq // -{2}(pow_1 x) -powS.
+rewrite /=.
+rewrite !mulR1 -normRM Rabs_pos_eq // -{2}(pow_1 x) -powS.
 exact: pow_even_ge0.
 Qed.
 

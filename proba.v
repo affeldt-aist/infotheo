@@ -978,13 +978,13 @@ Variable A : finType.
 Variable X : rvar A.
 
 Lemma chebyshev_inequality epsilon : 0 < epsilon ->
-  Pr `p_X [set a | Rabs (X a - `E X) >b= epsilon] <= `V X / epsilon ^ 2.
+  Pr `p_X [set a | `| X a - `E X | >b= epsilon] <= `V X / epsilon ^ 2.
 Proof.
 move=> He; apply/leRP.
 rewrite leR_pdivl_mulr; last exact/pow_gt0.
 apply/leRP; rewrite mulRC /`V [in X in _ <= X]ExE.
 rewrite (_ : `p_ ((X \-cst `E X) \^2) = `p_ X) //.
-apply (@leR_trans (\rsum_(a in A | Rabs (X a - `E X) >b= epsilon)
+apply (@leR_trans (\rsum_(a in A | `| X a - `E X | >b= epsilon)
     (((X \-cst `E X) \^2) a  * `p_X a)%R)); last first.
   apply ler_rsum_l_support with (Q := xpredT) => // a .
   apply mulR_ge0; [exact: pow_even_ge0| exact: dist_nonneg].
@@ -1412,7 +1412,7 @@ Variable X : {rvar 'rV[A]_n.+1}.
 Variable X_Xs : X \=isum Xs.
 
 Lemma wlln epsilon : 0 < epsilon ->
-  Pr `p_X [set t | Rabs ((X '/ n.+1) t - miu) >b= epsilon] <= sigma2 / ((INR n.+1) * epsilon ^ 2).
+  Pr `p_X [set t | `| (X '/ n.+1) t - miu | >b= epsilon] <= sigma2 / ((INR n.+1) * epsilon ^ 2).
 Proof.
 move=> He.
 have HV : `V (X '/ n.+1) = sigma2 / INR n.+1.
@@ -1431,7 +1431,7 @@ have HE : `E (X '/ n.+1) = miu.
   by field; apply not_0_INR.
 rewrite -{}HE.
 have cheby : Pr `p_(X '/ n.+1)
-  [set t | Rabs (X t / INR n.+1 - `E (X '/ n.+1)) >b= epsilon] <= `V (X '/ n.+1) / epsilon ^ 2.
+  [set t | `| X t / INR n.+1 - `E (X '/ n.+1) | >b= epsilon] <= `V (X '/ n.+1) / epsilon ^ 2.
   move: (chebyshev_inequality (X '/ n.+1) He) => cheby.
   set g := [set _ | _] in cheby; rewrite (@Pr_ext _ _ _ g) //.
   apply/setP => ta /=.

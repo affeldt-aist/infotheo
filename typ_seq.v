@@ -133,11 +133,11 @@ suff ? : Pr (P `^ n.+1) (~: p) <= epsilon by apply leR_add2l; rewrite leR_oppl o
 have -> : Pr P `^ n.+1 (~: p) =
   Pr P `^ n.+1 [set x | P `^ n.+1 x == 0]
   +
-  Pr P `^ n.+1 [set x | (0 <b P `^ n.+1 x) && (Rabs (- (1 / INR n.+1) * log (P `^ n.+1 x) - `H P) >b epsilon) ].
+  Pr P `^ n.+1 [set x | (0 <b P `^ n.+1 x) && (`| - (1 / INR n.+1) * log (P `^ n.+1 x) - `H P | >b epsilon) ].
   have H1 : ~: p =
     [set x | P `^ n.+1 x == 0 ] :|:
     [set x | (0 <b P `^ n.+1 x) &&
-               (Rabs (- (1 / INR n.+1) * log (P `^ n.+1 x) - `H P) >b epsilon)].
+               (`| - (1 / INR n.+1) * log (P `^ n.+1 x) - `H P | >b epsilon)].
     apply/setP => i.
     rewrite !inE.
     rewrite negb_and.
@@ -175,7 +175,7 @@ have -> : Pr P `^ n.+1 (~: p) =
           rewrite oppRD oppRK => LHS.
           have H2 : forall a b c, - a + b < c -> - c - a < - b by move=> *; fourier.
           move/ltRP/H2 in LHS.
-          rewrite div1R mulRC mulRN -/(Rdiv _ _) Rabs_left1.
+          rewrite div1R mulRC mulRN -/(Rdiv _ _) leR0_norm.
           + apply/ltRP; by rewrite ltR_oppr.
           + apply: (leR_trans (ltRW LHS)); by fourier.
       * move/negbT : LHS.

@@ -145,7 +145,7 @@ Hypothesis Hepsilon : 0 < epsilon.
 
 Lemma aep : aep_bound P epsilon <= INR n.+1 ->
   Pr (P `^ n.+1) [set t | (0 <b P `^ n.+1 t) &&
-    (Rabs ((--log (P `^ n.+1) '/ n.+1) t - `H P) >b= epsilon) ] <= epsilon.
+    (`| (--log (P `^ n.+1) '/ n.+1) t - `H P | >b= epsilon) ] <= epsilon.
 Proof.
 move=> Hbound.
 apply (@leR_trans (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R); last first.

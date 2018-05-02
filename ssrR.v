@@ -17,6 +17,8 @@ Local Open Scope R_scope.
 (* "^" = pow : R -> nat -> R *)
 Notation "x ^- n" := (/ (x ^ n)) : R_scope.
 
+Notation "`| x |" := (Rabs x).
+
 Hint Resolve Rlt_R0_R2.
 Hint Resolve Rlt_0_1.
 Hint Resolve Rle_0_1.
@@ -244,7 +246,7 @@ Proof. split; move/Ropp_lt_contravar; by rewrite oppRK. Qed.
 Lemma ltR_oppl x y : (- x < y) <-> (- y < x).
 Proof. split; move/Ropp_lt_contravar; by rewrite oppRK. Qed.
 
-(* not interesting lemmas? *)
+(* uninteresting lemmas? *)
 (* NB: Ropp_gt_lt_contravar *)
 (* NB: Ropp_le_ge_contravar *)
 (* NB: Ropp_le_cancel *)
@@ -470,3 +472,29 @@ Qed.
 
 (*Rpow_mult_distr : forall (x y : R) (n : nat), (x * y) ^ n = x ^ n * y ^ n*)
 Definition powRM := Rpow_mult_distr.
+
+Lemma normRM : {morph Rabs : x y / x * y : R}.
+Proof. exact: Rabs_mult. Qed.
+
+Lemma leR0_norm x : x <= 0 -> `|x| = - x. Proof. exact: Rabs_left1. Qed.
+Lemma ltR0_norm x : x < 0 -> `|x| = - x. Proof. by move/ltRW/leR0_norm. Qed.
+Lemma geR0_norm x : 0 <= x -> `|x| = x. Proof. exact: Rabs_pos_eq. Qed.
+Lemma gtR0_norm x : 0 < x -> `|x| = x. Proof. by move/ltRW/geR0_norm. Qed.
+
+Definition maxRA : associative Rmax := Rmax_assoc.
+Definition maxRC : commutative Rmax := Rmax_comm.
+
+(*Lemma geq_max m n1 n2 : (m >= maxn n1 n2) = (m >= n1) && (m >= n2).*)
+Lemma leR_max x y z : (Rmax y z <b= x) = (y <b= x) && (z <b= x).
+Proof.
+apply/idP/idP => [/leRP|/andP[/leRP H1 /leRP H2]]; last first.
+  apply/leRP; by apply Rmax_case_strong.
+apply Rmax_case_strong => /leRP H1 /leRP H2.
+  rewrite H2; apply/leRP/leR_trans; apply/leRP; by eauto.
+rewrite H2 andbC; apply/leRP/leR_trans; apply/leRP; by eauto.
+Qed.
+
+Definition leR_maxl m n : m <= Rmax m n := Rmax_l m n.
+Definition leR_maxr m n : n <= Rmax m n := Rmax_r m n.
+Definition geR_minl m n : Rmin m n <= m := Rmin_l m n.
+Definition geR_minr m n : Rmin m n <= n := Rmin_r m n.

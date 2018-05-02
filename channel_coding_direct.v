@@ -860,8 +860,8 @@ have [epsilon0 Hepsilon0] : exists epsilon0,
     apply Rmin_pos; apply mulR_gt0 => //; fourier.
   split.
     apply mulR_gt0 => //; fourier.
-  split; [exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/Rmin_l |
-          exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/Rmin_r ].
+  split; [exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/geR_minl |
+          exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/geR_minr ].
 have [n Hn] : exists n, n_condition W P r epsilon0 n.
   destruct r as [r [num [den [Hnum [Hden Hr]]]]].
   have Hn : exists n, (0 < n)%nat /\
