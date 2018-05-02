@@ -2,7 +2,6 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
 From mathcomp Require Import fintype tuple div path bigop prime finset fingroup.
 From mathcomp Require Import finfun perm.
-Require Import Reals.
 
 (** * Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
 
@@ -63,7 +62,7 @@ have : nat_of_bin (bin_of_nat a) = nat_of_bin (bin_of_nat b) by rewrite X.
 by rewrite 2!bin_of_natK.
 Qed.
 
-Lemma bin_of_nat_nat_of_pos_not_0 : forall i, bin_of_nat (nat_of_pos i) <> 0%N.
+Lemma bin_of_nat_nat_of_pos_not_0 : forall i, bin_of_nat (nat_of_pos i) <> 0%num.
 Proof.
 elim=> // a Ha /=.
 rewrite NatTrec.doubleE.
@@ -71,18 +70,18 @@ contradict Ha.
 by destruct (nat_of_pos a).
 Qed.
 
-Lemma bin_of_nat_expn2 m : bin_of_nat (expn 2 m.+1) = (2 * bin_of_nat (expn 2 m))%N.
+Lemma bin_of_nat_expn2 m : bin_of_nat (expn 2 m.+1) = BinNat.N.mul 2 (bin_of_nat (expn 2 m)).
 Proof.
-set x := (_ * _)%N.
+set x := BinNat.N.mul _ _.
 by rewrite -(nat_of_binK x) {}/x nat_of_mul_bin bin_of_natK expnS.
 Qed.
 
-Lemma Nto_natE x : N.to_nat x = nat_of_bin x.
+Lemma Nto_natE x : BinNat.N.to_nat x = nat_of_bin x.
 Proof.
 case x => //=.
 elim => [ | | //] p Hp /=.
-by rewrite Pos2Nat.inj_xI NatTrec.trecE Hp -mul2n.
-by rewrite Pos2Nat.inj_xO NatTrec.trecE Hp -mul2n.
+by rewrite Pnat.Pos2Nat.inj_xI NatTrec.trecE Hp -mul2n.
+by rewrite Pnat.Pos2Nat.inj_xO NatTrec.trecE Hp -mul2n.
 Qed.
 
 Lemma BinPos_nat_of_P_nat_of_pos : forall i, BinPos.nat_of_P i = nat_of_pos i.
@@ -92,8 +91,8 @@ elim=> // i /= Hi.
 - by rewrite Pnat.nat_of_P_xO NatTrec.doubleE Hi multE mul2n.
 Qed.
 
-Lemma nat_of_posK k : bin_of_nat (nat_of_pos k) = Npos k.
-Proof. by rewrite -(nat_of_binK (Npos k)). Qed.
+Lemma nat_of_posK k : bin_of_nat (nat_of_pos k) = BinNat.Npos k.
+Proof. by rewrite -(nat_of_binK (BinNat.Npos k)). Qed.
 
 End ssrnat_ext.
 
