@@ -157,10 +157,9 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
   exists (exp (- 2 * / eps)).
   split ; first exact: exp_pos.
   move=> x; rewrite /R_dist subR0; case=> Hx1 Hx2.
-  rewrite /xlnx ltRR.
-  case (Rlt_le_dec 0 x) => Hcase.
-  + rewrite Rabs_pos_eq in Hx2 ; last exact/ltRW.
-    have -> : 0 <b x by apply/ltRP.
+  rewrite /xlnx ltRR'.
+  case: ifPn => Hcase; move/ltRP in Hcase.
+  + rewrite Rabs_pos_eq in Hx2; last exact/ltRW.
     rewrite subR0 -{1}(exp_ln _ Hcase).
     set X := ln x.
     have X_neg : X < 0.
@@ -176,7 +175,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       rewrite -mulRA mulRV ?mulR1; last by rewrite oppR_eq0; apply/eqP/ltR_eqF.
       rewrite -(invRK 2) //.
       rewrite -mulRA ( _ : forall r, r * r = r ^ 2); last by move=> ?; rewrite /pow mulR1.
-      rewrite powRV; last exact/eqP/not_eq_sym/Rlt_not_eq/oppR_gt0.
+      rewrite expRV; last exact/eqP/not_eq_sym/ltR_eqF/oppR_gt0.
       rewrite -invRM; last 2 first.
         apply/eqP; rewrite invR_neq0 //; exact/eqP/gtR_eqF.
         apply/eqP; rewrite pow_eq0 oppR_eq0; exact/eqP/ltR_eqF.
@@ -195,18 +194,17 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       - apply/mulR_gt0 => //; exact: invR_gt0.
       - rewrite leR_oppr mulRC -mulNR.
         apply/exp_le_inv/ltRW; subst X; by rewrite exp_ln.
-  + have -> : 0 <b x = false by apply/ltRP; apply RIneq.Rle_not_lt.
-    by rewrite subRR Rabs_R0.
+  + by rewrite subRR Rabs_R0.
 - exists (- r); split; first exact: oppR_gt0.
   move=> x [[_ Hx1] Hx2].
   rewrite /R_dist /xlnx.
   have -> : 0 <b x = false.
-    apply/ltRP ; apply Rge_not_lt, Rle_ge.
+    apply/ltRP/leRNgt.
     rewrite -(addR0 x) -{1}(Rplus_opp_l r) addRA.
     apply (@leR_trans ((x + - r) - `| x + - r |)).
       apply/leR_add2l/ltRW; by rewrite ltR_oppr.
     exact/Rle_minus/Rle_abs.
-  have -> : 0 <b r = false by apply/negbTE; rewrite -leRNgt; apply/leRP/ltRW.
+  have -> : 0 <b r = false by apply/negbTE; rewrite -leRNgt'; apply/leRP/ltRW.
   by rewrite subRR Rabs_R0.
 Qed.
 

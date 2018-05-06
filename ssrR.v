@@ -23,36 +23,35 @@ Hint Resolve Rlt_R0_R2.
 Hint Resolve Rlt_0_1.
 Hint Resolve Rle_0_1.
 
-(** eqType for Coq Reals *)
-Definition Req_bool (a b : R) : bool :=
+Definition Reqb (a b : R) : bool :=
   match Req_EM_T a b with left _ => true | _ => false end.
 
-Lemma eqRP : Equality.axiom Req_bool.
-Proof. move=> a b; apply: (iffP idP); rewrite /Req_bool; by case: Req_EM_T. Qed.
+Lemma eqRP : Equality.axiom Reqb.
+Proof. move=> a b; apply: (iffP idP); rewrite /Reqb; by case: Req_EM_T. Qed.
 
 Canonical R_eqMixin := EqMixin eqRP.
 Canonical R_eqType := Eval hnf in EqType R R_eqMixin.
 
-Definition leR_bool a b := if Rle_dec a b is left _ then true else false.
-Notation "a '<b=' b" := (leR_bool a b) : R_scope.
+Definition leRb a b := if Rle_dec a b is left _ then true else false.
+Notation "a '<b=' b" := (leRb a b) : R_scope.
 
-Definition geR_bool (a b : R) := leR_bool b a.
-Notation "a '>b=' b" := (geR_bool a b) : R_scope.
+Definition geRb (a b : R) := leRb b a.
+Notation "a '>b=' b" := (geRb a b) : R_scope.
 
-Definition ltR_bool (a b : R) := if Rlt_dec a b is left _ then true else false.
-Notation "a '<b' b" := (ltR_bool a b) : R_scope.
+Definition ltRb (a b : R) := if Rlt_dec a b is left _ then true else false.
+Notation "a '<b' b" := (ltRb a b) : R_scope.
 
-Definition gtR_bool a b := b <b a.
-Notation "a '>b' b" := (gtR_bool a b) : R_scope.
+Definition gtRb a b := b <b a.
+Notation "a '>b' b" := (gtRb a b) : R_scope.
 
-Notation "a '<b=' b '<b=' c" := (leR_bool a b && leR_bool b c) : R_scope.
-Notation "a '<b' b '<b' c" := (ltR_bool a b && ltR_bool b c) : R_scope.
+Notation "a '<b=' b '<b=' c" := (leRb a b && leRb b c) : R_scope.
+Notation "a '<b' b '<b' c" := (ltRb a b && ltRb b c) : R_scope.
 
 Lemma leRP (a b : R) : reflect (a <= b) (a <b= b).
-Proof. by apply: (iffP idP); rewrite /leR_bool; case: Rle_dec. Qed.
+Proof. by apply: (iffP idP); rewrite /leRb; case: Rle_dec. Qed.
 
 Lemma ltRP (a b : R) : reflect (a < b) (a <b b).
-Proof. apply: (iffP idP); by rewrite /ltR_bool; case: Rlt_dec. Qed.
+Proof. apply: (iffP idP); by rewrite /ltRb; case: Rlt_dec. Qed.
 
 Definition add0R : left_id 0 Rplus := Rplus_0_l.
 Definition addR0 : right_id 0 Rplus := Rplus_0_r.
@@ -73,6 +72,7 @@ Lemma addRK (a : R) : cancel (Rplus^~ a) (Rminus^~ a).
 Proof. move=> b; by field. Qed.
 
 Definition subR0 : right_id 0 Rminus := Rminus_0_r.
+
 Lemma subRR a : a - a = 0. Proof. by rewrite Rminus_diag_eq. Qed.
 
 Lemma subRKC m n : m + (n - m) = n. Proof. ring. Qed.
@@ -125,8 +125,16 @@ Proof. by move=> r0; split => [/Rmult_eq_reg_l/(_ r0) | ->]. Qed.
 Lemma eqR_mul2r {r r1 r2} : r <> 0 -> (r1 * r = r2 * r) <-> (r1 = r2).
 Proof. by move=> r0; split => [/Rmult_eq_reg_r/(_ r0)|->]. Qed.
 
+Definition ltRR := Rlt_irrefl.
+Lemma ltRR' n : (n <b n) = false.
+Proof. by apply/ltRP/ltRR. Qed.
+
+Definition ltRW {m n} : m < n -> m <= n := Rlt_le m n.
+Lemma ltRW' {a b : R} : a <b b -> a <b= b.
+Proof. by move/ltRP/Rlt_le/leRP. Qed.
+
 Lemma gtR_eqF a b : a < b -> b <> a.
-Proof. move=> Hb He; rewrite He in Hb; by apply (Rlt_irrefl a). Qed.
+Proof. move=> ab ba; rewrite ba in ab; exact: (ltRR a). Qed.
 
 Definition ltR_eqF := Rlt_not_eq.
 
@@ -171,29 +179,23 @@ Proof. exact: Ropp_0_lt_gt_contravar. Qed.
 Lemma oppR_gt0 x : 0 > x -> 0 < - x.
 Proof. exact: Ropp_0_gt_lt_contravar. Qed.
 
-(* Rnot_lt_le
-     : forall r1 r2 : R, ~ r1 < r2 -> r2 <= r1 *)
-(* Rlt_not_le
-     : forall r1 r2 : R, r2 < r1 -> ~ r1 <= r2 *)
-Lemma leRNlt m n : (m <b= n) = ~~ (n <b m).
+Lemma leRNlt m n : (m <= n) <-> ~ (n < m).
+Proof. split; [exact: Rle_not_lt | exact: Rnot_lt_le]. Qed.
+Lemma leRNlt' m n : (m <b= n) = ~~ (n <b m).
 Proof.
-apply/idP/idP.
-move/leRP => ?; exact/ltRP/Rle_not_gt.
-move/ltRP/Rnot_lt_le => ?; exact/leRP.
+apply/idP/idP => [/leRP ? | /ltRP/Rnot_lt_le ?];
+  [exact/ltRP/Rle_not_gt | exact/leRP].
 Qed.
 
-Lemma ltRNge m n : (m <b n) = ~~ (n <b= m).
-Proof. by rewrite leRNlt negbK. Qed.
+Lemma ltRNge m n : (m < n) <-> ~ (n <= m).
+Proof. split; [exact: Rlt_not_le | exact: Rnot_le_lt]. Qed.
+Lemma ltRNge' m n : (m <b n) = ~~ (n <b= m).
+Proof. by rewrite leRNlt' negbK. Qed.
 
-Lemma leRNgt (x y : R) : (x <b= y) = ~~ (x >b y).
-Proof. by rewrite /gtR_bool ltRNge negbK. Qed.
-
-Lemma ltRR n : n <b n = false.
-Proof. by apply/ltRP/Rlt_irrefl. Qed.
-
-Definition ltRW {m n} : m < n -> m <= n := Rlt_le m n.
-Lemma ltRW' {a b : R} : a <b b -> a <b= b.
-Proof. by move/ltRP/Rlt_le/leRP. Qed.
+Lemma leRNgt (x y : R) : (x <= y) <-> ~ (y < x).
+Proof. by rewrite leRNlt. Qed.
+Lemma leRNgt' (x y : R) : (x <b= y) = ~~ (y <b x).
+Proof. by rewrite ltRNge' negbK. Qed.
 
 Lemma leR_eqVlt m n : (m <b= n) = (m == n) || (m <b n).
 Proof.
@@ -204,7 +206,7 @@ exact: ltRW'.
 Qed.
 
 Lemma ltR_neqAle m n : (m <b n) = (m != n) && (m <b= n).
-Proof. by rewrite ltRNge leR_eqVlt negb_or ltRNge negbK eq_sym. Qed.
+Proof. by rewrite ltRNge' leR_eqVlt negb_or ltRNge' negbK eq_sym. Qed.
 
 Lemma lt0R x : (0 <b x) = (x != 0) && (0 <b= x).
 Proof. by rewrite ltR_neqAle eq_sym. Qed.
@@ -450,6 +452,14 @@ Qed.
 Lemma invR_le1 x : 0 < x -> (/ x <b= 1) = (1 <b= x).
 Proof. move=> x0; by rewrite -(div1R x) leR_pdivr_mulr // mul1R. Qed.
 
+Lemma invR_gt1 x : 0 < x -> (1 <b / x) = (x <b 1).
+Proof.
+move=> x0; apply/idP/idP => [|] /ltRP x1; apply/ltRP; last first.
+  by rewrite -invR1; apply ltR_inv.
+move/ltR_inv : x1; rewrite invRK ?invR1; last exact/gtR_eqF.
+apply => //; exact/invR_gt0.
+Qed.
+
 (*******)
 (* pow *)
 (*******)
@@ -463,15 +473,27 @@ Qed.
 Lemma pow_not0 x (n : nat) : x != 0 -> x ^ n != 0.
 Proof. by move/eqP/(pow_nonzero _ n)/eqP. Qed.
 
-Lemma powRV x (n : nat) : x != 0 -> (/ x ) ^ n = x ^- n.
+Lemma expRV x (n : nat) : x != 0 -> (/ x ) ^ n = x ^- n.
 Proof.
 move/eqP => x_not0.
 elim : n => /= [ | n IH]; first by rewrite Rinv_1.
 rewrite invRM //; by [rewrite IH | apply/eqP/pow_not0/eqP].
 Qed.
 
-(*Rpow_mult_distr : forall (x y : R) (n : nat), (x * y) ^ n = x ^ n * y ^ n*)
-Definition powRM := Rpow_mult_distr.
+(* forall (x y : R) (n : nat), (x * y) ^ n = x ^ n * y ^ n*)
+Definition expRM := Rpow_mult_distr.
+
+Lemma expRB (n m : nat) r : (m <= n)%nat -> r <> 0 -> r ^ (n - m) = r ^ n / (r ^ m).
+Proof.
+move=> Hr ab.
+rewrite (pow_RN_plus r _ m) // plusE -minusE subnK // powRV //; exact/eqP.
+Qed.
+
+Lemma sqrRB a b : (a - b) ^ 2 = a ^ 2 - 2 * a * b + b ^ 2.
+Proof. rewrite /= !mulR1 !mulRDr !mulRBl /=; field. Qed.
+
+Lemma sqrRD a b : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2.
+Proof. rewrite /= !mulR1 !mulRDl !mul1R !mulRDr /=; field. Qed.
 
 Lemma normRM : {morph Rabs : x y / x * y : R}.
 Proof. exact: Rabs_mult. Qed.

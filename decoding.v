@@ -245,14 +245,16 @@ rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
   apply/pow_not0; rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
 rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
   exact/pow_not0/eqP/gtR_eqF.
-rewrite -powRV; last by apply/eqP/gtR_eqF.
-rewrite -powRV; last by rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
-rewrite mulRC Rmult_pow_inv; last 2 first.
-  move=> ?; fourier.
+rewrite -expRV; last by apply/eqP/gtR_eqF.
+rewrite -expRV; last by rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
+rewrite mulRC expRV; last exact/eqP/gtR_eqF.
+rewrite -/(Rdiv _ _) -expRB; last 2 first.
   by case/andP : d1d2.
-rewrite Rmult_pow_inv; last 2 first.
-  by move=> ?; fourier.
-  apply: leq_sub2l; by case/andP : d1d2.
+  exact/gtR_eqF.
+rewrite expRV; last by rewrite subR_eq0; apply/eqP => ?; subst p; fourier.
+rewrite -/(Rdiv _ _) -expRB; last 2 first.
+  rewrite leq_sub2l //; by case/andP : d1d2.
+  by apply/eqP; rewrite subR_eq0; apply/eqP => ?; subst p; fourier.
 suff -> : (n - d1 - (n - d2) = d2 - d1)%nat.
   apply pow_incr; split; fourier.
 rewrite -subnDA addnC subnDA subKn //.

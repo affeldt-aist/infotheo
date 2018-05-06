@@ -10,51 +10,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Section Pad.
-
-Variable A : Type.
-Variable def : A.
-
-Definition pad_seq (l : seq A) n :=
-  if size l <= n then l ++ nseq (n - size l) def else take n l.
-
-Definition pad_seqL (l : seq A) n :=
-  if size l <= n then nseq (n - size l) def ++ l else take n l.
-
-Lemma pad_seqL_inj : forall n a b, size a = n -> size b = n ->
-  pad_seqL a n = pad_seqL b n -> a = b.
-Proof.
-elim=> [[] // [] // | ] n IH [|a ta] // [|b tb] // [Ha] [Hb].
-by rewrite /pad_seqL /= Ha Hb ltnS leqnn subnn.
-Qed.
-
-Lemma size_pad_seq : forall l n, size (pad_seq l n) = n.
-Proof.
-move=> lst n.
-rewrite /pad_seq.
-case/orP : (orbN (size lst <= n)) => X.
-- by rewrite X size_cat size_nseq -maxnE (maxn_idPr _) // ltnW.
-- rewrite (negbTE X) size_takel //.
-  rewrite leqNgt negbK in X.
-  by rewrite ltnW.
-Qed.
-
-Lemma size_pad_seqL : forall l n, size (pad_seqL l n) = n.
-Proof.
-move=> lst n.
-rewrite /pad_seqL.
-case/orP : (orbN (size lst <= n)) => X.
-- by rewrite X size_cat size_nseq subnK // ltnW.
-- rewrite (negbTE X) size_takel //.
-  rewrite leqNgt negbK in X.
-  by rewrite ltnW.
-Qed.
-
-End Pad.
-Arguments pad_seq [A].
-Arguments pad_seqL [A].
-Arguments size_pad_seq [A].
-
+(* NB: not used? *)
 Lemma pad_seqL_leading_true_inj : forall n i j,
   size i <= n -> size j <= n ->
   pad_seqL false (true :: i) n.+1 = pad_seqL false (true :: j) n.+1 ->

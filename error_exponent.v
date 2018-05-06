@@ -153,7 +153,7 @@ have Htmp : D_x no_cond 0 x /\ R_dist x 0 < mu.
     apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
     apply/ltRP; rewrite ltR_pdivr_mulr //; apply/ltRP; fourier.
 move=> /(_ Htmp) {Htmp}.
-rewrite /R_dist /Rminus {2}/xlnx ltRR oppR0 addR0 ltR0_norm; last first.
+rewrite /R_dist /Rminus {2}/xlnx ltRR' oppR0 addR0 ltR0_norm; last first.
   apply xlnx_neg.
   split => //; subst x.
   exact: leR_ltR_trans (geR_minr _ _) ltRinve21.

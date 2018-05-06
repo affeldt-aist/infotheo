@@ -10,13 +10,17 @@ Unset Printing Implicit Defensive.
 
 Local Open Scope R_scope.
 
+(* TODO: move? *)
 Definition ceil (r : R) : Z := if frac_part r == 0 then Int_part r else up r.
 
+(* TODO: move? *)
 Definition floor : R -> Z := Int_part.
 
+(* TODO: move? *)
 Lemma floorP (r : R) : r - 1 < IZR (floor r) <= r.
 Proof. rewrite /floor; case: (base_Int_part r) => ? ?; split=> //; fourier. Qed.
 
+(* TODO: move? *)
 Lemma ceilP (r : R) : r <= IZR (ceil r) < r + 1.
 Proof.
 rewrite /ceil; case: ifPn => [|] /eqP r0.
@@ -26,9 +30,11 @@ case: (floorP r); rewrite /floor => H1 /Rle_lt_or_eq_dec[] H2.
 exfalso; apply/r0/eqP; rewrite subR_eq0; by apply/eqP.
 Qed.
 
+(* TODO: move? *)
 Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.
 Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(leR_trans _ K). Qed.
 
+(* TODO: move? *)
 Lemma leR_wiexpn2l x :
   0 <= x -> x <= 1 -> {homo (pow x) : m n / (n <= m)%nat >-> m <= n}.
 Proof.
@@ -41,23 +47,16 @@ move/leRP; rewrite le0R => /orP[/eqP -> _ m n|/ltRP x0 x1 m n /leP nm].
 apply invR_le => //.
 exact/pow_gt0.
 exact/pow_gt0.
-rewrite -powRV; last exact/eqP/gtR_eqF.
-rewrite -powRV; last exact/eqP/gtR_eqF.
+rewrite -expRV; last exact/eqP/gtR_eqF.
+rewrite -expRV; last exact/eqP/gtR_eqF.
 apply Rle_pow => //.
 rewrite -invR1; apply leR_inv => //; exact/ltRP.
 Qed.
 
+(* TODO: move? *)
 Lemma leR_weexpn2l x :
   1 <= x -> {homo (pow x) : m n / (m <= n)%nat >-> m <= n}.
 Proof. move=> x1 m n /leP nm; exact/Rle_pow. Qed.
-
-Lemma invR_gt1 x : 0 < x -> (1 <b / x) = (x <b 1).
-Proof.
-move=> x0; apply/idP/idP => [|] /ltRP x1; apply/ltRP; last first.
-  by rewrite -invR1; apply ltR_inv.
-move/ltR_inv : x1; rewrite invRK ?invR1; last exact/gtR_eqF.
-apply => //; exact/invR_gt0.
-Qed.
 
 (* TODO: move up? *)
 Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").

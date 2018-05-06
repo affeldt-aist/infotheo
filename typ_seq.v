@@ -146,16 +146,14 @@ have -> : Pr P `^ n.+1 (~: p) =
     + case/orP : LHS => LHS.
       * symmetry.
         apply/orP; left.
-        rewrite -leRNgt in LHS.
-        move/leRP in LHS.
+        rewrite -leRNgt' in LHS; move/leRP in LHS.
         apply/eqP/Rle_antisym => //; exact: dist_nonneg.
       * rewrite /typ_seq negb_and in LHS.
         case/orP : LHS => LHS.
         - apply/esym.
           case/boolP : (P `^ n.+1 i == 0) => /= H1; first by [].
           rewrite lt0R H1 /=; apply/andP; split; first exact/leRP/dist_nonneg.
-          rewrite leRNlt negbK in LHS.
-          move/ltRP in LHS.
+          rewrite -ltRNge' in LHS; move/ltRP in LHS.
           apply (@Log_increasing 2) in LHS => //; last first.
             apply/ltRP; rewrite lt0R H1 /=; exact/leRP/dist_nonneg.
           move/ltRP : LHS.
@@ -165,7 +163,7 @@ have -> : Pr P `^ n.+1 (~: p) =
           rewrite mulNR -ltR_subRL => LHS.
           rewrite mul1R Rabs_pos_eq //.
           by move/ltRP : LHS; move/(ltR_trans He)/ltRW.
-        - rewrite leRNgt negbK in LHS.
+        - rewrite leRNgt' negbK in LHS.
           apply/esym/orP; right.
           move/ltRP in LHS.
           apply/andP; split; first exact/ltRP/(ltR_trans (exp2_gt0 _) LHS).
@@ -182,7 +180,7 @@ have -> : Pr P `^ n.+1 (~: p) =
         rewrite negb_or 2!negbK /typ_seq => /andP[H1 /andP[/leRP H2 /leRP H3]].
         apply/esym/negbTE.
         rewrite negb_or; apply/andP; split; first exact/eqP/gtR_eqF/ltRP.
-        rewrite negb_and H1 /= -leRNgt.
+        rewrite negb_and H1 /= -leRNgt'.
         apply (@Log_increasing_le 2) in H2 => //.
         rewrite /exp2 ExpK // in H2.
         move/leRP : H2.
@@ -204,17 +202,14 @@ have -> : Pr P `^ n.+1 (~: p) =
     apply/subsetP => i.
     rewrite !inE /= => Hi.
     rewrite negb_and.
-    apply/orP; left.
-    move/eqP : Hi => ->.
-    by rewrite ltRR.
-    congr (_ + _); apply Pr_ext => i /=; by rewrite !inE.
+    by rewrite (eqP Hi) ltRR'.
+  congr (_ + _); apply Pr_ext => i /=; by rewrite !inE.
 have -> : Pr P `^ n.+1 [set x | P `^ n.+1 x == 0] = 0.
   rewrite /Pr.
   transitivity (\rsum_(a in 'rV[A]_n.+1 | P `^ n.+1 a == 0) 0).
     apply eq_big => // i.
-    by rewrite !inE.
-    rewrite inE.
-    by move/eqP.
+      by rewrite !inE.
+    by rewrite inE => /eqP.
   by rewrite big_const /= iter_Rplus mulR0.
 rewrite add0R.
 apply/(leR_trans _ (@aep _ P n _ He k0_k))/Pr_incl/subsetP => /= t.

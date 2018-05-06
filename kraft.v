@@ -151,6 +151,9 @@ Qed.
 Definition nat_of_ary (s : seq 'I_t) : nat :=
   \sum_(i < size s) nth ord0 s i * t ^ ((size s).-1 - i).
 
+Lemma nat_of_ary_nil:  nat_of_ary [::] = O.
+Proof. by rewrite /nat_of_ary /= big_ord0. Qed.
+
 Lemma nat_of_ary_nseq0 (n : nat) : nat_of_ary (nseq n ord0) = 0.
 Proof.
 rewrite /nat_of_ary (eq_bigr (fun=> O)) ?big1 //= => i _.
@@ -199,13 +202,12 @@ rewrite (addnC i) subnDA; congr (_ - _).
 by rewrite -subn1 -subnDA (addnC 1) subnDA addnK subn1.
 Qed.
 
-Lemma nat_of_ary_ub (s : seq 'I_t) : nat_of_ary s < #|'I_t| ^ size s.
+Lemma nat_of_ary_ub (s : seq 'I_t) : nat_of_ary s < t ^ size s.
 Proof.
 elim/last_ind : s => [|a b IH]; first by rewrite /nat_of_ary big_ord0 expn0.
-rewrite -{1}cats1 nat_of_ary_cat expn1 size_rcons /=.
-rewrite (@leq_trans (nat_of_ary a * #|'I_t| + #|'I_t|)) //.
-  by rewrite ltn_add2l nat_of_ary1 card_ord.
-by rewrite -mulSnr expnSr leq_pmul2r // card_ord.
+rewrite -{1}cats1 nat_of_ary_cat expn1 size_rcons /= card_ord.
+rewrite (@leq_trans (nat_of_ary a * t + t)) // ?ltn_add2l ?nat_of_ary1 //.
+by rewrite -mulSnr expnSr leq_pmul2r.
 Qed.
 
 Lemma prefix_modn (s1 s2 : seq 'I_t) : prefix s1 s2 ->
@@ -215,7 +217,7 @@ Proof.
 case/prefixP => s3 H.
 rewrite -{1 2}(eqP H) nat_of_ary_cat size_cat (addnC (_ s1)) addnK; congr addn.
 rewrite -{1 2}(eqP H) nat_of_ary_cat size_cat (addnC (_ s1)) addnK.
-by rewrite modnMDl modn_small // nat_of_ary_ub.
+by rewrite modnMDl modn_small // card_ord nat_of_ary_ub.
 Qed.
 
 Lemma ary_of_natK n : nat_of_ary (ary_of_nat n) = n.

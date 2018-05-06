@@ -137,12 +137,12 @@ pose A_ := fun b => match b with 0 => A0 | 1 => A1 end.
 have cov : A_ 0 :|: A_ 1 = setT.
   rewrite /= /A0 /A1.
   have -> : [set x | P x <b Q x] = ~: [set x | Q x <b= P x].
-    apply/setP => a; by rewrite in_set in_setC in_set ltRNge.
+    apply/setP => a; by rewrite in_set in_setC in_set ltRNge'.
   by rewrite setUCr.
 have dis : A_ 0 :&: A_ 1 = set0.
   rewrite /A_ /A0 /A1.
   have -> : [set x | P x <b Q x] = ~: [set x | Q x <b= P x].
-    apply/setP => a; by rewrite in_set in_setC in_set ltRNge.
+    apply/setP => a; by rewrite in_set in_setC in_set ltRNge'.
   by rewrite setICr.
 pose P_A := bipart dis cov P.
 pose Q_A := bipart dis cov Q.

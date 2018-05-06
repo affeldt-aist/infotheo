@@ -146,12 +146,6 @@ apply sqrt_lt_1 in H; try exact: pow_even_ge0.
 by rewrite /= !mulR1 !sqrt_square in H.
 Qed.
 
-Lemma sqrRB a b : (a - b) ^ 2 = a ^ 2 - 2 * a * b + b ^ 2.
-Proof. rewrite /= !mulR1 !mulRDr !mulRBl /=; field. Qed.
-
-Lemma sqrRD a b : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2.
-Proof. rewrite /= !mulR1 !mulRDl !mul1R !mulRDr /=; field. Qed.
-
 Lemma x_x2_eq q : q * (1 - q) = / 4 - / 4 * (2 * q - 1) ^ 2.
 Proof. field. Qed.
 
@@ -183,13 +177,6 @@ Proof.
 move=> x_pos.
 elim => [/= | n IH] => //.
 rewrite -(mulR0 0); apply leR_pmul => //; exact/leRR.
-Qed.
-
-(* TODO: rename *)
-Lemma Rmult_pow_inv r (n m : nat) : r <> 0 -> (m <= n)%nat -> r ^ n * (/ r) ^ m = r ^ (n - m).
-Proof.
-move=> Hr ab; symmetry.
-rewrite (pow_RN_plus r _ m) // plusE -minusE subnK // powRV //; exact/eqP.
 Qed.
 
 End pow_sect.

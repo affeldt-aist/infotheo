@@ -129,12 +129,12 @@ apply (@leR_trans ((INR n.+1 / INR n) ^ K * aux)); last first.
       rewrite -mulRA mulVR // ?mulR1 ?INR_eq0 ?gtn_eqF // (_ : 2 = INR 2) //.
       rewrite -mult_INR; apply/le_INR/leP; by rewrite multE -{1}(mul1n n) ltn_pmul2r.
   - exact/leRR.
-rewrite powRM -mulRA; apply leR_pmul => //.
+rewrite expRM -mulRA; apply leR_pmul => //.
 - exact/pow_ge0/ltRW/lt_0_INR/ltP.
 - exact/leRR.
 - apply invR_le => //.
   + apply mulR_gt0; last exact aux_gt0.
-    rewrite powRV ?INR_eq0 //; exact/invR_gt0/pow_gt0.
+    rewrite expRV ?INR_eq0 //; exact/invR_gt0/pow_gt0.
   + rewrite -exp2_Ropp mulNR oppRK /exp2.
     have nDeltaln2 : 0 <= INR n * Delta * ln 2.
       apply mulR_ge0; last exact/ltRW.
@@ -155,9 +155,9 @@ rewrite powRM -mulRA; apply leR_pmul => //.
         apply/eqP; rewrite pow_eq0 mulR_eq0 negb_or ln2_neq0 andbT; exact/eqP/gtR_eqF.
       rewrite invRK; last by apply/eqP; rewrite INR_eq0.
       rewrite (_ : / (/ INR n) ^ K = (INR n) ^ K); last first.
-        rewrite powRV ?INR_eq0 // invRK //; apply/eqP/pow_not0; by rewrite INR_eq0.
+        rewrite expRV ?INR_eq0 // invRK //; apply/eqP/pow_not0; by rewrite INR_eq0.
       rewrite /Rdiv; congr (_ * _).
-      by rewrite -mulRA -powS mulRC -powRM mulRA.
+      by rewrite -mulRA -powS mulRC -expRM mulRA.
 Qed.
 
 End channel_coding_converse.

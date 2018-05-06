@@ -194,6 +194,41 @@ Qed.
 
 End seq_ext.
 
+Section Pad.
+
+Variables (A : Type) (a : A).
+Implicit Types s t : seq A.
+
+Definition pad_seq s n :=
+  if size s <= n then s ++ nseq (n - size s) a else take n s.
+
+Lemma size_pad_seq s n : size (pad_seq s n) = n.
+Proof.
+rewrite /pad_seq; case: ifPn; last by rewrite -ltnNge size_take => ->.
+by rewrite size_cat size_nseq => /subnKC.
+Qed.
+
+Lemma pad_seq_size s n : size s = n -> pad_seq s n = s.
+Proof. by rewrite /pad_seq => ->; rewrite leqnn subnn cats0. Qed.
+
+Definition pad_seqL s n :=
+  if size s <= n then nseq (n - size s) a ++ s else take n s.
+
+Lemma pad_seqL_inj n s t : size s = n -> size t = n ->
+  pad_seqL s n = pad_seqL t n -> s = t.
+Proof.
+elim: n s t => [[] // [] // | ] n IH [|a' ta] // [|b tb] // [Ha] [Hb].
+by rewrite /pad_seqL /= Ha Hb ltnS leqnn subnn.
+Qed.
+
+Lemma size_pad_seqL n s : size (pad_seqL s n) = n.
+Proof.
+rewrite /pad_seqL; case: ifPn; last by rewrite -ltnNge size_take => ->.
+by rewrite size_cat size_nseq => /subnK.
+Qed.
+
+End Pad.
+
 Section seq_eqType_ext.
 
 Variables A B : eqType.
@@ -735,6 +770,9 @@ Qed.
 Canonical bseq_finMixin n (T : finType) := Eval hnf in FinMixin (@bseq_enumP n T).
 Canonical bseq_finType n (T : finType) := Eval hnf in FinType (n.-bseq T) (bseq_finMixin n T).
 Canonical bseq_subFinType n (T: finType) := Eval hnf in [subFinType of n.-bseq T].
+
+Lemma size_bseq (n : nat) (T : Type) (bs : n.-bseq T) : size bs <= n.
+Proof. by case: bs. Qed.
 
 Section ordered_ranks.
 
