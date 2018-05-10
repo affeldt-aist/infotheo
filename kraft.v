@@ -63,13 +63,6 @@ move=> ab /prefixP[[|h t /eqP <-]]; first by rewrite cats0 (negbTE ab).
 by rewrite size_cat /= -addSnnS ltn_addr.
 Qed.
 
-Lemma prefix_neq_size a b : prefix a b -> a != b -> size a < size b.
-Proof.
-move/prefixP => [c /eqP  <-]; rewrite ltnNge; apply: contra.
-case: c => [|x y]; first by rewrite cats0.
-by rewrite size_cat /= -{2}(addn0 (size a)) leq_add2l ltn0.
-Qed.
-
 Lemma prefix_leq_size a b : prefix a b -> size a <= size b.
 Proof. by move/prefixP => [c /eqP  <-]; rewrite size_cat leq_addr. Qed.
 
@@ -617,7 +610,7 @@ move: (H' a).
 rewrite negb_exists => /forallP/(_ b); rewrite prefix_ab andbT -leqNgt => ba.
 move: size_ab; rewrite leqNgt => /negP; apply.
 rewrite ltn_neqAle; apply/andP; split.
-  by rewrite eq_sym ltn_eqF // prefix_neq_size.
+  by rewrite eq_sym ltn_eqF // prefixW.
 rewrite size_sigma //; last by rewrite -/t -(card_ord t) w_sub.
 rewrite size_sigma //; last by rewrite -/t -(card_ord t) w_sub.
 by rewrite nth_of_sorted // ba l_n /=.
