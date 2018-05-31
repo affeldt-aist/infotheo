@@ -106,7 +106,7 @@ Definition channel_ext n := 'rV[A]_n -> {dist 'rV[B]_n}.
 Definition f (x y : 'rV_n) := \rprod_(i < n) W `(y ``_ i | x ``_ i).
 
 Lemma f0 x y : 0 <= f x y.
-Proof. apply rprodr_ge0 => ?; exact: dist_nonneg. Qed.
+Proof. apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
 
 Lemma f1 x : \rsum_(y in 'rV_n) f x y = 1%R.
 Proof.
@@ -122,7 +122,7 @@ suff H : \rsum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1%R.
   - move=> _; apply eq_bigr => i _; by rewrite ffunE.
 rewrite -bigA_distr_bigA /= /f'.
 transitivity (\rprod_(i < n) 1%R); first by apply eq_bigr => i _; rewrite pmf1.
-by rewrite big_const_ord iter_Rmult pow1.
+by rewrite big_const_ord iter_mulR pow1.
 Qed.
 
 Definition c : channel_ext n := locked (fun x => makeDist (f0 x) (f1 x)).
@@ -140,8 +140,8 @@ Lemma DMCE {A B : finType} n (W : `Ch_1(A, B)) b a :
   W ``(b | a) = \rprod_(i < n) W (a ``_ i) (b ``_ i).
 Proof. rewrite /DMC.c; by unlock. Qed.
 
-Lemma DMC_nonneg {A B : finType} n (W : `Ch_1(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
-Proof. by apply dist_nonneg. Qed.
+Lemma DMC_ge0 {A B : finType} n (W : `Ch_1(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
+Proof. exact: dist_ge0. Qed.
 
 Section DMC_sub_vec.
 
@@ -194,7 +194,7 @@ Variable W  : `Ch_1(A, B).
 Definition f (b : B) := \rsum_(a in A) W a b * P a.
 
 Lemma f0 (b : B) : 0 <= f b.
-Proof. apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/dist_nonneg. Qed.
+Proof. apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/dist_ge0. Qed.
 
 Lemma f1 : \rsum_(b in B) f b = 1.
 Proof.
@@ -259,7 +259,7 @@ Variable W : `Ch_1(A, B).
 Definition f (ab : A * B) := W ab.1 ab.2 * P ab.1.
 
 Lemma f0 (ab : A * B) : 0 <= f ab.
-Proof. apply: mulR_ge0; by [apply ptm0 | apply dist_nonneg]. Qed.
+Proof. apply: mulR_ge0; by [apply ptm0 | apply dist_ge0]. Qed.
 
 Lemma f1 : \rsum_(ab | ab \in {: A * B}) (W ab.1) ab.2 * P ab.1 = 1.
 Proof.
@@ -337,7 +337,7 @@ case/boolP : (P a == 0); move=> Hcase.
     congr (- _).
     apply eq_bigr => // b _.
     by rewrite {1}JointDist.dE Hcase !(mul0R, mulR0).
-  by rewrite big_const iter_Rplus mulR0 oppR0.
+  by rewrite big_const iter_addR mulR0 oppR0.
 - rewrite mulRC -(mulR1 (-(log (P a) * P a))) -(pmf1 (W a)).
   rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) mulRN; f_equal.
   rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) -big_split /=.
@@ -346,8 +346,8 @@ case/boolP : (P a == 0); move=> Hcase.
   - move/eqP in Hcase2.
     by rewrite {1}JointDist.dE Hcase2 !(mul0R, mulR0, addR0).
   - rewrite {2}JointDist.dE /log LogM; last 2 first.
-    + apply/ltRP; rewrite lt0R Hcase2 /=; exact/leRP/dist_nonneg.
-    + apply/ltRP; rewrite lt0R Hcase /=; exact/leRP/dist_nonneg.
+    + apply/ltRP; rewrite lt0R Hcase2 /=; exact/leRP/dist_ge0.
+    + apply/ltRP; rewrite lt0R Hcase /=; exact/leRP/dist_ge0.
     + rewrite {1}JointDist.dE /=; by field.
 Qed.
 
@@ -385,6 +385,6 @@ Definition capacity (W : `Ch_1(A, B)) cap := lubound (fun P => `I(P ; W)) cap.
 
 Lemma capacity_uniq (W : `Ch_1(A, B)) r1 r2 :
   capacity W r1 -> capacity W r2 -> r1 = r2.
-Proof. case=> H1 H2 [H3 H4]; apply Rle_antisym; by [apply H2 | apply H4]. Qed.
+Proof. move=> [? H1] [? H2]; rewrite eqR_le; split; [exact: H1| exact: H2]. Qed.
 
 End capacity_definition.

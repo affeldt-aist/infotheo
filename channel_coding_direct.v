@@ -27,13 +27,13 @@ Variables (A M : finType) (P : dist A) (n : nat).
 Definition pmf := fun f : encT A M n => \rprod_(m in M) P `^ n (f m).
 
 Lemma pmf0 (f : {ffun M -> 'rV[A]_n}) : 0 <= pmf f.
-Proof. apply rprodr_ge0 => ?; exact: dist_nonneg. Qed.
+Proof. apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
 
 Lemma pmf1 : \rsum_(f | f \in {ffun M -> 'rV[A]_n}) pmf f = 1.
 Proof.
 rewrite -(bigA_distr_bigA (fun _ ta => P `^ n ta)) /=.
 rewrite [X in _ X](_ : 1 = \rprod_(i : M | xpredT i) 1); last first.
-  by rewrite big_const /= iter_Rmult pow1.
+  by rewrite big_const /= iter_mulR pow1.
 apply eq_bigr => _ _; by rewrite (pmf1 (P `^ n)).
 Qed.
 
@@ -87,8 +87,8 @@ set x := \rsum_(f <- _) _ in H.
 have : \rsum_(f : encT A M n) Wght.d P f * epsilon <= x.
   rewrite /x.
   apply ler_rsum_l => //= i _.
-  - apply leR_wpmul2l; [exact/dist_nonneg | exact/Rnot_lt_le/abs].
-  - apply mulR_ge0; [exact/dist_nonneg | exact/echa_pos].
+  - apply leR_wpmul2l; [exact/dist_ge0 | exact/Rnot_lt_le/abs].
+  - apply mulR_ge0; [exact/dist_ge0 | exact/echa_ge0].
 apply/Rlt_not_le/(@ltR_leR_trans epsilon) => //.
 rewrite -big_distrl /= (pmf1 (Wght.d P)) mul1R; exact/leRR.
 Qed.
@@ -317,7 +317,7 @@ transitivity (\rsum_(j : {ffun 'I_k -> 'rV[_]_n})
   - move=> i _; apply eq_bigr => j _; by rewrite ffunE /= tcastE -enum_rank_ord.
 rewrite -(bigA_distr_bigA (fun m xn => Q `^ _ xn)) /= big_const.
 rewrite (_ : \rsum_(_ <- _) _ = 1%R); last by rewrite pmf1.
-by rewrite iter_Rmult pow1.
+by rewrite iter_mulR pow1.
 Qed.
 
 (* TODO: move? *)
@@ -716,16 +716,16 @@ have [k Hk] : exists k, (log (INR k.+1) / INR n = r)%R.
   rewrite prednK; last first.
     apply/ltP/INR_lt.
     rewrite INR_Zabs_nat; [by rewrite -Hn2 | apply le_IZR; by rewrite -Hn2].
-  rewrite -(@eqR_mul2l (INR n)); last by apply/eqP; rewrite INR_eq0 -lt0n.
-  rewrite mulRCA mulRV ?INR_eq0 -?lt0n // mulR1 -(exp2K (INR n * r)) Hn2 INR_Zabs_nat //.
+  rewrite -(@eqR_mul2l (INR n)); last by rewrite INR_eq0; apply/eqP; rewrite -lt0n.
+  rewrite mulRCA mulRV ?INR_eq0' -?lt0n // mulR1 -(exp2K (INR n * r)) Hn2 INR_Zabs_nat //.
   apply le_IZR; by rewrite -Hn2.
 set M := [finType of 'I_k.+1].
 exists [finType of 'I_k.+1].
 split; first by rewrite /= card_ord.
 split.
   have -> : (INR n * r)%R = log (INR k.+1).
-    rewrite -Hk mulRCA mulRV ?INR_eq0 -?lt0n ?mulR1 //; by case: Hn.
-  rewrite logK; last exact/lt_0_INR/ltP.
+    rewrite -Hk mulRCA mulRV ?INR_eq0' -?lt0n ?mulR1 //; by case: Hn.
+  rewrite logK; last exact/ltR0n.
   by rewrite Int_part_INR Zabs_nat_Z_of_nat card_ord.
 move=> Jtdec.
 rewrite /CodeErrRate.
@@ -750,7 +750,8 @@ rewrite [X in X < _](_ : _ = (\rsum_(f : encT A M n) Wght.d P f * (e(W, mkCode f
     apply eq_bigr => m' _.
     apply error_rate_symmetry.
     by move: Hepsilon0; rewrite /epsilon0_condition; case => /ltRW.
-  by rewrite exchange_big /= big_const /= iter_Rplus div1R mulRA mulVR ?mul1R // INR_eq0 card_ord.
+  rewrite exchange_big /= big_const /= iter_addR div1R mulRA mulVR ?mul1R //.
+  by rewrite INR_eq0' card_ord.
 set Cal_E := @cal_E M n epsilon0.
 apply (@leR_ltR_trans
 (\rsum_(f : encT A M n) Wght.d P f * Pr (W ``(| f ord0)) (~: Cal_E f ord0) +
@@ -759,7 +760,7 @@ apply (@leR_ltR_trans
   rewrite exchange_big /= -big_split /=.
   apply ler_rsum => /= i _.
   rewrite -big_distrr /= -mulRDr.
-  apply leR_wpmul2l; first exact: (dist_nonneg (Wght.d P)).
+  apply leR_wpmul2l; first exact: (dist_ge0 (Wght.d P)).
   rewrite [X in X <= _](_ : _ = Pr (W ``(| i ord0))
     (~: Cal_E i ord0 :|: \bigcup_(i0 : M | i0 != ord0) Cal_E i i0)); last first.
     apply Pr_ext; apply/setP => tb /=.
@@ -774,7 +775,7 @@ have -> : lhs = (INR #| M |.-1 * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | pr
   rewrite {}/lhs.
   rewrite [RHS](_ : _ = \rsum_(H0 < k.+1 | H0 != ord0)
     Pr ((P `^ n) `x ((`O( P , W )) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0])%R; last first.
-    rewrite big_const /= iter_Rplus.
+    rewrite big_const /= iter_addR.
     do 2 f_equal.
     rewrite card_ord /=.
     transitivity (#| setT :\ (@ord0 k)|).
@@ -810,12 +811,12 @@ have -> : INR #| M | = exp2 (log (INR #| M |)).
 rewrite -ExpD.
 rewrite (_ : _ + _ = - INR n * (`I(P ; W) - log (INR #| M |) / INR n - 3 * epsilon0))%R; last first.
   field.
-  apply/eqP; rewrite INR_eq0 gtn_eqF //; by case: Hn.
+  apply/eqP; rewrite INR_eq0' gtn_eqF //; by case: Hn.
 rewrite (_ : _ / _ = r)%R; last by rewrite -Hk card_ord.
 apply (@ltR_trans (exp2 (- INR n * epsilon0))).
   apply Exp_increasing => //.
   rewrite !mulNR ltR_oppr oppRK; apply/ltR_pmul2l.
-  - apply lt_0_INR; case: Hn => Hn _; exact/ltP.
+  - apply ltR0n; by case: Hn.
   - case: Hepsilon0 => _ [_ Hepsilon0].
     apply (@ltR_pmul2l 4) in Hepsilon0; last by fourier.
     rewrite mulRCA mulRV ?mulR1 in Hepsilon0; last exact/eqP.
@@ -886,7 +887,7 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
         move=> ?; fourier.
       apply (@leR_trans (INR (Z.abs_nat (up (- log epsilon0 / epsilon0))))).
         case: (Z_lt_le_dec (up (- log epsilon0 / epsilon0)) 0) => H1.
-          apply (@leR_trans 0); [exact/IZR_le/Zlt_le_weak | exact: pos_INR].
+          apply (@leR_trans 0); [exact/IZR_le/Zlt_le_weak | exact: leR0n].
         rewrite INR_Zabs_nat //; exact/leRR.
       apply le_INR.
       rewrite /supermax maxnA.
@@ -910,7 +911,7 @@ case: (good_code_sufficient_condition HM H) => f Hf.
 exists n, M, (mkCode f (jtdec P W epsilon0 f)); split => //.
 rewrite /CodeRate M_k INR_Zabs_nat; last exact/Int_part_pos.
 suff Htmp : IZR (Int_part (exp2 (INR n * r))) = exp2 (INR n * r).
-  rewrite Htmp exp2K /Rdiv -mulRA mulRCA mulRV ?INR_eq0 -?lt0n ?mulR1 //; by case: Hn.
+  rewrite Htmp exp2K /Rdiv -mulRA mulRCA mulRV ?INR_eq0' -?lt0n ?mulR1 //; by case: Hn.
 apply frac_Int_part; by case: Hn => _ [_ []].
 Qed.
 

@@ -136,7 +136,7 @@ apply/eqP/setP => b.
 rewrite !inE.
 case/boolP: (b == a) => Hb.
   rewrite (eqP Hb) Xa1; apply/eqP => Hb'.
-  apply (Rlt_irrefl 1).
+  apply (ltRR 1).
   by rewrite {1}Hb'.
 by rewrite H // eqxx.
 Qed.

@@ -60,11 +60,11 @@ have {Htmp}Htmp : (lam * n = rho * m)%nat.
   transitivity (\sum_(n0 < n) lam).
     by rewrite big_const iter_addn addn0 card_ord.
   apply eq_bigr => i _; exact/esym/Hlam.
-rewrite -(@eqR_mul2l (INR n)); last exact/not_0_INR.
-rewrite mulRCA mulRV ?INR_eq0 ?mulR1; last exact/eqP.
-rewrite -(@eqR_mul2l (INR rho)); last exact/not_0_INR.
+rewrite -(@eqR_mul2l (INR n)); last exact/INR_eq0.
+rewrite mulRCA mulRV ?INR_eq0' ?mulR1; last exact/eqP.
+rewrite -(@eqR_mul2l (INR rho)); last exact/INR_eq0.
 rewrite mulRA [in X in _ = X](mulRC (INR rho)).
-rewrite -mulRA (mulRCA (INR rho)) mulRV ?INR_eq0 ?mulR1; last exact/eqP.
+rewrite -mulRA (mulRCA (INR rho)) mulRV ?INR_eq0' ?mulR1; last exact/eqP.
 by rewrite -mult_INR multE -Htmp mult_INR mulRC.
 Qed.
 
@@ -100,7 +100,7 @@ have Hsum : tmp = 1%R.
   apply/(@big_singl_rV _ _ _ _ (fun i => if a' == i then (1 - p)%R else p)).
   by rewrite -Binary.f_sum_swap // Binary.f1.
 rewrite Hsum 2!mxE mulR1 BSC.cE /Binary.f /= eq_sym; field.
-split; apply not_0_INR => //; by rewrite card_A.
+split; rewrite INR_eq0 //; by rewrite card_A.
 Qed.
 
 End post_proba_bsc_unif.
@@ -514,7 +514,7 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
     rewrite UniformSupport.E ?inE //.
     rewrite /PosteriorProbability.den.
     have HH : INR #|[set cw in kernel H]| <> 0.
-      apply/not_0_INR/eqP.
+      apply/INR_eq0/eqP.
       rewrite cards_eq0.
       apply/set0Pn; exists t; by rewrite inE.
     rewrite -(mulRC (W ``(y | t))) -[X in X = _]mulR1.
@@ -589,7 +589,7 @@ rewrite [in X in X = _](bigID [pred x | x \in kernel H])
   /=.
 rewrite addRC (eq_bigr (fun=> 0)); last first.
   by move=> ta /negbTE Hta; rewrite checksubsum_in_kernel Hta mulR0.
-rewrite big_const iter_Rplus mulR0 add0R.
+rewrite big_const iter_addR mulR0 add0R.
 apply eq_bigr => ta Ha.
 by rewrite checksubsum_in_kernel Ha mulR1 -DMCE.
 Qed.

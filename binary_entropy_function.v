@@ -20,7 +20,7 @@ Lemma derivable_pt_ln_Rminus x : x < 1 -> derivable_pt ln (1 - x).
 Proof.
 move=> Hx.
 exists (/ (1 - x)).
-apply derivable_pt_lim_ln, Rlt_Rminus.
+apply derivable_pt_lim_ln, subR_gt0.
 assumption.
 Defined.
 

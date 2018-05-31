@@ -88,9 +88,9 @@ Lemma ln_id_eq x : 0 < x -> ln x = x - 1 -> x = 1.
 Proof.
 move=> Hx' Hx.
 case (total_order_T x 1) => [ [] // Hx2 | Hx2]; contradict Hx.
-- apply Rlt_not_eq, (@ltR_add2r (- (x - 1))); rewrite (addRC (x - 1)) Rplus_opp_l.
+- apply/ltR_eqF/(@ltR_add2r (- (x - 1))); rewrite (addRC (x - 1)) Rplus_opp_l.
   apply ln_idlt0_xlt1; split; [exact Hx' | exact Hx2].
-- apply Rlt_not_eq, (@ltR_add2r (- (x - 1))); rewrite (addRC (x - 1)) Rplus_opp_l.
+- apply/ltR_eqF/(@ltR_add2r (- (x - 1))); rewrite (addRC (x - 1)) Rplus_opp_l.
   by apply ln_idlt0_xgt1.
 Qed.
 
@@ -179,7 +179,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       rewrite -invRM; last 2 first.
         apply/eqP; rewrite invR_neq0 //; exact/eqP/gtR_eqF.
         apply/eqP; rewrite pow_eq0 oppR_eq0; exact/eqP/ltR_eqF.
-      rewrite -(invRK (exp X)); last by apply not_eq_sym, Rlt_not_eq, exp_pos.
+      rewrite -(invRK (exp X)); last exact/gtR_eqF/exp_pos.
       apply ltR_inv => //.
         exact/invR_gt0/exp_pos.
         apply/mulR_gt0; first fourier.
@@ -188,7 +188,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
         exact/exp_strict_lb/oppR_gt0.
     * apply (@leR_pmul2r (/ 2)); first exact/invR_gt0.
       rewrite mulRC mulRA mulVR ?mul1R //; last exact/eqP/gtR_eqF.
-      rewrite -(invRK eps); last by apply not_eq_sym, Rlt_not_eq.
+      rewrite -(invRK eps); last exact/gtR_eqF.
       rewrite -invRM //; last exact/gtR_eqF/invR_gt0.
       apply leR_inv => //.
       - apply/mulR_gt0 => //; exact: invR_gt0.
@@ -239,7 +239,7 @@ Proof. by rewrite -derive_pt_f_eq_g. Qed.
 Lemma derive_xlnx_aux2 x (x_pos : 0 < x) : derive_pt xlnx x (derivable_pt_xlnx x_pos) = ln x + 1.
 Proof.
 rewrite derive_xlnx_aux1 /f derive_pt_mult derive_pt_ln.
-rewrite mulRV; last exact/eqP/not_eq_sym/Rlt_not_eq.
+rewrite mulRV; last exact/eqP/gtR_eqF.
 rewrite (_ : derive_pt ssrfun.id x (derivable_id x) = 1) ; first by rewrite mul1R.
 rewrite -(derive_pt_id x).
 by apply proof_derive_irrelevance.
@@ -571,7 +571,7 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
   apply (@leR_trans (- xlnx `| x - y |)).
     apply xlnx_delta_bound.
     - split.
-      - exact/Rabs_pos_lt/Rlt_not_eq/Rlt_minus.
+      - exact/Rabs_pos_lt/ltR_eqF/Rlt_minus.
       - apply (@leR_trans a) => //; by apply Ha.
     - split => //.
       by rewrite leR_subr_addr -Haux.
@@ -599,7 +599,7 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
   apply (@leR_trans (- xlnx `| y - x |)).
     apply xlnx_delta_bound.
     - split.
-      - by apply Rabs_pos_lt, Rlt_not_eq, Rlt_minus.
+      - exact/Rabs_pos_lt/ltR_eqF/Rlt_minus.
       - apply (@leR_trans a) => //; by apply Ha.
     - split => //.
       by rewrite leR_subr_addr -Haux.

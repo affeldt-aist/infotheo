@@ -47,12 +47,12 @@ case/andP. move/leRP => H2. move/leRP => H3.
 apply/andP; split; apply/leRP.
 - apply/(leR_trans _ H2)/Exp_le_increasing => //.
   rewrite !mulNR.
-  rewrite leR_oppr oppRK; apply leR_wpmul2l; first exact: pos_INR.
+  rewrite leR_oppr oppRK; apply leR_wpmul2l; first exact/leR0n.
   apply leR_add2l, Rdiv_le => //; fourier.
 - eapply Rle_trans; first by apply H3.
   apply Exp_le_increasing => //.
   rewrite !mulNR.
-  rewrite leR_oppr oppRK; apply leR_wpmul2l; first exact: pos_INR.
+  rewrite leR_oppr oppRK; apply leR_wpmul2l; first exact/leR0n.
   apply leR_add2l; rewrite leR_oppr oppRK; apply Rdiv_le => //; fourier.
 Qed.
 
@@ -72,10 +72,10 @@ suff Htmp : INR #| `TS P n epsilon | * exp2 (- INR n * (`H P + epsilon)) <b= 1.
   by rewrite /Rdiv -exp2_Ropp -mulNR.
 rewrite -(pmf1 (P `^ n)).
 rewrite (_ : _ * _ = \rsum_(x in `TS P n epsilon) (exp2 (- INR n * (`H P + epsilon)))); last first.
-  by rewrite big_const iter_Rplus.
+  by rewrite big_const iter_addR.
 apply/leRP/ler_rsum_l => //=.
 - move=> i; rewrite inE; by case/andP => /leRP.
-- move=> a _; exact/dist_nonneg.
+- move=> a _; exact/dist_ge0.
 Qed.
 
 Lemma typ_seq_definition_equiv x : x \in `TS P n epsilon ->
@@ -90,8 +90,8 @@ Lemma typ_seq_definition_equiv2 x : x \in `TS P n.+1 epsilon ->
 Proof.
 rewrite inE /typ_seq.
 case/andP => H1 H2; split;
-  apply/leRP; rewrite -(leR_pmul2l' (INR n.+1)) ?ltR0n //;
-  rewrite div1R mulRA mulRN mulRV ?INR_eq0 // mulN1R; apply/leRP.
+  apply/leRP; rewrite -(leR_pmul2l' (INR n.+1)) ?ltR0n' //;
+  rewrite div1R mulRA mulRN mulRV ?INR_eq0' // mulN1R; apply/leRP.
 - rewrite leR_oppr.
   apply/(@Exp_le_inv 2) => //.
   rewrite LogK //; last by apply/(ltR_leR_trans (exp2_gt0 _)); apply/leRP: H1.
@@ -147,18 +147,17 @@ have -> : Pr P `^ n.+1 (~: p) =
       * symmetry.
         apply/orP; left.
         rewrite -leRNgt' in LHS; move/leRP in LHS.
-        apply/eqP/Rle_antisym => //; exact: dist_nonneg.
+        apply/eqP; rewrite eqR_le; split => //; exact: dist_ge0.
       * rewrite /typ_seq negb_and in LHS.
         case/orP : LHS => LHS.
         - apply/esym.
           case/boolP : (P `^ n.+1 i == 0) => /= H1; first by [].
-          rewrite lt0R H1 /=; apply/andP; split; first exact/leRP/dist_nonneg.
+          rewrite lt0R H1 /=; apply/andP; split; first exact/leRP/dist_ge0.
           rewrite -ltRNge' in LHS; move/ltRP in LHS.
           apply (@Log_increasing 2) in LHS => //; last first.
-            apply/ltRP; rewrite lt0R H1 /=; exact/leRP/dist_nonneg.
+            apply/ltRP; rewrite lt0R H1 /=; exact/leRP/dist_ge0.
           move/ltRP : LHS.
-          rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivr_mulr; last first.
-            by apply/ltRP; rewrite ltR0n.
+          rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivr_mulr; last exact/ltR0n.
           rewrite /Rdiv mulRC => /ltRP; rewrite ltR_oppr => /ltRP.
           rewrite mulNR -ltR_subRL => LHS.
           rewrite mul1R Rabs_pos_eq //.
@@ -169,7 +168,7 @@ have -> : Pr P `^ n.+1 (~: p) =
           apply/andP; split; first exact/ltRP/(ltR_trans (exp2_gt0 _) LHS).
           apply (@Log_increasing 2) in LHS => //.
           move: LHS; rewrite /exp2 ExpK // => /ltRP.
-          rewrite mulRC mulRN -mulNR -ltR_pdivl_mulr; last exact/lt_0_INR/ltP.
+          rewrite mulRC mulRN -mulNR -ltR_pdivl_mulr; last exact/ltR0n.
           rewrite oppRD oppRK => LHS.
           have H2 : forall a b c, - a + b < c -> - c - a < - b by move=> *; fourier.
           move/ltRP/H2 in LHS.
@@ -184,14 +183,14 @@ have -> : Pr P `^ n.+1 (~: p) =
         apply (@Log_increasing_le 2) in H2 => //.
         rewrite /exp2 ExpK // in H2.
         move/leRP : H2.
-        rewrite mulRC mulRN -mulNR -leR_pdivl_mulr ?oppRD; last exact/lt_0_INR/ltP.
+        rewrite mulRC mulRN -mulNR -leR_pdivl_mulr ?oppRD; last exact/ltR0n.
         move/leRP => H2.
         have /(_ _ _ _ H2) {H2}H2 : forall a b c, - a + - b <= c -> - c - a <= b.
           by move=> *; fourier.
         apply (@Log_increasing_le 2) in H3 => //; last exact/ltRP.
         rewrite /exp2 ExpK // in H3.
         move/leRP : H3.
-        rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/lt_0_INR/ltP.
+        rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltR0n.
         rewrite oppRD oppRK div1R mulRC mulRN => /leRP H3.
         have /(_ _ _ _ H3) {H3}H3 : forall a b c, a <= - c + b -> - b <= - a - c.
           by move=> *; fourier.
@@ -210,7 +209,7 @@ have -> : Pr P `^ n.+1 [set x | P `^ n.+1 x == 0] = 0.
     apply eq_big => // i.
       by rewrite !inE.
     by rewrite inE => /eqP.
-  by rewrite big_const /= iter_Rplus mulR0.
+  by rewrite big_const /= iter_addR mulR0.
 rewrite add0R.
 apply/(leR_trans _ (@aep _ P n _ He k0_k))/Pr_incl/subsetP => /= t.
 rewrite inE /=.

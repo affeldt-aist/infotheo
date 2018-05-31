@@ -928,7 +928,7 @@ transitivity (\rsum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^ (m - 1) * p ^
   transitivity (\rsum_(i|wH (i : 'rV['F_2]_m) == 1%N) ((1 - p) ^ (m - 1) * p ^ 1)%R).
     by apply eq_bigr => i /= /eqP ->.
   done.
-by rewrite big_const iter_Rplus pow_1 /= -(mulRC p) mulRA -cardsE wH_m_card bin1.
+by rewrite big_const iter_addR pow_1 /= -(mulRC p) mulRA -cardsE wH_m_card bin1.
 Qed.
 
 Lemma binomial_theorem m p :

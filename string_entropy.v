@@ -22,7 +22,7 @@ Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
 Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl 0%:R).
 
 Local Hint Resolve leRR.
-Local Hint Resolve pos_INR.
+Local Hint Resolve leR0n.
 
 Lemma log_concave_gt0 x y t :
   0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
@@ -41,14 +41,14 @@ Let f_div_total (a : A) := f a / total.
 Lemma f_div_total_pos c : 0 <= f_div_total c.
 Proof.
 apply mulR_ge0 => //.
-apply /Rlt_le /invR_gt0 /lt_0_INR /ltP.
+apply /Rlt_le /invR_gt0 /ltR0n.
 by rewrite lt0n.
 Qed.
 
 Lemma f_div_total_1 : \rsum_(a in A) (mkPosFun f_div_total_pos) a = 1.
 Proof.
 rewrite /f_div_total -big_distrl -big_morph_plus_INR.
-by rewrite sum_f_total /= mulRV // INR_eq0.
+by rewrite sum_f_total /= mulRV // INR_eq0'.
 Qed.
 
 Definition seq_nat_dist := mkDist f_div_total_1.
@@ -112,15 +112,15 @@ rewrite -mulRN1 big_distrl big_distrr /=.
 apply eq_bigr => a _ /=.
 case: ifP => [/eqP -> | Hnum].
   by rewrite !mulRA !simplR.
-rewrite /Rdiv (mulRC N(a|s)) 3!(mulRA _%:R) !mulRV ?mul1R // ?INR_eq0 //.
+rewrite /Rdiv (mulRC N(a|s)) 3!(mulRA _%:R) !mulRV ?mul1R // ?INR_eq0' //.
 rewrite -mulRA mulRN1 /log /Log -mulNR -ln_Rinv.
   rewrite invRM ?invRK //; apply /eqP.
-  + by rewrite INR_eq0.
-  + by apply /invR_neq0; rewrite INR_eq0.
-  + by rewrite INR_eq0 Hnum.
+  + by rewrite INR_eq0'.
+  + by apply /invR_neq0; rewrite INR_eq0'.
+  + by rewrite INR_eq0' Hnum.
 apply mulR_gt0.
-  by apply /invR_gt0 /lt_0_INR /ltP; rewrite lt0n.
-by apply /lt_0_INR /ltP; rewrite lt0n Hnum.
+  by apply /invR_gt0 /ltR0n; rewrite lt0n.
+by apply /ltR0n; rewrite lt0n Hnum.
 Qed.
 
 Definition mulnRdep (x : nat) (y : x != O -> R) : R.
@@ -196,7 +196,7 @@ case/boolP: (ss' == [::]) => Hss'.
 have Hnum s : s \in ss' -> (N(a|s) > 0)%nat.
   by rewrite /ss' mem_filter lt0n => /andP [->].
 have Hnum': 0 < N(a|flatten ss').
-  apply /lt_0_INR /leP.
+  apply /ltR0n.
   destruct ss' => //=.
   rewrite /num_occ count_cat ltn_addr //.
   by rewrite Hnum // in_cons eqxx.
@@ -216,10 +216,10 @@ apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
   apply leR_wpmul2l => //.
   apply Log_increasing_le => //.
     apply Rlt_mult_inv_pos => //.
-    apply/lt_0_INR/ltP.
+    apply/ltR0n.
     by rewrite lt0n Hsum.
   apply leR_wpmul2r.
-    apply /Rlt_le /invR_gt0 /lt_0_INR /ltP.
+    apply /Rlt_le /invR_gt0 /ltR0n.
     by rewrite lt0n Hsum.
   apply /le_INR /leP.
   rewrite !size_flatten !sumn_big_addn.
@@ -231,13 +231,13 @@ apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
 have Htotal := esym (num_occ_flatten a ss').
 rewrite big_tnth in Htotal.
 have Hnum2 : N(a|flatten ss') != O.
-  rewrite -lt0n -ltR0n; exact/ltRP.
+  rewrite -lt0n -ltR0n'; exact/ltRP.
 set d := seq_nat_dist Htotal Hnum2.
 set r := fun i =>
   (size (tnth (in_tuple ss') i)) / N(a|tnth (in_tuple ss') i).
 have Hr: forall i, Rpos_interval (r i).
   rewrite /r /= => i.
-  apply Rlt_mult_inv_pos; apply /lt_0_INR /ltP.
+  apply Rlt_mult_inv_pos; apply /ltR0n.
     apply (@leq_trans N(a|tnth (in_tuple ss') i)).
       by rewrite Hnum // mem_tnth.
     by apply count_size.
@@ -254,7 +254,7 @@ rewrite -(big_tnth _ _ _ xpredT
      (size s) / N(a|s) *
      (N(a|s) / N(a|flatten ss')))).
 (* (6) Transform the statement to match the goal *)
-move/(@leR_wpmul2r N(a|flatten ss') _ _ (pos_INR _)).
+move/(@leR_wpmul2r N(a|flatten ss') _ _ (leR0n _)).
 rewrite !big_distrl /=.
 rewrite (eq_bigr
      (fun i => log (size i / N(a|i)) * N(a|i)));
@@ -267,7 +267,7 @@ rewrite (eq_bigr
      (fun i => size i * / N(a|flatten ss')));
   last first.
   move=> i Hi; rewrite !mulRA -(mulRA _ (/ _)).
-  by rewrite mulVR ?mulR1 // INR_eq0.
+  by rewrite mulVR ?mulR1 // INR_eq0'.
 rewrite -big_filter -/ss' -big_distrl -big_morph_plus_INR /=.
 by rewrite size_flatten sumn_big_addn big_map.
 Qed.
@@ -307,7 +307,7 @@ Definition hoH (k : nat) := / n%:R *
 Lemma hoH_decr (k : nat) : hoH k.+1 <= hoH k.
 Proof.
 rewrite /hoH; apply/leRP; rewrite leR_pmul2l'; last first.
-  by apply/ltRP/invR_gt0/ltRP; rewrite ltR0n lt0n.
+  by apply/ltRP/invR_gt0/ltRP; rewrite ltR0n' lt0n.
 (* TODO *)
 Abort.
 

@@ -51,9 +51,9 @@ have {rhs}-> : rhs = \rsum_(m in M) (1 - e(W, c) m).
   apply eq_bigl => t /=; by rewrite inE.
 set rhs := \rsum_(m | _ ) _.
 have {rhs}-> : rhs = INR #|M| - \rsum_(m in M) e(W, c) m.
-  rewrite /rhs {rhs} big_split /= big_const iter_Rplus mulR1.
+  rewrite /rhs {rhs} big_split /= big_const iter_addR mulR1.
   by rewrite -(big_morph _ morph_Ropp oppR0).
-by rewrite mulRDr -mulRA mulVR ?mulR1 ?INR_eq0 -?lt0n // mulRN.
+by rewrite mulRDr -mulRA mulVR ?mulR1 ?INR_eq0' -?lt0n // mulRN.
 Qed.
 
 End scha_facts.
@@ -107,7 +107,7 @@ rewrite (reindex_onto (@row_of_tuple B n) (@tuple_of_row B n)); last first.
   move=> i Hi; by rewrite tuple_of_rowK.
 rewrite (sum_tuples_ctypes (typed_prop tc m)) //.
 apply eq_bigr=> V HV.
-rewrite -mulRA mulRC -mulRA -iter_Rplus_Rmult -big_const.
+rewrite -mulRA mulRC -mulRA -iter_addR -big_const.
 apply eq_big => tb.
 - rewrite inE row_of_tupleK eqxx andbT.
   f_equal.
@@ -145,10 +145,10 @@ Hypothesis Vctyp : V \in \nu^{B}(P).
 
 Lemma success_factor_bound_part1 : success_factor tc V <= 1.
 Proof.
-apply/leRP; rewrite -(leR_pmul2l' (INR #|M|)) ?ltR0n //; apply/leRP.
+apply/leRP; rewrite -(leR_pmul2l' (INR #|M|)) ?ltR0n' //; apply/leRP.
 rewrite /success_factor /Rdiv -(mulRC (/ INR #|M|)) 2!mulRA.
-rewrite mulRV ?INR_eq0 -?lt0n // mul1R.
-rewrite -iter_Rplus_Rmult -big_const /=.
+rewrite mulRV ?INR_eq0' -?lt0n // mul1R.
+rewrite -iter_addR -big_const /=.
 rewrite (_ : \rsum_(m | m \in M ) 1 = \rsum_(m : M) 1); last exact/eq_bigl.
 rewrite big_distrr /=.
 apply: ler_rsum => m _.
@@ -210,7 +210,7 @@ Lemma success_factor_bound_part2 :
   success_factor tc V <=  exp2(INR n * `I(P ; V)) / INR #|M|.
 Proof.
 rewrite /success_factor -mulRA (mulRC (/ INR #|M|)) !mulRA.
-apply leR_wpmul2r; first exact/ltRW/invR_gt0/lt_0_INR/ltP.
+apply leR_wpmul2r; first exact/ltRW/invR_gt0/ltR0n.
 rewrite /mut_info /Rminus addRC addRA.
 rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last by rewrite /cond_entropy; field.
 rewrite mulRDr mulRN -mulNR /exp2 ExpD.
@@ -259,9 +259,9 @@ apply Rmax_case.
 - apply (@leR_trans (exp2(INR n * `I(P ; V)) / INR #|M|)); last first.
   + apply/Req_le/esym.
     rewrite /Rminus mulRDr mulRC.
-    rewrite Rmult_opp_opp -mulRA mulRN mulVR ?INR_eq0 //.
+    rewrite Rmult_opp_opp -mulRA mulRN mulVR ?INR_eq0' //.
     rewrite mulRN mulR1 /exp2 ExpD mulRC /Rdiv; f_equal.
-    rewrite Exp_Ropp LogK //; exact/lt_0_INR/ltP.
+    rewrite Exp_Ropp LogK //; exact/ltR0n.
   + exact/success_factor_bound_part2.
 Qed.
 
@@ -312,7 +312,7 @@ apply (@leR_trans (\rsum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
   move: (@arg_rmax2 [finType of (P_ n (A, B))] V0 [pred V | V \in \nu^{B}(P) ]
                     (fun V => exp_cdiv P V W * success_factor_bound M V P)).
   apply => //; by exists V.
-rewrite big_const iter_Rplus_Rmult /success_factor_bound.
+rewrite big_const iter_addR /success_factor_bound.
 apply leR_wpmul2r.
 - apply mulR_ge0; last exact/exp2_ge0.
   rewrite /exp_cdiv; case: ifP => _ //; exact/leRR.
@@ -354,14 +354,14 @@ apply (@leR_trans (INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c))); last fir
 apply (@leR_trans (\rsum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
   rewrite (_ : INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c) =
              \rsum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)); last first.
-    by rewrite big_const iter_Rplus_Rmult.
+    by rewrite big_const iter_addR.
   apply ler_rsum => P _.
   exact: (@arg_rmax2 _ P0 xpredT (fun P1 : P_ n (A) => scha(W, P1.-typed_code c))).
 rewrite success_decode // -(sum_messages_types c).
 rewrite div1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply ler_rsum => P _.
-apply/leRP; rewrite mulRC leR_pdivr_mulr; last by apply/ltRP; rewrite ltR0n.
-rewrite success_decode // div1R -mulRA mulRCA mulVR ?INR_eq0 -?lt0n // mulR1.
+apply/leRP; rewrite mulRC leR_pdivr_mulr; last exact/ltR0n.
+rewrite success_decode // div1R -mulRA mulRCA mulVR ?INR_eq0' -?lt0n // mulR1.
 apply/leRP/(@leR_trans (\rsum_(m | m \in enc_pre_img c P)
                      \rsum_(y | (dec (P.-typed_code c)) y == Some m)
                      (W ``(|(enc (P.-typed_code c)) m)) y)).
@@ -370,7 +370,7 @@ apply/leRP/(@leR_trans (\rsum_(m | m \in enc_pre_img c P)
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
 - apply ler_rsum_l => //= i Hi; first exact/leRR.
-  apply: rsumr_ge0 => ? _; exact/dist_nonneg.
+  apply: rsumr_ge0 => ? _; exact/dist_ge0.
 Qed.
 
 End success_bound_sect.

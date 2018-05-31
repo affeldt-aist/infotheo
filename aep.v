@@ -123,7 +123,7 @@ Variable P : dist A.
 Definition aep_bound epsilon := (aep_sigma2 P / epsilon ^ 3)%R.
 
 Lemma aep_bound_pos e (_ : 0 < e) : 0 <= aep_bound e.
-Proof. apply Rle_mult_inv_pos; by [apply aep_sigma2_pos | apply pow_lt]. Qed.
+Proof. apply divR_ge0; [exact: aep_sigma2_pos | exact/pow_lt]. Qed.
 
 Lemma aep_bound_decreasing e e' : 0 < e' <= e -> aep_bound e <= aep_bound e'.
 Proof.
@@ -151,13 +151,13 @@ move=> Hbound.
 apply (@leR_trans (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R); last first.
   rewrite /aep_bound in Hbound.
   apply (@leR_wpmul2r (epsilon / INR n.+1)) in Hbound; last first.
-    apply Rle_mult_inv_pos; [exact/ltRW/Hepsilon | exact/lt_0_INR/ltP].
-  rewrite [in X in _ <= X]mulRCA mulRV ?INR_eq0 // ?mulR1 in Hbound.
+    apply divR_ge0; [exact/ltRW/Hepsilon | exact/ltR0n].
+  rewrite [in X in _ <= X]mulRCA mulRV ?INR_eq0' // ?mulR1 in Hbound.
   apply/(leR_trans _ Hbound)/Req_le; field.
-  split; [exact: not_0_INR | exact: gtR_eqF].
+  split; [by rewrite INR_eq0 | exact: gtR_eqF].
 move: (sum_mlog_prod_isum_map_mlog P n) => Hisum.
 move: (wlln (@E_map_mlog _ P n) (@V_map_mlog _ P n) Hisum Hepsilon) => law_large.
-apply: leR_trans; last exact: law_large.
+apply: (leR_trans _ law_large).
 apply Pr_incl; apply/subsetP => ta; rewrite 2!inE.
 case/andP => H1.
 rewrite [--log _]lock /= -lock.
@@ -168,7 +168,7 @@ rewrite /p1 /p2 {p1 p2}.
 congr (_ * _)%R.
 rewrite /map_mlog /=.
 rewrite TupleDist.dE.
-apply log_rmul_rsum_mlog, (rprodr_gt0_inv (dist_nonneg P)).
+apply log_rmul_rsum_mlog, (rprodr_gt0_inv (dist_ge0 P)).
 move: H1; by rewrite TupleDist.dE => /ltRP.
 Qed.
 

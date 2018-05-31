@@ -19,8 +19,7 @@ Proof. move=> x0; rewrite -ln_1; exact: ln_increasing. Qed.
 Lemma ln2_gt0 : 0 < ln 2. Proof. apply ln_pos; fourier. Qed.
 Local Hint Resolve ln2_gt0.
 
-Lemma ln2_neq0 : ln 2 != 0.
-Proof. exact/eqP/nesym/Rlt_not_eq. Qed.
+Lemma ln2_neq0 : ln 2 != 0. Proof. exact/eqP/gtR_eqF. Qed.
 
 Lemma ln_increasing_le a b : 0 < a -> a <= b -> ln a <= ln b.
 Proof.
@@ -68,9 +67,9 @@ rewrite /exp_dev derive_pt_minus derive_pt_exp; congr (_ - _).
 rewrite derive_pt_mult derive_pt_const mulR0 addR0 derive_pt_pow.
 rewrite mulRC mulRA mulRC; congr (_ * _).
 rewrite factS mult_INR invRM; last 2 first.
-  by apply/eqP; rewrite INR_eq0.
-  by apply/eqP; rewrite INR_eq0 -lt0n fact_gt0.
-by rewrite mulRC mulRA mulRV ?mul1R // INR_eq0.
+  exact/INR_eq0.
+  apply/eqP; by rewrite INR_eq0' -lt0n fact_gt0.
+by rewrite mulRC mulRA mulRV ?mul1R // INR_eq0'.
 Qed.
 
 Let exp_dev_gt0 : forall n r, 0 < r -> 0 < exp_dev n r.
@@ -249,17 +248,12 @@ Lemma Exp_INR n : (0 < n)%nat -> forall m, Exp (INR n) (INR m) = INR (expn n m).
 Proof.
 move=> n0.
 elim=> [|m IH]; first by rewrite /Exp mul0R exp_0.
-rewrite S_INR ExpD expnS mult_INR IH /Exp mul1R exp_ln; [ by rewrite mulRC | ].
-by apply/ltRP; rewrite ltR0n.
+rewrite S_INR ExpD expnS mult_INR IH /Exp mul1R exp_ln;
+  [by rewrite mulRC | exact/ltR0n].
 Qed.
 
 Lemma Exp_increasing n x y : 1 < n -> x < y -> Exp n x < Exp n y.
-Proof.
-move=> n1 x_y.
-rewrite /Exp.
-apply/exp_increasing/ltR_pmul2r => //.
-exact/ln_pos.
-Qed.
+Proof. move=> ? ?; apply/exp_increasing/ltR_pmul2r => //; exact/ln_pos. Qed.
 
 Lemma Exp_le_inv n x y : 1 < n -> Exp n x <= Exp n y -> x <= y.
 Proof.
@@ -363,7 +357,6 @@ split.
   apply H with n => //.
   by rewrite -{1}(muln1 n) leq_mul2l HP orbC.
 rewrite mult_INR -mulRA (mulRCA (INR den)) mulRV // ?mulR1; last first.
-  by rewrite INR_eq0 -lt0n.
-rewrite exp2_pow logK; last exact/lt_0_INR/ltP.
-exact/frac_part_pow/frac_part_INR.
+  by rewrite INR_eq0' -lt0n.
+rewrite exp2_pow logK; [exact/frac_part_pow/frac_part_INR | exact/ltR0n].
 Qed.

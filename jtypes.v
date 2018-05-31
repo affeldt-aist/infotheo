@@ -94,9 +94,9 @@ move=> a.
 refine (@mkPosFun _ (pf a) _) => b.
 rewrite /pf.
 case: ifP => [_ | Hcase].
-- exact/ltRW/invR_gt0/lt_0_INR/ltP.
-- apply Rle_mult_inv_pos; first by apply pos_INR.
-  by apply/ltRP; rewrite lt0R INR_eq0 Hcase /= leR0n.
+- exact/ltRW/invR_gt0/ltR0n.
+- apply divR_ge0; first exact/leR0n.
+  by apply/ltRP; rewrite lt0R INR_eq0' Hcase /= leR0n'.
 Defined.
 
 Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat) (Bnot0 : (0 < #|B|)%nat)
@@ -110,10 +110,10 @@ refine (@Channel1.mkChan A B _ Anot0) => a.
 refine (@mkDist _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a) _).
 rewrite /=.
 case/boolP : (\sum_(b1 in B) (f a b1) == O) => Hcase.
-- by rewrite /Rle big_const iter_Rplus_Rmult mulRV // INR_eq0 -lt0n.
+- by rewrite /Rle big_const iter_addR mulRV // INR_eq0' -lt0n.
 - rewrite (@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
   rewrite /Rdiv -big_distrl /= mulRV //.
-  by rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) // INR_eq0.
+  by rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) // INR_eq0'.
 Defined.
 
 Definition jtype_choice_f (A B : finType) n (f : {ffun A -> {ffun B -> 'I_n.+1}}) : option (P_ n ( A , B )).
@@ -292,11 +292,11 @@ destruct V as [V1 V2 V3 V4] => /=.
 rewrite V4 /=.
 case: ifP => [| H'].
   rewrite sum_nat_eq0.
-  move/forallP/(_ b)/implyP/(_ Logic.eq_refl)/eqP => H _; by apply val_inj.
-rewrite /Rdiv => /(Rmult_integral _); case => [| abs].
-  move/eqP; rewrite INR_eq0 => /eqP ?; exact/val_inj.
+  move/forallP/(_ b)/implyP/(_ Logic.eq_refl)/eqP => H _; exact: val_inj.
+rewrite /Rdiv => /eqP; rewrite mulR_eq0 => /orP[|abs].
+  rewrite INR_eq0' => /eqP ?; exact/val_inj.
 exfalso.
-by move: abs; apply/eqP/invR_neq0; rewrite INR_eq0 H'.
+by apply/negP : abs; apply/invR_neq0; rewrite INR_eq0' H'.
 Qed.
 
 (** Upper-bound of the number of conditional types: *)
@@ -641,12 +641,12 @@ pose d := fun b => (INR (f b) / INR N(a | ta))%R.
 have d0 : forall b, (0 <= d b)%R.
   move=> b.
   rewrite /d /=.
-  apply mulR_ge0; first by apply pos_INR.
-  apply/ltRW/invR_gt0/lt_0_INR/ltP; by rewrite lt0n.
+  apply mulR_ge0; first exact/leR0n.
+  apply/ltRW/invR_gt0/ltR0n; by rewrite lt0n.
 have d1 : \rsum_(b : B) d b = 1%R.
   rewrite /d -big_distrl /= -(@big_morph _ _ _ 0%R _ O _ morph_plus_INR) //.
   set lhs := \sum_i _.
-  suff -> : lhs = N(a | ta) by rewrite mulRV // INR_eq0.
+  suff -> : lhs = N(a | ta) by rewrite mulRV // INR_eq0'.
   rewrite /lhs /f /= -[in X in _ = X](Hrow_num_occ Hta a).
   apply eq_bigr => b _; by rewrite ffunE.
 by apply (@type.mkType _ _ (makeDist d0 d1) f).
@@ -807,13 +807,13 @@ apply (@leR_trans (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
                \rprod_(j : A) INR (card_type_of_row Hta Vctyp (enum_rank j))); last first.
       apply eq_bigl => a; rewrite enum_rankK; by apply/eqP.
   apply ler_rprod => a.
-  split; first exact/pos_INR.
+  split; first exact/leR0n.
   rewrite -exp2_pow mulRA.
   rewrite /card_type_of_row; destruct eqVneq.
     rewrite -[X in X <= _]exp2_0.
     apply Exp_le_increasing, mulR_ge0 => //.
-      apply mulR_ge0; by [apply pos_INR | apply dist_nonneg].
-      by apply entropy_pos.
+      apply mulR_ge0; by [apply leR0n | apply dist_ge0].
+      exact: entropy_ge0.
   set pta0 := type_of_row Hta Vctyp _.
   rewrite (_ : exp2 _ = exp2 (INR N(a | ta) * `H pta0)%R).
     rewrite -[in X in _ <= exp2 (X * _)](enum_rankK a); by apply card_typed_tuples.
@@ -1107,17 +1107,13 @@ Variable V : P_ n ( A , B ).
 Definition f := fun b => (INR (\sum_(a in A) (jtype.f V) a b) / INR n)%R.
 
 Lemma f0 (b : B) : (0 <= f b)%R.
-Proof.
-apply Rle_mult_inv_pos; first by apply pos_INR.
-apply lt_0_INR; by apply/ltP.
-Qed.
+Proof. apply divR_ge0; [exact/leR0n | exact/ltR0n]. Qed.
 
 Lemma f1 : \rsum_(b in B) f b = 1%R.
 Proof.
 rewrite /f -big_distrl /= -(@big_morph _ _ _ 0%R _ 0 _ morph_plus_INR) //.
 rewrite exchange_big /=.
-move/eqP : (jtype.sum_f V) => ->.
-by rewrite mulRV // INR_eq0.
+move/eqP : (jtype.sum_f V) => ->; by rewrite mulRV // INR_eq0'.
 Qed.
 
 Definition d : dist B := makeDist f0 f1.
@@ -1180,7 +1176,7 @@ case: ifP => [/eqP |] Hcase.
   by rewrite mul0R.
 - rewrite -mulRA sum_V; congr (_ * _).
   move: Hta; rewrite in_set => /forallP/(_ a)/eqP ->.
-  by rewrite mulRA -{1}(mul1R (/ INR n)) mulVR // INR_eq0 -sum_V Hcase.
+  by rewrite mulRA -{1}(mul1R (/ INR n)) mulVR // INR_eq0' -sum_V Hcase.
 Qed.
 
 Lemma output_type_out_entropy : `H (`tO( V )) = `H(P `o V).
@@ -1288,7 +1284,7 @@ exists (num_co_occ_jtype ta tb).-shell ta.
     move: Hta'; rewrite in_set => /forallP/(_ a)/eqP => Hta'.
     move: Hta.
     rewrite in_set => /forallP/(_ a)/eqP.
-    rewrite Hta' eqR_mul2r; last by apply/eqP/invR_neq0; rewrite INR_eq0.
+    rewrite Hta' eqR_mul2r; last by apply/eqP/invR_neq0; rewrite INR_eq0'.
     by move/INR_eq.
 - rewrite in_set.
   apply/forallP => a. apply/forallP => b.

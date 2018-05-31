@@ -75,7 +75,7 @@ apply Rmin_case_strong => H1.
   move=> ?; fourier.
   move=> ?; fourier.
 - apply Rmin_case_strong => H2.
-  + apply nesym, Rlt_not_eq.
+  + apply/gtR_eqF.
     apply: leR_ltR_trans.
     * apply: (leR_trans _ H2).
       apply Rdiv_le; [exact/Rlt_le/Hepsilon1 | by fourier].
@@ -152,7 +152,7 @@ Lemma step3 : 1 - (esrc(P , sc)) <=
 Proof.
 rewrite step2; apply/leR_add2r/ler_rsum_l => /= i Hi.
 exact/leRR.
-exact/dist_nonneg.
+exact/dist_ge0.
 by move: Hi; rewrite in_setI => /andP[].
 Qed.
 
@@ -177,9 +177,9 @@ apply/(leR_trans step3)/leR_add.
       rewrite /`TS inE /typ_seq => /andP[/leRP i_TS _].
       exact: (ltR_leR_trans (exp2_gt0 _) i_TS).
     + rewrite /exp2 ExpK //.
-      apply/leRP; rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltRP/ltR0n.
+      apply/leRP; rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltR0n.
       apply/leRP; rewrite leR_oppr /Rdiv mulRC; by rewrite div1R mulNR in H1.
-  rewrite big_const iter_Rplus; exact/leRR.
+  rewrite big_const iter_addR; exact/leRR.
 Qed.
 
 Lemma step5 : 1 - (esrc(P , sc)) <= delta + exp2 (- INR k.+1 * (e0 - delta)).
@@ -202,8 +202,8 @@ have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
   - rewrite /exp2 ExpK //.
     apply (@leR_pmul2r (1 / (e0 - delta))) => //.
     + apply Rlt_mult_inv_pos; first by fourier.
+      apply subR_gt0.
       rewrite /e0 /delta /r.
-      apply Rlt_Rminus.
       have H1 : (`H P - r) / 2 < `H P - r.
         rewrite -[X in _ < X]mulR1.
         apply ltR_pmul2l; last by fourier.

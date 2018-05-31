@@ -51,16 +51,16 @@ apply: (leR_trans (success_bound W Mnot0 c)).
 set Pmax := arg_rmax _ _ _.
 set tc :=  _.-typed_code _.
 rewrite pow_add -mulRA.
-apply leR_wpmul2l; first exact/pow_le/pos_INR.
+apply leR_wpmul2l; first exact/pow_le/leR0n.
 apply (leR_trans (typed_success_bound W Mnot0 (Pmax.-typed_code c))).
-apply leR_wpmul2l; first exact/pow_le/pos_INR.
+apply leR_wpmul2l; first exact/pow_le/leR0n.
 set Vmax := arg_rmax _ _ _.
 rewrite /success_factor_bound /exp_cdiv.
 case : ifP => Hcase; last by rewrite mul0R.
 rewrite -ExpD.
 apply Exp_le_increasing => //.
 rewrite -mulRDr 2!mulNR.
-rewrite leR_oppr oppRK; apply/leR_wpmul2l; first exact/pos_INR.
+rewrite leR_oppr oppRK; apply/leR_wpmul2l; first exact/leR0n.
 have {Hcase}Hcase : Pmax |- Vmax << W.
   move=> a Hp b /eqP Hw.
   move/forallP : Hcase.
@@ -101,14 +101,14 @@ have Rlt0n : 0 < INR n.
   rewrite /Rdiv -mulRA.
   apply mulR_gt0; first by apply pow_gt0; fourier.
   apply mulR_gt0;
-    [exact/lt_0_INR/ltP/fact_gt0 | exact/invR_gt0/pow_gt0/mulR_gt0].
+    [exact/ltR0n/fact_gt0 | exact/invR_gt0/pow_gt0/mulR_gt0].
 destruct n as [|n'].
-  by apply Rlt_irrefl in Rlt0n.
+  by apply ltRR in Rlt0n.
 set n := n'.+1.
 apply: (@leR_ltR_trans (INR n.+1 ^ K * exp2 (- INR n * Delta))).
   exact: HDelta.
 move: (n0_n) => /(@ltR_pmul2l (/ INR n) _) => /(_ (invR_gt0 (INR n) Rlt0n)).
-rewrite mulVR ?INR_eq0 //.
+rewrite mulVR ?INR_eq0' //.
 move/(@ltR_pmul2l epsilon) => /(_ eps_gt0); rewrite mulR1 => H1'.
 apply: (leR_ltR_trans _ H1') => {H1'}.
 rewrite /n0 [in X in _ <= X]mulRC -2![in X in _ <= X]mulRA.
@@ -116,46 +116,45 @@ rewrite mulVR ?mulR1; last exact/eqP/gtR_eqF.
 apply Rge_le; rewrite mulRC -2!mulRA; apply Rle_ge.
 set aux := INR _ * (_ * _).
 have aux_gt0 : 0 < aux.
-  apply mulR_gt0.
-    apply/lt_0_INR/ltP; exact/fact_gt0.
+  apply mulR_gt0; first exact/ltR0n/fact_gt0.
   apply mulR_gt0; [exact/invR_gt0/pow_gt0/mulR_gt0 | exact/invR_gt0].
 apply (@leR_trans ((INR n.+1 / INR n) ^ K * aux)); last first.
   apply leR_pmul => //.
-  - apply pow_ge0, Rle_mult_inv_pos => //; exact: pos_INR.
+  - apply/pow_ge0/divR_ge0 => //; exact: leR0n.
   - exact: ltRW.
   - apply pow_incr; split.
-    + apply Rle_mult_inv_pos => //; exact: pos_INR.
+    + apply divR_ge0 => //; exact: leR0n.
     + apply (@leR_pmul2r (INR n)) => //.
-      rewrite -mulRA mulVR // ?mulR1 ?INR_eq0 ?gtn_eqF // (_ : 2 = INR 2) //.
+      rewrite -mulRA mulVR // ?mulR1 ?INR_eq0' ?gtn_eqF // (_ : 2 = INR 2) //.
       rewrite -mult_INR; apply/le_INR/leP; by rewrite multE -{1}(mul1n n) ltn_pmul2r.
   - exact/leRR.
 rewrite expRM -mulRA; apply leR_pmul => //.
-- exact/pow_ge0/ltRW/lt_0_INR/ltP.
+- exact/pow_ge0/ltRW/ltR0n.
 - exact/leRR.
 - apply invR_le => //.
   + apply mulR_gt0; last exact aux_gt0.
-    rewrite expRV ?INR_eq0 //; exact/invR_gt0/pow_gt0.
+    rewrite expRV ?INR_eq0' //; exact/invR_gt0/pow_gt0.
   + rewrite -exp2_Ropp mulNR oppRK /exp2.
     have nDeltaln2 : 0 <= INR n * Delta * ln 2.
       apply mulR_ge0; last exact/ltRW.
-      apply mulR_ge0; [by apply pos_INR | exact/ltRW].
+      apply mulR_ge0; [exact/leR0n | exact/ltRW].
     apply: (leR_trans _ (exp_lb (K.+1) nDeltaln2)) => {nDeltaln2}.
     apply Req_le.
     rewrite invRM; last 2 first.
       exact/gtR_eqF/pow_gt0/invR_gt0.
       exact/gtR_eqF.
     rewrite mulRC invRM; last 2 first.
-      by apply/eqP; rewrite INR_eq0 gtn_eqF // fact_gt0.
+      by apply/eqP; rewrite INR_eq0' gtn_eqF // fact_gt0.
       apply/nesym/ltR_eqF/mulR_gt0; last exact/invR_gt0.
       exact/invR_gt0/pow_gt0/mulR_gt0.
     rewrite -mulRA mulRC invRM; last 2 first.
     - apply/eqP/invR_neq0; rewrite pow_eq0 mulR_eq0 negb_or ln2_neq0 andbT; exact/eqP/gtR_eqF.
-    - apply/eqP/invR_neq0; by rewrite INR_eq0.
+    - apply/eqP/invR_neq0; by rewrite INR_eq0'.
     - rewrite invRK; last first.
         apply/eqP; rewrite pow_eq0 mulR_eq0 negb_or ln2_neq0 andbT; exact/eqP/gtR_eqF.
-      rewrite invRK; last by apply/eqP; rewrite INR_eq0.
+      rewrite invRK; last by apply/eqP; rewrite INR_eq0'.
       rewrite (_ : / (/ INR n) ^ K = (INR n) ^ K); last first.
-        rewrite expRV ?INR_eq0 // invRK //; apply/eqP/pow_not0; by rewrite INR_eq0.
+        rewrite expRV ?INR_eq0' // invRK //; apply/eqP/pow_not0; by rewrite INR_eq0'.
       rewrite /Rdiv; congr (_ * _).
       by rewrite -mulRA -powS mulRC -expRM mulRA.
 Qed.

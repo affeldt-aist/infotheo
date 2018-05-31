@@ -70,10 +70,10 @@ case: (Req_EM_T (P a) 0) => H1.
 rewrite /log LogM; last 2 first.
   case: p_01' => ? ?; fourier.
   move/eqP in H1.
-  apply/ltRP; rewrite lt0R H1; exact/leRP/dist_nonneg.
+  apply/ltRP; rewrite lt0R H1; exact/leRP/dist_ge0.
 rewrite /log LogM; last 2 first.
   case: p_01' => ? ?; fourier.
-  apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_nonneg].
+  apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
 case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 !(mul0R, mulR0, addR0, add0R).
   move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
@@ -81,10 +81,10 @@ case: (Req_EM_T (P b) 0) => H2.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log LogM; last 2 first.
   case: p_01' => ? ?; fourier.
-  apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_nonneg].
+  apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
 rewrite /log LogM; last 2 first.
   case: p_01' => ? ?; fourier.
-  apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_nonneg].
+  apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   rewrite /log; by field.
 move: (pmf1 P); rewrite Set2sumE /= -/a -/b => ->; rewrite /log; by field.
@@ -108,7 +108,7 @@ move: (pmf1 P); rewrite Set2sumE /= -/a -/b => P1.
 have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
   rewrite -{2}P1; by field.
 have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
-  move: (dist_nonneg P a) => H1.
+  move: (dist_ge0 P a) => H1.
   move: (dist_max P b) => H4.
   move: (dist_max P a) => H3.
   case: p_01' => Hp1 Hp2.
@@ -129,7 +129,7 @@ have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
     - apply leR_lt_add.
       + rewrite -{2}(mul1R (P a)); apply leR_wpmul2r; fourier.
       + rewrite -{2}(mul1R (P b)); apply ltR_pmul2r => //.
-        apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_nonneg].
+        apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
     - rewrite -H1 mulR0 2!add0R.
       have -> : P b = 1 by rewrite -P1 -H1 add0R.
       by rewrite mulR1.
@@ -212,8 +212,8 @@ transitivity ((\rprod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
   by apply eq_bigr => // i /eqP ->; rewrite BSC.cE Binary.fxx.
   apply eq_bigr => //= i /negbTE Htmp; rewrite BSC.cE /Binary.f eq_sym; by rewrite Htmp.
 congr (_ * _).
-by rewrite big_const /= iter_Rmult /= card_dHC.
-by rewrite big_const /= iter_Rmult /= card_dH_vec.
+by rewrite big_const /= iter_mulR /= card_dHC.
+by rewrite big_const /= iter_mulR /= card_dH_vec.
 Qed.
 
 Local Close Scope vec_ext_scope.

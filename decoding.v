@@ -131,7 +131,7 @@ Lemma ML_err_rate x1 x2 y : repair y = Some x1 ->
 Proof.
 move=> Hx1 Hx2.
 case/boolP : (W ``(y | x2) == 0%R) => [/eqP ->| Hcase].
-  by apply DMC_nonneg.
+  exact: DMC_ge0.
 have : receivable W P y.
   apply/existsP; exists x2.
   by rewrite Hcase andbT UniformSupport.neq0 inE.
@@ -155,7 +155,7 @@ Lemma ML_smallest_err_rate phi :
 Proof.
 move=> dec.
 apply leR_wpmul2l.
-  apply/mulR_ge0 => //; exact/ltRW/invR_gt0/lt_0_INR/ltP.
+  apply/mulR_ge0 => //; exact/ltRW/invR_gt0/ltR0n.
 rewrite /ErrRateCond /=.
 apply (@leR_trans (\rsum_(m in M) (1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m]))); last first.
   apply Req_le, eq_bigr => m _.
@@ -192,10 +192,10 @@ case/boolP : (dec tb == None) => dectb.
     move/subsetP : enc_img; apply.
     apply/imsetP; by exists m.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite Htb'.
-  rewrite big_const iter_Rplus mulR0.
-  apply rsumr_ge0 => ? _; exact/DMC_nonneg.
+  rewrite big_const iter_addR mulR0.
+  apply rsumr_ge0 => ? _; exact/DMC_ge0.
 case/boolP : (phi tb == None) => [/eqP ->|phi_tb].
-  rewrite big_pred0 //; apply rsumr_ge0 => ? _; exact/DMC_nonneg.
+  rewrite big_pred0 //; apply rsumr_ge0 => ? _; exact/DMC_ge0.
 have [m1 Hm1] : exists m', dec tb = Some m'.
   destruct (dec tb) => //; by exists s.
 have [m2 Hm2] : exists m', phi tb = Some m'.
@@ -346,7 +346,7 @@ Proof.
 move=> HMAP.
 rewrite /ML_decoding => /= tb Htb.
 have Hunpos : INR 1 / INR #| [set cw in C] | > 0.
-  rewrite div1R; by apply/invR_gt0/lt_0_INR/ltP/vspace_not_empty.
+  rewrite div1R; exact/invR_gt0/ltR0n/vspace_not_empty.
 move: (HMAP _ Htb) => H.
 rewrite /PosteriorProbability.d in H.
 unlock in H.
@@ -354,7 +354,7 @@ simpl in H.
 set tmp := \rmax_(_ <- _ | _) _ in H.
 rewrite /tmp -rmax_distrl in H; last first.
   apply/ltRW/invR_gt0/ltRP; rewrite ltR_neqAle; apply/andP; split; last first.
-    exact/leRP/PosteriorProbability.den_nonneg.
+    exact/leRP/PosteriorProbability.den_ge0.
   by rewrite eq_sym -receivableE.
 rewrite /P /UniformSupport.d /UniformSupport.f /= in H.
 case: H => [m' [Hm' H]].
@@ -369,8 +369,7 @@ move/(eqR_mul2r x0) in H.
 rewrite /= UniformSupport.E ?inE // in H; last first.
   move/subsetP : dec_img; apply.
   rewrite inE; apply/existsP; by exists tb; apply/eqP.
-move/eqR_mul2l :  H => -> //.
-exact: gtR_eqF.
+move/eqR_mul2l :  H => -> //; exact: gtR_eqF.
 Qed.
 
 End MAP_decoding_prop.

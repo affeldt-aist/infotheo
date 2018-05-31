@@ -114,15 +114,6 @@ Canonical mulR_muloid := Monoid.MulLaw mul0R mulR0.
 Canonical mulR_comoid := Monoid.ComLaw mulRC.
 Canonical addR_addoid := Monoid.AddLaw mulRDl mulRDr.
 
-Lemma iter_Rplus n r : ssrnat.iter n (Rplus r) 0 = INR n * r.
-Proof.
-elim : n r => [r /= | m IHm r]; first by rewrite mul0R.
-rewrite iterS IHm S_INR; field.
-Qed.
-
-Lemma iter_Rmult n p : ssrnat.iter n (Rmult p) 1 = p ^ n.
-Proof. elim : n p => // n0 IH p0 /=; by rewrite IH. Qed.
-
 Lemma morph_Ropp : {morph [eta Ropp] : x y / x + y}.
 Proof. by move=> x y /=; field. Qed.
 
@@ -279,7 +270,7 @@ Lemma rsumr_ge0 (A : finType) (P : pred A) f (H : forall i, P i -> 0 <= f i) :
   0 <= \rsum_(i in A | P i) f i.
 Proof.
 apply (@leR_trans (\rsum_(i | (i \in A) && P i) (fun=> 0) i)).
-rewrite big_const iter_Rplus mulR0 /=; exact/leRR.
+rewrite big_const iter_addR mulR0 /=; exact/leRR.
 exact/ler_rsum.
 Qed.
 
@@ -291,7 +282,7 @@ rewrite (_ : \rsum_(i in A) f i = \rsum_(i in [set: A]) f i); last first.
   apply eq_bigl => x /=; by rewrite !inE.
 apply: leR_ltR_trans; last first.
   apply ltr_rsum_support with (f := fun=> 0) => //; by rewrite cardsT.
-rewrite big_const_seq iter_Rplus mulR0; exact/leRR.
+rewrite big_const_seq iter_addR mulR0; exact/leRR.
 Qed.
 
 Lemma prsumr_eq0P (A : finType) (P : pred A) f :
@@ -299,7 +290,7 @@ Lemma prsumr_eq0P (A : finType) (P : pred A) f :
   \rsum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
 Proof.
 move=> Hf; split=> [H a Ha|h]; last first.
-  by rewrite (eq_bigr (fun=> 0)) // big_const iter_Rplus mulR0.
+  by rewrite (eq_bigr (fun=> 0)) // big_const iter_addR mulR0.
 suff : f a = 0 /\ \rsum_(i | P i && (i != a)) f i = 0 by case.
 apply: Rplus_eq_R0.
 - exact/Hf/Ha.
@@ -408,20 +399,17 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
     apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
   apply (@leR_pmul2r (1 * / \rprod_(i : A) f i) _ _).
     apply Rlt_mult_inv_pos => //; fourier.
-  rewrite mul1R mulRV; last exact/eqP/not_eq_sym/Rlt_not_eq.
+  rewrite mul1R mulRV; last exact/eqP/gtR_eqF.
   set inv_spec := fun r => if r == 0 then 0 else / r.
   rewrite (_ : / (\rprod_(a : A) f a) = inv_spec (\rprod_(a : A) f a)) ; last first.
     rewrite /inv_spec (_ : \rprod_(a : A) f a == 0 = false) //.
-    apply/eqP ; by apply not_eq_sym, Rlt_not_eq.
+    exact/eqP/gtR_eqF.
   rewrite (@big_morph _ _ (inv_spec) R1 Rmult R1 Rmult _); last 2 first.
   - move=> a b /=.
     case/boolP : ((a != 0) && (b != 0)).
-    - move=> /andP [/negbTE Ha /negbTE Hb] ; rewrite /inv_spec Ha Hb.
+    - move=> /andP [/negbTE Ha /negbTE Hb]; rewrite /inv_spec Ha Hb.
       move/negbT in Ha ; move/negbT in Hb.
-      have : (a * b)%R == 0 = false ; last move=> ->.
-      apply/negP => /eqP Habs.
-        apply (Rmult_eq_compat_r (/ b)) in Habs ; move: Habs.
-        rewrite -mulRA mul0R mulRV // ?mulR1; move/eqP; exact/negP.
+      have -> : (a * b)%R == 0 = false by rewrite mulR_eq0 (negbTE Ha) (negbTE Hb).
       rewrite invRM //; exact/eqP.
     - rewrite negb_and !negbK => /orP[|]/eqP ->;
         by rewrite /inv_spec !(eqxx,mul0R,mulR0).
@@ -435,7 +423,7 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
   rewrite -(mulRV (f a)) //.
   apply leR_wpmul2r => //.
   rewrite -(mul1R (/ f a)).
-  apply Rle_mult_inv_pos; [fourier | apply/ltRP; rewrite lt0R Hf; exact/leRP].
+  apply divR_ge0; [fourier | apply/ltRP; rewrite lt0R Hf; exact/leRP].
 Qed.
 
 End ler_ltr_rprod.
@@ -447,8 +435,7 @@ transitivity (\rsum_(i < n) \rsum_(s | true && (f s == i)) F (f s)).
   by apply partition_big.
 apply eq_bigr => i _ /=.
 transitivity (\rsum_(s | f s == i) F i); first by apply eq_bigr => s /eqP ->.
-rewrite big_const iter_Rplus.
-congr (INR _ * _).
+rewrite big_const iter_addR; congr (INR _ * _).
 apply eq_card => j /=; by rewrite !inE.
 Qed.
 

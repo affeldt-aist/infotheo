@@ -28,7 +28,7 @@ apply derivable_pt_minus.
       apply derivable_pt_mult.
         apply derivable_pt_const.
       apply derivable_pt_inv.
-      by apply nesym, Rlt_not_eq.
+      exact/gtR_eqF.
       apply derivable_pt_id.
     apply derivable_pt_Log.
     by apply Rlt_mult_inv_pos.
@@ -143,7 +143,7 @@ apply (@leR_trans ((2 - 8 * t * (1 - t)) / (2 * (1 - t) * ln 2))); last first.
   apply Req_le.
   field.
   split; [exact/eqP/ln2_neq0 | case: Ht => ? ? ?; fourier].
-apply Rle_mult_inv_pos; last first.
+apply divR_ge0; last first.
   rewrite mulRC mulRA.
   apply mulR_gt0.
     apply mulR_gt0 => //; fourier.
@@ -261,7 +261,7 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   have : forall a b, b <= a -> 0 <= a - b by move=> *; fourier.
   apply.
   have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
-  have Hlocal2 : t * (1 - t) <> 0 by apply nesym, Rlt_not_eq, mulR_gt0; fourier.
+  have Hlocal2 : t * (1 - t) <> 0 by apply/gtR_eqF/mulR_gt0; fourier.
   apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans (8 * / (2 * ln 2))).
       apply/leRP.
@@ -338,7 +338,7 @@ case/Rle_lt_or_eq_dec : Hq0 => Hq0; last first.
   move: P_dom_by_Q.
   rewrite /dom_by /Binary.d /= => /(_ b); rewrite /Binary.f.
   rewrite eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) ?; subst p.
-  by move/Rlt_irrefl : Hp0.
+  by move/ltRR : Hp0.
 case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
@@ -347,7 +347,7 @@ case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
   rewrite /dom_by /Binary.d /= => /(_ a).
   rewrite /Binary.f eqxx subRR // => /(_ erefl) H1.
   have {H1}? : p = 1. fourier. subst p.
-  by move/Rlt_irrefl : Hp1.
+  by move/ltRR : Hp1.
 rewrite -(pinsker_fun_p p01 c).
 case: (Rlt_le_dec q p) => qp.
   apply pinsker_fun_decreasing_on_0_to_p => //.

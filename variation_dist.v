@@ -31,7 +31,7 @@ Lemma def_var_dist p q : d( p , q) = 0 -> p = q.
 Proof.
 rewrite /var_dist => H.
 apply dist_eq, pos_fun_eq, FunctionalExtensionality.functional_extensionality => x0.
-apply/eqP; rewrite -subR_eq0; apply/eqP/Rabs_eq0; move: H.
+apply/eqP; rewrite -subR_eq0; apply/eqP/normR0_eq0; move: H.
 rewrite (bigD1 x0) //=.
 apply Rplus_eq_0_l; first exact/Rabs_pos.
 apply: rsumr_ge0 => ? _ ; exact/Rabs_pos.

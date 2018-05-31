@@ -235,7 +235,7 @@ Lemma derive_increasing_ad_hoc (a b : R) (f : R -> R) (pr : pderivable f (fun x 
    forall x y:R, a < x <= b -> a < y <= b -> x < y -> f x < f y).
 Proof.
 move=> H H0 x y H1 H2 H3.
-apply Rminus_gt_0_lt.
+apply/subR_gt0.
 set pr' := pderivable_restrict_left pr (proj1 H1) (proj2 H2) H3.
 have H0' : forall t (Ht : x <= t <= y), 0 < if t == y then 1 else derive_pt f t (pr' t Ht).
   move=> z /= [Hz0 Hz1].
@@ -248,8 +248,7 @@ have H0' : forall t (Ht : x <= t <= y), 0 < if t == y then 1 else derive_pt f t 
     - apply: (leR_trans Hz1); by apply H2.
   move: (H0 z) => H02.
   have Hz2 : ~~ (z == b).
-    apply/eqP.
-    apply Rlt_not_eq.
+    apply/eqP/ltR_eqF.
     clear Hz0 H1 H3 pr' H H0 x.
     move/eqP in Hcase.
     apply (@ltR_leR_trans y).
@@ -264,8 +263,7 @@ have H0' : forall t (Ht : x <= t <= y), 0 < if t == y then 1 else derive_pt f t 
 case: (MVT_cor1_pderivable pr' H3); intros x0 [x1 [H7 H8]].
 rewrite H7.
 apply mulR_gt0; last by fourier.
-have Hx0 : ~~ (x0 == y).
-  apply/eqP ; apply Rlt_not_eq, H8.
+have Hx0 : ~~ (x0 == y) by apply/eqP; apply ltR_eqF, H8.
 move/negbTE in Hx0.
 move: (H0' x0) ; rewrite Hx0 ; by apply.
 Qed.

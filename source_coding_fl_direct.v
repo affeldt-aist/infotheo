@@ -81,7 +81,7 @@ rewrite -multE (mult_INR (Z.abs_nat (up D)) d.+1).
 apply (@leR_trans (IZR (Z.abs (up D)))); first exact: Rle_up.
 rewrite INR_IZR_INZ inj_Zabs_nat -{1}(mulR1 (IZR _)).
 apply leR_wpmul2l; first exact/IZR_le/Zabs_pos.
-rewrite -addn1 plus_INR /= (_ : INR 1 = 1%R) //; move: (pos_INR d) => ?; fourier.
+rewrite -addn1 plus_INR /= (_ : INR 1 = 1%R) //; move: (leR0n d) => ?; fourier.
 Qed.
 
 Lemma SrcDirectBound d D : { k | D <= INR ((k.+1) * (d.+1)) }.
@@ -89,7 +89,7 @@ Proof.
 case: (SrcDirectBound' d D) => k Hk.
 destruct k as [|k]; last by exists k.
 exists O; rewrite mul1n.
-apply (@leR_trans 0%R); by [assumption | apply pos_INR].
+apply (@leR_trans 0%R); by [ | apply leR0n].
 Qed.
 
 Local Open Scope source_code_scope.
@@ -168,7 +168,7 @@ set PHI := @phi _ n _ S def.
 exists (mkScode F PHI).
 split.
   rewrite /SrcRate /r /n /k 2!mult_INR; field.
-  split; by apply not_0_INR.
+  split; exact/INR_eq0.
 set lhs := esrc(_, _).
 suff -> : lhs = (1 - Pr (P `^ k) (`TS P k (lambda / 2)))%R.
   rewrite leR_subl_addr addRC -leR_subl_addr.
@@ -197,11 +197,11 @@ apply/negPn/negPn.
     apply/ltP/INR_lt; rewrite -exp2_INR.
     suff : INR n = (INR k * r)%R by move=> ->.
     rewrite /n /k /r (mult_INR _ den.+1) /Rdiv -mulRA.
-    by rewrite (mulRCA (INR den.+1)) mulRV ?INR_eq0 // mulR1 mult_INR.
+    by rewrite (mulRCA (INR den.+1)) mulRV ?INR_eq0' // mulR1 mult_INR.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * r) by fourier.
   suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * (`H P + lambda)).
     apply: leR_trans; first exact: card_S_bound.
-    apply Exp_le_increasing => //; apply leR_wpmul2l; [exact/pos_INR | exact/Hlambdar].
+    apply Exp_le_increasing => //; apply leR_wpmul2l; [exact/leR0n | exact/Hlambdar].
   apply (@leR_trans (exp2 (INR k * (lambda / 2) +
                               INR k * (`H P + lambda / 2)))); last first.
     rewrite -mulRDr addRC -addRA.
@@ -212,17 +212,17 @@ apply/negPn/negPn.
     move/leRP : Hdelta; rewrite leR_max => /andP[_ /leRP Hlambda].
     apply (@leR_pmul2r (2 / lambda)%R); first exact lambdainv2.
     rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
-      apply nesym, Rlt_not_eq; exact lambda0.
+      exact/gtR_eqF/lambda0.
       move=> ?; fourier.
-      rewrite mulRV ?mulR1 //; exact/eqP/nesym/Rlt_not_eq/halflambda0.
+      rewrite mulRV ?mulR1 //; exact/eqP/gtR_eqF/halflambda0.
   apply: leR_trans; first exact/leR_add2l/TS_sup.
   apply (@leR_trans (exp2 (INR k* (`H P + lambda / 2)) +
                         exp2 (INR k * (`H P + lambda / 2)))%R).
   + apply leR_add2r.
     rewrite -exp2_0.
     apply Exp_le_increasing => //.
-    apply mulR_ge0; first exact: pos_INR.
-    apply addR_ge0; first exact: entropy_pos.
+    apply mulR_ge0; first exact: leR0n.
+    apply addR_ge0; first exact: entropy_ge0.
     apply Rlt_le; exact: halflambda0.
   + rewrite (_ : forall a, a + a = 2 * a)%R; last by move=> ?; field.
     rewrite {1}(_ : 2 = exp2 (log 2)); last by rewrite logK //; fourier.

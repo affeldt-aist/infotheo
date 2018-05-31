@@ -27,9 +27,7 @@ Local Open Scope types_scope.
 
 Section condition_equivalence.
 
-Variables A B : finType.
-Variables V W : `Ch_1(A, B).
-Variable P : dist A.
+Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
 
 Definition cdom_by := forall a, P a != 0 -> (V a) << (W a).
 
@@ -38,20 +36,13 @@ Proof.
 rewrite /dom_by; split=> H.
 - move=> a p_not_0 b; move: (H (a, b)).
   rewrite JointDist.dE /= => H0 H1.
-  move: H0.
-  rewrite H1 mul0R => /(_ erefl).
-  rewrite JointDist.dE.
-  case/Rmult_integral => // H0.
-  by rewrite H0 eqxx in p_not_0.
+  move: H0; rewrite H1 mul0R => /(_ erefl)/eqP.
+  by rewrite JointDist.dE mulR_eq0 /= (negbTE p_not_0) orbF => /eqP.
 - case=> a p_not_0 b; move: {H}(H a) => H.
   rewrite JointDist.dE /=.
-  case/boolP : (P a == 0) => [/eqP -> | H1].
-    by rewrite mulR0.
-  move: {H}(H H1) => ->.
-    by rewrite mul0R.
-  rewrite JointDist.dE in b.
-  case/Rmult_integral : b => // b.
-  by rewrite b eqxx in H1.
+  case/boolP : (P a == 0) => [/eqP -> | H1]; first by rewrite mulR0.
+  move: {H}(H H1) => ->; first by rewrite mul0R.
+  move/eqP : b; by rewrite JointDist.dE mulR_eq0 /= (negbTE H1) orbF => /eqP.
 Qed.
 
 End condition_equivalence.
@@ -70,14 +61,12 @@ Variable P : dist A.
 Lemma joint_dom : P |- V << W -> dom_by (`J(P, V)) (`J(P, W)) (*NB: notation issue*).
 Proof.
 move => V_dom_by_W => ab /= Hab.
-case: (Rle_lt_or_eq_dec _ _ (dist_nonneg P ab.1)) => Hab1.
+case: (Rle_lt_or_eq_dec _ _ (dist_ge0 P ab.1)) => Hab1.
 - rewrite JointDist.dE in Hab.
   rewrite JointDist.dE V_dom_by_W ?mul0R //.
-  + case/Rmult_integral : Hab => Hab.
-    * apply/eqP; by apply nesym, Rlt_not_eq.
-    * move: Hab1; rewrite Hab; by move/Rlt_irrefl.
-  + case/Rmult_integral : Hab => // Hab.
-    move/Rlt_not_eq : Hab1; by rewrite Hab.
+  + exact/eqP/gtR_eqF.
+  + move/eqP : Hab; rewrite mulR_eq0 /= => /orP[/eqP//|/eqP].
+    by move: (gtR_eqF _ _ Hab1).
 - by rewrite JointDist.dE -Hab1 mulR0.
 Qed.
 
@@ -118,7 +107,7 @@ case/boolP : (W a b == 0) => [/eqP Weq0| Wneq0].
   contradict Vneq0.
   apply/negP. rewrite negbK. apply/eqP. by apply V_dom_by_W.
 rewrite JointDist.dE /= /log !LogM; first field;
-  apply/ltRP; rewrite lt0R; apply/andP; split => //; exact/leRP/dist_nonneg.
+  apply/ltRP; rewrite lt0R; apply/andP; split => //; exact/leRP/dist_ge0.
 Qed.
 
 Lemma leq0cdiv : 0 <= D(V || W | P).
@@ -127,20 +116,18 @@ rewrite cdiv_is_div_joint_dist //; apply leq0div.
 case=> a b; rewrite 2!JointDist.dE /=.
 case/boolP : (P a == 0); first by move/eqP => ->; rewrite 2!mulR0.
 move=> H1 H2.
-apply Rmult_eq_0_compat_r.
+suff -> : (V a b) = 0 by rewrite mul0R.
 apply V_dom_by_W => //.
-case (Rmult_integral _ _ H2) => // ?; contradict H1.
-by apply/negP/negPn/eqP.
+by move/eqP : H2; rewrite mulR_eq0 (negbTE H1) orbF => /eqP.
 Qed.
 
 Lemma eq0cdiv : D(V || W | P) = 0 <-> `J(P, V) = `J(P, W).
 Proof.
 rewrite cdiv_is_div_joint_dist.
-apply eq0div; case=> a b.
-rewrite 2!JointDist.dE /= => HW.
-apply Rmult_integral in HW; case: HW => Hcase; last by rewrite Hcase mulR0.
-case/boolP : (P a == 0) => [/eqP ->|Hcase2]; first by rewrite mulR0.
-by apply Rmult_eq_0_compat_r, V_dom_by_W.
+apply eq0div; case=> a b /eqP.
+rewrite 2!JointDist.dE /= mulR_eq0 => /orP[|/eqP ->]; last by rewrite mulR0.
+case/boolP : (P a == 0) => [/eqP ->|Pa0]; first by rewrite mulR0.
+move/eqP/V_dom_by_W => /(_ Pa0) ->; by rewrite mul0R.
 Qed.
 
 End conditional_divergence_prop.
@@ -221,10 +208,10 @@ case/boolP : (W a b == 0) => Wab0.
     move/cond_type_equiv/(_ _ Hx a).
     move: Hx; rewrite in_set => /forallP/(_ a)/eqP => Htmp Htmp'.
     rewrite -Htmp' Pa0 in Htmp.
-    symmetry in Htmp; case/Rmult_integral : Htmp; last first.
-      by move/eqP/invR_eq0; rewrite INR_eq0 (negbTE Hn).
-    move/eqP; rewrite INR_eq0.
-    rewrite sum_nat_eq0 => /forall_inP/(_ b) => H; apply/eqP; by move: H => ->.
+    move/esym/eqP : Htmp.
+    rewrite mulR_eq0 => /orP[|]; last first.
+      by move/invR_eq0; rewrite INR_eq0' (negbTE Hn).
+    rewrite INR_eq0' sum_nat_eq0 => /forall_inP/(_ b) => H; apply/eqP; by move: H => ->.
   - move: (W0_V0 Pa0 Wab0) => nullV.
     rewrite nullV.
     suff : N(a, b| tuple_of_row x, tuple_of_row y) = 0%nat.
@@ -232,7 +219,7 @@ case/boolP : (W a b == 0) => Wab0.
     move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
     by rewrite jtype_0_jtypef.
 - rewrite -{1}(@logK (W a b)); last first.
-    apply/ltRP; rewrite lt0R Wab0; exact/leRP/dist_nonneg.
+    apply/ltRP; rewrite lt0R Wab0; exact/leRP/dist_ge0.
   rewrite -exp2_pow.
   f_equal.
   rewrite -mulRN -mulRDr mulRA /Rminus addRC addRA Rplus_opp_l add0R mulRN -3!mulNR oppRK.
@@ -252,8 +239,8 @@ case/boolP : (W a b == 0) => Wab0.
     move/forallP.
     by move/(_ b)/implyP/(_ Logic.eq_refl)/eqP => ->.
   - move/negP/negP => HP.
-    rewrite Htmp -Htmp' (mulRCA (INR n)) mulRV ?INR_eq0 // mulR1.
-    by rewrite mulRCA mulRV ?mulR1 // INR_eq0.
+    rewrite Htmp -Htmp' (mulRCA (INR n)) mulRV ?INR_eq0' // mulR1.
+    by rewrite mulRCA mulRV ?mulR1 // INR_eq0'.
 Qed.
 
 End dmc_cdiv_cond_entropy_sect.

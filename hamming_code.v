@@ -1023,11 +1023,11 @@ eapply eq_trans.
   apply eq_bigr => i _; exact: e_hamming.
 eapply eq_trans.
   apply f_equal.
-  by rewrite big_const /= iter_Rplus.
+  by rewrite big_const /= iter_addR.
 rewrite mulRA /=.
 set den := INR _.
 have -> : 1 / den * den = 1.
-  by rewrite div1R mulVR // ?INR_eq0 card_matrix /= mul1n expn_eq0 negb_and card_F2.
+  by rewrite div1R mulVR // ?INR_eq0' card_matrix /= mul1n expn_eq0 negb_and card_F2.
 rewrite mul1R.
 have toleft A B C D : A + C + D = B -> A = B - C - D by move => <-; ring.
 apply toleft.

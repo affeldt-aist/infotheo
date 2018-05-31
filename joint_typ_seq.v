@@ -364,11 +364,9 @@ apply (@leR_trans (\rsum_(i | i \in `JTS P W n epsilon)
     move=> ? ?; by rewrite rV_prodK.
   apply: ler_rsum_l => i Hi.
   - rewrite inE in Hi.
-    apply leR_pmul.
-    exact: dist_nonneg.
-    exact: dist_nonneg.
+    apply leR_pmul; [exact: dist_ge0 | exact: dist_ge0 | | ].
     exact: (proj2 (typical_sequence1_JTS Hi)).
-    by apply (typical_sequence1_JTS' Hi).
+    exact: (proj2 (typical_sequence1_JTS' Hi)).
   - exact/mulR_ge0.
   - rewrite inE in Hi.
     by rewrite prod_rVK eqxx andbC.
@@ -377,7 +375,7 @@ rewrite (_ : \rsum_(_ | _) _ =
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W) - epsilon))); last first.
   rewrite big_const_seq /= (_ : count _ _ = #|`JTS P W n epsilon|); last first.
     by rewrite -size_filter filter_index_enum -cardE.
-  by rewrite iter_Rplus -mulRA.
+  by rewrite iter_addR -mulRA.
 apply (@leR_trans (exp2 (INR n * (`H( P , W ) + epsilon)) *
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W ) - epsilon)))).
   do 2 apply leR_wpmul2r => //.

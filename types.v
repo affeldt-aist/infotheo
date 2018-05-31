@@ -6,6 +6,8 @@ Require Import Reals Fourier FunctionalExtensionality ProofIrrelevance.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba entropy num_occ channel_code channel typ_seq.
 
+(* TODO: document *)
+
 Reserved Notation "'P_' n '(' A ')'" (at level 9, n, A at next level).
 Reserved Notation "'T_{' P '}'" (at level 9).
 Reserved Notation "P '.-typed_code' c" (at level 50, c at next level).
@@ -43,7 +45,7 @@ Local Open Scope types_scope.
 
 Lemma type_fun_type A n (_ : n != O) (P : P_ n ( A )) a : INR ((type.f P) a) = INR n * P a.
 Proof.
-destruct P => /=; by rewrite d_f mulRCA mulRV ?INR_eq0 // mulR1.
+case: P => /= d f d_f; by rewrite d_f mulRCA mulRV ?INR_eq0' // mulR1.
 Qed.
 
 Lemma INR_type_fun A n (P : P_ n ( A )) a : INR ((type.f P) a) / INR n = P a.
@@ -65,12 +67,10 @@ Qed.
 Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
 set f := fun a => INR N(a | ta) / INR n.+1.
 assert (H1 : forall a, (0 <= f a)%R).
-  move=> a.
-  rewrite /f.
-  apply Rle_mult_inv_pos; by [apply pos_INR | apply lt_0_INR; apply/ltP].
+  move=> a; apply divR_ge0; by [apply leR0n | apply ltR0n].
 assert (H2 : \rsum_(a in A) f a = 1%R).
   rewrite /f -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  by rewrite sum_num_occ_alt mulRV // INR_eq0.
+  by rewrite sum_num_occ_alt mulRV // INR_eq0'.
 have H : forall a, (N(a | ta) < n.+2)%nat.
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
 refine (@type.mkType _ n.+1 (@mkDist _ (@mkPosFun _ f H1) H2)
@@ -129,13 +129,13 @@ apply/type_eqP => /=.
 apply/eqP/ffunP => a.
 apply/val_inj/INR_eq.
 move: {H}(H a); rewrite H1 H2 eqR_mul2r //.
-apply/eqP/invR_neq0; by rewrite INR_eq0.
+apply/eqP/invR_neq0; by rewrite INR_eq0'.
 Qed.
 
 Definition pos_fun_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2}) : pos_fun A.
 set d := fun a : A => INR (f a) / INR n.+1.
 refine (@mkPosFun _ d _) => a.
-apply Rle_mult_inv_pos; by [apply pos_INR  | apply lt_0_INR; apply/ltP].
+apply divR_ge0; by [apply leR0n | apply ltR0n].
 Defined.
 
 Definition dist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
@@ -144,7 +144,7 @@ set pf := pos_fun_of_ffun f.
 assert (H : \rsum_(a in A) pf a = 1).
   rewrite /pf /= /Rdiv -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
   move/eqP : Hf => ->.
-  by rewrite mulRV // INR_eq0.
+  by rewrite mulRV // INR_eq0'.
 exact (mkDist H).
 Defined.
 
@@ -171,7 +171,7 @@ suff : INR (\sum_(a in A) t a) == INR n.+1 * \rsum_(a | a \in A) d a.
 apply/eqP.
 transitivity (INR n.+1 * (\rsum_(a|a \in A) INR (t a) / INR n.+1)).
   rewrite -big_distrl -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  by rewrite mulRCA mulRV ?mulR1 // INR_eq0.
+  by rewrite mulRCA mulRV ?mulR1 // INR_eq0'.
 f_equal; exact/eq_bigr.
 Qed.
 
@@ -353,7 +353,7 @@ move/forallP/(_ a)/eqP.
 destruct P as [d f H] => /= Htmp.
 apply/INR_eq/esym; move: Htmp.
 rewrite H eqR_mul2r //.
-apply/eqP/invR_neq0; by rewrite INR_eq0.
+apply/eqP/invR_neq0; by rewrite INR_eq0'.
 Qed.
 
 Lemma typed_tuples_not_empty' : exists x : seq A,
@@ -431,11 +431,11 @@ transitivity (\rprod_(i < n | t ``_ i == a) (INR (type.f P a) / INR n)).
   apply eq_big => // i.
   move/eqP => ->.
   by rewrite INR_type_fun.
-rewrite big_const iter_Rmult_pow INR_type_fun.
+rewrite big_const iter_mulR INR_type_fun.
 congr (_ ^ _).
 rewrite /typed_tuples inE in Hx.
 move/forallP/(_ a)/eqP : Hx.
-rewrite -INR_type_fun eqR_mul2r; last by apply/eqP/invR_neq0; rewrite INR_eq0.
+rewrite -INR_type_fun eqR_mul2r; last by apply/eqP/invR_neq0; rewrite INR_eq0'.
 move/INR_eq => ->.
 rewrite num_occ_alt cardsE /=.
 apply eq_card => /= n0.
@@ -455,7 +455,7 @@ rewrite (_ : \rprod_(a : A) P a ^ (type.f P) a =
   apply eq_bigr => a _.
   case/boolP : (0 == P a) => H; last first.
     have {H}H : 0 < P a.
-      have := dist_nonneg P a.
+      have := dist_ge0 P a.
       case/Rle_lt_or_eq_dec => // abs.
       by rewrite abs eqxx in H.
     rewrite -{1}(logK H) -exp2_pow.
@@ -467,7 +467,7 @@ rewrite (_ : \rprod_(a : A) P a ^ (type.f P) a =
     rewrite -(_ : O = type.f P a); first by rewrite !mul0R exp2_0 /pow.
     apply INR_eq.
     rewrite {1}/INR.
-    rewrite -(@eqR_mul2r ( / INR n)); last by apply/eqP/invR_neq0; rewrite INR_eq0.
+    rewrite -(@eqR_mul2r ( / INR n)); last by apply/eqP/invR_neq0; rewrite INR_eq0'.
     by rewrite type_fun_type // -(eqP H) mulR0.
 rewrite -(big_morph _ morph_exp2_plus exp2_0) -(big_morph _ (morph_mulRDl _) (mul0R _)).
 by rewrite /entropy Rmult_opp_opp mulRC.
@@ -509,7 +509,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
     apply eq_big => // ta'/= Hta'.
     rewrite -(@tuple_dist_type_entropy ta') //.
     case/imsetP : Hta' => x Hx ->. by rewrite row_of_tupleK.
-  rewrite big_const iter_Rplus_Rmult tuple_dist_type_entropy //.
+  rewrite big_const iter_addR tuple_dist_type_entropy //.
   do 2 f_equal.
   rewrite card_imset //; exact row_of_tuple_inj.
 - rewrite (_ : (INR #| T_{P} | = 0)%R); first by fourier.
@@ -641,7 +641,7 @@ apply/eqP.
 apply ffunP => a.
 apply/val_inj/INR_eq.
 move: {HPQ}(HPQ a); rewrite HP HQ eqR_mul2r //.
-apply/eqP/invR_neq0; by rewrite INR_eq0.
+apply/eqP/invR_neq0; by rewrite INR_eq0'.
 Qed.
 
 Lemma sum_messages_types f :

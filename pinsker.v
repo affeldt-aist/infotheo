@@ -69,7 +69,7 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
     move: (@P_dom_by_Q (Set2.b card_A)).
     rewrite -/pj -/qj Hqj -Hq1 => /(_ erefl).
     rewrite Hpj => abs.
-    move: Hp1; by rewrite abs => /Rlt_irrefl.
+    move: Hp1; by rewrite abs => /ltRR.
   rewrite /div_fct /comp /= (_ : id q = q) //.
   case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
     rewrite Hp2 subRR !mul0R /Rdiv /log LogM; last 2 first.
@@ -195,8 +195,8 @@ apply (Pinsker_2_inequality card_bool) => /= b.
 rewrite /bipart_pmf.
 move/prsumr_eq0P => H.
 transitivity (\rsum_(a | a \in A_ b) 0%R).
-  apply eq_bigr => // a ?; apply P_dom_by_Q; rewrite H // => c ?; exact/pos_f_nonneg.
-by rewrite big_const iter_Rplus mulR0.
+  apply eq_bigr => // a ?; apply P_dom_by_Q; rewrite H // => c ?; exact/pos_f_ge0.
+by rewrite big_const iter_addR mulR0.
 Qed.
 
 Lemma Pinsker_inequality_weak : d(P , Q) <= sqrt (2 * D(P || Q)).

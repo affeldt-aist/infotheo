@@ -20,7 +20,7 @@ Variable P : dist A.
 Definition entropy := - \rsum_(a in A) P a * log (P a).
 Local Notation "'`H'" := (entropy).
 
-Lemma entropy_pos : 0 <= `H.
+Lemma entropy_ge0 : 0 <= `H.
 Proof.
 rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))); last first.
@@ -31,11 +31,11 @@ case/boolP : (P i == 0) => [/eqP ->|Hi].
      consequence of lim x->0 x log x = 0 *)
   rewrite mul0R oppR0; exact/leRR.
 rewrite mulRC -mulNR.
-apply mulR_ge0; last exact: dist_nonneg.
+apply mulR_ge0; last exact: dist_ge0.
 apply oppR_ge0.
 rewrite /log -(Log_1 2).
 apply Log_increasing_le => //; last exact: dist_max.
-apply/ltRP; rewrite lt0R Hi; exact/leRP/dist_nonneg.
+apply/ltRP; rewrite lt0R Hi; exact/leRP/dist_ge0.
 Qed.
 
 Hypothesis P_pos : forall b, 0 < P b.
@@ -46,7 +46,7 @@ rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))).
   apply rsumr_ge0 => i _.
   rewrite mulRC -mulNR.
-  apply mulR_ge0; last by apply dist_nonneg.
+  apply mulR_ge0; last exact: dist_ge0.
   apply oppR_ge0.
   rewrite /log -(Log_1 2).
   apply Log_increasing_le => //; by [by apply P_pos | exact: dist_max].
@@ -74,15 +74,15 @@ rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply eq_bigr => a _ ;rewrite /log /Rdiv mulRA mulRC; f_equal.
 rewrite /xlnx; case : ifP => // /ltRP Hcase.
 have : P a = 0; last by move=> ->; rewrite mul0R.
-case (Rle_lt_or_eq_dec 0 (P a)) => //; by apply dist_nonneg.
+case (Rle_lt_or_eq_dec 0 (P a)) => //; exact: dist_ge0.
 Qed.
 
 Lemma entropy_uniform {A : finType} n (HA : #|A| = n.+1) :
   `H (Uniform.d HA) = log (INR #|A|).
 Proof.
 rewrite /entropy /Uniform.d /Uniform.f /=.
-rewrite big_const iter_Rplus div1R mulRA mulRV; last by rewrite INR_eq0 HA.
-rewrite mul1R /log LogV ?oppRK //; by rewrite HA; apply/lt_0_INR/ltP.
+rewrite big_const iter_addR div1R mulRA mulRV; last by rewrite INR_eq0' HA.
+rewrite mul1R /log LogV ?oppRK //; by rewrite HA; apply/ltR0n.
 Qed.
 
 Local Open Scope reals_ext_scope.
@@ -100,5 +100,5 @@ transitivity (\rsum_(a|a \in A) P a * log (P a) + \rsum_(a|a \in A) P a * - log 
   rewrite -big_split /=.
   apply eq_bigr => a _; by rewrite mulRDr.
 rewrite /= /Uniform.f /= div1R -[in X in _ + X = _]big_distrl /= pmf1 mul1R.
-rewrite /entropy oppRK /log LogV ?oppRK // HA; apply/ltRP; by rewrite ltR0n.
+rewrite /entropy oppRK /log LogV ?oppRK // HA; exact/ltR0n.
 Qed.

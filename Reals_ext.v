@@ -30,7 +30,7 @@ Hint Resolve Rlt_1_2.
 
 Record pos_fun (T : Type) := mkPosFun {
   pos_f :> T -> R ;
-  pos_f_nonneg : forall a, 0 <= pos_f a }.
+  pos_f_ge0 : forall a, 0 <= pos_f a }.
 
 Notation "T '->' 'R+' " := (pos_fun T) : reals_ext_scope.
 
@@ -45,32 +45,35 @@ suff : Hf = Hg by move=> ->.
 by apply proof_irrelevance.
 Qed.
 
-Lemma iter_Rmult_pow x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
+Definition onem (r : R) := (1 - r)%R.
+Notation "p '.~'" := (onem p)%R (format "p .~", at level 5) : R_scope.
+
+Lemma onem_ge0 (r : R) : r <= 1 -> 0 <= r.~.
+Proof. move=> r1; rewrite /onem; fourier. Qed.
+
+Lemma onemKC (r : R) : (r + r.~ = 1)%R.
+Proof. rewrite /onem; by field. Qed.
+
+Lemma iter_mulR x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
 Proof. elim : n => // n Hn ; by rewrite iterS Hn. Qed.
 
-Lemma iter_Rplus_Rmult x (n : nat) : ssrnat.iter n (Rplus x) 0 = INR n * x.
+Lemma iter_addR x (n : nat) : ssrnat.iter n (Rplus x) 0 = INR n * x.
 Proof.
 elim : n ; first by rewrite mul0R.
 move=> n Hn; by rewrite iterS Hn -{1}(mul1R x) -mulRDl addRC -S_INR.
 Qed.
 
-(* TODO: rename. move? *)
+(* TODO: rename; move? *)
 Lemma Rlt_0_Rmult_inv a b : 0 < a * b -> 0 <= a -> 0 <= b -> 0 < a /\ 0 < b.
 Proof.
 move=> H Ha Hb.
 split.
-  apply Rnot_le_lt => abs.
-  have : a = 0.
-    clear -Ha abs.
-    by apply Rle_antisym.
-  move=> abs'; rewrite abs' mul0R in H.
-  by move/Rlt_irrefl : H.
-apply Rnot_le_lt => abs.
-have : b = 0.
-  clear -Hb abs.
-  by apply Rle_antisym.
-move=> abs'; rewrite abs' mulR0 in H.
-by move/Rlt_irrefl : H.
+- apply Rnot_le_lt => abs.
+  have abs' : a = 0 by rewrite eqR_le.
+  by move: H; rewrite abs' mul0R => /ltRR.
+- apply Rnot_le_lt => abs.
+  have abs' : b = 0 by rewrite eqR_le.
+  by move: H; rewrite abs' mulR0 => /ltRR.
 Qed.
 
 (* NB: see Rplus_lt_reg_pos_r in the standard library *)
@@ -158,9 +161,9 @@ Qed.
 
 Lemma pow0_inv : forall (n : nat) x, x ^ n = 0 -> x = 0.
 Proof.
-elim => [x /= H | n IH x /= H].
+elim => [x /= H | n IH x /= /eqP].
 fourier.
-case/Rmult_integral : H => //; by move/IH.
+by rewrite mulR_eq0 => /orP[/eqP //|/eqP/IH].
 Qed.
 
 Lemma INR_pow_expn r : forall n : nat, INR r ^ n = INR (expn r n).
@@ -289,10 +292,7 @@ End dominance.
 Notation "P '<<' Q" := (dom_by P Q) : reals_ext_scope.
 Notation "P '<<b' Q" := (dom_byb P Q) : reals_ext_scope.
 
-Lemma Rabs_eq0 r : `| r | = 0 -> r = 0.
-Proof. move: (Rabs_no_R0 r); tauto. Qed.
-
-Lemma ltR_Rabsl a b : `| a  | <b b = (- b <b a <b b).
+Lemma ltR_Rabsl a b : `| a | <b b = (- b <b a <b b).
 Proof.
 apply/idP/idP => [/ltRP/Rabs_def2[? ?]|/andP[]/ltRP ? /ltRP ?].
 apply/andP; split; exact/ltRP.
@@ -324,10 +324,9 @@ Proof.
 move=> ?.
 rewrite /C.
 apply (@eqR_mul2r (INR (fact m0) * INR (fact (n0 - m0)%coq_nat))).
-  apply Rmult_integral_contrapositive.
-  split; apply/eqP; rewrite INR_eq0; exact/eqP/fact_neq_0.
+  move/eqP; rewrite mulR_eq0 !INR_eq0' => /orP[|] /eqP; exact/fact_neq_0.
 set tmp := INR (fact m0) * _.
 rewrite -mulRA mulVR ?mulR1; last first.
-  by rewrite /tmp mulR_eq0 negb_or !INR_eq0 !fact_Coq_SSR -!lt0n !fact_gt0.
-by rewrite/tmp -!mult_INR !fact_Coq_SSR !multE !minusE bin_fact.
+  by rewrite /tmp mulR_eq0 negb_or !INR_eq0' !fact_Coq_SSR -!lt0n !fact_gt0.
+by rewrite /tmp -!mult_INR !fact_Coq_SSR !multE !minusE bin_fact.
 Qed.

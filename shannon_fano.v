@@ -112,12 +112,12 @@ rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
 apply ler_rsum => i _.
 rewrite H.
-have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos; exact/leRP/dist_nonneg.
+have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos; exact/leRP/dist_ge0.
 apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
   rewrite div1R LogV //.
   rewrite oppRK LogK //; first exact/leRR.
   by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
-rewrite pow_Exp; last by apply/ltRP; rewrite ltR0n card_ord.
+rewrite pow_Exp; last by apply ltR0n; rewrite card_ord.
 rewrite Exp_Ropp.
 apply/leR_inv/Exp_le_increasing => //.
   by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
@@ -160,11 +160,11 @@ move=> H; rewrite /average.
 apply (@ltR_leR_trans (\rsum_(x in A) P x * (- Log (INR #|T|) (P x) + 1))).
   apply ltR_rsum; [exact: dist_domain_not_empty|move=> i].
   apply ltR_pmul2l.
-    apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_nonneg.
+    apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_ge0.
   rewrite H.
   rewrite (_ : INR #|T| = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
-  have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_nonneg.
+  have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_ge0.
   rewrite INR_Zabs_nat; last first.
     apply/leR0ceil.
     rewrite /x div1R /log LogV //.

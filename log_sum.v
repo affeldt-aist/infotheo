@@ -23,18 +23,18 @@ case/boolP : (C == set0) => [ /eqP -> | Hc].
   rewrite !big_set0 mul0R; exact/leRR.
 have gspos : forall a, a \in C -> 0 < g a.
   move=> a a_C.
-  case/Rle_lt_or_eq_dec : ((pos_f_nonneg g) a) => // abs; symmetry in abs; apply fg in abs.
-  move: (fspos _ a_C); by rewrite abs; move/Rlt_irrefl.
+  case/Rle_lt_or_eq_dec : ((pos_f_ge0 g) a) => // abs; symmetry in abs; apply fg in abs.
+  move: (fspos _ a_C); by rewrite abs; move/ltRR.
 have Fnot0 : \rsum_{ C } f != 0.
   apply/eqP => /prsumr_eq0P abs.
   case/set0Pn : Hc => a aC.
   move: (fspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/fspos.
-  by move/Rlt_irrefl.
+  by move/ltRR.
 have Gnot0 : \rsum_{ C } g != 0.
   apply/eqP => /prsumr_eq0P abs.
   case/set0Pn : Hc => a aC.
   move: (gspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/gspos.
-  by move/Rlt_irrefl.
+  by move/ltRR.
 wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
   move=> Hwlog.
   set k := \rsum_{ C } f / \rsum_{ C } g.
@@ -46,17 +46,15 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
     apply: rsumr_ge0 => ? ?; exact/ltRW/gspos.
   have kspos : 0 < k by apply Rlt_mult_inv_pos.
   have kg_pos : forall a, 0 <= k * g a.
-    move=> a; apply mulR_ge0; by [apply ltRW | apply pos_f_nonneg].
+    move=> a; apply mulR_ge0; by [apply ltRW | apply pos_f_ge0].
   have kabs_con : forall a, k * g a = 0 -> f a = 0.
-    move=> a.
-    case/Rmult_integral.
-    - move=> Hk; rewrite Hk in kspos; by move/Rlt_irrefl : kspos.
-    - by move/fg.
+    move=> a /eqP; rewrite mulR_eq0 => /orP[/eqP Hk| /eqP/fg //].
+    rewrite Hk in kspos; by move/ltRR : kspos.
   have kgspos : forall a, a \in C -> 0 < k * g a.
     move=> a a_C; apply mulR_gt0 => //; by apply gspos.
   have Hkg : \rsum_(a | a \in C) k * g a = \rsum_{C} f.
     by rewrite -big_distrr /= /k /Rdiv -mulRA mulRC mulVR // mul1R.
-  have Htmp : \rsum_{ C } {| pos_f := fun x : A => k * g x; pos_f_nonneg := kg_pos |} != 0.
+  have Htmp : \rsum_{ C } {| pos_f := fun x : A => k * g x; pos_f_ge0 := kg_pos |} != 0.
     by rewrite /= Hkg.
   symmetry in Hkg.
   move: {Hwlog}(Hwlog Fnot0 (@mkPosFun _ (fun x => (k * g x)) kg_pos) Htmp kabs_con kgspos Hkg) => /= Hwlog.
@@ -144,34 +142,34 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
       apply eq_bigr => a.
       rewrite /D' in_set.
       by case/andP => _ /eqP.
-    by rewrite big_const iter_Rplus mulR0 add0R.
+    by rewrite big_const iter_addR mulR0 add0R.
   rewrite -H1 in H.
   have pos_F : 0 <= \rsum_{C} f.
-    apply rsumr_ge0 => ? ?; exact: pos_f_nonneg.
+    apply rsumr_ge0 => ? ?; exact: pos_f_ge0.
   apply (@leR_trans (\rsum_{C} f * log (\rsum_{C} f / \rsum_{D} g))).
     case/Rle_lt_or_eq_dec : pos_F => pos_F; last first.
       rewrite -pos_F !mul0R; exact/leRR.
     have H2 : 0 <= \rsum_(a | a \in D) g a.
-      apply: rsumr_ge0 => ? _; exact: pos_f_nonneg.
+      apply: rsumr_ge0 => ? _; exact: pos_f_ge0.
     case/Rle_lt_or_eq_dec : H2 => H2; last first.
       have : 0 = \rsum_{D} f.
         transitivity (\rsum_(a | a \in D) 0).
-          by rewrite big_const iter_Rplus mulR0.
+          by rewrite big_const iter_addR mulR0.
         apply eq_bigr => a a_C1.
-        rewrite fg // (proj1 (@prsumr_eq0P _ (mem D) _ _)) // => ? ?; exact/pos_f_nonneg.
+        rewrite fg // (proj1 (@prsumr_eq0P _ (mem D) _ _)) // => ? ?; exact/pos_f_ge0.
       move=> abs; rewrite -abs in H1; rewrite H1 in pos_F.
-      by move/Rlt_irrefl : pos_F.
+      by move/ltRR : pos_F.
     have H3 : 0 < \rsum_(a | a \in C) g a.
       rewrite setUC in DUD'.
       rewrite DUD' (big_union _ g DID') /=.
       apply addR_gt0wr => //.
-      apply: rsumr_ge0 => *; exact/pos_f_nonneg.
+      apply: rsumr_ge0 => *; exact/pos_f_ge0.
     apply/(leR_wpmul2l (ltRW pos_F))/Log_increasing_le => //.
       apply Rlt_mult_inv_pos => //; by rewrite -HG.
     apply/(leR_wpmul2l (ltRW pos_F))/leR_inv => //.
     rewrite setUC in DUD'.
     rewrite DUD' (big_union _ g DID') /= -[X in X <= _]add0R; apply leR_add2r.
-    apply: rsumr_ge0 => ? ?; exact/pos_f_nonneg.
+    apply: rsumr_ge0 => ? ?; exact/pos_f_ge0.
   apply: (leR_trans H).
   rewrite setUC in DUD'.
   rewrite DUD' (big_union _ (fun a => f a * log (f a / g a)) DID') /=.
@@ -179,11 +177,11 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
     transitivity (\rsum_(a | a \in D') 0).
       apply eq_bigr => a.
       rewrite /D' in_set => /andP[a_C /eqP ->]; by rewrite mul0R.
-    by rewrite big_const iter_Rplus mulR0.
+    by rewrite big_const iter_addR mulR0.
   rewrite add0R; exact/leRR.
 apply log_sum1 => // a.
 rewrite /C1 in_set.
 case/andP => a_C fa_not_0.
-case/Rle_lt_or_eq_dec: (pos_f_nonneg f a) => // abs.
+case/Rle_lt_or_eq_dec: (pos_f_ge0 f a) => // abs.
 by rewrite abs eqxx in fa_not_0.
 Qed.

@@ -50,18 +50,18 @@ Definition CodeErrRate (W : `Ch_1(A, B)) c :=
 
 Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
 
-Lemma echa_pos (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
+Lemma echa_ge0 (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
 apply mulR_ge0.
-- apply Rle_mult_inv_pos; by [fourier | exact/lt_0_INR/ltP].
-- apply: rsumr_ge0 => ? _; apply: rsumr_ge0 => ? _; exact: DMC_nonneg.
+- apply divR_ge0; by [fourier | exact/ltR0n].
+- apply: rsumr_ge0 => ? _; apply: rsumr_ge0 => ? _; exact: DMC_ge0.
 Qed.
 
 Lemma echa1 (HM : (0 < #| M |)%nat) W (c : code) : echa(W , c) <= 1.
 Proof.
 rewrite /CodeErrRate div1R.
-apply (@leR_pmul2l (INR #|M|)); first exact/lt_0_INR/ltP.
-rewrite mulRA mulRV ?INR_eq0 -?lt0n // mul1R -iter_Rplus_Rmult -big_const.
+apply (@leR_pmul2l (INR #|M|)); first exact/ltR0n.
+rewrite mulRA mulRV ?INR_eq0' -?lt0n // mul1R -iter_addR -big_const.
 apply: ler_rsum => m _; exact: Pr_1.
 Qed.
 

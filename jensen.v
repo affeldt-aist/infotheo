@@ -90,14 +90,14 @@ apply: (iffP idP).
 move=> Xa1.
 have H : forall b : A, b != a -> X b = 0.
   apply/(@prsumr_eq0P _ [pred x | x != a] X).
-    move=> ? _; exact/dist_nonneg.
+    move=> ? _; exact/dist_ge0.
   move/eqP : (pmf1 X).
   by rewrite (bigD1 a) //= Xa1 eq_sym addRC -subR_eq subRR => /eqP <-.
 apply/eqP/setP => b.
 rewrite !inE.
 case/boolP: (b == a) => Hb.
   rewrite (eqP Hb) Xa1; apply/eqP => Hb'.
-  apply (Rlt_irrefl 1).
+  apply (ltRR 1).
   by rewrite {1}Hb'.
 by rewrite H // eqxx.
 Qed.
@@ -142,7 +142,7 @@ have {HsumD1}HsumXD1 q:
 rewrite 2!{}HsumXD1.
 have /IH {IH}[IH HDd] : #|dist_supp d| = n.
   by rewrite D1Dist.card_dist_supp // cardA.
-have HXb: 0 <= X b <= 1 by split; [exact/dist_nonneg|exact/dist_max].
+have HXb: 0 <= X b <= 1 by split; [exact/dist_ge0|exact/dist_max].
 split; last by rewrite mulRC; apply interval_convex.
 rewrite mulRC.
 refine (leR_trans

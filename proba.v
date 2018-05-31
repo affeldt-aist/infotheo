@@ -3,7 +3,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
-Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
+Require Import Reals Fourier FunctionalExtensionality.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 
 (** * Formalization of discrete probabilities *)
@@ -24,38 +24,39 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
   7. Module D1Dist.
      construction of a distribution from another by removing one element from the support
   8. Module TupleDist.
-  9. Section wolfowitz_counting.
-     Wolfowitz's counting principle
-  10. Module ProdDist.
+  9. Module ProdDist.
+  10. Module ConvexDist.
   11. Section tuple_prod_cast.
-  12. Section probability.
+  12. Section wolfowitz_counting.
+     Wolfowitz's counting principle
+  13. Section probability.
       Probability of an event P with distribution p (Pr_p[P] = \sum_{i \in A, P\,i} \, p(i))
-  13. Section Pr_tuple_prod.
-  14. Section random_variable.
+  14. Section Pr_tuple_prod.
+  15. Section random_variable.
       Definition of a random variable (R-valued) with a distribution
       pr: Probability that a random variable evaluates to r \in R
-  15. Section expected_value_definition.
+  16. Section expected_value_definition.
       Expected value of a random variable
-  16. Section expected_value_for_standard_random_variables.
+  17. Section expected_value_for_standard_random_variables.
       Properties of the expected value of standard random variables:
-  17. Section markov_inequality.
-  18. Section variance_definition.
-  19. Section variance_properties.
-  20. Section chebyshev.
+  18. Section markov_inequality.
+  19. Section variance_definition.
+  20. Section variance_properties.
+  21. Section chebyshev.
       Chebyshev's Inequality
-  21. Section joint_dist.
+  22. Section joint_dist.
       Joint Distribution
-  22. Section identically_distributed.
+  23. Section identically_distributed.
       Identically Distributed Random Variables
-  23. Section independent_random_variables.
-  24. Section sum_two_rand_var_def.
+  24. Section independent_random_variables.
+  25. Section sum_two_rand_var_def.
       The sum of two random variables
-  25. Section sum_two_rand_var.
-  26. Section sum_n_rand_var_def.
-  27. Section sum_n_rand_var.
-  28. Section sum_n_independent_rand_var_def.
-  29. Section sum_n_independent_rand_var.
-  20. Section weak_law_of_large_numbers.
+  26. Section sum_two_rand_var.
+  27. Section sum_n_rand_var_def.
+  28. Section sum_n_rand_var.
+  29. Section sum_n_independent_rand_var_def.
+  30. Section sum_n_independent_rand_var.
+  31. Section weak_law_of_large_numbers.
 *)
 
 Set Implicit Arguments.
@@ -112,31 +113,27 @@ Lemma rsum_dist_supp (g : A -> R) (X : dist) (P : pred A):
 Proof.
 rewrite (bigID (mem (dist_supp X))) /= addRC (eq_bigr (fun=> 0)); last first.
   move=> i; rewrite inE negbK => /andP[_ /eqP] ->; by rewrite mulR0.
-rewrite big_const iter_Rplus mulR0 add0R [in RHS]big_seq_cond.
+rewrite big_const iter_addR mulR0 add0R [in RHS]big_seq_cond.
 apply eq_bigl => a; by rewrite !inE andbC /index_enum -enumT mem_enum inE.
 Qed.
 
 Definition makeDist (pmf : A -> R) (H0 : forall a, 0 <= pmf a)
   (H1 : \rsum_(a|a \in A) pmf a = 1) := @mkDist (@mkPosFun _ pmf H0) H1.
 
-Lemma dist_nonneg (P : dist) a : 0 <= P a.
-Proof. by apply pos_f_nonneg. Qed.
+Lemma dist_ge0 (P : dist) a : 0 <= P a.
+Proof. exact: pos_f_ge0. Qed.
 
 Lemma dist_max (P : dist) a : P a <= 1.
 Proof.
 rewrite -(pmf1 P) (_ : P a = \rsum_(a' in A | a' == a) P a').
-  apply ler_rsum_l_support with (Q := xpredT) => // ?; exact/dist_nonneg.
+  apply ler_rsum_l_support with (Q := xpredT) => // ?; exact/dist_ge0.
 by rewrite big_pred1_eq.
 Qed.
 
 Lemma dist_eq d d' : pmf d = pmf d' -> d = d'.
 Proof.
-destruct d as [d d1] => /=.
-destruct d' as [d' d'1] => /= H.
-move: d1 d'1.
-rewrite H.
-move=> d1 d'1.
-by rewrite (proof_irrelevance _ d1 d'1).
+move: d d' => [d d1] [d' d'1] /= dd'.
+move: d1 d'1; rewrite dd' => d1 d'1; congr mkDist; exact: eq_irrelevance.
 Qed.
 
 End distribution_definition.
@@ -146,8 +143,7 @@ Definition dist_of (A : finType) := fun phT : phant (Finite.sort A) => dist A.
 Notation "{ 'dist' T }" := (dist_of (Phant T)) : proba_scope.
 
 Module Uniform.
-
-Section Uniform_sect.
+Section uniform.
 
 Variables (A : finType) (n : nat).
 Hypothesis domain_not_empty : #|A| = n.+1.
@@ -155,27 +151,25 @@ Hypothesis domain_not_empty : #|A| = n.+1.
 Definition f (a : A) := INR 1 / INR #|A|.
 
 Lemma f0 a : 0 <= f a.
-Proof.
-apply/(Rle_mult_inv_pos _ _ (pos_INR _))/lt_0_INR.
-rewrite domain_not_empty; by apply/ltP.
-Qed.
+Proof. apply/divR_ge0 => //; apply/ltR0n; by rewrite domain_not_empty. Qed.
 
 Lemma f1 : \rsum_(a | a \in A) f a = 1.
 Proof.
-by rewrite /f -big_distrr /= mul1R big_const iter_Rplus mulRV // INR_eq0 domain_not_empty.
+rewrite /f -big_distrr /= mul1R big_const iter_addR mulRV //.
+by rewrite INR_eq0' domain_not_empty.
 Qed.
 
 Definition d : dist A := makeDist f0 f1.
 
-End Uniform_sect.
+End uniform.
 
 Lemma d_neq0 (C : finType) (domain_non_empty : { m : nat | #| C | = m.+1 }) :
   forall x, d (projT2 domain_non_empty) x != 0.
 Proof.
 move=> x.
 rewrite /d /= /f /=.
-apply/eqP/Rmult_integral_contrapositive; split; first by apply/eqP; rewrite INR_eq0.
-apply/eqP/invR_neq0; rewrite INR_eq0; by case: domain_non_empty => x' ->.
+apply/negP; rewrite mulR_eq0 => /orP[|]; first by rewrite INR_eq0'.
+apply/negP/invR_neq0; rewrite INR_eq0'; by case: domain_non_empty => x' ->.
 Qed.
 
 End Uniform.
@@ -185,11 +179,11 @@ Lemma dom_by_uniform {A : finType} (P : dist A) n (HA : #|A| = n.+1) :
 Proof.
 move=> a; rewrite /Uniform.d /= /Uniform.f /= HA div1R => /esym abs.
 exfalso.
-move: abs; exact/ltR_eqF/invR_gt0/lt_0_INR/ltP.
+move: abs; exact/ltR_eqF/invR_gt0/ltR0n.
 Qed.
 
 Module UniformSupport.
-Section UniformSupport_sect.
+Section uniformsupport.
 
 Variables (A : finType) (C : {set A}).
 Hypothesis support_not_empty : (0 < #|C|)%nat.
@@ -200,25 +194,24 @@ Lemma f0 a : 0 <= f a.
 Proof.
 rewrite /f.
 case e : (a \in C); last exact/leRR.
-apply Rle_mult_inv_pos; first by fourier.
-rewrite -/(INR 0); by apply/lt_INR/ltP.
+apply divR_ge0; [by fourier|exact/ltR0n].
 Qed.
 
 Lemma f1 : \rsum_(a in A) f a = 1%R.
 Proof.
 rewrite /f.
-have HC' : INR #|C| != 0%R by rewrite INR_eq0 -lt0n.
+have HC' : INR #|C| != 0%R by rewrite INR_eq0' -lt0n.
 transitivity (\rsum_(a in A) (if a \in C then 1 else 0) / INR #|C|)%R.
 apply eq_bigr => a _.
-  case aC : (a \in C); [reflexivity | by move/eqP in HC'; field].
+  case aC : (a \in C); by [ | move/eqP in HC'; field].
 have HC'' : \rsum_(a in A) (if a \in C then 1 else 0)%R = INR #|C|.
-  by rewrite -big_mkcondr /= big_const iter_Rplus mulR1.
+  by rewrite -big_mkcondr /= big_const iter_addR mulR1.
 by rewrite /Rdiv -big_distrl HC'' /= mulRV.
 Qed.
 
 Definition d : dist A := locked (makeDist f0 f1).
 
-End UniformSupport_sect.
+End uniformsupport.
 
 Local Notation "'`U' HC " := (d HC).
 
@@ -235,7 +228,7 @@ Proof. by rewrite /d; unlock; move/negbTE; rewrite /= /f => ->. Qed.
 Lemma restrict g : \rsum_(t in A) ((`U HC) t * g t)%R = \rsum_(t in C) ((`U HC) t * g t)%R.
 Proof.
 rewrite (bigID (fun x => x \in C)) /= addRC (eq_bigr (fun=> 0)).
-by rewrite big_const // iter_Rplus mulR0 add0R.
+by rewrite big_const // iter_addR mulR0 add0R.
 move=> a aC; by rewrite E0 // mul0R.
 Qed.
 
@@ -247,7 +240,7 @@ Qed.
 Lemma neq0 z : ((`U HC) z != 0) = (z \in C).
 Proof.
 case/boolP : (z \in C) => [/E ->|/E0 ->//]; last by rewrite eqxx.
-rewrite div1R; by apply/invR_neq0; rewrite INR_eq0 -lt0n.
+rewrite div1R; by apply/invR_neq0; rewrite INR_eq0' -lt0n.
 Qed.
 
 End UniformSupport_prop.
@@ -292,8 +285,7 @@ End Binary.
 
 Section binary_distribution_prop.
 
-Variable A : finType.
-Variables P Q : dist A.
+Variables (A : finType) (P Q : dist A).
 Hypothesis card_A : #|A| = 2%nat.
 
 Lemma charac_bdist : {r | {r01 : 0 <= r <= 1 & P = Binary.d card_A r01 }}.
@@ -322,7 +314,6 @@ Variables (A : finType) (d : dist A).
 Hypothesis Hd : #|dist_supp d| = 2%nat.
 
 Definition a := enum_val (cast_ord (esym Hd) ord0).
-
 Definition b := enum_val (cast_ord (esym Hd) (lift ord0 ord0)).
 
 Lemma enumE : enum (dist_supp d) = a :: b :: [::].
@@ -356,9 +347,8 @@ Lemma f0 : forall a, 0 <= f a.
 Proof.
 move=> a; rewrite /f.
 case: ifPn => [_ |ab]; first exact/leRR.
-apply mulR_ge0; first exact/dist_nonneg.
-apply/ltRW/invR_gt0/Rlt_Rminus.
-apply/ltRP; rewrite ltR_neqAle Xb1; exact/leRP/dist_max.
+apply mulR_ge0; first exact/dist_ge0.
+apply/ltRW/invR_gt0/subR_gt0/ltRP; rewrite ltR_neqAle Xb1; exact/leRP/dist_max.
 Qed.
 
 Lemma f1 : \rsum_(a in B) f a = 1.
@@ -382,10 +372,9 @@ rewrite /dist_supp (cardsD1 b [set a | X a != 0]) !inE Xb0 add1n /=.
 apply eq_card => i; rewrite !inE /f.
 case: ifPn => //= ib; first by rewrite eqxx.
 apply/idP/idP; first by apply: contra => /eqP ->; rewrite div0R.
-apply: contra; rewrite /Rdiv => /eqP.
-case/Rmult_integral => [/eqP //| H].
+apply: contra; rewrite /Rdiv mulR_eq0 => /orP[//|H].
 exfalso.
-move/eqP/negPn/negP : H; apply.
+move/negPn/negP : H; apply.
 apply/invR_neq0; by apply: contra Xb1; rewrite subR_eq0 eq_sym.
 Qed.
 
@@ -407,7 +396,7 @@ Lemma dist2tuple1 : forall A, dist A -> {dist 1.-tuple A}.
 Proof.
 move=> A d.
 apply makeDist with (fun x => d (thead x)).
-  move=> a; exact: dist_nonneg.
+  move=> a; exact: dist_ge0.
 rewrite -(pmf1 d); exact: big_1_tuple.
 Defined.
 
@@ -417,8 +406,8 @@ Lemma dist2rV1 : forall A, dist A -> {dist 'rV[A]_1}.
 Proof.
 move=> A d.
 apply makeDist with (fun x : 'rV[A]_1 => d (x ``_ ord0)).
-move=> a; exact: dist_nonneg.
-  rewrite -(pmf1 d).
+move=> a; exact: dist_ge0.
+rewrite -(pmf1 d).
 exact: big_rV_1.
 Defined.
 
@@ -435,7 +424,7 @@ Local Open Scope vec_ext_scope.
 Definition f (t : 'rV[A]_n) := \rprod_(i < n) P t ``_ i.
 
 Lemma f0 (t : 'rV[A]_n) : 0 <= f t.
-Proof. apply rprodr_ge0 => ?; exact/dist_nonneg. Qed.
+Proof. apply rprodr_ge0 => ?; exact/dist_ge0. Qed.
 
 (** Definition of the product distribution (over a row vector): *)
 
@@ -454,7 +443,7 @@ Local Close Scope ring_scope.
   move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
 rewrite -bigA_distr_bigA /= /P'.
 rewrite [X in _ = X](_ : 1 = \rprod_(i < n) 1)%R; last first.
-  by rewrite big_const_ord iter_Rmult pow1.
+  by rewrite big_const_ord iter_mulR pow1.
 apply eq_bigr => i _; by apply pmf1.
 Qed.
 
@@ -501,53 +490,8 @@ transitivity (\rsum_(j : {ffun 'I_k -> 'rV[A]_n}) \rprod_(m : 'I_k) P `^ _ (j m)
   - move=> v /=; by apply/esym/eqP/rowP => i; rewrite mxE ffunE.
   - move=> i _; apply eq_bigr => j _; by rewrite ffunE.
 rewrite -(bigA_distr_bigA (fun m => P `^ _)) /= big_const.
-by rewrite iter_Rmult pmf1 pow1.
+by rewrite iter_mulR pmf1 pow1.
 Qed.
-
-Section wolfowitz_counting.
-
-Variable B : finType.
-Variable P : dist B.
-Variable k : nat.
-Variable A : {set 'rV[B]_k}.
-
-Lemma wolfowitz a b alpha beta : 0 < alpha -> 0 < beta ->
-  a <= \rsum_(x in A) P `^ k x <= b ->
-  (forall x : 'rV_k, x \in A -> alpha <= P `^ k x <= beta) ->
-  a / beta <= INR #| A | <= b /alpha.
-Proof.
-move=> Halpha Hbeta H1 H2.
-have H3 : \rsum_(x in A) P `^ _ x <= INR #|A| * beta.
-  have H3 : \rsum_(x in A | predT A ) P `^ _ x <= INR #|A| * beta.
-  apply (@leR_trans (\rsum_(x in A | predT A) [fun _ => beta] x)).
-      apply ler_rsum_support => /= i iA _; by apply H2.
-    rewrite -big_filter /= big_const_seq /= iter_Rplus /=.
-    apply leR_wpmul2r; first by fourier.
-    apply Req_le.
-    rewrite filter_index_enum count_predT cardE.
-    congr (INR (size _)).
-    apply eq_enum => i; by rewrite /in_mem /= andbC.
-  apply: leR_trans; last exact: H3.
-  apply Req_le, eq_bigl => i; by rewrite andbC.
-have H4 : INR #|A| * alpha <= \rsum_(x in A) P `^ _ x.
-  have H4 : INR #|A| * alpha <= \rsum_(x in A | predT A) P `^ _ x.
-    apply (@leR_trans (\rsum_(x in A | predT A) [fun _ => alpha] x)); last first.
-      apply ler_rsum_support => i Hi _; by case: (H2 i Hi).
-    rewrite -big_filter /= big_const_seq /= iter_Rplus /=.
-    apply leR_wpmul2r; first by fourier.
-    apply Req_le.
-    rewrite filter_index_enum count_predT cardE.
-    congr (INR (size _)).
-    apply eq_enum => i; by rewrite /in_mem /= andbC.
-  apply: leR_trans; first exact: H4.
-  apply Req_le, eq_bigl => i; by rewrite andbC.
-case: H1 => H1 H1'.
-split; apply/leRP.
-- rewrite leR_pdivr_mulr //; apply/leRP; move/leR_trans : H1; exact.
-- rewrite leR_pdivl_mulr //; apply/leRP; exact: (leR_trans H4).
-Qed.
-
-End wolfowitz_counting.
 
 Module ProdDist.
 
@@ -558,26 +502,25 @@ Variables (A B : finType) (P1 : dist A) (P2 : dist B).
 Definition f (ab : A * B) := (P1 ab.1 * P2 ab.2)%R.
 
 Lemma f0 (ab : A * B) : 0 <= f ab.
-Proof. apply mulR_ge0; by apply dist_nonneg. Qed.
+Proof. apply/mulR_ge0; exact/dist_ge0. Qed.
 
 Lemma f1 : \rsum_(ab in {: A * B}) f ab = 1%R.
 Proof.
 rewrite -(pair_big xpredT xpredT (fun a b => P1 a * P2 b)%R) /= -(pmf1 P1).
-apply eq_bigr => a _.
-by rewrite -big_distrr /= pmf1 mulR1.
+apply eq_bigr => a _; by rewrite -big_distrr /= pmf1 mulR1.
 Qed.
 
 Definition d : {dist A * B} := makeDist f0 f1.
 
 Definition proj1 (P : {dist A * B}) : dist A.
 apply makeDist with (fun a => \rsum_(b in B) P (a, b)).
-- move=> a; apply rsumr_ge0 => ? _; exact: dist_nonneg.
+- move=> a; apply rsumr_ge0 => ? _; exact: dist_ge0.
 - rewrite -(pmf1 P) pair_big /=; apply eq_bigr; by case.
 Defined.
 
 Definition proj2 (P : {dist A * B}) : dist B.
 apply makeDist with (fun b => \rsum_(a in A) P (a, b)).
-- move=> a; apply: rsumr_ge0 => ? _; exact: dist_nonneg.
+- move=> a; apply: rsumr_ge0 => ? _; exact: dist_ge0.
 - rewrite exchange_big /= -(pmf1 P) pair_big /=; apply eq_big; by case.
 Defined.
 
@@ -586,6 +529,28 @@ End ProdDist_sect.
 End ProdDist.
 
 Notation "P1 `x P2" := (ProdDist.d P1 P2) : proba_scope.
+
+Module ConvexDist.
+Section convexdist.
+Variables (A : finType) (d1 d2 : dist A) (p : R).
+Hypothesis p01 : 0 <= p <= 1.
+
+Definition f a := (p * d1 a + p.~ * d1 a)%R.
+
+Lemma f0 a : 0 <= f a.
+Proof.
+apply addR_ge0; apply mulR_ge0;
+ [by case: p01|exact: dist_ge0|exact: (onem_ge0 (proj2 p01))|exact: dist_ge0].
+Qed.
+
+Lemma f1 : \rsum_(a in A) f a = 1%R.
+Proof.
+by rewrite big_split /= -2!big_distrr /= -mulRDl pmf1 mulR1 onemKC.
+Qed.
+
+Definition d : {dist A} := makeDist f0 f1.
+End convexdist.
+End ConvexDist.
 
 Section tuple_prod_cast.
 
@@ -609,6 +574,43 @@ Defined.
 
 End tuple_prod_cast.
 
+Section wolfowitz_counting.
+
+Variables (C : finType) (P : dist C) (k : nat) (s : {set 'rV[C]_k}).
+
+Lemma wolfowitz a b A B : 0 < A -> 0 < B ->
+  a <= \rsum_(x in s) P `^ k x <= b ->
+  (forall x : 'rV_k, x \in s -> A <= P `^ k x <= B) ->
+  a / B <= INR #| s | <= b / A.
+Proof.
+move=> A0 B0 [Ha Hb] H.
+have HB : \rsum_(x in s) P `^ _ x <= INR #|s| * B.
+  have HB : \rsum_(x in s | predT s ) P `^ _ x <= INR #|s| * B.
+    apply (@leR_trans (\rsum_(x in s | predT s) [fun _ => B] x)).
+      apply ler_rsum_support => /= i iA _; by apply H.
+    rewrite -big_filter /= big_const_seq /= iter_addR /=.
+    apply leR_wpmul2r; first by fourier.
+    apply Req_le.
+    rewrite filter_index_enum count_predT cardE; congr (INR (size _)).
+    apply eq_enum => i; by rewrite /in_mem /= andbC.
+  apply/(leR_trans _ HB)/Req_le/eq_bigl => i; by rewrite andbC.
+have HA : INR #|s| * A <= \rsum_(x in s) P `^ _ x.
+  have HA : INR #|s| * A <= \rsum_(x in s | predT s) P `^ _ x.
+    apply (@leR_trans (\rsum_(x in s | predT s) [fun _ => A] x)); last first.
+      apply ler_rsum_support => i Hi _; by case: (H i Hi).
+    rewrite -big_filter /= big_const_seq /= iter_addR /=.
+    apply leR_wpmul2r; first by fourier.
+    apply Req_le.
+    rewrite filter_index_enum count_predT cardE; congr (INR (size _)).
+    apply eq_enum => i; by rewrite /in_mem /= andbC.
+  apply/(leR_trans HA)/Req_le/eq_bigl => i; by rewrite andbC.
+split; apply/leRP.
+- rewrite leR_pdivr_mulr //; apply/leRP; move/leR_trans : Ha; exact.
+- rewrite leR_pdivl_mulr //; apply/leRP; exact: (leR_trans HA).
+Qed.
+
+End wolfowitz_counting.
+
 Section probability.
 
 Variable A : finType.
@@ -617,12 +619,11 @@ Variable P : dist A.
 Definition Pr (E : {set A}) := \rsum_(a in E) P a.
 
 Lemma le_0_Pr E : 0 <= Pr E.
-Proof. apply rsumr_ge0 => *; exact: dist_nonneg. Qed.
+Proof. apply rsumr_ge0 => *; exact: dist_ge0. Qed.
 
 Lemma Pr_1 E : Pr E <= 1.
 Proof.
-rewrite -(pmf1 P); apply ler_rsum_l => // a _;
-  [exact/leRR | exact/dist_nonneg].
+rewrite -(pmf1 P); apply ler_rsum_l => // a _; [exact/leRR | exact/dist_ge0].
 Qed.
 
 Lemma Pr_ext E F : E :=: F -> Pr E = Pr F.
@@ -658,7 +659,7 @@ rewrite (_ : \rsum_(i in A | [pred x in E1] i) P i =
 rewrite (_ : \rsum_(i in A | [pred x in E2] i) P i =
   \rsum_(i in A | pred_of_set E2 i) P i); last first.
   apply eq_bigl => x /=; by rewrite unfold_in.
-exact/ler_rsum_predU/dist_nonneg.
+exact/ler_rsum_predU/dist_ge0.
 Qed.
 
 Lemma Pr_union_disj E1 E2 :
@@ -672,7 +673,7 @@ Qed.
 Lemma Pr_incl (E E' : {set A}) : (E \subset E') -> Pr E <= Pr E'.
 Proof.
 move=> H; apply ler_rsum_l => a Ha;
-  [exact/leRR | exact/dist_nonneg | move/subsetP : H; exact].
+  [exact/leRR | exact/dist_ge0 | move/subsetP : H; exact].
 Qed.
 
 Lemma Pr_bigcup (B : finType) (E : pred B) F :
@@ -691,13 +692,13 @@ case: ifP => H1.
   rewrite [X in _ <= X](exchange_big_dep (fun hd => (hd \in A) && [pred x in \bigcup_(i | E i) F i] hd)) /=; last first.
     move=> b j Pi Fj; apply/bigcupP; by exists b.
   rewrite big_cons /=.
-  rewrite H1 big_const iter_Rplus -exchange_big_dep //; last first.
+  rewrite H1 big_const iter_addR -exchange_big_dep //; last first.
     move=> b j Pi Fj; apply/bigcupP; by exists b.
   apply/leR_add2r.
   set inr := INR _.
   suff H : 1 <= inr.
     rewrite -{1}(mul1R (P hd)).
-    apply leR_wpmul2r => //; exact: dist_nonneg.
+    apply leR_wpmul2r => //; exact: dist_ge0.
   rewrite /inr {inr} (_ : 1 = INR 1) //.
   apply le_INR.
   apply/leP => /=.
@@ -708,7 +709,7 @@ case: ifP => H1.
 apply/(leR_trans IH)/ler_rsum => b Eb.
 rewrite big_cons.
 case: ifPn => hFb; last exact/leRR.
-rewrite -[X in X <= _]add0R; exact/leR_add2r/dist_nonneg.
+rewrite -[X in X <= _]add0R; exact/leR_add2r/dist_ge0.
 Qed.
 
 End probability.
@@ -826,7 +827,7 @@ Qed.
 Lemma Ex_nonneg : (forall a, 0 <= X a) -> 0 <= Ex.
 Proof.
 move=> H; rewrite ExE; apply: rsumr_ge0 => i _.
-apply mulR_ge0; by [apply H | apply dist_nonneg].
+apply mulR_ge0; by [apply H | apply dist_ge0].
 Qed.
 
 End expected_value_definition.
@@ -909,11 +910,11 @@ rewrite (bigID [pred a' | X a' >b= r]) /=.
 rewrite -[a in a <= _]addR0.
 apply leR_add; last first.
   apply rsumr_ge0 => a _.
-  apply mulR_ge0; by [apply X_nonneg | apply dist_nonneg].
+  apply mulR_ge0; by [apply X_nonneg | apply dist_ge0].
 apply (@leR_trans (\rsum_(i | X i >b= r) r * `p_ X i)).
   rewrite big_distrr /=;  apply/Req_le/eq_bigl => a; by rewrite inE.
 apply ler_rsum => a Xar.
-apply/leR_wpmul2r; [exact/dist_nonneg | exact/leRP].
+apply/leR_wpmul2r; [exact/dist_ge0 | exact/leRP].
 Qed.
 
 Lemma markov (r : R) : 0 < r -> Pr[X >= r] <= `E X / r.
@@ -987,13 +988,13 @@ rewrite (_ : `p_ ((X \-cst `E X) \^2) = `p_ X) //.
 apply (@leR_trans (\rsum_(a in A | `| X a - `E X | >b= epsilon)
     (((X \-cst `E X) \^2) a  * `p_X a)%R)); last first.
   apply ler_rsum_l_support with (Q := xpredT) => // a .
-  apply mulR_ge0; [exact: pow_even_ge0| exact: dist_nonneg].
+  apply mulR_ge0; [exact: pow_even_ge0| exact: dist_ge0].
 rewrite /Pr big_distrr [_ \^2]lock /= -!lock.
 apply ler_rsum_l => i Hi; rewrite /= -!/(_ ^ 2).
-- apply leR_wpmul2r; first exact: dist_nonneg.
+- apply leR_wpmul2r; first exact: dist_ge0.
   move: Hi; rewrite inE -(Rabs_sq (X i - _)) => H.
   apply/pow_incr; split => //; [exact/ltRW | exact/leRP].
-- apply mulR_ge0; [exact: pow_even_ge0 | exact: dist_nonneg].
+- apply mulR_ge0; [exact: pow_even_ge0 | exact: dist_ge0].
 - move: Hi; by rewrite inE.
 Qed.
 
@@ -1395,7 +1396,7 @@ Proof.
 move=> s Hs.
 destruct n.
   by inversion sum_Xs.
-rewrite (V_scale X) // (V_linearity_isum sum_Xs Hs) //; field; by apply not_0_INR.
+rewrite (V_scale X) // (V_linearity_isum sum_Xs Hs) //; field; exact/INR_eq0.
 Qed.
 
 End sum_n_independent_rand_var.
@@ -1416,9 +1417,9 @@ Lemma wlln epsilon : 0 < epsilon ->
 Proof.
 move=> He.
 have HV : `V (X '/ n.+1) = sigma2 / INR n.+1.
-  rewrite -(V_average_isum X_Xs V_Xs) V_scale //; by field; exact/not_0_INR.
+  rewrite -(V_average_isum X_Xs V_Xs) V_scale //; by field; exact/INR_eq0.
 rewrite /Rdiv invRM; last 2 first.
-  by apply/eqP; rewrite INR_eq0.
+  by rewrite INR_eq0.
   exact/gtR_eqF/pow_gt0.
 rewrite mulRA (_ : sigma2 * / INR n.+1 = sigma2 / INR n.+1)%R // -{}HV.
 have HE : `E (X '/ n.+1) = miu.
@@ -1427,8 +1428,8 @@ have HE : `E (X '/ n.+1) = miu.
   have -> : su = (INR n.+1 * miu)%R.
     rewrite /su.
     transitivity (\rsum_(i < n.+1) miu); first exact/eq_bigr.
-    by rewrite big_const /= iter_Rplus cardE /= size_enum_ord.
-  by field; apply not_0_INR.
+    by rewrite big_const /= iter_addR cardE /= size_enum_ord.
+  by field; exact/INR_eq0.
 rewrite -{}HE.
 have cheby : Pr `p_(X '/ n.+1)
   [set t | `| X t / INR n.+1 - `E (X '/ n.+1) | >b= epsilon] <= `V (X '/ n.+1) / epsilon ^ 2.

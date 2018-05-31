@@ -44,16 +44,16 @@ Lemma out_entropy_dist_ub : `| `H(P `o V) - `H(P `o W) | <=
 Proof.
 rewrite 2!xlnx_entropy /Rminus.
 rewrite -mulRN -mulRDr normRM Rabs_right; last first.
-  rewrite -(mul1R (/ ln 2)); exact/Rle_ge/Rle_mult_inv_pos.
+  rewrite -(mul1R (/ ln 2)); exact/Rle_ge/divR_ge0.
 rewrite -mulRA; apply leR_wpmul2l.
-  by rewrite -(mul1R (/ ln 2)); exact: Rle_mult_inv_pos.
+  by rewrite -(mul1R (/ ln 2)); exact: divR_ge0.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
 apply: leR_trans; first exact: ler_rsum_Rabs.
-rewrite -iter_Rplus_Rmult -big_const.
+rewrite -iter_addR -big_const.
 apply ler_rsum => b _; rewrite addRC.
 apply Rabs_xlnx => //.
-- split; [exact/dist_nonneg | exact/dist_max].
-- split; [exact/dist_nonneg | exact/dist_max].
+- split; [exact/dist_ge0 | exact/dist_max].
+- split; [exact/dist_ge0 | exact/dist_max].
 - rewrite 2!OutDist.dE /Rminus (big_morph _ morph_Ropp oppR0) -big_split /=.
   apply: leR_trans; first exact: ler_rsum_Rabs.
   apply (@leR_trans (d(`J(P , V), `J(P , W)))).
@@ -74,16 +74,16 @@ Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
 Proof.
 rewrite 2!xlnx_entropy.
 rewrite /Rminus -mulRN -mulRDr normRM Rabs_right; last first.
-  by rewrite -(mul1R (/ ln 2)); apply Rle_ge, Rle_mult_inv_pos.
+  by rewrite -(mul1R (/ ln 2)); apply/Rle_ge/divR_ge0.
 rewrite -2!mulRA; apply leR_wpmul2l.
-  by rewrite -(mul1R (/ ln 2)); exact: Rle_mult_inv_pos.
+  by rewrite -(mul1R (/ ln 2)); exact: divR_ge0.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
 apply: leR_trans; first exact: ler_rsum_Rabs.
-rewrite -2!iter_Rplus_Rmult -2!big_const pair_bigA /=.
+rewrite -2!iter_addR -2!big_const pair_bigA /=.
 apply: ler_rsum; case => a b _; rewrite addRC /=.
 apply Rabs_xlnx => //.
-- split; [exact: dist_nonneg | exact: dist_max].
-- split; [exact: dist_nonneg | exact: dist_max].
+- split; [exact: dist_ge0 | exact: dist_max].
+- split; [exact: dist_ge0 | exact: dist_max].
 - apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
     rewrite /var_dist /R_dist (bigD1 (a, b)) //= Rabs_minus_sym /Rminus.
     rewrite -[X in X <= _]addR0.
@@ -134,8 +134,8 @@ have Htmp : min(exp (-2), gamma) > 0.
   - by apply exp_pos.
   - subst gamma ; apply mulR_gt0.
       apply/invR_gt0/addR_gt0wl.
-      - exact/lt_0_INR/ltP.
-      - apply mulR_ge0; exact/pos_INR.
+      - exact/ltR0n.
+      - apply mulR_ge0; exact/leR0n.
     apply mulR_gt0 => //; apply mulR_gt0; last exact: invR_gt0.
     rewrite -(Rplus_opp_r cap) /Rminus; by apply ltR_add2r.
 move=> /(_ Htmp) {Htmp} [] /= mu [mu_pos mu_cond].
@@ -147,7 +147,7 @@ have x_pos : 0 < x.
   apply mulR_gt0 => //; exact: invR_gt0.
 have Htmp : D_x no_cond 0 x /\ R_dist x 0 < mu.
   split.
-  - split => //; by apply Rlt_not_eq.
+  - split => //; exact/ltR_eqF.
   - rewrite /R_dist subR0 Rabs_right; last exact/Rle_ge/ltRW.
     subst x.
     apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
@@ -203,7 +203,7 @@ suff Htmp : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite leR_oppr oppRK -mulRA mulRC.
   apply/leRP; rewrite leR_pdivr_mulr //.
   rewrite mulRC -leR_pdivl_mulr; last first.
-    by apply/ltRP; rewrite -mult_INR -plus_INR plusE multE ltR0n addn_gt0 Bnot0.
+    by apply/ltRP; rewrite -mult_INR -plus_INR plusE multE ltR0n' addn_gt0 Bnot0.
   apply/leRP; by rewrite [in X in _ <= X]mulRC /Rdiv (mulRC _ (/ (_ + _))).
 suff Htmp : xlnx x <= xlnx (sqrt (2 * (D(V || W | P)))).
   clear -Hx Htmp.
