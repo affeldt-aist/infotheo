@@ -72,10 +72,9 @@ have aux : 0 < Rmin (x - r) delt.
   apply Rmin_case => // ; apply (@ltR_add2r r); by rewrite add0R addRC subRKC.
 exists (mkposreal (Rmin (x - r) delt) aux) => /= h hnot0 Rlthdelta.
 rewrite Hfg ; last first.
-  apply (@ltR_add2r (- h)), Rgt_lt.
-  rewrite -addRA Rplus_opp_r addR0; apply Rlt_gt.
+  rewrite -ltR_subl_addr.
   apply (@ltR_add2r (- r)).
-  rewrite (addRC r) -addRA Rplus_opp_r addR0 addRC.
+  rewrite -addRA addRCA -/(_ - _) subRR addR0 addRC.
   apply (@leR_ltR_trans (Rabs h)); first by rewrite -Rabs_Ropp; apply Rle_abs.
   apply (@ltR_leR_trans (Rmin (- r + x) delt)) => //.
   by rewrite addRC.
@@ -156,14 +155,12 @@ Lemma derive_increasing_interv_ax_left : forall (a b:R) (f:R -> R) (pr: pderivab
       forall x y:R, a < x <= b -> a < y <= b -> x < y -> f x <= f y).
 Proof.
 intros a b f pr H; split; intros H0 x y H1 H2 H3.
-- apply (@ltR_add2r (- f x)).
-  rewrite addRC Rplus_opp_l.
+- rewrite -subR_gt0.
   set pr' := pderivable_restrict_left pr (proj1 H1) (proj2 H2) H3.
   have H0' : forall t (Ht : x <= t <= y), 0 < derive_pt f t (pr' t Ht).
     move=> z /= [Hz0 Hz1].
     by apply H0.
   case: (MVT_cor1_pderivable pr' H3); intros x0 [x1 [H7 H8]].
-  unfold Rminus in H7.
   rewrite H7.
   apply mulR_gt0; [by apply H0' | fourier].
 - set pr' := pderivable_restrict_left pr (proj1 H1) (proj2 H2) H3.
@@ -183,14 +180,12 @@ Lemma derive_increasing_interv_ax_right :
       forall x y:R, a <= x < b -> a <= y < b -> x < y -> f x <= f y).
 Proof.
 intros a b f pr H; split; intros H0 x y H1 H2 H3.
-- apply (@ltR_add2r (- f x)).
-  rewrite addRC Rplus_opp_l.
+- rewrite -subR_gt0.
   set pr' := pderivable_restrict_right pr (proj1 H1) (proj2 H2) H3.
   have H0' : forall t (Ht : x <= t <= y), 0 < derive_pt f t (pr' t Ht).
     move=> z /= [Hz0 Hz1].
     by apply H0.
   case: (MVT_cor1_pderivable pr' H3); intros x0 [x1 [H7 H8]].
-  unfold Rminus in H7.
   rewrite H7.
   apply mulR_gt0; [by apply H0' | fourier].
 - set pr' := pderivable_restrict_right pr (proj1 H1) (proj2 H2) H3.

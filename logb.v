@@ -76,7 +76,7 @@ Let exp_dev_gt0 : forall n r, 0 < r -> 0 < exp_dev n r.
 Proof.
 elim => [r rpos | n IH r rpos].
 - rewrite /exp_dev /= mul1R Rinv_1 -exp_0.
-  by apply Rgt_lt, Rgt_minus, Rlt_gt, exp_increasing.
+  by apply subR_gt0, exp_increasing.
 - apply: (@ltR_trans 1) ; first by fourier.
   rewrite (_ : 1 = exp_dev n.+1 0) ; last first.
     rewrite /exp_dev exp_0 pow_i ?mul0R ?subR0 //; by apply/ltP.

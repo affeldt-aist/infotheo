@@ -72,6 +72,7 @@ Lemma addRK (a : R) : cancel (Rplus^~ a) (Rminus^~ a).
 Proof. move=> b; by field. Qed.
 
 Definition subR0 : right_id 0 Rminus := Rminus_0_r.
+Definition sub0R := Rminus_0_l.
 
 Lemma subRR a : a - a = 0. Proof. by rewrite Rminus_diag_eq. Qed.
 
@@ -89,9 +90,6 @@ Lemma subR_eq x y z : (x - z == y) = (x == y + z).
 Proof.
 apply/idP/idP => [/eqP <-|/eqP ->]; by [rewrite subRK | rewrite addRK].
 Qed.
-
-Lemma subR_gt0 x y : (0 < y - x) <-> (x < y).
-Proof. split; [exact: Rminus_gt_0_lt | exact: Rlt_Rminus]. Qed.
 
 Definition mul0R : left_zero 0 Rmult := Rmult_0_l.
 Definition mulR0 : right_zero 0 Rmult := Rmult_0_r.
@@ -114,6 +112,8 @@ Proof. move=> *; by rewrite Rmult_plus_distr_r. Qed.
 Lemma mulRDr : right_distributive Rmult Rplus.
 Proof. move=> *; by rewrite Rmult_plus_distr_l. Qed.
 Lemma mulRBl : left_distributive Rmult Rminus.
+Proof. move=> *; field. Qed.
+Lemma mulRBr : right_distributive Rmult Rminus.
 Proof. move=> *; field. Qed.
 
 Lemma mulR_eq0 (x y : R) : (x * y == 0) = ((x == 0) || (y == 0)).
@@ -200,22 +200,29 @@ Proof. by rewrite leRNlt. Qed.
 Lemma leRNgt' (x y : R) : (x <b= y) = ~~ (y <b x).
 Proof. by rewrite ltRNge' negbK. Qed.
 
-Lemma leR_eqVlt m n : (m <b= n) = (m == n) || (m <b n).
+Lemma leR_eqVlt m n : (m <= n) <-> (m = n) \/ (m < n).
 Proof.
-apply/idP/idP => [/leRP|/orP[/eqP ->|]].
-  case/Rle_lt_or_eq_dec => ?; apply/orP; by [right; apply/ltRP|left; apply/eqP].
-exact: leRR'.
-exact: ltRW'.
+split => [|[->|]].
+  case/Rle_lt_or_eq_dec => ?; by [right|left].
+exact: leRR.
+exact: ltRW.
+Qed.
+Lemma leR_eqVlt' m n : (m <b= n) = (m == n) || (m <b n).
+Proof.
+apply/idP/idP => [/leRP/leR_eqVlt[/eqP -> //|/ltRP ->]|/orP[/eqP ->|/ltRP]].
+  by rewrite orbT.
+by rewrite leRR'.
+by move/ltRP/ltRW'.
 Qed.
 
 Lemma ltR_neqAle m n : (m <b n) = (m != n) && (m <b= n).
-Proof. by rewrite ltRNge' leR_eqVlt negb_or ltRNge' negbK eq_sym. Qed.
+Proof. by rewrite ltRNge' leR_eqVlt' negb_or ltRNge' negbK eq_sym. Qed.
 
 Lemma lt0R x : (0 <b x) = (x != 0) && (0 <b= x).
 Proof. by rewrite ltR_neqAle eq_sym. Qed.
 
 Lemma le0R x : (0 <b= x) = (x == 0) || (0 <b x).
-Proof. by rewrite leR_eqVlt eq_sym. Qed.
+Proof. by rewrite leR_eqVlt' eq_sym. Qed.
 
 (* Lemma pnatr_eq0 n : (n%:R == 0 :> R) = (n == 0)%N. *)
 Lemma INR_eq0 n : (INR n = 0) <-> (n = O).
@@ -296,11 +303,21 @@ Proof. split; [exact: Rplus_lt_reg_l | exact: Rplus_lt_compat_l]. Qed.
 
 Definition leR_lt_add := Rplus_le_lt_compat. (* x <= y -> z < t -> x + z < y + t *)
 
-Lemma ltR_subRL m n p : (n <b p - m) = (m + n <b p).
+Lemma ltR_subRL m n p : (n < p - m) <-> (m + n < p).
 Proof.
-apply/idP/idP => /ltRP H; apply/ltRP.
-  move/(@ltR_add2l m) : H; by rewrite addRCA Rplus_opp_r addR0.
-by apply (@ltR_add2l m); rewrite addRCA Rplus_opp_r addR0.
+split => H.
+- move/(@ltR_add2l m) : H; by rewrite subRKC.
+- by apply (@ltR_add2l m); rewrite subRKC.
+Qed.
+Lemma ltR_subRL' m n p : (n <b p - m) = (m + n <b p).
+Proof. by apply/idP/idP => /ltRP/ltR_subRL/ltRP. Qed.
+
+Definition ltR_addr_subl := ltR_subRL.
+
+Lemma ltR_subl_addr x y z : (x - y < z) <-> (x < z + y).
+Proof.
+split => H; [apply (@ltR_add2r (-y)) | apply (@ltR_add2r y)]; last by rewrite subRK.
+rewrite -addRA; apply: (ltR_leR_trans H); rewrite Rplus_opp_r addR0; exact/leRR.
 Qed.
 
 Lemma leR_subr_addr x y z : (x <= y - z) <-> (x + z <= y).
@@ -318,6 +335,21 @@ apply/leRP; rewrite -(leR_add2r' y) subRK; exact/leRP.
 Qed.
 Lemma leR_subl_addr' x y z : (x - y <b= z) = (x <b= z + y).
 Proof. by apply/idP/idP => /leRP/leR_subl_addr/leRP. Qed.
+
+Lemma subR_gt0 x y : (0 < y - x) <-> (x < y).
+Proof. split; [exact: Rminus_gt_0_lt | exact: Rlt_Rminus]. Qed.
+Lemma subR_lt0 x y : (y - x < 0) <-> (y < x).
+Proof. split; [exact: Rminus_lt | exact: Rlt_minus]. Qed.
+Lemma subR_ge0 x y : (0 <= y - x) <-> (x <= y).
+Proof.
+split => [|?]; first by move/leR_subr_addr; rewrite add0R.
+apply/leR_subr_addr; by rewrite add0R.
+Qed.
+Lemma subr_le0  x y : (y - x <= 0) <-> (y <= x).
+Proof.
+split => [|?]; first by move/leR_subl_addr; rewrite add0R.
+apply/leR_subl_addr; by rewrite add0R.
+Qed.
 
 (***********************************)
 (* inequalities and multiplication *)
@@ -507,6 +539,8 @@ Proof. rewrite /= !mulR1 !mulRDr !mulRBl /=; field. Qed.
 Lemma sqrRD a b : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2.
 Proof. rewrite /= !mulR1 !mulRDl !mul1R !mulRDr /=; field. Qed.
 
+Definition normR0 : `| 0 | = 0 := Rabs_R0.
+
 Lemma normR0_eq0 r : `| r | = 0 -> r = 0. Proof. move: (Rabs_no_R0 r); tauto. Qed.
 
 Lemma normRM : {morph Rabs : x y / x * y : R}.
@@ -520,17 +554,25 @@ Lemma gtR0_norm x : 0 < x -> `|x| = x. Proof. by move/ltRW/geR0_norm. Qed.
 Definition maxRA : associative Rmax := Rmax_assoc.
 Definition maxRC : commutative Rmax := Rmax_comm.
 
-(*Lemma geq_max m n1 n2 : (m >= maxn n1 n2) = (m >= n1) && (m >= n2).*)
-Lemma leR_max x y z : (Rmax y z <b= x) = (y <b= x) && (z <b= x).
-Proof.
-apply/idP/idP => [/leRP|/andP[/leRP H1 /leRP H2]]; last first.
-  apply/leRP; by apply Rmax_case_strong.
-apply Rmax_case_strong => /leRP H1 /leRP H2.
-  rewrite H2; apply/leRP/leR_trans; apply/leRP; by eauto.
-rewrite H2 andbC; apply/leRP/leR_trans; apply/leRP; by eauto.
-Qed.
+Lemma maxRR : idempotent Rmax.
+Proof. move=> x; rewrite Rmax_left //; exact/leRR. Qed.
 
 Definition leR_maxl m n : m <= Rmax m n := Rmax_l m n.
 Definition leR_maxr m n : n <= Rmax m n := Rmax_r m n.
 Definition geR_minl m n : Rmin m n <= m := Rmin_l m n.
 Definition geR_minr m n : Rmin m n <= n := Rmin_r m n.
+
+Lemma leR_max x y z : (Rmax y z <= x) <-> (y <= x) /\ (z <= x).
+Proof.
+split => [| [yx zx] ].
+  move/leRP; rewrite leR_eqVlt' => /orP[/eqP <-|/ltRP/Rmax_Rlt].
+    split; [exact: leR_maxl | exact: leR_maxr].
+  case=> ?; split; exact/ltRW.
+rewrite -(Rmax_right _ _ yx); exact: Rle_max_compat_l.
+Qed.
+
+Lemma leR_max' x y z : (Rmax y z <b= x) = (y <b= x) && (z <b= x).
+Proof.
+apply/idP/idP => [/leRP/leR_max[] /leRP -> /leRP -> //|].
+case/andP=> /leRP ? /leRP ?; exact/leRP/leR_max.
+Qed.

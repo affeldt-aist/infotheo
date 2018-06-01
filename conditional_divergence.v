@@ -222,7 +222,7 @@ case/boolP : (W a b == 0) => Wab0.
     apply/ltRP; rewrite lt0R Wab0; exact/leRP/dist_ge0.
   rewrite -exp2_pow.
   f_equal.
-  rewrite -mulRN -mulRDr mulRA /Rminus addRC addRA Rplus_opp_l add0R mulRN -3!mulNR oppRK.
+  rewrite -mulRN -mulRDr mulRA addRC addRA (addRC _ (log (V a b))) -/(Rminus (log (V a b)) _) subRR add0R mulRN -3!mulNR oppRK.
   f_equal.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   move: (HV).

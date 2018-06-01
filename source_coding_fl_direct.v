@@ -162,7 +162,7 @@ Proof.
 move: (proj2_sig (SrcDirectBound den delta)) => Hdelta.
 have Hk : aep_bound P (lambda / 2) <= INR k by exact/(leR_trans _ Hdelta)/leR_maxl.
 set S := `TS P k (lambda / 2).
-set def := TS_0 halflambda0 halflambda1 Hk.
+set def := TS_0 halflambda0 halflambda1 Hk. (*TODO: get rid of this expansion*)
 set F := f n S.
 set PHI := @phi _ n _ S def.
 exists (mkScode F PHI).
@@ -209,7 +209,7 @@ apply/negPn/negPn.
     exact/leRR.
   apply (@leR_trans (exp2 (1 + INR k * (`H P + lambda / 2)))); last first.
    apply Exp_le_increasing => //; apply leR_add2r.
-    move/leRP : Hdelta; rewrite leR_max => /andP[_ /leRP Hlambda].
+    move/leR_max : Hdelta => [_ Hlambda].
     apply (@leR_pmul2r (2 / lambda)%R); first exact lambdainv2.
     rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
       exact/gtR_eqF/lambda0.

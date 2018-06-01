@@ -134,14 +134,14 @@ Lemma bin_ent_0eq0 : H2 0 = 0.
 Proof.
 rewrite /H2 /log.
 by rewrite !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
-                       add0R, addR0, subR0, Rplus_opp_r).
+                       add0R, addR0, subR0).
 Qed.
 
 Lemma bin_ent_1eq0 : H2 1 = 0.
 Proof.
 rewrite /H2 /log.
-by rewrite /Rminus !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
-                       add0R, addR0, subR0, Rplus_opp_r).
+by rewrite !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
+                       add0R, addR0, subR0, subRR).
 Qed.
 
 (** The binary entropy function is bounded by 1: *)

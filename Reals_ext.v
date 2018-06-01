@@ -68,10 +68,10 @@ Lemma Rlt_0_Rmult_inv a b : 0 < a * b -> 0 <= a -> 0 <= b -> 0 < a /\ 0 < b.
 Proof.
 move=> H Ha Hb.
 split.
-- apply Rnot_le_lt => abs.
+- apply/ltRNge => abs.
   have abs' : a = 0 by rewrite eqR_le.
   by move: H; rewrite abs' mul0R => /ltRR.
-- apply Rnot_le_lt => abs.
+- apply/ltRNge => abs.
   have abs' : b = 0 by rewrite eqR_le.
   by move: H; rewrite abs' mulR0 => /ltRR.
 Qed.
@@ -329,4 +329,16 @@ set tmp := INR (fact m0) * _.
 rewrite -mulRA mulVR ?mulR1; last first.
   by rewrite /tmp mulR_eq0 negb_or !INR_eq0' !fact_Coq_SSR -!lt0n !fact_gt0.
 by rewrite /tmp -!mult_INR !fact_Coq_SSR !multE !minusE bin_fact.
+Qed.
+
+Lemma normR_max a b c c' : 0 <= a <= c -> 0 <= b <= c' ->
+  `| a - b | <= max(c, c').
+Proof.
+move=> [H1 H2] [H H3]; case: (Rtotal_order a b) => [H0|[H0|H0]].
+- rewrite Rabs_minus_sym Rabs_right; last fourier.
+  apply: (@leR_trans b); [fourier | apply/(leR_trans H3)/leR_maxr; fourier].
+- subst b; rewrite subRR normR0.
+  exact/(leR_trans H1)/(leR_trans H2)/leR_maxl.
+- rewrite geR0_norm; last by fourier.
+  apply: (@leR_trans a); [fourier|exact/(leR_trans H2)/leR_maxl].
 Qed.

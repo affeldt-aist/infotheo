@@ -45,7 +45,7 @@ case/boolP : (y == 0) => [/eqP y0 | y0].
     rewrite (_ : y - x = x * (y / x - 1) ); last first.
       rewrite mulRDr mulRCA mulRV ?mulR1 ?mulRN1 //; exact/eqP.
     rewrite -mulRA; apply (leR_wpmul2l (ltRW x_pos)).
-    rewrite /Rminus -LogV; last exact: x_pos.
+    rewrite {1}/Rminus -LogV; last exact: x_pos.
     rewrite -LogM; last 2 first.
       exact/y_pos.
       exact/invR_gt0/x_pos.
@@ -68,7 +68,7 @@ apply (@leR_trans ((\rsum_(a | a \in A) (Q a - P a)) * log (exp 1))).
 rewrite -{1}(mul0R (log (exp 1))).
 apply (leR_wpmul2r log_exp1_Rle_0).
 rewrite big_split /= -(big_morph _ morph_Ropp oppR0).
-rewrite !pmf1 Rplus_opp_r; exact/leRR.
+rewrite !pmf1 -/(_ - _) subRR; exact/leRR.
 Qed.
 
 (* TODO: move? *)
@@ -89,7 +89,7 @@ case/boolP : (y == 0) => [/eqP y0 | y_not_0].
       by rewrite mulRC; apply Rlt_mult_inv_pos ; [apply y_pos | apply x_pos].
     rewrite {1}/log LogM //; last exact/invR_gt0/x_pos.
     rewrite -(@eqR_mul2l x); last exact/gtR_eqF.
-    rewrite LogV // addRC Hxy2 mulRA /Rminus mulRDr; congr (_ * _).
+    rewrite LogV // addRC Hxy2 mulRA mulRBr; congr (_ * _).
     field; exact/eqP.
 Qed.
 
@@ -112,7 +112,7 @@ split => [HPQ | ->].
       symmetry.
       rewrite -{1}oppR0 -{1}HPQ (big_morph _ morph_Ropp oppR0); apply eq_bigr => a _; by field.
   - rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
-    by rewrite -(big_morph _ morph_Ropp oppR0) !pmf1 Rplus_opp_r mul0R.
+    by rewrite -(big_morph _ morph_Ropp oppR0) !pmf1 -/(Rminus 1 1) subRR mul0R.
 - by rewrite /div; apply big1=> a _; rewrite subRR mulR0.
 Qed.
 

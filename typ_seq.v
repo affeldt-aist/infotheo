@@ -159,7 +159,7 @@ have -> : Pr P `^ n.+1 (~: p) =
           move/ltRP : LHS.
           rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivr_mulr; last exact/ltR0n.
           rewrite /Rdiv mulRC => /ltRP; rewrite ltR_oppr => /ltRP.
-          rewrite mulNR -ltR_subRL => LHS.
+          rewrite mulNR -ltR_subRL' => LHS.
           rewrite mul1R Rabs_pos_eq //.
           by move/ltRP : LHS; move/(ltR_trans He)/ltRW.
         - rewrite leRNgt' negbK in LHS.

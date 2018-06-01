@@ -114,7 +114,7 @@ rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply (@leR_pmul2r (1 / r)) => //.
 apply Rlt_mult_inv_pos; [fourier | tauto].
 rewrite -mulRA div1R mulRV ?mulR1; last by case: Hr => /ltRP; rewrite lt0R => /andP[].
-by move/leRP : Hk; rewrite leR_max => /andP[_ /leRP].
+by case/leR_max : Hk.
 Qed.
 
 Local Open Scope proba_scope.
@@ -160,7 +160,7 @@ Lemma step4 : 1 - (esrc(P , sc)) <= delta +
   INR #| no_failure :&: `TS P k.+1 delta| * exp2 (- INR k.+1 * (`H P - delta)).
 Proof.
 apply/(leR_trans step3)/leR_add.
-- move/leRP : Hk; rewrite 2!leR_max -andbA => /andP[/leRP].
+- move/leRP : Hk; rewrite 2!leR_max' -andbA => /andP[/leRP].
   move/(Pr_TS_1 Hdelta) => H2 _.
   set p1 := Pr _ _ in H2.
   rewrite -/(Pr (P `^ k.+1) _) Pr_to_cplt /= (_ : Pr _ _ = p1); last first.
@@ -207,11 +207,11 @@ have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
       have H1 : (`H P - r) / 2 < `H P - r.
         rewrite -[X in _ < X]mulR1.
         apply ltR_pmul2l; last by fourier.
-        apply/ltRP; rewrite ltR_subRL addR0; apply/ltRP; by case: Hr.
+        apply/ltRP; rewrite ltR_subRL' addR0; apply/ltRP; by case: Hr.
       apply Rmin_case_strong => H2 //; exact: (leR_ltR_trans H2 H1).
     + rewrite -mulRA div1R mulRV; last exact/eqP/Rminus_eq_contra/e0_delta.
       rewrite mulNR mulR1 leR_oppl.
-      by move/leRP : Hk; rewrite 2!leR_max => /andP[/andP[_ /leRP]].
+      by move/leRP : Hk; rewrite 2!leR_max' => /andP[/andP[_ /leRP]].
 suff : 1 - (esrc(P , sc)) <= delta + delta by move=> *; fourier.
 exact/(leR_trans step5)/leR_add2l.
 Qed.

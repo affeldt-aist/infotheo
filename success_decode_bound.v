@@ -258,7 +258,7 @@ apply Rmax_case.
 - rewrite mulR0 exp2_0; by apply success_factor_bound_part1.
 - apply (@leR_trans (exp2(INR n * `I(P ; V)) / INR #|M|)); last first.
   + apply/Req_le/esym.
-    rewrite /Rminus mulRDr mulRC.
+    rewrite mulRDr mulRC.
     rewrite Rmult_opp_opp -mulRA mulRN mulVR ?INR_eq0' //.
     rewrite mulRN mulR1 /exp2 ExpD mulRC /Rdiv; f_equal.
     rewrite Exp_Ropp LogK //; exact/ltR0n.
