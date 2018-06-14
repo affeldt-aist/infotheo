@@ -21,10 +21,16 @@ Qed.
 
 Section prefix.
 
-Variable T : finType.
+Variable T : eqType.
 Implicit Types a b : seq T.
 
 Definition prefix a b := a == take (size a) b.
+
+Lemma prefix_nil (p : seq T) : (prefix p [::]) = (p == [::]).
+Proof. by case: p. Qed.
+
+Lemma prefix_refl a : prefix a a.
+Proof. by rewrite /prefix take_size. Qed.
 
 Lemma prefix_cons x y a b : prefix (x :: a) (y :: b) = (x == y) && prefix a b.
 Proof.
@@ -57,14 +63,35 @@ move/eqP : H => /(congr1 (take (size b))).
 by rewrite take_cat ltnn subnn take0 cats0 take_cat ltnNge ab /= => <-.
 Qed.
 
+Lemma prefix_leq_size a b : prefix a b -> size a <= size b.
+Proof. by move/prefixP => [c /eqP  <-]; rewrite size_cat leq_addr. Qed.
+
 Lemma prefixW a b : a != b -> prefix a b -> size a < size b.
 Proof.
 move=> ab /prefixP[[|h t /eqP <-]]; first by rewrite cats0 (negbTE ab).
 by rewrite size_cat /= -addSnnS ltn_addr.
 Qed.
 
-Lemma prefix_leq_size a b : prefix a b -> size a <= size b.
-Proof. by move/prefixP => [c /eqP  <-]; rewrite size_cat leq_addr. Qed.
+Lemma prefix_same_size a b : prefix a b -> size a = size b -> a = b.
+Proof.
+case/prefixP => c /eqP/esym ->{b} /eqP.
+rewrite size_cat -{1}(addn0 (size a)) eqn_add2l eq_sym size_eq0 => /eqP ->.
+by rewrite cats0.
+Qed.
+
+Lemma prefix_rcons a b c : prefix a (rcons b c) = prefix a b || (a == rcons b c).
+Proof.
+rewrite /prefix -cats1 take_cat; case: ifPn => [ab|].
+  rewrite (_ : _ == b ++ _ = false) ?orbF //; apply/negbTE.
+  apply: contraTN ab => /eqP ->; by rewrite -leqNgt size_cat leq_addr.
+rewrite -leqNgt leq_eqVlt => /orP[/eqP|] ab.
+  rewrite -ab subnn take0 cats0 take_size (_ : _ == _ ++ _ = false) ?orbF //.
+  apply/negbTE/eqP => /(congr1 size)/eqP.
+  by rewrite size_cat ab -{1}(addn0 (size a)) eqn_add2l.
+rewrite take_oversize /= ?subn_gt0 // (_ : _ == take _ _ = false) //.
+apply/negbTE; move: (ab).
+rewrite ltnNge; apply: contra => /eqP ->; by rewrite size_take ltnNge (ltnW ab).
+Qed.
 
 End prefix.
 

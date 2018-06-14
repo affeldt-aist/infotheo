@@ -687,8 +687,7 @@ Lemma bseqval_inj : injective bseqval.
 Proof.
 move=> [a Ha] [b Hb] /= H.
 move: Ha Hb; rewrite H => Ha Hb.
-congr Bseq.
-exact: eq_irrelevance.
+congr Bseq; exact: eq_irrelevance.
 Qed.
 
 Canonical bseq_subType := Eval hnf in [subType for bseqval].
@@ -773,6 +772,16 @@ Canonical bseq_subFinType n (T: finType) := Eval hnf in [subFinType of n.-bseq T
 
 Lemma size_bseq (n : nat) (T : Type) (bs : n.-bseq T) : size bs <= n.
 Proof. by case: bs. Qed.
+
+Lemma rcons_bseqP n T (t : n.-bseq T) x : size (rcons t x) <= n.+1.
+Proof. by rewrite size_rcons ltnS size_bseq. Qed.
+Canonical rcons_bseq n (T : Type) (t : n.-bseq T) x := Bseq (rcons_bseqP t x).
+
+Definition bseq n (T : Type) (t : n.-bseq T) mkT : bseq_of n T :=
+  mkT (let: Bseq _ tP := t return size t <= n in tP).
+
+Notation "[ 'bseq' 'of' s ]" := (@bseq _ _ _ (fun sP => @Bseq _ _ s sP))
+  (at level 0, format "[ 'bseq'  'of'  s ]") : type_scope.
 
 Section ordered_ranks.
 
