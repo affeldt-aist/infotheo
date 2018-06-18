@@ -943,3 +943,41 @@ by rewrite (tnth_nth (thead ta)) (tnth_nth (thead tb)).
 Qed.
 
 End perm_tuples_facts.
+
+(* TODO: move *)
+From mathcomp Require Import fingraph.
+
+Lemma connect_sym1 (D : finType) (r : rel D) : symmetric r ->
+  forall x y, connect r x y -> connect r y x.
+Proof.
+move=> rs x y; case/boolP : (x == y) => [/eqP ->//|xy].
+case/connectP => s H1 H2; apply/connectP.
+elim/last_ind : s H1 H2 => [|h t _ H1 H2].
+  rewrite /= => _ ?; subst y; by rewrite eqxx in xy.
+rewrite last_rcons in H2; subst t.
+move: H1; rewrite rcons_path => /andP[H1 H2].
+exists (rcons (rev h) x); last by rewrite last_rcons.
+apply/(pathP x) => i.
+rewrite size_rcons ltnS leq_eqVlt size_rev.
+case/orP => [/eqP|] Hi.
+  case: h => [|h t] in H1 H2 Hi *.
+    rewrite /= in H2; by rewrite Hi /= rs.
+  rewrite Hi nth_rcons size_rev ltnn eqxx /= nth_rcons size_rev /= ltnS leqnn.
+  rewrite nth_rev // subnn rs /=; by case/andP : H1.
+rewrite nth_rcons size_rev Hi -cat1s -cats1 catA cats1.
+rewrite nth_rcons /= size_rev ltnS (ltnW Hi) nth_rev // -cat1s nth_cat /=.
+case: ifPn.
+  rewrite ltnS leqn0 => /eqP -> /=; by rewrite subn1 nth_last rs.
+rewrite -leqNgt => i0.
+rewrite subn1 /= rs nth_rev ?(leq_ltn_trans _ Hi) // ?leq_pred // prednK //.
+move/pathP : H1 => /(_ x (size h - i)).
+rewrite -cat1s nth_cat /= ifF; last first.
+  apply/negbTE; by rewrite -leqNgt subn_gt0 (leq_trans _ Hi).
+rewrite -subnDA addn1; apply.
+by rewrite -{2}(subn0 (size h)) ltn_sub2l // (leq_trans _ Hi).
+Qed.
+
+Lemma connect_sym (D : finType) (r : rel D) : symmetric r -> connect_sym r.
+Proof.
+move=> ?; rewrite /connect_sym => ? ?; apply/idP/idP => /connect_sym1; exact.
+Qed.

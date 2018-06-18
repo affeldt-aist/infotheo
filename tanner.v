@@ -15,27 +15,25 @@ Require Import bigop_ext ssralg_ext f2 subgraph_partition.
 - Section subscript_set.
 *)
 
+Reserved Notation "''V(' x ',' y ')'" (format "''V(' x ','  y ')'").
+Reserved Notation "''F(' x ',' y ')'" (format "''F(' x ','  y ')'").
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Module Tanner.
 Section tanner.
-
 Variable (V : finType).
 
 Record graph (r : rel V) := {
   connected : forall a b, connect r a b;
   undirected : symmetric r ;
-  coloring : V -> 'I_2 ;
-  bipartite : colorable r coloring }.
+  bipartite : Colorable.graph r 2 }.
 
 Record acyclic_graph (r : rel V) := {
   edges :> graph r ;
   acyclic : acyclic r }.
-
-Definition bipartite_of_tanner r : graph r -> colorable_graph V 2.
-Proof. by case => _ _; apply/Build_colorable_graph. Defined.
 
 End tanner.
 End Tanner.
@@ -48,7 +46,7 @@ Local Open Scope ring_scope.
 
 Variable (m n : nat) (H : 'M['F_2]_(m, n)).
 
-Definition tanner_rel : rel ('I_ m + 'I_n) :=
+Definition tanner_rel' : rel ('I_ m + 'I_n) :=
   fun x y =>
   match x, y with
     | inl x', inr y' => H x' y' == 1
@@ -56,20 +54,22 @@ Definition tanner_rel : rel ('I_ m + 'I_n) :=
     | _, _ => false
   end.
 
+Definition tanner_rel : rel ('I_ m + 'I_n) := locked tanner_rel'.
+
+Lemma tanner_relE : tanner_rel = tanner_rel'.
+Proof. by rewrite /tanner_rel; unlock. Qed.
+
 Lemma sym_tanner_rel : symmetric tanner_rel.
-Proof. by case. Qed.
+Proof. rewrite tanner_relE; by case. Qed.
 
 Definition tanner_rel_kind (o : ('I_ m + 'I_n)) : 'I_2 :=
   if o is inl _ then 0 else 1.
 
 Lemma colorable_tanner_rel : colorable tanner_rel tanner_rel_kind.
-Proof. by case => v1; case. Qed.
+Proof. rewrite tanner_relE; by case => v1; case. Qed.
 
 Lemma simple_tanner_rel : simple tanner_rel.
-Proof.
-apply: (@colorable_is_simple _ tanner_rel 2) .
-by apply colorable_tanner_rel.
-Qed.
+Proof. exact/(@colorable_is_simple _ tanner_rel 2)/colorable_tanner_rel. Qed.
 
 End tanner_relation.
 
@@ -80,24 +80,37 @@ Local Open Scope ring_scope.
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 (** Variable nodes *)
-Definition Vnext m0 := [set n0 | H m0 n0 == 1].
+Definition Vnext m0 := locked [set n0 | H m0 n0 == 1].
 
 Local Notation "''V'" := (Vnext).
+
+Lemma VnextE1 n0 m0 : n0 \in 'V m0 = tanner_rel H (inr n0) (inl m0).
+Proof. by rewrite /Vnext tanner_relE -lock inE. Qed.
+
+Lemma VnextE2 n0 m0 : n0 \in 'V m0 = tanner_rel H (inl m0) (inr n0).
+Proof. by rewrite /Vnext tanner_relE -lock inE. Qed.
+
+Definition VnextE := (VnextE1,VnextE2).
 
 Definition Vgraph m0 n0 :=
   n0 |: [set x | inr x \in subgraph (tanner_rel H) (inl m0) (inr n0)].
 
-Local Notation "''V(' x ',' y ')'" := (Vgraph x y) (format "''V(' x ','  y ')'").
+Local Notation "''V(' x ',' y ')'" := (Vgraph x y).
 
-(* TODO: rename *)
-Lemma Vgraph_n0 m0 n0 : n0 \in 'V(m0, n0).
+Lemma root_in_Vgraph m0 n0 : n0 \in 'V(m0, n0).
 Proof. by rewrite /Vgraph 3!inE eqxx. Qed.
+
+Lemma mem_VgraphD1_Vnext n0 n1 m0 : n1 \in 'V( m0, n0) :\ n0 -> n0 \in 'V m0.
+Proof.
+rewrite 2!inE => /andP[n1n0].
+by rewrite 3!inE (negbTE n1n0) orFb inE -VnextE => /andP[].
+Qed.
 
 Lemma Vgraph_not0 m0 n0 : 0 < #|'V(m0, n0)|.
 Proof.
 rewrite card_gt0.
 apply/set0Pn => /=.
-eexists; by apply Vgraph_n0.
+eexists; exact: root_in_Vgraph.
 Qed.
 
 Lemma Vgraph_set1 m1 n1 : n1 \notin 'V m1 -> 'V(m1, n1) = [set n1].
@@ -106,29 +119,25 @@ move=> m1n1.
 apply/setP => n2.
 rewrite inE in_set1 /=.
 case/boolP: (n2 == n1) => //= n2n1.
-rewrite inE /= in m1n1.
-by rewrite inE /= inE /= (negbTE m1n1).
+by rewrite 2!inE -VnextE (negbTE m1n1).
 Qed.
 
 (** Function nodes *)
-Definition Fnext n0 := [set m0 | n0 \in 'V m0].
+Definition Fnext n0 := locked [set m0 | n0 \in 'V m0].
 
 Local Notation "''F'" := (Fnext).
 
-Lemma VFnext m0 n0 : (n0 \in 'V m0) = (m0 \in 'F n0).
-Proof. by rewrite [in X in _ = X]inE. Qed.
+Lemma FnextE m0 n0 : (m0 \in 'F n0) = (n0 \in 'V m0).
+Proof. by rewrite /Fnext; unlock; rewrite inE. Qed.
 
 Definition Fgraph m0 n0 :=
   [set m1 | inl m1 \in subgraph (tanner_rel H) (inl m0) (inr n0)].
 
-Local Notation "''F(' x ',' y ')'" := (Fgraph x y) (format "''F(' x ','  y ')'").
+Local Notation "''F(' x ',' y ')'" := (Fgraph x y).
 
 Lemma Fgraph_m0 m0 n0 : n0 \in 'V m0 -> m0 \in 'F(m0, n0).
 Proof.
-move=> Hm0.
-rewrite /Fgraph inE /subgraph inE.
-rewrite connect0 andbT.
-by rewrite !inE /= in Hm0.
+move=> Hm0; by rewrite /Fgraph inE /subgraph inE -VnextE Hm0 connect0.
 Qed.
 
 Lemma Fgraph_nonempty m1 n1 : n1 \notin 'V m1 -> 'F(m1, n1) == set0.
@@ -138,21 +147,18 @@ apply/eqP/setP => m2.
 rewrite in_set0.
 apply/negbTE.
 apply: contra m1n1.
-rewrite 2!inE.
-case/andP => X _.
-by rewrite inE.
+rewrite 2!inE -VnextE; by case/andP.
 Qed.
 
 Lemma Fnext_Vnext_Vgraph m0 n0 : n0 \in 'V m0 ->
   'V m0 :\ n0 \subset 'V(m0, n0) :\ n0.
 Proof.
 move=> m0Fn0; apply/subsetP => n1.
-rewrite !inE /=.
+rewrite in_setD1.
 case/andP => X1 X2.
-rewrite !inE /= in m0Fn0.
-rewrite X1 /= (negbTE X1) /= m0Fn0 /=.
+rewrite in_setD1 X1 /= !inE (negbTE X1) orFb -VnextE /= m0Fn0 /=.
 apply/connect1.
-rewrite /except /= /= X2 /=.
+rewrite exceptE /= -VnextE X2.
 by apply: contra X1 => /eqP [] ->.
 Qed.
 
@@ -167,8 +173,8 @@ case/connectP : m0m1 => /= p Hp1 Hp2.
 exists (rcons p (inr n1)).
 rewrite rcons_path /=.
 apply/andP; split => //.
-  apply/andP; split.
-    apply/andP; split; by rewrite -Hp2.
+  rewrite -Hp2.
+  rewrite exceptE /= -VnextE m1n1 /=.
   by apply: contra n1n0 => /eqP [] ->.
 by rewrite last_rcons.
 Qed.
@@ -181,13 +187,12 @@ apply/negPn/negP.
 rewrite !inE negb_or.
 case/andP => n1n0.
 rewrite !inE in Hm1, Hm0.
-rewrite negb_and /= Hm0 /=.
+rewrite negb_and /= -VnextE Hm0 /=.
 case/andP : Hm1 => _ Hm1 abs.
 move/negP : abs; apply.
 apply: (@connect_trans _ _ (inl m1) _ _ Hm1).
 apply/connect1.
-rewrite !inE in Hn1.
-rewrite /except /= Hn1 /=.
+rewrite exceptE /= -VnextE Hn1 /=.
 by apply: contra n1n0 => /eqP [] ->.
 Qed.
 
@@ -219,39 +224,36 @@ apply/set0Pn.
 rewrite !inE /= in Hm1.
 exists m1.
 apply Fgraph_m0.
-rewrite !inE.
+rewrite -FnextE.
 by case/andP : Hm1 => _.
 Qed.
 
 End next_graph.
 
-(* TODO: clean *)
 Section subscript_set.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
+Local Notation "''V'" := (Vnext H).
 
 Local Open Scope ring_scope.
-
+Import GRing.Theory.
 Local Open Scope vec_ext_scope.
 
-Local Notation "'`V'" := (Vnext H).
-
-Lemma PCM_V (c : 'rV['F_2]_n) : H *m c ^T == 0 ->
-  forall m0 : 'I_m, \big[+%R/Zp0]_(n0 : 'I_n | n0 \in `V m0) c ``_ n0 == 0.
+(* TODO: not used? *)
+Lemma PCM_V (c : 'rV['F_2]__) : H *m c ^T = 0 ->
+  forall m0, \big[+%R/Zp0]_(n0 < n | n0 \in 'V m0) c ``_ n0 = 0.
 Proof.
-move/eqP => Hsyndrome i.
-apply/eqP.
-have : (H *m c^T) i ord0 = 0 by rewrite Hsyndrome mxE.
+move=> Hsyndrome m0.
+have : (H *m c^T) m0 ord0 = 0 by rewrite Hsyndrome mxE.
 rewrite mxE => <-.
-transitivity (\sum_(j | H i j != 0) H i j * c^T j ord0); last first.
-  set X := \sum_(j < n | H i j != 0) H i j * c^T j ord0.
-  rewrite (bigID (fun j => H i j != 0)) /=.
-  rewrite [X in _ = _ + X](_ : _ = 0) ?GRing.addr0 //.
-  apply (big_ind (fun x => x = 0)) => //.
-  move=> ? ? -> ->; by rewrite GRing.addr0.
-  move=> j; rewrite negbK => /eqP ->; by rewrite GRing.mul0r.
-apply congr_big => //; first by move=> ?; rewrite inE F2_eq1.
-move=> j; rewrite inE => /eqP ->; by rewrite GRing.mul1r mxE.
+rewrite [in RHS](bigID (fun j => H m0 j == 0)) /=.
+rewrite [in RHS](eq_bigr (fun=> 0)); last by move=> ? /eqP ->; rewrite mul0r.
+rewrite [in RHS]big1 // add0r.
+apply congr_big => //.
+  move=> x.
+  by rewrite -F2_eq1 VnextE //= sym_tanner_rel // /tanner_rel /=; unlock.
+move=> n1 n1m0; rewrite (_ : H _ _ = 1) ?mul1r ?mxE //.
+apply/eqP; by move: n1m0; rewrite VnextE /tanner_rel; unlock.
 Qed.
 
 End subscript_set.

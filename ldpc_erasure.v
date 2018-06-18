@@ -566,15 +566,13 @@ have Hrhs : rhs = \sum_(i0 < _ | i0 \in `V m0 :\ n0) c ``_ i0.
     rewrite (eq_bigr (fun=> 0)).
       by rewrite big_const /= iter_addr0.
     move=> /= i0 /andP[] i0j.
-    rewrite !inE -F2_eq0 => /eqP ->.
-    by rewrite mul0r.
+    rewrite FnextE VnextE tanner_relE -F2_eq0 => /eqP ->; by rewrite mul0r.
   apply eq_big.
-    move=> j0 /=; by rewrite !inE.
+    by move=> j0 /=; rewrite in_setD1 FnextE.
   move=> i0 /andP[] H1.
-  rewrite !inE => /eqP ->.
-  by rewrite mul1r mxE.
-rewrite !inE in m0n0.
-rewrite Hrhs (eqP m0n0) mul1r mxE in Hc'.
+  rewrite FnextE VnextE tanner_relE => /eqP ->; by rewrite mul1r mxE.
+rewrite Hrhs (_ : H _ _ = 1) ?mul1r ?mxE in Hc'; last first.
+  move: m0n0; by rewrite FnextE VnextE tanner_relE => /eqP.
 move/eqP : Hc'.
 rewrite addr_eq0 => /eqP ->.
 rewrite (@sum_rowVnextD1 c) ?oppr_char2 // => *; by rewrite mxE H0.
@@ -728,7 +726,7 @@ case: ifP => Hi.
     move/'forall_forallP/(_ m0 n1) : (mxProd_monotone c_le_y Ha Ha' Haa').
     move: K.
     rewrite {}N {ln1} // mxE [(row _ _) _ _]mxE.
-    case/starblankP => /orP[/eqP ->|/eqP ->]; by [move/lel_Star | move/lel_Blank].
+    move/starblankP => /orP[/eqP ->|/eqP ->]; by [move/lel_Star | move/lel_Blank].
   case: ifPn => // Hn2.
   apply/orP; left.
   apply/eqP; congr Bit.

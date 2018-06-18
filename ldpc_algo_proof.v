@@ -374,7 +374,7 @@ Lemma select_children_spec s k i j :
   tanner_rel H (id_of_kind k i) (id_of_kind (negk k) j)
   && (id_of_kind (negk k) j \notin (id_of_kind k i :: s)).
 Proof.
-by destruct k; rewrite /= !mem_filter !mem_ord_enum andbT.
+by destruct k; rewrite /= !mem_filter !mem_ord_enum andbT tanner_relE.
 Qed.
 
 Lemma build_tree_rec_sound h s k i a b :
@@ -604,7 +604,11 @@ have Hab a b: a \in l -> b \in l -> tanner_rel H a b -> id_of_kind k i == a ->
   rewrite -map_comp.
   apply /mapP.
   have [x Hx]: exists x, b = id_of_kind (negk k) x.
-    destruct b as [b|b]; destruct k; try done; by exists b.
+    destruct b as [b|b]; destruct k.
+      by rewrite tanner_relE in HH.
+      by exists b.
+      by exists b.
+      by rewrite tanner_relE in HH.
   exists x; last by destruct h.
   rewrite select_children_spec.
   rewrite -Hx HH.
@@ -801,7 +805,11 @@ case Hcb: (connect _ _ a).
     by rewrite Ha /= eqxx in Hai.
   have [o Ho]: exists o, s0 = id_of_kind (negk k) o.
     apply (sub_path (@tanner_split_tanner _)) in Hp.
-    by destruct k, s0; try done; exists o.
+    destruct k, s0.
+      by rewrite tanner_relE in Hp.
+      by exists o.
+      by exists o.
+      by rewrite tanner_relE in Hp.
   subst s0.
   have Ho: o \in select_children H s k i.
     rewrite select_children_spec.
@@ -938,7 +946,7 @@ Qed.
 
 Lemma myrel_ok : myrel =2 tanner_rel H.
 Proof.
-rewrite /myrel /tanner_rel /H /=.
+rewrite /myrel tanner_relE /tanner_rel' /= /H /=.
 move=> [a|a] [b|b] //; rewrite mxE.
   by destruct (F a b).
 by destruct (F b a).
@@ -1049,16 +1057,16 @@ Let n := n'.+1.
 Variable H : 'M['F_2]_(m, n).
 Hypothesis tanner_acyclic : acyclic' (tanner_rel H).
 Hypothesis tanner_connected : forall a b, connect (tanner_rel H) a b.
-Local Notation "'`V(' x ',' y ')'" := (Vgraph H x y).
-Local Notation "'`F(' x ',' y ')'" := (Fgraph H x y).
+Local Notation "''V(' x ',' y ')'" := (Vgraph H x y).
+Local Notation "''F(' x ',' y ')'" := (Fgraph H x y).
 Variable B : finType.
 Open Scope channel_scope.
 Open Scope vec_ext_scope.
 Open Scope proba_scope.
 Variable W : `Ch_1('F_2, B).
 Variable vb : 'rV[B]_n.
-Local Notation "'`V'" := (Vnext H).
-Local Notation "'`F'" := (Fnext H).
+Local Notation "''V'" := (Vnext H).
+Local Notation "''F'" := (Fnext H).
 
 Local Open Scope ring_scope.
 
@@ -1258,7 +1266,7 @@ Local Open Scope ring_scope.
 Lemma beta_def n0 m0 (d : 'rV_n) :
   let d0 := d `[ n0 := 0 ] in
   let d1 := d `[ n0 := 1 ] in
-  beta (rW n0) [seq (alpha' m1 n0 d0, alpha' m1 n0 d1) | m1 in `F n0 :\ m0]
+  beta (rW n0) [seq (alpha' m1 n0 d0, alpha' m1 n0 d1) | m1 in 'F n0 :\ m0]
   = (beta' n0 m0 d0, beta' n0 m0 d1).
 Proof.
 rewrite /rW /beta' /alpha' /ldpc.beta /=.
@@ -1296,7 +1304,7 @@ Definition tanner : Tanner.acyclic_graph (tanner_rel H).
   constructor.
     econstructor; try done.
     + apply sym_tanner_rel.
-    + apply colorable_tanner_rel.
+    + exact: (Colorable.Build_graph (colorable_tanner_rel H)).
   by apply acyclic_equiv.
 Qed.
 
@@ -1328,8 +1336,8 @@ by rewrite (negbTE n1_l).
 Qed.
 
 Lemma alpha_def_sub m0 n1 n0 (x y : 'F_2) (l : seq 'I_n) d :
-  n1 \notin l -> uniq l -> n0 != n1 -> n0 \notin l -> n1 \in `V m0 :\ n0 ->
-  {subset l <= `V m0 :\ n0} ->
+  n1 \notin l -> uniq l -> n0 != n1 -> n0 \notin l -> n1 \in 'V m0 :\ n0 ->
+  {subset l <= 'V m0 :\ n0} ->
   beta' n1 m0 (d`[n1 := x]) *
   foldr (fun n2 (F : 'rV_n -> R) t => \rsum_(x in 'F_2) F (t`[n2 := x]))
     (fun t => INR (t ``_ n0 != \delta [set x in l] t) *
@@ -1342,7 +1350,7 @@ Lemma alpha_def_sub m0 n1 n0 (x y : 'F_2) (l : seq 'I_n) d :
 Proof.
 move=> n1_l Hun n0_n1 n0_l Hn1 Hsub.
 have d' := d.
-have n1_Vm0 : n1 \in `V m0 by move: Hn1; rewrite in_setD1; case/andP.
+have n1_Vm0 : n1 \in 'V m0 by move: Hn1; rewrite in_setD1; case/andP.
 rewrite {1}/beta'.
 rewrite (@beta_inva _ _ _ _ _ _ _ _ _ (d'`[n1 := x])) => //; last first.
   by rewrite !mxE eqxx.
@@ -1391,28 +1399,28 @@ Qed.
 
 Local Open Scope summary_scope.
 
-Lemma alpha_def m0 n0 (d : 'rV['F_2]_n) : n0 \in `V m0 ->
+Lemma alpha_def m0 n0 (d : 'rV['F_2]_n) : n0 \in 'V m0 ->
   let d0 := d`[n0 := 0%R] in
   let d1 := d`[n0 := 1%R] in
   alpha [seq (beta' n1 m0 (d`[n1 := 0%R]), beta' n1 m0 (d`[n1 := 1%R]))
-        | n1 in `V m0 :\ n0] =
+        | n1 in 'V m0 :\ n0] =
   (alpha' m0 n0 d0, alpha' m0 n0 d1).
 Proof.
 move=> Hn0.
 rewrite /alpha' !recursive_computation /alpha //; first last.
   by apply tanner.
   by apply tanner.
-rewrite (eq_bigr (fun t : 'rV_n => INR ((t ``_ n0) != \delta (`V m0 :\ n0) t) *
-  (\rprod_(n1 in `V m0 :\ n0) beta' n1 m0 t))); last first.
+rewrite (eq_bigr (fun t : 'rV_n => INR ((t ``_ n0) != \delta ('V m0 :\ n0) t) *
+  (\rprod_(n1 in 'V m0 :\ n0) beta' n1 m0 t))); last first.
   by move=> i _; rewrite (checksubsum_D1 _ Hn0) eq_sym.
 rewrite [in X in _ = (_, X)](eq_bigr (fun t : 'rV_n =>
-  INR ((t ``_ n0) != \delta (`V m0 :\ n0) t) *
-  (\rprod_(n1 in `V m0 :\ n0) beta' n1 m0 t))); last first.
+  INR ((t ``_ n0) != \delta ('V m0 :\ n0) t) *
+  (\rprod_(n1 in 'V m0 :\ n0) beta' n1 m0 t))); last first.
   move=> i _; by rewrite (checksubsum_D1 _ Hn0) eq_sym.
 rewrite !summary_powersetE !summary_foldE /summary_fold /=.
 rewrite /image_mem /enum_mem.
 rewrite !filter_index_enum.
-set f := `V m0 :\ n0.
+set f := 'V m0 :\ n0.
 rewrite {2 3 5 6}(set_mem f).
 have {Hn0}Hn0 : n0 \notin enum f by rewrite mem_enum setD11.
 have Hl : {subset enum f <= f} by move=> ?; rewrite mem_enum.
@@ -1682,11 +1690,11 @@ transitivity
   destruct k; simpl.
     have Hp: [preim [eta inl] of [set x | tanner_rel H (inl i) x] :\: inr @: s]
              =i pred0.
-      by move=> x; rewrite /= !inE andbF.
+      by move=> x; rewrite /= !inE tanner_relE andbF.
     by rewrite (eq_filter Hp) filter_pred0.
   have Hp: [preim [eta inr] of [set x | tanner_rel H (inr i) x] :\: inl @: s]
            =i pred0
-    by move=> x; rewrite /= !inE andbF.
+    by move=> x; rewrite /= !inE tanner_relE andbF.
   by rewrite (eq_filter Hp) filter_pred0 cats0.
 congr (map _ _).
 apply eq_filter => x /=.
@@ -1708,15 +1716,20 @@ Lemma msg_spec_alpha_beta a b :
   alpha_beta (tag_of_id rW a)
              [seq msg_spec' c a | c in finset (tanner_rel H a) :\ b].
 Proof.
-destruct a, b; rewrite //=  => Hij.
-  rewrite -alpha_def; last by rewrite /Vnext !inE.
-  by rewrite -imset_set1 (@kind_filter _ kf).
-rewrite -beta_def -imset_set1 (@kind_filter _ kv) /=.
-congr beta.
-rewrite /image_mem /enum_mem.
-congr map.
-apply eq_filter => x.
-by rewrite !inE.
+destruct a, b; rewrite //= => Hij.
+- by rewrite tanner_relE in Hij.
+- rewrite -alpha_def; last by rewrite VnextE sym_tanner_rel.
+  rewrite -imset_set1 (@kind_filter _ kf).
+  set x := [set x | _].
+  suff : 'V o = x by move=> ->.
+  by apply/setP => i; rewrite inE /= -VnextE.
+- rewrite -beta_def -imset_set1 (@kind_filter _ kv) /=.
+  congr beta.
+  rewrite /image_mem /enum_mem.
+  congr map.
+  apply eq_filter => x.
+  by rewrite !inE /= -VnextE -FnextE.
+- by rewrite tanner_relE in Hij.
 Qed.
 
 Definition down_msg (s : seq id') (i : id') :=
@@ -1743,7 +1756,7 @@ have {Hb}Hb: b \in labels t1.
   move /orP: Hb => [] Hb //.
   rewrite mem_seq1 in Hb.
   rewrite (eqP Hb) in Hgr.
-  by destruct a.
+  rewrite tanner_relE in Hgr; by destruct a.
 have [p [Hunp [Hlp _]]] := labels_build_tree_rec Hb Hun.
 move/acyclic_equiv/(_ (b :: rcons p a)): tanner_acyclic.
 rewrite /ucycle /ucycleb /cycle.
@@ -1823,8 +1836,11 @@ move/mapP: Hx => [y Hy] ->.
 symmetry.
 apply/contraFF: Hx => Hex.
 apply/mapP.
-destruct k; destruct x as [x|x]; try done; exists x;
-try done; try (by rewrite eqxx); by rewrite select_children_spec Hex.
+destruct k; destruct x as [x|x].
+- by rewrite tanner_relE in Hex.
+- exists x => //; by rewrite select_children_spec Hex.
+- exists x => //; by rewrite select_children_spec Hex.
+- by rewrite tanner_relE in Hex.
 Qed.
 
 Lemma set1F (A : finType) (s : A) : [set x | (x == s) || false] = [set s].
@@ -1940,7 +1956,11 @@ destruct s; simpl.
 (* Inner node *)
 have [o Hs]: exists o, s = id_of_kind (negk k) o.
   move: Hun => /= /andP/proj1 /= /andP/proj1.
-  destruct s as [o|o], k; try done; by exists o.
+  destruct s as [o|o], k.
+  by rewrite tanner_relE.
+  move=> ?; by exists o.
+  move=> ?; by exists o.
+  by rewrite tanner_relE.
 congr {| children := _; up := _; down := _ |}.
     (* children *)
     rewrite apply_seqs_but1 -!map_comp; last by apply unique_children.
@@ -2190,7 +2210,7 @@ Lemma estimation_alpha n0 h (s : seq id') k (i : ord_of_kind m n' k) :
   uniq_path (tanner_rel H) (id_of_kind k i) s ->
   inr n0 \in labels t ->
   get_esti n0 (estimation t) =
-  [:: normalize (beta (rW n0) [seq (p01 (alpha' m1 n0) n0) | m1 in `F n0])].
+  [:: normalize (beta (rW n0) [seq (p01 (alpha' m1 n0) n0) | m1 in 'F n0])].
 Proof.
 elim: h => [|h IH] in s k i *.
   move=> t Ht.
@@ -2216,10 +2236,10 @@ case Hid: (node_id t == inr n0).
       apply eq_in_map_seqs => //.
       have ->: Finite.enum [finType of 'I_m] = ord_enum m.
         by rewrite unlock.
-      apply eq_filter => x.
-      by rewrite !inE.
+      apply eq_filter => x; by rewrite /= !inE /= -VnextE -FnextE.
     (* inner node *)
-    destruct s; [ | done].
+    destruct s; [ | ]; last first.
+      by rewrite tanner_relE in Hun.
     rewrite set1F -imset_set1 (kind_filter (k:=kv)).
     rewrite -!big_beta.
     rewrite -beta_opA.
@@ -2239,13 +2259,13 @@ case Hid: (node_id t == inr n0).
         by rewrite -enumT enum_uniq.
       by rewrite enum_uniq.
     move=> j /=.
-    rewrite in_cons /Fnext /Vnext mem_filter /= mem_enum !inE.
+    rewrite in_cons mem_filter /= mem_enum !inE /= -VnextE.
     case Hjo: (j == o).
       rewrite (eqP Hjo).
-      by move/andP/proj1/andP/proj1: Hun.
-    case Hji: (H j i == 1%R) => /=.
-      by rewrite Hji -enumT mem_enum.
-    by rewrite Hji.
+      by move/andP/proj1/andP/proj1 : Hun => /=; rewrite -VnextE -FnextE.
+    case Hji: (i \in 'V j) => /=.
+      by rewrite -enumT mem_enum FnextE Hji.
+    by rewrite FnextE Hji.
   (* ensure it is the unique solution *)
   rewrite get_esti_flatten.
   apply/nilP.
@@ -2257,6 +2277,9 @@ case Hid: (node_id t == inr n0).
   have Hunx : uniq_path (tanner_rel H) (inl x) [:: id_of_kind kv i & s].
     rewrite mem_filter in Hx.
     move/andP/proj1/andP: Hx => [Hx Hx'].
+    rewrite /=.
+    move: Hun.
+    rewrite tanner_relE.
     by apply cons_uniq_path.
   rewrite -tree_ok // labels_sumprod_down labels_sumprod_up.
   apply/negP => Hi.
@@ -2394,7 +2417,7 @@ Theorem estimation_ok : estimation_spec d Hvb.
 Proof.
 split.
   rewrite /build_tree.
-  have Hun0 : uniq_path (tanner_rel H) (id_of_kind kv ord0) [::] by done.
+  have Hun0 : uniq_path (tanner_rel H) (id_of_kind kv ord0) [::] by [].
   have Hun := uniq_labels_build_tree_rec tanner_acyclic rW #|id'| Hun0.
   rewrite -labels_sumprod_up -(@labels_sumprod_down kv _ None) in Hun.
   refine (subseq_uniq _ Hun).

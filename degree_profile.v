@@ -934,7 +934,7 @@ Proof.
 move/trivIsetP => HC Hx.
 apply/trivIsetP => y z.
 rewrite !in_setU1.
-by move/orP => [[/eqP ->] | ?]; move/orP => [[/eqP ->] | ?]; apply HC.
+by move/orP => [/eqP -> | ?]; move/orP => [/eqP -> | ?]; apply HC.
 Qed.
 
 Lemma trivIset_out :
@@ -4161,7 +4161,7 @@ Proof.
 elim: l c ts => [|l IH] c ts.
   by rewrite tuple0.
 case: ts => [] [|t1] // [|t2 ts] //=.
-rewrite doubleS => /eqP [] [] /eqP Hsz.
+rewrite doubleS => /eqP [] /eqP Hsz.
 rewrite (subset_trans _ (IH _ (Tuple Hsz))) //=.
 rewrite part_nodes_step_it /=.
 apply monotone_conodes_step_it.
@@ -4173,7 +4173,7 @@ Proof.
 elim: l c ts => [|l IH] c ts.
   by rewrite tuple0.
 case: ts => [] [|t1] // [|t2 ts] //=.
-rewrite doubleS => /eqP [] [] /eqP Hsz.
+rewrite doubleS => /eqP [] /eqP Hsz.
 rewrite (subset_trans _ (IH _ (Tuple Hsz))) //=.
 rewrite (subset_trans _ (monotone_conodes_step_it _ _)) //=.
 by rewrite part_nodes_step_it.

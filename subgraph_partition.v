@@ -30,17 +30,17 @@ Section colorable.
 Variable (V : eqType) (g : rel V).
 
 Definition colorable n (coloring : V -> 'I_n) :=
-  forall v1 v2, coloring v1 == coloring v2 -> ~~ g v1 v2.
+  forall v w, coloring v = coloring w -> ~~ g v w.
 
 Lemma colorable_path_kind n (kind : V -> 'I_n) :
   colorable kind -> forall t h, path g h t -> forall i h0,
   i < size t -> kind (nth h0 (h :: t) i) != kind (nth h0 (h :: t) i.+1).
 Proof.
 move=> Hcol; elim => // h [_ h0 /andP[h0h _] i h1|h1 t IH h0].
-  rewrite ltnS leqn0 => /eqP -> /=; apply/negP => /Hcol; by rewrite h0h.
+  rewrite ltnS leqn0 => /eqP -> /=; apply/eqP => /Hcol; by rewrite h0h.
 rewrite [h1 :: t]lock /= -lock => /andP[eh0h hh1t] [|[/= _ _|i h0']].
-  move=> /= _ _; apply/negP => /Hcol; by rewrite eh0h.
-  by apply/negP => /Hcol; move: hh1t => /= /andP[-> _].
+  move=> /= _ _; apply/eqP => /Hcol; by rewrite eh0h.
+  by apply/eqP => /Hcol; move: hh1t => /= /andP[-> _].
 rewrite /= ltnS; move/IH: hh1t; by apply.
 Qed.
 
@@ -80,39 +80,13 @@ Lemma bipartite_cycle_even cy :
   colorable g kind -> cycle g cy -> ~~ odd (size cy).
 Proof.
 case: cy => //= h t Hcol Hcycle; apply/negP => abs.
-suff /Hcol/negP : kind (last h t) == kind h.
+suff /Hcol : kind (last h t) = kind h.
   move: Hcycle; by rewrite rcons_path => /andP[_ ->].
-apply/eqP/esym.
+apply/esym.
 rewrite -nth_last (_ : nth _ _ _ = nth h (h :: t) (size t)); last by destruct t.
 rewrite -(odd_double_half (size t)) (negbTE abs) add0n.
 apply (bipartite_path_kind_even Hcol) => //.
 move: Hcycle; by rewrite /= rcons_path => /andP[].
-Qed.
-
-(* TODO: remove? *)
-Lemma bipartite_cycle_even_old cy :
-  colorable g kind -> ucycle g cy -> ~~ odd (size cy).
-Proof.
-rewrite /colorable /ucycle /cycle.
-case: cy => //= x cy H; case/andP => H0 _.
-apply/negPn.
-set kind' := fun x => 0 == kind x.
-have H' v1 v2 : kind' v1 == kind' v2 -> ~~ g v1 v2.
-  rewrite /kind'.
-  move => H1; apply/(H v1 v2).
-  by move: (kind v1) (kind v2) H1 => [[]] // [] // ? [[]] // [].
-move: {H} kind' H' => kind' H.
-move: x {2 4}(x) (eq_refl (kind' x)) H0 => x y.
-rewrite -(addFb (_ == _)) -(addFb (odd _)).
-elim: cy x false.
-- by move => x [] //=; move/H/negP; rewrite andbT.
-- move => x' cy IH x b /= H0; case/andP => H1 H2.
-  rewrite addbN -addNb.
-  apply/(IH x') => // {IH}.
-  have ->: (kind' x' == kind' y) = (kind' x != kind' y).
-    have: kind' x != kind' x' by apply/negP; move/H/negP; apply.
-    by move: (kind' x) (kind' x') (kind' y) => [] [] [].
-  by rewrite addbN addNb H0.
 Qed.
 
 End bipartite.
@@ -160,55 +134,63 @@ Qed.
 
 End acyclic.
 
+Module Colorable.
+Section colorable.
+Variable (V : finType).
+
+Record graph (edge : rel V) n := {
+  kind : V -> 'I_n ;
+  prop : colorable edge kind }.
+
+End colorable.
+End Colorable.
+
 Section graph_class.
 
 Variable (V : finType).
-
-Record colorable_graph n := {
-  colorable_edge :> rel V ;
-  colorable_kind : V -> 'I_n ;
-  colorable_prop : colorable colorable_edge colorable_kind }.
 
 Record simple_graph := {
   simple_edge :> rel V ;
   simple_prop : simple simple_edge }.
 
-Definition simple_of_colorable n : colorable_graph n -> simple_graph.
-Proof. by case => g kind; move/colorable_is_simple/Build_simple_graph. Defined.
+Definition simple_of_colorable (r : rel V) n : Colorable.graph r n -> simple_graph.
+Proof. by case => kind; move/colorable_is_simple/Build_simple_graph. Defined.
 
 End graph_class.
 
-Section subgraph.
+Section except.
 
-Variables (V : finType) (g : rel V).
+Variables (V : eqType) (g : rel V).
 
-Definition except n : rel V := [rel x y | g x y && (x != n) && (y != n)].
+Definition except n : rel V := locked [rel x y | [&& g x y, x != n & y != n]].
+
+Lemma exceptE n : except n = [rel x y | [&& g x y, x != n & y != n]].
+Proof. by rewrite /except; unlock. Qed.
+
+Lemma except13 n h m : except n h m -> n != m.
+Proof. by rewrite exceptE /= => /and3P[_ _]; rewrite eq_sym. Qed.
+
+Lemma except_rel n h m : except n h m -> g h m.
+Proof. by rewrite exceptE /= => /and3P[]. Qed.
+
+Lemma symmetric_except x : symmetric g -> symmetric (except x).
+Proof. by move=> sg ? ?; rewrite exceptE /= sg andbA andbAC -andbA. Qed.
 
 Lemma exceptN n y : ~~ except n y n.
-Proof. by rewrite /except /= negb_and negbK eqxx orbT. Qed.
-
-Lemma connect_except n w v : connect (except n) w v -> connect g w v.
-Proof.
-case/connectP=> t wt ->{v}.
-case/shortenP : wt => t' wt' Hun t't.
-apply/connectP; exists t' => //.
-apply: sub_path wt' => x y; by rewrite /except /= => /andP[/andP[? _] _].
-Qed.
+Proof. by rewrite exceptE /= !negb_and !negbK eqxx !orbT. Qed.
 
 Lemma path_except n h t : n \notin h :: t -> path g h t -> path (except n) h t.
 Proof.
 move=> nt /pathP H.
-apply/(pathP n) => i it.
-apply/andP; split; [apply/andP; split; [by apply H|]|].
-  apply: contra nt => /eqP <-.
+apply/(pathP n) => i it; rewrite exceptE; apply/and3P; split; [by apply H | | ].
+- apply: contra nt => /eqP <-.
   apply: mem_nth => /=; by rewrite ltnS ltnW.
-apply: contra nt => /eqP <-; by rewrite inE mem_nth ?orbT.
+- apply: contra nt => /eqP <-; by rewrite inE mem_nth ?orbT.
 Qed.
 
 Lemma except_path n h t : path (except n) h t -> path g h t.
 Proof.
-move/(pathP n) => H; apply/(pathP n) => i Hi.
-by move: (H _ Hi); rewrite /except /= => /andP[/andP[]].
+move/(pathP n) => H; apply/(pathP n) => i Hi; exact: (except_rel (H _ Hi)).
 Qed.
 
 Lemma path_except_notin n m l : path (except n) m l -> n \notin l.
@@ -218,34 +200,46 @@ move/pathP : Hpath => /(_ m _ il); rewrite ni; apply/negP.
 by rewrite exceptN.
 Qed.
 
-Lemma path_except_neq n m l : ~~ nilp l -> path (except n) m l -> n != m.
+Lemma path_except_neq n m h l : m \in l -> path (except n) h l -> n != m.
 Proof.
-move=> l0 /pathP H; apply/negP => /eqP ?; subst m.
-destruct l => //.
-move: (H s O isT).
-by rewrite /except /= eqxx /= andbF.
+elim: l n m h => // a b IH n m h; rewrite in_cons => /orP[/eqP <-{a}|mb] /=.
+  by case/andP => /except13.
+by case/andP => H1 /(IH _ _ _ mb).
 Qed.
 
 Lemma sub_path_except n n' m t (n'm : n' != m) :
   n' \notin t -> path (except n) m t -> path (except n') m t.
 Proof.
 move=> n't => /(pathP m) H; apply/(pathP m) => i it.
-move/H : (it) => /andP[/andP[H1 _] _].
-rewrite /except /= H1 /=.
+move/H : (it); rewrite exceptE => /and3P[H1 _ _].
+rewrite exceptE /= H1 /=.
 apply/andP; split; last by apply: contra n't => /eqP <-; rewrite mem_nth.
 move=> {H1}; case: i => [|i] in it *; first by apply: contra n'm => /eqP <-.
 apply: contra n't => /eqP <-; by rewrite /= mem_nth // ltnW.
 Qed.
 
+End except.
+
+Section subgraph.
+
+Variables (V : finType) (g : rel V).
+
+Lemma connect_except n w v : connect (except g n) w v -> connect g w v.
+Proof.
+case/connectP=> t wt ->{v}.
+case/shortenP : wt => t' wt' Hun t't.
+apply/connectP; exists t' => //.
+by apply: sub_path wt' => x y /except_rel.
+Qed.
+
 Definition successors n := [set m | g n m].
 
-Definition subgraph m n := [set v | g n m && connect (except n) m v].
+Definition subgraph m n := [set v | g n m && connect (except g n) m v].
 
 Lemma start_in_subgraph n m : g n m -> m \in subgraph m n.
 Proof. by move=> gnm; rewrite /subgraph inE gnm /= connect0. Qed.
 
-(* TODO: rename *)
-Lemma pivot_notin_subgraph (Hg : simple g) n m :
+Lemma root_notin_subgraph (Hg : simple g) n m :
   m \in successors n -> n \notin subgraph m n.
 Proof.
 rewrite 2!inE => gnm; rewrite negb_and -implybE gnm implyTb.
@@ -304,11 +298,11 @@ apply/trivIsetP => s1 s2.
 rewrite !inE => /orP[/eqP ->{s1}|].
   case/orP => [/eqP ->{s2}|]; first by rewrite eqxx.
   rewrite (@eq_disjoint1 _ n) //; last by move => ?; rewrite inE.
-  case/imsetP => v Hv -> _; by apply pivot_notin_subgraph.
+  case/imsetP => v Hv -> _; exact: root_notin_subgraph.
 case/imsetP => m1 Hm1 ->{s1}.
 case/orP => [/eqP ->|].
   rewrite disjoint_sym (@eq_disjoint1 _ n) //; last by move => ?; rewrite inE.
-  move=> _; by apply pivot_notin_subgraph.
+  move=> _; exact: root_notin_subgraph.
 case/imsetP => m2 Hm2 ->{s2} s1s2.
 rewrite !inE in Hm1 Hm2.
 have m1m2 : m1 != m2 by apply/negP => /eqP m12; rewrite m12 eqxx in s1s2.
@@ -316,12 +310,10 @@ rewrite -setI_eq0 /subgraph.
 apply/eqP/setP => x; rewrite !inE Hm1 Hm2 /=.
 apply/andP; case; case/connectP => p Hp Hp'; subst x.
 case/connectP => q.
-have: (fun x y => g x y && (x != n) && (y != n)) =2
-      (fun x y => g y x && (y != n) && (x != n))
-  by move => x y /=; rewrite undirected -!andbA [X in _ && X]andbC.
-move/eq_path => ->.
+have /eq_path -> : except g n =2 fun x y => [&& g y x, y != n & x != n].
+  by move => x y /=; rewrite exceptE /= undirected  andbA andbAC -andbA.
 rewrite -rev_path => Hq Hpq; move/andP : {Hp Hq} (conj Hp Hq).
-rewrite -Hpq -cat_path.
+rewrite -Hpq exceptE -cat_path -exceptE.
 have : last m1 (p ++ rev (belast m2 q)) = m2.
   rewrite /rev.
   case: q Hpq => /=; first by rewrite cats0.
@@ -329,7 +321,7 @@ have : last m1 (p ++ rev (belast m2 q)) = m2.
 move=> H H0; move/shortenP: H0 H {Hpq} => [] [] //;
   first by move => /= _ _ _ ?; subst m1; move: m1m2; rewrite eqxx.
 move => hd tl tl_path tl_uniq _ /= tl_last.
-move: tl_path => /=; do 3 case/andP; move => m1hd m1n hdn tl_path.
+move: tl_path => /=; case/andP; rewrite {1}exceptE => /and3P[]; move => m1hd m1n hdn tl_path.
 move: (acyclic (n :: m1 :: hd :: tl) erefl); apply.
 rewrite /ucycle cons_uniq tl_uniq andbT inE negb_or eq_sym m1n andTb inE.
 rewrite negb_or eq_sym hdn andTb (path_except_notin tl_path) andbT /=.
@@ -368,7 +360,7 @@ apply/idP/idP => Hlhs.
   rewrite 3!inE in Hsucc_m.
   suff : connect (except g n) succ_m v.
     apply/connect_trans/connect1.
-    by rewrite /except /= andbC andbA Hsucc_m /= (simple_neg Hg).
+    rewrite exceptE /= H1 (simple_neg Hg) //=; by case/andP : Hsucc_m.
   case/connectP : H2 => l Hl Kl.
   case/shortenP : Hl => l' Hl' uniql' subpredl' in Kl.
   apply/connectP.
@@ -395,7 +387,7 @@ apply/idP/idP => Hlhs.
     move: Hl'; by rewrite -{1}(cat_take_drop (index n l') l') cat_path => /andP[/except_path].
   move: Hl'.
   rewrite -{1}(cat_take_drop (index n l').+1 l') (take_nth n) // ?index_mem //.
-  rewrite cat_path => /andP[]; rewrite rcons_path => /andP[_ /andP[/andP[]]].
+  rewrite cat_path => /andP[]; rewrite exceptE rcons_path => /andP[_ /and3P[]].
   by rewrite nth_index.
 rewrite /subgraph inE symmetric_g gmn /= in Hlhs.
 rewrite !inE.
@@ -406,14 +398,13 @@ case/connectP : Hlhs => t.
 case/shortenP.
 case => [_ /= _ _ ? | h t' /=].
   by subst v; rewrite eqxx in vm.
-rewrite -!andbA.
-case/and4P => mh mn hn H4 Hun t't vt.
+case/andP; rewrite {1}exceptE /= => /and3P[mh mn hn] H4 Hun t't vt.
 exists (subgraph g h m).
-  by rewrite (mem_imset (fun x => subgraph g x m)) // !inE hn.
+  by rewrite (mem_imset (subgraph g ^~ m)) // !inE hn.
 rewrite /subgraph inE mh /=.
 apply/connectP; exists t' => //.
 case/andP : Hun; rewrite inE negb_or => /andP[m_neq_h mt'] _.
-by apply: sub_path_except H4.
+exact: sub_path_except H4.
 Qed.
 
 End second_partition.
@@ -466,7 +457,7 @@ have n1m : n1 != m by rewrite (simple_neg simple_g) // symmetric_g.
 have n1n : n1 != n.
   rewrite cat_path in Hl.
   case/andP : Hl => _ /=.
-  rewrite -!andbA; by case/and4P.
+  by rewrite andbT => /except13; rewrite eq_sym.
 have mn : m != n by rewrite (simple_neg simple_g).
 apply/andP; split.
   by rewrite /= !inE negb_or andbT n1m /= n1n.
@@ -490,9 +481,9 @@ case/orP.
   by rewrite symmetric_g.
   rewrite -[in X in k11 ++ X](cat1s n1) -!catA catA cat_path in Hl.
   case/andP : Hl => Hl Hl1.
-  rewrite /= /except /= nm' m'm /= andbT eq_sym mn /=.
-  apply: sub_path_except (Hl) => //.
-    by rewrite eq_sym.
+  rewrite /=.
+  rewrite (sub_path_except _ _ Hl) // ?andbT // 1?eq_sym //.
+  by rewrite exceptE /= nm' eq_sym mn.
   rewrite mem_cat.
   rewrite last_cat /= in Hl1.
   apply/negP.
@@ -543,7 +534,7 @@ move: (Hun) => Hun'.
 rewrite -(cat1s m) -(cat1s n) catA -(cat1s n1) catA -(cat1s m'1) catA cat_uniq Hun andbT.
 have n1m : n1 != m by rewrite (simple_neg simple_g) // symmetric_g.
 have m'1n : m'1 != n.
-  move: Hl; by rewrite cat_path /= andbT {2}/except /= => /and3P[].
+  by move: Hl; rewrite cat_path /= andbT => /andP[_] /except13; rewrite eq_sym.
 have m_not_n : m != n by rewrite (simple_neg simple_g).
 have m'1n1 : m'1 != n1 by rewrite (simple_neg simple_g) // symmetric_g.
 apply/andP; split.
@@ -576,10 +567,8 @@ case/orP.
   by rewrite eq_sym.
   rewrite -[in X in l1 ++ X](cat1s m'1) -!catA catA cat_path in Hl.
   case/andP : Hl => Hl Hl1.
-  rewrite /= /except /= nm' /= (simple_neg simple_g) /=; last by rewrite symmetric_g.
-  rewrite m'm /=.
-  apply: sub_path_except (Hl) => //.
-    by rewrite eq_sym.
+  rewrite /= (sub_path_except _ _ Hl) ?andbT 1?eq_sym //.
+  by rewrite exceptE /= nm' /= eq_sym m_not_n.
   rewrite mem_cat.
   rewrite last_cat /= in Hl1.
   apply/negP.
@@ -637,7 +626,7 @@ move: l1 l2 Hp x n2 m n2m n1 n1m n2n1.
 elim: p {-2}p (leqnn p).
   case=> // _ [] // [] // _ x /=.
   move=> n2 m n2m n1 n1m n2n1.
-  rewrite /except /= !andbT -!andbA.
+  rewrite !andbT exceptE /=.
   case/and3P => H1 H2 H3.
   case/and3P => L2 K2 K3.
   move=> _ _.
@@ -794,7 +783,7 @@ case/orP.
     by rewrite -Hp !size_cat addnS addSn /= -addnA leq_add2l leq_addl.
     by rewrite -subn1 leq_subLR -addn1.
   rewrite -[in X in l11 ++ X](cat1s x) -2!catA catA cat_path in Hl1; by case/andP : Hl1.
-  rewrite -(cat1s n1) -(cat1s x) 1!catA cat_uniq in Hun1; by case/andP : Hun1.
+  rewrite -cat_cons cat_uniq in Hun1; by case/andP : Hun1.
 move/eqP => ?; subst y.
 move/path_except_notin : Hl1.
 by rewrite mem_cat yl1.
@@ -820,7 +809,7 @@ by rewrite symmetric_g.
 by rewrite eq_sym.
 rewrite /=.
 apply/andP; split.
-  by rewrite /except /= n1m1 m1m andbT /= eq_sym (simple_neg simple_g).
+  by rewrite exceptE /= n1m1 m1m andbT /= eq_sym (simple_neg simple_g).
 apply: sub_path_except (Hl1) => //.
   by rewrite eq_sym.
 rewrite mem_cat inE; apply/negP.
@@ -843,7 +832,7 @@ rewrite -[in X in l11 ++ X](cat1s m) -2!catA catA cat_path in Hl1; by case/andP 
 rewrite -(cat1s m1) -(cat1s m) 2!catA cat_uniq in Hunl1; by case/andP : Hunl1.
 rewrite -(cat1s m2) -catA cat_path /= andbT.
 apply/andP; split.
-  rewrite /except /= n2m2 /= (simple_neg simple_g) //=; by rewrite symmetric_g.
+  rewrite exceptE /= n2m2 /= (simple_neg simple_g) //=; by rewrite symmetric_g.
 apply: sub_path_except (Hl2) => //.
   by rewrite eq_sym.
 rewrite mem_cat inE; apply/negP.
@@ -912,7 +901,7 @@ case: ifP.
   destruct p' as [|n' t].
     by rewrite Hlast eqxx in vm.
   rewrite /= in Hpath.
-  case/andP : Hpath => /andP [] /andP [] gmn' mn n'n Hpath.
+  case/andP : Hpath; rewrite {1}exceptE => /and3P[] gmn' mn n'n Hpath.
   rewrite /= in Hlast.
   exists (n' |: \bigcup_(m' in successors g n' :\ m) (subgraph g m' n')).
     apply/imsetP.
@@ -925,7 +914,7 @@ case: ifP.
     by rewrite Hlast eqxx in vn'.
   rewrite /= in Hlast.
   rewrite /= in Hpath.
-  case/andP : Hpath => /andP [] /andP [] gn'm' _ m'n Hpath.
+  case/andP : Hpath; rewrite {1}exceptE => /and3P[] gn'm' _ m'n Hpath.
   exists m'.
     rewrite !inE gn'm' andbT; apply/eqP => ?; subst m'.
     by rewrite /= !inE eqxx orbT /= in Hun.
@@ -980,7 +969,7 @@ case/orP.
   have : connect (except g n) m v.
     apply/connectP.
     exists [:: v] => //=.
-    by rewrite /except /= gmn' n'n /= 2!andbT (simple_neg Hg).
+    by rewrite exceptE /= gmn' n'n /= 2!andbT (simple_neg Hg).
   by rewrite (negbTE H1).
 case/bigcupP => m'.
 rewrite 3!inE.
@@ -1011,8 +1000,7 @@ have {m'v}m'v : connect (except g n) m' v.
    apply/andP; split.
      rewrite /cycle rcons_path /= symmetric_g gmn gmn' gn'm' /=.
      move: Hl'.
-     rewrite -cat1s cat_path /= => /and3P[/except_path -> /=].
-     by rewrite /except /= -andbA => /and3P[].
+     by rewrite -cat1s cat_path /= => /and3P[/except_path -> /= /except_rel].
   have nm : n != m by rewrite (simple_neg Hg) // symmetric_g.
   have mn' : m != n' by rewrite (simple_neg Hg).
   have n'm' : n' != m' by rewrite (simple_neg Hg).
@@ -1032,7 +1020,7 @@ have {m'v}m'v : connect (except g n) m' v.
       apply/andP; split.
       rewrite /cycle rcons_path /= gmn' gn'm' /=.
         rewrite -catA cat_path in Hl'.
-        by case/andP : Hl' => /except_path -> /=; rewrite /except /= => /andP[/andP[/andP[]]].
+        by case/andP : Hl' => /except_path -> /= /andP[] /except_rel.
       rewrite -(cat1s m) -(cat1s n') -(cat1s m') catA cat_uniq andbA.
       apply/andP; split; last first.
         rewrite -(cat1s m') 2!catA -(catA ([:: m'] ++ l11)) cat_uniq in Hun.
@@ -1058,9 +1046,9 @@ have {m'v}m'v : connect (except g n) m' v.
 apply: connect_trans _ m'v.
 apply connect_trans with n'.
   apply connect1.
-  by rewrite /except /= gmn' n'n andbT /= (simple_neg Hg).
+  by rewrite exceptE /= gmn' n'n andbT /= (simple_neg Hg).
 apply connect1.
-rewrite /except /= gn'm' n'n /=.
+rewrite exceptE /= gn'm' n'n /=.
 apply/eqP => abs; subst m'.
 move: acyclic_g.
 move/(_ [:: m; n'; n] erefl); apply.
@@ -1072,7 +1060,7 @@ Lemma trivIset_sub_ver_suc_suc_helper (Hg : simple g) n1 l' m'2 n2 m :
   g m n2 ->
   m'2 \in successors g n2 :\ m ->
   g n2 m'2 ->
-  path (fun x y : V => g x y && (x != n2) && (y != n2)) m'2 l' ->
+  path (except g n2) m'2 l' ->
   uniq (m'2 :: l') ->
   n1 = last m'2 l' ->
    False.
@@ -1101,7 +1089,7 @@ suff : ucycle g [:: m, n2, m'2 & l1] by apply acyclic_g.
 apply/andP; split.
   rewrite [m'2 :: _]lock /= -lock rcons_path Hn2 /=.
   rewrite cat_path in Hl'.
-  case/andP : Hl' => H1 /= /andP[/andP[/andP[H2 _] _ ] _].
+  case/andP : Hl' => H1 /= /andP[/except_rel ? _].
   by rewrite (@except_path _ _ n2) // andbT n2m'2 /=.
 rewrite [m'2 :: _]lock /= -lock.
 move: (Hun) => Hun'.
@@ -1172,12 +1160,12 @@ apply/andP; split.
   rewrite rcons_path.
   apply/andP; split.
     rewrite -Hkast {1}Hlast rev_path.
-    apply: sub_path Hl' => w1 w2 /= /andP[/andP[]]; by rewrite symmetric_g.
+    apply: sub_path Hl' => w1 w2 /except_rel; by rewrite symmetric_g.
   move/(pathP m'1) : Hl' => /(_ O).
   have Htmp' : 0 < size l'.
     case: l' Hunl l'l Hlast => //= _ _ vm1'.
     subst m'1.
-    suff : False by done.
+    exfalso.
     suff : ucycle g [:: n1, m, n2, m'2 & k'] by apply acyclic_g.
     apply/andP; split.
       rewrite /= symmetric_g Hn1 /= Hn2 /= n2m'2 /= rcons_path.
@@ -1202,7 +1190,7 @@ apply/andP; split.
       apply/andP; split.
         rewrite /cycle rcons_path /= symmetric_g Hn1 /= Hn2 /= n2m'2 /=.
         rewrite cat_path in Hk'.
-        case/andP : Hk' => /= Hk' /andP [] /andP [] /andP [] H1 _ _ _.
+        case/andP : Hk' => /= Hk' /andP[] /except_rel ->.
         by rewrite (except_path Hk').
       move: (Hunk).
       rewrite -cat_cons cat_uniq => /andP [] Htmp _.
@@ -1254,7 +1242,7 @@ apply/andP; split.
     move/eqP => ?; subst x.
     move: Hx; apply/negP.
     by move/path_except_notin : Hk'.
-  move/(_ Htmp') => /andP [] /andP [] Htmp _ _.
+  move/(_ Htmp')/except_rel => Htmp.
   rewrite [nth _ (_ :: _) _]/= in Htmp.
   rewrite (_ : last _ _ = m'1); first by rewrite symmetric_g.
   rewrite (last_nth m'1) size_rev size_belast.

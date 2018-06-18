@@ -162,34 +162,27 @@ Section dprojs_subgraph.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 Hypothesis Hconnected : forall a b, connect (tanner_rel H) a b.
-Local Notation "'`V(' x ',' y ')'" := (Vgraph H x y).
-Local Notation "'`F(' x ',' y ')'" := (Fgraph H x y).
+Local Notation "''V(' x ',' y ')'" := (Vgraph H x y).
+Local Notation "''F(' x ',' y ')'" := (Fgraph H x y).
 Local Notation "''V'" := (Vnext H).
-Local Notation "'`F'" := (Fnext H).
+Local Notation "''F'" := (Fnext H).
 
 Implicit Types d t : 'rV['F_2]_n.
 
-Definition sgraph n0 m0 := `V(m0, n0) :\ n0.
+Definition sgraph n0 m0 := 'V(m0, n0) :\ n0.
 
 (* family of projections; for each m1 : 'I_m, returns a projection on `V(m1, n0) :\ n0 *)
 Definition dprojs_V d n0 t : {ffun 'I_m -> 'rV_n} := dprojs d (sgraph n0) t.
 
-(* TODO: move *)
-Lemma mem_VgraphD1_Vnext n0 n1 m0 : n1 \in `V( m0, n0) :\ n0 -> n0 \in 'V m0.
-Proof.
-rewrite 2!inE => /andP[n1n0].
-by  rewrite 3!inE (negbTE n1n0) orFb 2!inE /= => /andP[].
-Qed.
-
 Lemma pfamily_dprojs_V d n0 t : dprojs d (sgraph n0) t \in
-  pfamily d (`F n0) (fun m0 => [pred t | freeon (sgraph n0 m0) d t]).
+  pfamily d ('F n0) (fun m0 => [pred t | freeon (sgraph n0 m0) d t]).
 Proof.
 apply/pfamilyP; split.
   apply/supportP => m0 n0m0.
   apply/rowP => n1.
   rewrite dprojs_out //.
   apply: contra n0m0.
-  rewrite [in X in _ -> X]inE; exact: mem_VgraphD1_Vnext.
+  rewrite FnextE; exact: mem_VgraphD1_Vnext.
 move=> m0 m0n0; by rewrite inE (freeon_dprojs _ _ (sgraph n0)).
 Qed.
 
@@ -215,7 +208,7 @@ Qed.
 
 Lemma comb_V_support d (f : {ffun 'I_m -> 'rV_n}) n0 n1 (s : {set 'I_m}) :
   d.-support f \subset s ->
-  ~~ [exists m0, (m0 \in s) && (n1 \in `V(m0, n0))] ->
+  ~~ [exists m0, (m0 \in s) && (n1 \in 'V(m0, n0))] ->
   (comb_V d n0 f) ``_ n1 = d ``_ n1.
 Proof.
 move=> H0 H1.
@@ -229,7 +222,7 @@ by move/supportP : H0 => /(_ _ m1s) => ->.
 Qed.
 
 Lemma checksubsum_dprojs_V d n0 t m0 m1 :
-  m1 \in `F(m0, n0) -> t ``_ n0 = d ``_ n0 ->
+  m1 \in 'F(m0, n0) -> t ``_ n0 = d ``_ n0 ->
   \delta ('V m1) ((dprojs_V d n0 t) m0) = \delta ('V m1) t.
 Proof.
 move=> Hm1 tn0dn0.
@@ -253,22 +246,22 @@ Section dprojs_subgraph_acyclic.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 Hypothesis Hconnected : forall a b, connect (tanner_rel H) a b.
-Local Notation "'`V(' x ',' y ')'" := (Vgraph H x y).
-Local Notation "'`F(' x ',' y ')'" := (Fgraph H x y).
+Local Notation "''V(' x ',' y ')'" := (Vgraph H x y).
+Local Notation "''F(' x ',' y ')'" := (Fgraph H x y).
 Local Notation "''V'" := (Vnext H).
-Local Notation "'`F'" := (Fnext H).
+Local Notation "''F'" := (Fnext H).
 
 Implicit Types d : 'rV['F_2]_n.
 
 Hypothesis Hacyclic : acyclic (tanner_rel H).
 
 Lemma comb_V_in d (f : {ffun 'I_m -> 'rV_n}) n0 m0 n1 :
-  n1 \in `V(m0, n0) :\ n0 -> (comb_V H d n0 f) ``_ n1 = (f m0) ``_ n1.
+  n1 \in 'V(m0, n0) :\ n0 -> (comb_V H d n0 f) ``_ n1 = (f m0) ``_ n1.
 Proof.
 move=> Hn1; rewrite /comb_V (@comb_in _ _ _ _ f _ _ m0) //.
 case: pickP => [m1 Hm1 | ].
   case/boolP : (m0 == m1) => [/eqP -> // | m0m1].
-  have {Hm1}Hm1 : n1 \in `V(m1, n0).
+  have {Hm1}Hm1 : n1 \in 'V(m1, n0).
     move: Hm1; rewrite in_setD1; by case/andP.
   move: Hn1; rewrite in_setD1; case/andP => n1n0 Hn1.
   move: (disjoint_Vgraph Hacyclic n1n0 m0m1 Hn1); by rewrite Hm1.
@@ -276,13 +269,13 @@ move/(_ m0); by rewrite Hn1.
 Qed.
 
 Lemma dprojs_comb_V d n0 (g : 'I_n -> {set 'I_m}) (f : {ffun 'I_m -> 'rV_n}) :
-  f \in pfamily d (g n0) (fun i => freeon (`V(i, n0) :\ n0) d) ->
+  f \in pfamily d (g n0) (fun i => freeon ('V(i, n0) :\ n0) d) ->
   dprojs_V H d n0 (comb_V H d n0 f) = f.
 Proof.
 rewrite inE /= => /forallP => /= Hf.
 apply/ffunP => /= m0.
 apply/rowP => n1.
-case/boolP : (n1 \in `V( m0, n0) :\ n0) => Hn1.
+case/boolP : (n1 \in 'V( m0, n0) :\ n0) => Hn1.
   rewrite dprojs_in //.
   by rewrite (@comb_V_in _ _ _ m0) //.
 rewrite dprojs_out //.
@@ -298,15 +291,15 @@ Local Open Scope R_scope.
 Lemma rmul_rsum_commute0 d n0 (B : finType) (t : 'rV[B]_n)
   (W : forall m, 'rV_m -> 'rV_m -> R) (* channel *)
   (F : 'I_m -> 'rV_n -> R)
-  (HF : forall m1 m0 (t' : 'rV_n), m1 \in `F(m0, n0) -> t' ``_ n0 = d ``_ n0 -> F m1 ((dprojs_V H d n0 t') m0) = F m1 t') :
-  (\rprod_(m0 in `F n0) \rsum_(t' # `V(m0, n0) :\ n0 , d)
-    W _ (t # `V(m0, n0) :\ n0) (t' # `V(m0, n0) :\ n0) * (\rprod_(m1 in `F(m0, n0)) F m1 t') =
-  \rsum_(t' # setT :\ n0 , d) \rprod_(m0 in `F n0)
-    W _ (t # `V(m0, n0) :\ n0) (t' # `V(m0, n0) :\ n0) * (\rprod_(m1 in `F(m0, n0)) F m1 t'))%R.
+  (HF : forall m1 m0 (t' : 'rV_n), m1 \in 'F(m0, n0) -> t' ``_ n0 = d ``_ n0 -> F m1 ((dprojs_V H d n0 t') m0) = F m1 t') :
+  (\rprod_(m0 in 'F n0) \rsum_(t' # 'V(m0, n0) :\ n0 , d)
+    W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * (\rprod_(m1 in 'F(m0, n0)) F m1 t') =
+  \rsum_(t' # setT :\ n0 , d) \rprod_(m0 in 'F n0)
+    W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * (\rprod_(m1 in 'F(m0, n0)) F m1 t'))%R.
 Proof.
-rewrite (big_distr_big_dep d [pred x in `F n0] (fun i => freeon (`V(i, n0) :\ n0) d)) [LHS]/=.
+rewrite (big_distr_big_dep d [pred x in 'F n0] (fun i => freeon ('V(i, n0) :\ n0) d)) [LHS]/=.
 rewrite (reindex_onto (dprojs_V H d n0) (comb_V H d n0)); last first.
-  rewrite /= => f Hf; by apply (@dprojs_comb_V d n0 (fun n => `F n)).
+  rewrite /= => f Hf; by apply (@dprojs_comb_V d n0 (fun n => 'F n)).
 rewrite [LHS]/=.
 apply/esym/eq_big.
 - move=> /= t'.
@@ -384,7 +377,7 @@ move/eqP/rowP/(_ n1).
 rewrite comb_dprojs_V_not_in_partition; last first.
   by move=> m3; rewrite in_setD1 eqxx.
 rewrite /dprojs_V2 dprojs_in // inE Hn1 /=.
-apply/existsP; exists m1; by rewrite Hm1 /= Vgraph_n0.
+apply/existsP; exists m1; by rewrite Hm1 /= root_in_Vgraph.
 Qed.
 
 End dprojs_subsubgraph.
@@ -531,7 +524,7 @@ apply/andP; split.
   move/negP : Hn2'; apply.
   rewrite Vgraph_set1 in Hn2.
     by rewrite in_set1 in Hn2.
-  by rewrite inE in m1n1.
+  by rewrite -FnextE.
 rewrite comb_dprojs_V //.
 case/boolP: [exists m1, (m1 \in `F n1 :\ m0) && (n1 \in `V( m1, n1))] => X.
   rewrite /dprojs_V2 dprojs_in //; last by rewrite inE /ssgraph Hn1 X.
@@ -603,19 +596,11 @@ case/shortenP => p' Hp' Hun p'p Hlast.
 exfalso.
 apply (@Hacyclic [:: inl m0, inr n1', inl m1' & p'] isT).
 apply: uniq_path_ucycle_extend_1 => //.
-- rewrite !inE in Hn1'; by case/andP : Hn1'.
-- rewrite cat_path Hp' /= andbT -Hlast /except /= andbT.
-  rewrite !inE in n1m0.
-  rewrite n1m0 /=.
-  apply/eqP; case => ?; subst n1'.
-  move/path_except_notin : Hp'.
-  rewrite Hlast => abs.
-  move: (mem_last (inl m1') p').
-  rewrite inE (negbTE abs) orbF.
-  destruct p' => //=.
-  rewrite /= in abs.
-  move: (mem_last s p').
-  by rewrite (negbTE abs).
+- by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
+- rewrite cat_path Hp' /= andbT -Hlast.
+  rewrite exceptE /= andbT -VnextE n1m0 /= eq_sym.
+  rewrite (path_except_neq _ Hp') // Hlast.
+  destruct p' => //=; by rewrite mem_last.
 - rewrite -(cat1s (inl m1')) catA cat_uniq Hun /= andbT orbF.
   rewrite inE /= negb_or.
   apply/andP; split.
@@ -626,7 +611,7 @@ apply: uniq_path_ucycle_extend_1 => //.
   rewrite last_cat /= in Hlast.
   apply (@Hacyclic [:: inl m0, inr n1', inl m1' & p1] isT).
   apply: uniq_path_ucycle_extend_1 => //.
-  + case/setD1P : Hn1'; by rewrite !inE.
+  + by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
   + rewrite -(cat1s (inl m0)) catA cat_path in Hp'; by case/andP : Hp'.
   + rewrite -(cat1s (inl m1')) -(cat1s (inl m0)) 2!catA cat_uniq in Hun; by case/andP : Hun.
 Qed.
@@ -667,8 +652,7 @@ rewrite /ssgraph inE negb_and in_setD1 Hn1 andbT negbK (negbTE n1n0) orFb.
 move=> tmp _.
 rewrite -{}Ht comb_dprojs_V2_Vnext_dangling //.
 apply: contra tmp => /existsP[m1 Hm1].
-apply/existsP; exists m1; rewrite Hm1 /=.
-by rewrite Vgraph_n0.
+apply/existsP; exists m1; rewrite Hm1 /=; exact: root_in_Vgraph.
 Qed.
 
 Lemma dprojs_V2_in d m0 n0 t n1 (Hn1 : n1 \in 'V m0 :\ n0)
@@ -677,7 +661,7 @@ Lemma dprojs_V2_in d m0 n0 t n1 (Hn1 : n1 \in 'V m0 :\ n0)
 Proof.
 case/boolP : [exists m1, (m1 \in `F n1 :\ m0)] => [/existsP[m1 K]|K].
   rewrite /dprojs_V2 dprojs_in // inE /ssgraph Hn1 /=.
-  by apply/existsP; exists m1; rewrite K Vgraph_n0.
+  by apply/existsP; exists m1; rewrite K root_in_Vgraph.
 rewrite dprojs_out /=; last first.
   rewrite inE /ssgraph Hn1 /=.
   apply: contra K => /existsP[x /andP[Hx _]].
@@ -698,14 +682,11 @@ case/shortenP => p' Hp' Hun pp' Hlast.
 exfalso.
 apply (@Hacyclic [:: inl m0, inr n3, inl m1 & p'] isT).
 apply: uniq_path_ucycle_extend_1 => //.
-- case/setD1P : Hn3; by rewrite inE.
-- rewrite cat_path Hp' /= andbT -Hlast /except /= andbT.
-  rewrite !inE in Hn1.
-  case/andP : Hn1 => _ -> /=.
-  apply/eqP; case=> ?; subst n3.
-  move/path_except_notin : Hp' => tmp.
-  move: (mem_last (inl m1) p').
-  by rewrite inE /= -Hlast /= (negbTE tmp).
+- by rewrite /= -VnextE; move: Hn3; rewrite in_setD1 => /andP[].
+- rewrite cat_path Hp' /= andbT -Hlast exceptE /= andbT -VnextE.
+  move: Hn1; rewrite in_setD1 => /andP[_ -> /=].
+  rewrite eq_sym (path_except_neq _ Hp') // Hlast.
+  destruct p' => //=; by rewrite mem_last.
 - rewrite -(cat1s (inl m1)) catA cat_uniq Hun /= andbT orbF.
   rewrite inE negb_or.
   apply/andP; split.
@@ -716,7 +697,7 @@ apply: uniq_path_ucycle_extend_1 => //.
   rewrite last_cat /= in Hlast.
   apply (@Hacyclic [:: inl m0, inr n3, inl m1 & p1] isT).
   apply: uniq_path_ucycle_extend_1 => //.
-  + case/setD1P : Hn3; by rewrite inE.
+  + by rewrite /= -VnextE; move: Hn3; rewrite in_setD1 => /andP[].
   + rewrite -(cat1s (inl m0)) catA cat_path last_cat /= in Hp'; by case/andP : Hp'.
   + rewrite -(cat1s (inl m1)) -(cat1s (inl m0)) 2!catA cat_uniq in Hun; by case/andP : Hun.
 Qed.

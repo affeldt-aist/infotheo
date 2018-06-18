@@ -36,12 +36,12 @@ Section PCM_instance.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
-Local Notation "'`F'" := (Fnext H).
+Local Notation "''F'" := (Fnext H).
 
 Definition PCM_instance (y : 'rV[letter]_n) :=
-  \matrix_(i < m, j < n) if i \in `F j then y ``_ j else Blank.
+  \matrix_(i < m, j < n) if i \in 'F j then y ``_ j else Blank.
 
-Lemma PCM_instanceE n0 m0 y : m0 \in `F n0 -> (PCM_instance y) m0 n0 = y ``_ n0.
+Lemma PCM_instanceE n0 m0 y : m0 \in 'F n0 -> (PCM_instance y) m0 n0 = y ``_ n0.
 Proof. move=> m0n0; by rewrite /mxSum !mxE m0n0. Qed.
 
 Lemma mxProd_mxStar_PCM_instance (y : 'rV[letter]_n) :
@@ -126,16 +126,14 @@ have : s :&: `V m0 :\ n0 != set0.
   apply contra.
   move/eqP.
   move/(f_equal (fun x => n0 |: x)).
-  rewrite setD1K; last first.
-    rewrite inE in m0n0.
-    by rewrite inE n0s.
+  rewrite setD1K; last by rewrite inE n0s -FnextE.
   move=> ->.
   by rewrite cardsU1 /= cards0 inE.
 case/set0Pn => n1.
 rewrite in_setD1 => /andP [] n1n0.
 rewrite inE => /andP [] n1s1 m0n1.
 exists n1.
-rewrite inE m0n1; by rewrite eq_sym.
+rewrite FnextE m0n1; by rewrite eq_sym.
 Qed.
 
 Lemma stopsetE (s : {set 'I_n}) :
@@ -146,9 +144,7 @@ apply/idP/idP.
   move=> /forallP Hs; apply/'forall_forallP => m0 n0; apply/implyP => /andP[n0s m0n0].
   case: (stopsetE_help n0s m0n0 (Hs m0)) => /= n1 [m0n1 [n0n1 n1s]].
   apply/set0Pn.
-  exists n1.
-  rewrite inE in m0n1.
-  by rewrite in_setD1 eq_sym n0n1 /= in_setI m0n1.
+  exists n1; by rewrite 2!inE eq_sym n0n1 in_setI -FnextE m0n1.
 move=> H0; apply/forallP => /= m0; apply/negP => abs.
 case/boolP : [exists n0, (n0 \in s) && (m0 \in `F n0)]; last first.
   move/negP; apply.
@@ -157,7 +153,7 @@ case/boolP : [exists n0, (n0 \in s) && (m0 \in `F n0)]; last first.
   case/set0Pn => n1.
   rewrite inE.
   case/andP => H1 H2.
-  apply/existsP; exists n1; by rewrite inE H1.
+  by apply/existsP; exists n1; rewrite FnextE H1.
 case/existsP => /= n0 /andP[n0W m0n0].
 move/'forall_forallP : H0 => /(_ m0 n0); rewrite n0W m0n0 implyTb.
 case/set0Pn => /= n1.
@@ -166,8 +162,7 @@ case/and3P => [n1n0 m0n1 n1W].
 suff : 1 < #|[set n0 in s | n0 \in `V m0]| by rewrite (eqP abs).
 rewrite cardsltn1P.
 apply/existsP; exists n0; apply/existsP; exists n1.
-rewrite eq_sym n1n0 andbT inE n0W /= andbC inE n1W /= m0n1 /=.
-by rewrite inE in m0n0.
+by rewrite eq_sym n1n0 andbT inE n0W /= andbC inE n1W /= m0n1 /= -FnextE.
 Qed.
 
 End stopping_set.
@@ -196,16 +191,16 @@ apply.
 rewrite cardsltn1P.
 case: m0 => -[ ? | ].
   apply/existsP; exists 1; apply/existsP; exists 0.
-  by rewrite !inE eqxx /= /test_mat !mxE !eqxx.
+  by rewrite !inE eqxx /= /test_mat !VnextE !tanner_relE /= !mxE !eqxx.
 case => [ ? | ].
   apply/existsP; exists 1; apply/existsP; exists 0.
-  by rewrite !inE eqxx /= /test_mat !mxE !eqxx.
+  by rewrite !inE eqxx /= /test_mat !VnextE !tanner_relE /= !mxE !eqxx.
 case => [ ? | ].
   apply/existsP; exists 1; apply/existsP; exists 0.
-  by rewrite !inE eqxx /= /test_mat !mxE !eqxx.
+  by rewrite !inE eqxx /= /test_mat !VnextE !tanner_relE /= !mxE !eqxx.
 case => [ ? | [] //].
 apply/existsP; exists 1; apply/existsP; exists 0.
-by rewrite !inE eqxx /= /test_mat !mxE !eqxx.
+by rewrite !inE eqxx /= /test_mat !VnextE !tanner_relE /= !mxE !eqxx.
 Qed.
 
 Definition set2 : {set 'I_4} := 1 |: [set 1].
@@ -219,7 +214,7 @@ rewrite negbK.
 apply/cards1P.
 exists 1.
 apply/setP => /=  i.
-rewrite !inE /test_mat /= mxE.
+rewrite !inE /test_mat /= !VnextE !tanner_relE /= mxE.
 case: i.
 case=> [? // | ].
 case=> [? // | ].
@@ -250,17 +245,18 @@ Section stopset_cols_starblank.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
-Local Notation "'`F'" := (Fnext H).
+Local Notation "''F'" := (Fnext H).
+Local Notation "''V'" := (Vnext H).
 
 Definition cols_starblank (M : 'M[letter]_(m, n)) (s : {set 'I_n}) :=
   forall n0, n0 \in s ->
-  col n0 M = \col_m0 (if m0 \in `F n0 then Star else Blank).
+  col n0 M = \col_m0 (if m0 \in 'F n0 then Star else Blank).
 
 Variables s : {set 'I_n}.
 Hypothesis s_stopset : stopset H s.
 
 Lemma mxSum_Star n0 m0 M :
-  cols_starblank M s -> n0 \in s -> m0 \in `F n0 ->
+  cols_starblank M s -> n0 \in s -> m0 \in 'F n0 ->
   mxSum H M m0 n0 = Star.
 Proof.
 move=> HB n0s m0n0.
@@ -272,7 +268,7 @@ move/forallP : s_stopset => /(_ m0).
 case/(stopsetE_help n0s m0n0) => n2 [m0n2 [n0n2 n2s1]].
 apply/hasP => /=; exists Star => //.
 apply/mapP; exists n2.
-  rewrite mem_enum in_setD1 eq_sym n0n2; by rewrite inE in m0n2.
+  by rewrite mem_enum in_setD1 eq_sym n0n2 -FnextE.
 by move/colP: (HB _ n2s1) => /(_ m0); rewrite !mxE m0n2.
 Qed.
 
@@ -282,8 +278,8 @@ Section subset_erasures.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
-Local Notation "'`V'" := (Vnext H).
-Local Notation "'`F'" := (Fnext H).
+Local Notation "''V'" := (Vnext H).
+Local Notation "''F'" := (Fnext H).
 
 Definition erasures (y : 'rV[letter]_n) : {set 'I_n} :=
   [set i | y ``_ i == Star].
@@ -513,12 +509,12 @@ Variable c : 'rV['F_2]_n.
 Hypothesis Hc : syndrome H c = 0.
 Variable E : {set 'I_n}.
 
-Local Notation "'`F'" := (Fnext H).
-Local Notation "'`V'" := (Vnext H).
+Local Notation "''F'" := (Fnext H).
+Local Notation "''V'" := (Vnext H).
 
 Lemma all_starletter_iSP_BEC0S : forall l n0, all
   [pred i | starletter ((col n0 (iSP_BEC0 H (erase c E) l.+1)) i ord0) (c ``_ n0)]
-  (enum (`F n0)).
+  (enum ('F n0)).
 Proof.
 elim => [j|l IH j].
   apply/allP => /= i ij.
@@ -528,7 +524,7 @@ elim => [j|l IH j].
   rewrite (sum_rowVnextD1_nostars Hc) //; last by rewrite -mem_enum.
   move=> n1.
   rewrite in_setD1 => /andP[n1j ijn1].
-  rewrite !mxE inE ijn1.
+  rewrite !mxE FnextE ijn1.
   case: ifPn => n1E; last first.
     rewrite Prod_colFnextD1_Bit //.
     apply/allP => m1.
@@ -539,21 +535,21 @@ elim => [j|l IH j].
   apply/mapP.
   exists n1 => //.
     by rewrite mem_enum in_setD1 n1j.
-  by rewrite !mxE inE ijn1 n1E /colFnextD1 Prod_cons_Star Prod_mxStar_col_Star.
+  by rewrite !mxE FnextE ijn1 n1E /colFnextD1 Prod_cons_Star Prod_mxStar_col_Star.
 apply/allP => i ij.
 rewrite /= mxE /starletter /= mxE -mem_enum ij.
-set starset := [set n1 | (n1 \in `V i :\ j) &&
+set starset := [set n1 | (n1 \in 'V i :\ j) &&
   ((mxProd H (erase c E) (iSP_BEC0 H (erase c E) l.+1)) i n1 == Star) ].
 have [/eqP H1|H1] : (#| starset | = O \/ 1 <= #| starset |)%nat.
   case: (#| starset| ); [tauto | move=> n0; by right].
 - apply/orP; right.
   rewrite cards_eq0 in H1.
-  have H0 : forall n0, n0 \in `V i :\ j ->
+  have H0 : forall n0, n0 \in 'V i :\ j ->
     (mxProd H (erase c E) (iSP_BEC0 H (erase c E) l.+1)) i n0 = Bit c ``_ n0.
     move=> /= n0.
     rewrite in_setD1.
     case/andP => n0j n0i.
-    have n0i' : i \in `F n0 by rewrite inE.
+    have n0i' : i \in 'F n0 by rewrite FnextE.
     move: {n0i'}(starletter_mxProd_erase E n0i' (IH n0)).
     case/orP => [abs | /eqP //].
     move/eqP/setP : H1 => /(_ n0).
@@ -574,7 +570,7 @@ Qed.
 
 Lemma all_starletter_iSP_BEC0 : forall l n0, all
   [pred i | starletter ((col n0 (iSP_BEC0 H (erase c E) l)) i ord0) (c ``_ n0)]
-  (enum (`F n0)).
+  (enum ('F n0)).
 Proof.
 case => [n0 /=|].
   apply/allP => m1 m1n0 /=.
@@ -745,9 +741,9 @@ case: ifPn => m0n0.
   exists n1 => //.
   move: Hn1.
   rewrite mem_enum in_setD1 => /andP[-> n1m0]; split => //.
-  rewrite inE; split => //.
+  rewrite FnextE n1m0; split => //.
   move: (@starletter_PiSP_BEC0 l n1 m0).
-  rewrite inE => /(_ n1m0).
+  rewrite FnextE => /(_ n1m0).
   rewrite /starletter => /orP[/eqP //| /eqP abs].
   exfalso.
   move: Kln1.
@@ -772,9 +768,9 @@ Proof.
 case: l n0 m0 => [n0 m0 n0m0|].
   rewrite /PiSP_BEC0 /= mxProd_mxStar_PCM_instance; last first.
     move=> n1; rewrite mxE; by case: ifPn.
-  by rewrite PCM_instanceE // inE.
+  by rewrite PCM_instanceE // FnextE.
 move=> l n1 m0 n1m0.
-rewrite mxE inE n1m0.
+rewrite mxE FnextE n1m0.
 apply (@Prod_erase_Star _ _ H c E m0 n1 (iSP_BEC0 H y l.+1)).
 move=> j0; exact: (all_starletter_iSP_BEC0D1 l.+1 j0 m0).
 Qed.
@@ -784,7 +780,7 @@ Lemma PiSP_BEC0_Star_inv_stable l n0 m0 : n0 \in `V m0 -> (PiSP_BEC0 H y l) m0 n
   forall n1, n1 \in `V m0 -> n1 != n0 -> (iSP_BEC0 H y l) m0 n1 = Star.
 Proof.
 move=> m0n0 H1 Hstable n1 n1m0 n1n0.
-rewrite Hstable mxE inE n1m0.
+rewrite Hstable mxE FnextE n1m0.
 rewrite /Sum ifT //.
 apply/hasP => //=; exists Star => //.
 apply/mapP; exists n0 => //.
@@ -796,7 +792,7 @@ Lemma PiSP_BEC0S_Star_inv l n0 m0 : n0 \in `V m0 -> (PiSP_BEC0 H y l.+1) m0 n0 =
   forall m1, m1 \in `F n0 :\ m0 -> (iSP_BEC0 H y l.+1) m1 n0 = Star.
 Proof.
 move=> n0m0 H1 m1 m1n.
-rewrite mxE inE n0m0 in H1.
+rewrite mxE FnextE n0m0 in H1.
 have : (forall n1, all
     [pred i | starletter ((col n1 (mxSum H (PiSP_BEC0 H y l))) i ord0) (c ``_ n1)]
     (enum (`F n1 :\ m0))).
@@ -820,7 +816,7 @@ rewrite /starFnext inE => /andP[yn0 /forallP Hn0].
 move: (Hn0 m0) => /implyP /(_ Hm0)/eqP.
 case/iSP_BEC0_star_inv => n1 [] n1n0 [] m0n1 bm0n1.
 apply/set0Pn; exists n1.
-rewrite inE in m0n1.
+rewrite FnextE in m0n1.
 rewrite in_setD1 in_setI n1n0 /= m0n1 /= /starFnext /=.
 have [H1 H2] : (forall m1, m1 \in `F n1 :\ m0 -> iSP_BEC0 H y l m1 n1 = Star) /\ y ``_ n1 = Star.
   apply Prod_erase_Star.
@@ -841,9 +837,9 @@ case/boolP : (m2 == m0) => [/eqP ?|m2m0].
   case: l => [|l] in Hstable Hn0 bm0n1 H1 *.
   - by rewrite !mxE Hm2.
   - apply: (@PiSP_BEC0_Star_inv_stable _ n0 m0 _ _ _ n1 m0n1 n1n0) => //.
-    + by rewrite inE in Hm0.
-    + rewrite inE in Hm0.
-      rewrite /= /mxProd /colFnextD1 mxE inE Hm0 (eqP yn0) Prod_cons_Star.
+    + by rewrite FnextE in Hm0.
+    + rewrite FnextE in Hm0.
+      rewrite /= /mxProd /colFnextD1 mxE FnextE Hm0 (eqP yn0) Prod_cons_Star.
       apply/Prod_starblank_is_Star/allP => y0.
       case/mapP => m1 Hm1 ->.
       apply/starblankP; apply/orP; left.
