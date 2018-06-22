@@ -54,7 +54,7 @@ case: ifP => /= ij; last by rewrite ij.
 rewrite /colFnextD1.
 case/orP : (letter_split (y ``_ j)) => [/existsP[x /eqP Hx]|].
   rewrite Hx.
-  apply Prod_colFnextD1_Bit => //; apply/allP => /= m1.
+  apply Prod_colFnext_Bit => //; apply/allP => /= m1.
   by rewrite mem_enum in_setD1 !mxE => /andP[m1i ->].
 move: (Hblank j).
 case/letterP : (y ``_ j) => // _ _.
@@ -489,7 +489,7 @@ split.
 rewrite mxE.
 case: ifPn => // n0E.
 exfalso.
-move: H2; by rewrite mxE (negbTE n0E) Prod_colFnextD1_Bit.
+move: H2; by rewrite mxE (negbTE n0E) Prod_colFnext_Bit.
 Qed.
 
 Lemma all_stopsets_in_erasures_in_SP_BEC c E (Hc : syndrome H c = 0) :
@@ -526,7 +526,7 @@ elim => [j|l IH j].
   rewrite in_setD1 => /andP[n1j ijn1].
   rewrite !mxE FnextE ijn1.
   case: ifPn => n1E; last first.
-    rewrite Prod_colFnextD1_Bit //.
+    rewrite Prod_colFnext_Bit //.
     apply/allP => m1.
     by rewrite mem_enum in_setD1 => /andP[xi xFn1] /=; rewrite !mxE xFn1.
   suff : false by [].

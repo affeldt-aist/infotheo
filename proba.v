@@ -13,50 +13,51 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
      Distribution over sample space A
      (numerically-valued distribution function p : A -> R;
       for any a \in A, 0 <= p(a); \sum_{i \in A} p(i) = 1)
-  2. Module Uniform.
+  2. Module Dist1.
+  3. Module Uniform.
      Uniform distribution
-  3. Module UniformSupport.
+  4. Module UniformSupport.
      Uniform distribution with a restricted support
-  4. Module Binary.
+  5. Module Binary.
      Binary distributions (distributions over sets with two elements)
-  5. Section binary_distribution_prop.
-  6. Module BinarySupport.
-  7. Module D1Dist.
+  6. Section binary_distribution_prop.
+  7. Module BinarySupport.
+  8. Module D1Dist.
      construction of a distribution from another by removing one element from the support
-  8. Module TupleDist.
-  9. Module ProdDist.
-  10. Module ConvexDist.
-  11. Section tuple_prod_cast.
-  12. Section wolfowitz_counting.
+  9. Module TupleDist.
+  10. Module ProdDist.
+  11. Module ConvexDist.
+  12. Section tuple_prod_cast.
+  13. Section wolfowitz_counting.
      Wolfowitz's counting principle
-  13. Section probability.
+  14. Section probability.
       Probability of an event P with distribution p (Pr_p[P] = \sum_{i \in A, P\,i} \, p(i))
-  14. Section Pr_tuple_prod.
-  15. Section random_variable.
+  15. Section Pr_tuple_prod.
+  16. Section random_variable.
       Definition of a random variable (R-valued) with a distribution
       pr: Probability that a random variable evaluates to r \in R
-  16. Section expected_value_definition.
+  17. Section expected_value_definition.
       Expected value of a random variable
-  17. Section expected_value_for_standard_random_variables.
+  18. Section expected_value_for_standard_random_variables.
       Properties of the expected value of standard random variables:
-  18. Section markov_inequality.
-  19. Section variance_definition.
-  20. Section variance_properties.
-  21. Section chebyshev.
+  19. Section markov_inequality.
+  20. Section variance_definition.
+  21. Section variance_properties.
+  22. Section chebyshev.
       Chebyshev's Inequality
-  22. Section joint_dist.
+  23. Section joint_dist.
       Joint Distribution
-  23. Section identically_distributed.
+  24. Section identically_distributed.
       Identically Distributed Random Variables
-  24. Section independent_random_variables.
-  25. Section sum_two_rand_var_def.
+  25. Section independent_random_variables.
+  26. Section sum_two_rand_var_def.
       The sum of two random variables
-  26. Section sum_two_rand_var.
-  27. Section sum_n_rand_var_def.
-  28. Section sum_n_rand_var.
-  29. Section sum_n_independent_rand_var_def.
-  30. Section sum_n_independent_rand_var.
-  31. Section weak_law_of_large_numbers.
+  27. Section sum_two_rand_var.
+  28. Section sum_n_rand_var_def.
+  29. Section sum_n_rand_var.
+  30. Section sum_n_independent_rand_var_def.
+  31. Section sum_n_independent_rand_var.
+  32. Section weak_law_of_large_numbers.
 *)
 
 Set Implicit Arguments.
@@ -118,7 +119,7 @@ apply eq_bigl => a; by rewrite !inE andbC /index_enum -enumT mem_enum inE.
 Qed.
 
 Definition makeDist (pmf : A -> R) (H0 : forall a, 0 <= pmf a)
-  (H1 : \rsum_(a|a \in A) pmf a = 1) := @mkDist (@mkPosFun _ pmf H0) H1.
+  (H1 : \rsum_(a in A) pmf a = 1) := @mkDist (@mkPosFun _ pmf H0) H1.
 
 Lemma dist_ge0 (P : dist) a : 0 <= P a.
 Proof. exact: pos_f_ge0. Qed.
@@ -142,6 +143,81 @@ Definition dist_of (A : finType) := fun phT : phant (Finite.sort A) => dist A.
 
 Notation "{ 'dist' T }" := (dist_of (Phant T)) : proba_scope.
 
+Module Dist1.
+Section dist1.
+Variables (A : finType) (a : A).
+
+Definition f b := INR (b == a).
+
+Lemma f0 b : 0 <= f b. Proof. exact: leR0n. Qed.
+
+Lemma f1 : \rsum_(b in A) f b = 1.
+Proof.
+rewrite (bigD1 a) //= {1}/f eqxx /= (eq_bigr (fun=> 0)); last first.
+  by move=> b ba; rewrite /f (negbTE ba).
+by rewrite big1_eq // addR0.
+Qed.
+
+Definition d : dist A := makeDist f0 f1.
+
+Lemma dxx : d a = 1.
+Proof. by rewrite /d /= /f eqxx. Qed.
+
+Lemma d_neq b : b != a -> d b = 0.
+Proof. by move=> ba; rewrite /d /= /f (negbTE ba). Qed.
+
+End dist1.
+End Dist1.
+
+Module DistBind.
+Section distbind.
+Variables (A B : finType) (p : dist A) (g : A -> dist B).
+
+Definition f b := \rsum_(a in A) p a * (g a) b.
+
+Lemma f0 b : 0 <= f b.
+Proof. rewrite /f; apply rsumr_ge0 => a _; apply mulR_ge0; exact/dist_ge0. Qed.
+
+Lemma f1 : \rsum_(b in B) f b = 1.
+Proof.
+rewrite /f exchange_big /= -[RHS](pmf1 p); apply eq_bigr => a _.
+by rewrite -big_distrr /= pmf1 mulR1.
+Qed.
+
+Definition d : dist B := makeDist f0 f1.
+
+End distbind.
+End DistBind.
+
+Lemma DistBind1f (A B : finType) (a : A) (f : A -> dist B) :
+  DistBind.d (Dist1.d a) f = f a.
+Proof.
+apply/dist_eq/pos_fun_eq/functional_extensionality => b.
+rewrite /DistBind.d /= /DistBind.f (bigD1 a) // Dist1.dxx mul1R [Dist1.d _]lock.
+rewrite /= (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 // => c ca.
+by rewrite -lock Dist1.d_neq // mul0R.
+Qed.
+
+Lemma DistBindp1 A (p : dist A) : DistBind.d p (@Dist1.d A) = p.
+Proof.
+apply/dist_eq/pos_fun_eq/functional_extensionality => /= a.
+rewrite /DistBind.f (bigD1 a) // Dist1.dxx mulR1.
+rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0.
+by rewrite /= ?addR0.
+by move=> b; rewrite inE andTb => ba; rewrite Dist1.d_neq ?mulR0 // eq_sym.
+Qed.
+
+Lemma DistBindA A B C (m : dist A) (f : A -> dist B) (g : B -> dist C) :
+  DistBind.d (DistBind.d m f) g = DistBind.d m (fun x => DistBind.d (f x) g).
+Proof.
+apply/dist_eq/pos_fun_eq/functional_extensionality => c.
+rewrite /DistBind.d /DistBind.f /=.
+rewrite (eq_bigr (fun a => (\rsum_(a0 in A) m a0 * (f a0) a * (g a) c))); last first.
+  move=> b _; by rewrite big_distrl.
+rewrite exchange_big /=; apply eq_bigr => a _.
+rewrite big_distrr /=; apply eq_bigr => b _; by rewrite mulRA.
+Qed.
+
 Module Uniform.
 Section uniform.
 
@@ -153,7 +229,7 @@ Definition f (a : A) := INR 1 / INR #|A|.
 Lemma f0 a : 0 <= f a.
 Proof. apply/divR_ge0 => //; apply/ltR0n; by rewrite domain_not_empty. Qed.
 
-Lemma f1 : \rsum_(a | a \in A) f a = 1.
+Lemma f1 : \rsum_(a in A) f a = 1.
 Proof.
 rewrite /f -big_distrr /= mul1R big_const iter_addR mulRV //.
 by rewrite INR_eq0' domain_not_empty.
@@ -174,7 +250,7 @@ Qed.
 
 End Uniform.
 
-Lemma dom_by_uniform {A : finType} (P : dist A) n (HA : #|A| = n.+1) :
+Lemma dom_by_uniform A (P : dist A) n (HA : #|A| = n.+1) :
   P << (Uniform.d HA).
 Proof.
 move=> a; rewrite /Uniform.d /= /Uniform.f /= HA div1R => /esym abs.
@@ -299,8 +375,7 @@ have r01 : 0 <= 1 - pmf (Set2.a card_A) <= 1.
   suff : forall a, a <= 1 -> 0 <= a -> 1 - a <= 1 by apply.
   move=> *; fourier.
 exists r01.
-apply/dist_eq/pos_fun_eq => /=.
-apply FunctionalExtensionality.functional_extensionality => a.
+apply/dist_eq/pos_fun_eq => /=; apply functional_extensionality => a.
 rewrite /Binary.f; case: ifPn => [/eqP ->|Ha]; first by field.
 by rewrite -pmf1 /= Set2sumE /= addRC addRK; move/Set2.neq_a_b/eqP : Ha => ->.
 Qed.
@@ -462,16 +537,16 @@ Local Open Scope proba_scope.
 
 Local Open Scope vec_ext_scope.
 
-Lemma TupleDist0E {B : finType} (x : 'rV[B]_0) P : P `^ 0 x = 1.
+Lemma TupleDist0E (B : finType) (x : 'rV[B]_0) P : P `^ 0 x = 1.
 Proof. by rewrite TupleDist.dE big_ord0. Qed.
 
-Lemma TupleDist1E {A : finType} (a : 'rV[A]_1) P : (P `^ 1) a = P (a ``_ ord0).
+Lemma TupleDist1E (A : finType) (a : 'rV[A]_1) P : (P `^ 1) a = P (a ``_ ord0).
 Proof.
 rewrite TupleDist.dE big_ord_recr /= big_ord0 mul1R; congr (P _ ``_ _).
 by apply val_inj.
 Qed.
 
-Lemma TupleDistSE {B : finType} {n} (x : 'rV[B]_n.+1) P : P `^ n.+1 x = (P (x ``_ ord0) * P `^ n (rbehead x))%R.
+Lemma TupleDistSE (B : finType) n (x : 'rV[B]_n.+1) P : P `^ n.+1 x = (P (x ``_ ord0) * P `^ n (rbehead x))%R.
 Proof.
 rewrite 2!TupleDist.dE big_ord_recl; congr (_ * _)%R.
 apply eq_bigr => i _; by rewrite /rbehead mxE.
@@ -613,8 +688,7 @@ End wolfowitz_counting.
 
 Section probability.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : dist A).
 
 Definition Pr (E : {set A}) := \rsum_(a in E) P a.
 
@@ -956,7 +1030,7 @@ Lemma V_scale k : `V (k \cst* X) = k ^ 2 * `V X.
 Proof.
 rewrite {1}/`V [in X in X = _]/= E_scale.
 rewrite (@E_comp_rv_ext _ ((k \cst* X) \-cst k * `E X) (k \cst* (X \+cst - `E X))) //; last first.
-  rewrite /=; apply FunctionalExtensionality.functional_extensionality => x; field.
+  apply functional_extensionality => /= x; field.
 rewrite E_comp; last by move=> x y; field.
 by rewrite E_scale.
 Qed.
@@ -1060,8 +1134,7 @@ End identically_distributed.
 
 Section independent_random_variables.
 
-Variable A : finType.
-Variable X : rvar A.
+Variables (A : finType) (X : rvar A).
 Variable n : nat.
 Variable Y : {rvar 'rV[A]_n}.
 Variable P : {dist 'rV[A]_n.+1}.

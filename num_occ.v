@@ -41,21 +41,28 @@ Local Open Scope num_occ_scope.
 
 Section num_occ_prop.
 
-Variables (A : eqType) (a : A) (t : seq A).
+Variables (A : eqType) (a : A).
 
-Lemma num_occ0 : N(a | [::]) = 0. Proof. done. Qed.
+Lemma num_occ0 : N(a | [::]) = 0. Proof. by []. Qed.
 
-Lemma num_occ_cons (x y : A) : N(x | y :: t) = (x == y) + N(x | t).
+Lemma num_occ_cons x y (t : seq A) : N(x | y :: t) = (x == y) + N(x | t).
 Proof. by rewrite eq_sym. Qed.
 
-Lemma filter_pred1_num_occ : filter (pred1 a) t = nseq (N(a | t)) a.
+Lemma filter_pred1_num_occ (t : seq A) : filter (pred1 a) t = nseq N(a | t) a.
 Proof.
 set lhs := (X in X = _).
 rewrite (_ : N(a | t) = size lhs); last by rewrite size_filter.
 apply/all_pred1P/all_filterP; by rewrite filter_id.
 Qed.
 
-Lemma notin_num_occ_0 : (a \notin t) = (N(a | t) == O).
+Lemma num_occ_map_filter (B : finType) (f : B -> A) (s : {set B}) (p : pred A) (pa : p a) :
+  N(a | [seq f i | i <- enum s & p (f i)]) = N(a | [seq f i | i in s]).
+Proof.
+rewrite /num_occ count_map count_filter /= count_map.
+apply eq_count => /= m0 /=; by rewrite andb_idr // => /eqP ->.
+Qed.
+
+Lemma notin_num_occ_0 (t : seq A) : (a \notin t) = (N(a | t) == O).
 Proof.
 apply/esym.
 case/boolP : (a \notin t) => [/count_memPn | ].
@@ -63,13 +70,17 @@ case/boolP : (a \notin t) => [/count_memPn | ].
 apply: contraNF; by move/eqP/count_memPn.
 Qed.
 
-Lemma num_occ_rev : N(a | t) = N(a | rev t).
+Lemma mem_num_occ_gt0 (t : seq A) : (a \in t) = (0 < N(a | t)).
+Proof. by rewrite ltnNge leqn0 -notin_num_occ_0 negbK. Qed.
+
+Lemma num_occ_rev (t : seq A) : N(a | t) = N(a | rev t).
 Proof.
 elim : t => // hd tl IH /=.
 by rewrite IH rev_cons /= {2}/num_occ -cats1 count_cat /= addn0 addnC.
 Qed.
 
 End num_occ_prop.
+Arguments num_occ_map_filter [A] [a] [B] [f] [s] _ _.
 
 Lemma num_occ_sum : forall (t : seq 'F_2), num_occ 1%R t = \sum_(i <- t) i.
 Proof.

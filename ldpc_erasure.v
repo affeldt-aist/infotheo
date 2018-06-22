@@ -181,60 +181,31 @@ End Sum_prop.
 
 Section Prod_prop.
 
-(* TODO: move? *)
-Lemma num_occ_filter m n {A : finType} (l : 'M[A]_(m, n)) j (s : {set 'I_m}) (x y : A)
-  (xy : x != y) :
-  N(x | [seq l i j | i <- enum s & l i j != y]) =
-  N(x | [seq l i j | i in s]).
-Proof.
-rewrite /num_occ count_map count_filter count_map.
-apply eq_count => /= m0.
-case K : (preim _ _ m0) => /=.
-  by rewrite K /= (eqP K) xy.
-apply: contraFF K.
-by case/andP.
-Qed.
-
 Lemma Prod_filter_Star m n (A : 'M[letter]_(m, n)) n0 (s : {set 'I_m}) :
   Prod [seq A m0 n0 | m0 in s]  =
   Prod [seq A m0 n0 | m0 <- enum s & A m0 n0 != Star].
 Proof.
-rewrite /Prod.
-case: ifP => H1.
-  case: ifP => H2 //.
-  exfalso.
-  move/negbT/negP : H2; apply.
-  by rewrite (num_occ_filter A n0 s) // (num_occ_filter A n0 s).
-move/negbT in H1.
-rewrite -leqNgt leq_eqVlt in H1.
-case/orP : H1 => H1.
-  move/eqP : H1 => H1; rewrite H1.
-  by rewrite ltnn (num_occ_filter A n0 s) // (num_occ_filter A n0 s) // H1 ltnn.
-rewrite H1 (num_occ_filter A n0 s) // (num_occ_filter A n0 s) //.
-case: ifP => H2.
-  move: (ltn_trans H1 H2); by rewrite ltnn.
-move/negbT in H2.
-rewrite -leqNgt leq_eqVlt in H2.
-case/orP : H2 => H2.
-  move/eqP : H2 => H2; by rewrite H2 ltnn in H1.
-by rewrite H2.
+rewrite /Prod; case: ifPn => [H|];
+  do 2 rewrite (num_occ_map_filter [pred x | x != Star]) //.
+- by rewrite H.
+- rewrite -leqNgt leq_eqVlt => /orP[/eqP|] H;
+    by [rewrite H ltnn | rewrite H ltnNge (ltnW H)].
 Qed.
 
 Lemma Prod1 l : l != Blank -> Prod [:: l] = l.
 Proof. by case/letterP : l. Qed.
 
 Lemma Prod_cons_Star s : Prod (Star :: s) = Prod s.
-Proof. done. Qed.
+Proof. by []. Qed.
 
-Lemma Prod_starblank_is_Star (s : seq letter) :
-  all starblank s -> Prod s = Star.
+Lemma Prod_starblank_is_Star s : all starblank s -> Prod s = Star.
 Proof.
 move=> K.
 rewrite /Prod.
 suff : forall x : 'F_2, N(Bit x | s) = O by move=> X; rewrite 2!X.
 move=> x.
 apply/eqP; rewrite -notin_num_occ_0.
-move/allP : K => /(_ (Bit x))/contra; by apply.
+move/allP : K => /(_ (Bit x))/contra; exact.
 Qed.
 
 Lemma Prod_nseq_not_blank n x : n != O -> x != Blank -> Prod (nseq n x) = x.
@@ -254,14 +225,8 @@ Qed.
 Lemma Prod_Bit (b : 'F_2) s : Prod s = Bit b -> Bit b \in s.
 Proof.
 rewrite /Prod.
-case: ifP => Hcount.
-  case=> <-.
-  move/(leq_ltn_trans (leq0n _)) : Hcount.
-  by rewrite lt0n -notin_num_occ_0 negbK.
-case: ifP => // Hcount'.
-case=> <-.
-move/(leq_ltn_trans (leq0n _)) : Hcount'.
-by rewrite lt0n -notin_num_occ_0 negbK.
+case: ifPn => [H [<-] | H]; first by rewrite mem_num_occ_gt0 (leq_trans _ H).
+case: ifPn => // H' [<-]; by rewrite mem_num_occ_gt0 (leq_trans _ H').
 Qed.
 
 Lemma Prod_cons (x : letter) h t :
@@ -448,14 +413,14 @@ Section SumProd_algo_mxStar.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
-Local Notation "'`F'" := (Fnext H).
+Local Notation "''F'" := (Fnext H).
 
-Definition mxStar := \matrix_(i < m, j < n) if i \in `F j then Star else Blank.
+Definition mxStar := \matrix_(i < m, j < n) if i \in 'F j then Star else Blank.
 
-Lemma mxStarE i j : i \in `F j -> mxStar i j = Star.
+Lemma mxStarE i j : i \in 'F j -> mxStar i j = Star.
 Proof. rewrite /mxStar => ij; by rewrite mxE ij. Qed.
 
-Lemma all_mxStar n0 : all [pred i | mxStar i n0 == Star] (enum (`F n0)).
+Lemma all_mxStar n0 : all [pred i | mxStar i n0 == Star] (enum ('F n0)).
 Proof.
 apply/allP => m0 Hm0; by rewrite inE mxStarE // -mem_enum.
 Qed.
@@ -525,17 +490,17 @@ Section mxSumProd_def.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
-Local Notation "'`V'" := (Vnext H).
-Local Notation "'`F'" := (Fnext H).
+Local Notation "''V'" := (Vnext H).
+Local Notation "''F'" := (Fnext H).
 
 Section rowVnext.
 
 Definition rowVnextD1 (r : 'rV[letter]_n) n0 m0 : seq letter :=
-  [seq r ``_ i | i in `V n0 :\ m0].
+  [seq r ``_ i | i in 'V n0 :\ m0].
 
 Lemma sum_rowVnextD1 (c : 'rV['F_2]_n) (r : 'rV[letter]_n) m0 n0 :
-  (forall j : 'I_n, j \in `V m0 :\ n0 -> r ``_ j = Bit (c ``_ j)) ->
-  sum_letter (filter is_Bit (rowVnextD1 r m0 n0)) = \sum_(i0 in `V m0 :\ n0) c ``_ i0.
+  (forall j : 'I_n, j \in 'V m0 :\ n0 -> r ``_ j = Bit (c ``_ j)) ->
+  sum_letter (filter is_Bit (rowVnextD1 r m0 n0)) = \sum_(i0 in 'V m0 :\ n0) c ``_ i0.
 Proof.
 move=> H0.
 rewrite /sum_letter big_filter big_map big_mkcond /= big_filter.
@@ -547,8 +512,8 @@ Section rowVnext_codeword.
 Variables (c : 'rV['F_2]_n) (Hc : syndrome H c = 0).
 
 Lemma sum_rowVnextD1_nostars m0 n0 (r : 'rV[letter]_n) :
-  (forall j, j \in `V m0 :\ n0 -> r ``_ j = Bit (c ``_ j)) ->
-  m0 \in `F n0 ->
+  (forall j, j \in 'V m0 :\ n0 -> r ``_ j = Bit (c ``_ j)) ->
+  m0 \in 'F n0 ->
   let s := rowVnextD1 r m0 n0 in
   ~~ has starblank s ->
   sum_letter (filter is_Bit s) = c ``_ n0.
@@ -557,11 +522,11 @@ move=> H0 m0n0 s starblank.
 move/matrixP/(_ ord0 m0) : Hc.
 rewrite !mxE (bigD1 n0) //= => Hc'.
 set rhs := \sum_(_ < _ | _) _ in Hc'.
-have Hrhs : rhs = \sum_(i0 < _ | i0 \in `V m0 :\ n0) c ``_ i0.
+have Hrhs : rhs = \sum_(i0 < _ | i0 \in 'V m0 :\ n0) c ``_ i0.
   rewrite /rhs.
-  transitivity (\sum_(H0 < n | (H0 != n0) && (m0 \in `F H0)) H m0 H0 * c^T H0 ord0).
-    rewrite (bigID (fun j => m0 \in `F j)) /=.
-    rewrite (_ : \sum_(i0 < n | (i0 != n0) && (m0 \notin `F i0)) H m0 i0 * c^T i0 ord0 = 0).
+  transitivity (\sum_(H0 < n | (H0 != n0) && (m0 \in 'F H0)) H m0 H0 * c^T H0 ord0).
+    rewrite (bigID (fun j => m0 \in 'F j)) /=.
+    rewrite (_ : \sum_(i0 < n | (i0 != n0) && (m0 \notin 'F i0)) H m0 i0 * c^T i0 ord0 = 0).
       by rewrite addr0.
     rewrite (eq_bigr (fun=> 0)).
       by rewrite big_const /= iter_addr0.
@@ -578,8 +543,8 @@ rewrite addr_eq0 => /eqP ->.
 rewrite (@sum_rowVnextD1 c) ?oppr_char2 // => *; by rewrite mxE H0.
 Qed.
 
-Lemma sum_rowVnextD1_Bit m0 n0 (m0n0 : m0 \in `F n0) (r : 'rV[letter]_n) :
-  (forall n1, n1 \in `V m0 :\ n0 -> r ``_ n1 = Bit c ``_ n1) ->
+Lemma sum_rowVnextD1_Bit m0 n0 (m0n0 : m0 \in 'F n0) (r : 'rV[letter]_n) :
+  (forall n1, n1 \in 'V m0 :\ n0 -> r ``_ n1 = Bit c ``_ n1) ->
   Sum (rowVnextD1 r m0 n0) = Bit c ``_ n0.
 Proof.
 move=> H0.
@@ -597,47 +562,66 @@ End rowVnext.
 
 Section colFnext.
 
-Local Notation "'`F'" := (Fnext H).
+Definition ColFnext (l : letter) (c : 'cV[letter]_m) (s : {set 'I_m}) :=
+  l :: [seq c m0 ord0 | m0 in s].
 
-Definition colFnextD1 (l : letter) (c : 'cV[letter]_m) n0 m0 : seq letter :=
-  l :: [seq c i ord0 | i in `F n0 :\ m0].
-
-Lemma Prod_colFnextD1_Bit (b : 'F_2) (c : 'cV[letter]_m) n0 m0 :
-  all [pred i | starletter (c i ord0) b] (enum (`F n0 :\ m0)) ->
-  Prod (colFnextD1 (Bit b) c n0 m0) = Bit b.
+Lemma Prod_colFnext_Bit (b : 'F_2) (c : 'cV[letter]_m) (s : {set 'I_m}) :
+  all [pred i | starletter (c i ord0) b] (enum s) ->
+  Prod (ColFnext (Bit b) c s) = Bit b.
 Proof.
 move=> /= H1.
 apply/Prod_cons.
 rewrite Prod1 //; split => //.
-set lst := [seq _ | _ in _].
-case/boolP : (Bit b \in lst) => Hlst.
-  left.
+set l := [seq _ | _ in _].
+case/boolP : (Bit b \in l) => Hlst.
+- left.
   apply Prod_starletter.
     apply/allP => x xFn0m0.
     by move: H1 => /allP/(_ x) /(_ xFn0m0).
   case/mapP : Hlst => m1 H2 H3.
   exists m1; rewrite -?H3 //; by rewrite mem_enum in H2.
-right.
-rewrite (_ : lst = nseq (size lst) Star); last first.
-  apply/all_pred1P/allP => /= x.
-  case/mapP => m1 Hm1 Hx.
-  move: H1 => /allP/(_ _ Hm1).
-  rewrite /= /starletter -Hx.
-  case/orP => // xBitb.
-  exfalso.
-  move: Hlst; rewrite /lst => /mapP; apply.
-  exists m1 => //.
-  by rewrite -Hx (eqP xBitb).
-apply/Prod_starblank_is_Star; by rewrite all_nseq orbT.
+- right.
+  rewrite (_ : l = nseq (size l) Star); last first.
+    apply/all_pred1P/allP => /= x.
+    case/mapP => m1 Hm1 Hx.
+    move: H1 => /allP/(_ _ Hm1).
+    rewrite /= /starletter -Hx.
+    case/orP => // xBitb.
+    exfalso.
+    move: Hlst; rewrite /l => /mapP; apply.
+    exists m1 => //.
+    by rewrite -Hx (eqP xBitb).
+  apply/Prod_starblank_is_Star; by rewrite all_nseq orbT.
 Qed.
+
+Local Notation "'`F'" := (Fnext H).
+
+Definition colFnext l (c : 'cV[letter]_m) n0 := ColFnext l c (`F n0).
+
+Definition colFnextD1 l (c : 'cV[letter]_m) n0 m0 : seq letter :=
+  ColFnext l c (`F n0 :\ m0).
 
 End colFnext.
 
 Definition mxSum M := \matrix_(i < m, j < n)
-  if i \in `F j then Sum (rowVnextD1 (row i M) i j) else M i j.
+  if i \in 'F j then Sum (rowVnextD1 (row i M) i j) else M i j.
 
 Definition mxProd (y : 'rV[letter]_n) M := \matrix_(i < m, j < n)
-  if i \in `F j then Prod (colFnextD1 (y ``_ j) (col j M) j i) else M i j.
+  if i \in 'F j then Prod (colFnextD1 (y ``_ j) (col j M) j i) else M i j.
+
+Lemma has_starblank_rowVnextD1 (A B : 'M_(m, n)) y m0 n0 :
+  mxProd y A <=m mxProd y B ->
+  has starblank (rowVnextD1 (row m0 (mxProd y A)) m0 n0) ->
+  has starblank (rowVnextD1 (row m0 (mxProd y B)) m0 n0).
+Proof.
+move=> AB /hasP[l l_row Hl]; move: l_row => /mapP[n1 Hn1 ln1].
+apply/hasP => /=; exists l => //.
+apply/mapP; exists n1 => //.
+move/'forall_forallP/(_ m0 n1) : AB.
+move: Hl.
+rewrite {}ln1 {l} // mxE [(row _ _) _ _]mxE.
+move/starblankP => /orP[/eqP ->|/eqP ->]; by [move/lel_Star | move/lel_Blank].
+Qed.
 
 Definition mxSumProd (y : 'rV[letter]_n) := mxSum \o mxProd y.
 
@@ -650,7 +634,7 @@ case: ifP => m0n0.
   move/Prod_Bit => mem_b.
   have Ha' : forall i : 'I_m, Bit c <=l blank_to_star ((col n0 A) i ord0).
     move=> i; move: Ha => /(_ i); by rewrite !mxE.
-  apply: (@Bit_col _ _ _ cy _ (`F n0 :\ m0) Ha').
+  apply: (@Bit_col _ _ _ cy _ ('F n0 :\ m0) Ha').
   move: mem_b; rewrite inE; case/orP => [/eqP <-|mem_b].
     by rewrite eqxx.
   apply/orP; right.
@@ -714,19 +698,9 @@ rewrite /mxSumProd !mxE.
 case: ifP => Hi.
   rewrite /Sum.
   case: ifPn => [Hn1 | _].
-    case: ifPn => // Hn2.
-    exfalso.
-    move/negP : Hn2; apply.
-    case/hasP : Hn1 => /= ln1 Hln1 K.
-    move: Hln1.
-    rewrite /rowVnextD1. (* TODO: lemma? *)
-    case/mapP => n1 M N.
-    apply/hasP => /=; exists ln1 => //.
-    apply/mapP; exists n1 => //.
-    move/'forall_forallP/(_ m0 n1) : (mxProd_monotone c_le_y Ha Ha' Haa').
-    move: K.
-    rewrite {}N {ln1} // mxE [(row _ _) _ _]mxE.
-    move/starblankP => /orP[/eqP ->|/eqP ->]; by [move/lel_Star | move/lel_Blank].
+    case: ifPn => // /negP Hn2.
+    exfalso; apply Hn2; move: Hn1.
+    exact/has_starblank_rowVnextD1/(mxProd_monotone c_le_y).
   case: ifPn => // Hn2.
   apply/orP; left.
   apply/eqP; congr Bit.
@@ -815,12 +789,7 @@ Section SumProdBEC_algo.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
-Local Notation "'`V'" := (Vnext H).
-Local Notation "'`F'" := (Fnext H).
-
-(* TODO: factorize with colFnextD1? *)
-Definition colFnext (l : letter) (A : 'cV[letter]_m) i :=
-  l :: [seq A m1 ord0 | m1 in `F i].
+Local Notation "''F'" := (Fnext H).
 
 Require Program.Wf.
 
@@ -897,7 +866,7 @@ Definition iSP_BEC0 k := iter k (mxSumProd H y) (mxStar H).
 Lemma SP_BEC0_is_iter : exists k, SP_BEC0 = iSP_BEC0 k.
 Proof. by rewrite /SP_BEC0; case: SP_BEC0_rec => H' [? []]. Qed.
 
-Lemma iSP_BEC0_Blank : forall l m0 n0, m0 \notin `F n0 ->
+Lemma iSP_BEC0_Blank : forall l m0 n0, m0 \notin 'F n0 ->
   (iSP_BEC0 l) m0 n0 = Blank.
 Proof.
 elim=> [m0 n0 m0n0 | l IH m0 n0 m0n0]; by rewrite /= !mxE (negbTE m0n0) ?IH.
@@ -907,7 +876,7 @@ Qed.
 Definition PiSP_BEC0 l := mxProd H y (iSP_BEC0 l).
 
 Definition Esti (M : 'M[letter]_(m, n)) : 'rV[letter]_n :=
-  \row_i Prod (colFnext (y ``_ i) (col i M) i).
+  \row_i Prod (colFnext H (y ``_ i) (col i M) i).
 
 Definition SP_BEC := Esti SP_BEC0.
 
