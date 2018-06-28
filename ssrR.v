@@ -562,16 +562,22 @@ Lemma sqrRD a b : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2.
 Proof. rewrite /= !mulR1 !mulRDl !mul1R !mulRDr /=; field. Qed.
 
 Definition normR0 : `| 0 | = 0 := Rabs_R0.
+Definition normRN x : `|- x| = `|x| := Rabs_Ropp x.
 
+Definition normR_ge0 x : 0 <= `|x| := Rabs_pos x.
 Lemma normR0_eq0 r : `| r | = 0 -> r = 0. Proof. move: (Rabs_no_R0 r); tauto. Qed.
-
-Lemma normRM : {morph Rabs : x y / x * y : R}.
-Proof. exact: Rabs_mult. Qed.
 
 Lemma leR0_norm x : x <= 0 -> `|x| = - x. Proof. exact: Rabs_left1. Qed.
 Lemma ltR0_norm x : x < 0 -> `|x| = - x. Proof. by move/ltRW/leR0_norm. Qed.
 Lemma geR0_norm x : 0 <= x -> `|x| = x. Proof. exact: Rabs_pos_eq. Qed.
 Lemma gtR0_norm x : 0 < x -> `|x| = x. Proof. by move/ltRW/geR0_norm. Qed.
+
+Lemma normRM : {morph Rabs : x y / x * y : R}.
+Proof. exact: Rabs_mult. Qed.
+
+Definition sqR_norm x : `| x | ^ 2 = x ^ 2 := pow2_abs x.
+
+Definition distRC x y : `|x - y| = `|y - x| := Rabs_minus_sym x y.
 
 Definition maxRA : associative Rmax := Rmax_assoc.
 Definition maxRC : commutative Rmax := Rmax_comm.

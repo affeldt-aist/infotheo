@@ -308,13 +308,6 @@ case: (Rlt_le_dec a 0) => h.
 rewrite geR0_norm // => ?; apply/andP; split; apply/leRP; fourier.
 Qed.
 
-Lemma Rabs_sq x : `| x | ^ 2 = x ^ 2.
-Proof.
-rewrite /=.
-rewrite !mulR1 -normRM Rabs_pos_eq // -{2}(pow_1 x) -powS.
-exact: pow_even_ge0.
-Qed.
-
 (* TODO: rename *)
 Lemma fact_Coq_SSR n0 : fact n0 = n0 `!.
 Proof. elim: n0 => // n0 IH /=. by rewrite IH factS mulSn -multE. Qed.
@@ -335,7 +328,7 @@ Lemma normR_max a b c c' : 0 <= a <= c -> 0 <= b <= c' ->
   `| a - b | <= max(c, c').
 Proof.
 move=> [H1 H2] [H H3]; case: (Rtotal_order a b) => [H0|[H0|H0]].
-- rewrite Rabs_minus_sym Rabs_right; last fourier.
+- rewrite distRC gtR0_norm ?subR_gt0 //.
   apply: (@leR_trans b); [fourier | apply/(leR_trans H3)/leR_maxr; fourier].
 - subst b; rewrite subRR normR0.
   exact/(leR_trans H1)/(leR_trans H2)/leR_maxl.

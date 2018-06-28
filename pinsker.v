@@ -47,8 +47,8 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   set tmp := (`| _ | + _) ^ 2.
   have -> : tmp = 4 * (p - q) ^ 2.
     rewrite /tmp (_ : 1 - p - (1 - q) = q - p); last by field.
-    rewrite sqrRD (Rabs_minus_sym q p) -mulRA -{3}(pow_1 `| p - q |).
-    rewrite -powS Rabs_sq; by field.
+    rewrite sqrRD (distRC q p) -mulRA -{3}(pow_1 `| p - q |).
+    rewrite -powS sqR_norm; ring.
   rewrite [X in _ = _ + _ - X]mulRA.
   rewrite [in X in _ = _ + _ - X](mulRC c).
   congr (_ - _).
@@ -63,8 +63,7 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
     rewrite /log LogM; last 2 first.
       fourier.
       apply/invR_gt0; fourier.
-      rewrite LogV; last by fourier.
-      rewrite Log_1; by field.
+      by rewrite LogV ?subR_gt0 // Log_1.
   case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
     move: (@P_dom_by_Q (Set2.b card_A)).
     rewrite -/pj -/qj Hqj -Hq1 => /(_ erefl).
@@ -75,17 +74,16 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
     rewrite Hp2 subRR !mul0R /Rdiv /log LogM; last 2 first.
       fourier.
       exact/invR_gt0.
-    rewrite Log_1 mul1R LogV //; by field.
+    by rewrite Log_1 mul1R LogV // !(add0R,mul1R,addR0,sub0R).
   rewrite /log LogM //; last exact/invR_gt0.
   rewrite LogV //.
   case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
     move: (@P_dom_by_Q (Set2.a card_A)).
     rewrite -/pi -/qi Hqi -Hq2 subRR => /(_ erefl).
     rewrite Hpi => abs. exfalso. fourier.
-  rewrite /Rdiv LogM; last 2 first.
-    fourier.
+  rewrite /Rdiv LogM ?subR_gt0 //; last first.
     apply/invR_gt0; fourier.
-  rewrite LogV; [by field | by fourier].
+  rewrite LogV ?subR_gt0 //; ring.
 do 2 f_equal.
 by rewrite /var_dist Set2sumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
 Qed.
@@ -94,8 +92,7 @@ Lemma Pinsker_2_inequality_bdist : / (2 * ln 2) * d(P , Q) ^ 2 <= D(P || Q).
 Proof.
 set lhs := _ * _.
 set rhs := D(_ || _).
-suff : 0 <= rhs - lhs by move=> ?; fourier.
-rewrite -pinsker_fun_p_eq.
+rewrite -subR_ge0 -pinsker_fun_p_eq.
 apply pinsker_fun_pos with p01 q01 A card_A => //.
 split; [exact/ltRW/invR_gt0/mulR_gt0 | exact/leRR].
 Qed.
@@ -159,24 +156,20 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       transitivity (\rsum_(a | a \in A0) (P a - Q a)).
         apply eq_bigr => a; rewrite /A0 in_set => /leRP Ha.
-        rewrite Rabs_pos_eq //; by fourier.
-      rewrite big_split /= Rabs_pos_eq; last first.
-        suff : \rsum_(a | a \in A0) Q a <= \rsum_(a | a \in A0) P a.
-          move=> ?; by fourier.
-        apply ler_rsum => a; by rewrite inE => /leRP.
+        by rewrite geR0_norm ?subR_ge0.
+      rewrite big_split /= geR0_norm; last first.
+        rewrite subR_ge0; apply ler_rsum => ?; by rewrite inE => /leRP.
       rewrite -(big_morph _ morph_Ropp oppR0) //; by field.
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
         destruct (#|A1|); [tauto | by right].
       + move/eqP : A1_card; rewrite cards_eq0; move/eqP => A1_card.
-        rewrite A1_card !big_set0 Rabs_pos_eq //; [by field | fourier].
+        by rewrite A1_card !big_set0 subRR normR0.
       + transitivity (\rsum_(a | a \in A1) - (P a - Q a)).
           apply eq_bigr => a; rewrite /A1 in_set => Ha.
-          rewrite ltR0_norm //.
-          move/ltRP in Ha; by fourier.
+          rewrite ltR0_norm // subR_lt0; exact/ltRP.
         rewrite -(big_morph _  morph_Ropp oppR0) // big_split /= ltR0_norm; last first.
-          suff : \rsum_(a | a \in A1) P a < \rsum_(a | a \in A1) Q a by move=> ?; fourier.
-          apply ltr_rsum_support => // a.
+          rewrite subR_lt0; apply ltr_rsum_support => // a.
           rewrite /A1 in_set; by move/ltRP.
         by rewrite -(big_morph _ morph_Ropp oppR0).
   rewrite Set2sumE ?card_bool // => HX; rewrite /bipart_pmf.
@@ -207,7 +200,7 @@ apply (@leR_pmul2l (/ 2)); first by apply invR_gt0; fourier.
 apply (@leR_trans (D(P || Q))); last first.
   rewrite mulRA mulVR // ?mul1R; [exact/leRR | exact/eqP/gtR_eqF].
 apply: (leR_trans _ Pinsker_inequality).
-rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow; field.
+rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow mulR1.
 apply leR_wpmul2r; first exact: pow_even_ge0.
 apply leR_inv => //; first exact/mulR_gt0.
 rewrite -[X in _ <= X]mulR1.

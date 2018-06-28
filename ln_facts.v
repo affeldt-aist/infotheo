@@ -141,7 +141,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       apply/ltRP.
       rewrite -(addR0 x) -{2}(subRR r) addRA addRAC.
       apply (@leR_ltR_trans ((x + - r) + `| x + - r |)).
-        rewrite addRC -leR_subl_addr sub0R -Rabs_Ropp; exact: Rle_abs.
+        rewrite addRC -leR_subl_addr sub0R -normRN; exact: Rle_abs.
       rewrite /R_dist in Hx2.
       apply/ltR_add2l/(@ltR_leR_trans (Rmin k r)) => //; exact: geR_minr.
     have -> : 0 <b r by apply/ltRP.
@@ -154,7 +154,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
   move=> x; rewrite /R_dist subR0; case=> Hx1 Hx2.
   rewrite /xlnx ltRR'.
   case: ifPn => Hcase; move/ltRP in Hcase.
-  + rewrite Rabs_pos_eq in Hx2; last exact/ltRW.
+  + rewrite (geR0_norm _ (ltRW Hcase)) in Hx2.
     rewrite subR0 -{1}(exp_ln _ Hcase).
     set X := ln x.
     have X_neg : X < 0.
@@ -189,7 +189,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       - apply/mulR_gt0 => //; exact: invR_gt0.
       - rewrite leR_oppr mulRC -mulNR.
         apply/exp_le_inv/ltRW; subst X; by rewrite exp_ln.
-  + by rewrite subRR Rabs_R0.
+  + by rewrite subRR normR0.
 - exists (- r); split; first exact: oppR_gt0.
   move=> x [[_ Hx1] Hx2].
   rewrite /R_dist /xlnx.
@@ -200,7 +200,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       apply/leR_add2l/ltRW; by rewrite ltR_oppr.
     exact/Rle_minus/Rle_abs.
   have -> : 0 <b r = false by apply/negbTE; rewrite -leRNgt'; apply/leRP/ltRW.
-  by rewrite subRR Rabs_R0.
+  by rewrite subRR normR0.
 Qed.
 
 (* TODO: not used *)
@@ -417,19 +417,19 @@ rewrite -subR_gt0.
 have prd' : pderivable f (fun z => x < z < y).
   move=> z /= [Hz1 Hz2] ; apply pr.
   split.
-  - apply (@leR_ltR_trans x) => // ; by apply H1.
-  - apply (@ltR_leR_trans y) => // ; by apply H2.
+  - apply (@leR_ltR_trans x) => //; by apply H1.
+  - apply (@ltR_leR_trans y) => //; by apply H2.
 have H0' : forall t (Ht : x < t < y), 0 < derive_pt f t (prd' t Ht).
   move=> z /= [Hz0 Hz1].
   apply H0.
   split.
-  - apply (@leR_ltR_trans x) => // ; by apply H1.
-  - apply (@ltR_leR_trans y) => // ; by apply H2.
+  - apply (@leR_ltR_trans x) => //; by apply H1.
+  - apply (@ltR_leR_trans y) => //; by apply H2.
 have prcx : continuity_pt f x by apply prc; split; apply H1.
 have prcy : continuity_pt f y by apply prc; split; apply H2.
 have aux : a < b.
   apply (@leR_ltR_trans x) ; first by apply H1.
-  apply (@ltR_leR_trans y) => // ; by apply H2.
+  apply (@ltR_leR_trans y) => //; by apply H2.
 case: (MVT_cor1_pderivable_new_var prd' prcx prcy H3); intros x0 [x1 [H7 H8]].
 rewrite H7.
 apply mulR_gt0; first by apply H0'.
@@ -551,10 +551,8 @@ Proof.
 move=> [Hx1 Hx2] [Hy1 Hy2] H.
 case : (Rtotal_order x y) ; last case ; move => Hcase.
 - have Haux : y = x + `| x - y |.
-    rewrite /R_dist -Rabs_Ropp Rabs_pos_eq.
-      by rewrite oppRB subRKC.
-    rewrite leR_oppr oppR0; exact/Rle_minus/ltRW.
-  rewrite Haux -Rabs_Ropp oppRD oppRK addRC.
+    by rewrite distRC gtR0_norm ?subR_gt0 // subRKC.
+  rewrite Haux -normRN oppRD oppRK addRC.
   apply (@leR_trans (- xlnx `| x - y |)).
     apply xlnx_delta_bound.
     - split.
@@ -564,24 +562,22 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
       by rewrite leR_subr_addr -Haux.
   rewrite leR_oppr oppRK.
   apply xlnx_decreasing_0_Rinv_e => //.
-  - split; first exact: Rabs_pos.
+  - split; first exact: normR_ge0.
     apply (@leR_trans a) => //.
     apply (@leR_trans (exp (- 2))); first by apply Ha.
     apply/ltRW/exp_increasing; fourier.
   - split; first by apply Ha.
     apply (@leR_trans (exp (-2))); first by apply Ha.
     apply/ltRW/exp_increasing; fourier.
-- subst x ; rewrite subRR Rabs_R0.
-  rewrite leR_oppr oppR0.
+- subst x ; rewrite subRR normR0 leR_oppr oppR0.
   case/orP : (orbN (0 == a)); last move=> anot0.
     by move=> /eqP <-; rewrite xlnx_0; exact: leRR.
   apply/ltRW/xlnx_neg; split.
   - apply/ltRP; rewrite lt0R eq_sym anot0; exact/leRP/(proj1 Ha).
   - exact: (leR_ltR_trans (proj2 Ha) ltRinve21).
 - apply Rgt_lt in Hcase.
-  have Haux : x = y + `| x - y |.
-    rewrite Rabs_pos_eq ?subRKC //; exact/Rge_le/Rge_minus/Rle_ge/ltRW.
-  rewrite Rabs_minus_sym in H Haux.
+  have Haux : x = y + `| x - y | by rewrite gtR0_norm ?subR_gt0 // subRKC.
+  rewrite distRC in H Haux.
   rewrite Haux.
   apply (@leR_trans (- xlnx `| y - x |)).
     apply xlnx_delta_bound.
@@ -592,7 +588,7 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
       by rewrite leR_subr_addr -Haux.
   rewrite leR_oppr oppRK.
   apply xlnx_decreasing_0_Rinv_e => //.
-  + split; first exact: Rabs_pos.
+  + split; first exact: normR_ge0.
     apply (@leR_trans a) => //.
     apply (@leR_trans (exp (-2))); first by apply Ha.
     apply/ltRW/exp_increasing; fourier.

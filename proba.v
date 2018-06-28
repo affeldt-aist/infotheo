@@ -612,7 +612,7 @@ Section convexdist.
 Variables (A : finType) (d1 d2 : dist A) (p : R).
 Hypothesis p01 : 0 <= p <= 1.
 
-Definition f a := (p * d1 a + p.~ * d1 a)%R.
+Definition f a := (p * d1 a + p.~ * d2 a)%R.
 
 Lemma f0 a : 0 <= f a.
 Proof.
@@ -621,9 +621,7 @@ apply addR_ge0; apply mulR_ge0;
 Qed.
 
 Lemma f1 : \rsum_(a in A) f a = 1%R.
-Proof.
-by rewrite big_split /= -2!big_distrr /= -mulRDl pmf1 mulR1 onemKC.
-Qed.
+Proof. by rewrite big_split /= -2!big_distrr /= 2!pmf1 2!mulR1 onemKC. Qed.
 
 Definition d : {dist A} := makeDist f0 f1.
 End convexdist.
@@ -1383,7 +1381,7 @@ apply (@leR_trans (\rsum_(a in A | `| X a - `E X | >b= epsilon)
 rewrite /Pr big_distrr [_ \^2]lock /= -!lock.
 apply ler_rsum_l => i Hi; rewrite /= -!/(_ ^ 2).
 - apply leR_wpmul2r; first exact: dist_ge0.
-  move: Hi; rewrite inE -(Rabs_sq (X i - _)) => H.
+  move: Hi; rewrite inE -(sqR_norm (X i - _)) => H.
   apply/pow_incr; split => //; [exact/ltRW | exact/leRP].
 - apply mulR_ge0; [exact: pow_even_ge0 | exact: dist_ge0].
 - move: Hi; by rewrite inE.

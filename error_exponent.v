@@ -43,10 +43,8 @@ Lemma out_entropy_dist_ub : `| `H(P `o V) - `H(P `o W) | <=
   / ln 2 * INR #|B| * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
-rewrite /Rminus -mulRN -mulRDr normRM Rabs_right; last first.
-  rewrite -(mul1R (/ ln 2)); exact/Rle_ge/divR_ge0.
-rewrite -mulRA; apply leR_wpmul2l.
-  by rewrite -(mul1R (/ ln 2)); exact: divR_ge0.
+rewrite /Rminus -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
+rewrite -mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
 apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -iter_addR -big_const.
@@ -61,8 +59,8 @@ apply Rabs_xlnx => //.
     apply (@leR_trans (\rsum_(a : A) \rsum_(b : B) `| (`J(P, V)) (a, b) - (`J(P, W)) (a, b) |)); last first.
       apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
     apply: ler_rsum => a _.
-    rewrite (bigD1 b) //= Rabs_minus_sym -[X in X <= _]addR0.
-    rewrite 2!JointDist.dE /=; apply/leR_add2l/rsumr_ge0 => ? _; exact/Rabs_pos.
+    rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
+    rewrite 2!JointDist.dE /=; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
   + rewrite cdiv_is_div_joint_dist => //.
     exact/Pinsker_inequality_weak/joint_dom.
 Qed.
@@ -73,10 +71,8 @@ Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
   / ln 2 * INR #|A| * INR #|B| * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
-rewrite /Rminus -mulRN -mulRDr normRM Rabs_right; last first.
-  by rewrite -(mul1R (/ ln 2)); apply/Rle_ge/divR_ge0.
-rewrite -2!mulRA; apply leR_wpmul2l.
-  by rewrite -(mul1R (/ ln 2)); exact: divR_ge0.
+rewrite /Rminus -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
+rewrite -2!mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
 apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -2!iter_addR -2!big_const pair_bigA /=.
@@ -85,9 +81,9 @@ apply Rabs_xlnx => //.
 - split; [exact: dist_ge0 | exact: dist_max].
 - split; [exact: dist_ge0 | exact: dist_max].
 - apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
-    rewrite /var_dist /R_dist (bigD1 (a, b)) //= Rabs_minus_sym.
+    rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
     rewrite -[X in X <= _]addR0.
-    apply/leR_add2l/rsumr_ge0 => ? _; exact/Rabs_pos.
+    apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
   rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dom.
 Qed.
@@ -103,7 +99,7 @@ apply: leR_trans; first exact: Rabs_triang.
 rewrite -mulRA mulRDl mulRDr.
 apply leR_add.
 - by rewrite mulRA; apply out_entropy_dist_ub.
-- by rewrite Rabs_minus_sym 2!mulRA; apply joint_entropy_dist_ub.
+- by rewrite distRC 2!mulRA; apply joint_entropy_dist_ub.
 Qed.
 
 End mutinfo_distance_bound.
@@ -148,7 +144,7 @@ have x_pos : 0 < x.
 have Htmp : D_x no_cond 0 x /\ R_dist x 0 < mu.
   split.
   - split => //; exact/ltR_eqF.
-  - rewrite /R_dist subR0 Rabs_right; last exact/Rle_ge/ltRW.
+  - rewrite /R_dist subR0 gtR0_norm //.
     subst x.
     apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
     apply/ltRP; rewrite ltR_pdivr_mulr //; apply/ltRP; fourier.
