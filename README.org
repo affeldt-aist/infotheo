@@ -1,20 +1,18 @@
-infotheo
-========
+* infotheo
 
 This is a Coq formalization of information theory and linear
 error-correcting codes.
 
-## Requirements
+** Requirements
 
-The development version of the Mathematical Components library:
-https://github.com/math-comp/math-comp
+The development version of the [[https://github.com/math-comp/math-comp][Mathematical Components library]]
 (because we use the fieldext and finfield libraries).
 
-Coq 8.7.
-Compilation is almost fine with Coq 8.6 except for 
+Coq 8.8.
+Compilation should be fine with previous versions except for 
 minor problems due to recent changes in the Reals library.
 
-## Install
+** Install
 
 After gunzip/untar, do
 cd infotheo
@@ -22,11 +20,11 @@ and do
 coq_makefile -f _CoqProject -o Makefile
 make
 
-## License
+** License
 
 GNU GPLv3
 
-## Authors
+** Authors
 
-See infotheo_authors.txt
+See [[infotheo_authors.txt]]
 
