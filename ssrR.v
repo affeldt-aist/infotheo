@@ -62,14 +62,12 @@ Proof. move=> m n; by rewrite Rplus_comm. Qed.
 Lemma addRA : associative Rplus.
 Proof. move=> m n p; by rewrite Rplus_assoc. Qed.
 
-Lemma addRCA : left_commutative Rplus.
-Proof. move=> a b c; by field. Qed.
+Lemma addRCA : left_commutative Rplus. Proof. move=> ? ? ?; ring. Qed.
 
-Lemma addRAC : right_commutative Rplus.
-Proof. move=> a b c; by field. Qed.
+Lemma addRAC : right_commutative Rplus. Proof. move=> ? ? ?; ring. Qed.
 
 Lemma addRK (a : R) : cancel (Rplus^~ a) (Rminus^~ a).
-Proof. move=> b; by field. Qed.
+Proof. move=> ?; ring. Qed.
 
 Lemma addRN r : r + - r = 0.
 Proof. exact: Rplus_opp_r r. Qed.
@@ -111,16 +109,17 @@ Definition mulRC : commutative Rmult := Rmult_comm.
 Lemma mulRA : associative Rmult.
 Proof. move=> m n p; by rewrite Rmult_assoc. Qed.
 
-Lemma mulRCA : left_commutative Rmult. Proof. move=> a b c; by field. Qed.
+Lemma mulRCA : left_commutative Rmult. Proof. move=> ? ? ?; ring. Qed.
+Lemma mulRAC : right_commutative Rmult. Proof. move=> ? ? ?; ring. Qed.
 
 Lemma mulRDl : left_distributive Rmult Rplus.
 Proof. move=> *; by rewrite Rmult_plus_distr_r. Qed.
 Lemma mulRDr : right_distributive Rmult Rplus.
 Proof. move=> *; by rewrite Rmult_plus_distr_l. Qed.
 Lemma mulRBl : left_distributive Rmult Rminus.
-Proof. move=> *; field. Qed.
+Proof. move=> *; ring. Qed.
 Lemma mulRBr : right_distributive Rmult Rminus.
-Proof. move=> *; field. Qed.
+Proof. move=> *; ring. Qed.
 
 Lemma mulR_eq0 (x y : R) : (x * y == 0) = ((x == 0) || (y == 0)).
 Proof.
