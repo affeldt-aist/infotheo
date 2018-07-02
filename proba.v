@@ -625,6 +625,22 @@ Proof. by rewrite big_split /= -2!big_distrr /= 2!pmf1 2!mulR1 onemKC. Qed.
 
 Definition d : {dist A} := makeDist f0 f1.
 End convexdist.
+Section convexdist_prop.
+Variables (A : finType).
+
+Lemma d0 (d1 d2 : dist A) (H : 0 <= 0 <= 1) : ConvexDist.d d1 d2 H = d2.
+Proof.
+apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
+by rewrite /f mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R).
+Qed.
+
+Lemma d1 (d1 d2 : dist A) (H : 0 <= 1 <= 1) : ConvexDist.d d1 d2 H = d1.
+Proof.
+apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
+by rewrite /f mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R,addRN).
+Qed.
+
+End convexdist_prop.
 End ConvexDist.
 
 Section tuple_prod_cast.
