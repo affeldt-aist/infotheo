@@ -44,7 +44,7 @@ Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable P : dist A.
 Variable p : R.
-Hypothesis p_01' : 0 < p < 1.
+Hypothesis p_01' : (0 < p < 1)%R.
 
 Let p_01 := closed p_01'.
 

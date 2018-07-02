@@ -54,6 +54,9 @@ Proof. move=> r1; rewrite /onem; fourier. Qed.
 Lemma onemKC (r : R) : (r + r.~ = 1)%R.
 Proof. rewrite /onem; by field. Qed.
 
+Lemma onemK p : p.~.~ = p.
+Proof. by rewrite /onem subRBA addRC addRK. Qed.
+
 Lemma iter_mulR x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
 Proof. elim : n => // n Hn ; by rewrite iterS Hn. Qed.
 

@@ -95,6 +95,9 @@ Proof.
 apply/idP/idP => [/eqP <-|/eqP ->]; by [rewrite subRK | rewrite addRK].
 Qed.
 
+Lemma subRBA m n p : m - (n - p) = m + p - n.
+Proof. by field. Qed.
+
 Definition mul0R : left_zero 0 Rmult := Rmult_0_l.
 Definition mulR0 : right_zero 0 Rmult := Rmult_0_r.
 Definition mul1R : ssrfun.left_id 1%R Rmult := Rmult_1_l.

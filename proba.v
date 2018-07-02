@@ -5,6 +5,7 @@ From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier FunctionalExtensionality.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import Nsatz.
 
 (** * Formalization of discrete probabilities *)
 
@@ -99,7 +100,7 @@ Variable A : finType.
 
 Record dist := mkDist {
   pmf :> A -> R+ ;
-  pmf1 : \rsum_(a in A) pmf a = 1 }.
+  pmf1 : \rsum_(a in A) pmf a = 1%R}.
 
 Lemma dist_domain_not_empty (P : dist) : (0 < #| A |)%nat.
 Proof.
@@ -112,7 +113,7 @@ Qed.
 Definition dist_supp (d : dist) := [set a | d a != 0].
 
 Lemma rsum_dist_supp (g : A -> R) (X : dist) (P : pred A):
-  \rsum_(a in A | P a) g a * X a = \rsum_(a | P a && (a \in dist_supp X)) g a * X a.
+  (\rsum_(a in A | P a) g a * X a = \rsum_(a | P a && (a \in dist_supp X)) g a * X a)%R.
 Proof.
 rewrite (bigID (mem (dist_supp X))) /= addRC (eq_bigr (fun=> 0)); last first.
   move=> i; rewrite inE negbK => /andP[_ /eqP] ->; by rewrite mulR0.
@@ -121,12 +122,12 @@ apply eq_bigl => a; by rewrite !inE andbC /index_enum -enumT mem_enum inE.
 Qed.
 
 Definition makeDist (pmf : A -> R) (H0 : forall a, 0 <= pmf a)
-  (H1 : \rsum_(a in A) pmf a = 1) := @mkDist (@mkPosFun _ pmf H0) H1.
+  (H1 : \rsum_(a in A) pmf a = 1%R) := @mkDist (@mkPosFun _ pmf H0) H1.
 
 Lemma dist_ge0 (P : dist) a : 0 <= P a.
 Proof. exact: pos_f_ge0. Qed.
 
-Lemma dist_max (P : dist) a : P a <= 1.
+Lemma dist_max (P : dist) a : P a <= 1%R.
 Proof.
 rewrite -(pmf1 P) (_ : P a = \rsum_(a' in A | a' == a) P a').
   apply ler_rsum_l_support with (Q := xpredT) => // ?; exact/dist_ge0.
@@ -149,11 +150,11 @@ Module Dist1.
 Section dist1.
 Variables (A : finType) (a : A).
 
-Definition f b := INR (b == a).
+Definition f b := INR (b == a)%bool.
 
 Lemma f0 b : 0 <= f b. Proof. exact: leR0n. Qed.
 
-Lemma f1 : \rsum_(b in A) f b = 1.
+Lemma f1 : \rsum_(b in A) f b = 1%R.
 Proof.
 rewrite (bigD1 a) //= {1}/f eqxx /= (eq_bigr (fun=> 0)); last first.
   by move=> b ba; rewrite /f (negbTE ba).
@@ -162,7 +163,7 @@ Qed.
 
 Definition d : dist A := makeDist f0 f1.
 
-Lemma dxx : d a = 1.
+Lemma dxx : d a = 1%R.
 Proof. by rewrite /d /= /f eqxx. Qed.
 
 Lemma d_neq b : b != a -> d b = 0.
@@ -175,12 +176,12 @@ Module DistBind.
 Section distbind.
 Variables (A B : finType) (p : dist A) (g : A -> dist B).
 
-Definition f b := \rsum_(a in A) p a * (g a) b.
+Definition f b := (\rsum_(a in A) p a * (g a) b)%R.
 
 Lemma f0 b : 0 <= f b.
 Proof. rewrite /f; apply rsumr_ge0 => a _; apply mulR_ge0; exact/dist_ge0. Qed.
 
-Lemma f1 : \rsum_(b in B) f b = 1.
+Lemma f1 : \rsum_(b in B) f b = 1%R.
 Proof.
 rewrite /f exchange_big /= -[RHS](pmf1 p); apply eq_bigr => a _.
 by rewrite -big_distrr /= pmf1 mulR1.
@@ -231,7 +232,7 @@ Definition f (a : A) := INR 1 / INR #|A|.
 Lemma f0 a : 0 <= f a.
 Proof. apply/divR_ge0 => //; apply/ltR0n; by rewrite domain_not_empty. Qed.
 
-Lemma f1 : \rsum_(a in A) f a = 1.
+Lemma f1 : \rsum_(a in A) f a = 1%R.
 Proof.
 rewrite /f -big_distrr /= mul1R big_const iter_addR mulRV //.
 by rewrite INR_eq0' domain_not_empty.
@@ -335,17 +336,17 @@ Section binary.
 Variable A : finType.
 Hypothesis HA : #|A| = 2%nat.
 Variable p : R.
-Hypothesis Hp : 0 <= p <= 1.
+Hypothesis Hp : (0 <= p <= 1)%R.
 
-Definition f (a : A) := fun a' => if a' == a then 1 - p else p.
+Definition f (a : A) := fun a' => if a' == a then (1 - p)%R else p.
 
-Lemma fxx a : f a a = 1 - p.
+Lemma fxx a : f a a = (1 - p)%R.
 Proof. by rewrite /f eqxx. Qed.
 
 Lemma f0 (a a' : A) : 0 <= f a a'.
 Proof. rewrite /f. case: ifP => _; case: Hp => ? ?; fourier. Qed.
 
-Lemma f1 (a : A) : \rsum_(a' in A) f a a' = 1.
+Lemma f1 (a : A) : \rsum_(a' in A) f a a' = 1%R.
 Proof.
 rewrite Set2sumE /= /f.
 case: ifPn => [/eqP <-|].
@@ -366,11 +367,11 @@ Section binary_distribution_prop.
 Variables (A : finType) (P Q : dist A).
 Hypothesis card_A : #|A| = 2%nat.
 
-Lemma charac_bdist : {r | {r01 : 0 <= r <= 1 & P = Binary.d card_A r01 }}.
+Lemma charac_bdist : {r | {r01 : (0 <= r <= 1)%R & P = Binary.d card_A r01 }}.
 Proof.
 destruct P as [[pmf pmf0] pmf1].
-exists (1 - pmf (Set2.a card_A)).
-have r01 : 0 <= 1 - pmf (Set2.a card_A) <= 1.
+exists (1 - pmf (Set2.a card_A))%R.
+have r01 : 0 <= 1 - pmf (Set2.a card_A) <= 1%R.
   move: (dist_max (mkDist pmf1) (Set2.a card_A)) => /= H1.
   move: (pmf0 (Set2.a card_A)) => H0.
   split; first by fourier.
@@ -418,7 +419,7 @@ Variables (B : finType) (X : dist B) (b : B).
 
 Definition f : B -> R := fun a => if a == b then 0 else X a / (1 - X b).
 
-Hypothesis Xb1 : X b != 1.
+Hypothesis Xb1 : X b != 1%R.
 
 Lemma f0 : forall a, 0 <= f a.
 Proof.
@@ -428,7 +429,7 @@ apply mulR_ge0; first exact/dist_ge0.
 apply/ltRW/invR_gt0/subR_gt0/ltRP; rewrite ltR_neqAle Xb1; exact/leRP/dist_max.
 Qed.
 
-Lemma f1 : \rsum_(a in B) f a = 1.
+Lemma f1 : \rsum_(a in B) f a = 1%R.
 Proof.
 rewrite (bigD1 b) //= {1}/f eqxx add0R.
 rewrite (eq_bigr (fun c => X c / (1 - X b))); last first.
@@ -455,7 +456,7 @@ move/negPn/negP : H; apply.
 apply/invR_neq0; by apply: contra Xb1; rewrite subR_eq0 eq_sym.
 Qed.
 
-Lemma f_eq0 a (Xa0 : X a != 0) : (f a == 0) = (b == a).
+Lemma f_eq0 a (Xa0 : X a != 0) : ((f a == 0) = (b == a))%bool.
 Proof.
 rewrite /f; case: ifPn => [/eqP ->|ab]; first by rewrite !eqxx.
 apply/idP/idP => [|]; last by rewrite eq_sym (negbTE ab).
@@ -474,7 +475,7 @@ Proof.
 move=> A d.
 apply makeDist with (fun x => d (thead x)).
   move=> a; exact: dist_ge0.
-rewrite -(pmf1 d); exact: big_1_tuple.
+rewrite -[RHS](pmf1 d); exact: big_1_tuple.
 Defined.
 
 Local Open Scope vec_ext_scope.
@@ -484,7 +485,7 @@ Proof.
 move=> A d.
 apply makeDist with (fun x : 'rV[A]_1 => d (x ``_ ord0)).
 move=> a; exact: dist_ge0.
-rewrite -(pmf1 d).
+rewrite -[RHS](pmf1 d).
 exact: big_rV_1.
 Defined.
 
@@ -505,10 +506,10 @@ Proof. apply rprodr_ge0 => ?; exact/dist_ge0. Qed.
 
 (** Definition of the product distribution (over a row vector): *)
 
-Lemma f1 : \rsum_(t in 'rV[A]_n) f t = 1.
+Lemma f1 : \rsum_(t in 'rV[A]_n) f t = 1%R.
 Proof.
 pose P' := fun (a : 'I_n) b => P b.
-suff : \rsum_(g : {ffun 'I_n -> A }) \rprod_(i < n) P' i (g i) = 1.
+suff : \rsum_(g : {ffun 'I_n -> A }) \rprod_(i < n) P' i (g i) = 1%R.
 Local Open Scope ring_scope.
   rewrite (reindex_onto (fun j : 'rV[A]_n => finfun (fun x => j ``_ x))
                         (fun i => \row_(j < n) i j)) /=.
@@ -519,9 +520,9 @@ Local Close Scope ring_scope.
     + move=> _; apply eq_bigr => i _ /=; by rewrite ffunE.
   move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
 rewrite -bigA_distr_bigA /= /P'.
-rewrite [X in _ = X](_ : 1 = \rprod_(i < n) 1)%R; last first.
+rewrite [RHS](_ : _ = \rprod_(i < n) 1)%R; last first.
   by rewrite big_const_ord iter_mulR pow1.
-apply eq_bigr => i _; by apply pmf1.
+apply eq_bigr => i _; exact: pmf1.
 Qed.
 
 Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
@@ -539,7 +540,7 @@ Local Open Scope proba_scope.
 
 Local Open Scope vec_ext_scope.
 
-Lemma TupleDist0E (B : finType) (x : 'rV[B]_0) P : P `^ 0 x = 1.
+Lemma TupleDist0E (B : finType) (x : 'rV[B]_0) P : P `^ 0 x = 1%R.
 Proof. by rewrite TupleDist.dE big_ord0. Qed.
 
 Lemma TupleDist1E (A : finType) (a : 'rV[A]_1) P : (P `^ 1) a = P (a ``_ ord0).
@@ -592,13 +593,13 @@ Definition d : {dist A * B} := makeDist f0 f1.
 Definition proj1 (P : {dist A * B}) : dist A.
 apply makeDist with (fun a => \rsum_(b in B) P (a, b)).
 - move=> a; apply rsumr_ge0 => ? _; exact: dist_ge0.
-- rewrite -(pmf1 P) pair_big /=; apply eq_bigr; by case.
+- rewrite -[RHS](pmf1 P) pair_big /=; apply eq_bigr; by case.
 Defined.
 
 Definition proj2 (P : {dist A * B}) : dist B.
 apply makeDist with (fun b => \rsum_(a in A) P (a, b)).
 - move=> a; apply: rsumr_ge0 => ? _; exact: dist_ge0.
-- rewrite exchange_big /= -(pmf1 P) pair_big /=; apply eq_big; by case.
+- rewrite exchange_big /= -[RHS](pmf1 P) pair_big /=; apply eq_big; by case.
 Defined.
 
 End ProdDist_sect.
@@ -610,7 +611,7 @@ Notation "P1 `x P2" := (ProdDist.d P1 P2) : proba_scope.
 Module ConvexDist.
 Section convexdist.
 Variables (A : finType) (d1 d2 : dist A) (p : R).
-Hypothesis p01 : 0 <= p <= 1.
+Hypothesis p01 : (0 <= p <= 1)%R.
 
 Definition f a := (p * d1 a + p.~ * d2 a)%R.
 
@@ -638,6 +639,44 @@ Lemma d1 (d1 d2 : dist A) (H : 0 <= 1 <= 1) : ConvexDist.d d1 d2 H = d1.
 Proof.
 apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
 by rewrite /f mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R,addRN).
+Qed.
+
+Lemma commute (d1 d2 : dist A) p (Hp : 0 <= p <= 1) (Hp' : 0 <= p.~ <= 1) :
+  d d1 d2 Hp = d d2 d1 Hp'.
+Proof.
+apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
+by rewrite /f onemK addRC.
+Qed.
+
+Lemma idempotent (d0 : dist A) p (Hp : 0 <= p <= 1) : d d0 d0 Hp = d0.
+Proof.
+apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
+by rewrite /f mulRBl mul1R addRCA addRN addR0.
+Qed.
+
+Lemma quasi_assoc (p q r s : R) (d0 d1 d2 : dist A)
+  (Hp : 0 <= p <= 1) (Hq : 0 <= q <= 1) (Hr : 0 <= r <= 1) (Hs : 0 <= s <= 1) :
+  p = (r * s)%R -> (s.~ = p.~ * q.~)%R ->
+  d d0 (d d1 d2 Hq) Hp = d (d d0 d1 Hr) d2 Hs.
+Proof.
+move=> H1 H2.
+apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
+rewrite /d /f /=.
+transitivity (p * d0 a + p.~ * q * d1 a + p.~ * q.~ * d2 a)%R; first nsatz.
+transitivity (r * s * d0 a + r.~ * s * d1 a + s.~ * d2 a)%R; last nsatz.
+rewrite H1; congr (_ + _ * _ + _ * _)%R.
+rewrite -(onemK s) H2; nsatz.
+rewrite H2 H1; nsatz.
+Qed.
+
+Lemma bind_left_distr (B : finType) (p : R) (Hp : 0 <= p <= 1)
+  (d0 d1 : dist A) (f : A -> dist B) :
+  DistBind.d (d d0 d1 Hp) f = d (DistBind.d d0 f) (DistBind.d d1 f) Hp.
+Proof.
+apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
+rewrite /DistBind.d /DistBind.f /ConvexDist.d /ConvexDist.f /=.
+rewrite 2!big_distrr /= -big_split /=; apply/eq_bigr => a0 _.
+by rewrite mulRDl !mulRA.
 Qed.
 
 End convexdist_prop.
@@ -1042,7 +1081,7 @@ Lemma Ind_cap (S1 S2 : {set A}) (x : A) :
   Ind (S1 :&: S2) x = (Ind S1 x * Ind S2 x)%R.
 Proof. by rewrite /Ind inE; case: in_mem; case: in_mem=>/=; ring. Qed.
 
-Lemma Ind_bigcap I (e : I -> {set A}) (r : seq I) (p : pred I) x :
+Lemma Ind_bigcap I (e : I -> {set A}) (r : seq.seq I) (p : pred I) x :
   Ind (\bigcap_(j <- r | p j) e j) x = \rprod_(j <- r | p j) (Ind (e j) x).
 Proof.
 apply (big_ind2 (R1 := {set A}) (R2 := R)); last done.
@@ -1128,7 +1167,7 @@ rewrite bigA_distr_bigA big_mkord (partition_big
     move=> Hi; rewrite -[RHS]inord_val -{}Hi.
     by congr inord; apply: eq_card => v; rewrite inE ffunE. }
   by move=> j Hj; apply: eq_bigr => k Hk; rewrite /F12 ffunE. }
-rewrite (reindex (fun x : 'I_2 => (x : nat) == 1%N)); last first.
+rewrite (reindex (fun x : 'I_2 => (x : nat) == 1%N)%bool); last first.
   { apply: onW_bij.
     exists (fun b : bool => inord (nat_of_bool b)).
     by move=> [x Hx]; rewrite -[RHS]inord_val; case: x Hx =>// x Hx; case: x Hx.
@@ -1148,7 +1187,7 @@ apply: eq_big => [i|i /andP [H1 H2]] /=; first by rewrite inE negbK.
 by rewrite ifF //; apply: negbTE; rewrite inE in_setC in H2.
 Qed.
 
-Lemma bigcap_seq_const I (B : {set A}) (r : seq I) :
+Lemma bigcap_seq_const I (B : {set A}) (r : seq.seq I) :
   (0 < size r)%nat -> \bigcap_(i <- r) B = B.
 Proof.
 elim: r => [//|a r IHr] _; rewrite big_cons.
@@ -1160,7 +1199,7 @@ Lemma bigcap_ord_const n' (B : {set A}) :
   \bigcap_(i < n'.+1) B = B.
 Proof. by rewrite bigcap_seq_const // /index_enum -enumT size_enum_ord. Qed.
 
-Lemma bigcap_const (I : eqType) (B : {set A}) (r : seq I) (p : pred I) :
+Lemma bigcap_const (I : eqType) (B : {set A}) (r : seq.seq I) (p : pred I) :
   (exists2 i : I, i \in r & p i) ->
   \bigcap_(i <- r | p i) B = B.
 Proof.
@@ -1632,7 +1671,7 @@ apply trans_eq with (\rsum_(i in 'rV[A]_n.+2)
   ((X1 (i ``_ ord0)) ^ 2 * `p_X i +  2 * X1 (i ``_ ord0) * X2 (rbehead i) * `p_X i +
    (X2 (rbehead i)) ^ 2 * `p_X i))%R.
   apply eq_bigr => ? ?; by field.
-rewrite !big_split [pow]lock /= -lock.
+rewrite !big_split /=.
 f_equal.
 - f_equal.
   + rewrite ExE -(big_rV_cons_behead _ _ xpredT xpredT) /=.
@@ -1650,7 +1689,7 @@ f_equal.
   rewrite exchange_big /=.
   apply eq_bigr => t _.
   apply trans_eq with (X2 t ^ 2 * \rsum_(i0 in A) (`p_X (row_mx (\row_(k < 1) i0) t)))%R.
-  + rewrite big_distrr [pow]lock /= -lock //; apply eq_bigr => i0 Hi0.
+  + rewrite big_distrr /=; apply eq_bigr => i0 Hi0.
     by rewrite rbehead_row_mx.
   + congr (_ * _)%R.
     case: Hsum1 => _ ->.
