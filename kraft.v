@@ -41,6 +41,9 @@ Qed.
 Lemma prefix_cat a b : prefix a (a ++ b).
 Proof. by rewrite /prefix take_cat ltnn subnn take0 cats0. Qed.
 
+Lemma prefix_take n a : prefix (take n a) a.
+Proof. by rewrite -{2}(cat_take_drop n a) prefix_cat. Qed.
+
 Lemma prefixP a b : reflect (exists s, a ++ s == b) (prefix a b).
 Proof.
 apply: (iffP idP); last by case=> s /eqP <-; exact: prefix_cat.

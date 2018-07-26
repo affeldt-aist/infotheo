@@ -32,7 +32,7 @@ Section num_occ_def.
 
 Variables (A : eqType) (a : A) (t : seq A).
 
-Definition num_occ := count (pred1 a) t.
+Definition num_occ := count_mem a t.
 
 End num_occ_def.
 

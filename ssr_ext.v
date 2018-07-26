@@ -10,6 +10,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Notation "t '\_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
+Reserved Notation "n .-bseq" (at level 2, format "n .-bseq").
 
 Lemma addb_tri_ine a b c : a (+) b <= (a (+) c) + (c (+) b).
 Proof. move: a b c; by case; case; case. Qed.
@@ -677,7 +678,7 @@ Defined.
 
 End tuple_ext.
 
-Section bseq.
+Section bseq_def.
 
 Variables (n : nat) (T : Type).
 
@@ -692,11 +693,31 @@ Qed.
 
 Canonical bseq_subType := Eval hnf in [subType for bseqval].
 
-End bseq.
+End bseq_def.
 
-Notation "n .-bseq" := (bseq_of n) (at level 2, format "n .-bseq") : type_scope.
+Notation "n .-bseq" := (bseq_of n) : type_scope.
 
-Section canonical.
+Program Definition bseq0 n T : n.-bseq T := @Bseq n T [::] _.
+
+Definition bseq_of_tuple n T (t : seq T) : n.-bseq T :=
+  match Bool.bool_dec (size t <= n) true with
+    left H => Bseq H | right _ => @bseq0 n T
+  end.
+
+Lemma size_bseq n T (bs : n.-bseq T) : size bs <= n.
+Proof. by case: bs. Qed.
+
+Lemma rcons_bseqP n T (t : n.-bseq T) x : size (rcons t x) <= n.+1.
+Proof. by rewrite size_rcons ltnS size_bseq. Qed.
+Canonical rcons_bseq n T (t : n.-bseq T) x := Bseq (rcons_bseqP t x).
+
+Definition bseq n T (t : n.-bseq T) mkT : bseq_of n T :=
+  mkT (let: Bseq _ tP := t return size t <= n in tP).
+
+Notation "[ 'bseq' 'of' s ]" := (@bseq _ _ _ (fun sP => @Bseq _ _ s sP))
+  (at level 0, format "[ 'bseq'  'of'  s ]") : type_scope.
+
+Section bseq_structures.
 
 Variable n : nat.
 
@@ -712,19 +733,11 @@ Canonical bseq_countType (T : countType) :=
   Eval hnf in CountType (n.-bseq T) (bseq_countMixin T).
 Canonical bseq_subCountType (T : countType) := Eval hnf in [subCountType of n.-bseq T].
 
-End canonical.
+Definition bseq_enum (T : finType) : seq (n.-bseq T) :=
+  flatten (map (fun m => map (@bseq_of_tuple n _) (map (@tval _ _) (enum {: m.-tuple T})))
+               (iota 0 n.+1)).
 
-Program Definition bseq0 n (T : finType) : n.-bseq T := @Bseq n T [::] _.
-
-Definition bseq_of_tuple n (T : finType) (t : seq T) : n.-bseq T :=
-  match Bool.bool_dec (size t <= n) true with
-    left H => Bseq H | right _ => @bseq0 n T
-  end.
-
-Definition bseq_enum n (T : finType) : seq (n.-bseq T) :=
-  flatten (map (fun m => map (@bseq_of_tuple n _) (map (@tval _ _) (enum {: m.-tuple T}))) (iota 0 n.+1)).
-
-Lemma bseq_of_tuple_inj n (T : finType) m (mn : m <= n) :
+Lemma bseq_of_tuple_inj T m (mn : m <= n) :
   injective (bseq_of_tuple n (T:=T) \o @tval m T).
 Proof.
 move=> /= [a Ha] [b Hb] /=.
@@ -736,7 +749,7 @@ case => ?; subst a.
 congr Tuple; exact: eq_irrelevance.
 Qed.
 
-Lemma bseq_enumP n (T : finType) : Finite.axiom (bseq_enum n T).
+Lemma bseq_enumP T : Finite.axiom (bseq_enum T).
 Proof.
 case=> s sn.
 rewrite count_flatten -[in iota _ _](subnKC sn) -addnS iota_add !map_cat.
@@ -766,22 +779,24 @@ move=> _ln'; case => ?; subst s.
 by rewrite size_tuple ltnn in sl.
 Qed.
 
-Canonical bseq_finMixin n (T : finType) := Eval hnf in FinMixin (@bseq_enumP n T).
-Canonical bseq_finType n (T : finType) := Eval hnf in FinType (n.-bseq T) (bseq_finMixin n T).
-Canonical bseq_subFinType n (T: finType) := Eval hnf in [subFinType of n.-bseq T].
+Canonical bseq_finMixin (T : finType) := Eval hnf in FinMixin (@bseq_enumP T).
+Canonical bseq_finType (T : finType) := Eval hnf in FinType (n.-bseq T) (bseq_finMixin T).
+Canonical bseq_subFinType (T: finType) := Eval hnf in [subFinType of n.-bseq T].
 
-Lemma size_bseq (n : nat) (T : Type) (bs : n.-bseq T) : size bs <= n.
-Proof. by case: bs. Qed.
+End bseq_structures.
 
-Lemma rcons_bseqP n T (t : n.-bseq T) x : size (rcons t x) <= n.+1.
-Proof. by rewrite size_rcons ltnS size_bseq. Qed.
-Canonical rcons_bseq n (T : Type) (t : n.-bseq T) x := Bseq (rcons_bseqP t x).
+Section bseq_lemmas.
 
-Definition bseq n (T : Type) (t : n.-bseq T) mkT : bseq_of n T :=
-  mkT (let: Bseq _ tP := t return size t <= n in tP).
+Variables (n : nat) (T : Type).
 
-Notation "[ 'bseq' 'of' s ]" := (@bseq _ _ _ (fun sP => @Bseq _ _ s sP))
-  (at level 0, format "[ 'bseq'  'of'  s ]") : type_scope.
+Lemma leq_take (s : seq T) k : size s <= n -> size (take k s) <= n.
+Proof.
+by move=> sn; rewrite size_take; case: ifPn => // ks; rewrite (leq_trans _ sn) // ltnW.
+Qed.
+
+Definition bseq_take (t : n.-bseq T) k : n.-bseq T := Bseq (leq_take k (size_bseq t)).
+
+End bseq_lemmas.
 
 Section ordered_ranks.
 

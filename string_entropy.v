@@ -196,8 +196,7 @@ case/boolP: (ss' == [::]) => Hss'.
 have Hnum s : s \in ss' -> (N(a|s) > 0)%nat.
   by rewrite /ss' mem_filter lt0n => /andP [->].
 have Hnum': 0 < N(a|flatten ss').
-  apply /ltR0n.
-  destruct ss' => //=.
+  apply /ltR0n; destruct ss' => //=.
   rewrite /num_occ count_cat ltn_addr //.
   by rewrite Hnum // in_cons eqxx.
 have Hsz: 0 < size (flatten ss').
@@ -215,8 +214,8 @@ apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
     by rewrite (eqP Hsum) mul0R.
   apply leR_wpmul2l => //.
   apply Log_increasing_le => //.
-    apply Rlt_mult_inv_pos => //.
-    apply/ltR0n.
+    apply/mulR_gt0 => //.
+    apply/invR_gt0/ltR0n.
     by rewrite lt0n Hsum.
   apply leR_wpmul2r.
     apply /Rlt_le /invR_gt0 /ltR0n.
@@ -234,7 +233,8 @@ have Hnum2 : N(a|flatten ss') != O.
   rewrite -lt0n -ltR0n'; exact/ltRP.
 set d := seq_nat_dist Htotal Hnum2.
 set r := fun i =>
-  (size (tnth (in_tuple ss') i)) / N(a|tnth (in_tuple ss') i).
+  (size (tnth (in_tuple ss') i))
+  / N(a|tnth (in_tuple ss') i).
 have Hr: forall i, Rpos_interval (r i).
   rewrite /r /= => i.
   apply Rlt_mult_inv_pos; apply /ltR0n.
@@ -246,29 +246,28 @@ have Hr: forall i, Rpos_interval (r i).
 move: (jensen_dist_concave log_concave d Hr).
 rewrite /d /r /=.
 rewrite -(big_tnth _ _ _ xpredT
-  (fun s =>
-     log ((size s) / N(a|s)) *
-     (N(a|s) / N(a|flatten ss')))).
+  (fun s => log ((size s) / N(a|s))
+          * (N(a|s) / N(a|flatten ss')))).
 rewrite -(big_tnth _ _ _ xpredT
-  (fun s =>
-     (size s) / N(a|s) *
-     (N(a|s) / N(a|flatten ss')))).
+  (fun s => (size s) / N(a|s)
+          * (N(a|s) / N(a|flatten ss')))).
 (* (6) Transform the statement to match the goal *)
 move/(@leR_wpmul2r N(a|flatten ss') _ _ (leR0n _)).
 rewrite !big_distrl /=.
 rewrite (eq_bigr
-     (fun i => log (size i / N(a|i)) * N(a|i)));
+  (fun i => log (size i / N(a|i)) * N(a|i)));
   last first.
   move=> i _; rewrite !mulRA -mulRA mulVR ?mulR1 //.
   exact/eqP/gtR_eqF.
 move/leR_trans; apply. (* LHS matches *)
 rewrite mulRC -num_occ_flatten big_filter.
 rewrite (eq_bigr
-     (fun i => size i * / N(a|flatten ss')));
+  (fun i => size i * / N(a|flatten ss')));
   last first.
   move=> i Hi; rewrite !mulRA -(mulRA _ (/ _)).
   by rewrite mulVR ?mulR1 // INR_eq0'.
-rewrite -big_filter -/ss' -big_distrl -big_morph_plus_INR /=.
+rewrite -big_filter -/ss' -big_distrl.
+rewrite -big_morph_plus_INR /=.
 by rewrite size_flatten sumn_big_addn big_map.
 Qed.
 
