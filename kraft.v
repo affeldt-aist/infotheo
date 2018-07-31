@@ -560,8 +560,8 @@ rewrite (eq_bigr (fun i : 'I_n => #|subtree C``_i|%:R)%R); last first.
 (*\color{comment}{\framebox{the goal is now $\sum_{i < n} | \{ x | \prefix{c_i}{x} \} | \leq |T|^{\ell_{\mathrm{max}}}$}} *)
 apply (@ler_trans _ (#|\bigcup_(i < n) subtree (C ``_ i)|%:R)%R).
   set P := [set (subtree C``_(nat_of_ord i)) | i in 'I_n].
-  rewrite (@card_partition _ P); last first.
-    rewrite /partition cover_imset eqxx /=; apply/andP; split; last first.
+  rewrite (@card_partition _ P) ?/partition; last first.
+    rewrite cover_imset eqxx /=; apply/andP; split; last first.
       apply/imsetP => -[i _ /esym]; by apply: subtree_not_empty.
     apply/trivIsetP => /= x y /imsetP[i _ ->] /imsetP[j _ ->] ij.
     rewrite -setI_eq0 disjoint_subtree //; [apply/nthP; by exists i |
@@ -726,7 +726,7 @@ have H2 : (r - 1 < (w j)%:R)%R. (* \color{comment}{\framebox{here we prove $r - 
   have : ((w k %% #|T| ^ (l``_k - l``_j))%:R /
           #|T|%:R ^+ (l``_k - l``_j) < (1 : R))%R.
     (*\color{comment}{\framebox{here we prove $(w_k \bmod |T|^{\ell_k-\ell_j}) / |T|^{\ell_k - \ell_j} < 1$, leading to (\ref{eqn:kraft_converse6})}} *)
-    rewrite ltr_pdivr_mulr; last by rewrite -natrX ltr0n expn_gt0 card_ord.
+    rewrite ltr_pdivr_mulr; [|by rewrite -natrX ltr0n expn_gt0 card_ord].
     by rewrite mul1r -natrX ltr_nat ltn_mod expn_gt0 card_ord.
   by rewrite {}wkE ltr_sub_addl addrC ltr_add2r.
 by rewrite ltr_subl_addl addrC ltrNge H1 in H2.

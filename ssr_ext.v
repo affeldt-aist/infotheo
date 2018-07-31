@@ -200,17 +200,17 @@ Section Pad.
 Variables (A : Type) (a : A).
 Implicit Types s t : seq A.
 
-Definition pad_seq s n :=
+Definition pad_seqR s n :=
   if size s <= n then s ++ nseq (n - size s) a else take n s.
 
-Lemma size_pad_seq s n : size (pad_seq s n) = n.
+Lemma size_pad_seqR s n : size (pad_seqR s n) = n.
 Proof.
-rewrite /pad_seq; case: ifPn; last by rewrite -ltnNge size_take => ->.
+rewrite /pad_seqR; case: ifPn; last by rewrite -ltnNge size_take => ->.
 by rewrite size_cat size_nseq => /subnKC.
 Qed.
 
-Lemma pad_seq_size s n : size s = n -> pad_seq s n = s.
-Proof. by rewrite /pad_seq => ->; rewrite leqnn subnn cats0. Qed.
+Lemma pad_seqR_size s n : size s = n -> pad_seqR s n = s.
+Proof. by rewrite /pad_seqR => ->; rewrite leqnn subnn cats0. Qed.
 
 Definition pad_seqL s n :=
   if size s <= n then nseq (n - size s) a ++ s else take n s.

@@ -641,7 +641,7 @@ apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
 by rewrite /f mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R,addRN).
 Qed.
 
-Lemma commute (d1 d2 : dist A) p (Hp : 0 <= p <= 1) (Hp' : 0 <= p.~ <= 1) :
+Lemma quasi_commute (d1 d2 : dist A) p (Hp : 0 <= p <= 1) (Hp' : 0 <= p.~ <= 1) :
   d d1 d2 Hp = d d2 d1 Hp'.
 Proof.
 apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.

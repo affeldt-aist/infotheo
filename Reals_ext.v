@@ -57,6 +57,12 @@ Proof. rewrite /onem; by field. Qed.
 Lemma onemK p : p.~.~ = p.
 Proof. by rewrite /onem subRBA addRC addRK. Qed.
 
+Lemma onem_prob (p : R) : (R0 <= p <= R1)%R -> (R0 <= p.~ <= R1)%R.
+Proof.
+case=> pO p1; split; by [rewrite leR_subr_addr add0R|
+  rewrite leR_subl_addr -(addR0 1) leR_add2l].
+Qed.
+
 Lemma iter_mulR x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
 Proof. elim : n => // n Hn ; by rewrite iterS Hn. Qed.
 
