@@ -12,13 +12,11 @@ Coq 8.8.
 Compilation should be fine with previous versions except for 
 minor problems due to recent changes in the Reals library.
 
-** Install
+** Installation
 
-After gunzip/untar, do
-cd infotheo
-and do
-coq_makefile -f _CoqProject -o Makefile
-make
+1. ~coq_makefile -f _CoqProject -o Makefile~
+2. ~make~
+3. ~make install~
 
 ** License
 
