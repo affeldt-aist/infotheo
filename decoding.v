@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg perm zmodp matrix vector.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
 
@@ -236,27 +236,25 @@ case/Rle_lt_or_eq_dec: (proj1 p_01) => [Hp | <-]; last first.
   destruct d2 as [|d2].
     destruct d1 as [|d1]; [exact/leRR | by []].
   rewrite !subR0 /= !mul0R !mulR0.
-  destruct d1 as [|d1] => /=.
-    rewrite subn0 mulR1 pow1; fourier.
+  destruct d1 as [|d1] => /=; first by rewrite exp1R mul1R.
   rewrite !mul0R !mulR0; exact/leRR.
 apply (@leR_pmul2l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
-  apply mulR_gt0; apply/invR_gt0/pow_lt => //; by fourier.
+  apply mulR_gt0; apply/invR_gt0/pow_lt => //; lra.
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
-  apply/pow_not0; rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
+  apply/pow_not0; rewrite subR_eq0; apply/eqP/gtR_eqF; lra.
 rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
   exact/pow_not0/eqP/gtR_eqF.
-rewrite -expRV; last by apply/eqP/gtR_eqF.
-rewrite -expRV; last by rewrite subR_eq0; apply/eqP/gtR_eqF; fourier.
+rewrite -expRV; last exact/eqP/gtR_eqF.
+rewrite -expRV; last by rewrite subR_eq0; apply/eqP/gtR_eqF; lra.
 rewrite mulRC expRV; last exact/eqP/gtR_eqF.
 rewrite -/(Rdiv _ _) -expRB; last 2 first.
   by case/andP : d1d2.
   exact/gtR_eqF.
-rewrite expRV; last by rewrite subR_eq0; apply/eqP => ?; subst p; fourier.
+rewrite expRV; last by rewrite subR_eq0; apply/eqP => ?; subst p; lra.
 rewrite -/(Rdiv _ _) -expRB; last 2 first.
   rewrite leq_sub2l //; by case/andP : d1d2.
-  by apply/eqP; rewrite subR_eq0; apply/eqP => ?; subst p; fourier.
-suff -> : (n - d1 - (n - d2) = d2 - d1)%nat.
-  apply pow_incr; split; fourier.
+  by apply/eqP; rewrite subR_eq0; apply/eqP => ?; subst p; lra.
+suff -> : (n - d1 - (n - d2) = d2 - d1)%nat by apply pow_incr; lra.
 rewrite -subnDA addnC subnDA subKn //.
 by case/andP : d1d2.
 Qed.
@@ -311,7 +309,7 @@ rewrite (@big_rmax_bigminn_helper_vec _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //
 - apply eq_bigl => /= i; by rewrite inE.
 - by apply bsc_prob_prop.
 - move=> r; rewrite /g.
-  apply mulR_ge0; apply pow_le; [fourier | by case: p_01].
+  apply mulR_ge0; apply pow_le; [lra | by case: p_01].
 - rewrite inE; move/subsetP: f_img; apply.
   rewrite inE; apply/existsP; by exists y; apply/eqP.
 - move=> ? _; by rewrite /dH_y max_dH.

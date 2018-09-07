@@ -226,22 +226,22 @@ congr (_ + (_ + _))%R.
   rewrite /bump leq0n /= 2!add1n.
   case => Hk.
   case/boolP : (a == k) => // abs.
-  suff : False by done.
+  exfalso.
   move/negP : abs; apply.
-  by apply/eqP/val_inj.
+  exact/eqP/val_inj.
 - rewrite (eq_bigr (fun x => 0%R)); first by rewrite big_const iter_addr0.
   move=> i /andP [] H1 H2.
   rewrite 2!mxE mulr1 castmxE /= cast_ord_id mxE.
   case: splitP => [j /= | k /= ik].
     rewrite {j}(ord1 j) => abs.
-    suff : False by done.
+    exfalso.
     move/negP : H1; apply.
-    by apply/eqP/val_inj.
+    exact/eqP/val_inj.
   rewrite mxE.
   case/boolP : (a == k) => // /eqP ?; subst k.
   exfalso.
   move/negP : H2; apply.
-  by apply/eqP/val_inj.
+  exact/eqP/val_inj.
 Qed.
 
 Section assuming_a_repair_function.

@@ -96,7 +96,7 @@ Qed.
 Lemma leq_bigmax_seq (F : A -> nat) x (l : seq A) :
   x \in l -> F x <= \max_(i <- l) F i.
 Proof.
-elim: l => [|y l IH]; first done.
+elim: l => [//|y l IH].
 rewrite in_cons big_cons.
 case Hx: (x == y) => /= Hl.
   by rewrite (eqP Hx) leq_maxl.
@@ -175,8 +175,7 @@ move/orP: Hx => [] Hx.
   move/hasP: Hinter => [b Hb Hbx].
   exists b.
     apply/flattenP.
-    exists (f y); try done.
-    by apply map_f.
+    exists (f y) => //; exact/map_f.
   by rewrite -(eqP Hx).
 move/orP: Hy => [] Hy.
   rewrite /= cat_uniq in Hun.
@@ -185,8 +184,7 @@ move/orP: Hy => [] Hy.
   move/hasP: Hinter => [b Hb Hbx].
   exists b.
     apply/flattenP.
-    exists (f x); try done.
-    by apply map_f.
+    exists (f x) => //; exact/map_f.
   by rewrite -(eqP Hy).
 apply IH => //.
 rewrite /= cat_uniq in Hun.
@@ -242,9 +240,8 @@ Definition tag_eq_bool k (t1 t2 : tag k) : bool :=
 
 Lemma tag_eqP k : Equality.axiom (@tag_eq_bool k).
 Proof.
-move=> [|r] y; refine (match y with Func => _ | Var r' => _ end); try done.
+move=> [|r] y; refine (match y with Func => _ | Var r' => _ end) => //=.
   by constructor.
-simpl.
 case Hrr': (r == r').
   by rewrite (eqP Hrr'); constructor.
 constructor.
@@ -308,12 +305,12 @@ case Heq: (tn_tree_eq_bool x y); constructor.
   case Hlen: (length ch0 == length ch1) => //=.
   rewrite (eqP Hid) (eqP Htag) (eqP Hdown) (eqP Hup).
   move=> Hchildren.
-  suff ->: ch0 = ch1; first done.
+  suff -> : ch0 = ch1 by [].
   move: ch1 Hchildren Hlen.
   clear -Hd IHd.
   elim: ch0 Hd => [| a chld0 IH] Hd chld1 Hch Hlen /=.
     by destruct chld1.
-  destruct chld1; first done.
+  destruct chld1; first by [].
   simpl in *.
   rewrite big_cons in Hd.
   congr (_ :: _).
@@ -340,9 +337,8 @@ case Ha: (tn_tree_eq_bool a a) => /=.
   by rewrite leq_maxr.
 move=> _.
 move/IHd: Ha.
-apply; last done.
-refine (leq_ltn_trans _ Hd).
-by rewrite leq_max leqnn.
+apply; last by [].
+apply: (leq_ltn_trans _ Hd); by rewrite leq_max leqnn.
 Qed.
 
 Section EqTnTree.
@@ -440,7 +436,7 @@ split.
 move=> b Hb.
 rewrite mem_rcons in_cons in Hb.
 rewrite /= in_cons.
-case Hbi: (b == id_of_kind k i) => /= in Hb *; first done.
+case Hbi: (b == id_of_kind k i) => /= in Hb *; first by [].
 apply/flattenP.
 exists (labels (build_tree_rec H rW h (id_of_kind k i :: s) (negk k) x)).
   rewrite -map_comp.
@@ -673,7 +669,7 @@ case Hsasb: (sa == sb).
   rewrite /sa /sb=> eq.
   destruct k; inversion eq; by rewrite H1 eqxx in Hiab.
 move=> Hcy.
-suff : false; first done.
+suff : false; first by [].
 move /andP: Hp1 => [Hp1 Hun1].
 move /andP: Hp2 => [Hp2 Hun2].
 apply Hcy; clear Hcy Hsasb.
@@ -709,33 +705,29 @@ Definition tanner_split (s : seq id') : rel id' :=
   fun a b => if (a \in s) || (b \in s) then false else tanner_rel H a b.
 
 Lemma tanner_split_tanner s : subrel (tanner_split s) (tanner_rel H).
-rewrite /subrel /tanner_split.
-move => x y.
-by case: ifP.
-Qed.
+Proof. rewrite /subrel /tanner_split => x y; by case: ifP. Qed.
 
 Lemma tanner_split_nil : tanner_split [::] =2 tanner_rel H.
-done.
-Qed.
+Proof. by []. Qed.
 
 Lemma tanner_split_cons c s : subrel (tanner_split (c :: s)) (tanner_split s).
-rewrite /subrel /tanner_split /=.
-move=> a b.
+Proof.
+rewrite /subrel /tanner_split /= => a b.
 rewrite in_cons in_cons.
 case Ha: (a \in s); first by rewrite /= orbT.
 case Hb: (b \in s); first by rewrite /= orbT orbT.
-case: ifP. done.
-by move=> _ ->.
+by case: ifP.
 Qed.
 
 Lemma tanner_rel_split (s : seq id') (x : id') p :
   ~~has (mem s) (x::p) -> path (tanner_rel H) x p -> path (tanner_split s) x p.
+Proof.
 move: x s.
-elim: p => [|y p IHp] x s Hs; simpl. done.
-move /andP => [Hx Hp].
+elim: p => [//|/= y p IHp] x s Hs.
+move/andP => [Hx Hp].
 rewrite IHp //.
   rewrite /tanner_split Hx.
-  case: ifP; last done.
+  case: ifP; last by [].
   simpl in Hs.
   move /norP: Hs => [Hxs Hs].
   move /norP: Hs => [Hys Hs].
@@ -747,14 +739,15 @@ Qed.
 Lemma tanner_split_uncons (s : seq id') (c x : id') p :
   c \notin (x :: p) -> path (tanner_split s) x p ->
   path (tanner_split (c :: s)) x p.
+Proof.
 move: c x s.
-elim: p => [|y p IHp] c x s Hc; simpl. done.
+elim: p => [//|/=y p IHp] c x s Hc.
 move /andP => [Hx Hp].
 rewrite IHp //.
   move: Hx.
   rewrite /tanner_split /=.
   rewrite in_cons in_cons.
-  case: ifP; first done.
+  case: ifP; first by [].
   move /norP => [Hxs Hys].
   rewrite in_cons in_cons in Hc.
   move /norP: Hc => [Hxc Hc].
@@ -823,18 +816,17 @@ case Hcb: (connect _ _ a).
     rewrite eq_sym Hoi.
     move /andP/proj1: Hp.
     rewrite /tanner_split.
-    case: (id_of_kind (negk k) o \in s); last done.
+    case: (id_of_kind (negk k) o \in s); last by [].
     by rewrite orbT.
-  exists o; first done.
+  exists o; first by [].
   rewrite IHh //.
     rewrite inE.
     apply /connectP.
-    exists p.
-      apply tanner_split_uncons.
-        by move /andP/proj1: Hun'.
-      by move /andP/proj2: Hp.
-    done.
-  by apply Hchild.
+    exists p => //.
+    apply tanner_split_uncons.
+      by move /andP/proj1: Hun'.
+    by move /andP/proj2: Hp.
+  exact: Hchild.
 rewrite -map_comp.
 apply /flatten_mapP => Hl.
 move: Hl => [l Hl Hal].
@@ -843,7 +835,7 @@ rewrite IHh // in Hal.
   move /connectP: Hcb.
   apply.
   move /connectP: Hal => [p Hp Hlp].
-  exists (id_of_kind (negk k) l :: p); last done.
+  exists (id_of_kind (negk k) l :: p); last by [].
   simpl.
   apply /andP; split.
     rewrite select_children_spec in Hl.
@@ -863,9 +855,7 @@ rewrite build_tree_rec_full //.
   rewrite inE.
   apply /connectP.
   move /connectP: (tanner_connected (id_of_kind k i) a) => [p Hp Ha].
-  exists p.
-    by rewrite (eq_path tanner_split_nil).
-  done.
+  by exists p.
 by rewrite card_sum !card_ord card0 subn0.
 Qed.
 
@@ -878,14 +868,13 @@ case Htan: (tanner_rel H a b).
   symmetry.
   apply build_tree_rec_ok with (s:=[::]).
   + by rewrite card_sum !card_ord card0 subn0.
-  + done.
-  + apply build_tree_full.
-  + apply build_tree_full.
-  + done.
+  + by [].
+  + exact: build_tree_full.
+  + exact: build_tree_full.
+  + by [].
 symmetry.
 move: Htan.
-apply contraFF.
-apply build_tree_rec_sound.
+exact/contraFF/build_tree_rec_sound.
 Qed.
 
 End BuildTreeOk.
@@ -939,10 +928,7 @@ Fixpoint mypath (h : nat) : seq (seq id') :=
 
 Theorem test_acyclic : forall p, p \in [::] :: mypath (m+n) ->
                                 (size p > 2) ==> ~~ ucycleb myrel p.
-Proof.
-apply /allP.
-done.
-Qed.
+Proof. by apply /allP. Qed.
 
 Lemma myrel_ok : myrel =2 tanner_rel H.
 Proof.
@@ -975,28 +961,25 @@ Qed.
 Lemma mypath_ok_rec h a p :
   (size p) < h -> path myrel a p -> (a :: p \in mypath h).
 Proof.
-elim: h a p => [|h IHh] a p Hp Hun.
-  done.
-suff : a :: p \in flatten
-  [seq [seq i :: l | l <- [::] :: mypath h & path myrel i l] | i <- enum_id].
-  done.
+elim: h a p => [//|h IHh] a p Hp Hun.
+suff : a :: p \in flatten [seq [seq i :: l |
+  l <- [::] :: mypath h & path myrel i l] | i <- enum_id] by [].
 apply /flattenP.
 exists [seq a :: l | l <- [::] :: mypath h & path myrel a l].
   apply /mapP.
-  exists a; last done.
-  by rewrite enum_id_ok.
+  exists a => //; by rewrite enum_id_ok.
 destruct p.
   by rewrite in_cons eqxx.
 apply /mapP.
-exists (s :: p); last done.
-rewrite mem_filter.
-rewrite Hun in_cons IHh ?orbT //.
+exists (s :: p) => //.
+rewrite mem_filter Hun in_cons IHh ?orbT //.
 simpl in Hun.
 by move /andP/proj2: Hun => ->.
 Qed.
 
 Lemma mypath_ok a p :
   uniq (a :: p) -> path myrel a p -> (a :: p) \in mypath (m+n).
+Proof.
 move /card_uniqP => Hsz Hp.
 have Hc: #|a::p| <= #|id'| by apply max_card.
 rewrite Hsz card_sum !card_ord in Hc.
@@ -1009,11 +992,7 @@ Lemma test_connected : forall ab, ab \in allpairs pair enum_id enum_id ->
          if p is x :: p then (a == x) && path myrel a p && (b == last x p)
          else a == b)
       (mypath (m+n)).
-Proof.
-apply /allP.
-vm_compute.
-done.
-Qed.
+Proof. apply /allP; by vm_compute. Qed.
 
 Theorem test_graph : forall k i,
     tanner_rel H =2 graph (build_tree H rW (k:=k) i).
@@ -1028,8 +1007,7 @@ apply build_tree_ok.
   apply/negP: (Hun).
   apply /implyP/test_acyclic: Hlen.
   rewrite in_cons.
-  destruct p.
-    done.
+  destruct p; first by [].
   move /andP: Hun => [Hp Hun].
   rewrite mypath_ok ?orbT //.
   rewrite /cycle rcons_path in Hp.
@@ -1044,8 +1022,7 @@ apply build_tree_ok.
     rewrite (eqP Hp).
     by exists [::].
   move /andP: Hp => [] /andP [] /eqP -> Hp /eqP ->.
-  exists p; try done.
-  by rewrite -(eq_path myrel_ok) Hp.
+  exists p => //; by rewrite -(eq_path myrel_ok) Hp.
 Qed.
 
 End BuildTreeTest.
@@ -1084,20 +1061,18 @@ Proof.
 move=> Hi1 Hi2 [id0 tag0 ch0 up0 down0] /=.
 case: ifP => [/eqP [] |] Hi1'.
   by rewrite Hi1' eqxx in Hi1.
-case: ifP => [/eqP [] |] Hi2'.
-  by rewrite Hi2' eqxx in Hi2.
-done.
+case: ifP => [/eqP [] | //] Hi2'.
+by rewrite Hi2' eqxx in Hi2.
 Qed.
 
 Lemma subseq_labels {A:eqType} {k U P} (l : seq (tn_tree A k U P)) :
   subseq (map node_id l) (flatten (map labels l)).
 Proof.
-elim: l => [|a l Hl].
-  done.
+elim: l => [//|a l Hl].
 case: a => [id0 tag0 ch0 up0 down0] /=.
 rewrite eqxx.
 rewrite -(cat0s [seq node_id i | i <- l]).
-apply cat_subseq. apply sub0seq. done.
+apply cat_subseq => //; exact: sub0seq.
 Qed.
 
 Lemma children_ind {i U V : eqType}
@@ -1107,7 +1082,7 @@ Lemma children_ind {i U V : eqType}
 Proof.
 move=> HP k t.
 set h := depth t.
-have : depth t <= h by done.
+have : depth t <= h by [].
 clearbody h.
 move: k t.
 elim: h => [|h IH] k t Hh.
@@ -1144,8 +1119,8 @@ rewrite -map_comp.
 apply/eqP/sumn_eq0P.
 move=> i' /mapP [l Hl] -> /=.
 apply/eqP/IH => //.
-case Hi1l: (i1 \notin _); first done.
-case Hi2l: (i2 \notin _); first done.
+case Hi1l: (i1 \notin _); first by [].
+case Hi2l: (i2 \notin _); first by [].
 simpl; symmetry.
 move /orP: Hch => [Hch | Hch]; apply/contraNF: Hch => _.
   move: Hi1l; rewrite mem_cat in_cons.
@@ -1170,8 +1145,7 @@ Corollary msg_nonnil (i1 i2 : id') i {k} t :
 Proof.
 move=> Hsz.
 case Hi1: (i1 \in _).
-  case Hi2: (i2 \in _).
-    done.
+  case Hi2: (i2 \in _); first by [].
   rewrite msg_nil // in Hsz.
   by rewrite Hi2 orbT.
 rewrite msg_nil // in Hsz.
@@ -1223,7 +1197,7 @@ case: ifP => Hi2.
 rewrite (eq_map (msg_none_eq _ _)); first last.
     by rewrite Hi2.
   by rewrite Hi1.
-elim: ch0 => [| a l IHc] /= in IH Hun *; first done.
+elim: ch0 => [//| a l IHc] /= in IH Hun *.
 rewrite size_cat.
 rewrite cat_uniq in Hun.
 move /andP: Hun => [Hni] /andP [Huna] /andP [Hal Hunl].
@@ -1249,10 +1223,9 @@ case Ha: (graph a i1 i2).
     apply/orP; left.
     apply/contra: Hal => Hi1x.
     apply/hasP.
-    exists i1; last done.
+    exists i1; last by [].
     apply/flattenP.
-    exists (labels x); last done.
-    by apply (map_f labels).
+    exists (labels x) => //; exact/(map_f labels).
   by rewrite Hsz' addn0.
 rewrite IH => //=; last by rewrite in_cons eqxx.
 by rewrite Ha /= add0n.
@@ -1302,7 +1275,7 @@ Qed.
 
 Definition tanner : Tanner.acyclic_graph (tanner_rel H).
   constructor.
-    econstructor; try done.
+    econstructor; try by [].
     + apply sym_tanner_rel.
     + exact: (Colorable.Build_graph (colorable_tanner_rel H)).
   by apply acyclic_equiv.
@@ -1768,7 +1741,7 @@ rewrite cat_path in Hp.
 rewrite rcons_path last_rcons /=.
 rewrite Hgr.
 move/andP: Hp => [] -> _ /=.
-destruct p; try done.
+destruct p; first by [].
 rewrite size_rcons /=.
 by move/(_ (eqxx true)).
 Qed.
@@ -1788,7 +1761,7 @@ Lemma select_children_def k j s i :
   select_children H s k i = enum ([set x | tanner_rel H a (inj x)] :\ j).
 Proof.
 move=> a inj Hun Hj.
-destruct s as [|b s]; first done.
+destruct s as [|b s]; first by [].
 move: Hj Hun => /= [] => -> {b}Hun.
 rewrite -enum_select_children.
 rewrite /enum_mem.
@@ -2064,7 +2037,7 @@ have Hh': (#|id'| - #|id_of_kind k i :: s| <= h)%nat.
   by apply card_uniq_seq_decr.
 rewrite /t /=.
 case Has: (Some a == prec_node s).
-  destruct s; first done.
+  destruct s; first by [].
   rewrite /= (inj_eq (@Some_inj _)) in Has.
   (* Upper node is a. Just have to check that current node is b,
      since we know the down message by hypothesis. *)
@@ -2078,7 +2051,7 @@ case Has: (Some a == prec_node s).
   by rewrite eqxx.
 case Hbs: (Some b == prec_node s).
   (* Upper node is b. Need to check the computation of the up message. *)
-  destruct s; first done.
+  destruct s; first by [].
   simpl in Hbs.
   move/eqP: Hbs => [] Hbs; subst b.
   case Ha0: (a == _).
@@ -2096,12 +2069,12 @@ have Hgr': graph t a b.
   apply build_tree_rec_ok => //.
     move: Ha.
     rewrite mem_cat => /orP [] //.
-    destruct s; first done.
+    destruct s; first by [].
     rewrite in_cons => /orP [] // Hab.
     by rewrite (eqP Hab) eqxx in Has.
   move: Hb.
   rewrite mem_cat => /orP [] //.
-  destruct s; first done.
+  destruct s; first by [].
   rewrite in_cons => /orP [] // Hab.
   by rewrite (eqP Hab) eqxx in Hbs.
 have Hun': uniq (labels t).
@@ -2118,8 +2091,8 @@ rewrite {}Hgr' /= {}Has {}Hbs in Hsz.
 set fl := flatten _ in Hsz *.
 have Hfl: fl = fl by [].
 rewrite {1}/fl in Hfl.
-destruct fl; first done.
-destruct fl; last done.
+destruct fl; first by [].
+destruct fl; last by [].
 move: {Hsz} (eq_refl r).
 rewrite -mem_seq1 -Hfl.
 move/flattenP => [l Hl Hrl].
@@ -2132,7 +2105,7 @@ suff : msg_spec' a b \in fl.
   rewrite Hfl mem_seq1.
   by move/eqP => ->.
 apply/flatten_mapP.
-exists c; first done.
+exists c; first by [].
 set e := id_of_kind k i in Hun Hh' Hrl *.
 move/mapP: Hc => [j Hj] /= Hc.
 rewrite -/e in Hc *.
@@ -2188,7 +2161,7 @@ Proof.
 move: k t; refine (children_ind _) => k [id0 tag0 ch0 up0 down0] /= IH.
 rewrite in_cons => /norP [Hid0 Hfl].
 suff : size (get_esti n0 (flatten [seq estimation i | i <- ch0])) == 0%N.
-  destruct tag0; first done.
+  destruct tag0; first by [].
   by rewrite /= (eq_sym id0) (negbTE Hid0).
 rewrite get_esti_flatten size_flatten.
 apply /sumn_eq0P => i.
@@ -2198,8 +2171,8 @@ apply/negP => Hlx.
 apply/negP: Hfl.
 rewrite negbK.
 apply/flattenP.
-exists (labels x); last done.
-by apply (map_f labels).
+exists (labels x); last by [].
+exact: (map_f labels).
 Qed.
 
 Let p01 f n0 : R2 := (f (d`[n0 := 0%R]), f (d`[n0 := 1%R])).
@@ -2334,13 +2307,12 @@ rewrite -tree_ok // labels_sumprod_down labels_sumprod_up.
 have Hun':= uniq_labels_build_tree_rec tanner_acyclic rW h.+1 Hun.
 move: Hun' => /= /andP/proj2.
 rewrite -map_comp => Hun'.
-case Hn0: (inr n0 \in _).
-  rewrite -select_children_spec in Hj.
-  rewrite (uniq_flatten_map (x:=y) (y:=j) _ Hun') ?eqxx // in Hyj.
-  apply/hasP.
-  rewrite -tree_ok // labels_sumprod_down labels_sumprod_up in Hn0l.
-  by exists (inr n0).
-done.
+case Hn0: (inr n0 \in _); last by [].
+rewrite -select_children_spec in Hj.
+rewrite (uniq_flatten_map (x:=y) (y:=j) _ Hun') ?eqxx // in Hyj.
+apply/hasP.
+rewrite -tree_ok // labels_sumprod_down labels_sumprod_up in Hn0l.
+by exists (inr n0).
 Qed.
 
 Let C := kernel H.

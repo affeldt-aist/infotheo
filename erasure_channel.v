@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
 From mathcomp Require Import fintype div finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg perm zmodp matrix.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 Require Import binary_entropy_function channel hamming channel_code.
 
@@ -13,6 +13,7 @@ Import Prenex Implicits.
 (** * Definition of erasure channel *)
 
 Local Open Scope channel_scope.
+Local Open Scope R_scope.
 
 Module EC.
 
@@ -32,8 +33,8 @@ Definition f (a : A) := fun b =>
 Lemma f0 a b : 0 <= f a b.
 Proof. rewrite /f.
   case: b => [a'|]; last by case: p_01.
-  case: ifP => _. case: p_01 => ? ?; fourier.
-  fourier.
+  case: ifP => _. case: p_01 => ? ?; lra.
+  lra.
 Qed.
 
 Lemma f1 (a : A) : \rsum_(a' : {:option A}) f a a' = 1.
@@ -42,7 +43,7 @@ rewrite (bigD1 None) //= (bigD1 (Some a)) //= eqxx /= (proj2 (prsumr_eq0P _)).
 - by field.
 - rewrite /f; case => [a'|]; last by case: p_01.
   case: ifPn => [_ |*]; last exact/leRR.
-  case: p_01 => ? ? _; fourier.
+  case: p_01 => ? ? _; lra.
 - case => //= a' aa'; case: ifPn => // /eqP ?; subst a'.
   move: aa'; by rewrite eqxx.
 Qed.

@@ -183,7 +183,7 @@ rewrite (bigID (fun x : 'I_n => x < r) xpredT) /=.
 rewrite [in X in _ + X = _](eq_bigr (fun=> 0)); last first.
   move=> k kj; rewrite !mxE esymK (_ : _ == _ = false).
     by rewrite mulr0n mulr0.
-  apply/negbTE; apply: contra kj => /eqP -> /=. done.
+  apply/negbTE; by apply: contra kj => /eqP -> /=.
 rewrite big_const iter_addr0 addr0.
 rewrite big_ord_narrow //.
 apply eq_bigr => k _.

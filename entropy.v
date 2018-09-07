@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq.
 From mathcomp Require Import fintype tuple finfun bigop.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Rbigop logb ln_facts proba divergence.
 
 (** * Entropy of a distribution *)
@@ -11,6 +11,8 @@ Reserved Notation "'`H'" (at level 5).
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Local Open Scope R_scope.
 
 Section entropy_definition.
 
@@ -94,7 +96,7 @@ have [n HA] : exists n, #|A| = n.+1.
 have : P << (Uniform.d HA) by apply dom_by_uniform.
 move/leq0div => H.
 rewrite /div in H.
-suff Htmp : 0 <= - `H P + log (INR #|A|) by fourier.
+suff Htmp : 0 <= - `H P + log (INR #|A|) by lra.
 apply/(leR_trans H)/Req_le.
 transitivity (\rsum_(a|a \in A) P a * log (P a) + \rsum_(a|a \in A) P a * - log ((Uniform.d HA) a)).
   rewrite -big_split /=.

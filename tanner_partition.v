@@ -444,7 +444,7 @@ Lemma Fgraph_disjoint n0 m0 m1 m2 :
 Proof.
 move=> m3m1 m3m2.
 case/boolP : (m0 == m1) => [/eqP //| m1m2].
-suff : Logic.False by done.
+exfalso.
 move: (trivIset_Fgraph_part_fnode n0).
 move/trivIsetP.
 move/(_ 'F(m0, n0) 'F(m1, n0)).
@@ -565,7 +565,7 @@ move/trivIsetP.
 move/(_ ('V(m0, n0) :\ n0) ('V(m1, n0) :\ n0)) => /= abs.
 have : 'V(m0, n0) :\ n0 \in Vgraph_part_vnode n0.
   case: imsetP => // abs'.
-  suff: Logic.False by done.
+  exfalso.
   apply abs'; exists m0 => //; by rewrite FnextE.
 move/abs => {abs}abs.
 have : 'V(m1, n0) :\ n0 \in Vgraph_part_vnode n0.
@@ -587,7 +587,7 @@ Lemma cover_Fgraph_part_Fgraph m0 n0 : n0 \in 'V m0 ->
   cover (Fgraph_part_Fgraph m0 n0) = 'F(m0, n0) :\ m0.
 Proof.
 move=> Htmp.
-have {Htmp}Htmp : tanner_rel H (inl m0) (inr n0) by rewrite VnextE sym_tanner_rel in Htmp. 
+have {Htmp}Htmp : tanner_rel H (inl m0) (inr n0) by rewrite VnextE sym_tanner_rel in Htmp.
 move: (cover_subgraph_succ2_D1 (sym_tanner_rel H) Hacyclic (simple_tanner_rel H) Htmp) => Hcover.
 apply/setP => /= m1.
 rewrite 2!inE.

@@ -416,10 +416,14 @@ Proof. move=> m0; split; [exact: Rmult_lt_reg_r | exact/Rmult_lt_compat_r]. Qed.
 Lemma leR_pmul2r' m n1 n2 : 0 <b m -> (n1 * m <b= n2 * m) = (n1 <b= n2).
 Proof. move=> Hm; by rewrite -!(mulRC m) leR_pmul2l'. Qed.
 
+Lemma pmulR_lgt0 x y : 0 < x -> (0 < y * x) <-> (0 < y).
+Proof. by move=> x0; rewrite -{1}(mul0R x) ltR_pmul2r. Qed.
+
 Arguments leR_pmul2l [_] [_] [_].
 Arguments leR_pmul2r [_] [_] [_].
 Arguments ltR_pmul2l [_] [_] [_].
 Arguments ltR_pmul2r [_] [_] [_].
+Arguments pmulR_lgt0 [_] [_].
 
 (*************)
 (* invR/divR *)
@@ -475,6 +479,9 @@ Proof. by rewrite /Rdiv mul0R. Qed.
 
 Lemma divR_ge0 (x y : R) : 0 <= x -> 0 < y -> 0 <= x / y.
 Proof. move=> x0 y0; apply mulR_ge0 => //; exact/ltRW/invR_gt0. Qed.
+
+Lemma divR_gt0 (x y : R) : 0 < x -> 0 < y -> 0 < x / y.
+Proof. exact: Rdiv_lt_0_compat x y. Qed.
 
 Definition mulRV (x : R) : x != 0 -> x * / x = 1 := divRR x.
 
@@ -541,6 +548,8 @@ Qed.
 
 Lemma pow_not0 x (n : nat) : x != 0 -> x ^ n != 0.
 Proof. by move/eqP/(pow_nonzero _ n)/eqP. Qed.
+
+Lemma exp1R n : 1 ^ n = 1. Proof. exact: pow1. Qed.
 
 Lemma expRV x (n : nat) : x != 0 -> (/ x ) ^ n = x ^- n.
 Proof.

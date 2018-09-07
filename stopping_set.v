@@ -735,7 +735,7 @@ Proof.
 rewrite mxE.
 case: ifPn => m0n0.
   rewrite /Sum.
-  case: ifP; last by done.
+  case: ifP; last by [].
   case/hasP => /= ln1.
   case/mapP => n1 Hn1 Hln1 Kln1 _.
   exists n1 => //.

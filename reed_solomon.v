@@ -850,7 +850,6 @@ suff H : (size (rVpoly (encoder m - c))) <= d.-1.
     case: (RS.addr_closed a n' r) => _.
     move/(_ _ (- c) Hencm); apply.
     by rewrite RS.oppr_closed.
-  have d_pos : 0 < d by done.
   case/(@RS.deg_lb _ a _ _ rn a_neq0 a_not_uroot_on)/orP => [/eqP -> | ].
     apply/eqP/polyP => i.
     rewrite coef_poly coef0.
@@ -858,7 +857,7 @@ suff H : (size (rVpoly (encoder m - c))) <= d.-1.
     case: (insub i) => // ?; by rewrite mxE.
   move=> H'.
   move: (leq_trans H' H).
-  rewrite -ltnS prednK; last exact d_pos.
+  rewrite -ltnS prednK; last by [].
   by rewrite ltnn.
 rewrite /encoder ffunE linearB /= poly_rV_K; last first.
   rewrite (leq_trans (size_add _ _)) // geq_max.

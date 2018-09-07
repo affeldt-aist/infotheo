@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext Ranalysis_ext logb Rbigop proba.
 
 Set Implicit Arguments.
@@ -9,6 +9,8 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 (** * Function used in the proof of Pinsker's inequality *)
+
+Local Open Scope R_scope.
 
 Definition pinsker_fun p c := fun q =>
   p * log (div_fct (fun _ => p) id q) +
@@ -31,16 +33,16 @@ apply derivable_pt_minus.
       exact/gtR_eqF.
       apply derivable_pt_id.
     apply derivable_pt_Log.
-    by apply Rlt_mult_inv_pos.
+    exact: divR_gt0.
   apply derivable_pt_mult.
     apply derivable_pt_const.
   apply derivable_pt_comp.
     apply derivable_pt_div.
       apply derivable_pt_const.
       apply derivable_pt_Rminus.
-      move=> abs; fourier.
+      move=> abs; lra.
   apply derivable_pt_Log.
-  apply Rlt_mult_inv_pos => //; fourier.
+  apply divR_gt0 => //; lra.
 apply derivable_pt_mult.
   apply derivable_pt_const.
 apply derivable_pt_comp.
@@ -62,28 +64,27 @@ case: Hp => Hp1 Hp2.
 case: Hq => Hq1 Hq2.
 rewrite !(derive_pt_minus,derive_pt_plus,derive_pt_comp,derive_pt_ln,derive_pt_const,derive_pt_mult,derive_pt_inv,derive_pt_id,derive_pt_div,derive_pt_pow).
 rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l) /= (_ : INR 2 = 2) //.
-rewrite /pinsker_fun' /div_fct.
-rewrite [X in _ = X]Rmult_minus_distr_l.
+rewrite /pinsker_fun' /div_fct [X in _ = X]mulRBr.
 f_equal; last by field.
 rewrite (_ : id q = q) //.
 rewrite Rinv_Rdiv; last 2 first.
-  move=> ?; fourier.
-  move=> ?; fourier.
+  move=> ?; lra.
+  move=> ?; lra.
 rewrite Rinv_Rdiv; last 2 first.
-  move=> ?; fourier.
-  move=> ?; fourier.
+  move=> ?; lra.
+  move=> ?; lra.
 have -> : p * (q / p * / ln 2 * (p * (-1 / q²)) ) = - (p / q) * / ln 2.
   rewrite !mulRA /Rsqr.
   field.
-  split; [exact/eqP/ln2_neq0 | split => ?; fourier].
+  split; [exact/eqP/ln2_neq0 | split => ?; lra].
 have -> : (1 - p) * ((1 - q) / (1 - p) * / ln 2 * (- (-1 * (1 - p)) / (1 - q)²)) =
   (((1 - p) / (1 - q))) * / ln 2.
   rewrite /Rsqr.
   field.
-  split; [exact/eqP/ln2_neq0 | split => ?; fourier].
+  split; [exact/eqP/ln2_neq0 | split => ?; lra].
 rewrite /inv_fct.
 field.
-split; [exact/eqP/ln2_neq0 | split => ?; fourier].
+split; [exact/eqP/ln2_neq0 | split => ?; lra].
 Qed.
 
 Definition pinsker_function_spec c q := - log (1 - q) - 4 * c * q ^ 2.
@@ -102,7 +103,7 @@ apply derivable_pt_minus.
     apply derivable_pt_Rminus.
   apply derivable_pt_Log.
   rewrite /= in Hq0.
-  decompose [and] Hq0; clear Hq0; fourier.
+  decompose [and] Hq0; clear Hq0; lra.
 apply derivable_pt_mult.
   apply derivable_pt_const.
 apply derivable_pt_pow.
@@ -123,51 +124,50 @@ rewrite derive_pt_pow.
 rewrite derive_pt_const.
 rewrite mul0R add0R /= /pinsker_function_spec' (_ : INR 2 = 2) //.
 field.
-split; [exact/eqP/ln2_neq0|case: Hq0 => ? ? ?; fourier].
+split; [exact/eqP/ln2_neq0|case: Hq0 => ? ? ?; lra].
 Defined.
 
 Lemma pinsker_fun_increasing_on_0_to_1 (c : R) (Hc : c <= / (2 * ln 2)) : forall x y,
   0 <= x < 1 -> 0 <= y < 1 -> x <= y -> pinsker_function_spec c x <= pinsker_function_spec c y.
 Proof.
 apply derive_increasing_interv_right with (pderivable_pinsker_function_spec c).
-fourier.
+lra.
 move=> t Ht.
 rewrite derive_pt_pinsker_function_spec // /pinsker_function_spec'.
 apply (@leR_trans (/ ((1 - t) * ln 2) - 8 * t / (2 * ln 2))); last first.
   apply leR_add2l.
   rewrite leR_oppr oppRK -mulRA /Rdiv -[X in _ <= X]mulRA.
-  apply leR_wpmul2l; first by fourier.
+  apply leR_wpmul2l; first lra.
   rewrite mulRC; apply leR_wpmul2l => //.
   by case: Ht.
 apply (@leR_trans ((2 - 8 * t * (1 - t)) / (2 * (1 - t) * ln 2))); last first.
   apply Req_le.
   field.
-  split; [exact/eqP/ln2_neq0 | case: Ht => ? ? ?; fourier].
+  split; [exact/eqP/ln2_neq0 | case: Ht => ? ? ?; lra].
 apply divR_ge0; last first.
   rewrite mulRC mulRA.
   apply mulR_gt0.
-    apply mulR_gt0 => //; fourier.
-  case: Ht => ? ?; fourier.
+    apply mulR_gt0 => //; lra.
+  case: Ht => ? ?; lra.
 have H2 : -2 <= - 8 * t * (1 - t).
   rewrite !mulNR -mulRA.
   rewrite leR_oppr oppRK [X in _ <= X](_ : 2 = 8 * / 4); last by field.
-  apply leR_wpmul2l; [by fourier | exact: x_x2_max].
-apply (@leR_trans (2 - 2)); first by fourier.
+  apply leR_wpmul2l; [lra | exact: x_x2_max].
+apply (@leR_trans (2 - 2)); first lra.
 apply leR_add; [exact/leRR | by rewrite -mulRA -mulNR mulRA].
 Qed.
 
-Lemma pinsker_function_spec_pos : forall c q,
+Lemma pinsker_function_spec_pos c q :
   0 <= c <= / (2 * ln 2) ->
   0 <= q < 1 ->
   0 <= pinsker_function_spec c q.
 Proof.
-move=> c q0 Hc Hq0.
+move=> Hc [q0 q1].
 rewrite (_ : 0 = pinsker_function_spec c 0); last first.
-rewrite /pinsker_function_spec /= subR0 /log Log_1; field.
+  rewrite /pinsker_function_spec /= subR0 /log Log_1; field.
 apply pinsker_fun_increasing_on_0_to_1 => //.
 by case: Hc.
-split; fourier.
-by case: Hq0.
+lra.
 Qed.
 
 Section pinsker_function_analysis.
@@ -199,7 +199,7 @@ apply derivable_pt_opp.
 apply: (@derive_pinsker_fun p c Hp').
 case: Hp' => Hp'1 Hp'2.
 split => //.
-fourier.
+lra.
 Defined.
 
 Lemma pinsker_fun_decreasing_on_0_to_p (c : R) (Hc : c <= / (2 * ln 2)) (Hp' : 0 < p < 1) :
@@ -214,28 +214,28 @@ move=> t [Ht1 Ht2].
 rewrite /pinsker_fun_pderivable1.
 rewrite derive_pt_opp.
 destruct Hp' as [Hp'1 Hp'2].
-rewrite derive_pt_pinsker_fun //; last by split; fourier.
+rewrite derive_pt_pinsker_fun //; last lra.
 rewrite /pinsker_fun' /div_fct.
 have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
 have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
-  have : forall a b, b <= a -> 0 <= a - b. move=> *; fourier. apply.
+  have : forall a b, b <= a -> 0 <= a - b. move=> *; lra. apply.
   apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans  (8 * / (2 * ln 2))).
-      apply leR_wpmul2l => //; fourier.
+      apply leR_wpmul2l => //; lra.
     rewrite invRM; last 2 first.
-      move=> ?; fourier.
+      move=> ?; lra.
       exact/eqP/ln2_neq0.
     rewrite mulRA.
-    apply leR_wpmul2r => //; by fourier.
+    apply leR_wpmul2r => //; lra.
   rewrite invRM; last 2 first.
-    apply/gtR_eqF/mulR_gt0; fourier.
+    apply/gtR_eqF/mulR_gt0; lra.
     exact/eqP/ln2_neq0.
   apply leR_wpmul2r => //.
   rewrite -(invRK 4) //.
   apply leR_inv => //.
-    apply/mulR_gt0 => //; by fourier.
+    apply/mulR_gt0 => //; lra.
   exact: x_x2_max.
-rewrite /inv_fct -mulNR; apply mulR_ge0 => //; fourier.
+rewrite /inv_fct -mulNR; apply mulR_ge0 => //; lra.
 Qed.
 
 Lemma pinsker_fun_pderivable2 c (Hp' : 0 < p < 1) :
@@ -244,7 +244,7 @@ move=> x [Hx1 Hx2].
 apply: (@derive_pinsker_fun p c Hp').
 split => //.
 case: Hp' => Hp'1 Hp'2.
-fourier.
+lra.
 Defined.
 
 Lemma pinsker_fun_increasing_on_p_to_1 (c : R) (Hc : c <= / (2 * ln 2)) (Hp' : 0 < p < 1) :
@@ -255,28 +255,28 @@ apply derive_increasing_interv_right with (pinsker_fun_pderivable2 c Hp').
 move=> t [Ht1 Ht2].
 rewrite /pinsker_fun_pderivable2.
 destruct Hp' as [Hp'1 Hp'2].
-rewrite derive_pt_pinsker_fun //; last by split; fourier.
+rewrite derive_pt_pinsker_fun //; last lra.
 rewrite /pinsker_fun' /div_fct.
 have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
-  have : forall a b, b <= a -> 0 <= a - b by move=> *; fourier.
+  have : forall a b, b <= a -> 0 <= a - b by move=> *; lra.
   apply.
   have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
-  have Hlocal2 : t * (1 - t) <> 0 by apply/gtR_eqF/mulR_gt0; fourier.
+  have Hlocal2 : t * (1 - t) <> 0 by apply/gtR_eqF/mulR_gt0; lra.
   apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans (8 * / (2 * ln 2))).
       apply/leRP.
-      rewrite leR_pmul2l'; [exact/leRP | by apply/ltRP; fourier].
+      rewrite leR_pmul2l'; [exact/leRP | by apply/ltRP; lra].
     rewrite invRM; last 2 first.
-      move=> ?; fourier.
+      move=> ?; lra.
       exact/eqP/ln2_neq0.
     rewrite mulRA.
-    apply leR_wpmul2r => //; by fourier.
+    apply leR_wpmul2r => //; lra.
   rewrite invRM //; last exact/eqP/ln2_neq0.
   apply leR_wpmul2r => //.
   rewrite -(invRK 4) //=; apply leR_inv => //.
-    apply/mulR_gt0; fourier.
+    apply/mulR_gt0; lra.
   exact: x_x2_max.
-rewrite /inv_fct; apply mulR_ge0 => //; fourier.
+rewrite /inv_fct; apply mulR_ge0 => //; lra.
 Qed.
 
 End pinsker_function_analysis.
@@ -309,11 +309,11 @@ case/Rle_lt_or_eq_dec : Hp0 => Hp0; last first.
     exfalso.
     move: P_dom_by_Q.
     rewrite /dom_by /Binary.d /= => /(_ a).
-    rewrite /Binary.f eqxx subRR // => /(_ erefl) ?; fourier.
+    rewrite /Binary.f eqxx subRR // => /(_ erefl) ?; lra.
   apply: leR_trans; first exact: (pinsker_function_spec_pos Hc (conj Hq0 Hq1)).
   rewrite /pinsker_function_spec.
   apply Req_le.
-  rewrite mul1R div1R /log LogV; by [field | fourier].
+  rewrite mul1R div1R /log LogV; [by field | lra].
 case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   subst p.
   rewrite /pinsker_fun /div_fct /comp subRR mul0R addR0.
@@ -322,9 +322,9 @@ case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
     exfalso.
     move: P_dom_by_Q.
     rewrite /dom_by /Binary.d /= => /(_ b); rewrite /Binary.f.
-    rewrite eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) ?; fourier.
+    rewrite eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) ?; lra.
   apply: leR_trans.
-    have : 0 <= 1 - q < 1 by split; fourier.
+    have : 0 <= 1 - q < 1 by lra.
     exact: pinsker_function_spec_pos Hc.
   rewrite /pinsker_function_spec.
   apply Req_le.
@@ -346,18 +346,18 @@ case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
   move: P_dom_by_Q.
   rewrite /dom_by /Binary.d /= => /(_ a).
   rewrite /Binary.f eqxx subRR // => /(_ erefl) H1.
-  have {H1}? : p = 1. fourier. subst p.
+  have {H1}? : p = 1. lra. subst p.
   by move/ltRR : Hp1.
 rewrite -(pinsker_fun_p p01 c).
 case: (Rlt_le_dec q p) => qp.
   apply pinsker_fun_decreasing_on_0_to_p => //.
   - by case : Hc.
-  - split; fourier.
-  - split; fourier.
+  - lra.
+  - lra.
   - by apply Rlt_le.
 apply pinsker_fun_increasing_on_p_to_1 => //.
 - by case: Hc.
-- split; fourier.
+- lra.
 Qed.
 
 End pinsker_fun_pos_sect.

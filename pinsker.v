@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype tuple finfun bigop finset.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
 Require Import Rbigop proba divergence variation_dist pinsker_function.
 Require Import partition_inequality.
@@ -14,6 +14,7 @@ Import Prenex Implicits.
 
 Local Open Scope divergence_scope.
 Local Open Scope variation_distance_scope.
+Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
 Section Pinsker_2_bdist.
@@ -59,10 +60,10 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
     case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
       move: (@P_dom_by_Q (Set2.a card_A)).
       rewrite -/pi -/qi Hqi Hq2 subRR => /(_ erefl).
-      rewrite Hpi -Hp1 subR0 => ?. exfalso. fourier.
+      rewrite Hpi -Hp1 subR0 => ?. exfalso. lra.
     rewrite /log LogM; last 2 first.
-      fourier.
-      apply/invR_gt0; fourier.
+      lra.
+      apply/invR_gt0; lra.
       by rewrite LogV ?subR_gt0 // Log_1.
   case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
     move: (@P_dom_by_Q (Set2.b card_A)).
@@ -72,7 +73,7 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   rewrite /div_fct /comp /= (_ : id q = q) //.
   case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
     rewrite Hp2 subRR !mul0R /Rdiv /log LogM; last 2 first.
-      fourier.
+      lra.
       exact/invR_gt0.
     by rewrite Log_1 mul1R LogV // !(add0R,mul1R,addR0,sub0R).
   rewrite /log LogM //; last exact/invR_gt0.
@@ -80,9 +81,9 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
     move: (@P_dom_by_Q (Set2.a card_A)).
     rewrite -/pi -/qi Hqi -Hq2 subRR => /(_ erefl).
-    rewrite Hpi => abs. exfalso. fourier.
+    rewrite Hpi => abs. exfalso. lra.
   rewrite /Rdiv LogM ?subR_gt0 //; last first.
-    apply/invR_gt0; fourier.
+    apply/invR_gt0; lra.
   rewrite LogV ?subR_gt0 //; ring.
 do 2 f_equal.
 by rewrite /var_dist Set2sumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
@@ -196,7 +197,7 @@ Lemma Pinsker_inequality_weak : d(P , Q) <= sqrt (2 * D(P || Q)).
 Proof.
 rewrite -(sqrt_Rsqr (d(P , Q))); last exact/pos_var_dist.
 apply sqrt_le_1_alt.
-apply (@leR_pmul2l (/ 2)); first by apply invR_gt0; fourier.
+apply (@leR_pmul2l (/ 2)); first by apply invR_gt0; lra.
 apply (@leR_trans (D(P || Q))); last first.
   rewrite mulRA mulVR // ?mul1R; [exact/leRR | exact/eqP/gtR_eqF].
 apply: (leR_trans _ Pinsker_inequality).
@@ -204,9 +205,9 @@ rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow mul
 apply leR_wpmul2r; first exact: pow_even_ge0.
 apply leR_inv => //; first exact/mulR_gt0.
 rewrite -[X in _ <= X]mulR1.
-apply leR_wpmul2l; first by fourier.
+apply leR_wpmul2l; first lra.
 rewrite [X in _ <= X](_ : 1%R = ln (exp 1)); last by rewrite ln_exp.
-apply ln_increasing_le; [fourier | exact leR2e].
+apply ln_increasing_le; [lra | exact leR2e].
 Qed.
 
 End Pinsker.

@@ -2,9 +2,11 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext logb Rbigop.
 Require Import proba entropy aep.
+
+Local Open Scope R_scope.
 
 (** * Typical Sequences *)
 
@@ -48,12 +50,11 @@ apply/andP; split; apply/leRP.
 - apply/(leR_trans _ H2)/Exp_le_increasing => //.
   rewrite !mulNR.
   rewrite leR_oppr oppRK; apply leR_wpmul2l; first exact/leR0n.
-  apply leR_add2l, Rdiv_le => //; fourier.
-- eapply Rle_trans; first by apply H3.
+  apply/leR_add2l/Rdiv_le => //; lra.
+- apply (leR_trans H3).
   apply Exp_le_increasing => //.
-  rewrite !mulNR.
-  rewrite leR_oppr oppRK; apply leR_wpmul2l; first exact/leR0n.
-  apply leR_add2l; rewrite leR_oppr oppRK; apply Rdiv_le => //; fourier.
+  rewrite !mulNR leR_oppr oppRK; apply leR_wpmul2l; first exact/leR0n.
+  apply leR_add2l; rewrite leR_oppr oppRK; apply Rdiv_le => //; lra.
 Qed.
 
 Section typ_seq_prop.
@@ -169,11 +170,11 @@ have -> : Pr P `^ n.+1 (~: p) =
           move: LHS; rewrite /exp2 ExpK // => /ltRP.
           rewrite mulRC mulRN -mulNR -ltR_pdivl_mulr; last exact/ltR0n.
           rewrite oppRD oppRK => LHS.
-          have H2 : forall a b c, - a + b < c -> - c - a < - b by move=> *; fourier.
+          have H2 : forall a b c, - a + b < c -> - c - a < - b by move=> *; lra.
           move/ltRP/H2 in LHS.
           rewrite div1R mulRC mulRN -/(Rdiv _ _) leR0_norm.
           + apply/ltRP; by rewrite ltR_oppr.
-          + apply: (leR_trans (ltRW LHS)); by fourier.
+          + apply: (leR_trans (ltRW LHS)); lra.
       * move/negbT : LHS.
         rewrite negb_or 2!negbK /typ_seq => /andP[H1 /andP[/leRP H2 /leRP H3]].
         apply/esym/negbTE.
@@ -185,14 +186,14 @@ have -> : Pr P `^ n.+1 (~: p) =
         rewrite mulRC mulRN -mulNR -leR_pdivl_mulr ?oppRD; last exact/ltR0n.
         move/leRP => H2.
         have /(_ _ _ _ H2) {H2}H2 : forall a b c, - a + - b <= c -> - c - a <= b.
-          by move=> *; fourier.
+          by move=> *; lra.
         apply (@Log_increasing_le 2) in H3 => //; last exact/ltRP.
         rewrite /exp2 ExpK // in H3.
         move/leRP : H3.
         rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltR0n.
         rewrite oppRD oppRK div1R mulRC mulRN => /leRP H3.
         have /(_ _ _ _ H3) {H3}H3 : forall a b c, a <= - c + b -> - b <= - a - c.
-          by move=> *; fourier.
+          by move=> *; lra.
         rewrite leR_Rabsl; apply/andP; split; exact/leRP.
   rewrite H1 Pr_union_disj; last first.
     apply disjoint_setI0.
@@ -226,11 +227,11 @@ Lemma set_typ_seq_not0 : aep_bound P epsilon <= INR n.+1 ->
 Proof.
 move/Pr_TS_1 => H.
 case/boolP : (#| `TS P n.+1 epsilon |== O) => Heq; last by apply/eqP.
-suff : False by done.
+exfalso.
 rewrite cards_eq0 in Heq.
 move/eqP in Heq.
 rewrite Heq (_ : Pr _ _ = 0) in H; last by rewrite /Pr big_set0.
-fourier.
+lra.
 Qed.
 
 (** the typical sequence of index 0 *)

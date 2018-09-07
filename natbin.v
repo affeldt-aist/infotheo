@@ -122,10 +122,10 @@ Lemma bitseq_of_N_leading_bit n : n <> N0 -> exists k, rev (bitseq_of_N n) = tru
 Proof.
 case : n => //.
 elim => [i IH _ | i IH _ | _ /=].
-- have : Npos i <> 0%N by done.
+- have : Npos i <> 0%N by [].
   case/IH => k /= Hk.
   exists (rcons k true); by rewrite rev_cons Hk.
-- have : Npos i <> 0%N by done.
+- have : Npos i <> 0%N by [].
   case/IH => k /= Hk.
   exists (rcons k false); by rewrite rev_cons Hk.
 - by exists nil.
@@ -444,7 +444,7 @@ Qed.
 
 Lemma bin_of_nat_7 : forall n, 2 < n ->
   bin_of_nat 7 = BinNums.Npos (BinNums.xI (BinNums.xI (BinNums.xH))).
-Proof. done. Qed.
+Proof. by []. Qed.
 
 Fixpoint xOs n cont :=
   match n with

@@ -276,7 +276,7 @@ rewrite (_ : [set n1 \in (s0 : {set 'I_n}) | s0 in _] = [set: bool]); last first
 rewrite (reindex F2_of_bool bijective_F2_of_bool).
 apply eq_big => [i|i _]; first by rewrite /= !inE.
 case/andP : Hs => /= Hn1 Hs.
-rewrite -IH; last by done.
+rewrite -IH; last by [].
 rewrite (reindex_onto (fun f => if i then n1 |: f else f) (fun f => f :\ n1)); last first.
   move=> /= j; rewrite !inE.
   move/andP=> [] /subsetP Hj.

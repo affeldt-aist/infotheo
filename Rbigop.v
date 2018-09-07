@@ -3,7 +3,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
 (** * Instantiation of canonical big operators with Coq reals *)
@@ -105,6 +105,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
 Canonical addR_monoid := Monoid.Law addRA add0R addR0.
@@ -241,7 +242,7 @@ Lemma ler_rsum_predU (A : finType) (f : A -> R) (P Q : pred A) :
   \rsum_(i in A | P i) f i + \rsum_(i in A | Q i) f i.
 Proof.
 move=> Hf.
-elim: (index_enum _) => [|h t IH /=]; first by rewrite !big_nil /=; fourier.
+elim: (index_enum _) => [|h t IH /=]; first by rewrite !big_nil /=; lra.
 rewrite !big_cons /=.
 case: ifPn => /=.
 - case/orP => [hP | hQ].
@@ -249,14 +250,14 @@ case: ifPn => /=.
     case: ifP => // Qh.
     * rewrite -addRA; apply leR_add2l.
       apply (leR_trans IH).
-      have : forall a b c, 0 <= c -> a + b <= a + (c + b) by move=> *; fourier.
+      have : forall a b c, 0 <= c -> a + b <= a + (c + b) by move=> *; lra.
       apply; by apply Hf.
     * rewrite -addRA; apply leR_add2l.
       exact/(leR_trans IH)/Req_le.
   + move: hQ; rewrite unfold_in => ->.
     case: ifP => // Ph.
     * rewrite -addRA; apply/leR_add2l/(leR_trans IH).
-      have : forall a b c, 0 <= c -> a + b <= a + (c + b) by move=> *; fourier.
+      have : forall a b c, 0 <= c -> a + b <= a + (c + b) by move=> *; lra.
       apply; by apply Hf.
     * rewrite -(addRC (f h + _)) -addRA; apply/leR_add2l/(leR_trans IH).
       by rewrite addRC; apply Req_le.
@@ -318,90 +319,85 @@ Qed.
 
 Section ler_ltr_rprod.
 
-Lemma rprodr_gt0 {A : finType} F : (forall i, 0 < F i) ->
+Lemma rprodr_gt0 (A : finType) F : (forall i, 0 < F i) ->
   0 < \rprod_(i : A) F i.
 Proof.
 move=> H.
 elim: (index_enum _) => [| hd tl IH].
-rewrite big_nil; fourier.
+rewrite big_nil; lra.
 rewrite big_cons; apply mulR_gt0 => //; by apply H.
 Qed.
 
-Lemma rprodr_ge0 {A : finType} F : (forall i, 0 <= F i) ->
+Lemma rprodr_ge0 (A : finType) F : (forall i, 0 <= F i) ->
   0 <= \rprod_(i : A) F i.
 Proof.
 move=> H.
 elim: (index_enum _) => [| hd tl IH].
-  rewrite big_nil; fourier.
+  rewrite big_nil; lra.
 rewrite big_cons; apply mulR_ge0 => //; exact H.
 Qed.
 
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-Lemma rprodr_gt0_inv {B : finType} F (HF: forall a, 0 <= F a) :
+Lemma rprodr_gt0_inv (B : finType) F (HF: forall a, 0 <= F a) :
   forall n (x : 'rV[B]_n.+1),
   0 < \rprod_(i < n.+1) F (x ``_ i) -> forall i, 0 < F (x ``_ i).
 Proof.
 elim => [x | n IH].
   rewrite big_ord_recr /= big_ord0 mul1R => Hi i.
   suff : i = ord_max by move=> ->.
-  rewrite (ord1 i).
-  by apply/val_inj.
+  rewrite (ord1 i); exact/val_inj.
 move=> x.
 set t := \row_(i < n.+1) (x ``_ (lift ord0 i)).
-rewrite big_ord_recl /= => H.
-apply Rlt_0_Rmult_inv in H; last 2 first.
-  exact/HF.
-  apply rprodr_ge0 => ?; exact/HF.
-case.
-case=> [Hi | i Hi].
-  rewrite (_ : Ordinal _ = ord0); last exact/val_inj.
-  by case: H.
-case: H => _ H.
+rewrite big_ord_recl /=.
+move: (HF (x ``_ ord0)); rewrite leR_eqVlt => -[<-|H].
+  by rewrite mul0R => /ltRR.
+rewrite mulRC (pmulR_lgt0 H) => H'.
+case; case => [i0|i Hi].
+  rewrite (_ : Ordinal _ = ord0) //; exact/val_inj.
 have : 0 < \rprod_(i0 < n.+1) F (t ``_ i0).
   suff : \rprod_(i < n.+1) F (x ``_ (lift ord0 i)) =
          \rprod_(i < n.+1) F (t ``_ i) by move=> <-.
   apply eq_bigr => ? _; by rewrite mxE.
 have Hi' : (i < n.+1)%nat by rewrite ltnS in Hi.
-move/IH.
-move/(_ (Ordinal Hi')).
-set o1 := Ordinal _.
-set o2 := Ordinal _.
+move/IH/(_ (Ordinal Hi')).
+set o1 := Ordinal _. set o2 := Ordinal _.
 suff : lift ord0 o1 = o2 by move=> <-; rewrite mxE.
-by apply val_inj.
+exact/val_inj.
 Qed.
 
-Lemma rprodr_ge1 {A : finType}  f : (forall i, 1 <= f i) ->
+Local Close Scope vec_ext_scope.
+Local Close Scope ring_scope.
+
+Lemma rprodr_ge1 (A : finType) f : (forall i, 1 <= f i) ->
   1 <= \rprod_(i : A) f i.
 Proof.
 move=> Hf.
 elim: (index_enum _) => [| hd tl IH].
 - rewrite big_nil; exact/leRR.
-- rewrite big_cons -{1}(mulR1 1%R); apply leR_pmul => // ; fourier.
+- rewrite big_cons -{1}(mulR1 1%R); apply leR_pmul => //; lra.
 Qed.
 
-Local Open Scope R_scope.
-
-Lemma ler_rprod {A : finType} f g : (forall i, 0 <= f i <= g i) ->
+Lemma ler_rprod (A : finType) f g : (forall i, 0 <= f i <= g i) ->
   \rprod_(i : A) f i <= \rprod_(i : A) g i.
 Proof.
 move=> Hfg.
-case/orP : (orbN [forall i, f i != 0%R]) ; last first.
+case/orP : (orbN [forall i, f i != 0%R]); last first.
 - rewrite negb_forall => /existsP Hf.
   case: Hf => i0 /negPn/eqP Hi0.
   rewrite (bigD1 i0) //= Hi0 mul0R; apply rprodr_ge0.
-  move=> i ; move: (Hfg i) => [Hi1 Hi2] ; exact: (leR_trans Hi1 Hi2).
+  move=> i ; move: (Hfg i) => [Hi1 Hi2]; exact: (leR_trans Hi1 Hi2).
 - move=> /forallP Hf.
   have Hprodf : 0 < \rprod_(i : A) f i.
     apply rprodr_gt0 => a.
     move: (Hf a) (Hfg a) => {Hf}Hf {Hfg}[Hf2 _].
     apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
   apply (@leR_pmul2r (1 * / \rprod_(i : A) f i) _ _).
-    apply Rlt_mult_inv_pos => //; fourier.
+    apply divR_gt0 => //; lra.
   rewrite mul1R mulRV; last exact/eqP/gtR_eqF.
   set inv_spec := fun r => if r == 0 then 0 else / r.
-  rewrite (_ : / (\rprod_(a : A) f a) = inv_spec (\rprod_(a : A) f a)) ; last first.
+  rewrite (_ : / (\rprod_(a : A) f a) = inv_spec (\rprod_(a : A) f a)); last first.
     rewrite /inv_spec (_ : \rprod_(a : A) f a == 0 = false) //.
     exact/eqP/gtR_eqF.
   rewrite (@big_morph _ _ (inv_spec) R1 Rmult R1 Rmult _); last 2 first.
@@ -423,7 +419,7 @@ case/orP : (orbN [forall i, f i != 0%R]) ; last first.
   rewrite -(mulRV (f a)) //.
   apply leR_wpmul2r => //.
   rewrite -(mul1R (/ f a)).
-  apply divR_ge0; [fourier | apply/ltRP; rewrite lt0R Hf; exact/leRP].
+  apply divR_ge0; [lra | apply/ltRP; rewrite lt0R Hf; exact/leRP].
 Qed.
 
 End ler_ltr_rprod.
@@ -453,7 +449,7 @@ Theorem RPascal k (a b : R) :
 Proof.
 rewrite addRC Binomial.binomial sum_f_R0_rsum.
 apply eq_bigr => i _.
-rewrite combinaison_Coq_SSR; last by rewrite -ltnS.
+rewrite combinaisonE; last by rewrite -ltnS.
 rewrite -minusE; field.
 Qed.
 
@@ -483,6 +479,9 @@ rewrite oppRD [X in _ = X]big_ord_recl IH.
 congr (_ + _)%R.
 apply eq_bigr => i _; by rewrite mxE.
 Qed.
+
+Local Close Scope vec_ext_scope.
+Local Close Scope ring_scope.
 
 Section bigrmax_sect.
 
@@ -569,11 +568,11 @@ rewrite bigrmax_cat // maxRA (maxRC (g h1)) -maxRA ht2 bigrmax_cat; last first.
 by rewrite big_cons.
 Qed.
 
-Lemma bigrmax_eqi (I : finType) g : forall (s1 s2 : seq I),
+Lemma bigrmax_eqi (I : finType) g (s1 s2 : seq I) :
   (forall r : I, r \in s1 -> 0 <= g r) -> s1 =i s2 ->
   \rmax_(c0 <- s1) g c0 = \rmax_(c0 <- s2) g c0.
 Proof.
-move=> s1 s2 Hg s1s2.
+move=> Hg s1s2.
 rewrite (bigrmax_undup _ s1) (bigrmax_undup g s2).
 apply bigrmax_perm; [ | | by rewrite undup_uniq | by rewrite undup_uniq].
 - move=> r Hr; apply Hg.
@@ -583,7 +582,7 @@ apply bigrmax_perm; [ | | by rewrite undup_uniq | by rewrite undup_uniq].
   move=> i; by rewrite !mem_undup.
 Qed.
 
-Lemma rmax_imset' {M : finType} (I : finType) h (g : I -> R) (s : seq M) :
+Lemma rmax_imset' (M I : finType) h (g : I -> R) (s : seq M) :
   (forall r : I, r \in enum [set h x | x in s] -> 0 <= g r) ->
   \rmax_(c0 <- enum [set h x | x in s]) g c0 = \rmax_(m <- s) g (h m).
 Proof.
@@ -635,7 +634,7 @@ destruct lhs.
 by rewrite big_cons.
 Qed.
 
-Lemma rmax_imset {M : finType} (I : finType) h (g : I -> R) :
+Lemma rmax_imset (M I : finType) h (g : I -> R) :
   (forall r : I, r \in [set h x | x in M] -> 0 <= g r) ->
   \rmax_(c0 in [set h x | x in M]) g c0 = \rmax_(m in M) g (h m).
 Proof.
@@ -663,22 +662,20 @@ eapply trans_eq.
 apply congr_big => //; by rewrite enumT.
 Qed.
 
-Lemma Rle_bigrmax_R {A : finType} (h : A -> R) (tl : seq A) hd :
+Lemma Rle_bigrmax_R (A : finType) (h : A -> R) (tl : seq A) hd :
   (forall r, 0 <= h r) ->
   (forall c : A, c \in tl -> h c <= h hd) ->
   \rmax_(j <- tl) h j <= h hd.
 Proof.
 elim: tl hd => [hd Hh _ | hd1 tl2 IH hd Hhpos Hh].
-  rewrite big_nil; by apply Hh.
-rewrite big_cons.
-apply Rmax_lub.
-- apply Hh.
-  by rewrite in_cons eqxx.
+  rewrite big_nil; exact/Hh.
+rewrite big_cons; apply Rmax_lub.
+- apply Hh; by rewrite in_cons eqxx.
 - apply IH => // c0 Hc0; apply Hh.
   by rewrite in_cons Hc0 orbC.
 Qed.
 
-Lemma bigrmax_max_seq {A : finType} (h : A -> R) (s : seq A) a :
+Lemma bigrmax_max_seq (A : finType) (h : A -> R) (s : seq A) a :
   a \in s ->
   (forall r, 0 <= h r) ->
   (forall c, c \in s -> h c <= h a) ->
@@ -704,7 +701,7 @@ elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
       by rewrite in_cons Hc0 orbC.
 Qed.
 
-Lemma bigrmax_max {A : finType} (C : {set A}) a (h : A -> R):
+Lemma bigrmax_max (A : finType) (C : {set A}) a (h : A -> R):
   a \in C ->
   (forall r, 0 <= h r) ->
   (forall c, c \in C -> h c <= h a) ->
@@ -732,11 +729,10 @@ case: ifP => Qh //.
 by rewrite -IH RmaxRmult.
 Qed.
 
-Lemma rmax_distrl I a (apos: 0 <= a) r (Q:pred I) F :
+Lemma rmax_distrl I a (apos : 0 <= a) r (Q : pred I) F :
   ((\rmax_(i <- r | Q i) F i) * a = \rmax_(i <- r | Q i) (F i * a)).
 Proof.
-rewrite mulRC rmax_distrr //.
-by apply congr_big; auto using mulRC.
+by rewrite mulRC rmax_distrr //; apply congr_big => // ?; rewrite mulRC.
 Qed.
 
 Notation "\min^ b '_(' a 'in' A ) F" :=
@@ -744,82 +740,74 @@ Notation "\min^ b '_(' a 'in' A ) F" :=
 
 Local Open Scope min_scope.
 
-Lemma bigminn_min {A : finType} (C : {set A}) (cnot0 : {c0 | c0 \in C}) a (Ha : a \in C) (h : A -> nat) :
+Lemma bigminn_min (A : finType) (C : {set A}) (cnot0 : {c0 | c0 \in C})
+  a (Ha : a \in C) (h : A -> nat) :
   (\min^ (sval cnot0) _(c in C) h c <= h a)%nat.
 Proof.
 case: arg_minP.
 by destruct cnot0.
-move=> a0 a0C H.
-by apply H.
+move=> a0 a0C; exact.
 Qed.
 
 (* TODO: useless ? *)
-Lemma big_rmax_bigminn_helper {A : finType} n (g : nat -> R) :
+Lemma big_rmax_bigminn_helper (A : finType) n (g : nat -> R) :
   (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
   (forall r, 0 <= g r) ->
-  forall (C : {set n.-tuple A}) c'' (_ : c'' \in C) (d : n.-tuple A -> nat)
+  forall (C : {set n.-tuple A}) c (_ : c \in C) (d : n.-tuple A -> nat)
   (_ : forall c, c \in C -> (d c <= n)%nat)
   (cnot0 : {c0 | c0 \in C}),
-  d c'' = \min^ (sval cnot0) _(c in C) d c ->
-  g (d c'') = \rmax_(c in C) g (d c).
+  d c = \min^ (sval cnot0) _(c in C) d c ->
+  g (d c) = \rmax_(c in C) g (d c).
 Proof.
-move=> Hdecr Hr C c'' Hcc' d Hd cnot0 H.
-apply (@bigrmax_max _ C c'' (fun a => g (d a))) => //.
+move=> Hdecr Hr C c cC d Hd cnot0 H.
+apply (@bigrmax_max _ C c (fun a => g (d a))) => //.
 move=> /= c0 c0C.
-apply Hdecr.
-apply/andP; split.
-  rewrite H.
-  by apply bigminn_min.
-by apply Hd.
+apply/Hdecr/andP; split; [|exact: Hd].
+rewrite H; exact: bigminn_min.
 Qed.
 
-Lemma big_rmax_bigminn {A M : finType} n (f : {ffun M -> n.-tuple A}) (g : nat -> R)
+Lemma big_rmax_bigminn (A M : finType) n (f : {ffun M -> n.-tuple A}) (g : nat -> R)
   (cnot0 : {c0 | c0 \in f @: M } ) :
   (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
   (forall r, 0 <= g r) ->
-  forall m'' (d : n.-tuple A -> nat)
+  forall m (d : n.-tuple A -> nat)
   (_ : forall c0 : n.-tuple A, c0 \in [set f x | x : M] -> (d c0 <= n)%nat),
-  d (f m'') = \min^ (sval cnot0) _(c in [set f x | x in M]) d c ->
-  g (d (f m'')) = \rmax_(m | m \in M) g (d (f m)).
+  d (f m) = \min^ (sval cnot0) _(c in [set f x | x in M]) d c ->
+  g (d (f m)) = \rmax_(m | m \in M) g (d (f m)).
 Proof.
-move=> n1n2 Hg m'' d H Hd.
+move=> n1n2 Hg m d H Hd.
 transitivity (\rmax_(c in [set f x | x in M]) g (d c)); last by rewrite rmax_imset.
 apply big_rmax_bigminn_helper with cnot0 => //.
-apply/imsetP.
-by exists m''.
+apply/imsetP; by exists m.
 Qed.
 
-Lemma big_rmax_bigminn_helper_vec {A : finType} n (g : nat -> R) :
+Lemma big_rmax_bigminn_helper_vec (A : finType) n (g : nat -> R) :
   (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
   (forall r, 0 <= g r) ->
-  forall (C : {set 'rV[A]_n}) c'' (_ : c'' \in C) (d : 'rV[A]_n -> nat)
+  forall (C : {set 'rV[A]_n}) c (_ : c \in C) (d : 'rV[A]_n -> nat)
   (_ : forall c, c \in C -> (d c <= n)%nat)
   (cnot0 : {c0 | c0 \in C}),
-  d c'' = \min^ (sval cnot0) _(c in C) d c ->
-  g (d c'') = \rmax_(c in C) g (d c).
+  d c = \min^ (sval cnot0) _(c in C) d c ->
+  g (d c) = \rmax_(c in C) g (d c).
 Proof.
-move=> Hdecr Hr C c'' Hcc' d Hd cnot0 H.
-apply (@bigrmax_max _ C c'' (fun a => g (d a))) => //.
+move=> Hdecr Hr C c cC d Hd cnot0 H.
+apply (@bigrmax_max _ C c (fun a => g (d a))) => //.
 move=> /= c0 c0C.
-apply Hdecr.
-apply/andP; split.
-  rewrite H.
-  by apply bigminn_min.
-by apply Hd.
+apply/Hdecr/andP; split; [|exact: Hd].
+rewrite H; exact: bigminn_min.
 Qed.
 
-Lemma big_rmax_bigminn_vec {A M : finType} n (f : {ffun M -> 'rV[A]_n}) (g : nat -> R)
+Lemma big_rmax_bigminn_vec (A M : finType) n (f : {ffun M -> 'rV[A]_n}) (g : nat -> R)
   (cnot0 : {c0 | c0 \in f @: M } ) :
   (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
   (forall r, 0 <= g r) ->
-  forall m'' (d : 'rV[A]_n -> nat)
+  forall m (d : 'rV[A]_n -> nat)
   (_ : forall c0 : 'rV[A]_n, c0 \in f @: M -> (d c0 <= n)%nat),
-  d (f m'') = \min^ (sval cnot0) _(c in f @: M) d c ->
-  g (d (f m'')) = \rmax_(m in M) g (d (f m)).
+  d (f m) = \min^ (sval cnot0) _(c in f @: M) d c ->
+  g (d (f m)) = \rmax_(m in M) g (d (f m)).
 Proof.
-move=> n1n2 Hg m'' d H Hd.
+move=> n1n2 Hg m d H Hd.
 transitivity (\rmax_(c in f @: M) g (d c)); last by rewrite rmax_imset.
 apply big_rmax_bigminn_helper_vec with cnot0 => //.
-apply/imsetP.
-by exists m''.
+apply/imsetP; by exists m.
 Qed.

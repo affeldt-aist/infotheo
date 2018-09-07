@@ -3,7 +3,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
-Require Import Reals Fourier FunctionalExtensionality.
+Require Import Reals Lra FunctionalExtensionality.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import Nsatz.
 
@@ -91,6 +91,7 @@ Reserved Notation "'`V'" (at level 5).
 Reserved Notation "X _| P |_ Y" (at level 50).
 Reserved Notation "Z \= X '@+' Y" (at level 50).
 
+Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope tuple_ext_scope.
 
@@ -273,7 +274,7 @@ Lemma f0 a : 0 <= f a.
 Proof.
 rewrite /f.
 case e : (a \in C); last exact/leRR.
-apply divR_ge0; [by fourier|exact/ltR0n].
+apply divR_ge0; [lra|exact/ltR0n].
 Qed.
 
 Lemma f1 : \rsum_(a in A) f a = 1%R.
@@ -344,7 +345,7 @@ Lemma fxx a : f a a = (1 - p)%R.
 Proof. by rewrite /f eqxx. Qed.
 
 Lemma f0 (a a' : A) : 0 <= f a a'.
-Proof. rewrite /f. case: ifP => _; case: Hp => ? ?; fourier. Qed.
+Proof. rewrite /f. case: ifP => _; case: Hp => ? ?; lra. Qed.
 
 Lemma f1 (a : A) : \rsum_(a' in A) f a a' = 1%R.
 Proof.
@@ -374,9 +375,9 @@ exists (1 - pmf (Set2.a card_A))%R.
 have r01 : 0 <= 1 - pmf (Set2.a card_A) <= 1%R.
   move: (dist_max (mkDist pmf1) (Set2.a card_A)) => /= H1.
   move: (pmf0 (Set2.a card_A)) => H0.
-  split; first by fourier.
+  split; first lra.
   suff : forall a, a <= 1 -> 0 <= a -> 1 - a <= 1 by apply.
-  move=> *; fourier.
+  move=> *; lra.
 exists r01.
 apply/dist_eq/pos_fun_eq => /=; apply functional_extensionality => a.
 rewrite /Binary.f; case: ifPn => [/eqP ->|Ha]; first by field.
@@ -520,8 +521,7 @@ Local Close Scope ring_scope.
     + move=> _; apply eq_bigr => i _ /=; by rewrite ffunE.
   move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
 rewrite -bigA_distr_bigA /= /P'.
-rewrite [RHS](_ : _ = \rprod_(i < n) 1)%R; last first.
-  by rewrite big_const_ord iter_mulR pow1.
+rewrite [RHS](_ : _ = \rprod_(i < n) 1)%R; last by rewrite big1.
 apply eq_bigr => i _; exact: pmf1.
 Qed.
 
@@ -568,7 +568,7 @@ transitivity (\rsum_(j : {ffun 'I_k -> 'rV[A]_n}) \rprod_(m : 'I_k) P `^ _ (j m)
   - move=> v /=; by apply/esym/eqP/rowP => i; rewrite mxE ffunE.
   - move=> i _; apply eq_bigr => j _; by rewrite ffunE.
 rewrite -(bigA_distr_bigA (fun m => P `^ _)) /= big_const.
-by rewrite iter_mulR pmf1 pow1.
+by rewrite iter_mulR pmf1 exp1R.
 Qed.
 
 Module ProdDist.
@@ -641,6 +641,7 @@ apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
 by rewrite /f mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R,addRN).
 Qed.
 
+(* TODO: rename to skewed_commute *)
 Lemma quasi_commute (d1 d2 : dist A) p (Hp : 0 <= p <= 1) (Hp' : 0 <= p.~ <= 1) :
   d d1 d2 Hp = d d2 d1 Hp'.
 Proof.
@@ -719,7 +720,7 @@ have HB : \rsum_(x in s) P `^ _ x <= INR #|s| * B.
     apply (@leR_trans (\rsum_(x in s | predT s) [fun _ => B] x)).
       apply ler_rsum_support => /= i iA _; by apply H.
     rewrite -big_filter /= big_const_seq /= iter_addR /=.
-    apply leR_wpmul2r; first by fourier.
+    apply leR_wpmul2r; first lra.
     apply Req_le.
     rewrite filter_index_enum count_predT cardE; congr (INR (size _)).
     apply eq_enum => i; by rewrite /in_mem /= andbC.
@@ -729,7 +730,7 @@ have HA : INR #|s| * A <= \rsum_(x in s) P `^ _ x.
     apply (@leR_trans (\rsum_(x in s | predT s) [fun _ => A] x)); last first.
       apply ler_rsum_support => i Hi _; by case: (H i Hi).
     rewrite -big_filter /= big_const_seq /= iter_addR /=.
-    apply leR_wpmul2r; first by fourier.
+    apply leR_wpmul2r; first lra.
     apply Req_le.
     rewrite filter_index_enum count_predT cardE; congr (INR (size _)).
     apply eq_enum => i; by rewrite /in_mem /= andbC.
@@ -1084,7 +1085,7 @@ Proof. by rewrite /Ind inE; case: in_mem; case: in_mem=>/=; ring. Qed.
 Lemma Ind_bigcap I (e : I -> {set A}) (r : seq.seq I) (p : pred I) x :
   Ind (\bigcap_(j <- r | p j) e j) x = \rprod_(j <- r | p j) (Ind (e j) x).
 Proof.
-apply (big_ind2 (R1 := {set A}) (R2 := R)); last done.
+apply (big_ind2 (R1 := {set A}) (R2 := R)); last by [].
 - by rewrite /Ind inE.
 - by move=> sa a sb b Ha Hb; rewrite -Ha -Hb; apply: Ind_cap.
 Qed.

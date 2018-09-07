@@ -1,12 +1,13 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype finfun bigop finset.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts bigop_ext Rbigop.
 
 (** * The log-sum Inequality *)
 
 Local Open Scope reals_ext_scope.
+Local Open Scope R_scope.
 
 Local Notation "'\rsum_{' C '}' f" :=
   (\rsum_(a | a \in C) f a) (at level 10, format "\rsum_{ C }  f").
@@ -44,7 +45,7 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
   have Gspos : 0 < \rsum_{ C } g.
     suff Gpocs : 0 <= \rsum_{ C } g by apply/ltRP; rewrite lt0R Gnot0; exact/leRP.
     apply: rsumr_ge0 => ? ?; exact/ltRW/gspos.
-  have kspos : 0 < k by apply Rlt_mult_inv_pos.
+  have kspos : 0 < k by apply divR_gt0.
   have kg_pos : forall a, 0 <= k * g a.
     move=> a; apply mulR_ge0; by [apply ltRW | apply pos_f_ge0].
   have kabs_con : forall a, k * g a = 0 -> f a = 0.
@@ -74,7 +75,7 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
       apply invR_gt0; by [apply gspos | apply fspos].
     rewrite LogV; by [field | apply gspos].
   rewrite big_split /= -(big_morph _ morph_Ropp oppR0) -big_distrl /= in Hwlog.
-  have : forall a b, 0 <= a + - b -> b <= a by move=> *; fourier.
+  have : forall a b, 0 <= a + - b -> b <= a by move=> *; lra.
   by apply.
 move=> Htmp; rewrite Htmp.
 rewrite /Rdiv mulRV; last by rewrite -Htmp.
@@ -90,9 +91,9 @@ suff : 0 <= \rsum_(a | a \in C) f a * ln (f a / g a).
   apply mulR_ge0 => //; exact/ltRW/invR_gt0.
 apply (@leR_trans (\rsum_(a | a \in C) f a * (1 - g a / f a))).
   apply (@leR_trans (\rsum_(a | a \in C) (f a - g a))).
-    rewrite big_split /= -(big_morph _ morph_Ropp oppR0); fourier.
+    rewrite big_split /= -(big_morph _ morph_Ropp oppR0) Htmp addRN; exact/leRR.
   apply Req_le, eq_bigr => a a_C.
-  rewrite Rmult_minus_distr_l mulR1.
+  rewrite mulRDr mulR1 mulRN.
   case: (Req_EM_T (g a) 0).
     move=> ->; by rewrite div0R mulR0.
   move=> ga_not_0.
@@ -100,7 +101,7 @@ apply (@leR_trans (\rsum_(a | a \in C) f a * (1 - g a / f a))).
 apply: ler_rsum => a C_a.
 apply leR_wpmul2l; first exact/ltRW/fspos.
 rewrite -[X in _ <= X]oppRK leR_oppr -ln_Rinv; last first.
-  apply Rlt_mult_inv_pos; by [apply fspos | apply gspos].
+  apply divR_gt0; by [apply fspos | apply gspos].
 rewrite invRM; last 2 first.
   exact/gtR_eqF/(fspos _ C_a).
   exact/eqP/invR_neq0/eqP/gtR_eqF/(gspos _ C_a).
@@ -108,7 +109,7 @@ rewrite invRK; last exact/gtR_eqF/(gspos _ C_a).
 rewrite mulRC.
 apply: leR_trans.
   apply ln_id_cmp.
-  apply Rlt_mult_inv_pos; by [apply gspos | apply fspos].
+  apply divR_gt0; by [apply gspos | apply fspos].
 apply Req_le.
 field; exact/gtR_eqF/(fspos _ C_a).
 Qed.
@@ -165,7 +166,7 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
       apply addR_gt0wr => //.
       apply: rsumr_ge0 => *; exact/pos_f_ge0.
     apply/(leR_wpmul2l (ltRW pos_F))/Log_increasing_le => //.
-      apply Rlt_mult_inv_pos => //; by rewrite -HG.
+      apply divR_gt0 => //; by rewrite -HG.
     apply/(leR_wpmul2l (ltRW pos_F))/leR_inv => //.
     rewrite setUC in DUD'.
     rewrite DUD' (big_union _ g DID') /= -[X in X <= _]add0R; apply leR_add2r.

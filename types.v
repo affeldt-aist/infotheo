@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
-Require Import Reals Fourier FunctionalExtensionality ProofIrrelevance.
+Require Import Reals Lra FunctionalExtensionality ProofIrrelevance.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba entropy num_occ channel_code channel typ_seq.
 
@@ -18,6 +18,7 @@ Import Prenex Implicits.
 
 Local Open Scope entropy_scope.
 Local Open Scope num_occ_scope.
+Local Open Scope R_scope.
 
 Module type.
 
@@ -87,7 +88,7 @@ subst f2.
 suff ? : d1 = d2.
   subst d2.
   f_equal.
-  by apply proof_irrelevance.
+  exact: proof_irrelevance.
 apply dist_eq => /=.
 apply pos_fun_eq => /=.
 apply functional_extensionality => a /=.
@@ -107,7 +108,7 @@ apply: (iffP idP).
   suff ? : d1 = d2.
     subst d2.
     f_equal.
-    by apply proof_irrelevance.
+    exact: proof_irrelevance.
   apply dist_eq => /=.
   apply pos_fun_eq => /=.
   apply functional_extensionality => a.
@@ -420,7 +421,7 @@ move=> Hx.
 rewrite TupleDist.dE.
 rewrite (_ : \rprod_(i < n) P (t ``_ i) =
   \rprod_(a : A) (\rprod_(i < n) (if a == t ``_ i then P t ``_ i else 1))); last first.
-  rewrite exchange_big ; apply eq_big ; first done.
+  rewrite exchange_big; apply eq_big ; first by [].
   move=> i _.
   rewrite (bigID (fun y => y == t ``_ i)) /=.
   rewrite -/(INR n.+1) big_pred1_eq eqxx big1 ?mulR1 //.
@@ -512,8 +513,8 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
   rewrite big_const iter_addR tuple_dist_type_entropy //.
   do 2 f_equal.
   rewrite card_imset //; exact row_of_tuple_inj.
-- rewrite (_ : (INR #| T_{P} | = 0)%R); first by fourier.
-  rewrite (_ : 0%R = INR 0) //; f_equal; apply/eqP.
+- rewrite (_ : (INR #| T_{P} | = 0)%R); first lra.
+  rewrite (_ : 0%R = INR 0) //; congr INR; apply/eqP.
   rewrite cards_eq0; apply/negPn.
   move: x_T_P; apply contra; by move/set0Pn/existsP.
 Qed.

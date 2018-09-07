@@ -122,7 +122,7 @@ suff H : \rsum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1%R.
   - move=> _; apply eq_bigr => i _; by rewrite ffunE.
 rewrite -bigA_distr_bigA /= /f'.
 transitivity (\rprod_(i < n) 1%R); first by apply eq_bigr => i _; rewrite pmf1.
-by rewrite big_const_ord iter_mulR pow1.
+by rewrite big1.
 Qed.
 
 Definition c : channel_ext n := locked (fun x => makeDist (f0 x) (f1 x)).

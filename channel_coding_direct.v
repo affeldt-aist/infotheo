@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix perm.
-Require Import Reals Fourier Classical.
+Require Import Reals Lra Classical.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy aep typ_seq joint_typ_seq channel channel_code.
 
@@ -17,6 +17,7 @@ Local Open Scope jtyp_seq_scope.
 Local Open Scope channel_code_scope.
 Local Open Scope channel_scope.
 Local Open Scope vec_ext_scope.
+Local Open Scope R_scope.
 
 Module Wght.
 
@@ -32,8 +33,7 @@ Proof. apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
 Lemma pmf1 : \rsum_(f | f \in {ffun M -> 'rV[A]_n}) pmf f = 1.
 Proof.
 rewrite -(bigA_distr_bigA (fun _ ta => P `^ n ta)) /=.
-rewrite [X in _ X](_ : 1 = \rprod_(i : M | xpredT i) 1); last first.
-  by rewrite big_const /= iter_mulR pow1.
+rewrite [X in _ X](_ : 1 = \rprod_(i : M | xpredT i) 1); last by rewrite big1.
 apply eq_bigr => _ _; by rewrite (pmf1 (P `^ n)).
 Qed.
 
@@ -116,16 +116,13 @@ Lemma error_rate_symmetry (P : {dist A}) (W : `Ch_1(A, B)) epsilon :
 Proof.
 move=> Hepsilon PHI' m m'.
 set lhs := \rsum_(_ <- _) _.
-have Hlhs : lhs = \rsum_(f : encT A M n) (Wght.d P f * e(W, mkCode f (PHI' f)) m).
-  done.
+have Hlhs : lhs = \rsum_(f : encT A M n) (Wght.d P f * e(W, mkCode f (PHI' f)) m) by [].
 have Hlhs2 : lhs = \rsum_(f : encT A M n)
   (Wght.d P (o_PI m m' f) * e(W, mkCode (o_PI m m' f) (PHI' (o_PI m m' f))) m).
   rewrite Hlhs (reindex_onto (o_PI m m') (o_PI m m')) /=; last first.
     move=> i _; apply/ffunP => m_; by rewrite o_PI_2.
   apply eq_bigl => x /=.
-  apply/eqP.
-  apply/ffunP => y.
-  by apply: o_PI_2.
+  apply/eqP/ffunP => y; exact: o_PI_2.
 rewrite Hlhs2.
 apply eq_bigr => g _.
 rewrite wght_o_PI; congr (_ * _).
@@ -158,7 +155,7 @@ apply/idP/idP.
             rewrite eqtype.eq_sym in m__m'.
             rewrite m__m /= /o_PI ffunE tpermD // in Hm0'; by rewrite eqtype.eq_sym.
       by apply: (jtdec_map Hm1 Hm').
-    * suff : False by done.
+    * exfalso.
       rewrite {1}/o_PI ffunE tpermL in Hm0.
       move/negbT: {Hm1}(Hm1 m').
       rewrite negb_and; case/orP => Hm'.
@@ -200,8 +197,8 @@ apply/idP/idP.
             rewrite /o_PI ffunE tpermD //.
             case/andP : Hm0 => _.
             move/forallP. move/(_ m_). by rewrite eqtype.eq_sym m__m'.
-      by apply: (jtdec_map Hm1 Hm0).
-    * suff : False by done.
+      exact: (jtdec_map Hm1 Hm0).
+    * exfalso.
       move: {Hm1}(Hm1 m).
       move/negbT. rewrite negb_and. case/orP.
       - rewrite /o_PI ffunE tpermL.
@@ -317,7 +314,7 @@ transitivity (\rsum_(j : {ffun 'I_k -> 'rV[_]_n})
   - move=> i _; apply eq_bigr => j _; by rewrite ffunE /= tcastE -enum_rank_ord.
 rewrite -(bigA_distr_bigA (fun m xn => Q `^ _ xn)) /= big_const.
 rewrite (_ : \rsum_(_ <- _) _ = 1%R); last by rewrite pmf1.
-by rewrite iter_mulR pow1.
+by rewrite iter_mulR exp1R.
 Qed.
 
 (* TODO: move? *)
@@ -791,7 +788,7 @@ apply (@leR_ltR_trans (epsilon0 + INR k *
    Pr P `^ n `x (`O(P , W)) `^ n [set x | prod_rV x \in `JTS P W n epsilon0])%R).
   apply leR_add2r.
   rewrite Pr_of_cplt.
-  have : forall a b, a >= 1 - b -> 1 - a <= b by move=> *; fourier.
+  have : forall a b, a >= 1 - b -> 1 - a <= b by move=> *; lra.
   apply.
   apply JTS_1 => //.
   rewrite /epsilon0_condition in Hepsilon0; tauto.
@@ -803,7 +800,7 @@ apply (@leR_ltR_trans (epsilon0 + INR #| M | * exp2 (- INR n * (`I( P ; W ) - 3 
     apply/le_INR/leP; by rewrite card_ord.
     exact: non_typical_sequences.
 apply (@ltR_trans (epsilon0 + epsilon0)%R); last first.
-  case: Hepsilon0 => ? [? ?]; fourier.
+  case: Hepsilon0 => ? [? ?]; lra.
 apply ltR_add2l.
 have -> : INR #| M | = exp2 (log (INR #| M |)).
   rewrite logK // (_ : 0 = INR 0)%R //.
@@ -818,9 +815,9 @@ apply (@ltR_trans (exp2 (- INR n * epsilon0))).
   rewrite !mulNR ltR_oppr oppRK; apply/ltR_pmul2l.
   - apply ltR0n; by case: Hn.
   - case: Hepsilon0 => _ [_ Hepsilon0].
-    apply (@ltR_pmul2l 4) in Hepsilon0; last by fourier.
+    apply (@ltR_pmul2l 4) in Hepsilon0; last lra.
     rewrite mulRCA mulRV ?mulR1 in Hepsilon0; last exact/eqP.
-    clear Hk; fourier.
+    clear Hk; lra.
 apply (@ltR_leR_trans (exp2 (- (- (log epsilon0) / epsilon0) * epsilon0))).
   apply Exp_increasing => //; apply ltR_pmul2r.
   - rewrite /epsilon0_condition in Hepsilon0; tauto.
@@ -853,14 +850,14 @@ have [P HP] : exists P : dist A, r < `I(P ; W).
     move/not_ex_all_not in abs.
     move=> P; exact/Rnot_lt_le/abs.
   have Hcap : cap <= r by apply/H2 => P; exact/abs.
-  fourier.
+  lra.
 have [epsilon0 Hepsilon0] : exists epsilon0,
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P ; W) - r) / 4.
   exists ((Rmin (epsilon/2) ((`I(P ; W) - r) / 4))/2).
   have Htmp : 0 < Rmin (epsilon / 2) (((`I(P ; W) - r) / 4)).
-    apply Rmin_pos; apply mulR_gt0 => //; fourier.
+    apply Rmin_pos; apply mulR_gt0 => //; lra.
   split.
-    apply mulR_gt0 => //; fourier.
+    apply mulR_gt0 => //; lra.
   split; [exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/geR_minl |
           exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/geR_minr ].
 have [n Hn] : exists n, n_condition W P r epsilon0 n.
@@ -884,7 +881,7 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
         rewrite plus_IZR //.
         move: H2.
         set eps := - log epsilon0 / epsilon0.
-        move=> ?; fourier.
+        move=> ?; lra.
       apply (@leR_trans (INR (Z.abs_nat (up (- log epsilon0 / epsilon0))))).
         case: (Z_lt_le_dec (up (- log epsilon0 / epsilon0)) 0) => H1.
           apply (@leR_trans 0); [exact/IZR_le/Zlt_le_weak | exact: leR0n].

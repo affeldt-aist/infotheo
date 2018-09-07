@@ -130,7 +130,7 @@ match Sumbool.sumbool_of_bool (0 < #|A|)%nat with
     end
   | right _ => None
 end).
-done.
+by [].
 Defined.
 
 Lemma jtype_choice_pcancel (A B : finType) n : pcancel (@jtype.f A B n) (@jtype_choice_f A B n).
@@ -185,7 +185,7 @@ refine (match Sumbool.sumbool_of_bool (\sum_(a in A) \sum_(b in B) f a b == n) w
           | right _ => None
         end).
 refine (Some (@jtype.mkJtype A B n (chan_of_jtype Anot0 Bnot0 f) f Hf _)).
-done.
+by [].
 Defined.
 
 Lemma jtype_count_pcancel A B n : pcancel (@jtype_pickle A B n) (@jtype_unpickle A B n).
@@ -225,7 +225,7 @@ refine (
       | right _ => None
     end).
 refine (Some (@jtype.mkJtype A B n (@chan_of_jtype _ _ Anot0 Bnot0 n (sval f)) (sval f) (proj2_sig f) _)).
-done.
+by [].
 Defined.
 
 Definition jtype_enum A B n := pmap (@jtype_enum_f A B n) (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}} | \sum_(a in A) \sum_(b in B) f a b == n}]).
@@ -338,8 +338,7 @@ have [tmp Htmp] : [finType of {f : {ffun A -> {ffun B -> 'I_n.+1}} |
 have Htmp' : (forall a b,
         (chan_of_jtype Anot0 Bnot0 tmp) a b =
         (let ln := \sum_(b0 in B) (tmp a) b0 in
-         if ln == 0 then / INR #|B| else (INR ((tmp a) b) / INR ln)%R)).
-  done.
+         if ln == 0 then / INR #|B| else (INR ((tmp a) b) / INR ln)%R)) by [].
 exists (@jtype.mkJtype _ _ _ (chan_of_jtype Anot0 Bnot0 tmp) tmp Htmp Htmp').
 by rewrite inE.
 Qed.
@@ -700,7 +699,7 @@ apply/andP; split.
   by rewrite -Htb_2 sum_num_occ_rec take_take.
 - rewrite in_set.
   set t := Tuple _.
-  have Ht : tval t = take N(enum_val k | ta) (drop (sum_num_occ ta k) sb) by done.
+  have Ht : tval t = take N(enum_val k | ta) (drop (sum_num_occ ta k) sb) by [].
   apply/forallP => b.
   rewrite /= ffunE /=.
   move: Htb_1.
@@ -758,8 +757,8 @@ elim.
   rewrite /card_type_of_row; destruct eqVneq.
     rewrite mul1n.
     move/eqP in e.
-    eapply leq_trans; by [apply (card_take_shell0 e) | done].
-  eapply leq_trans; first by apply (card_take_shell i).
+    eapply leq_trans; [exact: (card_take_shell0 e) | by []].
+  apply (leq_trans (card_take_shell i)).
   rewrite mulnC leq_pmul2l //.
   apply/card_gt0P.
   set Q := type_of_row i.
@@ -1246,8 +1245,7 @@ have Hf : \sum_(a in A) \sum_(b in B) f a b == n.
 have Htmp' : (forall a b,
         (chan_of_jtype Anot0 Bnot0 f) a b =
         (let ln := \sum_(b0 in B) (f a) b0 in
-         if ln == O then / INR #|B| else (INR ((f a) b) / INR ln))%R).
-  done.
+         if ln == O then / INR #|B| else (INR ((f a) b) / INR ln))%R) by [].
 exact (@jtype.mkJtype _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf Htmp').
 Defined.
 

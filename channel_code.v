@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import Reals_ext ssrR logb Rbigop proba channel.
 
 (** * Definition of a channel code *)
@@ -16,6 +16,7 @@ Import Prenex Implicits.
 
 Local Open Scope proba_scope.
 Local Open Scope channel_scope.
+Local Open Scope R_scope.
 
 Section code_definition.
 
@@ -53,7 +54,7 @@ Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
 Lemma echa_ge0 (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
 apply mulR_ge0.
-- apply divR_ge0; by [fourier | exact/ltR0n].
+- apply divR_ge0; [lra | exact/ltR0n].
 - apply: rsumr_ge0 => ? _; apply: rsumr_ge0 => ? _; exact: DMC_ge0.
 Qed.
 

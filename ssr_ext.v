@@ -266,10 +266,10 @@ case => [/= [// | j /=] | i /= [// | j]].
   rewrite ltnS => jt.
   apply: leq_trans; [|by apply: (IH Ht O); rewrite leq0n jt].
   apply: leq_trans; last by apply H; rewrite (leq_ltn_trans _ jt).
-  done.
+  by [].
 rewrite !ltnS => ijt.
-eapply leq_trans; first by apply: (IH _ _ j).
-done.
+apply: leq_trans; first by apply: (IH _ _ j).
+by [].
 Qed.
 
 Lemma sorted_of_nth (r : rel A) s (r_trans : transitive r) (r_sorted : sorted r s) :
@@ -417,7 +417,7 @@ split.
     by rewrite Htmp in Y.
 - split.
   + rewrite -filter_map undup_filter p_t /= eqxx.
-    have -> : filter [pred x | x == h] t = [::]; last by done.
+    have -> : filter [pred x | x == h] t = [::]; last by [].
     apply trans_eq with (filter pred0 t); last by apply filter_pred0.
     apply eq_in_filter => i Hi /=.
     apply/negP => X.
@@ -926,7 +926,7 @@ move=> u t.
 rewrite (tuple0 t).
 have -> : u = 1%g.
   apply/permP => /= x.
-  suff : False by done.
+  exfalso.
   by move/ord0_false in x.
 by rewrite perm_tuple_id.
 Qed.

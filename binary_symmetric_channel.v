@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg perm zmodp matrix.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy binary_entropy_function channel hamming channel_code.
 
@@ -13,6 +13,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope channel_scope.
+Local Open Scope R_scope.
 
 (** Definition of the Binary Symmetric Channel (BSC) *)
 
@@ -68,11 +69,11 @@ case: (Req_EM_T (P a) 0) => H1.
   rewrite H1 add0R => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log LogM; last 2 first.
-  case: p_01' => ? ?; fourier.
+  case: p_01' => ? ?; lra.
   move/eqP in H1.
   apply/ltRP; rewrite lt0R H1; exact/leRP/dist_ge0.
 rewrite /log LogM; last 2 first.
-  case: p_01' => ? ?; fourier.
+  case: p_01' => ? ?; lra.
   apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
 case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 !(mul0R, mulR0, addR0, add0R).
@@ -80,10 +81,10 @@ case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 addR0 => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log LogM; last 2 first.
-  case: p_01' => ? ?; fourier.
+  case: p_01' => ? ?; lra.
   apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
 rewrite /log LogM; last 2 first.
-  case: p_01' => ? ?; fourier.
+  case: p_01' => ? ?; lra.
   apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   rewrite /log; by field.
@@ -114,7 +115,7 @@ have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
   case: p_01' => Hp1 Hp2.
   split.
     case/Rle_lt_or_eq_dec : H1 => H1.
-    - apply addR_gt0wl; by [apply mulR_gt0; fourier | apply mulR_ge0; fourier].
+    - apply addR_gt0wl; by [apply mulR_gt0; lra | apply mulR_ge0; lra].
     - by rewrite -H1 mulR0 add0R (_ : P b = 1) ?mulR1 // -P1 -H1 add0R.
   rewrite -{2}P1.
   case: (Req_EM_T (P a) 0) => Hi.
@@ -124,15 +125,15 @@ have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
   case: (Req_EM_T (P b) 0) => Hj.
     rewrite Hj addR0 in P1.
     rewrite Hj mulR0 !addR0 P1 mulR1.
-    fourier.
-    case/Rle_lt_or_eq_dec : H1 => H1.
-    - apply leR_lt_add.
-      + rewrite -{2}(mul1R (P a)); apply leR_wpmul2r; fourier.
-      + rewrite -{2}(mul1R (P b)); apply ltR_pmul2r => //.
-        apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
-    - rewrite -H1 mulR0 2!add0R.
-      have -> : P b = 1 by rewrite -P1 -H1 add0R.
-      by rewrite mulR1.
+    lra.
+  case/Rle_lt_or_eq_dec : H1 => H1.
+  - apply leR_lt_add.
+    + rewrite -{2}(mul1R (P a)); apply leR_wpmul2r; lra.
+    + rewrite -{2}(mul1R (P b)); apply ltR_pmul2r => //.
+      apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
+  - rewrite -H1 mulR0 2!add0R.
+    have -> : P b = 1 by rewrite -P1 -H1 add0R.
+    by rewrite mulR1.
 rewrite (_ : forall a b, - (a + b) = - a - b); last by move=> *; field.
 rewrite -mulNR.
 set q := (1 - p) * P a + p * P b.
@@ -141,7 +142,7 @@ rewrite /H2 !mulNR; apply Req_le; field.
 Qed.
 
 Lemma bsc_out_H_half' : 0 < INR 1 / INR 2 < 1.
-Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; split; fourier. Qed.
+Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; lra. Qed.
 
 Lemma H_out_binary_uniform :
   `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
@@ -152,7 +153,7 @@ rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.
 rewrite mul1R (_ : p + (1 - p) = 1); last by field.
 rewrite mul1R -!mulRDl /= /Uniform.f card_A /=.
-rewrite (_ : INR 1 = 1) // (_ : INR 2 = 2) // div1R /log LogV; last by fourier.
+rewrite (_ : INR 1 = 1) // (_ : INR 2 = 2) // div1R /log LogV; last lra.
 rewrite Log_n //=; field.
 Qed.
 
@@ -176,12 +177,12 @@ rewrite /capacity; split.
   suff : `H(d `o BSC.c card_A p_01) <= 1.
     move=> ?.
     unfold p_01 in *.
-    fourier.
-  by apply H_out_max.
+    lra.
+  exact: H_out_max.
 - move=> d Hd.
   move: (@IPW _ card_A (Uniform.d card_A) _ p_01').
   rewrite H_out_binary_uniform => <-.
-  by apply Hd.
+  exact: Hd.
 Qed.
 
 End bsc_capacity_theorem.

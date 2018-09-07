@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
 From mathcomp Require Import path fingraph vector.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext num_occ bigop_ext Rbigop.
 Require Import proba channel pproba f2 linearcode subgraph_partition tanner.
 Require Import tanner_partition hamming binary_symmetric_channel decoding.
@@ -286,7 +286,7 @@ transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
   case/boolP : (k == n0) => kn0.
     by rewrite (eqP kn0).
   rewrite in_setD1 kn0 /= in K.
-  suff : False by done.
+  exfalso.
   move/negP : K; apply.
   move: kn0.
   by apply Fgraph_Vnext_Vgraph with j.
@@ -485,13 +485,8 @@ transitivity (
   apply eq_bigr => /= t Ht.
   rewrite [in X in _ = X]big_split /=; congr (_ * _).
   by apply DMC_sub_vec_Fnext.
-transitivity (
-  \rprod_(m0 in 'F n0) (\rsum_(x # 'V(m0, n0) :\ n0 , d)
-    W ``(y # 'V(m0, n0) :\ n0 | x # 'V(m0, n0) :\ n0) *
-    \rprod_(m1 in 'F(m0, n0)) INR (\delta ('V m1) x))).
-  rewrite (@rmul_rsum_commute0 _ _ _ (Tanner.connected tanner)  (Tanner.acyclic tanner) d n0 _ y (fun m x y => W ``(x | y))) //.
-  move=> /= m1 m0 t m1m0n0 tn0dn0; by rewrite checksubsum_dprojs_V.
-done.
+rewrite (@rmul_rsum_commute0 _ _ _ (Tanner.connected tanner)  (Tanner.acyclic tanner) d n0 _ y (fun m x y => W ``(x | y))) //.
+move=> /= m1 m0 t m1m0n0 tn0dn0; by rewrite checksubsum_dprojs_V.
 Qed.
 
 (* TODO: rename. move? *)
@@ -502,7 +497,7 @@ Definition K949 (n0 : 'I_n) df := 1 /
 Lemma K949_lemma df n0 : K949 n0 df = Kmpp Hy * Kppu W [set cw in C] y.
 Proof.
 rewrite /K949 /Kmpp /Kppu /Rdiv 2!mul1R -invRM; last 2 first.
-  rewrite pmf1 => ?; fourier.
+  rewrite pmf1 => ?; lra.
   apply/eqP; by rewrite -not_receivable_uniformE Hy.
 congr (/ _).
 transitivity (\rsum_(t in 'rV['F_2]_n)

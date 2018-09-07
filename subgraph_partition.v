@@ -699,8 +699,7 @@ apply/andP; split.
       apply leq_trans with p'.-1.
         rewrite -Hp !size_cat /= 3!addnS /= addSnnS -!addnA leq_add2l.
         by rewrite -addnS addnC -addnA leq_addr.
-      have : forall a b : nat, a.+1 <= b.+1 -> a <= b by done.
-      apply.
+      rewrite -(leq_add2r 1) 2!addn1.
       apply: leq_trans Hp'.
       rewrite -ltnS prednK //; first by rewrite -Hp 2!size_cat /= addnS addSn.
       rewrite -(cat1s y) -2!catA catA cat_path in Hl1; by case/andP : Hl1.

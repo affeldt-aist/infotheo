@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div choice fintype tuple finfun bigop prime.
 From mathcomp Require Import binomial ssralg finset fingroup finalg matrix.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts Rbigop proba entropy.
 Require Import channel_code channel divergence conditional_divergence.
 Require Import variation_dist pinsker.
@@ -16,6 +16,7 @@ Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
 Local Open Scope channel_scope.
 Local Open Scope reals_ext_scope.
+Local Open Scope R_scope.
 
 Section mutinfo_distance_bound.
 
@@ -30,7 +31,7 @@ Proof.
 split; first by apply sqrt_pos.
 apply pow2_Rle_inv; [ by apply sqrt_pos | exact/ltRW/exp_pos | ].
 rewrite [in X in X <= _]/= mulR1 sqrt_sqrt; last first.
-  apply mulR_ge0; by [fourier | apply leq0cdiv].
+  apply mulR_ge0; [lra | exact: leq0cdiv].
 apply/leRP; rewrite -(leR_pmul2r' (/ 2)); last exact/ltRP/invR_gt0.
 rewrite -mulRA mulRCA mulRV ?mulR1; [exact/leRP | exact/eqP/gtR_eqF].
 Qed.
@@ -147,7 +148,7 @@ have Htmp : D_x no_cond 0 x /\ R_dist x 0 < mu.
   - rewrite /R_dist subR0 gtR0_norm //.
     subst x.
     apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
-    apply/ltRP; rewrite ltR_pdivr_mulr //; apply/ltRP; fourier.
+    apply/ltRP; rewrite ltR_pdivr_mulr //; apply/ltRP; lra.
 move=> /(_ Htmp) {Htmp}.
 rewrite /R_dist {2}/xlnx ltRR' subR0 ltR0_norm; last first.
   apply xlnx_neg.
@@ -220,10 +221,10 @@ apply xlnx_sdecreasing_0_Rinv_e => //.
   apply: (@leR_trans x _ _ (ltRW _)) => //.
   subst x.
   apply (@leR_trans (exp (-2))); first exact: geR_minr.
-  apply/ltRW/exp_increasing; fourier.
+  apply/ltRW/exp_increasing; lra.
 - split; first exact: ltRW.
   apply (@leR_trans (exp (-2))); first exact: geR_minr.
-  apply/ltRW/exp_increasing; fourier.
+  apply/ltRW/exp_increasing; lra.
 Qed.
 
 End error_exponent_lower_bound.

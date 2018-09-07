@@ -3,7 +3,7 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop prime finset.
 From mathcomp Require Import binomial.
-Require Import ProofIrrelevance Reals Fourier.
+Require Import ProofIrrelevance Reals Lra.
 Require Import ssrR.
 
 (** * Additional lemmas about Coq Reals *)
@@ -25,7 +25,9 @@ Import Prenex Implicits.
 
 Arguments INR : simpl never.
 
-Lemma Rlt_1_2 : 1 < 2. Proof. by fourier. Qed.
+Local Open Scope R_scope.
+
+Lemma Rlt_1_2 : 1 < 2. Proof. lra. Qed.
 Hint Resolve Rlt_1_2.
 
 Record pos_fun (T : Type) := mkPosFun {
@@ -49,7 +51,7 @@ Definition onem (r : R) := (1 - r)%R.
 Notation "p '.~'" := (onem p)%R (format "p .~", at level 5) : R_scope.
 
 Lemma onem_ge0 (r : R) : r <= 1 -> 0 <= r.~.
-Proof. move=> r1; rewrite /onem; fourier. Qed.
+Proof. move=> r1; rewrite /onem; lra. Qed.
 
 Lemma onemKC (r : R) : (r + r.~ = 1)%R.
 Proof. rewrite /onem; by field. Qed.
@@ -72,22 +74,9 @@ elim : n ; first by rewrite mul0R.
 move=> n Hn; by rewrite iterS Hn -{1}(mul1R x) -mulRDl addRC -S_INR.
 Qed.
 
-(* TODO: rename; move? *)
-Lemma Rlt_0_Rmult_inv a b : 0 < a * b -> 0 <= a -> 0 <= b -> 0 < a /\ 0 < b.
-Proof.
-move=> H Ha Hb.
-split.
-- apply/ltRNge => abs.
-  have abs' : a = 0 by rewrite eqR_le.
-  by move: H; rewrite abs' mul0R => /ltRR.
-- apply/ltRNge => abs.
-  have abs' : b = 0 by rewrite eqR_le.
-  by move: H; rewrite abs' mulR0 => /ltRR.
-Qed.
-
-(* NB: see Rplus_lt_reg_pos_r in the standard library *)
+(* TODO: see Rplus_lt_reg_pos_r in the standard library *)
 Lemma Rplus_le_lt_reg_pos_r r1 r2 r3 : 0 < r2 -> r1 + r2 <= r3 -> r1 < r3.
-Proof. move=> *. fourier. Qed.
+Proof. move=> *. lra. Qed.
 
 Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Z.abs_nat x) = IZR x.
 Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
@@ -115,8 +104,8 @@ Qed.
 Lemma Rdiv_le a : 0 <= a -> forall r, 1 <= r -> a / r <= a.
 Proof.
 move=> Ha r Hr.
-apply (@leR_pmul2l r); first by fourier.
-rewrite /Rdiv mulRCA mulRV; last by apply/negP => /eqP ?; subst r; fourier.
+apply (@leR_pmul2l r); first lra.
+rewrite /Rdiv mulRCA mulRV; last by apply/negP => /eqP ?; subst r; lra.
 rewrite -mulRC; exact: leR_wpmul2r.
 Qed.
 
@@ -126,7 +115,7 @@ move=> Ha r0 Hr0.
 rewrite -[X in _ < X]mulR1.
 apply ltR_pmul2l => //.
 rewrite -invR1.
-apply ltR_inv => //; fourier.
+apply ltR_inv => //; lra.
 Qed.
 
 (** Lemmas about power *)
@@ -164,14 +153,13 @@ Proof. field. Qed.
 Lemma x_x2_max q : q * (1 - q) <= / 4.
 Proof.
 rewrite x_x2_eq.
-have : forall a b, 0 <= b -> a - b <= a. move=>  *; fourier.
-apply; apply mulR_ge0; [fourier | exact: pow_even_ge0].
+have : forall a b, 0 <= b -> a - b <= a. move=>  *; lra.
+apply; apply mulR_ge0; [lra | exact: pow_even_ge0].
 Qed.
 
 Lemma pow0_inv : forall (n : nat) x, x ^ n = 0 -> x = 0.
 Proof.
-elim => [x /= H | n IH x /= /eqP].
-fourier.
+elim => [x /= H | n IH x /= /eqP]; first lra.
 by rewrite mulR_eq0 => /orP[/eqP //|/eqP/IH].
 Qed.
 
@@ -210,20 +198,20 @@ rewrite Z.abs_eq; last first.
   apply up_pos in Hr.
   by apply Z.lt_le_incl.
 case: (base_Int_part r).
-rewrite /Int_part minus_IZR => _ ?; fourier.
+rewrite /Int_part minus_IZR => _ ?; lra.
 Qed.
 
 Lemma Rle_up a : a <= IZR (Z.abs (up a)).
 Proof.
 case: (Rlt_le_dec a 0) => Ha; last by apply Rle_up_pos.
-apply (@leR_trans  0); first by fourier.
+apply (@leR_trans  0); first lra.
 exact/IZR_le/Zabs_pos.
 Qed.
 
 Lemma up_Int_part r : (up r = Int_part r + 1)%Z.
 Proof.
 case: (base_Int_part r) => H1 H2.
-rewrite -(up_tech r (Int_part r)) // plus_IZR //; fourier.
+rewrite -(up_tech r (Int_part r)) // plus_IZR //; lra.
 Qed.
 
 Lemma Int_part_pos a : 0 <= a -> (0 <= Int_part a)%Z.
@@ -275,7 +263,7 @@ rewrite -(tech_up _ ((up a - 1) * (up b - 1) + 1)).
   rewrite ?plus_IZR ?minus_IZR ?mult_IZR ?minus_IZR // Ha Hb.
   rewrite (_ : forall a, a + 1 - 1 = a); last by move=> *; field.
   rewrite (_ : forall a, a + 1 - 1 = a); last by move=> *; field.
-  fourier.
+  lra.
   rewrite ?plus_IZR ?minus_IZR ?mult_IZR ?minus_IZR // Ha Hb.
   rewrite (_ : forall a, a + 1 - 1 = a); last by move=> *; field.
   rewrite (_ : forall a, a + 1 - 1 = a); last by move=> *; field.
@@ -313,15 +301,14 @@ Proof.
 apply/idP/idP => [/leRP|]; last first.
   case/andP => /leRP H1 /leRP H2; exact/leRP/Rabs_le.
 case: (Rlt_le_dec a 0) => h.
-  rewrite ltR0_norm // => ?; apply/andP; split; apply/leRP; fourier.
-rewrite geR0_norm // => ?; apply/andP; split; apply/leRP; fourier.
+  rewrite ltR0_norm // => ?; apply/andP; split; apply/leRP; lra.
+rewrite geR0_norm // => ?; apply/andP; split; apply/leRP; lra.
 Qed.
 
-(* TODO: rename *)
-Lemma fact_Coq_SSR n0 : fact n0 = n0 `!.
+Lemma factE n0 : fact n0 = n0 `!.
 Proof. elim: n0 => // n0 IH /=. by rewrite IH factS mulSn -multE. Qed.
 
-Lemma combinaison_Coq_SSR n0 m0 : (m0 <= n0)%nat -> C n0 m0 = INR 'C(n0, m0).
+Lemma combinaisonE n0 m0 : (m0 <= n0)%nat -> C n0 m0 = INR 'C(n0, m0).
 Proof.
 move=> ?.
 rewrite /C.
@@ -329,8 +316,8 @@ apply (@eqR_mul2r (INR (fact m0) * INR (fact (n0 - m0)%coq_nat))).
   move/eqP; rewrite mulR_eq0 !INR_eq0' => /orP[|] /eqP; exact/fact_neq_0.
 set tmp := INR (fact m0) * _.
 rewrite -mulRA mulVR ?mulR1; last first.
-  by rewrite /tmp mulR_eq0 negb_or !INR_eq0' !fact_Coq_SSR -!lt0n !fact_gt0.
-by rewrite /tmp -!mult_INR !fact_Coq_SSR !multE !minusE bin_fact.
+  by rewrite /tmp mulR_eq0 negb_or !INR_eq0' !factE -!lt0n !fact_gt0.
+by rewrite /tmp -!mult_INR !factE !multE !minusE bin_fact.
 Qed.
 
 Lemma normR_max a b c c' : 0 <= a <= c -> 0 <= b <= c' ->
@@ -338,12 +325,12 @@ Lemma normR_max a b c c' : 0 <= a <= c -> 0 <= b <= c' ->
 Proof.
 move=> [H1 H2] [H H3]; case: (Rtotal_order a b) => [H0|[H0|H0]].
 - rewrite distRC gtR0_norm ?subR_gt0 //.
-  apply: (@leR_trans b); [fourier | apply/(leR_trans H3)/leR_maxr; fourier].
+  apply: (@leR_trans b); [lra | apply/(leR_trans H3)/leR_maxr; lra].
 - subst b; rewrite subRR normR0.
   exact/(leR_trans H1)/(leR_trans H2)/leR_maxl.
-- rewrite geR0_norm; last by fourier.
-  apply: (@leR_trans a); [fourier|exact/(leR_trans H2)/leR_maxl].
+- rewrite geR0_norm; last lra.
+  apply: (@leR_trans a); [lra|exact/(leR_trans H2)/leR_maxl].
 Qed.
 
-Lemma Rplus_minus_assoc (r1 r2 r3 : R) : (r1 + r2 - r3 = r1 + (r2 - r3))%R.
-Proof. by rewrite /Rminus Rplus_assoc. Qed.
+(*Lemma Rplus_minus_assoc (r1 r2 r3 : R) : (r1 + r2 - r3 = r1 + (r2 - r3))%R.
+Proof. by rewrite /Rminus Rplus_assoc. Qed.*)

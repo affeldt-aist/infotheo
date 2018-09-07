@@ -1,7 +1,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import finfun choice fintype tuple bigop finset path.
 From mathcomp Require Import ssralg fingroup zmodp poly ssrnum.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR logb Reals_ext Rbigop ssr_ext proba entropy kraft.
 
 Set Implicit Arguments.
@@ -18,16 +18,16 @@ Definition floor : R -> Z := Int_part.
 
 (* TODO: move? *)
 Lemma floorP (r : R) : r - 1 < IZR (floor r) <= r.
-Proof. rewrite /floor; case: (base_Int_part r) => ? ?; split=> //; fourier. Qed.
+Proof. rewrite /floor; case: (base_Int_part r) => ? ?; split=> //; lra. Qed.
 
 (* TODO: move? *)
 Lemma ceilP (r : R) : r <= IZR (ceil r) < r + 1.
 Proof.
 rewrite /ceil; case: ifPn => [|] /eqP r0.
-  rewrite frac_Int_part //; split; fourier.
+  rewrite frac_Int_part //; lra.
 case: (floorP r); rewrite /floor => H1 /Rle_lt_or_eq_dec[] H2.
-  rewrite up_Int_part plus_IZR; split; fourier.
-exfalso; apply/r0/eqP; rewrite subR_eq0; by apply/eqP.
+  rewrite up_Int_part plus_IZR; lra.
+exfalso; apply/r0/eqP; rewrite subR_eq0; exact/eqP.
 Qed.
 
 (* TODO: move? *)

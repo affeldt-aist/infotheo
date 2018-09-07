@@ -145,7 +145,7 @@ Proof match t with Frontier _ => erefl end.
 
 Lemma tree_children_node l k (s : seq (tree l (negk k))) :
   tree_children (Node s) = s.
-Proof. done. Qed.
+Proof. by []. Qed.
 
 Lemma Node_inj l k : injective (@Node l k).
 Proof.
@@ -356,7 +356,7 @@ rewrite /finseqs /mkseq -addn1 iota_add map_cat flatten_cat count_cat.
 rewrite [in X in (_ + X)%nat = _]/= cats0 IH.
 case: leqP => Hm.
   rewrite ltnW //= (_ : count_mem _ _ = O) //.
-  suff /count_memPn -> : xs \notin nseqs en m.+1 by done.
+  suff /count_memPn -> : xs \notin nseqs en m.+1 by [].
   apply: contraL Hm => /size_nseqs ->.
   by rewrite ltnn.
 by rewrite /= add0n leq_eqVlt ltnS leqNgt Hm orbF (nseqs_deg m.+1 xs).
@@ -382,7 +382,7 @@ Proof.
 elim: l k x => [|l IH] k x.
   by rewrite (tree_frontier x) /= addn0.
 rewrite (tree_node_children x).
-rewrite -(@finseqs_deg n l k (tree_enum l (negk k))); last done.
+rewrite -(@finseqs_deg n l k (tree_enum l (negk k))); last by [].
 rewrite {IH} /=.
 f_equal.
 - rewrite eqtype.inj_eq //.
@@ -1162,7 +1162,7 @@ case: eqP => Hn /=.
       rewrite (eq_irrelevance ec1 ec2).
       have -> : ei1 = ei2 by apply proof_irrelevance.
       have -> : eo1 = eo2 by apply proof_irrelevance.
-      done.
+      by [].
     apply ReflectF => [] [] _ _.
     by move/He.
   apply ReflectF => [] [] _.
@@ -1218,7 +1218,7 @@ case: ifP => Hend.
   rewrite in_setU => /orP [] Hx2.
     by rewrite (subsetP (border_p (conodes c)) _ Hx2) orbT.
   apply/orP; left.
-  apply/bigcupP; exists end_node; last done.
+  apply/bigcupP; exists end_node; last by [].
   by rewrite in_set eqxx.
 Qed.
 
@@ -4028,8 +4028,7 @@ Qed.
 Lemma tree_like_rev_switch_step_it (c : comp_graph port) t :
   tree_like (switch_step_it c t) -> tree_like c.
 Proof.
-elim: t c => [|[epen] t IH] /= c Htl.
-  done.
+elim: t c => [//|[epen] t IH] /= c Htl.
 set s := map _ _ in Htl.
 apply (@tree_like_rev_step_it c s).
 by rewrite -tree_like_switch IH.
@@ -4060,9 +4059,9 @@ have Htl': tree_like (step_it (step c s i.1 i.2) t').
   by move: Htl; rewrite /step_it /= Heqb /= Hesb.
 destruct (IH (step c s i.1 i.2) t') as [Hc Hb].
 + rewrite /step_it cardE Hesb.
-+ done.
++ by [].
 + by rewrite Heqb in Ht'.
-+ done.
++ by [].
 + by apply connected_step.
 have Hin: s \in s :: b by rewrite in_cons eqxx.
 rewrite -Heqb mem_enum in Hin.
@@ -4140,7 +4139,7 @@ by rewrite (eq_irrelevance Hsz i).
 Qed.
 
 Lemma nodes_switch_conodes (c : comp_graph port) : nodes (switch c) = conodes c.
-Proof. done. Qed.
+Proof. by []. Qed.
 
 Lemma monotone_conodes_step_it c t :
   conodes c \subset conodes (step_it c t).
@@ -4212,7 +4211,7 @@ destruct (conodes_step_it Ht) as [Hct Hbt].
 + rewrite -tree_like_switch.
   move: Htl; rewrite /c' /= tuple_to_partial_enumK.
   apply tree_like_rev_switch_step_it.
-+ done.
++ by [].
 rewrite (@node_of_hemi_comp_graph ep en) //.
     rewrite ffunE def.
     rewrite /image_mem.
@@ -4262,7 +4261,7 @@ rewrite (@node_of_hemi_comp_graph ep en) //.
           exists (Ordinal Hidx') => //.
           move: Hq.
           by rewrite (tnth_nth (def_port,set0)) def'.
-        + done.
+        + by [].
         + by rewrite /c' /= !tuple_to_partial_enumK in Htl.
         + by apply connected_switch, connected_step_it,
                    connected_switch, connected_step_it.

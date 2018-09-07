@@ -64,7 +64,7 @@ Fixpoint uv k :=
   else P0.
 
 Lemma uvE k : uv k.+2 = - q k.+2 * uv k.+1 + uv k.
-Proof. done. Qed.
+Proof. by []. Qed.
 
 End uv_sect.
 
@@ -164,8 +164,7 @@ move: (leq_trans K1 (H2 Htmp)).
 rewrite [in X in _ < _ - X -> _]/= => Ktmp.
 rewrite subnS -ltnS prednK //.
 rewrite [in X in _ < X - _]/= in Ktmp.
-apply: (leq_ltn_trans _ Ktmp).
-done.
+exact: leq_ltn_trans Ktmp.
 Qed.
 
 End euclid_algo.

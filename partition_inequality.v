@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype finfun bigop finset.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
 Require Import Rbigop proba divergence log_sum variation_dist.
 
@@ -12,6 +12,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope divergence_scope.
+Local Open Scope R_scope.
 
 Local Notation "0" := (false).
 Local Notation "1" := (true).
@@ -133,8 +134,8 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       rewrite -big_union //.
       apply eq_bigl => i; by rewrite cov in_set inE.
       by rewrite -setI_eq0 -dis setIC.
-    rewrite H3 /Rdiv /log LogM // ; last by fourier.
-    rewrite LogV; last by fourier.
+    rewrite H3 /Rdiv /log LogM //; last lra.
+    rewrite LogV; last lra.
     apply Req_le; by field.
 - have H1 : P_A 1 = 1%R.
     rewrite -[X in X = _]add0R -[X in X + _ = _]A0_P_0 -(pmf1 P).
@@ -145,7 +146,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
     apply Rle_lt_or_eq_dec; apply: rsumr_ge0 => i _; exact/dist_ge0.
   + rewrite A0_P_0 !mul0R !add0R H1 !mul1R.
     rewrite /Rdiv /log LogM; last 2 first.
-      by fourier.
+      lra.
       exact/invR_gt0.
     rewrite /log LogV //; apply Req_le; by field.
   + (* contradiction H1 / Bi_true_Q_0 *)
@@ -154,7 +155,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       rewrite /bipart /= /bipart_pmf (eq_bigr (fun=> 0%R)).
       by rewrite big_const iter_addR mulR0.
       move=> a ?; rewrite P_dom_by_Q // A1_Q_0 // => b ?; exact/pos_f_ge0.
-    move=> abs; rewrite abs in H1. fourier.
+    move=> abs; rewrite abs in H1. lra.
 Qed.
 
 End bipart_lem.

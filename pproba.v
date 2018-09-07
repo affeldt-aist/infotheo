@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg zmodp matrix.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop proba channel.
 
 (** * Posterior Probability *)
@@ -27,6 +27,7 @@ Import Prenex Implicits.
 
 Local Open Scope channel_scope.
 Local Open Scope proba_scope.
+Local Open Scope R_scope.
 
 Section receivable_def.
 
@@ -199,7 +200,7 @@ Lemma f0 i a : 0 <= f i a.
 Proof.
 apply mulR_ge0.
 - rewrite /Kmpp.
-  apply divR_ge0; [by fourier|].
+  apply divR_ge0; [lra|].
   apply/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
     apply rsumr_ge0 => /= ? _; exact: dist_ge0.
   exact/f'_neq0.

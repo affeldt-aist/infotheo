@@ -1,6 +1,6 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext.
 
 (** * log_n x and n ^ x *)
@@ -16,7 +16,7 @@ Section addtional_lemmas_about_ln_exp.
 Lemma ln_pos x : 1 < x -> 0 < ln x.
 Proof. move=> x0; rewrite -ln_1; exact: ln_increasing. Qed.
 
-Lemma ln2_gt0 : 0 < ln 2. Proof. apply ln_pos; fourier. Qed.
+Lemma ln2_gt0 : 0 < ln 2. Proof. apply ln_pos; lra. Qed.
 Local Hint Resolve ln2_gt0.
 
 Lemma ln2_neq0 : ln 2 != 0. Proof. exact/eqP/gtR_eqF. Qed.
@@ -40,14 +40,13 @@ elim => [|k IH]; first by rewrite mul0R exp_0.
 by rewrite S_INR mulRDl mul1R exp_plus IH mulRC.
 Qed.
 
-Lemma leR2e : 2 <= exp 1.
-Proof. apply Rlt_le, exp_ineq1; fourier. Qed.
+Lemma leR2e : 2 <= exp 1. Proof. apply Rlt_le, exp_ineq1; lra. Qed.
 
 Lemma ltRinve1 : exp (-1) < 1.
-Proof. rewrite -[X in _ < X]exp_0. apply exp_increasing. fourier. Qed.
+Proof. rewrite -[X in _ < X]exp_0. apply exp_increasing. lra. Qed.
 
 Lemma ltRinve21 : exp (-2) < 1.
-Proof. rewrite -[X in _ < X]exp_0. apply exp_increasing. fourier. Qed.
+Proof. rewrite -[X in _ < X]exp_0. apply exp_increasing. lra. Qed.
 
 Section exp_lower_bound.
 
@@ -77,7 +76,7 @@ Proof.
 elim => [r rpos | n IH r rpos].
 - rewrite /exp_dev /= mul1R Rinv_1 -exp_0.
   by apply subR_gt0, exp_increasing.
-- apply: (@ltR_trans 1) ; first by fourier.
+- apply: (@ltR_trans 1); first lra.
   rewrite (_ : 1 = exp_dev n.+1 0) ; last first.
     rewrite /exp_dev exp_0 pow_i ?mul0R ?subR0 //; by apply/ltP.
   move: derive_increasing_interv.
@@ -219,8 +218,8 @@ move=> n1 x0.
 rewrite /Log /Exp -mulRA mulVR ?mulR1; last first.
   rewrite -ln_1.
   apply/eqP => /ln_inv H.
-  have : 0 < n by fourier.
-  move/H => /(_ Rlt_0_1) ?; fourier.
+  have : 0 < n by lra.
+  move/H => /(_ Rlt_0_1) ?; lra.
 by rewrite exp_ln.
 Qed.
 
@@ -229,8 +228,8 @@ Proof.
 move=> n1.
 rewrite /Log /Exp ln_exp /Rdiv -mulRA mulRV ?mulR1 //.
 rewrite -ln_1; apply/eqP => /ln_inv H.
-have : 0 < n by fourier.
-move/H => /(_ Rlt_0_1) ?; fourier.
+have : 0 < n by lra.
+move/H => /(_ Rlt_0_1) ?; lra.
 Qed.
 
 Lemma Exp_gt0 n x : 0 < Exp n x. Proof. rewrite /Exp; exact: exp_pos. Qed.

@@ -403,7 +403,7 @@ case=> n2 Hn2.
 have [n2' Hn2'] : exists n2', [pick a | n1 \in ssgraph H m0 n0 a] = Some n2'.
   case: pickP Hn2 => [x Hx _ | /(_ n2) -> //]; by exists x.
 rewrite (@comb_in _ _ _ _ _ _ _ n2') //.
-rewrite dprojs_in; first by done.
+rewrite dprojs_in; first by [].
 case: pickP Hn2'.
   by move=> x hx [<-].
 move=> _ ?.

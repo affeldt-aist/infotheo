@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb ln_facts Rbigop arg_rmax.
 Require Import num_occ proba entropy types jtypes divergence.
 Require Import conditional_divergence error_exponent channel_code channel.
@@ -22,6 +22,7 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope types_scope.
 Local Open Scope divergence_scope.
+Local Open Scope R_scope.
 
 Section channel_coding_converse_intermediate_lemma.
 
@@ -99,7 +100,7 @@ have Rlt0n : 0 < INR n.
   rewrite /n0.
   apply mulR_gt0; last exact/invR_gt0.
   rewrite /Rdiv -mulRA.
-  apply mulR_gt0; first by apply pow_gt0; fourier.
+  apply mulR_gt0; first by apply pow_gt0; lra.
   apply mulR_gt0;
     [exact/ltR0n/fact_gt0 | exact/invR_gt0/pow_gt0/mulR_gt0].
 destruct n as [|n'].

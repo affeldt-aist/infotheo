@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb.
 
 (** * Some Results about the Analysis of ln *)
@@ -9,6 +9,8 @@ Require Import ssrR Reals_ext Ranalysis_ext logb.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Local Open Scope R_scope.
 
 Section ln_id_sect.
 
@@ -36,7 +38,7 @@ Defined.
 
 Lemma derive_pt_ln_id_xle1_ge0 x (Hx : 0 < x <= 1) : 0 < if x==1 then 1 else ln_id' Hx.
 Proof.
-case/boolP : (x == 1) => Hcase ; first by fourier.
+case/boolP : (x == 1) => Hcase ; first lra.
 rewrite -derive_pt_ln_id_xle1; apply/subR_gt0.
 rewrite -invR1; apply ltR_inv => //; first by case: Hx.
 case (Rle_lt_or_eq_dec x 1) ; [apply Hx | by [] | ].
@@ -48,10 +50,10 @@ Lemma ln_idlt0_xlt1 : forall x, 0 < x < 1 -> ln_id x < 0.
 Proof.
 rewrite {2}(_ : 0 = ln_id 1); last by rewrite /ln_id ln_1 2!subRR.
 move=> x Hx.
-have lt01 : 0 < 1 by fourier.
+have lt01 : 0 < 1 by lra.
 apply (derive_increasing_ad_hoc lt01 derive_pt_ln_id_xle1_ge0).
 - by split; [apply Hx | apply ltRW, Hx].
-- split; by fourier.
+- lra.
 - by apply Hx.
 Qed.
 
@@ -161,7 +163,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       apply (@ltR_trans (-2 * / eps)).
       by apply exp_lt_inv; subst X; rewrite exp_ln.
       rewrite mulNR.
-      exact/oppR_lt0/Rlt_mult_inv_pos.
+      exact/oppR_lt0/divR_gt0.
     apply: (@ltR_leR_trans (2 * / (- X))).
     * rewrite ltR0_norm; last first.
         rewrite -(mulR0 (exp X)) ltR_pmul2l => //; exact: exp_pos.
@@ -177,10 +179,9 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       rewrite -(invRK (exp X)); last exact/gtR_eqF/exp_pos.
       apply ltR_inv => //.
         exact/invR_gt0/exp_pos.
-        apply/mulR_gt0; first fourier.
-        apply pow_gt0; by fourier.
-        rewrite -exp_Ropp mulRC (_ : 2 = INR 2`!) //.
-        exact/exp_strict_lb/oppR_gt0.
+        apply/mulR_gt0; [lra | apply pow_gt0; lra].
+      rewrite -exp_Ropp mulRC (_ : 2 = INR 2`!) //.
+      exact/exp_strict_lb/oppR_gt0.
     * apply (@leR_pmul2r (/ 2)); first exact/invR_gt0.
       rewrite mulRC mulRA mulVR ?mul1R //; last exact/eqP/gtR_eqF.
       rewrite -(invRK eps); last exact/gtR_eqF.
@@ -350,7 +351,7 @@ intros prd prc ab.
 have H0 : forall c : R, a < c < b -> derivable_pt f c.
   move=> c Hc.
   apply prd.
-  case: Hc => ? ?; split; fourier.
+  case: Hc => ? ?; lra.
 have H1 : forall c : R, a < c < b -> derivable_pt id c.
   move=> c _; by apply derivable_pt_id.
 have H2 : forall c, a <= c <= b -> continuity_pt f c.
@@ -387,7 +388,7 @@ have prc : forall x (Hx : a <= x <= b), continuity_pt f x.
 have H0 : forall c : R, a < c < b -> derivable_pt f c.
   move=> c Hc.
   apply prd.
-  case: Hc => ? ?; split; fourier.
+  case: Hc => ? ?; lra.
 have H1 : forall c : R, a < c < b -> derivable_pt id c.
   move=> c _; by apply derivable_pt_id.
 have H2 : forall c, a <= c <= b -> continuity_pt f c.
@@ -565,10 +566,10 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
   - split; first exact: normR_ge0.
     apply (@leR_trans a) => //.
     apply (@leR_trans (exp (- 2))); first by apply Ha.
-    apply/ltRW/exp_increasing; fourier.
+    apply/ltRW/exp_increasing; lra.
   - split; first by apply Ha.
     apply (@leR_trans (exp (-2))); first by apply Ha.
-    apply/ltRW/exp_increasing; fourier.
+    apply/ltRW/exp_increasing; lra.
 - subst x ; rewrite subRR normR0 leR_oppr oppR0.
   case/orP : (orbN (0 == a)); last move=> anot0.
     by move=> /eqP <-; rewrite xlnx_0; exact: leRR.
@@ -591,10 +592,10 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
   + split; first exact: normR_ge0.
     apply (@leR_trans a) => //.
     apply (@leR_trans (exp (-2))); first by apply Ha.
-    apply/ltRW/exp_increasing; fourier.
+    apply/ltRW/exp_increasing; lra.
   - split; first by apply Ha.
     apply (@leR_trans (exp (-2))); first by apply Ha.
-    apply/ltRW/exp_increasing; fourier.
+    apply/ltRW/exp_increasing; lra.
 Qed.
 
 End xlnx_sect.

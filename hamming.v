@@ -707,7 +707,7 @@ elim.
 - move=> n IH [|[] t] // [Hsz] /=.
   + case=> H.
     exists O.
-    split; first by done.
+    split; first by [].
     move=> j Hj Hj'.
     destruct j => //=.
     move: (has_count (pred1 true) t).
@@ -724,7 +724,7 @@ elim.
   + rewrite add0n.
     case/(IH _ Hsz) => i [[H11 H12] H2].
     exists i.+1%N.
-    split; first by done.
+    split; first by [].
     move=> j Hj Hj'.
     destruct j => //=.
     apply H2 => //.
@@ -775,11 +775,9 @@ elim.
     exists O.
     case: (@wHb_1 _ _ Hsz X) => k [[Hk1 Hk11] Hk2].
     exists k.+1%N.
-    split; first by done.
-    split.
-      split; last by done.
-      by apply leq_ltn_trans with n.+1%N.
-    split; first by done.
+    split; first by [].
+    split; first by split => //; exact: (@leq_ltn_trans n.+1%N).
+    split; first by [].
     move=> j Hj Hj' Hjk.
     destruct j => //=.
     apply Hk2 => //.
@@ -787,8 +785,8 @@ elim.
   + rewrite add0n.
     case/(IH _ Hsz) => i [k [[H11 H12] [H21 [H221 H222]]]].
     exists i.+1%N, k.+1%N.
-    split; first by done.
-    split; first by done.
+    split; first by [].
+    split; first by [].
     split.
     contradict H221; by case: H221.
     move=> j Hj Hj' Hjk.
@@ -916,18 +914,12 @@ transitivity (\rsum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^ (m - 1) * p ^
       ((1 - p) ^ (m - wH i) * p ^ wH i)%R).
     apply eq_bigl => /= i.
     rewrite !inE.
-    case wH_1 : (wH i == 1)%nat.
-      move/eqP in wH_1.
-      by rewrite wH_1.
-    case wH_0 : (wH i) => [|n1].
-      by rewrite eqxx.
+    case/boolP : (wH i == 1)%nat => [/eqP -> //|wH_1].
+    case wH_0 : (wH i) => [|n1]; first by rewrite eqxx.
     rewrite /= andbT.
-    case n1_0 : n1 => [|n2].
-      by rewrite wH_0 n1_0 in wH_1.
-    by [].
-  transitivity (\rsum_(i|wH (i : 'rV['F_2]_m) == 1%N) ((1 - p) ^ (m - 1) * p ^ 1)%R).
-    by apply eq_bigr => i /= /eqP ->.
-  done.
+    case n1_0 : n1 => [|? //].
+    by rewrite wH_0 n1_0 in wH_1.
+  by apply/eq_bigr => /= v /eqP ->.
 by rewrite big_const iter_addR pow_1 /= -(mulRC p) mulRA -cardsE wH_m_card bin1.
 Qed.
 
@@ -935,14 +927,13 @@ Lemma binomial_theorem m p :
   (\rsum_(b | b \in [set: 'rV['F_2]_m]) (1 - p) ^ (m - wH b) * p ^ wH b = 1)%R.
 Proof.
 transitivity (((1 - p) + p) ^ m); last first.
-  rewrite addRC (_ : (p + (1 - p) = 1)%R); last by field.
-  by rewrite pow1.
+  by rewrite subRK exp1R.
 rewrite RPascal.
 transitivity (\rsum_(b : 'rV['F_2]_m) ((1 - p) ^ (m - wH b) * p ^ wH b)%R).
   apply eq_bigl => /= i; by rewrite inE.
 rewrite (classify_big (fun s : 'rV_m => Ordinal (max_wH' s)) (fun x => ((1 - p) ^ (m - x) * p ^ x))%R) /=.
 apply eq_bigr => i _.
-do 2 f_equal.
+congr (INR _ * _)%R.
 rewrite -wH_m_card.
 apply eq_card => /= x; by rewrite !inE.
 Qed.
