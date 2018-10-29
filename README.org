@@ -8,7 +8,7 @@ error-correcting codes.
 The development version of the [[https://github.com/math-comp/math-comp][Mathematical Components library]]
 (because we use the fieldext and finfield libraries).
 
-Coq 8.8.1.
+Coq 8.8.2.
 Compilation should be fine with previous versions except for 
 minor problems due to recent changes in the Reals library.
 

@@ -597,11 +597,12 @@ exfalso.
 apply (@Hacyclic [:: inl m0, inr n1', inl m1' & p'] isT).
 apply: uniq_path_ucycle_extend_1 => //.
 - by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
-- rewrite cat_path Hp' /= andbT -Hlast.
+- rewrite rcons_path Hp' /= -Hlast.
   rewrite exceptE /= andbT -VnextE n1m0 /= eq_sym.
   rewrite (path_except_neq _ Hp') // Hlast.
   destruct p' => //=; by rewrite mem_last.
-- rewrite -(cat1s (inl m1')) catA cat_uniq Hun /= andbT orbF.
+- rewrite -cats1. (* TODO *)
+  rewrite -(cat1s (inl m1')) cat_uniq Hun /= andbT orbF.
   rewrite inE /= negb_or.
   apply/andP; split.
     apply/eqP; case => ?; subst m1'.
@@ -612,8 +613,12 @@ apply: uniq_path_ucycle_extend_1 => //.
   apply (@Hacyclic [:: inl m0, inr n1', inl m1' & p1] isT).
   apply: uniq_path_ucycle_extend_1 => //.
   + by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
-  + rewrite -(cat1s (inl m0)) catA cat_path in Hp'; by case/andP : Hp'.
-  + rewrite -(cat1s (inl m1')) -(cat1s (inl m0)) 2!catA cat_uniq in Hun; by case/andP : Hun.
+  + rewrite -(cat1s (inl m0)) catA cat_path in Hp'.
+    rewrite !cats1 in Hp'.
+    by case/andP : Hp'.
+  + rewrite -(cat1s (inl m1')) -(cat1s (inl m0)) 2!catA cat_uniq in Hun.
+    rewrite -cats1. (* TODO *)
+    by case/andP : Hun.
 Qed.
 
 Lemma dproj_prop d m0 n0 d' t (d'd : freeon ('V m0 :\ n0) d' d)
@@ -683,11 +688,12 @@ exfalso.
 apply (@Hacyclic [:: inl m0, inr n3, inl m1 & p'] isT).
 apply: uniq_path_ucycle_extend_1 => //.
 - by rewrite /= -VnextE; move: Hn3; rewrite in_setD1 => /andP[].
-- rewrite cat_path Hp' /= andbT -Hlast exceptE /= andbT -VnextE.
+- rewrite rcons_path Hp' /= -Hlast exceptE /= andbT -VnextE.
   move: Hn1; rewrite in_setD1 => /andP[_ -> /=].
   rewrite eq_sym (path_except_neq _ Hp') // Hlast.
   destruct p' => //=; by rewrite mem_last.
-- rewrite -(cat1s (inl m1)) catA cat_uniq Hun /= andbT orbF.
+- rewrite -cats1. (* TODO *)
+  rewrite -(cat1s (inl m1)) cat_uniq Hun /= andbT orbF.
   rewrite inE negb_or.
   apply/andP; split.
     apply/eqP; case => ?; subst m1.
@@ -698,8 +704,10 @@ apply: uniq_path_ucycle_extend_1 => //.
   apply (@Hacyclic [:: inl m0, inr n3, inl m1 & p1] isT).
   apply: uniq_path_ucycle_extend_1 => //.
   + by rewrite /= -VnextE; move: Hn3; rewrite in_setD1 => /andP[].
-  + rewrite -(cat1s (inl m0)) catA cat_path last_cat /= in Hp'; by case/andP : Hp'.
-  + rewrite -(cat1s (inl m1)) -(cat1s (inl m0)) 2!catA cat_uniq in Hun; by case/andP : Hun.
+  + rewrite -(cat1s (inl m0)) catA cats1 cat_path last_rcons /= in Hp'; by case/andP : Hp'.
+  + rewrite -(cat1s (inl m1)) -(cat1s (inl m0)) 2!catA cat_uniq in Hun.
+    rewrite -cats1. (* Hun *)
+    by case/andP : Hun.
 Qed.
 
 Local Open Scope channel_scope.

@@ -1,3 +1,5 @@
+-arg "-w -notation-overridden"
+
 ssrR.v
 Reals_ext.v
 Ranalysis_ext.v

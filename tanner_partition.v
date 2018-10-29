@@ -109,7 +109,7 @@ move=> n0m0 Hn1 Hm1.
 rewrite in_setD1 in Hn1; case/andP : Hn1 => n1n0 n1m0.
 rewrite in_setD1 in Hm1; case/andP : Hm1 => m1m0 m1n1.
 suff : inr n0 \notin subgraph (tanner_rel H) (inl m1) (inr n1).
-  move=> Htmp.
+  move=> ?.
   by rewrite /Vgraph inE negb_or in_set1 eq_sym n1n0 /= inE.
 apply: (@notin_subgraph _ (tanner_rel H) _ _ _ _ (inl m0)) => //.
 exact: sym_tanner_rel.
@@ -158,7 +158,7 @@ exact: simple_tanner_rel.
 by rewrite /= -VnextE.
 by rewrite /= -VnextE.
 apply/eqP; case => ?; subst m1; by rewrite in_setD1 eqxx in Hm1.
-rewrite -(cat1s (inr n0)) catA cat_path in Hp'; by case/andP : Hp'.
+rewrite -(cat1s (inr n0)) catA cats1 cat_path in Hp'; by case/andP : Hp'.
 rewrite -(cat1s (inl m1)) catA cat_uniq in Hun; by case/andP : Hun.
 Qed.
 
@@ -365,10 +365,10 @@ have K3 : 'V(m0, n1) :\ n1 != 'V(m1, n1) :\ n1.
     exact: simple_tanner_rel.
     by rewrite /= -VnextE; case/andP : Hm1.
     by rewrite /= -VnextE -FnextE; case/andP : Hm1.
-    rewrite cat_path Hp' /= andbT exceptE /= andbT -Hlast -VnextE m0n0 /=.
+    rewrite rcons_path Hp' /= exceptE /= andbT -Hlast -VnextE m0n0 /=.
     apply/eqP; case => ?; subst n1.
     by rewrite in_setD1 eqxx in K4.
-    rewrite -(cat1s (inl m1)) catA cat_uniq Hun /= andbT orbF inE negb_or.
+    rewrite rcons_uniq Hun andbT /= !inE /= negb_or.
     apply/andP; split.
       apply/eqP; case => ?; subst m1; by rewrite eqxx in Hm1.
     apply/negP => m0p.
@@ -378,9 +378,13 @@ have K3 : 'V(m0, n1) :\ n1 != 'V(m1, n1) :\ n1.
     exact: simple_tanner_rel.
     by rewrite /= -VnextE.
     rewrite /= -VnextE -FnextE; by case/andP : Hm1.
-    rewrite -(cat1s (inl m0)) catA cat_path in Hp'; by case/andP : Hp'.
-    rewrite -(cat1s (inl m1)) -(cat1s (inl m0)) 2!catA cat_uniq in Hun.
-    by case/andP : Hun.
+    rewrite -(cat1s (inl m0)) catA cat_path in Hp'.
+    rewrite !cats1 in Hp'.
+    by case/andP : Hp'.
+    rewrite rcons_uniq.
+    move: Hun.
+    rewrite -cat_cons cat_uniq => /andP[->]; rewrite andbT.
+    by rewrite /= negb_or -andbA => /and3P[].
   apply/eqP.
   move/setP/(_ n0).
   by rewrite K4 (negbTE K5).
@@ -461,15 +465,11 @@ have H1 : 'F(m0, n0) \in Fgraph_part_fnode n0.
 have H2 : 'F(m1, n0) \in Fgraph_part_fnode n0.
   apply/imsetP; exists m1 => //; by rewrite FnextE.
 move/(_ H1 H2) => {H1 H2}.
-have Htmp : 'F(m0, n0) != 'F(m1, n0).
-  apply: contra m1m2 => /eqP Htmp; apply/eqP; move: Htmp.
-  exact: Fgraph_injective.
-move/(_ Htmp) => {Htmp}.
-rewrite -setI_eq0.
-move/set0Pn.
-apply.
-exists m2.
-by rewrite inE m3m1 m3m2.
+have HF : 'F(m0, n0) != 'F(m1, n0).
+  apply: contra m1m2 => /eqP HF; apply/eqP; exact: Fgraph_injective HF.
+move/(_ HF) => {HF}.
+rewrite -setI_eq0 => /set0Pn; apply.
+exists m2; by rewrite inE m3m1 m3m2.
 Qed.
 
 Lemma Vgraph_injective n0 m0 m1 :
@@ -485,14 +485,10 @@ have : exists cy, (2 < size cy)%nat /\ ucycleb (tanner_rel H) cy.
     rewrite !inE.
     case/andP => n1n0.
     case/orP => [/eqP ? | ]; first by subst n1; rewrite eqxx in n1n0.
-    rewrite /subgraph => /andP [] n0m1 Htmp.
-    have Htmp2 : connect (except (tanner_rel H) (inr n0)) (inl m0) (inr n1).
-      move: Hn1.
-      rewrite -H20 !inE.
-      case/andP => _.
-      case/orP => [/eqP ? | ]; first by subst n1; rewrite eqxx in n1n0.
-      by case/andP.
-    apply (connect_trans Htmp2).
+    rewrite /subgraph => /andP [] n0m1 m1n1.
+    have : connect (except (tanner_rel H) (inr n0)) (inl m0) (inr n1).
+      move: Hn1; by rewrite -H20 !inE n1n0 /= (negbTE n1n0) /= => /andP[].
+    move/connect_trans; apply.
     rewrite connect_sym //; exact/symmetric_except/sym_tanner_rel.
   case/connectP => /= s H1 H2.
   case/shortenP : (H1) H2 => /= s' H1' H2' H3' H2.
@@ -507,8 +503,7 @@ have : exists cy, (2 < size cy)%nat /\ ucycleb (tanner_rel H) cy.
     exists (take i s'), (drop i.+1 s').
     by rewrite -im1 -drop_nth // cat_take_drop.
   exists (inr n0 :: inl m0 :: s1 ++ [:: inl m1]).
-  split.
-    by rewrite /= size_cat /= addn1.
+  rewrite /= size_cat /= addn1; split => //.
   apply/andP; split; last first.
     rewrite -/(uniq (inl m0 :: s')) s1s2 -cat1s catA -(cat1s (inl m1)) catA cat_uniq in H2'.
     case/andP : H2' => H2' H2''.
@@ -586,14 +581,14 @@ Definition Fgraph_part_Fgraph m0 n0 : {set {set 'I_m}} :=
 Lemma cover_Fgraph_part_Fgraph m0 n0 : n0 \in 'V m0 ->
   cover (Fgraph_part_Fgraph m0 n0) = 'F(m0, n0) :\ m0.
 Proof.
-move=> Htmp.
-have {Htmp}Htmp : tanner_rel H (inl m0) (inr n0) by rewrite VnextE sym_tanner_rel in Htmp.
-move: (cover_subgraph_succ2_D1 (sym_tanner_rel H) Hacyclic (simple_tanner_rel H) Htmp) => Hcover.
+move=> Hn0.
+have {Hn0}m0n0 : tanner_rel H (inl m0) (inr n0) by rewrite VnextE sym_tanner_rel in Hn0.
+move: (cover_subgraph_succ2_D1 (sym_tanner_rel H) Hacyclic (simple_tanner_rel H) m0n0) => Hcover.
 apply/setP => /= m1.
 rewrite 2!inE.
 move Hlhs : ( _ \in _ ) => [|].
   apply/esym.
-  have Hm1 : inl m1 \in cover (subgraph_succ2_D1 Htmp).
+  have Hm1 : inl m1 \in cover (subgraph_succ2_D1 m0n0).
     rewrite /Fgraph_part_Fgraph in Hlhs.
     case/bigcupP : Hlhs => /= i i1 i2.
     case/imsetP : i1 => /= n1 Hn1 i1.
@@ -759,7 +754,7 @@ destruct p' as [|p'1 p'2].
   by [].
   by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
   apply/eqP; case => ?; subst m3; by rewrite in_setD1 eqxx in Hm3.
-  rewrite cat_path Hp0' /= andbT exceptE /= -lastp0 /= sym_tanner_rel m2n1 /=.
+  rewrite rcons_path Hp0' /= exceptE /= -lastp0 /= sym_tanner_rel m2n1 /=.
   by apply: contra n1n2 => /eqP [] ->.
   by [].
 destruct p0' as [|p0'1 p0'2].
@@ -778,8 +773,7 @@ destruct p0' as [|p0'1 p0'2].
   apply/eqP; case => ?; subst m2; by rewrite in_setD1 eqxx in Hm2.
   move/path_except_notin : Hp'; rewrite inE negb_or => /andP []; by rewrite eq_sym.
   by apply: contra n1n2 => /eqP [] ->.
-  rewrite cat_path.
-  apply/andP; split.
+  rewrite rcons_path; apply/andP; split.
     rewrite /= in Hp'.
     case/andP : (Hp') => Hp'1 Hp'2.
     apply: sub_path_except Hp'2.
@@ -790,7 +784,7 @@ destruct p0' as [|p0'1 p0'2].
     rewrite -(cat1s (inl m2)) -(cat1s p'1) uniq_catCA uniq_catC cat_uniq.
     case/andP => /andP []; by rewrite m2p'2.
   rewrite /= in lastp.
-  rewrite /= andbT exceptE /= andbT -lastp /= sym_tanner_rel m3n2 /=.
+  rewrite /= exceptE /= andbT -lastp /= sym_tanner_rel m3n2 /=.
   apply/eqP; case => ?; subst m2.
   move: unp.
   by rewrite cons_uniq lastI mem_rcons inE -lastp /= eqxx.
@@ -805,8 +799,8 @@ by rewrite /= -VnextE; move: Hn2; rewrite in_setD1 => /andP[].
 by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
 apply/eqP; case => ?; subst m3; by rewrite in_setD1 eqxx in Hm3.
 apply/eqP; case => ?; subst m2; by rewrite in_setD1 eqxx in Hm2.
-by rewrite lastp [_ ++ _]/= cats1 -lastI.
-by rewrite lastp0 cats1 -lastI.
+by rewrite lastp last_cons -lastI.
+by rewrite lastp0 last_cons -lastI.
 move: unp.
 rewrite (cons_uniq (inl m2)) => /andP [] H1 H2.
 rewrite cons_uniq.
@@ -841,7 +835,7 @@ case/orP => [/eqP ? |]; [subst n2|].
   apply: uniq_path_ucycle_extend_1 => //.
   exact: simple_tanner_rel.
   by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
-  rewrite cat_path /= andbT Hp' /= exceptE /= -lastp andbT.
+  rewrite rcons_path /= Hp' /= exceptE /= -lastp andbT.
   apply/andP; split.
     by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
   apply/eqP; case => ?; subst n1'.
@@ -849,7 +843,7 @@ case/orP => [/eqP ? |]; [subst n2|].
   destruct p' => //.
   rewrite /= in lastp.
   by rewrite lastI -lastp mem_rcons inE eqxx.
-  rewrite -(cat1s (inl m1')) catA cat_uniq unp /= andbT orbF inE negb_or.
+  rewrite rcons_uniq unp andbT inE negb_or.
   apply/andP; split.
     rewrite !inE in Hm1'.
     case/andP : Hm1' => Hm1' _.
@@ -861,8 +855,12 @@ case/orP => [/eqP ? |]; [subst n2|].
   apply: uniq_path_ucycle_extend_1 => //.
   exact: simple_tanner_rel.
   by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
-  rewrite -(cat1s (inl m0)) catA cat_path in Hp'; by case/andP : Hp'.
-  rewrite -(cat1s (inl m0)) -(cat1s (inl m1')) 2!catA cat_uniq in unp; by case/andP : unp.
+  rewrite -(cat1s (inl m0)) catA cat_path in Hp'.
+  rewrite cats1 in Hp'.
+  by case/andP : Hp'.
+  rewrite rcons_uniq.
+  move: unp; rewrite -cat_cons cat_uniq => /andP[-> /=].
+  by rewrite negb_or -andbA => /and3P[] ->.
 case/andP => n1m1 /connectP /= [] p.
 case/shortenP => p' Hp' unp pp' lastp.
 case/orP => [/eqP ?|]; [subst n1'|].
@@ -872,7 +870,7 @@ case/orP => [/eqP ?|]; [subst n1'|].
   apply: uniq_path_ucycle_extend_1 => //.
   exact: simple_tanner_rel.
   by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
-  rewrite cat_path Hp' /= andbT -lastp exceptE /= andbT -VnextE.
+  rewrite rcons_path Hp' /= -lastp exceptE /= andbT -VnextE.
   rewrite !inE in Hn1'.
   case/andP : Hn1' => n2n0 -> /=.
   apply/eqP; case => ?; subst n2.
@@ -880,7 +878,7 @@ case/orP => [/eqP ?|]; [subst n1'|].
   destruct p' => //.
   rewrite /= in lastp.
   by rewrite lastI mem_rcons -lastp inE eqxx.
-  rewrite -(cat1s (inl m1)) catA cat_uniq unp /= andbT orbF inE negb_or.
+  rewrite rcons_uniq unp andbT inE /= negb_or.
   apply/andP; split.
     apply/eqP; case => ?; subst m1.
     by rewrite in_setD1 eqxx in Hm1.
@@ -890,8 +888,11 @@ case/orP => [/eqP ?|]; [subst n1'|].
   apply: uniq_path_ucycle_extend_1 => //.
   exact: simple_tanner_rel.
   by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
-  rewrite -(cat1s (inl m0)) catA cat_path in Hp'; by case/andP : Hp'.
-  rewrite -(cat1s (inl m0)) -(cat1s (inl m1)) 2!catA cat_uniq in unp; by case/andP : unp.
+  rewrite -(cat1s (inl m0)) catA cat_path in Hp'.
+  rewrite cats1 in Hp'.
+  by case/andP : Hp'.
+  rewrite rcons_uniq.
+  by move: unp; rewrite -cat_cons cat_uniq => /and3P[-> /=]; rewrite negb_or => /andP[->].
 move: (Hm1'); rewrite !inE /= -VnextE -FnextE => /andP [] _ -> /=.
 case/connectP => /= q.
 case/shortenP => q' Hq' unq qq' lastq.
@@ -907,10 +908,9 @@ exact: simple_tanner_rel.
 by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
 by rewrite /= -VnextE -FnextE; move: Hm1'; rewrite in_setD1 => /andP[].
 by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
-apply/eqP;case => ?; subst m1'; by rewrite in_setD1 eqxx in Hm1'.
-apply/eqP;case => ?; subst m1; by rewrite in_setD1 eqxx in Hm1.
-by rewrite lastp cats1 -lastI.
-by rewrite cats1.
+apply/eqP; case => ?; subst m1'; by rewrite in_setD1 eqxx in Hm1'.
+apply/eqP; case => ?; subst m1; by rewrite in_setD1 eqxx in Hm1.
+by rewrite lastp last_cons -lastI.
 move: unp.
 rewrite (lastI p'1) /= mem_rcons inE negb_or => /andP [] /andP [] H1 ->.
 by rewrite rcons_uniq => /andP [].
@@ -925,14 +925,14 @@ Definition Vgraph_part_Vgraph m0 n0 : {set {set 'I_n}} :=
 Lemma cover_Vgraph_part_Vgraph m0 n0 : n0 \in 'V m0 ->
   cover (Vgraph_part_Vgraph m0 n0) = 'V(m0, n0) :\ n0.
 Proof.
-move=> Htmp.
-have {Htmp}Htmp : tanner_rel H (inl m0) (inr n0) by rewrite VnextE sym_tanner_rel in Htmp.
-move: (cover_subgraph_succ2_D1 (sym_tanner_rel H) Hacyclic (simple_tanner_rel H) Htmp) => Hcover.
+move=> Hn0.
+have {Hn0}m0n0 : tanner_rel H (inl m0) (inr n0) by rewrite VnextE sym_tanner_rel in Hn0.
+move: (cover_subgraph_succ2_D1 (sym_tanner_rel H) Hacyclic (simple_tanner_rel H) m0n0) => Hcover.
 apply/setP => /= n1.
 rewrite 2!inE.
 move Hlhs : ( _ \in _ ) => [|].
   apply/esym.
-  have Hn1 : inr n1 \in cover (subgraph_succ2_D1 Htmp).
+  have Hn1 : inr n1 \in cover (subgraph_succ2_D1 m0n0).
     rewrite /Vgraph_part_Vgraph in Hlhs.
     case/bigcupP : Hlhs => /= i i1 i2.
     case/imsetP : i1 => /= n1' Hn1' i1.
@@ -1098,11 +1098,11 @@ apply: uniq_path_ucycle_extend_1.
 exact: simple_tanner_rel.
 by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
 by rewrite /= -VnextE -FnextE; move: m1n1; rewrite in_setD1 => /andP[].
-rewrite cat_path Hp /= andbT exceptE /= andbT -lastp.
+rewrite rcons_path Hp /= exceptE /= andbT -lastp.
 apply/andP; split.
   by rewrite /= -VnextE; move: Hn2; rewrite in_setD1 => /andP[].
 apply/eqP; case=> ?; subst n2; by rewrite eqxx in abs'.
-rewrite -(cat1s (inl m1)) catA cat_uniq unp /= andbT orbF inE negb_or.
+rewrite rcons_uniq unp andbT inE negb_or.
 apply/andP; split.
   apply/eqP; case => ?; subst m1; by rewrite in_setD1 eqxx in m1n1.
 apply/negP => m0p'.
@@ -1113,8 +1113,9 @@ apply: uniq_path_ucycle_extend_1; try assumption.
 exact: simple_tanner_rel.
 by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
 by rewrite /= -VnextE -FnextE; move: m1n1; rewrite in_setD1 => /andP[].
-rewrite -(cat1s (inl m0)) catA cat_path in Hp; by case/andP : Hp.
-rewrite -(cat1s (inl m1)) -(cat1s (inl m0)) 2!catA cat_uniq in unp; by case/andP : unp.
+rewrite -(cat1s (inl m0)) catA cats1 cat_path in Hp; by case/andP : Hp.
+rewrite rcons_uniq.
+by move: unp; rewrite -cat_cons cat_uniq => /and3P[-> /=]; rewrite negb_or => /andP[->].
 Qed.
 
 End tanner_partition.

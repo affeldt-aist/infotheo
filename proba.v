@@ -3,9 +3,8 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
-Require Import Reals Lra FunctionalExtensionality.
+Require Import Reals Lra Nsatz FunctionalExtensionality.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
-Require Import Nsatz.
 
 (** * Formalization of discrete probabilities *)
 
@@ -663,11 +662,11 @@ Proof.
 move=> H1 H2.
 apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
 rewrite /d /f /=.
-transitivity (p * d0 a + p.~ * q * d1 a + p.~ * q.~ * d2 a)%R; first nsatz.
-transitivity (r * s * d0 a + r.~ * s * d1 a + s.~ * d2 a)%R; last nsatz.
+transitivity (p * d0 a + p.~ * q * d1 a + p.~ * q.~ * d2 a)%R; first lra.
+transitivity (r * s * d0 a + r.~ * s * d1 a + s.~ * d2 a)%R; last lra.
 rewrite H1; congr (_ + _ * _ + _ * _)%R.
 rewrite -(onemK s) H2; nsatz.
-rewrite H2 H1; nsatz.
+rewrite H2 H1; lra.
 Qed.
 
 Lemma bind_left_distr (B : finType) (p : R) (Hp : 0 <= p <= 1)
