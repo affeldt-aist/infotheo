@@ -764,7 +764,7 @@ Proof.
 move=> no_fail Hmin.
 rewrite /BD_decoding => /= c e cC wHe.
 move: (@mddP _ _ _ _  Hmin C_not_trivial Himg c (c + e) (no_fail _) cC) => //.
-by rewrite dH_wH => /(_ wHe) [].
+by rewrite dH_wH => /(_ wHe).
 Qed.
 
 End bounded_distance_decoding.

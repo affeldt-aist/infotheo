@@ -327,7 +327,7 @@ Proof.
 rewrite /cond_entropy /`H /=.
 rewrite (eq_bigr (fun x => (`J( P, W)) (x.1, x.2) * log ((`J( P, W)) (x.1, x.2)))); last by case.
 rewrite -(pair_big xpredT xpredT (fun a b => (`J( P, W)) (a, b) * log ((`J( P, W)) (a, b)))) /=.
-rewrite /Rminus -oppRD /=.
+rewrite -addR_opp -oppRD /=.
 rewrite (big_morph _ morph_Ropp oppR0) -big_split /= (big_morph _ morph_Ropp oppR0).
 apply eq_bigr => // a _.
 case/boolP : (P a == 0); move=> Hcase.

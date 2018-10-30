@@ -185,18 +185,10 @@ Lemma addR_eq0 x y : (x + y == 0) = (x == - y).
 Proof. by rewrite -[y in LHS]oppRK subR_eq0. Qed.
 
 Lemma eqR_opp x y : (- x == - y) = (x == y).
-Proof.
-apply/eqP/eqP.
-{ by move=> Hopp; rewrite -[LHS]oppRK -[RHS]oppRK Hopp. }
-by move->.
-Qed.
+Proof. apply/eqP/eqP => [Hopp|->//]; by rewrite -[LHS]oppRK -[RHS]oppRK Hopp. Qed.
 
 Lemma eqR_oppLR x y : (- x == y) = (x == - y).
-Proof.
-apply/eqP/eqP.
-{ by move<-; rewrite oppRK. }
-by move->; rewrite oppRK.
-Qed.
+Proof. apply/eqP/eqP => [<-|->]; by rewrite oppRK. Qed.
 
 Lemma oppR_ge0 x : x <= 0 -> 0 <= - x.
 Proof. move/Rle_ge; exact: Ropp_0_ge_le_contravar. Qed.
@@ -214,6 +206,9 @@ Proof.
 apply/idP/idP => [/leRP ? | /ltRP/Rnot_lt_le ?];
   [exact/ltRP/Rle_not_gt | exact/leRP].
 Qed.
+
+Lemma subR_opp x y : x - - y = x + y. Proof. by rewrite /Rminus oppRK. Qed.
+Lemma addR_opp x y : x + - y = x - y. Proof. by []. Qed.
 
 Lemma ltRNge m n : (m < n) <-> ~ (n <= m).
 Proof. split; [exact: Rlt_not_le | exact: Rnot_le_lt]. Qed.

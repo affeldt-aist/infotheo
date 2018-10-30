@@ -211,7 +211,7 @@ Lemma success_factor_bound_part2 :
 Proof.
 rewrite /success_factor -mulRA (mulRC (/ INR #|M|)) !mulRA.
 apply leR_wpmul2r; first exact/ltRW/invR_gt0/ltR0n.
-rewrite /mut_info /Rminus addRC addRA.
+rewrite /mut_info -addR_opp addRC addRA.
 rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last by rewrite /cond_entropy; field.
 rewrite mulRDr mulRN -mulNR /exp2 ExpD.
 apply leR_wpmul2l => //.

@@ -210,7 +210,7 @@ have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
         apply ltR_pmul2l; last lra.
         apply/ltRP; rewrite ltR_subRL' addR0; apply/ltRP; by case: Hr.
       apply Rmin_case_strong => H2 //; exact: (leR_ltR_trans H2 H1).
-    + rewrite -mulRA div1R mulRV; last exact/eqP/Rminus_eq_contra/e0_delta.
+    + rewrite -mulRA div1R mulRV; last by rewrite subR_eq0; exact/eqP/e0_delta.
       rewrite mulNR mulR1 leR_oppl.
       by move/leRP : Hk; rewrite 2!leR_max' => /andP[/andP[_ /leRP]].
 suff : 1 - (esrc(P , sc)) <= delta + delta by move=> *; lra.

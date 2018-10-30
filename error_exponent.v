@@ -44,7 +44,7 @@ Lemma out_entropy_dist_ub : `| `H(P `o V) - `H(P `o W) | <=
   / ln 2 * INR #|B| * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
-rewrite /Rminus -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
+rewrite -addR_opp -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
 rewrite -mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
 apply: leR_trans; first exact: ler_rsum_Rabs.
@@ -53,7 +53,7 @@ apply ler_rsum => b _; rewrite addRC.
 apply Rabs_xlnx => //.
 - split; [exact/dist_ge0 | exact/dist_max].
 - split; [exact/dist_ge0 | exact/dist_max].
-- rewrite 2!OutDist.dE /Rminus (big_morph _ morph_Ropp oppR0) -big_split /=.
+- rewrite 2!OutDist.dE -addR_opp (big_morph _ morph_Ropp oppR0) -big_split /=.
   apply: leR_trans; first exact: ler_rsum_Rabs.
   apply (@leR_trans (d(`J(P , V), `J(P , W)))).
   + rewrite /var_dist /=.
@@ -72,7 +72,7 @@ Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
   / ln 2 * INR #|A| * INR #|B| * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
-rewrite /Rminus -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
+rewrite -addR_opp -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
 rewrite -2!mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
 rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
 apply: leR_trans; first exact: ler_rsum_Rabs.

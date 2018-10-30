@@ -116,11 +116,8 @@ move=> x_notin_C.
 rewrite /C mem_kernel_syndrome0 /syndrome in x_notin_C.
 have {x_notin_C}x_notin_C : [exists m0, \sum_i (H m0 i) * (x ``_ i) != 0].
   rewrite -negb_forall; apply: contra x_notin_C => /forallP x_notin_C.
-  apply/eqP/rowP => a; rewrite !mxE /=.
-  move: (x_notin_C a) => /eqP Htmp.
-  rewrite -[in X in _ = X]Htmp.
-  apply eq_bigr => // i _; congr (_ * _).
-  by rewrite /row_of_tuple !mxE.
+  apply/eqP/rowP => a; rewrite !mxE /= -[RHS](eqP (x_notin_C a)).
+  by apply eq_bigr => // i _; rewrite /row_of_tuple !mxE.
 have {x_notin_C}x_notin_C : [exists m0, \sum_(i in 'V m0) ((H m0 i) * x ``_ i) != 0].
   case/existsP : x_notin_C => m0 Hm0.
   apply/existsP; exists m0.
@@ -132,22 +129,18 @@ have {x_notin_C}x_notin_C : [exists m0, \sum_(i in 'V m0) ((H m0 i) * x ``_ i) !
   apply eq_big => n0 //.
   rewrite VnextE tanner_relE -F2_eq0 => /eqP ->; by rewrite mul0r.
 have {x_notin_C}x_notin_C : [exists m0, \sum_(i in 'V m0) x ``_ i != 0].
-  case/existsP : x_notin_C => /= i x_notin_C.
-  apply/existsP; exists i; apply: contra x_notin_C => /eqP Htmp.
-  apply/eqP.
-  rewrite -[in X in _ = X]Htmp.
-  apply eq_bigr => n0.
+  case/existsP : x_notin_C => /= m0 x_notin_C.
+  apply/existsP; exists m0; apply: contra x_notin_C => /eqP H0.
+  apply/eqP; rewrite -[RHS]H0; apply eq_bigr => n0.
   rewrite VnextE tanner_relE => /eqP ->; by rewrite mul1r.
 have {x_notin_C}x_notin_C : [exists m0, \sum_(i in 'V m0) x ``_ i != 0].
-  case/existsP : x_notin_C => /= i x_notin_C.
-  apply/existsP; exists i; apply: contra x_notin_C => /eqP Htmp.
-  by apply/eqP.
+  case/existsP : x_notin_C => /= m0 x_notin_C.
+  by apply/existsP; exists m0; apply: contra x_notin_C => /eqP ->.
 case/existsP : x_notin_C => m0 Hm0.
 rewrite /checksubsum (bigID (pred1 m0)) /=.
 set lhs := (\prod_(i < m | i == m0) _)%nat.
-suff -> : lhs = O. by rewrite mul0n.
-rewrite /lhs big_pred1_eq.
-by move/negbTE : Hm0 => ->.
+suff -> : lhs = O by rewrite mul0n.
+by rewrite /lhs big_pred1_eq (negbTE Hm0).
 Qed.
 
 Lemma kernel_checksubsum (x : 'rV['F_2]_n) :

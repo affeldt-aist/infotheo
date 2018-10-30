@@ -9,6 +9,19 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+(* OUTLINE:
+  1. Section prefix.
+  2. Section ary_of_nat.
+  3. Section code.
+  4. Section prefix_code.
+  5. Section example_of_code.
+  6. Section kraft_condition.
+  7. Section prefix_implies_kraft_cond.
+  8. Section kraft_code.
+  9. Section kraft_cond_implies_prefix.
+  10. wip
+*)
+
 Lemma empty_finType_nil (T : finType) : (#|T| = 0) -> forall c : seq T, c = [::].
 Proof. move/card0_eq => T0; by case=> // h; move: (T0 h); rewrite !inE. Qed.
 
@@ -26,16 +39,15 @@ Implicit Types a b : seq T.
 
 Definition prefix a b := a == take (size a) b.
 
-Lemma prefix_nil (p : seq T) : (prefix p [::]) = (p == [::]).
-Proof. by case: p. Qed.
+Lemma prefix_nil a : (prefix a [::]) = (a == [::]).
+Proof. by case: a. Qed.
 
 Lemma prefix_refl a : prefix a a.
 Proof. by rewrite /prefix take_size. Qed.
 
 Lemma prefix_cons x y a b : prefix (x :: a) (y :: b) = (x == y) && prefix a b.
 Proof.
-rewrite /prefix /=.
-by apply/eqP/andP => [[-> {1}-> //]|[/eqP -> /eqP <-]].
+rewrite /prefix /=; by apply/eqP/andP => [[-> {1}-> //]|[/eqP -> /eqP <-]].
 Qed.
 
 Lemma prefix_cat a b : prefix a (a ++ b).
@@ -491,19 +503,18 @@ Let lmax := last O l.
 
 Lemma leq_lmax c : c \in C -> size c <= lmax.
 Proof.
-move=> cC.
-apply sorted_leq_last.
-  rewrite /l /sort_sizes; apply sort_sorted; exact: leq_total.
+move=> cC; apply sorted_leq_last.
+  rewrite /l /sort_sizes; exact/sort_sorted/leq_total.
 rewrite mem_sort; apply/mapP; by exists c.
 Qed.
 
-Definition subtree s :=
+Definition suffixes s :=
   if s \in C then [set x : lmax.-tuple T | prefix s x] else set0.
 
-Lemma subtree_not_empty (i : 'I_n) : 0 < #|T| -> subtree (nth [::] C i) <> set0.
+Lemma suffixes_not_empty (i : 'I_n) : 0 < #|T| -> suffixes (nth [::] C i) <> set0.
 Proof.
 move=> T0.
-rewrite /subtree mem_nth //.
+rewrite /suffixes mem_nth //.
 move/setP.
 have [t Ht] : exists t : T, t \in T by move/card_gt0P : T0.
 move/(_ (@prepend T lmax (nth [::] C i) [tuple of nseq _ t])).
@@ -511,11 +522,11 @@ rewrite !inE /prepend /= take_oversize ?prefix_cat //.
 apply/leq_lmax/(nthP [::]); by exists i.
 Qed.
 
-Lemma card_subtree (c : seq T) : c \in C ->
-  #| subtree c | = #|T| ^ (lmax - size c).
+Lemma card_suffixes (c : seq T) : c \in C ->
+  #| suffixes c | = #|T| ^ (lmax - size c).
 Proof.
 move=> cC.
-rewrite /subtree cC -card_tuple -(card_imset _ (@injective_prepend T lmax c)).
+rewrite /suffixes cC -card_tuple -(card_imset _ (@injective_prepend T lmax c)).
 apply eq_card => /= t; rewrite !inE.
 apply/idP/imsetP => /= [ct|/= [x _ ->{t}]].
   have @x : (lmax - size c).-tuple T.
@@ -527,11 +538,11 @@ apply/idP/imsetP => /= [ct|/= [x _ ->{t}]].
 by rewrite /prepend /= take_oversize ?prefix_cat // leq_lmax.
 Qed.
 
-Lemma disjoint_subtree (a b : seq T) (Hprefix : prefix_code C) :
+Lemma disjoint_suffixes (a b : seq T) (Hprefix : prefix_code C) :
   a \in C -> b \in C -> a != b ->
-  subtree a :&: subtree b == set0.
+  suffixes a :&: suffixes b == set0.
 Proof.
-move=> aC bC ab; rewrite /subtree aC bC.
+move=> aC bC ab; rewrite /suffixes aC bC.
 apply/set0Pn => -[/= s]; rewrite !inE => /andP[sa sb].
 wlog : a b aC bC sa sb ab / prefix a b.
   move=> H.
@@ -552,27 +563,27 @@ move=> prefixC T_gt0; rewrite /kraft_cond size_map -/n.
 have /ler_pmul2l <- : ((0 : R) < #|T|%:R ^+ lmax)%R.
   by rewrite exprn_gt0 // ltr0n.
 rewrite mulr1 big_distrr /=. (*\color{comment}{\framebox{the goal is now $\sum_{i < n}\frac{|T|^{\ell_{\mathrm{max}}}}{#|T|^{\ell(i)}} \leq |T|^{\ell_{\mathrm{max}}}$}} *)
-rewrite (eq_bigr (fun i : 'I_n => #|subtree C``_i|%:R)%R); last first.
-  move=> i _; rewrite card_subtree; last by apply/nthP; exists i.
+rewrite (eq_bigr (fun i : 'I_n => #|suffixes C``_i|%:R)%R); last first.
+  move=> i _; rewrite card_suffixes; last by apply/nthP; exists i.
   rewrite natrX exprB // ?(nth_map [::]) //.
   by apply/leq_lmax/nthP; exists i.
   by rewrite unitfE pnatr_eq0 -lt0n.
 (*\color{comment}{\framebox{the goal is now $\sum_{i < n} | \{ x | \prefix{c_i}{x} \} | \leq |T|^{\ell_{\mathrm{max}}}$}} *)
-apply (@ler_trans _ (#|\bigcup_(i < n) subtree (C ``_ i)|%:R)%R).
-  set P := [set (subtree C``_(nat_of_ord i)) | i in 'I_n].
+apply (@ler_trans _ (#|\bigcup_(i < n) suffixes (C ``_ i)|%:R)%R).
+  set P := [set (suffixes C``_(nat_of_ord i)) | i in 'I_n].
   rewrite (@card_partition _ P) ?/partition; last first.
     rewrite cover_imset eqxx /=; apply/andP; split; last first.
-      apply/imsetP => -[i _ /esym]; by apply: subtree_not_empty.
+      apply/imsetP => -[i _ /esym]; exact: suffixes_not_empty.
     apply/trivIsetP => /= x y /imsetP[i _ ->] /imsetP[j _ ->] ij.
-    rewrite -setI_eq0 disjoint_subtree //; [apply/nthP; by exists i |
+    rewrite -setI_eq0 disjoint_suffixes //; [apply/nthP; by exists i |
       apply/nthP; by exists j | by apply: contra ij => /eqP ->].
   rewrite big_imset /= ?natr_sum // => i j _ _ Hij.
   apply/eqP/negPn/negP => ij.
   have Ci : C ``_ i \in C by apply/nthP; exists i.
   have Cj : C ``_ j \in C by apply/nthP; exists j.
   have : C ``_ i != C ``_ j by rewrite nth_uniq //; case: C.
-  move/(disjoint_subtree prefixC Ci Cj).
-  rewrite Hij setIid => /eqP/subtree_not_empty; exact.
+  move/(disjoint_suffixes prefixC Ci Cj).
+  rewrite Hij setIid => /eqP/suffixes_not_empty; exact.
 (*\color{comment}{\framebox{the goal is now $\left| \bigcup_{i < n} \{ x | \prefix{c_i}{x} \} \right| \leq |T|^{\ell_{\mathrm{max}}}$}} *)
 by rewrite -natrX -card_tuple ler_nat max_card.
 Qed.

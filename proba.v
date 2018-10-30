@@ -238,17 +238,18 @@ rewrite /f -big_distrr /= mul1R big_const iter_addR mulRV //.
 by rewrite INR_eq0' domain_not_empty.
 Qed.
 
-Definition d : dist A := makeDist f0 f1.
+Definition d : dist A := locked (makeDist f0 f1).
+
+Lemma dE a : d a = / INR #|A|.
+Proof. by rewrite /d; unlock => /=; rewrite /f div1R. Qed.
 
 End uniform.
 
 Lemma d_neq0 (C : finType) (domain_non_empty : { m : nat | #| C | = m.+1 }) :
   forall x, d (projT2 domain_non_empty) x != 0.
 Proof.
-move=> x.
-rewrite /d /= /f /=.
-apply/negP; rewrite mulR_eq0 => /orP[|]; first by rewrite INR_eq0'.
-apply/negP/invR_neq0; rewrite INR_eq0'; by case: domain_non_empty => x' ->.
+move=> c; rewrite dE invR_neq0 //; apply/eqP.
+case: domain_non_empty => x' ->; by rewrite INR_eq0.
 Qed.
 
 End Uniform.
@@ -256,9 +257,9 @@ End Uniform.
 Lemma dom_by_uniform A (P : dist A) n (HA : #|A| = n.+1) :
   P << (Uniform.d HA).
 Proof.
-move=> a; rewrite /Uniform.d /= /Uniform.f /= HA div1R => /esym abs.
+move=> a; rewrite Uniform.dE => /esym abs.
 exfalso.
-move: abs; exact/ltR_eqF/invR_gt0/ltR0n.
+move: abs; rewrite HA; exact/ltR_eqF/invR_gt0/ltR0n.
 Qed.
 
 Module UniformSupport.

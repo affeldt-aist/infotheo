@@ -854,12 +854,11 @@ have [P HP] : exists P : dist A, r < `I(P ; W).
 have [epsilon0 Hepsilon0] : exists epsilon0,
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P ; W) - r) / 4.
   exists ((Rmin (epsilon/2) ((`I(P ; W) - r) / 4))/2).
-  have Htmp : 0 < Rmin (epsilon / 2) (((`I(P ; W) - r) / 4)).
+  have H0 : 0 < Rmin (epsilon / 2) ((`I(P ; W) - r) / 4).
     apply Rmin_pos; apply mulR_gt0 => //; lra.
-  split.
-    apply mulR_gt0 => //; lra.
-  split; [exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/geR_minl |
-          exact/(ltR_leR_trans (Rlt_eps2_eps _ Htmp))/geR_minr ].
+  split; first by apply mulR_gt0 => //; lra.
+  split; [exact/(ltR_leR_trans (Rlt_eps2_eps _ H0))/geR_minl |
+          exact/(ltR_leR_trans (Rlt_eps2_eps _ H0))/geR_minr ].
 have [n Hn] : exists n, n_condition W P r epsilon0 n.
   destruct r as [r [num [den [Hnum [Hden Hr]]]]].
   have Hn : exists n, (0 < n)%nat /\
@@ -907,8 +906,8 @@ case: (random_coding_good_code (ltRW Hepsilon) Hepsilon0 Hn) =>
 case: (good_code_sufficient_condition HM H) => f Hf.
 exists n, M, (mkCode f (jtdec P W epsilon0 f)); split => //.
 rewrite /CodeRate M_k INR_Zabs_nat; last exact/Int_part_pos.
-suff Htmp : IZR (Int_part (exp2 (INR n * r))) = exp2 (INR n * r).
-  rewrite Htmp exp2K /Rdiv -mulRA mulRCA mulRV ?INR_eq0' -?lt0n ?mulR1 //; by case: Hn.
+suff -> : IZR (Int_part (exp2 (INR n * r))) = exp2 (INR n * r).
+  rewrite exp2K /Rdiv -mulRA mulRCA mulRV ?INR_eq0' -?lt0n ?mulR1 //; by case: Hn.
 apply frac_Int_part; by case: Hn => _ [_ []].
 Qed.
 

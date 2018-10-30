@@ -331,6 +331,3 @@ move=> [H1 H2] [H H3]; case: (Rtotal_order a b) => [H0|[H0|H0]].
 - rewrite geR0_norm; last lra.
   apply: (@leR_trans a); [lra|exact/(leR_trans H2)/leR_maxl].
 Qed.
-
-(*Lemma Rplus_minus_assoc (r1 r2 r3 : R) : (r1 + r2 - r3 = r1 + (r2 - r3))%R.
-Proof. by rewrite /Rminus Rplus_assoc. Qed.*)

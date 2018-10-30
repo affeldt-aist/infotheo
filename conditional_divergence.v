@@ -204,12 +204,9 @@ case/boolP : (W a b == 0) => Wab0.
     f_equal.
     move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
     move: (HV).
-    rewrite in_set.
-    move/cond_type_equiv/(_ _ Hx a).
-    move: Hx; rewrite in_set => /forallP/(_ a)/eqP => Htmp Htmp'.
-    rewrite -Htmp' Pa0 in Htmp.
-    move/esym/eqP : Htmp.
-    rewrite mulR_eq0 => /orP[|]; last first.
+    rewrite in_set => /cond_type_equiv/(_ _ Hx a).
+    move: Hx; rewrite in_set => /forallP/(_ a)/eqP; rewrite {}Pa0 => HPa sumB.
+    move: HPa; rewrite -sumB => /esym/eqP; rewrite mulR_eq0 => /orP[|]; last first.
       by move/invR_eq0; rewrite INR_eq0' (negbTE Hn).
     rewrite INR_eq0' sum_nat_eq0 => /forall_inP/(_ b) => H; apply/eqP; by move: H => ->.
   - move: (W0_V0 Pa0 Wab0) => nullV.
@@ -227,19 +224,14 @@ case/boolP : (W a b == 0) => Wab0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   move: (HV).
   rewrite in_set.
-  move/cond_type_equiv => /(_ _ Hx a).
-  move=> Htmp'.
-  move: Hx; rewrite in_set => /forallP/(_ a)/eqP => Htmp.
+  move/cond_type_equiv => /(_ _ Hx a) sumB.
+  move: Hx; rewrite in_set => /forallP/(_ a)/eqP => HPa.
   rewrite (jtype.c_f V) /=.
-  case: ifP.
-  - move/eqP => HP.
-    rewrite Htmp -Htmp' HP div0R mulR0 mul0R.
-    move/eqP : HP.
-    rewrite sum_nat_eq0.
-    move/forallP.
-    by move/(_ b)/implyP/(_ Logic.eq_refl)/eqP => ->.
-  - move/negP/negP => HP.
-    rewrite Htmp -Htmp' (mulRCA (INR n)) mulRV ?INR_eq0' // mulR1.
+  case: ifPn => [/eqP|] HP.
+  - rewrite HPa -sumB HP div0R mulR0 mul0R.
+    move/eqP : HP; rewrite sum_nat_eq0 => /forallP/(_ b).
+    by rewrite implyTb => /eqP ->.
+  - rewrite HPa -sumB (mulRCA (INR n)) mulRV ?INR_eq0' // mulR1.
     by rewrite mulRCA mulRV ?mulR1 // INR_eq0'.
 Qed.
 
@@ -302,7 +294,7 @@ case : ifP => Hcase.
   case/andP=> Wab H.
   rewrite dmc_cdiv_cond_entropy_aux.
   rewrite pair_big /= (bigD1 (a, b)) //=.
-  apply Rmult_eq_0_compat_r.
+  apply Rmult_eq_0_compat_r (* TODO *).
   move/eqP in Wab; rewrite Wab.
   apply pow_i.
   apply/ltP.
@@ -313,14 +305,12 @@ case : ifP => Hcase.
   move: (Vctyp).
   rewrite in_set.
   move/cond_type_equiv => /(_ _ Hta a) ->.
-  move: Hta; rewrite in_set => /forallP/(_ a)/eqP => Htmp.
-  case: ifP => Hcase.
-    exfalso.
-    move/eqP : Pa; apply.
-    rewrite Htmp.
-    move/eqP : Hcase => ->.
-    by rewrite div0R.
-  apply: contra => /eqP ->; by rewrite div0R.
+  move: Hta; rewrite in_set => /forallP/(_ a)/eqP => HPa.
+  case: ifPn => Nax; last first.
+    apply: contra => /eqP ->; by rewrite div0R.
+  exfalso.
+  move/eqP : Pa; apply.
+  by rewrite HPa (eqP Nax) div0R.
 Qed.
 
 End dmc_cdiv_cond_entropy_spec_sect.

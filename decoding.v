@@ -154,69 +154,46 @@ Lemma ML_smallest_err_rate phi :
   echa(W, mkCode enc dec) <= echa(W, mkCode enc phi).
 Proof.
 move=> dec.
-apply leR_wpmul2l.
-  apply/mulR_ge0 => //; exact/ltRW/invR_gt0/ltR0n.
-rewrite /ErrRateCond /=.
-apply (@leR_trans (\rsum_(m in M) (1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m]))); last first.
-  apply Req_le, eq_bigr => m _.
-  rewrite [in RHS]Pr_to_cplt.
-  set lhs := ~: _. set rhs := [set _ | _].
-  suff -> : lhs = rhs by [].
+apply leR_wpmul2l; first by apply/mulR_ge0 => //; exact/ltRW/invR_gt0/ltR0n.
+rewrite /ErrRateCond /= [in X in _ <= X](eq_bigr
+  (fun m => 1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m])); last first.
+  move=> m _; rewrite Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
-apply (@leR_trans (\rsum_(m in M) (1 - Pr (W ``(|enc m)) [set tb | dec tb == Some m]))).
-  apply Req_le, eq_bigr => m _.
-  rewrite [LHS]Pr_to_cplt.
-  set lhs := ~: _. set rhs := [set _ | _].
-  suff -> : lhs = rhs by [].
+rewrite (eq_bigr
+  (fun m => 1 - Pr (W ``(|enc m)) [set tb | dec tb == Some m])); last first.
+  move => m _; rewrite Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
-rewrite 2!big_split /=.
-apply Rplus_le_compat_l.
+rewrite 2!big_split /= leR_add2l.
 rewrite -2!(big_morph _ morph_Ropp oppR0) leR_oppr oppRK.
-rewrite /Pr (exchange_big_dep xpredT) //= [in X in (_ <= X)%R](exchange_big_dep xpredT) //=.
+rewrite /Pr (exchange_big_dep xpredT) //=.
+rewrite [in X in (_ <= X)%R](exchange_big_dep xpredT) //=.
 apply ler_rsum => /= tb _.
-apply (@leR_trans (\rsum_(m| phi tb == Some m) (W ``(tb | enc m)))).
-  apply Req_le, eq_bigl => m; by rewrite inE.
-apply (@leR_trans (\rsum_(m| dec tb == Some m) (W ``(tb | enc m)))); last first.
-  apply Req_le, eq_bigl => m; by rewrite inE.
+rewrite (eq_bigl (fun m => phi tb == Some m)); last by move=> m; rewrite inE.
+rewrite [in X in _ <= X](eq_bigl (fun m => dec tb == Some m)); last by move=> m; rewrite inE.
 (* show that phi_ML succeeds more often than phi *)
-case/boolP : (dec tb == None) => dectb.
-  case/boolP: (receivable W P tb) => [ | Htb].
-    case/ML_dec => m'.
-      case=> Htmp.
-      move: dectb.
-      by rewrite {1}/dec {1}ffunE Htmp.
-  have Htb' m : W ``(tb | enc m) = 0%R.
+have [dectb_None|dectb_Some] := boolP (dec tb == None).
+  case/boolP : (receivable W P tb) => [/ML_dec[m' [tb_m']] | Htb].
+    move: dectb_None; by rewrite {1}/dec {1}ffunE tb_m'.
+  have W_tb m : W ``(tb | enc m) = 0%R.
     apply/eqP; apply/contraR : Htb => Htb.
     apply/existsP; exists (enc m).
     rewrite Htb andbT UniformSupport.neq0 inE.
-    move/subsetP : enc_img; apply.
-    apply/imsetP; by exists m.
-  rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite Htb'.
-  rewrite big_const iter_addR mulR0.
-  apply rsumr_ge0 => ? _; exact/DMC_ge0.
+    move/subsetP : enc_img; apply; apply/imsetP; by exists m.
+  rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite W_tb.
+  rewrite big1 //; apply rsumr_ge0 => ? _; exact/DMC_ge0.
 case/boolP : (phi tb == None) => [/eqP ->|phi_tb].
   rewrite big_pred0 //; apply rsumr_ge0 => ? _; exact/DMC_ge0.
-have [m1 Hm1] : exists m', dec tb = Some m'.
-  destruct (dec tb) => //; by exists s.
-have [m2 Hm2] : exists m', phi tb = Some m'.
-  destruct (phi tb) => //; by exists s.
+have [m1 Hm1] : exists m', dec tb = Some m' by destruct (dec tb) => //; exists s.
+have [m2 Hm2] : exists m', phi tb = Some m' by destruct (phi tb) => //; exists s.
 rewrite Hm1 {}Hm2.
-apply (@leR_trans (\rsum_(m| m == m2) W ``(tb | enc m))).
-  by apply Req_le, eq_bigl => m; rewrite eq_sym.
-apply (@leR_trans (\rsum_(m| m == m1) W ``(tb | enc m))); last first.
-  by apply Req_le, eq_bigl => m; rewrite eq_sym.
-rewrite 2!big_pred1_eq.
-apply ML_err_rate.
-  move: Hm1.
-  rewrite /dec ffunE.
-  rewrite /Option.map.
-  rewrite /obind.
-  rewrite /oapp.
+rewrite (eq_bigl [pred m | m == m2]); last by move=> ?; rewrite eq_sym.
+rewrite [in X in _ <= X](eq_bigl [pred m | m == m1]); last by move=> ?; rewrite eq_sym.
+rewrite 2!big_pred1_eq; apply ML_err_rate.
+  move: Hm1; rewrite /dec ffunE /omap /obind /oapp.
   move H : (repair tb) => h.
-  case: h H => // a Ha [<-]; congr Some.
-  by rewrite (discard_cancel Ha).
-move/subsetP : enc_img; apply.
-apply/imsetP; by exists m2.
+  case: h H => // a tb_a [<-]; congr Some.
+  by rewrite (discard_cancel tb_a).
+move/subsetP : enc_img; apply; apply/imsetP; by exists m2.
 Qed.
 
 End maximum_likelihood_decoding_prop.

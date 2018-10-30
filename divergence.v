@@ -45,12 +45,11 @@ case/boolP : (y == 0) => [/eqP y0 | y0].
     rewrite (_ : y - x = x * (y / x - 1) ); last first.
       rewrite mulRDr mulRCA mulRV ?mulR1 ?mulRN1 //; exact/eqP.
     rewrite -mulRA; apply (leR_wpmul2l (ltRW x_pos)).
-    rewrite {1}/Rminus -LogV; last exact: x_pos.
+    rewrite -addR_opp -LogV; last exact: x_pos.
     rewrite -LogM; last 2 first.
       exact/y_pos.
       exact/invR_gt0/x_pos.
-    apply log_id_cmp.
-    by apply (Rlt_mult_inv_pos _ _ y_pos x_pos).
+    apply/log_id_cmp/mulR_gt0 => //; exact/invR_gt0.
 Qed.
 
 Hypothesis P_dom_by_Q : P << Q.

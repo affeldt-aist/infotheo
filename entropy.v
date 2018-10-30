@@ -82,25 +82,25 @@ Qed.
 Lemma entropy_uniform {A : finType} n (HA : #|A| = n.+1) :
   `H (Uniform.d HA) = log (INR #|A|).
 Proof.
-rewrite /entropy /Uniform.d /Uniform.f /=.
-rewrite big_const iter_addR div1R mulRA mulRV; last by rewrite INR_eq0' HA.
+rewrite /entropy (eq_bigr (fun a => / INR #|A| * log (/INR #|A|))); last first.
+  by move=> a _; rewrite Uniform.dE.
+rewrite big_const iter_addR mulRA mulRV; last by rewrite INR_eq0' HA.
 rewrite mul1R /log LogV ?oppRK //; by rewrite HA; apply/ltR0n.
 Qed.
 
 Local Open Scope reals_ext_scope.
 
-Lemma entropy_max {A : finType} (P : dist A) : `H P <= log (INR #|A|).
+Lemma entropy_max (A : finType) (P : dist A) : `H P <= log (INR #|A|).
 Proof.
 have [n HA] : exists n, #|A| = n.+1.
-  exists (#|A|.-1); rewrite prednK //; by apply (dist_domain_not_empty P).
-have : P << (Uniform.d HA) by apply dom_by_uniform.
-move/leq0div => H.
-rewrite /div in H.
-suff Htmp : 0 <= - `H P + log (INR #|A|) by lra.
-apply/(leR_trans H)/Req_le.
-transitivity (\rsum_(a|a \in A) P a * log (P a) + \rsum_(a|a \in A) P a * - log ((Uniform.d HA) a)).
-  rewrite -big_split /=.
-  apply eq_bigr => a _; by rewrite mulRDr.
-rewrite /= /Uniform.f /= div1R -[in X in _ + X = _]big_distrl /= pmf1 mul1R.
-rewrite /entropy oppRK /log LogV ?oppRK // HA; exact/ltR0n.
+  exists (#|A|.-1); rewrite prednK //; exact: (dist_domain_not_empty P).
+have /leq0div H : P << (Uniform.d HA) by apply dom_by_uniform.
+rewrite -subR_ge0; apply/(leR_trans H)/Req_le.
+transitivity (\rsum_(a|a \in A) P a * log (P a) +
+              \rsum_(a|a \in A) P a * - log ((Uniform.d HA) a)).
+  rewrite -big_split /=; apply eq_bigr => a _; by rewrite mulRDr.
+rewrite [in X in _ + X](eq_bigr (fun a => P a * - log (/ INR #|A|))); last first.
+  by move=> a _; rewrite Uniform.dE.
+rewrite -[in X in _ + X = _]big_distrl /= pmf1 mul1R.
+rewrite addRC /entropy /log LogV ?oppRK ?subR_opp // HA; exact/ltR0n.
 Qed.

@@ -148,12 +148,11 @@ Lemma H_out_binary_uniform :
   `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
 Proof.
 rewrite {1}/entropy !Set2sumE /= !OutDist.dE !Set2sumE /=.
-rewrite !BSC.cE !Binary.fxx /Binary.f (eq_sym _ (Set2.a _)).
+rewrite !BSC.cE !Binary.fxx /Binary.f (eq_sym _ (Set2.a _)) !Uniform.dE.
 rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.
 rewrite mul1R (_ : p + (1 - p) = 1); last by field.
-rewrite mul1R -!mulRDl /= /Uniform.f card_A /=.
-rewrite (_ : INR 1 = 1) // (_ : INR 2 = 2) // div1R /log LogV; last lra.
+rewrite mul1R -!mulRDl card_A /= (_ : INR 2 = 2) // /log LogV; last lra.
 rewrite Log_n //=; field.
 Qed.
 
@@ -204,14 +203,12 @@ Lemma DMC_BSC_prop : forall m y,
   let d := dH y (f m) in
   W ``(y | (f m)) = ((1 - p) ^ (n - d) * p ^ d)%R.
 Proof.
-move=> m y d.
-rewrite DMCE.
+move=> m y d; rewrite DMCE.
 transitivity ((\rprod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
               (\rprod_(i < n | (f m) ``_ i != y ``_ i) p))%R.
-  rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=.
-  congr (_ * _).
-  by apply eq_bigr => // i /eqP ->; rewrite BSC.cE Binary.fxx.
-  apply eq_bigr => //= i /negbTE Htmp; rewrite BSC.cE /Binary.f eq_sym; by rewrite Htmp.
+  rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=; congr (_ * _).
+    by apply eq_bigr => // i /eqP ->; rewrite BSC.cE Binary.fxx.
+  apply eq_bigr => //= i /negbTE Hyi; by rewrite BSC.cE /Binary.f eq_sym Hyi.
 congr (_ * _).
 by rewrite big_const /= iter_mulR /= card_dHC.
 by rewrite big_const /= iter_mulR /= card_dH_vec.

@@ -69,48 +69,38 @@ Definition sum_mlog_prod A (P : dist A) n : rvar [finType of 'rV[A]_n] :=
 Lemma sum_mlog_prod_isum_map_mlog A (P : dist A) : forall n,
   sum_mlog_prod P n.+1 \=isum map_mlog n.+1 P.
 Proof.
-elim.
+elim => [|n IH].
 - move: (@isum_n_1 A (\row_i --log P)).
   set mlogP := cast_rv _.
-  move=> HmlogP.
+  move => HmlogP.
   set mlogprodP := sum_mlog_prod _ _.
   suff -> : mlogprodP = mlogP.
-    rewrite [X in _ \=isum X](_ : _ = \row_i --log P); last by apply val_inj.
-    by apply isum_n_1.
-  rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_rv /=.
-  rewrite mxE /=.
-  congr mkRvar.
+    rewrite [X in _ \=isum X](_ : _ = \row_i --log P);
+      [exact: isum_n_1 | exact: val_inj].
+  rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_rv /= mxE /=; congr mkRvar.
   apply FunctionalExtensionality.functional_extensionality => ta.
   by rewrite big_ord_recl big_ord0 addR0.
-- move=> n IHn.
-  rewrite [X in _ \=isum X](_ : _ = row_mx (\row_(i < 1) (--log P)) (map_mlog n.+1 P)); last first.
-    apply/matrixP => a b; rewrite {a}(ord1 a) !mxE.
-    case: splitP.
+- rewrite [X in _ \=isum X](_ : _ = row_mx (\row_(i < 1) (--log P)) (map_mlog n.+1 P)); last first.
+    apply/rowP => b; rewrite !mxE; case: splitP.
       move=> a; rewrite {a}(ord1 a) => _; by rewrite mxE.
     move=> k _; by rewrite mxE.
-  eapply isum_n_cons; first by apply IHn.
+  apply: (isum_n_cons IH).
   + rewrite /sum; split.
-    * by apply joint_prod_n.
+    * exact: joint_prod_n.
     * move=> ta.
-      rewrite /= big_ord_recl /=.
-      congr (_ + _)%R.
+      rewrite /= big_ord_recl /=; congr (_ + _)%R.
       apply eq_bigr => i _; by rewrite mxE.
   + rewrite /inde_rv => /= x y.
-    have : id_dist P (map_mlog n.+2 P).
-      rewrite /id_dist => i.
-      by rewrite mxE /=.
-    move/(inde_rv_tuple_pmf_dist x y) => Htmp.
-    eapply trans_eq.
-      eapply trans_eq; last by apply Htmp.
-      apply Pr_ext; apply/setP => ta; rewrite 2!inE /=.
-      apply andb_id2l => _.
-      congr (_ == _).
-      apply eq_bigr => i _.
-      by rewrite !mxE /mlog_rv /=.
+    have : id_dist P (map_mlog n.+2 P) by rewrite /id_dist => i; rewrite mxE.
+    move/(inde_rv_tuple_pmf_dist x y) => H.
+    apply: trans_eq.
+      apply: (trans_eq _ H).
+        apply Pr_ext; apply/setP => ta; rewrite 2!inE /=.
+        apply andb_id2l => _; congr (_ == _).
+        apply eq_bigr => i _; by rewrite !mxE.
     congr (_ * _)%R.
-    apply Pr_ext; apply/setP => ta /=; rewrite 2!inE.
-    congr (_ == _).
-    apply eq_bigr => i _; by rewrite !mxE /=.
+    apply Pr_ext; apply/setP => ta /=; rewrite 2!inE; congr (_ == _).
+    apply eq_bigr => i _; by rewrite !mxE.
 Qed.
 
 (** Constant used in the statement of AEP: *)

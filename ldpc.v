@@ -89,18 +89,17 @@ Lemma bsc_post (a : A) :
   (if a == a' then 1 - p else p)%R.
 Proof.
 rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
-rewrite DMCE.
-rewrite /= /DMC.f /= /Uniform.f big_ord_recl big_ord0 -big_distrr /=.
-set tmp := \rsum_(_ | _) _.
-have Hsum : tmp = 1%R.
-  rewrite /tmp.
+rewrite mxE DMCE big_ord_recl big_ord0.
+rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
+  by move=> i _; rewrite /P !Uniform.dE.
+rewrite -big_distrr /= (_ : \rsum_(_ | _) _ = 1)%R; last first.
   transitivity (\rsum_(i in 'M_1) Binary.f p (i ``_ ord0) a').
     apply eq_bigr => i _.
-    by rewrite DMCE big_ord_recl big_ord0 mulR1 /Binary.f mxE BSC.cE.
+    by rewrite DMCE big_ord_recl big_ord0 mulR1 BSC.cE mxE.
   apply/(@big_singl_rV _ _ _ _ (fun i => if a' == i then (1 - p)%R else p)).
   by rewrite -Binary.f_sum_swap // Binary.f1.
-rewrite Hsum 2!mxE mulR1 BSC.cE /Binary.f /= eq_sym; field.
-split; rewrite INR_eq0 //; by rewrite card_A.
+rewrite 2!mxE mulR1 BSC.cE /Binary.f /= eq_sym; field.
+rewrite /P Uniform.dE card_A (_ : INR 2 = 2) //; lra.
 Qed.
 
 End post_proba_bsc_unif.
