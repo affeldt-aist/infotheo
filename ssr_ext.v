@@ -234,41 +234,31 @@ Section seq_eqType_ext.
 
 Variables A B : eqType.
 
-Lemma in_cat (s : seq A) x : x \in s -> exists hd tl, s = hd ++ x :: tl.
+Lemma take_index (a : A) s : a \notin take (index a s) s.
 Proof.
-elim: s => // h t IH; rewrite in_cons; case/orP.
-- move/eqP => ?; subst h.
-  by exists [::], t.
-- case/IH => h1 [] t1 ht1.
-  exists (h ::h1), t1 => /=.
-  congruence.
-Qed.
-
-Lemma take_index (a : A) l : a \notin take (index a l) l.
-Proof.
-elim: l => // h t IH /=; case: ifPn => //.
+elim: s => // h t IH /=; case: ifPn => //.
 by rewrite inE negb_or eq_sym IH andbT.
 Qed.
 
-Lemma uniq_take i (l : seq A) :  i < size l -> uniq l -> uniq (take i l).
+Lemma uniq_take i (s : seq A) :  i < size s -> uniq s -> uniq (take i s).
 Proof.
-elim: i l => [l _ _ |i IH [| h t] //=]; first by rewrite take0.
+elim: i s => [l _ _ |i IH [| h t] //=]; first by rewrite take0.
 rewrite ltnS => nt /andP[ht ut].
 rewrite (IH _ nt ut) andbT; apply: contra ht; exact: mem_take.
 Qed.
 
-Lemma nth_of_sorted (l : seq nat) : sorted leq l -> forall i j,
-  i <= j < size l -> nth O l i <= nth O l j.
+Lemma nth_of_sorted (s : seq nat) : sorted leq s -> forall i j,
+  i <= j < size s -> nth O s i <= nth O s j.
 Proof.
-elim: l => [/= _ i j|h t IH Ht]; first by rewrite ltn0 andbF.
+elim: s => [/= _ i j|h t IH Ht]; first by rewrite ltn0 andbF.
 move/pathP : (Ht) => H; move/path_sorted in Ht.
 case => [/= [// | j /=] | i /= [// | j]].
   rewrite ltnS => jt.
-  apply: leq_trans; [|by apply: (IH Ht O); rewrite leq0n jt].
+  apply: (leq_trans _); last exact: (IH Ht O).
   apply: leq_trans; last by apply H; rewrite (leq_ltn_trans _ jt).
   by [].
 rewrite !ltnS => ijt.
-apply: leq_trans; first by apply: (IH _ _ j).
+apply: leq_trans; first exact: (IH _ _ j).
 by [].
 Qed.
 
@@ -288,10 +278,10 @@ have H : subseq [:: f a ; f b] s.
 by case/andP : (subseq_sorted r_trans H r_sorted).
 Qed.
 
-Lemma sorted_cat (l k : seq A) (Rel : @rel A) :
-  sorted Rel l -> sorted Rel k ->
-  (forall a, a \in l -> forall b, b \in k -> Rel a b) ->
-  sorted Rel (l ++ k).
+Lemma sorted_cat (l k : seq A) (r : @rel A) :
+  sorted r l -> sorted r k ->
+  (forall a, a \in l -> forall b, b \in k -> r a b) ->
+  sorted r (l ++ k).
 Proof.
 move=> Hl Hk H.
 destruct l => //.
@@ -386,56 +376,29 @@ elim: l => // h t IH /=; case/boolP : (P h) => /= Ph.
 Qed.
 
 Lemma undup_perm (f : A -> B) p h t : undup (map f p) = h :: t ->
-  exists preh : seq A,
-    exists pret : seq A,
-      perm_eq p (preh ++ pret) /\
-      undup (map f preh) = [:: h] /\ undup (map f pret) = t.
+  exists p1 : seq A, exists p2 : seq A,
+    perm_eq p (p1 ++ p2) /\ undup (map f p1) = [:: h] /\ undup (map f p2) = t.
 Proof.
-move=> p_t.
-exists (filter (preim f [pred x | x == h]) p), (filter (preim f [pred x | x \in t]) p).
+move=> p_t; exists (filter (preim f (pred1 h)) p), (filter (preim f (mem t)) p).
 split.
-- apply/perm_eqlP => x.
-  rewrite -(@perm_filterC A (preim f [pred x | (x == h)]) p).
-  move: x.
-  apply/perm_eqlP.
-  rewrite perm_cat2l (@eq_in_filter _ _ [pred x | (f x \in t)]) //.
-  move=> x X /=.
-  case/orP : (orbN (f x == h)) => Y.
-  + rewrite Y /=.
-    symmetry.
-    apply/negP => abs.
-    move/eqP : Y => Y; subst h.
-    have : uniq (f x :: t).
-      rewrite -p_t; by apply undup_uniq.
-    by rewrite /= abs.
-  - rewrite Y.
-    symmetry.
-    have Htmp : f x \in map f p by apply/mapP; exists x.
-    have {Htmp}Htmp : f x \in h :: t by rewrite -p_t mem_undup.
-    rewrite in_cons in Htmp.
-    case/orP : Htmp => [Htmp|->//].
-    by rewrite Htmp in Y.
+- apply/perm_eqlP => x; rewrite -(perm_filterC (preim f (pred1 h)) p).
+  apply/perm_eqlP : x.
+  rewrite perm_cat2l (@eq_in_filter _ _ [pred x | f x \in t]) //= => x X.
+  case/boolP: (f x == h) => [/eqP ->|/negbTE fxh] /=; apply/esym.
+  + by have /andP[/negbTE] : uniq (h :: t) by rewrite -p_t; apply undup_uniq.
+  + have : f x \in h :: t by rewrite -p_t mem_undup; apply/mapP; exists x.
+    rewrite in_cons => /orP[|->//]; by rewrite fxh.
 - split.
-  + rewrite -filter_map undup_filter p_t /= eqxx.
-    have -> : filter [pred x | x == h] t = [::]; last by [].
-    apply trans_eq with (filter pred0 t); last by apply filter_pred0.
-    apply eq_in_filter => i Hi /=.
-    apply/negP => X.
-    move/eqP : X => X; subst h.
-    have : uniq (i :: t).
-      rewrite -p_t; by apply undup_uniq.
-    rewrite /=.
-    case/andP => H1 H2.
-    by rewrite Hi in H1.
-  + rewrite -filter_map undup_filter p_t /=.
-    have -> : h \in t = false.
+  + rewrite -filter_map undup_filter p_t /= eqxx; congr cons.
+    rewrite -(filter_pred0 t); apply eq_in_filter => i it /=.
+    apply/negP => /eqP X; subst h.
+    have : uniq (i :: t) by rewrite -p_t; exact: undup_uniq.
+    rewrite /= => /andP[]; by rewrite it.
+  + rewrite -filter_map undup_filter p_t /= ifF; last first.
       apply/negP => X.
-      have : uniq (h :: t).
-        rewrite -p_t.
-        by apply undup_uniq.
+      have : uniq (h :: t) by rewrite -p_t undup_uniq.
       by rewrite /= X.
-    apply trans_eq with (filter predT t); last by apply filter_predT.
-    by apply eq_in_filter.
+    rewrite -[RHS](filter_predT t); exact: eq_in_filter.
 Qed.
 
 End seq_eqType_ext.

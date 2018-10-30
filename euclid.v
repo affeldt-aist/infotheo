@@ -154,17 +154,10 @@ elim/pair_ind: n => [_|_|n [H1 H2 H]].
   by rewrite /= subn0.
   by rewrite /= subn0.
 rewrite [n.+1]lock /= -lock.
-move: (H _ (ltnSn n.+1)) => rn10.
-move: (ltn_modpN0 (r n) rn10) => K1.
-have Htmp : (forall k : nat, k < n.+1 -> r k != 0).
-  move=> k kn.
-  apply H.
-  by rewrite ltnW.
-move: (leq_trans K1 (H2 Htmp)).
-rewrite [in X in _ < _ - X -> _]/= => Ktmp.
-rewrite subnS -ltnS prednK //.
-rewrite [in X in _ < X - _]/= in Ktmp.
-exact: leq_ltn_trans Ktmp.
+move: (H _ (ltnSn n.+1)) => /(ltn_modpN0 (r n)) K.
+have rk_neq0 k : k < n.+1 -> r k != 0 by move=> kn; apply H; rewrite ltnW.
+move: (leq_trans K (H2 rk_neq0)); rewrite [in X in _ < X -> _]/= => ltn_size.
+rewrite subnS -ltnS prednK //; exact: leq_ltn_trans ltn_size.
 Qed.
 
 End euclid_algo.
@@ -424,69 +417,49 @@ have vk1_neq0 : `v k.+1 != 0.
   move: {IH}(IH (ltnW H)); rewrite abs add0n => /(congr1 (fun x => x.+1)).
   rewrite prednK; last by rewrite lt0n size_poly_eq0.
   rewrite prednK; last by rewrite (leq_trans _ tr0).
-  apply/eqP.
-  rewrite ltn_eqF //.
-  destruct k => //.
+  apply/eqP; rewrite ltn_eqF //.
+  destruct k.
     move: abs.
     rewrite /= addr0 mulr1 size_opp => /eqP.
     rewrite size_poly_eq0 divp_eq0 ltnNge r1_leq_r0 orbF (negbTE rk_neq0) orbF.
     rewrite -size_poly_eq0 => abs.
     exfalso.
-    move/eqP : abs.
-    apply/eqP.
-    rewrite -lt0n.
-    by rewrite (leq_trans _ tr0).
-  apply (ltn_size_r_stop_r0) => //=.
-  by rewrite ltnW // ltnW.
+    move/eqP : abs; apply/eqP.
+    by rewrite -lt0n (leq_trans _ tr0).
+  by rewrite (ltn_size_r_stop_r0) //= ltnW // ltnW.
 rewrite size_addl; last first.
   rewrite mulNr size_opp.
   destruct k.
     rewrite /= /Euclid.v0 /Euclid.v1 size_poly0 mulr1 lt0n size_poly_eq0 divp_eq0.
     by rewrite ltnNge r1_leq_r0 orbF (negbTE rk1_neq0) orbF.
-  have Htmp : 1 < size (`q k.+3).
+  have q_k3 : 1 < size (`q k.+3).
     rewrite Euclid.qE size_divp // -subn1 subnBA; last by rewrite lt0n size_poly_eq0.
-    rewrite addn1 subSn; last first.
-      by rewrite ltnW // ltn_size_r_stop //= ltnW.
+    rewrite addn1 subSn; last by rewrite ltnW // ltn_size_r_stop //= ltnW.
     by rewrite ltnS subn_gt0 ltn_size_r_stop //= ltnW.
   rewrite -Euclid.qE size_mul //; last first.
-    by rewrite -size_poly_eq0 -lt0n (leq_trans _ Htmp).
-  rewrite -subn1 -addnBA; last first.
-     by rewrite lt0n size_poly_eq0.
+    by rewrite -size_poly_eq0 -lt0n (leq_trans _ q_k3).
+  rewrite -subn1 -addnBA; last by rewrite lt0n size_poly_eq0.
   rewrite (@leq_ltn_trans (1 + (size (`v k.+2)).-1))%N //.
-    rewrite add1n prednK.
-      rewrite leq_size_v_incr //.
-      by rewrite ltnW.
-    by rewrite lt0n size_poly_eq0.
-  rewrite add1n subn1 prednK; last first.
-    by rewrite lt0n size_poly_eq0.
+    rewrite add1n prednK; last by rewrite lt0n size_poly_eq0.
+    by rewrite leq_size_v_incr // ltnW.
+  rewrite add1n subn1 prednK; last by rewrite lt0n size_poly_eq0.
   rewrite -subn1 addnBA ?lt0n ?size_poly_eq0 // (@leq_ltn_trans (1 + size (`v k.+2) -1)) //.
     by rewrite add1n subn1.
-  rewrite -addnBA ?lt0n ?size_poly_eq0 // -addnBA ?lt0n ?size_poly_eq0 //.
-  by rewrite ltn_add2r //.
+  by rewrite -addnBA ?lt0n ?size_poly_eq0 // -addnBA ?lt0n ?size_poly_eq0 // ltn_add2r.
 have H1 : size (`r k.+1) <= size (`r k).
   destruct k => //.
-  rewrite ltnW //; apply ltn_size_r_stop => //.
-  by rewrite /= ltnW.
+  by rewrite ltnW // ltn_size_r_stop //= ltnW.
 rewrite size_mul //; last by rewrite oppr_eq0 divpN0.
-rewrite size_opp.
-rewrite size_divp //.
-rewrite -subn2.
+rewrite size_opp size_divp // -subn2.
 set a := size (`r k.+1).
-rewrite addnC.
-rewrite addnBA; last first.
-  rewrite {}/a.
-  rewrite -subn1 subnBA; last by rewrite lt0n size_poly_eq0.
+rewrite addnC addnBA; last first.
+  rewrite {}/a -subn1 subnBA; last by rewrite lt0n size_poly_eq0.
   by rewrite addn1 subSn // addSn ltnS addn_gt0 (lt0n (size (`v k.+1))) size_poly_eq0 vk1_neq0 orbT.
-rewrite addnA.
-rewrite subnKC; last by rewrite {}/a (leq_trans _ H1) // leq_pred.
+rewrite addnA subnKC; last by rewrite {}/a (leq_trans _ H1) // leq_pred.
 rewrite -IH; last by rewrite ltnW.
-rewrite -[in X in (_ = _ + X)%N]subn1.
-rewrite addnBA; last by rewrite lt0n size_poly_eq0.
-rewrite [in RHS]addnC subn1.
-rewrite subn2.
-congr (_ .-1).
-rewrite -subn1.
-rewrite -addnBA; last by rewrite lt0n size_poly_eq0.
+rewrite -[in X in (_ = _ + X)%N]subn1 addnBA; last by rewrite lt0n size_poly_eq0.
+rewrite [in RHS]addnC subn1 subn2; congr (_ .-1).
+rewrite -subn1 -addnBA; last by rewrite lt0n size_poly_eq0.
 by rewrite subn1.
 Qed.
 
@@ -495,8 +468,7 @@ Lemma ltn_size_q' i (tr0 : t < size r0) (r1_ltn_r0 : size r1 < size r0) :
 Proof.
 move=> istop Hr; rewrite Euclid.qE.
 case: i => [|i] in Hr istop *.
-  rewrite size_divp //= ltn_subRL addn1 prednK //.
-  by rewrite lt0n size_poly_eq0.
+  by rewrite size_divp //= ltn_subRL addn1 prednK // lt0n size_poly_eq0.
 rewrite size_divp // ltn_subRL addn1 prednK; last by rewrite lt0n size_poly_eq0.
 by rewrite ltn_size_r_stop // ltnW.
 Qed.
@@ -518,9 +490,7 @@ rewrite -size_poly_eq0; by case: (size _).
 Qed.
 
 Lemma size_v01 : size (`v 0) < size (`v 1).
-Proof.
-by rewrite /= /Euclid.v0 /Euclid.v1 size_poly0 size_poly1.
-Qed.
+Proof. by rewrite /= /Euclid.v0 /Euclid.v1 size_poly0 size_poly1. Qed.
 
 Lemma size_v12 (r1_leq_r0 : size r1 <= size r0) : r1 != 0 -> size (`v 1) <= size (`v 2).
 Proof.
@@ -538,10 +508,9 @@ move: (relationF tr0 r1_leq_r0 istop) => H1.
 destruct i => //.
 move: (relationF tr0 r1_leq_r0(ltnW istop)) => H2.
 move: (ltn_size_r_stop).
-have : 0 < i < stop.
+have H3 : 0 < i < stop.
   destruct i => //=.
   by rewrite ltnW.
-move=> H3.
 move/(_ _ tr0 r1_leq_r0 H3) => H4.
 move: H1.
 move/(congr1 (fun x => x.+1))/eqP.

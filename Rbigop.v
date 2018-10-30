@@ -544,7 +544,8 @@ elim: n1 s1 H => //.
 move=> n1 IH1 [|h1 t1] // [] H1 s2 Hg Hs2 K1 K2.
 rewrite big_cons.
 have [h2 [t2 ht2]] : exists h2 t2, s2 = h2 ++ h1 :: t2.
-  apply in_cat; by rewrite -(perm_eq_mem Hs2) in_cons eqxx.
+  have /path.splitPr[h2 t2] : h1 \in s2 by rewrite -(perm_eq_mem Hs2) in_cons eqxx.
+  by exists h2, t2.
 have Hs2' : perm_eq t1 (h2 ++ t2).
   rewrite ht2 in Hs2.
   rewrite -(perm_cons h1).

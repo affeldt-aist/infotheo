@@ -123,57 +123,43 @@ Lemma error_exponent_bound : exists Delta, 0 < Delta /\
     Delta <= D(V || W | P) +  +| minRate - `I(P ; V) |.
 Proof.
 set gamma := / (INR #|B| + INR #|A| * INR #|B|) * (ln 2 * ((minRate - cap) / 2)).
-move: (continue_xlnx 0).
-rewrite /continuity_pt /continue_in /limit1_in /limit_in.
-move=> /(_ (min(exp (-2), gamma))).
-have Htmp : min(exp (-2), gamma) > 0.
-  apply Rmin_Rgt_r ; split ; apply Rlt_gt.
-  - by apply exp_pos.
-  - subst gamma ; apply mulR_gt0.
-      apply/invR_gt0/addR_gt0wl.
-      - exact/ltR0n.
-      - apply mulR_ge0; exact/leR0n.
-    apply mulR_gt0 => //; apply mulR_gt0; last exact: invR_gt0.
-    by rewrite subR_gt0.
-move=> /(_ Htmp) {Htmp} [] /= mu [mu_pos mu_cond].
+have : min(exp (-2), gamma) > 0.
+  apply Rmin_Rgt_r; split; apply Rlt_gt; first exact: exp_pos.
+  apply mulR_gt0.
+  - apply/invR_gt0/addR_gt0wl; [exact/ltR0n | apply/mulR_ge0; exact/leR0n].
+  - apply mulR_gt0 => //; apply mulR_gt0; [by rewrite subR_gt0 | exact: invR_gt0].
+move/(continue_xlnx 0) => [] /= mu [mu_gt0 mu_cond].
 set x := min(mu / 2, exp (-2)).
-move: {mu_cond}(mu_cond x).
-have x_pos : 0 < x.
-  subst x.
-  apply Rmin_pos; last by apply exp_pos.
+have x_gt0 : 0 < x.
+  apply Rmin_pos; last exact: exp_pos.
   apply mulR_gt0 => //; exact: invR_gt0.
-have Htmp : D_x no_cond 0 x /\ R_dist x 0 < mu.
+have /mu_cond : D_x no_cond 0 x /\ R_dist x 0 < mu.
   split.
   - split => //; exact/ltR_eqF.
-  - rewrite /R_dist subR0 gtR0_norm //.
-    subst x.
+  - rewrite /R_dist subR0 gtR0_norm // /x.
     apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
     apply/ltRP; rewrite ltR_pdivr_mulr //; apply/ltRP; lra.
-move=> /(_ Htmp) {Htmp}.
 rewrite /R_dist {2}/xlnx ltRR' subR0 ltR0_norm; last first.
-  apply xlnx_neg.
-  split => //; subst x.
+  apply xlnx_neg; split => //; rewrite /x.
   exact: leR_ltR_trans (geR_minr _ _) ltRinve21.
 move=> Hx.
 set Delta := min((minRate - cap) / 2, x ^ 2 / 2).
 exists Delta; split.
   apply Rmin_case.
-    apply mulR_gt0; [exact/subR_gt0 | exact/invR_gt0].
-  apply mulR_gt0; [exact: pow_gt0 | exact: invR_gt0].
+  - apply mulR_gt0; [exact/subR_gt0 | exact/invR_gt0].
+  - apply mulR_gt0; [exact: pow_gt0 | exact: invR_gt0].
 move=> P V v_dom_by_w.
-case/boolP : (Delta <b= D(V || W | P)).
-  move/leRP => Hcase.
+case/boolP : (Delta <b= D(V || W | P)) => [/leRP| /leRP/ltRNge] Hcase.
   apply (@leR_trans (D(V || W | P))) => //.
   rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.
-move/leRP/ltRNge => Hcase.
-suff Htmp : (minRate - cap) / 2 <= minRate - (`I(P; V)).
-  clear -Hcase v_dom_by_w Htmp.
+suff HminRate : (minRate - cap) / 2 <= minRate - (`I(P; V)).
+  clear -Hcase v_dom_by_w HminRate.
   apply (@leR_trans +| minRate - `I(P ; V) |); last first.
     rewrite -[X in X <= _]add0R.
     apply/leR_add2r/leq0cdiv => b Hb ? ?; exact: v_dom_by_w.
   apply: leR_trans; last exact: leR_maxr.
-  apply: (leR_trans _ Htmp); exact: geR_minl.
-have Htmp : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
+  apply: (leR_trans _ HminRate); exact: geR_minl.
+have : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
                                (- xlnx (sqrt (2 * D(V || W | P)))).
   apply (@leR_trans (`I(P ; W) + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
                                - xlnx (sqrt (2 * D(V || W | P))))); last first.
@@ -181,19 +167,15 @@ have Htmp : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
     move: W_cap; rewrite /capacity /lub; case; by move/(_ P).
   rewrite addRC -leR_subl_addr.
   apply (@leR_trans `| `I(P ; V) + - `I(P ; W) |); first exact: Rle_abs.
-  have Htmp : D(V || W | P) <= exp (-2) ^ 2 * / 2.
-    clear -Hcase x_pos.
-    apply/ltRW/(ltR_leR_trans Hcase).
-    apply (@leR_trans (x ^ 2 * / 2)); first exact: geR_minr.
-    apply leR_wpmul2r; first exact/ltRW/invR_gt0.
-    apply pow_incr.
-    split; [exact: ltRW | exact: geR_minr].
-  by apply mut_info_dist_ub.
-rewrite -[X in _ <= X]oppRK in Htmp.
-apply leR_oppr in Htmp.
-apply (@leR_add2l minRate) in Htmp.
-apply: (leR_trans _ Htmp) => {Htmp}.
-suff Htmp : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
+  suff : D(V || W | P) <= exp (-2) ^ 2 * / 2 by apply mut_info_dist_ub.
+  clear -Hcase x_gt0.
+  apply/ltRW/(ltR_leR_trans Hcase).
+  apply (@leR_trans (x ^ 2 * / 2)); first exact: geR_minr.
+  apply leR_wpmul2r; first exact/ltRW/invR_gt0.
+  apply pow_incr; split; [exact: ltRW | exact: geR_minr].
+rewrite -[X in _ <= X]oppRK => /leR_oppr/(@leR_add2l minRate).
+move/(leR_trans _); apply.
+suff x_gamma : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite oppRD addRA addRC -leR_subl_addr.
   rewrite [X in X <= _](_ : _ = - ((minRate + - cap) / 2)); last by field.
   rewrite leR_oppr oppRK -mulRA mulRC.
@@ -201,15 +183,13 @@ suff Htmp : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite mulRC -leR_pdivl_mulr; last first.
     by apply/ltRP; rewrite -mult_INR -plus_INR plusE multE ltR0n' addn_gt0 Bnot0.
   apply/leRP; by rewrite [in X in _ <= X]mulRC /Rdiv (mulRC _ (/ (_ + _))).
-suff Htmp : xlnx x <= xlnx (sqrt (2 * (D(V || W | P)))).
-  clear -Hx Htmp.
-  rewrite leR_oppl.
-  apply (@leR_trans (xlnx x)) => //.
-  rewrite leR_oppl.
-  apply/ltRW/(ltR_leR_trans Hx).
-  subst gamma; exact: geR_minr.
+suff x_D : xlnx x <= xlnx (sqrt (2 * (D(V || W | P)))).
+  clear -Hx x_D.
+  rewrite leR_oppl; apply (@leR_trans (xlnx x)) => //.
+  rewrite leR_oppl; apply/ltRW/(ltR_leR_trans Hx).
+  rewrite /gamma; exact: geR_minr.
 apply/ltRW/Rgt_lt.
-have Htmp : sqrt (2 * D(V || W | P)) < x.
+have ? : sqrt (2 * D(V || W | P)) < x.
   apply pow2_Rlt_inv; [exact: sqrt_pos | exact: ltRW | ].
   rewrite [in X in X < _]/= mulR1 sqrt_sqrt; last first.
     apply mulR_ge0; first exact/ltRW.
@@ -219,8 +199,7 @@ have Htmp : sqrt (2 * D(V || W | P)) < x.
 apply xlnx_sdecreasing_0_Rinv_e => //.
 - split; first exact/sqrt_pos.
   apply: (@leR_trans x _ _ (ltRW _)) => //.
-  subst x.
-  apply (@leR_trans (exp (-2))); first exact: geR_minr.
+  rewrite /x; apply (@leR_trans (exp (-2))); first exact: geR_minr.
   apply/ltRW/exp_increasing; lra.
 - split; first exact: ltRW.
   apply (@leR_trans (exp (-2))); first exact: geR_minr.

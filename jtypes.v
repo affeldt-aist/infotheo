@@ -941,7 +941,8 @@ rewrite -size_filter (_ : filter _ _ = filter
 rewrite filter_predI (@filter_zip_L _ _ n) //.
 have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (jtype.f V a b) b | b <- enum B].
   have [A1 [A2 A12]] : exists A1 A2, enum A = A1 ++ a :: A2.
-    apply: in_cat; by rewrite mem_enum.
+    have /splitPr[A1 A2] : a \in enum A by rewrite mem_enum.
+    by exists A1, A2.
   rewrite /cdom /dom A12 map_cat flatten_cat map_cat flatten_cat map_cat mask_cat; last first.
     rewrite size_map size_flatten /shape -map_comp sumn_big_addn big_map.
     rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
