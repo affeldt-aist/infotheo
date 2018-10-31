@@ -541,6 +541,16 @@ apply/idP/idP => [/eqP H|/eqP ->]; apply/eqP; last by rewrite pow_ne_zero.
 move: (pow_nonzero x n.+1); tauto.
 Qed.
 
+Lemma pow_gt0 x : 0 < x -> forall n : nat, 0 < x ^ n.
+Proof. move=> ?; elim => [/= | n IH] => //; exact: mulR_gt0. Qed.
+
+Lemma pow_ge0 x : 0 <= x -> forall n : nat, 0 <= x ^ n.
+Proof.
+move=> x_pos.
+elim => [/= | n IH] => //.
+rewrite -(mulR0 0); apply leR_pmul => //; exact/leRR.
+Qed.
+
 Lemma pow_not0 x (n : nat) : x != 0 -> x ^ n != 0.
 Proof. by move/eqP/(pow_nonzero _ n)/eqP. Qed.
 
@@ -561,6 +571,28 @@ Proof.
 move=> Hr ab.
 rewrite (pow_RN_plus r _ m) // plusE -minusE subnK // powRV //; exact/eqP.
 Qed.
+
+Lemma leR_wiexpn2l x :
+  0 <= x -> x <= 1 -> {homo (pow x) : m n / (n <= m)%nat >-> m <= n}.
+Proof.
+move/leRP; rewrite le0R => /orP[/eqP -> _ m n|/ltRP x0 x1 m n /leP nm].
+  case: n => [|n nm].
+    case: m => [_ |m _]; first exact/leRR.
+    by rewrite pow_ne_zero.
+  rewrite pow_ne_zero; last by case: m nm.
+  rewrite pow_ne_zero //; exact/leRR.
+apply invR_le => //.
+exact/pow_gt0.
+exact/pow_gt0.
+rewrite -expRV; last exact/eqP/gtR_eqF.
+rewrite -expRV; last exact/eqP/gtR_eqF.
+apply Rle_pow => //.
+rewrite -invR1; apply leR_inv => //; exact/ltRP.
+Qed.
+
+Lemma leR_weexpn2l x :
+  1 <= x -> {homo (pow x) : m n / (m <= n)%nat >-> m <= n}.
+Proof. move=> x1 m n /leP nm; exact/Rle_pow. Qed.
 
 Lemma sqrRB a b : (a - b) ^ 2 = a ^ 2 - 2 * a * b + b ^ 2.
 Proof. rewrite /= !mulR1 !mulRDr !mulRBl /=; field. Qed.

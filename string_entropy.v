@@ -14,6 +14,7 @@ Local Open Scope num_occ_scope.
 Local Open Scope entropy_scope.
 Local Coercion INR : nat >-> R.
 
+(* TODO *)
 Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
 Local Notation "n %:R" := (INR n).
 

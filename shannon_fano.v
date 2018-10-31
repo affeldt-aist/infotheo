@@ -34,30 +34,6 @@ Qed.
 Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.
 Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(leR_trans _ K). Qed.
 
-(* TODO: move? *)
-Lemma leR_wiexpn2l x :
-  0 <= x -> x <= 1 -> {homo (pow x) : m n / (n <= m)%nat >-> m <= n}.
-Proof.
-move/leRP; rewrite le0R => /orP[/eqP -> _ m n|/ltRP x0 x1 m n /leP nm].
-  case: n => [|n nm].
-    case: m => [_ |m _]; first exact/leRR.
-    by rewrite pow_ne_zero.
-  rewrite pow_ne_zero; last by case: m nm.
-  rewrite pow_ne_zero //; exact/leRR.
-apply invR_le => //.
-exact/pow_gt0.
-exact/pow_gt0.
-rewrite -expRV; last exact/eqP/gtR_eqF.
-rewrite -expRV; last exact/eqP/gtR_eqF.
-apply Rle_pow => //.
-rewrite -invR1; apply leR_inv => //; exact/ltRP.
-Qed.
-
-(* TODO: move? *)
-Lemma leR_weexpn2l x :
-  1 <= x -> {homo (pow x) : m n / (m <= n)%nat >-> m <= n}.
-Proof. move=> x1 m n /leP nm; exact/Rle_pow. Qed.
-
 (* TODO: move up? *)
 Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
 Local Notation "n %:R" := (INR n).

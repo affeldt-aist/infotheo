@@ -169,16 +169,6 @@ elim => // n IH.
 by rewrite (expnSr r n) mult_INR -addn1 pow_add /= mulR1 IH.
 Qed.
 
-Lemma pow_gt0 x : 0 < x -> forall n : nat, 0 < x ^ n.
-Proof. move=> ?; elim => [/= | n IH] => //; exact: mulR_gt0. Qed.
-
-Lemma pow_ge0 x : 0 <= x -> forall n : nat, 0 <= x ^ n.
-Proof.
-move=> x_pos.
-elim => [/= | n IH] => //.
-rewrite -(mulR0 0); apply leR_pmul => //; exact/leRR.
-Qed.
-
 End pow_sect.
 
 (** Lemmas about up / Int_part / frac_part *)

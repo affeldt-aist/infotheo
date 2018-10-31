@@ -570,20 +570,15 @@ rewrite (eq_bigr (fun i : 'I_n => #|suffixes C``_i|%:R)%R); last first.
   by rewrite unitfE pnatr_eq0 -lt0n.
 (*\color{comment}{\framebox{the goal is now $\sum_{i < n} | \{ x | \prefix{c_i}{x} \} | \leq |T|^{\ell_{\mathrm{max}}}$}} *)
 apply (@ler_trans _ (#|\bigcup_(i < n) suffixes (C ``_ i)|%:R)%R).
-  set P := [set (suffixes C``_(nat_of_ord i)) | i in 'I_n].
-  rewrite (@card_partition _ P) ?/partition; last first.
-    rewrite cover_imset eqxx /=; apply/andP; split; last first.
-      apply/imsetP => -[i _ /esym]; exact: suffixes_not_empty.
-    apply/trivIsetP => /= x y /imsetP[i _ ->] /imsetP[j _ ->] ij.
-    rewrite -setI_eq0 disjoint_suffixes //; [apply/nthP; by exists i |
-      apply/nthP; by exists j | by apply: contra ij => /eqP ->].
-  rewrite big_imset /= ?natr_sum // => i j _ _ Hij.
-  apply/eqP/negPn/negP => ij.
-  have Ci : C ``_ i \in C by apply/nthP; exists i.
-  have Cj : C ``_ j \in C by apply/nthP; exists j.
-  have : C ``_ i != C ``_ j by rewrite nth_uniq //; case: C.
-  move/(disjoint_suffixes prefixC Ci Cj).
-  rewrite Hij setIid => /eqP/suffixes_not_empty; exact.
+  rewrite -sum1_card.
+  rewrite partition_disjoint_bigcup /=.
+    rewrite natr_sum ler_sum // => i _.
+    by rewrite sum1_card.
+  move=> i j ij.
+  rewrite -setI_eq0 disjoint_suffixes //.
+  by apply/nthP; exists i.
+  by apply/nthP; exists j.
+  by rewrite nth_uniq //; case: C.
 (*\color{comment}{\framebox{the goal is now $\left| \bigcup_{i < n} \{ x | \prefix{c_i}{x} \} \right| \leq |T|^{\ell_{\mathrm{max}}}$}} *)
 by rewrite -natrX -card_tuple ler_nat max_card.
 Qed.

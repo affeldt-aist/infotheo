@@ -601,24 +601,18 @@ apply: uniq_path_ucycle_extend_1 => //.
   rewrite exceptE /= andbT -VnextE n1m0 /= eq_sym.
   rewrite (path_except_neq _ Hp') // Hlast.
   destruct p' => //=; by rewrite mem_last.
-- rewrite -cats1. (* TODO *)
-  rewrite -(cat1s (inl m1')) cat_uniq Hun /= andbT orbF.
-  rewrite inE /= negb_or.
-  apply/andP; split.
-    apply/eqP; case => ?; subst m1'.
-    by rewrite in_setD1 eqxx in Hm1'.
+- rewrite rcons_uniq Hun andbT inE negb_or; apply/andP; split.
+    apply/eqP; case => m0m1'; by move: Hm1'; rewrite m0m1' in_setD1 eqxx.
   apply/negP => Hx.
   case/splitPr : Hx => p1 p2 in Hp' Hun p'p Hlast.
   rewrite last_cat /= in Hlast.
   apply (@Hacyclic [:: inl m0, inr n1', inl m1' & p1] isT).
   apply: uniq_path_ucycle_extend_1 => //.
   + by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
-  + rewrite -(cat1s (inl m0)) catA cat_path in Hp'.
-    rewrite !cats1 in Hp'.
-    by case/andP : Hp'.
-  + rewrite -(cat1s (inl m1')) -(cat1s (inl m0)) 2!catA cat_uniq in Hun.
-    rewrite -cats1. (* TODO *)
-    by case/andP : Hun.
+  + move: Hp'; by rewrite -cat_rcons cat_path => /andP[].
+  + rewrite rcons_uniq.
+    move: Hun; rewrite -cat_cons cat_uniq => /andP[-> /=].
+    by rewrite negb_or -andbA => /and3P[->].
 Qed.
 
 Lemma dproj_prop d m0 n0 d' t (d'd : freeon ('V m0 :\ n0) d' d)
@@ -692,9 +686,7 @@ apply: uniq_path_ucycle_extend_1 => //.
   move: Hn1; rewrite in_setD1 => /andP[_ -> /=].
   rewrite eq_sym (path_except_neq _ Hp') // Hlast.
   destruct p' => //=; by rewrite mem_last.
-- rewrite -cats1. (* TODO *)
-  rewrite -(cat1s (inl m1)) cat_uniq Hun /= andbT orbF.
-  rewrite inE negb_or.
+- rewrite rcons_uniq Hun andbT inE negb_or.
   apply/andP; split.
     apply/eqP; case => ?; subst m1.
     by rewrite in_setD1 eqxx in Hm1.
@@ -704,10 +696,10 @@ apply: uniq_path_ucycle_extend_1 => //.
   apply (@Hacyclic [:: inl m0, inr n3, inl m1 & p1] isT).
   apply: uniq_path_ucycle_extend_1 => //.
   + by rewrite /= -VnextE; move: Hn3; rewrite in_setD1 => /andP[].
-  + rewrite -(cat1s (inl m0)) catA cats1 cat_path last_rcons /= in Hp'; by case/andP : Hp'.
-  + rewrite -(cat1s (inl m1)) -(cat1s (inl m0)) 2!catA cat_uniq in Hun.
-    rewrite -cats1. (* Hun *)
-    by case/andP : Hun.
+  + by move: Hp'; rewrite -cat_rcons cat_path => /andP[].
+  + rewrite rcons_uniq.
+    move: Hun; rewrite -cat_cons cat_uniq => /andP[-> /=].
+    by rewrite negb_or -andbA => /andP[ ->].
 Qed.
 
 Local Open Scope channel_scope.
