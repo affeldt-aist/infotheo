@@ -222,33 +222,33 @@ Proof. by rewrite ltRNge' negbK. Qed.
 
 Lemma leR_eqVlt m n : (m <= n) <-> (m = n) \/ (m < n).
 Proof.
-split => [|[->|]].
-  case/Rle_lt_or_eq_dec => ?; by [right|left].
-exact: leRR.
-exact: ltRW.
+split => [|[->|]]; [ |exact: leRR|exact: ltRW].
+case/Rle_lt_or_eq_dec => ?; by [right|left].
 Qed.
 Lemma leR_eqVlt' m n : (m <b= n) = (m == n) || (m <b n).
 Proof.
-apply/idP/idP => [/leRP/leR_eqVlt[/eqP -> //|/ltRP ->]|/orP[/eqP ->|/ltRP]].
-  by rewrite orbT.
-by rewrite leRR'.
-by move/ltRP/ltRW'.
+apply/idP/idP => [/leRP/leR_eqVlt[/eqP -> //|/ltRP ->]|/orP[/eqP ->|/ltRP]];
+  by [rewrite orbT|rewrite leRR'|move/ltRP/ltRW'].
 Qed.
 
-Lemma ltR_neqAle m n : (m <b n) = (m != n) && (m <b= n).
+Lemma ltR_neqAle' m n : (m <b n) = (m != n) && (m <b= n).
 Proof. by rewrite ltRNge' leR_eqVlt' negb_or ltRNge' negbK eq_sym. Qed.
+Lemma ltR_neqAle m n : (m < n) <-> (m <> n) /\ (m <= n).
+Proof.
+split => [/ltRP|[/eqP H /leRP K]]; by
+  [rewrite ltR_neqAle' => /andP[/eqP ? /leRP] |
+   apply/ltRP; rewrite ltR_neqAle' H].
+Qed.
 
 Lemma lt0R x : (0 <b x) = (x != 0) && (0 <b= x).
-Proof. by rewrite ltR_neqAle eq_sym. Qed.
+Proof. by rewrite ltR_neqAle' eq_sym. Qed.
 
 Lemma le0R x : (0 <b= x) = (x == 0) || (0 <b x).
 Proof. by rewrite leR_eqVlt' eq_sym. Qed.
 
 (* Lemma pnatr_eq0 n : (n%:R == 0 :> R) = (n == 0)%N. *)
 Lemma INR_eq0 n : (INR n = 0) <-> (n = O).
-Proof.
-split => [|-> //]; by rewrite (_ : 0 = INR 0) // => /INR_eq ->.
-Qed.
+Proof. split => [|-> //]; by rewrite (_ : 0 = INR 0) // => /INR_eq ->. Qed.
 Lemma INR_eq0' n : (INR n == 0) = (n == O).
 Proof. by apply/idP/idP => /eqP/INR_eq0/eqP. Qed.
 
@@ -256,13 +256,10 @@ Lemma eqR_le x y : (x = y) <-> (x <= y <= x).
 Proof. split => [->| [] ]; by [split; exact/leRR | exact: Rle_antisym]. Qed.
 
 Definition leR0n n : 0 <= INR n := pos_INR n.
-Lemma leR0n' n : (0 <b= INR n).
-Proof. exact/leRP/leR0n. Qed.
+Lemma leR0n' n : (0 <b= INR n). Proof. exact/leRP/leR0n. Qed.
 
 Lemma ltR0n n : (0 < INR n) <-> (O < n)%nat.
-Proof.
-split; by [move/gtR_eqF/INR_not_0/Nat.neq_0_lt_0/ltP | move/ltP/lt_0_INR].
-Qed.
+Proof. by split => [/gtR_eqF/INR_not_0/Nat.neq_0_lt_0/ltP | /ltP/lt_0_INR]. Qed.
 Lemma ltR0n' n : (0 <b INR n) = (O < n)%nat.
 Proof. by apply/idP/idP => [/ltRP/ltR0n|/ltR0n/ltRP]. Qed.
 

@@ -255,13 +255,10 @@ Defined.
 Lemma xlnx_sdecreasing_0_Rinv_e_helper : forall (t : R) (Ht : 0 < t <= exp (-1)),
   0 < (if t == exp (-1) then 1 else derive_pt (fun x => - xlnx x) t (pderivable_Ropp_xlnx Ht)).
 Proof.
-move=> t [Ht1 Ht2].
-case : ifP => [//|/negbT] Hcase.
+move=> t [t0 te]; case: ifPn => [//|] /eqP Hcase.
 rewrite derive_pt_opp derive_pt_xlnx //.
 rewrite ltR_oppr oppR0 addRC -ltR_subRL sub0R.
-apply exp_lt_inv.
-rewrite exp_ln //.
-apply/ltRP; rewrite ltR_neqAle Hcase; exact/leRP.
+apply exp_lt_inv; by rewrite exp_ln // ltR_neqAle.
 Qed.
 
 Lemma xlnx_sdecreasing_0_Rinv_e x y :
@@ -281,9 +278,8 @@ Lemma xlnx_decreasing_0_Rinv_e x y :
   0 <= x <= exp (-1) -> 0 <= y <= exp (-1) -> x <= y -> xlnx y <= xlnx x.
 Proof.
 move=> Hx Hy Hxy.
-case/boolP : (x == y) => [/eqP ->|H]; first exact/leRR.
-- apply/ltRW/xlnx_sdecreasing_0_Rinv_e => //.
-  apply/ltRP; rewrite ltR_neqAle H; exact/leRP.
+case/boolP : (x == y) => [/eqP ->|/eqP H]; first exact/leRR.
+- apply/ltRW/xlnx_sdecreasing_0_Rinv_e => //; by rewrite ltR_neqAle.
 Qed.
 
 End xlnx.
@@ -379,12 +375,12 @@ Proof.
 intros prd prca prcb ab.
 have prc : forall x (Hx : a <= x <= b), continuity_pt f x.
   move=> x Hx.
-  case/boolP : (x == a) => [/eqP -> //|xnota].
-  case/boolP : (x == b) => [/eqP -> //|xnotb].
+  case/boolP : (x == a) => [/eqP -> //|/eqP /nesym xnota].
+  case/boolP : (x == b) => [/eqP -> //|/eqP xnotb].
   apply derivable_continuous_pt, prd.
-  split; apply/ltRP; rewrite ltR_neqAle.
-  - rewrite eq_sym xnota; exact/leRP/(proj1 Hx).
-  - rewrite xnotb; exact/leRP/(proj2 Hx).
+  split; rewrite ltR_neqAle.
+  - split => //; exact/(proj1 Hx).
+  - split => //; exact/(proj2 Hx).
 have H0 : forall c : R, a < c < b -> derivable_pt f c.
   move=> c Hc.
   apply prd.
@@ -463,10 +459,10 @@ Proof.
 move=> [Hx1 Hx2].
 apply Rge_le, Rminus_ge, Rle_ge.
 rewrite -diff_xlnx_0 -/(diff_xlnx x).
-case/boolP : (0 == x) => [/eqP ->|xnot0]; first exact/leRR.
+case/boolP : (0 == x) => [/eqP ->|/eqP xnot0]; first exact/leRR.
 apply/ltRW/diff_xlnx_sincreasing_0_Rinv_e2 => //.
   split; [exact/leRR | exact/ltRW/exp_pos].
-apply/ltRP; rewrite ltR_neqAle xnot0; exact/leRP.
+by rewrite ltR_neqAle.
 Qed.
 
 End diff_xlnx.
@@ -529,17 +525,17 @@ move=> [Heps1 Heps2] x [Hx1 Hx2].
 apply/leRP; rewrite leR_Rabsl oppRK; apply/andP; split; apply/leRP.
 - rewrite (_ : xlnx eps = xlnx_delta eps 0); last first.
     by rewrite /xlnx_delta add0R xlnx_0 subR0.
-  case/boolP : (0 == x) => [/eqP <-|xnot0]; first exact/leRR.
+  case/boolP : (0 == x) => [/eqP <-|/eqP xnot0]; first exact/leRR.
   apply/ltRW/increasing_xlnx_delta => //.
   + exact: (conj Heps1 (leR_ltR_trans Heps2 ltRinve21)).
-  + split ; by [apply (@leR_trans x) | exact: leRR].
-  + apply/ltRP; rewrite ltR_neqAle xnot0; exact/leRP.
+  + split; by [apply (@leR_trans x) | exact: leRR].
+  + by rewrite ltR_neqAle.
 - apply (@leR_trans (xlnx_delta eps (1 - eps))).
-    case/boolP : (x == 1 - eps) => [/eqP ->|xnot0]; first exact/leRR.
+    case/boolP : (x == 1 - eps) => [/eqP ->|/eqP xnot0]; first exact/leRR.
     apply/ltRW/increasing_xlnx_delta => //.
     + exact: (conj Heps1 (leR_ltR_trans Heps2 ltRinve21)).
     + split; by [apply (@leR_trans x) | exact: leRR].
-    + apply/ltRP; rewrite ltR_neqAle xnot0; exact/leRP.
+    + by rewrite ltR_neqAle.
   rewrite /xlnx_delta subRK xlnx_1 sub0R leR_oppr oppRK.
   apply xlnx_ineq.
   split => //; exact: ltRW.

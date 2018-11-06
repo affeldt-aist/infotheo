@@ -200,6 +200,12 @@ Defined.
 (* NB: log is 0 for input < 0 *)
 Definition log x := Log 2 x.
 
+Lemma logV x : 0 < x -> log (/ x) = - log x.
+Proof. by move/(@LogV 2). Qed.
+
+Lemma logM x y : 0 < x -> 0 < y -> log (x * y) = log x + log y.
+Proof. move=> x0 y0; exact: (@LogM 2 _ _ x0 y0). Qed.
+
 Lemma logexp1E : log (exp 1) = / ln 2.
 Proof. by rewrite /log /Log ln_exp div1R. Qed.
 

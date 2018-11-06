@@ -35,14 +35,14 @@ Lemma condition_equivalence : (`J(P , V) << `J(P , W)) <-> cdom_by.
 Proof.
 rewrite /dom_by; split=> H.
 - move=> a p_not_0 b; move: (H (a, b)).
-  rewrite JointDist.dE /= => H0 H1.
+  rewrite JointDistChan.dE /= => H0 H1.
   move: H0; rewrite H1 mul0R => /(_ erefl)/eqP.
-  by rewrite JointDist.dE mulR_eq0 /= (negbTE p_not_0) orbF => /eqP.
+  by rewrite JointDistChan.dE mulR_eq0 /= (negbTE p_not_0) orbF => /eqP.
 - case=> a p_not_0 b; move: {H}(H a) => H.
-  rewrite JointDist.dE /=.
+  rewrite JointDistChan.dE /=.
   case/boolP : (P a == 0) => [/eqP -> | H1]; first by rewrite mulR0.
   move: {H}(H H1) => ->; first by rewrite mul0R.
-  move/eqP : b; by rewrite JointDist.dE mulR_eq0 /= (negbTE H1) orbF => /eqP.
+  move/eqP : b; by rewrite JointDistChan.dE mulR_eq0 /= (negbTE H1) orbF => /eqP.
 Qed.
 
 End condition_equivalence.
@@ -62,12 +62,12 @@ Lemma joint_dom : P |- V << W -> dom_by (`J(P, V)) (`J(P, W)) (*NB: notation iss
 Proof.
 move => V_dom_by_W => ab /= Hab.
 case: (Rle_lt_or_eq_dec _ _ (dist_ge0 P ab.1)) => Hab1.
-- rewrite JointDist.dE in Hab.
-  rewrite JointDist.dE V_dom_by_W ?mul0R //.
+- rewrite JointDistChan.dE in Hab.
+  rewrite JointDistChan.dE V_dom_by_W ?mul0R //.
   + exact/eqP/gtR_eqF.
   + move/eqP : Hab; rewrite mulR_eq0 /= => /orP[/eqP//|/eqP].
     by move: (gtR_eqF _ _ Hab1).
-- by rewrite JointDist.dE -Hab1 mulR0.
+- by rewrite JointDistChan.dE -Hab1 mulR0.
 Qed.
 
 End joint_dom_sect.
@@ -100,20 +100,20 @@ rewrite (_ : D(V || W | P) =
   by rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite pair_bigA big_mkcond /=.
 apply eq_bigr; case => [] a b /= _.
-rewrite JointDist.dE /=.
+rewrite JointDistChan.dE /=.
 case/boolP : (P a == 0) => [/eqP -> | Pneq0]; first by rewrite !mulR0 mul0R.
 case/boolP : (V a b == 0) => [/eqP -> | Vneq0]; first by rewrite !mul0R.
 case/boolP : (W a b == 0) => [/eqP Weq0| Wneq0].
   contradict Vneq0.
   apply/negP. rewrite negbK. apply/eqP. by apply V_dom_by_W.
-rewrite JointDist.dE /= /log !LogM; first field;
-  apply/ltRP; rewrite lt0R; apply/andP; split => //; exact/leRP/dist_ge0.
+rewrite JointDistChan.dE /= /log !LogM; [field | by rewrite -dist_neq0 |
+  by rewrite -dist_neq0 | by rewrite -dist_neq0 | by rewrite -dist_neq0].
 Qed.
 
 Lemma leq0cdiv : 0 <= D(V || W | P).
 Proof.
 rewrite cdiv_is_div_joint_dist //; apply leq0div.
-case=> a b; rewrite 2!JointDist.dE /=.
+case=> a b; rewrite 2!JointDistChan.dE /=.
 case/boolP : (P a == 0); first by move/eqP => ->; rewrite 2!mulR0.
 move=> H1 H2.
 suff -> : (V a b) = 0 by rewrite mul0R.
@@ -125,7 +125,7 @@ Lemma eq0cdiv : D(V || W | P) = 0 <-> `J(P, V) = `J(P, W).
 Proof.
 rewrite cdiv_is_div_joint_dist.
 apply eq0div; case=> a b /eqP.
-rewrite 2!JointDist.dE /= mulR_eq0 => /orP[|/eqP ->]; last by rewrite mulR0.
+rewrite 2!JointDistChan.dE /= mulR_eq0 => /orP[|/eqP ->]; last by rewrite mulR0.
 case/boolP : (P a == 0) => [/eqP ->|Pa0]; first by rewrite mulR0.
 move/eqP/V_dom_by_W => /(_ Pa0) ->; by rewrite mul0R.
 Qed.
@@ -188,7 +188,7 @@ Hypothesis Hn : n != O.
 Lemma dmc_cdiv_cond_entropy :
   W ``(y | x) = exp2 (- INR n * (D(V || W | P) + `H(V | P))).
 Proof.
-rewrite dmc_cdiv_cond_entropy_aux cond_entropy_single_sum.
+rewrite dmc_cdiv_cond_entropy_aux CondEntropyChan.hE.
 rewrite /cdiv /entropy -big_split /=.
 rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) (big_morph _ morph_exp2_plus exp2_0).
 apply eq_bigr => a _.

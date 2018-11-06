@@ -435,7 +435,7 @@ transitivity (\rsum_(v in 'rV[A]_n)
   apply eq_bigr => // w _.
   rewrite DMCE 2!TupleDist.dE -big_split /=.
   apply eq_bigr => /= i _.
-  by rewrite JointDist.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
+  by rewrite JointDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
 rewrite /Pr big_rV_prod pair_big_dep /=.
 apply eq_bigl; case=> /= ? ?; by rewrite !inE.
 Qed.
@@ -793,18 +793,19 @@ apply (@leR_ltR_trans (epsilon0 + INR k *
   apply JTS_1 => //.
   rewrite /epsilon0_condition in Hepsilon0; tauto.
   by case: Hn => _ [_ []].
-apply (@leR_ltR_trans (epsilon0 + INR #| M | * exp2 (- INR n * (`I( P ; W ) - 3 * epsilon0)))%R).
+apply (@leR_ltR_trans (epsilon0 +
+    INR #| M | * exp2 (- INR n * (`I( P ; W ) - 3 * epsilon0)))).
   apply/leR_add2l/leR_pmul.
-    rewrite (_ : 0 = INR 0)%R //; exact/le_INR/leP.
-    exact: le_0_Pr.
+    exact: leR0n.
+    exact: Pr_ge0.
     apply/le_INR/leP; by rewrite card_ord.
     exact: non_typical_sequences.
-apply (@ltR_trans (epsilon0 + epsilon0)%R); last first.
+apply (@ltR_trans (epsilon0 + epsilon0)); last first.
   case: Hepsilon0 => ? [? ?]; lra.
 apply ltR_add2l.
 have -> : INR #| M | = exp2 (log (INR #| M |)).
   rewrite logK // (_ : 0 = INR 0)%R //.
-  apply lt_INR. rewrite card_ord. by apply/ltP.
+  apply lt_INR. rewrite card_ord. exact/ltP.
 rewrite -ExpD.
 rewrite (_ : _ + _ = - INR n * (`I(P ; W) - log (INR #| M |) / INR n - 3 * epsilon0))%R; last first.
   field.

@@ -61,7 +61,7 @@ apply Rabs_xlnx => //.
       apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
     apply: ler_rsum => a _.
     rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
-    rewrite 2!JointDist.dE /=; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
+    rewrite 2!JointDistChan.dE /=; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
   + rewrite cdiv_is_div_joint_dist => //.
     exact/Pinsker_inequality_weak/joint_dom.
 Qed.
@@ -94,7 +94,7 @@ Qed.
 Lemma mut_info_dist_ub : `| `I(P ; V) - `I(P ; W) | <=
   / ln 2 * (INR #|B| + INR #|A| * INR #|B|) * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
-rewrite /mut_info.
+rewrite /MutualInfoChan.mut_info.
 rewrite (_ : _ - _ = `H(P `o V) - `H(P `o W) + (`H(P , W) - `H(P , V))); last by field.
 apply: leR_trans; first exact: Rabs_triang.
 rewrite -mulRA mulRDl mulRDr.

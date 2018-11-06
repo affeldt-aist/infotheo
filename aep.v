@@ -80,15 +80,15 @@ elim => [|n IH].
   rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_rv /= mxE /=; congr mkRvar.
   apply FunctionalExtensionality.functional_extensionality => ta.
   by rewrite big_ord_recl big_ord0 addR0.
-- rewrite [X in _ \=isum X](_ : _ = row_mx (\row_(i < 1) (--log P)) (map_mlog n.+1 P)); last first.
+- rewrite [X in _ \=isum X](_ : _ =
+      row_mx (\row_(i < 1) (--log P)) (map_mlog n.+1 P)); last first.
     apply/rowP => b; rewrite !mxE; case: splitP.
       move=> a; rewrite {a}(ord1 a) => _; by rewrite mxE.
     move=> k _; by rewrite mxE.
   apply: (isum_n_cons IH).
   + rewrite /sum; split.
-    * exact: joint_prod_n.
-    * move=> ta.
-      rewrite /= big_ord_recl /=; congr (_ + _)%R.
+    * split; [exact: tuple_dist_head_of_joint | exact: tuple_dist_tail_of_joint].
+    * move=> ta; rewrite /= big_ord_recl /=; congr (_ + _)%R.
       apply eq_bigr => i _; by rewrite mxE.
   + rewrite /inde_rv => /= x y.
     have : id_dist P (map_mlog n.+2 P) by rewrite /id_dist => i; rewrite mxE.

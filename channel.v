@@ -12,29 +12,29 @@ Require Import entropy.
   1. Module Channel1.
      Probability transition matrix
   2. Module DMC.
-     nth extension of the discrete memoryless channel (DMC)
+     nth extension of the discrete memoryless channel
   3. Section DMC_sub_vec.
   4. Module OutDist.
      Output distribution for the discrete channel
   5. Section OutDist_prop.
      Output entropy
-  6. Module JointDist.
+  6. Module JointDistChan.
      Joint distribution
   7. Section Pr_rV_prod_sect.
-  8. Section conditional_entropy.
-  9. Section conditional_entropy_prop.
-  10. Section mutual_information.
-  11. Section capacity_definition.
+  8. Module CondEntropyChan.
+  9. Module MutualInfoChan
+  10. Section capacity_definition.
 *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Reserved Notation "'`Ch_1(' A ',' B ')'" (at level 10, A, B at next level).
+Reserved Notation "'`Ch_1(' A ',' B ')'" (at level 10, A, B at next level,
+  only parsing).
 Reserved Notation "'`Ch_1*(' A ',' B ')'" (at level 10, A, B at next level).
-Reserved Notation "W '`(' b '|' a ')'"
-  (at level 10, b, a at next level, only parsing).
+Reserved Notation "W '`(' b '|' a ')'" (at level 10, b, a at next level,
+  only parsing).
 Reserved Notation "'`Ch_' n '(' A ',' B ')'" (at level 10,
   A, B, n at next level, format "'`Ch_'  n  '(' A ','  B ')'").
 Reserved Notation "W '``^' n" (at level 10).
@@ -42,15 +42,14 @@ Reserved Notation "W '``(|' x ')'" (at level 10, x at next level).
 Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level).
 Reserved Notation "'`O(' P , W )" (at level 10, P, W at next level).
 Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level).
-Reserved Notation "'`J(' P , W )" (at level 10, P, W at next level).
+Reserved Notation "'`J(' P , W )" (at level 10, P, W at next level,
+  format "'`J(' P ,  W )").
 Reserved Notation "`H( P , W )" (at level 10, P, W at next level).
 Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
 Reserved Notation "`I( P ; W )" (at level 50).
 
 Module Channel1.
-
-Section Channel1_sect.
-
+Section channel1.
 Variables A B : finType.
 
 (** Definition of a discrete channel of input alphabet A and output alphabet B.
@@ -66,15 +65,10 @@ Local Notation "'`Ch_1*'" := (chan_star).
 
 Lemma chan_star_eq (c1 c2 : `Ch_1*) : c c1 = c c2 -> c1 = c2.
 Proof.
-destruct c1 as [c1 Hc1].
-destruct c2 as [c2 Hc2].
-move=> /= ?; subst c2.
-f_equal.
-apply eq_irrelevance.
+move: c1 c2 => [c1 Hc1] [c2 Hc2] /= <-{c2}; congr mkChan; exact: eq_irrelevance.
 Qed.
 
-End Channel1_sect.
-
+End channel1.
 End Channel1.
 
 Definition chan_star_coercion := Channel1.c.
@@ -89,12 +83,9 @@ Local Open Scope vec_ext_scope.
 Local Open Scope entropy_scope.
 
 Module DMC.
+Section dmc.
 
-Section DMC_sect.
-
-Variables A B : finType.
-Variable W : `Ch_1(A, B).
-Variable n : nat.
+Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat).
 
 Local Open Scope ring_scope.
 
@@ -127,20 +118,19 @@ Qed.
 
 Definition c : channel_ext n := locked (fun x => makeDist (f0 x) (f1 x)).
 
-End DMC_sect.
-
+End dmc.
 End DMC.
 
 Notation "'`Ch_' n '(' A ',' B ')'" := (@DMC.channel_ext A B n) : channel_scope.
-Notation "W '``^' n" := (@DMC.c _ _ W n) (at level 10) : channel_scope.
+Notation "W '``^' n" := (@DMC.c _ _ W n) : channel_scope.
 Notation "W '``(|' x ')'" := (@DMC.c _ _ W _ x) : channel_scope.
 Notation "W '``(' y '|' x ')'" := (@DMC.c _ _ W _ x y) : channel_scope.
 
-Lemma DMCE {A B : finType} n (W : `Ch_1(A, B)) b a :
+Lemma DMCE (A B : finType) n (W : `Ch_1(A, B)) b a :
   W ``(b | a) = \rprod_(i < n) W (a ``_ i) (b ``_ i).
 Proof. rewrite /DMC.c; by unlock. Qed.
 
-Lemma DMC_ge0 {A B : finType} n (W : `Ch_1(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
+Lemma DMC_ge0 (A B : finType) n (W : `Ch_1(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
 Proof. exact: dist_ge0. Qed.
 
 Section DMC_sub_vec.
@@ -184,12 +174,9 @@ Proof. by rewrite DMCE -rprod_sub_vec. Qed.
 End DMC_sub_vec.
 
 Module OutDist.
+Section outdist.
 
-Section OutDist_sect.
-
-Variables A B : finType.
-Variable P : dist A.
-Variable W  : `Ch_1(A, B).
+Variables (A B : finType) (P : dist A) (W  : `Ch_1(A, B)).
 
 Definition f (b : B) := \rsum_(a in A) W a b * P a.
 
@@ -207,8 +194,7 @@ Definition d : dist B := locked (makeDist f0 f1).
 Lemma dE b : d b = \rsum_(a in A) W a b * P a.
 Proof. rewrite /d; by unlock. Qed.
 
-End OutDist_sect.
-
+End outdist.
 End OutDist.
 
 Notation "'`O(' P , W )" := (OutDist.d P W) : channel_scope.
@@ -217,14 +203,14 @@ Section OutDist_prop.
 
 Variables A B : finType.
 
-(** Equivalence between both definition when n = 1: *)
+(** Equivalence between both definitions when n = 1: *)
 
 Local Open Scope reals_ext_scope.
 Local Open Scope ring_scope.
 
 Lemma tuple_pmf_out_dist (W : `Ch_1(A, B)) (P : dist A) n (b : 'rV_ _):
-   \rsum_(j0 : 'rV[A]_n)
-      ((\rprod_(i < n) W j0 ``_ i b ``_ i) * P `^ _ j0)%R =
+   \rsum_(j : 'rV[A]_n)
+      ((\rprod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
    (`O(P , W)) `^ _ b.
 Proof.
 rewrite TupleDist.dE.
@@ -246,85 +232,66 @@ Qed.
 
 End OutDist_prop.
 
-Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ))) : channel_scope.
+Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ) )) : channel_scope.
 
-Module JointDist.
+Module JointDistChan.
+Section jointdistchan.
 
-Section JointDist_sect.
+Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
 
-Variables A B : finType.
-Variable P : dist A.
-Variable W : `Ch_1(A, B).
+Definition f (ab : A * B) := PairDist.f P (W ab.1) ab.
 
-Definition f (ab : A * B) := W ab.1 ab.2 * P ab.1.
+Lemma f0 (ab : A * B) : 0 <= f ab. Proof. exact: PairDist.f0. Qed.
 
-Lemma f0 (ab : A * B) : 0 <= f ab.
-Proof. apply: mulR_ge0; by [apply ptm0 | apply dist_ge0]. Qed.
-
-Lemma f1 : \rsum_(ab | ab \in {: A * B}) (W ab.1) ab.2 * P ab.1 = 1.
+Lemma f1 : \rsum_(ab | ab \in {: A * B}) f ab = 1.
 Proof.
-rewrite -(pair_big xpredT xpredT (fun a b => (W a) b * P a)) /= -(pmf1 P).
-apply eq_bigr => /= t Ht; by rewrite -big_distrl /= pmf1 mul1R.
+rewrite -(pair_big xpredT xpredT (fun a b => f (a, b))) /= -(pmf1 P).
+by apply eq_bigr => /= t ?; rewrite /f /PairDist.f /= -big_distrr /= pmf1 mulR1.
 Qed.
 
-Definition d : dist [finType of A * B] := locked (makeDist f0 f1).
+Definition d : {dist (A * B)} := locked (makeDist f0 f1).
 
 Lemma dE ab : d ab = W ab.1 ab.2 * P ab.1.
-Proof. rewrite /d; by unlock. Qed.
+Proof. rewrite /d; unlock => /=; rewrite /f /PairDist.f; by rewrite mulRC. Qed.
 
-End JointDist_sect.
+End jointdistchan.
+End JointDistChan.
 
-End JointDist.
+Notation "'`J(' P , W )" := (JointDistChan.d P W) : channel_scope.
 
-Notation "'`J(' P , W )" := (JointDist.d P W) : channel_scope.
+(** Mutual entropy: *)
+
+Notation "`H( P , W )" := (`H (`J(P, W)) ) : channel_scope.
 
 Section Pr_rV_prod_sect.
 
-Variable A B : finType.
-Variable P : dist A.
-Variable W : `Ch_1(A, B).
-Variable n : nat.
+Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)) (n : nat).
 
-Lemma Pr_rV_prod Q : Pr (`J(P `^ n, (W ``^ n))) [set x | Q x] =
-  Pr (`J(P, W)) `^ n [set x | Q (rV_prod x)].
+Lemma Pr_rV_prod Q :
+  Pr (`J(P `^ n, W ``^ n)) [set x | Q x] =
+  Pr (`J(P, W)) `^ n       [set x | Q (rV_prod x)].
 Proof.
-rewrite /Pr big_rV_prod /=.
-apply eq_big => tab; first by rewrite !inE prod_rVK.
-rewrite inE => Htab.
-rewrite JointDist.dE DMCE TupleDist.dE -big_split /= TupleDist.dE.
+rewrite /Pr [RHS]big_rV_prod /=.
+apply eq_big => y; first by rewrite !inE prod_rVK.
+rewrite inE => Qy.
+rewrite JointDistChan.dE DMCE TupleDist.dE -big_split /= TupleDist.dE.
 apply eq_bigr => i /= _.
-by rewrite JointDist.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
+by rewrite JointDistChan.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
 
 End Pr_rV_prod_sect.
 
-(** Mutual entropy: *)
+Module CondEntropyChan.
+Section condentropychan.
+Variables (A B : finType) (W : `Ch_1(A, B)) (P : dist A).
 
-Notation "`H( P , W )" := (`H ( `J(P , W))) : channel_scope.
+(** Definition of conditional entropy using an input distribution and a channel *)
+Definition h := `H(P, W) - `H P.
 
-Section conditional_entropy.
-
-Variable A B : finType.
-Variable W : `Ch_1(A, B).
-Variable P : dist A.
-
-(** Definition of conditional entropy *)
-Definition cond_entropy := `H(P , W) - `H P.
-
-End conditional_entropy.
-
-Notation "`H( W | P )" := (cond_entropy W P) : channel_scope.
-
-Section conditional_entropy_prop.
-
-Variables A B : finType.
-Variable W : `Ch_1(A, B).
-Variable P : dist A.
-
-(** Equivalent expression of the conditional entropy (cf. Lemma 6.23) *)
-Lemma cond_entropy_single_sum : `H( W | P ) = \rsum_(a in A) P a * `H (W a).
+(** Alternative distribution using the entropy of the channel (cf. Lemma 6.23) *)
+Lemma hE : h = \rsum_(a in A) P a * `H (W a).
 Proof.
-rewrite /cond_entropy /`H /=.
+rewrite /h /`H /=.
 rewrite (eq_bigr (fun x => (`J( P, W)) (x.1, x.2) * log ((`J( P, W)) (x.1, x.2)))); last by case.
 rewrite -(pair_big xpredT xpredT (fun a b => (`J( P, W)) (a, b) * log ((`J( P, W)) (a, b)))) /=.
 rewrite -addR_opp -oppRD /=.
@@ -336,7 +303,7 @@ case/boolP : (P a == 0); move=> Hcase.
   transitivity (- \rsum_(b : B) 0).
     congr (- _).
     apply eq_bigr => // b _.
-    by rewrite {1}JointDist.dE Hcase !(mul0R, mulR0).
+    by rewrite {1}JointDistChan.dE Hcase !(mul0R, mulR0).
   by rewrite big_const iter_addR mulR0 oppR0.
 - rewrite mulRC -(mulR1 (-(log (P a) * P a))) -(pmf1 (W a)).
   rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) mulRN; f_equal.
@@ -344,16 +311,20 @@ case/boolP : (P a == 0); move=> Hcase.
   apply eq_bigr => // b _.
   case/boolP : (W a b == 0); move=> Hcase2.
   - move/eqP in Hcase2.
-    by rewrite {1}JointDist.dE Hcase2 !(mul0R, mulR0, addR0).
-  - rewrite {2}JointDist.dE /log LogM; last 2 first.
+    by rewrite {1}JointDistChan.dE Hcase2 !(mul0R, mulR0, addR0).
+  - rewrite {2}JointDistChan.dE /log LogM; last 2 first.
     + apply/ltRP; rewrite lt0R Hcase2 /=; exact/leRP/dist_ge0.
     + apply/ltRP; rewrite lt0R Hcase /=; exact/leRP/dist_ge0.
-    + rewrite {1}JointDist.dE /=; by field.
++ rewrite {1}JointDistChan.dE /=; by field.
 Qed.
 
-End conditional_entropy_prop.
+End condentropychan.
+End CondEntropyChan.
 
-Section mutual_information.
+Notation "`H( W | P )" := (CondEntropyChan.h W P) : channel_scope.
+
+Module MutualInfoChan.
+Section mutualinfochan.
 
 Variables A B : finType.
 
@@ -366,9 +337,10 @@ Definition mut_info_dist (P : dist [finType of A * B]) :=
 
 Definition mut_info P (W : `Ch_1(A, B)) := `H P + `H(P `o W) - `H(P , W).
 
-End mutual_information.
+End mutualinfochan.
+End MutualInfoChan.
 
-Notation "`I( P ; W )" := (mut_info P W) : channel_scope.
+Notation "`I( P ; W )" := (MutualInfoChan.mut_info P W) : channel_scope.
 
 Section capacity_definition.
 

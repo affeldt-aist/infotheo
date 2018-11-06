@@ -141,7 +141,7 @@ have : (JTS_1_bound <= n)%nat ->
       rewrite [in RHS]TupleDist.dE -[in RHS]big_split /=.
       rewrite TupleDist.dE.
       apply eq_bigr => j _.
-      by rewrite JointDist.dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
+      by rewrite JointDistChan.dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
     transitivity (\rsum_(i | i \notin `TS P m epsilon) P `^ _ i).
       apply eq_bigr => i Hi.
       by rewrite (pmf1 (W ``(| i))) mulR1.
@@ -221,7 +221,7 @@ have : (JTS_1_bound <= n)%nat ->
       by apply/eqP/matrixP => a b; rewrite {a}(ord1 a) mxE ffunE.
     move=> k.
     rewrite TupleDist.dE /=; apply eq_bigr => l _.
-    by rewrite JointDist.dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE.
+    by rewrite JointDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE.
   have {H1}H1 : forall n,
     Pr (`J(P , W) `^ n) [set x | (rV_prod x).2 \notin `TS ( `O(P , W) ) n epsilon ] <=
     Pr ( (`O( P , W) ) `^ n) (~: `TS ( `O( P , W) ) n (epsilon / 3)).
@@ -383,7 +383,7 @@ apply (@leR_trans (exp2 (INR n * (`H( P , W ) + epsilon)) *
 apply Req_le.
 rewrite -2!ExpD.
 congr (exp2 _).
-rewrite /mut_info !mulRDr 2!Rmult_opp_opp (_ : 3 * epsilon = epsilon + epsilon + epsilon); by field.
+rewrite /MutualInfoChan.mut_info !mulRDr 2!Rmult_opp_opp (_ : 3 * epsilon = epsilon + epsilon + epsilon); by field.
 Qed.
 
 End non_typicality.

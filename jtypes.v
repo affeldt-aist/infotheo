@@ -12,7 +12,8 @@ Import Prenex Implicits.
 
 Reserved Notation "'P_' n '(' A ',' B ')'" (at level 9,
   n at next level, A at next level, B at next level).
-Reserved Notation "V '.-shell' ta" (at level 5).
+Reserved Notation "V '.-shell' ta" (at level 5,
+  format "V '.-shell'  ta").
 Reserved Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" (at level 50,
   n, A, B, P at next level, format "'\nu_' n '^{' A ',' B '}' '(' P ')'").
 Reserved Notation "'\nu^{' B '}' '(' P ')'" (at level 50,
@@ -388,14 +389,7 @@ Hypothesis Hta : ta \in T_{P}.
 
 Lemma type_co_occ a b :
   ((type.f P) a * (jtype.f V) a b = N(a, b | ta, tb) * N(a | ta))%nat.
-Proof.
-move: Htb => Htb'; rewrite /shell inE in Htb'.
-rewrite occ_co_occ.
-rewrite mulnC.
-f_equal.
-move: Hta.
-by move: (type_numocc Hta a).
-Qed.
+Proof. by rewrite occ_co_occ mulnC (type_numocc Hta a). Qed.
 
 End shelled_tuples_facts.
 
@@ -793,7 +787,7 @@ Hypothesis Bnot0 : (0 < #|B|)%nat.
 Lemma card_shell_leq_exp_entropy :
   INR #| V.-shell ta | <= exp2 (INR n * `H(V | P)).
 Proof.
-rewrite cond_entropy_single_sum.
+rewrite CondEntropyChan.hE.
 apply (@leR_trans (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
 - exact/le_INR/leP/card_shelled_tuples_leq_prod_card.
 - rewrite exp2_pow.
@@ -1199,7 +1193,7 @@ Hypothesis Hta : ta \in T_{P}.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
-Lemma card_shelled_tuples : INR #| V.-shell ta | <= exp2 (INR n * `H(V | P )).
+Lemma card_shelled_tuples : INR #| V.-shell ta | <= exp2 (INR n * `H(V | P)).
 Proof.
 case: (tuple_exist_perm_sort (@le_rank A) ta) => /= s Hta'.
 have H : sort (@le_rank _) ta =

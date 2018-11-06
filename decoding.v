@@ -328,9 +328,8 @@ unlock in H.
 simpl in H.
 set tmp := \rmax_(_ <- _ | _) _ in H.
 rewrite /tmp -rmax_distrl in H; last first.
-  apply/ltRW/invR_gt0/ltRP; rewrite ltR_neqAle; apply/andP; split; last first.
-    exact/leRP/PosteriorProbability.den_ge0.
-  by rewrite eq_sym -receivableE.
+  apply/ltRW/invR_gt0; rewrite ltR_neqAle; split.    apply/eqP; by rewrite eq_sym -receivableE.
+  exact/PosteriorProbability.den_ge0.
 rewrite /P /UniformSupport.d /UniformSupport.f /= in H.
 case: H => [m' [Hm' H]].
 set r := index_enum _ in H.

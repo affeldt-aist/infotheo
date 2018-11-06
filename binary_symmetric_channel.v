@@ -60,7 +60,7 @@ rewrite {1}/entropy .
 set a := \rsum_(_ in _) _. set b := \rsum_(_ <- _) _.
 apply trans_eq with (- (a + (-1) * b)); first by field.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
-rewrite !Set2sumE /= !JointDist.dE !BSC.cE /= !Binary.fxx.
+rewrite !Set2sumE /= !JointDistChan.dE !BSC.cE /= !Binary.fxx.
 rewrite /Binary.f eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2.
 set a := Set2.a _. set b := Set2.b _.
 case: (Req_EM_T (P a) 0) => H1.
@@ -93,7 +93,7 @@ Qed.
 
 Lemma IPW : `I(P ; BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
 Proof.
-rewrite /mut_info addRC.
+rewrite /MutualInfoChan.mut_info addRC.
 set a := `H(_ `o _).
 apply trans_eq with (a + (`H P - `H(P , BSC.c card_A p_01))); first by field.
 by rewrite HP_HPW.
