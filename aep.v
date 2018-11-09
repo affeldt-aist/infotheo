@@ -57,11 +57,21 @@ Definition sum_mlog_prod A (P : dist A) n : rvar [finType of 'rV[A]_n] :=
   mkRvar (P `^ n) (fun t => \rsum_(i < n) - log (P t ``_ i))%R.
 
 Lemma inde_rv_sum_mlog_prod A (P : dist A) n :
-  `p_ (sum_mlog_prod P n.+1) |= --log P _|_ sum_mlog_prod P n.
+  (Multivar.to_bivar `p_ (sum_mlog_prod P n.+1)) |= --log P _|_ sum_mlog_prod P n.
 Proof.
 rewrite /inde_rv /= => x y.
+rewrite -/(Multivar.head_of _) -/(Multivar.tail_of _).
 rewrite -!TupleDist.head_of -!TupleDist.tail_of.
-exact: inde_rv_tuple_dist.
+rewrite -inde_rv_tuple_dist /=.
+(* TODO: lemma? *)
+rewrite /Pr.
+rewrite (reindex (fun x : 'rV[A]_n.+1 => (x ``_ ord0, rbehead x))) //=; last first.
+  exists (fun x => let: (a, b) := x in row_mx (\row_(i < 1) a) b).
+  - move=> t _; by rewrite row_mx_rbehead.
+  - case=> a b; by rewrite rbehead_row_mx row_mx_row_ord0.
+apply eq_big.
+- move=> t; by rewrite !inE.
+- move=> t _; by rewrite Multivar.to_bivarE /= row_mx_rbehead.
 Qed.
 
 Lemma sum_mlog_prod_isum_map_mlog A (P : dist A) : forall n,

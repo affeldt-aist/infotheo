@@ -311,28 +311,19 @@ Lemma big_rV_cons n (F : 'rV[A]_n.+1 -> R) (a : A) :
   \big[M/idx]_(v in 'rV[A]_n) (F (row_mx (\row_(k < 1) a) v)) =
   \big[M/idx]_(v in 'rV[A]_n.+1 | v ``_ ord0 == a) (F v).
 Proof.
-symmetry.
-rewrite (reindex_onto (fun j : 'rV[A]_n => row_mx (\row_(k < 1) a) j)
-  (fun p : 'rV[A]_n.+1 => rbehead p)) /=; last first.
-  move=> m Hm.
-  apply/matrixP => i j; rewrite {i}(ord1 i).
-  rewrite row_mx_rbehead //.
-  by apply/eqP.
-apply eq_bigl => /= x.
-by rewrite rbehead_row_mx eqxx andbT row_mx_row_ord0 eqxx.
+rewrite [in RHS](reindex_onto (row_mx (\row_(k < 1) a)) rbehead) /=; last first.
+  move=> m /eqP <-; by rewrite row_mx_rbehead.
+apply eq_bigl => ?; by rewrite rbehead_row_mx eqxx andbT row_mx_row_ord0 eqxx.
 Qed.
 
 Lemma big_rV_behead n (F : 'rV[A]_n.+1 -> R) (w : 'rV[A]_n) :
   \big[M/idx]_(a in A) (F (row_mx (\row_(k < 1) a) w)) =
   \big[M/idx]_(v in 'rV[A]_n.+1 | rbehead v == w) (F v).
 Proof.
-apply/esym.
-rewrite (reindex_onto (fun p => row_mx (\row_(k < 1) p) w) (fun p => p ``_ ord0) ) /=; last first.
-  move=> i /eqP <-.
-  apply/matrixP => a b; rewrite {a}(ord1 a).
-  by rewrite row_mx_rbehead.
-apply eq_bigl => /= a.
-by rewrite rbehead_row_mx eqxx /= row_mx_row_ord0 eqxx.
+rewrite [in RHS](reindex_onto
+  (fun p => row_mx (\row_(k < 1) p) w) (fun p => p ``_ ord0) ) /=; last first.
+  move=> i /eqP <-; by rewrite row_mx_rbehead.
+apply eq_bigl => ?; by rewrite rbehead_row_mx eqxx /= row_mx_row_ord0 eqxx.
 Qed.
 
 Lemma big_rV_cons_behead_support n (F : 'rV[A]_n.+1 -> R) (X1 : {set A}) (X2 : {set {: 'rV[A]_n}}) :

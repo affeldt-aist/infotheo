@@ -113,13 +113,11 @@ Lemma inj_row_set (A : ringType) n n0 (d : 'rV_n) :
   {in A &, injective ((row_set n0)^~ d)}.
 Proof. move=> a b _ _ /= /rowP /(_ n0); by rewrite mxE eqxx mxE eqxx. Qed.
 
-Lemma row_set_comm n A (i1 i2 : 'I_n) (x1 x2 : A) d :
-  i1 != i2 -> d `[ i2 := x2 ] `[ i1 := x1 ] = (d `[ i1 := x1 ]) `[ i2 := x2 ].
+Lemma row_setC n A (i j : 'I_n) (a b : A) d :
+  i != j -> d `[ j := b ] `[ i := a ] = (d `[ i := a ]) `[ j := b ].
 Proof.
-move=> Hneq.
-apply/rowP => i; rewrite !mxE.
-case Hi1: (i == i1); case Hi2: (i == i2) => //=.
-by rewrite -(eqP Hi1) (eqP Hi2) eqxx in Hneq.
+move=> ij; apply/rowP => k; rewrite !mxE.
+by case: ifP => // /eqP ->; case: ifPn => //; rewrite (negbTE ij).
 Qed.
 
 Section sub_vec_sect.
@@ -136,31 +134,29 @@ Notation "t # V" := (sub_vec t V) : vec_ext_scope.
 
 Section row_mx_ext.
 
-Context {A : Type}.
+Context {A : Type} {n : nat}.
 
-Definition rbehead {n} (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (lift ord0 i).
+Definition rbehead (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (lift ord0 i).
 
-Lemma rbehead_row_mx {n} (x : 'rV_n) (i : A) : rbehead (row_mx (\row_(j < 1) i) x) = x.
+Lemma rbehead_row_mx (x : 'rV_n) a : rbehead (row_mx (\row_(j < 1) a) x) = x.
 Proof.
-apply/matrixP => a b; rewrite {a}(ord1 a) !mxE.
+apply/rowP => i; rewrite !mxE.
 case: splitP; first by move=> j; rewrite {j}(ord1 j) lift0.
 by move=> n0; rewrite lift0 add1n => -[] /val_inj ->.
 Qed.
 
-Lemma row_mx_row_ord0 {n} (x : 'rV_n) (i : A) : (row_mx (\row_(k < 1) i) x) ``_ ord0 = i.
+Lemma row_mx_row_ord0 (x : 'rV[A]_n) a : (row_mx (\row_(k < 1) a) x) ``_ ord0 = a.
 Proof.
 rewrite mxE; case: splitP => [|/=] k; first by rewrite {k}(ord1 k) mxE.
 by rewrite add1n.
 Qed.
 
-Lemma row_mx_rbehead {n} (x : 'rV_(1 + n)) (i : A) (b : 'I_(1 + n)) :
-  x ``_ ord0 = i -> (row_mx (\row__ i) (rbehead x)) ``_ b = x ``_ b.
+Lemma row_mx_rbehead (x : 'rV_(1 + n)) : row_mx (\row__ (x ``_ ord0)) (rbehead x) = x.
 Proof.
-move=> xi.
-rewrite mxE; case: splitP => [j|k bk].
-  rewrite {j}(ord1 j) => Hb; rewrite mxE -xi; congr (_ ``_ _).
-  exact/val_inj.
-rewrite mxE; congr (_ ``_ _); exact/val_inj.
+apply/rowP => i.
+rewrite !mxE; case: splitP => [j|k bk].
+- rewrite {j}(ord1 j) => Hb; rewrite mxE; congr (_ ``_ _); exact/val_inj.
+- rewrite mxE; congr (_ ``_ _); exact/val_inj.
 Qed.
 
 End row_mx_ext.

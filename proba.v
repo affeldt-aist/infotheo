@@ -1658,6 +1658,21 @@ End identically_distributed.
 
 Section independent_random_variables.
 
+Variables (A B : finType) (f : A -> R) (g : B -> R) (n : nat).
+Variable P : {dist A * B}.
+Let X := mkRvar (Bivar.marg1 P) f.
+Let Y := mkRvar (Bivar.marg2 P) g.
+
+Local Open Scope vec_ext_scope.
+
+Definition inde_rv := forall x y,
+  Pr P [set xy : A * B | (X xy.1 == x) && (Y xy.2 == y)] =
+  Pr[X = x] * Pr[Y = y].
+
+End independent_random_variables.
+
+(*Section independent_random_variables.
+
 Variables (A : finType) (f : A -> R) (n : nat) (g : 'rV[A]_n -> R).
 Variable P : {dist 'rV[A]_n.+1}.
 Let X := mkRvar (Multivar.head_of P) f.
@@ -1669,7 +1684,7 @@ Definition inde_rv := forall x y,
   Pr P [set xy : 'rV__ | (X (xy ``_ ord0) == x) && (Y (rbehead xy) == y)] =
   Pr[X = x] * Pr[Y = y].
 
-End independent_random_variables.
+End independent_random_variables.*)
 
 Notation "P |= X _|_ Y" := (inde_rv X Y P) : proba_scope.
 
@@ -1753,7 +1768,7 @@ Qed.
 
 (* TODO: relation with theorem 6.4 of probook (E(XY)=E(X)E(Y))? *)
 
-Lemma E_id_rem_helper : X \= X1 @+ X2 -> `p_X |= X1 _|_ X2 ->
+Lemma E_id_rem_helper : X \= X1 @+ X2 -> (Multivar.to_bivar `p_X) |= X1 _|_ X2 ->
   \rsum_(i in 'rV[A]_n.+2) (X1 (i ``_ ord0) * X2 (rbehead i) * `p_X i) =
     `E X1 * `E X2.
 Proof.
@@ -1788,26 +1803,19 @@ apply trans_eq with (r * r' * \rsum_(i0 | X2 i0 == r') \rsum_(i1 | X1 i1 == r)
   apply eq_bigr => a a_l.
   move/eqP : ta_r' => <-.
   by move/eqP : a_l => <-.
-rewrite -!mulRA.
-congr (_ * (_ * _))%R.
+rewrite -[RHS]mulRA; congr (_ * _)%R.
 rewrite exchange_big /=.
-move: {Hinde}(Hinde r r').
-rewrite -(proj1 Hjoint) -(proj2 Hjoint).
-move=> <-.
-rewrite /Pr.
-move: (big_rV_cons_behead_support addR_comoid (fun a => `p_ X a) [set j0 | X1 j0 == r]
-  [set i0 | X2 i0 == r']) => H'.
-eapply trans_eq.
-  eapply trans_eq; last by apply H'.
-  apply eq_big.
-    move=> a /=; by rewrite inE.
-  move=> a /eqP Ha.
-  apply eq_bigl => ta /=; by rewrite inE.
-apply eq_bigl => ta /=; by rewrite !inE.
+move: {Hinde}(Hinde r r') => /=.
+rewrite -/(Multivar.head_of _) -/(Multivar.tail_of _).
+rewrite -(proj1 Hjoint) -(proj2 Hjoint) => <-.
+rewrite /Pr pair_big /=.
+apply eq_big.
+- by move=> -[a b] /=; rewrite inE.
+- move=> -[a b] /= /andP[ar br']; by rewrite Multivar.to_bivarE.
 Qed.
 
 (** Expected Value of the Square (requires mutual independence): *)
-Lemma E_id_rem : X \= X1 @+ X2 -> `p_X |= X1 _|_ X2 ->
+Lemma E_id_rem : X \= X1 @+ X2 -> (Multivar.to_bivar `p_X) |= X1 _|_ X2 ->
   `E (X \^2) = `E (X1 \^2) + 2 * `E X1 * `E X2 + `E (X2 \^2).
 Proof.
 move=> [[Hjoint1 Hjoint2] Hsum] Hinde.
@@ -1840,7 +1848,8 @@ Qed.
 
 (** The variance of the sum is the sum of variances for any two
   independent random variables %(\cite[Theorem 6.8]{probook})%: *)
-Lemma V_linear_2 : X \= X1 @+ X2 -> `p_X |= X1 _|_ X2  -> `V X = (`V X1 + `V X2).
+Lemma V_linear_2 : X \= X1 @+ X2 -> (Multivar.to_bivar `p_X) |= X1 _|_ X2  ->
+  `V X = `V X1 + `V X2.
 Proof.
 move=> H ?; rewrite !V_alt E_id_rem // (E_linear_2 H) sqrRD; by field.
 Qed.
@@ -1915,7 +1924,7 @@ Inductive isum_n : forall n,
   {rvar 'rV[A]_n} -> 'rV[rvar A]_n -> Prop :=
 | isum_n_1 : forall X, cast_rv X \=isum X
 | isum_n_cons : forall n (Ys : 'rV_n.+1) Y X Z,
-  Y \=isum Ys -> Z \= X @+ Y -> `p_Z |= X _|_ Y ->
+  Y \=isum Ys -> Z \= X @+ Y -> (Multivar.to_bivar `p_Z) |= X _|_ Y ->
   Z \=isum (row_mx (\row_(k < 1) X) Ys)
 where "X '\=isum' Xs" := (isum_n X Xs) : proba_scope.
 

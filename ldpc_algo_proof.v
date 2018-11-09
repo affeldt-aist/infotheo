@@ -1291,7 +1291,7 @@ move=> n1_n0 n0_l n1_l.
 congr (negb _).
 rewrite GRing.addrC eq_sym -GRing.subr_eq eq_sym /=.
 congr (_ == _).
-rewrite (row_set_comm _ _ _ n1_n0) (GRing.oppr_char2 _ x) //.
+rewrite (row_setC _ _ _ n1_n0) (GRing.oppr_char2 _ x) //.
 rewrite {2}/checksubsum [in X in _ = X](bigD1 n0) /=; last by rewrite !inE eqxx.
 rewrite !mxE eqxx.
 rewrite GRing.addrC /checksubsum F2_of_bool_addr.
@@ -1340,7 +1340,7 @@ elim: l' => [|hd tl IH] /= in d n1_l' n0_l' *.
   rewrite mulRA mulRA [X in _ = X * _]mulRC.
   congr (_ * _).
     congr (_ * INR _).
-    rewrite row_set_comm; last by rewrite eq_sym.
+    rewrite row_setC; last by rewrite eq_sym.
     by rewrite !mxE eqxx (@checksubsum_add n1).
   apply congr_big => // i.
     rewrite !inE.
@@ -1358,15 +1358,15 @@ elim: l' => [|hd tl IH] /= in d n1_l' n0_l' *.
   case/boolP : (i == n1) => [/eqP -> |//].
   by rewrite (negbTE n1_l).
 apply eq_bigr => i _.
-rewrite row_set_comm; last first.
+rewrite row_setC; last first.
   by move: n0_l'; rewrite in_cons eq_sym; case/norP.
 rewrite IH; last 2 first.
   by rewrite in_cons in n1_l'; case/norP: n1_l'.
   by rewrite in_cons in n0_l'; case/norP: n0_l'.
 congr (foldr _ _ _ _).
-rewrite (row_set_comm y i); last first.
+rewrite (row_setC y i); last first.
   by rewrite in_cons in n0_l'; case/norP: n0_l'.
-rewrite (row_set_comm x i) //.
+rewrite (row_setC x i) //.
 by rewrite in_cons in n1_l'; case/norP: n1_l'.
 Qed.
 

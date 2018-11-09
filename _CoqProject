@@ -21,6 +21,7 @@ source_coding_fl_direct.v
 source_coding_fl_converse.v
 log_sum.v
 channel.v
+cproba.v
 pproba.v
 channel_code.v
 binary_entropy_function.v
