@@ -239,29 +239,25 @@ Section jointdistchan.
 
 Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
 
-Definition f (ab : A * B) := PairDist.f P (W ab.1) ab.
+Definition f (ab : A * B) := ProdDist.f P (W ab.1) ab.
 
-Lemma f0 (ab : A * B) : 0 <= f ab. Proof. exact: PairDist.f0. Qed.
+Lemma f0 (ab : A * B) : 0 <= f ab. Proof. exact: ProdDist.f0. Qed.
 
 Lemma f1 : \rsum_(ab | ab \in {: A * B}) f ab = 1.
 Proof.
 rewrite -(pair_big xpredT xpredT (fun a b => f (a, b))) /= -(pmf1 P).
-by apply eq_bigr => /= t ?; rewrite /f /PairDist.f /= -big_distrr /= pmf1 mulR1.
+by apply eq_bigr => /= t ?; rewrite /f /ProdDist.f /= -big_distrr /= pmf1 mulR1.
 Qed.
 
 Definition d : {dist (A * B)} := locked (makeDist f0 f1).
 
 Lemma dE ab : d ab = W ab.1 ab.2 * P ab.1.
-Proof. rewrite /d; unlock => /=; rewrite /f /PairDist.f; by rewrite mulRC. Qed.
+Proof. rewrite /d; unlock => /=; rewrite /f /ProdDist.f; by rewrite mulRC. Qed.
 
 End jointdistchan.
 End JointDistChan.
 
 Notation "'`J(' P , W )" := (JointDistChan.d P W) : channel_scope.
-
-(** Mutual entropy: *)
-
-Notation "`H( P , W )" := (`H (`J(P, W)) ) : channel_scope.
 
 Section Pr_rV_prod_sect.
 
@@ -280,6 +276,10 @@ by rewrite JointDistChan.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
 
 End Pr_rV_prod_sect.
+
+(** Mutual entropy: *)
+
+Notation "`H( P , W )" := (`H (`J(P, W)) ) : channel_scope.
 
 Module CondEntropyChan.
 Section condentropychan.
@@ -330,8 +330,8 @@ Variables A B : finType.
 
 (** Mutual information of distributions *)
 
-Definition mut_info_dist (P : dist [finType of A * B]) :=
-  `H (ProdDist.proj1 P) + `H (ProdDist.proj2 P) - `H P.
+Definition mut_info_dist (P : {dist A * B}) :=
+  `H (Bivar.marg1 P) + `H (Bivar.marg2 P) - `H P.
 
 (** Mutual information of input/output *)
 

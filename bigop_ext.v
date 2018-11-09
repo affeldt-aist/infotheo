@@ -233,10 +233,8 @@ Lemma pair_big_fst (F : {: A * B} -> R) P Q :
   \big[M/idx]_(i in A | Q i) \big[M/idx]_(j in B) F (i, j) =
   \big[M/idx]_(i in {: A * B} | P i) F i.
 Proof.
-move=> /= PQ; rewrite pair_big /=.
-apply eq_big.
-- case=> /= i1 i2; by rewrite inE andbC PQ.
-- by case.
+move=> /= PQ; rewrite pair_big /=; apply eq_big; last by case.
+case=> /= ? ?; by rewrite inE andbC PQ.
 Qed.
 
 Lemma pair_big_snd (F : {: A * B} -> R) P Q :
@@ -244,10 +242,17 @@ Lemma pair_big_snd (F : {: A * B} -> R) P Q :
   \big[M/idx]_(i in A) \big[M/idx]_(j in B | Q j) F (i, j) =
   \big[M/idx]_(i in {: A * B} | P i) F i.
 Proof.
-move=> /= PQ; rewrite pair_big /=.
-apply eq_big.
-- case=> /= i1 i2; by rewrite PQ.
-- by case.
+move=> /= PQ; rewrite pair_big /=; apply eq_big; last by case.
+case=> /= ? ?; by rewrite PQ.
+Qed.
+
+Lemma big_setX (a : {set A}) (b : {set B}) f :
+  \big[M/idx]_(x in setX a b) f x = \big[M/idx]_(x in a) \big[M/idx]_(y in b) f (x, y).
+Proof.
+rewrite (eq_bigl (fun x => (x.1 \in a) && (x.2 \in b))); last first.
+  by case=> x y; rewrite in_setX.
+rewrite (eq_bigr (fun x => f (x.1, x.2))); last by case.
+by rewrite -(pair_big _ _ (fun a b => f (a, b))).
 Qed.
 
 Lemma big_rV_prod n f (X : {set 'rV[A * B]_n}) :
@@ -368,6 +373,8 @@ move=> i; by case/andP.
 Qed.
 
 End bigop_com_law.
+Arguments pair_big_fst {R} {idx} {M} {A} {B} _.
+Arguments pair_big_snd {R} {idx} {M} {A} {B} _.
 
 Section MyPartitions.
 

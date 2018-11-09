@@ -13,61 +13,59 @@ Import Prenex Implicits.
 
 Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
-Local Open Scope tuple_ext_scope.
-
 Local Open Scope ring_scope.
-
-Definition map_mlog A n (P : dist A) : 'rV[rvar A]_n :=
-  \row_(i < n) --log P.
-
 Local Open Scope vec_ext_scope.
 
-Section map_mlog_prop.
+(* properties of the ``- log P'' random variable, NB: to go to proba.v? *)
+Section mlog_prop.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : dist A).
 
-Lemma E_map_mlog k i : `E ((map_mlog k.+1 P) ``_ i) = `H P.
+Lemma E_mlog : `E (--log P) = `H P.
 Proof.
 rewrite ExE /entropy (big_morph _ morph_Ropp oppR0).
-apply eq_bigr=> a _; by rewrite mxE /= mulNR mulRC.
+apply eq_bigr=> a _; by rewrite /= mulNR mulRC.
 Qed.
 
 Definition aep_sigma2 := (\rsum_(a in A) P a * (log (P a))^2 - (`H P)^2)%R.
 
-Lemma V_map_mlog k i : `V ((map_mlog k.+1 P) ``_ i) = aep_sigma2.
+Lemma V_mlog : `V (--log P) = aep_sigma2.
 Proof.
-rewrite /Var E_trans_id_rem E_map_mlog.
-rewrite ExE /aep_sigma2 /map_mlog.
-rewrite mxE /= -/(_ ^ 2).
+rewrite /Var E_trans_id_rem E_mlog ExE /aep_sigma2 /= -/(_ ^ 2).
 transitivity
   (\rsum_(a in A) ((- log (P a))^2 * P a - 2 * `H P * - log (P a) * P a + `H P ^ 2 * P a))%R.
   apply eq_bigr => a _; by field.
 rewrite big_split /= big_split /= -big_distrr /= (pmf1 P) mulR1.
 set s := (\rsum_(a in A) - _)%R.
 have {s}-> : s = (- (2 * `H P ^ 2))%R.
-  rewrite /s -{1}(big_morph _ morph_Ropp oppR0).
-  f_equal.
+  rewrite /s -{1}(big_morph _ morph_Ropp oppR0); congr (- _)%R.
   rewrite [X in X = _](_ : _ = \rsum_(a in A) (2 * `H P) * (- (P a * log (P a))))%R; last first.
     apply eq_bigr => a _; by rewrite -!mulRA (mulRC (P a)) mulNR.
-  by rewrite -big_distrr /= -{1}(big_morph _ morph_Ropp oppR0) -/(entropy P) mulR1 mulRA.
+  rewrite -big_distrr /= -{1}(big_morph _ morph_Ropp oppR0) -/(entropy P).
+  by rewrite mulR1 mulRA.
 set s := \rsum_(a in A ) _.
-rewrite (_ : \rsum_(a in A) _ = s); last by rewrite /s; apply eq_bigr => a _; field.
+rewrite (_ : \rsum_(a in A) _ = s); last by apply eq_bigr => a _; field.
 by field.
 Qed.
 
-Lemma aep_sigma2_pos : 0 <= aep_sigma2.
-Proof.
-rewrite -(@V_map_mlog O ord0) /Var; apply Ex_nonneg => ?; exact: pow_even_ge0.
-Qed.
+Lemma aep_sigma2_nonneg : 0 <= aep_sigma2.
+Proof. rewrite -V_mlog /Var; apply Ex_nonneg => ?; exact: pow_even_ge0. Qed.
 
-End map_mlog_prop.
+End mlog_prop.
 
 Definition sum_mlog_prod A (P : dist A) n : rvar [finType of 'rV[A]_n] :=
   mkRvar (P `^ n) (fun t => \rsum_(i < n) - log (P t ``_ i))%R.
 
+Lemma inde_rv_sum_mlog_prod A (P : dist A) n :
+  `p_ (sum_mlog_prod P n.+1) |= --log P _|_ sum_mlog_prod P n.
+Proof.
+rewrite /inde_rv /= => x y.
+rewrite -!TupleDist.head_of -!TupleDist.tail_of.
+exact: inde_rv_tuple_dist.
+Qed.
+
 Lemma sum_mlog_prod_isum_map_mlog A (P : dist A) : forall n,
-  sum_mlog_prod P n.+1 \=isum map_mlog n.+1 P.
+  sum_mlog_prod P n.+1 \=isum (\row_(i < n.+1) --log P).
 Proof.
 elim => [|n IH].
 - move: (@isum_n_1 A (\row_i --log P)).
@@ -75,50 +73,37 @@ elim => [|n IH].
   move => HmlogP.
   set mlogprodP := sum_mlog_prod _ _.
   suff -> : mlogprodP = mlogP.
-    rewrite [X in _ \=isum X](_ : _ = \row_i --log P);
-      [exact: isum_n_1 | exact: val_inj].
+    done.
   rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_rv /= mxE /=; congr mkRvar.
   apply FunctionalExtensionality.functional_extensionality => ta.
   by rewrite big_ord_recl big_ord0 addR0.
 - rewrite [X in _ \=isum X](_ : _ =
-      row_mx (\row_(i < 1) (--log P)) (map_mlog n.+1 P)); last first.
+      row_mx (\row_(i < 1) (--log P)) (\row_(i < n.+1) --log P)); last first.
     apply/rowP => b; rewrite !mxE; case: splitP.
       move=> a; rewrite {a}(ord1 a) => _; by rewrite mxE.
     move=> k _; by rewrite mxE.
-  apply: (isum_n_cons IH).
-  + rewrite /sum; split.
-    * split; [exact: tuple_dist_head_of_joint | exact: tuple_dist_tail_of_joint].
-    * move=> ta; rewrite /= big_ord_recl /=; congr (_ + _)%R.
-      apply eq_bigr => i _; by rewrite mxE.
-  + rewrite /inde_rv => /= x y.
-    have : id_dist P (map_mlog n.+2 P) by rewrite /id_dist => i; rewrite mxE.
-    move/(inde_rv_tuple_pmf_dist x y) => H.
-    apply: trans_eq.
-      apply: (trans_eq _ H).
-        apply Pr_ext; apply/setP => ta; rewrite 2!inE /=.
-        apply andb_id2l => _; congr (_ == _).
-        apply eq_bigr => i _; by rewrite !mxE.
-    congr (_ * _)%R.
-    apply Pr_ext; apply/setP => ta /=; rewrite 2!inE; congr (_ == _).
-    apply eq_bigr => i _; by rewrite !mxE.
+  apply: (isum_n_cons IH _ (inde_rv_sum_mlog_prod _ _)).
+  rewrite /sum; split.
+  + split; [exact: TupleDist.head_of | exact: TupleDist.tail_of].
+  + move=> ta; rewrite /= big_ord_recl /=; congr (_ + _)%R.
+    apply eq_bigr => i _; by rewrite mxE.
 Qed.
 
 (** Constant used in the statement of AEP: *)
 
 Section aep_k0_constant.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : dist A).
 
 Definition aep_bound epsilon := (aep_sigma2 P / epsilon ^ 3)%R.
 
 Lemma aep_bound_pos e (_ : 0 < e) : 0 <= aep_bound e.
-Proof. apply divR_ge0; [exact: aep_sigma2_pos | exact/pow_lt]. Qed.
+Proof. apply divR_ge0; [exact: aep_sigma2_nonneg | exact/pow_lt]. Qed.
 
 Lemma aep_bound_decreasing e e' : 0 < e' <= e -> aep_bound e <= aep_bound e'.
 Proof.
 case=> Oe' e'e.
-apply leR_wpmul2l; first exact: aep_sigma2_pos.
+apply leR_wpmul2l; first exact: aep_sigma2_nonneg.
 apply leR_inv => //; first exact/pow_lt.
 apply pow_incr => //; split; [exact/ltRW | exact/e'e ].
 Qed.
@@ -127,10 +112,7 @@ End aep_k0_constant.
 
 Section AEP.
 
-Variable A : finType.
-Variable P : dist A.
-Variable n : nat.
-Variable epsilon : R.
+Variables (A : finType) (P : dist A) (n : nat) (epsilon : R).
 Hypothesis Hepsilon : 0 < epsilon.
 
 Lemma aep : aep_bound P epsilon <= INR n.+1 ->
@@ -145,20 +127,16 @@ apply (@leR_trans (aep_sigma2 P / (INR n.+1 * epsilon ^ 2))%R); last first.
   rewrite [in X in _ <= X]mulRCA mulRV ?INR_eq0' // ?mulR1 in Hbound.
   apply/(leR_trans _ Hbound)/Req_le; field.
   split; [by rewrite INR_eq0 | exact: gtR_eqF].
-move: (sum_mlog_prod_isum_map_mlog P n) => Hisum.
-move: (wlln (@E_map_mlog _ P n) (@V_map_mlog _ P n) Hisum Hepsilon) => law_large.
-apply: (leR_trans _ law_large).
-apply Pr_incl; apply/subsetP => ta; rewrite 2!inE.
-case/andP => H1.
-rewrite [--log _]lock /= -lock.
-set p1 := (_ * _)%R.
-set p2 := (_ * _)%R.
-suff : p1 = p2 by move=> <-.
-rewrite /p1 /p2 {p1 p2}.
-congr (_ * _)%R.
-rewrite /map_mlog /=.
-rewrite TupleDist.dE.
-apply log_rmul_rsum_mlog, (rprodr_gt0_inv (dist_ge0 P)).
+have Hisum := sum_mlog_prod_isum_map_mlog P n.
+have H1 : forall k i, `E ((\row_(i < k.+1) --log P) ``_ i) = `H P.
+  by move=> k i; rewrite mxE E_mlog.
+have H2 : forall k i, `V ((\row_(i < k.+1) --log P) ``_ i) = aep_sigma2 P.
+  by move=> k i; rewrite mxE V_mlog.
+have {H1 H2} := (wlln (H1 n) (H2 n) Hisum Hepsilon).
+move/(leR_trans _); apply.
+apply/Pr_incl/subsetP => ta; rewrite 2!inE => /andP[H1].
+rewrite [--log _]lock /= -lock /= TupleDist.dE log_rmul_rsum_mlog //.
+apply: (rprodr_gt0_inv (dist_ge0 P)).
 move: H1; by rewrite TupleDist.dE => /ltRP.
 Qed.
 

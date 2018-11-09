@@ -26,30 +26,34 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
   8. Module D1Dist.
        construction of a distribution from another
        by removing one element from the support
-  9. Module TupleDist.
-  10. Module ProdDist.
-  11. Module ConvexDist.
-  12. Module PairDist.
-  13. Section wolfowitz_counting.
+  9. Module ConvexDist.
+  10. Module Bivar.
+       Joint (Bivariate) Distribution
+  11. Module Multivar
+        multivariate distribution
+      Section joint_dist_rV.
+      Section joint_rV_dist.
+      Section joint_tuple_dist.
+  12. Module ProdDist.
+  13. Module TupleDist.
+  14. Section wolfowitz_counting.
         Wolfowitz's counting principle
-  14. Section probability.
+  15. Section probability.
         Probability of an event P with distribution p (Pr_p[P] = \sum_{i \in A, P\,i} \, p(i))
-  15. Section random_variable.
+  16. Section random_variable.
         Definition of a random variable (R-valued) with a distribution
         pr: Probability that a random variable evaluates to r \in R
-  16. Section expected_value_definition.
+  17. Section expected_value_definition.
         Expected value of a random variable
       Section expected_value_for_standard_random_variables.
         Properties of the expected value of standard random variables
-  17. Section probability_inclusion_exclusion.
+  18. Section probability_inclusion_exclusion.
         An algebraic proof of the formula of inclusion-exclusion (by Erik Martin-Dorel)
-  18. Section markov_inequality.
-  19. Section variance_definition.
+  19. Section markov_inequality.
+  20. Section variance_definition.
       Section variance_properties.
-  20. Section chebyshev.
+  21. Section chebyshev.
         Chebyshev's Inequality
-  21. Section joint_dist.
-        Joint Distribution
   22. Section identically_distributed.
         Identically Distributed Random Variables
   23. Section independent_random_variables.
@@ -74,8 +78,8 @@ Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "P1 `, P2" (at level 6).
 Reserved Notation "{ 'rvar' T }" (at level 0, format "{ 'rvar'  T }").
 Reserved Notation "`p_ X" (at level 5).
-Reserved Notation "'Pr[' X '=' r ']'"
-  (at level 5, X at next level, r at next level).
+Reserved Notation "'Pr[' X '=' r ']'" (at level 5, X at next level,
+  r at next level, format "Pr[ X  =  r ]").
 Reserved Notation "k \cst* X" (at level 49).
 Reserved Notation "X ''/' n" (at level 49, format "X  ''/'  n").
 Reserved Notation "X \+_( H ) Y" (at level 50).
@@ -89,7 +93,8 @@ Reserved Notation "X '\=isum' Xs" (at level 50).
 Reserved Notation "'Pr[' X '>=' r ']'" (at level 5,
   X at next level, r at next level, format "Pr[  X  >=  r  ]").
 Reserved Notation "'`V'" (at level 5).
-Reserved Notation "X _| P |_ Y" (at level 50).
+Reserved Notation "P |= X _|_ Y" (at level 50, X, Y at next level,
+  format "P  |=  X  _|_  Y").
 Reserved Notation "Z \= X '@+' Y" (at level 50).
 
 Local Open Scope R_scope.
@@ -485,141 +490,6 @@ Proof. move=> Xa0; rewrite /f Xa0 div0R; by case: ifP. Qed.
 End d1dist.
 End D1Dist.
 
-Lemma dist2tuple1 : forall A, dist A -> {dist 1.-tuple A}.
-Proof.
-move=> A d.
-apply makeDist with (fun x => d (thead x)).
-  move=> a; exact: dist_ge0.
-rewrite -[RHS](pmf1 d); exact: big_1_tuple.
-Defined.
-
-Local Open Scope vec_ext_scope.
-
-Lemma dist2rV1 : forall A, dist A -> {dist 'rV[A]_1}.
-Proof.
-move=> A d.
-apply makeDist with (fun x : 'rV[A]_1 => d (x ``_ ord0)).
-move=> a; exact: dist_ge0.
-rewrite -[RHS](pmf1 d).
-exact: big_rV_1.
-Defined.
-
-Local Close Scope vec_ext_scope.
-
-Module TupleDist.
-
-Section TupleDist_sect.
-
-Variables (A : finType) (P : dist A) (n : nat).
-
-Local Open Scope vec_ext_scope.
-
-Definition f (t : 'rV[A]_n) := \rprod_(i < n) P t ``_ i.
-
-Lemma f0 (t : 'rV[A]_n) : 0 <= f t.
-Proof. apply rprodr_ge0 => ?; exact/dist_ge0. Qed.
-
-(** Definition of the product distribution (over a row vector): *)
-
-Lemma f1 : \rsum_(t in 'rV[A]_n) f t = 1%R.
-Proof.
-pose P' := fun (a : 'I_n) b => P b.
-suff : \rsum_(g : {ffun 'I_n -> A }) \rprod_(i < n) P' i (g i) = 1%R.
-Local Open Scope ring_scope.
-  rewrite (reindex_onto (fun j : 'rV[A]_n => finfun (fun x => j ``_ x))
-                        (fun i => \row_(j < n) i j)) /=.
-Local Close Scope ring_scope.
-  - move=> H; rewrite /f -H {H}.
-    apply eq_big => t /=.
-    + by apply/esym/eqP/rowP => i; rewrite mxE ffunE.
-    + move=> _; apply eq_bigr => i _ /=; by rewrite ffunE.
-  move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
-rewrite -bigA_distr_bigA /= /P'.
-rewrite [RHS](_ : _ = \rprod_(i < n) 1)%R; last by rewrite big1.
-apply eq_bigr => i _; exact: pmf1.
-Qed.
-
-Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
-
-Lemma dE t : d t = \rprod_(i < n) P t ``_ i.
-Proof. rewrite /d; by unlock. Qed.
-
-End TupleDist_sect.
-
-End TupleDist.
-
-Notation "P `^ n" := (TupleDist.d P n) : proba_scope.
-
-Local Open Scope vec_ext_scope.
-
-Lemma TupleDist0E (B : finType) (x : 'rV[B]_0) P : P `^ 0 x = 1%R.
-Proof. by rewrite TupleDist.dE big_ord0. Qed.
-
-Lemma TupleDist1E (A : finType) (a : 'rV[A]_1) P : (P `^ 1) a = P (a ``_ ord0).
-Proof.
-rewrite TupleDist.dE big_ord_recr /= big_ord0 mul1R; congr (P _ ``_ _).
-by apply val_inj.
-Qed.
-
-Lemma TupleDistSE (B : finType) n (x : 'rV[B]_n.+1) P : P `^ n.+1 x = (P (x ``_ ord0) * P `^ n (rbehead x))%R.
-Proof.
-rewrite 2!TupleDist.dE big_ord_recl; congr (_ * _)%R.
-apply eq_bigr => i _; by rewrite /rbehead mxE.
-Qed.
-
-Local Open Scope ring_scope.
-
-Lemma rsum_rmul_rV_pmf_tnth A n k (P : dist A) :
-  \rsum_(t : 'rV[ 'rV[A]_n]_k) \rprod_(m < k) (P `^ n) t ``_ m = 1%R.
-Proof.
-transitivity (\rsum_(j : {ffun 'I_k -> 'rV[A]_n}) \rprod_(m : 'I_k) P `^ _ (j m)).
-  rewrite (reindex_onto (fun p : 'rV_k => [ffun i => p ``_ i])
-    (fun x : {ffun 'I_k -> 'rV_n} => \row_(i < k) x i)) //=; last first.
-    move=> f _; apply/ffunP => /= k0; by rewrite ffunE mxE.
-  apply eq_big => //.
-  - move=> v /=; by apply/esym/eqP/rowP => i; rewrite mxE ffunE.
-  - move=> i _; apply eq_bigr => j _; by rewrite ffunE.
-rewrite -(bigA_distr_bigA (fun m => P `^ _)) /= big_const.
-by rewrite iter_mulR pmf1 exp1R.
-Qed.
-
-Module ProdDist.
-
-Section ProdDist_sect.
-
-Variables (A B : finType) (P1 : dist A) (P2 : dist B).
-
-Definition f (ab : A * B) := (P1 ab.1 * P2 ab.2)%R.
-
-Lemma f0 (ab : A * B) : 0 <= f ab.
-Proof. apply/mulR_ge0; exact/dist_ge0. Qed.
-
-Lemma f1 : \rsum_(ab in {: A * B}) f ab = 1%R.
-Proof.
-rewrite -(pair_big xpredT xpredT (fun a b => P1 a * P2 b)%R) /= -(pmf1 P1).
-apply eq_bigr => a _; by rewrite -big_distrr /= pmf1 mulR1.
-Qed.
-
-Definition d : {dist A * B} := makeDist f0 f1.
-
-Definition proj1 (P : {dist A * B}) : dist A.
-apply makeDist with (fun a => \rsum_(b in B) P (a, b)).
-- move=> a; apply rsumr_ge0 => ? _; exact: dist_ge0.
-- rewrite -[RHS](pmf1 P) pair_big /=; apply eq_bigr; by case.
-Defined.
-
-Definition proj2 (P : {dist A * B}) : dist B.
-apply makeDist with (fun b => \rsum_(a in A) P (a, b)).
-- move=> a; apply: rsumr_ge0 => ? _; exact: dist_ge0.
-- rewrite exchange_big /= -[RHS](pmf1 P) pair_big /=; apply eq_big; by case.
-Defined.
-
-End ProdDist_sect.
-
-End ProdDist.
-
-Notation "P1 `x P2" := (ProdDist.d P1 P2) : proba_scope.
-
 Module ConvexDist.
 Section convexdist.
 Variables (A : finType) (d1 d2 : dist A) (p : R).
@@ -695,25 +565,282 @@ Qed.
 End convexdist_prop.
 End ConvexDist.
 
-(* pair distribution of two distributions *)
-Module PairDist.
-Section pairdist.
-Variables (A B : finType) (P : dist A) (Q : dist B).
-Definition f (x : A * B) := (P x.1 * Q x.2)%R.
-Lemma f0 x : 0 <= f x.
-Proof. by rewrite /f; apply mulR_ge0; apply dist_ge0. Qed.
-Lemma f1 : \rsum_(i in {: A * B}) f i = 1%R.
-Proof.
-rewrite /f -(pair_big xpredT xpredT (fun a b => P a * Q b)%R) /= -(pmf1 P).
-apply eq_bigr => /= t Ht; by rewrite -big_distrr /= pmf1 mulR1.
-Qed.
-Definition d : dist [finType of {: A * B}] := locked (makeDist f0 f1).
-Lemma dE ab : d ab = (P ab.1 * Q ab.2)%R.
-Proof. rewrite /d; unlock => /=; rewrite /f; by rewrite mulRC. Qed.
-End pairdist.
-End PairDist.
+(* bivariate (joint) distribution *)
+Module Bivar.
+Section bivar.
+Variables (A B : finType) (P : {dist (A * B)}).
 
-Notation "P1 `, P2" := (PairDist.d P1 P2) : proba_scope.
+(* marginal left *)
+Definition ml a := \rsum_(x in {: A * B} | x.1 == a) P x.
+
+Lemma ml0 a : 0 <= ml a.
+Proof. apply rsumr_ge0 => x xa; exact: dist_ge0. Qed.
+
+Lemma ml1 : \rsum_(a in A) ml a = 1%R.
+Proof.
+rewrite -(pmf1 P) (eq_bigr (fun a => P (a.1, a.2))); last by case.
+rewrite -(pair_big xpredT xpredT (fun a b => P (a, b))) /=; apply eq_bigr => a _.
+rewrite /ml -(pair_big_fst _ _ (pred1 a)) //= exchange_big /=.
+apply eq_bigr => b _; by rewrite big_pred1_eq.
+Qed.
+
+Definition marg1 := locked (makeDist ml0 ml1).
+
+Lemma marg1E a : marg1 a = \rsum_(i in B) P (a, i).
+Proof.
+rewrite /marg1; unlock => /=; rewrite /ml.
+by rewrite -(pair_big_fst _ _ (pred1 a)) //= big_pred1_eq.
+Qed.
+
+Lemma marg1_eq0 a b : marg1 a = 0%R -> P (a, b) = 0%R.
+Proof.
+rewrite /marg1; unlock => /prsumr_eq0P /= -> //; case.
+move=> a' b' /= /eqP ->; exact/dist_ge0.
+Qed.
+
+Lemma marg1_eq0N a b : P (a, b) != 0%R -> marg1 a != 0%R.
+Proof. by apply: contra => /eqP /marg1_eq0 ->. Qed.
+
+(* marginal right *)
+Definition mr b := \rsum_(x in {: A * B} | x.2 == b) P x.
+
+Lemma mr0 b : 0 <= mr b.
+Proof. apply rsumr_ge0 => x xb; exact: dist_ge0. Qed.
+
+Lemma mr1 : \rsum_(b in B) mr b = 1%R.
+Proof.
+rewrite -(pmf1 P) (eq_bigr (fun a => P (a.1, a.2))); last by case.
+rewrite -(pair_big xpredT xpredT (fun a b => P (a, b))) /=.
+rewrite exchange_big; apply eq_bigr => b _.
+rewrite /mr -(pair_big_snd _ _ (pred1 b)) //=.
+apply eq_bigr => a _; by rewrite big_pred1_eq.
+Qed.
+
+Definition marg2 : dist B := locked (makeDist mr0 mr1).
+
+Lemma marg2E b : marg2 b = \rsum_(i in A) P (i, b).
+Proof.
+rewrite /marg2; unlock => /=; rewrite /mr -(pair_big_snd _ _ (pred1 b)) //=.
+apply eq_bigr => a ?; by rewrite big_pred1_eq.
+Qed.
+
+Lemma marg2_eq0 a b : marg2 b = 0%R -> P (a, b) = 0%R.
+Proof.
+rewrite /marg2; unlock => /prsumr_eq0P /= -> //; case.
+move=> a' b' /= /eqP ->; exact/dist_ge0.
+Qed.
+
+Lemma marg2_eq0N a b : P (a, b) != 0%R -> marg2 b != 0%R.
+Proof. by apply: contra => /eqP /marg2_eq0 ->. Qed.
+
+End bivar.
+End Bivar.
+
+(* multivariate (joint) distribution *)
+Module Multivar.
+Section prod_of_rV.
+Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}).
+
+Definition tobi (a : A * 'rV[A]_n) := P (row_mx (\row_(i < 1) a.1) a.2).
+
+Lemma tobi0 a : 0 <= tobi a.
+Proof. exact: dist_ge0. Qed.
+
+Lemma tobi1 : \rsum_(a in {: A * 'rV[A]_n}) tobi a = 1%R.
+Proof.
+rewrite -(pmf1 P) /= -(big_rV_cons_behead _ _ xpredT xpredT) /=.
+by rewrite pair_big /=; apply eq_bigr; case.
+Qed.
+
+Definition to_bivar : {dist (A * 'rV[A]_n)} := locked (makeDist tobi0 tobi1).
+
+Lemma to_bivarE a : to_bivar a = P (row_mx (\row_(i < 1) a.1) a.2).
+Proof. rewrite /to_bivar; unlock => /=; by []. Qed.
+
+Definition head_of := Bivar.marg1 to_bivar.
+Definition tail_of := Bivar.marg2 to_bivar.
+
+End prod_of_rV.
+
+Section rV_of_prod.
+
+Local Open Scope vec_ext_scope.
+
+Variables (A : finType) (n : nat) (P : {dist A * 'rV[A]_n}).
+
+Definition frombi (a : 'rV[A]_n.+1) := P (a ``_ ord0, rbehead a).
+
+Lemma frombi0 a : 0 <= frombi a.
+Proof. exact: dist_ge0. Qed.
+
+Lemma frombi1 : \rsum_(a in {: 'rV[A]_n.+1}) frombi a = 1%R.
+Proof.
+rewrite -(pmf1 P) /= -(big_rV_cons_behead _ _ xpredT xpredT) /=.
+rewrite pair_big /=; apply eq_bigr; case => a b _ /=.
+by rewrite /frombi row_mx_row_ord0 rbehead_row_mx.
+Qed.
+
+Definition from_bivar : {dist 'rV[A]_n.+1} := locked (makeDist frombi0 frombi1).
+
+Lemma from_bivarE a : from_bivar a = P (a ``_ ord0, rbehead a).
+Proof. rewrite /from_bivar; unlock => /=; by []. Qed.
+
+End rV_of_prod.
+End Multivar.
+
+(*Lemma dist2tuple1 : forall A, dist A -> {dist 1.-tuple A}.
+Proof.
+move=> A d.
+apply makeDist with (fun x => d (thead x)).
+  move=> a; exact: dist_ge0.
+rewrite -[RHS](pmf1 d); exact: big_1_tuple.
+Defined.*)
+
+Local Open Scope vec_ext_scope.
+
+Lemma dist2rV1 : forall A, dist A -> {dist 'rV[A]_1}.
+Proof.
+move=> A d.
+apply makeDist with (fun x : 'rV[A]_1 => d (x ``_ ord0)).
+move=> a; exact: dist_ge0.
+rewrite -[RHS](pmf1 d).
+exact: big_rV_1.
+Defined.
+
+Local Close Scope vec_ext_scope.
+
+Module ProdDist.
+Section ProdDist_sect.
+
+Variables (A B : finType) (P1 : dist A) (P2 : dist B).
+
+Definition f (ab : A * B) := (P1 ab.1 * P2 ab.2)%R.
+
+Lemma f0 (ab : A * B) : 0 <= f ab.
+Proof. apply/mulR_ge0; exact/dist_ge0. Qed.
+
+Lemma f1 : \rsum_(ab in {: A * B}) f ab = 1%R.
+Proof.
+rewrite -(pair_big xpredT xpredT (fun a b => P1 a * P2 b)%R) /= -(pmf1 P1).
+apply eq_bigr => a _; by rewrite -big_distrr /= pmf1 mulR1.
+Qed.
+
+Definition d : {dist A * B} := makeDist f0 f1.
+
+Lemma dE x : d x = (P1 x.1 * P2 x.2)%R. Proof. by []. Qed.
+
+End ProdDist_sect.
+End ProdDist.
+
+Notation "P1 `x P2" := (ProdDist.d P1 P2) : proba_scope.
+
+Module TupleDist.
+Section tupledist.
+Variables (A : finType) (P : dist A) (n : nat).
+
+Local Open Scope vec_ext_scope.
+
+Definition f (t : 'rV[A]_n) := \rprod_(i < n) P t ``_ i.
+
+Lemma f0 (t : 'rV[A]_n) : 0 <= f t.
+Proof. apply rprodr_ge0 => ?; exact/dist_ge0. Qed.
+
+(** Definition of the product distribution (over a row vector): *)
+
+Lemma f1 : \rsum_(t in 'rV[A]_n) f t = 1%R.
+Proof.
+pose P' := fun (a : 'I_n) b => P b.
+suff : \rsum_(g : {ffun 'I_n -> A }) \rprod_(i < n) P' i (g i) = 1%R.
+Local Open Scope ring_scope.
+  rewrite (reindex_onto (fun j : 'rV[A]_n => finfun (fun x => j ``_ x))
+                        (fun i => \row_(j < n) i j)) /=.
+Local Close Scope ring_scope.
+  - move=> H; rewrite /f -H {H}.
+    apply eq_big => t /=.
+    + by apply/esym/eqP/rowP => i; rewrite mxE ffunE.
+    + move=> _; apply eq_bigr => i _ /=; by rewrite ffunE.
+  move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
+rewrite -bigA_distr_bigA /= /P'.
+rewrite [RHS](_ : _ = \rprod_(i < n) 1)%R; last by rewrite big1.
+apply eq_bigr => i _; exact: pmf1.
+Qed.
+
+Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
+
+Lemma dE t : d t = \rprod_(i < n) P t ``_ i.
+Proof. rewrite /d; by unlock. Qed.
+
+End tupledist.
+
+Local Notation "P `^ n" := (d P n).
+
+Section tupledist_prop.
+Variable B : finType.
+
+Local Open Scope vec_ext_scope.
+
+Lemma zero (x : 'rV[B]_0) P : P `^ 0 x = 1%R.
+Proof. by rewrite dE big_ord0. Qed.
+
+Lemma S n (x : 'rV[B]_n.+1) P : P `^ n.+1 x = P (x ``_ ord0) * P `^ n (rbehead x).
+Proof.
+rewrite 2!TupleDist.dE big_ord_recl; congr (_ * _)%R.
+apply eq_bigr => i _; by rewrite /rbehead mxE.
+Qed.
+
+Lemma one (a : 'rV[B]_1) P : (P `^ 1) a = P (a ``_ ord0).
+Proof. by rewrite S zero mulR1. Qed.
+
+End tupledist_prop.
+
+(* The tuple distribution as a joint distribution *)
+Section joint_tuple_dist.
+
+Variables (A : finType) (P : dist A) (n : nat).
+
+Lemma head_of : P = Multivar.head_of (P `^ n.+1).
+Proof.
+apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => a.
+rewrite /Multivar.head_of Bivar.marg1E /=.
+evar (f : 'rV[A]_n -> R); rewrite (eq_bigr f); last first.
+  move=> v _; rewrite Multivar.to_bivarE /= TupleDist.S.
+  rewrite row_mx_row_ord0 rbehead_row_mx /f; reflexivity.
+by rewrite {}/f -big_distrr /= pmf1 mulR1.
+Qed.
+
+Lemma tail_of : P `^ n = Multivar.tail_of (P `^ n.+1).
+Proof.
+apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => a.
+rewrite /Multivar.tail_of Bivar.marg2E /=.
+evar (f : A -> R); rewrite (eq_bigr f); last first.
+  move=> v _; rewrite Multivar.to_bivarE /= TupleDist.S.
+  rewrite row_mx_row_ord0 rbehead_row_mx /f; reflexivity.
+by rewrite {}/f -big_distrl /= pmf1 mul1R.
+Qed.
+
+End joint_tuple_dist.
+End TupleDist.
+
+Notation "P `^ n" := (TupleDist.d P n) : proba_scope.
+
+Local Open Scope ring_scope.
+Local Open Scope vec_ext_scope.
+
+Lemma rsum_rmul_rV_pmf_tnth A n k (P : dist A) :
+  \rsum_(t : 'rV[ 'rV[A]_n]_k) \rprod_(m < k) (P `^ n) t ``_ m = 1%R.
+Proof.
+transitivity (\rsum_(j : {ffun 'I_k -> 'rV[A]_n}) \rprod_(m : 'I_k) P `^ _ (j m)).
+  rewrite (reindex_onto (fun p : 'rV_k => [ffun i => p ``_ i])
+    (fun x : {ffun 'I_k -> 'rV_n} => \row_(i < k) x i)) //=; last first.
+    move=> f _; apply/ffunP => /= k0; by rewrite ffunE mxE.
+  apply eq_big => //.
+  - move=> v /=; by apply/esym/eqP/rowP => i; rewrite mxE ffunE.
+  - move=> i _; apply eq_bigr => j _; by rewrite ffunE.
+rewrite -(bigA_distr_bigA (fun m => P `^ _)) /= big_const.
+by rewrite iter_mulR pmf1 exp1R.
+Qed.
+
+Local Close Scope vec_ext_scope.
 
 (*Section tuple_prod_cast.
 
@@ -775,7 +902,6 @@ Qed.
 End wolfowitz_counting.
 
 Section probability.
-
 Variables (A : finType) (P : dist A).
 
 Definition Pr (E : {set A}) := \rsum_(a in E) P a.
@@ -799,8 +925,14 @@ Proof. move=> H; apply eq_bigl => x; by rewrite H. Qed.
 
 Local Open Scope R_scope.
 
-Lemma Pr_0 : Pr set0 = 0.
+Lemma Pr_set0 : Pr set0 = 0.
 Proof. rewrite /Pr big_pred0 // => a; by rewrite in_set0. Qed.
+
+Lemma Pr_set0P S : Pr S = 0 <-> (forall s, s \in S -> P s = 0).
+Proof.
+rewrite /Pr (eq_bigl (fun x => x \in S)); last by [].
+apply: (@prsumr_eq0P _ (mem S) P) => a Sa; exact: dist_ge0.
+Qed.
 
 Lemma Pr_set1 a : Pr [set a] = P a.
 Proof. by rewrite /Pr big_set1. Qed.
@@ -884,6 +1016,24 @@ rewrite -[X in X <= _]add0R; exact/leR_add2r/dist_ge0.
 Qed.
 
 End probability.
+
+Lemma Pr_marg1_eq0 (A B : finType) (P : {dist (A * B)}) a b :
+  Pr (Bivar.marg1 P) a = 0%R -> Pr P (setX a b) = 0%R.
+Proof.
+move/Pr_set0P => H; apply/Pr_set0P; case=> a' b'.
+rewrite inE /= => /andP[/H tmp _]; move: tmp.
+rewrite /Bivar.marg1; unlock => /=; rewrite /Bivar.marg2.
+move/prsumr_eq0P => /=; apply => //; case=> a'' b'' /= ?; exact: dist_ge0.
+Qed.
+
+Lemma Pr_marg2_eq0 (A B : finType) (P : {dist (A * B)}) a b :
+  Pr (Bivar.marg2 P) b = 0%R -> Pr P (setX a b) = 0%R.
+Proof.
+move/Pr_set0P => H; apply/Pr_set0P; case=> a' b'.
+rewrite inE /= => /andP[a'a /H].
+rewrite /Bivar.marg2; unlock => /=; rewrite /Bivar.mr.
+move/prsumr_eq0P => /=; apply => //; case=> a'' b'' /= ?; exact: dist_ge0.
+Qed.
 
 Lemma Pr_setX1 (A B : finType) (PQ : {dist (A * B)}) a b :
   Pr PQ (setX [set a] [set b]) = Pr PQ [set (a, b)].
@@ -970,6 +1120,8 @@ Notation "'--log' P" := (mlog_rv P) (at level 5) : proba_scope.
 
 (** Cast operation: *)
 
+Local Open Scope vec_ext_scope.
+
 Lemma tuple1_of_rvar : forall A, rvar A -> {rvar 'rV[A]_1}.
 Proof.
 move=> A [d f]; apply mkRvar.
@@ -981,6 +1133,8 @@ Definition cast_rv A : 'rV[rvar A]_1 -> {rvar 'rV[A]_1}.
 move=> t.
 exact (tuple1_of_rvar (t ``_ ord0)).
 Defined.
+
+Local Close Scope vec_ext_scope.
 
 Section expected_value_definition.
 
@@ -1066,7 +1220,7 @@ Lemma E_tuple1_of_rvar A : forall (X : rvar A), `E (tuple1_of_rvar X) = `E X.
 Proof.
 case=> d f.
 rewrite 2!ExE /tuple1_of_rvar /=; apply big_rV_1 => // m.
-by rewrite -TupleDist1E.
+by rewrite -TupleDist.one.
 Qed.
 
 (** ** An algebraic proof of the formula of inclusion-exclusion *)
@@ -1459,7 +1613,7 @@ Lemma V_tuple1_of_rvar A : forall (X : rvar A), `V (tuple1_of_rvar X) = `V X.
 Proof.
 case=> d f.
 rewrite /`V !E_tuple1_of_rvar !ExE; apply: big_rV_1 => // i.
-by rewrite TupleDist1E.
+by rewrite TupleDist.one.
 Qed.
 
 (** (Probabilistic statement.)
@@ -1491,140 +1645,74 @@ Qed.
 
 End chebyshev.
 
-Section joint_dist.
-
-Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}).
-
-(*Definition joint :=
-  (forall x, P1 x = \rsum_(t in 'rV[A]_n.+1 | t ``_ ord0 == x) P t) /\
-  (forall x, P2 x = \rsum_(t in 'rV[A]_n.+1 | rbehead t == x) P t).*)
-
-Definition pmf_head a := \rsum_(t in 'rV_n.+1 | t ``_ ord0 == a) P t.
-
-Lemma pmf_head0 a : 0 <= pmf_head a.
-Proof. apply rsumr_ge0 => t ta; exact: dist_ge0. Qed.
-
-Lemma pmf_head1 : \rsum_(a in A) pmf_head a = 1.
-Proof.
-rewrite -(pmf1 P) /= -(big_rV_cons_behead _ _ xpredT xpredT) /=.
-apply eq_bigr => a _; by rewrite /pmf_head big_rV_cons.
-Qed.
-
-Definition head_of_joint := makeDist pmf_head0 pmf_head1.
-
-Definition pmf_tail a := \rsum_(t in 'rV_n.+1 | rbehead t == a) P t.
-
-Lemma pmf_tail0 a : 0 <= pmf_tail a.
-Proof. apply rsumr_ge0 => t ta; exact: dist_ge0. Qed.
-
-Lemma pmf_tail1 : \rsum_(a in 'rV[A]_n) pmf_tail a = 1.
-Proof.
-rewrite -(pmf1 P) /= -(big_rV_cons_behead _ _ xpredT xpredT) /=.
-rewrite exchange_big /=; apply eq_bigr => t _.
-by rewrite /pmf_tail -big_rV_behead.
-Qed.
-
-Definition tail_of_joint := makeDist pmf_tail0 pmf_tail1.
-
-End joint_dist.
-
-(* The tuple distribution as a joint distribution *)
-Section joint_tuple_dist.
-
-Variables (A : finType) (P : dist A) (n : nat).
-
-Lemma tuple_dist_head_of_joint : P = head_of_joint (P `^ n.+1).
-Proof.
-case: P => /= f f1.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality.
-move=> a /=; rewrite /pmf_head /= (eq_bigr
-  (fun t => f a * {| pmf := f; pmf1 := f1 |} `^ n (rbehead t))); last first.
-  move=> t /eqP t0a /=; by rewrite TupleDistSE /= -t0a.
-rewrite -big_distrr /= -big_rV_cons /=.
-rewrite (eq_bigr (fun v => {| pmf := f; pmf1 := f1 |} `^ n v)); last first.
-  move=> /= v _; congr (_ `^ n _); by rewrite rbehead_row_mx.
-by rewrite pmf1 mulR1.
-Qed.
-
-Lemma tuple_dist_tail_of_joint : P `^ n = tail_of_joint (P `^ n.+1).
-Proof.
-case: P => /= f f1.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality.
-move=> a /=.
-rewrite /pmf_tail /= (eq_bigr (fun t : 'rV_n.+1 =>
-  f (t ``_ ord0) * {| pmf := f; pmf1 := f1 |} `^ n a))%R; last first.
-  move=> t /eqP t0a /=; by rewrite TupleDistSE /= -t0a.
-rewrite -big_distrl /= -big_rV_behead (eq_bigr f); last first.
-  move=> /= v _; by rewrite row_mx_row_ord0.
-rewrite /=; by rewrite f1 mul1R.
-Qed.
-
-End joint_tuple_dist.
-
 Section identically_distributed.
 
 Variables (A : finType) (P : dist A) (n : nat).
 
+Local Open Scope vec_ext_scope.
+
 (** The random variables Xs are identically distributed with distribution P: *)
-(*Definition id_dist (Xs : n.-tuple (rvar A)) := forall i, `p_(Xs \_ i) = P.*)
 Definition id_dist (Xs : 'rV[rvar A]_n) := forall i, `p_(Xs ``_ i) = P.
 
 End identically_distributed.
 
 Section independent_random_variables.
 
-Variables (A : finType) (X : rvar A).
-Variable n : nat.
-Variable Y : {rvar 'rV[A]_n}.
+Variables (A : finType) (f : A -> R) (n : nat) (g : 'rV[A]_n -> R).
 Variable P : {dist 'rV[A]_n.+1}.
+Let X := mkRvar (Multivar.head_of P) f.
+Let Y := mkRvar (Multivar.tail_of P) g.
+
+Local Open Scope vec_ext_scope.
 
 Definition inde_rv := forall x y,
-  Pr P [set xy : 'rV_n.+1 | (X (xy ``_ ord0) == x) && (Y (rbehead xy) == y)] =
-  (Pr[X = x] * Pr[Y = y])%R.
+  Pr P [set xy : 'rV__ | (X (xy ``_ ord0) == x) && (Y (rbehead xy) == y)] =
+  Pr[X = x] * Pr[Y = y].
 
 End independent_random_variables.
 
-Notation "X _| P |_ Y" := (inde_rv X Y P) : proba_scope.
+Notation "P |= X _|_ Y" := (inde_rv X Y P) : proba_scope.
+
+Local Open Scope vec_ext_scope.
 
 (** Independent random variables over the tuple distribution: *)
-Lemma inde_rv_tuple_pmf_dist A (P : dist A) n (x y : R) (Xs : 'rV[rvar A]_n.+2) :
-  id_dist P Xs ->
-    Pr (P `^ n.+2) [set xy : 'rV__ | (- log (P (xy ``_ ord0)) == x)%R &&
-      (\rsum_(i : 'I_n.+1)
-       - log (`p_ ((rbehead Xs) ``_ i) (rbehead xy) ``_ i) == y)%R] =
-    (Pr P [set a | - log (P a) == x] *
-    Pr (P `^ n.+1) [set ta : 'rV__ |
-      \rsum_(i : 'I_n.+1) - log (`p_ ((rbehead Xs) ``_ i) ta ``_ i) == y])%R.
+Lemma inde_rv_tuple_dist A (P : dist A) n (x y : R) f :
+  Pr P `^ n.+1 [set xy : 'rV__ |
+    (f (xy ``_ ord0) == x) &&
+    (\rsum_(i < n) f ((rbehead xy) ``_ i) == y)] =
+  Pr P [set a | f a == x] *
+  Pr P `^ n [set b : 'rV__ | \rsum_(i < n) f (b ``_ i) == y].
 Proof.
-move=> Hid_dist.
 rewrite /Pr.
 move: (big_rV_cons_behead_support addR_comoid
-  (fun i : 'rV[A]_n.+2 => P `^ _ i)
-  [set a | (- log (P a) == x)%R]
-  [set t : 'rV__ | \rsum_(i < n.+1) - log (`p_ ((rbehead Xs) ``_ i) t ``_ i) == y])%R => H.
+  (fun i : 'rV__ => P `^ _ i)
+  [set a | f a == x]
+  [set t : 'rV__ | \rsum_(i < n) f ( t ``_ i) == y]) => H.
 eapply trans_eq.
   eapply trans_eq; last by symmetry; apply H.
   apply eq_bigl => ta /=; by rewrite !inE.
-transitivity (\rsum_(a in [set a | (- log (P a) == x)%R])
-  \rsum_(a' in [set ta : 'rV__ | \rsum_(i < n.+1) - log (`p_ ((rbehead Xs) ``_ i) ta ``_ i) == y])
-  P a * P `^ _ a')%R.
+transitivity (\rsum_(a in [set a | f a == x])
+  \rsum_(a' in [set ta : 'rV__ | \rsum_(i < n) f (ta ``_ i) == y])
+  P a * P `^ _ a').
   apply eq_bigr => a _.
   apply eq_bigr => ta _.
-  by rewrite TupleDistSE row_mx_row_ord0 rbehead_row_mx.
+  by rewrite TupleDist.S row_mx_row_ord0 rbehead_row_mx.
 rewrite big_distrl /=.
 apply eq_bigr => a _; by rewrite -big_distrr.
 Qed.
 
+Local Close Scope vec_ext_scope.
+
 Section sum_two_rand_var_def.
 
-Variable A : finType.
-Variable X1 : rvar A.
-Variable n : nat.
-Variable X2 : {rvar 'rV[A]_n.+1}.
+Variables (A : finType) (X1 : rvar A).
+Variables (n : nat) (X2 : {rvar 'rV[A]_n.+1}).
 Variable X : {rvar 'rV[A]_n.+2}.
 
-Definition sum := (*joint `p_X1 `p_X2 `p_X /\*)
-  (`p_X1 = head_of_joint `p_X /\ `p_X2 = tail_of_joint `p_X) /\
+Local Open Scope vec_ext_scope.
+
+Definition sum :=
+  (`p_X1 = Multivar.head_of `p_X /\ `p_X2 = Multivar.tail_of `p_X) /\
   X =1 fun x => X1 (x ``_ ord0) + X2 (rbehead x).
 
 End sum_two_rand_var_def.
@@ -1633,40 +1721,41 @@ Notation "Z \= X '@+' Y" := (sum X Y Z) : proba_scope.
 
 Section sum_two_rand_var.
 
-Variable A : finType.
-Variable X1 : rvar A.
-Variable n : nat.
-Variable X2 : {rvar 'rV[A]_n.+1}.
+Variables (A : finType) (X1 : rvar A).
+Variables (n : nat) (X2 : {rvar 'rV[A]_n.+1}).
 Variable X : {rvar 'rV[A]_n.+2}.
+
+Local Open Scope vec_ext_scope.
 
 (** The expected value of a sum is the sum of expected values,
    whether or not the summands are mutually independent
    (the ``First Fundamental Mystery of Probability'' \cite[Theorem 6.2]{probook}): *)
-Lemma E_linear_2 : X \= X1 @+ X2 -> `E X = (`E X1 + `E X2)%R.
+Lemma E_linear_2 : X \= X1 @+ X2 -> `E X = `E X1 + `E X2.
 Proof.
 move=> [[Hjoint1 Hjoint2] Hsum]; rewrite !ExE /=.
 transitivity (\rsum_(ta in 'rV[A]_n.+2)
-  (X1 (ta ``_ ord0) * `p_X ta + X2 (rbehead ta) * `p_X ta)%R).
+  (X1 (ta ``_ ord0) * `p_X ta + X2 (rbehead ta) * `p_X ta)).
 - apply eq_bigr => ta _; by rewrite Hsum mulRDl.
 - rewrite big_split => //=; f_equal.
   + transitivity (\rsum_(a in A)
-      (X1 a * \rsum_(ta in 'rV_n.+1) `p_X (row_mx (\row_(k < 1) a) ta))).
+      (X1 a * \rsum_(ta in 'rV_n.+1) ((Multivar.to_bivar `p_X) (a, ta)))).
     * rewrite -(big_rV_cons_behead _ _ xpredT xpredT); apply eq_bigr => a _.
-      rewrite big_distrr /=; apply eq_bigr => i _; by rewrite row_mx_row_ord0.
-    * apply eq_bigr => a _; by rewrite Hjoint1 big_rV_cons.
+      rewrite big_distrr /=; apply eq_bigr => i _.
+      by rewrite row_mx_row_ord0 Multivar.to_bivarE.
+    * apply eq_bigr => a _; by rewrite Hjoint1 /Multivar.head_of Bivar.marg1E.
   + transitivity (\rsum_(ta in 'rV_n.+1)
-      (X2 ta * \rsum_(a in A) `p_X (row_mx (\row_(k < 1) a) ta))).
+      (X2 ta * \rsum_(a in A) ((Multivar.to_bivar `p_X) (a, ta)))).
     * rewrite -(big_rV_cons_behead _ _ xpredT xpredT) exchange_big /=.
       apply eq_bigr => ta _; rewrite big_distrr /=.
-      apply eq_bigr => a _; by rewrite rbehead_row_mx.
-    * apply eq_bigr => ta _; by rewrite Hjoint2 big_rV_behead.
+      apply eq_bigr => a _; by rewrite rbehead_row_mx Multivar.to_bivarE.
+    * apply eq_bigr => ta _; by rewrite Hjoint2 /Multivar.tail_of Bivar.marg2E.
 Qed.
 
 (* TODO: relation with theorem 6.4 of probook (E(XY)=E(X)E(Y))? *)
 
-Lemma E_id_rem_helper : X \= X1 @+ X2 -> X1 _| `p_X |_ X2 ->
-  \rsum_(i in 'rV[A]_n.+2)(X1 (i ``_ ord0) * X2 (rbehead i) * `p_X i)%R =
-    (`E X1 * `E X2)%R.
+Lemma E_id_rem_helper : X \= X1 @+ X2 -> `p_X |= X1 _|_ X2 ->
+  \rsum_(i in 'rV[A]_n.+2) (X1 (i ``_ ord0) * X2 (rbehead i) * `p_X i) =
+    `E X1 * `E X2.
 Proof.
 case=> Hjoint Hsum Hinde.
 apply trans_eq with (\rsum_(r <- undup (map X1 (enum A)))
@@ -1702,7 +1791,9 @@ apply trans_eq with (r * r' * \rsum_(i0 | X2 i0 == r') \rsum_(i1 | X1 i1 == r)
 rewrite -!mulRA.
 congr (_ * (_ * _))%R.
 rewrite exchange_big /=.
-move: {Hinde}(Hinde r r') => <-.
+move: {Hinde}(Hinde r r').
+rewrite -(proj1 Hjoint) -(proj2 Hjoint).
+move=> <-.
 rewrite /Pr.
 move: (big_rV_cons_behead_support addR_comoid (fun a => `p_ X a) [set j0 | X1 j0 == r]
   [set i0 | X2 i0 == r']) => H'.
@@ -1716,8 +1807,8 @@ apply eq_bigl => ta /=; by rewrite !inE.
 Qed.
 
 (** Expected Value of the Square (requires mutual independence): *)
-Lemma E_id_rem : X \= X1 @+ X2 -> X1 _| `p_X |_ X2 ->
-  `E (X \^2) = (`E (X1 \^2) + 2 * `E X1 * `E X2 + `E (X2 \^2))%R.
+Lemma E_id_rem : X \= X1 @+ X2 -> `p_X |= X1 _|_ X2 ->
+  `E (X \^2) = `E (X1 \^2) + 2 * `E X1 * `E X2 + `E (X2 \^2).
 Proof.
 move=> [[Hjoint1 Hjoint2] Hsum] Hinde.
 rewrite [in LHS]ExE.
@@ -1730,27 +1821,26 @@ transitivity (\rsum_(i in 'rV_n.+2) ((X1 (i ``_ ord0)) ^ 2 +
 transitivity (\rsum_(i in 'rV_n.+2) ((X1 (i ``_ ord0)) ^ 2 * `p_X i + 2 *
   X1 (i ``_ ord0) * X2 (rbehead i) * `p_X i + (X2 (rbehead i)) ^ 2 * `p_X i)).
   apply eq_bigr => ? ?; by field.
-rewrite !big_split /=.
-f_equal.
-- f_equal.
-  + rewrite ExE -(big_rV_cons_behead _ _ xpredT xpredT) /=.
-    apply eq_bigr => i _.
-    transitivity (X1 i ^ 2 *
-      \rsum_(j in 'rV_n.+1) `p_X (row_mx (\row_(k < 1) i) j)).
-    * rewrite big_distrr /=; apply eq_bigr => i0 _; by rewrite row_mx_row_ord0.
-    * congr (_ * _)%R; by rewrite Hjoint1 big_rV_cons.
-  + rewrite -mulRA -E_id_rem_helper // big_distrr /=.
-    apply eq_bigr => i _; field.
+rewrite !big_split /=; congr (_ + _ + _).
+- rewrite ExE -(big_rV_cons_behead _ _ xpredT xpredT) /=.
+  apply eq_bigr => i _.
+  transitivity (X1 i ^ 2 * \rsum_(j in 'rV_n.+1) (Multivar.to_bivar `p_ X) (i, j)).
+  + rewrite big_distrr /=; apply eq_bigr => i0 _.
+    by rewrite row_mx_row_ord0 Multivar.to_bivarE.
+  + congr (_ * _)%R; by rewrite Hjoint1 /Multivar.head_of Bivar.marg1E.
+- rewrite -mulRA -E_id_rem_helper // big_distrr /=.
+  apply eq_bigr => i _; field.
 - rewrite ExE -(big_rV_cons_behead _ _ xpredT xpredT) exchange_big /=.
   apply eq_bigr => t _.
-  transitivity (X2 t ^ 2 * \rsum_(i in A) (`p_X (row_mx (\row_(k < 1) i) t))).
-  + rewrite big_distrr /=; apply eq_bigr => i _; by rewrite rbehead_row_mx.
-  + congr (_ * _); by rewrite Hjoint2 big_rV_behead.
+  transitivity (X2 t ^ 2 * \rsum_(i in A) (Multivar.to_bivar `p_ X) (i, t)).
+  + rewrite big_distrr /=; apply eq_bigr => i _.
+    by rewrite rbehead_row_mx Multivar.to_bivarE.
+  + congr (_ * _); by rewrite Hjoint2 /Multivar.tail_of Bivar.marg2E.
 Qed.
 
 (** The variance of the sum is the sum of variances for any two
   independent random variables %(\cite[Theorem 6.8]{probook})%: *)
-Lemma V_linear_2 : X \= X1 @+ X2 -> X1 _| `p_X |_ X2  -> `V X = (`V X1 + `V X2).
+Lemma V_linear_2 : X \= X1 @+ X2 -> `p_X |= X1 _|_ X2  -> `V X = (`V X1 + `V X2).
 Proof.
 move=> H ?; rewrite !V_alt E_id_rem // (E_linear_2 H) sqrRD; by field.
 Qed.
@@ -1777,20 +1867,22 @@ Section sum_n_rand_var.
 
 Variable A : finType.
 
+Local Open Scope vec_ext_scope.
+
 Lemma E_linear_n : forall n (Xs : 'rV[rvar A]_n) X,
   X \=sum Xs -> `E X = \rsum_(i < n) `E Xs ``_ i.
 Proof.
 elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
 - by inversion 1.
 - inversion 1; subst.
-  apply Eqdep_dec.inj_pair2_eq_dec in H0; last by exact eq_nat_dec.
-  apply Eqdep_dec.inj_pair2_eq_dec in H1; last by exact eq_nat_dec.
+  apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
+  apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
   subst Xs Xbar.
   rewrite big_ord_recl big_ord0 addR0 /cast_rv.
   by rewrite E_tuple1_of_rvar.
 - inversion 1; subst.
-  apply Eqdep_dec.inj_pair2_eq_dec in H1; last by exact eq_nat_dec.
-  apply Eqdep_dec.inj_pair2_eq_dec in H2; last by exact eq_nat_dec.
+  apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
+  apply Eqdep_dec.inj_pair2_eq_dec in H2; last exact eq_nat_dec.
   subst Z Xs.
   move: {IHn}(IHn _ _ H3) => IHn'.
   rewrite big_ord_recl.
@@ -1823,7 +1915,7 @@ Inductive isum_n : forall n,
   {rvar 'rV[A]_n} -> 'rV[rvar A]_n -> Prop :=
 | isum_n_1 : forall X, cast_rv X \=isum X
 | isum_n_cons : forall n (Ys : 'rV_n.+1) Y X Z,
-  Y \=isum Ys -> Z \= X @+ Y -> X _| `p_Z |_ Y ->
+  Y \=isum Ys -> Z \= X @+ Y -> `p_Z |= X _|_ Y ->
   Z \=isum (row_mx (\row_(k < 1) X) Ys)
 where "X '\=isum' Xs" := (isum_n X Xs) : proba_scope.
 
@@ -1845,6 +1937,8 @@ elim.
   by econstructor 2; eauto.
 Qed.
 
+Local Open Scope vec_ext_scope.
+
 Lemma V_linearity_isum : forall n
   (X : {rvar 'rV[A]_n}) (Xs : 'rV[rvar A]_n),
   X \=isum Xs ->
@@ -1856,8 +1950,8 @@ elim.
   by inversion X_Xs.
 case=> [_ | n IH] Xsum Xs Hsum s Hs.
   inversion Hsum.
-  apply Eqdep_dec.inj_pair2_eq_dec in H; last by exact eq_nat_dec.
-  apply Eqdep_dec.inj_pair2_eq_dec in H0; last by exact eq_nat_dec.
+  apply Eqdep_dec.inj_pair2_eq_dec in H; last exact eq_nat_dec.
+  apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
   subst Xs Xsum.
   rewrite /cast_rv V_tuple1_of_rvar /= mul1R.
   exact: Hs.
@@ -1866,8 +1960,8 @@ have {IH}IH : forall Xsum (Xs : 'rV[rvar A]_n.+1),
   forall sigma2, (forall i, `V (Xs ``_ i) = sigma2) ->
     `V Xsum = (INR n.+1 * sigma2)%R by apply IH.
 move: Hsum; inversion 1.
-apply Eqdep_dec.inj_pair2_eq_dec in H0; last by exact eq_nat_dec.
-apply Eqdep_dec.inj_pair2_eq_dec in H1; last by exact eq_nat_dec.
+apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
+apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
 subst Z n0 Xs.
 move: {IH}(IH Y Ys H2) => IH.
 rewrite S_INR mulRDl -IH.
@@ -1897,6 +1991,8 @@ Qed.
 End sum_n_independent_rand_var.
 
 Section weak_law_of_large_numbers.
+
+Local Open Scope vec_ext_scope.
 
 Variable A : finType.
 Variable P : dist A.

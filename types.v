@@ -305,7 +305,7 @@ exists (@type.mkType _ _ (dist_of_ffun Hf) _ (dist_of_ffun_prop Hf)).
 by rewrite inE.
 Qed.
 
-Lemma type_empty1 n : #|A|= 0 -> #|P_ n(A)| = 0.
+Lemma type_empty1 n : #|A| = 0 -> #|P_ n(A)| = 0.
 Proof.
 move=> A0; apply eq_card0; case=> d ? ?.
 move: (dist_domain_not_empty d); by rewrite A0.
