@@ -175,15 +175,11 @@ have -> : Pr P `^ n.+1 (~: p) =
       have /(_ _ _ _ H3) {H3}H3 : forall a b c, a <= - c + b -> - b <= - a - c.
         by move=> *; lra.
       rewrite leR_Rabsl; apply/andP; split; exact/leRP.
-  rewrite Pr_union_disj //.
-  rewrite disjoint_setI0 // disjoints_subset; apply/subsetP => /= i.
+  rewrite Pr_union_disj // disjoints_subset; apply/subsetP => /= i.
   rewrite !inE /= => /eqP Hi; by rewrite negb_and Hi ltRR'.
-rewrite (_ : Pr P `^ n.+1 [set x | P `^ n.+1 x == 0] = 0) ?add0R; last first.
-  transitivity (\rsum_(a in 'rV[A]_n.+1 | P `^ n.+1 a == 0) 0).
-    apply eq_big => // i; first by rewrite !inE.
-    by rewrite inE => /eqP.
-  by rewrite big_const /= iter_addR mulR0.
-apply/(leR_trans _ (@aep _ P n _ He k0_k))/Pr_incl/subsetP => /= t.
+rewrite {1}/Pr (eq_bigr (fun=> 0)); last by move=> /= v; rewrite inE => /eqP.
+rewrite big_const iter_addR mulR0 add0R.
+apply/(leR_trans _ (aep He k0_k))/Pr_incl/subsetP => /= t.
 rewrite !inE /= => /andP[-> /= H3]; apply/ltRW'; by rewrite mulRN -mulNR.
 Qed.
 

@@ -36,22 +36,23 @@ Variables (n : nat) (P : {dist 'rV[A]_n}).
 
 Definition receivable y := [exists x, (P x != 0) && (W ``(y | x) != 0)].
 
-Lemma receivableE y :
+Lemma receivableE (y : 'rV__) :
   receivable y = (\rsum_(x in 'rV[A]_n) P x * W ``(y | x) != 0).
 Proof.
 apply/idP/idP => [|H].
-- case/existsP => x /andP [] H1.
-  apply: contra => /eqP/prsumr_eq0P => H2.
-  apply/eqP.
-  rewrite -(@eqR_mul2l (P x)); last exact/eqP.
-  rewrite mulR0 H2 // => /= x' _.
-  apply mulR_ge0; by [apply dist_ge0 | apply DMC_nonneg].
-- have : \rsum_(x in setT) P x * W ``(y | x) != 0.
+- case/existsP => /= x /andP[Px0].
+  apply: contra => /eqP/prsumr_eq0P => /= H.
+  apply/eqP; rewrite -(@eqR_mul2l (P x)); last exact/eqP.
+  rewrite mulR0 H // => /= x' _.
+  apply mulR_ge0; exact: dist_ge0.
+- have /= : \rsum_(x in setT) P x * W ``(y | x) != 0.
     apply: contra H => /eqP H; apply/eqP.
     rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
-  case/big_neq0/existsP => /= x /andP[_ H1].
-  rewrite /receivable; apply/existsP; exists x; rewrite -negb_or.
-  apply: contra H1 => /orP[|] /eqP ->; by rewrite ?mul0R ?mulR0.
+  apply: contraNT.
+  rewrite /receivable negb_exists => /forallP /= {H}H.
+  apply/eqP/big1 => x _.
+  move: (H x); rewrite negb_and 2!negbK => /orP[|] /eqP ->;
+    by rewrite ?(mul0R,mulR0).
 Qed.
 
 End receivable_def.

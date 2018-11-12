@@ -435,24 +435,22 @@ Section finset_ext.
 
 Variable A : finType.
 
+Lemma setDUKl (a b : {set A}) : (a :|: b) :\: a = b :\: a.
+Proof. by rewrite setDUl setDv set0U. Qed.
+
 Lemma seq_index_enum_card : forall l (Y : {set A}) i,
   l =i enum Y -> uniq l -> i \in Y -> index i l < #| Y |.
 Proof.
-elim => [Y i Y0 _ iY | h t IH Y i htY uniqht iY /= ].
-  have {iY} : i \in enum Y by rewrite mem_enum.
-  by rewrite -Y0.
+elim => [Y i Y0 _ iY| h t IH Y i htY uniqht iY /=].
+  exact: enum_rank_subproof iY.
 case: ifPn => [_|hi]; first by rewrite card_gt0; apply/set0Pn; exists i.
 apply (@leq_ltn_trans #|Y :\ h|); last first.
-  rewrite (cardsD1 h Y).
-  suff : h \in Y by move=> ->; rewrite addnC addn1.
-  by rewrite -mem_enum -htY in_cons eqxx.
+  by rewrite (cardsD1 h Y) -mem_enum -htY mem_head add1n.
 apply IH.
-- move=> j.
-  move H : (j \in enum (Y :\ h)) => [].
-  + move: H; rewrite mem_enum in_setD1 => /andP[/negbTE H].
+- move=> j; case/boolP : (j \in enum (Y :\ h)).
+  + rewrite mem_enum in_setD1 => /andP[/negbTE H].
     by rewrite -mem_enum -htY in_cons H.
-  + move/negbT: H.
-    rewrite mem_enum in_setD1 negb_and negbK => /orP[/eqP ->{j}|].
+  + rewrite mem_enum in_setD1 negb_and negbK => /orP[/eqP ->{j}|].
     - by move: uniqht => /= /andP[/negbTE].
     - by rewrite -mem_enum -htY inE negb_or => /andP[_ /negbTE].
 - move: uniqht; by case/andP.
@@ -466,45 +464,24 @@ Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
 Lemma cardsltn1P (s : {set A}) :
   (1 < #| s |) = [exists a, exists b, (a \in s) && (b \in s) && (a != b)].
 Proof.
-case/boolP : (s == set0) => [ /eqP -> | /set0Pn [] /= a Ha ].
-  rewrite cards0 /=.
-  apply/esym/negbTE.
-  rewrite negb_exists.
-  apply/forallP => a.
-  rewrite negb_exists.
-  apply/forallP => b.
-  by rewrite !inE.
-case/boolP : (s :\ a == set0) => [sa | ].
-  have Hs : s == [set a].
-    apply/eqP/setP => /= a'.
-    move/eqP/setP/(_ a') in sa.
-    rewrite !inE in sa.
-    move/negbT in sa.
-    rewrite negb_and negbK in sa.
-    case/orP : sa => sa.
-      move/eqP in sa; subst a'.
-      by rewrite inE eqxx.
-    rewrite (negbTE sa) inE.
-    apply/esym/negbTE.
-    apply/eqP => ?; subst a'.
-    by rewrite Ha in sa.
-  rewrite (eqP Hs) cards1.
-  apply/esym/negbTE.
-  rewrite negb_exists.
-  apply/forallP => b.
-  rewrite negb_exists.
-  apply/forallP => c.
-  rewrite 2!in_set1.
-  case/boolP : (b == c).
-    move/eqP => ?; subst c; by rewrite /= andbC.
-  rewrite /= andbT negb_and => bc.
-  case/boolP : (b == a) => // /eqP ?; subst b => /=; by rewrite eq_sym.
+case/boolP : (s == set0) => [/eqP -> | /set0Pn [] /= a Ha].
+  rewrite cards0; apply/esym/negbTE.
+  rewrite negb_exists; apply/forallP => a.
+  rewrite negb_exists; apply/forallP => b; by rewrite !inE.
+case/boolP : (s :\ a == set0) => [/eqP sa | ].
+  have Hs : s = [set a] by apply/eqP; rewrite -(setD1K Ha) sa setU0.
+  rewrite Hs cards1; apply/esym/negbTE.
+  rewrite negb_exists; apply/forallP => b.
+  rewrite negb_exists; apply/forallP => c.
+  rewrite 2!in_set1 2!negb_and negbK.
+  case/boolP : (b == c) => [_|bc]; first by rewrite orbT.
+  rewrite orbF.
+  case/boolP : (b == a) => //= /eqP <-; by rewrite eq_sym.
 case/set0Pn => b Hb.
-have -> : 1 < #| s |.
-  by rewrite (cardsD1 a s) Ha /= (cardsD1 b (s :\ a)) Hb.
+have -> : 1 < #| s | by rewrite (cardsD1 a s) Ha /= (cardsD1 b (s :\ a)) Hb.
 apply/esym; apply/existsP; exists a; apply/existsP; exists b.
-rewrite !inE eq_sym in Hb.
-case/andP : Hb => -> ->; by rewrite Ha.
+rewrite !inE eq_sym andbC in Hb.
+by rewrite -andbA Hb andbT.
 Qed.
 
 Variables (C : {set A}).
@@ -525,7 +502,7 @@ Qed.
 
 End finset_ext.
 
-Lemma ord0_false (i : 'I_0 ) : False. Proof. by case: i => [[]]. Qed.
+(*Lemma ord0_false (i : 'I_0 ) : False. Proof. by case: i => [[]]. Qed.*)
 
 Lemma ord1 (i : 'I_1) : i = ord0. Proof. case: i => [[]] // ?; exact/eqP. Qed.
 
@@ -888,9 +865,8 @@ Proof.
 move=> u t.
 rewrite (tuple0 t).
 have -> : u = 1%g.
-  apply/permP => /= x.
-  exfalso.
-  by move/ord0_false in x.
+  apply/permP => /=.
+  by case.
 by rewrite perm_tuple_id.
 Qed.
 

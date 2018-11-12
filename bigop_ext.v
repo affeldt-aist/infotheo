@@ -23,29 +23,7 @@ Proof. subst m; apply eq_bigr => ta => /andP[_ H]; by rewrite tcast_id. Qed.
 
 End bigop_no_law.
 
-Section bigop_law.
-
-Variables (R : eqType) (idx : R) (op : Monoid.law idx) .
-Variable (A : finType).
-
-Lemma big_neq0 (X : {set A}) (f : A -> R) :
-  \big[op/idx]_(t | t \in X) f t != idx -> [exists t, (t \in X) && (f t != idx)].
-Proof.
-move=> H.
-apply negbNE.
-rewrite negb_exists.
-apply/negP => /forallP abs.
-move/negP : H; apply.
-rewrite big_mkcond /=.
-apply/eqP.
-transitivity (\big[op/idx]_(a : A) idx); last by rewrite big1_eq.
-apply eq_bigr => a _.
-case: ifP => // Hcond.
-move: (abs a); by rewrite Hcond /= negbK => /eqP.
-Qed.
-
-End bigop_law.
-
+(* TODO: remove? *)
 Section removeme.
 
 Variable op : Monoid.com_law 1.
@@ -326,41 +304,31 @@ rewrite [in RHS](reindex_onto
 apply eq_bigl => ?; by rewrite rbehead_row_mx eqxx /= row_mx_row_ord0 eqxx.
 Qed.
 
-Lemma big_rV_cons_behead_support n (F : 'rV[A]_n.+1 -> R) (X1 : {set A}) (X2 : {set {: 'rV[A]_n}}) :
-  \big[M/idx]_(a in X1) \big[M/idx]_(v in X2) (F (row_mx (\row_(k < 1) a) v))
-  =
+Lemma big_rV_cons_behead_support n (F : 'rV[A]_n.+1 -> R)
+  (X1 : {set A}) (X2 : {set {: 'rV[A]_n}}) :
+  \big[M/idx]_(a in X1) \big[M/idx]_(v in X2) (F (row_mx (\row_(k < 1) a) v)) =
   \big[M/idx]_(w in 'rV[A]_n.+1 | (w ``_ ord0 \in X1) && (rbehead w \in X2)) (F w).
 Proof.
-apply/esym.
-rewrite (@partition_big _ _ _ _ _ _ (fun x : 'rV[A]_n.+1 => x ``_ ord0) (mem X1)) //=.
-- apply eq_bigr => i Hi.
-  rewrite (reindex_onto (fun j : 'rV[A]_n => row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
-    move=> j Hj.
-    case/andP : Hj => Hj1 /eqP => <-.
-    apply/matrixP => a b; rewrite {a}(ord1 a).
-    by rewrite row_mx_rbehead.
-  apply congr_big => // x /=.
-  by rewrite rbehead_row_mx eqxx andbT row_mx_row_ord0 eqxx Hi andbT.
-move=> i; by case/andP.
+rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => x ``_ ord0) (mem X1)) /=; last first.
+  by move=> i /andP[].
+apply eq_bigr => i Hi.
+rewrite (reindex_onto (fun j => row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
+  move=> j /andP[] => _ /eqP => <-; by rewrite row_mx_rbehead.
+apply eq_big => //= x; by rewrite row_mx_row_ord0 rbehead_row_mx !eqxx Hi !andbT.
 Qed.
 
-Lemma big_rV_cons_behead n (F : 'rV[A]_n.+1 -> R) (P1 : pred A) (P2 : pred 'rV[A]_n) :
-  \big[M/idx]_(i in A | P1 i) \big[M/idx]_(j in 'rV[A]_n | P2 j) (F (row_mx (\row_(k < 1) i) j))
-  =
+Lemma big_rV_cons_behead n (F : 'rV[A]_n.+1 -> R)
+  (P1 : pred A) (P2 : pred 'rV[A]_n) :
+  \big[M/idx]_(i in A | P1 i)
+    \big[M/idx]_(j in 'rV[A]_n | P2 j) (F (row_mx (\row_(k < 1) i) j)) =
   \big[M/idx]_(p in 'rV[A]_n.+1 | (P1 (p ``_ ord0)) && (P2 (rbehead p)) ) (F p).
 Proof.
-symmetry.
-rewrite (@partition_big _ _ _ _ _ _ (fun x : 'rV[A]_n.+1 => x ``_ ord0)
-  (fun x : A => P1 x)) //=.
-- apply eq_bigr => i Hi.
-  rewrite (reindex_onto (fun j : 'rV[A]_n => row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
-    move=> j Hj.
-    case/andP : Hj => Hj1 /eqP => <-.
-    apply/matrixP => a b; rewrite {a}(ord1 a).
-    by rewrite row_mx_rbehead.
-  apply congr_big => // x /=.
-  by rewrite row_mx_row_ord0 rbehead_row_mx 2!eqxx Hi !andbT.
-move=> i; by case/andP.
+rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => x ``_ ord0) P1) /=; last first.
+  by move=> i /andP[].
+apply eq_bigr => i Hi.
+rewrite (reindex_onto (fun j=> row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
+    move=> j /andP[] Hj1 /eqP => <-; by rewrite row_mx_rbehead.
+apply eq_big => //= x; by rewrite row_mx_row_ord0 rbehead_row_mx 2!eqxx Hi !andbT.
 Qed.
 
 End bigop_com_law.

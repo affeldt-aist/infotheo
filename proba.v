@@ -688,14 +688,6 @@ Proof. rewrite /from_bivar; unlock => /=; by []. Qed.
 End rV_of_prod.
 End Multivar.
 
-(*Lemma dist2tuple1 : forall A, dist A -> {dist 1.-tuple A}.
-Proof.
-move=> A d.
-apply makeDist with (fun x => d (thead x)).
-  move=> a; exact: dist_ge0.
-rewrite -[RHS](pmf1 d); exact: big_1_tuple.
-Defined.*)
-
 Local Open Scope vec_ext_scope.
 
 Lemma dist2rV1 : forall A, dist A -> {dist 'rV[A]_1}.
@@ -909,7 +901,7 @@ Definition Pr (E : {set A}) := \rsum_(a in E) P a.
 Lemma Pr_ge0 E : 0 <= Pr E.
 Proof. apply rsumr_ge0 => *; exact: dist_ge0. Qed.
 
-Lemma Pr_neq0 E : (Pr E != R0) <-> (0 < Pr E).
+Lemma Pr_neq0 E : Pr E != R0 <-> 0 < Pr E.
 Proof.
 split => H; [|by move/gtR_eqF : H => /eqP].
 rewrite ltR_neqAle; split; [exact/nesym/eqP|exact/Pr_ge0].
@@ -934,14 +926,16 @@ rewrite /Pr (eq_bigl (fun x => x \in S)); last by [].
 apply: (@prsumr_eq0P _ (mem S) P) => a Sa; exact: dist_ge0.
 Qed.
 
+Lemma Pr_setT : Pr setT = 1.
+Proof. rewrite /Pr (eq_bigl xpredT) ?pmf1 // => a; by rewrite in_setT. Qed.
+
 Lemma Pr_set1 a : Pr [set a] = P a.
 Proof. by rewrite /Pr big_set1. Qed.
 
 Lemma Pr_cplt E : Pr E + Pr (~: E) = 1.
 Proof.
 rewrite /Pr -bigU /=; last by rewrite -subsets_disjoint.
-rewrite -(pmf1 P); apply eq_bigl => /= a.
-by rewrite !inE /= orbN.
+rewrite -(pmf1 P); apply eq_bigl => /= a; by rewrite !inE /= orbN.
 Qed.
 
 Lemma Pr_to_cplt E : Pr E = 1 - Pr (~: E).
@@ -949,6 +943,12 @@ Proof. rewrite -(Pr_cplt E); field. Qed.
 
 Lemma Pr_of_cplt E : Pr (~: E) = 1 - Pr E.
 Proof. rewrite -(Pr_cplt E); field. Qed.
+
+Lemma Pr_incl (E E' : {set A}) : E \subset E' -> Pr E <= Pr E'.
+Proof.
+move=> H; apply ler_rsum_l => a Ha;
+  [exact/leRR | exact/dist_ge0 | move/subsetP : H; exact].
+Qed.
 
 Lemma Pr_union E1 E2 : Pr (E1 :|: E2) <= Pr E1 + Pr E2.
 Proof.
@@ -965,54 +965,55 @@ rewrite (_ : \rsum_(i in A | [pred x in E2] i) P i =
 exact/ler_rsum_predU/dist_ge0.
 Qed.
 
-Lemma Pr_union_disj E1 E2 :
-  E1 :&: E2 = set0 (*NB: use disjoint?*) -> Pr (E1 :|: E2) = (Pr E1 + Pr E2)%R.
-Proof.
-move=> E1E2.
-rewrite -bigU /=; last by rewrite -setI_eq0; apply/eqP.
-apply eq_bigl => a /=; by rewrite !inE.
-Qed.
-
-Lemma Pr_incl (E E' : {set A}) : (E \subset E') -> Pr E <= Pr E'.
-Proof.
-move=> H; apply ler_rsum_l => a Ha;
-  [exact/leRR | exact/dist_ge0 | move/subsetP : H; exact].
-Qed.
-
 Lemma Pr_bigcup (B : finType) (E : pred B) F :
   Pr (\bigcup_(i | E i) F i) <= \rsum_(i | E i) Pr (F i).
 Proof.
 rewrite /Pr.
-elim: (index_enum _) => [| hd tl IH].
-  rewrite big_nil; apply: rsumr_ge0 => i _; rewrite big_nil; exact/leRR.
+elim: (index_enum _) => [| h t IH].
+  rewrite big_nil; apply: rsumr_ge0 => b _; rewrite big_nil; exact/leRR.
 rewrite big_cons.
 case: ifP => H1.
-  move: IH.
-  set lhs := \rsum_(_ <- _ | _) _.
-  move=> IH.
-  apply: leR_trans.
-    eapply leR_add2l; by apply IH.
-  rewrite [X in _ <= X](exchange_big_dep (fun hd => (hd \in A) && [pred x in \bigcup_(i | E i) F i] hd)) /=; last first.
-    move=> b j Pi Fj; apply/bigcupP; by exists b.
-  rewrite big_cons /=.
-  rewrite H1 big_const iter_addR -exchange_big_dep //; last first.
-    move=> b j Pi Fj; apply/bigcupP; by exists b.
+  apply: leR_trans; first by eapply leR_add2l; exact: IH.
+  rewrite [X in _ <= X](exchange_big_dep
+    (fun h => (h \in A) && [pred x in \bigcup_(i | E i) F i] h)) /=; last first.
+    move=> b a Ea jFi; apply/bigcupP; by exists b.
+  rewrite big_cons /= H1 big_const iter_addR -exchange_big_dep /=; last first.
+    move=> b a Ea iFj; apply/bigcupP; by exists b.
   apply/leR_add2r.
-  set inr := INR _.
-  suff H : 1 <= inr.
-    rewrite -{1}(mul1R (P hd)).
-    apply leR_wpmul2r => //; exact: dist_ge0.
-  rewrite /inr {inr} (_ : 1 = INR 1) //.
-  apply le_INR.
-  apply/leP => /=.
-  apply/card_gt0P.
-  case/bigcupP : H1 => b E_b H1'.
-  exists b.
-  by rewrite -topredE /= E_b.
+  rewrite -{1}(mul1R (P h)); apply: (@leR_wpmul2r (P h)); [exact: dist_ge0|].
+  rewrite (_ : 1 = INR 1) //; apply/le_INR/leP/card_gt0P.
+  case/bigcupP : H1 => b Eb hFb; exists b; by rewrite -topredE /= Eb.
 apply/(leR_trans IH)/ler_rsum => b Eb.
 rewrite big_cons.
 case: ifPn => hFb; last exact/leRR.
 rewrite -[X in X <= _]add0R; exact/leR_add2r/dist_ge0.
+Qed.
+
+Lemma Pr_union_disj (E1 E2 : {set A}) :
+  [disjoint E1 & E2] -> Pr (E1 :|: E2) = Pr E1 + Pr E2.
+Proof. move=> ?; rewrite -bigU //=; apply eq_bigl => a; by rewrite inE. Qed.
+
+Lemma Pr_big_union_disj n (E : 'I_n -> {set A}):
+  (forall i j, i != j -> [disjoint E i & E j]) ->
+  Pr (\bigcup_(i < n) E i) = \rsum_(i < n) Pr (E i).
+Proof.
+elim: n E => [E H|n IH E H]; first by rewrite !big_ord0 Pr_set0.
+rewrite big_ord_recl /= Pr_union_disj; last first.
+  rewrite -setI_eq0 big_distrr /=; apply/eqP/big1 => i _; apply/eqP.
+  rewrite setI_eq0; exact: H.
+rewrite big_ord_recl IH // => i j ij; by rewrite H.
+Qed.
+
+Lemma Pr_union_eq (E1 E2 : {set A}) :
+  Pr (E1 :|: E2) = Pr E1 + Pr E2 - Pr (E1 :&: E2).
+Proof.
+rewrite -[E1 :|: E2](setID _ E1) Pr_union_disj; last first.
+  rewrite -setI_eq0 setDE -setIA [E1 :&: _]setIC -setIA [~: E1 :&: _]setIC.
+  by rewrite setICr !setI0.
+rewrite setUK setDUKl -{1}[E2 in RHS](setID _ E1) Pr_union_disj; last first.
+  rewrite -setI_eq0 setDE -setIA [E1 :&: _]setIC -setIA [~: E1 :&: _]setIC.
+  by rewrite setICr !setI0.
+rewrite setIC; ring.
 Qed.
 
 End probability.
@@ -1241,21 +1242,6 @@ apply big_ind.
 - by move=> K; exfalso; auto with real.
 - move=> ? ? ? ? /eqP; rewrite mulR_eq0 => /orP[] /eqP; by auto.
 - move=> i Hi Hi0; by exists i.
-Qed.
-
-Lemma setDUKl (T : finType) (a b : {set T}) : (a :|: b) :\: a = b :\: a.
-Proof. by rewrite setDUl setDv set0U. Qed.
-
-Lemma Pr_union_eq (E1 E2 : {set A}) :
-  Pr P (E1 :|: E2) = (Pr P E1 + Pr P E2 - Pr P (E1 :&: E2))%R.
-Proof.
-rewrite -[E1 :|: E2](setID _ E1) Pr_union_disj; last first.
-{ rewrite setDE -setIA [E1 :&: _]setIC -setIA [~: E1 :&: _]setIC setICr.
-  by rewrite !setI0. }
-rewrite setUK setDUKl -{1}[E2 in RHS](setID _ E1) Pr_union_disj; last first.
-{ rewrite setDE -setIA [E1 :&: _]setIC -setIA [~: E1 :&: _]setIC setICr.
-  by rewrite !setI0. }
-by rewrite setIC; ring.
 Qed.
 
 Lemma Pr_inter_eq (E1 E2 : {set A}) :
