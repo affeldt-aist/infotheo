@@ -68,13 +68,12 @@ Variable n : nat.
 
 Lemma TS_sup : INR #| `TS P n epsilon | <= exp2 (INR n * (`H P + epsilon)).
 Proof.
-suff Htmp : INR #| `TS P n epsilon | * exp2 (- INR n * (`H P + epsilon)) <b= 1.
-  apply/leRP; rewrite -(mulR1 (exp2 _)) mulRC -leR_pdivr_mulr //.
-  by rewrite /Rdiv -exp2_Ropp -mulNR.
+suff Htmp : INR #| `TS P n epsilon | * exp2 (- INR n * (`H P + epsilon)) <= 1.
+  by rewrite -(mulR1 (exp2 _)) mulRC -leR_pdivr_mulr // /Rdiv -exp2_Ropp -mulNR.
 rewrite -(pmf1 (P `^ n)).
 rewrite (_ : _ * _ = \rsum_(x in `TS P n epsilon) (exp2 (- INR n * (`H P + epsilon)))); last first.
   by rewrite big_const iter_addR.
-apply/leRP/ler_rsum_l => //=.
+apply/ler_rsum_l => //=.
 - move=> i; rewrite inE; by case/andP => /leRP.
 - move=> a _; exact/dist_ge0.
 Qed.
@@ -140,20 +139,17 @@ have -> : Pr P `^ n.+1 (~: p) =
         have {H1}H1 : 0 < P `^ n.+1 i.
           apply/ltRP; rewrite ltR_neqAle' eq_sym H1; exact/leRP/dist_ge0.
         apply/andP; split; first exact/ltRP.
-        move: LHS; rewrite -ltRNge' => /ltRP/(@Log_increasing 2 _ _ Rlt_1_2 H1)/ltRP.
+        move: LHS; rewrite -ltRNge' => /ltRP/(@Log_increasing 2 _ _ Rlt_1_2 H1).
         rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivr_mulr; last exact/ltR0n.
-        rewrite /Rdiv mulRC => /ltRP; rewrite ltR_oppr => /ltRP.
-        rewrite mulNR -ltR_subRL' => LHS.
-        rewrite mul1R geR0_norm //.
-        by move/ltRP : LHS; move/(ltR_trans He)/ltRW.
+        rewrite /Rdiv mulRC ltR_oppr => /ltRP; rewrite mulNR -ltR_subRL' => LHS.
+        rewrite mul1R geR0_norm //; by move/ltRP : LHS; move/(ltR_trans He)/ltRW.
       + move: LHS; rewrite leRNgt' negbK => /ltRP LHS.
         apply/orP; right; apply/andP; split; first exact/ltRP/(ltR_trans (exp2_gt0 _) LHS).
         move/(@Log_increasing 2 _ _ Rlt_1_2 (exp2_gt0 _)) : LHS.
-        rewrite /exp2 ExpK // => /ltRP.
-        rewrite mulRC mulRN -mulNR -ltR_pdivl_mulr; last exact/ltR0n.
+        rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivl_mulr; last exact/ltR0n.
         rewrite oppRD oppRK => LHS.
         have H2 : forall a b c, - a + b < c -> - c - a < - b by move=> *; lra.
-        move/ltRP/H2 in LHS.
+        move/H2 in LHS.
         rewrite div1R mulRC mulRN -/(Rdiv _ _) leR0_norm.
         * apply/ltRP; by rewrite ltR_oppr.
         * apply: (leR_trans (ltRW LHS)); lra.
@@ -162,16 +158,15 @@ have -> : Pr P `^ n.+1 (~: p) =
       apply/andP; split; first exact/eqP/gtR_eqF/ltRP.
       rewrite negb_and H1 /= -leRNgt'.
       move/(@Log_increasing_le 2 _ _ Rlt_1_2 (exp2_gt0 _)) : H2.
-      rewrite /exp2 ExpK // => /leRP.
-      rewrite mulRC mulRN -mulNR -leR_pdivl_mulr ?oppRD; last exact/ltR0n.
-      move/leRP => H2.
+      rewrite /exp2 ExpK // mulRC mulRN -mulNR -leR_pdivl_mulr ?oppRD; last exact/ltR0n.
+      move => H2.
       have /(_ _ _ _ H2) {H2}H2 : forall a b c, - a + - b <= c -> - c - a <= b.
         by move=> *; lra.
       move/ltRP in H1.
       move/(@Log_increasing_le 2 _ _ Rlt_1_2 H1) : H3.
-      rewrite /exp2 ExpK // => /leRP.
+      rewrite /exp2 ExpK //.
       rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltR0n.
-      rewrite oppRD oppRK div1R mulRC mulRN => /leRP H3.
+      rewrite oppRD oppRK div1R mulRC mulRN => H3.
       have /(_ _ _ _ H3) {H3}H3 : forall a b c, a <= - c + b -> - b <= - a - c.
         by move=> *; lra.
       rewrite leR_Rabsl; apply/andP; split; exact/leRP.

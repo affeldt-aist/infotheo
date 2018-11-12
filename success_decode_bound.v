@@ -153,8 +153,8 @@ rewrite (_ : \rsum_(m | m \in M ) 1 = \rsum_(m : M) 1); last exact/eq_bigl.
 rewrite big_distrr /=.
 apply: ler_rsum => m _.
 rewrite mulNR exp2_Ropp.
-apply/leRP; rewrite mulRC leR_pdivr_mulr // ?mul1R.
-apply/leRP/(@leR_trans (INR #| V.-shell (tuple_of_row (enc tc m)) |) _); last first.
+rewrite mulRC leR_pdivr_mulr // ?mul1R.
+apply/(@leR_trans (INR #| V.-shell (tuple_of_row (enc tc m)) |) _); last first.
   apply card_shelled_tuples => //.
     exact/typed_prop.
   case: (jtype.c V) => _ Anot0.
@@ -360,9 +360,9 @@ apply (@leR_trans (\rsum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first
 rewrite success_decode // -(sum_messages_types c).
 rewrite div1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply ler_rsum => P _.
-apply/leRP; rewrite mulRC leR_pdivr_mulr; last exact/ltR0n.
+rewrite mulRC leR_pdivr_mulr; last exact/ltR0n.
 rewrite success_decode // div1R -mulRA mulRCA mulVR ?INR_eq0' -?lt0n // mulR1.
-apply/leRP/(@leR_trans (\rsum_(m | m \in enc_pre_img c P)
+apply/(@leR_trans (\rsum_(m | m \in enc_pre_img c P)
                      \rsum_(y | (dec (P.-typed_code c)) y == Some m)
                      (W ``(|(enc (P.-typed_code c)) m)) y)).
   apply ler_rsum => m Hm.

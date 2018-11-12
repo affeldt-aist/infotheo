@@ -331,7 +331,7 @@ Variables A B : finType.
 (** Mutual information of distributions *)
 
 Definition mut_info_dist (P : {dist A * B}) :=
-  `H (Bivar.marg1 P) + `H (Bivar.marg2 P) - `H P.
+  `H (Bivar.fst P) + `H (Bivar.snd P) - `H P.
 
 (** Mutual information of input/output *)
 

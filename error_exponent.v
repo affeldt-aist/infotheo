@@ -138,7 +138,7 @@ have /mu_cond : D_x no_cond 0 x /\ R_dist x 0 < mu.
   - split => //; exact/ltR_eqF.
   - rewrite /R_dist subR0 gtR0_norm // /x.
     apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
-    apply/ltRP; rewrite ltR_pdivr_mulr //; apply/ltRP; lra.
+    rewrite ltR_pdivr_mulr //; lra.
 rewrite /R_dist {2}/xlnx ltRR' subR0 ltR0_norm; last first.
   apply xlnx_neg; split => //; rewrite /x.
   exact: leR_ltR_trans (geR_minr _ _) ltRinve21.
@@ -179,10 +179,9 @@ suff x_gamma : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite oppRD addRA addRC -leR_subl_addr.
   rewrite [X in X <= _](_ : _ = - ((minRate + - cap) / 2)); last by field.
   rewrite leR_oppr oppRK -mulRA mulRC.
-  apply/leRP; rewrite leR_pdivr_mulr //.
-  rewrite mulRC -leR_pdivl_mulr; last first.
+  rewrite leR_pdivr_mulr // mulRC -leR_pdivl_mulr; last first.
     by apply/ltRP; rewrite -mult_INR -plus_INR plusE multE ltR0n' addn_gt0 Bnot0.
-  apply/leRP; by rewrite [in X in _ <= X]mulRC /Rdiv (mulRC _ (/ (_ + _))).
+  by rewrite [in X in _ <= X]mulRC /Rdiv (mulRC _ (/ (_ + _))).
 suff x_D : xlnx x <= xlnx (sqrt (2 * (D(V || W | P)))).
   clear -Hx x_D.
   rewrite leR_oppl; apply (@leR_trans (xlnx x)) => //.
@@ -193,9 +192,8 @@ have ? : sqrt (2 * D(V || W | P)) < x.
   apply pow2_Rlt_inv; [exact: sqrt_pos | exact: ltRW | ].
   rewrite [in X in X < _]/= mulR1 sqrt_sqrt; last first.
     apply mulR_ge0; first exact/ltRW.
-    apply leq0cdiv=> a Ha ? ?; by apply v_dom_by_w.
-  apply/ltRP; rewrite mulRC -ltR_pdivl_mulr //.
-  exact/ltRP/(ltR_leR_trans Hcase)/geR_minr.
+    apply leq0cdiv=> a Ha ? ?; exact: v_dom_by_w.
+  rewrite mulRC -ltR_pdivl_mulr //; exact/(ltR_leR_trans Hcase)/geR_minr.
 apply xlnx_sdecreasing_0_Rinv_e => //.
 - split; first exact/sqrt_pos.
   apply: (@leR_trans x _ _ (ltRW _)) => //.

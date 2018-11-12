@@ -584,22 +584,22 @@ rewrite /ml -(pair_big_fst _ _ (pred1 a)) //= exchange_big /=.
 apply eq_bigr => b _; by rewrite big_pred1_eq.
 Qed.
 
-Definition marg1 := locked (makeDist ml0 ml1).
+Definition fst := locked (makeDist ml0 ml1).
 
-Lemma marg1E a : marg1 a = \rsum_(i in B) P (a, i).
+Lemma fstE a : fst a = \rsum_(i in B) P (a, i).
 Proof.
-rewrite /marg1; unlock => /=; rewrite /ml.
+rewrite /fst; unlock => /=; rewrite /ml.
 by rewrite -(pair_big_fst _ _ (pred1 a)) //= big_pred1_eq.
 Qed.
 
-Lemma marg1_eq0 a b : marg1 a = 0%R -> P (a, b) = 0%R.
+Lemma fst_eq0 a b : fst a = 0%R -> P (a, b) = 0%R.
 Proof.
-rewrite /marg1; unlock => /prsumr_eq0P /= -> //; case.
+rewrite /fst; unlock => /prsumr_eq0P /= -> //; case.
 move=> a' b' /= /eqP ->; exact/dist_ge0.
 Qed.
 
-Lemma marg1_eq0N a b : P (a, b) != 0%R -> marg1 a != 0%R.
-Proof. by apply: contra => /eqP /marg1_eq0 ->. Qed.
+Lemma fst_eq0N a b : P (a, b) != 0%R -> fst a != 0%R.
+Proof. by apply: contra => /eqP /fst_eq0 ->. Qed.
 
 (* marginal right *)
 Definition mr b := \rsum_(x in {: A * B} | x.2 == b) P x.
@@ -616,22 +616,22 @@ rewrite /mr -(pair_big_snd _ _ (pred1 b)) //=.
 apply eq_bigr => a _; by rewrite big_pred1_eq.
 Qed.
 
-Definition marg2 : dist B := locked (makeDist mr0 mr1).
+Definition snd : dist B := locked (makeDist mr0 mr1).
 
-Lemma marg2E b : marg2 b = \rsum_(i in A) P (i, b).
+Lemma sndE b : snd b = \rsum_(i in A) P (i, b).
 Proof.
-rewrite /marg2; unlock => /=; rewrite /mr -(pair_big_snd _ _ (pred1 b)) //=.
+rewrite /snd; unlock => /=; rewrite /mr -(pair_big_snd _ _ (pred1 b)) //=.
 apply eq_bigr => a ?; by rewrite big_pred1_eq.
 Qed.
 
-Lemma marg2_eq0 a b : marg2 b = 0%R -> P (a, b) = 0%R.
+Lemma snd_eq0 a b : snd b = 0%R -> P (a, b) = 0%R.
 Proof.
-rewrite /marg2; unlock => /prsumr_eq0P /= -> //; case.
+rewrite /snd; unlock => /prsumr_eq0P /= -> //; case.
 move=> a' b' /= /eqP ->; exact/dist_ge0.
 Qed.
 
-Lemma marg2_eq0N a b : P (a, b) != 0%R -> marg2 b != 0%R.
-Proof. by apply: contra => /eqP /marg2_eq0 ->. Qed.
+Lemma snd_eq0N a b : P (a, b) != 0%R -> snd b != 0%R.
+Proof. by apply: contra => /eqP /snd_eq0 ->. Qed.
 
 End bivar.
 End Bivar.
@@ -657,8 +657,8 @@ Definition to_bivar : {dist (A * 'rV[A]_n)} := locked (makeDist tobi0 tobi1).
 Lemma to_bivarE a : to_bivar a = P (row_mx (\row_(i < 1) a.1) a.2).
 Proof. rewrite /to_bivar; unlock => /=; by []. Qed.
 
-Definition head_of := Bivar.marg1 to_bivar.
-Definition tail_of := Bivar.marg2 to_bivar.
+Definition head_of := Bivar.fst to_bivar.
+Definition tail_of := Bivar.snd to_bivar.
 
 End prod_of_rV.
 
@@ -793,7 +793,7 @@ Variables (A : finType) (P : dist A) (n : nat).
 Lemma head_of : P = Multivar.head_of (P `^ n.+1).
 Proof.
 apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => a.
-rewrite /Multivar.head_of Bivar.marg1E /=.
+rewrite /Multivar.head_of Bivar.fstE /=.
 evar (f : 'rV[A]_n -> R); rewrite (eq_bigr f); last first.
   move=> v _; rewrite Multivar.to_bivarE /= TupleDist.S.
   rewrite row_mx_row_ord0 rbehead_row_mx /f; reflexivity.
@@ -803,7 +803,7 @@ Qed.
 Lemma tail_of : P `^ n = Multivar.tail_of (P `^ n.+1).
 Proof.
 apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => a.
-rewrite /Multivar.tail_of Bivar.marg2E /=.
+rewrite /Multivar.tail_of Bivar.sndE /=.
 evar (f : A -> R); rewrite (eq_bigr f); last first.
   move=> v _; rewrite Multivar.to_bivarE /= TupleDist.S.
   rewrite row_mx_row_ord0 rbehead_row_mx /f; reflexivity.
@@ -886,9 +886,9 @@ have HA : INR #|s| * A <= \rsum_(x in s) P `^ _ x.
     rewrite filter_index_enum count_predT cardE; congr (INR (size _)).
     apply eq_enum => i; by rewrite /in_mem /= andbC.
   apply/(leR_trans HA)/Req_le/eq_bigl => i; by rewrite andbC.
-split; apply/leRP.
-- rewrite leR_pdivr_mulr //; apply/leRP; move/leR_trans : Ha; exact.
-- rewrite leR_pdivl_mulr //; apply/leRP; exact: (leR_trans HA).
+split.
+- rewrite leR_pdivr_mulr //; move/leR_trans : Ha; exact.
+- rewrite leR_pdivl_mulr //; exact: (leR_trans HA).
 Qed.
 
 End wolfowitz_counting.
@@ -1018,21 +1018,21 @@ Qed.
 
 End probability.
 
-Lemma Pr_marg1_eq0 (A B : finType) (P : {dist (A * B)}) a b :
-  Pr (Bivar.marg1 P) a = 0%R -> Pr P (setX a b) = 0%R.
+Lemma Pr_fst_eq0 (A B : finType) (P : {dist (A * B)}) a b :
+  Pr (Bivar.fst P) a = 0%R -> Pr P (setX a b) = 0%R.
 Proof.
 move/Pr_set0P => H; apply/Pr_set0P; case=> a' b'.
 rewrite inE /= => /andP[/H tmp _]; move: tmp.
-rewrite /Bivar.marg1; unlock => /=; rewrite /Bivar.marg2.
+rewrite /Bivar.fst; unlock => /=; rewrite /Bivar.snd.
 move/prsumr_eq0P => /=; apply => //; case=> a'' b'' /= ?; exact: dist_ge0.
 Qed.
 
-Lemma Pr_marg2_eq0 (A B : finType) (P : {dist (A * B)}) a b :
-  Pr (Bivar.marg2 P) b = 0%R -> Pr P (setX a b) = 0%R.
+Lemma Pr_snd_eq0 (A B : finType) (P : {dist (A * B)}) a b :
+  Pr (Bivar.snd P) b = 0%R -> Pr P (setX a b) = 0%R.
 Proof.
 move/Pr_set0P => H; apply/Pr_set0P; case=> a' b'.
 rewrite inE /= => /andP[a'a /H].
-rewrite /Bivar.marg2; unlock => /=; rewrite /Bivar.mr.
+rewrite /Bivar.snd; unlock => /=; rewrite /Bivar.mr.
 move/prsumr_eq0P => /=; apply => //; case=> a'' b'' /= ?; exact: dist_ge0.
 Qed.
 
@@ -1550,10 +1550,7 @@ apply/leR_wpmul2r; [exact/dist_ge0 | exact/leRP].
 Qed.
 
 Lemma markov (r : R) : 0 < r -> Pr[X >= r] <= `E X / r.
-Proof.
-move=> ?; apply/leRP.
-rewrite /Rdiv leR_pdivl_mulr // mulRC; exact/leRP/Ex_lb.
-Qed.
+Proof. move=> ?; rewrite /Rdiv leR_pdivl_mulr // mulRC; exact/Ex_lb. Qed.
 
 End markov_inequality.
 
@@ -1612,9 +1609,8 @@ Variables (A : finType) (X : rvar A).
 Lemma chebyshev_inequality epsilon : 0 < epsilon ->
   Pr `p_X [set a | `| X a - `E X | >b= epsilon] <= `V X / epsilon ^ 2.
 Proof.
-move=> He; apply/leRP.
-rewrite leR_pdivl_mulr; last exact/pow_gt0.
-apply/leRP; rewrite mulRC /`V [in X in _ <= X]ExE.
+move=> He; rewrite leR_pdivl_mulr; last exact/pow_gt0.
+rewrite mulRC /`V [in X in _ <= X]ExE.
 rewrite (_ : `p_ ((X \-cst `E X) \^2) = `p_ X) //.
 apply (@leR_trans (\rsum_(a in A | `| X a - `E X | >b= epsilon)
     (((X \-cst `E X) \^2) a  * `p_X a)%R)); last first.
@@ -1646,8 +1642,8 @@ Section independent_random_variables.
 
 Variables (A B : finType) (f : A -> R) (g : B -> R) (n : nat).
 Variable P : {dist A * B}.
-Let X := mkRvar (Bivar.marg1 P) f.
-Let Y := mkRvar (Bivar.marg2 P) g.
+Let X := mkRvar (Bivar.fst P) f.
+Let Y := mkRvar (Bivar.snd P) g.
 
 Local Open Scope vec_ext_scope.
 
@@ -1743,13 +1739,13 @@ transitivity (\rsum_(ta in 'rV[A]_n.+2)
     * rewrite -(big_rV_cons_behead _ _ xpredT xpredT); apply eq_bigr => a _.
       rewrite big_distrr /=; apply eq_bigr => i _.
       by rewrite row_mx_row_ord0 Multivar.to_bivarE.
-    * apply eq_bigr => a _; by rewrite Hjoint1 /Multivar.head_of Bivar.marg1E.
+    * apply eq_bigr => a _; by rewrite Hjoint1 /Multivar.head_of Bivar.fstE.
   + transitivity (\rsum_(ta in 'rV_n.+1)
       (X2 ta * \rsum_(a in A) ((Multivar.to_bivar `p_X) (a, ta)))).
     * rewrite -(big_rV_cons_behead _ _ xpredT xpredT) exchange_big /=.
       apply eq_bigr => ta _; rewrite big_distrr /=.
       apply eq_bigr => a _; by rewrite rbehead_row_mx Multivar.to_bivarE.
-    * apply eq_bigr => ta _; by rewrite Hjoint2 /Multivar.tail_of Bivar.marg2E.
+    * apply eq_bigr => ta _; by rewrite Hjoint2 /Multivar.tail_of Bivar.sndE.
 Qed.
 
 (* TODO: relation with theorem 6.4 of probook (E(XY)=E(X)E(Y))? *)
@@ -1821,7 +1817,7 @@ rewrite !big_split /=; congr (_ + _ + _).
   transitivity (X1 i ^ 2 * \rsum_(j in 'rV_n.+1) (Multivar.to_bivar `p_ X) (i, j)).
   + rewrite big_distrr /=; apply eq_bigr => i0 _.
     by rewrite row_mx_row_ord0 Multivar.to_bivarE.
-  + congr (_ * _)%R; by rewrite Hjoint1 /Multivar.head_of Bivar.marg1E.
+  + congr (_ * _)%R; by rewrite Hjoint1 /Multivar.head_of Bivar.fstE.
 - rewrite -mulRA -E_id_rem_helper // big_distrr /=.
   apply eq_bigr => i _; field.
 - rewrite ExE -(big_rV_cons_behead _ _ xpredT xpredT) exchange_big /=.
@@ -1829,7 +1825,7 @@ rewrite !big_split /=; congr (_ + _ + _).
   transitivity (X2 t ^ 2 * \rsum_(i in A) (Multivar.to_bivar `p_ X) (i, t)).
   + rewrite big_distrr /=; apply eq_bigr => i _.
     by rewrite rbehead_row_mx Multivar.to_bivarE.
-  + congr (_ * _); by rewrite Hjoint2 /Multivar.tail_of Bivar.marg2E.
+  + congr (_ * _); by rewrite Hjoint2 /Multivar.tail_of Bivar.sndE.
 Qed.
 
 (** The variance of the sum is the sum of variances for any two

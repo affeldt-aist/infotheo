@@ -496,7 +496,7 @@ Proof.
 rewrite -(invRK (exp2 (INR n * `H P))%R) => //.
 rewrite -exp2_Ropp -mulNR.
 set aux := - INR n * `H P.
-apply/leRP; rewrite -div1R leR_pdivl_mulr //; apply/leRP; rewrite {}/aux.
+rewrite -div1R leR_pdivl_mulr // {}/aux.
 case/boolP : [exists x, x \in T_{P}] => x_T_P.
 - case/existsP : x_T_P => ta Hta.
   rewrite -(row_of_tupleK ta) in Hta.

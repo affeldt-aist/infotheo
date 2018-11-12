@@ -178,8 +178,8 @@ apply/(leR_trans step3)/leR_add.
       rewrite /`TS inE /typ_seq => /andP[/leRP i_TS _].
       exact: (ltR_leR_trans (exp2_gt0 _) i_TS).
     + rewrite /exp2 ExpK //.
-      apply/leRP; rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltR0n.
-      apply/leRP; rewrite leR_oppr /Rdiv mulRC; by rewrite div1R mulNR in H1.
+      rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltR0n.
+      rewrite leR_oppr /Rdiv mulRC; by rewrite div1R mulNR in H1.
   rewrite big_const iter_addR; exact/leRR.
 Qed.
 

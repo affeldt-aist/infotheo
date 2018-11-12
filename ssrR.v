@@ -481,44 +481,60 @@ Definition mulRV (x : R) : x != 0 -> x * / x = 1 := divRR x.
 Lemma mulVR (x : R) : x != 0 -> / x * x = 1.
 Proof. by move=> x0; rewrite mulRC mulRV. Qed.
 
-Lemma leR_pdivl_mulr z x y : 0 < z -> (x <b= y / z) = (x * z <b= y).
+Lemma leR_pdivl_mulr z x y : 0 < z -> (x <= y / z) <-> (x * z <= y).
 Proof.
-move=> z0; apply/idP/idP=> [|]/leRP.
-  move/(leR_wpmul2l (ltRW z0)).
-  rewrite mulRC mulRCA mulRV ?mulR1; by [move/leRP | exact/eqP/gtR_eqF].
-move=> H; apply/leRP/(@leR_pmul2r z) => //.
-rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+move=> z0; split => [/(leR_wpmul2l (ltRW z0))|H].
+- rewrite mulRC mulRCA mulRV ?mulR1 //; exact/eqP/gtR_eqF.
+- apply/(@leR_pmul2r z) => //; rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+Qed.
+Lemma leR_pdivl_mulr' z x y : 0 < z -> (x <b= y / z) = (x * z <b= y).
+Proof.
+move=> z0; apply/idP/idP => /leRP.
+- by rewrite leR_pdivl_mulr // => /leRP.
+- by rewrite -leR_pdivl_mulr // => /leRP.
 Qed.
 
-Lemma ltR_pdivl_mulr z x y : 0 < z -> (x <b y / z) = (x * z <b y).
+Lemma ltR_pdivl_mulr z x y : 0 < z -> (x < y / z) <-> (x * z < y).
 Proof.
-move=> z0; apply/idP/idP=> [|]/ltRP.
-  move/(@ltR_pmul2l z) => /(_ z0).
-  rewrite mulRC mulRCA mulRV ?mulR1; by [move/ltRP | exact/eqP/gtR_eqF].
-move=> H; apply/ltRP/(@ltR_pmul2r z) => //.
-rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+move=> z0; split => [/(ltR_pmul2l z0)|H].
+- rewrite mulRC mulRCA mulRV ?mulR1 //; exact/eqP/gtR_eqF.
+- apply/(@ltR_pmul2r z) => //; rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+Qed.
+Lemma ltR_pdivl_mulr' z x y : 0 < z -> (x <b y / z) = (x * z <b y).
+Proof.
+move=> z0; apply/idP/idP => /ltRP.
+- by rewrite ltR_pdivl_mulr // => /ltRP.
+- by rewrite -ltR_pdivl_mulr // => /ltRP.
 Qed.
 
-Lemma leR_pdivr_mulr z x y : 0 < z -> (y / z <b= x) = (y <b= x * z).
+Lemma leR_pdivr_mulr z x y : 0 < z -> (y / z <= x) <-> (y <= x * z).
 Proof.
-move=> z0; apply/idP/idP => [|]/leRP.
-  move/(leR_wpmul2r (ltRW z0)).
-  rewrite -mulRA mulVR ?mulR1; [by move/leRP | exact/eqP/gtR_eqF].
-move=> H; apply/leRP/(@leR_pmul2r z) => //.
-rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+move=> z0; split => [/(leR_wpmul2r (ltRW z0))|H].
+- rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+- apply/(@leR_pmul2r z) => //; rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+Qed.
+Lemma leR_pdivr_mulr' z x y : 0 < z -> (y / z <b= x) = (y <b= x * z).
+Proof.
+move=> z0; apply/idP/idP => /leRP.
+- by rewrite leR_pdivr_mulr // => /leRP.
+- by rewrite -leR_pdivr_mulr // => /leRP.
 Qed.
 
-Lemma ltR_pdivr_mulr z x y : 0 < z -> (y / z <b x) = (y <b x * z).
+Lemma ltR_pdivr_mulr z x y : 0 < z -> (y / z < x) <-> (y < x * z).
 Proof.
-move=> z0; apply/idP/idP => [|]/ltRP.
-  move/(@ltR_pmul2r z) => /(_ z0).
-  rewrite -mulRA mulVR ?mulR1; by [move/ltRP | exact/eqP/gtR_eqF].
-move=> H; apply/ltRP/(@ltR_pmul2r z) => //.
-rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+move=> z0; split => [/(ltR_pmul2r z0)|H].
+- rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+- apply/(@ltR_pmul2r z) => //; rewrite -mulRA mulVR ?mulR1 //; exact/eqP/gtR_eqF.
+Qed.
+Lemma ltR_pdivr_mulr' z x y : 0 < z -> (y / z <b x) = (y <b x * z).
+Proof.
+move=> z0; apply/idP/idP => /ltRP.
+- by rewrite ltR_pdivr_mulr // => /ltRP.
+- by rewrite -ltR_pdivr_mulr // => /ltRP.
 Qed.
 
 Lemma invR_le1 x : 0 < x -> (/ x <b= 1) = (1 <b= x).
-Proof. move=> x0; by rewrite -(div1R x) leR_pdivr_mulr // mul1R. Qed.
+Proof. move=> x0; by rewrite -(div1R x) leR_pdivr_mulr' // mul1R. Qed.
 
 Lemma invR_gt1 x : 0 < x -> (1 <b / x) = (x <b 1).
 Proof.
