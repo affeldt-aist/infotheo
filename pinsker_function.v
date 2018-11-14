@@ -136,7 +136,7 @@ move=> t Ht.
 rewrite derive_pt_pinsker_function_spec // /pinsker_function_spec'.
 apply (@leR_trans (/ ((1 - t) * ln 2) - 8 * t / (2 * ln 2))); last first.
   apply leR_add2l.
-  rewrite leR_oppr oppRK -mulRA /Rdiv -[X in _ <= X]mulRA.
+  rewrite leR_oppr oppRK -mulRA /Rdiv -[X in _ <= X]mulRA -/(Rdiv _ _).
   apply leR_wpmul2l; first lra.
   rewrite mulRC; apply leR_wpmul2l => //.
   by case: Ht.
@@ -180,13 +180,10 @@ Lemma pinsker_fun_p c : pinsker_fun p c p = 0.
 Proof.
 rewrite /pinsker_fun /= /div_fct /comp subRR mul0R mulR0 subR0.
 case: Hp => Hp1 Hp2.
-case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
-  subst p.
-  rewrite mul0R !subR0 add0R mul1R.
-  by rewrite /Rdiv Rinv_1 mulR1 /log Log_1.
-case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
-  subst p.
-  rewrite /Rdiv Rinv_1 mulR1 /log Log_1 mulR0 !subRR // mul0R; field.
+case/leR_eqVlt : Hp1 => [/esym ->|Hp1].
+  by rewrite mul0R !subR0 add0R mul1R div1R invR1 /log Log_1.
+case/leR_eqVlt : Hp2 => [->|Hp2].
+  by rewrite divR1 /log Log_1 subRR mul0R mulR0 addR0.
 rewrite divRR; last by rewrite subR_eq0; apply/eqP/gtR_eqF.
 rewrite /log Log_1 divRR; last exact/eqP/gtR_eqF.
 rewrite /log Log_1; by field.
@@ -300,11 +297,11 @@ move=> Hc.
 case: p01 => Hp0 Hp1.
 case: q01 => Hq0 Hq1.
 set a := Set2.a card_A. set b := Set2.b card_A.
-case/Rle_lt_or_eq_dec : Hp0 => Hp0; last first.
+case/leR_eqVlt : Hp0 => [|] Hp0.
   subst p.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l,subR0).
-  case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
+  case/leR_eqVlt : Hq1 => [|] Hq1.
     subst q.
     exfalso.
     move: P_dom_by_Q.
@@ -314,10 +311,10 @@ case/Rle_lt_or_eq_dec : Hp0 => Hp0; last first.
   rewrite /pinsker_function_spec.
   apply Req_le.
   rewrite mul1R div1R /log LogV; [by field | lra].
-case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
+case/leR_eqVlt : Hp1 => [|] Hp1.
   subst p.
   rewrite /pinsker_fun /div_fct /comp subRR mul0R addR0.
-  case/Rle_lt_or_eq_dec : Hq0 => Hq0; last first.
+  case/leR_eqVlt : Hq0 => [|] Hq0.
     subst q.
     exfalso.
     move: P_dom_by_Q.
@@ -330,7 +327,7 @@ case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
   apply Req_le.
   rewrite mul1R div1R /log LogV; last by rewrite /id.
   rewrite /id (_ : 1 - (1 - q) = q) //; by field.
-case/Rle_lt_or_eq_dec : Hq0 => Hq0; last first.
+case/leR_eqVlt : Hq0 => [|] Hq0.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite (_ : id 0 = 0) //.
@@ -339,7 +336,7 @@ case/Rle_lt_or_eq_dec : Hq0 => Hq0; last first.
   rewrite /dom_by /Binary.d /= => /(_ b); rewrite /Binary.f.
   rewrite eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) ?; subst p.
   by move/ltRR : Hp0.
-case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
+case/leR_eqVlt : Hq1 => [|] Hq1.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
   exfalso.

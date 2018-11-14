@@ -495,7 +495,7 @@ Definition K949 (n0 : 'I_n) df := 1 /
 
 Lemma K949_lemma df n0 : K949 n0 df = Kmpp Hy * Kppu W [set cw in C] y.
 Proof.
-rewrite /K949 /Kmpp /Kppu /Rdiv 2!mul1R -invRM; last 2 first.
+rewrite /K949 /Kmpp /Kppu 2!div1R -invRM; last 2 first.
   rewrite pmf1 => ?; lra.
   apply/eqP; by rewrite -not_receivable_uniformE Hy.
 congr (/ _).
@@ -515,7 +515,7 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
     rewrite -!mulRA.
     congr (_ * _).
     rewrite mul1R UniformSupport.restrict /= UniformSupport.big_distrr /=; last first.
-    rewrite /Rdiv invRM; last 2 first.
+    rewrite invRM; last 2 first.
       exact/eqP/invR_neq0/eqP.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
       apply/eqP; by rewrite -not_receivable_uniformE Hy.

@@ -52,31 +52,27 @@ Notation "P '|-' V '<<' W" := (cdom_by V W P) : divergence_scope.
 Notation "P '|-' V '<<b' W" := ([forall a, (P a != 0) ==> (V a) <<b (W a)])
   : divergence_scope.
 
-Section joint_dom_sect.
+Section joint_dom.
 
-Variable A B : finType.
-Variables V W : `Ch_1(A, B).
-Variable P : dist A.
+Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
 
-Lemma joint_dom : P |- V << W -> dom_by (`J(P, V)) (`J(P, W)) (*NB: notation issue*).
+Lemma joint_dom : P |- V << W -> (`J(P, V)) << (`J(P, W)).
 Proof.
-move => V_dom_by_W => ab /= Hab.
-case: (Rle_lt_or_eq_dec _ _ (dist_ge0 P ab.1)) => Hab1.
+move => V_dom_by_W /= ab Hab.
+case/leR_eqVlt : (dist_ge0 P ab.1) => [/esym|] Hab1.
+- by rewrite JointDistChan.dE Hab1 mulR0.
 - rewrite JointDistChan.dE in Hab.
   rewrite JointDistChan.dE V_dom_by_W ?mul0R //.
   + exact/eqP/gtR_eqF.
   + move/eqP : Hab; rewrite mulR_eq0 /= => /orP[/eqP//|/eqP].
     by move: (gtR_eqF _ _ Hab1).
-- by rewrite JointDistChan.dE -Hab1 mulR0.
 Qed.
 
-End joint_dom_sect.
+End joint_dom.
 
 Section conditional_divergence_def.
 
-Variables A B : finType.
-Variables V W : `Ch_1(A, B).
-Variable P : dist A.
+Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
 
 Definition cdiv := \rsum_(a : A) P a * D(V a || W a).
 
@@ -86,9 +82,7 @@ Notation "'D(' V '||' W '|' P ')'" := (cdiv V W P) : divergence_scope.
 
 Section conditional_divergence_prop.
 
-Variables A B : finType.
-Variables V W : `Ch_1(A, B).
-Variable P : dist A.
+Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
 
 Hypothesis V_dom_by_W : P |- V << W.
 
@@ -110,21 +104,19 @@ rewrite JointDistChan.dE /= /log !LogM; [field | by rewrite -dist_neq0 |
   by rewrite -dist_neq0 | by rewrite -dist_neq0 | by rewrite -dist_neq0].
 Qed.
 
-Lemma leq0cdiv : 0 <= D(V || W | P).
+Lemma cdiv_ge0 : 0 <= D(V || W | P).
 Proof.
-rewrite cdiv_is_div_joint_dist //; apply leq0div.
+rewrite cdiv_is_div_joint_dist //; apply div_ge0.
 case=> a b; rewrite 2!JointDistChan.dE /=.
-case/boolP : (P a == 0); first by move/eqP => ->; rewrite 2!mulR0.
-move=> H1 H2.
+case/boolP : (P a == 0) => [|H1 H2]; first by move/eqP => ->; rewrite 2!mulR0.
 suff -> : (V a b) = 0 by rewrite mul0R.
 apply V_dom_by_W => //.
 by move/eqP : H2; rewrite mulR_eq0 (negbTE H1) orbF => /eqP.
 Qed.
 
-Lemma eq0cdiv : D(V || W | P) = 0 <-> `J(P, V) = `J(P, W).
+Lemma cdiv0P : D(V || W | P) = 0 <-> `J(P, V) = `J(P, W).
 Proof.
-rewrite cdiv_is_div_joint_dist.
-apply eq0div; case=> a b /eqP.
+rewrite cdiv_is_div_joint_dist; apply div0P => -[a b] /eqP.
 rewrite 2!JointDistChan.dE /= mulR_eq0 => /orP[|/eqP ->]; last by rewrite mulR0.
 case/boolP : (P a == 0) => [/eqP ->|Pa0]; first by rewrite mulR0.
 move/eqP/V_dom_by_W => /(_ Pa0) ->; by rewrite mul0R.
@@ -132,10 +124,9 @@ Qed.
 
 End conditional_divergence_prop.
 
-Section dmc_cdiv_cond_entropy_sect.
+Section dmc_cdiv_cond_entropy.
 
-Variable A B : finType.
-Variables W : `Ch_1(A, B).
+Variables (A B : finType) (W : `Ch_1(A, B)).
 Variable n : nat.
 Variable P : P_ n ( A ).
 Variable V : P_ n ( A , B ).
@@ -235,9 +226,9 @@ case/boolP : (W a b == 0) => Wab0.
     by rewrite mulRCA mulRV ?mulR1 // INR_eq0'.
 Qed.
 
-End dmc_cdiv_cond_entropy_sect.
+End dmc_cdiv_cond_entropy.
 
-Section cdiv_spec.
+Section cdiv_specialized.
 
 Variables A B : finType.
 Variable n : nat.
@@ -261,9 +252,9 @@ apply/eqP.
 by apply H.
 Qed.
 
-End cdiv_spec.
+End cdiv_specialized.
 
-Section dmc_cdiv_cond_entropy_spec_sect.
+Section dmc_cdiv_cond_entropy_spec.
 
 Variables A B : finType.
 Variable W : `Ch_1*(A, B).
@@ -313,4 +304,4 @@ case : ifP => Hcase.
   by rewrite HPa (eqP Nax) div0R.
 Qed.
 
-End dmc_cdiv_cond_entropy_spec_sect.
+End dmc_cdiv_cond_entropy_spec.

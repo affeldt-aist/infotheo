@@ -573,8 +573,7 @@ Variables (A B : finType) (P : {dist (A * B)}).
 (* marginal left *)
 Definition ml a := \rsum_(x in {: A * B} | x.1 == a) P x.
 
-Lemma ml0 a : 0 <= ml a.
-Proof. apply rsumr_ge0 => x xa; exact: dist_ge0. Qed.
+Lemma ml0 a : 0 <= ml a. Proof. apply rsumr_ge0 => x xa; exact: dist_ge0. Qed.
 
 Lemma ml1 : \rsum_(a in A) ml a = 1%R.
 Proof.
@@ -592,20 +591,19 @@ rewrite /fst; unlock => /=; rewrite /ml.
 by rewrite -(pair_big_fst _ _ (pred1 a)) //= big_pred1_eq.
 Qed.
 
-Lemma fst_eq0 a b : fst a = 0%R -> P (a, b) = 0%R.
+Lemma dom_by_fst a b : fst a = 0%R -> P (a, b) = 0%R.
 Proof.
 rewrite /fst; unlock => /prsumr_eq0P /= -> //; case.
 move=> a' b' /= /eqP ->; exact/dist_ge0.
 Qed.
 
-Lemma fst_eq0N a b : P (a, b) != 0%R -> fst a != 0%R.
-Proof. by apply: contra => /eqP /fst_eq0 ->. Qed.
+Lemma dom_by_fstN a b : P (a, b) != 0%R -> fst a != 0%R.
+Proof. by apply: contra => /eqP /dom_by_fst ->. Qed.
 
 (* marginal right *)
 Definition mr b := \rsum_(x in {: A * B} | x.2 == b) P x.
 
-Lemma mr0 b : 0 <= mr b.
-Proof. apply rsumr_ge0 => x xb; exact: dist_ge0. Qed.
+Lemma mr0 b : 0 <= mr b. Proof. apply rsumr_ge0 => x xb; exact: dist_ge0. Qed.
 
 Lemma mr1 : \rsum_(b in B) mr b = 1%R.
 Proof.
@@ -624,14 +622,14 @@ rewrite /snd; unlock => /=; rewrite /mr -(pair_big_snd _ _ (pred1 b)) //=.
 apply eq_bigr => a ?; by rewrite big_pred1_eq.
 Qed.
 
-Lemma snd_eq0 a b : snd b = 0%R -> P (a, b) = 0%R.
+Lemma dom_by_snd a b : snd b = 0%R -> P (a, b) = 0%R.
 Proof.
 rewrite /snd; unlock => /prsumr_eq0P /= -> //; case.
 move=> a' b' /= /eqP ->; exact/dist_ge0.
 Qed.
 
-Lemma snd_eq0N a b : P (a, b) != 0%R -> snd b != 0%R.
-Proof. by apply: contra => /eqP /snd_eq0 ->. Qed.
+Lemma dom_by_sndN a b : P (a, b) != 0%R -> snd b != 0%R.
+Proof. by apply: contra => /eqP /dom_by_snd ->. Qed.
 
 End bivar.
 End Bivar.
@@ -717,9 +715,9 @@ rewrite -(pair_big xpredT xpredT (fun a b => P1 a * P2 b)%R) /= -(pmf1 P1).
 apply eq_bigr => a _; by rewrite -big_distrr /= pmf1 mulR1.
 Qed.
 
-Definition d : {dist A * B} := makeDist f0 f1.
+Definition d : {dist A * B} := locked (makeDist f0 f1).
 
-Lemma dE x : d x = (P1 x.1 * P2 x.2)%R. Proof. by []. Qed.
+Lemma dE x : d x = (P1 x.1 * P2 x.2)%R. Proof. by rewrite /d; unlock. Qed.
 
 End ProdDist_sect.
 End ProdDist.
@@ -2000,10 +1998,10 @@ Proof.
 move=> He.
 have HV : `V (X '/ n.+1) = sigma2 / INR n.+1.
   rewrite -(V_average_isum X_Xs V_Xs) V_scale //; by field; exact/INR_eq0.
-rewrite /Rdiv invRM; last 2 first.
+rewrite divRM; last 2 first.
   by rewrite INR_eq0.
   exact/gtR_eqF/pow_gt0.
-rewrite mulRA (_ : sigma2 * / INR n.+1 = sigma2 / INR n.+1)%R // -{}HV.
+rewrite -{}HV.
 have HE : `E (X '/ n.+1) = miu.
   rewrite E_scale (E_linear_n (sum_n_i_sum_n X_Xs)).
   set su := \rsum_(_<-_) _.
@@ -2021,7 +2019,7 @@ have cheby : Pr `p_(X '/ n.+1)
   by rewrite !inE /= mulRC mulRA mulR1.
 set p1 := Pr _ _ in cheby. set p2 := Pr _ _. suff : p2 = p1 by move=> ->.
 rewrite /p1 /p2 /=.
-apply Pr_ext; apply/setP => ta /=; by rewrite !inE mul1R mulRC.
+apply Pr_ext; apply/setP => ta /=; by rewrite 2!inE div1R mulRC.
 Qed.
 
 End weak_law_of_large_numbers.

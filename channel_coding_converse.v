@@ -26,8 +26,7 @@ Local Open Scope R_scope.
 
 Section channel_coding_converse_intermediate_lemma.
 
-Variables A B : finType.
-Variable W : `Ch_1*(A, B).
+Variables (A B : finType) (W : `Ch_1*(A, B)).
 Variable cap : R.
 Hypothesis Hc : capacity W cap.
 
@@ -144,7 +143,7 @@ rewrite expRM -mulRA; apply leR_pmul => //.
     rewrite invRM; last 2 first.
       exact/gtR_eqF/pow_gt0/invR_gt0.
       exact/gtR_eqF.
-    rewrite mulRC invRM; last 2 first.
+    rewrite -/(Rdiv _ _) divRM; last 2 first.
       by apply/eqP; rewrite INR_eq0' gtn_eqF // fact_gt0.
       apply/nesym/ltR_eqF/mulR_gt0; last exact/invR_gt0.
       exact/invR_gt0/pow_gt0/mulR_gt0.
@@ -156,8 +155,8 @@ rewrite expRM -mulRA; apply leR_pmul => //.
       rewrite invRK; last by apply/eqP; rewrite INR_eq0'.
       rewrite (_ : / (/ INR n) ^ K = (INR n) ^ K); last first.
         rewrite expRV ?INR_eq0' // invRK //; apply/eqP/pow_not0; by rewrite INR_eq0'.
-      rewrite /Rdiv; congr (_ * _).
-      by rewrite -mulRA -powS mulRC -expRM mulRA.
+      rewrite -mulRA {1}/Rdiv (mulRA (INR n)) -powS mulRA -expRM.
+      by rewrite -/(Rdiv _ _) mulRCA -mulRA (mulRC (ln 2)).
 Qed.
 
 End channel_coding_converse.

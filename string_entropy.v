@@ -108,20 +108,12 @@ Definition nHs (s : seq A) :=
 Lemma szHs_is_nHs s (H : size s != O) :
   size s * `H (@num_occ_dist s H) = nHs s.
 Proof.
-rewrite /entropy /nHs /num_occ_dist /=.
-rewrite -mulRN1 big_distrl big_distrr /=.
+rewrite /entropy /nHs /num_occ_dist /= -mulRN1 big_distrl big_distrr /=.
 apply eq_bigr => a _ /=.
-case: ifP => [/eqP -> | Hnum].
-  by rewrite !mulRA !simplR.
-rewrite /Rdiv (mulRC N(a|s)) 3!(mulRA _%:R) !mulRV ?mul1R // ?INR_eq0' //.
-rewrite -mulRA mulRN1 /log /Log -mulNR -ln_Rinv.
-  rewrite invRM ?invRK //; apply /eqP.
-  + by rewrite INR_eq0'.
-  + by apply /invR_neq0; rewrite INR_eq0'.
-  + by rewrite INR_eq0' Hnum.
-apply mulR_gt0.
-  by apply /invR_gt0 /ltR0n; rewrite lt0n.
-by apply /ltR0n; rewrite lt0n Hnum.
+case: ifPn => [/eqP -> | Hnum]; first by rewrite !mulRA !simplR.
+rewrite {1}/Rdiv (mulRC N(a | s)) 3![in LHS]mulRA mulRV ?INR_eq0' // ?mul1R.
+rewrite -mulRA mulRN1 -logV; last by apply divR_gt0; rewrite ltR0n lt0n.
+rewrite Rinv_Rdiv //; apply/eqP; by rewrite INR_eq0'.
 Qed.
 
 Definition mulnRdep (x : nat) (y : x != O -> R) : R.

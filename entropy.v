@@ -94,7 +94,7 @@ Lemma entropy_max (A : finType) (P : dist A) : `H P <= log (INR #|A|).
 Proof.
 have [n HA] : exists n, #|A| = n.+1.
   exists (#|A|.-1); rewrite prednK //; exact: (dist_domain_not_empty P).
-have /leq0div H : P << (Uniform.d HA) by apply dom_by_uniform.
+have /div_ge0 H : P << (Uniform.d HA) by apply dom_by_uniform.
 rewrite -subR_ge0; apply/(leR_trans H)/Req_le.
 transitivity (\rsum_(a|a \in A) P a * log (P a) +
               \rsum_(a|a \in A) P a * - log ((Uniform.d HA) a)).

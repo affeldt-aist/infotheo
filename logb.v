@@ -138,6 +138,9 @@ Qed.
 Lemma LogM n x y : 0 < x -> 0 < y -> Log n (x * y) = Log n x + Log n y.
 Proof. move=> *; by rewrite /Log -mulRDl ln_mult. Qed.
 
+Lemma LogDiv n x y : 0 < x -> 0 < y -> Log n (x / y) = Log n x - Log n y.
+Proof. move=> *; rewrite LogM //; [by rewrite LogV | exact: invR_gt0]. Qed.
+
 Lemma Log_increasing_le n x y : 1 < n -> 0 < x -> x <= y -> Log n x <= Log n y.
 Proof.
 move=> n1 x0 xy.
@@ -205,6 +208,9 @@ Proof. by move/(@LogV 2). Qed.
 
 Lemma logM x y : 0 < x -> 0 < y -> log (x * y) = log x + log y.
 Proof. move=> x0 y0; exact: (@LogM 2 _ _ x0 y0). Qed.
+
+Lemma logDiv x y : 0 < x -> 0 < y -> log (x / y) = log x - log y.
+Proof. move=> x0 y0; exact: (@LogDiv 2 _ _ x0 y0). Qed.
 
 Lemma logexp1E : log (exp 1) = / ln 2.
 Proof. by rewrite /log /Log ln_exp div1R. Qed.

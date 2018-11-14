@@ -633,12 +633,15 @@ transitivity (\rsum_(ji : 'rV[A]_n)
   (\rsum_( y | y \in
     [set y0 | prod_rV (ji , y0) \in `JTS P W n epsilon0])
     ((P `^ n) `x ((`O(P , W)) `^ n)) (ji, y))).
-  apply eq_bigr => // i0 _; by rewrite /= big_distrr.
+  apply eq_bigr => // i0 _.
+  rewrite big_distrr /=; apply eq_bigr => i1 _.
+  by rewrite ProdDist.dE.
 transitivity (\rsum_( jiy | prod_rV jiy \in `JTS P W n epsilon0)
   ((P `^ n) `x ((`O(P , W)) `^ n)) jiy).
   rewrite [in LHS]pair_big_dep /=.
-  apply eq_big => //.
-  case=> ? ?; by rewrite !inE.
+  apply eq_big.
+  by case=> ? ? /=; rewrite !inE.
+  by case=> ? ? /=; rewrite !inE ProdDist.dE.
 apply eq_bigl => tab; by rewrite !inE.
 Qed.
 

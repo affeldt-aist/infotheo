@@ -475,6 +475,9 @@ Proof. move=> x0 y0; apply mulR_ge0 => //; exact/ltRW/invR_gt0. Qed.
 Lemma divR_gt0 (x y : R) : 0 < x -> 0 < y -> 0 < x / y.
 Proof. exact: Rdiv_lt_0_compat x y. Qed.
 
+Lemma divRM (r1 r2 x : R) : r1 <> 0 -> r2 <> 0 -> x / (r1 * r2) = x / r1 * / r2.
+Proof. move=> ? ?; by rewrite {1}/Rdiv invRM // mulRA. Qed.
+
 Definition mulRV (x : R) : x != 0 -> x * / x = 1 := divRR x.
 
 (* Rinv_l_sym *)

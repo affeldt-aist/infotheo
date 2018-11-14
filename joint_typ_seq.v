@@ -332,6 +332,7 @@ apply (@leR_trans (\rsum_(i | i \in `JTS P W n epsilon)
     move=> ? ?; by rewrite rV_prodK.
   apply: ler_rsum_l => i Hi.
   - rewrite inE in Hi.
+    rewrite ProdDist.dE.
     apply leR_pmul; [exact: dist_ge0 | exact: dist_ge0 | | ].
     exact: (proj2 (typical_sequence1_JTS Hi)).
     exact: (proj2 (typical_sequence1_JTS' Hi)).

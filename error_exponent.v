@@ -20,18 +20,16 @@ Local Open Scope R_scope.
 
 Section mutinfo_distance_bound.
 
-Variable A B : finType.
-Variables V W : `Ch_1(A, B).
-Variable P : dist A.
-Hypothesis V_dom_by_W : P|- V << W.
+Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
+Hypothesis V_dom_by_W : P |- V << W.
 Hypothesis cdiv_ub : D(V || W | P) <= (exp(-2)) ^ 2 * / 2.
 
 Let cdiv_bounds : 0 <= sqrt (2 * D(V || W | P)) <= exp (-2).
 Proof.
-split; first by apply sqrt_pos.
-apply pow2_Rle_inv; [ by apply sqrt_pos | exact/ltRW/exp_pos | ].
+split; first exact: sqrt_pos.
+apply pow2_Rle_inv; [ exact: sqrt_pos | exact/ltRW/exp_pos | ].
 rewrite [in X in X <= _]/= mulR1 sqrt_sqrt; last first.
-  apply mulR_ge0; [lra | exact: leq0cdiv].
+  apply mulR_ge0; [lra | exact: cdiv_ge0].
 apply/leRP; rewrite -(leR_pmul2r' (/ 2)); last exact/ltRP/invR_gt0.
 rewrite -mulRA mulRCA mulRV ?mulR1; [exact/leRP | exact/eqP/gtR_eqF].
 Qed.
@@ -156,7 +154,7 @@ suff HminRate : (minRate - cap) / 2 <= minRate - (`I(P; V)).
   clear -Hcase v_dom_by_w HminRate.
   apply (@leR_trans +| minRate - `I(P ; V) |); last first.
     rewrite -[X in X <= _]add0R.
-    apply/leR_add2r/leq0cdiv => b Hb ? ?; exact: v_dom_by_w.
+    apply/leR_add2r/cdiv_ge0 => b Hb ? ?; exact: v_dom_by_w.
   apply: leR_trans; last exact: leR_maxr.
   apply: (leR_trans _ HminRate); exact: geR_minl.
 have : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
@@ -192,7 +190,7 @@ have ? : sqrt (2 * D(V || W | P)) < x.
   apply pow2_Rlt_inv; [exact: sqrt_pos | exact: ltRW | ].
   rewrite [in X in X < _]/= mulR1 sqrt_sqrt; last first.
     apply mulR_ge0; first exact/ltRW.
-    apply leq0cdiv=> a Ha ? ?; exact: v_dom_by_w.
+    apply cdiv_ge0 => a Ha ? ?; exact: v_dom_by_w.
   rewrite mulRC -ltR_pdivl_mulr //; exact/(ltR_leR_trans Hcase)/geR_minr.
 apply xlnx_sdecreasing_0_Rinv_e => //.
 - split; first exact/sqrt_pos.
