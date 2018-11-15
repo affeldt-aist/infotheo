@@ -102,8 +102,7 @@ rewrite INR_Zabs_nat; last first.
     by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_pos/leRR.
   apply/leR0ceil/ltRW/ltR0Log.
   by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
-  rewrite div1R.
-  apply/ltRP; rewrite invR_gt1 // ltR_neqAle' Pj1 /=; exact/leRP/dist_max.
+  rewrite div1R invR_gt1 // ltR_neqAle; split; [exact/eqP|exact/dist_max].
 by set x := Log _ _; case: (ceilP x).
 Qed.
 

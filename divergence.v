@@ -6,7 +6,8 @@ Require Import ssrR Reals_ext ln_facts logb Rbigop proba.
 
 (** * The Kullback-Leibler divergence *)
 
-Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level).
+Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level,
+  format "'D(' P  '||'  Q ')'").
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -82,21 +83,22 @@ rewrite big_split /= -(big_morph _ morph_Ropp oppR0) !pmf1 addR_opp subRR;
   exact/leRR.
 Qed.
 
+Lemma divPP : D(Q || Q) = 0.
+Proof. by rewrite /div; apply big1 => a _; rewrite subRR mulR0. Qed.
+
 Lemma div0P : D(P || Q) = 0 <-> P = Q.
 Proof.
-split => [HPQ | ->].
-- apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => j.
-  apply log_id_diff; [exact: dist_ge0 | exact: P_dom_by_Q | exact: dist_ge0 | ].
-  apply/esym.
-  move: j (erefl true); apply Rle_big_eq.
-  - move=> i _; apply div_diff_ub;
-      [exact: dist_ge0 | exact: P_dom_by_Q | exact: dist_ge0].
-  - transitivity 0; last first.
-      rewrite -{1}oppR0 -{1}HPQ (big_morph _ morph_Ropp oppR0).
-      by apply eq_bigr => a _; rewrite -mulRN oppRB.
-  - rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
-    by rewrite -(big_morph _ morph_Ropp oppR0) !pmf1 addR_opp subRR mul0R.
-- by rewrite /div; apply big1=> a _; rewrite subRR mulR0.
+split => [HPQ | ->]; last by rewrite divPP.
+apply/dist_ext => a.
+apply log_id_diff; [exact: dist_ge0 | exact: P_dom_by_Q | exact: dist_ge0 | ].
+apply/esym; move: a (erefl true); apply Rle_big_eq.
+- move=> a' _; apply div_diff_ub;
+    [exact: dist_ge0 | exact: P_dom_by_Q | exact: dist_ge0].
+- transitivity 0; last first.
+    rewrite -{1}oppR0 -{1}HPQ (big_morph _ morph_Ropp oppR0).
+    by apply eq_bigr => a _; rewrite -mulRN oppRB.
+- rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
+  by rewrite -(big_morph _ morph_Ropp oppR0) !pmf1 addR_opp subRR mul0R.
 Qed.
 
 End divergence_prop.

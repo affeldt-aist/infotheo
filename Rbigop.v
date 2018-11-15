@@ -299,7 +299,7 @@ apply: Rplus_eq_R0.
 - rewrite -bigD1 /=; [exact H | exact Ha].
 Qed.
 
-(* TODO: factorize? *)
+(* TODO: factorize? rename? *)
 Lemma Rle_big_eq (A : finType) (f g : A -> R) (P : pred A) :
    (forall i : A, P i -> f i <= g i) ->
    \rsum_(i | P i) g i = \rsum_(i | P i) f i ->

@@ -81,18 +81,12 @@ Defined.
 
 Definition ffun_of_type A n (P : P_ n ( A )) := let: type.mkType _ f _ := P in f.
 
-Lemma type_proj_eq A n (t1 t2 : P_ n ( A )) : type.f t1 = type.f t2 -> t1 = t2.
+Lemma type_ext A n (t1 t2 : P_ n ( A )) : type.f t1 = type.f t2 -> t1 = t2.
 Proof.
 case: t1 t2 => d1 f1 H1 /= [] d2 f2 H2 /= f1f2.
 subst f2.
-suff ? : d1 = d2.
-  subst d2.
-  f_equal.
-  exact: proof_irrelevance.
-apply dist_eq => /=.
-apply pos_fun_eq => /=.
-apply functional_extensionality => a /=.
-by rewrite H1 H2.
+suff ? : d1 = d2 by subst d2; congr type.mkType; exact: proof_irrelevance.
+apply dist_ext => /= a; by rewrite H1 H2.
 Qed.
 
 Definition type_eq A n (t1 t2 : P_ n ( A )) :=
@@ -103,17 +97,10 @@ Definition type_eq A n (t1 t2 : P_ n ( A )) :=
 Lemma type_eqP A n : Equality.axiom (@type_eq A n).
 Proof.
 case=> d1 f1 H1 [] d2 f2 H2 /=.
-apply: (iffP idP).
-- move/eqP => H; subst f2.
-  suff ? : d1 = d2.
-    subst d2.
-    f_equal.
-    exact: proof_irrelevance.
-  apply dist_eq => /=.
-  apply pos_fun_eq => /=.
-  apply functional_extensionality => a.
-  by rewrite H1 H2.
-by case => _ ->.
+apply: (iffP idP) => [/eqP H|[] _ -> //].
+subst f2.
+suff ? : d1 = d2 by subst d2; congr type.mkType; exact: proof_irrelevance.
+apply dist_ext => /= a; by rewrite H1 H2.
 Qed.
 
 Definition type_eqMixin A n := EqMixin (@type_eqP A n).
@@ -185,13 +172,10 @@ rewrite /type_choice_f /=; f_equal.
 move: (ffun_of_dist H) => H'.
 destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.
-f_equal.
+congr Some.
 set d1 := dist_of_ffun _.
-suff ? : d1 = d by subst d; f_equal; apply proof_irrelevance.
-apply dist_eq => /=.
-apply pos_fun_eq => /=.
-apply functional_extensionality => a.
-by rewrite H.
+suff ? : d1 = d by subst d; congr type.mkType; apply proof_irrelevance.
+apply dist_ext => /= a; by rewrite H.
 Qed.
 
 Lemma type_choiceMixin A n : choiceMixin (P_ n ( A )).
@@ -229,10 +213,8 @@ destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.
 f_equal.
 set d1 := dist_of_ffun _.
-suff ? : d1 = d.
-  subst d; f_equal; by apply proof_irrelevance.
-apply dist_eq, pos_fun_eq, functional_extensionality => a.
-by rewrite H.
+suff ? : d1 = d by subst d; congr type.mkType; apply proof_irrelevance.
+apply/dist_ext => a; by rewrite H.
 Qed.
 
 Definition type_countMixin A n := CountMixin (@type_count_pcancel A n).
@@ -283,14 +265,9 @@ apply uniq_leq_size.
     move: (enum_uniq (type_finType A n)).
     by rewrite enumT.
   case=> d f Hd [] d2 f2 Hd2 /= ?; subst f2.
-  have ? : d = d2.
-    apply dist_eq => /=. apply pos_fun_eq => /=. apply functional_extensionality => a.
-    by rewrite Hd Hd2.
-  subst d2.
-  f_equal.
-  by apply proof_irrelevance.
-move=> /= f Hf.
-by rewrite mem_enum.
+  have ? : d = d2 by apply/dist_ext => a; rewrite Hd Hd2.
+  subst d2; congr type.mkType; exact: proof_irrelevance.
+move=> /= f Hf; by rewrite mem_enum.
 Qed.
 
 Lemma type_not_empty n : 0 < #|A| -> 0 < #|P_ n.+1(A)|.

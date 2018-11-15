@@ -52,14 +52,13 @@ Local Open Scope types_scope.
 
 Definition ffun_of_jtype A B n (i : P_ n ( A , B )) := let: jtype.mkJtype _ f _ _ := i in f.
 
-Lemma jtype_proj_eq A B n (t1 t2 : P_ n ( A , B )) : jtype.f t1 = jtype.f t2 -> t1 = t2.
+Lemma jtype_ext A B n (t1 t2 : P_ n ( A , B )) : jtype.f t1 = jtype.f t2 -> t1 = t2.
 Proof.
 case: t1 t2 => d1 f1 Hf1 H1 /= [] d2 f2 Hf2 H2 /= ?; subst f2.
 have ? : d1 = d2.
-  apply Channel1.chan_star_eq, functional_extensionality => a.
-  apply dist_eq, pos_fun_eq, functional_extensionality => b.
-  by rewrite H1 H2.
-subst d2; f_equal; by apply proof_irrelevance.
+  apply/Channel1.chan_star_eq/functional_extensionality => a.
+  apply/dist_ext => b; by rewrite H1 H2.
+subst d2; congr jtype.mkJtype; exact: proof_irrelevance.
 Qed.
 
 Definition jtype_eq A B n (t1 t2 : P_ n ( A , B )) :=
@@ -70,15 +69,12 @@ Definition jtype_eq A B n (t1 t2 : P_ n ( A , B )) :=
 Lemma jtype_eqP A B n : Equality.axiom (@jtype_eq A B n).
 Proof.
 case=> d1 f1 Hf1 H1 [] d2 f2 Hf2 H2 /=.
-apply: (iffP idP).
-  move/eqP => H; subst f2.
-  have ? : d1 = d2.
-    apply Channel1.chan_star_eq, functional_extensionality => a /=.
-    apply dist_eq, pos_fun_eq, functional_extensionality => b.
-    by rewrite H1 H2.
-  subst d2.
-  f_equal; by apply proof_irrelevance.
-by case => _ ->.
+apply: (iffP idP) => [/eqP H |[] _ -> //].
+subst f2.
+have ? : d1 = d2.
+  apply/Channel1.chan_star_eq/functional_extensionality => a /=.
+  apply/dist_ext => b; by rewrite H1 H2.
+subst d2; congr jtype.mkJtype; exact: proof_irrelevance.
 Qed.
 
 Definition jtype_eqMixin A B n := EqMixin (@jtype_eqP A B n).
@@ -148,9 +144,8 @@ destruct Sumbool.sumbool_of_bool; last first.
 set d1 := chan_of_jtype _ _ _.
 set d2 := Channel1.mkChan d Hd.
 have d12 : d1 = d2.
-  apply Channel1.chan_star_eq, functional_extensionality => /= a.
-  apply dist_eq, pos_fun_eq, functional_extensionality => b.
-  by rewrite H.
+  apply/Channel1.chan_star_eq/functional_extensionality => /= a.
+  apply/dist_ext => b; by rewrite H.
 destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
 congr Some; by apply/jtype_eqP => /=.
 Qed.
@@ -201,9 +196,8 @@ destruct Sumbool.sumbool_of_bool; last by rewrite Bnot0 in e0.
 rewrite pcan_pickleK; last by apply valK.
 set d1 := chan_of_jtype _ _ _.
 have ? : d1 = Channel1.mkChan c Anot0.
-  apply Channel1.chan_star_eq, functional_extensionality => a1.
-  apply dist_eq, pos_fun_eq, functional_extensionality => b /=.
-  by rewrite H.
+  apply/Channel1.chan_star_eq/functional_extensionality => a1.
+  apply/dist_ext => b /=; by rewrite H.
 destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
 congr Some; by apply/jtype_eqP => /=.
 Qed.

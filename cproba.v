@@ -5,7 +5,8 @@ Require Import Reals Fourier.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import proba divergence entropy.
 
-(* tentative definition of conditional probability *)
+(* tentative definition of conditional probability,
+   application to the formalization of Cover and Thomas, Chapter 2 *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -34,30 +35,24 @@ Lemma dE a b : d (b, a) = P (a, b). Proof. rewrite /d; unlock; by []. Qed.
 
 Lemma fst : Bivar.fst d = Bivar.snd P.
 Proof.
-rewrite /Bivar.fst /d /Bivar.snd; unlock => /=.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => b /=.
+rewrite /Bivar.fst /d /Bivar.snd; unlock => /=; apply/dist_ext => b /=.
 rewrite /Bivar.ml /Bivar.mr -(pair_big_fst _ _ (pred1 b)) //=.
 by rewrite exchange_big /= pair_big; apply eq_bigr; case => a' b' /= /eqP ->.
 Qed.
 
 Lemma snd : Bivar.snd d = Bivar.fst P.
 Proof.
-rewrite /Bivar.fst /d /Bivar.snd; unlock => /=.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => a /=.
+rewrite /Bivar.fst /d /Bivar.snd; unlock => /=; apply/dist_ext => a /=.
 rewrite /Bivar.mr /Bivar.mr -(pair_big_snd _ _ (pred1 a)) //=.
-rewrite exchange_big /= pair_big /=.
-rewrite (eq_bigl (fun x => x.1 == a)); last by case=> a' b' /=; rewrite inE andbT.
+rewrite exchange_big /= pair_big /= (eq_bigl (fun x => x.1 == a)).
 by apply eq_bigr; case => a' b' /= /eqP ->.
+by case=> a' b' /=; rewrite inE andbT.
 Qed.
 
 End swap.
 
-Lemma dI (A B : finType) (P : {dist A * B}) :
-  d (d P) = P.
-Proof.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => -[x1 x2].
-by rewrite 2!dE.
-Qed.
+Lemma dI (A B : finType) (P : {dist A * B}) : d (d P) = P.
+Proof. apply/dist_ext => -[a b]; by rewrite 2!dE. Qed.
 
 End Swap.
 
@@ -74,7 +69,8 @@ Proof.
 rewrite (eq_bigr (fun a => f (a.1, a.2))); last by case.
 rewrite -(pair_big xpredT xpredT (fun a1 a2 => f (a1, a2))) /=.
 rewrite -(pmf1 P); apply/eq_bigr => a _.
-rewrite /f /= (bigD1 a) //= eqxx (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 //.
+rewrite /f /= (bigD1 a) //= eqxx.
+rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 //.
 by move=> a' /negbTE; rewrite eq_sym => ->.
 Qed.
 Definition d : {dist A * A} := locked (makeDist f0 f1).
@@ -82,17 +78,273 @@ Lemma dE a : d a = if a.1 == a.2 then P a.1 else 0.
 Proof. by rewrite /d; unlock. Qed.
 Lemma fst : Bivar.fst d = P.
 Proof.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => a.
-rewrite Bivar.fstE (bigD1 a) //= dE eqxx /= (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 //.
+apply/dist_ext => a /=.
+rewrite Bivar.fstE (bigD1 a) //= dE eqxx /=.
+rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 //.
 by move=> a' /negbTE; rewrite dE /= eq_sym => ->.
 Qed.
 Lemma swap : Swap.d d = d.
 Proof.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => -[a1 a2].
+apply/dist_ext => -[a1 a2].
 by rewrite Swap.dE !dE /= eq_sym; case: ifPn => // /eqP ->.
 Qed.
 End self.
 End Self.
+
+Lemma Pr_swap (A B : finType) (P : {dist A * B}) a b :
+  Pr P (setX a b) = Pr (Swap.d P) (setX b a).
+Proof.
+rewrite /Pr !big_setX exchange_big /=; apply eq_bigr => b' _.
+apply eq_bigr => a' _; by rewrite Swap.dE.
+Qed.
+
+Module SwapHead.
+Section swaphead.
+Variables (A B C : finType) (P : {dist A * B * C}).
+
+Definition f (x : B * A * C) : R := P (x.1.2, x.1.1, x.2).
+
+Lemma f0 x : 0 <= f x. Proof. exact: dist_ge0. Qed.
+
+Lemma f1 : \rsum_(x in {: B * A * C}) f x = 1.
+Proof.
+rewrite /f.
+rewrite -(pair_big xpredT xpredT (fun x1 x2 => P ((fun x => (x.2, x.1)) x1, x2))) /=.
+rewrite -(pmf1 (Swap.d (Bivar.fst P))).
+apply eq_bigr; case => b a _ /=.
+by rewrite Swap.dE /= Bivar.fstE.
+Qed.
+
+Definition d : {dist B * A * C} := locked (makeDist f0 f1).
+
+Lemma dE x : d x = P (x.1.2, x.1.1, x.2).
+Proof. by rewrite /d; unlock. Qed.
+
+Lemma fst a b : (Bivar.fst d) (b, a) = (Bivar.fst P) (a, b).
+Proof. rewrite !Bivar.fstE /d; unlock; exact: eq_bigr. Qed.
+
+Lemma snd c : (Bivar.snd d) c = (Bivar.snd P) c.
+Proof.
+rewrite /Bivar.snd; unlock => /=; rewrite /Bivar.mr /d /= /f.
+rewrite (eq_bigl (fun x => (xpredT x.1) && (x.2 == c))) //.
+rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
+rewrite -(pair_big xpredT (pred1 c) (fun a b => P (a, b))) /=.
+unlock.
+rewrite -[in LHS](pair_big xpredT (pred1 c) (fun x1 x2 => P ((fun x => (x.2, x.1)) x1, x2))) /=.
+rewrite -[in LHS](pair_big xpredT xpredT (fun x1 x2 => \rsum_(j | j == c) P (x2, x1, j))) /=.
+rewrite exchange_big pair_big /=.
+by apply eq_bigr; case.
+Qed.
+
+End swaphead.
+End SwapHead.
+
+Module DistA.
+Section dista.
+Variables (A B C : finType) (P : {dist A * B * C}).
+
+Definition f (x : A * (B * C)) : R := P (x.1, x.2.1, x.2.2).
+
+Lemma f0 x : 0 <= f x. Proof. exact: dist_ge0. Qed.
+
+Lemma f1 : \rsum_(x in {: A * (B * C) }) f x = 1.
+Proof.
+rewrite /f (eq_bigr (fun x => P (x.1, x.2.1, x.2.2))); last by move=> -[? []].
+rewrite -(pair_big xpredT xpredT (fun x1 x2 => P (x1, x2.1, x2.2))) /=.
+evar (f : A -> R).
+rewrite (eq_bigr f); last first.
+  move=> a _; rewrite -(pair_big xpredT xpredT (fun x1 x2 => P (a, x1, x2))) /= /f; reflexivity.
+rewrite {}/f !pair_big /= -(pmf1 P) /=; by apply eq_bigr => -[[]].
+Qed.
+
+Definition d : {dist A * (B * C)} := locked (makeDist f0 f1).
+
+Lemma dE x : d x = P (x.1, x.2.1, x.2.2).
+Proof. by rewrite /d; unlock. Qed.
+
+Lemma dom_by a b c : d (a, (b, c)) = 0 -> P (a, b, c) = 0.
+Proof. by rewrite dE. Qed.
+
+Lemma dom_byN a b c : P (a, b, c) != 0 -> d (a, (b, c)) != 0.
+Proof. by apply: contra => /eqP H; apply/eqP; apply: dom_by H. Qed.
+
+Lemma fst_snd : Bivar.fst (Bivar.snd d) = Bivar.snd (Bivar.fst P).
+Proof.
+apply/dist_ext => b /=; rewrite Bivar.sndE Bivar.fstE.
+evar (f : C -> R).
+rewrite (eq_bigr f); last by move=> c _; rewrite Bivar.sndE /f; reflexivity.
+rewrite {}/f exchange_big /=; apply eq_bigr => a _.
+rewrite Bivar.fstE; apply eq_bigr => c _; by rewrite dE.
+Qed.
+
+Lemma fst : Bivar.fst d = Bivar.fst (Bivar.fst P).
+Proof.
+apply/dist_ext => a; rewrite 2!Bivar.fstE /=.
+rewrite (eq_bigr (fun i => d (a, (i.1, i.2)))); last by case.
+rewrite -(pair_big xpredT xpredT (fun i1 i2 => d (a, (i1, i2)))) /=.
+apply eq_bigr => b _; rewrite Bivar.fstE; apply eq_bigr => c _; by rewrite dE.
+Qed.
+
+End dista.
+End DistA.
+
+Module Dist13.
+Section dist13.
+Variables (A B C : finType) (P : {dist A * B * C}).
+
+Definition f (x : A * C) : R := \rsum_(b in B) P (x.1, b, x.2).
+
+Lemma f0 x : 0 <= f x. Proof. apply rsumr_ge0 => b _; exact: dist_ge0. Qed.
+
+Lemma f1 : \rsum_(x in {: A * C}) f x = 1.
+Proof.
+rewrite /f.
+rewrite -(pair_big xpredT xpredT (fun x1 x2 => \rsum_(b in B) P (x1, b, x2))) /=.
+evar (f : A -> R).
+rewrite (eq_bigr f); last by move=> a _; rewrite exchange_big /= /f; reflexivity.
+rewrite {}/f pair_big /= pair_big /= -(pmf1 P) /=; by apply eq_bigr => -[[]].
+Qed.
+
+Definition d : {dist A * C} := locked (makeDist f0 f1).
+
+Lemma dE x : d x = \rsum_(b in B) P (x.1, b, x.2).
+Proof. by rewrite /d; unlock. Qed.
+
+Lemma dom_by a b c : d (a, c) = 0 -> P (a, b, c) = 0.
+Proof. rewrite dE /= => /prsumr_eq0P -> // b' _; exact: dist_ge0. Qed.
+
+Lemma dom_byN a b c : P (a, b, c) != 0 -> d (a, c) != 0.
+Proof. by apply: contra => /eqP H; apply/eqP/dom_by. Qed.
+
+Lemma snd : Bivar.snd d = Bivar.snd P.
+Proof.
+apply/dist_ext => c; rewrite !Bivar.sndE /=.
+rewrite (eq_bigr (fun i => P (i.1, i.2, c))); last by case.
+rewrite -(pair_big xpredT xpredT (fun i1 i2 => P (i1, i2, c))) /=.
+by apply/eq_bigr => a _; rewrite dE; apply eq_bigr => b _.
+Qed.
+
+Lemma fst : Bivar.fst d = Bivar.fst (DistA.d P).
+Proof.
+apply/dist_ext => a; rewrite !Bivar.fstE /=.
+rewrite [in RHS](eq_bigr (fun i => (DistA.d P) (a, (i.1, i.2)))); last by case.
+rewrite -(pair_big xpredT xpredT (fun i1 i2 => (DistA.d P) (a, (i1, i2)))) /=.
+rewrite exchange_big /=; apply eq_bigr => c _; rewrite dE /=; apply eq_bigr => b _.
+by rewrite DistA.dE.
+Qed.
+
+End dist13.
+End Dist13.
+
+Module Swap23.
+Section swap23.
+Variables (A B C : finType) (P : {dist A * B * C}).
+
+Definition f (x : A * C * B) : R := P (x.1.1, x.2, x.1.2).
+
+Lemma f0 x : 0 <= f x. Proof. exact: dist_ge0. Qed.
+
+Lemma f1 : \rsum_(x in {: A * C * B}) f x = 1.
+Proof.
+rewrite /f.
+rewrite -(pair_big xpredT xpredT (fun x1 x2 => P (x1.1, x2, x1.2))) /=.
+rewrite -(pair_big xpredT xpredT (fun x1 x2 => \rsum_(j | true) P (x1, j, x2))) /=.
+rewrite -(pmf1 (DistA.d P)) /=.
+rewrite (eq_bigr (fun x => (DistA.d P) (x.1, x.2))); last by case.
+rewrite -(pair_big xpredT xpredT (fun x1 x2 => (DistA.d P) (x1, x2))) /=.
+apply eq_bigr => a _.
+rewrite exchange_big /= pair_big /=; apply eq_bigr => -[b c] _ /=.
+by rewrite DistA.dE.
+Qed.
+
+Definition d : {dist A * C * B} := locked (makeDist f0 f1).
+
+Lemma dE x : d x = P (x.1.1, x.2, x.1.2).
+Proof. by rewrite /d; unlock. Qed.
+
+Lemma snd : Bivar.snd d = Bivar.snd (Bivar.fst P).
+Proof.
+apply/dist_ext => b.
+rewrite !Bivar.sndE /= (eq_bigr (fun i => d (i.1, i.2, b))); last by case.
+rewrite -(pair_big xpredT xpredT (fun i1 i2 => d (i1, i2, b))) /=.
+apply eq_bigr => a _; rewrite Bivar.fstE; apply eq_bigr => c _; by rewrite dE.
+Qed.
+
+Lemma fst : Bivar.fst (DistA.d d) = Bivar.fst (DistA.d P).
+Proof.
+apply/dist_ext => a; rewrite !Bivar.fstE.
+rewrite (eq_bigr (fun i => (DistA.d d) (a, (i.1, i.2)))); last by case.
+rewrite -(pair_big xpredT xpredT (fun i1 i2 => (DistA.d d) (a, (i1, i2)))).
+rewrite exchange_big pair_big; apply eq_bigr => -[b c] _ /=.
+by rewrite DistA.dE /= dE /= DistA.dE.
+Qed.
+
+Lemma fst2 : Bivar.fst (Bivar.fst d) = Bivar.fst (Bivar.fst P).
+Proof.
+apply/dist_ext => a; rewrite !Bivar.fstE /=.
+evar (f : C -> R).
+rewrite (eq_bigr f); last first.
+  move=> c _; rewrite Bivar.fstE /f; reflexivity.
+rewrite {}/f exchange_big /=; apply eq_bigr => b _.
+by rewrite Bivar.fstE; apply eq_bigr => c _; rewrite dE.
+Qed.
+
+Lemma sndA : Bivar.snd (DistA.d d) = Swap.d (Bivar.snd (DistA.d P)).
+Proof.
+apply/dist_ext => -[c b].
+rewrite Swap.dE !Bivar.sndE /=; apply eq_bigr => a _; by rewrite !DistA.dE /= dE.
+Qed.
+
+End swap23.
+End Swap23.
+
+Module Dist23.
+Section dist23.
+Variables (A B C : finType) (P : {dist A * B * C}).
+
+Definition f (x : B * C) : R := \rsum_(a in A) P (a, x.1, x.2).
+
+Lemma f0 x : 0 <= f x. Proof. apply rsumr_ge0 => b _; exact: dist_ge0. Qed.
+
+Lemma f1 : \rsum_(x in {: B * C}) f x = 1.
+Proof.
+rewrite /f exchange_big /= -(pmf1 (DistA.d P)) /= pair_big /=.
+apply eq_bigr => -[a [b c]] /=; by rewrite DistA.dE.
+Qed.
+
+Definition d : {dist B * C} := locked (makeDist f0 f1).
+
+Lemma dE x : d x = \rsum_(a in A) P (a, x.1, x.2).
+Proof. by rewrite /d; unlock. Qed.
+
+Lemma dom_by a b c : d (b, c) = 0 -> P (a, b, c) = 0.
+Proof. rewrite dE /= => /prsumr_eq0P -> // a' _; exact: dist_ge0. Qed.
+
+Lemma dom_byN a b c : P (a, b, c) != 0 -> d (b, c) != 0.
+Proof. by apply: contra => /eqP H; apply/eqP; apply: dom_by. Qed.
+
+Lemma snd : Bivar.snd d = Bivar.snd P.
+Proof.
+apply/dist_ext => c; rewrite !Bivar.sndE /=.
+rewrite (eq_bigr (fun i => P (i.1, i.2, c))); last by case.
+rewrite -(pair_big xpredT xpredT (fun i1 i2 => P (i1, i2, c))) /=.
+by rewrite exchange_big; apply/eq_bigr => a _; rewrite dE; apply eq_bigr => b _.
+Qed.
+
+End dist23.
+End Dist23.
+
+Section distributions_prop.
+
+Variables (A B C : finType) (P : {dist A * B * C}).
+
+Lemma Dist23Swap23 : Bivar.fst P = Dist13.d (Swap23.d P).
+Proof.
+apply/dist_ext => -[a b].
+rewrite Dist13.dE Bivar.fstE; apply eq_bigr => c _; by rewrite Swap23.dE.
+Qed.
+
+End distributions_prop.
 
 Section conditional_probability.
 
@@ -136,7 +388,7 @@ rewrite Bivar.sndE; apply ler_rsum_l => // a0 _;
   [exact: leRR | exact: dist_ge0].
 Qed.
 
-Lemma cPr_neq0 (a : {set A}) (b : {set B}) : 0 < cPr a b <-> cPr a b != 0.
+Lemma cPr_gt0 (a : {set A}) (b : {set B}) : 0 < cPr a b <-> cPr a b != 0.
 Proof.
 split; rewrite /cPr; first by rewrite ltR_neqAle => -[/eqP H1 _]; rewrite eq_sym.
 rewrite ltR_neqAle eq_sym => /eqP H; split => //; exact: cPr_ge0.
@@ -146,7 +398,7 @@ Lemma cPr_Pr_setX_eq0 (a : {set A}) (b : {set B}) :
   0 < Pr P (setX a b) <-> 0 < cPr a b.
 Proof.
 rewrite -Pr_neq0; split => H; last first.
-  move/cPr_neq0 : H; apply: contra.
+  move/cPr_gt0 : H; apply: contra.
   rewrite /cPr => /eqP ->; by rewrite div0R.
 rewrite /cPr; apply/divR_gt0; first by rewrite -Pr_neq0.
 rewrite -Pr_neq0; apply: contra H => /eqP H; by rewrite Pr_snd_eq0.
@@ -156,6 +408,55 @@ End conditional_probability.
 
 Notation "\Pr_ P [ A | B ]" := (cPr P A B) (at level 3, P, A, B at next level,
   format "\Pr_ P [ A  |  B ]").
+
+Section conditional_probability_prop.
+
+Variables (A B C : finType) (P : {dist A * B * C}).
+
+Lemma Pr_Swap23 a b c : \Pr_(DistA.d P)[[set a] | [set (b, c)]] =
+  \Pr_(DistA.d (Swap23.d P))[[set a] | [set (c, b)]].
+Proof.
+rewrite /cPr; congr (_ / _).
+- by rewrite !Pr_setX1 !Pr_set1 !DistA.dE /= Swap23.dE.
+- by rewrite Swap23.sndA -Pr_setX1 Pr_swap Pr_setX1.
+Qed.
+
+End conditional_probability_prop.
+
+Module CondDist.
+Section conddist.
+
+Variables (A B : finType) (PQ : {dist A * B}) (b : B).
+Hypothesis Hb : Bivar.snd PQ b != 0.
+
+Lemma temp :
+  \rsum_(i in A) Pr PQ (setX [set i] [set b]) = Pr (Bivar.snd PQ) [set b].
+Proof.
+rewrite /Pr (eq_bigr (fun i =>
+    \rsum_(a in [set i]) \rsum_(j in [set b]) PQ (a, j))); last first.
+  by move=> a _; rewrite big_setX.
+rewrite pair_big_dep /= exchange_big /=; apply eq_bigr => b0 _.
+rewrite Bivar.sndE (reindex_onto (fun x => (x, x)) fst); last first.
+  by case => /= a b1; rewrite in_set1 => /eqP ->.
+by rewrite /= (eq_bigl predT) // => a; rewrite !inE !eqxx.
+Qed.
+
+Definition f a := \Pr_PQ [[set a] | [set b]].
+
+Lemma f0 a : 0 <= f a. Proof. exact: cPr_ge0. Qed.
+
+Lemma f1 : \rsum_(a in A) f a = 1.
+Proof. by rewrite /f /cPr -big_distrl /= temp mulRV // Pr_set1. Qed.
+
+Definition d : {dist A} := locked (makeDist f0 f1).
+
+Lemma dE a : d a = \Pr_PQ [[set a] | [set b]].
+Proof. by rewrite /d; unlock. Qed.
+
+End conddist.
+End CondDist.
+
+Arguments CondDist.d {A} {B} _ _ _.
 
 Section total_probability_theorem.
 
@@ -202,12 +503,7 @@ Let QP := Swap.d PQ.
 Lemma bayes (a : {set A}) (b : {set B}) :
   \Pr_PQ[a | b] = \Pr_QP [b | a] * Pr P a / Pr Q b.
 Proof.
-rewrite /cPr.
-have <- : Pr PQ (setX a b) = Pr QP (setX b a).
-  (* TODO: lemma? *)
-  rewrite /Pr !big_setX exchange_big /=; apply eq_bigr => b' _.
-  apply eq_bigr => a' _; by rewrite Swap.dE.
-rewrite Swap.snd -/Q -/P.
+rewrite /cPr -Pr_swap Swap.snd -/Q -/P.
 case/boolP : (Pr P a == 0) => [/eqP|] H0.
   by rewrite Pr_fst_eq0 // !(mul0R,div0R).
 - rewrite /Rdiv -!mulRA; congr (_ * _).
@@ -283,7 +579,7 @@ case/boolP : (\Pr_QP[[set b]|[set a]] == 0) => [/eqP|] H0.
   rewrite H0 mul0R; exact/leRR.
 apply mulR_ge0; [exact: cPr_ge0|].
 rewrite -oppR0 -(Log_1 2) /log leR_oppr oppRK.
-apply Log_increasing_le => //; [by rewrite cPr_neq0 | exact: cPr_max].
+apply Log_increasing_le => //; [by rewrite cPr_gt0 | exact: cPr_max].
 Qed.
 
 Lemma h_ge0 : 0 <= h.
@@ -377,189 +673,30 @@ Qed.
 
 End conditional_entropy_prop2.
 
-Module SwapHead.
-Section swaphead.
-Variables (A B C : finType) (P : {dist A * B * C}).
+Section conditional_entropy_prop3.
 
-Definition f (x : B * A * C) : R := P (x.1.2, x.1.1, x.2).
+Variables (A B C : finType) (PQR : {dist A * B * C}).
 
-Lemma f0 x : 0 <= f x. Proof. exact: dist_ge0. Qed.
-
-Lemma f1 : \rsum_(x in {: B * A * C}) f x = 1.
+Lemma h1Swap23 b c : CondEntropy.h1 (DistA.d PQR) (b, c) = CondEntropy.h1 (DistA.d (Swap23.d PQR)) (c, b).
 Proof.
-rewrite /f.
-rewrite -(pair_big xpredT xpredT (fun x1 x2 => P ((fun x => (x.2, x.1)) x1, x2))) /=.
-rewrite -(pmf1 (Swap.d (Bivar.fst P))).
-apply eq_bigr; case => b a _ /=.
-by rewrite Swap.dE /= Bivar.fstE.
-Qed.
-
-Definition d : {dist B * A * C} := locked (makeDist f0 f1).
-
-Lemma dE x : d x = P (x.1.2, x.1.1, x.2).
-Proof. by rewrite /d; unlock. Qed.
-
-Lemma fst a b : (Bivar.fst d) (b, a) = (Bivar.fst P) (a, b).
-Proof. rewrite !Bivar.fstE /d; unlock; exact: eq_bigr. Qed.
-
-Lemma snd c : (Bivar.snd d) c = (Bivar.snd P) c.
-Proof.
-rewrite /Bivar.snd; unlock => /=; rewrite /Bivar.mr /d /= /f.
-rewrite (eq_bigl (fun x => (xpredT x.1) && (x.2 == c))) //.
-rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite -(pair_big xpredT (pred1 c) (fun a b => P (a, b))) /=.
-unlock.
-rewrite -[in LHS](pair_big xpredT (pred1 c) (fun x1 x2 => P ((fun x => (x.2, x.1)) x1, x2))) /=.
-rewrite -[in LHS](pair_big xpredT xpredT (fun x1 x2 => \rsum_(j | j == c) P (x2, x1, j))) /=.
-rewrite exchange_big pair_big /=.
-by apply eq_bigr; case.
-Qed.
-
-End swaphead.
-End SwapHead.
-
-Module DistA.
-Section dista.
-Variables (A B C : finType) (P : {dist A * B * C}).
-
-Definition f (x : A * (B * C)) : R := P (x.1, x.2.1, x.2.2).
-
-Lemma f0 x : 0 <= f x. Proof. exact: dist_ge0. Qed.
-
-Lemma f1 : \rsum_(x in {: A * (B * C) }) f x = 1.
-Proof.
-rewrite /f (eq_bigr (fun x => P (x.1, x.2.1, x.2.2))); last by move=> -[? []].
-rewrite -(pair_big xpredT xpredT (fun x1 x2 => P (x1, x2.1, x2.2))) /=.
-evar (f : A -> R).
-rewrite (eq_bigr f); last first.
-  move=> a _; rewrite -(pair_big xpredT xpredT (fun x1 x2 => P (a, x1, x2))) /= /f; reflexivity.
-rewrite {}/f !pair_big /= -(pmf1 P) /=; by apply eq_bigr => -[[]].
-Qed.
-
-Definition d : {dist A * (B * C)} := locked (makeDist f0 f1).
-
-Lemma dE x : d x = P (x.1, x.2.1, x.2.2).
-Proof. by rewrite /d; unlock. Qed.
-
-Lemma dom_by a b c : d (a, (b, c)) = 0 -> P (a, b, c) = 0.
-Proof. by rewrite dE. Qed.
-
-End dista.
-End DistA.
-
-Module Swap23.
-Section swap23.
-Variables (A B C : finType) (P : {dist A * B * C}).
-
-Definition f (x : A * C * B) : R := P (x.1.1, x.2, x.1.2).
-
-Lemma f0 x : 0 <= f x. Proof. exact: dist_ge0. Qed.
-
-Lemma f1 : \rsum_(x in {: A * C * B}) f x = 1.
-Proof.
-rewrite /f.
-rewrite -(pair_big xpredT xpredT (fun x1 x2 => P (x1.1, x2, x1.2))) /=.
-rewrite -(pair_big xpredT xpredT (fun x1 x2 => \rsum_(j | true) P (x1, j, x2))) /=.
-rewrite -(pmf1 (DistA.d P)) /=.
-rewrite (eq_bigr (fun x => (DistA.d P) (x.1, x.2))); last by case.
-rewrite -(pair_big xpredT xpredT (fun x1 x2 => (DistA.d P) (x1, x2))) /=.
+rewrite /CondEntropy.h1; congr (- _).
 apply eq_bigr => a _.
-rewrite exchange_big /= pair_big /=; apply eq_bigr => -[b c] _ /=.
-by rewrite DistA.dE.
+suff H : \Pr_(DistA.d PQR)[[set a] | [set (b, c)]] = \Pr_(DistA.d (Swap23.d PQR))[[set a] | [set (c, b)]].
+  rewrite H //.
+by rewrite Pr_Swap23.
 Qed.
 
-Definition d : {dist A * C * B} := locked (makeDist f0 f1).
-
-Lemma dE x : d x = P (x.1.1, x.2, x.1.2).
-Proof. by rewrite /d; unlock. Qed.
-
-End swap23.
-End Swap23.
-
-Module Dist23.
-Section dist23.
-Variables (A B C : finType) (P : {dist A * B * C}).
-
-Definition f (x : B * C) : R := \rsum_(a in A) P (a, x.1, x.2).
-
-Lemma f0 x : 0 <= f x. Proof. apply rsumr_ge0 => b _; exact: dist_ge0. Qed.
-
-Lemma f1 : \rsum_(x in {: B * C}) f x = 1.
+Lemma hSwap23 : CondEntropy.h (DistA.d PQR) = CondEntropy.h (DistA.d (Swap23.d PQR)).
 Proof.
-rewrite /f exchange_big /= -(pmf1 (DistA.d P)) /= pair_big /=.
-apply eq_bigr => -[a [b c]] /=; by rewrite DistA.dE.
+rewrite /CondEntropy.h /=.
+rewrite (eq_bigr (fun a => (Bivar.snd (DistA.d PQR)) (a.1, a.2) * CondEntropy.h1 (DistA.d PQR) (a.1, a.2))); last by case.
+rewrite -(pair_big xpredT xpredT (fun a1 a2 => (Bivar.snd (DistA.d PQR)) (a1, a2) * CondEntropy.h1 (DistA.d PQR) (a1, a2))) /=.
+rewrite exchange_big pair_big /=; apply eq_bigr => -[c b] _ /=; congr (_ * _).
+  by rewrite Swap23.sndA Swap.dE.
+by rewrite h1Swap23.
 Qed.
 
-Definition d : {dist B * C} := locked (makeDist f0 f1).
-
-Lemma dE x : d x = \rsum_(a in A) P (a, x.1, x.2).
-Proof. by rewrite /d; unlock. Qed.
-
-Lemma eq0 b c : d (b, c) = 0 -> forall a, P (a, b, c) = 0.
-Proof.
-rewrite /d; unlock => /=; rewrite /f /= => H a.
-move/prsumr_eq0P : H => -> // b' _; exact: dist_ge0.
-Qed.
-
-Lemma snd : Bivar.snd d = Bivar.snd P.
-Proof.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => c.
-rewrite !Bivar.sndE /=.
-rewrite (eq_bigr (fun i => P (i.1, i.2, c))); last by case.
-rewrite -(pair_big xpredT xpredT (fun i1 i2 => P (i1, i2, c))) /=.
-by rewrite exchange_big; apply/eq_bigr => a _; rewrite dE; apply eq_bigr => b _.
-Qed.
-
-Lemma dom_by a b c : d (b, c) = 0 -> P (a, b, c) = 0.
-Proof. rewrite dE /= => /prsumr_eq0P -> // a' _; exact: dist_ge0. Qed.
-
-End dist23.
-End Dist23.
-
-Module Dist13.
-Section dist13.
-Variables (A B C : finType) (P : {dist A * B * C}).
-
-Definition f (x : A * C) : R := \rsum_(b in B) P (x.1, b, x.2).
-
-Lemma f0 x : 0 <= f x. Proof. apply rsumr_ge0 => b _; exact: dist_ge0. Qed.
-
-Lemma f1 : \rsum_(x in {: A * C}) f x = 1.
-Proof.
-rewrite /f.
-rewrite -(pair_big xpredT xpredT (fun x1 x2 => \rsum_(b in B) P (x1, b, x2))) /=.
-evar (f : A -> R).
-rewrite (eq_bigr f); last by move=> a _; rewrite exchange_big /= /f; reflexivity.
-rewrite {}/f pair_big /= pair_big /= -(pmf1 P) /=; by apply eq_bigr => -[[]].
-Qed.
-
-Definition d : {dist A * C} := locked (makeDist f0 f1).
-
-Lemma dE x : d x = \rsum_(b in B) P (x.1, b, x.2).
-Proof. by rewrite /d; unlock. Qed.
-
-Lemma eq0 a c : d (a, c) = 0 -> forall b, P (a, b, c) = 0.
-Proof.
-rewrite /d; unlock => /=; rewrite /f /= => H b.
-move/prsumr_eq0P : H => -> // b' _; exact: dist_ge0.
-Qed.
-
-Lemma snd : Bivar.snd d = Bivar.snd P.
-Proof.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => c.
-rewrite !Bivar.sndE /=.
-rewrite (eq_bigr (fun i => P (i.1, i.2, c))); last by case.
-rewrite -(pair_big xpredT xpredT (fun i1 i2 => P (i1, i2, c))) /=.
-by apply/eq_bigr => a _; rewrite dE; apply eq_bigr => b _.
-Qed.
-
-Local Open Scope reals_ext_scope.
-
-Lemma dom_by a b c : d (a, c) = 0 -> P (a, b, c) = 0.
-Proof. rewrite dE /= => /prsumr_eq0P -> // b' _; exact: dist_ge0. Qed.
-
-End dist13.
-End Dist13.
+End conditional_entropy_prop3.
 
 Section entropy_chain_rule_corollary.
 Variables (A B C : finType) (PQR : {dist A * B * C}).
@@ -582,22 +719,21 @@ rewrite !(Swap.dE,DistA.dE,SwapHead.dE) /= -mulRDr.
 case/boolP : (PQR (a, b, c) == 0) => [/eqP H0|H0].
   by rewrite H0 !mul0R.
 rewrite -logM; last 2 first.
-  rewrite -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1.
-  by apply: contra H0 => /eqP /Dist13.eq0 => ->.
-  by rewrite -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1 DistA.dE /= SwapHead.dE /=.
+  rewrite -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1; exact: Dist13.dom_byN H0.
+  by rewrite -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1 DistA.dE /= SwapHead.dE.
 congr (_ * log _).
+(* TODO: lemma? *)
 rewrite /cPr !Pr_setX1 !Pr_set1.
 rewrite mulRCA -mulRA DistA.dE SwapHead.dE /=; congr (_ * _).
 rewrite -invRM; last 2 first.
-  apply/eqP; rewrite (@Bivar.dom_by_sndN _ _ _ a) //; apply: contra H0 => /eqP.
-  by move/Dist13.eq0 => ->.
+  apply/eqP; rewrite (@Bivar.dom_by_sndN _ _ _ a) //; exact: Dist13.dom_byN H0.
   apply/eqP; by rewrite (@Bivar.dom_by_sndN _ _ _ b) // DistA.dE /= SwapHead.dE.
 suff -> : (Bivar.snd PR) c * (Bivar.snd QPR) (a, c) =
   PR (a, c) * (Bivar.snd PQR) c.
   rewrite invRM; last 2 first.
-    by apply/eqP; apply: contra H0 => /eqP /Dist13.eq0 => ->.
+    apply/eqP; exact: Dist13.dom_byN H0.
     by apply/eqP; rewrite (@Bivar.dom_by_sndN _ _ _ (a, b)).
-  rewrite mulRA mulRV ?mul1R //; by apply: contra H0 => /eqP /Dist13.eq0 => ->.
+  rewrite mulRA mulRV ?mul1R //; exact: Dist13.dom_byN H0.
 rewrite mulRC.
 congr (_ * _).
   rewrite Dist13.dE Bivar.sndE; apply eq_bigr => b' _ /=.
@@ -659,7 +795,7 @@ rewrite miE.
 transitivity (\rsum_(a in A) \rsum_(b in B)
     PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ] / P a)).
   apply eq_bigr => a _; apply eq_bigr => b _.
-  rewrite /cPr Pr_setX1 2!Pr_set1 /=.
+  rewrite /cPr Pr_setX1 2!Pr_set1 /= -/Q.
   case/boolP : (PQ (a, b) == 0) => [/eqP H0 | H0].
   - by rewrite H0 !mul0R.
   - congr (_ * log _).
@@ -675,9 +811,7 @@ transitivity (- (\rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (P a)) +
   case/boolP : (PQ (a, b) == 0) => [/eqP ->| H0].
   - by rewrite !mul0R.
   - congr (_ * _); rewrite logDiv //.
-    + rewrite /cPr Pr_setX1 2!Pr_set1; apply divR_gt0.
-        by rewrite -dist_neq0.
-        rewrite -dist_neq0; exact: Bivar.dom_by_sndN H0.
+    + by rewrite -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1.
     + rewrite -dist_neq0; exact: Bivar.dom_by_fstN H0.
 rewrite -subR_opp; congr (_ - _).
 - rewrite /entropy; congr (- _); apply/eq_bigr => a _.
@@ -686,10 +820,8 @@ rewrite -subR_opp; congr (_ - _).
   rewrite (big_morph _ morph_Ropp oppR0); apply eq_bigr=> b _ /=.
   rewrite mulRN; congr (- _).
   rewrite big_distrr /=; apply eq_bigr=> a _ /=.
-  rewrite mulRA; congr (_ * _).
-  rewrite /cPr !(Pr_setX1,Pr_set1) mulRCA.
-  case/boolP : (PQ (a, b) == 0) => [/eqP -> | H0]; first by rewrite mul0R.
-  rewrite mulRV ?mulR1 //; exact: Bivar.dom_by_sndN H0.
+  rewrite mulRA; congr (_ * _); rewrite -/Q.
+  by rewrite -[in LHS]Pr_set1 -Pr_setX1 Pr_cPr Pr_set1 -/Q mulRC.
 Qed.
 
 Lemma miE3 : mi = `H Q - CondEntropy.h QP. (* 2.40 *)
@@ -718,6 +850,17 @@ End MutualInfo.
 
 Section mutualinfo_prop.
 
+Local Open Scope divergence_scope.
+
+(* 2.46 *)
+Lemma mi_sym (A B : finType) (PQ : {dist A * B}) :
+  let P := Bivar.fst PQ in
+  let Q := Bivar.snd PQ in
+  MutualInfo.mi PQ = MutualInfo.mi (Swap.d PQ).
+Proof.
+by move=> P Q; rewrite !MutualInfo.miE2 entropyB Swap.fst.
+Qed.
+
 (* self-information *)
 Lemma mutual_info_self (A : finType) (P : dist A) :
   MutualInfo.mi (Self.d P) = `H P.
@@ -726,6 +869,62 @@ by rewrite MutualInfo.miE2 CondEntrop_self subR0 Self.fst.
 Qed.
 
 End mutualinfo_prop.
+
+Section divergence_conditional_distributions.
+
+Variables (A B C : finType) (PQR : {dist A * B * C}).
+
+Definition cdiv1 z := \rsum_(x in {: A * B})
+  \Pr_PQR[[set x] | [set z]] * log (\Pr_PQR[[set x] | [set z]] /
+    (\Pr_(Dist13.d PQR)[[set x.1] | [set z]] * \Pr_(Dist23.d PQR)[[set x.2] | [set z]])).
+
+Local Open Scope divergence_scope.
+
+Lemma cdiv1_is_div c
+  (Hc : Bivar.snd PQR c != 0)
+  (Hc1 : (Bivar.snd (Dist13.d PQR)) c != 0)
+  (Hc2 : (Bivar.snd (Dist23.d PQR)) c != 0) :
+  cdiv1 c = D(CondDist.d PQR c Hc ||
+    (CondDist.d (Dist13.d PQR) c Hc1) `x (CondDist.d (Dist23.d PQR) c Hc2)).
+Proof.
+rewrite /cdiv1 /div; apply eq_bigr => -[a b] /= _; rewrite CondDist.dE.
+case/boolP : (\Pr_PQR[[set (a, b)]|[set c]] == 0) => [/eqP ->|H0].
+  by rewrite !mul0R.
+congr (_ * _); rewrite -logDiv; last 2 first.
+  by rewrite cPr_gt0.
+  rewrite ProdDist.dE /=; apply mulR_gt0.
+    (* TODO: lemma? *)
+    rewrite CondDist.dE -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1.
+    move: H0; rewrite /cPr /Rdiv mulR_neq0 => /andP[].
+    rewrite Pr_setX1 Pr_set1; by move/Dist13.dom_byN.
+  (* TODO: lemma? *)
+  rewrite CondDist.dE -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1.
+  move: H0; rewrite /cPr /Rdiv mulR_neq0 => /andP[].
+  rewrite Pr_setX1 Pr_set1; by move/Dist23.dom_byN.
+congr (log (_ / _)); by rewrite ProdDist.dE 2!CondDist.dE.
+Qed.
+
+Lemma cdiv1_ge0 z : 0 <= cdiv1 z.
+Proof.
+case/boolP : ((Bivar.snd PQR) z == 0) => [/eqP|] z0.
+  apply rsumr_ge0 => -[a b] _.
+  rewrite {1}/cPr Pr_setX1 Pr_set1 (Bivar.dom_by_snd _ z0) div0R mul0R.
+  exact: leRR.
+rewrite cdiv1_is_div.
+  by rewrite Dist13.snd.
+  by rewrite Dist23.snd.
+move=> Hz1 Hz2; apply div_ge0 => -[a b].
+rewrite ProdDist.dE !CondDist.dE /= => /eqP; rewrite mulR_eq0 => /orP[|].
+(* TODO: lemma? *)
+- rewrite /cPr !Pr_setX1 !Pr_set1 !mulR_eq0 => /orP[/eqP|].
+  move/Dist13.dom_by => ->; by rewrite div0R.
+  rewrite Dist13.snd => /eqP; rewrite /Rdiv => ->; by rewrite mulR0.
+- rewrite /cPr !Pr_setX1 !Pr_set1 !mulR_eq0 => /orP[/eqP|].
+  move/Dist23.dom_by => ->; by rewrite div0R.
+  rewrite Dist23.snd => /eqP; rewrite /Rdiv => ->; by rewrite mulR0.
+Qed.
+
+End divergence_conditional_distributions.
 
 Section conditional_mutual_information.
 
@@ -763,48 +962,57 @@ rewrite Swap.dE DistA.dE /= -mulRN -mulRDr.
 case/boolP : (PQR (a, b, c) == 0) => [/eqP ->| H0]; first by rewrite !mul0R.
 congr (_ * _).
 rewrite addRC addR_opp -logDiv; last 2 first.
-  rewrite -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1.
-  apply: contra H0 => /eqP H0; apply/eqP.
-  by rewrite DistA.dom_by.
-  rewrite -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1.
-  apply: contra H0 => /eqP H0; apply/eqP.
-  by move/Dist13.dom_by : H0 => ->.
+  rewrite -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1; exact: DistA.dom_byN H0.
+  rewrite -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1; exact: Dist13.dom_byN H0.
 congr (log _).
 rewrite divRM; last 2 first.
   apply/eqP.
-  rewrite -cPr_neq0 -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1.
-  apply: contra H0 => /eqP H0; apply/eqP.
-  by rewrite Dist13.dom_by.
+  rewrite -cPr_gt0 -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1; exact: Dist13.dom_byN H0.
   apply/eqP.
-  rewrite -cPr_neq0 -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1.
-  apply: contra H0 => /eqP H0; apply/eqP.
-  by rewrite Dist23.dom_by.
+  rewrite -cPr_gt0 -cPr_Pr_setX_eq0 -Pr_neq0 Pr_setX1 Pr_set1; exact: Dist23.dom_byN H0.
 rewrite {2}/Rdiv -mulRA mulRCA {1}/Rdiv [in LHS]mulRC; congr (_ * _).
 (* TODO: lemma? *)
 rewrite /cPr !Pr_setX1 !Pr_set1 DistA.dE /= {1 2}/Rdiv -mulRA; congr (_ * _).
 rewrite -invRM; last 2 first.
-  apply/eqP.
-  apply: contra H0 => /eqP H0; apply/eqP.
-  by rewrite Bivar.dom_by_snd.
-  apply/eqP; rewrite mulR_eq0 negb_or; apply/andP; split.
-    apply: contra H0 => /eqP H0; apply/eqP.
-    by rewrite Dist23.dom_by.
-    rewrite invR_neq0 //.
-    apply: contra H0 => /eqP H0; apply/eqP.
-    rewrite Dist23.snd in H0.
-    by rewrite Bivar.dom_by_snd.
+  apply/eqP; exact: Bivar.dom_by_sndN H0.
+  apply/eqP; rewrite mulR_neq0; apply/andP; split.
+  exact: Dist23.dom_byN H0.
+  move/Bivar.dom_by_sndN in H0; by rewrite invR_neq0 // Dist23.snd.
 congr (/ _).
 rewrite Dist23.snd mulRCA mulRV ?mulR1; last first.
-  apply: contra H0 => /eqP H0; apply/eqP.
-  by rewrite Bivar.dom_by_snd.
+  exact: Bivar.dom_by_sndN H0.
 (* TODO: lemma? *)
-rewrite Dist23.dE Bivar.sndE; apply eq_bigr => a' _.
-by rewrite DistA.dE.
+rewrite Dist23.dE Bivar.sndE; apply eq_bigr => a' _; by rewrite DistA.dE.
+Qed.
+
+Let R := Bivar.snd PQR.
+
+Lemma cmiE2 : cmi = \rsum_(z in C) R z * cdiv1 PQR z.
+Proof.
+rewrite cmiE.
+rewrite (eq_bigr (fun x => PQR (x.1, x.2) * log
+  (\Pr_PQR[[set x.1] | [set x.2]] /
+    (\Pr_(Dist13.d PQR)[[set x.1.1] | [set x.2]] * \Pr_(Dist23.d PQR)[[set x.1.2] | [set x.2]])))); last by case.
+rewrite -(pair_big xpredT xpredT (fun x1 x2 => PQR (x1, x2) * log
+  (\Pr_PQR[[set x1] | [set x2]] /
+    (\Pr_(Dist13.d PQR)[[set x1.1] | [set x2]] * \Pr_(Dist23.d PQR)[[set x1.2] | [set x2]])))).
+rewrite exchange_big; apply eq_bigr => c _ /=.
+rewrite big_distrr /=; apply eq_bigr => -[a b] _ /=; rewrite mulRA; congr (_ * _).
+rewrite mulRC.
+move: (Pr_cPr PQR [set (a, b)] [set c]); rewrite -/R Pr_set1 => <-.
+by rewrite Pr_setX1 Pr_set1.
+Qed.
+
+(* 2.92 *)
+Lemma cmi_ge0 : 0 <= cmi.
+Proof.
+rewrite cmiE2; apply rsumr_ge0 => c _.
+apply mulR_ge0; [exact: dist_ge0 | exact: cdiv1_ge0].
 Qed.
 
 End conditional_mutual_information.
 
-(* TODO: conditional relative entropy *)
+(* TODO: conditional relative entropy? *)
 
 Section conditioning_reduces_entropy.
 
@@ -813,10 +1021,98 @@ Let P := Bivar.fst PQ.
 Let Q := Bivar.snd PQ.
 Let QP := Swap.d PQ.
 
+(* 2.95 *)
 Lemma information_cant_hurt : CondEntropy.h PQ <= `H P.
 Proof. rewrite -subR_ge0 -MutualInfo.miE2; exact: MutualInfo.mi_ge0. Qed.
 
 End conditioning_reduces_entropy.
+
+Section markov_chain.
+
+Variables (A B C : finType) (PQR : {dist A * B * C}).
+Let P := Bivar.fst (Bivar.fst PQR).
+Let Q := Bivar.snd (Bivar.fst PQR).
+Let PQ := Bivar.fst PQR.
+Let QP := Swap.d PQ.
+Let RQ := Swap.d (Bivar.snd (DistA.d PQR)).
+
+(* cond. distr. of Z depends only on Y and conditionally independent of X *)
+Definition markov_chain := forall (x : A) (y : B) (z : C),
+  PQR (x, y, z) = P x * \Pr_QP[ [set y] | [set x]] * \Pr_RQ[ [set z] | [set y]].
+
+Let PRQ := Swap23.d PQR.
+
+(* X and Z are conditionally independent given Y *)
+Lemma markov_cmi : markov_chain -> cmi (PRQ : {dist A * C * B}) = 0.
+Proof.
+rewrite /markov_chain => mc.
+rewrite cmiE (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 //= => x _.
+case/boolP : (PRQ x == 0) => [/eqP ->|H0]; first by rewrite mul0R.
+rewrite (_ : _ / _ = 1); first by rewrite /log Log_1 mulR0.
+rewrite eqR_divr_mulr ?mul1R; last first.
+  rewrite mulR_neq0; apply/andP; split.
+    (* TODO: lemma? *)
+    rewrite /cPr mulR_neq0; apply/andP; split.
+      (* TODO: lemma? *)
+      rewrite Pr_setX1 Pr_set1.
+      case: x => [[x11 x12] x2] in H0 *.
+      exact: Dist13.dom_byN H0.
+    rewrite invR_neq0 // Pr_set1 Dist13.snd.
+    case: x => [x1 x2] in H0 *.
+    exact: Bivar.dom_by_sndN H0.
+  (* TODO: lemma? *)
+  rewrite /cPr mulR_neq0; apply/andP; split.
+    rewrite Pr_setX1 Pr_set1.
+    case: x => [[x11 x12] x2] in H0 *.
+    exact: Dist23.dom_byN H0.
+  rewrite invR_neq0 // Pr_set1 Dist23.snd.
+  case: x => [x1 x2] in H0 *.
+  exact: Bivar.dom_by_sndN H0.
+(* TODO: lemma? *) (* 2.118 *)
+transitivity (Pr PRQ [set x] / Pr Q [set x.2]).
+  rewrite /cPr Pr_setX1 {2}/PRQ Swap23.snd -/Q; by case: x H0.
+transitivity (Pr PQ [set (x.1.1,x.2)] * \Pr_RQ[[set x.1.2]|[set x.2]] / Pr Q [set x.2]).
+  congr (_ / _).
+  case: x H0 => [[a c] b] H0 /=.
+  rewrite /PRQ Pr_set1 Swap23.dE /= mc; congr (_ * _).
+  rewrite /cPr {2}/QP Swap.snd -/P Pr_set1 mulRCA mulRV ?mulR1; last first.
+    apply Bivar.dom_by_fstN with b.
+    apply Bivar.dom_by_fstN with c.
+    by rewrite Swap23.dE in H0.
+  by rewrite /QP -Pr_swap Pr_setX1.
+rewrite {1}/Rdiv -mulRA mulRCA mulRC; congr (_ * _).
+  rewrite /cPr Dist13.snd -/Q {2}/PRQ Swap23.snd -/Q -/(Rdiv _ _); congr (_ / _).
+  by rewrite /PRQ /PQ Pr_setX1 -Dist23Swap23.
+rewrite /cPr Dist23.snd; congr (_ / _).
+  (* TODO: lemma? *)
+  apply eq_bigr => -[c b] _.
+  rewrite /RQ Swap.dE Bivar.sndE Dist23.dE; apply/eq_bigr => a _.
+  by rewrite DistA.dE /= Swap23.dE.
+apply/eq_bigr => b _; by rewrite /RQ Swap.snd /PRQ Swap23.snd DistA.fst_snd.
+Qed.
+
+Let PR := Dist13.d PQR.
+
+(* thm 2.8.1 *)
+Lemma data_processing_inequality : markov_chain ->
+  MutualInfo.mi PR <= MutualInfo.mi PQ.
+Proof.
+move=> H.
+have H1 : MutualInfo.mi (DistA.d PQR) = MutualInfo.mi PR + cmi PQR.
+  rewrite /cmi !MutualInfo.miE2 addRA; congr (_ - _).
+  by rewrite -/PR subRK /PR Dist13.fst.
+have H2 : MutualInfo.mi (DistA.d PQR) = MutualInfo.mi PQ + cmi PRQ.
+  transitivity (MutualInfo.mi (DistA.d PRQ)).
+    by rewrite !MutualInfo.miE2 Swap23.fst hSwap23.
+  rewrite /cmi !MutualInfo.miE2 addRA; congr (_ - _).
+  by rewrite DistA.fst {1}/PRQ -Dist23Swap23 -/PQ subRK /PQ Swap23.fst2.
+have H3 : cmi PRQ = 0 by rewrite markov_cmi.
+have H4 : 0 <= cmi PQR by exact: cmi_ge0.
+move: H2; rewrite {}H3 addR0 => <-.
+by rewrite {}H1 addRC -leR_subl_addr subRR.
+Qed.
+
+End markov_chain.
 
 Require Import channel.
 

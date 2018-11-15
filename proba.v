@@ -159,6 +159,9 @@ move: d d' => [d d1] [d' d'1] /= dd'.
 move: d1 d'1; rewrite dd' => d1 d'1; congr mkDist; exact: eq_irrelevance.
 Qed.
 
+Lemma dist_ext d d' : (forall x, pos_f (pmf d) x = pos_f (pmf d') x) -> d = d'.
+Proof. move=> ?; exact/dist_eq/pos_fun_eq/functional_extensionality. Qed.
+
 End distribution_definition.
 
 Definition dist_of (A : finType) := fun phT : phant (Finite.sort A) => dist A.
@@ -214,7 +217,7 @@ End DistBind.
 Lemma DistBind1f (A B : finType) (a : A) (f : A -> dist B) :
   DistBind.d (Dist1.d a) f = f a.
 Proof.
-apply/dist_eq/pos_fun_eq/functional_extensionality => b.
+apply/dist_ext => b.
 rewrite /DistBind.d /= /DistBind.f (bigD1 a) // Dist1.dxx mul1R [Dist1.d _]lock.
 rewrite /= (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 // => c ca.
 by rewrite -lock Dist1.d_neq // mul0R.
@@ -222,7 +225,7 @@ Qed.
 
 Lemma DistBindp1 A (p : dist A) : DistBind.d p (@Dist1.d A) = p.
 Proof.
-apply/dist_eq/pos_fun_eq/functional_extensionality => /= a.
+apply/dist_ext => /= a.
 rewrite /DistBind.f (bigD1 a) // Dist1.dxx mulR1.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0.
 by rewrite /= ?addR0.
@@ -232,7 +235,7 @@ Qed.
 Lemma DistBindA A B C (m : dist A) (f : A -> dist B) (g : B -> dist C) :
   DistBind.d (DistBind.d m f) g = DistBind.d m (fun x => DistBind.d (f x) g).
 Proof.
-apply/dist_eq/pos_fun_eq/functional_extensionality => c.
+apply/dist_ext => c.
 rewrite /DistBind.d /DistBind.f /=.
 rewrite (eq_bigr (fun a => (\rsum_(a0 in A) m a0 * (f a0) a * (g a) c))); last first.
   move=> b _; by rewrite big_distrl.
@@ -398,7 +401,7 @@ have r01 : 0 <= 1 - pmf (Set2.a card_A) <= 1%R.
   suff : forall a, a <= 1 -> 0 <= a -> 1 - a <= 1 by apply.
   move=> *; lra.
 exists r01.
-apply/dist_eq/pos_fun_eq => /=; apply functional_extensionality => a.
+apply/dist_ext => a /=.
 rewrite /Binary.f; case: ifPn => [/eqP ->|Ha]; first by field.
 by rewrite -pmf1 /= Set2sumE /= addRC addRK; move/Set2.neq_a_b/eqP : Ha => ->.
 Qed.
@@ -513,28 +516,24 @@ Variables (A : finType).
 
 Lemma d0 (d1 d2 : dist A) (H : 0 <= 0 <= 1) : ConvexDist.d d1 d2 H = d2.
 Proof.
-apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
+apply/dist_ext => a /=.
 by rewrite /f mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R).
 Qed.
 
 Lemma d1 (d1 d2 : dist A) (H : 0 <= 1 <= 1) : ConvexDist.d d1 d2 H = d1.
 Proof.
-apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
+apply/dist_ext => a /=.
 by rewrite /f mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R,addRN).
 Qed.
 
 (* TODO: rename to skewed_commute *)
 Lemma quasi_commute (d1 d2 : dist A) p (Hp : 0 <= p <= 1) (Hp' : 0 <= p.~ <= 1) :
   d d1 d2 Hp = d d2 d1 Hp'.
-Proof.
-apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
-by rewrite /f onemK addRC.
-Qed.
+Proof. apply/dist_ext => a /=; by rewrite /f onemK addRC. Qed.
 
 Lemma idempotent (d0 : dist A) p (Hp : 0 <= p <= 1) : d d0 d0 Hp = d0.
 Proof.
-apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
-by rewrite /f mulRBl mul1R addRCA addRN addR0.
+apply/dist_ext => a; by rewrite /= /f mulRBl mul1R addRCA addRN addR0.
 Qed.
 
 Lemma quasi_assoc (p q r s : R) (d0 d1 d2 : dist A)
@@ -542,9 +541,7 @@ Lemma quasi_assoc (p q r s : R) (d0 d1 d2 : dist A)
   p = (r * s)%R -> (s.~ = p.~ * q.~)%R ->
   d d0 (d d1 d2 Hq) Hp = d (d d0 d1 Hr) d2 Hs.
 Proof.
-move=> H1 H2.
-apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
-rewrite /d /f /=.
+move=> H1 H2; apply/dist_ext => a /=; rewrite /d /f /=.
 transitivity (p * d0 a + p.~ * q * d1 a + p.~ * q.~ * d2 a)%R; first lra.
 transitivity (r * s * d0 a + r.~ * s * d1 a + s.~ * d2 a)%R; last lra.
 rewrite H1; congr (_ + _ * _ + _ * _)%R.
@@ -556,7 +553,7 @@ Lemma bind_left_distr (B : finType) (p : R) (Hp : 0 <= p <= 1)
   (d0 d1 : dist A) (f : A -> dist B) :
   DistBind.d (d d0 d1 Hp) f = d (DistBind.d d0 f) (DistBind.d d1 f) Hp.
 Proof.
-apply/dist_eq/pos_fun_eq/functional_extensionality => a /=.
+apply/dist_ext => a /=.
 rewrite /DistBind.d /DistBind.f /ConvexDist.d /ConvexDist.f /=.
 rewrite 2!big_distrr /= -big_split /=; apply/eq_bigr => a0 _.
 by rewrite mulRDl !mulRA.
@@ -790,8 +787,7 @@ Variables (A : finType) (P : dist A) (n : nat).
 
 Lemma head_of : P = Multivar.head_of (P `^ n.+1).
 Proof.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => a.
-rewrite /Multivar.head_of Bivar.fstE /=.
+apply/dist_ext => a; rewrite /Multivar.head_of Bivar.fstE /=.
 evar (f : 'rV[A]_n -> R); rewrite (eq_bigr f); last first.
   move=> v _; rewrite Multivar.to_bivarE /= TupleDist.S.
   rewrite row_mx_row_ord0 rbehead_row_mx /f; reflexivity.
@@ -800,8 +796,7 @@ Qed.
 
 Lemma tail_of : P `^ n = Multivar.tail_of (P `^ n.+1).
 Proof.
-apply/dist_eq/pos_fun_eq/FunctionalExtensionality.functional_extensionality => a.
-rewrite /Multivar.tail_of Bivar.sndE /=.
+apply/dist_ext => a; rewrite /Multivar.tail_of Bivar.sndE /=.
 evar (f : A -> R); rewrite (eq_bigr f); last first.
   move=> v _; rewrite Multivar.to_bivarE /= TupleDist.S.
   rewrite row_mx_row_ord0 rbehead_row_mx /f; reflexivity.
@@ -1584,8 +1579,7 @@ Proof.
 rewrite {1}/`V [in X in X = _]/= E_scale.
 rewrite (@E_comp_rv_ext _ ((k \cst* X) \-cst k * `E X) (k \cst* (X \+cst - `E X))) //; last first.
   apply functional_extensionality => /= x; field.
-rewrite E_comp; last by move=> x y; field.
-by rewrite E_scale.
+rewrite E_comp ?E_scale // => x y; field.
 Qed.
 
 End variance_properties.

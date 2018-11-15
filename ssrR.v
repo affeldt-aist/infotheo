@@ -130,6 +130,9 @@ apply/idP/idP => [/eqP/Rmult_integral[] ->| ]; try by rewrite eqxx // orbC.
 case/orP => /eqP ->; by rewrite ?mulR0 ?mul0R.
 Qed.
 
+Lemma mulR_neq0 (x y : R) : (x * y != 0) = ((x != 0) && (y != 0)).
+Proof. by rewrite mulR_eq0 negb_or. Qed.
+
 Lemma eqR_mul2l {r r1 r2} : r <> 0 -> (r * r1 = r * r2) <-> (r1 = r2).
 Proof. by move=> r0; split => [/Rmult_eq_reg_l/(_ r0) | ->]. Qed.
 
@@ -384,6 +387,14 @@ Arguments leR_pmul [_] [_] [_] [_].
 
 (* NB: Rmult_ge_compat_l? *)
 
+Lemma paddR_eq0 (x y : R) :
+  0 <= x -> 0 <= y -> (x + y = 0) <-> (x = 0) /\ (y = 0).
+Proof.
+move=> x0 y0; split => [|[-> ->]]; last by rewrite addR0.
+move=> H; move: (H) => /Rplus_eq_0_l -> //.
+by move: H; rewrite addRC => /Rplus_eq_0_l ->.
+Qed.
+
 Lemma leR_pmul2l m n1 n2 : 0 < m -> (m * n1 <= m * n2) <-> (n1 <= n2).
 Proof.
 move=> m0; split; [exact: Rmult_le_reg_l | exact/Rmult_le_compat_l/ltRW].
@@ -510,6 +521,12 @@ move=> z0; apply/idP/idP => /ltRP.
 - by rewrite -ltR_pdivl_mulr // => /ltRP.
 Qed.
 
+Lemma eqR_divr_mulr z x y : z != 0 -> (y / z = x) <-> (y = x * z).
+Proof.
+move=> z0; split => [<-|->]; first by rewrite -mulRA mulVR // mulR1.
+by rewrite /Rdiv -mulRA mulRV // mulR1.
+Qed.
+
 Lemma leR_pdivr_mulr z x y : 0 < z -> (y / z <= x) <-> (y <= x * z).
 Proof.
 move=> z0; split => [/(leR_wpmul2r (ltRW z0))|H].
@@ -536,16 +553,19 @@ move=> z0; apply/idP/idP => /ltRP.
 - by rewrite -ltR_pdivr_mulr // => /ltRP.
 Qed.
 
-Lemma invR_le1 x : 0 < x -> (/ x <b= 1) = (1 <b= x).
-Proof. move=> x0; by rewrite -(div1R x) leR_pdivr_mulr' // mul1R. Qed.
+Lemma invR_le1 x : 0 < x -> (/ x <= 1) <-> (1 <= x).
+Proof. move=> x0; by rewrite -(div1R x) leR_pdivr_mulr // mul1R. Qed.
+Lemma invR_le1' x : 0 < x -> (/ x <b= 1) = (1 <b= x).
+Proof. by move=> x0; apply/idP/idP => /leRP/(invR_le1 _ x0)/leRP. Qed.
 
-Lemma invR_gt1 x : 0 < x -> (1 <b / x) = (x <b 1).
+Lemma invR_gt1 x : 0 < x -> (1 < / x) <-> (x < 1).
 Proof.
-move=> x0; apply/idP/idP => [|] /ltRP x1; apply/ltRP; last first.
-  by rewrite -invR1; apply ltR_inv.
+move=> x0; split => x1; last by rewrite -invR1; apply ltR_inv.
 move/ltR_inv : x1; rewrite invRK ?invR1; last exact/gtR_eqF.
 apply => //; exact/invR_gt0.
 Qed.
+Lemma invR_gt1' x : 0 < x -> (1 <b / x) = (x <b 1).
+Proof. by move=> x0; apply/idP/idP => /ltRP/(invR_gt1 _ x0)/ltRP. Qed.
 
 (*******)
 (* pow *)
