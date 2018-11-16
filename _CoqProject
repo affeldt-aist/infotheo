@@ -10,6 +10,7 @@ bigop_ext.v
 Rbigop.v
 proba.v
 jensen.v
+convex.v
 natbin.v
 ssralg_ext.v
 divergence.v

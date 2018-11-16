@@ -73,11 +73,11 @@ rewrite Rinv_Rdiv; last 2 first.
 rewrite Rinv_Rdiv; last 2 first.
   move=> ?; lra.
   move=> ?; lra.
-have -> : p * (q / p * / ln 2 * (p * (-1 / q²)) ) = - (p / q) * / ln 2.
+have -> : p * (/ ln 2 * (q / p) * (p * (-1 / q²))) = - (p / q) * / ln 2.
   rewrite !mulRA /Rsqr.
   field.
   split; [exact/eqP/ln2_neq0 | split => ?; lra].
-have -> : (1 - p) * ((1 - q) / (1 - p) * / ln 2 * (- (-1 * (1 - p)) / (1 - q)²)) =
+have -> : (1 - p) * (/ ln 2 * ((1 - q) / (1 - p)) * (- (-1 * (1 - p)) / (1 - q)²)) =
   (((1 - p) / (1 - q))) * / ln 2.
   rewrite /Rsqr.
   field.
@@ -113,7 +113,7 @@ Lemma derive_pt_pinsker_function_spec c q0 (Hq0 : 0 <= q0 < 1)
   (pr : derivable_pt (pinsker_function_spec c) q0) :
   derive_pt (pinsker_function_spec c) q0 pr = pinsker_function_spec' c q0.
 Proof.
-rewrite (proof_derive_irrelevance _ (pderivable_pinsker_function_spec c Hq0)).
+rewrite (proof_derive_irrelevance _ (pderivable_pinsker_function_spec c Hq0)) //.
 rewrite /pinsker_function_spec.
 rewrite derive_pt_minus.
 rewrite derive_pt_opp.

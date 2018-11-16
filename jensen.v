@@ -52,6 +52,12 @@ Definition strictly_concave (f : R -> R) := forall x y t : R,
 
 End concave.
 
+Lemma concaveN (f : R -> R) : convex (fun x => - f x) -> concave f.
+Proof.
+move=> H x y t t01; move: (H x y _ t01).
+by rewrite /convex_leq !mulRN -oppRD => /leR_oppl; rewrite oppRK.
+Qed.
+
 Lemma dist_ind (A : finType) (P : dist A -> Prop) :
   (forall n : nat, (forall X, #|dist_supp X| = n -> P X) ->
     forall X b, #|dist_supp X| = n.+1 -> X b != 0 -> P X) ->

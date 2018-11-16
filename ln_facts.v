@@ -332,10 +332,11 @@ apply (@ltR_add2r (-1)).
 by rewrite addRAC -[X in _ < X](addR0 _) ltR_add2l ltR_oppl oppR0.
 Qed.
 
-Lemma derive_diff_xlnx_pos x (Hx : 0 < x < 1) (pr : derivable_pt diff_xlnx x) : x < exp (-2) -> 0 < derive_pt diff_xlnx x pr.
+Lemma derive_diff_xlnx_pos x (Hx : 0 < x < 1) (pr : derivable_pt diff_xlnx x) :
+  x < exp (-2) -> 0 < derive_pt diff_xlnx x pr.
 Proof.
-rewrite (proof_derive_irrelevance _ (derivable_pt_diff_xlnx Hx)).
-apply derive_diff_xlnx_neg_aux.
+rewrite (proof_derive_irrelevance _ (derivable_pt_diff_xlnx Hx)) //.
+exact: derive_diff_xlnx_neg_aux.
 Qed.
 
 Lemma MVT_cor1_pderivable_new f a b : forall (prd : pderivable f (fun x => a < x < b)) (prc : forall x (Hx : a <= x <= b), continuity_pt f x),
@@ -512,7 +513,8 @@ apply derive_sincreasing_interv.
   - by apply continue_xlnx.
 - apply subR_gt0; by case: Heps.
 - move=> t prd Ht.
-  rewrite (proof_derive_irrelevance _ (derivable_xlnx_delta Heps Ht)) derive_pt_xlnx_delta.
+  rewrite (proof_derive_irrelevance _ (derivable_xlnx_delta Heps Ht)) //.
+  rewrite derive_pt_xlnx_delta.
   apply/subR_gt0/ln_increasing; first by apply Ht.
   rewrite -{1}(addR0 t).
   by apply ltR_add2l, Heps.

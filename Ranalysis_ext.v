@@ -1,8 +1,9 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq fintype.
 From mathcomp Require Import tuple finfun bigop.
-Require Import Reals Lra.
-Require Import ssrR Reals_ext.
+Require Import Reals Lra FunctionalExtensionality.
+Require Import ssrR logb Reals_ext.
 
 (** * Additional lemmas about real analysis *)
 
@@ -14,55 +15,16 @@ Local Open Scope R_scope.
 
 (** Small extension to the mean value theorem to handle partially derivable functions *)
 
-Lemma proof_derive_irrelevance g x (derg1 derg2 : derivable_pt g x) : derive_pt g x derg1 = derive_pt g x derg2.
+Lemma proof_derive_irrelevance g1 g2 x
+  (g1x : derivable_pt g1 x) (g2x : derivable_pt g2 x) :
+  (forall x, g1 x = g2 x) -> derive_pt g1 x g1x = derive_pt g2 x g2x.
 Proof.
-move : derg1 derg2.
-case => l Hl.
-case => m Hm.
+move: g1x g2x => [l Hl] [m Hm] Hext.
 move: Hl Hm ; rewrite /derivable_pt_abs => Hl Hm.
-have ml : l = m by exact: (uniqueness_limite g x).
+have g1g2 : g1 = g2 by exact: functional_extensionality.
+have ml : l = m by subst g2; exact: (uniqueness_limite g1 x).
 by subst m.
 Qed.
-
-Lemma derivable_pt_cst : forall c x, derivable_pt (fun _ => c) x.
-Proof.
-rewrite /derivable_pt /derivable_pt_abs /derivable_pt_lim.
-exists 0 => e He.
-exists (mkposreal _ He) => h Hh h0.
-by rewrite subRR div0R subRR Rabs_R0.
-Defined.
-
-Lemma derive_pt_cst : forall x c, derive_pt (fun _ => c) x (derivable_pt_cst c x) = 0.
-Proof. by []. Defined.
-
-Lemma derivable_pt_Ropp x : derivable_pt Ropp x.
-Proof.
-exists (-1) => eps Heps.
-exists (mkposreal _ Heps) => h /eqP Hh /= Hh'.
-rewrite (_ : (- (x + h) - - x) = - h); last by field.
-rewrite /Rdiv mulNR mulRV // (_ : -1 - -1 = 0); last by field.
-by rewrite Rabs_R0.
-Defined.
-
-Lemma derivable_pt_Rminus p x : derivable_pt (Rminus p) x.
-Proof.
-exists (-1) => eps Heps.
-exists (mkposreal _ Heps) => h /eqP Hh /= Hh'.
-rewrite (_ : (p - (x + h) - (p - x)) = - h); last by field.
-rewrite /Rdiv mulNR mulRV // (_ : -1 - -1 = 0); last by field.
-by rewrite Rabs_R0.
-Defined.
-
-Lemma derivable_pt_ln x : 0 < x -> derivable_pt ln x.
-Proof.
-move=> Hx.
-exists (/ x).
-apply derivable_pt_lim_ln.
-assumption.
-Defined.
-
-Lemma derive_pt_ln : forall a (Ha : 0 < a), derive_pt ln a (derivable_pt_ln Ha) = (/ a).
-Proof. by []. Defined.
 
 Lemma derivable_f_eq_g (f g : R -> R) x r : (forall y, r < y -> g y = f y) -> r < x ->
   derivable_pt f x -> derivable_pt g x.
@@ -95,7 +57,72 @@ rewrite /derive_pt /derivable_f_eq_g.
 by destruct derivable_f.
 Qed.
 
+Lemma derivable_pt_lim_cst c x : derivable_pt_lim (fun _ : R => c) x 0.
+Proof.
+rewrite /derivable_pt_lim => e e0.
+exists (mkposreal _ e0) => h h0 Hh; by rewrite subRR subR0 div0R normR0.
+Defined.
+
+Lemma derivable_pt_cst c x :  derivable_pt (fun _ => c) x.
+Proof. exists 0; exact: derivable_pt_lim_cst. Defined.
+
+Lemma derive_pt_cst x c :  derive_pt (fun _ => c) x (derivable_pt_cst c x) = 0.
+Proof. by []. Defined.
+
+Lemma derivable_pt_Ropp x : derivable_pt Ropp x.
+Proof.
+exists (-1) => eps Heps.
+exists (mkposreal _ Heps) => h /eqP Hh /= Hh'.
+rewrite (_ : (- (x + h) - - x) = - h); last by field.
+rewrite /Rdiv mulNR mulRV // (_ : -1 - -1 = 0); last by field.
+by rewrite Rabs_R0.
+Defined.
+
+Lemma derivable_pt_Rminus p x : derivable_pt (Rminus p) x.
+Proof.
+exists (-1) => eps Heps.
+exists (mkposreal _ Heps) => h /eqP Hh /= Hh'.
+rewrite (_ : (p - (x + h) - (p - x)) = - h); last by field.
+rewrite /Rdiv mulNR mulRV // (_ : -1 - -1 = 0); last by field.
+by rewrite Rabs_R0.
+Defined.
+
+Lemma derivable_pt_ln x : 0 < x -> derivable_pt ln x.
+Proof.
+move=> Hx.
+exists (/ x).
+apply derivable_pt_lim_ln.
+assumption.
+Defined.
+
+Lemma derivable_pt_lim_Log b : forall x : R, 0 < x -> derivable_pt_lim (Log b) x (/ ln b * / x).
+Proof.
+move=> x x0.
+rewrite (_ : Log b = comp (fun x => x / ln b) ln); last exact: functional_extensionality.
+apply derivable_pt_lim_comp; first exact: derivable_pt_lim_ln.
+move=> e e0.
+exists (mkposreal _ e0) => h h0 /= he.
+rewrite [_ / ln b]/Rdiv mulRDl -(addR_opp _ (ln x / ln b)) addRAC addR_opp.
+rewrite subRR add0R {1}/Rdiv mulRAC mulRV ?mul1R ?subRR ?normR0 //; exact/eqP.
+Defined.
+
+Lemma derivable_pt_Log b x : 0 < x -> derivable_pt (Log b) x.
+Proof.
+move=> x0.
+exists (/ln b * / x).
+apply derivable_pt_lim_Log.
+assumption.
+Defined.
+
+Lemma derive_pt_Log b a (a0 : 0 < a) :
+  derive_pt (Log b) a (derivable_pt_Log b a0) = (/ ln b * / a).
+Proof. by []. Defined.
+
+Lemma derive_pt_ln a (a0 : 0 < a) : derive_pt ln a (derivable_pt_ln a0) = / a.
+Proof. by []. Defined.
+
 (** Derivability restricted by a condition (such as an appartenance to an interval): *)
+
 Definition pderivable f (P : R -> Prop) := forall x, P x -> derivable_pt f x.
 
 Section pderivable_prop.
@@ -144,6 +171,11 @@ Proof. move=> H a' b' aa' bb' a'b' z [z0 z1]; apply H; lra. Defined.
 
 Lemma pderivable_restrict_right : pderivable f (fun x => a <= x < b) ->
   forall a' b', a <= a' -> b' < b -> a' < b' ->
+  pderivable f (fun x => a' <= x <= b').
+Proof. move=> H a' b' aa' bb' a'b' z [z0 z1]; apply H; lra. Defined.
+
+Lemma pderivable_restrict_left_right : pderivable f (fun x => a < x < b) ->
+  forall a' b', a < a' -> b' < b -> a' < b' ->
   pderivable f (fun x => a' <= x <= b').
 Proof. move=> H a' b' aa' bb' a'b' z [z0 z1]; apply H; lra. Defined.
 

@@ -1,7 +1,8 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext Ranalysis_ext.
+Require Import ssrR Reals_ext.
 
 (** * log_n x and n ^ x *)
 
@@ -177,26 +178,6 @@ move=> n1 Hx Hy.
 case/Rle_lt_or_eq_dec; first by move/(Log_lt_inv n1 Hx Hy)/ltRW.
 move/(Log_inv n1 Hx Hy) => ->; exact/leRR.
 Qed.
-
-Lemma derivable_pt_Log n : forall x : R, 0 < x -> derivable_pt (Log n) x.
-move=> x Hx.
-rewrite /Log /Rdiv.
-apply derivable_pt_mult.
-  exact: derivable_pt_ln.
-apply derivable_pt_const.
-Defined.
-
-Lemma derive_pt_Log n : forall (a : R) (Ha : 0 < a),
-  derive_pt (Log n) a (derivable_pt_Log n Ha) = / a * / ln n.
-move=> a Ha.
-rewrite /Log.
-rewrite /Rdiv.
-rewrite derive_pt_mult.
-rewrite derive_pt_const.
-rewrite derive_pt_ln.
-rewrite mulR0 addR0.
-reflexivity.
-Defined.
 
 (** Log base 2 *)
 
