@@ -905,8 +905,8 @@ Proof.
 rewrite -(pmf1 P); apply ler_rsum_l => // a _; [exact/leRR | exact/dist_ge0].
 Qed.
 
-Lemma Pr_ext E F : E :=: F -> Pr E = Pr F.
-Proof. move=> H; apply eq_bigl => x; by rewrite H. Qed.
+(*Lemma Pr_ext E F : E :=: F -> Pr E = Pr F.
+Proof. by move=> ->. Qed.*)
 
 Local Open Scope R_scope.
 
@@ -1008,6 +1008,10 @@ rewrite setUK setDUKl -{1}[E2 in RHS](setID _ E1) Pr_union_disj; last first.
   by rewrite setICr !setI0.
 rewrite setIC; ring.
 Qed.
+
+Lemma Pr_inter_eq (E1 E2 : {set A}) :
+  Pr (E1 :&: E2) = (Pr E1 + Pr E2 - Pr (E1 :|: E2))%R.
+Proof. by rewrite Pr_union_eq subRBA addRC addRK. Qed.
 
 End probability.
 
@@ -1236,10 +1240,6 @@ apply big_ind.
 - move=> ? ? ? ? /eqP; rewrite mulR_eq0 => /orP[] /eqP; by auto.
 - move=> i Hi Hi0; by exists i.
 Qed.
-
-Lemma Pr_inter_eq (E1 E2 : {set A}) :
-  Pr P (E1 :&: E2) = (Pr P E1 + Pr P E2 - Pr P (E1 :|: E2))%R.
-Proof. by rewrite Pr_union_eq subRBA addRC addRK. Qed.
 
 (** *** A theory of indicator functions from [A : finType] to [R] *)
 
@@ -1643,32 +1643,32 @@ Definition inde_rv := forall x y,
   Pr P [set xy : A * B | (X xy.1 == x) && (Y xy.2 == y)] =
   Pr[X = x] * Pr[Y = y].
 
+Lemma prod_dist_inde_rv : P = (Bivar.fst P) `x (Bivar.snd P) -> inde_rv.
+Proof.
+move=> H x y.
+rewrite /Pr /= (eq_bigr (fun a => P (a.1, a.2))); last by case.
+rewrite (eq_bigl (fun a => (f a.1 == x) && (g a.2 == y))); last first.
+  by case => a b; rewrite !inE.
+rewrite -(pair_big [pred a | f a == x] [pred b | g b == y]
+  (fun a1 a2 => P (a1, a2))) /=.
+rewrite {1}/pr /Pr big_distrl /=; apply eq_big.
+- move=> a; by rewrite inE.
+- move=> a fax.
+  rewrite /pr /Pr big_distrr /=; apply eq_big.
+  + move=> b; by rewrite inE.
+  + by move=> b gby; rewrite {1}H /= ProdDist.dE.
+Qed.
+
 End independent_random_variables.
-
-(*Section independent_random_variables.
-
-Variables (A : finType) (f : A -> R) (n : nat) (g : 'rV[A]_n -> R).
-Variable P : {dist 'rV[A]_n.+1}.
-Let X := mkRvar (Multivar.head_of P) f.
-Let Y := mkRvar (Multivar.tail_of P) g.
-
-Local Open Scope vec_ext_scope.
-
-Definition inde_rv := forall x y,
-  Pr P [set xy : 'rV__ | (X (xy ``_ ord0) == x) && (Y (rbehead xy) == y)] =
-  Pr[X = x] * Pr[Y = y].
-
-End independent_random_variables.*)
 
 Notation "P |= X _|_ Y" := (inde_rv X Y P) : proba_scope.
 
 Local Open Scope vec_ext_scope.
 
 (** Independent random variables over the tuple distribution: *)
-Lemma inde_rv_tuple_dist A (P : dist A) n (x y : R) f :
+Lemma inde_rv_tuple_dist A (P : dist A) n (x y : R) (f : A -> R) :
   Pr P `^ n.+1 [set xy : 'rV__ |
-    (f (xy ``_ ord0) == x) &&
-    (\rsum_(i < n) f ((rbehead xy) ``_ i) == y)] =
+    (f (xy ``_ ord0) == x) && (\rsum_(i < n) f ((rbehead xy) ``_ i) == y)] =
   Pr P [set a | f a == x] *
   Pr P `^ n [set b : 'rV__ | \rsum_(i < n) f (b ``_ i) == y].
 Proof.
@@ -1750,12 +1750,11 @@ case=> Hjoint Hsum Hinde.
 apply trans_eq with (\rsum_(r <- undup (map X1 (enum A)))
    \rsum_(r' <- undup (map X2 (enum ('rV[A]_n.+1))))
    ( r * r' * Pr[ X1 = r] * Pr[ X2 = r' ]))%R; last first.
-  symmetry.
-  rewrite big_distrl /=.
+  rewrite [in RHS]big_distrl /=.
   apply eq_bigr => i _.
   rewrite big_distrr /=.
   apply eq_bigr => j _.
-  rewrite mulRA. f_equal. rewrite -!mulRA. f_equal. by rewrite mulRC.
+  by rewrite -!mulRA [in RHS](mulRCA _ j).
 rewrite -(big_rV_cons_behead _ _ xpredT xpredT).
 apply trans_eq with (\rsum_(a in A) \rsum_(j in 'rV[A]_n.+1)
   (X1 a * X2 j * `p_X (row_mx (\row_(k < 1) a) j)))%R.
@@ -1764,13 +1763,13 @@ apply trans_eq with (\rsum_(a in A) \rsum_(j in 'rV[A]_n.+1)
   by rewrite row_mx_row_ord0 rbehead_row_mx.
 rewrite (sum_parti _ X1); last by rewrite /index_enum -enumT; apply enum_uniq.
 rewrite /index_enum -enumT.
-apply eq_bigr => r _.
+apply eq_bigr => /= r _.
 rewrite {1}enumT exchange_big /= (sum_parti _ X2); last first.
   rewrite /index_enum -enumT; by apply enum_uniq.
 rewrite /index_enum -enumT.
-apply eq_bigr => r' _.
+apply eq_bigr => /= r' _.
 apply trans_eq with (r * r' * \rsum_(i0 | X2 i0 == r') \rsum_(i1 | X1 i1 == r)
-    (`p_X (row_mx (\row_(k < 1) i1) i0)))%R.
+    (`p_X (row_mx (\row_(k < 1) i1) i0))).
   rewrite big_distrr /= /index_enum -!enumT.
   apply eq_bigr => ta ta_r'.
   rewrite big_distrr /=.
@@ -1835,8 +1834,7 @@ Section sum_n_rand_var_def.
 Variable A : finType.
 
 (** The sum of n >= 1 random variable(s): *)
-Inductive sum_n : forall n,
-  {rvar 'rV[A]_n} -> 'rV[rvar A]_n -> Prop :=
+Inductive sum_n : forall n, {rvar 'rV[A]_n} -> 'rV[rvar A]_n -> Prop :=
 | sum_n_1 : forall X, cast_rv X \=sum X
 | sum_n_cons : forall n (Xs : 'rV_n.+1) Y X Z,
   Y \=sum Xs -> Z \= X @+ Y -> Z \=sum (row_mx (\row_(k < 1) X) Xs)
@@ -1861,29 +1859,22 @@ elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
   apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
   apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
   subst Xs Xbar.
-  rewrite big_ord_recl big_ord0 addR0 /cast_rv.
-  by rewrite E_tuple1_of_rvar.
+  rewrite big_ord_recl big_ord0 addR0.
+  by rewrite /cast_rv E_tuple1_of_rvar.
 - inversion 1; subst.
   apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
   apply Eqdep_dec.inj_pair2_eq_dec in H2; last exact eq_nat_dec.
   subst Z Xs.
-  move: {IHn}(IHn _ _ H3) => IHn'.
+  move: {IHn}(IHn _ _ H3) => IHn.
   rewrite big_ord_recl.
-  have -> : \rsum_(i : 'I_n.+1) `E ((row_mx (\row_(k < 1) X) Xs0) ``_ (lift ord0 i)) =
-       \rsum_(i : 'I_n.+1) `E (Xs0 ``_ i).
+  have -> : \rsum_(i < n.+1) `E ((row_mx (\row_(k < 1) X) Xs0) ``_ (lift ord0 i)) =
+           \rsum_(i < n.+1) `E (Xs0 ``_ i).
     apply eq_bigr => i _ /=.
     rewrite !ExE.
     apply eq_bigr => a _ /=.
-    set tmp := row_mx _ _ _ _.
-    suff : tmp = Xs0 ``_ i by move=> ->.
-    rewrite /tmp.
-    rewrite mxE.
-    case: splitP => //.
-      by move=> j; rewrite {j}(ord1 j).
-    move=> k.
-    by rewrite lift0 add1n => [] [] /ord_inj ->.
-  rewrite -IHn' (E_linear_2 H4).
-  by rewrite row_mx_row_ord0.
+    rewrite (_ : lift _ _ = rshift 1 i); last exact: val_inj.
+    by rewrite (@row_mxEr _ _ 1).
+  by rewrite -IHn (E_linear_2 H4) row_mx_row_ord0.
 Qed.
 
 End sum_n_rand_var.
@@ -1910,60 +1901,50 @@ Section sum_n_independent_rand_var.
 
 Variable A : finType.
 
-Lemma sum_n_i_sum_n : forall n (Xs : 'rV[rvar A]_n) X,
+Lemma sum_n_i_sum_n n (Xs : 'rV[rvar A]_n) X :
   X \=isum Xs -> X \=sum Xs.
 Proof.
-move=> n Xs Xsum.
 elim.
-- move=> X; by constructor 1.
-- move=> n0 lst Z W Z' H1 H2 H3 H4.
+- move=> X0; by constructor 1.
+- move=> {Xs X n} n Ys Y X Z H1 H2 H3 H4.
   by econstructor 2; eauto.
 Qed.
 
 Local Open Scope vec_ext_scope.
 
-Lemma V_linearity_isum : forall n
-  (X : {rvar 'rV[A]_n}) (Xs : 'rV[rvar A]_n),
+Lemma V_linearity_isum : forall n (X : {rvar 'rV[A]_n}) (Xs : 'rV[rvar A]_n),
   X \=isum Xs ->
   forall sigma2, (forall i, `V (Xs ``_ i) = sigma2) ->
-  `V X = (INR n * sigma2)%R.
+  `V X = INR n * sigma2.
 Proof.
 elim.
   move=> X Xs X_Xs sigma2 Hsigma2.
   by inversion X_Xs.
 case=> [_ | n IH] Xsum Xs Hsum s Hs.
-  inversion Hsum.
+- inversion Hsum.
   apply Eqdep_dec.inj_pair2_eq_dec in H; last exact eq_nat_dec.
   apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
   subst Xs Xsum.
   rewrite /cast_rv V_tuple1_of_rvar /= mul1R.
   exact: Hs.
-have {IH}IH : forall Xsum (Xs : 'rV[rvar A]_n.+1),
-  Xsum \=isum Xs ->
-  forall sigma2, (forall i, `V (Xs ``_ i) = sigma2) ->
-    `V Xsum = (INR n.+1 * sigma2)%R by apply IH.
-move: Hsum; inversion 1.
-apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
-apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
-subst Z n0 Xs.
-move: {IH}(IH Y Ys H2) => IH.
-rewrite S_INR mulRDl -IH.
-+ by rewrite mul1R addRC (@V_linear_2 _ _ _ _ _ H3) // -(Hs ord0) /= row_mx_row_ord0.
-+ move=> i; rewrite -(Hs (lift ord0 i)).
-  congr (`V _).
-  rewrite mxE.
-  case: splitP.
-    move=> j; by rewrite {j}(ord1 j) lift0.
-  move=> k.
-  rewrite lift0 add1n.
-  by case => /ord_inj ->.
+- move: Hsum; inversion 1.
+  apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
+  apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
+  subst Z n0 Xs.
+  move: {IH}(IH Y Ys H2) => IH.
+  rewrite S_INR mulRDl -IH.
+  + by rewrite mul1R addRC (V_linear_2 H3) // -(Hs ord0) /= row_mx_row_ord0.
+  + move=> i; rewrite -(Hs (lift ord0 i)).
+    congr (`V _).
+    rewrite (_ : lift _ _ = rshift 1 i); last exact: val_inj.
+    by rewrite (@row_mxEr _ _ 1).
 Qed.
 
 (** The variance of the average for independent random variables: *)
 
 Lemma V_average_isum n (X : {rvar 'rV[A]_n}) Xs (sum_Xs : X \=isum Xs) :
   forall sigma2, (forall i, `V (Xs ``_ i) = sigma2) ->
-  (INR n * `V (X '/ n))%R = sigma2.
+  INR n * `V (X '/ n) = sigma2.
 Proof.
 move=> s Hs.
 destruct n.
@@ -1980,40 +1961,32 @@ Local Open Scope vec_ext_scope.
 Variable A : finType.
 Variable P : dist A.
 Variable n : nat.
-Variable Xs : 'rV[rvar A]_n.+1.     Hypothesis Xs_id : id_dist P Xs.
+Variable Xs : 'rV[rvar A]_n.+1.     (*Hypothesis Xs_id : id_dist P Xs.*)
 Variable miu : R.                   Hypothesis E_Xs : forall i, `E Xs ``_ i = miu.
 Variable sigma2 : R.                Hypothesis V_Xs : forall i, `V Xs ``_ i = sigma2.
 Variable X : {rvar 'rV[A]_n.+1}.
 Variable X_Xs : X \=isum Xs.
 
 Lemma wlln epsilon : 0 < epsilon ->
-  Pr `p_X [set t | `| (X '/ n.+1) t - miu | >b= epsilon] <= sigma2 / ((INR n.+1) * epsilon ^ 2).
+  Pr `p_X [set t | `| (X '/ n.+1) t - miu | >b= epsilon] <=
+    sigma2 / (INR n.+1 * epsilon ^ 2).
 Proof.
 move=> He.
-have HV : `V (X '/ n.+1) = sigma2 / INR n.+1.
-  rewrite -(V_average_isum X_Xs V_Xs) V_scale //; by field; exact/INR_eq0.
 rewrite divRM; last 2 first.
   by rewrite INR_eq0.
   exact/gtR_eqF/pow_gt0.
-rewrite -{}HV.
-have HE : `E (X '/ n.+1) = miu.
+have <- : `V (X '/ n.+1) = sigma2 / INR n.+1.
+  rewrite -(V_average_isum X_Xs V_Xs) V_scale //; by field; exact/INR_eq0.
+have <- : `E (X '/ n.+1) = miu.
   rewrite E_scale (E_linear_n (sum_n_i_sum_n X_Xs)).
-  set su := \rsum_(_<-_) _.
-  have -> : su = (INR n.+1 * miu)%R.
+  set su := \rsum_(_ <- _) _.
+  have -> : su = INR n.+1 * miu.
     rewrite /su.
     transitivity (\rsum_(i < n.+1) miu); first exact/eq_bigr.
     by rewrite big_const /= iter_addR cardE /= size_enum_ord.
-  by field; exact/INR_eq0.
-rewrite -{}HE.
-have cheby : Pr `p_(X '/ n.+1)
-  [set t | `| X t / INR n.+1 - `E (X '/ n.+1) | >b= epsilon] <= `V (X '/ n.+1) / epsilon ^ 2.
-  move: (chebyshev_inequality (X '/ n.+1) He) => cheby.
-  set g := [set _ | _] in cheby; rewrite (@Pr_ext _ _ _ g) //.
-  apply/setP => ta /=.
-  by rewrite !inE /= mulRC mulRA mulR1.
-set p1 := Pr _ _ in cheby. set p2 := Pr _ _. suff : p2 = p1 by move=> ->.
-rewrite /p1 /p2 /=.
-apply Pr_ext; apply/setP => ta /=; by rewrite 2!inE div1R mulRC.
+  by rewrite div1R mulRA mulVR ?mul1R // INR_eq0'.
+move: (chebyshev_inequality (X '/ n.+1) He).
+move/leR_trans; apply; exact/leRR.
 Qed.
 
 End weak_law_of_large_numbers.

@@ -31,9 +31,9 @@ Variable n : nat.
 Variable epsilon : R.
 
 Definition jtyp_seq (t : 'rV[A * B]_n) :=
-  typ_seq P epsilon (rV_prod t).1 &&
-  typ_seq (`O(P , W)) epsilon (rV_prod t).2 &&
-  typ_seq (`J(P , W)) epsilon t.
+  [&& typ_seq P epsilon (rV_prod t).1,
+      typ_seq (`O(P , W)) epsilon (rV_prod t).2 &
+      typ_seq (`J(P , W)) epsilon t].
 
 Definition set_jtyp_seq : {set 'rV[A * B]_n} := [set tab | jtyp_seq tab].
 
@@ -45,10 +45,7 @@ Local Notation "'`JTS'" := (set_jtyp_seq).
 Lemma typical_sequence1_JTS x : prod_rV x \in `JTS ->
   exp2 (- INR n * (`H P + epsilon)) <= P `^ n x.1 <= exp2 (- INR n * (`H P - epsilon)).
 Proof.
-rewrite inE.
-case/andP=> /andP [].
-case/andP=> /leRP JTS11 /leRP JTS12.
-move=> _ _.
+rewrite inE => /and3P[/andP[/leRP JTS11 /leRP JTS12] _ _].
 by rewrite prod_rVK in JTS11, JTS12.
 Qed.
 
@@ -56,11 +53,7 @@ Lemma typical_sequence1_JTS' x : prod_rV x \in `JTS ->
   exp2 (- INR n * (`H (`O( P , W)) + epsilon)) <= (`O( P , W)) `^ n x.2 <=
   exp2 (- INR n * (`H (`O( P , W)) - epsilon)).
 Proof.
-rewrite inE.
-case/andP => /andP [].
-move=> _.
-case/andP=> /leRP JTS11 /leRP JTS12.
-move=> _.
+rewrite inE => /and3P[_ /andP[/leRP JTS11 /leRP JTS12] _].
 by rewrite prod_rVK in JTS11, JTS12.
 Qed.
 
@@ -73,32 +66,25 @@ Local Open Scope jtyp_seq_scope.
 
 Section jtyp_seq_upper.
 
-Variables A B : finType.
-Variable P : dist A.
-Variable W : `Ch_1(A, B).
+Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
 Variable n : nat.
 Variable epsilon : R.
 
 Lemma JTS_sup : INR #| `JTS P W n epsilon| <= exp2 (INR n * (`H(P , W) + epsilon)).
 Proof.
-have H : INR #|`JTS P W n epsilon| <= INR #|`TS (`J(P , W)) n epsilon|.
-  have H : `JTS P W n epsilon \subset `TS (`J(P , W)) n epsilon.
-    apply/subsetP => tab.
-    rewrite /set_jtyp_seq inE /jtyp_seq.
-    case/andP => /andP [] _ _.
-    by rewrite inE.
-  exact/le_INR/leP/subset_leq_card.
-apply: leR_trans; first exact: H.
-exact (@TS_sup _ (`J(P , W)) epsilon n).
+have : INR #|`JTS P W n epsilon| <= INR #|`TS (`J(P , W)) n epsilon|.
+  suff : `JTS P W n epsilon \subset `TS (`J(P , W)) n epsilon.
+    by move/subset_leq_card/leP/le_INR.
+  apply/subsetP => tab.
+  by rewrite /set_jtyp_seq inE /jtyp_seq inE => /and3P[].
+move/leR_trans; apply; exact: (@TS_sup _ (`J(P , W)) epsilon n).
 Qed.
 
 End jtyp_seq_upper.
 
 Section jtyp_seq_transmitted.
 
-Variable A B : finType.
-Variable P : dist A.
-Variable W : `Ch_1(A, B).
+Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
 Variable epsilon : R.
 
 Definition JTS_1_bound :=
@@ -124,13 +110,13 @@ have : (JTS_1_bound <= n)%nat ->
   have H1 m :
     Pr (`J(P , W) `^ m) [set x | (rV_prod x).1 \notin `TS P m epsilon ] =
     Pr (P `^ m) [set x | x \notin `TS P m epsilon].
-    rewrite {1}/Pr.
+    rewrite {1}/Pr (* TODO *).
     rewrite big_rV_prod /=.
     rewrite -(pair_big_fst _ _ [pred x | x \notin `TS P m epsilon]) //; last first.
       move=> t /=.
-      rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE.
+      rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE. (* TODO: clean *)
       do 2 f_equal.
-      apply/matrixP => a b; by rewrite {a}(ord1 a) !mxE.
+      apply/rowP => a; by rewrite !mxE.
     rewrite /=.
     transitivity (\rsum_(i | i \notin `TS P m epsilon)
       (P `^ m i * (\rsum_(y in 'rV[B]_m) W ``(y | i)))).
@@ -138,13 +124,11 @@ have : (JTS_1_bound <= n)%nat ->
       rewrite mulRC big_distrl /=.
       apply eq_bigr => tb _ /=.
       rewrite DMCE.
-      rewrite [in RHS]TupleDist.dE -[in RHS]big_split /=.
-      rewrite TupleDist.dE.
+      rewrite [in RHS]TupleDist.dE -[in RHS]big_split /= TupleDist.dE.
       apply eq_bigr => j _.
       by rewrite JointDistChan.dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
     transitivity (\rsum_(i | i \notin `TS P m epsilon) P `^ _ i).
-      apply eq_bigr => i Hi.
-      by rewrite (pmf1 (W ``(| i))) mulR1.
+      apply eq_bigr => i _; by rewrite (pmf1 (W ``(| i))) mulR1.
     rewrite /Pr.
     apply eq_bigl => t; by rewrite !inE.
   have {H1}H1 : forall n, Pr (`J(P , W) `^ n) [set x | (rV_prod x).1 \notin `TS P n epsilon ] <=
@@ -164,32 +148,27 @@ have : (JTS_1_bound <= n)%nat ->
     have n0_prednK : n0.-1.+1 = n0.
       rewrite prednK // (leq_trans _ Hn0) // (_ : O = Z.abs_nat 0) //.
       apply/ltP/Zabs_nat_lt; split; [by [] | apply/up_pos/aep_bound_pos; lra].
-    have Htmp : 1 - (epsilon / 3) <= Pr (P `^ n0) (`TS P n0 (epsilon/3)).
+    have : 1 - (epsilon / 3) <= Pr (P `^ n0) (`TS P n0 (epsilon/3)).
       rewrite -n0_prednK.
-      apply Pr_TS_1 => //.
+      apply Pr_TS_1.
       - apply divR_gt0 => //; lra.
       - rewrite n0_prednK.
-        move/leP/le_INR in Hn0.
-        apply: (leR_trans _ Hn0) => //.
+        move/leP/le_INR : Hn0; apply leR_trans.
         rewrite INR_Zabs_nat; last first.
-          apply Zlt_le_weak, up_pos, aep_bound_pos => //.
+          apply/Zlt_le_weak/up_pos/aep_bound_pos => //.
           apply divR_gt0 => //; lra.
         exact/ltRW/(proj1 (archimed _ )).
-    rewrite Pr_to_cplt.
-    set p1 := Pr _ _ in Htmp.
-    rewrite (_ : Pr _ _ = p1); last first.
-      rewrite /p1; apply Pr_ext; apply/setP => i /=; by rewrite !inE negbK.
-    lra.
+    rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
+    rewrite Pr_to_cplt setCK; exact/leRR.
   have H1 m :
     Pr (`J(P , W) `^ m) [set x | (rV_prod x).2 \notin `TS ( `O(P , W) ) m epsilon] =
     Pr (( `O(P , W) ) `^ m) (~: `TS ( `O(P , W) ) m epsilon).
     rewrite {1}/Pr big_rV_prod /=.
     rewrite -(pair_big_snd _ _ [pred x | x \notin `TS (`O(P , W)) m epsilon]) //; last first.
       move=> tab /=.
-      rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE. (* NB: clean *)
+      rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE. (* TODO: clean *)
       do 3 f_equal.
-      apply/matrixP => a b; rewrite {a}(ord1 a).
-      by rewrite !mxE.
+      apply/rowP => a; by rewrite !mxE.
     rewrite /= /Pr /= exchange_big /=.
     apply eq_big => tb.
       by rewrite !inE.
@@ -207,7 +186,7 @@ have : (JTS_1_bound <= n)%nat ->
       by rewrite ffunE mxE.
     apply eq_big => ta.
       rewrite inE; apply/esym.
-      by apply/eqP/matrixP => a b; rewrite {a}(ord1 a) mxE ffunE.
+      by apply/eqP/rowP => a; rewrite mxE ffunE.
     move=> k.
     rewrite TupleDist.dE /=; apply eq_bigr => l _.
     by rewrite JointDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE.
@@ -229,22 +208,19 @@ have : (JTS_1_bound <= n)%nat ->
     have n0_prednK : n0.-1.+1 = n0.
       rewrite prednK // (leq_trans _ Hn0) // (_ : O = Z.abs_nat 0) //.
       apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_pos; lra].
-    have Htmp : 1 - epsilon / 3 <=
-      Pr ((`O(P , W)) `^ n0) (`TS (`O(P , W)) n0 (epsilon / 3)).
+    have : 1 - epsilon / 3 <=
+        Pr ((`O(P , W)) `^ n0) (`TS (`O(P , W)) n0 (epsilon / 3)).
       rewrite -n0_prednK.
-      apply Pr_TS_1 => //.
+      apply Pr_TS_1.
       - apply divR_gt0 => //; lra.
-      - move/leP/le_INR in Hn0.
+      - move/leP/le_INR : Hn0.
         rewrite n0_prednK.
-        apply: (leR_trans _ Hn0).
+        apply leR_trans.
         + rewrite INR_Zabs_nat; last first.
-            apply Zlt_le_weak, up_pos, aep_bound_pos; lra.
+            apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_pos; lra.
           exact/ltRW/(proj1 (archimed _ )).
-    rewrite Pr_to_cplt.
-    set p1 := Pr _ _ in Htmp.
-    rewrite (_ : Pr _ _ = p1); last first.
-      rewrite /p1; apply Pr_ext; apply/setP => i /=; by rewrite !inE negbK.
-    lra.
+    rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
+    rewrite Pr_to_cplt setCK; exact/leRR.
   have H1 : forall n,
     Pr (`J(P , W) `^ n) (~: `TS (`J(P , W)) n epsilon) <=
     Pr (( `J( P , W) ) `^ n) (~: `TS (`J( P , W)) n (epsilon / 3)).
@@ -262,40 +238,31 @@ have : (JTS_1_bound <= n)%nat ->
     have n0_prednK : n0.-1.+1 = n0.
       rewrite prednK // (leq_trans _ Hn0) // (_ : O = Z.abs_nat 0) //.
       apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_pos; lra].
-    have Htmp : 1 - epsilon / 3 <= Pr ((`J( P , W)) `^ n0) (`TS (`J( P , W)) n0 (epsilon / 3)).
-      rewrite -n0_prednK.
-      apply Pr_TS_1 => //.
+    have : 1 - epsilon / 3 <= Pr ((`J( P , W)) `^ n0) (`TS (`J( P , W)) n0 (epsilon / 3)).
+      rewrite -n0_prednK; apply Pr_TS_1.
       - apply divR_gt0 => //; lra.
       - rewrite n0_prednK.
-        move/leP/le_INR in Hn0.
-        apply: (leR_trans _ Hn0) => //.
+        move/leP/le_INR : Hn0; apply leR_trans.
         rewrite INR_Zabs_nat; last first.
-          apply Zlt_le_weak, up_pos, aep_bound_pos; lra.
+          apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_pos; lra.
         exact/Rlt_le/(proj1 (archimed _ )).
-    rewrite Pr_to_cplt.
-    set p1 := Pr _ _ in Htmp.
-    rewrite (_ : Pr _ _ = p1); last first.
-      rewrite /p1; apply Pr_ext; apply/setP => i /=; by rewrite !inE negbK.
-    lra.
+    rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
+    rewrite Pr_to_cplt setCK; exact/leRR.
   move=> Hn.
   rewrite [in X in _ <= X] (_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3)%R; last by field.
-  rewrite 2!geq_max in Hn.
-  case/andP : Hn => Hn1; case/andP => Hn2 Hn3.
+  move: Hn; rewrite 2!geq_max => /andP[Hn1 /andP[Hn2 Hn3]].
   rewrite !Pr_rV_prod.
   apply leR_add; first by apply leR_add; [exact: HnP | exact: HnPW].
   apply: leR_trans; last exact/HnP_W/Hn3.
-  apply/Req_le/Pr_ext/setP => /= tab.
-  by rewrite !inE rV_prodK.
+  apply/Req_le; congr Pr; apply/setP => /= tab; by rewrite !inE rV_prodK.
 move=> n0n Hn0n0.
 suff H : Pr (`J(P , W) `^ n ) (~: `JTS P W n epsilon) <= epsilon.
   rewrite -(Pr_cplt (`J(P , W) `^ n) (`JTS P W n epsilon)).
-  have : forall a b r : R, a <= r -> b >= b + a - r by move=> *; lra.
-  by apply.
-rewrite (@Pr_ext _ (`J(P , W) `^ n) (~: _)
-([set x | ((rV_prod x).1 \notin `TS P n epsilon)] :|:
+  apply/Rle_ge; by rewrite leR_subl_addr leR_add2l.
+apply (@leR_trans (Pr (`J(P , W) `^ n) ([set x | ((rV_prod x).1 \notin `TS P n epsilon)] :|:
 ([set x | ((rV_prod x).2 \notin `TS (`O( P , W)) n epsilon)] :|:
-          (~: `TS (`J( P , W)) n epsilon)))); last first.
-  apply/setP => xy.
+          (~: `TS (`J( P , W)) n epsilon))))).
+  apply Req_le; congr Pr; apply/setP => xy.
   by rewrite !inE 2!negb_and orbA.
 apply: leR_trans; last exact: n0n.
 apply (@leR_trans (
@@ -305,8 +272,7 @@ apply (@leR_trans (
   exact: Pr_union.
 rewrite -addRA !Pr_rV_prod.
 apply/leR_add2l; apply: leR_trans; last exact: Pr_union.
-apply/Req_le/Pr_ext/setP => t.
-by rewrite !inE rV_prodK.
+apply/Req_le; congr Pr; apply/setP => t; by rewrite !inE rV_prodK.
 Qed.
 
 End jtyp_seq_transmitted.

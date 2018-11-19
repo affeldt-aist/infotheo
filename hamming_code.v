@@ -125,7 +125,7 @@ Qed.
 Lemma weight_3_cw : syndrome H (rV_of_nat n (7 * 2 ^ (n - 3))) = 0.
 Proof.
 have two_m := Hamming.two_len m'.
-apply/matrixP => y x; rewrite {y}(ord1 y) !mxE.
+apply/rowP => x; rewrite !mxE.
 have Hn' : size (bitseq_of_N (bin_of_nat (7 * 2 ^ (n - 3)))) = n.
   apply/eqP.
   rewrite eqn_leq size_bitseq_of_N_ub /=; last 2 first.
@@ -762,8 +762,7 @@ have [Y1 [Y2 HY]] : exists (Y1 : 'cV_ _) Y2, (row_perm systematic y^T) =
   have dim_len_new i (Hi : i < m) : n - m + i < n.
     by rewrite -ltn_subRL subnBA ?Hamming.dim_len // addnC addnK.
   exists (\matrix_(j < 1, i < m) (y j (systematic (Ordinal (dim_len_new _ (ltn_ord i))))))^T.
-  apply/matrixP => a b /=.
-  rewrite (ord1 b) {b} /=.
+  apply/colP => a /=.
   rewrite !mxE castmxE /=.
   rewrite !mxE.
   case: splitP.

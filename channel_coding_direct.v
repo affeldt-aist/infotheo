@@ -127,7 +127,7 @@ rewrite Hlhs2.
 apply eq_bigr => g _.
 rewrite wght_o_PI; congr (_ * _).
 rewrite /ErrRateCond /= (_ : (o_PI m m' g) m = g m'); last by rewrite ffunE tpermL.
-apply Pr_ext; apply/setP => tb /=.
+congr Pr; apply/setP => tb /=.
 rewrite 2!inE.
 apply/negbLR. rewrite in_setC negbK.
 apply/idP/idP.
@@ -251,8 +251,7 @@ rewrite (reindex_onto (fun y : {ffun _ -> _} => \row_(i < _) y (enum_val i))
   f_equal.
   by rewrite mxE (enum_val_nth idef) -Hzero.
 move=> i _.
-apply/matrixP => a b; rewrite {a}(ord1 a).
-by rewrite mxE ffunE enum_valK.
+apply/rowP => a; by rewrite mxE ffunE enum_valK.
 Qed.
 
 End sum_rV_ffun.
@@ -763,7 +762,7 @@ apply (@leR_ltR_trans
   apply leR_wpmul2l; first exact: (dist_ge0 (Wght.d P)).
   rewrite [X in X <= _](_ : _ = Pr (W ``(| i ord0))
     (~: Cal_E i ord0 :|: \bigcup_(i0 : M | i0 != ord0) Cal_E i i0)); last first.
-    apply Pr_ext; apply/setP => tb /=.
+    congr Pr; apply/setP => /= tb.
     move: (preimC_Cal_E epsilon0 i tb); by rewrite inE.
   apply (@leR_trans (Pr (W ``(| i ord0)) (~: Cal_E i ord0) +
     Pr (W ``(| i ord0)) (\bigcup_(i0 | i0 != ord0) (Cal_E i i0)))%R).

@@ -55,15 +55,10 @@ Definition rV_prod n (x : 'rV[A * B]_n) : {: 'rV[A]_n * 'rV[B]_n} :=
   (\row_(k < n) (x ``_ k).1, \row_(k < n) (x ``_ k).2).
 
 Lemma prod_rVK n (x : 'rV[A]_n * 'rV[B]_n) : rV_prod (prod_rV x) = x.
-Proof.
-case: x => x1 x2.
-congr (_ , _); apply/matrixP => a b; rewrite {a}(ord1 a); by rewrite !mxE /=.
-Qed.
+Proof. case: x => x1 x2; congr (_ , _); apply/rowP => b; by rewrite !mxE. Qed.
 
 Lemma rV_prodK n (x : 'rV[A * B]_n) : prod_rV (rV_prod x) = x.
-Proof.
-apply/matrixP => a b; rewrite {a}(ord1 a); rewrite !mxE; by case: (x ``_ b).
-Qed.
+Proof. apply/rowP => b; rewrite !mxE; by case: (x ``_ b). Qed.
 
 Lemma fst_tnth_prod_rV n (x : {: 'rV[A]_n * 'rV[B]_n}) i :
   x.1 ``_ i = ((prod_rV x) ``_ i).1.
@@ -95,8 +90,8 @@ Lemma supp_set0 : (supp == set0) = (e == 0).
 Proof.
 apply/idP/idP => [/eqP/setP HE |/eqP ]; last first.
   rewrite /supp => ->; by apply/eqP/setP => i; rewrite !inE /= mxE eqxx.
-apply/eqP/matrixP => i j; rewrite mxE (ord1 i).
-move: (HE j); by rewrite !inE /= => /negbT; rewrite negbK => /eqP.
+apply/eqP/rowP => i; rewrite mxE.
+move: (HE i); by rewrite !inE /= => /negbT; rewrite negbK => /eqP.
 Qed.
 
 End support_set.
@@ -163,7 +158,7 @@ End row_mx_ext.
 
 Lemma col_matrix (R : ringType) m n (A : 'I_m -> 'cV[R]_(n.+1)) (i : 'I_m) :
   col i (\matrix_(a < n.+1, b < m) (A b) a ord0) = A i.
-Proof. apply/matrixP => a b; by rewrite !mxE (ord1 b). Qed.
+Proof. apply/colP => a; by rewrite !mxE. Qed.
 
 Section AboutPermPid.
 
@@ -175,34 +170,32 @@ in column 0, there is a 1 at line s0
          | 0 1 |
 [a b ] * | 1 0 |  = [b a]
 *)
-Lemma vec_perm_mx : forall n (s : 'S_n) (z : 'rV[R]_n),
+Lemma vec_perm_mx n (s : 'S_n) (z : 'rV[R]_n) :
   z *m perm_mx s = \matrix_(i < 1, j < n) z i ((s^-1)%g j).
 Proof.
-move=> n s z; apply/matrixP => i j.
-rewrite (ord1 i) {i} !mxE (bigID (pred1 ((s^-1)%g j))) /=.
+apply/rowP => j; rewrite !mxE (bigID (pred1 ((s^-1)%g j))) /=.
 rewrite big_pred1_eq !mxE {2}permE perm_invK eqxx mulr1 (eq_bigr (fun _ => 0)).
 - by rewrite big_const_seq iter_addr0 addr0.
 - move=> i H.
   rewrite !mxE (_ : (s i == j) = false); first by rewrite mulr0.
-  apply/eqP; move/eqP : H => H; contradict H.
+  apply/eqP; move/eqP in H; contradict H.
   by rewrite -H -permM (mulgV s) perm1.
 Qed.
 
-Lemma perm_mx_vec : forall n (s : 'S_n) (z : 'cV[R]_n),
+Lemma perm_mx_vec n (s : 'S_n) (z : 'cV[R]_n) :
   perm_mx s *m z = \matrix_(i < n, j < 1) z (s i) j.
 Proof.
-move=> n s z; apply/matrixP => i j.
-rewrite (ord1 j) {j} !mxE (bigID (pred1 (s i))) /=.
+apply/colP => i; rewrite !mxE (bigID (pred1 (s i))) /=.
 rewrite big_pred1_eq {1}/perm_mx !mxE eqxx mul1r (eq_bigr (fun _ => 0)).
 - by rewrite big_const_seq iter_addr0 addr0.
 - move=> j; move/negbTE => H.
   by rewrite !mxE eq_sym H /= mul0r.
 Qed.
 
-Lemma pid_mx_inj : forall r n (a b : 'rV[R]_r), r <= n ->
+Lemma pid_mx_inj r n (a b : 'rV[R]_r) : r <= n ->
   a *m (@pid_mx _ r n r) = b *m (@pid_mx _ r n r) -> a = b.
 Proof.
-move=> r n a b Hrn /matrixP Heq.
+move=> Hrn /matrixP Heq.
 apply/matrixP => x y.
 move: {Heq}(Heq x (widen_ord Hrn y)).
 rewrite !mxE (ord1 x){x} (bigID (pred1 y)) /= big_pred1_eq (eq_bigr (fun _ => 0)); last first.
@@ -289,7 +282,7 @@ Proof. apply eq_from_tnth; by case. Qed.
 
 Local Open Scope tuple_ext_scope.
 
-Lemma tuple_of_row_row_mx {C : finType} n1 n2 (v1 : 'rV[C]_n1) (B : 'rV[C]_n2) :
+Lemma tuple_of_row_row_mx (C : finType) n1 n2 (v1 : 'rV[C]_n1) (B : 'rV[C]_n2) :
   tuple_of_row (row_mx v1 B) = [tuple of tuple_of_row v1 ++ tuple_of_row B].
 Proof.
 apply eq_from_tnth => n0.
@@ -355,8 +348,8 @@ rewrite mulmxV //.
 by apply: col_ebase_unit.
 Qed.
 
-Lemma empty_rV {A : ringType} (a : 'rV[A]_O) : a = 0.
-Proof. apply/matrixP => x []; by rewrite (ord1 x). Qed.
+Lemma empty_rV (A : ringType) (a : 'rV[A]_O) : a = 0.
+Proof. apply/rowP; by case. Qed.
 
 Lemma full_rank_inj m n (A : 'M[F]_(m, n)) : m <= n -> \rank A = m ->
   forall (a b : 'rV[F]_m),  a *m A = b *m A -> a = b.

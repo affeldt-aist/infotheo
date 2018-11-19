@@ -162,11 +162,10 @@ Lemma step4 : 1 - (esrc(P , sc)) <= delta +
 Proof.
 apply/(leR_trans step3)/leR_add.
 - move/leRP : Hk; rewrite 2!leR_max' -andbA => /andP[/leRP].
-  move/(Pr_TS_1 Hdelta) => H2 _.
-  set p1 := Pr _ _ in H2.
-  rewrite -/(Pr (P `^ k.+1) _) Pr_to_cplt /= (_ : Pr _ _ = p1); last first.
-    rewrite /p1; apply/Pr_ext/setP => i /=; by rewrite !inE negbK.
-  lra.
+  move/(Pr_TS_1 Hdelta) => Hdelta _.
+  rewrite -[in X in _ <= X](oppRK delta) leR_oppr -(@leR_add2l 1) 2!addR_opp.
+  move/leR_trans : Hdelta; apply.
+  rewrite Pr_to_cplt; exact/leRR.
 - apply (@leR_trans
     (\rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
       exp2 (-INR k.+1 * (`H P - delta)))).

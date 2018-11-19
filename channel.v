@@ -109,7 +109,7 @@ suff H : \rsum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1%R.
     move=> g _; apply/ffunP => /= i; by rewrite ffunE mxE.
   apply eq_big => vb.
   - rewrite inE.
-    apply/esym/eqP/matrixP => a b; by rewrite {a}(ord1 a) mxE ffunE.
+    apply/esym/eqP/rowP => a; by rewrite mxE ffunE.
   - move=> _; apply eq_bigr => i _; by rewrite ffunE.
 rewrite -bigA_distr_bigA /= /f'.
 transitivity (\rprod_(i < n) 1%R); first by apply eq_bigr => i _; rewrite pmf1.

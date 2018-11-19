@@ -253,7 +253,7 @@ Proof.
 move=> FG PQ.
 rewrite (reindex_onto (fun i => \row_(j < 1) i) (fun p => p ``_ ord0)) /=; last first.
   move=> m Pm.
-  apply/matrixP => a b; rewrite {a}(ord1 a) {b}(ord1 b); by rewrite mxE.
+  apply/rowP => a; by rewrite {a}(ord1 a) mxE.
 apply eq_big => a.
   by rewrite PQ mxE eqxx andbT.
 by rewrite FG !mxE.
@@ -266,7 +266,7 @@ move=> <-.
 rewrite (reindex_onto (fun j => \row_(i < 1) j) (fun p => p ``_ ord0)) /=.
 - apply eq_big => a; first by rewrite mxE eqxx inE.
   move=> _; by rewrite mxE.
-- move=> t _; apply/matrixP => a b; by rewrite (ord1 a) (ord1 b) mxE.
+- move=> t _; apply/rowP => a; by rewrite (ord1 a) mxE.
 Qed.
 
 Lemma big_1_tuple F G P Q :

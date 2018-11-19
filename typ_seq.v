@@ -118,7 +118,7 @@ Proof.
 move=> k0_k.
 have -> : Pr P `^ n.+1 (`TS P n.+1 epsilon) =
   Pr P `^ n.+1 [set i | (i \in `TS P n.+1 epsilon) && (0 <b P `^ n.+1 i)].
-  apply/Pr_ext/setP => /= t; rewrite !inE.
+  congr Pr; apply/setP => /= t; rewrite !inE.
   apply/idP/andP => [H|]; [split => // | by case].
   case/andP : H => /leRP H _; exact/ltRP/(ltR_leR_trans (exp2_gt0 _) H).
 set p := [set _ | _].
