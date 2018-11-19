@@ -61,7 +61,7 @@ apply Rabs_xlnx => //.
     rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
     rewrite 2!JointDistChan.dE /=; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
   + rewrite cdiv_is_div_joint_dist => //.
-    exact/Pinsker_inequality_weak/joint_dom.
+    exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
 
 (** Distance from the joint entropy of one channel to another: *)
@@ -84,7 +84,7 @@ apply Rabs_xlnx => //.
     rewrite -[X in X <= _]addR0.
     apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
   rewrite cdiv_is_div_joint_dist => //.
-  exact/Pinsker_inequality_weak/joint_dom.
+  exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
 
 (** * Distance from the mutual information of one channel to another *)
@@ -153,8 +153,7 @@ case/boolP : (Delta <b= D(V || W | P)) => [/leRP| /leRP/ltRNge] Hcase.
 suff HminRate : (minRate - cap) / 2 <= minRate - (`I(P; V)).
   clear -Hcase v_dom_by_w HminRate.
   apply (@leR_trans +| minRate - `I(P ; V) |); last first.
-    rewrite -[X in X <= _]add0R.
-    apply/leR_add2r/cdiv_ge0 => b Hb ? ?; exact: v_dom_by_w.
+    rewrite -[X in X <= _]add0R; exact/leR_add2r/cdiv_ge0.
   apply: leR_trans; last exact: leR_maxr.
   apply: (leR_trans _ HminRate); exact: geR_minl.
 have : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
@@ -189,8 +188,7 @@ apply/ltRW/Rgt_lt.
 have ? : sqrt (2 * D(V || W | P)) < x.
   apply pow2_Rlt_inv; [exact: sqrt_pos | exact: ltRW | ].
   rewrite [in X in X < _]/= mulR1 sqrt_sqrt; last first.
-    apply mulR_ge0; first exact/ltRW.
-    apply cdiv_ge0 => a Ha ? ?; exact: v_dom_by_w.
+    apply mulR_ge0; [exact/ltRW | exact/cdiv_ge0].
   rewrite mulRC -ltR_pdivl_mulr //; exact/(ltR_leR_trans Hcase)/geR_minr.
 apply xlnx_sdecreasing_0_Rinv_e => //.
 - split; first exact/sqrt_pos.

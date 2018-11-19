@@ -270,14 +270,37 @@ Qed.
 (** P is dominated by Q: *)
 Section dominance.
 
-Definition dom_by {A : Type} (P Q : A -> R) := forall a, Q a = 0 -> P a = 0.
+Definition dominates {A : Type} (Q P : A -> R) := locked (forall a, Q a = 0 -> P a = 0).
 
-Definition dom_byb {A : finType} (P Q : A -> R) := [forall b, (Q b == 0) ==> (P b == 0)].
+Local Notation "P '<<' Q" := (dominates Q P).
+
+Lemma dominatesP A (Q P : A -> R) : P << Q <-> forall a, Q a = 0 -> P a = 0.
+Proof. by rewrite /dominates; unlock. Qed.
+
+Lemma dominatesxx A (P : A -> R) : P << P.
+Proof. by apply/dominatesP. Qed.
+
+Let dominatesN A (Q P : A -> R) : P << Q -> forall a, P a != 0 -> Q a != 0.
+Proof. by move/dominatesP => H a; apply: contra => /eqP /H ->. Qed.
+
+Lemma dominatesE A (Q P : A -> R) a : P << Q -> Q a = 0 -> P a = 0.
+Proof. move/dominatesP; exact. Qed.
+
+Lemma dominatesEN A (Q P : A -> R) a : P << Q -> P a != 0 -> Q a != 0.
+Proof. move/dominatesN; exact. Qed.
+
+Lemma dominates_scale A (Q P : A -> R) : P << Q -> forall k, k != 0 -> P << (fun a => k * Q a).
+Proof.
+move=> PQ k k0; apply/dominatesP => a /eqP.
+by rewrite mulR_eq0 (negbTE k0) /= => /eqP/(dominatesE PQ).
+Qed.
+
+Definition dominatesb {A : finType} (Q P : A -> R) := [forall b, (Q b == 0) ==> (P b == 0)].
 
 End dominance.
 
-Notation "P '<<' Q" := (dom_by P Q) : reals_ext_scope.
-Notation "P '<<b' Q" := (dom_byb P Q) : reals_ext_scope.
+Notation "P '<<' Q" := (dominates Q P) : reals_ext_scope.
+Notation "P '<<b' Q" := (dominatesb Q P) : reals_ext_scope.
 
 Lemma ltR_Rabsl a b : `| a | <b b = (- b <b a <b b).
 Proof.

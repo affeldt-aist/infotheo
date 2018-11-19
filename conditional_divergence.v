@@ -33,15 +33,15 @@ Definition cdom_by := forall a, P a != 0 -> (V a) << (W a).
 
 Lemma condition_equivalence : (`J(P , V) << `J(P , W)) <-> cdom_by.
 Proof.
-rewrite /dom_by; split=> H.
-- move=> a p_not_0 b; move: (H (a, b)).
+split; [move/dominatesP => H | move=> H; apply/dominatesP].
+- move=> a p_not_0; apply/dominatesP => b; move: (H (a, b)).
   rewrite JointDistChan.dE /= => H0 H1.
   move: H0; rewrite H1 mul0R => /(_ erefl)/eqP.
   by rewrite JointDistChan.dE mulR_eq0 /= (negbTE p_not_0) orbF => /eqP.
 - case=> a p_not_0 b; move: {H}(H a) => H.
   rewrite JointDistChan.dE /=.
   case/boolP : (P a == 0) => [/eqP -> | H1]; first by rewrite mulR0.
-  move: {H}(H H1) => ->; first by rewrite mul0R.
+  move: {H}(H H1) => /dominatesP ->; first by rewrite mul0R.
   move/eqP : b; by rewrite JointDistChan.dE mulR_eq0 /= (negbTE H1) orbF => /eqP.
 Qed.
 
@@ -56,13 +56,13 @@ Section joint_dom.
 
 Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
 
-Lemma joint_dom : P |- V << W -> (`J(P, V)) << (`J(P, W)).
+Lemma joint_dominates : P |- V << W -> (`J(P, V)) << (`J(P, W)).
 Proof.
-move => V_dom_by_W /= ab Hab.
+move=> V_dom_by_W /=; apply/dominatesP => ab Hab.
 case/leR_eqVlt : (dist_ge0 P ab.1) => [/esym|] Hab1.
 - by rewrite JointDistChan.dE Hab1 mulR0.
 - rewrite JointDistChan.dE in Hab.
-  rewrite JointDistChan.dE V_dom_by_W ?mul0R //.
+  rewrite JointDistChan.dE (dominatesE (V_dom_by_W _ _)) ?mul0R //.
   + exact/eqP/gtR_eqF.
   + move/eqP : Hab; rewrite mulR_eq0 /= => /orP[/eqP//|/eqP].
     by move: (gtR_eqF _ _ Hab1).
@@ -88,39 +88,27 @@ Hypothesis V_dom_by_W : P |- V << W.
 
 Lemma cdiv_is_div_joint_dist : D(V || W | P) =  D(`J(P , V) || `J(P , W)).
 Proof.
-rewrite (_ : D(V || W | P) =
-  \rsum_(a : A) (\rsum_(b | b \in B) V a b * (log (V a b) - log (W a b)) * P a)); last first.
+rewrite (_ : D(V || W | P) = \rsum_(a in A) (\rsum_(b in B)
+    V a b * (log (V a b / W a b)) * P a)); last first.
   apply eq_bigr => a _.
   by rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite pair_bigA big_mkcond /=.
-apply eq_bigr; case => [] a b /= _.
-rewrite JointDistChan.dE /=.
-case/boolP : (P a == 0) => [/eqP -> | Pneq0]; first by rewrite !mulR0 mul0R.
-case/boolP : (V a b == 0) => [/eqP -> | Vneq0]; first by rewrite !mul0R.
-case/boolP : (W a b == 0) => [/eqP Weq0| Wneq0].
-  contradict Vneq0.
-  apply/negP. rewrite negbK. apply/eqP. by apply V_dom_by_W.
-rewrite JointDistChan.dE /= /log !LogM; [field | by rewrite -dist_neq0 |
-  by rewrite -dist_neq0 | by rewrite -dist_neq0 | by rewrite -dist_neq0].
+apply eq_bigr => -[a b] /= _.
+rewrite JointDistChan.dE /= [in RHS]mulRAC.
+case/boolP : (P a == 0) => [/eqP -> | Pa0]; first by rewrite !mulR0.
+congr (_ * _).
+case/boolP : (V a b == 0) => [/eqP -> | Vab0]; first by rewrite !mul0R.
+congr (_ * _).
+have Wab0 : W a b != 0 := dominatesEN (V_dom_by_W Pa0) Vab0.
+rewrite JointDistChan.dE /= {2}/Rdiv (invRM (W a b)); [|exact/eqP|exact/eqP].
+by rewrite -mulRA (mulRCA (P a)) mulRV // mulR1.
 Qed.
 
 Lemma cdiv_ge0 : 0 <= D(V || W | P).
-Proof.
-rewrite cdiv_is_div_joint_dist //; apply div_ge0.
-case=> a b; rewrite 2!JointDistChan.dE /=.
-case/boolP : (P a == 0) => [|H1 H2]; first by move/eqP => ->; rewrite 2!mulR0.
-suff -> : (V a b) = 0 by rewrite mul0R.
-apply V_dom_by_W => //.
-by move/eqP : H2; rewrite mulR_eq0 (negbTE H1) orbF => /eqP.
-Qed.
+Proof. rewrite cdiv_is_div_joint_dist //; exact/div_ge0/joint_dominates. Qed.
 
 Lemma cdiv0P : D(V || W | P) = 0 <-> `J(P, V) = `J(P, W).
-Proof.
-rewrite cdiv_is_div_joint_dist; apply div0P => -[a b] /eqP.
-rewrite 2!JointDistChan.dE /= mulR_eq0 => /orP[|/eqP ->]; last by rewrite mulR0.
-case/boolP : (P a == 0) => [/eqP ->|Pa0]; first by rewrite mulR0.
-move/eqP/V_dom_by_W => /(_ Pa0) ->; by rewrite mul0R.
-Qed.
+Proof. rewrite cdiv_is_div_joint_dist; exact/div0P/joint_dominates. Qed.
 
 End conditional_divergence_prop.
 
@@ -181,49 +169,50 @@ Lemma dmc_cdiv_cond_entropy :
 Proof.
 rewrite dmc_cdiv_cond_entropy_aux CondEntropyChan.hE.
 rewrite /cdiv /entropy -big_split /=.
-rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) (big_morph _ morph_exp2_plus exp2_0).
+rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
+rewrite (big_morph _ morph_exp2_plus exp2_0).
 apply eq_bigr => a _.
 rewrite (big_morph _ morph_Ropp oppR0).
 rewrite /div /= -mulRDr mulRA -big_split /=.
-rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) (big_morph _ morph_exp2_plus exp2_0).
+rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
+rewrite (big_morph _ morph_exp2_plus exp2_0).
 apply eq_bigr => b _.
-case/boolP : (W a b == 0) => Wab0.
-- move/eqP in Wab0; rewrite Wab0.
-  case/boolP : (P a == 0) => Pa0.
-  - move/eqP in Pa0; rewrite Pa0.
-    rewrite mulR0 mul0R exp2_0 -(pow_O 0).
-    f_equal.
-    move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
-    move: (HV).
-    rewrite in_set => /cond_type_equiv/(_ _ Hx a).
-    move: Hx; rewrite in_set => /forallP/(_ a)/eqP; rewrite {}Pa0 => HPa sumB.
-    move: HPa; rewrite -sumB => /esym/eqP; rewrite mulR_eq0 => /orP[|]; last first.
-      by move/invR_eq0; rewrite INR_eq0' (negbTE Hn).
-    rewrite INR_eq0' sum_nat_eq0 => /forall_inP/(_ b) => H; apply/eqP; by move: H => ->.
-  - move: (W0_V0 Pa0 Wab0) => nullV.
-    rewrite nullV.
-    suff : N(a, b| tuple_of_row x, tuple_of_row y) = 0%nat.
-      move=> ->; by rewrite 2!mul0R oppR0 addR0 mulR0 exp2_0.
-    move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
-    by rewrite jtype_0_jtypef.
-- rewrite -{1}(@logK (W a b)); last first.
-    apply/ltRP; rewrite lt0R Wab0; exact/leRP/dist_ge0.
-  rewrite -exp2_pow.
-  f_equal.
-  rewrite -mulRN -mulRDr mulRA addRC addRA (addRC _ (log (V a b))) -/(Rminus (log (V a b)) _) subRR add0R mulRN -3!mulNR oppRK.
-  f_equal.
+case/boolP : (P a == 0) => [/eqP|] Pa0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
-  move: (HV).
-  rewrite in_set.
-  move/cond_type_equiv => /(_ _ Hx a) sumB.
-  move: Hx; rewrite in_set => /forallP/(_ a)/eqP => HPa.
-  rewrite (jtype.c_f V) /=.
-  case: ifPn => [/eqP|] HP.
-  - rewrite HPa -sumB HP div0R mulR0 mul0R.
-    move/eqP : HP; rewrite sum_nat_eq0 => /forallP/(_ b).
-    by rewrite implyTb => /eqP ->.
-  - rewrite HPa -sumB (mulRCA (INR n)) mulRV ?INR_eq0' // mulR1.
-    by rewrite mulRCA mulRV ?mulR1 // INR_eq0'.
+  move: (HV); rewrite in_set => /cond_type_equiv/(_ _ Hx a).
+  move: Hx; rewrite in_set => /forallP/(_ a)/eqP; rewrite {}Pa0 => HPa sumB.
+  move: HPa; rewrite -sumB => /esym/eqP; rewrite mulR_eq0 => /orP[|]; last first.
+    by move/invR_eq0; rewrite INR_eq0' (negbTE Hn).
+  rewrite INR_eq0' sum_nat_eq0 => /forall_inP/(_ b erefl)/eqP => H; apply/eqP.
+  by rewrite H pow_O !(mulR0,mul0R) exp2_0.
+case/boolP : (W a b == 0) => [/eqP |] Wab0.
+  move: (dominatesE (W0_V0 Pa0) Wab0) => nullV.
+  suff -> : N(a, b| tuple_of_row x, tuple_of_row y) = O.
+    by rewrite nullV 2!mul0R oppR0 addR0 mulR0 exp2_0.
+  move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
+  by rewrite jtype_0_jtypef.
+rewrite -{1}(@logK (W a b)); last by rewrite -dist_neq0.
+case/boolP : (V a b == 0) => [/eqP|] Vab0.
+  suff -> : N( a, b | [seq x ``_ i | i <- enum 'I_n], [seq y ``_ i | i <- enum 'I_n]) = O.
+    by rewrite pow_O Vab0 !(mulR0,mul0R,addR0,add0R,oppR0,exp2_0).
+  move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
+  by rewrite jtype_0_jtypef.
+rewrite -exp2_pow; congr exp2.
+rewrite -mulRN -mulRDr mulRA addR_opp -logDiv; last 2 first.
+  by apply/divR_gt0; rewrite -dist_neq0.
+  by rewrite -dist_neq0.
+rewrite /Rdiv (mulRAC _ (/ _)) mulRV // mul1R logV -?dist_neq0 //.
+rewrite mulRN 3!mulNR oppRK; congr (_ * log _).
+move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
+move: (HV); rewrite in_set => /cond_type_equiv => /(_ _ Hx a) sumB.
+move: Hx; rewrite in_set => /forallP/(_ a)/eqP => HPa.
+rewrite (jtype.c_f V) /=.
+case: ifPn => [/eqP|] HP.
+- rewrite HPa -sumB HP div0R mulR0 mul0R.
+  move/eqP : HP; rewrite sum_nat_eq0 => /forallP/(_ b).
+  by rewrite implyTb => /eqP ->.
+- rewrite HPa -sumB (mulRCA (INR n)) mulRV ?INR_eq0' // mulR1.
+  by rewrite mulRCA mulRV ?mulR1 // INR_eq0'.
 Qed.
 
 End dmc_cdiv_cond_entropy.
@@ -245,11 +234,8 @@ Lemma exp_cdiv_left (H : P |- V << W) : exp_cdiv = exp2 (-INR n * D(V || W | P))
 Proof.
 rewrite /exp_cdiv.
 suff : P |- V <<b W by move=> ->.
-apply/forallP => a.
-apply/implyP => Pa0.
-apply/forall_inP => b /eqP Wab.
-apply/eqP.
-by apply H.
+apply/forallP => a; apply/implyP => Pa0.
+apply/forall_inP => b /eqP Wab; by rewrite (dominatesE (H _ Pa0)).
 Qed.
 
 End cdiv_specialized.
@@ -275,7 +261,9 @@ Proof.
 rewrite /exp_cdiv.
 case : ifP => Hcase.
 - rewrite -ExpD -mulRDr.
-  apply dmc_cdiv_cond_entropy => // a Pa b /eqP Wab.
+  apply dmc_cdiv_cond_entropy => //.
+  (* TODO: lemma? *)
+  move=> a Pa; apply/dominatesP => b /eqP Wab.
   by move: Hcase => /forallP/(_ a)/implyP/(_ Pa)/forallP/(_ b)/implyP/(_ Wab)/eqP.
 - rewrite mul0R.
   move: Hcase => /negbT; rewrite negb_forall; case/existsP => a.

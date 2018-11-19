@@ -62,7 +62,7 @@ apply Exp_le_increasing => //.
 rewrite -mulRDr 2!mulNR.
 rewrite leR_oppr oppRK; apply/leR_wpmul2l; first exact/leR0n.
 have {Hcase}Hcase : Pmax |- Vmax << W.
-  move=> a Hp b /eqP Hw.
+  move=> a Hp; apply/dominatesP => b /eqP Hw.
   move/forallP : Hcase.
   by move/(_ a)/implyP/(_ Hp)/forallP/(_ b)/implyP/(_ Hw)/eqP.
 apply (leR_trans (HDelta Pmax Vmax Hcase)) => /=.

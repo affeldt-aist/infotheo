@@ -56,9 +56,9 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   case: p01 => Hp1 Hp2.
   case: q01 => Hq1 Hq2.
   case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
-    rewrite -Hp1 !mul0R subR0 addR0 add0R !mul1R /log Log_1 /Rdiv.
+    rewrite -Hp1 !mul0R subR0 addR0 add0R !mul1R /log (*_Log_1*) /Rdiv.
     case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
-      move: (@P_dom_by_Q (Set2.a card_A)).
+      move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
       rewrite -/pi -/qi Hqi Hq2 subRR => /(_ erefl).
       rewrite Hpi -Hp1 subR0 => ?. exfalso. lra.
     rewrite /log LogM; last 2 first.
@@ -66,7 +66,7 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
       apply/invR_gt0; lra.
       by rewrite LogV ?subR_gt0 // Log_1.
   case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
-    move: (@P_dom_by_Q (Set2.b card_A)).
+    move/dominatesP : P_dom_by_Q => /(_ (Set2.b card_A)).
     rewrite -/pj -/qj Hqj -Hq1 => /(_ erefl).
     rewrite Hpj => abs.
     move: Hp1; by rewrite abs => /ltRR.
@@ -79,7 +79,7 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   rewrite /log LogM //; last exact/invR_gt0.
   rewrite LogV //.
   case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
-    move: (@P_dom_by_Q (Set2.a card_A)).
+    move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
     rewrite -/pi -/qi Hqi -Hq2 subRR => /(_ erefl).
     rewrite Hpi => abs. exfalso. lra.
   rewrite /Rdiv LogM ?subR_gt0 //; last first.
@@ -113,7 +113,7 @@ move: (charac_bdist P card_A) => [r1 [Hr1 Hp]].
 move: (charac_bdist Q card_A) => [r2 [Hr2 Hq]].
 rewrite Hp Hq.
 apply Pinsker_2_inequality_bdist.
-by rewrite /dom_by -Hp -Hq.
+by rewrite -Hp -Hq.
 Qed.
 
 End Pinsker_2.
@@ -185,11 +185,13 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
     - by apply Hwlog.
   case/andP => /eqP ? /eqP ?; by subst a b.
 rewrite step2.
-apply (Pinsker_2_inequality card_bool) => /= b.
+apply (Pinsker_2_inequality card_bool).
+(* TODO: lemma *)
+apply/dominatesP => /= b.
 rewrite /bipart_pmf.
 move/prsumr_eq0P => H.
 transitivity (\rsum_(a | a \in A_ b) 0%R).
-  apply eq_bigr => // a ?; apply P_dom_by_Q; rewrite H // => c ?; exact/pos_f_ge0.
+  apply eq_bigr => // a ?; rewrite (dominatesE P_dom_by_Q) // H // => a' ?; exact/pos_f_ge0.
 by rewrite big_const iter_addR mulR0.
 Qed.
 

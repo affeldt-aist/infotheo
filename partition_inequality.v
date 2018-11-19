@@ -70,12 +70,6 @@ have -> : D(P || Q) = \rsum_(a in A_ 0) P a * log (P a / Q a) +
                       \rsum_(a in A_ 1) P a * log (P a / Q a).
   rewrite /div -big_union //; last by rewrite -setI_eq0 setIC dis eqxx.
   apply eq_big => // a; first by rewrite cov in_set inE.
-  move=> _.
-  case/Rle_lt_or_eq_dec: (dist_ge0 P a) => Pa.
-    case/Rle_lt_or_eq_dec: (dist_ge0 Q a) => Qa.
-      rewrite /log LogM // ?LogV //; exact/invR_gt0.
-    symmetry in Qa. rewrite (P_dom_by_Q Qa) in Pa. by apply ltRR in Pa.
-  by rewrite -Pa 2!mul0R.
 have step2 :
   (\rsum_(a in A_ 0) P a) * log ((\rsum_(a in A_ 0) P a) / \rsum_(a in A_ 0) Q a) +
   (\rsum_(a in A_ 1) P a) * log ((\rsum_(a in A_ 1) P a) / \rsum_(a in A_ 1) Q a) <=
@@ -116,7 +110,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       - rewrite A1_P_0 !mul0R addR0; exact/Req_le.
     * move/prsumr_eq0P in A0_Q_0.
       have {A0_Q_0}A0_Q_0 : forall i : A, i \in A_ 0 -> P i = 0%R.
-        move=> i ?; rewrite P_dom_by_Q // A0_Q_0 // => a ?; exact/pos_f_ge0.
+        move=> i ?; rewrite (dominatesE P_dom_by_Q) // A0_Q_0 // => a ?; exact/pos_f_ge0.
       have Habs : P_A 0 = 0%R.
         transitivity (\rsum_(H|H \in A_ 0) 0%R).
           apply eq_big => // i Hi; by rewrite -A0_Q_0.
@@ -127,7 +121,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       move/prsumr_eq0P in A1_Q_0.
       rewrite /bipart /= /bipart_pmf (eq_bigr (fun=> 0%R)).
         by rewrite big_const iter_addR mulR0.
-      move=> a ?; rewrite P_dom_by_Q // A1_Q_0 // => b ?; exact/pos_f_ge0.
+      move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_f_ge0.
     rewrite H2 !mul0R !addR0.
     have H3 : Q_A 0 = 1%R.
       rewrite -[X in X = _]addR0 -[X in _ + X = _]A1_Q_0 -(pmf1 Q).
@@ -154,7 +148,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
     have : P_A 1 = 0%R.
       rewrite /bipart /= /bipart_pmf (eq_bigr (fun=> 0%R)).
       by rewrite big_const iter_addR mulR0.
-      move=> a ?; rewrite P_dom_by_Q // A1_Q_0 // => b ?; exact/pos_f_ge0.
+      move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_f_ge0.
     move=> abs; rewrite abs in H1. lra.
 Qed.
 

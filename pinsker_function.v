@@ -304,9 +304,9 @@ case/leR_eqVlt : Hp0 => [|] Hp0.
   case/leR_eqVlt : Hq1 => [|] Hq1.
     subst q.
     exfalso.
-    move: P_dom_by_Q.
-    rewrite /dom_by /Binary.d /= => /(_ a).
-    rewrite /Binary.f eqxx subRR // => /(_ erefl) ?; lra.
+    move/dominatesP : P_dom_by_Q.
+    rewrite /Binary.d /= /Binary.f /= subRR => /(_ a); rewrite eqxx.
+    move/(_ erefl) => ?; lra.
   apply: leR_trans; first exact: (pinsker_function_spec_pos Hc (conj Hq0 Hq1)).
   rewrite /pinsker_function_spec.
   apply Req_le.
@@ -317,8 +317,8 @@ case/leR_eqVlt : Hp1 => [|] Hp1.
   case/leR_eqVlt : Hq0 => [|] Hq0.
     subst q.
     exfalso.
-    move: P_dom_by_Q.
-    rewrite /dom_by /Binary.d /= => /(_ b); rewrite /Binary.f.
+    move/dominatesP : P_dom_by_Q.
+    rewrite /Binary.d /= /Binary.f /= subRR => /(_ b).
     rewrite eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) ?; lra.
   apply: leR_trans.
     have : 0 <= 1 - q < 1 by lra.
@@ -332,17 +332,17 @@ case/leR_eqVlt : Hq0 => [|] Hq0.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite (_ : id 0 = 0) //.
   exfalso.
-  move: P_dom_by_Q.
-  rewrite /dom_by /Binary.d /= => /(_ b); rewrite /Binary.f.
+  move/dominatesP : P_dom_by_Q.
+  rewrite /Binary.d /= /Binary.f /= => /(_ b).
   rewrite eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) ?; subst p.
   by move/ltRR : Hp0.
 case/leR_eqVlt : Hq1 => [|] Hq1.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
   exfalso.
-  move: P_dom_by_Q.
-  rewrite /dom_by /Binary.d /= => /(_ a).
-  rewrite /Binary.f eqxx subRR // => /(_ erefl) H1.
+  move/dominatesP : P_dom_by_Q.
+  rewrite /Binary.d /Binary.f /= subRR => /(_ a); rewrite eqxx.
+  move/(_ erefl) => H1.
   have {H1}? : p = 1. lra. subst p.
   by move/ltRR : Hp1.
 rewrite -(pinsker_fun_p p01 c).

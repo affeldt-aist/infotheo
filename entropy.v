@@ -98,7 +98,11 @@ have /div_ge0 H : P << (Uniform.d HA) by apply dom_by_uniform.
 rewrite -subR_ge0; apply/(leR_trans H)/Req_le.
 transitivity (\rsum_(a|a \in A) P a * log (P a) +
               \rsum_(a|a \in A) P a * - log ((Uniform.d HA) a)).
-  rewrite -big_split /=; apply eq_bigr => a _; by rewrite mulRDr.
+  rewrite -big_split /=; apply eq_bigr => a _; rewrite -mulRDr.
+  case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
+  congr (_ * _); rewrite logDiv ?addR_opp //.
+  by rewrite -dist_neq0.
+  rewrite Uniform.dE; apply/invR_gt0; rewrite HA; exact/ltR0n.
 rewrite [in X in _ + X](eq_bigr (fun a => P a * - log (/ INR #|A|))); last first.
   by move=> a _; rewrite Uniform.dE.
 rewrite -[in X in _ + X = _]big_distrl /= pmf1 mul1R.

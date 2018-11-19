@@ -24,7 +24,7 @@ case/boolP : (C == set0) => [ /eqP -> | Hc].
   rewrite !big_set0 mul0R; exact/leRR.
 have gspos : forall a, a \in C -> 0 < g a.
   move=> a a_C.
-  case/Rle_lt_or_eq_dec : ((pos_f_ge0 g) a) => // abs; symmetry in abs; apply fg in abs.
+  case/Rle_lt_or_eq_dec : ((pos_f_ge0 g) a) => // /esym/(dominatesE fg) abs.
   move: (fspos _ a_C); by rewrite abs; move/ltRR.
 have Fnot0 : \rsum_{ C } f != 0.
   apply/eqP => /prsumr_eq0P abs.
@@ -48,9 +48,7 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
   have kspos : 0 < k by apply divR_gt0.
   have kg_pos : forall a, 0 <= k * g a.
     move=> a; apply mulR_ge0; by [apply ltRW | apply pos_f_ge0].
-  have kabs_con : forall a, k * g a = 0 -> f a = 0.
-    move=> a /eqP; rewrite mulR_eq0 => /orP[/eqP Hk| /eqP/fg //].
-    rewrite Hk in kspos; by move/ltRR : kspos.
+  have kabs_con : f << (fun a => k * g a) by apply/dominates_scale => //; exact/eqP/gtR_eqF.
   have kgspos : forall a, a \in C -> 0 < k * g a.
     move=> a a_C; apply mulR_gt0 => //; by apply gspos.
   have Hkg : \rsum_(a | a \in C) k * g a = \rsum_{C} f.
@@ -157,7 +155,7 @@ suff : \rsum_{D} f * log (\rsum_{D} f / \rsum_{D} g) <=
         transitivity (\rsum_(a | a \in D) 0).
           by rewrite big_const iter_addR mulR0.
         apply eq_bigr => a a_C1.
-        rewrite fg // (proj1 (@prsumr_eq0P _ (mem D) _ _)) // => ? ?; exact/pos_f_ge0.
+        rewrite (dominatesE fg) // (proj1 (@prsumr_eq0P _ (mem D) _ _)) // => ? ?; exact/pos_f_ge0.
       move=> abs; rewrite -abs in H1; rewrite H1 in pos_F.
       by move/ltRR : pos_F.
     have H3 : 0 < \rsum_(a | a \in C) g a.

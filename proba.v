@@ -279,8 +279,7 @@ End Uniform.
 Lemma dom_by_uniform A (P : dist A) n (HA : #|A| = n.+1) :
   P << (Uniform.d HA).
 Proof.
-move=> a; rewrite Uniform.dE => /esym abs.
-exfalso.
+apply/dominatesP => a; rewrite Uniform.dE => /esym abs; exfalso.
 move: abs; rewrite HA; exact/ltR_eqF/invR_gt0/ltR0n.
 Qed.
 
