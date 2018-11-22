@@ -190,10 +190,7 @@ Qed.
 Lemma ln_concave_gt0 x y t : x < y ->
   0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq ln x y t.
 Proof.
-move=> xy x0 y0 t01.
-suff : convex_leq (fun x => - ln x) x y t.
-  (* TODO: lemma, see concaveN *)
-  rewrite /convex_leq /concave_leq !mulRN => /leR_oppl; by rewrite oppRD !oppRK.
+move=> xy x0 y0 t01; rewrite /concave_leq.
 set Df := fun x => - / x.
 move: t t01.
 have HDf : pderivable (fun x => - ln x) (fun x0 => x <= x0 <= y).
@@ -233,9 +230,8 @@ Qed.
 Lemma log_concave_gt0 x y t : x < y ->
   0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
 Proof.
-move=> xy x0 y0 t01; rewrite /concave_leq /log /Log /Rdiv !mulRA -mulRDl.
-(* TODO: lemma: convexity w.r.t. scaling *)
-apply leR_wpmul2r; [exact/ltRW/invR_gt0/ln2_gt0 | exact: ln_concave_gt0].
+move=> xy x0 y0 t01; rewrite /log /Log.
+apply concave_leqN; [exact: ln_concave_gt0 | exact/ltRW/invR_gt0/ln2_gt0].
 Qed.
 
 End log_concave.

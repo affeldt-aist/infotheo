@@ -22,41 +22,47 @@ End interval.
 
 Section convex.
 
-Definition convex_leq (f : R -> R) (x y t : R) :=
+Implicit Types f : R -> R.
+
+Definition convex_leq f (x y t : R) :=
   f (t * x + (1 - t) * y) <= t * f x + (1 - t) * f y.
 
-Definition convex (f : R -> R) := forall x y t : R,
+Definition convex f := forall x y t : R,
   0 <= t <= 1 -> convex_leq f x y t.
 
-Definition convex_in (D : interval) (f : R -> R) := forall x y t : R,
+Definition convex_in (D : interval) f := forall x y t : R,
   D x -> D y -> 0 <= t <= 1 -> convex_leq f x y t.
 
-Definition strictly_convex (f : R -> R) := forall x y t : R,
+Definition strictly_convex f := forall x y t : R,
   x != y -> 0 < t < 1 -> convex_leq f x y t.
 
 End convex.
 
 Section concave.
 
-Definition concave_leq (f : R -> R) (x y t : R) :=
-  t * f x + (1 - t) * f y <=  f (t * x + (1 - t) * y).
+Definition concave_leq f := convex_leq (fun x => - f x).
 
-Definition concave (f : R -> R) := forall x y t : R,
+Lemma concave_leqP f x y t : concave_leq f x y t <->
+  t * f x + (1 - t) * f y <=  f (t * x + (1 - t) * y).
+Proof. by rewrite /concave_leq /convex_leq leR_oppl oppRD 2!mulRN 2!oppRK. Qed.
+
+Lemma concave_leqN f x y t : concave_leq f x y t ->
+  forall k, 0 <= k -> concave_leq (fun x => f x * k) x y t.
+Proof.
+move=> H k k0; rewrite /concave_leq /convex_leq.
+rewrite -3!mulNR 2!mulRA -mulRDl; exact: leR_wpmul2r.
+Qed.
+
+Definition concave f := forall x y t : R,
   0 <= t <= 1 -> concave_leq f x y t.
 
-Definition concave_in (D : interval) (f : R -> R) := forall x y t : R,
+Definition concave_in (D : interval) f := forall x y t : R,
   D x -> D y -> 0 <= t <= 1 -> concave_leq f x y t.
 
-Definition strictly_concave (f : R -> R) := forall x y t : R,
+Definition strictly_concave f := forall x y t : R,
   x != y -> 0 < t < 1 -> concave_leq f x y t.
 
 End concave.
-
-Lemma concaveN (f : R -> R) : convex (fun x => - f x) -> concave f.
-Proof.
-move=> H x y t t01; move: (H x y _ t01).
-by rewrite /convex_leq !mulRN -oppRD => /leR_oppl; rewrite oppRK.
-Qed.
 
 Lemma dist_ind (A : finType) (P : dist A -> Prop) :
   (forall n : nat, (forall X, #|dist_supp X| = n -> P X) ->
@@ -176,12 +182,7 @@ Variable A : finType.
 Let g x := - f x.
 
 Lemma convex_g : convex_in D g.
-Proof.
-move=> x y t Hx Hy Ht.
-rewrite /convex_leq /g.
-rewrite !mulRN -oppRD leR_oppr oppRK.
-exact: concave_f.
-Qed.
+Proof. by []. Qed.
 
 Lemma jensen_dist_concave (r : A -> R) (X : dist A) :
   (forall x, D (r x)) ->
@@ -189,13 +190,8 @@ Lemma jensen_dist_concave (r : A -> R) (X : dist A) :
 Proof.
 move=> HDr.
 rewrite -[X in _ <= X]oppRK leR_oppr.
-move: (jensen_dist convex_g X HDr).
-rewrite /g.
-rewrite [in X in _ <= X](eq_bigr (fun a => -1 * (f (r a) * X a))).
-  rewrite -[in X in _ <= X]big_distrr /=.
-  by rewrite mulNR mul1R.
-move=> i _.
-by rewrite !mulNR mul1R.
+apply/(leR_trans (jensen_dist convex_g X HDr))/Req_le.
+rewrite (big_morph _ morph_Ropp oppR0); by apply eq_bigr => a _; rewrite mulNR.
 Qed.
 
 End jensen_concave.

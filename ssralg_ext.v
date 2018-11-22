@@ -131,27 +131,55 @@ Section row_mx_ext.
 
 Context {A : Type} {n : nat}.
 
-Definition rbehead (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (lift ord0 i).
+Definition rbehead (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (lift 0 i).
 
 Lemma rbehead_row_mx (x : 'rV_n) a : rbehead (row_mx (\row_(j < 1) a) x) = x.
 Proof.
-apply/rowP => i; rewrite !mxE.
-case: splitP; first by move=> j; rewrite {j}(ord1 j) lift0.
-by move=> n0; rewrite lift0 add1n => -[] /val_inj ->.
+apply/rowP => i; rewrite mxE.
+rewrite (_ : lift _ _ = rshift 1%nat i); last exact/val_inj.
+by rewrite (@row_mxEr _ _ 1%nat).
 Qed.
 
-Lemma row_mx_row_ord0 (x : 'rV[A]_n) a : (row_mx (\row_(k < 1) a) x) ``_ ord0 = a.
+Lemma row_mx_row_ord0 (x : 'rV[A]_n) a : (row_mx (\row_(k < 1) a) x) ``_ 0 = a.
 Proof.
-rewrite mxE; case: splitP => [|/=] k; first by rewrite {k}(ord1 k) mxE.
-by rewrite add1n.
+transitivity ((row_mx (\row_(_ < 1) a) x) 0 (lshift n 0)).
+  congr (_ _ _); exact/val_inj.
+by rewrite row_mxEl mxE.
 Qed.
 
-Lemma row_mx_rbehead (x : 'rV_(1 + n)) : row_mx (\row__ (x ``_ ord0)) (rbehead x) = x.
+Lemma row_mx_rbehead (x : 'rV_(1 + n)) : row_mx (\row__ (x ``_ 0)) (rbehead x) = x.
 Proof.
-apply/rowP => i.
-rewrite !mxE; case: splitP => [j|k bk].
-- rewrite {j}(ord1 j) => Hb; rewrite mxE; congr (_ ``_ _); exact/val_inj.
-- rewrite mxE; congr (_ ``_ _); exact/val_inj.
+apply/rowP => i; rewrite mxE; case: splitP=> [j|j i1j].
+- rewrite (ord1 j) mxE => i0; congr (x _ _); exact/val_inj.
+- rewrite mxE; congr (x _ _); exact/val_inj.
+Qed.
+
+Definition rbelast (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (widen_ord (leqnSn _) i).
+
+Definition rlast (x : 'rV[A]_n.+1) := x ``_ ord_max.
+
+Lemma row_mx_row_ord_max (x : 'rV[A]_n) a :
+  (castmx (erefl 1%nat, addnC n 1%nat) (row_mx x (\row_(k < 1) a))) ``_ ord_max = a.
+Proof.
+rewrite castmxE /= mxE /=; case: splitP => [j Hj|k _].
+by move: (ltn_ord j); rewrite -Hj ltnn.
+by rewrite (ord1 k) mxE.
+Qed.
+
+Lemma row_mx_rbelast (x : 'rV_(1 + n)) :
+  castmx (erefl 1%N, addnC n 1%N) (row_mx (rbelast x) (\row__ (x ``_ ord_max))) = x.
+Proof.
+apply/rowP => i; rewrite castmxE /= mxE; case: splitP => [j /= ij|k /=].
+rewrite mxE; congr (x _ _); exact/val_inj.
+rewrite (ord1 k) addn0 => ni; rewrite mxE; congr (x _ _); exact/val_inj.
+Qed.
+
+Lemma rbelast_row_mx (x : 'rV_n) a :
+  rbelast (castmx (erefl 1%N, addnC n 1%N) (row_mx x (\row_(j < 1) a))) = x.
+Proof.
+apply/rowP => i; rewrite !(mxE,castmxE) /=; case: splitP => [j /= ij|k /=].
+by congr (x _ _); apply/val_inj.
+rewrite (ord1 k) addn0 => ni; move: (ltn_ord i); by rewrite ni ltnn.
 Qed.
 
 End row_mx_ext.

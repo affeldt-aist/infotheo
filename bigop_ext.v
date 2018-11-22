@@ -21,6 +21,13 @@ Lemma big_tcast n m (n_m : m = n) (A : finType) F (P : pred {: n.-tuple A}) :
   \big[op/idx]_(p in {: m.-tuple A} | P (tcast n_m p)) (F (tcast n_m p)).
 Proof. subst m; apply eq_bigr => ta => /andP[_ H]; by rewrite tcast_id. Qed.
 
+Lemma big_cast_rV n m (n_m : m = n) (A : finType) F (P : pred {: 'rV[A]_n}) :
+  \big[op/idx]_(p in {: 'rV_n} | P p) (F p) =
+  \big[op/idx]_(p in {: 'rV_m} | P (castmx (erefl, n_m) p)) (F (castmx (erefl, n_m) p)).
+Proof.
+by subst m; apply eq_bigr => ta => /andP[_ H].
+Qed.
+
 End bigop_no_law.
 
 (* TODO: remove? *)
@@ -55,7 +62,26 @@ Proof.
 by rewrite /index_enum -enumT Set2.enumE !big_cons big_nil (Monoid.addm0 M) !enum_valP.
 Qed.
 
-Lemma big_rV_0 f (P : pred _) : \big[M/idx]_(v in 'rV[A]_0 | P v) f v =
+Local Open Scope ring_scope.
+Lemma big_rV_0 f (P : pred 'rV[A]_0) (a : A) : \big[M/idx]_(v in 'rV[A]_0 | P v) f v =
+  if P (\row_(i < 0) a) then f (\row_(i < 0) a) else idx.
+Proof.
+rewrite -big_map /= /index_enum -enumT /=.
+set e := enum _.
+rewrite (_ : e = [:: \row_(i < 0) a]).
+  by rewrite /= big_cons big_nil Monoid.addm0.
+rewrite /e.
+apply (@eq_from_nth _ (\row_(i < 0) a)).
+  by rewrite -cardE card_matrix muln0 expn0.
+move=> i.
+rewrite -cardE card_matrix muln0 expn0 ltnS leqn0 => /eqP ->{i}.
+rewrite -/e.
+destruct e => //.
+apply val_inj => /=.
+by apply/ffunP => /= -[? []].
+Qed.
+
+Lemma big_tuple_0 f (P : pred _) : \big[M/idx]_(v in 'rV[A]_0 | P v) f v =
   if P (row_of_tuple [tuple]) then f (row_of_tuple [tuple]) else idx.
 Proof.
 rewrite -big_map /= /index_enum -enumT /=.
@@ -74,6 +100,8 @@ by apply/ffunP => /= -[? []].
 Qed.
 
 End bigop_add_law.
+
+Arguments big_rV_0 {R} {idx} {op} {M} {A} _ _ _. 
 
 Section bigop_add_law_eqtype.
 
@@ -269,7 +297,7 @@ rewrite (reindex_onto (fun j => \row_(i < 1) j) (fun p => p ``_ ord0)) /=.
 - move=> t _; apply/rowP => a; by rewrite (ord1 a) mxE.
 Qed.
 
-Lemma big_1_tuple F G P Q :
+(*Lemma big_1_tuple F G P Q :
   (forall i : 1.-tuple A, F i = G (thead i)) ->
   (forall i : 1.-tuple A, P i = Q (thead i)) ->
   \big[M/idx]_(i in {: 1.-tuple A} | P i) F i = \big[M/idx]_(i in A | Q i) G i.
@@ -280,7 +308,7 @@ rewrite (reindex_onto (fun i => [tuple of [:: i]]) (fun p => thead p)) /=; last 
 apply eq_big => x //.
 by rewrite (PQ [tuple x]) /= theadE eqxx andbC.
 move=> X; by rewrite FG.
-Qed.
+Qed.*)
 
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
@@ -326,14 +354,35 @@ Proof.
 rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => x ``_ ord0) P1) /=; last first.
   by move=> i /andP[].
 apply eq_bigr => i Hi.
-rewrite (reindex_onto (fun j=> row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
+rewrite (reindex_onto (fun j => row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
     move=> j /andP[] Hj1 /eqP => <-; by rewrite row_mx_rbehead.
 apply eq_big => //= x; by rewrite row_mx_row_ord0 rbehead_row_mx 2!eqxx Hi !andbT.
+Qed.
+
+Lemma big_rV_belast_last n (F : 'rV[A]_n.+1 -> R)
+  (P1 : pred 'rV[A]_n) (P2 : pred A) :
+  \big[M/idx]_(i in 'rV[A]_n | P1 i)
+    \big[M/idx]_(j in A | P2 j) (F (castmx (erefl, addnC n 1%nat) (row_mx i (\row_(k < 1) j)))) =
+  \big[M/idx]_(p in 'rV[A]_n.+1 | (P1 (rbelast p)) && (P2 (rlast p)) ) (F p).
+Proof.
+rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => x ``_ ord_max) P2) /=; last first.
+  by move=> i /andP[].
+rewrite exchange_big.
+apply eq_bigr => i Hi.
+rewrite (reindex_onto (fun j => (castmx (erefl 1%nat, addnC n 1%nat) (row_mx j (\row_(k < 1) i)))) rbelast) /=; last first.
+    move=> j /andP[] Hj1 /eqP => <-; by rewrite row_mx_rbelast.
+apply eq_big => //= x.
+rewrite row_mx_row_ord_max rbelast_row_mx 2!eqxx !andbT.
+rewrite /rlast !(castmxE,mxE) /=; case: splitP => /= [|k].
+  move=> j nj; move: (ltn_ord j); by rewrite -nj ltnn.
+by move=> _; rewrite mxE Hi andbT.
 Qed.
 
 End bigop_com_law.
 Arguments pair_big_fst {R} {idx} {M} {A} {B} _.
 Arguments pair_big_snd {R} {idx} {M} {A} {B} _.
+Arguments big_rV_belast_last {R} {idx} {M} {A} {n} _ _ _.
+Arguments big_rV_cons_behead {R} {idx} {M} {A} {n} _ _ _. 
 
 Section MyPartitions.
 

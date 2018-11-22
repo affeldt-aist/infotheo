@@ -53,16 +53,16 @@ Proof. rewrite -V_mlog /Var; apply Ex_nonneg => ?; exact: pow_even_ge0. Qed.
 
 End mlog_prop.
 
-Definition sum_mlog_prod A (P : dist A) n : rvar [finType of 'rV[A]_n] :=
+Definition sum_mlog_prod A (P : dist A) n : {rvar 'rV[A]_n} :=
   mkRvar (P `^ n) (fun t => \rsum_(i < n) - log (P t ``_ i))%R.
 
 Lemma inde_rv_sum_mlog_prod A (P : dist A) n :
   (Multivar.to_bivar `p_ (sum_mlog_prod P n.+1)) |= --log P _|_ sum_mlog_prod P n.
 Proof.
-rewrite /inde_rv /= => x y.
+rewrite /inde_drv /= => x y.
 rewrite -/(Multivar.head_of _) -/(Multivar.tail_of _).
 rewrite -!TupleDist.head_of -!TupleDist.tail_of.
-rewrite -inde_rv_tuple_dist /=.
+rewrite -inde_drv_tuple_dist /=.
 (* TODO: lemma? *)
 rewrite /Pr.
 rewrite (reindex (fun x : 'rV[A]_n.+1 => (x ``_ ord0, rbehead x))) //=; last first.
@@ -79,11 +79,11 @@ Lemma sum_mlog_prod_isum_map_mlog A (P : dist A) : forall n,
 Proof.
 elim => [|n IH].
 - move: (@isum_n_1 A (\row_i --log P)).
-  set mlogP := cast_rv _.
+  set mlogP := cast_rV1 _.
   move => HmlogP.
   set mlogprodP := sum_mlog_prod _ _.
   suff -> : mlogprodP = mlogP by [].
-  rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_rv /= mxE /=; congr mkRvar.
+  rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_rV1 /= mxE /=; congr mkRvar.
   apply functional_extensionality => ta; by rewrite big_ord_recl big_ord0 addR0.
 - rewrite [X in _ \=isum X](_ : _ =
       row_mx (\row_(i < 1) (--log P)) (\row_(i < n.+1) --log P)); last first.
