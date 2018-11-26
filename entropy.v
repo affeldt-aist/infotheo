@@ -1,8 +1,10 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq.
 From mathcomp Require Import fintype tuple finfun bigop.
+From mathcomp Require Import matrix.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext Rbigop logb ln_facts proba divergence.
+Require Import ssrR Reals_ext ssralg_ext Rbigop bigop_ext logb ln_facts.
+Require Import proba divergence.
 
 (** * Entropy of a distribution *)
 
@@ -107,4 +109,13 @@ rewrite [in X in _ + X](eq_bigr (fun a => P a * - log (/ INR #|A|))); last first
   by move=> a _; rewrite Uniform.dE.
 rewrite -[in X in _ + X = _]big_distrl /= pmf1 mul1R.
 rewrite addRC /entropy /log LogV ?oppRK ?subR_opp // HA; exact/ltR0n.
+Qed.
+
+Lemma entropy_from_bivar (A : finType) n (P : {dist A * 'rV[A]_n}) :
+  `H (Multivar.from_bivar P) = `H P.
+Proof.
+rewrite /entropy /=; congr (- _).
+rewrite -(big_rV_cons_behead _ xpredT xpredT) /= pair_bigA /=.
+apply eq_bigr => -[a b] _ /=.
+by rewrite Multivar.from_bivarE /= row_mx_row_ord0 rbehead_row_mx.
 Qed.

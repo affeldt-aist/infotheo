@@ -24,6 +24,7 @@ log_sum.v
 channel.v
 cproba.v
 pproba.v
+cinde.v
 channel_code.v
 binary_entropy_function.v
 f2.v

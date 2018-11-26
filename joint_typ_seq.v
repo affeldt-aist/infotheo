@@ -98,7 +98,7 @@ Hypothesis He : 0 < epsilon.
 (** #<img src="http://staff.aist.go.jp/reynald.affeldt/shannon/typ_seq1-10.png"># *)
 
 Lemma JTS_1 : (JTS_1_bound <= n)%nat ->
-  Pr (`J(P , W) `^ n) (`JTS P W n epsilon) >= 1 - epsilon.
+  1 - epsilon <= Pr (`J(P , W) `^ n) (`JTS P W n epsilon).
 Proof.
 have : (JTS_1_bound <= n)%nat ->
   Pr ( `J( P `^ n , W ``^ n) )
@@ -258,7 +258,7 @@ have : (JTS_1_bound <= n)%nat ->
 move=> n0n Hn0n0.
 suff H : Pr (`J(P , W) `^ n ) (~: `JTS P W n epsilon) <= epsilon.
   rewrite -(Pr_cplt (`J(P , W) `^ n) (`JTS P W n epsilon)).
-  apply/Rle_ge; by rewrite leR_subl_addr leR_add2l.
+  by rewrite leR_subl_addr leR_add2l.
 apply (@leR_trans (Pr (`J(P , W) `^ n) ([set x | ((rV_prod x).1 \notin `TS P n epsilon)] :|:
 ([set x | ((rV_prod x).2 \notin `TS (`O( P , W)) n epsilon)] :|:
           (~: `TS (`J( P , W)) n epsilon))))).

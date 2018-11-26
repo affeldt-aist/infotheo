@@ -655,7 +655,7 @@ Definition head_of := Bivar.fst to_bivar.
 Definition tail_of := Bivar.snd to_bivar.
 
 Definition tolast (a : 'rV[A]_n * A) :=
-  P (castmx (erefl, @addnC n 1%nat) (row_mx a.1 (\row_(i < 1) a.2))).
+  P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2))).
 Lemma tolast0 a : 0 <= tolast a. Proof. exact: dist_ge0. Qed.
 Lemma tolast1 : \rsum_(a in {: 'rV[A]_n * A}) tolast a = 1%R.
 Proof.
@@ -664,7 +664,7 @@ by rewrite pair_big /=; apply eq_bigr; case.
 Qed.
 Definition to_bivar_last : {dist 'rV[A]_n * A} := locked (makeDist tolast0 tolast1).
 Lemma to_bivar_lastE a : to_bivar_last a =
-  P (castmx (erefl, @addnC n 1%nat) (row_mx a.1 (\row_(i < 1) a.2))).
+  P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2))).
 Proof. rewrite /to_bivar_last; unlock => /=; by []. Qed.
 
 End prod_of_rV.
@@ -693,6 +693,14 @@ Lemma from_bivarE a : from_bivar a = P (a ``_ ord0, rbehead a).
 Proof. rewrite /from_bivar; unlock => /=; by []. Qed.
 
 End rV_of_prod.
+
+Lemma from_bivarK (A : finType) n (P : {dist A * 'rV[A]_n}) :
+  to_bivar (from_bivar P) = P.
+Proof.
+apply/dist_ext => /= -[a b].
+by rewrite to_bivarE /= from_bivarE /= row_mx_row_ord0 rbehead_row_mx.
+Qed.
+
 End Multivar.
 
 Local Open Scope vec_ext_scope.

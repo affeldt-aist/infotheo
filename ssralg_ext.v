@@ -159,7 +159,7 @@ Definition rbelast (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (widen_ord (leqnSn _)
 Definition rlast (x : 'rV[A]_n.+1) := x ``_ ord_max.
 
 Lemma row_mx_row_ord_max (x : 'rV[A]_n) a :
-  (castmx (erefl 1%nat, addnC n 1%nat) (row_mx x (\row_(k < 1) a))) ``_ ord_max = a.
+  (castmx (erefl 1%nat, addn1 n) (row_mx x (\row_(k < 1) a))) ``_ ord_max = a.
 Proof.
 rewrite castmxE /= mxE /=; case: splitP => [j Hj|k _].
 by move: (ltn_ord j); rewrite -Hj ltnn.
@@ -167,7 +167,7 @@ by rewrite (ord1 k) mxE.
 Qed.
 
 Lemma row_mx_rbelast (x : 'rV_(1 + n)) :
-  castmx (erefl 1%N, addnC n 1%N) (row_mx (rbelast x) (\row__ (x ``_ ord_max))) = x.
+  castmx (erefl 1%N, addn1 n) (row_mx (rbelast x) (\row__ (x ``_ ord_max))) = x.
 Proof.
 apply/rowP => i; rewrite castmxE /= mxE; case: splitP => [j /= ij|k /=].
 rewrite mxE; congr (x _ _); exact/val_inj.
@@ -175,7 +175,7 @@ rewrite (ord1 k) addn0 => ni; rewrite mxE; congr (x _ _); exact/val_inj.
 Qed.
 
 Lemma rbelast_row_mx (x : 'rV_n) a :
-  rbelast (castmx (erefl 1%N, addnC n 1%N) (row_mx x (\row_(j < 1) a))) = x.
+  rbelast (castmx (erefl 1%N, addn1 n) (row_mx x (\row_(j < 1) a))) = x.
 Proof.
 apply/rowP => i; rewrite !(mxE,castmxE) /=; case: splitP => [j /= ij|k /=].
 by congr (x _ _); apply/val_inj.
