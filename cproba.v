@@ -1279,7 +1279,7 @@ Variables (A B : finType) (n : nat) (P : {dist 'rV[A]_n * B}) (i : 'I_n).
 Definition f (ab : A * B) :=
   \rsum_(x : 'rV[A]_n * B | (x.1 ``_ i == ab.1) && (x.2 == ab.2)) P x.
 Lemma f0 ab : 0 <= f ab.
-Proof. rewrite /f; apply rsumr_ge0 => /= -[a b] /= _; exact: dist_ge0. Qed.
+Proof. rewrite /f; apply: rsumr_ge0 => /= -[a b] /= _; exact: dist_ge0. Qed.
 Lemma f1 : \rsum_(ab : A * B) f ab = 1.
 Proof.
 rewrite -(pmf1 P) /= (eq_bigr (fun x => f (x.1, x.2))); last by case.
@@ -1309,7 +1309,7 @@ Qed.
 Definition f (ab : 'rV[A]_i * A * B) := \rsum_(w : 'rV[A]_(n - i)) P
     (castmx (erefl, cast) (row_mx (row_mx ab.1.1 (\row__ ab.1.2)) w), ab.2).
 Lemma f0 ab : 0 <= f ab.
-Proof. rewrite /f; apply rsumr_ge0 => w _; exact: dist_ge0. Qed.
+Proof. rewrite /f; apply: rsumr_ge0 => w _; exact: dist_ge0. Qed.
 
 Lemma row_mxA' (w1 : 'rV_(n - i)) (a : A) (w : 'rV_i) (H1 : (n.+1 - i)%nat = (n - i)%nat.+1)
   (H2 : _) (H3 : (i + 1%nat + (n - i))%nat = n.+1) :
@@ -1414,7 +1414,7 @@ Local Open Scope vec_ext_scope.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n}) (i : 'I_n).
 Definition f (a : A) := \rsum_(x : 'rV[A]_n | x ``_ i == a) P x.
 Lemma f0 a : 0 <= f a.
-Proof. apply (@rsumr_ge0 _ (fun x : 'rV_n => x ``_ i == a)) => /= x _; exact/dist_ge0. Qed.
+Proof. apply: (@rsumr_ge0 _ _ (fun x : 'rV_n => x ``_ i == a)) => /= x _; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(a : A) f a = 1.
 Proof. by rewrite -(pmf1 P) /= (partition_big (fun x : 'rV[A]_n => x ``_ i) xpredT). Qed.
 Definition d : {dist A} := locked (makeDist f0 f1).

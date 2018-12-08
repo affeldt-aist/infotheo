@@ -267,13 +267,20 @@ case: ifPn => /=.
   exact/IH.
 Qed.
 
-Lemma rsumr_ge0 (A : finType) (P : pred A) f (H : forall i, P i -> 0 <= f i) :
+Lemma rsumr_ge0 (A : eqType) (d : seq A) (P : pred A) f (H : forall i, P i -> 0 <= f i) :
+  0 <= \rsum_(i <- d | P i) f i.
+Proof.
+elim: d => [|h t IH]; first by rewrite big_nil; exact/leRR.
+rewrite big_cons; case: ifPn => // Ph; apply/addR_ge0 => //; exact: H.
+Qed.
+
+(*Lemma rsumr_ge0 (A : finType) (P : pred A) f (H : forall i, P i -> 0 <= f i) :
   0 <= \rsum_(i in A | P i) f i.
 Proof.
 apply (@leR_trans (\rsum_(i | (i \in A) && P i) (fun=> 0) i)).
 rewrite big_const iter_addR mulR0 /=; exact/leRR.
 exact/ler_rsum.
-Qed.
+Qed.*)
 
 Lemma rsumr_gt0 (A : finType) (f : A -> R) (HA : (0 < #|A|)%nat) :
   (forall i, 0 < f i) -> 0 < \rsum_(i in A) f i.

@@ -70,23 +70,13 @@ Definition e0 := `H P - r.
 Lemma e0_delta : e0 <> delta.
 Proof.
 rewrite /e0 /delta /lambda -/r.
-apply Rmin_case_strong => H1.
-- apply neq_Rdiv.
-  case: Hr => ? ? ?; lra.
-  move=> ?; lra.
-  move=> ?; lra.
-- apply Rmin_case_strong => H2.
-  + apply/gtR_eqF.
-    apply: leR_ltR_trans.
-    * apply: (leR_trans _ H2).
-      apply Rdiv_le; [exact/Rlt_le/Hepsilon1 | lra].
-    * apply Rdiv_lt; last lra.
-      case: Hr => ? ?; lra.
-  + rewrite /Rdiv -mulRA (_ : ( _ * / 2 ) = / 4); last by field.
-    apply neq_Rdiv.
-    case: Hr => ? ? ?; lra.
-    move=> ?; lra.
-    move=> ?; lra.
+apply Rmin_case_strong => H1; first by lra.
+apply Rmin_case_strong => H2.
+- apply/gtR_eqF; apply: leR_ltR_trans.
+  + apply: (leR_trans _ H2).
+    apply Rdiv_le; [exact/Rlt_le/Hepsilon1 | lra].
+  * rewrite ltR_pdivr_mulr //; lra.
+- rewrite /Rdiv -mulRA (_ : ( _ * / 2 ) = / 4); [lra | by field].
 Qed.
 
 Definition no_failure := [set x : 'rV[A]_k.+1 | dec sc (enc sc x) == x].

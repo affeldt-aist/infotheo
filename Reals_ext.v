@@ -53,6 +53,9 @@ Notation "p '.~'" := (onem p)%R (format "p .~", at level 5) : R_scope.
 Lemma onem_ge0 (r : R) : r <= 1 -> 0 <= r.~.
 Proof. move=> r1; rewrite /onem; lra. Qed.
 
+Lemma onem_le1 (r : R) : 0 <= r -> r.~ <= 1.
+Proof. move=> r0; rewrite /onem; lra. Qed.
+
 Lemma onemKC (r : R) : (r + r.~ = 1)%R.
 Proof. rewrite /onem; by field. Qed.
 
@@ -91,31 +94,12 @@ Coercion Q2R : Qplus >-> R.
 
 (** Lemmas about division *)
 
-Lemma neq_Rdiv a b : a <> 0 -> b <> 0 -> b <> 1 -> a <> a / b.
-Proof.
-move=> Ha Hb Hb' abs.
-rewrite -{1}[X in X = _]mulR1 in abs.
-move/(eqR_mul2l Ha) in abs.
-apply Hb'.
-apply (@eqR_mul2r (/ b)); first exact/eqP/invR_neq0/eqP.
-rewrite mulRV ?mul1R //; exact/eqP.
-Qed.
-
 Lemma Rdiv_le a : 0 <= a -> forall r, 1 <= r -> a / r <= a.
 Proof.
 move=> Ha r Hr.
 apply (@leR_pmul2l r); first lra.
 rewrite /Rdiv mulRCA mulRV; last by apply/negP => /eqP ?; subst r; lra.
 rewrite -mulRC; exact: leR_wpmul2r.
-Qed.
-
-Lemma Rdiv_lt a : 0 < a -> forall r : R, 1 < r -> a / r < a.
-Proof.
-move=> Ha r0 Hr0.
-rewrite -[X in _ < X]mulR1.
-apply ltR_pmul2l => //.
-rewrite -invR1.
-apply ltR_inv => //; lra.
 Qed.
 
 (** Lemmas about power *)

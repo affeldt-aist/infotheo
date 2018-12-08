@@ -385,6 +385,8 @@ Arguments leR_wpmul2l [_] [_] [_].
 Arguments leR_wpmul2r [_] [_] [_].
 Arguments leR_pmul [_] [_] [_] [_].
 
+Definition ltR_pmul := Rmult_le_0_lt_compat. (* 0 <= r1 -> 0 <= r3 -> r1 < r2 -> r3 < r4 -> r1 * r3 < r2 * r4 *)
+
 (* NB: Rmult_ge_compat_l? *)
 
 Lemma paddR_eq0 (x y : R) :
