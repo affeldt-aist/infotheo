@@ -42,25 +42,23 @@ Local Open Scope typ_seq_scope.
 Lemma set_typ_seq_incl A (P : dist A) n epsilon : 0 <= epsilon -> forall r, 1 <= r ->
   `TS P n (epsilon / 3) \subset `TS P n epsilon.
 Proof.
-move=> He r Hr.
-apply/subsetP => x.
-rewrite /typ_seq !inE /typ_seq.
-case/andP. move/leRP => H2. move/leRP => H3.
+move=> e0 r r1.
+apply/subsetP => /= x.
+rewrite !inE /typ_seq => /andP[/leRP H2 /leRP H3] [:Htmp].
 apply/andP; split; apply/leRP.
 - apply/(leR_trans _ H2)/Exp_le_increasing => //.
-  rewrite !mulNR.
-  rewrite leR_oppr oppRK; apply leR_wpmul2l; first exact/leR0n.
-  apply/leR_add2l/Rdiv_le => //; lra.
-- apply (leR_trans H3).
-  apply Exp_le_increasing => //.
   rewrite !mulNR leR_oppr oppRK; apply leR_wpmul2l; first exact/leR0n.
-  apply leR_add2l; rewrite leR_oppr oppRK; apply Rdiv_le => //; lra.
+  apply/leR_add2l.
+  abstract: Htmp.
+  rewrite leR_pdivr_mulr; [apply leR_pmulr => //|]; lra.
+- apply/(leR_trans H3)/Exp_le_increasing => //.
+  rewrite !mulNR leR_oppr oppRK; apply leR_wpmul2l; first exact/leR0n.
+  apply leR_add2l; rewrite leR_oppr oppRK; exact Htmp.
 Qed.
 
 Section typ_seq_prop.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : dist A).
 Variable epsilon : R.
 Variable n : nat.
 

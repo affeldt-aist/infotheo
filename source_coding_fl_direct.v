@@ -16,8 +16,7 @@ Local Open Scope ring_scope.
 
 Section encoder_and_decoder.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : dist A).
 Variables n k : nat.
 
 Variable S : {set 'rV[A]_k.+1}.
@@ -131,7 +130,7 @@ Qed.
 Lemma halflambdaepsilon : lambda / 2 <= epsilon.
 Proof.
 apply (@leR_trans lambda).
-  apply Rdiv_le; [apply Rlt_le; exact lambda0 | lra].
+  rewrite leR_pdivr_mulr //; apply leR_pmulr; [lra | exact/ltRW/lambda0].
 rewrite /lambda.
 case: (Rlt_le_dec (r - `H P) epsilon) => ?.
 - rewrite Rmin_left; lra.
@@ -235,8 +234,7 @@ End source_coding_direct'.
 
 Section source_coding_direct.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : dist A).
 
 (** Source coding theorem (direct part) #<a name="label_source_coding_direct"> </a># *)
 

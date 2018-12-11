@@ -188,11 +188,11 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       rewrite expRV; last exact/eqP/not_eq_sym/ltR_eqF/oppR_gt0.
       rewrite -invRM; last 2 first.
         apply/eqP; rewrite invR_neq0 //; exact/eqP/gtR_eqF.
-        apply/eqP; rewrite pow_eq0 oppR_eq0; exact/eqP/ltR_eqF.
+        apply/eqP; rewrite expR_eq0 oppR_eq0; exact/eqP/ltR_eqF.
       rewrite -(invRK (exp X)); last exact/gtR_eqF/exp_pos.
       apply ltR_inv => //.
         exact/invR_gt0/exp_pos.
-        apply/mulR_gt0; [lra | apply pow_gt0; lra].
+        apply/mulR_gt0; [lra | apply expR_gt0; lra].
       rewrite -exp_Ropp mulRC (_ : 2 = INR 2`!) //.
       exact/exp_strict_lb/oppR_gt0.
     * apply (@leR_pmul2r (/ 2)); first exact/invR_gt0.
@@ -663,7 +663,7 @@ apply: (@second_derivative_convexf _ _ _ HDf Df _ HDDf DDf) => //.
   exact/proof_derive_irrelevance.
 - move=> r; rewrite /DDf => -[x11 x12].
   rewrite -expRV; last by apply/eqP/gtR_eqF/(@ltR_leR_trans x).
-  exact/pow_ge0/ltRW/invR_gt0/(@ltR_leR_trans x).
+  exact/expR_ge0/ltRW/invR_gt0/(@ltR_leR_trans x).
 Qed.
 
 Lemma log_concave_gt0W x y t : x < y ->

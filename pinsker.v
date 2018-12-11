@@ -49,7 +49,7 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   have -> : tmp = 4 * (p - q) ^ 2.
     rewrite /tmp (_ : 1 - p - (1 - q) = q - p); last by field.
     rewrite sqrRD (distRC q p) -mulRA -{3}(pow_1 `| p - q |).
-    rewrite -powS sqR_norm; ring.
+    rewrite -expRS sqR_norm; ring.
   rewrite [X in _ = _ + _ - X]mulRA.
   rewrite [in X in _ = _ + _ - X](mulRC c).
   congr (_ - _).

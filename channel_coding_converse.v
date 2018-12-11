@@ -99,9 +99,9 @@ have Rlt0n : 0 < INR n.
   rewrite /n0.
   apply mulR_gt0; last exact/invR_gt0.
   rewrite /Rdiv -mulRA.
-  apply mulR_gt0; first by apply pow_gt0; lra.
+  apply mulR_gt0; first by apply expR_gt0; lra.
   apply mulR_gt0;
-    [exact/ltR0n/fact_gt0 | exact/invR_gt0/pow_gt0/mulR_gt0].
+    [exact/ltR0n/fact_gt0 | exact/invR_gt0/expR_gt0/mulR_gt0].
 destruct n as [|n'].
   by apply ltRR in Rlt0n.
 set n := n'.+1.
@@ -117,10 +117,10 @@ apply Rge_le; rewrite mulRC -2!mulRA; apply Rle_ge.
 set aux := INR _ * (_ * _).
 have aux_gt0 : 0 < aux.
   apply mulR_gt0; first exact/ltR0n/fact_gt0.
-  apply mulR_gt0; [exact/invR_gt0/pow_gt0/mulR_gt0 | exact/invR_gt0].
+  apply mulR_gt0; [exact/invR_gt0/expR_gt0/mulR_gt0 | exact/invR_gt0].
 apply (@leR_trans ((INR n.+1 / INR n) ^ K * aux)); last first.
   apply leR_pmul => //.
-  - apply/pow_ge0/divR_ge0 => //; exact: leR0n.
+  - apply/expR_ge0/divR_ge0 => //; exact: leR0n.
   - exact: ltRW.
   - apply pow_incr; split.
     + apply divR_ge0 => //; exact: leR0n.
@@ -129,11 +129,11 @@ apply (@leR_trans ((INR n.+1 / INR n) ^ K * aux)); last first.
       rewrite -mult_INR; apply/le_INR/leP; by rewrite multE -{1}(mul1n n) ltn_pmul2r.
   - exact/leRR.
 rewrite expRM -mulRA; apply leR_pmul => //.
-- exact/pow_ge0/ltRW/ltR0n.
+- exact/expR_ge0/ltRW/ltR0n.
 - exact/leRR.
 - apply invR_le => //.
   + apply mulR_gt0; last exact aux_gt0.
-    rewrite expRV ?INR_eq0' //; exact/invR_gt0/pow_gt0.
+    rewrite expRV ?INR_eq0' //; exact/invR_gt0/expR_gt0.
   + rewrite -exp2_Ropp mulNR oppRK /exp2.
     have nDeltaln2 : 0 <= INR n * Delta * ln 2.
       apply mulR_ge0; last exact/ltRW.
@@ -141,21 +141,21 @@ rewrite expRM -mulRA; apply leR_pmul => //.
     apply: (leR_trans _ (exp_lb (K.+1) nDeltaln2)) => {nDeltaln2}.
     apply Req_le.
     rewrite invRM; last 2 first.
-      exact/gtR_eqF/pow_gt0/invR_gt0.
+      exact/gtR_eqF/expR_gt0/invR_gt0.
       exact/gtR_eqF.
     rewrite -/(Rdiv _ _) divRM; last 2 first.
       by apply/eqP; rewrite INR_eq0' gtn_eqF // fact_gt0.
       apply/nesym/ltR_eqF/mulR_gt0; last exact/invR_gt0.
-      exact/invR_gt0/pow_gt0/mulR_gt0.
+      exact/invR_gt0/expR_gt0/mulR_gt0.
     rewrite -mulRA mulRC invRM; last 2 first.
-    - apply/eqP/invR_neq0; rewrite pow_eq0 mulR_neq0 ln2_neq0 andbT; exact/eqP/gtR_eqF.
+    - apply/eqP/invR_neq0; rewrite expR_eq0 mulR_neq0 ln2_neq0 andbT; exact/eqP/gtR_eqF.
     - apply/eqP/invR_neq0; by rewrite INR_eq0'.
     - rewrite invRK; last first.
-        apply/eqP; rewrite pow_eq0 mulR_neq0 ln2_neq0 andbT; exact/eqP/gtR_eqF.
+        apply/eqP; rewrite expR_eq0 mulR_neq0 ln2_neq0 andbT; exact/eqP/gtR_eqF.
       rewrite invRK; last by apply/eqP; rewrite INR_eq0'.
       rewrite (_ : / (/ INR n) ^ K = (INR n) ^ K); last first.
-        rewrite expRV ?INR_eq0' // invRK //; apply/eqP/pow_not0; by rewrite INR_eq0'.
-      rewrite -mulRA {1}/Rdiv (mulRA (INR n)) -powS mulRA -expRM.
+        rewrite expRV ?INR_eq0' // invRK //; apply/eqP/expR_neq0; by rewrite INR_eq0'.
+      rewrite -mulRA {1}/Rdiv (mulRA (INR n)) -expRS mulRA -expRM.
       by rewrite -/(Rdiv _ _) mulRCA -mulRA (mulRC (ln 2)).
 Qed.
 

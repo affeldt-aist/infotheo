@@ -147,7 +147,7 @@ have : (JTS_1_bound <= n)%nat ->
     apply: leR_trans; first exact: (H1 n0).
     have n0_prednK : n0.-1.+1 = n0.
       rewrite prednK // (leq_trans _ Hn0) // (_ : O = Z.abs_nat 0) //.
-      apply/ltP/Zabs_nat_lt; split; [by [] | apply/up_pos/aep_bound_pos; lra].
+      apply/ltP/Zabs_nat_lt; split; [by [] | apply/up_pos/aep_bound_ge0; lra].
     have : 1 - (epsilon / 3) <= Pr (P `^ n0) (`TS P n0 (epsilon/3)).
       rewrite -n0_prednK.
       apply Pr_TS_1.
@@ -155,7 +155,7 @@ have : (JTS_1_bound <= n)%nat ->
       - rewrite n0_prednK.
         move/leP/le_INR : Hn0; apply leR_trans.
         rewrite INR_Zabs_nat; last first.
-          apply/Zlt_le_weak/up_pos/aep_bound_pos => //.
+          apply/Zlt_le_weak(*TODO: ssrZ*)/up_pos/aep_bound_ge0 => //.
           apply divR_gt0 => //; lra.
         exact/ltRW/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
@@ -207,7 +207,7 @@ have : (JTS_1_bound <= n)%nat ->
     apply: leR_trans; first exact: (H1 n0).
     have n0_prednK : n0.-1.+1 = n0.
       rewrite prednK // (leq_trans _ Hn0) // (_ : O = Z.abs_nat 0) //.
-      apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_pos; lra].
+      apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_ge0; lra].
     have : 1 - epsilon / 3 <=
         Pr ((`O(P , W)) `^ n0) (`TS (`O(P , W)) n0 (epsilon / 3)).
       rewrite -n0_prednK.
@@ -217,7 +217,7 @@ have : (JTS_1_bound <= n)%nat ->
         rewrite n0_prednK.
         apply leR_trans.
         + rewrite INR_Zabs_nat; last first.
-            apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_pos; lra.
+            apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_ge0; lra.
           exact/ltRW/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
     rewrite Pr_to_cplt setCK; exact/leRR.
@@ -237,14 +237,14 @@ have : (JTS_1_bound <= n)%nat ->
     apply: leR_trans; first exact: (H1 n0).
     have n0_prednK : n0.-1.+1 = n0.
       rewrite prednK // (leq_trans _ Hn0) // (_ : O = Z.abs_nat 0) //.
-      apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_pos; lra].
+      apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_ge0; lra].
     have : 1 - epsilon / 3 <= Pr ((`J( P , W)) `^ n0) (`TS (`J( P , W)) n0 (epsilon / 3)).
       rewrite -n0_prednK; apply Pr_TS_1.
       - apply divR_gt0 => //; lra.
       - rewrite n0_prednK.
         move/leP/le_INR : Hn0; apply leR_trans.
         rewrite INR_Zabs_nat; last first.
-          apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_pos; lra.
+          apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_ge0; lra.
         exact/Rlt_le/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
     rewrite Pr_to_cplt setCK; exact/leRR.

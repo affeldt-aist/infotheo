@@ -218,9 +218,9 @@ case/Rle_lt_or_eq_dec: (proj1 p_01) => [Hp | <-]; last first.
 apply (@leR_pmul2l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
   apply mulR_gt0; apply/invR_gt0/pow_lt => //; lra.
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
-  apply/pow_not0; rewrite subR_eq0; apply/eqP/gtR_eqF; lra.
+  apply/expR_neq0; rewrite subR_eq0; apply/eqP/gtR_eqF; lra.
 rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
-  exact/pow_not0/eqP/gtR_eqF.
+  exact/expR_neq0/eqP/gtR_eqF.
 rewrite -expRV; last exact/eqP/gtR_eqF.
 rewrite -expRV; last by rewrite subR_eq0; apply/eqP/gtR_eqF; lra.
 rewrite mulRC expRV; last exact/eqP/gtR_eqF.

@@ -48,8 +48,8 @@ rewrite (_ : \rsum_(a in A) _ = s); last by apply eq_bigr => a _; field.
 by field.
 Qed.
 
-Lemma aep_sigma2_nonneg : 0 <= aep_sigma2.
-Proof. rewrite -V_mlog /Var; apply Ex_nonneg => ?; exact: pow_even_ge0. Qed.
+Lemma aep_sigma2_ge0 : 0 <= aep_sigma2.
+Proof. rewrite -V_mlog /Var; apply Ex_ge0 => ?; exact: pow_even_ge0. Qed.
 
 End mlog_prop.
 
@@ -105,13 +105,13 @@ Variables (A : finType) (P : dist A).
 
 Definition aep_bound epsilon := (aep_sigma2 P / epsilon ^ 3)%R.
 
-Lemma aep_bound_pos e (_ : 0 < e) : 0 <= aep_bound e.
-Proof. apply divR_ge0; [exact: aep_sigma2_nonneg | exact/pow_lt]. Qed.
+Lemma aep_bound_ge0 e (_ : 0 < e) : 0 <= aep_bound e.
+Proof. apply divR_ge0; [exact: aep_sigma2_ge0 | exact/pow_lt]. Qed.
 
 Lemma aep_bound_decreasing e e' : 0 < e' <= e -> aep_bound e <= aep_bound e'.
 Proof.
 case=> Oe' e'e.
-apply leR_wpmul2l; first exact: aep_sigma2_nonneg.
+apply leR_wpmul2l; first exact: aep_sigma2_ge0.
 apply leR_inv => //; first exact/pow_lt.
 apply pow_incr => //; split; [exact/ltRW | exact/e'e ].
 Qed.

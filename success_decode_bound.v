@@ -17,10 +17,11 @@ Local Open Scope entropy_scope.
 Local Open Scope tuple_ext_scope.
 Local Open Scope reals_ext_scope.
 
+Reserved Notation "scha( W , C )" (at level 50).
+
 Section scha_def.
 
-Variables B A M : finType.
-Variable n : nat.
+Variables (B A M : finType) (n : nat).
 
 (** Decoding success rate: *)
 
@@ -28,7 +29,7 @@ Definition scha (W : `Ch_1(A, B)) (c : code A B M n) := 1 - echa(W , c).
 
 End scha_def.
 
-Notation "scha( W , C )" := (scha W C) (at level 50) : channel_code_scope.
+Notation "scha( W , C )" := (scha W C) : channel_code_scope.
 
 Section scha_facts.
 
@@ -316,7 +317,7 @@ rewrite big_const iter_addR /success_factor_bound.
 apply leR_wpmul2r.
 - apply mulR_ge0; last exact/exp2_ge0.
   rewrite /exp_cdiv; case: ifP => _ //; exact/leRR.
-- rewrite INR_pow_expn; exact/le_INR/leP/card_nu.
+- rewrite INR_expR; exact/le_INR/leP/card_nu.
 Qed.
 
 End typed_success_bound_sect.
@@ -349,8 +350,7 @@ Proof.
 move=> Pmax.
 apply (@leR_trans (INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c))); last first.
   apply leR_wpmul2r; first exact: scha_pos.
-  rewrite INR_pow_expn; apply le_INR; apply/leP.
-  exact: (type_counting A n).
+  rewrite INR_expR; exact/le_INR/leP/(type_counting A n).
 apply (@leR_trans (\rsum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
   rewrite (_ : INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c) =
              \rsum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)); last first.

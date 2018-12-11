@@ -145,7 +145,7 @@ set Delta := min((minRate - cap) / 2, x ^ 2 / 2).
 exists Delta; split.
   apply Rmin_case.
   - apply mulR_gt0; [exact/subR_gt0 | exact/invR_gt0].
-  - apply mulR_gt0; [exact: pow_gt0 | exact: invR_gt0].
+  - apply mulR_gt0; [exact: expR_gt0 | exact: invR_gt0].
 move=> P V v_dom_by_w.
 case/boolP : (Delta <b= D(V || W | P)) => [/leRP| /leRP/ltRNge] Hcase.
   apply (@leR_trans (D(V || W | P))) => //.

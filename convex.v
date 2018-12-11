@@ -23,6 +23,8 @@ The last term is then positive thanks to the assumption on DDf.
 Now this is an equivalent condition to the convexity of f.
  *)
 
+Local Open Scope reals_ext_scope.
+
 Section interval.
 
 Definition convex_interval (D : R -> Prop) := forall x y t,

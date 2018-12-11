@@ -11,34 +11,6 @@ Unset Printing Implicit Defensive.
 
 Local Open Scope R_scope.
 
-(* TODO: move? *)
-Definition ceil (r : R) : Z := if frac_part r == 0 then Int_part r else up r.
-
-(* TODO: move? *)
-Definition floor : R -> Z := Int_part.
-
-(* TODO: move? *)
-Lemma floorP (r : R) : r - 1 < IZR (floor r) <= r.
-Proof. rewrite /floor; case: (base_Int_part r) => ? ?; split=> //; lra. Qed.
-
-(* TODO: move? *)
-Lemma ceilP (r : R) : r <= IZR (ceil r) < r + 1.
-Proof.
-rewrite /ceil; case: ifPn => [|] /eqP r0.
-  rewrite frac_Int_part //; lra.
-case: (floorP r); rewrite /floor => H1 /Rle_lt_or_eq_dec[] H2.
-  rewrite up_Int_part plus_IZR; lra.
-exfalso; apply/r0/eqP; rewrite subR_eq0; exact/eqP.
-Qed.
-
-(* TODO: move? *)
-Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.
-Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(leR_trans _ K). Qed.
-
-(* TODO: move up? *)
-Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
-Local Notation "n %:R" := (INR n).
-
 (* NB(rei): redefine kraft_cond in R instead of with an rcfType *)
 (* TODO: use mathcomp.analysis? or build an ad-hoc interface to bridge R and rcfType as a temporary fix? *)
 Definition kraft_condR (T : finType) (sizes : seq nat) :=
@@ -93,16 +65,16 @@ have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos; exact/leRP/dist_ge0.
 apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
   rewrite div1R LogV //.
   rewrite oppRK LogK //; first exact/leRR.
-  by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
+  by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite pow_Exp; last by apply ltR0n; rewrite card_ord.
 rewrite Exp_Ropp.
 apply/leR_inv/Exp_le_increasing => //.
-  by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
+  by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite INR_Zabs_nat; last first.
   case/boolP : (P i == 1) => [/eqP ->|Pj1].
     by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_pos/leRR.
   apply/leR0ceil/ltRW/ltR0Log.
-  by apply/ltRP; rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
+  by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
   rewrite div1R invR_gt1 // ltR_neqAle; split; [exact/eqP|exact/dist_max].
 by set x := Log _ _; case: (ceilP x).
 Qed.

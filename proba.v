@@ -27,36 +27,37 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
        construction of a distribution from another
        by removing one element from the support
   9. Module ConvexDist.
-  10. Module Bivar.
+  10. Module FamilyDist.
+  11. Module Bivar.
        Joint (Bivariate) Distribution
-  11. Module Multivar
+  12. Module Multivar
         multivariate distribution
       Section joint_dist_rV.
       Section joint_rV_dist.
       Section joint_tuple_dist.
-  12. Module ProdDist.
-  13. Module TupleDist.
-  14. Section wolfowitz_counting.
+  13. Module ProdDist.
+  14. Module TupleDist.
+  15. Section wolfowitz_counting.
         Wolfowitz's counting principle
-  15. Section probability.
+  16. Section probability.
         Probability of an event P with distribution p (Pr_p[P] = \sum_{i \in A, P\,i} \, p(i))
-  16. Section random_variable.
+  17. Section random_variable.
         Definition of a random variable (R-valued) with a distribution
         pr: Probability that a random variable evaluates to r \in R
-  17. Section expected_value_definition.
+  18. Section expected_value_definition.
         Expected value of a random variable
       Section expected_value_for_standard_random_variables.
         Properties of the expected value of standard random variables
-  18. Section probability_inclusion_exclusion.
+  19. Section probability_inclusion_exclusion.
         An algebraic proof of the formula of inclusion-exclusion (by Erik Martin-Dorel)
-  19. Section markov_inequality.
-  20. Section variance_definition.
+  20. Section markov_inequality.
+  21. Section variance_definition.
       Section variance_properties.
-  21. Section chebyshev.
+  22. Section chebyshev.
         Chebyshev's Inequality
-  22. Section identically_distributed.
+  23. Section identically_distributed.
         Identically Distributed Random Variables
-  23. Section independent_random_variables.
+  24. Section independent_random_variables.
       Section sum_two_rand_var_def.
         The sum of two random variables
       Section sum_two_rand_var.
@@ -64,7 +65,7 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
       Section sum_n_rand_var.
       Section sum_n_independent_rand_var_def.
       Section sum_n_independent_rand_var.
-  24. Section weak_law_of_large_numbers.
+  25. Section weak_law_of_large_numbers.
 *)
 
 Set Implicit Arguments.
@@ -710,8 +711,8 @@ Qed.
 End convexdist_prop.
 End ConvexDist.
 
-Module ConvexFamily.
-Section convexfamily.
+Module FamilyDist.
+Section familydist.
 Variables (A : finType) (n : nat) (g : 'I_n -> dist A) (e : {dist 'I_n}).
 
 Definition f a := \rsum_(i < n) e i * g i a.
@@ -730,8 +731,8 @@ Definition d : {dist A} := locked (makeDist f0 f1).
 Lemma dE a : d a = \rsum_(i < n) e i * g i a.
 Proof. by rewrite /d; unlock. Qed.
 
-End convexfamily.
-End ConvexFamily.
+End familydist.
+End FamilyDist.
 
 (* bivariate (joint) distribution *)
 Module Bivar.
@@ -1339,7 +1340,7 @@ transitivity (\rsum_(r <- fin_img X) \rsum_(a in A | X a == r) (X a * `p_X a)).
 by rewrite -sum_parti_finType.
 Qed.
 
-Lemma Ex_nonneg : (forall a, 0 <= X a) -> 0 <= Ex.
+Lemma Ex_ge0 : (forall a, 0 <= X a) -> 0 <= Ex.
 Proof.
 move=> H; rewrite ExE; apply: rsumr_ge0 => i _.
 apply mulR_ge0; by [apply H | apply dist_ge0].
@@ -1787,7 +1788,7 @@ Variables (A : finType) (X : rvar A).
 Lemma chebyshev_inequality epsilon : 0 < epsilon ->
   Pr `p_X [set a | `| X a - `E X | >b= epsilon] <= `V X / epsilon ^ 2.
 Proof.
-move=> He; rewrite leR_pdivl_mulr; last exact/pow_gt0.
+move=> He; rewrite leR_pdivl_mulr; last exact/expR_gt0.
 rewrite mulRC /`V [in X in _ <= X]ExE.
 rewrite (_ : `p_ ((X \-cst `E X) \^2) = `p_ X) //.
 apply (@leR_trans (\rsum_(a in A | `| X a - `E X | >b= epsilon)
@@ -2188,7 +2189,7 @@ Proof.
 move=> He.
 rewrite divRM; last 2 first.
   by rewrite INR_eq0.
-  exact/gtR_eqF/pow_gt0.
+  exact/gtR_eqF/expR_gt0.
 have <- : `V (X '/ n.+1) = sigma2 / INR n.+1.
   rewrite -(V_average_isum X_Xs V_Xs) V_scale //; by field; exact/INR_eq0.
 have <- : `E (X '/ n.+1) = miu.

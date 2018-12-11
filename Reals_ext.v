@@ -12,6 +12,7 @@ Reserved Notation "T '->' 'R+' " (at level 10, format "'[' T  ->  R+ ']'").
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
 Reserved Notation "P '<<' Q" (at level 10, Q at next level).
 Reserved Notation "P '<<b' Q" (at level 10).
+Reserved Notation "p '.~'" (format "p .~", at level 5).
 
 Notation "'min(' x ',' y ')'" := (Rmin x y)
   (format "'min(' x ','  y ')'") : reals_ext_scope.
@@ -47,8 +48,24 @@ suff : Hf = Hg by move=> ->.
 by apply proof_irrelevance.
 Qed.
 
+Lemma iter_mulR x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
+Proof. elim : n => // n Hn ; by rewrite iterS Hn. Qed.
+
+Lemma iter_addR x (n : nat) : ssrnat.iter n (Rplus x) 0 = INR n * x.
+Proof.
+elim : n ; first by rewrite mul0R.
+move=> n Hn; by rewrite iterS Hn -{1}(mul1R x) -mulRDl addRC -S_INR.
+Qed.
+
+(* TODO: see Rplus_lt_reg_pos_r in the standard library *)
+(*Lemma Rplus_le_lt_reg_pos_r r1 r2 r3 : 0 < r2 -> r1 + r2 <= r3 -> r1 < r3.
+Proof. move=> *. lra. Qed.*)
+
+Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Z.abs_nat x) = IZR x.
+Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
+
 Definition onem (r : R) := (1 - r)%R.
-Notation "p '.~'" := (onem p)%R (format "p .~", at level 5) : R_scope.
+Notation "p '.~'" := (onem p)%R : reals_ext_scope.
 
 Lemma onem_ge0 (r : R) : r <= 1 -> 0 <= r.~.
 Proof. move=> r1; rewrite /onem; lra. Qed.
@@ -68,22 +85,6 @@ case=> pO p1; split; by [rewrite leR_subr_addr add0R|
   rewrite leR_subl_addr -(addR0 1) leR_add2l].
 Qed.
 
-Lemma iter_mulR x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
-Proof. elim : n => // n Hn ; by rewrite iterS Hn. Qed.
-
-Lemma iter_addR x (n : nat) : ssrnat.iter n (Rplus x) 0 = INR n * x.
-Proof.
-elim : n ; first by rewrite mul0R.
-move=> n Hn; by rewrite iterS Hn -{1}(mul1R x) -mulRDl addRC -S_INR.
-Qed.
-
-(* TODO: see Rplus_lt_reg_pos_r in the standard library *)
-Lemma Rplus_le_lt_reg_pos_r r1 r2 r3 : 0 < r2 -> r1 + r2 <= r3 -> r1 < r3.
-Proof. move=> *. lra. Qed.
-
-Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Z.abs_nat x) = IZR x.
-Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
-
 (** non-negative rationals: *)
 
 Record Qplus := mkRrat { num : nat ; den : nat }.
@@ -92,29 +93,22 @@ Definition Q2R (q : Qplus) := INR (num q) / INR (den q).+1.
 
 Coercion Q2R : Qplus >-> R.
 
-(** Lemmas about division *)
-
-Lemma Rdiv_le a : 0 <= a -> forall r, 1 <= r -> a / r <= a.
+(*Lemma Rdiv_le a : 0 <= a -> forall r, 1 <= r -> a / r <= a.
 Proof.
 move=> Ha r Hr.
 apply (@leR_pmul2l r); first lra.
 rewrite /Rdiv mulRCA mulRV; last by apply/negP => /eqP ?; subst r; lra.
 rewrite -mulRC; exact: leR_wpmul2r.
-Qed.
+Qed.*)
 
-(** Lemmas about power *)
-
-Section pow_sect.
-
-Lemma powS x (n : nat) : x ^ n.+1 = x * x ^ n.
-Proof. by rewrite tech_pow_Rmult. Qed.
+Section about_the_pow_function.
 
 Lemma pow_even_ge0 (n : nat) x : ~~ odd n -> 0 <= x ^ n.
 Proof.
 move=> Hn; rewrite -(odd_double_half n) (negbTE Hn) {Hn} add0n.
 move Hm : (_./2) => m {Hm n}; elim: m => [|m ih]; first by rewrite pow_O.
-rewrite doubleS 2!powS mulRA; apply/mulR_ge0 => //.
-rewrite -{2}(pow_1 x) -powS; exact: pow2_ge_0.
+rewrite doubleS 2!expRS mulRA; apply/mulR_ge0 => //.
+rewrite -{2}(pow_1 x) -expRS; exact: pow2_ge_0.
 Qed.
 
 Lemma pow2_Rle_inv a b : 0 <= a -> 0 <= b -> a ^ 2 <= b ^ 2 -> a <= b.
@@ -141,21 +135,15 @@ have : forall a b, 0 <= b -> a - b <= a. move=>  *; lra.
 apply; apply mulR_ge0; [lra | exact: pow_even_ge0].
 Qed.
 
-Lemma pow0_inv : forall (n : nat) x, x ^ n = 0 -> x = 0.
+(*Lemma pow0_inv : forall (n : nat) x, x ^ n = 0 -> x = 0.
 Proof.
 elim => [x /= H | n IH x /= /eqP]; first lra.
 by rewrite mulR_eq0 => /orP[/eqP //|/eqP/IH].
-Qed.
+Qed.*)
 
-Lemma INR_pow_expn r : forall n : nat, INR r ^ n = INR (expn r n).
-Proof.
-elim => // n IH.
-by rewrite (expnSr r n) mult_INR -addn1 pow_add /= mulR1 IH.
-Qed.
+End about_the_pow_function.
 
-End pow_sect.
-
-(** Lemmas about up / Int_part / frac_part *)
+(** Lemmas about up / Int_part / frac_part / ceil / floor *)
 
 Lemma up_pos r : 0 <= r -> (0 < up r)%Z.
 Proof.
@@ -250,6 +238,25 @@ move=> Ha; elim=> /=.
 by rewrite /frac_part (_ : 1 = INR 1) // Int_part_INR  subRR.
 move=> n IH; exact: frac_part_mult.
 Qed.
+
+Definition ceil (r : R) : Z := if frac_part r == 0 then Int_part r else up r.
+
+Definition floor : R -> Z := Int_part.
+
+Lemma floorP (r : R) : r - 1 < IZR (floor r) <= r.
+Proof. rewrite /floor; case: (base_Int_part r) => ? ?; split=> //; lra. Qed.
+
+Lemma ceilP (r : R) : r <= IZR (ceil r) < r + 1.
+Proof.
+rewrite /ceil; case: ifPn => [|] /eqP r0.
+  rewrite frac_Int_part //; lra.
+case: (floorP r); rewrite /floor => H1 /Rle_lt_or_eq_dec[] H2.
+  rewrite up_Int_part plus_IZR; lra.
+exfalso; apply/r0/eqP; rewrite subR_eq0; exact/eqP.
+Qed.
+
+Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.
+Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(leR_trans _ K). Qed.
 
 (** P is dominated by Q: *)
 Section dominance.

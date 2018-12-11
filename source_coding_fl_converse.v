@@ -54,7 +54,7 @@ apply divR_gt0; last lra.
 case: Hepsilon => ? ?; lra.
 Qed.
 
-Lemma Hlambda : 0 < lambda.
+Lemma lambda0 : 0 < lambda.
 Proof. rewrite /lambda; apply P_Rmin => //; [exact Hepsilon1 | exact Hr1]. Qed.
 
 Lemma Hdelta : 0 < delta.
@@ -62,7 +62,7 @@ Proof.
 rewrite /delta.
 apply Rmin_pos.
 case: Hr => ? ?; apply divR_gt0; lra.
-apply divR_gt0; [exact Hlambda | lra].
+apply divR_gt0; [exact lambda0 | lra].
 Qed.
 
 Definition e0 := `H P - r.
@@ -74,7 +74,7 @@ apply Rmin_case_strong => H1; first by lra.
 apply Rmin_case_strong => H2.
 - apply/gtR_eqF; apply: leR_ltR_trans.
   + apply: (leR_trans _ H2).
-    apply Rdiv_le; [exact/Rlt_le/Hepsilon1 | lra].
+    rewrite leR_pdivr_mulr //; apply leR_pmulr; [lra|exact/ltRW/Hepsilon1].
   * rewrite ltR_pdivr_mulr //; lra.
 - rewrite /Rdiv -mulRA (_ : ( _ * / 2 ) = / 4); [lra | by field].
 Qed.
@@ -215,8 +215,8 @@ rewrite mulRA mulVR ?mul1R; last exact/eqP/gtR_eqF.
 rewrite /delta.
 have H1 : lambda / 2 <= / 2 * (1 - epsilon).
   apply (@leR_trans lambda).
-    apply Rdiv_le; [apply Rlt_le; exact Hlambda | lra].
-  rewrite /lambda mulRC; exact: geR_minl.
+    rewrite leR_pdivr_mulr //; apply leR_pmulr; [lra | exact/ltRW/lambda0].
+ rewrite /lambda mulRC; exact: geR_minl.
 apply Rmin_case_strong => ? //; exact: (@leR_trans (lambda / 2)).
 Qed.
 
@@ -224,8 +224,7 @@ End source_coding_converse'.
 
 Section source_coding_converse.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : dist A).
 
 (** Source coding theorem (converse part) #<a name="label_source_coding_converse"> </a># *)
 
