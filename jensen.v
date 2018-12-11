@@ -3,116 +3,18 @@ From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import proba.
+Require Import proba convex.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Section interval.
-
-Definition convex_interval (D : R -> Prop) := forall x y t,
-  D x -> D y -> 0 <= t <= 1 -> D (t * x + (1-t) * y).
-
-Record interval := mkInterval {
-  mem_interval :> R -> Prop;
-  interval_convex : convex_interval mem_interval }.
-
-End interval.
-
-Section convex.
-
-Implicit Types f : R -> R.
-
-Definition convex_leq f (x y t : R) :=
-  f (t * x + (1 - t) * y) <= t * f x + (1 - t) * f y.
-
-Definition convex f := forall x y t : R,
-  0 <= t <= 1 -> convex_leq f x y t.
-
-Definition convex_in (D : interval) f := forall x y t : R,
-  D x -> D y -> 0 <= t <= 1 -> convex_leq f x y t.
-
-Definition strictly_convex f := forall x y t : R,
-  x != y -> 0 < t < 1 -> convex_leq f x y t.
-
-End convex.
-
-Section concave.
-
-Definition concave_leq f := convex_leq (fun x => - f x).
-
-Lemma concave_leqP f x y t : concave_leq f x y t <->
-  t * f x + (1 - t) * f y <=  f (t * x + (1 - t) * y).
-Proof. by rewrite /concave_leq /convex_leq leR_oppl oppRD 2!mulRN 2!oppRK. Qed.
-
-Lemma concave_leqN f x y t : concave_leq f x y t ->
-  forall k, 0 <= k -> concave_leq (fun x => f x * k) x y t.
-Proof.
-move=> H k k0; rewrite /concave_leq /convex_leq.
-rewrite -3!mulNR 2!mulRA -mulRDl; exact: leR_wpmul2r.
-Qed.
-
-Definition concave f := forall x y t : R,
-  0 <= t <= 1 -> concave_leq f x y t.
-
-Definition concave_in (D : interval) f := forall x y t : R,
-  D x -> D y -> 0 <= t <= 1 -> concave_leq f x y t.
-
-Definition strictly_concave f := forall x y t : R,
-  x != y -> 0 < t < 1 -> concave_leq f x y t.
-
-End concave.
-
-Lemma dist_ind (A : finType) (P : dist A -> Prop) :
-  (forall n : nat, (forall X, #|dist_supp X| = n -> P X) ->
-    forall X b, #|dist_supp X| = n.+1 -> X b != 0 -> P X) ->
-  forall X, P X.
-Proof.
-move=> H1 d.
-move: {-2}(#|dist_supp d|) (erefl (#|dist_supp d|)) => n; move: n d.
-elim=> [d /esym /card0_eq Hd0|].
-  move: (pmf1 d).
-  rewrite -[X in X = _]mul1R big_distrr rsum_dist_supp.
-  rewrite big1 => [H01|a].
-    by elim: (gtR_eqF _ _ Rlt_0_1).
-  by rewrite Hd0.
-move=> n IH d n13.
-have [b Hb] : exists b : A, d b != 0.
-  suff : {x | x \in dist_supp d} by case => a; rewrite inE => ?; exists a.
-  apply/sigW/set0Pn; by rewrite -cards_eq0 -n13.
-by refine (H1 n _ _ _ _ Hb) => // d' A2; apply IH.
-Qed.
-
 Section jensen_inequality.
 
 Variable f : R -> R.
 Variable D : interval.
-Hypothesis convex_f : convex_in D f.
+Hypothesis convex_f : convexf_in D f.
 Variables A : finType.
-
-Lemma dist_supp_singleP (X : dist A) a :
-  reflect (X a = 1) (dist_supp X == [set a]).
-Proof.
-apply: (iffP idP).
-  move/eqP => Ha.
-  rewrite -(pmf1 X).
-  rewrite (eq_bigr (fun i => 1 * X i)); last by move=> *; rewrite mul1R.
-  by rewrite rsum_dist_supp Ha big_set1 mul1R.
-move=> Xa1.
-have H : forall b : A, b != a -> X b = 0.
-  apply/(@prsumr_eq0P _ [pred x | x != a] X).
-    move=> ? _; exact/dist_ge0.
-  move/eqP : (pmf1 X).
-  by rewrite (bigD1 a) //= Xa1 eq_sym addRC -subR_eq subRR => /eqP <-.
-apply/eqP/setP => b.
-rewrite !inE.
-case/boolP: (b == a) => Hb.
-  rewrite (eqP Hb) Xa1; apply/eqP => Hb'.
-  apply (ltRR 1).
-  by rewrite {1}Hb'.
-by rewrite H // eqxx.
-Qed.
 
 Local Hint Resolve leRR.
 
@@ -137,8 +39,7 @@ have HsumD1 q:
   \rsum_(a in dist_supp d) q a * d a =
   /(1 - X b) * \rsum_(a in dist_supp d) q a * X a.
   rewrite (eq_bigr (fun a => /(1-X b) * (q a * X a))); last first.
-    move=> i.
-    rewrite inE /= /d /D1Dist.f /=.
+    move=> i; rewrite inE D1Dist.dE.
     case: ifP => Hi; first by rewrite eqxx.
     by rewrite /Rdiv (mulRC (/ _)) mulRA.
   by rewrite -big_distrr.
@@ -149,8 +50,8 @@ have {HsumD1}HsumXD1 q:
   rewrite (eq_bigl (fun a : A => a \in dist_supp d)) //= => i.
   rewrite !inE /=.
   case HXi: (X i == 0) => //=.
-    by rewrite (D1Dist.f_0 _ (eqP HXi)) eqxx.
-  by rewrite D1Dist.f_eq0 // ?HXi // eq_sym.
+    by rewrite (D1Dist.d_0 _ (eqP HXi)) eqxx.
+  by rewrite D1Dist.d_eq0 // ?HXi // eq_sym.
 rewrite 2!{}HsumXD1.
 have /IH {IH}[IH HDd] : #|dist_supp d| = n.
   by rewrite D1Dist.card_dist_supp // cardA.
@@ -176,12 +77,12 @@ Section jensen_concave.
 
 Variable f : R -> R.
 Variable D : interval.
-Hypothesis concave_f : concave_in D f.
+Hypothesis concave_f : concavef_in D f.
 Variable A : finType.
 
 Let g x := - f x.
 
-Lemma convex_g : convex_in D g.
+Let convex_g : convexf_in D g.
 Proof. by []. Qed.
 
 Lemma jensen_dist_concave (r : A -> R) (X : dist A) :

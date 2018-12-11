@@ -1,3 +1,4 @@
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import finfun choice fintype tuple bigop finset path.
 From mathcomp Require Import ssralg fingroup zmodp poly ssrnum.

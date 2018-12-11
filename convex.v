@@ -1,11 +1,10 @@
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
+Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba.
-
-Require Import Ranalysis_ext jensen.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -24,8 +23,100 @@ The last term is then positive thanks to the assumption on DDf.
 Now this is an equivalent condition to the convexity of f.
  *)
 
+Section interval.
+
+Definition convex_interval (D : R -> Prop) := forall x y t,
+  D x -> D y -> 0 <= t <= 1 -> D (t * x + t.~ * y).
+
+Record interval := mkInterval {
+  mem_interval :> R -> Prop;
+  interval_convex : convex_interval mem_interval }.
+
+End interval.
+
+Lemma Rpos_convex : convex_interval (fun x => 0 < x).
+Proof.
+move=> x y t Hx Hy Ht.
+case/boolP : (t == 0) => [/eqP ->| Ht0].
+  by rewrite mul0R add0R (_ : _.~ = 1) ?mul1R // /onem subR0.
+apply addR_gt0wl.
+  apply mulR_gt0 => //.
+  case/proj1: Ht Ht0 => // ->; by rewrite eqxx.
+apply mulR_ge0; last exact: ltRW.
+rewrite leR_subr_addr add0R; by case: Ht.
+Qed.
+
+Definition Rpos_interval := mkInterval Rpos_convex.
+
+Section convex_function.
+
+Implicit Types f : R -> R.
+
+Definition convexf_leq f (x y t : R) :=
+  f (t * x + t.~ * y) <= t * f x + t.~ * f y.
+
+Definition convexf f := forall x y t : R, 0 <= t <= 1 -> convexf_leq f x y t.
+
+Definition convexf_in (D : interval) f := forall x y t : R,
+  D x -> D y -> 0 <= t <= 1 -> convexf_leq f x y t.
+
+Definition strictly_convexf f := forall x y t : R,
+  x != y -> 0 < t < 1 -> convexf_leq f x y t.
+
+Lemma convexf_leqxx x t f :
+  0 < x -> 0 <= t <= 1 -> convexf_leq f x x t.
+Proof.
+move=> x0 t01; rewrite /convexf_leq.
+do 2 rewrite mulRBl mul1R addRCA addR_opp subRR addR0; exact/leRR.
+Qed.
+
+Lemma convexf_leq_onem x y t f : 0 < x -> 0 < y -> 0 <= t <= 1 -> x < y ->
+  convexf_leq f x y t -> convexf_leq f y x t.~.
+Proof.
+move=> x0 y0 t01 xy; rewrite /convexf_leq => H.
+rewrite onemK addRC; apply: (leR_trans H); rewrite addRC; exact/leRR.
+Qed.
+
+End convex_function.
+
+Section concave_function.
+
+Definition concavef_leq f := convexf_leq (fun x => - f x).
+
+Lemma concavef_leqP f x y t : concavef_leq f x y t <->
+  t * f x + t.~ * f y <=  f (t * x + t.~ * y).
+Proof.
+by rewrite /concavef_leq /convexf_leq leR_oppl oppRD 2!mulRN 2!oppRK.
+Qed.
+
+Lemma concavef_leqN f x y t : concavef_leq f x y t ->
+  forall k, 0 <= k -> concavef_leq (fun x => f x * k) x y t.
+Proof.
+move=> H k k0; rewrite /concavef_leq /convexf_leq.
+rewrite -3!mulNR 2!mulRA -mulRDl; exact: leR_wpmul2r.
+Qed.
+
+Definition concavef f := forall x y t : R, 0 <= t <= 1 -> concavef_leq f x y t.
+
+Definition concavef_in (D : interval) f := forall x y t : R,
+  D x -> D y -> 0 <= t <= 1 -> concavef_leq f x y t.
+
+Definition strictly_concavef f := forall x y t : R,
+  x != y -> 0 < t < 1 -> concavef_leq f x y t.
+
+Lemma concavef_leq_xx x t f :
+  0 < x -> 0 <= t <= 1 -> concavef_leq f x x t.
+Proof. move=> *; rewrite /concavef_leq; exact: convexf_leqxx. Qed.
+
+Lemma concavef_leq_onem x y t f :
+  0 < x -> 0 < y -> 0 <= t <= 1 -> x < y ->
+  concavef_leq f x y t -> concavef_leq f y x t.~.
+Proof. move=> x0 y0 t01 xy; rewrite /concavef_leq; exact/convexf_leq_onem. Qed.
+
+End concave_function.
+
 (* ref: http://www.math.wisc.edu/~nagel/convexity.pdf *)
-Section twice_der_convex.
+Section twice_derivable_convex.
 
 Variables (f : R -> R) (a b : R).
 Let I := fun x0 => a <= x0 <= b.
@@ -49,20 +140,20 @@ rewrite -(mulRV (b - a)); last by rewrite subR_eq0; exact/eqP/gtR_eqF.
 by rewrite -mulRBl -addR_opp oppRB addRA subRK addR_opp.
 Qed.
 
-Lemma convexP : (forall x, a <= x <= b -> 0 <= L x - f x) ->
-  forall t, 0 <= t <= 1 -> convex_leq f a b t.
+Lemma convexfP : (forall x, a <= x <= b -> 0 <= L x - f x) ->
+  forall t, 0 <= t <= 1 -> convexf_leq f a b t.
 Proof.
-move=> H t t01; rewrite /convex_leq.
-set x := t * a + (1 - t) * b.
+move=> H t t01; rewrite /convexf_leq.
+set x := t * a + t.~ * b.
 have : a <= x <= b.
   rewrite /x; split.
-  - apply (@leR_trans (t * a + (1 - t) * a)).
+  - apply (@leR_trans (t * a + t.~ * a)).
       rewrite -mulRDl addRCA addR_opp subRR addR0 mul1R; exact/leRR.
     case/boolP : (t == 1) => [/eqP ->|t1].
-      rewrite subRR !mul0R !addR0 mul1R; exact/leRR.
+      rewrite /onem subRR !mul0R !addR0; exact/leRR.
     rewrite leR_add2l; apply leR_wpmul2l; last exact/ltRW.
     rewrite subR_ge0; by case: t01.
-  - apply (@leR_trans (t * b + (1 - t) * b)); last first.
+  - apply (@leR_trans (t * b + t.~ * b)); last first.
       rewrite -mulRDl addRCA addR_opp subRR addR0 mul1R; exact/leRR.
     rewrite leR_add2r; apply leR_wpmul2l; [by case: t01 | exact/ltRW].
 move/H; rewrite subR_ge0 => /leR_trans; apply.
@@ -71,22 +162,21 @@ have -> : (b - x) / (b - a) = t.
   rewrite /x -addR_opp oppRD addRCA mulRBl mul1R oppRB (addRCA b).
   rewrite addR_opp subRR addR0 -mulRN addRC -mulRDr addR_opp.
   rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0; exact/eqP/gtR_eqF.
-have -> : (x - a) / (b - a) = 1 - t.
+have -> : (x - a) / (b - a) = t.~.
   rewrite /x -addR_opp addRAC -{1}(oppRK a) mulRN -mulNR -{2}(mul1R (- a)).
   rewrite -mulRDl (addRC _ 1) addR_opp -mulRDr addRC addR_opp.
   rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0; exact/eqP/gtR_eqF.
 exact/leRR.
 Qed.
 
-Lemma second_derivative_convex : forall t,
-  0 <= t <= 1 -> convex_leq f a b t.
+Lemma second_derivative_convexf : forall t, 0 <= t <= 1 -> convexf_leq f a b t.
 Proof.
 have note1 : forall x, 1 = (x - a) / (b - a) + (b - x) / (b - a).
   move=> x; rewrite -mulRDl addRC addRA subRK addR_opp mulRV // subR_eq0.
   exact/eqP/gtR_eqF.
 have step1 : forall x, f x = (x - a) / (b - a) * f x + (b - x) / (b - a) * f x.
   by move=> x; rewrite -mulRDl -note1 mul1R.
-apply convexP => // x axb.
+apply convexfP => // x axb.
 rewrite /L.
 case: axb.
   rewrite leR_eqVlt => -[-> _|].
@@ -174,64 +264,4 @@ apply/mulR_ge0; last first.
 apply/mulR_ge0; rewrite subR_ge0; exact/ltRW.
 Qed.
 
-End twice_der_convex.
-
-Section log_concave.
-
-Lemma pderivable_log a x1 : 0 <= a -> pderivable log (fun x2 : R => a < x2 < x1).
-Proof.
-move=> a0; rewrite /pderivable => x Hx.
-rewrite /log /Log (_ : (fun x0 => ln x0 / ln 2) =
-  (mult_real_fct (/ ln 2) (fun x0 => ln x0))); last first.
-  apply functional_extensionality => x0; by rewrite /mult_real_fct mulRC.
-apply/derivable_pt_scal/derivable_pt_ln/(leR_ltR_trans a0); by case: Hx.
-Qed.
-
-Lemma ln_concave_gt0 x y t : x < y ->
-  0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq ln x y t.
-Proof.
-move=> xy x0 y0 t01; rewrite /concave_leq.
-set Df := fun x => - / x.
-move: t t01.
-have HDf : pderivable (fun x => - ln x) (fun x0 => x <= x0 <= y).
-  rewrite (_ : (fun x => - ln x) = comp Ropp ln); last first.
-    exact: functional_extensionality.
-  move=> r xry; apply derivable_pt_comp; last exact: derivable_pt_Ropp.
-  apply/derivable_pt_ln/(@ltR_leR_trans x) => //; by case: xry.
-set DDf := fun x => / x^2.
-have HDDf : pderivable Df (fun x0 : R => x <= x0 <= y).
-  rewrite /Df (_ : (fun x => - / x) = comp Ropp Rinv); last first.
-    exact: functional_extensionality.
-  move=> r xry; apply derivable_pt_comp; last exact/derivable_pt_Ropp.
-  rewrite (_ : Rinv = inv_fct (fun x => x)); last first.
-    exact: functional_extensionality.
-  apply derivable_pt_inv; last exact: derivable_pt_id.
-  apply/gtR_eqF/(@ltR_leR_trans x) => //; by case: xry.
-apply: (@second_derivative_convex _ _ _ HDf Df _ HDDf DDf) => //.
-- move=> r xry; rewrite /Df.
-  have r0 : 0 < r by apply (@ltR_leR_trans x) => //; case: xry.
-  transitivity (derive_pt (comp Ropp ln) _
-    (derivable_pt_comp ln Ropp _ (derivable_pt_ln r0) (derivable_pt_Ropp _))).
-    by rewrite derive_pt_comp /= mulN1R.
-  exact: proof_derive_irrelevance.
-- move=> r xry; rewrite /DDf /Df.
-  have r0 : r <> 0 by apply/gtR_eqF/(@ltR_leR_trans x) => //; case: xry.
-  transitivity (derive_pt (comp Ropp Rinv) _
-    (derivable_pt_comp Rinv Ropp _
-      (derivable_pt_inv _ _ r0 (derivable_pt_id _)) (derivable_pt_Ropp _))).
-    rewrite derive_pt_comp [in RHS]/= derive_pt_inv derive_pt_id mulN1R.
-    by rewrite /Rdiv mulNR oppRK mul1R Rsqr_pow2 (* TODO: rename? *).
-  exact/proof_derive_irrelevance.
-- move=> r; rewrite /DDf => -[x11 x12].
-  rewrite -expRV; last by apply/eqP/gtR_eqF/(@ltR_leR_trans x).
-  exact/pow_ge0/ltRW/invR_gt0/(@ltR_leR_trans x).
-Qed.
-
-Lemma log_concave_gt0 x y t : x < y ->
-  0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
-Proof.
-move=> xy x0 y0 t01; rewrite /log /Log.
-apply concave_leqN; [exact: ln_concave_gt0 | exact/ltRW/invR_gt0/ln2_gt0].
-Qed.
-
-End log_concave.
+End twice_derivable_convex.

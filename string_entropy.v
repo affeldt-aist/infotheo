@@ -1,10 +1,11 @@
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 
 Require Import Reals Fourier ProofIrrelevance FunctionalExtensionality.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import proba entropy jensen num_occ.
+Require Import proba entropy convex ln_facts jensen num_occ.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -14,20 +15,12 @@ Local Open Scope num_occ_scope.
 Local Open Scope entropy_scope.
 Local Coercion INR : nat >-> R.
 
-(* TODO *)
-Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
-Local Notation "n %:R" := (INR n).
-
 Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
 
 Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl 0%:R).
 
 Local Hint Resolve leRR.
 Local Hint Resolve leR0n.
-
-Lemma log_concave_gt0 x y t :
-  0 < x -> 0 < y -> 0 <= t <= 1 -> concave_leq log x y t.
-Admitted.
 
 Section seq_nat_dist.
 
@@ -60,6 +53,7 @@ Section string.
 
 Variable A : finType.
 
+(* TODO: move?*)
 Section num_occ.
 
 Lemma sum_num_occ s : \sum_(a in A) N(a|s) = size s.
@@ -142,20 +136,8 @@ move=> a _; suff -> : N(a|s) == O by [].
 by rewrite /num_occ -leqn0 -(eqP i) count_size.
 Qed.
 
-Lemma Rpos_convex : convex_interval (fun x =>  0 < x).
-Proof.
-move=> x y t Hx Hy Ht.
-case Ht0: (t == 0); first by rewrite (eqP Ht0) !simplR.
-apply addR_gt0wl.
-  apply mulR_gt0 => //.
-  case/proj1: Ht Ht0 => // ->; by rewrite eqxx.
-apply mulR_ge0; last exact: ltRW.
-rewrite leR_subr_addr add0R; by case: Ht.
-Qed.
-
-Definition Rpos_interval := mkInterval Rpos_convex.
-
-Lemma log_concave : concave_in Rpos_interval log.
+(* TODO: move to ln_facts.v also ? *)
+Lemma log_concave : concavef_in Rpos_interval log.
 Proof. by move=> x; apply log_concave_gt0. Qed.
 
 Theorem concats_entropy ss :
@@ -284,9 +266,6 @@ Fixpoint takes {k : nat} (w : k.-tuple A) (s : seq A) {struct s} : seq A :=
     if take k s == w then nth def (drop k s) O :: s' else s'
   else
     [::].
-
-Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
-Local Notation "n %:R" := (INR n).
 
 (* sample ref: https://www.dcc.uchile.cl/~gnavarro/ps/jea08.2.pdf *)
 Definition hoH (k : nat) := / n%:R *

@@ -687,14 +687,12 @@ apply eq_bigr=> tl _.
 by rewrite big_cons.
 Qed.
 
-Local Open Scope R_scope.
-
 Variable RofK : K -> R.
 Hypothesis RofKpos : forall x : K, (Num.Def.ler 0%:R x) -> (0 <= RofK x)%R.
-Hypothesis RofK0 : RofK 0 = 0.
-Hypothesis RofK1 : RofK 1 = 1.
-Hypothesis RofKadd : forall x y : K, RofK (x + y) = RofK x + RofK y.
-Hypothesis RofKmul : forall x y : K, RofK (x * y) = RofK x * RofK y.
+Hypothesis RofK0 : RofK 0 = 0%R.
+Hypothesis RofK1 : RofK 1 = 1%R.
+Hypothesis RofKadd : forall x y : K, RofK (x + y) = (RofK x + RofK y)%R.
+Hypothesis RofKmul : forall x y : K, RofK (x * y) = (RofK x * RofK y)%R.
 
 Require Import ssrR.
 
@@ -703,7 +701,7 @@ Proof. apply RofKpos, f0. Qed.
 
 Lemma f1R l : (\rsum_(t : @fintree tw l) RofK (@fintree_dist l t) = 1)%R.
 Proof.
-by rewrite -(@big_morph _ _ RofK 0 Rplus 0%:R (@GRing.add K)) // f1 RofK1.
+by rewrite -(@big_morph _ _ RofK 0%R Rplus 0%:R (@GRing.add K)) // f1 RofK1.
 Qed.
 
 Definition tree_ensemble l : ensemble tw l := makeDist (@f0R l) (@f1R l).

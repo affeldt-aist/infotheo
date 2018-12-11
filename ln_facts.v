@@ -1,10 +1,23 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
-Require Import Reals Lra.
-Require Import ssrR Reals_ext Ranalysis_ext logb.
+Require Import FunctionalExtensionality Reals Lra.
+Require Import ssrR Reals_ext Ranalysis_ext logb convex.
 
-(** * Some Results about the Analysis of ln *)
+(** * Results about the Analysis of ln *)
+
+(* contents:
+- Section ln_id_sect.
+   about the function x |-> ln x - (x - 1)
+- Section xlnx_sect.
+   about the function x |-> x * ln x
+  + Section diff_xlnx
+     about the function x |-> xlnx (1 - x) - xlnx x.
+  + Section Rabs_xlnx
+     proof of the lemma Rabs_xlnx
+- Section log_concave
+*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -468,6 +481,8 @@ Qed.
 
 End diff_xlnx.
 
+Section Rabs_xlnx.
+
 Definition xlnx_delta a := fun x => xlnx (x + a) - xlnx x.
 
 Lemma derivable_xlnx_delta eps (Heps : 0 < eps < 1) x (Hx : 0 < x < 1 - eps) :
@@ -596,4 +611,78 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
     apply/ltRW/exp_increasing; lra.
 Qed.
 
+End Rabs_xlnx.
+
 End xlnx_sect.
+
+Section log_concave.
+
+Lemma pderivable_log a x1 : 0 <= a -> pderivable log (fun x2 : R => a < x2 < x1).
+Proof.
+move=> a0; rewrite /pderivable => x Hx.
+rewrite /log /Log (_ : (fun x0 => ln x0 / ln 2) =
+  (mult_real_fct (/ ln 2) (fun x0 => ln x0))); last first.
+  apply functional_extensionality => x0; by rewrite /mult_real_fct mulRC.
+apply/derivable_pt_scal/derivable_pt_ln/(leR_ltR_trans a0); by case: Hx.
+Qed.
+
+Lemma ln_concave_gt0 x y t : x < y ->
+  0 < x -> 0 < y -> 0 <= t <= 1 -> concavef_leq ln x y t.
+Proof.
+move=> xy x0 y0 t01; rewrite /concavef_leq.
+set Df := fun x => - / x.
+move: t t01.
+have HDf : pderivable (fun x => - ln x) (fun x0 => x <= x0 <= y).
+  rewrite (_ : (fun x => - ln x) = comp Ropp ln); last first.
+    exact: functional_extensionality.
+  move=> r xry; apply derivable_pt_comp; last exact: derivable_pt_Ropp.
+  apply/derivable_pt_ln/(@ltR_leR_trans x) => //; by case: xry.
+set DDf := fun x => / x^2.
+have HDDf : pderivable Df (fun x0 : R => x <= x0 <= y).
+  rewrite /Df (_ : (fun x => - / x) = comp Ropp Rinv); last first.
+    exact: functional_extensionality.
+  move=> r xry; apply derivable_pt_comp; last exact/derivable_pt_Ropp.
+  rewrite (_ : Rinv = inv_fct (fun x => x)); last first.
+    exact: functional_extensionality.
+  apply derivable_pt_inv; last exact: derivable_pt_id.
+  apply/gtR_eqF/(@ltR_leR_trans x) => //; by case: xry.
+apply: (@second_derivative_convexf _ _ _ HDf Df _ HDDf DDf) => //.
+- move=> r xry; rewrite /Df.
+  have r0 : 0 < r by apply (@ltR_leR_trans x) => //; case: xry.
+  transitivity (derive_pt (comp Ropp ln) _
+    (derivable_pt_comp ln Ropp _ (derivable_pt_ln r0) (derivable_pt_Ropp _))).
+    by rewrite derive_pt_comp /= mulN1R.
+  exact: proof_derive_irrelevance.
+- move=> r xry; rewrite /DDf /Df.
+  have r0 : r <> 0 by apply/gtR_eqF/(@ltR_leR_trans x) => //; case: xry.
+  transitivity (derive_pt (comp Ropp Rinv) _
+    (derivable_pt_comp Rinv Ropp _
+      (derivable_pt_inv _ _ r0 (derivable_pt_id _)) (derivable_pt_Ropp _))).
+    rewrite derive_pt_comp [in RHS]/= derive_pt_inv derive_pt_id mulN1R.
+    by rewrite /Rdiv mulNR oppRK mul1R Rsqr_pow2 (* TODO: rename? *).
+  exact/proof_derive_irrelevance.
+- move=> r; rewrite /DDf => -[x11 x12].
+  rewrite -expRV; last by apply/eqP/gtR_eqF/(@ltR_leR_trans x).
+  exact/pow_ge0/ltRW/invR_gt0/(@ltR_leR_trans x).
+Qed.
+
+Lemma log_concave_gt0W x y t : x < y ->
+  0 < x -> 0 < y -> 0 <= t <= 1 -> concavef_leq log x y t.
+Proof.
+move=> xy x0 y0 t01; rewrite /log /Log.
+apply concavef_leqN; [exact: ln_concave_gt0 | exact/ltRW/invR_gt0/ln2_gt0].
+Qed.
+
+Lemma log_concave_gt0 x y t :
+  0 < x -> 0 < y -> 0 <= t <= 1 -> concavef_leq log x y t.
+Proof.
+move=> x0 y0 t01.
+case/boolP : (x <b y) => [/ltRP xy|]; first exact: log_concave_gt0W.
+rewrite -leRNgt' => /leRP; rewrite leR_eqVlt => -[->|yx].
+exact: convexf_leqxx.
+rewrite -(onemK t); apply: concavef_leq_onem => //.
+exact: onem_prob.
+apply: log_concave_gt0W => //; exact: onem_prob.
+Qed.
+
+End log_concave.

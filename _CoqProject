@@ -4,13 +4,13 @@ ssrR.v
 Reals_ext.v
 Ranalysis_ext.v
 logb.v
+convex.v
 ln_facts.v
 ssr_ext.v
 bigop_ext.v
 Rbigop.v
 proba.v
 jensen.v
-convex.v
 natbin.v
 ssralg_ext.v
 divergence.v

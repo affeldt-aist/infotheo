@@ -11,13 +11,16 @@ Reserved Notation "a '<b' b" (at level 70).
 Reserved Notation "a '>b' b" (at level 70).
 Reserved Notation "a '<b=' b '<b=' c" (at level 70, b at next level).
 Reserved Notation "a '<b' b '<b' c" (at level 70, b at next level).
+Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
 
 Local Open Scope R_scope.
 
 (* "^" = pow : R -> nat -> R *)
 Notation "x ^- n" := (/ (x ^ n)) : R_scope.
 
-Notation "`| x |" := (Rabs x).
+Notation "`| x |" := (Rabs x) : R_scope.
+
+Notation "n %:R" := (INR n) : R_scope.
 
 Hint Resolve Rlt_R0_R2.
 Hint Resolve Rlt_0_1.
@@ -250,26 +253,26 @@ Lemma le0R x : (0 <b= x) = (x == 0) || (0 <b x).
 Proof. by rewrite leR_eqVlt' eq_sym. Qed.
 
 (* Lemma pnatr_eq0 n : (n%:R == 0 :> R) = (n == 0)%N. *)
-Lemma INR_eq0 n : (INR n = 0) <-> (n = O).
-Proof. split => [|-> //]; by rewrite (_ : 0 = INR 0) // => /INR_eq ->. Qed.
-Lemma INR_eq0' n : (INR n == 0) = (n == O).
+Lemma INR_eq0 n : (n%:R = 0) <-> (n = O).
+Proof. split => [|-> //]; by rewrite (_ : 0 = 0%:R) // => /INR_eq ->. Qed.
+Lemma INR_eq0' n : (n%:R == 0) = (n == O).
 Proof. by apply/idP/idP => /eqP/INR_eq0/eqP. Qed.
 
 Lemma eqR_le x y : (x = y) <-> (x <= y <= x).
 Proof. split => [->| [] ]; by [split; exact/leRR | exact: Rle_antisym]. Qed.
 
-Definition leR0n n : 0 <= INR n := pos_INR n.
-Lemma leR0n' n : (0 <b= INR n). Proof. exact/leRP/leR0n. Qed.
+Definition leR0n n : 0 <= n%:R := pos_INR n.
+Lemma leR0n' n : (0 <b= n%:R). Proof. exact/leRP/leR0n. Qed.
 
-Lemma ltR0n n : (0 < INR n) <-> (O < n)%nat.
+Lemma ltR0n n : (0 < n%:R) <-> (O < n)%nat.
 Proof. by split => [/gtR_eqF/INR_not_0/Nat.neq_0_lt_0/ltP | /ltP/lt_0_INR]. Qed.
-Lemma ltR0n' n : (0 <b INR n) = (O < n)%nat.
+Lemma ltR0n' n : (0 <b n%:R) = (O < n)%nat.
 Proof. by apply/idP/idP => [/ltRP/ltR0n|/ltR0n/ltRP]. Qed.
 
-Lemma leR_nat m n : (INR m <b= INR n) = (m <= n)%nat.
+Lemma leR_nat m n : (m%:R <b= n%:R) = (m <= n)%nat.
 Proof. by apply/idP/idP => [/leRP/INR_le/leP//|/leP/le_INR/leRP]. Qed.
 
-Lemma ltR_nat m n : (INR m <b INR n) = (m < n)%nat.
+Lemma ltR_nat m n : (m%:R <b n%:R) = (m < n)%nat.
 Proof. by apply/idP/idP => [/ltRP/INR_lt/ltP//|/ltP/lt_INR/ltRP]. Qed.
 
 Lemma leR_oppr x y : (x <= - y) <-> (y <= - x).

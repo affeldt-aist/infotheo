@@ -134,6 +134,26 @@ rewrite big_const iter_addR mulR0 add0R [in RHS]big_seq_cond.
 apply eq_bigl => a; by rewrite !inE andbC /index_enum -enumT mem_enum inE.
 Qed.
 
+Lemma dist_ind (P : dist -> Prop) :
+  (forall n : nat, (forall X, #|dist_supp X| = n -> P X) ->
+    forall X b, #|dist_supp X| = n.+1 -> X b != 0 -> P X) ->
+  forall X, P X.
+Proof.
+move=> H1 d.
+move: {-2}(#|dist_supp d|) (erefl (#|dist_supp d|)) => n; move: n d.
+elim=> [d /esym /card0_eq Hd0|].
+  move: (pmf1 d).
+  rewrite -[X in X = _]mul1R big_distrr rsum_dist_supp.
+  rewrite big1 => [H01|a].
+    by elim: (gtR_eqF _ _ Rlt_0_1).
+  by rewrite Hd0.
+move=> n IH d n13.
+have [b Hb] : exists b : A, d b != 0.
+  suff : {x | x \in dist_supp d} by case => a; rewrite inE => ?; exists a.
+  apply/sigW/set0Pn; by rewrite -cards_eq0 -n13.
+by refine (H1 n _ _ _ _ Hb) => // d' A2; apply IH.
+Qed.
+
 Definition makeDist (pmf : A -> R) (H0 : forall a, 0 <= pmf a)
   (H1 : \rsum_(a in A) pmf a = 1%R) := @mkDist (@mkPosFun _ pmf H0) H1.
 
@@ -161,6 +181,22 @@ Qed.
 
 Lemma dist_ext d d' : (forall x, pos_f (pmf d) x = pos_f (pmf d') x) -> d = d'.
 Proof. move=> ?; exact/dist_eq/pos_fun_eq/functional_extensionality. Qed.
+
+Lemma dist_supp_singleP (d : dist) a :
+  reflect (d a = 1) (dist_supp d == [set a]).
+Proof.
+apply: (iffP idP) => [/eqP Ha | Xa1].
+  rewrite -(pmf1 d) (eq_bigr (fun i => 1 * d i)) => *; last by rewrite mul1R.
+  by rewrite rsum_dist_supp Ha big_set1 mul1R.
+have H : forall a0, a0 != a -> d a0 = 0.
+  apply/(@prsumr_eq0P _ [pred x | x != a] d).
+    move=> ? _; exact/dist_ge0.
+  move/eqP : (pmf1 d).
+  by rewrite (bigD1 a) //= Xa1 eq_sym addRC -subR_eq subRR => /eqP.
+apply/eqP/setP => a0; rewrite !inE.
+case/boolP : (_ == _ :> A) => /= [/eqP ->|/H ->]; last by rewrite eqxx.
+rewrite Xa1; exact/eqP.
+Qed.
 
 Definition eqdist (d d' : dist) := [forall a, d a == d' a].
 
@@ -514,12 +550,15 @@ rewrite -(@eqR_mul2r (1 - X b)); last exact/eqP.
 by rewrite mul1R -mulRA mulVR ?mulR1 // H.
 Qed.
 
-Definition d := makeDist f0 f1.
+Definition d := locked (makeDist f0 f1).
+
+Lemma dE a : d a = if a == b then 0 else X a / (1 - X b).
+Proof. by rewrite /d; unlock. Qed.
 
 Lemma card_dist_supp (Xb0 : X b != 0) : #|dist_supp d| = #|dist_supp X|.-1.
 Proof.
 rewrite /dist_supp (cardsD1 b [set a | X a != 0]) !inE Xb0 add1n /=.
-apply eq_card => i; rewrite !inE /f.
+apply eq_card => i; rewrite !inE dE.
 case: ifPn => //= ib; first by rewrite eqxx.
 apply/idP/idP; first by apply: contra => /eqP ->; rewrite div0R.
 apply: contra; rewrite /Rdiv mulR_eq0 => /orP[//|H].
@@ -528,16 +567,16 @@ move/negPn/negP : H; apply.
 apply/invR_neq0; by apply: contra Xb1; rewrite subR_eq0 eq_sym.
 Qed.
 
-Lemma f_eq0 a (Xa0 : X a != 0) : ((f a == 0) = (b == a))%bool.
+Lemma d_eq0 a (Xa0 : X a != 0) : ((d a == 0) = (b == a))%bool.
 Proof.
-rewrite /f; case: ifPn => [/eqP ->|ab]; first by rewrite !eqxx.
+rewrite dE; case: ifPn => [/eqP ->|ab]; first by rewrite !eqxx.
 apply/idP/idP => [|]; last by rewrite eq_sym (negbTE ab).
 rewrite mulR_eq0 => /orP[]; first by rewrite (negbTE Xa0).
 by move/invR_eq0; rewrite subR_eq0 eq_sym (negbTE Xb1).
 Qed.
 
-Lemma f_0 a : X a = 0 -> f a = 0.
-Proof. move=> Xa0; rewrite /f Xa0 div0R; by case: ifP. Qed.
+Lemma d_0 a : X a = 0 -> d a = 0.
+Proof. move=> Xa0; rewrite dE Xa0 div0R; by case: ifP. Qed.
 
 End d1dist.
 End D1Dist.
@@ -558,7 +597,11 @@ Qed.
 Lemma f1 : \rsum_(a in A) f a = 1%R.
 Proof. by rewrite big_split /= -2!big_distrr /= 2!pmf1 2!mulR1 onemKC. Qed.
 
-Definition d : {dist A} := makeDist f0 f1.
+Definition d : {dist A} := locked (makeDist f0 f1).
+
+Lemma dE a : d a = (p * d1 a + p.~ * d2 a)%R.
+Proof. by rewrite /d; unlock. Qed.
+
 End convexdist.
 Section convexdist_prop.
 Variables (A : finType).
@@ -568,23 +611,23 @@ Local Notation "x <| p |> y" := (d x y p) (format "x  <| p |>  y", at level 50).
 Lemma d0 (d1 d2 : dist A) (H : 0 <= 0 <= 1) : d1 <| H |> d2 = d2.
 Proof.
 apply/dist_ext => a /=.
-by rewrite /f mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R).
+by rewrite dE mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R).
 Qed.
 
 Lemma d1 (d1 d2 : dist A) (H : 0 <= 1 <= 1) : d1 <| H |> d2 = d1.
 Proof.
 apply/dist_ext => a /=.
-by rewrite /f mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R,addRN).
+by rewrite dE mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R,addRN).
 Qed.
 
 (* TODO: rename to skewed_commute *)
 Lemma quasi_commute (d1 d2 : dist A) p (Hp : 0 <= p <= 1) (Hp' : 0 <= p.~ <= 1) :
   d1 <| Hp |> d2 = d2 <| Hp' |> d1.
-Proof. apply/dist_ext => a /=; by rewrite /f onemK addRC. Qed.
+Proof. apply/dist_ext => a /=; by rewrite 2!dE onemK addRC. Qed.
 
 Lemma idempotent (d0 : dist A) p (p01 : 0 <= p <= 1) : d0 <|p01|> d0 = d0.
 Proof.
-apply/dist_ext => a; by rewrite /= /f mulRBl mul1R addRCA addRN addR0.
+apply/dist_ext => a; by rewrite dE mulRBl mul1R addRCA addRN addR0.
 Qed.
 
 Lemma quasi_assoc (p q r s : R) (d0 d1 d2 : dist A)
@@ -592,7 +635,7 @@ Lemma quasi_assoc (p q r s : R) (d0 d1 d2 : dist A)
   p = (r * s)%R -> (s.~ = p.~ * q.~)%R ->
   d0 <|Hp|> (d1 <|Hq|> d2) = (d0 <|Hr|> d1) <|Hs|> d2.
 Proof.
-move=> H1 H2; apply/dist_ext => a /=; rewrite /d /f /=.
+move=> H1 H2; apply/dist_ext => a /=; rewrite 4!dE /=.
 transitivity (p * d0 a + p.~ * q * d1 a + p.~ * q.~ * d2 a)%R; first lra.
 transitivity (r * s * d0 a + r.~ * s * d1 a + s.~ * d2 a)%R; last lra.
 rewrite H1; congr (_ + _ * _ + _ * _)%R.
@@ -659,13 +702,36 @@ Lemma bind_left_distr (B : finType) (p : R) (Hp : 0 <= p <= 1)
   DistBind.d (d0 <| Hp |> d1) f = DistBind.d d0 f <| Hp |> DistBind.d d1 f.
 Proof.
 apply/dist_ext => a /=.
-rewrite /DistBind.d /DistBind.f /ConvexDist.d /ConvexDist.f /=.
+rewrite /DistBind.d /DistBind.f dE /=.
 rewrite 2!big_distrr /= -big_split /=; apply/eq_bigr => a0 _.
-by rewrite mulRDl !mulRA.
+by rewrite dE mulRDl !mulRA.
 Qed.
 
 End convexdist_prop.
 End ConvexDist.
+
+Module ConvexFamily.
+Section convexfamily.
+Variables (A : finType) (n : nat) (g : 'I_n -> dist A) (e : {dist 'I_n}).
+
+Definition f a := \rsum_(i < n) e i * g i a.
+
+Lemma f0 a : 0 <= f a.
+Proof. apply: rsumr_ge0 => /= i _; apply mulR_ge0; exact: dist_ge0. Qed.
+
+Lemma f1 : \rsum_(a in A) f a = 1.
+Proof.
+rewrite /f exchange_big /= -(pmf1 e) /=; apply eq_bigr => i _.
+by rewrite -big_distrr /= pmf1 mulR1.
+Qed.
+
+Definition d : {dist A} := locked (makeDist f0 f1).
+
+Lemma dE a : d a = \rsum_(i < n) e i * g i a.
+Proof. by rewrite /d; unlock. Qed.
+
+End convexfamily.
+End ConvexFamily.
 
 (* bivariate (joint) distribution *)
 Module Bivar.
