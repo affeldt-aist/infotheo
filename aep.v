@@ -53,7 +53,7 @@ Proof. rewrite -V_mlog /Var; apply Ex_ge0 => ?; exact: pow_even_ge0. Qed.
 
 End mlog_prop.
 
-Definition sum_mlog_prod A (P : dist A) n : {rvar 'rV[A]_n} :=
+Definition sum_mlog_prod A (P : dist A) n : {rvar 'rV[A]_n, R} :=
   mkRvar (P `^ n) (fun t => \rsum_(i < n) - log (P t ``_ i))%R.
 
 Lemma inde_rv_sum_mlog_prod A (P : dist A) n :

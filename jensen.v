@@ -67,7 +67,7 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Lemma Jensen (X : rvar A) : (forall x, D (X x)) ->
+Lemma Jensen (X : {rvar A, R}) : (forall x, D (X x)) ->
   f (`E X) <= `E (mkRvar (`p_ X) (fun x => f (X x))).
 Proof. move=> HDX; rewrite !ExE /=; by apply jensen_dist. Qed.
 

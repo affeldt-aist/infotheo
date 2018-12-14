@@ -1260,39 +1260,41 @@ Local Open Scope R_scope.
 
 Section random_variable.
 
-Record rvar A := mkRvar {rv_dist : dist A ; rv_fun :> A -> R }.
+Record rvar (A : finType) (T : eqType) := mkRvar {rv_dist : dist A ; rv_fun :> A -> T}.
 
-Definition rvar_of (A : finType) := fun phT : phant (Finite.sort A) => rvar A.
+Definition rvar_of (A : finType) (T : eqType) :=
+  fun (phA : phant (Finite.sort A)) (phT : phant (Equality.sort T)) => rvar A T.
 
 Local Notation "`p_ X" := (rv_dist X).
 
 Section pr_def.
 
-Variable A : finType.
+Variables (A : finType) (T : eqType).
 
-Definition pr (X : rvar A) r := Pr `p_X [set x | X x == r].
+Definition pr (X : rvar A T) r := Pr `p_X [set x | X x == r].
 
 End pr_def.
 
-Definition scale_rv A k (X : rvar A) :=
+Definition scale_rv A k (X : rvar A R_eqType) :=
   mkRvar `p_X (fun x => k * X x).
-Definition add_rv A (X Y : rvar A) (H : `p_X = `p_Y) :=
+Definition add_rv A (X Y : rvar A R_eqType) (H : `p_X = `p_Y) :=
   mkRvar `p_X (fun x => X x + Y x).
-Definition sub_rv A (X Y : rvar A) (H : `p_X = `p_Y) :=
+Definition sub_rv A (X Y : rvar A R_eqType) (H : `p_X = `p_Y) :=
   mkRvar `p_X (fun x => X x - Y x).
-Definition trans_add_rv A (X : rvar A) m :=
+Definition trans_add_rv A (X : rvar A R_eqType) m :=
   mkRvar `p_X (fun x => X x + m).
-Definition trans_min_rv A (X : rvar A) m :=
+Definition trans_min_rv A (X : rvar A R_eqType) m :=
   mkRvar `p_X (fun x => X x - m).
-Definition const_rv A cst (X : rvar A) :=
-  mkRvar `p_X (fun _ => cst).
-Definition comp_rv A (X : rvar A) f :=
+Definition const_rv A T cst (X : rvar A T) :=
+  @mkRvar _ T `p_X (fun _ => cst).
+Definition comp_rv A T (B : eqType) (X : rvar A T) (f : T -> B) :=
   mkRvar `p_X (fun x => f (X x)).
-Definition sq_rv A (X : rvar A) := comp_rv X (fun x => x ^ 2).
+Definition sq_rv A (X : rvar A R_eqType) := comp_rv X (fun x => x ^ 2).
 
 End random_variable.
 
-Notation "{ 'rvar' T }" := (rvar_of (Phant T)) : proba_scope.
+Notation "{ 'rvar' A , T }" := (rvar_of (Phant A) (Phant T)) : proba_scope.
+
 Notation "`p_ X" := (rv_dist X) : proba_scope.
 Notation "'Pr[' X '=' r ']'" := (pr X r) : proba_scope.
 
@@ -1305,7 +1307,7 @@ Notation "X '\-cst' m" := (trans_min_rv X m) : proba_scope.
 Notation "X '\^2' " := (sq_rv X) : proba_scope.
 
 (** The ``- log P'' random variable *)
-Definition mlog_rv A (P : dist A) : rvar A := mkRvar P (fun x => - log (P x))%R.
+Definition mlog_rv A (P : dist A) : rvar A R_eqType := mkRvar P (fun x => - log (P x))%R.
 
 Notation "'--log' P" := (mlog_rv P) (at level 5) : proba_scope.
 
@@ -1313,17 +1315,17 @@ Notation "'--log' P" := (mlog_rv P) (at level 5) : proba_scope.
 
 Local Open Scope vec_ext_scope.
 
-Definition rvar_rV1_of_rvar A (X : rvar A) : {rvar 'rV[A]_1} :=
+Definition rvar_rV1_of_rvar A T (X : rvar A T) : {rvar 'rV[A]_1, T} :=
   mkRvar (`p_X `^ 1) (fun x => X (x ``_ ord0)).
 
-Definition cast_rV1 A (v : 'rV[rvar A]_1) : {rvar 'rV[A]_1} :=
+Definition cast_rV1 A T (v : 'rV[rvar A T]_1) : {rvar 'rV[A]_1, T} :=
   rvar_rV1_of_rvar (v ``_ ord0).
 
 Local Close Scope vec_ext_scope.
 
 Section expected_value_definition.
 
-Variables (A : finType) (X : rvar A).
+Variables (A : finType) (X : {rvar A, R}).
 
 Definition Ex := \rsum_(r <- fin_img X) r * Pr[ X = r ].
 
@@ -1352,7 +1354,7 @@ Notation "'`E'" := (Ex) : proba_scope.
 
 Section expected_value_for_standard_random_variables.
 
-Variables (A : finType) (X Y : rvar A).
+Variables (A : finType) (X Y : {rvar A, R}).
 
 Lemma E_scale k : `E (k \cst* X) = k * `E X.
 Proof.
@@ -1401,7 +1403,7 @@ Proof. move=> H1 H2; by rewrite 2!ExE /comp_rv /= H1 H2. Qed.
 
 End expected_value_for_standard_random_variables.
 
-Lemma E_rvar_rV1_of_rvar A : forall (X : rvar A), `E (rvar_rV1_of_rvar X) = `E X.
+Lemma E_rvar_rV1_of_rvar A : forall (X : rvar A R_eqType), `E (rvar_rV1_of_rvar X) = `E X.
 Proof.
 case=> d f.
 rewrite 2!ExE /rvar_rV1_of_rvar /=; apply big_rV_1 => // m.
@@ -1470,7 +1472,7 @@ Qed.
     For convenience, we locally define the function [rv] for building
     such random variables, endowed with the ambient distribution [P]. *)
 
-Let rv : (A -> R) -> rvar A := mkRvar P.
+Let rv : (A -> R) -> {rvar A, R} := mkRvar P.
 
 Lemma E_Ind s : `E (rv (Ind s)) = Pr P s.
 Proof.
@@ -1708,10 +1710,10 @@ End probability_inclusion_exclusion.
 
 Section markov_inequality.
 
-Variables (A : finType) (X : rvar A).
-Hypothesis X_nonneg : forall a, 0 <= X a.
+Variables (A : finType) (X : {rvar A, R}).
+Hypothesis X_ge0 : forall a, 0 <= X a.
 
-Definition pr_geq (X : rvar A) r := Pr `p_X [set x | X x >b= r].
+Definition pr_geq (X : {rvar A, R}) r := Pr `p_X [set x | X x >b= r].
 
 Local Notation "'Pr[' X '>=' r ']'" := (pr_geq X r).
 
@@ -1722,7 +1724,7 @@ rewrite (bigID [pred a' | X a' >b= r]) /=.
 rewrite -[a in a <= _]addR0.
 apply leR_add; last first.
   apply rsumr_ge0 => a _.
-  apply mulR_ge0; by [apply X_nonneg | apply dist_ge0].
+  apply mulR_ge0; [exact/X_ge0 | apply dist_ge0].
 apply (@leR_trans (\rsum_(i | X i >b= r) r * `p_ X i)).
   rewrite big_distrr /=;  apply/Req_le/eq_bigl => a; by rewrite inE.
 apply ler_rsum => a Xar.
@@ -1740,7 +1742,7 @@ Notation "'Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
 
 Section variance_definition.
 
-Variables (A : finType) (X : rvar A).
+Variables (A : finType) (X : {rvar A, R}).
 
 (** Variance of a random variable (\sigma^2(X) = V(X) = E (X^2) - (E X)^2): *)
 Definition Var := let miu := `E X in `E ((X \-cst miu) \^2).
@@ -1758,7 +1760,7 @@ Notation "'`V'" := (Var) : proba_scope.
 
 Section variance_properties.
 
-Variables (A : finType) (X : rvar A).
+Variables (A : finType) (X : {rvar A, R}).
 
 (** The variance is not linear V (k X) = k^2 V (X) \cite[Theorem 6.7]{probook}: *)
 Lemma V_scale k : `V (k \cst* X) = k ^ 2 * `V X.
@@ -1771,9 +1773,9 @@ Qed.
 
 End variance_properties.
 
-Lemma V_rvar_rV1_of_rvar A : forall (X : rvar A), `V (rvar_rV1_of_rvar X) = `V X.
+Lemma V_rvar_rV1_of_rvar (A : finType) (X : {rvar A, R}) : `V (rvar_rV1_of_rvar X) = `V X.
 Proof.
-case=> d f.
+case: X => d f.
 rewrite /`V !E_rvar_rV1_of_rvar !ExE; apply: big_rV_1 => // i.
 by rewrite TupleDist.one.
 Qed.
@@ -1783,7 +1785,7 @@ Qed.
  Pr[ |X - E X| \geq \epsilon] \leq V(X) / \epsilon^2 *)
 Section chebyshev.
 
-Variables (A : finType) (X : rvar A).
+Variables (A : finType) (X : {rvar A, R}).
 
 Lemma chebyshev_inequality epsilon : 0 < epsilon ->
   Pr `p_X [set a | `| X a - `E X | >b= epsilon] <= `V X / epsilon ^ 2.
@@ -1808,12 +1810,12 @@ End chebyshev.
 
 Section identically_distributed.
 
-Variables (A : finType) (P : dist A) (n : nat).
+Variables (A : finType) (T : eqType) (P : dist A) (n : nat).
 
 Local Open Scope vec_ext_scope.
 
 (** The random variables Xs are identically distributed with distribution P: *)
-Definition id_dist (Xs : 'rV[rvar A]_n) := forall i, `p_(Xs ``_ i) = P.
+Definition id_dist (Xs : 'rV[rvar A T]_n) := forall i, `p_(Xs ``_ i) = P.
 
 End identically_distributed.
 
@@ -1911,9 +1913,9 @@ Local Close Scope vec_ext_scope.
 
 Section sum_two_rand_var_def.
 
-Variables (A : finType) (X1 : rvar A).
-Variables (n : nat) (X2 : {rvar 'rV[A]_n.+1}).
-Variable X : {rvar 'rV[A]_n.+2}.
+Variables (A : finType) (X1 : {rvar A, R}).
+Variables (n : nat) (X2 : {rvar 'rV[A]_n.+1, R}).
+Variable X : {rvar 'rV[A]_n.+2, R}.
 
 Local Open Scope vec_ext_scope.
 
@@ -1927,9 +1929,9 @@ Notation "Z \= X '@+' Y" := (sum X Y Z) : proba_scope.
 
 Section sum_two_rand_var.
 
-Variables (A : finType) (X1 : rvar A).
-Variables (n : nat) (X2 : {rvar 'rV[A]_n.+1}).
-Variable X : {rvar 'rV[A]_n.+2}.
+Variables (A : finType) (X1 : {rvar A, R}).
+Variables (n : nat) (X2 : {rvar 'rV[A]_n.+1, R}).
+Variable X : {rvar 'rV[A]_n.+2, R}.
 
 Local Open Scope vec_ext_scope.
 
@@ -2051,7 +2053,7 @@ Section sum_n_rand_var_def.
 Variable A : finType.
 
 (** The sum of n >= 1 random variable(s): *)
-Inductive sum_n : forall n, {rvar 'rV[A]_n} -> 'rV[rvar A]_n -> Prop :=
+Inductive sum_n : forall n, {rvar 'rV[A]_n, R} -> 'rV[{rvar A, R}]_n -> Prop :=
 | sum_n_1 : forall X, cast_rV1 X \=sum X
 | sum_n_cons : forall n (Xs : 'rV_n.+1) Y X Z,
   Y \=sum Xs -> Z \= X @+ Y -> Z \=sum (row_mx (\row_(k < 1) X) Xs)
@@ -2067,7 +2069,7 @@ Variable A : finType.
 
 Local Open Scope vec_ext_scope.
 
-Lemma E_linear_n : forall n (Xs : 'rV[rvar A]_n) X,
+Lemma E_linear_n : forall n (Xs : 'rV[{rvar A, R}]_n) X,
   X \=sum Xs -> `E X = \rsum_(i < n) `E Xs ``_ i.
 Proof.
 elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
@@ -2102,7 +2104,7 @@ Variable A : finType.
 (** The sum of n >= 1 independent random variables: *)
 
 Inductive isum_n : forall n,
-  {rvar 'rV[A]_n} -> 'rV[rvar A]_n -> Prop :=
+  {rvar 'rV[A]_n, R} -> 'rV[{rvar A, R}]_n -> Prop :=
 | isum_n_1 : forall X, cast_rV1 X \=isum X
 | isum_n_cons : forall n (Ys : 'rV_n.+1) Y X Z,
   Y \=isum Ys -> Z \= X @+ Y -> (Multivar.to_bivar `p_Z) |= X _|_ Y ->
@@ -2117,8 +2119,7 @@ Section sum_n_independent_rand_var.
 
 Variable A : finType.
 
-Lemma sum_n_i_sum_n n (Xs : 'rV[rvar A]_n) X :
-  X \=isum Xs -> X \=sum Xs.
+Lemma sum_n_i_sum_n n (Xs : 'rV[{rvar A, R}]_n) X : X \=isum Xs -> X \=sum Xs.
 Proof.
 elim.
 - move=> X0; by constructor 1.
@@ -2128,7 +2129,7 @@ Qed.
 
 Local Open Scope vec_ext_scope.
 
-Lemma V_linearity_isum : forall n (X : {rvar 'rV[A]_n}) (Xs : 'rV[rvar A]_n),
+Lemma V_linearity_isum : forall n (X : {rvar 'rV[A]_n, R}) (Xs : 'rV[{rvar A, R}]_n),
   X \=isum Xs ->
   forall sigma2, (forall i, `V (Xs ``_ i) = sigma2) ->
   `V X = INR n * sigma2.
@@ -2157,7 +2158,7 @@ Qed.
 
 (** The variance of the average for independent random variables: *)
 
-Lemma V_average_isum n (X : {rvar 'rV[A]_n}) Xs (sum_Xs : X \=isum Xs) :
+Lemma V_average_isum n (X : {rvar 'rV[A]_n, R}) Xs (sum_Xs : X \=isum Xs) :
   forall sigma2, (forall i, `V (Xs ``_ i) = sigma2) ->
   INR n * `V (X '/ n) = sigma2.
 Proof.
@@ -2176,15 +2177,15 @@ Local Open Scope vec_ext_scope.
 Variable A : finType.
 Variable P : dist A.
 Variable n : nat.
-Variable Xs : 'rV[rvar A]_n.+1.     (*Hypothesis Xs_id : id_dist P Xs.*)
+Variable Xs : 'rV[{rvar A, R}]_n.+1.     (*Hypothesis Xs_id : id_dist P Xs.*)
 Variable miu : R.                   Hypothesis E_Xs : forall i, `E Xs ``_ i = miu.
 Variable sigma2 : R.                Hypothesis V_Xs : forall i, `V Xs ``_ i = sigma2.
-Variable X : {rvar 'rV[A]_n.+1}.
+Variable X : {rvar 'rV[A]_n.+1, R}.
 Variable X_Xs : X \=isum Xs.
 
 Lemma wlln epsilon : 0 < epsilon ->
   Pr `p_X [set t | `| (X '/ n.+1) t - miu | >b= epsilon] <=
-    sigma2 / (INR n.+1 * epsilon ^ 2).
+    sigma2 / (n.+1%:R * epsilon ^ 2).
 Proof.
 move=> He.
 rewrite divRM; last 2 first.
@@ -2200,8 +2201,7 @@ have <- : `E (X '/ n.+1) = miu.
     transitivity (\rsum_(i < n.+1) miu); first exact/eq_bigr.
     by rewrite big_const /= iter_addR cardE /= size_enum_ord.
   by rewrite div1R mulRA mulVR ?mul1R // INR_eq0'.
-move: (chebyshev_inequality (X '/ n.+1) He).
-move/leR_trans; apply; exact/leRR.
+move/leR_trans: (chebyshev_inequality (X '/ n.+1) He); apply; exact/leRR.
 Qed.
 
 End weak_law_of_large_numbers.

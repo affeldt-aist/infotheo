@@ -8,6 +8,9 @@ Require Import proba divergence entropy.
 (* tentative definition of conditional probability,
    application to the formalization of Cover and Thomas, Chapter 2 *)
 
+Reserved Notation "\Pr_ P [ A | B ]" (at level 6, P, A, B at next level,
+  format "\Pr_ P [  A  |  B  ]").
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -392,8 +395,7 @@ Qed.
 
 End conditional_probability.
 
-Notation "\Pr_ P [ A | B ]" := (cPr P A B) (at level 6, P, A, B at next level,
-  format "\Pr_ P [ A  |  B ]").
+Notation "\Pr_ P [ A | B ]" := (cPr P A B) : proba_scope.
 
 Section conditional_probability_prop.
 

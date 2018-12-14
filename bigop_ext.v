@@ -101,112 +101,88 @@ Qed.
 
 End bigop_add_law.
 
-Arguments big_rV_0 {R} {idx} {op} {M} {A} _ _ _. 
+Arguments big_rV_0 {R} {idx} {op} {M} {A} _ _ _.
 
 Section bigop_add_law_eqtype.
 
-Variable A : finType.
+Variables (A : finType) (B : eqType).
 
 (** Switching from a sum on the domain to a sum on the image of function *)
 
-Definition fin_img (B : eqType) (f : A -> B) : seq B :=
-  undup (map f (enum A)).
+Definition fin_img (f : A -> B) : seq B := undup (map f (enum A)).
 
 Variables (R : eqType) (idx : R) (op : R -> R -> R) (M : Monoid.add_law idx op).
 
-Lemma sum_parti (p : seq A) (f : A -> R) : forall g, uniq p ->
+Lemma sum_parti (p : seq A) (f : A -> B) : forall g, uniq p ->
   \big[M/idx]_(i <- p) (g i) =
   \big[M/idx]_(r <- undup (map f p)) \big[M/idx]_(i <- p | f i == r) (g i).
 Proof.
 move Hn : (undup (map f (p))) => n.
-move: n p f Hn.
-elim => [p f HA F Hp | h t IH p f H F Hp].
-- rewrite big_nil.
-  suff : p = [::] by move=> ->; rewrite big_nil.
-  move/undup_nil : HA => /(congr1 size) /=; rewrite size_map.
+elim: n p f Hn => [p f H F ? | b bs IH p f H F ?].
+  rewrite big_nil.
+  suff -> : p = [::] by rewrite big_nil.
+  move/undup_nil : H => /(congr1 size) /=; rewrite size_map.
   by move/eqP; rewrite size_eq0 => /eqP.
-- rewrite big_cons.
-  have [preh [pret [H1 [H2 H3]]]] : exists preh pret,
-    perm_eq p (preh ++ pret) /\ undup (map f preh) = [:: h] /\ undup (map f pret) = t.
-    by apply undup_perm.
-  apply (@trans_eq _ _ (\big[M/idx]_(i <- preh ++ pret) F i)); first exact: eq_big_perm.
-  apply trans_eq with
-   (M (\big[M/idx]_(i <- preh ++ pret | f i == h) F i)
-   (\big[M/idx]_(j <- t) \big[M/idx]_(i <- preh ++ pret | f i == j) F i)); last first.
-    congr (M _ _).
-      apply: eq_big_perm; by rewrite perm_eq_sym.
-    apply eq_bigr => i _ /=; apply: eq_big_perm; by rewrite perm_eq_sym.
-  have -> :
-    \big[M/idx]_(j <- t) \big[M/idx]_(i <- (preh ++ pret) | f i == j) F i =
-    \big[M/idx]_(j <- t) \big[M/idx]_(i <- pret | f i == j) F i.
-    rewrite [in LHS]big_seq_cond [in RHS]big_seq_cond /=.
-    apply/esym/eq_bigr => i Hi.
-    rewrite big_cat /=.
-    rewrite (_ : \big[M/idx]_(i0 <- preh | f i0 == i) F i0 = idx) ?Monoid.add0m //.
-    transitivity (\big[M/idx]_(i0 <- preh | false) F i0); last by rewrite big_pred0.
-    rewrite big_seq_cond.
-    apply eq_bigl => /= j.
-    apply/negP.
-    case/andP; move=> Xj_i; move/eqP=> j_preh.
-    subst i.
-    have Xj_h : f j \in [:: h].
-      have H4 : f j \in map f preh by apply/mapP; exists j.
-      have : f j \in undup (map f preh) by rewrite mem_undup.
-      by rewrite H2.
-    have : uniq (h :: t).
-      rewrite -H.
-      by apply undup_uniq.
-    rewrite /= in_cons in_nil orbC /= in Xj_h.
-    move/eqP : Xj_h => Xj_h.
-    subst h.
-    rewrite andbC /= in Hi.
-    by rewrite /= Hi.
-  rewrite -IH //; last first.
-    have : uniq (preh ++ pret) by rewrite -(@perm_eq_uniq _ _ _ H1).
-    rewrite cat_uniq.
-    case/andP => _; by case/andP.
-  have -> : \big[M/idx]_(i <- (preh ++ pret) | f i == h) F i =
-    \big[M/idx]_(i <- preh) F i.
-    rewrite big_cat /=.
-    have -> : \big[M/idx]_(i <- pret | f i == h) F i = idx.
-      transitivity (\big[M/idx]_(i0 <- pret | false) F i0); last by rewrite big_pred0.
-      rewrite big_seq_cond.
-      apply eq_bigl => /= j.
-      apply/negP.
-      case/andP; move => j_pret; move/eqP => Xj_h.
-      subst h.
-      have Xj_t : f j \in t.
-        have H4 : f j \in map f pret.
-        apply/mapP; by exists j.
-        have H5 : f j \in undup (map f pret).
-        by rewrite mem_undup.
-        by rewrite H3 in H5.
-      have : uniq (f j :: t) by rewrite -H undup_uniq.
-      by rewrite /= Xj_t.
-    rewrite Monoid.addm0 big_seq_cond /=.
-    symmetry.
-    rewrite big_seq_cond /=.
-    apply congr_big => //= x.
-    case/boolP : (x \in preh) => Y //=.
-    symmetry.
-    have : f x \in [:: h].
-      rewrite -H2 mem_undup.
-      apply/mapP; by exists x.
-    by rewrite in_cons /= in_nil orbC.
+rewrite big_cons.
+have [h [t [H1 [H2 H3]]]] : exists h t,
+  perm_eq p (h ++ t) /\ undup (map f h) = [:: b] /\ undup (map f t) = bs.
+  exact: undup_perm.
+transitivity (\big[M/idx]_(i <- h ++ t) F i); first exact: eq_big_perm.
+transitivity (M
+    (\big[M/idx]_(i <- h ++ t | f i == b) F i)
+    (\big[M/idx]_(j <- bs) \big[M/idx]_(i <- h ++ t | f i == j) F i)); last first.
+  congr (M _ _).
+  by apply: eq_big_perm; rewrite perm_eq_sym.
+  by apply eq_bigr => b0 _ /=; apply: eq_big_perm; rewrite perm_eq_sym.
+have -> : \big[M/idx]_(j <- bs) \big[M/idx]_(i <- h ++ t | f i == j) F i =
+  \big[M/idx]_(j <- bs) \big[M/idx]_(i <- t | f i == j) F i.
+  rewrite [in LHS]big_seq_cond [in RHS]big_seq_cond /=.
+  apply/esym/eq_bigr => b0; rewrite andbT => b0bs.
+  rewrite big_cat /=.
+  rewrite (_ : \big[M/idx]_(i0 <- h | f i0 == b0) F i0 = idx); first by rewrite Monoid.add0m.
+  transitivity (\big[M/idx]_(i0 <- h | false) F i0); last by rewrite big_pred0.
+  rewrite big_seq_cond; apply eq_bigl => /= a.
+  apply/negP => /andP[ah /eqP fai]; subst b0.
+  have fab : f a \in [:: b].
+    have H' : f a \in map f h by apply/mapP; exists a.
+    have : f a \in undup (map f h) by rewrite mem_undup.
+    by rewrite H2.
+  have : uniq (b :: bs) by rewrite -H undup_uniq.
+  move: fab; rewrite /= in_cons in_nil orbC /= => /eqP ?; subst b.
+  by rewrite b0bs.
+rewrite -IH //; last first.
+  have : uniq (h ++ t) by rewrite -(perm_eq_uniq H1).
+  by rewrite cat_uniq => /and3P[].
+suff -> : \big[M/idx]_(i <- h ++ t | f i == b) F i = \big[M/idx]_(i <- h) F i.
   by rewrite big_cat.
+rewrite big_cat /=.
+have -> : \big[M/idx]_(i <- t | f i == b) F i = idx.
+  transitivity (\big[M/idx]_(i0 <- t | false) F i0); last by rewrite big_pred0.
+  rewrite big_seq_cond; apply eq_bigl => /= a.
+  apply/negP => /andP[ta /eqP fab]; subst b.
+  have fabs : f a \in bs.
+    have : f a \in undup (map f t) by rewrite mem_undup; apply/mapP; exists a.
+    by rewrite H3.
+  have : uniq (f a :: bs) by rewrite -H undup_uniq.
+  by rewrite /= fabs.
+rewrite Monoid.addm0 big_seq_cond /=.
+apply/esym.
+rewrite big_seq_cond /=; apply congr_big => //= a.
+rewrite andbT.
+case/boolP : (a \in h) => ah //=; apply/esym.
+have : f a \in [:: b] by rewrite -H2 mem_undup; apply/mapP; exists a.
+by rewrite in_cons /= in_nil orbC.
 Qed.
 
 (* NB: use finset.partition_big_imset? *)
-Lemma sum_parti_finType (f : A -> R) g :
+Lemma sum_parti_finType (f : A -> B) g :
    \big[M/idx]_(i in A) (g i) =
    \big[M/idx]_(r <- fin_img f) \big[M/idx]_(i in A | f i == r) (g i).
 Proof.
 move: (@sum_parti (enum A) f g) => /=.
 rewrite enum_uniq.
-move/(_ (refl_equal _)) => IH.
-transitivity (\big[M/idx]_(i <- enum A) g i).
-  apply congr_big => //.
-  by rewrite enumT.
+move/(_ isT) => IH.
+transitivity (\big[M/idx]_(i <- enum A) g i); first by rewrite enumT.
 rewrite IH.
 apply eq_bigr => i _.
 apply congr_big => //; by rewrite enumT.
