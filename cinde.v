@@ -16,7 +16,7 @@ Local Open Scope vec_ext_scope.
 (* wip *)
 
 Reserved Notation "X @= x" (at level 10).
-Reserved Notation "P |= X _|_  Y | Z" (at level 6).
+Reserved Notation "P |= X _|_  Y | Z" (at level 6, X, Y, Z at next level).
 
 Notation "X @= x" := ([set h | X h == x]) : proba_scope.
 
@@ -34,8 +34,6 @@ Definition cinde_drv:= forall a b c,
 End conditionnally_independent_discrete_random_variables.
 
 Notation "P |= X _|_  Y | Z" := (cinde_drv P X Y Z) : proba_scope.
-
-(* TODO: relation inde_cdrv inde_rv *)
 
 Definition swap {A B : finType} (ab : A * B) := (ab.2, ab.1).
 
@@ -101,6 +99,21 @@ Proof. by rewrite /d; unlock. Qed.
 End proj124.
 End Proj124.
 
+Lemma snd_Proj124 (A B C D : finType) (P : {dist A * (B * C) * D}) :
+  Bivar.snd (Proj124.d P) = Bivar.snd P.
+Proof.
+apply/dist_ext => d.
+rewrite 2!Bivar.sndE /=; apply/esym.
+rewrite (eq_bigr (fun i => P (i.1, i.2, d))); last by case.
+rewrite -(pair_bigA _ (fun i1 i2 => P (i1, i2, d))) /=.
+rewrite (eq_bigr (fun i => (Proj124.d P) (i.1, i.2, d))); last by case.
+rewrite -(pair_bigA _ (fun i1 i2 => (Proj124.d P) (i1, i2, d))).
+apply eq_bigr => a _ /=.
+rewrite (eq_bigr (fun i => P (a, (i.1, i.2), d))); last by case.
+rewrite -(pair_bigA _ (fun i1 i2 => P (a, (i1, i2), d))) /=.
+apply eq_bigr => b _; rewrite Proj124.dE /=; exact: eq_bigr.
+Qed.
+
 Module Pair4A.
 Section pair4a.
 Variables (A B C D : finType) (P : {dist A * (B * D) * C}).
@@ -122,6 +135,32 @@ Proof. by rewrite /d; unlock. Qed.
 End pair4a.
 End Pair4A.
 
+Lemma snd_Pair4A (A B C D : finType) (P : {dist A * (B * D) * C}) :
+  Bivar.snd (Pair4A.d P) = Bivar.snd P.
+Proof.
+apply/dist_ext => c; rewrite !Bivar.sndE /=.
+rewrite (eq_bigr (fun i => (Pair4A.d P) (i.1, i.2, c))); last by case.
+rewrite -(pair_bigA _ (fun i1 i2 => (Pair4A.d P) (i1, i2, c))) /=.
+rewrite (eq_bigr (fun i => \rsum_(j | true) (Pair4A.d P) (i.1, i.2, j, c))); last by case.
+rewrite -(pair_bigA _ (fun i1 i2 => \rsum_(j | true) (Pair4A.d P) (i1, i2, j, c))) /=.
+rewrite (eq_bigr (fun i => P (i.1, i.2, c))); last by case.
+rewrite -(pair_bigA _ (fun i1 i2 => P (i1, i2, c))) /=.
+apply eq_bigr => a _.
+rewrite (eq_bigr (fun i => P (a, (i.1, i.2), c))); last by case.
+rewrite -(pair_bigA _ (fun i1 i2 => P (a, (i1, i2), c))) /=.
+apply eq_bigr => b _; apply eq_bigr => d _; by rewrite Pair4A.dE.
+Qed.
+
+Lemma snd_PairA_Swap12 (A B C D : finType) (P : {dist A * (B * D) * C}) :
+  Bivar.snd (PairA.d (Swap12.d P)) = Bivar.snd (PairA.d (Swap12.d (Proj124.d P))).
+Proof.
+apply/dist_ext => -[a0 c0]; rewrite 2!Bivar.sndE /=.
+rewrite (eq_bigr (fun i => (PairA.d (Swap12.d P)) (i.1, i.2, (a0, c0)))); last by case.
+rewrite -(pair_bigA _ (fun i1 i2 => (PairA.d (Swap12.d P)) (i1, i2, (a0, c0)))) /=.
+apply eq_bigr => b _; rewrite PairA.dE /= Swap12.dE /= Proj124.dE /=.
+by apply eq_bigr => d _; rewrite PairA.dE /= Swap12.dE /=.
+Qed.
+
 Definition Proj14d (A B C D : finType) (d : {dist A * (B * D) * C}) : {dist A * C} :=
   Proj13.d d.
 
@@ -130,8 +169,7 @@ Definition Proj234d (A B C D : finType) (d : {dist A * (B * D) * C}) : {dist B *
 
 Section Pr_Swap23.
 
-Variables A B C : finType.
-Variable P : {dist A * B * C}.
+Variables (A B C : finType) (P : {dist A * B * C}).
 Variables (E : {set A}) (F : {set B}) (G : {set C}).
 
 Lemma Pr_Swap23 :
@@ -208,15 +246,7 @@ Qed.
 Lemma reasoning_by_cases_proj124 E F : \Pr_(Proj124.d P)[E | F] =
   \rsum_(z <- fin_img Z) \Pr_(Pair4A.d P)[setX E (Z @= z) | F].
 Proof.
-rewrite {1}/cPr total_proj124 -[in RHS]big_distrl /=; congr (_ / Pr _ _).
-(* TODO: lemma *)
-apply/dist_ext => d.
-rewrite !Bivar.sndE /=; apply/esym.
-rewrite (eq_bigr (fun i => (Pair4A.d P) (i.1, i.2, d))); last by case.
-rewrite -(pair_bigA _ (fun i1 i2 => (Pair4A.d P) (i1, i2, d))) /=.
-apply eq_bigr => -[a b] _.
-rewrite Proj124.dE /=; apply eq_bigr => c _.
-by rewrite Pair4A.dE.
+by rewrite {1}/cPr total_proj124 -[in RHS]big_distrl /= snd_Pair4A snd_Proj124.
 Qed.
 
 End total_proj124.
@@ -258,54 +288,33 @@ Proof.
 rewrite {1}/cPr total_proj23_proj124.
 rewrite -big_distrl /=.
 congr (_ / Pr _ _).
-(* TODO: lemma *)
-rewrite /Proj234d.
-rewrite Proj23.def.
-apply/dist_ext => d.
-rewrite !Bivar.sndE /=; apply/esym.
-rewrite (eq_bigr (fun i => (Bivar.snd (PairA.d P)) (i.1, i.2, d))); last by case.
-rewrite -(pair_bigA _ (fun i1 i2 => (Bivar.snd (PairA.d P)) (i1, i2, d))) /=.
-apply eq_bigr => b _.
-rewrite Bivar.sndE.
-evar (e : C -> R).
-rewrite (eq_bigr e); last first.
-  move=> c _.
-  rewrite Bivar.sndE.
-  rewrite /e; reflexivity.
-rewrite {}/e.
-rewrite exchange_big.
-apply eq_bigr => a _.
-rewrite PairA.dE /= Proj124.dE /=; apply eq_bigr => c _.
-by rewrite PairA.dE.
+by rewrite /Proj234d Proj23.def 2!PairA.snd_snd snd_Proj124.
 Qed.
 
 End total_proj23_proj124.
 
 Section decomposition.
 
-Variables (A B C D : finType) (T : eqType) (P : {dist A * (B * D) * C}).
-Variables (X : {rvar A, T}) (Y : {rvar B, T}) (Z : {rvar C, T}) (W : {rvar D, T}).
-Variable YW : {rvar B * D, T * T}.
+Variables (A B C D : finType) (TA TB TC TD : eqType) (P : {dist A * (B * D) * C}).
+Variables (X : {rvar A, TA}) (Y : {rvar B, TB}) (Z : {rvar C, TC}) (W : {rvar D, TD}).
+Variable YW : {rvar B * D, TB * TD}.
 Hypothesis HYW : forall x, YW x = (Y x.1, W x.2).
 
-Lemma decomposition :
-  (P |= X _|_ YW | Z) -> (Proj124.d P) |= X _|_ Y | Z.
+Lemma decomposition : (P |= X _|_ YW | Z) -> (Proj124.d P) |= X _|_ Y | Z.
 Proof.
-move=> Hinde.
-rewrite /cinde_drv => x y z /=.
-transitivity (\rsum_(w <- fin_img W) \Pr_(Pair4A.d P) [
-  [set abc | (X abc.1.1 == x) && (Y abc.1.2 == y) && (W abc.2 == w)] | Z @= z ]).
+move=> Hinde; rewrite /cinde_drv => x y z /=.
+transitivity (\rsum_(w <- fin_img W) \Pr_(Pair4A.d P)
+  [ [set abc | (X abc.1.1 == x) && (Y abc.1.2 == y) && (W abc.2 == w)] | Z @= z ]).
   rewrite (reasoning_by_cases_proj124 P W); apply eq_bigr => /= r _.
   congr (cPr _ _); by apply/setP => -[[a0 b0] d0]; rewrite !inE.
-transitivity (\rsum_(w <- fin_img W)
-  \Pr_(Proj14d P)[ X @= x | Z @= z] *
+transitivity (\rsum_(w <- fin_img W) \Pr_(Proj14d P)[ X @= x | Z @= z ] *
   \Pr_(Proj234d P)[ [set x | (Y x.1 == y) && (W x.2 == w)] | Z @= z ]).
   apply eq_bigr => w _.
   move: Hinde; rewrite /cinde_drv /= => /(_ x (y, w) z) => Hinde.
-  transitivity (\Pr_P[[set h | X h.1 == x & YW h.2 == (y, w)] | Z @= z ]).
+  transitivity (\Pr_P[ [set h | X h.1 == x & YW h.2 == (y, w)] | Z @= z ]).
     rewrite /cPr; congr (_ / _).
-      rewrite {1}/Pr big_setX exchange_big /=.
-      rewrite {1}/Pr big_setX exchange_big /=.
+      rewrite [in LHS]/Pr big_setX exchange_big /=.
+      rewrite [in RHS]/Pr big_setX exchange_big /=.
       apply eq_bigr => c _.
       rewrite (reindex (fun x => let: (a, b, c) := x in (a, (b, c)))) /=; last first.
         exists (fun x => let: (a, (b, c)) := x in (a, b, c)).
@@ -314,34 +323,13 @@ transitivity (\rsum_(w <- fin_img W)
       apply eq_big.
       - by move=> -[[a0 b0] d0]; rewrite !inE /= HYW /= xpair_eqE andbA.
       - by move=> -[[a0 b0] d0] _; rewrite Pair4A.dE.
-    congr (Pr _  _).
-    (* TODO: lemma *)
-    apply/dist_ext => c.
-    rewrite !Bivar.sndE /=.
-    rewrite (eq_bigr (fun i => (Pair4A.d P) (i.1, i.2, c))); last by case.
-    rewrite -(pair_bigA _ (fun i1 i2 => (Pair4A.d P) (i1, i2, c))) /=.
-    rewrite (eq_bigr (fun i => \rsum_(j | true) (Pair4A.d P) (i.1, i.2, j, c))); last by case.
-    rewrite -(pair_bigA _ (fun i1 i2 => \rsum_(j | true) (Pair4A.d P) (i1, i2, j, c))) /=.
-    rewrite (eq_bigr (fun i => P (i.1, i.2, c))); last by case.
-    rewrite -(pair_bigA _ (fun i1 i2 => P (i1, i2, c))) /=.
-    apply eq_bigr => a _.
-    rewrite (eq_bigr (fun i => P (a, (i.1, i.2), c))); last by case.
-    rewrite -(pair_bigA _ (fun i1 i2 => P (a, (i1, i2), c))) /=.
-    apply eq_bigr => b _.
-    apply eq_bigr => d _.
-    by rewrite Pair4A.dE.
-  rewrite Hinde; congr (_ * _).
-  rewrite /cPr; congr (_ / _).
-    rewrite /Proj234d Proj23.def; congr Pr.
-    apply/setP => -[[b0 d0] c0]; by rewrite !inE /= HYW xpair_eqE.
+    by rewrite snd_Pair4A.
+  rewrite Hinde. congr (_ * cPr _ _ _).
   by rewrite /Proj234d Proj23.def.
+  by apply/setP => -[b0 d0]; rewrite !inE /= HYW xpair_eqE.
 rewrite -big_distrr /=; congr (_ * _).
-  rewrite /Proj14d; congr cPr.
-  (* TODO: lemma *)
-  apply/dist_ext => -[a0 c0].
-  rewrite !Proj13.dE /= (eq_bigr (fun b => P (a0, (b.1, b.2), c0))); last by case.
-  rewrite -(pair_bigA _ (fun i1 i2 => P (a0, (i1, i2), c0))) /=.
-  by apply eq_bigr => b _; rewrite Proj124.dE.
+  congr cPr.
+  by rewrite /Proj14d 2!Proj13.def snd_PairA_Swap12.
 rewrite (reasoning_by_cases_proj23_proj124 P W).
 apply eq_bigr => r _; congr (cPr _ _); by apply/setP => -[b0 d0]; rewrite !inE.
 Qed.

@@ -64,26 +64,43 @@ Proof. move=> *. lra. Qed.*)
 Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Z.abs_nat x) = IZR x.
 Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
 
-Definition onem (r : R) := (1 - r)%R.
-Notation "p '.~'" := (onem p)%R : reals_ext_scope.
+Section onem.
 
-Lemma onem_ge0 (r : R) : r <= 1 -> 0 <= r.~.
+Implicit Type r : R.
+
+Definition onem r := 1 - r.
+Local Notation "p '.~'" := (onem p).
+
+Lemma onem_ge0 r : r <= 1 -> 0 <= r.~.
 Proof. move=> r1; rewrite /onem; lra. Qed.
 
-Lemma onem_le1 (r : R) : 0 <= r -> r.~ <= 1.
+Lemma onem_le1 r : 0 <= r -> r.~ <= 1.
 Proof. move=> r0; rewrite /onem; lra. Qed.
 
-Lemma onemKC (r : R) : (r + r.~ = 1)%R.
+Lemma onemKC r : r + r.~ = 1.
 Proof. rewrite /onem; by field. Qed.
 
-Lemma onemK p : p.~.~ = p.
+Lemma onemK r : r.~.~ = r.
 Proof. by rewrite /onem subRBA addRC addRK. Qed.
 
-Lemma onem_prob (p : R) : (R0 <= p <= R1)%R -> (R0 <= p.~ <= R1)%R.
+Lemma onem_prob r : (0%R <= r <= R1)%R -> (0%R <= r.~ <= R1)%R.
 Proof.
-case=> pO p1; split; by [rewrite leR_subr_addr add0R|
+case=> rO r1; split; by [rewrite leR_subr_addr add0R|
   rewrite leR_subl_addr -(addR0 1) leR_add2l].
 Qed.
+
+Lemma onem_eq0 r : r.~ = 0 <-> r = 1.
+Proof. rewrite /onem; lra. Qed.
+
+Lemma onem_neq0 r : r.~ != 0 <-> r != 1.
+Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
+
+Lemma onem_gt0 r : r < 1 -> 0 < r.~. Proof. rewrite /onem; lra. Qed.
+Lemma onem_lt1 r : 0 < r -> r.~ < 1. Proof. rewrite /onem; lra. Qed.
+
+End onem.
+
+Notation "p '.~'" := (onem p) : reals_ext_scope.
 
 (** non-negative rationals: *)
 

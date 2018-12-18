@@ -232,14 +232,10 @@ rewrite (bigD1 a) //= {1}/f eqxx /= (eq_bigr (fun=> 0)); last first.
 by rewrite big1_eq // addR0.
 Qed.
 
-(* TODO: lock *)
-Definition d : dist A := makeDist f0 f1.
+Definition d : dist A := locked (makeDist f0 f1).
 
-Lemma dxx : d a = 1%R.
-Proof. by rewrite /d /= /f eqxx. Qed.
-
-Lemma d_neq b : b != a -> d b = 0.
-Proof. by move=> ba; rewrite /d /= /f (negbTE ba). Qed.
+Lemma dE a0 : d a0 = INR (a0 == a)%bool.
+Proof. by rewrite /d; unlock. Qed.
 
 End dist1.
 End Dist1.
@@ -290,18 +286,16 @@ Lemma DistBind1f (A B : finType) (a : A) (f : A -> dist B) :
   DistBind.d (Dist1.d a) f = f a.
 Proof.
 apply/dist_ext => b.
-rewrite /DistBind.d /= /DistBind.f (bigD1 a) // Dist1.dxx mul1R [Dist1.d _]lock.
-rewrite /= (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 // => c ca.
-by rewrite -lock Dist1.d_neq // mul0R.
+rewrite /DistBind.d /= /DistBind.f (bigD1 a) //= Dist1.dE eqxx mul1R.
+rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 // => c ca.
+by rewrite Dist1.dE (negbTE ca) mul0R.
 Qed.
 
 Lemma DistBindp1 A (p : dist A) : DistBind.d p (@Dist1.d A) = p.
 Proof.
-apply/dist_ext => /= a.
-rewrite /DistBind.f (bigD1 a) // Dist1.dxx mulR1.
-rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0.
-by rewrite /= ?addR0.
-by move=> b; rewrite inE andTb => ba; rewrite Dist1.d_neq ?mulR0 // eq_sym.
+apply/dist_ext => /= a; rewrite /DistBind.f (bigD1 a) //= Dist1.dE eqxx mulR1.
+rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 /= ?addR0 //.
+by move=> b ba; rewrite Dist1.dE eq_sym (negbTE ba) mulR0.
 Qed.
 
 Lemma DistBindA A B C (m : dist A) (f : A -> dist B) (g : B -> dist C) :
@@ -325,7 +319,8 @@ Lemma fmap_distE (p : dist A) : DistMap.d g p = fmap_dist p.
 Proof.
 apply/dist_ext => b; rewrite DistMap.dE /DistMap.f /fmap_dist DistBind.dE.
 rewrite /DistBind.f big_mkcond /=; apply eq_bigr => a _.
-rewrite /Dist1.f eq_sym; case: ifPn => /=; by [rewrite mulR1 | rewrite mulR0].
+case: ifPn => [/eqP ->|]; rewrite Dist1.dE; [by rewrite eqxx mulR1|].
+move/negbTE; rewrite eq_sym => ->; by rewrite mulR0.
 Qed.
 
 End map_bind_dist.
@@ -1829,14 +1824,14 @@ End independent_events.
 
 Section independent_discrete_random_variables.
 
-Variables (A B : finType) (f : A -> R) (g : B -> R).
+Variables (A B : finType) (TA TB : eqType) (f : A -> TA) (g : B -> TB).
 Variable P : {dist A * B}.
 Let X := mkRvar (Bivar.fst P) f.
 Let Y := mkRvar (Bivar.snd P) g.
 
 Local Open Scope vec_ext_scope.
 
-Definition inde_drv := forall x y : R,
+Definition inde_drv := forall (x : TA) (y : TB),
   Pr P [set xy | (X xy.1 == x) && (Y xy.2 == y)] = Pr[X = x] * Pr[Y = y].
 
 Lemma inde_events_drv : inde_drv <-> (forall x y,

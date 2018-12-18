@@ -393,6 +393,7 @@ move=> x0 y0; split => [|[-> ->]]; last by rewrite addR0.
 move=> H; move: (H) => /Rplus_eq_0_l -> //.
 by move: H; rewrite addRC => /Rplus_eq_0_l ->.
 Qed.
+Arguments paddR_eq0 {x} {y}.
 
 Lemma leR_pmul2l m n1 n2 : 0 < m -> (m * n1 <= m * n2) <-> (n1 <= n2).
 Proof.
