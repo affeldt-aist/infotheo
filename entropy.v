@@ -18,8 +18,7 @@ Local Open Scope R_scope.
 
 Section entropy_definition.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : dist A).
 
 Definition entropy := - \rsum_(a in A) P a * log (P a).
 Local Notation "'`H'" := (entropy).
