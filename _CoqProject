@@ -22,9 +22,7 @@ source_coding_fl_direct.v
 source_coding_fl_converse.v
 log_sum.v
 channel.v
-cproba.v
 pproba.v
-cinde.v
 channel_code.v
 binary_entropy_function.v
 f2.v
@@ -76,4 +74,6 @@ alternant.v
 kraft.v
 shannon_fano.v
 string_entropy.v
+cproba.v
+cinde.v
 -R . infotheo

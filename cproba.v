@@ -10,9 +10,6 @@ Require Import proba divergence entropy.
 
 Reserved Notation "\Pr_ P [ A | B ]" (at level 6, P, A, B at next level,
   format "\Pr_ P [  A  |  B  ]").
-Reserved Notation "X @= x" (at level 10).
-
-Notation "X @= x" := ([set h | X h == x]) : proba_scope.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -413,20 +410,6 @@ Qed.
 End conditional_probability.
 
 Notation "\Pr_ P [ A | B ]" := (cPr P A B) : proba_scope.
-
-Definition swap {A B : finType} (ab : A * B) := (ab.2, ab.1).
-
-Lemma injective_swap (A B : finType) (E : {set A * B}) : {in E &, injective swap}.
-Proof. by case=> a b [a0 b0] /= _ _ [-> ->]. Qed.
-
-Lemma Pr_TripC12 (A B C : finType) (T : eqType) (Z : rvar C T) (P : {dist A * B * C}) (c : T) (E : {set A * B}) :
-  \Pr_P[E | Z @= c] = \Pr_(TripC12.d P)[swap @: E | Z @= c].
-Proof.
-rewrite /cPr TripC12.snd; congr (_ / _).
-rewrite /Pr 2!big_setX /= [in LHS]exchange_big /= [in RHS]exchange_big /=.
-apply eq_bigr => c' Zc'c; rewrite (big_imset _ (@injective_swap _ _ E)) /=.
-apply eq_bigr => -[? ?] _; by rewrite TripC12.dE.
-Qed.
 
 Section conditional_probability_prop.
 

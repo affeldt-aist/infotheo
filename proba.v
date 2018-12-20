@@ -732,7 +732,7 @@ End FamilyDist.
 (* bivariate (joint) distribution *)
 Module Bivar.
 Section bivar.
-Variables (A B : finType) (P : {dist (A * B)}).
+Variables (A B : finType) (P : {dist A * B}).
 
 (* marginal left *)
 Definition ml a := \rsum_(x in {: A * B} | x.1 == a) P x.
