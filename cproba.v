@@ -1,7 +1,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Fourier.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import proba divergence entropy.
 
@@ -17,6 +17,7 @@ Import Prenex Implicits.
 
 Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
+Local Open Scope R_scope.
 
 Module Swap.
 Section swap.
@@ -653,6 +654,67 @@ Qed.
 End condentropy.
 End CondEntropy.
 
+Module conditional_entropy_example.
+
+Definition zero : 'I_4 := ord0.
+Definition one : 'I_4 := @Ordinal 4 1 isT.
+Definition two : 'I_4 := @Ordinal 4 2 isT.
+Definition three : 'I_4 := @Ordinal 4 3 isT.
+
+Definition f : 'I_4 * 'I_4 -> R := [eta (fun=>0) with
+(zero, zero) |-> (1/8), (zero, one) |-> (1/16), (zero, two) |-> (1/16), (zero, three) |-> (1/4),
+(one, zero) |-> (1/16), (one, one) |-> (1/8), (one, two) |-> (1/16), (one, three) |-> 0,
+(two, zero) |-> (1/32), (two, one) |-> (1/32), (two, two) |-> (1/16), (zero, three) |-> 0,
+(three, zero) |-> (1/32), (three, one) |-> (1/32), (three, two) |-> (1/16), (two, three) |-> 0].
+
+Lemma f0 : forall x, 0 <= f x.
+Proof.
+case => -[ [? [[|[|[|[|[]//]]]]]
+  | [? [[|[|[|[|[]//]]]]]
+  | [? [[|[|[|[|[]//]]]]]
+  | [? [[|[|[|[|[]//]]]]] | []//]]]]]; rewrite /f /=; try lra.
+Qed.
+
+Lemma f1 : \rsum_(x in {: 'I_4 * 'I_4}) f x = 1.
+Proof.
+rewrite (eq_bigr (fun x => f (x.1, x.2))); last by case.
+rewrite -(pair_bigA _ (fun x1 x2 => f (x1, x2))) /=.
+rewrite !big_ord_recl !big_ord0 /f /=; field.
+Qed.
+
+Definition d : {dist 'I_4 * 'I_4} := locked (makeDist f0 f1).
+
+Lemma dE x : d x = f x.
+Proof. by rewrite /d; unlock. Qed.
+
+Definition conditional_entropy := CondEntropy.h d.
+
+Lemma conditional_entropyE : conditional_entropy = 11/8.
+Proof.
+rewrite /conditional_entropy /CondEntropy.h /=.
+rewrite !big_ord_recl big_ord0 !Bivar.sndE /=.
+rewrite !big_ord_recl !big_ord0 !dE /f /=.
+rewrite /CondEntropy.h1 /=.
+rewrite !big_ord_recl !big_ord0 /cPr /Pr !(big_setX,big_set1) !dE /f /=.
+rewrite !Bivar.sndE /=.
+rewrite !big_ord_recl !big_ord0 !dE /f /=.
+rewrite !(addR0,add0R,div0R,mul0R).
+repeat (rewrite logDiv; try lra).
+rewrite !log1 !sub0R !log4 !log8 !log16 !log32.
+rewrite [X in log X](_ : _ = 1/4); last lra.
+rewrite !div1R logV; last lra.
+rewrite !log4.
+rewrite [X in log X](_ : _ = 1/4); last lra.
+rewrite !div1R logV; last lra.
+rewrite !log4.
+rewrite [X in log X](_ : _ = 1/4); last lra.
+rewrite !div1R logV; last lra.
+rewrite !log4.
+field.
+Qed.
+
+End conditional_entropy_example.
+
 Section cond_entropy_prop.
 
 Variable (A : finType) (P : {dist A}).
@@ -808,7 +870,6 @@ by rewrite /PR Proj13.snd.
 Qed.
 
 End entropy_chain_rule_corollary.
-
 
 Section row_take_drop.
 

@@ -39,16 +39,30 @@ Lemma dE a : d a = Pr P (X @= a). Proof. by rewrite /d; unlock. Qed.
 End rvardist.
 End RvarDist.
 
-Section tuples_of_rvars.
+Reserved Notation "<{ X , Y }>" (at level 5, X, Y at next level).
+
+Section pair_of_rvars.
 Variables (Omega : finType) (P : dist Omega).
 Variables (TA : finType) (X : Rvar P TA) (TB : finType) (Y : Rvar P TB).
 Definition Rvar2 : Rvar P [finType of TA * TB] := fun x => (X x, Y x).
+End pair_of_rvars.
+
+Notation "<{ X , Y }>" := (Rvar2 X Y).
+
+Section triple_of_rvars.
+Variables (Omega : finType) (P : dist Omega).
+Variables (TA TB TC TD : finType) (X : Rvar P TA) (Y : Rvar P TB) (Z : Rvar P TC).
+Definition Rvar3 : Rvar P [finType of TA * TB * TC] := fun x => (<{X, Y}> x, Z x).
+End triple_of_rvars.
+
+Section tuples_of_rvars.
+Variables (Omega : finType) (P : dist Omega).
+Variables (TA : finType) (X : Rvar P TA) (TB : finType) (Y : Rvar P TB).
 
 Variables (TC : finType) (Z : Rvar P TC).
-Definition Rvar3 : Rvar P [finType of TA * TB * TC] := fun x => (Rvar2 x, Z x).
 
 Variables (TD : finType) (W : Rvar P TD).
-Definition Rvar4 : Rvar P [finType of TA * TB * TC * TD] := fun x => (Rvar3 x, W x).
+Definition Rvar4 : Rvar P [finType of TA * TB * TC * TD] := fun x => (Rvar3 X Y Z x, W x).
 End tuples_of_rvars.
 
 Section marginals.
@@ -57,8 +71,8 @@ Variables (TA TB TC TD : finType).
 Variables (W : Rvar P TD) (X : Rvar P TA) (Y : Rvar P TB) (Z : Rvar P TC).
 
 Lemma marginal_Rvar3_1 b c :
-  \rsum_(a0 in (Rvar2 Y Z) @= (b, c)) P a0 =
-  \rsum_(x in TD) (RvarDist.d (Rvar3 W Y Z)) (x, b, c).
+  \rsum_(a0 in <{Y, Z}> @= (b, c)) P a0 =
+  \rsum_(x in TD) (RvarDist.d (Rvar3 W Y Z) (x, b, c)).
 Proof.
 have -> : ((Rvar2 Y Z) @= (b, c)) = \bigcup_x0 (Rvar3 W Y Z) @= (x0, b, c).
   apply/setP => a0; rewrite !inE; apply/eqP/bigcupP.

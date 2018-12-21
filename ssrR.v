@@ -595,6 +595,8 @@ Proof.
 elim: n => // n IH; by rewrite (expnSr r n) mult_INR -addn1 pow_add /= mulR1 IH.
 Qed.
 
+Lemma expR0 (a : R) : a ^ 0 = 1. Proof. exact: pow_O. Qed.
+
 (* TODO: pow_lt *)
 
 Lemma expR_eq0 x (n : nat) : (x ^ n.+1 == 0) = (x == 0).

@@ -22,6 +22,13 @@ Local Hint Resolve ln2_gt0.
 
 Lemma ln2_neq0 : ln 2 != 0. Proof. exact/eqP/gtR_eqF. Qed.
 
+Lemma ln_expR (a : R) (n : nat) : 0 < a -> ln (a ^ n) = n%:R * ln a.
+Proof.
+move=> a0; elim: n => [|n IH]; first by rewrite expR0 ln_1 mul0R.
+rewrite expRS ln_mult //; last exact: expR_gt0.
+by rewrite IH S_INR mulRDl mul1R addRC.
+Qed.
+
 Lemma ln_increasing_le a b : 0 < a -> a <= b -> ln a <= ln b.
 Proof.
 move=> Ha.
@@ -122,6 +129,9 @@ Hint Resolve ln2_gt0.
 
 Definition Log (n : R) x := ln x / ln n.
 
+Lemma Log_expR (a b : R) (n : nat) : 0 < a -> Log b (a ^ n) = n%:R * Log b a.
+Proof. by move=> a0; rewrite /Log ln_expR // mulRA. Qed.
+
 Lemma ltR0Log n x : 1 < n -> 1 < x -> 0 < Log n x.
 Proof. move=> ? ?; apply mulR_gt0; [exact/ln_pos | exact/invR_gt0/ln_pos]. Qed.
 
@@ -183,6 +193,28 @@ Qed.
 
 (* NB: log is 0 for input < 0 *)
 Definition log x := Log 2 x.
+
+Lemma log1 : log 1 = 0. Proof. by rewrite /log Log_1. Qed.
+Lemma log4 : log 4 = 2.
+Proof.
+rewrite (_ : 4 = 2 ^ 2); last lra.
+rewrite /log Log_expR // /Log divRR ?ln2_neq0 // mulR1 !S_INR add0R; field.
+Qed.
+Lemma log8 : log 8 = 3.
+Proof.
+rewrite (_ : 8 = 2 ^ 3); last lra.
+rewrite /log Log_expR // /Log divRR ?ln2_neq0 // mulR1 !S_INR add0R; field.
+Qed.
+Lemma log16 : log 16 = 4.
+Proof.
+rewrite (_ : 16 = 2 ^ 4); last lra.
+rewrite /log Log_expR // /Log divRR ?ln2_neq0 // mulR1 !S_INR add0R; field.
+Qed.
+Lemma log32 : log 32 = 5.
+Proof.
+rewrite (_ : 32 = 2 ^ 5); last lra.
+rewrite /log Log_expR // /Log divRR ?ln2_neq0 // mulR1 !S_INR add0R; field.
+Qed.
 
 Lemma logV x : 0 < x -> log (/ x) = - log x.
 Proof. by move/(@LogV 2). Qed.
