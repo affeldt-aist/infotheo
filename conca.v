@@ -4,6 +4,7 @@ From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy proba cproba convex binary_entropy_function.
+Require Import Ranalysis_ext Lra.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -62,9 +63,20 @@ Qed.
 
 Definition open_unit_interval := mkInterval open_unit_interval_convex.
 
-Lemma HDH2 : Ranalysis_ext.pderivable H2 (mem_interval open_unit_interval).
+Lemma pderivable_H2 : pderivable H2 (mem_interval open_unit_interval).
 Proof.
-  rewrite Ranalysis
+move=> x /= [Hx0 Hx1].
+apply derivable_pt_minus.
+apply derivable_pt_opp.
+apply derivable_pt_mult; [apply derivable_pt_id|apply derivable_pt_Log].
+assumption.
+apply derivable_pt_mult.
+apply derivable_pt_Rminus.
+apply derivable_pt_comp.
+apply derivable_pt_Rminus.
+apply derivable_pt_Log.
+lra.
+
 
 
 Lemma concavity_of_entropy_x_le_y
