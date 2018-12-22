@@ -40,21 +40,25 @@ Proof. by rewrite onem_eq1. Qed.
 Lemma onem_10 : onem 1 = 0.
 Proof. by rewrite onem_eq0. Qed.
 
-Lemma open_unit_interval_convex : convex_interval (fun x => 0 < x < 1).
+Lemma open_interval_convex (a b : R) (Hab : a < b) : convex_interval (fun x => a < x < b).
 Proof.
-  move => x y t [Hx0 Hx1] [Hy0 Hy1] [[Htlt0|Hteq0] [Htlt1|Hteq1]]
+  move => x y t [Hxa Hxb] [Hya Hyb] [[Haltt|Haeqt] [Htltb|Hteqb]]
    ; [
-   | by rewrite {Htlt0} Hteq1 onem_10 mul0R addR0 mul1R; apply conj
-   | by rewrite {Htlt1} -Hteq0 onem_01 mul0R add0R mul1R; apply conj
-   | by rewrite Hteq1 in Hteq0; move : Rlt_0_1 => /Rlt_not_eq].
+   | by rewrite {Haltt} Hteqb onem_10 mul0R addR0 mul1R; apply conj
+   | by rewrite {Htltb} -Haeqt onem_01 mul0R add0R mul1R; apply conj
+   | by rewrite Hteqb in Haeqt; move : Rlt_0_1 => /Rlt_not_eq].
   have H : 0 < onem t by apply onem_gt0.
   apply conj.
-  - by rewrite (_ : 0 = 0 + 0);
-      [apply Rplus_lt_compat; apply Rmult_lt_0_compat
-      | by rewrite Rplus_0_r].
-  - have : t * x + onem t * y < t + onem t by apply Rplus_lt_compat; [by rewrite mulRC -[X in x * t < X]mul1R; apply Rmult_lt_compat_r | by rewrite mulRC -[X in y * onem t < X]mul1R; apply Rmult_lt_compat_r].
-    by rewrite onemKC.
-Qed.    
+  - rewrite -[X in X < t * x + onem t * y]mul1R -(onemKC t) mulRDl.
+    by apply ltR_add; rewrite ltR_pmul2l.
+  - rewrite -[X in _ + _ < X]mul1R -(onemKC t) mulRDl.
+    by apply ltR_add; rewrite ltR_pmul2l.
+Qed.  
+
+Lemma open_unit_interval_convex : convex_interval (fun x => 0 < x < 1).
+Proof.
+  apply /open_interval_convex /Rlt_0_1.
+Qed.
 
 Definition open_unit_interval := mkInterval open_unit_interval_convex.
 
