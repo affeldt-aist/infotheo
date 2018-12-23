@@ -66,69 +66,147 @@ Definition open_unit_interval := mkInterval open_unit_interval_convex.
 Lemma pderivable_H2 : pderivable H2 (mem_interval open_unit_interval).
 Proof.
 move=> x /= [Hx0 Hx1].
-apply derivable_pt_minus.
+apply derivable_pt_plus.
 apply derivable_pt_opp.
 apply derivable_pt_mult; [apply derivable_pt_id|apply derivable_pt_Log].
 assumption.
+apply derivable_pt_opp.
 apply derivable_pt_mult.
 apply derivable_pt_Rminus.
 apply derivable_pt_comp.
 apply derivable_pt_Rminus.
 apply derivable_pt_Log.
 lra.
+(* NB : transparent definition is required to proceed with a forward proof, later in concavity_of_entropy_x_le_y *)
+Defined.
 
-
-
-Lemma concavity_of_entropy_x_le_y
-      (x y t : R)
-      (Hx : open_unit_interval x) (Hy : open_unit_interval y) (Ht : 0 <= t <= 1)
-      (Hxy : x < y)
-  : concavef_leq H2 x y t.
+Lemma expand_interval_closed_to_open a b c d :
+  a < b -> b < c -> c < d -> forall x, b <= x <= c -> a < x < d.
 Proof.
-  eapply second_derivative_convexf => //.
-  About    second_derivative_convexf.
-  About Ranalysis_ext.pderivable.
-
-Lemma concavivity_of_entropy : concavef_in open_unit_interval H2.
-Proof.
-  rewrite /concavef_in.
-  rewrite /concavef_in /concavef_leq => x y t Hx Hy Ht.  
-  eapply second_derivative_convexf.
-  Focus 1.
-  
-  instantiate (2 := fun x => x).
-
-
-  Lemma second_derivative_convexf : forall t, 0 <= t <= 1 -> convexf_leq f a b t.
-
-  have : pderivable H2 I
-  
-Abort.
-
-(*----*)
-Variables (f : R -> R) (a b : R).
-Let I := fun x0 => a <= x0 <= b.
-Hypothesis HDf : pderivable f I.
-Variable Df : R -> R.
-Hypothesis DfE : forall x (Hx : I x), Df x = derive_pt f x (HDf Hx).
-Hypothesis HDDf : pderivable Df I.
-Variable DDf : R -> R.
-Hypothesis DDfE : forall x (Hx : I x), DDf x = derive_pt Df x (HDDf Hx).
-Hypothesis DDf_ge0 : forall x, I x -> 0 <= DDf x.
-
-Definition L (x : R) := f a + (x - a) / (b - a) * (f b - f a).
-
-Hypothesis ab : a < b.
-
-Lemma LE x : L x = (b - x) / (b - a) * f a + (x - a) / (b - a) * f b.
-Proof.
-rewrite /L mulRBr [in LHS]addRA addRAC; congr (_ + _).
-rewrite addR_opp -{1}(mul1R (f a)) -mulRBl; congr (_ * _).
-rewrite -(mulRV (b - a)); last by rewrite subR_eq0; exact/eqP/gtR_eqF.
-by rewrite -mulRBl -addR_opp oppRB addRA subRK addR_opp.
+  move => Hab Hbc Hcd x [Hbx Hxc].
+  by apply conj; [eapply Rlt_le_trans|eapply Rle_lt_trans]; [exact Hab|exact Hbx|exact Hxc|exact Hcd].
 Qed.
 
-(*----*)
+Lemma expand_internal_closed_to_closed a b c d :
+  a <= b -> b < c -> c <= d -> forall x, b <= x <= c -> a <= x <= d.
+Proof.
+  move => Hab Hbc Hcd x [Hbx Hxc].
+  by apply conj; [eapply Rle_trans|eapply Rle_trans]; [exact Hab|exact Hbx|exact Hxc|exact Hcd].
+Qed.
+
+Lemma expand_interval_open_to_open a b c d :
+  a < b -> b < c -> c < d -> forall x, b < x < c -> a < x < d.
+Proof.
+  move => Hab Hbc Hcd x [Hbx Hxc].
+  by apply conj; [eapply Rlt_trans|eapply Rlt_trans]; [exact Hab|exact Hbx|exact Hxc|exact Hcd].
+Qed.
+
+Lemma expand_interval_closed_to_closed a b c d :
+  a <= b -> b < c -> c <= d -> forall x, b <= x <= c -> a <= x <= d.
+Proof.
+  move => Hab Hbc Hcd x [Hbx Hxc].
+  by apply conj; [eapply Rle_trans|eapply Rle_trans]; [exact Hab|exact Hbx|exact Hxc|exact Hcd].
+Qed.
+
+Lemma concavity_of_entropy_x_le_y x y t :
+      open_unit_interval x -> open_unit_interval y -> 0 <= t <= 1 -> x < y
+      -> concavef_leq H2 x y t.
+Proof.
+  move => [H0x Hx1] [H0y Hy1] [H0t Ht1] Hxy.
+  eapply second_derivative_convexf.
+  Unshelve.
+  - Focus 4. done.
+  - Focus 4. done.
+  - Focus 4.
+    move => z Hz.
+    by apply /derivable_pt_opp /pderivable_H2 /(@expand_interval_closed_to_open 0 x y 1).
+  - Focus 4.
+    exact (fun z => log z - log (1 - z)).
+  - Focus 4.
+    move => z [Hxz Hzy].
+    apply derivable_pt_minus.
+    apply derivable_pt_Log.
+    apply (ltR_leR_trans H0x Hxz).
+    apply derivable_pt_comp.
+    apply derivable_pt_Rminus.
+    apply derivable_pt_Log.
+    apply subR_gt0.
+    by apply (leR_ltR_trans Hzy Hy1).
+  - Focus 4.
+    exact (fun z => / (z * (1 - z) * ln 2)).
+  -
+    move => z Hz.
+    rewrite derive_pt_opp.
+    set (H := expand_interval_closed_to_open _ _ _ _).
+    rewrite /pderivable_H2.
+    case H => [H0z Hz1].
+    rewrite derive_pt_plus.
+    rewrite 2!derive_pt_opp.
+    rewrite 2!derive_pt_mult.
+    rewrite derive_pt_id derive_pt_comp 2!derive_pt_Log /=.
+    rewrite mul1R mulN1R mulRN1.
+    rewrite [X in z * X]mulRC [X in (1 - z) * - X]mulRC mulRN 2!mulRA.
+    rewrite !mulRV; [|by apply /eqP; move => /subR0_eq /gtR_eqF|by apply /eqP /gtR_eqF].
+    rewrite mul1R -2!oppRD oppRK.
+    by rewrite [X in X + - _]addRC oppRD addRA addRC !addRA Rplus_opp_l add0R addR_opp.
+  -
+    move => z [Hxz Hzy].
+    rewrite derive_pt_minus.
+    rewrite derive_pt_comp 2!derive_pt_Log /=.
+    rewrite mulRN1 -[X in _ = X]addR_opp oppRK.
+    rewrite -mulRDr [X in _ = X]mulRC.
+    have Hzn0 : z != 0 by apply /eqP /gtR_eqF /ltR_leR_trans; [exact H0x| exact Hxz].
+    have H1zn0 : 1 - z != 0 by apply /eqP; move => /subR0_eq /gtR_eqF H; apply /H /leR_ltR_trans; [exact Hzy| exact Hy1].
+    have Hzn0' : z <> 0 by move : Hzn0 => /eqP.
+    have H1zn0' : 1 - z <> 0 by move : H1zn0 => /eqP.
+    have Hz1zn0 : z * (1 - z) <> 0 by apply /eqP; rewrite mulR_neq0; apply /andP.
+    have ln2n0 : ln 2 <> 0 by move : ln2_gt0 => /gtR_eqF.
+    have -> : / z = (1 - z) / (z * (1 - z)) by change (/ z = (1 - z) * / (z * (1 - z))); rewrite invRM // [X in _ = _ * X]mulRC mulRA mulRV // mul1R.
+    have -> : / (1 - z) = z  / (z * (1 - z)) by change (/ (1 - z) = z * / (z * (1 - z))); rewrite invRM // mulRA mulRV // mul1R.
+    rewrite -Rdiv_plus_distr.
+    rewrite -addRA Rplus_opp_l addR0.
+    by rewrite div1R -invRM.
+  -
+    move => z [Hxz Hzy].
+    have Hz : 0 < z by apply /ltR_leR_trans; [exact H0x| exact Hxz].
+    have H1z : 0 < 1 - z by apply /subR_gt0 /leR_ltR_trans; [exact Hzy| exact Hy1].
+    apply /or_introl /invR_gt0.
+    by apply mulR_gt0; [apply mulR_gt0|apply ln2_gt0].
+Qed.
+
+Lemma convexf_leq_sym f x y : (forall t, 0 <= t <= 1 -> convexf_leq f x y t) -> forall t, 0 <= t <= 1 -> convexf_leq f y x t.
+Proof.
+  move => H t [H0t Ht1]; move: (H (onem t)).
+  rewrite /convexf_leq onemK.
+  rewrite [X in (_ -> f X <= _) -> _]addRC [X in (_ -> f _ <= X) -> _]addRC.
+  apply.
+  by apply conj; [apply onem_ge0 | apply onem_le1].
+Qed.
+
+Lemma convexf_on_point f x t : convexf_leq f x x t.
+Proof.
+  by rewrite /convexf_leq -2!mulRDl onemKC 2!mul1R; apply or_intror.
+Qed.
+
+Lemma concavity_of_entropy : concavef_in open_unit_interval H2.
+Proof.
+  rewrite /concavef_in /concavef_leq => x y t Hx Hy Ht.  
+  (* wlogつかう. まず関係ない変数を戻し, *)
+  move : t Ht.
+  (* 不等号をorでつないだやつを用意して *)
+  move : (Rtotal_order x y) => Hxy.
+  (* その不等号のひとつを固定してwlogする *)
+  wlog : x y Hx Hy Hxy / x < y.
+  -
+    move => H.
+    case Hxy; [apply H|] => //.
+    case => [-> t Ht|]; [by apply convexf_on_point|].
+    move => Hxy'; apply convexf_leq_sym.
+    apply H => //.
+    by apply or_introl.
+  - 
+    by move => Hxy' t Ht; apply concavity_of_entropy_x_le_y.
+Qed.
 
 End concavity_of_entropy.
 (* TODO: concavity of relative entropy and of mutual information *)
