@@ -101,11 +101,11 @@ Proof.
   by apply conj; [eapply Rlt_trans|eapply Rlt_trans]; [exact Hab|exact Hbx|exact Hxc|exact Hcd].
 Qed.
 
-Lemma expand_interval_closed_to_closed a b c d :
-  a <= b -> b < c -> c <= d -> forall x, b <= x <= c -> a <= x <= d.
+Lemma expand_interval_open_to_closed a b c d :
+  a <= b -> b < c -> c <= d -> forall x, b < x < c -> a <= x <= d.
 Proof.
   move => Hab Hbc Hcd x [Hbx Hxc].
-  by apply conj; [eapply Rle_trans|eapply Rle_trans]; [exact Hab|exact Hbx|exact Hxc|exact Hcd].
+  by apply conj; [eapply Rle_trans|eapply Rle_trans]; [exact Hab|apply or_introl; exact Hbx|apply or_introl; exact Hxc|exact Hcd].
 Qed.
 
 Lemma concavity_of_entropy_x_le_y x y t :
