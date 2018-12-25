@@ -412,7 +412,7 @@ case/orP : (orbN [forall i, f i != 0%R]); last first.
     case/boolP : ((a != 0) && (b != 0)).
     - move=> /andP [/negbTE Ha /negbTE Hb]; rewrite /inv_spec Ha Hb.
       move/negbT in Ha ; move/negbT in Hb.
-      have -> : (a * b)%R == 0 = false by rewrite mulR_eq0 (negbTE Ha) (negbTE Hb).
+      have -> : (a * b)%R == 0 = false by rewrite mulR_eq0' (negbTE Ha) (negbTE Hb).
       rewrite invRM //; exact/eqP.
     - rewrite negb_and !negbK => /orP[|]/eqP ->;
         by rewrite /inv_spec !(eqxx,mul0R,mulR0).

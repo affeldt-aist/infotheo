@@ -127,14 +127,18 @@ Proof. move=> *; ring. Qed.
 Lemma mulRBr : right_distributive Rmult Rminus.
 Proof. move=> *; ring. Qed.
 
-Lemma mulR_eq0 (x y : R) : (x * y == 0) = ((x == 0) || (y == 0)).
+Lemma mulR_eq0 (x y : R) : (x * y = 0) <-> ((x = 0) \/ (y = 0)).
 Proof.
-apply/idP/idP => [/eqP/Rmult_integral[] ->| ]; try by rewrite eqxx // orbC.
+split => [/Rmult_integral //| [] ->]; by rewrite ?mul0R ?mulR0.
+Qed.
+Lemma mulR_eq0' (x y : R) : (x * y == 0) = ((x == 0) || (y == 0)).
+Proof.
+apply/idP/idP => [/eqP/mulR_eq0[]/eqP-> //|]; first by rewrite orbT.
 case/orP => /eqP ->; by rewrite ?mulR0 ?mul0R.
 Qed.
 
 Lemma mulR_neq0 (x y : R) : (x * y != 0) = ((x != 0) && (y != 0)).
-Proof. by rewrite mulR_eq0 negb_or. Qed.
+Proof. by rewrite mulR_eq0' negb_or. Qed.
 
 Lemma eqR_mul2l {r r1 r2} : r <> 0 -> (r * r1 = r * r2) <-> (r1 = r2).
 Proof. by move=> r0; split => [/Rmult_eq_reg_l/(_ r0) | ->]. Qed.

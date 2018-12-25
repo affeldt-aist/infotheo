@@ -557,7 +557,7 @@ rewrite /dist_supp (cardsD1 b [set a | X a != 0]) !inE Xb0 add1n /=.
 apply eq_card => i; rewrite !inE dE.
 case: ifPn => //= ib; first by rewrite eqxx.
 apply/idP/idP; first by apply: contra => /eqP ->; rewrite div0R.
-apply: contra; rewrite /Rdiv mulR_eq0 => /orP[//|H].
+apply: contra; rewrite /Rdiv mulR_eq0' => /orP[//|H].
 exfalso.
 move/negPn/negP : H; apply.
 apply/invR_neq0; by apply: contra Xb1; rewrite subR_eq0 eq_sym.
@@ -567,7 +567,7 @@ Lemma d_eq0 a (Xa0 : X a != 0) : ((d a == 0) = (b == a))%bool.
 Proof.
 rewrite dE; case: ifPn => [/eqP ->|ab]; first by rewrite !eqxx.
 apply/idP/idP => [|]; last by rewrite eq_sym (negbTE ab).
-rewrite mulR_eq0 => /orP[]; first by rewrite (negbTE Xa0).
+rewrite mulR_eq0' => /orP[]; first by rewrite (negbTE Xa0).
 by move/invR_eq0; rewrite subR_eq0 eq_sym (negbTE Xb1).
 Qed.
 
@@ -755,13 +755,10 @@ rewrite /fst; unlock => /=; rewrite /ml.
 by rewrite -(pair_big_fst _ _ (pred1 a)) //= big_pred1_eq.
 Qed.
 
-Lemma dom_by_fst a b : fst a = 0%R -> P (a, b) = 0%R.
-Proof.
-rewrite /fst; unlock => /prsumr_eq0P /= -> //; case.
-move=> a' b' /= /eqP ->; exact/dist_ge0.
-Qed.
+Lemma dom_by_fst a b : fst a = 0 -> P (a, b) = 0.
+Proof. rewrite fstE => /prsumr_eq0P -> // ? _; exact: dist_ge0. Qed.
 
-Lemma dom_by_fstN a b : P (a, b) != 0%R -> fst a != 0%R.
+Lemma dom_by_fstN a b : P (a, b) != 0 -> fst a != 0.
 Proof. by apply: contra => /eqP /dom_by_fst ->. Qed.
 
 (* marginal right *)
@@ -786,13 +783,10 @@ rewrite /snd; unlock => /=; rewrite /mr -(pair_big_snd _ _ (pred1 b)) //=.
 apply eq_bigr => a ?; by rewrite big_pred1_eq.
 Qed.
 
-Lemma dom_by_snd a b : snd b = 0%R -> P (a, b) = 0%R.
-Proof.
-rewrite /snd; unlock => /prsumr_eq0P /= -> //; case.
-move=> a' b' /= /eqP ->; exact/dist_ge0.
-Qed.
+Lemma dom_by_snd a b : snd b = 0 -> P (a, b) = 0.
+Proof. rewrite sndE => /prsumr_eq0P -> // ? _; exact: dist_ge0. Qed.
 
-Lemma dom_by_sndN a b : P (a, b) != 0%R -> snd b != 0%R.
+Lemma dom_by_sndN a b : P (a, b) != 0 -> snd b != 0.
 Proof. by apply: contra => /eqP /dom_by_snd ->. Qed.
 
 End bivar.
@@ -1206,19 +1200,15 @@ End probability.
 Lemma Pr_fst_eq0 (A B : finType) (P : {dist (A * B)}) a b :
   Pr (Bivar.fst P) a = 0%R -> Pr P (setX a b) = 0%R.
 Proof.
-move/Pr_set0P => H; apply/Pr_set0P; case=> a' b'.
-rewrite inE /= => /andP[/H tmp _]; move: tmp.
-rewrite /Bivar.fst; unlock => /=; rewrite /Bivar.snd.
-move/prsumr_eq0P => /=; apply => //; case=> a'' b'' /= ?; exact: dist_ge0.
+move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
+by rewrite inE /= => /andP[/H /Bivar.dom_by_fst ->].
 Qed.
 
 Lemma Pr_snd_eq0 (A B : finType) (P : {dist (A * B)}) a b :
   Pr (Bivar.snd P) b = 0%R -> Pr P (setX a b) = 0%R.
 Proof.
-move/Pr_set0P => H; apply/Pr_set0P; case=> a' b'.
-rewrite inE /= => /andP[a'a /H].
-rewrite /Bivar.snd; unlock => /=; rewrite /Bivar.mr.
-move/prsumr_eq0P => /=; apply => //; case=> a'' b'' /= ?; exact: dist_ge0.
+move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
+by rewrite inE /= => /andP[_ /H /Bivar.dom_by_snd ->].
 Qed.
 
 Lemma Pr_setX1 (A B : finType) (PQ : {dist (A * B)}) a b :
@@ -1421,7 +1411,7 @@ split.
 { by case => [i Hi Hi0]; rewrite (bigD1 i) //= Hi0 mul0R. }
 apply big_ind.
 - by move=> K; exfalso; auto with real.
-- move=> ? ? ? ? /eqP; rewrite mulR_eq0 => /orP[] /eqP; by auto.
+- move=> ? ? ? ?; rewrite mulR_eq0 => -[]; by tauto.
 - move=> i Hi Hi0; by exists i.
 Qed.
 

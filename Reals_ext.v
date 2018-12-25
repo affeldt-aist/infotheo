@@ -300,7 +300,7 @@ Proof. move/dominatesN; exact. Qed.
 Lemma dominates_scale A (Q P : A -> R) : P << Q -> forall k, k != 0 -> P << (fun a => k * Q a).
 Proof.
 move=> PQ k k0; apply/dominatesP => a /eqP.
-by rewrite mulR_eq0 (negbTE k0) /= => /eqP/(dominatesE PQ).
+by rewrite mulR_eq0' (negbTE k0) /= => /eqP/(dominatesE PQ).
 Qed.
 
 Definition dominatesb {A : finType} (Q P : A -> R) := [forall b, (Q b == 0) ==> (P b == 0)].
@@ -334,7 +334,7 @@ Proof.
 move=> ?.
 rewrite /C.
 apply (@eqR_mul2r (INR (fact m0) * INR (fact (n0 - m0)%coq_nat))).
-  move/eqP; rewrite mulR_eq0 !INR_eq0' => /orP[|] /eqP; exact/fact_neq_0.
+  move/eqP; rewrite mulR_eq0' !INR_eq0' => /orP[|] /eqP; exact/fact_neq_0.
 set tmp := INR (fact m0) * _.
 rewrite -mulRA mulVR ?mulR1; last first.
   by rewrite /tmp mulR_neq0 !INR_eq0' !factE -!lt0n !fact_gt0.

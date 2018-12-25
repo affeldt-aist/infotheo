@@ -288,10 +288,10 @@ rewrite V4 /=.
 case: ifP => [| H'].
   rewrite sum_nat_eq0.
   move/forallP/(_ b)/implyP/(_ Logic.eq_refl)/eqP => H _; exact: val_inj.
-rewrite /Rdiv => /eqP; rewrite mulR_eq0 => /orP[|abs].
-  rewrite INR_eq0' => /eqP ?; exact/val_inj.
+rewrite /Rdiv mulR_eq0 => -[|abs].
+  rewrite INR_eq0 => ?; exact/val_inj.
 exfalso.
-by apply/negP : abs; apply/invR_neq0; rewrite INR_eq0' H'.
+by apply/eqP : abs; apply/invR_neq0; rewrite INR_eq0' H'.
 Qed.
 
 (** Upper-bound of the number of conditional types: *)

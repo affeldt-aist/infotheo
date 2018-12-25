@@ -37,12 +37,12 @@ split; [move/dominatesP => H | move=> H; apply/dominatesP].
 - move=> a p_not_0; apply/dominatesP => b; move: (H (a, b)).
   rewrite JointDistChan.dE /= => H0 H1.
   move: H0; rewrite H1 mul0R => /(_ erefl)/eqP.
-  by rewrite JointDistChan.dE mulR_eq0 /= (negbTE p_not_0) orbF => /eqP.
+  by rewrite JointDistChan.dE mulR_eq0' /= (negbTE p_not_0) orbF => /eqP.
 - case=> a p_not_0 b; move: {H}(H a) => H.
   rewrite JointDistChan.dE /=.
   case/boolP : (P a == 0) => [/eqP -> | H1]; first by rewrite mulR0.
   move: {H}(H H1) => /dominatesP ->; first by rewrite mul0R.
-  move/eqP : b; by rewrite JointDistChan.dE mulR_eq0 /= (negbTE H1) orbF => /eqP.
+  move/eqP : b; by rewrite JointDistChan.dE mulR_eq0' /= (negbTE H1) orbF => /eqP.
 Qed.
 
 End condition_equivalence.
@@ -64,7 +64,7 @@ case/leR_eqVlt : (dist_ge0 P ab.1) => [/esym|] Hab1.
 - rewrite JointDistChan.dE in Hab.
   rewrite JointDistChan.dE (dominatesE (V_dom_by_W _ _)) ?mul0R //.
   + exact/eqP/gtR_eqF.
-  + move/eqP : Hab; rewrite mulR_eq0 /= => /orP[/eqP//|/eqP].
+  + move: Hab; rewrite mulR_eq0 => -[//|].
     by move: (gtR_eqF _ _ Hab1).
 Qed.
 
@@ -181,7 +181,7 @@ case/boolP : (P a == 0) => [/eqP|] Pa0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   move: (HV); rewrite in_set => /cond_type_equiv/(_ _ Hx a).
   move: Hx; rewrite in_set => /forallP/(_ a)/eqP; rewrite {}Pa0 => HPa sumB.
-  move: HPa; rewrite -sumB => /esym/eqP; rewrite mulR_eq0 => /orP[|]; last first.
+  move: HPa; rewrite -sumB => /esym; rewrite mulR_eq0 => -[/eqP|/eqP]; last first.
     by move/invR_eq0; rewrite INR_eq0' (negbTE Hn).
   rewrite INR_eq0' sum_nat_eq0 => /forall_inP/(_ b erefl)/eqP => H; apply/eqP.
   by rewrite H pow_O !(mulR0,mul0R) exp2_0.

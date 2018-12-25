@@ -416,12 +416,14 @@ Section conditional_probability_prop.
 
 Variables (A B C : finType) (P : {dist A * B * C}).
 
-Lemma cPr_TripA a b c : \Pr_(TripA.d P)[[set a] | [set (b, c)]] =
-  \Pr_(TripA.d (TripC23.d P))[[set a] | [set (c, b)]].
+Lemma cPr_TripA a b c : \Pr_(TripA.d P)[ a | setX b c] =
+  \Pr_(TripA.d (TripC23.d P))[ a | setX c b ].
 Proof.
 rewrite /cPr; congr (_ / _).
-- by rewrite !Pr_setX1 !Pr_set1 !TripA.dE /= TripC23.dE.
-- by rewrite TripC23.sndA -Pr_setX1 Pr_swap Pr_setX1.
+- rewrite /Pr !big_setX /=; apply eq_bigr => a0 _; rewrite !big_setX /=.
+  rewrite exchange_big /=; apply eq_bigr => c0 _; apply eq_bigr => b0 _.
+  by rewrite !TripA.dE /= TripC23.dE.
+- by rewrite TripC23.sndA Pr_swap.
 Qed.
 
 End conditional_probability_prop.
@@ -514,9 +516,8 @@ rewrite (mulRC _ (P (b, a))).
 rewrite -mulRA.
 rewrite (mulRC (/ _) (Q2 a)).
 rewrite -/(Rdiv (Q2 a) (P2 a)) -(Rinv_Rdiv (P2 a) (Q2 a)); [|exact/eqP|exact/eqP].
-rewrite -mulRA mulRV ?mulR1 // mulR_eq0 negb_or P2a0 /=.
-apply: contra Q2a0.
-exact: invR_eq0.
+rewrite -mulRA mulRV ?mulR1 // mulR_eq0' negb_or P2a0 /=.
+apply: contra Q2a0; exact: invR_eq0.
 Qed.
 
 End conditional_relative_entropy.
@@ -798,6 +799,9 @@ Qed.
 
 End conditional_entropy_prop2.
 
+Lemma setX1 (A B : finType) (a : A) (b : B) : setX [set a] [set b] = [set (a, b)].
+Proof. by apply/setP => -[a0 b0]; rewrite !inE /= xpair_eqE. Qed.
+
 Section conditional_entropy_prop3.
 
 Variables (A B C : finType) (PQR : {dist A * B * C}).
@@ -807,10 +811,7 @@ Lemma h1TripC23 b c :
   CondEntropy.h1 (TripA.d (TripC23.d PQR)) (c, b).
 Proof.
 rewrite /CondEntropy.h1; congr (- _).
-apply eq_bigr => a _.
-suff H : \Pr_(TripA.d PQR)[[set a] | [set (b, c)]] =
-  \Pr_(TripA.d (TripC23.d PQR))[[set a] | [set (c, b)]] by rewrite H.
-by rewrite cPr_TripA.
+by apply eq_bigr => a _; rewrite -!setX1 cPr_TripA.
 Qed.
 
 Lemma hTripC23 :
@@ -1094,7 +1095,7 @@ Local Open Scope reals_ext_scope.
 Lemma Prod_dominates_Joint : PQ << P `x Q.
 Proof.
 apply/dominatesP => -[a b].
-rewrite ProdDist.dE /= => /eqP; rewrite mulR_eq0 => /orP[/eqP Pa0|/eqP Pb0];
+rewrite ProdDist.dE /= mulR_eq0 => -[Pa0|Pb0];
   by [rewrite Bivar.dom_by_fst | rewrite Bivar.dom_by_snd].
 Qed.
 
@@ -1242,13 +1243,13 @@ rewrite cdiv1_is_div.
 move=> Hz1 Hz2; apply div_ge0.
 (* TODO: lemma *)
 apply/dominatesP => -[a b].
-rewrite ProdDist.dE !CondDist.dE /= => /eqP; rewrite mulR_eq0 => /orP[|].
-- rewrite /cPr !Pr_setX1 !Pr_set1 !mulR_eq0 => /orP[/eqP|].
-  move/Proj13.domin => ->; by rewrite div0R.
-  rewrite Proj13.snd => /eqP; rewrite /Rdiv => ->; by rewrite mulR0.
-- rewrite /cPr !Pr_setX1 !Pr_set1 !mulR_eq0 => /orP[/eqP|].
-  move/Proj23.domin => ->; by rewrite div0R.
-  rewrite Proj23.snd => /eqP; rewrite /Rdiv => ->; by rewrite mulR0.
+rewrite ProdDist.dE !CondDist.dE /= mulR_eq0 => -[|].
+- rewrite /cPr !Pr_setX1 !Pr_set1 !mulR_eq0 => -[|].
+  move/Proj13.domin => ->; by left.
+  rewrite Proj13.snd /Rdiv => ->; by right.
+- rewrite /cPr !Pr_setX1 !Pr_set1 !mulR_eq0 => -[|].
+  move/Proj23.domin => ->; by left.
+  rewrite Proj23.snd => ->; by right.
 Qed.
 
 End divergence_conditional_distributions.
@@ -1777,7 +1778,7 @@ case: Bool.bool_dec => j0 /=.
       by rewrite !TripA.dE /= Swap.dE TripC12.dE /= TripA.dE.
     - (* TODO: lemma? *)
       rewrite /CondEntropy.h1; congr (- _); apply eq_bigr => a _.
-      by rewrite cPr_TripA TripC23.def TripC12.dI.
+      by rewrite -!setX1 cPr_TripA TripC23.def TripC12.dI.
 rewrite /g0 MutualInfo.miE2 addR_opp; congr (`H _ - _).
 rewrite /Multivar.head_of.
 apply/dist_ext => a.
