@@ -4,7 +4,7 @@ From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy proba cproba convex binary_entropy_function.
-Require Import Ranalysis_ext Lra.
+Require Import divergence.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -13,8 +13,7 @@ Import Prenex Implicits.
 Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
 
-Section concavity_of_entropy.
-
+Section interval.
 Lemma Rnonneg_convex : convex_interval (fun x => 0 <= x).
 Proof.
   rewrite /convex_interval.
@@ -36,13 +35,10 @@ Proof.
   by move /Rplus_0_r_uniq /Ropp_eq_0_compat; rewrite Ropp_involutive.
 Qed.
 
-Lemma onem_01 : onem 0 = 1.
-Proof. by rewrite onem_eq1. Qed.
-Lemma onem_10 : onem 1 = 0.
-Proof. by rewrite onem_eq0. Qed.
-
 Lemma open_interval_convex (a b : R) (Hab : a < b) : convex_interval (fun x => a < x < b).
 Proof.
+  have onem_01 : onem 0 = 1  by rewrite onem_eq1.
+  have onem_10 : onem 1 = 0  by rewrite onem_eq0.
   move => x y t [Hxa Hxb] [Hya Hyb] [[Haltt|Haeqt] [Htltb|Hteqb]]
    ; [
    | by rewrite {Haltt} Hteqb onem_10 mul0R addR0 mul1R; apply conj
@@ -62,6 +58,56 @@ Proof.
 Qed.
 
 Definition open_unit_interval := mkInterval open_unit_interval_convex.
+End interval.
+
+
+Section Hp_Dpu.
+Variables (A:finType) (p:dist A) (n:nat) (domain_not_empty: #|A| = n.+1).
+Definition u := (Uniform.d domain_not_empty).
+
+Lemma Hp_Dpu : entropy p = log #|A|%:R - div p u.
+  rewrite /entropy /div.
+  evar (RHS : A -> R).
+  have H : forall a : A, p a * log (p a / u a) = RHS a.
+  -
+    move => a.
+    move : (pos_f_ge0 (pmf p) a) => [H|H].
+    +
+      rewrite Uniform.dE.
+      change (p a * log (p a / / #|A|%:R)) with (p a * log (p a * / / #|A|%:R)).
+      have H0 : 0 < #|A|%:R by rewrite domain_not_empty ltR0n //.
+      have H1 : #|A|%:R <> 0 by apply gtR_eqF.
+      rewrite invRK // logM // mulRDr.
+        by instantiate (RHS := fun a => p a * log (p a) + p a * log #|A|%:R).
+    by rewrite /RHS -H /= 3!mul0R add0R.
+  have H0 : \rsum_(a in A) p a * log (p a / u a) = \rsum_(a in A) RHS a.
+  - move : H; rewrite /RHS => H.
+    by apply eq_bigr.
+  rewrite H0 /RHS.
+  rewrite big_split /=.
+  rewrite -big_distrl /=.
+  rewrite (pmf1 p) mul1R.
+  by rewrite -addR_opp oppRD addRC -addRA Rplus_opp_l addR0.
+Qed.
+End Hp_Dpu.
+
+Section D_convex.
+Variables (A:finType) (p q:dist A) (n:nat) (domain_not_empty: #|A| = n.+1).
+
+(* 
+Lemma D_convex : convexf_in open_unit_interval (fun p => div p q).
+型があわないのでconvexityを変えるひつようがある
+TODO: monaeのaltprob_model.vの定義を輸入する
+
+*)
+
+End D_convex.
+
+
+Module alternative_proof.
+Require Import Ranalysis_ext Lra.
+
+Section concavity_of_entropy.
 
 Lemma pderivable_H2 : pderivable H2 (mem_interval open_unit_interval).
 Proof.
@@ -209,4 +255,7 @@ Proof.
 Qed.
 
 End concavity_of_entropy.
+
+End alternative_proof.
+
 (* TODO: concavity of relative entropy and of mutual information *)
