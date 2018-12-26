@@ -416,7 +416,7 @@ Section conditional_probability_prop.
 
 Variables (A B C : finType) (P : {dist A * B * C}).
 
-Lemma cPr_TripA a b c : \Pr_(TripA.d P)[ a | setX b c] =
+Lemma cPr_TripA_TripC23 a b c : \Pr_(TripA.d P)[ a | setX b c] =
   \Pr_(TripA.d (TripC23.d P))[ a | setX c b ].
 Proof.
 rewrite /cPr; congr (_ / _).
@@ -811,7 +811,7 @@ Lemma h1TripC23 b c :
   CondEntropy.h1 (TripA.d (TripC23.d PQR)) (c, b).
 Proof.
 rewrite /CondEntropy.h1; congr (- _).
-by apply eq_bigr => a _; rewrite -!setX1 cPr_TripA.
+by apply eq_bigr => a _; rewrite -!setX1 cPr_TripA_TripC23.
 Qed.
 
 Lemma hTripC23 :
@@ -1778,7 +1778,7 @@ case: Bool.bool_dec => j0 /=.
       by rewrite !TripA.dE /= Swap.dE TripC12.dE /= TripA.dE.
     - (* TODO: lemma? *)
       rewrite /CondEntropy.h1; congr (- _); apply eq_bigr => a _.
-      by rewrite -!setX1 cPr_TripA TripC23.def TripC12.dI.
+      by rewrite -!setX1 cPr_TripA_TripC23 TripC23.def TripC12.dI.
 rewrite /g0 MutualInfo.miE2 addR_opp; congr (`H _ - _).
 rewrite /Multivar.head_of.
 apply/dist_ext => a.
