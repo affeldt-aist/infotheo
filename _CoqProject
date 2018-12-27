@@ -75,5 +75,6 @@ kraft.v
 shannon_fano.v
 string_entropy.v
 cproba.v
+chap2.v
 cinde.v
 -R . infotheo

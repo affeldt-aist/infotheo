@@ -3,338 +3,27 @@ From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
-Require Import proba divergence entropy cproba.
+Require Import cproba.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+(* tentative formalization of conditional independence *)
+
 Reserved Notation "X @= x" (at level 10).
+Reserved Notation "X _|_  Y | Z" (at level 10, Y, Z at next level).
 Reserved Notation "P |= X _|_  Y | Z" (at level 10, X, Y, Z at next level).
+Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
+  format "[%  x ,  y ,  .. ,  z ]").
+Reserved Notation "{ 'RV' d -> T }" (at level 0, d, T at next level).
 
 Notation "X @= x" := ([set h | X h == x]) : proba_scope.
 
 Local Open Scope proba_scope.
 
-Definition RV {A : finType} (d : dist A) (TA : finType) := A -> TA.
-
-Definition RV_of {A : finType} (d : dist A) {TA : finType} :=
-  fun phT : phant (Finite.sort TA) => @RV A d TA.
-
-Notation "{ 'RV' d -> T }" := (RV_of d (Phant T)) (at level 0, d, T at next level) : proba_scope.
-
-Module RvarDist.
-Section rvardist.
-Variables (A TA : finType) (P : dist A) (X : {RV P -> TA}).
-Definition f a := Pr P (X @= a).
-Lemma f0 a : 0 <= f a. Proof. exact/Pr_ge0. Qed.
-Lemma f1 : \rsum_(a in TA) (f a) = 1.
-Proof.
-rewrite /f /Pr -(pmf1 P) (sum_parti_finType _ X) /=.
-rewrite (bigID (fun x => x \in fin_img X)) /=.
-rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
-  move=> ta taX; rewrite big1 // => a; rewrite inE => /eqP Xata.
-  move: taX; rewrite /fin_img mem_undup.
-  case/mapP; exists a => //; by rewrite mem_enum.
-rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
-apply eq_bigr => ta Hta; by apply eq_bigl => a; rewrite inE.
-Qed.
-Definition d : {dist TA} := locked (makeDist f0 f1).
-Lemma dE a : d a = Pr P (X @= a). Proof. by rewrite /d; unlock. Qed.
-End rvardist.
-End RvarDist.
-
-Section pair_of_rvars.
-Variables (Omega : finType) (P : dist Omega).
-Variables (TA : finType) (X : {RV P -> TA}) (TB : finType) (Y : {RV P -> TB}).
-Definition Rvar2 : {RV P -> TA * TB} := fun x => (X x, Y x).
-End pair_of_rvars.
-
-Notation "'[%' x , y , .. , z ']'" := (Rvar2 .. (Rvar2 x y) .. z) (at level 0, format "[%  x ,  y ,  .. ,  z ]").
-
-Section marginals.
-Variables (A : finType) (P : dist A).
-Variables (TA TB TC TD : finType).
-Variables (W : {RV P -> TD}) (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
-
-Lemma marginal_Rvar2_1 a :
-  \rsum_(a0 in X @= a) P a0 = \rsum_(i in TB) (RvarDist.d [% X, Y]) (a, i).
-Proof.
-have -> : (X @= a) = \bigcup_x0 [% X, Y] @= (a, x0).
-  apply/setP => b0; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- /=; exists (Y b0) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- ?.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01; rewrite -setI_eq0; apply/eqP/setP => a0; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- Hd0] /eqP -[].
-  rewrite Hd0; exact/eqP.
-apply eq_bigr => d _; by rewrite RvarDist.dE.
-Qed.
-
-Lemma marginal_Rvar2_2 b :
-  \rsum_(a in Y @= b) P a = \rsum_(i in TA) (RvarDist.d [% X, Y]) (i, b).
-Proof.
-have -> : (Y @= b) = \bigcup_x0 [% X, Y] @= (x0, b).
-  apply/setP => a0; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- /=; exists (X a0) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] ? <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01; rewrite -setI_eq0; apply/eqP/setP => a0; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[Hd0 <-] /eqP -[].
-  rewrite Hd0; exact/eqP.
-apply eq_bigr => d _; by rewrite RvarDist.dE.
-Qed.
-
-Lemma marginal_Rvar3_1 b c :
-  \rsum_(a0 in [% Y, Z] @= (b, c)) P a0 =
-  \rsum_(x in TD) (RvarDist.d [% W, Y, Z] (x, b, c)).
-Proof.
-have -> : ([% Y, Z] @= (b, c)) = \bigcup_x0 [% W, Y, Z] @= (x0, b, c).
-  apply/setP => a0; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- /=; exists (W a0) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] ? <- <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01; rewrite -setI_eq0; apply/eqP/setP => a0; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[Hd0 <- <-] /eqP -[].
-  rewrite Hd0; exact/eqP.
-apply eq_bigr => d _; by rewrite RvarDist.dE.
-Qed.
-
-Lemma marginal_Rvar3_2 b c :
-  \rsum_(a0 in [% Y, Z] @= (b, c)) P a0 =
-  \rsum_(x in TD) (RvarDist.d [% Y, W, Z]) (b, x, c).
-Proof.
-have -> : ([% Y, Z] @= (b, c)) = \bigcup_x0 [% Y, W, Z] @= (b, x0, c).
-  apply/setP => a0; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- /=; exists (W a0) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- ? <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => a0; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- Hd0 <-] /eqP -[].
-  rewrite Hd0; exact/eqP.
-apply eq_bigr => d _; by rewrite RvarDist.dE.
-Qed.
-
-Lemma marginal_Rvar3_3 b c :
-  \rsum_(a0 in [% Y, Z] @= (b, c)) P a0 =
-  \rsum_(x in TD) (RvarDist.d [% Y, Z, W]) (b, c, x).
-Proof.
-have -> : ([% Y, Z] @= (b, c)) = \bigcup_x0 [% Y, Z, W] @= (b, c, x0).
-  apply/setP => a0; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- /=; exists (W a0) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => a0; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- <- Hd0] /eqP -[].
-  rewrite Hd0; exact/eqP.
-apply eq_bigr => d _; by rewrite RvarDist.dE.
-Qed.
-
-Lemma marginal_Rvar4_1 a b c :
-  \rsum_(a0 in [% X, Y, Z] @= (a, b, c)) P a0 =
-  \rsum_(x in TD) (RvarDist.d [% W, X, Y, Z]) (x, a, b, c).
-Proof.
-have -> : ([% X, Y, Z] @= (a, b, c)) = \bigcup_d [% W, X, Y, Z] @= (d, a, b, c).
-  apply/setP => a0; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- <- /=; exists (W a0) => //; rewrite inE.
-   by case=> d _; rewrite inE => /eqP[] ? <- <- <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => a0; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[Hd0 <- <- <-] /eqP -[].
-  rewrite Hd0; exact/eqP.
-apply eq_bigr => d _; by rewrite RvarDist.dE.
-Qed.
-
-Lemma marginal_Rvar4_3 a b c :
-  \rsum_(a0 in [% X, Y, Z] @= (a, b, c)) P a0 =
-  \rsum_(x in TD) (RvarDist.d [% X, Y, W, Z]) (a, b, x, c).
-Proof.
-have -> : ([% X, Y, Z] @= (a, b, c)) = \bigcup_x0 [% X, Y, W, Z] @= (a, b, x0, c).
-  apply/setP => a0; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- <- /=; exists (W a0) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- <- ? <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => a0; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- <- Hd0 <-] /eqP -[].
-  rewrite Hd0; exact/eqP.
-apply eq_bigr => d _; by rewrite RvarDist.dE.
-Qed.
-
-Lemma marginal_Rvar4_4 a b d :
-  \rsum_(a0 in [% X, Y, Z] @= (a, b, d)) P a0 =
-  \rsum_(x in TD) (RvarDist.d [% X, Y, Z, W]) (a, b, d, x).
-Proof.
-have -> : ([% X, Y, Z] @= (a, b, d)) = \bigcup_x0 [% X, Y, Z, W] @= (a, b, d, x0).
-  apply/setP => a0; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- <- /=; exists (W a0) => //; rewrite inE.
-  by case=> c _; rewrite inE => /eqP[] <- <- <- ?.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => a0; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- <- <- Hd0] /eqP -[].
-  rewrite Hd0; exact/eqP.
-by apply eq_bigr => c _; rewrite RvarDist.dE.
-Qed.
-
-End marginals.
-
-Section rvar2_prop.
-Variables (A : finType) (P : dist A).
-Variables (TA TB : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
-
-Lemma Pr_Rvar2C a b :
-  Pr (RvarDist.d [% X, Y]) (setX a b) = Pr (RvarDist.d [% Y, X]) (setX b a).
-Proof.
-rewrite /Pr !big_setX /= exchange_big /=; apply eq_bigr => b0 _.
-apply/eq_bigr => a0 _; rewrite !RvarDist.dE /Pr; apply eq_bigl => w0.
-by rewrite !inE; apply/eqP/eqP => -[<- <-].
-Qed.
-
-Lemma fst_Rvar2 : Bivar.fst (RvarDist.d [% X, Y]) = RvarDist.d X.
-Proof.
-apply/dist_ext => ?; by rewrite Bivar.fstE RvarDist.dE /Pr -marginal_Rvar2_1.
-Qed.
-
-Lemma snd_Rvar2 : Bivar.snd (RvarDist.d [% X, Y]) = RvarDist.d Y.
-Proof.
-apply/dist_ext => ?; by rewrite Bivar.sndE RvarDist.dE /Pr (marginal_Rvar2_2 X).
-Qed.
-
-Lemma Pr_Rvar2_domin_fst a b : Pr (RvarDist.d X) a = 0 ->
-  Pr (RvarDist.d [% X, Y]) (setX a b) = 0.
-Proof. move=> H; apply Pr_fst_eq0; by rewrite fst_Rvar2. Qed.
-
-Lemma Pr_Rvar2_domin_snd a b : Pr (RvarDist.d Y) b = 0 ->
-  Pr (RvarDist.d [% X, Y]) (setX a b) = 0.
-Proof. move=> H; apply Pr_snd_eq0; by rewrite snd_Rvar2. Qed.
-
-End rvar2_prop.
-
-Section rvar3_prop.
-Variables (A : finType) (P : dist A).
-Variables (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD}).
-
-Lemma snd_TripA_Rvar3 :
-  Bivar.snd (TripA.d (RvarDist.d [% X, Y, Z])) = RvarDist.d [% Y, Z].
-Proof.
-apply/dist_ext => -[b c].
-rewrite Bivar.sndE RvarDist.dE /Pr (marginal_Rvar3_1 X).
-by apply eq_bigr => a _; rewrite TripA.dE.
-Qed.
-
-Lemma snd_TripA_Rvar3A :
-  Bivar.snd (TripA.d (RvarDist.d [% X, [% Y, W],  Z])) = RvarDist.d [% Y, W, Z].
-Proof.
-apply/dist_ext => -[[b d c]].
-rewrite Bivar.sndE RvarDist.dE /Pr (marginal_Rvar4_1 X); apply/eq_bigr => a _.
-rewrite TripA.dE /= !RvarDist.dE /Pr; apply eq_bigl => a0.
-by rewrite !inE; apply/eqP/eqP => -[<- <- <- <-].
-Qed.
-
-Lemma Proj13_Rvar3 : Proj13.d (RvarDist.d [% X, Y, Z]) = RvarDist.d [% X, Z].
-Proof.
-apply/dist_ext => -[a c].
-by rewrite Proj13.dE RvarDist.dE /Pr /= (marginal_Rvar3_2 Y).
-Qed.
-
-Lemma snd_Rvar3 : Bivar.snd (RvarDist.d [% X, Y, Z]) = Bivar.snd (RvarDist.d [% X, Z]).
-Proof. by rewrite -Proj13.snd Proj13_Rvar3. Qed.
-
-Lemma Proj23_Rvar3 : Proj23.d (RvarDist.d [% X, Y, Z]) = RvarDist.d [% Y, Z].
-Proof.
-apply/dist_ext => -[b c].
-by rewrite Proj23.dE RvarDist.dE /Pr /= (marginal_Rvar3_1 X).
-Qed.
-
-End rvar3_prop.
-
-Section conditionnally_independent_discrete_random_variables.
-
-Variables (Omega : finType) (P : dist Omega).
-Variables (TA TB TC : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
-Let Q : {dist TA * TB * TC} := RvarDist.d [% X, Y, Z].
-
-Definition cinde_drv := forall (a : TA) (b : TB) (c : TC),
-  \Pr_Q[ [set (a, b)] | [set c] ] =
-  \Pr_(Proj13.d Q) [ [set a] | [set c] ] * \Pr_(Proj23.d Q) [ [set b] | [set c] ].
-
-End conditionnally_independent_discrete_random_variables.
-
-Arguments cinde_drv {Omega} _ {TA} {TB} {TC}.
-
-Notation "P |= X _|_  Y | Z" := (cinde_drv P X Y Z) : proba_scope.
-
-Definition swap {A B : finType} (ab : A * B) := (ab.2, ab.1).
-
-Lemma injective_swap (A B : finType) (E : {set A * B}) : {in E &, injective swap}.
-Proof. by case=> a b [a0 b0] /= _ _ [-> ->]. Qed.
-
-Lemma set_swap (A B : finType) (P : B -> A -> bool) :
-  [set h : {: B * A} | P h.1 h.2 ] = swap @: [set h | P h.2 h.1].
-Proof.
-apply/setP => /= -[b a]; rewrite !inE /=; apply/idP/imsetP => [H|].
-- by exists (a, b) => //=; rewrite inE.
-- by case => -[a0 b0]; rewrite inE /= => ? [-> ->].
-Qed.
-
-Section tripc12_prop.
-Variables (TA TB TC : finType) (P : {dist TA * TB * TC}).
-Lemma Pr_TripC12 (c : {set TC}) (E : {set TA * TB}) :
-  \Pr_P[E | c] = \Pr_(TripC12.d P)[swap @: E | c].
-Proof.
-rewrite /cPr TripC12.snd; congr (_ / _).
-rewrite /Pr 2!big_setX /= [in LHS]exchange_big /= [in RHS]exchange_big /=.
-apply eq_bigr => c' Zc'c; rewrite (big_imset _ (@injective_swap _ _ E)) /=.
-apply eq_bigr => -[? ?] _; by rewrite TripC12.dE.
-Qed.
-End tripc12_prop.
-
-Section tripc12_prop2.
-Variable (Omega : finType) (Q : dist Omega).
-Variables (TA TB TC : finType) (X : {RV Q -> TA}) (Y : {RV Q -> TB}) (Z : {RV Q -> TC}).
-Let P : {dist TA * TB * TC} := RvarDist.d [% X, Y, Z].
-Lemma TripC12_Rvar3 : TripC12.d P = RvarDist.d [% Y, X, Z].
-Proof.
-apply/dist_ext => -[[a b] c]; rewrite TripC12.dE /= !RvarDist.dE.
-congr (Pr _ _).
-apply/setP => a0; rewrite !inE; rewrite /Rvar2.
-by apply/idP/idP => /eqP -[-> -> ->].
-Qed.
-End tripc12_prop2.
-
-Section symmetry.
-
-Variable (Omega : finType) (P : dist Omega).
-Variables (TA TB TC : finType) (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
-
-Lemma symmetry : P |= X _|_ Y | Z -> P |= Y _|_ X | Z.
-Proof.
-rewrite /cinde_drv => /= H b a c.
-rewrite mulRC.
-have -> : Proj23.d (RvarDist.d [% Y, X, Z]) = Proj13.d (RvarDist.d [% X, Y, Z]).
-  by rewrite Proj23_Rvar3 Proj13_Rvar3.
-have -> : Proj13.d (RvarDist.d [% Y, X, Z]) = Proj23.d (RvarDist.d [% X, Y, Z]).
-  by rewrite Proj13_Rvar3 Proj23_Rvar3.
-rewrite Pr_TripC12 TripC12_Rvar3.
-rewrite -H.
-congr cPr.
-apply/setP => -[a0 b0]; rewrite !inE.
-apply/imsetP/idP.
-- by case => -[tb ta]; rewrite inE => /eqP -[-> ->] ->.
-- by case/eqP => -> ->; exists (b, a) => //; rewrite inE.
-Qed.
-
-End symmetry.
-
 Module Proj124.
-Section proj124.
+Section def.
 Variables (A B D C : finType) (P : {dist A * B * D * C}).
 Definition f (abc : A * B * C) := \rsum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
 Lemma f0 x : 0 <= f x. Proof. apply rsumr_ge0 => ? _; exact: dist_ge0. Qed.
@@ -350,52 +39,26 @@ Qed.
 Definition d : {dist A * B * C} := locked (makeDist f0 f1).
 Lemma dE abc: d abc = \rsum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
 Proof. by rewrite /d; unlock. Qed.
-End proj124.
-End Proj124.
-
-Lemma snd_Proj124 (A B C D : finType) (P : {dist A * B * C * D}) :
-  Bivar.snd (Proj124.d P) = Bivar.snd P.
+End def.
+Section prop.
+Variables (A B D C : finType) (P : {dist A * B * D * C}).
+Lemma snd : Bivar.snd (Proj124.d P) = Bivar.snd P.
 Proof.
 apply/dist_ext => d.
 rewrite 2!Bivar.sndE /=.
 rewrite (eq_bigr (fun i => P (i.1, i.2, d))); last by case.
 rewrite -(pair_bigA _ (fun i1 i2 => P (i1, i2, d))) /=.
 apply eq_bigr => -[a b] _.
-by rewrite Proj124.dE; apply eq_bigr => c _.
+by rewrite dE; apply eq_bigr => c _.
 Qed.
+End prop.
+End Proj124.
 
 Definition Proj14d (A B C D : finType) (d : {dist A * B * D * C}) : {dist A * C} :=
   Proj13.d (Proj124.d d).
 
-Section proj124_rvar4.
-Variables (A : finType) (P : dist A).
-Variables (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD}).
-
-Lemma Proj124_Rvar4 : Proj124.d (RvarDist.d [% X, Y, W, Z])= RvarDist.d [% X, Y, Z].
-Proof.
-apply/dist_ext => -[[a b] c].
-by rewrite Proj124.dE /= RvarDist.dE /= {1}/Pr -marginal_Rvar4_3.
-Qed.
-End proj124_rvar4.
-
-Section Proj14.
-Variables (A : finType) (P : dist A).
-Variables (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD}).
-Let YW := [% Y, W].
-
-Lemma Proj14_Rvar4 : (RvarDist.d [% X, Z]) = Proj14d (RvarDist.d [% X, Y, W, Z]).
-Proof.
-rewrite /Proj14d; apply/dist_ext => -[a c].
-rewrite !Proj13.dE /= RvarDist.dE {1}/Pr (marginal_Rvar3_2 Y); apply eq_bigr => b _.
-by rewrite RvarDist.dE {1}/Pr Proj124.dE (marginal_Rvar4_3 W); apply eq_bigr.
-Qed.
-
-End Proj14.
-
 Module Proj234.
-Section proj234.
+Section def.
 Variables (A B D C : finType) (P : {dist A * B * C * D}).
 Definition f (abc : B * C * D) := \rsum_(x in A) P (x, abc.1.1, abc.1.2, abc.2).
 Lemma f0 x : 0 <= f x. Proof. apply rsumr_ge0 => ? _; exact: dist_ge0. Qed.
@@ -412,26 +75,11 @@ Qed.
 Definition d : {dist B * C * D} := locked (makeDist f0 f1).
 Lemma dE abc: d abc = \rsum_(x in A) P (x, abc.1.1, abc.1.2, abc.2).
 Proof. by rewrite /d; unlock. Qed.
-End proj234.
+End def.
 End Proj234.
 
-Section proj234_rvar4.
-Variables (A : finType) (P : dist A).
-Variables (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD}).
-Let YW := [% Y, W].
-Lemma Proj234_Rvar4 :
-  Proj234.d (RvarDist.d [% X, Y, W, Z]) = Proj23.d (RvarDist.d [% X, YW, Z]).
-Proof.
-apply/dist_ext => -[[] b d c].
-rewrite Proj23.dE Proj234.dE; apply eq_bigr => a _ /=.
-rewrite !RvarDist.dE; congr Pr.
-apply/setP => a0; by rewrite !inE !xpair_eqE !andbA.
-Qed.
-End proj234_rvar4.
-
-Module QuadA12.
-Section quada12.
+Module QuadA23.
+Section def.
 Variables (A B C D : finType) (P : {dist A * B * D * C}).
 Let g (x : A * (B * D) * C) := let: (a, (b, d), c) := x in (a, b, d, c).
 Definition f (x : A * (B * D) * C) :=  P (g x).
@@ -448,361 +96,625 @@ Qed.
 Definition d : {dist A * (B * D) * C} := locked (makeDist f0 f1).
 Lemma dE x : d x = P (g x).
 Proof. by rewrite /d /g; unlock => /=. Qed.
-End quada12.
-End QuadA12.
-
-Lemma snd_QuadA12 (A B D C : finType) (P : {dist A * B * D * C}) :
-  Bivar.snd P = Bivar.snd (QuadA12.d P).
+End def.
+Section prop.
+Variables (A B C D : finType) (P : {dist A * B * D * C}).
+Lemma snd : Bivar.snd (QuadA23.d P) = Bivar.snd P.
 Proof.
 apply/dist_ext => c; rewrite 2!Bivar.sndE /=.
 rewrite (reindex (fun x => let: (a, b, d) := x in (a, (b, d)))) /=; last first.
   exists (fun x => let: (a, (b, d)) := x in (a, b, d)).
   by move=> -[] [].
   by move=> -[] ? [].
-apply eq_bigr => -[[]] a b d _; by rewrite QuadA12.dE.
+apply eq_bigr => -[[]] a b d _; by rewrite dE.
+Qed.
+End prop.
+End QuadA23.
+
+Module QuadA34.
+Section def.
+Variables (A B C D : finType) (P : {dist A * B * D * C}).
+Let g (x : A * B * (D * C)) := let: (a, b, (d, c)) := x in (a, b, d, c).
+Definition f (x : A * B * (D * C)) :=  P (g x).
+Lemma f0 x : 0 <= f x.
+Proof. move: x => -[[] ? ? [] ? ?]; exact/dist_ge0. Qed.
+Lemma f1 : \rsum_(x in {: A * B * (D * C)}) f x = 1.
+Proof.
+rewrite /f -(pmf1 P) /= (reindex g) /=; last first.
+  exists (fun x => let: (a, b, d, c) := x in (a, b, (d, c))).
+  by move=> -[[] ? ? [] ? ?].
+  by move=> -[[] [] ? ? ? ?].
+by apply eq_bigr => -[[] ? ? [] ? ?].
+Qed.
+Definition d : {dist A * B * (D * C)} := locked (makeDist f0 f1).
+Lemma dE x : d x = P (g x).
+Proof. by rewrite /d /g; unlock => /=. Qed.
+End def.
+End QuadA34.
+
+Module QuadA234.
+Section def.
+Variables (A B C D : finType) (P : {dist A * B * D * C}).
+Let g (x : A * (B * D * C)) := let: (a, (b, d, c)) := x in (a, b, d, c).
+Definition f (x : A * (B * D * C)) :=  P (g x).
+Lemma f0 x : 0 <= f x.
+Proof. move: x => -[? [] [] ? ? ?]; exact/dist_ge0. Qed.
+Lemma f1 : \rsum_(x in {: A * (B * D * C)}) f x = 1.
+Proof.
+rewrite /f -(pmf1 P) /= (reindex g) /=; last first.
+  exists (fun x => let: (a, b, d, c) := x in (a, (b, d, c))).
+  by move=> -[? [] [] ? ? ?].
+  by move=> -[[] [] ? ? ? ?].
+by apply eq_bigr => -[? [] [] ? ?].
+Qed.
+Definition d : {dist A * (B * D * C)} := locked (makeDist f0 f1).
+Lemma dE x : d x = P (g x).
+Proof. by rewrite /d /g; unlock => /=. Qed.
+End def.
+End QuadA234.
+
+Section QuadA_prop.
+Variables (A B C D : finType) (P : {dist A * B * C * D}).
+
+Lemma cPr_TripA E F G H :
+  \Pr_(TripA.d (QuadA34.d P))[ E | setX F (setX G H) ] =
+  \Pr_(QuadA234.d P)[ E | setX (setX F G) H ].
+Proof.
+rewrite /cPr.
+congr (_ / _).
+  rewrite TripA.Pr /Pr !big_setX /=; apply eq_bigr => a _.
+  rewrite !big_setX /=; apply eq_bigr => b _; rewrite big_setX /=.
+  apply/eq_bigr => c _; apply eq_bigr => d _.
+  by rewrite QuadA34.dE QuadA234.dE.
+rewrite /Pr !big_setX /=; apply eq_bigr => b _.
+rewrite !big_setX /=; apply eq_bigr => c _.
+apply eq_bigr=> d _.
+rewrite !Bivar.sndE; apply eq_bigr => a _.
+by rewrite TripA.dE QuadA234.dE QuadA34.dE.
 Qed.
 
-Section quada12_prop.
-Variables (A : finType) (P : dist A).
-Variables (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD}).
-Let YW := [% Y, W].
+End QuadA_prop.
 
-Lemma QuadA12d_Rvar4 : QuadA12.d (RvarDist.d [% X, Y, W, Z]) = RvarDist.d [% X, YW, Z].
+Definition RV {U : finType} (P : dist U) (A : finType) := U -> A.
+
+Definition RV_of {U : finType} (P : dist U) {A : finType} :=
+  fun phT : phant (Finite.sort A) => @RV U P A.
+
+Notation "{ 'RV' d -> T }" := (RV_of d (Phant T)) : proba_scope.
+
+Module RVar.
+Section def.
+Variables (U A : finType) (P : dist U) (X : {RV P -> A}).
+Definition f a := Pr P (X @= a).
+Lemma f0 a : 0 <= f a. Proof. exact/Pr_ge0. Qed.
+Lemma f1 : \rsum_(a in A) (f a) = 1.
+Proof.
+rewrite /f /Pr -(pmf1 P) (sum_parti_finType _ X) /=.
+rewrite (bigID (fun x => x \in fin_img X)) /=.
+rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
+  move=> a aX; rewrite big1 // => u; rewrite inE => /eqP Xua.
+  move: aX; rewrite /fin_img mem_undup.
+  case/mapP; exists u => //; by rewrite mem_enum.
+rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
+apply eq_bigr => a aX; by apply eq_bigl => u; rewrite inE.
+Qed.
+Definition d : {dist A} := locked (makeDist f0 f1).
+Lemma dE a : d a = Pr P (X @= a). Proof. by rewrite /d; unlock. Qed.
+End def.
+End RVar.
+
+Section pair_of_RVs.
+Variables (U : finType) (P : dist U).
+Variables (A : finType) (X : {RV P -> A}) (B : finType) (Y : {RV P -> B}).
+Definition RV2 : {RV P -> A * B} := fun x => (X x, Y x).
+End pair_of_RVs.
+
+Notation "'[%' x , y , .. , z ']'" := (RV2 .. (RV2 x y) .. z).
+
+Section marginals.
+Variables (U : finType) (P : dist U).
+Variables (A B C D : finType).
+Variables (W : {RV P -> D}) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+
+Lemma marginal_RV2_1 a :
+  \rsum_(u in X @= a) P u = \rsum_(b in B) (RVar.d [% X, Y]) (a, b).
+Proof.
+have -> : (X @= a) = \bigcup_b [% X, Y] @= (a, b).
+  apply/setP=> u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- /=; exists (Y u) => //; rewrite inE.
+  by case=> b _; rewrite inE => /eqP[] <- ?.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> b0 b1 b01; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- Yub0] /eqP -[].
+  rewrite Yub0; exact/eqP.
+apply eq_bigr => b _; by rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV2_2 b :
+  \rsum_(u in Y @= b) P u = \rsum_(a in A) (RVar.d [% X, Y]) (a, b).
+Proof.
+have -> : (Y @= b) = \bigcup_a [% X, Y] @= (a, b).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- /=; exists (X u) => //; rewrite inE.
+  by case=> a _; rewrite inE => /eqP[] ? <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> a0 a1 a01; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[Xua0 <-] /eqP -[].
+  rewrite Xua0; exact/eqP.
+by apply eq_bigr => a _; by rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV3_1 b c :
+  \rsum_(u in [% Y, Z] @= (b, c)) P u =
+  \rsum_(d in D) (RVar.d [% W, Y, Z] (d, b, c)).
+Proof.
+have -> : ([% Y, Z] @= (b, c)) = \bigcup_d [% W, Y, Z] @= (d, b, c).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] ? <- <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[Wud0 <- <-] /eqP -[].
+  rewrite Wud0; exact/eqP.
+by apply eq_bigr => d _; rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV3_2 b c :
+  \rsum_(u in [% Y, Z] @= (b, c)) P u =
+  \rsum_(d in D) (RVar.d [% Y, W, Z]) (b, d, c).
+Proof.
+have -> : ([% Y, Z] @= (b, c)) = \bigcup_d [% Y, W, Z] @= (b, d, c).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] <- ? <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- Wud0 <-] /eqP -[].
+  rewrite Wud0; exact/eqP.
+by apply eq_bigr => d  _; rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV3_3 b c :
+  \rsum_(u in [% Y, Z] @= (b, c)) P u =
+  \rsum_(d in D) (RVar.d [% Y, Z, W]) (b, c, d).
+Proof.
+have -> : ([% Y, Z] @= (b, c)) = \bigcup_d [% Y, Z, W] @= (b, c, d).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] <- <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- <- Wud0] /eqP -[].
+  rewrite Wud0; exact/eqP.
+apply eq_bigr => d _; by rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV4_1 a b c :
+  \rsum_(u in [% X, Y, Z] @= (a, b, c)) P u =
+  \rsum_(d in D) (RVar.d [% W, X, Y, Z]) (d, a, b, c).
+Proof.
+have -> : ([% X, Y, Z] @= (a, b, c)) = \bigcup_d [% W, X, Y, Z] @= (d, a, b, c).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] ? <- <- <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[Wud0 <- <- <-] /eqP -[].
+  rewrite Wud0; exact/eqP.
+by apply eq_bigr => d _; rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV4_3 a b c :
+  \rsum_(u in [% X, Y, Z] @= (a, b, c)) P u =
+  \rsum_(d in D) (RVar.d [% X, Y, W, Z]) (a, b, d, c).
+Proof.
+have -> : ([% X, Y, Z] @= (a, b, c)) = \bigcup_d [% X, Y, W, Z] @= (a, b, d, c).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] <- <- ? <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- <- Wud0 <-] /eqP -[].
+  rewrite Wud0; exact/eqP.
+by apply eq_bigr => d _; rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV4_4 a b c :
+  \rsum_(u in [% X, Y, Z] @= (a, b, c)) P u =
+  \rsum_(d in D) (RVar.d [% X, Y, Z, W]) (a, b, c, d).
+Proof.
+have -> : ([% X, Y, Z] @= (a, b, c)) = \bigcup_d [% X, Y, Z, W] @= (a, b, c, d).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] <- <- <- ?.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- <- <- Wud0] /eqP -[].
+  rewrite Wud0; exact/eqP.
+by apply eq_bigr => d _; rewrite RVar.dE.
+Qed.
+
+End marginals.
+
+Section RV2_prop.
+Variables (U : finType) (P : dist U).
+Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
+Implicit Types (E : {set A}) (F : {set B}).
+
+Lemma Pr_RV2C E F :
+  Pr (RVar.d [% X, Y]) (setX E F) = Pr (RVar.d [% Y, X]) (setX F E).
+Proof.
+rewrite /Pr !big_setX /= exchange_big /=; apply eq_bigr => b _.
+apply/eq_bigr => a _; rewrite !RVar.dE /Pr; apply eq_bigl => u.
+by rewrite !inE; apply/eqP/eqP => -[<- <-].
+Qed.
+
+Lemma fst_RV2 : Bivar.fst (RVar.d [% X, Y]) = RVar.d X.
+Proof.
+apply/dist_ext => ?; by rewrite Bivar.fstE RVar.dE /Pr -marginal_RV2_1.
+Qed.
+
+Lemma snd_RV2 : Bivar.snd (RVar.d [% X, Y]) = RVar.d Y.
+Proof.
+apply/dist_ext => ?; by rewrite Bivar.sndE RVar.dE /Pr (marginal_RV2_2 X).
+Qed.
+
+Lemma Pr_RV2_domin_fst E F : Pr (RVar.d X) E = 0 ->
+  Pr (RVar.d [% X, Y]) (setX E F) = 0.
+Proof. move=> H; apply Pr_fst_eq0; by rewrite fst_RV2. Qed.
+
+Lemma Pr_RV2_domin_snd a b : Pr (RVar.d Y) b = 0 ->
+  Pr (RVar.d [% X, Y]) (setX a b) = 0.
+Proof. move=> H; apply Pr_snd_eq0; by rewrite snd_RV2. Qed.
+
+End RV2_prop.
+
+Section RV3_prop.
+Variables (U : finType) (P : dist U).
+Variables (A B C D : finType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
+
+Lemma snd_TripA_RV3 :
+  Bivar.snd (TripA.d (RVar.d [% X, Y, Z])) = RVar.d [% Y, Z].
+Proof.
+apply/dist_ext => -[b c].
+rewrite Bivar.sndE RVar.dE /Pr (marginal_RV3_1 X).
+by apply eq_bigr => a _; rewrite TripA.dE.
+Qed.
+
+Lemma snd_TripA_RV4 :
+  Bivar.snd (TripA.d (RVar.d [% X, [% Y, W],  Z])) = RVar.d [% Y, W, Z].
+Proof.
+apply/dist_ext => -[[b d c]].
+rewrite Bivar.sndE RVar.dE /Pr (marginal_RV4_1 X); apply/eq_bigr => a _.
+rewrite TripA.dE /= !RVar.dE /Pr; apply eq_bigl => u.
+by rewrite !inE; apply/eqP/eqP => -[<- <- <- <-].
+Qed.
+
+Lemma Proj13_RV3 : Proj13.d (RVar.d [% X, Y, Z]) = RVar.d [% X, Z].
+Proof.
+apply/dist_ext => -[a c].
+by rewrite Proj13.dE RVar.dE /Pr /= (marginal_RV3_2 Y).
+Qed.
+
+Lemma snd_RV3 : Bivar.snd (RVar.d [% X, Y, Z]) = Bivar.snd (RVar.d [% X, Z]).
+Proof. by rewrite -Proj13.snd Proj13_RV3. Qed.
+
+Lemma Proj23_RV3 : Proj23.d (RVar.d [% X, Y, Z]) = RVar.d [% Y, Z].
+Proof. by rewrite Proj23.def snd_TripA_RV3. Qed.
+
+End RV3_prop.
+
+Section trip_prop.
+Variable (U : finType) (Q : dist U).
+Variables (A B C : finType) (X : {RV Q -> A}) (Y : {RV Q -> B}) (Z : {RV Q -> C}).
+Let P := RVar.d [% X, Y, Z].
+Lemma TripC12_RV3 : TripC12.d P = RVar.d [% Y, X, Z].
+Proof.
+apply/dist_ext => -[[b a] c]; rewrite TripC12.dE /= !RVar.dE.
+congr (Pr _ _); apply/setP => u; rewrite !inE; rewrite /RV2.
+by apply/idP/idP => /eqP -[-> -> ->].
+Qed.
+End trip_prop.
+
+Section quad_prop.
+Variables (U : finType) (P : dist U).
+Variables (A B C D : finType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
+
+Lemma Proj124_RV4 : Proj124.d (RVar.d [% X, Y, W, Z])= RVar.d [% X, Y, Z].
+Proof.
+apply/dist_ext => -[[a b] c].
+by rewrite Proj124.dE /= RVar.dE /= {1}/Pr -marginal_RV4_3.
+Qed.
+
+Lemma Proj14_Rvar4 : (RVar.d [% X, Z]) = Proj14d (RVar.d [% X, Y, W, Z]).
+Proof.
+rewrite /Proj14d; apply/dist_ext => -[a c].
+rewrite !Proj13.dE /= RVar.dE {1}/Pr (marginal_RV3_2 Y); apply eq_bigr => b _.
+by rewrite RVar.dE {1}/Pr Proj124.dE (marginal_RV4_3 W); apply eq_bigr.
+Qed.
+
+Lemma QuadA12d_RV4 : QuadA23.d (RVar.d [% X, Y, W, Z]) = RVar.d [% X, [% Y, W], Z].
 Proof.
 apply/dist_ext => -[] [] ? [] ? ? ?.
-rewrite QuadA12.dE /= !RvarDist.dE; congr Pr.
-apply/setP => a0.
-rewrite !inE /Rvar2 /= /YW /Rvar2.
+rewrite QuadA23.dE /= !RVar.dE; congr Pr.
+apply/setP => u.
+rewrite !inE /RV2 /= /RV2.
 apply/eqP/eqP; by move=> -[] <- <- <- <-.
 Qed.
-End quada12_prop.
 
-Section reasoning_by_cases_Rvar2.
+Lemma Proj234_RV4 :
+  Proj234.d (RVar.d [% X, Y, W, Z]) = Proj23.d (RVar.d [% X, [% Y, W], Z]).
+Proof.
+rewrite -QuadA12d_RV4.
+apply/dist_ext => -[[] b d c].
+rewrite Proj23.dE Proj234.dE; apply eq_bigr => a _ /=.
+by rewrite !(RVar.dE,QuadA23.dE).
+Qed.
 
-Variables (A : finType) (P : dist A).
-Variables (TA TB TC : finType).
-Variables (Z : {RV P -> TC}) (X : {RV P -> TA}) (Y : {RV P -> TB}) .
+Lemma QuadA34_RV4 :
+  RVar.d [% X, Y, [% Z, W]] = QuadA34.d (RVar.d [% X, Y, Z, W]).
+Proof.
+apply/dist_ext => -[[a0 b0] [c0 d0]].
+rewrite !(RVar.dE,QuadA34.dE).
+rewrite /Pr; apply eq_bigl => u; rewrite !inE.
+by apply/eqP/eqP => -[<- <- <- <-].
+Qed.
 
-Lemma total_Rvar2 E F :
-  Pr (RvarDist.d [% X, Y]) (setX E F) =
-  \rsum_(z <- fin_img Z) Pr (RvarDist.d [% X, Z, Y]) (setX (setX E [set z]) F).
+Lemma QuadA234_RV4 :
+  QuadA234.d (RVar.d [% X, Y, Z, W]) = RVar.d [% X, [% Y, Z, W]].
+Proof.
+apply/dist_ext => -[a0 [[b0 c0] d0]].
+rewrite !(RVar.dE,QuadA234.dE).
+rewrite /Pr; apply eq_bigl => u; rewrite !inE.
+by apply/eqP/eqP => -[<- <- <- <-].
+Qed.
+
+End quad_prop.
+
+Section conditionnally_independent_discrete_random_variables.
+
+Variables (U : finType) (P : dist U) (A B C : finType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+Let Q := RVar.d [% X, Y, Z].
+
+Definition cinde_drv := forall a b c,
+  \Pr_Q[ [set (a, b)] | [set c] ] =
+  \Pr_(Proj13.d Q) [ [set a] | [set c] ] * \Pr_(Proj23.d Q) [ [set b] | [set c] ].
+
+End conditionnally_independent_discrete_random_variables.
+
+Notation "X _|_  Y | Z" := (cinde_drv X Y Z) : proba_scope.
+Notation "P |= X _|_  Y | Z" := (@cinde_drv _ P _ _ _ X Y Z) : proba_scope.
+
+Section reasoning_by_cases_RV2.
+
+Variables (U : finType) (P : dist U).
+Variables (A B C : finType) (Z : {RV P -> C}) (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Lemma total_RV2 E F :
+  Pr (RVar.d [% X, Y]) (setX E F) =
+  \rsum_(z <- fin_img Z) Pr (RVar.d [% X, Z, Y]) (setX (setX E [set z]) F).
 Proof.
 apply/esym.
-evar (e : TC -> R); rewrite (eq_bigr e); last first.
+evar (e : C -> R); rewrite (eq_bigr e); last first.
   move=> r _; rewrite /Pr big_setX /=.
   rewrite (eq_bigl (fun x => x \in setX E [set r])); last first.
     move=> -[? ?]; by rewrite !inE.
   rewrite big_setX /= /e; reflexivity.
 rewrite {}/e exchange_big /=.
 rewrite [in RHS]/Pr [in RHS]big_setX /=; apply eq_bigr => a aE.
-evar (e : TC -> R); rewrite (eq_bigr e); last first.
+evar (e : C -> R); rewrite (eq_bigr e); last first.
   move=> r _; rewrite exchange_big /= /e; reflexivity.
 rewrite {}/e exchange_big /=; apply eq_bigr => b _.
-rewrite RvarDist.dE /Pr (marginal_Rvar3_2 Z).
+rewrite RVar.dE /Pr (marginal_RV3_2 Z).
 rewrite [in RHS](bigID (fun x => x \in fin_img Z)) /=.
 rewrite [X in _ = _ + X ](eq_bigr (fun=> 0)); last first.
   move=> d dZ.
-  rewrite RvarDist.dE /= /Pr (eq_bigl (fun=> false)) ?big_pred0 // => a0.
+  rewrite RVar.dE /= /Pr (eq_bigl (fun=> false)) ?big_pred0 // => a0.
   rewrite !inE; apply/negbTE.
   apply: contra dZ => /eqP -[? <- ?].
   rewrite mem_undup; apply/mapP; exists a0 => //; by rewrite mem_enum.
 rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
-apply eq_bigr => c cZ; by rewrite big_set1 !RvarDist.dE.
+apply eq_bigr => c cZ; by rewrite big_set1 !RVar.dE.
 Qed.
 
-Lemma reasoning_by_cases_Rvar2 E F :
-  \Pr_(RvarDist.d [% X, Y])[E | F] =
-  \rsum_(z <- fin_img Z) \Pr_(RvarDist.d [% X, Z, Y])[setX E [set z] | F].
+Lemma reasoning_by_cases_RV2 E F :
+  \Pr_(RVar.d [% X, Y])[E | F] =
+  \rsum_(z <- fin_img Z) \Pr_(RVar.d [% X, Z, Y])[setX E [set z] | F].
 Proof.
-by rewrite {1}/cPr total_Rvar2 -[in RHS]big_distrl /= (snd_Rvar3 _ Z).
+by rewrite {1}/cPr total_RV2 -[in RHS]big_distrl /= (snd_RV3 _ Z).
 Qed.
 
-End reasoning_by_cases_Rvar2.
+End reasoning_by_cases_RV2.
 
-Section reasoning_by_cases_Rvar3.
+Section symmetry.
 
-Variables (A : finType) (P : dist A).
-Variables (TA TB TC TD : finType).
-Variables (Z : {RV P -> TC}) (X : {RV P -> TA}) (Y : {RV P -> TB}) (W : {RV P -> TD}).
-Let Q := RvarDist.d [% X, Y, Z, W].
+Variable (U : finType) (P : dist U).
+Variables (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
-Lemma total_Rvar3 E F :
-  Pr (RvarDist.d [% X, Y, W]) (setX E F) =
-  \rsum_(z <- fin_img Z) Pr Q (setX (setX E [set z]) F).
+Lemma symmetry : X _|_ Y | Z -> Y _|_ X | Z.
 Proof.
-apply/esym.
-evar (e : TC -> R); rewrite (eq_bigr e); last first.
-  move=> r _; rewrite /Pr big_setX /=.
-  rewrite (eq_bigl (fun x => x \in setX E [set r])); last first.
-    move=> -[[a0 b0] c0]; by rewrite !inE.
-  rewrite big_setX /= /e; reflexivity.
-rewrite {}/e exchange_big /=.
-rewrite [in RHS]/Pr [in RHS]big_setX /=.
-apply eq_bigr => -[a b] _.
-evar (e : TC -> R); rewrite (eq_bigr e); last first.
-  move=> r _; rewrite exchange_big /= /e; reflexivity.
-rewrite {}/e exchange_big /=; apply eq_bigr => d _.
-rewrite RvarDist.dE /Pr (marginal_Rvar4_4 Z).
-rewrite [in RHS](bigID (fun x => x \in fin_img Z)) /=.
-rewrite [X in _ = _ + X ](eq_bigr (fun=> 0)); last first.
-  move=> c cZ.
-  rewrite /Q RvarDist.dE /= /Pr (eq_bigl (fun=> false)) ?big_pred0 // => a0.
-  rewrite !inE; apply/negbTE.
-  apply: contra cZ => /eqP -[? ? ? <-].
-  rewrite mem_undup; apply/mapP; exists a0 => //; by rewrite mem_enum.
-rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
-apply eq_bigr => c cZ.
-rewrite big_set1 !RvarDist.dE; congr Pr.
-apply/setP => a0.
-rewrite !inE /= /Rvar2; by apply/idP/idP => /eqP -[-> -> -> ->].
+rewrite /cinde_drv => /= H b a c.
+rewrite mulRC.
+have -> : Proj23.d (RVar.d [% Y, X, Z]) = Proj13.d (RVar.d [% X, Y, Z]).
+  by rewrite Proj23_RV3 Proj13_RV3.
+have -> : Proj13.d (RVar.d [% Y, X, Z]) = Proj23.d (RVar.d [% X, Y, Z]).
+  by rewrite Proj13_RV3 Proj23_RV3.
+rewrite Pr_TripC12 TripC12_RV3.
+rewrite -H.
+congr cPr.
+apply/setP => -[a0 b0]; rewrite !inE.
+apply/imsetP/idP.
+- by case => -[b1 a1]; rewrite inE => /eqP -[-> ->] ->.
+- by case/eqP => -> ->; exists (b, a) => //; rewrite inE.
 Qed.
 
-Lemma reasoning_by_cases_Rvar3 E F :
-  \Pr_(RvarDist.d [% X, Y, W])[E | F] =
-  \rsum_(z <- fin_img Z) \Pr_Q[setX E [set z] | F].
-Proof.
-rewrite /Q {1}/cPr total_Rvar3 -[in RHS]big_distrl /= -(Proj124_Rvar4 _ _ _ Z).
-by rewrite snd_Proj124.
-Qed.
-
-End reasoning_by_cases_Rvar3.
+End symmetry.
 
 Section decomposition.
 
-Variables (Omega : finType) (P : dist Omega) (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD}).
-Let YW := [% Y, W].
-Let Q := RvarDist.d [% X, Y, W, Z].
+Variables (U : finType) (P : dist U) (A B C D : finType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
+Let Q := RVar.d [% X, Y, W, Z].
 
-Lemma decomposition : P |= X _|_ YW | Z -> P |= X _|_ Y | Z.
+Lemma decomposition : X _|_ [% Y, W] | Z -> X _|_ Y | Z.
 Proof.
 move=> H; rewrite /cinde_drv => a b c /=.
-transitivity (\rsum_(w <- fin_img W)
-    \Pr_(QuadA12.d Q) [ setX [set a] (setX [set b] [set w]) | [set c] ]).
-  rewrite (reasoning_by_cases_Rvar3 W); apply eq_bigr => /= d _.
+transitivity (\rsum_(d <- fin_img W)
+    \Pr_(QuadA23.d Q) [ setX [set a] (setX [set b] [set d]) | [set c] ]).
+  rewrite (reasoning_by_cases_RV2 W); apply eq_bigr => /= d _.
   rewrite !setX1.
   rewrite /cPr; congr (_ / _).
-  - by rewrite /Pr !(big_setX,big_set1) /= !(RvarDist.dE,QuadA12.dE).
-  - by rewrite snd_QuadA12.
-transitivity (\rsum_(w <- fin_img W)
+  - by rewrite /Pr !(big_setX,big_set1) /= !(RVar.dE,QuadA23.dE).
+  - by rewrite QuadA23.snd.
+transitivity (\rsum_(d <- fin_img W)
   \Pr_(Proj14d Q)[ [set a] | [set c] ] *
-  \Pr_(Proj234.d Q)[ (setX [set b] [set w]) | [set c] ]).
+  \Pr_(Proj234.d Q)[ (setX [set b] [set d]) | [set c] ]).
   apply eq_bigr => d _.
-  rewrite QuadA12d_Rvar4.
+  rewrite QuadA12d_RV4.
   rewrite 2!setX1.
   rewrite H.
-  rewrite Proj13_Rvar3.
-  rewrite Proj23_Rvar3.
+  rewrite Proj13_RV3.
+  rewrite Proj23_RV3.
   rewrite -Proj14_Rvar4.
-  by rewrite Proj234_Rvar4 Proj23_Rvar3.
+  by rewrite Proj234_RV4 Proj23_RV3.
 rewrite -big_distrr /=; congr (_ * _).
-  by rewrite /Proj14d Proj124_Rvar4.
-rewrite Proj23_Rvar3.
-rewrite (reasoning_by_cases_Rvar2 W).
+  by rewrite /Proj14d Proj124_RV4.
+rewrite Proj23_RV3.
+rewrite (reasoning_by_cases_RV2 W).
 apply eq_bigr => d _.
-by rewrite Proj234_Rvar4 Proj23_Rvar3.
+by rewrite Proj234_RV4 Proj23_RV3.
 Qed.
 
 End decomposition.
 
-(* WIP *)
-
-Section conditional_probability.
-
-Variables (A B C : finType) (P : {dist A * B * C}).
-
-Lemma Pr_TripA (E : {set A}) (F : {set B}) (G : {set C}) :
- Pr P (setX (setX E F) G) = Pr (TripA.d P) (setX E (setX F G)).
-Proof.
-rewrite /Pr !big_setX /=; apply eq_bigr => a aE; rewrite big_setX /=.
-by apply eq_bigr => b bF; apply eq_bigr => c cG; rewrite TripA.dE.
-Qed.
-
-Lemma Pr_Proj23_domin (a : {set A}) (b : {set B}) (c : {set C}) :
-  Pr (Proj23.d P) (setX b c) = 0 -> Pr P (setX (setX a b) c) = 0.
-Proof.
-move/Pr_set0P => H; apply/Pr_set0P => -[[? ?] ?].
-rewrite !inE /= -andbA => /and3P[Ha Hb Hc].
-by apply/Proj23.domin/H; rewrite inE /= Hb Hc.
-Qed.
-
-Lemma product_rule (a : {set A}) (b : {set B}) (c : {set C}) :
-  \Pr_P [ setX a b | c] = \Pr_(TripA.d P) [a | setX b c] * \Pr_(Proj23.d P) [b | c].
-Proof.
-rewrite /cPr; rewrite !mulRA; congr (_ * _); last by rewrite Proj23.snd.
-rewrite -mulRA -Proj23.def Pr_TripA.
-case/boolP : (Pr (Proj23.d P) (setX b c) == 0) => H; last by rewrite mulVR ?mulR1.
-suff -> : Pr (TripA.d P) (setX a (setX b c)) = 0 by rewrite mul0R.
-rewrite -Pr_TripA; exact/Pr_Proj23_domin/eqP.
-Qed.
-
-End conditional_probability.
-
-Section conditional_probability2.
-
-Variables (A B C : finType) (P : {dist A * B * C}).
-
-Lemma product_ruleC (a : {set A}) (b : {set B}) (c : {set C}) :
-  \Pr_P [ setX a b | c] = \Pr_(TripA.d (TripC12.d P)) [b | setX a c] * \Pr_(Proj13.d P) [a | c].
-Proof.
-rewrite Pr_TripC12.
-transitivity (\Pr_(TripC12.d P)[ setX b a | c ]).
-  rewrite -Pr_TripC12.
-  rewrite /cPr; congr (_ / _).
-    rewrite /Pr !big_setX /= exchange_big /=; apply eq_bigr => b0 _.
-    apply eq_bigr => a0 _; apply eq_bigr => c0 _.
-    by rewrite TripC12.dE.
-  by rewrite TripC12.snd.
-by rewrite product_rule.
-Qed.
-
-End conditional_probability2.
-
-Section tmp.
-Variables (Omega : finType) (P : dist Omega) (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD}).
-
-Lemma cPr_TripA a b c d :
-  \Pr_(TripA.d (RvarDist.d [% X, Y, [% Z, W]]))[ a | setX b (setX c d) ] =
-  \Pr_(RvarDist.d [% X, [% Y, Z, W]])[ a | setX (setX b c) d ].
-Proof.
-rewrite /cPr.
-rewrite snd_TripA_Rvar3 snd_Rvar2; congr (_ / _).
-  rewrite /Pr !big_setX /=; apply eq_bigr => a0 _.
-  rewrite !big_setX /=; apply eq_bigr => b0 _.
-  rewrite big_setX; apply eq_bigr => c0 _ /=.
-  apply eq_bigr => d0 _.
-  rewrite TripA.dE /= !RvarDist.dE /=.
-  rewrite /Pr /=; apply eq_bigl => w0; rewrite !inE.
-  by apply/eqP/eqP => -[<- <- <- <-].
-rewrite /Pr !big_setX /=; apply eq_bigr => b0 _.
-rewrite big_setX; apply eq_bigr => c0 _; apply eq_bigr => d0 _.
-rewrite !RvarDist.dE; rewrite /Pr; apply eq_bigl => a0; rewrite !inE.
-by apply/eqP/eqP => -[<- <- <-].
-Qed.
-
-End tmp.
-
 Section weak_union.
 
-Variables (Omega : finType) (P : dist Omega) (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD}).
+Variables (U : finType) (P : dist U) (A B C D : finType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
 
-Lemma weak_union : P |= X _|_ [% Y, W] | Z -> P |= X _|_ Y | [% Z, W].
+Lemma weak_union : X _|_ [% Y, W] | Z -> X _|_ Y | [% Z, W].
 Proof.
 move=> Hinde.
 move=> a b -[c d].
 transitivity (
-  \Pr_(RvarDist.d [% X, [% Y, Z, W]]) [ [set a] | [set (b, c, d)] ] *
-  \Pr_(RvarDist.d [% Y, [% Z, W]]) [ [set b] | [set (c, d)] ]).
-  by rewrite -!setX1 product_rule cPr_TripA Proj23_Rvar3.
-transitivity (\Pr_(RvarDist.d [% X, Z])[ [set a] | [set c] ] *
-  \Pr_(RvarDist.d [% Y, [% Z,  W]]) [ [set b] | [set (c, d)] ]).
+  \Pr_(RVar.d [% X, [% Y, Z, W]]) [ [set a] | [set (b, c, d)] ] *
+  \Pr_(RVar.d [% Y, [% Z, W]]) [ [set b] | [set (c, d)] ]).
+  rewrite -!setX1 product_rule QuadA34_RV4 cPr_TripA.
+  by rewrite -!QuadA34_RV4 Proj23_RV3 QuadA234_RV4.
+transitivity (\Pr_(RVar.d [% X, Z])[ [set a] | [set c] ] *
+  \Pr_(RVar.d [% Y, [% Z,  W]]) [ [set b] | [set (c, d)] ]).
   move: (Hinde a (b, d) c) => {Hinde}.
-  rewrite Proj13_Rvar3.
-  rewrite Proj23_Rvar3.
+  rewrite Proj13_RV3.
+  rewrite Proj23_RV3.
   rewrite -!setX1.
-  case/boolP : (\Pr_(RvarDist.d [% W, Z])[ [set d] | [set c] ] == 0) => Htmp.
+  case/boolP : (\Pr_(RVar.d [% W, Z])[ [set d] | [set c] ] == 0) => Htmp.
     move=> _.
     move: Htmp.
     rewrite {1}/cPr.
-    rewrite snd_Rvar2.
+    rewrite snd_RV2.
     move/eqP; rewrite mulR_eq0 => -[].
       move=> Htmp.
       rewrite {2 4}/cPr.
-      by rewrite Pr_Rvar2_domin_snd ?div0R ?mulR0 // Pr_Rvar2C.
+      by rewrite Pr_RV2_domin_snd ?div0R ?mulR0 // Pr_RV2C.
     move/eqP/invR_eq0/eqP => Htmp.
     rewrite {2 4}/cPr.
-    rewrite Pr_Rvar2_domin_snd ?div0R ?mulR0 //.
-    by rewrite Pr_Rvar2_domin_fst.
+    rewrite Pr_RV2_domin_snd ?div0R ?mulR0 //.
+    by rewrite Pr_RV2_domin_fst.
   rewrite product_rule.
-  rewrite Proj23_Rvar3.
+  rewrite Proj23_RV3.
   rewrite product_rule.
-  rewrite Proj23_Rvar3.
+  rewrite Proj23_RV3.
   rewrite [in X in X = _ -> _]mulRA.
   rewrite [in X in _ = X -> _]mulRA.
   rewrite eqR_mul2r; last first.
     exact/eqP.
   move=> Hinde.
   transitivity (
-    \Pr_(TripA.d (RvarDist.d [% X, [% Y, W], Z]))[ [set a] | (setX
+    \Pr_(TripA.d (RVar.d [% X, [% Y, W], Z]))[ [set a] | (setX
                                                                         (setX [set b] [set d])
                                                                         [set c]) ] *
-          \Pr_(TripA.d (RvarDist.d [% Y, W, Z]))[ [set b] | (setX [set d] [set c]) ]
+          \Pr_(TripA.d (RVar.d [% Y, W, Z]))[ [set b] | (setX [set d] [set c]) ]
   ).
     congr (_ * _).
       rewrite /cPr.
-      rewrite snd_Rvar2.
-      rewrite snd_TripA_Rvar3A.
+      rewrite snd_RV2.
+      rewrite snd_TripA_RV3.
       congr (_ / _).
-        rewrite /Pr !(big_setX,big_set1) /= TripA.dE /= !RvarDist.dE.
+        rewrite /Pr !(big_setX,big_set1) /= TripA.dE /= !RVar.dE.
         by rewrite /Pr; apply eq_bigl => w0; rewrite !inE; apply/eqP/eqP => -[<- <- <- <-].
-      rewrite /Pr !(big_setX,big_set1) /= !RvarDist.dE /Pr.
+      rewrite /Pr !(big_setX,big_set1) /= !RVar.dE /Pr.
       by apply eq_bigl => w0; rewrite !inE; apply/eqP/eqP => -[<- <- <-].
     rewrite /cPr; congr (_ / _).
-      rewrite /Pr !(big_setX,big_set1) TripA.dE /= !RvarDist.dE /Pr.
+      rewrite /Pr !(big_setX,big_set1) TripA.dE /= !RVar.dE /Pr.
       by apply eq_bigl => w0; rewrite !inE; apply/eqP/eqP => -[<- <- <-].
     rewrite /Pr !(big_setX,big_set1) !Bivar.sndE; apply eq_bigr => b0 _.
-    rewrite TripA.dE /= !RvarDist.dE /Pr; apply eq_bigl => w0.
+    rewrite TripA.dE /= !RVar.dE /Pr; apply eq_bigl => w0.
     by rewrite !inE; apply/eqP/eqP => -[<- <- <-].
   rewrite Hinde.
   congr (_ * _).
   rewrite /cPr.
-  rewrite snd_Rvar2.
-  rewrite snd_TripA_Rvar3; congr (_ * _).
+  rewrite snd_RV2.
+  rewrite snd_TripA_RV3; congr (_ * _).
     rewrite /Pr !(big_setX,big_set1) TripA.dE /=.
-    rewrite !RvarDist.dE /Pr; apply eq_bigl => w0; rewrite !inE.
+    rewrite !RVar.dE /Pr; apply eq_bigl => w0; rewrite !inE.
     by apply/eqP/eqP => -[<- <- <-].
-  by rewrite Pr_Rvar2C.
+  by rewrite Pr_RV2C.
 have Hdecomp : P |= X _|_ W | Z.
-  apply decomposition with TB Y.
+  apply decomposition with B Y.
   move=> a0 -[d0 b0] c0.
   move: (Hinde a0 (b0, d0) c0) => {Hinde}Hinde.
   transitivity (
-      \Pr_(RvarDist.d [% X, [% Y, W], Z])[ [set (a0, (b0, d0))] | [set c0] ]
+      \Pr_(RVar.d [% X, [% Y, W], Z])[ [set (a0, (b0, d0))] | [set c0] ]
       ).
-    rewrite /cPr !snd_Rvar3; congr (_ / _).
-    rewrite /Pr !big_setX /= !big_set1 !RvarDist.dE /Pr.
+    rewrite /cPr !snd_RV3; congr (_ / _).
+    rewrite /Pr !big_setX /= !big_set1 !RVar.dE /Pr.
     apply eq_bigl => w0; rewrite !inE.
     by apply/eqP/eqP => -[<- <- <- <-].
-  rewrite {}Hinde 2!Proj13_Rvar3 2!Proj23_Rvar3; congr (_ * _).
-  rewrite /cPr !snd_Rvar2; congr (_ / _).
-  rewrite /Pr !big_setX /= !big_set1 !RvarDist.dE /Pr; apply eq_bigl => w0.
+  rewrite {}Hinde 2!Proj13_RV3 2!Proj23_RV3; congr (_ * _).
+  rewrite /cPr !snd_RV2; congr (_ / _).
+  rewrite /Pr !big_setX /= !big_set1 !RVar.dE /Pr; apply eq_bigl => w0.
   by rewrite !inE; apply/eqP/eqP => -[<- <- <-].
-case/boolP : (\Pr_(RvarDist.d [% W, Z])[ [set d] | [set c] ] == 0) => [|Htmp].
+case/boolP : (\Pr_(RVar.d [% W, Z])[ [set d] | [set c] ] == 0) => [|Htmp].
   rewrite {1}/cPr.
-  rewrite snd_Rvar2.
+  rewrite snd_RV2.
   move/eqP.
   rewrite mulR_eq0 => -[].
     move=> Htmp.
-    rewrite /cPr Proj23_Rvar3 Proj13_Rvar3 !snd_Rvar2.
-    rewrite Pr_Rvar2C in Htmp.
-    have : Pr (RvarDist.d [% Y, [% Z, W] ]) (setX [set b] [set (c, d)]) = 0.
-      apply Pr_Rvar2_domin_snd.
+    rewrite /cPr Proj23_RV3 Proj13_RV3 !snd_RV2.
+    rewrite Pr_RV2C in Htmp.
+    have : Pr (RVar.d [% Y, [% Z, W] ]) (setX [set b] [set (c, d)]) = 0.
+      apply Pr_RV2_domin_snd.
       by rewrite -setX1.
     by move=> ->; rewrite !div0R !mulR0.
   move/eqP/invR_eq0 => /eqP Htmp.
-  rewrite /cPr Proj23_Rvar3 Proj13_Rvar3 !snd_Rvar2.
-  have : Pr (RvarDist.d [% Y, [% Z, W]]) (setX [set b] [set (c, d)]) = 0.
-    apply Pr_Rvar2_domin_snd.
+  rewrite /cPr Proj23_RV3 Proj13_RV3 !snd_RV2.
+  have : Pr (RVar.d [% Y, [% Z, W]]) (setX [set b] [set (c, d)]) = 0.
+    apply Pr_RV2_domin_snd.
     rewrite -setX1.
-    by apply Pr_Rvar2_domin_fst.
+    by apply Pr_RV2_domin_fst.
   move=> ->.
   by rewrite !div0R !mulR0.
 congr (_ * _); last first.
-  by rewrite Proj23_Rvar3.
-rewrite Proj13_Rvar3.
+  by rewrite Proj23_RV3.
+rewrite Proj13_RV3.
 move: (Hdecomp a d c).
-rewrite Proj13_Rvar3 Proj23_Rvar3.
+rewrite Proj13_RV3 Proj23_RV3.
 rewrite -setX1.
-rewrite product_rule Proj23_Rvar3.
+rewrite product_rule Proj23_RV3.
 rewrite eqR_mul2r; last first.
   exact/eqP.
 move=> <-.
-rewrite /cPr !snd_Rvar2.
-rewrite snd_TripA_Rvar3 Pr_Rvar2C; congr (_ / _).
-  rewrite /Pr !(big_setX,big_set1) TripA.dE /= !RvarDist.dE /Pr.
+rewrite /cPr !snd_RV2.
+rewrite snd_TripA_RV3 Pr_RV2C; congr (_ / _).
+  rewrite /Pr !(big_setX,big_set1) TripA.dE /= !RVar.dE /Pr.
   by apply eq_bigl => w0; rewrite !inE; apply/eqP/eqP => -[<- <- <-].
 by rewrite setX1.
 Qed.
@@ -811,65 +723,65 @@ End weak_union.
 
 Section contraction.
 
-Variables (Omega : finType) (P : dist Omega) (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD}).
+Variables (U : finType) (P : dist U) (A B C D : finType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
 
 Lemma contraction : P |= X _|_ W | [% Z, Y] -> P |= X _|_ Y | Z -> P |= X _|_ [% Y, W] | Z.
 Proof.
 move=> H1 H2.
 move=> a -[b d] c.
-rewrite Proj13_Rvar3.
-rewrite Proj23_Rvar3.
+rewrite Proj13_RV3.
+rewrite Proj23_RV3.
 rewrite -setX1.
 rewrite product_rule.
-rewrite Proj23_Rvar3.
+rewrite Proj23_RV3.
 transitivity (
-  \Pr_(TripA.d (RvarDist.d [%X, Y, Z]))[ [set a] | (setX [set b] [set c]) ] *
-  \Pr_(RvarDist.d [%Y, W, Z])[ [set (b, d)] | [set c] ]
+  \Pr_(TripA.d (RVar.d [%X, Y, Z]))[ [set a] | (setX [set b] [set c]) ] *
+  \Pr_(RVar.d [%Y, W, Z])[ [set (b, d)] | [set c] ]
 ).
   move: {H1}(H1 a d (c, b)).
-  rewrite Proj13_Rvar3.
-  rewrite Proj23_Rvar3.
+  rewrite Proj13_RV3.
+  rewrite Proj23_RV3.
   rewrite -!setX1.
   rewrite product_rule.
-  rewrite Proj23_Rvar3 => H1.
+  rewrite Proj23_RV3 => H1.
   rewrite product_ruleC.
-  rewrite Proj13_Rvar3.
+  rewrite Proj13_RV3.
   rewrite mulRA.
   transitivity (
-    \Pr_(TripA.d (RvarDist.d [%X, W, [%Z, Y]]))[ [set a] | (setX [set d] (setX [set c] [set b])) ] *
-    \Pr_(RvarDist.d [%W, [%Z, Y]])[ [set d] | (setX [set c] [set b]) ] *
-    \Pr_(RvarDist.d [%Y, Z])[ [set b] | [set c] ]).
+    \Pr_(TripA.d (RVar.d [%X, W, [%Z, Y]]))[ [set a] | (setX [set d] (setX [set c] [set b])) ] *
+    \Pr_(RVar.d [%W, [%Z, Y]])[ [set d] | (setX [set c] [set b]) ] *
+    \Pr_(RVar.d [%Y, Z])[ [set b] | [set c] ]).
     congr (_ * _ * _).
-      rewrite cPr_TripA.
+      rewrite QuadA34_RV4 cPr_TripA QuadA234_RV4.
       rewrite /cPr.
       congr (_ / _).
-        rewrite -Pr_TripA.
+        rewrite TripA.Pr.
         rewrite /Pr !(big_setX,big_set1).
-        rewrite !RvarDist.dE.
+        rewrite !RVar.dE.
         rewrite /Pr; apply eq_bigl => w0.
         by rewrite !inE; apply/eqP/eqP => -[<- <- <- <-].
-      rewrite snd_TripA_Rvar3A.
+      rewrite snd_TripA_RV3.
       rewrite /Pr.
       rewrite !(big_setX,big_set1).
       rewrite Bivar.sndE.
-      rewrite RvarDist.dE.
+      rewrite RVar.dE.
       rewrite /Pr.
-      rewrite -marginal_Rvar2_2.
+      rewrite -marginal_RV2_2.
       apply eq_bigl => w0.
       by rewrite !inE; apply/eqP/eqP => -[<- <- <-].
     rewrite /cPr.
     congr (_ / _).
-      rewrite -Pr_TripA.
+      rewrite TripA.Pr.
       rewrite /Pr.
       rewrite !(big_setX,big_set1) /=.
-      rewrite TripC12.dE /= !RvarDist.dE /Pr.
+      rewrite TripC12.dE /= !RVar.dE /Pr.
       apply eq_bigl => w0.
       by rewrite !inE; apply/eqP/eqP => -[<- <- <-].
     rewrite -Proj13.def.
-    rewrite snd_Rvar2.
-    rewrite Proj13_Rvar3.
-    by rewrite Pr_Rvar2C.
+    rewrite snd_RV2.
+    rewrite Proj13_RV3.
+    by rewrite Pr_RV2C.
   rewrite H1.
   rewrite mulRA.
   congr (_ * _ * _).
@@ -877,31 +789,31 @@ transitivity (
     congr (_ / _).
       rewrite /Pr.
       rewrite !(big_setX, big_set1) TripA.dE /=.
-      rewrite !RvarDist.dE /Pr.
+      rewrite !RVar.dE /Pr.
       apply eq_bigl => w0.
       by rewrite !inE; apply/eqP/eqP => -[<- <- <-].
-    rewrite snd_Rvar2.
+    rewrite snd_RV2.
     rewrite -Proj23.def.
-    rewrite Proj23_Rvar3.
-    by rewrite Pr_Rvar2C.
+    rewrite Proj23_RV3.
+    by rewrite Pr_RV2C.
   rewrite /cPr.
   congr (_ / _).
     rewrite /Pr.
-    rewrite !(big_setX,big_set1) TripA.dE TripC12.dE /= !RvarDist.dE /Pr.
+    rewrite !(big_setX,big_set1) TripA.dE TripC12.dE /= !RVar.dE /Pr.
     apply eq_bigl => w0.
     by rewrite !inE; apply/eqP/eqP => -[<- <- <-].
-  rewrite snd_Rvar2.
+  rewrite snd_RV2.
   rewrite -Proj13.def.
-  by rewrite Proj13_Rvar3 Pr_Rvar2C.
+  by rewrite Proj13_RV3 Pr_RV2C.
 move: {H2}(H2 a b c).
-rewrite Proj13_Rvar3.
-rewrite Proj23_Rvar3.
+rewrite Proj13_RV3.
+rewrite Proj23_RV3.
 rewrite -setX1.
 rewrite product_rule.
-rewrite Proj23_Rvar3 => H2.
+rewrite Proj23_RV3 => H2.
 rewrite -setX1.
 rewrite product_ruleC.
-rewrite Proj13_Rvar3.
+rewrite Proj13_RV3.
 rewrite mulRCA H2.
 by rewrite mulRCA.
 Qed.
