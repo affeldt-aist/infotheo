@@ -824,10 +824,10 @@ Proof.
 rewrite -(pmf1 P) /= -(big_rV_belast_last _ xpredT xpredT) /=.
 by rewrite pair_big /=; apply eq_bigr; case.
 Qed.
-Definition to_bivar_last : {dist 'rV[A]_n * A} := locked (makeDist tolast0 tolast1).
-Lemma to_bivar_lastE a : to_bivar_last a =
+Definition belast_last : {dist 'rV[A]_n * A} := locked (makeDist tolast0 tolast1).
+Lemma belast_lastE a : belast_last a =
   P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2))).
-Proof. rewrite /to_bivar_last; unlock => /=; by []. Qed.
+Proof. rewrite /belast_last; unlock => /=; by []. Qed.
 
 End prod_of_rV.
 
