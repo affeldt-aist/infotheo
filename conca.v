@@ -10,99 +10,99 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+(* wip: concavity of relative entropy and of mutual information *)
+
 Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
+Local Open Scope reals_ext_scope.
 
 Section interval.
 Lemma Rnonneg_convex : convex_interval (fun x => 0 <= x).
 Proof.
-  rewrite /convex_interval.
-  move => x y t Hx Hy Ht.
-  have H : 0 <= onem t by move : Ht => [] _ /onem_ge0.
-  rewrite (_ : 0 = 0 + 0);
-    [apply Rplus_le_compat;
-     rewrite (_ : 0 = 0 * 0);
-     [|by rewrite Rmult_0_r| |by rewrite Rmult_0_r]
-    | by rewrite Rplus_0_r]; apply Rmult_le_compat => //=; try by apply Req_le.
-  by move : Ht => [].
+rewrite /convex_interval.
+move => x y t Hx Hy Ht.
+apply addR_ge0; apply/mulR_ge0 => //.
+by case: Ht.
+apply/onem_ge0; by case: Ht.
 Qed.
 
 Definition Rnonneg_interval := mkInterval Rnonneg_convex.
 
-Lemma onem_eq1 : forall r : R, onem r = 1 <-> r = 0.
-Proof.
-  rewrite /onem; move => r; apply conj; [|by move => ->; rewrite Rminus_0_r].
-  by move /Rplus_0_r_uniq /Ropp_eq_0_compat; rewrite Ropp_involutive.
-Qed.
-
 Lemma open_interval_convex (a b : R) (Hab : a < b) : convex_interval (fun x => a < x < b).
 Proof.
-  have onem_01 : onem 0 = 1  by rewrite onem_eq1.
-  have onem_10 : onem 1 = 0  by rewrite onem_eq0.
-  move => x y t [Hxa Hxb] [Hya Hyb] [[Haltt|Haeqt] [Htltb|Hteqb]]
-   ; [
-   | by rewrite {Haltt} Hteqb onem_10 mul0R addR0 mul1R; apply conj
-   | by rewrite {Htltb} -Haeqt onem_01 mul0R add0R mul1R; apply conj
-   | by rewrite Hteqb in Haeqt; move : Rlt_0_1 => /Rlt_not_eq].
-  have H : 0 < onem t by apply onem_gt0.
-  apply conj.
-  - rewrite -[X in X < t * x + onem t * y]mul1R -(onemKC t) mulRDl.
-    by apply ltR_add; rewrite ltR_pmul2l.
-  - rewrite -[X in _ + _ < X]mul1R -(onemKC t) mulRDl.
-    by apply ltR_add; rewrite ltR_pmul2l.
-Qed.  
+have onem_01 : 0.~ = 1  by rewrite onem_eq1.
+have onem_10 : 1.~ = 0  by rewrite onem_eq0.
+move => x y t [Hxa Hxb] [Hya Hyb] [[Haltt|Haeqt] [Htltb|Hteqb]]
+ ; [
+ | by rewrite {Haltt} Hteqb onem_10 mul0R addR0 mul1R; apply conj
+ | by rewrite {Htltb} -Haeqt onem_01 mul0R add0R mul1R; apply conj
+ | by rewrite Hteqb in Haeqt; move : Rlt_0_1 => /Rlt_not_eq].
+have H : 0 < t.~ by apply onem_gt0.
+apply conj.
+- rewrite -[X in X < t * x + t.~ * y]mul1R -(onemKC t) mulRDl.
+  by apply ltR_add; rewrite ltR_pmul2l.
+- rewrite -[X in _ + _ < X]mul1R -(onemKC t) mulRDl.
+  by apply ltR_add; rewrite ltR_pmul2l.
+Qed.
 
 Lemma open_unit_interval_convex : convex_interval (fun x => 0 < x < 1).
-Proof.
-  apply /open_interval_convex /Rlt_0_1.
-Qed.
+Proof. apply /open_interval_convex /Rlt_0_1. Qed.
 
 Definition open_unit_interval := mkInterval open_unit_interval_convex.
 End interval.
 
-
 Section Hp_Dpu.
-Variables (A:finType) (p:dist A) (n:nat) (domain_not_empty: #|A| = n.+1).
-Definition u := (Uniform.d domain_not_empty).
+Variables (A : finType) (p : dist A) (n : nat) (domain_not_empty : #|A| = n.+1).
+Definition u := Uniform.d domain_not_empty.
 
 Lemma Hp_Dpu : entropy p = log #|A|%:R - div p u.
-  rewrite /entropy /div.
-  evar (RHS : A -> R).
-  have H : forall a : A, p a * log (p a / u a) = RHS a.
-  -
-    move => a.
-    move : (pos_f_ge0 (pmf p) a) => [H|H].
-    +
-      rewrite Uniform.dE.
-      change (p a * log (p a / / #|A|%:R)) with (p a * log (p a * / / #|A|%:R)).
-      have H0 : 0 < #|A|%:R by rewrite domain_not_empty ltR0n //.
-      have H1 : #|A|%:R <> 0 by apply gtR_eqF.
-      rewrite invRK // logM // mulRDr.
-        by instantiate (RHS := fun a => p a * log (p a) + p a * log #|A|%:R).
-    by rewrite /RHS -H /= 3!mul0R add0R.
-  have H0 : \rsum_(a in A) p a * log (p a / u a) = \rsum_(a in A) RHS a.
-  - move : H; rewrite /RHS => H.
-    by apply eq_bigr.
-  rewrite H0 /RHS.
-  rewrite big_split /=.
-  rewrite -big_distrl /=.
-  rewrite (pmf1 p) mul1R.
-  by rewrite -addR_opp oppRD addRC -addRA Rplus_opp_l addR0.
+Proof.
+rewrite /entropy /div.
+evar (RHS : A -> R).
+have H : forall a : A, p a * log (p a / u a) = RHS a.
+  move => a.
+  move : (pos_f_ge0 (pmf p) a) => [H|H].
+  - rewrite Uniform.dE.
+    change (p a * log (p a / / #|A|%:R)) with (p a * log (p a * / / #|A|%:R)).
+    have H0 : 0 < #|A|%:R by rewrite domain_not_empty ltR0n //.
+    have H1 : #|A|%:R <> 0 by apply gtR_eqF.
+    rewrite invRK // logM // mulRDr.
+    by instantiate (RHS := fun a => p a * log (p a) + p a * log #|A|%:R).
+  - by rewrite /RHS -H /= 3!mul0R add0R.
+have H0 : \rsum_(a in A) p a * log (p a / u a) = \rsum_(a in A) RHS a.
+  move : H; rewrite /RHS => H.
+  exact: eq_bigr.
+rewrite H0 /RHS.
+rewrite big_split /=.
+rewrite -big_distrl /=.
+rewrite (pmf1 p) mul1R.
+by rewrite -addR_opp oppRD addRC -addRA Rplus_opp_l addR0.
 Qed.
 End Hp_Dpu.
 
+Section convex_pair.
+Variables (A : finType) (f : dist A -> dist A -> R).
+
+Definition convex_in_pair := forall (p1 p2 q1 q2 : dist A)
+  (t : R) (Ht : 0 <= t <= 1),
+  f (ConvexDist.d p1 p2 Ht) (ConvexDist.d q1 q2 Ht) <=
+  t * f p1 q1 + t.~ * f p2 q2.
+
+End convex_pair.
+
+Require Import log_sum.
+
 Section D_convex.
-Variables (A:finType) (p q:dist A) (n:nat) (domain_not_empty: #|A| = n.+1).
+Variables (A:finType) (n:nat) (domain_not_empty: #|A| = n.+1).
 
-(* 
-Lemma D_convex : convexf_in open_unit_interval (fun p => div p q).
-型があわないのでconvexityを変えるひつようがある
-TODO: monaeのaltprob_model.vの定義を輸入する
-
-*)
+(* thm 2.7.2 *)
+Lemma D_convex : convex_in_pair (@div A).
+Proof.
+move=> p1 p2 q1 q2 t t01.
+move: (@log_sum A setT).
+Admitted.
 
 End D_convex.
-
 
 Module alternative_proof.
 Require Import Ranalysis_ext Lra.
@@ -220,13 +220,14 @@ Proof.
     by apply mulR_gt0; [apply mulR_gt0|apply ln2_gt0].
 Qed.
 
-Lemma convexf_leq_sym f x y : (forall t, 0 <= t <= 1 -> convexf_leq f x y t) -> forall t, 0 <= t <= 1 -> convexf_leq f y x t.
+Lemma convexf_leq_sym f x y : (forall t, 0 <= t <= 1 -> convexf_leq f x y t) ->
+  forall t, 0 <= t <= 1 -> convexf_leq f y x t.
 Proof.
-  move => H t [H0t Ht1]; move: (H (onem t)).
-  rewrite /convexf_leq onemK.
-  rewrite [X in (_ -> f X <= _) -> _]addRC [X in (_ -> f _ <= X) -> _]addRC.
-  apply.
-  by apply conj; [apply onem_ge0 | apply onem_le1].
+move => H t [H0t Ht1]; move: (H t.~).
+rewrite /convexf_leq onemK.
+rewrite [X in (_ -> f X <= _) -> _]addRC [X in (_ -> f _ <= X) -> _]addRC.
+apply.
+by apply conj; [apply onem_ge0 | apply onem_le1].
 Qed.
 
 Lemma convexf_on_point f x t : convexf_leq f x x t.
@@ -236,26 +237,22 @@ Qed.
 
 Lemma concavity_of_entropy : concavef_in open_unit_interval H2.
 Proof.
-  rewrite /concavef_in /concavef_leq => x y t Hx Hy Ht.  
-  (* wlogつかう. まず関係ない変数を戻し, *)
-  move : t Ht.
-  (* 不等号をorでつないだやつを用意して *)
-  move : (Rtotal_order x y) => Hxy.
-  (* その不等号のひとつを固定してwlogする *)
-  wlog : x y Hx Hy Hxy / x < y.
-  -
-    move => H.
-    case Hxy; [apply H|] => //.
-    case => [-> t Ht|]; [by apply convexf_on_point|].
-    move => Hxy'; apply convexf_leq_sym.
-    apply H => //.
-    by apply or_introl.
-  - 
-    by move => Hxy' t Ht; apply concavity_of_entropy_x_le_y.
+rewrite /concavef_in /concavef_leq => x y t Hx Hy Ht.
+(* wlogつかう. まず関係ない変数を戻し, *)
+move : t Ht.
+(* 不等号をorでつないだやつを用意して *)
+move : (Rtotal_order x y) => Hxy.
+(* その不等号のひとつを固定してwlogする *)
+wlog : x y Hx Hy Hxy / x < y.
+  move => H.
+  case Hxy; [apply H|] => //.
+  case => [-> t Ht|]; [by apply convexf_on_point|].
+  move => Hxy'; apply convexf_leq_sym.
+  apply H => //.
+  by apply or_introl.
+by move => Hxy' t Ht; apply concavity_of_entropy_x_le_y.
 Qed.
 
 End concavity_of_entropy.
 
 End alternative_proof.
-
-(* TODO: concavity of relative entropy and of mutual information *)

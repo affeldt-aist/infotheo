@@ -92,6 +92,9 @@ Qed.
 Lemma onem_eq0 r : r.~ = 0 <-> r = 1.
 Proof. rewrite /onem; lra. Qed.
 
+Lemma onem_eq1 r : r.~ = 1 <-> r = 0.
+Proof. rewrite /onem; lra. Qed.
+
 Lemma onem_neq0 r : r.~ != 0 <-> r != 1.
 Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 
