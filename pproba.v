@@ -154,7 +154,7 @@ rewrite div1R -invRM.
 rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
   move=> *; by rewrite UniformSupport.E.
 rewrite -big_distrr /= mulR_eq0 => -[].
-  rewrite div1R; exact/eqP/invR_neq0.
+  rewrite div1R; exact/invR_neq0/eqP.
 by apply/eqP; rewrite -not_receivable_uniformE Hy.
 Qed.
 
@@ -190,7 +190,7 @@ rewrite (eq_bigr x); last first.
   move=> i _; rewrite /f' PosteriorProbability.dE /Rdiv /x; reflexivity.
 rewrite -big_distrl { x} /= mulR_eq0 => -[/eqP|].
 - apply/negP; by rewrite -receivableE.
-- apply/eqP/invR_neq0; by rewrite -receivableE.
+- apply/invR_neq0/eqP; by rewrite -receivableE.
 Qed.
 
 Definition f (i : 'I_n) a := Kmpp * \rsum_(t in 'rV_n | t ``_ i == a) f' t.

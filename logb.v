@@ -170,7 +170,7 @@ Qed.
 Lemma Log_inv n x y : 1 < n -> 0 < x -> 0 < y -> Log n x = Log n y -> x = y.
 Proof.
 move=> n1 Hx Hy.
-rewrite /Log /Rdiv eqR_mul2r; last exact/eqP/invR_neq0/eqP/gtR_eqF/ln_pos.
+rewrite /Log /Rdiv eqR_mul2r; last exact/invR_neq0/gtR_eqF/ln_pos.
 apply ln_inv => //; exact: H.
 Qed.
 

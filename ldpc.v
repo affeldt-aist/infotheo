@@ -516,7 +516,7 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
     congr (_ * _).
     rewrite mul1R UniformSupport.restrict /= UniformSupport.big_distrr /=; last first.
     rewrite invRM; last 2 first.
-      exact/eqP/invR_neq0/eqP.
+      exact/invR_neq0.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
       apply/eqP; by rewrite -not_receivable_uniformE Hy.
     rewrite invRK // -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.

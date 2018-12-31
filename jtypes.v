@@ -291,7 +291,7 @@ case: ifP => [| H'].
 rewrite /Rdiv mulR_eq0 => -[|abs].
   rewrite INR_eq0 => ?; exact/val_inj.
 exfalso.
-by apply/eqP : abs; apply/invR_neq0; rewrite INR_eq0' H'.
+by apply/eqP : abs; apply/invR_neq0'; rewrite INR_eq0' H'.
 Qed.
 
 (** Upper-bound of the number of conditional types: *)
@@ -1271,7 +1271,7 @@ exists (num_co_occ_jtype ta tb).-shell ta.
     move: Hta'; rewrite in_set => /forallP/(_ a)/eqP => Hta'.
     move: Hta.
     rewrite in_set => /forallP/(_ a)/eqP.
-    rewrite Hta' eqR_mul2r; last by apply/eqP/invR_neq0; rewrite INR_eq0'.
+    rewrite Hta' eqR_mul2r; last by apply/invR_neq0; rewrite INR_eq0.
     by move/INR_eq.
 - rewrite in_set.
   apply/forallP => a. apply/forallP => b.

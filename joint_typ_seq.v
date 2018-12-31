@@ -289,7 +289,7 @@ Variable epsilon : R.
 
 Lemma non_typical_sequences :
   Pr ((P `^ n) `x ((`O(P , W)) `^ n))
-    [set x | prod_rV x \in `JTS P W n epsilon] <= exp2 (- INR n * (`I( P ; W) - 3 * epsilon)).
+    [set x | prod_rV x \in `JTS P W n epsilon] <= exp2 (- INR n * (`I(P, W) - 3 * epsilon)).
 Proof.
 rewrite /Pr /=.
 apply (@leR_trans (\rsum_(i | i \in `JTS P W n epsilon)

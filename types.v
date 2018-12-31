@@ -117,7 +117,7 @@ apply/type_eqP => /=.
 apply/eqP/ffunP => a.
 apply/val_inj/INR_eq.
 move: {H}(H a); rewrite H1 H2 eqR_mul2r //.
-apply/eqP/invR_neq0; by rewrite INR_eq0'.
+apply/invR_neq0; by rewrite INR_eq0.
 Qed.
 
 Definition pos_fun_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2}) : pos_fun A.
@@ -331,7 +331,7 @@ move/forallP/(_ a)/eqP.
 destruct P as [d f H] => /= Htmp.
 apply/INR_eq/esym; move: Htmp.
 rewrite H eqR_mul2r //.
-apply/eqP/invR_neq0; by rewrite INR_eq0'.
+apply/invR_neq0; by rewrite INR_eq0.
 Qed.
 
 Lemma typed_tuples_not_empty' : exists x : seq A,
@@ -413,7 +413,7 @@ rewrite big_const iter_mulR INR_type_fun.
 congr (_ ^ _).
 rewrite /typed_tuples inE in Hx.
 move/forallP/(_ a)/eqP : Hx.
-rewrite -INR_type_fun eqR_mul2r; last by apply/eqP/invR_neq0; rewrite INR_eq0'.
+rewrite -INR_type_fun eqR_mul2r; last by apply/invR_neq0; rewrite INR_eq0; exact/eqP.
 move/INR_eq => ->.
 rewrite num_occ_alt cardsE /=.
 apply eq_card => /= n0.
@@ -445,7 +445,7 @@ rewrite (_ : \rprod_(a : A) P a ^ (type.f P) a =
     rewrite -(_ : O = type.f P a); first by rewrite !mul0R exp2_0 /pow.
     apply INR_eq.
     rewrite {1}/INR.
-    rewrite -(@eqR_mul2r ( / INR n)); last by apply/eqP/invR_neq0; rewrite INR_eq0'.
+    rewrite -(@eqR_mul2r ( / INR n)); last by apply/invR_neq0; rewrite INR_eq0; exact/eqP.
     by rewrite type_fun_type // -(eqP H) mulR0.
 rewrite -(big_morph _ morph_exp2_plus exp2_0) -(big_morph _ (morph_mulRDl _) (mul0R _)).
 by rewrite /entropy Rmult_opp_opp mulRC.
@@ -619,7 +619,7 @@ apply/eqP.
 apply ffunP => a.
 apply/val_inj/INR_eq.
 move: {HPQ}(HPQ a); rewrite HP HQ eqR_mul2r //.
-apply/eqP/invR_neq0; by rewrite INR_eq0'.
+apply/invR_neq0; by rewrite INR_eq0.
 Qed.
 
 Lemma sum_messages_types f :

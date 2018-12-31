@@ -137,7 +137,9 @@ apply/idP/idP => [/eqP/mulR_eq0[]/eqP-> //|]; first by rewrite orbT.
 case/orP => /eqP ->; by rewrite ?mulR0 ?mul0R.
 Qed.
 
-Lemma mulR_neq0 (x y : R) : (x * y != 0) = ((x != 0) && (y != 0)).
+Lemma mulR_neq0 (x y : R) : (x * y <> 0) <-> ((x <> 0) /\ (y <> 0)).
+Proof. rewrite mulR_eq0; tauto. Qed.
+Lemma mulR_neq0' (x y : R) : (x * y != 0) = ((x != 0) && (y != 0)).
 Proof. by rewrite mulR_eq0' negb_or. Qed.
 
 Lemma eqR_mul2l {r r1 r2} : r <> 0 -> (r * r1 = r * r2) <-> (r1 = r2).
@@ -459,14 +461,17 @@ Lemma invR_gt0 x : 0 < x -> 0 < / x.
 Proof. move=> x0; by apply Rinv_0_lt_compat. Qed.
 
 (* Rinv_neq_0_compat : forall r : R, r <> 0 -> / r <> 0 *)
-Lemma invR_neq0 (x : R) : x != 0 -> / x != 0.
-Proof. by move/eqP/Rinv_neq_0_compat/eqP. Qed.
+Lemma invR_neq0 (x : R) : x <> 0 -> / x <> 0.
+Proof. exact: Rinv_neq_0_compat. Qed.
+Lemma invR_neq0' (x : R) : x != 0 -> / x != 0.
+Proof. by move/eqP/invR_neq0/eqP. Qed.
 
-Lemma invR_eq0 (x : R) : / x == 0 -> x == 0.
+Lemma invR_eq0 (x : R) : / x = 0 -> x = 0.
 Proof.
-move => H; apply: contraTT H => H.
-exact/invR_neq0.
+move/eqP=> H; apply/eqP; apply: contraTT H => H; exact/eqP/invR_neq0/eqP.
 Qed.
+Lemma invR_eq0' (x : R) : / x == 0 -> x == 0.
+Proof. by move/eqP/invR_eq0/eqP. Qed.
 
 Definition invR1 : / 1 = 1 := Rinv_1.
 

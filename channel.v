@@ -40,13 +40,16 @@ Reserved Notation "'`Ch_' n '(' A ',' B ')'" (at level 10,
 Reserved Notation "W '``^' n" (at level 10).
 Reserved Notation "W '``(|' x ')'" (at level 10, x at next level).
 Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level).
-Reserved Notation "'`O(' P , W )" (at level 10, P, W at next level).
-Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level).
+Reserved Notation "'`O(' P , W )" (at level 10, P, W at next level,
+  format "'`O(' P ,  W )").
 Reserved Notation "'`J(' P , W )" (at level 10, P, W at next level,
   format "'`J(' P ,  W )").
-Reserved Notation "`H( P , W )" (at level 10, P, W at next level).
+Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level,
+  format "'`H(' P  '`o'  W )").
+Reserved Notation "`H( P , W )" (at level 10, P, W at next level,
+  format "`H( P ,  W )").
 Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
-Reserved Notation "`I( P ; W )" (at level 50).
+Reserved Notation "`I( P , W )" (at level 50, format "`I( P ,  W )").
 
 Module Channel1.
 Section channel1.
@@ -83,7 +86,7 @@ Local Open Scope vec_ext_scope.
 Local Open Scope entropy_scope.
 
 Module DMC.
-Section dmc.
+Section def.
 
 Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat).
 
@@ -118,13 +121,15 @@ Qed.
 
 Definition c : channel_ext n := locked (fun x => makeDist (f0 x) (f1 x)).
 
-End dmc.
+End def.
 End DMC.
 
+Arguments DMC.c {A} {B}.
+
 Notation "'`Ch_' n '(' A ',' B ')'" := (@DMC.channel_ext A B n) : channel_scope.
-Notation "W '``^' n" := (@DMC.c _ _ W n) : channel_scope.
-Notation "W '``(|' x ')'" := (@DMC.c _ _ W _ x) : channel_scope.
-Notation "W '``(' y '|' x ')'" := (@DMC.c _ _ W _ x y) : channel_scope.
+Notation "W '``^' n" := (DMC.c W n) : channel_scope.
+Notation "W '``(|' x ')'" := (DMC.c W _ x) : channel_scope.
+Notation "W '``(' y '|' x ')'" := (DMC.c W _ x y) : channel_scope.
 
 Lemma DMCE (A B : finType) n (W : `Ch_1(A, B)) b a :
   W ``(b | a) = \rprod_(i < n) W (a ``_ i) (b ``_ i).
@@ -174,7 +179,7 @@ Proof. by rewrite DMCE -rprod_sub_vec. Qed.
 End DMC_sub_vec.
 
 Module OutDist.
-Section outdist.
+Section def.
 
 Variables (A B : finType) (P : dist A) (W  : `Ch_1(A, B)).
 
@@ -194,7 +199,7 @@ Definition d : dist B := locked (makeDist f0 f1).
 Lemma dE b : d b = \rsum_(a in A) W a b * P a.
 Proof. rewrite /d; by unlock. Qed.
 
-End outdist.
+End def.
 End OutDist.
 
 Notation "'`O(' P , W )" := (OutDist.d P W) : channel_scope.
@@ -211,7 +216,7 @@ Local Open Scope ring_scope.
 Lemma tuple_pmf_out_dist (W : `Ch_1(A, B)) (P : dist A) n (b : 'rV_ _):
    \rsum_(j : 'rV[A]_n)
       ((\rprod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
-   (`O(P , W)) `^ _ b.
+   (`O(P, W)) `^ _ b.
 Proof.
 rewrite TupleDist.dE.
 apply/esym.
@@ -235,7 +240,7 @@ End OutDist_prop.
 Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ) )) : channel_scope.
 
 Module JointDistChan.
-Section jointdistchan.
+Section def.
 
 Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
 
@@ -249,12 +254,12 @@ rewrite -(pair_big xpredT xpredT (fun a b => f (a, b))) /= -(pmf1 P).
 by apply eq_bigr => /= t ?; rewrite /f /ProdDist.f /= -big_distrr /= pmf1 mulR1.
 Qed.
 
-Definition d : {dist (A * B)} := locked (makeDist f0 f1).
+Definition d : {dist A * B} := locked (makeDist f0 f1).
 
 Lemma dE ab : d ab = W ab.1 ab.2 * P ab.1.
 Proof. rewrite /d; unlock => /=; rewrite /f /ProdDist.f; by rewrite mulRC. Qed.
 
-End jointdistchan.
+End def.
 End JointDistChan.
 
 Notation "'`J(' P , W )" := (JointDistChan.d P W) : channel_scope.
@@ -324,7 +329,7 @@ End CondEntropyChan.
 Notation "`H( W | P )" := (CondEntropyChan.h W P) : channel_scope.
 
 Module MutualInfoChan.
-Section mutualinfochan.
+Section def.
 
 Variables A B : finType.
 
@@ -337,10 +342,10 @@ Definition mut_info_dist (P : {dist A * B}) :=
 
 Definition mut_info P (W : `Ch_1(A, B)) := `H P + `H(P `o W) - `H(P , W).
 
-End mutualinfochan.
+End def.
 End MutualInfoChan.
 
-Notation "`I( P ; W )" := (MutualInfoChan.mut_info P W) : channel_scope.
+Notation "`I( P , W )" := (MutualInfoChan.mut_info P W) : channel_scope.
 
 Section capacity_definition.
 
@@ -353,7 +358,7 @@ Definition ubound {S : Type} (f : S -> R) (ub : R) := forall a, f a <= ub.
 Definition lubound {S : Type} (f : S -> R) (lub : R) :=
   ubound f lub /\ forall ub, ubound f ub -> lub <= ub.
 
-Definition capacity (W : `Ch_1(A, B)) cap := lubound (fun P => `I(P ; W)) cap.
+Definition capacity (W : `Ch_1(A, B)) cap := lubound (fun P => `I(P , W)) cap.
 
 Lemma capacity_uniq (W : `Ch_1(A, B)) r1 r2 :
   capacity W r1 -> capacity W r2 -> r1 = r2.

@@ -139,7 +139,7 @@ Variable P : P_ n ( A ).
 (** * Bound of the success rate of decoding for typed codes *)
 
 Definition success_factor_bound :=
-  exp2(- INR n * +| log (INR #|M|) / INR n - `I(P ; V) |).
+  exp2(- INR n * +| log (INR #|M|) / INR n - `I(P, V) |).
 
 Variable tc : typed_code B M P.
 Hypothesis Vctyp : V \in \nu^{B}(P).
@@ -208,7 +208,7 @@ case/boolP : (tb \in cover partition_pre_image) => Hcase.
 Qed.
 
 Lemma success_factor_bound_part2 :
-  success_factor tc V <=  exp2(INR n * `I(P ; V)) / INR #|M|.
+  success_factor tc V <=  exp2(INR n * `I(P, V)) / INR #|M|.
 Proof.
 rewrite /success_factor -mulRA (mulRC (/ INR #|M|)) !mulRA.
 apply leR_wpmul2r; first exact/ltRW/invR_gt0/ltR0n.
@@ -257,7 +257,7 @@ Proof.
 rewrite /success_factor_bound.
 apply Rmax_case.
 - rewrite mulR0 exp2_0; by apply success_factor_bound_part1.
-- apply (@leR_trans (exp2(INR n * `I(P ; V)) / INR #|M|)); last first.
+- apply (@leR_trans (exp2(INR n * `I(P, V)) / INR #|M|)); last first.
   + apply/Req_le/esym.
     rewrite mulRDr mulRC.
     rewrite Rmult_opp_opp -mulRA mulRN mulVR ?INR_eq0' //.
@@ -301,14 +301,14 @@ Proof.
 move=> Vmax.
 rewrite (typed_success W Mnot0 tc).
 apply (@leR_trans ( \rsum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
-  exp2 (- INR n *  +| log (INR #|M|) * / INR n - `I(P ; V) |))).
+  exp2 (- INR n *  +| log (INR #|M|) * / INR n - `I(P, V) |))).
   apply: ler_rsum => V HV.
   rewrite -mulRA; apply leR_wpmul2l.
     rewrite /exp_cdiv.
     case : ifP => _ //; exact/leRR.
   rewrite /success_factor mulRA; exact: success_factor_ub.
 apply (@leR_trans (\rsum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
-                    exp2 (- INR n * +| log (INR #|M|) * / INR n - `I(P ; Vmax)|))).
+                    exp2 (- INR n * +| log (INR #|M|) * / INR n - `I(P, Vmax)|))).
   apply ler_rsum => V HV.
   move: (@arg_rmax2 [finType of (P_ n (A, B))] V0 [pred V | V \in \nu^{B}(P) ]
                     (fun V => exp_cdiv P V W * success_factor_bound M V P)).

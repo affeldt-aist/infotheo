@@ -338,7 +338,7 @@ rewrite (eq_bigr (fun i => 1 / INR #|[set cw in C]| * W ``(tb | i))) in H; last 
 rewrite -rmax_distrr in H; last exact/ltRW/Hunpos.
 exists m'; split; first exact Hm'.
 set x := PosteriorProbability.den _ _ _ in H.
-have x0 : / x <> 0 by apply/eqP/invR_neq0; rewrite -receivableE.
+have x0 : / x <> 0 by apply/eqP/invR_neq0'; rewrite -receivableE.
 move/(eqR_mul2r x0) in H.
 rewrite /= UniformSupport.E ?inE // in H; last first.
   move/subsetP : dec_img; apply.

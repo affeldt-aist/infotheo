@@ -102,7 +102,7 @@ rewrite -[X in _ <= X]oppRK leR_oppr -ln_Rinv; last first.
   apply divR_gt0; by [apply fspos | apply gspos].
 rewrite invRM; last 2 first.
   exact/gtR_eqF/(fspos _ C_a).
-  exact/eqP/invR_neq0/eqP/gtR_eqF/(gspos _ C_a).
+  exact/invR_neq0/gtR_eqF/(gspos _ C_a).
 rewrite invRK; last exact/gtR_eqF/(gspos _ C_a).
 rewrite mulRC.
 apply: leR_trans.

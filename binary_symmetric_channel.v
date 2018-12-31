@@ -49,7 +49,7 @@ Hypothesis p_01' : (0 < p < 1)%R.
 
 Let p_01 := closed p_01'.
 
-Lemma HP_HPW : `H P - `H(P , BSC.c card_A p_01) = - H2 p.
+Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01) = - H2 p.
 Proof.
 rewrite {2}/entropy /=.
 rewrite (eq_bigr (fun a => (`J( P, (BSC.c card_A p_01))) (a.1, a.2) *
@@ -91,7 +91,7 @@ transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
 move: (pmf1 P); rewrite Set2sumE /= -/a -/b => ->; rewrite /log; by field.
 Qed.
 
-Lemma IPW : `I(P ; BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
+Lemma IPW : `I(P, BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
 Proof.
 rewrite /MutualInfoChan.mut_info addRC.
 set a := `H(_ `o _).
@@ -144,8 +144,7 @@ Qed.
 Lemma bsc_out_H_half' : 0 < INR 1 / INR 2 < 1.
 Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; lra. Qed.
 
-Lemma H_out_binary_uniform :
-  `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
+Lemma H_out_binary_uniform : `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
 Proof.
 rewrite {1}/entropy !Set2sumE /= !OutDist.dE !Set2sumE /=.
 rewrite !BSC.cE !Binary.fxx /Binary.f (eq_sym _ (Set2.a _)) !Uniform.dE.
@@ -201,7 +200,7 @@ Local Open Scope vec_ext_scope.
 
 Lemma DMC_BSC_prop : forall m y,
   let d := dH y (f m) in
-  W ``(y | (f m)) = ((1 - p) ^ (n - d) * p ^ d)%R.
+  W ``(y | f m) = ((1 - p) ^ (n - d) * p ^ d)%R.
 Proof.
 move=> m y d; rewrite DMCE.
 transitivity ((\rprod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
@@ -213,7 +212,5 @@ congr (_ * _).
 by rewrite big_const /= iter_mulR /= card_dHC.
 by rewrite big_const /= iter_mulR /= card_dH_vec.
 Qed.
-
-Local Close Scope vec_ext_scope.
 
 End dH_BSC.

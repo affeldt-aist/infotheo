@@ -35,7 +35,7 @@ Proof.
 move=> Hx Hxy /leR_eqVlt[/esym|] y0 Hxy2; first by rewrite y0 Hxy.
 case/leR_eqVlt : Hx => [/esym|] x0.
 - move/esym : Hxy2; rewrite x0 mul0R subR0 mulR_eq0 => -[] //.
-  by rewrite logexp1E => /eqP/invR_eq0; rewrite (negbTE ln2_neq0).
+  by rewrite logexp1E => /invR_eq0/eqP; rewrite (negbTE ln2_neq0).
 - apply/esym; rewrite -(@eqR_mul2l (/ x)) //; last exact/nesym/ltR_eqF/invR_gt0.
   rewrite mulVR //; last exact/eqP/gtR_eqF.
   apply log_id_eq; first by apply mulR_gt0 => //; exact: invR_gt0.

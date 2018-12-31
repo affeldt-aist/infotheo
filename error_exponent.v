@@ -89,11 +89,11 @@ Qed.
 
 (** * Distance from the mutual information of one channel to another *)
 
-Lemma mut_info_dist_ub : `| `I(P ; V) - `I(P ; W) | <=
+Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
   / ln 2 * (INR #|B| + INR #|A| * INR #|B|) * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite /MutualInfoChan.mut_info.
-rewrite (_ : _ - _ = `H(P `o V) - `H(P `o W) + (`H(P , W) - `H(P , V))); last by field.
+rewrite (_ : _ - _ = `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last by field.
 apply: leR_trans; first exact: Rabs_triang.
 rewrite -mulRA mulRDl mulRDr.
 apply leR_add.
@@ -118,7 +118,7 @@ Hypothesis minRate_cap : minRate > cap.
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
   forall P : dist A, forall V : `Ch_1(A, B),
     P |- V << W ->
-    Delta <= D(V || W | P) +  +| minRate - `I(P ; V) |.
+    Delta <= D(V || W | P) +  +| minRate - `I(P, V) |.
 Proof.
 set gamma := / (INR #|B| + INR #|A| * INR #|B|) * (ln 2 * ((minRate - cap) / 2)).
 have : min(exp (-2), gamma) > 0.
@@ -150,20 +150,20 @@ move=> P V v_dom_by_w.
 case/boolP : (Delta <b= D(V || W | P)) => [/leRP| /leRP/ltRNge] Hcase.
   apply (@leR_trans (D(V || W | P))) => //.
   rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.
-suff HminRate : (minRate - cap) / 2 <= minRate - (`I(P; V)).
+suff HminRate : (minRate - cap) / 2 <= minRate - (`I(P, V)).
   clear -Hcase v_dom_by_w HminRate.
-  apply (@leR_trans +| minRate - `I(P ; V) |); last first.
+  apply (@leR_trans +| minRate - `I(P, V) |); last first.
     rewrite -[X in X <= _]add0R; exact/leR_add2r/cdiv_ge0.
   apply: leR_trans; last exact: leR_maxr.
   apply: (leR_trans _ HminRate); exact: geR_minl.
-have : `I(P ; V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
+have : `I(P, V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
                                (- xlnx (sqrt (2 * D(V || W | P)))).
-  apply (@leR_trans (`I(P ; W) + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
+  apply (@leR_trans (`I(P, W) + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
                                - xlnx (sqrt (2 * D(V || W | P))))); last first.
     apply/leR_add2r.
     move: W_cap; rewrite /capacity /lub; case; by move/(_ P).
   rewrite addRC -leR_subl_addr.
-  apply (@leR_trans `| `I(P ; V) + - `I(P ; W) |); first exact: Rle_abs.
+  apply (@leR_trans `| `I(P, V) + - `I(P, W) |); first exact: Rle_abs.
   suff : D(V || W | P) <= exp (-2) ^ 2 * / 2 by apply mut_info_dist_ub.
   clear -Hcase x_gt0.
   apply/ltRW/(ltR_leR_trans Hcase).

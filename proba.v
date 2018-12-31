@@ -352,7 +352,7 @@ End uniform.
 Lemma d_neq0 (C : finType) (domain_non_empty : { m : nat | #| C | = m.+1 }) :
   forall x, d (projT2 domain_non_empty) x != 0.
 Proof.
-move=> c; rewrite dE invR_neq0 //; apply/eqP.
+move=> c; rewrite dE invR_neq0' //; apply/eqP.
 case: domain_non_empty => x' ->; by rewrite INR_eq0.
 Qed.
 
@@ -423,7 +423,7 @@ Qed.
 Lemma neq0 z : ((`U HC) z != 0) = (z \in C).
 Proof.
 case/boolP : (z \in C) => [/E ->|/E0 ->//]; last by rewrite eqxx.
-rewrite div1R; by apply/invR_neq0; rewrite INR_eq0' -lt0n.
+rewrite div1R; by apply/invR_neq0'; rewrite INR_eq0' -lt0n.
 Qed.
 
 End UniformSupport_prop.
@@ -560,7 +560,7 @@ apply/idP/idP; first by apply: contra => /eqP ->; rewrite div0R.
 apply: contra; rewrite /Rdiv mulR_eq0' => /orP[//|H].
 exfalso.
 move/negPn/negP : H; apply.
-apply/invR_neq0; by apply: contra Xb1; rewrite subR_eq0 eq_sym.
+apply/invR_neq0'; by apply: contra Xb1; rewrite subR_eq0 eq_sym.
 Qed.
 
 Lemma d_eq0 a (Xa0 : X a != 0) : ((d a == 0) = (b == a))%bool.
@@ -568,7 +568,7 @@ Proof.
 rewrite dE; case: ifPn => [/eqP ->|ab]; first by rewrite !eqxx.
 apply/idP/idP => [|]; last by rewrite eq_sym (negbTE ab).
 rewrite mulR_eq0' => /orP[]; first by rewrite (negbTE Xa0).
-by move/invR_eq0; rewrite subR_eq0 eq_sym (negbTE Xb1).
+by move/invR_eq0'; rewrite subR_eq0 eq_sym (negbTE Xb1).
 Qed.
 
 Lemma d_0 a : X a = 0 -> d a = 0.
@@ -1070,8 +1070,9 @@ End wolfowitz_counting.
 
 Section probability.
 Variables (A : finType) (P : dist A).
+Implicit Types E : {set A}.
 
-Definition Pr (E : {set A}) := \rsum_(a in E) P a.
+Definition Pr E := \rsum_(a in E) P a.
 
 Lemma Pr_ge0 E : 0 <= Pr E.
 Proof. apply rsumr_ge0 => *; exact: dist_ge0. Qed.
@@ -1095,10 +1096,10 @@ Local Open Scope R_scope.
 Lemma Pr_set0 : Pr set0 = 0.
 Proof. rewrite /Pr big_pred0 // => a; by rewrite in_set0. Qed.
 
-Lemma Pr_set0P S : Pr S = 0 <-> (forall s, s \in S -> P s = 0).
+Lemma Pr_set0P E : Pr E = 0 <-> (forall a, a \in E -> P a = 0).
 Proof.
-rewrite /Pr (eq_bigl (fun x => x \in S)); last by [].
-apply: (@prsumr_eq0P _ (mem S) P) => a Sa; exact: dist_ge0.
+rewrite /Pr (eq_bigl (fun x => x \in E)); last by [].
+apply: (@prsumr_eq0P _ (mem E) P) => a aE; exact: dist_ge0.
 Qed.
 
 Lemma Pr_setT : Pr setT = 1.
@@ -1119,7 +1120,7 @@ Proof. rewrite -(Pr_cplt E); field. Qed.
 Lemma Pr_of_cplt E : Pr (~: E) = 1 - Pr E.
 Proof. rewrite -(Pr_cplt E); field. Qed.
 
-Lemma Pr_incl (E E' : {set A}) : E \subset E' -> Pr E <= Pr E'.
+Lemma Pr_incl E E' : E \subset E' -> Pr E <= Pr E'.
 Proof.
 move=> H; apply ler_rsum_l => a Ha;
   [exact/leRR | exact/dist_ge0 | move/subsetP : H; exact].
@@ -1140,8 +1141,8 @@ rewrite (_ : \rsum_(i in A | [pred x in E2] i) P i =
 exact/ler_rsum_predU/dist_ge0.
 Qed.
 
-Lemma Pr_bigcup (B : finType) (E : pred B) F :
-  Pr (\bigcup_(i | E i) F i) <= \rsum_(i | E i) Pr (F i).
+Lemma Pr_bigcup (B : finType) (p : pred B) F :
+  Pr (\bigcup_(i | p i) F i) <= \rsum_(i | p i) Pr (F i).
 Proof.
 rewrite /Pr.
 elim: (index_enum _) => [| h t IH].
@@ -1150,7 +1151,7 @@ rewrite big_cons.
 case: ifP => H1.
   apply: leR_trans; first by eapply leR_add2l; exact: IH.
   rewrite [X in _ <= X](exchange_big_dep
-    (fun h => (h \in A) && [pred x in \bigcup_(i | E i) F i] h)) /=; last first.
+    (fun h => (h \in A) && [pred x in \bigcup_(i | p i) F i] h)) /=; last first.
     move=> b a Ea jFi; apply/bigcupP; by exists b.
   rewrite big_cons /= H1 big_const iter_addR -exchange_big_dep /=; last first.
     move=> b a Ea iFj; apply/bigcupP; by exists b.
@@ -1164,59 +1165,58 @@ case: ifPn => hFb; last exact/leRR.
 rewrite -[X in X <= _]add0R; exact/leR_add2r/dist_ge0.
 Qed.
 
-Lemma Pr_union_disj (E1 E2 : {set A}) :
-  [disjoint E1 & E2] -> Pr (E1 :|: E2) = Pr E1 + Pr E2.
+Lemma Pr_union_disj E1 E2 : [disjoint E1 & E2] -> Pr (E1 :|: E2) = Pr E1 + Pr E2.
 Proof. move=> ?; rewrite -bigU //=; apply eq_bigl => a; by rewrite inE. Qed.
 
-Lemma Pr_big_union_disj n (E : 'I_n -> {set A}):
-  (forall i j, i != j -> [disjoint E i & E j]) ->
-  Pr (\bigcup_(i < n) E i) = \rsum_(i < n) Pr (E i).
+Lemma Pr_big_union_disj n (F : 'I_n -> {set A}):
+  (forall i j, i != j -> [disjoint F i & F j]) ->
+  Pr (\bigcup_(i < n) F i) = \rsum_(i < n) Pr (F i).
 Proof.
-elim: n E => [E H|n IH E H]; first by rewrite !big_ord0 Pr_set0.
+elim: n F => [F H|n IH F H]; first by rewrite !big_ord0 Pr_set0.
 rewrite big_ord_recl /= Pr_union_disj; last first.
   rewrite -setI_eq0 big_distrr /=; apply/eqP/big1 => i _; apply/eqP.
   rewrite setI_eq0; exact: H.
 rewrite big_ord_recl IH // => i j ij; by rewrite H.
 Qed.
 
-Lemma Pr_union_eq (E1 E2 : {set A}) :
-  Pr (E1 :|: E2) = Pr E1 + Pr E2 - Pr (E1 :&: E2).
+Lemma Pr_diff E1 E2 : Pr (E1 :\: E2) = Pr E1 - Pr (E1 :&: E2).
 Proof.
-rewrite -[E1 :|: E2](setID _ E1) Pr_union_disj; last first.
-  rewrite -setI_eq0 setDE -setIA [E1 :&: _]setIC -setIA [~: E1 :&: _]setIC.
-  by rewrite setICr !setI0.
-rewrite setUK setDUKl -{1}[E2 in RHS](setID _ E1) Pr_union_disj; last first.
-  rewrite -setI_eq0 setDE -setIA [E1 :&: _]setIC -setIA [~: E1 :&: _]setIC.
-  by rewrite setICr !setI0.
-rewrite setIC; ring.
+rewrite /Pr [in X in _ = X + _](big_setID E2) /= -addRA addRCA addR_opp.
+by rewrite subRR addR0.
 Qed.
 
-Lemma Pr_inter_eq (E1 E2 : {set A}) :
-  Pr (E1 :&: E2) = (Pr E1 + Pr E2 - Pr (E1 :|: E2))%R.
+Lemma Pr_union_eq E1 E2 : Pr (E1 :|: E2) = Pr E1 + Pr E2 - Pr (E1 :&: E2).
+Proof.
+rewrite addRC -addR_opp -addRA addR_opp -Pr_diff -Pr_union_disj -?setU_setUD //.
+by rewrite -setI_eq0 setIDA setDIl setDv set0I.
+Qed.
+
+Lemma Pr_inter_eq E1 E2 : Pr (E1 :&: E2) = Pr E1 + Pr E2 - Pr (E1 :|: E2).
 Proof. by rewrite Pr_union_eq subRBA addRC addRK. Qed.
 
 End probability.
 
-Lemma Pr_fst_eq0 (A B : finType) (P : {dist (A * B)}) a b :
+Lemma Pr_domin_fst (A B : finType) (P : {dist A * B}) a b :
   Pr (Bivar.fst P) a = 0%R -> Pr P (setX a b) = 0%R.
 Proof.
 move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
 by rewrite inE /= => /andP[/H /Bivar.dom_by_fst ->].
 Qed.
 
-Lemma Pr_snd_eq0 (A B : finType) (P : {dist (A * B)}) a b :
+Lemma Pr_domin_fstN (A B : finType) (P : {dist A * B}) a b :
+  Pr P (setX a b) != 0%R -> Pr (Bivar.fst P) a != 0%R.
+Proof. apply/contra => /eqP/Pr_domin_fst => ?; exact/eqP. Qed.
+
+Lemma Pr_domin_snd (A B : finType) (P : {dist A * B}) a b :
   Pr (Bivar.snd P) b = 0%R -> Pr P (setX a b) = 0%R.
 Proof.
 move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
 by rewrite inE /= => /andP[_ /H /Bivar.dom_by_snd ->].
 Qed.
 
-Lemma Pr_setX1 (A B : finType) (PQ : {dist (A * B)}) a b :
-  Pr PQ (setX [set a] [set b]) = Pr PQ [set (a, b)].
-Proof.
-rewrite (_ : setX [set a] _ = [set (a, b)]) //.
-apply/setP => -[x1 x2]; by rewrite !inE /= xpair_eqE.
-Qed.
+Lemma Pr_domin_sndN (A B : finType) (P : {dist A * B}) a b :
+  Pr P (setX a b) != 0%R -> Pr (Bivar.snd P) b != 0%R.
+Proof. apply/contra => /eqP/Pr_domin_snd => ?; exact/eqP. Qed.
 
 (*Section Pr_tuple_prod.
 

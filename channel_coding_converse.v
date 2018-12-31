@@ -148,10 +148,10 @@ rewrite expRM -mulRA; apply leR_pmul => //.
       apply/nesym/ltR_eqF/mulR_gt0; last exact/invR_gt0.
       exact/invR_gt0/expR_gt0/mulR_gt0.
     rewrite -mulRA mulRC invRM; last 2 first.
-    - apply/eqP/invR_neq0; rewrite expR_eq0 mulR_neq0 ln2_neq0 andbT; exact/eqP/gtR_eqF.
-    - apply/eqP/invR_neq0; by rewrite INR_eq0'.
+    - apply/invR_neq0/eqP; rewrite expR_eq0 mulR_neq0' ln2_neq0 andbT; exact/eqP/gtR_eqF.
+    - apply/invR_neq0/eqP; by rewrite INR_eq0'.
     - rewrite invRK; last first.
-        apply/eqP; rewrite expR_eq0 mulR_neq0 ln2_neq0 andbT; exact/eqP/gtR_eqF.
+        apply/eqP; rewrite expR_eq0 mulR_neq0' ln2_neq0 andbT; exact/eqP/gtR_eqF.
       rewrite invRK; last by apply/eqP; rewrite INR_eq0'.
       rewrite (_ : / (/ INR n) ^ K = (INR n) ^ K); last first.
         rewrite expRV ?INR_eq0' // invRK //; apply/eqP/expR_neq0; by rewrite INR_eq0'.

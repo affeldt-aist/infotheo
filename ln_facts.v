@@ -187,7 +187,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       rewrite -mulRA ( _ : forall r, r * r = r ^ 2); last by move=> ?; rewrite /pow mulR1.
       rewrite expRV; last exact/eqP/not_eq_sym/ltR_eqF/oppR_gt0.
       rewrite -invRM; last 2 first.
-        apply/eqP; rewrite invR_neq0 //; exact/eqP/gtR_eqF.
+        apply invR_neq0; exact/gtR_eqF.
         apply/eqP; rewrite expR_eq0 oppR_eq0; exact/eqP/ltR_eqF.
       rewrite -(invRK (exp X)); last exact/gtR_eqF/exp_pos.
       apply ltR_inv => //.

@@ -250,12 +250,10 @@ End sum_rV_ffun.
 
 Section random_coding_good_code_existence.
 
-Variables B A : finType.
-Variable W : `Ch_1(A, B).
-Variable P : dist A.
+Variables (B A : finType) (W : `Ch_1(A, B)) (P : dist A).
 
 Definition epsilon0_condition r epsilon epsilon0 :=
-  0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P ; W) - r) / 4.
+  0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.
 
 Definition n_condition r epsilon0 n :=
   (O < n)%nat /\ - log epsilon0 / epsilon0 < INR n /\
@@ -769,7 +767,7 @@ apply (@leR_ltR_trans (epsilon0 + INR k *
   by case: Hepsilon0.
   by case: Hn => _ [_ []].
 apply (@leR_ltR_trans (epsilon0 +
-    INR #| M | * exp2 (- INR n * (`I( P ; W ) - 3 * epsilon0)))).
+    INR #| M | * exp2 (- INR n * (`I(P, W ) - 3 * epsilon0)))).
   apply/leR_add2l/leR_pmul.
     exact: leR0n.
     exact: Pr_ge0.
@@ -782,7 +780,7 @@ have -> : INR #| M | = exp2 (log (INR #| M |)).
   rewrite logK // (_ : 0 = INR 0)%R //.
   apply lt_INR. rewrite card_ord. exact/ltP.
 rewrite -ExpD.
-rewrite (_ : _ + _ = - INR n * (`I(P ; W) - log (INR #| M |) / INR n - 3 * epsilon0))%R; last first.
+rewrite (_ : _ + _ = - INR n * (`I(P, W) - log (INR #| M |) / INR n - 3 * epsilon0))%R; last first.
   field.
   apply/eqP; rewrite INR_eq0' gtn_eqF //; by case: Hn.
 rewrite (_ : _ / _ = r)%R; last by rewrite -Hk card_ord.
@@ -807,8 +805,7 @@ End random_coding_good_code_existence.
 
 Section channel_coding_theorem.
 
-Variables A B : finType.
-Variable W : `Ch_1(A, B).
+Variables (A B : finType) (W : `Ch_1(A, B)).
 Variable cap : R.
 Hypothesis Hc : capacity W cap.
 
@@ -819,18 +816,18 @@ Theorem channel_coding (r : CodeRateType) : r < cap ->
     exists n M (c : code A B M n), CodeRate c = r /\ echa(W, c) < epsilon.
 Proof.
 move=> r_I epsilon Hepsilon.
-have [P HP] : exists P : dist A, r < `I(P ; W).
+have [P HP] : exists P : dist A, r < `I(P, W).
   case: Hc => H1 H2.
   apply NNPP => abs.
-  have {abs}abs : forall P : dist A, `I(P ; W) <= r.
+  have {abs}abs : forall P : dist A, `I(P, W) <= r.
     move/not_ex_all_not in abs.
     move=> P; exact/Rnot_lt_le/abs.
   have Hcap : cap <= r by apply/H2 => P; exact/abs.
   lra.
 have [epsilon0 Hepsilon0] : exists epsilon0,
-  0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P ; W) - r) / 4.
-  exists ((Rmin (epsilon/2) ((`I(P ; W) - r) / 4))/2).
-  have H0 : 0 < Rmin (epsilon / 2) ((`I(P ; W) - r) / 4).
+  0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.
+  exists ((Rmin (epsilon/2) ((`I(P, W) - r) / 4))/2).
+  have H0 : 0 < Rmin (epsilon / 2) ((`I(P, W) - r) / 4).
     apply Rmin_pos; apply mulR_gt0 => //; lra.
   split; first by apply mulR_gt0 => //; lra.
   split; [exact/(ltR_leR_trans (Rlt_eps2_eps _ H0))/geR_minl |

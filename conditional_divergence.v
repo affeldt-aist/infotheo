@@ -182,7 +182,7 @@ case/boolP : (P a == 0) => [/eqP|] Pa0.
   move: (HV); rewrite in_set => /cond_type_equiv/(_ _ Hx a).
   move: Hx; rewrite in_set => /forallP/(_ a)/eqP; rewrite {}Pa0 => HPa sumB.
   move: HPa; rewrite -sumB => /esym; rewrite mulR_eq0 => -[/eqP|/eqP]; last first.
-    by move/invR_eq0; rewrite INR_eq0' (negbTE Hn).
+    by move/invR_eq0'; rewrite INR_eq0' (negbTE Hn).
   rewrite INR_eq0' sum_nat_eq0 => /forall_inP/(_ b erefl)/eqP => H; apply/eqP.
   by rewrite H pow_O !(mulR0,mul0R) exp2_0.
 case/boolP : (W a b == 0) => [/eqP |] Wab0.
