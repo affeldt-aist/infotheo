@@ -1,10 +1,10 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Fourier.
+Require Import Reals Fourier Ranalysis_ext Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy proba cproba convex binary_entropy_function.
-Require Import divergence.
+Require Import log_sum divergence.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -53,9 +53,11 @@ End interval.
 
 Section Hp_Dpu.
 Variables (A : finType) (p : dist A) (n : nat) (domain_not_empty : #|A| = n.+1).
-Definition u := Uniform.d domain_not_empty.
+Let u := Uniform.d domain_not_empty.
 
-Lemma Hp_Dpu : entropy p = log #|A|%:R - div p u.
+Local Open Scope divergence_scope.
+
+Lemma Hp_Dpu : entropy p = log #|A|%:R - D(p || u).
 Proof.
 rewrite /entropy /div.
 evar (RHS : A -> R).
@@ -80,34 +82,138 @@ by rewrite -addR_opp oppRD addRC -addRA Rplus_opp_l addR0.
 Qed.
 End Hp_Dpu.
 
-Section convex_pair.
+Section convex_dist.
+Variables (A : finType) (f : dist A -> R).
+
+Definition convex_dist := forall (p q : dist A) (t : R) (Ht : 0 <= t <= 1),
+  f (ConvexDist.d p q Ht) <= t * f p + t.~ * f q.
+
+End convex_dist.
+
+Definition concave_dist (A : finType) (f : dist A -> R) :=
+ convex_dist (fun x => - f x).
+
+Section convex_dist_pair.
 Variables (A : finType) (f : dist A -> dist A -> R).
 
-Definition convex_in_pair := forall (p1 p2 q1 q2 : dist A)
-  (t : R) (Ht : 0 <= t <= 1),
+Definition convex_dist_pair := forall (p1 p2 q1 q2 : dist A) (t : R) (Ht : 0 <= t <= 1),
+  p1 << q1 -> p2 << q2 ->
   f (ConvexDist.d p1 p2 Ht) (ConvexDist.d q1 q2 Ht) <=
   t * f p1 q1 + t.~ * f p2 q2.
 
-End convex_pair.
+End convex_dist_pair.
 
-Require Import log_sum.
+Definition concave_dist_pair (A : finType) (f : dist A -> dist A -> R) :=
+  convex_dist_pair (fun a b => - f a b).
 
-Section D_convex.
-Variables (A:finType) (n:nat) (domain_not_empty: #|A| = n.+1).
+Section divergence_convex.
+Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
+
+Local Open Scope divergence_scope.
 
 (* thm 2.7.2 *)
-Lemma D_convex : convex_in_pair (@div A).
+Lemma div_convex : convex_dist_pair (@div A).
 Proof.
-move=> p1 p2 q1 q2 t t01.
-move: (@log_sum A setT).
-Admitted.
+(* TODO: clean *)
+move=> p1 p2 q1 q2 t t01 pq1 pq2.
+rewrite 2!big_distrr /= -big_split /= /div.
+rewrite rsum_setT [in X in _ <= X]rsum_setT.
+apply ler_rsum => a _.
+rewrite 2!ConvexDist.dE.
+case/boolP : (q2 a == 0) => [|] q2a0.
+  rewrite (eqP q2a0) !(mul0R,mulR0,add0R).
+  have p2a0 : p2 a == 0.
+    apply/eqP.
+    move/dominatesP in pq2.
+    exact/pq2/eqP.
+  rewrite (eqP p2a0) !(mulR0,addR0,mul0R).
+  case/boolP : (q1 a == 0) => [|] q1a0.
+    have p1a0 : p1 a == 0.
+      apply/eqP.
+      move/dominatesP in pq1.
+      exact/pq1/eqP.
+    rewrite (eqP p1a0) !(mulR0,mul0R); exact/leRR.
+  case/boolP : (t == 0) => [/eqP ->|t0].
+    rewrite !mul0R; exact/leRR.
+  apply/Req_le.
+  rewrite mulRA; congr (_ * _ * log _).
+  field.
+  split; exact/eqP.
+case/boolP : (q1 a == 0) => [|] q1a0.
+  rewrite (eqP q1a0) !(mul0R,mulR0,add0R).
+  have p1a0 : p1 a == 0.
+    apply/eqP.
+    move/dominatesP in pq1.
+    exact/pq1/eqP.
+  rewrite (eqP p1a0) !(mulR0,addR0,mul0R,add0R).
+  case/boolP : (t.~ == 0) => [/eqP ->|t0].
+    rewrite !mul0R; exact/leRR.
+  apply/Req_le.
+  rewrite mulRA; congr (_ * _ * log _).
+  field.
+  split; exact/eqP.
+set h : dist A -> dist A -> 'I_2 -> R := fun p1 p2 => [eta (fun=> 0) with
+  ord0 |-> t * p1 a, lift ord0 ord0 |-> t.~ * p2 a].
+have hdom : ((h p1 p2) << (h q1 q2)).
+  apply/dominatesP => i.
+  rewrite /h /=; case: ifPn => _.
+  move/eqP. rewrite mulR_eq0 => /orP[/eqP ->|].
+  by rewrite mul0R.
+  by rewrite (negbTE q1a0).
+  case: ifPn => // _.
+  move/eqP. rewrite mulR_eq0 => /orP[/eqP ->|].
+  by rewrite mul0R.
+  by rewrite (negbTE q2a0).
+set f : 'I_2 -> R := h p1 p2.
+set g : 'I_2 -> R := h q1 q2.
+have h0 : forall p1 p2 i, 0 <= h p1 p2 i.
+  move=> ? ? ?; rewrite /h /=.
+  case: ifPn => [_ | _]; first by apply mulR_ge0; [case: t01|exact/dist_ge0].
+  case: ifPn => [_ |  _]; [|exact/leRR].
+  apply/mulR_ge0; [apply/onem_ge0; by case: t01|exact/dist_ge0].
+move: (@log_sum _ setT (mkPosFun (h0 p1 p2)) (mkPosFun (h0 q1 q2)) hdom).
+rewrite /=.
+have rsum_setT' : forall (f : 'I_2 -> R),
+  \rsum_(i < 2) f i = \rsum_(i in [set: 'I_2]) f i.
+  move=> f0; by apply eq_bigl => i; rewrite inE.
+rewrite -!rsum_setT' !big_ord_recl !big_ord0 !addR0.
+rewrite /h /=; move/leR_trans; apply.
+apply/Req_le; congr (_ + _).
+  case/boolP : (t == 0) => [/eqP ->|t0]; first by rewrite !mul0R.
+  rewrite mulRA; congr (_ * _ * log _).
+  field.
+  split; exact/eqP.
+case/boolP : (t.~ == 0) => [/eqP ->|t1]; first by rewrite !mul0R.
+rewrite mulRA; congr (_ * _ * log _).
+field.
+split; exact/eqP.
+Qed.
 
-End D_convex.
+End divergence_convex.
 
-Module alternative_proof.
-Require Import Ranalysis_ext Lra.
+Section entropy_concave.
+Variable (A : finType).
+Hypothesis A_not_empty : (0 < #|A|)%nat.
+Let A_not_empty' : #|A| = #|A|.-1.+1.
+Proof. by rewrite prednK. Qed.
+Let u : {dist A} := Uniform.d A_not_empty'.
 
-Section concavity_of_entropy.
+Local Open Scope divergence_scope.
+
+(* thm 2.7.3 *)
+Lemma entropy_concave : concave_dist (fun P : dist A => `H P).
+Proof.
+rewrite /concave_dist => p q t t01.
+rewrite !(@Hp_Dpu _ _ _ A_not_empty') /=.
+rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
+rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
+move: (div_convex t01 (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).
+by rewrite ConvexDist.idempotent.
+Qed.
+
+End entropy_concave.
+
+Module entropy_concave_alternative_proof.
 
 Lemma pderivable_H2 : pderivable H2 (mem_interval open_unit_interval).
 Proof.
@@ -253,6 +359,4 @@ wlog : x y Hx Hy Hxy / x < y.
 by move => Hxy' t Ht; apply concavity_of_entropy_x_le_y.
 Qed.
 
-End concavity_of_entropy.
-
-End alternative_proof.
+End entropy_concave_alternative_proof.
