@@ -879,8 +879,7 @@ Defined.
 Local Close Scope vec_ext_scope.
 
 Module ProdDist.
-Section ProdDist_sect.
-
+Section def.
 Variables (A B : finType) (P1 : dist A) (P2 : dist B).
 
 Definition f (ab : A * B) := (P1 ab.1 * P2 ab.2)%R.
@@ -897,8 +896,7 @@ Qed.
 Definition d : {dist A * B} := locked (makeDist f0 f1).
 
 Lemma dE x : d x = (P1 x.1 * P2 x.2)%R. Proof. by rewrite /d; unlock. Qed.
-
-End ProdDist_sect.
+End def.
 End ProdDist.
 
 Notation "P1 `x P2" := (ProdDist.d P1 P2) : proba_scope.

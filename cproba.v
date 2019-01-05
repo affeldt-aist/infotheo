@@ -614,6 +614,19 @@ Qed.
 
 End bayes.
 
+Section todo.
+Variables (A B : finType) (PQ : {dist A * B}).
+Let P := Bivar.fst PQ. Let Q := Bivar.snd PQ. Let QP := Swap.d PQ.
+Implicit Types (E : {set A}) (F : {set B}).
+
+Lemma Pr_cPr' E F : Pr PQ (setX E F) = Pr P E * \Pr_QP[F | E].
+Proof.
+case/boolP : (Pr (Bivar.fst PQ) E == 0) => [/eqP H0|H0].
+- by rewrite H0 mul0R Pr_domin_fst.
+- by rewrite /cPr -mulRCA Swap.snd mulRV // mulR1 [in RHS]Swap.Pr Swap.dI.
+Qed.
+End todo.
+
 Section conditional_probability_prop3.
 Variables (A B C : finType) (P : {dist A * B * C}).
 
