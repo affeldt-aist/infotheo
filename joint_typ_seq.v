@@ -107,170 +107,113 @@ have : (JTS_1_bound <= n)%nat ->
     [set x | x.2 \notin `TS (`O(P , W)) n epsilon] +
   Pr ( `J( P `^ n , W ``^ n))
     [set x | prod_rV x \notin `TS ( `J( P , W) ) n epsilon] <= epsilon.
-  have H1 m :
-    Pr (`J(P , W) `^ m) [set x | (rV_prod x).1 \notin `TS P m epsilon ] =
-    Pr (P `^ m) [set x | x \notin `TS P m epsilon].
-    rewrite {1}/Pr (* TODO *).
-    rewrite big_rV_prod /=.
-    rewrite -(pair_big_fst _ _ [pred x | x \notin `TS P m epsilon]) //; last first.
-      move=> t /=.
-      rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE. (* TODO: clean *)
-      do 2 f_equal.
-      apply/rowP => a; by rewrite !mxE.
-    rewrite /=.
-    transitivity (\rsum_(i | i \notin `TS P m epsilon)
-      (P `^ m i * (\rsum_(y in 'rV[B]_m) W ``(y | i)))).
-      apply eq_bigr => ta Hta.
-      rewrite mulRC big_distrl /=.
-      apply eq_bigr => tb _ /=.
-      rewrite DMCE.
-      rewrite [in RHS]TupleDist.dE -[in RHS]big_split /= TupleDist.dE.
-      apply eq_bigr => j _.
-      by rewrite JointDistChan.dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
-    transitivity (\rsum_(i | i \notin `TS P m epsilon) P `^ _ i).
-      apply eq_bigr => i _; by rewrite (pmf1 (W ``(| i))) mulR1.
-    rewrite /Pr.
-    apply eq_bigl => t; by rewrite !inE.
-  have {H1}H1 : forall n, Pr (`J(P , W) `^ n) [set x | (rV_prod x).1 \notin `TS P n epsilon ] <=
+  have H1 : forall n, Pr (`J(P , W) `^ n) [set x | (rV_prod x).1 \notin `TS P n epsilon ] <=
     Pr (P `^ n) [set x | x \notin `TS P n (epsilon / 3)].
     move=> m.
     have : 1 <= 3 by lra.
     move/(set_typ_seq_incl P m (ltRW He)) => Hincl.
-    rewrite H1.
+    rewrite (JointDistChan.Pr_DMC_fst P W (fun x => x \notin `TS P m epsilon)).
     apply/Pr_incl/subsetP => i /=; rewrite !inE.
     apply contra.
     move/subsetP : Hincl => /(_ i).
     by rewrite !inE.
   have {H1}HnP : forall n, (Z.abs_nat (up (aep_bound P (epsilon / 3))) <= n)%nat ->
     Pr (`J(P , W) `^ n) [set x | (rV_prod x).1 \notin `TS P n epsilon ] <= epsilon /3.
-    move=> n0 Hn0.
-    apply: leR_trans; first exact: (H1 n0).
-    have n0_prednK : n0.-1.+1 = n0.
-      rewrite prednK // (leq_trans _ Hn0) // (_ : O = Z.abs_nat 0) //.
+    move=> m Hm.
+    apply: leR_trans; first exact: (H1 m).
+    have m_prednK : m.-1.+1 = m.
+      rewrite prednK // (leq_trans _ Hm) // (_ : O = Z.abs_nat 0) //.
       apply/ltP/Zabs_nat_lt; split; [by [] | apply/up_pos/aep_bound_ge0; lra].
-    have : 1 - (epsilon / 3) <= Pr (P `^ n0) (`TS P n0 (epsilon/3)).
-      rewrite -n0_prednK.
+    have : 1 - (epsilon / 3) <= Pr (P `^ m) (`TS P m (epsilon/3)).
+      rewrite -m_prednK.
       apply Pr_TS_1.
       - apply divR_gt0 => //; lra.
-      - rewrite n0_prednK.
-        move/leP/le_INR : Hn0; apply leR_trans.
+      - rewrite m_prednK.
+        move/leP/le_INR : Hm; apply leR_trans.
         rewrite INR_Zabs_nat; last first.
           apply/Zlt_le_weak(*TODO: ssrZ*)/up_pos/aep_bound_ge0 => //.
           apply divR_gt0 => //; lra.
         exact/ltRW/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
     rewrite Pr_to_cplt setCK; exact/leRR.
-  have H1 m :
-    Pr (`J(P , W) `^ m) [set x | (rV_prod x).2 \notin `TS ( `O(P , W) ) m epsilon] =
-    Pr (( `O(P , W) ) `^ m) (~: `TS ( `O(P , W) ) m epsilon).
-    rewrite {1}/Pr big_rV_prod /=.
-    rewrite -(pair_big_snd _ _ [pred x | x \notin `TS (`O(P , W)) m epsilon]) //; last first.
-      move=> tab /=.
-      rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE. (* TODO: clean *)
-      do 3 f_equal.
-      apply/rowP => a; by rewrite !mxE.
-    rewrite /= /Pr /= exchange_big /=.
-    apply eq_big => tb.
-      by rewrite !inE.
-    move=> Htb.
-    rewrite TupleDist.dE.
-    etransitivity; last by apply eq_bigr => i _; rewrite OutDist.dE; reflexivity.
-    rewrite bigA_distr_bigA /=.
-  (* TODO: move *)
-  Local Open Scope ring_scope.
-  Local Open Scope vec_ext_scope.
-    rewrite (reindex_onto (fun p : 'rV[A]_m => [ffun x => p ord0 x])
-      (fun y : {ffun 'I_m -> A} => \row_(i < m) y i)) /=; last first.
-      move=> j _.
-      apply/ffunP => /= m0.
-      by rewrite ffunE mxE.
-    apply eq_big => ta.
-      rewrite inE; apply/esym.
-      by apply/eqP/rowP => a; rewrite mxE ffunE.
-    move=> k.
-    rewrite TupleDist.dE /=; apply eq_bigr => l _.
-    by rewrite JointDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE.
-  have {H1}H1 : forall n,
+  have H1 : forall n,
     Pr (`J(P , W) `^ n) [set x | (rV_prod x).2 \notin `TS ( `O(P , W) ) n epsilon ] <=
     Pr ( (`O( P , W) ) `^ n) (~: `TS ( `O( P , W) ) n (epsilon / 3)).
     move=> m.
     have : 1 <= 3 by lra.
     move/(set_typ_seq_incl (`O(P , W)) m (ltRW He)) => Hincl.
-    rewrite H1.
+    rewrite JointDistChan.Pr_DMC_out.
     apply/Pr_incl/subsetP => i /=; rewrite !inE.
     apply contra.
     move/subsetP : Hincl => /(_ i).
     by rewrite !inE.
   have {H1}HnPW : forall n, (Z.abs_nat (up (aep_bound (`O(P , W)) (epsilon / 3))) <= n)%nat ->
     Pr (`J(P , W) `^ n) [set x | (rV_prod x).2 \notin `TS (`O(P , W)) n epsilon] <= epsilon /3.
-    move=> n0 Hn0.
-    apply: leR_trans; first exact: (H1 n0).
-    have n0_prednK : n0.-1.+1 = n0.
-      rewrite prednK // (leq_trans _ Hn0) // (_ : O = Z.abs_nat 0) //.
+    move=> m Hm.
+    apply: leR_trans; first exact: (H1 m).
+    have m_prednK : m.-1.+1 = m.
+      rewrite prednK // (leq_trans _ Hm) // (_ : O = Z.abs_nat 0) //.
       apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_ge0; lra].
-    have : 1 - epsilon / 3 <=
-        Pr ((`O(P , W)) `^ n0) (`TS (`O(P , W)) n0 (epsilon / 3)).
-      rewrite -n0_prednK.
+    have : 1 - epsilon / 3 <= Pr ((`O(P , W)) `^ m) (`TS (`O(P , W)) m (epsilon / 3)).
+      rewrite -m_prednK.
       apply Pr_TS_1.
       - apply divR_gt0 => //; lra.
-      - move/leP/le_INR : Hn0.
-        rewrite n0_prednK.
+      - move/leP/le_INR : Hm.
+        rewrite m_prednK.
         apply leR_trans.
-        + rewrite INR_Zabs_nat; last first.
-            apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_ge0; lra.
-          exact/ltRW/(proj1 (archimed _ )).
+        rewrite INR_Zabs_nat; last first.
+          apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_ge0; lra.
+        exact/ltRW/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
     rewrite Pr_to_cplt setCK; exact/leRR.
-  have H1 : forall n,
-    Pr (`J(P , W) `^ n) (~: `TS (`J(P , W)) n epsilon) <=
+  have H1 : forall n, Pr (`J(P , W) `^ n) (~: `TS (`J(P , W)) n epsilon) <=
     Pr (( `J( P , W) ) `^ n) (~: `TS (`J( P , W)) n (epsilon / 3)).
     move=> m.
     have : 1 <= 3 by lra.
     move/(set_typ_seq_incl (`J( P , W)) m (ltRW He)) => Hincl.
-    apply/Pr_incl/subsetP => i /=; rewrite !inE.
+    apply/Pr_incl/subsetP => /= v; rewrite !inE.
     apply contra.
-    move/subsetP : Hincl => /(_ i).
-    by rewrite !inE.
+    move/subsetP : Hincl => /(_ v); by rewrite !inE.
   have {H1}HnP_W : forall n, (Z.abs_nat (up (aep_bound (`J(P , W)) (epsilon / 3))) <= n)%nat ->
     Pr (`J(P , W) `^ n) (~: `TS (`J( P , W)) n epsilon) <= epsilon /3.
-    move=> n0 Hn0.
-    apply: leR_trans; first exact: (H1 n0).
-    have n0_prednK : n0.-1.+1 = n0.
-      rewrite prednK // (leq_trans _ Hn0) // (_ : O = Z.abs_nat 0) //.
+    move=> m Hm.
+    apply: leR_trans; first exact: (H1 m).
+    have m_prednK : m.-1.+1 = m.
+      rewrite prednK // (leq_trans _ Hm) // (_ : O = Z.abs_nat 0) //.
       apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_ge0; lra].
-    have : 1 - epsilon / 3 <= Pr ((`J( P , W)) `^ n0) (`TS (`J( P , W)) n0 (epsilon / 3)).
-      rewrite -n0_prednK; apply Pr_TS_1.
+    have : 1 - epsilon / 3 <= Pr ((`J( P , W)) `^ m) (`TS (`J( P , W)) m (epsilon / 3)).
+      rewrite -m_prednK; apply Pr_TS_1.
       - apply divR_gt0 => //; lra.
-      - rewrite n0_prednK.
-        move/leP/le_INR : Hn0; apply leR_trans.
+      - rewrite m_prednK.
+        move/leP/le_INR : Hm; apply leR_trans.
         rewrite INR_Zabs_nat; last first.
           apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_ge0; lra.
         exact/Rlt_le/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
     rewrite Pr_to_cplt setCK; exact/leRR.
   move=> Hn.
-  rewrite [in X in _ <= X] (_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3)%R; last by field.
+  rewrite [in X in _ <= X](_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3)%R; last by field.
   move: Hn; rewrite 2!geq_max => /andP[Hn1 /andP[Hn2 Hn3]].
-  rewrite !Pr_rV_prod.
+  rewrite !JointDistChan.Pr_DMC_rV_prod.
   apply leR_add; first by apply leR_add; [exact: HnP | exact: HnPW].
   apply: leR_trans; last exact/HnP_W/Hn3.
   apply/Req_le; congr Pr; apply/setP => /= tab; by rewrite !inE rV_prodK.
-move=> n0n Hn0n0.
+move=> Hn_Pr Hn.
 suff H : Pr (`J(P , W) `^ n ) (~: `JTS P W n epsilon) <= epsilon.
   rewrite -(Pr_cplt (`J(P , W) `^ n) (`JTS P W n epsilon)).
   by rewrite leR_subl_addr leR_add2l.
-apply (@leR_trans (Pr (`J(P , W) `^ n) ([set x | ((rV_prod x).1 \notin `TS P n epsilon)] :|:
-([set x | ((rV_prod x).2 \notin `TS (`O( P , W)) n epsilon)] :|:
-          (~: `TS (`J( P , W)) n epsilon))))).
-  apply Req_le; congr Pr; apply/setP => xy.
-  by rewrite !inE 2!negb_and orbA.
-apply: leR_trans; last exact: n0n.
+apply (@leR_trans (Pr (`J(P , W) `^ n)
+                      ([set x | ((rV_prod x).1 \notin `TS P n epsilon)] :|:
+                       ([set x | ((rV_prod x).2 \notin `TS (`O( P , W)) n epsilon)] :|:
+                        (~: `TS (`J( P , W)) n epsilon))))).
+  apply Req_le; congr Pr; apply/setP => xy; by rewrite !inE 2!negb_and orbA.
+apply: leR_trans; last exact: Hn_Pr.
 apply (@leR_trans (
  Pr (`J(P , W) `^ n) [set x | (rV_prod x).1 \notin `TS P n epsilon] +
  Pr (`J(P , W) `^ n) ([set x | ((rV_prod x).2 \notin `TS (`O( P , W)) n epsilon)] :|:
-               (~: `TS (`J( P , W)) n epsilon)))%R).
+                      (~: `TS (`J( P , W)) n epsilon)))).
   exact: Pr_union.
-rewrite -addRA !Pr_rV_prod.
+rewrite -addRA !JointDistChan.Pr_DMC_rV_prod.
 apply/leR_add2l; apply: leR_trans; last exact: Pr_union.
 apply/Req_le; congr Pr; apply/setP => t; by rewrite !inE rV_prodK.
 Qed.
@@ -279,9 +222,7 @@ End jtyp_seq_transmitted.
 
 Section non_typicality.
 
-Variables A B : finType.
-Variable P : dist A.
-Variable W : `Ch_1(A, B).
+Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
 Variable n : nat.
 Variable epsilon : R.
 

@@ -259,16 +259,20 @@ Definition d : {dist A * B} := locked (makeDist f0 f1).
 Lemma dE ab : d ab = W ab.1 ab.2 * P ab.1.
 Proof. rewrite /d; unlock => /=; rewrite /f /ProdDist.f; by rewrite mulRC. Qed.
 
+Lemma fst : Bivar.fst d = P.
+Proof.
+apply/dist_ext => a; rewrite Bivar.fstE.
+evar (f : B -> R); rewrite (eq_bigr f); last first.
+  move=> b ?; rewrite dE /= /f; reflexivity.
+by rewrite {}/f -big_distrl /= pmf1 mul1R.
+Qed.
+
 End def.
-End JointDistChan.
-
-Notation "'`J(' P , W )" := (JointDistChan.d P W) : channel_scope.
-
-Section Pr_rV_prod_sect.
-
+Local Notation "'`J(' P , W )" := (JointDistChan.d P W).
+Section prop.
 Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)) (n : nat).
 
-Lemma Pr_rV_prod Q :
+Lemma Pr_DMC_rV_prod (Q : 'rV_n * 'rV_n -> bool) :
   Pr (`J(P `^ n, W ``^ n)) [set x | Q x] =
   Pr (`J(P, W)) `^ n       [set x | Q (rV_prod x)].
 Proof.
@@ -280,7 +284,64 @@ apply eq_bigr => i /= _.
 by rewrite JointDistChan.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
 
-End Pr_rV_prod_sect.
+Lemma Pr_DMC_fst (Q : 'rV_n -> bool) :
+  Pr (`J(P, W)) `^ n [set x | Q (rV_prod x).1 ] =
+  Pr P `^ n [set x | Q x ].
+Proof.
+rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=; last first.
+  move=> t /=.
+  rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE. (* TODO: clean *)
+  do 2 f_equal.
+  apply/rowP => a; by rewrite !mxE.
+transitivity (\rsum_(i | Q i) (P `^ n i * (\rsum_(y in 'rV[B]_n) W ``(y | i)))).
+  apply eq_bigr => ta Sta.
+  rewrite mulRC big_distrl /=.
+  apply eq_bigr => tb _ /=.
+  rewrite DMCE.
+  rewrite [in RHS]TupleDist.dE -[in RHS]big_split /= TupleDist.dE.
+  apply eq_bigr => j _.
+  by rewrite JointDistChan.dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
+transitivity (\rsum_(i | Q i) P `^ _ i).
+  apply eq_bigr => i _; by rewrite (pmf1 (W ``(| i))) mulR1.
+rewrite /Pr.
+apply eq_bigl => t; by rewrite !inE.
+Qed.
+
+Local Open Scope ring_scope.
+
+Lemma Pr_DMC_out m (S : {set 'rV_m}) :
+  Pr (`J(P , W) `^ m) [set x | (rV_prod x).2 \notin S] =
+  Pr (`O(P , W) `^ m) (~: S).
+Proof.
+rewrite {1}/Pr big_rV_prod /= -(pair_big_snd _ _ [pred x | x \notin S]) //=; last first.
+  move=> tab /=.
+  rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE. (* TODO: clean *)
+  do 3 f_equal.
+  apply/rowP => a; by rewrite !mxE.
+rewrite /= /Pr /= exchange_big /=.
+apply eq_big => tb.
+  by rewrite !inE.
+move=> Htb.
+rewrite TupleDist.dE.
+etransitivity; last by apply eq_bigr => i _; rewrite OutDist.dE; reflexivity.
+rewrite bigA_distr_bigA /=.
+rewrite (reindex_onto (fun p : 'rV[A]_m => [ffun x => p ord0 x])
+  (fun y : {ffun 'I_m -> A} => \row_(i < m) y i)) /=; last first.
+  move=> f _.
+  apply/ffunP => /= m0.
+  by rewrite ffunE mxE.
+apply eq_big => ta.
+  rewrite inE; apply/esym.
+  by apply/eqP/rowP => a; rewrite mxE ffunE.
+move=> Hta.
+rewrite TupleDist.dE /=; apply eq_bigr => l _.
+by rewrite JointDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE.
+Qed.
+
+End prop.
+End JointDistChan.
+
+Notation "'`J(' P , W )" := (JointDistChan.d P W) : channel_scope.
 
 (** Mutual entropy: *)
 
@@ -302,25 +363,16 @@ rewrite -(pair_big xpredT xpredT (fun a b => (`J( P, W)) (a, b) * log ((`J( P, W
 rewrite -addR_opp -oppRD /=.
 rewrite (big_morph _ morph_Ropp oppR0) -big_split /= (big_morph _ morph_Ropp oppR0).
 apply eq_bigr => // a _.
-case/boolP : (P a == 0); move=> Hcase.
-- move/eqP in Hcase.
-  rewrite Hcase !(mul0R, addR0, oppR0).
-  transitivity (- \rsum_(b : B) 0).
-    congr (- _).
-    apply eq_bigr => // b _.
-    by rewrite {1}JointDistChan.dE Hcase !(mul0R, mulR0).
-  by rewrite big_const iter_addR mulR0 oppR0.
+case/boolP : (P a == 0) => [/eqP|] Pa0.
+- rewrite Pa0 !(mul0R, addR0, oppR0) big1 ?oppR0 // => b _.
+  by rewrite JointDistChan.dE Pa0 !(mul0R, mulR0).
 - rewrite mulRC -(mulR1 (-(log (P a) * P a))) -(pmf1 (W a)).
-  rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) mulRN; f_equal.
+  rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) mulRN; congr (- _).
   rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)) -big_split /=.
   apply eq_bigr => // b _.
-  case/boolP : (W a b == 0); move=> Hcase2.
-  - move/eqP in Hcase2.
-    by rewrite {1}JointDistChan.dE Hcase2 !(mul0R, mulR0, addR0).
-  - rewrite {2}JointDistChan.dE /log LogM; last 2 first.
-    + apply/ltRP; rewrite lt0R Hcase2 /=; exact/leRP/dist_ge0.
-    + apply/ltRP; rewrite lt0R Hcase /=; exact/leRP/dist_ge0.
-+ rewrite {1}JointDistChan.dE /=; by field.
+  case/boolP : (W a b == 0) => [/eqP|] Wab0.
+  - by rewrite {1}JointDistChan.dE Wab0 !(mul0R, mulR0, addR0).
+  - rewrite {2}JointDistChan.dE /log LogM -?dist_neq0 // {1}JointDistChan.dE /=; by field.
 Qed.
 
 End condentropychan.
