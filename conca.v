@@ -506,30 +506,25 @@ Let Cond (d : dist A) :=
 
 Lemma Cond_exists (R : {dist A * B}) :
   (forall a b, \Pr_(Swap.d R)[[set b]|[set a]] = Q(a,b)) ->
-  exists H : Cond (Bivar.fst R),
-    forall a b, Bivar.fst R a <> 0 ->
-     \Pr_(Swap.d (DepProdDist.d (proj1_sig H)))[[set b]|[set a]] = Q(a,b).
+  Cond (Bivar.fst R).
 Proof.
 move=> HQ.
-have H : Cond (Bivar.fst R).
-  have H : \rsum_(ab in (prod_finType A B)) (Bivar.fst R) ab.1 * Q ab = 1.
-    transitivity (\rsum_(ab : A * B) R ab).
-      apply eq_bigr => -[a b] _.
-      rewrite -HQ /=.
-      rewrite (_ : Bivar.fst R a = Pr (Bivar.fst R) [set a]) //.
-        by rewrite -Pr_cPr' setX1 Pr_set1.
-      by rewrite Pr_set1.
-    by apply pmf1.
-  exists H => a.
-  rewrite !Bivar.fstE.
-  apply/eq_bigr => b _.
-  rewrite DepProdDist.dE.
-  rewrite -HQ /=.
-  rewrite (_ : Bivar.fst R a = Pr (Bivar.fst R) [set a]) //.
-    by rewrite -Pr_cPr' setX1 Pr_set1.
-  by rewrite Pr_set1.
-exists H.
-move=> a b HRa.
+have H : \rsum_(ab in (prod_finType A B)) (Bivar.fst R) ab.1 * Q ab = 1.
+  transitivity (\rsum_(ab : A * B) R ab).
+    apply eq_bigr => -[a b] _.
+    by rewrite -HQ /= -Pr_set1 -Pr_cPr' setX1 Pr_set1.
+  by apply pmf1.
+exists H => a.
+rewrite !Bivar.fstE.
+apply/eq_bigr => b _.
+by rewrite DepProdDist.dE -HQ /= -Pr_set1 -Pr_cPr' setX1 Pr_set1.
+Qed.
+
+Lemma Cond_cproba (d : dist A) (H : Cond d) :
+  forall a b, d a <> 0 ->
+    \Pr_(Swap.d (DepProdDist.d (proj1_sig H)))[[set b]|[set a]] = Q(a,b).
+Proof.
+move=> a b Hda.
 rewrite /cPr setX1 !Pr_set1 Swap.dE DepProdDist.dE Swap.snd.
 rewrite (proj2_sig H) /=.
 by field.
@@ -562,13 +557,7 @@ apply pconcave_distB.
   rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
   rewrite !DepProdDist.dE /= ConvexDist.dE /=.
   rewrite !(mulRA t) !(mulRA t.~).
-  have HQ: forall (d : dist A) H,
-    Bivar.fst (@DepProdDist.d _ _ d Q H) a = d a -> d a <> 0 ->
-    \Pr_(Swap.d (DepProdDist.d H))[ [set b] | [set a] ] = Q(a,b).
-    move=> d Hd Hd' Hd0.
-    rewrite /cPr setX1 !Pr_set1 Swap.dE.
-    rewrite Swap.snd DepProdDist.dE Hd' /=.
-    by field.
+  have HQ d H H' := @Cond_cproba d (exist _ H H').
   case/boolP: (t * p a == 0) => /eqP Hp.
     rewrite Hp.
     case/boolP: (t.~ * q a == 0) => /eqP Hq.
