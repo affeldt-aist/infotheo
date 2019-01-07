@@ -524,22 +524,41 @@ apply pconcave_distB.
   rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
   rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
   rewrite !DepProdDist.dE /= ConvexDist.dE /=.
-  have <- : \Pr_(Swap.d (DepProdDist.d Ppq))[ [set b] | [set a] ] =
-         \Pr_(Swap.d (DepProdDist.d Pp))[ [set b] | [set a] ].
-    rewrite /cPr !setX1 !Pr_set1 !Swap.dE.
-    rewrite !Swap.snd.
-    rewrite !DepProdDist.dE.
-    rewrite Ppq' Pp' /=.
-    admit.
-  have <- : \Pr_(Swap.d (DepProdDist.d Ppq))[ [set b] | [set a] ] =
-         \Pr_(Swap.d (DepProdDist.d Pq))[ [set b] | [set a] ].
-    rewrite /cPr !setX1 !Pr_set1 !Swap.dE.
-    rewrite !Swap.snd.
-    rewrite !DepProdDist.dE.
-    rewrite Ppq' Pq' /=.
-    admit.
-  field.
-Admitted.
+  rewrite !(mulRA t) !(mulRA t.~).
+  have HQ: forall (d : dist A) H,
+    Bivar.fst (@DepProdDist.d _ _ d Q H) a = d a -> d a <> 0 ->
+    \Pr_(Swap.d (DepProdDist.d H))[ [set b] | [set a] ] = Q(a,b).
+    move=> d Hd Hd' Hd0.
+    rewrite /cPr setX1 !Pr_set1 Swap.dE.
+    rewrite Swap.snd DepProdDist.dE Hd' /=.
+    by field.
+  case/boolP: (t * p a == 0) => /eqP Hp.
+    rewrite Hp.
+    case/boolP: (t.~ * q a == 0) => /eqP Hq.
+      rewrite Hq.
+      field.
+    rewrite !(mul0R,add0R) HQ ?Ppq' // ?HQ ?Pq' //.
+      by move/mulR_neq0: (Hq) => [].
+    by rewrite ConvexDist.dE Hp add0R.
+  case/boolP: (t.~ * q a == 0) => /eqP Hq.
+    rewrite Hq !(mul0R,addR0).
+    rewrite HQ ?Ppq' // ?HQ ?Pp' //.
+      by move/mulR_neq0: (Hp) => [].
+    by rewrite ConvexDist.dE Hq addR0.
+  rewrite HQ ?Ppq // ?HQ ?Pp' // ?HQ ?Pq' //.
+  + field.
+  + by move/mulR_neq0: (Hq) => [].
+  + by move/mulR_neq0: (Hp) => [].
+  + by rewrite Ppq'.
+  + apply gtR_eqF.
+    rewrite ConvexDist.dE.
+    move: (t01) => [t0 t1].
+    apply/addR_gt0; apply/ltRP; rewrite lt0R; apply/andP;
+      split; try (by apply/eqP);
+      apply/leRP/mulR_ge0 => //; try apply pos_f_ge0.
+    apply leR_subr_addr.
+    by rewrite add0R.
+Qed.
 
 End mutual_information_concave.
 
