@@ -506,26 +506,33 @@ Let Cond (d : dist A) :=
 
 Lemma Cond_exists (R : {dist A * B}) :
   (forall a b, \Pr_(Swap.d R)[[set b]|[set a]] = Q(a,b)) ->
-  Cond (Bivar.fst R).
+  exists H : Cond (Bivar.fst R),
+    forall a b, Bivar.fst R a <> 0 ->
+     \Pr_(Swap.d (DepProdDist.d (proj1_sig H)))[[set b]|[set a]] = Q(a,b).
 Proof.
 move=> HQ.
-rewrite /Cond.
-have H : \rsum_(ab in (prod_finType A B)) (Bivar.fst R) ab.1 * Q ab = 1.
-  transitivity (\rsum_(ab : A * B) R ab).
-    apply eq_bigr => -[a b] _.
-    rewrite -HQ /=.
-    rewrite (_ : Bivar.fst R a = Pr (Bivar.fst R) [set a]) //.
-      by rewrite -Pr_cPr' setX1 Pr_set1.
-    by rewrite Pr_set1.
-  by apply pmf1.
-exists H => a.
-rewrite !Bivar.fstE.
-apply/eq_bigr => b _.
-rewrite DepProdDist.dE.
-rewrite -HQ /=.
-rewrite (_ : Bivar.fst R a = Pr (Bivar.fst R) [set a]) //.
-  by rewrite -Pr_cPr' setX1 Pr_set1.
-by rewrite Pr_set1.
+have H : Cond (Bivar.fst R).
+  have H : \rsum_(ab in (prod_finType A B)) (Bivar.fst R) ab.1 * Q ab = 1.
+    transitivity (\rsum_(ab : A * B) R ab).
+      apply eq_bigr => -[a b] _.
+      rewrite -HQ /=.
+      rewrite (_ : Bivar.fst R a = Pr (Bivar.fst R) [set a]) //.
+        by rewrite -Pr_cPr' setX1 Pr_set1.
+      by rewrite Pr_set1.
+    by apply pmf1.
+  exists H => a.
+  rewrite !Bivar.fstE.
+  apply/eq_bigr => b _.
+  rewrite DepProdDist.dE.
+  rewrite -HQ /=.
+  rewrite (_ : Bivar.fst R a = Pr (Bivar.fst R) [set a]) //.
+    by rewrite -Pr_cPr' setX1 Pr_set1.
+  by rewrite Pr_set1.
+exists H.
+move=> a b HRa.
+rewrite /cPr setX1 !Pr_set1 Swap.dE DepProdDist.dE Swap.snd.
+rewrite (proj2_sig H) /=.
+by field.
 Qed.
 
 Lemma mutual_information_concave :
