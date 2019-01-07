@@ -494,9 +494,39 @@ Section mutual_information_concave.
 Variables (A B : finType) (Q : {dist A * B}).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
+(*
+Let Cond (d : dist A) :=
+  exists R : {dist A * B},
+    Bivar.fst R = d /\ forall a b, \Pr_(Swap.d R)[[set b]|[set a]] = Q(a,b) }.
+*)
+
 Let Cond (d : dist A) :=
   { H : \rsum_(ab in {: A * B}) d ab.1 * Q ab = 1 |
-    Bivar.fst (DepProdDist.d H) = d }.
+    Bivar.fst (DepProdDist.d H) =1 d }.
+
+Lemma Cond_exists (R : {dist A * B}) :
+  (forall a b, \Pr_(Swap.d R)[[set b]|[set a]] = Q(a,b)) ->
+  Cond (Bivar.fst R).
+Proof.
+move=> HQ.
+rewrite /Cond.
+have H : \rsum_(ab in (prod_finType A B)) (Bivar.fst R) ab.1 * Q ab = 1.
+  transitivity (\rsum_(ab : A * B) R ab).
+    apply eq_bigr => -[a b] _.
+    rewrite -HQ /=.
+    rewrite (_ : Bivar.fst R a = Pr (Bivar.fst R) [set a]) //.
+      by rewrite -Pr_cPr' setX1 Pr_set1.
+    by rewrite Pr_set1.
+  by apply pmf1.
+exists H => a.
+rewrite !Bivar.fstE.
+apply/eq_bigr => b _.
+rewrite DepProdDist.dE.
+rewrite -HQ /=.
+rewrite (_ : Bivar.fst R a = Pr (Bivar.fst R) [set a]) //.
+  by rewrite -Pr_cPr' setX1 Pr_set1.
+by rewrite Pr_set1.
+Qed.
 
 Lemma mutual_information_concave :
   pconcave_dist (fun (P : dist A) (H : Cond P) =>
@@ -549,7 +579,6 @@ apply pconcave_distB.
   + field.
   + by move/mulR_neq0: (Hq) => [].
   + by move/mulR_neq0: (Hp) => [].
-  + by rewrite Ppq'.
   + apply gtR_eqF.
     rewrite ConvexDist.dE.
     move: (t01) => [t0 t1].
