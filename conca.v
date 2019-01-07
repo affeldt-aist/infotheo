@@ -504,29 +504,31 @@ Let Cond (d : dist A) :=
   { H : \rsum_(ab in {: A * B}) d ab.1 * Q ab = 1 |
     Bivar.fst (DepProdDist.d H) =1 d }.
 
+(* If Q was taken as the conditional probability of some distribution R,
+   as intended, then Cond is satisfied *)
 Lemma Cond_exists (R : {dist A * B}) :
   (forall a b, \Pr_(Swap.d R)[[set b]|[set a]] = Q(a,b)) ->
   Cond (Bivar.fst R).
 Proof.
 move=> HQ.
-have H : \rsum_(ab in (prod_finType A B)) (Bivar.fst R) ab.1 * Q ab = 1.
-  transitivity (\rsum_(ab : A * B) R ab).
-    apply eq_bigr => -[a b] _.
-    by rewrite -HQ /= -Pr_set1 -Pr_cPr' setX1 Pr_set1.
-  by apply pmf1.
+have HRQ a b : Bivar.fst R a * Q (a, b) = R (a, b).
+  by rewrite -HQ //= -Pr_set1 -Pr_cPr' setX1 Pr_set1.
+have H : \rsum_(ab in {: A * B}) (Bivar.fst R) ab.1 * Q ab = 1.
+  rewrite -(pmf1 R).
+  by apply eq_bigr => -[a b].
 exists H => a.
 rewrite !Bivar.fstE.
 apply/eq_bigr => b _.
-by rewrite DepProdDist.dE -HQ /= -Pr_set1 -Pr_cPr' setX1 Pr_set1.
+by rewrite DepProdDist.dE.
 Qed.
 
+(* If Cond is statisfied, then the conditional probability is indeed Q *)
 Lemma Cond_cproba (d : dist A) (H : Cond d) :
   forall a b, d a <> 0 ->
     \Pr_(Swap.d (DepProdDist.d (proj1_sig H)))[[set b]|[set a]] = Q(a,b).
 Proof.
 move=> a b Hda.
-rewrite /cPr setX1 !Pr_set1 Swap.dE DepProdDist.dE Swap.snd.
-rewrite (proj2_sig H) /=.
+rewrite /cPr setX1 !Pr_set1 Swap.dE DepProdDist.dE Swap.snd (proj2_sig H) /=.
 by field.
 Qed.
 
@@ -545,8 +547,7 @@ suff : pconcave_dist (fun (P : dist A) (H : Cond P) =>
 apply pconcave_distB.
 - move: (entropy_concave B_not_empty) => H.
   move=> p q [Pp Pp'] [Pq Pq'] t t01 [Ppq Ppq'] /=.
-  move: H; rewrite /concave_dist /convex_dist.
-  move/(_ (Bivar.snd (DepProdDist.d Pp)) (Bivar.snd (DepProdDist.d Pq)) _ t01).
+  move: (H (Bivar.snd (DepProdDist.d Pp)) (Bivar.snd (DepProdDist.d Pq)) _ t01).
   rewrite !Swap.fst; apply/leR_trans.
   rewrite -DepProdDist.snd; exact/leRR.
 - move=> p q [Pp Pp'] [Pq Pq'] t t01 [Ppq Ppq'] /=.
@@ -561,8 +562,7 @@ apply pconcave_distB.
   case/boolP: (t * p a == 0) => /eqP Hp.
     rewrite Hp.
     case/boolP: (t.~ * q a == 0) => /eqP Hq.
-      rewrite Hq.
-      field.
+      rewrite Hq; field.
     rewrite !(mul0R,add0R) HQ ?Ppq' // ?HQ ?Pq' //.
       by move/mulR_neq0: (Hq) => [].
     by rewrite ConvexDist.dE Hp add0R.
