@@ -421,40 +421,46 @@ End entropy_concave_alternative_proof_binary_case.
 
 Module DepProdDist.
 Section def.
-Variables (A B : finType) (P : dist A) (Q : {: A * B} -> R+).
-Hypothesis H : \rsum_(ab in {: A * B}) P ab.1 * Q ab = 1.
+Variables (A B : finType) (P : dist A) (Q : A -> dist B).
 
-Definition f ab := P ab.1 * Q ab.
+Definition f ab := P ab.1 * Q ab.1 ab.2.
 
 Lemma f0 ab : 0 <= f ab.
 Proof. apply/mulR_ge0; [exact/dist_ge0|exact/pos_f_ge0]. Qed.
 
 Lemma f1 : \rsum_(ab in {: A * B}) f ab = 1.
-Proof. by rewrite -H. Qed.
+Proof.
+rewrite -(pair_bigA _ (fun i j => P i * Q i j)) /=.
+rewrite -(pmf1 P).
+apply eq_bigr => a _.
+by rewrite -big_distrr pmf1 /= mulR1.
+Qed.
 
 Definition d := locked (makeDist f0 f1).
 
-Lemma dE ab : d ab = P ab.1 * Q ab.
+Lemma dE ab : d ab = P ab.1 * Q ab.1 ab.2.
 Proof. by rewrite /d; unlock. Qed.
-End def.
-Section prop.
-Variables (A B : finType) (Q : {: A * B} -> R+).
-Let Cond (d : dist A) := \rsum_(ab in {: A * B}) d ab.1 * Q ab = 1.
 
-Lemma fst (p q : dist A) (Pp : Cond p) (Pq : Cond q)
-  (t : R) (t01 : 0 <= t <= 1) (Ppq : Cond (ConvexDist.d p q t01)) :
-  Bivar.fst (DepProdDist.d Ppq) =
-    ConvexDist.d (Bivar.fst (DepProdDist.d Pp)) (Bivar.fst (DepProdDist.d Pq)) t01.
+Lemma fstE : Bivar.fst d = P.
 Proof.
-apply/dist_ext => a.
-rewrite Bivar.fstE ConvexDist.dE !Bivar.fstE 2!big_distrr /=.
-rewrite -big_split; apply eq_bigr => b _ /=.
-rewrite !DepProdDist.dE /= ConvexDist.dE; field.
+apply/dist_ext=> a.
+rewrite Bivar.fstE (eq_bigr _ (fun b _ => dE (a,b))) /=.
+by rewrite -big_distrr pmf1 /= mulR1.
 Qed.
-Lemma snd (p q : dist A) (Pp : Cond p) (Pq : Cond q)
-  (t : R) (t01 : 0 <= t <= 1) (Ppq : Cond (ConvexDist.d p q t01)) :
-  Bivar.snd (DepProdDist.d Ppq) =
-    ConvexDist.d (Bivar.snd (DepProdDist.d Pp)) (Bivar.snd (DepProdDist.d Pq)) t01.
+
+End def.
+
+Section prop.
+Variables (A B : finType) (Q : A -> dist B).
+
+Lemma fst (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
+  Bivar.fst (DepProdDist.d (ConvexDist.d p q t01) Q) =
+    ConvexDist.d (Bivar.fst (DepProdDist.d p Q)) (Bivar.fst (DepProdDist.d q Q)) t01.
+Proof. by rewrite !fstE. Qed.
+
+Lemma snd (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
+  Bivar.snd (DepProdDist.d (ConvexDist.d p q t01) Q) =
+    ConvexDist.d (Bivar.snd (DepProdDist.d p Q)) (Bivar.snd (DepProdDist.d q Q)) t01.
 Proof.
 apply/dist_ext => b.
 rewrite Bivar.sndE ConvexDist.dE !Bivar.sndE 2!big_distrr /=.
@@ -468,15 +474,10 @@ Require Import chap2.
 
 Section mutual_information_concave.
 
-Variables (A B : finType) (Q : {: A * B} -> R+).
+Variables (A B : finType) (Q : A -> dist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 (*
-Let Cond (d : dist A) :=
-  exists R : {dist A * B},
-    Bivar.fst R = d /\ forall a b, \Pr_(Swap.d R)[[set b]|[set a]] = Q(a,b) }.
-*)
-
 Let Cond (P : dist A) :=
   { H : \rsum_(ab in {: A * B}) P ab.1 * Q ab = 1 |
     Bivar.fst (DepProdDist.d H) =1 P }.
@@ -498,38 +499,40 @@ rewrite !Bivar.fstE.
 apply/eq_bigr => b _.
 by rewrite DepProdDist.dE.
 Qed.
+*)
 
 (* If Cond is statisfied, then the conditional probability is indeed Q *)
-Lemma Cond_cproba (d : dist A) (H : Cond d) :
+Lemma Cond_cproba (d : dist A) :
   forall a b, d a <> 0 ->
-    \Pr_(Swap.d (DepProdDist.d (proj1_sig H)))[[set b]|[set a]] = Q(a,b).
+    \Pr_(Swap.d (DepProdDist.d d Q))[[set b]|[set a]] = Q a b.
 Proof.
 move=> a b Hda.
-rewrite /cPr setX1 !Pr_set1 Swap.dE DepProdDist.dE Swap.snd (proj2_sig H) /=.
+rewrite /cPr setX1 !Pr_set1 Swap.dE DepProdDist.dE Swap.snd DepProdDist.fstE /=.
 by field.
 Qed.
 
 Lemma mutual_information_concave :
-  pconcave_dist (fun (P : dist A) (H : Cond P) =>
-                   MutualInfo.mi (DepProdDist.d (proj1_sig H))).
+  pconcave_dist (fun (P : dist A) (H : True) =>
+                   MutualInfo.mi (DepProdDist.d P Q)).
 Proof.
-suff : pconcave_dist (fun (P : dist A) (H : Cond P) =>
-           let PQ := Swap.d (DepProdDist.d (proj1_sig H)) in
+suff : pconcave_dist (fun (P : dist A) (H : True) =>
+           let PQ := Swap.d (DepProdDist.d P Q) in
            `H (Bivar.fst PQ) - CondEntropy.h PQ).
-  set f := fun _ _ => _. set g := fun _ _ => _.
+  set f := fun _ => (_ : True -> _). set g := fun _ => (_ : True -> _).
   rewrite (FunctionalExtensionality.functional_extensionality_dep f g) //.
   move=> d; rewrite {}/f {}/g /=.
   apply FunctionalExtensionality.functional_extensionality => Hd.
   by rewrite -MutualInfo.miE2 -mi_sym.
 apply pconcave_distB.
 - move: (entropy_concave B_not_empty) => H.
-  move=> p q [Pp Pp'] [Pq Pq'] t t01 [Ppq Ppq'] /=.
+  move=> p q _ _ t t01 _ /=.
   move/convex_distP in H.
-  move: (H (Bivar.snd (DepProdDist.d Pp)) (Bivar.snd (DepProdDist.d Pq)) t t01).
+  move:
+    (H (Bivar.snd (DepProdDist.d p Q)) (Bivar.snd (DepProdDist.d q Q)) t t01).
   rewrite !Swap.fst; apply/leR_trans.
   rewrite -DepProdDist.snd; exact/leRR.
-- suff : affine_dist (fun (x : dist A) (Hx : Cond x) => CondEntropy.h (Swap.d (DepProdDist.d (sval Hx)))) by case.
-  apply/affine_distP => p q [Pp Pp'] [Pq Pq'] t t01 [Ppq Ppq'] /=.
+- suff : affine_dist (fun (x : dist A) (Hx : True) => CondEntropy.h (Swap.d (DepProdDist.d x Q))) by case.
+  apply/affine_distP => p q _ _ t t01 _ /=.
   rewrite /CondEntropy.h /CondEntropy.h1.
   rewrite 2!big_distrr /= -big_split /=; apply eq_bigr => a _.
   rewrite !Swap.snd !Bivar.fstE !mulRN -oppRD; congr (- _).
@@ -537,7 +540,7 @@ apply pconcave_distB.
   rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
   rewrite !DepProdDist.dE /= ConvexDist.dE /=.
   rewrite !(mulRA t) !(mulRA t.~).
-  have HQ d H H' := @Cond_cproba d (exist _ H H').
+  have HQ := Cond_cproba.
   case/boolP: (t * p a == 0) => /eqP Hp.
     rewrite Hp.
     case/boolP: (t.~ * q a == 0) => /eqP Hq.
