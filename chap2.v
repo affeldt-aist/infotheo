@@ -535,15 +535,11 @@ transitivity (
   - rewrite -mulRDr; congr (_ * _); rewrite mulRC logM //.
     by rewrite -cPr_Pr_setX_gt0 setX1 Pr_set1 Swap.dE -dist_neq0.
     rewrite -dist_neq0; exact: Bivar.dom_by_fstN H0.
-rewrite /CondEntropy.h [in X in _ + X = _](big_morph _ morph_Ropp oppR0); congr (_ + _).
-- (* TODO: lemma? *)
-  congr (- _); apply eq_bigr => a _.
+rewrite [in X in _ + X = _](big_morph _ morph_Ropp oppR0); congr (_ + _).
+- rewrite /entropy; congr (- _); apply eq_bigr => a _.
   by rewrite -big_distrl /= -Bivar.fstE.
-- apply eq_bigr => a _.
-  rewrite /CondEntropy.h1 /= mulRN; congr (- _).
-  rewrite big_distrr /=; apply eq_bigr => b _.
-  rewrite mulRA; congr (_ * _).
-  by rewrite -(Pr_set1 (Bivar.snd _) a) mulRC -Pr_cPr setX1 Pr_set1 Swap.dE.
+- rewrite CondEntropy.hE (big_morph _ morph_Ropp oppR0).
+  apply eq_bigr => a _; congr (- _); apply eq_bigr => b _; by rewrite !Swap.dE.
 Qed.
 
 End chain_rule.
@@ -572,22 +568,7 @@ rewrite -logM; last 2 first.
   rewrite -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
   by rewrite -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1 TripA.dE /= TripC12.dE.
 congr (_ * log _).
-(* TODO: lemma? *)
-rewrite /cPr !setX1 !Pr_set1.
-rewrite mulRCA -mulRA TripA.dE TripC12.dE /=; congr (_ * _).
-rewrite -invRM; last 2 first.
-  apply/eqP; rewrite (@Bivar.dom_by_sndN _ _ _ a) //; exact: Proj13.dominN H0.
-  apply/eqP; by rewrite (@Bivar.dom_by_sndN _ _ _ b) // TripA.dE /= TripC12.dE.
-suff -> : (Bivar.snd PR) c * (Bivar.snd QPR) (a, c) =
-  PR (a, c) * (Bivar.snd PQR) c.
-  rewrite invRM; last 2 first.
-    apply/eqP; exact: Proj13.dominN H0.
-    by apply/eqP; rewrite (@Bivar.dom_by_sndN _ _ _ (a, b)).
-  rewrite mulRA mulRV ?mul1R //; exact: Proj13.dominN H0.
-rewrite mulRC.
-congr (_ * _).
-by rewrite /PR Proj13.def.
-by rewrite /PR Proj13.snd.
+by rewrite -setX1 product_ruleC !setX1 mulRC.
 Qed.
 
 End entropy_chain_rule_corollary.
@@ -707,7 +688,6 @@ Proof.
 split; last by rewrite /mi => <-; rewrite div0P //; exact: dominatesxx.
 rewrite /mi div0P //; exact: Prod_dominates_Joint.
 Qed.
-
 End prop.
 End MutualInfo.
 
@@ -928,17 +908,10 @@ rewrite divRM; last 2 first.
   apply/eqP.
   rewrite -cPr_gt0 -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj23.dominN H0.
 rewrite {2}/Rdiv -mulRA mulRCA {1}/Rdiv [in LHS]mulRC; congr (_ * _).
-(* TODO: lemma? *)
-rewrite /cPr !setX1 !Pr_set1 TripA.dE /= {1 2}/Rdiv -mulRA; congr (_ * _).
-rewrite -invRM; last 2 first.
-  apply/eqP; exact: Bivar.dom_by_sndN H0.
-  rewrite mulR_neq0; split; apply/eqP.
-  exact: Proj23.dominN H0.
-  move/Bivar.dom_by_sndN in H0; by rewrite invR_neq0' // Proj23.snd.
-congr (/ _).
-rewrite Proj23.snd mulRCA mulRV ?mulR1 //.
-by rewrite Proj23.def.
-exact: Bivar.dom_by_sndN H0.
+rewrite -[in X in _ = X * _]setX1 product_rule setX1 -mulRA mulRV ?mulR1 //.
+rewrite /cPr mulR_neq0' setX1 !Pr_set1; apply/andP; split.
+exact: Proj23.dominN H0.
+rewrite invR_neq0' // Proj23.snd; exact: Bivar.dom_by_sndN H0.
 Qed.
 
 Let R := Bivar.snd PQR.
@@ -964,6 +937,32 @@ Lemma cmi_ge0 : 0 <= cmi PQR.
 Proof.
 rewrite cmiE2; apply rsumr_ge0 => c _.
 apply mulR_ge0; [exact: dist_ge0 | exact: cdiv1_ge0].
+Qed.
+
+Let P : dist A := Bivar.fst (TripA.d PQR).
+Let Q : dist B := Bivar.snd (Bivar.fst PQR).
+
+Lemma chain_rule_mi : MutualInfo.mi PQR = MutualInfo.mi (Proj13.d PQR) + cmi (Swap.d (TripA.d PQR)).
+Proof.
+rewrite MutualInfo.miE2.
+move: (chain_rule (Bivar.fst PQR)); rewrite /JointEntropy.h => ->.
+have -> : CondEntropy.h PQR = CondEntropy.h (Proj13.d PQR) + CondEntropy.h (TripA.d (TripC12.d PQR)).
+  by rewrite chain_rule_corollary.
+rewrite -addR_opp oppRD addRCA 2!addRA -(addRA (- _ + _)) addR_opp; congr (_ + _).
+  rewrite MutualInfo.miE2 addRC; congr (_ - _).
+  by rewrite Proj13.fst TripA.fst.
+rewrite /cmi; congr (CondEntropy.h _ - _).
+  by rewrite Proj13.def -TripC13.def TripC13.sndA.
+(* TODO: lemma *)
+rewrite /CondEntropy.h.
+rewrite (eq_bigr (fun a => (Bivar.snd (TripA.d (TripC12.d PQR))) (a.1, a.2) * CondEntropy.h1 (TripA.d (TripC12.d PQR)) (a.1, a.2))); last by case.
+rewrite -(pair_bigA _ (fun a1 a2 => (Bivar.snd (TripA.d (TripC12.d PQR))) (a1, a2) * CondEntropy.h1 (TripA.d (TripC12.d PQR)) (a1, a2))).
+rewrite exchange_big pair_big; apply eq_bigr => -[c a] _ /=; congr (_ * _).
+  rewrite !Bivar.sndE; apply eq_bigr => b _.
+  by rewrite !(Swap.dE,TripA.dE,TripC12.dE).
+rewrite /CondEntropy.h1; congr (- _).
+apply eq_bigr => b _.
+by rewrite -setX1 cPr_TripA_TripC12 setX1.
 Qed.
 End prop.
 End conditional_mutual_information.
@@ -1270,7 +1269,7 @@ Qed.
 End chain_rule_for_information.
 
 Section conditioning_reduces_entropy.
-
+Section prop.
 Variables (A B : finType) (PQ : {dist A * B}).
 Let P := Bivar.fst PQ.
 Let Q := Bivar.snd PQ.
@@ -1280,6 +1279,40 @@ Let QP := Swap.d PQ.
 Lemma information_cant_hurt : CondEntropy.h PQ <= `H P.
 Proof. rewrite -subR_ge0 -MutualInfo.miE2; exact: MutualInfo.mi_ge0. Qed.
 
+Lemma condentropy_indep : PQ = P `x Q -> CondEntropy.h PQ = `H P.
+Proof.
+move/MutualInfo.mi0P; by rewrite MutualInfo.miE2 => /eqP; rewrite subR_eq0 => /eqP <-.
+Qed.
+End prop.
+Section prop2.
+Variables (A B C : finType) (PQR : {dist A * B * C}).
+Let P : dist A := Bivar.fst (TripA.d PQR).
+Let Q : dist B := Bivar.snd (Bivar.fst PQR).
+Let R := Bivar.snd PQR.
+Lemma mi_bound : Bivar.fst PQR = P `x Q (* P and Q independent *) ->
+  MutualInfo.mi (Proj13.d PQR) + MutualInfo.mi (Proj23.d PQR) <= MutualInfo.mi PQR.
+Proof.
+move=> PQ; rewrite chain_rule_mi leR_add2l /cmi.
+rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
+  rewrite condentropy_indep; last first.
+    rewrite Proj13.fst TripA.fst Swap.fst TripA.fst_snd -/Q.
+    rewrite Proj13.snd Swap.snd -/P.
+    rewrite -[RHS]Swap.dI Swap.ProdDist -PQ.
+    apply/dist_ext => -[b a]. (* TODO: lemma? *)
+    rewrite Proj13.dE Swap.dE Bivar.fstE; apply eq_bigr => c _.
+    by rewrite Swap.dE TripA.dE.
+  by rewrite Proj13.def TripA.fst_snd TripC12.fst Swap.fst Swap.snd TripA.fst_snd -/Q.
+rewrite MutualInfo.miE2.
+rewrite Proj23.fst -/Q.
+rewrite -oppRB leR_oppl oppRB -!addR_opp leR_add2r.
+(* conditioning cannot increase entropy *)
+(* Q|R,P <= Q|R, lemma *)
+rewrite -subR_ge0.
+move: (cmi_ge0 (TripC12.d PQR)); rewrite /cmi.
+rewrite Proj13.def TripC12.dI -Proj23.def.
+by rewrite hTripC23 TripC23.def TripC12.dI.
+Qed.
+End prop2.
 End conditioning_reduces_entropy.
 
 Section markov_chain.

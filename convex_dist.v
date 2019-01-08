@@ -16,10 +16,10 @@ Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 
 Section pconvex_dist. (* p for partial *)
-Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
-Definition pconvex_dist := forall p q (Pp : P p) (Pq : P q)
-  t (Ht : 0 <= t <= 1) (Ppq : P (ConvexDist.d p q Ht)),
-  f Ppq <= t * f Pp + t.~ * f Pq.
+Variables (A : finType) (S : dist A -> Prop) (f : forall P, S P -> R).
+Definition pconvex_dist := forall p q (Sp : S p) (Sq : S q)
+  t (Ht : 0 <= t <= 1) (Spq : S (ConvexDist.d p q Ht)),
+  f Spq <= t * f Sp + t.~ * f Sq.
 End pconvex_dist.
 
 Section pconcave_dist.
@@ -477,9 +477,9 @@ Let Cond (d : dist A) :=
     Bivar.fst R = d /\ forall a b, \Pr_(Swap.d R)[[set b]|[set a]] = Q(a,b) }.
 *)
 
-Let Cond (d : dist A) :=
-  { H : \rsum_(ab in {: A * B}) d ab.1 * Q ab = 1 |
-    Bivar.fst (DepProdDist.d H) =1 d }.
+Let Cond (P : dist A) :=
+  { H : \rsum_(ab in {: A * B}) P ab.1 * Q ab = 1 |
+    Bivar.fst (DepProdDist.d H) =1 P }.
 
 (* If Q was taken as the conditional probability of some distribution R,
    as intended, then Cond is satisfied *)
