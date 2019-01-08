@@ -421,13 +421,13 @@ End entropy_concave_alternative_proof_binary_case.
 
 Module DepProdDist.
 Section def.
-Variables (A B : finType) (P : dist A) (Q : {dist A * B}).
+Variables (A B : finType) (P : dist A) (Q : {: A * B} -> R+).
 Hypothesis H : \rsum_(ab in {: A * B}) P ab.1 * Q ab = 1.
 
 Definition f ab := P ab.1 * Q ab.
 
 Lemma f0 ab : 0 <= f ab.
-Proof. apply/mulR_ge0; exact/dist_ge0. Qed.
+Proof. apply/mulR_ge0; [exact/dist_ge0|exact/pos_f_ge0]. Qed.
 
 Lemma f1 : \rsum_(ab in {: A * B}) f ab = 1.
 Proof. by rewrite -H. Qed.
