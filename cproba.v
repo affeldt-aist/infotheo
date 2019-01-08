@@ -88,6 +88,11 @@ rewrite /Pr !big_setX exchange_big /=; apply eq_bigr => b _.
 apply eq_bigr => a _; by rewrite Swap.dE.
 Qed.
 End prop.
+Section prop2.
+Variables (A B : finType) (P : dist A) (Q : dist B).
+Lemma ProdDist : Swap.d Q `x P = P `x Q.
+Proof. apply/dist_ext => -[a b]; by rewrite dE !ProdDist.dE mulRC. Qed.
+End prop2.
 End Swap.
 
 Module Self.
@@ -363,6 +368,8 @@ Proof. rewrite dE /= => /prsumr_eq0P -> // a' _; exact: dist_ge0. Qed.
 Lemma dominN a b c : P (a, b, c) != 0 -> d (b, c) != 0.
 Proof. by apply: contra => /eqP H; apply/eqP; apply: domin. Qed.
 
+Lemma fst : Bivar.fst d = Bivar.snd (Bivar.fst P).
+Proof. by rewrite def TripA.fst_snd. Qed.
 Lemma snd : Bivar.snd d = Bivar.snd P.
 Proof. by rewrite def TripA.snd_snd. Qed.
 End def.
