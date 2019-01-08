@@ -17,9 +17,9 @@ Local Open Scope reals_ext_scope.
 
 Section pconvex_dist. (* p for partial *)
 Variables (A : finType) (S : dist A -> Prop) (f : forall P, S P -> R).
-Definition pconvex_dist := forall p q (Sp : S p) (Sq : S q)
-  t (Ht : 0 <= t <= 1) (Spq : S (ConvexDist.d p q Ht)),
-  f Spq <= t * f Sp + t.~ * f Sq.
+Definition pconvex_dist := forall P Q (SP : S P) (SQ : S Q)
+  t (t01 : 0 <= t <= 1) (SPQ : S (ConvexDist.d P Q t01)),
+  f SPQ <= t * f SP + t.~ * f SPQ.
 End pconvex_dist.
 
 Section pconcave_dist.
