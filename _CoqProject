@@ -76,5 +76,6 @@ shannon_fano.v
 string_entropy.v
 cproba.v
 chap2.v
+convex_dist.v
 cinde.v
 -R . infotheo

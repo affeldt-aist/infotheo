@@ -13,51 +13,117 @@ Import Prenex Implicits.
 (* wip: concavity of relative entropy and of mutual information *)
 
 Local Open Scope proba_scope.
-Local Open Scope entropy_scope.
 Local Open Scope reals_ext_scope.
 
-Section interval.
-Lemma Rnonneg_convex : convex_interval (fun x => 0 <= x).
+Section pconvex_dist. (* p for partial *)
+Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
+Definition pconvex_dist := forall p q (Pp : P p) (Pq : P q)
+  t (Ht : 0 <= t <= 1) (Ppq : P (ConvexDist.d p q Ht)),
+  f Ppq <= t * f Pp + t.~ * f Pq.
+End pconvex_dist.
+
+Section pconcave_dist.
+Section def.
+Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
+Definition pconcave_dist := pconvex_dist (fun x (Hx : P x) => - f Hx).
+End def.
+Section prop.
+Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
+Lemma pconcave_distN : pconvex_dist f -> pconcave_dist (fun x (Hx : P x) => - f Hx).
 Proof.
-rewrite /convex_interval.
-move => x y t Hx Hy Ht.
-apply addR_ge0; apply/mulR_ge0 => //.
-by case: Ht.
-apply/onem_ge0; by case: Ht.
+move=> H; rewrite /pconcave_dist.
+rewrite (FunctionalExtensionality.functional_extensionality_dep
+  (fun _ _ => _) (fun x Hx => f Hx)) //= => x.
+apply FunctionalExtensionality.functional_extensionality => ?; by rewrite oppRK.
 Qed.
+Lemma pconvex_distN : pconcave_dist f -> pconvex_dist (fun x (Hx : P x) => - f Hx).
+Proof. by []. Qed.
+End prop.
+End pconcave_dist.
 
-Definition Rnonneg_interval := mkInterval Rnonneg_convex.
-
-Lemma open_interval_convex (a b : R) (Hab : a < b) : convex_interval (fun x => a < x < b).
+Section affine_dist.
+Section def.
+Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
+Definition affine_dist := pconvex_dist f /\ pconcave_dist f.
+End def.
+Section prop.
+Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
+Lemma affine_distP : affine_dist f <->
+  forall p q (Pp : P p) (Pq : P q) t (t01 : 0 <= t <= 1) (Ppq : P (ConvexDist.d p q t01)),
+  f Ppq = t * f Pp + t.~ * f Pq.
 Proof.
-have onem_01 : 0.~ = 1  by rewrite onem_eq1.
-have onem_10 : 1.~ = 0  by rewrite onem_eq0.
-move => x y t [Hxa Hxb] [Hya Hyb] [[Haltt|Haeqt] [Htltb|Hteqb]]
- ; [
- | by rewrite {Haltt} Hteqb onem_10 mul0R addR0 mul1R; apply conj
- | by rewrite {Htltb} -Haeqt onem_01 mul0R add0R mul1R; apply conj
- | by rewrite Hteqb in Haeqt; move : Rlt_0_1 => /Rlt_not_eq].
-have H : 0 < t.~ by apply onem_gt0.
-apply conj.
-- rewrite -[X in X < t * x + t.~ * y]mul1R -(onemKC t) mulRDl.
-  by apply ltR_add; rewrite ltR_pmul2l.
-- rewrite -[X in _ + _ < X]mul1R -(onemKC t) mulRDl.
-  by apply ltR_add; rewrite ltR_pmul2l.
+split => [[H1 H2] p q Pp Pq t t01 Ppq| H]; last split => p q Pp Pq t t01 Ppq.
+- rewrite eqR_le; split; first exact/H1.
+  rewrite -[X in X <= _](oppRK _) leR_oppl oppRD -2!mulRN; exact/H2.
+- rewrite H; exact/leRR.
+- rewrite H oppRD -2!mulRN; exact/leRR.
 Qed.
+Lemma affine_distN : affine_dist f -> affine_dist (fun x (Hx : P x) => - f Hx).
+Proof. case=> H1 H2; split => //; exact/pconcave_distN. Qed.
+End prop.
+End affine_dist.
 
-Lemma open_unit_interval_convex : convex_interval (fun x => 0 < x < 1).
-Proof. apply /open_interval_convex /Rlt_0_1. Qed.
+Section pconvex_dist_prop.
+Variables (A : finType) (P : dist A -> Prop).
+Lemma pconvex_distB (f g : forall (d : dist A), P d -> R) :
+  pconvex_dist f -> pconcave_dist g -> pconvex_dist (fun x Hx => f x Hx - g x Hx).
+Proof.
+move=> H1 H2 p q Pp Pq t t01 Ppq.
+rewrite 2!mulRBr addRAC addRA.
+move: (H1 _ _ Pp Pq _ t01 Ppq) => {H1}H1.
+rewrite -addR_opp -(addRA (_ + _)); apply leR_add => //.
+by rewrite -2!mulRN addRC.
+Qed.
+Lemma pconcave_distB (f g : forall (d : dist A), P d -> R) :
+  pconcave_dist f -> pconvex_dist g -> pconcave_dist (fun x Hx => f x Hx - g x Hx).
+Proof.
+move=> H1 H2.
+rewrite (FunctionalExtensionality.functional_extensionality_dep
+  (fun _ _ => _) (fun x Hx => - (g x Hx - f x Hx))); last first.
+  move=> x.
+  apply FunctionalExtensionality.functional_extensionality => ?; by rewrite oppRB.
+exact/pconcave_distN/pconvex_distB.
+Qed.
+End pconvex_dist_prop.
 
-Definition open_unit_interval := mkInterval open_unit_interval_convex.
-End interval.
+Section convex_dist.
+Section def.
+Variables (A : finType) (f : dist A -> R).
+Definition convex_dist := locked (@pconvex_dist A (fun _ => True) (fun d (_ : True) => f d)).
+End def.
+Section prop.
+Variables (A : finType) (f : dist A -> R).
+Lemma convex_distP : convex_dist f <->
+  forall (p q : dist A) (t : R) (Ht : 0 <= t <= 1), f (ConvexDist.d p q Ht) <= t * f p + t.~ * f q.
+Proof.
+rewrite /convex_dist; unlock => /=.
+split => [H p q t t01|H p q _ _ t t01 _]; exact/H.
+Qed.
+End prop.
+End convex_dist.
 
-Section Hp_Dpu.
-Variables (A : finType) (p : dist A) (n : nat) (domain_not_empty : #|A| = n.+1).
-Let u := Uniform.d domain_not_empty.
+Definition concave_dist (A : finType) (f : dist A -> R) :=
+ convex_dist (fun x => - f x).
+
+Section convex_dist_pair.
+Variables (A : finType) (f : dist A -> dist A -> R).
+Definition convex_dist_pair := forall (p1 p2 q1 q2 : dist A) (t : R) (Ht : 0 <= t <= 1),
+  p1 << q1 -> p2 << q2 ->
+  f (ConvexDist.d p1 p2 Ht) (ConvexDist.d q1 q2 Ht) <=
+  t * f p1 q1 + t.~ * f p2 q2.
+End convex_dist_pair.
+Definition concave_dist_pair (A : finType) (f : dist A -> dist A -> R) :=
+  convex_dist_pair (fun a b => - f a b).
+
+Local Open Scope entropy_scope.
+
+Section entropy_log_div.
+Variables (A : finType) (p : dist A) (n : nat) (A_not_empty : #|A| = n.+1).
+Let u := Uniform.d A_not_empty.
 
 Local Open Scope divergence_scope.
 
-Lemma Hp_Dpu : entropy p = log #|A|%:R - D(p || u).
+Lemma entropy_log_div : entropy p = log #|A|%:R - D(p || u).
 Proof.
 rewrite /entropy /div.
 evar (RHS : A -> R).
@@ -66,7 +132,7 @@ have H : forall a : A, p a * log (p a / u a) = RHS a.
   move : (pos_f_ge0 (pmf p) a) => [H|H].
   - rewrite Uniform.dE.
     change (p a * log (p a / / #|A|%:R)) with (p a * log (p a * / / #|A|%:R)).
-    have H0 : 0 < #|A|%:R by rewrite domain_not_empty ltR0n //.
+    have H0 : 0 < #|A|%:R by rewrite A_not_empty ltR0n.
     have H1 : #|A|%:R <> 0 by apply gtR_eqF.
     rewrite invRK // logM // mulRDr.
     by instantiate (RHS := fun a => p a * log (p a) + p a * log #|A|%:R).
@@ -80,32 +146,9 @@ rewrite -big_distrl /=.
 rewrite (pmf1 p) mul1R.
 by rewrite -addR_opp oppRD addRC -addRA Rplus_opp_l addR0.
 Qed.
-End Hp_Dpu.
+End entropy_log_div.
 
-Section convex_dist.
-Variables (A : finType) (f : dist A -> R).
-
-Definition convex_dist := forall (p q : dist A) (t : R) (Ht : 0 <= t <= 1),
-  f (ConvexDist.d p q Ht) <= t * f p + t.~ * f q.
-
-End convex_dist.
-
-Definition concave_dist (A : finType) (f : dist A -> R) :=
- convex_dist (fun x => - f x).
-
-Section convex_dist_pair.
-Variables (A : finType) (f : dist A -> dist A -> R).
-
-Definition convex_dist_pair := forall (p1 p2 q1 q2 : dist A) (t : R) (Ht : 0 <= t <= 1),
-  p1 << q1 -> p2 << q2 ->
-  f (ConvexDist.d p1 p2 Ht) (ConvexDist.d q1 q2 Ht) <=
-  t * f p1 q1 + t.~ * f p2 q2.
-
-End convex_dist_pair.
-
-Definition concave_dist_pair (A : finType) (f : dist A -> dist A -> R) :=
-  convex_dist_pair (fun a b => - f a b).
-
+(* convexity of relative entropy *)
 Section divergence_convex.
 Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
 
@@ -203,8 +246,8 @@ Local Open Scope divergence_scope.
 (* thm 2.7.3 *)
 Lemma entropy_concave : concave_dist (fun P : dist A => `H P).
 Proof.
-rewrite /concave_dist => p q t t01.
-rewrite !(@Hp_Dpu _ _ _ A_not_empty') /=.
+rewrite /concave_dist; apply/convex_distP => p q t t01.
+rewrite !(entropy_log_div _ A_not_empty') /=.
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
 rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
 move: (div_convex t01 (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).
@@ -213,7 +256,37 @@ Qed.
 
 End entropy_concave.
 
-Module entropy_concave_alternative_proof.
+Module entropy_concave_alternative_proof_binary_case.
+
+Lemma Rnonneg_convex : convex_interval (fun x => 0 <= x).
+Proof.
+rewrite /convex_interval => x y t Hx Hy Ht.
+apply addR_ge0; apply/mulR_ge0 => //; [by case: Ht | apply/onem_ge0; by case: Ht].
+Qed.
+
+Definition Rnonneg_interval := mkInterval Rnonneg_convex.
+
+Lemma open_interval_convex (a b : R) (Hab : a < b) : convex_interval (fun x => a < x < b).
+Proof.
+have onem_01 : 0.~ = 1  by rewrite onem_eq1.
+have onem_10 : 1.~ = 0  by rewrite onem_eq0.
+move => x y t [Hxa Hxb] [Hya Hyb] [[Haltt|Haeqt] [Htltb|Hteqb]]
+ ; [
+ | by rewrite {Haltt} Hteqb onem_10 mul0R addR0 mul1R; apply conj
+ | by rewrite {Htltb} -Haeqt onem_01 mul0R add0R mul1R; apply conj
+ | by rewrite Hteqb in Haeqt; move : Rlt_0_1 => /Rlt_not_eq].
+have H : 0 < t.~ by apply onem_gt0.
+apply conj.
+- rewrite -[X in X < t * x + t.~ * y]mul1R -(onemKC t) mulRDl.
+  by apply ltR_add; rewrite ltR_pmul2l.
+- rewrite -[X in _ + _ < X]mul1R -(onemKC t) mulRDl.
+  by apply ltR_add; rewrite ltR_pmul2l.
+Qed.
+
+Lemma open_unit_interval_convex : convex_interval (fun x => 0 < x < 1).
+Proof. apply /open_interval_convex /Rlt_0_1. Qed.
+
+Definition open_unit_interval := mkInterval open_unit_interval_convex.
 
 Lemma pderivable_H2 : pderivable H2 (mem_interval open_unit_interval).
 Proof.
@@ -326,21 +399,6 @@ Proof.
     by apply mulR_gt0; [apply mulR_gt0|apply ln2_gt0].
 Qed.
 
-Lemma convexf_leq_sym f x y : (forall t, 0 <= t <= 1 -> convexf_leq f x y t) ->
-  forall t, 0 <= t <= 1 -> convexf_leq f y x t.
-Proof.
-move => H t [H0t Ht1]; move: (H t.~).
-rewrite /convexf_leq onemK.
-rewrite [X in (_ -> f X <= _) -> _]addRC [X in (_ -> f _ <= X) -> _]addRC.
-apply.
-by apply conj; [apply onem_ge0 | apply onem_le1].
-Qed.
-
-Lemma convexf_on_point f x t : convexf_leq f x x t.
-Proof.
-  by rewrite /convexf_leq -2!mulRDl onemKC 2!mul1R; apply or_intror.
-Qed.
-
 Lemma concavity_of_entropy : concavef_in open_unit_interval H2.
 Proof.
 rewrite /concavef_in /concavef_leq => x y t Hx Hy Ht.
@@ -352,16 +410,14 @@ move : (Rtotal_order x y) => Hxy.
 wlog : x y Hx Hy Hxy / x < y.
   move => H.
   case Hxy; [apply H|] => //.
-  case => [-> t Ht|]; [by apply convexf_on_point|].
+  case => [-> t Ht|]; [exact/convexf_leqxx|].
   move => Hxy'; apply convexf_leq_sym.
   apply H => //.
   by apply or_introl.
 by move => Hxy' t Ht; apply concavity_of_entropy_x_le_y.
 Qed.
 
-End entropy_concave_alternative_proof.
-
-Require Import chap2.
+End entropy_concave_alternative_proof_binary_case.
 
 Module DepProdDist.
 Section def.
@@ -382,27 +438,6 @@ Lemma dE ab : d ab = P ab.1 * Q ab.
 Proof. by rewrite /d; unlock. Qed.
 End def.
 Section prop.
-(*
-Variables (A B : finType) (P : dist A) (Q : {dist B * A}).
-Hypothesis H : \rsum_(ab in {: A * B}) P ab.1 * Q (swap ab) = 1.
-
-Lemma fst : Bivar.fst (DepProdDist.d H) = P.
-Proof.
-apply/dist_ext => a.
-rewrite Bivar.fstE.
-evar (f : B -> R); rewrite (eq_bigr f); last first.
-  move=> b _.
-  rewrite dE /=.
-
-    ConvexDist.d (Bivar.fst (DepProdDist.d Pp)) (Bivar.fst (DepProdDist.d Pq)) t01.
-Proof.
-apply/dist_ext => a.
-rewrite Bivar.fstE ConvexDist.dE !Bivar.fstE 2!big_distrr /=.
-rewrite -big_split; apply eq_bigr => b _ /=.
-rewrite !DepProdDist.dE /= ConvexDist.dE; field.
-Qed.
-*)
-
 Variables (A B : finType) (Q : {dist A * B}).
 Let Cond (d : dist A) := \rsum_(ab in {: A * B}) d ab.1 * Q ab = 1.
 
@@ -429,65 +464,7 @@ Qed.
 End prop.
 End DepProdDist.
 
-Section pconvex_dist. (* partial convex_dist *)
-Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
-
-Definition pconvex_dist := forall p q (Pp : P p) (Pq : P q)
-  t (Ht : 0 <= t <= 1) (Ppq : P (ConvexDist.d p q Ht)),
-  f Ppq <= t * f Pp + t.~ * f Pq.
-
-End pconvex_dist.
-
-Section affine_dist.
-Section def.
-Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
-
-Definition affine_dist := forall p q (Pp : P p) (Pq : P q)
-  t (t01 : 0 <= t <= 1) (Ppq : P (ConvexDist.d p q t01)),
-  f Ppq = t * f Pp + t.~ * f Pq.
-End def.
-Section prop.
-Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
-
-Lemma affine_distN : affine_dist f -> affine_dist (fun x (Hx : P x) => - f Hx).
-Proof. move=> H ? ? ? ? ? ? ?; by rewrite H oppRD 2!mulRN. Qed.
-
-End prop.
-End affine_dist.
-
-Section pconvex_dist_prop.
-Variables (A : finType) (P : dist A -> Prop).
-
-Lemma pconvex_distB (f g : forall (d : dist A), P d -> R) :
-  pconvex_dist f -> affine_dist g -> pconvex_dist (fun x Hx => f x Hx - g x Hx).
-Proof.
-move=> H1 H2 p q Pp Pq t t01 Ppq.
-rewrite 2!mulRBr addRAC addRA.
-move: (H1 _ _ Pp Pq _ t01 Ppq) => {H1}H1.
-rewrite -addR_opp -(addRA (_ + _)); apply leR_add => //.
-rewrite -oppRD leR_oppl oppRK H2 addRC; exact/leRR.
-Qed.
-
-End pconvex_dist_prop.
-
-Definition pconcave_dist (A : finType) (P : dist A -> Prop)
-  (f : forall (d : dist A), P d -> R) :=
-  pconvex_dist (fun x Hx => - f x Hx).
-
-Lemma pconcave_distB (A : finType) (P : dist A -> Prop)
-  (f g : forall (d : dist A), P d -> R) :
-  pconcave_dist f -> affine_dist g -> pconcave_dist (fun x Hx => f x Hx - g x Hx).
-Proof.
-move=> H1 H2.
-rewrite /pconcave_dist.
-set h := fun _ _ => - _.
-rewrite (FunctionalExtensionality.functional_extensionality_dep
-  h (fun x Hx => - f x Hx - (- g x Hx))); last first.
-  move=> x.
-  apply FunctionalExtensionality.functional_extensionality => Hx.
-  by rewrite {}/h oppRB -[in RHS]addR_opp oppRK addRC.
-apply pconvex_distB => //; exact/affine_distN.
-Qed.
+Require Import chap2.
 
 Section mutual_information_concave.
 
@@ -547,10 +524,12 @@ suff : pconcave_dist (fun (P : dist A) (H : Cond P) =>
 apply pconcave_distB.
 - move: (entropy_concave B_not_empty) => H.
   move=> p q [Pp Pp'] [Pq Pq'] t t01 [Ppq Ppq'] /=.
-  move: (H (Bivar.snd (DepProdDist.d Pp)) (Bivar.snd (DepProdDist.d Pq)) _ t01).
+  move/convex_distP in H.
+  move: (H (Bivar.snd (DepProdDist.d Pp)) (Bivar.snd (DepProdDist.d Pq)) t t01).
   rewrite !Swap.fst; apply/leR_trans.
   rewrite -DepProdDist.snd; exact/leRR.
-- move=> p q [Pp Pp'] [Pq Pq'] t t01 [Ppq Ppq'] /=.
+- suff : affine_dist (fun (x : dist A) (Hx : Cond x) => CondEntropy.h (Swap.d (DepProdDist.d (sval Hx)))) by case.
+  apply/affine_distP => p q [Pp Pp'] [Pq Pq'] t t01 [Ppq Ppq'] /=.
   rewrite /CondEntropy.h /CondEntropy.h1.
   rewrite 2!big_distrr /= -big_split /=; apply eq_bigr => a _.
   rewrite !Swap.snd !Bivar.fstE !mulRN -oppRD; congr (- _).
@@ -593,10 +572,8 @@ Variables (A B : finType) (P : dist A).
 
 Let Cond (d : {dist B * A}) := \rsum_(ab in {: A * B}) P ab.1 * d (swap ab) = 1.
 
-Lemma mutual_information_convex :
+Fail Lemma mutual_information_convex :
   pconvex_dist
     (fun (Q : {dist B * A}) (H : Cond Q) => MutualInfo.mi (DepProdDist.d H)).
-Proof.
-Abort.
 
 End mutual_information_convex.

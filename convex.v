@@ -65,10 +65,9 @@ Definition convexf_in (D : interval) f := forall x y t : R,
 Definition strictly_convexf f := forall x y t : R,
   x != y -> 0 < t < 1 -> convexf_leq f x y t.
 
-Lemma convexf_leqxx x t f :
-  0 < x -> 0 <= t <= 1 -> convexf_leq f x x t.
+Lemma convexf_leqxx x t f : convexf_leq f x x t.
 Proof.
-move=> x0 t01; rewrite /convexf_leq.
+rewrite /convexf_leq.
 do 2 rewrite mulRBl mul1R addRCA addR_opp subRR addR0; exact/leRR.
 Qed.
 
@@ -77,6 +76,16 @@ Lemma convexf_leq_onem x y t f : 0 < x -> 0 < y -> 0 <= t <= 1 -> x < y ->
 Proof.
 move=> x0 y0 t01 xy; rewrite /convexf_leq => H.
 rewrite onemK addRC; apply: (leR_trans H); rewrite addRC; exact/leRR.
+Qed.
+
+Lemma convexf_leq_sym f x y : (forall t, 0 <= t <= 1 -> convexf_leq f x y t) ->
+  forall t, 0 <= t <= 1 -> convexf_leq f y x t.
+Proof.
+move => H t [H0t Ht1]; move: (H t.~).
+rewrite /convexf_leq onemK.
+rewrite [X in (_ -> f X <= _) -> _]addRC [X in (_ -> f _ <= X) -> _]addRC.
+apply.
+by apply conj; [apply onem_ge0 | apply onem_le1].
 Qed.
 
 End convex_function.
