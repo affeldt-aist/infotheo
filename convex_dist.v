@@ -438,7 +438,7 @@ Lemma dE ab : d ab = P ab.1 * Q ab.
 Proof. by rewrite /d; unlock. Qed.
 End def.
 Section prop.
-Variables (A B : finType) (Q : {dist A * B}).
+Variables (A B : finType) (Q : {: A * B} -> R+).
 Let Cond (d : dist A) := \rsum_(ab in {: A * B}) d ab.1 * Q ab = 1.
 
 Lemma fst (p q : dist A) (Pp : Cond p) (Pq : Cond q)
@@ -468,7 +468,7 @@ Require Import chap2.
 
 Section mutual_information_concave.
 
-Variables (A B : finType) (Q : {dist A * B}).
+Variables (A B : finType) (Q : {: A * B} -> R+).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 (*
