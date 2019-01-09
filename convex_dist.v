@@ -458,6 +458,42 @@ Qed.
 
 End mutual_information_concave.
 
+Module AffineConvexType.
+Require Import R_for_mathcomp.
+
+Definition I t := 0 <= t <= 1.
+
+Lemma Isym t : I t -> I t.~.
+Proof. by case => *; split; [apply onem_ge0|apply onem_le1]. Qed.
+
+Lemma I0 : I 0.
+Proof. split; [exact /leRR|exact (leR0n 1)]. Qed.
+
+Lemma Imul t u : I t -> I u -> I (t * u).
+Proof.
+  move => [] /leRP t0 /leRP t1 [] /leRP u0 /leRP u1; split.
+  - by apply /leRP /mulR_ge0.
+  - rewrite -[X in _ <= X]mulR1.
+      by apply /leR_pmul; apply /leRP.
+Qed.
+
+(* mixture of convex set and convex space taken from nlab, and ConvexDist *)
+Structure affineConvexType : Type :=
+  AffineConvexSet
+    { T : Type;
+      w (x y : T) (t : R) : I t -> T;
+      w0 x y : w x y I0 = y;
+      widem x t (H : I t) : w x x H = x;
+      wqcom x y t (H : I t) : w x y H = w y x (Isym H);
+      wqassoc x y z q r s (Hq : I q) (Hr : I r) (Hs : I s) :
+        let p := r * s in
+        let Hp := Imul Hr Hs in
+        s.~ = p.~ * q.~ ->
+        w x (w y z Hq) Hp = w (w x y Hr) z Hs
+    }.
+
+End AffineConvexType.
+
 Section mutual_information_convex.
 
 Variables (A B : finType) (P : dist A).
