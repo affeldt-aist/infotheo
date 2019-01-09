@@ -14,7 +14,7 @@ OUTLINE:
 *)
 
 Reserved Notation "\Pr_ P [ A | B ]" (at level 6, P, A, B at next level,
-  format "\Pr_ P [  A  |  B  ]").
+  format "\Pr_ P [ A  |  B ]").
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -90,9 +90,18 @@ Qed.
 End prop.
 Section prop2.
 Variables (A B : finType) (P : dist A) (Q : dist B).
-Lemma ProdDist : Swap.d Q `x P = P `x Q.
+Lemma ProdDist : Swap.d (Q `x P) = P `x Q.
 Proof. apply/dist_ext => -[a b]; by rewrite dE !ProdDist.dE mulRC. Qed.
 End prop2.
+Section prop3.
+Variables (A B : finType) (P : {dist A * B}) (Q : {dist A * B}).
+Local Open Scope reals_ext_scope.
+Lemma dom_by :dominates P Q -> dominates (Swap.d P) (Swap.d Q).
+Proof.
+move/dominatesP => H.
+by apply/dominatesP => -[b a]; rewrite !dE => /H.
+Qed.
+End prop3.
 End Swap.
 
 Module Self.
@@ -510,26 +519,55 @@ Notation "\Pr_ P [ E | F ]" := (cPr P E F) : proba_scope.
 
 Module CondDist.
 Section def.
-Variables (A B : finType) (PQ : {dist A * B}) (b : B).
-Hypothesis Hb : Bivar.snd PQ b != 0.
-Definition f a := \Pr_PQ [[set a] | [set b]].
-Lemma f0 a : 0 <= f a. Proof. exact: cPr_ge0. Qed.
-Lemma f1 : \rsum_(a in A) f a = 1.
-Proof. by rewrite /f /cPr -big_distrl /= PrX_snd mulRV // Pr_set1. Qed.
-Definition d : {dist A} := locked (makeDist f0 f1).
-Lemma dE a : d a = \Pr_PQ [[set a] | [set b]].
+Variables (A B : finType) (PQ : {dist A * B}) (a : A).
+Hypothesis Ha : Bivar.fst PQ a != 0.
+Definition f b := \Pr_(Swap.d PQ) [[set b] | [set a]].
+Lemma f0 b : 0 <= f b. Proof. exact: cPr_ge0. Qed.
+Lemma f1 : \rsum_(b in B) f b = 1.
+Proof.
+by rewrite /f /cPr -big_distrl /= PrX_snd mulRV // Pr_set1 Swap.snd.
+Qed.
+Definition d : {dist B} := locked (makeDist f0 f1).
+Lemma dE b : d b = \Pr_(Swap.d PQ) [[set b] | [set a]].
 Proof. by rewrite /d; unlock. Qed.
 End def.
 End CondDist.
 
 Arguments CondDist.d {A} {B} _ _ _.
 
+Module CDist.
+Section def.
+Variables (A B : finType).
+Record t := mkt {P : dist A ; W :> A -> dist B}.
+Definition joint_of (x : t) : {dist A * B} := ProdDist.d (P x) (W x).
+Definition make_joint (P : dist A) (W : A -> dist B) : {dist A * B} :=
+  joint_of (mkt P W).
+Lemma CondDistE (x : t) : forall a (a0 : Bivar.fst (joint_of x) a != 0),
+  x a = CondDist.d (joint_of x) _ a0.
+Proof.
+move=> a a0; apply/dist_ext => b.
+rewrite CondDist.dE /cPr setX1 !Pr_set1 /P Swap.dE Swap.snd ProdDist.fst.
+rewrite ProdDist.dE /=; field.
+move: a0; by rewrite ProdDist.fst => /eqP.
+Qed.
+Lemma E (x : t) a b : (P x) a <> 0 ->
+  x a b = \Pr_(Swap.d (joint_of x))[[set b]|[set a]].
+Proof.
+move=> Pxa.
+rewrite /cPr setX1 Swap.snd 2!Pr_set1 /joint_of Swap.dE ProdDist.fst.
+by rewrite ProdDist.dE /=; field.
+Qed.
+End def.
+End CDist.
+Definition cdistw (A B : finType) (x : CDist.t A B) := CDist.W x.
+Coercion cdistw : CDist.t >-> Funclass.
+
 Section conditional_probability_prop.
 
-Variables (A B : finType) (P : {dist B * A}).
+Variables (A B : finType) (P : {dist A * B}).
 
-Lemma cPr_1 a : Bivar.snd P a != 0 ->
-  \rsum_(b in B) \Pr_P[ [set b] | [set a] ] = 1.
+Lemma cPr_1 a : Bivar.fst P a != 0 ->
+  \rsum_(b in B) \Pr_(Swap.d P)[ [set b] | [set a] ] = 1.
 Proof.
 move=> Xa0; rewrite -(pmf1 (CondDist.d P _ Xa0)).
 apply eq_bigr => b _; by rewrite CondDist.dE.
@@ -541,7 +579,7 @@ Proof.
 move=> H.
 apply/eqP; rewrite -subR_eq -addR_opp oppRK /cPr -mulRDl /Pr; apply/eqP.
 rewrite !big_setX /= exchange_big /= [in X in (_ + X) * / _]exchange_big /=.
-rewrite -big_split /= (eq_bigr (fun i => \rsum_(i0 in B) P (i0, i))); last first.
+rewrite -big_split /= (eq_bigr (fun i => \rsum_(i0 in A) P (i0, i))); last first.
   move=> a aE; apply/esym; rewrite (bigID (fun x => x \in F)) /= addRC; congr (_ + _).
   by apply eq_bigl => b; rewrite !inE.
 by rewrite eqR_divr_mulr // mul1R; apply eq_bigr => a aE; rewrite Bivar.sndE.

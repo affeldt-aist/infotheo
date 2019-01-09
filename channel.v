@@ -311,13 +311,10 @@ Let QP := Swap.d (`J(P, W)).
 Lemma channel_cPr : forall a b, P a != 0 -> W a b = \Pr_QP[[set b]|[set a]].
 Proof.
 move=> a b Pa0.
-rewrite /cPr setX1 Pr_set1 Pr_set1 Swap.dE Swap.snd JointDistChan.dE /=.
-have -> : Bivar.fst (`J(P, W)) a = P a.
-  rewrite Bivar.fstE.
-  evar (f : B -> R); rewrite (eq_bigr f); last first.
-    move=> b0 _; rewrite JointDistChan.dE /= /f; reflexivity.
-  by rewrite {}/f -big_distrr /= pmf1 mulR1.
-by rewrite /Rdiv mulRAC mulRV // mul1R.
+rewrite (@CDist.E _ _ (CDist.mkt P W)) //=; last exact/eqP.
+congr cPr.
+apply/dist_ext => -[b0 a0].
+by rewrite !Swap.dE JointDistChan.dE /= /CDist.joint_of /= ProdDist.dE.
 Qed.
 
 End relation_channel_cproba.

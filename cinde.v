@@ -807,12 +807,12 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 Lemma cPr_1_RV a : (RVar.d X) a != 0 ->
   \rsum_(b <- fin_img Y) \Pr_(RVar.d [% Y, X])[ [set b] | [set a] ] = 1.
 Proof.
-rewrite -{1}(snd_RV2 Y) => Xa0.
-set Q := CondDist.d (RVar.d [% Y, X]) _ Xa0.
+rewrite -{1}(fst_RV2 _ Y) => Xa0.
+set Q := CondDist.d (RVar.d [% X, Y]) _ Xa0.
 rewrite -(pmf1 Q) [in RHS](bigID (fun b => b \in fin_img Y)) /=.
 rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   move=> b bY.
-  rewrite /Q CondDist.dE /cPr /Pr !(big_setX,big_set1) /= snd_RV2.
+  rewrite /Q CondDist.dE /cPr /Pr !(big_setX,big_set1) /= Swap.dE Swap.snd fst_RV2.
   rewrite !RVar.dE /Pr big1 ?div0R // => u.
   rewrite inE => /eqP[Yub ?].
   exfalso.
@@ -821,7 +821,7 @@ rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
 rewrite big_const iter_addR mulR0 addR0.
 rewrite big_uniq; last by rewrite /fin_img undup_uniq.
 apply eq_bigr => b; rewrite mem_undup => /mapP[u _ bWu].
-by rewrite /Q CondDist.dE.
+by rewrite /Q CondDist.dE Swap_RV2.
 Qed.
 
 End cPr_1_RV.

@@ -5,6 +5,7 @@ From mathcomp Require Import binomial ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop ln_facts.
 Require Import num_occ proba entropy channel divergence types jtypes.
+Require Import cproba chap2.
 
 (** * Conditional divergence *)
 
@@ -25,13 +26,12 @@ Local Open Scope divergence_scope.
 Local Open Scope num_occ_scope.
 Local Open Scope types_scope.
 
-Section condition_equivalence.
-
+Section conditional_dominance.
 Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
 
 Definition cdom_by := forall a, P a != 0 -> (V a) << (W a).
 
-Lemma condition_equivalence : (`J(P , V) << `J(P , W)) <-> cdom_by.
+Lemma dom_by_cdom_by : (`J(P , V) << `J(P , W)) <-> cdom_by.
 Proof.
 split; [move/dominatesP => H | move=> H; apply/dominatesP].
 - move=> a p_not_0; apply/dominatesP => b; move: (H (a, b)).
@@ -45,10 +45,9 @@ split; [move/dominatesP => H | move=> H; apply/dominatesP].
   move/eqP : b; by rewrite JointDistChan.dE mulR_eq0' /= (negbTE H1) orFb => /eqP.
 Qed.
 
-End condition_equivalence.
+End conditional_dominance.
 
 Notation "P '|-' V '<<' W" := (cdom_by V W P) : divergence_scope.
-
 Notation "P '|-' V '<<b' W" := ([forall a, (P a != 0) ==> (V a) <<b (W a)])
   : divergence_scope.
 
@@ -70,23 +69,19 @@ Qed.
 
 End joint_dom.
 
-Section conditional_divergence_def.
-
+Section conditional_divergence.
 Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
-
 Definition cdiv := \rsum_(a : A) P a * D(V a || W a).
-
-End conditional_divergence_def.
+End conditional_divergence.
 
 Notation "'D(' V '||' W '|' P ')'" := (cdiv V W P) : divergence_scope.
 
 Section conditional_divergence_prop.
-
 Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
 
 Hypothesis V_dom_by_W : P |- V << W.
 
-Lemma cdiv_is_div_joint_dist : D(V || W | P) =  D(`J(P , V) || `J(P , W)).
+Lemma cdiv_is_div_joint_dist : D(V || W | P) = D(`J(P , V) || `J(P , W)).
 Proof.
 rewrite (_ : D(V || W | P) = \rsum_(a in A) (\rsum_(b in B)
     V a b * (log (V a b / W a b)) * P a)); last first.
@@ -111,6 +106,51 @@ Lemma cdiv0P : D(V || W | P) = 0 <-> `J(P, V) = `J(P, W).
 Proof. rewrite cdiv_is_div_joint_dist; exact/div0P/joint_dominates. Qed.
 
 End conditional_divergence_prop.
+
+Section conditional_divergence_vs_conditional_relative_entropy.
+
+Variables (A B : finType) (P' Q' : A -> {dist B}) (R : dist A).
+Let P := CDist.mkt R P'.
+Let Q := CDist.mkt R Q'.
+
+Local Open Scope divergence_scope.
+Local Open Scope reals_ext_scope.
+
+Lemma cre_compat : (CDist.joint_of P) << (CDist.joint_of Q) ->
+  cre P Q = D(P || Q | R).
+Proof.
+move=> PQ.
+rewrite /cre cdiv_is_div_joint_dist; last first.
+  by apply/dom_by_cdom_by; rewrite /JointDistChan.d; unlock.
+rewrite /div.
+evar (f : A -> Rdefinitions.R); rewrite (eq_bigr f); last first.
+  move=> b _; rewrite big_distrr /= /f; reflexivity.
+rewrite {}/f pair_big /=; apply eq_bigr => -[a b] _ /=.
+rewrite (_ : JointDistChan.d R P (a, b) = (CDist.joint_of P) (a, b)); last first.
+  by rewrite JointDistChan.dE ProdDist.dE.
+rewrite (_ : JointDistChan.d R Q (a, b) = (CDist.joint_of Q) (a, b)); last first.
+  by rewrite JointDistChan.dE ProdDist.dE.
+rewrite mulRA.
+rewrite {1}/cPr.
+rewrite Swap.snd ProdDist.fst Pr_set1.
+case/boolP : (R a == 0) => [/eqP|] H.
+  by rewrite H 2!mul0R /P /CDist.joint_of /= ProdDist.dE H !mul0R.
+congr (_ * log _).
+  rewrite setX1 Pr_set1 Swap.dE ProdDist.dE /=.
+  field.
+  exact/eqP.
+rewrite /cPr !setX1 !Pr_set1 !Swap.dE.
+rewrite !Swap.snd.
+case/boolP : (CDist.joint_of Q (a, b) == 0) => [/eqP|] H'.
+  have : (CDist.joint_of P) (a, b) = 0 by move/dominatesP : PQ => ->.
+  rewrite /P ProdDist.dE /= mulR_eq0 => -[| -> ].
+    move/eqP : H; tauto.
+  by rewrite !(mulR0,mul0R,div0R).
+rewrite 2!ProdDist.fst /=; field.
+split; exact/eqP.
+Qed.
+
+End conditional_divergence_vs_conditional_relative_entropy.
 
 Section dmc_cdiv_cond_entropy.
 

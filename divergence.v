@@ -4,7 +4,7 @@ From mathcomp Require Import tuple finfun bigop.
 Require Import Reals Fourier.
 Require Import ssrR Reals_ext ln_facts logb Rbigop proba.
 
-(** * The Kullback-Leibler divergence *)
+(** * divergence (or the Kullback-Leibler distance or relative entropy) *)
 
 Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level,
   format "'D(' P  '||'  Q ')'").

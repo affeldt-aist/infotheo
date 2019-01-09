@@ -395,7 +395,6 @@ Qed.
 End entropy_concave_alternative_proof_binary_case.
 
 Require Import chap2.
-Require channel (* tmp? *).
 
 Section mutual_information_concave.
 
@@ -403,7 +402,7 @@ Variables (A B : finType) (Q : A -> dist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 (* If Cond is statisfied, then the conditional probability is indeed Q *)
-Lemma Cond_cproba (d : dist A) :
+(*Lemma Cond_cproba (d : dist A) :
   forall a b, d a <> 0 ->
     \Pr_(Swap.d (ProdDist.d d Q))[[set b]|[set a]] = Q a b.
 Proof.
@@ -411,12 +410,13 @@ move=> a b /eqP Hda.
 rewrite (@channel.channel_cPr _ _ Q d a b Hda); congr cPr.
 apply/dist_ext => -[b0 a0].
 by rewrite !Swap.dE channel.JointDistChan.dE ProdDist.dE.
-Qed.
+Qed.*)
 
-Lemma mutual_information_concave : concave_dist (fun P => MutualInfo.mi (ProdDist.d P Q)).
+Lemma mutual_information_concave :
+  concave_dist (fun P => MutualInfo.mi (CDist.make_joint P Q)).
 Proof.
-suff : concave_dist (fun P => let PQ := Swap.d (ProdDist.d P Q) in
-           `H (Bivar.fst PQ) - CondEntropy.h PQ).
+suff : concave_dist (fun P => let PQ := Swap.d (CDist.make_joint P Q) in
+                           `H (Bivar.fst PQ) - CondEntropy.h PQ).
   set f := fun _ => _. set g := fun _ => _.
   rewrite (FunctionalExtensionality.functional_extensionality f g) //.
   move=> d; rewrite {}/f {}/g /=.
@@ -424,10 +424,10 @@ suff : concave_dist (fun P => let PQ := Swap.d (ProdDist.d P Q) in
 apply concave_distB.
 - move: (entropy_concave B_not_empty) => H.
   move=> p q t t01 /=.
-  move: (H (Bivar.snd (ProdDist.d p Q)) (Bivar.snd (ProdDist.d q Q)) t t01).
-  rewrite !Swap.fst; apply/leR_trans.
+  rewrite 3!Swap.fst.
+  apply: leR_trans (H (Bivar.snd (CDist.make_joint p Q)) (Bivar.snd (CDist.make_joint q Q)) t t01).
   rewrite -ProdDist.snd_convex; exact/leRR.
-- suff : affine_dist (fun x => CondEntropy.h (Swap.d (ProdDist.d x Q))) by case.
+- suff : affine_dist (fun x => CondEntropy.h (Swap.d (CDist.make_joint x Q))) by case.
   apply/affine_distP => p q t t01 /=.
   rewrite /CondEntropy.h /CondEntropy.h1.
   rewrite 2!big_distrr /= -big_split /=; apply eq_bigr => a _.
@@ -436,31 +436,24 @@ apply concave_distB.
   rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
   rewrite !ProdDist.dE /= ConvexDist.dE /=.
   rewrite !(mulRA t) !(mulRA t.~).
-  have HQ := Cond_cproba.
   case/boolP: (t * p a == 0) => /eqP Hp.
     rewrite Hp.
     case/boolP: (t.~ * q a == 0) => /eqP Hq.
       rewrite Hq; field.
-    rewrite !(mul0R,add0R) HQ ?Ppq' // ?HQ ?Pq' //.
-      by move/mulR_neq0: (Hq) => [].
-    by rewrite ConvexDist.dE Hp add0R.
+    rewrite !(mul0R,add0R).
+    rewrite -CDist.E /=; last by rewrite ConvexDist.dE Hp add0R.
+    rewrite -CDist.E /= //; by move: Hq; rewrite mulR_neq0 => -[].
   case/boolP: (t.~ * q a == 0) => /eqP Hq.
     rewrite Hq !(mul0R,addR0).
-    rewrite HQ ?Ppq' // ?HQ ?Pp' //.
-      by move/mulR_neq0: (Hp) => [].
-    by rewrite ConvexDist.dE Hq addR0.
-  rewrite HQ ?Ppq // ?HQ ?Pp' // ?HQ ?Pq' //.
-  + field.
-  + by move/mulR_neq0: (Hq) => [].
-  + by move/mulR_neq0: (Hp) => [].
-  + apply gtR_eqF.
-    rewrite ConvexDist.dE.
-    move: (t01) => [t0 t1].
-    apply/addR_gt0; apply/ltRP; rewrite lt0R; apply/andP;
-      split; try (by apply/eqP);
-      apply/leRP/mulR_ge0 => //; try apply pos_f_ge0.
-    apply leR_subr_addr.
-    by rewrite add0R.
+    rewrite -CDist.E; last by rewrite ConvexDist.dE Hq addR0.
+    rewrite -CDist.E /= //; by move: Hp; rewrite mulR_neq0 => -[].
+  rewrite -CDist.E; last first.
+    rewrite /= ConvexDist.dE paddR_eq0; [tauto | |].
+    apply/mulR_ge0; [by case: t01 | exact/dist_ge0].
+    apply/mulR_ge0; [apply/onem_ge0; by case: t01 | exact/dist_ge0].
+  rewrite -CDist.E; last by move: Hp; rewrite mulR_neq0 => -[].
+  rewrite -CDist.E //=; last by move: Hq; rewrite mulR_neq0 => -[].
+  field.
 Qed.
 
 End mutual_information_concave.
