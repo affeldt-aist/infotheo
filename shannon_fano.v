@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import finfun choice fintype tuple bigop finset path.
 From mathcomp Require Import ssralg fingroup zmodp poly ssrnum.
 Require Import Reals Lra.
-Require Import ssrR logb Reals_ext Rbigop ssr_ext proba entropy kraft.
+Require Import ssrZ ssrR logb Reals_ext Rbigop ssr_ext proba entropy kraft.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -31,8 +31,10 @@ Section shannon_fano_def.
 
 Variables (A T : finType) (P : {dist A}).
 
+Local Open Scope zarith_ext_scope.
+
 Definition is_shannon_fano (f : Encoding.t A T) :=
-  forall s, size (f s) = Z.abs_nat (ceil (Log (INR #|T|) (1 / P s)%R)).
+  forall s, size (f s) = '| ceil (Log (INR #|T|) (1 / P s)%R) |.
 
 End shannon_fano_def.
 

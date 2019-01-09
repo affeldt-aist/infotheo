@@ -3,8 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix perm.
 Require Import Reals Lra Classical.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
-Require Import entropy aep typ_seq joint_typ_seq channel channel_code.
+Require Import ssrZ ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import proba entropy aep typ_seq joint_typ_seq channel channel_code.
 
 (** * Channel Coding Theorem (direct part) *)
 
@@ -672,11 +672,13 @@ apply/idP/idP.
     case/andP : Hm2 => _ /forallP /(_ m); by rewrite !inE m_tb m20 Hm implyTb.
 Qed.
 
+Local Open Scope zarith_ext_scope.
+
 Lemma random_coding_good_code epsilon : 0 <= epsilon ->
   forall (r : CodeRateType),
     forall epsilon0, epsilon0_condition r epsilon epsilon0 ->
     forall n, n_condition r epsilon0 n ->
-  exists M : finType, (0 < #|M|)%nat /\ #|M| = Z.abs_nat (Int_part (exp2 (INR n * r))) /\
+  exists M : finType, (0 < #|M|)%nat /\ #|M| = '| Int_part (exp2 (INR n * r)) | /\
   let Jtdec := jtdec P W epsilon0 in
   \rsum_(f : encT A M n) (Wght.d P f * echa(W , mkCode f (Jtdec f)))%R < epsilon.
 Proof.
@@ -684,9 +686,9 @@ move=> Hepsilon r epsilon0 Hepsilon0 n Hn.
 have [k Hk] : exists k, (log (INR k.+1) / INR n = r)%R.
   case: Hn => ? [? [Hn2 ?]].
   case/fp_nat : Hn2 => k Hn2.
-  exists (Z.abs_nat k).-1.
+  exists '| k |.-1.
   rewrite prednK; last first.
-    apply/ltP/INR_lt.
+    apply/ltP/INR_lt. (* TODO: ssrZ? *)
     rewrite INR_Zabs_nat; [by rewrite -Hn2 | apply le_IZR; by rewrite -Hn2].
   rewrite -(@eqR_mul2l (INR n)); last by rewrite INR_eq0; apply/eqP; rewrite -lt0n.
   rewrite mulRCA mulRV ?INR_eq0' -?lt0n // mulR1 -(exp2K (INR n * r)) Hn2 INR_Zabs_nat //.
@@ -808,6 +810,8 @@ Hypothesis Hc : capacity W cap.
 
 (** Channel Coding Theorem (direct part) *)
 
+Local Open Scope zarith_ext_scope.
+
 Theorem channel_coding (r : CodeRateType) : r < cap ->
   forall epsilon, 0 < epsilon ->
     exists n M (c : code A B M n), CodeRate c = r /\ echa(W, c) < epsilon.
@@ -833,14 +837,14 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
   destruct r as [r [num [den [Hnum [Hden Hr]]]]].
   have Hn : exists n, (0 < n)%nat /\
     - log epsilon0 / epsilon0 < INR n /\
-    (maxn (Z.abs_nat (up (aep_bound P (epsilon0 / 3))))
-    (maxn (Z.abs_nat (up (aep_bound (`O(P , W)) (epsilon0 / 3))))
-          (Z.abs_nat (up (aep_bound (`J(P , W)) (epsilon0 / 3))))) <= n)%nat.
+    (maxn '| up (aep_bound P (epsilon0 / 3)) |
+    (maxn '| up (aep_bound (`O(P , W)) (epsilon0 / 3)) |
+          '| up (aep_bound (`J(P , W)) (epsilon0 / 3)) |) <= n)%nat.
     set supermax := maxn 1
-      (maxn (Z.abs_nat (up (- log epsilon0 / epsilon0)))
-      (maxn (Z.abs_nat (up (aep_bound P (epsilon0 / 3))))
-      (maxn (Z.abs_nat (up (aep_bound (`O(P , W)) (epsilon0 / 3))))
-            (Z.abs_nat (up (aep_bound (`J(P , W)) (epsilon0 / 3))))))).
+      (maxn '| up (- log epsilon0 / epsilon0) |
+      (maxn '| up (aep_bound P (epsilon0 / 3)) |
+      (maxn '| up (aep_bound (`O(P , W)) (epsilon0 / 3)) |
+            '| up (aep_bound (`J(P , W)) (epsilon0 / 3)) |))).
     exists supermax.
     split; first by rewrite leq_max.
     split.
@@ -851,9 +855,9 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
         move: H2.
         set eps := - log epsilon0 / epsilon0.
         move=> ?; lra.
-      apply (@leR_trans (INR (Z.abs_nat (up (- log epsilon0 / epsilon0))))).
+      apply (@leR_trans (INR '| up (- log epsilon0 / epsilon0) |)).
         case: (Z_lt_le_dec (up (- log epsilon0 / epsilon0)) 0) => H1.
-          apply (@leR_trans 0); [exact/IZR_le/Zlt_le_weak(*TODO: use ssrZ?*) | exact: leR0n].
+          apply (@leR_trans 0); [exact/IZR_le/ltZW | exact: leR0n].
         rewrite INR_Zabs_nat //; exact/leRR.
       apply le_INR.
       rewrite /supermax maxnA.

@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb natbin Rbigop proba.
+Require Import ssrZ ssrR Reals_ext ssr_ext ssralg_ext logb natbin Rbigop proba.
 Require Import entropy aep typ_seq source_code.
 
 (** * Source coding theorem (direct part) *)
@@ -74,18 +74,19 @@ Qed.
 End encoder_and_decoder.
 
 Local Open Scope R_scope.
+Local Open Scope zarith_ext_scope.
 
 Lemma SrcDirectBound' d D : { k | D <= INR (k * d.+1) }.
 Proof.
-exists (Z.abs_nat (up D)).
-rewrite -multE (mult_INR (Z.abs_nat (up D)) d.+1).
-apply (@leR_trans (IZR (Z.abs (up D)))); first exact: Rle_up.
+exists '| up D |.
+rewrite -multE (mult_INR '| up D | d.+1).
+apply (@leR_trans (IZR `| up D |)); first exact: Rle_up.
 rewrite INR_IZR_INZ inj_Zabs_nat -{1}(mulR1 (IZR _)).
-apply leR_wpmul2l; first exact/IZR_le/Zabs_pos.
+apply leR_wpmul2l; first exact/IZR_le/Zabs_pos (* TODO: ssrZ? *).
 rewrite -addn1 plus_INR /= (_ : INR 1 = 1%R) //; move: (leR0n d) => ?; lra.
 Qed.
 
-Lemma SrcDirectBound d D : { k | D <= INR ((k.+1) * (d.+1)) }.
+Lemma SrcDirectBound d D : { k | D <= INR (k.+1 * d.+1) }.
 Proof.
 case: (SrcDirectBound' d D) => k Hk.
 destruct k as [|k]; last by exists k.

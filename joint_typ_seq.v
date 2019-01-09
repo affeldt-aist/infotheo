@@ -3,8 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext ssr_ext logb ssralg_ext bigop_ext Rbigop proba.
-Require Import entropy aep typ_seq channel.
+Require Import ssrZ ssrR Reals_ext ssr_ext logb ssralg_ext bigop_ext Rbigop.
+Require Import proba entropy aep typ_seq channel.
 
 (** * Jointly typical sequences *)
 
@@ -87,10 +87,12 @@ Section jtyp_seq_transmitted.
 Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
 Variable epsilon : R.
 
+Local Open Scope zarith_ext_scope.
+
 Definition JTS_1_bound :=
-  maxn (Z.abs_nat (up (aep_bound P (epsilon / 3))))
- (maxn (Z.abs_nat (up (aep_bound (`O(P , W)) (epsilon / 3))))
-       (Z.abs_nat (up (aep_bound (`J(P , W)) (epsilon / 3))))).
+  maxn '| up (aep_bound P (epsilon / 3)) |
+ (maxn '| up (aep_bound (`O(P , W)) (epsilon / 3)) |
+       '| up (aep_bound (`J(P , W)) (epsilon / 3)) |).
 
 Variable n : nat.
 Hypothesis He : 0 < epsilon.
@@ -117,12 +119,12 @@ have : (JTS_1_bound <= n)%nat ->
     apply contra.
     move/subsetP : Hincl => /(_ i).
     by rewrite !inE.
-  have {H1}HnP : forall n, (Z.abs_nat (up (aep_bound P (epsilon / 3))) <= n)%nat ->
+  have {H1}HnP : forall n, ('| up (aep_bound P (epsilon / 3)) | <= n)%nat ->
     Pr (`J(P , W) `^ n) [set x | (rV_prod x).1 \notin `TS P n epsilon ] <= epsilon /3.
     move=> m Hm.
     apply: leR_trans; first exact: (H1 m).
     have m_prednK : m.-1.+1 = m.
-      rewrite prednK // (leq_trans _ Hm) // (_ : O = Z.abs_nat 0) //.
+      rewrite prednK // (leq_trans _ Hm) // (_ : O = '| 0 |) //.
       apply/ltP/Zabs_nat_lt; split; [by [] | apply/up_pos/aep_bound_ge0; lra].
     have : 1 - (epsilon / 3) <= Pr (P `^ m) (`TS P m (epsilon/3)).
       rewrite -m_prednK.
@@ -131,7 +133,7 @@ have : (JTS_1_bound <= n)%nat ->
       - rewrite m_prednK.
         move/leP/le_INR : Hm; apply leR_trans.
         rewrite INR_Zabs_nat; last first.
-          apply/Zlt_le_weak(*TODO: ssrZ*)/up_pos/aep_bound_ge0 => //.
+          apply/ltZW/up_pos/aep_bound_ge0 => //.
           apply divR_gt0 => //; lra.
         exact/ltRW/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
@@ -147,13 +149,13 @@ have : (JTS_1_bound <= n)%nat ->
     apply contra.
     move/subsetP : Hincl => /(_ i).
     by rewrite !inE.
-  have {H1}HnPW : forall n, (Z.abs_nat (up (aep_bound (`O(P , W)) (epsilon / 3))) <= n)%nat ->
+  have {H1}HnPW : forall n, ('| up (aep_bound (`O(P , W)) (epsilon / 3)) | <= n)%nat ->
     Pr (`J(P , W) `^ n) [set x | (rV_prod x).2 \notin `TS (`O(P , W)) n epsilon] <= epsilon /3.
     move=> m Hm.
     apply: leR_trans; first exact: (H1 m).
     have m_prednK : m.-1.+1 = m.
-      rewrite prednK // (leq_trans _ Hm) // (_ : O = Z.abs_nat 0) //.
-      apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_ge0; lra].
+      rewrite prednK // (leq_trans _ Hm) // (_ : O = '| 0 |) //.
+      apply/ltP/Zabs_nat_lt (* TODO: ssrZ? *); split; [by []|apply/up_pos/aep_bound_ge0; lra].
     have : 1 - epsilon / 3 <= Pr ((`O(P , W)) `^ m) (`TS (`O(P , W)) m (epsilon / 3)).
       rewrite -m_prednK.
       apply Pr_TS_1.
@@ -162,7 +164,7 @@ have : (JTS_1_bound <= n)%nat ->
         rewrite m_prednK.
         apply leR_trans.
         rewrite INR_Zabs_nat; last first.
-          apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_ge0; lra.
+          apply/ltZW/up_pos/aep_bound_ge0; lra.
         exact/ltRW/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
     rewrite Pr_to_cplt setCK; exact/leRR.
@@ -174,12 +176,12 @@ have : (JTS_1_bound <= n)%nat ->
     apply/Pr_incl/subsetP => /= v; rewrite !inE.
     apply contra.
     move/subsetP : Hincl => /(_ v); by rewrite !inE.
-  have {H1}HnP_W : forall n, (Z.abs_nat (up (aep_bound (`J(P , W)) (epsilon / 3))) <= n)%nat ->
+  have {H1}HnP_W : forall n, ('| up (aep_bound (`J(P , W)) (epsilon / 3)) | <= n)%nat ->
     Pr (`J(P , W) `^ n) (~: `TS (`J( P , W)) n epsilon) <= epsilon /3.
     move=> m Hm.
     apply: leR_trans; first exact: (H1 m).
     have m_prednK : m.-1.+1 = m.
-      rewrite prednK // (leq_trans _ Hm) // (_ : O = Z.abs_nat 0) //.
+      rewrite prednK // (leq_trans _ Hm) // (_ : O = '| 0 |) //.
       apply/ltP/Zabs_nat_lt; split; [by []|apply/up_pos/aep_bound_ge0; lra].
     have : 1 - epsilon / 3 <= Pr ((`J( P , W)) `^ m) (`TS (`J( P , W)) m (epsilon / 3)).
       rewrite -m_prednK; apply Pr_TS_1.
@@ -187,7 +189,7 @@ have : (JTS_1_bound <= n)%nat ->
       - rewrite m_prednK.
         move/leP/le_INR : Hm; apply leR_trans.
         rewrite INR_Zabs_nat; last first.
-          apply/Zlt_le_weak(*TODO: ssrZ?*)/up_pos/aep_bound_ge0; lra.
+          apply/ltZW/up_pos/aep_bound_ge0; lra.
         exact/Rlt_le/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
     rewrite Pr_to_cplt setCK; exact/leRR.
