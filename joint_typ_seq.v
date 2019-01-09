@@ -241,8 +241,8 @@ apply (@leR_trans (\rsum_(i | i \in `JTS P W n epsilon)
   - rewrite inE in Hi.
     rewrite ProdDist.dE.
     apply leR_pmul; [exact: dist_ge0 | exact: dist_ge0 | | ].
-    exact: (proj2 (typical_sequence1_JTS Hi)).
-    exact: (proj2 (typical_sequence1_JTS' Hi)).
+    exact: proj2 (typical_sequence1_JTS Hi).
+    exact: proj2 (typical_sequence1_JTS' Hi).
   - exact/mulR_ge0.
   - rewrite inE in Hi.
     by rewrite prod_rVK eqxx andbC.

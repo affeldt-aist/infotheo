@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
@@ -241,32 +242,10 @@ Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ) )) : channel_scope.
 
 Module JointDistChan.
 Section def.
-
 Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
-
-Definition f (ab : A * B) := ProdDist.f P (W ab.1) ab.
-
-Lemma f0 (ab : A * B) : 0 <= f ab. Proof. exact: ProdDist.f0. Qed.
-
-Lemma f1 : \rsum_(ab | ab \in {: A * B}) f ab = 1.
-Proof.
-rewrite -(pair_big xpredT xpredT (fun a b => f (a, b))) /= -(pmf1 P).
-by apply eq_bigr => /= t ?; rewrite /f /ProdDist.f /= -big_distrr /= pmf1 mulR1.
-Qed.
-
-Definition d : {dist A * B} := locked (makeDist f0 f1).
-
-Lemma dE ab : d ab = W ab.1 ab.2 * P ab.1.
-Proof. rewrite /d; unlock => /=; rewrite /f /ProdDist.f; by rewrite mulRC. Qed.
-
-Lemma fst : Bivar.fst d = P.
-Proof.
-apply/dist_ext => a; rewrite Bivar.fstE.
-evar (f : B -> R); rewrite (eq_bigr f); last first.
-  move=> b ?; rewrite dE /= /f; reflexivity.
-by rewrite {}/f -big_distrl /= pmf1 mul1R.
-Qed.
-
+Definition d : {dist A * B} := locked (ProdDist.d P W).
+Lemma dE ab : d ab = P ab.1 * W ab.1 ab.2.
+Proof. by rewrite /d; unlock => /=; rewrite ProdDist.dE. Qed.
 End def.
 Local Notation "'`J(' P , W )" := (JointDistChan.d P W).
 Section prop.
@@ -295,16 +274,13 @@ rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=; last first
   apply/rowP => a; by rewrite !mxE.
 transitivity (\rsum_(i | Q i) (P `^ n i * (\rsum_(y in 'rV[B]_n) W ``(y | i)))).
   apply eq_bigr => ta Sta.
-  rewrite mulRC big_distrl /=.
-  apply eq_bigr => tb _ /=.
-  rewrite DMCE.
-  rewrite [in RHS]TupleDist.dE -[in RHS]big_split /= TupleDist.dE.
+  rewrite big_distrr; apply eq_bigr => tb _ /=.
+  rewrite DMCE [in RHS]TupleDist.dE -[in RHS]big_split /= TupleDist.dE.
   apply eq_bigr => j _.
   by rewrite JointDistChan.dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
 transitivity (\rsum_(i | Q i) P `^ _ i).
   apply eq_bigr => i _; by rewrite (pmf1 (W ``(| i))) mulR1.
-rewrite /Pr.
-apply eq_bigl => t; by rewrite !inE.
+rewrite /Pr; apply eq_bigl => t; by rewrite !inE.
 Qed.
 
 Local Open Scope ring_scope.
@@ -335,7 +311,7 @@ apply eq_big => ta.
   by apply/eqP/rowP => a; rewrite mxE ffunE.
 move=> Hta.
 rewrite TupleDist.dE /=; apply eq_bigr => l _.
-by rewrite JointDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE.
+by rewrite JointDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulRC.
 Qed.
 
 End prop.

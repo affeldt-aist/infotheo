@@ -627,9 +627,7 @@ Proof.
 rewrite /mi /div pair_big /=; apply eq_bigr; case => a b _ /=.
 case/boolP : (PQ (a, b) == 0) => [/eqP H0|H0].
 - by rewrite H0 !mul0R.
-- rewrite -[in X in _ = _ * (log (_ / X))]/((a, b).1).
-  rewrite -[in X in _ = _ * (log (_ / X))]/((a, b).2).
-  by rewrite -(ProdDist.dE P Q).
+- by rewrite ProdDist.dE.
 Qed.
 
 (* 2.39 *)
@@ -834,8 +832,7 @@ Proof.
 rewrite /cdiv1 /div; apply eq_bigr => -[a b] /= _; rewrite CondDist.dE.
 case/boolP : (\Pr_PQR[[set (a, b)]|[set c]] == 0) => [/eqP ->|H0].
   by rewrite !mul0R.
-congr (_ * log (_ / _)).
-by rewrite ProdDist.dE 2!CondDist.dE.
+by rewrite ProdDist.dE /= 2!CondDist.dE.
 Qed.
 
 Lemma cdiv1_ge0 z : 0 <= cdiv1 z.
@@ -1457,8 +1454,8 @@ have -> : Bivar.fst (`J(P, W)) a = P a.
   rewrite Bivar.fstE.
   evar (f : B -> R); rewrite (eq_bigr f); last first.
     move=> b0 _; rewrite JointDistChan.dE /= /f; reflexivity.
-  by rewrite {}/f -big_distrl /= pmf1 mul1R.
-by rewrite /Rdiv -mulRA mulRV ?mulR1.
+  by rewrite {}/f -big_distrr /= pmf1 mulR1.
+by rewrite /Rdiv mulRAC mulRV // mul1R.
 Qed.
 
 Lemma cond_entropy_chanE : `H(W | P) = CondEntropy.h QP.
@@ -1467,7 +1464,7 @@ rewrite CondEntropyChan.hE CondEntropy.hE (big_morph _ morph_Ropp oppR0).
 apply eq_bigr => a _.
 rewrite /entropy mulRN; congr (- _).
 rewrite big_distrr /=; apply eq_bigr => b _.
-rewrite !Swap.dE JointDistChan.dE /= mulRCA mulRA.
+rewrite !Swap.dE JointDistChan.dE /= mulRA.
 case/boolP : (P a == 0) => [/eqP ->|?].
   by rewrite !(mulR0,mul0R).
 by rewrite WcPr.
@@ -1480,7 +1477,7 @@ rewrite /CondEntropyChan.h -[in RHS]addR_opp oppRB addRCA addRA; congr (_ + _ + 
 congr `H.
 apply/dist_ext => b.
 rewrite OutDist.dE /QP Swap.fst Bivar.sndE; apply/eq_bigr => a _.
-by rewrite JointDistChan.dE.
+by rewrite JointDistChan.dE mulRC.
 Qed.
 
 End channel_cPr.

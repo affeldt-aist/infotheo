@@ -64,7 +64,7 @@ Hypothesis p_01 : 0 <= p <= 1.
 Let BEC := @EC.c X p p_01.
 Let q := P (Set2.a card_X).
 Local Notation W := (EC.f p).
-Local Notation P'W := (JointDistChan.f P BEC).
+Local Notation P'W := (JointDistChan.d P BEC).
 Local Notation PW := (OutDist.f P BEC).
 
 Lemma EC_non_flip (a : X) (i : option X):

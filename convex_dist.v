@@ -15,95 +15,70 @@ Import Prenex Implicits.
 Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 
-Section pconvex_dist. (* p for partial *)
-Variables (A : finType) (S : dist A -> Prop) (f : forall P, S P -> R).
-Definition pconvex_dist := forall P Q (SP : S P) (SQ : S Q)
-  t (t01 : 0 <= t <= 1) (SPQ : S (ConvexDist.d P Q t01)),
-  f SPQ <= t * f SP + t.~ * f SPQ.
-End pconvex_dist.
-
-Section pconcave_dist.
-Section def.
-Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
-Definition pconcave_dist := pconvex_dist (fun x (Hx : P x) => - f Hx).
-End def.
-Section prop.
-Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
-Lemma pconcave_distN : pconvex_dist f -> pconcave_dist (fun x (Hx : P x) => - f Hx).
-Proof.
-move=> H; rewrite /pconcave_dist.
-rewrite (FunctionalExtensionality.functional_extensionality_dep
-  (fun _ _ => _) (fun x Hx => f Hx)) //= => x.
-apply FunctionalExtensionality.functional_extensionality => ?; by rewrite oppRK.
-Qed.
-Lemma pconvex_distN : pconcave_dist f -> pconvex_dist (fun x (Hx : P x) => - f Hx).
-Proof. by []. Qed.
-End prop.
-End pconcave_dist.
-
-Section affine_dist.
-Section def.
-Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
-Definition affine_dist := pconvex_dist f /\ pconcave_dist f.
-End def.
-Section prop.
-Variables (A : finType) (P : dist A -> Prop) (f : forall (d : dist A), P d -> R).
-Lemma affine_distP : affine_dist f <->
-  forall p q (Pp : P p) (Pq : P q) t (t01 : 0 <= t <= 1) (Ppq : P (ConvexDist.d p q t01)),
-  f Ppq = t * f Pp + t.~ * f Pq.
-Proof.
-split => [[H1 H2] p q Pp Pq t t01 Ppq| H]; last split => p q Pp Pq t t01 Ppq.
-- rewrite eqR_le; split; first exact/H1.
-  rewrite -[X in X <= _](oppRK _) leR_oppl oppRD -2!mulRN; exact/H2.
-- rewrite H; exact/leRR.
-- rewrite H oppRD -2!mulRN; exact/leRR.
-Qed.
-Lemma affine_distN : affine_dist f -> affine_dist (fun x (Hx : P x) => - f Hx).
-Proof. case=> H1 H2; split => //; exact/pconcave_distN. Qed.
-End prop.
-End affine_dist.
-
-Section pconvex_dist_prop.
-Variables (A : finType) (P : dist A -> Prop).
-Lemma pconvex_distB (f g : forall (d : dist A), P d -> R) :
-  pconvex_dist f -> pconcave_dist g -> pconvex_dist (fun x Hx => f x Hx - g x Hx).
-Proof.
-move=> H1 H2 p q Pp Pq t t01 Ppq.
-rewrite 2!mulRBr addRAC addRA.
-move: (H1 _ _ Pp Pq _ t01 Ppq) => {H1}H1.
-rewrite -addR_opp -(addRA (_ + _)); apply leR_add => //.
-by rewrite -2!mulRN addRC.
-Qed.
-Lemma pconcave_distB (f g : forall (d : dist A), P d -> R) :
-  pconcave_dist f -> pconvex_dist g -> pconcave_dist (fun x Hx => f x Hx - g x Hx).
-Proof.
-move=> H1 H2.
-rewrite (FunctionalExtensionality.functional_extensionality_dep
-  (fun _ _ => _) (fun x Hx => - (g x Hx - f x Hx))); last first.
-  move=> x.
-  apply FunctionalExtensionality.functional_extensionality => ?; by rewrite oppRB.
-exact/pconcave_distN/pconvex_distB.
-Qed.
-End pconvex_dist_prop.
-
 Section convex_dist.
 Section def.
 Variables (A : finType) (f : dist A -> R).
-Definition convex_dist := locked (@pconvex_dist A (fun _ => True) (fun d (_ : True) => f d)).
+Definition convex_dist := forall (p q : dist A) (t : R) (Ht : 0 <= t <= 1),
+  f (ConvexDist.d p q Ht) <= t * f p + t.~ * f q.
+End def.
+End convex_dist.
+
+Section concave_dist.
+Section def.
+Variables (A : finType) (f : dist A -> R).
+Definition concave_dist := convex_dist (fun x => - f x).
 End def.
 Section prop.
 Variables (A : finType) (f : dist A -> R).
-Lemma convex_distP : convex_dist f <->
-  forall (p q : dist A) (t : R) (Ht : 0 <= t <= 1), f (ConvexDist.d p q Ht) <= t * f p + t.~ * f q.
+Lemma convex_distN : concave_dist f -> convex_dist (fun x => - f x).
+Proof. by []. Qed.
+Lemma concave_distN : convex_dist f -> concave_dist (fun x => - f x).
 Proof.
-rewrite /convex_dist; unlock => /=.
-split => [H p q t t01|H p q _ _ t t01 _]; exact/H.
+move=> H; rewrite /concave_dist (_ : (fun x => - - f x) = f) //.
+apply FunctionalExtensionality.functional_extensionality => ?; by rewrite oppRK.
 Qed.
 End prop.
-End convex_dist.
+Section prop2.
+Variables (A : finType).
+Lemma convex_distB (f g : dist A -> R) :
+  convex_dist f -> concave_dist g -> convex_dist (fun x => f x - g x).
+Proof.
+move=> H1 H2 p q t t01; rewrite 2!mulRBr addRAC addRA.
+move: (H1 p q t t01) => {H1}H1.
+rewrite -addR_opp -(addRA (_ + _)); apply leR_add => //; by rewrite -2!mulRN addRC.
+Qed.
+Lemma concave_distB (f g : dist A -> R) :
+  concave_dist f -> convex_dist g -> concave_dist (fun x => f x - g x).
+Proof.
+move=> H1 H2.
+rewrite (_ : (fun _ => _) = (fun x => - (g x - f x))); last first.
+  apply FunctionalExtensionality.functional_extensionality => x; by rewrite oppRB.
+exact/concave_distN/convex_distB.
+Qed.
+End prop2.
+End concave_dist.
 
-Definition concave_dist (A : finType) (f : dist A -> R) :=
- convex_dist (fun x => - f x).
+Section affine_dist.
+Section def.
+Variables (A : finType) (f : dist A -> R).
+Definition affine_dist := convex_dist f /\ concave_dist f.
+End def.
+Section prop.
+Variables (A : finType) (P : dist A -> Prop) (f : dist A -> R).
+Lemma affine_distP : affine_dist f <-> forall p q t (t01 : 0 <= t <= 1),
+  f (ConvexDist.d p q t01) = t * f p + t.~ * f q.
+Proof.
+split => [[H1 H2] p q t t01| H]; last first.
+  split.
+  - move=> p q t t01; rewrite H //; exact/leRR.
+  - move=> p q t t01; rewrite H // oppRD -!mulRN; exact/leRR.
+rewrite eqR_le; split; first exact/H1.
+rewrite -[X in X <= _](oppRK _) leR_oppl oppRD -2!mulRN; exact/H2.
+Qed.
+Lemma affine_distN : affine_dist f -> affine_dist (fun x => - f x).
+Proof. case=> H1 H2; split => //; exact/concave_distN. Qed.
+End prop.
+End affine_dist.
 
 Section convex_dist_pair.
 Variables (A : finType) (f : dist A -> dist A -> R).
@@ -246,7 +221,7 @@ Local Open Scope divergence_scope.
 (* thm 2.7.3 *)
 Lemma entropy_concave : concave_dist (fun P : dist A => `H P).
 Proof.
-rewrite /concave_dist; apply/convex_distP => p q t t01.
+rewrite /concave_dist => p q t t01.
 rewrite !(entropy_log_div _ A_not_empty') /=.
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
 rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
@@ -419,57 +394,6 @@ Qed.
 
 End entropy_concave_alternative_proof_binary_case.
 
-Module DepProdDist.
-Section def.
-Variables (A B : finType) (P : dist A) (Q : A -> dist B).
-
-Definition f ab := P ab.1 * Q ab.1 ab.2.
-
-Lemma f0 ab : 0 <= f ab.
-Proof. apply/mulR_ge0; [exact/dist_ge0|exact/pos_f_ge0]. Qed.
-
-Lemma f1 : \rsum_(ab in {: A * B}) f ab = 1.
-Proof.
-rewrite -(pair_bigA _ (fun i j => P i * Q i j)) /=.
-rewrite -(pmf1 P).
-apply eq_bigr => a _.
-by rewrite -big_distrr pmf1 /= mulR1.
-Qed.
-
-Definition d := locked (makeDist f0 f1).
-
-Lemma dE ab : d ab = P ab.1 * Q ab.1 ab.2.
-Proof. by rewrite /d; unlock. Qed.
-
-Lemma fstE : Bivar.fst d = P.
-Proof.
-apply/dist_ext=> a.
-rewrite Bivar.fstE (eq_bigr _ (fun b _ => dE (a,b))) /=.
-by rewrite -big_distrr pmf1 /= mulR1.
-Qed.
-
-End def.
-
-Section prop.
-Variables (A B : finType) (Q : A -> dist B).
-
-Lemma fst (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
-  Bivar.fst (DepProdDist.d (ConvexDist.d p q t01) Q) =
-    ConvexDist.d (Bivar.fst (DepProdDist.d p Q)) (Bivar.fst (DepProdDist.d q Q)) t01.
-Proof. by rewrite !fstE. Qed.
-
-Lemma snd (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
-  Bivar.snd (DepProdDist.d (ConvexDist.d p q t01) Q) =
-    ConvexDist.d (Bivar.snd (DepProdDist.d p Q)) (Bivar.snd (DepProdDist.d q Q)) t01.
-Proof.
-apply/dist_ext => b.
-rewrite Bivar.sndE ConvexDist.dE !Bivar.sndE 2!big_distrr /=.
-rewrite -big_split; apply eq_bigr => a _ /=.
-rewrite !DepProdDist.dE /= ConvexDist.dE; field.
-Qed.
-End prop.
-End DepProdDist.
-
 Require Import chap2.
 
 Section mutual_information_concave.
@@ -504,41 +428,36 @@ Qed.
 (* If Cond is statisfied, then the conditional probability is indeed Q *)
 Lemma Cond_cproba (d : dist A) :
   forall a b, d a <> 0 ->
-    \Pr_(Swap.d (DepProdDist.d d Q))[[set b]|[set a]] = Q a b.
+    \Pr_(Swap.d (ProdDist.d d Q))[[set b]|[set a]] = Q a b.
 Proof.
-move=> a b Hda.
-rewrite /cPr setX1 !Pr_set1 Swap.dE DepProdDist.dE Swap.snd DepProdDist.fstE /=.
-by field.
+move=> a b /eqP Hda.
+rewrite (@WcPr _ _ Q d a b Hda); congr cPr.
+apply/dist_ext => -[b0 a0].
+by rewrite !Swap.dE channel.JointDistChan.dE ProdDist.dE.
 Qed.
 
-Lemma mutual_information_concave :
-  pconcave_dist (fun (P : dist A) (H : True) =>
-                   MutualInfo.mi (DepProdDist.d P Q)).
+Lemma mutual_information_concave : concave_dist (fun P => MutualInfo.mi (ProdDist.d P Q)).
 Proof.
-suff : pconcave_dist (fun (P : dist A) (H : True) =>
-           let PQ := Swap.d (DepProdDist.d P Q) in
+suff : concave_dist (fun P => let PQ := Swap.d (ProdDist.d P Q) in
            `H (Bivar.fst PQ) - CondEntropy.h PQ).
-  set f := fun _ => (_ : True -> _). set g := fun _ => (_ : True -> _).
-  rewrite (FunctionalExtensionality.functional_extensionality_dep f g) //.
+  set f := fun _ => _. set g := fun _ => _.
+  rewrite (FunctionalExtensionality.functional_extensionality f g) //.
   move=> d; rewrite {}/f {}/g /=.
-  apply FunctionalExtensionality.functional_extensionality => Hd.
   by rewrite -MutualInfo.miE2 -mi_sym.
-apply pconcave_distB.
+apply concave_distB.
 - move: (entropy_concave B_not_empty) => H.
-  move=> p q _ _ t t01 _ /=.
-  move/convex_distP in H.
-  move:
-    (H (Bivar.snd (DepProdDist.d p Q)) (Bivar.snd (DepProdDist.d q Q)) t t01).
+  move=> p q t t01 /=.
+  move: (H (Bivar.snd (ProdDist.d p Q)) (Bivar.snd (ProdDist.d q Q)) t t01).
   rewrite !Swap.fst; apply/leR_trans.
-  rewrite -DepProdDist.snd; exact/leRR.
-- suff : affine_dist (fun (x : dist A) (Hx : True) => CondEntropy.h (Swap.d (DepProdDist.d x Q))) by case.
-  apply/affine_distP => p q _ _ t t01 _ /=.
+  rewrite -ProdDist.snd; exact/leRR.
+- suff : affine_dist (fun x => CondEntropy.h (Swap.d (ProdDist.d x Q))) by case.
+  apply/affine_distP => p q t t01 /=.
   rewrite /CondEntropy.h /CondEntropy.h1.
   rewrite 2!big_distrr /= -big_split /=; apply eq_bigr => a _.
   rewrite !Swap.snd !Bivar.fstE !mulRN -oppRD; congr (- _).
   rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
   rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
-  rewrite !DepProdDist.dE /= ConvexDist.dE /=.
+  rewrite !ProdDist.dE /= ConvexDist.dE /=.
   rewrite !(mulRA t) !(mulRA t.~).
   have HQ := Cond_cproba.
   case/boolP: (t * p a == 0) => /eqP Hp.

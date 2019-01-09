@@ -876,36 +876,52 @@ rewrite -[RHS](pmf1 d).
 exact: big_rV_1.
 Defined.
 
-Local Close Scope vec_ext_scope.
-
 Module ProdDist.
 Section def.
-Variables (A B : finType) (P1 : dist A) (P2 : dist B).
-
-Definition f (ab : A * B) := (P1 ab.1 * P2 ab.2)%R.
-
-Lemma f0 (ab : A * B) : 0 <= f ab.
-Proof. apply/mulR_ge0; exact/dist_ge0. Qed.
-
-Lemma f1 : \rsum_(ab in {: A * B}) f ab = 1%R.
+Variables (A B : finType) (P : dist A) (Q : A -> dist B) (*TODO: sto mat?*).
+Definition f ab := P ab.1 * Q ab.1 ab.2.
+Lemma f0 ab : 0 <= f ab.
+Proof. apply/mulR_ge0; [exact/dist_ge0|exact/pos_f_ge0]. Qed.
+Lemma f1 : \rsum_(ab in {: A * B}) f ab = 1.
 Proof.
-rewrite -(pair_big xpredT xpredT (fun a b => P1 a * P2 b)%R) /= -(pmf1 P1).
-apply eq_bigr => a _; by rewrite -big_distrr /= pmf1 mulR1.
+rewrite -(pair_bigA _ (fun i j => P i * Q i j)) /= -(pmf1 P).
+apply eq_bigr => a _; by rewrite -big_distrr pmf1 /= mulR1.
 Qed.
-
-Definition d : {dist A * B} := locked (makeDist f0 f1).
-
-Lemma dE x : d x = (P1 x.1 * P2 x.2)%R. Proof. by rewrite /d; unlock. Qed.
+Definition d := locked (makeDist f0 f1).
+Lemma dE ab : d ab = P ab.1 * Q ab.1 ab.2.
+Proof. by rewrite /d; unlock. Qed.
+Lemma fst : Bivar.fst d = P.
+Proof.
+apply/dist_ext=> a; rewrite Bivar.fstE (eq_bigr _ (fun b _ => dE (a,b))) /=.
+by rewrite -big_distrr pmf1 /= mulR1.
+Qed.
 End def.
+Section prop.
+Variables (A B : finType) (Q : A -> dist B).
+Lemma fst_convex (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
+  Bivar.fst (d (ConvexDist.d p q t01) Q) =
+    ConvexDist.d (Bivar.fst (d p Q)) (Bivar.fst (d q Q)) t01.
+Proof. by rewrite !fst. Qed.
+Lemma snd (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
+  Bivar.snd (d (ConvexDist.d p q t01) Q) =
+    ConvexDist.d (Bivar.snd (d p Q)) (Bivar.snd (d q Q)) t01.
+Proof.
+apply/dist_ext => b.
+rewrite Bivar.sndE ConvexDist.dE !Bivar.sndE 2!big_distrr /=.
+rewrite -big_split; apply eq_bigr => a _; rewrite !dE ConvexDist.dE /=; field.
+Qed.
+End prop.
 End ProdDist.
 
-Notation "P1 `x P2" := (ProdDist.d P1 P2) : proba_scope.
+Local Close Scope vec_ext_scope.
+
+(* notation for product distribution *)
+Notation "P1 `x P2" := (ProdDist.d P1 (fun _ => P2)) : proba_scope.
 
 Module TupleDist.
-Section tupledist.
-Variables (A : finType) (P : dist A) (n : nat).
-
 Local Open Scope vec_ext_scope.
+Section def.
+Variables (A : finType) (P : dist A) (n : nat).
 
 Definition f (t : 'rV[A]_n) := \rprod_(i < n) P t ``_ i.
 
@@ -937,14 +953,10 @@ Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
 Lemma dE t : d t = \rprod_(i < n) P t ``_ i.
 Proof. rewrite /d; by unlock. Qed.
 
-End tupledist.
-
+End def.
 Local Notation "P `^ n" := (d P n).
-
-Section tupledist_prop.
+Section prop.
 Variable B : finType.
-
-Local Open Scope vec_ext_scope.
 
 Lemma zero (x : 'rV[B]_0) P : P `^ 0 x = 1%R.
 Proof. by rewrite dE big_ord0. Qed.
@@ -958,7 +970,7 @@ Qed.
 Lemma one (a : 'rV[B]_1) P : (P `^ 1) a = P (a ``_ ord0).
 Proof. by rewrite S zero mulR1. Qed.
 
-End tupledist_prop.
+End prop.
 
 (* The tuple distribution as a joint distribution *)
 Section joint_tuple_dist.

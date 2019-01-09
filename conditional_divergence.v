@@ -36,13 +36,13 @@ Proof.
 split; [move/dominatesP => H | move=> H; apply/dominatesP].
 - move=> a p_not_0; apply/dominatesP => b; move: (H (a, b)).
   rewrite JointDistChan.dE /= => H0 H1.
-  move: H0; rewrite H1 mul0R => /(_ erefl)/eqP.
-  by rewrite JointDistChan.dE mulR_eq0' /= (negbTE p_not_0) orbF => /eqP.
+  move: H0; rewrite H1 mulR0 => /(_ erefl)/eqP.
+  by rewrite JointDistChan.dE mulR_eq0' /= (negbTE p_not_0) orFb => /eqP.
 - case=> a p_not_0 b; move: {H}(H a) => H.
   rewrite JointDistChan.dE /=.
-  case/boolP : (P a == 0) => [/eqP -> | H1]; first by rewrite mulR0.
-  move: {H}(H H1) => /dominatesP ->; first by rewrite mul0R.
-  move/eqP : b; by rewrite JointDistChan.dE mulR_eq0' /= (negbTE H1) orbF => /eqP.
+  case/boolP : (P a == 0) => [/eqP -> | H1]; first by rewrite mul0R.
+  move: {H}(H H1) => /dominatesP ->; first by rewrite mulR0.
+  move/eqP : b; by rewrite JointDistChan.dE mulR_eq0' /= (negbTE H1) orFb => /eqP.
 Qed.
 
 End condition_equivalence.
@@ -60,11 +60,11 @@ Lemma joint_dominates : P |- V << W -> (`J(P, V)) << (`J(P, W)).
 Proof.
 move=> V_dom_by_W /=; apply/dominatesP => ab Hab.
 case/leR_eqVlt : (dist_ge0 P ab.1) => [/esym|] Hab1.
-- by rewrite JointDistChan.dE Hab1 mulR0.
+- by rewrite JointDistChan.dE Hab1 mul0R.
 - rewrite JointDistChan.dE in Hab.
-  rewrite JointDistChan.dE (dominatesE (V_dom_by_W _ _)) ?mul0R //.
+  rewrite JointDistChan.dE (dominatesE (V_dom_by_W _ _)) ?mulR0 //.
   + exact/eqP/gtR_eqF.
-  + move: Hab; rewrite mulR_eq0 => -[//|].
+  + move: Hab; rewrite mulR_eq0 => -[|//].
     by move: (gtR_eqF _ _ Hab1).
 Qed.
 
@@ -94,13 +94,13 @@ rewrite (_ : D(V || W | P) = \rsum_(a in A) (\rsum_(b in B)
   by rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite pair_bigA big_mkcond /=.
 apply eq_bigr => -[a b] /= _.
-rewrite JointDistChan.dE /= [in RHS]mulRAC.
+rewrite JointDistChan.dE /= (mulRC (P a)) [in RHS]mulRAC.
 case/boolP : (P a == 0) => [/eqP -> | Pa0]; first by rewrite !mulR0.
 congr (_ * _).
 case/boolP : (V a b == 0) => [/eqP -> | Vab0]; first by rewrite !mul0R.
 congr (_ * _).
 have Wab0 : W a b != 0 := dominatesEN (V_dom_by_W Pa0) Vab0.
-rewrite JointDistChan.dE /= {2}/Rdiv (invRM (W a b)); [|exact/eqP|exact/eqP].
+rewrite JointDistChan.dE /= {2}/Rdiv (mulRC _ (W a b)) (invRM (W a b)); [|exact/eqP|exact/eqP].
 by rewrite -mulRA (mulRCA (P a)) mulRV // mulR1.
 Qed.
 

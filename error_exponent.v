@@ -59,7 +59,7 @@ apply Rabs_xlnx => //.
       apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
     apply: ler_rsum => a _.
     rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
-    rewrite 2!JointDistChan.dE /=; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
+    rewrite 2!JointDistChan.dE /= !(mulRC (P a)) addR_opp; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
   + rewrite cdiv_is_div_joint_dist => //.
     exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
