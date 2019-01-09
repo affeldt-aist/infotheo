@@ -902,7 +902,7 @@ Lemma fst_convex (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
   Bivar.fst (d (ConvexDist.d p q t01) Q) =
     ConvexDist.d (Bivar.fst (d p Q)) (Bivar.fst (d q Q)) t01.
 Proof. by rewrite !fst. Qed.
-Lemma snd (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
+Lemma snd_convex (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
   Bivar.snd (d (ConvexDist.d p q t01) Q) =
     ConvexDist.d (Bivar.snd (d p Q)) (Bivar.snd (d q Q)) t01.
 Proof.

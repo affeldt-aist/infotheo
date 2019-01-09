@@ -395,35 +395,12 @@ Qed.
 End entropy_concave_alternative_proof_binary_case.
 
 Require Import chap2.
+Require channel (* tmp? *).
 
 Section mutual_information_concave.
 
 Variables (A B : finType) (Q : A -> dist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
-
-(*
-Let Cond (P : dist A) :=
-  { H : \rsum_(ab in {: A * B}) P ab.1 * Q ab = 1 |
-    Bivar.fst (DepProdDist.d H) =1 P }.
-
-(* If Q was taken as the conditional probability of some distribution R,
-   as intended, then Cond is satisfied *)
-Lemma Cond_exists (R : {dist A * B}) :
-  (forall a b, \Pr_(Swap.d R)[[set b]|[set a]] = Q(a,b)) ->
-  Cond (Bivar.fst R).
-Proof.
-move=> HQ.
-have HRQ a b : Bivar.fst R a * Q (a, b) = R (a, b).
-  by rewrite -HQ //= -Pr_set1 -Pr_cPr' setX1 Pr_set1.
-have H : \rsum_(ab in {: A * B}) (Bivar.fst R) ab.1 * Q ab = 1.
-  rewrite -(pmf1 R).
-  by apply eq_bigr => -[a b].
-exists H => a.
-rewrite !Bivar.fstE.
-apply/eq_bigr => b _.
-by rewrite DepProdDist.dE.
-Qed.
-*)
 
 (* If Cond is statisfied, then the conditional probability is indeed Q *)
 Lemma Cond_cproba (d : dist A) :
@@ -431,7 +408,7 @@ Lemma Cond_cproba (d : dist A) :
     \Pr_(Swap.d (ProdDist.d d Q))[[set b]|[set a]] = Q a b.
 Proof.
 move=> a b /eqP Hda.
-rewrite (@WcPr _ _ Q d a b Hda); congr cPr.
+rewrite (@channel.channel_cPr _ _ Q d a b Hda); congr cPr.
 apply/dist_ext => -[b0 a0].
 by rewrite !Swap.dE channel.JointDistChan.dE ProdDist.dE.
 Qed.
@@ -449,7 +426,7 @@ apply concave_distB.
   move=> p q t t01 /=.
   move: (H (Bivar.snd (ProdDist.d p Q)) (Bivar.snd (ProdDist.d q Q)) t t01).
   rewrite !Swap.fst; apply/leR_trans.
-  rewrite -ProdDist.snd; exact/leRR.
+  rewrite -ProdDist.snd_convex; exact/leRR.
 - suff : affine_dist (fun x => CondEntropy.h (Swap.d (ProdDist.d x Q))) by case.
   apply/affine_distP => p q t t01 /=.
   rewrite /CondEntropy.h /CondEntropy.h1.

@@ -167,7 +167,7 @@ Hypothesis Hn : n != O.
 Lemma dmc_cdiv_cond_entropy :
   W ``(y | x) = exp2 (- INR n * (D(V || W | P) + `H(V | P))).
 Proof.
-rewrite dmc_cdiv_cond_entropy_aux CondEntropyChan.hE.
+rewrite dmc_cdiv_cond_entropy_aux CondEntropyChanE2.
 rewrite /cdiv /entropy -big_split /=.
 rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
 rewrite (big_morph _ morph_exp2_plus exp2_0).

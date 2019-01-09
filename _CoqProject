@@ -10,7 +10,9 @@ ssr_ext.v
 bigop_ext.v
 Rbigop.v
 proba.v
+cproba.v
 jensen.v
+chap2.v
 natbin.v
 ssralg_ext.v
 divergence.v
@@ -74,8 +76,6 @@ alternant.v
 kraft.v
 shannon_fano.v
 string_entropy.v
-cproba.v
-chap2.v
 convex_dist.v
 cinde.v
 -R . infotheo

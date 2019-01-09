@@ -781,7 +781,7 @@ Hypothesis Bnot0 : (0 < #|B|)%nat.
 Lemma card_shell_leq_exp_entropy :
   INR #| V.-shell ta | <= exp2 (INR n * `H(V | P)).
 Proof.
-rewrite CondEntropyChan.hE.
+rewrite CondEntropyChanE2.
 apply (@leR_trans (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
 - exact/le_INR/leP/card_shelled_tuples_leq_prod_card.
 - rewrite exp2_pow.

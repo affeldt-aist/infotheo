@@ -241,3 +241,26 @@ Lemma marginal_post_probaE b n0 :
 Proof. by []. Qed.
 
 End marginal_post_proba_prop.
+
+(* relation with channel-based information-theoretic definitions *)
+
+Require Import cproba.
+
+Section pproba_cPr.
+
+Local Open Scope channel_scope.
+
+Variables (n : nat) (A B : finType) (W : `Ch_1(A, B)).
+Variable P : {dist 'rV[A]_n}.
+
+Import MarginalPosteriorProbabiliy.
+
+Lemma ppE (x : 'rV[A]_n) (y : 'rV[B]_n) (Hy : receivable W P y) :
+  P `^^ W , Hy (x | y) = \Pr_(`J(P, W ``^ n))[[set x]|[set y]].
+Proof.
+rewrite PosteriorProbability.dE /PosteriorProbability.den /cPr setX1 2!Pr_set1.
+rewrite JointDistChan.dE /= mulRC; congr (_ / _).
+rewrite Bivar.sndE /=; apply eq_bigr => x' _; by rewrite JointDistChan.dE /= mulRC.
+Qed.
+
+End pproba_cPr.
