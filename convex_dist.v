@@ -479,7 +479,7 @@ Qed.
 
 (* mixture of convex set and convex space taken from nlab, and ConvexDist *)
 Structure affineConvexType : Type :=
-  AffineConvexSet
+  AffineConvexType
     { T : Type;
       w (x y : T) (t : R) : I t -> T;
       w0 x y : w x y I0 = y;
