@@ -480,17 +480,80 @@ Qed.
 (* mixture of convex set and convex space taken from nlab, and ConvexDist *)
 Structure affineConvexType : Type :=
   AffineConvexType
-    { T : Type;
-      w (x y : T) (t : R) : I t -> T;
-      w0 x y : w x y I0 = y;
+    { car : Type;
+      w (x y : car) (t : R) : I t -> car;
+      w0 x y (H : I 0) : w x y H = y;
       widem x t (H : I t) : w x x H = x;
-      wqcom x y t (H : I t) : w x y H = w y x (Isym H);
-      wqassoc x y z q r s (Hq : I q) (Hr : I r) (Hs : I s) :
-        let p := r * s in
-        let Hp := Imul Hr Hs in
-        s.~ = p.~ * q.~ ->
+      wscom x y t (H : I t) (H' : I t.~) : w x y H = w y x H';
+      wqassoc x y z p q r s 
+              (Hp : I p) (Hq : I q) (Hr : I r) (Hs : I s) :
+        p = r * s ->  s.~ = p.~ * q.~ -> 
         w x (w y z Hq) Hp = w (w x y Hr) z Hs
     }.
+
+Local Notation "x <| H |> y" := (w x y H) (format "x  <| H |>  y", at level 50).
+
+Lemma I1 : 0 <= 1 <= 1.
+Proof. split; [exact (leR0n 1)|exact /leRR]. Qed.
+
+Lemma w1 (T : affineConvexType) (x y : car T) (H : I 1) : x <| H |> y = x.
+Proof.  
+  rewrite wscom.
+  - rewrite /onem subRR; exact I0.
+  rewrite /onem subRR => H0; by rewrite w0.
+Qed.
+
+Lemma wcom (T : affineConvexType) (x1 y1 x2 y2 : car T)
+      p q :  forall (Hp : I p) (Hq : I q), 
+    (x1 <|Hq|> y1) <|Hp|> (x2 <|Hq|> y2) = (x1 <|Hp|> x2) <|Hq|> (y1 <|Hp|> y2).
+Proof.
+rewrite /I => Hp Hq.
+case/boolP : (p == 0 :> R) => [|]/eqP p0; first by subst p; rewrite !w0.
+case/boolP : (q == 0 :> R) => [|]/eqP q0; first by subst q; rewrite !w0.
+case/boolP : (p == 1 :> R) => [|]/eqP p1; first by subst p; rewrite !w1.
+case/boolP : (q == 1 :> R) => [|]/eqP q1; first by subst q; rewrite !w1.
+set r := p * q.
+have pq1 : p * q != 1.
+  apply/eqP => pq1; have {p1} : p < 1 by lra.
+  rewrite -pq1 mulRC -ltR_pdivr_mulr; last lra.
+  rewrite divRR; [lra | exact/eqP].
+have r1 : r < 1.
+  rewrite ltR_neqAle; split; [exact/eqP|rewrite -(mulR1 1); apply/leR_pmul; tauto].
+set s := (p - r) / (1 - r).
+rewrite -(@wqassoc T x1 _ _ r s); last 2 first.
+  by rewrite mulRC.
+  rewrite /onem {}/s; field; by apply/eqP; rewrite subR_eq0 eq_sym.
+  split.
+  - apply divR_ge0; last by rewrite subR_gt0.
+    rewrite subR_ge0 /r -{2}(mulR1 p); apply/leR_wpmul2l; tauto.
+  - rewrite /s leR_pdivr_mulr ?subR_gt0 // mul1R leR_add2r; tauto.
+  exact (Imul Hp Hq).
+move=> Hs Hr.
+rewrite (wscom y1); [exact (Isym Hs)|].
+move=> Hs'.
+set t := s.~ * q.
+have t01 : 0 <= t <= 1 by exact (Imul (Isym Hs) Hq).
+have t1 : t < 1.
+  rewrite ltR_neqAle; split; last tauto.
+  move=> t1; subst t.
+  have {q1} : q < 1 by lra.
+    rewrite -t1 -ltR_pdivr_mulr; last by lra.
+    rewrite divRR; [rewrite /I in Hs'; lra | exact/eqP].
+rewrite -(@wqassoc T x2 _ _ t p.~) => //; last 2 first.
+  by rewrite mulRC.
+  rewrite 2!onemK /t /onem /s /r; field.
+  by apply/eqP; rewrite subR_eq0 eq_sym.
+  exact (Isym Hp).
+move=> Hp'.
+rewrite (@wqassoc T x1 _ _ _ _ p.~.~ q); last 2 first.
+  by rewrite onemK.
+  rewrite /t /onem /s /r; field; by apply/eqP; rewrite subR_eq0 eq_sym.
+  by rewrite onemK.
+move=> Hp''.
+rewrite (wscom y2 y1).
+move: Hp''; rewrite onemK => Hp''.
+by rewrite (ProofIrrelevance.proof_irrelevance _ Hp'' Hp).
+Qed.
 
 End AffineConvexType.
 
