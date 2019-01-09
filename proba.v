@@ -693,6 +693,10 @@ move: Hp''; rewrite onemK => Hp''.
 by rewrite (ProofIrrelevance.proof_irrelevance _ Hp'' Hp).
 Qed.
 
+Lemma distribute (x y z : dist A) p q (Hp : 0 <= p <= 1) (Hq : 0 <= q <= 1) :
+  x <|Hp|> (y <|Hq|> z) = (x <|Hp|> y) <|Hq|> (x <|Hp|> z).
+Proof. by rewrite -{1}(idempotent x Hq) commute. Qed.
+
 Lemma bind_left_distr (B : finType) (p : R) (Hp : 0 <= p <= 1)
   (d0 d1 : dist A) (f : A -> dist B) :
   DistBind.d (d0 <| Hp |> d1) f = DistBind.d d0 f <| Hp |> DistBind.d d1 f.
