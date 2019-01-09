@@ -67,26 +67,25 @@ From mathcomp Require Import ssrnum.
        (forall x : R, le 0 x -> norm x = x) ->
        (forall x y : R, lt x y = (y != x) && le x y) -> Num.mixin_of R*)
 
-Delimit Scope R_scope with Rb.
-Lemma addR_ge0 : (forall x y : R, 0 <b= x -> 0 <b= y -> 0 <b= x + y)%Rb.
+Lemma addR_ge0 : (forall x y : R, 0 <b= x -> 0 <b= y -> 0 <b= x + y)%R.
 Proof.
 move=> x y /leRP Hx /leRP Hy. apply/leRP. by apply ssrR.addR_ge0.
 Qed.
 
-Lemma mulR_ge0 : (forall x y : R, 0 <b= x -> 0 <b= y -> 0 <b= x * y)%Rb.
+Lemma mulR_ge0 : (forall x y : R, 0 <b= x -> 0 <b= y -> 0 <b= x * y)%R.
 Proof.
 move=> x y /leRP Hx /leRP Hy. apply/leRP. by apply ssrR.mulR_ge0.
 Qed.
 
-Lemma le_ge_0 : (forall x : R, 0 <b= x -> x <b= 0 -> x = 0)%Rb.
+Lemma le_ge_0 : (forall x : R, 0 <b= x -> x <b= 0 -> x = 0)%R.
 Proof. move=> x /leRP Hx /leRP Hy. by apply Rle_antisym. Qed.
 
 Require Import Fourier.
 
-Lemma subR_le0 : (forall x y : R, 0 <b= (y - x) = (x <b= y))%Rb.
+Lemma subR_le0 : (forall x y : R, 0 <b= (y - x) = (x <b= y))%R.
 Proof.
 move=> x y.
-move Hlhs : (0 <b= y - x)%Rb => [|].
+move Hlhs : (0 <b= y - x)%R => [|].
   move/leRP in Hlhs.
   symmetry.
   apply/leRP.
@@ -98,7 +97,7 @@ contradict Hlhs.
 by fourier.
 Qed.
 
-Lemma or_le0 : forall x : R, (0 <b= x)%Rb || (x <b= 0)%Rb.
+Lemma or_le0 : forall x : R, (0 <b= x)%R || (x <b= 0)%R.
 Proof.
 move=> x; apply/orP.
 case: (Rle_or_lt 0 x).
@@ -107,10 +106,10 @@ right; apply/leRP.
 by apply Rlt_le.
 Qed.
 
-Lemma Rabs_le0 : (forall x : R, (0 <b= x)%Rb -> Rabs x = x).
+Lemma Rabs_le0 : (forall x : R, (0 <b= x)%R -> Rabs x = x).
 Proof. move=> x /leRP. by apply Rabs_pos_eq. Qed.
 
-Lemma Rltn_neqAle_new : forall m n : R, (m <b n)%Rb = (n != m) && (m <b= n)%Rb.
+Lemma Rltn_neqAle_new : forall m n : R, (m <b n)%R = (n != m) && (m <b= n)%R.
 Proof. move=> x y. by rewrite ltR_neqAle' eq_sym. Qed.
 
 Definition R_RealLeMixin := RealLeMixin addR_ge0 mulR_ge0 le_ge_0 subR_le0 or_le0 Rabs_Ropp Rabs_le0 Rltn_neqAle_new.
@@ -120,4 +119,16 @@ Canonical R_numFieldType := [numFieldType of R].
 Canonical R_realDomainType := RealDomainType R or_le0.
 Canonical R_realFieldType := [realFieldType of R].
 
-(* TODO: archimedian also corresponds to a stucture *)
+Lemma H1 (a b : R_ringType) (v : R_zmodType) : a * (b * v) = (a * b)%R * v.
+Proof. by rewrite mulRA. Qed.
+Lemma H2 : left_id 1 Rmult.
+Proof. by rewrite /left_id => x; rewrite mul1R. Qed.
+Lemma H3 : right_distributive Rmult +%R.
+Proof. by rewrite /right_distributive => x y z; rewrite mulRDr. Qed.
+Lemma H4 : forall v : R_zmodType, {morph Rmult^~ v : a b / (a + b)%R >-> (a + b)%R}.
+Proof. by move=> v x y; rewrite mulRDl. Qed.
+
+Definition R_lmodMixin := @LmodMixin R_ringType R_zmodType Rmult H1 H2 H3 H4.
+Canonical R_lmodType := LmodType R _ R_lmodMixin.
+
+(* TODO: archimedian also corresponds to a structure *)

@@ -567,14 +567,60 @@ Qed.
 
 End AffineConvexType.
 
+Section gconvex_dist.
+Section def.
+Variables (A : finType) (B : finType) (f : (A -> dist B) -> R).
+Definition gconvex_dist := forall (p q : A -> dist B) (t : R) (t01 : 0 <= t <= 1),
+  f (fun x => ConvexDist.d (p x) (q x) t01) <= t * f p + t.~ * f q.
+End def.
+End gconvex_dist.
+
 Section mutual_information_convex.
 
 Variables (A B : finType) (P : dist A).
 
-Let Cond (d : {dist B * A}) := \rsum_(ab in {: A * B}) P ab.1 * d (swap ab) = 1.
+Local Open Scope divergence_scope.
 
-Fail Lemma mutual_information_convex :
-  pconvex_dist
-    (fun (Q : {dist B * A}) (H : Cond Q) => MutualInfo.mi (DepProdDist.d H)).
+Lemma mutual_information_convex :
+  gconvex_dist (fun (Q : A -> dist B) => MutualInfo.mi (CDist.make_joint P Q)).
+Proof.
+move=> p1yx p2yx t t01.
+pose p1' := CDist.mkt P p1yx.
+pose p2' := CDist.mkt P p2yx.
+pose p1xy := CDist.joint_of p1'.
+pose p2xy := CDist.joint_of p2'.
+pose p1 := Bivar.snd p1xy.
+pose p2 := Bivar.snd p2xy.
+pose plambdayx := fun a : A => ConvexDist.d (p1yx a) (p2yx a) t01.
+pose plambda' := CDist.mkt P plambdayx.
+pose plambdaxy := CDist.joint_of plambda'.
+pose plambday := Bivar.snd plambdaxy.
+pose qlambdaxy := P `x plambday.
+pose q1xy := P `x p1.
+pose q2xy := P `x p2.
+have -> : MutualInfo.mi (CDist.make_joint P (fun x : A => ConvexDist.d (p1yx x) (p2yx x) t01)) =
+       D(plambdaxy || qlambdaxy).
+  admit.
+have -> : qlambdaxy = ConvexDist.d q1xy q2xy t01.
+  apply/dist_ext => -[a b].
+  rewrite !ProdDist.dE !ConvexDist.dE /=.
+  rewrite /q1xy /q2xy !ProdDist.dE /=.
+  rewrite /p1 /plambday.
+  rewrite !Bivar.sndE !big_distrr /= -big_split /=.
+  apply eq_bigr => a0 _.
+  rewrite /plambdaxy /= !ProdDist.dE /= /p1xy /plambdayx.
+  rewrite ConvexDist.dE.
+  field.
+have -> : plambdaxy = ConvexDist.d p1xy p2xy t01.
+  apply/dist_ext => -[a b].
+  rewrite !ProdDist.dE !ConvexDist.dE /=.
+  rewrite /p1xy /p2xy !ProdDist.dE /=.
+  field.
+have -> : MutualInfo.mi (CDist.make_joint P p1yx) = D(p1xy || q1xy).
+  admit.
+have -> : MutualInfo.mi (CDist.make_joint P p2yx) = D(p2xy || q2xy).
+  admit.
+apply: div_convex.
+Abort.
 
 End mutual_information_convex.
