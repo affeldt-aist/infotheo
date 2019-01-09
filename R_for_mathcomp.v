@@ -67,19 +67,19 @@ From mathcomp Require Import ssrnum.
        (forall x : R, le 0 x -> norm x = x) ->
        (forall x y : R, lt x y = (y != x) && le x y) -> Num.mixin_of R*)
 
-Delimit Scope Rb_scope with Rb.
+Delimit Scope R_scope with Rb.
 Lemma addR_ge0 : (forall x y : R, 0 <b= x -> 0 <b= y -> 0 <b= x + y)%Rb.
 Proof.
-move=> x y /RleP Hx /RleP Hy. apply/RleP. by apply ssrR.addR_ge0.
+move=> x y /leRP Hx /leRP Hy. apply/leRP. by apply ssrR.addR_ge0.
 Qed.
 
 Lemma mulR_ge0 : (forall x y : R, 0 <b= x -> 0 <b= y -> 0 <b= x * y)%Rb.
 Proof.
-move=> x y /RleP Hx /RleP Hy. apply/RleP. by apply ssrR.mulR_ge0.
+move=> x y /leRP Hx /leRP Hy. apply/leRP. by apply ssrR.mulR_ge0.
 Qed.
 
 Lemma le_ge_0 : (forall x : R, 0 <b= x -> x <b= 0 -> x = 0)%Rb.
-Proof. move=> x /RleP Hx /RleP Hy. by apply Rle_antisym. Qed.
+Proof. move=> x /leRP Hx /leRP Hy. by apply Rle_antisym. Qed.
 
 Require Import Fourier.
 
@@ -87,13 +87,13 @@ Lemma subR_le0 : (forall x y : R, 0 <b= (y - x) = (x <b= y))%Rb.
 Proof.
 move=> x y.
 move Hlhs : (0 <b= y - x)%Rb => [|].
-  move/RleP in Hlhs.
+  move/leRP in Hlhs.
   symmetry.
-  apply/RleP.
+  apply/leRP.
   by fourier.
 symmetry.
-apply/RleP.
-move/RleP in Hlhs.
+apply/leRP.
+move/leRP in Hlhs.
 contradict Hlhs.
 by fourier.
 Qed.
@@ -102,16 +102,16 @@ Lemma or_le0 : forall x : R, (0 <b= x)%Rb || (x <b= 0)%Rb.
 Proof.
 move=> x; apply/orP.
 case: (Rle_or_lt 0 x).
-left; by apply/RleP.
-right; apply/RleP.
+left; by apply/leRP.
+right; apply/leRP.
 by apply Rlt_le.
 Qed.
 
 Lemma Rabs_le0 : (forall x : R, (0 <b= x)%Rb -> Rabs x = x).
-Proof. move=> x /RleP. by apply Rabs_pos_eq. Qed.
+Proof. move=> x /leRP. by apply Rabs_pos_eq. Qed.
 
 Lemma Rltn_neqAle_new : forall m n : R, (m <b n)%Rb = (n != m) && (m <b= n)%Rb.
-Proof. move=> x y. by rewrite Rlt_neqAle eq_sym. Qed.
+Proof. move=> x y. by rewrite ltR_neqAle' eq_sym. Qed.
 
 Definition R_RealLeMixin := RealLeMixin addR_ge0 mulR_ge0 le_ge_0 subR_le0 or_le0 Rabs_Ropp Rabs_le0 Rltn_neqAle_new.
 
