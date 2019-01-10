@@ -289,13 +289,14 @@ Qed.*)
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-Lemma big_rV_cons n (F : 'rV[A]_n.+1 -> R) (a : A) :
+Lemma big_rV_cons n (F : 'rV[A]_n.+1 -> R) (a : A) (i0 : 'I_n.+1) : i0 = ord0 ->
   \big[M/idx]_(v in 'rV[A]_n) (F (row_mx (\row_(k < 1) a) v)) =
-  \big[M/idx]_(v in 'rV[A]_n.+1 | v ``_ ord0 == a) (F v).
+  \big[M/idx]_(v in 'rV[A]_n.+1 | v ``_ i0 == a) (F v).
 Proof.
+move=> i00.
 rewrite [in RHS](reindex_onto (row_mx (\row_(k < 1) a)) rbehead) /=; last first.
-  move=> m /eqP <-; by rewrite row_mx_rbehead.
-apply eq_bigl => ?; by rewrite rbehead_row_mx eqxx andbT row_mx_row_ord0 eqxx.
+  move=> m /eqP <-; by rewrite i00 row_mx_rbehead.
+apply eq_bigl => ?; by rewrite i00 rbehead_row_mx eqxx andbT row_mx_row_ord0 eqxx.
 Qed.
 
 Lemma big_rV_behead n (F : 'rV[A]_n.+1 -> R) (w : 'rV[A]_n) :
