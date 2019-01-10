@@ -535,6 +535,35 @@ End CondDist.
 
 Arguments CondDist.d {A} {B} _ _ _.
 
+Module CondDistT.
+Section def.
+Variables (A B : finType) (PQ : {dist A * B}) (a : A).
+Let Ha := Bivar.fst PQ a != 0.
+Lemma sizeB : #|B| = #|B|.-1.+1.
+Proof.
+case HB: #|B| => //.
+move: (dist_domain_not_empty PQ).
+by rewrite card_prod HB muln0 ltnn.
+Qed.  
+Definition d :=
+  match boolP Ha with
+  | AltTrue H => CondDist.d PQ a H
+  | AltFalse _ => Uniform.d sizeB
+  end.
+Lemma dE (H : Ha) : d = CondDist.d PQ a H.
+Proof.
+rewrite /d; destruct boolP.
+  by rewrite (eq_irrelevance i H).
+by rewrite H in i.
+Qed.
+Lemma dNE (H : ~~Ha) : d = Uniform.d sizeB.
+Proof.
+rewrite /d; destruct boolP => //.
+by rewrite i in H.
+Qed.
+End def.
+End CondDistT.
+
 Module CDist.
 Section def.
 Variables (A B : finType).
@@ -556,6 +585,23 @@ Proof.
 move=> Pxa.
 rewrite /cPr setX1 Swap.snd 2!Pr_set1 /joint_of Swap.dE ProdDist.fst.
 by rewrite ProdDist.dE /=; field.
+Qed.
+Definition split (PQ : {dist A * B}) :=
+  mkt (Bivar.fst PQ) (CondDistT.d PQ).
+Lemma splitK : cancel split joint_of.
+Proof.
+move=> PQ.
+rewrite /joint_of /split /=.
+apply/dist_ext => ab.
+rewrite ProdDist.dE.
+case /boolP: (Bivar.fst PQ ab.1 == 0) => Ha.
+  rewrite (eqP Ha) mul0R.
+  symmetry.
+  apply (dominatesE (Prod_dominates_Joint PQ)).
+  by rewrite ProdDist.dE (eqP Ha) mul0R.
+rewrite CondDistT.dE CondDist.dE -Swap.snd mulRC.
+rewrite -(Pr_set1 _ ab.1) -Pr_cPr setX1 Pr_set1 Swap.dE.
+by destruct ab.
 Qed.
 End def.
 End CDist.
