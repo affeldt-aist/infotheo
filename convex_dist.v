@@ -600,7 +600,11 @@ pose q1xy := P `x p1.
 pose q2xy := P `x p2.
 have -> : MutualInfo.mi (CDist.make_joint P (fun x : A => ConvexDist.d (p1yx x) (p2yx x) t01)) =
        D(plambdaxy || qlambdaxy).
-  admit.
+  rewrite MutualInfo.miE /div pair_big /=.
+  apply eq_bigr => -[a b] _ /=.
+  congr (_ * log (_ / _)).
+  rewrite /qlambdaxy.
+  by rewrite ProdDist.dE /= /CDist.make_joint /CDist.joint_of /= ProdDist.fst; congr (_ * _).
 have -> : qlambdaxy = ConvexDist.d q1xy q2xy t01.
   apply/dist_ext => -[a b].
   rewrite !ProdDist.dE !ConvexDist.dE /=.
@@ -617,10 +621,28 @@ have -> : plambdaxy = ConvexDist.d p1xy p2xy t01.
   rewrite /p1xy /p2xy !ProdDist.dE /=.
   field.
 have -> : MutualInfo.mi (CDist.make_joint P p1yx) = D(p1xy || q1xy).
-  admit.
+  rewrite MutualInfo.miE /div pair_big /=.
+  apply eq_bigr => -[a b] _ /=.
+  congr (_ * log (_ / _)).
+  by rewrite /q1xy ProdDist.dE /CDist.make_joint /CDist.joint_of /= ProdDist.fst.
 have -> : MutualInfo.mi (CDist.make_joint P p2yx) = D(p2xy || q2xy).
-  admit.
+  rewrite MutualInfo.miE /div pair_big /=.
+  apply eq_bigr => -[a b] _ /=.
+  congr (_ * log (_ / _)).
+  by rewrite /q2xy ProdDist.dE /CDist.make_joint /CDist.joint_of /= ProdDist.fst.
 apply: div_convex.
-Abort.
+- apply/dominatesP => -[a b].
+  rewrite /q1xy /p1xy ProdDist.dE /= mulR_eq0.
+  rewrite /p1 /p1xy /CDist.joint_of => -[|].
+    by rewrite ProdDist.dE => ->; rewrite mul0R.
+  rewrite Bivar.sndE.
+  move/prsumr_eq0P => -> // a0 _; exact/dist_ge0.
+-  apply/dominatesP => -[a b].
+  rewrite /q1xy /p1xy ProdDist.dE /= mulR_eq0.
+  rewrite /p1 /p1xy /CDist.joint_of => -[|].
+    by rewrite ProdDist.dE => ->; rewrite mul0R.
+  rewrite Bivar.sndE.
+  move/prsumr_eq0P => -> // a0 _; exact/dist_ge0.
+Qed.
 
 End mutual_information_convex.
