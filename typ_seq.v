@@ -173,7 +173,8 @@ have -> : Pr P `^ n.+1 (~: p) =
 rewrite {1}/Pr (eq_bigr (fun=> 0)); last by move=> /= v; rewrite inE => /eqP.
 rewrite big_const iter_addR mulR0 add0R.
 apply/(leR_trans _ (aep He k0_k))/Pr_incl/subsetP => /= t.
-rewrite !inE /= => /andP[-> /= H3]; apply/ltRW'; by rewrite mulRN -mulNR.
+rewrite !inE /= => /andP[-> /= H3]; apply/ltRW'.
+by rewrite /mlog_RV /= /scale_RV /= mulRN -mulNR.
 Qed.
 
 Variable He1 : epsilon < 1.

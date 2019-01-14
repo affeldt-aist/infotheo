@@ -82,23 +82,23 @@ Hypothesis p_01' : 0 < p < 1.
 Let p_01 := closed p_01'.
 Let P : dist A := Uniform.d card_A.
 Variable a' : A.
-Hypothesis Ha' : receivable (BSC.c card_A p_01) (dist2rV1 P) (\row_(i < 1) a').
+Hypothesis Ha' : receivable (BSC.c card_A p_01) (P `^ 1) (\row_(i < 1) a').
 
 Lemma bsc_post (a : A) :
-  (dist2rV1 P) `^^ (BSC.c card_A p_01) , Ha' (\row_(i < 1) a | \row_(i < 1) a') =
+  (P `^ 1) `^^ (BSC.c card_A p_01) , Ha' (\row_(i < 1) a | \row_(i < 1) a') =
   (if a == a' then 1 - p else p)%R.
 Proof.
 rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
-rewrite mxE DMCE big_ord_recl big_ord0.
+rewrite !TupleDist.dE DMCE big_ord_recl big_ord0.
 rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
-  by move=> i _; rewrite /P !Uniform.dE.
+  by move=> i _; rewrite /P !TupleDist.dE big_ord_recl big_ord0 !Uniform.dE mulR1.
 rewrite -big_distrr /= (_ : \rsum_(_ | _) _ = 1)%R; last first.
   transitivity (\rsum_(i in 'M_1) Binary.f p (i ``_ ord0) a').
     apply eq_bigr => i _.
     by rewrite DMCE big_ord_recl big_ord0 mulR1 BSC.cE mxE.
   apply/(@big_singl_rV _ _ _ _ (fun i => if a' == i then (1 - p)%R else p)).
   by rewrite -Binary.f_sum_swap // Binary.f1.
-rewrite 2!mxE mulR1 BSC.cE /Binary.f /= eq_sym; field.
+rewrite mxE mulR1 big_ord_recl big_ord0 BSC.cE /Binary.f /= eq_sym !mxE; field.
 rewrite /P Uniform.dE card_A (_ : INR 2 = 2) //; lra.
 Qed.
 
@@ -505,7 +505,7 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
   apply eq_bigr => /= t Ht.
   case: ifP => HtH.
     rewrite PosteriorProbability.dE.
-    rewrite UniformSupport.E ?inE //.
+    rewrite UniformSupport.dET ?inE //.
     rewrite /PosteriorProbability.den.
     have HH : INR #|[set cw in kernel H]| <> 0.
       apply/INR_eq0/eqP.
@@ -523,7 +523,8 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
     set tmp1 := \rsum_(_ | _) _.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
     by rewrite -not_receivable_uniformE Hy.
-  by rewrite PosteriorProbability.dE UniformSupport.E0 /Rdiv ?mul0R // inE HtH.
+  rewrite PosteriorProbability.dE UniformSupport.dEN; last by rewrite inE; exact/negbT.
+  by rewrite !(mul0R,div0R).
 rewrite -big_mkcond /=.
 rewrite /alpha.
 transitivity (W Zp0 (y ``_ n0) *

@@ -334,13 +334,13 @@ rewrite /P /UniformSupport.d /UniformSupport.f /= in H.
 case: H => [m' [Hm' H]].
 set r := index_enum _ in H.
 rewrite (eq_bigr (fun i => 1 / INR #|[set cw in C]| * W ``(tb | i))) in H; last first.
-  move=> i iC; by rewrite UniformSupport.E // inE.
+  move=> i iC; by rewrite UniformSupport.dET // inE.
 rewrite -rmax_distrr in H; last exact/ltRW/Hunpos.
 exists m'; split; first exact Hm'.
 set x := PosteriorProbability.den _ _ _ in H.
 have x0 : / x <> 0 by apply/eqP/invR_neq0'; rewrite -receivableE.
 move/(eqR_mul2r x0) in H.
-rewrite /= UniformSupport.E ?inE // in H; last first.
+rewrite /= UniformSupport.dET ?inE // in H; last first.
   move/subsetP : dec_img; apply.
   rewrite inE; apply/existsP; by exists tb; apply/eqP.
 move/eqR_mul2l :  H => -> //; exact: gtR_eqF.

@@ -544,7 +544,7 @@ Proof.
 case HB: #|B| => //.
 move: (dist_domain_not_empty PQ).
 by rewrite card_prod HB muln0 ltnn.
-Qed.  
+Qed.
 Definition d :=
   match boolP Ha with
   | AltTrue H => CondDist.d PQ a H
@@ -779,3 +779,50 @@ Lemma product_ruleC E F G :
 Proof. by rewrite -cPr_TripC12 product_rule. Qed.
 End variant.
 End product_rule.
+
+Section conditional_expectation_def.
+
+Variable (U : finType) (P : dist U) (X : {RV P -> R}) (F : {set U}).
+
+Definition cEx := \rsum_(r <- fin_img X) r * Pr P ((X @= r) :&: F) / Pr P F.
+
+End conditional_expectation_def.
+
+Section conditional_expectation_prop.
+
+Variable (U : finType) (P : dist U) (X : {RV P -> R}).
+Variables (n : nat) (F : 'I_n -> {set U}).
+
+Lemma thm65 : (forall i j, i != j -> [disjoint F i & F j]) ->
+  cover [set F i | i in 'I_n] = [set: U] ->
+  `E X = \rsum_(i < n) cEx X (F i) * Pr P (F i).
+Proof.
+move=> H1 H2; apply/esym; rewrite /cEx.
+evar (f : 'I_n -> R); rewrite (eq_bigr f); last first.
+  move=> i _; rewrite big_distrl /f; reflexivity.
+rewrite {}/f /= (bigID (fun i => Pr P (F i) != 0)) /=.
+rewrite [in X in _ + X = _]big1 ?addR0; last first.
+  move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _; by rewrite mulR0.
+transitivity (\rsum_(i < n | Pr P (F i) != 0)
+  \rsum_(i0 <- fin_img X) (i0 * Pr P ((X @= i0) :&: F i))).
+  apply eq_bigr => i Fi0; apply eq_bigr => r _.
+  by rewrite -!mulRA mulVR // mulR1.
+rewrite -Ex_altE /Ex_alt exchange_big /=; apply eq_bigr => r _.
+rewrite -big_distrr /=; congr (_ * _).
+transitivity (\rsum_(i < n) Pr P (X @= r :&: F i)).
+  rewrite big_mkcond /=; apply eq_bigr => i _.
+  case: ifPn => //; rewrite negbK => /eqP PFi0.
+  rewrite /Pr big1 // => u; rewrite inE => /andP[uXr uFi].
+  move/prsumr_eq0P : PFi0 => -> // u' _; exact/dist_ge0.
+rewrite -Pr_big_union_disj; last first.
+  move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE; rewrite !negb_and.
+  case/boolP : (X u == r) => Xur //=.
+  move: (H1 _ _ ij); rewrite -setI_eq0 => /eqP/setP/(_ u).
+  by rewrite !inE => /negbT; rewrite negb_and.
+congr Pr.
+rewrite cover_imset in H2.
+by rewrite -big_distrr /= H2 setIT.
+Qed.
+
+End conditional_expectation_prop.

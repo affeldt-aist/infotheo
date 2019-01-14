@@ -11,14 +11,10 @@ Import Prenex Implicits.
 
 (* tentative formalization of conditional independence *)
 
-Reserved Notation "X @= x" (at level 10).
 Reserved Notation "X _|_  Y | Z" (at level 10, Y, Z at next level).
 Reserved Notation "P |= X _|_  Y | Z" (at level 10, X, Y, Z at next level).
 Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
   format "[%  x ,  y ,  .. ,  z ]").
-Reserved Notation "{ 'RV' d -> T }" (at level 0, d, T at next level).
-
-Notation "X @= x" := ([set h | X h == x]) : proba_scope.
 
 Local Open Scope proba_scope.
 
@@ -227,34 +223,6 @@ by rewrite 2!QuadA234.dE TripC23.dE.
 Qed.
 
 End QuadA_prop2.
-
-Definition RV {U : finType} (P : dist U) (A : finType) := U -> A.
-
-Definition RV_of {U : finType} (P : dist U) {A : finType} :=
-  fun phT : phant (Finite.sort A) => @RV U P A.
-
-Notation "{ 'RV' d -> T }" := (RV_of d (Phant T)) : proba_scope.
-
-Module RVar.
-Section def.
-Variables (U A : finType) (P : dist U) (X : {RV P -> A}).
-Definition f a := Pr P (X @= a).
-Lemma f0 a : 0 <= f a. Proof. exact/Pr_ge0. Qed.
-Lemma f1 : \rsum_(a in A) (f a) = 1.
-Proof.
-rewrite /f /Pr -(pmf1 P) (sum_parti_finType _ X) /=.
-rewrite (bigID (fun x => x \in fin_img X)) /=.
-rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
-  move=> a aX; rewrite big1 // => u; rewrite inE => /eqP Xua.
-  move: aX; rewrite /fin_img mem_undup.
-  case/mapP; exists u => //; by rewrite mem_enum.
-rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
-apply eq_bigr => a aX; by apply eq_bigl => u; rewrite inE.
-Qed.
-Definition d : {dist A} := locked (makeDist f0 f1).
-Lemma dE a : d a = Pr P (X @= a). Proof. by rewrite /d; unlock. Qed.
-End def.
-End RVar.
 
 Section pair_of_RVs.
 Variables (U : finType) (P : dist U).

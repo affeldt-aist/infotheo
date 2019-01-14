@@ -61,8 +61,8 @@ rewrite {1}/entropy .
 set a := \rsum_(_ in _) _. set b := \rsum_(_ <- _) _.
 apply trans_eq with (- (a + (-1) * b)); first by field.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
-rewrite !Set2sumE /= !JointDistChan.dE !BSC.cE /= !Binary.fxx.
-rewrite /Binary.f eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2.
+rewrite !Set2sumE /= !JointDistChan.dE !BSC.cE /=.
+rewrite !/Binary.f !eqxx /Binary.f eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2 (* TODO *).
 set a := Set2.a _. set b := Set2.b _.
 case: (Req_EM_T (P a) 0) => H1.
   rewrite H1 !(mul0R, mulR0, addR0, add0R).
@@ -103,7 +103,7 @@ Lemma H_out_max : `H(P `o BSC.c card_A p_01) <= 1.
 Proof.
 rewrite {1}/entropy /= Set2sumE /= !OutDist.dE 2!Set2sumE /=.
 set a := Set2.a _. set b := Set2.b _.
-rewrite !BSC.cE !Binary.fxx /Binary.f /= !(eq_sym _ a).
+rewrite !BSC.cE /Binary.f !eqxx /= !(eq_sym _ a) (* TODO *).
 rewrite (negbTE (Set2.a_neq_b card_A)).
 move: (pmf1 P); rewrite Set2sumE /= -/a -/b => P1.
 have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
@@ -147,7 +147,8 @@ Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; lra. Qed.
 Lemma H_out_binary_uniform : `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
 Proof.
 rewrite {1}/entropy !Set2sumE /= !OutDist.dE !Set2sumE /=.
-rewrite !BSC.cE !Binary.fxx /Binary.f (eq_sym _ (Set2.a _)) !Uniform.dE.
+rewrite !BSC.cE.
+rewrite /Binary.f !eqxx (eq_sym _ (Set2.a _)) !Uniform.dE (* TODO *).
 rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.
 rewrite mul1R (_ : p + (1 - p) = 1); last by field.
@@ -206,7 +207,7 @@ move=> m y d; rewrite DMCE.
 transitivity ((\rprod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
               (\rprod_(i < n | (f m) ``_ i != y ``_ i) p))%R.
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=; congr (_ * _).
-    by apply eq_bigr => // i /eqP ->; rewrite BSC.cE Binary.fxx.
+    by apply eq_bigr => // i /eqP ->; rewrite BSC.cE /Binary.f eqxx (* TODO *).
   apply eq_bigr => //= i /negbTE Hyi; by rewrite BSC.cE /Binary.f eq_sym Hyi.
 congr (_ * _).
 by rewrite big_const /= iter_mulR /= card_dHC.

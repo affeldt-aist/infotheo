@@ -40,7 +40,7 @@ Definition scode_vl := scode A (seq bool) k.
 Variable f : 'rV[A]_n -> seq bool.
 Variable P : dist A.
 
-Definition E_leng_cw := `E (mkRvar (P `^ n) (INR \o size \o f)).
+Definition E_leng_cw := `E_(P `^ n) (INR \o size \o f).
 
 End scode_vl_definition.
 

@@ -37,12 +37,12 @@ set pi := P a.
 set pj := P b.
 set qi := Q a.
 set qj := Q b.
-have Hpi : pi = 1 - p by rewrite /pi /= Binary.fxx.
-have Hqi : qi = 1 - q by rewrite /qi /= Binary.fxx.
+have Hpi : pi = 1 - p by rewrite /pi /P Binary.dxx.
+have Hqi : qi = 1 - q by rewrite /qi /= Binary.dxx.
 have Hpj : pj = p.
-  by rewrite /pj /= /Binary.f eq_sym (negbTE (Set2.a_neq_b card_A)).
+  by rewrite /pj /= Binary.dE eq_sym (negbTE (Set2.a_neq_b card_A)).
 have Hqj : qj = q.
-  by rewrite /qj /= /Binary.f eq_sym (negbTE (Set2.a_neq_b card_A)).
+  by rewrite /qj /= Binary.dE eq_sym (negbTE (Set2.a_neq_b card_A)).
 transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   rewrite /pinsker_fun /div Set2sumE -/a -/b -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
   set tmp := (`| _ | + _) ^ 2.

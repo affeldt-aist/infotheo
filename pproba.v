@@ -137,22 +137,22 @@ Lemma post_proba_uniform0 (x : 'rV[A]_n) : x \notin C ->
   (`U HC) `^^ W, Hy (x | y) = 0%R.
 Proof.
 move=> xC.
-by rewrite PosteriorProbability.dE UniformSupport.E0 // /Rdiv !mul0R.
+by rewrite PosteriorProbability.dE UniformSupport.dEN // /Rdiv !mul0R.
 Qed.
 
 Lemma post_proba_uniformE (x : 'rV[A]_n) : x \in C ->
   (`U HC) `^^ W, Hy (x | y) = (Kppu * W ``(y | x))%R.
 Proof.
 move=> Ht.
-rewrite PosteriorProbability.dE UniformSupport.E // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
+rewrite PosteriorProbability.dE UniformSupport.dET // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
 rewrite /PosteriorProbability.den UniformSupport.restrict.
 have Htmp : INR #|C| != 0 by rewrite INR_eq0' -lt0n.
 rewrite div1R -invRM.
   rewrite /Kppu; congr Rinv; rewrite big_distrr /=; apply eq_bigr => i iC.
-  by rewrite UniformSupport.E // div1R mulRA mulRV // mul1R.
+  by rewrite UniformSupport.dET // div1R mulRA mulRV // mul1R.
   exact/eqP.
 rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
-  move=> *; by rewrite UniformSupport.E.
+  by move=> *; rewrite UniformSupport.dET.
 rewrite -big_distrr /= mulR_eq0 => -[].
   rewrite div1R; exact/invR_neq0/eqP.
 by apply/eqP; rewrite -not_receivable_uniformE Hy.

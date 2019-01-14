@@ -65,7 +65,7 @@ Local Open Scope proba_scope.
 
 Lemma entropy_Ex {A} (P : dist A) : `H P = `E (--log P).
 Proof.
-rewrite /entropy /mlog_rv ExE /= (big_morph _ morph_Ropp oppR0).
+rewrite /entropy /mlog_RV /= (big_morph _ morph_Ropp oppR0).
 apply eq_bigr => a _; by rewrite mulRC -mulNR.
 Qed.
 
