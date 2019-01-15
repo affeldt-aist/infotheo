@@ -19,7 +19,7 @@ Section convex_dist.
 Section def.
 Variables (A : finType) (f : dist A -> R).
 Definition convex_dist := forall (p q : dist A) (t : R) (Ht : 0 <= t <= 1),
-  f (ConvexDist.d p q Ht) <= t * f p + t.~ * f q.
+  f (Conv2Dist.d p q Ht) <= t * f p + t.~ * f q.
 End def.
 End convex_dist.
 
@@ -66,7 +66,7 @@ End def.
 Section prop.
 Variables (A : finType) (P : dist A -> Prop) (f : dist A -> R).
 Lemma affine_distP : affine_dist f <-> forall p q t (t01 : 0 <= t <= 1),
-  f (ConvexDist.d p q t01) = t * f p + t.~ * f q.
+  f (Conv2Dist.d p q t01) = t * f p + t.~ * f q.
 Proof.
 split => [[H1 H2] p q t t01| H]; last first.
   split.
@@ -84,7 +84,7 @@ Section convex_dist_pair.
 Variables (A : finType) (f : dist A -> dist A -> R).
 Definition convex_dist_pair := forall (p1 p2 q1 q2 : dist A) (t : R) (Ht : 0 <= t <= 1),
   p1 << q1 -> p2 << q2 ->
-  f (ConvexDist.d p1 p2 Ht) (ConvexDist.d q1 q2 Ht) <=
+  f (Conv2Dist.d p1 p2 Ht) (Conv2Dist.d q1 q2 Ht) <=
   t * f p1 q1 + t.~ * f p2 q2.
 End convex_dist_pair.
 Definition concave_dist_pair (A : finType) (f : dist A -> dist A -> R) :=
@@ -137,7 +137,7 @@ move=> p1 p2 q1 q2 t t01 pq1 pq2.
 rewrite 2!big_distrr /= -big_split /= /div.
 rewrite rsum_setT [in X in _ <= X]rsum_setT.
 apply ler_rsum => a _.
-rewrite 2!ConvexDist.dE.
+rewrite 2!Conv2Dist.dE.
 case/boolP : (q2 a == 0) => [|] q2a0.
   rewrite (eqP q2a0) !(mul0R,mulR0,add0R).
   have p2a0 : p2 a == 0.
@@ -226,7 +226,7 @@ rewrite !(entropy_log_div _ A_not_empty') /=.
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
 rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
 move: (div_convex t01 (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).
-by rewrite ConvexDist.idempotent.
+by rewrite Conv2Dist.idempotent.
 Qed.
 
 End entropy_concave.
@@ -434,21 +434,21 @@ apply concave_distB.
   rewrite !Swap.snd !Bivar.fstE !mulRN -oppRD; congr (- _).
   rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
   rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
-  rewrite !ProdDist.dE /= ConvexDist.dE /=.
+  rewrite !ProdDist.dE /= Conv2Dist.dE /=.
   rewrite !(mulRA t) !(mulRA t.~).
   case/boolP: (t * p a == 0) => /eqP Hp.
     rewrite Hp.
     case/boolP: (t.~ * q a == 0) => /eqP Hq.
       rewrite Hq; field.
     rewrite !(mul0R,add0R).
-    rewrite -CDist.E /=; last by rewrite ConvexDist.dE Hp add0R.
+    rewrite -CDist.E /=; last by rewrite Conv2Dist.dE Hp add0R.
     rewrite -CDist.E /= //; by move: Hq; rewrite mulR_neq0 => -[].
   case/boolP: (t.~ * q a == 0) => /eqP Hq.
     rewrite Hq !(mul0R,addR0).
-    rewrite -CDist.E; last by rewrite ConvexDist.dE Hq addR0.
+    rewrite -CDist.E; last by rewrite Conv2Dist.dE Hq addR0.
     rewrite -CDist.E /= //; by move: Hp; rewrite mulR_neq0 => -[].
   rewrite -CDist.E; last first.
-    rewrite /= ConvexDist.dE paddR_eq0; [tauto | |].
+    rewrite /= Conv2Dist.dE paddR_eq0; [tauto | |].
     apply/mulR_ge0; [by case: t01 | exact/dist_ge0].
     apply/mulR_ge0; [apply/onem_ge0; by case: t01 | exact/dist_ge0].
   rewrite -CDist.E; last by move: Hp; rewrite mulR_neq0 => -[].
@@ -571,7 +571,7 @@ Section gconvex_dist.
 Section def.
 Variables (A : finType) (B : finType) (f : (A -> dist B) -> R).
 Definition gconvex_dist := forall (p q : A -> dist B) (t : R) (t01 : 0 <= t <= 1),
-  f (fun x => ConvexDist.d (p x) (q x) t01) <= t * f p + t.~ * f q.
+  f (fun x => Conv2Dist.d (p x) (q x) t01) <= t * f p + t.~ * f q.
 End def.
 End gconvex_dist.
 
@@ -591,33 +591,33 @@ pose p1xy := CDist.joint_of p1'.
 pose p2xy := CDist.joint_of p2'.
 pose p1 := Bivar.snd p1xy.
 pose p2 := Bivar.snd p2xy.
-pose plambdayx := fun a : A => ConvexDist.d (p1yx a) (p2yx a) t01.
+pose plambdayx := fun a : A => Conv2Dist.d (p1yx a) (p2yx a) t01.
 pose plambda' := CDist.mkt P plambdayx.
 pose plambdaxy := CDist.joint_of plambda'.
 pose plambday := Bivar.snd plambdaxy.
 pose qlambdaxy := P `x plambday.
 pose q1xy := P `x p1.
 pose q2xy := P `x p2.
-have -> : MutualInfo.mi (CDist.make_joint P (fun x : A => ConvexDist.d (p1yx x) (p2yx x) t01)) =
+have -> : MutualInfo.mi (CDist.make_joint P (fun x : A => Conv2Dist.d (p1yx x) (p2yx x) t01)) =
        D(plambdaxy || qlambdaxy).
   rewrite MutualInfo.miE /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
   rewrite /qlambdaxy.
   by rewrite ProdDist.dE /= /CDist.make_joint /CDist.joint_of /= ProdDist.fst; congr (_ * _).
-have -> : qlambdaxy = ConvexDist.d q1xy q2xy t01.
+have -> : qlambdaxy = Conv2Dist.d q1xy q2xy t01.
   apply/dist_ext => -[a b].
-  rewrite !ProdDist.dE !ConvexDist.dE /=.
+  rewrite !ProdDist.dE !Conv2Dist.dE /=.
   rewrite /q1xy /q2xy !ProdDist.dE /=.
   rewrite /p1 /plambday.
   rewrite !Bivar.sndE !big_distrr /= -big_split /=.
   apply eq_bigr => a0 _.
   rewrite /plambdaxy /= !ProdDist.dE /= /p1xy /plambdayx.
-  rewrite ConvexDist.dE.
+  rewrite Conv2Dist.dE.
   field.
-have -> : plambdaxy = ConvexDist.d p1xy p2xy t01.
+have -> : plambdaxy = Conv2Dist.d p1xy p2xy t01.
   apply/dist_ext => -[a b].
-  rewrite !ProdDist.dE !ConvexDist.dE /=.
+  rewrite !ProdDist.dE !Conv2Dist.dE /=.
   rewrite /p1xy /p2xy !ProdDist.dE /=.
   field.
 have -> : MutualInfo.mi (CDist.make_joint P p1yx) = D(p1xy || q1xy).

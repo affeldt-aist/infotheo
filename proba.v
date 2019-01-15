@@ -22,8 +22,8 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
   9. Module D1Dist.
        construction of a distribution from another
        by removing one element from the support
-  10. Module ConvexDist.
-  11. Module FamilyDist.
+  10. Module ConvDist.
+  11. Module Conv2Dist.
   12. Module Bivar.
        Joint (Bivariate) Distribution
   13. Module Multivar
@@ -516,27 +516,52 @@ Proof. move=> Xa0; rewrite dE Xa0 div0R; by case: ifP. Qed.
 End prop.
 End D1Dist.
 
-Module ConvexDist.
+Module ConvDist.
+Section def.
+Variables (A : finType) (n : nat) (g : 'I_n -> dist A) (e : {dist 'I_n}).
+Definition f a := \rsum_(i < n) e i * g i a.
+Lemma f0 a : 0 <= f a.
+Proof. apply: rsumr_ge0 => /= i _; apply mulR_ge0; exact: dist_ge0. Qed.
+Lemma f1 : \rsum_(a in A) f a = 1.
+Proof.
+rewrite /f exchange_big /= -(pmf1 e) /=; apply eq_bigr => i _.
+by rewrite -big_distrr /= pmf1 mulR1.
+Qed.
+Definition d : dist A := locked (makeDist f0 f1).
+Lemma dE a : d a = \rsum_(i < n) e i * g i a.
+Proof. by rewrite /d; unlock. Qed.
+End def.
+End ConvDist.
+
+(* TODO: move? *)
+Module Dist2.
+Section def.
+Variables (p : R) (Op1 : (0 <= p <= 1)%R).
+Definition f : 'I_2 -> R := [eta (fun=>R0) with ord0 |-> p, lift ord0 ord0 |-> p.~].
+Lemma f0 : forall i, (0 <= f i)%R.
+Proof.
+move=> i; rewrite /f /=; case: ifP => _; first by case: Op1.
+case: ifPn => _; [apply onem_ge0; by case: Op1 | exact/leRR].
+Qed.
+Lemma f1 : \rsum_(i < 2) f i = 1%R.
+Proof. by rewrite 2!big_ord_recl big_ord0 addR0 /f /= onemKC. Qed.
+Definition d : {dist 'I_2} := locked (makeDist f0 f1).
+Lemma dE a : d a = [eta (fun=>R0) with ord0 |-> p, lift ord0 ord0 |-> p.~] a.
+Proof. by rewrite /d; unlock. Qed.
+End def.
+End Dist2.
+
+Module Conv2Dist.
 Section def.
 Variables (A : finType) (d1 d2 : dist A) (p : R).
-Hypothesis p01 : (0 <= p <= 1)%R.
-
-Definition f a := (p * d1 a + p.~ * d2 a)%R.
-
-Lemma f0 a : 0 <= f a.
-Proof.
-apply addR_ge0; apply mulR_ge0;
-  [by case: p01|exact: dist_ge0|exact: (onem_ge0 (proj2 p01))|exact: dist_ge0].
-Qed.
-
-Lemma f1 : \rsum_(a in A) f a = 1%R.
-Proof. by rewrite big_split /= -2!big_distrr /= 2!pmf1 2!mulR1 onemKC. Qed.
-
-Definition d : {dist A} := locked (makeDist f0 f1).
-
+Hypothesis p01 : 0 <= p <= 1.
+Definition d : {dist A} := locked
+  (ConvDist.d [eta (fun=> d1) with ord0 |-> d1, lift ord0 ord0 |-> d2] (Dist2.d p01)).
 Lemma dE a : d a = (p * d1 a + p.~ * d2 a)%R.
-Proof. by rewrite /d; unlock. Qed.
-
+Proof.
+rewrite /d; unlock => /=.
+by rewrite ConvDist.dE !big_ord_recl big_ord0 /= addR0 !Dist2.dE.
+Qed.
 End def.
 Section prop.
 Variables (A : finType).
@@ -646,32 +671,9 @@ by rewrite dE mulRDl !mulRA.
 Qed.
 
 End prop.
-End ConvexDist.
+End Conv2Dist.
 
-Notation "x <| p |> y" := (ConvexDist.d x y p) : proba_scope.
-
-Module FamilyDist.
-Section def.
-Variables (A : finType) (n : nat) (g : 'I_n -> dist A) (e : {dist 'I_n}).
-
-Definition f a := \rsum_(i < n) e i * g i a.
-
-Lemma f0 a : 0 <= f a.
-Proof. apply: rsumr_ge0 => /= i _; apply mulR_ge0; exact: dist_ge0. Qed.
-
-Lemma f1 : \rsum_(a in A) f a = 1.
-Proof.
-rewrite /f exchange_big /= -(pmf1 e) /=; apply eq_bigr => i _.
-by rewrite -big_distrr /= pmf1 mulR1.
-Qed.
-
-Definition d : dist A := locked (makeDist f0 f1).
-
-Lemma dE a : d a = \rsum_(i < n) e i * g i a.
-Proof. by rewrite /d; unlock. Qed.
-
-End def.
-End FamilyDist.
+Notation "x <| p |> y" := (Conv2Dist.d x y p) : proba_scope.
 
 (* bivariate (joint) distribution *)
 Module Bivar.
@@ -832,16 +834,16 @@ End def.
 Section prop.
 Variables (A B : finType) (Q : A -> dist B).
 Lemma fst_convex (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
-  Bivar.fst (d (ConvexDist.d p q t01) Q) =
-    ConvexDist.d (Bivar.fst (d p Q)) (Bivar.fst (d q Q)) t01.
+  Bivar.fst (d (Conv2Dist.d p q t01) Q) =
+    Conv2Dist.d (Bivar.fst (d p Q)) (Bivar.fst (d q Q)) t01.
 Proof. by rewrite !fst. Qed.
 Lemma snd_convex (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
-  Bivar.snd (d (ConvexDist.d p q t01) Q) =
-    ConvexDist.d (Bivar.snd (d p Q)) (Bivar.snd (d q Q)) t01.
+  Bivar.snd (d (Conv2Dist.d p q t01) Q) =
+    Conv2Dist.d (Bivar.snd (d p Q)) (Bivar.snd (d q Q)) t01.
 Proof.
 apply/dist_ext => b.
-rewrite Bivar.sndE ConvexDist.dE !Bivar.sndE 2!big_distrr /=.
-rewrite -big_split; apply eq_bigr => a _; rewrite !dE ConvexDist.dE /=; field.
+rewrite Bivar.sndE Conv2Dist.dE !Bivar.sndE 2!big_distrr /=.
+rewrite -big_split; apply eq_bigr => a _; rewrite !dE Conv2Dist.dE /=; field.
 Qed.
 End prop.
 End ProdDist.
