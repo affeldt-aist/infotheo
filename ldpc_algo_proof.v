@@ -2348,7 +2348,7 @@ rewrite -!(K949_lemma Hvb tanner d n0).
 rewrite /K949 /normalize.
 rewrite -big_beta.
 rewrite big_beta_mul /=.
-rewrite /Rdiv !mul1R.
+rewrite /Rdiv.
 congr pair.
   rewrite mulRC /alpha' !mxE.
   by rewrite eqxx mulRA.

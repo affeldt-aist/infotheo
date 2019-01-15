@@ -83,7 +83,7 @@ Reserved Notation "X '\=sum' Xs" (at level 50).
 Reserved Notation "'Pr[' X '>=' r ']'" (at level 5,
   X at next level, r at next level, format "Pr[  X  >=  r  ]").
 Reserved Notation "'`V'" (at level 5).
-Reserved Notation "'`V_'" (at level 5, format "'`V_'").
+Reserved Notation "'`V_' x" (at level 5, format "'`V_' x").
 Reserved Notation "P |= X _|_ Y" (at level 50, X, Y at next level,
   format "P  |=  X  _|_  Y").
 Reserved Notation "Z \= X '@+' Y" (at level 50).
@@ -1691,6 +1691,18 @@ End markov_inequality.
 
 Notation "'Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
 
+Section thm61.
+Variables (U : finType) (P : dist U) (X : {RV P -> R}) (phi : R -> R).
+Lemma thm61 : `E (comp_RV X phi) = \rsum_(r <- fin_img X) phi r * Pr `p_X (X @= r).
+Proof.
+rewrite /Ex.
+rewrite (sum_parti_finType _ X (fun u => comp_RV X phi u * `p_ (comp_RV X phi) u)) /=.
+apply eq_bigr => a _; rewrite /Pr big_distrr /=; apply eq_big.
+by move=> u; rewrite inE.
+by move=> u /eqP Xua; rewrite /comp_RV -Xua.
+Qed.
+End thm61.
+
 Section variance_def.
 
 Variables (U : finType) (P : dist U) (X : {RV P -> R}).
@@ -1708,14 +1720,14 @@ End variance_def.
 Arguments Var {U} _ _.
 
 Notation "'`V'" := (@Var _ _) : proba_scope.
-Notation "'`V_'" := (@Var _) : proba_scope.
+Notation "'`V_' x" := (@Var _ x) : proba_scope.
 
 Section variance_prop.
 
 Variables (U : finType) (P : dist U) (X : {RV P -> R}).
 
 (* The variance is not linear V (k X) = k^2 V (X) \cite[Theorem 6.7]{probook}: *)
-Lemma V_scale k : `V (k `cst* X) = k ^ 2 * `V X.
+Lemma Var_scale k : `V (k `cst* X) = k ^ 2 * `V X.
 Proof.
 rewrite {1}/`V [in X in X = _]/= E_scale_RV.
 pose Y : {RV P -> R} := k `cst* (X `+cst - `E X).
@@ -1724,6 +1736,13 @@ rewrite (@E_comp_RV_ext _ P ((k `cst* X) `-cst k * `E X) Y) //; last first.
   rewrite /Y /scale_RV /= /trans_min_RV /trans_add_RV; field.
 rewrite E_comp_RV; last by move=> *; field.
 by rewrite E_scale_RV.
+Qed.
+
+Lemma Var_trans m : `V (X `+cst m) = `V X.
+Proof.
+rewrite /Var E_trans_add_RV; congr (`E (_ `^2)).
+apply FunctionalExtensionality.functional_extensionality =>  /=u.
+rewrite /trans_add_RV /trans_min_RV /=; field.
 Qed.
 
 End variance_prop.
@@ -1977,18 +1996,6 @@ End sum_two_rand_var.
 
 Section expected_value_of_the_product.
 
-Section thm61.
-Variables (U : finType) (P : dist U) (A : finType) (X : {RV P -> A}) (phi : A -> R).
-Lemma thm61 : `E (comp_RV X phi) = \rsum_(r <- fin_img X) phi r * Pr `p_X (X @= r).
-Proof.
-rewrite /Ex.
-rewrite (sum_parti_finType _ X (fun u => comp_RV X phi u * `p_ (comp_RV X phi) u)) /=.
-apply eq_bigr => a _; rewrite /Pr big_distrr /=; apply eq_big.
-by move=> u; rewrite inE.
-by move=> u /eqP Xua; rewrite /comp_RV -Xua.
-Qed.
-End thm61.
-
 Section thm64.
 Variables (A B : finType) (X : A -> R) (Y : B -> R).
 Variables (P : {dist A * B}).
@@ -2094,14 +2101,14 @@ case=> [_ | n IH] Xsum Xs Hsum s Hs.
 Qed.
 
 (* The variance of the average for independent random variables: *)
-Lemma V_average n (P : dist A) (X : 'rV[A]_n -> R) Xs (sum_Xs : X \=sum Xs) :
+Lemma Var_average n (P : dist A) (X : 'rV[A]_n -> R) Xs (sum_Xs : X \=sum Xs) :
   forall sigma2, (forall i, `V_P (Xs ``_ i) = sigma2) ->
   INR n * `V_(P `^ n) (X `/ n) = sigma2.
 Proof.
 move=> s Hs.
 destruct n.
   by inversion sum_Xs.
-rewrite (V_scale X) // (V_sum_n sum_Xs Hs) //; field; exact/INR_eq0.
+rewrite (Var_scale X) // (V_sum_n sum_Xs Hs) //; field; exact/INR_eq0.
 Qed.
 
 End sum_n_rand_var.
@@ -2128,7 +2135,7 @@ rewrite divRM; last 2 first.
   by rewrite INR_eq0.
   exact/gtR_eqF/expR_gt0.
 have <- : `V (X `/ n.+1) = sigma2 / INR n.+1.
-  rewrite -(V_average X_Xs V_Xs) V_scale //; by field; exact/INR_eq0.
+  rewrite -(Var_average X_Xs V_Xs) Var_scale //; by field; exact/INR_eq0.
 have <- : `E (X `/ n.+1) = miu.
   rewrite E_scale_RV (E_sum_n P X_Xs).
   set su := \rsum_(_ <- _) _.

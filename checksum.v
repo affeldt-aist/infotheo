@@ -182,9 +182,9 @@ Hypothesis Hy : receivable W (`U HC) y.
 
 Lemma post_proba_uniform_checksubsum (x : 'rV['F_2]_n) :
   (`U HC) `^^ W, Hy (x | y) =
-    (Kppu W [set cw in C] y * INR (\prod_m0 (\delta ('V m0) x)) * W ``(y | x))%R.
+    (PosteriorProbability.Kppu W [set cw in C] y * INR (\prod_m0 (\delta ('V m0) x)) * W ``(y | x))%R.
 Proof.
-rewrite post_proba_uniform_kernel; congr (_ * _ * _)%R.
+rewrite PosteriorProbability.uniform_kernel; congr (_ * _ * _)%R.
 rewrite (big_morph _ mult_INR erefl) checksubsum_in_kernel.
 by rewrite inE mem_kernel_syndrome0.
 Qed.

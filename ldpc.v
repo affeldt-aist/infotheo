@@ -441,23 +441,22 @@ Local Notation "'alpha'" := (alpha H W y).
 
 (** Correctness of the estimation of the sum-product algorithm *)
 
-Import MarginalPosteriorProbabiliy.
-
 Local Open Scope R_scope.
 
 Lemma estimation_correctness (d : 'rV_n) n0 :
   let b := d ``_ n0 in let P := `U C_not_empty in
-  P '_ n0 `^^ W , Hy (b | y) = Kmpp Hy * Kppu W [set cw in C] y *
+  P '_ n0 `^^ W , Hy (b | y) =
+    MarginalPostProbability.Kmpp Hy * PosteriorProbability.Kppu W [set cw in C] y *
     W `(y ``_ n0 | b) * \rprod_(m0 in 'F n0) alpha m0 n0 d.
 Proof.
 move=> b P.
-rewrite marginal_post_probaE -2!mulRA; congr (_ * _).
-transitivity (Kppu W [set cw in C] y * (\rsum_(x # setT :\ n0 , d)
+rewrite MarginalPostProbability.probaE -2!mulRA; congr (_ * _).
+transitivity (PosteriorProbability.Kppu W [set cw in C] y * (\rsum_(x # setT :\ n0 , d)
       W ``(y | x) * \rprod_(m0 < m) INR (\delta ('V m0) x)))%R.
   rewrite [RHS]big_distrr [in RHS]/=.
   apply eq_big => t; first by rewrite -freeon_all.
   rewrite inE andTb => td_n0.
-  rewrite post_proba_uniform_kernel -mulRA; congr (_ * _)%R.
+  rewrite PosteriorProbability.uniform_kernel -mulRA; congr (_ * _)%R.
   rewrite mulRC; congr (_ * _)%R.
   by rewrite checksubsum_in_kernel inE mem_kernel_syndrome0.
 congr (_ * _)%R.
@@ -489,13 +488,14 @@ move=> /= m1 m0 t m1m0n0 tn0dn0; by rewrite checksubsum_dprojs_V.
 Qed.
 
 (* TODO: rename. move? *)
-Definition K949 (n0 : 'I_n) df := 1 /
+Definition K949 (n0 : 'I_n) df := /
   ((W Zp0 (y ``_ n0) * \rprod_(m1 in 'F n0) alpha m1 n0 (df `[ n0 := Zp0 ])) +
     W Zp1 (y ``_ n0) * \rprod_(m1 in 'F n0) alpha m1 n0 (df `[ n0 := Zp1 ])).
 
-Lemma K949_lemma df n0 : K949 n0 df = Kmpp Hy * Kppu W [set cw in C] y.
+Lemma K949_lemma df n0 : K949 n0 df =
+  MarginalPostProbability.Kmpp Hy * PosteriorProbability.Kppu W [set cw in C] y.
 Proof.
-rewrite /K949 /Kmpp /Kppu 2!div1R -invRM; last 2 first.
+rewrite /K949 /MarginalPostProbability.Kmpp /PosteriorProbability.Kppu -invRM; last 2 first.
   rewrite pmf1 => ?; lra.
   apply/eqP; by rewrite -not_receivable_uniformE Hy.
 congr (/ _).

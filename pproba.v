@@ -4,15 +4,16 @@ From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg zmodp matrix.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop proba channel.
+Require Import cproba.
 
 (** * Posterior Probability *)
 
 (** OUTLINE:
 - Section receivable_def.
 - Section receivable_uniform.
-- Module PosteriorProbability.
+- Module PostProbability.
 - Section post_proba_prop.
-- Module MarginalPosteriorProbabiliy.
+- Module MarginalPostProbabiliy.
 - Section marginal_post_proba_prop.
 *)
 
@@ -31,8 +32,7 @@ Local Open Scope R_scope.
 
 Section receivable_def.
 
-Variables (A B : finType) (W : `Ch_1(A, B)).
-Variables (n : nat) (P : {dist 'rV[A]_n}).
+Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 
 Definition receivable y := [exists x, (P x != 0) && (W ``(y | x) != 0)].
 
@@ -59,16 +59,13 @@ End receivable_def.
 
 Section receivable_uniform.
 
-Variables (A B : finType) (W : `Ch_1(A, B)).
-Variables (n : nat) (x : 'rV[A]_n).
-
+Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (x : 'rV[A]_n).
 Variable C : {set 'rV[A]_n}.
 Hypothesis HC : (0 < #| C |)%nat.
-
 Variable y : 'rV[B]_n.
 
 Lemma not_receivable_uniformE :
-  ~~ receivable W (`U HC) y = (\rsum_(t0 in C) W ``(y | t0) == 0)%R.
+  ~~ receivable W (`U HC) y = (\rsum_(t0 in C) W ``(y | t0) == 0).
 Proof.
 apply/idP/idP => [|/eqP].
 - rewrite negb_exists => /forallP H.
@@ -86,11 +83,10 @@ Qed.
 
 End receivable_uniform.
 
+(* posterior probability *)
 Module PosteriorProbability.
-Section PosteriorProbability_sect.
-
-Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat).
-Variable P : {dist 'rV[A]_n}.
+Section def.
+Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Variable y : 'rV[B]_n.
 Definition den := \rsum_(x in 'rV_n) P x * W ``(y | x).
 Hypothesis receivable_y : receivable W P y.
@@ -115,38 +111,41 @@ Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
 
 Lemma dE x : d x = P x * W ``(y | x) / den.
 Proof. rewrite /d; by unlock. Qed.
+End def.
+Local Notation "P '`^^' W ',' H '(' x '|' y ')'" := (@d _ _ W _ P y H x).
 
-End PosteriorProbability_sect.
-End PosteriorProbability.
+(* relation with channel-based information-theoretic definitions *)
+Section chap2.
+Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
+Local Open Scope channel_scope.
+Lemma ppE (x : 'rV[A]_n) (y : 'rV[B]_n) (Hy : receivable W P y) :
+  P `^^ W , Hy (x | y) = \Pr_(`J(P, W ``^ n))[[set x]|[set y]].
+Proof.
+rewrite dE /cPr setX1 2!Pr_set1 JointDistChan.dE /=; congr (_ / _).
+rewrite Bivar.sndE /=; apply eq_bigr => x' _; by rewrite JointDistChan.dE /= mulRC.
+Qed.
+End chap2.
 
-Notation "P '`^^' W ',' H '(' x '|' y ')'" :=
-  (@PosteriorProbability.d _ _ W _ P y H x) : proba_scope.
-
-Section post_proba_prop.
-
-Variables (A B : finType) (W : `Ch_1(A, B)).
-Variables (n : nat) (C : {set 'rV[A]_n}).
+Section prop.
+Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat).
+Variable (C : {set 'rV[A]_n}).
 Hypothesis HC : (0 < #| C |)%nat.
-
 Variable y : 'rV[B]_n.
 Hypothesis Hy : receivable W (`U HC) y.
 
-Definition Kppu := (/ \rsum_(c in C) W ``(y | c))%R.
+Definition Kppu := / \rsum_(c in C) W ``(y | c).
 
-Lemma post_proba_uniform0 (x : 'rV[A]_n) : x \notin C ->
-  (`U HC) `^^ W, Hy (x | y) = 0%R.
-Proof.
-move=> xC.
-by rewrite PosteriorProbability.dE UniformSupport.dEN // /Rdiv !mul0R.
-Qed.
+Lemma uniformEF (x : 'rV[A]_n) : x \notin C ->
+  (`U HC) `^^ W, Hy (x | y) = 0.
+Proof. move=> xC; by rewrite dE UniformSupport.dEN // /Rdiv !mul0R. Qed.
 
-Lemma post_proba_uniformE (x : 'rV[A]_n) : x \in C ->
-  (`U HC) `^^ W, Hy (x | y) = (Kppu * W ``(y | x))%R.
+Lemma uniformET (x : 'rV[A]_n) : x \in C ->
+  (`U HC) `^^ W, Hy (x | y) = Kppu * W ``(y | x).
 Proof.
 move=> Ht.
-rewrite PosteriorProbability.dE UniformSupport.dET // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
-rewrite /PosteriorProbability.den UniformSupport.restrict.
-have Htmp : INR #|C| != 0 by rewrite INR_eq0' -lt0n.
+rewrite dE UniformSupport.dET // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
+rewrite /den UniformSupport.restrict.
+have C0 : INR #|C| != 0 by rewrite INR_eq0' -lt0n.
 rewrite div1R -invRM.
   rewrite /Kppu; congr Rinv; rewrite big_distrr /=; apply eq_bigr => i iC.
   by rewrite UniformSupport.dET // div1R mulRA mulRV // mul1R.
@@ -158,30 +157,31 @@ rewrite -big_distrr /= mulR_eq0 => -[].
 by apply/eqP; rewrite -not_receivable_uniformE Hy.
 Qed.
 
-Lemma post_proba_uniform_kernel (x : 'rV[A]_n) :
+Lemma uniform_kernel (x : 'rV[A]_n) :
   (`U HC) `^^ W, Hy (x | y) = (Kppu * INR (x \in C) * W ``(y | x))%R.
 Proof.
-case/boolP : (x \in C) => Ht.
-- by rewrite post_proba_uniformE // ?inE // mulR1.
-- by rewrite post_proba_uniform0 ?inE // mulR0 mul0R.
+case/boolP : (x \in C) => xC.
+- by rewrite uniformET // ?inE // mulR1.
+- by rewrite uniformEF ?inE // mulR0 mul0R.
 Qed.
 
-End post_proba_prop.
+End prop.
+End PosteriorProbability.
+
+Notation "P '`^^' W ',' H '(' x '|' y ')'" :=
+  (@PosteriorProbability.d _ _ W _ P y H x) : proba_scope.
 
 Local Open Scope vec_ext_scope.
 
-Module MarginalPosteriorProbabiliy.
-Section marginal_post_proba.
-
-Variable n : nat.
-Variables (A : finType) (P : {dist 'rV[A]_n}).
-Variables (B : finType) (W : `Ch_1(A, B)).
+Module MarginalPostProbability.
+Section def.
+Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Variable y : 'rV[B]_n.
 Hypothesis H : receivable W P y.
 
 Let f' := fun x : 'rV_n => P `^^ W, H (x | y).
 
-Definition Kmpp : R := 1 / \rsum_(t in 'rV_n) f' t.
+Definition Kmpp : R := / \rsum_(t in 'rV_n) f' t.
 
 Lemma f'_neq0 : \rsum_(t in 'rV_n) f' t <> 0.
 Proof.
@@ -199,8 +199,7 @@ Lemma f0 i a : 0 <= f i a.
 Proof.
 apply mulR_ge0.
 - rewrite /Kmpp.
-  apply divR_ge0; [lra|].
-  apply/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
+  apply/ltRW/invR_gt0/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
     apply rsumr_ge0 => /= ? _; exact: dist_ge0.
   exact/f'_neq0.
 - apply rsumr_ge0 => /= ? _; exact: dist_ge0.
@@ -208,7 +207,7 @@ Qed.
 
 Lemma f1 i : \rsum_(a in A) f i a = 1.
 Proof.
-rewrite /f /= -big_distrr /= /Kmpp div1R.
+rewrite /f /= -big_distrr /= /Kmpp.
 set tmp1 := \rsum_( _ | _ ) _.
 set tmp2 := \rsum_( _ | _ ) _.
 suff : tmp1 = tmp2.
@@ -218,14 +217,10 @@ Qed.
 
 Definition d i : dist A := makeDist (f0 i) (f1 i).
 
-End marginal_post_proba.
-End MarginalPosteriorProbabiliy.
-
-Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" :=
-  (@MarginalPosteriorProbabiliy.d _ _ P _ W y H n0 a) : proba_scope.
-
-Section marginal_post_proba_prop.
-
+End def.
+Local Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" :=
+  (@d _ _ W _ P y H n0 a).
+Section prop.
 Variables (A B : finType) (W : `Ch_1(A, B)).
 Variables (n : nat) (C : {set 'rV[A]_n}).
 Hypothesis HC : (0 < #| C |)%nat.
@@ -233,34 +228,13 @@ Hypothesis HC : (0 < #| C |)%nat.
 Variable y : 'rV[B]_n.
 Hypothesis Hy : receivable W (`U HC) y.
 
-Import MarginalPosteriorProbabiliy.
-
-Lemma marginal_post_probaE b n0 :
+Lemma probaE b n0 :
   (`U HC) '_ n0 `^^ W, Hy (b | y) =
-  (Kmpp Hy * (\rsum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W, Hy (t | y)))%R.
+  Kmpp Hy * (\rsum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W, Hy (t | y)).
 Proof. by []. Qed.
 
-End marginal_post_proba_prop.
+End prop.
+End MarginalPostProbability.
 
-(* relation with channel-based information-theoretic definitions *)
-
-Require Import cproba.
-
-Section pproba_cPr.
-
-Local Open Scope channel_scope.
-
-Variables (n : nat) (A B : finType) (W : `Ch_1(A, B)).
-Variable P : {dist 'rV[A]_n}.
-
-Import MarginalPosteriorProbabiliy.
-
-Lemma ppE (x : 'rV[A]_n) (y : 'rV[B]_n) (Hy : receivable W P y) :
-  P `^^ W , Hy (x | y) = \Pr_(`J(P, W ``^ n))[[set x]|[set y]].
-Proof.
-rewrite PosteriorProbability.dE /PosteriorProbability.den /cPr setX1 2!Pr_set1.
-rewrite JointDistChan.dE /= mulRC; congr (_ / _).
-rewrite Bivar.sndE /=; apply eq_bigr => x' _; by rewrite JointDistChan.dE /= mulRC.
-Qed.
-
-End pproba_cPr.
+Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" :=
+  (@MarginalPostProbability.d _ _ W _ P y H n0 a) : proba_scope.
