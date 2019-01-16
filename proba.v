@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
 Require Import Reals Lra Nsatz FunctionalExtensionality.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop convex.
 
 (** * Formalization of discrete probabilities *)
 
@@ -60,7 +60,7 @@ Import Prenex Implicits.
 
 Reserved Notation "{ 'dist' T }" (at level 0, format "{ 'dist'  T }").
 Reserved Notation "'`U' HC " (at level 10, HC at next level).
-Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
+(*Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).*)
 Reserved Notation "P `^ n" (at level 5).
 Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "P1 `, P2" (at level 6).
@@ -553,10 +553,9 @@ End Dist2.
 
 Module Conv2Dist.
 Section def.
-Variables (A : finType) (d1 d2 : dist A) (p : R).
-Hypothesis p01 : 0 <= p <= 1.
+Variables (A : finType) (d1 d2 : dist A) (p : prob).
 Definition d : {dist A} := locked
-  (ConvDist.d [eta (fun=> d1) with ord0 |-> d1, lift ord0 ord0 |-> d2] (Dist2.d p01)).
+  (ConvDist.d [eta (fun=> d1) with ord0 |-> d1, lift ord0 ord0 |-> d2] (Dist2.d (Prob.Op1 p))).
 Lemma dE a : d a = (p * d1 a + p.~ * d2 a)%R.
 Proof.
 rewrite /d; unlock => /=.
@@ -568,32 +567,44 @@ Variables (A : finType).
 
 Local Notation "x <| p |> y" := (d x y p).
 
-Lemma d0 (d1 d2 : dist A) (H : 0 <= 0 <= 1) : d1 <| H |> d2 = d2.
+(*Lemma d0' (d1 d2 : dist A) (H : 0 <= 0 <= 1) : d1 <| Prob.mk H |> d2 = d2.
 Proof.
-apply/dist_ext => a /=.
-by rewrite dE mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R).
+apply/dist_ext => a /=; by rewrite dE mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R).
 Qed.
 
-Lemma d1 (d1 d2 : dist A) (H : 0 <= 1 <= 1) : d1 <| H |> d2 = d1.
+Lemma d0 (d1 d2 : dist A) : d1 <| `Pr 0 |> d2 = d2.
+Proof. by rewrite d0'. Qed.*)
+
+Lemma d1' (d1 d2 : dist A) (H : 0 <= 1 <= 1) : d1 <| Prob.mk H |> d2 = d1.
 Proof.
-apply/dist_ext => a /=.
-by rewrite dE mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R,addRN).
+apply/dist_ext => a /=; by rewrite dE mulRDl !(mul0R,mulNR,oppR0,add0R,addR0,mulR1,mul1R,addRN).
 Qed.
 
-(* TODO: rename to skewed_commute *)
-Lemma quasi_commute (d1 d2 : dist A) p (Hp : 0 <= p <= 1) (Hp' : 0 <= p.~ <= 1) :
-  d1 <| Hp |> d2 = d2 <| Hp' |> d1.
+Lemma d1 (d1 d2 : dist A) : d1 <| `Pr 1 |> d2 = d1.
+Proof. by rewrite d1'. Qed.
+
+Lemma skewed_commute' (d1 d2 : dist A) p (Hp : 0 <= p <= 1) :
+  d1 <| Prob.mk Hp |> d2 = d2 <| Prob.mk (onem_prob Hp) |> d1.
 Proof. apply/dist_ext => a /=; by rewrite 2!dE onemK addRC. Qed.
 
-Lemma idempotent (d0 : dist A) p (p01 : 0 <= p <= 1) : d0 <|p01|> d0 = d0.
+Lemma skewed_commute (d1 d2 : dist A) p : d1 <| p |> d2 = d2 <| `Pr p.~ |> d1.
+Proof.
+rewrite skewed_commute' /=.
+by apply/dist_ext => a; rewrite !dE /= !onemK.
+Qed.
+
+Lemma idempotent' (d0 : dist A) p (p01 : 0 <= p <= 1) : d0 <|Prob.mk p01|> d0 = d0.
 Proof.
 apply/dist_ext => a; by rewrite dE mulRBl mul1R addRCA addRN addR0.
 Qed.
 
-Lemma quasi_assoc (p q r s : R) (d0 d1 d2 : dist A)
+Lemma idempotent (d0 : dist A) p : d0 <| p |> d0 = d0.
+Proof. by case: p => p Hp; rewrite idempotent'. Qed.
+
+Lemma quasi_assoc' (p q r s : R) (d0 d1 d2 : dist A)
   (Hp : 0 <= p <= 1) (Hq : 0 <= q <= 1) (Hr : 0 <= r <= 1) (Hs : 0 <= s <= 1) :
   p = (r * s)%R -> (s.~ = p.~ * q.~)%R ->
-  d0 <|Hp|> (d1 <|Hq|> d2) = (d0 <|Hr|> d1) <|Hs|> d2.
+  d0 <|Prob.mk Hp|> (d1 <|Prob.mk Hq|> d2) = (d0 <|Prob.mk Hr|> d1) <|Prob.mk Hs|> d2.
 Proof.
 move=> H1 H2; apply/dist_ext => a /=; rewrite 4!dE /=.
 transitivity (p * d0 a + p.~ * q * d1 a + p.~ * q.~ * d2 a)%R; first lra.
@@ -603,13 +614,39 @@ rewrite -(onemK s) H2; nsatz.
 rewrite H2 H1; lra.
 Qed.
 
-Lemma commute (x1 y1 x2 y2 : dist A) p q (Hp : 0 <= p <= 1) (Hq : 0 <= q <= 1) :
-  (x1 <|Hq|> y1) <|Hp|> (x2 <|Hq|> y2) = (x1 <|Hp|> x2) <|Hq|> (y1 <|Hp|> y2).
+Lemma quasi_assoc (p q r s : prob) (d0 d1 d2 : dist A) :
+  p = (r * s)%R :> R -> (s.~ = p.~ * q.~)%R ->
+  d0 <|p|> (d1 <|q|> d2) = (d0 <|r|> d1) <|s|> d2.
 Proof.
-case/boolP : (p == 0 :> R) => [|]/eqP p0; first by subst p; rewrite !d0.
-case/boolP : (q == 0 :> R) => [|]/eqP q0; first by subst q; rewrite !d0.
-case/boolP : (p == 1 :> R) => [|]/eqP p1; first by subst p; rewrite !d1.
-case/boolP : (q == 1 :> R) => [|]/eqP q1; first by subst q; rewrite !d1.
+move: p q r s => -[p Hp] [q Hq] [r Hr] [s Hs] /= H1 H2.
+by rewrite (@quasi_assoc' _ _ r s).
+Qed.
+End prop.
+End Conv2Dist.
+
+Definition dist_convMixin (A : finType) :=
+  @ConvexSpace.Class (dist A) (@Conv2Dist.d A)
+  (@Conv2Dist.d1 A)
+  (@Conv2Dist.idempotent A)
+  (@Conv2Dist.skewed_commute A)
+  (@Conv2Dist.quasi_assoc A).
+Canonical dist_convType (A : finType) := ConvexSpace.Pack (dist_convMixin A).
+
+Module Conv2DistProp.
+Section prop.
+Variables (A : finType).
+Local Open Scope convex_scope.
+Lemma commute' (x1 y1 x2 y2 : dist A) p q (Hp : 0 <= p <= 1) (Hq : 0 <= q <= 1) :
+  (x1 <|Prob.mk Hq|> y1) <|Prob.mk Hp|> (x2 <|Prob.mk Hq|> y2) = (x1 <|Prob.mk Hp|> x2) <|Prob.mk Hq|> (y1 <|Prob.mk Hp|> y2).
+Proof.
+case/boolP : (p == 0 :> R) => [|]/eqP p0.
+  by subst p; rewrite !(ProofIrrelevance.proof_irrelevance _ Hp OO1) !conv0.
+case/boolP : (q == 0 :> R) => [|]/eqP q0.
+  by subst q; rewrite !(ProofIrrelevance.proof_irrelevance _ Hq OO1) !conv0.
+case/boolP : (p == 1 :> R) => [|]/eqP p1.
+  by subst p; rewrite !(ProofIrrelevance.proof_irrelevance _ Hp O11) !conv1.
+case/boolP : (q == 1 :> R) => [|]/eqP q1.
+  by subst q; rewrite !(ProofIrrelevance.proof_irrelevance _ Hq O11) !conv1.
 set r := p * q.
 have pq1 : p * q != 1.
   apply/eqP => pq1; have {p1} : p < 1 by lra.
@@ -618,7 +655,8 @@ have pq1 : p * q != 1.
 have r1 : r < 1.
   rewrite ltR_neqAle; split; [exact/eqP|rewrite -(mulR1 1); apply/leR_pmul; tauto].
 set s := (p - r) / (1 - r).
-rewrite -(@quasi_assoc r s _ _ x1); last 2 first.
+rewrite /Conv /= (* TODO *).
+rewrite -(@Conv2Dist.quasi_assoc' _ r s _ _ x1); last 2 first.
   by rewrite mulRC.
   rewrite /onem {}/s; field; by apply/eqP; rewrite subR_eq0 eq_sym.
   split.
@@ -627,9 +665,7 @@ rewrite -(@quasi_assoc r s _ _ x1); last 2 first.
   - rewrite /s leR_pdivr_mulr ?subR_gt0 // mul1R leR_add2r; tauto.
   split; by [apply/mulR_ge0; tauto | rewrite leR_eqVlt; right].
 move=> Hs Hr.
-rewrite (quasi_commute y1).
-  split; [apply onem_ge0; tauto | apply onem_le1; tauto].
-move=> Hs'.
+rewrite (Conv2Dist.skewed_commute y1).
 set t := s.~ * q.
 have t01 : 0 <= t <= 1.
   split; first by apply/mulR_ge0; [apply onem_ge0; tauto|tauto].
@@ -640,40 +676,55 @@ have t1 : t < 1.
   move=> t1; subst t.
   have {q1} : q < 1 by lra.
     rewrite -t1 -ltR_pdivr_mulr; last by lra.
-    rewrite divRR; [lra | exact/eqP].
-rewrite -(@quasi_assoc t p.~ _ _ x2) => //; last 2 first.
+    rewrite divRR; [rewrite /onem; lra | exact/eqP].
+rewrite -(@Conv2Dist.quasi_assoc' _ t p.~ _ _ x2) => //; last 2 first.
   by rewrite mulRC.
-  rewrite 2!onemK /t /onem /s /r; field.
+  rewrite /= !onemK /t /s /r /onem; field.
   by apply/eqP; rewrite subR_eq0 eq_sym.
   split; [apply onem_ge0; tauto | apply onem_le1; tauto].
 move=> Hp'.
-rewrite (@quasi_assoc _ _ p.~.~ q x1); last 2 first.
+rewrite (@Conv2Dist.quasi_assoc' _ _ _ p.~.~ q x1); last 2 first.
   by rewrite onemK.
   rewrite /t /onem /s /r; field; by apply/eqP; rewrite subR_eq0 eq_sym.
   by rewrite onemK.
-move=> Hp''.
-rewrite (quasi_commute y2 y1).
-move: Hp''; rewrite onemK => Hp''.
-by rewrite (ProofIrrelevance.proof_irrelevance _ Hp'' Hp).
+rewrite !onemK => Hp''.
+rewrite (Conv2Dist.skewed_commute' y2 y1).
+rewrite (ProofIrrelevance.proof_irrelevance _ Hp'' Hp).
+congr (_ <| Prob.mk Hq |> _).
+apply/dist_ext => a /=.
+by rewrite !Conv2Dist.dE /= !onemK.
 Qed.
 
-Lemma distribute (x y z : dist A) p q (Hp : 0 <= p <= 1) (Hq : 0 <= q <= 1) :
-  x <|Hp|> (y <|Hq|> z) = (x <|Hp|> y) <|Hq|> (x <|Hp|> z).
-Proof. by rewrite -{1}(idempotent x Hq) commute. Qed.
+Lemma commute (x1 y1 x2 y2 : dist A) p q :
+  (x1 <|q|> y1) <|p|> (x2 <|q|> y2) = (x1 <|p|> x2) <|q|> (y1 <|p|> y2).
+Proof. by move: p q => -[p Hp] [q Hq]; rewrite commute'. Qed.
 
-Lemma bind_left_distr (B : finType) (p : R) (Hp : 0 <= p <= 1)
+Lemma distribute' (x y z : dist A) p q (Hp : 0 <= p <= 1) (Hq : 0 <= q <= 1) :
+  x <|Prob.mk Hp|> (y <|Prob.mk Hq|> z) = (x <|Prob.mk Hp|> y) <|Prob.mk Hq|> (x <|Prob.mk Hp|> z).
+Proof. by rewrite -{1}(convmm x (Prob.mk Hq)) commute. Qed.
+
+Lemma distribute (x y z : dist A) p q :
+  x <|p|> (y <|q|> z) = (x <|p|> y) <|q|> (x <|p|> z).
+Proof. by move: p q => -[p Hp] [q Hq]; rewrite distribute'. Qed.
+
+Lemma bind_left_distr' (B : finType) (p : R) (Hp : 0 <= p <= 1)
   (d0 d1 : dist A) (f : A -> dist B) :
-  DistBind.d (d0 <| Hp |> d1) f = DistBind.d d0 f <| Hp |> DistBind.d d1 f.
+  DistBind.d (d0 <| Prob.mk Hp |> d1) f = DistBind.d d0 f <| Prob.mk Hp |> DistBind.d d1 f.
 Proof.
-apply/dist_ext => a /=; rewrite !(DistBind.dE,dE) /=.
+apply/dist_ext => a /=; rewrite !(DistBind.dE,Conv2Dist.dE) /=.
 rewrite 2!big_distrr /= -big_split /=; apply/eq_bigr => a0 _.
-by rewrite dE mulRDl !mulRA.
+by rewrite Conv2Dist.dE mulRDl !mulRA.
 Qed.
+
+Lemma bind_left_distr (B : finType) (p : prob)
+  (d0 d1 : dist A) (f : A -> dist B) :
+  DistBind.d (d0 <| p |> d1) f = DistBind.d d0 f <| p |> DistBind.d d1 f.
+Proof. by rewrite bind_left_distr'. Qed.
 
 End prop.
-End Conv2Dist.
+End Conv2DistProp.
 
-Notation "x <| p |> y" := (Conv2Dist.d x y p) : proba_scope.
+(*Notation "x <| p |> y" := (Conv2Dist.d x y p) : proba_scope.*)
 
 (* bivariate (joint) distribution *)
 Module Bivar.
@@ -834,12 +885,12 @@ End def.
 Section prop.
 Variables (A B : finType) (Q : A -> dist B).
 Lemma fst_convex (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
-  Bivar.fst (d (Conv2Dist.d p q t01) Q) =
-    Conv2Dist.d (Bivar.fst (d p Q)) (Bivar.fst (d q Q)) t01.
+  Bivar.fst (d (Conv2Dist.d p q (Prob.mk t01)) Q) =
+    Conv2Dist.d (Bivar.fst (d p Q)) (Bivar.fst (d q Q)) (Prob.mk t01).
 Proof. by rewrite !fst. Qed.
 Lemma snd_convex (p q : dist A) (t : R) (t01 : 0 <= t <= 1) :
-  Bivar.snd (d (Conv2Dist.d p q t01) Q) =
-    Conv2Dist.d (Bivar.snd (d p Q)) (Bivar.snd (d q Q)) t01.
+  Bivar.snd (d (Conv2Dist.d p q (Prob.mk t01)) Q) =
+    Conv2Dist.d (Bivar.snd (d p Q)) (Bivar.snd (d q Q)) (Prob.mk t01).
 Proof.
 apply/dist_ext => b.
 rewrite Bivar.sndE Conv2Dist.dE !Bivar.sndE 2!big_distrr /=.

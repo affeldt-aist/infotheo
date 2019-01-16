@@ -626,12 +626,12 @@ rewrite /log /Log (_ : (fun x0 => ln x0 / ln 2) =
 apply/derivable_pt_scal/derivable_pt_ln/(leR_ltR_trans a0); by case: Hx.
 Qed.
 
-Lemma ln_concave_gt0 x y t : x < y ->
-  0 < x -> 0 < y -> 0 <= t <= 1 -> concavef_leq ln x y t.
+Lemma ln_concave_at_gt0 x y (t : prob) : x < y ->
+  0 < x -> 0 < y -> concave_function_at ln x y t.
 Proof.
-move=> xy x0 y0 t01; rewrite /concavef_leq.
+move=> xy x0 y0; rewrite /concave_function_at.
 set Df := fun x => - / x.
-move: t t01.
+move: t.
 have HDf : pderivable (fun x => - ln x) (fun x0 => x <= x0 <= y).
   rewrite (_ : (fun x => - ln x) = comp Ropp ln); last first.
     exact: functional_extensionality.
@@ -646,7 +646,7 @@ have HDDf : pderivable Df (fun x0 : R => x <= x0 <= y).
     exact: functional_extensionality.
   apply derivable_pt_inv; last exact: derivable_pt_id.
   apply/gtR_eqF/(@ltR_leR_trans x) => //; by case: xry.
-apply: (@second_derivative_convexf _ _ _ HDf Df _ HDDf DDf) => //.
+apply: (@second_derivative_convexf_pt _ _ _ HDf Df _ HDDf DDf) => //.
 - move=> r xry; rewrite /Df.
   have r0 : 0 < r by apply (@ltR_leR_trans x) => //; case: xry.
   transitivity (derive_pt (comp Ropp ln) _
@@ -666,23 +666,26 @@ apply: (@second_derivative_convexf _ _ _ HDf Df _ HDDf DDf) => //.
   exact/expR_ge0/ltRW/invR_gt0/(@ltR_leR_trans x).
 Qed.
 
-Lemma log_concave_gt0W x y t : x < y ->
-  0 < x -> 0 < y -> 0 <= t <= 1 -> concavef_leq log x y t.
+Local Open Scope reals_ext_scope.
+
+Lemma log_concave_at_gt0W x y (t : prob) : x < y ->
+  0 < x -> 0 < y -> concave_function_at log x y t.
 Proof.
-move=> xy x0 y0 t01; rewrite /log /Log.
-apply concavef_leqN; [exact: ln_concave_gt0 | exact/ltRW/invR_gt0/ln2_gt0].
+move=> xy x0 y0; rewrite /log /Log.
+apply concave_function_atN; [exact: ln_concave_at_gt0 | exact/ltRW/invR_gt0/ln2_gt0].
 Qed.
 
-Lemma log_concave_gt0 x y t :
-  0 < x -> 0 < y -> 0 <= t <= 1 -> concavef_leq log x y t.
+Lemma log_concave_at_gt0 x y (t : prob) : 0 < x -> 0 < y -> concave_function_at log x y t.
 Proof.
-move=> x0 y0 t01.
-case/boolP : (x <b y) => [/ltRP xy|]; first exact: log_concave_gt0W.
+move=> x0 y0.
+case/boolP : (x <b y) => [/ltRP xy|].
+  exact: log_concave_at_gt0W.
 rewrite -leRNgt' => /leRP; rewrite leR_eqVlt => -[->|yx].
-exact: convexf_leqxx.
-rewrite -(onemK t); apply: concavef_leq_onem => //.
-exact: onem_prob.
-apply: log_concave_gt0W => //; exact: onem_prob.
+exact: concave_function_atxx.
+rewrite (probK t); apply: concavef_at_onem => //; exact: log_concave_at_gt0W.
 Qed.
+
+Lemma log_concave : concave_function_in Rpos_interval log.
+Proof. move=> x y t Hx Hy; apply log_concave_at_gt0 => //; by case: t. Qed.
 
 End log_concave.

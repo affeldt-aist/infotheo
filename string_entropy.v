@@ -136,10 +136,6 @@ move=> a _; suff -> : N(a|s) == O by [].
 by rewrite /num_occ -leqn0 -(eqP i) count_size.
 Qed.
 
-(* TODO: move to ln_facts.v also ? *)
-Lemma log_concave : concavef_in Rpos_interval log.
-Proof. by move=> x; apply log_concave_gt0. Qed.
-
 Theorem concats_entropy ss :
 (*  \rsum_(s <- ss) size s * Hs s
        <= size (flatten ss) * Hs (flatten ss). *)

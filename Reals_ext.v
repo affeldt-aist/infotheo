@@ -13,6 +13,7 @@ Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
 Reserved Notation "P '<<' Q" (at level 10, Q at next level).
 Reserved Notation "P '<<b' Q" (at level 10).
 Reserved Notation "p '.~'" (format "p .~", at level 5).
+Reserved Notation "'`Pr' p " (format "`Pr  p", at level 6).
 
 Notation "'min(' x ',' y ')'" := (Rmin x y)
   (format "'min(' x ','  y ')'") : reals_ext_scope.
@@ -104,6 +105,66 @@ Lemma onem_lt1 r : 0 < r -> r.~ < 1. Proof. rewrite /onem; lra. Qed.
 End onem.
 
 Notation "p '.~'" := (onem p) : reals_ext_scope.
+
+Module Prob.
+Record t := mk {
+  p : R ;
+  Op1 : (0 <= p <= 1)%R }.
+Definition O1 (p : t) := Op1 p.
+Arguments O1 : simpl never.
+Module Exports.
+Notation prob := t.
+Notation "'`Pr' q" := (@mk q (@O1 _)).
+Coercion p : t >-> R.
+End Exports.
+End Prob.
+Export Prob.Exports.
+
+Definition eqprob (x y : prob) := (x == y :> R).
+
+Lemma eqprobP : Equality.axiom eqprob.
+Proof.
+move=> -[a Ha] -[b Hb]; rewrite /eqprob /=; apply: (iffP idP) => [/eqP ab| [->] //].
+subst a; congr Prob.mk; exact: ProofIrrelevance.proof_irrelevance.
+Qed.
+
+Canonical prob_eqMixin := EqMixin eqprobP.
+Canonical prob_eqType := Eval hnf in EqType _ prob_eqMixin.
+
+Lemma probpK p H : Prob.p (@Prob.mk p H) = p. Proof. by []. Qed.
+
+Lemma OO1 : (R0 <= R0 <= R1)%R.
+Proof. lra. Qed.
+
+Lemma O11 : (R0 <= R1 <= R1)%R.
+Proof. lra. Qed.
+
+Canonical prob0 := Prob.mk OO1.
+Canonical prob1 := Prob.mk O11.
+Canonical probcplt (p : prob) := @Prob.mk p.~ (onem_prob (Prob.O1 p)).
+
+Lemma prob_ge0 (p : prob) : (0 <= p)%R.
+Proof. by case: p => p []. Qed.
+
+Lemma prob_le1 (p : prob) : (p <= 1)%R.
+Proof. by case: p => p []. Qed.
+
+Lemma prob_gt0 (p : prob) : p != `Pr 0 -> (0 < p)%R.
+Proof.
+move=> H; rewrite ltR_neqAle; split; [exact/nesym/eqP|exact/prob_ge0].
+Qed.
+
+Lemma prob_lt1 (p : prob) : p != `Pr 1 -> (p < 1)%R.
+Proof. move=> H; rewrite ltR_neqAle; split; [exact/eqP|exact/prob_le1]. Qed.
+
+Lemma prob_ext (p q : prob) : p = q :> R -> p = q.
+Proof.
+move: p q => -[p Hp] [q Hq] /= ?; subst q.
+by rewrite (ProofIrrelevance.proof_irrelevance _ Hp Hq).
+Qed.
+
+Lemma probK t : t = `Pr (t.~).~ :> prob.
+Proof. by apply prob_ext => /=; rewrite onemK. Qed.
 
 (** non-negative rationals: *)
 
