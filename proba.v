@@ -128,7 +128,7 @@ rewrite big_const iter_addR mulR0 add0R [in RHS]big_seq_cond.
 apply eq_bigl => a; by rewrite !inE andbC /index_enum -enumT mem_enum inE.
 Qed.
 
-Lemma dist_ind (P : dist -> Prop) :
+Lemma dist_ind (P : dist -> Type) :
   (forall n : nat, (forall X, #|dist_supp X| = n -> P X) ->
     forall X b, #|dist_supp X| = n.+1 -> X b != 0 -> P X) ->
   forall X, P X.
@@ -142,7 +142,7 @@ elim=> [d /esym /card0_eq Hd0|].
     by elim: (gtR_eqF _ _ Rlt_0_1).
   by rewrite Hd0.
 move=> n IH d n13.
-have [b Hb] : exists b : A, d b != 0.
+have [b Hb] : {b : A | d b != 0}.
   suff : {x | x \in dist_supp d} by case => a; rewrite inE => ?; exists a.
   apply/sigW/set0Pn; by rewrite -cards_eq0 -n13.
 by refine (H1 n _ _ _ _ Hb) => // d' A2; apply IH.
