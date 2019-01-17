@@ -170,7 +170,7 @@ End entropy_concave.
 
 Module entropy_concave_alternative_proof_binary_case.
 
-Lemma pderivable_H2 : pderivable H2 (mem_interval open_unit_interval).
+Lemma pderivable_H2 : pderivable H2 (CSet.car open_unit_interval).
 Proof.
 move=> x /= [Hx0 Hx1].
 apply derivable_pt_plus.
@@ -216,10 +216,10 @@ Proof.
 Qed.
 
 Lemma concavity_of_entropy_x_le_y x y (t : prob) :
-  open_unit_interval x -> open_unit_interval y -> x < y ->
+  x \in open_unit_interval -> y \in open_unit_interval -> x < y ->
   concave_function_at H2 x y t.
 Proof.
-move => [H0x Hx1] [H0y Hy1] Hxy.
+rewrite !classical_sets.in_setE => -[H0x Hx1] [H0y Hy1] Hxy.
 eapply second_derivative_convexf_pt.
 Unshelve.
 - Focus 4. done.

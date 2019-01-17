@@ -1,4 +1,5 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+Require Program.Wf.
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
@@ -790,8 +791,6 @@ Section SumProdBEC_algo.
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "''F'" := (Fnext H).
-
-Require Program.Wf.
 
 Obligation Tactic := idtac.
 
