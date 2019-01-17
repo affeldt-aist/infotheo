@@ -480,16 +480,56 @@ rewrite mulRBl mulRBr mulR1 (mulRC s r) -K1; lra.
 Qed.
 Definition R_convMixin := ConvexSpace.Class avgn1E avgnE avgE avgn_proj avgI avgC avgA.
 Canonical R_convType := ConvexSpace.Pack R_convMixin.
-
 End R_convex_space.
 
-Module FunConvType.
+Module Funavg.
 Variables (A:Type) (B:convType).
 
 Definition T := A -> B.
 
 Definition avg (x y : T) (t : prob) :=
   fun a : A => (x a <| t |> y a).
+
+Definition avgn n (g : 'I_n -> T) (e : {dist 'I_n}) :=
+  fun a : A => @Convn B n (fun (i : 'I_n) => g i a) e.
+
+Lemma avgn1E a : avgn (fun _ : 'I_1 => a) (Dist1.d ord0) = a.
+Proof.
+  apply FunctionalExtensionality.functional_extensionality => x.
+  rewrite /avgn //.
+  by rewrite convn1E.
+Qed.  
+Lemma avgnE n (g : 'I_n.+1 -> T) (d : {dist 'I_n.+1}) (i : 'I_n.+1) (i1 : d i != 1%R) :
+  avgn g d = avg (g i)
+    (avgn (fun x => g (DelDist.h i x)) (DelDist.d i1))
+    (Prob.mk (conj (dist_ge0 d i) (dist_max d i))).
+Proof.
+  apply FunctionalExtensionality.functional_extensionality => x.
+  rewrite /avg /avgn //.
+  set (f := g^~ x).
+  by rewrite (convnE f i1) //.
+Qed.
+Lemma avgn_proj n g (d : {dist 'I_n}) i : d i = 1%R -> avgn g d = g i.
+Proof.
+  move => H.
+  apply FunctionalExtensionality.functional_extensionality => x.
+  rewrite /avgn.
+  by rewrite (convn_proj (g^~ x) H).
+Qed.
+
+Lemma avgE a b p : avg a b p = avgn (fun i => if i == ord0 then a else b) (I2Dist.d p).
+Proof.
+  apply FunctionalExtensionality.functional_extensionality => x.
+  rewrite /avg /avgn //.
+  rewrite conv2E.
+  have -> : (fun i : 'I_2 => if i == ord0 then a x else b x) = (fun i : 'I_2 => (if i == ord0 then a else b) x).
+  apply FunctionalExtensionality.functional_extensionality => i.
+  case i => m H.
+  case (Ordinal H) => m0 H0.
+  by case (Ordinal H0 == ord0).
+  done.
+Qed.  
+
 Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
 Proof.
   apply FunctionalExtensionality.functional_extensionality => a.
@@ -514,11 +554,15 @@ Proof.
   apply FunctionalExtensionality.functional_extensionality => a.
   by apply convA.
 Qed.
+End Funavg.
 
-Definition Fun_convMixin := ConvexSpace.Class avg1 avgI avgC avgA.
-Canonical Fun_convType := ConvexSpace.Pack Fun_convMixin.
+Section fun_convex_space.
+Variables (A:Type) (B:convType).
 
-End FunConvType.
+Definition funConvMixin := ConvexSpace.Class Funavg.avgn1E Funavg.avgnE Funavg.avgE Funavg.avgn_proj Funavg.avgI Funavg.avgC Funavg.avgA.
+Canonical funConvType := ConvexSpace.Pack funConvMixin.
+
+End fun_convex_space.
 
 Section convex_set.
 Variable A : convType.
