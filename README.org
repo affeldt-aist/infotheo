@@ -12,6 +12,8 @@ Coq 8.8.2.
 Compilation should be fine with previous versions except for 
 minor problems due to recent changes in the Reals library.
 
+[[https://github.com/math-comp/analysis][MathComp-Analysis]]
+
 ** Installation
 
 1. ~coq_makefile -f _CoqProject -o Makefile~

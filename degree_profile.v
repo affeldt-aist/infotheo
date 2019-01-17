@@ -1,8 +1,9 @@
+Require ProofIrrelevance.
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
 From mathcomp Require Import fintype div bigop ssralg binomial finset fingroup.
 From mathcomp Require Import zmodp poly ssrnum matrix tuple finfun path ssrnum.
 From mathcomp Require Import binomial perm.
-Require Import ssr_ext ssralg_ext proba.
+Require Import ssr_ext ssralg_ext ssrR proba.
 
 (** * wip *)
 
@@ -694,8 +695,6 @@ Hypothesis RofK1 : RofK 1 = 1%R.
 Hypothesis RofKadd : forall x y : K, RofK (x + y) = (RofK x + RofK y)%R.
 Hypothesis RofKmul : forall x y : K, RofK (x * y) = (RofK x * RofK y)%R.
 
-Require Import ssrR.
-
 Lemma f0R l t : (0 <= RofK (@fintree_dist l t))%R.
 Proof. apply RofKpos, f0. Qed.
 
@@ -1144,8 +1143,6 @@ Canonical hemi_comp_graph_eqType :=
 Definition comp_graph_eqb (c1 c2 : comp_graph) :=
  [&& nodes c1 == nodes c2, conodes c1 == conodes c2 & edges c1 == edges c2].
 
-Require Import ProofIrrelevance.
-
 Lemma comp_graph_eqP : Equality.axiom comp_graph_eqb.
 Proof.
 case => n1 cn1 e1 ed1 ec1 ei1 eo1.
@@ -1158,8 +1155,8 @@ case: eqP => Hn /=.
       destruct Hn, Hcn, He.
       subst ed1 ed2.
       rewrite (eq_irrelevance ec1 ec2).
-      have -> : ei1 = ei2 by apply proof_irrelevance.
-      have -> : eo1 = eo2 by apply proof_irrelevance.
+      have -> : ei1 = ei2 by apply ProofIrrelevance.proof_irrelevance.
+      have -> : eo1 = eo2 by apply ProofIrrelevance.proof_irrelevance.
       by [].
     apply ReflectF => [] [] _ _.
     by move/He.
@@ -4946,7 +4943,7 @@ Let conodes_ports := \bigcup_(x in exnodes.2) x.
 Definition nodes_border := nodes_ports :\: edges g @^-1: conodes_ports.
 Definition conode_border := conodes_ports :\: edges g @: nodes_ports.
 
-Search _ subset setD.
+(*Search _ subset setD.*)
 
 Definition partial_nodes :=
   PartialComputationGraph.Build_hemi_comp_graph nodes_part_p
@@ -5048,8 +5045,8 @@ Definition n := n'.+1.
 
 Variables (l : nat) (k : TreeEnsemble.kind) (t : TreeEnsemble.tree l k).
 
-Check decode_word.
-Check (decT [finType of option 'F_2]).
+(*Check decode_word.
+Check (decT [finType of option 'F_2]).*)
 
 Definition c_dec : decT [finType of option 'F_2] [finType of 'rV['F_2]_n] n :=
   [ffun msg =>

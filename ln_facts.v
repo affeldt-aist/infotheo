@@ -686,6 +686,6 @@ rewrite (probK t); apply: concavef_at_onem => //; exact: log_concave_at_gt0W.
 Qed.
 
 Lemma log_concave : concave_function_in Rpos_interval log.
-Proof. move=> x y t Hx Hy; apply log_concave_at_gt0 => //; by case: t. Qed.
+Proof. by move=> x y t; rewrite !classical_sets.in_setE => Hx Hy; apply log_concave_at_gt0. Qed.
 
 End log_concave.

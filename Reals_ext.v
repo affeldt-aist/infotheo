@@ -166,6 +166,33 @@ Qed.
 Lemma probK t : t = `Pr (t.~).~ :> prob.
 Proof. by apply prob_ext => /=; rewrite onemK. Qed.
 
+Lemma prob_IZR (p : positive) : (R0 <= / IZR (Zpos p) <= R1)%R.
+Proof.
+split; first exact/Rlt_le/Rinv_0_lt_compat/IZR_lt/Pos2Z.is_pos.
+rewrite -[X in (_ <= X)%R]Rinv_1; apply Rle_Rinv.
+- exact: Rlt_0_1.
+- exact/IZR_lt/Pos2Z.is_pos.
+- exact/IZR_le/Pos2Z.pos_le_pos/Pos.le_1_l.
+Qed.
+
+Canonical probIZR (p : positive) := @Prob.mk _ (prob_IZR p).
+
+Lemma prob_addn (n m : nat) : (R0 <= INR n / INR (n + m) <= R1)%R.
+Proof.
+have [/eqP ->|n0] := boolP (n == O); first by rewrite div0R; exact OO1.
+split; first by apply divR_ge0; [exact: leR0n | rewrite ltR0n addn_gt0 lt0n n0].
+by rewrite leR_pdivr_mulr ?mul1R ?leR_nat ?leq_addr // ltR0n addn_gt0 lt0n n0.
+Qed.
+
+Canonical probaddn (n m : nat) := @Prob.mk (INR n / INR (n + m)) (prob_addn n m).
+
+Lemma prob_invn (m : nat) : (R0 <= / INR (1 + m) <= R1)%R.
+Proof.
+rewrite -(mul1R (/ _)%R) (_ : 1%R = INR 1) // -/(Rdiv _ _); exact: prob_addn.
+Qed.
+
+Canonical probinvn (n : nat) := @Prob.mk (/ INR (1 + n)) (prob_invn n).
+
 (** non-negative rationals: *)
 
 Record Qplus := mkRrat { num : nat ; den : nat }.
