@@ -86,6 +86,43 @@ Qed.
 Definition R_convMixin := ConvexSpace.Class avg1 avgI avgC avgA.
 Canonical R_convType := ConvexSpace.Pack R_convMixin.
 
+Module FunConvType.
+Variables (A:Type) (B:convType).
+
+Definition T := A -> B.
+
+Definition avg (x y : T) (t : prob) :=
+  fun a : A => (x a <| t |> y a).
+Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
+Proof.
+  apply FunctionalExtensionality.functional_extensionality => a.
+  by apply conv1.
+Qed.
+Lemma avgI (x : T) (p : prob) : avg x x p = x.
+Proof.
+  apply FunctionalExtensionality.functional_extensionality => a.
+  by apply convmm.
+Qed.
+Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
+Proof.
+  apply FunctionalExtensionality.functional_extensionality => a.
+  by apply convC.
+Qed.
+Lemma avgA (p q r s : prob) (d0 d1 d2 : T) :
+  p = (r * s)%R :> R ->
+  s.~ = (p.~ * q.~)%R ->
+  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 r) d2 s.
+Proof.
+  move => *.
+  apply FunctionalExtensionality.functional_extensionality => a.
+  by apply convA.
+Qed.
+
+Definition Fun_convMixin := ConvexSpace.Class avg1 avgI avgC avgA.
+Canonical Fun_convType := ConvexSpace.Pack Fun_convMixin.
+
+End FunConvType.
+
 Section convex_set.
 Variable A : convType.
 Definition is_convex_set (D : A -> Prop) := forall x y t, D x -> D y -> D (x <| t |> y).
