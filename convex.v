@@ -256,15 +256,6 @@ Section convex_space_prop.
 Variables A : convType.
 Implicit Types a b : A.
 
-(*
-Definition Convn' (n : nat) : 'I_n -> A -> {dist 'I_n} -> A.
-elim n; [move => _ _ /dist_domain_not_empty => /=; by rewrite card_ord |].
-move => n0 IHn0 i a e.
-pose p := \rsum_(j in 'I_n0) (e (widen_ord (leqnSn n0) j)).
-pose q := e ord_max.
-Abort.
- *)
-
 Lemma conv1 a b : a <| `Pr 1 |> b = a.
 Proof. by rewrite conv2E /= (@convn_proj _ _ _ _ ord0) //= I2Dist.dE. Qed.
 Lemma conv0 a b : a <| `Pr 0 |> b = b.
