@@ -477,13 +477,13 @@ Qed.
 
 End AffineConvexType.
 
-Section gconvex_dist.
+(*Section gconvex_dist.
 Section def.
 Variables (A : finType) (B : finType) (f : (A -> dist B) -> R).
 Definition gconvex_dist := forall (p q : A -> dist B) (t : prob),
   f (fun x => p x <| t |> q x) <= f p <| t |> f q.
 End def.
-End gconvex_dist.
+End gconvex_dist.*)
 
 Section mutual_information_convex.
 
@@ -492,7 +492,7 @@ Variables (A B : finType) (P : dist A).
 Local Open Scope divergence_scope.
 
 Lemma mutual_information_convex :
-  gconvex_dist (fun (Q : A -> dist B) => MutualInfo.mi (CDist.make_joint P Q)).
+  convex_function (fun (Q : A -> dist B) => MutualInfo.mi (CDist.make_joint P Q)).
 Proof.
 move=> p1yx p2yx t.
 pose p1' := CDist.mkt P p1yx.
@@ -508,6 +508,7 @@ pose plambday := Bivar.snd plambdaxy.
 pose qlambdaxy := P `x plambday.
 pose q1xy := P `x p1.
 pose q2xy := P `x p2.
+rewrite /convex_function_at.
 have -> : MutualInfo.mi (CDist.make_joint P (fun x : A => p1yx x <| t |> p2yx x)) =
        D(plambdaxy || qlambdaxy).
   rewrite MutualInfo.miE /div pair_big /=.
