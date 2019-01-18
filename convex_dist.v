@@ -220,30 +220,16 @@ Lemma concavity_of_entropy_x_le_y x y (t : prob) :
   concave_function_at H2 x y t.
 Proof.
 rewrite !classical_sets.in_setE => -[H0x Hx1] [H0y Hy1] Hxy.
-eapply second_derivative_convexf_pt.
-Unshelve.
-- Focus 4. done.
-- Focus 4.
+rewrite /concave_function_at.
+set Df := fun z : R => log z - log (1 - z).
+have @f_derive : pderivable (fun x0 => - H2 x0) (fun z => x <= z <= y).
   move => z Hz.
-  by apply /derivable_pt_opp /pderivable_H2 /(@expand_interval_closed_to_open 0 x y 1).
-- Focus 4.
-  exact (fun z => log z - log (1 - z)).
-- Focus 4.
-  move => z [Hxz Hzy].
-  apply derivable_pt_minus.
-  apply derivable_pt_Log.
-  apply (ltR_leR_trans H0x Hxz).
-  apply derivable_pt_comp.
-  apply derivable_pt_Rminus.
-  apply derivable_pt_Log.
-  apply subR_gt0.
-  by apply (leR_ltR_trans Hzy Hy1).
-- Focus 4.
-  exact (fun z => / (z * (1 - z) * ln 2)).
--
+  exact/derivable_pt_opp/pderivable_H2/(@expand_interval_closed_to_open 0 x y 1).
+have @derive_pt_f : forall z (Hz : x <= z <= y),
+  Df z = derive_pt (fun x1 => - H2 x1) _ (f_derive _ Hz).
   move => z Hz.
   rewrite derive_pt_opp.
-  set (H := expand_interval_closed_to_open _ _ _ _).
+  set H := expand_interval_closed_to_open _ _ _ _.
   rewrite /pderivable_H2.
   case H => [H0z Hz1].
   rewrite derive_pt_plus.
@@ -252,32 +238,46 @@ Unshelve.
   rewrite derive_pt_id derive_pt_comp 2!derive_pt_Log /=.
   rewrite mul1R mulN1R mulRN1.
   rewrite [X in z * X]mulRC [X in (1 - z) * - X]mulRC mulRN 2!mulRA.
-  rewrite !mulRV; [|by apply /eqP; move => /subR0_eq /gtR_eqF|by apply /eqP /gtR_eqF].
+  rewrite !mulRV; [|by apply/eqP => /subR0_eq /gtR_eqF | exact/eqP/gtR_eqF].
   rewrite mul1R -2!oppRD oppRK.
   by rewrite [X in X + - _]addRC oppRD addRA addRC !addRA Rplus_opp_l add0R addR_opp.
--
+have @pderivable_Df : pderivable Df (fun z => x <= z <= y).
   move => z [Hxz Hzy].
-  rewrite derive_pt_minus.
-  rewrite derive_pt_comp 2!derive_pt_Log /=.
+  apply derivable_pt_minus.
+  apply derivable_pt_Log.
+  apply (ltR_leR_trans H0x Hxz).
+  apply derivable_pt_comp.
+  apply derivable_pt_Rminus.
+  apply derivable_pt_Log.
+  apply subR_gt0.
+  exact: leR_ltR_trans Hzy Hy1.
+set DDf := fun z => / (z * (1 - z) * ln 2).
+have derive_pt_Df : forall z (Hz : x <= z <= y), DDf z = derive_pt Df z (pderivable_Df z Hz).
+  rewrite -/Df => z [Hxz Hzy].
+  rewrite derive_pt_minus derive_pt_comp 2!derive_pt_Log /=.
   rewrite mulRN1 -[X in _ = X]addR_opp oppRK.
   rewrite -mulRDr [X in _ = X]mulRC.
-  have Hzn0 : z != 0 by apply /eqP /gtR_eqF /ltR_leR_trans; [exact H0x| exact Hxz].
-  have H1zn0 : 1 - z != 0 by apply /eqP; move => /subR0_eq /gtR_eqF H; apply /H /leR_ltR_trans; [exact Hzy| exact Hy1].
+  have Hzn0 : z != 0 by apply/eqP/gtR_eqF/(ltR_leR_trans H0x Hxz).
+  have H1zn0 : 1 - z != 0.
+    apply /eqP; move => /subR0_eq /gtR_eqF H.
+    by apply /H /leR_ltR_trans; [exact Hzy| exact Hy1].
   have Hzn0' : z <> 0 by move : Hzn0 => /eqP.
   have H1zn0' : 1 - z <> 0 by move : H1zn0 => /eqP.
   have Hz1zn0 : z * (1 - z) <> 0 by rewrite mulR_neq0.
   have ln2n0 : ln 2 <> 0 by move : ln2_gt0 => /gtR_eqF.
-  have -> : / z = (1 - z) / (z * (1 - z)) by change (/ z = (1 - z) * / (z * (1 - z))); rewrite invRM // [X in _ = _ * X]mulRC mulRA mulRV // mul1R.
-  have -> : / (1 - z) = z  / (z * (1 - z)) by change (/ (1 - z) = z * / (z * (1 - z))); rewrite invRM // mulRA mulRV // mul1R.
-  rewrite -Rdiv_plus_distr.
-  rewrite -addRA Rplus_opp_l addR0.
-  by rewrite div1R -invRM.
--
+  have -> : / z = (1 - z) / (z * (1 - z)).
+    change (/ z = (1 - z) * / (z * (1 - z))).
+    by rewrite invRM // [X in _ = _ * X]mulRC mulRA mulRV // mul1R.
+  have -> : / (1 - z) = z  / (z * (1 - z)).
+    change (/ (1 - z) = z * / (z * (1 - z))).
+    by rewrite invRM // mulRA mulRV // mul1R.
+  by rewrite -Rdiv_plus_distr -addRA Rplus_opp_l addR0 div1R -invRM.
+have DDf_nonneg : forall z, x <= z <= y -> 0 <= DDf z.
   move => z [Hxz Hzy].
   have Hz : 0 < z by apply /ltR_leR_trans; [exact H0x| exact Hxz].
   have H1z : 0 < 1 - z by apply /subR_gt0 /leR_ltR_trans; [exact Hzy| exact Hy1].
-  apply /or_introl /invR_gt0.
-  by apply mulR_gt0; [apply mulR_gt0|apply ln2_gt0].
+  apply/or_introl/invR_gt0/mulR_gt0; [exact/mulR_gt0 | exact/ln2_gt0].
+exact: (@second_derivative_convexf_pt _ _ _ _ Df _ _ DDf).
 Qed.
 
 Lemma concavity_of_entropy : concave_function_in open_unit_interval H2.
@@ -368,8 +368,8 @@ Qed.
 
 End mutual_information_concave.
 
-Module AffineConvexType.
 Require Import R_for_mathcomp.
+Module AffineConvexType.
 
 Definition I t := 0 <= t <= 1.
 
@@ -476,14 +476,6 @@ by rewrite !(wproofirrelevant Hp'' Hp).
 Qed.
 
 End AffineConvexType.
-
-(*Section gconvex_dist.
-Section def.
-Variables (A : finType) (B : finType) (f : (A -> dist B) -> R).
-Definition gconvex_dist := forall (p q : A -> dist B) (t : prob),
-  f (fun x => p x <| t |> q x) <= f p <| t |> f q.
-End def.
-End gconvex_dist.*)
 
 Section mutual_information_convex.
 

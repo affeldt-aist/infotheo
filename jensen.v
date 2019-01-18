@@ -34,9 +34,9 @@ apply: (@dist_ind A (fun X =>
    f (\rsum_(a in dist_supp X) X a * r a) <=
    \rsum_(a in dist_supp X) X a * f (r a) /\ _)) => //.
 move=> n IH {X}X b cardA Hb.
-case/boolP : (X b == 1) => Xb1.
-  move/dist_supp_singleP: (eqP Xb1) => /eqP ->.
-  by rewrite !big_set1 (eqP Xb1) !mul1R.
+case/boolP : (X b == 1) => [/eqP|]Xb1.
+  move/eqP : (Xb1); rewrite dist_supp_singleP => /eqP ->.
+  by rewrite !big_set1 Xb1 !mul1R.
 have HXb1: (X b).~ != 0 by rewrite onem_neq0.
 set d := D1Dist.d Xb1.
 have HsumD1 q:

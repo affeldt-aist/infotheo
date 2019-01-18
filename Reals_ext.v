@@ -72,6 +72,12 @@ Implicit Type r : R.
 Definition onem r := 1 - r.
 Local Notation "p '.~'" := (onem p).
 
+Lemma onem0 : 0.~ = 1.
+Proof. by rewrite /onem subR0. Qed.
+
+Lemma onem1 : 1.~ = 0.
+Proof. by rewrite /onem subRR. Qed.
+
 Lemma onem_ge0 r : r <= 1 -> 0 <= r.~.
 Proof. move=> r1; rewrite /onem; lra. Qed.
 
