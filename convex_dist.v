@@ -64,6 +64,19 @@ Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
 
 Local Open Scope divergence_scope.
 
+(*
+Lemma
+
+Let T and U be convType, f : (T * U) -> R and (curry f) : T -> U -> R be
+a function and its currying.
+Then f : (T * U) -> R is convex iff both of the following holds:
+1) For any t : T, (curry f t) : U -> R is convex, and
+2) curry f is convex.
+
+For (2), the convexity of curry f is with respect to the ordering on U -> R s.t.
+g <= h iff for every u : U, g u <= h u.
+*)
+
 (* thm 2.7.2 *)
 Lemma div_convex : convex_dist_pair (@div A).
 Proof.
