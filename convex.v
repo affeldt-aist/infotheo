@@ -555,6 +555,28 @@ move => H t; move: (H (`Pr t.~)).
 by rewrite /convex_function_at /= convC -probK (convC (f a)) -probK.
 Qed.
 
+(* NB : The proofs below should work for any ordered convType instead of R *)
+Lemma convex_function_comp (f : A -> R) (g : R -> R)
+      (Hf : convex_function f) (Hg : convex_function g)
+      (g_monotone_on_hull_Im_f : forall a b t, (f (a <|t|> b) <= f a <|t|> f b)%R -> (g (f (a <|t|> b)) <= g (f a <|t|> f b))%R)
+      : convex_function (fun a => g (f a)).
+Proof.
+  rewrite convex_functionP => a b t.
+  move : (Hg (f a) (f b) t) => {Hg}.
+  rewrite /convex_function_at => Hg.
+  eapply leR_trans; [| exact Hg] => {Hg}.
+  apply g_monotone_on_hull_Im_f.
+  exact: Hf.
+Qed.
+Lemma convex_function_comp' (f : A -> R) (g : R -> R)
+      (Hf : convex_function f) (Hg : convex_function g)
+      (g_monotone : forall x y, (x <= y)%R -> (g x <= g y)%R)
+      : convex_function (fun a => g (f a)).
+Proof.
+  apply convex_function_comp => // *.
+  by apply g_monotone.
+Qed.
+
 End convex_function_prop.
 
 Section concave_function_def.
