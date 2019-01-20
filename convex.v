@@ -527,6 +527,84 @@ Canonical funConvType := ConvexSpace.Pack funConvMixin.
 
 End fun_convex_space.
 
+Module Depfunavg.
+Section depfunavg.
+Variables (A : Type) (B : A -> convType).
+Let T := forall a : A , B a.
+Definition avg (x y : T) (t : prob) := fun a : A => (x a <| t |> y a).
+Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
+Proof.
+apply FunctionalExtensionality.functional_extensionality_dep => a.
+by apply conv1.
+Qed.
+Lemma avgI (x : T) (p : prob) : avg x x p = x.
+Proof.
+apply FunctionalExtensionality.functional_extensionality_dep => a.
+by apply convmm.
+Qed.
+Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
+Proof.
+apply FunctionalExtensionality.functional_extensionality_dep => a.
+by apply convC.
+Qed.
+Lemma avgA (p q r s : prob) (d0 d1 d2 : T) :
+  p = (r * s)%R :> R -> s.~ = (p.~ * q.~)%R ->
+  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 r) d2 s.
+Proof.
+move => *.
+apply FunctionalExtensionality.functional_extensionality_dep => a.
+by apply convA.
+Qed.
+End depfunavg.
+End Depfunavg.
+
+Section depfun_convex_space.
+Variables (A : Type) (B : A -> convType).
+
+Definition depfunConvMixin := ConvexSpace.Class
+  (@Depfunavg.avg1 A B) (@Depfunavg.avgI A B) (@Depfunavg.avgC A B) (@Depfunavg.avgA A B).
+Canonical depfunConvType := ConvexSpace.Pack depfunConvMixin.
+
+End depfun_convex_space.
+
+Module Prodavg.
+Section prodavg.
+Variables (A B : convType).
+Let T := prod A B.
+Definition avg (x y : T) (t : prob) := (fst x <| t |> fst y , snd x <| t |> snd y).
+Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
+Proof.
+  rewrite /avg (conv1 (fst x)) (conv1 (snd x)).
+    by case x.
+Qed.
+Lemma avgI (x : T) (p : prob) : avg x x p = x.
+Proof.
+  rewrite /avg (convmm (fst x)) (convmm (snd x)).
+    by case x.
+Qed.
+Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
+Proof.
+by congr (pair _ _); apply convC.
+Qed.
+Lemma avgA (p q r s : prob) (d0 d1 d2 : T) :
+  p = (r * s)%R :> R -> s.~ = (p.~ * q.~)%R ->
+  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 r) d2 s.
+Proof.
+move => *.
+congr (pair _ _); by apply convA.
+Qed.
+End prodavg.
+End Prodavg.
+
+Section prod_convex_space.
+Variables (A B : convType).
+
+Definition prodConvMixin := ConvexSpace.Class
+  (@Prodavg.avg1 A B) (@Prodavg.avgI A B) (@Prodavg.avgC A B) (@Prodavg.avgA A B).
+Canonical prodConvType := ConvexSpace.Pack prodConvMixin.
+
+End prod_convex_space.
+
 Section convex_function_def.
 Variables (A : convType) (f : A -> R).
 
