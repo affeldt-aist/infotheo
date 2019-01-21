@@ -241,7 +241,8 @@ Lemma f0 b : 0 <= f b. Proof. apply: rsumr_ge0 => a _; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(b in B) f b = 1%R.
 Proof. by rewrite -(pmf1 p) (@partition_big _ _ _ _ _ _ g xpredT). Qed.
 Definition d : dist B := locked (makeDist f0 f1).
-Definition dE x : d x = f x. Proof. by rewrite /d; unlock. Qed.
+Definition dE x : d x = \rsum_(a in A | g a == x) p a.
+Proof. by rewrite /d; unlock. Qed.
 End def.
 End DistMap.
 
@@ -621,7 +622,7 @@ End BelastDist.
 
 Module ConvDist.
 Section def.
-Variables (A : finType) (n : nat) (g : 'I_n -> dist A) (e : {dist 'I_n}).
+Variables (A : finType) (n : nat) (e : {dist 'I_n}) (g : 'I_n -> dist A).
 Definition f a := \rsum_(i < n) e i * g i a.
 Lemma f0 a : 0 <= f a.
 Proof. apply: rsumr_ge0 => /= i _; apply mulR_ge0; exact: dist_ge0. Qed.
@@ -640,7 +641,7 @@ Module Conv2Dist.
 Section def.
 Variables (A : finType) (d1 d2 : dist A) (p : prob).
 Definition d : {dist A} := locked
-  (ConvDist.d (fun i => if i == ord0 then d1 else d2) (I2Dist.d p)).
+  (ConvDist.d (I2Dist.d p) (fun i => if i == ord0 then d1 else d2)).
 Lemma dE a : d a = p * d1 a + p.~ * d2 a.
 Proof.
 rewrite /d; unlock => /=.
