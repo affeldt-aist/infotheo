@@ -704,6 +704,7 @@ Qed.
 End prop2.
 End concave_function_prop.
 
+(* NB affine_functionPのほうが定義で, affine_functionのほうは性質では？ - saikawa *)
 Section affine_function_def.
 Variables (A : convType) (f : A -> R).
 Definition affine_function := convex_function f /\ concave_function f.
