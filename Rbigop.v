@@ -312,14 +312,9 @@ Lemma Rle_big_eq (A : finType) (f g : A -> R) (P : pred A) :
    \rsum_(i | P i) g i = \rsum_(i | P i) f i ->
    (forall i : A, P i -> g i = f i).
 Proof.
-move=> H1 H2 i Hi.
-apply/eqP; rewrite -subR_eq0; apply/eqP.
-move: i Hi.
-apply prsumr_eq0P.
-- move=> i Hi.
-  rewrite leR_subr_addr add0R; exact: H1.
-- rewrite big_split /= -(big_morph _ morph_Ropp oppR0).
-  by apply/eqP; rewrite subR_eq0 H2.
+move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply prsumr_eq0P.
+- move=> i Hi; rewrite leR_subr_addr add0R; exact: H1.
+- by rewrite big_split /= -(big_morph _ morph_Ropp oppR0) subR_eq0 H2.
 Qed.
 
 (** Rle, Rlt lemmas for big-mult of reals *)

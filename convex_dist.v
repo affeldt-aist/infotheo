@@ -455,7 +455,7 @@ have r1 : r < 1.
 set s := (p - r) / (1 - r).
 rewrite -(@wqassoc T x1 _ _ r s); last 2 first.
   by rewrite mulRC.
-  rewrite /onem {}/s; field; by apply/eqP; rewrite subR_eq0 eq_sym.
+  rewrite /onem {}/s; field; rewrite subR_eq0; apply/eqP; by rewrite eq_sym.
   split.
   - apply divR_ge0; last by rewrite subR_gt0.
     rewrite subR_ge0 /r -{2}(mulR1 p); apply/leR_wpmul2l; tauto.
@@ -475,12 +475,12 @@ have t1 : t < 1.
 rewrite -(@wqassoc T x2 _ _ t p.~) => //; last 2 first.
   by rewrite mulRC.
   rewrite 2!onemK /t /onem /s /r; field.
-  by apply/eqP; rewrite subR_eq0 eq_sym.
+  rewrite subR_eq0; apply/eqP; by rewrite eq_sym.
   exact (Isym Hp).
 move=> Hp'.
 rewrite (@wqassoc T x1 _ _ _ _ p.~.~ q); last 2 first.
   by rewrite onemK.
-  rewrite /t /onem /s /r; field; by apply/eqP; rewrite subR_eq0 eq_sym.
+  rewrite /t /onem /s /r; field; by rewrite subR_eq0; apply/eqP; rewrite eq_sym.
   by rewrite onemK.
 move=> Hp''.
 rewrite (wscom' y2 y1).

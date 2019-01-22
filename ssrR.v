@@ -84,11 +84,10 @@ Lemma subRKC m n : m + (n - m) = n. Proof. ring. Qed.
 
 Lemma subRK m n : n - m + m = n. Proof. ring. Qed.
 
-Lemma subR_eq0 (x y : R) : (x - y == 0) = (x == y).
-Proof.
-apply/idP/idP => [|/eqP ->]; last by rewrite subRR.
-by move/eqP/Rminus_diag_uniq => ->.
-Qed.
+Lemma subR_eq0 (x y : R) : (x - y = 0) <-> (x = y).
+Proof. split => [/Rminus_diag_uniq //|->]; by rewrite subRR. Qed.
+Lemma subR_eq0' (x y : R) : (x - y == 0) = (x == y).
+Proof. by apply/idP/idP => /eqP/subR_eq0/eqP. Qed.
 
 Lemma subR0_eq x y : x - y = 0 -> x = y.
 Proof. exact: Rminus_diag_uniq x y. Qed.
@@ -193,8 +192,10 @@ apply/idP/idP => [|/eqP ->]; last by rewrite oppR0.
 apply: contraTT; by move/eqP/Ropp_neq_0_compat/eqP.
 Qed.
 
-Lemma addR_eq0 x y : (x + y == 0) = (x == - y).
+Lemma addR_eq0 x y : (x + y = 0) <-> (x = - y).
 Proof. by rewrite -[y in LHS]oppRK subR_eq0. Qed.
+Lemma addR_eq0' x y : (x + y == 0) = (x == - y).
+Proof. by apply/idP/idP => /eqP/addR_eq0/eqP. Qed.
 
 Lemma eqR_opp x y : (- x == - y) = (x == y).
 Proof. apply/eqP/eqP => [Hopp|->//]; by rewrite -[LHS]oppRK -[RHS]oppRK Hopp. Qed.

@@ -172,20 +172,17 @@ Qed.
 
 Section pinsker_function_analysis.
 
-Variables p q : R.
-Hypothesis Hp : 0 <= p <= 1.
-Hypothesis Hq : 0 <= q <= 1.
+Variables p q : prob.
 
 Lemma pinsker_fun_p c : pinsker_fun p c p = 0.
 Proof.
 rewrite /pinsker_fun /= /div_fct /comp subRR mul0R mulR0 subR0.
-case: Hp => Hp1 Hp2.
-case/leR_eqVlt : Hp1 => [/esym ->|Hp1].
-  by rewrite mul0R !subR0 add0R mul1R div1R invR1 /log Log_1.
-case/leR_eqVlt : Hp2 => [->|Hp2].
-  by rewrite divR1 /log Log_1 subRR mul0R mulR0 addR0.
-rewrite divRR; last by rewrite subR_eq0; apply/eqP/gtR_eqF.
-rewrite /log Log_1 divRR; last exact/eqP/gtR_eqF.
+case/boolP: (p == `Pr 0) => [/eqP |] p0.
+  by rewrite p0 mul0R !subR0 add0R mul1R div1R invR1 /log Log_1.
+case/boolP: (p == `Pr 1) => [/eqP |] p1.
+  by rewrite p1 divR1 /log Log_1 subRR mul0R mulR0 addR0.
+rewrite divRR; last by rewrite subR_eq0' eq_sym.
+rewrite /log Log_1 divRR //.
 rewrite /log Log_1; by field.
 Qed.
 
@@ -215,15 +212,13 @@ rewrite derive_pt_pinsker_fun //; last lra.
 rewrite /pinsker_fun' /div_fct.
 have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
 have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
-  have : forall a b, b <= a -> 0 <= a - b. move=> *; lra. apply.
-  apply (@leR_trans (4 / ln 2)).
+  rewrite subR_ge0; apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans  (8 * / (2 * ln 2))).
       apply leR_wpmul2l => //; lra.
     rewrite invRM; last 2 first.
       move=> ?; lra.
       exact/eqP/ln2_neq0.
-    rewrite mulRA.
-    apply leR_wpmul2r => //; lra.
+    rewrite mulRA; apply leR_wpmul2r => //; lra.
   rewrite invRM; last 2 first.
     apply/gtR_eqF/mulR_gt0; lra.
     exact/eqP/ln2_neq0.
@@ -283,73 +278,79 @@ Local Open Scope reals_ext_scope.
 
 Section pinsker_fun_pos.
 
-Variables p q : R.
-Hypothesis p01 : 0 <= p <= 1.
-Hypothesis q01 : 0 <= q <= 1.
+Variables p q : prob .
 
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
-Hypothesis P_dom_by_Q : (Binary.d card_A p01) << (Binary.d card_A q01).
+Hypothesis P_dom_by_Q :
+  (Binary.d card_A p (Set2.a card_A)) << (Binary.d card_A q (Set2.a card_A)).
 
 Lemma pinsker_fun_pos c : 0 <= c <= / (2 * ln 2) -> 0 <= pinsker_fun p c q.
 Proof.
 move=> Hc.
-case: p01 => Hp0 Hp1.
-case: q01 => Hq0 Hq1.
 set a := Set2.a card_A. set b := Set2.b card_A.
-case/leR_eqVlt : Hp0 => [|] Hp0.
+case/boolP : (p == `Pr 0) => [/eqP|] p0.
   subst p.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l,subR0).
-  case/leR_eqVlt : Hq1 => [|] Hq1.
+  case/boolP : (q == `Pr 1) => [/eqP|] q1.
     subst q.
     exfalso.
     move/dominatesP : P_dom_by_Q => /(_ a).
-    rewrite !Binary.dE subRR eqxx; lra.
-  apply: leR_trans; first exact: (pinsker_function_spec_pos Hc (conj Hq0 Hq1)).
+    rewrite !Binary.dE subRR eqxx.
+    rewrite subR0; lra.
+  apply: leR_trans.
+    apply: (@pinsker_function_spec_pos _ q Hc).
+    split; [exact/prob_ge0 | by rewrite -prob_lt1].
   rewrite /pinsker_function_spec.
   apply Req_le.
-  rewrite mul1R div1R /log LogV; [by field | lra].
-case/leR_eqVlt : Hp1 => [|] Hp1.
+  rewrite mul1R div1R /log LogV; [by field |by rewrite subR_gt0 -prob_lt1].
+case/boolP : (p == `Pr 1) => [/eqP|] p1.
   subst p.
   rewrite /pinsker_fun /div_fct /comp subRR mul0R addR0.
-  case/leR_eqVlt : Hq0 => [|] Hq0.
+  case/boolP : (q == `Pr 0) => [/eqP|] q0.
     subst q.
     exfalso.
     move/dominatesP : P_dom_by_Q => /(_ b).
-    rewrite !Binary.dE subRR eq_sym (negbTE (Set2.a_neq_b card_A)) => ?; lra.
+    rewrite !Binary.dE subRR eq_sym (negbTE (Set2.a_neq_b card_A)) => /=; lra.
   apply: leR_trans.
-    have : 0 <= 1 - q < 1 by lra.
+    have : 0 <= 1 - q < 1.
+      split.
+      rewrite subR_ge0; exact/prob_le1.
+      by rewrite ltR_subl_addr -{1}(addR0 1) ltR_add2l -prob_gt0.
     exact: pinsker_function_spec_pos Hc.
   rewrite /pinsker_function_spec.
   apply Req_le.
-  rewrite mul1R div1R /log LogV; last by rewrite /id.
+  rewrite mul1R div1R /log LogV -?prob_gt0 //.
   rewrite /id (_ : 1 - (1 - q) = q) //; by field.
-case/leR_eqVlt : Hq0 => [|] Hq0.
+case/boolP : (q == `Pr 0) => [/eqP|] q0.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite (_ : id 0 = 0) //.
   exfalso.
   move/dominatesP : P_dom_by_Q => /(_ b).
-  rewrite !Binary.dE eq_sym (negbTE (Set2.a_neq_b card_A)) => ?; lra.
-case/leR_eqVlt : Hq1 => [|] Hq1.
+  rewrite !Binary.dE eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) p0_.
+  move/eqP : p0; apply; apply/prob_ext; by rewrite p0_.
+case/boolP : (q == `Pr 1) => [/eqP|] q1.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
   exfalso.
   move/dominatesP : P_dom_by_Q => /(_ a).
-  rewrite !Binary.dE subRR eqxx => H1.
-  have {H1}? : p = 1. lra. subst p.
-  by move/ltRR : Hp1.
-rewrite -(pinsker_fun_p p01 c).
+  rewrite !Binary.dE subRR eqxx subR_eq0 => /(_ erefl) p1_.
+  move/eqP : p1; apply; apply/prob_ext; by rewrite -p1_.
+rewrite -(pinsker_fun_p p c).
 case: (Rlt_le_dec q p) => qp.
   apply pinsker_fun_decreasing_on_0_to_p => //.
-  - by case : Hc.
-  - lra.
-  - lra.
-  - by apply Rlt_le.
+  lra.
+  split; [by rewrite -prob_gt0 | by rewrite -prob_lt1].
+  split; [by rewrite -prob_gt0 | exact/ltRW].
+  split; [by rewrite -prob_gt0 | exact/leRR].
+  exact/ltRW.
 apply pinsker_fun_increasing_on_p_to_1 => //.
-- by case: Hc.
-- lra.
+lra.
+split; [by rewrite -prob_gt0 | by rewrite -prob_lt1].
+split; [exact/leRR | by rewrite -prob_lt1].
+split => //; by rewrite -prob_lt1.
 Qed.
 
 End pinsker_fun_pos.

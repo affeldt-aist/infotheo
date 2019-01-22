@@ -1446,9 +1446,7 @@ Lemma information_cant_hurt : CondEntropy.h PQ <= `H P.
 Proof. rewrite -subR_ge0 -MutualInfo.miE2; exact: MutualInfo.mi_ge0. Qed.
 
 Lemma condentropy_indep : PQ = P `x Q -> CondEntropy.h PQ = `H P.
-Proof.
-move/MutualInfo.mi0P; by rewrite MutualInfo.miE2 => /eqP; rewrite subR_eq0 => /eqP <-.
-Qed.
+Proof. move/MutualInfo.mi0P; by rewrite MutualInfo.miE2 subR_eq0 => <-. Qed.
 End prop.
 Section prop2.
 Variables (A B C : finType) (PQR : {dist A * B * C}).

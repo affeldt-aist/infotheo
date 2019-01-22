@@ -79,7 +79,7 @@ Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
 Hypothesis p_01' : 0 < p < 1.
-Let p_01 := closed p_01'.
+Let p_01 := Prob.mk (closed p_01').
 Let P : dist A := Uniform.d card_A.
 Variable a' : A.
 Hypothesis Ha' : receivable (BSC.c card_A p_01) (P `^ 1) (\row_(i < 1) a').
@@ -93,12 +93,12 @@ rewrite !TupleDist.dE DMCE big_ord_recl big_ord0.
 rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
   by move=> i _; rewrite /P !TupleDist.dE big_ord_recl big_ord0 !Uniform.dE mulR1.
 rewrite -big_distrr /= (_ : \rsum_(_ | _) _ = 1)%R; last first.
-  transitivity (\rsum_(i in 'M_1) Binary.f p (i ``_ ord0) a').
+  transitivity (\rsum_(i in 'M_1) Binary.d card_A p_01 (i ``_ ord0) a').
     apply eq_bigr => i _.
-    by rewrite DMCE big_ord_recl big_ord0 mulR1 BSC.cE mxE.
-  apply/(@big_singl_rV _ _ _ _ (fun i => if a' == i then (1 - p)%R else p)).
-  by rewrite -Binary.f_sum_swap // Binary.f1.
-rewrite mxE mulR1 big_ord_recl big_ord0 BSC.cE /Binary.f /= eq_sym !mxE; field.
+    by rewrite DMCE big_ord_recl big_ord0 mulR1 /BSC.c mxE.
+  apply/(@big_singl_rV _ _ _ _ (fun i => (Binary.d card_A p_01 i) a')).
+  by rewrite -Binary.d_sum_swap // pmf1.
+rewrite mxE mulR1 big_ord_recl big_ord0 /BSC.c Binary.dE /= eq_sym !mxE; field.
 rewrite /P Uniform.dE card_A (_ : INR 2 = 2) //; lra.
 Qed.
 

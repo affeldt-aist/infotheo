@@ -200,8 +200,7 @@ End maximum_likelihood_decoding_prop.
 
 Section MD_ML_decoding.
 
-Variable p : R.
-Hypothesis p_01 : 0 <= p <= 1.
+Variable p : prob.
 
 (* TODO: move to file on bsc? *)
 Lemma bsc_prob_prop n : p < 1 / 2 ->
@@ -209,35 +208,44 @@ Lemma bsc_prob_prop n : p < 1 / 2 ->
   ((1 - p) ^ (n - n2) * p ^ n2 <= (1 - p) ^ (n - n1) * p ^ n1)%R.
 Proof.
 move=> p05 d1 d2 d1d2.
-case/Rle_lt_or_eq_dec: (proj1 p_01) => [Hp | <-]; last first.
+case/boolP : (p == `Pr 0) => [/eqP ->|p0].
   destruct d2 as [|d2].
     destruct d1 as [|d1]; [exact/leRR | by []].
   rewrite !subR0 /= !mul0R !mulR0.
   destruct d1 as [|d1] => /=; first by rewrite exp1R mul1R.
   rewrite !mul0R !mulR0; exact/leRR.
 apply (@leR_pmul2l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
-  apply mulR_gt0; apply/invR_gt0/pow_lt => //; lra.
+  apply mulR_gt0; apply/invR_gt0/pow_lt => //.
+  rewrite subR_gt0; lra.
+  by rewrite -prob_gt0.
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
-  apply/expR_neq0; rewrite subR_eq0; apply/eqP/gtR_eqF; lra.
+  apply/expR_neq0; rewrite subR_eq0'; apply/eqP/gtR_eqF; lra.
 rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
-  exact/expR_neq0/eqP/gtR_eqF.
-rewrite -expRV; last exact/eqP/gtR_eqF.
-rewrite -expRV; last by rewrite subR_eq0; apply/eqP/gtR_eqF; lra.
-rewrite mulRC expRV; last exact/eqP/gtR_eqF.
+  apply/expR_neq0/eqP/gtR_eqF.
+  by rewrite -prob_gt0.
+rewrite -expRV; last by apply/eqP/gtR_eqF; rewrite -prob_gt0.
+rewrite -expRV; last by rewrite subR_eq0'; apply/eqP/gtR_eqF; lra.
+rewrite mulRC expRV; last by apply/eqP/gtR_eqF; rewrite -prob_gt0.
 rewrite -/(Rdiv _ _) -expRB; last 2 first.
   by case/andP : d1d2.
-  exact/gtR_eqF.
-rewrite expRV; last by rewrite subR_eq0; apply/eqP => ?; subst p; lra.
+  exact/eqP.
+rewrite expRV; last first.
+  rewrite subR_eq0'; apply/eqP => p1.
+  move: p05; rewrite ltRNge; apply.
+  lra.
 rewrite -/(Rdiv _ _) -expRB; last 2 first.
   rewrite leq_sub2l //; by case/andP : d1d2.
-  by apply/eqP; rewrite subR_eq0; apply/eqP => ?; subst p; lra.
-suff -> : (n - d1 - (n - d2) = d2 - d1)%nat by apply pow_incr; lra.
+  rewrite subR_eq0 => ?.
+  move: p05; rewrite ltRNge; apply.
+  lra.
+suff -> : (n - d1 - (n - d2) = d2 - d1)%nat.
+  apply pow_incr; split; [exact/prob_ge0|lra].
 rewrite -subnDA addnC subnDA subKn //.
 by case/andP : d1d2.
 Qed.
 
 Let card_F2 : #| 'F_2 | = 2%nat. Proof. by rewrite card_Fp. Qed.
-Let W := BSC.c card_F2 p_01.
+Let W := BSC.c card_F2 p.
 
 Variables (n : nat) (C : {vspace 'rV['F_2]_n}).
 Variable f : repairT [finType of 'F_2] [finType of 'F_2] n.
@@ -267,7 +275,7 @@ exists c; split; first by reflexivity.
 pose dH_y c := dH y c.
 pose g : nat -> R := fun d : nat => (1 - p) ^ (n - d) * p ^ d.
 have -> : W ``(y | c) = g (dH_y c).
-  move: (DMC_BSC_prop p_01 enc (discard c) y).
+  move: (DMC_BSC_prop p enc (discard c) y).
   set cast_card := eq_ind_r _ _ _.
   rewrite (_ : cast_card = card_F2) //; last by apply eq_irrelevance.
   clear cast_card.
@@ -276,7 +284,7 @@ have -> : W ``(y | c) = g (dH_y c).
   rewrite inE; apply/existsP; by exists y; apply/eqP.
 transitivity (\big[Rmax/R0]_(c in C) (g (dH_y c))); last first.
   apply eq_bigr => /= c' Hc'.
-  move: (DMC_BSC_prop p_01 enc (discard c') y).
+  move: (DMC_BSC_prop p enc (discard c') y).
   set cast_card := eq_ind_r _ _ _.
   rewrite (_ : cast_card = card_F2) //; last by apply eq_irrelevance.
   by rewrite -/W compatible.
@@ -286,7 +294,7 @@ rewrite (@big_rmax_bigminn_helper_vec _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //
 - apply eq_bigl => /= i; by rewrite inE.
 - by apply bsc_prob_prop.
 - move=> r; rewrite /g.
-  apply mulR_ge0; apply pow_le; [lra | by case: p_01].
+  apply mulR_ge0; apply pow_le; [lra | exact/prob_ge0].
 - rewrite inE; move/subsetP: f_img; apply.
   rewrite inE; apply/existsP; by exists y; apply/eqP.
 - move=> ? _; by rewrite /dH_y max_dH.

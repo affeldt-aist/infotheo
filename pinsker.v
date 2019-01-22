@@ -19,14 +19,12 @@ Local Open Scope reals_ext_scope.
 
 Section Pinsker_2_bdist.
 
-Variables p q : R.
-Hypothesis p01 : 0 <= p <= 1.
-Hypothesis q01 : 0 <= q <= 1.
+Variables p q : prob.
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 
-Let P := Binary.d card_A p01.
-Let Q := Binary.d card_A q01.
+Let P := Binary.d card_A p (Set2.a card_A).
+Let Q := Binary.d card_A q (Set2.a card_A).
 
 Hypothesis P_dom_by_Q : P << Q.
 
@@ -53,38 +51,44 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   rewrite [X in _ = _ + _ - X]mulRA.
   rewrite [in X in _ = _ + _ - X](mulRC c).
   congr (_ - _).
-  case: p01 => Hp1 Hp2.
-  case: q01 => Hq1 Hq2.
-  case/Rle_lt_or_eq_dec : Hp1 => Hp1; last first.
-    rewrite -Hp1 !mul0R subR0 addR0 add0R !mul1R /log (*_Log_1*) /Rdiv.
-    case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
+  case/boolP : (p == `Pr 0) => [/eqP |] p0.
+    rewrite p0 !mul0R subR0 addR0 add0R !mul1R /log (*_Log_1*) /Rdiv.
+    case/boolP : (q == `Pr 1) => [/eqP |] q1.
       move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
-      rewrite -/pi -/qi Hqi Hq2 subRR => /(_ erefl).
-      rewrite Hpi -Hp1 subR0 => ?. exfalso. lra.
+      rewrite -/pi -/qi Hqi q1 subRR => /(_ erefl).
+      rewrite Hpi p0 subR0 => ?. exfalso. lra.
     rewrite /log LogM; last 2 first.
       lra.
-      apply/invR_gt0; lra.
-      by rewrite LogV ?subR_gt0 // Log_1.
-  case/Rle_lt_or_eq_dec : Hq1 => Hq1; last first.
+      by apply/invR_gt0; rewrite subR_gt0 -prob_lt1.
+      by rewrite LogV ?subR_gt0 -?prob_lt1 // Log_1.
+  case/boolP : (q == `Pr 0) => [/eqP |] q0.
     move/dominatesP : P_dom_by_Q => /(_ (Set2.b card_A)).
-    rewrite -/pj -/qj Hqj -Hq1 => /(_ erefl).
+    rewrite -/pj -/qj Hqj q0 => /(_ erefl).
     rewrite Hpj => abs.
-    move: Hp1; by rewrite abs => /ltRR.
+    have : p == `Pr 0 by apply/eqP/prob_ext.
+    by rewrite (negbTE p0).
   rewrite /div_fct /comp /= (_ : id q = q) //.
-  case/Rle_lt_or_eq_dec : Hp2 => Hp2; last first.
-    rewrite Hp2 subRR !mul0R /Rdiv /log LogM; last 2 first.
-      lra.
-      exact/invR_gt0.
-    by rewrite Log_1 mul1R LogV // !(add0R,mul1R,addR0,sub0R).
-  rewrite /log LogM //; last exact/invR_gt0.
-  rewrite LogV //.
-  case/Rle_lt_or_eq_dec : Hq2 => Hq2; last first.
+  case/boolP : (p == `Pr 1) => [/eqP |] p1.
+    rewrite p1 subRR !mul0R /Rdiv /log LogM; last 2 first.
+      done.
+      apply/invR_gt0; by rewrite -prob_gt0.
+      by rewrite Log_1 mul1R LogV // -?prob_gt0 // !(add0R,mul1R,addR0,sub0R).
+  rewrite /log LogM //; last 2 first.
+    by rewrite -prob_gt0.
+    apply/invR_gt0; by rewrite -prob_gt0.
+  rewrite LogV //; last first.
+    by rewrite -prob_gt0.
+  case/boolP : (q == `Pr 1) => [/eqP |] q1.
     move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
-    rewrite -/pi -/qi Hqi -Hq2 subRR => /(_ erefl).
-    rewrite Hpi => abs. exfalso. lra.
-  rewrite /Rdiv LogM ?subR_gt0 //; last first.
-    apply/invR_gt0; lra.
-  rewrite LogV ?subR_gt0 //; ring.
+    rewrite -/pi -/qi Hqi q1 subRR => /(_ erefl).
+    rewrite Hpi subR_eq0 => abs.
+    have : p == `Pr 1 by apply/eqP/prob_ext.
+    by rewrite (negbTE p1).
+  rewrite /Rdiv LogM ?subR_gt0 //; last 2 first.
+    by rewrite -prob_lt1.
+    by apply/invR_gt0; rewrite subR_gt0 -prob_lt1.
+  rewrite LogV ?subR_gt0 //; last by rewrite -prob_lt1.
+  ring.
 do 2 f_equal.
 by rewrite /var_dist Set2sumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
 Qed.
@@ -94,7 +98,7 @@ Proof.
 set lhs := _ * _.
 set rhs := D(_ || _).
 rewrite -subR_ge0 -pinsker_fun_p_eq.
-apply pinsker_fun_pos with p01 q01 A card_A => //.
+apply pinsker_fun_pos with A card_A => //.
 split; [exact/ltRW/invR_gt0/mulR_gt0 | exact/leRR].
 Qed.
 
@@ -109,8 +113,8 @@ Hypothesis P_dom_by_Q : P << Q.
 
 Lemma Pinsker_2_inequality : / (2 * ln 2) * d(P , Q) ^ 2 <= D(P || Q).
 Proof.
-move: (charac_bdist P card_A) => [r1 [Hr1 Hp]].
-move: (charac_bdist Q card_A) => [r2 [Hr2 Hq]].
+move: (charac_bdist P card_A) => [r1 Hp].
+move: (charac_bdist Q card_A) => [r2 Hq].
 rewrite Hp Hq.
 apply Pinsker_2_inequality_bdist.
 by rewrite -Hp -Hq.

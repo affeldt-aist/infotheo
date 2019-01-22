@@ -155,13 +155,19 @@ Proof. by case: p => p []. Qed.
 Lemma prob_le1 (p : prob) : (p <= 1)%R.
 Proof. by case: p => p []. Qed.
 
-Lemma prob_gt0 (p : prob) : p != `Pr 0 -> (0 < p)%R.
+Lemma prob_gt0 (p : prob) : p != `Pr 0 <-> (0 < p)%R.
 Proof.
-move=> H; rewrite ltR_neqAle; split; [exact/nesym/eqP|exact/prob_ge0].
+rewrite ltR_neqAle; split=> [H|[/eqP p0 _]].
+split; [exact/nesym/eqP|exact/prob_ge0].
+by case: p p0 => p ?; apply: contra => /eqP[/= ->].
 Qed.
 
-Lemma prob_lt1 (p : prob) : p != `Pr 1 -> (p < 1)%R.
-Proof. move=> H; rewrite ltR_neqAle; split; [exact/eqP|exact/prob_le1]. Qed.
+Lemma prob_lt1 (p : prob) : p != `Pr 1 <-> (p < 1)%R.
+Proof.
+rewrite ltR_neqAle; split=> [H|[/eqP p1 _]].
+split; [exact/eqP|exact/prob_le1].
+by case: p p1 => p ?; apply: contra => /eqP[/= ->].
+Qed.
 
 Lemma prob_ext (p q : prob) : p = q :> R -> p = q.
 Proof.
@@ -198,6 +204,16 @@ rewrite -(mul1R (/ _)%R) (_ : 1%R = INR 1) // -/(Rdiv _ _); exact: prob_addn.
 Qed.
 
 Canonical probinvn (n : nat) := @Prob.mk (/ INR (1 + n)) (prob_invn n).
+
+Lemma prob_mulR (p q : prob) : (0 <= p * q <= 1)%R.
+Proof.
+split.
+  apply/mulR_ge0; [exact/prob_ge0 | exact/prob_ge0].
+rewrite -(mulR1 1%R); apply leR_pmul; [exact/prob_ge0 |
+    exact/prob_ge0 | exact/prob_le1 | exact/prob_le1].
+Qed.
+
+Canonical probmuLR (p q : prob) := @Prob.mk (p * q) (prob_mulR p q).
 
 (** non-negative rationals: *)
 
@@ -366,7 +382,7 @@ rewrite /ceil; case: ifPn => [|] /eqP r0.
   rewrite frac_Int_part //; lra.
 case: (floorP r); rewrite /floor => H1 /Rle_lt_or_eq_dec[] H2.
   rewrite up_Int_part plus_IZR; lra.
-exfalso; apply/r0/eqP; rewrite subR_eq0; exact/eqP.
+by exfalso; apply/r0; rewrite subR_eq0.
 Qed.
 
 Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.

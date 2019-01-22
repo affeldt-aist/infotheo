@@ -184,15 +184,29 @@ Proof. by rewrite /d'; unlock. Qed.
 End def.
 End CodomDDist.
 
+Lemma r_of_pq_is_r (p q r s : prob) : r != `Pr 0 -> s != `Pr 0 ->
+  p = (r * s)%R :> R -> s.~ = (p.~ * q.~)%R ->
+  [r_of p, q] = r.
+Proof.
+move=> r0 s0 H1 H2.
+apply prob_ext => /=.
+rewrite r_of_pqE eqR_divr_mulr; last first.
+  by rewrite s_of_pqE -H2 onemK.
+rewrite (p_is_rs _ q) /=.
+rewrite {1}s_of_pqE -H2 onemK.
+rewrite r_of_pqE s_of_pqE.
+rewrite -H2 onemK.
+by rewrite /Rdiv -mulRA mulVR ?mulR1.
+Qed.
+
 Module ConvexSpace.
 Record class_of (car : Type) : Type := Class {
   conv : car -> car -> prob -> car where "a <| p |> b" := (conv a b p);
   _ : forall a b, a <| `Pr 1 |> b = a ;
   _ : forall a p, a <| p |> a = a ;
   _ : forall a b p, a <| p |> b = b <| `Pr p.~ |> a;
-  _ : forall (p q r s : prob) (a b c : car),
-      p = (r * s)%R :> R -> (s.~ = p.~ * q.~)%R ->
-      a <| p |> (b <| q |> c) = (a <| r |> b) <| s |> c
+  _ : forall (p q : prob) (a b c : car),
+      a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c
 }.
 Structure t : Type := Pack { car : Type ; class : class_of car }.
 Module Exports.
@@ -218,12 +232,10 @@ Lemma convmm a p : a <| p |> a = a.
 Proof. by case: A a => ? []. Qed.
 Lemma convC a b p : a <| p |> b = b <| `Pr p.~ |> a.
 Proof. by case: A a b => ? []. Qed.
-Lemma convA p q r s a b c :
-  p = (r * s)%R :> R -> (s.~ = p.~ * q.~)%R ->
-  a <| p |> (b <| q |> c) = (a <| r |> b) <| s |> c.
+Lemma convA p q a b c :
+  a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c.
 Proof.
-case: A a b c p q r s => ? [] f H0 H1 H2 H3 d0 d1 d2 p q r s K1 K2.
-by rewrite /Conv; rewrite (H3 _ _ _ _ _ _ _ K1 K2).
+case: A a b c p q => ? [] f H0 H1 H2 H3 d0 d1 d2 p q; by rewrite /Conv H3.
 Qed.
 End convex_space_interface.
 
@@ -234,6 +246,89 @@ Lemma conv0 a b : a <| `Pr 0 |> b = b.
 Proof.
 rewrite convC (_ : `Pr _ = `Pr 1) ?conv1 //=; apply prob_ext; exact: onem0.
 Qed.
+
+Lemma convA0 (p q r s : prob) a b c :
+  p = (r * s)%R :> R -> (s.~ = p.~ * q.~)%R ->
+  a <| p |> (b <| q |> c) = (a <| r |> b) <| s |> c.
+Proof.
+move=> H1 H2.
+case/boolP : (r == `Pr 0) => r0.
+  rewrite (eqP r0) conv0 (_ : p = `Pr 0) ?conv0; last first.
+    by apply/prob_ext; rewrite H1 (eqP r0) mul0R.
+  congr (_ <| _ |> _); move: H2; rewrite H1 (eqP r0) mul0R onem0 mul1R.
+  move/(congr1 onem); rewrite !onemK => ?; exact/prob_ext.
+case/boolP : (s == `Pr 0) => s0.
+  rewrite (eqP s0) conv0 (_ : p = `Pr 0) ?conv0; last first.
+    by apply/prob_ext; rewrite H1 (eqP s0) mulR0.
+  rewrite (_ : q = `Pr 0) ?conv0 //.
+  move: H1; rewrite (eqP s0) mulR0 => p0.
+  move: H2; rewrite p0 onem0 mul1R => /(congr1 onem); rewrite !onemK => sq.
+  rewrite -(eqP s0); exact/prob_ext.
+rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
+  by rewrite (@r_of_pq_is_r  _ _ r s).
+apply prob_ext => /=; by rewrite s_of_pqE -H2 onemK.
+Qed.
+
+Lemma convA' (r s : prob) a b c : [p_of r, s] != `Pr 1 ->
+  a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = (a <| r |> b) <| s |> c.
+Proof.
+move=> H; case/boolP : (s == `Pr 0) => s0.
+- by rewrite (eqP s0) p_of_r0 conv0 q_of_r0 conv0 conv0.
+- by rewrite convA s_of_pqK // r_of_pqK.
+Qed.
+
+Lemma p_of_neq1 (p q : prob) : (0 < p < 1)%R -> [p_of q, p] != `Pr 1.
+Proof.
+case=> p0 p1; apply/eqP => pq1; move: (p1).
+rewrite [X in (_ < X)%R -> _](_ : _ = Prob.p (`Pr 1))%R //.
+rewrite -pq1 p_of_rsE -ltR_pdivr_mulr // divRR ?prob_gt0 //.
+rewrite ltRNge; apply; exact/prob_le1.
+Qed.
+
+Lemma commute (x1 y1 x2 y2 : A) p q :
+  (x1 <|q|> y1) <|p|> (x2 <|q|> y2) = (x1 <|p|> x2) <|q|> (y1 <|p|> y2).
+Proof.
+case/boolP : (p == `Pr 0) => [/eqP|] p0; first by rewrite p0 !conv0.
+case/boolP : (q == `Pr 0) => [/eqP|] q0; first by rewrite q0 !conv0.
+case/boolP : (p == `Pr 1) => [/eqP|] p1; first by rewrite p1 !conv1.
+case/boolP : (q == `Pr 1) => [/eqP|] q1; first by rewrite q1 !conv1.
+set r := [p_of q, p].
+have r1 : (r != `Pr 1)%R by rewrite p_of_neq1 // -prob_gt0 -prob_lt1.
+rewrite -(convA' x1 y1) //.
+rewrite (convC y1).
+set s := [q_of q, p].
+set t := `Pr (`Pr s.~ * q).
+have t1 : (t < 1)%R.
+  rewrite -prob_lt1; apply/eqP => t1; subst t.
+  have {q1} : (q < 1)%R by rewrite -prob_lt1.
+  move/(congr1 Prob.p) : t1 => /= <-.
+  rewrite -ltR_pdivr_mulr; last by rewrite -prob_gt0.
+  rewrite divRR // /onem ltR_addr_subl ltRNge; apply.
+  rewrite -{1}(add0R 1%R) leR_add2r; exact/prob_ge0.
+rewrite -(convA' x2); last by rewrite prob_lt1 p_of_rsC /= p_of_rsE.
+rewrite -(convA' x1) //; last by rewrite p_of_rsC.
+rewrite (convC y2 y1) /=.
+congr (_ <| _ |> _); last by rewrite p_of_rsC.
+congr (_ <| _ |> _); last first.
+  (* TODO: lemma? *)
+  apply prob_ext => /=.
+  rewrite /s /onem /= !(p_of_rsE,q_of_rsE) /= !(p_of_rsE,q_of_rsE) /= /onem.
+  field.
+  rewrite subR_eq0 mulRC; apply/nesym/eqP; by rewrite -p_of_rsE.
+congr (_ <| _ |> _).
+apply prob_ext => /=.
+rewrite -[in RHS](onemK p); congr onem.
+rewrite q_of_rsE {1}p_of_rsE /= q_of_rsE p_of_rsE /= /onem; field.
+split.
+  rewrite subR_eq0; apply/nesym/eqP; by rewrite -p_of_rsE.
+rewrite mulRBl mul1R -(addR_opp _ (p - _)) oppRB addRA subRK.
+rewrite -(addR_opp _ (q * _)) mulRDr mulR1 oppRD mulRN oppRK addRA addRAC subRK.
+rewrite addR_opp subR_eq0 => /esym; exact/eqP.
+Qed.
+
+Lemma distribute (x y z : A) (p q : prob) :
+  x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
+Proof. by rewrite -{1}(convmm x q) commute. Qed.
 
 Local Open Scope vec_ext_scope.
 
@@ -459,17 +554,19 @@ Lemma avgI x (p : prob) : avg x x p = x.
 Proof. by rewrite /avg -mulRDl onemKC mul1R. Qed.
 Lemma avgC x y (p : prob) : avg x y p = avg y x `Pr p.~.
 Proof. by rewrite /avg onemK addRC. Qed.
-Lemma avgA (p q r s : prob) (d0 d1 d2 : R) :
-  p = (r * s)%R :> R ->
-  s.~ = (p.~ * q.~)%R ->
-  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 r) d2 s.
+Lemma avgA (p q : prob) (d0 d1 d2 : R) :
+  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
 Proof.
-move: p q r s => -[p Hp] [q Hq] [r Hr] [s Hs] /= K1.
-rewrite /avg /onem => K2 /=.
-rewrite (mulRDr s) -addRA (mulRA s) (mulRC s r) -K1; congr (_ + _)%R.
-rewrite K2 mulRDr -(mulRA (1 - p)%R); congr (_ + _)%R.
-rewrite !mulRA; congr (_ * _)%R.
-rewrite mulRBl mulRBr mulR1 (mulRC s r) -K1; lra.
+rewrite /avg /onem.
+set s := [s_of p, q].
+set r := [r_of p, q].
+rewrite (mulRDr s) -addRA (mulRA s) (mulRC s); congr (_ + _)%R.
+  by rewrite (p_is_rs p q) -/s.
+rewrite mulRDr (mulRA _ _ d2).
+rewrite -/p.~ -/q.~ -/r.~ -/s.~.
+rewrite {2}(s_of_pqE p q) onemK; congr (_ + _)%R.
+rewrite 2!mulRA; congr (_ * _)%R.
+by rewrite pq_is_rs -/r -/s mulRC.
 Qed.
 Definition R_convMixin := ConvexSpace.Class avg1 avgI avgC avgA.
 Canonical R_convType := ConvexSpace.Pack R_convMixin.
@@ -508,11 +605,10 @@ Proof.
 apply FunctionalExtensionality.functional_extensionality => a.
 by apply convC.
 Qed.
-Lemma avgA (p q r s : prob) (d0 d1 d2 : T) :
-  p = (r * s)%R :> R -> s.~ = (p.~ * q.~)%R ->
-  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 r) d2 s.
+Lemma avgA (p q (*r s*) : prob) (d0 d1 d2 : T) :
+  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
 Proof.
-move => *.
+move=> *.
 apply FunctionalExtensionality.functional_extensionality => a.
 by apply convA.
 Qed.
@@ -548,9 +644,8 @@ Proof.
 apply FunctionalExtensionality.functional_extensionality_dep => a.
 by apply convC.
 Qed.
-Lemma avgA (p q r s : prob) (d0 d1 d2 : T) :
-  p = (r * s)%R :> R -> s.~ = (p.~ * q.~)%R ->
-  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 r) d2 s.
+Lemma avgA (p q (*r s*) : prob) (d0 d1 d2 : T) :
+  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
 Proof.
 move => *.
 apply FunctionalExtensionality.functional_extensionality_dep => a.
@@ -587,9 +682,8 @@ Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
 Proof.
 by congr (pair _ _); apply convC.
 Qed.
-Lemma avgA (p q r s : prob) (d0 d1 d2 : T) :
-  p = (r * s)%R :> R -> s.~ = (p.~ * q.~)%R ->
-  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 r) d2 s.
+Lemma avgA (p q : prob) (d0 d1 d2 : T) :
+  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
 Proof.
 move => *.
 congr (pair _ _); by apply convA.
@@ -877,7 +971,7 @@ Lemma LE x : L x = ((b - x) / (b - a) * f a + (x - a) / (b - a) * f b)%R.
 Proof.
 rewrite /L mulRBr [in LHS]addRA addRAC; congr (_ + _)%R.
 rewrite addR_opp -{1}(mul1R (f a)) -mulRBl; congr (_ * _)%R.
-rewrite -(mulRV (b - a)); last by rewrite subR_eq0; exact/eqP/gtR_eqF.
+rewrite -(mulRV (b - a)); last by rewrite subR_eq0'; exact/eqP/gtR_eqF.
 by rewrite -mulRBl -addR_opp oppRB addRA subRK addR_opp.
 Qed.
 
@@ -902,18 +996,18 @@ rewrite LE //.
 have -> : ((b - x) / (b - a) = t)%R.
   rewrite /x -addR_opp oppRD addRCA mulRBl mul1R oppRB (addRCA b).
   rewrite addR_opp subRR addR0 -mulRN addRC -mulRDr addR_opp.
-  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0; exact/eqP/gtR_eqF.
+  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0'; exact/eqP/gtR_eqF.
 have -> : ((x - a) / (b - a) = t.~)%R.
   rewrite /x -addR_opp addRAC -{1}(oppRK a) mulRN -mulNR -{2}(mul1R (- a)%R).
   rewrite -mulRDl (addRC _ R1) addR_opp -mulRDr addRC addR_opp.
-  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0; exact/eqP/gtR_eqF.
+  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0'; exact/eqP/gtR_eqF.
 exact/leRR.
 Qed.
 
 Lemma second_derivative_convexf_pt : forall t : prob, convex_function_at f a b t.
 Proof.
 have note1 : forall x, R1 = ((x - a) / (b - a) + (b - x) / (b - a))%R.
-  move=> x; rewrite -mulRDl addRC addRA subRK addR_opp mulRV // subR_eq0.
+  move=> x; rewrite -mulRDl addRC addRA subRK addR_opp mulRV // subR_eq0'.
   exact/eqP/gtR_eqF.
 have step1 : forall x, f x = ((x - a) / (b - a) * f x + (b - x) / (b - a) * f x)%R.
   by move=> x; rewrite -mulRDl -note1 mul1R.
@@ -924,7 +1018,7 @@ case: axb.
   rewrite /L subRR div0R mul0R addR0 subRR; exact/leRR.
 move=> ax.
 rewrite leR_eqVlt => -[->|].
-rewrite /L /Rdiv mulRV ?mul1R; last by rewrite subR_eq0; exact/eqP/gtR_eqF.
+rewrite /L /Rdiv mulRV ?mul1R; last by rewrite subR_eq0'; exact/eqP/gtR_eqF.
 rewrite addRC subRK subRR; exact/leRR.
 move=> xb.
 have {step1}step2 : (L x - f x =
@@ -940,9 +1034,9 @@ have {step1}step2 : (L x - f x =
   rewrite -(oppRK (f a - f x)) mulRN addR_opp oppRB.
   congr (_ + _)%R.
   - rewrite {1}/Rdiv -!mulRA; congr (_ * _)%R; rewrite mulRCA; congr (_ * _)%R.
-    rewrite mulRCA mulRV ?mulR1 // subR_eq0; exact/eqP/gtR_eqF.
+    rewrite mulRCA mulRV ?mulR1 // subR_eq0'; exact/eqP/gtR_eqF.
   - rewrite -!mulNR -!mulRA; congr (_ * _)%R; rewrite mulRCA; congr (_ * _)%R.
-    rewrite mulRCA mulRV ?mulR1 // subR_eq0; exact/eqP/gtR_eqF.
+    rewrite mulRCA mulRV ?mulR1 // subR_eq0'; exact/eqP/gtR_eqF.
 have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%R.
   have H : pderivable f (fun x0 => x <= x0 <= b)%R.
     move=> z [z1 z2]; apply HDf; split => //.
@@ -950,7 +1044,7 @@ have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%R
   case: (@MVT_cor1_pderivable x b f H xb) => c2 [Ic2 [H1 H2]].
   exists c2; split => //.
   rewrite H1 /Rdiv -mulRA mulRV ?mulR1; last first.
-    by rewrite subR_eq0; exact/eqP/gtR_eqF.
+    by rewrite subR_eq0'; exact/eqP/gtR_eqF.
   rewrite DfE; last by move=> ?; exact: proof_derive_irrelevance.
   split.
     apply (@leR_trans x); [exact/ltRW | by case: Ic2 H1].
@@ -962,7 +1056,7 @@ have [c1 [Ic1 Hc1]] : exists c1, (a < c1 < x /\ (f x - f a) / (x - a) = Df c1)%R
   case: (@MVT_cor1_pderivable a x f H ax) => c1 [Ic1 [H1 H2]].
   exists c1; split => //.
   rewrite H1 /Rdiv -mulRA mulRV ?mulR1; last first.
-    by rewrite subR_eq0; exact/eqP/gtR_eqF.
+    by rewrite subR_eq0'; exact/eqP/gtR_eqF.
   rewrite DfE; last by move=> ?; exact: proof_derive_irrelevance.
   split.
   - by case: H2 => /ltRW.
@@ -974,7 +1068,7 @@ have {step2 Hc1 Hc2}step3 : (L x - f x =
   (b - x) * (x - a) * (c2 - c1) / (b - a) * ((Df c2 - Df c1) / (c2 - c1)))%R.
   rewrite {}step2 Hc2 Hc1 (mulRC (x - a)%R) -mulRBr {1}/Rdiv -!mulRA.
   congr (_ * (_ * _))%R; rewrite mulRCA; congr (_ * _)%R.
-  rewrite mulRCA mulRV ?mulR1 // subR_eq0; by move/gtR_eqF/eqP : c1c2.
+  rewrite mulRCA mulRV ?mulR1 // subR_eq0'; by move/gtR_eqF/eqP : c1c2.
 have [d [Id H]] : exists d, (c1 < d < c2 /\ (Df c2 - Df c1) / (c2 - c1) = DDf d)%R.
   have H : pderivable Df (fun x0 => c1 <= x0 <= c2)%R.
     move=> z [z1 z2]; apply HDDf; split => //.
@@ -983,7 +1077,7 @@ have [d [Id H]] : exists d, (c1 < d < c2 /\ (Df c2 - Df c1) / (c2 - c1) = DDf d)
   case: (@MVT_cor1_pderivable c1 c2 Df H c1c2) => d [Id [H1 H2]].
   exists d; split => //.
   rewrite H1 /Rdiv -mulRA mulRV ?mulR1; last first.
-    by rewrite subR_eq0; exact/eqP/gtR_eqF.
+    by rewrite subR_eq0'; exact/eqP/gtR_eqF.
   rewrite DDfE; last by move=> ?; exact: proof_derive_irrelevance.
   split.
   - apply (@leR_trans c1); last by case: Id H1.

@@ -23,13 +23,9 @@ Section BSC_sect.
 
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
-Variable p : R.
-Hypothesis p_01 : 0 <= p <= 1.
+Variable p : prob.
 
-Definition c : `Ch_1(A, A) :=
-  fun a => locked (makeDist (Binary.f0 p_01 a) (Binary.f1 card_A p a)).
-
-Lemma cE a : c a =1 Binary.f p a. Proof. rewrite /c; by unlock. Qed.
+Definition c : `Ch_1(A, A) := Binary.d card_A p.
 
 End BSC_sect.
 End BSC.
@@ -48,7 +44,7 @@ Variable P : dist A.
 Variable p : R.
 Hypothesis p_01' : (0 < p < 1)%R.
 
-Let p_01 := closed p_01'.
+Let p_01 : prob := Prob.mk (closed p_01').
 
 Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01) = - H2 p.
 Proof.
@@ -61,7 +57,7 @@ rewrite {1}/entropy .
 set a := \rsum_(_ in _) _. set b := \rsum_(_ <- _) _.
 apply trans_eq with (- (a + (-1) * b)); first by field.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
-rewrite !Set2sumE /= !JointDistChan.dE !BSC.cE /=.
+rewrite !Set2sumE /= !JointDistChan.dE /BSC.c !Binary.dE /=.
 rewrite !/Binary.f !eqxx /Binary.f eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2 (* TODO *).
 set a := Set2.a _. set b := Set2.b _.
 case: (Req_EM_T (P a) 0) => H1.
@@ -103,7 +99,7 @@ Lemma H_out_max : `H(P `o BSC.c card_A p_01) <= 1.
 Proof.
 rewrite {1}/entropy /= Set2sumE /= !OutDist.dE 2!Set2sumE /=.
 set a := Set2.a _. set b := Set2.b _.
-rewrite !BSC.cE /Binary.f !eqxx /= !(eq_sym _ a) (* TODO *).
+rewrite /BSC.c !Binary.dE !eqxx /= !(eq_sym _ a).
 rewrite (negbTE (Set2.a_neq_b card_A)).
 move: (pmf1 P); rewrite Set2sumE /= -/a -/b => P1.
 have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
@@ -147,8 +143,7 @@ Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; lra. Qed.
 Lemma H_out_binary_uniform : `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
 Proof.
 rewrite {1}/entropy !Set2sumE /= !OutDist.dE !Set2sumE /=.
-rewrite !BSC.cE.
-rewrite /Binary.f !eqxx (eq_sym _ (Set2.a _)) !Uniform.dE (* TODO *).
+rewrite /BSC.c !Binary.dE !eqxx (eq_sym _ (Set2.a _)) !Uniform.dE.
 rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.
 rewrite mul1R (_ : p + (1 - p) = 1); last by field.
@@ -164,7 +159,7 @@ Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
 Hypothesis p_01' : 0 < p < 1.
-Let p_01 := closed p_01'.
+Let p_01 := Prob.mk (closed p_01').
 
 (** The capacity of a Binary Symmetric Channel: *)
 
@@ -188,12 +183,11 @@ End bsc_capacity_theorem.
 
 Section dH_BSC.
 
-Variable p : R.
-Hypothesis p_01 : (0 <= p <= 1)%R.
+Variable p : prob.
 
 Let card_F2 : #| 'F_2 | = 2%nat. by rewrite card_Fp. Qed.
 
-Let W := BSC.c card_F2 p_01.
+Let W := BSC.c card_F2 p.
 
 Variables (M : finType) (n : nat) (f : encT [finType of 'F_2] M n).
 
@@ -207,8 +201,8 @@ move=> m y d; rewrite DMCE.
 transitivity ((\rprod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
               (\rprod_(i < n | (f m) ``_ i != y ``_ i) p))%R.
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=; congr (_ * _).
-    by apply eq_bigr => // i /eqP ->; rewrite BSC.cE /Binary.f eqxx (* TODO *).
-  apply eq_bigr => //= i /negbTE Hyi; by rewrite BSC.cE /Binary.f eq_sym Hyi.
+    by apply eq_bigr => // i /eqP ->; rewrite /BSC.c Binary.dE eqxx.
+  apply eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c Binary.dE eq_sym Hyi.
 congr (_ * _).
 by rewrite big_const /= iter_mulR /= card_dHC.
 by rewrite big_const /= iter_mulR /= card_dH_vec.

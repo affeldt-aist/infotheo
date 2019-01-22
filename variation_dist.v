@@ -30,7 +30,7 @@ Proof. apply: rsumr_ge0 => ? _ ; exact: normR_ge0. Qed.
 Lemma def_var_dist p q : d( p , q) = 0 -> p = q.
 Proof.
 rewrite /var_dist => H; apply/dist_ext => a.
-apply/eqP; rewrite -subR_eq0; apply/eqP/normR0_eq0; move: H.
+rewrite -subR_eq0; apply/normR0_eq0; move: H.
 rewrite (bigD1 a) //= paddR_eq0 => [[] // | |  ].
 exact/normR_ge0.
 apply: rsumr_ge0 => ? _ ; exact/normR_ge0.

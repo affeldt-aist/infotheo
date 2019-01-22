@@ -931,10 +931,9 @@ Section hamming_code_error_rate.
 
 Variable M : finType.
 Hypothesis M_not_0 : 0 < #|M|.
-Variable p : R.
-Hypothesis p_01 : (0 <= p <= 1)%R.
+Variable p : prob.
 Let card_F2 : #| 'F_2 | = 2. by rewrite card_Fp. Qed.
-Let W := BSC.c card_F2 p_01.
+Let W := BSC.c card_F2 p.
 
 Variable m' : nat.
 Let m := m'.+2.
@@ -955,7 +954,7 @@ transitivity (
     (1 - p) ^ (n - d) * p ^ d).
   apply eq_bigr => t Ht.
   rewrite dH_sym.
-  rewrite -(DMC_BSC_prop p_01 (enc hamming_channel_code) m0 t).
+  rewrite -(DMC_BSC_prop p (enc hamming_channel_code) m0 t).
   set x := eq_ind_r _ _ _.
   rewrite (_ : x = card_F2) //; by apply eq_irrelevance.
 transitivity (
