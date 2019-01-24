@@ -89,9 +89,6 @@ Proof. split => [/Rminus_diag_uniq //|->]; by rewrite subRR. Qed.
 Lemma subR_eq0' (x y : R) : (x - y == 0) = (x == y).
 Proof. by apply/idP/idP => /eqP/subR_eq0/eqP. Qed.
 
-Lemma subR0_eq x y : x - y = 0 -> x = y.
-Proof. exact: Rminus_diag_uniq x y. Qed.
-
 Lemma subR_eq x y z : (x - z == y) = (x == y + z).
 Proof.
 apply/idP/idP => [/eqP <-|/eqP ->]; by [rewrite subRK | rewrite addRK].
@@ -336,8 +333,6 @@ Qed.
 Lemma ltR_subRL' m n p : (n <b p - m) = (m + n <b p).
 Proof. by apply/idP/idP => /ltRP/ltR_subRL/ltRP. Qed.
 
-Definition ltR_addr_subl := ltR_subRL.
-
 Lemma ltR_subl_addr x y z : (x - y < z) <-> (x < z + y).
 Proof.
 split => H; [apply (@ltR_add2r (-y)) | apply (@ltR_add2r y)]; last by rewrite subRK.
@@ -359,6 +354,16 @@ apply/leRP; rewrite -(leR_add2r' y) subRK; exact/leRP.
 Qed.
 Lemma leR_subl_addr' x y z : (x - y <b= z) = (x <b= z + y).
 Proof. by apply/idP/idP => /leRP/leR_subl_addr/leRP. Qed.
+
+Definition leR_sub_addr := (leR_subl_addr, leR_subr_addr).
+
+Definition ltR_subr_addl := ltR_subRL.
+
+Lemma ltr_subl_addl x y z : (x - y < z) <-> (x < y + z).
+Proof.
+split => [/(@ltR_add2r y)|/(@ltR_add2r (- y))]; first by rewrite subRK addRC.
+by rewrite addR_opp (addRC y) addR_opp addRK.
+Qed.
 
 Lemma subR_gt0 x y : (0 < y - x) <-> (x < y).
 Proof. split; [exact: Rminus_gt_0_lt | exact: Rlt_Rminus]. Qed.

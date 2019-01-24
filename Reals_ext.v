@@ -90,6 +90,12 @@ Proof. rewrite /onem; by field. Qed.
 Lemma onemK r : r.~.~ = r.
 Proof. by rewrite /onem subRBA addRC addRK. Qed.
 
+Lemma onemD (p q : R) : ((p + q).~ = p.~ + q.~ - 1)%R.
+Proof. rewrite /onem; field. Qed.
+
+Lemma onemM (p q : R) : ((p * q).~ = p.~ + q.~ - p.~ * q.~)%R.
+Proof. rewrite /onem; field. Qed.
+
 Lemma onem_prob r : (0%R <= r <= R1)%R -> (0%R <= r.~ <= R1)%R.
 Proof.
 case=> rO r1; split; by [rewrite leR_subr_addr add0R|

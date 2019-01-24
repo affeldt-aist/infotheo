@@ -1,7 +1,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
-From mathcomp Require Import ssralg finset fingroup finalg matrix.
+From mathcomp Require Import ssralg finset fingroup perm finalg matrix.
 From mathcomp Require Import boolp classical_sets.
 Require Import Reals Lra ProofIrrelevance FunctionalExtensionality.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
@@ -239,6 +239,7 @@ case: A a b c p q => ? [] f H0 H1 H2 H3 d0 d1 d2 p q; by rewrite /Conv H3.
 Qed.
 End convex_space_interface.
 
+
 Section convex_space_prop.
 Variables A : convType.
 Implicit Types a b : A.
@@ -303,7 +304,7 @@ have t1 : (t < 1)%R.
   have {q1} : (q < 1)%R by rewrite -prob_lt1.
   move/(congr1 Prob.p) : t1 => /= <-.
   rewrite -ltR_pdivr_mulr; last by rewrite -prob_gt0.
-  rewrite divRR // /onem ltR_addr_subl ltRNge; apply.
+  rewrite divRR // /onem ltR_subr_addl ltRNge; apply.
   rewrite -{1}(add0R 1%R) leR_add2r; exact/prob_ge0.
 rewrite -(convA' x2); last by rewrite prob_lt1 p_of_rsC /= p_of_rsE.
 rewrite -(convA' x1) //; last by rewrite p_of_rsC.
@@ -342,6 +343,56 @@ Fixpoint Convn n : {dist 'I_n} -> ('I_n -> A) -> A :=
       g ord0 <| Prob.mk (conj (dist_ge0 e ord0) (dist_max e ord0)) |> Convn (DelDist.d H) G
     end
   end.
+
+(* wip *)
+
+Lemma dist1_perm n (s : 'S_n) (d : {dist 'I_n}) (k j : 'I_n) :
+  d k = 1%R -> d (s j) != 1%R -> d (s j) = 0%R.
+Proof.
+move=> d01 ds01; suff [i [i0 i1]] : exists i : 'I_n, i != j /\ d (s i) == 1%R.
+  by move/dist1P : i1 => -> //; apply: contra i0 => /eqP/perm_inj <-.
+exists (s^-1 k)%g; split; last by rewrite permKV d01.
+case/boolP : (k == j) => kj.
+  rewrite (eqP kj) in d01 *.
+  apply/eqP => s00; by move: ds01; rewrite -s00 permKV d01 eqxx.
+apply/eqP => ?; subst j.
+by rewrite permKV d01 eqxx in ds01.
+Qed.
+
+Lemma dist1_inj n (d : {dist 'I_n}) (s : 'S_n) (i j : 'I_n) :
+  d i = 1%R -> d (s j) = 1%R -> s j = i.
+Proof.
+move=> d01 ds01; apply/eqP/negPn/negP => s00.
+move/eqP : d01 => /dist1P/(_ _ s00); rewrite ds01; lra.
+Qed.
+
+Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): Convn (Dist1.d j) g = g j.
+Proof.
+elim: n j g => [[] [] //|n IH j g /=].
+case: eqVneq => [|b01].
+  rewrite Dist1.dE; case j0 : (_ == _) => /=.
+  by move=> _; rewrite (eqP j0).
+  rewrite (_ : (0%:R)%R = 0%R) //; lra.
+rewrite (_ : Prob.mk _ = `Pr 0) ?conv0; last first.
+  apply prob_ext => /=; move: b01; rewrite !Dist1.dE => j0.
+  case j0' : (_ == _) => //; by rewrite j0' eqxx in j0.
+have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite Dist1.dE eqxx.
+have j0' : 0 < j by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
+move=> [:H]; have @j' : 'I_n.
+  by apply: (@Ordinal _ j.-1 _); abstract: H; rewrite prednK // -ltnS.
+rewrite (_ : DelDist.d b01 = Dist1.d j'); last first.
+  apply/dist_ext => /= k.
+  rewrite DelDist.dE D1Dist.dE /DelDist.h ltn0 eq_sym (negbTE (neq_lift _ _)).
+  rewrite !Dist1.dE /= (negbTE j0) subR0 divR1; congr (INR (nat_of_bool _)).
+  move R : (k == _) => [|].
+  - apply/eqP/val_inj => /=; rewrite /bump leq0n add1n.
+    move/eqP : R => -> /=; by rewrite prednK // lt0n.
+  - apply: contraFF R => /eqP.
+    move/(congr1 val) => /=; rewrite /bump leq0n add1n => kj.
+    by apply/eqP/val_inj => /=; rewrite -kj.
+rewrite IH /DelDist.h ltn0; congr g.
+by apply val_inj => /=; rewrite /bump leq0n add1n prednK // lt0n.
+Qed.
 
 Lemma convn1E a e : Convn e (fun _ : 'I_1 => a) = a.
 Proof.

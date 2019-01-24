@@ -251,7 +251,7 @@ have @derive_pt_f : forall z (Hz : x <= z <= y),
   rewrite derive_pt_id derive_pt_comp 2!derive_pt_Log /=.
   rewrite mul1R mulN1R mulRN1.
   rewrite [X in z * X]mulRC [X in (1 - z) * - X]mulRC mulRN 2!mulRA.
-  rewrite !mulRV; [|by apply/eqP => /subR0_eq /gtR_eqF | exact/eqP/gtR_eqF].
+  rewrite !mulRV; [|by apply/eqP => /subR_eq0 /gtR_eqF | exact/eqP/gtR_eqF].
   rewrite mul1R -2!oppRD oppRK.
   by rewrite [X in X + - _]addRC oppRD addRA addRC !addRA Rplus_opp_l add0R addR_opp.
 have @pderivable_Df : pderivable Df (fun z => x <= z <= y).
@@ -272,7 +272,7 @@ have derive_pt_Df : forall z (Hz : x <= z <= y), DDf z = derive_pt Df z (pderiva
   rewrite -mulRDr [X in _ = X]mulRC.
   have Hzn0 : z != 0 by apply/eqP/gtR_eqF/(ltR_leR_trans H0x Hxz).
   have H1zn0 : 1 - z != 0.
-    apply /eqP; move => /subR0_eq /gtR_eqF H.
+    apply /eqP; move => /subR_eq0 /gtR_eqF H.
     by apply /H /leR_ltR_trans; [exact Hzy| exact Hy1].
   have Hzn0' : z <> 0 by move : Hzn0 => /eqP.
   have H1zn0' : 1 - z <> 0 by move : H1zn0 => /eqP.
