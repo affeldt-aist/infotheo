@@ -751,6 +751,42 @@ Canonical prodConvType := ConvexSpace.Pack prodConvMixin.
 
 End prod_convex_space.
 
+Module OrderedConvexSpace.
+Record class_of (car : convType) : Type := Class {
+  leconv : car -> car -> Prop;
+  _ : forall a, leconv a a;
+  _ : forall a b c, leconv a b -> leconv b c -> leconv a c;
+  _ : forall a b, leconv a b -> leconv b a -> a = b;
+}.
+Structure t : Type := Pack {car : convType; class : class_of car}.
+Module Exports.
+Definition Leconv (T : t) : car T -> car T -> Prop :=
+  let: Pack _ (Class leconv _ _ _) := T in leconv.
+Arguments Leconv {T} : simpl never.
+Notation "x <= y" := (Leconv x y) : ordered_convex_scope.
+Notation "x <= y <= z" := (Leconv x y /\ Leconv y z) : ordered_convex_scope.
+Notation orderedConvType := t.
+Coercion car : orderedConvType >-> convType.
+End Exports.
+End OrderedConvexSpace.
+Export OrderedConvexSpace.Exports.
+
+Section ordered_convex_space_interface.
+Local Open Scope ordered_convex_scope.
+Variable A : orderedConvType.
+Implicit Types a b c : A.
+Lemma leconvR a : a <= a.
+by case: A a => ? [].
+Qed.
+Lemma leconv_trans b a c : a <= b -> b <= c -> a <= c.
+by case: A a b c => ? [].
+Qed.
+Lemma eqconv_le a b : (a = b) <-> (a <= b <= a).
+split; [move => ->; split; exact: leconvR|].
+by case; case: A a b => ? [].
+Qed.
+End ordered_convex_space_interface.
+
 Section convex_function_def.
 Variables (A : convType) (f : A -> R).
 
