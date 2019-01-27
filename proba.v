@@ -898,6 +898,8 @@ End def.
 Section prop.
 Lemma one (n : nat) (d : {dist 'I_n}) : PermDist.d d 1%g = d.
 Proof. apply/dist_ext => /= i; by rewrite PermDist.dE perm1. Qed.
+Lemma mul (n : nat) (P : {dist 'I_n}) (s s' : 'S_n) : d (d P s) s' = d P (s' * s).
+Proof. by apply/dist_ext => /= i; rewrite !dE permM. Qed.
 Lemma tperm2 (a b : 'I_2) : d (Dist1.d a) (tperm a b) = Dist1.d b.
 Proof.
 apply/dist_ext => /= x; rewrite dE !Dist1.dE permE /=.
