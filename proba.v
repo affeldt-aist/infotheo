@@ -2,7 +2,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
-From mathcomp Require Import ssralg finset fingroup finalg matrix.
+From mathcomp Require Import ssralg finset fingroup perm finalg matrix.
 Require Import Reals Lra Nsatz FunctionalExtensionality.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 
@@ -176,26 +176,6 @@ Qed.
 Lemma dist_ext d d' : (forall x, pos_f (pmf d) x = pos_f (pmf d') x) -> d = d'.
 Proof. move=> ?; exact/dist_eq/pos_fun_eq/functional_extensionality. Qed.
 
-Lemma dist1P (d : dist) a : reflect (forall i, i != a -> d i = 0) (d a == 1).
-Proof.
-apply: (iffP idP) => [/eqP H b ?|H].
-- move/eqP : (pmf1 d); rewrite (bigD1 a) //= H eq_sym addRC -subR_eq subRR.
-  move/eqP/esym/prsumr_eq0P => -> // c ca; exact/dist_ge0.
-- move: (pmf1 d); rewrite (bigD1 a) //= => /esym/eqP.
-  by rewrite -subR_eq => /eqP <-; rewrite big1 // subR0.
-Qed.
-
-Lemma dist_supp_singleP (d : dist) a :
-  (d a == 1 :> R) = (dist_supp d == [set a] :> {set A}).
-Proof.
-case/boolP : (_ == _ :> {set A}) => [/eqP H|H].
-- apply/dist1P => b ba; move/setP : H => /(_ b).
-  by rewrite !inE (negbTE ba) => /negbT; rewrite negbK => /eqP.
-- apply: contraNF H => /eqP da1; apply/eqP/setP => b; rewrite !inE.
-  case/boolP : (b == a :> A) => [/eqP ->|ba]; first by rewrite da1; exact/eqP.
-  by apply/negbTE; rewrite negbK; by move/eqP/dist1P : da1 => ->.
-Qed.
-
 Definition eqdist (d d' : dist) := [forall a, d a == d' a].
 
 Lemma eqdistP : Equality.axiom eqdist.
@@ -231,6 +211,36 @@ Definition d : dist A := locked (makeDist f0 f1).
 Lemma dE a0 : d a0 = INR (a0 == a)%bool.
 Proof. by rewrite /d; unlock. Qed.
 End def.
+Section prop.
+Variable A : finType.
+Lemma dist1P (d : {dist A}) a : reflect (forall i, i != a -> d i = 0) (d a == 1).
+Proof.
+apply: (iffP idP) => [/eqP H b ?|H].
+- move/eqP : (pmf1 d); rewrite (bigD1 a) //= H eq_sym addRC -subR_eq' subRR.
+  move/eqP/esym/prsumr_eq0P => -> // c ca; exact/dist_ge0.
+- move: (pmf1 d); rewrite (bigD1 a) //= => /esym.
+  by rewrite -subR_eq => <-; rewrite big1 // subR0.
+Qed.
+Lemma one (P : dist A) a : (P a == 1 :> R) = (P == d a :> {dist A}).
+Proof.
+apply/idP/idP => [Pa1|/eqP ->]; last by rewrite dE eqxx.
+apply/eqP/dist_ext => a0; rewrite dE.
+case/boolP : (a0 == a :> A) => Ha.
+by rewrite (eqP Ha); exact/eqP.
+by move/dist1P : Pa1 => ->.
+Qed.
+Lemma supp a : dist_supp (d a) = [set a] :> {set A}.
+Proof.
+apply/setP => a0; rewrite !inE; case/boolP : (_ == _ :> A) => [/eqP ->|a0a].
+by rewrite dE eqxx; apply/negbT => /=; apply/eqP; rewrite INR_eq0.
+by apply/negbTE; rewrite negbK dE (negbTE a0a).
+Qed.
+Lemma I1 (d : {dist 'I_1}) : d = Dist1.d ord0.
+Proof.
+apply/dist_ext => /= i; rewrite dE (ord1 i) eqxx.
+by move: (pmf1 d); rewrite big_ord_recl big_ord0 addR0.
+Qed.
+End prop.
 End Dist1.
 
 Module DistMap.
@@ -481,8 +491,8 @@ rewrite (eq_bigr (fun c => X c / (1 - X b))); last first.
   by move=> ? cb; rewrite /f (negbTE cb).
 rewrite -big_distrl /=.
 move: (pmf1 X); rewrite (bigD1 b) //=.
-move=> /eqP; rewrite eq_sym addRC -subR_eq => /eqP H.
-have ?: 1 - X b != 0 by apply/eqP; rewrite subR_eq0 => /esym; apply/eqP.
+move=> /esym; rewrite addRC -subR_eq => H.
+have ?: 1 - X b != 0 by rewrite subR_eq0' eq_sym.
 rewrite -(@eqR_mul2r (1 - X b)); last exact/eqP.
 by rewrite mul1R -mulRA mulVR ?mulR1 // H.
 Qed.
@@ -525,16 +535,9 @@ End D1Dist.
 Lemma distI0_False (d : {dist 'I_O}) : False.
 Proof. move: (dist_domain_not_empty d); by rewrite card_ord. Qed.
 
-Lemma dist_supp1 (d : {dist 'I_1}) : dist_supp d = ([set ord0])%SET.
-Proof.
-case: d => -[/= f f0] f1; apply/setP => i.
-rewrite (ssr_ext.ord1 i) /= !inE /= eqxx.
-move: f1; rewrite big_ord_recl big_ord0 addR0 => ->; exact/eqP.
-Qed.
-
 Module I2Dist.
 Section def.
-Variables (p : prob).
+Variable (p : prob).
 Definition f (i : 'I_2) : R := if i == ord0 then Prob.p p else p.~.
 Lemma f0 i : 0 <= f i.
 Proof.
@@ -546,6 +549,18 @@ Definition d : {dist 'I_2} := locked (makeDist f0 f1).
 Lemma dE a : d a = if a == ord0 then Prob.p p else p.~.
 Proof. by rewrite /d; unlock. Qed.
 End def.
+Section prop.
+Lemma p1 : d (`Pr 1) = Dist1.d ord0.
+Proof.
+apply/dist_ext => /= i; rewrite dE Dist1.dE; case: ifPn => //= _; exact: onem1.
+Qed.
+Lemma p0 : d (`Pr 0) = Dist1.d (lift ord0 ord0).
+Proof.
+apply/dist_ext => /= i; rewrite dE Dist1.dE; case: ifPn.
+by move/eqP ->; rewrite (negbTE (neq_lift _ _)).
+case: i => -[//|] [|//] i12 _ /=; by rewrite onem0.
+Qed.
+End prop.
 End I2Dist.
 
 Module AddDist.
@@ -761,6 +776,12 @@ Proof. by rewrite /q_of_rs; unlock. Qed.
 Lemma q_of_r0 (r : prob) : [q_of r, `Pr 0] = `Pr 0.
 Proof. by apply/prob_ext => /=; rewrite q_of_rsE mulR0 div0R. Qed.
 
+Lemma q_of_r1 (r : prob) : r != `Pr 1 -> [q_of r, `Pr 1] = `Pr 1.
+Proof.
+move=> r1.
+by apply/prob_ext => /=; rewrite q_of_rsE /= mulR1 p_of_r1 divRR // onem_neq0.
+Qed.
+
 Lemma q_of_1s (s : prob) : [q_of `Pr 1, s] = `Pr 0.
 Proof. by apply/prob_ext => /=; rewrite q_of_rsE onem1 mul0R div0R. Qed.
 
@@ -793,8 +814,7 @@ split.
   rewrite subR_eq0 => /esym.
   apply/eqP; apply: contra H1 => /eqP H1.
   apply/eqP/prob_ext; by rewrite p_of_rsE.
-rewrite -addR_opp oppRB -addR_opp oppRB addRC -addRA subRK mulRBl subRK mul1R.
-exact/eqP.
+rewrite 2!subRB subRR add0R mulRBl mul1R addRC subRK; exact/eqP.
 Qed.
 
 Module Conv2Dist.
@@ -851,6 +871,46 @@ End prop.
 End Conv2Dist.
 
 Local Notation "x <| p |> y" := (Conv2Dist.d x y p) : proba_scope.
+
+Module PermDist.
+Section def.
+Variables (n : nat) (P : {dist 'I_n}) (s : 'S_n).
+Definition f (i : 'I_n) := P (s i).
+Lemma f0 (i : 'I_n) : (0 <= f i)%R. Proof. exact/dist_ge0. Qed.
+Lemma f1 : (\rsum_(i < n) f i = 1)%R.
+Proof.
+transitivity (\rsum_(i <- [tuple (s^-1)%g i | i < n]) f i).
+  apply/eq_big_perm/tuple_perm_eqP; exists s.
+  destruct n; first by move: (distI0_False P).
+  rewrite /index_enum -enumT; apply/(@eq_from_nth _ ord0).
+    by rewrite size_map size_tuple -enumT size_enum_ord.
+  move=> i; rewrite size_enum_ord => ni /=.
+  rewrite (nth_map ord0) ?size_enum_ord //= tnth_map /=.
+  apply (@perm_inj _ s); by rewrite permKV /= tnth_ord_tuple.
+rewrite -(pmf1 P) /= big_map; apply congr_big => //.
+  by rewrite /index_enum -enumT.
+move=> i _; by rewrite /f permKV.
+Qed.
+Definition d : {dist 'I_n} := locked (makeDist f0 f1).
+Lemma dE i : d i = P (s i).
+Proof. by rewrite /d; unlock. Qed.
+End def.
+Section prop.
+Lemma one (n : nat) (d : {dist 'I_n}) : PermDist.d d 1%g = d.
+Proof. apply/dist_ext => /= i; by rewrite PermDist.dE perm1. Qed.
+Lemma tperm2 (a b : 'I_2) : d (Dist1.d a) (tperm a b) = Dist1.d b.
+Proof.
+apply/dist_ext => /= x; rewrite dE !Dist1.dE permE /=.
+case: ifPn => [/eqP ->|xa]; first by rewrite eq_sym.
+case: ifPn; by [rewrite eqxx | move=> _; rewrite (negbTE xa)].
+Qed.
+Lemma dist1 (n : nat) (a : 'I_n) (s : 'S_n) : d (Dist1.d a) s = Dist1.d (s^-1 a)%g.
+Proof.
+apply/dist_ext => /= i; rewrite dE !Dist1.dE; congr (INR (nat_of_bool _)).
+by apply/eqP/eqP => [<-|->]; rewrite ?permK // ?permKV.
+Qed.
+End prop.
+End PermDist.
 
 (* bivariate (joint) distribution *)
 Module Bivar.
@@ -1310,10 +1370,7 @@ rewrite big_ord_recl IH // => i j ij; by rewrite H.
 Qed.
 
 Lemma Pr_diff E1 E2 : Pr (E1 :\: E2) = (Pr E1 - Pr (E1 :&: E2))%R.
-Proof.
-rewrite /Pr [in X in _ = (X + _)%R](big_setID E2) /= -addRA addRCA addR_opp.
-by rewrite subRR addR0.
-Qed.
+Proof. by rewrite /Pr [in RHS](big_setID E2) /= addRC addRK. Qed.
 
 Lemma Pr_union_eq E1 E2 : Pr (E1 :|: E2) = (Pr E1 + Pr E2 - Pr (E1 :&: E2))%R.
 Proof.

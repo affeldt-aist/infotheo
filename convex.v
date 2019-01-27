@@ -239,6 +239,10 @@ case: A a b c p q => ? [] f H0 H1 H2 H3 d0 d1 d2 p q; by rewrite /Conv H3.
 Qed.
 End convex_space_interface.
 
+Lemma prob_dist (A : finType) (d : dist A) (a : A) : (0 <= d a <= 1)%R.
+Proof. split; [exact/dist_ge0 | exact/dist_max]. Qed.
+
+Definition probdist (A : finType) (d : dist A) (a : A) := @Prob.mk (d a) (prob_dist d a).
 
 Section convex_space_prop.
 Variables A : convType.
@@ -322,9 +326,8 @@ rewrite -[in RHS](onemK p); congr onem.
 rewrite q_of_rsE {1}p_of_rsE /= q_of_rsE p_of_rsE /= /onem; field.
 split.
   rewrite subR_eq0; apply/nesym/eqP; by rewrite -p_of_rsE.
-rewrite mulRBl mul1R -(addR_opp _ (p - _)) oppRB addRA subRK.
-rewrite -(addR_opp _ (q * _)) mulRDr mulR1 oppRD mulRN oppRK addRA addRAC subRK.
-rewrite addR_opp subR_eq0 => /esym; exact/eqP.
+rewrite mulRBl mul1R subRBA subRK mulRDr mulR1 mulRN addR_opp subRBA subRK.
+rewrite subR_eq0 => /esym; exact/eqP.
 Qed.
 
 Lemma distribute (x y z : A) (p q : prob) :
@@ -340,31 +343,11 @@ Fixpoint Convn n : {dist 'I_n} -> ('I_n -> A) -> A :=
     match eqVneq (e ord0) 1%R with
     | left _ => g ord0
     | right H => let G := fun i => g (DelDist.h ord0 i) in
-      g ord0 <| Prob.mk (conj (dist_ge0 e ord0) (dist_max e ord0)) |> Convn (DelDist.d H) G
+      g ord0 <| probdist e ord0 |> Convn (DelDist.d H) G
     end
   end.
 
 (* wip *)
-
-Lemma dist1_perm n (s : 'S_n) (d : {dist 'I_n}) (k j : 'I_n) :
-  d k = 1%R -> d (s j) != 1%R -> d (s j) = 0%R.
-Proof.
-move=> d01 ds01; suff [i [i0 i1]] : exists i : 'I_n, i != j /\ d (s i) == 1%R.
-  by move/dist1P : i1 => -> //; apply: contra i0 => /eqP/perm_inj <-.
-exists (s^-1 k)%g; split; last by rewrite permKV d01.
-case/boolP : (k == j) => kj.
-  rewrite (eqP kj) in d01 *.
-  apply/eqP => s00; by move: ds01; rewrite -s00 permKV d01 eqxx.
-apply/eqP => ?; subst j.
-by rewrite permKV d01 eqxx in ds01.
-Qed.
-
-Lemma dist1_inj n (d : {dist 'I_n}) (s : 'S_n) (i j : 'I_n) :
-  d i = 1%R -> d (s j) = 1%R -> s j = i.
-Proof.
-move=> d01 ds01; apply/eqP/negPn/negP => s00.
-move/eqP : d01 => /dist1P/(_ _ s00); rewrite ds01; lra.
-Qed.
 
 Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): Convn (Dist1.d j) g = g j.
 Proof.
@@ -373,7 +356,7 @@ case: eqVneq => [|b01].
   rewrite Dist1.dE; case j0 : (_ == _) => /=.
   by move=> _; rewrite (eqP j0).
   rewrite (_ : (0%:R)%R = 0%R) //; lra.
-rewrite (_ : Prob.mk _ = `Pr 0) ?conv0; last first.
+rewrite (_ : probdist _ _ = `Pr 0) ?conv0; last first.
   apply prob_ext => /=; move: b01; rewrite !Dist1.dE => j0.
   case j0' : (_ == _) => //; by rewrite j0' eqxx in j0.
 have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite Dist1.dE eqxx.
@@ -396,33 +379,60 @@ Qed.
 
 Lemma convn1E a e : Convn e (fun _ : 'I_1 => a) = a.
 Proof.
-rewrite /=; case: eqVneq => [//|H]; exfalso; move: H.
-by rewrite dist_supp_singleP dist_supp1 eqxx.
-Qed.
-
-Lemma convnE0 n g (d : {dist 'I_n.+1}) (d01 : d ord0 == 1%R) : Convn d g = g ord0.
-Proof.
-rewrite /=; case: eqVneq => [//|H]; exfalso; by rewrite d01 in H.
+rewrite /=; case: eqVneq => [//|H]; exfalso; move/eqP: H; apply.
+by apply/eqP; rewrite Dist1.one (Dist1.I1 e).
 Qed.
 
 Lemma convnE n g (d : {dist 'I_n.+1}) (i1 : d ord0 != 1%R) :
-  Convn d g = g ord0
-              <| Prob.mk (conj (dist_ge0 d ord0) (dist_max d ord0)) |>
-              Convn (DelDist.d i1) (fun x => g (DelDist.h ord0 x)).
+  Convn d g = g ord0 <| probdist d ord0 |> Convn (DelDist.d i1) (fun x => g (DelDist.h ord0 x)).
 Proof.
 rewrite /=; case: eqVneq => /= H.
 exfalso; by rewrite H eqxx in i1.
 by rewrite (ProofIrrelevance.proof_irrelevance _ H i1).
 Qed.
 
+Lemma convn2E g (d : {dist 'I_2}) :
+  Convn d g = g ord0 <| probdist d ord0 |> g (lift ord0 ord0).
+Proof.
+case/boolP : (d ord0 == 1%R) => [|i1].
+  rewrite Dist1.one => /eqP ->; rewrite ConvnDist1.
+  rewrite (_ : probdist _ _ = `Pr 1) ?conv1 //.
+  by apply prob_ext => /=; rewrite Dist1.dE eqxx.
+rewrite convnE; congr (_ <| _ |> _).
+rewrite (_ : (fun _ => _) = (fun=> g (DelDist.h ord0 ord0))); last first.
+  by apply FunctionalExtensionality.functional_extensionality => x; rewrite (ord1 x).
+by rewrite convn1E /DelDist.h ltnn.
+Qed.
+
+Lemma convn3E g (d : {dist 'I_3}) (p : prob) :
+  d ord0 != 1%R ->
+  p = (d (lift ord0 ord0) / (1 - d ord0))%R :> R ->
+  Convn d g = g ord0 <| probdist d ord0 |> (g (lift ord0 ord0) <| p |> g ord_max).
+Proof.
+move=> i1 Hp.
+case/boolP : (p == `Pr 1) => p1.
+  rewrite convnE; congr (_ <| _ |> _).
+  rewrite convn2E /DelDist.h ltnn /=; congr (_ <| _ |> g _).
+  exact/val_inj.
+  apply prob_ext => /=.
+  by rewrite DelDist.dE D1Dist.dE /DelDist.h ltnn (eq_sym (lift _ _)) (negbTE (neq_lift _ _)) -Hp.
+rewrite convnE; congr (_ <| _ |> _).
+rewrite convn2E /DelDist.h ltnn /=; congr (_ <| _ |> g _).
+  exact/val_inj.
+apply prob_ext => /=.
+by rewrite DelDist.dE D1Dist.dE /DelDist.h ltnn (eq_sym (lift _ _)) (negbTE (neq_lift _ _)).
+Qed.
+
 Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> Convn d g = g i.
 Proof.
 elim: n g d i => [d d0|n IH g d i di1]; first by move: (distI0_False d0).
-case/boolP : (i == ord0) => [/eqP|]i0; first by subst i; rewrite convnE0 // di1.
-have d00 : d ord0 = R0 by move/eqP/dist1P : di1 => -> //; rewrite eq_sym.
+case/boolP : (i == ord0) => [/eqP|]i0.
+  move/eqP : di1; rewrite i0 Dist1.one => /eqP ->.
+  by rewrite ConvnDist1.
+have d00 : d ord0 = R0 by move/eqP/Dist1.dist1P : di1 => -> //; rewrite eq_sym.
 rewrite convnE; first by rewrite d00; apply/eqP; lra.
 move=> d01.
-rewrite (_ : Prob.mk _ = `Pr 0); last exact/prob_ext.
+rewrite (_ : probdist _ _ = `Pr 0); last exact/prob_ext.
 rewrite conv0.
 move=> [:Hj].
 have @j : 'I_n.
@@ -434,6 +444,65 @@ rewrite (IH _ _ j) // ?ltn0.
 rewrite DelDist.dE /DelDist.h ltn0 D1Dist.dE eq_sym (negbTE (neq_lift _ _ )).
 rewrite d00 subR0 divR1 -di1; congr (d _).
 apply val_inj => /=; by rewrite /bump leq0n add1n prednK // lt0n.
+Qed.
+
+Lemma Convn_perm1 (d : {dist 'I_1}) (g : 'I_1 -> A) (s : 'S_1) :
+  Convn d g = Convn (PermDist.d d s) (g \o s).
+Proof.
+have s1 : s = 1%g.
+  apply/permP => i; by case: (s i) => -[|//] ?; rewrite perm1 (ord1 i); exact/val_inj.
+rewrite s1 PermDist.one; congr (Convn d _).
+apply FunctionalExtensionality.functional_extensionality => i; by rewrite /= perm1.
+Qed.
+
+Lemma perm_S2 (s : 'S_2) : s = 1%g \/ s = tperm ord0 (lift ord0 ord0).
+Proof.
+pose s0 := s ord0. pose s1 := s (lift ord0 ord0).
+move : (ord2 s0) => /orP[|] /eqP Hs0.
+  move : (ord2 s1) => /orP[|] /eqP Hs1.
+    rewrite -Hs0 in Hs1; by move: (perm_inj Hs1) => /(congr1 val).
+  left; apply/permP => i.
+  move: (ord2 i) => /orP[|] /eqP ->; by rewrite perm1.
+move : (ord2 s1) => /orP[|] /eqP Hs1.
+  right; apply/permP => i.
+  move: (ord2 i) => /orP[|] /eqP ->; by rewrite permE.
+rewrite -Hs0 in Hs1.
+by move: (perm_inj Hs1) => /(congr1 val).
+Qed.
+
+Lemma Convn_perm2 (d : {dist 'I_2}) (g : 'I_2 -> A) (s : 'S_2) :
+  Convn d g = Convn (PermDist.d d s) (g \o s).
+Proof.
+have [->|Hs] := perm_S2 s.
+  rewrite PermDist.one; congr Convn.
+  apply FunctionalExtensionality.functional_extensionality => i.
+  by rewrite /= perm1.
+move: (dist_ge0 d ord0); rewrite leR_eqVlt => -[/esym d00|d00].
+  have d11 : d (lift ord0 ord0) = 1%R.
+    by rewrite -(pmf1 d) 2!big_ord_recl big_ord0 addR0 d00 add0R.
+  have H1 : d = Dist1.d (lift ord0 ord0).
+    rewrite -I2Dist.p0; apply/dist_ext => /= i.
+    rewrite I2Dist.dE; case: ifPn => [/eqP ->//|/= i0]; rewrite onem0.
+    rewrite -(pmf1 d) 2!big_ord_recl big_ord0 addR0 d00 add0R; congr (d _).
+    case: i i0 => -[//|] -[|//] //= i12 _; exact/val_inj.
+  rewrite {1}H1 ConvnDist1 {1}Hs.
+  have H2 : PermDist.d d (tperm ord0 (lift ord0 ord0)) = Dist1.d ord0.
+    apply/dist_ext => /= i; rewrite PermDist.dE Dist1.dE.
+    case/boolP : (i == ord0 :> 'I__) => i0.
+      by rewrite (eqP i0) permE /= d11.
+    rewrite permE /= (negbTE i0).
+    by case: ifPn => //; case: i i0 => -[|[|]].
+  rewrite H2 ConvnDist1 /=; congr g; by rewrite Hs permE.
+case/boolP : (d (lift ord0 ord0) == 0%R :> R) => d10.
+  have d01 : d ord0 = 1%R.
+    rewrite -(pmf1 d) !big_ord_recl big_ord0 addR0.
+    by rewrite addRC -subR_eq subRR (eqP d10).
+  have -> : d = Dist1.d ord0 by apply/eqP; rewrite -Dist1.one; exact/eqP.
+  by rewrite ConvnDist1 {1}Hs PermDist.tperm2 ConvnDist1 /= Hs permE.
+rewrite convn2E.
+rewrite convn2E.
+rewrite /= Hs permE /= convC !permE /=; congr (_ <| _ |> _); apply prob_ext => /=.
+by rewrite PermDist.dE permE /= /onem -(pmf1 d) !big_ord_recl big_ord0 addR0 addRC addRK.
 Qed.
 
 End convex_space_prop.
@@ -464,14 +533,14 @@ apply/idP/idP => H; apply/asboolP; last first.
   move/asboolP : H => /(_ _ g (I2Dist.d p) gX).
   rewrite convnE; first by rewrite I2Dist.dE eqxx.
   move=> p1'.
-  rewrite {1}/g eqxx (_ : Prob.mk _ = p); last first.
+  rewrite {1}/g eqxx (_ : probdist _ _ = p); last first.
     by apply prob_ext => /=; rewrite I2Dist.dE eqxx.
   by rewrite (_ : Convn _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?convn1E.
 elim => [g d|n IH g d]; first by move: (distI0_False d).
 destruct n as [|n] => gX.
   rewrite {IH} (@convn_proj _ _ _ _ ord0) //.
   rewrite in_setE; exact/gX/classical_sets.imageP.
-  by apply/eqP; rewrite dist_supp_singleP dist_supp1.
+  by apply/eqP; rewrite Dist1.one (Dist1.I1 d).
 case/boolP : (d ord0 == 1%R) => [/eqP|]d01.
   suff -> : Convn d g = g ord0 by rewrite in_setE; apply gX; exists ord0.
   by rewrite (@convn_proj _ _ _ _ ord0).
@@ -627,7 +696,7 @@ Proof.
 elim: n g e => /= [g e|n IH g e]; first by move: (distI0_False e).
 case: eqVneq => H /=.
   rewrite /avgn big_ord_recl /= H mul1R big1 ?addR0 // => j _.
-  by move/eqP/dist1P : H => ->; rewrite ?mul0R.
+  by move/eqP/Dist1.dist1P : H => ->; rewrite ?mul0R.
 rewrite /avgn big_ord_recl /=.
 rewrite /Conv /= /avg /=; congr (_ + _)%R.
 rewrite IH /avgn big_distrr /=; apply eq_bigr => j _.
@@ -931,7 +1000,7 @@ elim: n g d => /= [g d|n IH g d]; first by move: (distI0_False d).
 case: eqVneq => H.
   apply/dist_ext => a.
   rewrite ConvDist.dE big_ord_recl H mul1R big1 ?addR0 //= => j _.
-  by move/eqP/dist1P : H => -> //; rewrite ?mul0R.
+  by move/eqP/Dist1.dist1P : H => -> //; rewrite ?mul0R.
 apply/dist_ext => a.
 rewrite Conv2Dist.dE ConvDist.dE /= big_ord_recl; congr (_ + _)%R.
 rewrite IH ConvDist.dE big_distrr /=; apply eq_bigr => i _.

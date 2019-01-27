@@ -745,10 +745,8 @@ Let QP := Swap.d PQ.
 
 Lemma entropyB : `H P - CondEntropy.h PQ = `H Q - CondEntropy.h QP.
 Proof.
-apply/eqP; rewrite subR_eq addRAC -subR_eq subR_opp; apply/eqP.
-rewrite -chain_rule JointEntropy.hC.
-rewrite -/(JointEntropy.h (Swap.d PQ)) chain_rule.
-by rewrite Swap.fst -/Q Swap.dI.
+rewrite subR_eq addRAC -subR_eq subR_opp -chain_rule JointEntropy.hC.
+by rewrite -/(JointEntropy.h (Swap.d PQ)) chain_rule Swap.fst -/Q Swap.dI.
 Qed.
 
 End conditional_entropy_prop.
@@ -759,8 +757,8 @@ Variables (A : finType) (P : {dist A}).
 
 Lemma CondEntrop_self : CondEntropy.h (Self.d P) = 0.
 Proof.
-move: (@chain_rule _ _ (Self.d P)) => /eqP.
-rewrite !Self.fst Self.swap addRC -subR_eq => /eqP <-.
+move: (@chain_rule _ _ (Self.d P)).
+rewrite !Self.fst Self.swap addRC -subR_eq => <-.
 by rewrite /JointEntropy.h joint_entropy_self subRR.
 Qed.
 
@@ -834,10 +832,9 @@ Proof. by rewrite miE2 entropyB. Qed.
 
 Lemma miE4 : mi PQ = `H P + `H Q - `H PQ. (* 2.41 *)
 Proof.
-rewrite miE2; move/eqP: (chain_rule QP).
-rewrite addRC -subR_eq => /eqP; rewrite -(Swap.dI PQ) -/QP => <-.
-rewrite -addR_opp oppRB Swap.fst -/Q addRA; congr (_ - _).
-by rewrite JointEntropy.hC.
+rewrite miE2; move: (chain_rule QP).
+rewrite addRC -subR_eq -(Swap.dI PQ) -/QP => <-.
+by rewrite -addR_opp oppRB Swap.fst -/Q addRA JointEntropy.hC.
 Qed.
 
 (* nonnegativity of mutual information 2.90 *)
@@ -1221,8 +1218,8 @@ have -> : CondEntropy.h PY = \rsum_(j < n.+1)
     | right _ => CondEntropy.h (PairNth.d PY ord0)
     | left _ => CondEntropy.h (fA j)
   end.
-  move/eqP : (chain_rule (Swap.d PY)).
-  rewrite Swap.dI addRC -subR_eq Swap.fst -/Y => /eqP <-.
+  move: (chain_rule (Swap.d PY)).
+  rewrite Swap.dI addRC -subR_eq Swap.fst -/Y => <-.
   rewrite /JointEntropy.h.
   (* do-not-delete-me *)
   set YP : {dist 'rV[A]_n.+2} := Multivar.from_bivar (Swap.d PY).

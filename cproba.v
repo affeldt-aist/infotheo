@@ -623,7 +623,7 @@ Lemma cPr_cplt E F : Pr (Bivar.snd P) E != 0 ->
   \Pr_P[~: F | E] = 1 - \Pr_P[F | E].
 Proof.
 move=> H.
-apply/eqP; rewrite -subR_eq -addR_opp oppRK /cPr -mulRDl /Pr; apply/eqP.
+rewrite -subR_eq -addR_opp oppRK /cPr -mulRDl /Pr.
 rewrite !big_setX /= exchange_big /= [in X in (_ + X) * / _]exchange_big /=.
 rewrite -big_split /= (eq_bigr (fun i => \rsum_(i0 in A) P (i0, i))); last first.
   move=> a aE; apply/esym; rewrite (bigID (fun x => x \in F)) /= addRC; congr (_ + _).

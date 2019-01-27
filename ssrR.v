@@ -89,10 +89,10 @@ Proof. split => [/Rminus_diag_uniq //|->]; by rewrite subRR. Qed.
 Lemma subR_eq0' (x y : R) : (x - y == 0) = (x == y).
 Proof. by apply/idP/idP => /eqP/subR_eq0/eqP. Qed.
 
-Lemma subR_eq x y z : (x - z == y) = (x == y + z).
-Proof.
-apply/idP/idP => [/eqP <-|/eqP ->]; by [rewrite subRK | rewrite addRK].
-Qed.
+Lemma subR_eq x y z : (x - z = y) <-> (x = y + z).
+Proof. split; by [move=> <-; rewrite subRK|move=> ->; rewrite addRK]. Qed.
+Lemma subR_eq' x y z : (x - z == y) = (x == y + z).
+Proof. by apply/eqP/eqP => /subR_eq. Qed.
 
 Lemma subRBA m n p : m - (n - p) = m + p - n.
 Proof. by field. Qed.
@@ -180,8 +180,15 @@ Arguments ltR_leR_trans [_] [_] [_].
 Definition oppR0 := Ropp_0.
 Definition oppRK := Ropp_involutive.
 
+Lemma subR_opp x y : x - - y = x + y. Proof. by rewrite /Rminus oppRK. Qed.
+Lemma addR_opp x y : x + - y = x - y. Proof. by []. Qed.
+
 Definition oppRD := Ropp_plus_distr.
 Definition oppRB := Ropp_minus_distr.
+Lemma subRB x y z : x - (y - z) = x - y + z.
+Proof. by rewrite -addR_opp oppRB addRA addRAC. Qed.
+Lemma subRD x y z : x - (y + z) = x - y - z.
+Proof. by rewrite -addR_opp oppRD addRA. Qed.
 
 Lemma oppR_eq0 x : (- x == 0) = (x == 0).
 Proof.
@@ -216,9 +223,6 @@ Proof.
 apply/idP/idP => [/leRP ? | /ltRP/Rnot_lt_le ?];
   [exact/ltRP/Rle_not_gt | exact/leRP].
 Qed.
-
-Lemma subR_opp x y : x - - y = x + y. Proof. by rewrite /Rminus oppRK. Qed.
-Lemma addR_opp x y : x + - y = x - y. Proof. by []. Qed.
 
 Lemma ltRNge m n : (m < n) <-> ~ (n <= m).
 Proof. split; [exact: Rlt_not_le | exact: Rnot_le_lt]. Qed.
@@ -364,6 +368,13 @@ Proof.
 split => [/(@ltR_add2r y)|/(@ltR_add2r (- y))]; first by rewrite subRK addRC.
 by rewrite addR_opp (addRC y) addR_opp addRK.
 Qed.
+
+Lemma leR_addl x y : (x <= x + y) <-> (0 <= y).
+Proof. by rewrite -{1}(addR0 x) leR_add2l. Qed.
+Lemma leR_addr x y : (x <= y + x) <-> (0 <= y).
+Proof. by rewrite -{1}(add0R x) leR_add2r. Qed.
+Lemma ltR_addl x y : (x < x + y) <-> (0 < y).
+Proof. by rewrite -{1}(addR0 x) ltR_add2l. Qed.
 
 Lemma subR_gt0 x y : (0 < y - x) <-> (x < y).
 Proof. split; [exact: Rminus_gt_0_lt | exact: Rlt_Rminus]. Qed.
