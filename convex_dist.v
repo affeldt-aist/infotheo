@@ -172,7 +172,7 @@ Lemma entropy_concave : concave_function (fun P : dist A => `H P).
 Proof.
 rewrite /concave_function => p q t; rewrite /convex_function_at.
 rewrite !(entropy_log_div _ A_not_empty') /=.
-rewrite [in X in _ <= X]/Conv /= /avg /= (* TODO *).
+rewrite /Leconv /= [in X in _ <= X]/Conv /= /avg /= (* TODO *).
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
 rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
 move: (div_convex t (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).

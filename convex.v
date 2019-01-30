@@ -1721,9 +1721,10 @@ Definition R_orderedConvMixin := OrderedConvexSpace.Mixin leRR leR_trans eqR_le.
 Canonical R_orderedConvType := OrderedConvexSpace.Pack (OrderedConvexSpace.Class R_orderedConvMixin).
 
 Section convex_function_def.
-Variables (A : convType) (f : A -> R).
+Local Open Scope ordered_convex_scope.
+Variables (A : convType) (B : orderedConvType) (f : A -> B).
 
-Definition convex_function_at a b t := (f (a <| t |> b) <= f a <| t |> f b)%R.
+Definition convex_function_at a b t := (f (a <| t |> b) <= f a <| t |> f b).
 
 Definition strictly_convexf_at := forall a b (t : prob),
   a <> b -> (0 < t < 1)%R -> convex_function_at a b t.
@@ -1734,36 +1735,36 @@ Lemma convex_functionP : convex_function <-> forall a b t, convex_function_at a 
 Proof. split => [H x y t|H x y t]; exact: H. Qed.
 
 Lemma convex_function_atxx a t : convex_function_at a a t.
-Proof. rewrite /convex_function_at !convmm; exact/leRR. Qed.
+Proof. rewrite /convex_function_at !convmm; exact/leconvR. Qed.
 
 End convex_function_def.
 
 Section convex_function_prop.
-Variable (A : convType).
+Local Open Scope ordered_convex_scope.
+Variable (A : convType) (B C : orderedConvType).
 
-Lemma convex_function_sym (f : A -> R) a b : (forall t, convex_function_at f a b t) ->
+Lemma convex_function_sym (f : A -> B) a b : (forall t, convex_function_at f a b t) ->
   forall t, convex_function_at f b a t.
 Proof.
 move => H t; move: (H (`Pr t.~)).
 by rewrite /convex_function_at /= convC -probK (convC (f a)) -probK.
 Qed.
 
-(* NB : The proofs below should work for any ordered convType instead of R *)
-Lemma convex_function_comp (f : A -> R) (g : R -> R)
+Lemma convex_function_comp (f : A -> B) (g : B -> C)
       (Hf : convex_function f) (Hg : convex_function g)
-      (g_monotone_on_hull_Im_f : forall a b t, (f (a <|t|> b) <= f a <|t|> f b)%R -> (g (f (a <|t|> b)) <= g (f a <|t|> f b))%R)
+      (g_monotone_on_hull_Im_f : forall a b t, (f (a <|t|> b) <= f a <|t|> f b) -> (g (f (a <|t|> b)) <= g (f a <|t|> f b)))
       : convex_function (fun a => g (f a)).
 Proof.
   rewrite convex_functionP => a b t.
   move : (Hg (f a) (f b) t) => {Hg}.
   rewrite /convex_function_at => Hg.
-  eapply leR_trans; [| exact Hg] => {Hg}.
+  eapply leconv_trans; [| exact Hg] => {Hg}.
   apply g_monotone_on_hull_Im_f.
   exact: Hf.
 Qed.
-Lemma convex_function_comp' (f : A -> R) (g : R -> R)
+Lemma convex_function_comp' (f : A -> B) (g : B -> C)
       (Hf : convex_function f) (Hg : convex_function g)
-      (g_monotone : forall x y, (x <= y)%R -> (g x <= g y)%R)
+      (g_monotone : forall x y, (x <= y) -> (g x <= g y))
       : convex_function (fun a => g (f a)).
 Proof.
   apply convex_function_comp => // *.
@@ -1772,6 +1773,9 @@ Qed.
 
 End convex_function_prop.
 
+(* The concavity below depends on the additive group structure on R.
+   We should redefine it using only ordering (just reverse the orientation)
+   and restate as lemmas the current definitions. *)
 Section concave_function_def.
 Variables (A : convType) (f : A -> R).
 Definition concave_function_at := convex_function_at (fun x => - f x)%R.
