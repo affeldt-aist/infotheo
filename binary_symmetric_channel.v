@@ -66,10 +66,10 @@ case: (Req_EM_T (P a) 0) => H1.
   rewrite H1 add0R => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log LogM; last 2 first.
-  rewrite -dist_neq0; exact/eqP.
+  rewrite -dist_gt0; exact/eqP.
   case: p_01' => ? ?; lra.
 rewrite /log LogM; last 2 first.
-  rewrite -dist_neq0; exact/eqP.
+  rewrite -dist_gt0; exact/eqP.
   by case: p_01'.
 case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 !(mul0R, mulR0, addR0, add0R).
@@ -77,10 +77,10 @@ case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 addR0 => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log LogM; last 2 first.
-  rewrite -dist_neq0; exact/eqP.
+  rewrite -dist_gt0; exact/eqP.
   by case: p_01'.
 rewrite /log LogM; last 2 first.
-  rewrite -dist_neq0; exact/eqP.
+  rewrite -dist_gt0; exact/eqP.
   rewrite subR_gt0; by case: p_01'.
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   rewrite /log; by field.

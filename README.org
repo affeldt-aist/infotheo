@@ -5,14 +5,11 @@ error-correcting codes.
 
 ** Requirements
 
-The development version of the [[https://github.com/math-comp/math-comp][Mathematical Components library]]
-(because we use the fieldext and finfield libraries).
-
-Coq 8.8.2.
-Compilation should be fine with previous versions except for 
-minor problems due to recent changes in the Reals library.
-
-[[https://github.com/math-comp/analysis][MathComp-Analysis]]
+- Coq 8.9.0.
+  + Compilation should be fine with previous versions except for
+    minor problems due to recent changes in the Reals library.
+- [[https://github.com/math-comp/math-comp][Mathematical Components library]] (github version)
+- [[https://github.com/math-comp/analysis][MathComp-Analysis]] (github version)
 
 ** Installation
 
@@ -27,4 +24,5 @@ GNU GPLv3
 ** Authors
 
 See [[infotheo_authors.txt]]
+
 

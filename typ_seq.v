@@ -29,7 +29,7 @@ Variable epsilon : R.
 (** Definition a typical sequence: *)
 
 Definition typ_seq (t : 'rV[A]_n) :=
-  exp2 (- INR n * (`H P + epsilon)) <b= P `^ n t <b= exp2 (- INR n * (`H P - epsilon)).
+  exp2 (- n%:R * (`H P + epsilon)) <b= P `^ n t <b= exp2 (- n%:R * (`H P - epsilon)).
 
 Definition set_typ_seq := [set ta | typ_seq ta].
 
@@ -64,12 +64,12 @@ Variable n : nat.
 
 (** The total number of typical sequences is upper-bounded by 2^(k*(H P + e)): *)
 
-Lemma TS_sup : INR #| `TS P n epsilon | <= exp2 (INR n * (`H P + epsilon)).
+Lemma TS_sup : #| `TS P n epsilon |%:R <= exp2 (n%:R * (`H P + epsilon)).
 Proof.
-suff Htmp : INR #| `TS P n epsilon | * exp2 (- INR n * (`H P + epsilon)) <= 1.
+suff Htmp : #| `TS P n epsilon |%:R * exp2 (- n%:R * (`H P + epsilon)) <= 1.
   by rewrite -(mulR1 (exp2 _)) mulRC -leR_pdivr_mulr // /Rdiv -exp2_Ropp -mulNR.
 rewrite -(pmf1 (P `^ n)).
-rewrite (_ : _ * _ = \rsum_(x in `TS P n epsilon) (exp2 (- INR n * (`H P + epsilon)))); last first.
+rewrite (_ : _ * _ = \rsum_(x in `TS P n epsilon) (exp2 (- n%:R * (`H P + epsilon)))); last first.
   by rewrite big_const iter_addR.
 apply/ler_rsum_l => //=.
 - move=> i; rewrite inE; by case/andP => /leRP.
@@ -77,18 +77,18 @@ apply/ler_rsum_l => //=.
 Qed.
 
 Lemma typ_seq_definition_equiv x : x \in `TS P n epsilon ->
-  exp2 (- INR n * (`H P + epsilon)) <= P `^ n x <= exp2 (- INR n * (`H P - epsilon)).
+  exp2 (- n%:R * (`H P + epsilon)) <= P `^ n x <= exp2 (- n%:R * (`H P - epsilon)).
 Proof.
 rewrite inE /typ_seq.
 case/andP => H1 H2; split; by apply/leRP.
 Qed.
 
 Lemma typ_seq_definition_equiv2 x : x \in `TS P n.+1 epsilon ->
-  `H P - epsilon <= - (1 / INR n.+1) * log (P `^ n.+1 x) <= `H P + epsilon.
+  `H P - epsilon <= - (1 / n.+1%:R) * log (P `^ n.+1 x) <= `H P + epsilon.
 Proof.
 rewrite inE /typ_seq.
 case/andP => H1 H2; split;
-  apply/leRP; rewrite -(leR_pmul2l' (INR n.+1)) ?ltR0n' //;
+  apply/leRP; rewrite -(leR_pmul2l' n.+1%:R) ?ltR0n' //;
   rewrite div1R mulRA mulRN mulRV ?INR_eq0' // mulN1R; apply/leRP.
 - rewrite leR_oppr.
   apply/(@Exp_le_inv 2) => //.
@@ -110,7 +110,7 @@ Variable n : nat.
 
 Hypothesis He : 0 < epsilon.
 
-Lemma Pr_TS_1 : aep_bound P epsilon <= INR n.+1 ->
+Lemma Pr_TS_1 : aep_bound P epsilon <= n.+1%:R ->
   1 - epsilon <= Pr (P `^ n.+1) (`TS P n.+1 epsilon).
 Proof.
 move=> k0_k.
@@ -124,14 +124,14 @@ rewrite Pr_to_cplt leR_add2l leR_oppl oppRK.
 have -> : Pr P `^ n.+1 (~: p) =
   Pr P `^ n.+1 [set x | P `^ n.+1 x == 0] +
   Pr P `^ n.+1 [set x | (0 <b P `^ n.+1 x) &&
-                (`| - (1 / INR n.+1) * log (P `^ n.+1 x) - `H P | >b epsilon)].
+                (`| - (1 / n.+1%:R) * log (P `^ n.+1 x) - `H P | >b epsilon)].
   have -> : ~: p =
     [set x | P `^ n.+1 x == 0 ] :|:
     [set x | (0 <b P `^ n.+1 x) &&
-             (`| - (1 / INR n.+1) * log (P `^ n.+1 x) - `H P | >b epsilon)].
+             (`| - (1 / n.+1%:R) * log (P `^ n.+1 x) - `H P | >b epsilon)].
     apply/setP => /= i; rewrite !inE negb_and orbC.
     apply/idP/idP => [/orP[/ltRP|]|].
-    - by rewrite -dist_neq0 => /negP; rewrite negbK => ->.
+    - by rewrite -dist_gt0 => /negP; rewrite negbK => ->.
     - rewrite /typ_seq negb_and => /orP[|] LHS.
       + case/boolP : (P `^ n.+1 i == 0) => /= H1; first by [].
         have {H1}H1 : 0 < P `^ n.+1 i.
@@ -181,7 +181,7 @@ Variable He1 : epsilon < 1.
 
 (** In particular, for k big enough, the set of typical sequences is not empty: *)
 
-Lemma set_typ_seq_not0 : aep_bound P epsilon <= INR n.+1 ->
+Lemma set_typ_seq_not0 : aep_bound P epsilon <= n.+1%:R ->
   #| `TS P n.+1 epsilon | <> O.
 Proof.
 move/Pr_TS_1 => H.
@@ -193,7 +193,7 @@ Qed.
 
 (** the typical sequence of index 0 *)
 
-Definition TS_0 (H : aep_bound P epsilon <= INR n.+1) : [finType of 'rV[A]_n.+1].
+Definition TS_0 (H : aep_bound P epsilon <= n.+1%:R) : [finType of 'rV[A]_n.+1].
 apply (@enum_val _ (pred_of_set (`TS P n.+1 epsilon))).
 have -> : #| `TS P n.+1 epsilon| = #| `TS P n.+1 epsilon|.-1.+1.
   rewrite prednK //.
@@ -202,21 +202,21 @@ have -> : #| `TS P n.+1 epsilon| = #| `TS P n.+1 epsilon|.-1.+1.
 exact ord0.
 Defined.
 
-Lemma TS_0_is_typ_seq (k_k0 : aep_bound P epsilon <= INR n.+1) :
+Lemma TS_0_is_typ_seq (k_k0 : aep_bound P epsilon <= n.+1%:R) :
   TS_0 k_k0 \in `TS P n.+1 epsilon.
 Proof. rewrite /TS_0. apply/enum_valP. Qed.
 
 (** The total number of typical sequences is lower-bounded by (1 - e)*2^(k*(H P - e))
     for k big enough: *)
 
-Lemma TS_inf : aep_bound P epsilon <= INR n.+1 ->
-  (1 - epsilon) * exp2 (INR n.+1 * (`H P - epsilon)) <= INR #| `TS P n.+1 epsilon |.
+Lemma TS_inf : aep_bound P epsilon <= n.+1%:R ->
+  (1 - epsilon) * exp2 (n.+1%:R * (`H P - epsilon)) <= #| `TS P n.+1 epsilon |%:R.
 Proof.
 move=> k0_k.
 have H1 : 1 - epsilon <= Pr (P `^ n.+1) (`TS P n.+1 epsilon) <= 1.
   split; by [apply Pr_TS_1 | apply Pr_1].
 have H2 : (forall x, x \in `TS P n.+1 epsilon ->
-  exp2 (- INR n.+1 * (`H P + epsilon)) <= P `^ n.+1 x <= exp2 (- INR n.+1 * (`H P - epsilon))).
+  exp2 (- n.+1%:R * (`H P + epsilon)) <= P `^ n.+1 x <= exp2 (- n.+1%:R * (`H P - epsilon))).
   by move=> x; rewrite inE /typ_seq => /andP[/leRP ? /leRP].
 move: (wolfowitz (exp2_gt0 _) (exp2_gt0 _) H1 H2).
 rewrite mulNR exp2_Ropp {1}/Rdiv invRK; last exact/nesym/ltR_eqF.

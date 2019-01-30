@@ -102,7 +102,7 @@ transitivity (\rsum_(a|a \in A) P a * log (P a) +
   rewrite -big_split /=; apply eq_bigr => a _; rewrite -mulRDr.
   case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
   congr (_ * _); rewrite logDiv ?addR_opp //.
-  by rewrite -dist_neq0.
+  by rewrite -dist_gt0.
   rewrite Uniform.dE; apply/invR_gt0; rewrite HA; exact/ltR0n.
 rewrite [in X in _ + X](eq_bigr (fun a => P a * - log (/ INR #|A|))); last first.
   by move=> a _; rewrite Uniform.dE.

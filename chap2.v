@@ -696,8 +696,8 @@ transitivity (
   case/boolP : (PQ (a, b) == 0) => [/eqP H0|H0].
   - by rewrite H0 !mul0R addR0.
   - rewrite -mulRDr; congr (_ * _); rewrite mulRC logM //.
-    by rewrite -cPr_Pr_setX_gt0 setX1 Pr_set1 Swap.dE -dist_neq0.
-    rewrite -dist_neq0; exact: Bivar.dom_by_fstN H0.
+    by rewrite -cPr_Pr_setX_gt0 setX1 Pr_set1 Swap.dE -dist_gt0.
+    rewrite -dist_gt0; exact: Bivar.dom_by_fstN H0.
 rewrite [in X in _ + X = _](big_morph _ morph_Ropp oppR0); congr (_ + _).
 - rewrite /entropy; congr (- _); apply eq_bigr => a _.
   by rewrite -big_distrl /= -Bivar.fstE.
@@ -815,7 +815,7 @@ transitivity (- (\rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (P a)) +
   - by rewrite !mul0R.
   - congr (_ * _); rewrite logDiv //.
     + by rewrite -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1.
-    + rewrite -dist_neq0; exact: Bivar.dom_by_fstN H0.
+    + rewrite -dist_gt0; exact: Bivar.dom_by_fstN H0.
 rewrite -subR_opp; congr (_ - _).
 - rewrite /entropy; congr (- _); apply/eq_bigr => a _.
   by rewrite -big_distrl /= -Bivar.fstE.
@@ -1177,8 +1177,8 @@ have Qba0 := dominatesEN PQ H0.
 have Q2a0 : Q1 a != 0.
   apply: contra Qba0; rewrite /Q Swap.dE ProdDist.dE => /eqP ->; by rewrite mul0R.
 rewrite -logM; last 2 first.
-  by apply/divR_gt0; rewrite -dist_neq0.
-  apply/divR_gt0; by rewrite -cPr_Pr_setX_gt0 setX1 Pr_set1 -dist_neq0.
+  by apply/divR_gt0; rewrite -dist_gt0.
+  apply/divR_gt0; by rewrite -cPr_Pr_setX_gt0 setX1 Pr_set1 -dist_gt0.
 congr (log _).
 rewrite /cPr !setX1 !Pr_set1.
 rewrite !Swap.dE !Swap.snd !ProdDist.fst !ProdDist.dE /=.

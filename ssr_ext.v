@@ -2,6 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
 From mathcomp Require Import fintype tuple div path bigop prime finset fingroup.
 From mathcomp Require Import finfun perm.
+Import Coq.NArith.BinNatDef.
 
 (** * Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
 
@@ -71,7 +72,7 @@ contradict Ha.
 by destruct (nat_of_pos a).
 Qed.
 
-Lemma bin_of_nat_expn2 m : bin_of_nat (expn 2 m.+1) = BinNat.N.mul 2 (bin_of_nat (expn 2 m)).
+Lemma bin_of_nat_expn2 m : bin_of_nat (expn 2 m.+1) = BinNat.N.mul 2%num (bin_of_nat (expn 2 m)).
 Proof.
 set x := BinNat.N.mul _ _.
 by rewrite -(nat_of_binK x) {}/x nat_of_mul_bin bin_of_natK expnS.

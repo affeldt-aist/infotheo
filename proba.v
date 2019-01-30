@@ -154,7 +154,7 @@ Definition makeDist (pmf : A -> R) (H0 : forall a, 0 <= pmf a)
 Lemma dist_ge0 (P : dist) a : 0 <= P a.
 Proof. exact: pos_f_ge0. Qed.
 
-Lemma dist_neq0 (P : dist) a : (P a != 0) <-> (0 < P a).
+Lemma dist_gt0 (P : dist) a : (P a != 0) <-> (0 < P a).
 Proof.
 split => H; [|by move/gtR_eqF : H => /eqP].
 rewrite ltR_neqAle; split; [exact/nesym/eqP|exact/dist_ge0].
@@ -165,6 +165,12 @@ Proof.
 rewrite -(pmf1 P) (_ : P a = \rsum_(a' in A | a' == a) P a').
   apply ler_rsum_l_support with (Q := xpredT) => // ?; exact/dist_ge0.
 by rewrite big_pred1_eq.
+Qed.
+
+Lemma dist_lt1 (P : dist) a : (P a != 1) <-> (P a < 1).
+Proof.
+split=> H; first by rewrite ltR_neqAle; split; [exact/eqP|exact/dist_max].
+exact/eqP/ltR_eqF.
 Qed.
 
 Lemma dist_eq d d' : pmf d = pmf d' -> d = d'.
@@ -481,8 +487,7 @@ Lemma f0 : forall a, 0 <= f a.
 Proof.
 move=> a; rewrite /f.
 case: ifPn => [_ |ab]; first exact/leRR.
-apply mulR_ge0; first exact/dist_ge0.
-apply/ltRW/invR_gt0/subR_gt0/ltRP; rewrite ltR_neqAle' Xb1; exact/leRP/dist_max.
+apply mulR_ge0; [exact/dist_ge0 | exact/ltRW/invR_gt0/subR_gt0/dist_lt1].
 Qed.
 Lemma f1 : \rsum_(a in B) f a = 1%R.
 Proof.
@@ -900,7 +905,7 @@ Lemma one (n : nat) (d : {dist 'I_n}) : PermDist.d d 1%g = d.
 Proof. apply/dist_ext => /= i; by rewrite PermDist.dE perm1. Qed.
 Lemma mul (n : nat) (P : {dist 'I_n}) (s s' : 'S_n) : d (d P s) s' = d P (s' * s).
 Proof. by apply/dist_ext => /= i; rewrite !dE permM. Qed.
-Lemma tperm2 (a b : 'I_2) : d (Dist1.d a) (tperm a b) = Dist1.d b.
+Lemma tperm (n : nat) (a b : 'I_n) : d (Dist1.d a) (tperm a b) = Dist1.d b.
 Proof.
 apply/dist_ext => /= x; rewrite dE !Dist1.dE permE /=.
 case: ifPn => [/eqP ->|xa]; first by rewrite eq_sym.

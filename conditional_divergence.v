@@ -231,7 +231,7 @@ case/boolP : (W a b == 0) => [/eqP |] Wab0.
     by rewrite nullV 2!mul0R oppR0 addR0 mulR0 exp2_0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   by rewrite jtype_0_jtypef.
-rewrite -{1}(@logK (W a b)); last by rewrite -dist_neq0.
+rewrite -{1}(@logK (W a b)); last by rewrite -dist_gt0.
 case/boolP : (V a b == 0) => [/eqP|] Vab0.
   suff -> : N( a, b | [seq x ``_ i | i <- enum 'I_n], [seq y ``_ i | i <- enum 'I_n]) = O.
     by rewrite pow_O Vab0 !(mulR0,mul0R,addR0,add0R,oppR0,exp2_0).
@@ -239,9 +239,9 @@ case/boolP : (V a b == 0) => [/eqP|] Vab0.
   by rewrite jtype_0_jtypef.
 rewrite -exp2_pow; congr exp2.
 rewrite -mulRN -mulRDr mulRA addR_opp -logDiv; last 2 first.
-  by apply/divR_gt0; rewrite -dist_neq0.
-  by rewrite -dist_neq0.
-rewrite /Rdiv (mulRAC _ (/ _)) mulRV // mul1R logV -?dist_neq0 //.
+  by apply/divR_gt0; rewrite -dist_gt0.
+  by rewrite -dist_gt0.
+rewrite /Rdiv (mulRAC _ (/ _)) mulRV // mul1R logV -?dist_gt0 //.
 rewrite mulRN 3!mulNR oppRK; congr (_ * log _).
 move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
 move: (HV); rewrite in_set => /cond_type_equiv => /(_ _ Hx a) sumB.
