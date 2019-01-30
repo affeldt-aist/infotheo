@@ -1372,6 +1372,12 @@ Definition is_convex_set (D : set A) : bool :=
 Lemma is_convex_set0 : is_convex_set set0.
 Proof. apply/asboolP => x y p; by rewrite in_setE. Qed.
 
+Lemma is_convex_set1 a : is_convex_set [set a].
+Proof.
+apply/asboolP => x y p; rewrite 2!in_setE /= => -> ->.
+by rewrite convmm in_setE.
+Qed.
+
 Lemma is_convex_setT : is_convex_set setT.
 Proof. apply/asboolP => ? ? ? _ _; by rewrite in_setE. Qed.
 
