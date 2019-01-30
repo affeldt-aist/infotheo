@@ -1096,6 +1096,33 @@ move=> _.
 by rewrite (negbTE i2) (negbTE i1).
 Qed.
 
+Lemma decomp_swap' (n : nat) (s : 'S_n.+2) (K : s ord0 != ord0) :
+  tperm ord0 (s ord0) =
+  ((tperm (lift ord0 ord0) (s ord0)) * (tperm ord0 (lift ord0 ord0)) * (tperm (lift ord0 ord0) (s ord0)))%g :> 'S_n.+2.
+Proof.
+  apply /permP => /= i.
+  case/boolP : (i == ord0 :> 'I__) => [/eqP ->|Hi];
+   first by do ! rewrite permE /=;
+            have -> : (if ord0 == s ord0 then lift ord0 ord0 else ord0) = ord0
+              by move => n0; rewrite ifN_eqC //=.
+  do ! rewrite permE /=.
+  rewrite ifN_eq //.
+  case/boolP : (i == lift ord0 ord0 :> 'I__) => [/eqP ->|Hi1].
+  - case/boolP : (s ord0 == lift ord0 ord0 :> 'I__) => [/eqP ->|Hs];
+      first by rewrite eq_refl;
+        have -> : (if lift ord0 ord0 == ord0 then lift ord0 ord0 else ord0) = ord0;
+        done.
+  - rewrite ifN_eqC //=.
+    have -> : (if s ord0 == ord0 then lift ord0 ord0 else s ord0) = s ord0 by rewrite ifN_eq.
+    by rewrite ifN_eq //= eq_refl.
+  case/boolP : (i == s ord0 :> 'I__) => His;
+  first by  have -> : (if lift ord0 ord0 == lift ord0 ord0 then ord0 else lift ord0 ord0) = ord0; [by move => *; rewrite eq_refl|rewrite ifN_eqC //|done].
+  have -> : (if i == ord0
+     then lift ord0 ord0
+     else if i == lift ord0 ord0 then ord0 else i) = i by rewrite !ifN_eq.
+  by rewrite !ifN_eq.
+Qed.
+
 Lemma perm_Sn' (n : nat) (P : 'S_n.+2-> Prop) :
   (forall s s', P s -> P s' -> P (s' * s)%g) ->
   (P (tperm ord0 (lift ord0 ord0))) ->
