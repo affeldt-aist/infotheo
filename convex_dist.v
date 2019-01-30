@@ -381,7 +381,7 @@ Qed.
 
 End mutual_information_concave.
 
-Require Import R_for_mathcomp.
+(*Require Import R_for_mathcomp.
 Module AffineConvexType.
 
 Definition I t := 0 <= t <= 1.
@@ -488,7 +488,7 @@ move: Hp''; rewrite onemK => Hp''.
 by rewrite !(wproofirrelevant Hp'' Hp).
 Qed.
 
-End AffineConvexType.
+End AffineConvexType.*)
 
 Section mutual_information_convex.
 

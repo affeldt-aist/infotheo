@@ -1,7 +1,8 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
-From mathcomp Require Import fintype tuple div path bigop prime finset fingroup.
-From mathcomp Require Import finfun perm.
+From mathcomp Require Import fintype finfun fingraph tuple div path bigop prime.
+From mathcomp Require Import finset fingroup perm.
 Import Coq.NArith.BinNatDef.
 
 (** * Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
@@ -424,7 +425,7 @@ Lemma addb_seq_cat a b c d : size a = size c ->
   addb_seq (a ++ b) (c ++ d) = addb_seq a c ++ addb_seq b d.
 Proof. move=> a_c; by rewrite /addb_seq /= -map_cat zip_cat. Qed.
 
-Lemma addb_seq_map {A : Type} : forall n (a b : seq A) f,
+Lemma addb_seq_map A : forall n (a b : seq A) f,
   size a = n -> size b = n ->
   addb_seq (map f a) (map f b) = map (fun x => f x.1 (+) f x.2) (zip a b).
 Proof.
@@ -817,23 +818,15 @@ Section perm_tuples.
 
 Local Open Scope tuple_ext_scope.
 
-Variables A : eqType.
-Variable n : nat.
-Variable s : 'S_n.
+Variables (A : eqType) (n : nat) (s : 'S_n).
 
 Definition perm_tuple (t : n.-tuple A) := [tuple (t \_ (s i)) | i < n].
 
 End perm_tuples.
 
-Section perm_tuples_facts.
+Section perm_tuples_prop.
 
-Lemma perm_tuple_id {A : finType} {m} (b : m.-tuple A) : perm_tuple 1 b = b.
-Proof.
-apply eq_from_tnth => i.
-by rewrite /perm_tuple /= tnth_map /= perm1 tnth_ord_tuple.
-Qed.
-
-Lemma tuple_exist_perm_sort (X : eqType) n (r : rel X) (t : n.-tuple X) :
+Lemma tuple_exist_perm_sort (T : eqType) n (r : rel T) (t : n.-tuple T) :
   exists s : 'S_n, t = perm_tuple s (sort_tuple r t).
 Proof.
 rewrite /perm_tuple.
@@ -847,69 +840,56 @@ move/eqP : {Hu}Ht => ->; by case: i.
 Qed.
 
 Variable A : finType.
-Variable n : nat.
 
-Definition perm_tuple_set (s : 'S_n) (E : {set n.-tuple A}) :=
+Lemma perm_tuple_id n (t : n.-tuple A) : perm_tuple 1 t = t.
+Proof.
+apply eq_from_tnth => i.
+by rewrite /perm_tuple /= tnth_map /= perm1 tnth_ord_tuple.
+Qed.
+
+Definition perm_tuple_set n (s : 'S_n) (E : {set n.-tuple A}) :=
   perm_tuple s @: E.
 
-Lemma perm_tuple_comp (s1 s2 : 'S_n) (b : n.-tuple A) :
-  perm_tuple s1 (perm_tuple s2 b) = perm_tuple (s1 * s2) b.
+Lemma perm_tuple_comp n (s1 s2 : 'S_n) (t : n.-tuple A) :
+  perm_tuple s1 (perm_tuple s2 t) = perm_tuple (s1 * s2) t.
 Proof.
 apply eq_from_tnth => i.
 by rewrite /perm_tuple !tnth_map /= tnth_ord_tuple permM.
 Qed.
 
-Lemma perm_tuple_inj (s : 'S_n) : injective (@perm_tuple A n s).
+Lemma perm_tuple_inj n (s : 'S_n) : injective (@perm_tuple A n s).
 Proof.
-rewrite /injective.
 move=> a b H.
-have H2 : perm_tuple 1 a = perm_tuple 1 b.
-- rewrite -(mulVg s).
-  rewrite -!perm_tuple_comp.
-  f_equal ; apply H.
-rewrite !perm_tuple_id in H2 ; apply H2.
+have : perm_tuple 1 a = perm_tuple 1 b by rewrite -(mulVg s) -!perm_tuple_comp H.
+rewrite !perm_tuple_id; apply.
 Qed.
 
-Lemma perm_tuple0 : forall (u : 'S_0) (t : 0.-tuple A), perm_tuple u t = t.
+Lemma perm_tuple0 (u : 'S_0) (t : 0.-tuple A) : perm_tuple u t = t.
 Proof.
-move=> u t.
-rewrite (tuple0 t).
-have -> : u = 1%g.
-  apply/permP => /=.
-  by case.
-by rewrite perm_tuple_id.
+rewrite (tuple0 t) (_ : u = 1%g) ?perm_tuple_id //; by apply/permP => /=; case.
 Qed.
 
-Variable B : finType.
-
-Lemma zip_perm_tuple (ta : n.-tuple A) (tb : n.-tuple B) (s : 'S_n) :
-  zip_tuple (perm_tuple s ta) (perm_tuple s tb) = perm_tuple s (zip_tuple ta tb).
+Lemma zip_perm_tuple (B : finType) n (a : n.-tuple A) (b : n.-tuple B) (s : 'S_n) :
+  zip_tuple (perm_tuple s a) (perm_tuple s b) = perm_tuple s (zip_tuple a b).
 Proof.
-apply eq_from_tnth.
-case.
-destruct n => //.
+apply eq_from_tnth; case.
+destruct n as [|n] => //.
 case=> [Hi | i Hi].
-  rewrite (tnth_nth (thead ta, thead tb)) (tnth_nth (thead (zip_tuple ta tb))).
-  rewrite /= enum_ordS /= (tnth_nth (thead ta, thead tb)) /= nth_zip; last
-    by rewrite (size_tuple ta) (size_tuple tb).
-  by rewrite (tnth_nth (thead ta)) /= (tnth_nth (thead tb)) /=.
-rewrite (tnth_nth (thead ta, thead tb)) (tnth_nth (thead (zip_tuple ta tb))) /= enum_ordS /=.
-rewrite ltnS in Hi.
-rewrite nth_zip; last by rewrite 4!size_map size_enum_ord.
-symmetry.
-rewrite (nth_map ord0); last by rewrite size_map size_enum_ord.
-rewrite (tnth_nth (thead ta, thead tb)) /zip_tuple /=.
-rewrite nth_zip; last by rewrite (size_tuple ta) (size_tuple tb).
-symmetry.
+  rewrite (tnth_nth (thead a, thead b)) (tnth_nth (thead (zip_tuple a b))).
+  rewrite /= enum_ordS /= (tnth_nth (thead a, thead b)) /= nth_zip; last first.
+    by rewrite (size_tuple a) (size_tuple b).
+  by rewrite (tnth_nth (thead a)) /= (tnth_nth (thead b)).
+rewrite (tnth_nth (thead a, thead b)) (tnth_nth (thead (zip_tuple a b))) /=.
+rewrite enum_ordS /= nth_zip; last by rewrite 4!size_map size_enum_ord.
+rewrite [in RHS](nth_map ord0); last by rewrite size_map size_enum_ord.
+rewrite [in RHS](tnth_nth (thead a, thead b)) [in RHS]/zip_tuple /=.
+rewrite [in RHS]nth_zip; last by rewrite (size_tuple a) (size_tuple b).
 rewrite (nth_map ord0); last by rewrite size_map size_enum_ord.
 rewrite (nth_map ord0); last by rewrite size_map size_enum_ord.
-by rewrite (tnth_nth (thead ta)) (tnth_nth (thead tb)).
+by rewrite (tnth_nth (thead a)) (tnth_nth (thead b)).
 Qed.
 
-End perm_tuples_facts.
-
-(* TODO: move *)
-From mathcomp Require Import fingraph.
+End perm_tuples_prop.
 
 Lemma connect_sym1 (D : finType) (r : rel D) : symmetric r ->
   forall x y, connect r x y -> connect r y x.

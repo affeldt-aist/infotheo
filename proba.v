@@ -754,6 +754,14 @@ Proof. by apply/prob_ext => /=; rewrite p_of_rsE mul0R. Qed.
 Lemma p_of_rsC (r s : prob) : [p_of r, s] = [p_of s, r].
 Proof. by apply/prob_ext; rewrite !p_of_rsE mulRC. Qed.
 
+Lemma p_of_neq1 (p q : prob) : 0 < p < 1 -> [p_of q, p] != `Pr 1.
+Proof.
+case=> p0 p1; apply/eqP => pq1; move: (p1).
+rewrite [X in _ < X -> _](_ : _ = Prob.p (`Pr 1)) //.
+rewrite -pq1 p_of_rsE -ltR_pdivr_mulr // divRR ?prob_gt0 //.
+rewrite ltRNge; apply; exact/prob_le1.
+Qed.
+
 Lemma q_of_rs_prob (r s : prob) : (0 <= (r.~ * s) / [p_of r, s].~ <= 1)%R.
 Proof.
 case/boolP : (r == `Pr 1 :> prob) => r1.
