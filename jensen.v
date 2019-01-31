@@ -92,7 +92,7 @@ Let g x := - f x.
 Let convex_g : convex_function_in D g.
 Proof.
 rewrite /convex_function_in => x y t Dx Dy.
-apply concave_f => //; by case: t.
+apply /R_convex_function_atN/concave_f => //; by case: t.
 Qed.
 
 Lemma jensen_dist_concave (r : A -> R) (X : dist A) :

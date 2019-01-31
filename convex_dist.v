@@ -170,7 +170,7 @@ Local Open Scope divergence_scope.
 (* thm 2.7.3 *)
 Lemma entropy_concave : concave_function (fun P : dist A => `H P).
 Proof.
-rewrite /concave_function => p q t; rewrite /convex_function_at.
+apply R_concave_functionN' => p q t; rewrite /convex_function_at.
 rewrite !(entropy_log_div _ A_not_empty') /=.
 rewrite /Leconv /= [in X in _ <= X]/Conv /= /avg /= (* TODO *).
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
@@ -233,7 +233,7 @@ Lemma concavity_of_entropy_x_le_y x y (t : prob) :
   concave_function_at H2 x y t.
 Proof.
 rewrite !classical_sets.in_setE => -[H0x Hx1] [H0y Hy1] Hxy.
-rewrite /concave_function_at.
+apply R_concave_function_atN'.
 set Df := fun z : R => log z - log (1 - z).
 have @f_derive : pderivable (fun x0 => - H2 x0) (fun z => x <= z <= y).
   move => z Hz.
@@ -295,7 +295,8 @@ Qed.
 
 Lemma concavity_of_entropy : concave_function_in open_unit_interval H2.
 Proof.
-rewrite /concave_function_in /concave_function_at => x y t Hx Hy.
+rewrite /concave_function_in => x y t Hx Hy.
+apply R_concave_function_atN'.
 (* wlogつかう. まず関係ない変数を戻し, *)
 move : t.
 (* 不等号をorでつないだやつを用意して *)
@@ -309,7 +310,8 @@ wlog : x y Hx Hy Hxy / x < y.
   apply: convex_function_sym => // t0.
   apply H => //.
   by apply or_introl.
-by move => Hxy' t; apply concavity_of_entropy_x_le_y.
+move => Hxy' t.
+by apply /R_convex_function_atN /concavity_of_entropy_x_le_y.
 Qed.
 
 End entropy_concave_alternative_proof_binary_case.
@@ -341,11 +343,13 @@ suff : concave_function (fun P => let PQ := Swap.d (CDist.make_joint P Q) in
   rewrite (FunctionalExtensionality.functional_extensionality f g) //.
   move=> d; rewrite {}/f {}/g /=.
   by rewrite -MutualInfo.miE2 -mi_sym.
-apply concave_functionB.
+apply R_concave_functionB.
 - move: (entropy_concave B_not_empty) => H.
+  apply R_concave_functionN.
   move=> p q t /=.
-  rewrite /convex_function_at.
   rewrite 3!Swap.fst.
+  move : H.
+  move /R_convex_functionN' => H.
   apply: leR_trans (H (Bivar.snd (CDist.make_joint p Q)) (Bivar.snd (CDist.make_joint q Q)) t).
   destruct t. rewrite /Conv /=. (* TODO *)
   rewrite -ProdDist.snd_convex; exact/leRR.

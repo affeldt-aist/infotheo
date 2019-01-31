@@ -1816,18 +1816,22 @@ Proof. rewrite /concave_function_at !convmm; exact/leconvR. Qed.
 End prop.
 Section Rprop.
 Variable (f : A -> R).
+Lemma R_convex_function_atN a b t : concave_function_at f a b t -> convex_function_at (fun x => - f x)%R a b t.
+Proof. by rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2. Qed.
+Lemma R_concave_function_atN a b t : convex_function_at f a b t -> concave_function_at (fun x => - f x)%R a b t.
+Proof. by rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2. Qed.
 Lemma R_convex_functionN : concave_function f -> convex_function (fun x => - f x)%R.
-Proof.
-move => H a b t.
-rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2.
-exact: H.
-Qed.
+Proof. move => ? ? ? ?; by apply R_convex_function_atN. Qed.
 Lemma R_concave_functionN : convex_function f -> concave_function (fun x => - f x)%R.
-Proof.
-move => H a b t.
-rewrite /concave_function_at /Leconv /= avg_oppD leR_opp2.
-exact: H.
-Qed.
+Proof. move => ? ? ? ?; by apply R_concave_function_atN. Qed.
+Lemma R_convex_function_atN' a b t : concave_function_at (fun x => - f x)%R a b t -> convex_function_at f a b t.
+Proof. by rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2. Qed.
+Lemma R_concave_function_atN' a b t : convex_function_at (fun x => - f x)%R a b t -> concave_function_at f a b t.
+Proof. by rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2. Qed.
+Lemma R_convex_functionN' : concave_function (fun x => - f x)%R -> convex_function f.
+Proof. move => ? ? ? ?; by apply R_convex_function_atN'. Qed.
+Lemma R_concave_functionN' : convex_function (fun x => - f x)%R -> concave_function f.
+Proof. move => ? ? ? ?; by apply R_concave_function_atN'. Qed.
 End Rprop.
 Section Rprop2.
 Lemma R_convex_functionB (f g : A -> R) :
