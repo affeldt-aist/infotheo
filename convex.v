@@ -1570,6 +1570,12 @@ rewrite IH /avgn big_distrr /=; apply eq_bigr => j _.
 rewrite DelDist.dE D1Dist.dE /DelDist.h ltn0 eq_sym (negbTE (neq_lift _ _)).
 by rewrite mulRAC mulRC -mulRA mulVR ?onem_neq0 // mulR1.
 Qed.
+Lemma avg_oppD x y t : (- x <|t|> - y = - (x <|t|> y))%R.
+Proof. rewrite /Conv /= /avg; lra. Qed.
+Lemma avg_mulDr t : right_distributive Rmult (fun x y => x <|t|> y).
+Proof. move => x y z. rewrite /Conv /= /avg. lra. Qed.
+Lemma avg_mulDl t : left_distributive Rmult (fun x y => x <|t|> y).
+Proof. move => x y z. rewrite /Conv /= /avg. lra. Qed.
 End R_convex_space.
 
 Module Funavg.
@@ -1785,36 +1791,46 @@ Qed.
 
 End convex_function_prop.
 
-(* The concavity below depends on the additive group structure on R.
-   We should redefine it using only ordering (just reverse the orientation)
-   and restate as lemmas the current definitions. *)
 Section concave_function_def.
-Variables (A : convType) (f : A -> R).
-Definition concave_function_at := convex_function_at (fun x => - f x)%R.
-Definition concave_function := convex_function (fun x => - f x)%R.
+Local Open Scope ordered_convex_scope.
+Variables (A : convType) (B : orderedConvType) (f : A -> B).
+Definition concave_function_at a b t := (f a <| t |> f b <= f (a <| t |> b)).
+Definition concave_function := forall a b t, concave_function_at a b t.
 Definition strictly_concavef_at := forall a b (t : prob),
   a <> b -> (0 < t < 1)%R -> concave_function_at a b t.
+Lemma concave_functionP : concave_function <-> forall a b t, concave_function_at a b t.
+Proof. split => [H x y t|H x y t]; exact: H. Qed.
 End concave_function_def.
 
+
+Lemma leR_opp2 x y : (-x <= - y)%R <-> (y <= x)%R.
+Proof. split;[exact: Ropp_le_cancel|exact:Ropp_le_contravar]. Qed.
+
 Section concave_function_prop.
-Variable (A : convType).
+Local Open Scope ordered_convex_scope.
+Variable (A : convType) (B : orderedConvType).
 Section prop.
-Variable (f : A -> R).
-
+Variable (f : A -> B).
 Lemma concave_function_atxx a t : concave_function_at f a a t.
-Proof. exact: convex_function_atxx. Qed.
-
-Lemma convex_functionN : concave_function f -> convex_function (fun x => - f x)%R.
-Proof. by []. Qed.
-
-Lemma concave_functionN : convex_function f -> concave_function (fun x => - f x)%R.
-Proof.
-move=> H; rewrite /concave_function (_ : (fun x => - - f x)%R = f) //.
-apply FunctionalExtensionality.functional_extensionality => ?; by rewrite oppRK.
-Qed.
+Proof. rewrite /concave_function_at !convmm; exact/leconvR. Qed.
 End prop.
-Section prop2.
-Lemma convex_functionB (f g : A -> R) :
+Section Rprop.
+Variable (f : A -> R).
+Lemma R_convex_functionN : concave_function f -> convex_function (fun x => - f x)%R.
+Proof.
+move => H a b t.
+rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2.
+exact: H.
+Qed.
+Lemma R_concave_functionN : convex_function f -> concave_function (fun x => - f x)%R.
+Proof.
+move => H a b t.
+rewrite /concave_function_at /Leconv /= avg_oppD leR_opp2.
+exact: H.
+Qed.
+End Rprop.
+Section Rprop2.
+Lemma R_convex_functionB (f g : A -> R) :
   convex_function f -> concave_function g -> convex_function (fun x => f x - g x)%R.
 Proof.
 move=> H1 H2 p q t.
@@ -1822,17 +1838,17 @@ rewrite /convex_function_at /=.
 rewrite {3}/Conv /= /avg /= (* TODO *) 2!mulRBr addRAC addRA.
 move: (H1 p q t) => {H1}H1.
 rewrite -addR_opp -addRA; apply leR_add => //.
-rewrite -2!mulRN addRC; exact: H2.
+rewrite -2!mulRN addRC; exact: (R_convex_functionN H2).
 Qed.
-Lemma concave_functionB (f g : A -> R) :
+Lemma R_concave_functionB (f g : A -> R) :
   concave_function f -> convex_function g -> concave_function (fun x => f x - g x)%R.
 Proof.
 move=> H1 H2.
 rewrite (_ : (fun _ => _) = (fun x => - (g x - f x)))%R; last first.
   apply FunctionalExtensionality.functional_extensionality => x; by rewrite oppRB.
-exact/concave_functionN/convex_functionB.
+exact/R_concave_functionN/R_convex_functionB.
 Qed.
-End prop2.
+End Rprop2.
 End concave_function_prop.
 
 (* NB affine_functionPのほうが定義で, affine_functionのほうは性質では？ - saikawa *)
@@ -1849,12 +1865,11 @@ Proof.
 split => [[H1 H2] p q t| H]; last first.
   split.
   - move=> p q t; rewrite /convex_function_at /= H //; exact/leRR.
-  - move=> p q t; rewrite /convex_function_at H // oppRD -!mulRN; exact/leRR.
-rewrite eqR_le; split; first exact/H1.
-rewrite -[X in (X <= _)%R](oppRK _)leR_oppl oppRD -2!mulRN; exact/H2.
+  - move=> p q t; rewrite /concave_function_at /= H //; exact/leRR.
+rewrite eqR_le; split; [exact/H1|exact/H2].
 Qed.
-Lemma affine_functiontN : affine_function f -> affine_function (fun x => - f x)%R.
-Proof. case=> H1 H2; split => //; exact/concave_functionN. Qed.
+Lemma affine_functionN : affine_function f -> affine_function (fun x => - f x)%R.
+Proof. case=> H1 H2; split => //; [exact/R_convex_functionN|exact/R_concave_functionN]. Qed.
 End affine_function_prop.
 
 Section convex_function_in_def.
@@ -1954,7 +1969,8 @@ Lemma concave_function_atN f x y t : concave_function_at f x y t ->
 Proof.
 move=> H k k0; rewrite /concave_function_at /convex_function_at.
 rewrite {2}/Conv /= /avg /= (* TODO *).
-rewrite -3!mulNR 2!mulRA -mulRDl; exact: leR_wpmul2r.
+rewrite /Leconv /= -avg_mulDl.
+exact: leR_wpmul2r.
 Qed.
 
 Lemma convexf_at_onem x y (t : prob) f : (0 < x -> 0 < y -> x < y ->
@@ -1969,8 +1985,13 @@ Qed.
 
 Lemma concavef_at_onem x y (t : prob) f : (0 < x -> 0 < y -> x < y ->
   concave_function_at f x y t -> concave_function_at f y x (`Pr t.~))%R.
-Proof. move=> ? ? ?; exact/convexf_at_onem. Qed.
-
+Proof.
+move=> x0 y0 xy H; rewrite /concave_function_at.
+rewrite {2}/Conv /= /avg /= onemK addRC.
+rewrite /concave_function_at /Conv /= /avg /= in H.
+rewrite /Conv /= /avg /= onemK addRC.
+apply: (leR_trans H); rewrite addRC; exact/leRR.
+Qed.
 End convex_function_R.
 
 (* NB(saikawa):
