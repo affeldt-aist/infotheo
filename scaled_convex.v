@@ -30,15 +30,17 @@ Canonical Rpos_eqType := Eval hnf in EqType Rpos Rpos_eqMixin.
 Lemma Rpos_neq0 (x : Rpos) : val x != 0.
 Proof. case: x => p /=. by rewrite /gtRb lt0R => /andP []. Qed.
 
-Definition addRpos : Rpos -> Rpos -> Rpos.
+Definition addRpos_def : Rpos -> Rpos -> Rpos.
 intros [x Hx] [y Hy].
 apply (@mkRpos (x+y)).
 apply /ltRP/addR_gt0/ltRP => //.
 by apply/ltRP.
 Defined.
 
+Definition addRpos := locked addRpos_def.
+
 Lemma addRposE x y : val (addRpos x y) = val x + val y.
-Proof. by destruct x, y. Qed.
+Proof. by rewrite /addRpos -lock; destruct x, y. Qed.
 
 Lemma addRposC : commutative addRpos.
 Proof. by move=> x y; apply val_inj; rewrite !addRposE addRC. Qed.
@@ -46,15 +48,17 @@ Proof. by move=> x y; apply val_inj; rewrite !addRposE addRC. Qed.
 Lemma addRposA : associative addRpos.
 Proof. by move=> x y z; apply val_inj; rewrite !addRposE addRA. Qed.
 
-Definition mulRpos : Rpos -> Rpos -> Rpos.
+Definition mulRpos_def : Rpos -> Rpos -> Rpos.
 intros [x Hx] [y Hy].
 apply (@mkRpos (x*y)).
 apply /ltRP/mulR_gt0/ltRP => //.
 by apply/ltRP.
 Defined.
 
+Definition mulRpos := locked mulRpos_def.
+
 Lemma mulRposE x y : val (mulRpos x y) = val x * val y.
-Proof. by destruct x, y. Qed.
+Proof. by rewrite /mulRpos -lock; destruct x, y. Qed.
 
 Lemma mulRposC : commutative mulRpos.
 Proof. by move=> x y; apply val_inj; rewrite !mulRposE mulRC. Qed.
@@ -205,38 +209,114 @@ Proof. by []. Qed.
 Lemma weight_bary pts : weight (barycenter pts) = \rsum_(x <- pts) weight x.
 Proof. by rewrite (big_morph weight weight_addpt weight0). Qed.
 
-Definition scalept (p : Rpos) (x : scaled_pt) :=
-  if x is Scaled q y then Scaled (mulRpos p q) y else Zero.
+Definition scalept_def p (x : scaled_pt) :=
+  if x is Scaled q y then
+    match boolP (p >b 0) with
+    | AltTrue Hp => Scaled (mulRpos (mkRpos Hp) q) y
+    | AltFalse _ => Zero
+    end
+  else Zero.
 
-Lemma scalept_weight p x : weight (scalept p x) = p * weight x.
-Proof. by case: x => [q y|] /=; rewrite (mulRposE, mulR0). Qed.
+Definition scalept := locked scalept_def.
 
-Lemma scalept_addpt r : {morph scalept r : x y / addpt x y >-> addpt x y}.
+
+Lemma scalept_weight p x : 0 <= p -> weight (scalept p x) = p * weight x.
 Proof.
-move=> [p x|] [q y|] //=.
+case: x => [q y|] Hp.
+  rewrite /scalept -lock /=.
+  destruct boolP.
+    rewrite /weight /=.
+    rewrite /mulRpos -lock.
+    by destruct q.
+  move/leRP: Hp.
+  rewrite /gtRb in i.
+  rewrite le0R (negbTE i) orbF => /eqP ->.
+  by rewrite mul0R.
+by rewrite /= /scalept -lock mulR0.
+Qed.
+
+Lemma scalept_addpt r :
+  0 <= r -> {morph scalept r : x y / addpt x y >-> addpt x y}.
+Proof.
+rewrite /scalept -lock.
+move=> Hr [p x|] [q y|] //=.
+destruct boolP => //=.
 congr Scaled.
 + apply val_inj. rewrite !(mulRposE,addRposE) /=. by rewrite mulRDr.
 + congr Conv. apply prob_ext => /=.
-  have /= Hr := Rpos_neq0 r.
-  rewrite !(mulRposE,addRposE) /= -mulRDr divRM.
-      by rewrite {2}/Rdiv -(mulRC (/r)) mulRA mulVR // mul1R.
-    by apply/eqP.
+  have Hr0 : r <> 0.
+    move=> Hr0; move: i.
+    by rewrite Hr0 => /ltRP /ltRR.
+  rewrite !(mulRposE,addRposE) /= -mulRDr divRM //.
+    by rewrite {2}/Rdiv -(mulRC (/r)) mulRA mulVR ?mul1R //; apply /eqP.
   have /= /eqP := (Rpos_neq0 (addRpos p q)).
   by rewrite addRposE.
+by rewrite addpt0.
 Qed.
 
 Lemma scalept0 p : scalept p Zero = Zero.
-Proof. by []. Qed.
+Proof. by rewrite /scalept -lock. Qed.
 
-Lemma scalept_bary p pts :
+Lemma scalept_bary p (H : 0 <= p) pts :
   scalept p (barycenter pts) = barycenter (map (scalept p) pts).
 Proof.
-rewrite (big_morph (scalept p) (scalept_addpt _) (scalept0 _)).
+rewrite (big_morph (scalept p) (scalept_addpt H) (scalept0 _)).
 by rewrite /barycenter big_map.
 Qed.
 
+Lemma scalept_comp p q x :
+  0 <= p -> 0 <= q -> scalept p (scalept q x) = scalept (p * q) x.
+Proof.
+move=> Hp Hq.
+rewrite /scalept -lock.
+case: x => [r x|] //=.
+destruct boolP.
+  destruct boolP => /=.
+    destruct boolP.
+      congr Scaled.
+      by apply val_inj; rewrite !mulRposE /= mulRA.
+    elimtype False.
+    move/ltRP /pmulR_lgt0 in i0.
+    rewrite /gtRb (introT (ltRP _ _) (i0 _)) // in i1.
+    by apply /ltRP.
+  destruct boolP => //.
+  elimtype False.
+  elim (negP i0).
+  apply/ltRP/mulR_gt0/ltRP => //.
+  by apply/ltRP.
+destruct boolP => //.
+elimtype False.
+case/leR_eqVlt: Hq => Hq.
+  rewrite -Hq mulR0 in i0.
+  by move/ltRP/ltRR in i0.
+by rewrite /gtRb (introT (ltRP _ _) Hq) in i.
+Qed.
+
+Lemma scalept_addR x : {morph scalept^~ x : p q / p + q >-> addpt p q}.
+Proof.
+move=> p q.
+Abort.
 
 Definition Rpos1 := @mkRpos 1 (introT (ltRP _ _) Rlt_0_1).
+
+Section convdist.
+Variables n m : nat.
+Variable p : {dist 'I_n}.
+Variable q : 'I_n -> {dist 'I_m}.
+Variable h : 'I_m -> A.
+
+Lemma barycenter_convdist :
+  \big[addpt/Zero]_(i < n) scalept (p i)
+     (\big[addpt/Zero]_(j < m) scalept (q i j) (Scaled Rpos1 (h j)))
+  = \big[addpt/Zero]_(j < m) scalept (ConvDist.d p q j) (Scaled Rpos1 (h j)).
+Proof.
+rewrite (eq_bigr _ (fun i _ => big_morph (scalept (p i)) (scalept_addpt (pos_f_ge0 p i)) (scalept0 _) _ _ _)).
+rewrite exchange_big /=.
+apply eq_bigr => j _.
+rewrite (eq_bigr _ (fun i _ => scalept_comp _ (pos_f_ge0 p i) (pos_f_ge0 (q i) j))).
+rewrite ConvDist.dE.
+Abort.
+End convdist.
 
 Section binary.
 Variable B : finType.
