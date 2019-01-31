@@ -1855,26 +1855,28 @@ Qed.
 End Rprop2.
 End concave_function_prop.
 
-(* NB affine_functionPのほうが定義で, affine_functionのほうは性質では？ - saikawa *)
 Section affine_function_def.
-Variables (A : convType) (f : A -> R).
-Definition affine_function := convex_function f /\ concave_function f.
+Variables (A B : convType) (f : A -> B).
+Definition affine_function := forall a b (t : prob), f (a <| t |> b) = f a <| t |> f b.
 End affine_function_def.
 
 Section affine_function_prop.
-Variables (A : convType) (f : A -> R).
-Lemma affine_functionP : affine_function f <-> forall a b (t : prob),
-  f (a <| t |> b) = f a <| t |> f b.
+Variables (A : convType) (B : orderedConvType) (f : A -> B).
+Lemma affine_functionP : affine_function f <-> convex_function f /\ concave_function f.
 Proof.
-split => [[H1 H2] p q t| H]; last first.
+split => [H | [H1 H2] p q t].
   split.
-  - move=> p q t; rewrite /convex_function_at /= H //; exact/leRR.
-  - move=> p q t; rewrite /concave_function_at /= H //; exact/leRR.
-rewrite eqR_le; split; [exact/H1|exact/H2].
+  - move=> p q t; rewrite /convex_function_at /= H //; exact/leconvR.
+  - move=> p q t; rewrite /concave_function_at /= H //; exact/leconvR.
+rewrite eqconv_le; split; [exact/H1|exact/H2].
 Qed.
-Lemma affine_functionN : affine_function f -> affine_function (fun x => - f x)%R.
-Proof. case=> H1 H2; split => //; [exact/R_convex_functionN|exact/R_concave_functionN]. Qed.
 End affine_function_prop.
+
+Section R_affine_function_prop.
+Variables (A : convType) (f : A -> R).
+Lemma R_affine_functionN : affine_function f -> affine_function (fun x => - f x)%R.
+Proof. move /affine_functionP => [H1 H2]; rewrite affine_functionP; split => //; [exact/R_convex_functionN|exact/R_concave_functionN]. Qed.
+End R_affine_function_prop.
 
 Section convex_function_in_def.
 Variables (A : convType) (D : convex_set A) (f : A -> R).

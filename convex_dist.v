@@ -353,8 +353,8 @@ apply R_concave_functionB.
   apply: leR_trans (H (Bivar.snd (CDist.make_joint p Q)) (Bivar.snd (CDist.make_joint q Q)) t).
   destruct t. rewrite /Conv /=. (* TODO *)
   rewrite -ProdDist.snd_convex; exact/leRR.
-- suff : affine_function (fun x => CondEntropy.h (Swap.d (CDist.make_joint x Q))) by case.
-  apply/affine_functionP => p q t /=.
+- suff : affine_function (fun x => CondEntropy.h (Swap.d (CDist.make_joint x Q))) by move /affine_functionP => [].
+  move => p q t.
   rewrite /CondEntropy.h /CondEntropy.h1.
   rewrite /Conv /= /avg /=.
   rewrite 2!big_distrr /= -big_split /=; apply eq_bigr => a _.
