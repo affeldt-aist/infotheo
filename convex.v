@@ -13,6 +13,8 @@ Import Prenex Implicits.
 
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
 Reserved Notation "{ 'convex_set' T }" (format "{ 'convex_set'  T }").
+Reserved Notation "'\Sum_' d f" (at level 36, f at level 36, d at level 0,
+  format "\Sum_ d  f").
 
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
@@ -691,7 +693,9 @@ Fixpoint Convn n : {dist 'I_n} -> ('I_n -> A) -> A :=
     end
   end.
 
-Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): Convn (Dist1.d j) g = g j.
+Local Notation "'\Sum_' d f" := (Convn d f).
+
+Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Sum_(Dist1.d j) g = g j.
 Proof.
 elim: n j g => [[] [] //|n IH j g /=].
 case: eqVneq => [|b01].
@@ -719,14 +723,14 @@ rewrite IH /DelDist.h ltn0; congr g.
 by apply val_inj => /=; rewrite /bump leq0n add1n prednK // lt0n.
 Qed.
 
-Lemma convn1E a e : Convn e (fun _ : 'I_1 => a) = a.
+Lemma convn1E a e : \Sum_ e (fun _ : 'I_1 => a) = a.
 Proof.
 rewrite /=; case: eqVneq => [//|H]; exfalso; move/eqP: H; apply.
 by apply/eqP; rewrite Dist1.one (Dist1.I1 e).
 Qed.
 
 Lemma convnE n g (d : {dist 'I_n.+1}) (i1 : d ord0 != 1%R) :
-  Convn d g = g ord0 <| probdist d ord0 |> Convn (DelDist.d i1) (fun x => g (DelDist.h ord0 x)).
+  \Sum_d g = g ord0 <| probdist d ord0 |> \Sum_(DelDist.d i1) (fun x => g (DelDist.h ord0 x)).
 Proof.
 rewrite /=; case: eqVneq => /= H.
 exfalso; by rewrite H eqxx in i1.
@@ -734,7 +738,7 @@ by rewrite (ProofIrrelevance.proof_irrelevance _ H i1).
 Qed.
 
 Lemma convn2E g (d : {dist 'I_2}) :
-  Convn d g = g ord0 <| probdist d ord0 |> g (lift ord0 ord0).
+  \Sum_d g = g ord0 <| probdist d ord0 |> g (lift ord0 ord0).
 Proof.
 case/boolP : (d ord0 == 1%R) => [|i1].
   rewrite Dist1.one => /eqP ->; rewrite ConvnDist1.
@@ -749,7 +753,7 @@ Qed.
 Lemma convn3E g (d : {dist 'I_3}) (p : prob) :
   d ord0 != 1%R ->
   p = (d (lift ord0 ord0) / (1 - d ord0))%R :> R ->
-  Convn d g = g ord0 <| probdist d ord0 |> (g (lift ord0 ord0) <| p |> g ord_max).
+  \Sum_d g = g ord0 <| probdist d ord0 |> (g (lift ord0 ord0) <| p |> g ord_max).
 Proof.
 move=> i1 Hp.
 case/boolP : (p == `Pr 1) => p1.
@@ -765,7 +769,7 @@ apply prob_ext => /=.
 by rewrite DelDist.dE D1Dist.dE /DelDist.h ltnn (eq_sym (lift _ _)) (negbTE (neq_lift _ _)).
 Qed.
 
-Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> Convn d g = g i.
+Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Sum_d g = g i.
 Proof.
 elim: n g d i => [d d0|n IH g d i di1]; first by move: (distI0_False d0).
 case/boolP : (i == ord0) => [/eqP|]i0.
@@ -791,14 +795,14 @@ Qed.
 (* goal: Conv_perm *)
 
 Lemma Convn_perm_1 n (d : {dist 'I_n}) (g : 'I_n -> A) :
-  Convn d g = Convn (PermDist.d d 1%g) (g \o (1%g : 'S_n)).
+  \Sum_d g = \Sum_(PermDist.d d 1%g) (g \o (1%g : 'S_n)).
 Proof.
 rewrite PermDist.one; congr (Convn d _).
 apply FunctionalExtensionality.functional_extensionality => i /=; by rewrite perm1.
 Qed.
 
 Lemma Convn_perm1 (d : {dist 'I_1}) (g : 'I_1 -> A) (s : 'S_1) :
-  Convn d g = Convn (PermDist.d d s) (g \o s).
+  \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
 Proof.
 have s1 : s = 1%g.
   apply/permP => i; by case: (s i) => -[|//] ?; rewrite perm1 (ord1 i); exact/val_inj.
@@ -806,7 +810,7 @@ by rewrite s1 -Convn_perm_1.
 Qed.
 
 Lemma Convn_perm2 (d : {dist 'I_2}) (g : 'I_2 -> A) (s : 'S_2) :
-  Convn d g = Convn (PermDist.d d s) (g \o s).
+  \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
 Proof.
 have [->|Hs] := S2.generators s.
   rewrite PermDist.one; congr Convn.
@@ -841,7 +845,7 @@ by rewrite PermDist.dE permE /= /onem -(pmf1 d) !big_ord_recl big_ord0 addR0 add
 Qed.
 
 Lemma Convn_perm3_p01 (d : {dist 'I_3}) (g : 'I_3 -> A) :
-  Convn d g = Convn (PermDist.d d S3.p01) (g \o S3.p01).
+  \Sum_d g = \Sum_(PermDist.d d S3.p01) (g \o S3.p01).
 Proof.
 have : (d ord0 + d (lift ord0 ord0) = 0 \/ d (lift ord0 ord0) + d ord_max = 0 \/
   (0 < d ord0 + d (lift ord0 ord0) /\ 0 < d (lift ord0 ord0) + d ord_max))%R.
@@ -980,7 +984,7 @@ by rewrite addRC.
 Qed.
 
 Lemma Convn_perm3_p02 (d : {dist 'I_3}) (g : 'I_3 -> A) :
-  Convn d g = Convn (PermDist.d d S3.p02) (g \o S3.p02).
+  \Sum_d g = \Sum_(PermDist.d d S3.p02) (g \o S3.p02).
 Proof.
 (* TODO(rei): redundant part with Convn_perm3_p02 *)
 have : (d ord0 + d (lift ord0 ord0) = 0 \/ d (lift ord0 ord0) + d ord_max = 0 \/
@@ -1106,7 +1110,7 @@ by rewrite [in RHS]addRC -addRA.
 Qed.
 
 Lemma Convn_perm3 (d : {dist 'I_3}) (g : 'I_3 -> A) (s : 'S_3) :
-  Convn d g = Convn (PermDist.d d s) (g \o s).
+  \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
 Proof.
 move: s d g.
 apply: S3.suff_generators; last first.
@@ -1122,15 +1126,15 @@ Qed.
 Lemma Convn_perm_projection n (d : {dist 'I_n.+2})
   (g : 'I_n.+2 -> A) (s : 'S_n.+2) (H : s ord0 = ord0) (dmax1 : d ord0 != 1%R)
   (m : nat) (nm : n.+1 < m) (IH : forall n : nat, n < m -> forall (d : {dist 'I_n}) (g : 'I_n -> A) (s : 'S_n),
-    Convn d g = Convn (PermDist.d d s) (g \o s)) :
-  Convn d g = Convn (PermDist.d d s) (g \o s).
+    \Sum_d g = \Sum_(PermDist.d d s) (g \o s)) :
+  \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
 Proof.
-transitivity (g ord0 <| probdist d ord0 |> (Convn (DelDist.d dmax1) (fun x => g (DelDist.h ord0 x)))).
+transitivity (g ord0 <| probdist d ord0 |> (\Sum_(DelDist.d dmax1) (fun x => g (DelDist.h ord0 x)))).
   by rewrite convnE.
 set s' : 'S_n.+1 := PermDef.perm (Sn.proj0_inj H).
-transitivity (g ord0 <| probdist d ord0 |> (Convn (PermDist.d (DelDist.d dmax1) s') ((fun x => g (DelDist.h ord0 x)) \o s'))).
+transitivity (g ord0 <| probdist d ord0 |> (\Sum_(PermDist.d (DelDist.d dmax1) s') ((fun x => g (DelDist.h ord0 x)) \o s'))).
   by rewrite -IH.
-transitivity (g (s ord0) <| probdist d ord0 |> (Convn (PermDist.d (DelDist.d dmax1) s') ((fun x => g (DelDist.h ord0 x)) \o s'))).
+transitivity (g (s ord0) <| probdist d ord0 |> (\Sum_(PermDist.d (DelDist.d dmax1) s') ((fun x => g (DelDist.h ord0 x)) \o s'))).
   by rewrite H.
 rewrite [in RHS]convnE //.
   by rewrite PermDist.dE H.
@@ -1180,8 +1184,8 @@ Lemma Convn_perm_tperm (n : nat) (d : {dist 'I_n.+3})
   (g : 'I_n.+3 -> A) (s : 'S_n.+3) (H : s = tperm ord0 (lift ord0 ord0)) (dmax1 : d ord0 != 1%R)
   (m : nat) (nm : n.+3 < m.+1) (IH : forall n : nat, n < m ->
        forall (d : {dist 'I_n}) (g : 'I_n -> A) (s : 'S_n),
-       Convn d g = Convn (PermDist.d d s) (g \o s)) :
-  Convn d g = Convn (PermDist.d d s) (g \o s).
+       \Sum_d g = \Sum_(PermDist.d d s) (g \o s)) :
+  \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
 Proof.
 case/boolP : (d (lift ord0 ord0) == 1 - d ord0 :> R)%R => K.
   case/boolP : (d (lift ord0 ord0) == 1%R :> R) => [|d11].
@@ -1190,12 +1194,12 @@ case/boolP : (d (lift ord0 ord0) == 1 - d ord0 :> R)%R => K.
   rewrite [in RHS]convnE.
     by rewrite PermDist.dE H permE.
   move=> K'.
-  rewrite (_ : Convn _ _ = g (lift ord0 ord0)); last first.
+  rewrite (_ : \Sum_ _ _ = g (lift ord0 ord0)); last first.
     have /eqP : (DelDist.d dmax1) ord0 = 1%R.
       by rewrite DelDist.dE D1Dist.dE /DelDist.h /= (eqP K) divRR // subR_eq0' eq_sym.
     rewrite Dist1.one => /eqP ->.
     by rewrite ConvnDist1 /DelDist.h /=.
-  rewrite (_ : Convn _ _ = g ord0); last first.
+  rewrite (_ : \Sum_ _ _ = g ord0); last first.
     have /eqP : (DelDist.d K') ord0 = 1%R.
       rewrite DelDist.dE D1Dist.dE /DelDist.h /= !PermDist.dE H !permE /=.
       rewrite (eqP K) subRB subRR add0R divRR //.
@@ -1247,7 +1251,7 @@ have H1 : (DelDist.d dmax1) ord0 != 1%R.
 pose G : 'I_3 -> A := [eta (fun=>g ord0) with
   ord0 |-> g ord0,
   lift ord0 ord0 |-> g (lift ord0 ord0),
-  ord_max |-> Convn (DelDist.d H1) (fun i : 'I_n.+1 => g (lift ord0 (lift ord0 i)))].
+  ord_max |-> \Sum_(DelDist.d H1) (fun i : 'I_n.+1 => g (lift ord0 (lift ord0 i)))].
 transitivity (Convn D G).
   erewrite convn3E.
   rewrite convnE.
@@ -1302,7 +1306,7 @@ congr (_ <| _ |> _).
     by rewrite /= /G /= !permE /= /DelDist.h ltnn H permE /=.
     pose s' : 'S_n.+1 := 1%g.
     rewrite (@IH _ _ _ _ s') //; last by rewrite -ltnS ltnW.
-    transitivity (Convn (DelDist.d H1) (fun i : 'I_n.+1 => g (lift ord0 (lift ord0 i)))).
+    transitivity (\Sum_(DelDist.d H1) (fun i : 'I_n.+1 => g (lift ord0 (lift ord0 i)))).
       by rewrite /G [in LHS]/= !permE [in LHS]/=.
     congr (Convn _ _).
       apply/dist_ext => j.
@@ -1327,7 +1331,7 @@ Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2*)
 Lemma Convn_perm (n : nat) (d : {dist 'I_n}) (g : 'I_n -> A) (s : 'S_n) :
-  Convn d g = Convn (PermDist.d d s) (g \o s).
+  \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
 Proof.
 move: d g s.
 elim: n.+1 {-2}n (ltnSn n) => {n} // m IH n nm d g s.
@@ -1339,12 +1343,12 @@ move: m IH nm d g.
 apply (@Sn.suff_generators _ (fun s => forall m : nat,
   (forall n0, n0 < m ->
    forall (d : {dist 'I_n0}) (g : 'I_n0 -> A) (s0 : 'S_n0),
-   Convn d g = Convn (PermDist.d d s0) (g \o s0)) ->
+   \Sum_d g = \Sum_(PermDist.d d s0) (g \o s0)) ->
   n.+4 < m.+1 ->
   forall (d : {dist 'I_n.+4}) (g : 'I_n.+4 -> A),
-  Convn d g = Convn (PermDist.d d s) (g \o s))).
+  \Sum_d g = \Sum_(PermDist.d d s) (g \o s))).
 - move=> s1 s2 H1 H2 m IH nm d g.
-  rewrite (H1 m) // (H2 m) // PermDist.mul; congr(Convn _ _).
+  rewrite (H1 m) // (H2 m) // PermDist.mul; congr (Convn _ _).
   apply FunctionalExtensionality.functional_extensionality => i.
   by rewrite /= permM.
 - move=> m IH nm d g.
@@ -1361,6 +1365,8 @@ apply (@Sn.suff_generators _ (fun s => forall m : nat,
 Qed.
 
 End convex_space_prop.
+
+Notation "'\Sum_' d f" := (Convn d f) : convex_scope.
 
 Section is_convex_set.
 Local Open Scope classical_set_scope.
@@ -1382,7 +1388,7 @@ Lemma is_convex_setT : is_convex_set setT.
 Proof. apply/asboolP => ? ? ? _ _; by rewrite in_setE. Qed.
 
 Definition is_convex_set_n (X : set A) : bool :=
-  `[< forall n (g : 'I_n -> A) (d : {dist 'I_n}), g @` setT `<=` X -> Convn d g \in X >].
+  `[< forall n (g : 'I_n -> A) (d : {dist 'I_n}), g @` setT `<=` X -> \Sum_d g \in X >].
 
 Lemma is_convex_setP (X : set A) : is_convex_set X = is_convex_set_n X.
 Proof.
@@ -1396,14 +1402,14 @@ apply/idP/idP => H; apply/asboolP; last first.
   move=> p1'.
   rewrite {1}/g eqxx (_ : probdist _ _ = p); last first.
     by apply prob_ext => /=; rewrite I2Dist.dE eqxx.
-  by rewrite (_ : Convn _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?convn1E.
+  by rewrite (_ : \Sum_ _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?convn1E.
 elim => [g d|n IH g d]; first by move: (distI0_False d).
 destruct n as [|n] => gX.
   rewrite {IH} (@convn_proj _ _ _ _ ord0) //.
   rewrite in_setE; exact/gX/classical_sets.imageP.
   by apply/eqP; rewrite Dist1.one (Dist1.I1 d).
 case/boolP : (d ord0 == 1%R) => [/eqP|]d01.
-  suff -> : Convn d g = g ord0 by rewrite in_setE; apply gX; exists ord0.
+  suff -> : \Sum_d g = g ord0 by rewrite in_setE; apply gX; exists ord0.
   by rewrite (@convn_proj _ _ _ _ ord0).
 set D : {dist 'I_n.+1} := DelDist.d d01.
 pose G (i : 'I_n.+1) : A := g (DelDist.h (@ord0 _) i).
@@ -1419,7 +1425,7 @@ End is_convex_set.
 Section hull_def.
 Local Open Scope classical_set_scope.
 Definition hull (A : convType) (X : set A) : set A :=
-  [set d | exists n, exists g : 'I_n -> A, exists e : {dist 'I_n}, g @` setT `<=` X /\ d = Convn e g].
+  [set d | exists n, exists g : 'I_n -> A, exists e : {dist 'I_n}, g @` setT `<=` X /\ d = \Sum_e g].
 End hull_def.
 
 Section hull_prop.
@@ -1552,7 +1558,7 @@ Qed.
 Definition R_convMixin := ConvexSpace.Class avg1 avgI avgC avgA.
 Canonical R_convType := ConvexSpace.Pack R_convMixin.
 Definition avgn n (g : 'I_n -> R) (e : {dist 'I_n}) := \rsum_(i < n) (e i * g i)%R.
-Lemma avgnE n (g : 'I_n -> R) e : Convn e g = avgn g e.
+Lemma avgnE n (g : 'I_n -> R) e : \Sum_e g = avgn g e.
 Proof.
 elim: n g e => /= [g e|n IH g e]; first by move: (distI0_False e).
 case: eqVneq => H /=.
@@ -1712,15 +1718,11 @@ Local Open Scope ordered_convex_scope.
 Variable A : orderedConvType.
 Implicit Types a b c : A.
 Lemma leconvR a : a <= a.
-case: A a => ? [? []].
-done.
-Qed.
+Proof. by case: A a => ? [? []]. Qed.
 Lemma leconv_trans b a c : a <= b -> b <= c -> a <= c.
-by case: A b a c => ? [? []].
-Qed.
+Proof. by case: A b a c => ? [? []]. Qed.
 Lemma eqconv_le a b : (a = b) <-> (a <= b <= a).
-by case: A a b => ? [? []].
-Qed.
+Proof. by case: A a b => ? [? []]. Qed.
 End ordered_convex_space_interface.
 
 Definition R_orderedConvMixin := OrderedConvexSpace.Mixin leRR leR_trans eqR_le.
@@ -1730,7 +1732,11 @@ Section convex_function_def.
 Local Open Scope ordered_convex_scope.
 Variables (A : convType) (B : orderedConvType) (f : A -> B).
 
-Definition convex_function_at a b t := (f (a <| t |> b) <= f a <| t |> f b).
+Definition convex_function_at a b t := f (a <| t |> b) <= f a <| t |> f b.
+
+(* NB(rei): move from 'I_n -> A to 'rV[A]_n? *)
+Definition convex_function_at_Convn n (a : 'I_n -> A) (t : {dist 'I_n}) :=
+  f (\Sum_t a) <= \Sum_t (f \o a).
 
 Definition strictly_convexf_at := forall a b (t : prob),
   a <> b -> (0 < t < 1)%R -> convex_function_at a b t.
@@ -1868,7 +1874,7 @@ Definition dist_convMixin :=
 Canonical dist_convType := ConvexSpace.Pack dist_convMixin.
 
 Lemma convn_convdist (n : nat) (g : 'I_n -> dist A) (d : {dist 'I_n}) :
-  Convn d g = ConvDist.d d g.
+  \Sum_d g = ConvDist.d d g.
 Proof.
 elim: n g d => /= [g d|n IH g d]; first by move: (distI0_False d).
 case: eqVneq => H.
