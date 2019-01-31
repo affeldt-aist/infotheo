@@ -653,6 +653,16 @@ Definition d : dist A := locked (makeDist f0 f1).
 Lemma dE a : d a = \rsum_(i < n) e i * g i a.
 Proof. by rewrite /d; unlock. Qed.
 End def.
+Section prop.
+Variables (A : finType) (n : nat).
+Lemma dist1 (g : 'I_n -> dist A) a : d (Dist1.d a) g = g a.
+Proof.
+apply/dist_ext => a0; rewrite dE (bigD1 a) //= Dist1.dE eqxx mul1R.
+by rewrite big1 ?addR0 // => i ia; rewrite Dist1.dE (negbTE ia) mul0R.
+Qed.
+Lemma cst (e : {dist 'I_n}) (a : {dist A}) : d e (fun=> a) = a.
+Proof. by apply/dist_ext => a0; rewrite dE -big_distrl /= pmf1 mul1R. Qed.
+End prop.
 End ConvDist.
 
 Lemma s_of_pq_prob (p q : prob) : (0 <= (p.~ * q.~).~ <= 1)%R.
