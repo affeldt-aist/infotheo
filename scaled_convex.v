@@ -361,29 +361,29 @@ Variables n : nat.
 Variable p : {dist 'I_n}.
 Variable h : 'I_n -> scaled_pt.
 
+Lemma perm_eq_perm (pe : 'S_n) :
+  perm_eq (enum 'I_n) [seq pe i | i <- enum 'I_n].
+Proof.
+apply uniq_perm_eq.
++ by rewrite enum_uniq.
++ rewrite map_inj_in_uniq ?enum_uniq //.
+  by move=> x1 x2 _ _; apply perm_inj.
+move=> i.
+rewrite mem_enum inE.
+symmetry.
+apply/mapP.
+exists (perm_inv pe i).
+  by rewrite mem_enum inE.
+by rewrite permKV.
+Qed.
+
 Lemma barycenter_reorder (pe : 'S_n) :
   \big[addpt/Zero]_(i < n) scalept (p i) (h i) =
   \big[addpt/Zero]_(i < n) scalept (p (pe i)) (h (pe i)).
 Proof.
-transitivity (barycenter [tuple scalept (p i) (h i) | i < n]).
-  by rewrite /barycenter big_map big_filter.
-transitivity
-  (barycenter (map_tuple (fun i => scalept (p i) (h i)) (mktuple pe))).
-  rewrite /barycenter.
-  rewrite 3!big_map /=.
-  apply eq_big_perm, uniq_perm_eq.
-  + by rewrite -enumT enum_uniq.
-    rewrite map_inj_in_uniq ?enum_uniq //.
-  + by move=> x1 x2 _ _; apply perm_inj.
-  rewrite -enumT.
-  move=> i.
-  rewrite mem_enum inE.
-  symmetry.
-  apply/mapP.
-  exists (perm_inv pe i).
-    by rewrite mem_enum inE.
-  by rewrite permKV.
-by rewrite /barycenter big_map big_map big_filter.
+rewrite -[RHS](big_map pe xpredT (fun i => scalept (p i) (h i))).
+apply eq_big_perm.
+by rewrite /index_enum -enumT perm_eq_perm.
 Qed.
 End reordering.
 
