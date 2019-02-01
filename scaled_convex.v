@@ -447,15 +447,35 @@ Qed.
 End convdist.
 
 Section binary.
-Variable B : finType.
-Hypothesis HB : #|B| = 2%nat.
-Variable points : B -> A.
+Variables x y : A.
 Variable p : prob.
-Variable b : B.
-Let d := Binary.d HB p b.
 
-Definition scaled_points :=
-  [seq mkscaled (d i) (points i) | i <- enum B].
+Lemma adjunction_1 a b :
+  addpt (mkscaled 1 a) (mkscaled 0 b) =
+  Scaled Rpos1 (a <|`Pr 1|> b).
+Proof.
+rewrite mkscaled0 /= addpt0 mkscaled_gt0.
+  apply/ltRP/Rlt_0_1.
+move=> h; congr Scaled; by [apply val_inj | rewrite conv1].
+Qed.
+
+Lemma adjunction_2 :
+  addpt (mkscaled p x) (mkscaled p.~ y) = Scaled Rpos1 (x <| p |> y).
+Proof.
+case Hp0: (0 <b p); last first.
+  move/prob_ge0/leR_eqVlt: p => [Hp | /ltRP]; last by rewrite Hp0.
+  rewrite -Hp /= convC addptC {1}onem0 adjunction_1.
+  by congr Scaled; congr Conv; apply prob_ext; rewrite /= -Hp onem0.
+case Hp1: (0 <b p.~); last first.
+  move/prob_ge0/leR_eqVlt: `Pr p.~ => [Hp | /ltRP]; last by rewrite Hp1.
+  rewrite {1}(probK p) /= -Hp /= onem0 adjunction_1.
+  by congr Scaled; congr Conv; apply prob_ext; rewrite (probK p) /= -Hp onem0.
+rewrite (mkscaled_gt0 _ Hp0) (mkscaled_gt0 _ Hp1).
+congr Scaled.
+  apply val_inj; by rewrite addRposE /= onemKC.
+congr Conv; apply prob_ext => /=.
+by rewrite addRposE /= addRC subRK divR1.
+Qed.
 End binary.
 
 Section adjunction.
@@ -473,6 +493,27 @@ apply eq_bigr => i _.
 rewrite weight_mkscaled //.
 by apply pos_f_ge0.
 Qed.
+
+Lemma perm_eq_filter0 :
+  perm_eq [seq i <- enum 'I_n.+1 | i != ord0]
+          [seq lift ord0 i | i <- enum 'I_n].
+Proof.
+apply uniq_perm_eq.
++ by rewrite filter_uniq // enum_uniq.
++ rewrite map_inj_in_uniq ?enum_uniq //.
+  by move=> x1 x2 _ _; apply lift_inj.
+move=> j.
+rewrite mem_filter mem_enum andbT.
+symmetry.
+case: (unliftP ord0 j) => /= [a] ->.
+  rewrite eq_sym neq_lift.
+  rewrite mem_map. by rewrite mem_enum inE.
+  by apply lift_inj.
+rewrite eqxx.
+apply/mapP => /= -[x Hx].
+move/(f_equal (@nat_of_ord _)).
+by rewrite lift0.
+Qed.
 End adjunction.
 
 Lemma adjunction_n n (points : 'I_n -> A) d :
@@ -488,45 +529,22 @@ case: eqVneq => Hd.
     apply enum_uniq.
     apply mem_enum.
   rewrite Hd big1 /=.
-    rewrite addptC /= /mkscaled.
-    destruct boolP.
-      congr Scaled.
-      by apply val_inj.
-    elim: (negP i).
-    apply/ltRP/Rlt_0_1.
-  move=> i Hi.
-  have := pmf1 d.
-  rewrite (bigD1 ord0) ?mem_enum // Hd /= addRC.
-  move/(f_equal (fun x => x - 1)).
-  rewrite addRK subRR /mkscaled => /prsumr_eq0P -> //.
-    destruct boolP => //.
-    by move/ltRP/ltRR: (i0).
-  move=> a _; apply pos_f_ge0.
+    rewrite addpt0 mkscaled_gt0. by apply/ltRP/Rlt_0_1.
+    by move=> H; congr Scaled; apply val_inj.
+  move=> i Hi; have := pmf1 d.
+  rewrite (bigD1 ord0) ?mem_enum // Hd /= addRC => /(f_equal (Rminus^~ 1)).
+  rewrite addRK subRR => /prsumr_eq0P -> //.
+    by rewrite mkscaled0.
+  by move=> a _; apply pos_f_ge0.
 set d' := DelDist.d Hd.
 set points' := fun i => points (DelDist.h ord0 i).
 rewrite /barycenter big_map (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
 rewrite -big_filter.
-rewrite (eq_big_perm (map (lift ord0) (enum 'I_n))); last first.
-  apply uniq_perm_eq.
-  + by rewrite filter_uniq // enum_uniq.
-  + rewrite map_inj_in_uniq ?enum_uniq //.
-    by move=> x1 x2 _ _; apply lift_inj.
-  move=> j.
-  rewrite mem_filter mem_enum andbT.
-  symmetry.
-  case: (unliftP ord0 j) => /= [a] ->.
-    rewrite eq_sym neq_lift.
-    rewrite mem_map. by rewrite mem_enum inE.
-    by apply lift_inj.
-  rewrite eqxx.
-  apply/mapP => /= -[x Hx].
-  move/(f_equal (@nat_of_ord _)).
-  by rewrite lift0.
+rewrite (eq_big_perm (map (lift ord0) (enum 'I_n)));
+  last by apply perm_eq_filter0.
 rewrite big_map.
 have Hd0' : 1 - d ord0 > 0.
-  apply ltR_subRL.
-  rewrite addR0.
-  by apply dist_lt1.
+  by apply ltR_subRL; rewrite addR0; apply dist_lt1.
 rewrite (eq_bigr
            (fun j => scalept (1 - d ord0) (mkscaled (d' j) (points' j))));
   last first.
@@ -542,26 +560,7 @@ rewrite -(big_morph (scalept (1 - d ord0)) (scalept_addpt (ltRW Hd0'))
                     (scalept0 _)).
 have:= IH points' d'.
 rewrite /barycenter big_map => -> /=.
-rewrite mulR1.
-rewrite (mkscaled_gt0 _ (introT (ltRP _ _) Hd0')).
-case/boolP: (d ord0 == 0) => Hd0.
-  rewrite {1}(eqP Hd0) mkscaled0 /=.
-  congr Scaled.
-    apply val_inj => /=.
-    by rewrite (eqP Hd0) subR0.
-  have -> : probdist d ord0 = `Pr 0.
-    apply prob_ext => /=. by apply/eqP.
-  by rewrite conv0.
-rewrite mkscaled_gt0.
-  move/leRP: (pos_f_ge0 d ord0).
-  by rewrite leR_eqVlt' eq_sym (negbTE Hd0).
-move=> Hd0b.
-congr Scaled.
-  apply val_inj; rewrite addRposE /=.
-  by rewrite addRC subRK.
-congr Conv.
-apply prob_ext => /=.
-by rewrite addRposE /= addRC subRK divR1.
+by rewrite mulR1 -adjunction_2.
 Qed.
 
 End scaled_convex.
