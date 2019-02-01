@@ -219,7 +219,6 @@ Definition scalept_def p (x : scaled_pt) :=
 
 Definition scalept := locked scalept_def.
 
-
 Lemma scalept_weight p x : 0 <= p -> weight (scalept p x) = p * weight x.
 Proof.
 case: x => [q y|] Hp.
@@ -356,6 +355,37 @@ apply (big_ind2 (fun y q => y = scalept q x /\ 0 <= q)).
 + move=> i _; split => //.
   by apply pos_f_ge0.
 Qed.
+
+Section reordering.
+Variables n : nat.
+Variable p : {dist 'I_n}.
+Variable h : 'I_n -> scaled_pt.
+
+Lemma barycenter_reorder (pe : 'S_n) :
+  \big[addpt/Zero]_(i < n) scalept (p i) (h i) =
+  \big[addpt/Zero]_(i < n) scalept (p (pe i)) (h (pe i)).
+Proof.
+transitivity (barycenter [tuple scalept (p i) (h i) | i < n]).
+  by rewrite /barycenter big_map big_filter.
+transitivity
+  (barycenter (map_tuple (fun i => scalept (p i) (h i)) (mktuple pe))).
+  rewrite /barycenter.
+  rewrite 3!big_map /=.
+  apply eq_big_perm, uniq_perm_eq.
+  + by rewrite -enumT enum_uniq.
+    rewrite map_inj_in_uniq ?enum_uniq //.
+  + by move=> x1 x2 _ _; apply perm_inj.
+  rewrite -enumT.
+  move=> i.
+  rewrite mem_enum inE.
+  symmetry.
+  apply/mapP.
+  exists (perm_inv pe i).
+    by rewrite mem_enum inE.
+  by rewrite permKV.
+by rewrite /barycenter big_map big_map big_filter.
+Qed.
+End reordering.
 
 Section convdist.
 Variables n m : nat.
