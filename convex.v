@@ -1734,6 +1734,32 @@ End ordered_convex_space_interface.
 Definition R_orderedConvMixin := OrderedConvexSpace.Mixin leRR leR_trans eqR_le.
 Canonical R_orderedConvType := OrderedConvexSpace.Pack (OrderedConvexSpace.Class R_orderedConvMixin).
 
+Module FunLe.
+Section lefun.
+Local Open Scope ordered_convex_scope.
+Variables (A : convType) (B : orderedConvType).
+Definition T := A -> B.
+Definition lefun (f g : T) := forall a, f a <= g a.
+Lemma lefunR f : lefun f f.
+Proof. move => *; exact: leconvR. Qed.
+Lemma lefun_trans g f h : lefun f g -> lefun g h -> lefun f h.
+Proof. move => Hfg Hgh a; move : (Hfg a) (Hgh a); exact: leconv_trans. Qed.
+Lemma eqfun_le f g : f = g <-> lefun f g /\ lefun g f.
+Proof. split; [move ->; move: lefunR; done |].
+case => Hfg Hgh; apply FunctionalExtensionality.functional_extensionality => a.
+move : (Hfg a) (Hgh a) => Hfg' Hgh'.
+by apply eqconv_le.
+Qed.
+End lefun.
+End FunLe.
+
+Section fun_ordered_convex_space.
+Variables (A : convType) (B : orderedConvType).
+Import FunLe.
+Definition fun_orderedConvMixin := OrderedConvexSpace.Mixin (@lefunR A B) (@lefun_trans A B) (@eqfun_le A B).
+Canonical fun_orderedConvType := OrderedConvexSpace.Pack (OrderedConvexSpace.Class fun_orderedConvMixin).
+End fun_ordered_convex_space.
+
 Section convex_function_def.
 Local Open Scope ordered_convex_scope.
 Variables (A : convType) (B : orderedConvType) (f : A -> B).
