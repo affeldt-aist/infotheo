@@ -102,43 +102,40 @@ destruct pt.
 Defined.
 
 Definition mkscaled r (x : A) :=
-  match boolP (r >b 0) with
-  | AltTrue Hr => Scaled (mkRpos Hr) x
-  | AltFalse _ => Zero
-  end.
+  if Rlt_dec 0 r is left Hr then Scaled (mkRpos (introT (ltRP _ _) Hr)) x
+                            else Zero.
 
 Lemma mkscaled_gt0 r (x : A) (H : r >b 0) : mkscaled r x = Scaled (mkRpos H) x.
 Proof.
 rewrite /mkscaled.
-destruct boolP.
+case: Rlt_dec => // Hr.
 + congr Scaled. by apply val_inj.
-+ by rewrite H in i.
++ by elim Hr; apply/ltRP.
 Qed.
 
 Lemma mkscaled0 x : mkscaled 0 x = Zero.
 Proof.
 rewrite /mkscaled.
-destruct boolP => //.
-by move/ltRP/ltRR: (i).
+case: Rlt_dec => // Ha.
+by move/ltRR: (Ha).
 Qed.
 
-Lemma leR_ngtRb_eq0 p : 0 <= p -> ~~ (p >b 0) -> p = 0.
-Proof. by move/leRP; rewrite le0R /gtRb; case: eqP => //= _ ->. Qed.
+Lemma leR_ngtR_eq0 p : 0 <= p -> ~ 0 < p -> p = 0.
+Proof. by case/leR_eqVlt. Qed.
 
 Lemma weight_mkscaled r x : (0 <= r) -> weight (mkscaled r x) = r.
 Proof.
 move=> H.
-rewrite /mkscaled. destruct boolP => //=.
-symmetry.
-by apply leR_ngtRb_eq0.
+rewrite /mkscaled.
+case: Rlt_dec => //= Ha.
+by rewrite (leR_ngtR_eq0 H).
 Qed.
 
 Lemma point_mkscaled r x H : @point (mkscaled r x) H = x.
 Proof.
 move: H; rewrite /point.
 rewrite /mkscaled.
-destruct boolP => //=.
-by move/ltRR.
+by case: Rlt_dec => //= Hp /ltRR.
 Qed.
 
 Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / addRpos r q <= 1.
@@ -242,14 +239,17 @@ Definition scalept p (x : scaled_pt) :=
 Lemma scalept0 p : scalept p Zero = Zero.
 Proof. by []. Qed.
 
+Lemma leR_mulR_ngt0_eq0 p (x : Rpos) : 0 <= p -> ~ 0 < p * x -> p = 0.
+Proof.
+by move=>/leR_eqVlt [] // /mulRposP; move/(_ x)/ltRP => Hp; elim.
+Qed.
+
 Lemma scalept_weight p x : 0 <= p -> weight (scalept p x) = p * weight x.
 Proof.
 case: x => [q y|] Hp.
   rewrite /= /mkscaled.
-  destruct boolP => //=.
-  rewrite (leR_ngtRb_eq0 _ i) //.
-  apply mulR_ge0 => //.
-  by apply /ltRW /Rpos_gt0.
+  case: Rlt_dec => //= /leR_mulR_ngt0_eq0 -> //.
+  by rewrite mul0R.
 by rewrite scalept0 mulR0.
 Qed.
 
@@ -257,15 +257,13 @@ Lemma scalept_mkscaled p q x :
   0 <= p -> scalept p (mkscaled q x) = mkscaled (p*q) x.
 Proof.
 rewrite /scalept /mkscaled => Hp.
-destruct boolP, boolP => //.
+case: Rlt_dec => Hq'; case: Rlt_dec => // Hpq.
 elimtype False.
 case/leR_eqVlt: Hp => Hp.
-  rewrite -Hp mul0R in i0.
-  by move/ltRP/ltRR in i0.
-rewrite -leRNgt' in i.
-rewrite mulRC in i0.
-have := proj1 (pmulR_lgt0 Hp) (ltRP _ _ i0).
-by move/(leR_ltR_trans (leRP _ _ i))/ltRR.
+  by move: Hpq; rewrite -Hp mul0R => /ltRR.
+rewrite mulRC in Hpq.
+have Hq := proj1 (pmulR_lgt0 Hp) Hpq.
+by move/Hq' in Hq.
 Qed.
  
 Lemma scalept_addpt r :
@@ -275,12 +273,12 @@ rewrite /scalept.
 move=> Hr [p x|] [q y|] //=; last first.
   by rewrite addpt0.
 rewrite /mkscaled.
-destruct boolP.
-  have Hr' := mulRposP _ _ i.
-  destruct boolP; last first.
-    by elim (negP i0); apply /ltRP/mulR_gt0/Rpos_gt0.
-  destruct boolP; last first.
-    by elim (negP i1); apply /ltRP/mulR_gt0/Rpos_gt0.
+case: Rlt_dec => Hpq.
+  have Hr' := mulRposP _ _ (introT (ltRP _ _) Hpq).
+  case: Rlt_dec => Hp; last first.
+    by elim Hp; apply /mulR_gt0/Rpos_gt0.
+  case: Rlt_dec => Hq; last first.
+    by elim Hq; apply /mulR_gt0/Rpos_gt0.
   congr Scaled.
   + apply val_inj. by rewrite /= !(mulRposE,addRposE) mulRDr.
   + congr Conv. apply prob_ext => /=.
@@ -291,10 +289,10 @@ destruct boolP.
       by rewrite {2}/Rdiv -(mulRC (/r)) mulRA mulVR ?mul1R //; apply /eqP.
     have /= /eqP := (Rpos_neq0 (addRpos p q)).
     by rewrite addRposE.
-destruct boolP.
-  elim (negP i); apply /ltRP/mulR_gt0/Rpos_gt0/(mulRposP _ _ i0).
-destruct boolP.
-  elim (negP i); apply /ltRP/mulR_gt0/Rpos_gt0/(mulRposP _ _ i1).
+case: Rlt_dec => Hp.
+  elim Hpq; apply /mulR_gt0/Rpos_gt0/mulRposP/ltRP/Hp.
+case: Rlt_dec => Hq.
+  elim Hpq; apply /mulR_gt0/Rpos_gt0/mulRposP/ltRP/Hq.
 by rewrite addpt0.
 Qed.
 
@@ -311,30 +309,23 @@ Proof.
 move=> Hp Hq.
 rewrite /scalept /mkscaled.
 case: x => [r x|] //=.
-destruct boolP.
-  destruct boolP => /=.
-    destruct boolP.
+case: Rlt_dec => Hqr.
+  case: Rlt_dec => /= Hpqr.
+    case: Rlt_dec => [Hpqr'].
       congr Scaled.
       by apply val_inj; rewrite /= mulRA.
-    elim (negP i1).
-    rewrite -mulRA.
-    apply /ltRP/mulR_gt0/ltRP => //.
-    by apply (mulRposP _ _ i0).
-  destruct boolP => //.
-  elim (negP i0) => /=.
-  by rewrite mulRA.
-destruct boolP => //.
-elim (negP i).
+    by elim; rewrite -mulRA.
+  case: Rlt_dec => // Hpqr'.
+  by elim Hpqr; rewrite mulRA.
+case: Rlt_dec => // Hpqr.
+elim Hqr.
 case/leR_eqVlt: Hq => Hq.
-  rewrite -Hq mulR0 mul0R in i0.
-  by move/ltRP/ltRR in i0.
-by apply/mulRposP.
+  move: Hpqr.
+  by rewrite -Hq mulR0 mul0R => /ltRR.
+by apply /mulR_gt0/Rpos_gt0.
 Qed.
 
 Definition Rpos1 := @mkRpos 1 (introT (ltRP _ _) Rlt_0_1).
-
-Lemma leR_nmulgtRb_eq0 p (x : Rpos) : 0 <= p -> ~~ (p * x >b 0) -> p = 0.
-Proof. by move=> /leR_eqVlt [] // Hp /mulRposP; elim. Qed.
 
 Lemma scalept_addR p q x :
   0 <= p -> 0 <= q ->
@@ -343,40 +334,36 @@ Proof.
 move=> Hp Hq.
 rewrite /scalept /mkscaled.
 case: x => // r c.
-destruct boolP.
-  destruct boolP.
-    destruct boolP.
+case: Rlt_dec => Hpq.
+  case: Rlt_dec => Hpr.
+    case: Rlt_dec => Hqr.
       congr Scaled.
         apply val_inj; by rewrite addRposE /= mulRDl.
       by rewrite convmm.
     congr Scaled; apply val_inj => /=.
-    by rewrite (leR_nmulgtRb_eq0 Hq i1) addR0.
-  destruct boolP.
+    by rewrite (leR_mulR_ngt0_eq0 Hq Hqr) addR0.
+  case: Rlt_dec => Hqr.
     congr Scaled; apply val_inj => /=.
-    by rewrite (leR_nmulgtRb_eq0 Hp i0) add0R.
-  elimtype False.
-  rewrite (leR_nmulgtRb_eq0 Hp i0) (leR_nmulgtRb_eq0 Hq i1) addR0 mul0R in i.
-  by move/ltRP/ltRR: i.
-destruct boolP.
-  elimtype False.
-  move: i => /negP; elim.
-  apply/ltRP/mulR_gt0/Rpos_gt0.
-  apply/addR_gt0wl => //.
-  by apply/(mulRposP _ _ i0).
-destruct boolP.
-  elimtype False.
-  move: i => /negP; elim.
-  apply/ltRP/mulR_gt0/Rpos_gt0.
-  apply/addR_gt0wr => //.
-  by apply/(mulRposP _ _ i1).
+    by rewrite (leR_mulR_ngt0_eq0 Hp Hpr) add0R.
+  elimtype False; move: Hpq.
+  rewrite (leR_mulR_ngt0_eq0 Hp Hpr) (leR_mulR_ngt0_eq0 Hq Hqr) addR0 mul0R.
+  by move/ltRR.
+case: Rlt_dec => Hpr.
+  elim Hpq.
+  apply/mulR_gt0/Rpos_gt0/addR_gt0wl => //.
+  by apply /mulRposP/ltRP/Hpr.
+case: Rlt_dec => Hqr.
+  elim Hpq.
+  apply/mulR_gt0/Rpos_gt0/addR_gt0wr => //.
+  by apply /mulRposP/ltRP/Hqr.
 by [].
 Qed.
 
 Lemma scalept_R0 x : scalept 0 x = Zero.
 Proof.
 case: x; rewrite /scalept /mkscaled //.
-move=> r c; destruct boolP => //.
-by elim (ltRR 0); rewrite mul0R in i; apply /ltRP.
+move=> r c; case: Rlt_dec => // Hr.
+by elim (ltRR 0); rewrite mul0R in Hr.
 Qed.
 
 Lemma big_scalept (B : finType) (F : B -> R+) x :
