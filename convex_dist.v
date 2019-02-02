@@ -59,23 +59,92 @@ Qed.
 End entropy_log_div.
 
 (* convexity of relative entropy *)
+Module DominatedProd.
+Section def.
+Variable (A : finType).
+Definition T := {d : dist A * dist A | d.1 << d.2}.
+Lemma avg_dominates_compatible (a b c d : dist A) t : a << b -> c << d -> (a <|t|> c) << (b <|t|> d).
+Proof.
+rewrite !dominatesP => Hab Hcd i.
+rewrite /Conv/= !Conv2Dist.dE.
+rewrite paddR_eq0; [|apply mulR_ge0;[exact:prob_ge0|exact:dist_ge0]|apply mulR_ge0;[exact:prob_ge0|exact:dist_ge0]].
+rewrite !mulR_eq0.
+case; case.
+- move->; case; first by rewrite onem0=>H; have : 1 <> 0 by lra; move /(_ H).
+  by move/Hcd->; rewrite mul0R mulR0 addR0.
+move/Hab->.
+rewrite mulR0 onem_eq0 add0R.
+case.
+- by move->; rewrite onem1 mul0R.
+by move/Hcd->; rewrite mulR0.
+Qed.
+Definition avg (x y : T) (t : prob) : T:=
+  let ab := proj1_sig x in
+  let Hab := proj2_sig x in
+  let cd := proj1_sig y in
+  let Hcd := proj2_sig y in
+  exist _ (ab <|t|> cd) (avg_dominates_compatible t Hab Hcd).
+End def.
+
+Section hott.
+(* from github.com/HoTT/HoTT *)
+Definition transport {A : Type} (P : A -> Prop) {x y : A} (p : x = y) (u : P x) : P y :=
+  match p with erefl => u end.
+Definition path_sigma {A : Type} (P : A -> Prop) (u1 v1 : A) (u2 : P u1) (v2 : P v1) (p : u1 = v1) (q : transport p u2 = v2)
+  : exist P u1 u2 = exist P v1 v2
+  :=
+    match q in (_ = v2) return (exist P u1 u2) = (exist _ v1 v2) with
+    | erefl => match p as p in (_ = v1) return (exist P u1 u2) = (exist _ v1 (transport p u2)) with
+               | erefl => erefl
+               end
+    end.
+Lemma eq_sig {A : Type} (P : A -> Prop) (u1 v1 : A) (u2 : P u1) (v2 : P v1) (p : u1 = v1) : exist P u1 u2 = exist P v1 v2.
+apply (path_sigma (p:=p)).
+exact: ProofIrrelevance.proof_irrelevance.
+Qed.
+End hott.
+
+Section prop.
+Variable (A : finType).
+Let T := T A.
+Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
+Proof.
+  rewrite /avg; case x => x0 H /=.
+  apply eq_sig.
+  exact: conv1.
+Qed.
+Lemma avgI (x : T) (p : prob) : avg x x p = x.
+Proof.
+  rewrite /avg; case x => x0 H /=.
+  apply eq_sig.
+  exact: convmm.
+Qed.
+Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
+Proof.
+rewrite /avg; apply eq_sig.
+exact: convC.
+Qed.
+Lemma avgA (p q : prob) (d0 d1 d2 : T) :
+  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
+Proof.
+rewrite /avg /=; apply eq_sig.
+exact: convA.
+Qed.
+End prop.
+End DominatedProd.
+
+Section dominated_prod_convex_space.
+Import DominatedProd.
+Variable (A : finType).
+Definition dominatedProdConvMixin := ConvexSpace.Class
+  (@avg1 A) (@avgI A) (@avgC A) (@avgA A).
+Canonical dominatedProdConvType := ConvexSpace.Pack dominatedProdConvMixin.
+End dominated_prod_convex_space.
+
 Section divergence_convex.
 Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
 
 Local Open Scope divergence_scope.
-
-(*
-Lemma
-
-Let T and U be convType, f : (T * U) -> R and (curry f) : T -> U -> R be
-a function and its currying.
-Then f : (T * U) -> R is convex iff both of the following holds:
-1) For any t : T, (curry f t) : U -> R is convex, and
-2) curry f is convex.
-
-For (2), the convexity of curry f is with respect to the ordering on U -> R s.t.
-g <= h iff for every u : U, g u <= h u.
-*)
 
 (* thm 2.7.2 *)
 Lemma div_convex : convex_dist_pair (@div A).
