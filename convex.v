@@ -1817,6 +1817,60 @@ Qed.
 
 End convex_function_prop.
 
+Section convex_in_both.
+Local Open Scope ordered_convex_scope.
+Variables (A B : convType) (C : orderedConvType) (f : A -> B -> C).
+Definition convex_in_both := convex_function (prod_curry f).
+Lemma convex_in_bothP :
+  convex_in_both
+  <->
+  forall a0 a1 b0 b1 t,
+    f (a0 <| t |> a1) (b0 <| t |> b1) <= f a0 b0 <| t |> f a1 b1.
+Proof.
+split => [H a0 a1 b0 b1 t | H];
+  first by move: (H (a0,b0) (a1,b1) t); rewrite /convex_function_at /prod_curry.
+by case => a0 b0 [a1 b1] t; move:(H a0 a1 b0 b1 t); rewrite /convex_function_at /prod_curry.
+Qed.
+End convex_in_both.
+
+Section biconvex_function.
+Local Open Scope ordered_convex_scope.
+Section definition.
+Variables (A B : convType) (C : orderedConvType) (f : A -> B -> C).
+Definition biconvex_function := (forall a, convex_function (f a)) /\ (forall b, convex_function (f^~ b)).
+(*
+Lemma biconvex_functionP : biconvex_function <-> convex_function f /\ @convex_function B (fun_orderedConvType A C) (fun b a => f a b).
+Proof.
+change ((forall (a : A) (a0 b : B) (t : prob),
+   f a (a0 <|t|> b) <= f a a0 <|t|> f a b) /\
+  (forall (b : B) (a b0 : A) (t : prob),
+   f (a <|t|> b0) b <= f a b <|t|> f b0 b) <->
+  (forall (a b : A) (t : prob) (a0 : B),
+   f (a <|t|> b) a0 <= f a a0 <|t|> f b a0) /\
+  (forall (a b : B) (t : prob) (a0 : A),
+   f a0 (a <|t|> b) <= f a0 a <|t|> f a0 b)).
+by split; case => [H0 H1]; split => *; try apply H0; try apply H1.
+Qed.
+ *)
+End definition.
+Section counterexample.
+Local Open Scope R_scope.
+Example biconvex_is_not_convex_in_both : exists f : R -> R -> R, biconvex_function f /\ ~ convex_in_both f.
+Proof.
+exists Rmult; split.
+split => [a b0 b1 t | b a0 a1 t] /=; rewrite /Conv /= ; [rewrite avg_mulDr /Conv /=|rewrite avg_mulDl /Conv /=]; exact: leRR.
+move /convex_in_bothP /(_ (-1)%R 1%R 1%R (-1)%R (probinvn 1)).
+rewrite /Leconv /probinvn /Conv /= /avg /=.
+rewrite mul1R !mulR1 !mulRN1.
+rewrite /onem.
+rewrite (_ : (- / (1 + 1) + (1 - / (1 + 1))) = 0); last by lra.
+rewrite mul0R.
+rewrite (_ : - / (1 + 1) + - (1 - / (1 + 1)) = - 1); last by lra.
+by move /leRNlt; apply; lra.
+Qed.
+End counterexample.
+End biconvex_function.
+
 Section concave_function_def.
 Local Open Scope ordered_convex_scope.
 Variables (A : convType) (B : orderedConvType) (f : A -> B).
