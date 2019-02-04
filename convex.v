@@ -1808,14 +1808,24 @@ End OppositeOrderedConvexSpace.
 
 Section opposite_ordered_convex_space.
 Import OppositeOrderedConvexSpace.
-Section canonical.
 Variable A : orderedConvType.
 Canonical oppConvType := ConvexSpace.Pack (oppConvMixin A).
 Definition opposite_orderedConvMixin := @OrderedConvexSpace.Mixin oppConvType (@leopp A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
 Canonical opposite_orderedConvType := OrderedConvexSpace.Pack (OrderedConvexSpace.Class opposite_orderedConvMixin).
-End canonical.
-Notation "A '^逆'" := (T A) (at level 100) : ordered_convex_scope.
 End opposite_ordered_convex_space.
+Notation "a '.逆'" := (OppositeOrderedConvexSpace.mkOpp a) (at level 10, format "a .逆") : ordered_convex_scope.
+
+Section opposite_ordered_convex_space_prop.
+Local Open Scope ordered_convex_scope.
+Import OppositeOrderedConvexSpace.
+Variable A : orderedConvType.
+Lemma conv_leoppD (a b : A) t : a.逆 <|t|> b.逆 = (a <|t|> b).逆.
+Proof. by rewrite/Conv/=/avg/unbox. Qed.
+Lemma unboxK (a : A) : unbox (a.逆) = a.
+Proof. reflexivity. Qed.
+Lemma leoppP (a b : T A) : a <= b <-> unbox b <= unbox a.
+Proof. by case a;case b=>*;rewrite !unboxK. Qed.
+End opposite_ordered_convex_space_prop.
 
 Section convex_function_def.
 Local Open Scope ordered_convex_scope.
@@ -1957,9 +1967,12 @@ End biconvex_function.
 Section concave_function_def.
 Local Open Scope ordered_convex_scope.
 Variables (A : convType) (B : orderedConvType).
-Definition concave_function_at (f : A -> B) a b t := (f a <| t |> f b <= f (a <| t |> b)).
+Definition concave_function_at (f : A -> B) a b t := convex_function_at (fun a => (f a).逆) a b t. 
+Definition concave_function_at' (f : A -> B) a b t := (f a <| t |> f b <= f (a <| t |> b)).
 Definition strictly_concavef_at (f : A -> B) := forall a b (t : prob),
   a <> b -> (0 < t < 1)%R -> concave_function_at f a b t.
+Lemma concave_function_at'P f a b t : concave_function_at' f a b t <-> concave_function_at f a b t.
+Proof. by rewrite /concave_function_at'/concave_function_at/convex_function_at conv_leoppD leoppP. Qed.
 End concave_function_def.
 
 Module ConcaveFunction.
@@ -1998,25 +2011,25 @@ Variable (A : convType) (B : orderedConvType).
 Section prop.
 Variable (f : A -> B).
 Lemma concave_function_atxx a t : concave_function_at f a a t.
-Proof. rewrite /concave_function_at !convmm; exact/leconvR. Qed.
+Proof. exact: convex_function_atxx. Qed.
 End prop.
 Section Rprop.
-Variable (f : A -> R).
-Lemma R_convex_function_atN a b t : concave_function_at f a b t -> convex_function_at (fun x => - f x)%R a b t.
+(*Variable (f : A -> R).*)
+Lemma R_convex_function_atN (f : A -> R) a b t : concave_function_at f a b t -> convex_function_at (fun x => - f x)%R a b t.
 Proof. by rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2. Qed.
-Lemma R_concave_function_atN a b t : convex_function_at f a b t -> concave_function_at (fun x => - f x)%R a b t.
-Proof. by rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2. Qed.
-Lemma R_convex_functionN : concave_function f -> convex_function (fun x => - f x)%R.
+Lemma R_concave_function_atN (f : A -> R) a b t : convex_function_at f a b t -> concave_function_at (fun x => - f x)%R a b t.
+Proof. by rewrite /concave_function_at /Leconv /= /OppositeOrderedConvexSpace.leopp /Leconv /= avg_oppD leR_opp2. Qed.
+Lemma R_convex_functionN (f : A -> R) : concave_function f -> convex_function (fun x => - f x)%R.
 Proof. move=> H a b t; exact/R_convex_function_atN/H. Qed.
-Lemma R_concave_functionN : convex_function f -> concave_function (fun x => - f x)%R.
+Lemma R_concave_functionN (f : A -> R) : convex_function f -> concave_function (fun x => - f x)%R.
 Proof. move=> H a b t; exact/R_concave_function_atN/H. Qed.
-Lemma R_convex_function_atN' a b t : concave_function_at (fun x => - f x)%R a b t -> convex_function_at f a b t.
-Proof. by rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2. Qed.
-Lemma R_concave_function_atN' a b t : convex_function_at (fun x => - f x)%R a b t -> concave_function_at f a b t.
-Proof. by rewrite /convex_function_at /Leconv /= avg_oppD leR_opp2. Qed.
-Lemma R_convex_functionN' : concave_function (fun x => - f x)%R -> convex_function f.
+Lemma R_convex_function_atN' (f : A -> R) a b t : concave_function_at (fun x => - f x)%R a b t -> convex_function_at f a b t.
+Proof. by move/(R_convex_function_atN);rewrite/convex_function_at !oppRK. Qed.
+Lemma R_concave_function_atN' (f : A -> R) a b t : convex_function_at (fun x => - f x)%R a b t -> concave_function_at f a b t.
+Proof. by move/(R_concave_function_atN);rewrite/concave_function_at/convex_function_at !oppRK. Qed.
+Lemma R_convex_functionN' (f : A -> R) : concave_function (fun x => - f x)%R -> convex_function f.
 Proof. move=> H a b t; exact/R_convex_function_atN'/H. Qed.
-Lemma R_concave_functionN' : convex_function (fun x => - f x)%R -> concave_function f.
+Lemma R_concave_functionN' (f : A -> R) : convex_function (fun x => - f x)%R -> concave_function f.
 Proof. move=> H a b t; exact/R_concave_function_atN'/H. Qed.
 End Rprop.
 Section Rprop2.
@@ -2212,6 +2225,7 @@ Lemma concave_function_atN f x y t : concave_function_at f x y t ->
   forall k, (0 <= k)%R -> concave_function_at (fun x => f x * k)%R x y t.
 Proof.
 move=> H k k0; rewrite /concave_function_at /convex_function_at.
+rewrite conv_leoppD leoppP.
 rewrite {2}/Conv /= /avg /= (* TODO *).
 rewrite /Leconv /= -avg_mulDl.
 exact: leR_wpmul2r.
@@ -2230,11 +2244,10 @@ Qed.
 Lemma concavef_at_onem x y (t : prob) f : (0 < x -> 0 < y -> x < y ->
   concave_function_at f x y t -> concave_function_at f y x (`Pr t.~))%R.
 Proof.
-move=> x0 y0 xy H; rewrite /concave_function_at.
-rewrite {2}/Conv /= /avg /= onemK addRC.
-rewrite /concave_function_at /Conv /= /avg /= in H.
-rewrite /Conv /= /avg /= onemK addRC.
-apply: (leR_trans H); rewrite addRC; exact/leRR.
+move=>x0 y0 xy; rewrite/concave_function_at/convex_function_at.
+rewrite !conv_leoppD !leoppP/=.
+rewrite /Conv /= /avg /= onemK.
+by rewrite addRC [in X in Leconv _ X -> _]addRC.
 Qed.
 End convex_function_R.
 
