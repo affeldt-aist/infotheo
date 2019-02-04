@@ -1663,8 +1663,8 @@ Canonical depfunConvType := ConvexSpace.Pack depfunConvMixin.
 
 End depfun_convex_space.
 
-Module Prodavg.
-Section prodavg.
+Module Pairavg.
+Section pairavg.
 Variables (A B : convType).
 Let T := prod A B.
 Definition avg (x y : T) (t : prob) := (fst x <| t |> fst y , snd x <| t |> snd y).
@@ -1688,17 +1688,17 @@ Proof.
 move => *.
 congr (pair _ _); by apply convA.
 Qed.
-End prodavg.
-End Prodavg.
+End pairavg.
+End Pairavg.
 
-Section prod_convex_space.
+Section pair_convex_space.
 Variables (A B : convType).
 
-Definition prodConvMixin := ConvexSpace.Class
-  (@Prodavg.avg1 A B) (@Prodavg.avgI A B) (@Prodavg.avgC A B) (@Prodavg.avgA A B).
-Canonical prodConvType := ConvexSpace.Pack prodConvMixin.
+Definition pairConvMixin := ConvexSpace.Class
+  (@Pairavg.avg1 A B) (@Pairavg.avgI A B) (@Pairavg.avgC A B) (@Pairavg.avgA A B).
+Canonical pairConvType := ConvexSpace.Pack pairConvMixin.
 
-End prod_convex_space.
+End pair_convex_space.
 
 Module OrderedConvexSpace.
 Record mixin_of (car : convType) : Type := Mixin {

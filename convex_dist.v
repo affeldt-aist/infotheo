@@ -16,17 +16,6 @@ Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
 
-(*
-Section convex_dist_pair.
-Variables (A : finType) (f : dist A -> dist A -> R).
-Definition convex_dist_pair := forall (p1 p2 q1 q2 : dist A) (t : prob),
-  p1 << q1 -> p2 << q2 ->
-  f (p1 <| t |> p2) (q1 <| t |> q2) <= f p1 q1 <| t |> f p2 q2.
-End convex_dist_pair.
-Definition concave_dist_pair (A : finType) (f : dist A -> dist A -> R) :=
-  convex_dist_pair (fun a b => - f a b).
-*)
-
 Local Open Scope entropy_scope.
 
 Section entropy_log_div.
@@ -61,7 +50,7 @@ Qed.
 End entropy_log_div.
 
 (* convexity of relative entropy *)
-Module DominatedProd.
+Module DominatedPair.
 Section def.
 Variable (A : finType).
 Definition T := {d : dist A * dist A | d.1 << d.2}.
@@ -87,7 +76,6 @@ Definition avg (x y : T) (t : prob) : T:=
   let Hcd := proj2_sig y in
   exist _ (ab <|t|> cd) (avg_dominates_compatible t Hab Hcd).
 Definition simple_elim (U : Type) (f : dist A -> dist A -> U) (x : T) := f (sval x).1 (sval x).2.
-Definition simple_prod_of : T -> dist A * dist A := sval.
 End def.
 
 Section proof_irrelevance.
@@ -125,15 +113,15 @@ rewrite /avg /=; apply eq_sig_irrelevant.
 exact: convA.
 Qed.
 End prop.
-End DominatedProd.
+End DominatedPair.
 
-Section dominated_prod_convex_space.
-Import DominatedProd.
+Section dominated_pair_convex_space.
+Import DominatedPair.
 Variable (A : finType).
-Definition dominatedProdConvMixin := ConvexSpace.Class
+Definition dominatedPairConvMixin := ConvexSpace.Class
   (@avg1 A) (@avgI A) (@avgC A) (@avgA A).
-Canonical dominatedProdConvType := ConvexSpace.Pack dominatedProdConvMixin.
-End dominated_prod_convex_space.
+Canonical dominatedPairConvType := ConvexSpace.Pack dominatedPairConvMixin.
+End dominated_pair_convex_space.
 
 Section divergence_convex.
 Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
@@ -141,14 +129,12 @@ Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
 Local Open Scope divergence_scope.
 
 (* thm 2.7.2 *)
-(*Lemma div_convex : convex_dist_pair (@div A).*)
-(*Lemma div_convex : convex_function ((prod_curry (@div A) \o (@DominatedProd.simple_prod_of A))).*)
-(*Lemma div_convex : convex_in_both (prod_uncurry ((prod_curry (@div A) \o (@DominatedProd.simple_prod_of A)))).*)
-Lemma div_convex : convex_function (DominatedProd.simple_elim (@div A)).
+(* div restricted to dominated pairs is a convex function; it's actually not a restriction since div is meaningful only on dominated pairs. *)
+Lemma div_convex : convex_function (DominatedPair.simple_elim (@div A)).
 Proof.
 (* TODO: clean *)
 rewrite /ConvexFunction.axiom => [] [[p1 q1] /= pq1] [[p2 q2] /= pq2] t.
-rewrite /DominatedProd.simple_elim /=.
+rewrite /DominatedPair.simple_elim /=.
 rewrite /Conv /= /avg /= (* TODO *).
 rewrite 2!big_distrr /= -big_split /= /div.
 rewrite rsum_setT [in X in _ <= X]rsum_setT.
@@ -229,7 +215,7 @@ Lemma div_convex' : forall (p1 p2 q1 q2 : dist A) (t : prob),
 Proof.
 move => p1 p2 q1 q2 t pq1 pq2.
 move:div_convex.
-rewrite/ConvexFunction.axiom/convex_function_at/DominatedProd.simple_elim/=.
+rewrite/ConvexFunction.axiom/convex_function_at/DominatedPair.simple_elim/=.
 move/(_ (exist _ (p1,q1) pq1) (exist _ (p2,q2) pq2))=>/=.
 by apply.
 Qed.
@@ -400,17 +386,6 @@ Section mutual_information_concave.
 Variables (A B : finType) (Q : A -> dist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
-(* If Cond is statisfied, then the conditional probability is indeed Q *)
-(*Lemma Cond_cproba (d : dist A) :
-  forall a b, d a <> 0 ->
-    \Pr_(Swap.d (ProdDist.d d Q))[[set b]|[set a]] = Q a b.
-Proof.
-move=> a b /eqP Hda.
-rewrite (@channel.channel_cPr _ _ Q d a b Hda); congr cPr.
-apply/dist_ext => -[b0 a0].
-by rewrite !Swap.dE channel.JointDistChan.dE ProdDist.dE.
-Qed.*)
-
 Lemma mutual_information_concave :
   concave_function (fun P => MutualInfo.mi (CDist.make_joint P Q)).
 Proof.
@@ -461,115 +436,6 @@ apply R_concave_functionB.
 Qed.
 
 End mutual_information_concave.
-
-(*Require Import R_for_mathcomp.
-Module AffineConvexType.
-
-Definition I t := 0 <= t <= 1.
-
-Lemma Isym t : I t -> I t.~.
-Proof. by case => *; split; [apply onem_ge0|apply onem_le1]. Qed.
-
-Lemma I0 : I 0.
-Proof. split; [exact /leRR|exact (leR0n 1)]. Qed.
-
-Lemma Imul t u : I t -> I u -> I (t * u).
-Proof.
-  move => [] /leRP t0 /leRP t1 [] /leRP u0 /leRP u1; split.
-  - by apply /leRP /mulR_ge0.
-  - rewrite -[X in _ <= X]mulR1.
-      by apply /leR_pmul; apply /leRP.
-Qed.
-
-(* mixture of convex set and convex space taken from nlab, and ConvexDist *)
-Structure affineConvexType : Type :=
-  AffineConvexType
-    { car : Type;
-      w (x y : car) (t : R) : I t -> car;
-      w0 x y : w x y I0 = y;
-      widem x t (H : I t) : w x x H = x;
-      wscom x y t (H : I t) : w x y H = w y x (Isym H);
-      wqassoc x y z p q r s 
-              (Hp : I p) (Hq : I q) (Hr : I r) (Hs : I s) :
-        p = r * s ->  s.~ = p.~ * q.~ -> 
-        w x (w y z Hq) Hp = w (w x y Hr) z Hs;
-      wproofirrelevant t (H H' : I t) x y : w x y H = w x y H'
-    }.
-
-Local Notation "x <| H |> y" := (w x y H) (format "x  <| H |>  y", at level 50).
-
-Lemma w0' (T : affineConvexType) (x y : car T) (H : I 0) : x <| H |> y = y.
-Proof. by rewrite (wproofirrelevant H I0) w0. Qed.
-
-Lemma I1 : 0 <= 1 <= 1.
-Proof. split; [exact (leR0n 1)|exact /leRR]. Qed.
-
-Lemma wscom' (T : affineConvexType) (x y : car T) t (H : I t) (H' : I t.~) : x <| H |> y = y <| H' |> x.
-Proof. by rewrite wscom (wproofirrelevant (Isym H) H'). Qed.
-
-Lemma w1 (T : affineConvexType) (x y : car T) : x <| I1 |> y = x.
-Proof.
-  rewrite wscom'.
-  - rewrite /onem subRR; exact I0.
-  rewrite /onem subRR => H; by rewrite (wproofirrelevant H I0) w0.
-Qed.
-
-Lemma w1' (T : affineConvexType) (x y : car T) (H : I 1) : x <| H |> y = x.
-Proof.  by rewrite (wproofirrelevant H I1) w1. Qed.
-
-Lemma wcom (T : affineConvexType) (x1 y1 x2 y2 : car T)
-      p q :  forall (Hp : I p) (Hq : I q), 
-    (x1 <|Hq|> y1) <|Hp|> (x2 <|Hq|> y2) = (x1 <|Hp|> x2) <|Hq|> (y1 <|Hp|> y2).
-Proof.
-rewrite /I => Hp Hq.
-case/boolP : (p == 0 :> R) => [|]/eqP p0; first by subst p; rewrite !w0'.
-case/boolP : (q == 0 :> R) => [|]/eqP q0; first by subst q; rewrite !w0'.
-case/boolP : (p == 1 :> R) => [|]/eqP p1; first by subst p; rewrite !w1'.
-case/boolP : (q == 1 :> R) => [|]/eqP q1; first by subst q; rewrite !w1'.
-set r := p * q.
-have pq1 : p * q != 1.
-  apply/eqP => pq1; have {p1} : p < 1 by lra.
-  rewrite -pq1 mulRC -ltR_pdivr_mulr; last lra.
-  rewrite divRR; [lra | exact/eqP].
-have r1 : r < 1.
-  rewrite ltR_neqAle; split; [exact/eqP|rewrite -(mulR1 1); apply/leR_pmul; tauto].
-set s := (p - r) / (1 - r).
-rewrite -(@wqassoc T x1 _ _ r s); last 2 first.
-  by rewrite mulRC.
-  rewrite /onem {}/s; field; rewrite subR_eq0; apply/eqP; by rewrite eq_sym.
-  split.
-  - apply divR_ge0; last by rewrite subR_gt0.
-    rewrite subR_ge0 /r -{2}(mulR1 p); apply/leR_wpmul2l; tauto.
-  - rewrite /s leR_pdivr_mulr ?subR_gt0 // mul1R leR_add2r; tauto.
-  exact (Imul Hp Hq).
-move=> Hs Hr.
-rewrite (wscom' y1); [exact (Isym Hs)|].
-move=> Hs'.
-set t := s.~ * q.
-have t01 : 0 <= t <= 1 by exact (Imul (Isym Hs) Hq).
-have t1 : t < 1.
-  rewrite ltR_neqAle; split; last tauto.
-  move=> t1; subst t.
-  have {q1} : q < 1 by lra.
-    rewrite -t1 -ltR_pdivr_mulr; last by lra.
-    rewrite divRR; [rewrite /I in Hs'; lra | exact/eqP].
-rewrite -(@wqassoc T x2 _ _ t p.~) => //; last 2 first.
-  by rewrite mulRC.
-  rewrite 2!onemK /t /onem /s /r; field.
-  rewrite subR_eq0; apply/eqP; by rewrite eq_sym.
-  exact (Isym Hp).
-move=> Hp'.
-rewrite (@wqassoc T x1 _ _ _ _ p.~.~ q); last 2 first.
-  by rewrite onemK.
-  rewrite /t /onem /s /r; field; by rewrite subR_eq0; apply/eqP; rewrite eq_sym.
-  by rewrite onemK.
-move=> Hp''.
-rewrite (wscom' y2 y1).
-move: Hp''; rewrite onemK => Hp''.
-by rewrite !(wproofirrelevant Hp'' Hp).
-Qed.
-
-End AffineConvexType.*)
 
 Section mutual_information_convex.
 
