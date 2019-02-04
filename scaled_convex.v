@@ -91,7 +91,7 @@ Definition raw_weight pt : R :=
   if pt is Scaled r _ then r else 0.
 
 Lemma weight_ge0 pt : 0 <= raw_weight pt.
-Proof. case: pt => /= [[x] /= /ltRP/ltRW] //; by apply leRR. Qed.
+Proof. case: pt => /= [[x] /= /ltRP/ltRW //|]; by apply leRR. Qed.
 
 Definition weight := mkPosFun weight_ge0.
 
@@ -321,7 +321,7 @@ rewrite /scalept /mkscaled.
 case: x => [r x|] //=.
 case: Rlt_dec => Hqr.
   case: Rlt_dec => /= Hpqr.
-    case: Rlt_dec => [Hpqr'].
+    case: Rlt_dec => [Hpqr'|].
       congr Scaled.
       by apply val_inj; rewrite /= mulRA.
     by elim; rewrite -mulRA.
@@ -502,10 +502,10 @@ apply uniq_perm_eq.
 move=> j.
 rewrite mem_filter mem_enum andbT.
 symmetry.
-case: (unliftP ord0 j) => /= [a] ->.
+case: (unliftP ord0 j) => /= [a|] ->.
   rewrite eq_sym neq_lift.
   rewrite mem_map. by rewrite mem_enum inE.
-  by apply lift_inj.
+  by apply: lift_inj.
 rewrite eqxx.
 apply/mapP => /= -[x Hx].
 move/(f_equal (@nat_of_ord _)).
