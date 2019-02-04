@@ -1817,7 +1817,7 @@ Lemma convex_functionP a b t : convex_function_at f a b t.
 Proof. by case: f => f0; apply. Qed.
 End convex_function_prop.
 
-Section convex_function_prop.
+Section convex_function_prop'.
 Local Open Scope ordered_convex_scope.
 Variable (A : convType) (B C : orderedConvType).
 
@@ -1848,7 +1848,7 @@ Proof.
   by apply g_monotone.
 Qed.
 
-End convex_function_prop.
+End convex_function_prop'.
 
 Section convex_in_both.
 Local Open Scope ordered_convex_scope.
