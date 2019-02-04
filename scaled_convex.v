@@ -170,6 +170,16 @@ Definition addpt a b :=
   | _, _ => a
   end.
 
+(* Note: we need the argument to be an Rpos, because otherwise addpt cannot
+   make a commutative monoid:
+   1) if addpt (Scaled 0 x) (Scaled 0 y) = Scaled 0 x commutativity fails
+      so at least we need addpt (Scaled 0 x) (Scaled 0 y) = Zero
+   2) if addpt (Scaled 0 x) Zero = Zero then left/right identity fail
+   2) if addpt (Scaled 0 x) Zero = Scaled 0 x then associativity fails
+      addpt (Scaled 0 x) (addpt (Scaled 0 y) (Scaled 0 z)) = Scaled 0 x
+      addpt (addpt (Scaled 0 x) (Scaled 0 y)) (Scaled 0 z) = Scaled 0 z
+   So we cannot allow 0 as argument to Scaled.                             *)
+
 Lemma addptC : commutative addpt.
 Proof.
 move=> [r x|] [q y|] //=.
