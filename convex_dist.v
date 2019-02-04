@@ -16,6 +16,7 @@ Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
 
+(*
 Section convex_dist_pair.
 Variables (A : finType) (f : dist A -> dist A -> R).
 Definition convex_dist_pair := forall (p1 p2 q1 q2 : dist A) (t : prob),
@@ -24,6 +25,7 @@ Definition convex_dist_pair := forall (p1 p2 q1 q2 : dist A) (t : prob),
 End convex_dist_pair.
 Definition concave_dist_pair (A : finType) (f : dist A -> dist A -> R) :=
   convex_dist_pair (fun a b => - f a b).
+*)
 
 Local Open Scope entropy_scope.
 
@@ -84,6 +86,8 @@ Definition avg (x y : T) (t : prob) : T:=
   let cd := proj1_sig y in
   let Hcd := proj2_sig y in
   exist _ (ab <|t|> cd) (avg_dominates_compatible t Hab Hcd).
+Definition simple_elim (U : Type) (f : dist A -> dist A -> U) (x : T) := f (sval x).1 (sval x).2.
+Definition simple_prod_of : T -> dist A * dist A := sval.
 End def.
 
 Section proof_irrelevance.
@@ -137,10 +141,14 @@ Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
 Local Open Scope divergence_scope.
 
 (* thm 2.7.2 *)
-Lemma div_convex : convex_dist_pair (@div A).
+(*Lemma div_convex : convex_dist_pair (@div A).*)
+(*Lemma div_convex : convex_function ((prod_curry (@div A) \o (@DominatedProd.simple_prod_of A))).*)
+(*Lemma div_convex : convex_in_both (prod_uncurry ((prod_curry (@div A) \o (@DominatedProd.simple_prod_of A)))).*)
+Lemma div_convex : convex_function (DominatedProd.simple_elim (@div A)).
 Proof.
 (* TODO: clean *)
-move=> p1 p2 q1 q2 t pq1 pq2.
+rewrite /ConvexFunction.axiom => [] [[p1 q1] /= pq1] [[p2 q2] /= pq2] t.
+rewrite /DominatedProd.simple_elim /=.
 rewrite /Conv /= /avg /= (* TODO *).
 rewrite 2!big_distrr /= -big_split /= /div.
 rewrite rsum_setT [in X in _ <= X]rsum_setT.
@@ -215,6 +223,16 @@ field.
 split; exact/eqP.
 Qed.
 
+Lemma div_convex' : forall (p1 p2 q1 q2 : dist A) (t : prob),
+  p1 << q1 -> p2 << q2 ->
+  div (p1 <| t |> p2) (q1 <| t |> q2) <= div p1 q1 <| t |> div p2 q2.
+Proof.
+move => p1 p2 q1 q2 t pq1 pq2.
+move:div_convex.
+rewrite/ConvexFunction.axiom/convex_function_at/DominatedProd.simple_elim/=.
+move/(_ (exist _ (p1,q1) pq1) (exist _ (p2,q2) pq2))=>/=.
+by apply.
+Qed.
 End divergence_convex.
 
 Section entropy_concave.
@@ -234,7 +252,7 @@ rewrite !(entropy_log_div _ A_not_empty') /=.
 rewrite /Leconv /= [in X in _ <= X]/Conv /= /avg /= (* TODO *).
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
 rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
-move: (div_convex t (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).
+move: (div_convex' t (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).
 by rewrite convmm.
 Qed.
 
@@ -609,7 +627,7 @@ have -> : MutualInfo.mi (CDist.make_joint P p2yx) = D(p2xy || q2xy).
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
   by rewrite /q2xy ProdDist.dE /CDist.make_joint /CDist.joint_of /= ProdDist.fst.
-apply: div_convex.
+apply: div_convex'.
 - apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy ProdDist.dE /= mulR_eq0.
   rewrite /p1 /p1xy /CDist.joint_of => -[|].
