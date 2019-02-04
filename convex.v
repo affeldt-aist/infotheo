@@ -1767,6 +1767,56 @@ Definition fun_orderedConvMixin := OrderedConvexSpace.Mixin (@lefunR A B) (@lefu
 Canonical fun_orderedConvType := OrderedConvexSpace.Pack (OrderedConvexSpace.Class fun_orderedConvMixin).
 End fun_ordered_convex_space.
 
+Module OppositeOrderedConvexSpace.
+Section def.
+Variable A : orderedConvType.
+CoInductive T := mkOpp : A -> T.
+End def.
+Section leopp.
+Local Open Scope ordered_convex_scope.
+Variable A : orderedConvType.
+Notation T := (T A).
+Definition leopp (x y : T) := match (x,y) with (mkOpp x',mkOpp y') => y' <= x' end.
+Lemma leoppR x : leopp x x.
+Proof. case x; exact: leconvR. Qed.
+Lemma leopp_trans y x z : leopp x y -> leopp y z -> leopp x z.
+Proof. case x;case y;case z=>z' y' x' yx zy; apply:(leconv_trans zy); exact yx. Qed.
+Lemma eqopp_le x y : x = y <-> leopp x y /\ leopp y x.
+Proof. split; [move ->; move: leoppR; done |].
+case x;case y=>y' x'; rewrite /leopp/=.
+by move/eqconv_le->.
+Qed.
+End leopp.
+Section convtype.
+Local Open Scope convex_scope.
+Variable A : orderedConvType.
+Notation T := (T A).
+Definition unbox (x : T) := match x with mkOpp x' => x' end.
+Definition avg a b (t : prob) := mkOpp (unbox a <|t|> unbox b).
+Lemma avg1 a b : avg a b (`Pr 1) = a.
+Proof. by case a;case b=>b' a';rewrite/avg/unbox/=conv1. Qed.
+Lemma avgI x (p : prob) : avg x x p = x.
+Proof. by case x=>x';rewrite/avg/unbox/=convmm. Qed.
+Lemma avgC x y (p : prob) : avg x y p = avg y x `Pr p.~.
+Proof. by case x;case y=>y' x'; rewrite/avg/unbox/=convC. Qed.
+Lemma avgA (p q : prob) d0 d1 d2 :
+  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
+Proof. by case d0;case d1;case d2=>d2' d1' d0';rewrite/avg/unbox/=convA. Qed.
+Definition oppConvMixin := ConvexSpace.Class avg1 avgI avgC avgA.
+End convtype.
+End OppositeOrderedConvexSpace.
+
+Section opposite_ordered_convex_space.
+Import OppositeOrderedConvexSpace.
+Section canonical.
+Variable A : orderedConvType.
+Canonical oppConvType := ConvexSpace.Pack (oppConvMixin A).
+Definition opposite_orderedConvMixin := @OrderedConvexSpace.Mixin oppConvType (@leopp A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
+Canonical opposite_orderedConvType := OrderedConvexSpace.Pack (OrderedConvexSpace.Class opposite_orderedConvMixin).
+End canonical.
+Notation "A '^逆'" := (T A) (at level 100) : ordered_convex_scope.
+End opposite_ordered_convex_space.
+
 Section convex_function_def.
 Local Open Scope ordered_convex_scope.
 Variables (A : convType) (B : orderedConvType).
