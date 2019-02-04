@@ -2101,6 +2101,14 @@ by rewrite (affine_functionP' f) (affine_functionP' g).
 Qed.
 Definition affine_function_comp (A B C : convType) (f : {affine A -> B}) (g : {affine B -> C}) :
   {affine A -> C} := AffineFunction (affine_function_comp_proof f g).
+Lemma affine_function_Sum (A B : convType) (f : {affine A -> B}) (n : nat) (g : 'I_n -> A) (e : {dist 'I_n}) :
+  f (\Sum_e g) = \Sum_e (f \o g).
+Proof.
+elim: n g e => [g e|n IH g e]; first by move: (distI0_False e).
+case/boolP : (e ord0 == 1%R :> R) => [|e01].
+  by rewrite Dist1.one => /eqP ->; rewrite 2!ConvnDist1.
+by rewrite 2!convnE (affine_functionP' f) IH.
+Qed.
 End affine_function_prop0.
 
 Section affine_function_prop.
