@@ -1511,6 +1511,13 @@ Section CSet_prop.
 Local Open Scope classical_set_scope.
 Variable A : convType.
 
+Lemma mem_convex_set (x y : A) (p : prob) (X : {convex_set A}) :
+  x \in X -> y \in X -> x <|p|> y \in X.
+Proof.
+case: X => X convX; move: (convX) => convX_save.
+move/asboolP : convX => convX Hx Hy; exact: convX.
+Qed.
+
 Definition cset0 : {convex_set A} := CSet.mk (is_convex_set0 A).
 
 Lemma cset0P (x : {convex_set A}) : (x == cset0) = (x == set0 :> set _).
