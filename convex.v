@@ -272,6 +272,8 @@ Definition S1 := Scaled Rpos1.
 Lemma Scaled_inj p : injective (Scaled p).
 Proof. by move=> x y []. Qed.
 
+Definition S1_inj : injective S1 := @Scaled_inj Rpos1.
+
 Definition raw_weight pt : R :=
   if pt is Scaled r _ then r else 0.
 
@@ -592,44 +594,6 @@ by rewrite !mulR1 /= addRC subRK divR1.
 Qed.
 End binary.
 
-Section adjunction.
-Variables (n : nat) (points : 'I_n -> A).
-
-Definition points_of_dist (d : {dist 'I_n}) :=
-  [seq scalept (d i) (S1 (points i)) | i <- enum 'I_n].
-
-Lemma weight_gt0 d : weight (barycenter (points_of_dist d)) > 0.
-rewrite weight_bary.
-rewrite (_ : \rsum_(x <- _)  _ = 1).
-  apply /Rlt_gt /Rlt_0_1.
-rewrite big_map -(pmf1 d) big_filter.
-apply eq_bigr => i _.
-rewrite scalept_weight ?mulR1 //.
-by apply pos_f_ge0.
-Qed.
-
-Lemma perm_eq_filter0 :
-  perm_eq [seq i <- enum 'I_n.+1 | i != ord0]
-          [seq lift ord0 i | i <- enum 'I_n].
-Proof.
-apply uniq_perm_eq.
-+ by rewrite filter_uniq // enum_uniq.
-+ rewrite map_inj_in_uniq ?enum_uniq //.
-  by move=> x1 x2 _ _; apply lift_inj.
-move=> j.
-rewrite mem_filter mem_enum andbT.
-symmetry.
-case: (unliftP ord0 j) => /= [a|] ->.
-  rewrite eq_sym neq_lift.
-  rewrite mem_map. by rewrite mem_enum inE.
-  by apply: lift_inj.
-rewrite eqxx.
-apply/mapP => /= -[x Hx].
-move/(f_equal (@nat_of_ord _)).
-by rewrite lift0.
-Qed.
-End adjunction.
-
 End scaled_convex.
 End ScaledConvex.
 
@@ -674,41 +638,16 @@ Qed.
 Lemma commute (x1 y1 x2 y2 : A) p q :
   (x1 <|q|> y1) <|p|> (x2 <|q|> y2) = (x1 <|p|> x2) <|q|> (y1 <|p|> y2).
 Proof.
-case/boolP : (p == `Pr 0) => [/eqP|] p0; first by rewrite p0 !conv0.
-case/boolP : (q == `Pr 0) => [/eqP|] q0; first by rewrite q0 !conv0.
-case/boolP : (p == `Pr 1) => [/eqP|] p1; first by rewrite p1 !conv1.
-case/boolP : (q == `Pr 1) => [/eqP|] q1; first by rewrite q1 !conv1.
-set r := [p_of q, p].
-have r1 : (r != `Pr 1)%R by rewrite p_of_neq1 // -prob_gt0 -prob_lt1.
-rewrite -(convA' x1 y1) //.
-rewrite (convC y1).
-set s := [q_of q, p].
-set t := `Pr (`Pr s.~ * q).
-have t1 : (t < 1)%R.
-  rewrite -prob_lt1; apply/eqP => t1; subst t.
-  have {q1} : (q < 1)%R by rewrite -prob_lt1.
-  move/(congr1 Prob.p) : t1 => /= <-.
-  rewrite -ltR_pdivr_mulr; last by rewrite -prob_gt0.
-  rewrite divRR // /onem ltR_subr_addl ltRNge; apply.
-  rewrite -{1}(add0R 1%R) leR_add2r; exact/prob_ge0.
-rewrite -(convA' x2); last by rewrite prob_lt1 p_of_rsC /= p_of_rsE.
-rewrite -(convA' x1) //; last by rewrite p_of_rsC.
-rewrite (convC y2 y1) /=.
-congr (_ <| _ |> _); last by rewrite p_of_rsC.
-congr (_ <| _ |> _); last first.
-  (* TODO: lemma? *)
-  apply prob_ext => /=.
-  rewrite /s /onem /= !(p_of_rsE,q_of_rsE) /= !(p_of_rsE,q_of_rsE) /= /onem.
-  field.
-  rewrite subR_eq0 mulRC; apply/nesym/eqP; by rewrite -p_of_rsE.
-congr (_ <| _ |> _).
-apply prob_ext => /=.
-rewrite -[in RHS](onemK p); congr onem.
-rewrite q_of_rsE {1}p_of_rsE /= q_of_rsE p_of_rsE /= /onem; field.
-split.
-  rewrite subR_eq0; apply/nesym/eqP; by rewrite -p_of_rsE.
-rewrite mulRBl mul1R subRBA subRK mulRDr mulR1 mulRN addR_opp subRBA subRK.
-rewrite subR_eq0 => /esym; exact/eqP.
+Import ScaledConvex.
+apply S1_inj.
+transitivity
+  (addpt (scalept p   (addpt (scalept q (S1 x1)) (scalept q.~ (S1 y1))))
+         (scalept p.~ (addpt (scalept q (S1 x2)) (scalept q.~ (S1 y2))))).
+  by rewrite !adjunction_2.
+rewrite !scalept_addpt ?scalept_comp; try apply prob_ge0.
+rewrite !(mulRC p) !(mulRC p.~) addptA addptC (addptC (scalept (q*p) _)).
+rewrite !addptA -addptA -!scalept_comp -?scalept_addpt; try apply prob_ge0.
+by rewrite !(addptC (scalept _.~ _)) !adjunction_2.
 Qed.
 
 Lemma distribute (x y z : A) (p q : prob) :
@@ -733,6 +672,30 @@ Local Notation "'\Sum_' d f" := (Convn d f).
 Section adjunction.
 Import ScaledConvex.
 Local Open Scope R_scope.
+
+Lemma perm_eq_filter0 n :
+  perm_eq [seq i <- enum 'I_n.+1 | i != ord0]
+          [seq lift ord0 i | i <- enum 'I_n].
+Proof.
+apply uniq_perm_eq.
++ by rewrite filter_uniq // enum_uniq.
++ rewrite map_inj_in_uniq ?enum_uniq //.
+  by move=> x1 x2 _ _; apply lift_inj.
+move=> j.
+rewrite mem_filter mem_enum andbT.
+symmetry.
+case: (unliftP ord0 j) => /= [a|] ->.
+  rewrite eq_sym neq_lift.
+  rewrite mem_map. by rewrite mem_enum inE.
+  by apply: lift_inj.
+rewrite eqxx.
+apply/mapP => /= -[x Hx].
+move/(f_equal (@nat_of_ord _)).
+by rewrite lift0.
+Qed.
+
+Definition points_of_dist n (points : 'I_n -> A) (d : {dist 'I_n}) :=
+  [seq scalept (d i) (S1 (points i)) | i <- enum 'I_n].
 
 Lemma adjunction_n n (points : 'I_n -> A) d :
   barycenter (points_of_dist points d) = S1 (Convn d points).
@@ -784,16 +747,12 @@ Qed.
 
 Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Sum_(Dist1.d j) g = g j.
 Proof.
-apply (@Scaled_inj _ Rpos1).
-rewrite -!/(S1 _).
-rewrite -(adjunction_n g (Dist1.d j)) /barycenter /points_of_dist.
-rewrite big_map (bigD1_seq j) /=; first last.
-+ by apply enum_uniq.
-+ by apply mem_enum.
+apply S1_inj.
+rewrite -!/(S1 _) -adjunction_n /barycenter /points_of_dist.
+rewrite big_map (bigD1_seq j) /=; [|apply mem_enum|apply enum_uniq].
 rewrite big1.
-  rewrite addpt0 Dist1.dE eqxx /= mkscaled_gt0.
-    apply Rlt_0_1.
-  by move=> H; congr Scaled; apply val_inj; rewrite /= mulR1.
+  rewrite addpt0 Dist1.dE eqxx /= (mkscaled_gt0 _ _ Rlt_0_1).
+  by congr Scaled; apply val_inj; rewrite /= mulR1.
 move=> i /negbTE H; by rewrite Dist1.dE H -(scalept0 (S1 (g i))).
 Qed.
 
