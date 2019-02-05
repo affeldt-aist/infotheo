@@ -785,25 +785,14 @@ Qed.
 
 Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Sum_d g = g i.
 Proof.
-elim: n g d i => [d d0|n IH g d i di1]; first by move: (distI0_False d0).
-case/boolP : (i == ord0) => [/eqP|]i0.
-  move/eqP : di1; rewrite i0 Dist1.one => /eqP ->.
-  by rewrite ConvnDist1.
-have d00 : d ord0 = R0 by move/eqP/Dist1.dist1P : di1 => -> //; rewrite eq_sym.
-rewrite convnE; first by rewrite d00; apply/eqP; lra.
-move=> d01.
-rewrite (_ : probdist _ _ = `Pr 0); last exact/prob_ext.
-rewrite conv0.
-move=> [:Hj].
-have @j : 'I_n.
-  apply: (@Ordinal _ i.-1).
-  abstract: Hj; by rewrite prednK // ?lt0n // -ltnS.
-rewrite (IH _ _ j) // ?ltn0.
-  congr g; apply val_inj => /=.
-  by rewrite /bump leq0n add1n prednK // lt0n.
-rewrite DelDist.dE /DelDist.h ltn0 D1Dist.dE eq_sym (negbTE (neq_lift _ _ )).
-rewrite d00 subR0 divR1 -di1; congr (d _).
-apply val_inj => /=; by rewrite /bump leq0n add1n prednK // lt0n.
+move=> Hd; apply S1_inj.
+rewrite -adjunction_n /barycenter big_map.
+rewrite (bigD1_seq i) /=; [|apply mem_enum|apply enum_uniq].
+rewrite big1 ?addpt0 ?Hd.
+  by rewrite -(scalept1 (S1 _)).
+move=> j Hj.
+rewrite -(scalept0 (S1 (g j))) (_ : d j = 0) //.
+by move/eqP/Dist1.dist1P: Hd => ->.
 Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2*)
