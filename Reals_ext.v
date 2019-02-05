@@ -471,3 +471,30 @@ move=> [H1 H2] [H H3]; case: (Rtotal_order a b) => [H0|[H0|H0]].
 - rewrite geR0_norm; last lra.
   apply: (@leR_trans a); [lra|exact/(leR_trans H2)/leR_maxl].
 Qed.
+
+Section Rpos.
+Record Rpos : predArgType :=
+  mkRposb {Rpos_val :> R ; _ : Rpos_val >b 0 }.
+
+Canonical Rpos_subType := [subType for Rpos_val].
+Definition Rpos_eqMixin := Eval hnf in [eqMixin of Rpos by <:].
+Canonical Rpos_eqType := Eval hnf in EqType Rpos Rpos_eqMixin.
+
+Definition mkRpos x H := @mkRposb x (introT (ltRP _ _) H).
+
+Definition Rpos1 := mkRpos Rlt_0_1.
+
+Lemma Rpos_gt0 (x : Rpos) : x > 0.
+Proof. by case: x => p /= /ltRP. Qed.
+
+Lemma Rpos_neq0 (x : Rpos) : val x != 0.
+Proof. case: x => p /=. by rewrite /gtRb lt0R => /andP []. Qed.
+
+Lemma addRpos_gt0 (x y : Rpos) : x + y > 0.
+Proof. by apply/addR_gt0; apply /Rpos_gt0. Qed.
+Canonical addRpos x y := mkRpos (addRpos_gt0 x y).
+
+Lemma mulRpos_gt0 (x y : Rpos) : x * y > 0.
+Proof. apply/mulR_gt0; apply/Rpos_gt0. Qed.
+Canonical mulRpos x y := mkRpos (mulRpos_gt0 x y).
+End Rpos.
