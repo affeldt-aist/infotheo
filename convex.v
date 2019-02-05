@@ -745,16 +745,20 @@ rewrite /barycenter big_map => -> /=.
 by rewrite -adjunction_2.
 Qed.
 
-Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Sum_(Dist1.d j) g = g j.
+Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Sum_d g = g i.
 Proof.
-apply S1_inj.
-rewrite -!/(S1 _) -adjunction_n /barycenter /points_of_dist.
-rewrite big_map (bigD1_seq j) /=; [|apply mem_enum|apply enum_uniq].
-rewrite big1.
-  rewrite addpt0 Dist1.dE eqxx /= (mkscaled_gt0 _ _ Rlt_0_1).
-  by congr Scaled; apply val_inj; rewrite /= mulR1.
-move=> i /negbTE H; by rewrite Dist1.dE H -(scalept0 (S1 (g i))).
+move=> Hd; apply S1_inj.
+rewrite -adjunction_n /barycenter big_map.
+rewrite (bigD1_seq i) /=; [|apply mem_enum|apply enum_uniq].
+rewrite big1 ?addpt0 ?Hd.
+  by rewrite -(scalept1 (S1 _)).
+move=> j Hj.
+rewrite -(scalept0 (S1 (g j))) (_ : d j = 0) //.
+by move/eqP/Dist1.dist1P: Hd => ->.
 Qed.
+
+Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Sum_(Dist1.d j) g = g j.
+Proof. by apply convn_proj; rewrite Dist1.dE eqxx. Qed.
 
 Lemma convn1E a e : \Sum_ e (fun _ : 'I_1 => a) = a.
 Proof.
@@ -781,18 +785,6 @@ rewrite convnE; congr (_ <| _ |> _).
 rewrite (_ : (fun _ => _) = (fun=> g (DelDist.h ord0 ord0))); last first.
   by apply FunctionalExtensionality.functional_extensionality => x; rewrite (ord1 x).
 by rewrite convn1E /DelDist.h ltnn.
-Qed.
-
-Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Sum_d g = g i.
-Proof.
-move=> Hd; apply S1_inj.
-rewrite -adjunction_n /barycenter big_map.
-rewrite (bigD1_seq i) /=; [|apply mem_enum|apply enum_uniq].
-rewrite big1 ?addpt0 ?Hd.
-  by rewrite -(scalept1 (S1 _)).
-move=> j Hj.
-rewrite -(scalept0 (S1 (g j))) (_ : d j = 0) //.
-by move/eqP/Dist1.dist1P: Hd => ->.
 Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2*)
