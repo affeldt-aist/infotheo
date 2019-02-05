@@ -314,6 +314,9 @@ Proof. by apply/idP/idP => /eqP/INR_eq0/eqP. Qed.
 Lemma eqR_le x y : (x = y) <-> (x <= y <= x).
 Proof. split => [->| [] ]; by [split; exact/leRR | exact: Rle_antisym]. Qed.
 
+Lemma eqR_le_Ngt {x y} : x <= y -> ~ x < y -> y = x.
+Proof. by case/leR_eqVlt. Qed.
+
 Definition leR0n n : 0 <= n%:R := pos_INR n.
 Lemma leR0n' n : (0 <b= n%:R). Proof. exact/leRP/leR0n. Qed.
 

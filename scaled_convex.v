@@ -18,36 +18,6 @@ Module ScaledConvexSpace.
 
 Local Open Scope R_scope.
 
-Lemma le0R_Ngt0_eq0 p : 0 <= p -> ~ 0 < p -> p = 0.
-Proof. by case/leR_eqVlt. Qed.
-
-Section Rpos.
-Record Rpos : predArgType :=
-  mkRposb {Rpos_val :> R ; _ : Rpos_val >b 0 }.
-
-Canonical Rpos_subType := [subType for Rpos_val].
-Definition Rpos_eqMixin := Eval hnf in [eqMixin of Rpos by <:].
-Canonical Rpos_eqType := Eval hnf in EqType Rpos Rpos_eqMixin.
-
-Definition mkRpos x H := @mkRposb x (introT (ltRP _ _) H).
-
-Definition Rpos1 := mkRpos Rlt_0_1.
-
-Lemma Rpos_gt0 (x : Rpos) : x > 0.
-Proof. by case: x => p /= /ltRP. Qed.
-
-Lemma Rpos_neq0 (x : Rpos) : val x != 0.
-Proof. case: x => p /=. by rewrite /gtRb lt0R => /andP []. Qed.
-
-Lemma addRpos_gt0 (x y : Rpos) : x + y > 0.
-Proof. by apply/addR_gt0; apply /Rpos_gt0. Qed.
-Canonical addRpos x y := mkRpos (addRpos_gt0 x y).
-
-Lemma mulRpos_gt0 (x y : Rpos) : x * y > 0.
-Proof. apply/mulR_gt0; apply/Rpos_gt0. Qed.
-Canonical mulRpos x y := mkRpos (mulRpos_gt0 x y).
-End Rpos.
-
 Section scaled_convex.
 Variables A : convType.
 
@@ -193,7 +163,7 @@ Proof.
 case: x => [q y|] Hp.
   rewrite /= /mkscaled.
   case: Rlt_dec => //= Hp'.
-  by rewrite (le0R_Ngt0_eq0 Hp Hp') mul0R.
+  by rewrite (eqR_le_Ngt Hp Hp') mul0R.
 by rewrite scaleptR0 mulR0.
 Qed.
 
@@ -264,12 +234,12 @@ case: Rlt_dec => Hpq.
         by apply val_inj; rewrite /= mulRDl.
       by rewrite convmm.
     congr Scaled; apply val_inj => /=.
-    by rewrite /= (le0R_Ngt0_eq0 Hq Hqr) addR0.
+    by rewrite /= (eqR_le_Ngt Hq Hqr) addR0.
   case: Rlt_dec => Hqr.
     congr Scaled; apply val_inj => /=.
-    by rewrite /= (le0R_Ngt0_eq0 Hp Hpr) add0R.
+    by rewrite /= (eqR_le_Ngt Hp Hpr) add0R.
   elimtype False; move: Hpq.
-  by rewrite (le0R_Ngt0_eq0 Hp Hpr) (le0R_Ngt0_eq0 Hq Hqr) addR0 => /ltRR.
+  by rewrite (eqR_le_Ngt Hp Hpr) (eqR_le_Ngt Hq Hqr) addR0 => /ltRR.
 case: Rlt_dec => Hpr.
   elim Hpq.
   by apply/addR_gt0wl.
