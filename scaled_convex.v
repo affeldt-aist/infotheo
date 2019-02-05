@@ -18,6 +18,9 @@ Module ScaledConvexSpace.
 
 Local Open Scope R_scope.
 
+Lemma le0R_Ngt0_eq0 p : 0 <= p -> ~ 0 < p -> p = 0.
+Proof. by case/leR_eqVlt. Qed.
+
 Section Rpos.
 Inductive Rpos : predArgType := mkRpos x of x >b 0.
 Definition Rpos_val (x : Rpos) := let: mkRpos y _ := x in y.
@@ -91,6 +94,9 @@ Inductive scaled_pt := Scaled of Rpos & A | Zero.
 
 Definition S1 := Scaled Rpos1.
 
+Lemma Scaled_inj p : injective (Scaled p).
+Proof. by move=> x y []. Qed.
+
 Definition raw_weight pt : R :=
   if pt is Scaled r _ then r else 0.
 
@@ -104,9 +110,6 @@ destruct pt.
 + move=> _; exact c.
 + case/ltRR.
 Defined.
-
-Lemma le0R_Ngt0_eq0 p : 0 <= p -> ~ 0 < p -> p = 0.
-Proof. by case/leR_eqVlt. Qed.
 
 Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / addRpos r q <= 1.
 Proof.
@@ -224,11 +227,6 @@ Definition scalept p (x : scaled_pt) :=
 
 Lemma scaleptR0 p : scalept p Zero = Zero.
 Proof. by []. Qed.
-
-Lemma le0R_mulNgt0_eq0 p (x : Rpos) : 0 <= p -> ~ 0 < p * x -> p = 0.
-Proof.
-by move=>/leR_eqVlt [] // /mulRposP; move/(_ x)/ltRP => Hp; elim.
-Qed.
 
 Lemma scalept_weight p x : 0 <= p -> weight (scalept p x) = p * weight x.
 Proof.
