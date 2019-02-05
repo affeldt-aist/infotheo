@@ -1530,6 +1530,11 @@ rewrite cset0P; case: x => //= x Hx; split; last first.
 by case/set0P => /= d dx; exists d.
 Qed.
 
+Definition cset1 (x : A) : {convex_set A} := CSet.mk (is_convex_set1 x).
+
+Lemma cset1_neq0 (x : A) : cset1 x != cset0.
+Proof. apply/cset0PN; by exists x. Qed.
+
 Lemma hull_cset (x : {convex_set A}) : hull x = x.
 Proof.
 rewrite predeqE => d; split.
