@@ -3,7 +3,52 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
 Require Import Reals.
 
-(** * SSReflect-like lemmas for Coq Reals *)
+(* SSReflect-like lemmas for Coq Reals
+
+Various lemmas that make it a bit more comfortable to use the Reals of
+the Coq standard library with SSReflect.
+
+Basic ideas:
+- Mostly renaming of lemmas for the standard library to mimick ssrnat,
+  ssrnum, etc.
+- No ssralg instantiation so that the field and lra tactics remain
+  available.
+- Use Prop instead of bool: = becomes <-> but rewrite is still
+  possible thanks to setoids and the view mechanism allows for apply/,
+  exact/, etc.
+- Most lemmas come with a boolean counterpart (same name, ending with "'"):
+  + Lemma ltR_neqAle' m n : (m <b n) = (m != n) && (m <b= n).
+    Lemma ltR_neqAle m n : (m < n) <-> (m <> n) /\ (m <= n).
+
+Details:
+- boolean relations:
+  + they do not compute but can be used to write boolean predicates
+  + boolean equality for Reals as an eqtype
+  + boolean inequalities:
+    * notations: <b=, etc.
+    * reflect predicates: leRP, etc.
+- ssrnat/ssrnum-like notations:
+  + %:R instead of INR
+- ssrnat/ssrnum-like lemmas:
+  + mere renamings:
+    * mulRA instead of Rmult_assoc
+    * subR0 instead of Rminus_0_r
+    * etc.
+  + examples:
+    * ltRNge (for Reals) corresponds to ltnNge (from ssrnat)
+    * Lemma ltR0n n : (0 < n%:R) <-> (O < n)%nat. (for Reals)
+      corresponds to
+      Lemma ltr0n n : (0 < n%:R :> R) = (0 < n)%N. (from ssrnum)
+      (instead of lt_0_INR : forall n : nat, (0 < n)%coq_nat -> 0 < INR n
+      in the standard library)
+    * Lemma INR_eq0 n : (n%:R = 0) <-> (n = O).
+      instead of the one-sided INR_eq in the standard library
+    * Lemma leR_add2r {p m n} : m + p <= n + p <-> m <= n.
+- ssr-like lemmas (not so good matches):
+  + Lemma invR_gt0 : forall x : R, 0 < x -> 0 < / x
+    corresponds to
+    Lemma invr_gt0 x : (0 < x^-1) = (0 < x).
+*)
 
 Reserved Notation "a '>b=' b" (at level 70).
 Reserved Notation "a '<b=' b" (at level 70).
