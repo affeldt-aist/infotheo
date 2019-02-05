@@ -513,22 +513,6 @@ Variables n : nat.
 Variable p : {dist 'I_n}.
 Variable h : 'I_n -> scaled_pt.
 
-Lemma perm_eq_perm (pe : 'S_n) :
-  perm_eq (enum 'I_n) [seq pe i | i <- enum 'I_n].
-Proof.
-apply uniq_perm_eq.
-+ by rewrite enum_uniq.
-+ rewrite map_inj_in_uniq ?enum_uniq //.
-  by move=> x1 x2 _ _; apply perm_inj.
-move=> i.
-rewrite mem_enum inE.
-symmetry.
-apply/mapP.
-exists (perm_inv pe i).
-  by rewrite mem_enum inE.
-by rewrite permKV.
-Qed.
-
 Lemma barycenter_reorder (pe : 'S_n) :
   \big[addpt/Zero]_(i < n) scalept (p i) (h i) =
   \big[addpt/Zero]_(i < n) scalept (p (pe i)) (h (pe i)).
@@ -672,27 +656,6 @@ Local Notation "'\Sum_' d f" := (Convn d f).
 Section adjunction.
 Import ScaledConvex.
 Local Open Scope R_scope.
-
-Lemma perm_eq_filter0 n :
-  perm_eq [seq i <- enum 'I_n.+1 | i != ord0]
-          [seq lift ord0 i | i <- enum 'I_n].
-Proof.
-apply uniq_perm_eq.
-+ by rewrite filter_uniq // enum_uniq.
-+ rewrite map_inj_in_uniq ?enum_uniq //.
-  by move=> x1 x2 _ _; apply lift_inj.
-move=> j.
-rewrite mem_filter mem_enum andbT.
-symmetry.
-case: (unliftP ord0 j) => /= [a|] ->.
-  rewrite eq_sym neq_lift.
-  rewrite mem_map. by rewrite mem_enum inE.
-  by apply: lift_inj.
-rewrite eqxx.
-apply/mapP => /= -[x Hx].
-move/(f_equal (@nat_of_ord _)).
-by rewrite lift0.
-Qed.
 
 Definition points_of_dist n (points : 'I_n -> A) (d : {dist 'I_n}) :=
   [seq scalept (d i) (S1 (points i)) | i <- enum 'I_n].
