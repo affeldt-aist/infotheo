@@ -685,7 +685,7 @@ set points' := fun i => points (DelDist.h ord0 i).
 rewrite /barycenter big_map (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
 rewrite -big_filter.
 rewrite (eq_big_perm (map (lift ord0) (enum 'I_n)));
-  last by apply perm_eq_filter0.
+  last by apply perm_filter_enum_ord.
 rewrite big_map.
 have Hd0' : 1 - d ord0 > 0.
   by apply ltR_subRL; rewrite addR0; apply dist_lt1.

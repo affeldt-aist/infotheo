@@ -910,25 +910,25 @@ exists (perm_inv pe i).
 by rewrite permKV.
 Qed.
 
-Lemma perm_eq_filter0 :
-  perm_eq [seq i <- enum 'I_n.+1 | i != ord0]
-          [seq lift ord0 i | i <- enum 'I_n].
+Lemma perm_filter_enum_ord j :
+  perm_eq [seq i <- enum 'I_n.+1 | i != j]
+          [seq lift j i | i <- enum 'I_n].
 Proof.
 apply uniq_perm_eq.
 + by rewrite filter_uniq // enum_uniq.
 + rewrite map_inj_in_uniq ?enum_uniq //.
   by move=> x1 x2 _ _; apply lift_inj.
-move=> j.
+move=> k.
 rewrite mem_filter mem_enum andbT.
 symmetry.
-case: (unliftP ord0 j) => /= [a|] ->.
+case: (unliftP j k) => /= [a|] ->.
   rewrite eq_sym neq_lift.
   rewrite mem_map. by rewrite mem_enum inE.
   by apply: lift_inj.
 rewrite eqxx.
 apply/mapP => /= -[x Hx].
 move/(f_equal (@nat_of_ord _)).
-by rewrite lift0.
+by apply/eqP/neq_lift.
 Qed.
 End perm_enum.
 
