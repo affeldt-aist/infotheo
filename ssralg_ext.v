@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div choice fintype tuple finfun bigop prime ssralg.
 From mathcomp Require Import finset fingroup perm finalg zmodp matrix mxalgebra.
-From mathcomp Require Import mxrepresentation vector.
+From mathcomp Require Import vector.
 Require Import ssr_ext f2.
 
 (** * Additional lemmas about algebraic datatypes *)

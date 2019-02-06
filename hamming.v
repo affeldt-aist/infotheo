@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import fintype finfun finset bigop prime fingroup zmodp.
 From mathcomp Require Import ssralg perm matrix tuple poly finalg mxalgebra.
-From mathcomp Require Import mxpoly mxrepresentation binomial.
+From mathcomp Require Import mxpoly binomial.
 Require Import ssr_ext ssralg_ext f2 num_occ natbin.
 
 (** * Hamming weight and Hamming distance *)
