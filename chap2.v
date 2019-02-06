@@ -622,8 +622,8 @@ Definition three : 'I_4 := @Ordinal 4 3 isT.
 Definition f : 'I_4 * 'I_4 -> R := [eta (fun=>0) with
 (zero, zero) |-> (1/8), (zero, one) |-> (1/16), (zero, two) |-> (1/16), (zero, three) |-> (1/4),
 (one, zero) |-> (1/16), (one, one) |-> (1/8), (one, two) |-> (1/16), (one, three) |-> 0,
-(two, zero) |-> (1/32), (two, one) |-> (1/32), (two, two) |-> (1/16), (zero, three) |-> 0,
-(three, zero) |-> (1/32), (three, one) |-> (1/32), (three, two) |-> (1/16), (two, three) |-> 0].
+(two, zero) |-> (1/32), (two, one) |-> (1/32), (two, two) |-> (1/16), (two, three) |-> 0,
+(three, zero) |-> (1/32), (three, one) |-> (1/32), (three, two) |-> (1/16), (three, three) |-> 0].
 
 Lemma f0 : forall x, 0 <= f x.
 Proof.

@@ -6,6 +6,7 @@ Reals_ext.v
 Ranalysis_ext.v
 logb.v
 convex.v
+convex_stone.v
 ln_facts.v
 ssr_ext.v
 bigop_ext.v
