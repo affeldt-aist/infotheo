@@ -508,6 +508,21 @@ apply (big_ind2 (fun y q => y = scalept q x /\ 0 <= q)).
   by apply pos_f_ge0.
 Qed.
 
+Definition scaled_conv x y (p : prob) := addpt (scalept p x) (scalept p.~ y).
+Definition Scaled_convMixin : ConvexSpace.class_of scaled_pt.
+apply (@ConvexSpace.Class _ scaled_conv); rewrite /scaled_conv /=.
++ by move=> a b; rewrite onem1 scalept1 scalept0 addpt0.
++ move=> a p; rewrite -scalept_addR; try apply prob_ge0.
+  by rewrite onemKC scalept1.
++ move=> a b p; by rewrite [RHS]addptC onemK.
++ move=> p q a b c.
+  rewrite !scalept_addpt ?scalept_comp; try apply prob_ge0.
+  rewrite -[RHS]addptA; congr addpt.
+    by rewrite (p_is_rs p q) mulRC.
+  by rewrite pq_is_rs mulRC s_of_pqE onemK.
+Defined.
+Canonical Scaled_convType := ConvexSpace.Pack Scaled_convMixin.
+
 Section reordering.
 Variables n : nat.
 Variable p : {dist 'I_n}.
@@ -577,6 +592,9 @@ congr Conv; apply prob_ext => /=.
 by rewrite !mulR1 /= addRC subRK divR1.
 Qed.
 End binary.
+
+Lemma scaled_conv_Scaled p : {morph S1 : a b / a <|p|> b >-> a <|p|> b}.
+Proof. move=> a b. by rewrite -adjunction_2. Qed.
 
 End scaled_convex.
 End ScaledConvex.
@@ -661,7 +679,7 @@ Definition points_of_dist n (points : 'I_n -> A) (d : {dist 'I_n}) :=
   [seq scalept (d i) (S1 (points i)) | i <- enum 'I_n].
 
 Lemma adjunction_n n (points : 'I_n -> A) d :
-  barycenter (points_of_dist points d) = S1 (Convn d points).
+  barycenter (points_of_dist points d) = S1 (\Sum_d points).
 Proof.
 elim: n points d => [|n IH] points d.
   move: (pmf1 d).
@@ -689,23 +707,17 @@ rewrite (eq_big_perm (map (lift ord0) (enum 'I_n)));
 rewrite big_map.
 have Hd0' : 1 - d ord0 > 0.
   by apply ltR_subRL; rewrite addR0; apply dist_lt1.
-rewrite (eq_bigr
-           (fun j => scalept (1 - d ord0) (mkscaled (d' j) Rpos1 (points' j))));
-  last first.
-  move=> i _.
-  transitivity (scalept (1 - d ord0) (scalept (d' i) (S1 (points' i)))) => //.
-  rewrite scalept_comp; [|by apply ltRW|by apply pos_f_ge0].
-  rewrite DelDist.dE D1Dist.dE /=.
-  rewrite /Rdiv (mulRC (d _)) mulRA mulRV.
-    by rewrite mul1R.
-  apply/eqP => H1d0.
-  move: Hd0'.
-  by rewrite H1d0 => /ltRR.
-rewrite -(big_morph (scalept (1 - d ord0)) (scalept_addpt (ltRW Hd0'))
-                    (scaleptR0 _ _)).
-have:= IH points' d'.
-rewrite /barycenter big_map => -> /=.
-by rewrite -adjunction_2.
+rewrite scaled_conv_Scaled; congr addpt.
+rewrite -IH /barycenter [in RHS]big_map.
+rewrite (big_morph (scalept _) (scalept_addpt (ltRW Hd0')) (scaleptR0 _ _)).
+apply eq_bigr => i _.
+rewrite scalept_comp; [|by apply ltRW|by apply pos_f_ge0].
+rewrite DelDist.dE D1Dist.dE /=.
+rewrite /Rdiv (mulRC (d _)) mulRA mulRV.
+  by rewrite mul1R.
+apply/eqP => H1d0.
+move: Hd0'.
+by rewrite H1d0 => /ltRR.
 Qed.
 
 Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Sum_d g = g i.
