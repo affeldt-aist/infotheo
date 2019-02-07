@@ -1614,49 +1614,24 @@ by rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?onem_neq0 // mulR1.
 Qed.
 End dist_convex_space.
 
-(* Try again with convn_convdist. Very heavy. *)
+(* Another proof of convn_convdist. Reuses the morphisms of RScaledConvex. *)
 Module RfunScaledConvex.
 Import ScaledConvex.
-Local Open Scope R_scope.
+Import RScaledConvex.
 Section morph.
 Variable A : finType.
-Definition scaleR (x : scaled_pt (funConvType A R_convType)) : A -> R :=
-  if x is Scaled p f then (fun y => p * f y) else (fun=>0).
-Lemma S1_can : cancel (@S1 _) scaleR.
-Proof. move=> f /=. by apply functional_extensionality=> x; rewrite mul1R. Qed.
-Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> fun t => x t + y t}.
-Proof.
-move=> [p x|] [q y|] /=; apply functional_extensionality=> t;
-  rewrite ?(add0R,addR0) //.
-rewrite /Conv /= /avg /Rpos_prob /= onem_div /Rdiv; last by apply Rpos_neq0.
-rewrite -!(mulRC (/ _)%R) -!mulRA -mulRDr !mulRA mulRV; last by apply Rpos_neq0.
-by rewrite mul1R (addRC p) addRK.
-Qed.
-Lemma scaleR0 : scaleR (@Zero _) = fun=>R0. by []. Qed.
-Lemma scaleR_scalept p x : 0 <= p ->
-  scaleR (scalept p x) = fun t =>p * scaleR x t.
-Proof.
-case: x => [q y|] Hp //=; last by rewrite mulR0.
-apply functional_extensionality=> t.
-rewrite /mkscaled; case: Rlt_dec => Hp' /=. by rewrite mulRA.
-by rewrite (eqR_le_Ngt Hp Hp') mul0R.
-Qed.
 Lemma convn_convdist (n : nat) (g : 'I_n -> dist A) (d : {dist 'I_n}) :
   \Sum_d g = ConvDist.d d g.
 Proof.
-apply dist_eq, pos_fun_eq.
+apply dist_ext=> a.
 rewrite -[LHS]S1_can.
-rewrite (_ : pos_f (pmf (\Sum_d g)) = (@pos_f _ \o @pmf _) (\Sum_d g)) //.
-rewrite S1_convn_proj /barycenter; last first.
-  move=> p x y; apply functional_extensionality=> a.
-  by rewrite /Conv /= Conv2Dist.dE.
-rewrite big_map (big_morph scaleR scaleR_addpt scaleR0).
-apply functional_extensionality=> a.
+rewrite (@S1_convn_proj _ _ (@^~ a \o @pos_f _ \o @pmf _)); last first.
+  move=> p x y /=; by rewrite /Conv /= Conv2Dist.dE.
+rewrite /barycenter big_map (big_morph scaleR scaleR_addpt scaleR0).
 rewrite ConvDist.dE.
-rewrite (@big_morph _ _ (fun f => f a) 0 Rplus) //.
 rewrite big_filter; apply eq_bigr => i _.
 rewrite scaleR_scalept ?S1_can //; by apply pos_f_ge0.
-Qed. 
+Qed.
 End morph.
 End RfunScaledConvex.
 
