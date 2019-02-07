@@ -688,14 +688,12 @@ elim: n points d => [|n IH] points d.
   by apply Rlt_0_1.
 rewrite /=.
 case: eqVneq => Hd.
-  rewrite /barycenter big_map (bigD1_seq ord0); first last.
-    apply enum_uniq.
-    apply mem_enum.
+  rewrite /barycenter big_map big_filter (bigD1 ord0) ?inE //.
   rewrite Hd big1 /=.
     rewrite addpt0 (mkscaled_gt0 _ _ Rlt_0_1).
     by congr Scaled; apply val_inj; rewrite /= mulR1.
   move=> i Hi; have := pmf1 d.
-  rewrite (bigD1 ord0) ?mem_enum // Hd /= addRC => /(f_equal (Rminus^~ 1)).
+  rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ 1)).
   rewrite addRK subRR => /prsumr_eq0P -> //.
     by rewrite -(scalept0 (S1 (points i))).
   by move=> a _; apply pos_f_ge0.
@@ -979,7 +977,6 @@ Definition R_convMixin := ConvexSpace.Class avg1 avgI avgC avgA.
 Canonical R_convType := ConvexSpace.Pack R_convMixin.
 Definition avgn n (g : 'I_n -> R) (e : {dist 'I_n}) := \rsum_(i < n) (e i * g i)%R.
 Lemma avgnE n (g : 'I_n -> R) e : \Sum_e g = avgn g e.
-Proof.
 elim: n g e => /= [g e|n IH g e]; first by move: (distI0_False e).
 case: eqVneq => H /=.
   rewrite /avgn big_ord_recl /= H mul1R big1 ?addR0 // => j _.
@@ -997,6 +994,36 @@ Proof. move => x y z. rewrite /Conv /= /avg. lra. Qed.
 Lemma avg_mulDl t : left_distributive Rmult (fun x y => x <|t|> y).
 Proof. move => x y z. rewrite /Conv /= /avg. lra. Qed.
 End R_convex_space.
+
+(* Successful but heavy experiment: define a morphism to use
+   ScaleConvex for proving avgnE *)
+Module RScaledConvex.
+Import ScaledConvex.
+Definition scaleR x : R := if x is Scaled p y then p * y else 0.
+Lemma S1_can : cancel (@S1 R_convType) scaleR.
+Proof. by move=> x /=; rewrite mul1R. Qed.
+Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> (x + y)%R}.
+Proof.
+move=> [p x|] [q y|] /=; rewrite ?(add0R,addR0) //.
+rewrite /Conv /= /avg /Rpos_prob /= onem_div /Rdiv; last by apply Rpos_neq0.
+rewrite -!(mulRC (/ _)%R) -!mulRA -mulRDr !mulRA mulRV; last by apply Rpos_neq0.
+by rewrite mul1R (addRC p) addRK.
+Qed.
+Lemma scaleR0 : scaleR (@Zero _) = R0. by []. Qed.
+Lemma scaleR_scalept p x : (0 <= p -> scaleR (scalept p x) = p * scaleR x)%R.
+Proof.
+case: x => [q y|] Hp //=; last by rewrite mulR0.
+rewrite /mkscaled; case: Rlt_dec => Hp' /=. by rewrite mulRA.
+by rewrite (eqR_le_Ngt Hp Hp') mul0R.
+Qed.
+Lemma avgnE n (g : 'I_n -> R) e : \Sum_e g = avgn g e.
+Proof.
+rewrite -[LHS]S1_can S1_convn /barycenter big_map.
+rewrite (big_morph scaleR scaleR_addpt scaleR0).
+rewrite big_filter; apply eq_bigr => i _.
+rewrite scaleR_scalept ?S1_can //; by apply pos_f_ge0.
+Qed.
+End RScaledConvex.
 
 Module Funavg.
 Section funavg.
@@ -1575,6 +1602,43 @@ rewrite DelDist.dE D1Dist.dE /DelDist.h ltn0 eq_sym (negbTE (neq_lift _ _)).
 by rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?onem_neq0 // mulR1.
 Qed.
 End dist_convex_space.
+
+(* Failed experiment *)
+Module RfunScaledConvex.
+Import ScaledConvex.
+Local Open Scope R_scope.
+Section morph.
+Variable A : finType.
+Definition scaleR (x : scaled_pt (funConvType A R_convType)) : A -> R :=
+  if x is Scaled p f then (fun y => p * f y) else (fun=>0).
+Lemma S1_can : cancel (@S1 _) scaleR.
+Proof. move=> f /=. by apply functional_extensionality=> x; rewrite mul1R. Qed.
+Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> fun t => x t + y t}.
+Proof.
+move=> [p x|] [q y|] /=; apply functional_extensionality=> t;
+  rewrite ?(add0R,addR0) //.
+rewrite /Conv /= /avg /Rpos_prob /= onem_div /Rdiv; last by apply Rpos_neq0.
+rewrite -!(mulRC (/ _)%R) -!mulRA -mulRDr !mulRA mulRV; last by apply Rpos_neq0.
+by rewrite mul1R (addRC p) addRK.
+Qed.
+Lemma scaleR0 : scaleR (@Zero _) = fun=>R0. by []. Qed.
+Lemma scaleR_scalept p x : 0 <= p ->
+  scaleR (scalept p x) = fun t =>p * scaleR x t.
+Proof.
+case: x => [q y|] Hp //=; last by rewrite mulR0.
+apply functional_extensionality=> t.
+rewrite /mkscaled; case: Rlt_dec => Hp' /=. by rewrite mulRA.
+by rewrite (eqR_le_Ngt Hp Hp') mul0R.
+Qed.
+Lemma convn_convdist (n : nat) (g : 'I_n -> dist A) (d : {dist 'I_n}) :
+  \Sum_d g = ConvDist.d d g.
+Proof.
+(* Doesn't work because the above is not a morphism on distributions, only
+   on functions ... *)
+rewrite -[LHS]S1_can S1_convn /barycenter big_map || idtac.
+Abort.
+End morph.
+End RfunScaledConvex.
 
 (* TODO *)
 Section dist_ordered_convex_space.
