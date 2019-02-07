@@ -676,11 +676,17 @@ Section adjunction.
 Import ScaledConvex.
 Local Open Scope R_scope.
 
-Definition points_of_dist n (points : 'I_n -> A) (d : {dist 'I_n}) :=
+Definition points_of_dist (A : convType) n (points : 'I_n -> A)
+           (d : {dist 'I_n}) :=
   [seq scalept (d i) (S1 (points i)) | i <- enum 'I_n].
 
-Lemma S1_convn n (points : 'I_n -> A) d :
-  S1 (\Sum_d points) = barycenter (points_of_dist points d).
+Section with_proj.
+Variable B : convType.
+Variable f : A -> B.
+Hypothesis f_conv : forall p, {morph f : x y / x <|p|> y >-> x <|p|> y}.
+
+Lemma S1_convn_proj n (points : 'I_n -> A) d :
+  S1 (f (\Sum_d points)) = barycenter (points_of_dist (f \o points) d).
 Proof.
 elim: n points d => [|n IH] points d.
   move: (pmf1 d).
@@ -695,7 +701,7 @@ case: eqVneq => Hd.
   move=> i Hi; have := pmf1 d.
   rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ 1)).
   rewrite addRK subRR => /prsumr_eq0P -> //.
-    by rewrite -(scalept0 (S1 (points i))).
+    by rewrite -(scalept0 (S1 (f (points i)))).
   by move=> a _; apply pos_f_ge0.
 set d' := DelDist.d Hd.
 set points' := fun i => points (DelDist.h ord0 i).
@@ -703,7 +709,7 @@ rewrite /barycenter big_map (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
 rewrite -big_filter.
 rewrite (eq_big_perm (map (lift ord0) (enum 'I_n)));
   last by apply perm_filter_enum_ord.
-rewrite S1_conv; congr addpt.
+rewrite f_conv S1_conv; congr addpt.
 rewrite IH scalept_bary; last by apply prob_ge0.
 rewrite /barycenter 2!big_map [in RHS]big_map.
 apply eq_bigr => i _.
@@ -712,6 +718,11 @@ rewrite DelDist.dE D1Dist.dE /=.
 rewrite /Rdiv (mulRC (d _)) mulRA mulRV ?mul1R //.
 by move: (Hd); apply contra => /eqP Hd'; rewrite -onem0 -Hd' onemK.
 Qed.
+End with_proj.
+
+Lemma S1_convn n (points : 'I_n -> A) d :
+  S1 (\Sum_d points) = barycenter (points_of_dist points d).
+Proof. by rewrite (@S1_convn_proj _ (@id A)). Qed.
 
 Lemma eq_convn n g1 g2 (d1 d2 : {dist 'I_n}) :
   g1 =1 g2 -> d1 =1 d2 -> \Sum_d1 g1 = \Sum_d2 g2.
@@ -1603,7 +1614,7 @@ by rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?onem_neq0 // mulR1.
 Qed.
 End dist_convex_space.
 
-(* Failed experiment *)
+(* Try again with convn_convdist. Very heavy. *)
 Module RfunScaledConvex.
 Import ScaledConvex.
 Local Open Scope R_scope.
@@ -1633,10 +1644,19 @@ Qed.
 Lemma convn_convdist (n : nat) (g : 'I_n -> dist A) (d : {dist 'I_n}) :
   \Sum_d g = ConvDist.d d g.
 Proof.
-(* Doesn't work because the above is not a morphism on distributions, only
-   on functions ... *)
-rewrite -[LHS]S1_can S1_convn /barycenter big_map || idtac.
-Abort.
+apply dist_eq, pos_fun_eq.
+rewrite -[LHS]S1_can.
+rewrite (_ : pos_f (pmf (\Sum_d g)) = (@pos_f _ \o @pmf _) (\Sum_d g)) //.
+rewrite S1_convn_proj /barycenter; last first.
+  move=> p x y; apply functional_extensionality=> a.
+  by rewrite /Conv /= Conv2Dist.dE.
+rewrite big_map (big_morph scaleR scaleR_addpt scaleR0).
+apply functional_extensionality=> a.
+rewrite ConvDist.dE.
+rewrite (@big_morph _ _ (fun f => f a) 0 Rplus) //.
+rewrite big_filter; apply eq_bigr => i _.
+rewrite scaleR_scalept ?S1_can //; by apply pos_f_ge0.
+Qed. 
 End morph.
 End RfunScaledConvex.
 
