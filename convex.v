@@ -676,26 +676,31 @@ Section adjunction.
 Import ScaledConvex.
 Local Open Scope R_scope.
 
-Definition points_of_dist (A : convType) n (points : 'I_n -> A)
-           (d : {dist 'I_n}) :=
-  [seq scalept (d i) (S1 (points i)) | i <- enum 'I_n].
-
 Section with_proj.
 Variable B : convType.
+
+Definition points_of_dist n (points : 'I_n -> B) (d : {dist 'I_n}) :=
+  [seq scalept (d i) (S1 (points i)) | i <- enum 'I_n].
+
+Lemma barycenter_big_ord n points (d : {dist 'I_n}) :
+  barycenter (points_of_dist points d) =
+  \big[@addpt B/Zero B]_(i < n) scalept (d i) (S1 (points i)).
+Proof. by rewrite /barycenter big_map big_filter. Qed.
+
 Variable f : A -> B.
 Hypothesis f_conv : forall p, {morph f : x y / x <|p|> y >-> x <|p|> y}.
 
 Lemma S1_convn_proj n (points : 'I_n -> A) d :
-  S1 (f (\Sum_d points)) = barycenter (points_of_dist (f \o points) d).
+  S1 (f (\Sum_d points)) =
+  \big[@addpt B/Zero B]_(i < n) scalept (d i) (S1 (f (points i))).
 Proof.
 elim: n points d => [|n IH] points d.
   move: (pmf1 d).
-  rewrite big_ord0 => /Rlt_not_eq; elim.
+  rewrite /= big_ord0 => /Rlt_not_eq; elim.
   by apply Rlt_0_1.
 rewrite /=.
 case: eqVneq => Hd.
-  rewrite /barycenter big_map big_filter (bigD1 ord0) ?inE //.
-  rewrite Hd big1 /=.
+  rewrite (bigD1 ord0) ?inE // Hd big1 /=.
     rewrite addpt0 (mkscaled_gt0 _ _ Rlt_0_1).
     by congr Scaled; apply val_inj; rewrite /= mulR1.
   move=> i Hi; have := pmf1 d.
@@ -705,12 +710,11 @@ case: eqVneq => Hd.
   by move=> a _; apply pos_f_ge0.
 set d' := DelDist.d Hd.
 set points' := fun i => points (DelDist.h ord0 i).
-rewrite /barycenter big_map (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
-rewrite -big_filter.
-rewrite (eq_big_perm (map (lift ord0) (enum 'I_n)));
+rewrite /index_enum -enumT (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
+rewrite -big_filter (eq_big_perm (map (lift ord0) (enum 'I_n)));
   last by apply perm_filter_enum_ord.
 rewrite f_conv S1_conv; congr addpt.
-rewrite IH scalept_bary; last by apply prob_ge0.
+rewrite IH -barycenter_big_ord scalept_bary; last by apply prob_ge0.
 rewrite /barycenter 2!big_map [in RHS]big_map.
 apply eq_bigr => i _.
 rewrite scalept_comp; [|by apply prob_ge0|by apply pos_f_ge0].
@@ -721,22 +725,21 @@ Qed.
 End with_proj.
 
 Lemma S1_convn n (points : 'I_n -> A) d :
-  S1 (\Sum_d points) = barycenter (points_of_dist points d).
+  S1 (\Sum_d points) =
+  \big[@addpt A/Zero A]_(i < n) scalept (d i) (S1 (points i)).
 Proof. by rewrite (@S1_convn_proj _ (@id A)). Qed.
 
 Lemma eq_convn n g1 g2 (d1 d2 : {dist 'I_n}) :
   g1 =1 g2 -> d1 =1 d2 -> \Sum_d1 g1 = \Sum_d2 g2.
 Proof.
 move=> Hg Hd; apply S1_inj; rewrite !S1_convn.
-apply congr_big => //.
-apply eq_map => i; by rewrite Hg Hd.
+apply congr_big => // i _; by rewrite Hg Hd.
 Qed.
 
 Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Sum_d g = g i.
 Proof.
 move=> Hd; apply S1_inj.
-rewrite S1_convn /barycenter big_map.
-rewrite big_filter (bigD1 i) ?inE //=.
+rewrite S1_convn (bigD1 i) ?inE //=.
 rewrite big1; first by rewrite addpt0 Hd -(scalept1 (S1 _)).
 move=> j Hj.
 rewrite -(scalept0 (S1 (g j))) (_ : d j = 0) //.
@@ -776,7 +779,7 @@ Lemma Convn_perm (n : nat) (d : {dist 'I_n}) (g : 'I_n -> A) (s : 'S_n) :
   \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
 Proof.
 apply S1_inj.
-rewrite !S1_convn /barycenter !big_map (barycenter_reorder _ _ s).
+rewrite !S1_convn (barycenter_reorder _ _ s).
 apply eq_bigr => i _.
 by rewrite PermDist.dE.
 Qed.
@@ -1027,11 +1030,11 @@ case: x => [q y|] Hp //=; last by rewrite mulR0.
 rewrite /mkscaled; case: Rlt_dec => Hp' /=. by rewrite mulRA.
 by rewrite (eqR_le_Ngt Hp Hp') mul0R.
 Qed.
+Definition big_scaleR := big_morph scaleR scaleR_addpt scaleR0.
 Lemma avgnE n (g : 'I_n -> R) e : \Sum_e g = avgn g e.
 Proof.
-rewrite -[LHS]S1_can S1_convn /barycenter big_map.
-rewrite (big_morph scaleR scaleR_addpt scaleR0).
-rewrite big_filter; apply eq_bigr => i _.
+rewrite -[LHS]S1_can S1_convn big_scaleR.
+apply eq_bigr => i _.
 rewrite scaleR_scalept ?S1_can //; by apply pos_f_ge0.
 Qed.
 End RScaledConvex.
@@ -1627,9 +1630,7 @@ apply dist_ext=> a.
 rewrite -[LHS]S1_can.
 rewrite (@S1_convn_proj _ _ (@^~ a \o @pos_f _ \o @pmf _)); last first.
   move=> p x y /=; by rewrite /Conv /= Conv2Dist.dE.
-rewrite /barycenter big_map (big_morph scaleR scaleR_addpt scaleR0).
-rewrite ConvDist.dE.
-rewrite big_filter; apply eq_bigr => i _.
+rewrite big_scaleR ConvDist.dE; apply eq_bigr => i _.
 rewrite scaleR_scalept ?S1_can //; by apply pos_f_ge0.
 Qed.
 End morph.
