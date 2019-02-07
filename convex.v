@@ -328,22 +328,21 @@ rewrite convC; congr Conv.
 by rewrite [RHS]Rpos_probC.
 Qed.
 
-Lemma addptA : associative addpt.
+Lemma s_of_Rpos_probA p q r :
+  [s_of Rpos_prob p (addRpos q r), Rpos_prob q r] = Rpos_prob (addRpos p q) r.
 Proof.
-move=> [p x|] [q y|] [r z|] //=.
-congr Scaled. by apply val_inj; rewrite /= addRA.
-rewrite convA; congr Conv; last first.
-  apply prob_ext => /=.
-  rewrite s_of_pqE -addRA.
-  rewrite Rpos_probC (@Rpos_probC r) /= !onemK.
-  rewrite -(addRC p) -(addRC q) /Rdiv.
-  rewrite mulRA mulRC !mulRA.
-  rewrite mulVR; last by apply Rpos_neq0.
-  rewrite mul1R mulRC onem_div; last by apply Rpos_neq0.
-  by rewrite /= !addRA addRK.
-congr Conv.
 apply prob_ext => /=.
-rewrite r_of_pqE /=.
+rewrite s_of_pqE -addRA Rpos_probC (@Rpos_probC r) /= !onemK.
+rewrite -(addRC p) -(addRC q) /Rdiv mulRA mulRC !mulRA.
+rewrite mulVR; last by apply Rpos_neq0.
+rewrite mul1R mulRC onem_div; last by apply Rpos_neq0.
+by rewrite /= !addRA addRK.
+Qed.
+
+Lemma r_of_Rpos_probA p q r :
+  [r_of Rpos_prob p (addRpos q r), Rpos_prob q r] = Rpos_prob p q.
+Proof.
+apply prob_ext; rewrite r_of_pqE /=.
 rewrite s_of_pqE Rpos_probC (Rpos_probC r) /= !onemK.
 rewrite {3 4}/Rdiv !mulRA -(mulRC (/ (r + q))) !mulRA.
 have Hpqr : p + q + r != 0 by apply Rpos_neq0.
@@ -355,6 +354,14 @@ rewrite {3}/Rdiv divRM /=; last by apply /invR_neq0/eqP.
   by rewrite /Rdiv mulRC (mulRC p) !mulRA mulRV // mul1R.
 rewrite -addRA (addRC r) addRA /= addRK.
 by apply /eqP /Rpos_neq0.
+Qed.
+
+Lemma addptA : associative addpt.
+Proof.
+move=> [p x|] [q y|] [r z|] //=.
+congr Scaled. by apply val_inj; rewrite /= addRA.
+rewrite convA; congr Conv; last by rewrite s_of_Rpos_probA.
+congr Conv; by rewrite r_of_Rpos_probA.
 Qed.
 
 Lemma addpt0 x : addpt x Zero = x.
@@ -564,8 +571,7 @@ by rewrite -big_scalept; apply eq_bigr.
 Qed.
 End convdist.
 
-Section binary.
-Variables x y : A.
+Section adjunction.
 Variable p : prob.
 
 Lemma adjunction_1 a b :
@@ -573,7 +579,7 @@ Lemma adjunction_1 a b :
   S1 (a <|`Pr 1|> b).
 Proof. by rewrite scalept0 scalept1 addpt0 conv1. Qed.
 
-Lemma adjunction_2 :
+Lemma adjunction_2 x y :
   addpt (scalept p (S1 x)) (scalept p.~ (S1 y)) = S1 (x <| p |> y).
 Proof.
 case Hp0: (0 <b p); last first.
@@ -591,10 +597,10 @@ congr Scaled.
 congr Conv; apply prob_ext => /=.
 by rewrite !mulR1 /= addRC subRK divR1.
 Qed.
-End binary.
 
-Lemma scaled_conv_Scaled p : {morph S1 : a b / a <|p|> b >-> a <|p|> b}.
+Lemma S1_conv : {morph S1 : a b / a <|p|> b >-> a <|p|> b}.
 Proof. move=> a b. by rewrite -adjunction_2. Qed.
+End adjunction.
 
 End scaled_convex.
 End ScaledConvex.
@@ -618,10 +624,9 @@ case/boolP : (r == `Pr 0) => r0.
   congr (_ <| _ |> _); move: H2; rewrite H1 (eqP r0) mul0R onem0 mul1R.
   move/(congr1 onem); rewrite !onemK => ?; exact/prob_ext.
 case/boolP : (s == `Pr 0) => s0.
-  rewrite (eqP s0) conv0 (_ : p = `Pr 0) ?conv0; last first.
-    by apply/prob_ext; rewrite H1 (eqP s0) mulR0.
+  have p0 : p = `Pr 0 by apply/prob_ext; rewrite H1 (eqP s0) mulR0.
+  rewrite (eqP s0) conv0 p0 // ?conv0.
   rewrite (_ : q = `Pr 0) ?conv0 //.
-  move: H1; rewrite (eqP s0) mulR0 => p0.
   move: H2; rewrite p0 onem0 mul1R => /(congr1 onem); rewrite !onemK => sq.
   rewrite -(eqP s0); exact/prob_ext.
 rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
@@ -641,11 +646,11 @@ Lemma commute (x1 y1 x2 y2 : A) p q :
   (x1 <|q|> y1) <|p|> (x2 <|q|> y2) = (x1 <|p|> x2) <|q|> (y1 <|p|> y2).
 Proof.
 Import ScaledConvex.
-apply S1_inj; rewrite ![in LHS]scaled_conv_Scaled [LHS]/Conv /= /scaled_conv.
+apply S1_inj; rewrite ![in LHS]S1_conv [LHS]/Conv /= /scaled_conv.
 rewrite !scalept_addpt ?scalept_comp; try apply prob_ge0.
 rewrite !(mulRC p) !(mulRC p.~) addptA addptC (addptC (scalept (q*p) _)).
 rewrite !addptA -addptA -!scalept_comp -?scalept_addpt; try apply prob_ge0.
-by rewrite !(addptC (scalept _.~ _)) !scaled_conv_Scaled.
+by rewrite !(addptC (scalept _.~ _)) !S1_conv.
 Qed.
 
 Lemma distribute (x y z : A) (p q : prob) :
@@ -674,8 +679,8 @@ Local Open Scope R_scope.
 Definition points_of_dist n (points : 'I_n -> A) (d : {dist 'I_n}) :=
   [seq scalept (d i) (S1 (points i)) | i <- enum 'I_n].
 
-Lemma adjunction_n n (points : 'I_n -> A) d :
-  barycenter (points_of_dist points d) = S1 (\Sum_d points).
+Lemma S1_convn n (points : 'I_n -> A) d :
+  S1 (\Sum_d points) = barycenter (points_of_dist points d).
 Proof.
 elim: n points d => [|n IH] points d.
   move: (pmf1 d).
@@ -700,21 +705,20 @@ rewrite /barycenter big_map (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
 rewrite -big_filter.
 rewrite (eq_big_perm (map (lift ord0) (enum 'I_n)));
   last by apply perm_filter_enum_ord.
-rewrite scaled_conv_Scaled; congr addpt.
-rewrite -IH /barycenter big_map [in RHS]big_map.
-have Hd0' : 1 - d ord0 > 0 by apply ltR_subRL; rewrite addR0; apply dist_lt1.
-rewrite (big_morph (scalept _) (scalept_addpt (ltRW Hd0')) (scaleptR0 _ _)).
+rewrite S1_conv; congr addpt.
+rewrite IH scalept_bary; last by apply prob_ge0.
+rewrite /barycenter 2!big_map [in RHS]big_map.
 apply eq_bigr => i _.
-rewrite scalept_comp; [|by apply ltRW|by apply pos_f_ge0].
+rewrite scalept_comp; [|by apply prob_ge0|by apply pos_f_ge0].
 rewrite DelDist.dE D1Dist.dE /=.
 rewrite /Rdiv (mulRC (d _)) mulRA mulRV ?mul1R //.
-by apply/eqP/gtR_eqF.
+by move: (Hd); apply contra => /eqP Hd'; rewrite -onem0 -Hd' onemK.
 Qed.
 
 Lemma eq_convn n g1 g2 (d1 d2 : {dist 'I_n}) :
   g1 =1 g2 -> d1 =1 d2 -> \Sum_d1 g1 = \Sum_d2 g2.
 Proof.
-move=> Hg Hd; apply S1_inj; rewrite -!adjunction_n.
+move=> Hg Hd; apply S1_inj; rewrite !S1_convn.
 apply congr_big => //.
 apply eq_map => i; by rewrite Hg Hd.
 Qed.
@@ -722,10 +726,9 @@ Qed.
 Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Sum_d g = g i.
 Proof.
 move=> Hd; apply S1_inj.
-rewrite -adjunction_n /barycenter big_map.
-rewrite (bigD1_seq i) /=; [|apply mem_enum|apply enum_uniq].
-rewrite big1 ?addpt0 ?Hd.
-  by rewrite -(scalept1 (S1 _)).
+rewrite S1_convn /barycenter big_map.
+rewrite big_filter (bigD1 i) ?inE //=.
+rewrite big1; first by rewrite addpt0 Hd -(scalept1 (S1 _)).
 move=> j Hj.
 rewrite -(scalept0 (S1 (g j))) (_ : d j = 0) //.
 by move/eqP/Dist1.dist1P: Hd => ->.
@@ -764,7 +767,7 @@ Lemma Convn_perm (n : nat) (d : {dist 'I_n}) (g : 'I_n -> A) (s : 'S_n) :
   \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
 Proof.
 apply S1_inj.
-rewrite -!adjunction_n /barycenter !big_map (barycenter_reorder _ _ s).
+rewrite !S1_convn /barycenter !big_map (barycenter_reorder _ _ s).
 apply eq_bigr => i _.
 by rewrite PermDist.dE.
 Qed.
