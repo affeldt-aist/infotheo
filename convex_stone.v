@@ -1151,6 +1151,17 @@ by rewrite mulRAC mulRC -mulRA mulVR ?onem_neq0 // mulR1.
 Qed.
 End R_convex_space.
 
+Section affine_function_prop0.
+Lemma affine_function_Sum (A B : convType) (f : {affine A -> B}) (n : nat) (g : 'I_n -> A) (e : {dist 'I_n}) :
+  f (\Sum_e g) = \Sum_e (f \o g).
+Proof.
+elim: n g e => [g e|n IH g e]; first by move: (distI0_False e).
+case/boolP : (e ord0 == 1%R :> R) => [|e01].
+  by rewrite Dist1.one => /eqP ->; rewrite 2!ConvnDist1.
+by rewrite 2!convnE (affine_functionP' f) IH.
+Qed.
+End affine_function_prop0.
+
 Section convn_convdist.
 Variable A : finType.
 Lemma convn_convdist (n : nat) (g : 'I_n -> dist A) (d : {dist 'I_n}) :
