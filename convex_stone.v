@@ -1136,3 +1136,35 @@ apply (@Sn.suff_generators _ (fun s => forall m : nat,
 Qed.
 
 End convex_space_prop.
+
+Section R_convex_space.
+Lemma avgnE n (g : 'I_n -> R) e : \Sum_e g = avgn g e.
+elim: n g e => /= [g e|n IH g e]; first by move: (distI0_False e).
+case: eqVneq => H /=.
+  rewrite /avgn big_ord_recl /= H mul1R big1 ?addR0 // => j _.
+  by move/eqP/Dist1.dist1P : H => ->; rewrite ?mul0R.
+rewrite /avgn big_ord_recl /=.
+rewrite /Conv /= /avg /=; congr (_ + _)%R.
+rewrite IH /avgn big_distrr /=; apply eq_bigr => j _.
+rewrite DelDist.dE D1Dist.dE /DelDist.h ltn0 eq_sym (negbTE (neq_lift _ _)).
+by rewrite mulRAC mulRC -mulRA mulVR ?onem_neq0 // mulR1.
+Qed.
+End R_convex_space.
+
+Section convn_convdist.
+Variable A : finType.
+Lemma convn_convdist (n : nat) (g : 'I_n -> dist A) (d : {dist 'I_n}) :
+  \Sum_d g = ConvDist.d d g.
+Proof.
+elim: n g d => /= [g d|n IH g d]; first by move: (distI0_False d).
+case: eqVneq => H.
+  apply/dist_ext => a.
+  rewrite ConvDist.dE big_ord_recl H mul1R big1 ?addR0 //= => j _.
+  by move/eqP/Dist1.dist1P : H => -> //; rewrite ?mul0R.
+apply/dist_ext => a.
+rewrite Conv2Dist.dE ConvDist.dE /= big_ord_recl; congr (_ + _)%R.
+rewrite IH ConvDist.dE big_distrr /=; apply eq_bigr => i _.
+rewrite DelDist.dE D1Dist.dE /DelDist.h ltn0 eq_sym (negbTE (neq_lift _ _)).
+by rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?onem_neq0 // mulR1.
+Qed.
+End convn_convdist.
