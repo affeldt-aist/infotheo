@@ -373,17 +373,11 @@ Proof. by []. Qed.
 Canonical addpt_monoid := Monoid.Law addptA add0pt addpt0.
 Canonical addpt_comoid := Monoid.ComLaw addptC.
 
-Definition barycenter (pts : seq scaled_pt) :=
-  \big[addpt/Zero]_(x <- pts) x.
-
 Lemma weight_addpt : {morph weight : x y / addpt x y >-> x + y}.
 Proof. move=> [p x|] [q y|] //=; by rewrite (add0R, addR0). Qed.
 
 Lemma weight0 : weight Zero = 0.
 Proof. by []. Qed.
-
-Lemma weight_bary pts : weight (barycenter pts) = \rsum_(x <- pts) weight x.
-Proof. by rewrite (big_morph weight weight_addpt weight0). Qed.
 
 Definition mkscaled r q (x : A) :=
   match Rlt_dec 0 r with
@@ -429,13 +423,6 @@ congr Scaled.
   rewrite /= -mulRDr -(mulRC (p+q)) divRM //.
     by rewrite -(mulRC (/r)) !mulRA mulVR ?mul1R //; apply /eqP.
   by apply/eqP/Rpos_neq0.
-Qed.
-
-Lemma scalept_bary p (H : 0 <= p) pts :
-  scalept p (barycenter pts) = barycenter (map (scalept p) pts).
-Proof.
-rewrite (big_morph (scalept p) (scalept_addpt H) (scaleptR0 _)).
-by rewrite /barycenter big_map.
 Qed.
 
 Lemma scalept_comp p q x :
@@ -530,20 +517,30 @@ apply (@ConvexSpace.Class _ scaled_conv); rewrite /scaled_conv /=.
 Defined.
 Canonical Scaled_convType := ConvexSpace.Pack Scaled_convMixin.
 
-Section reordering.
-Variables n : nat.
-Variable p : {dist 'I_n}.
-Variable h : 'I_n -> scaled_pt.
+Definition barycenter (pts : seq scaled_pt) :=
+  \big[addpt/Zero]_(x <- pts) x.
 
-Lemma barycenter_reorder (pe : 'S_n) :
-  \big[addpt/Zero]_(i < n) scalept (p i) (h i) =
-  \big[addpt/Zero]_(i < n) scalept (p (pe i)) (h (pe i)).
+Lemma barycenter_big_fin (T : finType) (F : T -> scaled_pt) :
+  barycenter [seq F i | i <- enum T] = \big[addpt/Zero]_i F i.
+Proof. by rewrite /barycenter big_map big_filter. Qed.
+
+Lemma weight_bary pts : weight (barycenter pts) = \rsum_(x <- pts) weight x.
+Proof. by rewrite (big_morph weight weight_addpt weight0). Qed.
+
+Lemma scalept_bary p (H : 0 <= p) pts :
+  scalept p (barycenter pts) = barycenter (map (scalept p) pts).
 Proof.
-rewrite -[RHS](big_map pe xpredT (fun i => scalept (p i) (h i))).
-apply eq_big_perm.
-by rewrite /index_enum -enumT perm_eq_perm.
+rewrite (big_morph (scalept p) (scalept_addpt H) (scaleptR0 _)).
+by rewrite /barycenter big_map.
 Qed.
-End reordering.
+
+Lemma barycenter_perm n (F : 'I_n -> scaled_pt) (pe : 'S_n) :
+  \big[addpt/Zero]_(i < n) F i =
+  \big[addpt/Zero]_(i < n) F (pe i).
+Proof.
+rewrite -!barycenter_big_fin /barycenter big_map map_comp big_map.
+by apply eq_big_perm, perm_eq_perm.
+Qed.
 
 Section convdist.
 Variables n m : nat.
@@ -678,21 +675,12 @@ Local Open Scope R_scope.
 
 Section with_proj.
 Variable B : convType.
-
-Definition points_of_dist n (points : 'I_n -> B) (d : {dist 'I_n}) :=
-  [seq scalept (d i) (S1 (points i)) | i <- enum 'I_n].
-
-Lemma barycenter_big_ord n points (d : {dist 'I_n}) :
-  barycenter (points_of_dist points d) =
-  \big[@addpt B/Zero B]_(i < n) scalept (d i) (S1 (points i)).
-Proof. by rewrite /barycenter big_map big_filter. Qed.
-
-Variable f : A -> B.
-Hypothesis f_conv : forall p, {morph f : x y / x <|p|> y >-> x <|p|> y}.
+Variable prj : A -> B.
+Hypothesis prj_conv : forall p, {morph prj : x y / x <|p|> y >-> x <|p|> y}.
 
 Lemma S1_convn_proj n (points : 'I_n -> A) d :
-  S1 (f (\Sum_d points)) =
-  \big[@addpt B/Zero B]_(i < n) scalept (d i) (S1 (f (points i))).
+  S1 (prj (\Sum_d points)) =
+  \big[@addpt B/Zero B]_(i < n) scalept (d i) (S1 (prj (points i))).
 Proof.
 elim: n points d => [|n IH] points d.
   move: (pmf1 d).
@@ -706,15 +694,15 @@ case: eqVneq => Hd.
   move=> i Hi; have := pmf1 d.
   rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ 1)).
   rewrite addRK subRR => /prsumr_eq0P -> //.
-    by rewrite -(scalept0 (S1 (f (points i)))).
+    by rewrite -(scalept0 (S1 (prj (points i)))).
   by move=> a _; apply pos_f_ge0.
 set d' := DelDist.d Hd.
 set points' := fun i => points (DelDist.h ord0 i).
 rewrite /index_enum -enumT (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
 rewrite -big_filter (eq_big_perm (map (lift ord0) (enum 'I_n)));
   last by apply perm_filter_enum_ord.
-rewrite f_conv S1_conv; congr addpt.
-rewrite IH -barycenter_big_ord scalept_bary; last by apply prob_ge0.
+rewrite prj_conv S1_conv; congr addpt.
+rewrite IH -barycenter_big_fin scalept_bary; last by apply prob_ge0.
 rewrite /barycenter 2!big_map [in RHS]big_map.
 apply eq_bigr => i _.
 rewrite scalept_comp; [|by apply prob_ge0|by apply pos_f_ge0].
@@ -774,14 +762,12 @@ rewrite convnE; congr (_ <| _ |> _).
 by rewrite convn1E /DelDist.h ltnn.
 Qed.
 
-(* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2*)
+(* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2 *)
 Lemma Convn_perm (n : nat) (d : {dist 'I_n}) (g : 'I_n -> A) (s : 'S_n) :
   \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
 Proof.
-apply S1_inj.
-rewrite !S1_convn (barycenter_reorder _ _ s).
-apply eq_bigr => i _.
-by rewrite PermDist.dE.
+apply S1_inj; rewrite !S1_convn (barycenter_perm _ s).
+apply eq_bigr => i _; by rewrite PermDist.dE.
 Qed.
 End adjunction.
 End convex_space_prop.
