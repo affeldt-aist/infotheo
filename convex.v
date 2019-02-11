@@ -386,16 +386,25 @@ Lemma scalept_gt0 p q x (H : 0 < p) :
   scalept p (Scaled q x) = Scaled (mulRpos (mkRpos H) q) x.
 Proof. by rewrite /= mkscaled_gt0. Qed.
 
+Lemma mkscaled0 r x : mkscaled 0 r x = Zero.
+Proof. rewrite /mkscaled; case: Rlt_dec => // Hr; by elim (ltRR 0). Qed.
+
 Lemma scalept0 x : scalept 0 x = Zero.
-Proof.
-case: x; rewrite /scalept /mkscaled //.
-move=> r c; case: Rlt_dec => // Hr; by elim (ltRR 0).
-Qed.
+Proof. case: x => //= r c; by rewrite mkscaled0. Qed.
 
 Lemma scalept1 x : scalept 1 x = x.
 Proof.
 case: x => // r c; rewrite scalept_gt0.
 congr Scaled; apply val_inj; by rewrite /= mul1R.
+Qed.
+
+Lemma scalept_Scaled p q x : scalept p (Scaled q x) = scalept (p*q) (S1 x).
+Proof.
+rewrite /= /mkscaled.
+case: Rlt_dec => Hp; case: Rlt_dec => Hpq //.
+- congr Scaled; apply val_inj; by rewrite /= mulR1.
+- elim Hpq; by apply /mulR_gt0 /Rpos_gt0.
+- elim Hp; move/pmulR_lgt0: Hpq; apply; apply Rpos_gt0.
 Qed.
 
 Lemma scalept_weight p x : 0 <= p -> weight (scalept p x) = p * weight x.
@@ -410,7 +419,7 @@ Proof.
 case=> Hr x y; last by rewrite -Hr !scalept0 addpt0.
 case: x => [p x|]; last by rewrite !add0pt.
 case: y => [q y|]; last by rewrite !addpt0.
-rewrite /= !mkscaled_gt0 /=; congr Scaled.
+rewrite !scalept_gt0; congr Scaled.
   by apply val_inj; rewrite /= mulRDr.
 have Hr0 : r <> 0 by apply gtR_eqF.
 congr Conv; apply prob_ext; rewrite /= -mulRDr divRM //.
@@ -611,10 +620,24 @@ Fixpoint Convn n : {dist 'I_n} -> ('I_n -> A) -> A :=
 
 Local Notation "'\Sum_' d f" := (Convn d f).
 
-Section with_proj.
+Section with_affine_projection.
 Variable B : convType.
 Variable prj : A -> B.
-Hypothesis prj_conv : forall p, {morph prj : x y / x <|p|> y >-> x <|p|> y}.
+Hypothesis prj_affine : forall p, {morph prj : x y / x <|p|> y >-> x <|p|> y}.
+
+Definition map_scaled (x : scaled_pt A) :=
+  if x is Scaled p a then Scaled p (prj a) else @Zero B.
+
+Lemma map_scaled_affine p :
+  {morph map_scaled : x y / x <|p|> y >-> x <|p|> y}.
+Proof.
+move=> [q x|] [r y|] //=; rewrite /Conv /= /scaled_conv ?scaleptR0.
++ rewrite !(scalept_Scaled p) !(scalept_Scaled p.~) /= /mkscaled.
+  case: Rlt_dec => Hpq; case: Rlt_dec => Hpr //=; congr Scaled.
+  by rewrite prj_affine.
++ rewrite !addpt0 !(scalept_Scaled p) /= /mkscaled; by case: Rlt_dec.
++ rewrite !add0pt !(scalept_Scaled p.~) /= /mkscaled; by case: Rlt_dec.
+Qed.
 
 Lemma S1_convn_proj n (points : 'I_n -> A) d :
   S1 (prj (\Sum_d points)) =
@@ -632,14 +655,14 @@ case: eqVneq => Hd.
   move=> i Hi; have := pmf1 d.
   rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ R1)).
   rewrite addRK subRR => /prsumr_eq0P -> //.
-    by rewrite -(scalept0 (S1 (prj (points i)))).
+    by rewrite mkscaled0.
   by move=> a _; apply pos_f_ge0.
 set d' := DelDist.d Hd.
 set points' := fun i => points (DelDist.h ord0 i).
 rewrite /index_enum -enumT (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
 rewrite -big_filter (eq_big_perm (map (lift ord0) (enum 'I_n)));
   last by apply perm_filter_enum_ord.
-rewrite prj_conv S1_conv; congr addpt.
+rewrite prj_affine S1_conv; congr addpt.
 rewrite IH -barycenter_big_fin scalept_bary; last by apply prob_ge0.
 rewrite /barycenter 2!big_map [in RHS]big_map.
 apply eq_bigr => i _.
@@ -648,7 +671,7 @@ rewrite DelDist.dE D1Dist.dE /=.
 rewrite /Rdiv (mulRC (d _)) mulRA mulRV ?mul1R //.
 by move: (Hd); apply contra => /eqP Hd'; rewrite -onem0 -Hd' onemK.
 Qed.
-End with_proj.
+End with_affine_projection.
 
 Lemma S1_convn n (points : 'I_n -> A) d :
   S1 (\Sum_d points) =
@@ -668,8 +691,7 @@ move=> Hd; apply S1_inj.
 rewrite S1_convn (bigD1 i) ?inE //=.
 rewrite big1; first by rewrite addpt0 Hd -(scalept1 (S1 _)).
 move=> j Hj.
-rewrite -(scalept0 (S1 (g j))) (_ : d j = R0) //.
-by move/eqP/Dist1.dist1P: Hd => ->.
+move/eqP/Dist1.dist1P: Hd => -> //; by rewrite mkscaled0.
 Qed.
 
 Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Sum_(Dist1.d j) g = g j.
