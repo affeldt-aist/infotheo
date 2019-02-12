@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import choice fintype tuple finfun bigop finset binomial.
 From mathcomp Require Import fingroup perm.
@@ -38,8 +39,8 @@ Record jtype : predArgType := mkJtype {
   sum_f : \sum_(a in A) \sum_(b in B) f a b == n ;
   c_f : forall a b, c a b = let row := \sum_(b in B) f a b in
                             if row == O
-                            then / INR #|B|
-                            else (INR (f a b) / INR row)%R }.
+                            then / #|B|%:R
+                            else ((f a b)%:R / row%:R)%R }.
 
 End jtype_def.
 
@@ -85,8 +86,8 @@ Definition pos_fun_of_pre_jtype (A B : finType) (Bnot0 : (0 < #|B|)%nat) n
 pose pf := fun a => (fun b : B =>
   let ln := \sum_(b1 in B) (f a b1) in
   if ln == O
-    then / INR #|B|
-    else (INR (f a b)) / INR ln).
+    then / #|B|%:R
+    else (f a b)%:R / ln%:R).
 move=> a.
 refine (@mkPosFun _ (pf a) _) => b.
 rewrite /pf.
@@ -101,16 +102,15 @@ Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat) (Bnot0 : (0 < 
 set pf := fun a b =>
   let ln := \sum_(b1 in B) (f a b1) in
   if ln == O
-  then / INR #|B|
-  else INR (f a b) / INR ln.
+  then / #|B|%:R
+  else (f a b)%:R / ln%:R.
 refine (@Channel1.mkChan A B _ Anot0) => a.
 refine (@mkDist _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a) _).
 rewrite /=.
 case/boolP : (\sum_(b1 in B) (f a b1) == O) => Hcase.
 - by rewrite /Rle big_const iter_addR mulRV // INR_eq0' -lt0n.
-- rewrite (@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  rewrite /Rdiv -big_distrl /= mulRV //.
-  by rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) // INR_eq0'.
+- rewrite big_morph_natRD /Rdiv -big_distrl /= mulRV //.
+  by rewrite -big_morph_natRD // INR_eq0'.
 Defined.
 
 Definition jtype_choice_f (A B : finType) n (f : {ffun A -> {ffun B -> 'I_n.+1}}) : option (P_ n ( A , B )).
@@ -245,10 +245,10 @@ have -> : tmp = pmap (fun f =>
                             jtype.sum_f := proj2_sig f;
                             jtype.c_f := fun a b => erefl
                                              (if \sum_(b0 in B) (sval f a) b0 == 0%N
-                                              then / INR #|B|
+                                              then / #|B|%:R
                                               else
-                                                INR (sval f a b) /
-                                                    INR (\sum_(b0 in B) (sval f a) b0)) |}
+                                                (sval f a b)%:R /
+                                                    (\sum_(b0 in B) (sval f a) b0)%:R) |}
                      ) (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}} |
                                            \sum_(a in A) \sum_(b in B) f a b == n}]).
   apply: eq_pmap => V.
@@ -333,7 +333,7 @@ have [tmp Htmp] : [finType of {f : {ffun A -> {ffun B -> 'I_n.+1}} |
 have Htmp' : (forall a b,
         (chan_of_jtype Anot0 Bnot0 tmp) a b =
         (let ln := \sum_(b0 in B) (tmp a) b0 in
-         if ln == 0 then / INR #|B| else (INR ((tmp a) b) / INR ln)%R)) by [].
+         if ln == 0 then / #|B|%:R else (((tmp a) b)%:R / ln%:R)%R)) by [].
 exists (@jtype.mkJtype _ _ _ (chan_of_jtype Anot0 Bnot0 tmp) tmp Htmp Htmp').
 by rewrite inE.
 Qed.
@@ -624,14 +624,14 @@ Local Open Scope nat_scope.
 
 Definition type_of_row (a : A) (Ha : N(a | ta) != 0) : P_ N(a | ta) ( B ).
 pose f := [ffun b => Ordinal (ctyp_element_ub Hrow_num_occ Hta a b)].
-pose d := fun b => (INR (f b) / INR N(a | ta))%R.
+pose d := fun b => ((f b)%:R / N(a | ta)%:R)%R.
 have d0 : forall b, (0 <= d b)%R.
   move=> b.
   rewrite /d /=.
   apply mulR_ge0; first exact/leR0n.
   apply/ltRW/invR_gt0/ltR0n; by rewrite lt0n.
 have d1 : \rsum_(b : B) d b = 1%R.
-  rewrite /d -big_distrl /= -(@big_morph _ _ _ 0%R _ O _ morph_plus_INR) //.
+  rewrite /d -big_distrl /= -big_morph_natRD.
   set lhs := \sum_i _.
   suff -> : lhs = N(a | ta) by rewrite mulRV // INR_eq0'.
   rewrite /lhs /f /= -[in X in _ = X](Hrow_num_occ Hta a).
@@ -779,19 +779,18 @@ Hypothesis ta_sorted : sorted (@le_rank _) ta.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
 Lemma card_shell_leq_exp_entropy :
-  INR #| V.-shell ta | <= exp2 (INR n * `H(V | P)).
+  #| V.-shell ta |%:R <= exp2 (n%:R * `H(V | P)).
 Proof.
 rewrite CondEntropyChanE2.
-apply (@leR_trans (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
+apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
 - exact/le_INR/leP/card_shelled_tuples_leq_prod_card.
-- rewrite exp2_pow.
-  rewrite (big_morph _ mult_INR Logic.eq_refl).
+- rewrite exp2_pow big_morph_natRM.
   rewrite (@big_morph _ _ (fun r : R => ((exp2 r) ^ n)%R) 1%R Rmult _ Rplus _); last 2 first.
     move=> a b /=; rewrite -!exp2_pow mulRDr /exp2 !ExpD; by field.
     by rewrite -exp2_pow mulR0 /exp2 Exp_0.
   rewrite (reindex_onto (fun x => enum_rank x) (fun y => enum_val y)) => [|i _]; last by rewrite enum_valK.
   rewrite (_ : \rprod_(j | enum_val (enum_rank j) == j) _ =
-               \rprod_(j : A) INR (card_type_of_row Hta Vctyp (enum_rank j))); last first.
+               \rprod_(j : A) (card_type_of_row Hta Vctyp (enum_rank j))%:R); last first.
       apply eq_bigl => a; rewrite enum_rankK; by apply/eqP.
   apply ler_rprod => a.
   split; first exact/leR0n.
@@ -802,7 +801,7 @@ apply (@leR_trans (INR (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i))).
       apply mulR_ge0; by [apply leR0n | apply dist_ge0].
       exact: entropy_ge0.
   set pta0 := type_of_row Hta Vctyp _.
-  rewrite (_ : exp2 _ = exp2 (INR N(a | ta) * `H pta0)%R).
+  rewrite (_ : exp2 _ = exp2 (N(a | ta)%:R * `H pta0)%R).
     rewrite -[in X in _ <= exp2 (X * _)](enum_rankK a); by apply card_typed_tuples.
   do 2 f_equal.
   + by rewrite -type_fun_type // (type_numocc Hta).
@@ -1092,15 +1091,14 @@ Variable n' : nat.
 Let n := n'.+1.
 Variable V : P_ n ( A , B ).
 
-Definition f := fun b => (INR (\sum_(a in A) (jtype.f V) a b) / INR n)%R.
+Definition f := fun b => ((\sum_(a in A) (jtype.f V) a b)%:R / n%:R)%R.
 
 Lemma f0 (b : B) : (0 <= f b)%R.
 Proof. apply divR_ge0; [exact/leR0n | exact/ltR0n]. Qed.
 
 Lemma f1 : \rsum_(b in B) f b = 1%R.
 Proof.
-rewrite /f -big_distrl /= -(@big_morph _ _ _ 0%R _ 0 _ morph_plus_INR) //.
-rewrite exchange_big /=.
+rewrite /f -big_distrl /= -big_morph_natRD exchange_big /=.
 move/eqP : (jtype.sum_f V) => ->; by rewrite mulRV // INR_eq0'.
 Qed.
 
@@ -1144,8 +1142,8 @@ Hypothesis Vctyp : V \in \nu^{B}(P).
 Lemma output_type_out_dist : forall b, (`tO( V )) b = `O( P , V ) b.
 Proof.
 rewrite /dist_of_ffun /= /OutType.d /OutType.f => b /=.
-rewrite (@big_morph _ _ _ 0 _ O _ morph_plus_INR) // /Rdiv.
-rewrite (big_morph _ (morph_mulRDl _) (mul0R _)) OutDist.dE; apply eq_bigr => a _.
+rewrite big_morph_natRD /Rdiv (big_morph _ (morph_mulRDl _) (mul0R _)).
+rewrite OutDist.dE; apply eq_bigr => a _.
 case: (typed_tuples_not_empty P) => /= ta Hta.
 move: (Vctyp).
 rewrite in_set.
@@ -1164,7 +1162,7 @@ case: ifP => [/eqP |] Hcase.
   by rewrite mul0R.
 - rewrite -mulRA sum_V; congr (_ * _).
   move: Hta; rewrite in_set => /forallP/(_ a)/eqP ->.
-  by rewrite mulRA -{1}(mul1R (/ INR n)) mulVR // INR_eq0' -sum_V Hcase.
+  by rewrite mulRA -{1}(mul1R (/ n%:R)) mulVR // INR_eq0' -sum_V Hcase.
 Qed.
 
 Lemma output_type_out_entropy : `H (`tO( V )) = `H(P `o V).
@@ -1187,7 +1185,7 @@ Hypothesis Hta : ta \in T_{P}.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
-Lemma card_shelled_tuples : INR #| V.-shell ta | <= exp2 (INR n * `H(V | P)).
+Lemma card_shelled_tuples : #| V.-shell ta |%:R <= exp2 (n%:R * `H(V | P)).
 Proof.
 case: (tuple_exist_perm_sort (@le_rank A) ta) => /= s Hta'.
 have H : sort (@le_rank _) ta =
@@ -1234,7 +1232,7 @@ have Hf : \sum_(a in A) \sum_(b in B) f a b == n.
 have Htmp' : (forall a b,
         (chan_of_jtype Anot0 Bnot0 f) a b =
         (let ln := \sum_(b0 in B) (f a) b0 in
-         if ln == O then / INR #|B| else (INR ((f a) b) / INR ln))%R) by [].
+         if ln == O then / #|B|%:R else (((f a) b)%:R / ln%:R))%R) by [].
 exact (@jtype.mkJtype _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf Htmp').
 Defined.
 

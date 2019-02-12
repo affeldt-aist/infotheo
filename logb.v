@@ -42,7 +42,7 @@ case/Rle_lt_or_eq_dec; [move/exp_lt_inv => ?; exact/ltRW |
   move/exp_inv => ->; exact/leRR].
 Qed.
 
-Lemma exp_pow n : forall k, exp (INR k * n) = (exp n) ^ k.
+Lemma exp_pow n : forall k, exp (k%:R * n) = (exp n) ^ k.
 Proof.
 elim => [|k IH]; first by rewrite mul0R exp_0.
 by rewrite S_INR mulRDl mul1R exp_plus IH mulRC.
@@ -58,7 +58,7 @@ Proof. rewrite -[X in _ < X]exp_0. apply exp_increasing. lra. Qed.
 
 Section exp_lower_bound.
 
-Let exp_dev (n : nat) := fun x => exp x - x ^ n * / INR (n`!).
+Let exp_dev (n : nat) := fun x => exp x - x ^ n * / (n`!)%:R.
 
 Let derivable_exp_dev (n : nat) : derivable (exp_dev n).
 Proof.
@@ -73,7 +73,7 @@ Proof.
 rewrite /exp_dev derive_pt_minus derive_pt_exp; congr (_ - _).
 rewrite derive_pt_mult derive_pt_const mulR0 addR0 derive_pt_pow.
 rewrite mulRC mulRA mulRC; congr (_ * _).
-rewrite factS mult_INR invRM; last 2 first.
+rewrite factS natRM invRM; last 2 first.
   exact/INR_eq0.
   apply/eqP; by rewrite INR_eq0' -lt0n fact_gt0.
 by rewrite mulRC mulRA mulRV ?mul1R // INR_eq0'.
@@ -100,7 +100,7 @@ elim => [r rpos | n IH r rpos].
   - split; [exact: ltRW | exact/leRR].
 Qed.
 
-Lemma exp_strict_lb (n : nat) x : 0 < x -> x ^ n * / INR (n`!) < exp x.
+Lemma exp_strict_lb (n : nat) x : 0 < x -> x ^ n * / (n`!)%:R < exp x.
 Proof. move=> xpos; by apply Rgt_lt, Rminus_gt, Rlt_gt, exp_dev_gt0. Qed.
 
 Let exp_dev_ge0 n r : 0 <= r -> 0 <= exp_dev n r.
@@ -117,7 +117,7 @@ case/boolP : (r == 0) => [/eqP ->|]; last first.
     rewrite /exp_dev exp_0 pow_i ?mul0R ?subR0 //; exact/ltP.
 Qed.
 
-Lemma exp_lb x (n : nat) : 0 <= x -> x ^ n / INR (n`!) <= exp x.
+Lemma exp_lb x (n : nat) : 0 <= x -> x ^ n / (n`!)%:R <= exp x.
 Proof. move=> xpos; by apply Rge_le, Rminus_ge, Rle_ge, exp_dev_ge0. Qed.
 
 End exp_lower_bound.
@@ -234,7 +234,7 @@ Proof. rewrite logexp1E; exact/leRP/ltRW'/ltRP/invR_gt0. Qed.
 (** n ^ x *)
 Definition Exp (n : R) x := exp (x * ln n).
 
-Lemma pow_Exp x n : 0 < x -> x ^ n = Exp x (INR n).
+Lemma pow_Exp x n : 0 < x -> x ^ n = Exp x n%:R.
 Proof. by move=> x0; rewrite /Exp exp_pow exp_ln. Qed.
 
 Lemma LogK n x : 1 < n -> 0 < x -> Exp n (Log n x) = x.
@@ -268,11 +268,11 @@ Proof. by rewrite /Exp mul0R exp_0. Qed.
 Lemma ExpD n x y : Exp n (x + y) = Exp n x * Exp n y.
 Proof. by rewrite /Exp mulRDl exp_plus. Qed.
 
-Lemma Exp_INR n : (0 < n)%nat -> forall m, Exp (INR n) (INR m) = INR (expn n m).
+Lemma natRExp n : (0 < n)%nat -> forall m, Exp n%:R m%:R = (expn n m)%:R.
 Proof.
 move=> n0.
 elim=> [|m IH]; first by rewrite /Exp mul0R exp_0.
-rewrite S_INR ExpD expnS mult_INR IH /Exp mul1R exp_ln;
+rewrite S_INR ExpD expnS natRM IH /Exp mul1R exp_ln;
   [by rewrite mulRC | exact/ltR0n].
 Qed.
 
@@ -311,10 +311,10 @@ Hint Resolve exp2_neq0.
 Lemma exp2_0 : exp2 0 = 1.
 Proof. by rewrite /exp2 -/(Exp 2 0) Exp_0. Qed.
 
-Lemma exp2_INR : forall m, exp2 (INR m) = INR (expn 2 m).
-Proof. move=> m; by rewrite -Exp_INR. Qed.
+Lemma natRexp2 m : exp2 m%:R = (expn 2 m)%:R.
+Proof. by rewrite -natRExp. Qed.
 
-Lemma exp2_pow n k : exp2 (INR k * n) = (exp2 n) ^ k.
+Lemma exp2_pow n k : exp2 (k%:R * n) = (exp2 n) ^ k.
 Proof. by rewrite /exp2 /Exp -mulRA exp_pow. Qed.
 
 Lemma exp2_Ropp x : exp2 (- x) = / exp2 x.
@@ -373,14 +373,14 @@ Lemma exists_frac_part (P : nat -> Prop) : (exists n, P n) ->
   forall num den, (0 < num)%nat -> (0 < den)%nat ->
   (forall n m, (n <= m)%nat -> P n -> P m) ->
   exists n, P n /\
-    frac_part (exp2 (INR n * (log (INR num) / INR den))) = 0.
+    frac_part (exp2 (n%:R * (log num%:R / den%:R))) = 0.
 Proof.
 case=> n Pn num den Hden HP.
 exists (n * den)%nat.
 split.
   apply H with n => //.
   by rewrite -{1}(muln1 n) leq_mul2l HP orbC.
-rewrite mult_INR -mulRA (mulRCA (INR den)) mulRV // ?mulR1; last first.
+rewrite natRM -mulRA (mulRCA den%:R) mulRV // ?mulR1; last first.
   by rewrite INR_eq0' -lt0n.
 rewrite exp2_pow logK; [exact/frac_part_pow/frac_part_INR | exact/ltR0n].
 Qed.

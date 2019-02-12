@@ -502,6 +502,50 @@ Grab Existential Variables.
 exact: O.
 Qed.
 
+Module MargDist.
+Section def.
+Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) (i : 'I_n.+1).
+Definition f (v : 'rV[A]_n) := \rsum_(x : 'rV[A]_n.+1 | col' i x == v) P x.
+Lemma f0 (v : 'rV[A]_n) : 0 <= f v.
+Proof. apply: rsumr_ge0 => /= a _; exact/dist_ge0. Qed.
+Lemma f1 : \rsum_(v : 'rV[A]_n) f v = 1.
+Proof.
+case/boolP : (#|A| == O) => [/eqP A0|].
+  exfalso.
+  move: (dist_domain_not_empty P); by rewrite card_matrix mul1n expn_gt0 A0 ltnn.
+rewrite -lt0n => /card_gt0P[a _]; rewrite -(pmf1 P) /= /f; apply/esym.
+rewrite (partition_big_imset (col' i)) /=.
+apply congr_big => // v; apply/imsetP => /=.
+have H : (i + (1 + (n - i)) = n.+1)%nat by rewrite add1n addnS subnKC // -ltnS.
+exists (castmx (erefl, H)
+  (row_mx (row_take i v) (row_mx (\row_(i < 1) a) (row_drop i v)))) => //.
+rewrite {1}(row_mx_take_drop i v); apply/rowP => j.
+rewrite [in RHS]mxE 2!castmxE /= cast_ord_id /=.
+case/boolP : (j < i)%nat => [ji|]; last rewrite -leqNgt => ij.
+  set j' := Ordinal ji.
+  rewrite (_ : cast_ord _ _ = lshift (n - i) j') ?row_mxEl; last exact/val_inj.
+  rewrite (_ : cast_ord _ _ = lshift (1 + (n - i)) j') ?row_mxEl //.
+  by apply val_inj => /=; rewrite /bump /= leqNgt ji add0n.
+move=> [:Hj2].
+have @j2 : 'I_(n - i).
+  apply: (@Ordinal _ (j - i)).
+  abstract: Hj2; by rewrite ltn_sub2r // (leq_ltn_trans ij).
+rewrite (_ : cast_ord _ _ = rshift i j2) ?row_mxEr; last first.
+  by apply val_inj => /=; rewrite subnKC.
+move=> [:Hj3].
+have @j3 : 'I_(1 + (n - i)).
+  apply: (@Ordinal _ (j - i).+1).
+  abstract: Hj3; by rewrite ltnS ltn_sub2r // (leq_ltn_trans ij).
+rewrite (_ : cast_ord _ _ = rshift i j3) ?row_mxEr; last first.
+  by apply val_inj => /=; rewrite /bump ij add1n addnS subnKC.
+rewrite (_ : j3 = rshift 1 j2) ?row_mxEr //; exact/val_inj.
+Qed.
+Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
+Lemma dE v : d v = \rsum_(x : 'rV[A]_n.+1 | col' i x == v) P x.
+Proof. by rewrite /d; unlock. Qed.
+End def.
+End MargDist.
+
 Local Open Scope entropy_scope.
 
 Module JointEntropy.
@@ -561,7 +605,7 @@ Let PQ := Swap.d QP.
 Lemma hE : h = - \rsum_(a in A) \rsum_(b in B)
   PQ (a, b) * log (\Pr_QP [ [set b] | [set a]]).
 Proof.
-rewrite /h (big_morph _ morph_Ropp oppR0) /=; apply eq_bigr => a _.
+rewrite /h big_morph_oppR /=; apply eq_bigr => a _.
 rewrite /h1 mulRN big_distrr /=; congr (- _); apply eq_bigr => b _.
 rewrite mulRA; congr (_ * _).
 by rewrite mulRC -(Pr_set1 P a) -Pr_cPr setX1 Swap.dE Pr_set1.
@@ -569,7 +613,7 @@ Qed.
 
 Lemma h1_ge0 a : 0 <= h1 a.
 Proof.
-rewrite /h1 (big_morph _ morph_Ropp oppR0); apply rsumr_ge0 => b _.
+rewrite /h1 big_morph_oppR; apply rsumr_ge0 => b _.
 rewrite -mulRN.
 case/boolP : (\Pr_QP[[set b]|[set a]] == 0) => [/eqP|] H0.
   rewrite H0 mul0R; exact/leRR.
@@ -698,10 +742,10 @@ transitivity (
   - rewrite -mulRDr; congr (_ * _); rewrite mulRC logM //.
     by rewrite -cPr_Pr_setX_gt0 setX1 Pr_set1 Swap.dE -dist_gt0.
     rewrite -dist_gt0; exact: Bivar.dom_by_fstN H0.
-rewrite [in X in _ + X = _](big_morph _ morph_Ropp oppR0); congr (_ + _).
+rewrite [in X in _ + X = _]big_morph_oppR; congr (_ + _).
 - rewrite /entropy; congr (- _); apply eq_bigr => a _.
   by rewrite -big_distrl /= -Bivar.fstE.
-- rewrite CondEntropy.hE (big_morph _ morph_Ropp oppR0).
+- rewrite CondEntropy.hE big_morph_oppR.
   apply eq_bigr => a _; congr (- _); apply eq_bigr => b _; by rewrite !Swap.dE.
 Qed.
 
@@ -808,8 +852,8 @@ transitivity (\rsum_(a in A) \rsum_(b in B)
     by rewrite mulRAC.
 transitivity (- (\rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (P a)) +
   \rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ])). (* 2.37 *)
-  rewrite (big_morph _ morph_Ropp oppR0) -big_split; apply/eq_bigr => a _ /=.
-  rewrite (big_morph _ morph_Ropp oppR0) -big_split; apply/eq_bigr => b _ /=.
+  rewrite big_morph_oppR -big_split; apply/eq_bigr => a _ /=.
+  rewrite big_morph_oppR -big_split; apply/eq_bigr => b _ /=.
   rewrite addRC -mulRN -mulRDr addR_opp.
   case/boolP : (PQ (a, b) == 0) => [/eqP ->| H0].
   - by rewrite !mul0R.
@@ -820,7 +864,7 @@ rewrite -subR_opp; congr (_ - _).
 - rewrite /entropy; congr (- _); apply/eq_bigr => a _.
   by rewrite -big_distrl /= -Bivar.fstE.
 - rewrite /CondEntropy.h exchange_big.
-  rewrite (big_morph _ morph_Ropp oppR0); apply eq_bigr=> b _ /=.
+  rewrite big_morph_oppR; apply eq_bigr=> b _ /=.
   rewrite mulRN; congr (- _).
   rewrite big_distrr /=; apply eq_bigr=> a _ /=.
   rewrite mulRA; congr (_ * _); rewrite -/Q.
@@ -1035,7 +1079,7 @@ Lemma cmiE : cmi PQR = \rsum_(x in {: A * B * C}) PQR x *
   log (\Pr_PQR[[set x.1] | [set x.2]] /
        (\Pr_(Proj13.d PQR)[[set x.1.1] | [set x.2]] * \Pr_(Proj23.d PQR)[[set x.1.2] | [set x.2]])).
 Proof.
-rewrite /cmi 2!CondEntropy.hE /= subR_opp (big_morph _ morph_Ropp oppR0).
+rewrite /cmi 2!CondEntropy.hE /= subR_opp big_morph_oppR.
 rewrite (eq_bigr (fun a => \rsum_(b in A) (Swap.d (TripA.d PQR)) (a.1, a.2, b) * log \Pr_(TripA.d PQR)[[set b] | [set (a.1, a.2)]])); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => \rsum_(b in A) (Swap.d (TripA.d PQR)) ((a1, a2), b) * log \Pr_(TripA.d PQR)[[set b] | [set (a1, a2)]])).
 rewrite exchange_big -big_split /=.
@@ -1046,7 +1090,7 @@ rewrite -(pair_bigA _ (fun x1 x2 => PQR (x1, x2) * log
 (\Pr_PQR[[set x1] | [set x2]] /
         (\Pr_(Proj13.d PQR)[[set x1.1] | [set x2]] * \Pr_(Proj23.d PQR)[[set x1.2] | [set x2]])))).
 rewrite /= exchange_big; apply eq_bigr => c _.
-rewrite (big_morph _ morph_Ropp oppR0) /= exchange_big -big_split /=.
+rewrite big_morph_oppR /= exchange_big -big_split /=.
 rewrite (eq_bigr (fun i => PQR ((i.1, i.2), c) * log
        (\Pr_PQR[[set (i.1, i.2)] | [set c]] /
         (\Pr_(Proj13.d PQR)[[set i.1] | [set c]] * \Pr_(Proj23.d PQR)[[set i.2] | [set c]])))); last by case.
@@ -1054,7 +1098,7 @@ rewrite -(pair_bigA _ (fun i1 i2 => PQR (i1, i2, c) * log
   (\Pr_PQR[[set (i1, i2)] | [set c]] /
   (\Pr_(Proj13.d PQR)[[set i1] | [set c]] * \Pr_(Proj23.d PQR)[[set i2] | [set c]])))).
 apply eq_bigr => a _ /=.
-rewrite Swap.dE Proj13.dE big_distrl /= (big_morph _ morph_Ropp oppR0) -big_split.
+rewrite Swap.dE Proj13.dE big_distrl /= big_morph_oppR -big_split.
 apply eq_bigr => b _ /=.
 rewrite Swap.dE TripA.dE /= -mulRN -mulRDr.
 case/boolP : (PQR (a, b, c) == 0) => [/eqP ->| H0]; first by rewrite !mul0R.
@@ -1386,7 +1430,7 @@ have -> : CondEntropy.h PY = \rsum_(j < n.+1)
     congr (_ / _ * log (_ / _)).
     + rewrite 2!Bivar.sndE; apply eq_bigr => a' _; by rewrite H2.
     + rewrite 2!Bivar.sndE; apply eq_bigr => a' _; by rewrite H2.
-rewrite -addR_opp (big_morph _ morph_Ropp oppR0) -big_split /=; apply eq_bigr => j _ /=.
+rewrite -addR_opp big_morph_oppR -big_split /=; apply eq_bigr => j _ /=.
 case: ifPn => j0.
 - rewrite MutualInfo.miE2 addR_opp; congr (`H _ - _).
   rewrite /Multivar.head_of.
@@ -1617,3 +1661,24 @@ by rewrite Swap.snd TripA.fst_snd TripC13.sndA Swap.fst.
 Qed.
 
 End markov_chain_prop.
+
+From mathcomp Require Import perm.
+
+Local Open Scope ring_scope.
+
+(* wip *)
+Section Han_inequality.
+
+Variables (A : finType) (n' : nat).
+Let n := n'.+1.
+Variable (P : {dist 'rV[A]_n}).
+
+Lemma han : n.-1%:R * `H P <= \rsum_(i < n) `H (MargDist.d P i).
+Proof.
+case/boolP : (n == O) => [/eqP |] n0.
+  rewrite {1}n0 mul0R; apply: rsumr_ge0 => /= i _; exact/entropy_ge0.
+rewrite -subn1.
+rewrite (chain_rule_rV P).
+Abort.
+
+End Han_inequality.

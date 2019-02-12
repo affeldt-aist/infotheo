@@ -311,6 +311,13 @@ Proof. split => [|-> //]; by rewrite (_ : 0 = 0%:R) // => /INR_eq ->. Qed.
 Lemma INR_eq0' n : (n%:R == 0) = (n == O).
 Proof. by apply/idP/idP => /eqP/INR_eq0/eqP. Qed.
 
+Lemma natRD m n : (m + n)%:R = m%:R + n%:R.
+Proof. exact: plus_INR. Qed.
+Lemma natRB m n : (n <= m)%nat -> (m - n)%:R = m%:R - n%:R.
+Proof. move=> nm; rewrite minus_INR //; exact/leP. Qed.
+Lemma natRM m n : (m * n)%:R = m%:R * n%:R.
+Proof. by rewrite mult_INR. Qed.
+
 Lemma eqR_le x y : (x = y) <-> (x <= y <= x).
 Proof. split => [->| [] ]; by [split; exact/leRR | exact: Rle_antisym]. Qed.
 
@@ -664,9 +671,9 @@ Proof. by move=> x0; apply/idP/idP => /ltRP/(invR_gt1 _ x0)/ltRP. Qed.
 (* pow *)
 (*******)
 
-Lemma INR_expR r n : INR r ^ n = INR (expn r n).
+Lemma natRexp r n : r%:R ^ n = (expn r n)%:R.
 Proof.
-elim: n => // n IH; by rewrite (expnSr r n) mult_INR -addn1 pow_add /= mulR1 IH.
+elim: n => // n IH; by rewrite (expnSr r n) natRM -addn1 pow_add /= mulR1 IH.
 Qed.
 
 Lemma expR0 (a : R) : a ^ 0 = 1. Proof. exact: pow_O. Qed.

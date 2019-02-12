@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
@@ -79,11 +80,11 @@ Local Open Scope zarith_ext_scope.
 Lemma SrcDirectBound' d D : { k | D <= INR (k * d.+1) }.
 Proof.
 exists '| up D |.
-rewrite -multE (mult_INR '| up D | d.+1).
+rewrite -multE (natRM '| up D | d.+1).
 apply (@leR_trans (IZR `| up D |)); first exact: Rle_up.
 rewrite INR_IZR_INZ inj_Zabs_nat -{1}(mulR1 (IZR _)).
 apply leR_wpmul2l; first exact/IZR_le/Zabs_pos (* TODO: ssrZ? *).
-rewrite -addn1 plus_INR /= (_ : INR 1 = 1%R) //; move: (leR0n d) => ?; lra.
+rewrite -addn1 natRD /= (_ : INR 1 = 1%R) //; move: (leR0n d) => ?; lra.
 Qed.
 
 Lemma SrcDirectBound d D : { k | D <= INR (k.+1 * d.+1) }.
@@ -169,7 +170,7 @@ set F := f n S.
 set PHI := @phi _ n _ S def.
 exists (mkScode F PHI).
 split.
-  rewrite /SrcRate /r /n /k 2!mult_INR; field.
+  rewrite /SrcRate /r /n /k 2!natRM; field.
   split; exact/INR_eq0.
 set lhs := esrc(_, _).
 suff -> : lhs = (1 - Pr (P `^ k) (`TS P k (lambda / 2)))%R.
@@ -195,13 +196,13 @@ apply/negPn/negPn.
   exact: (TS_0_is_typ_seq halflambda0 halflambda1 Hk).
 - suff S_2n : (#| S | < expn 2 n)%nat.
     by move/(f_phi def S_2n)/eqP.
-  suff card_S_bound : INR #| S | < exp2 (INR k * r).
-    apply/ltP/INR_lt; rewrite -exp2_INR.
+  suff card_S_bound : #| S |%:R < exp2 (k%:R * r).
+    apply/ltP/INR_lt; rewrite -natRexp2.
     suff : INR n = (INR k * r)%R by move=> ->.
-    rewrite /n /k /r (mult_INR _ den.+1) /Rdiv -mulRA.
-    by rewrite (mulRCA (INR den.+1)) mulRV ?INR_eq0' // mulR1 mult_INR.
-  suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * r) by lra.
-  suff card_S_bound : 1 + INR #| S | <= exp2 (INR k * (`H P + lambda)).
+    rewrite /n /k /r (natRM _ den.+1) /Rdiv -mulRA.
+    by rewrite (mulRCA (INR den.+1)) mulRV ?INR_eq0' // mulR1 natRM.
+  suff card_S_bound : 1 + #| S |%:R <= exp2 (k%:R * r) by lra.
+  suff card_S_bound : 1 + #| S |%:R <= exp2 (k%:R * (`H P + lambda)).
     apply: leR_trans; first exact: card_S_bound.
     apply Exp_le_increasing => //; apply leR_wpmul2l; [exact/leR0n | exact/Hlambdar].
   apply (@leR_trans (exp2 (INR k * (lambda / 2) +

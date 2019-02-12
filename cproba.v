@@ -1,3 +1,4 @@
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
@@ -441,7 +442,7 @@ Lemma PrX_diff E1 E2 F :
   Pr P (setX (E1 :\: E2) F) = Pr P (setX E1 F) - Pr P (setX (E1 :&: E2) F).
 Proof.
 rewrite /Pr !big_setX /= exchange_big [in X in _ = X - _]exchange_big /=.
-rewrite [in X in _ = _ - X]exchange_big -addR_opp (big_morph _ morph_Ropp oppR0).
+rewrite [in X in _ = _ - X]exchange_big -addR_opp big_morph_oppR.
 rewrite -big_split /=; apply eq_bigr => a aE.
 by rewrite [in X in _ = X + _](big_setID E2) /= -addRA addRCA addR_opp subRR addR0.
 Qed.

@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div choice fintype tuple finfun bigop prime.
 From mathcomp Require Import binomial ssralg finset fingroup finalg matrix.
@@ -212,7 +213,7 @@ rewrite /cdiv /entropy -big_split /=.
 rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
 rewrite (big_morph _ morph_exp2_plus exp2_0).
 apply eq_bigr => a _.
-rewrite (big_morph _ morph_Ropp oppR0).
+rewrite big_morph_oppR.
 rewrite /div /= -mulRDr mulRA -big_split /=.
 rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
 rewrite (big_morph _ morph_exp2_plus exp2_0).

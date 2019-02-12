@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
@@ -18,10 +19,9 @@ Local Open Scope R_scope.
 
 Section source_coding_converse'.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : dist A).
 Variables num den : nat.
-Let r := INR num / INR den.+1.
+Let r := num%:R / den.+1%:R.
 Hypothesis Hr : 0 < r < `H P.
 
 Variable n : nat.
@@ -38,9 +38,9 @@ Definition lambda := min((1 - epsilon) / 2, (`H P - r) / 2).
 Definition delta := min((`H P - r) / 2, lambda / 2).
 
 Definition SrcConverseBound := max(max(
-  aep_bound P delta, - ((log delta) / (`H P - r - delta))), INR n / r).
+  aep_bound P delta, - ((log delta) / (`H P - r - delta))), n%:R / r).
 
-Hypothesis Hk : SrcConverseBound <= INR k.+1.
+Hypothesis Hk : SrcConverseBound <= k.+1%:R.
 
 Lemma Hr1 : 0 < (`H P - r) / 2.
 Proof.
@@ -81,9 +81,9 @@ Qed.
 
 Definition no_failure := [set x : 'rV[A]_k.+1 | dec sc (enc sc x) == x].
 
-Lemma no_failure_sup : INR #| no_failure | <= exp2 (INR k.+1 * (`H P - e0)).
+Lemma no_failure_sup : #| no_failure |%:R <= exp2 (k.+1%:R * (`H P - e0)).
 Proof.
-apply (@leR_trans (exp2 (INR n))).
+apply (@leR_trans (exp2 n%:R)).
   rewrite /no_failure.
   have Hsubset : [set x | dec sc (enc sc x) == x] \subset dec sc @: (enc sc @: [set: 'rV[A]_k.+1]).
     apply/subsetP => x.
@@ -92,14 +92,13 @@ apply (@leR_trans (exp2 (INR n))).
     exists (enc sc x).
     - apply mem_imset; by rewrite inE.
     - by move/eqP in Hx.
-  apply (@leR_trans (INR #| dec sc @: (enc sc @: [set: 'rV[A]_k.+1]) |)).
-    apply/le_INR/leP.
-    by case/subset_leqif_cards : Hsubset.
-  apply (@leR_trans (INR #| dec sc @: [set: 'rV[bool]_n] |)).
+  apply (@leR_trans #| dec sc @: (enc sc @: [set: 'rV[A]_k.+1]) |%:R).
+    by apply/le_INR/leP; case/subset_leqif_cards : Hsubset.
+  apply (@leR_trans #| dec sc @: [set: 'rV[bool]_n] |%:R).
     apply/le_INR/leP/subset_leqif_cards/imsetS/subsetP => x Hx; by rewrite inE.
-  apply (@leR_trans (INR #| [set: 'rV[bool]_n] |)).
+  apply (@leR_trans #| [set: 'rV[bool]_n] |%:R).
     apply/le_INR/leP/leq_imset_card.
-    rewrite cardsT card_matrix /= card_bool exp2_INR mul1n; exact/leRR.
+    rewrite cardsT card_matrix /= card_bool natRexp2 mul1n; exact/leRR.
 apply Exp_le_increasing => //.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply (@leR_pmul2r (1 / r)) => //.
@@ -148,7 +147,7 @@ by move: Hi; rewrite in_setI => /andP[].
 Qed.
 
 Lemma step4 : 1 - (esrc(P , sc)) <= delta +
-  INR #| no_failure :&: `TS P k.+1 delta| * exp2 (- INR k.+1 * (`H P - delta)).
+  #| no_failure :&: `TS P k.+1 delta|%:R * exp2 (- k.+1%:R * (`H P - delta)).
 Proof.
 apply/(leR_trans step3)/leR_add.
 - move/leRP : Hk; rewrite 2!leR_max' -andbA => /andP[/leRP].
@@ -158,7 +157,7 @@ apply/(leR_trans step3)/leR_add.
   rewrite Pr_to_cplt; exact/leRR.
 - apply (@leR_trans
     (\rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
-      exp2 (-INR k.+1 * (`H P - delta)))).
+      exp2 (- k.+1%:R * (`H P - delta)))).
     apply ler_rsum => /= i.
     rewrite in_setI => /andP[i_B i_TS].
     move: (typ_seq_definition_equiv2 i_TS) => [H1 _].
@@ -172,13 +171,13 @@ apply/(leR_trans step3)/leR_add.
   rewrite big_const iter_addR; exact/leRR.
 Qed.
 
-Lemma step5 : 1 - (esrc(P , sc)) <= delta + exp2 (- INR k.+1 * (e0 - delta)).
+Lemma step5 : 1 - (esrc(P , sc)) <= delta + exp2 (- k.+1%:R * (e0 - delta)).
 Proof.
-apply (@leR_trans (delta + INR #| no_failure | * exp2 (- INR k.+1 * (`H P - delta)))).
+apply (@leR_trans (delta + #| no_failure |%:R * exp2 (- k.+1%:R * (`H P - delta)))).
 - apply/(leR_trans step4)/leR_add2l/leR_wpmul2r => //.
   exact/le_INR/leP/subset_leqif_cards/subsetIl.
 - apply leR_add2l.
-  apply (@leR_trans (exp2 (INR k.+1 * (`H P - e0)) * exp2 (- INR k.+1 * (`H P - delta))));
+  apply (@leR_trans (exp2 (k.+1%:R * (`H P - e0)) * exp2 (- k.+1%:R * (`H P - delta))));
     last first.
     rewrite -ExpD; apply Exp_le_increasing => //; apply Req_le; by field.
   apply leR_wpmul2r => //; exact no_failure_sup.
@@ -186,7 +185,7 @@ Qed.
 
 Lemma step6 : 1 - 2 * delta <= esrc(P , sc).
 Proof.
-have H : exp2 (- INR k.+1 * (e0 - delta)) <= delta.
+have H : exp2 (- k.+1%:R * (e0 - delta)) <= delta.
   apply (@Log_le_inv 2) => //.
   - exact Hdelta.
   - rewrite /exp2 ExpK //.
@@ -232,7 +231,7 @@ Theorem source_coding_converse : forall epsilon, 0 < epsilon < 1 ->
   forall r : Qplus, 0 < r < `H P ->
     forall n k (sc : scode_fl A k.+1 n),
       SrcRate sc = r ->
-      SrcConverseBound P (num r) (den r) n epsilon <= INR k.+1 ->
+      SrcConverseBound P (num r) (den r) n epsilon <= k.+1%:R ->
       epsilon <= esrc(P , sc).
 Proof.
 move=> epsilon Hespilon r r_HP n k sc r_sc Hk_bound.

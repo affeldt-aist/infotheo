@@ -73,10 +73,10 @@ Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 Local Notation "''V'" := (Vnext H).
 
 Lemma kernel_checksubsum1 (x : 'rV['F_2]_n) : x \in kernel H ->
-  1%R = INR (\prod_m0 \delta ('V m0) x).
+  (1 = (\prod_m0 \delta ('V m0) x)%:R)%R.
 Proof.
 move=> x_in_C.
-rewrite {1}(_ : 1%R = INR (\prod_(m0 < m) 1)); [congr INR |
+rewrite {1}(_ : (1 = (\prod_(m0 < m) 1)%:R)%R); [congr INR |
   by rewrite big_const iter_muln_1 exp1n].
 apply eq_bigr => m0 _.
 rewrite /C mem_kernel_syndrome0 /syndrome in x_in_C.
@@ -110,7 +110,7 @@ by rewrite /checksubsum (x_in_C m0) eqxx.
 Qed.
 
 Lemma kernel_checksubsum0 (x : 'rV['F_2]_n) : x \notin kernel H ->
-  INR (\prod_m0 checksubsum ('V m0) x) = 0%R.
+  ((\prod_m0 checksubsum ('V m0) x)%:R = 0)%R.
 Proof.
 move=> x_notin_C.
 rewrite /C mem_kernel_syndrome0 /syndrome in x_notin_C.
@@ -149,24 +149,24 @@ Proof.
 apply/idP/idP; last first.
   apply: contraTT => /kernel_checksubsum0.
   rewrite -(@big_morph _ _ nat_of_bool true muln true andb) //.
-    rewrite -eqb0 /= (_ : 0%R = INR 0) //; by move/INR_eq/eqP.
+    rewrite -eqb0 /= (_ : 0 = 0%:R)%R //; by move/INR_eq/eqP.
   move=> ? ? /=; by rewrite mulnb.
 move/kernel_checksubsum1.
 rewrite -(@big_morph _ _ nat_of_bool true muln true andb) //; last first.
   move=> ? ? /=; by rewrite mulnb.
-rewrite (_ : 1%R = INR true) // => /INR_eq/esym.
+rewrite (_ : 1 = true%:R)%R // => /INR_eq/esym.
 by case: (\big[andb/true]_(_ < _) _).
 Qed.
 
 Local Open Scope R_scope.
 
 Lemma checksubsum_in_kernel (x : 'rV['F_2]_n) :
-  \rprod_(i < m) INR (\delta ('V i) x) = INR (x \in kernel H).
+  (\rprod_(i < m) (\delta ('V i) x)%:R = (x \in kernel H)%:R)%R.
 Proof.
 rewrite kernel_checksubsum.
-transitivity (INR (\prod_m1 (nat_of_bool (\delta ('V m1) x)))).
-  by rewrite (big_morph _ mult_INR erefl).
-congr (INR _).
+transitivity ((\prod_m1 (\delta ('V m1) x))%:R)%R.
+  by rewrite -big_morph_natRM.
+congr (_%:R).
 erewrite (@big_morph _ _ nat_of_bool true) => //.
 move=> ? ? /=; by rewrite mulnb.
 Qed.
@@ -182,11 +182,10 @@ Hypothesis Hy : receivable W (`U HC) y.
 
 Lemma post_proba_uniform_checksubsum (x : 'rV['F_2]_n) :
   (`U HC) `^^ W, Hy (x | y) =
-    (PosteriorProbability.Kppu W [set cw in C] y * INR (\prod_m0 (\delta ('V m0) x)) * W ``(y | x))%R.
+    (PosteriorProbability.Kppu W [set cw in C] y * (\prod_m0 (\delta ('V m0) x))%:R * W ``(y | x))%R.
 Proof.
 rewrite PosteriorProbability.uniform_kernel; congr (_ * _ * _)%R.
-rewrite (big_morph _ mult_INR erefl) checksubsum_in_kernel.
-by rewrite inE mem_kernel_syndrome0.
+by rewrite big_morph_natRM checksubsum_in_kernel inE mem_kernel_syndrome0.
 Qed.
 
 End post_proba_checksubsum.

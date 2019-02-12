@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
@@ -23,8 +24,7 @@ Variables (A : finType) (P : dist A).
 
 Lemma E_mlog : `E (--log P) = `H P.
 Proof.
-rewrite /entropy (big_morph _ morph_Ropp oppR0).
-apply eq_bigr=> a _; by rewrite /= mulNR mulRC.
+rewrite /entropy big_morph_oppR; apply eq_bigr=> a _; by rewrite /= mulNR mulRC.
 Qed.
 
 Definition aep_sigma2 := (\rsum_(a in A) P a * (log (P a))^2 - (`H P)^2)%R.
@@ -38,11 +38,11 @@ transitivity
   rewrite /scale_RV /mlog_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV /p_of; field.
 rewrite big_split /= big_split /= -big_distrr /= (pmf1 P) mulR1.
 rewrite (_ : \rsum_(a in A) - _ = - (2 * `H P ^ 2))%R; last first.
-  rewrite -{1}(big_morph _ morph_Ropp oppR0); congr (- _)%R.
+  rewrite -{1}big_morph_oppR; congr (- _)%R.
   rewrite [X in X = _](_ : _ =
     \rsum_(a in A) (2 * `H P) * (- (P a * log (P a))))%R; last first.
     apply eq_bigr => a _; by rewrite -!mulRA (mulRC (P a)) mulNR.
-  rewrite -big_distrr [in LHS]/= -{1}(big_morph _ morph_Ropp oppR0).
+  rewrite -big_distrr [in LHS]/= -{1}big_morph_oppR.
   by rewrite -/(entropy P) -mulRA /= mulR1.
 set s := (\rsum_(a in A ) _ in LHS).
 rewrite [in RHS](_ : \rsum_(a in A) _ = s); last by apply eq_bigr => a _; field.

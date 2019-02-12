@@ -128,7 +128,7 @@ rewrite (eq_bigr h); last first.
   move=> i _; rewrite mulRDr mulR1 mulRN  /h; reflexivity.
 rewrite {}/h big_split /=; apply leR_add.
   apply Req_le.
-  rewrite /entropy (big_morph _ morph_Ropp oppR0); apply eq_bigr => i _.
+  rewrite /entropy big_morph_oppR; apply eq_bigr => i _.
   by rewrite card_ord (_ : INR 2 = 2).
 rewrite pmf1; exact/leRR.
 Qed.

@@ -345,8 +345,8 @@ Qed.
 
 Lemma CondEntropyChanE2 : `H(W | P) = \rsum_(a in A) P a * `H (W a).
 Proof.
-rewrite CondEntropyChanE CondEntropy.hE (big_morph _ morph_Ropp oppR0); apply eq_bigr => a _.
-rewrite (big_morph _ morph_Ropp oppR0) /entropy mulRN -mulNR big_distrr; apply eq_bigr => b _.
+rewrite CondEntropyChanE CondEntropy.hE big_morph_oppR; apply eq_bigr => a _.
+rewrite big_morph_oppR /entropy mulRN -mulNR big_distrr; apply eq_bigr => b _.
 rewrite /= Swap.dI JointDistChan.dE /= mulNR mulRA.
 case/boolP: (P a == 0) => [/eqP ->|Pa0].
   by rewrite !(mulR0,mul0R).

@@ -115,14 +115,20 @@ Canonical mulR_muloid := Monoid.MulLaw mul0R mulR0.
 Canonical mulR_comoid := Monoid.ComLaw mulRC.
 Canonical addR_addoid := Monoid.AddLaw mulRDl mulRDr.
 
-Lemma morph_Ropp : {morph [eta Ropp] : x y / x + y}.
+Lemma morph_oppR : {morph [eta Ropp] : x y / x + y}.
 Proof. by move=> x y /=; field. Qed.
 
-Lemma morph_plus_INR : {morph INR : x y / (x + y)%nat >-> x + y}.
-Proof. move=> x y /=; by rewrite plus_INR. Qed.
+Definition big_morph_oppR := big_morph _ morph_oppR oppR0.
 
-Lemma morph_mult_INR : {morph INR : x y / (x * y)%nat >-> x * y}.
-Proof. move=> x y /=; by rewrite mult_INR. Qed.
+Lemma morph_natRD : {morph INR : x y / (x + y)%nat >-> x + y}.
+Proof. move=> x y /=; by rewrite natRD. Qed.
+
+Definition big_morph_natRD := big_morph INR morph_natRD (erefl 0%:R).
+
+Lemma morph_natRM : {morph INR : x y / (x * y)%nat >-> x * y}.
+Proof. move=> x y /=; by rewrite natRM. Qed.
+
+Definition big_morph_natRM := big_morph INR morph_natRM (erefl 1%:R).
 
 Lemma morph_mulRDr a : {morph [eta Rmult a] : x y / x + y}.
 Proof. move=> * /=; by rewrite mulRDr. Qed.
@@ -314,7 +320,7 @@ Lemma Rle_big_eq (A : finType) (f g : A -> R) (P : pred A) :
 Proof.
 move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply prsumr_eq0P.
 - move=> i Hi; rewrite leR_subr_addr add0R; exact: H1.
-- by rewrite big_split /= -(big_morph _ morph_Ropp oppR0) subR_eq0 H2.
+- by rewrite big_split /= -big_morph_oppR subR_eq0 H2.
 Qed.
 
 (** Rle, Rlt lemmas for big-mult of reals *)

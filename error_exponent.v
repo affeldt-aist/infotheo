@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div choice fintype tuple finfun bigop prime.
 From mathcomp Require Import binomial ssralg finset fingroup finalg matrix.
@@ -39,19 +40,19 @@ Local Open Scope variation_distance_scope.
 (** Distance from the output entropy of one channel to another: *)
 
 Lemma out_entropy_dist_ub : `| `H(P `o V) - `H(P `o W) | <=
-  / ln 2 * INR #|B| * - xlnx (sqrt (2 * D(V || W | P))).
+  / ln 2 * #|B|%:R * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
 rewrite -addR_opp -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
 rewrite -mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
-rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
+rewrite oppRK big_morph_oppR -big_split /=.
 apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -iter_addR -big_const.
 apply ler_rsum => b _; rewrite addRC.
 apply Rabs_xlnx => //.
 - split; [exact/dist_ge0 | exact/dist_max].
 - split; [exact/dist_ge0 | exact/dist_max].
-- rewrite 2!OutDist.dE -addR_opp (big_morph _ morph_Ropp oppR0) -big_split /=.
+- rewrite 2!OutDist.dE -addR_opp big_morph_oppR -big_split /=.
   apply: leR_trans; first exact: ler_rsum_Rabs.
   apply (@leR_trans (d(`J(P , V), `J(P , W)))).
   + rewrite /var_dist /=.
@@ -67,12 +68,12 @@ Qed.
 (** Distance from the joint entropy of one channel to another: *)
 
 Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
-  / ln 2 * INR #|A| * INR #|B| * - xlnx (sqrt (2 * D(V || W | P))).
+  / ln 2 * #|A|%:R * #|B|%:R * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
 rewrite -addR_opp -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
 rewrite -2!mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
-rewrite oppRK (big_morph _ morph_Ropp oppR0) -big_split /=.
+rewrite oppRK big_morph_oppR -big_split /=.
 apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -2!iter_addR -2!big_const pair_bigA /=.
 apply: ler_rsum; case => a b _; rewrite addRC /=.
@@ -90,7 +91,7 @@ Qed.
 (** * Distance from the mutual information of one channel to another *)
 
 Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
-  / ln 2 * (INR #|B| + INR #|A| * INR #|B|) * - xlnx (sqrt (2 * D(V || W | P))).
+  / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite /MutualInfoChan.mut_info.
 rewrite (_ : _ - _ = `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last by field.
@@ -120,7 +121,7 @@ Lemma error_exponent_bound : exists Delta, 0 < Delta /\
     P |- V << W ->
     Delta <= D(V || W | P) +  +| minRate - `I(P, V) |.
 Proof.
-set gamma := / (INR #|B| + INR #|A| * INR #|B|) * (ln 2 * ((minRate - cap) / 2)).
+set gamma := / (#|B|%:R + #|A|%:R * #|B|%:R) * (ln 2 * ((minRate - cap) / 2)).
 have : min(exp (-2), gamma) > 0.
   apply Rmin_Rgt_r; split; apply Rlt_gt; first exact: exp_pos.
   apply mulR_gt0.
@@ -156,9 +157,9 @@ suff HminRate : (minRate - cap) / 2 <= minRate - (`I(P, V)).
     rewrite -[X in X <= _]add0R; exact/leR_add2r/cdiv_ge0.
   apply: leR_trans; last exact: leR_maxr.
   apply: (leR_trans _ HminRate); exact: geR_minl.
-have : `I(P, V) <= cap + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
+have : `I(P, V) <= cap + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                (- xlnx (sqrt (2 * D(V || W | P)))).
-  apply (@leR_trans (`I(P, W) + / ln 2 * (INR #|B| + INR #|A| * INR #|B|) *
+  apply (@leR_trans (`I(P, W) + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                - xlnx (sqrt (2 * D(V || W | P))))); last first.
     apply/leR_add2r.
     move: W_cap; rewrite /capacity /lub; case; by move/(_ P).
@@ -177,7 +178,8 @@ suff x_gamma : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite [X in X <= _](_ : _ = - ((minRate + - cap) / 2)); last by field.
   rewrite leR_oppr oppRK -mulRA mulRC.
   rewrite leR_pdivr_mulr // mulRC -leR_pdivl_mulr; last first.
-    by apply/ltRP; rewrite -mult_INR -plus_INR plusE multE ltR0n' addn_gt0 Bnot0.
+    apply addR_gt0wl; first exact/ltR0n.
+    rewrite -natRM; exact/leR0n.
   by rewrite [in X in _ <= X]mulRC /Rdiv (mulRC _ (/ (_ + _))).
 suff x_D : xlnx x <= xlnx (sqrt (2 * (D(V || W | P)))).
   clear -Hx x_D.

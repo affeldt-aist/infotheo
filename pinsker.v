@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype tuple finfun bigop finset.
 Require Import Reals Lra.
@@ -164,7 +165,7 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
         by rewrite geR0_norm ?subR_ge0.
       rewrite big_split /= geR0_norm; last first.
         rewrite subR_ge0; apply ler_rsum => ?; by rewrite inE => /leRP.
-      rewrite -(big_morph _ morph_Ropp oppR0) //; by field.
+      rewrite -big_morph_oppR //; by field.
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
         destruct (#|A1|); [tauto | by right].
@@ -173,10 +174,10 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
       + transitivity (\rsum_(a | a \in A1) - (P a - Q a)).
           apply eq_bigr => a; rewrite /A1 in_set => Ha.
           rewrite ltR0_norm // subR_lt0; exact/ltRP.
-        rewrite -(big_morph _  morph_Ropp oppR0) // big_split /= ltR0_norm; last first.
+        rewrite -big_morph_oppR // big_split /= ltR0_norm; last first.
           rewrite subR_lt0; apply ltr_rsum_support => // a.
           rewrite /A1 in_set; by move/ltRP.
-        by rewrite -(big_morph _ morph_Ropp oppR0).
+        by rewrite -big_morph_oppR.
   rewrite Set2sumE ?card_bool // => HX; rewrite /bipart_pmf.
   set a := Set2.a HX. set b := Set2.b HX.
   have : a <> b by apply/eqP/Set2.a_neq_b.

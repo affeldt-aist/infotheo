@@ -102,7 +102,7 @@ Proof.
 move=> HDr.
 rewrite -[X in _ <= X]oppRK leR_oppr.
 apply/(leR_trans (jensen_dist convex_g X HDr))/Req_le.
-rewrite (big_morph _ morph_Ropp oppR0); by apply eq_bigr => a _; rewrite mulRN.
+rewrite big_morph_oppR; by apply eq_bigr => a _; rewrite mulRN.
 Qed.
 
 End jensen_concave.

@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq fintype.
 From mathcomp Require Import tuple finfun bigop.
 Require Import Reals Fourier.
@@ -69,7 +70,7 @@ Lemma div_ge0 : 0 <= D(P || Q).
 Proof.
 rewrite /div [X in _ <= X](_ : _ =
     - \rsum_(a | a \in A) P a * (log (Q a / P a))); last first.
-  rewrite (big_morph _ morph_Ropp oppR0); apply eq_bigr => a _; rewrite -mulRN.
+  rewrite big_morph_oppR; apply eq_bigr => a _; rewrite -mulRN.
   case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
   congr (_ * _).
   have Qa0 := dominatesEN P_dom_by_Q H0.
@@ -81,8 +82,7 @@ apply (@leR_trans ((\rsum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   apply ler_rsum => a _; apply div_diff_ub; [exact: dist_ge0 | | exact: dist_ge0].
   move/dominatesP : P_dom_by_Q; exact.
 rewrite -{1}(mul0R (log (exp 1))); apply (leR_wpmul2r log_exp1_Rle_0).
-rewrite big_split /= -(big_morph _ morph_Ropp oppR0) !pmf1 addR_opp subRR;
-  exact/leRR.
+rewrite big_split /= -big_morph_oppR !pmf1 addR_opp subRR; exact/leRR.
 Qed.
 
 Lemma divPP : D(Q || Q) = 0.
@@ -102,7 +102,7 @@ apply/esym; move: a (erefl true); apply Rle_big_eq.
 - move=> a' _; apply div_diff_ub;
     [exact: dist_ge0 | move/dominatesP : P_dom_by_Q; exact | exact: dist_ge0].
 - transitivity 0; last first.
-    rewrite -{1}oppR0 -{1}HPQ (big_morph _ morph_Ropp oppR0).
+    rewrite -{1}oppR0 -{1}HPQ big_morph_oppR.
     apply eq_bigr => a _; rewrite -mulRN.
     case/boolP : (P a == 0) => [/eqP ->| H0]; first by rewrite !mul0R.
     congr (_ * _).
@@ -110,7 +110,7 @@ apply/esym; move: a (erefl true); apply Rle_big_eq.
     rewrite -logV; last by apply divR_gt0; rewrite -dist_gt0.
     rewrite Rinv_Rdiv //; exact/eqP.
   rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
-  by rewrite -(big_morph _ morph_Ropp oppR0) !pmf1 addR_opp subRR mul0R.
+  by rewrite -big_morph_oppR !pmf1 addR_opp subRR mul0R.
 Qed.
 
 End divergence_prop.

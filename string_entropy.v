@@ -17,8 +17,6 @@ Local Coercion INR : nat >-> R.
 
 Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
 
-Definition big_morph_plus_INR := big_morph INR morph_plus_INR (erefl 0%:R).
-
 Local Hint Resolve leRR.
 Local Hint Resolve leR0n.
 
@@ -41,7 +39,7 @@ Qed.
 
 Lemma f_div_total_1 : \rsum_(a in A) (mkPosFun f_div_total_pos) a = 1.
 Proof.
-rewrite /f_div_total -big_distrl -big_morph_plus_INR.
+rewrite /f_div_total -big_distrl -big_morph_natRD.
 by rewrite sum_f_total /= mulRV // INR_eq0'.
 Qed.
 
@@ -239,7 +237,7 @@ rewrite (eq_bigr
   move=> i Hi; rewrite mulRCA {1}/Rdiv mulRAC.
   by rewrite mulRV ?mul1R // INR_eq0'.
 rewrite -big_filter -/ss' -big_distrl.
-rewrite -big_morph_plus_INR /=.
+rewrite -big_morph_natRD /=.
 by rewrite size_flatten sumn_big_addn big_map.
 Qed.
 

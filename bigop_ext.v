@@ -30,27 +30,6 @@ End bigop_no_law.
 Arguments big_tcast {R} {idx} {op} {n} {m} _ {A} _ _.
 Arguments big_cast_rV {R} {idx} {op} {n} {m} _ {A} _ _.
 
-(* TODO: remove? *)
-Section removeme.
-
-Variable op : Monoid.com_law 1.
-
-Local Notation "'*%M'" := op (at level 0).
-Local Notation "x * y" := (op x y).
-
-Lemma mybig_index_uniq (I : eqType) (i : R) (r : seq I) (E : 'I_(size r) -> R) :
-  uniq r ->
-  \big[*%M/1]_i E i = \big[*%M/1]_(x <- r) oapp E i (insub (seq.index x r)).
-Proof.
-move=> Ur.
-apply/esym.
-rewrite big_tnth.
-apply: eq_bigr => j _.
-by rewrite index_uniq // valK.
-Qed.
-
-End removeme.
-
 Section bigop_add_law.
 
 Variables (R : Type) (idx : R) (op : R -> R -> R) (M : Monoid.add_law idx op).

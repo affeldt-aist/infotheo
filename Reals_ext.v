@@ -457,7 +457,7 @@ apply (@eqR_mul2r (INR (fact m0) * INR (fact (n0 - m0)%coq_nat))).
 set tmp := INR (fact m0) * _.
 rewrite -mulRA mulVR ?mulR1; last first.
   by rewrite /tmp mulR_neq0' !INR_eq0' !factE -!lt0n !fact_gt0.
-by rewrite /tmp -!mult_INR !factE !multE !minusE bin_fact.
+by rewrite /tmp -!natRM !factE !minusE bin_fact.
 Qed.
 
 Lemma normR_max a b c c' : 0 <= a <= c -> 0 <= b <= c' ->

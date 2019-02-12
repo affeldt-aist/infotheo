@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype finfun bigop finset.
 Require Import Reals Lra.
@@ -72,7 +73,7 @@ wlog : Fnot0 g Gnot0 fg gspos / \rsum_{ C } f = \rsum_{ C } g.
       exact/fspos.
       apply invR_gt0; by [apply gspos | apply fspos].
     rewrite LogV; by [field | apply gspos].
-  rewrite big_split /= -(big_morph _ morph_Ropp oppR0) -big_distrl /= in Hwlog.
+  rewrite big_split /= -big_morph_oppR -big_distrl /= in Hwlog.
   have : forall a b, 0 <= a + - b -> b <= a by move=> *; lra.
   by apply.
 move=> Htmp; rewrite Htmp.
@@ -89,7 +90,7 @@ suff : 0 <= \rsum_(a | a \in C) f a * ln (f a / g a).
   apply mulR_ge0 => //; exact/ltRW/invR_gt0.
 apply (@leR_trans (\rsum_(a | a \in C) f a * (1 - g a / f a))).
   apply (@leR_trans (\rsum_(a | a \in C) (f a - g a))).
-    rewrite big_split /= -(big_morph _ morph_Ropp oppR0) Htmp addRN; exact/leRR.
+    rewrite big_split /= -big_morph_oppR Htmp addRN; exact/leRR.
   apply Req_le, eq_bigr => a a_C.
   rewrite mulRDr mulR1 mulRN.
   case: (Req_EM_T (g a) 0).

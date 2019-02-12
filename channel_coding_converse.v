@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
@@ -43,7 +44,7 @@ Qed.
 Lemma channel_coding_converse_gen : exists Delta, 0 < Delta /\ forall n',
   let n := n'.+1 in forall (M : finType) (c : code A B M n), (0 < #|M|)%nat ->
     minRate <= CodeRate c ->
-      scha(W, c) <= INR (n.+1)^(#|A| + #|A| * #|B|) * exp2 (- INR n * Delta).
+      scha(W, c) <= n.+1%:R ^ (#|A| + #|A| * #|B|) * exp2 (- n%:R * Delta).
 Proof.
 move: error_exponent_bound => /(_ _ _ Bnot0 W _ Hc _ HminRate); case => Delta [Delta_pos HDelta].
 exists Delta; split => // n' n M c Mnot0 H.
@@ -88,13 +89,13 @@ Hypothesis minRate_cap : minRate > cap.
 
 Theorem channel_coding_converse : exists n0,
   forall n M (c : code A B M n),
-    (0 < #|M|)%nat -> n0 < INR n -> minRate <= CodeRate c -> scha(W, c) < epsilon.
+    (0 < #|M|)%nat -> n0 < n%:R -> minRate <= CodeRate c -> scha(W, c) < epsilon.
 Proof.
 case: (channel_coding_converse_gen w_cap minRate_cap) => Delta [Delta_pos HDelta].
 pose K := (#|A| + #|A| * #|B|)%nat.
-pose n0 := 2 ^ K * INR K.+1`! / ((Delta * ln 2) ^ K.+1) / epsilon.
+pose n0 := 2 ^ K * K.+1`!%:R / ((Delta * ln 2) ^ K.+1) / epsilon.
 exists n0 => n M c HM n0_n HminRate.
-have Rlt0n : 0 < INR n.
+have Rlt0n : 0 < n%:R.
   apply: (ltR_trans _ n0_n).
   rewrite /n0.
   apply mulR_gt0; last exact/invR_gt0.
@@ -105,28 +106,28 @@ have Rlt0n : 0 < INR n.
 destruct n as [|n'].
   by apply ltRR in Rlt0n.
 set n := n'.+1.
-apply: (@leR_ltR_trans (INR n.+1 ^ K * exp2 (- INR n * Delta))).
+apply: (@leR_ltR_trans (n.+1%:R ^ K * exp2 (- n%:R * Delta))).
   exact: HDelta.
-move: (n0_n) => /(@ltR_pmul2l (/ INR n) _) => /(_ (invR_gt0 (INR n) Rlt0n)).
+move: (n0_n) => /(@ltR_pmul2l (/ n%:R) _) => /(_ (invR_gt0 n%:R Rlt0n)).
 rewrite mulVR ?INR_eq0' //.
 move/(@ltR_pmul2l epsilon) => /(_ eps_gt0); rewrite mulR1 => H1'.
 apply: (leR_ltR_trans _ H1') => {H1'}.
 rewrite /n0 [in X in _ <= X]mulRC -2![in X in _ <= X]mulRA.
 rewrite mulVR ?mulR1; last exact/eqP/gtR_eqF.
 apply Rge_le; rewrite mulRC -2!mulRA; apply Rle_ge.
-set aux := INR _ * (_ * _).
+set aux := _%:R * (_ * _).
 have aux_gt0 : 0 < aux.
   apply mulR_gt0; first exact/ltR0n/fact_gt0.
   apply mulR_gt0; [exact/invR_gt0/expR_gt0/mulR_gt0 | exact/invR_gt0].
-apply (@leR_trans ((INR n.+1 / INR n) ^ K * aux)); last first.
+apply (@leR_trans ((n.+1%:R / n%:R) ^ K * aux)); last first.
   apply leR_pmul => //.
   - apply/expR_ge0/divR_ge0 => //; exact: leR0n.
   - exact: ltRW.
   - apply pow_incr; split.
     + apply divR_ge0 => //; exact: leR0n.
-    + apply (@leR_pmul2r (INR n)) => //.
-      rewrite -mulRA mulVR // ?mulR1 ?INR_eq0' ?gtn_eqF // (_ : 2 = INR 2) //.
-      rewrite -mult_INR; apply/le_INR/leP; by rewrite multE -{1}(mul1n n) ltn_pmul2r.
+    + apply (@leR_pmul2r n%:R) => //.
+      rewrite -mulRA mulVR // ?mulR1 ?INR_eq0' ?gtn_eqF // (_ : 2 = 2%:R) //.
+      rewrite -natRM; apply/le_INR/leP; by rewrite -{1}(mul1n n) ltn_pmul2r.
   - exact/leRR.
 rewrite expRM -mulRA; apply leR_pmul => //.
 - exact/expR_ge0/ltRW/ltR0n.
@@ -135,7 +136,7 @@ rewrite expRM -mulRA; apply leR_pmul => //.
   + apply mulR_gt0; last exact aux_gt0.
     rewrite expRV ?INR_eq0' //; exact/invR_gt0/expR_gt0.
   + rewrite -exp2_Ropp mulNR oppRK /exp2.
-    have nDeltaln2 : 0 <= INR n * Delta * ln 2.
+    have nDeltaln2 : 0 <= n%:R * Delta * ln 2.
       apply mulR_ge0; last exact/ltRW.
       apply mulR_ge0; [exact/leR0n | exact/ltRW].
     apply: (leR_trans _ (exp_lb (K.+1) nDeltaln2)) => {nDeltaln2}.
@@ -153,9 +154,9 @@ rewrite expRM -mulRA; apply leR_pmul => //.
     - rewrite invRK; last first.
         apply/eqP; rewrite expR_eq0 mulR_neq0' ln2_neq0 andbT; exact/eqP/gtR_eqF.
       rewrite invRK; last by apply/eqP; rewrite INR_eq0'.
-      rewrite (_ : / (/ INR n) ^ K = (INR n) ^ K); last first.
+      rewrite (_ : / (/ n%:R) ^ K = n%:R ^ K); last first.
         rewrite expRV ?INR_eq0' // invRK //; apply/eqP/expR_neq0; by rewrite INR_eq0'.
-      rewrite -mulRA {1}/Rdiv (mulRA (INR n)) -expRS mulRA -expRM.
+      rewrite -mulRA {1}/Rdiv (mulRA n%:R) -expRS mulRA -expRM.
       by rewrite -/(Rdiv _ _) mulRCA -mulRA (mulRC (ln 2)).
 Qed.
 

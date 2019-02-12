@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
@@ -58,8 +59,8 @@ Proof.
 move=> H.
 apply R1_neq_R0.
 rewrite -(pmf1 d).
-transitivity (\rsum_(a | a \in A) INR (t a) / 0); first by apply eq_bigr.
-rewrite -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
+transitivity (\rsum_(a | a \in A) INR (t a) / 0); first exact/eq_bigr.
+rewrite -big_distrl /= -big_morph_natRD.
 rewrite (_ : \sum_(a in A) _ = O) ?mul0R //.
 transitivity (\sum_(a in A) 0); first by apply eq_bigr => a _; rewrite (ord1 (t a)).
 by rewrite big_const iter_addn.
@@ -69,9 +70,8 @@ Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
 set f := fun a => INR N(a | ta) / INR n.+1.
 assert (H1 : forall a, (0 <= f a)%R).
   move=> a; apply divR_ge0; by [apply leR0n | apply ltR0n].
-assert (H2 : \rsum_(a in A) f a = 1%R).
-  rewrite /f -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  by rewrite sum_num_occ_alt mulRV // INR_eq0'.
+have H2 : \rsum_(a in A) f a = 1%R.
+  by rewrite /f -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
 have H : forall a, (N(a | ta) < n.+2)%nat.
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
 refine (@type.mkType _ n.+1 (@mkDist _ (@mkPosFun _ f H1) H2)
@@ -130,9 +130,8 @@ Definition dist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : \sum_(a in A) f a == n.+1) : dist A.
 set pf := pos_fun_of_ffun f.
 assert (H : \rsum_(a in A) pf a = 1).
-  rewrite /pf /= /Rdiv -big_distrl /= -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  move/eqP : Hf => ->.
-  by rewrite mulRV // INR_eq0'.
+  rewrite /pf /= /Rdiv -big_distrl /= -big_morph_natRD.
+  move/eqP : Hf => ->; by rewrite mulRV // INR_eq0'.
 exact (mkDist H).
 Defined.
 
@@ -158,9 +157,8 @@ suff : INR (\sum_(a in A) t a) == INR n.+1 * \rsum_(a | a \in A) d a.
   by move/INR_eq/eqP.
 apply/eqP.
 transitivity (INR n.+1 * (\rsum_(a|a \in A) INR (t a) / INR n.+1)).
-  rewrite -big_distrl -(@big_morph _ _ _ 0 _ O _ morph_plus_INR) //.
-  by rewrite mulRCA mulRV ?mulR1 // INR_eq0'.
-f_equal; exact/eq_bigr.
+  by rewrite -big_distrl -big_morph_natRD mulRCA mulRV ?mulR1 // INR_eq0'.
+congr (_ * _); exact/eq_bigr.
 Qed.
 
 Lemma type_choice_pcancel A n : pcancel (@type.f A n) (@type_choice_f A n).

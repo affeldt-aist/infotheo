@@ -164,8 +164,7 @@ rewrite (eq_bigr
   move => m _; rewrite Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
 rewrite 2!big_split /= leR_add2l.
-rewrite -2!(big_morph _ morph_Ropp oppR0) leR_oppr oppRK.
-rewrite /Pr (exchange_big_dep xpredT) //=.
+rewrite -2!big_morph_oppR leR_oppr oppRK /Pr (exchange_big_dep xpredT) //=.
 rewrite [in X in (_ <= X)%R](exchange_big_dep xpredT) //=.
 apply ler_rsum => /= tb _.
 rewrite (eq_bigl (fun m => phi tb == Some m)); last by move=> m; rewrite inE.

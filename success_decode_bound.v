@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
@@ -43,7 +44,7 @@ Proof. rewrite /scha; by apply Rge_le, Rge_minus, Rle_ge, echa1. Qed.
 (** Expression of the success rate of decoding: *)
 
 Lemma success_decode (W : `Ch_1(A, B)) (c : code A B M n) :
-  scha(W, c) = 1 / INR #|M| *
+  scha(W, c) = 1 / #|M|%:R *
     \rsum_(m : M) \rsum_(tb | dec c tb == Some m) (W ``(| enc c m)) tb.
 Proof.
 set rhs := \rsum_(m | _ ) _.
@@ -51,9 +52,8 @@ have {rhs}-> : rhs = \rsum_(m in M) (1 - e(W, c) m).
   apply eq_bigr => i Hi; rewrite -Pr_to_cplt.
   apply eq_bigl => t /=; by rewrite inE.
 set rhs := \rsum_(m | _ ) _.
-have {rhs}-> : rhs = INR #|M| - \rsum_(m in M) e(W, c) m.
-  rewrite /rhs {rhs} big_split /= big_const iter_addR mulR1.
-  by rewrite -(big_morph _ morph_Ropp oppR0).
+have {rhs}-> : rhs = #|M|%:R - \rsum_(m in M) e(W, c) m.
+  by rewrite /rhs {rhs} big_split /= big_const iter_addR mulR1 -big_morph_oppR.
 by rewrite mulRDr -mulRA mulVR ?mulR1 ?INR_eq0' -?lt0n // mulRN.
 Qed.
 
@@ -77,9 +77,9 @@ Variable P : P_ n ( A ).
    using conditional divergence: *)
 
 Definition success_factor (tc : typed_code B M P) (V : P_ n (A , B)) :=
-  exp2 (- INR n * `H(V | P)) / INR #|M| *
-  \rsum_ (m : M) INR #| (V.-shell (tuple_of_row (enc tc m ))) :&:
-                        (@tuple_of_row B n @: ((dec tc) @^-1: [set Some m])) |.
+  exp2 (- n%:R * `H(V | P)) / #|M|%:R *
+  \rsum_ (m : M) #| (V.-shell (tuple_of_row (enc tc m ))) :&:
+                    (@tuple_of_row B n @: ((dec tc) @^-1: [set Some m])) |%:R.
 
 Let Anot0 : (0 < #|A|)%nat. Proof. by case: W. Qed.
 
@@ -93,13 +93,13 @@ Lemma typed_success (tc : typed_code B M P) : scha(W, tc) =
 Proof.
 rewrite success_decode // div1R.
 symmetry.
-transitivity (/ INR #|M| * \rsum_(m : M) \rsum_(V | V \in \nu^{B}(P))
-    exp_cdiv P V W * INR #| V.-shell (tuple_of_row (enc tc m)) :&:
-                            (@tuple_of_row B n @: (dec tc @^-1: [set Some m])) | *
-    exp2 (- INR n * `H(V | P))).
+transitivity (/ #|M|%:R * \rsum_(m : M) \rsum_(V | V \in \nu^{B}(P))
+    exp_cdiv P V W * #| V.-shell (tuple_of_row (enc tc m)) :&:
+                        (@tuple_of_row B n @: (dec tc @^-1: [set Some m])) |%:R *
+    exp2 (- n%:R * `H(V | P))).
   rewrite exchange_big /= big_distrr /=.
   apply eq_bigr => V _.
-  rewrite /success_factor !mulRA -(mulRC (/ INR #|M|)) -!mulRA; f_equal.
+  rewrite /success_factor !mulRA -(mulRC (/ #|M|%:R)) -!mulRA; f_equal.
   symmetry; rewrite -big_distrl /= -big_distrr /= -mulRA; f_equal.
   by rewrite mulRC.
 f_equal.
@@ -139,15 +139,15 @@ Variable P : P_ n ( A ).
 (** * Bound of the success rate of decoding for typed codes *)
 
 Definition success_factor_bound :=
-  exp2(- INR n * +| log (INR #|M|) / INR n - `I(P, V) |).
+  exp2(- n%:R * +| log #|M|%:R / n%:R - `I(P, V) |).
 
 Variable tc : typed_code B M P.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 
 Lemma success_factor_bound_part1 : success_factor tc V <= 1.
 Proof.
-apply/leRP; rewrite -(leR_pmul2l' (INR #|M|)) ?ltR0n' //; apply/leRP.
-rewrite /success_factor /Rdiv -(mulRC (/ INR #|M|)) 2!mulRA.
+apply/leRP; rewrite -(leR_pmul2l' #|M|%:R) ?ltR0n' //; apply/leRP.
+rewrite /success_factor /Rdiv -(mulRC (/ #|M|%:R)) 2!mulRA.
 rewrite mulRV ?INR_eq0' -?lt0n // mul1R.
 rewrite -iter_addR -big_const /=.
 rewrite (_ : \rsum_(m | m \in M ) 1 = \rsum_(m : M) 1); last exact/eq_bigl.
@@ -155,7 +155,7 @@ rewrite big_distrr /=.
 apply: ler_rsum => m _.
 rewrite mulNR exp2_Ropp.
 rewrite mulRC leR_pdivr_mulr // ?mul1R.
-apply/(@leR_trans (INR #| V.-shell (tuple_of_row (enc tc m)) |) _); last first.
+apply/(@leR_trans #| V.-shell (tuple_of_row (enc tc m)) |%:R); last first.
   apply card_shelled_tuples => //.
     exact/typed_prop.
   case: (jtype.c V) => _ Anot0.
@@ -208,16 +208,15 @@ case/boolP : (tb \in cover partition_pre_image) => Hcase.
 Qed.
 
 Lemma success_factor_bound_part2 :
-  success_factor tc V <=  exp2(INR n * `I(P, V)) / INR #|M|.
+  success_factor tc V <=  exp2(n%:R * `I(P, V)) / #|M|%:R.
 Proof.
-rewrite /success_factor -mulRA (mulRC (/ INR #|M|)) !mulRA.
+rewrite /success_factor -mulRA (mulRC (/ #|M|%:R)) !mulRA.
 apply leR_wpmul2r; first exact/ltRW/invR_gt0/ltR0n.
 rewrite /MutualInfoChan.mut_info -addR_opp addRC addRA.
-rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last by rewrite /CondEntropyChan.h; field.
-rewrite mulRDr mulRN -mulNR /exp2 ExpD.
-apply leR_wpmul2l => //.
-rewrite -(@big_morph _ _ _ 0 _ O _ morph_plus_INR Logic.eq_refl).
-apply (@leR_trans (INR #| T_{`tO( V )} |)); last first.
+rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last first.
+  by rewrite /CondEntropyChan.h; field.
+rewrite mulRDr mulRN -mulNR /exp2 ExpD; apply leR_wpmul2l => //.
+rewrite -big_morph_natRD; apply (@leR_trans #| T_{`tO( V )} |%:R); last first.
   rewrite -output_type_out_entropy //; exact: card_typed_tuples.
 apply/le_INR/leP.
 apply: (@leq_trans (\sum_m #| T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-1: [set Some m]))|)).
@@ -257,7 +256,7 @@ Proof.
 rewrite /success_factor_bound.
 apply Rmax_case.
 - rewrite mulR0 exp2_0; by apply success_factor_bound_part1.
-- apply (@leR_trans (exp2(INR n * `I(P, V)) / INR #|M|)); last first.
+- apply (@leR_trans (exp2 (n%:R * `I(P, V)) / #|M|%:R)); last first.
   + apply/Req_le/esym.
     rewrite mulRDr mulRC.
     rewrite Rmult_opp_opp -mulRA mulRN mulVR ?INR_eq0' //.
@@ -296,19 +295,19 @@ Let exp_cdiv_bound := fun V => exp_cdiv P V W * success_factor_bound M V P.
 
 Lemma typed_success_bound :
   let Vmax := arg_rmax V0 [pred V | V \in \nu^{B}(P)] exp_cdiv_bound in
-  scha(W, tc) <= (INR n.+1)^(#|A| * #|B|) * exp_cdiv_bound Vmax.
+  scha(W, tc) <= n.+1%:R ^ (#|A| * #|B|) * exp_cdiv_bound Vmax.
 Proof.
 move=> Vmax.
 rewrite (typed_success W Mnot0 tc).
 apply (@leR_trans ( \rsum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
-  exp2 (- INR n *  +| log (INR #|M|) * / INR n - `I(P, V) |))).
+  exp2 (- n%:R *  +| log #|M|%:R * / n%:R - `I(P, V) |))).
   apply: ler_rsum => V HV.
   rewrite -mulRA; apply leR_wpmul2l.
     rewrite /exp_cdiv.
     case : ifP => _ //; exact/leRR.
   rewrite /success_factor mulRA; exact: success_factor_ub.
 apply (@leR_trans (\rsum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
-                    exp2 (- INR n * +| log (INR #|M|) * / INR n - `I(P, Vmax)|))).
+                    exp2 (- n%:R * +| log #|M|%:R * / n%:R - `I(P, Vmax)|))).
   apply ler_rsum => V HV.
   move: (@arg_rmax2 [finType of (P_ n (A, B))] V0 [pred V | V \in \nu^{B}(P) ]
                     (fun V => exp_cdiv P V W * success_factor_bound M V P)).
@@ -317,7 +316,7 @@ rewrite big_const iter_addR /success_factor_bound.
 apply leR_wpmul2r.
 - apply mulR_ge0; last exact/exp2_ge0.
   rewrite /exp_cdiv; case: ifP => _ //; exact/leRR.
-- rewrite INR_expR; exact/le_INR/leP/card_nu.
+- rewrite natRexp; exact/le_INR/leP/card_nu.
 Qed.
 
 End typed_success_bound_sect.
@@ -345,14 +344,14 @@ Local Open Scope num_occ_scope.
 
 Lemma success_bound :
   let Pmax := arg_rmax P0 predT (fun P => scha(W, P.-typed_code c)) in
-  scha(W, c) <= (INR n.+1) ^ #|A| * scha(W, Pmax.-typed_code c).
+  scha(W, c) <= n.+1%:R ^ #|A| * scha(W, Pmax.-typed_code c).
 Proof.
 move=> Pmax.
-apply (@leR_trans (INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c))); last first.
+apply (@leR_trans (#| P_ n ( A ) |%:R * scha W (Pmax.-typed_code c))); last first.
   apply leR_wpmul2r; first exact: scha_pos.
-  rewrite INR_expR; exact/le_INR/leP/(type_counting A n).
+  rewrite natRexp; exact/le_INR/leP/(type_counting A n).
 apply (@leR_trans (\rsum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
-  rewrite (_ : INR #| P_ n ( A ) | * scha W (Pmax.-typed_code c) =
+  rewrite (_ : #| P_ n ( A ) |%:R * scha W (Pmax.-typed_code c) =
              \rsum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)); last first.
     by rewrite big_const iter_addR.
   apply ler_rsum => P _.
