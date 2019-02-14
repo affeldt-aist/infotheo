@@ -285,6 +285,17 @@ destruct pt.
 + case/ltRR.
 Defined.
 
+Lemma point_Scaled p x H : @point (Scaled p x) H = x.
+Proof. by []. Qed.
+
+Lemma Scaled_point x H : Scaled (mkRpos H) (@point x H) = x.
+Proof.
+case: x H => [p x|] H; by [congr Scaled; apply val_inj | elim: (ltRR 0)].
+Qed.
+
+Lemma weight0_Zero x : weight x = 0 -> x = Zero.
+Proof. case: x => //= r c /esym Hr; by move/ltR_eqF: (Rpos_gt0 r). Qed.
+
 Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / addRpos r q <= 1.
 Proof.
 split.
@@ -908,6 +919,27 @@ rewrite predeqE => d; split.
   by rewrite in_setE.
 - by rewrite -in_setE => /hull_mem; rewrite in_setE.
 Qed.
+
+Import ScaledConvex.
+Definition scaled_set (D : set A) :=
+  [set x | if x is Scaled p a then a \in D else True].
+
+Lemma addpt_scaled_set (D : {convex_set A}) x y :
+  x \in scaled_set D -> y \in scaled_set D -> addpt x y \in scaled_set D.
+Proof.
+case: x => [p x|]; case: y => [q y|] //=; rewrite !in_setE /scaled_set.
+move/CSet.H/asboolP: (D); apply.
+Qed.
+
+Lemma scalept_scaled_set (D : {convex_set A}) r x :
+  x \in scaled_set D -> scalept r x \in scaled_set D.
+Proof.
+case: x => //= p x; rewrite !in_setE /scaled_set /mkscaled; by case: Rlt_dec.
+Qed.
+
+Lemma scaled_set_extract (D : {convex_set A}) x (H : (0 < weight _ x)%R) :
+  x \in scaled_set D -> point H \in CSet.car D.
+Proof. case: x H => [p x|/ltRR] //=; by rewrite in_setE. Qed.
 End CSet_prop.
 
 Section R_convex_space.
