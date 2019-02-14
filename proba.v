@@ -1064,11 +1064,15 @@ Proof. rewrite /from_bivar; unlock => /=; by []. Qed.
 
 End rV_of_prod.
 
-Lemma from_bivarK (A : finType) n (P : {dist A * 'rV[A]_n}) :
-  to_bivar (from_bivar P) = P.
+Lemma from_bivarK (A : finType) n : cancel (@from_bivar A n) (@to_bivar A n).
 Proof.
-apply/dist_ext => /= -[a b].
+move=> P; apply/dist_ext => /= -[a b].
 by rewrite to_bivarE /= from_bivarE /= row_mx_row_ord0 rbehead_row_mx.
+Qed.
+
+Lemma to_bivarK (A : finType) n : cancel (@to_bivar A n) (@from_bivar A n).
+Proof.
+move=> P; by apply/dist_ext => v; rewrite from_bivarE to_bivarE row_mx_rbehead.
 Qed.
 
 End Multivar.

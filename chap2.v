@@ -544,11 +544,63 @@ Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
 Lemma dE v : d v = \rsum_(x : 'rV[A]_n.+1 | col' i x == v) P x.
 Proof. by rewrite /d; unlock. Qed.
 End def.
+Section prop.
+Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}).
+Lemma zero : d P ord0 = Multivar.tail_of P.
+Proof.
+apply/dist_ext => /= v.
+rewrite dE /Multivar.tail_of Bivar.sndE.
+evar (f : A -> R); rewrite [in RHS](eq_bigr f); last first.
+  move=> a _; rewrite Multivar.to_bivarE /f /=; reflexivity.
+rewrite {}/f (eq_bigl (fun x => rbehead x == v)); last first.
+  by move=> i; congr (_ == _); apply/rowP => j; rewrite 2!mxE.
+by rewrite big_rV_behead.
+Qed.
+End prop.
 End MargDist.
+
+From mathcomp Require Import perm.
+
+(*TODO: move*)
+Lemma col_perm_inj n (s : 'S_n) T m : injective (@col_perm T m n s).
+Proof.
+move=> x y; rewrite /col_perm => /matrixP xy; apply/matrixP => i j.
+by move: (xy i (s^-1%g j)); rewrite !mxE permKV.
+Qed.
+
+Module MultivarPerm.
+Section def.
+Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n}) (s : 'S_n).
+Definition f (v : 'rV[A]_n) := P (col_perm s v).
+Lemma f0 (v : 'rV[A]_n) : (0 <= f v)%R. Proof. exact/dist_ge0. Qed.
+Lemma f1 : (\rsum_(v : 'rV[A]_n) f v = 1)%R.
+Proof.
+rewrite -(pmf1 P) /=.
+rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ (s ^-1)%g) xpredT); last first.
+  exact: col_perm_inj.
+by apply eq_bigr => x _; rewrite /f -col_permM mulgV col_perm1.
+Qed.
+Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
+Lemma dE v : d v = P (col_perm s v).
+Proof. by rewrite /d; unlock. Qed.
+End def.
+Section prop.
+Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n}) (s : 'S_n).
+Local Open Scope entropy_scope.
+Lemma entropy : `H P = `H (d P s).
+Proof.
+rewrite /entropy; congr (- _) => /=.
+rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ s) xpredT); last first.
+  exact: col_perm_inj.
+apply eq_bigr => v _; by rewrite MultivarPerm.dE.
+Qed.
+End prop.
+End MultivarPerm.
 
 Local Open Scope entropy_scope.
 
 Module JointEntropy.
+Local Open Scope entropy_scope.
 Section jointentropy.
 Variables (A B : finType) (P : {dist A * B}).
 
@@ -750,6 +802,130 @@ rewrite [in X in _ + X = _]big_morph_oppR; congr (_ + _).
 Qed.
 
 End chain_rule.
+
+Section chain_rule_generalization.
+
+(* TODO: move *)
+Lemma to_bivar_entropy (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) :
+  `H P = `H (Multivar.to_bivar P).
+Proof.
+rewrite /entropy /=; congr (- _).
+apply/esym.
+rewrite (eq_bigr (fun a => (Multivar.to_bivar P) (a.1, a.2) * log ((Multivar.to_bivar P) (a.1, a.2)))); last by case.
+rewrite -(pair_bigA _ (fun a1 a2 => (Multivar.to_bivar P) (a1, a2) * log ((Multivar.to_bivar P) (a1, a2)))) /=.
+rewrite -(big_rV_cons_behead _ xpredT xpredT) /=.
+apply eq_bigr => a _; apply eq_bigr => v _.
+by rewrite Multivar.to_bivarE /=.
+Qed.
+
+Local Open Scope ring_scope.
+
+(* TODO: move *)
+Definition put_front (n : nat) (i : 'I_n.+1) : 'I_n.+1 -> 'I_n.+1 := fun j =>
+  if j == i then ord0 else
+    if (j < i)%nat then inord (j.+1) else
+      j.
+
+Definition put_back (n : nat) (i : 'I_n.+1) : 'I_n.+1 -> 'I_n.+1 := fun j =>
+  if j == ord0 then i else
+    if (j <= i)%nat then inord (j.-1) else
+      j.
+
+Lemma put_front_inj (n : nat) (i : 'I_n.+1) : injective (put_front i).
+Proof.
+apply: (@can_inj _ _ (put_front i) (put_back i)) => j.
+rewrite /put_back /put_front; case: (ifPn (j == i)) => [ji|].
+  rewrite eqxx; exact/esym/eqP.
+rewrite neq_ltn => /orP[|] ji.
+  rewrite ji ifF; last first.
+    apply/negbTE/eqP => /(congr1 val) => /=.
+    by rewrite inordK // ltnS (leq_trans ji) // -ltnS.
+  rewrite inordK; last by rewrite ltnS (leq_trans ji) // -ltnS.
+  by rewrite ji /=; apply val_inj => /=; rewrite inordK.
+rewrite ltnNge (ltnW ji) /= ifF; last first.
+  by apply/negbTE; rewrite -lt0n (leq_trans _ ji).
+by rewrite leqNgt ji.
+Qed.
+
+Definition put_front_perm (n : nat) i : 'S_n.+1 := perm (@put_front_inj n i).
+
+Lemma chain_rule_multivar (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) (i : 'I_n.+1) :
+  i != ord0 ->
+  (`H P = `H (MargDist.d P i) + CondEntropy.h (Multivar.to_bivar (MultivarPerm.d P (put_front_perm i))))%R.
+Proof.
+move=> i0.
+rewrite -(Swap.dI (Multivar.to_bivar _)).
+set PQ : {dist 'rV[A]_n * A} := Swap.d (Multivar.to_bivar _).
+have -> : MargDist.d P i = Bivar.fst PQ.
+  apply/dist_ext => /= v.
+  rewrite MargDist.dE.
+  rewrite Bivar.fstE.
+  rewrite {}/PQ.
+  apply/esym; evar (f : A -> R); rewrite (eq_bigr f); last first.
+    move=> a _; rewrite Swap.dE /f; reflexivity.
+  rewrite {}/f.
+  apply/esym.
+  destruct n as [|n']; first by rewrite (ord1 i) eqxx in i0.
+  transitivity (\rsum_(x : A) P
+    (\row_(k < n'.+2) (if k == i then x else v ``_ (inord (unbump i k)))))%R.
+    rewrite (reindex_onto (fun a => \row_k (if k == i then a else v ``_ (inord (unbump i k))))
+      (fun w => w ``_ i)); last first.
+      move=> w wv.
+      apply/rowP => j.
+      rewrite !mxE; case: ifPn => [/eqP -> //|ji].
+      rewrite -(eqP wv) mxE; congr (w _ _).
+      move: ji; rewrite neq_ltn => /orP[|] ji.
+        apply val_inj => /=.
+        rewrite inordK; last first.
+          by rewrite /unbump (ltnNge i j) (ltnW ji) subn0 (leq_trans ji) // -ltnS.
+        by rewrite unbumpK //= inE ltn_eqF.
+      apply val_inj => /=.
+      rewrite inordK; last first.
+        rewrite /unbump ji subn1 prednK //; by [rewrite -ltnS | rewrite (leq_ltn_trans _ ji)].
+      by rewrite unbumpK //= inE gtn_eqF.
+    apply eq_bigl => a /=.
+    apply/andP; split.
+      apply/eqP/rowP => k.
+      rewrite !mxE eq_sym (negbTE (neq_lift _ _)).
+      congr (v _ _).
+      apply val_inj => /=.
+      by rewrite bumpK inordK.
+    by rewrite mxE eqxx.
+  transitivity (\rsum_(i1 in A) (MultivarPerm.d P (put_front_perm i)) (row_mx (\row_(i < 1) i1) v)); last first.
+    apply eq_bigr => a _.
+    by rewrite Multivar.to_bivarE.
+  apply/esym; evar (f : A -> R); rewrite (eq_bigr f); last first.
+    move=> a _.
+    rewrite MultivarPerm.dE /f; reflexivity.
+  rewrite {}/f.
+  apply/eq_bigr => a _.
+  congr (P _); apply/rowP => k.
+  rewrite /col_perm /= 2!mxE /=.
+  rewrite /put_front_perm /= permE /put_front.
+  case: ifPn => [ki|]; first by rewrite row_mx_row_ord0.
+  rewrite neq_ltn => /orP[|] ki.
+    rewrite ki mxE; case: splitP => [j|j].
+      by rewrite (ord1 j) inordK // (leq_ltn_trans _ (ltn_ord i)).
+   rewrite inordK; last by rewrite (leq_ltn_trans _ (ltn_ord i)).
+   rewrite add1n => -[] kj.
+   congr (v _ _); apply val_inj => /=.
+   rewrite /unbump ltnNge (ltnW ki) subn0 inordK; last first.
+      rewrite (_ : nat_of_ord k = nat_of_ord j) //.
+      by rewrite kj.
+   rewrite ltnNge (ltnW ki) /= mxE; case: splitP => [j|k' kk'].
+     rewrite (ord1 j){j} => k0.
+     by rewrite k0 ltn0 in ki.
+   congr (v _ _).
+   apply val_inj => /=.
+   rewrite kk' /unbump -kk' ki subn1 inordK.
+   by rewrite kk' add1n.
+   rewrite prednK //.
+   by rewrite -ltnS.
+   by rewrite (leq_ltn_trans _ ki).
+by rewrite -chain_rule JointEntropy.hC Swap.dI -to_bivar_entropy -MultivarPerm.entropy.
+Qed.
+
+End chain_rule_generalization.
 
 Section entropy_chain_rule_corollary.
 Variables (A B C : finType) (PQR : {dist A * B * C}).
@@ -1677,8 +1853,16 @@ Lemma han : n.-1%:R * `H P <= \rsum_(i < n) `H (MargDist.d P i).
 Proof.
 case/boolP : (n == O) => [/eqP |] n0.
   rewrite {1}n0 mul0R; apply: rsumr_ge0 => /= i _; exact/entropy_ge0.
-rewrite -subn1.
-rewrite (chain_rule_rV P).
+rewrite -subn1 natRB // mulRBl mul1R leR_subl_addr {2}(chain_rule_rV P).
+rewrite -big_split /= -{1}(card_ord n) -sum1_card big_morph_natRD big_distrl /=.
+apply ler_rsum => i _; rewrite mul1R.
+case: ifPn => [/eqP|] i0.
+  rewrite (_ : i = ord0); last exact/val_inj.
+  rewrite MargDist.zero /Multivar.tail_of /Multivar.head_of.
+  rewrite -{1}(Multivar.to_bivarK P) entropy_from_bivar.
+  move: (chain_rule (Multivar.to_bivar P)); rewrite /JointEntropy.h => ->.
+  rewrite [in X in _ <= X]addRC leR_add2l -Swap.fst; exact: information_cant_hurt.
+rewrite (chain_rule_multivar _ i0) leR_add2l.
 Abort.
 
 End Han_inequality.

@@ -131,19 +131,17 @@ Section row_mx_ext.
 
 Context {A : Type} {n : nat}.
 
-Definition rbehead (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (lift 0 i).
+Definition rbehead (x : 'rV[A]_n.+1) := col' ord0 x.
 
 Lemma rbehead_row_mx (x : 'rV_n) a : rbehead (row_mx (\row_(j < 1) a) x) = x.
 Proof.
-apply/rowP => i; rewrite mxE.
-rewrite (_ : lift _ _ = rshift 1%nat i); last exact/val_inj.
-by rewrite (@row_mxEr _ _ 1%nat).
+apply/rowP => i; rewrite mxE (_ : lift _ _ = rshift 1%nat i); last exact/val_inj.
+by rewrite (@row_mxEr _ _ 1).
 Qed.
 
 Lemma row_mx_row_ord0 (x : 'rV[A]_n) a : (row_mx (\row_(k < 1) a) x) ``_ 0 = a.
 Proof.
-transitivity ((row_mx (\row_(_ < 1) a) x) 0 (lshift n 0)).
-  congr (_ _ _); exact/val_inj.
+rewrite [X in _ _ X = _](_ : _ = lshift n 0 :> 'I_(1 + n)); last exact/val_inj.
 by rewrite row_mxEl mxE.
 Qed.
 
