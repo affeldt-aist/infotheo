@@ -941,6 +941,22 @@ Lemma scaled_set_extract (D : {convex_set A}) x (H : (0 < weight _ x)%R) :
   x \in scaled_set D -> point H \in CSet.car D.
 Proof. case: x H => [p x|/ltRR] //=; by rewrite in_setE. Qed.
 
+Lemma split_lshift n m (i : 'I_n) : fintype.split (lshift m i) = inl i.
+Proof. by rewrite -/(unsplit (inl i)) unsplitK. Qed.
+Lemma split_rshift n m (i : 'I_m) : fintype.split (rshift n i) = inr i.
+Proof. by rewrite -/(unsplit (inr i)) unsplitK. Qed.
+
+Lemma AddDist_conv n m p (g : 'I_(n+m) -> A)(d : {dist 'I_n})(e : {dist 'I_m}) :
+  \Sum_(AddDist.d d e p) g =
+  \Sum_d (g \o @lshift n m) <|p|> \Sum_e (g \o @rshift n m).
+Proof.
+apply S1_inj; rewrite S1_conv !S1_convn.
+rewrite /Conv /= /scaled_conv big_split_ord !(big_scalept (prob_ge0 _)) /=.
+congr addpt; apply eq_bigr => i _;
+  rewrite (scalept_comp (S1 _) (prob_ge0 _) (pos_f_ge0 _ _));
+  by rewrite AddDist.dE (split_lshift,split_rshift).
+Qed.
+
 Lemma convex_hull (X : set A) : is_convex_set (hull X).
 Proof.
 apply/asboolP => x y p; rewrite 2!in_setE.
@@ -953,22 +969,16 @@ exists (AddDist.d d e p).
 split.
   move=> a -[i _]; rewrite ffunE.
   case: splitP => j _ <-; by [apply gX; exists j | apply hX; exists j].
-apply S1_inj; rewrite S1_conv !S1_convn.
-rewrite /Conv /= /scaled_conv big_split_ord !(big_scalept (prob_ge0 _)) /=.
-congr addpt; apply eq_bigr => i _;
-  rewrite (scalept_comp (S1 _) (prob_ge0 _) (pos_f_ge0 _ _));
-  rewrite ffunE /= AddDist.dE; case: splitP => /= j.
-+ by move/val_inj => ->.
-+ move=> ij; move: (ltn_ord i); by rewrite ij -ltn_subRL subnn ltn0.
-+ move=> ij; move: (ltn_ord j); by rewrite -ij -ltn_subRL subnn ltn0.
-+ by move/eqP; rewrite eqn_add2l => /eqP /val_inj ->.
+rewrite AddDist_conv; congr Conv; apply eq_convn => i //=;
+  by rewrite ffunE (split_lshift,split_rshift).
 Qed.
 
 Lemma hullI (X : set A) : hull (hull X) = hull X.
 Proof.
 rewrite predeqE => d; split.
 - move=> -[n [g [e [gX ->{d}]]]].
-  move: (convex_hull X); rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
+  move: (convex_hull X).
+  rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
   by rewrite in_setE.
 - by rewrite -in_setE => /hull_mem; rewrite in_setE.
 Qed.
