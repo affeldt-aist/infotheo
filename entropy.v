@@ -119,3 +119,11 @@ rewrite -(big_rV_cons_behead _ xpredT xpredT) /= pair_bigA /=.
 apply eq_bigr => -[a b] _ /=.
 by rewrite Multivar.from_bivarE /= row_mx_row_ord0 rbehead_row_mx.
 Qed.
+
+Lemma entropy_to_bivar (A : finType) n (P : {dist 'rV[A]_n.+1}) :
+  `H (Multivar.to_bivar P) = `H P.
+Proof.
+rewrite /entropy /=; congr (- _).
+rewrite -(big_rV_cons_behead _ xpredT xpredT) /= pair_bigA /=.
+apply eq_bigr => -[a b] _ /=; by rewrite Multivar.to_bivarE /=.
+Qed.

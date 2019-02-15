@@ -849,6 +849,7 @@ Qed.
 
 Definition put_front_perm (n : nat) i : 'S_n.+1 := perm (@put_front_inj n i).
 
+(* TODO: clean *)
 Lemma chain_rule_multivar (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) (i : 'I_n.+1) :
   i != ord0 ->
   (`H P = `H (MargDist.d P i) + CondEntropy.h (Multivar.to_bivar (MultivarPerm.d P (put_front_perm i))))%R.
@@ -1840,10 +1841,112 @@ End markov_chain_prop.
 
 From mathcomp Require Import perm.
 
-Local Open Scope ring_scope.
-
 (* wip *)
 Section Han_inequality.
+
+Local Open Scope ring_scope.
+
+Lemma information_cant_hurt_cond' (A : finType) (n' : nat) (n := n'.+1 : nat)
+  (P : {dist 'rV[A]_n}) (i : 'I_n) (i0 : i != O :> nat) :
+  CondEntropy.h (Multivar.to_bivar P) <=
+  CondEntropy.h (Multivar.to_bivar (Take.d P (lift ord0 i))).
+Proof.
+Admitted.
+
+Lemma information_cant_hurt_cond (A : finType) (n' : nat) (n := n'.+1 : nat)
+  (P : {dist 'rV[A]_n}) (i : 'I_n) (i0 : i != O :> nat) :
+  CondEntropy.h (Multivar.to_bivar (MultivarPerm.d P (put_front_perm i))) <=
+  CondEntropy.h (Swap.d (Multivar.belast_last (Take.d P (lift ord0 i)))).
+Proof.
+rewrite (_ : Swap.d _ = Multivar.to_bivar (MultivarPerm.d
+    (Take.d P (lift ord0 i)) (put_front_perm (inord i)))); last first.
+  apply/dist_ext => /= -[a v].
+  rewrite Swap.dE Multivar.belast_lastE Multivar.to_bivarE /= MultivarPerm.dE.
+  rewrite !Take.dE; apply eq_bigr => /= w _; congr (P _); apply/rowP => k.
+  rewrite !castmxE /= cast_ord_id.
+  case/boolP : (k < i.+1)%nat => ki.
+    have @k1 : 'I_i.+1 := Ordinal ki.
+    rewrite (_ : cast_ord _ k = lshift (n - bump 0 i) k1); last exact/val_inj.
+    rewrite 2!row_mxEl castmxE /= cast_ord_id [in RHS]mxE.
+    case/boolP : (k < i)%nat => [ki'|].
+      rewrite (_ : cast_ord _ _ = lshift 1%nat (Ordinal ki')) /=; last exact/val_inj.
+      rewrite row_mxEl /put_front_perm permE /put_front ifF; last first.
+        apply/negbTE/eqP => /(congr1 val) /=.
+        by rewrite inordK // => /eqP; rewrite ltn_eqF.
+      rewrite inordK //= ki' (_ : inord k.+1 = rshift 1%nat (Ordinal ki')); last first.
+        by apply/val_inj => /=; rewrite inordK.
+      by rewrite (@row_mxEr _ 1%nat 1%nat).
+    rewrite permE /put_front.
+    rewrite -leqNgt leq_eqVlt => /orP[|] ik.
+      rewrite ifT; last first.
+        apply/eqP/val_inj => /=; rewrite inordK //; exact/esym/eqP.
+      rewrite row_mx_row_ord0 (_ : cast_ord _ _ = rshift i ord0); last first.
+        by apply val_inj => /=; rewrite addn0; apply/esym/eqP.
+      by rewrite row_mxEr mxE.
+    move: (leq_ltn_trans ik ki); by rewrite ltnn.
+  rewrite -ltnNge ltnS in ki.
+  move=> [:Hk1].
+  have @k1 : 'I_(n - bump 0 i).
+    apply: (@Ordinal _ (k - i.+1)).
+    abstract: Hk1.
+    by rewrite /bump leq0n add1n ltn_sub2r // (leq_ltn_trans _ (ltn_ord k)).
+  rewrite (_ : cast_ord _ _ = rshift i.+1 k1); last by apply val_inj => /=; rewrite subnKC.
+  by rewrite 2!row_mxEr.
+rewrite (_ : MultivarPerm.d (Take.d _ _) _ =
+  Take.d (MultivarPerm.d P (put_front_perm i)) (lift ord0 i)); last first.
+  apply/dist_ext => /= w.
+  rewrite MultivarPerm.dE 2!Take.dE; apply eq_bigr => /= v _.
+  rewrite MultivarPerm.dE; congr (P _); apply/rowP => /= k.
+  rewrite /col_perm mxE !castmxE /= !cast_ord_id /=.
+  case/boolP : (k < bump 0 i)%nat => ki.
+    rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) (Ordinal ki)); last exact/val_inj.
+    rewrite row_mxEl mxE /put_front_perm !permE /= /put_front /=.
+    case/boolP : (k == i) => ik.
+      rewrite ifT; last first.
+        apply/eqP/val_inj => /=; rewrite inordK //; exact/eqP.
+      rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) ord0); last exact/val_inj.
+      by rewrite row_mxEl.
+    rewrite ifF; last first.
+      apply/negbTE/eqP => /(congr1 val) /=.
+      apply/eqP; by rewrite inordK.
+    case/boolP : (k < i)%nat => {ik}ik.
+      rewrite inordK // ik.
+      move=> [:Hk1].
+      have @k1 : 'I_(bump 0 i).
+        apply: (@Ordinal _ k.+1).
+        abstract: Hk1.
+        by rewrite /bump leq0n add1n.
+      rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) k1); last first.
+        apply/val_inj => /=; rewrite inordK // ltnS.
+        by rewrite (leq_trans ik) // -ltnS.
+      rewrite row_mxEl; congr (w _ _).
+      by apply val_inj => /=; rewrite inordK.
+    rewrite -ltnNge in ik.
+    rewrite ifF; last first.
+      apply/negbTE.
+      by rewrite -leqNgt -ltnS inordK.
+    rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) (Ordinal ki)); last exact/val_inj.
+    by rewrite row_mxEl.
+  rewrite -ltnNge /bump leq0n add1n ltnS in ki.
+  move=> [:Hk1].
+  have @k1 : 'I_(n - bump 0 i).
+    apply: (@Ordinal _ (k - i.+1)).
+    abstract: Hk1.
+    by rewrite /bump leq0n add1n ltn_sub2r // (leq_trans _ (ltn_ord k)).
+  rewrite (_ : cast_ord _ _ = rshift i.+1 k1); last by apply/val_inj => /=; rewrite subnKC.
+  rewrite row_mxEr permE /put_front /= ifF; last first.
+     by move: ki; rewrite ltnNge; apply: contraNF => /eqP ->.
+  rewrite ltnNge (ltnW ki) /=.
+  move=> [:Hk2].
+  have @k2 : 'I_(n - bump 0 i).
+    apply: (@Ordinal _ (k - i.+1)).
+    abstract: Hk2.
+    by rewrite /bump leq0n add1n ltn_sub2r // (leq_trans _ (ltn_ord k)).
+  rewrite (_ : cast_ord _ _ = rshift (bump 0 i) k2); last first.
+    by apply/val_inj => /=; rewrite /bump leq0n add1n subnKC.
+  rewrite row_mxEr; congr (v _ _); exact/val_inj.
+exact/information_cant_hurt_cond'.
+Qed.
 
 Variables (A : finType) (n' : nat).
 Let n := n'.+1.
@@ -1851,8 +1954,6 @@ Variable (P : {dist 'rV[A]_n}).
 
 Lemma han : n.-1%:R * `H P <= \rsum_(i < n) `H (MargDist.d P i).
 Proof.
-case/boolP : (n == O) => [/eqP |] n0.
-  rewrite {1}n0 mul0R; apply: rsumr_ge0 => /= i _; exact/entropy_ge0.
 rewrite -subn1 natRB // mulRBl mul1R leR_subl_addr {2}(chain_rule_rV P).
 rewrite -big_split /= -{1}(card_ord n) -sum1_card big_morph_natRD big_distrl /=.
 apply ler_rsum => i _; rewrite mul1R.
@@ -1862,7 +1963,7 @@ case: ifPn => [/eqP|] i0.
   rewrite -{1}(Multivar.to_bivarK P) entropy_from_bivar.
   move: (chain_rule (Multivar.to_bivar P)); rewrite /JointEntropy.h => ->.
   rewrite [in X in _ <= X]addRC leR_add2l -Swap.fst; exact: information_cant_hurt.
-rewrite (chain_rule_multivar _ i0) leR_add2l.
+rewrite (chain_rule_multivar _ i0) leR_add2l; exact/information_cant_hurt_cond.
 Abort.
 
 End Han_inequality.
