@@ -941,6 +941,38 @@ Lemma scaled_set_extract (D : {convex_set A}) x (H : (0 < weight _ x)%R) :
   x \in scaled_set D -> point H \in CSet.car D.
 Proof. case: x H => [p x|/ltRR] //=; by rewrite in_setE. Qed.
 
+Lemma convex_hull (X : set A) : is_convex_set (hull X).
+Proof.
+apply/asboolP => x y p; rewrite 2!in_setE.
+move=> -[n [g [d [gX ->{x}]]]].
+move=> -[m [h [e [hX ->{y}]]]].
+rewrite in_setE.
+exists (n + m).
+exists [ffun i => match fintype.split i with inl a => g a | inr a => h a end].
+exists (AddDist.d d e p).
+split.
+  move=> a -[i _]; rewrite ffunE.
+  case: splitP => j _ <-; by [apply gX; exists j | apply hX; exists j].
+apply S1_inj; rewrite S1_conv !S1_convn.
+rewrite /Conv /= /scaled_conv big_split_ord !(big_scalept (prob_ge0 _)) /=.
+congr addpt; apply eq_bigr => i _;
+  rewrite (scalept_comp (S1 _) (prob_ge0 _) (pos_f_ge0 _ _));
+  rewrite ffunE /= AddDist.dE; case: splitP => /= j.
++ by move/val_inj => ->.
++ move=> ij; move: (ltn_ord i); by rewrite ij -ltn_subRL subnn ltn0.
++ move=> ij; move: (ltn_ord j); by rewrite -ij -ltn_subRL subnn ltn0.
++ by move/eqP; rewrite eqn_add2l => /eqP /val_inj ->.
+Qed.
+
+Lemma hullI (X : set A) : hull (hull X) = hull X.
+Proof.
+rewrite predeqE => d; split.
+- move=> -[n [g [e [gX ->{d}]]]].
+  move: (convex_hull X); rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
+  by rewrite in_setE.
+- by rewrite -in_setE => /hull_mem; rewrite in_setE.
+Qed.
+
 Lemma hull_setU (a : A) (x y : {convex_set A}) :
   x !=set0 -> y !=set0 -> a \in hull (x `|` y) ->
   exists a1, a1 \in x /\ exists a2, a2 \in y /\ exists p : prob, a = a1 <| p |> a2.
