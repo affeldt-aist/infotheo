@@ -303,6 +303,11 @@ rewrite [in RHS]addRC onem_div.
 by apply Rpos_neq0.
 Qed.
 
+(* scaled_pt associated with the following operations define
+   a real cone [Varacca & Winskell, MSCS, 2006]
+   In the following we annotate the lemmas with the corresponding
+   axiom in definition 2.1 [VW] (the numbers are 1-7 and 13)  *)
+
 Definition addpt a b :=
   match a, b with
   | Scaled r x, Scaled q y => Scaled (addRpos r q) (x <| Rpos_prob r q |> y)
@@ -310,6 +315,16 @@ Definition addpt a b :=
   | _, _ => a
   end.
 
+Definition mkscaled r q (x : A) :=
+  match Rlt_dec 0 r with
+  | left Hr => Scaled (mulRpos (mkRpos Hr) q) x
+  | right _ => Zero
+  end.
+
+Definition scalept p (x : scaled_pt) :=
+  if x is Scaled q y then mkscaled p q y else Zero.
+
+(* 1 *)
 Lemma addptC : commutative addpt.
 Proof.
 move=> [r x|] [q y|] //=.
@@ -333,6 +348,7 @@ rewrite !onemK -(addRC p) addRA (addRC r) /onem; field.
 do! split; apply /eqP /Rpos_neq0.
 Qed.
 
+(* 2 *)
 Lemma addptA : associative addpt.
 Proof.
 move=> [p x|] [q y|] [r z|] //=.
@@ -341,9 +357,11 @@ rewrite convA; congr Conv; last by rewrite s_of_Rpos_probA.
 congr Conv; by rewrite r_of_Rpos_probA.
 Qed.
 
+(* 3 *)
 Lemma addpt0 x : addpt x Zero = x.
 Proof. by case: x. Qed.
 
+(* 3' *)
 Lemma add0pt x : addpt Zero x = x.
 Proof. by []. Qed.
 
@@ -355,15 +373,6 @@ Proof. move=> [p x|] [q y|] //=; by rewrite (add0R, addR0). Qed.
 
 Lemma weight0 : weight Zero = 0.
 Proof. by []. Qed.
-
-Definition mkscaled r q (x : A) :=
-  match Rlt_dec 0 r with
-  | left Hr => Scaled (mulRpos (mkRpos Hr) q) x
-  | right _ => Zero
-  end.
-
-Definition scalept p (x : scaled_pt) :=
-  if x is Scaled q y then mkscaled p q y else Zero.
 
 Lemma scaleptR0 p : scalept p Zero = Zero.
 Proof. by []. Qed.
@@ -382,9 +391,11 @@ Proof. by rewrite /= mkscaled_gt0. Qed.
 Lemma mkscaled0 r x : mkscaled 0 r x = Zero.
 Proof. rewrite /mkscaled; case: Rlt_dec => // Hr; by elim (ltRR 0). Qed.
 
+(* 4 *)
 Lemma scalept0 x : scalept 0 x = Zero.
 Proof. case: x => //= r c; by rewrite mkscaled0. Qed.
 
+(* 5 *)
 Lemma scalept1 x : scalept 1 x = x.
 Proof.
 case: x => // r c; rewrite scalept_gt0.
@@ -406,6 +417,7 @@ case=> Hp; last by rewrite -Hp scalept0 mul0R.
 by case: x => [q y|]; [rewrite scalept_gt0 | rewrite mulR0].
 Qed.
 
+(* 6 *)
 Lemma scalept_addpt r :
   0 <= r -> {morph scalept r : x y / addpt x y >-> addpt x y}.
 Proof.
@@ -423,6 +435,7 @@ Qed.
 Definition big_scalept q (H : 0 <= q) :=
   big_morph (scalept q) (scalept_addpt H) (scaleptR0 _).
 
+(* 7 *)
 Lemma scalept_comp p q x :
   0 <= p -> 0 <= q -> scalept p (scalept q x) = scalept (p * q) x.
 Proof.
@@ -432,6 +445,7 @@ case: x => [r x|] //; rewrite !scalept_gt0; first by apply mulR_gt0.
 move=> Hpq; congr Scaled; apply val_inj; by rewrite /= mulRA.
 Qed.
 
+(* 13 *)
 Lemma scalept_addR p q x :
   0 <= p -> 0 <= q ->
   scalept (p + q) x = addpt (scalept p x) (scalept q x).
