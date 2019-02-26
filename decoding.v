@@ -334,16 +334,21 @@ rewrite /PosteriorProbability.d in H.
 unlock in H.
 simpl in H.
 set tmp := \rmax_(_ <- _ | _) _ in H.
-rewrite /tmp -rmax_distrl in H; last first.
+rewrite /tmp in H.
+evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H; last first.
+  move=> v vC; rewrite ffunE /h; reflexivity.
+rewrite -rmax_distrl in H; last first.
   apply/ltRW/invR_gt0; rewrite ltR_neqAle; split.    apply/eqP; by rewrite eq_sym -receivableE.
   exact/PosteriorProbability.den_ge0.
-rewrite /P /UniformSupport.d /UniformSupport.f /= in H.
-case: H => [m' [Hm' H]].
+move: H.
+rewrite {2 3}/P.
+case => [m' [Hm' H]].
 set r := index_enum _ in H.
 rewrite (eq_bigr (fun i => 1 / INR #|[set cw in C]| * W ``(tb | i))) in H; last first.
   move=> i iC; by rewrite UniformSupport.dET // inE.
 rewrite -rmax_distrr in H; last exact/ltRW/Hunpos.
 exists m'; split; first exact Hm'.
+rewrite /PosteriorProbability.f ffunE in H.
 set x := PosteriorProbability.den _ _ _ in H.
 have x0 : / x <> 0 by apply/eqP/invR_neq0'; rewrite -receivableE.
 move/(eqR_mul2r x0) in H.

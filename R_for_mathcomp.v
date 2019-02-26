@@ -11,8 +11,6 @@ Import GRing.Theory.
 
 Local Open Scope ring_scope.
 
-Delimit Scope R_scope with CR.
-
 Definition Req_bool (a b : R) : bool :=
   match Req_EM_T a b with left _ => true | _ => false end.
 
@@ -30,8 +28,6 @@ Canonical R_choice := ChoiceType R R_choiceMixin.
 Definition R_zmodMixin := ZmodMixin addRA addRC add0R Rplus_opp_l.
 Canonical R_zmodType := ZmodType R R_zmodMixin.
 
-Search (R1 <> R0).
-
 Lemma R1dR0 : R1 != R0. Proof. apply/eqP; exact R1_neq_R0. Qed.
 
 Definition R_ringMixin := RingMixin mulRA mul1R mulR1 mulRDl mulRDr R1dR0.
@@ -42,7 +38,7 @@ Canonical R_comRingType := ComRingType R mulRC.
 Lemma Rinv_r' : forall x : R, x != 0 -> Rinv x * x = 1.
 Proof. by move=> x /eqP /Rinv_l_sym H; rewrite -[_ * _]H. Qed.
 
-Axiom Rinv_R0 : (/ 0 = 0)%CR.
+Axiom Rinv_R0 : (/ 0 = 0)%R.
 
 Definition R_unitRingMixin := FieldUnitMixin Rinv_r' Rinv_R0.
 Canonical R_unitRingType := UnitRingType R R_unitRingMixin.
@@ -80,7 +76,7 @@ Qed.
 Lemma le_ge_0 : (forall x : R, 0 <b= x -> x <b= 0 -> x = 0)%R.
 Proof. move=> x /leRP Hx /leRP Hy. by apply Rle_antisym. Qed.
 
-Require Import Fourier.
+Require Import Lra.
 
 Lemma subR_le0 : (forall x y : R, 0 <b= (y - x) = (x <b= y))%R.
 Proof.
@@ -89,12 +85,12 @@ move Hlhs : (0 <b= y - x)%R => [|].
   move/leRP in Hlhs.
   symmetry.
   apply/leRP.
-  by fourier.
+  lra.
 symmetry.
 apply/leRP.
 move/leRP in Hlhs.
 contradict Hlhs.
-by fourier.
+lra.
 Qed.
 
 Lemma or_le0 : forall x : R, (0 <b= x)%R || (x <b= 0)%R.
@@ -119,8 +115,8 @@ Canonical R_numFieldType := [numFieldType of R].
 Canonical R_realDomainType := RealDomainType R or_le0.
 Canonical R_realFieldType := [realFieldType of R].
 
-Lemma H1 (a b : R_ringType) (v : R_zmodType) : a * (b * v) = (a * b)%R * v.
-Proof. by rewrite mulRA. Qed.
+Lemma H1 (a b : R_ringType) (v : R_zmodType) : a * (b * v) = (a * b) * v.
+Proof. by rewrite mulrA. Qed.
 Lemma H2 : left_id 1 Rmult.
 Proof. by rewrite /left_id => x; rewrite mul1R. Qed.
 Lemma H3 : right_distributive Rmult +%R.

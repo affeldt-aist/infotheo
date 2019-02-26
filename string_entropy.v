@@ -28,22 +28,24 @@ Variable total : nat.
 Hypothesis sum_f_total : \sum_(a in A) f a = total.
 Hypothesis total_gt0 : total != O.
 
-Let f_div_total (a : A) := f a / total.
+Let f_div_total := [ffun a : A => f a / total].
 
 Lemma f_div_total_pos c : 0 <= f_div_total c.
 Proof.
-apply mulR_ge0 => //.
+rewrite ffunE; apply mulR_ge0 => //.
 apply /Rlt_le /invR_gt0 /ltR0n.
 by rewrite lt0n.
 Qed.
 
-Lemma f_div_total_1 : \rsum_(a in A) (mkPosFun f_div_total_pos) a = 1.
+Lemma f_div_total_1 : \rsum_(a in A) [ffun a : A => f a / total] a = 1.
 Proof.
-rewrite /f_div_total -big_distrl -big_morph_natRD.
+evar (h : A -> R); rewrite (eq_bigr h); last first.
+  move=> a _ /=; rewrite /f_div_total ffunE /h; reflexivity.
+rewrite {}/h /f_div_total -big_distrl -big_morph_natRD.
 by rewrite sum_f_total /= mulRV // INR_eq0'.
 Qed.
 
-Definition seq_nat_dist := mkDist f_div_total_1.
+Definition seq_nat_dist := makeDist f_div_total_pos f_div_total_1.
 
 End seq_nat_dist.
 
@@ -101,7 +103,7 @@ Lemma szHs_is_nHs s (H : size s != O) :
   size s * `H (@num_occ_dist s H) = nHs s.
 Proof.
 rewrite /entropy /nHs /num_occ_dist /= -mulRN1 big_distrl big_distrr /=.
-apply eq_bigr => a _ /=.
+apply eq_bigr => a _ /=; rewrite ffunE.
 case: ifPn => [/eqP -> | Hnum]; first by rewrite !mulRA !simplR.
 rewrite {1}/Rdiv (mulRC N(a | s)) 3![in LHS]mulRA mulRV ?INR_eq0' // ?mul1R.
 rewrite -mulRA mulRN1 -logV; last by apply divR_gt0; rewrite ltR0n lt0n.
@@ -214,6 +216,12 @@ have Hr: forall i, r i \in Rpos_interval.
 (* (5) Apply Jensen *)
 move: (jensen_dist_concave log_concave d Hr).
 rewrite /d /r /=.
+evar (h : 'I_(size ss') -> R); rewrite (eq_bigr h); last first.
+  move=> i _; rewrite ffunE /h; reflexivity.
+rewrite {}/h.
+evar (h : 'I_(size ss') -> R); rewrite [X in _ <= log X -> _](eq_bigr h); last first.
+  move=> i _; rewrite ffunE /h; reflexivity.
+rewrite {}/h.
 rewrite -(big_tnth _ _ _ xpredT
   (fun s => (N(a|s) / N(a|flatten ss')) *
            log ((size s) / N(a|s)))).

@@ -91,7 +91,7 @@ Variable y : 'rV[B]_n.
 Definition den := \rsum_(x in 'rV_n) P x * W ``(y | x).
 Hypothesis receivable_y : receivable W P y.
 
-Definition f x := P x * W ``(y | x) / den.
+Definition f := [ffun x => P x * W ``(y | x) / den].
 
 Lemma den_ge0 : 0 <= den.
 Proof.
@@ -100,17 +100,21 @@ Qed.
 
 Lemma f0 x : 0 <= f x.
 Proof.
-apply divR_ge0; first by apply mulR_ge0; exact/dist_ge0.
+rewrite ffunE; apply divR_ge0; first by apply mulR_ge0; exact/dist_ge0.
 apply/ltRP; rewrite lt0R {1}/den -receivableE receivable_y; exact/leRP/den_ge0.
 Qed.
 
 Lemma f1 : \rsum_(x in 'rV_n) f x = 1.
-Proof. by rewrite /f /Rdiv -big_distrl /= mulRC mulVR // -receivableE. Qed.
+Proof.
+rewrite /f /Rdiv; evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h); last first.
+  move=> a _; rewrite ffunE /h; reflexivity.
+by rewrite {}/h -big_distrl /= mulRC mulVR // -receivableE.
+Qed.
 
 Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
 
 Lemma dE x : d x = P x * W ``(y | x) / den.
-Proof. rewrite /d; by unlock. Qed.
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
 Local Notation "P '`^^' W ',' H '(' x '|' y ')'" := (@d _ _ W _ P y H x).
 
@@ -193,11 +197,11 @@ rewrite -big_distrl { x} /= mulR_eq0 => -[/eqP|].
 - apply/invR_neq0/eqP; by rewrite -receivableE.
 Qed.
 
-Definition f (i : 'I_n) a := Kmpp * \rsum_(t in 'rV_n | t ``_ i == a) f' t.
+Definition f (i : 'I_n) := [ffun a => Kmpp * \rsum_(t in 'rV_n | t ``_ i == a) f' t].
 
 Lemma f0 i a : 0 <= f i a.
 Proof.
-apply mulR_ge0.
+rewrite ffunE; apply mulR_ge0.
 - rewrite /Kmpp.
   apply/ltRW/invR_gt0/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
     apply rsumr_ge0 => /= ? _; exact: dist_ge0.
@@ -207,7 +211,9 @@ Qed.
 
 Lemma f1 i : \rsum_(a in A) f i a = 1.
 Proof.
-rewrite /f /= -big_distrr /= /Kmpp.
+rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
+  move=> a _; rewrite ffunE /h; reflexivity.
+rewrite {}/h -big_distrr /= /Kmpp.
 set tmp1 := \rsum_( _ | _ ) _.
 set tmp2 := \rsum_( _ | _ ) _.
 suff : tmp1 = tmp2.
@@ -231,7 +237,7 @@ Hypothesis Hy : receivable W (`U HC) y.
 Lemma probaE b n0 :
   (`U HC) '_ n0 `^^ W, Hy (b | y) =
   Kmpp Hy * (\rsum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W, Hy (t | y)).
-Proof. by []. Qed.
+Proof. by rewrite ffunE. Qed.
 
 End prop.
 End MarginalPostProbability.

@@ -299,6 +299,20 @@ apply: leR_ltR_trans; last first.
 rewrite big_const_seq iter_addR mulR0; exact/leRR.
 Qed.
 
+Lemma prsumr_seq_eq0P (A : eqType) (l : seq A) f :
+  uniq l ->
+  (forall a, a \in l -> 0 <= f a) ->
+  \rsum_(a <- l) f a = 0 <-> (forall a, a \in l -> f a = 0).
+Proof.
+move=> ul Hf; split=> [H a al|h]; last first.
+  by rewrite (eq_big_seq (fun=> 0)) ?big1.
+suff : f a = 0 /\ \rsum_(i <- l|i != a) f i = 0 by case.
+apply: Rplus_eq_R0.
+- exact/Hf.
+- by rewrite big_seq_cond; apply: rsumr_ge0 => ? /andP[? ?]; apply Hf.
+- by rewrite -bigD1_seq.
+Qed.
+
 Lemma prsumr_eq0P (A : finType) (P : pred A) f :
   (forall a, P a -> 0 <= f a) ->
   \rsum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
@@ -467,7 +481,7 @@ Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
 (* TODO: rename *)
-Lemma log_rmul_rsum_mlog {A : finType} k (f : A -> R+) : forall n (ta : 'rV[A]_n.+1),
+Lemma log_rmul_rsum_mlog {A : finType} k (f : {+ A -> R}) : forall n (ta : 'rV[A]_n.+1),
   (forall i, 0 < f ta ``_ i) ->
   (- Log k (\rprod_(i < n.+1) f ta ``_ i) = \rsum_(i < n.+1) - Log k (f ta ``_ i))%R.
 Proof.

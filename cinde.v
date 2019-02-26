@@ -21,11 +21,15 @@ Local Open Scope proba_scope.
 Module Proj124.
 Section def.
 Variables (A B D C : finType) (P : {dist A * B * D * C}).
-Definition f (abc : A * B * C) := \rsum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
-Lemma f0 x : 0 <= f x. Proof. apply rsumr_ge0 => ? _; exact: dist_ge0. Qed.
+Definition f := [ffun abc : A * B * C => \rsum_(x in D) P (abc.1.1, abc.1.2, x, abc.2)].
+Lemma f0 x : 0 <= f x.
+Proof. rewrite ffunE; apply rsumr_ge0 => ? _; exact: dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: A * B * C}) f x = 1.
 Proof.
-rewrite /f -(pmf1 P) /= pair_big /=.
+rewrite /f -(pmf1 P) /=.
+evar (h : A * B * C -> R); rewrite (eq_bigr h); last first.
+  move=> i _; rewrite ffunE /h; reflexivity.
+rewrite {}/h pair_big /=.
 rewrite (reindex (fun x => let: (a, b, c, d) := x in ((a, b, d), c))) /=; last first.
   exists (fun x => let: (a, b, d, c) := x in ((a, b, c), d)).
   by move=> -[[[]]].
@@ -34,7 +38,7 @@ by apply eq_bigr => -[[[]]] *.
 Qed.
 Definition d : {dist A * B * C} := locked (makeDist f0 f1).
 Lemma dE abc: d abc = \rsum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
-Proof. by rewrite /d; unlock. Qed.
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
 Section prop.
 Variables (A B D C : finType) (P : {dist A * B * D * C}).
@@ -56,12 +60,14 @@ Definition Proj14d (A B C D : finType) (d : {dist A * B * D * C}) : {dist A * C}
 Module Proj234.
 Section def.
 Variables (A B D C : finType) (P : {dist A * B * C * D}).
-Definition f (abc : B * C * D) := \rsum_(x in A) P (x, abc.1.1, abc.1.2, abc.2).
-Lemma f0 x : 0 <= f x. Proof. apply rsumr_ge0 => ? _; exact: dist_ge0. Qed.
+Definition f := [ffun abc : B * C * D => \rsum_(x in A) P (x, abc.1.1, abc.1.2, abc.2)].
+Lemma f0 x : 0 <= f x. Proof. rewrite ffunE; apply rsumr_ge0 => ? _; exact: dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: B * C * D}) f x = 1.
 Proof.
-rewrite -(pmf1 P) /=.
-rewrite pair_big /=.
+rewrite -(pmf1 P) /= /f.
+evar (h : B * C * D -> R); rewrite (eq_bigr h); last first.
+  move=> i _; rewrite ffunE /h; reflexivity.
+rewrite {}/h pair_big /=.
 rewrite (reindex (fun x => let: (a, b, c, d) := x in (b, c, d, a))) /=; last first.
   exists (fun x => let: (b, c, d, a) := x in (a, b, c, d)).
   by move=> -[] [] [].
@@ -70,7 +76,7 @@ by apply eq_bigr => -[[] []].
 Qed.
 Definition d : {dist B * C * D} := locked (makeDist f0 f1).
 Lemma dE abc: d abc = \rsum_(x in A) P (x, abc.1.1, abc.1.2, abc.2).
-Proof. by rewrite /d; unlock. Qed.
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
 End Proj234.
 
@@ -78,20 +84,23 @@ Module QuadA23.
 Section def.
 Variables (A B C D : finType) (P : {dist A * B * D * C}).
 Let g (x : A * (B * D) * C) := let: (a, (b, d), c) := x in (a, b, d, c).
-Definition f (x : A * (B * D) * C) :=  P (g x).
+Definition f := [ffun x : A * (B * D) * C =>  P (g x)].
 Lemma f0 x : 0 <= f x.
-Proof. move: x => -[[] ? [] ? ? ?]; exact/dist_ge0. Qed.
+Proof. rewrite ffunE; move: x => -[[] ? [] ? ? ?]; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: A * (B * D) * C}) f x = 1.
 Proof.
 rewrite /f -(pmf1 P) /= (reindex g) /=; last first.
   exists (fun x => let: (a, b, d, c) := x in (a, (b, d), c)).
   by move=> -[[] ? [] ? ? ?].
   by move=> -[[] [] ? ? ? ?].
+evar (h : A * (B * D) * C -> R); rewrite (eq_bigr h); last first.
+  move=> i _; rewrite ffunE /h; reflexivity.
+rewrite {}/h.
 by apply eq_bigr => -[[] ? [] ? ? ?].
 Qed.
 Definition d : {dist A * (B * D) * C} := locked (makeDist f0 f1).
 Lemma dE x : d x = P (g x).
-Proof. by rewrite /d /g; unlock => /=. Qed.
+Proof. by rewrite /d /g; unlock; rewrite ffunE. Qed.
 End def.
 Section prop.
 Variables (A B C D : finType) (P : {dist A * B * D * C}).
@@ -111,20 +120,23 @@ Module QuadA34.
 Section def.
 Variables (A B C D : finType) (P : {dist A * B * D * C}).
 Let g (x : A * B * (D * C)) := let: (a, b, (d, c)) := x in (a, b, d, c).
-Definition f (x : A * B * (D * C)) :=  P (g x).
+Definition f := [ffun x : A * B * (D * C) =>  P (g x)].
 Lemma f0 x : 0 <= f x.
-Proof. move: x => -[[] ? ? [] ? ?]; exact/dist_ge0. Qed.
+Proof. rewrite ffunE; move: x => -[[] ? ? [] ? ?]; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: A * B * (D * C)}) f x = 1.
 Proof.
 rewrite /f -(pmf1 P) /= (reindex g) /=; last first.
   exists (fun x => let: (a, b, d, c) := x in (a, b, (d, c))).
   by move=> -[[] ? ? [] ? ?].
   by move=> -[[] [] ? ? ? ?].
+evar (h : A * B * (D * C) -> R); rewrite (eq_bigr h); last first.
+  move=> i _; rewrite ffunE /h; reflexivity.
+rewrite {}/h.
 by apply eq_bigr => -[[] ? ? [] ? ?].
 Qed.
 Definition d : {dist A * B * (D * C)} := locked (makeDist f0 f1).
 Lemma dE x : d x = P (g x).
-Proof. by rewrite /d /g; unlock => /=. Qed.
+Proof. by rewrite /d /g; unlock; rewrite ffunE. Qed.
 End def.
 End QuadA34.
 
@@ -132,20 +144,23 @@ Module QuadA234.
 Section def.
 Variables (A B C D : finType) (P : {dist A * B * D * C}).
 Let g (x : A * (B * D * C)) := let: (a, (b, d, c)) := x in (a, b, d, c).
-Definition f (x : A * (B * D * C)) :=  P (g x).
+Definition f := [ffun x : A * (B * D * C) =>  P (g x)].
 Lemma f0 x : 0 <= f x.
-Proof. move: x => -[? [] [] ? ? ?]; exact/dist_ge0. Qed.
+Proof. rewrite ffunE; move: x => -[? [] [] ? ? ?]; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: A * (B * D * C)}) f x = 1.
 Proof.
 rewrite /f -(pmf1 P) /= (reindex g) /=; last first.
   exists (fun x => let: (a, b, d, c) := x in (a, (b, d, c))).
   by move=> -[? [] [] ? ? ?].
   by move=> -[[] [] ? ? ? ?].
+evar (h : A * (B * D * C) -> R); rewrite (eq_bigr h); last first.
+  move=> i _; rewrite ffunE /h; reflexivity.
+rewrite {}/h.
 by apply eq_bigr => -[? [] [] ? ?].
 Qed.
 Definition d : {dist A * (B * D * C)} := locked (makeDist f0 f1).
 Lemma dE x : d x = P (g x).
-Proof. by rewrite /d /g; unlock => /=. Qed.
+Proof. by rewrite /d /g; unlock; rewrite ffunE. Qed.
 End def.
 Section prop.
 Variables (A B C D : finType) (P : {dist A * B * D * C}).

@@ -982,18 +982,18 @@ case/boolP : (d (lift ord0 ord0) == 1 - d ord0 :> R)%R => K.
 case/boolP : (d (lift ord0 ord0) == 1%R :> R) => [|K1].
   by rewrite Dist1.one => /eqP ->; rewrite PermDist.dist1 !ConvnDist1 /= permKV.
 (* TODO: isolate this construction? *)
-pose D' : 'I_3 -> R := [eta (fun=>R0) with
+pose D' : {ffun 'I_3 -> R} := [ffun x => [eta (fun=>R0) with
   ord0 |-> d ord0,
   lift ord0 ord0 |-> d (lift ord0 ord0),
-  ord_max |-> \rsum_(i < n.+3 | 2 <= i) d i].
+  ord_max |-> \rsum_(i < n.+3 | 2 <= i) d i] x].
 have D'0 : (forall i, 0 <= D' i)%R.
-  move=> i; rewrite /D' /=; case: ifPn => _; first exact/dist_ge0.
+  move=> i; rewrite /D' ffunE /=; case: ifPn => _; first exact/dist_ge0.
   case: ifPn => _; first exact/dist_ge0.
   case: ifPn => _; last exact/leRR.
   apply rsumr_ge0 => k _; exact/dist_ge0.
 have D'1 : (\rsum_(i < 3) (D' i) = 1)%R.
   rewrite !big_ord_recr big_ord0 /= add0R.
-  rewrite /D' /= -(pmf1 d).
+  rewrite /D' !ffunE /= -(pmf1 d).
   apply/esym.
   rewrite 2!big_ord_recl addRA; congr (_ + _)%R.
   apply/esym.
@@ -1030,9 +1030,9 @@ transitivity (Convn D G).
   rewrite convnE.
   rewrite /G.
   congr (_ <| _ |> _).
-  exact/prob_ext.
-  by [].
-  by rewrite /= DelDist.dE D1Dist.dE /DelDist.h /=.
+  by apply/prob_ext => /=; rewrite ffunE.
+  by rewrite ffunE.
+  by rewrite /= !ffunE DelDist.dE D1Dist.dE /DelDist.h /=.
 rewrite (Convn_perm3 _ _ S3.p01).
 pose q' := (d ord0 / (1 - d (lift ord0 ord0)))%R.
 move=> [:Hq].
@@ -1052,10 +1052,10 @@ have @q : prob.
 rewrite (@convn3E _ _ q); last 2 first.
   rewrite PermDist.dE permE /=.
   rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
-  by rewrite /D' /=.
+  by rewrite /D' ffunE /=.
   rewrite /= !PermDist.dE /= !permE /=.
   rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
-  by [].
+  by rewrite !ffunE.
 rewrite convnE.
   by rewrite PermDist.dE H !permE.
 move=> K2.
@@ -1097,7 +1097,7 @@ congr (_ <| _ |> _).
   by rewrite !DelDist.dE !D1Dist.dE /= !PermDist.dE H !permE.
 apply prob_ext => /=.
 rewrite !PermDist.dE !permE /= (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
-by rewrite H !permE.
+by rewrite ffunE H !permE.
 Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2*)

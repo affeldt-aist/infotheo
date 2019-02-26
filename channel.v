@@ -98,10 +98,10 @@ Definition channel_ext n := 'rV[A]_n -> {dist 'rV[B]_n}.
 (* Definition of a discrete memoryless channel (DMC).
    W(y|x) = \Pi_i W_0(y_i|x_i) where W_0 is a probability
    transition matrix. *)
-Definition f (x y : 'rV_n) := \rprod_(i < n) W `(y ``_ i | x ``_ i).
+Definition f (x : 'rV_n) := [ffun y : 'rV_n => \rprod_(i < n) W `(y ``_ i | x ``_ i)].
 
 Lemma f0 x y : 0 <= f x y.
-Proof. apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
+Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
 
 Lemma f1 x : \rsum_(y in 'rV_n) f x y = 1%R.
 Proof.
@@ -114,7 +114,7 @@ suff H : \rsum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1%R.
   apply eq_big => vb.
   - rewrite inE.
     apply/esym/eqP/rowP => a; by rewrite mxE ffunE.
-  - move=> _; apply eq_bigr => i _; by rewrite ffunE.
+  - move=> _; rewrite ffunE; apply eq_bigr => i _; by rewrite ffunE.
 rewrite -bigA_distr_bigA /= /f'.
 transitivity (\rprod_(i < n) 1%R); first by apply eq_bigr => i _; rewrite pmf1.
 by rewrite big1.
@@ -134,7 +134,7 @@ Notation "W '``(' y '|' x ')'" := (DMC.c W _ x y) : channel_scope.
 
 Lemma DMCE (A B : finType) n (W : `Ch_1(A, B)) b a :
   W ``(b | a) = \rprod_(i < n) W (a ``_ i) (b ``_ i).
-Proof. rewrite /DMC.c; by unlock. Qed.
+Proof. by rewrite /DMC.c; unlock; rewrite ffunE. Qed.
 
 Lemma DMC_ge0 (A B : finType) n (W : `Ch_1(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
 Proof. exact: dist_ge0. Qed.
@@ -182,17 +182,19 @@ End DMC_sub_vec.
 Module OutDist.
 Section def.
 Variables (A B : finType) (P : dist A) (W  : `Ch_1(A, B)).
-Definition f (b : B) := \rsum_(a in A) W a b * P a.
+Definition f := [ffun b : B => \rsum_(a in A) W a b * P a].
 Lemma f0 (b : B) : 0 <= f b.
-Proof. apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/dist_ge0. Qed.
+Proof. rewrite ffunE; apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(b in B) f b = 1.
 Proof.
-rewrite exchange_big /= -(pmf1 P).
+rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
+  move=> a _; rewrite ffunE /h; reflexivity.
+rewrite {}/h exchange_big /= -(pmf1 P).
 apply eq_bigr => a _; by rewrite -big_distrl /= (pmf1 (W a)) mul1R.
 Qed.
 Definition d : dist B := locked (makeDist f0 f1).
 Lemma dE b : d b = \rsum_(a in A) W a b * P a.
-Proof. rewrite /d; by unlock. Qed.
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
 End OutDist.
 

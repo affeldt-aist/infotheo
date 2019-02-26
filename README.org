@@ -5,11 +5,11 @@ error-correcting codes.
 
 ** Requirements
 
-- Coq 8.9.0.
-  + Compilation should be fine with previous versions except for
-    minor problems due to recent changes in the Reals library.
-- [[https://github.com/math-comp/math-comp][Mathematical Components library]] (github version)
-- [[https://github.com/math-comp/analysis][MathComp-Analysis]] (github version)
+- [[https://coq.inria.fr][Coq 8.9.0]]
+- [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.7.0
+- [[https://github.com/math-comp/analysis][MathComp-Analysis]] github master version
+  which requires
+  + [[https://github.com/math-comp/bigenough/][bigenough]] first release
 
 ** Installation
 

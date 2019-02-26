@@ -26,21 +26,6 @@ Implicit Types A B C : set T.
 
 Local Open Scope classical_set_scope.
 
-Lemma imsetP T1 T2 (D : set T1) (f : T1 -> T2) b :
-  reflect (exists2 a, a \in D & b = f a) (b \in f @` D).
-Proof.
-apply: (iffP idP) => [|[a aC ->]].
-by rewrite in_setE => -[a Ca <-{b}]; exists a => //; rewrite in_setE.
-by rewrite in_setE; apply/classical_sets.imageP; rewrite -in_setE.
-Qed.
-
-Lemma in_setU A B x : (x \in A `|` B) = (x \in A) || (x \in B) :> Prop.
-Proof.
-rewrite propeqE; split => [ | ]; last first.
-  move/orP => -[]; rewrite 2!in_setE => ?; by [left|right].
-rewrite in_setE => -[?|?]; apply/orP; rewrite 2!in_setE; tauto.
-Qed.
-
 Lemma set0U A : set0 `|` A = A.
 Proof. rewrite funeqE => t; rewrite propeqE; split; by [case|right]. Qed.
 
@@ -141,48 +126,45 @@ Module CodomDDist.
 Section def.
 Local Open Scope classical_set_scope.
 Variables (A : Type) (n : nat) (g : 'I_n -> A) (e : {dist 'I_n}) (y : set A).
-Definition f : 'I_n -> R := fun i => if g i \in y then e i else 0%R.
+Definition f := [ffun i : 'I_n => if g i \in y then e i else 0%R].
 Lemma f0 i : (0 <= f i)%R.
-Proof. rewrite /f; case: ifPn => _; [exact/dist_ge0|exact/leRR]. Qed.
+Proof. rewrite /f ffunE; case: ifPn => _; [exact/dist_ge0|exact/leRR]. Qed.
 Lemma f1 (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, g i \in x -> e i = 0%R) :
+  (ge : forall i : 'I_n, x (g i) -> e i = 0%R) :
   (\rsum_(i < n) f i = 1)%R.
 Proof.
 rewrite /f -(pmf1 e) /=.
-apply eq_bigr => i _.
-case: ifPn => // giy.
+apply eq_bigr => i _; rewrite ffunE.
+case: ifPn => // /negP; rewrite in_setE => ygi.
 rewrite ge //.
-have : g i \in x `|` y by rewrite in_setE; apply/gX; by exists i.
-rewrite in_setU => /orP[|] //.
-by rewrite (negbTE giy).
+have : (x `|` y) (g i) by apply/gX; by exists i.
+by case.
 Qed.
 Definition d (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, g i \in x -> e i = 0%R) : {dist 'I_n} :=
+  (ge : forall i : 'I_n, x (g i) -> e i = 0%R) : {dist 'I_n} :=
   locked (makeDist f0 (f1 gX ge)).
 Lemma dE (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, g i \in x -> e i = 0%R) i :
+  (ge : forall i : 'I_n, x (g i) -> e i = 0%R) i :
   d gX ge i = if g i \in y then e i else 0%R.
-Proof. by rewrite /d; unlock. Qed.
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 Lemma f1' (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, (g i \in x) && (g i \notin y) -> e i = 0%R) :
+  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0%R) :
   (\rsum_(i < n) f i = 1)%R.
 Proof.
 rewrite /f -(pmf1 e) /=.
-apply eq_bigr => i _.
-case: ifPn => // giy.
+apply eq_bigr => i _; rewrite ffunE.
+case: ifPn => // /negP; rewrite in_setE => giy.
 rewrite ge //.
-have : g i \in x `|` y by rewrite in_setE; apply/gX; by exists i.
-rewrite in_setU => /orP[|].
-  by rewrite (negbTE giy) andbT.
-by rewrite (negbTE giy).
+have : (x `|` y) (g i) by apply/gX; by exists i.
+by case.
 Qed.
 Definition d' (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, (g i \in x) && (g i \notin y) -> e i = 0%R) :=
+  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0%R) :=
   locked (makeDist f0 (f1' gX ge)).
 Lemma dE' (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, (g i \in x) && (g i \notin y) -> e i = 0%R) i :
+  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0%R) i :
   d' gX ge i = if g i \in y then e i else 0%R.
-Proof. by rewrite /d'; unlock. Qed.
+Proof. by rewrite /d'; unlock; rewrite ffunE. Qed.
 End def.
 End CodomDDist.
 
@@ -522,13 +504,12 @@ Lemma barycenter_convdist :
      (\big[addpt/Zero]_(j < m) scalept (q i j) (h j))
   = \big[addpt/Zero]_(j < m) scalept (ConvDist.d p q j) (h j).
 Proof.
-rewrite (eq_bigr _ (fun i _ => big_scalept (pos_f_ge0 p i) _ _ _)).
+rewrite (eq_bigr _ (fun i _ => big_scalept (pos_ff_ge0 p i) _ _ _)).
 rewrite exchange_big /=; apply eq_bigr => j _.
 rewrite ConvDist.dE.
-have HF : forall i : 'I_n, 0 <= p i * q i j.
-  by move=> i; apply mulR_ge0; apply pos_f_ge0.
+have HF : forall i, 0 <= p i * q i j by move=> i; apply/mulR_ge0; apply/dist_ge0.
 rewrite (scalept_rsum (mkPosFun HF)) /=; apply eq_bigr => i _.
-rewrite scalept_comp //; by apply pos_f_ge0.
+rewrite scalept_comp //; exact/dist_ge0.
 Qed.
 End convdist.
 
@@ -667,7 +648,7 @@ case: eqVneq => Hd.
   rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ R1)).
   rewrite addRK subRR => /prsumr_eq0P -> //.
     by rewrite mkscaled0.
-  by move=> a _; apply pos_f_ge0.
+  by move=> a _; exact/dist_ge0.
 set d' := DelDist.d Hd.
 set points' := fun i => points (DelDist.h ord0 i).
 rewrite /index_enum -enumT (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
@@ -677,7 +658,7 @@ rewrite prj_affine S1_conv; congr addpt.
 rewrite IH -barycenter_big_fin scalept_bary; last by apply prob_ge0.
 rewrite /barycenter 2!big_map [in RHS]big_map.
 apply eq_bigr => i _.
-rewrite scalept_comp; [|by apply prob_ge0|by apply pos_f_ge0].
+rewrite scalept_comp; [|by apply prob_ge0|exact/dist_ge0].
 rewrite DelDist.dE D1Dist.dE /=.
 rewrite /Rdiv (mulRC (d _)) mulRA mulRV ?mul1R //.
 by move: (Hd); apply contra => /eqP Hd'; rewrite -onem0 -Hd' onemK.
@@ -831,15 +812,11 @@ Qed.
 Lemma mem_hull_setU (x y : set A) (a0 a1 : A) p :
   a0 \in x -> a1 \in y -> a0 <| p |> a1 \in hull (x `|` y).
 Proof.
-move=> a0x a1y.
-rewrite in_setE.
+rewrite 3!in_setE => a0x a1y.
 exists 2, (fun i => if i == ord0 then a0 else a1), (I2Dist.d p); split => /=.
   move=> a2.
-  rewrite -in_setE.
-  case/imsetP => i _ ->{a2} /=.
-  case: ifPn => _.
-  by rewrite -in_setE in_setU a0x.
-  by rewrite -in_setE in_setU orbC a1y.
+  case => i _ <-{a2} /=.
+  case: ifPn => _; [by left | by right].
 case: eqVneq => [|H].
   rewrite I2Dist.dE eqxx /= => p1.
   suff -> : p = `Pr 1 by rewrite conv1.
@@ -854,7 +831,7 @@ rewrite (negbTE lift0') I2Dist.dE (negbTE lift0') I2Dist.dE eqxx divRR ?eqxx //.
 by move: H; rewrite I2Dist.dE eqxx onem_neq0.
 Qed.
 Lemma mem_hull_setU_left (x y : set A) (a : A) : a \in x -> a \in hull (x `|` y).
-Proof. by move=> ax; apply: hull_mem; rewrite in_setU ax. Qed.
+Proof. by rewrite in_setE=> ax; apply: hull_mem; rewrite in_setE; left. Qed.
 
 End hull_prop.
 
@@ -953,7 +930,7 @@ Proof.
 apply S1_inj; rewrite S1_conv !S1_convn.
 rewrite /Conv /= /scaled_conv big_split_ord !(big_scalept (prob_ge0 _)) /=.
 congr addpt; apply eq_bigr => i _;
-  rewrite (scalept_comp (S1 _) (prob_ge0 _) (pos_f_ge0 _ _));
+  rewrite (scalept_comp (S1 _) (prob_ge0 _) (dist_ge0 _ _));
   by rewrite AddDist.dE (split_lshift,split_rshift).
 Qed.
 
@@ -1022,8 +999,8 @@ exists sa2; split.
   + by rewrite in_setE.
   + apply addpt_scaled_set.
   + move=> i Hi; apply scalept_scaled_set.
-    rewrite in_setE /= -[_ \in _]orFb -(negbTE Hi) -in_setU in_setE.
-    by apply /gX /imageP.
+    rewrite in_setE /= -[_ \in _]orFb -(negbTE Hi).
+    apply/orP; rewrite 2!in_setE; exact/gX/imageP.
 by [].
 Qed.
 End CSet_prop.
@@ -1083,7 +1060,7 @@ Lemma avgnE n (g : 'I_n -> R) e : \Sum_e g = avgn g e.
 Proof.
 rewrite -[LHS]Scaled1RK S1_convn big_scaleR.
 apply eq_bigr => i _.
-rewrite scaleR_scalept ?Scaled1RK //; by apply pos_f_ge0.
+rewrite scaleR_scalept ?Scaled1RK //; exact/dist_ge0.
 Qed.
 End R_convex_space.
 
@@ -1657,10 +1634,10 @@ Lemma convn_convdist (n : nat) (g : 'I_n -> dist A) (d : {dist 'I_n}) :
   \Sum_d g = ConvDist.d d g.
 Proof.
 apply dist_ext=> a; rewrite -[LHS]Scaled1RK.
-rewrite (@S1_convn_proj _ _ (@^~ a \o @pos_f _ \o @pmf _)); last first.
+rewrite (@S1_convn_proj _ _ (@^~ a \o @pos_ff _ \o @pmf _)); last first.
   move=> p x y /=; by rewrite /Conv /= Conv2Dist.dE.
 rewrite big_scaleR ConvDist.dE; apply eq_bigr => i _.
-rewrite scaleR_scalept ?Scaled1RK //; by apply pos_f_ge0.
+rewrite scaleR_scalept ?Scaled1RK //; exact/dist_ge0.
 Qed.
 End dist_convex_space.
 

@@ -695,12 +695,14 @@ Hypothesis RofK1 : RofK 1 = 1%R.
 Hypothesis RofKadd : forall x y : K, RofK (x + y) = (RofK x + RofK y)%R.
 Hypothesis RofKmul : forall x y : K, RofK (x * y) = (RofK x * RofK y)%R.
 
-Lemma f0R l t : (0 <= RofK (@fintree_dist l t))%R.
-Proof. apply RofKpos, f0. Qed.
+Lemma f0R l t : (0 <= [ffun x => RofK (@fintree_dist l x)] t)%R.
+Proof. rewrite ffunE; apply RofKpos, f0. Qed.
 
-Lemma f1R l : (\rsum_(t : @fintree tw l) RofK (@fintree_dist l t) = 1)%R.
+Lemma f1R l : (\rsum_(t : @fintree tw l) [ffun x => RofK (@fintree_dist l x)] t = 1)%R.
 Proof.
-by rewrite -(@big_morph _ _ RofK 0%R Rplus 0%:R (@GRing.add K)) // f1 RofK1.
+evar (h : fintree_finType tw l -> R); rewrite (eq_bigr h); last first.
+  move=> i _; rewrite ffunE /h; reflexivity.
+by rewrite {}/h -(@big_morph _ _ RofK 0%R Rplus 0%:R (@GRing.add K)) // f1 RofK1.
 Qed.
 
 Definition tree_ensemble l : ensemble tw l := makeDist (@f0R l) (@f1R l).

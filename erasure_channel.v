@@ -25,13 +25,13 @@ Hypothesis p_01 : 0 <= p <= 1.
 
 (** Definition of n-ary Erasure Channel (EC) *)
 
-Definition f (a : A) := fun b =>
+Definition f (a : A) := [ffun b =>
   if b is Some a' then
     if a == a' then 1 - p else 0
-  else p.
+  else p].
 
 Lemma f0 a b : 0 <= f a b.
-Proof. rewrite /f.
+Proof. rewrite /f ffunE.
   case: b => [a'|]; last by case: p_01.
   case: ifP => _. case: p_01 => ? ?; lra.
   lra.
@@ -39,12 +39,13 @@ Qed.
 
 Lemma f1 (a : A) : \rsum_(a' : {:option A}) f a a' = 1.
 Proof.
-rewrite (bigD1 None) //= (bigD1 (Some a)) //= eqxx /= (proj2 (prsumr_eq0P _)).
+rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /= (proj2 (prsumr_eq0P _)).
 - by field.
 - rewrite /f; case => [a'|]; last by case: p_01.
+  rewrite ffunE.
   case: ifPn => [_ |*]; last exact/leRR.
   case: p_01 => ? ? _; lra.
-- case => //= a' aa'; case: ifPn => // /eqP ?; subst a'.
+- case => //= a' aa'; rewrite ffunE; case: ifPn => // /eqP ?; subst a'.
   move: aa'; by rewrite eqxx.
 Qed.
 
@@ -70,7 +71,7 @@ Local Notation PW := (OutDist.f P BEC).
 Lemma EC_non_flip (a : X) (i : option X):
   (i != None) && (i != Some a) -> 0 = EC.f p a i.
 Proof.
-case: i => //= x xa; case: ifP => // ax; move: xa; by rewrite (eqP ax) eqxx.
+case: i => //= x xa; rewrite ffunE; case: ifP => // ax; move: xa; by rewrite (eqP ax) eqxx.
 Qed.
 
 End EC_prob.

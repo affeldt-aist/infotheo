@@ -22,17 +22,19 @@ Local Open Scope R_scope.
 Module Wght.
 Section wght.
 Variables (A M : finType) (P : dist A) (n : nat).
-Definition f := fun g : encT A M n => \rprod_(m in M) P `^ n (g m).
+Definition f := [ffun g : encT A M n => \rprod_(m in M) P `^ n (g m)].
 Lemma f0 g : 0 <= f g.
-Proof. apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
+Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
 Lemma f1 : \rsum_(g in {ffun M -> 'rV[A]_n}) f g = 1.
 Proof.
-rewrite -(bigA_distr_bigA (fun _ v => P `^ n v)) /=.
+rewrite /f; evar (h : {ffun M -> 'rV[A]_n} -> R); rewrite (eq_bigr h); last first.
+  move=> a _; rewrite ffunE /h; reflexivity.
+rewrite {}/h -(bigA_distr_bigA (fun _ v => P `^ n v)) /=.
 rewrite [RHS](_ : _ = \rprod_(m0 : M | xpredT m0) 1); last by rewrite big1.
 apply eq_bigr => _ _; by rewrite (pmf1 (P `^ n)).
 Qed.
 Definition d : {dist encT A M n} := locked (makeDist f0 f1).
-Lemma dE x : d x = f x. Proof. by rewrite /d; unlock. Qed.
+Lemma dE x : d x = f x. Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End wght.
 End Wght.
 
@@ -92,7 +94,7 @@ Proof. by rewrite /o_PI !ffunE tpermK. Qed.
 
 Lemma wght_o_PI m m' P (h : encT A M n) : Wght.d P (o_PI m m' h) = Wght.d P h.
 Proof.
-rewrite 2!Wght.dE /Wght.f
+rewrite 2!Wght.dE /Wght.f 2!ffunE
   (reindex_onto (tperm m m') (tperm m m')) /=; last first.
   move=> m0 _; by rewrite tpermK.
 apply eq_big => m0.
@@ -345,7 +347,7 @@ transitivity (\rsum_(v : 'rV['rV[A]_n]_#|M|) (
     \rsum_(w | w \in ~: cal_E epsilon0 [ffun x => v ``_ x] zero)
     (W ``(| [ffun x => v ``_ x] zero)) w))%R.
   apply eq_bigr => v _; congr (_ * _)%R.
-    rewrite Wght.dE. (* NB *)
+    rewrite Wght.dE ffunE. (* NB *)
     by apply eq_bigr => m _; rewrite 2!ffunE.
   apply eq_big.
   - move=> /= ?; by rewrite !inE ffunE.
@@ -524,7 +526,7 @@ transitivity (
     apply eq_bigr => i2 _.
     have Ht : (#|'I_k.+1| - i.+1 = k - i)%nat by rewrite card_ord /= subSS.
     rewrite (big_tcast Ht) //; apply eq_bigr => /= i3 _; congr (_ * _)%R.
-    - rewrite 2!Wght.dE /Wght.f /=.
+    - rewrite 2!Wght.dE /Wght.f 2!ffunE /=.
       rewrite (reindex_onto enum_rank enum_val); last by move=> *; rewrite enum_valK.
       apply eq_big => /=; first by move=> x; rewrite enum_rankK eqxx inE.
       move=> i4 _; congr (P `^ _ _).
@@ -578,7 +580,7 @@ transitivity (
   rewrite [in RHS](big_nth j0) /= big_mkord.
   transitivity (\rprod_(j < #|@predT M|)
     P `^ _ ([ffun x => (tcast Hcast [tuple of j0 :: j1 ++ j3 :: j2])\_(enum_rank x)] (enum_val j)))%R.
-    apply eq_big => ? //= _.
+    rewrite ffunE; apply eq_big => ? //= _.
     by rewrite !ffunE enum_valK.
   have j_M : (size (j1 ++ j3 :: j2)).+1 = #|M|.
     rewrite size_cat (size_tuple j1) /= (size_tuple j2) card_ord.

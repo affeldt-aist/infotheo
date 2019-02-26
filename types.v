@@ -67,16 +67,18 @@ by rewrite big_const iter_addn.
 Qed.
 
 Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
-set f := fun a => INR N(a | ta) / INR n.+1.
+set f := [ffun a => INR N(a | ta) / INR n.+1].
 assert (H1 : forall a, (0 <= f a)%R).
-  move=> a; apply divR_ge0; by [apply leR0n | apply ltR0n].
+  move=> a; rewrite ffunE; apply divR_ge0; by [apply leR0n | apply ltR0n].
 have H2 : \rsum_(a in A) f a = 1%R.
-  by rewrite /f -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
+  rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
+    move=> a _; rewrite ffunE /h; reflexivity.
+  by rewrite {}/h -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
 have H : forall a, (N(a | ta) < n.+2)%nat.
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
-refine (@type.mkType _ n.+1 (@mkDist _ (@mkPosFun _ f H1) H2)
+refine (@type.mkType _ n.+1 (makeDist H1 H2)
   [ffun a => @Ordinal n.+2 (N(a | ta)) (H a)] _).
-move=> a /=; by rewrite /f ffunE.
+by move=> a /=; rewrite !ffunE.
 Defined.
 
 Definition ffun_of_type A n (P : P_ n ( A )) := let: type.mkType _ f _ := P in f.
@@ -120,17 +122,19 @@ move: {H}(H a); rewrite H1 H2 eqR_mul2r //.
 apply/invR_neq0; by rewrite INR_eq0.
 Qed.
 
-Definition pos_fun_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2}) : pos_fun A.
-set d := fun a : A => INR (f a) / INR n.+1.
-refine (@mkPosFun _ d _) => a.
-apply divR_ge0; by [apply leR0n | apply ltR0n].
+Definition pos_fun_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2}) : pos_ffun A.
+set d := [ffun a : A => INR (f a) / INR n.+1].
+refine (@mkPosFfun _ d _); apply/forallP_leRP => a.
+rewrite ffunE; apply divR_ge0; by [apply leR0n | apply ltR0n].
 Defined.
 
 Definition dist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : \sum_(a in A) f a == n.+1) : dist A.
 set pf := pos_fun_of_ffun f.
 assert (H : \rsum_(a in A) pf a = 1).
-  rewrite /pf /= /Rdiv -big_distrl /= -big_morph_natRD.
+  rewrite /pf; evar (h : A -> R); rewrite (eq_bigr h); last first.
+    move=> a _; rewrite ffunE /h; reflexivity.
+  rewrite {}/h /= /Rdiv -big_distrl /= -big_morph_natRD.
   move/eqP : Hf => ->; by rewrite mulRV // INR_eq0'.
 exact (mkDist H).
 Defined.
@@ -138,7 +142,7 @@ Defined.
 Lemma dist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : \sum_(a in A) f a == n.+1) :
 forall a : A, (dist_of_ffun Hf) a = INR (f a) / INR n.+1.
-Proof. by move=> a. Qed.
+Proof. by move=> a; rewrite ffunE. Qed.
 
 Definition type_choice_f (A : finType) n (f : {ffun A -> 'I_n.+1}) : option (P_ n ( A )).
 destruct n; first by exact None.
@@ -173,7 +177,7 @@ destruct Sumbool.sumbool_of_bool as [e|e]; last first.
 congr Some.
 set d1 := dist_of_ffun _.
 suff ? : d1 = d by subst d; congr type.mkType; apply proof_irrelevance.
-apply dist_ext => /= a; by rewrite H.
+apply dist_ext => /= a; by rewrite ffunE H.
 Qed.
 
 Lemma type_choiceMixin A n : choiceMixin (P_ n ( A )).
@@ -212,7 +216,7 @@ destruct Sumbool.sumbool_of_bool as [e|e]; last first.
 f_equal.
 set d1 := dist_of_ffun _.
 suff ? : d1 = d by subst d; congr type.mkType; apply proof_irrelevance.
-apply/dist_ext => a; by rewrite H.
+apply/dist_ext => a; by rewrite ffunE H.
 Qed.
 
 Definition type_countMixin A n := CountMixin (@type_count_pcancel A n).
@@ -555,9 +559,9 @@ exists (enc_pre_img (type_of_tuple (tuple_of_row (enc c m)))).
   apply/set0Pn.
   exists m.
   rewrite 2!in_set.
-  by apply/forallP.
+  by apply/forallP => a; rewrite ffunE.
 - rewrite 2!in_set.
-  by apply/forallP.
+  by apply/forallP => a; rewrite ffunE.
 Qed.
 
 Lemma trivIset_enc_pre_img : trivIset enc_pre_img_partition.

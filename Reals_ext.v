@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
-From mathcomp Require Import div fintype tuple finfun bigop prime finset.
+From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice.
+From mathcomp Require Import path div fintype tuple finfun bigop prime finset.
 From mathcomp Require Import binomial.
 Require Import ProofIrrelevance Reals Lra.
 Require Import ssrR.
@@ -9,6 +9,8 @@ Require Import ssrR.
 (** * Additional lemmas about Coq Reals *)
 
 Reserved Notation "T '->' 'R+' " (at level 10, format "'[' T  ->  R+ ']'").
+Reserved Notation "{ '+' T -> R }" (at level 0, T at next level,
+  format "{ '+'  T  ->  R }").
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
 Reserved Notation "P '<<' Q" (at level 10, Q at next level).
 Reserved Notation "P '<<b' Q" (at level 10).
@@ -32,13 +34,30 @@ Local Open Scope R_scope.
 Lemma Rlt_1_2 : 1 < 2. Proof. lra. Qed.
 Hint Resolve Rlt_1_2.
 
+Section pos_finfun.
+Variable (T : finType).
+
+Record pos_ffun := mkPosFfun {
+  pos_ff :> {ffun T -> R} ;
+  _ : [forall a, 0 <b= pos_ff a] }.
+
+Canonical pos_ffun_subType := Eval hnf in [subType for pos_ff].
+Definition pos_ffun_eqMixin := [eqMixin of pos_ffun by <:].
+Canonical pos_ffun_eqType := Eval hnf in EqType _ pos_ffun_eqMixin.
+End pos_finfun.
+
+Notation "{ '+' T '->' R }" := (pos_ffun T) : reals_ext_scope.
+
+Local Open Scope reals_ext_scope.
+
+Lemma pos_ff_ge0 (T : finType) (f : {+ T -> R}) : forall a, 0 <= pos_ff f a.
+Proof. by case: f => f /= /forallP H a; apply/leRP/H. Qed.
+
 Record pos_fun (T : Type) := mkPosFun {
   pos_f :> T -> R ;
   pos_f_ge0 : forall a, 0 <= pos_f a }.
 
 Notation "T '->' 'R+' " := (pos_fun T) : reals_ext_scope.
-
-Local Open Scope reals_ext_scope.
 
 Lemma pos_fun_eq {C : Type} (f g : C -> R+) : pos_f f = pos_f g -> f = g.
 Proof.
@@ -416,10 +435,11 @@ Proof. move/dominatesP; exact. Qed.
 Lemma dominatesEN A (Q P : A -> R) a : P << Q -> P a != 0 -> Q a != 0.
 Proof. move/dominatesN; exact. Qed.
 
-Lemma dominates_scale A (Q P : A -> R) : P << Q -> forall k, k != 0 -> P << (fun a => k * Q a).
+Lemma dominates_scale (A : finType) (Q P : A -> R) : P << Q ->
+  forall k, k != 0 -> P << [ffun a : A => k * Q a].
 Proof.
 move=> PQ k k0; apply/dominatesP => a /eqP.
-by rewrite mulR_eq0' (negbTE k0) /= => /eqP/(dominatesE PQ).
+by rewrite ffunE mulR_eq0' (negbTE k0) /= => /eqP/(dominatesE PQ).
 Qed.
 
 Definition dominatesb {A : finType} (Q P : A -> R) := [forall b, (Q b == 0) ==> (P b == 0)].

@@ -30,7 +30,7 @@ rewrite /entropy /div.
 evar (RHS : A -> R).
 have H : forall a : A, p a * log (p a / u a) = RHS a.
   move => a.
-  move : (pos_f_ge0 (pmf p) a) => [H|H].
+  move : (pos_ff_ge0 (pmf p) a) => [H|H].
   - rewrite Uniform.dE.
     change (p a * log (p a / / #|A|%:R)) with (p a * log (p a * / / #|A|%:R)).
     have H0 : 0 < #|A|%:R by rewrite A_not_empty ltR0n.
@@ -172,11 +172,11 @@ case/boolP : (q1 a == 0) => [|] q1a0.
   rewrite mulRA; congr (_ * _ * log _).
   field.
   split; exact/eqP.
-set h : dist A -> dist A -> 'I_2 -> R := fun p1 p2 => [eta (fun=> 0) with
-  ord0 |-> t * p1 a, lift ord0 ord0 |-> t.~ * p2 a].
+set h : dist A -> dist A -> {ffun 'I_2 -> R} := fun p1 p2 => [ffun i => [eta (fun=> 0) with
+  ord0 |-> t * p1 a, lift ord0 ord0 |-> t.~ * p2 a] i].
 have hdom : ((h p1 p2) << (h q1 q2)).
   apply/dominatesP => i.
-  rewrite /h /=; case: ifPn => _.
+  rewrite /h /= !ffunE; case: ifPn => _.
   rewrite mulR_eq0 => -[->|/eqP].
   by rewrite mul0R.
   by rewrite (negbTE q1a0).
@@ -186,25 +186,27 @@ have hdom : ((h p1 p2) << (h q1 q2)).
   by rewrite (negbTE q2a0).
 set f : 'I_2 -> R := h p1 p2.
 set g : 'I_2 -> R := h q1 q2.
-have h0 : forall p1 p2 i, 0 <= h p1 p2 i.
-  move=> ? ? ?; rewrite /h /=.
+have h0 : forall p1 p2, [forall i, 0 <b= h p1 p2 i].
+  move=> p1' p2'; apply/forallP_leRP => ?; rewrite /h /= ffunE.
   case: ifPn => [_ | _]; first by apply mulR_ge0; [exact/prob_ge0|exact/dist_ge0].
   case: ifPn => [_ |  _]; [|exact/leRR].
   apply/mulR_ge0; [apply/onem_ge0; exact/prob_le1|exact/dist_ge0].
-move: (@log_sum _ setT (mkPosFun (h0 p1 p2)) (mkPosFun (h0 q1 q2)) hdom).
+move: (@log_sum _ setT (mkPosFfun (h0 p1 p2)) (mkPosFfun (h0 q1 q2)) hdom).
 rewrite /=.
 have rsum_setT' : forall (f : 'I_2 -> R),
   \rsum_(i < 2) f i = \rsum_(i in [set: 'I_2]) f i.
   move=> f0; by apply eq_bigl => i; rewrite inE.
 rewrite -!rsum_setT' !big_ord_recl !big_ord0 !addR0.
-rewrite /h /=; move/leR_trans; apply.
+rewrite /h /= !ffunE; move/leR_trans; apply.
 apply/Req_le; congr (_ + _).
   case/boolP : (t == `Pr 0) => [/eqP ->|t0]; first by rewrite !mul0R.
   rewrite mulRA; congr (_ * _ * log _).
+  rewrite !eqxx.
   field.
   split; exact/eqP.
 case/boolP : (t.~ == 0) => [/eqP ->|t1]; first by rewrite !mul0R.
 rewrite mulRA; congr (_ * _ * log _).
+rewrite /=.
 field.
 split; exact/eqP.
 Qed.

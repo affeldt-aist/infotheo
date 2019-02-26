@@ -164,9 +164,9 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
         apply eq_bigr => a; rewrite /A0 in_set => /leRP Ha.
         by rewrite geR0_norm ?subR_ge0.
       rewrite big_split /= geR0_norm; last first.
-        rewrite subR_ge0; apply ler_rsum => ?; by rewrite inE => /leRP.
-      rewrite -big_morph_oppR //; by field.
-    - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
+        rewrite subR_ge0; rewrite !ffunE; apply ler_rsum => ?; by rewrite inE => /leRP.
+      by rewrite -big_morph_oppR // 2!ffunE addR_opp.
+    - rewrite /P_A /Q_A /bipart /= !ffunE /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
         destruct (#|A1|); [tauto | by right].
       + move/eqP : A1_card; rewrite cards_eq0; move/eqP => A1_card.
@@ -193,10 +193,10 @@ rewrite step2.
 apply (Pinsker_2_inequality card_bool).
 (* TODO: lemma *)
 apply/dominatesP => /= b.
-rewrite /bipart_pmf.
+rewrite !ffunE.
 move/prsumr_eq0P => H.
 transitivity (\rsum_(a | a \in A_ b) 0%R).
-  apply eq_bigr => // a ?; rewrite (dominatesE P_dom_by_Q) // H // => a' ?; exact/pos_f_ge0.
+  apply eq_bigr => // a ?; rewrite (dominatesE P_dom_by_Q) // H // => a' ?; exact/pos_ff_ge0.
 by rewrite big_const iter_addR mulR0.
 Qed.
 
