@@ -16,26 +16,12 @@ OUTLINE:
 
 Reserved Notation "\Pr_ P [ A | B ]" (at level 6, P, A, B at next level,
   format "\Pr_ P [ A  |  B ]").
+Reserved Notation "\Pr_[ A | B ]" (at level 6, A, B at next level,
+  format "\Pr_[ A  |  B ]").
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-Lemma setX1 (A B : finType) (a : A) (b : B) : setX [set a] [set b] = [set (a, b)].
-Proof. by apply/setP => -[a0 b0]; rewrite !inE /= xpair_eqE. Qed.
-
-Definition swap {A B : finType} (ab : A * B) := (ab.2, ab.1).
-
-Lemma injective_swap (A B : finType) (E : {set A * B}) : {in E &, injective swap}.
-Proof. by case=> a b [a0 b0] /= _ _ [-> ->]. Qed.
-
-Lemma set_swap (A B : finType) (P : B -> A -> bool) :
-  [set h : {: B * A} | P h.1 h.2 ] = swap @: [set h | P h.2 h.1].
-Proof.
-apply/setP => /= -[b a]; rewrite !inE /=; apply/idP/imsetP => [H|].
-- by exists (a, b) => //=; rewrite inE.
-- by case=> -[a0 b0]; rewrite inE /= => ? [-> ->].
-Qed.
 
 Local Open Scope R_scope.
 Local Open Scope proba_scope.
@@ -479,15 +465,15 @@ Implicit Types (E : {set A}) (F : {set B}).
 (* Pr(a | b) *)
 Definition cPr E F := Pr P (setX E F) / Pr (Bivar.snd P) F.
 
-Local Notation "\Pr[ E | F ]" := (cPr E F).
+Local Notation "\Pr_[ E | F ]" := (cPr E F).
 
-Lemma cPr_setT E : \Pr[E | setT] = Pr (Bivar.fst P) E.
+Lemma cPr_setT E : \Pr_[E | setT] = Pr (Bivar.fst P) E.
 Proof. by rewrite /cPr Pr_setT divR1 PrX_setT. Qed.
 
-Lemma cPr_set0 E : \Pr[E | set0] = 0.
+Lemma cPr_set0 E : \Pr_[E | set0] = 0.
 Proof. by rewrite /cPr Pr_domin_snd ?div0R // Pr_set0. Qed.
 
-Lemma cPr_ge0 E F : 0 <= \Pr[E | F].
+Lemma cPr_ge0 E F : 0 <= \Pr_[E | F].
 Proof.
 rewrite /cPr; case/boolP : (Pr (Bivar.snd P) F == 0) => [/eqP|] H0.
   suff -> : Pr P (setX E F) = 0 by rewrite div0R; exact: leRR.
@@ -495,7 +481,7 @@ rewrite /cPr; case/boolP : (Pr (Bivar.snd P) F == 0) => [/eqP|] H0.
 apply divR_ge0; [exact: Pr_ge0 | by rewrite Pr_gt0].
 Qed.
 
-Lemma cPr_max E F : \Pr[E | F] <= 1.
+Lemma cPr_max E F : \Pr_[E | F] <= 1.
 Proof.
 rewrite /cPr; case/boolP : (Pr (Bivar.snd P) F == 0) => [/eqP|] H0.
   by rewrite Pr_domin_snd // div0R.
@@ -504,20 +490,20 @@ apply ler_rsum => b _.
 rewrite Bivar.sndE; apply ler_rsum_l => // a _; [exact: leRR | exact: dist_ge0].
 Qed.
 
-Lemma Pr_cPr E F : Pr P (setX E F) = \Pr[E | F] * Pr (Bivar.snd P) F.
+Lemma Pr_cPr E F : Pr P (setX E F) = \Pr_[E | F] * Pr (Bivar.snd P) F.
 Proof.
 case/boolP : (Pr (Bivar.snd P) F == 0) => [/eqP H0|H0].
 - by rewrite H0 mulR0 Pr_domin_snd.
 - by rewrite /cPr -mulRA mulVR // mulR1.
 Qed.
 
-Lemma cPr_gt0 E F : 0 < \Pr[E | F] <-> \Pr[E | F] != 0.
+Lemma cPr_gt0 E F : 0 < \Pr_[E | F] <-> \Pr_[E | F] != 0.
 Proof.
 split; rewrite /cPr; first by rewrite ltR_neqAle => -[/eqP H1 _]; rewrite eq_sym.
 rewrite ltR_neqAle eq_sym => /eqP H; split => //; exact: cPr_ge0.
 Qed.
 
-Lemma cPr_Pr_setX_gt0 E F : 0 < Pr P (setX E F) <-> 0 < \Pr[E | F].
+Lemma cPr_Pr_setX_gt0 E F : 0 < Pr P (setX E F) <-> 0 < \Pr_[E | F].
 Proof.
 rewrite Pr_gt0; split => H; last first.
   move/cPr_gt0 : H; apply: contra => /eqP; rewrite /cPr => ->; by rewrite div0R.
@@ -737,14 +723,6 @@ Variables (A B C : finType) (P : {dist A * B * C}).
 Lemma cPr_TripC12 (E : {set A}) (F : {set B }) (G : {set C}) :
   \Pr_(TripC12.d P)[setX F E | G] = \Pr_P[setX E F | G].
 Proof. by rewrite /cPr TripC12.Pr TripC12.snd. Qed.
-(*Lemma cPr_TripC12 (E : {set A * B}) (F : {set C}) :
-  \Pr_P[E | F] = \Pr_(TripC12.d P)[swap @: E | F].
-Proof.
-rewrite /cPr TripC12.snd; congr (_ / _).
-rewrite /Pr 2!big_setX /= [in LHS]exchange_big /= [in RHS]exchange_big /=.
-apply eq_bigr => c cF; rewrite (big_imset _ (@injective_swap _ _ E)) /=.
-apply eq_bigr => -[? ?] _; by rewrite TripC12.dE.
-Qed.*)
 
 Lemma cPr_TripA_TripC23 (E : {set A}) (F : {set B}) (G : {set C}) :
   \Pr_(TripA.d (TripC23.d P))[E | setX G F] = \Pr_(TripA.d P)[E | setX F G].
@@ -797,7 +775,7 @@ Section conditional_expectation_def.
 
 Variable (U : finType) (P : dist U) (X : {RV P -> R}) (F : {set U}).
 
-Definition cEx := \rsum_(r <- fin_img X) r * Pr P ((X @= r) :&: F) / Pr P F.
+Definition cEx := \rsum_(r <- fin_img X) r * Pr P ((X @^-1 r) :&: F) / Pr P F.
 
 End conditional_expectation_def.
 
@@ -817,12 +795,12 @@ rewrite {}/f /= (bigID (fun i => Pr P (F i) != 0)) /=.
 rewrite [in X in _ + X = _]big1 ?addR0; last first.
   move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _; by rewrite mulR0.
 transitivity (\rsum_(i < n | Pr P (F i) != 0)
-  \rsum_(i0 <- fin_img X) (i0 * Pr P ((X @= i0) :&: F i))).
+  \rsum_(i0 <- fin_img X) (i0 * Pr P ((X @^-1 i0) :&: F i))).
   apply eq_bigr => i Fi0; apply eq_bigr => r _.
   by rewrite -!mulRA mulVR // mulR1.
 rewrite -Ex_altE /Ex_alt exchange_big /=; apply eq_bigr => r _.
 rewrite -big_distrr /=; congr (_ * _).
-transitivity (\rsum_(i < n) Pr P (X @= r :&: F i)).
+transitivity (\rsum_(i < n) Pr P (X @^-1 r :&: F i)).
   rewrite big_mkcond /=; apply eq_bigr => i _.
   case: ifPn => //; rewrite negbK => /eqP PFi0.
   rewrite /Pr big1 // => u; rewrite inE => /andP[uXr uFi].

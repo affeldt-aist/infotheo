@@ -99,6 +99,20 @@ Proof. by rewrite -(nat_of_binK (BinNat.Npos k)). Qed.
 
 End ssrnat_ext.
 
+Definition swap {A B : Type} (ab : A * B) := (ab.2, ab.1).
+
+Lemma injective_swap (A B : finType) (E : {set A * B}) : {in E &, injective swap}.
+Proof. by case=> a b [a0 b0] /= _ _ [-> ->]. Qed.
+
+Lemma set_swap (A B : finType) (P : B -> A -> bool) :
+  [set h : {: B * A} | P h.1 h.2 ] = swap @: [set h | P h.2 h.1].
+Proof.
+apply/setP => /= -[b a]; rewrite !inE /=; apply/idP/imsetP => [H|].
+- by exists (a, b) => //=; rewrite inE.
+- by case=> -[a0 b0]; rewrite inE /= => ? [-> ->].
+Qed.
+
+
 Section seq_ext.
 
 Variables A B : Type.
@@ -480,6 +494,9 @@ apply IH.
 - move: uniqht; by case/andP.
 - apply/setD1P; by rewrite eq_sym.
 Qed.
+
+Lemma setX1 (B : finType) (a : A) (b : B) : setX [set a] [set b] = [set (a, b)].
+Proof. by apply/setP => -[a0 b0]; rewrite !inE /= xpair_eqE. Qed.
 
 Lemma inj_card (B : finType) (f : {ffun A -> B}) :
   injective f -> #| A | <= #| B |.

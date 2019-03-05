@@ -66,8 +66,10 @@ Reserved Notation "P1 `, P2" (at level 6).
 Reserved Notation "{ 'RV' d -> T }" (at level 0, d, T at next level,
   format "{ 'RV'  d  ->  T }").
 Reserved Notation "`p_ X" (at level 5).
-Reserved Notation "'Pr[' X '=' r ']'" (at level 5, X at next level,
-  r at next level, format "Pr[ X  =  r ]").
+Reserved Notation "\Pr[ X = a ]" (at level 6, X, a at next level,
+  format "\Pr[  X  =  a  ]").
+Reserved Notation "\Pr[ X >= r ]" (at level 6, X, r at next level,
+  format "\Pr[  X  >=  r  ]").
 Reserved Notation "k `cst* X" (at level 49).
 Reserved Notation "X '`/' n" (at level 49, format "X  '`/'  n").
 Reserved Notation "X `+ Y" (at level 50).
@@ -79,17 +81,15 @@ Reserved Notation "'--log' P" (at level 5).
 Reserved Notation "'`E'" (at level 5).
 Reserved Notation "'`E_'" (at level 5, format "'`E_'").
 Reserved Notation "X '\=sum' Xs" (at level 50).
-Reserved Notation "'Pr[' X '>=' r ']'" (at level 5,
-  X at next level, r at next level, format "Pr[  X  >=  r  ]").
 Reserved Notation "'`V'" (at level 5).
 Reserved Notation "'`V_' x" (at level 5, format "'`V_' x").
 Reserved Notation "P |= X _|_ Y" (at level 50, X, Y at next level,
   format "P  |=  X  _|_  Y").
 Reserved Notation "Z \= X '@+' Y" (at level 50).
-Reserved Notation "X @= x" (at level 10).
+Reserved Notation "X @^-1 x" (at level 10).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
 
-Notation "X @= x" := ([set h | X h == x]) : proba_scope.
+Notation "X @^-1 x" := ([set h | X h == x]) : proba_scope.
 
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
@@ -1496,25 +1496,35 @@ End random_variable.
 Notation "{ 'RV' P -> T }" := (RV_of P (Phant _) (Phant T)) : proba_scope.
 Notation "`p_ X" := (p_of X) : proba_scope.
 
+Definition pr_eq (U : finType) (A : eqType) (P : dist U) (X : {RV P -> A}) (a : A) :=
+  Pr `p_X (X @^-1 a).
+Notation "\Pr[ X = a ]" := (pr_eq X a) : proba_scope.
+
+Lemma pr_eq0 (U A : finType) (P : dist U) (X : {RV (P) -> (A)}) (a : A) :
+  a \notin fin_img X -> \Pr[ X = a ] = 0.
+Proof.
+move=> Xa; rewrite /pr_eq /Pr big1 // => u; rewrite inE => /eqP Xua.
+move: Xa; rewrite /fin_img mem_undup.
+case/mapP; exists u => //; by rewrite mem_enum.
+Qed.
+
 (* special case where the codomain is a fintype *)
 Module RVar.
 Section def.
 Variables (U A : finType) (P : dist U) (X : {RV P -> A}).
-Definition f := [ffun a => Pr P (X @= a)].
+Definition f := [ffun a => \Pr[ X = a ]].
 Lemma f0 a : 0 <= f a. Proof. rewrite ffunE; exact/Pr_ge0. Qed.
 Lemma f1 : \rsum_(a in A) (f a) = 1.
 Proof.
 rewrite /f /Pr -(pmf1 P) (sum_parti_finType _ X) /=.
 rewrite (bigID (fun x => x \in fin_img X)) /=.
 rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
-  move=> a aX; rewrite ffunE big1 // => u; rewrite inE => /eqP Xua.
-  move: aX; rewrite /fin_img mem_undup.
-  case/mapP; exists u => //; by rewrite mem_enum.
+  by move=> a aX; rewrite ffunE pr_eq0.
 rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
 apply eq_bigr => a aX; rewrite ffunE; by apply eq_bigl => u; rewrite inE.
 Qed.
 Definition d : {dist A} := locked (makeDist f0 f1).
-Lemma dE a : d a = Pr P (X @= a).
+Lemma dE a : d a = \Pr[ X = a ].
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
 End RVar.
@@ -1562,7 +1572,6 @@ Definition cast_rV1_fun_rV1 U (T : eqType) (Xs : 'rV[U -> T]_1) : 'rV[U]_1 -> T 
 Local Close Scope vec_ext_scope.
 
 Section expected_value_def.
-
 Variables (U : finType) (P : dist U) (X : {RV P -> R}).
 
 Definition Ex := \rsum_(u in U) X u * `p_X u.
@@ -1573,7 +1582,6 @@ move=> H; apply: rsumr_ge0 => u _; apply mulR_ge0; [exact/H | exact/dist_ge0].
 Qed.
 
 End expected_value_def.
-
 Arguments Ex {U} _ _.
 
 Notation "'`E_'" := (@Ex _) : proba_scope.
@@ -1583,7 +1591,7 @@ Notation "'`E'" := (@Ex _ _) : proba_scope.
 Section Ex_alt.
 Variables (U : finType) (P : dist U) (X : {RV P -> R}).
 
-Definition Ex_alt := \rsum_(r <- fin_img X) r * Pr `p_X (X @= r).
+Definition Ex_alt := \rsum_(r <- fin_img X) r * \Pr[ X = r ].
 
 Lemma Ex_altE : Ex_alt = `E X.
 Proof.
@@ -1958,9 +1966,9 @@ Hypothesis X_ge0 : forall u, 0 <= X u.
 
 Definition pr_geq (X : {RV P -> R}) r := Pr `p_X [set x | X x >b= r].
 
-Local Notation "'Pr[' X '>=' r ']'" := (pr_geq X r).
+Local Notation "'\Pr[' X '>=' r ']'" := (pr_geq X r).
 
-Lemma Ex_lb (r : R) : r * Pr[ X >= r] <= `E X.
+Lemma Ex_lb (r : R) : r * \Pr[ X >= r] <= `E X.
 Proof.
 rewrite /Ex (bigID [pred a' | X a' >b= r]) /= -[a in a <= _]addR0.
 apply leR_add; last first.
@@ -1970,7 +1978,7 @@ apply (@leR_trans (\rsum_(i | X i >b= r) r * `p_X i)).
 apply ler_rsum => u Xur; apply/leR_wpmul2r; [exact/dist_ge0 | exact/leRP].
 Qed.
 
-Lemma markov (r : R) : 0 < r -> Pr[X >= r] <= `E X / r.
+Lemma markov (r : R) : 0 < r -> \Pr[ X >= r ] <= `E X / r.
 Proof. move=> ?; rewrite /Rdiv leR_pdivl_mulr // mulRC; exact/Ex_lb. Qed.
 
 End markov_inequality.
@@ -1979,7 +1987,7 @@ Notation "'Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
 
 Section thm61.
 Variables (U : finType) (P : dist U) (X : {RV P -> R}) (phi : R -> R).
-Lemma thm61 : `E (comp_RV X phi) = \rsum_(r <- fin_img X) phi r * Pr `p_X (X @= r).
+Lemma thm61 : `E (comp_RV X phi) = \rsum_(r <- fin_img X) phi r * \Pr[ X = r ].
 Proof.
 rewrite /Ex.
 rewrite (sum_parti_finType _ X (fun u => comp_RV X phi u * `p_ (comp_RV X phi) u)) /=.
@@ -1999,7 +2007,9 @@ Definition Var := let miu := `E X in `E ((X `-cst miu) `^2).
 (* Alternative form for computing the variance
    (V(X) = E(X^2) - E(X)^2 \cite[Theorem 6.6]{probook}): *)
 Lemma VarE : Var = `E (X `^2)  - (`E X) ^ 2.
-Proof. rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV E_scale_RV; field. Qed.
+Proof.
+rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV E_scale_RV; field.
+Qed.
 
 End variance_def.
 
@@ -2020,14 +2030,13 @@ pose Y : {RV P -> R} := k `cst* (X `+cst - `E X).
 rewrite (@E_comp_RV_ext _ P ((k `cst* X) `-cst k * `E X) Y) //; last first.
   apply functional_extensionality => /= x.
   rewrite /Y /scale_RV /= /trans_min_RV /trans_add_RV; field.
-rewrite E_comp_RV; last by move=> *; field.
-by rewrite E_scale_RV.
+rewrite E_comp_RV ?E_scale_RV // => *; field.
 Qed.
 
 Lemma Var_trans m : `V (X `+cst m) = `V X.
 Proof.
 rewrite /Var E_trans_add_RV; congr (`E (_ `^2)).
-apply FunctionalExtensionality.functional_extensionality =>  /=u.
+apply FunctionalExtensionality.functional_extensionality => /= u.
 rewrite /trans_add_RV /trans_min_RV /=; field.
 Qed.
 
@@ -2077,16 +2086,6 @@ Definition inde_events := Pr d (E :&: F) = Pr d E * Pr d F.
 
 End independent_events.
 
-Section pr_def.
-
-Variables (U : finType) (P : dist U) (T : eqType).
-
-Definition pr (X : {RV P -> T}) r := Pr `p_X (X @= r).
-
-End pr_def.
-
-Notation "'Pr[' X '=' r ']'" := (@pr _ `p_X _ X r) : proba_scope.
-
 Section independent_discrete_random_variables.
 
 Variables (A B : finType) (P : {dist A * B}).
@@ -2098,23 +2097,24 @@ Local Open Scope vec_ext_scope.
 
 Definition inde_drv := forall (x : TA) (y : TB),
   Pr P [set xy | (X xy.1 == x) && (Y xy.2 == y)] =
-  Pr (Bivar.fst P) (X @= x) * Pr (Bivar.snd P) (Y @= y). (* Pr[X = x] * Pr[Y = y] *)
+  Pr (Bivar.fst P) (X @^-1 x) * Pr (Bivar.snd P) (Y @^-1 y). (* TODO: notations *)
 
 Lemma inde_events_drv : inde_drv <-> (forall x y,
   inde_events P [set xy | X xy.1 == x] [set xy | Y xy.2 == y]).
 Proof.
-have H1 : forall x, Pr (Bivar.fst P) (X @= x) = Pr P [set xy | X xy.1 == x].
-  move=> /= x; rewrite /pr /Pr /= (eq_bigr (fun a => P (a.1, a.2))); last by case.
-  rewrite (eq_bigl (fun ab => (ab.1 \in (X @= x)) && (xpredT ab.2))); last first.
-    move=> -[a b]; by rewrite !inE andbT.
-  rewrite -[in RHS](pair_big (fun z => z \in (X @= x)) xpredT (fun a b => P (a, b))) /=.
+have H1 : forall x, Pr (Bivar.fst P) (X @^-1 x) = Pr P [set xy | X xy.1 == x].
+  move=> /= x; rewrite /Pr /=.
+  rewrite (eq_bigr (fun a => P (a.1, a.2))); last by case.
+  rewrite (eq_bigl (fun ab => (ab.1 \in X @^-1 x) && (xpredT ab.2))); last first.
+    by case=> a b; rewrite !inE andbT.
+  rewrite -[in RHS](pair_big (mem (X @^-1 x)) xpredT (fun a b => P (a, b))) /=.
   apply eq_bigr => a _; by rewrite Bivar.fstE.
-have H2 : forall y, Pr (Bivar.snd P) (Y @= y) = Pr P [set xy | Y xy.2 == y].
-  move=> /= y; rewrite /pr /Pr /= (eq_bigr (fun a => P (a.1, a.2))); last by case.
+have H2 : forall y, Pr (Bivar.snd P) (Y @^-1 y) = Pr P [set xy | Y xy.2 == y].
+  move=> /= y; rewrite /Pr /= (eq_bigr (fun a => P (a.1, a.2))); last by case.
   rewrite (eq_bigl (fun ab => (xpredT ab.1) && (ab.2 \in [set z | Y z == y]))); last first.
-    by move=> -[a b]; rewrite !inE.
-  rewrite -[in RHS](pair_big xpredT (fun z => z \in (Y @= y)) (fun a b => P (a, b))) /=.
-  rewrite exchange_big; apply eq_bigr => b _; by rewrite Bivar.sndE.
+    by case=> a b; rewrite !inE.
+  rewrite -[in RHS](pair_big xpredT (mem (Y @^-1 y)) (fun a b => P (a, b))) /=.
+  by rewrite exchange_big; apply eq_bigr => b _; rewrite Bivar.sndE.
 split=> [H /= x y|/= H x y].
 - rewrite /inde_events.
   move: (H x y) => {H}H.
@@ -2133,9 +2133,9 @@ rewrite -(pair_big [pred a | X a == x] [pred b | Y b == y] (fun a1 a2 => P (a1, 
 rewrite big_distrl /=; apply eq_big.
 - move=> a; by rewrite inE.
 - move=> a fax.
-  rewrite /pr /Pr big_distrr /=; apply eq_big.
-  + move=> b; by rewrite inE.
-  + by move=> b gby; rewrite {1}H /= ProdDist.dE.
+  rewrite big_distrr /=; apply eq_big.
+  + by move=> b; rewrite inE.
+  + by move=> b _; rewrite {1}H /= ProdDist.dE.
 Qed.
 
 End independent_discrete_random_variables.
@@ -2197,7 +2197,7 @@ move=> Hsum Hinde.
 rewrite -!Ex_altE.
 apply trans_eq with (\rsum_(r <- undup (map X1 (enum A)))
    \rsum_(r' <- undup (map X2 (enum ('rV[A]_n.+1))))
-   ( r * r' * @pr _ P1 _ X1 r * @pr _ P2 _ X2 r'))%R; last first.
+   ( r * r' * @pr_eq _ _ P1 X1 r * @pr_eq _ _ P2 X2 r'))%R; last first.
   rewrite [in RHS]big_distrl /=.
   apply eq_bigr => i _.
   rewrite big_distrr /=.
@@ -2302,11 +2302,11 @@ transitivity (\rsum_(x <- fin_img X)
   apply eq_big.
   by move=> -[a b] /=; rewrite inE.
   by case=> a b /= /andP[/eqP -> /eqP ->].
-transitivity (\rsum_(x <- fin_img X) \rsum_(y <- fin_img Y) x * y * Pr P1 (X @= x) * Pr P2 (Y @= y)).
+transitivity (\rsum_(x <- fin_img X) \rsum_(y <- fin_img Y) x * y * Pr P1 (X @^-1 x) * Pr P2 (Y @^-1 y)).
   apply eq_bigr => x _; apply eq_bigr => y _; by rewrite Hinde !mulRA.
 rewrite -!Ex_altE.
 rewrite /Ex_alt big_distrl; apply eq_bigr => x _ /=; rewrite big_distrr /=.
-apply eq_bigr=> y _; rewrite /p_of; field.
+apply eq_bigr=> y _; rewrite -!mulRA; congr (_ * _); by rewrite mulRCA.
 Qed.
 
 End thm64.
@@ -2416,21 +2416,15 @@ Lemma wlln epsilon : 0 < epsilon ->
   Pr `p_X [set t | `| (X `/ n.+1) t - miu | >b= epsilon] <=
     sigma2 / (n.+1%:R * epsilon ^ 2).
 Proof.
-move=> He.
-rewrite divRM; last 2 first.
-  by rewrite INR_eq0.
-  exact/gtR_eqF/expR_gt0.
+move=> e0.
+rewrite divRM ?INR_eq0 //; last exact/gtR_eqF/expR_gt0.
 have <- : `V (X `/ n.+1) = sigma2 / INR n.+1.
-  rewrite -(Var_average X_Xs V_Xs) Var_scale //; by field; exact/INR_eq0.
+  rewrite -(Var_average X_Xs V_Xs) Var_scale //; field; exact/INR_eq0.
 have <- : `E (X `/ n.+1) = miu.
   rewrite E_scale_RV (E_sum_n P X_Xs).
-  set su := \rsum_(_ <- _) _.
-  have -> : su = INR n.+1 * miu.
-    rewrite /su.
-    transitivity (\rsum_(i < n.+1) miu); first exact/eq_bigr.
-    by rewrite big_const /= iter_addR cardE /= size_enum_ord.
-  by rewrite div1R mulRA mulVR ?mul1R // INR_eq0'.
-move/leR_trans: (chebyshev_inequality (X `/ n.+1) He); apply; exact/leRR.
+  rewrite div1R mulRC eqR_divr_mulr ?INR_eq0' // (eq_bigr (fun=> miu)) //.
+  by rewrite big_const /= iter_addR cardE /= size_enum_ord mulRC.
+move/leR_trans: (chebyshev_inequality (X `/ n.+1) e0); apply; exact/leRR.
 Qed.
 
 End weak_law_of_large_numbers.
