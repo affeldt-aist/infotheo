@@ -2036,7 +2036,7 @@ Qed.
 Lemma Var_trans m : `V (X `+cst m) = `V X.
 Proof.
 rewrite /Var E_trans_add_RV; congr (`E (_ `^2)).
-apply FunctionalExtensionality.functional_extensionality => /= u.
+apply functional_extensionality => /= u.
 rewrite /trans_add_RV /trans_min_RV /=; field.
 Qed.
 

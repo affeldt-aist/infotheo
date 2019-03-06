@@ -653,25 +653,16 @@ Lemma total_prob : (forall i j, i != j -> [disjoint E i & E j]) ->
   cover [set E i | i in 'I_n] = [set: A] ->
   Pr Q F = \rsum_(i < n) Pr P (E i) * \Pr_QP [F | E i].
 Proof.
-move=> H1 H2.
-transitivity (\rsum_(i < n) Pr QP (setX F (E i))).
-  transitivity (Pr QP (setX F (\bigcup_(i < n) E i))).
-    rewrite Pr_cPr Swap.snd.
-    move: H2; rewrite cover_imset => ->.
-    by rewrite cPr_setT Pr_setT mulR1 Swap.fst.
-  transitivity (Pr QP (\bigcup_(i < n) setX F (E i))).
-    congr Pr.
-    apply/setP => -[b a] /=; rewrite !inE /=.
-    apply/andP/bigcupP => [[K1] /bigcupP[/= i _ aEi]|[/= i _]].
-      exists i => //; by rewrite !inE /= K1.
-    rewrite !inE /= => /andP[xb yai]; rewrite xb; split => //.
-    apply/bigcupP; by exists i.
-  rewrite Pr_big_union_disj // => i j ij.
-  have := H1 _ _ ij.
-  rewrite -!setI_eq0 => /set0Pn => K.
-  apply/set0Pn => -[[b a]]; rewrite !inE /= -andbA => /and4P[_ aEi _ aEj].
-  by apply K; exists a; rewrite !inE aEi.
-apply eq_bigr => i _; by rewrite Pr_cPr mulRC Swap.snd.
+move=> disE covE.
+rewrite (eq_bigr (fun i => Pr QP (setX F (E i)))); last first.
+  by move=> i _; rewrite Pr_cPr mulRC Swap.snd.
+rewrite -Pr_big_union_disj; last first.
+  move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => -[b a]; rewrite inE.
+  move: (disE _ _ ij); rewrite -setI_eq0 => /eqP/setP/(_ a).
+  by rewrite !inE /= andbACA andbb => ->; rewrite andbF.
+rewrite bigcup_setX Pr_cPr Swap.snd.
+move: covE; rewrite cover_imset => ->.
+by rewrite cPr_setT Pr_setT mulR1 Swap.fst.
 Qed.
 
 End total_probability.

@@ -65,6 +65,36 @@ Definition makeDist (f : {fsfun A -> R for (fun=>0)}) (H0 : forall a, (0 <= f a)
 
 End Dist_prop.
 
+Module Dist_of_dist.
+Section def.
+Variable (A : finType) (P : dist A).
+Local Open Scope fset_scope.
+Let f := [fsfun a in [fset a0 | a0 in enum A] => P a | 0].
+Let f0 : (forall a, 0 <= f a)%R.
+Proof.
+move=> a; rewrite fsfunE; case: ifPn => _; [exact/dist_ge0|exact/leRR].
+Qed.
+Let f1 : \rsum_(a <- finsupp f) f a = 1%R.
+Proof.
+rewrite (bigID (fun x => x \in enum A)) /=.
+rewrite [in X in (_ + X)%R = _]big1 ?addR0; last first.
+  by move=> a; rewrite mem_enum inE.
+rewrite (eq_bigr (fun x => P x)); last first.
+  by move=> a _; rewrite fsfunE; case: ifPn => //; rewrite inE mem_enum inE.
+rewrite -[RHS](pmf1 P) [in RHS](bigID (fun x => x \in finsupp f)) /=.
+rewrite [in X in _ = (_ + X)%R]big1 ?addR0; last first.
+  move=> a /eqP; rewrite memNfinsupp fsfunE.
+  by case: ifPn => [_ /eqP/eqP //|]; rewrite inE /= mem_enum inE.
+rewrite -big_filter -[in RHS]big_filter; apply eq_big_perm.
+apply uniq_perm_eq.
+exact/filter_uniq/fset_uniq.
+by apply/filter_uniq; rewrite /index_enum -enumT; apply/enum_uniq.
+by move=> a; rewrite !mem_filter !inE /= andbC.
+Qed.
+Definition d : Dist A := makeDist f0 f1.
+End def.
+End Dist_of_dist.
+
 Module Dist1.
 Section def.
 Local Open Scope fset_scope.

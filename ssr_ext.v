@@ -112,7 +112,6 @@ apply/setP => /= -[b a]; rewrite !inE /=; apply/idP/imsetP => [H|].
 - by case=> -[a0 b0]; rewrite inE /= => ? [-> ->].
 Qed.
 
-
 Section seq_ext.
 
 Variables A B : Type.
@@ -462,21 +461,24 @@ transitivity ([seq i | i <- enum 'I_m.+1]); first by rewrite map_id.
 apply eq_map => i /=; by rewrite inord_val.
 Qed.
 
-Section finset_ext.
-Variable A : finType.
-Implicit Types E F : {set A}.
+Lemma inj_card (A B : finType) (f : {ffun A -> B}) :
+  injective f -> #| A | <= #| B |.
+Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
 
-Lemma setDUKl E F : (E :|: F) :\: E = F :\: E.
+Section finset_ext.
+Implicit Types A B : finType.
+
+Lemma setDUKl A (E F : {set A}) : (E :|: F) :\: E = F :\: E.
 Proof. by rewrite setDUl setDv set0U. Qed.
 
-Lemma setU_setUD E F : E :|: F = F :|: E :\: F.
+Lemma setU_setUD A (E F : {set A}) : E :|: F = F :|: E :\: F.
 Proof.
 apply/setP => a; rewrite !inE; apply/orP/orP => -[->|H] ; [
   by rewrite andbT; apply/orP; rewrite orbN | by left |
   by right | case/andP : H => _ ->; by left ].
 Qed.
 
-Lemma seq_index_enum_card : forall s E a,
+Lemma seq_index_enum_card A : forall s (E : {set A}) a,
   s =i enum E -> uniq s -> a \in E -> index a s < #| E |.
 Proof.
 elim => [E a _ _ aE| h t IH E a htE uniqht aE /=].
@@ -495,14 +497,20 @@ apply IH.
 - apply/setD1P; by rewrite eq_sym.
 Qed.
 
-Lemma setX1 (B : finType) (a : A) (b : B) : setX [set a] [set b] = [set (a, b)].
+Lemma setX1 A B (a : A) (b : B) : setX [set a] [set b] = [set (a, b)].
 Proof. by apply/setP => -[a0 b0]; rewrite !inE /= xpair_eqE. Qed.
 
-Lemma inj_card (B : finType) (f : {ffun A -> B}) :
-  injective f -> #| A | <= #| B |.
-Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
+Lemma bigcup_setX A B n (E : 'I_n -> {set A}) (F : {set B}) :
+  \bigcup_(i < n) setX F (E i) = setX F (\bigcup_(i < n) (E i)).
+Proof.
+apply/setP => -[b a] /=; rewrite !inE /=.
+apply/bigcupP/andP => [[/= i _]|[K1] /bigcupP[/= i _ aEi]].
+  rewrite !inE /= => /andP[xb yai]; rewrite xb; split => //.
+  by apply/bigcupP; exists i.
+by exists i => //; rewrite !inE /= K1.
+Qed.
 
-Lemma cardsltn1P E :
+Lemma cardsltn1P A (E : {set A}) :
   (1 < #| E |) = [exists a, exists b, (a \in E) && (b \in E) && (a != b)].
 Proof.
 case/boolP : (E == set0) => [/eqP -> | /set0Pn [] /= a Ha].
@@ -525,7 +533,8 @@ rewrite !inE eq_sym andbC in Hb.
 by rewrite -andbA Hb andbT.
 Qed.
 
-Lemma set1_set2 E a : a \in E -> E != set1 a -> exists i, (i \in E) && (i != a).
+Lemma set1_set2 A (E : {set A}) a :
+  a \in E -> E != set1 a -> exists i, (i \in E) && (i != a).
 Proof.
 move/setD1K => aC Ca.
 have /set0Pn[b] : E :\ a != set0.
@@ -534,7 +543,8 @@ have /set0Pn[b] : E :\ a != set0.
 rewrite !inE => /andP[ba bC]; exists b; by rewrite bC.
 Qed.
 
-Lemma set2_set1 E a : (exists i, (i \in E) && (i != a)) -> E != set1 a.
+Lemma set2_set1 A (E : {set A}) a :
+  (exists i, (i \in E) && (i != a)) -> E != set1 a.
 Proof.
 case=> b /andP[bC]; apply: contra => /eqP Ca; move: bC; by rewrite Ca !inE.
 Qed.
