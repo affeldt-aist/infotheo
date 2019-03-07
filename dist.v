@@ -19,14 +19,14 @@ Module Dist.
 Section dist.
 Variable A : choiceType.
 Record t  := mk {
-  f :> {fsfun A -> R for (fun=>0)} ;
-  f01 : all (fun x => 0 <b= x)%R (map f (finsupp f)) &&
-        \rsum_(a <- (finsupp f)) f a == 1}.
+  f :> {fsfun A -> R with 0} ;
+  f01 : all (fun x => 0 <b= f x)%R (finsupp f) &&
+        \rsum_(a <- finsupp f) f a == 1}.
 Lemma ge0 (P : t) a : (0 <= P a)%R.
 Proof.
 case: P => /= f /andP[/allP H _]; apply/leRP.
 have [/eqP ->|fa0] := boolP (f a == 0%R); first exact/leRR'.
-apply/H/mapP; exists a => //; by rewrite mem_finsupp.
+apply/H; by rewrite mem_finsupp.
 Qed.
 Lemma f1 (P : t) : \rsum_(a <- (finsupp P)) P a = 1.
 Proof. by case: P => P /= /andP[_ /eqP]. Qed.
@@ -52,15 +52,12 @@ Notation "{ 'Dist' T }" := (Dist_of (Phant T)).
 Section Dist_prop.
 Variable A : choiceType.
 
-Lemma Distmk (f : {fsfun A -> R for (fun=>0)}) (H0 : forall a, (0 <= f a)%R)
-  (H1 : \rsum_(a <- finsupp f) f a = 1%R) : all (fun x => 0 <b= x)%R (map f (finsupp f)) &&
-        \rsum_(a <- finsupp f) f a == 1.
-Proof.
-rewrite H1 eqxx andbT; apply/allP => x.
-case/mapP => a; rewrite mem_finsupp => fa0 ->{x}; exact/leRP/H0.
-Qed.
+Lemma Distmk (f : {fsfun A -> R with 0}) (H0 : forall a, (0 <= f a)%R)
+  (H1 : \rsum_(a <- finsupp f) f a = 1%R) :
+  all (fun x => 0 <b= f x)%R (finsupp f) && \rsum_(a <- finsupp f) f a == 1.
+Proof. rewrite H1 eqxx andbT; apply/allP => x _. exact/leRP/H0. Qed.
 
-Definition makeDist (f : {fsfun A -> R for (fun=>0)}) (H0 : forall a, (0 <= f a)%R)
+Definition makeDist (f : {fsfun A -> R with 0}) (H0 : forall a, (0 <= f a)%R)
   (H1 : \rsum_(a <- finsupp f) f a = 1%R) := Dist.mk (Distmk H0 H1).
 
 End Dist_prop.
@@ -99,7 +96,7 @@ Module Dist1.
 Section def.
 Local Open Scope fset_scope.
 Variables (A : choiceType) (a : A).
-Definition f : {fsfun A -> R for (fun=>0)} := [fsfun b in [fset a] => 1 | 0].
+Definition f : {fsfun A -> R with 0} := [fsfun b in [fset a] => 1 | 0].
 Lemma f0 b : (0 <= f b)%R.
 Proof. rewrite fsfun_fun inE; case: ifPn => // _; exact/leRR. Qed.
 Lemma f1 : \rsum_(b <- (finsupp f)) f b = 1%R.
@@ -122,7 +119,7 @@ Section def.
 Local Open Scope fset_scope.
 Variables (A B : choiceType) (p : Dist A) (g : A -> Dist B).
 Let D := \bigcup_(d <- g @` [fset a | a in finsupp p]) finsupp d.
-Definition f : {fsfun B -> R for (fun=>0)} :=
+Definition f : {fsfun B -> R with 0} :=
   [fsfun b in D => \rsum_(a <- finsupp p) p a * (g a) b | 0].
 Lemma f0 b : (0 <= f b)%R.
 Proof.
