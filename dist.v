@@ -160,6 +160,29 @@ Qed.
 Definition d : Dist B := locked (makeDist f0 f1).
 Lemma dE x : d x = f x.
 Proof. by rewrite /d; unlock. Qed.
+Lemma supp : finsupp d = D.
+Proof.
+apply/fsetP => b; rewrite !mem_finsupp; apply/idP/idP => [|].
+  rewrite dE /f fsfunE; case: ifPn => //; by rewrite eqxx.
+case/bigfcupP => dB.
+rewrite andbT => /imfsetP[a].
+rewrite !(inE,mem_finsupp) => pa0 ->{dB} gab0.
+rewrite dE /f fsfunE; case: ifPn; last first.
+  apply: contra => _.
+  apply/bigfcupP.
+  exists (g a); last by rewrite mem_finsupp.
+  by rewrite andbT; apply/imfsetP; exists a => //; rewrite !(inE,mem_finsupp).
+case/bigfcupP => dB.
+rewrite andbT => /imfsetP[a0].
+rewrite !(inE,mem_finsupp) => pa00 ->{dB} ga0b0.
+apply/eqP => H.
+have : ((p a0) * (g a0) b <> R0)%R by rewrite mulR_eq0 => -[]; exact/eqP.
+apply.
+move/prsumr_seq_eq0P : H; apply.
+exact: fset_uniq.
+move=> b0 _; apply/mulR_ge0; exact/Dist.ge0.
+by rewrite mem_finsupp.
+Qed.
 End def.
 End DistBind.
 
@@ -214,12 +237,146 @@ Qed.
 Lemma DistBindA A B C (m : Dist A) (f : A -> Dist B) (g : B -> Dist C) :
   DistBind.d (DistBind.d m f) g = DistBind.d m (fun x => DistBind.d (f x) g).
 Proof.
-(*apply/dist_ext => c; rewrite !DistBind.dE /=.
-rewrite (eq_bigr (fun a => (\rsum_(a0 in A) m a0 * (f a0) a * (g a) c))); last first.
-  move=> b _; by rewrite DistBind.dE big_distrl.
-rewrite exchange_big /=; apply eq_bigr => a _.
-rewrite DistBind.dE big_distrr /=; apply eq_bigr => b _; by rewrite mulRA.
-Qed.*) Admitted.
+apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => c.
+rewrite !DistBind.dE /DistBind.f !fsfunE /=.
+case: ifPn => [|H].
+  case/bigfcupP => /= dC.
+  rewrite andbT => /imfsetP[b].
+  rewrite !(inE,mem_finsupp) DistBind.dE /DistBind.f fsfunE /=.
+  case: ifPn; last by rewrite eqxx.
+  case/bigfcupP => /= dB.
+  rewrite andbT => /imfsetP[a].
+  rewrite !(inE,mem_finsupp) => ma0 ->{dB} fab0 H ->{dC} gbc0.
+  rewrite ifT; last first.
+    apply/bigfcupP => /=.
+    exists (DistBind.d (f a) g); last first.
+      rewrite DistBind.supp.
+      apply/bigfcupP; exists (g b); last by rewrite mem_finsupp.
+      rewrite andbT; apply/imfsetP.
+      exists b => //.
+      by rewrite !(inE,mem_finsupp).
+    rewrite andbT; apply/imfsetP.
+    by exists a => //; rewrite !(inE,mem_finsupp).
+  rewrite (eq_bigr (fun a => (\rsum_(a0 <- finsupp m) m a0 * (f a0) a * (g a) c))); last first.
+    move=> b0 _.
+    rewrite DistBind.dE /DistBind.f fsfunE.
+    case: ifPn.
+      case/bigfcupP => dB.
+      rewrite andbT => /imfsetP[a0].
+      rewrite !(inE,mem_finsupp) => ma00 ->{dB} fa0b0.
+      by rewrite -big_distrl.
+    rewrite {1}/multiplication /mul_notation /=.
+    rewrite (mul0R (g b0 c)) => K.
+    rewrite big1_fset => // a0.
+    rewrite mem_finsupp => ma00 _.
+    apply/eqP/negPn/negP => L.
+    move/negP : K; apply.
+    apply/bigfcupP.
+    exists (f a0); last first.
+      rewrite mem_finsupp; apply: contra L => /eqP ->.
+      by rewrite /multiplication /mul_notation /= mulR0 mul0R.
+    rewrite andbT; apply/imfsetP; exists a0 => //.
+    by rewrite !(inE,mem_finsupp).
+  rewrite exchange_big; apply eq_bigr => a0 _ /=.
+  rewrite DistBind.dE /DistBind.f fsfunE.
+  case/boolP : (m a0 == R0 :> R) => [/eqP ma00|ma00].
+    rewrite ma00.
+    rewrite {3}/multiplication /mul_notation mul0R big1_fset // => b2 _ _.
+    by rewrite /multiplication /mul_notation 2!mul0R.
+  case: ifPn.
+    case/bigfcupP => dC.
+    rewrite andbT => /imfsetP[b0].
+    rewrite !(inE,mem_finsupp) => fa0b0 ->{dC} gb0c.
+    evar (h : B -> R); rewrite (eq_bigr h); last first.
+      move=> b1 _.
+      rewrite /multiplication /mul_notation.
+      rewrite -mulRA.
+      rewrite /h.
+      reflexivity.
+    rewrite {}/h.
+    rewrite -(big_distrr  (m a0)) /=.
+    congr (_ * _).
+    rewrite (big_fsetID _ (fun x => x \in finsupp (f a0))) /=.
+    rewrite [X in (_ + X)%R = _](_ : _ = 0) ?addR0; last first.
+      rewrite big1_fset => // b1.
+      case/imfsetP => b2 /=.
+      rewrite !inE => /andP[/=].
+      by rewrite !mem_finsupp negbK => _ /eqP K -> _; rewrite K mul0R.
+    apply big_fset_incl.
+      apply/fsubsetP => b1.
+      rewrite mem_finsupp.
+      case/imfsetP => b2.
+     by rewrite !(inE,mem_finsupp) => /andP[_] ? ->.
+    move=> b1.
+    rewrite mem_finsupp => fa0b1.
+    case/boolP : (g b1 c == R0 :> R) => [/eqP -> _|gb1c].
+      by rewrite /multiplication /mul_notation mulR0.
+    case/imfsetP; exists b1 => //.
+    rewrite !(inE,mem_finsupp) fa0b1 andbT DistBind.dE /DistBind.f fsfunE.
+    rewrite ifT.
+    have /eqP K : (m a0 * (f a0 b1) <> R0 :> R) by rewrite mulR_eq0 => -[]; exact/eqP.
+    apply/eqP.
+    move/prsumr_seq_eq0P => L.
+    move/eqP : K; apply.
+    apply L => //.
+    move=> a1 _; apply mulR_ge0; exact/Dist.ge0.
+    by rewrite mem_finsupp.
+  apply/bigfcupP.
+  exists (f a0); last by rewrite mem_finsupp.
+  rewrite andbT.
+  apply/imfsetP.
+  exists a0 => //.
+  by rewrite !(inE,mem_finsupp).
+  move=> K.
+  rewrite DistBind.supp.
+  suff : \rsum_(i <- finsupp (DistBind.d m f)) ((f a0) i * (g i) c)%R = R0 :> R.
+    rewrite DistBind.supp => L.
+    evar (h : B -> R); rewrite (eq_bigr h); last first.
+      move=> b1 _.
+      rewrite /multiplication /mul_notation.
+      rewrite -mulRA.
+      rewrite /h.
+      reflexivity.
+    by rewrite -(big_distrr (m a0)) /= L !mulR0 /multiplication /mul_notation mulR0.
+  apply/prsumr_seq_eq0P.
+  exact: fset_uniq.
+  move=> b1 _; apply mulR_ge0; exact/Dist.ge0.
+  move=> a1 Ha1.
+  case/boolP : (g a1 c == R0 :> R) => ga1c.
+    by rewrite (eqP ga1c) mulR0.
+  case/boolP : (f a0 a1 == R0 :> R) => fa0a1.
+    by rewrite (eqP fa0a1) mul0R.
+  case/bigfcupP : K.
+  exists (g a1); last by rewrite mem_finsupp.
+  rewrite andbT.
+  apply/imfsetP; exists a1 => //.
+  by rewrite !(inE,mem_finsupp).
+rewrite ifF //; apply/negbTE; apply: contra H.
+case/bigfcupP => /= dC.
+rewrite andbT => /imfsetP[x]; rewrite !(inE,mem_finsupp) => mx0 ->{dC}.
+rewrite DistBind.dE /DistBind.f fsfunE.
+case: ifPn; last by rewrite eqxx.
+case/bigfcupP => dC; rewrite andbT => /imfsetP[b].
+rewrite !(inE,mem_finsupp) => fxb0 ->{dC} gbc0 K.
+apply/bigfcupP.
+exists (g b); last by rewrite mem_finsupp.
+rewrite andbT; apply/imfsetP; exists b => //.
+rewrite !(inE,mem_finsupp) DistBind.dE /DistBind.f fsfunE.
+case: ifPn; last first.
+  apply: contra => _.
+  apply/bigfcupP.
+  exists (f x); last by rewrite mem_finsupp.
+  rewrite andbT; apply/imfsetP; exists x => //.
+  by rewrite !(inE,mem_finsupp).
+case/bigfcupP => dB.
+rewrite andbT => /imfsetP[a].
+rewrite !(inE,mem_finsupp) => ma0 ->{dB} fab0.
+have /eqP : (m a * (f a b) <> R0)%R by rewrite mulR_eq0 => -[]; exact/eqP.
+apply: contra => /eqP /prsumr_seq_eq0P L; apply/eqP/L.
+by rewrite fset_uniq.
+move=> a0 _; apply/mulR_ge0; exact/Dist.ge0.
+by rewrite mem_finsupp.
+Qed.
 
 Module I2Dist.
 Section def.
