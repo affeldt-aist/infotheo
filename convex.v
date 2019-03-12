@@ -133,7 +133,7 @@ Lemma f1 (x : set A) (gX : g @` setT `<=` x `|` y)
   (ge : forall i : 'I_n, x (g i) -> e i = 0%R) :
   (\rsum_(i < n) f i = 1)%R.
 Proof.
-rewrite /f -(pmf1 e) /=.
+rewrite /f -(epmf1 e) /=.
 apply eq_bigr => i _; rewrite ffunE.
 case: ifPn => // /negP; rewrite in_setE => ygi.
 rewrite ge //.
@@ -151,7 +151,7 @@ Lemma f1' (x : set A) (gX : g @` setT `<=` x `|` y)
   (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0%R) :
   (\rsum_(i < n) f i = 1)%R.
 Proof.
-rewrite /f -(pmf1 e) /=.
+rewrite /f -(epmf1 e) /=.
 apply eq_bigr => i _; rewrite ffunE.
 case: ifPn => // /negP; rewrite in_setE => giy.
 rewrite ge //.
@@ -650,15 +650,15 @@ Lemma S1_convn_proj n (points : 'I_n -> A) d :
   \big[@addpt B/Zero B]_(i < n) scalept (d i) (S1 (prj (points i))).
 Proof.
 elim: n points d => [|n IH] points d.
-  move: (pmf1 d).
+  move: (epmf1 d).
   rewrite /= big_ord0 => /Rlt_not_eq; elim.
-  by apply Rlt_0_1.
+  exact: Rlt_0_1.
 rewrite /=.
 case: eqVneq => Hd.
   rewrite (bigD1 ord0) ?inE // Hd big1 /=.
     rewrite addpt0 (mkscaled_gt0 _ _ Rlt_0_1).
     by congr Scaled; apply val_inj; rewrite /= mulR1.
-  move=> i Hi; have := pmf1 d.
+  move=> i Hi; have := epmf1 d.
   rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ R1)).
   rewrite addRK subRR => /prsumr_eq0P -> //.
     by rewrite mkscaled0.

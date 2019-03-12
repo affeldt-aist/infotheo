@@ -97,7 +97,7 @@ rewrite -big_distrr /= (_ : \rsum_(_ | _) _ = 1)%R; last first.
     apply eq_bigr => i _.
     by rewrite DMCE big_ord_recl big_ord0 mulR1 /BSC.c mxE.
   apply/(@big_singl_rV _ _ _ _ (fun i => (Binary.d card_A p_01 i) a')).
-  by rewrite -Binary.d_sum_swap // pmf1.
+  by rewrite -Binary.d_sum_swap // epmf1.
 rewrite mxE mulR1 big_ord_recl big_ord0 /BSC.c Binary.dE /= eq_sym !mxE; field.
 rewrite /P Uniform.dE card_A (_ : 2%:R = 2)%R //; lra.
 Qed.
@@ -494,7 +494,7 @@ Lemma K949_lemma df n0 : K949 n0 df =
   MarginalPostProbability.Kmpp Hy * PosteriorProbability.Kppu W [set cw in C] y.
 Proof.
 rewrite /K949 /MarginalPostProbability.Kmpp /PosteriorProbability.Kppu -invRM; last 2 first.
-  rewrite pmf1 => ?; lra.
+  rewrite epmf1 => ?; lra.
   apply/eqP; by rewrite -not_receivable_uniformE Hy.
 congr (/ _).
 transitivity (\rsum_(t in 'rV['F_2]_n)

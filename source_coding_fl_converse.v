@@ -118,10 +118,9 @@ suff : 1 = a + b by move=> ->; field.
 rewrite /a {a}.
 have -> : b = \rsum_(i in [set i | dec sc (enc sc i) == i]) P `^ k.+1 i.
   apply eq_big => // i /=; by rewrite inE.
-rewrite -(pmf1 (P `^ k.+1)).
+rewrite -(epmf1 (P `^ k.+1)).
 rewrite (bigID [pred a | a \in [set i0 | dec sc (enc sc i0) == i0]]) /= addRC.
-f_equal.
-apply eq_bigl => t /=; by rewrite !inE.
+by congr (_ + _); apply eq_bigl => t /=; rewrite !inE.
 Qed.
 
 Local Open Scope typ_seq_scope.

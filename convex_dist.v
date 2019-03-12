@@ -1,3 +1,4 @@
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
@@ -44,7 +45,7 @@ have H0 : \rsum_(a in A) p a * log (p a / u a) = \rsum_(a in A) RHS a.
 rewrite H0 /RHS.
 rewrite big_split /=.
 rewrite -big_distrl /=.
-rewrite (pmf1 p) mul1R.
+rewrite (epmf1 p) mul1R.
 by rewrite -addR_opp oppRD addRC -addRA Rplus_opp_l addR0.
 Qed.
 End entropy_log_div.

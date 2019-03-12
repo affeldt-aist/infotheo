@@ -62,7 +62,7 @@ rewrite !/Binary.f !eqxx /Binary.f eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2 (*
 set a := Set2.a _. set b := Set2.b _.
 case: (Req_EM_T (P a) 0) => H1.
   rewrite H1 !(mul0R, mulR0, addR0, add0R).
-  move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
+  move: (epmf1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H1 add0R => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log LogM; last 2 first.
@@ -73,7 +73,7 @@ rewrite /log LogM; last 2 first.
   by case: p_01'.
 case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 !(mul0R, mulR0, addR0, add0R).
-  move: (pmf1 P); rewrite Set2sumE /= -/a -/b.
+  move: (epmf1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H2 addR0 => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log LogM; last 2 first.
@@ -84,7 +84,7 @@ rewrite /log LogM; last 2 first.
   rewrite subR_gt0; by case: p_01'.
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   rewrite /log; by field.
-move: (pmf1 P); rewrite Set2sumE /= -/a -/b => ->; rewrite /log; by field.
+move: (epmf1 P); rewrite Set2sumE /= -/a -/b => ->; rewrite /log; by field.
 Qed.
 
 Lemma IPW : `I(P, BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
@@ -101,7 +101,7 @@ rewrite {1}/entropy /= Set2sumE /= !OutDist.dE 2!Set2sumE /=.
 set a := Set2.a _. set b := Set2.b _.
 rewrite /BSC.c !Binary.dE !eqxx /= !(eq_sym _ a).
 rewrite (negbTE (Set2.a_neq_b card_A)).
-move: (pmf1 P); rewrite Set2sumE /= -/a -/b => P1.
+move: (epmf1 P); rewrite Set2sumE /= -/a -/b => P1.
 have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
   rewrite -{2}P1; by field.
 have H01 : 0 < ((1 - p) * P a + p * P b) < 1.

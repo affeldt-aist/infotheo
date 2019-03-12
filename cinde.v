@@ -1,3 +1,4 @@
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
@@ -26,7 +27,7 @@ Lemma f0 x : 0 <= f x.
 Proof. rewrite ffunE; apply rsumr_ge0 => ? _; exact: dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: A * B * C}) f x = 1.
 Proof.
-rewrite /f -(pmf1 P) /=.
+rewrite /f -(epmf1 P) /=.
 evar (h : A * B * C -> R); rewrite (eq_bigr h); last first.
   move=> i _; rewrite ffunE /h; reflexivity.
 rewrite {}/h pair_big /=.
@@ -64,7 +65,7 @@ Definition f := [ffun abc : B * C * D => \rsum_(x in A) P (x, abc.1.1, abc.1.2, 
 Lemma f0 x : 0 <= f x. Proof. rewrite ffunE; apply rsumr_ge0 => ? _; exact: dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: B * C * D}) f x = 1.
 Proof.
-rewrite -(pmf1 P) /= /f.
+rewrite -(epmf1 P) /= /f.
 evar (h : B * C * D -> R); rewrite (eq_bigr h); last first.
   move=> i _; rewrite ffunE /h; reflexivity.
 rewrite {}/h pair_big /=.
@@ -89,7 +90,7 @@ Lemma f0 x : 0 <= f x.
 Proof. rewrite ffunE; move: x => -[[] ? [] ? ? ?]; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: A * (B * D) * C}) f x = 1.
 Proof.
-rewrite /f -(pmf1 P) /= (reindex g) /=; last first.
+rewrite /f -(epmf1 P) /= (reindex g) /=; last first.
   exists (fun x => let: (a, b, d, c) := x in (a, (b, d), c)).
   by move=> -[[] ? [] ? ? ?].
   by move=> -[[] [] ? ? ? ?].
@@ -125,7 +126,7 @@ Lemma f0 x : 0 <= f x.
 Proof. rewrite ffunE; move: x => -[[] ? ? [] ? ?]; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: A * B * (D * C)}) f x = 1.
 Proof.
-rewrite /f -(pmf1 P) /= (reindex g) /=; last first.
+rewrite /f -(epmf1 P) /= (reindex g) /=; last first.
   exists (fun x => let: (a, b, d, c) := x in (a, b, (d, c))).
   by move=> -[[] ? ? [] ? ?].
   by move=> -[[] [] ? ? ? ?].
@@ -149,7 +150,7 @@ Lemma f0 x : 0 <= f x.
 Proof. rewrite ffunE; move: x => -[? [] [] ? ? ?]; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(x in {: A * (B * D * C)}) f x = 1.
 Proof.
-rewrite /f -(pmf1 P) /= (reindex g) /=; last first.
+rewrite /f -(epmf1 P) /= (reindex g) /=; last first.
   exists (fun x => let: (a, b, d, c) := x in (a, (b, d, c))).
   by move=> -[? [] [] ? ? ?].
   by move=> -[[] [] ? ? ? ?].
@@ -656,9 +657,7 @@ transitivity (\rsum_(d <- fin_img W) \Pr_(QuadA23.d Q)[[set (a, (b, d))] | [set 
 transitivity (\rsum_(d <- fin_img W)
   \Pr_(Proj14d Q)[[set a] | [set c]] * \Pr_(Proj234.d Q)[[set (b, d)] | [set c]]).
   apply eq_bigr => d _.
-  rewrite QuadA23_RV4.
-  rewrite H.
-  by rewrite Proj14_RV4 Proj234_RV4 Proj23_RV3.
+  by rewrite QuadA23_RV4 H Proj14_RV4 Proj234_RV4 Proj23_RV3.
 rewrite -big_distrr /=; congr (_ * _).
   by rewrite /Proj14d Proj124_RV4 Proj13_RV3.
 rewrite (reasoning_by_cases_RV2 W); apply eq_bigr => d _.
@@ -795,7 +794,7 @@ Lemma cPr_1_RV a : (RVar.d X) a != 0 ->
 Proof.
 rewrite -{1}(fst_RV2 _ Y) => Xa0.
 set Q := CondDist.d (RVar.d [% X, Y]) _ Xa0.
-rewrite -(pmf1 Q) [in RHS](bigID (fun b => b \in fin_img Y)) /=.
+rewrite -(epmf1 Q) [in RHS](bigID (fun b => b \in fin_img Y)) /=.
 rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   move=> b bY.
   rewrite /Q CondDist.dE /cPr /Pr !(big_setX,big_set1) /= Swap.dE Swap.snd fst_RV2.

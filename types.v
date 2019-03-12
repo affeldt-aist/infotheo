@@ -58,7 +58,7 @@ Lemma no_0_type A (d : dist A) (t : {ffun A -> 'I_1}) :
 Proof.
 move=> H.
 apply R1_neq_R0.
-rewrite -(pmf1 d).
+rewrite -(epmf1 d).
 transitivity (\rsum_(a | a \in A) INR (t a) / 0); first exact/eq_bigr.
 rewrite -big_distrl /= -big_morph_natRD.
 rewrite (_ : \sum_(a in A) _ = O) ?mul0R //.
@@ -131,7 +131,7 @@ Defined.
 Definition dist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : \sum_(a in A) f a == n.+1) : dist A.
 set pf := pos_fun_of_ffun f.
-assert (H : \rsum_(a in A) pf a = 1).
+have H : \rsum_(a in A) pf a == 1 :> R.
   rewrite /pf; evar (h : A -> R); rewrite (eq_bigr h); last first.
     move=> a _; rewrite ffunE /h; reflexivity.
   rewrite {}/h /= /Rdiv -big_distrl /= -big_morph_natRD.
@@ -157,7 +157,7 @@ Lemma ffun_of_dist A n (d : dist A) (t : {ffun A -> 'I_n.+2})
 Proof.
 suff : INR (\sum_(a in A) t a) == INR n.+1 * \rsum_(a | a \in A) d a.
   move/eqP.
-  rewrite (pmf1 d) mulR1.
+  rewrite (epmf1 d) mulR1.
   by move/INR_eq/eqP.
 apply/eqP.
 transitivity (INR n.+1 * (\rsum_(a|a \in A) INR (t a) / INR n.+1)).

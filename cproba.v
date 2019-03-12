@@ -51,7 +51,7 @@ Proof.
 rewrite /f; evar (h : B * A -> R); rewrite (eq_bigr h); last first.
   move=> b _; rewrite ffunE /h; reflexivity.
 rewrite {}/h -(pair_bigA _ (fun x1 x2 => P (x2, x1))) exchange_big.
-rewrite pair_bigA /= -(pmf1 P); apply eq_bigr; by case.
+rewrite pair_bigA /= -(epmf1 P); apply eq_bigr; by case.
 Qed.
 Definition d : {dist B * A} := locked (makeDist f0 f1).
 Lemma dE a b : d (b, a) = P (a, b).
@@ -106,7 +106,7 @@ Lemma f1 : \rsum_(x in {: A * A}) f x = 1.
 Proof.
 rewrite (eq_bigr (fun a => f (a.1, a.2))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => f (a1, a2))) /=.
-rewrite -(pmf1 P); apply/eq_bigr => a _.
+rewrite -(epmf1 P); apply/eq_bigr => a _.
 rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
   move=> b _; rewrite ffunE /h; reflexivity.
 rewrite {}/h /= (bigD1 a) //= eqxx.
@@ -147,7 +147,7 @@ rewrite -(pair_big xpredT xpredT (fun x1 x2 => P (x1, x2.1, x2.2))) /=.
 evar (f : A -> R).
 rewrite (eq_bigr f); last first.
   move=> a _; rewrite -(pair_bigA _ (fun x1 x2 => P (a, x1, x2))) /= /f; reflexivity.
-rewrite {}/f !pair_big /= -(pmf1 P) /=; by apply eq_bigr => -[[]].
+rewrite {}/f !pair_big /= -(epmf1 P) /=; by apply eq_bigr => -[[]].
 Qed.
 Definition d : {dist A * (B * C)} := locked (makeDist f0 f1).
 Lemma dE x : d x = P (x.1, x.2.1, x.2.2).
@@ -224,7 +224,7 @@ Proof.
 rewrite /f; evar (h : B * A * C -> R); rewrite (eq_bigr h); last first.
   move=> b _; rewrite ffunE /h; reflexivity.
 rewrite {}/h -(pair_bigA _ (fun a b => P ((fun x => (x.2, x.1)) a, b))) /=.
-rewrite -(pmf1 (Swap.d (Bivar.fst P))); apply eq_bigr; case => b a _ /=.
+rewrite -(epmf1 (Swap.d (Bivar.fst P))); apply eq_bigr; case => b a _ /=.
 by rewrite Swap.dE /= Bivar.fstE.
 Qed.
 Definition d : {dist B * A * C} := locked (makeDist f0 f1).
@@ -614,7 +614,7 @@ Variables (A B : finType) (P : {dist A * B}).
 Lemma cPr_1 a : Bivar.fst P a != 0 ->
   \rsum_(b in B) \Pr_(Swap.d P)[ [set b] | [set a] ] = 1.
 Proof.
-move=> Xa0; rewrite -(pmf1 (CondDist.d P _ Xa0)).
+move=> Xa0; rewrite -(epmf1 (CondDist.d P _ Xa0)).
 apply eq_bigr => b _; by rewrite CondDist.dE.
 Qed.
 

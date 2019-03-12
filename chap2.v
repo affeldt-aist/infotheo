@@ -147,7 +147,7 @@ Lemma f0 i x : 0 <= @f i x.
 Proof. rewrite ffunE; apply rsumr_ge0 => /= v _; exact: dist_ge0. Qed.
 Lemma f1 (i : 'I_n.+1) : \rsum_(x in 'rV[A]_i) @f i x = 1%R.
 Proof.
-rewrite -(pmf1 P) /= /f; apply/esym.
+rewrite -(epmf1 P) /= /f; apply/esym.
 rewrite (@partition_big _ _ _ _ [finType of 'rV[A]_i] xpredT (@row_take A n i) xpredT) //=.
 apply eq_bigr => v _.
 (* TODO: lemma yyy *)
@@ -195,7 +195,7 @@ Lemma f0 ab : 0 <= f ab.
 Proof. rewrite /f ffunE; apply: rsumr_ge0 => /= -[a b] /= _; exact: dist_ge0. Qed.
 Lemma f1 : \rsum_(ab : A * B) f ab = 1.
 Proof.
-rewrite -(pmf1 P) /= (eq_bigr (fun x => f (x.1, x.2))); last by case.
+rewrite -(epmf1 P) /= (eq_bigr (fun x => f (x.1, x.2))); last by case.
 rewrite -(pair_bigA _ (fun a b => f (a, b))) /=.
 rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
 rewrite -(pair_bigA _ (fun a b => P (a, b))) /=.
@@ -224,7 +224,7 @@ Lemma f0 ab : 0 <= f ab.
 Proof. rewrite /f ffunE; apply: rsumr_ge0 => w _; exact: dist_ge0. Qed.
 Lemma f1 : \rsum_(ab : 'rV[A]_i * A * B) f ab = 1.
 Proof.
-rewrite -(pmf1 P) /=.
+rewrite -(epmf1 P) /=.
 rewrite [in RHS](eq_bigr (fun x => P (x.1, x.2))); last by case.
 rewrite -[in RHS](pair_bigA _ (fun a b => P (a, b))) /=.
 rewrite (eq_bigr (fun x => f (x.1, x.2))); last by case.
@@ -341,7 +341,7 @@ rewrite ffunE; apply: (@rsumr_ge0 _ _ (fun x : 'rV_n => x ``_ i == a)) => /= x _
 Qed.
 Lemma f1 : \rsum_(a : A) f a = 1.
 Proof.
-rewrite -(pmf1 P) /= (partition_big (fun x : 'rV[A]_n => x ``_ i) xpredT) //.
+rewrite -(epmf1 P) /= (partition_big (fun x : 'rV[A]_n => x ``_ i) xpredT) //.
 rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
   move=> a _; rewrite ffunE /h; reflexivity.
 by rewrite {}/h.
@@ -525,7 +525,7 @@ Proof.
 case/boolP : (#|A| == O) => [/eqP A0|].
   exfalso.
   move: (dist_domain_not_empty P); by rewrite card_matrix mul1n expn_gt0 A0 ltnn.
-rewrite -lt0n => /card_gt0P[a _]; rewrite -(pmf1 P) /= /f; apply/esym.
+rewrite -lt0n => /card_gt0P[a _]; rewrite -(epmf1 P) /= /f; apply/esym.
 rewrite (partition_big_imset (col' i)) //=.
 apply/esym; rewrite /f; evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h); last first.
   move=> ? _; rewrite ffunE /h; reflexivity.
@@ -591,7 +591,7 @@ Lemma f0 (v : 'rV[A]_n) : (0 <= f v)%R.
 Proof. rewrite ffunE; exact/dist_ge0. Qed.
 Lemma f1 : (\rsum_(v : 'rV[A]_n) f v = 1)%R.
 Proof.
-rewrite -(pmf1 P) /=.
+rewrite -(epmf1 P) /=.
 rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ (s ^-1)%g) xpredT); last first.
   exact: col_perm_inj.
 by apply eq_bigr => x _; rewrite /f ffunE -col_permM mulgV col_perm1.
@@ -1866,7 +1866,7 @@ Definition f := [ffun x : A * 'rV[A]_i * 'rV[A]_(n - i) =>
 Lemma f0 x : 0 <= f x. Proof. rewrite ffunE; exact/dist_ge0. Qed.
 Lemma f1 : \rsum_(j in {: A * 'rV[A]_i * 'rV[A]_(n - i)}) f j = 1.
 Proof.
-rewrite -(pmf1 P) /= -(big_rV_cons_behead _ xpredT xpredT) /=.
+rewrite -(epmf1 P) /= -(big_rV_cons_behead _ xpredT xpredT) /=.
 rewrite (eq_bigr (fun j => f (j.1, j.2))); last by case.
 rewrite -(pair_bigA _ (fun j1 j2 => f (j1, j2))) /=.
 rewrite (eq_bigr (fun x => \rsum_(j | true) f (x.1, x.2, j))); last by case.

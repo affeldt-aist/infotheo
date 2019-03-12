@@ -1,4 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix perm.
@@ -31,7 +32,7 @@ rewrite /f; evar (h : {ffun M -> 'rV[A]_n} -> R); rewrite (eq_bigr h); last firs
   move=> a _; rewrite ffunE /h; reflexivity.
 rewrite {}/h -(bigA_distr_bigA (fun _ v => P `^ n v)) /=.
 rewrite [RHS](_ : _ = \rprod_(m0 : M | xpredT m0) 1); last by rewrite big1.
-apply eq_bigr => _ _; by rewrite (pmf1 (P `^ n)).
+apply eq_bigr => _ _; by rewrite (epmf1 (P `^ n)).
 Qed.
 Definition d : {dist encT A M n} := locked (makeDist f0 f1).
 Lemma dE x : d x = f x. Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
@@ -84,7 +85,7 @@ have : \rsum_(f : encT A M n) Wght.d P f * epsilon <= x.
   - apply leR_wpmul2l; [exact/dist_ge0 | exact/Rnot_lt_le/abs].
   - apply mulR_ge0; [exact/dist_ge0 | exact/echa_ge0].
 apply/Rlt_not_le/(@ltR_leR_trans epsilon) => //.
-rewrite -big_distrl /= (pmf1 (Wght.d P)) mul1R; exact/leRR.
+rewrite -big_distrl /= (epmf1 (Wght.d P)) mul1R; exact/leRR.
 Qed.
 
 Definition o_PI (m m' : M) := fun g : encT A M n => [ffun x => g (tperm m m' x)].
@@ -304,7 +305,7 @@ transitivity (\rsum_(j : {ffun 'I_k -> 'rV[_]_n})
     by rewrite tnth_fgraph ffunE enum_valK.
   - by move=> i _; apply eq_bigr => j _; rewrite ffunE /= tcastE -enum_rank_ord.
 rewrite -(bigA_distr_bigA (fun m xn => Q `^ _ xn)) /= big_const.
-rewrite (_ : \rsum_(_ <- _) _ = 1%R); last by rewrite pmf1.
+rewrite (_ : \rsum_(_ <- _) _ = 1%R); last by rewrite epmf1.
 by rewrite iter_mulR exp1R.
 Qed.
 

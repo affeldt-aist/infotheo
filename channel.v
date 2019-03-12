@@ -116,7 +116,7 @@ suff H : \rsum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1%R.
     apply/esym/eqP/rowP => a; by rewrite mxE ffunE.
   - move=> _; rewrite ffunE; apply eq_bigr => i _; by rewrite ffunE.
 rewrite -bigA_distr_bigA /= /f'.
-transitivity (\rprod_(i < n) 1%R); first by apply eq_bigr => i _; rewrite pmf1.
+transitivity (\rprod_(i < n) 1%R); first by apply eq_bigr => i _; rewrite epmf1.
 by rewrite big1.
 Qed.
 
@@ -189,8 +189,8 @@ Lemma f1 : \rsum_(b in B) f b = 1.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
   move=> a _; rewrite ffunE /h; reflexivity.
-rewrite {}/h exchange_big /= -(pmf1 P).
-apply eq_bigr => a _; by rewrite -big_distrl /= (pmf1 (W a)) mul1R.
+rewrite {}/h exchange_big /= -(epmf1 P).
+apply eq_bigr => a _; by rewrite -big_distrl /= (epmf1 (W a)) mul1R.
 Qed.
 Definition d : dist B := locked (makeDist f0 f1).
 Lemma dE b : d b = \rsum_(a in A) W a b * P a.
@@ -268,7 +268,7 @@ transitivity (\rsum_(i | Q i) (P `^ n i * (\rsum_(y in 'rV[B]_n) W ``(y | i)))).
   apply eq_bigr => j _.
   by rewrite JointDistChan.dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
 transitivity (\rsum_(i | Q i) P `^ _ i).
-  apply eq_bigr => i _; by rewrite (pmf1 (W ``(| i))) mulR1.
+  apply eq_bigr => i _; by rewrite (epmf1 (W ``(| i))) mulR1.
 rewrite /Pr; apply eq_bigl => t; by rewrite !inE.
 Qed.
 Local Open Scope ring_scope.

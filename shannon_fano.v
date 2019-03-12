@@ -54,7 +54,7 @@ Let sizes := [seq (size \o f) a| a in A].
 Lemma shannon_fano_is_kraft : is_shannon_fano P f -> kraft_condR T sizes.
 Proof.
 move=> H.
-rewrite /kraft_condR -(pmf1 P).
+rewrite /kraft_condR -(epmf1 P).
 rewrite /sizes size_map.
 rewrite (eq_bigr (fun i:'I_(size(enum A)) => #|'I_t|%:R ^- size (f (nth a (enum A) i)))); last first.
   move=> i _; by rewrite /= (nth_map a).
@@ -130,7 +130,7 @@ rewrite {}/h big_split /=; apply leR_add.
   apply Req_le.
   rewrite /entropy big_morph_oppR; apply eq_bigr => i _.
   by rewrite card_ord (_ : INR 2 = 2).
-rewrite pmf1; exact/leRR.
+rewrite epmf1; exact/leRR.
 Qed.
 
 End shannon_fano_suboptimal.

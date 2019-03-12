@@ -78,7 +78,7 @@ rewrite [in X in (_ + X)%R = _]big1 ?addR0; last first.
   by move=> a; rewrite mem_enum inE.
 rewrite (eq_bigr (fun x => P x)); last first.
   by move=> a _; rewrite fsfunE; case: ifPn => //; rewrite inE mem_enum inE.
-rewrite -[RHS](pmf1 P) [in RHS](bigID (fun x => x \in finsupp f)) /=.
+rewrite -[RHS](epmf1 P) [in RHS](bigID (fun x => x \in finsupp f)) /=.
 rewrite [in X in _ = (_ + X)%R]big1 ?addR0; last first.
   move=> a /eqP; rewrite memNfinsupp fsfunE.
   by case: ifPn => [_ /eqP/eqP //|]; rewrite inE /= mem_enum inE.
@@ -166,6 +166,7 @@ End DistBind.
 Lemma DistBind1f (A B : choiceType) (a : A) (f : A -> Dist B) :
   DistBind.d (Dist1.d a) f = f a.
 Proof.
+
 (*apply/dist_ext => b.
 rewrite DistBind.dE /= (bigD1 a) //= Dist1.dE eqxx mul1R.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 // => c ca.

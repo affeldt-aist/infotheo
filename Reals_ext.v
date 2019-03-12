@@ -34,6 +34,11 @@ Local Open Scope R_scope.
 Lemma Rlt_1_2 : 1 < 2. Proof. lra. Qed.
 Hint Resolve Rlt_1_2.
 
+Lemma forallP_leRP (A : finType) (f : A -> R) : reflect (forall a, 0 <= f a) [forall a, 0 <b= f a].
+Proof.
+apply: (iffP idP) => [/forallP H a|H]; [exact/leRP/H|apply/forallP => a; exact/leRP].
+Qed.
+
 Section pos_finfun.
 Variable (T : finType).
 
