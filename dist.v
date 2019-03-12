@@ -187,11 +187,29 @@ Qed.
 
 Lemma DistBindp1 (A : choiceType) (p : Dist A) : DistBind.d p (@Dist1.d A) = p.
 Proof.
-(*apply/dist_ext => /= a.
-rewrite DistBind.dE /= (bigD1 a) //= Dist1.dE eqxx mulR1.
-rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 /= ?addR0 //.
-by move=> b ba; rewrite Dist1.dE eq_sym (negbTE ba) mulR0.
-Qed.*) Admitted.
+apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => b.
+rewrite DistBind.dE /DistBind.f fsfunE /=.
+case: ifPn => [|H].
+  case/bigfcupP => /= d; rewrite andbT.
+  case/imfsetP => /= a /imfsetP[a0].
+  rewrite !mem_finsupp => pa00 ->{a} ->{d}.
+  rewrite Dist1.dE /Dist1.f fsfunE inE; case: ifPn => [/eqP ->{b} _|]; last by rewrite eqxx.
+  rewrite (big_fsetD1 a0) ?mem_finsupp //= Dist1.dE /= /Dist1.f fsfunE inE eqxx /=.
+  rewrite big1_fset ?addR0 //.
+    by rewrite /one /one_notation /multiplication /mul_notation mulR1.
+  move=> a.
+  rewrite !inE => /andP[aa0].
+  rewrite mem_finsupp => pa0 _.
+  rewrite Dist1.dE /Dist1.f fsfunE inE eq_sym (negbTE aa0).
+  by rewrite /zero /zero_notation /multiplication /mul_notation mulR0.
+case/boolP : (p b == R0 :> R) => [/eqP ->//|pb0].
+case/bigfcupP : H.
+exists (Dist1.d b); last first.
+  rewrite mem_finsupp Dist1.dE /Dist1.f fsfunE inE eqxx.
+  by apply/eqP; rewrite /one /zero /one_notation /zero_notation.
+rewrite andbT; apply/imfsetP; exists b => //.
+by rewrite !(inE,mem_finsupp).
+Qed.
 
 Lemma DistBindA A B C (m : Dist A) (f : A -> Dist B) (g : B -> Dist C) :
   DistBind.d (DistBind.d m f) g = DistBind.d m (fun x => DistBind.d (f x) g).
