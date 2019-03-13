@@ -557,10 +557,9 @@ Lemma p1 : d (`Pr 1) = Dist1.d ord0.
 Proof.
 apply/dist_ext => /= i; rewrite dE Dist1.dE; case: ifPn => //= _; exact: onem1.
 Qed.
-Lemma p0 : d (`Pr 0) = Dist1.d (lift ord0 ord0).
+Lemma p0 : d (`Pr 0) = Dist1.d (Ordinal (erefl (1 < 2)%nat)).
 Proof.
-apply/dist_ext => /= i; rewrite dE Dist1.dE; case: ifPn.
-by move/eqP ->; rewrite (negbTE (neq_lift _ _)).
+apply/dist_ext => /= i; rewrite dE Dist1.dE; case: ifPn => [/eqP ->//|].
 case: i => -[//|] [|//] i12 _ /=; by rewrite onem0.
 Qed.
 End prop.

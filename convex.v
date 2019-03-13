@@ -246,6 +246,8 @@ Local Open Scope convex_scope.
 
 Inductive scaled_pt := Scaled of Rpos & A | Zero.
 
+Local Notation "a *: v" := (Scaled a v).
+
 Definition S1 := Scaled Rpos1.
 
 Lemma Scaled_inj p : injective (Scaled p).
@@ -254,7 +256,7 @@ Proof. by move=> x y []. Qed.
 Definition S1_inj : injective S1 := @Scaled_inj Rpos1.
 
 Definition raw_weight pt : R :=
-  if pt is Scaled r _ then r else 0.
+  if pt is r *: _ then r else 0.
 
 Lemma weight_ge0 pt : 0 <= raw_weight pt.
 Proof. case: pt => /= [[x] /= /ltRP/ltRW //|]; by apply leRR. Qed.
@@ -267,10 +269,10 @@ destruct pt.
 + case/ltRR.
 Defined.
 
-Lemma point_Scaled p x H : @point (Scaled p x) H = x.
+Lemma point_Scaled p x H : @point (p *: x) H = x.
 Proof. by []. Qed.
 
-Lemma Scaled_point x H : Scaled (mkRpos H) (@point x H) = x.
+Lemma Scaled_point x H : mkRpos H *: @point x H = x.
 Proof.
 case: x H => [p x|] H; by [congr Scaled; apply val_inj | elim: (ltRR 0)].
 Qed.
@@ -278,7 +280,7 @@ Qed.
 Lemma weight0_Zero x : weight x = 0 -> x = Zero.
 Proof. case: x => //= r c /esym Hr; by move/ltR_eqF: (Rpos_gt0 r). Qed.
 
-Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / addRpos r q <= 1.
+Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / `Pos (r + q) <= 1.
 Proof.
 split.
 + apply /ltRW /divR_gt0; by apply /Rpos_gt0.
@@ -287,7 +289,7 @@ split.
   rewrite mul1R.
   by apply /leR_addl /ltRW /Rpos_gt0.
 Qed.
-Definition Rpos_prob r q := Prob.mk (Rpos_prob_Op1 r q).
+Definition Rpos_prob r q := @Prob.mk _ (Rpos_prob_Op1 r q).
 
 Lemma onem_div p q : q != 0 -> (p/q).~ = (q-p)/q.
 Proof.
@@ -295,7 +297,7 @@ move=> Hq.
 by rewrite /onem -(divRR q) // /Rdiv /Rminus -mulNR -mulRDl.
 Qed.
 
-Lemma Rpos_probC r q : Rpos_prob q r = `Pr(Rpos_prob r q).~.
+Lemma Rpos_probC r q : Rpos_prob q r = `Pr (Rpos_prob r q).~.
 Proof.
 apply prob_ext => /=.
 rewrite [in RHS]addRC onem_div.
@@ -310,19 +312,19 @@ Qed.
 
 Definition addpt a b :=
   match a, b with
-  | Scaled r x, Scaled q y => Scaled (addRpos r q) (x <| Rpos_prob r q |> y)
+  | r *: x, q *: y => `Pos (r + q) *: (x <| Rpos_prob r q |> y)
   | Zero, _ => b
   | _, _ => a
   end.
 
-Definition mkscaled r q (x : A) :=
+Definition mkscaled r (q : Rpos) (x : A) :=
   match Rlt_dec 0 r with
-  | left Hr => Scaled (mulRpos (mkRpos Hr) q) x
+  | left Hr => `Pos (mkRpos Hr * q) *: x
   | right _ => Zero
   end.
 
 Definition scalept p (x : scaled_pt) :=
-  if x is Scaled q y then mkscaled p q y else Zero.
+  if x is q *: y then mkscaled p q y else Zero.
 
 (* 1 *)
 Lemma addptC : commutative addpt.
@@ -333,15 +335,15 @@ rewrite convC; congr Conv.
 by rewrite [RHS]Rpos_probC.
 Qed.
 
-Lemma s_of_Rpos_probA p q r :
-  [s_of Rpos_prob p (addRpos q r), Rpos_prob q r] = Rpos_prob (addRpos p q) r.
+Lemma s_of_Rpos_probA (p q r : Rpos) :
+  [s_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob (`Pos (p + q)) r.
 Proof.
 apply prob_ext; rewrite s_of_pqE /onem /=; field.
 split; apply /eqP /Rpos_neq0.
 Qed.
 
-Lemma r_of_Rpos_probA p q r :
-  [r_of Rpos_prob p (addRpos q r), Rpos_prob q r] = Rpos_prob p q.
+Lemma r_of_Rpos_probA (p q r : Rpos) :
+  [r_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob p q.
 Proof.
 apply prob_ext; rewrite r_of_pqE s_of_pqE Rpos_probC (Rpos_probC r) /=.
 rewrite !onemK -(addRC p) addRA (addRC r) /onem; field.
@@ -377,15 +379,15 @@ Proof. by []. Qed.
 Lemma scaleptR0 p : scalept p Zero = Zero.
 Proof. by []. Qed.
 
-Lemma mkscaled_gt0 r p (x : A) (H : r > 0) :
-  mkscaled r p x = Scaled (mulRpos (mkRpos H) p) x.
+Lemma mkscaled_gt0 r (p : Rpos) (x : A) (H : r > 0) :
+  mkscaled r p x = `Pos (mkRpos H * p) *: x.
 Proof.
 rewrite /mkscaled; case: Rlt_dec => // Hr.
 congr Scaled; by apply val_inj.
 Qed.
 
-Lemma scalept_gt0 p q x (H : 0 < p) :
-  scalept p (Scaled q x) = Scaled (mulRpos (mkRpos H) q) x.
+Lemma scalept_gt0 p (q : Rpos) x (H : 0 < p) :
+  scalept p (q *: x) = `Pos (mkRpos H * q) *: x.
 Proof. by rewrite /= mkscaled_gt0. Qed.
 
 Lemma mkscaled0 r x : mkscaled 0 r x = Zero.
@@ -402,7 +404,7 @@ case: x => // r c; rewrite scalept_gt0.
 congr Scaled; apply val_inj; by rewrite /= mul1R.
 Qed.
 
-Lemma scalept_Scaled p q x : scalept p (Scaled q x) = scalept (p*q) (S1 x).
+Lemma scalept_Scaled p q x : scalept p (q *: x) = scalept (p*q) (S1 x).
 Proof.
 rewrite /= /mkscaled.
 case: Rlt_dec => Hp; case: Rlt_dec => Hpq //.
@@ -459,7 +461,7 @@ apply val_inj; by rewrite /= mulRDl.
 Qed.
 
 Lemma scalept_rsum (B : finType) (F : B -> R+) x :
-  scalept (\rsum_(i : B) (F i)) x =  \big[addpt/Zero]_(i : B) scalept (F i) x.
+  scalept (\rsum_(i : B) (F i)) x = \big[addpt/Zero]_(i : B) scalept (F i) x.
 Proof.
 apply (@proj1 _ (0 <= \rsum_(i : B) F i)).
 apply (big_ind2 (fun y q => scalept q x = y /\ 0 <= q)).
@@ -557,6 +559,7 @@ End adjunction.
 
 End scaled_convex.
 End ScaledConvex.
+Local Notation "a *: v" := (@ScaledConvex.Scaled _ a v).
 
 Section convex_space_prop.
 Variables A : convType.
@@ -632,7 +635,7 @@ Variable prj : A -> B.
 Hypothesis prj_affine : forall p, {morph prj : x y / x <|p|> y >-> x <|p|> y}.
 
 Definition map_scaled (x : scaled_pt A) :=
-  if x is Scaled p a then Scaled p (prj a) else @Zero B.
+  if x is p *: a then p *: prj a else @Zero B.
 
 Lemma map_scaled_affine p :
   {morph map_scaled : x y / x <|p|> y >-> x <|p|> y}.
@@ -913,7 +916,7 @@ Qed.
 
 Import ScaledConvex.
 Definition scaled_set (D : set A) :=
-  [set x | if x is Scaled p a then a \in D else True].
+  [set x | if x is p *: a then a \in D else True].
 
 Lemma addpt_scaled_set (D : {convex_set A}) x y :
   x \in scaled_set D -> y \in scaled_set D -> addpt x y \in scaled_set D.
@@ -1051,7 +1054,7 @@ Lemma avg_mulDl t : left_distributive Rmult (fun x y => x <|t|> y).
 Proof. move => x y z. rewrite /Conv /= /avg. lra. Qed.
 (* Introduce morphisms to prove avgnE *)
 Import ScaledConvex.
-Definition scaleR x : R := if x is Scaled p y then p * y else 0.
+Definition scaleR x : R := if x is p *: y then p * y else 0.
 Lemma Scaled1RK : cancel (@S1 R_convType) scaleR.
 Proof. by move=> x /=; rewrite mul1R. Qed.
 Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> (x + y)%R}.

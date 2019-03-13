@@ -448,10 +448,11 @@ Qed.
 
 Lemma ord1 (i : 'I_1) : i = ord0. Proof. case: i => [[]] // ?; exact/eqP. Qed.
 
-Lemma ord2 (i : 'I_2) : (i == ord0) || (i == lift ord0 ord0).
+Lemma ord2 (i : 'I_2) : (i == ord0) || (i == Ordinal (erefl (1 < 2))).
 Proof. by case: i => -[|[|]]. Qed.
 
-Lemma ord3 (i : 'I_3) : [|| i == ord0, i == lift ord0 ord0 | i == ord_max].
+Lemma ord3 (i : 'I_3) :
+  [|| i == ord0, i == Ordinal (erefl (1 < 3)) | i == Ordinal (erefl (2 < 3))].
 Proof. by case: i => -[|[|[|]]]. Qed.
 
 Lemma enum_inord (m : nat) : enum 'I_m.+1 = [seq inord i | i <- iota 0 m.+1].

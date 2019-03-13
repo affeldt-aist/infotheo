@@ -18,19 +18,18 @@ Local Open Scope reals_ext_scope.
 (* TODO: move? *)
 Module S2.
 
-Lemma generators (s : 'S_2) : s = 1%g \/ s = tperm ord0 (lift ord0 ord0).
+Lemma generators (s : 'S_2) : s = 1%g \/ s = tperm ord0 (Ordinal (erefl (1 < 2))).
 Proof.
-pose s0 := s ord0. pose s1 := s (lift ord0 ord0).
-move : (ord2 s0) => /orP[|] /eqP Hs0.
-  move : (ord2 s1) => /orP[|] /eqP Hs1.
-    rewrite -Hs0 in Hs1; by move: (perm_inj Hs1) => /(congr1 val).
-  left; apply/permP => i.
-  move: (ord2 i) => /orP[|] /eqP ->; by rewrite perm1.
-move : (ord2 s1) => /orP[|] /eqP Hs1.
-  right; apply/permP => i.
-  move: (ord2 i) => /orP[|] /eqP ->; by rewrite permE.
-rewrite -Hs0 in Hs1.
-by move: (perm_inj Hs1) => /(congr1 val).
+pose s0 := s ord0. pose s1 := s (Ordinal (erefl (1 < 2))).
+case/orP : (ord2 s0) => /eqP Hs0.
+- case/orP : (ord2 s1) => [/eqP |/eqP ?].
+  + by rewrite -Hs0 => /perm_inj /(congr1 val).
+  + left; apply/permP => i.
+    by case/orP: (ord2 i) => /eqP ->; rewrite perm1.
+- case/orP : (ord2 s1) => [/eqP ? |/eqP].
+  + right; apply/permP => i.
+    by case/orP: (ord2 i) => /eqP ->; rewrite permE.
+  + by rewrite -Hs0 => /perm_inj /(congr1 val).
 Qed.
 
 End S2.
@@ -38,9 +37,9 @@ End S2.
 (* TODO: move? *)
 Module S3.
 
-Definition p01 : 'S_3 := tperm ord0 (@Ordinal 3 1 erefl).
-Definition p02 : 'S_3 := tperm ord0 (@Ordinal 3 2 erefl).
-Definition p12 : 'S_3 := tperm (@Ordinal 3 1 erefl) (@Ordinal 3 2 erefl).
+Definition p01 : 'S_3 := tperm ord0 (Ordinal (erefl (1 < 3))).
+Definition p02 : 'S_3 := tperm ord0 (Ordinal (erefl (2 < 3))).
+Definition p12 : 'S_3 := tperm (Ordinal (erefl (1 < 3))) (Ordinal (erefl (2 < 3))).
 Definition p021 := (p01 * p02)%g.
 Definition p012 := (p02 * p01)%g.
 
@@ -49,72 +48,58 @@ Lemma suff_generators (P : 'S_3 -> Prop) : P 1%g -> P p01 -> P p02 ->
 Proof.
 move=> H1 H2 H3 H s.
 have : s = 1%g \/ s = S3.p01 \/ s = S3.p02 \/ s = S3.p12 \/ s = S3.p021 \/ s = S3.p012.
-  pose s0 := s ord0. pose s1 := s (lift ord0 ord0). pose s2 := s ord_max.
-  move: (ord3 s0) => /or3P[] /eqP Hs0.
-  - move: (ord3 s1) => /or3P[] /eqP Hs1.
-    + by move: Hs1; rewrite -Hs0 => /perm_inj.
-    + move: (ord3 s2) => /or3P[] /eqP Hs2.
-      * by move: Hs2; rewrite -Hs0 => /perm_inj.
-      * by move: Hs1; rewrite -Hs2=> /perm_inj.
-        left.
+  pose s0 := s ord0. pose s1 := s (Ordinal (erefl (1 < 3))). pose s2 := s (Ordinal (erefl (2 < 3))).
+  case/or3P : (ord3 s0) => [/eqP Hs0|/eqP Hs0|/eqP Hs0].
+  - case/or3P : (ord3 s1) => [/eqP|/eqP Hs1|/eqP Hs1].
+    + by rewrite -Hs0 => /perm_inj.
+    + case/or3P : (ord3 s2) => [/eqP|/eqP Hs2|/eqP].
+      * by rewrite -Hs0 => /perm_inj.
+      * by move: Hs1; rewrite -Hs2 => /perm_inj.
+      * left.
         apply/permP => /= i.
-        move: (ord3 i) => /or3P[] /eqP ->; by rewrite perm1.
-    + move: (ord3 s2) => /or3P[] /eqP Hs2.
-      * by move: Hs2; rewrite -Hs0 => /perm_inj.
+        case/or3P : (ord3 i) => /eqP ->; by rewrite permE //.
+    + case/or3P : (ord3 s2) => [/eqP|/eqP Hs2|/eqP].
+      * by rewrite -Hs0 => /perm_inj.
       * right; right; right; left.
         apply/permP => /= i.
-        move: (ord3 i) => /or3P[] /eqP ->; rewrite permE //=.
-        rewrite -/s1 Hs1; exact/val_inj.
-        rewrite -/s2 Hs2; exact/val_inj.
-      * by move: Hs2; rewrite -Hs1 => /perm_inj.
-  - move: (ord3 s1) => /or3P[] /eqP Hs1.
-    + move: (ord3 s2) => /or3P[] /eqP Hs2.
-      * by move: Hs2; rewrite -Hs1 => /perm_inj.
-      * by move: Hs2; rewrite -Hs0 => /perm_inj.
+        by case/or3P : (ord3 i) => /eqP ->; rewrite permE.
+      * by rewrite -Hs1 => /perm_inj.
+  - case/or3P : (ord3 s1) => [/eqP Hs1|/eqP|/eqP Hs1].
+    + case/or3P : (ord3 s2) => [/eqP|/eqP|/eqP Hs2].
+      * by rewrite -Hs1 => /perm_inj.
+      * by rewrite -Hs0 => /perm_inj.
       * right; left.
         apply/permP => /= i.
-        move: (ord3 i) => /or3P[] /eqP ->; rewrite permE //=.
-        rewrite -/s0 Hs0; exact/val_inj.
-        by move: Hs1; rewrite -Hs0 => /perm_inj.
-    + move: (ord3 s2) => /or3P[] /eqP Hs2.
+        by case/or3P : (ord3 i) => /eqP ->; rewrite permE.
+    + by rewrite -Hs0 => /perm_inj.
+    + case/or3P : (ord3 s2) => [/eqP Hs2|/eqP|/eqP].
       * right; right; right; right; left.
         apply/permP => /= i.
-        move: (ord3 i) => /or3P[] /eqP ->; rewrite !permE //= !permE /=.
-        rewrite -/s0 Hs0; exact/val_inj.
-        rewrite -/s1 Hs1; exact/val_inj.
-        rewrite -/s2 Hs2; exact/val_inj.
-      * by move: Hs2; rewrite -Hs0 => /perm_inj.
-      * by move: Hs2; rewrite -Hs1 => /perm_inj.
-  - move: (ord3 s1) => /or3P[] /eqP Hs1.
-    + move: (ord3 s2) => /or3P[] /eqP Hs2.
+        by case/or3P : (ord3 i) => /eqP ->; rewrite !permE //= !permE.
+      * by rewrite -Hs0 => /perm_inj.
+      * by rewrite -Hs1 => /perm_inj.
+  - case/or3P : (ord3 s1) => [/eqP Hs1|/eqP Hs1|/eqP Hs1].
+    + case/or3P : (ord3 s2) => [/eqP Hs2|/eqP Hs2|/eqP Hs2].
       * by move: Hs1; rewrite -Hs2 => /perm_inj.
       * right; right; right; right; right.
         apply/permP => /= i.
-        move: (ord3 i) => /or3P[] /eqP ->; rewrite !permE //= !permE /=.
-        rewrite -/s0 Hs0; exact/val_inj.
-        rewrite -/s1 Hs1; exact/val_inj.
-        rewrite -/s2 Hs2; exact/val_inj.
+        by case/or3P : (ord3 i) => /eqP ->; rewrite !permE //= !permE.
       * by move: Hs0; rewrite -Hs2 => /perm_inj.
-    + move: (ord3 s2) => /or3P[] /eqP Hs2.
+    + case/or3P : (ord3 s2) => [/eqP Hs2|/eqP Hs2|/eqP Hs2].
       * right; right; left.
         apply/permP => /= i.
-        move: (ord3 i) => /or3P[] /eqP ->; rewrite !permE //=.
-        rewrite -/s0 Hs0; exact/val_inj.
+        by case/or3P : (ord3 i) => /eqP ->; rewrite !permE //.
         by move: Hs1; rewrite -Hs2 => /perm_inj.
       * by move: Hs0; rewrite -Hs2 => /perm_inj.
       * by move: Hs0; rewrite -Hs1 => /perm_inj.
-case => [-> //|].
-case => [-> //|].
-case => [-> //|].
+move=> -[-> // | [-> // | [-> // | ]]].
 have K1 : P S3.p021 by rewrite (_ : S3.p021 = S3.p01 * S3.p02)%g //; exact/H.
 have K2 : P S3.p12.
-  rewrite -(_ : S3.p02 * S3.p021 = S3.p12)%g.
-  exact: H.
+  rewrite -(_ : S3.p02 * S3.p021 = S3.p12)%g; first exact: H.
   apply/permP => i.
-  move: (ord3 i) => /or3P[] /eqP ->; by repeat rewrite !permE /=.
+  case/or3P : (ord3 i) => /eqP ->; by repeat rewrite !permE /=.
 have K3 : P S3.p012 by exact: H.
-case => [-> //|].
-by case => [->|->].
+by move=> -[-> // | [-> // | -> //]].
 Qed.
 
 End S3.
@@ -122,12 +107,12 @@ End S3.
 (* TODO: move? *)
 Module Sn.
 
-Definition proj0 n (s : 'S_n.+2) : 'I_n.+1 -> 'I_n.+1 :=
-  fun i => inord ((s (lift ord0 i)).-1).
+Definition proj0 n (s : 'S_n.+2) (i : 'I_n.+1) : 'I_n.+1 :=
+  inord (s (lift ord0 i)).-1.
 
 Lemma proj0_inj n (s : 'S_n.+2) : s ord0 = ord0 -> injective (proj0 s).
 Proof.
-move=> s00=> i j; rewrite /proj0 => ij.
+move=> s00 i j; rewrite /proj0 => ij.
 suff : s (lift ord0 i) = s (lift ord0 j) by move/(@perm_inj _ s)/lift_inj.
 apply val_inj => /=.
 rewrite -[LHS]prednK ?lt0n; last first.
@@ -152,24 +137,21 @@ rewrite inordK // in ij; last first.
 by rewrite ij.
 Qed.
 
-Definition swap_asa n (s : 'S_n.+2) x : 'I_n.+1 -> 'I_n.+1 :=
-  fun i => if i.+1 == (s^-1 x)%g :> nat then inord (s x).-1 else inord (s (lift ord0 i)).-1.
+Definition swap_asa n (s : 'S_n.+2) x (i : 'I_n.+1) : 'I_n.+1 :=
+  if i.+1 == (s^-1 x)%g :> nat then inord (s x).-1 else inord (s (lift ord0 i)).-1.
 
 Lemma swap_asa_inj n (s : 'S_n.+2) (K : s ord0 != ord0) : injective (swap_asa s ord0).
 Proof.
 move=> i j; rewrite /swap_asa.
 case: ifPn => [/eqP Hi|Hi].
   case: ifPn => [/eqP Hj ?|Hj].
-    apply/val_inj.
-    move: Hi; rewrite -Hj.
-    by case.
+    move: Hi; rewrite -Hj => -[?]; exact/val_inj.
   move/(congr1 val) => /=.
   rewrite inordK //; last by rewrite prednK ?lt0n // -ltnS.
   rewrite inordK; last first.
     rewrite prednK ?lt0n; first by rewrite -ltnS.
     suff : s (lift ord0 j) != ord0 by [].
-    apply: contra Hj => /eqP <-.
-    rewrite permK; exact/eqP.
+    by apply: contra Hj => /eqP <-; rewrite permK.
   move/(congr1 S).
   rewrite prednK ?lt0n // prednK ?lt0n; last first.
     apply: contra Hj => Hj.
@@ -508,7 +490,7 @@ by rewrite (ProofIrrelevance.proof_irrelevance _ H i1).
 Qed.
 
 Lemma convn2E (g : 'I_2 -> A) (d : {dist 'I_2}) :
-  \Sum_d g = g ord0 <| probdist d ord0 |> g (lift ord0 ord0).
+  \Sum_d g = g ord0 <| probdist d ord0 |> g (Ordinal (erefl (1 < 2))).
 Proof.
 case/boolP : (d ord0 == 1%R) => [|i1].
   rewrite Dist1.one => /eqP ->; rewrite ConvnDist1.
@@ -517,24 +499,26 @@ case/boolP : (d ord0 == 1%R) => [|i1].
 rewrite convnE; congr (_ <| _ |> _).
 rewrite (_ : (fun _ => _) = (fun=> g (DelDist.h ord0 ord0))); last first.
   by apply FunctionalExtensionality.functional_extensionality => x; rewrite (ord1 x).
-by rewrite convn1E /DelDist.h ltnn.
+rewrite convn1E /DelDist.h ltnn; congr g; exact/val_inj.
 Qed.
 
 Lemma convn3E (g : 'I_3 -> A) (d : {dist 'I_3}) (p : prob) :
   d ord0 != 1%R ->
   p = (d (lift ord0 ord0) / (1 - d ord0))%R :> R ->
-  \Sum_d g = g ord0 <| probdist d ord0 |> (g (lift ord0 ord0) <| p |> g ord_max).
+  \Sum_d g = g ord0 <| probdist d ord0 |> (g (Ordinal (erefl (1 < 3)%nat)) <| p |> g (Ordinal (erefl (2 < 3)%nat))).
 Proof.
 move=> i1 Hp.
 case/boolP : (p == `Pr 1) => p1.
   rewrite convnE; congr (_ <| _ |> _).
-  rewrite convn2E /DelDist.h ltnn /=; congr (_ <| _ |> g _).
+  rewrite convn2E /DelDist.h ltnn /=; congr (g _ <| _ |> g _).
+  exact/val_inj.
   exact/val_inj.
   apply prob_ext => /=.
   by rewrite DelDist.dE D1Dist.dE /DelDist.h ltnn (eq_sym (lift _ _)) (negbTE (neq_lift _ _)) -Hp.
 rewrite convnE; congr (_ <| _ |> _).
-rewrite convn2E /DelDist.h ltnn /=; congr (_ <| _ |> g _).
-  exact/val_inj.
+rewrite convn2E /DelDist.h ltnn /=; congr (g _ <| _ |> g _).
+exact/val_inj.
+exact/val_inj.
 apply prob_ext => /=.
 by rewrite DelDist.dE D1Dist.dE /DelDist.h ltnn (eq_sym (lift _ _)) (negbTE (neq_lift _ _)).
 Qed.
@@ -588,21 +572,21 @@ have [->|Hs] := S2.generators s.
   apply FunctionalExtensionality.functional_extensionality => i.
   by rewrite /= perm1.
 move: (dist_ge0 d ord0); rewrite leR_eqVlt => -[/esym d00|d00].
-  have d11 : d (lift ord0 ord0) = 1%R.
-    by rewrite -(epmf1 d) 2!big_ord_recl big_ord0 addR0 d00 add0R.
-  have H1 : d = Dist1.d (lift ord0 ord0).
+  have d11 : d (Ordinal (erefl (1 < 2))) = 1%R.
+    rewrite -(epmf1 d) 2!big_ord_recl big_ord0 addR0 d00 add0R; f_equal; exact/val_inj.
+  have H1 : d = Dist1.d (Ordinal (erefl (1 < 2))).
     rewrite -I2Dist.p0; apply/dist_ext => /= i.
     rewrite I2Dist.dE; case: ifPn => [/eqP ->//|/= i0]; rewrite onem0.
     rewrite -(epmf1 d) 2!big_ord_recl big_ord0 addR0 d00 add0R; congr (d _).
     case: i i0 => -[//|] -[|//] //= i12 _; exact/val_inj.
   rewrite {1}H1 ConvnDist1 {1}Hs.
-  have H2 : PermDist.d d (tperm ord0 (lift ord0 ord0)) = Dist1.d ord0.
+  have H2 : PermDist.d d (tperm ord0 (Ordinal (erefl (1 < 2)))) = Dist1.d ord0.
     apply/dist_ext => /= i; rewrite PermDist.dE Dist1.dE.
     case/boolP : (i == ord0 :> 'I__) => i0.
       by rewrite (eqP i0) permE /= d11.
     rewrite permE /= (negbTE i0).
     by case: ifPn => //; case: i i0 => -[|[|]].
-  rewrite H2 ConvnDist1 /=; congr g; by rewrite Hs permE.
+  by rewrite H2 ConvnDist1 /=; congr g; rewrite Hs permE /=.
 case/boolP : (d (lift ord0 ord0) == 0%R :> R) => d10.
   have d01 : d ord0 = 1%R.
     rewrite -(epmf1 d) !big_ord_recl big_ord0 addR0.
@@ -612,7 +596,8 @@ case/boolP : (d (lift ord0 ord0) == 0%R :> R) => d10.
 rewrite convn2E.
 rewrite convn2E.
 rewrite /= Hs permE /= convC !permE /=; congr (_ <| _ |> _); apply prob_ext => /=.
-by rewrite PermDist.dE permE /= /onem -(epmf1 d) !big_ord_recl big_ord0 addR0 addRC addRK.
+rewrite PermDist.dE permE /= /onem -(epmf1 d) !big_ord_recl big_ord0 addR0 addRC addRK.
+f_equal; exact/val_inj.
 Qed.
 
 Lemma Convn_perm3_p01 (d : {dist 'I_3}) (g : 'I_3 -> A) :
@@ -662,7 +647,7 @@ case/boolP : (p == `Pr 1 :> prob) => [/eqP |p1].
   case/boolP : (d ord0 == 0 :> R)%R => d00.
     rewrite (_ : probdist _ _ = `Pr 0) ?conv0; last by apply prob_ext => /=; exact/eqP.
     move: H; rewrite (eqP d00) subR0 => /eqP; rewrite Dist1.one => /eqP ->.
-    by rewrite PermDist.dist1 ConvnDist1 /= permKV.
+    rewrite PermDist.dist1 ConvnDist1 /= permKV; congr g; exact/val_inj.
   rewrite (@convn3E _ _ (`Pr 1)) ?conv1; last first.
     rewrite !PermDist.dE /S3.p01 /= !permE /=.
     rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
@@ -673,7 +658,7 @@ case/boolP : (p == `Pr 1 :> prob) => [/eqP |p1].
   move: H; rewrite d001 => /esym.
   by rewrite subR_eq addRC -subR_eq subRR => <-.
   rewrite /= /S3.p01 !permE /= convC.
-  congr (g _ <| _ |> _); first exact/val_inj.
+  congr (g _ <| _ |> g _).
   apply/prob_ext => /=.
   rewrite PermDist.dE permE /=.
   rewrite (_ : Ordinal _ = lift ord0 ord0) ?H //; exact/val_inj.
@@ -794,7 +779,7 @@ have @p : prob.
   rewrite addRC leR_add2l addRC -leR_subl_addr subRR; exact/dist_ge0.
 rewrite (@convn3E _ _ p) //; last exact/eqP.
 rewrite convC.
-rewrite (convC _ (g ord_max)).
+rewrite (convC _ (g (Ordinal (erefl (2 < 3))))).
 case/boolP : (d ord_max == 1%R :> R) => dmax1.
   move/Dist1.dist1P in dmax1.
   by move: H1; rewrite dmax1 // dmax1 // addR0 => /ltRR.
@@ -813,7 +798,6 @@ case/boolP : (d ord0 == 0 :> R)%R => d00.
     by move: H1; rewrite (eqP d00) d10 addR0 => /ltRR.
   rewrite /= /S3.p02 !permE /= conv1.
   congr (g _ <| _ |> _).
-    exact/val_inj.
   apply/prob_ext => /=.
   rewrite PermDist.dE permE /=.
   rewrite (_ : Ordinal _ = ord_max) //; last exact/val_inj.
@@ -841,7 +825,6 @@ rewrite (@convn3E _ _ q) //; last first.
   rewrite PermDist.dE permE /= (_ : Ordinal _ = ord_max) //; exact/val_inj.
 rewrite /= !permE /=.
 congr (g _ <| _ |> (_ <| _ |> _)).
-  exact/val_inj.
   apply prob_ext => /=.
   rewrite !PermDist.dE !permE /= q_of_rsE /= p_of_rsE /=.
   rewrite (_ : Ordinal _ = ord_max); last exact/val_inj.
