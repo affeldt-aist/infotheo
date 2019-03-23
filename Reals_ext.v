@@ -517,7 +517,7 @@ Canonical Rpos_eqType := Eval hnf in EqType Rpos Rpos_eqMixin.
 
 Definition mkRpos x H := @Rpos.mk x (introT (ltRP _ _) H).
 
-Definition Rpos1 := mkRpos Rlt_0_1.
+Canonical Rpos1 := @mkRpos 1 Rlt_0_1.
 
 Lemma Rpos_gt0 (x : Rpos) : x > 0.
 Proof. by case: x => p /= /ltRP. Qed.

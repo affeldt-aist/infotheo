@@ -248,7 +248,7 @@ Inductive scaled_pt := Scaled of Rpos & A | Zero.
 
 Local Notation "a *: v" := (Scaled a v).
 
-Definition S1 := Scaled Rpos1.
+Definition S1 x := `Pos 1 *: x.
 
 Lemma Scaled_inj p : injective (Scaled p).
 Proof. by move=> x y []. Qed.
@@ -289,7 +289,8 @@ split.
   rewrite mul1R.
   by apply /leR_addl /ltRW /Rpos_gt0.
 Qed.
-Definition Rpos_prob r q := @Prob.mk _ (Rpos_prob_Op1 r q).
+Definition Rpos_prob (r q : Rpos) :=
+  @Prob.mk (r / `Pos (r + q)) (Rpos_prob_Op1 _ _).
 
 Lemma onem_div p q : q != 0 -> (p/q).~ = (q-p)/q.
 Proof.
@@ -313,15 +314,12 @@ Qed.
 Definition addpt a b :=
   match a, b with
   | r *: x, q *: y => `Pos (r + q) *: (x <| Rpos_prob r q |> y)
+  | _, Zero => a
   | Zero, _ => b
-  | _, _ => a
   end.
 
 Definition mkscaled r (q : Rpos) (x : A) :=
-  match Rlt_dec 0 r with
-  | left Hr => `Pos (mkRpos Hr * q) *: x
-  | right _ => Zero
-  end.
+  if Rlt_dec 0 r is left Hr then `Pos (mkRpos Hr * q) *: x else Zero.
 
 Definition scalept p (x : scaled_pt) :=
   if x is q *: y then mkscaled p q y else Zero.
@@ -365,7 +363,7 @@ Proof. by case: x. Qed.
 
 (* 3' *)
 Lemma add0pt x : addpt Zero x = x.
-Proof. by []. Qed.
+Proof. by case: x. Qed.
 
 Canonical addpt_monoid := Monoid.Law addptA add0pt addpt0.
 Canonical addpt_comoid := Monoid.ComLaw addptC.
