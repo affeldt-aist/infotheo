@@ -184,12 +184,12 @@ by rewrite /Rdiv -mulRA mulVR ?mulR1.
 Qed.
 
 Module ConvexSpace.
-Record class_of (car : Type) : Type := Class {
-  conv : car -> car -> prob -> car where "a <| p |> b" := (conv a b p);
+Record class_of (T : Type) : Type := Class {
+  conv : T -> T -> prob -> T where "a <| p |> b" := (conv a b p);
   _ : forall a b, a <| `Pr 1 |> b = a ;
   _ : forall a p, a <| p |> a = a ;
   _ : forall a b p, a <| p |> b = b <| `Pr p.~ |> a;
-  _ : forall (p q : prob) (a b c : car),
+  _ : forall (p q : prob) (a b c : T),
       a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c
 }.
 Structure t : Type := Pack { car : Type ; class : class_of car }.
@@ -786,8 +786,8 @@ End is_convex_set.
 
 Section hull_def.
 Local Open Scope classical_set_scope.
-Definition hull (A : convType) (X : set A) : set A :=
-  [set d | exists n, exists g : 'I_n -> A, exists e : {dist 'I_n}, g @` setT `<=` X /\ d = \Sum_e g].
+Definition hull (T : convType) (X : set T) : set T :=
+  [set p : T | exists n (g : 'I_n -> T) d, g @` setT `<=` X /\ p = \Sum_d g].
 End hull_def.
 
 Section hull_prop.
@@ -1184,12 +1184,11 @@ Canonical pairConvType := ConvexSpace.Pack pairConvMixin.
 End pair_convex_space.
 
 Module OrderedConvexSpace.
-Record mixin_of (car : convType) : Type := Mixin {
-  leconv : car -> car -> Prop;
-  _ : forall a, leconv a a;
-  _ : forall b a c, leconv a b -> leconv b c -> leconv a c;
-  _ : forall a b, a = b <-> leconv a b /\ leconv b a;
-}.
+Record mixin_of (T : convType) : Type := Mixin {
+  leconv : T -> T -> Prop where "a <= b" := (leconv a b);
+  _ : forall a, a <= a;
+  _ : forall b a c, a <= b -> b <= c -> a <= c;
+  _ : forall a b, a = b <-> a <= b /\ b <= a }.
 Record class_of (car : Type) := Class {
   base : ConvexSpace.class_of car;
   mixin : mixin_of (ConvexSpace.Pack base);
@@ -1314,7 +1313,8 @@ Section convex_function_def.
 Local Open Scope ordered_convex_scope.
 Variables (A : convType) (B : orderedConvType).
 
-Definition convex_function_at (f : A -> B) a b t := f (a <| t |> b) <= f a <| t |> f b.
+Definition convex_function_at (f : A -> B) a b p :=
+  f (a <| p |> b) <= f a <| p |> f b.
 
 (* NB(rei): move from 'I_n -> A to 'rV[A]_n? *)
 Definition convex_function_at_Convn (f : A -> B) n (a : 'I_n -> A) (t : {dist 'I_n}) :=
@@ -1618,8 +1618,10 @@ End R_affine_function_prop.
 
 Section convex_function_in_def.
 Variables (A : convType) (D : convex_set A) (f : A -> R).
-Definition convex_function_in := forall a b t, a \in D -> b \in D -> convex_function_at f a b t.
-Definition concave_function_in := forall a b t, a \in D -> b \in D -> concave_function_at f a b t.
+Definition convex_function_in :=
+  forall a b p, a \in D -> b \in D -> convex_function_at f a b p.
+Definition concave_function_in :=
+  forall a b p, a \in D -> b \in D -> concave_function_at f a b p.
 End convex_function_in_def.
 
 Section dist_convex_space.
