@@ -411,11 +411,9 @@ case: x => [r y|]; by [rewrite scalept_gt0 | rewrite scaleptR0 mulR0].
 Qed.
 
 (* 6 *)
-Lemma scalept_addpt r :
-  0 <= r -> {morph scalept r : x y / addpt x y >-> addpt x y}.
+Lemma scalept_addpt r : {morph scalept r : x y / addpt x y >-> addpt x y}.
 Proof.
-case=> Hr x y; last by rewrite -Hr !scalept0 addpt0.
-rewrite /scalept; case: Rlt_dec => // {Hr}Hr.
+rewrite /scalept; case: Rlt_dec => // Hr x y.
 case: x => [p x|]; last by rewrite !add0pt.
 case: y => [q y|]; last by rewrite !addpt0.
 congr Scaled. by apply val_inj => /=; rewrite mulRDr.
@@ -425,8 +423,8 @@ congr Conv; apply prob_ext; rewrite /= -mulRDr divRM //.
 by apply/eqP/Rpos_neq0.
 Qed.
 
-Definition big_scalept q (H : 0 <= q) :=
-  big_morph (scalept q) (scalept_addpt H) (scaleptR0 _).
+Definition big_scalept q :=
+  big_morph (scalept q) (scalept_addpt q) (scaleptR0 _).
 
 (* 7 *)
 Lemma scalept_comp p q x :
@@ -490,7 +488,7 @@ Proof. by rewrite (big_morph weight weight_addpt weight0). Qed.
 
 Lemma scalept_bary p (H : 0 <= p) pts :
   scalept p (barycenter pts) = barycenter (map (scalept p) pts).
-Proof. by rewrite big_scalept // /barycenter big_map. Qed.
+Proof. by rewrite big_scalept /barycenter big_map. Qed.
 
 Lemma barycenter_perm n (F : 'I_n -> scaled_pt) (pe : 'S_n) :
   \big[addpt/Zero]_(i < n) F i = \big[addpt/Zero]_(i < n) F (pe i).
@@ -510,7 +508,7 @@ Lemma barycenter_convdist :
      (\big[addpt/Zero]_(j < m) scalept (q i j) (h j))
   = \big[addpt/Zero]_(j < m) scalept (ConvDist.d p q j) (h j).
 Proof.
-rewrite (eq_bigr _ (fun i _ => big_scalept (pos_ff_ge0 p i) _ _ _)).
+rewrite (eq_bigr _ (fun i _ => big_scalept (p i) _ _ _)).
 rewrite exchange_big /=; apply eq_bigr => j _.
 rewrite ConvDist.dE.
 have HF : forall i, 0 <= p i * q i j by move=> i; apply/mulR_ge0; apply/dist_ge0.
@@ -935,12 +933,11 @@ Lemma AddDist_conv n m p (g : 'I_(n+m) -> A)(d : {dist 'I_n})(e : {dist 'I_m}) :
   \Sum_d (g \o @lshift n m) <|p|> \Sum_e (g \o @rshift n m).
 Proof.
 apply S1_inj; rewrite S1_conv !S1_convn.
-rewrite /Conv /= /scaled_conv big_split_ord !(big_scalept (prob_ge0 _)) /=.
+rewrite /Conv /= /scaled_conv big_split_ord !big_scalept /=.
 congr addpt; apply eq_bigr => i _;
   rewrite (scalept_comp (S1 _) (prob_ge0 _) (dist_ge0 _ _));
   by rewrite AddDist.dE (split_lshift,split_rshift).
 Qed.
-
 Lemma convex_hull (X : set A) : is_convex_set (hull X).
 Proof.
 apply/asboolP => x y p; rewrite 2!in_setE.
