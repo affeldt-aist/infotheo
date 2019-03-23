@@ -318,11 +318,11 @@ Definition addpt a b :=
   | Zero, _ => b
   end.
 
-Definition mkscaled r (q : Rpos) (x : A) :=
-  if Rlt_dec 0 r is left Hr then `Pos (mkRpos Hr * q) *: x else Zero.
-
 Definition scalept p (x : scaled_pt) :=
-  if x is q *: y then mkscaled p q y else Zero.
+  match Rlt_dec 0 p, x with
+  | left Hr, q *: y => `Pos (mkRpos Hr * q) *: y
+  | _, _ => Zero
+  end.
 
 (* 1 *)
 Lemma addptC : commutative addpt.
@@ -375,36 +375,29 @@ Lemma weight0 : weight Zero = 0.
 Proof. by []. Qed.
 
 Lemma scaleptR0 p : scalept p Zero = Zero.
-Proof. by []. Qed.
-
-Lemma mkscaled_gt0 r (p : Rpos) (x : A) (H : r > 0) :
-  mkscaled r p x = `Pos (mkRpos H * p) *: x.
-Proof.
-rewrite /mkscaled; case: Rlt_dec => // Hr.
-congr Scaled; by apply val_inj.
-Qed.
+Proof. by rewrite /scalept; case: Rlt_dec. Qed.
 
 Lemma scalept_gt0 p (q : Rpos) x (H : 0 < p) :
   scalept p (q *: x) = `Pos (mkRpos H * q) *: x.
-Proof. by rewrite /= mkscaled_gt0. Qed.
-
-Lemma mkscaled0 r x : mkscaled 0 r x = Zero.
-Proof. rewrite /mkscaled; case: Rlt_dec => // Hr; by elim (ltRR 0). Qed.
+Proof.
+rewrite /scalept; case: Rlt_dec => // Hr.
+congr Scaled; by apply val_inj.
+Qed.
 
 (* 4 *)
 Lemma scalept0 x : scalept 0 x = Zero.
-Proof. case: x => //= r c; by rewrite mkscaled0. Qed.
+Proof. rewrite /scalept; case: Rlt_dec => // Hr; by elim (ltRR 0). Qed.
 
 (* 5 *)
 Lemma scalept1 x : scalept 1 x = x.
 Proof.
-case: x => // r c; rewrite scalept_gt0.
+case: x => [r c|]; rewrite ?scaleptR0 // scalept_gt0.
 congr Scaled; apply val_inj; by rewrite /= mul1R.
 Qed.
 
 Lemma scalept_Scaled p q x : scalept p (q *: x) = scalept (p*q) (S1 x).
 Proof.
-rewrite /= /mkscaled.
+rewrite /scalept.
 case: Rlt_dec => Hp; case: Rlt_dec => Hpq //.
 - congr Scaled; apply val_inj; by rewrite /= mulR1.
 - elim Hpq; by apply /mulR_gt0 /Rpos_gt0.
@@ -414,7 +407,7 @@ Qed.
 Lemma scalept_weight p x : 0 <= p -> weight (scalept p x) = p * weight x.
 Proof.
 case=> Hp; last by rewrite -Hp scalept0 mul0R.
-by case: x => [q y|]; [rewrite scalept_gt0 | rewrite mulR0].
+case: x => [r y|]; by [rewrite scalept_gt0 | rewrite scaleptR0 mulR0].
 Qed.
 
 (* 6 *)
@@ -422,10 +415,10 @@ Lemma scalept_addpt r :
   0 <= r -> {morph scalept r : x y / addpt x y >-> addpt x y}.
 Proof.
 case=> Hr x y; last by rewrite -Hr !scalept0 addpt0.
+rewrite /scalept; case: Rlt_dec => // {Hr}Hr.
 case: x => [p x|]; last by rewrite !add0pt.
 case: y => [q y|]; last by rewrite !addpt0.
-rewrite !scalept_gt0; congr Scaled.
-  by apply val_inj; rewrite /= mulRDr.
+congr Scaled. by apply val_inj => /=; rewrite mulRDr.
 have Hr0 : r <> 0 by apply gtR_eqF.
 congr Conv; apply prob_ext; rewrite /= -mulRDr divRM //.
   rewrite /Rdiv -(mulRAC r) mulRV ?mul1R //; by apply /eqP.
@@ -440,9 +433,9 @@ Lemma scalept_comp p q x :
   0 <= p -> 0 <= q -> scalept p (scalept q x) = scalept (p * q) x.
 Proof.
 case=> Hp; last by rewrite -Hp mul0R !scalept0.
-case=> Hq; last by rewrite -Hq mulR0 !scalept0.
-case: x => [r x|] //; rewrite !scalept_gt0; first by apply mulR_gt0.
-move=> Hpq; congr Scaled; apply val_inj; by rewrite /= mulRA.
+case=> Hq; last by rewrite -Hq mulR0 scalept0 scaleptR0.
+case: x => [r x|]; rewrite ?scaleptR0 // !scalept_gt0; first by apply mulR_gt0.
+move=> Hpq; congr Scaled; apply val_inj => /=; by rewrite mulRA.
 Qed.
 
 (* 13 *)
@@ -452,10 +445,9 @@ Lemma scalept_addR p q x :
 Proof.
 case=> Hp; last by rewrite -Hp scalept0 add0R add0pt.
 case=> Hq; last by rewrite -Hq scalept0 addR0 addpt0.
-case: x => // r c; rewrite !scalept_gt0.
-  by apply addR_gt0.
-move=> Hpq /=; rewrite convmm; congr Scaled.
-apply val_inj; by rewrite /= mulRDl.
+case: x => [r c|]; last by rewrite !scaleptR0.
+rewrite !scalept_gt0 => [|Hpq /=]; first by apply addR_gt0.
+rewrite convmm; congr Scaled; apply val_inj; by rewrite /= mulRDl.
 Qed.
 
 Lemma scalept_rsum (B : finType) (F : B -> R+) x :
@@ -638,12 +630,12 @@ Definition map_scaled (x : scaled_pt A) :=
 Lemma map_scaled_affine p :
   {morph map_scaled : x y / x <|p|> y >-> x <|p|> y}.
 Proof.
-move=> [q x|] [r y|] //=; rewrite /Conv /= /scaled_conv ?scaleptR0.
-+ rewrite !(scalept_Scaled p) !(scalept_Scaled p.~) /= /mkscaled.
+move=> [q x|] [r y|] /=; rewrite /Conv /= /scaled_conv ?scaleptR0 //.
++ rewrite !(scalept_Scaled p) !(scalept_Scaled p.~) /= /scalept.
   case: Rlt_dec => Hpq; case: Rlt_dec => Hpr //=; congr Scaled.
   by rewrite prj_affine.
-+ rewrite !addpt0 !(scalept_Scaled p) /= /mkscaled; by case: Rlt_dec.
-+ rewrite !add0pt !(scalept_Scaled p.~) /= /mkscaled; by case: Rlt_dec.
++ rewrite !addpt0 !(scalept_Scaled p) /= /scalept; by case: Rlt_dec.
++ rewrite !add0pt !(scalept_Scaled p.~) /= /scalept; by case: Rlt_dec.
 Qed.
 
 Lemma S1_convn_proj n (points : 'I_n -> A) d :
@@ -657,12 +649,12 @@ elim: n points d => [|n IH] points d.
 rewrite /=.
 case: eqVneq => Hd.
   rewrite (bigD1 ord0) ?inE // Hd big1 /=.
-    rewrite addpt0 (mkscaled_gt0 _ _ Rlt_0_1).
+    rewrite addpt0 (scalept_gt0 _ _ Rlt_0_1).
     by congr Scaled; apply val_inj; rewrite /= mulR1.
   move=> i Hi; have := epmf1 d.
   rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ R1)).
   rewrite addRK subRR => /prsumr_eq0P -> //.
-    by rewrite mkscaled0.
+    by rewrite scalept0.
   by move=> a _; exact/dist_ge0.
 set d' := DelDist.d Hd.
 set points' := fun i => points (DelDist.h ord0 i).
@@ -696,9 +688,9 @@ Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Sum_d g = g i.
 Proof.
 move=> Hd; apply S1_inj.
 rewrite S1_convn (bigD1 i) ?inE //=.
-rewrite big1; first by rewrite addpt0 Hd -(scalept1 (S1 _)).
+rewrite big1; first by rewrite addpt0 Hd scalept1.
 move=> j Hj.
-move/eqP/Dist1.dist1P: Hd => -> //; by rewrite mkscaled0.
+move/eqP/Dist1.dist1P: Hd => -> //; by rewrite scalept0.
 Qed.
 
 Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Sum_(Dist1.d j) g = g j.
@@ -926,7 +918,7 @@ Qed.
 Lemma scalept_scaled_set (D : {convex_set A}) r x :
   x \in scaled_set D -> scalept r x \in scaled_set D.
 Proof.
-case: x => //= p x; rewrite !in_setE /scaled_set /mkscaled; by case: Rlt_dec.
+rewrite /scalept; case: Rlt_dec => //= Hr; by [case: x | rewrite !in_setE].
 Qed.
 
 Lemma scaled_set_extract (D : {convex_set A}) x (H : (0 < weight _ x)%R) :
@@ -1065,7 +1057,7 @@ Qed.
 Lemma scaleR0 : scaleR (@Zero _) = R0. by []. Qed.
 Lemma scaleR_scalept p x : (0 <= p -> scaleR (scalept p x) = p * scaleR x)%R.
 Proof.
-case: x => [q y|] //; last by rewrite mulR0.
+case: x => [q y|]; last by rewrite scaleptR0 mulR0.
 case=> Hp. by rewrite scalept_gt0 /= mulRA.
 by rewrite -Hp scalept0 mul0R.
 Qed.
