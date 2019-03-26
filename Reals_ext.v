@@ -219,18 +219,21 @@ Qed.
 
 Canonical probIZR (p : positive) := @Prob.mk _ (prob_IZR p).
 
-Lemma prob_addn (n m : nat) : (R0 <= INR n / INR (n + m) <= R1)%R.
+Definition divRnnm n m := INR n / INR (n + m).
+
+Lemma prob_divRnnm n m : (0 <= divRnnm n m <= 1)%R.
 Proof.
+rewrite /divRnnm.
 have [/eqP ->|n0] := boolP (n == O); first by rewrite div0R; exact OO1.
 split; first by apply divR_ge0; [exact: leR0n | rewrite ltR0n addn_gt0 lt0n n0].
 by rewrite leR_pdivr_mulr ?mul1R ?leR_nat ?leq_addr // ltR0n addn_gt0 lt0n n0.
 Qed.
 
-Canonical probaddn (n m : nat) := @Prob.mk (INR n / INR (n + m)) (prob_addn n m).
+Canonical probdivRnnm (n m : nat) := @Prob.mk (divRnnm n m) (prob_divRnnm n m).
 
 Lemma prob_invn (m : nat) : (R0 <= / INR (1 + m) <= R1)%R.
 Proof.
-rewrite -(mul1R (/ _)%R) (_ : 1%R = INR 1) // -/(Rdiv _ _); exact: prob_addn.
+rewrite -(mul1R (/ _)%R) (_ : 1%R = INR 1) // -/(Rdiv _ _); exact: prob_divRnnm.
 Qed.
 
 Canonical probinvn (n : nat) := @Prob.mk (/ INR (1 + n)) (prob_invn n).
@@ -532,3 +535,17 @@ Canonical addRpos x y := Rpos.mk (addRpos_gt0 x y).
 Lemma mulRpos_gt0 (x y : Rpos) : x * y >b 0.
 Proof. by apply/ltRP/mulR_gt0; apply/Rpos_gt0. Qed.
 Canonical mulRpos x y := Rpos.mk (mulRpos_gt0 x y).
+
+Lemma divRpos_gt0 (x y : Rpos) : x / y >b 0.
+Proof. by apply/ltRP/divR_gt0; apply/Rpos_gt0. Qed.
+Canonical divRpos x y := Rpos.mk (divRpos_gt0 x y).
+
+Lemma prob_divRposxxy (x y : Rpos) : (0 <= `Pos (x / (x + y)) <= 1)%R.
+Proof.
+split.
+  apply/divR_ge0; [exact/ltRW/Rpos_gt0 | exact/ltRP/addRpos_gt0].
+rewrite leR_pdivr_mulr ?mul1R; last exact/ltRP/addRpos_gt0.
+by rewrite leR_addl; apply/ltRW/Rpos_gt0.
+Qed.
+
+Canonical divRposxxt (x y : Rpos) := @Prob.mk _ (prob_divRposxxy x y).

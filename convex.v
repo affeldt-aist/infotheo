@@ -313,7 +313,7 @@ Qed.
 
 Definition addpt a b :=
   match a, b with
-  | r *: x, q *: y => `Pos (r + q) *: (x <| Rpos_prob r q |> y)
+  | r *: x, q *: y => `Pos (r + q) *: (x <| `Pr (`Pos (r / (r + q))) |> y)
   | _, Zero => a
   | Zero, _ => b
   end.
@@ -324,28 +324,37 @@ Definition scalept p (x : scaled_pt) :=
   | _, _ => Zero
   end.
 
+Lemma onem_divRxxy (r q : Rpos) : (r / (r + q)).~ = q / (q + r).
+Proof.
+rewrite /onem subR_eq (addRC r) -mulRDl mulRV //.
+exact/eqP/gtR_eqF/ltRP/addRpos_gt0.
+Qed.
+
 (* 1 *)
 Lemma addptC : commutative addpt.
 Proof.
 move=> [r x|] [q y|] //=.
 congr Scaled. by apply val_inj; rewrite /= addRC.
-rewrite convC; congr Conv.
-by rewrite [RHS]Rpos_probC.
+rewrite convC; congr Conv; exact/prob_ext/onem_divRxxy.
 Qed.
 
 Lemma s_of_Rpos_probA (p q r : Rpos) :
-  [s_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob (`Pos (p + q)) r.
+  [s_of `Pr `Pos (p / (p + (q + r))), `Pr `Pos (q / (q + r))] = `Pr `Pos ((p + q) / (p + q + r)).
+(*  [s_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob (`Pos (p + q)) r.*)
 Proof.
-apply prob_ext; rewrite s_of_pqE /onem /=; field.
-split; apply /eqP /Rpos_neq0.
+apply prob_ext => /=; rewrite s_of_pqE /onem /=; field.
+split; exact/eqP/Rpos_neq0.
 Qed.
 
 Lemma r_of_Rpos_probA (p q r : Rpos) :
-  [r_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob p q.
+  [r_of `Pr `Pos (p / (p + (q + r))), `Pr `Pos (q / (q + r))] = `Pr `Pos (p / (p + q)).
+(*  [r_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob p q.*)
 Proof.
-apply prob_ext; rewrite r_of_pqE s_of_pqE Rpos_probC (Rpos_probC r) /=.
-rewrite !onemK -(addRC p) addRA (addRC r) /onem; field.
-do! split; apply /eqP /Rpos_neq0.
+apply/prob_ext => /=; rewrite r_of_pqE s_of_pqE /onem /=; field.
+do 3 (split; first exact/eqP/Rpos_neq0).
+rewrite (addRC p (q + r)) addRK {4}[in q + r]addRC addRK.
+rewrite mulRC -mulRBr (addRC _ p) addRA addRK mulR_neq0.
+split; exact/eqP/Rpos_neq0.
 Qed.
 
 (* 2 *)
@@ -353,8 +362,8 @@ Lemma addptA : associative addpt.
 Proof.
 move=> [p x|] [q y|] [r z|] //=.
 congr Scaled. by apply val_inj; rewrite /= addRA.
-rewrite convA; congr Conv; last by rewrite s_of_Rpos_probA.
-congr Conv; by rewrite r_of_Rpos_probA.
+rewrite convA; congr Conv; last exact: s_of_Rpos_probA.
+congr Conv; exact: r_of_Rpos_probA.
 Qed.
 
 (* 3 *)
