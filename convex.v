@@ -13,8 +13,8 @@ Import Prenex Implicits.
 
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
 Reserved Notation "{ 'convex_set' T }" (format "{ 'convex_set'  T }").
-Reserved Notation "'\Sum_' d f" (at level 36, f at level 36, d at level 0,
-  format "\Sum_ d  f").
+Reserved Notation "'\Conv_' d f" (at level 36, f at level 36, d at level 0,
+  format "\Conv_ d  f").
 
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
@@ -624,7 +624,7 @@ Fixpoint Convn n : {dist 'I_n} -> ('I_n -> A) -> A :=
     end
   end.
 
-Local Notation "'\Sum_' d f" := (Convn d f).
+Local Notation "'\Conv_' d f" := (Convn d f).
 
 Section with_affine_projection.
 Variable B : convType.
@@ -646,7 +646,7 @@ move=> [q x|] [r y|] /=; rewrite /Conv /= /scaled_conv ?scaleptR0 //.
 Qed.
 
 Lemma S1_convn_proj n (points : 'I_n -> A) d :
-  S1 (prj (\Sum_d points)) =
+  S1 (prj (\Conv_d points)) =
   \big[@addpt B/Zero B]_(i < n) scalept (d i) (S1 (prj (points i))).
 Proof.
 elim: n points d => [|n IH] points d.
@@ -680,18 +680,18 @@ Qed.
 End with_affine_projection.
 
 Lemma S1_convn n (points : 'I_n -> A) d :
-  S1 (\Sum_d points) =
+  S1 (\Conv_d points) =
   \big[@addpt A/Zero A]_(i < n) scalept (d i) (S1 (points i)).
 Proof. by rewrite (@S1_convn_proj _ (@id A)). Qed.
 
 Lemma eq_convn n g1 g2 (d1 d2 : {dist 'I_n}) :
-  g1 =1 g2 -> d1 =1 d2 -> \Sum_d1 g1 = \Sum_d2 g2.
+  g1 =1 g2 -> d1 =1 d2 -> \Conv_d1 g1 = \Conv_d2 g2.
 Proof.
 move=> Hg Hd; apply S1_inj; rewrite !S1_convn.
 apply congr_big => // i _; by rewrite Hg Hd.
 Qed.
 
-Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Sum_d g = g i.
+Lemma convn_proj n g (d : {dist 'I_n}) i : d i = R1 -> \Conv_d g = g i.
 Proof.
 move=> Hd; apply S1_inj.
 rewrite S1_convn (bigD1 i) ?inE //=.
@@ -700,17 +700,17 @@ move=> j Hj.
 move/eqP/Dist1.dist1P: Hd => -> //; by rewrite scalept0.
 Qed.
 
-Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Sum_(Dist1.d j) g = g j.
+Lemma ConvnDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Conv_(Dist1.d j) g = g j.
 Proof. by apply convn_proj; rewrite Dist1.dE eqxx. Qed.
 
-Lemma convn1E g (e : {dist 'I_1}) : \Sum_ e g = g ord0.
+Lemma convn1E g (e : {dist 'I_1}) : \Conv_ e g = g ord0.
 Proof.
 rewrite /=; case: eqVneq => [//|H]; exfalso; move/eqP: H; apply.
 by apply/eqP; rewrite Dist1.one (Dist1.I1 e).
 Qed.
 
 Lemma convnE n g (d : {dist 'I_n.+1}) (i1 : d ord0 != 1%R) :
-  \Sum_d g = g ord0 <| probdist d ord0 |> \Sum_(DelDist.d i1) (fun x => g (DelDist.h ord0 x)).
+  \Conv_d g = g ord0 <| probdist d ord0 |> \Conv_(DelDist.d i1) (fun x => g (DelDist.h ord0 x)).
 Proof.
 rewrite /=; case: eqVneq => /= H.
 exfalso; by rewrite H eqxx in i1.
@@ -718,7 +718,7 @@ by rewrite (eq_irrelevance H i1).
 Qed.
 
 Lemma convn2E g (d : {dist 'I_2}) :
-  \Sum_d g = g ord0 <| probdist d ord0 |> g (lift ord0 ord0).
+  \Conv_d g = g ord0 <| probdist d ord0 |> g (lift ord0 ord0).
 Proof.
 case/boolP : (d ord0 == 1%R) => [|i1].
   rewrite Dist1.one => /eqP ->; rewrite ConvnDist1.
@@ -730,14 +730,14 @@ Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2 *)
 Lemma Convn_perm (n : nat) (d : {dist 'I_n}) (g : 'I_n -> A) (s : 'S_n) :
-  \Sum_d g = \Sum_(PermDist.d d s) (g \o s).
+  \Conv_d g = \Conv_(PermDist.d d s) (g \o s).
 Proof.
 apply S1_inj; rewrite !S1_convn (barycenter_perm _ s).
 apply eq_bigr => i _; by rewrite PermDist.dE.
 Qed.
 End convex_space_prop.
 
-Notation "'\Sum_' d f" := (Convn d f) : convex_scope.
+Notation "'\Conv_' d f" := (Convn d f) : convex_scope.
 
 Section is_convex_set.
 Local Open Scope classical_set_scope.
@@ -759,7 +759,7 @@ Lemma is_convex_setT : is_convex_set setT.
 Proof. apply/asboolP => ? ? ? _ _; by rewrite in_setE. Qed.
 
 Definition is_convex_set_n (X : set A) : bool :=
-  `[< forall n (g : 'I_n -> A) (d : {dist 'I_n}), g @` setT `<=` X -> \Sum_d g \in X >].
+  `[< forall n (g : 'I_n -> A) (d : {dist 'I_n}), g @` setT `<=` X -> \Conv_d g \in X >].
 
 Lemma is_convex_setP (X : set A) : is_convex_set X = is_convex_set_n X.
 Proof.
@@ -773,14 +773,14 @@ apply/idP/idP => H; apply/asboolP; last first.
   move=> p1'.
   rewrite {1}/g eqxx (_ : probdist _ _ = p); last first.
     by apply prob_ext => /=; rewrite I2Dist.dE eqxx.
-  by rewrite (_ : \Sum_ _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?convn1E.
+  by rewrite (_ : \Conv_ _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?convn1E.
 elim => [g d|n IH g d]; first by move: (distI0_False d).
 destruct n as [|n] => gX.
   rewrite {IH} (@convn_proj _ _ _ _ ord0) //.
   rewrite in_setE; exact/gX/classical_sets.imageP.
   by apply/eqP; rewrite Dist1.one (Dist1.I1 d).
 case/boolP : (d ord0 == 1%R) => [/eqP|]d01.
-  suff -> : \Sum_d g = g ord0 by rewrite in_setE; apply gX; exists ord0.
+  suff -> : \Conv_d g = g ord0 by rewrite in_setE; apply gX; exists ord0.
   by rewrite (@convn_proj _ _ _ _ ord0).
 set D : {dist 'I_n.+1} := DelDist.d d01.
 pose G (i : 'I_n.+1) : A := g (DelDist.h (@ord0 _) i).
@@ -796,7 +796,7 @@ End is_convex_set.
 Section hull_def.
 Local Open Scope classical_set_scope.
 Definition hull (T : convType) (X : set T) : set T :=
-  [set p : T | exists n (g : 'I_n -> T) d, g @` setT `<=` X /\ p = \Sum_d g].
+  [set p : T | exists n (g : 'I_n -> T) d, g @` setT `<=` X /\ p = \Conv_d g].
 End hull_def.
 
 Section hull_prop.
@@ -938,8 +938,8 @@ Lemma split_rshift n m (i : 'I_m) : fintype.split (rshift n i) = inr i.
 Proof. by rewrite -/(unsplit (inr i)) unsplitK. Qed.
 
 Lemma AddDist_conv n m p (g : 'I_(n+m) -> A)(d : {dist 'I_n})(e : {dist 'I_m}) :
-  \Sum_(AddDist.d d e p) g =
-  \Sum_d (g \o @lshift n m) <|p|> \Sum_e (g \o @rshift n m).
+  \Conv_(AddDist.d d e p) g =
+  \Conv_d (g \o @lshift n m) <|p|> \Conv_e (g \o @rshift n m).
 Proof.
 apply S1_inj; rewrite S1_conv !S1_convn.
 rewrite /Conv /= /scaled_conv big_split_ord !big_scalept /=.
@@ -1069,7 +1069,7 @@ by rewrite -Hp scalept0 mul0R.
 Qed.
 Definition big_scaleR := big_morph scaleR scaleR_addpt scaleR0.
 Definition avgn n (g : 'I_n -> R) (e : {dist 'I_n}) := \rsum_(i < n) (e i * g i)%R.
-Lemma avgnE n (g : 'I_n -> R) e : \Sum_e g = avgn g e.
+Lemma avgnE n (g : 'I_n -> R) e : \Conv_e g = avgn g e.
 Proof.
 rewrite -[LHS]Scaled1RK S1_convn big_scaleR.
 apply eq_bigr => i _.
@@ -1327,7 +1327,7 @@ Definition convex_function_at (f : A -> B) a b p :=
 
 (* NB(rei): move from 'I_n -> A to 'rV[A]_n? *)
 Definition convex_function_at_Convn (f : A -> B) n (a : 'I_n -> A) (t : {dist 'I_n}) :=
-  f (\Sum_t a) <= \Sum_t (f \o a).
+  f (\Conv_t a) <= \Conv_t (f \o a).
 
 Definition strictly_convexf_at (f : A -> B) := forall a b (t : prob),
   a <> b -> (0 < t < 1)%R -> convex_function_at f a b t.
@@ -1597,7 +1597,7 @@ Definition affine_function_comp (A B C : convType) (f : {affine A -> B}) (g : {a
   {affine A -> C} := AffineFunction (affine_function_comp_proof f g).
 Lemma affine_function_Sum (A B : convType) (f : {affine A -> B}) (n : nat)
                           (g : 'I_n -> A) (e : {dist 'I_n}) :
-  f (\Sum_e g) = \Sum_e (f \o g).
+  f (\Conv_e g) = \Conv_e (f \o g).
 Proof.
 Import ScaledConvex.
 apply S1_inj; rewrite S1_convn S1_convn_proj //.
@@ -1646,7 +1646,7 @@ Canonical dist_convType := ConvexSpace.Pack dist_convMixin.
 (* Reuse the morphisms from R_convex_space. *)
 Import ScaledConvex.
 Lemma convn_convdist (n : nat) (g : 'I_n -> dist A) (d : {dist 'I_n}) :
-  \Sum_d g = ConvDist.d d g.
+  \Conv_d g = ConvDist.d d g.
 Proof.
 apply dist_ext=> a; rewrite -[LHS]Scaled1RK.
 rewrite (@S1_convn_proj _ _ (@^~ a \o @pos_ff _ \o @pmf _)); last first.
