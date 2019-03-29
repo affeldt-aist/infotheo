@@ -672,7 +672,7 @@ apply/onem_ge0; rewrite -(mulR1 1%R); apply leR_pmul;
   [exact/onem_ge0 | exact/onem_ge0 | exact/onem_le1 | exact/onem_le1].
 Qed.
 
-Definition s_of_pq (p q : prob) : prob := locked (Prob.mk (s_of_pq_prob p q)).
+Definition s_of_pq (p q : prob) : prob := locked (`Pr (p.~ * q.~).~).
 
 Notation "[ 's_of' p , q ]" := (s_of_pq p q) (format "[ 's_of'  p ,  q ]") : proba_scope.
 

@@ -735,6 +735,15 @@ Proof.
 apply S1_inj; rewrite !S1_convn (barycenter_perm _ s).
 apply eq_bigr => i _; by rewrite PermDist.dE.
 Qed.
+
+(* ref: M.H.Stone, postulates for the barycentric calculus, lemma 4 *)
+Theorem Convn_convdist (n m : nat) (d : {dist 'I_n})
+        (e : 'I_n -> {dist 'I_m}) (x : 'I_m -> A) :
+  \Conv_d (fun i => \Conv_(e i) x) = \Conv_(ConvDist.d d e) x.
+Proof.
+apply S1_inj; rewrite !S1_convn -barycenter_convdist.
+apply eq_bigr => i _; by rewrite S1_convn.
+Qed.
 End convex_space_prop.
 
 Notation "'\Conv_' d f" := (Convn d f) : convex_scope.
