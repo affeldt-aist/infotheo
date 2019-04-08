@@ -13,6 +13,7 @@ bigop_ext.v
 Rbigop.v
 proba.v
 dist.v
+dist_wip.v
 cproba.v
 jensen.v
 chap2.v
