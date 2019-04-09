@@ -6,7 +6,7 @@ error-correcting codes.
 ** Requirements
 
 - [[https://coq.inria.fr][Coq 8.9.0]]
-- [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.7.0
+- [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.8.0
 - [[https://github.com/math-comp/analysis][MathComp-Analysis]] github master version
   which requires
   + [[https://github.com/math-comp/bigenough/][bigenough]] first release

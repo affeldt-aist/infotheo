@@ -177,7 +177,8 @@ Definition dprojs_V d n0 t : {ffun 'I_m -> 'rV_n} := dprojs d (sgraph n0) t.
 Lemma pfamily_dprojs_V d n0 t : dprojs d (sgraph n0) t \in
   pfamily d ('F n0) (fun m0 => [pred t | freeon (sgraph n0 m0) d t]).
 Proof.
-apply/pfamilyP; split.
+pose pT : predType _ := [predType of simpl_pred 'rV['F_2]_n].
+apply/(@pfamilyP _ _ pT); split.
   apply/supportP => m0 n0m0.
   apply/rowP => n1.
   rewrite dprojs_out //.
@@ -371,7 +372,8 @@ rewrite in_setD1 negb_and negbK.
 case/boolP : (n2 == n1) => [/eqP ?|/=]; last first.
   by move/(Fgraph_Vnext_Vgraph Hm2 n2m2) => ->.
 subst n2 => /=.
-case/pfamilyP : H0 => H0 /(_ _ Hn1).
+pose pT : predType _ := [predType of simpl_pred 'rV['F_2]_n].
+case/(@pfamilyP _ _ pT): H0 => H0 /(_ _ Hn1).
 rewrite inE => /andP[_].
 move/eqP/rowP/(_ n1).
 rewrite comb_dprojs_V_not_in_partition; last first.
@@ -475,7 +477,8 @@ Lemma dprojs_V2_pfamily d m0 n0 (m0n0 : n0 \in 'V m0) t d'
       \in pfamily d (`F n1 :\ m0) (fun m1 => freeon (`V(m1, n1) :\ n1) d)) &&
         (comb_V H d n1 (dprojs_V H d n1 t0) == t0)]).
 Proof.
-apply/pfamilyP; split.
+pose pT : predType _ := [predType of simpl_pred 'rV['F_2]_n].
+apply/(@pfamilyP _ _ pT); split.
   apply/supportP => n1.
   rewrite 2!inE /= negb_and negbK.
   case/orP => [ /eqP ->{n1}| m0n1].
@@ -633,7 +636,8 @@ rewrite dproj_in //.
 move: K.
 rewrite /= in_setD1.
 case/andP => n1n0 Hn1.
-case/pfamilyP : Hpfamily => _ /(_ n1).
+pose pT : predType _ := [predType of simpl_pred 'rV['F_2]_n].
+case/(@pfamilyP _ _ pT): Hpfamily => _ /(_ n1).
 rewrite inE in_set1 n1n0 /= => /(_ Hn1).
 rewrite {1}/in_mem /=.
 case/andP => /pfamilyP[Hlhs11 Hlhs12].

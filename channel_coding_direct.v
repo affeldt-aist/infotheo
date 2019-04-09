@@ -234,7 +234,7 @@ Lemma sum_rV_ffun (I J : finType) (F : {ffun I -> J} -> R)
 Proof.
 Local Open Scope ring_scope.
 move=> Hzero.
-rewrite (reindex_onto (fun y : {ffun _ -> _} => \row_(i < _) y (enum_val i))
+rewrite (reindex_onto (fun y : {ffun _ -> J} => \row_(i < _) y (enum_val i))
                       (fun p => [ffun x => p ord0 (enum_rank x)])) //.
   apply eq_big.
     move=> t /=.
@@ -359,10 +359,10 @@ transitivity (\rsum_(v : 'rV[A]_n)
   (W ``(| v)) y) *
     \rsum_(j in {: #|M|.-1.-tuple ('rV[A]_n)})
       (\rprod_(m : M) P `^ _ ((tcast M_prednK [tuple of v :: j]) \_ (enum_rank m))))%R.
-  rewrite (reindex_onto (fun y : {ffun _ -> _} => \row_(i < _) y (enum_val i))
+  rewrite (reindex_onto (fun y : {ffun _ -> 'rV__} => \row_(i < _) y (enum_val i))
       (fun p : 'rV_ _ => [ffun x => p ``_ (enum_rank x)])) //=; last first.
     move=> v _; by apply/rowP => i; rewrite mxE ffunE enum_valK.
-  apply trans_eq with (\rsum_(f : {ffun M -> _})
+  apply trans_eq with (\rsum_(f : {ffun M -> 'rV__})
     ((\rprod_(m < k.+1) P `^ n (f m)) *
       \rsum_(y in ~: [set y0 | prod_rV (f ord0, y0) \in `JTS P W n epsilon0])
       W ``(y | f ord0)))%R.

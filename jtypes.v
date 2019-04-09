@@ -159,9 +159,10 @@ Canonical jtype_choiceType A B n := Eval hnf in ChoiceType _ (jtype_choiceMixin 
 
 Definition jtype_pickle (A B : finType) n (P : P_ n (A , B)) : nat.
 destruct P as [d t H].
-destruct (finfun_countMixin A [finType of {ffun B -> 'I_n.+1}]) as [pi unpi Hcan].
+exact: (pickle t).
+(*destruct (finfun_countMixin A [finType of {ffun B -> 'I_n.+1}]) as [pi unpi Hcan].
 apply pi.
-exact t.
+exact t.*)
 Defined.
 
 Definition jtype_unpickle (A B : finType) n (m : nat) : option (P_ n ( A , B )).
@@ -175,8 +176,12 @@ refine (
       | right _ => None
     end
 ).
-case: (finfun_countMixin A [finType of {ffun B -> 'I_n.+1}]) => pi unpi Hcan.
+(*case: (finfun_countMixin A [finType of {ffun B -> 'I_n.+1}]) => pi unpi Hcan.
 case: (unpi m); last by exact None.
+move=> f.*)
+pose unpi : option {ffun A -> {ffun B -> 'I_n.+1}} := unpickle m.
+case: unpi; last first.
+  exact None.
 move=> f.
 refine (match Sumbool.sumbool_of_bool (\sum_(a in A) \sum_(b in B) f a b == n) with
           | left Hf => _
@@ -195,7 +200,8 @@ destruct Sumbool.sumbool_of_bool; last by rewrite Anot0 in e.
 case/card_gt0P : (e) => a Ha.
 move: (dist_domain_not_empty (c a)) => Bnot0.
 destruct Sumbool.sumbool_of_bool; last by rewrite Bnot0 in e0.
-rewrite pcan_pickleK; last by apply valK.
+rewrite pickleK.
+(*rewrite pcan_pickleK; last by apply valK.*)
 set d1 := chan_of_jtype _ _ _.
 have ? : d1 = Channel1.mkChan c Anot0.
   apply/Channel1.chan_star_eq/functional_extensionality => a1.
@@ -949,11 +955,14 @@ have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (jtype.f V a b) b | 
   have [A1 [A2 A12]] : exists A1 A2, enum A = A1 ++ a :: A2.
     have /splitPr[A1 A2] : a \in enum A by rewrite mem_enum.
     by exists A1, A2.
-  rewrite /cdom /dom A12 map_cat flatten_cat map_cat flatten_cat map_cat mask_cat; last first.
+  rewrite /cdom /dom A12 map_cat flatten_cat map_cat.
+  rewrite [in X in mask _ X]map_cat flatten_cat mask_cat; last first.
     rewrite size_map size_flatten /shape -map_comp sumn_big_addn big_map.
     rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
     apply eq_bigr => i _ /=; by rewrite sz_flat size_nseq.
-  rewrite (_ : _ :: _ = [:: a] ++ A2) // map_cat flatten_cat map_cat.
+  rewrite (_ : _ :: _ = [:: a] ++ A2) //.
+  rewrite map_cat.
+  rewrite [in X in _ ++ mask _ X = _]map_cat flatten_cat.
   rewrite mask_cat; last first.
     by rewrite size_map /= cats0 sz_flat size_nseq.
   transitivity (mask (map (pred1 a) (flatten [seq nseq N(a1 | ta) a1 | a1 <- [:: a]]))

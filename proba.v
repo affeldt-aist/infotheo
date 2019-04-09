@@ -448,7 +448,7 @@ have r01 : 0 <= 1 - pf (Set2.a card_A) <= 1%R.
   move=> *; lra.
 exists (Prob.mk r01).
 apply/dist_ext => a /=.
-rewrite Binary.dE; case: ifPn => [/eqP -> /=|Ha/=]; first field.
+rewrite Binary.dE; case: ifPn => [/eqP -> /=|Ha/=]; first by rewrite subRB subRR add0R.
 by rewrite -(eqP pf1) /= Set2sumE /= addRC addRK; move/Set2.neq_a_b/eqP : Ha => ->.
 Qed.
 
@@ -1758,7 +1758,7 @@ pose F12 i (j : bool) := if ~~ j then F1 i else F2 i.
 erewrite eq_bigr. (* to replace later with under *)
   2: move=> i _; rewrite (_: plus (F1 i) (F2 i) = \big[plus/zero]_(j : bool) F12 i j) //.
 rewrite bigA_distr_bigA big_mkord (partition_big
-  (fun i : {ffun I -> _} => inord #|[set x | i x]|)
+  (fun i : {ffun I -> bool} => inord #|[set x | i x]|)
   (fun j : [finType of 'I_#|I|.+1] => true)) //=.
 { eapply eq_big =>// i _.
   rewrite (reindex (fun s : {set I} => [ffun x => x \in s])); last first.

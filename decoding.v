@@ -159,9 +159,10 @@ rewrite /ErrRateCond /= [in X in _ <= X](eq_bigr
   (fun m => 1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m])); last first.
   move=> m _; rewrite Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
-rewrite (eq_bigr
+rewrite [in X in X <= _](eq_bigr
   (fun m => 1 - Pr (W ``(|enc m)) [set tb | dec tb == Some m])); last first.
-  move => m _; rewrite Pr_to_cplt; congr (_ - Pr _ _).
+  move => m _.
+  rewrite [in LHS]Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
 rewrite 2!big_split /= leR_add2l.
 rewrite -2!big_morph_oppR leR_oppr oppRK /Pr (exchange_big_dep xpredT) //=.

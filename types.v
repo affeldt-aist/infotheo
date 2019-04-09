@@ -187,15 +187,19 @@ Canonical type_choiceType A n := Eval hnf in ChoiceType _ (type_choiceMixin A n)
 
 Definition type_pickle A n (P : P_ n (A)) : nat.
 destruct P as [d f H].
-destruct (finfun_countMixin A [finType of 'I_n.+1]) as [pi unpi Hcan].
-apply (pi f).
+exact: (pickle f).
+(*destruct (finfun_countMixin A [finType of 'I_n.+1]) as [pi unpi Hcan].
+apply (pi f).*)
 Defined.
 
 Definition type_unpickle A n (m : nat) : option (P_ n ( A )).
 destruct n.
   exact None.
-case: (finfun_countMixin A [finType of 'I_n.+2]) => pi unpi Hcan.
+pose unpi : option {ffun A -> 'I_n.+2} := unpickle m.
+(*case: (finfun_countMixin A [finType of 'I_n.+2]) => pi unpi Hcan.
 case: (unpi m); last first.
+  exact None.*)
+case: unpi; last first.
   exact None.
 move=> f.
 refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1) with
@@ -209,7 +213,8 @@ Proof.
 destruct n.
   case=> d t H /=; by move: (no_0_type H).
 case=> d t H /=.
-rewrite pcan_pickleK; last by apply valK.
+rewrite pickleK.
+(*rewrite pcan_pickleK; last by apply valK.*)
 move: (ffun_of_dist H) => H'.
 destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.

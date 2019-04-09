@@ -579,7 +579,7 @@ by rewrite f0_tree.
 Qed.
 
 Lemma allpairs_flatten {S T R} (f : S -> T -> R) s t :
-  allpairs f s t = flatten [seq [seq f x y | y <- t] | x <- s].
+  [seq f i j | i <- s, j <- t] = flatten [seq [seq f x y | y <- t] | x <- s].
 Proof. elim: s => [|a s IH] //=; by f_equal. Qed.
 
 Lemma f1_tree l k : \sum_(t <- tree_enum tw l k) tree_dist t = 1.
@@ -615,7 +615,7 @@ rewrite -[X in _ = X]mulr1.
 f_equal.
 elim: (val d) => [|d' IHd] /=.
   by rewrite big_seq1 big_nil.
-rewrite allpairs_flatten big_flatten big_map /=.
+rewrite (@allpairs_flatten _ _ _ (fun s t => s :: t)) big_flatten big_map /=.
 rewrite -[X in _ = X](IH (negk k)).
 apply eq_bigr=> t1 _.
 rewrite big_map /=.
@@ -678,7 +678,7 @@ rewrite -[X in _ = X]mulr1.
 f_equal.
 elim: d' => [|d1 IHd] /=.
   by rewrite big_seq1 big_nil.
-rewrite allpairs_flatten big_flatten big_map /=.
+rewrite (@allpairs_flatten _ _ _ (fun s t => s :: t)) big_flatten big_map /=.
 rewrite -[X in _ = X](f1_tree (l.*2+1) kf).
 apply eq_bigr=> t1 _.
 rewrite big_map /=.
@@ -3194,7 +3194,7 @@ Fixpoint check_ports c (ts : seq {ffun port -> port * {set port}}) :=
   end.
 
 Definition dest_ports_seqs c len :=
-  [set ts : len.-tuple {ffun port -> _} | check_ports c ts].
+  [set ts : len.-tuple {ffun port -> port * {set port}} | check_ports c ts].
 
 Fixpoint switch_step_dist_it (lam rho : NormalizedDegreeDistribution.L K)
          c r (ts : seq {ffun port -> port * {set port}}) :=

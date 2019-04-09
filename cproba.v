@@ -575,15 +575,15 @@ Lemma CondDistE (x : t) : forall a (a0 : Bivar.fst (joint_of x) a != 0),
 Proof.
 move=> a a0; apply/dist_ext => b.
 rewrite CondDist.dE /cPr setX1 !Pr_set1 /P Swap.dE Swap.snd ProdDist.fst.
-rewrite ProdDist.dE /=; field.
-move: a0; by rewrite ProdDist.fst => /eqP.
+rewrite ProdDist.dE /= /Rdiv mulRAC mulRV ?mul1R //.
+by move: a0; rewrite ProdDist.fst.
 Qed.
 Lemma E (x : t) a b : (P x) a <> 0 ->
   x a b = \Pr_(Swap.d (joint_of x))[[set b]|[set a]].
 Proof.
 move=> Pxa.
 rewrite /cPr setX1 Swap.snd 2!Pr_set1 /joint_of Swap.dE ProdDist.fst.
-by rewrite ProdDist.dE /=; field.
+rewrite ProdDist.dE /= /Rdiv mulRAC mulRV ?mul1R //; exact/eqP.
 Qed.
 Definition split (PQ : {dist A * B}) :=
   mkt (Bivar.fst PQ) (CondDistT.d PQ).
