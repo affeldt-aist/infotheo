@@ -15,7 +15,7 @@ Import Prenex Implicits.
 Axiom R_choiceMixin : Choice.mixin_of R.
 Canonical R_choiceType := ChoiceType R R_choiceMixin.
 
-Module Dist.
+(*Module Dist.
 Section dist.
 Variable A : choiceType.
 Record t := mk {
@@ -124,6 +124,125 @@ Definition f : {fsfun B -> R with 0} :=
 Lemma f0 b : (0 <= f b)%R.
 Proof.
 rewrite /f fsfunE; case: ifP =>  _; last exact/leRR.
+apply rsumr_ge0 => a _; apply/mulR_ge0; exact/Dist.ge0.
+Qed.
+Lemma f1 : \rsum_(b <- finsupp f) f b = 1.
+Proof.
+???
+Qed.
+End def.
+End DistBind.
+*)
+
+Module Dist.
+Section dist.
+Variable A : choiceType.
+Record t := mk {
+  f :> {fsfun A -> R with 0} ;
+  f01 : all (fun x => 0 <b f x)%R (finsupp f) &&
+        \rsum_(a <- finsupp f) f a == 1}.
+Lemma ge0 (P : t) a : (0 <= P a)%R.
+Proof.
+case: P => /= f /andP[/allP H _].
+case/boolP : (a \in finsupp f) => [/H/ltRP/ltRW //|].
+rewrite memNfinsupp => /eqP ->; exact/leRR.
+Qed.
+Lemma f1 (P : t) : \rsum_(a <- finsupp P) P a = 1.
+Proof. by case: P => P /= /andP[_ /eqP]. Qed.
+End dist.
+End Dist.
+Coercion Dist.f : Dist.t >-> fsfun.
+
+Section Dist_canonical.
+Variable A : choiceType.
+Canonical Dist_subType := Eval hnf in [subType for @Dist.f A].
+Definition Dist_eqMixin := [eqMixin of @Dist.t A by <:].
+Canonical Dist_eqType := Eval hnf in EqType _ Dist_eqMixin.
+Definition Dist_choiceMixin := [choiceMixin of @Dist.t A by <:].
+Canonical Dist_choiceType := Eval hnf in ChoiceType _ Dist_choiceMixin.
+End Dist_canonical.
+
+Definition Dist (A : choiceType) : choiceType := Dist_choiceType A.
+
+Definition Dist_of (A : choiceType) := fun phT : phant (Choice.sort A) => Dist A.
+
+Notation "{ 'Dist' T }" := (Dist_of (Phant T)).
+
+Section Dist_prop.
+Variable A : choiceType.
+
+Lemma Dist_ext (d d' : Dist A) : (forall x, d x = d' x) -> d = d'.
+Proof. move=> H; exact/val_inj/fsfunP/H. Qed.
+
+Lemma Distmk (f : {fsfun A -> R with 0}) (H0 : forall a, a \in finsupp f -> (0 < f a)%R)
+  (H1 : \rsum_(a <- finsupp f) f a = 1%R) :
+  all (fun x => 0 <b f x)%R (finsupp f) && \rsum_(a <- finsupp f) f a == 1.
+Proof. by rewrite H1 eqxx andbT; apply/allP => a /H0/ltRP. Qed.
+
+Definition makeDist (f : {fsfun A -> R with 0}) (H0 : forall a, a \in finsupp f -> (0 < f a)%R)
+  (H1 : \rsum_(a <- finsupp f) f a = 1%R) := Dist.mk (Distmk H0 H1).
+
+End Dist_prop.
+
+Module Dist_of_dist.
+Section def.
+Variable (A : finType) (P : dist A).
+Local Open Scope fset_scope.
+Let D := [fset a0 : A | P a0 != 0].
+Definition f : {fsfun A -> R with 0} := [fsfun a in D => P a | 0].
+Let f0 a : a \in finsupp f -> (0 < f a)%R.
+Proof.
+rewrite fsfunE mem_finsupp /f fsfunE.
+case: ifPn => [_|]; by [rewrite dist_gt0 | rewrite eqxx].
+Qed.
+Let f1 : \rsum_(a <- finsupp f) f a = 1%R.
+Proof.
+rewrite -[RHS](epmf1 P) [in RHS](bigID (fun x => x \in finsupp f)) /=.
+rewrite [in X in _ = (_ + X)%R]big1 ?addR0; last first.
+  move=> a; rewrite memNfinsupp fsfunE !inE /=.
+  by case: ifPn => [_ /eqP //|]; rewrite negbK => /eqP.
+rewrite (@eq_fbigr _ _ _ _ _ _ _ (fun i => P i)) /=; last first.
+  move=> a; rewrite mem_finsupp fsfunE !inE /=; case: ifPn => //; by rewrite eqxx.
+exact/big_uniq/fset_uniq.
+Qed.
+Definition d : Dist A := makeDist f0 f1.
+End def.
+End Dist_of_dist.
+
+Module Dist1.
+Section def.
+Local Open Scope fset_scope.
+Variables (A : choiceType) (a : A).
+Let D := [fset a].
+Definition f : {fsfun A -> R with 0} := [fsfun b in D => 1 | 0].
+Lemma suppf : finsupp f = D.
+Proof.
+apply/fsetP => b; rewrite mem_finsupp /f fsfunE inE.
+case: ifPn => ba; [exact/eqP/gtR_eqF | by rewrite eqxx].
+Qed.
+Lemma f0 b : b \in finsupp f -> (0 < f b)%R.
+Proof. rewrite mem_finsupp fsfunE inE; case: ifPn => //; by rewrite eqxx. Qed.
+Lemma f1 : \rsum_(b <- finsupp f) f b = 1%R.
+Proof. by rewrite suppf big_seq_fset1 /f fsfunE inE eqxx. Qed.
+Definition d : Dist A := locked (makeDist f0 f1).
+Lemma dE a0 : d a0 = f a0.
+Proof. by rewrite /d; unlock. Qed.
+Lemma supp : finsupp d = D.
+Proof. by rewrite -suppf; apply/fsetP => b; rewrite !mem_finsupp dE. Qed.
+End def.
+End Dist1.
+
+Module DistBind.
+Section def.
+Local Open Scope fset_scope.
+Variables (A B : choiceType) (p : Dist A) (g : A -> Dist B).
+Let D := \bigcup_(d <- g @` [fset a | a in finsupp p]) finsupp d.
+Definition f : {fsfun B -> R with 0} :=
+  [fsfun b in D => \rsum_(a <- finsupp p) p a * (g a) b | 0].
+Lemma f0 b : b \in finsupp f -> (0 < f b)%R.
+Proof.
+rewrite mem_finsupp fsfunE; case: ifPn => [_ /eqP/nesym ?|]; last by rewrite eqxx.
+rewrite ltR_neqAle; split => //.
 apply rsumr_ge0 => a _; apply/mulR_ge0; exact/Dist.ge0.
 Qed.
 Lemma f1 : \rsum_(b <- finsupp f) f b = 1.
@@ -378,62 +497,290 @@ move=> a0 _; apply/mulR_ge0; exact/Dist.ge0.
 by rewrite mem_finsupp.
 Qed.
 
-Module I2Dist.
-Section def.
-Variable (p : prob).
-(*Definition f := [ffun i : 'I_2 => if i == ord0 then Prob.p p else p.~].
-Lemma f0 i : 0 <= f i.
-Proof.
-rewrite /f ffunE /=; case: ifP => _; [exact/prob_ge0|exact/onem_ge0/prob_le1].
-Qed.
-Lemma f1 : \rsum_(i < 2) f i = 1.
-Proof. by rewrite 2!big_ord_recl big_ord0 addR0 /f !ffunE /= onemKC. Qed.*)
-Definition d : {Dist 'I_2}(* := locked (makeDist f0 f1)*). Admitted.
-(*Lemma dE a : d a = if a == ord0 then Prob.p p else p.~.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.*)
-End def.
-End I2Dist.
-
 Module ConvDist.
 Section def.
-Variables (A : choiceType) (n : nat) (e : {Dist 'I_n}) (g : 'I_n -> Dist A).
-(*Definition f := [ffun a => \rsum_(i < n) e i * g i a].
-Lemma f0 a : 0 <= f a.
-Proof. rewrite ffunE; apply: rsumr_ge0 => /= i _; apply mulR_ge0; exact: dist_ge0. Qed.
-Lemma f1 : \rsum_(a in A) f a = 1.
+Local Open Scope proba_scope.
+Variables (A : choiceType) (n : nat) (e : {dist 'I_n}) (g : 'I_n -> Dist A).
+Local Open Scope fset_scope.
+Definition D : {fset A} := \big[fsetU/fset0]_(i < n | (0 <b e i)%R) finsupp (g i).
+Definition f := [fsfun a in D => \rsum_(i < n) e i * g i a | 0].
+Lemma supp : finsupp f = D.
 Proof.
-rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
-  move=> b _; rewrite ffunE /h; reflexivity.
-rewrite {}/h exchange_big /= -(pmf1 e) /=; apply eq_bigr => i _.
-by rewrite -big_distrr /= pmf1 mulR1.
-Qed.*)
-Definition d : Dist A(* := locked (makeDist f0 f1)*). Admitted.
-(*Lemma dE a : d a = \rsum_(i < n) e i * g i a.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.*)
+apply/fsetP => a; apply/idP/idP => [|].
+  rewrite mem_finsupp /f fsfunE.
+  case: ifPn => //; by rewrite eqxx.
+rewrite mem_finsupp fsfunE => aD.
+rewrite aD.
+case/bigfcupP : aD => /= i.
+rewrite mem_index_enum /= => /ltRP ei0.
+rewrite mem_finsupp => gia0.
+apply: contra gia0 => /eqP H; apply/eqP.
+rewrite -(@eqR_mul2l (e i)) ?mulR0; last exact/gtR_eqF.
+move/prsumr_eq0P : H; apply => //= j _.
+apply/mulR_ge0; [exact/dist_ge0 | exact/Dist.ge0].
+Qed.
+Lemma f0 a : a \in finsupp f -> (0 < f a)%R.
+Proof.
+rewrite mem_finsupp fsfunE; case: ifPn => [_ ?|]; last by rewrite eqxx.
+rewrite ltR_neqAle; split; first exact/nesym/eqP.
+apply/rsumr_ge0 => i _; apply/mulR_ge0; [exact/dist_ge0 | exact/Dist.ge0].
+Qed.
+Lemma f1 : (\rsum_(a <- finsupp f) f a = 1%R).
+Proof.
+rewrite {2}/f; evar (h : A -> R); rewrite (eq_big_seq h); last first.
+  move=> b; rewrite supp => bD.
+  rewrite fsfunE bD /h; reflexivity.
+rewrite {}/h exchange_big /= -[RHS](epmf1 e) /=; apply eq_bigr => i _.
+rewrite -big_distrr /=.
+case/boolP : (e i == R0 :> R) => [/eqP | ] ei0.
+  by rewrite ei0 mul0R.
+rewrite -(@big_fset_incl _ _ _ _ (finsupp (g i))).
+by rewrite Dist.f1 mulR1.
+rewrite supp /D bigfcup_sup //.
+apply/ltRP; rewrite ltR_neqAle; split; [exact/nesym/eqP | exact/dist_ge0].
+move=> a _.
+by rewrite memNfinsupp => /eqP.
+Qed.
+Definition d : Dist A := locked (makeDist f0 f1).
+Lemma dE a : d a = [fsfun a in D => (\rsum_(i < n) e i * g i a)%R | 0] a.
+Proof. by rewrite /d; unlock; rewrite fsfunE. Qed.
 End def.
 End ConvDist.
+
+Require convex.
 
 Module Conv2Dist.
 Section def.
 Variables (A : choiceType) (d1 d2 : Dist A) (p : prob).
 Definition d : Dist A := locked
   (ConvDist.d (I2Dist.d p) (fun i => if i == ord0 then d1 else d2)).
-(*Lemma dE a : d a = p * d1 a + p.~ * d2 a.
+Local Open Scope reals_ext_scope.
+Lemma dE a : (d a = p * d1 a + p.~ * d2 a)%R.
 Proof.
 rewrite /d; unlock => /=.
-by rewrite ConvDist.dE !big_ord_recl big_ord0 /= addR0 !I2Dist.dE.
-Qed.*)
+rewrite ConvDist.dE fsfunE.
+case: ifPn => [?|H].
+  rewrite !big_ord_recl big_ord0 /= addR0 !I2Dist.dE.
+  by rewrite eqxx eq_sym (negbTE (neq_lift _ _)).
+case/boolP : (p == R0 :> R) => [/eqP |] p0.
+  rewrite p0 mul0R add0R onem0 mul1R.
+  apply/esym/eqP.
+  rewrite -memNfinsupp.
+  apply: contra H => H.
+  rewrite /ConvDist.D.
+  apply/bigfcupP.
+  exists (lift ord0 ord0).
+  rewrite mem_index_enum /= I2Dist.dE eq_sym (negbTE (neq_lift _ _)) p0 onem0; exact/ltRP.
+  by rewrite eq_sym (negbTE (neq_lift _ _)).
+have d1a0 : d1 a = 0.
+  apply/eqP.
+  rewrite -memNfinsupp.
+  apply: contra H => H.
+  rewrite /ConvDist.D.
+  apply/bigfcupP.
+  exists ord0.
+  rewrite mem_index_enum /=.
+  rewrite I2Dist.dE eqxx.
+  apply/ltRP.
+  rewrite ltR_neqAle; split; [exact/nesym/eqP | exact/prob_ge0].
+  by rewrite eqxx.
+rewrite d1a0 mulR0 add0R.
+case/boolP : (p == R1 :> R) => [/eqP |] p1.
+  by rewrite p1 onem1 mul0R.
+have d2a0 : d2 a = 0.
+  apply/eqP.
+  rewrite -memNfinsupp.
+  apply: contra H => H.
+  rewrite /ConvDist.D.
+  apply/bigfcupP.
+  exists (lift ord0 ord0).
+  rewrite mem_index_enum /=.
+  rewrite I2Dist.dE eq_sym (negbTE (neq_lift _ _)).
+  exact/ltRP/onem_gt0/prob_lt1.
+  by rewrite eq_sym (negbTE (neq_lift _ _)).
+by rewrite d2a0 mulR0.
+Qed.
 End def.
 Section prop.
 Variables (A : choiceType).
 Implicit Types a b c : Dist A.
 Local Notation "x <| p |> y" := (d x y p).
+Local Open Scope reals_ext_scope.
+Lemma conv0 (mx my : Dist A) : mx <| `Pr 0 |> my = my.
+Proof. by apply/Dist_ext => a; rewrite Conv2Dist.dE /= mul0R add0R onem0 mul1R. Qed.
+Lemma conv1 (mx my : Dist A) : mx <| `Pr 1 |> my = mx.
+Proof. by apply/Dist_ext => a; rewrite Conv2Dist.dE /= mul1R onem1 mul0R addR0. Qed.
+Lemma convmm p : idempotent (fun x y => x <| p |> y : Dist A).
+Proof. by move=> d; apply/Dist_ext => a; rewrite Conv2Dist.dE -mulRDl onemKC mul1R. Qed.
+Lemma convC (p : prob) (mx my : Dist A) : mx <| p |> my = my <| `Pr p.~ |> mx.
+Proof. by apply/Dist_ext => a; rewrite 2!Conv2Dist.dE /= onemK addRC. Qed.
+Lemma convA (p q r s : prob) (mx my mz : Dist A) :
+    (p = r * s :> R /\ s.~ = p.~ * q.~)%R ->
+    mx <| p |> (my <| q |> mz) = (mx <| r |> my) <| s |> mz.
+Proof.
+move=> [Hp Hs]; apply/Dist_ext => a.
+rewrite !Conv2Dist.dE [in RHS]mulRDr (@mulRCA _ r) (@mulRA r) -Hp -addRA; congr (_ + _)%R.
+rewrite mulRDr (@mulRA p.~ q.~) -Hs; congr (_ + _)%R.
+rewrite !mulRA; congr (_ * _)%R.
+rewrite -p_of_rsE in Hp.
+move/(congr1 onem) : Hs; rewrite onemK => Hs.
+rewrite -s_of_pqE in Hs.
+case/boolP : (r == `Pr 0 :> prob) => r0.
+  rewrite (eqP r0) /= onem0 mulR1 Hs s_of_pqE.
+  by rewrite Hp p_of_rsE (eqP r0) /= mul0R onem0 !mul1R onemK.
+case/boolP : (s == `Pr 0 :> prob) => s0.
+  rewrite Hp p_of_rsE (eqP s0) /= mulR0 onem0 mul0R mul1R.
+  by move: Hs; rewrite s_of_pqE Hp p_of_rsE (eqP s0) /= mulR0 onem0 mul1R onemK.
+rewrite p_of_rsE in Hp.
+rewrite s_of_pqE in Hs.
+move/(congr1 onem) : Hs; rewrite onemK => Hs.
+(* TODO: move r_of_pq_is_r *)
+move: (@convex.r_of_pq_is_r p q r s r0 s0 Hp Hs) => <-.
+rewrite pq_is_rs mulRC; congr (_ * _)%R.
+by rewrite s_of_pqE -Hs onemK.
+Qed.
+Local Open Scope fset_scope.
+Lemma incl_finsupp_conv2dist (a b : Dist A) (p : prob) :
+  p != `Pr 0 -> finsupp a `<=` finsupp (a <|p|> b).
+Proof.
+move=> p0.
+apply/fsubsetP => a4.
+rewrite !mem_finsupp => aa4.
+rewrite Conv2Dist.dE.
+apply: contra aa4 => /eqP.
+rewrite paddR_eq0; last 2 first.
+  apply/mulR_ge0; [exact/prob_ge0 | exact/Dist.ge0].
+  apply/mulR_ge0; [exact/prob_ge0 | exact/Dist.ge0].
+case.
+rewrite mulR_eq0 => -[p0'|/eqP //].
+exfalso.
+move/eqP : p0; apply.
+apply/prob_ext; by rewrite p0'.
+Qed.
+Lemma tech1 (B : choiceType) (a b : Dist A) (f : A -> Dist B) (p : prob) (a0 : A) (b0 : B) (b0a0 : b0 \in finsupp (f a0)) :
+  p != `Pr 0 ->
+  \rsum_(i <- finsupp (a <|p|> b)) (a i * (f i) b0)%R = (DistBind.f a f) b0.
+Proof.
+move=> p0.
+rewrite fsfunE.
+case: ifPn.
+- case/bigfcupP => dB.
+  rewrite andbT.
+  case/imfsetP => a1 /=.
+  case/imfsetP => a2 /= a2a ->{a1} ->{dB} b0a2.
+  apply/esym.
+  apply/big_fset_incl.
+  exact/incl_finsupp_conv2dist.
+  move=> a3 Ha3.
+  rewrite memNfinsupp => /eqP ->.
+  by rewrite /multiplication /mul_notation mul0R.
+- move=> Hb0.
+  apply/prsumr_seq_eq0P.
+  exact/fset_uniq.
+  move=> a1 _.
+  apply/mulR_ge0; exact/Dist.ge0.
+  move=> a1 Ha1.
+  case/boolP : (a a1 == 0 :> R)%R => aa10.
+    by rewrite (eqP aa10) mul0R.
+  rewrite mulR_eq0; right.
+  apply/eqP.
+  rewrite -memNfinsupp.
+  apply: contra Hb0 => Hb0.
+  apply/bigfcupP.
+  exists (f a1) => //.
+  rewrite andbT.
+  apply/imfsetP.
+  exists a1 => //=.
+  apply/imfsetP.
+  exists a1 => //=.
+  by rewrite mem_finsupp.
+Qed.
+Lemma DistBind_ge0 (B : choiceType) (a : Dist A) (f : A -> Dist B) (b0 : B) : (0 <= (DistBind.f a f) b0)%R.
+Proof.
+rewrite fsfunE; case: ifPn => _; last exact/leRR.
+apply/rsumr_ge0 => a0 _.
+apply/mulR_ge0; exact/Dist.ge0.
+Qed.
 Lemma bind_left_distr (B : choiceType) (p : prob) a b (f : A -> Dist B) :
   DistBind.d (a <| p |> b) f = DistBind.d a f <| p |> DistBind.d b f.
 Proof.
-(*apply/dist_ext => a0 /=; rewrite !(DistBind.dE,Conv2Dist.dE) /=.
-rewrite 2!big_distrr /= -big_split /=; apply/eq_bigr => a1 _.
-by rewrite Conv2Dist.dE mulRDl !mulRA.
-Qed.*) Admitted.
+apply/Dist_ext => b0 /=; rewrite !(DistBind.dE,Conv2Dist.dE) /=.
+case/boolP : (p == `Pr 0 :> prob) => p0.
+  by rewrite (eqP p0) conv0 mul0R add0R onem0 mul1R.
+case/boolP : (p == `Pr 1 :> prob) => p1.
+  by rewrite (eqP p1) conv1 mul1R onem1 mul0R addR0.
+rewrite fsfunE.
+case: ifPn.
+  case/bigfcupP.
+  move=> dB.
+  rewrite andbT.
+  case/imfsetP => a0 /=.
+  rewrite inE /= => Ha0 ->{dB} b0a0.
+  evar (h : A -> R); rewrite (eq_bigr h); last first.
+    move=> a1 _.
+    rewrite /multiplication /mul_notation.
+    rewrite Conv2Dist.dE.
+    rewrite (@mulRDl _ _ (f a1 b0)).
+    rewrite -!mulRA.
+    rewrite /h; reflexivity.
+  rewrite {}/h.
+  rewrite big_split /=.
+  rewrite -2!big_distrr /=.
+  congr (_ * _ + _ * _)%R.
+  exact/(@tech1 _ _ _ _ _ a0).
+  rewrite convC.
+  apply/(@tech1 _ _ _ _ _ a0) => //.
+  apply: contra p1 => /eqP.
+  move/(congr1 (fun x : prob => x.~)).
+  rewrite onemK.
+  rewrite onem0 => p1.
+  exact/eqP/prob_ext.
+move=> Hb0.
+apply/esym/paddR_eq0.
+  apply/mulR_ge0.
+  exact/prob_ge0.
+  exact/DistBind_ge0.
+  apply/mulR_ge0.
+  exact/prob_ge0.
+  exact/DistBind_ge0.
+split.
+- rewrite mulR_eq0; right.
+  rewrite fsfunE; case: ifPn => // abs.
+  exfalso.
+  move/negP : Hb0; apply.
+  case/bigfcupP : abs => dB.
+  rewrite andbT => /imfsetP[a0 /=] /imfsetP[a1 /=] a1a ->{a0} ->{dB} Hb0.
+  apply/bigfcupP.
+  exists (f a1) => //.
+  rewrite andbT.
+  apply/imfsetP.
+  exists a1 => //=.
+  apply/imfsetP.
+  exists a1 => //=.
+  move: a1 a1a {Hb0}.
+  apply/fsubsetP.
+  by apply/incl_finsupp_conv2dist.
+- (* TODO: copype *) rewrite mulR_eq0; right.
+  rewrite fsfunE; case: ifPn => // abs.
+  exfalso.
+  move/negP : Hb0; apply.
+  case/bigfcupP : abs => dB.
+  rewrite andbT => /imfsetP[a0 /=] /imfsetP[a1 /=] a1a ->{a0} ->{dB} Hb0.
+  apply/bigfcupP.
+  exists (f a1) => //.
+  rewrite andbT.
+  apply/imfsetP.
+  exists a1 => //=.
+  apply/imfsetP.
+  exists a1 => //=.
+  move: a1 a1a {Hb0}.
+  apply/fsubsetP.
+  rewrite convC.
+  apply/incl_finsupp_conv2dist.
+  apply: contra p1 => /eqP.
+  move/(congr1 (fun x : prob => x.~)).
+  rewrite onemK onem0 => p1.
+  exact/eqP/prob_ext.
+Qed.
 End prop.
 End Conv2Dist.
