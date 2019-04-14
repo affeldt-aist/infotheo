@@ -615,8 +615,8 @@ Proof. by move=> d; apply/Dist_ext => a; rewrite Conv2Dist.dE -mulRDl onemKC mul
 Lemma convC (p : prob) (mx my : Dist A) : mx <| p |> my = my <| `Pr p.~ |> mx.
 Proof. by apply/Dist_ext => a; rewrite 2!Conv2Dist.dE /= onemK addRC. Qed.
 Lemma convA (p q r s : prob) (mx my mz : Dist A) :
-    (p = r * s :> R /\ s.~ = p.~ * q.~)%R ->
-    mx <| p |> (my <| q |> mz) = (mx <| r |> my) <| s |> mz.
+  (p = r * s :> R /\ s.~ = p.~ * q.~)%R ->
+  mx <| p |> (my <| q |> mz) = (mx <| r |> my) <| s |> mz.
 Proof.
 move=> [Hp Hs]; apply/Dist_ext => a.
 rewrite !Conv2Dist.dE [in RHS]mulRDr (@mulRCA _ r) (@mulRA r) -Hp -addRA; congr (_ + _)%R.
@@ -638,6 +638,17 @@ move/(congr1 onem) : Hs; rewrite onemK => Hs.
 move: (@convex.r_of_pq_is_r p q r s r0 s0 Hp Hs) => <-.
 rewrite pq_is_rs mulRC; congr (_ * _)%R.
 by rewrite s_of_pqE -Hs onemK.
+Qed.
+(* TODO: move the glue lemma to convex *)
+Lemma convA' (p q : prob) (a b c : Dist A) :
+  d a (d b c q) p = d (d a b (r_of_pq p q)) c (s_of_pq p q).
+Proof.
+rewrite (convA (r := r_of_pq p q) (s := s_of_pq p q)) //.
+rewrite {2}s_of_pqE onemK; split => //.
+case/boolP : (s_of_pq p q == `Pr 0 :> prob) => s0.
+- rewrite (eqP s0) mulR0; apply/eqP; move: s0.
+  by apply: contraTT => /(s_of_gt0 q); rewrite prob_gt0.
+- by rewrite -p_is_rs.
 Qed.
 Local Open Scope fset_scope.
 Lemma incl_finsupp_conv2dist (a b : Dist A) (p : prob) :
@@ -784,3 +795,16 @@ split.
 Qed.
 End prop.
 End Conv2Dist.
+
+Require Import convex.
+
+Section Dist_convex_space.
+Variable A : choiceType.
+Definition Dist_convMixin :=
+  @ConvexSpace.Class (Dist A) (@Conv2Dist.d A)
+  (@Conv2Dist.conv1 A)
+  (fun d p => @Conv2Dist.convmm A p d)
+  (fun d1 d2 p => @Conv2Dist.convC A p d1 d2)
+  (@Conv2Dist.convA' A).
+Canonical Dist_convType := ConvexSpace.Pack Dist_convMixin.
+End Dist_convex_space.
