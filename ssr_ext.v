@@ -262,21 +262,6 @@ rewrite ltnS => nt /andP[ht ut].
 rewrite (IH _ nt ut) andbT; apply: contra ht; exact: mem_take.
 Qed.
 
-Lemma nth_of_sorted (s : seq nat) : sorted leq s -> forall i j,
-  i <= j < size s -> nth O s i <= nth O s j.
-Proof.
-elim: s => [/= _ i j|h t IH Ht]; first by rewrite ltn0 andbF.
-move/pathP : (Ht) => H; move/path_sorted in Ht.
-case => [/= [// | j /=] | i /= [// | j]].
-  rewrite ltnS => jt.
-  apply: (leq_trans _); last exact: (IH Ht O).
-  apply: leq_trans; last by apply H; rewrite (leq_ltn_trans _ jt).
-  by [].
-rewrite !ltnS => ijt.
-apply: leq_trans; first exact: (IH _ _ j).
-by [].
-Qed.
-
 Lemma sorted_of_nth (r : rel A) s (r_trans : transitive r) (r_sorted : sorted r s) :
   forall x0 a b, a < b < size s -> r (nth x0 s a) (nth x0 s b).
 Proof.
