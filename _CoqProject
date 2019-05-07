@@ -79,7 +79,6 @@ alternant.v
 kraft.v
 shannon_fano.v
 string_entropy.v
-R_for_mathcomp.v
 convex_dist.v
 cinde.v
 -R . infotheo

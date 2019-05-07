@@ -2,6 +2,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup perm finalg matrix.
 From mathcomp Require Import finmap set.
+From mathcomp Require Rstruct.
 Require Import Reals Lra Nsatz FunctionalExtensionality.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import proba.
@@ -12,127 +13,7 @@ Import Prenex Implicits.
 
 (* wip: distribution using choiceType *)
 
-Axiom R_choiceMixin : Choice.mixin_of R.
-Canonical R_choiceType := ChoiceType R R_choiceMixin.
-
-(*Module Dist.
-Section dist.
-Variable A : choiceType.
-Record t := mk {
-  f :> {fsfun A -> R with 0} ;
-  f01 : all (fun x => 0 <b= f x)%R (finsupp f) &&
-        \rsum_(a <- finsupp f) f a == 1}.
-Lemma ge0 (P : t) a : (0 <= P a)%R.
-Proof.
-case: P => /= f /andP[/allP H _]; apply/leRP.
-have [/eqP ->|fa0] := boolP (f a == 0%R); first exact/leRR'.
-apply/H; by rewrite mem_finsupp.
-Qed.
-Lemma f1 (P : t) : \rsum_(a <- (finsupp P)) P a = 1.
-Proof. by case: P => P /= /andP[_ /eqP]. Qed.
-End dist.
-End Dist.
-Coercion Dist.f : Dist.t >-> fsfun.
-
-Section Dist_canonical.
-Variable A : choiceType.
-Canonical Dist_subType := Eval hnf in [subType for @Dist.f A].
-Definition Dist_eqMixin := [eqMixin of @Dist.t A by <:].
-Canonical Dist_eqType := Eval hnf in EqType _ Dist_eqMixin.
-Definition Dist_choiceMixin := [choiceMixin of @Dist.t A by <:].
-Canonical Dist_choiceType := Eval hnf in ChoiceType _ Dist_choiceMixin.
-End Dist_canonical.
-
-Definition Dist (A : choiceType) : choiceType := Dist_choiceType A.
-
-Definition Dist_of (A : choiceType) := fun phT : phant (Choice.sort A) => Dist A.
-
-Notation "{ 'Dist' T }" := (Dist_of (Phant T)).
-
-Section Dist_prop.
-Variable A : choiceType.
-
-Lemma Distmk (f : {fsfun A -> R with 0}) (H0 : forall a, (0 <= f a)%R)
-  (H1 : \rsum_(a <- finsupp f) f a = 1%R) :
-  all (fun x => 0 <b= f x)%R (finsupp f) && \rsum_(a <- finsupp f) f a == 1.
-Proof. rewrite H1 eqxx andbT; apply/allP => x _. exact/leRP/H0. Qed.
-
-Definition makeDist (f : {fsfun A -> R with 0}) (H0 : forall a, (0 <= f a)%R)
-  (H1 : \rsum_(a <- finsupp f) f a = 1%R) := Dist.mk (Distmk H0 H1).
-
-End Dist_prop.
-
-Module Dist_of_dist.
-Section def.
-Variable (A : finType) (P : dist A).
-Local Open Scope fset_scope.
-Let f := [fsfun a in [fset a0 | a0 in enum A] => P a | 0].
-Let f0 : (forall a, 0 <= f a)%R.
-Proof.
-move=> a; rewrite fsfunE; case: ifPn => _; [exact/dist_ge0|exact/leRR].
-Qed.
-Let f1 : \rsum_(a <- finsupp f) f a = 1%R.
-Proof.
-rewrite (bigID (fun x => x \in enum A)) /=.
-rewrite [in X in (_ + X)%R = _]big1 ?addR0; last first.
-  by move=> a; rewrite mem_enum inE.
-rewrite (eq_bigr (fun x => P x)); last first.
-  by move=> a _; rewrite fsfunE; case: ifPn => //; rewrite inE mem_enum inE.
-rewrite -[RHS](epmf1 P) [in RHS](bigID (fun x => x \in finsupp f)) /=.
-rewrite [in X in _ = (_ + X)%R]big1 ?addR0; last first.
-  move=> a /eqP; rewrite memNfinsupp fsfunE.
-  by case: ifPn => [_ /eqP/eqP //|]; rewrite inE /= mem_enum inE.
-rewrite -big_filter -[in RHS]big_filter; apply eq_big_perm.
-apply uniq_perm_eq.
-exact/filter_uniq/fset_uniq.
-by apply/filter_uniq; rewrite /index_enum -enumT; apply/enum_uniq.
-by move=> a; rewrite !mem_filter !inE /= andbC.
-Qed.
-Definition d : Dist A := makeDist f0 f1.
-End def.
-End Dist_of_dist.
-
-Module Dist1.
-Section def.
-Local Open Scope fset_scope.
-Variables (A : choiceType) (a : A).
-Definition f : {fsfun A -> R with 0} := [fsfun b in [fset a] => 1 | 0].
-Lemma suppf : finsupp f = [fset a].
-Proof.
-apply/fsetP => b; rewrite mem_finsupp /f fsfunE inE.
-case: ifPn => ba; [exact/eqP/gtR_eqF | by rewrite eqxx].
-Qed.
-Lemma f0 b : (0 <= f b)%R.
-Proof. rewrite fsfun_fun inE; case: ifPn => // _; exact/leRR. Qed.
-Lemma f1 : \rsum_(b <- finsupp f) f b = 1%R.
-Proof. by rewrite suppf big_seq_fset1 /f fsfunE inE eqxx. Qed.
-Definition d : Dist A := locked (makeDist f0 f1).
-Lemma dE a0 : d a0 = f a0.
-Proof. by rewrite /d; unlock. Qed.
-Lemma supp : finsupp d = [fset a].
-Proof. by rewrite -suppf; apply/fsetP => b; rewrite !mem_finsupp dE. Qed.
-End def.
-End Dist1.
-
-Module DistBind.
-Section def.
-Local Open Scope fset_scope.
-Variables (A B : choiceType) (p : Dist A) (g : A -> Dist B).
-Let D := \bigcup_(d <- g @` [fset a | a in finsupp p]) finsupp d.
-Definition f : {fsfun B -> R with 0} :=
-  [fsfun b in D => \rsum_(a <- finsupp p) p a * (g a) b | 0].
-Lemma f0 b : (0 <= f b)%R.
-Proof.
-rewrite /f fsfunE; case: ifP =>  _; last exact/leRR.
-apply rsumr_ge0 => a _; apply/mulR_ge0; exact/Dist.ge0.
-Qed.
-Lemma f1 : \rsum_(b <- finsupp f) f b = 1.
-Proof.
-???
-Qed.
-End def.
-End DistBind.
-*)
+Canonical R_choiceType := ChoiceType R Rstruct.R_choiceMixin.
 
 Module Dist.
 Section dist.
