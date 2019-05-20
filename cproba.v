@@ -214,6 +214,57 @@ Qed.
 End prop.
 End TripA.
 
+Module MapFst.
+Section def.
+Variables (A B C : finType) (g : A -> C) (p : {dist A * B}).
+Hypothesis bij_g : bijective g.
+Lemma big_pred1_inj h i : \rsum_(a | g a == g i) h a = h i.
+Proof.
+rewrite (big_pred1 i) // => a /=.
+case H: (a == i).
+  by rewrite (eqP H) eqxx.
+case Hg: (_ == _) => //.
+move/eqP/(bij_inj bij_g) in Hg.
+by rewrite Hg eqxx in H.
+Qed.
+
+Definition f := [ffun x : C * B => \rsum_(a in A | g a == x.1) p (a, x.2)].
+Lemma f0 x : 0 <= f x.
+Proof. rewrite ffunE. apply rsumr_ge0 => i _. exact: dist_ge0. Qed.
+Lemma f1 : \rsum_(x in {: C * B}) f x = 1.
+Proof.
+rewrite /f; evar (h : C * B -> R); rewrite (eq_bigr h); last first.
+  move=> b _; rewrite ffunE /h; reflexivity.
+rewrite (reindex (fun x : A * B => (g x.1, x.2))).
+  rewrite {}/h/= -(epmf1 p).
+  apply eq_bigr => -[i j] _ /=.
+  by apply big_pred1_inj.
+case: bij_g => g' Hg Hg'.
+exists (fun x => (g' x.1, x.2)) => -[i j] _ /=; by rewrite (Hg,Hg').
+Qed.
+
+Definition d : {dist C * B} := locked (makeDist f0 f1).
+Lemma dE x : d x = \rsum_(a in A | g a == x.1) p (a, x.2).
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+
+Lemma fst : Bivar.fst d = DistMap.d g (Bivar.fst p).
+Proof.
+apply/dist_ext => c.
+rewrite Bivar.fstE DistMap.dE.
+rewrite [RHS](eq_bigr _ (fun i _ => Bivar.fstE p i)) exchange_big.
+apply eq_bigr => i _; by rewrite dE.
+Qed.
+
+Lemma snd : Bivar.snd d = Bivar.snd p.
+Proof.
+apply/dist_ext => b.
+rewrite !Bivar.sndE (reindex g).
+  apply eq_bigr=> i _; by rewrite dE /= big_pred1_inj.
+case: bij_g => g'; by exists g'.
+Qed.
+End def.
+End MapFst.
+
 Module TripC12.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
