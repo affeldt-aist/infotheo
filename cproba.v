@@ -64,22 +64,16 @@ Variables (A B : finType) (P : {dist A * B}).
 Definition d : {dist B * A} := DistMap.d swap P.
 Lemma dE a b : d (b, a) = P (a, b).
 Proof.
-rewrite /d; rewrite DistMap.dE /= (_ : (b, a) = swap (a ,b)) //.
+rewrite DistMap.dE /= (_ : (b, a) = swap (a ,b)) //.
 by rewrite (big_pred1_inj _ _ _ (@inj_swap _ _)).
 Qed.
 End def.
 Section prop.
 Variables (A B : finType) (P : {dist A * B}).
 Lemma fst : Bivar.fst (d P) = Bivar.snd P.
-Proof.
-apply/dist_ext => b.
-by rewrite Bivar.fstE Bivar.sndE; apply eq_bigr => a _; rewrite dE.
-Qed.
+Proof. by rewrite /Bivar.fst /d DistMap_comp. Qed.
 Lemma snd : Bivar.snd (d P) = Bivar.fst P.
-Proof.
-apply dist_ext => a.
-by rewrite Bivar.fstE Bivar.sndE; apply eq_bigr => b _; rewrite dE.
-Qed.
+Proof. by rewrite /Bivar.snd /d DistMap_comp. Qed.
 Lemma dI : d (d P) = P.
 Proof. by rewrite /d DistMap_comp ide_swap DistMap_id. Qed.
 Lemma Pr (E : {set A}) (F : {set B}) :
@@ -147,22 +141,16 @@ End Self.
 Module TripA.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
-Definition f := [ffun x : A * (B * C) => P (x.1, x.2.1, x.2.2)].
-Lemma f0 x : 0 <= f x. Proof. rewrite ffunE; exact: dist_ge0. Qed.
-Lemma f1 : \rsum_(x in {: A * (B * C) }) f x = 1.
-Proof.
-rewrite /f; evar (h : A * (B * C) -> R); rewrite (eq_bigr h); last first.
-  move=> b _; rewrite ffunE /h; reflexivity.
-rewrite {}/h /= (eq_bigr (fun x => P (x.1, x.2.1, x.2.2))); last by move=> -[? []].
-rewrite -(pair_big xpredT xpredT (fun x1 x2 => P (x1, x2.1, x2.2))) /=.
-evar (f : A -> R).
-rewrite (eq_bigr f); last first.
-  move=> a _; rewrite -(pair_bigA _ (fun x1 x2 => P (a, x1, x2))) /= /f; reflexivity.
-rewrite {}/f !pair_big /= -(epmf1 P) /=; by apply eq_bigr => -[[]].
-Qed.
-Definition d : {dist A * (B * C)} := locked (makeDist f0 f1).
+Definition f := fun x : A * B * C => (x.1.1, (x.1.2, x.2)).
+Lemma inj_f : injective f.
+Proof. by rewrite /f => -[[? ?] ?] [[? ?] ?] /= [-> -> ->]. Qed.
+Definition d : {dist A * (B * C)} := DistMap.d f P.
 Lemma dE x : d x = P (x.1, x.2.1, x.2.2).
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Proof.
+rewrite /d DistMap.dE /= [in LHS](_ : x = f (x.1, x.2.1, x.2.2)); last first.
+  by move: x => [? [? ?]].
+rewrite big_pred1_inj //; exact/inj_f.
+Qed.
 
 Lemma domin a b c : d (a, (b, c)) = 0 -> P (a, b, c) = 0.
 Proof. by rewrite dE. Qed.
@@ -175,46 +163,19 @@ Variables (A B C : finType) (P : {dist A * B * C}).
 Implicit Types (E : {set A}) (F : {set B}) (G : {set C}).
 
 Lemma fst : Bivar.fst (d P) = Bivar.fst (Bivar.fst P).
-Proof.
-apply/dist_ext => a; rewrite 2!Bivar.fstE /=.
-rewrite (eq_bigr (fun i => d P (a, (i.1, i.2)))); last by case.
-rewrite -(pair_bigA _ (fun i1 i2 => d P (a, (i1, i2)))) /=.
-apply eq_bigr => b _; rewrite Bivar.fstE; apply eq_bigr => c _; by rewrite dE.
-Qed.
+Proof. by rewrite /Bivar.fst /d 2!DistMap_comp. Qed.
 
 Lemma fst_snd : Bivar.fst (Bivar.snd (d P)) = Bivar.snd (Bivar.fst P).
-Proof.
-apply/dist_ext => b /=; rewrite Bivar.sndE Bivar.fstE.
-evar (f : C -> R).
-rewrite (eq_bigr f); last by move=> c _; rewrite Bivar.sndE /f; reflexivity.
-rewrite {}/f exchange_big /=; apply eq_bigr => a _.
-rewrite Bivar.fstE; apply eq_bigr => c _; by rewrite dE.
-Qed.
+Proof. by rewrite /d /Bivar.snd /Bivar.fst /= !DistMap_comp. Qed.
 
 Lemma snd_snd : Bivar.snd (Bivar.snd (d P)) = Bivar.snd P.
-Proof.
-apply/dist_ext => c; rewrite 2!Bivar.sndE /=.
-rewrite (eq_bigr (fun i => P (i.1, i.2, c))); last by case.
-rewrite -(pair_bigA _ (fun i1 i2 => P (i1, i2, c))) /= exchange_big /=.
-apply eq_bigr => b _; rewrite Bivar.sndE; apply eq_bigr => a _; by rewrite dE.
-Qed.
+Proof. by rewrite /d /Bivar.snd !DistMap_comp. Qed.
 
 Lemma snd_swap : Bivar.snd (Swap.d (d P)) = Bivar.fst (Bivar.fst P).
-Proof.
-apply/dist_ext => a; rewrite Bivar.sndE /= Bivar.fstE /=.
-rewrite (eq_bigr (fun i => Swap.d (d P) (i.1, i.2, a))); last by case.
-rewrite -(pair_bigA _ (fun i1 i2 => Swap.d (d P) (i1, i2, a))) /=.
-apply eq_bigr => b _; rewrite Bivar.fstE; apply eq_bigr => c _; by rewrite Swap.dE dE.
-Qed.
+Proof. by rewrite /d /Bivar.snd /Swap.d /Bivar.fst /= 3!DistMap_comp. Qed.
 
 Lemma snd_fst_swap : Bivar.snd (Bivar.fst (Swap.d (d P))) = Bivar.snd P.
-Proof.
-apply/dist_ext => c; rewrite 2!Bivar.sndE /=.
-rewrite (eq_bigr (fun i => P (i.1, i.2, c))); last by case.
-rewrite -(pair_bigA _ (fun i1 i2 => P (i1, i2, c))) /=.
-rewrite exchange_big; apply eq_bigr => b _.
-rewrite Bivar.fstE /=; apply eq_bigr => a _; by rewrite Swap.dE dE.
-Qed.
+Proof. by rewrite /Bivar.snd /Bivar.fst /Swap.d !DistMap_comp. Qed.
 
 Lemma Pr E F G : Pr (TripA.d P) (setX E (setX F G)) = Pr P (setX (setX E F) G).
 Proof.
@@ -225,7 +186,7 @@ Qed.
 End prop.
 End TripA.
 
-Module MapFst.
+(*Module MapFst.
 Section def.
 Variables (A B C : finType) (g : A -> C) (p : {dist A * B}).
 Hypothesis bij_g : bijective g.
@@ -266,37 +227,38 @@ case: bij_g => g'; by exists g'.
 Qed.
 End def.
 End MapFst.
+*)
 
 Module TripC12.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
-
-Definition d : {dist B * A * C} := MapFst.d P (@bij_swap _ _).
+Definition f := fun x : A * B * C => (x.1.2, x.1.1, x.2).
+Lemma inj_f : injective f.
+Proof. by rewrite /f => -[[? ?] ?] [[? ?] ?] /= [-> -> ->]. Qed.
+Definition d : {dist B * A * C} := DistMap.d f P.
 Lemma dE x : d x = P (x.1.2, x.1.1, x.2).
 Proof.
-rewrite /d MapFst.dE [in LHS](_ : x.1 = swap (swap x.1)); last by case: x => -[].
-rewrite big_pred1_inj //; exact: inj_swap.
+rewrite /d DistMap.dE /= [in LHS](_ : x = f (x.1.2, x.1.1, x.2)); last first.
+  by move: x => [[? ?] ?].
+rewrite big_pred1_inj //; exact/inj_f.
 Qed.
 
 Lemma snd : Bivar.snd d = Bivar.snd P.
-Proof. by rewrite MapFst.snd. Qed.
+Proof. by rewrite /Bivar.snd /d DistMap_comp. Qed.
 
 Lemma fst : Bivar.fst d = Swap.d (Bivar.fst P).
-Proof. by rewrite MapFst.fst. Qed.
+Proof. by rewrite /Bivar.fst /d /Swap.d 2!DistMap_comp. Qed.
 
 Lemma fstA : Bivar.fst (TripA.d d) = Bivar.snd (Bivar.fst P).
-Proof.
-apply/dist_ext => b; rewrite Bivar.fstE Bivar.sndE /=.
-rewrite (eq_bigr (fun i => (TripA.d d) (b, (i.1, i.2)))); last by case.
-rewrite -(pair_bigA _ (fun i1 i2 => (TripA.d d) (b, (i1, i2)))) /=.
-apply eq_bigr => a _; rewrite Bivar.fstE; apply eq_bigr => c _.
-by rewrite TripA.dE dE.
-Qed.
+Proof. by rewrite /Bivar.fst /TripA.d /Bivar.snd !DistMap_comp. Qed.
 End def.
 Section prop.
 Variables (A B C : finType) (P : {dist A * B * C}).
 Lemma dI : d (d P) = P.
-Proof. by apply/dist_ext => -[[a b] c]; rewrite !dE /=. Qed.
+Proof.
+rewrite /d DistMap_comp (_ : f (C := C) \o f (C := C) = ssrfun.id) ?DistMap_id //.
+by apply FunctionalExtensionality.functional_extensionality => -[[]].
+Qed.
 Lemma Pr E F G : Pr (d P) (setX (setX E F) G) = Pr P (setX (setX F E) G).
 Proof.
 rewrite /Pr !big_setX /= exchange_big; apply eq_bigr => a aF.
@@ -330,10 +292,7 @@ Lemma fst_fst : Bivar.fst (Bivar.fst (d P)) = Bivar.fst (Bivar.fst P).
 Proof. by rewrite def Swap.fst TripA.fst_snd TripC12.fst Swap.snd. Qed.
 
 Lemma sndA : Bivar.snd (TripA.d (d P)) = Swap.d (Bivar.snd (TripA.d P)).
-Proof.
-apply/dist_ext => -[c b].
-rewrite Swap.dE !Bivar.sndE /=; apply eq_bigr => a _; by rewrite !TripA.dE /= dE.
-Qed.
+Proof. by rewrite def /Bivar.snd /TripA.d /Swap.d /= !DistMap_comp. Qed.
 
 Lemma Pr E F G : Pr (TripC23.d P) (setX (setX E G) F) = Pr P (setX (setX E F) G).
 Proof.
@@ -363,11 +322,7 @@ Lemma fst_fst : Bivar.fst (Bivar.fst d) = Bivar.snd P.
 Proof. by rewrite def TripC12.fst Swap.fst TripA.snd_fst_swap. Qed.
 
 Lemma sndA : Bivar.snd (TripA.d d) = Swap.d (Bivar.fst P).
-Proof.
-apply/dist_ext => -[b a].
-rewrite Swap.dE Bivar.sndE Bivar.fstE; apply eq_bigr => c _.
-by rewrite TripA.dE def TripC12.dE Swap.dE TripA.dE.
-Qed.
+Proof. by rewrite /Bivar.snd /TripA.d /Swap.d /Bivar.fst def !DistMap_comp. Qed.
 End def.
 End TripC13.
 

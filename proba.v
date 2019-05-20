@@ -953,25 +953,11 @@ Section def.
 Variables (A B : finType) (P : {dist A * B}).
 
 (* marginal left *)
-Definition ml := [ffun a => \rsum_(x in {: A * B} | x.1 == a) P x].
-
-Lemma ml0 a : 0 <= ml a.
-Proof. rewrite ffunE; apply rsumr_ge0 => x xa; exact: dist_ge0. Qed.
-
-Lemma ml1 : \rsum_(a in A) ml a = 1%R.
-Proof.
-rewrite -(epmf1 P) (eq_bigr (fun a => P (a.1, a.2))); last by case.
-rewrite -(pair_big xpredT xpredT (fun a b => P (a, b))) /=; apply eq_bigr => a _.
-rewrite /ml ffunE -(pair_big_fst _ _ (pred1 a)) //= exchange_big /=.
-apply eq_bigr => b _; by rewrite big_pred1_eq.
-Qed.
-
-Definition fst := locked (makeDist ml0 ml1).
+Definition fst : dist A := DistMap.d fst P.
 
 Lemma fstE a : fst a = \rsum_(i in B) P (a, i).
 Proof.
-rewrite /fst; unlock => /=; rewrite /ml ffunE.
-by rewrite -(pair_big_fst _ _ (pred1 a)) //= big_pred1_eq.
+by rewrite /fst DistMap.dE -(pair_big_fst _ _ (pred1 a)) //= big_pred1_eq.
 Qed.
 
 Lemma dom_by_fst a b : fst a = 0 -> P (a, b) = 0.
@@ -981,25 +967,11 @@ Lemma dom_by_fstN a b : P (a, b) != 0 -> fst a != 0.
 Proof. by apply: contra => /eqP /dom_by_fst ->. Qed.
 
 (* marginal right *)
-Definition mr := [ffun b => \rsum_(x in {: A * B} | x.2 == b) P x].
-
-Lemma mr0 b : 0 <= mr b.
-Proof. rewrite ffunE; apply rsumr_ge0 => x xb; exact: dist_ge0. Qed.
-
-Lemma mr1 : \rsum_(b in B) mr b = 1%R.
-Proof.
-rewrite -(epmf1 P) (eq_bigr (fun a => P (a.1, a.2))); last by case.
-rewrite -(pair_big xpredT xpredT (fun a b => P (a, b))) /=.
-rewrite exchange_big; apply eq_bigr => b _.
-rewrite /mr ffunE -(pair_big_snd _ _ (pred1 b)) //=.
-apply eq_bigr => a _; by rewrite big_pred1_eq.
-Qed.
-
-Definition snd : dist B := locked (makeDist mr0 mr1).
+Definition snd : dist B := DistMap.d snd P.
 
 Lemma sndE b : snd b = \rsum_(i in A) P (i, b).
 Proof.
-rewrite /snd; unlock => /=; rewrite /mr ffunE -(pair_big_snd _ _ (pred1 b)) //=.
+rewrite /snd DistMap.dE -(pair_big_snd _ _ (pred1 b)) //=.
 apply eq_bigr => a ?; by rewrite big_pred1_eq.
 Qed.
 
