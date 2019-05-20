@@ -218,6 +218,7 @@ Module MapFst.
 Section def.
 Variables (A B C : finType) (g : A -> C) (p : {dist A * B}).
 Hypothesis bij_g : bijective g.
+(* Valid for any bigop and any injective g; should generalize *)
 Lemma big_pred1_inj h i : \rsum_(a | g a == g i) h a = h i.
 Proof.
 rewrite (big_pred1 i) // => a /=.
