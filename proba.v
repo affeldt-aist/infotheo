@@ -318,6 +318,17 @@ Qed.
 
 End map_bind_dist.
 
+(* TODO: move *)
+Lemma DistMap_id (A : finType) P : DistMap.d (@id A) P = P.
+Proof. by rewrite fmap_distE /fmap_dist DistBindp1. Qed.
+
+Lemma DistMap_comp (A B C : finType) (g : A -> B) (h : C -> A) P :
+  DistMap.d g (DistMap.d h P) = DistMap.d (g \o h) P.
+Proof.
+rewrite !fmap_distE /fmap_dist DistBindA; congr (DistBind.d _ _).
+by apply/functional_extensionality => c; rewrite DistBind1f.
+Qed.
+
 Module Uniform.
 Section def.
 Variables (A : finType) (n : nat).
