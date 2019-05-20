@@ -1351,7 +1351,7 @@ rewrite -addR_opp oppRD addRCA 2!addRA -(addRA (- _ + _)) addR_opp; congr (_ + _
   rewrite MutualInfo.miE2 addRC; congr (_ - _).
   by rewrite Proj13.fst TripA.fst.
 rewrite /cmi; congr (CondEntropy.h _ - _).
-  by rewrite Proj13.def -TripC13.def TripC13.sndA.
+  by rewrite /Proj13.d -/(TripC13.d _) TripC13.sndA.
 (* TODO: lemma *)
 rewrite /CondEntropy.h.
 rewrite (eq_bigr (fun a => (Bivar.snd (TripA.d (TripC12.d PQR))) (a.1, a.2) * CondEntropy.h1 (TripA.d (TripC12.d PQR)) (a.1, a.2))); last by case.
@@ -1652,7 +1652,7 @@ case: ifPn => j0.
 - rewrite /cmi /fA -/P; congr (_ - _).
   + congr CondEntropy.h.
     by rewrite /f23 /f Proj13_TripC23 TripC12.fst belast_last_take.
-  + rewrite /f23 /f TripC23.def TripC12.dI /CondEntropy.h /=.
+  + rewrite /f23 /f /TripC23.d TripC12.dI /CondEntropy.h /=.
     rewrite (eq_bigr (fun a => (Bivar.snd (TripA.d (TripC12.d (PairTake.d PY j)))) (a.1, a.2) *
        CondEntropy.h1 (TripA.d (TripC12.d (PairTake.d PY j))) (a.1, a.2))); last by case.
     rewrite -(pair_bigA _ (fun a1 a2 => (Bivar.snd (TripA.d (TripC12.d (PairTake.d PY j)))) (a1, a2) *
@@ -1663,7 +1663,7 @@ case: ifPn => j0.
       by rewrite !TripA.dE /= Swap.dE TripC12.dE /= TripA.dE.
     * (* TODO: lemma? *)
       rewrite /CondEntropy.h1; congr (- _); apply eq_bigr => a _.
-      by rewrite -!setX1 -cPr_TripA_TripC23 TripC23.def TripC12.dI.
+      by rewrite -!setX1 -cPr_TripA_TripC23 /TripC23.d TripC12.dI.
 Qed.
 
 End chain_rule_for_information.
@@ -1699,7 +1699,7 @@ rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
     apply/dist_ext => -[b a]. (* TODO: lemma? *)
     rewrite Proj13.dE Swap.dE Bivar.fstE; apply eq_bigr => c _.
     by rewrite Swap.dE TripA.dE.
-  by rewrite Proj13.def TripA.fst_snd TripC12.fst Swap.fst Swap.snd TripA.fst_snd -/Q.
+  by rewrite /Proj13.d TripA.fst_snd TripC12.fst Swap.fst Swap.snd TripA.fst_snd -/Q.
 rewrite MutualInfo.miE2.
 rewrite Proj23.fst -/Q.
 rewrite -oppRB leR_oppl oppRB -!addR_opp leR_add2r.
@@ -1707,8 +1707,8 @@ rewrite -oppRB leR_oppl oppRB -!addR_opp leR_add2r.
 (* Q|R,P <= Q|R, lemma *)
 rewrite -subR_ge0.
 move: (cmi_ge0 (TripC12.d PQR)); rewrite /cmi.
-rewrite Proj13.def TripC12.dI -Proj23.def.
-by rewrite hTripC23 TripC23.def TripC12.dI.
+rewrite /Proj13.d TripC12.dI -/(Proj23.d _).
+by rewrite hTripC23 /TripC23.d TripC12.dI.
 Qed.
 End prop2.
 End conditioning_reduces_entropy.
@@ -1791,7 +1791,7 @@ rewrite {1}/Rdiv -mulRA mulRCA mulRC; congr (_ * _).
   rewrite /cPr Proj13.snd -/Q {2}/PRQ TripC23.snd -/Q -/(Rdiv _ _); congr (_ / _).
   by rewrite /PRQ /PQ setX1 Proj13_TripC23.
 rewrite /cPr Proj23.snd; congr (_ / _).
-- by rewrite /RQ /PRQ Proj23.def TripC23.sndA.
+- by rewrite /RQ /PRQ /Proj23.d TripC23.sndA.
 - by rewrite /RQ Swap.snd TripA.fst_snd /PRQ TripC23.snd.
 Qed.
 

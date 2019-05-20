@@ -42,6 +42,7 @@ Qed.
 End prod_dominates_joint.
 
 (* TODO: move *)
+(* TODO: generalize pair_big_fst? *)
 Section big_pred1_inj.
 Variables (R : Type) (idx : R) (op : Monoid.law idx).
 Lemma big_pred1_inj (A C : finType) h i (k : A -> C) : injective k ->
@@ -93,8 +94,7 @@ Variables (A B : finType) (P : {dist A * B}) (Q : {dist A * B}).
 Local Open Scope reals_ext_scope.
 Lemma dom_by : dominates P Q -> dominates (Swap.d P) (Swap.d Q).
 Proof.
-move/dominatesP => H.
-by apply/dominatesP => -[b a]; rewrite !dE => /H.
+by move/dominatesP => H; apply/dominatesP => -[b a]; rewrite !dE => /H.
 Qed.
 End prop3.
 End Swap.
@@ -186,6 +186,22 @@ Qed.
 End prop.
 End TripA.
 
+Module TripA'.
+Section def.
+Variables (A B C : finType) (P : {dist A * (B * C)}).
+Definition f := fun x : A * (B * C) => ((x.1, x.2.1), x.2.2).
+Lemma inj_f : injective f.
+Proof. by rewrite /f => -[? [? ?]] [? [? ?]] /= [-> -> ->]. Qed.
+Definition d : {dist A * B * C} := DistMap.d f P.
+Lemma dE x : d x = P (x.1.1, (x.1.2, x.2)).
+Proof.
+rewrite /d DistMap.dE /= [in LHS](_ : x = f (x.1.1, (x.1.2, x.2))); last first.
+  by move: x => [[? ?] ?].
+rewrite big_pred1_inj //; exact/inj_f.
+Qed.
+End def.
+End TripA'.
+
 (*Module MapFst.
 Section def.
 Variables (A B C : finType) (g : A -> C) (p : {dist A * B}).
@@ -270,29 +286,25 @@ End TripC12.
 Module TripC23.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
-Definition d : {dist A * C * B} := locked (Swap.d (TripA.d (TripC12.d P))).
-Definition def : d = Swap.d (TripA.d (TripC12.d P)).
-Proof. by rewrite /d; unlock. Qed.
+Definition d : {dist A * C * B} := Swap.d (TripA.d (TripC12.d P)).
 Lemma dE x : d x = P (x.1.1, x.2, x.1.2).
-Proof. case: x => x1 x2; by rewrite def Swap.dE TripA.dE TripC12.dE. Qed.
+Proof. by case: x => x1 x2; rewrite /d Swap.dE TripA.dE TripC12.dE. Qed.
 End def.
 Section prop.
 Variables (A B C : finType) (P : {dist A * B * C}).
 Implicit Types (E : {set A}) (F : {set B}) (G : {set C}).
 
 Lemma snd : Bivar.snd (d P) = Bivar.snd (Bivar.fst P).
-Proof. by rewrite def Swap.snd TripC12.fstA. Qed.
+Proof. by rewrite /d Swap.snd TripC12.fstA. Qed.
 
 Lemma fstA : Bivar.fst (TripA.d (d P)) = Bivar.fst (TripA.d P).
-Proof.
-by rewrite def TripA.fst Swap.fst TripA.fst_snd TripC12.fst Swap.snd TripA.fst.
-Qed.
+Proof. by rewrite /Bivar.fst !DistMap_comp. Qed.
 
 Lemma fst_fst : Bivar.fst (Bivar.fst (d P)) = Bivar.fst (Bivar.fst P).
-Proof. by rewrite def Swap.fst TripA.fst_snd TripC12.fst Swap.snd. Qed.
+Proof. by rewrite /Bivar.fst !DistMap_comp. Qed.
 
 Lemma sndA : Bivar.snd (TripA.d (d P)) = Swap.d (Bivar.snd (TripA.d P)).
-Proof. by rewrite def /Bivar.snd /TripA.d /Swap.d /= !DistMap_comp. Qed.
+Proof. by rewrite /Bivar.snd /Swap.d !DistMap_comp. Qed.
 
 Lemma Pr E F G : Pr (TripC23.d P) (setX (setX E G) F) = Pr P (setX (setX E F) G).
 Proof.
@@ -306,35 +318,31 @@ End TripC23.
 Module TripC13.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
-Definition d : {dist C * B * A} := locked (TripC12.d (Swap.d (TripA.d P))).
-Lemma def : d = TripC12.d (Swap.d (TripA.d P)).
-Proof. by rewrite /d; unlock. Qed.
+Definition d : {dist C * B * A} := TripC12.d (Swap.d (TripA.d P)).
 Lemma dE x : d x = P (x.2, x.1.2, x.1.1).
-Proof. by rewrite def TripC12.dE Swap.dE TripA.dE. Qed.
+Proof. by rewrite /d TripC12.dE Swap.dE TripA.dE. Qed.
 
 Lemma fst : Bivar.fst d = Swap.d (Bivar.snd (TripA.d P)).
-Proof. by rewrite def TripC12.fst Swap.fst. Qed.
+Proof. by rewrite /d /Bivar.fst /Swap.d !DistMap_comp. Qed.
 
 Lemma snd : Bivar.snd d = Bivar.fst (Bivar.fst P).
-Proof. by rewrite def TripC12.snd TripA.snd_swap. Qed.
+Proof. by rewrite /d TripC12.snd TripA.snd_swap. Qed.
 
 Lemma fst_fst : Bivar.fst (Bivar.fst d) = Bivar.snd P.
-Proof. by rewrite def TripC12.fst Swap.fst TripA.snd_fst_swap. Qed.
+Proof. by rewrite /Bivar.fst /Bivar.snd !DistMap_comp. Qed.
 
 Lemma sndA : Bivar.snd (TripA.d d) = Swap.d (Bivar.fst P).
-Proof. by rewrite /Bivar.snd /TripA.d /Swap.d /Bivar.fst def !DistMap_comp. Qed.
+Proof. by rewrite /Bivar.snd /Swap.d !DistMap_comp. Qed.
 End def.
 End TripC13.
 
 Module Proj13.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
-Definition d : {dist A * C} := locked (Bivar.snd (TripA.d (TripC12.d P))).
-Lemma def : d = Bivar.snd (TripA.d (TripC12.d P)).
-Proof. by rewrite /d; unlock. Qed.
+Definition d : {dist A * C} := Bivar.snd (TripA.d (TripC12.d P)).
 Lemma dE x : d x = \rsum_(b in B) P (x.1, b, x.2).
 Proof.
-rewrite def Bivar.sndE; apply eq_bigr => b _; by rewrite TripA.dE TripC12.dE.
+rewrite /d Bivar.sndE; apply eq_bigr => b _; by rewrite TripA.dE TripC12.dE.
 Qed.
 
 Lemma domin a b c : d (a, c) = 0 -> P (a, b, c) = 0.
@@ -344,23 +352,20 @@ Lemma dominN a b c : P (a, b, c) != 0 -> d (a, c) != 0.
 Proof. by apply: contra => /eqP H; apply/eqP/domin. Qed.
 
 Lemma snd : Bivar.snd d = Bivar.snd P.
-Proof. by rewrite def TripA.snd_snd TripC12.snd. Qed.
+Proof. by rewrite /d TripA.snd_snd TripC12.snd. Qed.
 
 Lemma fst : Bivar.fst d = Bivar.fst (TripA.d P).
-Proof. by rewrite def TripA.fst_snd TripC12.fst Swap.snd TripA.fst. Qed.
+Proof. by rewrite /d TripA.fst_snd TripC12.fst Swap.snd TripA.fst. Qed.
 
 End def.
-
 End Proj13.
 
 Module Proj23.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
-Definition d : {dist B * C} := locked (Bivar.snd (TripA.d P)).
-Lemma def : d = Bivar.snd (TripA.d P).
-Proof. by rewrite /d; unlock. Qed.
+Definition d : {dist B * C} := Bivar.snd (TripA.d P).
 Lemma dE x : d x = \rsum_(a in A) P (a, x.1, x.2).
-Proof. by rewrite def Bivar.sndE; apply eq_bigr => a _; rewrite TripA.dE. Qed.
+Proof. by rewrite /d Bivar.sndE; apply eq_bigr => a _; rewrite TripA.dE. Qed.
 
 Lemma domin a b c : d (b, c) = 0 -> P (a, b, c) = 0.
 Proof. rewrite dE /= => /prsumr_eq0P -> // a' _; exact: dist_ge0. Qed.
@@ -369,9 +374,9 @@ Lemma dominN a b c : P (a, b, c) != 0 -> d (b, c) != 0.
 Proof. by apply: contra => /eqP H; apply/eqP; apply: domin. Qed.
 
 Lemma fst : Bivar.fst d = Bivar.snd (Bivar.fst P).
-Proof. by rewrite def TripA.fst_snd. Qed.
+Proof. by rewrite /d TripA.fst_snd. Qed.
 Lemma snd : Bivar.snd d = Bivar.snd P.
-Proof. by rewrite def TripA.snd_snd. Qed.
+Proof. by rewrite /d TripA.snd_snd. Qed.
 End def.
 Section prop.
 Variables (A B C : finType) (P : {dist A * B * C}).
@@ -390,8 +395,9 @@ Section Proj_prop.
 Variables (A B C : finType) (P : {dist A * B * C}).
 Lemma Proj13_TripC23 : Proj13.d (TripC23.d P) = Bivar.fst P.
 Proof.
-apply/dist_ext => -[a b].
-rewrite Proj13.dE Bivar.fstE; apply eq_bigr => c _; by rewrite TripC23.dE.
+rewrite /Proj13.d /Bivar.snd /TripA.d /TripC12.d /TripC23.d /Bivar.fst.
+rewrite !DistMap_comp /=; congr (DistMap.d _ _).
+by apply FunctionalExtensionality.functional_extensionality => -[[]].
 Qed.
 End Proj_prop.
 
@@ -721,12 +727,9 @@ Lemma cPr_TripA_TripC12 (E : {set A}) (F : {set B}) (G : {set C}) :
 Proof.
 rewrite /cPr; congr (_ / _).
 by rewrite TripA.Pr TripC12.Pr TripA.Pr [in RHS]Swap.Pr Swap.dI TripA.Pr.
-rewrite -Proj13.def -(Swap.dI (Proj13.d P)) Swap.Pr Swap.dI; congr Pr.
+rewrite -/(Proj13.d _) -(Swap.dI (Proj13.d P)) Swap.Pr Swap.dI; congr Pr.
 (* TODO: lemma *)
-rewrite Proj13.def.
-apply/dist_ext => -[c a].
-rewrite Swap.dE 2!Bivar.sndE; apply eq_bigr => b _.
-by rewrite !(TripA.dE,Swap.dE,TripC12.dE).
+by rewrite /Proj13.d /Swap.d /Bivar.snd /TripA.d !DistMap_comp.
 Qed.
 
 End conditional_probability_prop3.
@@ -740,7 +743,7 @@ Lemma product_rule E F G :
   \Pr_P [setX E F | G] = \Pr_(TripA.d P) [E | setX F G] * \Pr_(Proj23.d P) [F | G].
 Proof.
 rewrite /cPr; rewrite !mulRA; congr (_ * _); last by rewrite Proj23.snd.
-rewrite -mulRA -Proj23.def -TripA.Pr.
+rewrite -mulRA -/(Proj23.d _) -TripA.Pr.
 case/boolP : (Pr (Proj23.d P) (setX F G) == 0) => H; last by rewrite mulVR ?mulR1.
 suff -> : Pr (TripA.d P) (setX E (setX F G)) = 0 by rewrite mul0R.
 rewrite TripA.Pr; exact/Proj23.Pr_domin/eqP.

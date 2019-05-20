@@ -1478,7 +1478,7 @@ Qed.
 Module RVar.
 Section def.
 Variables (U A : finType) (P : dist U) (X : {RV P -> A}).
-Definition f := [ffun a => \Pr[ X = a ]].
+(*Definition f := [ffun a => \Pr[ X = a ]].
 Lemma f0 a : 0 <= f a. Proof. rewrite ffunE; exact/Pr_ge0. Qed.
 Lemma f1 : \rsum_(a in A) (f a) = 1.
 Proof.
@@ -1489,9 +1489,14 @@ rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
 rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
 apply eq_bigr => a aX; rewrite ffunE; by apply eq_bigl => u; rewrite inE.
 Qed.
-Definition d : {dist A} := locked (makeDist f0 f1).
+Definition d : {dist A} := locked (makeDist f0 f1).*)
+Definition d : {dist A} := DistMap.d X P.
 Lemma dE a : d a = \Pr[ X = a ].
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Proof.
+rewrite /d DistMap.dE /pr_eq /Pr; apply eq_bigl => i; apply/andP/idP.
+by case=> _ /eqP Xia; rewrite inE Xia.
+by rewrite inE => /eqP ->.
+(*Proof. by rewrite /d; unlock; rewrite ffunE.*) Qed.
 End def.
 End RVar.
 
