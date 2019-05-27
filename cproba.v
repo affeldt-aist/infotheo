@@ -26,14 +26,6 @@ Import Prenex Implicits.
 Local Open Scope R_scope.
 Local Open Scope proba_scope.
 
-(* TODO: move *)
-Section big_pred1_inj.
-Variables (R : Type) (idx : R) (op : Monoid.law idx).
-Lemma big_pred1_inj (A C : finType) h i (k : A -> C) : injective k ->
-  \big[op/idx]_(a | k a == k i) h a = h i.
-Proof. by move=> ?; rewrite (big_pred1 i) // => ?; rewrite eqtype.inj_eq. Qed.
-End big_pred1_inj.
-
 Lemma inj_swap A B : injective (@swap A B).
 Proof. by move=> [? ?] [? ?] [-> ->]. Qed.
 

@@ -967,37 +967,38 @@ Module Multivar.
 Section prod_of_rV.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}).
 
-Definition tobi := [ffun a : A * 'rV[A]_n => P (row_mx (\row_(i < 1) a.1) a.2)].
-
-Lemma tobi0 a : 0 <= tobi a.
-Proof. rewrite ffunE; exact: dist_ge0. Qed.
-
-Lemma tobi1 : \rsum_(a in {: A * 'rV[A]_n}) tobi a = 1%R.
+Definition f (v : 'rV[A]_n.+1) : A * 'rV[A]_n := (v ord0 ord0, rbehead v).
+Let inj_f : injective f.
 Proof.
-rewrite -(epmf1 P) /= -(big_rV_cons_behead _ xpredT xpredT) /=.
-by rewrite pair_big /=; apply eq_bigr; case=> ? ?; rewrite ffunE.
+move=> a b -[H1 H2]; rewrite -(row_mx_rbehead a) -(row_mx_rbehead b).
+by rewrite {}H2; congr (@row_mx _ 1 1 n _ _); apply/rowP => i; rewrite !mxE.
 Qed.
-
-Definition to_bivar : {dist A * 'rV[A]_n} := locked (makeDist tobi0 tobi1).
-
+Definition to_bivar : {dist A * 'rV[A]_n} := DistMap.d f P.
 Lemma to_bivarE a : to_bivar a = P (row_mx (\row_(i < 1) a.1) a.2).
-Proof. by rewrite /to_bivar; unlock => /=; rewrite ffunE. Qed.
+Proof.
+case: a => x y; rewrite /to_bivar DistMap.dE /=.
+rewrite (_ : (x, y) = f (row_mx (\row_(i < 1) x) y)); last first.
+  by rewrite /f row_mx_row_ord0 rbehead_row_mx.
+by rewrite (big_pred1_inj _ _ _ inj_f).
+Qed.
 
 Definition head_of := Bivar.fst to_bivar.
 Definition tail_of := Bivar.snd to_bivar.
 
-Definition tolast := [ffun a : 'rV[A]_n * A =>
-  P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2)))].
-Lemma tolast0 a : 0 <= tolast a. Proof. rewrite ffunE; exact: dist_ge0. Qed.
-Lemma tolast1 : \rsum_(a in {: 'rV[A]_n * A}) tolast a = 1%R.
+Definition g (v : 'rV[A]_n.+1) : 'rV[A]_n * A := (rbelast v, rlast v).
+Let inj_g : injective g.
 Proof.
-rewrite -(epmf1 P) /= -(big_rV_belast_last _ xpredT xpredT) /=.
-by rewrite pair_big /=; apply eq_bigr; case => ? ?; rewrite ffunE.
+by move=> a b -[H1 H2]; rewrite -(row_mx_rbelast a) -(row_mx_rbelast b) H1 H2.
 Qed.
-Definition belast_last : {dist 'rV[A]_n * A} := locked (makeDist tolast0 tolast1).
+Definition belast_last : {dist 'rV[A]_n * A} := DistMap.d g P.
 Lemma belast_lastE a : belast_last a =
   P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2))).
-Proof. by rewrite /belast_last; unlock => /=; rewrite ffunE. Qed.
+Proof.
+case: a => x y; rewrite /belast_last DistMap.dE /=.
+rewrite (_ : (x, y) = g (castmx (erefl 1%nat, addn1 n) (row_mx x (\row__ y)))); last first.
+  by rewrite /g rbelast_row_mx row_mx_row_ord_max.
+by rewrite (big_pred1_inj _ _ _ inj_g).
+Qed.
 
 End prod_of_rV.
 

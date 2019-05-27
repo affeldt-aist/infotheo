@@ -157,15 +157,15 @@ Definition rbelast (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (widen_ord (leqnSn _)
 Definition rlast (x : 'rV[A]_n.+1) := x ``_ ord_max.
 
 Lemma row_mx_row_ord_max (x : 'rV[A]_n) a :
-  (castmx (erefl 1%nat, addn1 n) (row_mx x (\row_(k < 1) a))) ``_ ord_max = a.
+  rlast (castmx (erefl 1%nat, addn1 n) (row_mx x (\row_(k < 1) a))) = a.
 Proof.
-rewrite castmxE /= mxE /=; case: splitP => [j Hj|k _].
+rewrite /rlast castmxE /= mxE /=; case: splitP => [j Hj|k _].
 by move: (ltn_ord j); rewrite -Hj ltnn.
 by rewrite (ord1 k) mxE.
 Qed.
 
-Lemma row_mx_rbelast (x : 'rV_(1 + n)) :
-  castmx (erefl 1%N, addn1 n) (row_mx (rbelast x) (\row__ (x ``_ ord_max))) = x.
+Lemma row_mx_rbelast (x : 'rV_n.+1) :
+  castmx (erefl 1%N, addn1 n) (row_mx (rbelast x) (\row__ (rlast x))) = x.
 Proof.
 apply/rowP => i; rewrite castmxE /= mxE; case: splitP => [j /= ij|k /=].
 rewrite mxE; congr (x _ _); exact/val_inj.

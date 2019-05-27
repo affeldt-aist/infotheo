@@ -169,6 +169,13 @@ Qed.
 
 End bigop_add_law_eqtype.
 
+Section big_pred1_inj.
+Variables (R : Type) (idx : R) (op : Monoid.law idx).
+Lemma big_pred1_inj (A C : finType) h i (k : A -> C) : injective k ->
+  \big[op/idx]_(a | k a == k i) h a = h i.
+Proof. by move=> ?; rewrite (big_pred1 i) // => ?; rewrite eqtype.inj_eq. Qed.
+End big_pred1_inj.
+
 Section bigop_com_law.
 
 Variables (R : Type) (idx : R) (M : Monoid.com_law idx).
@@ -321,17 +328,14 @@ Lemma big_rV_belast_last n (F : 'rV[A]_n.+1 -> R)
     \big[M/idx]_(j in A | P2 j) (F (castmx (erefl, addn1 n) (row_mx i (\row_(k < 1) j)))) =
   \big[M/idx]_(p in 'rV[A]_n.+1 | (P1 (rbelast p)) && (P2 (rlast p)) ) (F p).
 Proof.
-rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => x ``_ ord_max) P2) /=; last first.
+rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => rlast x) P2) /=; last first.
   by move=> i /andP[].
 rewrite exchange_big.
 apply eq_bigr => i Hi.
 rewrite (reindex_onto (fun j => (castmx (erefl 1%nat, addn1 n) (row_mx j (\row_(k < 1) i)))) rbelast) /=; last first.
     move=> j /andP[] Hj1 /eqP => <-; by rewrite row_mx_rbelast.
 apply eq_big => //= x.
-rewrite row_mx_row_ord_max rbelast_row_mx 2!eqxx !andbT.
-rewrite /rlast !(castmxE,mxE) /=; case: splitP => /= [|k].
-  move=> j nj; move: (ltn_ord j); by rewrite -nj ltnn.
-by move=> _; rewrite mxE Hi andbT.
+by rewrite row_mx_row_ord_max rbelast_row_mx 2!eqxx !andbT Hi andbT.
 Qed.
 
 End bigop_com_law.
