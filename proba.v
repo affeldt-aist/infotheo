@@ -11,8 +11,8 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (** OUTLINE
   1. Section distribution_def.
   2. Module Dist1.
-  3. Module DistMap.
-  4. Module DistBind.
+  3. Module DistBind.
+  4. Module DistMap.
   5. Module Uniform.
   6. Module UniformSupport.
        Uniform distribution with a restricted support
@@ -239,29 +239,14 @@ Qed.
 End prop.
 End Dist1.
 
-Module DistMap.
-Section def.
-Variables (A B : finType) (g : A -> B) (p : dist A).
-Definition f := [ffun b => \rsum_(a in A | g a == b) p a].
-Lemma f0 b : 0 <= f b.
-Proof. rewrite ffunE; apply: rsumr_ge0 => a _; exact/dist_ge0. Qed.
-Lemma f1 : \rsum_(b in B) f b = 1%R.
-Proof.
-rewrite -(epmf1 p) (@partition_big _ _ _ _ _ _ g xpredT) //=.
-apply eq_bigr => b _; by rewrite /f ffunE.
-Qed.
-Definition d : dist B := locked (makeDist f0 f1).
-Definition dE x : d x = \rsum_(a in A | g a == x) p a.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-End def.
-End DistMap.
-
 Module DistBind.
 Section def.
 Variables (A B : finType) (p : dist A) (g : A -> dist B).
 Definition f := [ffun b => \rsum_(a in A) p a * (g a) b].
 Lemma f0 b : 0 <= f b.
-Proof. rewrite /f ffunE; apply rsumr_ge0 => a _; apply mulR_ge0; exact/dist_ge0. Qed.
+Proof.
+rewrite /f ffunE; apply rsumr_ge0 => a _; apply mulR_ge0; exact/dist_ge0.
+Qed.
 Lemma f1 : \rsum_(b in B) f b = 1%R.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
@@ -278,16 +263,14 @@ End DistBind.
 Lemma DistBind1f (A B : finType) (a : A) (f : A -> dist B) :
   DistBind.d (Dist1.d a) f = f a.
 Proof.
-apply/dist_ext => b.
-rewrite DistBind.dE /= (bigD1 a) //= Dist1.dE eqxx mul1R.
+apply/dist_ext => b; rewrite DistBind.dE /= (bigD1 a) //= Dist1.dE eqxx mul1R.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 // => c ca.
 by rewrite Dist1.dE (negbTE ca) mul0R.
 Qed.
 
 Lemma DistBindp1 A (p : dist A) : DistBind.d p (@Dist1.d A) = p.
 Proof.
-apply/dist_ext => /= a.
-rewrite DistBind.dE /= (bigD1 a) //= Dist1.dE eqxx mulR1.
+apply/dist_ext => /= a; rewrite DistBind.dE /= (bigD1 a) // Dist1.dE eqxx mulR1.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 /= ?addR0 //.
 by move=> b ba; rewrite Dist1.dE eq_sym (negbTE ba) mulR0.
 Qed.
@@ -296,38 +279,33 @@ Lemma DistBindA A B C (m : dist A) (f : A -> dist B) (g : B -> dist C) :
   DistBind.d (DistBind.d m f) g = DistBind.d m (fun x => DistBind.d (f x) g).
 Proof.
 apply/dist_ext => c; rewrite !DistBind.dE /=.
-rewrite (eq_bigr (fun a => (\rsum_(a0 in A) m a0 * (f a0) a * (g a) c))); last first.
+rewrite (eq_bigr (fun a => \rsum_(a0 in A) m a0 * f a0 a * g a c)); last first.
   move=> b _; by rewrite DistBind.dE big_distrl.
 rewrite exchange_big /=; apply eq_bigr => a _.
 rewrite DistBind.dE big_distrr /=; apply eq_bigr => b _; by rewrite mulRA.
 Qed.
 
-Section map_bind_dist.
-Variables (A B : finType) (g : A -> B).
-
-Definition fmap_dist (p : dist A) : dist B :=
-  DistBind.d p (fun a => Dist1.d (g a)).
-
-Lemma fmap_distE (p : dist A) : DistMap.d g p = fmap_dist p.
+Module DistMap.
+Section def.
+Variables (A B : finType) (g : A -> B) (p : dist A).
+Definition d : dist B := DistBind.d p (fun a => Dist1.d (g a)).
+Lemma dE (b : B) : d b = \rsum_(a in A | g a == b) p a.
 Proof.
-apply/dist_ext => b; rewrite DistMap.dE /DistMap.f /fmap_dist DistBind.dE.
-rewrite /DistBind.f big_mkcond /=; apply eq_bigr => a _.
+rewrite /d DistBind.dE [in RHS]big_mkcond /=; apply eq_bigr => a _.
 case: ifPn => [/eqP ->|]; rewrite Dist1.dE; [by rewrite eqxx mulR1|].
 move/negbTE; rewrite eq_sym => ->; by rewrite mulR0.
 Qed.
-
-End map_bind_dist.
-
-(* TODO: move *)
-Lemma DistMap_id (A : finType) P : DistMap.d (@id A) P = P.
-Proof. by rewrite fmap_distE /fmap_dist DistBindp1. Qed.
-
-Lemma DistMap_comp (A B C : finType) (g : A -> B) (h : C -> A) P :
-  DistMap.d g (DistMap.d h P) = DistMap.d (g \o h) P.
+End def.
+Section prop.
+Variables (A B C : finType).
+Lemma id P : d (@id A) P = P. Proof. by rewrite /d DistBindp1. Qed.
+Lemma comp (g : A -> B) (h : C -> A) P : d g (d h P) = d (g \o h) P.
 Proof.
-rewrite !fmap_distE /fmap_dist DistBindA; congr (DistBind.d _ _).
+rewrite /d DistBindA; congr (DistBind.d _ _).
 by apply/functional_extensionality => c; rewrite DistBind1f.
 Qed.
+End prop.
+End DistMap.
 
 Module Uniform.
 Section def.
@@ -1103,6 +1081,19 @@ End ProdDist.
 (* notation for product distribution *)
 Notation "P1 `x P2" := (ProdDist.d P1 (fun _ => P2)) : proba_scope.
 
+Section prod_dominates_joint.
+Variables (A B : finType) (P : {dist A * B}).
+Let P1 := Bivar.fst P. Let P2 := Bivar.snd P.
+
+Local Open Scope reals_ext_scope.
+Lemma Prod_dominates_Joint : P << P1 `x P2.
+Proof.
+apply/dominatesP => -[a b].
+rewrite ProdDist.dE /= mulR_eq0 => -[P1a|P2b];
+  by [rewrite Bivar.dom_by_fst | rewrite Bivar.dom_by_snd].
+Qed.
+End prod_dominates_joint.
+
 Lemma ProdDistsnd (A B : finType) (P1 : dist A) (P2 : dist B) : Bivar.snd (P1 `x P2) = P2.
 Proof.
 apply/dist_ext => b.
@@ -1478,25 +1469,13 @@ Qed.
 Module RVar.
 Section def.
 Variables (U A : finType) (P : dist U) (X : {RV P -> A}).
-(*Definition f := [ffun a => \Pr[ X = a ]].
-Lemma f0 a : 0 <= f a. Proof. rewrite ffunE; exact/Pr_ge0. Qed.
-Lemma f1 : \rsum_(a in A) (f a) = 1.
-Proof.
-rewrite /f /Pr -(epmf1 P) (sum_parti_finType _ X) /=.
-rewrite (bigID (fun x => x \in fin_img X)) /=.
-rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
-  by move=> a aX; rewrite ffunE pr_eq0.
-rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
-apply eq_bigr => a aX; rewrite ffunE; by apply eq_bigl => u; rewrite inE.
-Qed.
-Definition d : {dist A} := locked (makeDist f0 f1).*)
 Definition d : {dist A} := DistMap.d X P.
 Lemma dE a : d a = \Pr[ X = a ].
 Proof.
 rewrite /d DistMap.dE /pr_eq /Pr; apply eq_bigl => i; apply/andP/idP.
 by case=> _ /eqP Xia; rewrite inE Xia.
 by rewrite inE => /eqP ->.
-(*Proof. by rewrite /d; unlock; rewrite ffunE.*) Qed.
+Qed.
 End def.
 End RVar.
 

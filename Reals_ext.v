@@ -236,7 +236,8 @@ Proof.
 rewrite -(mul1R (/ _)%R) (_ : 1%R = INR 1) // -/(Rdiv _ _); exact: prob_divRnnm.
 Qed.
 
-Canonical probinvn (n : nat) := @Prob.mk (/ INR (1 + n)) (prob_invn n).
+(* was Canonical *)
+Definition probinvn (n : nat) := @Prob.mk (/ INR (1 + n)) (prob_invn n).
 
 Lemma prob_mulR (p q : prob) : (0 <= p * q <= 1)%R.
 Proof.
