@@ -11,7 +11,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-(* wip: concavity of relative entropy and of mutual information *)
+(* concavity of relative entropy and of mutual information
+   Cover and Thomas, Chapter 2 *)
 
 Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.

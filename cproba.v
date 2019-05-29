@@ -6,12 +6,20 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 
 (* tentative definition of conditional probability
-
 OUTLINE:
-- various distributions
-- Section conditional_probability
-- properties of conditional_probability
-
+- Various distributions (Swap.d, Self.d, TripA.d, TripA'.d, TripC12.d, TripC23.d,
+  TripC13.d, Proj13.d, Proj23.d)
+- Section conditional_probability_def.
+- Module CondDist.
+- Module CondDistT.
+- Module CDist.
+- Section conditional_probability_prop.
+- Section total_probability.
+- Section bayes.
+- Section conditional_probability_prop3.
+- Section product_rule.
+- Section conditional_expectation_def.
+- Section conditional_expectation_prop.
 *)
 
 Reserved Notation "\Pr_ P [ A | B ]" (at level 6, P, A, B at next level,
@@ -176,53 +184,10 @@ Qed.
 End def.
 End TripA'.
 
-(*Module MapFst.
-Section def.
-Variables (A B C : finType) (g : A -> C) (p : {dist A * B}).
-Hypothesis bij_g : bijective g.
-
-Definition f := [ffun x : C * B => \rsum_(a in A | g a == x.1) p (a, x.2)].
-Lemma f0 x : 0 <= f x.
-Proof. rewrite ffunE. apply rsumr_ge0 => i _. exact: dist_ge0. Qed.
-Lemma f1 : \rsum_(x in {: C * B}) f x = 1.
-Proof.
-rewrite /f; evar (h : C * B -> R); rewrite (eq_bigr h); last first.
-  move=> b _; rewrite ffunE /h; reflexivity.
-rewrite (reindex (fun x : A * B => (g x.1, x.2))).
-  rewrite {}/h/= -(epmf1 p).
-  apply eq_bigr => -[i j] _ /=.
-  exact/big_pred1_inj/bij_inj.
-case: bij_g => g' Hg Hg'.
-exists (fun x => (g' x.1, x.2)) => -[i j] _ /=; by rewrite (Hg,Hg').
-Qed.
-
-Definition d : {dist C * B} := locked (makeDist f0 f1).
-Lemma dE x : d x = \rsum_(a in A | g a == x.1) p (a, x.2).
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-
-Lemma fst : Bivar.fst d = DistMap.d g (Bivar.fst p).
-Proof.
-apply/dist_ext => c.
-rewrite Bivar.fstE DistMap.dE.
-rewrite [RHS](eq_bigr _ (fun i _ => Bivar.fstE p i)) exchange_big.
-apply eq_bigr => i _; by rewrite dE.
-Qed.
-
-Lemma snd : Bivar.snd d = Bivar.snd p.
-Proof.
-apply/dist_ext => b.
-rewrite !Bivar.sndE (reindex g).
-  apply eq_bigr=> i _; rewrite dE /= big_pred1_inj //; exact/bij_inj.
-case: bij_g => g'; by exists g'.
-Qed.
-End def.
-End MapFst.
-*)
-
 Module TripC12.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
-Definition f (x : A * B * C) := (x.1.2, x.1.1, x.2).
+Let f (x : A * B * C) := (x.1.2, x.1.1, x.2).
 Lemma inj_f : injective f.
 Proof. by rewrite /f => -[[? ?] ?] [[? ?] ?] /= [-> -> ->]. Qed.
 Definition d : {dist B * A * C} := DistMap.d f P.
@@ -245,7 +210,7 @@ Section prop.
 Variables (A B C : finType) (P : {dist A * B * C}).
 Lemma dI : d (d P) = P.
 Proof.
-rewrite /d DistMap.comp (_ : f (C := C) \o f (C := C) = ssrfun.id) ?DistMap.id //.
+rewrite /d DistMap.comp (_ : _ \o _ = ssrfun.id) ?DistMap.id //.
 by apply FunctionalExtensionality.functional_extensionality => -[[]].
 Qed.
 Lemma Pr E F G : Pr (d P) (setX (setX E F) G) = Pr P (setX (setX F E) G).
@@ -374,6 +339,7 @@ by apply FunctionalExtensionality.functional_extensionality => -[[]].
 Qed.
 End Proj_prop.
 
+(* TODO: move to proba.v? *)
 Section Pr_extra.
 
 Variables (A B : finType) (P : {dist A * B}).

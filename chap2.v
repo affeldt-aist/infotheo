@@ -1,15 +1,45 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg matrix.
+From mathcomp Require Import finset fingroup perm finalg matrix.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import cproba divergence entropy.
 
-(* tentative formalization Cover and Thomas, Chapter 2 *)
+(* tentative formalization Cover and Thomas, Chapter 2
+see also convex_dist.v
+Contents:
+- Various distributions (Take.d, Nth.d, PairNth.d, PairTake.d, MargDist.d,
+  MultivarPerm.d, TakeDrop.d)
+- Module JointEntropy.
+  Section joint_entropy_prop.
+- Module CondEntropy.
+  Section conditional_entropy_prop3.
+- Module conditional_entropy_example.
+- Section chain_rule. (thm 2.1.1)
+- Section chain_rule_generalization.
+- Section entropy_chain_rule_corollary.
+- Section conditional_entropy_prop.
+- Section conditional_entropy_prop2.
+- Module MutualInfo.
+- Section mutualinfo_prop.
+- Section chain_rule_for_entropy.
+- Section divergence_conditional_distributions.
+- Section conditional_mutual_information.
+- Section conditional_relative_entropy.
+- Section chain_rule_for_information. ( thm 2.5.1 )
+- Section conditioning_reduces_entropy.
+- Section independence_bound_on_entropy.
+- Section markov_chain.
+- Section markov_chain_prop.
+- Section Han_inequality.
+*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Local Open Scope R_scope.
+Local Open Scope proba_scope.
 
 (* TODO: move? *)
 Section row_mxA'.
@@ -86,9 +116,6 @@ congr (v ord0 _); exact: val_inj.
 Qed.
 End rV_take_drop.
 
-Local Open Scope R_scope.
-Local Open Scope proba_scope.
-
 (* TODO: move? *)
 Lemma head_of_fst_belast_last (A : finType) (n : nat) (P : {dist 'rV[A]_n.+2}) :
   Multivar.head_of (Bivar.fst (Multivar.belast_last P)) = Multivar.head_of P.
@@ -124,14 +151,9 @@ Local Open Scope vec_ext_scope.
 Lemma all (A : finType) (n : nat) (P : {dist 'rV[A]_n.+2}) :
   d P (lift ord0 ord_max) = P.
 Proof.
-apply/dist_ext => v.
-rewrite dE /=.
-have H1 : (n.+2 - bump 0 n.+1)%nat = O by rewrite /bump /= add1n subnn.
-rewrite (big_cast_rV H1) //= (big_rV_0 _ _ (v ``_ ord0)); congr (P _).
-apply/rowP => i.
-rewrite castmxE /= cast_ord_id /=.
-rewrite (_ : cast_ord _  _ = lshift (n.+2 - bump 0 n.+1) i); last exact/val_inj.
-by rewrite row_mxEl.
+rewrite /d (_ : row_take (lift ord0 ord_max) = ssrfun.id) ?DistMap.id //.
+apply FunctionalExtensionality.functional_extensionality => v; apply/rowP => i.
+rewrite /row_take mxE castmxE /= cast_ord_id; congr (v _ _); exact: val_inj.
 Qed.
 End prop.
 End Take.
@@ -160,90 +182,8 @@ End PairNth.
 Module PairTake.
 Section def.
 Variables (A B : finType) (n : nat) (P : {dist 'rV[A]_n.+1 * B}) (i : 'I_n.+1).
-Lemma cast : (i + 1%nat + (n - i))%nat = n.+1.
-by rewrite addn1 addSn subnKC // -ltnS.
-Qed.
-Definition f := [ffun ab : 'rV[A]_i * A * B => \rsum_(w : 'rV[A]_(n - i)) P
-    (castmx (erefl, cast) (row_mx (row_mx ab.1.1 (\row__ ab.1.2)) w), ab.2)].
-Lemma f0 ab : 0 <= f ab.
-Proof. rewrite /f ffunE; apply: rsumr_ge0 => w _; exact: dist_ge0. Qed.
-Lemma f1 : \rsum_(ab : 'rV[A]_i * A * B) f ab = 1.
-Proof.
-rewrite -(epmf1 P) /=.
-rewrite [in RHS](eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite -[in RHS](pair_bigA _ (fun a b => P (a, b))) /=.
-rewrite (eq_bigr (fun x => f (x.1, x.2))); last by case.
-rewrite -(pair_bigA _ (fun a b => f (a, b))) /=.
-rewrite (@partition_big _ _ _ _ [finType of 'rV[A]_i] xpredT
-  (@row_take A n.+1 (widen_ord (leqnSn _) i)) xpredT) //=.
-rewrite (eq_bigr (fun i0 => \rsum_(j | true) f (i0.1, i0.2, j))); last by case.
-rewrite -(pair_bigA _ (fun a b => \rsum_(j | true) f (a, b, j))) /=.
-apply eq_bigr => w _.
-have H1 : (i + (n.+1 - i))%nat = n.+1 by rewrite subnKC // ltnW.
-rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n.+1] [finType of 'rV[A]_(n.+1 - i)]
-  (fun w0 => (castmx (erefl 1%nat, H1) (row_mx w w0)))
-  (@row_drop A n.+1 (widen_ord (leqnSn _) i))) /=; last first.
-  move=> w0 w0w; apply/rowP => j.
-  rewrite castmxE /= cast_ord_id /= !mxE.
-  case: splitP => [j0 /= ?|k /= jik].
-  - rewrite -(eqP w0w) mxE castmxE /= cast_ord_id; congr (w0 _ _); exact/val_inj.
-  - rewrite mxE castmxE /= cast_ord_id; congr (w0 _ _); exact/val_inj.
-rewrite exchange_big /= [in RHS]exchange_big /=; apply eq_bigr => b _.
-transitivity (\rsum_(i0 : 'rV__) P (castmx (erefl 1%nat, H1) (row_mx w i0), b)); last first.
-  apply eq_bigl => v; apply/esym.
-  apply/andP; split.
-    apply/eqP/rowP => j.
-    rewrite mxE 2!castmxE /= !cast_ord_id /=.
-    rewrite (_ : cast_ord _ _ = lshift (n.+1 - i) j); last exact/val_inj.
-    by rewrite row_mxEl.
-  apply/eqP/rowP => j.
-  rewrite mxE 2!castmxE /= !cast_ord_id /=.
-  rewrite (_ : cast_ord _ _ = rshift i j); last exact/val_inj.
-  by rewrite row_mxEr.
-rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
-  move=> a _; rewrite ffunE /h; reflexivity.
-rewrite {}/h exchange_big /=.
-have H2 : (n.+1 - i = (n - i).+1)%nat by rewrite subSn // -ltnS.
-rewrite (big_cast_rV H2) /=.
-rewrite -(big_rV_cons_behead _ xpredT xpredT) /=.
-rewrite exchange_big /=.
-apply eq_bigr => a _.
-apply eq_bigr => w1 _.
-by rewrite row_mxA'.
-Qed.
-Definition d : {dist 'rV_i * A * B} := locked (makeDist f0 f1).
-(*Definition d : {dist 'rV_i * A * B} :=
-  DistMap.d (fun x : 'rV[A]_n.+1 * B => (row_take (widen_ord (leqnSn _) i) x.1, x.1 ord0 i, x.2)) P.*)
-(*Lemma dE ab : d ab = f ab.
-Proof.
-case: ab => /= -[a1 a2] b.
-rewrite DistMap.dE /f ffunE /=.
-rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite (eq_bigl (fun j =>
-  ((row_take (widen_ord (leqnSn n.+1) i) j.1, j.1 ord0 i) == (a1, a2)) &&
-  (j.2 == b))); last first.
-  by move=> j /=; rewrite xpair_eqE.
-rewrite -(pair_big (fun j =>
-  ((row_take (widen_ord (leqnSn n.+1) i) j, j ord0 i) == (a1, a2)))
-  (fun j => (j == b)) (fun a b => P (a, b))) /=.
-rewrite (eq_bigr (fun x => P (x, b))); last first.
-  by move=> j; rewrite big_pred1_eq.
-rewrite (eq_bigl (fun j => (row_take (widen_ord (leqnSn n.+1) i) j == a1) &&
-  (j ord0 i == a2))); last first.
-  by move=> j /=; rewrite xpair_eqE.
-rewrite big_mkcondr /=.
-have H1 : (i + (n.+1 - i))%nat = n.+1 by rewrite subnKC // ltnW.
-rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n.+1] [finType of 'rV[A]_(n.+1 - i)]
-  (fun w0 => (castmx (erefl 1%nat, H1) (row_mx a1 w0)))
-  (@row_drop A n.+1 (widen_ord (leqnSn _) i))) /=; last first.
-  move=> w0 w0w; apply/rowP => j.
-  rewrite castmxE /= cast_ord_id /= !mxE.
-  case: splitP => [j0 /= ?|k /= jik].
-  - rewrite -(eqP w0w) mxE castmxE /= cast_ord_id; congr (w0 _ _); exact/val_inj.
-  - rewrite mxE castmxE /= cast_ord_id; congr (w0 _ _); exact/val_inj.
-*)
-Lemma dE ab : d ab = f ab.
-Proof. by rewrite /d; unlock. Qed.
+Definition d : {dist 'rV_i * A * B} :=
+  DistMap.d (fun x : 'rV[A]_n.+1 * B => (row_take (widen_ord (leqnSn _) i) x.1, x.1 ord0 i, x.2)) P.
 End def.
 End PairTake.
 
@@ -256,59 +196,13 @@ Let P : {dist 'rV[A]_n.+1} := Bivar.fst PY.
 Lemma belast_last_take (j : 'I_n.+1) :
   Multivar.belast_last (Take.d P (lift ord0 j)) = Bivar.fst (PairTake.d PY j).
 Proof.
-(*rewrite /Multivar.belast_last /Take.d /Bivar.fst /PairTake.d !DistMap.comp.
+rewrite /Multivar.belast_last /Take.d /Bivar.fst /PairTake.d !DistMap.comp.
 congr (DistMap.d _ PY).
 apply FunctionalExtensionality.functional_extensionality => /= -[v b] /=.
 congr (_, _).
 - apply/rowP => i.
   rewrite /rbelast !mxE !castmxE /=; congr (v _ _); exact: val_inj.
-- rewrite /rlast mxE castmxE /=; congr (v _ _); exact: val_inj.*)
-apply/dist_ext => -[v a].
-rewrite Multivar.belast_lastE.
-rewrite (Take.dE _ (lift ord0 j)).
-rewrite Bivar.fstE.
-rewrite /PairTake.d; unlock => /=; rewrite /PairTake.f /=.
-rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
-  move=> b _; rewrite ffunE /h; reflexivity.
-rewrite {}/h exchange_big => /=.
-apply eq_bigr => w _.
-rewrite /P Bivar.fstE; apply eq_bigr => b _ /=.
-congr (PY (_, b)).
-apply/rowP => i.
-rewrite !castmxE /= !cast_ord_id /=.
-case: (ltnP i j) => [ij|].
-  move=> [:Hi0].
-  have @i0 : 'I_j.+1 by apply: (@Ordinal _ i) => /=; abstract: Hi0; exact/ltnW.
-  rewrite (_ : cast_ord _ _ = lshift (n - j)%nat i0); last exact/val_inj.
-  rewrite row_mxEl castmxE /= cast_ord_id.
-  rewrite (_ : cast_ord _ _ = lshift 1%nat (Ordinal ij)); last exact/val_inj.
-  rewrite row_mxEl.
-  move=> [:Hi1].
-  have @i1 : 'I_(j + 1) by apply: (@Ordinal _ i); abstract: Hi1; rewrite addn1.
-  rewrite (_ : cast_ord _ _ = lshift (n - j) i1); last exact/val_inj.
-  rewrite row_mxEl (_ : i1 = lshift 1%nat (Ordinal ij)); last exact/val_inj.
-  by rewrite row_mxEl.
-rewrite leq_eqVlt => /orP[/eqP ji|ji].
-- rewrite (_ : cast_ord _ _ = lshift (n - j) ord_max); last exact/val_inj.
-  rewrite row_mxEl castmxE /= cast_ord_id.
-  rewrite (_ : cast_ord _ _ = rshift j ord0); last first.
-    apply/val_inj => /=; by rewrite addn0.
-  rewrite row_mxEr mxE.
-  move=> [:Hi0].
-  have @i0 : 'I_(j + 1) by apply: (@Ordinal _ i); abstract: Hi0; rewrite addn1 ji.
-  rewrite (_ : cast_ord _ _ = lshift (n - j) i0); last exact/val_inj.
-  rewrite row_mxEl (_ : i0 = rshift j ord0); last first.
-    apply/val_inj => /=; by rewrite addn0.
-  by rewrite row_mxEr mxE.
-- move=> [:Hi1].
-  have @i1 : 'I_(n - j).
-    apply: (@Ordinal _ (i - j.+1)); abstract: Hi1.
-    by rewrite subnS prednK // ?subn_gt0 // leq_sub2r // -ltnS.
-  rewrite (_ : cast_ord _ _ = rshift j.+1 i1); last first.
-    by apply val_inj => /=; rewrite subnKC.
-  rewrite row_mxEr (_ : cast_ord _ _ = rshift (j + 1) i1); last first.
-    by apply val_inj => /=; rewrite addn1 subnKC.
-  by rewrite row_mxEr.
+- rewrite /rlast mxE castmxE /=; congr (v _ _); exact: val_inj.
 Qed.
 
 End to_bivar_last_take.
@@ -316,163 +210,18 @@ End to_bivar_last_take.
 Lemma head_of_nth0 (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) :
   Multivar.head_of P = Nth.d P ord0.
 Proof.
-apply/dist_ext => a.
-rewrite /Multivar.head_of Bivar.fstE Nth.dE /= -big_rV_cons //; apply eq_bigr => /= v _.
-by rewrite Multivar.to_bivarE /=.
+by rewrite /Multivar.head_of /Nth.d /Bivar.fst /Multivar.to_bivar DistMap.comp.
 Qed.
 
 Local Open Scope vec_ext_scope.
 
 Lemma take_nth (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) (i : 'I_n.+1) :
-  i != ord0 -> Bivar.snd (Multivar.belast_last (Take.d P (lift ord0 i))) = Nth.d P i.
+  Bivar.snd (Multivar.belast_last (Take.d P (lift ord0 i))) = Nth.d P i.
 Proof.
-move=> i0; apply/dist_ext => a.
-rewrite Bivar.sndE /= Nth.dE /=.
-have H1 : (i + (n.+1 - i) = n.+1)%nat by rewrite subnKC // ltnW.
-move=> [:Hi1].
-have @i1 : 'I_(n.+1 - i).
-  apply: (@Ordinal _ O).
-  abstract: Hi1.
-  by rewrite subn_gt0.
-transitivity (\rsum_(v1 : 'rV[A]_i)
-  \rsum_(v2 : 'rV[A]_(n.+1 - i) | v2 ``_ i1 == a)
-     P (castmx (erefl 1%nat, H1) (row_mx v1 v2))); last first.
-  rewrite[in RHS](@partition_big _ _ _ _ [finType of 'rV[A]_i]
-    (fun x : 'rV__ => x ord0 i == a) (@row_take A n.+1 (widen_ord (leqnSn _) i)) xpredT) //=.
-  apply eq_bigr => v1 _.
-  rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n.+1] [finType of 'rV[A]_(n.+1 - i)]
-    (fun w0 => (castmx (erefl 1%nat, H1) (row_mx v1 w0)))
-    (@row_drop A n.+1 (widen_ord (leqnSn _) i))) /=; last first.
-    move=> V /andP[Via Vv1].
-    apply/rowP => j; rewrite castmxE /= cast_ord_id.
-    rewrite /row_drop -(eqP Vv1) /row_take hsubmxK.
-    rewrite castmxE /= !cast_ord_id esymK.
-    congr (V ord0 _); exact/val_inj.
-  apply eq_bigl => v2.
-  rewrite castmxE /= cast_ord_id.
-  rewrite (_ : cast_ord _ _ = rshift i i1); last by apply val_inj => /=.
-  rewrite row_mxEr -andbA.
-  apply/idP/and3P => [H|[]//].
-  rewrite H; split => //.
-    rewrite /row_take (_ : castmx _ _ = row_mx v1 v2); last first.
-      apply/rowP => j; rewrite !castmxE !cast_ord_id /= esymK.
-      congr (_ ord0 _); exact/val_inj.
-    by rewrite row_mxKl.
-  rewrite /row_drop (_ : castmx _ _ = row_mx v1 v2); last first.
-    apply/rowP => j; rewrite !castmxE !cast_ord_id /= esymK.
-    congr (_ ord0 _); exact/val_inj.
-  by rewrite row_mxKr.
-apply eq_bigr => v _.
-rewrite Multivar.belast_lastE (Take.dE _ (lift ord0 i)) /=.
-move=> [:Hi2].
-have @i2 : 'I_(n - i).+1.
-  apply: (@Ordinal _ O).
-  abstract: Hi2.
-  by rewrite ltnS.
-have H2 : (i + (n - i).+1 = n.+1)%nat by rewrite addnS subnKC // -ltnS.
-transitivity (\rsum_(v2 : 'rV[A]_(n - i).+1 | v2 ``_ i2 == a)
-    P (castmx (erefl 1%nat, H2) (row_mx v v2))); last first.
-  have H3 : (n.+1 - i = (n - i).+1)%nat by rewrite subSn // -ltnS.
-  set h' : 'rV[A]_(n.+1 - i) -> 'rV[A]_(n - i).+1 := castmx (erefl 1%nat, H3).
-  set h : 'rV[A]_(n - i).+1 -> 'rV[A]_(n.+1 - i) := castmx (erefl 1%nat, esym H3).
-  rewrite (reindex_onto h' h) //=; last first.
-    move=> w Hw; rewrite /h /h'.
-    by apply/rowP => j; rewrite !castmxE /= !cast_ord_id /= cast_ordK.
-  apply eq_big.
-    move=> j.
-    rewrite /h /h' !castmxE /= !cast_ord_id.
-    rewrite (_ : cast_ord _ _ = i1); last exact/val_inj.
-    apply/andP/idP => [[]//| ?]; split => //.
-    apply/eqP/rowP => k.
-    rewrite !castmxE /= !cast_ord_id.
-    congr (j ord0 _); exact/val_inj.
-  move=> j => /andP[/eqP K1 /eqP K2].
-  congr (P _).
-  apply/rowP => k.
-  rewrite !castmxE /= !cast_ord_id /= /h'.
-  case/boolP : (k < i)%nat => ki.
-    rewrite (_ : cast_ord (esym H1) k = lshift (n.+1 - i) (Ordinal ki)); last exact/val_inj.
-    rewrite row_mxEl.
-    set i3 : 'I_i := Ordinal ki.
-    rewrite (_ : cast_ord (esym H2) k = lshift (n - i).+1 i3); last exact/val_inj.
-    by rewrite row_mxEl.
-  rewrite -leqNgt in ki.
-  move=> [:Hi4].
-  have @i4 : 'I_(n.+1 - i).
-    apply: (@Ordinal _ (k - i)).
-    abstract: Hi4.
-    by rewrite ltn_sub2r.
-  rewrite (_ : cast_ord (esym H1) k = rshift i i4); last by apply val_inj => /=; rewrite /i4 subnKC.
-  rewrite row_mxEr.
-  move=> [:Hi5].
-  have @i5 : 'I_(n - i).+1.
-    apply: (@Ordinal _ (k - i)).
-    abstract: Hi5.
-    by rewrite ltnS leq_sub2r // -ltnS.
-  rewrite (_ : cast_ord _ _ = rshift i i5); last by apply val_inj => /=; rewrite subnKC.
-  rewrite row_mxEr.
-  rewrite castmxE /= cast_ord_id.
-  congr (j ord0 _); exact/val_inj.
-rewrite -big_rV_cons; last exact/val_inj.
-apply eq_bigr => /= v2 _.
-congr (P _).
-apply/rowP => j.
-rewrite !castmxE /= !cast_ord_id /=.
-case/boolP : (j < i)%nat => [ji|].
-  have @i6 : 'I_i := Ordinal ji.
-  rewrite (_ : cast_ord (esym H2) j = lshift (1 + (n - i)) i6); last exact/val_inj.
-  rewrite row_mxEl.
-  move=> [:Hi7].
-  have @i7 : 'I_i.+1.
-    apply: (@Ordinal _ j).
-    abstract: Hi7.
-    by rewrite ltnW.
-  rewrite (_ : cast_ord _ _ = lshift (n - i) i7); last exact/val_inj.
-  rewrite row_mxEl.
-  rewrite castmxE /= cast_ord_id /=.
-  set i8 : 'I_i := Ordinal ji.
-  rewrite (_ : cast_ord _ _ = lshift 1 i8); last exact/val_inj.
-  by rewrite row_mxEl.
-rewrite -leqNgt leq_eqVlt => /orP[|] ij.
-  move=> [:Hi7].
-  have @i7 : 'I_i.+1.
-    apply: (@Ordinal _ j).
-    abstract: Hi7.
-    by rewrite ltnS (eqP ij).
-  rewrite (_ : cast_ord _ _ = lshift (n -i) i7); last exact/val_inj.
-  rewrite row_mxEl castmxE /= cast_ord_id.
-  rewrite (_ : cast_ord _ _ = rshift i ord0); last first.
-    by apply val_inj => /=; rewrite addn0 (eqP ij).
-  rewrite row_mxEr mxE.
-  move=> [:Hi8].
-  have @i8 : 'I_(1 + (n - i))%nat.
-    apply: (@Ordinal _ ord0).
-    abstract: Hi8.
-    by rewrite /= add1n.
-  rewrite (_ : cast_ord _ _ = rshift i i8); last first.
-    by apply val_inj => /=; rewrite addn0 (eqP ij).
-  rewrite row_mxEr /=.
-  rewrite (_ : i8 = lshift (n - i) (ord0 : 'I_1)); last exact/val_inj.
-  by rewrite (@row_mxEl _ 1%nat 1%nat (n - i)) mxE.
-move=> [:Hi4].
-have @i4 : 'I_(n - i).
-  apply: (@Ordinal _ (j - i.+1)).
-  abstract: Hi4.
-  rewrite subnS prednK //; last by rewrite subn_gt0.
-  by rewrite leq_sub2r // -ltnS.
-rewrite (_ : cast_ord _ _ = rshift i.+1 i4); last by apply val_inj => /=; rewrite subnKC.
-rewrite row_mxEr.
-move=> [:Hi5].
-have @i5 : 'I_(1 + ( n - i)).
-  apply: (@Ordinal _ (j - i)).
-  abstract: Hi5.
-  by rewrite add1n ltnS leq_sub2r // -ltnS.
-rewrite (_ : cast_ord _ _ = rshift i i5); last by apply val_inj => /=; rewrite subnKC // ltnW.
-rewrite row_mxEr.
-rewrite (_ : i5 = rshift 1%nat i4); last by apply val_inj => /=; rewrite addnBA.
-rewrite (@row_mxEr A 1%nat 1%nat (n - i) (\row_(k < 1) a) v2 ord0 i4) //.
-Grab Existential Variables.
-exact: O.
+rewrite /Bivar.snd /Multivar.belast_last /Take.d /Nth.d !DistMap.comp.
+congr (DistMap.d _ _).
+apply FunctionalExtensionality.functional_extensionality => /= v.
+rewrite /rlast mxE castmxE /= cast_ord_id /=; congr (v ``_ _); exact: val_inj.
 Qed.
 
 Module MargDist.
@@ -486,18 +235,10 @@ Section prop.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}).
 Lemma zero : d P ord0 = Multivar.tail_of P.
 Proof.
-apply/dist_ext => /= v.
-rewrite dE /Multivar.tail_of Bivar.sndE.
-evar (f : A -> R); rewrite [in RHS](eq_bigr f); last first.
-  move=> a _; rewrite Multivar.to_bivarE /f /=; reflexivity.
-rewrite {}/f (eq_bigl (fun x => rbehead x == v)); last first.
-  by move=> i; congr (_ == _); apply/rowP => j; rewrite 2!mxE.
-by rewrite big_rV_behead.
+by rewrite /d /Multivar.tail_of /Bivar.snd /Multivar.to_bivar DistMap.comp.
 Qed.
 End prop.
 End MargDist.
-
-From mathcomp Require Import perm.
 
 (*TODO: move*)
 Lemma col_perm_inj n (s : 'S_n) T m : injective (@col_perm T m n s).
@@ -529,6 +270,51 @@ apply eq_bigr => v _; by rewrite MultivarPerm.dE.
 Qed.
 End prop.
 End MultivarPerm.
+
+Module TakeDrop.
+Section def.
+Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) (i : 'I_n.+1).
+Definition d : {dist A * 'rV[A]_i * 'rV[A]_(n - i)} :=
+  DistMap.d (fun x : 'rV[A]_n.+1 => (x ord0 ord0, row_take i (rbehead x), row_drop i (rbehead x))) P.
+Let g (x : 'rV[A]_n.+1) : A * 'rV[A]_i * 'rV[A]_(n - i) :=
+  (x ``_ ord0,
+   row_take i (rbehead x),
+   row_drop i (rbehead x)).
+Lemma inj_g : injective g.
+Proof.
+move=> a b; rewrite /g => -[H1 [H2 H3]].
+rewrite -(row_mx_rbehead a) -(row_mx_rbehead b) H1; congr (@row_mx _ 1%nat 1%nat _ _ _).
+rewrite (row_mx_take_drop i (rbehead a)) (row_mx_take_drop i (rbehead b)).
+by rewrite H2 H3.
+Qed.
+Lemma dE x : d x = P (row_mx (\row_(_ < 1) x.1.1) (castmx (erefl 1%nat, @subnKC i n (ltnS' (ltn_ord i))) (row_mx x.1.2 x.2))).
+Proof.
+rewrite /d DistMap.dE /=.
+rewrite (eq_bigl (fun a => g a == x)); last first.
+  by move=> j.
+rewrite {1}(_ : x = g (row_mx (\row_(k<1) x.1.1) (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx x.1.2 x.2)))); last first.
+  move: x => /= -[[x11 x12] x2].
+  rewrite /g row_mx_row_ord0 /=; congr (_, _, _).
+  apply/rowP => j; rewrite !mxE !castmxE /= cast_ord_id mxE esymK.
+  have @k : 'I_n.
+    by apply: (@Ordinal _ j); rewrite (leq_trans (ltn_ord j)) // -ltnS.
+  rewrite (_ : lift _ _ = rshift 1%nat k); last first.
+    by apply val_inj => /=; rewrite /bump leq0n.
+  rewrite (@row_mxEr _ 1%nat 1%nat) // castmxE /= cast_ord_id.
+  rewrite (_ : cast_ord _ k = lshift (n - i) j).
+  by rewrite row_mxEl.
+  exact: val_inj.
+  apply/rowP => j; rewrite mxE castmxE /= cast_ord_id mxE esymK.
+  have @k0 : 'I_n by apply: (@Ordinal _ (i + j)); rewrite -ltn_subRL.
+  rewrite (_ : lift _ _ = rshift 1%nat k0); last first.
+    apply val_inj => /=; by rewrite /bump leq0n.
+  rewrite (@row_mxEr _ 1%nat 1%nat) castmxE /=.
+  rewrite (_ : cast_ord _ _ = rshift i j); last exact: val_inj.
+  by rewrite row_mxEr cast_ord_id.
+by rewrite (big_pred1_inj _ _ _ inj_g).
+Qed.
+End def.
+End TakeDrop.
 
 Local Open Scope entropy_scope.
 
@@ -1067,63 +853,11 @@ case: ifP => i0.
   rewrite /entropy; congr (- _).
   apply eq_bigr => a _; by rewrite head_of_fst_belast_last.
 congr (CondEntropy.h (Swap.d (Multivar.belast_last _))).
-apply/dist_ext => /= v.
-rewrite (Take.dE _ (lift ord0 i)) (Take.dE _ (lift ord0 (widen_ord (leqnSn n.+1) i))).
-have H1 : (n.+2 - lift ord0 (widen_ord (leqnSn n.+1) i) = (n.+1 - i.+1).+1)%nat.
-  by rewrite lift0 /= subSn.
-rewrite (big_cast_rV H1) //=.
-rewrite -(big_rV_belast_last _ xpredT xpredT) /=.
-apply eq_bigr => w /= _.
-rewrite Bivar.fstE /=.
-apply eq_bigr => a _.
-rewrite Multivar.belast_lastE /=.
-congr (P _).
-apply/rowP => j.
-rewrite 2!castmxE /= cast_ord_id /= castmx_comp /=.
-case: (ltnP j i.+1) => [ji|ij].
-  move=> [:Hj0].
-  have @j0 : 'I_n.+1 by apply: (@Ordinal _ j); abstract: Hj0; rewrite (leq_trans ji).
-  rewrite (_ : cast_ord _ _ = lshift 1 j0); last exact/val_inj.
-  rewrite row_mxEl castmxE /= cast_ord_id /=.
-  move=> [:Hj1].
-  have @j1 : 'I_i.+1 by apply: (@Ordinal _ j); abstract: Hj1; exact: ji.
-  rewrite (_ : cast_ord _ _ = lshift (n.+1 - i.+1) j1); last exact/val_inj.
-  rewrite row_mxEl.
-  rewrite (_ : cast_ord _ _ = lshift (n.+2 - lift ord0 i) j1); last exact/val_inj.
-  by rewrite row_mxEl // castmxE /= cast_ord_id.
-case: (ltnP j n.+1) => [jn|nj].
-  rewrite (_ : cast_ord _ _ = lshift 1 (Ordinal jn)); last exact/val_inj.
-  rewrite row_mxEl castmxE /= cast_ord_id /=.
-  move=> [:Hj0].
-  have @j0 : 'I_(n.+1 - i.+1).
-    apply: (@Ordinal _ (j - i.+1)); abstract: Hj0.
-    by rewrite ltn_sub2r // ltnS (leq_trans ij).
-  rewrite (_ : cast_ord _ _ = rshift i.+1 j0); last first.
-    by apply val_inj => /=; rewrite subnKC.
-  rewrite row_mxEr.
-  move=> [:Hj1].
-  have @j1 : 'I_(n.+2 - lift ord0 i).
-    apply: (@Ordinal _ (j - i.+1)); abstract: Hj1.
-    by rewrite lift0 ltn_sub2r // ltnS.
-  rewrite (_ : cast_ord _ _ = rshift i.+1 j1); last first.
-    by apply val_inj => /=; rewrite subnKC.
-  rewrite row_mxEr castmxE /=.
-  rewrite (_ : cast_ord _ _ = lshift 1 j0); last exact/val_inj.
-  by rewrite row_mxEl cast_ord_id.
-have {nj}jn : j = ord_max.
-  by apply/val_inj/eqP => /=; rewrite eq_sym eqn_leq nj /= -ltnS.
-subst j.
-rewrite (_ : cast_ord _ _ = rshift n.+1 ord0); last by apply/val_inj => /=.
-rewrite row_mxEr mxE.
-move=> [:Hj0].
-have @j0 : 'I_(n.+2 - lift ord0 i).
-  apply: (@Ordinal _ (@ord_max n.+1 - i.+1)); abstract: Hj0.
-  by rewrite lift0 /= ltn_sub2l.
-rewrite (_ : cast_ord _ _ = rshift i.+1 j0); last first.
-  by apply val_inj => /=; rewrite subnKC.
-rewrite row_mxEr castmxE /=.
-rewrite (_ : cast_ord _ _ = rshift (n.+1 - i.+1) ord0); last by apply val_inj => /=.
-by rewrite row_mxEr mxE.
+rewrite /Take.d /Bivar.fst /Multivar.belast_last !DistMap.comp.
+congr (DistMap.d _ P).
+apply FunctionalExtensionality.functional_extensionality => /= v.
+apply/rowP => j; rewrite !mxE !castmxE /= !mxE /= cast_ord_id; congr (v _ _).
+exact: val_inj.
 Qed.
 
 End chain_rule_for_entropy.
@@ -1460,74 +1194,79 @@ have -> : CondEntropy.h PY = \rsum_(j < n.+1)
       (a, (castmx (erefl 1%nat, H1') (row_mx (\row__ b) v))) =
       (TripA.d (TripC12.d (PairTake.d PY j))) (a, (v, b)).
       move=> v b a H1'.
-      rewrite Swap.dE Multivar.belast_lastE /=.
-      rewrite TripA.dE /= TripC12.dE /=.
-      rewrite PairTake.dE /PairTake.f /=.
-      rewrite (Take.dE _ (lift ord0 (lift ord0 j))) /=.
-      have H2 : (n.+2 - bump 0 (bump 0 j) = n - j)%nat by rewrite /bump !leq0n !add1n 2!subSS.
-      rewrite ffunE (big_cast_rV H2); apply eq_bigr => w _.
-      rewrite /YP Multivar.from_bivarE Swap.dE /=.
-      congr (PY (_, _)).
-        apply/rowP => i.
-        rewrite castmxE /= /rbehead mxE castmxE /= cast_ord_id /=.
-        case: (ltnP i j) => [ij|].
-          move=> [:Hi0].
-          have @i0 : 'I_(bump 0 j).+1.
-            apply: (@Ordinal _ i.+1); abstract: Hi0.
-            by rewrite /bump leq0n add1n ltnS ltnW // ltnS.
-          rewrite (_ : cast_ord _ _ = lshift (n - j) i0); last exact/val_inj.
-          rewrite row_mxEl castmxE /= cast_ord_id.
-          have @i1 : 'I_j.+1 by apply: (@Ordinal _ i.+1); rewrite ltnS.
-          rewrite (_ : cast_ord _ _ = lshift 1 i1); last exact/val_inj.
-          rewrite row_mxEl castmxE /= cast_ord_id.
-          rewrite (_ : cast_ord _ _ = rshift 1 (Ordinal ij)); last exact/val_inj.
-          rewrite row_mxEr.
-          have @i2 : 'I_(j + 1) by apply: (@Ordinal _ i); rewrite addn1 ltnW.
-          rewrite (_ : cast_ord _ _ = lshift (n - j) i2); last exact/val_inj.
-          rewrite row_mxEl.
-          rewrite (_ : i2 = lshift 1 (Ordinal ij)); last exact/ val_inj.
-          by rewrite row_mxEl.
-        rewrite leq_eqVlt => /orP[/eqP|] ji.
-          move=> [:Hi0].
-          have @i0 : 'I_((bump 0 j).+1).
-            apply: (@Ordinal _ i.+1); abstract: Hi0.
-            by rewrite /bump leq0n add1n ltnS ji.
-          rewrite (_ : cast_ord _ _ = lshift (n - j) i0); last first.
-            apply/val_inj => /=; by rewrite /bump !leq0n! add1n.
-          rewrite row_mxEl castmxE cast_ord_id /=.
-          set x := castmx _ _.
-          rewrite (_ : cast_ord _ _ = rshift j.+1 (Ordinal (ltn_ord ord0))); last first.
-            apply val_inj => /=; by rewrite addn0 ji.
-          rewrite row_mxEr mxE.
-          have @i1 : 'I_(j + 1) by apply: (@Ordinal _ i); rewrite addn1 ji.
-          rewrite (_ : cast_ord _ _ = lshift (n - j) i1); last exact/val_inj.
-          rewrite row_mxEl.
-          rewrite (_ : i1 = rshift j (Ordinal (ltn_ord ord0))); last first.
-            apply/val_inj => /=; by rewrite addn0 ji.
-          by rewrite row_mxEr mxE.
-        move=> [:Hi2].
-        have @i2 : 'I_(n - j).
-          apply: (@Ordinal _ (i - j.+1)); abstract:  Hi2.
-          by rewrite subnS prednK ?subn_gt0 // leq_sub2r // -ltnS.
-        rewrite (_ : cast_ord _ _ = rshift (bump 0 j).+1 i2); last first.
-          apply val_inj => /=; by rewrite /bump !leq0n !add1n addSn subnKC.
-        rewrite row_mxEr castmxE /= cast_ord_id.
-        move=> [:Hi3].
-        have @i3 : 'I_(n - j).
-          apply: (@Ordinal _ (i - j.+1)); abstract: Hi3.
-          by rewrite subnS prednK ?subn_gt0 // leq_sub2r // -ltnS.
-        rewrite (_ : cast_ord _ _ = rshift (j + 1) i3); last first.
-          apply val_inj => /=; by rewrite addn1 subnKC.
-        rewrite row_mxEr; congr (w _ _); exact/val_inj.
-      rewrite castmxE /= cast_ord_id.
-      set i0 : 'I_(bump 0 j).+1 := Ordinal (ltn_ord ord0).
-      rewrite (_ : cast_ord _ _ = lshift (n - j) i0); last exact/val_inj.
-      rewrite row_mxEl castmxE cast_ord_id /=.
-      set i1 : 'I_j.+1 := Ordinal (ltn_ord ord0).
-      rewrite (_ : cast_ord _ _ = lshift 1 i1); last exact/val_inj.
-      rewrite row_mxEl castmxE /= cast_ord_id.
-      rewrite (_ : cast_ord _ _ = lshift j (Ordinal (ltn_ord ord0))); last exact/val_inj.
-      by rewrite row_mxEl mxE.
+      rewrite /YP /Swap.d /Multivar.belast_last /Take.d /Multivar.from_bivar.
+      rewrite /TripA.d /TripC12.d /PairTake.d !DistMap.comp !DistMap.dE /=.
+      apply eq_bigl => -[w b0]; rewrite /= /swap /=.
+      rewrite (_ : rlast _ = w ``_ j); last first.
+        rewrite /rlast !mxE !castmxE /= cast_ord_id.
+        rewrite (_ : cast_ord _ _ = rshift 1%nat j); last exact/val_inj.
+        by rewrite (@row_mxEr _ 1%nat 1%nat n.+1).
+      rewrite !xpair_eqE; congr (_ && _).
+      rewrite (_ : rbelast _ =
+        row_take (lift ord0 j) (rbelast (row_mx (\row_(k<1) b0) w))); last first.
+        apply/rowP => i; rewrite !mxE !castmxE /= esymK !cast_ord_id.
+        rewrite /rbelast mxE; congr (row_mx _ _ _ _); exact: val_inj.
+      rewrite (_ : rbelast _ = row_mx (\row_(k<1) b0) (rbelast w)); last first.
+        apply/rowP => i; rewrite mxE /rbelast.
+        case/boolP : (i == O :> nat) => [/eqP | ] i0.
+          rewrite (_ : widen_ord _ _ = ord0); last exact: val_inj.
+          rewrite (_ : i = ord0); last exact: val_inj.
+          by rewrite 2!row_mx_row_ord0.
+        have @k : 'I_n.+1.
+          apply: (@Ordinal _ i.-1).
+          by rewrite prednK // ?lt0n // -ltnS (leq_trans (ltn_ord i)).
+        rewrite (_ : widen_ord _ _ = rshift 1%nat k); last first.
+          by apply val_inj => /=; rewrite -subn1 subnKC // lt0n.
+        rewrite (@row_mxEr _ 1%nat 1%nat n.+1).
+        have @k' : 'I_n.
+          apply: (@Ordinal _ i.-1).
+          by rewrite prednK // ?lt0n // -ltnS (leq_trans (ltn_ord i)).
+        rewrite (_ : i = rshift 1%nat k'); last first.
+          by apply val_inj => /=; rewrite -subn1 subnKC // lt0n.
+        rewrite (@row_mxEr _ 1%nat 1%nat n) mxE; congr (w ord0 _); exact: val_inj.
+      apply/idP/idP; last first.
+        move/andP => [/eqP <- /eqP ->].
+        apply/eqP/rowP => k.
+        rewrite !mxE !castmxE /= esymK !cast_ord_id.
+        case/boolP : (k == O :> nat) => [/eqP | ] k0.
+          rewrite (_ : cast_ord _ _ = ord0); last exact: val_inj.
+          rewrite (_ : k = ord0); last exact: val_inj.
+          by rewrite 2!row_mx_row_ord0.
+        have @l : 'I_n.
+          apply: (@Ordinal _ k.-1).
+          by rewrite prednK // ?lt0n // -ltnS (leq_trans (ltn_ord k)).
+        rewrite (_ : cast_ord _ _ = rshift 1%nat l); last first.
+          by apply val_inj => /=; rewrite add1n prednK // lt0n.
+        rewrite (@row_mxEr _ 1%nat 1%nat n) //.
+        have @l0 : 'I_(widen_ord (leqnSn n.+1) j).
+          apply: (@Ordinal _ k.-1).
+          by rewrite prednK // ?lt0n // -ltnS (leq_trans (ltn_ord k)).
+        rewrite (_ : k = rshift 1%nat l0); last first.
+          by apply val_inj => /=; rewrite add1n prednK // lt0n.
+        rewrite (@row_mxEr _ 1%nat 1%nat) //.
+        rewrite !mxE !castmxE /= cast_ord_id; congr (w _ _).
+        exact: val_inj.
+      move/eqP/rowP => H.
+      move: (H ord0).
+      rewrite !mxE !castmxE /= 2!cast_ord_id esymK.
+      rewrite (_ : cast_ord _ _ = ord0); last exact: val_inj.
+      rewrite 2!row_mx_row_ord0 => ->; rewrite eqxx andbT.
+      apply/eqP/rowP => k.
+      have @k1 : 'I_(bump 0 j).
+        apply: (@Ordinal _ k.+1).
+        by rewrite /bump leq0n add1n ltnS.
+      move: (H k1).
+      rewrite !mxE !castmxE /= esymK !cast_ord_id.
+      have @k2 : 'I_n.
+        apply: (@Ordinal _ k).
+        by rewrite (leq_trans (ltn_ord k)) // -ltnS (leq_trans (ltn_ord j)).
+      rewrite (_ : cast_ord _ _ = rshift 1%nat k2); last first.
+        by apply val_inj => /=; rewrite add1n.
+      rewrite (@row_mxEr _ 1%nat 1%nat) mxE.
+      rewrite (_ : cast_ord _ _ = widen_ord (leqnSn n) k2); last exact: val_inj.
+      move=> ->.
+      rewrite (_ : k1 = rshift 1%nat k); last by apply val_inj => /=; rewrite add1n.
+      by rewrite row_mxEr.
     apply eq_bigr => -[v b] _ /=.
     rewrite 2!Bivar.sndE; congr (_ * _).
       apply eq_bigr => a _.
@@ -1544,28 +1283,9 @@ have -> : CondEntropy.h PY = \rsum_(j < n.+1)
 rewrite -addR_opp big_morph_oppR -big_split /=; apply eq_bigr => j _ /=.
 case: ifPn => j0.
 - rewrite MutualInfo.miE2 addR_opp; congr (`H _ - _).
-  rewrite /Multivar.head_of.
-  apply/dist_ext => a.
-  rewrite [in RHS]Bivar.fstE.
-  transitivity ((Nth.d (Bivar.fst PY) ord0) a); last first.
-    (* TODO: lemma *)
-    rewrite Nth.dE -big_rV_cons //=.
-    transitivity (\rsum_(v in 'rV_n) \rsum_(b in B)
-        (PY (castmx (erefl, @add1n n) (row_mx (\row__ a) v), b))).
-      apply eq_bigr => /= w _; rewrite Bivar.fstE.
-      apply eq_bigr => b _; congr (PY (_, b)).
-      apply/rowP => i; rewrite castmxE /= cast_ord_id.
-      congr (_ _ _); exact/val_inj.
-    rewrite exchange_big /=; apply eq_bigr => b _.
-    rewrite PairNth.dE /=.
-    rewrite [in RHS](eq_bigr (fun x => PY (x.1, x.2))); last by case.
-    rewrite -(pair_big (fun x : 'rV__ => x ord0 ord0 == a) (fun x => x == b) (fun i1 i2 => PY (i1, i2))) /=.
-    rewrite -big_rV_cons //=; apply eq_bigr => w _.
-    rewrite big_pred1_eq /=; congr (PY (_, b)).
-    apply/rowP => i; rewrite castmxE /= cast_ord_id; congr (_ _ _).
-    exact/val_inj.
-  rewrite Bivar.fstE /= Nth.dE /= -big_rV_cons //=.
-  apply eq_bigr => v _; by rewrite Multivar.to_bivarE.
+  rewrite /Multivar.head_of /Bivar.fst.
+  rewrite /Multivar.to_bivar.
+  by rewrite /PairNth.d !DistMap.comp.
 - rewrite /cmi /fA -/P; congr (_ - _).
   + congr CondEntropy.h.
     by rewrite /f23 /f Proj13_TripC23 TripC12.fst belast_last_take.
@@ -1773,50 +1493,6 @@ Qed.
 
 End markov_chain_prop.
 
-From mathcomp Require Import perm.
-
-Module TakeDrop.
-Section def.
-Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) (i : 'I_n.+1).
-Definition f := [ffun x : A * 'rV[A]_i * 'rV[A]_(n - i) =>
-  P (row_mx (\row_(_ < 1) x.1.1) (castmx (erefl 1%nat, @subnKC i n (ltn_ord i)) (row_mx x.1.2 x.2)))].
-Lemma f0 x : 0 <= f x. Proof. rewrite ffunE; exact/dist_ge0. Qed.
-Lemma f1 : \rsum_(j in {: A * 'rV[A]_i * 'rV[A]_(n - i)}) f j = 1.
-Proof.
-rewrite -(epmf1 P) /= -(big_rV_cons_behead _ xpredT xpredT) /=.
-rewrite (eq_bigr (fun j => f (j.1, j.2))); last by case.
-rewrite -(pair_bigA _ (fun j1 j2 => f (j1, j2))) /=.
-rewrite (eq_bigr (fun x => \rsum_(j | true) f (x.1, x.2, j))); last by case.
-rewrite -(pair_bigA _ (fun x1 x2 => \rsum_(j | true) f (x1, x2, j))) /=.
-apply eq_bigr => a _; apply esym.
-rewrite (@partition_big _ _ _ _ [finType of 'rV[A]_i] xpredT (@row_take A n i) xpredT) //=.
-apply eq_bigr => v _.
-(* TODO: lemma yyy *)
-rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n] [finType of 'rV[A]_(n - i)]
-  (fun w => (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w)))
-  (@row_drop A n i)) /=; last first.
-  move=> w wv; apply/rowP => j.
-  rewrite castmxE /= cast_ord_id /row_drop mxE; case: splitP => [j0 /= jj0|k /= jik].
-  - rewrite -(eqP wv) mxE castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
-  - rewrite mxE /= castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
-apply eq_big => w.
-  apply/andP; split; apply/eqP/rowP => j.
-  by rewrite !mxE !castmxE /= !cast_ord_id esymK cast_ordK row_mxEl.
-  by rewrite !mxE !castmxE /= cast_ord_id esymK cast_ordK cast_ord_id row_mxEr.
-case/andP => Hv Hw.
-rewrite /f ffunE /=; congr (P _).
-set H1 := ltnS' _.
-set H2 := ltn_ord _.
-have -> : H1 = H2 by apply ProofIrrelevance.proof_irrelevance.
-by [].
-Qed.
-Definition d : {dist A * 'rV[A]_i * 'rV[A]_(n - i)} := locked (makeDist f0 f1).
-Lemma dE x : d x = P (row_mx (\row_(_ < 1) x.1.1) (castmx (erefl 1%nat, @subnKC i n (ltn_ord i)) (row_mx x.1.2 x.2))).
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-End def.
-End TakeDrop.
-
-(* wip *)
 Section Han_inequality.
 
 Local Open Scope ring_scope.
@@ -1829,110 +1505,47 @@ Proof.
 rewrite -subR_ge0.
 set Q : {dist A * 'rV[A]_i * 'rV[A]_(n' - i)} := TakeDrop.d P i.
 have H1 : Proj13.d (TripC23.d Q) = Multivar.to_bivar (Take.d P (lift ord0 i)).
-  apply/dist_ext => -[a v].
-  rewrite Proj13_TripC23 Bivar.fstE /= Multivar.to_bivarE /= (Take.dE _ (lift ord0 i)) /= /Q.
-  apply eq_bigr => w _.
-  rewrite TakeDrop.dE /=; congr (P _); apply/rowP => k.
-  rewrite castmxE /= cast_ord_id.
-  (* TODO: lemma row_mxA ? *)
-  case/boolP : (k == ord0) => k0.
-    rewrite {1}(_ : k = lshift n' (ord0 : 'I_1)); last by apply/val_inj => /=; rewrite (eqP k0).
-    rewrite (@row_mxEl _ 1%nat 1%nat) mxE.
-    rewrite (_ : cast_ord _ _ = ord0); last by apply val_inj => /=; rewrite (eqP k0).
-    rewrite (_ : ord0 = lshift (n - bump 0 i)%nat ord0); last exact/val_inj.
-    by rewrite row_mxEl mxE; case: splitP => // j j0; rewrite mxE.
-  move=> [:Hk1].
-  have @k1 : 'I_n'.
-    apply: (@Ordinal _ k.-1).
-    abstract: Hk1.
-    rewrite prednK //.
-    by rewrite -ltnS.
-    by rewrite lt0n.
-  rewrite {1}(_ : k = rshift 1%nat k1); last first.
-    by apply val_inj => /=; rewrite add1n prednK // lt0n.
-  rewrite (@row_mxEr _ 1%nat 1%nat) castmxE /= cast_ord_id.
-  case/boolP : (k1 < i)%nat => [k1i|].
-    rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) (Ordinal k1i)) ?row_mxEl; last first.
-      by apply/val_inj.
-    move=> [:Hk2].
-    have @k2 : 'I_(1 + i).
-      apply: (@Ordinal _ k).
-      abstract: Hk2.
-      rewrite /= in k1i.
-      rewrite add1n ltnS.
-      move: k1i.
-      rewrite prednK //; by rewrite lt0n.
-    rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) k2); last first.
-      by apply/val_inj => /=.
-    rewrite row_mxEl.
-    move=> [:Hk3].
-    have @k3 : 'I_i.
-      apply: (@Ordinal _ k2.-1).
-      abstract: Hk3.
-      by rewrite /= prednK // lt0n.
-    rewrite (_ : k2 = rshift 1%nat k3); last first.
-      apply/val_inj => /=.
-      by rewrite add1n prednK // lt0n.
-    rewrite row_mxEr.
-    congr (v _ _).
-    by apply val_inj => /=.
-  rewrite -leqNgt => k1i.
-  move=> [:Hk2].
-  have @k2 : 'I_(n - bump 0 i).
-    apply: (@Ordinal _ (k1 - i)).
-    abstract: Hk2.
-    rewrite /bump leq0n add1n subnS subSn /=; last by rewrite -ltnS.
-    by rewrite ltn_sub2r // (leq_ltn_trans _ Hk1).
-  rewrite (_ : cast_ord _ _ = rshift i k2); last by apply val_inj => /=; rewrite subnKC.
-  rewrite row_mxEr.
-  move=> [:Hk3].
-  have @k3 : 'I_(n - bump 0 i).
-    apply: (@Ordinal _ (k - i.+1)).
-    abstract: Hk3.
-    by rewrite /bump leq0n add1n ltn_sub2r // (@leq_ltn_trans k1.+1).
-  rewrite (_ : cast_ord _ _ = rshift (1 + i) k3); last first.
-    apply/val_inj => /=; rewrite add1n subnKC // (@leq_ltn_trans k1) //=.
-    by rewrite prednK // lt0n.
-  rewrite row_mxEr.
-  congr (w _ _).
-  apply val_inj => /=.
-  by rewrite -subn1 -subnDA add1n.
+  rewrite /Proj13.d /TripC23.d /Multivar.to_bivar /Take.d /Bivar.snd /TripA.d.
+  rewrite /TripC12.d /Swap.d /TakeDrop.d !DistMap.comp; congr (DistMap.d _ P).
+  apply FunctionalExtensionality.functional_extensionality => /= v.
+  congr (_, _).
+  - rewrite mxE castmxE /= cast_ord_id; congr (v ord0 _); exact: val_inj.
+  - apply/rowP => j.
+    rewrite !mxE !castmxE /= !cast_ord_id !esymK mxE; congr (v ord0 _).
+    exact: val_inj.
 have H2 : CondEntropy.h (TripA.d (TripC23.d Q)) = CondEntropy.h (Multivar.to_bivar P).
   rewrite -hTripC23 /CondEntropy.h /=.
-  rewrite (@partition_big _ _ _ _ [finType of 'rV[A]_i] xpredT (@row_take A _ i) xpredT) //=.
-  rewrite (eq_bigr (fun a => ((Bivar.snd (TripA.d Q)) (a.1, a.2) * CondEntropy.h1 (TripA.d Q) (a.1, a.2))%R)); last by case.
-  rewrite -(pair_bigA _ (fun a1 a2 => ((Bivar.snd (TripA.d Q)) (a1, a2) * CondEntropy.h1 (TripA.d Q) (a1, a2))%R)) /=.
+  rewrite (@partition_big _ _ _ _ _ xpredT (@row_take A _ i) xpredT) //=.
+  rewrite (eq_bigr (fun a => (Bivar.snd (TripA.d Q)) (a.1, a.2) *
+           CondEntropy.h1 (TripA.d Q) (a.1, a.2))%R); last by case.
+  rewrite -(pair_bigA _ (fun a1 a2 => (Bivar.snd (TripA.d Q)) (a1, a2) *
+           CondEntropy.h1 (TripA.d Q) (a1, a2))%R) /=.
   apply eq_bigr => v _.
 (* TODO: lemma yyy *)
-rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n'] [finType of 'rV[A]_(n' - i)]
-  (fun w => (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w)))
-  (@row_drop A _ i)) /=; last first.
-  move=> w wv; apply/rowP => j.
-  rewrite castmxE /= cast_ord_id /row_drop mxE; case: splitP => [j0 /= jj0|k /= jik].
-  - rewrite -(eqP wv) mxE castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
-  - rewrite mxE /= castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
-apply eq_big => /= w.
-  apply/esym/andP; split; apply/eqP/rowP => j.
-  by rewrite !mxE !castmxE /= !cast_ord_id esymK cast_ordK row_mxEl.
-  by rewrite !mxE !castmxE /= cast_ord_id esymK cast_ordK cast_ord_id row_mxEr.
-move=> _; congr (_ * _)%R.
-  rewrite !Bivar.sndE; apply eq_bigr => a _.
-  rewrite TripA.dE /= Multivar.to_bivarE /= /Q TakeDrop.dE /=.
-  rewrite {1}(_ : ltn_ord i = ltnS' (ltn_ord i)) //; exact/ProofIrrelevance.proof_irrelevance.
-rewrite /CondEntropy.h1; congr (- _)%R; apply eq_bigr => a _.
-congr (_ * log _)%R.
-  rewrite /cPr !(Pr_set1,setX1) TripA.dE /= /Q TakeDrop.dE /= Multivar.to_bivarE /=.
-  rewrite {1}(_ : ltn_ord i = ltnS' (ltn_ord i)); last exact/ProofIrrelevance.proof_irrelevance.
-  congr (_ / _)%R.
-  rewrite !Bivar.sndE; apply eq_bigr => a0 _.
-  rewrite TripA.dE TakeDrop.dE Multivar.to_bivarE /=.
-  rewrite {1}(_ : ltn_ord i = ltnS' (ltn_ord i)) //; exact/ProofIrrelevance.proof_irrelevance.
-rewrite /cPr !(Pr_set1,setX1) TripA.dE /= /Q TakeDrop.dE /= Multivar.to_bivarE /=.
-rewrite {1}(_ : ltn_ord i = ltnS' (ltn_ord i)); last exact/ProofIrrelevance.proof_irrelevance.
-congr (_ / _)%R.
-rewrite !Bivar.sndE; apply eq_bigr => a0 _.
-rewrite TripA.dE TakeDrop.dE Multivar.to_bivarE /=.
-rewrite {1}(_ : ltn_ord i = ltnS' (ltn_ord i)) //; exact/ProofIrrelevance.proof_irrelevance.
+  rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n'] [finType of 'rV[A]_(n' - i)]
+    (fun w => (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w)))
+    (@row_drop A _ i)) /=; last first.
+    move=> w wv; apply/rowP => j.
+    rewrite castmxE /= cast_ord_id /row_drop mxE; case: splitP => [j0 /= jj0|k /= jik].
+    - rewrite -(eqP wv) mxE castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
+    - rewrite mxE /= castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
+  apply eq_big => /= w.
+    apply/esym/andP; split; apply/eqP/rowP => j.
+    by rewrite !mxE !castmxE /= !cast_ord_id esymK cast_ordK row_mxEl.
+    by rewrite !mxE !castmxE /= cast_ord_id esymK cast_ordK cast_ord_id row_mxEr.
+  move=> _; congr (_ * _)%R.
+  - rewrite !Bivar.sndE; apply eq_bigr => a _.
+    by rewrite TripA.dE /= Multivar.to_bivarE /= /Q TakeDrop.dE.
+  - rewrite /CondEntropy.h1; congr (- _)%R; apply eq_bigr => a _.
+    congr (_ * log _)%R.
+    + rewrite /cPr !(Pr_set1,setX1) TripA.dE /= /Q TakeDrop.dE /= Multivar.to_bivarE /=.
+      congr (_ / _)%R.
+      rewrite !Bivar.sndE; apply eq_bigr => a0 _.
+      by rewrite TripA.dE TakeDrop.dE Multivar.to_bivarE.
+    + rewrite /cPr !(Pr_set1,setX1) TripA.dE /= /Q TakeDrop.dE /= Multivar.to_bivarE /=.
+      congr (_ / _)%R.
+      rewrite !Bivar.sndE; apply eq_bigr => a0 _.
+      by rewrite TripA.dE TakeDrop.dE Multivar.to_bivarE.
 rewrite (_ : _ - _ = cmi (TripC23.d Q))%R; last by rewrite /cmi H1 H2.
 exact/cmi_ge0.
 Qed.

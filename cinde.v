@@ -10,12 +10,34 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-(* tentative formalization of conditional independence *)
+(* tentative formalization of conditional independence
+contents:
+- Various distributions (Proj124.d, Proj14d, Proj234.d, QuadA23.d, QuadA34.d,
+  QuadA234.d)
+- Section pair_of_RVs.
+- Section marginals.
+- Section RV2_prop.
+- Section RV3_prop.
+- Section trip_prop.
+- Section quad_prop.
+- Section conditionnally_independent_discrete_random_variables.
+- Section cinde_drv_prop.
+- Section reasoning_by_cases_RV2.
+- Section symmetry.
+- Section decomposition.
+- Section weak_union.
+- Section contraction.
+- Section derived_rules.
+- Section cPr_1_RV.
+- Section intersection.
+*)
 
 Reserved Notation "X _|_  Y | Z" (at level 10, Y, Z at next level).
 Reserved Notation "P |= X _|_  Y | Z" (at level 10, X, Y, Z at next level).
 Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
   format "[%  x ,  y ,  .. ,  z ]").
+Reserved Notation "\Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
+  format "\Pr[  X =  a  |  Y  =  b  ]").
 
 Local Open Scope proba_scope.
 
@@ -416,9 +438,6 @@ Qed.
 
 End quad_prop.
 
-Reserved Notation "\Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
-  format "\Pr[  X =  a  |  Y  =  b  ]").
-
 Section conditionnally_independent_discrete_random_variables.
 
 Variables (U : finType) (P : dist U) (A B C : finType).
@@ -701,7 +720,6 @@ Qed.
 End cPr_1_RV.
 
 Section intersection.
-(* NB(rei): tentative *)
 
 Variables (U : finType) (P : dist U) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
