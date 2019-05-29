@@ -117,7 +117,7 @@ End Self.
 Module TripA.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
-Definition f (x : A * B * C) := (x.1.1, (x.1.2, x.2)).
+Let f (x : A * B * C) := (x.1.1, (x.1.2, x.2)).
 Lemma inj_f : injective f.
 Proof. by rewrite /f => -[[? ?] ?] [[? ?] ?] /= [-> -> ->]. Qed.
 Definition d : {dist A * (B * C)} := DistMap.d f P.

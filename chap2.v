@@ -93,79 +93,31 @@ Local Open Scope proba_scope.
 Lemma head_of_fst_belast_last (A : finType) (n : nat) (P : {dist 'rV[A]_n.+2}) :
   Multivar.head_of (Bivar.fst (Multivar.belast_last P)) = Multivar.head_of P.
 Proof.
-apply/dist_ext => a.
-rewrite /Multivar.head_of 2!Bivar.fstE /= -(big_rV_belast_last _ xpredT xpredT) /=.
-apply eq_bigr => v _.
-rewrite Multivar.to_bivarE /= Bivar.fstE; apply eq_bigr => a0 _.
-rewrite Multivar.to_bivarE Multivar.belast_lastE /=.
-congr (P _).
-apply/rowP => i.
-rewrite castmxE /= cast_ord_id /=.
-case: (ltnP i 1) => [i1|Oi].
-  set i0 : 'I_(1 + n) := Ordinal (leq_trans i1 (ltn0Sn n)).
-  rewrite (_ : cast_ord _ _ = lshift 1 i0) ?row_mxEl; last exact/val_inj.
-  set i2 : 'I_1 := Ordinal i1.
-  rewrite (_ : i0 = lshift n i2); last exact/val_inj.
-  rewrite (@row_mxEl _ _ 1%nat) mxE.
-  rewrite (_ : i = lshift n.+1 i2); last exact/val_inj.
-  by rewrite (@row_mxEl _ _ 1%nat) mxE.
-move=> [:Hi2].
-have @i2 : 'I_(1%nat + n) by apply: (@Ordinal _ i.-1); abstract: Hi2; rewrite prednK // add1n -ltnS.
-rewrite [in RHS](_ : i = rshift 1%nat i2); last first.
-  by apply/val_inj => /=; rewrite add1n prednK.
-rewrite (@row_mxEr _ _ 1%nat) castmxE /= cast_ord_id.
-case: (ltnP i n.+1) => [ni|jn].
-  move=> [:Hi3].
-  have @i3 : 'I_(1 + n) by apply: (@Ordinal _ i); abstract: Hi3; by rewrite add1n.
-  rewrite (_ : cast_ord _ _ = lshift 1%nat i3); last exact/val_inj.
-  rewrite row_mxEl.
-  move=> [:Hj4].
-  have @i4 : 'I_n by apply: (@Ordinal _ i.-1); abstract: Hj4; rewrite prednK.
-  rewrite (_ : i3 = rshift 1%nat i4); last first.
-    apply/val_inj => /=; by rewrite add1n prednK.
-  rewrite (@row_mxEr _ _ 1%nat).
-  have @i5 : 'I_n by apply: (@Ordinal _ i2).
-  rewrite (_ : cast_ord _ _ = lshift 1%nat i5); last exact/val_inj.
-  by rewrite row_mxEl.
-have {jn}jn : i = ord_max.
-  by apply/val_inj => /=; apply/eqP; rewrite eqn_leq jn andbT -ltnS.
-have @i3 : 'I_1 by apply: (@Ordinal _ ord0).
-rewrite (_ : cast_ord _ _ = rshift (1 + n) i3); last first.
-  by apply val_inj => /=; rewrite jn /= add1n.
-rewrite row_mxEr mxE.
-rewrite (_ : cast_ord _ _ = rshift n i3); last first.
-  apply val_inj => /=; by rewrite jn.
-by rewrite row_mxEr mxE.
+rewrite /Multivar.head_of /Bivar.fst /Multivar.to_bivar /Multivar.belast_last.
+rewrite !DistMap.comp; congr (DistMap.d _ P).
+apply FunctionalExtensionality.functional_extensionality => /= v.
+rewrite /rbelast mxE; congr (v ord0 _); exact: val_inj.
 Qed.
 
 Module Take.
 Section def.
 Variable (A : finType) (n : nat) (P : {dist 'rV[A]_n}).
-Definition f (i : 'I_n.+1) := [ffun v : 'rV[A]_i =>
-  \rsum_(w in 'rV[A]_(n - i)) P (castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx v w))].
-Lemma f0 i x : 0 <= @f i x.
-Proof. rewrite ffunE; apply rsumr_ge0 => /= v _; exact: dist_ge0. Qed.
-Lemma f1 (i : 'I_n.+1) : \rsum_(x in 'rV[A]_i) @f i x = 1%R.
+Definition d (i : 'I_n.+1) : {dist 'rV[A]_i} := DistMap.d (row_take i) P.
+Lemma dE i v : d i v = \rsum_(w in 'rV[A]_(n - i))
+  P (castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx v w)).
 Proof.
-rewrite -(epmf1 P) /= /f; apply/esym.
-rewrite (@partition_big _ _ _ _ [finType of 'rV[A]_i] xpredT (@row_take A n i) xpredT) //=.
-apply eq_bigr => v _.
-(* TODO: lemma yyy *)
+rewrite DistMap.dE /=.
 rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n] [finType of 'rV[A]_(n - i)]
-  (fun w => (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w)))
+  (fun w => castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w))
   (@row_drop A n i)) /=; last first.
   move=> w wv; apply/rowP => j.
   rewrite castmxE /= cast_ord_id /row_drop mxE; case: splitP => [j0 /= jj0|k /= jik].
   - rewrite -(eqP wv) mxE castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
   - rewrite mxE /= castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
-rewrite ffunE; apply eq_bigl => w; rewrite inE; apply/andP; split; apply/eqP/rowP => j.
+apply eq_bigl => w; rewrite inE; apply/andP; split; apply/eqP/rowP => j.
 - by rewrite !mxE !castmxE /= !cast_ord_id esymK cast_ordK row_mxEl.
 - by rewrite !mxE !castmxE /= cast_ord_id esymK cast_ordK cast_ord_id row_mxEr.
 Qed.
-Definition d (i : 'I_n.+1) : {dist 'rV[A]_i} := locked (makeDist (@f0 i) (@f1 i)).
-Lemma dE i v : d i v = \rsum_(w in 'rV[A]_(n - i))
-  P (castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx v w)).
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
 Section prop.
 Local Open Scope vec_ext_scope.
@@ -185,30 +137,23 @@ End prop.
 End Take.
 Arguments Take.dE {A} {n} _ _ _.
 
+Module Nth.
+Section def.
+Local Open Scope vec_ext_scope.
+Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n}) (i : 'I_n).
+Definition d : {dist A} := DistMap.d (fun v : 'rV[A]_n => v ord0 i) P.
+Lemma dE a : d a = \rsum_(x : 'rV[A]_n | x ``_ i == a) P x.
+Proof. by rewrite DistMap.dE. Qed.
+End def.
+End Nth.
+
 Module PairNth.
 Section def.
 Local Open Scope vec_ext_scope.
 Variables (A B : finType) (n : nat) (P : {dist 'rV[A]_n * B}) (i : 'I_n).
-Definition f := [ffun ab : A * B =>
-  \rsum_(x : 'rV[A]_n * B | (x.1 ``_ i == ab.1) && (x.2 == ab.2)) P x].
-Lemma f0 ab : 0 <= f ab.
-Proof. rewrite /f ffunE; apply: rsumr_ge0 => /= -[a b] /= _; exact: dist_ge0. Qed.
-Lemma f1 : \rsum_(ab : A * B) f ab = 1.
-Proof.
-rewrite -(epmf1 P) /= (eq_bigr (fun x => f (x.1, x.2))); last by case.
-rewrite -(pair_bigA _ (fun a b => f (a, b))) /=.
-rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite -(pair_bigA _ (fun a b => P (a, b))) /=.
-rewrite [in LHS]exchange_big [in RHS]exchange_big /=; apply eq_bigr => b _.
-rewrite /f /= (partition_big (fun x : 'rV[A]_n => x ``_ i) xpredT) //=.
-apply eq_bigr => a _; rewrite ffunE.
-rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite -(pair_big (fun x : 'rV[A]_n => x ord0 i == a) (fun x => x == b) (fun a b => P (a, b))) /=.
-apply eq_bigr => t /eqP tja; by rewrite big_pred1_eq.
-Qed.
-Definition d : {dist A * B} := locked (makeDist f0 f1).
+Definition d : {dist A * B} := DistMap.d (fun x : 'rV[A]_n * B => (x.1 ord0 i, x.2)) P.
 Lemma dE ab : d ab = \rsum_(x : 'rV[A]_n * B | (x.1 ``_ i == ab.1) && (x.2 == ab.2)) P x.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Proof. by rewrite DistMap.dE. Qed.
 End def.
 End PairNth.
 
@@ -267,7 +212,38 @@ apply eq_bigr => w1 _.
 by rewrite row_mxA'.
 Qed.
 Definition d : {dist 'rV_i * A * B} := locked (makeDist f0 f1).
-Lemma dE ab : d ab = f ab. Proof. by rewrite /d; unlock. Qed.
+(*Definition d : {dist 'rV_i * A * B} :=
+  DistMap.d (fun x : 'rV[A]_n.+1 * B => (row_take (widen_ord (leqnSn _) i) x.1, x.1 ord0 i, x.2)) P.*)
+(*Lemma dE ab : d ab = f ab.
+Proof.
+case: ab => /= -[a1 a2] b.
+rewrite DistMap.dE /f ffunE /=.
+rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
+rewrite (eq_bigl (fun j =>
+  ((row_take (widen_ord (leqnSn n.+1) i) j.1, j.1 ord0 i) == (a1, a2)) &&
+  (j.2 == b))); last first.
+  by move=> j /=; rewrite xpair_eqE.
+rewrite -(pair_big (fun j =>
+  ((row_take (widen_ord (leqnSn n.+1) i) j, j ord0 i) == (a1, a2)))
+  (fun j => (j == b)) (fun a b => P (a, b))) /=.
+rewrite (eq_bigr (fun x => P (x, b))); last first.
+  by move=> j; rewrite big_pred1_eq.
+rewrite (eq_bigl (fun j => (row_take (widen_ord (leqnSn n.+1) i) j == a1) &&
+  (j ord0 i == a2))); last first.
+  by move=> j /=; rewrite xpair_eqE.
+rewrite big_mkcondr /=.
+have H1 : (i + (n.+1 - i))%nat = n.+1 by rewrite subnKC // ltnW.
+rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n.+1] [finType of 'rV[A]_(n.+1 - i)]
+  (fun w0 => (castmx (erefl 1%nat, H1) (row_mx a1 w0)))
+  (@row_drop A n.+1 (widen_ord (leqnSn _) i))) /=; last first.
+  move=> w0 w0w; apply/rowP => j.
+  rewrite castmxE /= cast_ord_id /= !mxE.
+  case: splitP => [j0 /= ?|k /= jik].
+  - rewrite -(eqP w0w) mxE castmxE /= cast_ord_id; congr (w0 _ _); exact/val_inj.
+  - rewrite mxE castmxE /= cast_ord_id; congr (w0 _ _); exact/val_inj.
+*)
+Lemma dE ab : d ab = f ab.
+Proof. by rewrite /d; unlock. Qed.
 End def.
 End PairTake.
 
@@ -280,6 +256,13 @@ Let P : {dist 'rV[A]_n.+1} := Bivar.fst PY.
 Lemma belast_last_take (j : 'I_n.+1) :
   Multivar.belast_last (Take.d P (lift ord0 j)) = Bivar.fst (PairTake.d PY j).
 Proof.
+(*rewrite /Multivar.belast_last /Take.d /Bivar.fst /PairTake.d !DistMap.comp.
+congr (DistMap.d _ PY).
+apply FunctionalExtensionality.functional_extensionality => /= -[v b] /=.
+congr (_, _).
+- apply/rowP => i.
+  rewrite /rbelast !mxE !castmxE /=; congr (v _ _); exact: val_inj.
+- rewrite /rlast mxE castmxE /=; congr (v _ _); exact: val_inj.*)
 apply/dist_ext => -[v a].
 rewrite Multivar.belast_lastE.
 rewrite (Take.dE _ (lift ord0 j)).
@@ -329,28 +312,6 @@ rewrite leq_eqVlt => /orP[/eqP ji|ji].
 Qed.
 
 End to_bivar_last_take.
-
-Module Nth.
-Section def.
-Local Open Scope vec_ext_scope.
-Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n}) (i : 'I_n).
-Definition f := [ffun a : A => \rsum_(x : 'rV[A]_n | x ``_ i == a) P x].
-Lemma f0 a : 0 <= f a.
-Proof.
-rewrite ffunE; apply: (@rsumr_ge0 _ _ (fun x : 'rV_n => x ``_ i == a)) => /= x _; exact/dist_ge0.
-Qed.
-Lemma f1 : \rsum_(a : A) f a = 1.
-Proof.
-rewrite -(epmf1 P) /= (partition_big (fun x : 'rV[A]_n => x ``_ i) xpredT) //.
-rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
-  move=> a _; rewrite ffunE /h; reflexivity.
-by rewrite {}/h.
-Qed.
-Definition d : {dist A} := locked (makeDist f0 f1).
-Lemma dE a : d a = \rsum_(x : 'rV[A]_n | x ``_ i == a) P x.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-End def.
-End Nth.
 
 Lemma head_of_nth0 (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) :
   Multivar.head_of P = Nth.d P ord0.
@@ -517,47 +478,9 @@ Qed.
 Module MargDist.
 Section def.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) (i : 'I_n.+1).
-Definition f := [ffun v : 'rV[A]_n => \rsum_(x : 'rV[A]_n.+1 | col' i x == v) P x].
-Lemma f0 (v : 'rV[A]_n) : 0 <= f v.
-Proof. rewrite ffunE; apply: rsumr_ge0 => /= a _; exact/dist_ge0. Qed.
-Lemma f1 : \rsum_(v : 'rV[A]_n) f v = 1.
-Proof.
-case/boolP : (#|A| == O) => [/eqP A0|].
-  exfalso.
-  move: (dist_domain_not_empty P); by rewrite card_matrix mul1n expn_gt0 A0 ltnn.
-rewrite -lt0n => /card_gt0P[a _]; rewrite -(epmf1 P) /= /f; apply/esym.
-rewrite (partition_big_imset (col' i)) //=.
-apply/esym; rewrite /f; evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h); last first.
-  move=> ? _; rewrite ffunE /h; reflexivity.
-rewrite {}/h; apply/esym.
-apply congr_big => // v; apply/imsetP => /=.
-have H : (i + (1 + (n - i)) = n.+1)%nat by rewrite add1n addnS subnKC // -ltnS.
-exists (castmx (erefl, H)
-  (row_mx (row_take i v) (row_mx (\row_(i < 1) a) (row_drop i v)))) => //.
-rewrite {1}(row_mx_take_drop i v); apply/rowP => j.
-rewrite [in RHS]mxE 2!castmxE /= cast_ord_id /=.
-case/boolP : (j < i)%nat => [ji|]; last rewrite -leqNgt => ij.
-  set j' := Ordinal ji.
-  rewrite (_ : cast_ord _ _ = lshift (n - i) j') ?row_mxEl; last exact/val_inj.
-  rewrite (_ : cast_ord _ _ = lshift (1 + (n - i)) j') ?row_mxEl //.
-  by apply val_inj => /=; rewrite /bump /= leqNgt ji add0n.
-move=> [:Hj2].
-have @j2 : 'I_(n - i).
-  apply: (@Ordinal _ (j - i)).
-  abstract: Hj2; by rewrite ltn_sub2r // (leq_ltn_trans ij).
-rewrite (_ : cast_ord _ _ = rshift i j2) ?row_mxEr; last first.
-  by apply val_inj => /=; rewrite subnKC.
-move=> [:Hj3].
-have @j3 : 'I_(1 + (n - i)).
-  apply: (@Ordinal _ (j - i).+1).
-  abstract: Hj3; by rewrite ltnS ltn_sub2r // (leq_ltn_trans ij).
-rewrite (_ : cast_ord _ _ = rshift i j3) ?row_mxEr; last first.
-  by apply val_inj => /=; rewrite /bump ij add1n addnS subnKC.
-rewrite (_ : j3 = rshift 1 j2) ?row_mxEr //; exact/val_inj.
-Qed.
-Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
+Definition d : {dist 'rV[A]_n} := DistMap.d (fun v => col' i v) P.
 Lemma dE v : d v = \rsum_(x : 'rV[A]_n.+1 | col' i x == v) P x.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Proof. by rewrite DistMap.dE. Qed.
 End def.
 Section prop.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}).
@@ -586,19 +509,13 @@ Qed.
 Module MultivarPerm.
 Section def.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n}) (s : 'S_n).
-Definition f := [ffun v : 'rV[A]_n => P (col_perm s v)].
-Lemma f0 (v : 'rV[A]_n) : (0 <= f v)%R.
-Proof. rewrite ffunE; exact/dist_ge0. Qed.
-Lemma f1 : (\rsum_(v : 'rV[A]_n) f v = 1)%R.
-Proof.
-rewrite -(epmf1 P) /=.
-rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ (s ^-1)%g) xpredT); last first.
-  exact: col_perm_inj.
-by apply eq_bigr => x _; rewrite /f ffunE -col_permM mulgV col_perm1.
-Qed.
-Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
+Definition d : {dist 'rV[A]_n} := DistMap.d (col_perm s^-1) P.
 Lemma dE v : d v = P (col_perm s v).
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Proof.
+rewrite DistMap.dE /= {1}(_ : v = col_perm s^-1 (col_perm s v)); last first.
+  by rewrite -col_permM mulVg col_perm1.
+rewrite big_pred1_inj //; exact: col_perm_inj.
+Qed.
 End def.
 Section prop.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n}) (s : 'S_n).

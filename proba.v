@@ -530,16 +530,13 @@ Proof. move: (dist_domain_not_empty d); by rewrite card_ord. Qed.
 Module I2Dist.
 Section def.
 Variable (p : prob).
-Definition f := [ffun i : 'I_2 => if i == ord0 then Prob.p p else p.~].
-Lemma f0 i : 0 <= f i.
-Proof.
-rewrite /f ffunE /=; case: ifP => _; [exact/prob_ge0|exact/onem_ge0/prob_le1].
-Qed.
-Lemma f1 : \rsum_(i < 2) f i = 1.
-Proof. by rewrite 2!big_ord_recl big_ord0 addR0 /f !ffunE /= onemKC. Qed.
-Definition d : {dist 'I_2} := locked (makeDist f0 f1).
+Definition d : {dist 'I_2} := Binary.d (card_ord 2) p (lift ord0 ord0).
 Lemma dE a : d a = if a == ord0 then Prob.p p else p.~.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Proof.
+rewrite /d Binary.dE; case: ifPn => [/eqP ->|].
+by rewrite eq_sym (negbTE (neq_lift _ _)).
+by case: ifPn => //; move: a => -[[//|[|]//]].
+Qed.
 End def.
 Section prop.
 Lemma p1 : d (`Pr 1) = Dist1.d ord0.
@@ -967,7 +964,7 @@ Module Multivar.
 Section prod_of_rV.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}).
 
-Definition f (v : 'rV[A]_n.+1) : A * 'rV[A]_n := (v ord0 ord0, rbehead v).
+Let f (v : 'rV[A]_n.+1) : A * 'rV[A]_n := (v ord0 ord0, rbehead v).
 Let inj_f : injective f.
 Proof.
 move=> a b -[H1 H2]; rewrite -(row_mx_rbehead a) -(row_mx_rbehead b).
@@ -985,7 +982,7 @@ Qed.
 Definition head_of := Bivar.fst to_bivar.
 Definition tail_of := Bivar.snd to_bivar.
 
-Definition g (v : 'rV[A]_n.+1) : 'rV[A]_n * A := (rbelast v, rlast v).
+Let g (v : 'rV[A]_n.+1) : 'rV[A]_n * A := (rbelast v, rlast v).
 Let inj_g : injective g.
 Proof.
 by move=> a b -[H1 H2]; rewrite -(row_mx_rbelast a) -(row_mx_rbelast b) H1 H2.
@@ -1008,22 +1005,23 @@ Local Open Scope vec_ext_scope.
 
 Variables (A : finType) (n : nat) (P : {dist A * 'rV[A]_n}).
 
-Definition frombi := [ffun a : 'rV[A]_n.+1 => P (a ``_ ord0, rbehead a)].
-
-Lemma frombi0 a : 0 <= frombi a.
-Proof. rewrite ffunE; exact: dist_ge0. Qed.
-
-Lemma frombi1 : \rsum_(a in {: 'rV[A]_n.+1}) frombi a = 1%R.
+Let f (x : A * 'rV[A]_n) : 'rV[A]_n.+1 := row_mx (\row_(_ < 1) x.1) x.2.
+Lemma inj_f : injective f.
 Proof.
-rewrite -(epmf1 P) /= -(big_rV_cons_behead _ xpredT xpredT) /=.
-rewrite pair_big /=; apply eq_bigr; case => a b _ /=.
-by rewrite /frombi ffunE row_mx_row_ord0 rbehead_row_mx.
+move=> -[x1 x2] -[y1 y2]; rewrite /f /= => H.
+move: (H) => /(congr1 (@lsubmx A 1 1 n)); rewrite 2!row_mxKl => /rowP/(_ ord0).
+rewrite !mxE => ->; congr (_, _).
+by move: H => /(congr1 (@rsubmx A 1 1 n)); rewrite 2!row_mxKr.
 Qed.
-
-Definition from_bivar : {dist 'rV[A]_n.+1} := locked (makeDist frombi0 frombi1).
+Definition from_bivar : {dist 'rV[A]_n.+1} := DistMap.d f P.
 
 Lemma from_bivarE a : from_bivar a = P (a ``_ ord0, rbehead a).
-Proof. by rewrite /from_bivar; unlock => /=; rewrite ffunE. Qed.
+Proof.
+rewrite /from_bivar DistMap.dE /=.
+rewrite {1}(_ : a = f (a ``_ ord0, rbehead a)); last first.
+  by rewrite /f /= row_mx_rbehead.
+by rewrite (big_pred1_inj _ _ _ inj_f).
+Qed.
 
 End rV_of_prod.
 
