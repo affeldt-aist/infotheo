@@ -566,12 +566,12 @@ elim: n1 s1 H => //.
 move=> n1 IH1 [|h1 t1] // [] H1 s2 Hg Hs2 K1 K2.
 rewrite big_cons.
 have [h2 [t2 ht2]] : exists h2 t2, s2 = h2 ++ h1 :: t2.
-  have /path.splitPr[h2 t2] : h1 \in s2 by rewrite -(perm_eq_mem Hs2) in_cons eqxx.
+  have /path.splitPr[h2 t2] : h1 \in s2 by rewrite -(perm_mem Hs2) in_cons eqxx.
   by exists h2, t2.
 have Hs2' : perm_eq t1 (h2 ++ t2).
   rewrite ht2 in Hs2.
   rewrite -(perm_cons h1).
-  eapply perm_eq_trans; first by apply Hs2.
+  eapply perm_trans; first by apply Hs2.
   by rewrite perm_catC /= perm_cons perm_catC.
 have Hg' r : r \in h2 ++ t2 -> 0 <= g r.
   move=> rs2; apply Hg.
@@ -601,7 +601,7 @@ apply bigrmax_perm; [ | | by rewrite undup_uniq | by rewrite undup_uniq].
 - move=> r Hr; apply Hg.
   rewrite mem_undup in Hr.
   by rewrite s1s2.
-- apply uniq_perm_eq; [by rewrite undup_uniq | by rewrite undup_uniq | ].
+- apply uniq_perm; [by rewrite undup_uniq | by rewrite undup_uniq | ].
   move=> i; by rewrite !mem_undup.
 Qed.
 

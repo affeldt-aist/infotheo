@@ -676,8 +676,8 @@ apply Hcy; clear Hcy Hsasb.
   rewrite -cat_cons -rev_rcons -{1}Hbl -lastI.
   rewrite mem_cat mem_rev.
   have Hsi c p: uniq ((si :: c :: p) ++ s) = uniq (c :: p ++ si :: s).
-    apply perm_eq_uniq.
-    rewrite -cat1s -(cat1s c) perm_eq_sym -cat1s -(cat1s si).
+    apply perm_uniq.
+    rewrite -cat1s -(cat1s c) perm_sym -cat1s -(cat1s si).
     rewrite !catA perm_cat2r.
     by rewrite perm_catC catA.
   rewrite -!Hsi !cat_uniq in Hun1 Hun2.
@@ -1784,14 +1784,9 @@ Lemma eq_alpha_beta {A : eqType} F {k} (t1 t2 : tag k) (l1 l2 : list A) :
   t1 = t2 -> perm_eq l1 l2 ->
   alpha_beta t1 (map F l1) = alpha_beta t2 (map F l2).
 Proof.
-move => Ht Hl.
-rewrite /alpha_beta.
-case: t1 t2 Ht => [|v] t2 <-.
-  rewrite -!big_alpha.
-  by apply eq_big_perm.
-rewrite -!big_beta.
-congr beta_op.
-by apply eq_big_perm.
+move=> Ht ?; rewrite /alpha_beta; case: t1 t2 Ht => [|v] t2 <-.
+- rewrite -!big_alpha; exact/perm_big.
+- rewrite -!big_beta; congr beta_op; exact/perm_big.
 Qed.
 
 (*Lemma seq1_inj {A:eqType} : injective (fun x : A => [:: x]).
@@ -1975,7 +1970,7 @@ congr {| children := _; up := _; down := _ |}.
               (fun x => msg_spec' (id_of_kind (negk k) x) (id_of_kind k i))).
     apply eq_alpha_beta => //.
     (* equality of indices *)
-    apply uniq_perm_eq.
+    apply uniq_perm.
         by rewrite filter_uniq // -enumT enum_uniq.
       rewrite /= filter_uniq //.
         by rewrite mem_filter !inE eqxx.
@@ -2224,13 +2219,11 @@ case Hid: (node_id t == inr n0).
       by move/andP/proj1: Hun => /= /andP/proj1.
     rewrite -(big_seq1 beta_law o (fun j => msg_spec' (inl j) (inr i))).
     rewrite -big_cat.
-    apply eq_big_perm.
-    apply uniq_perm_eq .
-        rewrite /= filter_uniq.
-          rewrite mem_filter /= !inE.
-          by rewrite /= eqxx.
-        by rewrite -enumT enum_uniq.
-      by rewrite enum_uniq.
+    apply/perm_big/uniq_perm.
+     - rewrite /= filter_uniq.
+         by rewrite mem_filter /= !inE /= eqxx.
+       by rewrite -enumT enum_uniq.
+     - by rewrite enum_uniq.
     move=> j /=.
     rewrite in_cons mem_filter /= mem_enum !inE /= -VnextE.
     case Hjo: (j == o).

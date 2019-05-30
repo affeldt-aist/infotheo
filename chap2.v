@@ -65,11 +65,14 @@ rewrite leq_eqVlt => /orP[/eqP|]ij.
   have @j0 : 'I_(i + 1) by apply: (@Ordinal _ j); abstract: Hj0; by rewrite addn1 ij ltnS.
   rewrite (_ : cast_ord _ _ = lshift (n - i) j0); last exact/val_inj.
   rewrite row_mxEl.
-  rewrite (_ : j0 = rshift i ord0); last by apply/val_inj => /=; rewrite ij.
+  rewrite (_ : j0 = rshift i ord0); last first.
+    by apply val_inj => /=; rewrite ij addn0.
   rewrite row_mxEr mxE.
   move=> [:Hj1].
-  have @j1 : 'I_(n.+1 - i) by apply: (@Ordinal _ 0); abstract: Hj1; by rewrite subn_gt0.
-  rewrite (_ : cast_ord _ _ = rshift i j1); last by apply/val_inj => /=; rewrite ij.
+  have @j1 : 'I_(n.+1 - i).
+    by apply: (@Ordinal _ 0); abstract: Hj1; rewrite subn_gt0.
+  rewrite (_ : cast_ord _ _ = rshift i j1); last first.
+    by apply/val_inj => /=; rewrite ij addn0.
   rewrite row_mxEr castmxE /= cast_ord_id esymK.
   have @j2 : 'I_1 := ord0.
   rewrite (_ : cast_ord _ _ = lshift (n - i) j2); last exact/val_inj.
@@ -282,7 +285,7 @@ Let g (x : 'rV[A]_n.+1) : A * 'rV[A]_i * 'rV[A]_(n - i) :=
    row_drop i (rbehead x)).
 Lemma inj_g : injective g.
 Proof.
-move=> a b; rewrite /g => -[H1 [H2 H3]].
+move=> a b; rewrite /g => -[H1 H2 H3].
 rewrite -(row_mx_rbehead a) -(row_mx_rbehead b) H1; congr (@row_mx _ 1%nat 1%nat _ _ _).
 rewrite (row_mx_take_drop i (rbehead a)) (row_mx_take_drop i (rbehead b)).
 by rewrite H2 H3.

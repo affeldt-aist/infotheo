@@ -13,8 +13,8 @@ Unset Printing Implicit Defensive.
 - Section max_subset_satisfying_P.
 *)
 
-Module maxsubset.
-
+Module Maxsubset.
+Section maxsubset.
 Variable A : finType.
 
 Definition maxset P (E : {set A}) := (P E) &&
@@ -115,8 +115,8 @@ split=> // D PD BD.
 rewrite (maxB D) // PD.
 by rewrite (subset_trans CB).
 Qed.
-
 End maxsubset.
+End Maxsubset.
 
 Section max_subset_satisfying_P.
 

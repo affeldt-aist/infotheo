@@ -233,7 +233,7 @@ apply: (@leq_trans (\sum_m #| T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-
       move/setP/(_ tb); rewrite Htb; move: Htb.
       rewrite in_set => /andP [_ Hl].
       rewrite in_set => /andP [_ Hm].
-      apply Some_inj.
+      suff : Some m = Some l by case.
       move: Hl Hm.
       case/imsetP => v1 Hv1 ->.
       case/imsetP => v2 Hv2.

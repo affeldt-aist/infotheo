@@ -288,7 +288,10 @@ Variables (a : pred A) (b : pred B) (c : pred C).
 Hypothesis abc : forall x y, (a x && b y) == c (f x y).
 
 Lemma count_map_muln (x : A) : count c [seq f x i | i <- em] = (a x * count b em)%nat.
-Proof. elim: em => [|y ? IH] //=; by rewrite -(eqP (abc x y)) IH mulnDr mulnb. Qed.
+Proof.
+elim: em => [/=|y ? IH]; first by rewrite muln0.
+by rewrite /= -(eqP (abc x y)) IH mulnDr mulnb.
+Qed.
 
 Lemma count_allpairs : count c (allpairs f en em) = (count a en * count b em)%nat.
 Proof. elim: en => [|? ? IH] //=; by rewrite count_cat IH mulnDl count_map_muln. Qed.
@@ -356,7 +359,7 @@ elim: {1 2}n => [ | m IH ].
 rewrite /finseqs /mkseq -addn1 iota_add map_cat flatten_cat count_cat.
 rewrite [in X in (_ + X)%nat = _]/= cats0 IH.
 case: leqP => Hm.
-  rewrite ltnW //= (_ : count_mem _ _ = O) //.
+  rewrite ltnW //= (_ : count_mem _ _ = O) // ?addn0 //.
   suff /count_memPn -> : xs \notin nseqs en m.+1 by [].
   apply: contraL Hm => /size_nseqs ->.
   by rewrite ltnn.
@@ -1083,6 +1086,8 @@ Lemma sum_expr_S m l : (\sum_(i < l.+1) m ^ i = 1 + m * \sum_(i < l) m ^ i)%nat.
 Proof. by rewrite big_ord_recl big_distrr. Qed.
 End sum_ops.
 
+Require Import subgraph_partition tanner.
+
 Module PartialComputationGraph.
 Section pcomp_graph_def.
 Variable port : finType. (* total number of ports = #|port| (NB: was E) *)
@@ -1484,8 +1489,6 @@ by rewrite switch_edges_cancel.
 Qed.
 
 End switch_step.
-
-Require Import subgraph_partition tanner.
 
 Section graph_rel.
 
@@ -4838,6 +4841,8 @@ End graph_dist.
 
 End PartialComputationGraph.
 
+Require Import f2.
+
 Module ComputationGraph.
 
 Section comp_graph_def.
@@ -4966,8 +4971,6 @@ End ComputationGraph.
 Section ValidCodeword.
 
 Import TreeEnsemble.
-
-Require Import f2.
 
 Definition check_siblings (r : option (seq 'F_2 * seq 'F_2)) (f : seq 'F_2 -> option ('F_2 * seq 'F_2)) :=
   if r is Some (bs, cw') then

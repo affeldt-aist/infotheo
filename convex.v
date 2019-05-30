@@ -503,7 +503,7 @@ Lemma barycenter_perm n (F : 'I_n -> scaled_pt) (pe : 'S_n) :
   \big[addpt/Zero]_(i < n) F i = \big[addpt/Zero]_(i < n) F (pe i).
 Proof.
 rewrite -!barycenter_big_fin /barycenter big_map map_comp big_map.
-by apply eq_big_perm, perm_eq_perm.
+exact/perm_big/perm_eq_perm.
 Qed.
 
 Section convdist.
@@ -666,7 +666,7 @@ case: eqVneq => Hd.
 set d' := DelDist.d Hd.
 set points' := fun i => points (DelDist.h ord0 i).
 rewrite /index_enum -enumT (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
-rewrite -big_filter (eq_big_perm (map (lift ord0) (enum 'I_n)));
+rewrite -big_filter (perm_big (map (lift ord0) (enum 'I_n)));
   last by apply perm_filter_enum_ord.
 rewrite prj_affine S1_conv; congr addpt.
 rewrite IH -barycenter_big_fin scalept_bary; last by apply prob_ge0.

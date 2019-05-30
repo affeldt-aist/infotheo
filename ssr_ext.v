@@ -323,7 +323,7 @@ have X1 : v = filter (pred1 hd) v ++ filter (predC (pred1 hd)) v.
         move: (@subseq_order_path _ _ (Htrans) a [:: b] tl).
         rewrite /= andbC /=.
         apply => //; by rewrite sub1seq.
-  - rewrite perm_eq_sym; by apply perm_eqlE, perm_filterC.
+  - rewrite perm_sym; by apply permEl, perm_filterC.
 rewrite {1}X1 {X1} /=.
 congr (_ ++ _).
 move: lst_uniq => /= /andP[hdtl tl_uniq].
@@ -381,8 +381,8 @@ Lemma undup_perm (f : A -> B) p h t : undup (map f p) = h :: t ->
 Proof.
 move=> p_t; exists (filter (preim f (pred1 h)) p), (filter (preim f (mem t)) p).
 split.
-- apply/perm_eqlP => x; rewrite -(perm_filterC (preim f (pred1 h)) p).
-  apply/perm_eqlP : x.
+- apply/permPl => x; rewrite -(perm_filterC (preim f (pred1 h)) p).
+  apply/permPl : x.
   rewrite perm_cat2l (@eq_in_filter _ _ [pred x | f x \in t]) //= => x X.
   case/boolP: (f x == h) => [/eqP ->|/negbTE fxh] /=; apply/esym.
   + by have /andP[/negbTE] : uniq (h :: t) by rewrite -p_t; apply undup_uniq.
@@ -843,8 +843,8 @@ Lemma tuple_exist_perm_sort (T : eqType) n (r : rel T) (t : n.-tuple T) :
   exists s : 'S_n, t = perm_tuple s (sort_tuple r t).
 Proof.
 rewrite /perm_tuple.
-have : perm_eq t (sort_tuple r t) by rewrite perm_eq_sym perm_sort perm_eq_refl.
-case/tuple_perm_eqP => u Hu; exists u.
+have : perm_eq t (sort_tuple r t) by rewrite perm_sym perm_sort perm_refl.
+case/tuple_permP => u Hu; exists u.
 case: t Hu => t /= Ht Hu.
 apply eq_from_tnth => i /=.
 rewrite /tnth /= -Hu.
@@ -910,7 +910,7 @@ Variable n : nat.
 Lemma perm_eq_perm (pe : 'S_n) :
   perm_eq (enum 'I_n) [seq pe i | i <- enum 'I_n].
 Proof.
-apply uniq_perm_eq.
+apply uniq_perm.
 + by rewrite enum_uniq.
 + rewrite map_inj_in_uniq ?enum_uniq //.
   by move=> x1 x2 _ _; apply perm_inj.
@@ -927,7 +927,7 @@ Lemma perm_filter_enum_ord j :
   perm_eq [seq i <- enum 'I_n.+1 | i != j]
           [seq lift j i | i <- enum 'I_n].
 Proof.
-apply uniq_perm_eq.
+apply uniq_perm.
 + by rewrite filter_uniq // enum_uniq.
 + rewrite map_inj_in_uniq ?enum_uniq //.
   by move=> x1 x2 _ _; apply lift_inj.

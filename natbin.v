@@ -462,7 +462,7 @@ case=> //.
 case=> //.
 move=> n /(_ Logic.eq_refl) => IH _.
 rewrite (_ : n.+4 - 3 = n.+1)%nat //.
-rewrite (_ : n.+3 - 3 = n)%nat // in IH; last by rewrite -addn3 -addnBA // subnn.
+rewrite (_ : n.+3 - 3 = n)%nat // in IH; last by rewrite 3!subSS subn0.
 transitivity (BinNat.N.mul 2 (bin_of_nat (7 * 2 ^ n))); last by rewrite {}IH -BinPos.Pos.add_diag.
 set lhs := bin_of_nat _.
 set rhs := BinNat.N.mul _ _.

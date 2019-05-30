@@ -361,7 +361,7 @@ Proof. apply/subsetP=> /= x _; by rewrite !in_set mem_enum. Qed.
 (* TODO: move? *)
 Lemma perm_eq_enum (s : 'S_n) : perm_eq (enum 'I_n) (map (s^-1)%g (enum 'I_n)).
 Proof.
-apply uniq_perm_eq.
+apply uniq_perm.
 - by apply enum_uniq.
 - rewrite map_inj_uniq; by [apply enum_uniq | apply: perm_inj].
 - move=> /= xi.

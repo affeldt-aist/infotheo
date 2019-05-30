@@ -144,8 +144,8 @@ rewrite (eq_bigl (fun i => i \in finsupp (g a))); last first.
   move=> b; rewrite andb_idl // mem_finsupp => gab0.
   apply/bigfcupP; exists (g a); rewrite ?mem_finsupp // andbT.
   apply/imfsetP; exists a => //; by rewrite inE mem_finsupp.
-rewrite -big_filter -[RHS](Dist.f1 (g a)); apply eq_big_perm.
-apply uniq_perm_eq; [by rewrite filter_uniq | by rewrite fset_uniq |move=> b].
+rewrite -big_filter -[RHS](Dist.f1 (g a)); apply perm_big.
+apply uniq_perm; [by rewrite filter_uniq | by rewrite fset_uniq |move=> b].
 rewrite mem_finsupp.
 apply/idP/idP => [|gab0]; first by rewrite mem_filter mem_finsupp => /andP[].
 rewrite mem_filter 2!mem_finsupp gab0 /= /f fsfunE ifT; last first.

@@ -106,13 +106,13 @@ rewrite big_cons.
 have [h [t [H1 [H2 H3]]]] : exists h t,
   perm_eq p (h ++ t) /\ undup (map f h) = [:: b] /\ undup (map f t) = bs.
   exact: undup_perm.
-transitivity (\big[M/idx]_(i <- h ++ t) F i); first exact: eq_big_perm.
+transitivity (\big[M/idx]_(i <- h ++ t) F i); first exact: perm_big.
 transitivity (M
     (\big[M/idx]_(i <- h ++ t | f i == b) F i)
     (\big[M/idx]_(j <- bs) \big[M/idx]_(i <- h ++ t | f i == j) F i)); last first.
   congr (M _ _).
-  by apply: eq_big_perm; rewrite perm_eq_sym.
-  by apply eq_bigr => b0 _ /=; apply: eq_big_perm; rewrite perm_eq_sym.
+  by apply: perm_big; rewrite perm_sym.
+  by apply eq_bigr => b0 _ /=; apply: perm_big; rewrite perm_sym.
 have -> : \big[M/idx]_(j <- bs) \big[M/idx]_(i <- h ++ t | f i == j) F i =
   \big[M/idx]_(j <- bs) \big[M/idx]_(i <- t | f i == j) F i.
   rewrite [in LHS]big_seq_cond [in RHS]big_seq_cond /=.
@@ -130,7 +130,7 @@ have -> : \big[M/idx]_(j <- bs) \big[M/idx]_(i <- h ++ t | f i == j) F i =
   move: fab; rewrite /= in_cons in_nil orbC /= => /eqP ?; subst b.
   by rewrite b0bs.
 rewrite -IH //; last first.
-  have : uniq (h ++ t) by rewrite -(perm_eq_uniq H1).
+  have : uniq (h ++ t) by rewrite -(perm_uniq H1).
   by rewrite cat_uniq => /and3P[].
 suff -> : \big[M/idx]_(i <- h ++ t | f i == b) F i = \big[M/idx]_(i <- h) F i.
   by rewrite big_cat.

@@ -888,7 +888,7 @@ Lemma f0 (i : 'I_n) : (0 <= f i)%R. Proof. rewrite ffunE; exact/dist_ge0. Qed.
 Lemma f1 : (\rsum_(i < n) f i = 1)%R.
 Proof.
 transitivity (\rsum_(i <- [tuple (s^-1)%g i | i < n]) f i).
-  apply/eq_big_perm/tuple_perm_eqP; exists s.
+  apply/perm_big/tuple_permP; exists s.
   destruct n; first by move: (distI0_False P).
   rewrite /index_enum -enumT; apply/(@eq_from_nth _ ord0).
     by rewrite size_map size_tuple -enumT size_enum_ord.
