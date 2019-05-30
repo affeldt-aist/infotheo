@@ -5,18 +5,22 @@ error-correcting codes.
 
 ** Requirements
 
-- [[https://coq.inria.fr][Coq]] 8.9.0 (8.9.1 is ok too)
+- [[https://coq.inria.fr][Coq]] 8.9.0 or 8.9.1
 - [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.8.0
-- [[https://github.com/math-comp/analysis][MathComp-Analysis]] github master version
+- [[https://github.com/math-comp/analysis][MathComp-Analysis]] 0.2.0
   which requires
   + [[https://github.com/math-comp/bigenough/][bigenough]] first release
   + [[https://github.com/math-comp/finmap][finmap]] 1.2.0
+
+All versions available from opam.
+
+See branch mathcomp-1.9.0 [2019-05-30 Thu] for a version compatible with mathcomp 1.9.0, analysis 0.2.2, finmap 1.2.1.
 
 ** Installation
 
 1. ~coq_makefile -f _CoqProject -o Makefile~
 2. ~make~
-3. ~make install~
+3. ~make install~ (if needed in another project)
 
 ** License
 
