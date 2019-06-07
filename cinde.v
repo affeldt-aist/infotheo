@@ -37,12 +37,12 @@ Reserved Notation "P |= X _|_  Y | Z" (at level 10, X, Y, Z at next level).
 Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
   format "[%  x ,  y ,  .. ,  z ]").
 Reserved Notation "\Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
-  format "\Pr[  X =  a  |  Y  =  b  ]").
+  format "\Pr[  X  =  a  |  Y  =  b  ]").
 
 Local Open Scope proba_scope.
 
 Module Proj124.
-Section def.
+Section proj124.
 Variables (A B D C : finType) (P : {dist A * B * D * C}).
 Definition d : {dist A * B * C} :=
   Swap.d (Bivar.snd (TripA.d (Swap.d (TripA.d P)))).
@@ -52,26 +52,23 @@ case: abc => [[a b] c] /=.
 rewrite /d Swap.dE Bivar.sndE; apply eq_bigr => d _.
 by rewrite TripA.dE /= Swap.dE TripA.dE.
 Qed.
-End def.
-Section prop.
-Variables (A B D C : finType) (P : {dist A * B * D * C}).
-Lemma snd : Bivar.snd (Proj124.d P) = Bivar.snd P.
+Lemma snd : Bivar.snd d = Bivar.snd P.
 Proof. by rewrite /Bivar.snd /d !DistMap.comp. Qed.
-End prop.
+End proj124.
 End Proj124.
 
 Definition Proj14d (A B C D : finType) (d : {dist A * B * D * C}) : {dist A * C} :=
   Proj13.d (Proj124.d d).
 
 Module Proj234.
-Section def.
+Section proj234.
 Variables (A B D C : finType) (P : {dist A * B * C * D}).
 Definition d : {dist B * C * D} := TripA'.d (Bivar.snd (TripA.d (TripA.d P))).
 Lemma dE abc: d abc = \rsum_(x in A) P (x, abc.1.1, abc.1.2, abc.2).
 Proof.
-rewrite TripA'.dE Bivar.sndE; apply eq_bigr => a _; by rewrite 2!TripA.dE /=.
+rewrite TripA'.dE Bivar.sndE; apply eq_bigr => a _; by rewrite 2!TripA.dE.
 Qed.
-End def.
+End proj234.
 End Proj234.
 
 Module QuadA23.
@@ -576,6 +573,33 @@ Qed.
 
 End decomposition.
 
+Lemma Pr_inj (A B : finType) (f : A -> B) (d : dist A) (E : {set A}): injective f ->
+  Pr d E = Pr (DistMap.d f d) (f @: E).
+Proof.
+move=> bf; rewrite /Pr; evar (h : B -> R); rewrite [in RHS](eq_bigr h); last first.
+  move=> b bfE; rewrite DistMap.dE /h; reflexivity.
+rewrite {}/h (exchange_big_dep (mem E)) /=; last first.
+   by move=> b a /imsetP[a' a'E ->{b} /eqP] /bf ->.
+apply eq_bigr => a aE; rewrite (big_pred1 (f a)) // => b /=.
+rewrite andb_idl // => /eqP <-{b}; apply/imsetP; by exists a.
+Qed.
+Arguments Pr_inj [A] [B] _.
+
+Lemma cPr_inj (A B B' : finType) (f : B -> B') (d : {dist A * B}) (E : {set A}) (F : {set B}):
+  injective f ->
+  cPr d E F = cPr (DistMap.d (fun x => (x.1, f x.2)) d) E (f @: F).
+Proof.
+move=> injf; rewrite /cPr; congr (_ / _).
+- rewrite (Pr_inj (fun x => (x.1, f x.2))) /=; last by move=> [? ?] [? ?] /= [-> /injf ->].
+  congr (Pr _ _); apply/setP => -[a b]; rewrite !inE /=.
+  apply/imsetP/andP.
+  - case=> -[a' b']; rewrite inE /= => /andP[a'E b'F] [->{a} ->{b}]; split => //.
+    apply/imsetP; by exists b'.
+  - case=> aE /imsetP[b' b'F] ->{b}; by exists (a, b') => //; rewrite inE /= aE.
+by rewrite /Bivar.snd DistMap.comp (Pr_inj f) // DistMap.comp.
+Qed.
+Arguments cPr_inj [A] [B] [B'] _.
+
 Section weak_union.
 
 Variables (U : finType) (P : dist U) (A B C D : finType).
@@ -583,13 +607,20 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}
 
 Lemma weak_union : X _|_ [% Y, W] | Z -> X _|_ Y | [% Z, W].
 Proof.
-move=> H; move=> a b -[c d].
+move=> H a b -[c d].
 transitivity (\Pr_(RVar.d [% X, [% Y, Z, W]]) [[set a] | [set (b, c, d)]] *
   \Pr_(RVar.d [% Y, [% Z, W]]) [[set b] | [set (c, d)]]).
   rewrite -1!setX1 product_rule Proj23_RV3; congr (_ * _).
   by rewrite -QuadA34_RV4 -setX1 cPr_TripA_QuadA34 QuadA234_RV4 !setX1.
 transitivity (\Pr_(RVar.d [% X, Z])[ [set a] | [set c] ] *
   \Pr_(RVar.d [% Y, [% Z,  W]]) [[set b] | [set (c, d)]]).
+(*  rewrite (_ : \Pr[ X= a | [% Y, Z, W] = (b, c, d) ] = \Pr[ X= a | [% Y, W, Z] = (b, d, c) ]); last first.
+    rewrite (cPr_inj (fun x => let '(b, c, d) := x in (b, d, c))); last first.
+      by move=> -[[? ?] ?] [[? ?] ?] [-> -> ->].
+    rewrite !DistMap.comp; congr cPr.
+    apply/setP => -[[b0 d0] c0]; apply/imsetP/idP.
+    - case=> -[[? ?] ?]; rewrite inE => /eqP [-> -> ->] ->; by rewrite inE.
+    - rewrite inE => /eqP[-> -> ->] /=; exists (b, c, d) => //; by rewrite inE.*)
   move: {H}(H a (b, d) c).
   case/boolP : (\Pr_(RVar.d [% W, Z])[ [set d] | [set c] ] == 0) => [H0 _|H0].
     move: H0.
@@ -608,7 +639,8 @@ transitivity (\Pr_(RVar.d [% X, Z])[ [set a] | [set c] ] *
       rewrite -QuadA234_RV4 -2!setX1 cPr_TripA_QuadA23_TripC23 TripC23_RV3.
       by rewrite -QuadA23_RV4 2!setX1.
     by rewrite -TripC23_RV3 -!setX1 cPr_TripA_TripC23 TripA_RV3.
-  rewrite {}H; congr (_ * _).
+  rewrite {}H.
+  congr (_ * _).
   by rewrite -TripC23_RV3 -!setX1 cPr_TripA_TripC23 TripA_RV3.
 have {H}H : X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
 case/boolP : (\Pr_(RVar.d [% W, Z])[ [set d] | [set c] ] == 0) => [|H0].
