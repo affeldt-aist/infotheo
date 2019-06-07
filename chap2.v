@@ -293,8 +293,7 @@ Qed.
 Lemma dE x : d x = P (row_mx (\row_(_ < 1) x.1.1) (castmx (erefl 1%nat, @subnKC i n (ltnS' (ltn_ord i))) (row_mx x.1.2 x.2))).
 Proof.
 rewrite /d DistMap.dE /=.
-rewrite (eq_bigl (fun a => g a == x)); last first.
-  by move=> j.
+rewrite (eq_bigl (fun a => g a == x)) //.
 rewrite {1}(_ : x = g (row_mx (\row_(k<1) x.1.1) (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx x.1.2 x.2)))); last first.
   move: x => /= -[[x11 x12] x2].
   rewrite /g row_mx_row_ord0 /=; congr (_, _, _).
@@ -314,7 +313,7 @@ rewrite {1}(_ : x = g (row_mx (\row_(k<1) x.1.1) (castmx (erefl 1%nat, subnKC (l
   rewrite (@row_mxEr _ 1%nat 1%nat) castmxE /=.
   rewrite (_ : cast_ord _ _ = rshift i j); last exact: val_inj.
   by rewrite row_mxEr cast_ord_id.
-by rewrite (big_pred1_inj _ _ _ inj_g).
+by rewrite (big_pred1_inj inj_g).
 Qed.
 End def.
 End TakeDrop.
@@ -1228,7 +1227,7 @@ have -> : CondEntropy.h PY = \rsum_(j < n.+1)
           by apply val_inj => /=; rewrite -subn1 subnKC // lt0n.
         rewrite (@row_mxEr _ 1%nat 1%nat n) mxE; congr (w ord0 _); exact: val_inj.
       apply/idP/idP; last first.
-        move/andP => [/eqP <- /eqP ->].
+        move/andP => /= [/eqP <- /eqP ->].
         apply/eqP/rowP => k.
         rewrite !mxE !castmxE /= esymK !cast_ord_id.
         case/boolP : (k == O :> nat) => [/eqP | ] k0.

@@ -976,7 +976,7 @@ Proof.
 case: a => x y; rewrite /to_bivar DistMap.dE /=.
 rewrite (_ : (x, y) = f (row_mx (\row_(i < 1) x) y)); last first.
   by rewrite /f row_mx_row_ord0 rbehead_row_mx.
-by rewrite (big_pred1_inj _ _ _ inj_f).
+by rewrite (big_pred1_inj inj_f).
 Qed.
 
 Definition head_of := Bivar.fst to_bivar.
@@ -994,7 +994,7 @@ Proof.
 case: a => x y; rewrite /belast_last DistMap.dE /=.
 rewrite (_ : (x, y) = g (castmx (erefl 1%nat, addn1 n) (row_mx x (\row__ y)))); last first.
   by rewrite /g rbelast_row_mx row_mx_row_ord_max.
-by rewrite (big_pred1_inj _ _ _ inj_g).
+by rewrite (big_pred1_inj inj_g).
 Qed.
 
 End prod_of_rV.
@@ -1020,7 +1020,7 @@ Proof.
 rewrite /from_bivar DistMap.dE /=.
 rewrite {1}(_ : a = f (a ``_ ord0, rbehead a)); last first.
   by rewrite /f /= row_mx_rbehead.
-by rewrite (big_pred1_inj _ _ _ inj_f).
+by rewrite (big_pred1_inj inj_f).
 Qed.
 
 End rV_of_prod.
@@ -1387,6 +1387,18 @@ Lemma Pr_inter_eq E1 E2 : Pr (E1 :&: E2) = (Pr E1 + Pr E2 - Pr (E1 :|: E2))%R.
 Proof. by rewrite Pr_union_eq subRBA addRC addRK. Qed.
 
 End probability.
+
+Lemma Pr_DistMap (A B : finType) (f : A -> B) (d : dist A) (E : {set A}) : injective f ->
+  Pr d E = Pr (DistMap.d f d) (f @: E).
+Proof.
+move=> bf; rewrite /Pr; evar (h : B -> R); rewrite [in RHS](eq_bigr h); last first.
+  move=> b bfE; rewrite DistMap.dE /h; reflexivity.
+rewrite {}/h (exchange_big_dep (mem E)) /=; last first.
+   by move=> b a /imsetP[a' a'E ->{b} /eqP] /bf ->.
+apply eq_bigr => a aE; rewrite (big_pred1 (f a)) // => b /=.
+rewrite andb_idl // => /eqP <-{b}; apply/imsetP; by exists a.
+Qed.
+Arguments Pr_DistMap [A] [B] [f] [d] [E].
 
 Lemma Pr_domin_fst (A B : finType) (P : {dist A * B}) a b :
   Pr (Bivar.fst P) a = 0%R -> Pr P (setX a b) = 0%R.

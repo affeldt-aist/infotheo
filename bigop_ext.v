@@ -175,6 +175,7 @@ Lemma big_pred1_inj (A C : finType) h i (k : A -> C) : injective k ->
   \big[op/idx]_(a | k a == k i) h a = h i.
 Proof. by move=> ?; rewrite (big_pred1 i) // => ?; rewrite eqtype.inj_eq. Qed.
 End big_pred1_inj.
+Arguments big_pred1_inj [R] [idx] [op] [A] [C] [h] [i] [k] _.
 
 Section bigop_com_law.
 

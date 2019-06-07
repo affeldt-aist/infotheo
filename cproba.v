@@ -36,6 +36,7 @@ Local Open Scope proba_scope.
 
 Lemma inj_swap A B : injective (@swap A B).
 Proof. by move=> [? ?] [? ?] [-> ->]. Qed.
+Arguments inj_swap {A} {B}.
 
 Lemma bij_swap A B : bijective (@swap A B).
 Proof. apply Bijective with swap; by case. Qed.
@@ -49,8 +50,7 @@ Variables (A B : finType) (P : {dist A * B}).
 Definition d : {dist B * A} := DistMap.d swap P.
 Lemma dE a b : d (b, a) = P (a, b).
 Proof.
-rewrite DistMap.dE /= (_ : (b, a) = swap (a ,b)) //.
-by rewrite (big_pred1_inj _ _ _ (@inj_swap _ _)).
+by rewrite DistMap.dE /= (_ : (b, a) = swap (a ,b)) // (big_pred1_inj inj_swap).
 Qed.
 End def.
 Section prop.
@@ -125,7 +125,7 @@ End Self.
 Module TripA.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
-Let f (x : A * B * C) := (x.1.1, (x.1.2, x.2)).
+Definition f (x : A * B * C) := (x.1.1, (x.1.2, x.2)).
 Lemma inj_f : injective f.
 Proof. by rewrite /f => -[[? ?] ?] [[? ?] ?] /= [-> -> ->]. Qed.
 Definition d : {dist A * (B * C)} := DistMap.d f P.
@@ -168,21 +168,23 @@ Qed.
 
 End prop.
 End TripA.
+Arguments TripA.inj_f {A B C}.
 
 Module TripA'.
 Section def.
 Variables (A B C : finType) (P : {dist A * (B * C)}).
-Definition f (x : A * (B * C)) := ((x.1, x.2.1), x.2.2).
+Definition f (x : A * (B * C)) := (x.1, x.2.1, x.2.2).
 Lemma inj_f : injective f.
 Proof. by rewrite /f => -[? [? ?]] [? [? ?]] /= [-> -> ->]. Qed.
 Definition d : {dist A * B * C} := DistMap.d f P.
 Lemma dE x : d x = P (x.1.1, (x.1.2, x.2)).
 Proof.
 case: x => -[a b] c; rewrite /d DistMap.dE /= -/(f (a, (b, c))).
-by rewrite (big_pred1_inj _ _ _ inj_f).
+by rewrite (big_pred1_inj inj_f).
 Qed.
 End def.
 End TripA'.
+Arguments TripA'.inj_f {A B C}.
 
 Module TripC12.
 Section def.
@@ -194,7 +196,7 @@ Definition d : {dist B * A * C} := DistMap.d f P.
 Lemma dE x : d x = P (x.1.2, x.1.1, x.2).
 Proof.
 case: x => -[b a] c; rewrite /d DistMap.dE /= -/(f (a, b, c)).
-by rewrite (big_pred1_inj _ _ _ inj_f).
+by rewrite (big_pred1_inj inj_f).
 Qed.
 
 Lemma snd : Bivar.snd d = Bivar.snd P.
@@ -224,6 +226,8 @@ End TripC12.
 Module TripC23.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
+Definition f := fun x : A * B * C => (x.1.1, x.2, x.1.2).
+Lemma inj_f : injective f. Proof. by move=> -[[? ?] ?] [[? ?] ?] [-> -> ->]. Qed.
 Definition d : {dist A * C * B} := Swap.d (TripA.d (TripC12.d P)).
 Lemma dE x : d x = P (x.1.1, x.2, x.1.2).
 Proof. by case: x => x1 x2; rewrite /d Swap.dE TripA.dE TripC12.dE. Qed.
@@ -252,6 +256,7 @@ by apply eq_bigr => b bG; rewrite TripC23.dE.
 Qed.
 End prop.
 End TripC23.
+Arguments TripC23.inj_f {A B C}.
 
 Module TripC13.
 Section def.
@@ -452,6 +457,21 @@ Qed.
 End conditional_probability_def.
 
 Notation "\Pr_ P [ E | F ]" := (cPr P E F) : proba_scope.
+
+Lemma cPr_cond (A B B' : finType) (f : B -> B') (d : {dist A * B}) (E : {set A}) (F : {set B}):
+  injective f ->
+  cPr d E F = cPr (DistMap.d (fun x => (x.1, f x.2)) d) E (f @: F).
+Proof.
+move=> injf; rewrite /cPr; congr (_ / _).
+- rewrite (@Pr_DistMap _ _ (fun x => (x.1, f x.2))) /=; last by move=> [? ?] [? ?] /= [-> /injf ->].
+  congr (Pr _ _); apply/setP => -[a b]; rewrite !inE /=.
+  apply/imsetP/andP.
+  - case=> -[a' b']; rewrite inE /= => /andP[a'E b'F] [->{a} ->{b}]; split => //.
+    apply/imsetP; by exists b'.
+  - case=> aE /imsetP[b' b'F] ->{b}; by exists (a, b') => //; rewrite inE /= aE.
+by rewrite /Bivar.snd DistMap.comp (@Pr_DistMap _ _ f) // DistMap.comp.
+Qed.
+Arguments cPr_cond [A] [B] [B'] [f] [d] [E] [F] _.
 
 Module CondDist.
 Section def.

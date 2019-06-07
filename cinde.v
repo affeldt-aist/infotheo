@@ -82,7 +82,7 @@ Definition d : {dist A * (B * D) * C} := DistMap.d f P.
 Lemma dE x : d x = P (x.1.1, x.1.2.1, x.1.2.2, x.2).
 Proof.
 case: x => -[a [b d] c]; rewrite /def.d DistMap.dE /= -/(f (a, b, d, c)).
-by rewrite (big_pred1_inj _ _ _ inj_f).
+by rewrite (big_pred1_inj inj_f).
 Qed.
 End def.
 Section prop.
@@ -453,6 +453,19 @@ Notation "\Pr[ X = a | Y = b ]" := (\Pr_(RVar.d [% X, Y])[ [set a] | [set b]]).
 Notation "X _|_  Y | Z" := (cinde_drv X Y Z) : proba_scope.
 Notation "P |= X _|_  Y | Z" := (@cinde_drv _ P _ _ _ X Y Z) : proba_scope.
 
+Lemma cindeP (U : finType) (P : dist U) (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
+  P |= X _|_ Y | Z ->
+  \Pr[ Y = b | Z = c ] != 0 ->
+  \Pr[ X = a | [% Y, Z] = (b, c)] = \Pr[X = a | Z = c].
+Proof.
+move=> K H0.
+have H := K a b c.
+rewrite -(@eqR_mul2r (\Pr[ Y = b | Z = c ])); last exact/eqP.
+rewrite -{}H -[in RHS]setX1 product_rule; congr (_ * _).
+- by rewrite setX1 /RVar.d /TripA.d DistMap.comp.
+- by rewrite /Proj23.d /Bivar.snd !DistMap.comp.
+Qed.
+
 Section cinde_drv_prop.
 
 Variables (U : finType) (P : dist U) (A B C D : finType).
@@ -573,46 +586,6 @@ Qed.
 
 End decomposition.
 
-Lemma Pr_inj (A B : finType) (f : A -> B) (d : dist A) (E : {set A}): injective f ->
-  Pr d E = Pr (DistMap.d f d) (f @: E).
-Proof.
-move=> bf; rewrite /Pr; evar (h : B -> R); rewrite [in RHS](eq_bigr h); last first.
-  move=> b bfE; rewrite DistMap.dE /h; reflexivity.
-rewrite {}/h (exchange_big_dep (mem E)) /=; last first.
-   by move=> b a /imsetP[a' a'E ->{b} /eqP] /bf ->.
-apply eq_bigr => a aE; rewrite (big_pred1 (f a)) // => b /=.
-rewrite andb_idl // => /eqP <-{b}; apply/imsetP; by exists a.
-Qed.
-Arguments Pr_inj [A] [B] _.
-
-Lemma cPr_inj (A B B' : finType) (f : B -> B') (d : {dist A * B}) (E : {set A}) (F : {set B}):
-  injective f ->
-  cPr d E F = cPr (DistMap.d (fun x => (x.1, f x.2)) d) E (f @: F).
-Proof.
-move=> injf; rewrite /cPr; congr (_ / _).
-- rewrite (Pr_inj (fun x => (x.1, f x.2))) /=; last by move=> [? ?] [? ?] /= [-> /injf ->].
-  congr (Pr _ _); apply/setP => -[a b]; rewrite !inE /=.
-  apply/imsetP/andP.
-  - case=> -[a' b']; rewrite inE /= => /andP[a'E b'F] [->{a} ->{b}]; split => //.
-    apply/imsetP; by exists b'.
-  - case=> aE /imsetP[b' b'F] ->{b}; by exists (a, b') => //; rewrite inE /= aE.
-by rewrite /Bivar.snd DistMap.comp (Pr_inj f) // DistMap.comp.
-Qed.
-Arguments cPr_inj [A] [B] [B'] _.
-
-Lemma cindeP (U : finType) (P : dist U) (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
-  P |= X _|_ Y | Z ->
-  \Pr[ Y = b | Z = c ] != 0 ->
-  \Pr[ X = a | [% Y, Z] = (b, c)] = \Pr[X = a | Z = c].
-Proof.
-move=> K H0.
-have H := K a b c.
-rewrite -(@eqR_mul2r (\Pr[ Y = b | Z = c ])); last exact/eqP.
-rewrite -{}H -[in RHS]setX1 product_rule; congr (_ * _).
-- by rewrite setX1 /RVar.d /TripA.d DistMap.comp.
-- by rewrite /Proj23.d /Bivar.snd !DistMap.comp.
-Qed.
-
 Section weak_union.
 
 Variables (U : finType) (P : dist U) (A B C D : finType).
@@ -623,52 +596,35 @@ Proof.
 move=> H a b -[c d].
 transitivity (\Pr_(RVar.d [% X, [% Y, Z, W]]) [[set a] | [set (b, c, d)]] *
   \Pr_(RVar.d [% Y, [% Z, W]]) [[set b] | [set (c, d)]]).
-  rewrite -1!setX1 product_rule Proj23_RV3; congr (_ * _).
-  by rewrite -QuadA34_RV4 -setX1 cPr_TripA_QuadA34 QuadA234_RV4 !setX1.
+  rewrite -setX1 product_rule Proj23_RV3; congr (_ * _).
+  by rewrite setX1 (cPr_cond TripA.inj_f) /TripA.d !DistMap.comp // imset_set1.
 transitivity (\Pr_(RVar.d [% X, Z])[ [set a] | [set c] ] *
   \Pr_(RVar.d [% Y, [% Z,  W]]) [[set b] | [set (c, d)]]).
   rewrite [X in X * _ = _](_ : _ = \Pr[ X= a | [% Y, W, Z] = (b, d, c) ]); last first.
-    rewrite (cPr_inj (fun x => (x.1.1, x.2, x.1.2))) /=; last first.
-      by move=> -[[? ?] ?] [[? ?] ?] [-> -> ->].
-    rewrite !DistMap.comp; congr cPr.
-    apply/setP => -[[b0 d0] c0]; apply/imsetP/idP.
-    - case=> -[[? ?] ?]; rewrite inE => /eqP [-> -> ->] ->; by rewrite inE.
-    - rewrite inE => /eqP[-> -> ->] /=; exists (b, c, d) => //; by rewrite inE.
+    by rewrite (cPr_cond TripC23.inj_f) /= !DistMap.comp imset_set1.
   case/boolP : (\Pr[ [% Y, W] = (b, d) | Z = c ] == 0) => [|H0]; last first.
     by rewrite (cindeP _ H).
+  (* case Pr[Y,W|Z] = 0 *)
   move/eqP; rewrite {1}/cPr mulR_eq0 => -[|].
-    rewrite setX1 => H0.
-    rewrite {1}/cPr Pr_RV2_domin_snd // div0R mul0R {2}/cPr setX1.
-    rewrite (_ : Pr _ [set (b, (c, d))] = 0) ?div0R ?mulR0 //.
-    rewrite (Pr_inj (fun x => let '(b, (c, d)) := x in (b, d, c))); last first.
-      by move=> -[? [? ?]] [? [? ?]] [-> -> ->].
-    move: H0; rewrite /RVar.d !DistMap.comp => <-; congr Pr.
-    apply/setP => -[[b0 d0] c0]; apply/imsetP/idP.
-    - case=> -[? [? ?]]; rewrite inE => /eqP [-> -> ->] ->; by rewrite inE.
-    - rewrite inE => /eqP[-> -> ->] /=; exists (b, (c, d)) => //; by rewrite inE.
-  move/invR_eq0; rewrite snd_RV2 => H0.
-  rewrite {3}/cPr Pr_domin_snd ?snd_RV2 // div0R mul0R {2}/cPr -setX1.
-  by rewrite Pr_domin_snd ?div0R ?mulR0 // Pr_domin_fst // snd_RV2 fst_RV2.
-have {H}H : X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
+  - rewrite setX1 => H0.
+    rewrite {1}/cPr Pr_RV2_domin_snd // div0R mul0R.
+    rewrite {2}/cPr setX1 (_ : Pr _ [set (b, (c, d))] = 0) ?div0R ?mulR0 //.
+    by rewrite (Pr_DistMap (inj_comp TripC23.inj_f TripA'.inj_f)) -H0 /RVar.d !DistMap.comp imset_set1.
+  - move/invR_eq0; rewrite snd_RV2 => H0.
+    rewrite {3}/cPr Pr_domin_snd ?snd_RV2 // div0R mul0R.
+    by rewrite {2}/cPr -setX1 Pr_domin_snd ?div0R ?mulR0 // Pr_domin_fst // snd_RV2 fst_RV2.
 rewrite [X in _ = X * _](_ : _ = \Pr[ X = a | [% W, Z] = (d, c) ]); last first.
-  rewrite (cPr_inj _ _ _ _ (@inj_swap _ _)) /RVar.d !DistMap.comp; congr cPr.
-  apply/setP => -[? ?].
-  rewrite !inE; apply/imsetP/idP.
-  - by case=> -[? ?]; rewrite !inE => /eqP[-> -> ->].
-  - case/eqP => -> ->; exists (c, d) => //; by rewrite inE.
-  case/boolP : (\Pr[ W = d | Z = c ] == 0) => [|H0].
-    move/eqP; rewrite {1}/cPr mulR_eq0 setX1 snd_RV2 => -[H0|].
-      rewrite {2}/cPr Pr_domin_snd ?div0R ?mulR0; last first.
-        rewrite (Pr_inj _ _ _ (@inj_swap _ _)) -H0 /RVar.d !DistMap.comp; congr Pr.
-        apply/setP => -[? ?].
-        rewrite !inE; apply/imsetP/idP.
-        - by case=> -[? ?]; rewrite !inE => /eqP[-> -> ->].
-        - case/eqP => -> ->; exists (c, d) => //; by rewrite inE.
-      by rewrite {1}/cPr Pr_domin_snd ?div0R ?mul0R // snd_RV2.
-    move/invR_eq0 => H0.
-   rewrite {1}/cPr Pr_domin_snd ?snd_RV2 // div0R mul0R.
-   by rewrite {1}/cPr Pr_domin_snd ?div0R ?mul0R // snd_RV2 -setX1 Pr_domin_snd // snd_RV2.
-by rewrite (cindeP _ H).
+  by rewrite (cPr_cond inj_swap) /RVar.d !DistMap.comp imset_set1.
+case/boolP : (\Pr[ W = d | Z = c ] == 0) => [|H0]; last first.
+  have {H}H : X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
+  by rewrite (cindeP _ H).
+(* case Pr[W|Z] = 0 *)
+move/eqP; rewrite {1}/cPr mulR_eq0 setX1 snd_RV2 => -[H0|/invR_eq0 H0].
+  rewrite {2}/cPr Pr_domin_snd ?div0R ?mulR0; last first.
+    by rewrite (Pr_DistMap inj_swap) -H0 /RVar.d !DistMap.comp imset_set1.
+    by rewrite {1}/cPr Pr_domin_snd ?div0R ?mul0R // snd_RV2.
+ rewrite {1}/cPr Pr_domin_snd ?snd_RV2 // div0R mul0R.
+ by rewrite {1}/cPr Pr_domin_snd ?div0R ?mul0R // snd_RV2 -setX1 Pr_domin_snd // snd_RV2.
 Qed.
 
 End weak_union.
