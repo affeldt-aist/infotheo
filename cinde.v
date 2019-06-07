@@ -627,76 +627,48 @@ transitivity (\Pr_(RVar.d [% X, [% Y, Z, W]]) [[set a] | [set (b, c, d)]] *
   by rewrite -QuadA34_RV4 -setX1 cPr_TripA_QuadA34 QuadA234_RV4 !setX1.
 transitivity (\Pr_(RVar.d [% X, Z])[ [set a] | [set c] ] *
   \Pr_(RVar.d [% Y, [% Z,  W]]) [[set b] | [set (c, d)]]).
-  rewrite (_ : \Pr[ X= a | [% Y, Z, W] = (b, c, d) ] = \Pr[ X= a | [% Y, W, Z] = (b, d, c) ]); last first.
-    rewrite (cPr_inj (fun x => let '(b, c, d) := x in (b, d, c))); last first.
+  rewrite [X in X * _ = _](_ : _ = \Pr[ X= a | [% Y, W, Z] = (b, d, c) ]); last first.
+    rewrite (cPr_inj (fun x => (x.1.1, x.2, x.1.2))) /=; last first.
       by move=> -[[? ?] ?] [[? ?] ?] [-> -> ->].
     rewrite !DistMap.comp; congr cPr.
     apply/setP => -[[b0 d0] c0]; apply/imsetP/idP.
     - case=> -[[? ?] ?]; rewrite inE => /eqP [-> -> ->] ->; by rewrite inE.
     - rewrite inE => /eqP[-> -> ->] /=; exists (b, c, d) => //; by rewrite inE.
-  case/boolP : (\Pr[ [% Y, W] = (b, d) | Z = c ] == 0) => [H0|H0]; last first.
+  case/boolP : (\Pr[ [% Y, W] = (b, d) | Z = c ] == 0) => [|H0]; last first.
     by rewrite (cindeP _ H).
-  move/eqP : H0.
-  rewrite {1}/cPr.
-  rewrite mulR_eq0 => -[H0|H0].
-    rewrite setX1 in H0.
-    rewrite {1}/cPr Pr_RV2_domin_snd // div0R mul0R.
-    rewrite {2}/cPr.
-    rewrite (_ : Pr _ (setX _ [set (c, d)]) = 0) ?div0R ?mulR0 //.
-    rewrite !setX1.
+  move/eqP; rewrite {1}/cPr mulR_eq0 => -[|].
+    rewrite setX1 => H0.
+    rewrite {1}/cPr Pr_RV2_domin_snd // div0R mul0R {2}/cPr setX1.
+    rewrite (_ : Pr _ [set (b, (c, d))] = 0) ?div0R ?mulR0 //.
     rewrite (Pr_inj (fun x => let '(b, (c, d)) := x in (b, d, c))); last first.
       by move=> -[? [? ?]] [? [? ?]] [-> -> ->].
-    move: H0.
-    rewrite /RVar.d.
-    rewrite !DistMap.comp => <-.
-    congr Pr => //.
+    move: H0; rewrite /RVar.d !DistMap.comp => <-; congr Pr.
     apply/setP => -[[b0 d0] c0]; apply/imsetP/idP.
     - case=> -[? [? ?]]; rewrite inE => /eqP [-> -> ->] ->; by rewrite inE.
     - rewrite inE => /eqP[-> -> ->] /=; exists (b, (c, d)) => //; by rewrite inE.
-  move/invR_eq0 in H0.
-  rewrite snd_RV2 in H0.
-  rewrite {3}/cPr.
-  rewrite Pr_domin_snd ?snd_RV2 // div0R mul0R.
-  rewrite {2}/cPr.
-  rewrite -setX1.
-  rewrite Pr_domin_snd ?div0R ?mulR0 //.
-  by rewrite Pr_domin_fst // snd_RV2 fst_RV2.
-(*  move: {H}(H a (b, d) c).
-  case/boolP : (\Pr_(RVar.d [% W, Z])[ [set d] | [set c] ] == 0) => [H0 _|H0].
-    move: H0.
-    rewrite {1}/cPr snd_RV2 => /eqP; rewrite mulR_eq0 => -[Htmp|/invR_eq0 H0].
-    - by rewrite {2 4}/cPr -!setX1 Pr_RV2_domin_snd ?div0R ?mulR0 // Pr_RV2C.
-    - by rewrite {2 4}/cPr -setX1 Pr_RV2_domin_snd ?div0R ?mulR0 // Pr_RV2_domin_fst.
-  rewrite -setX1 product_rule Proj23_RV3.
-  rewrite -setX1 product_rule Proj23_RV3.
-  rewrite [in X in X = _ -> _]mulRA.
-  rewrite [in X in _ = X -> _]mulRA.
-  rewrite eqR_mul2r; last exact/eqP.
-  rewrite 3![in X in X -> _]setX1 => {H0}H.
-  transitivity (\Pr_(TripA.d (RVar.d [% X, [% Y, W], Z]))[[set a] | [set (b, d, c)]] *
-                \Pr_(TripA.d (RVar.d [% Y, W, Z]))[[set b] | [set (d, c)]]).
-    congr (_ * _).
-      rewrite -QuadA234_RV4 -2!setX1 cPr_TripA_QuadA23_TripC23 TripC23_RV3.
-      by rewrite -QuadA23_RV4 2!setX1.
-    by rewrite -TripC23_RV3 -!setX1 cPr_TripA_TripC23 TripA_RV3.
-  rewrite {}H.
-  congr (_ * _).
-  by rewrite -TripC23_RV3 -!setX1 cPr_TripA_TripC23 TripA_RV3.*)
+  move/invR_eq0; rewrite snd_RV2 => H0.
+  rewrite {3}/cPr Pr_domin_snd ?snd_RV2 // div0R mul0R {2}/cPr -setX1.
+  by rewrite Pr_domin_snd ?div0R ?mulR0 // Pr_domin_fst // snd_RV2 fst_RV2.
 have {H}H : X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
-case/boolP : (\Pr_(RVar.d [% W, Z])[ [set d] | [set c] ] == 0) => [|H0].
-  rewrite {1}/cPr snd_RV2 => /eqP; rewrite mulR_eq0 => -[H0|/invR_eq0 H0].
-    suff : Pr (RVar.d [% Y, [% Z, W] ]) [set (b, (c, d))] = 0.
-      by rewrite {2 4}/cPr !snd_RV2 setX1 => ->; rewrite !div0R !mulR0.
-    by rewrite -setX1; apply Pr_RV2_domin_snd; rewrite -setX1 Pr_RV2C.
-  suff : Pr (RVar.d [% Y, [% Z, W]]) [set (b, (c, d))] = 0.
-    by rewrite {2 4}/cPr !snd_RV2 !setX1 => ->; rewrite !div0R !mulR0.
-  rewrite -setX1; apply Pr_RV2_domin_snd; rewrite -setX1; exact: Pr_RV2_domin_fst.
-congr (_ * _).
-move: (H a d c).
-rewrite -setX1 product_rule Proj23_RV3.
-rewrite eqR_mul2r; last exact/eqP.
-move=> <-.
-by rewrite -TripC23_RV3 cPr_TripA_TripC23 TripA_RV3 setX1.
+rewrite [X in _ = X * _](_ : _ = \Pr[ X = a | [% W, Z] = (d, c) ]); last first.
+  rewrite (cPr_inj _ _ _ _ (@inj_swap _ _)) /RVar.d !DistMap.comp; congr cPr.
+  apply/setP => -[? ?].
+  rewrite !inE; apply/imsetP/idP.
+  - by case=> -[? ?]; rewrite !inE => /eqP[-> -> ->].
+  - case/eqP => -> ->; exists (c, d) => //; by rewrite inE.
+  case/boolP : (\Pr[ W = d | Z = c ] == 0) => [|H0].
+    move/eqP; rewrite {1}/cPr mulR_eq0 setX1 snd_RV2 => -[H0|].
+      rewrite {2}/cPr Pr_domin_snd ?div0R ?mulR0; last first.
+        rewrite (Pr_inj _ _ _ (@inj_swap _ _)) -H0 /RVar.d !DistMap.comp; congr Pr.
+        apply/setP => -[? ?].
+        rewrite !inE; apply/imsetP/idP.
+        - by case=> -[? ?]; rewrite !inE => /eqP[-> -> ->].
+        - case/eqP => -> ->; exists (c, d) => //; by rewrite inE.
+      by rewrite {1}/cPr Pr_domin_snd ?div0R ?mul0R // snd_RV2.
+    move/invR_eq0 => H0.
+   rewrite {1}/cPr Pr_domin_snd ?snd_RV2 // div0R mul0R.
+   by rewrite {1}/cPr Pr_domin_snd ?div0R ?mul0R // snd_RV2 -setX1 Pr_domin_snd // snd_RV2.
+by rewrite (cindeP _ H).
 Qed.
 
 End weak_union.
