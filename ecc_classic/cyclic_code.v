@@ -3,12 +3,13 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div choice fintype tuple finfun bigop prime ssralg.
 From mathcomp Require Import poly polydiv finset fingroup perm finalg zmodp.
 From mathcomp Require Import matrix mxalgebra mxpoly polydiv vector.
-Require Import ssralg_ext poly_ext f2 hamming linearcode.
+Require Import ssralg_ext poly_ext f2 hamming linearcode dft.
 
 (** * Cyclic codes *)
 
 (** OUTLINE:
 - Section right_cyclic_shift
+- Section fdcoor_cyclic
 - Section polynomial_code_generator.
 - Module Pcode : definition of polynomial codes
 - Module Ccode : definition of cyclic codes
@@ -199,6 +200,68 @@ Definition rcsP (F: finFieldType) n (C : {set 'rV[F]_n}) :=
 End right_cyclic_shift.
 
 Notation "'`[' P ']_' n" := (P %% ('X^n - 1)) : cyclic_code_scope.
+
+Section fdcoor_cyclic.
+
+Variables (F : fieldType) (n' : nat).
+Let n := n'.+1.
+Variable (a : F).
+
+Local Notation "v ^`_ i" := (fdcoor (rVexp a n) v i) (at level 9).
+
+Lemma fdcoor_rcs' (i : 'I_n) x : a ^+ n = 1 ->
+  a ^+ i * x ^`_ i = 0 -> (rcs x) ^`_ i = 0.
+Proof.
+move=> an1.
+rewrite /fdcoor (@horner_coef_wide _ n); last by rewrite /rVpoly size_poly.
+rewrite big_distrr /=.
+rewrite (eq_bigr (fun i1 : 'I_ _ => (rVpoly x)`_i1 * a ^+ i ^+ i1.+1)); last first.
+  move=> i1 _; rewrite mulrC -mulrA; congr (_ * _).
+  by rewrite mxE -!exprM -exprD mulnS addnC.
+move=> x_RS.
+rewrite (@horner_coef_wide _ n); last by move: (size_rcs x); rewrite size_Xn_sub_1.
+rewrite -{}[RHS]x_RS rcs_rcs_poly; apply/esym.
+rewrite (reindex_onto (@rcs_perm n) (perm_inv (@rcs_perm n))) /=; last first.
+  move=> i1 _; by rewrite permKV.
+rewrite (eq_bigl xpredT); last by move=> i1; rewrite permK eqxx.
+apply eq_bigr => i1 _.
+rewrite coef_rVpoly PermDef.fun_of_permE ffunE.
+case: ifPn => [/eqP ->|].
+  case: insubP => [j _ jn0|]; last by rewrite ltnS leqnn.
+  rewrite /= in jn0.
+  rewrite coef_rVpoly; case: insubP => // k _ k0.
+  rewrite mxE rcs_poly_rcs ?rVpolyK; last by rewrite size_poly.
+  rewrite coef_rVpoly_ord mxE PermDef.fun_of_permE ffunE -val_eqE k0 /= expr0 mulr1.
+  by rewrite exprAC an1 expr1n mulr1; congr (x _ _); apply val_inj => /=.
+case: insubP => /= [j|].
+  rewrite ltnS => i1n0 ji1 i10; rewrite coef_rVpoly.
+  case: insubP => /= [k|].
+    rewrite ltnS => i1n0' ki1.
+    rewrite mxE rcs_poly_rcs ?rVpolyK; last by rewrite size_poly.
+    rewrite coef_rVpoly_ord mxE PermDef.fun_of_permE ffunE -val_eqE [val k]/= ki1 val_eqE (negPf i10).
+    rewrite inordK; last by rewrite ltnW // ltnS prednK // lt0n.
+    rewrite prednK // ?lt0n //; congr (x _ _ * _).
+    by apply/val_inj.
+    by rewrite mxE.
+  rewrite ltnS => /negP abs; exfalso; apply: abs; by rewrite -ltnS.
+move=> /negP abs i10; exfalso; apply abs; by rewrite ltnS inordK.
+Qed.
+
+Lemma fdcoor_rcs (i : 'I_n) x : a ^+ n = 1 ->
+  x ^`_ i = 0 -> (rcs x) ^`_ i = 0.
+Proof. move=> H1 H2; by rewrite (fdcoor_rcs' H1) // H2 mulr0. Qed.
+
+Fixpoint loop (T : Type) (f : T -> T) (n : nat) (x : T) := if n is m.+1 then loop f m (f x) else x.
+
+Lemma fdcoor_loop_rcs k (i : 'I_n) (x : 'rV_n) : a ^+ n = 1 ->
+  x ^`_ i = 0 -> (loop (@rcs F n) k x) ^`_ i = 0.
+Proof.
+move: i x.
+elim: k => // k IH i x an1 H /=.
+by rewrite IH // fdcoor_rcs.
+Qed.
+
+End fdcoor_cyclic.
 
 Section polynomial_code_generator.
 
@@ -556,3 +619,4 @@ exact: (Pcode.P C).
 Qed.
 
 End polynomial_cyclic_equivalence_condition.
+
