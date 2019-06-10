@@ -183,6 +183,14 @@ case: x => -[a b] c; rewrite /d DistMap.dE /= -/(f (a, (b, c))).
 by rewrite (big_pred1_inj inj_f).
 Qed.
 End def.
+Section prop.
+Variables (A B C : finType) (P : {dist A * (B * C)}).
+Lemma Pr a b c : Pr P (setX a (setX b c)) = Pr (d P) (setX (setX a b) c).
+Proof.
+rewrite /Pr !big_setX /=; apply eq_bigr => a0 _.
+rewrite !big_setX; apply eq_bigr => b0 _; apply eq_bigr => c0 _; by rewrite dE.
+Qed.
+End prop.
 End TripA'.
 Arguments TripA'.inj_f {A B C}.
 

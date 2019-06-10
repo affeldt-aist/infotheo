@@ -81,7 +81,6 @@ Local Notation "'`q'" := (q).
 Local Notation "'`u'" := (u).
 Local Notation "'`v'" := (v).
 
-
 (* McEliece, p.245, table 9.2, slight difference *)
 Lemma relationA k : v k.+1 * r k - v k * r k.+1 = (- 1)^+k *: r0.
 Proof.
