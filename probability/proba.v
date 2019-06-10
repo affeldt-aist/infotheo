@@ -1487,6 +1487,8 @@ rewrite /d DistMap.dE /pr_eq /Pr; apply eq_bigl => i; apply/andP/idP.
 by case=> _ /eqP Xia; rewrite inE Xia.
 by rewrite inE => /eqP ->.
 Qed.
+Lemma Pr a : Pr d [set a] = \Pr[ X = a ].
+Proof. by rewrite -dE Pr_set1. Qed.
 End def.
 End RVar.
 
