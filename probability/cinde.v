@@ -607,20 +607,20 @@ transitivity (\Pr_(RVar.d [% X, Z])[ [set a] | [set c] ] *
   \Pr_(RVar.d [% Y, [% Z,  W]]) [[set b] | [set (c, d)]]).
   rewrite [X in X * _ = _](_ : _ = \Pr[ X= a | [% Y, W, Z] = (b, d, c) ]); last first.
     by rewrite (cPr_cond TripC23.inj_f) /= !DistMap.comp imset_set1.
-  case/boolP : (\Pr[ [% Y, W, Z] = (b, d, c)] == 0) => [|H0]; last first.
+  case/boolP : (\Pr[ [% Y, W, Z] = (b, d, c)] != 0) => [H0|].
     by rewrite (cindeP _ H).
   (* case Pr[Y,W,Z] = 0 *)
-  rewrite -RVar.dE -Pr_set1 {2 4}/cPr => /eqP H0.
+  rewrite negbK -RVar.dE -Pr_set1 {2 4}/cPr => /eqP H0.
   rewrite -setX1 TripA'.Pr -TripC23.Pr (_ : TripC23.d _ = RVar.d [% Y, W, Z]).
     by rewrite !setX1 H0 !(div0R,mul0R,mulR0).
   by rewrite /TripC23.d /Swap.d !DistMap.comp.
 rewrite [X in _ = X * _](_ : _ = \Pr[ X = a | [% W, Z] = (d, c) ]); last first.
   by rewrite (cPr_cond inj_swap) /RVar.d !DistMap.comp imset_set1.
-case/boolP : (\Pr[ [% W, Z] = (d, c) ] == 0) => [|H0]; last first.
+case/boolP : (\Pr[ [% W, Z] = (d, c) ] != 0) => [H0|].
   have {H}H : X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
   by rewrite (cindeP _ H).
 (* case Pr[W,Z] = 0 *)
-rewrite -RVar.dE -Pr_set1 => /eqP H0.
+rewrite negbK -RVar.dE -Pr_set1 => /eqP H0.
 rewrite {2 4}/cPr Pr_RV2_domin_snd ?(div0R, mul0R, mulR0) //.
 by rewrite -setX1 Swap.Pr !setX1 Swap_RV2.
 Qed.
