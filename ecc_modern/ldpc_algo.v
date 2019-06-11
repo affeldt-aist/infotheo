@@ -141,6 +141,7 @@ Extract Inlined Constant R1 => "1.".
 Extract Constant Rmult => "( *.)".
 Extract Constant Rplus => "(+.)".
 Extract Constant Rinv  => "fun x -> 1. /. x".
+Extract Constant Ropp  => "(~-.)".
 Extraction "sumprod.ml" sumprod estimation.
 
 Section ToGraph.
