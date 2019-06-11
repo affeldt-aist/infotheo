@@ -552,6 +552,54 @@ Qed.
 
 End reasoning_by_cases_RV2.
 
+Lemma RV_cPrC (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
+  \Pr[ [% Y, X] = (b, a) | Z = c ] = \Pr[ [% X, Y] = (a, b) | Z = c ].
+Proof. by rewrite -setX1 -cPr_TripC12 TripC12_RV3 setX1. Qed.
+
+Lemma RV_cPrE
+  (U : finType) (P : dist U) (B C : finType)
+  (Y : {RV P -> B}) (Z : {RV P -> C}) b c :
+  \Pr[ Y = b | Z = c ] = \Pr[ [% Y, Z] = (b, c) ] / \Pr[ Z = c ].
+Proof.
+rewrite -!RVar.dE.
+rewrite /cPr /pr_eq /Pr big_setX /=; congr (_ / _).
+by rewrite !big_set1.
+by rewrite big_set1 snd_RV2.
+Qed.
+
+(* NB: RV_cPr_comp? *)
+Lemma RV_Pr_comp (U : finType) (P : dist U) (A B : finType)
+  (f : A -> B) a (X : {RV (P) -> A}) :
+  injective f ->
+  \Pr[ X = a] = \Pr[ (comp_RV X f) = f a ].
+Proof.
+move=> inj_f.
+rewrite -2!RVar.Pr !Pr_set1 /RVar.d !DistMap.dE /comp_RV.
+apply eq_bigl => u; rewrite !inE /=; by apply/eqP/eqP => [->//|/inj_f].
+Qed.
+
+Definition unit_RV (U : finType) (P : dist U) : {RV P -> unit} := (fun=> tt).
+
+Lemma unit_RV1 (U : finType) (P : dist U) : \Pr[ (unit_RV P) = tt ] = 1.
+Proof. by rewrite -RVar.Pr Pr_set1; apply/eqP/Dist1.dist1P; case. Qed.
+
+Lemma RV_Pr_cPr_unit (U : finType) (P : dist U) (A : finType)
+  (X : {RV P -> A}) a :
+  \Pr[ X = a ] = \Pr[ X = a | (unit_RV P) = tt].
+Proof.
+rewrite RV_cPrE unit_RV1 divR1.
+rewrite (@RV_Pr_comp _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
+done.
+Qed.
+
+Lemma RV_Pr_C (U : finType) (P : dist U) (A B : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) a b :
+  \Pr[ [% Y, X] = (b, a) ] = \Pr[ [% X, Y] = (a, b)].
+Proof.
+by rewrite RV_Pr_cPr_unit RV_cPrC -RV_Pr_cPr_unit.
+Qed.
+
 Section symmetry.
 
 Variable (U : finType) (P : dist U).
@@ -559,8 +607,9 @@ Variables (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}
 
 Lemma symmetry : X _|_ Y | Z -> Y _|_ X | Z.
 Proof.
-rewrite /cinde_drv => H b a c.
-rewrite -setX1 -cPr_TripC12 setX1 TripC12_RV3.
+move=> H b a c.
+rewrite /cinde_drv in H.
+rewrite RV_cPrC.
 rewrite H.
 by rewrite mulRC.
 Qed.
@@ -591,6 +640,97 @@ Qed.
 
 End decomposition.
 
+(* TODO: move *)
+Lemma RV_product_rule
+  (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
+  \Pr[ [% X, Y] = (a, b) | Z = c ] =
+  \Pr[ X = a | [% Y, Z] = (b, c) ] * \Pr[ Y = b | Z = c ].
+Proof.
+rewrite -setX1 product_rule; congr (cPr _ _ _ * _).
+- by rewrite /TripA.d DistMap.comp.
+- by rewrite setX1.
+- congr cPr; by rewrite /Proj23.d TripA_RV3 snd_RV2.
+Qed.
+
+Lemma Pr_cPr_0
+  (U : finType) (P : dist U) (B C : finType)
+  (Y : {RV P -> B}) (Z : {RV P -> C}) b c :
+  \Pr[ [% Y, Z] = (b, c) ] = 0 ->
+  \Pr[ Y = b | Z = c ] = 0.
+Proof.
+move=> H0.
+by rewrite RV_cPrE H0 div0R.
+Qed.
+
+Lemma RV_Pr_A (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
+\Pr[ [% X, [% Y, Z]] = (a, (b, c)) ] = \Pr[ [% [% X, Y], Z] = ((a, b), c)].
+Proof.
+rewrite -!RVar.Pr.
+rewrite (Pr_DistMap TripA.inj_f).
+congr Pr.
+by rewrite /RVar.d DistMap.comp.
+by rewrite imset_set1.
+Qed.
+
+Lemma RV_Pr_AC (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
+\Pr[ [% X, Y, Z] = (a, b, c) ] = \Pr[ [% X, Z, Y] = (a, c, b)].
+Proof.
+rewrite -!RVar.Pr.
+rewrite (Pr_DistMap TripC23.inj_f).
+congr Pr.
+by rewrite /RVar.d DistMap.comp.
+by rewrite imset_set1.
+Qed.
+
+Lemma RV_Pr_RV2_domin_snd
+(U : finType) (P : dist U) (A B : finType) (X : {RV (P) -> (A)}) (Y : {RV (P) -> (B)}) a b : \Pr[ Y = b ] = 0 -> \Pr[ [% X, Y] = (a, b) ] = 0.
+Proof.
+move=> H.
+rewrite -RVar.Pr.
+rewrite -setX1.
+rewrite Pr_domin_snd //.
+rewrite snd_RV2.
+by rewrite RVar.Pr.
+Qed.
+
+Lemma RV_Pr_RV2_domin_fst
+(U : finType) (P : dist U) (A B : finType) (X : {RV (P) -> (A)}) (Y : {RV (P) -> (B)}) a b : \Pr[ X = a ] = 0 -> \Pr[ [% X, Y] = (a, b) ] = 0.
+Proof.
+move=> H.
+rewrite -RVar.Pr.
+rewrite -setX1.
+rewrite Pr_domin_fst //.
+rewrite fst_RV2.
+by rewrite RVar.Pr.
+Qed.
+
+Lemma RV_Pr_rA (U : finType) (P : dist U) (A B C D : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}) a b c d :
+  \Pr[ X = a | [% Y, [% Z, W]] = (b, (c, d)) ] =
+  \Pr[ X = a | [% Y, Z, W] = (b, c, d) ].
+Proof.
+by rewrite (cPr_cond TripA.inj_f) /= /RVar.d !DistMap.comp imset_set1.
+Qed.
+
+Lemma RV_Pr_rAC (U : finType) (P : dist U) (A B C D : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}) a b c d :
+  \Pr[ X = a | [% Y, Z, W] = (b, c, d) ] =
+  \Pr[ X = a | [% Y, W, Z] = (b, d, c) ].
+Proof.
+by rewrite (cPr_cond TripC23.inj_f) /= !DistMap.comp imset_set1.
+Qed.
+
+Lemma RV_Pr_rC (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
+  \Pr[ X = a | [% Y, Z] = (b, c) ] =
+  \Pr[ X = a | [% Z, Y] = (c, b) ].
+Proof.
+by rewrite (cPr_cond inj_swap) /RVar.d !DistMap.comp imset_set1.
+Qed.
+
 Section weak_union.
 
 Variables (U : finType) (P : dist U) (A B C D : finType).
@@ -598,31 +738,19 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}
 
 Lemma weak_union : X _|_ [% Y, W] | Z -> X _|_ Y | [% Z, W].
 Proof.
-move=> H a b -[c d].
-transitivity (\Pr_(RVar.d [% X, [% Y, Z, W]]) [[set a] | [set (b, c, d)]] *
-  \Pr_(RVar.d [% Y, [% Z, W]]) [[set b] | [set (c, d)]]).
-  rewrite -setX1 product_rule Proj23_RV3; congr (_ * _).
-  by rewrite setX1 (cPr_cond TripA.inj_f) /TripA.d !DistMap.comp // imset_set1.
-transitivity (\Pr_(RVar.d [% X, Z])[ [set a] | [set c] ] *
-  \Pr_(RVar.d [% Y, [% Z,  W]]) [[set b] | [set (c, d)]]).
-  rewrite [X in X * _ = _](_ : _ = \Pr[ X= a | [% Y, W, Z] = (b, d, c) ]); last first.
-    by rewrite (cPr_cond TripC23.inj_f) /= !DistMap.comp imset_set1.
-  case/boolP : (\Pr[ [% Y, W, Z] = (b, d, c)] != 0) => [H0|].
-    by rewrite (cindeP _ H).
-  (* case Pr[Y,W,Z] = 0 *)
-  rewrite negbK {2 4}/cPr => /eqP H0.
-  rewrite -setX1 TripA'.Pr -TripC23.Pr (_ : TripC23.d _ = RVar.d [% Y, W, Z]).
-    by rewrite !setX1 RVar.Pr H0 !(div0R,mul0R,mulR0).
-  by rewrite /TripC23.d /Swap.d !DistMap.comp.
-rewrite [X in _ = X * _](_ : _ = \Pr[ X = a | [% W, Z] = (d, c) ]); last first.
-  by rewrite (cPr_cond inj_swap) /RVar.d !DistMap.comp imset_set1.
-case/boolP : (\Pr[ [% W, Z] = (d, c) ] != 0) => [H0|].
-  have {H}H : X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
-  by rewrite (cindeP _ H).
-(* case Pr[W,Z] = 0 *)
-rewrite negbK => /eqP H0.
-rewrite {2 4}/cPr Pr_RV2_domin_snd ?(div0R, mul0R, mulR0) //.
-by rewrite -setX1 Swap.Pr setX1 Swap_RV2 RVar.Pr.
+move=> H a b [c d].
+transitivity (\Pr[ X = a | [% Y, Z, W] = (b, c, d)] *
+  \Pr[ Y = b | [% Z, W] = (c, d)]).
+  by rewrite RV_product_rule RV_Pr_rA.
+transitivity (\Pr[ X = a | Z = c] * \Pr[ Y = b | [% Z, W] = (c, d)]).
+  rewrite RV_Pr_rAC.
+  case/boolP : (\Pr[ [% Y, W, Z] = (b, d, c)] == 0) => [/eqP|] H0.
+  - by rewrite [X in _ * X = _ * X]RV_cPrE RV_Pr_A RV_Pr_AC H0 div0R !mulR0.
+  - by rewrite (cindeP _ H).
+case/boolP : (\Pr[ [% Z, W] = (c, d) ] == 0) => [/eqP|] ?.
+- by rewrite [X in _ * X = _ * X]RV_cPrE RV_Pr_RV2_domin_snd ?(div0R,mulR0).
+- have {H}H : X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
+  by rewrite [in X in _ = X * _]RV_Pr_rC (cindeP _ H) // RV_Pr_C.
 Qed.
 
 End weak_union.
@@ -634,28 +762,18 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}
 
 Lemma contraction : X _|_ W | [% Z, Y] -> X _|_ Y | Z -> X _|_ [% Y, W] | Z.
 Proof.
-move=> H1 H2; move=> a -[b d] c.
-rewrite -setX1 product_rule Proj23_RV3 setX1.
-transitivity (
-  \Pr_(TripA.d (RVar.d [%X, Y, Z]))[[set a] | [set (b, c)]] *
-  \Pr_(RVar.d [%Y, W, Z])[ [set (b, d)] | [set c] ]).
-  rewrite [X in X * _ = _](_ : _ = \Pr_(RVar.d [% X, [% W, [% Z, Y]]])[[set a]|[set (d, (c, b))]]); last first.
-    rewrite (cPr_cond (inj_comp TripA.inj_f (inj_comp inj_swap TripA.inj_f))) /RVar.d.
-    by rewrite !DistMap.comp !imset_set1.
-  case/boolP : (\Pr[ [% W, [% Z, Y]] = (d, (c, b))] == 0) => [|H0].
-    move=> H0.
-    rewrite {2 4}/cPr -setX1 -TripA.Pr Swap.Pr -TripA.Pr !setX1.
-    rewrite (_ : TripA.d _ = RVar.d [% W, [% Z, Y]]); last by rewrite /TripA.d /RVar.d !DistMap.comp.
-    by rewrite RVar.Pr (eqP H0) ?(div0R,mulR0).
-  rewrite (cindeP _ H1) // (cPr_cond inj_swap) /RVar.d.
-  by rewrite /TripA.d !DistMap.comp !imset_set1.
-rewrite TripA_RV3.
-case/boolP : (\Pr[ [% Y, Z] = (b, c) ] != 0) => [H0|].
-  by rewrite (cindeP _ H2).
-rewrite negbK => /eqP H0.
-rewrite {1}/cPr Pr_domin_snd ?(div0R,mul0R); last by rewrite snd_RV2 RVar.Pr.
-rewrite {2}/cPr -setX1 -TripC23.Pr Pr_domin_fst ?(div0R,mulR0) //.
-by rewrite TripC23_RV3 fst_RV2 setX1 RVar.Pr.
+move=> H1 H2; move=> a [b d] c.
+rewrite RV_product_rule.
+transitivity (\Pr[X = a | [% Y, Z] = (b, c)] * \Pr[[% Y, W] = (b, d) | Z = c]).
+  rewrite -RV_Pr_rA [in X in X * _ = _]RV_Pr_rC -RV_Pr_rA.
+  case/boolP : (\Pr[ [% W, [% Z, Y]] = (d, (c, b))] == 0) => [/eqP|] H0.
+    rewrite [in X in _ * X = _ * X]RV_cPrE.
+    by rewrite -RV_Pr_A RV_Pr_C -RV_Pr_A H0 div0R !mulR0.
+  by rewrite (cindeP _ H1) // RV_Pr_rC.
+case/boolP : (\Pr[ [% Y, Z] = (b, c) ] == 0) => [/eqP|] H0.
+- rewrite [X in _ * X = _ * X]RV_cPrE.
+  by rewrite RV_Pr_AC RV_Pr_RV2_domin_fst ?div0R ?mulR0.
+- by rewrite (cindeP _ H2).
 Qed.
 
 End contraction.

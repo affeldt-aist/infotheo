@@ -381,7 +381,7 @@ Proof.
 rewrite /h big_morph_oppR /=; apply eq_bigr => a _.
 rewrite /h1 mulRN big_distrr /=; congr (- _); apply eq_bigr => b _.
 rewrite mulRA; congr (_ * _).
-by rewrite mulRC -(Pr_set1 P a) -Pr_cPr setX1 Swap.dE Pr_set1.
+by rewrite mulRC -(Pr_set1 P a) -product_rule0 setX1 Swap.dE Pr_set1.
 Qed.
 
 Lemma h1_ge0 a : 0 <= h1 a.
@@ -505,7 +505,7 @@ transitivity (- (\rsum_(a in A) \rsum_(b in B)
   congr (- _); rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
   congr (_ * log _); case/boolP : (P a == 0) => [/eqP|] H0.
   - by rewrite (Bivar.dom_by_fst _ H0) H0 mul0R.
-  - by rewrite -(Pr_set1 P a) /P -(Swap.snd PQ) mulRC -Pr_cPr setX1 Pr_set1 Swap.dE.
+  - by rewrite -(Pr_set1 P a) /P -(Swap.snd PQ) mulRC -product_rule0 setX1 Pr_set1 Swap.dE.
 transitivity (
   - (\rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (P a))
   - (\rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (\Pr_QP [ [set b] | [set a] ]))). (* 2.17 *)
@@ -767,7 +767,7 @@ rewrite -subR_opp; congr (_ - _).
   rewrite mulRN; congr (- _).
   rewrite big_distrr /=; apply eq_bigr=> a _ /=.
   rewrite mulRA; congr (_ * _); rewrite -/Q.
-  by rewrite -[in LHS]Pr_set1 -setX1 Pr_cPr Pr_set1 -/Q mulRC.
+  by rewrite -[in LHS]Pr_set1 -setX1 product_rule0 Pr_set1 -/Q mulRC.
 Qed.
 
 Lemma miE3 : mi PQ = `H Q - CondEntropy.h QP. (* 2.40 *)
@@ -980,7 +980,7 @@ rewrite -(pair_bigA _ (fun x1 x2 => PQR (x1, x2) * log
 rewrite exchange_big; apply eq_bigr => c _ /=.
 rewrite big_distrr /=; apply eq_bigr => -[a b] _ /=; rewrite mulRA; congr (_ * _).
 rewrite mulRC.
-move: (Pr_cPr PQR [set (a, b)] [set c]); rewrite -/R Pr_set1 => <-.
+move: (product_rule0 PQR [set (a, b)] [set c]); rewrite -/R Pr_set1 => <-.
 by rewrite setX1 Pr_set1.
 Qed.
 
