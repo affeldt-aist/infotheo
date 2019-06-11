@@ -38,6 +38,8 @@ Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
   format "[%  x ,  y ,  .. ,  z ]").
 Reserved Notation "\Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
   format "\Pr[  X  =  a  |  Y  =  b  ]").
+Reserved Notation "\Pr[ X '\in' P | Y '\in' Q ]" (at level 6, X, Y, P, Q at next level,
+  format "\Pr[  X  '\in'  P  |  Y  '\in'  Q  ]").
 
 Local Open Scope proba_scope.
 
@@ -441,14 +443,16 @@ Variables (U : finType) (P : dist U) (A B C : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 Let Q := RVar.d [% X, Y, Z].
 
-Local Notation "\Pr[ X = a | Y = b ]" := (\Pr_(RVar.d [% X, Y])[ [set a] | [set b]]).
+Local Notation "\Pr[ X '\in' P | Y '\in' Q ]" := (\Pr_(RVar.d [% X, Y])[ P | Q ]).
+Local Notation "\Pr[ X = a | Y = b ]" := (\Pr[ X \in [set a] | Y \in [set b]]).
 
 Definition cinde_drv := forall a b c,
   \Pr[ [% X, Y] = (a, b) | Z = c ] = \Pr[ X = a | Z = c ] * \Pr[ Y = b | Z = c].
 
 End conditionnally_independent_discrete_random_variables.
 
-Notation "\Pr[ X = a | Y = b ]" := (\Pr_(RVar.d [% X, Y])[ [set a] | [set b]]).
+Notation "\Pr[ X '\in' P | Y '\in' Q ]" := (\Pr_(RVar.d [% X, Y])[ P | Q ]).
+Notation "\Pr[ X = a | Y = b ]" := (\Pr[ X \in [set a] | Y \in [set b]]).
 
 Notation "X _|_  Y | Z" := (cinde_drv X Y Z) : proba_scope.
 Notation "P |= X _|_  Y | Z" := (@cinde_drv _ P _ _ _ X Y Z) : proba_scope.
