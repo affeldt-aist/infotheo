@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Fourier Ranalysis_ext Lra.
+Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy proba cproba convex binary_entropy_function.
 Require Import log_sum divergence.
@@ -14,10 +14,10 @@ Import Prenex Implicits.
 (* concavity of relative entropy and of mutual information
    Cover and Thomas, Chapter 2 *)
 
+Local Open Scope R_scope.
 Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
-
 Local Open Scope entropy_scope.
 
 Section entropy_log_div.

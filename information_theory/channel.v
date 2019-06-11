@@ -3,7 +3,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Fourier.
+Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy cproba chap2.
 
@@ -51,6 +51,8 @@ Reserved Notation "`H( P , W )" (at level 10, P, W at next level,
   format "`H( P ,  W )").
 Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
 Reserved Notation "`I( P , W )" (at level 50, format "`I( P ,  W )").
+
+Local Open Scope R_scope.
 
 Module Channel1.
 Section channel1.

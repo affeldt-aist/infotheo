@@ -13,12 +13,12 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Local Open Scope R_scope.
 Local Open Scope proba_scope.
 Local Open Scope jtyp_seq_scope.
 Local Open Scope channel_code_scope.
 Local Open Scope channel_scope.
 Local Open Scope vec_ext_scope.
-Local Open Scope R_scope.
 
 Module Wght.
 Section wght.
