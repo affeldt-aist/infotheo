@@ -68,6 +68,8 @@ Reserved Notation "{ 'RV' d -> T }" (at level 0, d, T at next level,
 Reserved Notation "`p_ X" (at level 5).
 Reserved Notation "\Pr[ X = a ]" (at level 6, X, a at next level,
   format "\Pr[  X  =  a  ]").
+Reserved Notation "\Pr[ X '\in' E ]" (at level 6, X, E at next level,
+  format "\Pr[  X  '\in'  E  ]").
 Reserved Notation "\Pr[ X >= r ]" (at level 6, X, r at next level,
   format "\Pr[  X  >=  r  ]").
 Reserved Notation "k `cst* X" (at level 49).
@@ -1467,6 +1469,10 @@ Notation "`p_ X" := (p_of X) : proba_scope.
 Definition pr_eq (U : finType) (A : eqType) (P : dist U) (X : {RV P -> A}) (a : A) :=
   Pr `p_X (X @^-1 a).
 Notation "\Pr[ X = a ]" := (pr_eq X a) : proba_scope.
+
+Definition pr_set (U : finType) (A : finType) (P : dist U) (X : {RV P -> A}) (E : {set A}) :=
+  Pr `p_X (X @^-1: E).
+Notation "\Pr[ X '\in' E ]" := (pr_set X E) : proba_scope.
 
 Lemma pr_eq0 (U A : finType) (P : dist U) (X : {RV (P) -> (A)}) (a : A) :
   a \notin fin_img X -> \Pr[ X = a ] = 0.
