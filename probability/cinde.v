@@ -22,7 +22,7 @@ contents:
 - Section quad_prop.
 - Section conditionnally_independent_discrete_random_variables.
 - Section cinde_drv_prop.
-- Section reasoning_by_cases_RV2.
+- Section reasoning_by_cases.
 - Section symmetry.
 - Section decomposition.
 - Section weak_union.
@@ -36,10 +36,10 @@ Reserved Notation "X _|_  Y | Z" (at level 10, Y, Z at next level).
 Reserved Notation "P |= X _|_  Y | Z" (at level 10, X, Y, Z at next level).
 Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
   format "[%  x ,  y ,  .. ,  z ]").
-Reserved Notation "\Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
-  format "\Pr[  X  =  a  |  Y  =  b  ]").
 Reserved Notation "\Pr[ X '\in' P | Y '\in' Q ]" (at level 6, X, Y, P, Q at next level,
   format "\Pr[  X  '\in'  P  |  Y  '\in'  Q  ]").
+Reserved Notation "\Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
+  format "\Pr[  X  =  a  |  Y  =  b  ]").
 
 Local Open Scope proba_scope.
 
@@ -516,7 +516,7 @@ Qed.
 
 End cinde_drv_prop.
 
-Section reasoning_by_cases_RV2.
+Section reasoning_by_cases.
 
 Variables (U : finType) (P : dist U).
 Variables (A B C : finType) (Z : {RV P -> C}) (X : {RV P -> A}) (Y : {RV P -> B}).
@@ -547,14 +547,14 @@ rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
 apply eq_bigr => c cZ; by rewrite big_set1 !RVar.dE.
 Qed.
 
-Lemma reasoning_by_cases_RV2 E F :
+Lemma reasoning_by_cases E F :
   \Pr_(RVar.d [% X, Y])[E | F] =
   \rsum_(z <- fin_img Z) \Pr_(RVar.d [% X, Z, Y])[setX E [set z] | F].
 Proof.
 by rewrite {1}/cPr total_RV2 -[in RHS]big_distrl /= (snd_RV3 _ Z).
 Qed.
 
-End reasoning_by_cases_RV2.
+End reasoning_by_cases.
 
 Lemma RV_cPrC (U : finType) (P : dist U) (A B C : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
@@ -604,6 +604,35 @@ Proof.
 by rewrite RV_Pr_cPr_unit RV_cPrC -RV_Pr_cPr_unit.
 Qed.
 
+Lemma RV_Pr_lA (U : finType) (P : dist U) (A B C D : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}) a b c d:
+  \Pr[ [% X, [% Y, Z]] = (a, (b, c)) | W = d] =
+  \Pr[ [% [% X, Y], Z] = ((a, b), c) | W = d].
+Proof.
+rewrite /cPr !snd_RV2; congr (_ / _).
+rewrite (Pr_DistMap (@QuadA23.inj_f _ _ _ _)).
+rewrite /RVar.d !DistMap.comp; congr Pr => //.
+apply/setP => -[[a0 [b0 c0]] d0].
+rewrite !inE /=.
+apply/idP/idP.
+  case/andP => /eqP [-> -> -> /eqP ->].
+  apply/imsetP.
+  exists (((a, b), c), d) => //.
+  by rewrite !inE /= !eqxx.
+case/imsetP => -[[[a1 b1] c1] d1].
+rewrite !inE /= => /andP[/eqP [] -> -> -> /eqP ->].
+case=> -> -> -> ->; by rewrite !eqxx.
+Qed.
+
+Lemma RV_Pr_A (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
+\Pr[ [% X, [% Y, Z]] = (a, (b, c)) ] = \Pr[ [% [% X, Y], Z] = ((a, b), c)].
+Proof.
+rewrite RV_Pr_cPr_unit.
+rewrite RV_Pr_lA.
+by rewrite -RV_Pr_cPr_unit.
+Qed.
+
 Section symmetry.
 
 Variable (U : finType) (P : dist U).
@@ -628,18 +657,16 @@ Let Q := RVar.d [% X, Y, W, Z].
 
 Lemma decomposition : X _|_ [% Y, W] | Z -> X _|_ Y | Z.
 Proof.
-move=> H; rewrite /cinde_drv => a b c.
-transitivity (\rsum_(d <- fin_img W) \Pr_(QuadA23.d Q)[[set (a, (b, d))] | [set c]]).
-  rewrite (reasoning_by_cases_RV2 W); apply eq_bigr => /= d _.
-  by rewrite -2![in RHS]setX1 cPr_QuadA23 -setX1.
+move=> H a b c.
+transitivity (\rsum_(d <- fin_img W) \Pr[ [% X, [% Y, W]] = (a, (b, d)) | Z = c]).
+  rewrite (reasoning_by_cases W); apply eq_bigr => /= d _.
+  by rewrite [in RHS]RV_Pr_lA /cPr !setX1.
 transitivity (\rsum_(d <- fin_img W)
-  \Pr_(Proj14d Q)[[set a] | [set c]] * \Pr_(Proj234.d Q)[[set (b, d)] | [set c]]).
-  apply eq_bigr => d _.
-  by rewrite QuadA23_RV4 H Proj14_RV4 Proj234_RV4 Proj23_RV3.
+  \Pr[ X = a | Z = c] * \Pr[ [% Y, W] = (b, d) | Z = c]).
+  by apply eq_bigr => d _; rewrite H.
 rewrite -big_distrr /=; congr (_ * _).
-  by rewrite /Proj14d Proj124_RV4 Proj13_RV3.
-rewrite (reasoning_by_cases_RV2 W); apply eq_bigr => d _.
-by rewrite Proj234_RV4 Proj23_RV3 setX1.
+rewrite (reasoning_by_cases W); apply eq_bigr => d _.
+by rewrite /cPr !setX1.
 Qed.
 
 End decomposition.
@@ -667,16 +694,6 @@ move=> H0.
 by rewrite RV_cPrE H0 div0R.
 Qed.
 
-Lemma RV_Pr_A (U : finType) (P : dist U) (A B C : finType)
-  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
-\Pr[ [% X, [% Y, Z]] = (a, (b, c)) ] = \Pr[ [% [% X, Y], Z] = ((a, b), c)].
-Proof.
-rewrite -!RVar.Pr.
-rewrite (Pr_DistMap TripA.inj_f).
-congr Pr.
-by rewrite /RVar.d DistMap.comp.
-by rewrite imset_set1.
-Qed.
 
 Lemma RV_Pr_AC (U : finType) (P : dist U) (A B C : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
@@ -766,7 +783,7 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}
 
 Lemma contraction : X _|_ W | [% Z, Y] -> X _|_ Y | Z -> X _|_ [% Y, W] | Z.
 Proof.
-move=> H1 H2; move=> a [b d] c.
+move=> H1 H2 a [b d] c.
 rewrite RV_product_rule.
 transitivity (\Pr[X = a | [% Y, Z] = (b, c)] * \Pr[[% Y, W] = (b, d) | Z = c]).
   rewrite -RV_Pr_rA [in X in X * _ = _]RV_Pr_rC -RV_Pr_rA.
@@ -844,7 +861,7 @@ Hypothesis D_not_empty : D.
 Lemma intersection : X _|_ Y | [% Z, W] -> X _|_ W | [% Z, Y] -> X _|_ [% Y, W] | Z.
 Proof.
 move=> H1 H2; apply contraction => //; move=> a b c.
-rewrite [in X in _ = X * _](reasoning_by_cases_RV2 W).
+rewrite [in X in _ = X * _](reasoning_by_cases W).
 have {H2}K1 : forall d, \Pr_(RVar.d [% X, [% Y, Z]])[[set a]|[set (b, c)]] =
        \Pr_(RVar.d [% X, [% W, Z, Y]])[[set a]|[set (d, c, b)]].
   move=> d; move: {H2}(H2 a d (c, b)).
