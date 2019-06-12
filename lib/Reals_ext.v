@@ -477,7 +477,7 @@ Qed.
 Lemma factE n0 : fact n0 = n0 `!.
 Proof. elim: n0 => // n0 IH /=. by rewrite IH factS mulSn -multE. Qed.
 
-Lemma combinaisonE n0 m0 : (m0 <= n0)%nat -> C n0 m0 = INR 'C(n0, m0).
+Lemma combinaisonE n0 m0 : (m0 <= n0)%nat -> C n0 m0 = 'C(n0, m0)%:R.
 Proof.
 move=> ?.
 rewrite /C.

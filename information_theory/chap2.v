@@ -961,9 +961,9 @@ rewrite divRM; last 2 first.
   rewrite -cPr_gt0 -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj23.dominN H0.
 rewrite {2}/Rdiv -mulRA mulRCA {1}/Rdiv [in LHS]mulRC; congr (_ * _).
 rewrite -[in X in _ = X * _]setX1 product_rule setX1 -mulRA mulRV ?mulR1 //.
-rewrite /cPr mulR_neq0' setX1 !Pr_set1; apply/andP; split.
+rewrite /cPr divR_neq0' // ?setX1 !Pr_set1.
 exact: Proj23.dominN H0.
-rewrite invR_neq0' // Proj23.snd; exact: Bivar.dom_by_sndN H0.
+rewrite Proj23.snd; exact: Bivar.dom_by_sndN H0.
 Qed.
 
 Let R := Bivar.snd PQR.
@@ -1398,20 +1398,19 @@ rewrite (_ : _ / _ = 1); first by rewrite /log Log_1 mulR0.
 rewrite eqR_divr_mulr ?mul1R; last first.
   rewrite mulR_neq0'; apply/andP; split.
     (* TODO: lemma? *)
-    rewrite /cPr mulR_neq0'; apply/andP; split.
-      (* TODO: lemma? *)
+    rewrite /cPr divR_neq0' //.
       rewrite setX1 Pr_set1.
       case: x => [[x11 x12] x2] in H0 *.
       exact: Proj13.dominN H0.
-    rewrite invR_neq0' // Pr_set1 Proj13.snd.
+    rewrite Pr_set1 Proj13.snd.
     case: x => [x1 x2] in H0 *.
     exact: Bivar.dom_by_sndN H0.
   (* TODO: lemma? *)
-  rewrite /cPr mulR_neq0'; apply/andP; split.
+  rewrite /cPr divR_neq0' //.
     rewrite setX1 Pr_set1.
     case: x => [[x11 x12] x2] in H0 *.
     exact: Proj23.dominN H0.
-  rewrite invR_neq0' // Pr_set1 Proj23.snd.
+  rewrite Pr_set1 Proj23.snd.
   case: x => [x1 x2] in H0 *.
   exact: Bivar.dom_by_sndN H0.
 (* TODO: lemma? *) (* 2.118 *)

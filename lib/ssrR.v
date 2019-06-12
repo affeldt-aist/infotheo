@@ -589,6 +589,9 @@ Proof. exact: Rdiv_lt_0_compat x y. Qed.
 Lemma divRM (r1 r2 x : R) : r1 <> 0 -> r2 <> 0 -> x / (r1 * r2) = x / r1 * / r2.
 Proof. move=> ? ?; by rewrite {1}/Rdiv invRM // mulRA. Qed.
 
+Lemma divR_neq0' (x y : R) : x != 0 -> y != 0 -> x / y != 0.
+Proof. by move => x0 y0; rewrite mulR_neq0' x0 /= invR_neq0'. Qed.
+
 Definition mulRV (x : R) : x != 0 -> x * / x = 1 := divRR x.
 
 (* Rinv_l_sym *)
