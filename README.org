@@ -25,7 +25,7 @@ If the Requirements (see above) are already met, do:
 
 Or, if opam is installed, do:
 
-1. ~opam install .~
+3. ~opam install .~
 
 opam takes care of the dependencies.
 
