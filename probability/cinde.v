@@ -20,10 +20,9 @@ contents:
 - Section RV2_prop.
 - Section RV3_prop.
 - Section trip_prop.
-- Section quad_prop.
 - Section conditionnally_independent_discrete_random_variables.
-- Section cinde_drv_prop.
 - Section reasoning_by_cases.
+- Section cinde_drv_prop.
 - Section cPr_1_RV.
 - Section symmetry.
 - Section decomposition.
@@ -321,7 +320,6 @@ Notation "P |= X _|_  Y | Z" := (@cinde_drv _ P _ _ _ X Y Z) : proba_scope.
 Lemma cindeP (U : finType) (P : dist U) (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
   P |= X _|_ Y | Z ->
   \Pr[ [% Y, Z] = (b, c)] != 0 ->
-(*  \Pr[ Y = b | Z = c ] != 0 ->*)
   \Pr[ X = a | [% Y, Z] = (b, c)] = \Pr[X = a | Z = c].
 Proof.
 move=> K H0.
@@ -376,11 +374,6 @@ Qed.
 
 End reasoning_by_cases.
 
-Lemma RV_cPrC (U : finType) (P : dist U) (A B C : finType)
-  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
-  \Pr[ [% Y, X] = (b, a) | Z = c ] = \Pr[ [% X, Y] = (a, b) | Z = c ].
-Proof. by rewrite -setX1 -cPr_TripC12 TripC12_RV3 setX1. Qed.
-
 Lemma RV_cPrE
   (U : finType) (P : dist U) (B C : finType)
   (Y : {RV P -> B}) (Z : {RV P -> C}) b c :
@@ -417,12 +410,15 @@ rewrite (@RV_Pr_comp _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
 done.
 Qed.
 
+Lemma RV_Pr_lC (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
+  \Pr[ [% Y, X] = (b, a) | Z = c ] = \Pr[ [% X, Y] = (a, b) | Z = c ].
+Proof. by rewrite -setX1 -cPr_TripC12 TripC12_RV3 setX1. Qed.
+
 Lemma RV_Pr_C (U : finType) (P : dist U) (A B : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) a b :
   \Pr[ [% Y, X] = (b, a) ] = \Pr[ [% X, Y] = (a, b)].
-Proof.
-by rewrite RV_Pr_cPr_unit RV_cPrC -RV_Pr_cPr_unit.
-Qed.
+Proof. by rewrite RV_Pr_cPr_unit RV_Pr_lC -RV_Pr_cPr_unit. Qed.
 
 Lemma RV_Pr_lA (U : finType) (P : dist U) (A B C D : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}) a b c d:
@@ -622,7 +618,7 @@ Lemma symmetry : X _|_ Y | Z -> Y _|_ X | Z.
 Proof.
 move=> H b a c.
 rewrite /cinde_drv in H.
-rewrite RV_cPrC.
+rewrite RV_Pr_lC.
 rewrite H.
 by rewrite mulRC.
 Qed.
@@ -640,13 +636,13 @@ Proof.
 move=> H a b c.
 transitivity (\rsum_(d <- fin_img W) \Pr[ [% X, [% Y, W]] = (a, (b, d)) | Z = c]).
   rewrite (reasoning_by_cases W); apply eq_bigr => /= d _.
-  by rewrite [in RHS]RV_Pr_lA /cPr !setX1.
+  by rewrite RV_Pr_lA setX1.
 transitivity (\rsum_(d <- fin_img W)
   \Pr[ X = a | Z = c] * \Pr[ [% Y, W] = (b, d) | Z = c]).
   by apply eq_bigr => d _; rewrite H.
 rewrite -big_distrr /=; congr (_ * _).
 rewrite (reasoning_by_cases W); apply eq_bigr => d _.
-by rewrite /cPr !setX1.
+by rewrite setX1.
 Qed.
 
 End decomposition.

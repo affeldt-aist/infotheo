@@ -379,7 +379,7 @@ Variables (A B : finType) (W : `Ch_1(A, B)) (P : dist A).
 
 Lemma mut_info_chanE : `I(P, W) = MutualInfo.mi (Swap.d (`J(P, W))).
 Proof.
-rewrite /MutualInfoChan.mut_info MutualInfo.miE2 -CondEntropyChanE.
+rewrite /MutualInfoChan.mut_info MutualInfo.miE -CondEntropyChanE.
 rewrite /CondEntropyChan.h -[in RHS]addR_opp oppRB addRCA addRA; congr (_ + _ + _).
 congr `H.
 rewrite Swap.fst.
