@@ -425,19 +425,15 @@ Lemma RV_Pr_lA (U : finType) (P : dist U) (A B C D : finType)
   \Pr[ [% X, [% Y, Z]] = (a, (b, c)) | W = d] =
   \Pr[ [% [% X, Y], Z] = ((a, b), c) | W = d].
 Proof.
-rewrite /cPr !snd_RV2; congr (_ / _).
-rewrite (Pr_DistMap (@QuadA23.inj_f _ _ _ _)).
-rewrite /RVar.d !DistMap.comp; congr Pr => //.
-apply/setP => -[[a0 [b0 c0]] d0].
-rewrite !inE /=.
-apply/idP/idP.
-  case/andP => /eqP [-> -> -> /eqP ->].
-  apply/imsetP.
-  exists (((a, b), c), d) => //.
-  by rewrite !inE /= !eqxx.
-case/imsetP => -[[[a1 b1] c1] d1].
-rewrite !inE /= => /andP[/eqP [] -> -> -> /eqP ->].
-case=> -> -> -> ->; by rewrite !eqxx.
+by rewrite (Pr_DistMap_l TripA.inj_f) //= /RVar.d !DistMap.comp imset_set1.
+Qed.
+
+Lemma RV_Pr_lAC (U : finType) (P : dist U) (A B C D : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}) a b c d:
+  \Pr[ [% X, Y, Z] = (a, b, c) | W = d] =
+  \Pr[ [% X, Z, Y] = (a, c, b) | W = d].
+Proof.
+by rewrite (Pr_DistMap_l TripC23.inj_f) //= /RVar.d !DistMap.comp imset_set1.
 Qed.
 
 Lemma RV_Pr_A (U : finType) (P : dist U) (A B C : finType)
@@ -474,11 +470,7 @@ Lemma RV_Pr_AC (U : finType) (P : dist U) (A B C : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
 \Pr[ [% X, Y, Z] = (a, b, c) ] = \Pr[ [% X, Z, Y] = (a, c, b)].
 Proof.
-rewrite -!RVar.Pr.
-rewrite (Pr_DistMap TripC23.inj_f).
-congr Pr.
-by rewrite /RVar.d DistMap.comp.
-by rewrite imset_set1.
+by rewrite RV_Pr_cPr_unit RV_Pr_lAC -RV_Pr_cPr_unit.
 Qed.
 
 Lemma RV_Pr_rA (U : finType) (P : dist U) (A B C D : finType)
@@ -486,7 +478,7 @@ Lemma RV_Pr_rA (U : finType) (P : dist U) (A B C D : finType)
   \Pr[ X = a | [% Y, [% Z, W]] = (b, (c, d)) ] =
   \Pr[ X = a | [% Y, Z, W] = (b, c, d) ].
 Proof.
-by rewrite (cPr_cond TripA.inj_f) /= /RVar.d !DistMap.comp imset_set1.
+by rewrite (Pr_DistMap_r TripA.inj_f) /= /RVar.d !DistMap.comp imset_set1.
 Qed.
 
 Lemma RV_Pr_rAC (U : finType) (P : dist U) (A B C D : finType)
@@ -494,7 +486,7 @@ Lemma RV_Pr_rAC (U : finType) (P : dist U) (A B C D : finType)
   \Pr[ X = a | [% Y, Z, W] = (b, c, d) ] =
   \Pr[ X = a | [% Y, W, Z] = (b, d, c) ].
 Proof.
-by rewrite (cPr_cond TripC23.inj_f) /= !DistMap.comp imset_set1.
+by rewrite (Pr_DistMap_r TripC23.inj_f) /= !DistMap.comp imset_set1.
 Qed.
 
 Lemma RV_Pr_rCA (U : finType) (P : dist U) (A B C D : finType)
@@ -502,7 +494,7 @@ Lemma RV_Pr_rCA (U : finType) (P : dist U) (A B C D : finType)
   \Pr[ X = a | [% Y, [% Z, W]] = (b, (c, d)) ] =
   \Pr[ X = a | [% Y, [% W, Z]] = (b, (d, c)) ].
 Proof.
-rewrite (cPr_cond (inj_comp TripA.inj_f (inj_comp TripC23.inj_f TripA'.inj_f))).
+rewrite (Pr_DistMap_r (inj_comp TripA.inj_f (inj_comp TripC23.inj_f TripA'.inj_f))).
 by rewrite /= !DistMap.comp // !imset_set1.
 Qed.
 
@@ -511,7 +503,7 @@ Lemma RV_Pr_rC (U : finType) (P : dist U) (A B C : finType)
   \Pr[ X = a | [% Y, Z] = (b, c) ] =
   \Pr[ X = a | [% Z, Y] = (c, b) ].
 Proof.
-by rewrite (cPr_cond inj_swap) /RVar.d !DistMap.comp imset_set1.
+by rewrite (Pr_DistMap_r inj_swap) /RVar.d !DistMap.comp imset_set1.
 Qed.
 
 (* TODO: move *)
@@ -590,15 +582,8 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}
 
 Lemma cinde_drv_2C : X _|_ [% Y, W] | Z -> P |= X _|_ [% W, Y] | Z.
 Proof.
-move=> H; move=> a -[d b] c; move: (H a (b, d) c) => {H}H.
-transitivity (\Pr_(RVar.d [% X, [% Y, W], Z])[ [set (a, (b, d))] | [set c] ]).
-  rewrite /cPr !snd_RV3; congr (_ / _).
-  rewrite /Pr !big_setX /= !big_set1 !RVar.dE /Pr.
-  apply eq_bigl => u; rewrite !inE; by apply/eqP/eqP => -[<- <- <- <-].
-rewrite {}H; congr (_ * _).
-rewrite /cPr !snd_RV2; congr (_ / _).
-rewrite /Pr !big_setX /= !big_set1 !RVar.dE /Pr; apply eq_bigl => u.
-by rewrite !inE; apply/eqP/eqP => -[<- <- <-].
+move=> H a -[d b] c.
+by rewrite RV_Pr_lA RV_Pr_lAC -RV_Pr_lA H RV_Pr_lC.
 Qed.
 
 Lemma cinde_drv_3C : X _|_ Y | [% Z, W] -> X _|_ Y | [% W, Z].

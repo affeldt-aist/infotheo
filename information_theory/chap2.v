@@ -13,13 +13,13 @@ Contents:
 - Module JointEntropy.
   Section joint_entropy_prop.
 - Module CondEntropy.
-  Section conditional_entropy_prop3.
+  Section conditional_entropy_prop.
 - Module conditional_entropy_example.
 - Section chain_rule. (thm 2.1.1)
 - Section chain_rule_generalization.
 - Section entropy_chain_rule_corollary.
-- Section conditional_entropy_prop.
 - Section conditional_entropy_prop2.
+- Section conditional_entropy_prop3.
 - Module MutualInfo.
 - Section mutualinfo_prop.
 - Section chain_rule_for_entropy.
@@ -403,7 +403,7 @@ Qed.
 End condentropy.
 End CondEntropy.
 
-Section conditional_entropy_prop3.
+Section conditional_entropy_prop.
 
 Variables (A B C : finType) (PQR : {dist A * B * C}).
 
@@ -427,7 +427,7 @@ rewrite exchange_big pair_big /=; apply eq_bigr => -[c b] _ /=; congr (_ * _).
 by rewrite h1TripC23.
 Qed.
 
-End conditional_entropy_prop3.
+End conditional_entropy_prop.
 
 Module conditional_entropy_example.
 
@@ -679,7 +679,7 @@ Qed.
 
 End entropy_chain_rule_corollary.
 
-Section conditional_entropy_prop. (* NB: here because use chain rule *)
+Section conditional_entropy_prop2. (* NB: here because use chain rule *)
 
 Variables (A B : finType) (PQ : {dist A * B}).
 Let P := Bivar.fst PQ.
@@ -692,9 +692,9 @@ rewrite subR_eq addRAC -subR_eq subR_opp -chain_rule JointEntropy.hC.
 by rewrite -/(JointEntropy.h (Swap.d PQ)) chain_rule Swap.fst -/Q Swap.dI.
 Qed.
 
-End conditional_entropy_prop.
+End conditional_entropy_prop2.
 
-Section conditional_entropy_prop2. (* NB: here because use chain rule *)
+Section conditional_entropy_prop3. (* NB: here because use chain rule *)
 
 Variables (A : finType) (P : {dist A}).
 
@@ -705,7 +705,7 @@ rewrite !Self.fst Self.swap addRC -subR_eq => <-.
 by rewrite /JointEntropy.h joint_entropy_self subRR.
 Qed.
 
-End conditional_entropy_prop2.
+End conditional_entropy_prop3.
 
 Module MutualInfo.
 Local Open Scope divergence_scope.
