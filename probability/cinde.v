@@ -374,6 +374,7 @@ Qed.
 
 End reasoning_by_cases.
 
+(*
 Lemma RV_cPrE_set
   (U : finType) (P : dist U) (B C : finType)
   (Y : {RV P -> B}) (Z : {RV P -> C}) (E : {set B}) (F : {set C}) :
@@ -386,6 +387,7 @@ rewrite /cPr /pr_eq /Pr big_setX /=; congr (_ / _).
 by rewrite !big_set1.
 by rewrite big_set1 snd_RV2.
 Qed.
+*)
 
 Lemma RV_cPrE
   (U : finType) (P : dist U) (B C : finType)
