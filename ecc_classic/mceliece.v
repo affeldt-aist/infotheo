@@ -40,15 +40,15 @@ Local Notation "'H" := (Syslcode.PCM Hdimlen CSM).
 Local Notation "'G" := (Syslcode.GEN Hdimlen CSM).
 Let encode := Syslcode.encode Hdimlen CSM.
 
-Parameter repair : repairT [finType of 'F_2] [finType of 'F_2] n.
+Variable repair : repairT [finType of 'F_2] [finType of 'F_2] n.
 Variable repair_img : oimg repair \subset kernel 'H.
-Parameter discard : discardT [finType of 'F_2] n [finType of 'rV['F_2]_k].
-Parameter encode_discard : cancel_on (kernel 'H) encode discard.
+Variable discard : discardT [finType of 'F_2] n [finType of 'rV['F_2]_k].
+Variable encode_discard : cancel_on (kernel 'H) encode discard.
 
 Definition C := Syslcode.t repair_img encode_discard.
 Let decode := Decoder.dec (Lcode.dec C).
 
-Parameter t : nat.
+Variable t : nat.
 
 Local Open Scope ecc_scope.
 
@@ -59,9 +59,9 @@ Variable bdd : t.-BDD (C, repair).
    (2) a random permutation matrix P:
 *)
 
-Parameter S : 'M['F_2]_k.
+Variable S : 'M['F_2]_k.
 Variable S_inv : S \in unitmx.
-Parameter p : 'S_n.
+Variables p : 'S_n.
 Definition P : 'M['F_2]_n := perm_mx p.
 
 (** S, G (the generator matrix of the code), and P form the private key.
@@ -74,9 +74,9 @@ Definition pubkey : 'M_(k, n) := S *m 'G *m P.
    Bob chooses a random error vector of n bits with t 1's
 *)
 
-Parameter msg : 'rV['F_2]_k.
-Parameter z : 'rV['F_2]_n.
-Parameter Hz : wH z = t.
+Variable msg : 'rV['F_2]_k.
+Variable z : 'rV['F_2]_n.
+Variable Hz : wH z = t.
 
 (** The corresponding ciphertext is: *)
 
