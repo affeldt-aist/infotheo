@@ -36,8 +36,12 @@ Reserved Notation "X _|_  Y | Z" (at level 10, Y, Z at next level).
 Reserved Notation "P |= X _|_  Y | Z" (at level 10, X, Y, Z at next level).
 Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
   format "[%  x ,  y ,  .. ,  z ]").
-Reserved Notation "\Pr[ X '\in' P | Y '\in' Q ]" (at level 6, X, Y, P, Q at next level,
-  format "\Pr[  X  '\in'  P  |  Y  '\in'  Q  ]").
+Reserved Notation "\Pr[ X '\in' E | Y '\in' F ]" (at level 6, X, Y, E, F at next level,
+  format "\Pr[  X  '\in'  E  |  Y  '\in'  F  ]").
+Reserved Notation "\Pr[ X '\in' E | Y = b ]" (at level 6, X, Y, E, b at next level,
+  format "\Pr[  X  '\in'  E  |  Y  =  b  ]").
+Reserved Notation "\Pr[ X = a | Y '\in' F ]" (at level 6, X, Y, a, F at next level,
+  format "\Pr[  X  =  a  |  Y  '\in'  F  ]").
 Reserved Notation "\Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
   format "\Pr[  X  =  a  |  Y  =  b  ]").
 
@@ -233,6 +237,9 @@ rewrite /Pr !big_setX /= exchange_big /=; apply eq_bigr => b _.
 apply/eq_bigr => a _; rewrite !RVar.dE /Pr; apply eq_bigl => u.
 by rewrite !inE; apply/eqP/eqP => -[<- <-].
 Qed.
+Lemma Pr_RV2C' E F :
+  \Pr[ [% X, Y] \in setX E F ] = \Pr[ [% Y, X] \in setX F E ].
+Proof. by rewrite -!RVar.Pr_set; apply Pr_RV2C. Qed.
 
 Lemma fst_RV2 : Bivar.fst (RVar.d [% X, Y]) = RVar.d X.
 Proof. by rewrite /Bivar.fst /RVar.d DistMap.comp. Qed.
@@ -303,7 +310,7 @@ Variables (U : finType) (P : dist U) (A B C : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 Let Q := RVar.d [% X, Y, Z].
 
-Local Notation "\Pr[ X '\in' P | Y '\in' Q ]" := (\Pr_(RVar.d [% X, Y])[ P | Q ]).
+Local Notation "\Pr[ X '\in' E | Y '\in' F ]" := (\Pr_(RVar.d [% X, Y])[ E | F ]).
 Local Notation "\Pr[ X = a | Y = b ]" := (\Pr[ X \in [set a] | Y \in [set b]]).
 
 Definition cinde_drv := forall a b c,
@@ -311,7 +318,9 @@ Definition cinde_drv := forall a b c,
 
 End conditionnally_independent_discrete_random_variables.
 
-Notation "\Pr[ X '\in' P | Y '\in' Q ]" := (\Pr_(RVar.d [% X, Y])[ P | Q ]).
+Notation "\Pr[ X '\in' E | Y '\in' F ]" := (\Pr_(RVar.d [% X, Y])[ E | F ]).
+Notation "\Pr[ X '\in' E | Y = b ]" := (\Pr[ X \in E | Y \in [set b]]).
+Notation "\Pr[ X = a | Y '\in' F ]" := (\Pr[ X \in [set a] | Y \in F]).
 Notation "\Pr[ X = a | Y = b ]" := (\Pr[ X \in [set a] | Y \in [set b]]).
 
 Notation "X _|_  Y | Z" := (cinde_drv X Y Z) : proba_scope.
@@ -364,10 +373,16 @@ rewrite [X in _ = _ + X ](eq_bigr (fun=> 0)); last first.
 rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
 apply eq_bigr => c cZ; by rewrite big_set1 !RVar.dE.
 Qed.
+Lemma total_RV2' E F :
+  \Pr[ [% X, Y] \in setX E F] =
+  \rsum_(z <- fin_img Z) \Pr[ [% X, Z, Y] \in setX (setX E [set z]) F].
+Proof.
+by rewrite -RVar.Pr_set total_RV2; apply eq_bigr=> *; rewrite RVar.Pr_set.
+Qed.
 
 Lemma reasoning_by_cases E F :
-  \Pr_(RVar.d [% X, Y])[E | F] =
-  \rsum_(z <- fin_img Z) \Pr_(RVar.d [% X, Z, Y])[setX E [set z] | F].
+  \Pr[ X \in E | Y \in F ] =
+  \rsum_(z <- fin_img Z) \Pr[ [% X, Z] \in (setX E [set z]) | Y \in F ].
 Proof.
 by rewrite {1}/cPr total_RV2 -[in RHS]big_distrl /= (snd_RV3 _ Z).
 Qed.
@@ -398,7 +413,7 @@ Qed.
 Lemma RV_Pr_comp (U : finType) (P : dist U) (A B : finType)
   (f : A -> B) a (X : {RV (P) -> A}) :
   injective f ->
-  \Pr[ X = a] = \Pr[ (comp_RV X f) = f a ].
+  \Pr[ X = a ] = \Pr[ (comp_RV X f) = f a ].
 Proof.
 move=> inj_f.
 rewrite -2!RVar.Pr !Pr_set1 /RVar.d !DistMap.dE /comp_RV.
@@ -412,7 +427,7 @@ Proof. by rewrite -RVar.Pr Pr_set1; apply/eqP/Dist1.dist1P; case. Qed.
 
 Lemma RV_Pr_cPr_unit (U : finType) (P : dist U) (A : finType)
   (X : {RV P -> A}) a :
-  \Pr[ X = a ] = \Pr[ X = a | (unit_RV P) = tt].
+  \Pr[ X = a ] = \Pr[ X = a | (unit_RV P) = tt ].
 Proof.
 rewrite RV_cPrE unit_RV1 divR1.
 rewrite (@RV_Pr_comp _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
@@ -562,7 +577,7 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
 (* NB: see also cPr_1 *)
 Lemma cPr_1_RV a : \Pr[X = a] != 0 ->
-  \rsum_(b <- fin_img Y) \Pr_(RVar.d [% Y, X])[ [set b] | [set a] ] = 1.
+  \rsum_(b <- fin_img Y) \Pr[ Y = b | X = a ] = 1.
 Proof.
 rewrite -RVar.Pr Pr_set1.
 rewrite -{1}(fst_RV2 _ Y) => Xa0.
