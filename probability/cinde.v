@@ -374,21 +374,15 @@ Qed.
 
 End reasoning_by_cases.
 
-(*
 Lemma RV_cPrE_set
   (U : finType) (P : dist U) (B C : finType)
   (Y : {RV P -> B}) (Z : {RV P -> C}) (E : {set B}) (F : {set C}) :
   \Pr[ Y \in E | Z \in F ] = \Pr[ [% Y, Z] \in (setX E F)] / \Pr[ Z \in F ].
 Proof.
-Unset Printing Notations.
-rewrite /RVar.d.
-rewrite -!RVar.dE.
-rewrite /cPr /pr_eq /Pr big_setX /=; congr (_ / _).
-by rewrite !big_set1.
-by rewrite big_set1 snd_RV2.
+rewrite /cPr snd_RV2 /RVar.d /pr_set /Pr !partition_big_preimset /= /p_of.
+congr (_ / _); first by apply eq_bigr => i Hi; rewrite DistMap.dE; apply eq_bigr.
+by apply eq_bigr => c Hc; rewrite DistMap.dE.
 Qed.
-*)
-
 Lemma RV_cPrE
   (U : finType) (P : dist U) (B C : finType)
   (Y : {RV P -> B}) (Z : {RV P -> C}) b c :
