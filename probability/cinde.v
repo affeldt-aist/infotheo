@@ -394,7 +394,7 @@ Lemma RV_cPrE_set
   (Y : {RV P -> B}) (Z : {RV P -> C}) (E : {set B}) (F : {set C}) :
   \Pr[ Y \in E | Z \in F ] = \Pr[ [% Y, Z] \in (setX E F)] / \Pr[ Z \in F ].
 Proof.
-rewrite /cPr snd_RV2 /RVar.d /pr_set /Pr !partition_big_preimset /= /p_of.
+rewrite /cPr snd_RV2 /RVar.d /pr_eq_set /Pr !partition_big_preimset /= /p_of.
 congr (_ / _); first by apply eq_bigr => i Hi; rewrite DistMap.dE; apply eq_bigr.
 by apply eq_bigr => c Hc; rewrite DistMap.dE.
 Qed.

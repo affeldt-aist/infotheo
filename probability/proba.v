@@ -1470,9 +1470,9 @@ Definition pr_eq (U : finType) (A : eqType) (P : dist U) (X : {RV P -> A}) (a : 
   Pr `p_X (X @^-1 a).
 Notation "\Pr[ X = a ]" := (pr_eq X a) : proba_scope.
 
-Definition pr_set (U A : finType) (P : dist U) (X : {RV P -> A}) (E : {set A}) :=
+Definition pr_eq_set (U A : finType) (P : dist U) (X : {RV P -> A}) (E : {set A}) :=
   Pr `p_X (X @^-1: E).
-Notation "\Pr[ X '\in' E ]" := (pr_set X E) : proba_scope.
+Notation "\Pr[ X '\in' E ]" := (pr_eq_set X E) : proba_scope.
 
 Lemma pr_eq0 (U A : finType) (P : dist U) (X : {RV (P) -> (A)}) (a : A) :
   a \notin fin_img X -> \Pr[ X = a ] = 0.
@@ -1481,6 +1481,10 @@ move=> Xa; rewrite /pr_eq /Pr big1 // => u; rewrite inE => /eqP Xua.
 move: Xa; rewrite /fin_img mem_undup.
 case/mapP; exists u => //; by rewrite mem_enum.
 Qed.
+
+Lemma pr_eq_set1 (U A : finType) (P : dist U) (X : {RV P -> A}) x :
+  \Pr[ X \in [set x] ] = \Pr[ X = x ].
+Proof. by apply eq_bigl => i; rewrite !inE. Qed.
 
 (* TODO: move to bigop? *)
 Lemma imset_preimset (I J : finType) (h : I -> J) (B : {set J}) : B \subset h @: I -> h @: (h @^-1: B) = B.
@@ -1574,7 +1578,7 @@ by rewrite inE => /eqP ->.
 Qed.
 Lemma Pr_set (E : {set A}) : Pr d E = \Pr[ X \in E ].
 Proof.
-rewrite /pr_set /Pr partition_big_preimset /=.
+rewrite /pr_eq_set /Pr partition_big_preimset /=.
 have -> : \rsum_(a in E) d a = \rsum_(a in E) \Pr[ X = a ]
   by apply eq_bigr => *; exact: dE.
 apply eq_bigr => j jE.
