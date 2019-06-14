@@ -1470,7 +1470,7 @@ Definition pr_eq (U : finType) (A : eqType) (P : dist U) (X : {RV P -> A}) (a : 
   Pr `p_X (X @^-1 a).
 Notation "\Pr[ X = a ]" := (pr_eq X a) : proba_scope.
 
-Definition pr_set (U : finType) (A : finType) (P : dist U) (X : {RV P -> A}) (E : {set A}) :=
+Definition pr_set (U A : finType) (P : dist U) (X : {RV P -> A}) (E : {set A}) :=
   Pr `p_X (X @^-1: E).
 Notation "\Pr[ X '\in' E ]" := (pr_set X E) : proba_scope.
 
@@ -1482,6 +1482,85 @@ move: Xa; rewrite /fin_img mem_undup.
 case/mapP; exists u => //; by rewrite mem_enum.
 Qed.
 
+(* TODO: move to bigop? *)
+Lemma imset_preimset (I J : finType) (h : I -> J) (B : {set J}) : B \subset h @: I -> h @: (h @^-1: B) = B.
+Proof.
+move/subsetP=> B_covered.
+apply/setP/subset_eqP/andP. (* or, apply/eqP; rewrite eqEsubset; apply/andP. *)
+split; apply/subsetP => x; first by case/imsetP => i; rewrite inE => H ->.
+move=> xB; case/(B_covered x)/imsetP: (xB) => y yI xhy.
+by apply/imsetP; exists y => //; rewrite inE -xhy.
+Qed.
+Section Partitions.
+Variables T I : finType.
+Implicit Types (x y z : T) (A B D X : {set T}) (P Q : {set {set T}}).
+Implicit Types (J : pred I) (F : I -> {set T}).
+Section BigOps.
+Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
+Lemma bigsetU (F0 F1 : {set T}) E :
+    [disjoint F0 & F1] ->
+  \big[op/idx]_(x in F0 :|: F1) E x =
+    op (\big[op/idx]_(x in F0) E x) (\big[op/idx]_(x in F1) E x).
+Proof.
+move=> Hdisj.
+suff -> : \big[op/idx]_(x in (F0 :|: F1)) E x =
+          \big[op/idx]_(x in [predU F0 & F1]) E x
+  by apply bigU.
+by apply eq_bigl => x; rewrite !inE.
+Qed.
+End BigOps.
+End Partitions.
+Section BigOps.
+Variables (R : Type) (idx : R).
+Variables (op : Monoid.law idx) (aop : Monoid.com_law idx).
+Variables I J : finType.
+Implicit Type A B : {set I}.
+Implicit Type h : I -> J.
+Implicit Type P : pred I.
+Implicit Type F : I -> R.
+Lemma partition_big_preimset h (B : {set J}) F :
+  \big[aop/idx]_(i in h @^-1: B) F i =
+     \big[aop/idx]_(j in B) \big[aop/idx]_(i in I | h i == j) F i.
+Proof.
+have HA : [disjoint B :&: [set h x | x in I] & B :\: [set h x | x in I]] 
+    by rewrite -setI_eq0 -setIA setIDA [in _ :&: B]setIC -setIDA setDv !setI0.
+have Hha : [disjoint h @^-1: (B :&: [set h x | x in I])
+                             & h @^-1: (B :\: [set h x | x in I])].
+  rewrite -setI_eq0 -preimsetI.
+  suff // : [disjoint B :&: [set h x | x in I] & B :\: [set h x | x in I]]
+    by rewrite -setI_eq0; move/eqP => ->; rewrite preimset0.
+rewrite -(setID B (h @: I)) /= preimsetU !bigsetU //.
+have -> : h @^-1: (B :\: [set h x | x in I]) = set0.
+  apply/setP/subset_eqP/andP; rewrite sub0set; split => //.
+  apply/subsetP=> i; rewrite !inE; case/andP.
+  move/imsetP=> H _; elimtype False; apply H.
+    by exists i; rewrite ?inE.
+rewrite big_set0 Monoid.mulm1.
+have -> : \big[aop/idx]_(x in B :\: [set h x | x in I])
+           \big[aop/idx]_(i | h i == x) F i
+          = \big[aop/idx]_(x in B :\: [set h x | x in I])
+             idx.
+  apply eq_bigr => j.
+  rewrite inE; case/andP => Hj Hj'.
+  apply big_pred0 => i.
+  apply/negP => /eqP hij.
+  move: Hj; rewrite -hij.
+  move/imsetP; apply.
+  by exists i.
+rewrite big1_eq Monoid.mulm1.
+ set B' := B :&: [set h x | x in I].
+set A := h @^-1: B'.
+have -> : B' = h @: A by rewrite imset_preimset //; apply subsetIr.
+have Hright : forall j, j \in h @: A -> \big[aop/idx]_(i in I | h i == j) F i = \big[aop/idx]_(i in A | h i == j) F i.
+  move=> j Hj; apply eq_bigl => i; apply andb_id2r; move/eqP => hij.
+  move: Hj; rewrite -hij !inE.
+  case/imsetP => x; rewrite /A /B' !inE => /andP [H H0] ->.
+  by rewrite H H0.
+rewrite [in RHS](eq_bigr _ Hright).
+by apply: partition_big_imset.
+Qed.
+End BigOps.
+
 (* special case where the codomain is a fintype *)
 Module RVar.
 Section def.
@@ -1492,6 +1571,16 @@ Proof.
 rewrite /d DistMap.dE /pr_eq /Pr; apply eq_bigl => i; apply/andP/idP.
 by case=> _ /eqP Xia; rewrite inE Xia.
 by rewrite inE => /eqP ->.
+Qed.
+Lemma Pr_set (E : {set A}) : Pr d E = \Pr[ X \in E ].
+Proof.
+rewrite /pr_set /Pr partition_big_preimset /=.
+have -> : \rsum_(a in E) d a = \rsum_(a in E) \Pr[ X = a ]
+  by apply eq_bigr => *; exact: dE.
+apply eq_bigr => j jE.
+rewrite /pr_eq /Pr.
+apply eq_bigl => i.
+by rewrite inE.
 Qed.
 Lemma Pr a : Pr d [set a] = \Pr[ X = a ].
 Proof. by rewrite -dE Pr_set1. Qed.
