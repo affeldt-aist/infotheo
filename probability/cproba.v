@@ -231,6 +231,7 @@ Qed.
 End prop.
 End TripC12.
 
+(* NB(rei): rename to TripAC? *)
 Module TripC23.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
@@ -459,7 +460,7 @@ End conditional_probability_def.
 
 Notation "\Pr_ P [ E | F ]" := (cPr P E F) : proba_scope.
 
-Lemma cPr_cond (A B B' : finType) (f : B -> B') (d : {dist A * B}) (E : {set A}) (F : {set B}):
+Lemma Pr_DistMap_r (A B B' : finType) (f : B -> B') (d : {dist A * B}) (E : {set A}) (F : {set B}):
   injective f ->
   cPr d E F = cPr (DistMap.d (fun x => (x.1, f x.2)) d) E (f @: F).
 Proof.
@@ -472,7 +473,22 @@ move=> injf; rewrite /cPr; congr (_ / _).
   - case=> aE /imsetP[b' b'F] ->{b}; by exists (a, b') => //; rewrite inE /= aE.
 by rewrite /Bivar.snd DistMap.comp (@Pr_DistMap _ _ f) // DistMap.comp.
 Qed.
-Arguments cPr_cond [A] [B] [B'] [f] [d] [E] [F] _.
+Arguments Pr_DistMap_r [A] [B] [B'] [f] [d] [E] [F] _.
+
+Lemma Pr_DistMap_l (A A' B : finType) (f : A -> A') (d : {dist A * B}) (E : {set A}) (F : {set B}):
+  injective f ->
+  cPr d E F = cPr (DistMap.d (fun x => (f x.1, x.2)) d) (f @: E) F.
+Proof.
+move=> injf; rewrite /cPr; congr (_ / _).
+- rewrite (@Pr_DistMap _ _ (fun x => (f x.1, x.2))) /=; last by move=> [? ?] [? ?] /= [/injf -> ->].
+  congr (Pr _ _); apply/setP => -[a b]; rewrite !inE /=.
+  apply/imsetP/andP.
+  - case=> -[a' b']; rewrite inE /= => /andP[a'E b'F] [->{a} ->{b}]; split => //.
+    apply/imsetP; by exists a'.
+  - by case=> /imsetP[a' a'E] ->{a} bF; exists (a', b) => //; rewrite inE /= a'E.
+by rewrite /Bivar.snd !DistMap.comp.
+Qed.
+Arguments Pr_DistMap_l [A] [A'] [B] [f] [d] [E] [F] _.
 
 Section conditional_probability_prop3.
 Variables (A B C : finType) (P : {dist A * B * C}).
@@ -546,7 +562,7 @@ Lemma product_rule0 E F : Pr P (setX E F) = \Pr_P[E | F] * Pr (Bivar.snd P) F.
 Proof.
 rewrite Pr_cPr_unit product_rule cPr_setT; congr (_ * _); last first.
   by rewrite /Bivar.fst !DistMap.comp.
-rewrite [in RHS](@cPr_cond _ _ _ (fun b => (b, tt))); last by move=> ?? [] ->.
+rewrite [in RHS](@Pr_DistMap_r _ _ _ (fun b => (b, tt))); last by move=> ?? [] ->.
 rewrite /TripA.d !DistMap.comp; congr cPr.
 apply/setP => -[a []].
 rewrite !inE /= andbT.

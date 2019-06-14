@@ -3,7 +3,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
-Require Import Reals Fourier.
+Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
 (** * Additional lemmas about bigops *)
@@ -393,15 +393,15 @@ Section big_tuple_ffun.
 Import Monoid.Theory.
 
 Variable R : Type.
-Variable times : Monoid.mul_law 0.
+Variable times : Monoid.mul_law R0.
 Local Notation "*%M" := times (at level 0).
-Variable plus : Monoid.add_law 0 *%M.
+Variable plus : Monoid.add_law R0 *%M.
 Local Notation "+%M" := plus (at level 0).
 
 Lemma big_tuple_ffun (I J : finType) (F : {ffun I -> J} -> R)
   (G : _ -> _ -> _) (jdef : J) (idef : I) :
-  \big[+%M/0]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
-    = \big[+%M/0]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
+  \big[+%M/R0]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
+    = \big[+%M/R0]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
 Proof.
 rewrite (reindex_onto (fun y => fgraph y) (fun p => [ffun x => tnth p (enum_rank x)])); last first.
   move=> t _; by apply/eq_from_tnth => i; rewrite tnth_fgraph ffunE enum_valK.

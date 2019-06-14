@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
-Require Import Reals Fourier.
+Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext logb Rbigop proba ln_facts.
 
 (** * The Variation Distance *)
@@ -11,6 +11,8 @@ Reserved Notation "'d(' P ',' Q ')'".
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Local Open Scope R_scope.
 
 Section variation_distance.
 

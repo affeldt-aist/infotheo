@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
-Require Import Reals Fourier.
+Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext num_occ.
 
 (** * Variation of the SSReflect standard library *)
@@ -9,6 +9,8 @@ Require Import ssrR Reals_ext ssr_ext num_occ.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Local Open Scope R_scope.
 
 Section MinFintype.
 
@@ -96,13 +98,11 @@ Lemma arg_minordP : minimum_spec_ord arg_minord.
 Proof.
 rewrite /arg_minord; case: pickP => [i /andP[Pi /forallP min_i] | no_i].
   split=> // j ; exact/implyP.
-move: (ex_minordP).
-case => n ex_i min_i.
-apply FP_F in ex_i.
-case/pred0P: ex_i => i.
+case: (ex_minordP) => n ex_i min_i.
+move/FP_F : ex_i.
+case/pred0P => i.
 apply: contraFF (no_i i) => /andP[Pi def_n]; rewrite /= Pi.
-apply/forallP=> j.
-apply/implyP=> Pj.
+apply/forallP=> j; apply/implyP=> Pj.
 move/eqP in def_n.
 rewrite def_n.
 exact/min_i/Pj.
@@ -141,8 +141,8 @@ Proof. rewrite /total => x y ; apply ord_total. Qed.
 Lemma arg_maxordP : maximum_spec_ord arg_maxord.
 Proof.
 rewrite /arg_maxord.
-move: (@arg_minordP _ i0 P ord_inv P_not_pred0 ord_inv_trans ord_inv_refl ord_inv_total) => Harg.
-constructor; move: Harg ; by case.
+case: (@arg_minordP _ i0 P ord_inv P_not_pred0 ord_inv_trans ord_inv_refl ord_inv_total) => ???.
+exact: MaximumSpecOrd.
 Qed.
 
 End MaxFintype.
@@ -151,7 +151,7 @@ Section rExtrema.
 
 Variables (I : finType) (i0 : I) (P : pred I) (F : I -> R).
 
-Let ord_F_Rle i j := (F i) <b= (F j).
+Let ord_F_Rle i j := F i <b= F j.
 
 Let ord_trans : transitive ord_F_Rle.
 Proof.
@@ -170,10 +170,6 @@ Qed.
 
 Definition arg_rmax := arg_maxord i0 P ord_F_Rle.
 
-CoInductive minimum_spec_r : I -> Type :=
-  MinimumSpecR i of P i & (forall j, P j -> ord_F_Rle i j)
-    : minimum_spec_r i.
-
 CoInductive maximum_spec_r : I -> Type :=
   MaximumSpecR i of P i & (forall j, P j -> ord_F_Rle j i)
     : maximum_spec_r i.
@@ -183,15 +179,11 @@ Hypothesis P_not_pred0 : {i | P i}.
 Lemma arg_rmaxP : maximum_spec_r arg_rmax.
 Proof.
 rewrite /arg_rmax.
-move: (@arg_maxordP _ i0 P ord_F_Rle P_not_pred0 ord_trans ord_refl ord_total) => Harg.
-constructor; move: Harg ; by case.
+case: (@arg_maxordP _ i0 P ord_F_Rle P_not_pred0 ord_trans ord_refl ord_total) => ???.
+exact: MaximumSpecR.
 Qed.
 
 Lemma arg_rmax2 : forall j, P j -> F j <= F arg_rmax.
-Proof.
-case: arg_rmaxP => i1 Pi1.
-rewrite /ord_F_Rle => H j Pj.
-exact/leRP/H.
-Qed.
+Proof. case: arg_rmaxP => ? ? H ? ?; exact/leRP/H. Qed.
 
 End rExtrema.

@@ -3,7 +3,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Fourier FunctionalExtensionality.
+Require Import Reals FunctionalExtensionality.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 
 (** * Asymptotic Equipartition Property (AEP) *)
@@ -12,6 +12,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Local Open Scope R_scope.
 Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
 Local Open Scope ring_scope.

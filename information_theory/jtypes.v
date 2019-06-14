@@ -3,7 +3,7 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import choice fintype tuple finfun bigop finset binomial.
 From mathcomp Require Import fingroup perm.
-Require Import Reals Fourier FunctionalExtensionality ProofIrrelevance.
+Require Import Reals FunctionalExtensionality ProofIrrelevance.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 Require Import num_occ channel types.
 
@@ -21,6 +21,7 @@ Reserved Notation "'\nu^{' B '}' '(' P ')'" (at level 50,
   B, P at next level, format "'\nu^{' B '}' '(' P ')'").
 Reserved Notation "'`tO(' V )" (at level 10).
 
+Local Open Scope R_scope.
 Local Open Scope channel_scope.
 
 Module jtype.

@@ -13,13 +13,13 @@ Contents:
 - Module JointEntropy.
   Section joint_entropy_prop.
 - Module CondEntropy.
-  Section conditional_entropy_prop3.
+  Section conditional_entropy_prop.
 - Module conditional_entropy_example.
 - Section chain_rule. (thm 2.1.1)
 - Section chain_rule_generalization.
 - Section entropy_chain_rule_corollary.
-- Section conditional_entropy_prop.
 - Section conditional_entropy_prop2.
+- Section conditional_entropy_prop3.
 - Module MutualInfo.
 - Section mutualinfo_prop.
 - Section chain_rule_for_entropy.
@@ -403,7 +403,7 @@ Qed.
 End condentropy.
 End CondEntropy.
 
-Section conditional_entropy_prop3.
+Section conditional_entropy_prop.
 
 Variables (A B C : finType) (PQR : {dist A * B * C}).
 
@@ -427,7 +427,7 @@ rewrite exchange_big pair_big /=; apply eq_bigr => -[c b] _ /=; congr (_ * _).
 by rewrite h1TripC23.
 Qed.
 
-End conditional_entropy_prop3.
+End conditional_entropy_prop.
 
 Module conditional_entropy_example.
 
@@ -679,7 +679,7 @@ Qed.
 
 End entropy_chain_rule_corollary.
 
-Section conditional_entropy_prop. (* NB: here because use chain rule *)
+Section conditional_entropy_prop2. (* NB: here because use chain rule *)
 
 Variables (A B : finType) (PQ : {dist A * B}).
 Let P := Bivar.fst PQ.
@@ -692,9 +692,9 @@ rewrite subR_eq addRAC -subR_eq subR_opp -chain_rule JointEntropy.hC.
 by rewrite -/(JointEntropy.h (Swap.d PQ)) chain_rule Swap.fst -/Q Swap.dI.
 Qed.
 
-End conditional_entropy_prop.
+End conditional_entropy_prop2.
 
-Section conditional_entropy_prop2. (* NB: here because use chain rule *)
+Section conditional_entropy_prop3. (* NB: here because use chain rule *)
 
 Variables (A : finType) (P : {dist A}).
 
@@ -705,7 +705,7 @@ rewrite !Self.fst Self.swap addRC -subR_eq => <-.
 by rewrite /JointEntropy.h joint_entropy_self subRR.
 Qed.
 
-End conditional_entropy_prop2.
+End conditional_entropy_prop3.
 
 Module MutualInfo.
 Local Open Scope divergence_scope.
@@ -725,7 +725,7 @@ Let Q := Bivar.snd PQ.
 Let QP := Swap.d PQ.
 
 (* 2.28 *)
-Lemma miE : mi PQ =
+Lemma miE0 : mi PQ =
   \rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (PQ (a, b) / (P a * Q b)).
 Proof.
 rewrite /mi /div pair_big /=; apply eq_bigr; case => a b _ /=.
@@ -735,9 +735,9 @@ case/boolP : (PQ (a, b) == 0) => [/eqP H0|H0].
 Qed.
 
 (* 2.39 *)
-Lemma miE2 : mi PQ = `H P - CondEntropy.h PQ.
+Lemma miE : mi PQ = `H P - CondEntropy.h PQ.
 Proof.
-rewrite miE.
+rewrite miE0.
 transitivity (\rsum_(a in A) \rsum_(b in B)
     PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ] / P a)).
   apply eq_bigr => a _; apply eq_bigr => b _.
@@ -770,12 +770,12 @@ rewrite -subR_opp; congr (_ - _).
   by rewrite -[in LHS]Pr_set1 -setX1 product_rule0 Pr_set1 -/Q mulRC.
 Qed.
 
-Lemma miE3 : mi PQ = `H Q - CondEntropy.h QP. (* 2.40 *)
-Proof. by rewrite miE2 entropyB. Qed.
+Lemma miE2 : mi PQ = `H Q - CondEntropy.h QP. (* 2.40 *)
+Proof. by rewrite miE entropyB. Qed.
 
-Lemma miE4 : mi PQ = `H P + `H Q - `H PQ. (* 2.41 *)
+Lemma miE3 : mi PQ = `H P + `H Q - `H PQ. (* 2.41 *)
 Proof.
-rewrite miE2; move: (chain_rule QP).
+rewrite miE; move: (chain_rule QP).
 rewrite addRC -subR_eq -(Swap.dI PQ) -/QP => <-.
 by rewrite -addR_opp oppRB Swap.fst -/Q addRA JointEntropy.hC.
 Qed.
@@ -804,14 +804,14 @@ Lemma mi_sym (A B : finType) (PQ : {dist A * B}) :
   let Q := Bivar.snd PQ in
   MutualInfo.mi PQ = MutualInfo.mi (Swap.d PQ).
 Proof.
-by move=> P Q; rewrite !MutualInfo.miE2 entropyB Swap.fst.
+by move=> P Q; rewrite !MutualInfo.miE entropyB Swap.fst.
 Qed.
 
 (* eqn 2.47 *)
 Lemma mutual_info_self (A : finType) (P : dist A) :
   MutualInfo.mi (Self.d P) = `H P.
 Proof.
-by rewrite MutualInfo.miE2 CondEntrop_self subR0 Self.fst.
+by rewrite MutualInfo.miE CondEntrop_self subR0 Self.fst.
 Qed.
 
 End mutualinfo_prop.
@@ -961,9 +961,9 @@ rewrite divRM; last 2 first.
   rewrite -cPr_gt0 -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj23.dominN H0.
 rewrite {2}/Rdiv -mulRA mulRCA {1}/Rdiv [in LHS]mulRC; congr (_ * _).
 rewrite -[in X in _ = X * _]setX1 product_rule setX1 -mulRA mulRV ?mulR1 //.
-rewrite /cPr mulR_neq0' setX1 !Pr_set1; apply/andP; split.
+rewrite /cPr divR_neq0' // ?setX1 !Pr_set1.
 exact: Proj23.dominN H0.
-rewrite invR_neq0' // Proj23.snd; exact: Bivar.dom_by_sndN H0.
+rewrite Proj23.snd; exact: Bivar.dom_by_sndN H0.
 Qed.
 
 Let R := Bivar.snd PQR.
@@ -996,12 +996,12 @@ Let Q : dist B := Bivar.snd (Bivar.fst PQR).
 
 Lemma chain_rule_mi : MutualInfo.mi PQR = MutualInfo.mi (Proj13.d PQR) + cmi (Swap.d (TripA.d PQR)).
 Proof.
-rewrite MutualInfo.miE2.
+rewrite MutualInfo.miE.
 move: (chain_rule (Bivar.fst PQR)); rewrite /JointEntropy.h => ->.
 have -> : CondEntropy.h PQR = CondEntropy.h (Proj13.d PQR) + CondEntropy.h (TripA.d (TripC12.d PQR)).
   by rewrite chain_rule_corollary.
 rewrite -addR_opp oppRD addRCA 2!addRA -(addRA (- _ + _)) addR_opp; congr (_ + _).
-  rewrite MutualInfo.miE2 addRC; congr (_ - _).
+  rewrite MutualInfo.miE addRC; congr (_ - _).
   by rewrite Proj13.fst TripA.fst.
 rewrite /cmi; congr (CondEntropy.h _ - _).
   by rewrite /Proj13.d -/(TripC13.d _) TripC13.sndA.
@@ -1102,7 +1102,7 @@ Lemma chain_rule_information :
     else
       cmi (f23 i).
 Proof.
-rewrite MutualInfo.miE2 chain_rule_rV.
+rewrite MutualInfo.miE chain_rule_rV.
 have -> : CondEntropy.h PY = \rsum_(j < n.+1)
   if j == O :> nat then
     CondEntropy.h (PairNth.d PY ord0)
@@ -1284,7 +1284,7 @@ have -> : CondEntropy.h PY = \rsum_(j < n.+1)
     + rewrite 2!Bivar.sndE; apply eq_bigr => a' _; by rewrite H2.
 rewrite -addR_opp big_morph_oppR -big_split /=; apply eq_bigr => j _ /=.
 case: ifPn => j0.
-- rewrite MutualInfo.miE2 addR_opp; congr (`H _ - _).
+- rewrite MutualInfo.miE addR_opp; congr (`H _ - _).
   rewrite /Multivar.head_of /Bivar.fst.
   rewrite /Multivar.to_bivar.
   by rewrite /PairNth.d !DistMap.comp.
@@ -1316,10 +1316,10 @@ Let QP := Swap.d PQ.
 
 (* 2.95 *)
 Lemma information_cant_hurt : CondEntropy.h PQ <= `H P.
-Proof. rewrite -subR_ge0 -MutualInfo.miE2; exact: MutualInfo.mi_ge0. Qed.
+Proof. rewrite -subR_ge0 -MutualInfo.miE; exact: MutualInfo.mi_ge0. Qed.
 
 Lemma condentropy_indep : PQ = P `x Q -> CondEntropy.h PQ = `H P.
-Proof. move/MutualInfo.mi0P; by rewrite MutualInfo.miE2 subR_eq0 => <-. Qed.
+Proof. move/MutualInfo.mi0P; by rewrite MutualInfo.miE subR_eq0 => <-. Qed.
 End prop.
 Section prop2.
 Variables (A B C : finType) (PQR : {dist A * B * C}).
@@ -1339,7 +1339,7 @@ rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
     rewrite Proj13.dE Swap.dE Bivar.fstE; apply eq_bigr => c _.
     by rewrite Swap.dE TripA.dE.
   by rewrite /Proj13.d TripA.fst_snd TripC12.fst Swap.fst Swap.snd TripA.fst_snd -/Q.
-rewrite MutualInfo.miE2.
+rewrite MutualInfo.miE.
 rewrite Proj23.fst -/Q.
 rewrite -oppRB leR_oppl oppRB -!addR_opp leR_add2r.
 (* conditioning cannot increase entropy *)
@@ -1398,20 +1398,19 @@ rewrite (_ : _ / _ = 1); first by rewrite /log Log_1 mulR0.
 rewrite eqR_divr_mulr ?mul1R; last first.
   rewrite mulR_neq0'; apply/andP; split.
     (* TODO: lemma? *)
-    rewrite /cPr mulR_neq0'; apply/andP; split.
-      (* TODO: lemma? *)
+    rewrite /cPr divR_neq0' //.
       rewrite setX1 Pr_set1.
       case: x => [[x11 x12] x2] in H0 *.
       exact: Proj13.dominN H0.
-    rewrite invR_neq0' // Pr_set1 Proj13.snd.
+    rewrite Pr_set1 Proj13.snd.
     case: x => [x1 x2] in H0 *.
     exact: Bivar.dom_by_sndN H0.
   (* TODO: lemma? *)
-  rewrite /cPr mulR_neq0'; apply/andP; split.
+  rewrite /cPr divR_neq0' //.
     rewrite setX1 Pr_set1.
     case: x => [[x11 x12] x2] in H0 *.
     exact: Proj23.dominN H0.
-  rewrite invR_neq0' // Pr_set1 Proj23.snd.
+  rewrite Pr_set1 Proj23.snd.
   case: x => [x1 x2] in H0 *.
   exact: Bivar.dom_by_sndN H0.
 (* TODO: lemma? *) (* 2.118 *)
@@ -1442,12 +1441,12 @@ Lemma data_processing_inequality : markov_chain ->
 Proof.
 move=> H.
 have H1 : MutualInfo.mi (TripA.d PQR) = MutualInfo.mi PR + cmi PQR.
-  rewrite /cmi !MutualInfo.miE2 addRA; congr (_ - _).
+  rewrite /cmi !MutualInfo.miE addRA; congr (_ - _).
   by rewrite -/PR subRK /PR Proj13.fst.
 have H2 : MutualInfo.mi (TripA.d PQR) = MutualInfo.mi PQ + cmi PRQ.
   transitivity (MutualInfo.mi (TripA.d PRQ)).
-    by rewrite !MutualInfo.miE2 TripC23.fstA hTripC23.
-  rewrite /cmi !MutualInfo.miE2 addRA; congr (_ - _).
+    by rewrite !MutualInfo.miE TripC23.fstA hTripC23.
+  rewrite /cmi !MutualInfo.miE addRA; congr (_ - _).
   by rewrite TripA.fst {1}/PRQ Proj13_TripC23 -/PQ subRK /PQ TripC23.fst_fst.
 have H3 : cmi PRQ = 0 by rewrite markov_cmi.
 have H4 : 0 <= cmi PQR by exact: cmi_ge0.

@@ -2,7 +2,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq fintype.
 From mathcomp Require Import tuple finfun bigop.
-Require Import Reals Fourier.
+Require Import Reals.
 Require Import ssrR Reals_ext ln_facts logb Rbigop proba.
 
 (** * divergence (or the Kullback-Leibler distance or relative entropy) *)
@@ -13,6 +13,8 @@ Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level,
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Local Open Scope R_scope.
 
 (* TODO: rename, move? *)
 Section log_facts.

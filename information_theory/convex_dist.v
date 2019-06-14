@@ -2,7 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Fourier Ranalysis_ext Lra.
+Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy proba cproba convex binary_entropy_function.
 Require Import log_sum divergence.
@@ -14,10 +14,10 @@ Import Prenex Implicits.
 (* concavity of relative entropy and of mutual information
    Cover and Thomas, Chapter 2 *)
 
+Local Open Scope R_scope.
 Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
-
 Local Open Scope entropy_scope.
 
 Section entropy_log_div.
@@ -398,7 +398,7 @@ suff : concave_function (fun P => let PQ := Swap.d (CDist.make_joint P Q) in
   set f := fun _ => _. set g := fun _ => _.
   rewrite (FunctionalExtensionality.functional_extensionality f g) //.
   move=> d; rewrite {}/f {}/g /=.
-  by rewrite -MutualInfo.miE2 -mi_sym.
+  by rewrite -MutualInfo.miE -mi_sym.
 apply R_concave_functionB.
 - move: (entropy_concave B_not_empty) => H.
   apply R_concave_functionN.
@@ -467,7 +467,7 @@ pose q2xy := P `x p2.
 rewrite /convex_function_at.
 have -> : MutualInfo.mi (CDist.make_joint P (fun x : A => p1yx x <| t |> p2yx x)) =
        D(plambdaxy || qlambdaxy).
-  rewrite MutualInfo.miE /div pair_big /=.
+  rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
   rewrite /qlambdaxy.
@@ -488,12 +488,12 @@ have -> : plambdaxy = p1xy <| t |> p2xy.
   rewrite /p1xy /p2xy !ProdDist.dE /=.
   field.
 have -> : MutualInfo.mi (CDist.make_joint P p1yx) = D(p1xy || q1xy).
-  rewrite MutualInfo.miE /div pair_big /=.
+  rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
   by rewrite /q1xy ProdDist.dE /CDist.make_joint /CDist.joint_of /= ProdDist.fst.
 have -> : MutualInfo.mi (CDist.make_joint P p2yx) = D(p2xy || q2xy).
-  rewrite MutualInfo.miE /div pair_big /=.
+  rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
   by rewrite /q2xy ProdDist.dE /CDist.make_joint /CDist.joint_of /= ProdDist.fst.
