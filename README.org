@@ -5,22 +5,29 @@ error-correcting codes.
 
 ** Requirements
 
-- [[https://coq.inria.fr][Coq]] 8.9.0 or 8.9.1
-- [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.8.0
-- [[https://github.com/math-comp/analysis][MathComp-Analysis]] 0.2.0
+- [[https://coq.inria.fr][Coq]] 8.9.1
+- [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.9.0
+- [[https://github.com/math-comp/analysis][MathComp-Analysis]] 0.2.2
   which requires
   + [[https://github.com/math-comp/bigenough/][bigenough]] first release
-  + [[https://github.com/math-comp/finmap][finmap]] 1.2.0
+  + [[https://github.com/math-comp/finmap][finmap]] 1.2.1
 
-All versions available from opam.
+** Installation from the source files
 
-See branch mathcomp-1.9.0 [2019-05-30 Thu] for a version compatible with mathcomp 1.9.0, analysis 0.2.2, finmap 1.2.1.
+1. ~git clone git@github.com:affeldt-aist/infotheo.git~
+2. ~cd infotheo~
 
-** Installation
+If the Requirements (see above) are already met, do:
 
-1. ~coq_makefile -f _CoqProject -o Makefile~
-2. ~make~
-3. ~make install~ (if needed in another project)
+3. ~coq_makefile -f _CoqProject -o Makefile~
+4. ~make~
+5. ~make install~
+
+Or, if opam is installed, do:
+
+3. ~opam install .~
+
+opam takes care of the dependencies.
 
 ** License
 
