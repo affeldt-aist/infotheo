@@ -419,20 +419,42 @@ move=> inj_f.
 rewrite -2!RVar.Pr !Pr_set1 /RVar.d !DistMap.dE /comp_RV.
 apply eq_bigl => u; rewrite !inE /=; by apply/eqP/eqP => [->//|/inj_f].
 Qed.
+Lemma RV_Pr_comp_set (U : finType) (P : dist U) (A B : finType)
+  (f : A -> B) E (X : {RV (P) -> A}) :
+  injective f ->
+  \Pr[ X \in E ] = \Pr[ (comp_RV X f) \in f @: E ].
+Proof.
+move=> inj_f.
+rewrite -2!RVar.Pr_set /Pr big_imset /comp_RV /=; last by move=> *; apply inj_f.
+apply eq_bigr => a Ha.
+rewrite !DistMap.dE; apply eq_bigl => u /=.
+by apply/eqP/eqP => [->//|/inj_f].
+Qed.
 
 Definition unit_RV (U : finType) (P : dist U) : {RV P -> unit} := (fun=> tt).
 
 Lemma unit_RV1 (U : finType) (P : dist U) : \Pr[ (unit_RV P) = tt ] = 1.
 Proof. by rewrite -RVar.Pr Pr_set1; apply/eqP/Dist1.dist1P; case. Qed.
 
+(* TODO: move to lib/ssr_ext.v *)
+Lemma setX1' (A B : finType) (E : {set A}) (b : B) :
+  [set (a, b) | a in E] = setX E [set b].
+Proof. by rewrite -imset2_pair imset2_set1r. Qed.
+
+Lemma RV_Pr_cPr_unit_set (U : finType) (P : dist U) (A : finType)
+  (X : {RV P -> A}) E :
+  \Pr[ X \in E ] = \Pr[ X \in E | (unit_RV P) = tt ].
+Proof.
+rewrite RV_cPrE_set pr_eq_set1 unit_RV1 divR1.
+rewrite (@RV_Pr_comp_set _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
+by apply eq_bigl => u; rewrite setX1'.
+Qed.
+
+(* TODO: change the definition of \Pr[ X = a ] and obsolete pr_eq_set1 *)
 Lemma RV_Pr_cPr_unit (U : finType) (P : dist U) (A : finType)
   (X : {RV P -> A}) a :
   \Pr[ X = a ] = \Pr[ X = a | (unit_RV P) = tt ].
-Proof.
-rewrite RV_cPrE unit_RV1 divR1.
-rewrite (@RV_Pr_comp _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
-done.
-Qed.
+Proof. by rewrite -pr_eq_set1; apply RV_Pr_cPr_unit_set. Qed.
 
 Lemma RV_Pr_lC (U : finType) (P : dist U) (A B C : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
