@@ -159,6 +159,47 @@ rewrite partition_disjoint_bigcup /=; last first.
 by apply eq_bigr => d  _; rewrite RVar.dE.
 Qed.
 
+Lemma marginal_RV3_2' b c :
+  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
+  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
+Proof.
+rewrite /pr_eq marginal_RV3_2.
+by apply eq_bigr => d Hd; rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV3_2'' b c :
+  \Pr[ [% Y, Z] = (b, c) ] =
+  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
+Proof. exact: marginal_RV3_2'. Qed.
+
+Lemma bigcup_preimset (I : finType) (PP : pred I)
+      (AA BB : finType) (F : AA -> BB) (E : I -> {set BB}) :
+  \bigcup_(i | PP i) F @^-1: E i = F @^-1: \bigcup_(i | PP i) E i.
+Proof.
+rewrite/preimset.
+apply/setP=> x; rewrite inE; apply/bigcupP/bigcupP => -[] i HPi; rewrite ?inE => HFxEi; exists i => //=; by rewrite inE.
+Qed.
+
+Lemma marginal_RV3_2_set F G :
+  \Pr[ [% Y, Z] \in setX F G ] =
+  \rsum_(d in D) \Pr[ [% Y, W, Z] \in setX (setX F [set d]) G].
+Proof.
+rewrite /pr_eq_set.
+have -> : ([% Y, Z] @^-1: setX F G)
+          = \bigcup_d [% Y, W, Z] @^-1: setX (setX F [set d]) G.
+  rewrite bigcup_preimset; apply/setP => u; rewrite !inE; apply/andP/bigcupP.
+  by case=> HF HG; exists (W u) => //; rewrite !inE HF HG eqxx.
+  by case => d _; rewrite !inE => /andP[] /andP[] -> _ ->.
+rewrite bigcup_preimset /Pr /p_of partition_big_preimset /=.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP=> /andP[] /andP[] /andP[] -> /eqP-> -> /=; move/negP: d01. 
+  by rewrite andbT; apply.
+apply eq_bigr => d _.
+by rewrite partition_big_preimset /=.
+Qed.
+
 Lemma marginal_RV3_3 b c :
   \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
   \rsum_(d in D) (RVar.d [% Y, Z, W]) (b, c, d).
@@ -585,6 +626,16 @@ Lemma Pr_cPr_0
 Proof.
 move=> H0.
 by rewrite RV_cPrE H0 div0R.
+Qed.
+
+Lemma Pr_cPr_0_set
+  (U : finType) (P : dist U) (B C : finType)
+  (Y : {RV P -> B}) (Z : {RV P -> C}) F G :
+  \Pr[ [% Y, Z] \in setX F G ] = 0 ->
+  \Pr[ Y \in F | Z \in G ] = 0.
+Proof.
+move=> H0.
+by rewrite RV_cPrE_set H0 div0R.
 Qed.
 
 Section RV_pair.
