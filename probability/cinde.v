@@ -566,6 +566,17 @@ rewrite -setX1 product_rule; congr (cPr _ _ _ * _).
 - congr cPr; by rewrite /Proj23.d TripA_RV3 snd_RV2.
 Qed.
 
+Lemma RV_set_product_rule
+  (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) E F G :
+  \Pr[ [% X, Y] \in setX E F | Z \in G ] =
+  \Pr[ X \in E | [% Y, Z] \in setX F G ] * \Pr[ Y \in F | Z \in G ].
+Proof.
+rewrite product_rule; congr (cPr _ _ _ * _).
+- by rewrite /TripA.d DistMap.comp.
+- congr cPr; by rewrite /Proj23.d TripA_RV3 snd_RV2.
+Qed.
+
 Lemma Pr_cPr_0
   (U : finType) (P : dist U) (B C : finType)
   (Y : {RV P -> B}) (Z : {RV P -> C}) b c :
