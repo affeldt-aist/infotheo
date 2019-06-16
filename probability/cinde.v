@@ -145,7 +145,7 @@ Qed.*)
 
 Lemma marginal_RV3_2 b c :
   \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) (RVar.d [% Y, W, Z]) (b, d, c).
+  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
 Proof.
 have -> : [% Y, Z] @^-1 (b, c) = \bigcup_d [% Y, W, Z] @^-1 (b, d, c).
   apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
@@ -156,21 +156,13 @@ rewrite partition_disjoint_bigcup /=; last first.
   rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
   apply/negbTE/negP => /andP[] /eqP[<- Wud0 <-] /eqP -[].
   rewrite Wud0; exact/eqP.
-by apply eq_bigr => d  _; rewrite RVar.dE.
+exact: eq_bigr.
 Qed.
 
 Lemma marginal_RV3_2' b c :
-  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
-Proof.
-rewrite /pr_eq marginal_RV3_2.
-by apply eq_bigr => d Hd; rewrite RVar.dE.
-Qed.
-
-Lemma marginal_RV3_2'' b c :
   \Pr[ [% Y, Z] = (b, c) ] =
   \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
-Proof. exact: marginal_RV3_2'. Qed.
+Proof. exact: marginal_RV3_2. Qed.
 
 Lemma bigcup_preimset (I : finType) (PP : pred I)
       (AA BB : finType) (F : AA -> BB) (E : I -> {set BB}) :
@@ -345,24 +337,41 @@ by rewrite /TripC23.d /TripC12.d /TripA.d /RVar.d /Swap.d !DistMap.comp.
 Qed.
 End trip_prop.
 
+Notation "\Pr[ X '\in' E | Y '\in' F ]" := (\Pr_(RVar.d [% X, Y])[ E | F ]).
+Notation "\Pr[ X '\in' E | Y = b ]" := (\Pr[ X \in E | Y \in [set b]]).
+Notation "\Pr[ X = a | Y '\in' F ]" := (\Pr[ X \in [set a] | Y \in F]).
+Notation "\Pr[ X = a | Y = b ]" := (\Pr[ X \in [set a] | Y \in [set b]]).
+
+Lemma RV_cPrE_set
+  (U : finType) (P : dist U) (B C : finType)
+  (Y : {RV P -> B}) (Z : {RV P -> C}) (E : {set B}) (F : {set C}) :
+  \Pr[ Y \in E | Z \in F ] = \Pr[ [% Y, Z] \in (setX E F)] / \Pr[ Z \in F ].
+Proof.
+rewrite /cPr snd_RV2 /RVar.d /pr_eq_set /Pr !partition_big_preimset /= /p_of.
+congr (_ / _); first by apply eq_bigr => i Hi; rewrite DistMap.dE; apply eq_bigr.
+by apply eq_bigr => c Hc; rewrite DistMap.dE.
+Qed.
+Lemma RV_cPrE
+  (U : finType) (P : dist U) (B C : finType)
+  (Y : {RV P -> B}) (Z : {RV P -> C}) b c :
+  \Pr[ Y = b | Z = c ] = \Pr[ [% Y, Z] = (b, c) ] / \Pr[ Z = c ].
+Proof.
+rewrite -!RVar.dE.
+rewrite /cPr /pr_eq /Pr big_setX /=; congr (_ / _).
+by rewrite !big_set1.
+by rewrite big_set1 snd_RV2.
+Qed.
+
 Section conditionnally_independent_discrete_random_variables.
 
 Variables (U : finType) (P : dist U) (A B C : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 Let Q := RVar.d [% X, Y, Z].
 
-Local Notation "\Pr[ X '\in' E | Y '\in' F ]" := (\Pr_(RVar.d [% X, Y])[ E | F ]).
-Local Notation "\Pr[ X = a | Y = b ]" := (\Pr[ X \in [set a] | Y \in [set b]]).
-
 Definition cinde_drv := forall a b c,
   \Pr[ [% X, Y] = (a, b) | Z = c ] = \Pr[ X = a | Z = c ] * \Pr[ Y = b | Z = c].
 
 End conditionnally_independent_discrete_random_variables.
-
-Notation "\Pr[ X '\in' E | Y '\in' F ]" := (\Pr_(RVar.d [% X, Y])[ E | F ]).
-Notation "\Pr[ X '\in' E | Y = b ]" := (\Pr[ X \in E | Y \in [set b]]).
-Notation "\Pr[ X = a | Y '\in' F ]" := (\Pr[ X \in [set a] | Y \in F]).
-Notation "\Pr[ X = a | Y = b ]" := (\Pr[ X \in [set a] | Y \in [set b]]).
 
 Notation "X _|_  Y | Z" := (cinde_drv X Y Z) : proba_scope.
 Notation "P |= X _|_  Y | Z" := (@cinde_drv _ P _ _ _ X Y Z) : proba_scope.
@@ -390,65 +399,42 @@ Variables (U : finType) (P : dist U).
 Variables (A B C : finType) (Z : {RV P -> C}) (X : {RV P -> A}) (Y : {RV P -> B}).
 
 Lemma total_RV2 E F :
-  Pr (RVar.d [% X, Y]) (setX E F) =
-  \rsum_(z <- fin_img Z) Pr (RVar.d [% X, Z, Y]) (setX (setX E [set z]) F).
+  \Pr[ [% X, Y] \in setX E F] =
+  \rsum_(z <- fin_img Z) \Pr[ [% X, Z, Y] \in setX (setX E [set z]) F].
 Proof.
 apply/esym.
 evar (e : C -> R); rewrite (eq_bigr e); last first.
-  move=> r _; rewrite /Pr big_setX /=.
+  move=> r _; rewrite -RVar.Pr_set /Pr big_setX.
   rewrite (eq_bigl (fun x => x \in setX E [set r])); last first.
     move=> -[? ?]; by rewrite !inE.
   rewrite big_setX /= /e; reflexivity.
 rewrite {}/e exchange_big /=.
-rewrite [in RHS]/Pr [in RHS]big_setX /=; apply eq_bigr => a aE.
+rewrite -RVar.Pr_set [in RHS]/Pr [in RHS]big_setX /=; apply eq_bigr => a aE.
 evar (e : C -> R); rewrite (eq_bigr e); last first.
   move=> r _; rewrite exchange_big /= /e; reflexivity.
 rewrite {}/e exchange_big /=; apply eq_bigr => b _.
 rewrite RVar.dE /pr_eq /Pr (marginal_RV3_2 Z).
 rewrite [in RHS](bigID (fun x => x \in fin_img Z)) /=.
 rewrite [X in _ = _ + X ](eq_bigr (fun=> 0)); last first.
-  move=> d dZ; rewrite RVar.dE /=; apply pr_eq0.
+  move=> d dZ; apply pr_eq0.
   apply: contra dZ; rewrite /fin_img !mem_undup.
   case/mapP => u _ -[] Ha Hd Hb; apply/mapP.
   exists u => //; by rewrite mem_enum.
 rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
 apply eq_bigr => c cZ; by rewrite big_set1 !RVar.dE.
 Qed.
-Lemma total_RV2' E F :
-  \Pr[ [% X, Y] \in setX E F] =
-  \rsum_(z <- fin_img Z) \Pr[ [% X, Z, Y] \in setX (setX E [set z]) F].
-Proof.
-by rewrite -RVar.Pr_set total_RV2; apply eq_bigr=> *; rewrite RVar.Pr_set.
-Qed.
 
 Lemma reasoning_by_cases E F :
   \Pr[ X \in E | Y \in F ] =
   \rsum_(z <- fin_img Z) \Pr[ [% X, Z] \in (setX E [set z]) | Y \in F ].
 Proof.
-by rewrite {1}/cPr total_RV2 -[in RHS]big_distrl /= (snd_RV3 _ Z).
+rewrite RV_cPrE_set total_RV2 -[in RHS]big_distrl /= (snd_RV3 _ Z).
+congr (_ / _).
+by apply eq_bigr => c _; rewrite RVar.Pr_set.
+by rewrite snd_RV2 RVar.Pr_set.
 Qed.
 
 End reasoning_by_cases.
-
-Lemma RV_cPrE_set
-  (U : finType) (P : dist U) (B C : finType)
-  (Y : {RV P -> B}) (Z : {RV P -> C}) (E : {set B}) (F : {set C}) :
-  \Pr[ Y \in E | Z \in F ] = \Pr[ [% Y, Z] \in (setX E F)] / \Pr[ Z \in F ].
-Proof.
-rewrite /cPr snd_RV2 /RVar.d /pr_eq_set /Pr !partition_big_preimset /= /p_of.
-congr (_ / _); first by apply eq_bigr => i Hi; rewrite DistMap.dE; apply eq_bigr.
-by apply eq_bigr => c Hc; rewrite DistMap.dE.
-Qed.
-Lemma RV_cPrE
-  (U : finType) (P : dist U) (B C : finType)
-  (Y : {RV P -> B}) (Z : {RV P -> C}) b c :
-  \Pr[ Y = b | Z = c ] = \Pr[ [% Y, Z] = (b, c) ] / \Pr[ Z = c ].
-Proof.
-rewrite -!RVar.dE.
-rewrite /cPr /pr_eq /Pr big_setX /=; congr (_ / _).
-by rewrite !big_set1.
-by rewrite big_set1 snd_RV2.
-Qed.
 
 (* NB: RV_cPr_comp? *)
 Lemma RV_Pr_comp (U : finType) (P : dist U) (A B : finType)
