@@ -274,15 +274,13 @@ Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
 Implicit Types (E : {set A}) (F : {set B}).
 
 Lemma Pr_RV2C E F :
-  Pr (RVar.d [% X, Y]) (setX E F) = Pr (RVar.d [% Y, X]) (setX F E).
+  \Pr[ [% X, Y] \in setX E F] = \Pr[ [% Y, X] \in setX F E].
 Proof.
+rewrite -2!RVar.Pr_set.
 rewrite /Pr !big_setX /= exchange_big /=; apply eq_bigr => b _.
 apply/eq_bigr => a _; rewrite !RVar.dE /Pr; apply eq_bigl => u.
 by rewrite !inE; apply/eqP/eqP => -[<- <-].
 Qed.
-Lemma Pr_RV2C' E F :
-  \Pr[ [% X, Y] \in setX E F ] = \Pr[ [% Y, X] \in setX F E ].
-Proof. by rewrite -!RVar.Pr_set; apply Pr_RV2C. Qed.
 
 Lemma fst_RV2 : Bivar.fst (RVar.d [% X, Y]) = RVar.d X.
 Proof. by rewrite /Bivar.fst /RVar.d DistMap.comp. Qed.
@@ -611,7 +609,6 @@ Section conditionnally_independent_discrete_random_variables.
 
 Variables (U : finType) (P : dist U) (A B C : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
-Let Q := RVar.d [% X, Y, Z].
 
 Definition cinde_drv := forall a b c,
   \Pr[ [% X, Y] = (a, b) | Z = c ] = \Pr[ X = a | Z = c ] * \Pr[ Y = b | Z = c].
@@ -677,7 +674,6 @@ Section decomposition.
 
 Variables (U : finType) (P : dist U) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
-Let Q := RVar.d [% X, Y, W, Z].
 
 Lemma decomposition : X _|_ [% Y, W] | Z -> X _|_ Y | Z.
 Proof.
