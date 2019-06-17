@@ -16,10 +16,10 @@ Local Open Scope R_scope.
 contents:
 - Various distributions (Proj124.d, Proj14d, QuadA23.d)
 - Section pair_of_RVs.
-- Section marginals.
 - Section RV2_prop.
-- Section RV_domin.
 - Section RV3_prop.
+- Section marginals.
+- Section RV_domin.
 - Section cPr_1_RV.
 - Section reasoning_by_cases.
 - Section conditionnally_independent_discrete_random_variables.
@@ -104,6 +104,52 @@ Notation "\Pr[ X '\in' E | Y '\in' F ]" := (\Pr_(RVar.d [% X, Y])[ E | F ]).
 Notation "\Pr[ X '\in' E | Y = b ]" := (\Pr[ X \in E | Y \in [set b]]).
 Notation "\Pr[ X = a | Y '\in' F ]" := (\Pr[ X \in [set a] | Y \in F]).
 Notation "\Pr[ X = a | Y = b ]" := (\Pr[ X \in [set a] | Y \in [set b]]).
+
+Section RV2_prop.
+Variables (U : finType) (P : dist U).
+Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
+Implicit Types (E : {set A}) (F : {set B}).
+
+Lemma Pr_RV2C E F :
+  \Pr[ [% X, Y] \in setX E F] = \Pr[ [% Y, X] \in setX F E].
+Proof.
+rewrite -2!RVar.Pr_set.
+rewrite /Pr !big_setX /= exchange_big /=; apply eq_bigr => b _.
+apply/eq_bigr => a _; rewrite !RVar.dE /Pr; apply eq_bigl => u.
+by rewrite !inE; apply/eqP/eqP => -[<- <-].
+Qed.
+
+Lemma fst_RV2 : Bivar.fst (RVar.d [% X, Y]) = RVar.d X.
+Proof. by rewrite /Bivar.fst /RVar.d DistMap.comp. Qed.
+
+Lemma snd_RV2 : Bivar.snd (RVar.d [% X, Y]) = RVar.d Y.
+Proof. by rewrite /Bivar.snd /RVar.d DistMap.comp. Qed.
+
+Lemma Swap_RV2 : Swap.d (RVar.d [% X, Y]) = RVar.d [% Y, X].
+Proof. by rewrite /Swap.d /RVar.d DistMap.comp. Qed.
+
+End RV2_prop.
+
+Section RV3_prop.
+Variables (U : finType) (P : dist U).
+Variables (A B C D : finType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
+
+Lemma Proj13_RV3 : Proj13.d (RVar.d [% X, Y, Z]) = RVar.d [% X, Z].
+Proof.
+by rewrite /Proj13.d /Bivar.snd /TripA.d /RVar.d /TripC12.d !DistMap.comp.
+Qed.
+
+Lemma snd_RV3 : Bivar.snd (RVar.d [% X, Y, Z]) = Bivar.snd (RVar.d [% X, Z]).
+Proof. by rewrite -Proj13.snd Proj13_RV3. Qed.
+
+Lemma TripC12_RV3 : TripC12.d (RVar.d [% X, Y, Z]) = RVar.d [% Y, X, Z].
+Proof. by rewrite /TripC12.d /RVar.d DistMap.comp. Qed.
+
+Lemma TripA_RV3 : TripA.d (RVar.d [% X, Y, Z]) = RVar.d [% X, [% Y, Z]].
+Proof. by rewrite /TripC12.d /RVar.d /TripA.d DistMap.comp. Qed.
+
+End RV3_prop.
 
 Section marginals.
 Variables (U : finType) (P : dist U).
@@ -268,31 +314,6 @@ Qed.
 
 End marginals.
 
-Section RV2_prop.
-Variables (U : finType) (P : dist U).
-Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
-Implicit Types (E : {set A}) (F : {set B}).
-
-Lemma Pr_RV2C E F :
-  \Pr[ [% X, Y] \in setX E F] = \Pr[ [% Y, X] \in setX F E].
-Proof.
-rewrite -2!RVar.Pr_set.
-rewrite /Pr !big_setX /= exchange_big /=; apply eq_bigr => b _.
-apply/eq_bigr => a _; rewrite !RVar.dE /Pr; apply eq_bigl => u.
-by rewrite !inE; apply/eqP/eqP => -[<- <-].
-Qed.
-
-Lemma fst_RV2 : Bivar.fst (RVar.d [% X, Y]) = RVar.d X.
-Proof. by rewrite /Bivar.fst /RVar.d DistMap.comp. Qed.
-
-Lemma snd_RV2 : Bivar.snd (RVar.d [% X, Y]) = RVar.d Y.
-Proof. by rewrite /Bivar.snd /RVar.d DistMap.comp. Qed.
-
-Lemma Swap_RV2 : Swap.d (RVar.d [% X, Y]) = RVar.d [% Y, X].
-Proof. by rewrite /Swap.d /RVar.d DistMap.comp. Qed.
-
-End RV2_prop.
-
 Section RV_domin.
 Variables (U : finType) (P : dist U) (A B : finType).
 Variables (X : {RV (P) -> (A)}) (Y : {RV (P) -> (B)}).
@@ -309,27 +330,6 @@ move=> H.
 by rewrite -RVar.Pr -setX1 Pr_domin_fst // fst_RV2 RVar.Pr.
 Qed.
 End RV_domin.
-
-Section RV3_prop.
-Variables (U : finType) (P : dist U).
-Variables (A B C D : finType).
-Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
-
-Lemma Proj13_RV3 : Proj13.d (RVar.d [% X, Y, Z]) = RVar.d [% X, Z].
-Proof.
-by rewrite /Proj13.d /Bivar.snd /TripA.d /RVar.d /TripC12.d !DistMap.comp.
-Qed.
-
-Lemma snd_RV3 : Bivar.snd (RVar.d [% X, Y, Z]) = Bivar.snd (RVar.d [% X, Z]).
-Proof. by rewrite -Proj13.snd Proj13_RV3. Qed.
-
-Lemma TripC12_RV3 : TripC12.d (RVar.d [% X, Y, Z]) = RVar.d [% Y, X, Z].
-Proof. by rewrite /TripC12.d /RVar.d DistMap.comp. Qed.
-
-Lemma TripA_RV3 : TripA.d (RVar.d [% X, Y, Z]) = RVar.d [% X, [% Y, Z]].
-Proof. by rewrite /TripC12.d /RVar.d /TripA.d DistMap.comp. Qed.
-
-End RV3_prop.
 
 Lemma RV_cPrE_set
   (U : finType) (P : dist U) (B C : finType)
