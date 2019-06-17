@@ -151,185 +151,7 @@ Proof. by rewrite /TripC12.d /RVar.d /TripA.d DistMap.comp. Qed.
 
 End RV3_prop.
 
-Section marginals.
-Variables (U : finType) (P : dist U).
-Variables (A B C D : finType).
-Variables (W : {RV P -> D}) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
-
-(*Lemma marginal_RV2_1 a :
-  \rsum_(u in X @^-1 a) P u = \rsum_(b in B) (RVar.d [% X, Y]) (a, b).
-Proof.
-have -> : X @^-1 a = \bigcup_b [% X, Y] @^-1 (a, b).
-  apply/setP=> u; rewrite !inE; apply/eqP/bigcupP.
-  by move=> <- /=; exists (Y u) => //; rewrite inE.
-  by case=> b _; rewrite inE => /eqP[] <- ?.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> b0 b1 b01; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- Yub0] /eqP -[].
-  rewrite Yub0; exact/eqP.
-apply eq_bigr => b _; by rewrite RVar.dE.
-Qed.*)
-
-(*Lemma marginal_RV2_2 b :
-  \rsum_(u in Y @^-1 b) P u = \rsum_(a in A) (RVar.d [% X, Y]) (a, b).
-Proof.
-have -> : Y @^-1 b = \bigcup_a [% X, Y] @^-1 (a, b).
-  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
-  by move=> <- /=; exists (X u) => //; rewrite inE.
-  by case=> a _; rewrite inE => /eqP[] ? <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> a0 a1 a01; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[Xua0 <-] /eqP -[].
-  rewrite Xua0; exact/eqP.
-by apply eq_bigr => a _; by rewrite RVar.dE.
-Qed.*)
-
-(*Lemma marginal_RV3_1 b c :
-  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) (RVar.d [% W, Y, Z] (d, b, c)).
-Proof.
-have -> : ([% Y, Z] @^-1 (b, c)) = \bigcup_d [% W, Y, Z] @^-1 (d, b, c).
-  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- /=; exists (W u) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] ? <- <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[Wud0 <- <-] /eqP -[].
-  rewrite Wud0; exact/eqP.
-by apply eq_bigr => d _; rewrite RVar.dE.
-Qed.*)
-
-Lemma marginal_RV3_2 b c :
-  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
-Proof.
-have -> : [% Y, Z] @^-1 (b, c) = \bigcup_d [% Y, W, Z] @^-1 (b, d, c).
-  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- /=; exists (W u) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- ? <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- Wud0 <-] /eqP -[].
-  rewrite Wud0; exact/eqP.
-exact: eq_bigr.
-Qed.
-
-Lemma marginal_RV3_2' b c :
-  \Pr[ [% Y, Z] = (b, c) ] =
-  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
-Proof. exact: marginal_RV3_2. Qed.
-
-Lemma bigcup_preimset (I : finType) (PP : pred I)
-      (AA BB : finType) (F : AA -> BB) (E : I -> {set BB}) :
-  \bigcup_(i | PP i) F @^-1: E i = F @^-1: \bigcup_(i | PP i) E i.
-Proof.
-rewrite/preimset.
-apply/setP=> x; rewrite inE; apply/bigcupP/bigcupP => -[] i HPi; rewrite ?inE => HFxEi; exists i => //=; by rewrite inE.
-Qed.
-
-Lemma marginal_RV3_2_set F G :
-  \Pr[ [% Y, Z] \in setX F G ] =
-  \rsum_(d in D) \Pr[ [% Y, W, Z] \in setX (setX F [set d]) G].
-Proof.
-rewrite /pr_eq_set.
-have -> : ([% Y, Z] @^-1: setX F G)
-          = \bigcup_d [% Y, W, Z] @^-1: setX (setX F [set d]) G.
-  rewrite bigcup_preimset; apply/setP => u; rewrite !inE; apply/andP/bigcupP.
-  by case=> HF HG; exists (W u) => //; rewrite !inE HF HG eqxx.
-  by case => d _; rewrite !inE => /andP[] /andP[] -> _ ->.
-rewrite bigcup_preimset /Pr /p_of partition_big_preimset /=.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP=> /andP[] /andP[] /andP[] -> /eqP-> -> /=; move/negP: d01.
-  by rewrite andbT; apply.
-apply eq_bigr => d _.
-by rewrite partition_big_preimset /=.
-Qed.
-
-Lemma marginal_RV3_3 b c :
-  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) (RVar.d [% Y, Z, W]) (b, c, d).
-Proof.
-have -> : ([% Y, Z] @^-1 (b, c)) = \bigcup_d [% Y, Z, W] @^-1 (b, c, d).
-  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- /=; exists (W u) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- <- Wud0] /eqP -[].
-  rewrite Wud0; exact/eqP.
-apply eq_bigr => d _; by rewrite RVar.dE.
-Qed.
-
-Lemma marginal_RV4_1 a b c :
-  \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
-  \rsum_(d in D) (RVar.d [% W, X, Y, Z]) (d, a, b, c).
-Proof.
-have -> : [% X, Y, Z] @^-1 (a, b, c) = \bigcup_d [% W, X, Y, Z] @^-1 (d, a, b, c).
-  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- <- /=; exists (W u) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] ? <- <- <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[Wud0 <- <- <-] /eqP -[].
-  rewrite Wud0; exact/eqP.
-by apply eq_bigr => d _; rewrite RVar.dE.
-Qed.
-
-Lemma marginal_RV4_3 a b c :
-  \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
-  \rsum_(d in D) (RVar.d [% X, Y, W, Z]) (a, b, d, c).
-Proof.
-have -> : [% X, Y, Z] @^-1 (a, b, c) = \bigcup_d [% X, Y, W, Z] @^-1 (a, b, d, c).
-  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- <- /=; exists (W u) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- <- ? <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- <- Wud0 <-] /eqP -[].
-  rewrite Wud0; exact/eqP.
-by apply eq_bigr => d _; rewrite RVar.dE.
-Qed.
-
-Lemma marginal_RV4_4 a b c :
-  \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
-  \rsum_(d in D) (RVar.d [% X, Y, Z, W]) (a, b, c, d).
-Proof.
-have -> : [% X, Y, Z] @^-1 (a, b, c) = \bigcup_d [% X, Y, Z, W] @^-1 (a, b, c, d).
-  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- <- /=; exists (W u) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- <- <- ?.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- <- <- Wud0] /eqP -[].
-  rewrite Wud0; exact/eqP.
-by apply eq_bigr => d _; rewrite RVar.dE.
-Qed.
-
-End marginals.
-
-Section RV_domin.
-Variables (U : finType) (P : dist U) (A B : finType).
-Variables (X : {RV (P) -> (A)}) (Y : {RV (P) -> (B)}).
-
-Lemma RV_Pr_domin_snd  a b : \Pr[ Y = b ] = 0 -> \Pr[ [% X, Y] = (a, b) ] = 0.
-Proof.
-move=> H.
-by rewrite -RVar.Pr -setX1 Pr_domin_snd // snd_RV2 RVar.Pr.
-Qed.
-
-Lemma RV_Pr_domin_fst a b : \Pr[ X = a ] = 0 -> \Pr[ [% X, Y] = (a, b) ] = 0.
-Proof.
-move=> H.
-by rewrite -RVar.Pr -setX1 Pr_domin_fst // fst_RV2 RVar.Pr.
-Qed.
-End RV_domin.
+Section more_structural_lemmas_on_RV.
 
 Lemma RV_cPrE_set
   (U : finType) (P : dist U) (B C : finType)
@@ -533,6 +355,188 @@ Proof.
 move=> H0.
 by rewrite RV_cPrE_set H0 div0R.
 Qed.
+
+End more_structural_lemmas_on_RV.
+
+Section marginals.
+Variables (U : finType) (P : dist U).
+Variables (A B C D : finType).
+Variables (W : {RV P -> D}) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+
+(*Lemma marginal_RV2_1 a :
+  \rsum_(u in X @^-1 a) P u = \rsum_(b in B) (RVar.d [% X, Y]) (a, b).
+Proof.
+have -> : X @^-1 a = \bigcup_b [% X, Y] @^-1 (a, b).
+  apply/setP=> u; rewrite !inE; apply/eqP/bigcupP.
+  by move=> <- /=; exists (Y u) => //; rewrite inE.
+  by case=> b _; rewrite inE => /eqP[] <- ?.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> b0 b1 b01; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- Yub0] /eqP -[].
+  rewrite Yub0; exact/eqP.
+apply eq_bigr => b _; by rewrite RVar.dE.
+Qed.*)
+
+(*Lemma marginal_RV2_2 b :
+  \rsum_(u in Y @^-1 b) P u = \rsum_(a in A) (RVar.d [% X, Y]) (a, b).
+Proof.
+have -> : Y @^-1 b = \bigcup_a [% X, Y] @^-1 (a, b).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by move=> <- /=; exists (X u) => //; rewrite inE.
+  by case=> a _; rewrite inE => /eqP[] ? <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> a0 a1 a01; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[Xua0 <-] /eqP -[].
+  rewrite Xua0; exact/eqP.
+by apply eq_bigr => a _; by rewrite RVar.dE.
+Qed.*)
+
+(*Lemma marginal_RV3_1 b c :
+  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
+  \rsum_(d in D) (RVar.d [% W, Y, Z] (d, b, c)).
+Proof.
+have -> : ([% Y, Z] @^-1 (b, c)) = \bigcup_d [% W, Y, Z] @^-1 (d, b, c).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] ? <- <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[Wud0 <- <-] /eqP -[].
+  rewrite Wud0; exact/eqP.
+by apply eq_bigr => d _; rewrite RVar.dE.
+Qed.*)
+
+Lemma marginal_RV3_2 b c :
+  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
+  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
+Proof.
+have -> : [% Y, Z] @^-1 (b, c) = \bigcup_d [% Y, W, Z] @^-1 (b, d, c).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] <- ? <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- Wud0 <-] /eqP -[].
+  rewrite Wud0; exact/eqP.
+exact: eq_bigr.
+Qed.
+
+Lemma marginal_RV3_2' b c :
+  \Pr[ [% Y, Z] = (b, c) ] =
+  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
+Proof. exact: marginal_RV3_2. Qed.
+
+Lemma bigcup_preimset (I : finType) (PP : pred I)
+      (AA BB : finType) (F : AA -> BB) (E : I -> {set BB}) :
+  \bigcup_(i | PP i) F @^-1: E i = F @^-1: \bigcup_(i | PP i) E i.
+Proof.
+rewrite/preimset.
+apply/setP=> x; rewrite inE; apply/bigcupP/bigcupP => -[] i HPi; rewrite ?inE => HFxEi; exists i => //=; by rewrite inE.
+Qed.
+
+Lemma marginal_RV3_2_set F G :
+  \Pr[ [% Y, Z] \in setX F G ] =
+  \rsum_(d in D) \Pr[ [% Y, W, Z] \in setX (setX F [set d]) G].
+Proof.
+rewrite /pr_eq_set.
+have -> : ([% Y, Z] @^-1: setX F G)
+          = \bigcup_d [% Y, W, Z] @^-1: setX (setX F [set d]) G.
+  rewrite bigcup_preimset; apply/setP => u; rewrite !inE; apply/andP/bigcupP.
+  by case=> HF HG; exists (W u) => //; rewrite !inE HF HG eqxx.
+  by case => d _; rewrite !inE => /andP[] /andP[] -> _ ->.
+rewrite bigcup_preimset /Pr /p_of partition_big_preimset /=.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP=> /andP[] /andP[] /andP[] -> /eqP-> -> /=; move/negP: d01.
+  by rewrite andbT; apply.
+apply eq_bigr => d _.
+by rewrite partition_big_preimset /=.
+Qed.
+
+Lemma marginal_RV3_3 b c :
+  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
+  \rsum_(d in D) (RVar.d [% Y, Z, W]) (b, c, d).
+Proof.
+have -> : ([% Y, Z] @^-1 (b, c)) = \bigcup_d [% Y, Z, W] @^-1 (b, c, d).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] <- <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- <- Wud0] /eqP -[].
+  rewrite Wud0; exact/eqP.
+apply eq_bigr => d _; by rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV4_1 a b c :
+  \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
+  \rsum_(d in D) (RVar.d [% W, X, Y, Z]) (d, a, b, c).
+Proof.
+have -> : [% X, Y, Z] @^-1 (a, b, c) = \bigcup_d [% W, X, Y, Z] @^-1 (d, a, b, c).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] ? <- <- <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[Wud0 <- <- <-] /eqP -[].
+  rewrite Wud0; exact/eqP.
+by apply eq_bigr => d _; rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV4_3 a b c :
+  \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
+  \rsum_(d in D) (RVar.d [% X, Y, W, Z]) (a, b, d, c).
+Proof.
+have -> : [% X, Y, Z] @^-1 (a, b, c) = \bigcup_d [% X, Y, W, Z] @^-1 (a, b, d, c).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] <- <- ? <-.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- <- Wud0 <-] /eqP -[].
+  rewrite Wud0; exact/eqP.
+by apply eq_bigr => d _; rewrite RVar.dE.
+Qed.
+
+Lemma marginal_RV4_4 a b c :
+  \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
+  \rsum_(d in D) (RVar.d [% X, Y, Z, W]) (a, b, c, d).
+Proof.
+have -> : [% X, Y, Z] @^-1 (a, b, c) = \bigcup_d [% X, Y, Z, W] @^-1 (a, b, c, d).
+  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
+  by case=> <- <- <- /=; exists (W u) => //; rewrite inE.
+  by case=> d _; rewrite inE => /eqP[] <- <- <- ?.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> d0 d1 d01.
+  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  apply/negbTE/negP => /andP[] /eqP[<- <- <- Wud0] /eqP -[].
+  rewrite Wud0; exact/eqP.
+by apply eq_bigr => d _; rewrite RVar.dE.
+Qed.
+
+End marginals.
+
+Section RV_domin.
+Variables (U : finType) (P : dist U) (A B : finType).
+Variables (X : {RV (P) -> (A)}) (Y : {RV (P) -> (B)}).
+
+Lemma RV_Pr_domin_snd  a b : \Pr[ Y = b ] = 0 -> \Pr[ [% X, Y] = (a, b) ] = 0.
+Proof.
+move=> H.
+by rewrite -RVar.Pr -setX1 Pr_domin_snd // snd_RV2 RVar.Pr.
+Qed.
+
+Lemma RV_Pr_domin_fst a b : \Pr[ X = a ] = 0 -> \Pr[ [% X, Y] = (a, b) ] = 0.
+Proof.
+move=> H.
+by rewrite -RVar.Pr -setX1 Pr_domin_fst // fst_RV2 RVar.Pr.
+Qed.
+End RV_domin.
 
 Section cPr_1_RV.
 
