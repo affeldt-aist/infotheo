@@ -233,18 +233,55 @@ Proof.
 by rewrite (Pr_DistMap_l TripA.inj_f) //= /RVar.d !DistMap.comp imset_set1.
 Qed.
 
+Let ex2C (A : Type) (P Q : A -> Prop) : @ex2 A P Q <-> @ex2 A Q P.
+Proof. by split; case=> x H0 H1; exists x. Qed.
+
+Lemma RV_Pr_lA_set (U : finType) (P : dist U) (A B C D : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}) E F G H:
+  \Pr[ [% X, [% Y, Z]] \in setX E (setX F G) | W \in H] =
+  \Pr[ [% [% X, Y], Z] \in setX (setX E F) G | W \in H].
+Proof.
+rewrite (Pr_DistMap_l TripA.inj_f) //= /RVar.d !DistMap.comp /=.
+congr (_ / _); apply eq_bigl => -[[a [b c]] d] /=; rewrite !inE /=.
+apply andb_id2r=> dH; apply/andP/imsetP.
+- by move=> [aE /andP [bF cG]]; exists ((a, b), c); rewrite // !inE /= aE bF cG.
+- rewrite ex2C; move=> [[[a' b'] c']] /eqP.
+  by rewrite /TripA.f !inE !xpair_eqE /= => /andP [] /eqP -> /andP [] /eqP -> /eqP -> /andP [] /andP [] -> -> ->.
+Qed.
+
 Lemma RV_Pr_lAC (U : finType) (P : dist U) (A B C D : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}) a b c H:
   \Pr[ [% X, Y, Z] = (a, b, c) | W \in H] =
   \Pr[ [% X, Z, Y] = (a, c, b) | W \in H].
 Proof.
-by rewrite (Pr_DistMap_l TripC23.inj_f) //= /RVar.d !DistMap.comp imset_set1.
+(*by rewrite (Pr_DistMap_l TripC23.inj_f) //= /RVar.d !DistMap.comp  imset_set1.*)
+  rewrite (Pr_DistMap_l TripC23.inj_f) //= /RVar.d !DistMap.comp /cPr.
+  rewrite imset_set1.
+  done.
+Qed.
+
+Lemma RV_Pr_lAC_set (U : finType) (P : dist U) (A B C D : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}) E F G H:
+  \Pr[ [% X, Y, Z] \in setX (setX E F) G | W \in H] =
+  \Pr[ [% X, Z, Y] \in setX (setX E G) F | W \in H].
+Proof.
+rewrite (Pr_DistMap_l TripC23.inj_f) /= /RVar.d !DistMap.comp.
+suff -> : [set TripC23.f x | x in setX (setX E F) G] = setX (setX E G) F by done.
+apply/setP => -[[a c] b]; apply/imsetP/idP.
+- rewrite ex2C; move=> [[[a' b'] c']] /eqP.
+  by rewrite /TripC23.f !inE !xpair_eqE /= => /andP [] /andP [] /eqP -> /eqP -> /eqP -> /andP [] /andP [] -> -> ->.
+- by rewrite !inE /= => /andP [] /andP [] aE cG bF; exists ((a, b), c); rewrite // !inE  /= aE cG bF.
 Qed.
 
 Lemma RV_Pr_A (U : finType) (P : dist U) (A B C : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) a b c :
 \Pr[ [% X, [% Y, Z]] = (a, (b, c)) ] = \Pr[ [% [% X, Y], Z] = ((a, b), c)].
 Proof. by rewrite RV_Pr_cPr_unit RV_Pr_lA -RV_Pr_cPr_unit. Qed.
+
+Lemma RV_Pr_A_set (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) E F G :
+\Pr[ [% X, [% Y, Z]] \in setX E (setX F G) ] = \Pr[ [% [% X, Y], Z] \in setX (setX E F) G].
+Proof. by rewrite RV_Pr_cPr_unit_set RV_Pr_lA_set -RV_Pr_cPr_unit_set. Qed.
 
 Lemma RV_Pr_lCA (U : finType) (P : dist U) (A B C D : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}) a b c H:
@@ -277,6 +314,14 @@ Lemma RV_Pr_AC (U : finType) (P : dist U) (A B C : finType)
 \Pr[ [% X, Y, Z] = (a, b, c) ] = \Pr[ [% X, Z, Y] = (a, c, b)].
 Proof.
 by rewrite RV_Pr_cPr_unit RV_Pr_lAC -RV_Pr_cPr_unit.
+Qed.
+
+Lemma RV_Pr_AC_set (U : finType) (P : dist U) (A B C : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) E F G :
+\Pr[ [% X, Y, Z] \in setX (setX E F) G]
+= \Pr[ [% X, Z, Y] \in setX (setX E G) F].
+Proof.
+by rewrite RV_Pr_cPr_unit_set RV_Pr_lAC_set -RV_Pr_cPr_unit_set.
 Qed.
 
 Lemma RV_Pr_rA (U : finType) (P : dist U) (A B C D : finType)
@@ -406,27 +451,6 @@ rewrite partition_disjoint_bigcup /=; last first.
 by apply eq_bigr => d _; rewrite RVar.dE.
 Qed.*)
 
-Lemma marginal_RV3_2 b c :
-  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
-Proof.
-have -> : [% Y, Z] @^-1 (b, c) = \bigcup_d [% Y, W, Z] @^-1 (b, d, c).
-  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- /=; exists (W u) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- ? <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- Wud0 <-] /eqP -[].
-  rewrite Wud0; exact/eqP.
-exact: eq_bigr.
-Qed.
-
-Lemma marginal_RV3_2' b c :
-  \Pr[ [% Y, Z] = (b, c) ] =
-  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
-Proof. exact: marginal_RV3_2. Qed.
-
 Lemma bigcup_preimset (I : finType) (PP : pred I)
       (AA BB : finType) (F : AA -> BB) (E : I -> {set BB}) :
   \bigcup_(i | PP i) F @^-1: E i = F @^-1: \bigcup_(i | PP i) E i.
@@ -455,21 +479,36 @@ apply eq_bigr => d _.
 by rewrite partition_big_preimset /=.
 Qed.
 
+Lemma marginal_RV3_2' b c :
+  \Pr[ [% Y, Z] = (b, c) ] =
+  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
+Proof.
+by rewrite -pr_eq_set1 -setX1 marginal_RV3_2_set; apply eq_bigr => d _; rewrite !setX1 pr_eq_set1.
+Qed.
+
+Lemma marginal_RV3_2 b c :
+  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
+  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
+Proof. exact: marginal_RV3_2'. Qed.
+
+Lemma marginal_RV3_3_set F G :
+  \Pr[ [% Y, Z] \in setX F G ] =
+  \rsum_(d in D) \Pr[ [% Y, Z, W] \in setX (setX F G) [set d]].
+Proof.
+by rewrite marginal_RV3_2_set; apply eq_bigr => d _; rewrite RV_Pr_AC_set.
+Qed.
+
+Lemma marginal_RV3_3' b c :
+  \Pr[ [% Y, Z] = (b, c) ] =
+  \rsum_(d in D) \Pr[ [% Y, Z, W] = (b, c, d)].
+Proof.
+by rewrite -pr_eq_set1 -setX1 marginal_RV3_3_set; apply eq_bigr => d _; rewrite !setX1 pr_eq_set1.
+Qed.
+
 Lemma marginal_RV3_3 b c :
   \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) (RVar.d [% Y, Z, W]) (b, c, d).
-Proof.
-have -> : ([% Y, Z] @^-1 (b, c)) = \bigcup_d [% Y, Z, W] @^-1 (b, c, d).
-  apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
-  by case=> <- <- /=; exists (W u) => //; rewrite inE.
-  by case=> d _; rewrite inE => /eqP[] <- <-.
-rewrite partition_disjoint_bigcup /=; last first.
-  move=> d0 d1 d01.
-  rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
-  apply/negbTE/negP => /andP[] /eqP[<- <- Wud0] /eqP -[].
-  rewrite Wud0; exact/eqP.
-apply eq_bigr => d _; by rewrite RVar.dE.
-Qed.
+  \rsum_(d in D) \Pr[ [% Y, Z, W] = (b, c, d)].
+Proof. exact: marginal_RV3_3'. Qed.
 
 Lemma marginal_RV4_1 a b c :
   \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
