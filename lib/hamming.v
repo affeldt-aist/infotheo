@@ -1,21 +1,24 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+Require Import Reals.
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import fintype finfun finset bigop prime fingroup zmodp.
 From mathcomp Require Import ssralg perm matrix tuple poly finalg mxalgebra.
 From mathcomp Require Import mxpoly binomial.
-Require Import ssr_ext ssralg_ext f2 num_occ natbin.
+Require Import ssr_ext ssralg_ext f2 num_occ natbin ssrR Reals_ext Rbigop.
 
 (** * Hamming weight and Hamming distance *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
-Import Prenex Implicits.
+Unset Printing Implicit Defensive.
 
+Local Open Scope ring_scope.
 Import GRing.Theory.
 
-Module HammingBitstring.
-
+Local Open Scope vec_ext_scope.
 Local Open Scope num_occ_scope.
+
+Module HammingBitstring.
 
 Definition wH (a : bitseq) := N(true | a).
 
@@ -47,23 +50,19 @@ apply: leq_trans.
 Qed.
 
 Lemma dH_cat a b c d : size a = size c -> size b = size d ->
-  dH (a ++ b) (c ++ d) = dH a c + dH b d.
+  dH (a ++ b) (c ++ d) = (dH a c + dH b d)%nat.
 Proof.
 move=> ac bd; by rewrite /dH /wH addb_seq_cat // /num_occ count_cat.
 Qed.
 
 End HammingBitstring.
 
-Local Open Scope vec_ext_scope.
-
 Section hamming_weight_distance.
-
-Local Open Scope ring_scope.
 
 Variables (F : ringType) (n : nat).
 Implicit Types u v : 'rV[F]_n.
 
-Definition wH v := count (fun x => x != 0) (tuple_of_row v).
+Definition wH v := count (fun x => x != 0%R) (tuple_of_row v).
 
 Lemma max_wH u : wH u <= n.
 Proof. by rewrite /wH (leq_trans (count_size _ _)) // size_tuple. Qed.
@@ -77,21 +76,21 @@ rewrite /wH (@eq_in_count _ _ pred0) ?count_pred0 // => i /mapP[/= j _].
 by rewrite mxE => ->; rewrite eqxx.
 Qed.
 
-Lemma wH0_inv v : wH v = O -> v = 0.
+Lemma wH0_inv v : wH v = O -> v = 0%R.
 Proof.
 move=> H.
 apply/rowP => i; rewrite mxE; apply/eqP; move/eqP : H; apply: contraTT => H.
 rewrite -lt0n -has_count; apply/hasP.
-exists (v 0 i) => //; apply/mapP; exists i => //.
+exists (v ``_ i) => //; apply/mapP; exists i => //.
 by rewrite val_ord_tuple mem_enum.
 Qed.
 
-Lemma wH_eq0 u : (wH u == O) = (u == 0).
+Lemma wH_eq0 u : (wH u == O) = (u == 0%R).
 Proof. apply/idP/idP => [/eqP/wH0_inv/eqP //|/eqP ->]; by rewrite wH0. Qed.
 
 Lemma wH_opp v : wH (- v) = wH v.
 Proof.
-rewrite {1}/wH [X in tval X](_ : _ = [tuple of map (fun x => - x) (tuple_of_row v)]); last first.
+rewrite {1}/wH [X in tval X](_ : _ = [tuple of map (fun x => - x)%R (tuple_of_row v)]); last first.
   apply: eq_from_tnth => i /=; by rewrite !tnth_map mxE.
 rewrite count_map; apply eq_count => i /=; by rewrite oppr_eq0.
 Qed.
@@ -110,8 +109,8 @@ case/boolP : (size p < n) => pn; last first.
   rewrite -leqNgt in pn; rewrite (leq_trans _ pn) //.
   by rewrite (leq_trans (count_size _ _)) // size_map size_enum_ord.
 have -> : [seq (poly_rV p) ``_ i | i <- enum 'I_n] =
-  [seq (poly_rV p) ``_ i | i <- enum ('I_(size p))] ++ nseq (n - size p) 0.
-  apply (@eq_from_nth _ 0) => [|i].
+  [seq (poly_rV p) ``_ i | i <- enum ('I_(size p))] ++ nseq (n - size p) 0%R.
+  apply (@eq_from_nth _ 0%R) => [|i].
     by rewrite size_cat 2!size_map !size_enum_ord size_nseq subnKC // ltnW.
   rewrite size_map size_enum_ord => ni.
   rewrite (nth_map (Ordinal ni)) ?size_enum_ord // mxE nth_enum_ord //.
@@ -124,13 +123,11 @@ rewrite count_cat [X in _ + X <= _](_ : count _ _ = O) ?addn0; last first.
 by rewrite count_map (leq_trans (count_size _ _)) // size_enum_ord.
 Qed.
 
-Local Open Scope nat_scope.
-Lemma wH_sum v : wH v = \sum_(n0 < n) (v ``_ n0 != 0)%R.
+Lemma wH_sum (v : 'rV[F]_n) : wH v = (\sum_(n0 < n) (v ``_ n0 != 0%R))%nat.
 Proof.
 rewrite /wH 1!count_map -sum1_count /= big_mkcond /=.
 apply congr_big => //=; by rewrite /index_enum -enumT.
 Qed.
-Local Close Scope nat_scope.
 
 Lemma wH_card_supp u : wH u = #|supp u|%N.
 Proof.
@@ -147,10 +144,8 @@ Proof. by rewrite /dH opprD addrA subrr add0r wH_opp. Qed.
 Lemma dH0x x : dH 0 x = wH x.
 Proof. by rewrite /dH add0r wH_opp. Qed.
 
-Local Open Scope nat_scope.
 Lemma max_dH u v : dH u v <= n.
 Proof. rewrite /dH. apply max_wH. Qed.
-Local Close Scope nat_scope.
 
 Lemma dH_sym u v : dH u v = dH v u.
 Proof. by rewrite {1}/dH -wH_opp opprB. Qed.
@@ -169,7 +164,7 @@ Qed.
 Lemma sum_wH_row (F : ringType) n m (H : 'M[F]_(m, n)) :
   (\sum_(m0 : 'I_m) wH (row m0 H) = \sum_(n0 : 'I_n) wH (col n0 H)^T)%nat.
 Proof.
-transitivity (\sum_(m0 < m) \sum_(n0 < n) (H m0 n0 != 0)%R)%nat.
+transitivity (\sum_(m0 < m) \sum_(n0 < n) (H m0 n0 != 0%R))%nat.
   apply eq_bigr => m0 _.
   rewrite wH_sum; apply eq_bigr => n0 _; by rewrite mxE.
 rewrite exchange_big /=.
@@ -179,8 +174,6 @@ Qed.
 
 Section wH_num_occ_bitstring.
 
-Local Open Scope ring_scope.
-
 Lemma wH_col_1 n (i : 'I_n) : @wH [fieldType of 'F_2] _ (col i 1%:M)^T = 1%N.
 Proof.
 rewrite wH_sum (bigD1 i) //= !mxE eqxx /= add1n (eq_bigr (fun=> O)).
@@ -188,10 +181,8 @@ by rewrite big_const iter_addn mul0n.
 move=> j ji; by rewrite !mxE (negbTE ji).
 Qed.
 
-Local Open Scope num_occ_scope.
-Lemma wH_num_occ n (v : 'rV['F_2]_n) : wH v = N(1 | tuple_of_row v).
+Lemma wH_num_occ n (v : 'rV['F_2]_n) : wH v = N(1%R | tuple_of_row v).
 Proof. rewrite /wH /num_occ; apply eq_count => i; by rewrite -F2_eq1. Qed.
-Local Close Scope num_occ_scope.
 
 Lemma wH_bitstring n (x : 'rV_n) :
   wH x = HammingBitstring.wH (tval (rowF2_tuplebool x)).
@@ -199,44 +190,6 @@ Proof.
 rewrite wH_num_occ /HammingBitstring.wH /= /num_occ /= [in RHS]count_map.
 apply eq_in_count => /= b Hb; by rewrite -(F2_eq1 b) eqb_id.
 Qed.
-
-(*Lemma dH_dH_bitseq n (a b : 'rV_n) :
-  dH a b = HammingBitstring.dH (tval (rowF2_tuplebool a)) (tval (rowF2_tuplebool b)).
-Proof.
-rewrite /dH wH_oldE /wH_old.
-rewrite /HammingBitstring.dH /HammingBitstring.wH.
-transitivity (N(true | map bool_of_F2 (tuple_of_row (a - b)))).
-  rewrite num_occ_sum_bool big_map num_occ_sum.
-  apply eq_bigr; by case/F2P.
-congr (N(true | _)).
-apply/(@eq_from_nth _ true) => [|i Hi].
-  by rewrite size_map /addb_seq size_map size_zip !size_tuple minnn.
-rewrite size_map size_tuple in Hi.
-rewrite (nth_map (0 : 'F_2)); last by rewrite size_tuple.
-rewrite /addb_seq.
-rewrite (nth_map (true, true)); last by rewrite size_zip 2!size_tuple minnn.
-rewrite nth_zip /=; last by rewrite 2!size_map 2!size_tuple.
-rewrite /bool_of_F2.
-rewrite (_ : _ `_ i = [tuple (a - b) ``_ x | x < n] \_ (Ordinal Hi)); last first.
-  rewrite tnth_mktuple.
-  rewrite (nth_map (Ordinal Hi)) //; last by rewrite size_enum_ord.
-  congr (_ ord0 _).
-  by rewrite -[RHS](@nth_ord_enum n (Ordinal Hi)).
-rewrite tnth_mktuple !mxE.
-rewrite (nth_map (0 : 'F_2)); last by rewrite size_map size_enum_ord.
-rewrite (nth_map (0 : 'F_2)); last by rewrite size_map size_enum_ord.
-rewrite (_ : _ `_ i = (tuple_of_row a) \_ (Ordinal Hi)); last first.
-  rewrite tnth_mktuple (nth_map (Ordinal Hi)); last by rewrite size_enum_ord.
-  congr (_ ord0 _).
-  apply val_inj => /=.
-  by rewrite nth_enum_ord.
-rewrite (_ : _ `_ i = (tuple_of_row b) \_ (Ordinal Hi)); last first.
-  rewrite tnth_mktuple (nth_map (Ordinal Hi)); last by rewrite size_enum_ord.
-  congr (_ ord0 _).
-  apply val_inj => /=.
-  by rewrite nth_enum_ord.
-by rewrite 2!tnth_mktuple oppr_char2 // -bool_of_F2_add_xor.
-Qed.*)
 
 End wH_num_occ_bitstring.
 
@@ -248,7 +201,6 @@ rewrite /wH !count_map /=; apply eq_in_count => /= i _.
 by rewrite castmxE /= !cast_ord_id.
 Qed.
 
-Local Open Scope ring_scope.
 Lemma wH_row_mx n (F : ringType) r (rn : (r <= n)%N) :
   wH (row_mx (const_mx 1) 0 : 'rV[F]_(r + (n - r))) = r.
 Proof.
@@ -274,7 +226,6 @@ rewrite sum1dep_card (eq_bigr (fun=> O)) //; last first.
 rewrite big_const iter_addn_0 mul0n addn0 -sum1dep_card.
 by rewrite big_ord_narrow ?subnKC // sum1_card card_ord.
 Qed.
-Local Close Scope ring_scope.
 
 Section hamming_triangular_inequality.
 
@@ -391,7 +342,7 @@ Local Open Scope ring_scope.
 Lemma wH_m_card n k : #|[set a in 'rV['F_2]_n | wH a == k]| = 'C(n, k).
 Proof.
 rewrite -[in X in _ = X](card_ord n) -card_draws -2!sum1dep_card.
-pose h' := fun s : {set 'I_n} => \row_(j < n) (if j \in s then (1 : 'F_2) else 0)%R.
+pose h' := fun s : {set 'I_n} => \row_(j < n) (if j \in s then (1 : 'F_2) else 0).
 have h'h (i : 'rV_n) : h' [set i0 | i ``_ i0 == 1%R] == i.
   apply/eqP/rowP => y; rewrite !mxE inE.
   case: ifP => [/eqP -> // | /negbT]; by rewrite -F2_eq0 => /eqP.
@@ -565,6 +516,7 @@ have Hk : k = size (enum (wH_supp y)).
 rewrite inordK; last by rewrite -wH_supp_h -/k Hk index_mem mem_enum inE.
 by rewrite wH_supp_h nth_index // mem_enum -wH_supp_h inE.
 Qed.
+Local Close Scope ring_scope.
 
 Lemma card_sphere q n k x : k <= n -> prime q ->
   #|[set a in 'rV['F_q]_n | dH x a == k]| = ('C(n, k) * q.-1 ^ k)%nat.
@@ -617,7 +569,6 @@ Section card_dH.
 Variable n : nat.
 
 Local Open Scope tuple_ext_scope.
-
 Lemma card_dH (x y : n.-tuple 'F_2) :
   (#| [pred i | y \_ i != x \_ i ] |)%N = dH (row_of_tuple x) (row_of_tuple y).
 Proof.
@@ -636,6 +587,7 @@ rewrite -F2_eq0 tnth_mktuple !mxE.
 move/eqP : H => ->.
 by rewrite subr_eq0.
 Qed.
+Local Close Scope tuple_ext_scope.
 
 (* TODO: rename? move? *)
 Lemma card_dH_vec (x y : 'rV['F_2]_n) :
@@ -844,7 +796,7 @@ have -> : tmp = [tuple of rev (1 :: 1 :: nseq n.+1 0)]%R.
   rewrite (tnth_nth 0%R); congr ( _ `_ i)%R.
   rewrite /= (_ : 0 :: nseq n 0 = nseq n.+1 0)%R //.
   rewrite nseq_S -[in RHS]cat1s -[in RHS](cat1s _ (rcons _ _)) catA rev_cat.
-  rewrite [in RHS]rev_rcons /=; congr cons.
+  rewrite [in RHS]rev_rcons /=; congr (_ :: _).
   by rewrite rev_nseq map_cat map_nseq.
 rewrite /=.
 set y := _ :: _.
@@ -893,25 +845,21 @@ Qed.
 
 End AboutwH123.
 
-(* TODO: move? *)
-Require Import Reals ssrR Reals_ext Rbigop.
-
 Local Open Scope R_scope.
-Local Open Scope ring_scope.
 
 Lemma hamming_01 m p :
   \rsum_(u in 'rV['F_2]_m| u \in [set v |(1 >= wH v)%nat])
-           ((1 - p) ^ (m - wH u) * p ^ wH u)%R =
-  ((1 - p) ^ m + INR m * p * (1 - p) ^ (m - 1))%R.
+    (1 - p) ^ (m - wH u) * p ^ wH u =
+  (1 - p) ^ m + m%:R * p * (1 - p) ^ (m - 1).
 Proof.
 rewrite (bigID [pred i | wH i == O]) /=.
-rewrite (big_pred1 (0 : 'rV_m)) /=; last first.
+rewrite (big_pred1 (GRing.zero _)) /=; last first.
   move=> i /=.
   by rewrite !inE -wH_eq0 andb_idl // => /eqP ->.
 rewrite wH0 pow_O subn0 mulR1; f_equal.
-transitivity (\rsum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^ (m - 1) * p ^ 1)%R).
+transitivity (\rsum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^ (m - 1) * p ^ 1)).
   transitivity (\rsum_(i|(wH (i : 'rV['F_2]_m) == 1)%nat)
-      ((1 - p) ^ (m - wH i) * p ^ wH i)%R).
+      ((1 - p) ^ (m - wH i) * p ^ wH i)).
     apply eq_bigl => /= i.
     rewrite !inE.
     case/boolP : (wH i == 1)%nat => [/eqP -> //|wH_1].
@@ -924,16 +872,15 @@ by rewrite big_const iter_addR pow_1 /= -(mulRC p) mulRA -cardsE wH_m_card bin1.
 Qed.
 
 Lemma binomial_theorem m p :
-  (\rsum_(b | b \in [set: 'rV['F_2]_m]) (1 - p) ^ (m - wH b) * p ^ wH b = 1)%R.
+  \rsum_(b in [set: 'rV['F_2]_m]) (1 - p) ^ (m - wH b) * p ^ wH b = 1.
 Proof.
-transitivity (((1 - p) + p) ^ m); last first.
-  by rewrite subRK exp1R.
+transitivity (((1 - p) + p) ^ m); last by rewrite subRK exp1R.
 rewrite RPascal.
-transitivity (\rsum_(b : 'rV['F_2]_m) ((1 - p) ^ (m - wH b) * p ^ wH b)%R).
-  apply eq_bigl => /= i; by rewrite inE.
-rewrite (classify_big (fun s : 'rV_m => Ordinal (max_wH' s)) (fun x => ((1 - p) ^ (m - x) * p ^ x))%R) /=.
-apply eq_bigr => i _.
-congr (INR _ * _)%R.
-rewrite -wH_m_card.
-apply eq_card => /= x; by rewrite !inE.
+transitivity (\rsum_(b : 'rV['F_2]_m) (1 - p) ^ (m - wH b) * p ^ wH b).
+  by apply eq_bigl => /= i; rewrite inE.
+rewrite (classify_big (fun s => Ordinal (max_wH' s)) (fun x => (1 - p) ^ (m - x) * p ^ x)) /=.
+apply eq_bigr => i _; congr (_%:R * _).
+by rewrite -wH_m_card; apply eq_card => /= x; rewrite !inE.
 Qed.
+
+Local Close Scope R_scope.
