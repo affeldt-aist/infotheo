@@ -817,8 +817,7 @@ Lemma cindeP (U : finType) (P : dist U) (A B C : finType) (X : {RV P -> A}) (Y :
   \Pr[ X = a | [% Y, Z] = (b, c)] = \Pr[X = a | Z = c].
 Proof.
 move=> K /eqP H0.
-rewrite [in LHS]/cPr snd_RV2 !RVar.Pr_set setX1 !pr_eq_set1.
-rewrite -(eqR_mul2r H0) -mulRA mulVR ?mulR1; last by apply/eqP.
+rewrite RV_cPrE -(eqR_mul2r H0) -mulRA mulVR ?mulR1; last by apply/eqP.
 have H1 : /(\Pr[ Z = c ]) <> 0 by apply invR_neq0; move/(RV_Pr_domin_snd Y b).
 by rewrite RV_Pr_A -(eqR_mul2r H1) -mulRA !mulRinv -!RV_cPrE K.
 Qed.
