@@ -51,13 +51,33 @@ Lemma setX1' (A B : finType) (E : {set A}) (b : B) :
   [set (a, b) | a in E] = setX E [set b].
 Proof. by rewrite -imset2_pair imset2_set1r. Qed.
 
-Lemma bigcup_preimset (I : finType) (PP : pred I)
-      (AA BB : finType) (F : AA -> BB) (E : I -> {set BB}) :
-  \bigcup_(i | PP i) F @^-1: E i = F @^-1: \bigcup_(i | PP i) E i.
+Lemma setX0 (A B : finType) (E : {set A}) : setX E (@set0 B) = set0.
+Proof.
+apply/setP/subset_eqP/andP; split; apply/subsetP => -[a b]; rewrite !inE //.
+by move/andP => [].
+Qed.
+
+Lemma bigcup_preimset (I : finType) (P : pred I)
+      (A B : finType) (F : A -> B) (E : I -> {set B}) :
+  \bigcup_(i | P i) F @^-1: E i = F @^-1: \bigcup_(i | P i) E i.
 Proof.
 rewrite/preimset.
 apply/setP=> x; rewrite inE; apply/bigcupP/bigcupP => -[] i HPi; rewrite ?inE => HFxEi; exists i => //=; by rewrite inE.
 Qed.
+
+Lemma fin_img_imset (A B : finType) (f : A -> B) : fin_img f =i f @: A.
+Proof.
+apply/subset_eqP/andP; split; apply/subsetP => b; rewrite mem_undup; case/boolP : [exists a, b  == f a].
+- by case/existsP => a /eqP ->; rewrite mem_imset.
+- rewrite negb_exists; move/forallP=> bfx.
+  case/mapP => a _ bfa.
+    by move: (bfx a); rewrite bfa => /eqP.
+- by case/existsP => a /eqP -> _; apply/mapP; exists a; rewrite // mem_enum.
+- rewrite negb_exists; move/forallP=> bfx.
+  case/imsetP => a _ bfa.
+    by move: (bfx a); rewrite bfa => /eqP.
+Qed.
+
 End toolbox.
 
 Local Open Scope proba_scope.
@@ -375,7 +395,7 @@ rewrite [in LHS]RV_Pr_lC_set [in RHS]RV_Pr_lC_set.
 by rewrite !RV_set_product_rule FF'.
 Qed.
 
-Lemma RV2_Pr_congr (U : finType) (P : dist U) (A A' B B' C : finType)
+Lemma RV2_Pr_congr (U : finType) (P : dist U) (A A' B B' : finType)
   (X : {RV P -> A}) (X' : {RV P -> A'}) (Y : {RV P -> B}) (Y' : {RV P -> B'})
   E E' F F' :
   \Pr[ X \in E | Y \in F ] = \Pr[ X' \in E' | Y \in F ] ->
@@ -387,7 +407,7 @@ rewrite !RV_Pr_cPr_unit_set.
 apply RV2_Pr_lcongr; by rewrite !RV_Pr_rsetXunit.
 Qed.
 
-Lemma RV2_Pr_congr' (U : finType) (P : dist U) (A A' B B' C : finType)
+Lemma RV2_Pr_congr' (U : finType) (P : dist U) (A A' B B' : finType)
   (X : {RV P -> A}) (X' : {RV P -> A'}) (Y : {RV P -> B}) (Y' : {RV P -> B'})
   E E' F F' :
   \Pr[ X \in E | Y' \in F' ] = \Pr[ X' \in E' | Y' \in F' ] ->
@@ -480,7 +500,7 @@ Proof.
 by rewrite (Pr_DistMap_r inj_swap) /RVar.d !DistMap.comp imset_set1.
 Qed.
 
-Lemma Pr_cPr_0
+Lemma RV_Pr_cPr_0
   (U : finType) (P : dist U) (B C : finType)
   (Y : {RV P -> B}) (Z : {RV P -> C}) b c :
   \Pr[ [% Y, Z] = (b, c) ] = 0 ->
@@ -490,7 +510,7 @@ move=> H0.
 by rewrite RV_cPrE H0 div0R.
 Qed.
 
-Lemma Pr_cPr_0_set
+Lemma RV_Pr_cPr_0_set
   (U : finType) (P : dist U) (B C : finType)
   (Y : {RV P -> B}) (Z : {RV P -> C}) F G :
   \Pr[ [% Y, Z] \in setX F G ] = 0 ->
@@ -666,9 +686,35 @@ End marginal_RV4.
 
 End marginals.
 
+(* TODO: move to cproba.v? *) 
+Section Pr_cPr_domin.
+Lemma Pr_cPr_domin (A B : finType) (P : {dist A * B})
+      (E : {set A}) (F : {set B}) :
+  Pr (Bivar.snd P) F <> 0 -> 
+  Pr (Bivar.fst P) E = 0 -> \Pr_P[ E | F ] = 0.
+Proof.
+move=> Fn0 E0.
+rewrite /cPr.
+rewrite -(eqR_mul2r Fn0) mul0R -mulRA mulVR; last by move/eqP:Fn0.
+rewrite mulR1; by apply Pr_domin_fst.
+Qed.
+End Pr_cPr_domin.
+
 Section RV_domin.
 Variables (U : finType) (P : dist U) (A B : finType).
 Variables (X : {RV (P) -> (A)}) (Y : {RV (P) -> (B)}).
+
+Lemma RV_Pr_domin_snd_set E F : \Pr[ Y \in F ] = 0 -> \Pr[ [% X, Y] \in setX E F ] = 0.
+Proof.
+move=> H.
+by rewrite -RVar.Pr_set Pr_domin_snd // snd_RV2 RVar.Pr_set.
+Qed.
+
+Lemma RV_Pr_domin_fst_set E F : \Pr[ X \in E ] = 0 -> \Pr[ [% X, Y] \in setX E F ] = 0.
+Proof.
+move=> H.
+by rewrite -RVar.Pr_set Pr_domin_fst // fst_RV2 RVar.Pr_set.
+Qed.
 
 Lemma RV_Pr_domin_snd  a b : \Pr[ Y = b ] = 0 -> \Pr[ [% X, Y] = (a, b) ] = 0.
 Proof.
@@ -681,6 +727,14 @@ Proof.
 move=> H.
 by rewrite -RVar.Pr -setX1 Pr_domin_fst // fst_RV2 RVar.Pr.
 Qed.
+
+Lemma RV_Pr_cPr_domin_set E F :
+  \Pr[ Y \in F ] <> 0 -> \Pr[ X \in E ] = 0 -> \Pr[ X \in E | Y \in F ] = 0.
+Proof.
+move=> YF XE.
+by apply Pr_cPr_domin; [rewrite snd_RV2 RVar.Pr_set | rewrite fst_RV2 RVar.Pr_set].
+Qed.
+
 End RV_domin.
 
 Section cPr_1_RV.
@@ -721,26 +775,13 @@ Lemma total_RV2 E F :
   \Pr[ [% X, Y] \in setX E F] =
   \rsum_(z <- fin_img Z) \Pr[ [% X, Z, Y] \in setX (setX E [set z]) F].
 Proof.
-apply/esym.
-evar (e : C -> R); rewrite (eq_bigr e); last first.
-  move=> r _; rewrite -RVar.Pr_set /Pr big_setX.
-  rewrite (eq_bigl (fun x => x \in setX E [set r])); last first.
-    move=> -[? ?]; by rewrite !inE.
-  rewrite big_setX /= /e; reflexivity.
-rewrite {}/e exchange_big /=.
-rewrite -RVar.Pr_set [in RHS]/Pr [in RHS]big_setX /=; apply eq_bigr => a aE.
-evar (e : C -> R); rewrite (eq_bigr e); last first.
-  move=> r _; rewrite exchange_big /= /e; reflexivity.
-rewrite {}/e exchange_big /=; apply eq_bigr => b _.
-rewrite RVar.dE /pr_eq /Pr (marginal_RV3_2 Z).
-rewrite [in RHS](bigID (fun x => x \in fin_img Z)) /=.
-rewrite [X in _ = _ + X ](eq_bigr (fun=> 0)); last first.
-  move=> d dZ; apply pr_eq0.
-  apply: contra dZ; rewrite /fin_img !mem_undup.
-  case/mapP => u _ -[] Ha Hd Hb; apply/mapP.
-  exists u => //; by rewrite mem_enum.
-rewrite big_const iter_addR mulR0 addR0 big_uniq /=; last exact: undup_uniq.
-apply eq_bigr => c cZ; by rewrite big_set1 !RVar.dE.
+rewrite (@marginal_RV3_2_set _ _ _ _ C Z).
+rewrite (bigID (fun x => x \in fin_img Z)) /=.
+rewrite [X in _ + X = _](eq_bigr (fun=> 0)); first
+  by rewrite big_const iter_addR mulR0 addR0 big_uniq //; exact: undup_uniq.
+move=> c; rewrite RV_Pr_AC_set => H.
+apply RV_Pr_domin_snd_set.
+by rewrite pr_eq_set1 pr_eq0.
 Qed.
 
 Lemma reasoning_by_cases E F :
