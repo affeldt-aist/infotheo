@@ -78,6 +78,9 @@ apply/subset_eqP/andP; split; apply/subsetP => b; rewrite mem_undup; case/boolP 
     by move: (bfx a); rewrite bfa => /eqP.
 Qed.
 
+Lemma mulRinv x y : x * / y = x / y.
+Proof. reflexivity. Qed.
+
 End toolbox.
 
 Local Open Scope proba_scope.
@@ -813,16 +816,11 @@ Lemma cindeP (U : finType) (P : dist U) (A B C : finType) (X : {RV P -> A}) (Y :
   \Pr[ [% Y, Z] = (b, c)] != 0 ->
   \Pr[ X = a | [% Y, Z] = (b, c)] = \Pr[X = a | Z = c].
 Proof.
-move=> K H0.
-have H := K a b c.
-rewrite -(@eqR_mul2r (\Pr[ Y = b | Z = c ])); last first.
-  rewrite /cPr setX1 mulR_neq0; split.
-  - rewrite Pr_set1 RVar.dE; exact/eqP.
-  - apply/invR_neq0/eqP/(@Pr_domin_sndN _ _ _ [set b]).
-    by rewrite setX1 Pr_set1 RVar.dE.
-rewrite -{}H -[in RHS]setX1 product_rule; congr (_ * _).
-- by rewrite setX1 /RVar.d /TripA.d DistMap.comp.
-- by rewrite /Proj23.d /Bivar.snd !DistMap.comp.
+move=> K /eqP H0.
+rewrite [in LHS]/cPr snd_RV2 !RVar.Pr_set setX1 !pr_eq_set1.
+rewrite -(eqR_mul2r H0) -mulRA mulVR ?mulR1; last by apply/eqP.
+have H1 : /(\Pr[ Z = c ]) <> 0 by apply invR_neq0; move/(RV_Pr_domin_snd Y b).
+by rewrite RV_Pr_A -(eqR_mul2r H1) -mulRA !mulRinv -!RV_cPrE K.
 Qed.
 
 Section cinde_drv_prop.
