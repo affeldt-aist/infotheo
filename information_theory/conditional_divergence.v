@@ -73,7 +73,7 @@ End joint_dom.
 
 Section conditional_divergence.
 Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
-Definition cdiv := \rsum_(a : A) P a * D(V a || W a).
+Definition cdiv := \sum_(a : A) P a * D(V a || W a).
 End conditional_divergence.
 
 Notation "'D(' V '||' W '|' P ')'" := (cdiv V W P) : divergence_scope.
@@ -85,7 +85,7 @@ Hypothesis V_dom_by_W : P |- V << W.
 
 Lemma cdiv_is_div_joint_dist : D(V || W | P) = D(`J(P , V) || `J(P , W)).
 Proof.
-rewrite (_ : D(V || W | P) = \rsum_(a in A) (\rsum_(b in B)
+rewrite (_ : D(V || W | P) = \sum_(a in A) (\sum_(b in B)
     V a b * (log (V a b / W a b)) * P a)); last first.
   apply eq_bigr => a _.
   by rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.

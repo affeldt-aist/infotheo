@@ -50,14 +50,14 @@ Lemma reg_ldpc_prop m n : forall (C : reg_ldpc m n),
   m%:R / n%:R = (reglambda C)%:R / (regrho C)%:R.
 Proof.
 case => /= H lam rho [] Hlam Hrho Hm0 Hrho0.
-have : \sum_(m0 : 'I_m) wH (row m0 H) = (rho * m)%nat.
-  transitivity (\sum_(m0 < m) rho).
+have : (\sum_(m0 : 'I_m) wH (row m0 H) = rho * m)%nat.
+  transitivity (\sum_(m0 < m) rho)%nat.
     apply eq_bigr => i _; by apply Hrho.
   by rewrite big_const iter_addn addn0 card_ord.
 rewrite sum_wH_row => Htmp.
 have {Htmp}Htmp : (lam * n = rho * m)%nat.
   rewrite -Htmp.
-  transitivity (\sum_(n0 < n) lam).
+  transitivity (\sum_(n0 < n) lam)%nat.
     by rewrite big_const iter_addn addn0 card_ord.
   apply eq_bigr => i _; exact/esym/Hlam.
 rewrite -(@eqR_mul2l n%:R); last exact/INR_eq0.
@@ -92,8 +92,8 @@ rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
 rewrite !TupleDist.dE DMCE big_ord_recl big_ord0.
 rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
   by move=> i _; rewrite /P !TupleDist.dE big_ord_recl big_ord0 !Uniform.dE mulR1.
-rewrite -big_distrr /= (_ : \rsum_(_ | _) _ = 1)%R; last first.
-  transitivity (\rsum_(i in 'M_1) Binary.d card_A p_01 (i ``_ ord0) a').
+rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
+  transitivity (\sum_(i in 'M_1) Binary.d card_A p_01 (i ``_ ord0) a')%R.
     apply eq_bigr => i _.
     by rewrite DMCE big_ord_recl big_ord0 mulR1 /BSC.c mxE.
   apply/(@big_singl_rV _ _ _ _ (fun i => (Binary.d card_A p_01 i) a')).
@@ -497,7 +497,7 @@ rewrite /K949 /MarginalPostProbability.Kmpp /PosteriorProbability.Kppu -invRM; l
   rewrite epmf1 => ?; lra.
   apply/eqP; by rewrite -not_receivable_uniformE Hy.
 congr (/ _).
-transitivity (\rsum_(t in 'rV['F_2]_n)
+transitivity (\sum_(t in 'rV['F_2]_n)
   if t \in kernel H then W ``(y | t) else 0); last first.
   rewrite big_distrl /=.
   apply eq_bigr => /= t Ht.
@@ -518,7 +518,7 @@ transitivity (\rsum_(t in 'rV['F_2]_n)
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
       apply/eqP; by rewrite -not_receivable_uniformE Hy.
     rewrite invRK // -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.
-    set tmp1 := \rsum_(_ | _) _.
+    set tmp1 := \sum_(_ | _) _.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
     by rewrite -not_receivable_uniformE Hy.
   rewrite PosteriorProbability.dE UniformSupport.dEN; last by rewrite inE; exact/negbT.
@@ -540,7 +540,7 @@ transitivity (W Zp0 (y ``_ n0) *
     by rewrite checksubsum_dprojs_V.
   rewrite (rmul_rsum_commute0 (Tanner.connected tanner) (Tanner.acyclic tanner) y (fun m x y => W ``(x | y))) // => m1 m0 t Hm1 tdf.
   by rewrite checksubsum_dprojs_V.
-transitivity (\rsum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
+transitivity (\sum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
     \rprod_(m1 in 'F n0)
       W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0) *
       (\rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R)).
@@ -555,14 +555,14 @@ transitivity (\rsum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
       apply eq_bigr => ta.
       by rewrite -F2_eq1 => /eqP ->.
     move=> v /=; by rewrite -freeon_all mxE eqxx F2_eq1.
-transitivity (\rsum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
+transitivity (\sum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
     (\rprod_(m1 in 'F n0) W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0)) *
     (\rprod_(m1 in 'F n0) (\rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R))).
   apply eq_bigr => ta _.
   rewrite -mulRA.
   congr (_ * _).
   by apply big_split.
-transitivity (\rsum_(ta : 'rV_n)
+transitivity (\sum_(ta : 'rV_n)
     (\rprod_(k < n)  W (ta ``_ k) (y ``_ k)) *
     (\rprod_(m1 in 'F n0) \rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R)).
   apply eq_bigr => t /= _.
@@ -573,7 +573,7 @@ transitivity (\rsum_(ta : 'rV_n)
   apply eq_bigl => ? /=.
   by rewrite in_setC in_set1.
 (* 4 -> 5 *)
-transitivity (\rsum_(ta : 'rV_n) (\rprod_(k < n) (W ta ``_ k) y ``_ k) *
+transitivity (\sum_(ta : 'rV_n) (\rprod_(k < n) (W ta ``_ k) y ``_ k) *
   (\rprod_(m2 < m) (\delta ('V m2) ta)%:R)).
   apply eq_bigr => t /= _.
   congr (_ * _).
@@ -621,7 +621,7 @@ Qed.
 
 Lemma recursive_computation_helper m0 n0 d : n0 \in 'V m0 ->
   forall x : 'rV_n, freeon ('V m0 :\ n0) d x ->
-  let A := \rsum_(i | freeon ('V( m0, n0) :\ n0) d i &&
+  let A := \sum_(i | freeon ('V( m0, n0) :\ n0) d i &&
                           (dproj d ('V m0 :\ n0) i == x))
           \rprod_(n1 < n | n1 \in 'V m0 :\ n0)
              (W i ``_ n1) y ``_ n1 *
@@ -632,7 +632,7 @@ Lemma recursive_computation_helper m0 n0 d : n0 \in 'V m0 ->
  Proof.
 move=> m0n0 x Hx A; apply/esym.
 transitivity (\rprod_(n1 in 'V m0 :\ n0) (W x ``_ n1) y ``_ n1 *
-  (\rsum_(z | (dprojs_V H x n1 z \in
+  (\sum_(z | (dprojs_V H x n1 z \in
       pfamily x ('F n1 :\ m0) (fun m1 => freeon ('V( m1, n1) :\ n1) x)) &&
       (comb_V H x n1 (dprojs_V H x n1 z) == z))
     \rprod_(m1 in 'F n1 :\ m0)
@@ -645,7 +645,7 @@ transitivity (\rprod_(n1 in 'V m0 :\ n0) (W x ``_ n1) y ``_ n1 *
   rewrite /= => g Hg.
   exact: (@dprojs_comb_V _ _ _ (Tanner.acyclic tanner) _ _ (fun x => 'F x :\ m0) _ Hg).
 transitivity (\rprod_(n1 in 'V m0 :\ n0)
-   \rsum_(z | (dprojs_V H x n1 z \in
+   \sum_(z | (dprojs_V H x n1 z \in
       pfamily x ('F n1 :\ m0) (fun m1 => freeon ('V( m1, n1) :\ n1) x)) &&
       (comb_V H x n1 (dprojs_V H x n1 z) == z))
     (W z ``_ n1) y ``_ n1 *
@@ -660,7 +660,7 @@ transitivity (\rprod_(n1 in 'V m0 :\ n0)
   case/andP : Ht' => X1 X2.
   move/eqP : X2 => <-.
   rewrite comb_dprojs_V_not_in_partition // => m1; by rewrite !inE eqxx.
-transitivity (\rsum_(t | (dprojs_V2 H x m0 n0 t \in
+transitivity (\sum_(t | (dprojs_V2 H x m0 n0 t \in
   pfamily x ('V m0 :\ n0) (fun n1 => [pred t0 |
     (dprojs_V H x n1 t0 \in pfamily x ('F n1 :\ m0) (fun m1 => freeon ('V( m1, n1) :\ n1) x)) &&
     (comb_V H x n1 (dprojs_V H x n1 t0) == t0)])) &&

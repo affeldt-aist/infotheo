@@ -968,13 +968,13 @@ case/boolP : (d (lift ord0 ord0) == 1%R :> R) => [|K1].
 pose D' : {ffun 'I_3 -> R} := [ffun x => [eta (fun=>R0) with
   ord0 |-> d ord0,
   lift ord0 ord0 |-> d (lift ord0 ord0),
-  ord_max |-> \rsum_(i < n.+3 | 2 <= i) d i] x].
+  ord_max |-> (\sum_(i < n.+3 | (2 <= i)%nat) d i)%R] x].
 have D'0 : (forall i, 0 <= D' i)%R.
   move=> i; rewrite /D' ffunE /=; case: ifPn => _; first exact/dist_ge0.
   case: ifPn => _; first exact/dist_ge0.
   case: ifPn => _; last exact/leRR.
   apply rsumr_ge0 => k _; exact/dist_ge0.
-have D'1 : (\rsum_(i < 3) (D' i) = 1)%R.
+have D'1 : (\sum_(i < 3) (D' i) = 1)%R.
   rewrite !big_ord_recr big_ord0 /= add0R.
   rewrite /D' !ffunE /= -(epmf1 d).
   apply/esym.

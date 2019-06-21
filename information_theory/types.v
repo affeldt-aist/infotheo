@@ -59,10 +59,10 @@ Proof.
 move=> H.
 apply R1_neq_R0.
 rewrite -(epmf1 d).
-transitivity (\rsum_(a | a \in A) INR (t a) / 0); first exact/eq_bigr.
+transitivity (\sum_(a | a \in A) INR (t a) / 0); first exact/eq_bigr.
 rewrite -big_distrl /= -big_morph_natRD.
-rewrite (_ : \sum_(a in A) _ = O) ?mul0R //.
-transitivity (\sum_(a in A) 0); first by apply eq_bigr => a _; rewrite (ord1 (t a)).
+rewrite (_ : (\sum_(a in A) _)%nat = O) ?mul0R //.
+transitivity (\sum_(a in A) 0)%nat; first by apply eq_bigr => a _; rewrite (ord1 (t a)).
 by rewrite big_const iter_addn.
 Qed.
 
@@ -70,7 +70,7 @@ Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
 set f := [ffun a => INR N(a | ta) / INR n.+1].
 assert (H1 : forall a, (0 <= f a)%R).
   move=> a; rewrite ffunE; apply divR_ge0; by [apply leR0n | apply ltR0n].
-have H2 : \rsum_(a in A) f a = 1%R.
+have H2 : \sum_(a in A) f a = 1%R.
   rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
     move=> a _; rewrite ffunE /h; reflexivity.
   by rewrite {}/h -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
@@ -129,9 +129,9 @@ rewrite ffunE; apply divR_ge0; by [apply leR0n | apply ltR0n].
 Defined.
 
 Definition dist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
-  (Hf : \sum_(a in A) f a == n.+1) : dist A.
+  (Hf : (\sum_(a in A) f a)%nat == n.+1) : dist A.
 set pf := pos_fun_of_ffun f.
-have H : \rsum_(a in A) pf a == 1 :> R.
+have H : \sum_(a in A) pf a == 1 :> R.
   rewrite /pf; evar (h : A -> R); rewrite (eq_bigr h); last first.
     move=> a _; rewrite ffunE /h; reflexivity.
   rewrite {}/h /= /Rdiv -big_distrl /= -big_morph_natRD.
@@ -140,27 +140,27 @@ exact (mkDist H).
 Defined.
 
 Lemma dist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})
-  (Hf : \sum_(a in A) f a == n.+1) :
+  (Hf : (\sum_(a in A) f a)%nat == n.+1) :
 forall a : A, (dist_of_ffun Hf) a = INR (f a) / INR n.+1.
 Proof. by move=> a; rewrite ffunE. Qed.
 
 Definition type_choice_f (A : finType) n (f : {ffun A -> 'I_n.+1}) : option (P_ n ( A )).
 destruct n; first by exact None.
-refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1) with
+refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1)%nat with
           | left H => Some (@type.mkType _ _ (dist_of_ffun H) f (dist_of_ffun_prop H))
           | right _ => None
         end).
 Defined.
 
 Lemma ffun_of_dist A n (d : dist A) (t : {ffun A -> 'I_n.+2})
-  (H : forall a : A, d a = INR (t a) / INR n.+1) : \sum_(a in A) t a == n.+1.
+  (H : forall a : A, d a = INR (t a) / INR n.+1) : (\sum_(a in A) t a)%nat == n.+1.
 Proof.
-suff : INR (\sum_(a in A) t a) == INR n.+1 * \rsum_(a | a \in A) d a.
+suff : INR (\sum_(a in A) t a) == INR n.+1 * \sum_(a | a \in A) d a.
   move/eqP.
   rewrite (epmf1 d) mulR1.
   by move/INR_eq/eqP.
 apply/eqP.
-transitivity (INR n.+1 * (\rsum_(a|a \in A) INR (t a) / INR n.+1)).
+transitivity (INR n.+1 * (\sum_(a|a \in A) INR (t a) / INR n.+1)).
   by rewrite -big_distrl -big_morph_natRD mulRCA mulRV ?mulR1 // INR_eq0'.
 congr (_ * _); exact/eq_bigr.
 Qed.
@@ -202,7 +202,7 @@ case: (unpi m); last first.
 case: unpi; last first.
   exact None.
 move=> f.
-refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1) with
+refine (match Sumbool.sumbool_of_bool ((\sum_(a in A) f a)%nat == n.+1) with
           | left H => Some (@type.mkType _ _ (dist_of_ffun H) f (dist_of_ffun_prop H))
           | right _ => None
         end).
@@ -228,14 +228,14 @@ Definition type_countMixin A n := CountMixin (@type_count_pcancel A n).
 Canonical type_countType A n :=
   Eval hnf in CountType (P_ n ( A )) (@type_countMixin A n).
 
-Definition type_enum_f (A : finType) n (f : { f : {ffun A -> 'I_n.+1} | \sum_(a in A) f a == n} ) : option (P_ n ( A )).
+Definition type_enum_f (A : finType) n (f : { f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n} ) : option (P_ n ( A )).
 destruct n.
   apply None.
 refine (Some (@type.mkType _ _ (dist_of_ffun (proj2_sig f)) (sval f) (dist_of_ffun_prop (proj2_sig f)))).
 Defined.
 
 Definition type_enum A n := pmap (@type_enum_f A n)
-  (enum [finType of {f : {ffun A -> 'I_n.+1} | \sum_(a in A) f a == n}]).
+  (enum [finType of {f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n}]).
 
 Lemma type_enumP A n : Finite.axiom (@type_enum A n).
 Proof.
@@ -243,9 +243,9 @@ destruct n.
   case=> d t H /=; by move: (no_0_type H).
 case=> d t H /=.
 move: (ffun_of_dist H) => H'.
-have : Finite.axiom (enum [finType of { f : {ffun A -> 'I_n.+2} | \sum_(a in A) f a == n.+1}]).
+have : Finite.axiom (enum [finType of { f : {ffun A -> 'I_n.+2} | (\sum_(a in A) f a)%nat == n.+1}]).
   rewrite enumT; by apply enumP.
-move/(_ (@exist {ffun A -> 'I_n.+2} (fun f => \sum_(a in A) f a == n.+1) t H')) => <-.
+move/(_ (@exist {ffun A -> 'I_n.+2} (fun f => \sum_(a in A) f a == n.+1)%nat t H')) => <-.
 rewrite /type_enum /= /type_enum_f /= count_map.
 by apply eq_count.
 Qed.
@@ -349,9 +349,8 @@ have Hx : size (flatten [seq nseq (type.f P x0) x0 | x0 <- enum A]) == n.
   rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
   case: (P) => P' f HP' /=.
   apply/eqP.
-  transitivity (\sum_(a in A) f a); last first.
-     apply/eqP.
-     by apply ffun_of_dist with P'.
+  transitivity (\sum_(a in A) f a)%nat; last first.
+     apply/eqP; by apply ffun_of_dist with P'.
   apply congr_big => //.
   by rewrite enumT.
   move=> a /= _.
@@ -489,7 +488,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
     by apply Pr_1.
   symmetry.
   rewrite /Pr.
-  transitivity (\rsum_(a| (a \in [finType of 'rV[A]_n]) && [pred x in (@row_of_tuple A n @: T_{P})] a)
+  transitivity (\sum_(a| (a \in [finType of 'rV[A]_n]) && [pred x in (@row_of_tuple A n @: T_{P})] a)
       exp2 (- INR n * `H P)).
     apply eq_big => // ta'/= Hta'.
     rewrite -(@tuple_dist_type_entropy ta') //.
@@ -604,8 +603,8 @@ Let n := n'.+1.
 Variable c : code A B M n.
 
 Lemma sum_messages_types' f :
-  \rsum_(P : P_ n ( A )) (\rsum_(m |m \in enc_pre_img c P) f m) =
-  \rsum_ (S | S \in enc_pre_img_partition c) \rsum_(m in S) f m.
+  \sum_(P : P_ n ( A )) (\sum_(m |m \in enc_pre_img c P) f m) =
+  \sum_ (S | S \in enc_pre_img_partition c) \sum_(m in S) f m.
 Proof.
 rewrite (bigID (fun P => [exists m, m \in enc_pre_img c P] )).
 rewrite (_ : forall a b, addR_comoid a b = a + b) //.
@@ -630,9 +629,9 @@ apply/invR_neq0; by rewrite INR_eq0.
 Qed.
 
 Lemma sum_messages_types f :
-  \rsum_(P : P_ n ( A )) (\rsum_(m |m \in enc_pre_img c P) f m) = \rsum_ (m : M) (f m).
+  \sum_(P : P_ n ( A )) (\sum_(m |m \in enc_pre_img c P) f m) = \sum_ (m : M) (f m).
 Proof.
-transitivity (\rsum_ (m in [set: M]) (f m)); last by apply eq_bigl => b; rewrite in_set.
+transitivity (\sum_ (m in [set: M]) (f m)); last by apply eq_bigl => b; rewrite in_set.
 rewrite -(cover_enc_pre_img c) /enc_pre_img_partition sum_messages_types'.
 symmetry.
 by apply big_trivIset, trivIset_enc_pre_img.

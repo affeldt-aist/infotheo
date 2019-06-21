@@ -109,14 +109,14 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Lemma step1 : (1 - esrc(P , sc)) = \rsum_(x in no_failure) P `^ k.+1 x.
+Lemma step1 : (1 - esrc(P , sc)) = \sum_(x in no_failure) P `^ k.+1 x.
 Proof.
 rewrite /SrcErrRate /no_failure /Pr.
-set a := \rsum_(_ | _) _.
-set b := \rsum_(_ | _) _.
+set a := \sum_(_ | _) _.
+set b := \sum_(_ | _) _.
 suff : 1 = a + b by move=> ->; field.
 rewrite /a {a}.
-have -> : b = \rsum_(i in [set i | dec sc (enc sc i) == i]) P `^ k.+1 i.
+have -> : b = \sum_(i in [set i | dec sc (enc sc i) == i]) P `^ k.+1 i.
   apply eq_big => // i /=; by rewrite inE.
 rewrite -(epmf1 (P `^ k.+1)).
 rewrite (bigID [pred a | a \in [set i0 | dec sc (enc sc i0) == i0]]) /= addRC.
@@ -126,8 +126,8 @@ Qed.
 Local Open Scope typ_seq_scope.
 
 Lemma step2 : 1 - (esrc(P , sc)) =
-  \rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: ~: `TS P k.+1 delta) P `^ k.+1 x +
-  \rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) P `^ k.+1 x.
+  \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: ~: `TS P k.+1 delta) P `^ k.+1 x +
+  \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) P `^ k.+1 x.
 Proof.
 rewrite step1 (bigID [pred x | x \in `TS P k.+1 delta]) /= addRC.
 f_equal.
@@ -136,8 +136,8 @@ f_equal.
 Qed.
 
 Lemma step3 : 1 - (esrc(P , sc)) <=
-  \rsum_(x in 'rV[A]_k.+1 | x \in ~: `TS P k.+1 delta) P `^ k.+1 x +
-  \rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) P `^ k.+1 x.
+  \sum_(x in 'rV[A]_k.+1 | x \in ~: `TS P k.+1 delta) P `^ k.+1 x +
+  \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) P `^ k.+1 x.
 Proof.
 rewrite step2; apply/leR_add2r/ler_rsum_l => /= i Hi.
 exact/leRR.
@@ -155,7 +155,7 @@ apply/(leR_trans step3)/leR_add.
   move/leR_trans : Hdelta; apply.
   rewrite Pr_to_cplt; exact/leRR.
 - apply (@leR_trans
-    (\rsum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
+    (\sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
       exp2 (- k.+1%:R * (`H P - delta)))).
     apply ler_rsum => /= i.
     rewrite in_setI => /andP[i_B i_TS].

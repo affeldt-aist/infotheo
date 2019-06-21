@@ -944,12 +944,12 @@ Local Open Scope R_scope.
 
 Lemma e_hamming m0 :
   e(W, hamming_channel_code) m0 =
-  \rsum_(e0 in [set e0 : 'rV['F_2]_n | (2 <= wH e0)%nat])
+  \sum_(e0 in [set e0 : 'rV['F_2]_n | (2 <= wH e0)%nat])
     (1 - p) ^ (n - wH e0) * p ^ wH e0.
 Proof.
 rewrite /ErrRateCond /Pr /=.
 transitivity (
-  \rsum_(a | a \in preimC (dec hamming_channel_code) m0)
+  \sum_(a | a \in preimC (dec hamming_channel_code) m0)
     let d := dH ((enc hamming_channel_code) m0) a in
     (1 - p) ^ (n - d) * p ^ d).
   apply eq_bigr => t Ht.
@@ -958,7 +958,7 @@ transitivity (
   set x := eq_ind_r _ _ _.
   rewrite (_ : x = card_F2) //; by apply eq_irrelevance.
 transitivity (
-\rsum_(a|a \in [set tb | if dec hamming_channel_code tb is Some m1 then
+\sum_(a|a \in [set tb | if dec hamming_channel_code tb is Some m1 then
                            m1 != m0 else
                            true])
       (let d := dH ((enc hamming_channel_code) m0) a in
@@ -973,7 +973,7 @@ Local Close Scope R_scope.
 set f := fun y => (y0 + y).
 Local Open Scope R_scope.
 transitivity (
-  \rsum_(y | f y \in [set e1 | (1 < wH e1)%nat])
+  \sum_(y | f y \in [set e1 | (1 < wH e1)%nat])
     (1 - p) ^ (n - wH (f y)) * p ^ wH (f y)).
   apply eq_big.
     move=> y.

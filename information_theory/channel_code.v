@@ -47,7 +47,7 @@ Local Notation "e( W , c )" := (ErrRateCond W c) (at level 50).
 (** Average probability of error: *)
 
 Definition CodeErrRate (W : `Ch_1(A, B)) c :=
-  (1 / INR #| M | * \rsum_(m in M) e(W, c) m)%R.
+  (1 / INR #| M | * \sum_(m in M) e(W, c) m)%R.
 
 Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
 

@@ -91,7 +91,7 @@ Lemma f0 x : 0 <= f x.
 Proof.
 rewrite /f ffunE; case: ifPn => [/eqP ->| _]; [exact: dist_ge0|exact: leRR].
 Qed.
-Lemma f1 : \rsum_(x in {: A * A}) f x = 1.
+Lemma f1 : \sum_(x in {: A * A}) f x = 1.
 Proof.
 rewrite (eq_bigr (fun a => f (a.1, a.2))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => f (a1, a2))) /=.
@@ -292,7 +292,7 @@ Module Proj13.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
 Definition d : {dist A * C} := Bivar.snd (TripA.d (TripC12.d P)).
-Lemma dE x : d x = \rsum_(b in B) P (x.1, b, x.2).
+Lemma dE x : d x = \sum_(b in B) P (x.1, b, x.2).
 Proof.
 rewrite /d Bivar.sndE; apply eq_bigr => b _; by rewrite TripA.dE TripC12.dE.
 Qed.
@@ -316,7 +316,7 @@ Module Proj23.
 Section def.
 Variables (A B C : finType) (P : {dist A * B * C}).
 Definition d : {dist B * C} := Bivar.snd (TripA.d P).
-Lemma dE x : d x = \rsum_(a in A) P (a, x.1, x.2).
+Lemma dE x : d x = \sum_(a in A) P (a, x.1, x.2).
 Proof. by rewrite /d Bivar.sndE; apply eq_bigr => a _; rewrite TripA.dE. Qed.
 
 Lemma domin a b c : d (b, c) = 0 -> P (a, b, c) = 0.
@@ -365,10 +365,10 @@ rewrite /Pr big_setX /=; apply eq_bigr => a aE.
 by rewrite Bivar.fstE /=; apply eq_bigl => b; rewrite inE.
 Qed.
 
-Lemma PrX_snd F : \rsum_(a in A) Pr P (setX [set a] F) = Pr (Bivar.snd P) F.
+Lemma PrX_snd F : \sum_(a in A) Pr P (setX [set a] F) = Pr (Bivar.snd P) F.
 Proof.
 rewrite /Pr (eq_bigr (fun i =>
-    \rsum_(a in [set i]) \rsum_(j in F) P (a, j))); last first.
+    \sum_(a in [set i]) \sum_(j in F) P (a, j))); last first.
   by move=> a _; rewrite big_setX.
 rewrite pair_big_dep /= exchange_big /=; apply eq_bigr => b _.
 rewrite Bivar.sndE (reindex_onto (fun x => (x, x)) fst); last first.
@@ -376,10 +376,10 @@ rewrite Bivar.sndE (reindex_onto (fun x => (x, x)) fst); last first.
 by rewrite /= (eq_bigl predT) // => a; rewrite !inE !eqxx.
 Qed.
 
-Lemma PrX_fst E : \rsum_(b in B) Pr P (setX E [set b]) = Pr (Bivar.fst P) E.
+Lemma PrX_fst E : \sum_(b in B) Pr P (setX E [set b]) = Pr (Bivar.fst P) E.
 Proof.
 rewrite /Pr (eq_bigr (fun i =>
-    \rsum_(b in [set i]) \rsum_(i in E) P (i, b))); last first.
+    \sum_(b in [set i]) \sum_(i in E) P (i, b))); last first.
   by move=> b _; rewrite big_setX /= exchange_big.
 rewrite pair_big_dep /= exchange_big /=; apply eq_bigr => a _.
 rewrite Bivar.fstE (reindex_onto (fun x => (x, x)) snd); last first.
@@ -579,7 +579,7 @@ Variables (A B : finType) (PQ : {dist A * B}) (a : A).
 Hypothesis Ha : Bivar.fst PQ a != 0.
 Definition f := [ffun b => \Pr_(Swap.d PQ) [[set b] | [set a]]].
 Lemma f0 b : 0 <= f b. Proof. rewrite ffunE; exact: cPr_ge0. Qed.
-Lemma f1 : \rsum_(b in B) f b = 1.
+Lemma f1 : \sum_(b in B) f b = 1.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
   move=> b _; rewrite ffunE /h; reflexivity.
@@ -671,7 +671,7 @@ Section conditional_probability_prop.
 Variables (A B : finType) (P : {dist A * B}).
 
 Lemma cPr_1 a : Bivar.fst P a != 0 ->
-  \rsum_(b in B) \Pr_(Swap.d P)[ [set b] | [set a] ] = 1.
+  \sum_(b in B) \Pr_(Swap.d P)[ [set b] | [set a] ] = 1.
 Proof.
 move=> Xa0; rewrite -(epmf1 (CondDist.d P _ Xa0)).
 apply eq_bigr => b _; by rewrite CondDist.dE.
@@ -683,7 +683,7 @@ Proof.
 move=> H.
 rewrite -subR_eq -addR_opp oppRK /cPr -mulRDl /Pr.
 rewrite !big_setX /= exchange_big /= [in X in (_ + X) * / _]exchange_big /=.
-rewrite -big_split /= (eq_bigr (fun i => \rsum_(i0 in A) P (i0, i))); last first.
+rewrite -big_split /= (eq_bigr (fun i => \sum_(i0 in A) P (i0, i))); last first.
   move=> a aE; apply/esym; rewrite (bigID (fun x => x \in F)) /= addRC; congr (_ + _).
   by apply eq_bigl => b; rewrite !inE.
 by rewrite eqR_divr_mulr // mul1R; apply eq_bigr => a aE; rewrite Bivar.sndE.
@@ -710,7 +710,7 @@ Let P := Bivar.fst PQ.  Let Q := Bivar.snd PQ. Let QP := Swap.d PQ.
 
 Lemma total_prob : (forall i j, i != j -> [disjoint E i & E j]) ->
   cover [set E i | i in 'I_n] = [set: A] ->
-  Pr Q F = \rsum_(i < n) Pr P (E i) * \Pr_QP [F | E i].
+  Pr Q F = \sum_(i < n) Pr P (E i) * \Pr_QP [F | E i].
 Proof.
 move=> disE covE.
 rewrite (eq_bigr (fun i => Pr QP (setX F (E i)))); last first.
@@ -745,7 +745,7 @@ Lemma bayes_family n (E : 'I_n -> {set A}) (F : {set B}) :
   cover [set E i | i in 'I_n] = [set: A] ->
   forall i,
   \Pr_PQ [E i | F] = (\Pr_QP [F | E i] * Pr P (E i)) /
-                     \rsum_(j < n) \Pr_ QP [F | E j] * Pr P (E j).
+                     \sum_(j < n) \Pr_ QP [F | E j] * Pr P (E j).
 Proof.
 move=> H1 H2 i.
 rewrite bayes (total_prob _ _ H1) //; congr (_ / _).
@@ -771,7 +771,7 @@ Section conditional_expectation_def.
 
 Variable (U : finType) (P : dist U) (X : {RV P -> R}) (F : {set U}).
 
-Definition cEx := \rsum_(r <- fin_img X) r * Pr P ((X @^-1 r) :&: F) / Pr P F.
+Definition cEx := \sum_(r <- fin_img X) r * Pr P ((X @^-1 r) :&: F) / Pr P F.
 
 End conditional_expectation_def.
 
@@ -782,7 +782,7 @@ Variables (n : nat) (F : 'I_n -> {set U}).
 
 Lemma thm65 : (forall i j, i != j -> [disjoint F i & F j]) ->
   cover [set F i | i in 'I_n] = [set: U] ->
-  `E X = \rsum_(i < n) cEx X (F i) * Pr P (F i).
+  `E X = \sum_(i < n) cEx X (F i) * Pr P (F i).
 Proof.
 move=> H1 H2; apply/esym; rewrite /cEx.
 evar (f : 'I_n -> R); rewrite (eq_bigr f); last first.
@@ -790,13 +790,13 @@ evar (f : 'I_n -> R); rewrite (eq_bigr f); last first.
 rewrite {}/f /= (bigID (fun i => Pr P (F i) != 0)) /=.
 rewrite [in X in _ + X = _]big1 ?addR0; last first.
   move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _; by rewrite mulR0.
-transitivity (\rsum_(i < n | Pr P (F i) != 0)
-  \rsum_(i0 <- fin_img X) (i0 * Pr P ((X @^-1 i0) :&: F i))).
+transitivity (\sum_(i < n | Pr P (F i) != 0)
+  \sum_(i0 <- fin_img X) (i0 * Pr P ((X @^-1 i0) :&: F i))).
   apply eq_bigr => i Fi0; apply eq_bigr => r _.
   by rewrite -!mulRA mulVR // mulR1.
 rewrite -Ex_altE /Ex_alt exchange_big /=; apply eq_bigr => r _.
 rewrite -big_distrr /=; congr (_ * _).
-transitivity (\rsum_(i < n) Pr P (X @^-1 r :&: F i)).
+transitivity (\sum_(i < n) Pr P (X @^-1 r :&: F i)).
   rewrite big_mkcond /=; apply eq_bigr => i _.
   case: ifPn => //; rewrite negbK => /eqP PFi0.
   rewrite /Pr big1 // => u; rewrite inE => /andP[uXr uFi].

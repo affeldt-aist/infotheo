@@ -90,7 +90,7 @@ Section proj124.
 Variables (A B D C : finType) (P : {dist A * B * D * C}).
 Definition d : {dist A * B * C} :=
   Swap.d (Bivar.snd (TripA.d (Swap.d (TripA.d P)))).
-Lemma dE abc : d abc = \rsum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
+Lemma dE abc : d abc = \sum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
 Proof.
 case: abc => [[a b] c] /=.
 rewrite /d Swap.dE Bivar.sndE; apply eq_bigr => d _.
@@ -533,7 +533,7 @@ Variables (A B C D : finType).
 Variables (W : {RV P -> D}) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
 (*Lemma marginal_RV2_1 a :
-  \rsum_(u in X @^-1 a) P u = \rsum_(b in B) (RVar.d [% X, Y]) (a, b).
+  \sum_(u in X @^-1 a) P u = \sum_(b in B) (RVar.d [% X, Y]) (a, b).
 Proof.
 have -> : X @^-1 a = \bigcup_b [% X, Y] @^-1 (a, b).
   apply/setP=> u; rewrite !inE; apply/eqP/bigcupP.
@@ -547,7 +547,7 @@ apply eq_bigr => b _; by rewrite RVar.dE.
 Qed.*)
 
 (*Lemma marginal_RV2_2 b :
-  \rsum_(u in Y @^-1 b) P u = \rsum_(a in A) (RVar.d [% X, Y]) (a, b).
+  \sum_(u in Y @^-1 b) P u = \sum_(a in A) (RVar.d [% X, Y]) (a, b).
 Proof.
 have -> : Y @^-1 b = \bigcup_a [% X, Y] @^-1 (a, b).
   apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
@@ -561,8 +561,8 @@ by apply eq_bigr => a _; by rewrite RVar.dE.
 Qed.*)
 
 (*Lemma marginal_RV3_1 b c :
-  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) (RVar.d [% W, Y, Z] (d, b, c)).
+  \sum_(u in [% Y, Z] @^-1 (b, c)) P u =
+  \sum_(d in D) (RVar.d [% W, Y, Z] (d, b, c)).
 Proof.
 have -> : ([% Y, Z] @^-1 (b, c)) = \bigcup_d [% W, Y, Z] @^-1 (d, b, c).
   apply/setP => u; rewrite !inE; apply/eqP/bigcupP.
@@ -577,7 +577,7 @@ Qed.*)
 
 Lemma marginal_RV3_2_set F G :
   \Pr[ [% Y, Z] \in setX F G ] =
-  \rsum_(d in D) \Pr[ [% Y, W, Z] \in setX (setX F [set d]) G].
+  \sum_(d in D) \Pr[ [% Y, W, Z] \in setX (setX F [set d]) G].
 Proof.
 rewrite /pr_eq_set.
 have -> : ([% Y, Z] @^-1: setX F G)
@@ -597,33 +597,33 @@ Qed.
 
 Lemma marginal_RV3_2' b c :
   \Pr[ [% Y, Z] = (b, c) ] =
-  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
+  \sum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
 Proof.
 by rewrite -pr_eq_set1 -setX1 marginal_RV3_2_set; apply eq_bigr => d _; rewrite !setX1 pr_eq_set1.
 Qed.
 
 Lemma marginal_RV3_2 b c :
-  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
+  \sum_(u in [% Y, Z] @^-1 (b, c)) P u =
+  \sum_(d in D) \Pr[ [% Y, W, Z] = (b, d, c)].
 Proof. exact: marginal_RV3_2'. Qed.
 
 Lemma marginal_RV3_3_set F G :
   \Pr[ [% Y, Z] \in setX F G ] =
-  \rsum_(d in D) \Pr[ [% Y, Z, W] \in setX (setX F G) [set d]].
+  \sum_(d in D) \Pr[ [% Y, Z, W] \in setX (setX F G) [set d]].
 Proof.
 by rewrite marginal_RV3_2_set; apply eq_bigr => d _; rewrite RV_Pr_AC_set.
 Qed.
 
 Lemma marginal_RV3_3' b c :
   \Pr[ [% Y, Z] = (b, c) ] =
-  \rsum_(d in D) \Pr[ [% Y, Z, W] = (b, c, d)].
+  \sum_(d in D) \Pr[ [% Y, Z, W] = (b, c, d)].
 Proof.
 by rewrite -pr_eq_set1 -setX1 marginal_RV3_3_set; apply eq_bigr => d _; rewrite !setX1 pr_eq_set1.
 Qed.
 
 Lemma marginal_RV3_3 b c :
-  \rsum_(u in [% Y, Z] @^-1 (b, c)) P u =
-  \rsum_(d in D) \Pr[ [% Y, Z, W] = (b, c, d)].
+  \sum_(u in [% Y, Z] @^-1 (b, c)) P u =
+  \sum_(d in D) \Pr[ [% Y, Z, W] = (b, c, d)].
 Proof. exact: marginal_RV3_3'. Qed.
 
 End marginal_RV3.
@@ -635,7 +635,7 @@ Variables (W : {RV P -> D}) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}
 
 Lemma marginal_RV4_1_set E F G :
   \Pr[ [% X, Y, Z] \in setX (setX E F) G ] =
-  \rsum_(d in D) \Pr[ [% W, X, Y, Z] \in setX (setX (setX [set d] E) F) G].
+  \sum_(d in D) \Pr[ [% W, X, Y, Z] \in setX (setX (setX [set d] E) F) G].
 Proof.
 rewrite (marginal_RV3_2_set W [% X, Y] Z).
 apply eq_bigr => d _.
@@ -645,44 +645,44 @@ Qed.
 
 Lemma marginal_RV4_1' a b c :
   \Pr[ [% X, Y, Z] = (a, b, c)] =
-  \rsum_(d in D) \Pr[ [% W, X, Y, Z] = (d, a, b, c)].
+  \sum_(d in D) \Pr[ [% W, X, Y, Z] = (d, a, b, c)].
 Proof.
 by rewrite -pr_eq_set1 -!setX1 marginal_RV4_1_set; apply eq_bigr => d _; rewrite !setX1 pr_eq_set1.
 Qed.
 
 Lemma marginal_RV4_1 a b c :
-  \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
-  \rsum_(d in D) \Pr[ [% W, X, Y, Z] = (d, a, b, c)].
+  \sum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
+  \sum_(d in D) \Pr[ [% W, X, Y, Z] = (d, a, b, c)].
 Proof. exact: marginal_RV4_1'. Qed.
 
 Lemma marginal_RV4_3_set E F G :
   \Pr[ [% X, Y, Z] \in setX (setX E F) G ] =
-  \rsum_(d in D) \Pr[ [% X, Y, W, Z] \in setX (setX (setX E F) [set d]) G].
+  \sum_(d in D) \Pr[ [% X, Y, W, Z] \in setX (setX (setX E F) [set d]) G].
 Proof. by rewrite (marginal_RV3_2_set W [% X, Y] Z). Qed.
 
 Lemma marginal_RV4_3' a b c :
   \Pr[ [% X, Y, Z] = (a, b, c) ] =
-  \rsum_(d in D) \Pr[ [% X, Y, W, Z] = (a, b, d, c)].
+  \sum_(d in D) \Pr[ [% X, Y, W, Z] = (a, b, d, c)].
 Proof. by rewrite (marginal_RV3_2' W [% X, Y] Z). Qed.
 
 Lemma marginal_RV4_3 a b c :
-  \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
-  \rsum_(d in D) \Pr[ [% X, Y, W, Z] = (a, b, d, c)].
+  \sum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
+  \sum_(d in D) \Pr[ [% X, Y, W, Z] = (a, b, d, c)].
 Proof. exact: marginal_RV4_3'. Qed.
 
 Lemma marginal_RV4_4_set E F G :
   \Pr[ [% X, Y, Z] \in setX (setX E F) G ] =
-  \rsum_(d in D) \Pr[ [% X, Y, Z, W] \in setX (setX (setX E F) G) [set d] ].
+  \sum_(d in D) \Pr[ [% X, Y, Z, W] \in setX (setX (setX E F) G) [set d] ].
 Proof. by rewrite (marginal_RV3_3_set W [% X, Y] Z). Qed.
 
 Lemma marginal_RV4_4' a b c :
   \Pr[ [% X, Y, Z] = (a, b, c) ] =
-  \rsum_(d in D) \Pr[ [% X, Y, Z, W] = (a, b, c, d)].
+  \sum_(d in D) \Pr[ [% X, Y, Z, W] = (a, b, c, d)].
 Proof. by rewrite (marginal_RV3_3' W [% X, Y] Z). Qed.
 
 Lemma marginal_RV4_4 a b c :
-  \rsum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
-  \rsum_(d in D) \Pr[ [% X, Y, Z, W] = (a, b, c, d) ].
+  \sum_(u in [% X, Y, Z] @^-1 (a, b, c)) P u =
+  \sum_(d in D) \Pr[ [% X, Y, Z, W] = (a, b, c, d) ].
 Proof. exact: marginal_RV4_4'. Qed.
 
 End marginal_RV4.
@@ -747,7 +747,7 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
 (* NB: see also cPr_1 *)
 Lemma cPr_1_RV a : \Pr[X = a] != 0 ->
-  \rsum_(b <- fin_img Y) \Pr[ Y = b | X = a ] = 1.
+  \sum_(b <- fin_img Y) \Pr[ Y = b | X = a ] = 1.
 Proof.
 rewrite -RVar.Pr Pr_set1.
 rewrite -{1}(fst_RV2 _ Y) => Xa0.
@@ -776,7 +776,7 @@ Variables (A B C : finType) (Z : {RV P -> C}) (X : {RV P -> A}) (Y : {RV P -> B}
 
 Lemma total_RV2 E F :
   \Pr[ [% X, Y] \in setX E F] =
-  \rsum_(z <- fin_img Z) \Pr[ [% X, Z, Y] \in setX (setX E [set z]) F].
+  \sum_(z <- fin_img Z) \Pr[ [% X, Z, Y] \in setX (setX E [set z]) F].
 Proof.
 rewrite (@marginal_RV3_2_set _ _ _ _ C Z).
 rewrite (bigID (fun x => x \in fin_img Z)) /=.
@@ -789,7 +789,7 @@ Qed.
 
 Lemma reasoning_by_cases E F :
   \Pr[ X \in E | Y \in F ] =
-  \rsum_(z <- fin_img Z) \Pr[ [% X, Z] \in (setX E [set z]) | Y \in F ].
+  \sum_(z <- fin_img Z) \Pr[ [% X, Z] \in (setX E [set z]) | Y \in F ].
 Proof.
 rewrite RV_cPrE_set total_RV2 -[in RHS]big_distrl /= (snd_RV3 _ Z); congr (_ / _).
 by apply eq_bigr => c _; rewrite RVar.Pr_set.
@@ -865,10 +865,10 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}
 Lemma decomposition : X _|_ [% Y, W] | Z -> X _|_ Y | Z.
 Proof.
 move=> H a b c.
-transitivity (\rsum_(d <- fin_img W) \Pr[ [% X, [% Y, W]] = (a, (b, d)) | Z = c]).
+transitivity (\sum_(d <- fin_img W) \Pr[ [% X, [% Y, W]] = (a, (b, d)) | Z = c]).
   rewrite (reasoning_by_cases W); apply eq_bigr => /= d _.
   by rewrite RV_Pr_lA setX1.
-transitivity (\rsum_(d <- fin_img W)
+transitivity (\sum_(d <- fin_img W)
   \Pr[ X = a | Z = c] * \Pr[ [% Y, W] = (b, d) | Z = c]).
   by apply eq_bigr => d _; rewrite H.
 rewrite -big_distrr /=; congr (_ * _).
@@ -965,9 +965,9 @@ rewrite [in X in X * _ = _](reasoning_by_cases W).
 evar (h : D -> R); rewrite (eq_bigr h); last first.
   move=> d _; rewrite setX1 /h; reflexivity.
 rewrite {}/h big_distrl /=.
-have <- : \rsum_(d <- fin_img W)
+have <- : \sum_(d <- fin_img W)
            \Pr[ [% X, Y] = (a, b) | Z = c] * \Pr[ W = d | Z = c] =
-         \rsum_(d <- fin_img W)
+         \sum_(d <- fin_img W)
            \Pr[ [% X, W] = (a, d) | Z = c] * \Pr[ Y = b | Z = c].
   suff H : forall d, \Pr[ [% X, Y] = (a, b) | Z = c] / \Pr[ Y = b | Z = c ] =
                 \Pr[ [% X, W] = (a, d) | Z = c] / \Pr[ W = d | Z = c ].

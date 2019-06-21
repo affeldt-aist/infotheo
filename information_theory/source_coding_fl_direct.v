@@ -179,8 +179,8 @@ suff -> : lhs = (1 - Pr (P `^ k) (`TS P k (lambda / 2)))%R.
     apply leR_add2l; rewrite leR_oppr oppRK; exact halflambdaepsilon.
   by move: (Pr_TS_1 halflambda0 Hk).
 rewrite /lhs {lhs} /SrcErrRate /Pr /=.
-set lhs := \rsum_(_ | _ ) _.
-suff -> : lhs = \rsum_(x in 'rV[A]_k | x \notin S) P `^ k x.
+set lhs := \sum_(_ | _ ) _.
+suff -> : lhs = \sum_(x in 'rV[A]_k | x \notin S) P `^ k x.
   have : forall a b : R, (a + b = 1 -> b = 1 - a)%R. by move=> ? ? <-; field.
   apply.
   rewrite -[X in _ = X](Pr_cplt (P `^ k) (`TS P k (lambda / 2))).

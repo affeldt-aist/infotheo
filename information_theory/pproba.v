@@ -37,7 +37,7 @@ Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Definition receivable y := [exists x, (P x != 0) && (W ``(y | x) != 0)].
 
 Lemma receivableE (y : 'rV__) :
-  receivable y = (\rsum_(x in 'rV[A]_n) P x * W ``(y | x) != 0).
+  receivable y = (\sum_(x in 'rV[A]_n) P x * W ``(y | x) != 0).
 Proof.
 apply/idP/idP => [|H].
 - case/existsP => /= x /andP[Px0].
@@ -45,7 +45,7 @@ apply/idP/idP => [|H].
   apply/eqP; rewrite -(@eqR_mul2l (P x)); last exact/eqP.
   rewrite mulR0 H // => /= x' _.
   apply mulR_ge0; exact: dist_ge0.
-- have /= : \rsum_(x in setT) P x * W ``(y | x) != 0.
+- have /= : \sum_(x in setT) P x * W ``(y | x) != 0.
     apply: contra H => /eqP H; apply/eqP.
     rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
   apply: contraNT.
@@ -65,7 +65,7 @@ Hypothesis HC : (0 < #| C |)%nat.
 Variable y : 'rV[B]_n.
 
 Lemma not_receivable_uniformE :
-  ~~ receivable W (`U HC) y = (\rsum_(t0 in C) W ``(y | t0) == 0).
+  ~~ receivable W (`U HC) y = (\sum_(t0 in C) W ``(y | t0) == 0).
 Proof.
 apply/idP/idP => [|/eqP].
 - rewrite negb_exists => /forallP H.
@@ -88,7 +88,7 @@ Module PosteriorProbability.
 Section def.
 Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Variable y : 'rV[B]_n.
-Definition den := \rsum_(x in 'rV_n) P x * W ``(y | x).
+Definition den := \sum_(x in 'rV_n) P x * W ``(y | x).
 Hypothesis receivable_y : receivable W P y.
 
 Definition f := [ffun x => P x * W ``(y | x) / den].
@@ -104,7 +104,7 @@ rewrite ffunE; apply divR_ge0; first by apply mulR_ge0; exact/dist_ge0.
 apply/ltRP; rewrite lt0R {1}/den -receivableE receivable_y; exact/leRP/den_ge0.
 Qed.
 
-Lemma f1 : \rsum_(x in 'rV_n) f x = 1.
+Lemma f1 : \sum_(x in 'rV_n) f x = 1.
 Proof.
 rewrite /f /Rdiv; evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h); last first.
   move=> a _; rewrite ffunE /h; reflexivity.
@@ -137,7 +137,7 @@ Hypothesis HC : (0 < #| C |)%nat.
 Variable y : 'rV[B]_n.
 Hypothesis Hy : receivable W (`U HC) y.
 
-Definition Kppu := / \rsum_(c in C) W ``(y | c).
+Definition Kppu := / \sum_(c in C) W ``(y | c).
 
 Lemma uniformEF (x : 'rV[A]_n) : x \notin C ->
   (`U HC) `^^ W, Hy (x | y) = 0.
@@ -185,9 +185,9 @@ Hypothesis H : receivable W P y.
 
 Let f' := fun x : 'rV_n => P `^^ W, H (x | y).
 
-Definition Kmpp : R := / \rsum_(t in 'rV_n) f' t.
+Definition Kmpp : R := / \sum_(t in 'rV_n) f' t.
 
-Lemma f'_neq0 : \rsum_(t in 'rV_n) f' t <> 0.
+Lemma f'_neq0 : \sum_(t in 'rV_n) f' t <> 0.
 Proof.
 evar (x : 'rV[A]_n -> R).
 rewrite (eq_bigr x); last first.
@@ -197,7 +197,7 @@ rewrite -big_distrl { x} /= mulR_eq0 => -[/eqP|].
 - apply/invR_neq0/eqP; by rewrite -receivableE.
 Qed.
 
-Definition f (i : 'I_n) := [ffun a => Kmpp * \rsum_(t in 'rV_n | t ``_ i == a) f' t].
+Definition f (i : 'I_n) := [ffun a => Kmpp * \sum_(t in 'rV_n | t ``_ i == a) f' t].
 
 Lemma f0 i a : 0 <= f i a.
 Proof.
@@ -209,13 +209,13 @@ rewrite ffunE; apply mulR_ge0.
 - apply rsumr_ge0 => /= ? _; exact: dist_ge0.
 Qed.
 
-Lemma f1 i : \rsum_(a in A) f i a = 1.
+Lemma f1 i : \sum_(a in A) f i a = 1.
 Proof.
 rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
   move=> a _; rewrite ffunE /h; reflexivity.
 rewrite {}/h -big_distrr /= /Kmpp.
-set tmp1 := \rsum_( _ | _ ) _.
-set tmp2 := \rsum_( _ | _ ) _.
+set tmp1 := \sum_( _ | _ ) _.
+set tmp2 := \sum_( _ | _ ) _.
 suff : tmp1 = tmp2.
   move=> tp12; rewrite -tp12 mulVR //; exact/eqP/f'_neq0.
 by rewrite {}/tmp1 {}/tmp2 (partition_big (fun x : 'rV_n => x ``_ i) xpredT).
@@ -236,7 +236,7 @@ Hypothesis Hy : receivable W (`U HC) y.
 
 Lemma probaE b n0 :
   (`U HC) '_ n0 `^^ W, Hy (b | y) =
-  Kmpp Hy * (\rsum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W, Hy (t | y)).
+  Kmpp Hy * (\sum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W, Hy (t | y)).
 Proof. by rewrite ffunE. Qed.
 
 End prop.

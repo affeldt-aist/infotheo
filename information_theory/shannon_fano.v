@@ -15,7 +15,7 @@ Local Open Scope R_scope.
 (* TODO: use mathcomp.analysis? or build an ad-hoc interface to bridge R and rcfType as a temporary fix? *)
 Definition kraft_condR (T : finType) (sizes : seq nat) :=
   let n := size sizes in
-  (\rsum_(i < n) #|T|%:R^-(nth O sizes i) <= (1 : R))%R.
+  (\sum_(i < n) #|T|%:R^-(nth O sizes i) <= (1 : R))%R.
 
 Local Open Scope proba_scope.
 
@@ -88,7 +88,7 @@ Section average_length.
 Variables (A T : finType) (P : {dist A}).
 Variable f : {ffun A -> seq T}. (* encoding function *)
 
-Definition average := \rsum_(x in A) P x * (size (f x))%:R.
+Definition average := \sum_(x in A) P x * (size (f x))%:R.
 
 End average_length.
 
@@ -107,7 +107,7 @@ Lemma shannon_fano_average_entropy : is_shannon_fano P f ->
   average P f < `H P  + 1.
 Proof.
 move=> H; rewrite /average.
-apply (@ltR_leR_trans (\rsum_(x in A) P x * (- Log (INR #|T|) (P x) + 1))).
+apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log (INR #|T|) (P x) + 1))).
   apply ltR_rsum; [exact: dist_domain_not_empty|move=> i].
   apply ltR_pmul2l.
     apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_ge0.

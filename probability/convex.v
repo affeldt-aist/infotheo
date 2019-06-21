@@ -131,7 +131,7 @@ Lemma f0 i : (0 <= f i)%R.
 Proof. rewrite /f ffunE; case: ifPn => _; [exact/dist_ge0|exact/leRR]. Qed.
 Lemma f1 (x : set A) (gX : g @` setT `<=` x `|` y)
   (ge : forall i : 'I_n, x (g i) -> e i = 0%R) :
-  (\rsum_(i < n) f i = 1)%R.
+  (\sum_(i < n) f i = 1)%R.
 Proof.
 rewrite /f -(epmf1 e) /=.
 apply eq_bigr => i _; rewrite ffunE.
@@ -149,7 +149,7 @@ Lemma dE (x : set A) (gX : g @` setT `<=` x `|` y)
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 Lemma f1' (x : set A) (gX : g @` setT `<=` x `|` y)
   (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0%R) :
-  (\rsum_(i < n) f i = 1)%R.
+  (\sum_(i < n) f i = 1)%R.
 Proof.
 rewrite /f -(epmf1 e) /=.
 apply eq_bigr => i _; rewrite ffunE.
@@ -457,10 +457,10 @@ rewrite !scalept_gt0 => [|Hpq /=]; first by apply addR_gt0.
 rewrite convmm; congr Scaled; apply val_inj; by rewrite /= mulRDl.
 Qed.
 
-Lemma scalept_rsum (B : finType) (F : B -> R+) x :
-  scalept (\rsum_(i : B) (F i)) x = \big[addpt/Zero]_(i : B) scalept (F i) x.
+Lemma scalept_rsum (B : finType) (F : B ->R^+) x :
+  scalept (\sum_(i : B) (F i)) x = \big[addpt/Zero]_(i : B) scalept (F i) x.
 Proof.
-apply (@proj1 _ (0 <= \rsum_(i : B) F i)).
+apply (@proj1 _ (0 <= \sum_(i : B) F i)).
 apply (big_ind2 (fun y q => scalept q x = y /\ 0 <= q)).
 + rewrite scalept0; split => //. apply leRR.
 + move=> x1 x2 y1 y2 [Hx1 Hx2] [Hy1 Hy2].
@@ -492,7 +492,7 @@ Lemma barycenter_big_fin (T : finType) (F : T -> scaled_pt) :
   barycenter [seq F i | i <- enum T] = \big[addpt/Zero]_i F i.
 Proof. by rewrite /barycenter big_map big_filter. Qed.
 
-Lemma weight_bary pts : weight (barycenter pts) = \rsum_(x <- pts) weight x.
+Lemma weight_bary pts : weight (barycenter pts) = \sum_(x <- pts) weight x.
 Proof. by rewrite (big_morph weight weight_addpt weight0). Qed.
 
 Lemma scalept_bary p (H : 0 <= p) pts :
@@ -1077,7 +1077,7 @@ case=> Hp. by rewrite scalept_gt0 /= mulRA.
 by rewrite -Hp scalept0 mul0R.
 Qed.
 Definition big_scaleR := big_morph scaleR scaleR_addpt scaleR0.
-Definition avgn n (g : 'I_n -> R) (e : {dist 'I_n}) := \rsum_(i < n) (e i * g i)%R.
+Definition avgn n (g : 'I_n -> R) (e : {dist 'I_n}) := (\sum_(i < n) e i * g i)%R.
 Lemma avgnE n (g : 'I_n -> R) e : \Conv_e g = avgn g e.
 Proof.
 rewrite -[LHS]Scaled1RK S1_convn big_scaleR.
@@ -1684,8 +1684,8 @@ by rewrite Conv2Dist.dE mulRDl 2!mulRA.
 Qed.
 
 Lemma rsum_Conv (A : finType) (p : prob) (dx dy : dist A):
-  \rsum_(a in A) (dx a <|p|> dy a) =
-  \rsum_(a in A) dx a <|p|> \rsum_(a in A) dy a.
+  (\sum_(a in A) (dx a <|p|> dy a) =
+  \sum_(a in A) dx a <|p|> \sum_(a in A) dy a)%R.
 Proof. by rewrite /Conv /= /avg big_split /= -2!big_distrr. Qed.
 
 Section convex_set_R.

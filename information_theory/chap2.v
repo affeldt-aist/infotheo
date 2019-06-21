@@ -133,7 +133,7 @@ Module Take.
 Section def.
 Variable (A : finType) (n : nat) (P : {dist 'rV[A]_n}).
 Definition d (i : 'I_n.+1) : {dist 'rV[A]_i} := DistMap.d (row_take i) P.
-Lemma dE i v : d i v = \rsum_(w in 'rV[A]_(n - i))
+Lemma dE i v : d i v = \sum_(w in 'rV[A]_(n - i))
   P (castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx v w)).
 Proof.
 rewrite DistMap.dE /=.
@@ -167,7 +167,7 @@ Section def.
 Local Open Scope vec_ext_scope.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n}) (i : 'I_n).
 Definition d : {dist A} := DistMap.d (fun v : 'rV[A]_n => v ord0 i) P.
-Lemma dE a : d a = \rsum_(x : 'rV[A]_n | x ``_ i == a) P x.
+Lemma dE a : d a = \sum_(x : 'rV[A]_n | x ``_ i == a) P x.
 Proof. by rewrite DistMap.dE. Qed.
 End def.
 End Nth.
@@ -177,7 +177,7 @@ Section def.
 Local Open Scope vec_ext_scope.
 Variables (A B : finType) (n : nat) (P : {dist 'rV[A]_n * B}) (i : 'I_n).
 Definition d : {dist A * B} := DistMap.d (fun x : 'rV[A]_n * B => (x.1 ord0 i, x.2)) P.
-Lemma dE ab : d ab = \rsum_(x : 'rV[A]_n * B | (x.1 ``_ i == ab.1) && (x.2 == ab.2)) P x.
+Lemma dE ab : d ab = \sum_(x : 'rV[A]_n * B | (x.1 ``_ i == ab.1) && (x.2 == ab.2)) P x.
 Proof. by rewrite DistMap.dE. Qed.
 End def.
 End PairNth.
@@ -231,7 +231,7 @@ Module MargDist.
 Section def.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) (i : 'I_n.+1).
 Definition d : {dist 'rV[A]_n} := DistMap.d (fun v => col' i v) P.
-Lemma dE v : d v = \rsum_(x : 'rV[A]_n.+1 | col' i x == v) P x.
+Lemma dE v : d v = \sum_(x : 'rV[A]_n.+1 | col' i x == v) P x.
 Proof. by rewrite DistMap.dE. Qed.
 End def.
 Section prop.
@@ -364,18 +364,18 @@ Section condentropy.
 Variables (A B : finType) (QP : {dist B * A}).
 
 (* H(Y|X = x), see eqn 2.10 *)
-Definition h1 a := - \rsum_(b in B)
+Definition h1 a := - \sum_(b in B)
   \Pr_QP [ [set b] | [set a] ] * log (\Pr_QP [ [set b] | [set a] ]).
 
 Let P := Bivar.snd QP.
 
 (*eqn 2.11 *)
-Definition h := \rsum_(a in A) P a * h1 a.
+Definition h := \sum_(a in A) P a * h1 a.
 
 Let PQ := Swap.d QP.
 
 (* cover&thomas 2.12 *)
-Lemma hE : h = - \rsum_(a in A) \rsum_(b in B)
+Lemma hE : h = - \sum_(a in A) \sum_(b in B)
   PQ (a, b) * log (\Pr_QP [ [set b] | [set a]]).
 Proof.
 rewrite /h big_morph_oppR /=; apply eq_bigr => a _.
@@ -451,7 +451,7 @@ case => -[ [? [[|[|[|[|[]//]]]]]
   | [? [[|[|[|[|[]//]]]]] | []//]]]]]; rewrite /f /=; try lra.
 Qed.
 
-Lemma f1 : \rsum_(x in {: 'I_4 * 'I_4}) f x = 1.
+Lemma f1 : \sum_(x in {: 'I_4 * 'I_4}) f x = 1.
 Proof.
 rewrite (eq_bigr (fun x => f (x.1, x.2))); last by case.
 rewrite -(pair_bigA _ (fun x1 x2 => f (x1, x2))) /=.
@@ -500,15 +500,15 @@ Let QP := Swap.d PQ.
 Lemma chain_rule : JointEntropy.h PQ = `H P + CondEntropy.h QP. (* 2.14 *)
 Proof.
 rewrite /JointEntropy.h {1}/entropy.
-transitivity (- (\rsum_(a in A) \rsum_(b in B)
+transitivity (- (\sum_(a in A) \sum_(b in B)
     PQ (a, b) * log (P a * \Pr_QP [ [set b] | [set a] ]))). (* 2.16 *)
   congr (- _); rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
   congr (_ * log _); case/boolP : (P a == 0) => [/eqP|] H0.
   - by rewrite (Bivar.dom_by_fst _ H0) H0 mul0R.
   - by rewrite -(Pr_set1 P a) /P -(Swap.snd PQ) mulRC -product_rule0 setX1 Pr_set1 Swap.dE.
 transitivity (
-  - (\rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (P a))
-  - (\rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (\Pr_QP [ [set b] | [set a] ]))). (* 2.17 *)
+  - (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a))
+  - (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (\Pr_QP [ [set b] | [set a] ]))). (* 2.17 *)
   rewrite -oppRB; congr (- _); rewrite -addR_opp oppRK -big_split /=.
   apply eq_bigr => a _; rewrite -big_split /=; apply eq_bigr => b _.
   case/boolP : (PQ (a, b) == 0) => [/eqP H0|H0].
@@ -589,7 +589,7 @@ have -> : MargDist.d P i = Bivar.fst PQ.
   rewrite {}/f.
   apply/esym.
   destruct n as [|n']; first by rewrite (ord1 i) eqxx in i0.
-  transitivity (\rsum_(x : A) P
+  transitivity (\sum_(x : A) P
     (\row_(k < n'.+2) (if k == i then x else v ``_ (inord (unbump i k)))))%R.
     rewrite (reindex_onto (fun a => \row_k (if k == i then a else v ``_ (inord (unbump i k))))
       (fun w => w ``_ i)); last first.
@@ -614,7 +614,7 @@ have -> : MargDist.d P i = Bivar.fst PQ.
       apply val_inj => /=.
       by rewrite bumpK inordK.
     by rewrite mxE eqxx.
-  transitivity (\rsum_(i1 in A) (MultivarPerm.d P (put_front_perm i)) (row_mx (\row_(i < 1) i1) v)); last first.
+  transitivity (\sum_(i1 in A) (MultivarPerm.d P (put_front_perm i)) (row_mx (\row_(i < 1) i1) v))%R; last first.
     apply eq_bigr => a _.
     by rewrite Multivar.to_bivarE.
   apply/esym; evar (f : A -> R); rewrite (eq_bigr f); last first.
@@ -660,8 +660,8 @@ Lemma chain_rule_corollary :
   CondEntropy.h PQR = CondEntropy.h PR + CondEntropy.h QPR.
 Proof.
 rewrite !CondEntropy.hE -oppRD; congr (- _).
-rewrite [in X in _ = _ + X](eq_bigr (fun j => \rsum_(i in B) (Swap.d QPR) ((j.1, j.2), i) * log \Pr_QPR[[set i] | [set (j.1, j.2)]])); last by case.
-rewrite -[in RHS](pair_bigA _ (fun j1 j2 => \rsum_(i in B) (Swap.d QPR ((j1, j2), i) * log \Pr_QPR[[set i] | [set (j1, j2)]]))) /=.
+rewrite [in X in _ = _ + X](eq_bigr (fun j => \sum_(i in B) (Swap.d QPR) ((j.1, j.2), i) * log \Pr_QPR[[set i] | [set (j.1, j.2)]])); last by case.
+rewrite -[in RHS](pair_bigA _ (fun j1 j2 => \sum_(i in B) (Swap.d QPR ((j1, j2), i) * log \Pr_QPR[[set i] | [set (j1, j2)]]))) /=.
 rewrite [in X in _ = _ + X]exchange_big /= -big_split; apply eq_bigr => c _ /=.
 rewrite [in LHS](eq_bigr (fun j => (Swap.d PQR) (c, (j.1, j.2)) * log \Pr_PQR[[set (j.1, j.2)] | [set c]])); last by case.
 rewrite -[in LHS](pair_bigA _ (fun j1 j2 => (Swap.d PQR) (c, (j1, j2)) * log \Pr_PQR[[set (j1, j2)] | [set c]])) /=.
@@ -726,7 +726,7 @@ Let QP := Swap.d PQ.
 
 (* 2.28 *)
 Lemma miE0 : mi PQ =
-  \rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (PQ (a, b) / (P a * Q b)).
+  \sum_(a in A) \sum_(b in B) PQ (a, b) * log (PQ (a, b) / (P a * Q b)).
 Proof.
 rewrite /mi /div pair_big /=; apply eq_bigr; case => a b _ /=.
 case/boolP : (PQ (a, b) == 0) => [/eqP H0|H0].
@@ -738,7 +738,7 @@ Qed.
 Lemma miE : mi PQ = `H P - CondEntropy.h PQ.
 Proof.
 rewrite miE0.
-transitivity (\rsum_(a in A) \rsum_(b in B)
+transitivity (\sum_(a in A) \sum_(b in B)
     PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ] / P a)).
   apply eq_bigr => a _; apply eq_bigr => b _.
   rewrite /cPr setX1 2!Pr_set1 /= -/Q.
@@ -749,8 +749,8 @@ transitivity (\rsum_(a in A) \rsum_(b in B)
       apply/eqP; exact: Bivar.dom_by_fstN H0.
       apply/eqP; exact: Bivar.dom_by_sndN H0.
     by rewrite mulRAC.
-transitivity (- (\rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (P a)) +
-  \rsum_(a in A) \rsum_(b in B) PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ])). (* 2.37 *)
+transitivity (- (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a)) +
+  \sum_(a in A) \sum_(b in B) PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ])). (* 2.37 *)
   rewrite big_morph_oppR -big_split; apply/eq_bigr => a _ /=.
   rewrite big_morph_oppR -big_split; apply/eq_bigr => b _ /=.
   rewrite addRC -mulRN -mulRDr addR_opp.
@@ -834,7 +834,7 @@ Qed.
 
 (* thm 2.5.1 *)
 Lemma chain_rule_rV (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) :
-  `H P = \rsum_(i < n.+1)
+  `H P = \sum_(i < n.+1)
           if i == O :> nat then
             `H (Multivar.head_of P)
           else
@@ -868,7 +868,7 @@ Section divergence_conditional_distributions.
 
 Variables (A B C : finType) (PQR : {dist A * B * C}).
 
-Definition cdiv1 z := \rsum_(x in {: A * B})
+Definition cdiv1 z := \sum_(x in {: A * B})
   \Pr_PQR[[set x] | [set z]] * log (\Pr_PQR[[set x] | [set z]] /
     (\Pr_(Proj13.d PQR)[[set x.1] | [set z]] * \Pr_(Proj23.d PQR)[[set x.2] | [set z]])).
 
@@ -922,13 +922,13 @@ Definition cmi := CondEntropy.h (Proj13.d PQR) - CondEntropy.h (TripA.d PQR).
 End def.
 Section prop.
 Variables (A B C : finType) (PQR : {dist A * B * C}).
-Lemma cmiE : cmi PQR = \rsum_(x in {: A * B * C}) PQR x *
+Lemma cmiE : cmi PQR = \sum_(x in {: A * B * C}) PQR x *
   log (\Pr_PQR[[set x.1] | [set x.2]] /
        (\Pr_(Proj13.d PQR)[[set x.1.1] | [set x.2]] * \Pr_(Proj23.d PQR)[[set x.1.2] | [set x.2]])).
 Proof.
 rewrite /cmi 2!CondEntropy.hE /= subR_opp big_morph_oppR.
-rewrite (eq_bigr (fun a => \rsum_(b in A) (Swap.d (TripA.d PQR)) (a.1, a.2, b) * log \Pr_(TripA.d PQR)[[set b] | [set (a.1, a.2)]])); last by case.
-rewrite -(pair_bigA _ (fun a1 a2 => \rsum_(b in A) (Swap.d (TripA.d PQR)) ((a1, a2), b) * log \Pr_(TripA.d PQR)[[set b] | [set (a1, a2)]])).
+rewrite (eq_bigr (fun a => \sum_(b in A) (Swap.d (TripA.d PQR)) (a.1, a.2, b) * log \Pr_(TripA.d PQR)[[set b] | [set (a.1, a.2)]])); last by case.
+rewrite -(pair_bigA _ (fun a1 a2 => \sum_(b in A) (Swap.d (TripA.d PQR)) ((a1, a2), b) * log \Pr_(TripA.d PQR)[[set b] | [set (a1, a2)]])).
 rewrite exchange_big -big_split /=.
 rewrite (eq_bigr (fun x => PQR (x.1, x.2) * log
 (\Pr_PQR[[set x.1] | [set x.2]] /
@@ -968,7 +968,7 @@ Qed.
 
 Let R := Bivar.snd PQR.
 
-Lemma cmiE2 : cmi PQR = \rsum_(z in C) R z * cdiv1 PQR z.
+Lemma cmiE2 : cmi PQR = \sum_(z in C) R z * cdiv1 PQR z.
 Proof.
 rewrite cmiE.
 rewrite (eq_bigr (fun x => PQR (x.1, x.2) * log
@@ -1027,7 +1027,7 @@ Let Qj : {dist B * A} := Swap.d (CDist.joint_of Q).
 Let P1 : {dist A} := CDist.P P.
 
 (* eqn 2.65 *)
-Definition cre := \rsum_(x in A) P1 x * \rsum_(y in B)
+Definition cre := \sum_(x in A) P1 x * \sum_(y in B)
   \Pr_Pj[[set y]|[set x]] * log (\Pr_Pj[[set y]|[set x]] / \Pr_Qj[[set y]|[set x]]).
 End def.
 
@@ -1096,14 +1096,14 @@ Let fA (i : 'I_n.+1) : {dist A * ('rV[A]_i * B)} := TripA.d (f i).
 Local Open Scope vec_ext_scope.
 
 Lemma chain_rule_information :
-  (* 2.62 *) MutualInfo.mi PY = \rsum_(i < n.+1)
+  (* 2.62 *) MutualInfo.mi PY = \sum_(i < n.+1)
     if i == O :> nat then
       MutualInfo.mi (PairNth.d PY ord0)
     else
       cmi (f23 i).
 Proof.
 rewrite MutualInfo.miE chain_rule_rV.
-have -> : CondEntropy.h PY = \rsum_(j < n.+1)
+have -> : CondEntropy.h PY = \sum_(j < n.+1)
   if j == O :> nat then
     CondEntropy.h (PairNth.d PY ord0)
   else
@@ -1136,7 +1136,7 @@ have -> : CondEntropy.h PY = \rsum_(j < n.+1)
       rewrite -(pair_big (fun i : 'rV_n.+1 => i ``_ ord0 == a) (fun i => i == a1 ``_ ord0) (fun i1 i2 => PY (i1, i2))) /=.
       rewrite [in RHS](eq_bigl (fun i : 'rV_n.+1 => (xpred1 a (i ``_ ord0)) && (xpredT i))); last first.
         move=> i; by rewrite andbT.
-      rewrite -(big_rV_cons_behead (fun i => \rsum_(j | j == a1 ``_ ord0) PY (i, j)) (fun i => i == a) xpredT).
+      rewrite -(big_rV_cons_behead (fun i => \sum_(j | j == a1 ``_ ord0) PY (i, j)) (fun i => i == a) xpredT).
       rewrite exchange_big /=.
       apply eq_bigr => v _.
       rewrite big_pred1_eq.
@@ -1359,7 +1359,7 @@ Section independence_bound_on_entropy.
 Variables (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}).
 
 (* thm 2.6.6 TODO: with equality in case of independence *)
-Lemma independence_bound_on_entropy : `H P <= \rsum_(i < n.+1) `H (Nth.d P i).
+Lemma independence_bound_on_entropy : `H P <= \sum_(i < n.+1) `H (Nth.d P i).
 Proof.
 rewrite chain_rule_rV; apply ler_rsum => /= i _.
 case: ifPn => [/eqP|] i0.
@@ -1650,7 +1650,7 @@ Variables (A : finType) (n' : nat).
 Let n := n'.+1.
 Variable (P : {dist 'rV[A]_n}).
 
-Lemma han : n.-1%:R * `H P <= \rsum_(i < n) `H (MargDist.d P i).
+Lemma han : n.-1%:R * `H P <= \sum_(i < n) `H (MargDist.d P i).
 Proof.
 rewrite -subn1 natRB // mulRBl mul1R leR_subl_addr {2}(chain_rule_rV P).
 rewrite -big_split /= -{1}(card_ord n) -sum1_card big_morph_natRD big_distrl /=.

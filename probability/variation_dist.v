@@ -19,7 +19,7 @@ Section variation_distance.
 Variable A : finType.
 
 (** The variation distance of two distributions P and Q on X: *)
-Definition var_dist (P Q : dist A) := \rsum_(a : A) `| P a - Q a |.
+Definition var_dist (P Q : dist A) := \sum_(a : A) `| P a - Q a |.
 
 Local Notation "'d(' P ',' Q ')' " := (var_dist P Q).
 

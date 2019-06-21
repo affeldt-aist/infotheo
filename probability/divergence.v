@@ -53,7 +53,7 @@ Section divergence_def.
 
 Variables (A : finType) (P Q : dist A).
 
-Definition div := \rsum_(a in A) P a * log (P a / Q a).
+Definition div := \sum_(a in A) P a * log (P a / Q a).
 
 End divergence_def.
 
@@ -71,7 +71,7 @@ Hypothesis P_dom_by_Q : P << Q.
 Lemma div_ge0 : 0 <= D(P || Q).
 Proof.
 rewrite /div [X in _ <= X](_ : _ =
-    - \rsum_(a | a \in A) P a * (log (Q a / P a))); last first.
+    - \sum_(a | a \in A) P a * (log (Q a / P a))); last first.
   rewrite big_morph_oppR; apply eq_bigr => a _; rewrite -mulRN.
   case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
   congr (_ * _).
@@ -79,7 +79,7 @@ rewrite /div [X in _ <= X](_ : _ =
   rewrite -logV; last by apply divR_gt0; rewrite -dist_gt0.
   rewrite Rinv_Rdiv //; exact/eqP.
 rewrite leR_oppr oppR0.
-apply (@leR_trans ((\rsum_(a | a \in A) (Q a - P a)) * log (exp 1))).
+apply (@leR_trans ((\sum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
   apply ler_rsum => a _; apply div_diff_ub; [exact: dist_ge0 | | exact: dist_ge0].
   move/dominatesP : P_dom_by_Q; exact.

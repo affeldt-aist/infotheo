@@ -8,39 +8,39 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
 (** * Instantiation of canonical big operators with Coq reals *)
 
-Notation "\rsum_ ( i <- r | P ) F" := (\big[Rplus/R0]_(i <- r | P%B) F)
+Notation "\sum_ ( i <- r | P ) F" := (\big[Rplus/R0]_(i <- r | P%B) F)
   (at level 41, F at level 41, i, r at level 50,
-           format "'[' \rsum_ ( i  <-  r  |  P ) '/  '  F ']'").
-Notation "\rsum_ ( i <- r ) F" :=  (\big[Rplus/R0]_(i <- r) F)
+           format "'[' \sum_ ( i  <-  r  |  P ) '/  '  F ']'") : R_scope.
+Notation "\sum_ ( i <- r ) F" :=  (\big[Rplus/R0]_(i <- r) F)
   (at level 41, F at level 41, i, r at level 50,
-           format "'[' \rsum_ ( i  <-  r ) '/  '  F ']'").
-Notation "\rsum_ ( m <= i < n | P ) F" := (\big[Rplus/R0]_(m <= i < n | P%B) F)
+           format "'[' \sum_ ( i  <-  r ) '/  '  F ']'") : R_scope.
+Notation "\sum_ ( m <= i < n | P ) F" := (\big[Rplus/R0]_(m <= i < n | P%B) F)
   (at level 41, F at level 41, i, m, n at level 50,
-           format "'[' \rsum_ ( m  <=  i  <  n  |  P ) '/  '  F ']'").
-Notation "\rsum_ ( m <= i < n ) F" := (\big[Rplus/R0]_(m <= i < n) F)
+           format "'[' \sum_ ( m  <=  i  <  n  |  P ) '/  '  F ']'") : R_scope.
+Notation "\sum_ ( m <= i < n ) F" := (\big[Rplus/R0]_(m <= i < n) F)
   (at level 41, F at level 41, i, m, n at level 50,
-           format "'[' \rsum_ ( m  <=  i  <  n ) '/  '  F ']'").
-Notation "\rsum_ ( i | P ) F" := (\big[Rplus/R0]_(i | P%B) F)
+           format "'[' \sum_ ( m  <=  i  <  n ) '/  '  F ']'") : R_scope.
+Notation "\sum_ ( i | P ) F" := (\big[Rplus/R0]_(i | P%B) F)
   (at level 41, F at level 41, i at level 50,
-           format "'[' \rsum_ ( i  |  P ) '/  '  F ']'").
-Notation "\rsum_ ( i : t | P ) F" := (\big[Rplus/R0]_(i : t | P%B) F)
+           format "'[' \sum_ ( i  |  P ) '/  '  F ']'") : R_scope .
+Notation "\sum_ ( i : t | P ) F" := (\big[Rplus/R0]_(i : t | P%B) F)
   (at level 41, F at level 41, i at level 50,
-           only parsing).
-Notation "\rsum_ ( i : t ) F" := (\big[Rplus/R0]_(i : t) F)
+           only parsing) : R_scope.
+Notation "\sum_ ( i : t ) F" := (\big[Rplus/R0]_(i : t) F)
   (at level 41, F at level 41, i at level 50,
-           only parsing).
-Notation "\rsum_ ( i < n | P ) F" := (\big[Rplus/R0]_(i < n | P%B) F)
+           only parsing) : R_scope.
+Notation "\sum_ ( i < n | P ) F" := (\big[Rplus/R0]_(i < n | P%B) F)
   (at level 41, F at level 41, i, n at level 50,
-           format "'[' \rsum_ ( i  <  n  |  P ) '/  '  F ']'").
-Notation "\rsum_ ( i < n ) F" := (\big[Rplus/R0]_(i < n) F)
+           format "'[' \sum_ ( i  <  n  |  P ) '/  '  F ']'") : R_scope.
+Notation "\sum_ ( i < n ) F" := (\big[Rplus/R0]_(i < n) F)
   (at level 41, F at level 41, i, n at level 50,
-           format "'[' \rsum_ ( i  <  n ) '/  '  F ']'").
-Notation "\rsum_ ( i 'in' A | P ) F" := (\big[Rplus/R0]_(i in A | P%B) F)
+           format "'[' \sum_ ( i  <  n ) '/  '  F ']'") : R_scope.
+Notation "\sum_ ( i 'in' A | P ) F" := (\big[Rplus/R0]_(i in A | P%B) F)
   (at level 41, F at level 41, i, A at level 50,
-           format "'[' \rsum_ ( i  'in'  A  |  P ) '/  '  F ']'").
-Notation "\rsum_ ( i 'in' A ) F" := (\big[Rplus/R0]_(i in A) F)
+           format "'[' \sum_ ( i  'in'  A  |  P ) '/  '  F ']'") : R_scope.
+Notation "\sum_ ( i 'in' A ) F" := (\big[Rplus/R0]_(i in A) F)
   (at level 41, F at level 41, i, A at level 50,
-           format "'[' \rsum_ ( i  'in'  A ) '/  '  F ']'").
+           format "'[' \sum_ ( i  'in'  A ) '/  '  F ']'") : R_scope.
 
 Notation "\rprod_ ( i <- r | P ) F" := (\big[Rmult/R1]_(i <- r | P%B) F)
   (at level 41, F at level 41, i, r at level 50,
@@ -145,7 +145,7 @@ Proof. elim: k => // k Hk; by rewrite iterS Hk Rmax_right. Qed.
 (** Rle, Rlt lemmas for big sums of reals *)
 
 Lemma rsum_setT (A : finType) (f : A -> R) (P : pred A) :
-  \rsum_(i in A | P i) f i = \rsum_(i in [set: A] | P i) f i.
+  \sum_(i in A | P i) f i = \sum_(i in [set: A] | P i) f i.
 Proof. apply eq_bigl => x /=; by rewrite !inE. Qed.
 
 Section ler_ltr_rsum.
@@ -154,7 +154,7 @@ Variables (A : finType) (f g : A -> R) (P Q : pred A).
 
 Lemma ler_rsum_support (X : {set A}) :
   (forall i, i \in X -> P i -> f i <= g i) ->
-  \rsum_(i in X | P i) f i <= \rsum_(i in X | P i) g i.
+  \sum_(i in X | P i) f i <= \sum_(i in X | P i) g i.
 Proof.
 move=> H.
 elim: (index_enum _) => [|h t IH].
@@ -165,7 +165,7 @@ elim: (index_enum _) => [|h t IH].
 Qed.
 
 Lemma ler_rsum : (forall i, P i -> f i <= g i) ->
-  \rsum_(i | P i) f i <= \rsum_(i | P i) g i.
+  \sum_(i | P i) f i <= \sum_(i | P i) g i.
 Proof.
 move=> H; rewrite rsum_setT [in X in _ <= X]rsum_setT.
 apply ler_rsum_support => a _; exact: H.
@@ -174,7 +174,7 @@ Qed.
 Lemma ler_rsum_l : (forall i, P i -> f i <= g i) ->
   (forall i, Q i -> 0 <= g i) ->
   (forall i, P i -> Q i) ->
-  \rsum_(i | P i) f i <= \rsum_(i | Q i) g i.
+  \sum_(i | P i) f i <= \sum_(i | Q i) g i.
 Proof.
 move=> f_g Qg H.
 elim: (index_enum _) => [| h t IH].
@@ -187,7 +187,7 @@ Qed.
 
 Lemma ler_rsum_l_support (R : pred A) :
   (forall a, 0 <= f a) -> (forall i, P i -> Q i) ->
-  \rsum_(i in R | P i) f i <= \rsum_(i in R | Q i) f i.
+  \sum_(i in R | P i) f i <= \sum_(i in R | Q i) f i.
 Proof.
 move=> Hf P_Q.
 elim: (index_enum _) => [|h t IH].
@@ -204,7 +204,7 @@ Qed.
 
 Lemma ltr_rsum_support (X : {set A}) : (0 < #|X|)%nat ->
   (forall i, i \in X -> f i < g i) ->
-  \rsum_(i in X) f i < \rsum_(i in X) g i.
+  \sum_(i in X) f i < \sum_(i in X) g i.
 Proof.
 move Hn : #|X| => n.
 elim: n X Hn => // n IH X Hn _ H.
@@ -222,7 +222,7 @@ apply IH => //.
 Qed.
 
 Lemma ltR_rsum : (O < #|A|)%nat -> (forall i, f i < g i) ->
-  \rsum_(i in A) f i < \rsum_(i in A) g i.
+  \sum_(i in A) f i < \sum_(i in A) g i.
 Proof.
 move=> A0 H0.
 have : forall i : A, i \in [set: A] -> f i < g i by move=> a _; exact/H0.
@@ -234,18 +234,18 @@ Qed.
 
 End ler_ltr_rsum.
 
-Lemma ler_rsum_Rabs (A : finType) f : `| \rsum_(a : A) f a | <= \rsum_(a : A) `| f a |.
+Lemma ler_rsum_Rabs (A : finType) f : `| \sum_(a : A) f a | <= \sum_(a : A) `| f a |.
 Proof.
 elim: (index_enum _) => [|h t IH].
   rewrite 2!big_nil Rabs_R0; exact/leRR.
 rewrite 2!big_cons.
-apply (@leR_trans (`| f h | + `| \rsum_(j <- t) f j |));
+apply (@leR_trans (`| f h | + `| \sum_(j <- t) f j |));
   [exact/Rabs_triang |exact/leR_add2l].
 Qed.
 
 Lemma ler_rsum_predU (A : finType) (f : A -> R) (P Q : pred A) :
-  (forall a, 0 <= f a) -> \rsum_(i in A | [predU P & Q] i) f i <=
-  \rsum_(i in A | P i) f i + \rsum_(i in A | Q i) f i.
+  (forall a, 0 <= f a) -> \sum_(i in A | [predU P & Q] i) f i <=
+  \sum_(i in A | P i) f i + \sum_(i in A | Q i) f i.
 Proof.
 move=> Hf.
 elim: (index_enum _) => [|h t IH /=]; first by rewrite !big_nil /=; lra.
@@ -274,7 +274,7 @@ case: ifPn => /=.
 Qed.
 
 Lemma rsumr_ge0 (A : eqType) (d : seq A) (P : pred A) f (H : forall i, P i -> 0 <= f i) :
-  0 <= \rsum_(i <- d | P i) f i.
+  0 <= \sum_(i <- d | P i) f i.
 Proof.
 elim: d => [|h t IH]; first by rewrite big_nil; exact/leRR.
 rewrite big_cons; case: ifPn => // Ph; apply/addR_ge0 => //; exact: H.
@@ -289,10 +289,10 @@ exact/ler_rsum.
 Qed.*)
 
 Lemma rsumr_gt0 (A : finType) (f : A -> R) (HA : (0 < #|A|)%nat) :
-  (forall i, 0 < f i) -> 0 < \rsum_(i in A) f i.
+  (forall i, 0 < f i) -> 0 < \sum_(i in A) f i.
 Proof.
 move=> H.
-rewrite (_ : \rsum_(i in A) f i = \rsum_(i in [set: A]) f i); last first.
+rewrite (_ : \sum_(i in A) f i = \sum_(i in [set: A]) f i); last first.
   apply eq_bigl => x /=; by rewrite !inE.
 apply: leR_ltR_trans; last first.
   apply ltr_rsum_support with (f := fun=> 0) => //; by rewrite cardsT.
@@ -302,11 +302,11 @@ Qed.
 Lemma prsumr_seq_eq0P (A : eqType) (l : seq A) f :
   uniq l ->
   (forall a, a \in l -> 0 <= f a) ->
-  \rsum_(a <- l) f a = 0 <-> (forall a, a \in l -> f a = 0).
+  \sum_(a <- l) f a = 0 <-> (forall a, a \in l -> f a = 0).
 Proof.
 move=> ul Hf; split=> [H a al|h]; last first.
   by rewrite (eq_big_seq (fun=> 0)) ?big1.
-suff : f a = 0 /\ \rsum_(i <- l|i != a) f i = 0 by case.
+suff : f a = 0 /\ \sum_(i <- l|i != a) f i = 0 by case.
 apply: Rplus_eq_R0.
 - exact/Hf.
 - by rewrite big_seq_cond; apply: rsumr_ge0 => ? /andP[? ?]; apply Hf.
@@ -315,11 +315,11 @@ Qed.
 
 Lemma prsumr_eq0P (A : finType) (P : pred A) f :
   (forall a, P a -> 0 <= f a) ->
-  \rsum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
+  \sum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
 Proof.
 move=> Hf; split=> [H a Ha|h]; last first.
   by rewrite (eq_bigr (fun=> 0)) // big_const iter_addR mulR0.
-suff : f a = 0 /\ \rsum_(i | P i && (i != a)) f i = 0 by case.
+suff : f a = 0 /\ \sum_(i | P i && (i != a)) f i = 0 by case.
 apply: Rplus_eq_R0.
 - exact/Hf/Ha.
 - apply: rsumr_ge0 => ? /andP[? ?]; by apply Hf.
@@ -329,7 +329,7 @@ Qed.
 (* TODO: factorize? rename? *)
 Lemma Rle_big_eq (A : finType) (f g : A -> R) (P : pred A) :
    (forall i : A, P i -> f i <= g i) ->
-   \rsum_(i | P i) g i = \rsum_(i | P i) f i ->
+   \sum_(i | P i) g i = \sum_(i | P i) f i ->
    (forall i : A, P i -> g i = f i).
 Proof.
 move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply prsumr_eq0P.
@@ -447,12 +447,12 @@ Qed.
 End ler_ltr_rprod.
 
 Lemma classify_big (A : finType) n (f : A -> 'I_n) (F : 'I_n -> R) :
-  \rsum_(s : A) F (f s) = \rsum_(i < n) INR #|f @^-1: [set i]| * F i.
+  \sum_(s : A) F (f s) = \sum_(i < n) INR #|f @^-1: [set i]| * F i.
 Proof.
-transitivity (\rsum_(i < n) \rsum_(s | true && (f s == i)) F (f s)).
+transitivity (\sum_(i < n) \sum_(s | true && (f s == i)) F (f s)).
   by apply partition_big.
 apply eq_bigr => i _ /=.
-transitivity (\rsum_(s | f s == i) F i); first by apply eq_bigr => s /eqP ->.
+transitivity (\sum_(s | f s == i) F i); first by apply eq_bigr => s /eqP ->.
 rewrite big_const iter_addR; congr (INR _ * _).
 apply eq_card => j /=; by rewrite !inE.
 Qed.
@@ -460,14 +460,14 @@ Qed.
 Section pascal.
 
 Lemma sum_f_R0_rsum : forall n (f : nat -> R),
-  sum_f_R0 f n = \rsum_(i < n.+1) f i.
+  sum_f_R0 f n = \sum_(i < n.+1) f i.
 Proof.
 elim => [f|n IH f] /=; first by rewrite big_ord_recl /= big_ord0 addR0.
 by rewrite big_ord_recr /= IH.
 Qed.
 
 Theorem RPascal k (a b : R) :
-  (a + b) ^ k = \rsum_(i < k.+1) INR ('C(k, i))* (a ^ (k - i) * b ^ i).
+  (a + b) ^ k = \sum_(i < k.+1) INR ('C(k, i))* (a ^ (k - i) * b ^ i).
 Proof.
 rewrite addRC Binomial.binomial sum_f_R0_rsum.
 apply eq_bigr => i _.
@@ -481,9 +481,9 @@ Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
 (* TODO: rename *)
-Lemma log_rmul_rsum_mlog {A : finType} k (f : {+ A -> R}) : forall n (ta : 'rV[A]_n.+1),
+Lemma log_rmul_rsum_mlog {A : finType} k (f : A ->R+) : forall n (ta : 'rV[A]_n.+1),
   (forall i, 0 < f ta ``_ i) ->
-  (- Log k (\rprod_(i < n.+1) f ta ``_ i) = \rsum_(i < n.+1) - Log k (f ta ``_ i))%R.
+  (- Log k (\rprod_(i < n.+1) f ta ``_ i) = \sum_(i < n.+1) - Log k (f ta ``_ i))%R.
 Proof.
 elim => [i Hi | n IH].
   by rewrite big_ord_recl big_ord0 mulR1 big_ord_recl big_ord0 addR0.

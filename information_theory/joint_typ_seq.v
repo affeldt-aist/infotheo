@@ -235,7 +235,7 @@ Lemma non_typical_sequences :
     [set x | prod_rV x \in `JTS P W n epsilon] <= exp2 (- INR n * (`I(P, W) - 3 * epsilon)).
 Proof.
 rewrite /Pr /=.
-apply (@leR_trans (\rsum_(i | i \in `JTS P W n epsilon)
+apply (@leR_trans (\sum_(i | i \in `JTS P W n epsilon)
     (exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W ) - epsilon))))) => /=.
   rewrite (reindex_onto (fun y => prod_rV y) (fun x => rV_prod x)) /=; last first.
     move=> ? ?; by rewrite rV_prodK.
@@ -248,7 +248,7 @@ apply (@leR_trans (\rsum_(i | i \in `JTS P W n epsilon)
   - exact/mulR_ge0.
   - rewrite inE in Hi.
     by rewrite prod_rVK eqxx andbC.
-rewrite (_ : \rsum_(_ | _) _ =
+rewrite (_ : \sum_(_ | _) _ =
   INR #| `JTS P W n epsilon| *
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W) - epsilon))); last first.
   rewrite big_const_seq /= (_ : count _ _ = #|`JTS P W n epsilon|); last first.

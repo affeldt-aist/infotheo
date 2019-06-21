@@ -26,14 +26,14 @@ Local Hint Resolve leRR.
 
 Lemma jensen_dist (r : A -> R) (X : dist A) :
   (forall a, r a \in D) ->
-  f (\rsum_(a in A) X a * r a) <= \rsum_(a in A) X a * f (r a).
+  f (\sum_(a in A) X a * r a) <= \sum_(a in A) X a * f (r a).
 Proof.
 move=> HDr.
-apply (@proj1 _ (\rsum_(a in dist_supp X) X a * r a \in D)).
+apply (@proj1 _ (\sum_(a in dist_supp X) X a * r a \in D)).
 rewrite [in X in _ <= X]rsum_dist_supp [in X in X <= _]rsum_dist_supp /=.
 apply: (@dist_ind A (fun X =>
-   f (\rsum_(a in dist_supp X) X a * r a) <=
-   \rsum_(a in dist_supp X) X a * f (r a) /\ _)) => //.
+   f (\sum_(a in dist_supp X) X a * r a) <=
+   \sum_(a in dist_supp X) X a * f (r a) /\ _)) => //.
 move=> n IH {X}X b cardA Hb.
 case/boolP : (X b == 1) => [/eqP|]Xb1.
   move/eqP : (Xb1); rewrite Dist1.one => /eqP ->.
@@ -41,16 +41,16 @@ case/boolP : (X b == 1) => [/eqP|]Xb1.
 have HXb1: (X b).~ != 0 by rewrite onem_neq0.
 set d := D1Dist.d Xb1.
 have HsumD1 q:
-  \rsum_(a in dist_supp d) d a * q a =
-  /(X b).~ * \rsum_(a in dist_supp d) X a * q a.
+  \sum_(a in dist_supp d) d a * q a =
+  /(X b).~ * \sum_(a in dist_supp d) X a * q a.
   rewrite (eq_bigr (fun a => /(X b).~ * (X a * q a))); last first.
     move=> i; rewrite inE D1Dist.dE.
     case: ifP => Hi; first by rewrite eqxx.
     by rewrite /Rdiv mulRCA mulRA.
  by rewrite -big_distrr.
 have {HsumD1}HsumXD1 q:
-  \rsum_(a in dist_supp X) X a * q a =
-  X b * q b + (X b).~ * (\rsum_(a in dist_supp d) d a * q a).
+  \sum_(a in dist_supp X) X a * q a =
+  X b * q b + (X b).~ * (\sum_(a in dist_supp d) d a * q a).
   rewrite HsumD1 /d /D1Dist.f /= mulRA mulRV // mul1R (bigD1 b) ?inE //=.
   rewrite (eq_bigl (fun a : A => a \in dist_supp d)) //= => i.
   rewrite !inE /=.
@@ -62,7 +62,7 @@ have /IH {IH}[IH HDd] : #|dist_supp d| = n.
   by rewrite D1Dist.card_dist_supp // cardA.
 have HXb: 0 <= X b <= 1 by split; [exact/dist_ge0|exact/dist_max].
 split; last first.
-  move/asboolP : (CSet.H D) => /(_ (r b) (\rsum_(a in dist_supp d) d a * r a) (Prob.mk HXb)).
+  move/asboolP : (CSet.H D) => /(_ (r b) (\sum_(a in dist_supp d) d a * r a) (Prob.mk HXb)).
   exact.
 move/leR_trans: (convex_f (Prob.mk HXb) (HDr b) HDd); apply => /=.
 rewrite leR_add2l; apply leR_wpmul2l => //; apply/onem_ge0; by case: HXb.
@@ -98,7 +98,7 @@ Qed.
 
 Lemma jensen_dist_concave (r : A -> R) (X : dist A) :
   (forall x, r x \in D) ->
-  \rsum_(a in A) X a * f (r a) <= f (\rsum_(a in A) X a * r a).
+  \sum_(a in A) X a * f (r a) <= f (\sum_(a in A) X a * r a).
 Proof.
 move=> HDr.
 rewrite -[X in _ <= X]oppRK leR_oppr.

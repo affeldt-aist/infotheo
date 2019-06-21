@@ -85,7 +85,7 @@ Canonical jtype_eqType A B n := Eval hnf in EqType _ (@jtype_eqMixin A B n).
 Definition pos_fun_of_pre_jtype (A B : finType) (Bnot0 : (0 < #|B|)%nat) n
   (f : {ffun A -> {ffun B -> 'I_n.+1}}) : A -> pos_ffun B.
 pose pf := fun a => [ffun b : B =>
-  let ln := \sum_(b1 in B) (f a b1) in
+  let ln := (\sum_(b1 in B) (f a b1))%nat in
   if ln == O
     then / #|B|%:R
     else (f a b)%:R / ln%:R].
@@ -101,7 +101,7 @@ Defined.
 Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat) (Bnot0 : (0 < #|B|)%nat)
   n (f : {ffun A -> {ffun B -> 'I_n.+1}}) : `Ch_1*(A, B).
 set pf := fun a b =>
-  let ln := \sum_(b1 in B) (f a b1) in
+  let ln := (\sum_(b1 in B) (f a b1))%nat in
   if ln == O
   then / #|B|%:R
   else (f a b)%:R / ln%:R.
@@ -110,7 +110,7 @@ refine (@mkDist _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a) _).
 rewrite /=; evar (h : B -> R); rewrite (eq_bigr h); last first.
     move=> b _; rewrite ffunE /h; reflexivity.
 rewrite {}/h.
-case/boolP : (\sum_(b1 in B) (f a b1) == O) => Hcase.
+case/boolP : (\sum_(b1 in B) (f a b1) == O)%nat => Hcase.
 - by rewrite /Rle big_const iter_addR mulRV // INR_eq0' -lt0n.
 - rewrite big_morph_natRD /Rdiv -big_distrl /= mulRV //.
   by rewrite -big_morph_natRD // INR_eq0'.
@@ -122,7 +122,7 @@ match Sumbool.sumbool_of_bool (0 < #|A|)%nat with
   | left Anot0 =>
     match Sumbool.sumbool_of_bool (0 < #|B|)%nat with
       |left Bnot0 =>
-       match Sumbool.sumbool_of_bool (\sum_(a in A) \sum_(b in B) f a b == n) with
+       match Sumbool.sumbool_of_bool (\sum_(a in A) \sum_(b in B) f a b == n)%nat with
          | left Hf => Some (@jtype.mkJtype A B n (chan_of_jtype Anot0 Bnot0 f) f Hf _)
          | right _ => None
        end
@@ -184,7 +184,7 @@ pose unpi : option {ffun A -> {ffun B -> 'I_n.+1}} := unpickle m.
 case: unpi; last first.
   exact None.
 move=> f.
-refine (match Sumbool.sumbool_of_bool (\sum_(a in A) \sum_(b in B) f a b == n) with
+refine (match Sumbool.sumbool_of_bool (\sum_(a in A) \sum_(b in B) f a b == n)%nat with
           | left Hf => _
           | right _ => None
         end).
@@ -217,7 +217,7 @@ Canonical jtype_countType (A B : finType) n :=
   Eval hnf in CountType (P_ n ( A , B )) (@jtype_countMixin A B n).
 
 Definition jtype_enum_f (A B : finType) n
-  (f : { f : {ffun A -> {ffun B -> 'I_n.+1}} | \sum_(a in A) \sum_(b in B) f a b == n}) :
+  (f : { f : {ffun A -> {ffun B -> 'I_n.+1}} | (\sum_(a in A) \sum_(b in B) f a b == n)%nat}) :
   option (P_ n ( A , B )).
 refine (
     match Sumbool.sumbool_of_bool (0 < #|A|)%nat with
@@ -232,13 +232,13 @@ refine (Some (@jtype.mkJtype A B n (@chan_of_jtype _ _ Anot0 Bnot0 n (sval f)) (
 by move=> a b; rewrite ffunE.
 Defined.
 
-Definition jtype_enum A B n := pmap (@jtype_enum_f A B n) (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}} | \sum_(a in A) \sum_(b in B) f a b == n}]).
+Definition jtype_enum A B n := pmap (@jtype_enum_f A B n) (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}} | (\sum_(a in A) \sum_(b in B) f a b == n)%nat}]).
 
 Lemma jtype_enumP A B n : Finite.axiom (@jtype_enum A B n).
 Proof.
 case=> d f Hf H /=.
 have : Finite.axiom (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}}  |
-    \sum_(a in A) \sum_(b in B) f a b == n }]).
+    (\sum_(a in A) \sum_(b in B) f a b == n)%nat }]).
   rewrite enumT; by apply enumP.
 move/(_ (@exist _ _ f Hf)) => <-.
 rewrite /jtype_enum /=.
@@ -254,16 +254,16 @@ have -> : tmp = pmap (fun f =>
                             jtype.sum_f := proj2_sig f;
                             jtype.c_f := fun a b =>
 eq_ind_r
-                                     (eq^~ (if \sum_(b0 in B) sval f a b0 == 0%N
+                                     (eq^~ (if (\sum_(b0 in B) sval f a b0)%nat == 0%N
                                             then / #|B|%:R
                                             else (sval f a b)%:R / (\sum_(b0 in B) sval f a b0)%:R))
                                      (erefl
-                                        (if \sum_(b0 in B) sval f a b0 == 0%N
+                                        (if (\sum_(b0 in B) sval f a b0)%nat == 0%N
                                          then / #|B|%:R
                                          else (sval f a b)%:R / (\sum_(b0 in B) sval f a b0)%:R))
                                      (ffunE
                                         (fun b0 : B =>
-                                         if \sum_(b1 in B) sval f a b1 == 0%N
+                                         if (\sum_(b1 in B) sval f a b1)%nat == 0%N
                                          then / #|B|%:R
                                          else (sval f a b0)%:R / (\sum_(b1 in B) sval f a b1)%:R) b)
                                              (*(if \sum_(b0 in B) (sval f a) b0 == 0%N
@@ -272,7 +272,7 @@ eq_ind_r
                                                 (sval f a b)%:R /
                                                     (\sum_(b0 in B) (sval f a) b0)%:R)*) |}
                      ) (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}} |
-                                           \sum_(a in A) \sum_(b in B) f a b == n}]).
+                                           (\sum_(a in A) \sum_(b in B) f a b)%nat == n}]).
   apply: eq_pmap => V.
   destruct Sumbool.sumbool_of_bool; last by rewrite Anot0 in e.
   destruct Sumbool.sumbool_of_bool; last by rewrite Bnot0 in e0.
@@ -620,7 +620,7 @@ Variable B : finType.
 Variable V : P_ n (A , B).
 
 Definition row_num_occ := forall ta, ta \in T_{P} ->
-  forall a, \sum_(b in B) (jtype.f V) a b = N(a | ta).
+  forall a, (\sum_(b in B) (jtype.f V) a b)%nat = N(a | ta).
 
 Hypothesis H : row_num_occ.
 Variable ta : n.-tuple A.
@@ -653,7 +653,7 @@ have d0 : forall b, (0 <= d b)%R.
   rewrite /d /= ffunE.
   apply mulR_ge0; first exact/leR0n.
   apply/ltRW/invR_gt0/ltR0n; by rewrite lt0n.
-have d1 : \rsum_(b : B) d b = 1%R.
+have d1 : (\sum_(b : B) d b)%R = 1%R.
   rewrite /=; evar (h : B -> R); rewrite (eq_bigr h); last first.
     move=> b _; rewrite ffunE /h; reflexivity.
   rewrite {}/h -big_distrl /= -big_morph_natRD.
@@ -1125,7 +1125,7 @@ Definition f := [ffun b => ((\sum_(a in A) (jtype.f V) a b)%:R / n%:R)%R].
 Lemma f0 (b : B) : (0 <= f b)%R.
 Proof. rewrite ffunE; apply divR_ge0; [exact/leR0n | exact/ltR0n]. Qed.
 
-Lemma f1 : \rsum_(b in B) f b = 1%R.
+Lemma f1 : (\sum_(b in B) f b = 1)%R.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
   move=> b _; rewrite ffunE /h; reflexivity.
@@ -1262,7 +1262,7 @@ have Hf : \sum_(a in A) \sum_(b in B) f a b == n.
   by rewrite 2!ffunE.
 have Htmp' : (forall a b,
         (chan_of_jtype Anot0 Bnot0 f) a b =
-        (let ln := \sum_(b0 in B) (f a) b0 in
+        (let ln := (\sum_(b0 in B) (f a) b0)%nat in
          if ln == O then / #|B|%:R else (((f a) b)%:R / ln%:R))%R).
   by move=> a b; rewrite ffunE.
 exact (@jtype.mkJtype _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf Htmp').
@@ -1342,8 +1342,8 @@ Variable P : P_ n ( A ).
 Hypothesis Hta : ta \in T_{P}.
 
 Let sum_tuples_ctypes'' f :
-  \rsum_ (S | S \in shell_partition B ta P) \rsum_(tb in S) f tb =
-  \rsum_ (V | V \in \nu^{B}(P)) \rsum_ (tb in V.-shell ta) f tb.
+  \sum_ (S | S \in shell_partition B ta P) \sum_(tb in S) f tb =
+  \sum_ (V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta) f tb.
 Proof.
 rewrite big_imset // => V V' HV HV' /=.
 move/(shell_injective _) => /(_ P HV Hta) V_V' {HV HV'}.
@@ -1357,10 +1357,10 @@ Qed.
 Hypothesis Anot0 : (0 < #|A|)%nat.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
-Let sum_tuples_ctypes' f : \rsum_ (tb : _ ) f tb =
-  \rsum_ (V | V \in \nu^{B}(P)) \rsum_ (tb in V.-shell ta) f tb.
+Let sum_tuples_ctypes' f : \sum_ (tb : _ ) f tb =
+  \sum_ (V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta) f tb.
 Proof.
-transitivity (\rsum_ (tb in [set: n.-tuple B]) f tb).
+transitivity (\sum_ (tb in [set: n.-tuple B]) f tb).
   by apply eq_bigl => tb; rewrite in_set.
 rewrite -(cover_shell Anot0 Bnot0 Hta).
 rewrite -sum_tuples_ctypes'' // big_trivIset //.
@@ -1368,11 +1368,11 @@ apply trivIset_shell.
 Qed.
 
 Lemma sum_tuples_ctypes f F :
-  \rsum_(tb | F tb) f tb =
-  \rsum_(V | V \in \nu^{B}(P)) \rsum_ (tb in V.-shell ta | F tb) f tb.
+  \sum_(tb | F tb) f tb =
+  \sum_(V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta | F tb) f tb.
 Proof.
 rewrite big_mkcond /=.
-transitivity (\rsum_(V | V \in \nu^{B}(P)) \rsum_(tb in V.-shell ta) if F tb then f tb else 0).
+transitivity (\sum_(V | V \in \nu^{B}(P)) \sum_(tb in V.-shell ta) if F tb then f tb else 0).
   by apply sum_tuples_ctypes'.
 apply eq_bigr => s _.
 rewrite [in LHS]big_mkcond /= [in RHS]big_mkcond /=.

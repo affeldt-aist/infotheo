@@ -62,7 +62,7 @@ Section hamming_weight_distance.
 Variables (F : ringType) (n : nat).
 Implicit Types u v : 'rV[F]_n.
 
-Definition wH v := count (fun x => x != 0%R) (tuple_of_row v).
+Definition wH v := count (fun x => x != 0) (tuple_of_row v).
 
 Lemma max_wH u : wH u <= n.
 Proof. by rewrite /wH (leq_trans (count_size _ _)) // size_tuple. Qed.
@@ -76,7 +76,7 @@ rewrite /wH (@eq_in_count _ _ pred0) ?count_pred0 // => i /mapP[/= j _].
 by rewrite mxE => ->; rewrite eqxx.
 Qed.
 
-Lemma wH0_inv v : wH v = O -> v = 0%R.
+Lemma wH0_inv v : wH v = O -> v = 0.
 Proof.
 move=> H.
 apply/rowP => i; rewrite mxE; apply/eqP; move/eqP : H; apply: contraTT => H.
@@ -85,12 +85,12 @@ exists (v ``_ i) => //; apply/mapP; exists i => //.
 by rewrite val_ord_tuple mem_enum.
 Qed.
 
-Lemma wH_eq0 u : (wH u == O) = (u == 0%R).
+Lemma wH_eq0 u : (wH u == O) = (u == 0).
 Proof. apply/idP/idP => [/eqP/wH0_inv/eqP //|/eqP ->]; by rewrite wH0. Qed.
 
 Lemma wH_opp v : wH (- v) = wH v.
 Proof.
-rewrite {1}/wH [X in tval X](_ : _ = [tuple of map (fun x => - x)%R (tuple_of_row v)]); last first.
+rewrite {1}/wH [X in tval X](_ : _ = [tuple of map (fun x => - x) (tuple_of_row v)]); last first.
   apply: eq_from_tnth => i /=; by rewrite !tnth_map mxE.
 rewrite count_map; apply eq_count => i /=; by rewrite oppr_eq0.
 Qed.
@@ -109,8 +109,8 @@ case/boolP : (size p < n) => pn; last first.
   rewrite -leqNgt in pn; rewrite (leq_trans _ pn) //.
   by rewrite (leq_trans (count_size _ _)) // size_map size_enum_ord.
 have -> : [seq (poly_rV p) ``_ i | i <- enum 'I_n] =
-  [seq (poly_rV p) ``_ i | i <- enum ('I_(size p))] ++ nseq (n - size p) 0%R.
-  apply (@eq_from_nth _ 0%R) => [|i].
+  [seq (poly_rV p) ``_ i | i <- enum ('I_(size p))] ++ nseq (n - size p) 0.
+  apply (@eq_from_nth _ 0) => [|i].
     by rewrite size_cat 2!size_map !size_enum_ord size_nseq subnKC // ltnW.
   rewrite size_map size_enum_ord => ni.
   rewrite (nth_map (Ordinal ni)) ?size_enum_ord // mxE nth_enum_ord //.
@@ -152,7 +152,7 @@ Proof. by rewrite {1}/dH -wH_opp opprB. Qed.
 
 End hamming_weight_distance.
 
-Lemma wH_count n (x : 'rV['F_2]_n) : wH x = count (fun i => x ``_ i == 1%R) (enum 'I_n).
+Lemma wH_count n (x : 'rV['F_2]_n) : wH x = count (fun i => x ``_ i == 1) (enum 'I_n).
 Proof.
 rewrite wH_sum -sum1_count [in RHS]big_mkcond /=.
 apply congr_big => //.
@@ -181,7 +181,7 @@ by rewrite big_const iter_addn mul0n.
 move=> j ji; by rewrite !mxE (negbTE ji).
 Qed.
 
-Lemma wH_num_occ n (v : 'rV['F_2]_n) : wH v = N(1%R | tuple_of_row v).
+Lemma wH_num_occ n (v : 'rV['F_2]_n) : wH v = N(1 | tuple_of_row v).
 Proof. rewrite /wH /num_occ; apply eq_count => i; by rewrite -F2_eq1. Qed.
 
 Lemma wH_bitstring n (x : 'rV_n) :
@@ -243,8 +243,8 @@ elim: n a b c => [a b c|n IH a b c].
   by rewrite (empty_rV a) (empty_rV b) (empty_rV c) /dH subrr wH0.
 rewrite /dH /wH.
 have H : forall v w : 'rV[F]_n.+1,
-  count (fun x : F => x != 0%R) (tuple_of_row (v - w)) =
-  addn (v ``_ 0 - w ``_ 0 != 0)%R (count (fun x : F => x != 0)%R (behead (tuple_of_row (v - w)))).
+  count (fun x : F => x != 0) (tuple_of_row (v - w)) =
+  addn (v ``_ 0 - w ``_ 0 != 0) (count (fun x => x != 0) (behead (tuple_of_row (v - w)))).
   move=> v w.
   rewrite (tuple_eta (tuple_of_row (v - w))) /=.
   by rewrite /tuple_of_row /thead tnth_map !mxE tnth_ord_tuple.
@@ -281,7 +281,7 @@ Section wH_supp.
 Variables (n : nat) (F : ringType).
 Implicit Types x : 'rV[F]_n.
 
-Definition wH_supp x := [set i | x ``_ i != 0%R].
+Definition wH_supp x := [set i | x ``_ i != 0].
 
 Lemma card_wH_supp x : #| wH_supp x |%N = wH x.
 Proof.
@@ -289,13 +289,13 @@ rewrite cardE size_filter /wH count_map -enumT /=.
 apply eq_in_count => /= i _; by rewrite inE.
 Qed.
 
-Lemma mem_wH_supp x (i : 'I_n) : (x ``_ i != 0%R) = (i \in wH_supp x).
+Lemma mem_wH_supp x (i : 'I_n) : (x ``_ i != 0) = (i \in wH_supp x).
 Proof. by rewrite inE. Qed.
 
 End wH_supp.
 
 Lemma nth_wH_supp k n (F : ringType) (y : 'rV[F]_n.+1) : (k <= n.+1)%N ->
-  wH y = k -> forall j : nat, (j < k)%N -> y ``_ (nth ord0 (enum (wH_supp y)) j) != 0%R.
+  wH y = k -> forall j : nat, (j < k)%N -> y ``_ (nth ord0 (enum (wH_supp y)) j) != 0.
 Proof.
 move=> kn yD j jk; rewrite mem_wH_supp -mem_enum; apply/mem_nth.
 by rewrite -cardE card_wH_supp yD.
@@ -343,10 +343,10 @@ Lemma wH_m_card n k : #|[set a in 'rV['F_2]_n | wH a == k]| = 'C(n, k).
 Proof.
 rewrite -[in X in _ = X](card_ord n) -card_draws -2!sum1dep_card.
 pose h' := fun s : {set 'I_n} => \row_(j < n) (if j \in s then (1 : 'F_2) else 0).
-have h'h (i : 'rV_n) : h' [set i0 | i ``_ i0 == 1%R] == i.
+have h'h (i : 'rV_n) : h' [set i0 | i ``_ i0 == 1] == i.
   apply/eqP/rowP => y; rewrite !mxE inE.
   case: ifP => [/eqP -> // | /negbT]; by rewrite -F2_eq0 => /eqP.
-rewrite (reindex_onto (fun x : 'rV_n => [set i | x ``_ i == 1%R]) h') /=.
+rewrite (reindex_onto (fun x : 'rV_n => [set i | x ``_ i == 1]) h') /=.
 - apply eq_bigl => i.
   rewrite wH_num_occ num_occ_alt h'h andbC /=; congr (_ == _).
   apply eq_card => t; by rewrite !inE tnth_mktuple.
@@ -848,7 +848,7 @@ End AboutwH123.
 Local Open Scope R_scope.
 
 Lemma hamming_01 m p :
-  \rsum_(u in 'rV['F_2]_m| u \in [set v |(1 >= wH v)%nat])
+  \sum_(u in 'rV['F_2]_m| u \in [set v |(1 >= wH v)%nat])
     (1 - p) ^ (m - wH u) * p ^ wH u =
   (1 - p) ^ m + m%:R * p * (1 - p) ^ (m - 1).
 Proof.
@@ -857,8 +857,8 @@ rewrite (big_pred1 (GRing.zero _)) /=; last first.
   move=> i /=.
   by rewrite !inE -wH_eq0 andb_idl // => /eqP ->.
 rewrite wH0 pow_O subn0 mulR1; f_equal.
-transitivity (\rsum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^ (m - 1) * p ^ 1)).
-  transitivity (\rsum_(i|(wH (i : 'rV['F_2]_m) == 1)%nat)
+transitivity (\sum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^ (m - 1) * p ^ 1)).
+  transitivity (\sum_(i|(wH (i : 'rV['F_2]_m) == 1)%nat)
       ((1 - p) ^ (m - wH i) * p ^ wH i)).
     apply eq_bigl => /= i.
     rewrite !inE.
@@ -872,15 +872,13 @@ by rewrite big_const iter_addR pow_1 /= -(mulRC p) mulRA -cardsE wH_m_card bin1.
 Qed.
 
 Lemma binomial_theorem m p :
-  \rsum_(b in [set: 'rV['F_2]_m]) (1 - p) ^ (m - wH b) * p ^ wH b = 1.
+  \sum_(b in [set: 'rV['F_2]_m]) (1 - p) ^ (m - wH b) * p ^ wH b = 1.
 Proof.
 transitivity (((1 - p) + p) ^ m); last by rewrite subRK exp1R.
 rewrite RPascal.
-transitivity (\rsum_(b : 'rV['F_2]_m) (1 - p) ^ (m - wH b) * p ^ wH b).
+transitivity (\sum_(b : 'rV['F_2]_m) (1 - p) ^ (m - wH b) * p ^ wH b).
   by apply eq_bigl => /= i; rewrite inE.
 rewrite (classify_big (fun s => Ordinal (max_wH' s)) (fun x => (1 - p) ^ (m - x) * p ^ x)) /=.
 apply eq_bigr => i _; congr (_%:R * _).
 by rewrite -wH_m_card; apply eq_card => /= x; rewrite !inE.
 Qed.
-
-Local Close Scope R_scope.

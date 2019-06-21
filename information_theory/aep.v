@@ -28,25 +28,25 @@ Proof.
 rewrite /entropy big_morph_oppR; apply eq_bigr=> a _; by rewrite /= mulNR mulRC.
 Qed.
 
-Definition aep_sigma2 := (\rsum_(a in A) P a * (log (P a))^2 - (`H P)^2)%R.
+Definition aep_sigma2 := (\sum_(a in A) P a * (log (P a))^2 - (`H P)^2)%R.
 
 Lemma V_mlog : `V (--log P) = aep_sigma2.
 Proof.
 rewrite /Var E_trans_RV_id_rem E_mlog /aep_sigma2.
 transitivity
-  (\rsum_(a in A) ((- log (P a))^2 * P a - 2 * `H P * - log (P a) * P a + `H P ^ 2 * P a))%R.
+  (\sum_(a in A) ((- log (P a))^2 * P a - 2 * `H P * - log (P a) * P a + `H P ^ 2 * P a))%R.
   apply eq_bigr => a _.
   rewrite /scale_RV /mlog_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV /p_of; field.
 rewrite big_split /= big_split /= -big_distrr /= (epmf1 P) mulR1.
-rewrite (_ : \rsum_(a in A) - _ = - (2 * `H P ^ 2))%R; last first.
+rewrite (_ : \sum_(a in A) - _ = - (2 * `H P ^ 2))%R; last first.
   rewrite -{1}big_morph_oppR; congr (- _)%R.
   rewrite [X in X = _](_ : _ =
-    \rsum_(a in A) (2 * `H P) * (- (P a * log (P a))))%R; last first.
+    \sum_(a in A) (2 * `H P) * (- (P a * log (P a))))%R; last first.
     apply eq_bigr => a _; by rewrite -!mulRA (mulRC (P a)) mulNR.
   rewrite -big_distrr [in LHS]/= -{1}big_morph_oppR.
   by rewrite -/(entropy P) -mulRA /= mulR1.
-set s := (\rsum_(a in A ) _ in LHS).
-rewrite [in RHS](_ : \rsum_(a in A) _ = s); last by apply eq_bigr => a _; field.
+set s := ((\sum_(a in A ) _)%R in LHS).
+rewrite [in RHS](_ : \sum_(a in A) _ = s)%R; last by apply eq_bigr => a _; field.
 field.
 Qed.
 
@@ -56,7 +56,7 @@ Proof. rewrite -V_mlog /Var; apply Ex_ge0 => ?; exact: pow_even_ge0. Qed.
 End mlog_prop.
 
 Definition sum_mlog_prod A (P : dist A) n : {RV (P `^ n) -> R} :=
-  (fun t => \rsum_(i < n) - log (P t ``_ i))%R.
+  (fun t => \sum_(i < n) - log (P t ``_ i))%R.
 
 Arguments sum_mlog_prod {A} _ _.
 

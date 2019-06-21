@@ -716,12 +716,12 @@ Lemma rprod_rsum_commute d (B : finType) (x : 'rV_n) (W: `Ch_1('F_2, B)) m0 n0 (
   let g := dprojs_V2 H d m0 n0 in
   let g' := comb_V2 H d m0 n0 in
   (\rprod_(n1 in 'V m0 :\ n0)
-    \rsum_(t | pr n1 t)
+    \sum_(t | pr n1 t)
       (W (t ``_ n1) (x ``_ n1) *
          \rprod_(m1 in `F n1 :\ m0)
            W ``(x # `V(m1, n1) :\ n1 | ((dprojs_V H d n1 t) m1) # `V(m1, n1) :\ n1) *
            (\rprod_(m2 in `F(m1, n1)) INR (\delta ('V m2) ((dprojs_V H d n1 t) m1)))) =
-  \rsum_(t | (g t \in pfamily d ('V m0 :\ n0) pr) && (g' (g t) == t))
+  \sum_(t | (g t \in pfamily d ('V m0 :\ n0) pr) && (g' (g t) == t))
     \rprod_(n1 in 'V m0 :\ n0)
        W ((g t n1) ``_ n1) (x ``_ n1) *
          (\rprod_(m1 in `F n1 :\ m0)

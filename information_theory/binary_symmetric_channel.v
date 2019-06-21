@@ -54,7 +54,7 @@ rewrite (eq_bigr (fun a => (`J( P, (BSC.c card_A p_01))) (a.1, a.2) *
 rewrite -(pair_big xpredT xpredT (fun a b => (`J( P, (BSC.c card_A p_01)))
   (a, b) * log ((`J( P, (BSC.c card_A p_01))) (a, b)))) /=.
 rewrite {1}/entropy .
-set a := \rsum_(_ in _) _. set b := \rsum_(_ <- _) _.
+set a := \sum_(_ in _) _. set b := \sum_(_ <- _) _.
 apply trans_eq with (- (a + (-1) * b)); first by field.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
 rewrite !Set2sumE /= !JointDistChan.dE /BSC.c !Binary.dE /=.

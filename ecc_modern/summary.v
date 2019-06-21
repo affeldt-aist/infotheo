@@ -89,9 +89,9 @@ Local Open Scope R_scope.
 
 (** sum over vectors t whose V projection is free and its complemented fixed by d *)
 Notation "\rsum_ ( x '#' s ',' d ) F" :=
-  (\rsum_( x | freeon s d x ) F) : summary_scope.
+  (\sum_( x | freeon s d x ) F) : summary_scope.
 Notation "\rsum_ ( x '#' s ',' d '|' P ) F" :=
-  (\rsum_( x | freeon s d x && P x) F) : summary_scope.
+  (\sum_( x | freeon s d x && P x) F) : summary_scope.
 
 Local Close Scope R_scope.
 Local Open Scope summary_scope.
@@ -103,7 +103,7 @@ Variable n : nat.
 Lemma rsum_freeon0 (d : 'rV['F_2]_n) (F : 'rV_n -> R) :
   \rsum_(t # set0 , d) F t = F d.
 Proof.
-transitivity (\rsum_(t | t == d) F t)%R.
+transitivity (\sum_(t | t == d) F t)%R.
   apply eq_bigl => /= t; by rewrite freeon0 eq_sym.
 by rewrite (big_pred1 d).
 Qed.
@@ -111,7 +111,7 @@ Qed.
 Lemma rsum_freeon1 n2 (d : 'rV['F_2]_n) (F : 'rV_n -> R) :
   \rsum_(t # [set n2] , d) F t = (F (d `[ n2 := Zp0 ]) + F (d `[ n2 := Zp1 ]))%R.
 Proof.
-transitivity (\rsum_(t | (t \in [set d `[ n2 := x ] | x in 'F_2])) F t)%R.
+transitivity (\sum_(t | (t \in [set d `[ n2 := x ] | x in 'F_2])) F t)%R.
   apply eq_bigl => /= t.
   by rewrite freeon1.
 rewrite big_imset /=; last by exact: inj_row_set.
@@ -130,7 +130,7 @@ Variables n : nat.
 Local Open Scope R_scope.
 Definition summary_powerset (X : {set 'I_n}) (d : 'rV['F_2]_n) (e : 'rV_n -> R) :=
   let bvect s := \row_(i < n) if i \in X then F2_of_bool (i \in s) else d ``_ i in
-  \rsum_(s in powerset X) e (bvect s).
+  \sum_(s in powerset X) e (bvect s).
 Local Close Scope R_scope.
 
 Local Open Scope tuple_ext_scope.
@@ -140,9 +140,9 @@ Lemma summary_powersetE (s : {set 'I_n}) (d : 'rV['F_2]_n) (e : 'rV['F_2]_n -> R
   \rsum_(t # s , d) e t = summary_powerset s d e.
 Proof.
 rewrite /summary_powerset.
-transitivity (\rsum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
+transitivity (\sum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
   e (\row_(k0 < n) if k0 \in s then (fgraph f) \_ (cast_ord (esym (@card_ord n)) k0)
-    else d ``_ k0)).
+    else d ``_ k0))%R.
   rewrite (reindex_onto (fun p => [ffun x => p \_ (cast_ord (esym (@card_ord n)) x)])
     (fun y => fgraph y)) /=; last first.
     move=> /= f Hf.
@@ -173,7 +173,7 @@ transitivity (\rsum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
   rewrite in_setC bs implyTb.
   move/eqP => ->.
   by rewrite /row_of_tuple mxE tcastE.
-transitivity (\rsum_(f in {ffun 'I_n -> bool} | freeon s d (\row_i F2_of_bool (f i)))
+transitivity (\sum_(f in {ffun 'I_n -> bool} | freeon s d (\row_i F2_of_bool (f i)))
       e (\row_k0 (if k0 \in s
                   then F2_of_bool ((fgraph f) \_ (cast_ord (esym (card_ord n)) k0))
                   else d ``_ k0)))%R.
@@ -193,7 +193,7 @@ transitivity (\rsum_(f in {ffun 'I_n -> bool} | freeon s d (\row_i F2_of_bool (f
   apply/rowP => b; rewrite !mxE.
   case : (b \in s) => //.
   by rewrite 2!tnth_fgraph ffunE.
-transitivity (\rsum_(f in {set 'I_n} | freeon s d (\row_i F2_of_bool (i \in f)))
+transitivity (\sum_(f in {set 'I_n} | freeon s d (\row_i F2_of_bool (i \in f)))
       e (\row_k0 (if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0)))%R.
   rewrite (reindex_onto (fun f : {ffun 'I_n -> bool} => [set x | f x ])
     (@finfun_of_set [finType of 'I_n])).
@@ -210,7 +210,7 @@ transitivity (\rsum_(f in {set 'I_n} | freeon s d (\row_i F2_of_bool (i \in f)))
   apply/setP => /= k0.
   rewrite inE.
   by rewrite SetDef.pred_of_setE.
-transitivity (\rsum_(f in {set 'I_n} | f \subset s) e (\row_(k0 < n) if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0)); last first.
+transitivity (\sum_(f in {set 'I_n} | f \subset s) e (\row_(k0 < n) if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0))%R; last first.
   apply eq_bigl => /= s0.
   by rewrite powersetE.
 rewrite (reindex_onto (fun f => f :|: [set j | (j \notin s) && bool_of_F2 (d ``_ j)])
@@ -249,7 +249,7 @@ Local Close Scope tuple_ext_scope.
 Local Open Scope R_scope.
 
 Definition summary_fold (X : {set 'I_n}) d e :=
-  foldr (fun i F t => \rsum_(b in 'F_2) F (t `[ i := b ])) e (enum X) d.
+  foldr (fun i F t => \sum_(b in 'F_2) F (t `[ i := b ])) e (enum X) d.
 
 Local Close Scope R_scope.
 

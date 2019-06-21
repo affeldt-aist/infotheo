@@ -37,7 +37,7 @@ Proof. rewrite /f ffunE.
   lra.
 Qed.
 
-Lemma f1 (a : A) : \rsum_(a' : {:option A}) f a a' = 1.
+Lemma f1 (a : A) : \sum_(a' : {:option A}) f a a' = 1.
 Proof.
 rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /= (proj2 (prsumr_eq0P _)).
 - by field.

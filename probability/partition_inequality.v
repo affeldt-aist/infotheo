@@ -6,7 +6,8 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
 Require Import Rbigop proba divergence log_sum variation_dist.
 
-(** * Partition inequality (special case for distributions other sets with 2 elements) *)
+(* Partition inequality
+   (special case for distributions other sets with 2 elements) *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -26,7 +27,7 @@ Hypothesis dis : A_ 0 :&: A_ 1 = set0.
 Hypothesis cov : A_ 0 :|: A_ 1 = [set: A].
 Variable P : dist A.
 
-Definition bipart_pmf := [ffun i => \rsum_(a in A_ i) P a].
+Definition bipart_pmf := [ffun i => \sum_(a in A_ i) P a].
 
 Definition bipart : dist [finType of bool].
 apply makeDist with bipart_pmf.
@@ -42,7 +43,7 @@ apply makeDist with bipart_pmf.
     - by rewrite addRC Hwlog.
     - exact: Hwlog.
   case/andP => /eqP -> /eqP -> _.
-  transitivity (\rsum_(a | (a \in A_ 0 :|: A_ 1)) P a).
+  transitivity (\sum_(a | (a \in A_ 0 :|: A_ 1)) P a).
     by rewrite !ffunE [X in _ = X](@big_union _ _ _ _ (A_ 0) (A_ 1)) // -setI_eq0 setIC dis eqxx.
   rewrite cov -(epmf1 P).
   apply eq_bigl => /= x; by rewrite in_setT inE.
@@ -67,14 +68,14 @@ Let Q_A := bipart dis cov Q.
 
 Lemma partition_inequality : D(P_A || Q_A) <= D(P || Q).
 Proof.
-have -> : D(P || Q) = \rsum_(a in A_ 0) P a * log (P a / Q a) +
-                      \rsum_(a in A_ 1) P a * log (P a / Q a).
+have -> : D(P || Q) = \sum_(a in A_ 0) P a * log (P a / Q a) +
+                      \sum_(a in A_ 1) P a * log (P a / Q a).
   rewrite /div -big_union //; last by rewrite -setI_eq0 setIC dis eqxx.
   apply eq_big => // a; first by rewrite cov in_set inE.
 have step2 :
-  (\rsum_(a in A_ 0) P a) * log ((\rsum_(a in A_ 0) P a) / \rsum_(a in A_ 0) Q a) +
-  (\rsum_(a in A_ 1) P a) * log ((\rsum_(a in A_ 1) P a) / \rsum_(a in A_ 1) Q a) <=
-  \rsum_(a in A_ 0) P a * log (P a / Q a) + \rsum_(a in A_ 1) P a * log (P a / Q a).
+  (\sum_(a in A_ 0) P a) * log ((\sum_(a in A_ 0) P a) / \sum_(a in A_ 0) Q a) +
+  (\sum_(a in A_ 1) P a) * log ((\sum_(a in A_ 1) P a) / \sum_(a in A_ 1) Q a) <=
+  \sum_(a in A_ 0) P a * log (P a / Q a) + \sum_(a in A_ 1) P a * log (P a / Q a).
   apply leR_add; by apply log_sum.
 apply: (leR_trans _ step2) => {step2}.
 rewrite [X in _ <= X](_ : _ =
@@ -114,7 +115,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       have {A0_Q_0}A0_Q_0 : forall i : A, i \in A_ 0 -> P i = 0%R.
         move=> i ?; rewrite (dominatesE P_dom_by_Q) // A0_Q_0 // => a ?; exact/pos_ff_ge0.
       have Habs : P_A 0 = 0%R.
-        transitivity (\rsum_(H|H \in A_ 0) 0%R).
+        transitivity (\sum_(H|H \in A_ 0) 0%R).
           rewrite ffunE.
           apply eq_big => // i Hi; by rewrite -A0_Q_0.
         by rewrite big_const iter_addR mulR0.

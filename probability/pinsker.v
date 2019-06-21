@@ -154,13 +154,13 @@ suff : / (2 * ln 2) * d(P , Q) ^2 <= D(P_A || Q_A).
   move=> ?; apply (@leR_trans (D(P_A || Q_A))) => //; exact/Rge_le.
 have step2 : d( P , Q ) = d( P_A , Q_A ).
   rewrite /var_dist.
-  transitivity (\rsum_(a | a \in A0) `| P a - Q a | + \rsum_(a | a \in A1) `| P a - Q a |).
+  transitivity (\sum_(a | a \in A0) `| P a - Q a | + \sum_(a | a \in A1) `| P a - Q a |).
     rewrite -big_union //; last by rewrite -setI_eq0 -dis /A_ setIC.
     apply eq_bigl => a; by rewrite cov in_set.
   transitivity (`| P_A 0 - Q_A 0 | + `| P_A 1 - Q_A 1 |).
     congr (_ + _).
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
-      transitivity (\rsum_(a | a \in A0) (P a - Q a)).
+      transitivity (\sum_(a | a \in A0) (P a - Q a)).
         apply eq_bigr => a; rewrite /A0 in_set => /leRP Ha.
         by rewrite geR0_norm ?subR_ge0.
       rewrite big_split /= geR0_norm; last first.
@@ -171,7 +171,7 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
         destruct (#|A1|); [tauto | by right].
       + move/eqP : A1_card; rewrite cards_eq0; move/eqP => A1_card.
         by rewrite A1_card !big_set0 subRR normR0.
-      + transitivity (\rsum_(a | a \in A1) - (P a - Q a)).
+      + transitivity (\sum_(a | a \in A1) - (P a - Q a)).
           apply eq_bigr => a; rewrite /A1 in_set => Ha.
           rewrite ltR0_norm // subR_lt0; exact/ltRP.
         rewrite -big_morph_oppR // big_split /= ltR0_norm; last first.
@@ -195,7 +195,7 @@ apply (Pinsker_2_inequality card_bool).
 apply/dominatesP => /= b.
 rewrite !ffunE.
 move/prsumr_eq0P => H.
-transitivity (\rsum_(a | a \in A_ b) 0%R).
+transitivity (\sum_(a | a \in A_ b) 0%R).
   apply eq_bigr => // a ?; rewrite (dominatesE P_dom_by_Q) // H // => a' ?; exact/pos_ff_ge0.
 by rewrite big_const iter_addR mulR0.
 Qed.

@@ -9,9 +9,8 @@ Require Import ssrR.
 
 (** * Additional lemmas about Coq Reals *)
 
-Reserved Notation "T '->' 'R+' " (at level 10, format "'[' T  ->  R+ ']'").
-Reserved Notation "{ '+' T -> R }" (at level 0, T at next level,
-  format "{ '+'  T  ->  R }").
+Reserved Notation "T '->R^+' " (at level 10, format "'[' T  ->R^+ ']'").
+Reserved Notation "T '->R+' " (at level 10, format "'[' T  ->R+ ']'").
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
 Reserved Notation "P '<<' Q" (at level 10, Q at next level).
 Reserved Notation "P '<<b' Q" (at level 10).
@@ -54,20 +53,20 @@ Definition pos_ffun_eqMixin := [eqMixin of pos_ffun by <:].
 Canonical pos_ffun_eqType := Eval hnf in EqType _ pos_ffun_eqMixin.
 End pos_finfun.
 
-Notation "{ '+' T '->' R }" := (pos_ffun T) : reals_ext_scope.
+Notation "T '->R+' " := (pos_ffun T) : reals_ext_scope.
 
 Local Open Scope reals_ext_scope.
 
-Lemma pos_ff_ge0 (T : finType) (f : {+ T -> R}) : forall a, 0 <= pos_ff f a.
+Lemma pos_ff_ge0 (T : finType) (f : T ->R+) : forall a, 0 <= pos_ff f a.
 Proof. by case: f => f /= /forallP H a; apply/leRP/H. Qed.
 
 Record pos_fun (T : Type) := mkPosFun {
   pos_f :> T -> R ;
   pos_f_ge0 : forall a, 0 <= pos_f a }.
 
-Notation "T '->' 'R+' " := (pos_fun T) : reals_ext_scope.
+Notation "T '->R^+' " := (pos_fun T) : reals_ext_scope.
 
-Lemma pos_fun_eq {C : Type} (f g : C -> R+) : pos_f f = pos_f g -> f = g.
+Lemma pos_fun_eq {C : Type} (f g : C ->R^+) : pos_f f = pos_f g -> f = g.
 Proof.
 destruct f as [f Hf].
 destruct g as [g Hg].

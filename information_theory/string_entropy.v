@@ -25,7 +25,7 @@ Section seq_nat_dist.
 Variable A : finType.
 Variable f : A -> nat.
 Variable total : nat.
-Hypothesis sum_f_total : \sum_(a in A) f a = total.
+Hypothesis sum_f_total : (\sum_(a in A) f a)%nat = total.
 Hypothesis total_gt0 : total != O.
 
 Let f_div_total := [ffun a : A => f a / total].
@@ -37,7 +37,7 @@ apply /Rlt_le /invR_gt0 /ltR0n.
 by rewrite lt0n.
 Qed.
 
-Lemma f_div_total_1 : \rsum_(a in A) [ffun a : A => f a / total] a = 1.
+Lemma f_div_total_1 : \sum_(a in A) [ffun a : A => f a / total] a = 1.
 Proof.
 evar (h : A -> R); rewrite (eq_bigr h); last first.
   move=> a _ /=; rewrite /f_div_total ffunE /h; reflexivity.
@@ -56,7 +56,7 @@ Variable A : finType.
 (* TODO: move?*)
 Section num_occ.
 
-Lemma sum_num_occ s : \sum_(a in A) N(a|s) = size s.
+Lemma sum_num_occ s : (\sum_(a in A) N(a|s))%nat = size s.
 Proof.
 elim: s => [|a s IH] /=.
 + by apply big1_eq.
@@ -65,7 +65,7 @@ elim: s => [|a s IH] /=.
 Qed.
 
 Lemma num_occ_flatten (a:A) ss :
-  N(a|flatten ss) = \sum_(s <- ss) N(a|s).
+  N(a|flatten ss) = (\sum_(s <- ss) N(a|s))%nat.
 Proof.
 rewrite /num_occ.
 elim: ss => [|s ss IH] /=; first by rewrite big_nil.
@@ -95,7 +95,7 @@ Definition Hs (s : seq A) :=
 *)
 
 Definition nHs (s : seq A) :=
- \rsum_(a in A)
+ \sum_(a in A)
   if N(a|s) == 0%nat then 0 else
   N(a|s) * log (size s / N(a|s)).
 
@@ -141,7 +141,7 @@ Theorem concats_entropy ss :
        <= size (flatten ss) * Hs (flatten ss). *)
 (* \rsum_(s <- ss) mulnRdep (size s) (fun H => Hs0 H)
        <= mulnRdep (size (flatten ss)) (fun H => Hs0 H). *)
-  \rsum_(s <- ss) nHs s <= nHs (flatten ss).
+  \sum_(s <- ss) nHs s <= nHs (flatten ss).
 Proof.
 (* (1) First simplify formula *)
 (*rewrite szHs_is_nHs.
@@ -175,7 +175,7 @@ have Hsz: 0 < size (flatten ss').
   by apply /le_INR /leP /count_size.
 apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
     log (size (flatten ss') /
-      \sum_(i <- ss') N(a|i))));
+      (\sum_(i <- ss') N(a|i))%nat)));
   last first.
   (* Not mentioned in the book: one has to compensate for the discarding
      of strings containing no occurences.
@@ -272,7 +272,7 @@ Fixpoint takes {k : nat} (w : k.-tuple A) (s : seq A) {struct s} : seq A :=
 
 (* sample ref: https://www.dcc.uchile.cl/~gnavarro/ps/jea08.2.pdf *)
 Definition hoH (k : nat) := / n%:R *
-  \rsum_(w in {: k.-tuple A}) #|takes w l|%:R *
+  \sum_(w in {: k.-tuple A}) #|takes w l|%:R *
     match Bool.bool_dec (size w != O) true with
       | left H => `H (num_occ_dist H)
       | _ => 0

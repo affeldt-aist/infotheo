@@ -40,7 +40,7 @@ have H : forall a : A, p a * log (p a / u a) = RHS a.
     rewrite invRK // logM // mulRDr.
     by instantiate (RHS := fun a => p a * log (p a) + p a * log #|A|%:R).
   - by rewrite /RHS -H /= 3!mul0R add0R.
-have H0 : \rsum_(a in A) p a * log (p a / u a) = \rsum_(a in A) RHS a.
+have H0 : \sum_(a in A) p a * log (p a / u a) = \sum_(a in A) RHS a.
   move : H; rewrite /RHS => H.
   exact: eq_bigr.
 rewrite H0 /RHS.
@@ -196,7 +196,7 @@ have h0 : forall p1 p2, [forall i, 0 <b= h p1 p2 i].
 move: (@log_sum _ setT (mkPosFfun (h0 p1 p2)) (mkPosFfun (h0 q1 q2)) hdom).
 rewrite /=.
 have rsum_setT' : forall (f : 'I_2 -> R),
-  \rsum_(i < 2) f i = \rsum_(i in [set: 'I_2]) f i.
+  \sum_(i < 2) f i = \sum_(i in [set: 'I_2]) f i.
   move=> f0; by apply eq_bigl => i; rewrite inE.
 rewrite -!rsum_setT' !big_ord_recl !big_ord0 !addR0.
 rewrite /h /= !ffunE; move/leR_trans; apply.

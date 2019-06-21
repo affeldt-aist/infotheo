@@ -1262,9 +1262,9 @@ Local Open Scope R_scope.
 Lemma rmul_foldr_rsum {I A} {X : finType} (a : R) (g : I -> X -> A -> A)
   (F0 : A -> R) l d :
   a *
-  foldr (fun n1 (F : A -> R) t => \rsum_(x in X) F (g n1 x t))
+  foldr (fun n1 (F : A -> R) t => \sum_(x in X) F (g n1 x t))
          F0 l d =
-  foldr (fun n1 (F : A -> R) t => \rsum_(x in X) F (g n1 x t))
+  foldr (fun n1 (F : A -> R) t => \sum_(x in X) F (g n1 x t))
         (fun t => a * F0 t) l d.
 Proof.
 elim: l d => [|x l IH] d //=.
@@ -1312,11 +1312,11 @@ Lemma alpha_def_sub m0 n1 n0 (x y : 'F_2) (l : seq 'I_n) d :
   n1 \notin l -> uniq l -> n0 != n1 -> n0 \notin l -> n1 \in 'V m0 :\ n0 ->
   {subset l <= 'V m0 :\ n0} ->
   beta' n1 m0 (d`[n1 := x]) *
-  foldr (fun n2 (F : 'rV_n -> R) t => \rsum_(x in 'F_2) F (t`[n2 := x]))
+  foldr (fun n2 (F : 'rV_n -> R) t => \sum_(x in 'F_2) F (t`[n2 := x]))
     (fun t => INR (t ``_ n0 != \delta [set x in l] t) *
               (\rprod_(n3 in [set x in l]) beta' n3 m0 t))
     l (d`[n0 := x + y])%R =
-  foldr (fun n2 (F : 'rV_n -> R) t => \rsum_(x in 'F_2) F (t`[n2 := x]))
+  foldr (fun n2 (F : 'rV_n -> R) t => \sum_(x in 'F_2) F (t`[n2 := x]))
     (fun t => INR (t ``_ n0 != \delta [set x in n1 :: l] t) *
               (\rprod_(n3 in [set x in n1 :: l]) beta' n3 m0 t))
     l ((d`[n0 := y])`[n1 := x]).

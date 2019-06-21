@@ -105,10 +105,10 @@ Definition f (x : 'rV_n) := [ffun y : 'rV_n => \rprod_(i < n) W `(y ``_ i | x ``
 Lemma f0 x y : 0 <= f x y.
 Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
 
-Lemma f1 x : \rsum_(y in 'rV_n) f x y = 1%R.
+Lemma f1 x : (\sum_(y in 'rV_n) f x y = 1)%R.
 Proof.
 set f' := fun i b => W (x ``_ i) b.
-suff H : \rsum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1%R.
+suff H : (\sum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1)%R.
   rewrite -{}[RHS]H /f'.
   rewrite (reindex_onto (fun vb : 'rV_n => [ffun x => vb ``_ x])
     (fun g  => \row_(k < n) g k)) /=; last first.
@@ -184,10 +184,10 @@ End DMC_sub_vec.
 Module OutDist.
 Section def.
 Variables (A B : finType) (P : dist A) (W  : `Ch_1(A, B)).
-Definition f := [ffun b : B => \rsum_(a in A) W a b * P a].
+Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
 Lemma f0 (b : B) : 0 <= f b.
 Proof. rewrite ffunE; apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/dist_ge0. Qed.
-Lemma f1 : \rsum_(b in B) f b = 1.
+Lemma f1 : \sum_(b in B) f b = 1.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
   move=> a _; rewrite ffunE /h; reflexivity.
@@ -195,7 +195,7 @@ rewrite {}/h exchange_big /= -(epmf1 P).
 apply eq_bigr => a _; by rewrite -big_distrl /= (epmf1 (W a)) mul1R.
 Qed.
 Definition d : dist B := locked (makeDist f0 f1).
-Lemma dE b : d b = \rsum_(a in A) W a b * P a.
+Lemma dE b : d b = \sum_(a in A) W a b * P a.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
 End OutDist.
@@ -208,8 +208,8 @@ Variables A B : finType.
 Local Open Scope ring_scope.
 
 Lemma tuple_pmf_out_dist (W : `Ch_1(A, B)) (P : dist A) n (b : 'rV_ _):
-   \rsum_(j : 'rV[A]_n)
-      ((\rprod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
+   (\sum_(j : 'rV[A]_n)
+      (\rprod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
    (`O(P, W)) `^ _ b.
 Proof.
 rewrite TupleDist.dE.
@@ -263,13 +263,13 @@ rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=; last first
   rewrite SetDef.pred_of_setE /= SetDef.finsetE /= ffunE. (* TODO: clean *)
   do 2 f_equal.
   apply/rowP => a; by rewrite !mxE.
-transitivity (\rsum_(i | Q i) (P `^ n i * (\rsum_(y in 'rV[B]_n) W ``(y | i)))).
+transitivity (\sum_(i | Q i) (P `^ n i * (\sum_(y in 'rV[B]_n) W ``(y | i)))).
   apply eq_bigr => ta Sta.
   rewrite big_distrr; apply eq_bigr => tb _ /=.
   rewrite DMCE [in RHS]TupleDist.dE -[in RHS]big_split /= TupleDist.dE.
   apply eq_bigr => j _.
   by rewrite JointDistChan.dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
-transitivity (\rsum_(i | Q i) P `^ _ i).
+transitivity (\sum_(i | Q i) P `^ _ i).
   apply eq_bigr => i _; by rewrite (epmf1 (W ``(| i))) mulR1.
 rewrite /Pr; apply eq_bigl => t; by rewrite !inE.
 Qed.
@@ -347,7 +347,7 @@ rewrite /JointDistChan.d; unlock; rewrite ProdDist.fst addRC addRK.
 by rewrite /JointDistChan.d; unlock.
 Qed.
 
-Lemma CondEntropyChanE2 : `H(W | P) = \rsum_(a in A) P a * `H (W a).
+Lemma CondEntropyChanE2 : `H(W | P) = \sum_(a in A) P a * `H (W a).
 Proof.
 rewrite CondEntropyChanE CondEntropy.hE big_morph_oppR; apply eq_bigr => a _.
 rewrite big_morph_oppR /entropy mulRN -mulNR big_distrr; apply eq_bigr => b _.

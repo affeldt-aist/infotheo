@@ -13,7 +13,7 @@ Import Prenex Implicits.
 
 (* wip: distribution using choiceType *)
 
-Canonical R_choiceType := ChoiceType R Rstruct.R_choiceMixin.
+Local Open Scope R_scope.
 
 Module Dist.
 Section dist.
@@ -21,14 +21,14 @@ Variable A : choiceType.
 Record t := mk {
   f :> {fsfun A -> R with 0} ;
   f01 : all (fun x => 0 <b f x)%R (finsupp f) &&
-        \rsum_(a <- finsupp f) f a == 1}.
+        \sum_(a <- finsupp f) f a == 1}.
 Lemma ge0 (P : t) a : (0 <= P a)%R.
 Proof.
 case: P => /= f /andP[/allP H _].
 case/boolP : (a \in finsupp f) => [/H/ltRP/ltRW //|].
 rewrite memNfinsupp => /eqP ->; exact/leRR.
 Qed.
-Lemma f1 (P : t) : \rsum_(a <- finsupp P) P a = 1.
+Lemma f1 (P : t) : \sum_(a <- finsupp P) P a = 1.
 Proof. by case: P => P /= /andP[_ /eqP]. Qed.
 End dist.
 End Dist.
@@ -55,13 +55,13 @@ Variable A : choiceType.
 Lemma Dist_ext (d d' : Dist A) : (forall x, d x = d' x) -> d = d'.
 Proof. move=> H; exact/val_inj/fsfunP/H. Qed.
 
-Lemma Distmk (f : {fsfun A -> R with 0}) (H0 : forall a, a \in finsupp f -> (0 < f a)%R)
-  (H1 : \rsum_(a <- finsupp f) f a = 1%R) :
-  all (fun x => 0 <b f x)%R (finsupp f) && \rsum_(a <- finsupp f) f a == 1.
+Lemma Distmk (f : {fsfun A -> R with 0}) (H0 : forall a, a \in finsupp f -> (0 < f a))
+  (H1 : \sum_(a <- finsupp f) f a = 1) :
+  all (fun x => 0 <b f x) (finsupp f) && (\sum_(a <- finsupp f) f a == 1).
 Proof. by rewrite H1 eqxx andbT; apply/allP => a /H0/ltRP. Qed.
 
-Definition makeDist (f : {fsfun A -> R with 0}) (H0 : forall a, a \in finsupp f -> (0 < f a)%R)
-  (H1 : \rsum_(a <- finsupp f) f a = 1%R) := Dist.mk (Distmk H0 H1).
+Definition makeDist (f : {fsfun A -> R with 0}) (H0 : forall a, a \in finsupp f -> (0 < f a))
+  (H1 : \sum_(a <- finsupp f) f a = 1%R) := Dist.mk (Distmk H0 H1).
 
 End Dist_prop.
 
@@ -76,7 +76,7 @@ Proof.
 rewrite fsfunE mem_finsupp /f fsfunE.
 case: ifPn => [_|]; by [rewrite dist_gt0 | rewrite eqxx].
 Qed.
-Let f1 : \rsum_(a <- finsupp f) f a = 1%R.
+Let f1 : \sum_(a <- finsupp f) f a = 1.
 Proof.
 rewrite -[RHS](epmf1 P) [in RHS](bigID (fun x => x \in finsupp f)) /=.
 rewrite [in X in _ = (_ + X)%R]big1 ?addR0; last first.
@@ -103,7 +103,7 @@ case: ifPn => ba; [exact/eqP/gtR_eqF | by rewrite eqxx].
 Qed.
 Lemma f0 b : b \in finsupp f -> (0 < f b)%R.
 Proof. rewrite mem_finsupp fsfunE inE; case: ifPn => //; by rewrite eqxx. Qed.
-Lemma f1 : \rsum_(b <- finsupp f) f b = 1%R.
+Lemma f1 : \sum_(b <- finsupp f) f b = 1.
 Proof. by rewrite suppf big_seq_fset1 /f fsfunE inE eqxx. Qed.
 Definition d : Dist A := locked (makeDist f0 f1).
 Lemma dE a0 : d a0 = f a0.
@@ -119,14 +119,14 @@ Local Open Scope fset_scope.
 Variables (A B : choiceType) (p : Dist A) (g : A -> Dist B).
 Let D := \bigcup_(d <- g @` [fset a | a in finsupp p]) finsupp d.
 Definition f : {fsfun B -> R with 0} :=
-  [fsfun b in D => \rsum_(a <- finsupp p) p a * (g a) b | 0].
+  [fsfun b in D => \sum_(a <- finsupp p) p a * (g a) b | 0].
 Lemma f0 b : b \in finsupp f -> (0 < f b)%R.
 Proof.
 rewrite mem_finsupp fsfunE; case: ifPn => [_ /eqP/nesym ?|]; last by rewrite eqxx.
 rewrite ltR_neqAle; split => //.
 apply rsumr_ge0 => a _; apply/mulR_ge0; exact/Dist.ge0.
 Qed.
-Lemma f1 : \rsum_(b <- finsupp f) f b = 1.
+Lemma f1 : \sum_(b <- finsupp f) f b = 1.
 Proof.
 rewrite {2}/f.
 evar (h : B -> R); rewrite (eq_bigr h); last first.
@@ -136,7 +136,7 @@ rewrite -[RHS](Dist.f1 p); apply eq_bigr => a _.
 case/boolP : (p a == R0 :> R) => pa0.
   rewrite (eqP pa0) big1 // => b _; exact: mul0R (* TODO *).
 rewrite -big_distrr /=.
-rewrite (_ : (\rsum_(_ <- _ | _) _ = 1%R)%R) ?mulR1 //.
+rewrite (_ : (\sum_(_ <- _ | _) _ = 1%R)%R) ?mulR1 //.
 rewrite (bigID (fun x => x \in finsupp (g a))) /=.
 rewrite [X in (_ + X)%R = _]big1 ?addR0; last first.
   by move=> b /andP[_]; rewrite memNfinsupp => /eqP.
@@ -257,7 +257,7 @@ case: ifPn => [|H].
       by rewrite !(inE,mem_finsupp).
     rewrite andbT; apply/imfsetP.
     by exists a => //; rewrite !(inE,mem_finsupp).
-  rewrite (eq_bigr (fun a => (\rsum_(a0 <- finsupp m) m a0 * (f a0) a * (g a) c))); last first.
+  rewrite (eq_bigr (fun a => (\sum_(a0 <- finsupp m) m a0 * (f a0) a * (g a) c))); last first.
     move=> b0 _.
     rewrite DistBind.dE /DistBind.f fsfunE.
     case: ifPn.
@@ -265,7 +265,6 @@ case: ifPn => [|H].
       rewrite andbT => /imfsetP[a0].
       rewrite !(inE,mem_finsupp) => ma00 ->{dB} fa0b0.
       by rewrite -big_distrl.
-    rewrite {1}/multiplication /mul_notation /=.
     rewrite (mul0R (g b0 c)) => K.
     rewrite big1_fset => // a0.
     rewrite mem_finsupp => ma00 _.
@@ -280,8 +279,7 @@ case: ifPn => [|H].
   rewrite exchange_big; apply eq_bigr => a0 _ /=.
   rewrite DistBind.dE /DistBind.f fsfunE.
   case/boolP : (m a0 == R0 :> R) => [/eqP ma00|ma00].
-    rewrite ma00.
-    rewrite {3}/multiplication /mul_notation mul0R big1_fset // => b2 _ _.
+    rewrite ma00 mul0R big1_fset // => b2 _ _.
     by rewrite /multiplication /mul_notation 2!mul0R.
   case: ifPn.
     case/bigfcupP => dC.
@@ -329,7 +327,7 @@ case: ifPn => [|H].
   by rewrite !(inE,mem_finsupp).
   move=> K.
   rewrite DistBind.supp.
-  suff : \rsum_(i <- finsupp (DistBind.d m f)) ((f a0) i * (g i) c)%R = R0 :> R.
+  suff : \sum_(i <- finsupp (DistBind.d m f)) ((f a0) i * (g i) c)%R = R0 :> R.
     rewrite DistBind.supp => L.
     evar (h : B -> R); rewrite (eq_bigr h); last first.
       move=> b1 _.
@@ -337,7 +335,7 @@ case: ifPn => [|H].
       rewrite -mulRA.
       rewrite /h.
       reflexivity.
-    by rewrite -(big_distrr (m a0)) /= L !mulR0 /multiplication /mul_notation mulR0.
+    by rewrite -(big_distrr (m a0)) /= L !mulR0.
   apply/prsumr_seq_eq0P.
   exact: fset_uniq.
   move=> b1 _; apply mulR_ge0; exact/Dist.ge0.
@@ -384,7 +382,7 @@ Local Open Scope proba_scope.
 Variables (A : choiceType) (n : nat) (e : {dist 'I_n}) (g : 'I_n -> Dist A).
 Local Open Scope fset_scope.
 Definition D : {fset A} := \big[fsetU/fset0]_(i < n | (0 <b e i)%R) finsupp (g i).
-Definition f := [fsfun a in D => \rsum_(i < n) e i * g i a | 0].
+Definition f := [fsfun a in D => \sum_(i < n) e i * g i a | 0].
 Lemma supp : finsupp f = D.
 Proof.
 apply/fsetP => a; apply/idP/idP => [|].
@@ -406,7 +404,7 @@ rewrite mem_finsupp fsfunE; case: ifPn => [_ ?|]; last by rewrite eqxx.
 rewrite ltR_neqAle; split; first exact/nesym/eqP.
 apply/rsumr_ge0 => i _; apply/mulR_ge0; [exact/dist_ge0 | exact/Dist.ge0].
 Qed.
-Lemma f1 : (\rsum_(a <- finsupp f) f a = 1%R).
+Lemma f1 : \sum_(a <- finsupp f) f a = 1.
 Proof.
 rewrite {2}/f; evar (h : A -> R); rewrite (eq_big_seq h); last first.
   move=> b; rewrite supp => bD.
@@ -423,7 +421,7 @@ move=> a _.
 by rewrite memNfinsupp => /eqP.
 Qed.
 Definition d : Dist A := locked (makeDist f0 f1).
-Lemma dE a : d a = [fsfun a in D => (\rsum_(i < n) e i * g i a)%R | 0] a.
+Lemma dE a : d a = [fsfun a in D => \sum_(i < n) e i * g i a | 0] a.
 Proof. by rewrite /d; unlock; rewrite fsfunE. Qed.
 End def.
 End ConvDist.
@@ -551,7 +549,7 @@ apply/prob_ext; by rewrite p0'.
 Qed.
 Lemma tech1 (B : choiceType) (a b : Dist A) (f : A -> Dist B) (p : prob) (a0 : A) (b0 : B) (b0a0 : b0 \in finsupp (f a0)) :
   p != `Pr 0 ->
-  \rsum_(i <- finsupp (a <|p|> b)) (a i * (f i) b0)%R = (DistBind.f a f) b0.
+  \sum_(i <- finsupp (a <|p|> b)) (a i * (f i) b0) = (DistBind.f a f) b0.
 Proof.
 move=> p0.
 rewrite fsfunE.

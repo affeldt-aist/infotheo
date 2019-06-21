@@ -70,7 +70,7 @@ Proof.
 suff Htmp : #| `TS P n epsilon |%:R * exp2 (- n%:R * (`H P + epsilon)) <= 1.
   by rewrite -(mulR1 (exp2 _)) mulRC -leR_pdivr_mulr // /Rdiv -exp2_Ropp -mulNR.
 rewrite -(epmf1 (P `^ n)).
-rewrite (_ : _ * _ = \rsum_(x in `TS P n epsilon) (exp2 (- n%:R * (`H P + epsilon)))); last first.
+rewrite (_ : _ * _ = \sum_(x in `TS P n epsilon) (exp2 (- n%:R * (`H P + epsilon)))); last first.
   by rewrite big_const iter_addR.
 apply/ler_rsum_l => //=.
 - move=> i; rewrite inE; by case/andP => /leRP.

@@ -21,13 +21,13 @@ Section entropy_definition.
 
 Variables (A : finType) (P : dist A).
 
-Definition entropy := - \rsum_(a in A) P a * log (P a).
+Definition entropy := - \sum_(a in A) P a * log (P a).
 Local Notation "'`H'" := (entropy).
 
 Lemma entropy_ge0 : 0 <= `H.
 Proof.
 rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
-rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))); last first.
+rewrite (_ : \sum_(_ in _) _ = \sum_(i in A | predT A) - (P i * log (P i))); last first.
   apply eq_bigl => i /=; by rewrite inE.
 apply rsumr_ge0 => i _.
 case/boolP : (P i == 0) => [/eqP ->|Hi].
@@ -47,7 +47,7 @@ Hypothesis P_pos : forall b, 0 < P b.
 Lemma entropy_pos_P_pos : 0 <= `H.
 Proof.
 rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
-rewrite (_ : \rsum_(_ in _) _ = \rsum_(i in A | predT A) - (P i * log (P i))).
+rewrite (_ : \sum_(_ in _) _ = \sum_(i in A | predT A) - (P i * log (P i))).
   apply rsumr_ge0 => i _.
   rewrite mulRC -mulNR.
   apply mulR_ge0; last exact: dist_ge0.
@@ -71,7 +71,7 @@ apply eq_bigr => a _; by rewrite mulRC -mulNR.
 Qed.
 
 Lemma xlnx_entropy {A} (P : dist A) :
-  `H P = / ln 2 * - \rsum_(a : A) xlnx (P a).
+  `H P = / ln 2 * - \sum_(a : A) xlnx (P a).
 Proof.
 rewrite /entropy mulRN; f_equal.
 rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
@@ -98,8 +98,8 @@ have [n HA] : exists n, #|A| = n.+1.
   exists (#|A|.-1); rewrite prednK //; exact: (dist_domain_not_empty P).
 have /div_ge0 H : P << (Uniform.d HA) by apply dom_by_uniform.
 rewrite -subR_ge0; apply/(leR_trans H)/Req_le.
-transitivity (\rsum_(a|a \in A) P a * log (P a) +
-              \rsum_(a|a \in A) P a * - log ((Uniform.d HA) a)).
+transitivity (\sum_(a|a \in A) P a * log (P a) +
+              \sum_(a|a \in A) P a * - log ((Uniform.d HA) a)).
   rewrite -big_split /=; apply eq_bigr => a _; rewrite -mulRDr.
   case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
   congr (_ * _); rewrite logDiv ?addR_opp //.
