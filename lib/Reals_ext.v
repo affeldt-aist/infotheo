@@ -3,6 +3,7 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice.
 From mathcomp Require Import path div fintype tuple finfun bigop prime finset.
 From mathcomp Require Import binomial.
+From mathcomp Require Rstruct.
 Require Import ProofIrrelevance Reals Lra.
 Require Import ssrR.
 
@@ -28,6 +29,8 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Arguments INR : simpl never.
+
+Canonical R_choiceType := ChoiceType R Rstruct.R_choiceMixin.
 
 Local Open Scope R_scope.
 
@@ -518,6 +521,8 @@ Export Rpos.Exports.
 Canonical Rpos_subType := [subType for Rpos.v].
 Definition Rpos_eqMixin := Eval hnf in [eqMixin of Rpos by <:].
 Canonical Rpos_eqType := Eval hnf in EqType Rpos Rpos_eqMixin.
+Definition Rpos_choiceMixin := Eval hnf in [choiceMixin of Rpos by <:].
+Canonical Rpos_choiceType := Eval hnf in ChoiceType Rpos Rpos_choiceMixin.
 
 Definition mkRpos x H := @Rpos.mk x (introT (ltRP _ _) H).
 
