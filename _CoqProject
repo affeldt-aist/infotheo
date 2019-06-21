@@ -33,6 +33,8 @@ probability/pinsker_function.v
 probability/log_sum.v
 probability/partition_inequality.v
 probability/pinsker.v
+probability/convex_choice.v
+probability/gcm.v
 information_theory/source_code.v
 information_theory/entropy.v
 information_theory/chap2.v
