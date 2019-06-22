@@ -49,7 +49,7 @@ rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /= (proj2 (prsumr_eq0P
   move: aa'; by rewrite eqxx.
 Qed.
 
-Definition c : `Ch_1(A, [finType of option A]) :=
+Definition c : `Ch(A, [finType of option A]) :=
   fun a => makeDist (f0 a) (f1 a).
 
 End EC_sect.

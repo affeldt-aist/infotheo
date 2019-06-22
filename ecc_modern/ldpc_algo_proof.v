@@ -1040,7 +1040,7 @@ Variable B : finType.
 Open Scope channel_scope.
 Open Scope vec_ext_scope.
 Open Scope proba_scope.
-Variable W : `Ch_1('F_2, B).
+Variable W : `Ch('F_2, B).
 Variable vb : 'rV[B]_n.
 Local Notation "''V'" := (Vnext H).
 Local Notation "''F'" := (Fnext H).
@@ -1314,11 +1314,11 @@ Lemma alpha_def_sub m0 n1 n0 (x y : 'F_2) (l : seq 'I_n) d :
   beta' n1 m0 (d`[n1 := x]) *
   foldr (fun n2 (F : 'rV_n -> R) t => \sum_(x in 'F_2) F (t`[n2 := x]))
     (fun t => INR (t ``_ n0 != \delta [set x in l] t) *
-              (\rprod_(n3 in [set x in l]) beta' n3 m0 t))
+              (\prod_(n3 in [set x in l]) beta' n3 m0 t))
     l (d`[n0 := x + y])%R =
   foldr (fun n2 (F : 'rV_n -> R) t => \sum_(x in 'F_2) F (t`[n2 := x]))
     (fun t => INR (t ``_ n0 != \delta [set x in n1 :: l] t) *
-              (\rprod_(n3 in [set x in n1 :: l]) beta' n3 m0 t))
+              (\prod_(n3 in [set x in n1 :: l]) beta' n3 m0 t))
     l ((d`[n0 := y])`[n1 := x]).
 Proof.
 move=> n1_l Hun n0_n1 n0_l Hn1 Hsub.
@@ -1384,11 +1384,11 @@ rewrite /alpha' !recursive_computation /alpha //; first last.
   by apply tanner.
   by apply tanner.
 rewrite (eq_bigr (fun t : 'rV_n => INR ((t ``_ n0) != \delta ('V m0 :\ n0) t) *
-  (\rprod_(n1 in 'V m0 :\ n0) beta' n1 m0 t))); last first.
+  (\prod_(n1 in 'V m0 :\ n0) beta' n1 m0 t))); last first.
   by move=> i _; rewrite (checksubsum_D1 _ Hn0) eq_sym.
 rewrite [in X in _ = (_, X)](eq_bigr (fun t : 'rV_n =>
   INR ((t ``_ n0) != \delta ('V m0 :\ n0) t) *
-  (\rprod_(n1 in 'V m0 :\ n0) beta' n1 m0 t))); last first.
+  (\prod_(n1 in 'V m0 :\ n0) beta' n1 m0 t))); last first.
   move=> i _; by rewrite (checksubsum_D1 _ Hn0) eq_sym.
 rewrite !summary_powersetE !summary_foldE /summary_fold /=.
 rewrite /image_mem /enum_mem.
@@ -2314,7 +2314,7 @@ Hypothesis Hvb : receivable W (`U C_not_empty) vb.
 
 Lemma big_beta_mul (A : finType) (F1 F2 : A -> R) (l : pred A) :
   \big[beta_op/(1,1)]_(i <- enum l) (F1 i, F2 i) =
-  (\rprod_(i in l) F1 i , \rprod_(i in l) F2 i).
+  (\prod_(i in l) F1 i , \prod_(i in l) F2 i).
 Proof.
 rewrite /index_enum big_filter.
 elim: (Finite.enum A) => [|a la IH].

@@ -106,7 +106,7 @@ End post_proba_bsc_unif.
 
 Section DMC_sub_vec_Fnext_Vgraph.
 
-Variables (B : finType) (W : `Ch_1('F_2, B)).
+Variables (B : finType) (W : `Ch('F_2, B)).
 Variable n' : nat.
 Let n := n'.+1.
 Variable tb : 'rV[B]_n.
@@ -120,19 +120,19 @@ Variable tanner : Tanner.acyclic_graph (tanner_rel H).
 
 Lemma DMC_sub_vec_Fnext t n0 :
   W ``(tb # [set~ n0] | t # [set~ n0]) =
-  \rprod_(i in 'F n0) W ``(tb # 'V(i, n0) :\ n0 | t # 'V(i, n0) :\ n0).
+  (\prod_(i in 'F n0) W ``(tb # 'V(i, n0) :\ n0 | t # 'V(i, n0) :\ n0))%R.
 Proof.
 rewrite DMCE.
-transitivity (\rprod_(i in setT :\ n0) W (t ``_ i) (tb ``_ i)).
-  transitivity (\rprod_(i in [set~ n0]) (W (t ``_ i)) (tb ``_ i)); last first.
+transitivity (\prod_(i in setT :\ n0) W (t ``_ i) (tb ``_ i))%R.
+  transitivity (\prod_(i in [set~ n0]) W (t ``_ i) (tb ``_ i))%R; last first.
     apply eq_bigl => x /=; by rewrite !inE andbT.
   by rewrite -rprod_sub_vec.
 rewrite -{1}(cover_Vgraph_part_vnode (Tanner.connected tanner) n0).
 rewrite big_trivIset /=; last by apply trivIset_Vgraph_part_vnode, (Tanner.acyclic tanner).
 rewrite /Vgraph_part_vnode.
 (* specialize the bigop for non-empty A's only *)
-transitivity (\rprod_(A in [set 'V(m0, n0) :\ n0 | m0 in 'F n0 & ('V(m0, n0) :\ n0 != set0)])
-  \rprod_(x in A) (W (t ``_ x)) (tb ``_ x)).
+transitivity (\prod_(A in [set 'V(m0, n0) :\ n0 | m0 in 'F n0 & ('V(m0, n0) :\ n0 != set0)])
+  \prod_(x in A) W (t ``_ x) (tb ``_ x))%R.
   rewrite (bigID [pred x | x == set0 ]) /=.
   rewrite big1; last first.
     move=> i /andP [] Hi1 /eqP ->.
@@ -182,8 +182,8 @@ Qed.
 
 Lemma DMC_sub_vec_Vgraph t m0 n0 : n0 \in 'V m0 ->
    W ``(tb # ('V(m0, n0) :\ n0) | t # ('V(m0, n0) :\ n0)) =
-   (\rprod_(n1 in 'V m0 :\ n0) W (t ``_ n1) (tb ``_ n1) *
-   \rprod_(m1 in 'F n1 :\ m0) W ``(tb # 'V(m1, n1) :\ n1 | t # 'V(m1, n1) :\ n1))%R.
+   (\prod_(n1 in 'V m0 :\ n0) (W (t ``_ n1) (tb ``_ n1) *
+     \prod_(m1 in 'F n1 :\ m0) W ``(tb # 'V(m1, n1) :\ n1 | t # 'V(m1, n1) :\ n1)))%R.
 Proof.
 move=> m0n0.
 rewrite DMCE rprod_sub_vec.
@@ -195,7 +195,7 @@ rewrite big_imset /=; last first.
   apply: Vgraph_injective3 Hn1 Hn2 => //; by apply: Tanner.acyclic tanner.
 apply eq_bigr => n1 Hn1.
 set body := BIG_F.
-transitivity (\rprod_(i in [predU (pred1 n1) & [pred x | x \in \bigcup_(m1 in 'F n1 :\ m0) ('V(m1, n1) :\ n1)]]) (body i)).
+transitivity (\prod_(i in [predU (pred1 n1) & [pred x | x \in \bigcup_(m1 in 'F n1 :\ m0) ('V(m1, n1) :\ n1)]]) (body i))%R.
   apply eq_bigl => x /=.
   by rewrite !inE.
 rewrite {}/body bigU /=; last first.
@@ -235,17 +235,17 @@ Local Notation "''F'" := (Fnext H).
 Local Notation "''V(' x ',' y ')'" := (Vgraph H x y).
 Local Notation "''F(' x ',' y ')'" := (Fgraph H x y).
 Variable B : finType.
-Variable W : `Ch_1('F_2, B).
+Variable W : `Ch('F_2, B).
 Variable y : 'rV[B]_n.
 
 Local Open Scope R_scope.
 
 Definition alpha m0 n0 d := \rsum_(x # 'V(m0, n0) :\ n0 , d)
   W ``(y # 'V(m0, n0) :\ n0 | x # 'V(m0, n0) :\ n0) *
-    \rprod_(m1 in 'F(m0, n0)) (\delta ('V m1) x)%:R.
+    \prod_(m1 in 'F(m0, n0)) (\delta ('V m1) x)%:R.
 
 Definition beta n0 m0 (d : 'rV_n) :=
-  W (d ``_ n0) (y ``_ n0) * \rprod_(m1 in 'F n0 :\ m0) alpha m1 n0 d.
+  W (d ``_ n0) (y ``_ n0) * \prod_(m1 in 'F n0 :\ m0) alpha m1 n0 d.
 
 Local Close Scope R_scope.
 
@@ -261,7 +261,7 @@ move=> n0m0 dd'.
 rewrite /alpha.
 transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
      W ``((y # 'V(m0, n0) :\ n0) | ((dproj_V m0 n0 d x) # 'V(m0, n0) :\ n0)) *
-     (\rprod_(m2 in 'F(m0, n0)) (\delta ('V m2) (dproj_V m0 n0 d x))%:R))%R.
+     (\prod_(m2 in 'F(m0, n0)) (\delta ('V m2) (dproj_V m0 n0 d x))%:R))%R.
   apply eq_bigr => /= t Ht.
   congr (W ``(_ | _) * _)%R.
     by rewrite /dproj_V sub_vec_dproj.
@@ -269,7 +269,7 @@ transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
   by rewrite /dproj_V checksubsum_dproj_freeon.
 transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
      W ``((y # 'V(m0, n0) :\ n0) | ((dproj_V m0 n0 d' x) # 'V(m0, n0) :\ n0)) *
-     (\rprod_(m2 in 'F(m0, n0)) (\delta ('V m2) (dproj_V m0 n0 d' x))%:R))%R.
+     (\prod_(m2 in 'F(m0, n0)) (\delta ('V m2) (dproj_V m0 n0 d' x))%:R))%R.
   apply eq_bigr => /= i Hi.
   congr (W ``(_ | _) * _)%R.
     by rewrite sub_vec_dproj // sub_vec_dproj.
@@ -289,7 +289,7 @@ transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
   by apply Fgraph_Vnext_Vgraph with j.
 transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d')
      W ``((y # 'V(m0, n0) :\ n0) | ((dproj_V m0 n0 d' x) # 'V(m0, n0) :\ n0)) *
-     (\rprod_(m2 in 'F(m0, n0)) (\delta ('V m2) (dproj_V m0 n0 d' x))%:R))%R; last first.
+     (\prod_(m2 in 'F(m0, n0)) (\delta ('V m2) (dproj_V m0 n0 d' x))%:R))%R; last first.
    apply/esym.
    apply eq_bigr => /= t Ht.
    congr (W ``(_ | _) * _)%R.
@@ -332,7 +332,7 @@ move=> n0m0 dd' Hm1.
 rewrite /alpha.
 transitivity (\rsum_(x # 'V(m1, n0) :\ n0 , d)
       W ``((y # 'V(m1, n0) :\ n0) | ((dproj_V m1 n0 d x) # 'V(m1, n0) :\ n0)) *
-      (\rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) (dproj_V m1 n0 d x))%:R))%R.
+      (\prod_(m2 in 'F(m1, n0)) (\delta ('V m2) (dproj_V m1 n0 d x))%:R))%R.
   apply eq_bigr => /= t Ht.
   congr (W ``(_ | _) * _)%R.
     by rewrite /dproj_V sub_vec_dproj.
@@ -340,7 +340,7 @@ transitivity (\rsum_(x # 'V(m1, n0) :\ n0 , d)
   by rewrite checksubsum_dproj_freeon.
 transitivity (\rsum_(x # 'V(m1, n0) :\ n0 , d)
       W ``((y # 'V(m1, n0) :\ n0) | ((dproj_V m1 n0 d' x) # 'V(m1, n0) :\ n0)) *
-      (\rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) (dproj_V m1 n0 d' x))%:R))%R.
+      (\prod_(m2 in 'F(m1, n0)) (\delta ('V m2) (dproj_V m1 n0 d' x))%:R))%R.
   apply eq_bigr => /= i Hi.
   congr (W ``(_ | _) * _)%R.
     by rewrite /dproj_V sub_vec_dproj // sub_vec_dproj.
@@ -360,7 +360,7 @@ transitivity (\rsum_(x # 'V(m1, n0) :\ n0 , d)
   by apply Fgraph_Vnext_Vgraph with j.
 transitivity (\rsum_(x # 'V(m1, n0) :\ n0 , d')
       W ``((y # 'V(m1, n0) :\ n0) | ((dproj_V m1 n0 d' x) # 'V(m1, n0) :\ n0)) *
-      (\rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) (dproj_V m1 n0 d' x))%:R))%R; last first.
+      (\prod_(m2 in 'F(m1, n0)) (\delta ('V m2) (dproj_V m1 n0 d' x))%:R))%R; last first.
     apply/esym.
     apply eq_bigr => /= t Ht.
     congr (W ``(_ | _) * _)%R.
@@ -420,7 +420,7 @@ Section sum_prod_correctness.
 Variables (m n' : nat).
 Let n := n'.+1.
 Variable H : 'M['F_2]_(m, n).
-Variable (B : finType) (W : `Ch_1('F_2, B)).
+Variable (B : finType) (W : `Ch('F_2, B)).
 Variable y : 'rV[B]_n.
 Let C := kernel H.
 Let C_not_empty := Lcode0.not_empty C.
@@ -445,12 +445,12 @@ Lemma estimation_correctness (d : 'rV_n) n0 :
   let b := d ``_ n0 in let P := `U C_not_empty in
   P '_ n0 `^^ W , Hy (b | y) =
     MarginalPostProbability.Kmpp Hy * PosteriorProbability.Kppu W [set cw in C] y *
-    W `(y ``_ n0 | b) * \rprod_(m0 in 'F n0) alpha m0 n0 d.
+    W `(y ``_ n0 | b) * \prod_(m0 in 'F n0) alpha m0 n0 d.
 Proof.
 move=> b P.
 rewrite MarginalPostProbability.probaE -2!mulRA; congr (_ * _).
 transitivity (PosteriorProbability.Kppu W [set cw in C] y * (\rsum_(x # setT :\ n0 , d)
-      W ``(y | x) * \rprod_(m0 < m) (\delta ('V m0) x)%:R))%R.
+      W ``(y | x) * \prod_(m0 < m) (\delta ('V m0) x)%:R))%R.
   rewrite [RHS]big_distrr [in RHS]/=.
   apply eq_big => t; first by rewrite -freeon_all.
   rewrite inE andTb => td_n0.
@@ -460,7 +460,7 @@ transitivity (PosteriorProbability.Kppu W [set cw in C] y * (\rsum_(x # setT :\ 
 congr (_ * _)%R.
 transitivity (W `(y ``_ n0 | b) *
   (\rsum_(x # setT :\ n0 , d) W ``(y # ~: [set n0] | x # ~: [set n0]) *
-   \rprod_(m0 < m) (\delta ('V m0) x)%:R)).
+   \prod_(m0 < m) (\delta ('V m0) x)%:R)).
   rewrite big_distrr /=; apply eq_bigr => t Ht.
   rewrite mulRA; congr (_ * _)%R.
   rewrite /b (freeon_notin Ht); last by rewrite !inE eqxx.
@@ -470,14 +470,14 @@ transitivity (W `(y ``_ n0 | b) *
 congr (_ * _).
 transitivity (
     \rsum_(x # setT :\ n0 , d) W ``(y # ~: [set n0] | x # ~: [set n0]) *
-    \rprod_(m0 in 'F n0) \rprod_(m1 in 'F(m0, n0)) (\delta ('V m1) x)%:R).
+    \prod_(m0 in 'F n0) \prod_(m1 in 'F(m0, n0)) (\delta ('V m1) x)%:R).
   apply eq_bigr => /= t Ht.
   congr (_ * _)%R.
   by rewrite -(rprod_Fgraph_part_fnode (Tanner.connected tanner) (Tanner.acyclic tanner) (fun m0 => (\delta ('V m0) t)%:R)).
 transitivity (
-  \rsum_(x # setT :\ n0 , d) \rprod_(m0 in 'F n0)
-     W ``(y # 'V(m0, n0) :\ n0 | x # 'V(m0, n0) :\ n0) *
-      \rprod_(m1 in 'F(m0, n0)) (\delta ('V m1) x)%:R).
+  \rsum_(x # setT :\ n0 , d) \prod_(m0 in 'F n0)
+    (W ``(y # 'V(m0, n0) :\ n0 | x # 'V(m0, n0) :\ n0) *
+      \prod_(m1 in 'F(m0, n0)) (\delta ('V m1) x)%:R)).
   apply eq_bigr => /= t Ht.
   rewrite [in X in _ = X]big_split /=; congr (_ * _).
   by apply DMC_sub_vec_Fnext.
@@ -487,8 +487,8 @@ Qed.
 
 (* TODO: rename. move? *)
 Definition K949 (n0 : 'I_n) df := /
-  ((W Zp0 (y ``_ n0) * \rprod_(m1 in 'F n0) alpha m1 n0 (df `[ n0 := Zp0 ])) +
-    W Zp1 (y ``_ n0) * \rprod_(m1 in 'F n0) alpha m1 n0 (df `[ n0 := Zp1 ])).
+  ((W Zp0 (y ``_ n0) * \prod_(m1 in 'F n0) alpha m1 n0 (df `[ n0 := Zp0 ])) +
+    W Zp1 (y ``_ n0) * \prod_(m1 in 'F n0) alpha m1 n0 (df `[ n0 := Zp1 ])).
 
 Lemma K949_lemma df n0 : K949 n0 df =
   MarginalPostProbability.Kmpp Hy * PosteriorProbability.Kppu W [set cw in C] y.
@@ -527,23 +527,23 @@ rewrite -big_mkcond /=.
 rewrite /alpha.
 transitivity (W Zp0 (y ``_ n0) *
   (\rsum_(ta # setT :\ n0 , df `[ n0 := Zp0 ])
-    \rprod_(m1 in 'F n0)
-      W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0) *
-      (\rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R)) +
+    \prod_(m1 in 'F n0)
+      (W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0) *
+      (\prod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R))) +
   W Zp1 (y ``_ n0) *
   (\rsum_(ta # setT :\ n0 , df `[ n0 := Zp1 ])
-    \rprod_(m1 in 'F n0)
-      W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0) *
-      (\rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R))).
+    \prod_(m1 in 'F n0)
+      (W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0) *
+      (\prod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R)))).
   congr (_ * _ + _ * _).
     rewrite (rmul_rsum_commute0 (Tanner.connected tanner) (Tanner.acyclic tanner) y (fun m x y => W ``(x | y))) // => m1 m0 t Hm1 tdf.
     by rewrite checksubsum_dprojs_V.
   rewrite (rmul_rsum_commute0 (Tanner.connected tanner) (Tanner.acyclic tanner) y (fun m x y => W ``(x | y))) // => m1 m0 t Hm1 tdf.
   by rewrite checksubsum_dprojs_V.
 transitivity (\sum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
-    \rprod_(m1 in 'F n0)
-      W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0) *
-      (\rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R)).
+    \prod_(m1 in 'F n0)
+      (W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0) *
+        (\prod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R))).
   rewrite big_distrr big_distrr /=.
   rewrite [in X in _ = X] (bigID [pred x : 'rV_n | x ``_ n0 == Zp0]) /=.
   congr (_ + _).
@@ -556,15 +556,15 @@ transitivity (\sum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
       by rewrite -F2_eq1 => /eqP ->.
     move=> v /=; by rewrite -freeon_all mxE eqxx F2_eq1.
 transitivity (\sum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
-    (\rprod_(m1 in 'F n0) W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0)) *
-    (\rprod_(m1 in 'F n0) (\rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R))).
+    (\prod_(m1 in 'F n0) W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0)) *
+    (\prod_(m1 in 'F n0) (\prod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R))).
   apply eq_bigr => ta _.
   rewrite -mulRA.
   congr (_ * _).
   by apply big_split.
 transitivity (\sum_(ta : 'rV_n)
-    (\rprod_(k < n)  W (ta ``_ k) (y ``_ k)) *
-    (\rprod_(m1 in 'F n0) \rprod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R)).
+    (\prod_(k < n)  W (ta ``_ k) (y ``_ k)) *
+    (\prod_(m1 in 'F n0) \prod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R)).
   apply eq_bigr => t /= _.
   congr (_ * _).
   rewrite -DMC_sub_vec_Fnext // (bigID (pred1 n0)) /= (big_pred1 n0) //.
@@ -573,8 +573,8 @@ transitivity (\sum_(ta : 'rV_n)
   apply eq_bigl => ? /=.
   by rewrite in_setC in_set1.
 (* 4 -> 5 *)
-transitivity (\sum_(ta : 'rV_n) (\rprod_(k < n) (W ta ``_ k) y ``_ k) *
-  (\rprod_(m2 < m) (\delta ('V m2) ta)%:R)).
+transitivity (\sum_(ta : 'rV_n) (\prod_(k < n) (W ta ``_ k) y ``_ k) *
+  (\prod_(m2 < m) (\delta ('V m2) ta)%:R)).
   apply eq_bigr => t /= _.
   congr (_ * _).
   by rewrite -(rprod_Fgraph_part_fnode (Tanner.connected tanner) (Tanner.acyclic tanner) (fun m0 => (\delta ('V m0) t)%:R)).
@@ -590,11 +590,11 @@ Qed.
 Local Notation "'beta'" := (beta H W y).
 
 Lemma filter_out_set0 m0 t (g : 'I_m -> 'rV['F_2]_n -> R) (s : {set 'I_n}) :
-  \rprod_(A in [set \bigcup_(m1 in 'F n1 :\ m0) 'F( m1, n1) | n1 in s])
-     \rprod_(x in A) (g x t) =
-  \rprod_(A in [set \bigcup_(m1 in 'F n1 :\ m0) 'F( m1, n1)
+  \prod_(A in [set \bigcup_(m1 in 'F n1 :\ m0) 'F( m1, n1) | n1 in s])
+     \prod_(x in A) (g x t) =
+  \prod_(A in [set \bigcup_(m1 in 'F n1 :\ m0) 'F( m1, n1)
                  | n1 in [set n1 in s | 'F n1 :\ m0 != set0]])
-     \rprod_(x in A) (g x t).
+     \prod_(x in A) (g x t).
 Proof.
 rewrite (bigID [pred x | x == set0]) /= big1 ?mul1R; last first.
   move=> ms.
@@ -623,35 +623,35 @@ Lemma recursive_computation_helper m0 n0 d : n0 \in 'V m0 ->
   forall x : 'rV_n, freeon ('V m0 :\ n0) d x ->
   let A := \sum_(i | freeon ('V( m0, n0) :\ n0) d i &&
                           (dproj d ('V m0 :\ n0) i == x))
-          \rprod_(n1 < n | n1 \in 'V m0 :\ n0)
-             (W i ``_ n1) y ``_ n1 *
-             (\rprod_(m1 < m | m1 \in 'F n1 :\ m0)
-                 W ``((y # 'V( m1, n1) :\ n1) | (i # 'V( m1, n1) :\ n1)) *
-                 (\rprod_(m2 < m | m2 \in 'F( m1, n1)) (\delta ('V m2) i)%:R)) in
-  A = \rprod_(n1 < n | n1 \in 'V m0 :\ n0) beta n1 m0 x.
+          \prod_(n1 < n | n1 \in 'V m0 :\ n0)
+             ((W i ``_ n1) y ``_ n1 *
+             (\prod_(m1 < m | m1 \in 'F n1 :\ m0)
+                 (W ``((y # 'V( m1, n1) :\ n1) | (i # 'V( m1, n1) :\ n1)) *
+                 (\prod_(m2 < m | m2 \in 'F( m1, n1)) (\delta ('V m2) i)%:R)))) in
+  A = \prod_(n1 < n | n1 \in 'V m0 :\ n0) beta n1 m0 x.
  Proof.
 move=> m0n0 x Hx A; apply/esym.
-transitivity (\rprod_(n1 in 'V m0 :\ n0) (W x ``_ n1) y ``_ n1 *
+transitivity (\prod_(n1 in 'V m0 :\ n0) ((W x ``_ n1) y ``_ n1 *
   (\sum_(z | (dprojs_V H x n1 z \in
       pfamily x ('F n1 :\ m0) (fun m1 => freeon ('V( m1, n1) :\ n1) x)) &&
       (comb_V H x n1 (dprojs_V H x n1 z) == z))
-    \rprod_(m1 in 'F n1 :\ m0)
-      W ``((y # 'V( m1, n1) :\ n1) | ((dprojs_V H x n1 z) m1 # 'V( m1, n1) :\ n1)) *
-        (\rprod_(m2 in 'F( m1, n1)) (\delta ('V m2) ((dprojs_V H x n1 z) m1))%:R))).
+    \prod_(m1 in 'F n1 :\ m0)
+      (W ``((y # 'V( m1, n1) :\ n1) | ((dprojs_V H x n1 z) m1 # 'V( m1, n1) :\ n1)) *
+        (\prod_(m2 in 'F( m1, n1)) (\delta ('V m2) ((dprojs_V H x n1 z) m1))%:R))))).
   apply eq_bigr => n1 Hn1.
   congr (_ * _)%R.
   rewrite {1}(big_distr_big_dep x) /=.
   rewrite (reindex_onto (dprojs_V H x n1) (comb_V H x n1)) //.
   rewrite /= => g Hg.
   exact: (@dprojs_comb_V _ _ _ (Tanner.acyclic tanner) _ _ (fun x => 'F x :\ m0) _ Hg).
-transitivity (\rprod_(n1 in 'V m0 :\ n0)
+transitivity (\prod_(n1 in 'V m0 :\ n0)
    \sum_(z | (dprojs_V H x n1 z \in
       pfamily x ('F n1 :\ m0) (fun m1 => freeon ('V( m1, n1) :\ n1) x)) &&
       (comb_V H x n1 (dprojs_V H x n1 z) == z))
     (W z ``_ n1) y ``_ n1 *
-    (\rprod_(m1 in 'F n1 :\ m0)
-        W ``((y # 'V( m1, n1) :\ n1) | ((dprojs_V H x n1 z) m1 # 'V( m1, n1) :\ n1)) *
-         (\rprod_(m2 in 'F( m1, n1)) (\delta ('V m2) ((dprojs_V H x n1 z) m1))%:R))).
+    (\prod_(m1 in 'F n1 :\ m0)
+        (W ``((y # 'V( m1, n1) :\ n1) | ((dprojs_V H x n1 z) m1 # 'V( m1, n1) :\ n1)) *
+         (\prod_(m2 in 'F( m1, n1)) (\delta ('V m2) ((dprojs_V H x n1 z) m1))%:R)))).
   apply/esym.
   apply eq_bigr => /= n1 Hn1.
   rewrite [RHS]big_distrr /=.
@@ -665,12 +665,12 @@ transitivity (\sum_(t | (dprojs_V2 H x m0 n0 t \in
     (dprojs_V H x n1 t0 \in pfamily x ('F n1 :\ m0) (fun m1 => freeon ('V( m1, n1) :\ n1) x)) &&
     (comb_V H x n1 (dprojs_V H x n1 t0) == t0)])) &&
                          (comb_V2 H x m0 n0 (dprojs_V2 H x m0 n0 t) == t))
-    \rprod_(n1 < n | n1 \in 'V m0 :\ n0)
-      (W (((dprojs_V2 H x m0 n0 t) n1) ``_ n1)) y ``_ n1 *
-      (\rprod_(m1 < m | m1 \in 'F n1 :\ m0)
-        W ``((y # 'V( m1, n1) :\ n1) | ((dprojs_V H x n1 ((dprojs_V2 H x m0 n0 t) n1)) m1 # 'V( m1, n1) :\ n1)) *
-        (\rprod_(m2 < m | m2 \in 'F( m1, n1))
-          (\delta ('V m2) ((dprojs_V H x n1 ((dprojs_V2 H x m0 n0 t) n1)) m1))%:R))).
+    \prod_(n1 < n | n1 \in 'V m0 :\ n0)
+      (W (((dprojs_V2 H x m0 n0 t) n1) ``_ n1) y ``_ n1 *
+      (\prod_(m1 < m | m1 \in 'F n1 :\ m0)
+        (W ``((y # 'V( m1, n1) :\ n1) | ((dprojs_V H x n1 ((dprojs_V2 H x m0 n0 t) n1)) m1 # 'V( m1, n1) :\ n1)) *
+        (\prod_(m2 < m | m2 \in 'F( m1, n1))
+          (\delta ('V m2) ((dprojs_V H x n1 ((dprojs_V2 H x m0 n0 t) n1)) m1))%:R))))).
   apply/esym.
   by rewrite [in RHS](rprod_rsum_commute (Tanner.acyclic tanner)).
 apply/eq_big.
@@ -705,12 +705,12 @@ Qed.
 
 Lemma recursive_computation m0 n0 d : n0 \in 'V m0 ->
   alpha m0 n0 d = \rsum_(x # 'V m0 :\ n0 , d)
-    (\delta ('V m0) x)%:R * \rprod_(n1 in 'V m0 :\ n0) beta n1 m0 x.
+    (\delta ('V m0) x)%:R * \prod_(n1 in 'V m0 :\ n0) beta n1 m0 x.
 Proof.
 move=> m0n0.
 transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
     (\delta ('V m0) x)%:R *
-      W ``(y # 'V(m0, n0) :\ n0 | x # 'V(m0, n0) :\ n0) * \rprod_(n1 in 'V m0 :\ n0) \rprod_(m1 in 'F n1 :\ m0) \rprod_(m2 in 'F(m1, n1))
+      W ``(y # 'V(m0, n0) :\ n0 | x # 'V(m0, n0) :\ n0) * \prod_(n1 in 'V m0 :\ n0) \prod_(m1 in 'F n1 :\ m0) \prod_(m2 in 'F(m1, n1))
          (\delta ('V m2) x)%:R).
   (* get W(tb|t) out of beta *)
   rewrite /alpha.
@@ -719,7 +719,7 @@ transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
   congr (_ * _)%R.
   rewrite (bigD1 m0) /=; last by apply Fgraph_m0.
   rewrite mulRC; congr (_ * _)%R.
-  transitivity (\rprod_(i in 'F(m0, n0) :\ m0) (\delta ('V i) t)%:R).
+  transitivity (\prod_(i in 'F(m0, n0) :\ m0) (\delta ('V i) t)%:R).
     apply eq_bigl => /= m1.
     by rewrite 2![in X in _ = X]inE andbC.
   rewrite -(cover_Fgraph_part_Fgraph (Tanner.acyclic tanner)) //.
@@ -732,9 +732,9 @@ transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
     rewrite inE in Hn1; case/andP : Hn1 => Hn1 H1.
     rewrite inE in Hn2; case/andP : Hn2 => Hn2 H2.
     by apply: (another_Fgraph_injective (Tanner.acyclic tanner) Hn1 Hn2 H1).
-  transitivity (\rprod_(n1 < n | (n1 \in 'V m0 :\ n0) && ('F n1 :\ m0 != set0))
-      \rprod_(m1 in 'F n1 :\ m0)
-         \rprod_(m2 in 'F(m1, n1)) (\delta ('V m2) t)%:R); last first.
+  transitivity (\prod_(n1 < n | (n1 \in 'V m0 :\ n0) && ('F n1 :\ m0 != set0))
+      \prod_(m1 in 'F n1 :\ m0)
+         \prod_(m2 in 'F(m1, n1)) (\delta ('V m2) t)%:R); last first.
     rewrite [in RHS](bigID [pred x | 'F x :\ m0 == set0]) /= [in RHS]big1 ?mul1R //.
     move=> n1 /andP [] H1 /eqP ->; by rewrite !big_set0.
   apply eq_big => /= n1; first by rewrite !inE.
@@ -745,10 +745,10 @@ transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
   by apply/eqP/(Fgraph_disjoint (Tanner.acyclic tanner) H1 H2).
 transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
   (\delta ('V m0) x)%:R *
-    \rprod_(n1 in 'V m0 :\ n0) W `(y ``_ n1 | x ``_ n1) *
-    \rprod_(m1 in 'F n1 :\ m0)
+    \prod_(n1 in 'V m0 :\ n0) (W `(y ``_ n1 | x ``_ n1) *
+    \prod_(m1 in 'F n1 :\ m0)
      ((W ``(y # 'V(m1, n1) :\ n1 | x # 'V(m1, n1) :\ n1))
-      * \rprod_(m2 in 'F(m1, n1)) (\delta ('V m2) x)%:R)).
+      * \prod_(m2 in 'F(m1, n1)) (\delta ('V m2) x)%:R))).
   apply eq_bigr => /= t Ht.
   rewrite -mulRA; congr (_ * _).
   rewrite DMC_sub_vec_Vgraph // -big_split /=.
@@ -756,21 +756,21 @@ transitivity (\rsum_(x # 'V(m0, n0) :\ n0 , d)
   by rewrite -mulRA big_split.
 transitivity (\rsum_(x # ('V m0) :\ n0 , d)
   \rsum_(x' # 'V(m0, n0) :\ n0 , d | [pred x' | dproj d ('V m0 :\ n0) x' == x])
-    ((\delta ('V m0) x')%:R *
-    \rprod_(n1 in 'V m0 :\ n0)
-      W (x' ``_ n1) (y ``_ n1) *
-      (\rprod_(m1 in 'F n1 :\ m0)
-          W ``(y # 'V(m1, n1) :\ n1 | x' # 'V(m1, n1) :\ n1) *
-          (\rprod_(m2 in 'F(m1, n1)) (\delta ('V m2) x')%:R)))).
+    (\delta ('V m0) x')%:R *
+    \prod_(n1 in 'V m0 :\ n0)
+      (W (x' ``_ n1) (y ``_ n1) *
+      (\prod_(m1 in 'F n1 :\ m0)
+          (W ``(y # 'V(m1, n1) :\ n1 | x' # 'V(m1, n1) :\ n1) *
+          (\prod_(m2 in 'F(m1, n1)) (\delta ('V m2) x')%:R))))).
   apply partition_big => /= t _.
   by apply freeon_dproj.
 apply eq_bigr => /= x Hx.
 transitivity (\rsum_(x' # 'V(m0, n0) :\ n0 , d | [pred x' | dproj d ('V m0 :\ n0) x' == x])
   (\delta ('V m0) x)%:R *
-  (\rprod_(n1 in 'V m0 :\ n0) W (x' ``_ n1) y ``_ n1 *
-    (\rprod_(m1 in 'F n1 :\ m0)
-      W ``(y # 'V(m1, n1) :\ n1 | x' # 'V(m1, n1) :\ n1) *
-      (\rprod_(m2 in 'F(m1, n1)) (\delta ('V m2) x')%:R)))).
+  (\prod_(n1 in 'V m0 :\ n0) (W (x' ``_ n1) y ``_ n1 *
+    (\prod_(m1 in 'F n1 :\ m0)
+      (W ``(y # 'V(m1, n1) :\ n1 | x' # 'V(m1, n1) :\ n1) *
+        (\prod_(m2 in 'F(m1, n1)) (\delta ('V m2) x')%:R)))))).
   apply eq_bigr => /= x' Hx'.
   congr (_%:R * _)%R.
   case/andP : Hx' => H1 /eqP <-.
@@ -786,7 +786,7 @@ move=> Fn1.
 rewrite /beta -[X in _ = X]mulR1.
 congr (_ * _).
 set g := BIG_F.
-transitivity (\rprod_(i in set0) g i).
+transitivity (\prod_(i in set0) g i).
   apply eq_bigl => /= m2.
   rewrite Fn1 in_setD1 in_set1 in_set0.
   by case: (m2 == m1).
@@ -828,7 +828,7 @@ End sum_prod_correctness.
 Section ldpc_approx_algo.
 
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
-Variables (B : finType) (W : `Ch_1('F_2, B)).
+Variables (B : finType) (W : `Ch('F_2, B)).
 Variable y : n.-tuple B.
 
 Local Notation "''F'" := (Fnext H).
@@ -847,10 +847,10 @@ Definition alpha_fun (m0 : 'I_m) (n0 : 'I_n) (beta : 'M[R]_(m, n) * 'M[R]_(m, n)
   (x : 'F_2) : R :=
   \rsum_(t # 'V m0 :\ n0 , (row_of_tuple [tuple of nseq n (0 : 'F_2)]))
    ((\delta ('V m0) t)%:R *
-    \rprod_(n1 in 'V m0 :\ n0) if t ``_ n1 == Zp0 then beta.1 m0 n1 else beta.2 m0 n1)%R.
+    \prod_(n1 in 'V m0 :\ n0) if t ``_ n1 == Zp0 then beta.1 m0 n1 else beta.2 m0 n1)%R.
 
 Definition beta_fun (m0 : 'I_m) (n0 : 'I_n) (x : 'F_2) (alpha : 'M[R]_(m, n)) : R :=
-  (W `(y \_ n0 | x) * \rprod_(m1 in 'F n0 :\ m0) alpha m1 n0)%R.
+  (W `(y \_ n0 | x) * \prod_(m1 in 'F n0 :\ m0) alpha m1 n0)%R.
 
 Fixpoint sumproduct_loop (lmax : nat) (beta0 beta1 : 'M_(m, n)) : option ('rV['F_2]_n) :=
   match lmax with
@@ -867,7 +867,7 @@ Fixpoint sumproduct_loop (lmax : nat) (beta0 beta1 : 'M_(m, n)) : option ('rV['F
         (K * beta_fun m0 n0 x alpha)%R in
       let beta0 := \matrix_(m0 < m, n0 < n) nbeta m0 n0 0 alpha0 in
       let beta1 := \matrix_(m0 < m, n0 < n) nbeta m0 n0 1 alpha1 in
-      let estimation x n0 alpha := (W x (y \_ n0) * \rprod_(m1 in 'F n0) alpha m1 n0)%R in
+      let estimation x n0 alpha := (W x (y \_ n0) * \prod_(m1 in 'F n0) alpha m1 n0)%R in
       let gamma0 n0 := estimation Zp0 n0 alpha0 in
       let gamma1 n0 := estimation Zp1 n0 alpha1 in
       let chat := \matrix_(i < 1, n0 < n) if gamma0 n0 >b= gamma1 n0 then 0 else 1 in

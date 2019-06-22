@@ -39,15 +39,15 @@ Definition CodeRate (c : code) := (log (INR #| M |) / INR n)%R.
 
 Definition preimC (phi : decT) m := ~: (phi @^-1: xpred1 (Some m)).
 
-Definition ErrRateCond (W : `Ch_1(A, B)) c m :=
+Definition ErrRateCond (W : `Ch(A, B)) c m :=
   Pr (W ``(| enc c m)) (preimC (dec c) m).
 
 Local Notation "e( W , c )" := (ErrRateCond W c) (at level 50).
 
 (** Average probability of error: *)
 
-Definition CodeErrRate (W : `Ch_1(A, B)) c :=
-  (1 / INR #| M | * \sum_(m in M) e(W, c) m)%R.
+Definition CodeErrRate (W : `Ch(A, B)) c :=
+  (1 / #| M |%:R * \sum_(m in M) e(W, c) m)%R.
 
 Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
 

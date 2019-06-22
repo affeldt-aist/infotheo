@@ -21,7 +21,7 @@ Local Open Scope R_scope.
 
 Section mutinfo_distance_bound.
 
-Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : dist A).
 Hypothesis V_dom_by_W : P |- V << W.
 Hypothesis cdiv_ub : D(V || W | P) <= (exp(-2)) ^ 2 * / 2.
 
@@ -108,7 +108,7 @@ Section error_exponent_lower_bound.
 
 Variables A B : finType.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
-Variable W : `Ch_1(A, B).
+Variable W : `Ch(A, B).
 Variable cap : R.
 Hypothesis W_cap : capacity W cap.
 Variable minRate : R.
@@ -117,7 +117,7 @@ Hypothesis minRate_cap : minRate > cap.
 (** * Error exponent bound *)
 
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
-  forall P : dist A, forall V : `Ch_1(A, B),
+  forall P : dist A, forall V : `Ch(A, B),
     P |- V << W ->
     Delta <= D(V || W | P) +  +| minRate - `I(P, V) |.
 Proof.

@@ -42,39 +42,39 @@ Notation "\sum_ ( i 'in' A ) F" := (\big[Rplus/R0]_(i in A) F)
   (at level 41, F at level 41, i, A at level 50,
            format "'[' \sum_ ( i  'in'  A ) '/  '  F ']'") : R_scope.
 
-Notation "\rprod_ ( i <- r | P ) F" := (\big[Rmult/R1]_(i <- r | P%B) F)
-  (at level 41, F at level 41, i, r at level 50,
-           format "'[' \rprod_ ( i  <-  r  |  P ) '/  '  F ']'").
-Notation "\rprod_ ( i <- r ) F" :=  (\big[Rmult/R1]_(i <- r) F)
-  (at level 41, F at level 41, i, r at level 50,
-           format "'[' \rprod_ ( i  <-  r ) '/  '  F ']'").
-Notation "\rprod_ ( m <= i < n | P ) F" := (\big[Rmult/R1]_(m <= i < n | P%B) F)
-  (at level 41, F at level 41, i, m, n at level 50,
-           format "'[' \rprod_ ( m  <=  i  <  n  |  P ) '/  '  F ']'").
-Notation "\rprod_ ( m <= i < n ) F" := (\big[Rmult/R1]_(m <= i < n) F)
-  (at level 41, F at level 41, i, m, n at level 50,
-           format "'[' \rprod_ ( m  <=  i  <  n ) '/  '  F ']'").
-Notation "\rprod_ ( i | P ) F" := (\big[Rmult/R1]_(i | P%B) F)
-  (at level 41, F at level 41, i at level 50,
-           format "'[' \rprod_ ( i  |  P ) '/  '  F ']'").
-Notation "\rprod_ ( i : t | P ) F" := (\big[Rmult/R1]_(i : t | P%B) F)
-  (at level 41, F at level 41, i at level 50,
-           only parsing).
-Notation "\rprod_ ( i : t ) F" := (\big[Rmult/R1]_(i : t) F)
-  (at level 41, F at level 41, i at level 50,
-           only parsing).
-Notation "\rprod_ ( i < n | P ) F" := (\big[Rmult/R1]_(i < n | P%B) F)
-  (at level 41, F at level 41, i, n at level 50,
-           format "'[' \rprod_ ( i  <  n  |  P ) '/  '  F ']'").
-Notation "\rprod_ ( i < n ) F" := (\big[Rmult/R1]_(i < n) F)
-  (at level 41, F at level 41, i, n at level 50,
-           format "'[' \rprod_ ( i  <  n ) '/  '  F ']'").
-Notation "\rprod_ ( i 'in' A | P ) F" := (\big[Rmult/R1]_(i in A | P%B) F)
-  (at level 41, F at level 41, i, A at level 50,
-           format "'[' \rprod_ ( i  'in'  A  |  P ) '/  '  F ']'").
-Notation "\rprod_ ( i 'in' A ) F" := (\big[Rmult/R1]_(i in A) F)
-  (at level 41, F at level 41, i, A at level 50,
-           format "'[' \rprod_ ( i  'in'  A ) '/  '  F ']'").
+Notation "\prod_ ( i <- r | P ) F" := (\big[Rmult/R1]_(i <- r | P%B) F)
+  (at level 36, F at level 36, i, r at level 50,
+           format "'[' \prod_ ( i  <-  r  |  P ) '/  '  F ']'") : R_scope.
+Notation "\prod_ ( i <- r ) F" :=  (\big[Rmult/R1]_(i <- r) F)
+  (at level 36, F at level 36, i, r at level 50,
+           format "'[' \prod_ ( i  <-  r ) '/  '  F ']'") : R_scope.
+Notation "\prod_ ( m <= i < n | P ) F" := (\big[Rmult/R1]_(m <= i < n | P%B) F)
+  (at level 36, F at level 36, i, m, n at level 50,
+           format "'[' \prod_ ( m  <=  i  <  n  |  P ) '/  '  F ']'") : R_scope.
+Notation "\prod_ ( m <= i < n ) F" := (\big[Rmult/R1]_(m <= i < n) F)
+  (at level 36, F at level 36, i, m, n at level 50,
+           format "'[' \prod_ ( m  <=  i  <  n ) '/  '  F ']'") : R_scope.
+Notation "\prod_ ( i | P ) F" := (\big[Rmult/R1]_(i | P%B) F)
+  (at level 36, F at level 36, i at level 50,
+           format "'[' \prod_ ( i  |  P ) '/  '  F ']'") : R_scope.
+Notation "\prod_ ( i : t | P ) F" := (\big[Rmult/R1]_(i : t | P%B) F)
+  (at level 36, F at level 36, i at level 50,
+           only parsing) : R_scope.
+Notation "\prod_ ( i : t ) F" := (\big[Rmult/R1]_(i : t) F)
+  (at level 36, F at level 36, i at level 50,
+           only parsing) : R_scope.
+Notation "\prod_ ( i < n | P ) F" := (\big[Rmult/R1]_(i < n | P%B) F)
+  (at level 36, F at level 36, i, n at level 50,
+           format "'[' \prod_ ( i  <  n  |  P ) '/  '  F ']'") : R_scope.
+Notation "\prod_ ( i < n ) F" := (\big[Rmult/R1]_(i < n) F)
+  (at level 36, F at level 36, i, n at level 50,
+           format "'[' \prod_ ( i  <  n ) '/  '  F ']'") : R_scope.
+Notation "\prod_ ( i 'in' A | P ) F" := (\big[Rmult/R1]_(i in A | P%B) F)
+  (at level 36, F at level 36, i, A at level 50,
+           format "'[' \prod_ ( i  'in'  A  |  P ) '/  '  F ']'") : R_scope.
+Notation "\prod_ ( i 'in' A ) F" := (\big[Rmult/R1]_(i in A) F)
+  (at level 36, F at level 36, i, A at level 50,
+           format "'[' \prod_ ( i  'in'  A ) '/  '  F ']'") : R_scope.
 
 Notation "\rmax_ ( i <- r | P ) F" := (\big[Rmax/R0]_(i <- r | P%B) F)
   (at level 41, F at level 41, i, r at level 50,
@@ -342,7 +342,7 @@ Qed.
 Section ler_ltr_rprod.
 
 Lemma rprodr_gt0 (A : finType) F : (forall i, 0 < F i) ->
-  0 < \rprod_(i : A) F i.
+  0 < \prod_(i : A) F i.
 Proof.
 move=> H.
 elim: (index_enum _) => [| hd tl IH].
@@ -351,7 +351,7 @@ rewrite big_cons; apply mulR_gt0 => //; by apply H.
 Qed.
 
 Lemma rprodr_ge0 (A : finType) F : (forall i, 0 <= F i) ->
-  0 <= \rprod_(i : A) F i.
+  0 <= \prod_(i : A) F i.
 Proof.
 move=> H.
 elim: (index_enum _) => [| hd tl IH].
@@ -364,7 +364,7 @@ Local Open Scope ring_scope.
 
 Lemma rprodr_gt0_inv (B : finType) F (HF: forall a, 0 <= F a) :
   forall n (x : 'rV[B]_n.+1),
-  0 < \rprod_(i < n.+1) F (x ``_ i) -> forall i, 0 < F (x ``_ i).
+  0 < \prod_(i < n.+1) F (x ``_ i) -> forall i, 0 < F (x ``_ i).
 Proof.
 elim => [x | n IH].
   rewrite big_ord_recr /= big_ord0 mul1R => Hi i.
@@ -378,9 +378,9 @@ move: (HF (x ``_ ord0)); rewrite leR_eqVlt => -[<-|H].
 rewrite mulRC (pmulR_lgt0 H) => H'.
 case; case => [i0|i Hi].
   rewrite (_ : Ordinal _ = ord0) //; exact/val_inj.
-have : 0 < \rprod_(i0 < n.+1) F (t ``_ i0).
-  suff : \rprod_(i < n.+1) F (x ``_ (lift ord0 i)) =
-         \rprod_(i < n.+1) F (t ``_ i) by move=> <-.
+have : 0 < \prod_(i0 < n.+1) F (t ``_ i0).
+  suff : (\prod_(i < n.+1) F (x ``_ (lift ord0 i)) =
+         \prod_(i < n.+1) F (t ``_ i))%R by move=> <-.
   apply eq_bigr => ? _; by rewrite mxE.
 have Hi' : (i < n.+1)%nat by rewrite ltnS in Hi.
 move/IH/(_ (Ordinal Hi')).
@@ -393,7 +393,7 @@ Local Close Scope vec_ext_scope.
 Local Close Scope ring_scope.
 
 Lemma rprodr_ge1 (A : finType) f : (forall i, 1 <= f i) ->
-  1 <= \rprod_(i : A) f i.
+  1 <= \prod_(i : A) f i.
 Proof.
 move=> Hf.
 elim: (index_enum _) => [| hd tl IH].
@@ -402,7 +402,7 @@ elim: (index_enum _) => [| hd tl IH].
 Qed.
 
 Lemma ler_rprod (A : finType) f g : (forall i, 0 <= f i <= g i) ->
-  \rprod_(i : A) f i <= \rprod_(i : A) g i.
+  \prod_(i : A) f i <= \prod_(i : A) g i.
 Proof.
 move=> Hfg.
 case/orP : (orbN [forall i, f i != 0%R]); last first.
@@ -411,16 +411,16 @@ case/orP : (orbN [forall i, f i != 0%R]); last first.
   rewrite (bigD1 i0) //= Hi0 mul0R; apply rprodr_ge0.
   move=> i ; move: (Hfg i) => [Hi1 Hi2]; exact: (leR_trans Hi1 Hi2).
 - move=> /forallP Hf.
-  have Hprodf : 0 < \rprod_(i : A) f i.
+  have Hprodf : 0 < \prod_(i : A) f i.
     apply rprodr_gt0 => a.
     move: (Hf a) (Hfg a) => {Hf}Hf {Hfg}[Hf2 _].
     apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
-  apply (@leR_pmul2r (1 * / \rprod_(i : A) f i) _ _).
+  apply (@leR_pmul2r (1 * / \prod_(i : A) f i) _ _).
     apply divR_gt0 => //; lra.
   rewrite mul1R mulRV; last exact/eqP/gtR_eqF.
   set inv_spec := fun r => if r == 0 then 0 else / r.
-  rewrite (_ : / (\rprod_(a : A) f a) = inv_spec (\rprod_(a : A) f a)); last first.
-    rewrite /inv_spec (_ : \rprod_(a : A) f a == 0 = false) //.
+  rewrite (_ : / (\prod_(a : A) f a) = inv_spec (\prod_(a : A) f a)); last first.
+    rewrite /inv_spec (_ : \prod_(a : A) f a == 0 = false) //.
     exact/eqP/gtR_eqF.
   rewrite (@big_morph _ _ (inv_spec) R1 Rmult R1 Rmult _); last 2 first.
   - move=> a b /=.
@@ -483,7 +483,7 @@ Local Open Scope ring_scope.
 (* TODO: rename *)
 Lemma log_rmul_rsum_mlog {A : finType} k (f : A ->R+) : forall n (ta : 'rV[A]_n.+1),
   (forall i, 0 < f ta ``_ i) ->
-  (- Log k (\rprod_(i < n.+1) f ta ``_ i) = \sum_(i < n.+1) - Log k (f ta ``_ i))%R.
+  (- Log k (\prod_(i < n.+1) f ta ``_ i) = \sum_(i < n.+1) - Log k (f ta ``_ i))%R.
 Proof.
 elim => [i Hi | n IH].
   by rewrite big_ord_recl big_ord0 mulR1 big_ord_recl big_ord0 addR0.
@@ -495,7 +495,7 @@ set tl := \row_(i < n.+1) ta ``_ (lift ord0 i).
 have : forall i0 : 'I_n.+1, 0 < f tl ``_ i0.
   move=> i; rewrite mxE; exact/Hi.
 move/IH => {IH}IH.
-have -> : \rprod_(i < n.+1) f ta ``_ (lift ord0 i) = \rprod_(i < n.+1) f tl ``_ i.
+have -> : (\prod_(i < n.+1) f ta ``_ (lift ord0 i) = \prod_(i < n.+1) f tl ``_ i)%R.
   apply eq_bigr => i _; by rewrite mxE.
 rewrite oppRD [X in _ = X]big_ord_recl IH.
 congr (_ + _)%R.

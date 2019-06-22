@@ -29,7 +29,7 @@ Local Open Scope num_occ_scope.
 Local Open Scope types_scope.
 
 Section conditional_dominance.
-Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : dist A).
 
 Definition cdom_by := forall a, P a != 0 -> (V a) << (W a).
 
@@ -55,7 +55,7 @@ Notation "P '|-' V '<<b' W" := ([forall a, (P a != 0) ==> (V a) <<b (W a)])
 
 Section joint_dom.
 
-Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : dist A).
 
 Lemma joint_dominates : P |- V << W -> (`J(P, V)) << (`J(P, W)).
 Proof.
@@ -72,14 +72,14 @@ Qed.
 End joint_dom.
 
 Section conditional_divergence.
-Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : dist A).
 Definition cdiv := \sum_(a : A) P a * D(V a || W a).
 End conditional_divergence.
 
 Notation "'D(' V '||' W '|' P ')'" := (cdiv V W P) : divergence_scope.
 
 Section conditional_divergence_prop.
-Variables (A B : finType) (V W : `Ch_1(A, B)) (P : dist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : dist A).
 
 Hypothesis V_dom_by_W : P |- V << W.
 
@@ -156,7 +156,7 @@ End conditional_divergence_vs_conditional_relative_entropy.
 
 Section dmc_cdiv_cond_entropy.
 
-Variables (A B : finType) (W : `Ch_1(A, B)).
+Variables (A B : finType) (W : `Ch(A, B)).
 Variable n : nat.
 Variable P : P_ n ( A ).
 Variable V : P_ n ( A , B ).
@@ -166,9 +166,9 @@ Variable y : 'rV[B]_n.
 Local Open Scope vec_ext_scope.
 
 Lemma dmc_cdiv_cond_entropy_aux : W ``(y | x) =
-  \rprod_(a : A) \rprod_(b : B) W a b ^ N(a, b | tuple_of_row x, tuple_of_row y).
+  \prod_(a : A) \prod_(b : B) W a b ^ N(a, b | tuple_of_row x, tuple_of_row y).
 Proof.
-transitivity (\rprod_(a : A) \rprod_(b : B) \rprod_(i < n)
+transitivity (\prod_(a : A) \prod_(b : B) \prod_(i < n)
   if (a == x ``_ i) && (b == y ``_ i) then W `(y ``_ i | x ``_ i) else 1).
   rewrite pair_big exchange_big /= DMCE.
   apply eq_bigr => i _.
@@ -265,7 +265,7 @@ Variables A B : finType.
 Variable n : nat.
 Variable P : P_ n ( A ).
 Variable V : P_ n ( A , B ).
-Variable W : `Ch_1*(A, B).
+Variable W : `Ch*(A, B).
 
 Definition exp_cdiv :=
   if P |- V <<b W
@@ -285,7 +285,7 @@ End cdiv_specialized.
 Section dmc_cdiv_cond_entropy_spec.
 
 Variables A B : finType.
-Variable W : `Ch_1*(A, B).
+Variable W : `Ch*(A, B).
 Variable n' : nat.
 Let n := n'.+1.
 Variable P : P_ n ( A ).

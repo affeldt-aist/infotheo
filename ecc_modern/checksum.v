@@ -68,7 +68,7 @@ Local Open Scope channel_scope.
 
 Section post_proba_checksubsum.
 
-Variables (B : finType) (W : `Ch_1('F_2, B)).
+Variables (B : finType) (W : `Ch('F_2, B)).
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 Local Notation "''V'" := (Vnext H).
 
@@ -161,7 +161,7 @@ Qed.
 Local Open Scope R_scope.
 
 Lemma checksubsum_in_kernel (x : 'rV['F_2]_n) :
-  (\rprod_(i < m) (\delta ('V i) x)%:R = (x \in kernel H)%:R)%R.
+  (\prod_(i < m) (\delta ('V i) x)%:R = (x \in kernel H)%:R)%R.
 Proof.
 rewrite kernel_checksubsum.
 transitivity ((\prod_m1 (\delta ('V m1) x))%:R)%R.

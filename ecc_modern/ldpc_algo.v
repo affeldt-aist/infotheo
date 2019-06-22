@@ -253,7 +253,7 @@ Local Open Scope ring_scope.
 Variable B : finType.
 Open Scope channel_scope.
 Open Scope proba_scope.
-Variable W : `Ch_1('F_2, B).
+Variable W : `Ch('F_2, B).
 Variable y : 'rV[B]_n.
 
 Let rW n0 := (W`(y ``_ n0 | 0), W`(y ``_ n0 | 1)).

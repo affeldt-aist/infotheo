@@ -32,7 +32,7 @@ Local Open Scope R_scope.
 
 Section receivable_def.
 
-Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 
 Definition receivable y := [exists x, (P x != 0) && (W ``(y | x) != 0)].
 
@@ -59,7 +59,7 @@ End receivable_def.
 
 Section receivable_uniform.
 
-Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (x : 'rV[A]_n).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (x : 'rV[A]_n).
 Variable C : {set 'rV[A]_n}.
 Hypothesis HC : (0 < #| C |)%nat.
 Variable y : 'rV[B]_n.
@@ -86,7 +86,7 @@ End receivable_uniform.
 (* posterior probability *)
 Module PosteriorProbability.
 Section def.
-Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Variable y : 'rV[B]_n.
 Definition den := \sum_(x in 'rV_n) P x * W ``(y | x).
 Hypothesis receivable_y : receivable W P y.
@@ -120,7 +120,7 @@ Local Notation "P '`^^' W ',' H '(' x '|' y ')'" := (@d _ _ W _ P y H x).
 
 (* relation with channel-based information-theoretic definitions *)
 Section chap2.
-Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Local Open Scope channel_scope.
 Lemma ppE (x : 'rV[A]_n) (y : 'rV[B]_n) (Hy : receivable W P y) :
   P `^^ W , Hy (x | y) = \Pr_(`J(P, W ``^ n))[[set x]|[set y]].
@@ -131,7 +131,7 @@ Qed.
 End chap2.
 
 Section prop.
-Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat).
 Variable (C : {set 'rV[A]_n}).
 Hypothesis HC : (0 < #| C |)%nat.
 Variable y : 'rV[B]_n.
@@ -179,7 +179,7 @@ Local Open Scope vec_ext_scope.
 
 Module MarginalPostProbability.
 Section def.
-Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Variable y : 'rV[B]_n.
 Hypothesis H : receivable W P y.
 
@@ -227,7 +227,7 @@ End def.
 Local Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" :=
   (@d _ _ W _ P y H n0 a).
 Section prop.
-Variables (A B : finType) (W : `Ch_1(A, B)).
+Variables (A B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {set 'rV[A]_n}).
 Hypothesis HC : (0 < #| C |)%nat.
 

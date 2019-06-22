@@ -528,9 +528,9 @@ Qed.
 Local Open Scope R_scope.
 
 Lemma rprod_Fgraph_part_fnode g n0:
-  \rprod_(m0 < m) g m0 = \rprod_(m0 in 'F n0) \rprod_(m1 in 'F(m0, n0)) g m1.
+  \prod_(m0 < m) g m0 = \prod_(m0 in 'F n0) \prod_(m1 in 'F(m0, n0)) g m1.
 Proof.
-transitivity (\rprod_(m0 in [set: 'I_m]) g m0).
+transitivity (\prod_(m0 in [set: 'I_m]) g m0).
   apply eq_bigl => /= ?; by rewrite in_set.
 rewrite -(cover_Fgraph_part_fnode n0).
 rewrite big_trivIset /=; last exact: trivIset_Fgraph_part_fnode.

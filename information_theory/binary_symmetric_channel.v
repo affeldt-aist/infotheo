@@ -25,7 +25,7 @@ Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable p : prob.
 
-Definition c : `Ch_1(A, A) := Binary.d card_A p.
+Definition c : `Ch(A, A) := Binary.d card_A p.
 
 End BSC_sect.
 End BSC.
@@ -198,8 +198,8 @@ Lemma DMC_BSC_prop : forall m y,
   W ``(y | f m) = ((1 - p) ^ (n - d) * p ^ d)%R.
 Proof.
 move=> m y d; rewrite DMCE.
-transitivity ((\rprod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
-              (\rprod_(i < n | (f m) ``_ i != y ``_ i) p))%R.
+transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
+              (\prod_(i < n | (f m) ``_ i != y ``_ i) p))%R.
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=; congr (_ * _).
     by apply eq_bigr => // i /eqP ->; rewrite /BSC.c Binary.dE eqxx.
   apply eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c Binary.dE eq_sym Hyi.

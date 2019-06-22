@@ -103,7 +103,7 @@ Variable A : finType.
 
 Record dist := mkDist {
   pmf :> A ->R+ ;
-  pmf1 : \sum_(a in A) pmf a == 1 :> R}.
+  pmf1 : \sum_(a in A) pmf a == 1 :> R }.
 
 Canonical dist_subType := Eval hnf in [subType for pmf].
 Definition dist_eqMixin := [eqMixin of dist by <:].
@@ -127,8 +127,6 @@ move/card_gt0P : abs; apply; by exists a.
 Qed.
 
 Definition dist_supp (d : dist) := [set a | d a != 0].
-
-Print Canonical Projections.
 
 Lemma rsum_dist_supp (g : A -> R) (X : dist) (P : pred A):
   \sum_(a in A | P a) X a * g a = \sum_(a | P a && (a \in dist_supp X)) X a * g a.
@@ -1112,7 +1110,7 @@ Local Open Scope vec_ext_scope.
 Section def.
 Variables (A : finType) (P : dist A) (n : nat).
 
-Definition f := [ffun t : 'rV[A]_n => \rprod_(i < n) P t ``_ i].
+Definition f := [ffun t : 'rV[A]_n => \prod_(i < n) P t ``_ i].
 
 Lemma f0 t : 0 <= f t.
 Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact/dist_ge0. Qed.
@@ -1120,7 +1118,7 @@ Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact/dist_ge0. Qed.
 Lemma f1 : \sum_(t in 'rV_n) f t = 1.
 Proof.
 pose P' := fun (a : 'I_n) b => P b.
-suff : \sum_(g : {ffun 'I_n -> A }) \rprod_(i < n) P' i (g i) = 1.
+suff : \sum_(g : {ffun 'I_n -> A }) \prod_(i < n) P' i (g i) = 1.
 Local Open Scope ring_scope.
   rewrite (reindex_onto (fun j : 'rV[A]_n => finfun (fun x => j ``_ x))
                         (fun i => \row_(j < n) i j)) /=.
@@ -1131,13 +1129,13 @@ Local Close Scope ring_scope.
     + move=> _; rewrite ffunE; apply eq_bigr => i _ /=; by rewrite ffunE.
   move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
 rewrite -bigA_distr_bigA /= /P'.
-rewrite [RHS](_ : _ = \rprod_(i < n) 1); last by rewrite big1.
+rewrite [RHS](_ : _ = \prod_(i < n) 1); last by rewrite big1.
 apply eq_bigr => i _; exact: epmf1.
 Qed.
 
 Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
 
-Lemma dE t : d t = \rprod_(i < n) P t ``_ i.
+Lemma dE t : d t = \prod_(i < n) P t ``_ i.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 
 End def.
@@ -1199,9 +1197,9 @@ Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
 
 Lemma rsum_rmul_rV_pmf_tnth A n k (P : dist A) :
-  (\sum_(t : 'rV[ 'rV[A]_n]_k) \rprod_(m < k) (P `^ n) t ``_ m = 1)%R.
+  (\sum_(t : 'rV[ 'rV[A]_n]_k) \prod_(m < k) (P `^ n) t ``_ m = 1)%R.
 Proof.
-transitivity (\sum_(j : {ffun 'I_k -> 'rV[A]_n}) \rprod_(m : 'I_k) P `^ _ (j m))%R.
+transitivity (\sum_(j : {ffun 'I_k -> 'rV[A]_n}) \prod_(m : 'I_k) P `^ _ (j m))%R.
   rewrite (reindex_onto (fun p : 'rV_k => [ffun i => p ``_ i])
     (fun x : {ffun 'I_k -> 'rV_n} => \row_(i < k) x i)) //=; last first.
     move=> f _; apply/ffunP => /= k0; by rewrite ffunE mxE.
@@ -1732,7 +1730,7 @@ Variable A : finType.
 Variable P : dist A.
 
 Lemma bigmul_eq0 (C : finType) (p : pred C) (F : C -> R) :
-  (exists2 i : C, p i & F i = R0) <-> \rprod_(i : C | p i) F i = R0.
+  (exists2 i : C, p i & F i = R0) <-> \prod_(i : C | p i) F i = R0.
 Proof.
 split.
 { by case => [i Hi Hi0]; rewrite (bigD1 i) //= Hi0 mul0R. }
@@ -1767,7 +1765,7 @@ Lemma Ind_cap (S1 S2 : {set A}) (x : A) :
 Proof. by rewrite /Ind inE; case: in_mem; case: in_mem=>/=; ring. Qed.
 
 Lemma Ind_bigcap I (e : I -> {set A}) (r : seq.seq I) (p : pred I) x :
-  Ind (\bigcap_(j <- r | p j) e j) x = \rprod_(j <- r | p j) (Ind (e j) x).
+  Ind (\bigcap_(j <- r | p j) e j) x = \prod_(j <- r | p j) (Ind (e j) x).
 Proof.
 apply (big_ind2 (R1 := {set A}) (R2 := R)); last by [].
 - by rewrite /Ind inE.
@@ -1902,15 +1900,15 @@ Lemma bigsum_card_constE (I : finType) (B : pred I) x0 :
   \sum_(i in B) x0 = #|B|%:R * x0.
 Proof. by rewrite big_const iter_addR. Qed.
 
-Lemma bigmul_constE (x0 : R) (k : nat) : \rprod_(i < k) x0 = x0 ^ k.
+Lemma bigmul_constE (x0 : R) (k : nat) : \prod_(i < k) x0 = x0 ^ k.
 Proof. by rewrite big_const cardT size_enum_ord iter_mulR. Qed.
 
-Lemma bigmul_card_constE (I : finType) (B : pred I) x0 : \rprod_(i in B) x0 = x0 ^ #|B|.
+Lemma bigmul_card_constE (I : finType) (B : pred I) x0 : \prod_(i in B) x0 = x0 ^ #|B|.
 Proof. by rewrite big_const iter_mulR. Qed.
 
 (** [bigmul_m1pow] is the Reals counterpart of lemma [GRing.prodrN] *)
 Lemma bigmul_m1pow (I : finType) (p : pred I) (F : I -> R) :
-  \rprod_(i in p) - F i = (-1) ^ #|p| * \rprod_(i in p) F i.
+  \prod_(i in p) - F i = (-1) ^ #|p| * \prod_(i in p) F i.
 Proof.
 rewrite -bigmul_card_constE.
 apply: (big_rec3 (fun a b c => a = b * c)).
@@ -1927,7 +1925,7 @@ Lemma Ind_bigcup_incl_excl (n : nat) (S : 'I_n -> {set A}) (x : A) :
 Proof.
 case: n S => [|n] S; first by rewrite big_ord0 big_geq // Ind_set0.
 set Efull := \bigcup_(i < n.+1) S i.
-have Halg : \rprod_(i < n.+1) (Ind Efull x - Ind (S i) x) = 0.
+have Halg : \prod_(i < n.+1) (Ind Efull x - Ind (S i) x) = 0.
   case Ex : (x \in Efull); last first.
   { have /Ind_notinP Ex0 := Ex.
     erewrite eq_bigr. (* to replace later with under *)

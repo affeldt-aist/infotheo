@@ -26,7 +26,7 @@ Section joint_typ_seq_definition.
 
 Variables A B : finType.
 Variable P : dist A.
-Variable W : `Ch_1(A, B).
+Variable W : `Ch(A, B).
 Variable n : nat.
 Variable epsilon : R.
 
@@ -66,7 +66,7 @@ Local Open Scope jtyp_seq_scope.
 
 Section jtyp_seq_upper.
 
-Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
+Variables (A B : finType) (P : dist A) (W : `Ch(A, B)).
 Variable n : nat.
 Variable epsilon : R.
 
@@ -84,7 +84,7 @@ End jtyp_seq_upper.
 
 Section jtyp_seq_transmitted.
 
-Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
+Variables (A B : finType) (P : dist A) (W : `Ch(A, B)).
 Variable epsilon : R.
 
 Local Open Scope zarith_ext_scope.
@@ -224,7 +224,7 @@ End jtyp_seq_transmitted.
 
 Section non_typicality.
 
-Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
+Variables (A B : finType) (P : dist A) (W : `Ch(A, B)).
 Variable n : nat.
 Variable epsilon : R.
 

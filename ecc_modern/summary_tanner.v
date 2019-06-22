@@ -293,10 +293,10 @@ Lemma rmul_rsum_commute0 d n0 (B : finType) (t : 'rV[B]_n)
   (W : forall m, 'rV_m -> 'rV_m -> R) (* channel *)
   (F : 'I_m -> 'rV_n -> R)
   (HF : forall m1 m0 (t' : 'rV_n), m1 \in 'F(m0, n0) -> t' ``_ n0 = d ``_ n0 -> F m1 ((dprojs_V H d n0 t') m0) = F m1 t') :
-  (\rprod_(m0 in 'F n0) \rsum_(t' # 'V(m0, n0) :\ n0 , d)
-    W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * (\rprod_(m1 in 'F(m0, n0)) F m1 t') =
-  \rsum_(t' # setT :\ n0 , d) \rprod_(m0 in 'F n0)
-    W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * (\rprod_(m1 in 'F(m0, n0)) F m1 t'))%R.
+  \prod_(m0 in 'F n0) (\rsum_(t' # 'V(m0, n0) :\ n0 , d)
+    W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * \prod_(m1 in 'F(m0, n0)) F m1 t') =
+  \rsum_(t' # setT :\ n0 , d) (\prod_(m0 in 'F n0)
+    (W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * \prod_(m1 in 'F(m0, n0)) F m1 t')).
 Proof.
 rewrite (big_distr_big_dep d [pred x in 'F n0] (fun i => freeon ('V(i, n0) :\ n0) d)) [LHS]/=.
 rewrite (reindex_onto (dprojs_V H d n0) (comb_V H d n0)); last first.
@@ -709,24 +709,24 @@ Qed.
 Local Open Scope channel_scope.
 Local Open Scope proba_scope.
 
-Lemma rprod_rsum_commute d (B : finType) (x : 'rV_n) (W: `Ch_1('F_2, B)) m0 n0 (m0n0 : n0 \in 'V m0) :
+Lemma rprod_rsum_commute d (B : finType) (x : 'rV_n) (W: `Ch('F_2, B)) m0 n0 (m0n0 : n0 \in 'V m0) :
   let pr n1 t := (dprojs_V H d n1 t \in pfamily d (`F n1 :\ m0)
                    (fun m1 => freeon (`V(m1, n1) :\ n1) d)) &&
                  (comb_V H d n1 (dprojs_V H d n1 t) == t) in
   let g := dprojs_V2 H d m0 n0 in
   let g' := comb_V2 H d m0 n0 in
-  (\rprod_(n1 in 'V m0 :\ n0)
-    \sum_(t | pr n1 t)
-      (W (t ``_ n1) (x ``_ n1) *
-         \rprod_(m1 in `F n1 :\ m0)
-           W ``(x # `V(m1, n1) :\ n1 | ((dprojs_V H d n1 t) m1) # `V(m1, n1) :\ n1) *
-           (\rprod_(m2 in `F(m1, n1)) INR (\delta ('V m2) ((dprojs_V H d n1 t) m1)))) =
+  (\prod_(n1 in 'V m0 :\ n0)
+    (\sum_(t | pr n1 t)
+      W (t ``_ n1) (x ``_ n1) *
+         \prod_(m1 in `F n1 :\ m0)
+           (W ``(x # `V(m1, n1) :\ n1 | ((dprojs_V H d n1 t) m1) # `V(m1, n1) :\ n1) *
+             \prod_(m2 in `F(m1, n1)) INR (\delta ('V m2) ((dprojs_V H d n1 t) m1)))) =
   \sum_(t | (g t \in pfamily d ('V m0 :\ n0) pr) && (g' (g t) == t))
-    \rprod_(n1 in 'V m0 :\ n0)
-       W ((g t n1) ``_ n1) (x ``_ n1) *
-         (\rprod_(m1 in `F n1 :\ m0)
-           W ``(x # `V(m1, n1) :\ n1 | ((dprojs_V H d n1 (g t n1)) m1) # `V(m1, n1) :\ n1) *
-         (\rprod_(m2 in `F(m1, n1)) INR (\delta ('V m2) ((dprojs_V H d n1 (g t n1)) m1)))))%R.
+    \prod_(n1 in 'V m0 :\ n0)
+       (W ((g t n1) ``_ n1) (x ``_ n1) *
+         \prod_(m1 in `F n1 :\ m0)
+           (W ``(x # `V(m1, n1) :\ n1 | ((dprojs_V H d n1 (g t n1)) m1) # `V(m1, n1) :\ n1) *
+             \prod_(m2 in `F(m1, n1)) INR (\delta ('V m2) ((dprojs_V H d n1 (g t n1)) m1)))))%R.
 Proof.
 move=> pr g g'.
 rewrite (big_distr_big_dep d) /=.

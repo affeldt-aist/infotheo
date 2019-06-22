@@ -398,12 +398,12 @@ Local Open Scope tuple_ext_scope.
 Local Open Scope vec_ext_scope.
 
 Lemma tuple_dist_type t : tuple_of_row t \in T_{P} ->
-  P `^ n t = \rprod_(a : A) P a ^ (type.f P a).
+  P `^ n t = \prod_(a : A) P a ^ (type.f P a).
 Proof.
 move=> Hx.
 rewrite TupleDist.dE.
-rewrite (_ : \rprod_(i < n) P (t ``_ i) =
-  \rprod_(a : A) (\rprod_(i < n) (if a == t ``_ i then P t ``_ i else 1))); last first.
+rewrite (_ : \prod_(i < n) P (t ``_ i) =
+  \prod_(a : A) (\prod_(i < n) (if a == t ``_ i then P t ``_ i else 1))); last first.
   rewrite exchange_big; apply eq_big ; first by [].
   move=> i _.
   rewrite (bigID (fun y => y == t ``_ i)) /=.
@@ -411,7 +411,7 @@ rewrite (_ : \rprod_(i < n) P (t ``_ i) =
   by move=> i0 /negbTE ->.
 apply eq_bigr => a _.
 rewrite -big_mkcond /= -/(INR n.+1).
-transitivity (\rprod_(i < n | t ``_ i == a) (INR (type.f P a) / INR n)).
+transitivity (\prod_(i < n | t ``_ i == a) (INR (type.f P a) / INR n)).
   apply eq_big => // i.
   move/eqP => ->.
   by rewrite INR_type_fun.
@@ -434,8 +434,8 @@ Lemma tuple_dist_type_entropy t : tuple_of_row t \in T_{P} ->
   P `^ n t = exp2 (- INR n * `H P).
 Proof.
 move/(@tuple_dist_type t) => ->.
-rewrite (_ : \rprod_(a : A) P a ^ (type.f P) a =
-             \rprod_(a : A) exp2 (P a * log (P a) * INR n)); last first.
+rewrite (_ : \prod_(a : A) P a ^ (type.f P) a =
+             \prod_(a : A) exp2 (P a * log (P a) * INR n)); last first.
   apply eq_bigr => a _.
   case/boolP : (0 == P a) => H; last first.
     have {H}H : 0 < P a.

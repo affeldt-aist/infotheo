@@ -27,7 +27,7 @@ Variables (B A M : finType) (n : nat).
 
 (** Decoding success rate: *)
 
-Definition scha (W : `Ch_1(A, B)) (c : code A B M n) := 1 - echa(W , c).
+Definition scha (W : `Ch(A, B)) (c : code A B M n) := 1 - echa(W , c).
 
 End scha_def.
 
@@ -39,12 +39,12 @@ Variables B A M : finType.
 Hypothesis Mnot0 : (0 < #|M|)%nat.
 Variable n : nat.
 
-Lemma scha_pos (W : `Ch_1(A, B)) (c : code A B M n) : 0 <= scha(W, c).
+Lemma scha_pos (W : `Ch(A, B)) (c : code A B M n) : 0 <= scha(W, c).
 Proof. rewrite /scha; by apply Rge_le, Rge_minus, Rle_ge, echa1. Qed.
 
 (** Expression of the success rate of decoding: *)
 
-Lemma success_decode (W : `Ch_1(A, B)) (c : code A B M n) :
+Lemma success_decode (W : `Ch(A, B)) (c : code A B M n) :
   scha(W, c) = 1 / #|M|%:R *
     \sum_(m : M) \sum_(tb | dec c tb == Some m) (W ``(| enc c m)) tb.
 Proof.
@@ -67,7 +67,7 @@ Local Open Scope set_scope.
 Section typed_success_decomp_sect.
 
 Variables A B M : finType.
-Variable W : `Ch_1*(A, B).
+Variable W : `Ch*(A, B).
 Hypothesis Mnot0 : (0 < #|M|)%nat.
 
 Variable n' : nat.
@@ -271,7 +271,7 @@ End typed_success_factor_bound_sect.
 Section typed_success_bound_sect.
 
 Variables A B M : finType.
-Variable W : `Ch_1*(A, B).
+Variable W : `Ch*(A, B).
 Hypothesis Mnot0 : (0 < #|M|)%nat.
 
 Variable n' : nat.
@@ -325,7 +325,7 @@ End typed_success_bound_sect.
 Section success_bound_sect.
 
 Variables A B M : finType.
-Variable W : `Ch_1*(A, B).
+Variable W : `Ch*(A, B).
 Hypothesis Mnot0 : (0 < #|M|)%nat.
 
 Variable n' : nat.

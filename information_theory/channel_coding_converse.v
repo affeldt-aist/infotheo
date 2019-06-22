@@ -27,7 +27,7 @@ Local Open Scope R_scope.
 
 Section channel_coding_converse_intermediate_lemma.
 
-Variables (A B : finType) (W : `Ch_1*(A, B)).
+Variables (A B : finType) (W : `Ch*(A, B)).
 Variable cap : R.
 Hypothesis Hc : capacity W cap.
 
@@ -75,7 +75,7 @@ End channel_coding_converse_intermediate_lemma.
 Section channel_coding_converse.
 
 Variables A B : finType.
-Variable W : `Ch_1*(A, B).
+Variable W : `Ch*(A, B).
 Variable cap : R.
 Hypothesis w_cap : capacity W cap.
 

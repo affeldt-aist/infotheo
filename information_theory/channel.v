@@ -31,13 +31,11 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Reserved Notation "'`Ch_1(' A ',' B ')'" (at level 10, A, B at next level,
+Reserved Notation "'`Ch(' A ',' B ')'" (at level 10, A, B at next level,
   only parsing).
-Reserved Notation "'`Ch_1*(' A ',' B ')'" (at level 10, A, B at next level).
+Reserved Notation "'`Ch*(' A ',' B ')'" (at level 10, A, B at next level).
 Reserved Notation "W '`(' b '|' a ')'" (at level 10, b, a at next level,
   only parsing).
-Reserved Notation "'`Ch_' n '(' A ',' B ')'" (at level 10,
-  A, B, n at next level, format "'`Ch_'  n  '(' A ','  B ')'").
 Reserved Notation "W '``^' n" (at level 10).
 Reserved Notation "W '``(|' x ')'" (at level 10, x at next level).
 Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level).
@@ -60,16 +58,16 @@ Variables A B : finType.
 
 (* Definition of a discrete channel of input alphabet A and output alphabet B.
    It is a collection of probability mass functions, one for each a in A: *)
-Local Notation "'`Ch_1'" := (A -> dist B).
+Local Notation "'`Ch'" := (A -> dist B).
 
 (* Channels with non-empty alphabet: *)
 Record chan_star := mkChan {
-  c :> `Ch_1 ;
+  c :> `Ch ;
   input_not_0 : (0 < #|A|)%nat }.
 
-Local Notation "'`Ch_1*'" := (chan_star).
+Local Notation "'`Ch*'" := (chan_star).
 
-Lemma chan_star_eq (c1 c2 : `Ch_1*) : c c1 = c c2 -> c1 = c2.
+Lemma chan_star_eq (c1 c2 : `Ch*) : c c1 = c c2 -> c1 = c2.
 Proof.
 move: c1 c2 => [c1 Hc1] [c2 Hc2] /= <-{c2}; congr mkChan; exact: eq_irrelevance.
 Qed.
@@ -80,10 +78,12 @@ End Channel1.
 Definition chan_star_coercion := Channel1.c.
 Coercion chan_star_coercion : Channel1.chan_star >-> Funclass.
 
-Notation "'`Ch_1(' A ',' B ')'" := (A -> dist B) : channel_scope.
+Local Open Scope proba_scope.
+
+Notation "'`Ch(' A ',' B ')'" := (A -> {dist B}) : channel_scope.
 Local Open Scope channel_scope.
-Notation "'`Ch_1*(' A ',' B ')'" := (@Channel1.chan_star A B) : channel_scope.
-Notation "W '`(' b '|' a ')'" := ((W : `Ch_1(_, _)) a b) : channel_scope.
+Notation "'`Ch*(' A ',' B ')'" := (@Channel1.chan_star A B) : channel_scope.
+Notation "W '`(' b '|' a ')'" := ((W : `Ch(_, _)) a b) : channel_scope.
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
 Local Open Scope entropy_scope.
@@ -91,16 +91,14 @@ Local Open Scope entropy_scope.
 Module DMC.
 Section def.
 
-Variables (A B : finType) (W : `Ch_1(A, B)) (n : nat).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat).
 
 Local Open Scope ring_scope.
-
-Definition channel_ext n := 'rV[A]_n -> {dist 'rV[B]_n}.
 
 (* Definition of a discrete memoryless channel (DMC).
    W(y|x) = \Pi_i W_0(y_i|x_i) where W_0 is a probability
    transition matrix. *)
-Definition f (x : 'rV_n) := [ffun y : 'rV_n => \rprod_(i < n) W `(y ``_ i | x ``_ i)].
+Definition f (x : 'rV[A]_n) := [ffun y : 'rV[B]_n => (\prod_(i < n) W `(y ``_ i | x ``_ i))%R].
 
 Lemma f0 x y : 0 <= f x y.
 Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
@@ -108,7 +106,7 @@ Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
 Lemma f1 x : (\sum_(y in 'rV_n) f x y = 1)%R.
 Proof.
 set f' := fun i b => W (x ``_ i) b.
-suff H : (\sum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1)%R.
+suff H : (\sum_(g : {ffun 'I_n -> B}) \prod_(i < n) f' i (g i) = 1)%R.
   rewrite -{}[RHS]H /f'.
   rewrite (reindex_onto (fun vb : 'rV_n => [ffun x => vb ``_ x])
     (fun g  => \row_(k < n) g k)) /=; last first.
@@ -117,40 +115,37 @@ suff H : (\sum_(g : {ffun 'I_n -> B}) \rprod_(i < n) f' i (g i) = 1)%R.
   - rewrite inE.
     apply/esym/eqP/rowP => a; by rewrite mxE ffunE.
   - move=> _; rewrite ffunE; apply eq_bigr => i _; by rewrite ffunE.
-rewrite -bigA_distr_bigA /= /f'.
-transitivity (\rprod_(i < n) 1%R); first by apply eq_bigr => i _; rewrite epmf1.
-by rewrite big1.
+by rewrite -bigA_distr_bigA /= /f' big1 // => i _; rewrite epmf1.
 Qed.
 
-Definition c : channel_ext n := locked (fun x => makeDist (f0 x) (f1 x)).
+Definition c : `Ch('rV[A]_n, 'rV[B]_n) := locked (fun x => makeDist (f0 x) (f1 x)).
 
 End def.
 End DMC.
 
 Arguments DMC.c {A} {B}.
 
-Notation "'`Ch_' n '(' A ',' B ')'" := (@DMC.channel_ext A B n) : channel_scope.
 Notation "W '``^' n" := (DMC.c W n) : channel_scope.
 Notation "W '``(|' x ')'" := (DMC.c W _ x) : channel_scope.
 Notation "W '``(' y '|' x ')'" := (DMC.c W _ x y) : channel_scope.
 
-Lemma DMCE (A B : finType) n (W : `Ch_1(A, B)) b a :
-  W ``(b | a) = \rprod_(i < n) W (a ``_ i) (b ``_ i).
+Lemma DMCE (A B : finType) n (W : `Ch(A, B)) b a :
+  W ``(b | a) = \prod_(i < n) W (a ``_ i) (b ``_ i).
 Proof. by rewrite /DMC.c; unlock; rewrite ffunE. Qed.
 
-Lemma DMC_ge0 (A B : finType) n (W : `Ch_1(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
+Lemma DMC_ge0 (A B : finType) n (W : `Ch(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
 Proof. exact: dist_ge0. Qed.
 
 Section DMC_sub_vec.
 
-Variables (A B : finType) (W : `Ch_1(A, B)).
+Variables (A B : finType) (W : `Ch(A, B)).
 Variable n' : nat.
 Let n := n'.+1.
 Variable tb : 'rV[B]_n.
 
 Lemma rprod_sub_vec (D : {set 'I_n}) (t : 'rV_n) :
-  \rprod_(i < #|D|) W ((t # D) ``_ i) ((tb # D) ``_ i) =
-  \rprod_(i in D) W (t ``_ i) (tb ``_ i).
+  \prod_(i < #|D|) W ((t # D) ``_ i) ((tb # D) ``_ i) =
+  \prod_(i in D) W (t ``_ i) (tb ``_ i).
 Proof.
 case/boolP : (D == set0) => [/eqP -> |].
   rewrite big_set0 big_hasC //.
@@ -176,14 +171,14 @@ by rewrite enum_rankK_in.
 Qed.
 
 Lemma DMC_sub_vecE (V : {set 'I_n}) (t : 'rV_n) :
-  W ``(tb # V | t # V) = \rprod_(i in V) W (t ``_ i) (tb ``_ i).
+  W ``(tb # V | t # V) = \prod_(i in V) W (t ``_ i) (tb ``_ i).
 Proof. by rewrite DMCE -rprod_sub_vec. Qed.
 
 End DMC_sub_vec.
 
 Module OutDist.
 Section def.
-Variables (A B : finType) (P : dist A) (W  : `Ch_1(A, B)).
+Variables (A B : finType) (P : dist A) (W  : `Ch(A, B)).
 Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
 Lemma f0 (b : B) : 0 <= f b.
 Proof. rewrite ffunE; apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/dist_ge0. Qed.
@@ -207,9 +202,9 @@ Variables A B : finType.
 
 Local Open Scope ring_scope.
 
-Lemma tuple_pmf_out_dist (W : `Ch_1(A, B)) (P : dist A) n (b : 'rV_ _):
+Lemma tuple_pmf_out_dist (W : `Ch(A, B)) (P : dist A) n (b : 'rV_ _):
    (\sum_(j : 'rV[A]_n)
-      (\rprod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
+      (\prod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
    (`O(P, W)) `^ _ b.
 Proof.
 rewrite TupleDist.dE.
@@ -235,14 +230,14 @@ Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ) )) : channel_scope.
 
 Module JointDistChan.
 Section def.
-Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)).
+Variables (A B : finType) (P : dist A) (W : `Ch(A, B)).
 Definition d : {dist A * B} := locked (ProdDist.d P W).
 Lemma dE ab : d ab = P ab.1 * W ab.1 ab.2.
 Proof. by rewrite /d; unlock => /=; rewrite ProdDist.dE. Qed.
 End def.
 Local Notation "'`J(' P , W )" := (JointDistChan.d P W).
 Section prop.
-Variables (A B : finType) (P : dist A) (W : `Ch_1(A, B)) (n : nat).
+Variables (A B : finType) (P : dist A) (W : `Ch(A, B)) (n : nat).
 Lemma Pr_DMC_rV_prod (Q : 'rV_n * 'rV_n -> bool) :
   Pr (`J(P `^ n, W ``^ n)) [set x | Q x] =
   Pr (`J(P, W)) `^ n       [set x | Q (rV_prod x)].
@@ -309,7 +304,7 @@ Notation "'`J(' P , W )" := (JointDistChan.d P W) : channel_scope.
 
 Section relation_channel_cproba.
 
-Variables (A B : finType) (W : `Ch_1(A, B)) (P : dist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : dist A).
 Let QP := Swap.d (`J(P, W)).
 
 Lemma channel_cPr : forall a b, P a != 0 -> W a b = \Pr_QP[[set b]|[set a]].
@@ -329,7 +324,7 @@ Notation "`H( P , W )" := (`H (`J(P, W)) ) : channel_scope.
 (* Definition of conditional entropy using an input distribution and a channel *)
 Module CondEntropyChan.
 Section def.
-Variables (A B : finType) (W : `Ch_1(A, B)) (P : dist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : dist A).
 Definition h := `H(P, W) - `H P.
 End def.
 End CondEntropyChan.
@@ -337,7 +332,7 @@ End CondEntropyChan.
 Notation "`H( W | P )" := (CondEntropyChan.h W P) : channel_scope.
 
 Section condentropychan_prop.
-Variables (A B : finType) (W : `Ch_1(A, B)) (P : dist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : dist A).
 
 Lemma CondEntropyChanE : `H(W | P) = CondEntropy.h (Swap.d (`J(P, W))).
 Proof.
@@ -367,7 +362,7 @@ Definition mut_info_dist (P : {dist A * B}) :=
   `H (Bivar.fst P) + `H (Bivar.snd P) - `H P.
 
 (* Mutual information of input/output *)
-Definition mut_info P (W : `Ch_1(A, B)) := `H P + `H(P `o W) - `H(P , W).
+Definition mut_info P (W : `Ch(A, B)) := `H P + `H(P `o W) - `H(P , W).
 
 End def.
 End MutualInfoChan.
@@ -375,7 +370,7 @@ End MutualInfoChan.
 Notation "`I( P , W )" := (MutualInfoChan.mut_info P W) : channel_scope.
 
 Section mutualinfo_prop.
-Variables (A B : finType) (W : `Ch_1(A, B)) (P : dist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : dist A).
 
 Lemma mut_info_chanE : `I(P, W) = MutualInfo.mi (Swap.d (`J(P, W))).
 Proof.
@@ -400,9 +395,9 @@ Definition ubound {S : Type} (f : S -> R) (ub : R) := forall a, f a <= ub.
 Definition lubound {S : Type} (f : S -> R) (lub : R) :=
   ubound f lub /\ forall ub, ubound f ub -> lub <= ub.
 
-Definition capacity (W : `Ch_1(A, B)) cap := lubound (fun P => `I(P , W)) cap.
+Definition capacity (W : `Ch(A, B)) cap := lubound (fun P => `I(P , W)) cap.
 
-Lemma capacity_uniq (W : `Ch_1(A, B)) r1 r2 :
+Lemma capacity_uniq (W : `Ch(A, B)) r1 r2 :
   capacity W r1 -> capacity W r2 -> r1 = r2.
 Proof. move=> [? H1] [? H2]; rewrite eqR_le; split; [exact: H1| exact: H2]. Qed.
 

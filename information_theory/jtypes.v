@@ -35,7 +35,7 @@ Local Open Scope nat_scope.
 (** * Joint Types *)
 
 Record jtype : predArgType := mkJtype {
-  c :> `Ch_1*(A, B) ;
+  c :> `Ch*(A, B) ;
   f : {ffun A -> {ffun B -> 'I_n.+1}} ;
   sum_f : \sum_(a in A) \sum_(b in B) f a b == n ;
   c_f : forall a b, c a b = let row := \sum_(b in B) f a b in
@@ -99,7 +99,7 @@ case: ifP => [_ | Hcase].
 Defined.
 
 Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat) (Bnot0 : (0 < #|B|)%nat)
-  n (f : {ffun A -> {ffun B -> 'I_n.+1}}) : `Ch_1*(A, B).
+  n (f : {ffun A -> {ffun B -> 'I_n.+1}}) : `Ch*(A, B).
 set pf := fun a b =>
   let ln := (\sum_(b1 in B) (f a b1))%nat in
   if ln == O
@@ -815,8 +815,8 @@ apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
     move=> a b /=; rewrite -!exp2_pow mulRDr /exp2 !ExpD; by field.
     by rewrite -exp2_pow mulR0 /exp2 Exp_0.
   rewrite (reindex_onto (fun x => enum_rank x) (fun y => enum_val y)) => [|i _]; last by rewrite enum_valK.
-  rewrite (_ : \rprod_(j | enum_val (enum_rank j) == j) _ =
-               \rprod_(j : A) (card_type_of_row Hta Vctyp (enum_rank j))%:R); last first.
+  rewrite (_ : \prod_(j | enum_val (enum_rank j) == j) _ =
+               \prod_(j : A) (card_type_of_row Hta Vctyp (enum_rank j))%:R); last first.
       apply eq_bigl => a; rewrite enum_rankK; by apply/eqP.
   apply ler_rprod => a.
   split; first exact/leR0n.

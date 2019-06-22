@@ -100,7 +100,7 @@ Local Open Scope channel_scope.
 
 Section maximum_likelihood_decoding.
 
-Variables (A : finFieldType) (B : finType) (W : `Ch_1(A, B)).
+Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable f : decT B [finType of 'rV[A]_n] n.
 Variable P : {dist 'rV[A]_n}.
@@ -118,7 +118,7 @@ Local Open Scope R_scope.
 
 Section maximum_likelihood_decoding_prop.
 
-Variables (A : finFieldType) (B : finType) (W : `Ch_1(A, B)).
+Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable repair : decT B [finType of 'rV[A]_n] n.
 Let P := UniformSupport.d (vspace_not_empty C).
@@ -305,7 +305,7 @@ End MD_ML_decoding.
 
 Section MAP_decoding.
 
-Variables (A : finFieldType) (B : finType) (W : `Ch_1(A, B)).
+Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B [finType of 'rV[A]_n] n.
 Variable P : {dist 'rV[A]_n}.
@@ -318,7 +318,7 @@ End MAP_decoding.
 
 Section MAP_decoding_prop.
 
-Variables (A : finFieldType) (B : finType) (W : `Ch_1(A, B)).
+Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B [finType of 'rV[A]_n] n.
 Variable dec_img : oimg dec \subset C.
@@ -364,7 +364,7 @@ End MAP_decoding_prop.
 Section MPM_condition.
 
 (* in the special case of a binary code... *)
-Variable W : `Ch_1('F_2, [finType of 'F_2]).
+Variable W : `Ch('F_2, [finType of 'F_2]).
 Variable n : nat.
 Variable C : {vspace 'rV['F_2]_n}.
 Hypothesis C_not_empty : (0 < #|[set cw in C]|)%nat.
