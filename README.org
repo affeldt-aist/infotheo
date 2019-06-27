@@ -3,7 +3,35 @@
 This is a Coq formalization of information theory and linear
 error-correcting codes.
 
-** Requirements
+** Installation
+
+   The preferred way to install infotheo is with opam because it takes
+   care of the dependencies with other libraries. If not already done,
+   add the repository for Coq libraries to opam and update:
+
+1. ~opam repo add coq-released https://coq.inria.fr/opam/released~
+2. ~opam update~
+
+*** Last stable version:
+
+3. ~opam install coq-infotheo~
+
+*** Development version (git master):
+
+3. ~git clone git@github.com:affeldt-aist/infotheo.git~
+4. ~cd infotheo~
+
+If opam is installed, do:
+
+5. ~opam install .~
+
+If opam is not installed but if the requirements below are met, do:
+
+5. ~coq_makefile -f _CoqProject -o Makefile~
+6. ~make~
+7. ~make install~
+
+*** Requirements
 
 - [[https://coq.inria.fr][Coq]] 8.9.1
 - [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.9.0
@@ -11,24 +39,6 @@ error-correcting codes.
   which requires
   + [[https://github.com/math-comp/bigenough/][bigenough]] first release
   + [[https://github.com/math-comp/finmap][finmap]] 1.2.1
-
-** Installation from the source files
-
-1. ~git clone git@github.com:affeldt-aist/infotheo.git~
-2. ~cd infotheo~
-
-If the Requirements (see above) are already met, do:
-
-3. ~coq_makefile -f _CoqProject -o Makefile~
-4. ~make~
-5. ~make install~
-
-Or, if opam is installed, do:
-
-3. ~opam install .~
-
-opam takes care of the dependencies.
-
 ** License
 
 GNU GPLv3
