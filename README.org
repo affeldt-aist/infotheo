@@ -5,8 +5,8 @@ error-correcting codes.
 
 ** Installation
 
--. ~git clone git@github.com:affeldt-aist/infotheo.git~
--. ~cd infotheo~
+- ~git clone git@github.com:affeldt-aist/infotheo.git~
+- ~cd infotheo~
 
 If opam is installed, do:
 
