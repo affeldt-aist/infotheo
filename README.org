@@ -3,6 +3,23 @@
 This is a Coq formalization of information theory and linear
 error-correcting codes.
 
+** Installation
+
+-. ~git clone git@github.com:affeldt-aist/infotheo.git~
+-. ~cd infotheo~
+
+If opam is installed, do:
+
+1. ~opam install .~
+
+opam takes care of the dependencies.
+
+If opam is not installed but if the Requirements (see below) are met, do:
+
+1. ~coq_makefile -f _CoqProject -o Makefile~
+2. ~make~
+3. ~make install~
+
 ** Requirements
 
 - [[https://coq.inria.fr][Coq]] 8.9.1
@@ -11,24 +28,6 @@ error-correcting codes.
   which requires
   + [[https://github.com/math-comp/bigenough/][bigenough]] first release
   + [[https://github.com/math-comp/finmap][finmap]] 1.2.1
-
-** Installation from the source files
-
-1. ~git clone git@github.com:affeldt-aist/infotheo.git~
-2. ~cd infotheo~
-
-If the Requirements (see above) are already met, do:
-
-3. ~coq_makefile -f _CoqProject -o Makefile~
-4. ~make~
-5. ~make install~
-
-Or, if opam is installed, do:
-
-3. ~opam install .~
-
-opam takes care of the dependencies.
-
 ** License
 
 GNU GPLv3
