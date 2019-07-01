@@ -1,13 +1,13 @@
-Require Import ssreflect ssrfun ssrbool eqtype ssrnat div seq.
-Require Import path choice fintype tuple finfun finset bigop.
+Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div choice fintype.
+Require Import tuple finfun bigop prime binomial ssralg finset fingroup finalg matrix.
 Require Import Reals Fourier.
-Require Import Reals_ext log2 ssr_ext Rbigop proba entropy aep typ_seq natbin Rssr ceiling v_source_code.
+Require Import Reals_ext log2 ssr_ext ssralg_ext Rbigop proba entropy aep typ_seq.
+Require Import natbin Rssr ceiling source_code.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Local Open Scope tuple_ext_scope.
 Local Open Scope typ_seq_scope.
 Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
@@ -171,11 +171,11 @@ Definition enc_not_typ x := enum_val (widen_ord card_le_Xn_Lnt (enum_rank x)).
 Lemma inj_enc_not_typ : injective enc_not_typ.
 Proof. by move=> a1 a2 /enum_val_inj [] /ord_inj/enum_rank_inj. Qed.
 
-Definition f : var_enc X n := fun x =>
+Definition f : encT X (seq bool) n := fun x =>
   if x \in `TS P n epsilon then
     true :: enc_typ x
   else 
-    false :: enc_not_typ x.
+    false :: enc_not_typ (tuple_of_row x).
 
 Lemma f_inj : injective f.
 Proof.
@@ -185,7 +185,7 @@ have card_TS_Lt :  (#|`TS P n epsilon| <= (2 ^ Z.abs_nat L_typ))%nat.
 move=> t1 t2; rewrite /f.
 case/boolP : (t1 == t2) ; first by move /eqP.
 move=> mainCase.
-case: ifP=>?; case: ifP=>? //; case=> H; last by apply: inj_enc_not_typ; apply: val_inj.
+case: ifP=>?; case: ifP=>? //; case=> H; last by apply/tuple_of_row_inj/inj_enc_not_typ/val_inj.
 -  have {H}H : seq.index t1 (enum (`TS P n epsilon)) =
               seq.index t2 (enum (`TS P n epsilon))
      by apply: (nat2bin_inj (Zabs_nat L_typ)) => //;  apply: (leq_trans _ card_TS_Lt);
@@ -204,8 +204,8 @@ rewrite -cardsT card_gt0; case/set0Pn => ?.
 by rewrite abs.
 Defined.
 
-Definition phi: var_dec X n := fun y =>
- if [ pick x | f x == y ] is Some x then x else phi_def.
+Definition phi : decT X (seq bool) n := fun y =>
+ if [ pick x | f x == y ] is Some x then x else row_of_tuple phi_def.
 
 Lemma phi_f x : phi (f x) = x.
 Proof.
@@ -215,10 +215,11 @@ case:(pickP _)=> [x0 /eqP | H].
 -by move: (H x); rewrite eqxx.
 Qed.
 
-Definition extension (enc : var_enc X n) (x : seq (n.-tuple X)) :=
+(*Definition extension (enc : encT X (seq bool) n) (x : seq ('rV[X]_n)) :=
 flatten (map enc x).
+NB: 2015/02/06 -> already defined in uniquely_decodable.v *)
 
-Lemma ext_uniq_decodable : injective (extension f).
+Lemma ext_uniq_decodable : injective (extension _ _ f).
 Proof.
 elim => [ | a la H ]; case => [|b lb]; rewrite /extension /= /f //=; 
  [by case : ifP |by case : ifP | ].
@@ -234,10 +235,10 @@ End Enc_Dec.
 Section E_Leng_Cw_Lemma.
 Variable (X : finType).
 
-Definition E_leng_cw (n : nat) (f : var_enc X n) (P : dist X):= 
-  \rsum_(x in [finType of n.-tuple X])( P `^ n (x) * (INR (size (f x)))).
+Definition E_leng_cw (n : nat) (f : encT X (seq bool) n) (P : dist X):= 
+  \rsum_(x in 'rV[X]_n)( P `^ n (x) * (INR (size (f x)))).
 
-Lemma E_leng_cw' (n : nat) (f : var_enc X n) (P : dist X): 
+Lemma E_leng_cw' (n : nat) (f : encT X (seq bool) n) (P : dist X): 
   E_leng_cw f P = `E (mkRvar (P `^ n) (fun x => INR (size (f x)))).
 Proof. by rewrite /E_leng_cw /Ex_alt /= rsum_mulRC. Qed.
 
@@ -408,19 +409,18 @@ apply: (Rle_lt_trans _  (INR n'.+1 * (`H P + epsilon') + 1 + 1 +
 by apply: elevenOverTwelve_le_One.
 Qed.
 
-Lemma v_scode' : exists (f : var_enc X n) (phi : var_dec X n) , 
-                         (forall x, phi (f x) = x) /\
-                         (E_leng_cw f P) / (INR n) < (`H P + epsilon).
+Lemma v_scode' : exists sc : scode_vl _ n, 
+  cancel (enc sc) (dec sc) /\
+  E_leng_cw (enc sc) P / INR n < `H P + epsilon.
 Proof.
 move : (@leng_neq_0 n') (dist_supp_lg_add_1_neq_0 P) R3neqR0 R4neqR0 => ? ? ? ?.
-apply: (ex_intro _ (f P epsilon')).
-apply: (ex_intro _ (phi n' P epsilon')).
- -apply: conj=> [ x |]; first by apply: (phi_f _ eps'_pos).
-   apply: (Rmult_lt_reg_r (INR n)); first by apply: lt_0_INR; apply/ltP.
-   rewrite /Rdiv -mulRA -(mulRC (INR n)) Rinv_r // mulR1.
-   apply: (Rle_lt_trans _ (IZR (L_typ n' P epsilon') + 1 + epsilon' * (IZR (L_not_typ X n') + 1))).
-   +by apply: E_leng_cw_le_Length;[apply: eps'_pos | apply: le_aepbound_n].
-   +by apply: lb_entro_plus_eps.
+exists (mkScode (f P epsilon') (phi n' P epsilon')).
+apply: conj=> [ x |]; first by apply: (phi_f _ eps'_pos).
+apply: (Rmult_lt_reg_r (INR n)); first by apply: lt_0_INR; apply/ltP.
+rewrite /Rdiv -mulRA -(mulRC (INR n)) Rinv_r // mulR1.
+apply: (Rle_lt_trans _ (IZR (L_typ n' P epsilon') + 1 + epsilon' * (IZR (L_not_typ X n') + 1))).
+- by apply: E_leng_cw_le_Length; [apply: eps'_pos | apply: le_aepbound_n].
+- by apply: lb_entro_plus_eps.
 Qed.
 
 End v_scode.
@@ -434,17 +434,18 @@ Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon .
 Local Notation "'n0'" := (n0 P epsilon).
 
-Theorem v_scode_direct : exists m: nat, (m < n)%nat -> 
-  exists f : var_enc X n,
+Theorem v_scode_direct : exists m, (m < n)%nat -> 
+  exists f : encT X (seq bool) n,
     injective f /\
     E_leng_cw f P / INR n < `H P + epsilon.
 Proof.
 apply: (ex_intro _ n0).
 move /ltP=>le_n0_n.
 move /ltP :le_n0_n.
-case/v_scode' => // f [phi [fphi ccl]].
-apply: (ex_intro _ f).
+case/v_scode' => // sc [fphi ccl].
+apply: (ex_intro _ (enc sc)).
 apply: conj=>//.
 by apply: (can_inj fphi).
 Qed.
+
 End variable_length_source_coding.
