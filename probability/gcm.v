@@ -42,25 +42,43 @@ End necset_canonical.
 (* non-empty convex sets of distributions *)
 Notation "{ 'csdist+' T }" := (necset (Dist_convType T)) (format "{ 'csdist+'  T }") : convex_scope.
 
+Module SemiLattice.
+Section def.
+(* a semilattice is a commutative monoid with idempotence *)
+Record class_of T := Mixin {
+  op : T -> T -> T;
+  _ : commutative op;
+  _ : associative op;
+  _ : idempotent op;
+}.
+Structure type :=
+  Pack {sort : choiceType; _ : class_of sort}.
+End def.
+Module Exports.
+Notation semiLattType := type.
+Coercion sort : semiLattType >-> choiceType.
+End Exports.
+End SemiLattice.
+Export SemiLattice.Exports.
+
 Section P_delta.
+(* we have defined convex spaces in convex_new_dist.v *)
 
 (* we use the functor Dist *)
 Definition P : choiceType -> choiceType := fun x => [choiceType of necset (Dist_convType x)].
 
-(* we have defined convex spaces in convex_new_dist.v *)
-Axiom latt_axioms : choiceType -> Prop.
-Record lattType := LattType {latt_sort :> choiceType; latt_ax : latt_axioms
-latt_sort}.
-
 Axiom eps0: forall {C : convType}, Dist C -> C (* p.164 *).
 (* will be Convn? TODO  *)
-Axiom eps1 : forall {L : lattType}, P L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
+Axiom eps1 : forall {L : semiLattType}, P L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
 (* for an affine function f, returns a function F#f that to each convex set of dist returns its image by f, f needs to be affine *)
-Axiom F : forall {X Y : choiceType}, (X -> Y) -> P X -> P Y.
+Axiom F : forall {X Y : convType}, (X -> Y) -> P X -> P Y.
+Fail Axiom F_preserves_affine : forall (X Y : convType) (f : X -> Y),
+    affine_function f -> affine_function (F f).
 
-(* we know that Dist forms a convexSpace *)
-Axiom lattP : forall X, latt_axioms (P X).
-Canonical PlattType X := LattType (lattP X).
+(* the outputs of P carries a semilattice structure
+   (NB: this needs to be reviewed) *)
+Axiom P_semiLattClass : forall X, SemiLattice.class_of (P X).
+Canonical P_semiLattType X := SemiLattice.Pack (P_semiLattClass X).
 
 (* we now prove that P forms a convex space *)
 Section P_convex_space.
@@ -80,7 +98,7 @@ Definition P_convMixin :=
 Canonical P_convType := ConvexSpace.Pack P_convMixin.
 End P_convex_space.
 
-Canonical conv_lattType C := @LattType (P_convType C) (lattP _).
+Canonical conv_lattType C := @SemiLattice.Pack (P_convType C) (P_semiLattClass _).
 
 Definition PD := P \o Dist.
 
