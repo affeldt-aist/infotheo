@@ -44,8 +44,8 @@ Notation "{ 'csdist+' T }" := (necset (Dist_convType T)) (format "{ 'csdist+'  T
 
 Module SemiLattice.
 Section def.
-(* a semilattice is a commutative monoid with idempotence *)
-Record class_of T := Mixin {
+(* a semilattice is a commutative semigroup with idempotence *)
+Record class_of T := Class {
   op : T -> T -> T;
   _ : commutative op;
   _ : associative op;
@@ -55,11 +55,49 @@ Structure type :=
   Pack {sort : choiceType; _ : class_of sort}.
 End def.
 Module Exports.
+Definition SemiLattOp (T : type) : sort T -> sort T -> sort T :=
+  let: Pack _ (Class op _ _ _) := T in op.
+(* Notation "x [+] y" := (SemiLattOp x y) (format "x  [+]  y", at level 50). *)
 Notation semiLattType := type.
 Coercion sort : semiLattType >-> choiceType.
 End Exports.
 End SemiLattice.
 Export SemiLattice.Exports.
+
+(* Our lattice operation SemiLattOp could either be join or meet,
+   but we choose "join" for the names of lemmas because:
+   1. we want to follow the naming scheme in finmap.order, and
+   2. our intended use of the semilattice structure is for taking
+      convex hulls, which looks more like a join than meet.
+ *)
+Section join_semilattice_lemmas.
+(* naming scheme and proofs copied from finmap.order. *)
+Variable (L : semiLattType).
+Implicit Types (x y : L).
+
+Notation join := SemiLattOp.
+Notation "x `|` y" := (SemiLattOp x y) (format "x  `|`  y", at level 50).
+
+Lemma joinC : commutative (@join L). Proof. by case: L => [?[]]. Qed.
+Lemma joinA : associative (@join L). Proof. by case: L => [?[]]. Qed.
+Lemma joinxx : idempotent (@join L). Proof. by case: L => [?[]]. Qed.
+
+Lemma joinAC : right_commutative (@join L).
+Proof. by move=> x y z; rewrite -!joinA [X in _ `|` X]joinC. Qed.
+Lemma joinCA : left_commutative (@join L).
+Proof. by move=> x y z; rewrite !joinA [X in X `|` _]joinC. Qed.
+Lemma joinACA : interchange (@join L) (@join L).
+Proof. by move=> x y z t; rewrite !joinA [X in X `|` _]joinAC. Qed.
+
+Lemma joinKU y x : x `|` (x `|` y) = x `|` y.
+Proof. by rewrite joinA joinxx. Qed.
+Lemma joinUK y x : (x `|` y) `|` y = x `|` y.
+Proof. by rewrite -joinA joinxx. Qed.
+Lemma joinKUC y x : x `|` (y `|` x) = x `|` y.
+Proof. by rewrite joinC joinUK joinC. Qed.
+Lemma joinUKC y x : y `|` x `|` y = x `|` y.
+Proof. by rewrite joinAC joinC joinxx. Qed.
+End join_semilattice_lemmas.
 
 Section P_delta.
 (* we have defined convex spaces in convex_new_dist.v *)
