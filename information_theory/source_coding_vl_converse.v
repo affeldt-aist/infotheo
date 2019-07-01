@@ -233,7 +233,7 @@ Variable (A : finType) (P : dist A) (f : A -> seq bool).
 Let X := mkRvar P (INR \o size \o f).
 Definition Nmax := (\max_(a| a \in A) size (f a)).
 Definition I_lmax := [finType of 'I_Nmax.+1].
-Hypothesis f_uniq : uniquely_decodable _ _ f.
+Hypothesis f_uniq : uniquely_decodable f.
 
 Lemma Xnon0 x : 0 <> X x.
 Proof.
@@ -462,7 +462,7 @@ Variable f : A -> seq bool.
 Local Notation "'I_lmax'" := (I_lmax f).
 Let X := mkRvar P (INR \o size \o f).
 Local Notation "'PN'" := (PN P f).
-Hypothesis f_uniq: uniquely_decodable _ _ f.
+Hypothesis f_uniq: uniquely_decodable f.
 
 Definition Pf (i : seq bool) := if [ pick x | f x == i ] is Some x then P x else 0.
 
@@ -475,7 +475,7 @@ Qed.
 
 Lemma pmf1_Pf : \rsum_(m| m \in I_lmax) \rsum_(a in {: m.-tuple bool}) Pf a = 1.
 Proof.
-move:(uniq_dec_inj _ _ _ f_uniq)=> f_inj.
+move:(uniq_dec_inj f_uniq)=> f_inj.
 rewrite -(pmf1 P) (partition_big (inordf (size \o f)) (fun i => i \in I_lmax)) //=.
 apply:eq_bigr=>i _.
 rewrite (big_seq_tuple' i f_inj (dist_support_not_empty P)) /Pf=>[|x].
@@ -500,7 +500,7 @@ Qed.
 
 Lemma pmf1_Pf' m : PN m <> 0 -> \rsum_(a | a \in {: m.-tuple bool}) Pf' a = 1.
 Proof.
-move:(uniq_dec_inj _ _ _ f_uniq)=>f_inj.
+move:(uniq_dec_inj f_uniq)=>f_inj.
 move=>PNnon0.
 rewrite -big_distrl /=.
 apply:(Rmult_eq_reg_r (PN m))=>//.
@@ -533,7 +533,7 @@ Qed.
 Lemma rewrite_HP_with_Pf : `H P = 
  - \rsum_(m| m \in I_lmax) \rsum_(a in {: m.-tuple bool}) Pf a * log (Pf a).
 Proof.
-move:(uniq_dec_inj _ _ _ f_uniq)=> f_inj.
+move:(uniq_dec_inj f_uniq)=> f_inj.
 apply:Ropp_eq_compat.
 rewrite [in LHS](partition_big (inordf (size \o f)) (fun i => i \in I_lmax)) //=.
 apply:eq_bigr=>i _.
@@ -594,7 +594,7 @@ Lemma rewrite_HP_with_HPN : `H P =  \rsum_(m| m \in [set x : I_lmax | PN x != 0]
 PN m * (- \rsum_(a in {: m.-tuple bool}) Pf' a * 
 (log ((Pf' a)))) + `H PN.
 Proof.
-move:(uniq_dec_inj _ _ _ f_uniq)=>f_inj.
+move:(uniq_dec_inj f_uniq)=>f_inj.
 rewrite {2}/entropy (eq_bigl (fun m => m \in [set : I_lmax]) (fun x=> _ * log _))=>[|?]; last by rewrite /= in_setT.
 rewrite disjoints_set1.
 rewrite [Y in  _ = _ + - ( Y + _)](_ :_ = 0); last first.
@@ -612,7 +612,7 @@ Qed.
 
 Lemma apply_max_HPN : `H P <= `E X  + `H PN.
 Proof.
-move:(uniq_dec_inj _ _ _ f_uniq)=>f_inj.
+move:(uniq_dec_inj f_uniq)=>f_inj.
 rewrite rewrite_HP_with_HPN addRC (addRC _ (`H _)). 
 apply:Rplus_le_compat_l.
 rewrite EX_ord.
@@ -651,7 +651,7 @@ Variable A : finType.
 Variable n:nat.
 Variable f : encT A (seq bool) n.
 Variable P : dist A.
-Hypothesis f_uniq : uniquely_decodable _ _ f.
+Hypothesis f_uniq : uniquely_decodable f.
 
 Lemma converse_case1 : E_leng_cw f P < (INR n) * (log (INR #|A|)) -> 
 `H (P `^ n) <= E_leng_cw f P + log ((exp 1) * (INR n) * (log (INR #|A|))).
@@ -684,18 +684,18 @@ Variable A : finType.
 Variable n m:nat.
 Variable f : encT A (seq bool) n.
 Variable P : dist A.
-Hypothesis f_uniq : uniquely_decodable _ _ f.
+Hypothesis f_uniq : uniquely_decodable f.
 Hypothesis m_non0 : 0 <> (INR m).
-Let fm (x : 'rV['rV[A]_n]_m) := extension _ _ f (tuple_of_row x).
+Let fm (x : 'rV['rV[A]_n]_m) := extension f (tuple_of_row x).
 
-Lemma fm_uniq : uniquely_decodable _ _ fm.
+Lemma fm_uniq : uniquely_decodable fm.
 Proof.
 pose m' := m.-1.
 have mpos: m = m'.+1.
   case/Rdichotomy:m_non0; first by rewrite (_ : 0 = INR 0)//; move/INR_lt/(S_pred _ 0).
   by rewrite (_ : 0 = INR 0)//; move/Rgt_lt/INR_lt/ltP.
-have: extension [finType of 'rV[A]_n] _ f \o (flatten \o map (fun x => @tval m _ (tuple_of_row x))) =1 
-      extension [finType of {: 'rV[ 'rV[A]_n ]_m} ] _ fm.
+have: @extension [finType of 'rV[A]_n] _ f \o (flatten \o map (fun x => @tval m _ (tuple_of_row x))) =1 
+      @extension [finType of {: 'rV[ 'rV[A]_n ]_m} ] _ fm.
    by elim => //= ta sta; rewrite /extension /= map_cat flatten_cat => <-.
 apply: eq_inj. 
 apply: inj_comp => //.
@@ -723,9 +723,9 @@ elim:m'=>[_ |m'' _ IH].
   rewrite (_ : tuple_of_row i = [tuple of [:: i /_ ord0]]); last first.
     apply eq_from_tnth => a; by rewrite {a}(ord1 a) tnth_tuple_of_row.
   by rewrite /extension /= cats0.
-pose fm1 (x : 'rV['rV[A]_n]_(m''.+1)) := extension _ _ f (tuple_of_row x).
+pose fm1 (x : 'rV['rV[A]_n]_(m''.+1)) := extension f (tuple_of_row x).
 pose Xm1 := mkRvar ((P `^ n) `^ (m''.+1)) (INR \o size \o fm1).
-pose fm2 (x : 'rV['rV[A]_n]_(m''.+2)) := extension _ _ f (tuple_of_row x).
+pose fm2 (x : 'rV['rV[A]_n]_(m''.+2)) := extension f (tuple_of_row x).
 pose Xm2 := mkRvar ((P `^ n) `^ (m''.+2)) (INR \o size \o fm2).
 have X_Xm1_Xm2 : Xm2 \= X @+ Xm1.
   apply:conj=>[|x /=]; first by apply:joint_prod_n.
@@ -753,7 +753,7 @@ Variable A : finType.
 Variable P : dist A.
 Variable n : nat.
 Variable f : encT A (seq bool) n.
-Hypothesis f_uniq : uniquely_decodable _ _ f.
+Hypothesis f_uniq : uniquely_decodable f.
 
 Let alp := exp 1 * log (INR #| 'rV[A]_n |).
 Let m eps:= Zabs_nat (floor (exp (INR (maxn (Zabs_nat (ceil ((ln alp) + INR n * eps * ln 2))) 
@@ -887,7 +887,7 @@ apply: (Rmult_le_reg_r (/ INR n)).
 rewrite (mulRC (INR n)) -mulRA -Rinv_r_sym; last by apply: nesym.
 rewrite mulR1.
 apply:le_epsilon=>eps epspos.
-pose fm (x : 'rV['rV[A]_n]_((m eps))) := extension _ _ f (tuple_of_row x).
+pose fm (x : 'rV['rV[A]_n]_((m eps))) := extension f (tuple_of_row x).
 case:(Rle_or_lt  ((INR (m eps)) * (log (INR #| 'rV[A]_n |)))(E_leng_cw fm (P `^ n))).
   move/(@converse_case2 _ _ fm (P `^ n)).
   rewrite !entropy_TupleDist ELC_TupleDist.
@@ -930,7 +930,7 @@ Variable A : finType.
 Variable P : dist A.
 Variable n : nat.
 Variable f : encT A (seq bool) n.
-Hypothesis f_uniq : uniquely_decodable _ _ f.
+Hypothesis f_uniq : uniquely_decodable f.
 
 Theorem v_scode_converse :
   E_leng_cw f P >= INR n * `H P.

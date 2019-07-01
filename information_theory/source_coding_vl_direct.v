@@ -219,7 +219,7 @@ Qed.
 flatten (map enc x).
 NB: 2015/02/06 -> already defined in uniquely_decodable.v *)
 
-Lemma ext_uniq_decodable : injective (extension _ _ f).
+Lemma ext_uniq_decodable : injective (extension f).
 Proof.
 elim => [ | a la H ]; case => [|b lb]; rewrite /extension /= /f //=; 
  [by case : ifP |by case : ifP | ].
