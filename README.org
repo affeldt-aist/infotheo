@@ -49,6 +49,5 @@ See [[infotheo_authors.txt]]
 
 ** References
 
-There are a few papers available [[https://staff.aist.go.jp/reynald.affeldt/shannon/][here]] (information theory) and [[https://staff.aist.go.jp/reynald.affeldt/ecc/][here]]
-(error-correcting codes) that provide explanations and references.
+There are a few papers available [[https://staff.aist.go.jp/reynald.affeldt/shannon/][here]] that provide explanations and references.
 
