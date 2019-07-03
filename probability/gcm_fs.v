@@ -16,12 +16,111 @@ Local Open Scope convex_scope.
 Section misc.
 Definition set_of_fset (A : choiceType) (X : {fset A}) : set A :=
   [set a : A | a \in X].
+Lemma cset_ext (A : convType) (X Y : {convex_set A}) :
+  X = Y <-> CSet.car X = CSet.car Y.
+Proof.
+case: X => carX HX; case: Y => carY HY.
+split => [-> // | /= H].
+destruct H.
+congr CSet.mk.
+exact/Prop_irrelevance.
+Qed.
 End misc.
+
+Module PreFSCSet.
+Section def.
+Variable A : convType.
+Record class_of (car : {convex_set A}) : Type := Class {
+  supp : {fset A} ;
+  _ : car = CSet.mk (convex_hull [set a : A | a \in supp]) ;
+}.
+Structure t : Type := Pack { car : {convex_set A} ; _ : class_of car }.
+End def.
+Module Exports.
+Notation prefscset := t.
+Coercion car : prefscset >-> convex_set_of.
+End Exports.
+End PreFSCSet.
+Export PreFSCSet.Exports.
+Section prefscset_lemmas.
+Variable A : convType.
+Definition prefscset_supp (X : prefscset A) : {fset A} :=
+  let: PreFSCSet.Pack _ (PreFSCSet.Class supp _) := X in supp.
+Lemma prefscset_hull_supp (X : prefscset A) :
+  X = CSet.mk (convex_hull [set a : A | a \in prefscset_supp X]) :> {convex_set A}.
+Proof.
+case: X => carX [supp H].
+apply cset_ext => /=.
+by rewrite H.
+Qed.
+
+Section canonical.
+(*
+Definition supp_prefscset (sX : {fset A}) : prefscset A :=
+  @PreFSCSet.Pack
+    _
+    (CSet.mk (convex_hull [set a : A | a \in sX]))
+    (PreFSCSet.Class erefl).
+Lemma prefscset_suppK : cancel prefscset_supp supp_prefscset.
+Proof.
+rewrite /supp_prefscset.
+case => car [supp H] /=.
+Fail congr PreFSCSet.Pack.
+Abort.
+*)
+Definition prefscset_eqMixin : Equality.mixin_of (prefscset A) := @gen_eqMixin (prefscset A).
+Canonical prefscset_eqType := Eval hnf in EqType (prefscset A) prefscset_eqMixin.
+Definition prefscset_choiceMixin : Choice.mixin_of (prefscset A) := @gen_choiceMixin (prefscset A).
+Canonical prefscset_choiceType : choiceType :=
+  Eval hnf in Choice.Pack (Choice.Class prefscset_eqMixin prefscset_choiceMixin).
+End canonical.
+End prefscset_lemmas.
 
 Module FSCSet.
 Section def.
 Variable A : convType.
-Record mixin_of (car : {convex_set A}) := Mixin {
+Record t : Type := mk {
+  car : {convex_set A} ;
+  _ : exists supp : {fset A}, car = CSet.mk (convex_hull [set a : A | a \in supp]) ;
+}.
+End def.
+End FSCSet.
+Notation fscset := FSCSet.t.
+Coercion FSCSet.car : fscset >-> convex_set_of.
+
+Section fscset_lemmas.
+Variable (A : convType).
+
+Section canonical.
+Definition fscset_eqMixin : Equality.mixin_of (fscset A) := @gen_eqMixin (fscset A).
+Canonical fscset_eqType := Eval hnf in EqType (fscset A) fscset_eqMixin.
+Definition fscset_choiceMixin : Choice.mixin_of (fscset A) := @gen_choiceMixin (fscset A).
+Canonical fscset_choiceType : choiceType :=
+  Eval hnf in Choice.Pack (Choice.Class fscset_eqMixin fscset_choiceMixin).
+End canonical.
+
+Lemma fscset_ext (X Y : fscset A) : X = Y <-> FSCSet.car X = FSCSet.car Y.
+Proof.
+case: X => carX HX; case: Y => carY HY.
+split => [-> // | /= H].
+destruct H.
+congr FSCSet.mk.
+exact/Prop_irrelevance.
+Qed.
+Lemma fscset_property (X : fscset A) :
+exists sX : {fset A}, FSCSet.car X = CSet.mk (convex_hull [set a : A | a \in sX]).
+Proof. by case: X.  Qed.
+Definition fscset_supp (X : fscset A) : {fset A} :=
+(* axiom of choice *)
+  let (sX, _) := constructive_indefinite_description (fscset_property X) in sX.
+Lemma fscset_hull_supp (X : fscset A) :
+  FSCSet.car X = CSet.mk (convex_hull [set a : A | a \in fscset_supp X]).
+Proof. rewrite /fscset_supp. by case: (cid (fscset_property X)). Qed.
+Lemma fscset_hull_supp' (X : fscset A) :
+  X = CSet.mk (convex_hull [set a : A | a \in fscset_supp X]) :> {convex_set A}.
+Proof. by move: (fscset_hull_supp X) ->. Qed.
+End fscset_lemmas.
+
 
 
 Module NECSet.
