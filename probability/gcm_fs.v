@@ -25,6 +25,22 @@ destruct H.
 congr CSet.mk.
 exact/Prop_irrelevance.
 Qed.
+Lemma hull_monotone (A : convType) (X Y : set A) :
+  (X `<=` Y)%classic -> (hull X `<=` hull Y)%classic.
+Proof.
+move=> H a.
+case => n [g [d [H0 H1]]].
+exists n, g, d.
+split => //.
+by eapply subset_trans; first by exact: H0.
+Qed.
+Lemma hull_eqEsubset (A : convType) (X Y : set A) :
+  (X `<=` hull Y)%classic -> (Y `<=` hull X)%classic -> hull X = hull Y.
+Proof.
+move/hull_monotone; rewrite hullI => H.
+move/hull_monotone; rewrite hullI => H0.
+by apply/eqEsubset.
+Qed.
 End misc.
 
 Module PreFSCSet.
@@ -120,7 +136,7 @@ Lemma fscset_hull_supp' (X : fscset A) :
   X = CSet.mk (convex_hull [set a : A | a \in fscset_supp X]) :> {convex_set A}.
 Proof. by rewrite fscset_hull_supp. Qed.
 
-Lemma fscset_supp0E (X : fscset A) :
+Lemma fscset_supp0E' (X : fscset A) :
   (fscset_supp X = fset0) <-> (X = cset0 _ :> {convex_set A}).
 Proof.
 split.
@@ -138,6 +154,9 @@ split.
   apply/set0P.
   by exists a.
 Qed.
+Lemma fscset_supp0E (X : fscset A) :
+  (fscset_supp X == fset0) = (X == cset0 _ :> {convex_set A}).
+Proof. apply/eqP/eqP; by rewrite fscset_supp0E'. Qed.
 End fscset_lemmas.
 
 Module NECSet.
@@ -147,7 +166,7 @@ Local Open Scope proba_scope.
 Variable A : convType.
 Record t : Type := mk {
   car : fscset A ;
-  _ : FSCSet.car car != cset0 _ }.
+  _ : car != cset0 _ :> {convex_set A}}.
 End def.
 End NECSet.
 Notation necset := NECSet.t.
@@ -185,96 +204,92 @@ Definition necset_supp (X : necset A) : {fset A} := fscset_supp X.
 Lemma necset_hull_supp (X : necset A) :
   X = CSet.mk (convex_hull [set a : A | a \in necset_supp X]) :> {convex_set A}.
 Proof. by rewrite fscset_hull_supp. Qed.
-Lemma necset_support_neq0 (X : necset A) : necset_supp X != fset0.
-case: X => carX /= H.
-apply/eqP.
-move/(congr1 (fun Y => CSet.mk (convex_hull [set a : A | a \in Y]))).
-rewrite -necset_hull_supp /=.
-suff -> : {| CSet.car := hull (fun a : A => a \in fset0);
-             CSet.H := convex_hull (fun a : A => a \in fset0) |} = cset0 _
-  by apply/eqP.
-rewrite cset_ext /=.
-transitivity (@hull A set0); last by rewrite hull0.
-congr hull.
-apply funext => a.
-rewrite inE.
-by rewrite /set0 falseE.
-Qed.
 Lemma necset_neq0 (X : necset A) : X != cset0 _ :> {convex_set A}.
 Proof. by case: X. Qed.
+Lemma necset_supp_neq0 (X : necset A) : necset_supp X != fset0.
+Proof. by rewrite fscset_supp0E necset_neq0. Qed.
 End necset_lemmas.
 
-Section necset_convType.
+Module necset_convType.
+Section def.
 Variable A : convType.
 Let necset := necset A.
 Local Open Scope bool_scope.
 Local Open Scope fset_scope.
-Definition support_conv (X Y : necset) (p : prob) : {fset A} :=
-  (fun xy => xy.1 <| p |> xy.2) @` (necset_support X `*` necset_support Y).
-Definition pre_conv (X Y : necset) (p : prob) : {convex_set A} :=
-  CSet.mk (convex_hull [set a : A | a \in support_conv X Y p]).
-Lemma support_conv_neq0 X Y p : support_conv X Y p != fset0.
-Admitted.
-Lemma pre_conv_neq0 X Y p : pre_conv X Y p != cset0 _.
-Proof.
-(*rewrite /pre_conv.
-case: X => carX /= HX.
-case: Y => carY /= HY.
-
-case: X => carX /= /fset0Pn [x xX].
-case: Y => carY /= /fset0Pn [y yY].
-apply/fset0Pn.
-exists ((x,y).1 <| p |> (x,y).2).
-by rewrite in_imfset // inE xX yY.
-Qed.
-*)
-Admitted.
-Lemma pre_conv_support X Y p : 
-  `[exists G : {fset A}, pre_conv X Y p == CSet.mk (convex_hull [set a : A | a \in G])].
-Proof. rewrite /= existsbE asboolE. by exists (support_conv X Y p). Qed.
-Lemma pre_conv_axiom X Y p :
-  (pre_conv X Y p != cset0 _)  &&  `[exists G : {fset A}, pre_conv X Y p == CSet.mk (convex_hull [set a : A | a \in G])].
-Proof. by apply/andP; split; [apply pre_conv_neq0 | apply pre_conv_support]. Qed.
-Definition conv (X Y : necset) p : necset := NECSet.mk (pre_conv_axiom X Y p).
-Lemma conv1 X Y : conv X Y `Pr 1 = X.
+Definition conv_supp (X Y : necset) (p : prob) : {fset A} :=
+  (fun xy => xy.1 <| p |> xy.2) @` (necset_supp X `*` necset_supp Y).
+Lemma conv_supp1 X Y : conv_supp X Y `Pr 1 = fscset_supp X.
 Proof.
 case: X => carX HX; case: Y => carY HY.
-rewrite necset_ext /=.  rewrite /pre_conv /=.
-move: HX. => /andP. []. /cset0PN.  [x xX].
-move: HY => /fset0Pn [y yY].
+move/idP: (HY); rewrite -{1}fscset_supp0E; case/fset0Pn => y yY.
 apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => a.
 - move/imfsetP => -[xy /=]; by rewrite conv1 in_fsetM => /andP [Hx _] ->.
 - move => aX; apply/imfsetP; exists (a,y); last by rewrite conv1.
   by rewrite inE aX yY .
 Qed.
+(* NB: It's impossible to obtain conv_suppmm. Because of this, the type of
+   (finite) powersets of a convType cannot be a convType again. We need to
+   take hulls. *)
+Lemma conv_suppC X Y p : conv_supp X Y p = conv_supp Y X `Pr p.~.
+Proof.
+apply/eqP.
+rewrite /conv_supp eqEfsubset.
+apply/andP; split; apply/fsubsetP => a /imfsetP [[x y]]; rewrite !inE /= => /andP [H0 H1] ->; [rewrite convC | rewrite -convC]; change y with (y, x).1; change x with (y, x).2; rewrite in_imfset //= inE /=; by apply/andP.
+Qed.
+Definition pre_conv (X Y : necset) (p : prob) : fscset A.
+apply (@FSCSet.mk _ (CSet.mk (convex_hull [set a : A | a \in conv_supp X Y p]))).
+exists (conv_supp X Y p).
+exact: erefl.
+Defined.
+Lemma conv_supp_neq0 X Y p : conv_supp X Y p != fset0.
+Proof.
+apply/fset0Pn.
+case/fset0Pn: (necset_supp_neq0 X) => x xX.
+case/fset0Pn: (necset_supp_neq0 Y) => y yY.
+exists ((x,y).1 <|p|> (x,y).2).
+by rewrite in_imfset // inE xX yY.
+Qed.
+Lemma pre_conv_neq0 X Y p : pre_conv X Y p != cset0 _ :> {convex_set A}.
+Proof.
+apply/eqP; move/cset_ext => /=; apply/eqP.
+rewrite hull_eq0.
+case/fset0Pn : (conv_supp_neq0 X Y p) => a Ha.
+rewrite set0P.
+by exists a.
+Qed.
+Definition conv (X Y : necset) p : necset := NECSet.mk (pre_conv_neq0 X Y p).
+Lemma conv1 X Y : conv X Y `Pr 1 = X.
+Proof. by rewrite necset_ext /= [in RHS]fscset_hull_supp conv_supp1. Qed.
 Lemma convmm X p : conv X X p = X.
 Proof.
 case: X => carX HX.
-rewrite necset_ext /= /pre_conv /=.
-apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => x.
-- move/imfsetP => -[xy /=].
-
-
->>>  BOOM! <<<
-
-
-rewrite convmm in_fsetM.
-
-Lemma convC a b p : conv a b p = conv b a `Pr p.~.
-Lemma convA p q a b c :
-  conv a (conv b c q) p = conv (conv a b [r_of p, q]) c [s_of p, q].
-
-Definition necset_convMixin : ConvexSpace.class_of [choiceType of necset].
+rewrite necset_ext /= [in RHS]fscset_hull_supp cset_ext /=.
+apply hull_eqEsubset => a.
+- rewrite /conv_supp /necset_supp.
+  case/imfsetP => -[a0 a1] /=.
+  rewrite inE /= => /andP [Ha0 Ha1] ->.
+  set Z:= ([set a : A | a \in fscset_supp carX])%classic.
+  have -> : Z = (Z `|` Z)%classic by rewrite setUid.
+  by rewrite -in_setE mem_hull_setU // /Z inE asboolE.
+- move=> H.
+  rewrite -in_setE; apply hull_mem; rewrite inE asboolE /conv_supp.
+  by apply/imfsetP; exists (a, a); rewrite /= ?convmm // inE /=; apply/andP; split.
+Qed.
+Lemma convC X Y p : conv X Y p = conv Y X `Pr p.~.
+Proof. by rewrite /conv necset_ext /= cset_ext /= conv_suppC. Qed.
+Lemma convA p q X Y Z :
+  conv X (conv Y Z q) p = conv (conv X Y [r_of p, q]) Z [s_of p, q].
 Proof.
-apply (@ConvexSpace.Class _ conv).
+rewrite /conv necset_ext /= /conv_supp cset_ext /=.
+apply hull_eqEsubset => a /imfsetP [[a0 a1]] /=; rewrite inE /= => /andP [Ha0 Ha1] ->.
+Admitted.
 
+Definition convMixin : ConvexSpace.class_of [choiceType of necset]
+  := @ConvexSpace.Class _ conv conv1 convmm convC convA.
 
-
-
-Definition P : convType -> Type := 
+End def.
 End necset_convType.
-
-
+Canonical necset_convType A := ConvexSpace.Pack (necset_convType.convMixin A).
 
 (* non-empty convex sets of distributions *)
 Notation "{ 'csdist+' T }" := (necset (Dist_convType T)) (format "{ 'csdist+'  T }") : convex_scope.
