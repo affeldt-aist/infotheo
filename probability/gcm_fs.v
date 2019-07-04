@@ -1,6 +1,6 @@
 Require Import Reals.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
-From mathcomp Require Import choice.
+From mathcomp Require Import choice bigop.
 Require Import Reals_ext proba dist convex_choice.
 From mathcomp Require Import boolp classical_sets.
 From mathcomp Require Import finmap set.
@@ -12,6 +12,43 @@ Unset Printing Implicit Defensive.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope convex_scope.
+
+Reserved Notation "\joet_ i F"
+  (at level 41, F at level 41, i at level 0,
+           format "'[' \joet_ i '/  '  F ']'").
+Reserved Notation "\joet_ ( i <- r | P ) F"
+  (at level 41, F at level 41, i, r at level 50,
+           format "'[' \joet_ ( i  <-  r  |  P ) '/  '  F ']'").
+Reserved Notation "\joet_ ( i <- r ) F"
+  (at level 41, F at level 41, i, r at level 50,
+           format "'[' \joet_ ( i  <-  r ) '/  '  F ']'").
+Reserved Notation "\joet_ ( m <= i < n | P ) F"
+  (at level 41, F at level 41, i, m, n at level 50,
+           format "'[' \joet_ ( m  <=  i  <  n  |  P ) '/  '  F ']'").
+Reserved Notation "\joet_ ( m <= i < n ) F"
+  (at level 41, F at level 41, i, m, n at level 50,
+           format "'[' \joet_ ( m  <=  i  <  n ) '/  '  F ']'").
+Reserved Notation "\joet_ ( i | P ) F"
+  (at level 41, F at level 41, i at level 50,
+           format "'[' \joet_ ( i  |  P ) '/  '  F ']'").
+Reserved Notation "\joet_ ( i : t | P ) F"
+  (at level 41, F at level 41, i at level 50,
+           only parsing).
+Reserved Notation "\joet_ ( i : t ) F"
+  (at level 41, F at level 41, i at level 50,
+           only parsing).
+Reserved Notation "\joet_ ( i < n | P ) F"
+  (at level 41, F at level 41, i, n at level 50,
+           format "'[' \joet_ ( i  <  n  |  P ) '/  '  F ']'").
+Reserved Notation "\joet_ ( i < n ) F"
+  (at level 41, F at level 41, i, n at level 50,
+           format "'[' \joet_ ( i  <  n )  F ']'").
+Reserved Notation "\joet_ ( i 'in' A | P ) F"
+  (at level 41, F at level 41, i, A at level 50,
+           format "'[' \joet_ ( i  'in'  A  |  P ) '/  '  F ']'").
+Reserved Notation "\joet_ ( i 'in' A ) F"
+  (at level 41, F at level 41, i, A at level 50,
+           format "'[' \joet_ ( i  'in'  A ) '/  '  F ']'").
 
 Section misc.
 Definition set_of_fset (A : choiceType) (X : {fset A}) : set A :=
@@ -58,6 +95,7 @@ Coercion car : prefscset >-> convex_set_of.
 End Exports.
 End PreFSCSet.
 Export PreFSCSet.Exports.
+
 Section prefscset_lemmas.
 Variable A : convType.
 Definition prefscset_supp (X : prefscset A) : {fset A} :=
@@ -291,15 +329,106 @@ End def.
 End necset_convType.
 Canonical necset_convType A := ConvexSpace.Pack (necset_convType.convMixin A).
 
+Module UnitalSemiLattice.
+Section def.
+(* a semilattice is a commutative semigroup with idempotence *)
+Record class_of T := Class {
+  op : T -> T -> T;
+  idx : T;
+  _ : commutative op;
+  _ : associative op;
+  _ : idempotent op;
+  _ : left_id idx op;
+}.
+Structure type :=
+  Pack {sort : choiceType; _ : class_of sort}.
+End def.
+Module Exports.
+Definition SemiLattUnit (T : type) : sort T :=
+  let: Pack _ (Class _ idx _ _ _ _) := T in idx.
+Definition SemiLattOp (T : type) : sort T -> sort T -> sort T :=
+  let: Pack _ (Class op _ _ _ _ _) := T in op.
+Notation "x [+] y" := (SemiLattOp x y) (format "x  [+]  y", at level 50).
+Notation "`i" := SemiLattUnit : latt_scope.
+Notation unitalSemiLattType := type.
+Coercion sort : unitalSemiLattType >-> choiceType.
+End Exports.
+End UnitalSemiLattice.
+Export UnitalSemiLattice.Exports.
+
+Section unital_semilattice_lemmas.
+(* naming scheme and proofs copied from finmap.order. *)
+Variable (L : unitalSemiLattType).
+Implicit Types (x y : L).
+
+Local Open Scope latt_scope.
+
+Local Close Scope fset_scope.
+Local Close Scope classical_set_scope.
+Notation joet := SemiLattOp.
+Notation "x `|` y" := (SemiLattOp x y) : latt_scope.
+
+Notation "\joet_ ( i <- r | P ) F" :=
+  (\big[@joet _ _/`i]_(i <- r | P%B) F) : latt_scope.
+Notation "\joet_ ( i <- r ) F" :=
+  (\big[@joet _ _/`i]_(i <- r) F) : latt_scope.
+Notation "\joet_ ( i | P ) F" :=
+  (\big[@joet _ _/`i]_(i | P%B) F) : latt_scope.
+Notation "\joet_ i F" :=
+  (\big[@joet _ _/`i]_i F) : latt_scope.
+Notation "\joet_ ( i : I | P ) F" :=
+  (\big[@joet _ _/`i]_(i : I | P%B) F) (only parsing) : latt_scope.
+Notation "\joet_ ( i : I ) F" :=
+  (\big[@joet _ _/`i]_(i : I) F) (only parsing) : latt_scope.
+Notation "\joet_ ( m <= i < n | P ) F" :=
+ (\big[@joet _ _/`i]_(m <= i < n | P%B) F) : latt_scope.
+Notation "\joet_ ( m <= i < n ) F" :=
+ (\big[@joet _ _/`i]_(m <= i < n) F) : latt_scope.
+Notation "\joet_ ( i < n | P ) F" :=
+ (\big[@joet _ _/`i]_(i < n | P%B) F) : latt_scope.
+Notation "\joet_ ( i < n ) F" :=
+ (\big[@joet _ _/`i]_(i < n) F) : latt_scope.
+Notation "\joet_ ( i 'in' A | P ) F" :=
+ (\big[@joet _ _/`i]_(i in A | P%B) F) : latt_scope.
+Notation "\joet_ ( i 'in' A ) F" :=
+ (\big[@joet _ _/`i]_(i in A) F) : latt_scope.
+
+Lemma joetC : commutative (@joet L). Proof. by case: L => [?[]]. Qed.
+Lemma joetA : associative (@joet L). Proof. by case: L => [?[]]. Qed.
+Lemma joetxx : idempotent (@joet L). Proof. by case: L => [?[]]. Qed.
+
+(* TODO: add right-unit *)
+
+Lemma joetAC : right_commutative (@joet L).
+Proof. by move=> x y z; rewrite -!joetA [X in _ `|` X]joetC. Qed.
+Lemma joetCA : left_commutative (@joet L).
+Proof. by move=> x y z; rewrite !joetA [X in X `|` _]joetC. Qed.
+Lemma joetACA : interchange (@joet L) (@joet L).
+Proof. by move=> x y z t; rewrite !joetA [X in X `|` _]joetAC. Qed.
+
+Lemma joetKU y x : x `|` (x `|` y) = x `|` y.
+Proof. by rewrite joetA joetxx. Qed.
+Lemma joetUK y x : (x `|` y) `|` y = x `|` y.
+Proof. by rewrite -joetA joetxx. Qed.
+Lemma joetKUC y x : x `|` (y `|` x) = x `|` y.
+Proof. by rewrite joetC joetUK joetC. Qed.
+Lemma joetUKC y x : y `|` x `|` y = x `|` y.
+Proof. by rewrite joetAC joetC joetxx. Qed.
+End unital_semilattice_lemmas.
+
+
 (* non-empty convex sets of distributions *)
 Notation "{ 'csdist+' T }" := (necset (Dist_convType T)) (format "{ 'csdist+'  T }") : convex_scope.
 
-Section P_delta.
+Section Pdelta.
 (* P = necset \o Dist, where
    - Dist is the free convex space functor, and
    - necset is the finitely-supported convex power functor. *)
-Definition P : choiceType -> choiceType := fun x => [choiceType of necset (Dist_convType x)].
+Definition Pdelta : choiceType -> convType := fun x => necset_convType (Dist_convType x).
 
+(* codomain of P is actually a lattConvType *)
+
+(*
 (* we now prove that P forms a convex space *)
 Section P_convex_space.
 Variable A : choiceType.
@@ -317,16 +446,18 @@ Definition P_convMixin :=
   (@Conv2PconvA' A).
 Canonical P_convType := ConvexSpace.Pack P_convMixin.
 End P_convex_space.
-
 Canonical conv_lattType C := @SemiLattice.Pack (P_convType C) (P_semiLattClass _).
+*)
 
-Definition PD := P \o Dist.
+Variable x : choiceType.
+Check Pdelta x : convType.
 
 Section monad_mu.
 
-Axiom eps0: forall {C : convType}, Dist C -> C (* p.164 *).
+Definition eps0: forall {C : convType}, Dist C -> C :=
+  fun D => Convn D 
 (* will be Convn? TODO  *)
-Axiom eps1 : forall {L : semiLattType}, P L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
+Axiom eps1 : forall {L : unitalSemiLattType}, P L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
 (* for an affine function f, returns a function F#f that to each convex set of dist returns its image by f, f needs to be affine *)
 Axiom F : forall {X Y : convType}, (X -> Y) -> P X -> P Y.
 Axiom F_preserves_affine : forall (X Y : convType) (f : X -> Y),
@@ -336,4 +467,4 @@ Definition mu {T : choiceType} : PD (PD T) -> PD T := eps1 \o F eps0.
 
 End monad_mu.
 
-End P_delta.
+End Pdelta.
