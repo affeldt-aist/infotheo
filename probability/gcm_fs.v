@@ -1,6 +1,6 @@
 Require Import Reals.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
-From mathcomp Require Import choice bigop.
+From mathcomp Require Import choice fintype bigop.
 Require Import Reals_ext proba dist convex_choice.
 From mathcomp Require Import boolp classical_sets.
 From mathcomp Require Import finmap set.
@@ -452,19 +452,39 @@ Canonical conv_lattType C := @SemiLattice.Pack (P_convType C) (P_semiLattClass _
 Variable x : choiceType.
 Check Pdelta x : convType.
 
-Section monad_mu.
+Section monad_eps.
 
-Definition eps0: forall {C : convType}, Dist C -> C :=
-  fun D => Convn D 
-(* will be Convn? TODO  *)
-Axiom eps1 : forall {L : unitalSemiLattType}, P L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
+(*
+Convn : forall (A : convType) (n : nat), {dist fintype.ordinal n} -> (fintype.ordinal n -> A) -> A
+*)
+
+Definition eps0 : forall {C : convType}, Dist C -> C.
+move=> C d.
+set supp := finsupp d.
+set n := #|` supp|.
+have @c0 : C.
+  admit.
+set f : 'I_n -> C := fun i => nth c0 supp i.
+have @d' : {dist 'I_n}.
+  set f' : 'I_n -> R := d \o f.
+  admit.
+exact: (Convn d' f).
+Admitted.
+
+Axiom lattConvType : Type.
+
+Axiom eps1 : forall {L : convType (* should be lattConvType *) }, necset L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
+
+
 (* for an affine function f, returns a function F#f that to each convex set of dist returns its image by f, f needs to be affine *)
-Axiom F : forall {X Y : convType}, (X -> Y) -> P X -> P Y.
+Axiom F : forall {X Y : convType}, (X -> Y) -> necset X -> necset Y.
+(*
 Axiom F_preserves_affine : forall (X Y : convType) (f : X -> Y),
     affine_function f -> affine_function (F f).
+*)
 
-Definition mu {T : choiceType} : PD (PD T) -> PD T := eps1 \o F eps0.
+Definition eps {T : choiceType} : Pdelta (Pdelta T) -> Pdelta T := eps1 \o F eps0.
 
-End monad_mu.
+End monad_eps.
 
 End Pdelta.
