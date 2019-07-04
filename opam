@@ -19,6 +19,7 @@ authors: [
 build: [
   ["coq_makefile" "-f" "_CoqProject" "-o" "Makefile"]
   [make]
+  [make "-C" "extraction" "tests"]
 ]
 install: [
   [make "install"]

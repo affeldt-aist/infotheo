@@ -1,4 +1,5 @@
-#use "sumprod.ml";;
+(* #load "sumprod.cmo" *)
+open Sumprod;;
 
 type ('a,'b) sum = Inl of 'a | Inr of 'b;;
 let rec iota m n = if m >= n then [] else m :: iota (succ m) n;;
@@ -63,14 +64,28 @@ end;;
 
 module BTE = BT(Etzion);;
 
+module Print = struct
+  let node ppf = function
+      Inl n -> Format.fprintf ppf "Inl %d" n
+    | Inr n -> Format.fprintf ppf "Inr %d" n
+
+  let line (n, (a, b)) =
+    Format.printf "%a : %.13f, %.13f@." node n a b
+
+  let estim s l =
+    Format.printf "Distribution: %s@.%!" s;
+    List.iter line l
+end;;
+
 let f1 x = if x = 9 then (0.8, 0.2) else (0.2, 0.8);; (* bit 8 is wrong *)
 let f2 x = if x = 0 then (0.8, 0.2) else (0.2, 0.8);; (* bit 1 is wrong *)
 let f3 x = if x/2 = 0 then (0.8, 0.2) else (0.2, 0.8);; (* all ok *)
 
 (* Check that decoding works. *)
-BTE.decode f1;;
-BTE.decode f2;;
-BTE.decode f3;;
+let print s f = Print.estim ("Etzion " ^ s) (BTE.decode f);;
+print "f1" f1;;
+print "f2" f2;;
+print "f3" f3;;
 
 (* The example in ldpc_algo_proof.v *)
 
@@ -91,7 +106,7 @@ let f0 = function
   | _ -> (0., 0.)
 ;;
 
-BTC.decode f0;;
+Print.estim "Example f0" (BTC.decode f0);;
 
 
 (* A closer translation, using GADTs for ordinals *)
