@@ -138,9 +138,12 @@ Record t : Type := mk {
   _ : exists supp : {fset A}, car = CSet.mk (convex_hull [set a : A | a \in supp]) ;
 }.
 End def.
-End FSCSet.
+Module Exports.
 Notation fscset := FSCSet.t.
 Coercion FSCSet.car : fscset >-> convex_set_of.
+End Exports.
+End FSCSet.
+Export FSCSet.Exports.
 
 Section fscset_lemmas.
 Variable (A : convType).
@@ -162,17 +165,14 @@ congr FSCSet.mk.
 exact/Prop_irrelevance.
 Qed.
 Lemma fscset_property (X : fscset A) :
-exists sX : {fset A}, FSCSet.car X = CSet.mk (convex_hull [set a : A | a \in sX]).
+exists sX : {fset A}, X = CSet.mk (convex_hull [set a : A | a \in sX]) :> {convex_set A}.
 Proof. by case: X.  Qed.
 Definition fscset_supp (X : fscset A) : {fset A} :=
 (* axiom of choice *)
   let (sX, _) := constructive_indefinite_description (fscset_property X) in sX.
 Lemma fscset_hull_supp (X : fscset A) :
-  FSCSet.car X = CSet.mk (convex_hull [set a : A | a \in fscset_supp X]).
-Proof. rewrite /fscset_supp. by case: (cid (fscset_property X)). Qed.
-Lemma fscset_hull_supp' (X : fscset A) :
   X = CSet.mk (convex_hull [set a : A | a \in fscset_supp X]) :> {convex_set A}.
-Proof. by rewrite fscset_hull_supp. Qed.
+Proof. rewrite /fscset_supp. by case: (cid (fscset_property X)). Qed.
 
 Lemma fscset_supp0E' (X : fscset A) :
   (fscset_supp X = fset0) <-> (X = cset0 _ :> {convex_set A}).
@@ -206,9 +206,12 @@ Record t : Type := mk {
   car : fscset A ;
   _ : car != cset0 _ :> {convex_set A}}.
 End def.
-End NECSet.
+Module Exports.
 Notation necset := NECSet.t.
 Coercion NECSet.car : necset >-> fscset.
+End Exports.
+End NECSet.
+Export NECSet.Exports.
 
 Section necset_canonical.
 Variable (A : convType).
@@ -332,7 +335,7 @@ Canonical necset_convType A := ConvexSpace.Pack (necset_convType.convMixin A).
 Module UnitalSemiLattice.
 Section def.
 (* a semilattice is a commutative semigroup with idempotence *)
-Record class_of T := Class {
+Record class_of (T : Type) : Type := Class {
   op : T -> T -> T;
   idx : T;
   _ : commutative op;
@@ -341,7 +344,7 @@ Record class_of T := Class {
   _ : left_id idx op;
 }.
 Structure type :=
-  Pack {sort : choiceType; _ : class_of sort}.
+  Pack {sort : Type; _ : class_of sort}.
 End def.
 Module Exports.
 Definition SemiLattUnit (T : type) : sort T :=
@@ -351,7 +354,7 @@ Definition SemiLattOp (T : type) : sort T -> sort T -> sort T :=
 Notation "x [+] y" := (SemiLattOp x y) (format "x  [+]  y", at level 50).
 Notation "`i" := SemiLattUnit : latt_scope.
 Notation unitalSemiLattType := type.
-Coercion sort : unitalSemiLattType >-> choiceType.
+Coercion sort : unitalSemiLattType >-> Sortclass.
 End Exports.
 End UnitalSemiLattice.
 Export UnitalSemiLattice.Exports.
@@ -362,11 +365,10 @@ Variable (L : unitalSemiLattType).
 Implicit Types (x y : L).
 
 Local Open Scope latt_scope.
-
 Local Close Scope fset_scope.
 Local Close Scope classical_set_scope.
+
 Notation joet := SemiLattOp.
-Notation "x `|` y" := (SemiLattOp x y) : latt_scope.
 
 Notation "\joet_ ( i <- r | P ) F" :=
   (\big[@joet _ _/`i]_(i <- r | P%B) F) : latt_scope.
@@ -400,54 +402,32 @@ Lemma joetxx : idempotent (@joet L). Proof. by case: L => [?[]]. Qed.
 (* TODO: add right-unit *)
 
 Lemma joetAC : right_commutative (@joet L).
-Proof. by move=> x y z; rewrite -!joetA [X in _ `|` X]joetC. Qed.
+Proof. by move=> x y z; rewrite -!joetA [X in _ [+] X]joetC. Qed.
 Lemma joetCA : left_commutative (@joet L).
-Proof. by move=> x y z; rewrite !joetA [X in X `|` _]joetC. Qed.
+Proof. by move=> x y z; rewrite !joetA [X in X [+] _]joetC. Qed.
 Lemma joetACA : interchange (@joet L) (@joet L).
-Proof. by move=> x y z t; rewrite !joetA [X in X `|` _]joetAC. Qed.
+Proof. by move=> x y z t; rewrite !joetA [X in X [+] _]joetAC. Qed.
 
-Lemma joetKU y x : x `|` (x `|` y) = x `|` y.
+Lemma joetKU y x : x [+] (x [+] y) = x [+] y.
 Proof. by rewrite joetA joetxx. Qed.
-Lemma joetUK y x : (x `|` y) `|` y = x `|` y.
+Lemma joetUK y x : (x [+] y) [+] y = x [+] y.
 Proof. by rewrite -joetA joetxx. Qed.
-Lemma joetKUC y x : x `|` (y `|` x) = x `|` y.
+Lemma joetKUC y x : x [+] (y [+] x) = x [+] y.
 Proof. by rewrite joetC joetUK joetC. Qed.
-Lemma joetUKC y x : y `|` x `|` y = x `|` y.
+Lemma joetUKC y x : y [+] x [+] y = x [+] y.
 Proof. by rewrite joetAC joetC joetxx. Qed.
 End unital_semilattice_lemmas.
-
 
 (* non-empty convex sets of distributions *)
 Notation "{ 'csdist+' T }" := (necset (Dist_convType T)) (format "{ 'csdist+'  T }") : convex_scope.
 
+Definition lattConvType := convType.
+
 Section Pdelta.
-(* P = necset \o Dist, where
+(* Pdelta = necset \o Dist, where
    - Dist is the free convex space functor, and
    - necset is the finitely-supported convex power functor. *)
-Definition Pdelta : choiceType -> convType := fun x => necset_convType (Dist_convType x).
-
-(* codomain of P is actually a lattConvType *)
-
-(*
-(* we now prove that P forms a convex space *)
-Section P_convex_space.
-Variable A : choiceType.
-Axiom Conv2Pd : forall A : choiceType, P A -> P A -> Reals_ext.Prob.t -> P A.
-Axiom Conv2Pconv1 : forall (A : choiceType) a b, @Conv2Pd A a b (`Pr 1) = a.
-Axiom Conv2Pconvmm : forall (A : choiceType) a p, @Conv2Pd A a a p = a.
-Axiom Conv2PconvC : forall (A : choiceType) a b p, @Conv2Pd A a b p = @Conv2Pd A b a (`Pr p.~).
-Axiom Conv2PconvA' : forall (A : choiceType) p q a b c,
-  @Conv2Pd A a (@Conv2Pd A b c q) p = @Conv2Pd A (@Conv2Pd A a b ([r_of p, q])) c ([s_of p, q]).
-Definition P_convMixin :=
-  @ConvexSpace.Class (P A) (@Conv2Pd A)
-  (@Conv2Pconv1 A)
-  (@Conv2Pconvmm A)
-  (@Conv2PconvC A)
-  (@Conv2PconvA' A).
-Canonical P_convType := ConvexSpace.Pack P_convMixin.
-End P_convex_space.
-Canonical conv_lattType C := @SemiLattice.Pack (P_convType C) (P_semiLattClass _).
-*)
+Definition Pdelta : choiceType -> lattConvType := fun x => necset_convType (Dist_convType x).
 
 Variable x : choiceType.
 Check Pdelta x : convType.
@@ -471,19 +451,56 @@ have @d' : {dist 'I_n}.
 exact: (Convn d' f).
 Admitted.
 
-Axiom lattConvType : Type.
-
-Axiom eps1 : forall {L : convType (* should be lattConvType *) }, necset L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
-
+(* just flattening of lattice joins? preserves oplus and convex hull*)
+Axiom eps1 : forall {L : lattConvType}, necset L -> L.
 
 (* for an affine function f, returns a function F#f that to each convex set of dist returns its image by f, f needs to be affine *)
-Axiom F : forall {X Y : convType}, (X -> Y) -> necset X -> necset Y.
+Definition F0 : forall (X Y : choiceType), (X -> Y) -> Dist X -> Dist Y
+  := fun X Y (f : X -> Y) (d : Dist X) => DistBind.d d ((@Dist1.d Y) \o f).
+Local Open Scope fset_scope.
+Definition F1 : forall {X Y : convType}, (X -> Y) -> necset X -> necset Y.
+Proof.
+move => X Y f.
+case => carX Xneq0. 
+set sX := (fscset_supp carX).
+set sY := [fset f x | x in sX].
+apply (@NECSet.mk Y (@FSCSet.mk Y (CSet.mk (convex_hull [set a : Y | a \in sY])) (ex_intro _ sY erefl))).
+rewrite /=.
+apply/eqP => -[].
+apply/eqP; rewrite hull_eq0.
+apply/set0P.
+move: (Xneq0). rewrite -fscset_supp0E /sX.
+case/fset0Pn => x' Hx'.
+exists (f x').
+by rewrite in_imfset.
+Defined.
 (*
 Axiom F_preserves_affine : forall (X Y : convType) (f : X -> Y),
     affine_function f -> affine_function (F f).
 *)
 
-Definition eps {T : choiceType} : Pdelta (Pdelta T) -> Pdelta T := eps1 \o F eps0.
+Check F1 eps0.
+
+(*
+mu : U0 U1 F1 F0 U0 U1 F1 F0 -> U0 U1 F1 F0.
+eps : F1 F0 U0 U1 -> Id.
+eps0 : F0 U0 -> Id.
+eps1 : F1 U1 -> Id.
+eps = eps1 \o (F1 eps0 U1)
+mu = U0 U1 eps F1 F0
+
+Pdelta (functorial action of Pdelta) = F1 F0
+mu : F1 F0 F1 F0 -> F1 F0.
+eps : F1 F0 -> Id.
+eps0 : F0 -> Id.
+eps1 : F1 -> Id.
+eps = eps1 \o (F1 eps0)
+mu = @eps (fun x => F1 (F0 x))
+*)
+
+Definition eps {T : choiceType} : Pdelta (Pdelta T) -> Pdelta T := eps1 \o F1 eps0.
+
+Definition mu {T : choiceType} : Pdelta (Pdelta T) -> Pdelta T := eps.
 
 End monad_eps.
 
