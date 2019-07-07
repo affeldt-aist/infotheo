@@ -1,7 +1,7 @@
 Require Import Reals.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq.
 From mathcomp Require Import choice fintype finfun bigop.
-Require Import Reals_ext Rbigop proba dist convex_choice.
+Require Import Reals_ext Rbigop ssrR proba dist convex_choice.
 From mathcomp Require Import boolp classical_sets.
 From mathcomp Require Import finmap set.
 
@@ -13,45 +13,99 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope convex_scope.
 
-Reserved Notation "\joet_ i F"
-  (at level 41, F at level 41, i at level 0,
-           format "'[' \joet_ i '/  '  F ']'").
-Reserved Notation "\joet_ ( i <- r | P ) F"
-  (at level 41, F at level 41, i, r at level 50,
-           format "'[' \joet_ ( i  <-  r  |  P ) '/  '  F ']'").
-Reserved Notation "\joet_ ( i <- r ) F"
-  (at level 41, F at level 41, i, r at level 50,
-           format "'[' \joet_ ( i  <-  r ) '/  '  F ']'").
-Reserved Notation "\joet_ ( m <= i < n | P ) F"
-  (at level 41, F at level 41, i, m, n at level 50,
-           format "'[' \joet_ ( m  <=  i  <  n  |  P ) '/  '  F ']'").
-Reserved Notation "\joet_ ( m <= i < n ) F"
-  (at level 41, F at level 41, i, m, n at level 50,
-           format "'[' \joet_ ( m  <=  i  <  n ) '/  '  F ']'").
-Reserved Notation "\joet_ ( i | P ) F"
-  (at level 41, F at level 41, i at level 50,
-           format "'[' \joet_ ( i  |  P ) '/  '  F ']'").
-Reserved Notation "\joet_ ( i : t | P ) F"
-  (at level 41, F at level 41, i at level 50,
-           only parsing).
-Reserved Notation "\joet_ ( i : t ) F"
-  (at level 41, F at level 41, i at level 50,
-           only parsing).
-Reserved Notation "\joet_ ( i < n | P ) F"
-  (at level 41, F at level 41, i, n at level 50,
-           format "'[' \joet_ ( i  <  n  |  P ) '/  '  F ']'").
-Reserved Notation "\joet_ ( i < n ) F"
-  (at level 41, F at level 41, i, n at level 50,
-           format "'[' \joet_ ( i  <  n )  F ']'").
-Reserved Notation "\joet_ ( i 'in' A | P ) F"
-  (at level 41, F at level 41, i, A at level 50,
-           format "'[' \joet_ ( i  'in'  A  |  P ) '/  '  F ']'").
-Reserved Notation "\joet_ ( i 'in' A ) F"
-  (at level 41, F at level 41, i, A at level 50,
-           format "'[' \joet_ ( i  'in'  A ) '/  '  F ']'").
-
 Section misc.
-Section dist_of_Dist.
+Lemma cset_ext (A : convType) (X Y : {convex_set A}) :
+  X = Y <-> (X = Y :> set A).
+Proof.
+case: X => carX HX; case: Y => carY HY.
+split => [-> // | /= H].
+destruct H.
+congr CSet.mk.
+exact/Prop_irrelevance.
+Qed.
+
+Section misc_prob.
+Local Open Scope R_scope.
+Lemma p_of_rs1 (r s : prob) :
+  ([p_of r, s] == `Pr 1) = (r == `Pr 1) && (s == `Pr 1).
+Proof.
+apply/idP/idP; last by case/andP => /eqP -> /eqP ->; rewrite p_of_r1.
+move/eqP/(congr1 Prob.p); rewrite /= p_of_rsE => /eqP.
+apply contraLR => /nandP H.
+wlog: r s H / r != `Pr 1;
+  first by case: H;
+  [ move => H /(_ r s); rewrite H; apply => //; by left
+  | move => H /(_ s r); rewrite H mulRC; apply => //; by left ].
+move=> Hr.
+case/boolP: (r == `Pr 0);
+  first by move/eqP ->; rewrite mul0R eq_sym; apply/eqP/R1_neq_R0.
+case/prob_gt0/ltR_neqAle => /eqP; rewrite [in X in X -> _]eq_sym => /eqP Hr' _.
+apply/eqP => /(@eqR_mul2r (/ r)) []; last by apply/invR_neq0. 
+move/eqP: Hr' => Hr'.
+rewrite mulRAC mulRV // !mul1R => srV.
+move: (prob_le1 s); rewrite srV.
+move/prob_gt0: Hr' => Hr'.
+rewrite invR_le1 // => Hr''.
+move: (prob_le1 r) => Hr'''.
+suff: r = 1 :> R by apply/eqP; rewrite Hr.
+by apply eqR_le.
+Qed.
+
+Lemma p_of_rs1P r s : reflect (r = `Pr 1 /\ s  = `Pr 1) ([p_of r, s] == `Pr 1).
+Proof.
+move: (p_of_rs1 r s) ->.
+apply: (iffP idP);
+  [by case/andP => /eqP -> /eqP -> | by case => -> ->; rewrite eqxx].
+Qed.
+
+Lemma prob10 : `Pr 1 <> `Pr 0.
+Proof. by move/(congr1 Prob.p)/R1_neq_R0. Qed.
+End misc_prob.
+
+Section misc_hull.
+Local Open Scope classical_set_scope.
+Lemma hull_monotone (A : convType) (X Y : set A) :
+  (X `<=` Y)%classic -> (hull X `<=` hull Y)%classic.
+Proof.
+move=> H a.
+case => n [g [d [H0 H1]]].
+exists n, g, d.
+split => //.
+by eapply subset_trans; first by exact: H0.
+Qed.
+Lemma hull_eqEsubset (A : convType) (X Y : set A) :
+  (X `<=` hull Y)%classic -> (Y `<=` hull X)%classic -> hull X = hull Y.
+Proof.
+move/hull_monotone; rewrite hullI => H.
+move/hull_monotone; rewrite hullI => H0.
+by apply/eqEsubset.
+Qed.
+
+(* hull (X `|` hull Y) = hull (hull (X `|` Y)) = hull (x `|` y);
+   the first equality looks like a tensorial strength under hull
+   Todo : Check why this is so. *)
+Lemma hull_strr (A : convType) (X Y : set A) :
+  hull (X `|` hull Y) = hull (X `|` Y).
+Proof.
+apply/hull_eqEsubset => a.
+- case; first by rewrite -in_setE => H; rewrite -in_setE; apply mem_hull_setU_left.
+  case=> n [d [g [H0 H1]]].
+  exists n, d, g; split => //.
+  apply (subset_trans H0) => b Hb.
+  by right.
+- by case; rewrite -in_setE => H; rewrite -in_setE; [ | rewrite setUC] ; apply mem_hull_setU_left => //; apply hull_mem.
+Qed.
+
+Lemma hull_strl (A : convType) (X Y : set A) :
+  hull (hull X `|` Y) = hull (X `|` Y).
+Proof. by rewrite [in LHS]setUC [in RHS]setUC hull_strr. Qed.
+
+Lemma hullUA (A : convType) (X Y Z : {convex_set A}) :
+  hull (X `|` hull (Y `|` Z)) = hull (hull (X `|` Y) `|` Z).
+Proof. by rewrite hull_strr hull_strl setUA. Qed.
+End misc_hull.
+
+Section misc_dist_of_Dist.
 Variable (A : choiceType) (P : Dist A).
 Local Open Scope fset_scope.
 Local Open Scope R_scope.
@@ -65,17 +119,9 @@ rewrite -(Dist.f1 P) big_seq_fsetE /=.
 apply eq_bigr => a; by rewrite ffunE.
 Qed.
 Definition dist_of_Dist : dist D := proba.makeDist f0 f1.
-End dist_of_Dist.
+End misc_dist_of_Dist.
 
-Lemma Dist_domain_not_empty (A : choiceType) (P : Dist A)
-  : (0 < #|` finsupp P |)%nat.
-Proof.
-rewrite cardfE.
-apply dist_domain_not_empty.
-by apply dist_of_Dist.
-Qed.
-
-Section Convn_indexed_over_finType.
+Section misc_Convn_indexed_over_finType.
 Local Open Scope R_scope.
 Variables (A : convType) (T : finType) (d : {dist T}) (f : T -> A).
 Let n := #| T |.
@@ -109,7 +155,7 @@ by rewrite enum_val_ord /=.
 Qed.
 Let d' := proba.makeDist h0 h1.
 Definition Convn_indexed_over_finType : A := Convn d' (f \o g).
-End Convn_indexed_over_finType.
+End misc_Convn_indexed_over_finType.
 End misc.
 
 Module NECSet.
@@ -139,77 +185,57 @@ Canonical cont_choiceType : choiceType :=
 
 End necset_canonical.
 
+Section necset_lemmas.
+Variable A : convType.
+Lemma necset_ext (X Y : necset A) : X = Y <-> (X = Y :> {convex_set A}).
+Proof.
+case: X => carX HX; case: Y => carY HY.
+split => [-> // | /= H].
+destruct H.
+congr NECSet.mk.
+exact/Prop_irrelevance.
+Qed.
+End necset_lemmas.
+
 (* non-empty convex sets of distributions *)
 Notation "{ 'csdist+' T }" := (necset (Dist_convType T)) (format "{ 'csdist+'  T }") : convex_scope.
 
-Module UnitalSemiLattice.
+Module SemiLattice.
 Section def.
 (* a semilattice is a commutative semigroup with idempotence *)
-Record class_of (T : Type) : Type := Class {
+Record class_of (T : choiceType) : Type := Class {
   op : T -> T -> T;
-  idx : T;
   _ : commutative op;
   _ : associative op;
   _ : idempotent op;
-  _ : left_id idx op;
 }.
 Structure type :=
-  Pack {sort : Type; _ : class_of sort}.
+  Pack {sort : choiceType; _ : class_of sort}.
 End def.
 Module Exports.
-Definition SemiLattUnit (T : type) : sort T :=
-  let: Pack _ (Class _ idx _ _ _ _) := T in idx.
-Definition SemiLattOp (T : type) : sort T -> sort T -> sort T :=
-  let: Pack _ (Class op _ _ _ _ _) := T in op.
-Notation "x [+] y" := (SemiLattOp x y) (format "x  [+]  y", at level 50).
-Notation "`i" := SemiLattUnit : latt_scope.
-Notation unitalSemiLattType := type.
-Coercion sort : unitalSemiLattType >-> Sortclass.
+Definition SemiLattOp {T : type} : sort T -> sort T -> sort T :=
+  let: Pack _ (Class op _ _ _) := T in op.
+Notation "x [+] y" := (SemiLattOp x y) (format "x  [+]  y", at level 50) : latt_scope.
+Notation semiLattType := type.
+Coercion sort : semiLattType >-> choiceType.
 End Exports.
-End UnitalSemiLattice.
-Export UnitalSemiLattice.Exports.
+End SemiLattice.
+Export SemiLattice.Exports.
 
-Section unital_semilattice_lemmas.
+Section semilattice_lemmas.
 (* naming scheme and proofs copied from finmap.order. *)
-Variable (L : unitalSemiLattType).
+Variable (L : semiLattType).
 Implicit Types (x y : L).
 
 Local Open Scope latt_scope.
 Local Close Scope fset_scope.
 Local Close Scope classical_set_scope.
 
-Notation joet := SemiLattOp.
-
-Notation "\joet_ ( i <- r | P ) F" :=
-  (\big[@joet _ _/`i]_(i <- r | P%B) F) : latt_scope.
-Notation "\joet_ ( i <- r ) F" :=
-  (\big[@joet _ _/`i]_(i <- r) F) : latt_scope.
-Notation "\joet_ ( i | P ) F" :=
-  (\big[@joet _ _/`i]_(i | P%B) F) : latt_scope.
-Notation "\joet_ i F" :=
-  (\big[@joet _ _/`i]_i F) : latt_scope.
-Notation "\joet_ ( i : I | P ) F" :=
-  (\big[@joet _ _/`i]_(i : I | P%B) F) (only parsing) : latt_scope.
-Notation "\joet_ ( i : I ) F" :=
-  (\big[@joet _ _/`i]_(i : I) F) (only parsing) : latt_scope.
-Notation "\joet_ ( m <= i < n | P ) F" :=
- (\big[@joet _ _/`i]_(m <= i < n | P%B) F) : latt_scope.
-Notation "\joet_ ( m <= i < n ) F" :=
- (\big[@joet _ _/`i]_(m <= i < n) F) : latt_scope.
-Notation "\joet_ ( i < n | P ) F" :=
- (\big[@joet _ _/`i]_(i < n | P%B) F) : latt_scope.
-Notation "\joet_ ( i < n ) F" :=
- (\big[@joet _ _/`i]_(i < n) F) : latt_scope.
-Notation "\joet_ ( i 'in' A | P ) F" :=
- (\big[@joet _ _/`i]_(i in A | P%B) F) : latt_scope.
-Notation "\joet_ ( i 'in' A ) F" :=
- (\big[@joet _ _/`i]_(i in A) F) : latt_scope.
+Local Notation joet := SemiLattOp.
 
 Lemma joetC : commutative (@joet L). Proof. by case: L => [?[]]. Qed.
 Lemma joetA : associative (@joet L). Proof. by case: L => [?[]]. Qed.
 Lemma joetxx : idempotent (@joet L). Proof. by case: L => [?[]]. Qed.
-
-(* TODO: add right-unit *)
 
 Lemma joetAC : right_commutative (@joet L).
 Proof. by move=> x y z; rewrite -!joetA [X in _ [+] X]joetC. Qed.
@@ -226,13 +252,66 @@ Lemma joetKUC y x : x [+] (y [+] x) = x [+] y.
 Proof. by rewrite joetC joetUK joetC. Qed.
 Lemma joetUKC y x : y [+] x [+] y = x [+] y.
 Proof. by rewrite joetAC joetC joetxx. Qed.
-End unital_semilattice_lemmas.
+End semilattice_lemmas.
 
-Module USLattConvType.
+(* mimicking MonadAltProb *)
+Module SemiLattConvType.
+Local Open Scope convex_scope.
+Local Open Scope latt_scope.
+Record mixin_of (L : semiLattType) (op : L -> L -> prob -> L) := Mixin {
+  _ : forall p, right_distributive (fun x y => op x y p) (@SemiLattOp L) ;
+}.
+Record class_of (T : choiceType) : Type := Class {
+  base : SemiLattice.class_of T ;
+  base2 : ConvexSpace.class_of (SemiLattice.Pack base) ;
+  mixin : @mixin_of (SemiLattice.Pack base) (@Conv (ConvexSpace.Pack base2)) ;
+}.
+Structure t : Type := Pack { sort : choiceType ; class : class_of sort }.
+Definition baseType (T : t) : semiLattType := SemiLattice.Pack (base (class T)).
+Definition base2Type (T : t) : convType := ConvexSpace.Pack (base2 (class T)).
+Module Exports.
+Notation semiLattConvType := t.
+Coercion baseType : semiLattConvType >-> semiLattType.
+Coercion base2Type : semiLattConvType >-> convType.
+(*
+Canonical baseType.
+Canonical base2Type.
+*)
+End Exports.
+End SemiLattConvType.
+Export SemiLattConvType.Exports.
+
+(*
+Module necset_convType.
+Definition convMixin := ConvexSpace.Class 
+End necset_convType.
+*)
+
+Module necset_semiLattType.
 Section def.
-Variable A : convType.
+Local Open Scope classical_set_scope.
+Variable (A : convType).
+Definition pre_op (X Y : necset A) : {convex_set A}
+  := CSet.mk (convex_hull ((X : {convex_set A}) `|` (Y : {convex_set A}))).
+Lemma pre_op_neq0 X Y : pre_op X Y != cset0 A.
+Proof.
+case: X => carX /= HX; case: Y => carY /= HY.
+apply/eqP; rewrite cset_ext /=; apply/eqP; rewrite hull_eq0.
+apply/eqP; rewrite setU_eq0.
+move/eqP: HX; rewrite cset_ext => HX; move/eqP: HY; rewrite cset_ext => HY.
+by case.
+Qed.
+Definition op X Y := NECSet.mk (pre_op_neq0 X Y).
+Lemma op_C : commutative op.
+Proof. move=> X Y; by rewrite necset_ext /= cset_ext /= setUC. Qed.
+Lemma op_A : associative op.
+Proof. by move=> X Y Z; rewrite necset_ext /= cset_ext /= hullUA. Qed.
+Lemma op_xx : idempotent op.
+Proof.  by move=> X; rewrite necset_ext /= cset_ext /= setUid hull_cset. Qed.
+
+Definition semiLattMixin := SemiLattice.Class op_C op_A op_xx.
 End def.
-End USLattConvType.
+End necset_semiLattType.
 
 Section P_delta.
 (* P_delta = necset \o Dist, where
@@ -249,20 +328,22 @@ Definition eps0 : forall {C : convType}, Dist C -> C
                   (dist_of_Dist d)
                   (fun x : finsupp d => (fsval x)).
 
-Axiom eps1 : forall {L : semiLattType}, P L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
+Axiom eps1 : forall {L : semiLattConvType}, necset L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
 (* for an affine function f, returns a function F#f that to each convex set of dist returns its image by f, f needs to be affine *)
 
 (* for gcm.v *)
-Definition eps1' : forall {L : lattConvType}, necset L -> L.
+Definition eps1' : forall {L : semiLattConvType}, necset L -> L.
 move => L X.
 set CX := (FSCSet.car (NECSet.car X)).
 Local Open Scope classical_set_scope.
 Check \bigcup_(x in CX) x.
 
 
+(*
 Axiom F : forall {X Y : convType}, (X -> Y) -> P X -> P Y.
 Fail Axiom F_preserves_affine : forall (X Y : convType) (f : X -> Y),
     affine_function f -> affine_function (F f).
+*)
 
 (* the outputs of P carries a semilattice structure
    (NB: this needs to be reviewed) *)
