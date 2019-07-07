@@ -281,11 +281,72 @@ End Exports.
 End SemiLattConvType.
 Export SemiLattConvType.Exports.
 
-(*
 Module necset_convType.
-Definition convMixin := ConvexSpace.Class 
+Section def.
+Variable A : convType.
+Definition pre_pre_conv (X Y : necset A) (p : prob) : set A :=
+  [set a : A | exists x, exists y, x \in X /\ y \in Y /\ a = x <| p |> y].
+Lemma pre_pre_conv_convex X Y p : is_convex_set (pre_pre_conv X Y p).
+Proof.
+apply/asboolP => u v q.
+rewrite inE => /asboolP [] x0 [] y0 [] x0X [] y0Y ->.
+rewrite inE => /asboolP [] x1 [] y1 [] x1X [] y1Y ->.
+rewrite commute inE asboolE.
+exists (x0 <|q|> x1), (y0 <|q|> y1).
+split; first by move/asboolP: (CSet.H (NECSet.car X)); apply.
+by split; first by move/asboolP: (CSet.H (NECSet.car Y)); apply.
+Qed.
+Definition pre_conv X Y p : {convex_set A} :=
+  CSet.mk (pre_pre_conv_convex X Y p).
+Lemma pre_conv_neq0 X Y p : pre_conv X Y p != cset0 _.
+Proof.
+case/set0P: (NECSet.H X) => x; rewrite -in_setE => xX.
+case/set0P: (NECSet.H Y) => y; rewrite -in_setE => yY.
+apply/set0P; exists (x <| p |> y); rewrite -in_setE.
+by rewrite inE asboolE; exists x, y; split; try split.
+Qed.
+Definition conv X Y p : necset A := NECSet.mk (pre_conv_neq0 X Y p).
+Lemma conv1 X Y : conv X Y `Pr 1 = X.
+Proof.
+rewrite necset_ext /= cset_ext /= ; apply/eqEsubset => a;
+  first by case => x [] y [] xX [] yY ->; rewrite -in_setE conv1.
+case/set0P: (NECSet.H Y) => y; rewrite -in_setE => yY.
+rewrite -in_setE => aX.
+by exists a, y; split; try split; rewrite ?conv1.
+Qed.
+Lemma convmm X p : conv X X p = X.
+Proof.
+rewrite necset_ext /= cset_ext /=; apply eqEsubset => a.
+- case => x [] y [] xX [] yY ->.
+  by rewrite -in_setE; move/asboolP: (CSet.H (NECSet.car X)); apply => //.
+- rewrite -in_setE => aX.
+  by exists a, a; rewrite convmm; split; try split.
+Qed.
+Lemma convC X Y p : conv X Y p = conv Y X `Pr p.~.
+Proof.
+by rewrite necset_ext /= cset_ext /=; apply eqEsubset => a; case => x [] y [] xX [] yY ->; exists y, x; split => //; split => //; [rewrite convC | rewrite -convC].
+Qed.
+Lemma convA p q X Y Z :
+  conv X (conv Y Z q) p = conv (conv X Y [r_of p, q]) Z [s_of p, q].
+Proof.
+rewrite necset_ext /= cset_ext /=; apply eqEsubset => a; case => x [].
+- move=> y [] xX [].
+  rewrite in_setE => -[] y0 [] z0 [] y0Y [] z0Z -> ->.
+  exists (x <| [r_of p, q] |> y0), z0.
+  split; first by  rewrite inE asboolE /=; exists x, y0; split; try split.
+  split => //.
+  by rewrite convA.
+- move=> z []; rewrite in_setE => -[] x0 [] y [] x0X [] yY -> [] zZ ->.
+  exists x0, (y <| q |> z).
+  split => //.
+  split; first by rewrite inE asboolE /=; exists y, z; split; try split.
+  by rewrite -convA.
+Qed.
+Definition convMixin : ConvexSpace.class_of [choiceType of necset A]
+  := @ConvexSpace.Class _ conv conv1 convmm convC convA.
+End def.
 End necset_convType.
-*)
+Canonical necset_convType A := ConvexSpace.Pack (necset_convType.convMixin A).
 
 Module necset_semiLattType.
 Section def.
@@ -308,10 +369,10 @@ Lemma op_A : associative op.
 Proof. by move=> X Y Z; rewrite necset_ext /= cset_ext /= hullUA. Qed.
 Lemma op_xx : idempotent op.
 Proof.  by move=> X; rewrite necset_ext /= cset_ext /= setUid hull_cset. Qed.
-
 Definition semiLattMixin := SemiLattice.Class op_C op_A op_xx.
 End def.
 End necset_semiLattType.
+Canonical necset_semiLattType A := SemiLattice.Pack (necset_semiLattType.semiLattMixin A).
 
 Section P_delta.
 (* P_delta = necset \o Dist, where
@@ -349,24 +410,6 @@ Fail Axiom F_preserves_affine : forall (X Y : convType) (f : X -> Y),
    (NB: this needs to be reviewed) *)
 Axiom P_semiLattClass : forall X, SemiLattice.class_of (P X).
 Canonical P_semiLattType X := SemiLattice.Pack (P_semiLattClass X).
-
-(* we now prove that P forms a convex space *)
-Section P_convex_space.
-Variable A : choiceType.
-Axiom Conv2Pd : forall A : choiceType, P A -> P A -> Reals_ext.Prob.t -> P A.
-Axiom Conv2Pconv1 : forall (A : choiceType) a b, @Conv2Pd A a b (`Pr 1) = a.
-Axiom Conv2Pconvmm : forall (A : choiceType) a p, @Conv2Pd A a a p = a.
-Axiom Conv2PconvC : forall (A : choiceType) a b p, @Conv2Pd A a b p = @Conv2Pd A b a (`Pr p.~).
-Axiom Conv2PconvA' : forall (A : choiceType) p q a b c,
-  @Conv2Pd A a (@Conv2Pd A b c q) p = @Conv2Pd A (@Conv2Pd A a b ([r_of p, q])) c ([s_of p, q]).
-Definition P_convMixin :=
-  @ConvexSpace.Class (P A) (@Conv2Pd A)
-  (@Conv2Pconv1 A)
-  (@Conv2Pconvmm A)
-  (@Conv2PconvC A)
-  (@Conv2PconvA' A).
-Canonical P_convType := ConvexSpace.Pack P_convMixin.
-End P_convex_space.
 
 Canonical conv_lattType C := @SemiLattice.Pack (P_convType C) (P_semiLattClass _).
 
