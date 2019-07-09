@@ -104,59 +104,71 @@ Lemma hullUA (A : convType) (X Y Z : {convex_set A}) :
   hull (X `|` hull (Y `|` Z)) = hull (hull (X `|` Y) `|` Z).
 Proof. by rewrite hull_strr hull_strl setUA. Qed.
 End misc_hull.
+End misc.
 
-Section misc_dist_of_Dist.
+Module dist_of_Dist.
+Section def.
 Variable (A : choiceType) (P : Dist A).
 Local Open Scope fset_scope.
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
-Let D := [finType of finsupp P] : finType.
-Let f := [ffun d : D => P (fsval d)].
-Let f0 b : 0 <= f b. Proof. rewrite ffunE; by apply Dist.ge0. Qed.
-Let f1 : \sum_(b in D) f b = 1.
+Definition D := [finType of finsupp P] : finType.
+Definition f := [ffun d : D => P (fsval d)].
+Lemma f0 b : 0 <= f b. Proof. rewrite ffunE; by apply Dist.ge0. Qed.
+Lemma f1 : \sum_(b in D) f b = 1.
 Proof.
 rewrite -(Dist.f1 P) big_seq_fsetE /=.
 apply eq_bigr => a; by rewrite ffunE.
 Qed.
 Definition dist_of_Dist : dist D := proba.makeDist f0 f1.
-End misc_dist_of_Dist.
+End def.
+Module Exports.
+Notation dist_of_Dist := dist_of_Dist.
+End Exports.
+End dist_of_Dist.
+Export dist_of_Dist.Exports.
 
-Section misc_Convn_indexed_over_finType.
+Module Convn_indexed_over_finType.
+Section def.
 Local Open Scope R_scope.
 Variables (A : convType) (T : finType) (d : {dist T}) (f : T -> A).
-Let n := #| T |.
-Let t0 : T.
+Definition n := #| T |.
+Definition t0 : T.
 Proof.
 move/card_gt0P/xchoose: (dist_domain_not_empty d) => t0; exact t0.
 Defined.
-Let g : 'I_n -> T := fun i => nth t0 (index_enum T) i.
-Let h := [ffun i => d (g i)].
-Let h0 : forall b, 0 <= h b.
+Definition enum : 'I_n -> T := fun i => nth t0 (index_enum T) i.
+Definition d_enum := [ffun i => d (enum i)].
+Lemma d_enum0 : forall b, 0 <= d_enum b.
 Proof.
 move=> b.
 rewrite ffunE.
 by apply dist_ge0.
 Qed.
-Let h1 : \sum_(b in 'I_n) h b = 1.
+Lemma d_enum1 : \sum_(b in 'I_n) d_enum b = 1.
 Proof.
 rewrite -(@epmf1 T d).
-rewrite /h.
-transitivity (\sum_(b in 'I_n) d (g b));
+rewrite /d_enum.
+transitivity (\sum_(b in 'I_n) d (enum b));
   first by apply eq_bigr => i; rewrite ffunE.
 rewrite -big_image /=.
-suff -> : (image_mem g (mem (ordinal n))) = index_enum T
+suff -> : (image_mem enum (mem (ordinal n))) = index_enum T
   by done.
 apply (eq_from_nth (x0 := t0)) => [ | i ];
   first by rewrite size_image /index_enum -enumT -cardT card_ord.
 rewrite size_image => i_n.
-rewrite (nth_image t0 g (Ordinal i_n)) /g /=.
+rewrite (nth_image t0 enum (Ordinal i_n)) /enum /=.
 congr nth.
 by rewrite enum_val_ord /=.
 Qed.
-Let d' := proba.makeDist h0 h1.
-Definition Convn_indexed_over_finType : A := Convn d' (f \o g).
-End misc_Convn_indexed_over_finType.
-End misc.
+Definition dist := proba.makeDist d_enum0 d_enum1.
+Definition Convn_indexed_over_finType : A := Convn dist (f \o enum).
+End def.
+Module Exports.
+Notation Convn_indexed_over_finType := Convn_indexed_over_finType.
+End Exports.
+End Convn_indexed_over_finType.
+Export Convn_indexed_over_finType.Exports.
 
 Module NECSet.
 Section def.
@@ -202,7 +214,7 @@ Proof.
 apply eqEsubset => a.
 - rewrite -in_setE; case/hull_setU; try by apply/set0P/NECSet.H.
   move=> x [] xX [] y [] yY [] p [] ->.
-  by exists x, y, p; split => //; split.
+  by exists x, y, p.
 - by case => x [] y [] p [] xX [] yY [] ->; rewrite -in_setE; apply mem_hull_setU.
 Qed.
 End necset_lemmas.
@@ -313,7 +325,7 @@ Proof.
 case/set0P: (NECSet.H X) => x; rewrite -in_setE => xX.
 case/set0P: (NECSet.H Y) => y; rewrite -in_setE => yY.
 apply/set0P; exists (x <| p |> y); rewrite -in_setE.
-by rewrite inE asboolE; exists x, y; split; try split.
+by rewrite inE asboolE; exists x, y.
 Qed.
 Definition conv X Y p : necset A := locked (NECSet.mk (pre_conv_neq0 X Y p)).
 Lemma conv1 X Y : conv X Y `Pr 1 = X.
@@ -322,7 +334,7 @@ rewrite/conv; unlock; rewrite necset_ext /= cset_ext /= ; apply/eqEsubset => a;
   first by case => x [] y [] xX [] yY ->; rewrite -in_setE conv1.
 case/set0P: (NECSet.H Y) => y; rewrite -in_setE => yY.
 rewrite -in_setE => aX.
-by exists a, y; split; try split; rewrite ?conv1.
+by exists a, y; rewrite conv1.
 Qed.
 Lemma convmm X p : conv X X p = X.
 Proof.
@@ -330,11 +342,11 @@ rewrite/conv; unlock; rewrite necset_ext /= cset_ext /=; apply eqEsubset => a.
 - case => x [] y [] xX [] yY ->.
   by rewrite -in_setE; move/asboolP: (CSet.H (NECSet.car X)); apply => //.
 - rewrite -in_setE => aX.
-  by exists a, a; rewrite convmm; split; try split.
+  by exists a, a; rewrite convmm.
 Qed.
 Lemma convC X Y p : conv X Y p = conv Y X `Pr p.~.
 Proof.
-by rewrite/conv; unlock; rewrite necset_ext /= cset_ext /=; apply eqEsubset => a; case => x [] y [] xX [] yY ->; exists y, x; split => //; split => //; [rewrite convC | rewrite -convC].
+by rewrite/conv; unlock; rewrite necset_ext /= cset_ext /=; apply eqEsubset => a; case => x [] y [] xX [] yY ->; exists y, x; [rewrite convC | rewrite -convC].
 Qed.
 Lemma convA p q X Y Z :
   conv X (conv Y Z q) p = conv (conv X Y [r_of p, q]) Z [s_of p, q].
@@ -343,14 +355,11 @@ rewrite/conv; unlock; rewrite necset_ext /= cset_ext /=; apply eqEsubset => a; c
 - move=> y [] xX [].
   rewrite in_setE => -[] y0 [] z0 [] y0Y [] z0Z -> ->.
   exists (x <| [r_of p, q] |> y0), z0.
-  split; first by  rewrite inE asboolE /=; exists x, y0; split; try split.
-  split => //.
-  by rewrite convA.
+  by rewrite inE asboolE /= convA; split; try exists x, y0.
 - move=> z []; rewrite in_setE => -[] x0 [] y [] x0X [] yY -> [] zZ ->.
   exists x0, (y <| q |> z).
   split => //.
-  split; first by rewrite inE asboolE /=; exists y, z; split; try split.
-  by rewrite -convA.
+  by rewrite inE asboolE /= -convA; split; try exists y, z.
 Qed.
 Definition convMixin : ConvexSpace.class_of [choiceType of necset A]
   := @ConvexSpace.Class _ conv conv1 convmm convC convA.
@@ -421,9 +430,8 @@ have H0 : NECSet.car (necset_convType.conv X (SemiLattOp Y Z) p)
     by exists x, (y <| q |> z); split => //; rewrite in_setE /= hull_necsetU; split => //; exists y, z, q.
 move: H H0; rewrite necset_ext /= cset_ext /= => -> ->.
 apply eqEsubset => a; 
-  first by case => x [] y [] z [] q [] xX [] yY [] zZ [] H; exists x, x, y, z, q; split => //; split => //; split => //; split => //; rewrite commute convmm H.
-case => x0 [] x1 [] y [] z [] q [] x0X [] x1X [] yY [] zZ []; rewrite commute => ->; exists (x0 <| q |> x1), y, z, q; split; try split => //; try split => //.
-  by move/asboolP: (CSet.H (NECSet.car X)); apply.
+  first by case => x [] y [] z [] q [] xX [] yY [] zZ [] H; exists x, x, y, z, q;rewrite commute convmm H.
+by case => x0 [] x1 [] y [] z [] q [] x0X [] x1X [] yY [] zZ []; rewrite commute => ->; exists (x0 <| q |> x1), y, z, q; split; first by move/asboolP: (CSet.H (NECSet.car X)); apply.
 Qed.
 Definition semiLattConvMixin := @SemiLattConvType.Class [choiceType of necset A] (necset_semiLattType.semiLattMixin A) (necset_convType.convMixin A) (SemiLattConvType.Mixin axiom).
 End def.
@@ -444,6 +452,110 @@ Definition eps0 : forall {C : convType}, Dist C -> C
   := fun C d => Convn_indexed_over_finType
                   (dist_of_Dist d)
                   (fun x : finsupp d => (fsval x)).
+Definition DistBind_fmap' (A B : choiceType) (f : A -> B) (d : Dist A) : Dist B
+  := DistBind.d d (fun a => Dist1.d (f a)).
+Definition DistBind_fmap (A B : choiceType) (f : A -> B) : {affine Dist A -> Dist B}.
+refine (@AffineFunction.Pack _ _ _ (DistBind_fmap' f) _).
+move=> x y t.
+rewrite/affine_function_at.
+rewrite/DistBind_fmap'.
+exact: Conv2Dist.bind_left_distr.
+Defined.
+Definition join0 (C : choiceType) (d : Dist (Dist C)) : Dist C :=
+  DistBind.d d (DistBind_fmap idfun).
+
+Section eps0_correct.
+Import ScaledConvex.
+Lemma eps0_correct (C : choiceType) (d : Dist (Dist C)) :
+  eps0 d = join0 d.
+Proof.
+rewrite /eps0 /Convn_indexed_over_finType.
+apply S1_inj.
+rewrite S1_convn /=.
+evar (TX : Type).
+evar (X : TX).
+set Y := LHS.
+have -> : Y = \big[addpt (A:=Dist_convType C)/Zero (Dist_convType C)]_(i < #|
+       [finType of finsupp d] |) X i.
+- apply eq_bigr => i _.
+  rewrite ffunE /=.
+  rewrite /Convn_indexed_over_finType.enum /dist_of_Dist /dist_of_Dist.D /=.
+  exact: erefl.
+evar (X' : nat -> scaled_pt (Dist_convType C)).
+set Y' := LHS.
+have -> : Y' = \big[addpt (A:=Dist_convType C)/Zero (Dist_convType C)]_(i < #|[finType of finsupp d]| | xpredT i) X' i.
+- apply eq_bigr => i _.
+  set (i' := nat_of_ord i).
+  change (X i) with ((fun i : nat =>
+       scalept
+         ((dist_of_Dist.f d)
+            (nth
+               (Convn_indexed_over_finType.t0
+                  (proba.makeDist (dist_of_Dist.f0 (P:=d)) (dist_of_Dist.f1 d)))
+               (index_enum [finType of finsupp d]) i))
+         (S1
+            (fsval
+               (nth
+                  (Convn_indexed_over_finType.t0
+                     (proba.makeDist (dist_of_Dist.f0 (P:=d))
+                        (dist_of_Dist.f1 d)))
+                  (index_enum [finType of finsupp d]) i)))) i').
+  set (Z := (fun i0 : nat =>
+   scalept
+     ((dist_of_Dist.f d)
+        (nth
+           (Convn_indexed_over_finType.t0
+              (proba.makeDist (dist_of_Dist.f0 (P:=d)) (dist_of_Dist.f1 d)))
+           (index_enum [finType of finsupp d]) i0))
+     (S1
+        (fsval
+           (nth
+              (Convn_indexed_over_finType.t0
+                 (proba.makeDist (dist_of_Dist.f0 (P:=d)) (dist_of_Dist.f1 d)))
+              (index_enum [finType of finsupp d]) i0))))).
+  have -> : Z = X'.
+  + exact: erefl.
+  reflexivity.
+move: (@big_mkord
+         (scaled_pt (Dist_convType C))
+         (@Zero _)
+         (@addpt _)
+         (#|[finType of finsupp d]|)
+         xpredT
+         X').
+move <-.
+rewrite cardE -filter_index_enum /=.
+have -> : [seq x <- index_enum [finType of finsupp d] | finsupp d x] = index_enum [finType of finsupp d].
+- rewrite -[in RHS](filter_predT (index_enum [finType of finsupp d])).
+  by congr filter.
+set F := (fun x => scalept ((dist_of_Dist.f d) x) (S1 (fsval x))).
+move: (@big_nth
+         (scaled_pt (Dist_convType C))
+         (@Zero _)
+         (@addpt _)
+         (dist_of_Dist.D d)
+         (Convn_indexed_over_finType.t0
+                   (proba.makeDist (dist_of_Dist.f0 (P:=d))
+                      (dist_of_Dist.f1 d)))
+         (index_enum [finType of finsupp d])
+         xpredT
+         F).
+move <-.
+rewrite /F=> {F} {Y'} {X'} {Y} {X} {TX}. 
+rewrite /join0 -DistBindA DistBindp1 /=.
+
+Set Printing All.
+rewrite DistBind.dE.
+
+
+End eps0_correct.
+
+
+Definition Dist_mor (C D : convType) (f : {affine C -> D}) :
+  {affine Dist C -> Dist D}.
+DistBind.d
+
+Lemma eps0_natural (C D : convType) (f : {affine C -> D}) : 
 
 Axiom eps1 : forall {L : semiLattConvType}, necset L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
 (* for an affine function f, returns a function F#f that to each convex set of dist returns its image by f, f needs to be affine *)
