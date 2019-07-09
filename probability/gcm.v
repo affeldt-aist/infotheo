@@ -62,6 +62,10 @@ Lemma prob10 : `Pr 1 <> `Pr 0.
 Proof. by move/(congr1 Prob.p)/R1_neq_R0. Qed.
 End misc_prob.
 
+Lemma Dist_eval_affine (C : choiceType) (x : C) :
+  affine_function (fun D : Dist C => D x).
+Proof. by move=> a b p; rewrite /affine_function_at Conv2Dist.dE. Qed.
+
 Section misc_hull.
 Local Open Scope classical_set_scope.
 Lemma hull_monotone (A : convType) (X Y : set A) :
@@ -120,13 +124,19 @@ Proof.
 rewrite -(Dist.f1 P) big_seq_fsetE /=.
 apply eq_bigr => a; by rewrite ffunE.
 Qed.
-Definition dist_of_Dist : dist D := proba.makeDist f0 f1.
+Definition dist_of_Dist : dist D := locked (proba.makeDist f0 f1).
 End def.
 Module Exports.
 Notation dist_of_Dist := dist_of_Dist.
 End Exports.
 End dist_of_Dist.
 Export dist_of_Dist.Exports.
+
+Section dist_of_Dist_lemmas.
+Variable (A : choiceType) (d : Dist A).
+Lemma dist_of_DistE i : dist_of_Dist d i = d (fsval i).
+Proof. by rewrite /dist_of_Dist; unlock; rewrite ffunE; reflexivity. Qed.
+End dist_of_Dist_lemmas.
 
 Module Convn_indexed_over_finType.
 Section def.
@@ -529,16 +539,45 @@ Definition join0 (C : choiceType) (d : Dist (Dist C)) : Dist C :=
 
 Section eps0_correct.
 Import ScaledConvex.
+Local Open Scope R_scope.
 Lemma eps0_correct (C : choiceType) (d : Dist (Dist C)) :
   eps0 d = join0 d.
 Proof.
+rewrite /join0 -DistBindA DistBindp1.
 apply Dist_ext => x.
 rewrite -[LHS]Scaled1RK /eps0.
-rewrite (@S1_proj_Convn_indexed_over_finType _ _ (fun D : Dist C => D x)).
-rewrite big_scaleR DistBind.dE.
-rewrite /DistBind.f fsfunE.
-case: ifP => Hx.
-Admitted.
+rewrite (@S1_proj_Convn_indexed_over_finType _ _ (fun D : Dist C => D x));
+  last by apply Dist_eval_affine.
+rewrite big_scaleR.
+rewrite DistBind.dE /DistBind.f fsfunE.
+case: ifP => [_ | ].
+- set X := LHS.
+  have -> : X = \sum_(i | true) (dist_of_Dist d i) * ((fsval i) x).
+  + apply eq_bigr => -[v vP] _.
+    move/scaleR_scalept:(dist_ge0 (dist_of_Dist d) [` vP]%fset) ->.
+    by rewrite Scaled1RK.
+  move => {X}; set X := LHS.
+  evar (Y : dist_of_Dist.D d -> R).
+  have -> : X = \sum_(i | true) Y i
+    by apply eq_bigr => i _; rewrite dist_of_DistE; exact: erefl.
+  rewrite /Y => {Y} {X}.
+  suff -> : finsupp d = [seq fsval i | i in [finType of finsupp d]] :> seq _
+    by rewrite big_image; apply eq_bigl => a; rewrite inE.
+  by rewrite enum_fsetE /=.
+- rewrite !imfset_id.
+  move/bigfcupP => H.
+  have H' : forall i : Dist C, i \in finsupp d -> x \notin finsupp i
+      by move=> i Hi; apply/negP => Hx; apply H; exists i => //; rewrite andbT.
+  have H0 : 0 = \sum_(i | true) 0
+    by move=> t; rewrite big_const iter_addR mulR0.
+  rewrite [in RHS](H0 (dist_of_Dist.D d)).
+  apply eq_bigr => -[v vP] _.
+  move/scaleR_scalept:(dist_ge0 (dist_of_Dist d) [`vP]%fset) ->.
+  rewrite dist_of_DistE /= mul1R.
+  suff -> : v x = 0 by rewrite mulR0.
+  rewrite fsfun_dflt //.
+  by apply H'.
+Qed.
 End eps0_correct.
 
 Definition Dist_mor := DistBind_fmap.
