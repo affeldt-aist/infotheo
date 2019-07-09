@@ -170,6 +170,69 @@ End Exports.
 End Convn_indexed_over_finType.
 Export Convn_indexed_over_finType.Exports.
 
+Section S1_Convn_indexed_over_finType.
+Import ScaledConvex.
+Variables (A : convType) (T : finType) (d : {dist T}) (f : T -> A).
+Lemma S1_Convn_indexed_over_finType :
+  S1 (Convn_indexed_over_finType d f)
+  = \big[addpt (A:=A)/Zero A]_i scalept (d i) (S1 (f i)).
+Proof.
+rewrite /Convn_indexed_over_finType.
+rewrite S1_convn /=.
+evar (X : nat -> scaled_pt A).
+set Y := LHS.
+have -> : Y = \big[addpt (A:=A)/Zero A]_(i < Convn_indexed_over_finType.n T) X i.
+- apply eq_bigr => -[i Hi] _.
+  set (i' := nat_of_ord (Ordinal Hi)).
+  rewrite ffunE.
+  rewrite /Convn_indexed_over_finType.enum /=.
+  set X' := LHS.
+  set F := (fun i => 
+           scalept (d (nth (Convn_indexed_over_finType.t0 d) (index_enum T) i))
+          (S1 (f (nth (Convn_indexed_over_finType.t0 d) (index_enum T) i)))).
+  change X' with (F i').
+  exact: erefl.
+move: (@big_mkord
+         (scaled_pt A)
+         (@Zero _)
+         (@addpt _)
+         (Convn_indexed_over_finType.n T)
+         xpredT
+         X) => <-.
+rewrite /X {X}.
+rewrite /Convn_indexed_over_finType.n cardE -filter_index_enum.
+have -> : [seq x <- index_enum T | T x] = index_enum T.
+- rewrite -[in RHS](filter_predT (index_enum T)).
+  by congr filter.
+set F := (fun x => scalept (d x) (S1 (f x))).
+by move: (@big_nth
+            (scaled_pt A)
+            (@Zero _)
+            (@addpt _)
+            T
+            (Convn_indexed_over_finType.t0 d)
+            (index_enum T)
+            xpredT
+            F) <-.
+Qed.
+End S1_Convn_indexed_over_finType.
+
+Section S1_proj_Convn_indexed_over_finType.
+Import ScaledConvex.
+Variables (A B : convType) (prj : A -> B).
+Hypothesis prj_affine : affine_function prj.
+Variables (T : finType) (d : {dist T}) (f : T -> A).
+
+Lemma S1_proj_Convn_indexed_over_finType :
+  S1 (prj (Convn_indexed_over_finType d f))
+  = \big[@addpt B/Zero B]_i scalept (d i) (S1 (prj (f i))).
+Proof.
+set (prj' := AffineFunction.Pack (Phant (A -> B)) prj_affine).
+move: (affine_function_Sum prj') => /= ->.
+exact: S1_Convn_indexed_over_finType.
+Qed.
+End S1_proj_Convn_indexed_over_finType.
+
 Module NECSet.
 Section def.
 Local Open Scope classical_set_scope.
@@ -469,93 +532,20 @@ Import ScaledConvex.
 Lemma eps0_correct (C : choiceType) (d : Dist (Dist C)) :
   eps0 d = join0 d.
 Proof.
-rewrite /eps0 /Convn_indexed_over_finType.
-apply S1_inj.
-rewrite S1_convn /=.
-evar (TX : Type).
-evar (X : TX).
-set Y := LHS.
-have -> : Y = \big[addpt (A:=Dist_convType C)/Zero (Dist_convType C)]_(i < #|
-       [finType of finsupp d] |) X i.
-- apply eq_bigr => i _.
-  rewrite ffunE /=.
-  rewrite /Convn_indexed_over_finType.enum /dist_of_Dist /dist_of_Dist.D /=.
-  exact: erefl.
-evar (X' : nat -> scaled_pt (Dist_convType C)).
-set Y' := LHS.
-have -> : Y' = \big[addpt (A:=Dist_convType C)/Zero (Dist_convType C)]_(i < #|[finType of finsupp d]| | xpredT i) X' i.
-- apply eq_bigr => i _.
-  set (i' := nat_of_ord i).
-  change (X i) with ((fun i : nat =>
-       scalept
-         ((dist_of_Dist.f d)
-            (nth
-               (Convn_indexed_over_finType.t0
-                  (proba.makeDist (dist_of_Dist.f0 (P:=d)) (dist_of_Dist.f1 d)))
-               (index_enum [finType of finsupp d]) i))
-         (S1
-            (fsval
-               (nth
-                  (Convn_indexed_over_finType.t0
-                     (proba.makeDist (dist_of_Dist.f0 (P:=d))
-                        (dist_of_Dist.f1 d)))
-                  (index_enum [finType of finsupp d]) i)))) i').
-  set (Z := (fun i0 : nat =>
-   scalept
-     ((dist_of_Dist.f d)
-        (nth
-           (Convn_indexed_over_finType.t0
-              (proba.makeDist (dist_of_Dist.f0 (P:=d)) (dist_of_Dist.f1 d)))
-           (index_enum [finType of finsupp d]) i0))
-     (S1
-        (fsval
-           (nth
-              (Convn_indexed_over_finType.t0
-                 (proba.makeDist (dist_of_Dist.f0 (P:=d)) (dist_of_Dist.f1 d)))
-              (index_enum [finType of finsupp d]) i0))))).
-  have -> : Z = X'.
-  + exact: erefl.
-  reflexivity.
-move: (@big_mkord
-         (scaled_pt (Dist_convType C))
-         (@Zero _)
-         (@addpt _)
-         (#|[finType of finsupp d]|)
-         xpredT
-         X').
-move <-.
-rewrite cardE -filter_index_enum /=.
-have -> : [seq x <- index_enum [finType of finsupp d] | finsupp d x] = index_enum [finType of finsupp d].
-- rewrite -[in RHS](filter_predT (index_enum [finType of finsupp d])).
-  by congr filter.
-set F := (fun x => scalept ((dist_of_Dist.f d) x) (S1 (fsval x))).
-move: (@big_nth
-         (scaled_pt (Dist_convType C))
-         (@Zero _)
-         (@addpt _)
-         (dist_of_Dist.D d)
-         (Convn_indexed_over_finType.t0
-                   (proba.makeDist (dist_of_Dist.f0 (P:=d))
-                      (dist_of_Dist.f1 d)))
-         (index_enum [finType of finsupp d])
-         xpredT
-         F).
-move <-.
-rewrite /F=> {F} {Y'} {X'} {Y} {X} {TX}. 
-rewrite /join0 -DistBindA DistBindp1 /=.
-
-Set Printing All.
-rewrite DistBind.dE.
-
-
+apply Dist_ext => x.
+rewrite -[LHS]Scaled1RK /eps0.
+rewrite (@S1_proj_Convn_indexed_over_finType _ _ (fun D : Dist C => D x)).
+rewrite big_scaleR DistBind.dE.
+rewrite /DistBind.f fsfunE.
+case: ifP => Hx.
+Admitted.
 End eps0_correct.
 
+Definition Dist_mor := DistBind_fmap.
 
-Definition Dist_mor (C D : convType) (f : {affine C -> D}) :
-  {affine Dist C -> Dist D}.
-DistBind.d
-
-Lemma eps0_natural (C D : convType) (f : {affine C -> D}) : 
+Lemma eps0_natural (C D : convType) (f : {affine C -> D}) : f \o eps0 = eps0 \o (Dist_mor f).
+Proof.
+Admitted.
 
 Axiom eps1 : forall {L : semiLattConvType}, necset L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
 (* for an affine function f, returns a function F#f that to each convex set of dist returns its image by f, f needs to be affine *)
