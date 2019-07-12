@@ -55,14 +55,6 @@ Canonical mulRnneg x y := Rnneg.mk (mulRnneg_0le x y).
 End Rnneg_lemmas.
 
 Section misc.
-Lemma fsval_inj : forall A S x y, @fsval A S x = @fsval A S y -> x = y.
-Proof.
-move => A B -[x xP] -[y yP] /= xy.
-move: xP yP.
-rewrite xy => xP yP.
-move: (bool_irrelevance xP yP) => xPyP.
-case/boolP: (y \in B == true); move/eqP => HyB; by rewrite xPyP.
-Qed.
 
 Section misc_prob.
 Local Open Scope R_scope.
@@ -710,8 +702,7 @@ transitivity (\big[addpt (A:=D)/Zero D]_(i0 | Dist_mor_supp f d i0 == [` Hi])
 apply eq_bigl => i0.
 apply/eqP/eqP; first by move/(congr1 (@fsval _ _)) => /= <-.
 move=> H.
-apply/fsval_inj.
-by rewrite fsval_Dist_mor_supp /= H.
+exact/val_inj.
 Qed.
 End eps0_natural.
 
