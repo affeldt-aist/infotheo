@@ -90,11 +90,12 @@ move=> Hr.
 case/boolP: (r == `Pr 0);
   first by move/eqP ->; rewrite mul0R eq_sym; apply/eqP/R1_neq_R0.
 case/prob_gt0/ltR_neqAle => /eqP; rewrite [in X in X -> _]eq_sym => /eqP Hr' _.
-apply/eqP => /(@eqR_mul2r (/ r)) []; last by apply/invR_neq0. 
-move/eqP: Hr' => Hr'.
-rewrite mulRAC mulRV // !mul1R => srV.
+apply/eqP => /(@eqR_mul2r (/ r)).
+move/(_ (invR_neq0 _ Hr')).
+rewrite mulRAC mulRV ?mul1R; last exact/eqP.
+move=> srV.
 move: (prob_le1 s); rewrite srV.
-move/prob_gt0: Hr' => Hr'.
+move/eqP : Hr' => /prob_gt0 Hr'.
 rewrite invR_le1 // => Hr''.
 move: (prob_le1 r) => Hr'''.
 suff: r = 1 :> R by apply/eqP; rewrite Hr.
@@ -367,9 +368,9 @@ Lemma hull_necsetU (X Y : necset A) : hull ((X : {convex_set A}) `|` (Y : {conve
 Proof.
 apply eqEsubset => a.
 - rewrite -in_setE; case/hull_setU; try by apply/set0P/NECSet.H.
-  move=> x [] xX [] y [] yY [] p [] ->.
+  move=> x [] xX [] y [] yY [] p ->.
   by exists x, y, p.
-- by case => x [] y [] p [] xX [] yY [] ->; rewrite -in_setE; apply mem_hull_setU.
+- by case => x [] y [] p [] xX [] yY ->; rewrite -in_setE; apply mem_hull_setU.
 Qed.
 End necset_lemmas.
 
@@ -570,22 +571,22 @@ have H : NECSet.car (SemiLattOp (necset_convType.conv X Y p) (necset_convType.co
   apply eqEsubset => a.
   + case => u [] v [] q [].
     rewrite !in_setE !necset_convType.convE.
-    case => x0 [] y [] x0X [] yY [] -> [] [] x1 [] z [] x1X [] zZ [] -> [] ->.
+    case => x0 [] y [] x0X [] yY -> [] [] x1 [] z [] x1X [] zZ -> ->.
       by exists x0, x1, y, z, q.
-  + case=> x0 [] x1 [] y [] z [] q [] x0X [] x1X [] yY [] zZ [] ->.
+  + case=> x0 [] x1 [] y [] z [] q [] x0X [] x1X [] yY [] zZ ->.
       by exists (x0 <| p |> y), (x1 <| p |> z), q; rewrite !in_setE !necset_convType.convE; split; [exists x0, y | split => //; exists x1, z].
 have H0 : NECSet.car (necset_convType.conv X (SemiLattOp Y Z) p)
        = [set u | exists x, exists y, exists z, exists q, x \in X /\ y \in Y /\ z \in Z /\ u = x <| p |> (y <| q |> z)] :> set A.
 - rewrite necset_convType.convE.
   apply eqEsubset => a.
-  + case => x [] u [] xX []; rewrite in_setE /= hull_necsetU => -[] y [] z [] q [] yY [] zZ [] -> ->.
+  + case => x [] u [] xX []; rewrite in_setE /= hull_necsetU => -[] y [] z [] q [] yY [] zZ -> ->.
     by exists x, y, z, q.
-  + case => x [] y [] z [] q [] xX [] yY [] zZ [] ->.
+  + case => x [] y [] z [] q [] xX [] yY [] zZ ->.
     by exists x, (y <| q |> z); split => //; rewrite in_setE /= hull_necsetU; split => //; exists y, z, q.
 move: H H0; rewrite necset_ext /= cset_ext /= => -> ->.
-apply eqEsubset => a; 
-  first by case => x [] y [] z [] q [] xX [] yY [] zZ [] H; exists x, x, y, z, q;rewrite commute convmm H.
-by case => x0 [] x1 [] y [] z [] q [] x0X [] x1X [] yY [] zZ []; rewrite commute => ->; exists (x0 <| q |> x1), y, z, q; split; first by move/asboolP: (CSet.H (NECSet.car X)); apply.
+apply eqEsubset => a;
+  first by case => x [] y [] z [] q [] xX [] yY [] zZ H; exists x, x, y, z, q; rewrite commute convmm H.
+by case => x0 [] x1 [] y [] z [] q [] x0X [] x1X [] yY [] zZ; rewrite commute => ->; exists (x0 <| q |> x1), y, z, q; split; first by move/asboolP: (CSet.H (NECSet.car X)); apply.
 Qed.
 Definition semiLattConvMixin := @SemiLattConvType.Class [choiceType of necset A] (necset_semiLattType.semiLattMixin A) (necset_convType.convMixin A) (SemiLattConvType.Mixin axiom).
 End def.
