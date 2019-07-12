@@ -735,6 +735,19 @@ Canonical P_semiLattType X := SemiLattice.Pack (P_semiLattClass X).*)
 
 Axiom F : forall {X Y : convType}, (X -> Y) -> necset X -> necset Y.
 
+Definition F' (A B : convType) (f : {affine A -> B}) : necset A -> necset B.
+case=> car car0.
+apply: (@NECSet.mk _ (@CSet.mk _ (f @` car) _)).
+  rewrite /is_convex_set.
+  apply/asboolP => x y p; rewrite 3!in_setE => -[a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
+  exists (a0 <|p|> a1) => //.
+  by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
+  by rewrite (affine_functionP' f).
+move=> H.
+case/cset0PN : car0 => a carx.
+apply/cset0PN; exists (f a) => /=; by exists a.
+Defined.
+
 Definition join {T : choiceType} : P_delta (P_delta T) -> P_delta T := eps1 \o F eps0.
 
 End P_delta.
