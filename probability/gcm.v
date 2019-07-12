@@ -13,7 +13,57 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope convex_scope.
 
+Module Rnneg.
+Local Open Scope R_scope.
+Record t := mk {
+  v : R ;
+  H : 0 <b= v }.
+Definition K (r : t) := H r.
+Arguments K : simpl never.
+Module Exports.
+Notation Rnneg := t.
+Notation "'`Nneg' r" := (@mk r (@K _)) (format "'`Nneg'  r", at level 6).
+Coercion v : t >-> R.
+End Exports.
+End Rnneg.
+Export Rnneg.Exports.
+
+Canonical Rnneg_subType := [subType for Rnneg.v].
+Definition Rnneg_eqMixin := Eval hnf in [eqMixin of Rnneg by <:].
+Canonical Rnneg_eqType := Eval hnf in EqType Rnneg Rnneg_eqMixin.
+Definition Rnneg_choiceMixin := Eval hnf in [choiceMixin of Rnneg by <:].
+Canonical Rnneg_choiceType := Eval hnf in ChoiceType Rnneg Rnneg_choiceMixin.
+
+Section Rnneg_lemmas.
+Local Open Scope R_scope.
+
+Definition mkRnneg x H := @Rnneg.mk x (introT (leRP _ _) H).
+
+Canonical Rnneg0 := @mkRnneg 0 (leRR 0).
+Canonical Rnneg1 := @mkRnneg 1 Rle_0_1.
+
+Lemma Rnneg_0le (x : Rnneg) : 0 <= x.
+Proof. by case: x => p /= /leRP. Qed.
+
+Lemma addRnneg_0le (x y : Rnneg) : 0 <b= x + y.
+Proof. apply/leRP/addR_ge0; apply/Rnneg_0le. Qed.
+Canonical addRnneg x y := Rnneg.mk (addRnneg_0le x y).
+
+Lemma mulRnneg_0le (x y : Rnneg) : 0 <b= x * y.
+Proof. by apply/leRP/mulR_ge0; apply/Rnneg_0le. Qed.
+Canonical mulRnneg x y := Rnneg.mk (mulRnneg_0le x y).
+End Rnneg_lemmas.
+
 Section misc.
+Lemma fsval_inj : forall A S x y, @fsval A S x = @fsval A S y -> x = y.
+Proof.
+move => A B -[x xP] -[y yP] /= xy.
+move: xP yP.
+rewrite xy => xP yP.
+move: (bool_irrelevance xP yP) => xPyP.
+case/boolP: (y \in B == true); move/eqP => HyB; by rewrite xPyP.
+Qed.
+
 Lemma cset_ext (A : convType) (X Y : {convex_set A}) :
   X = Y <-> (X = Y :> set A).
 Proof.
@@ -108,6 +158,39 @@ Lemma hullUA (A : convType) (X Y Z : {convex_set A}) :
   hull (X `|` hull (Y `|` Z)) = hull (hull (X `|` Y) `|` Z).
 Proof. by rewrite hull_strr hull_strl setUA. Qed.
 End misc_hull.
+
+Section misc_scaled.
+Import ScaledConvex.
+Lemma scalept_addRnneg : forall (A : convType) (x : scaled_pt A),
+    {morph (fun (r : Rnneg) => scalept r x) : r s / addRnneg r s >-> addpt r s}.
+Proof. by move=> A x [] r /= /leRP Hr [] s /= /leRP Hs; apply scalept_addR. Qed.
+Definition big_scaleptl (A : convType) (x : scaled_pt A) := 
+  @big_morph
+    (@scaled_pt A)
+    Rnneg
+    (fun r : Rnneg => scalept r x)
+    (Zero A)
+    (@addpt A)
+    Rnneg0
+    addRnneg
+    (@scalept_addRnneg A x).
+Local Open Scope R_scope.
+Lemma big_scaleptl' (A : convType) (x : scaled_pt A) :
+  scalept R0 x = Zero A ->
+  forall (I : Type) (r : seq I) (P : pred I) (F : I -> R),
+    (forall i : I, 0 <= F i) ->
+    scalept (\big[Rplus/R0]_(i <- r | P i) F i) x =
+    \big[addpt (A:=A)/Zero A]_(i <- r | P i) scalept (F i) x.
+Proof.
+move=> H I r P F H'.
+transitivity (\big[addpt (A:=A)/Zero A]_(i <- r | P i) (fun r0 : Rnneg => scalept r0 x) (mkRnneg (H' i))); last by reflexivity.
+rewrite -big_scaleptl ?scalept0 //.
+congr scalept.
+transitivity (\sum_(i <- r | P i) mkRnneg (H' i)); first by reflexivity.
+apply (big_ind2 (fun x y => x = (Rnneg.v y))) => //.
+by move=> x1 [v Hv] y1 y2 -> ->.
+Qed.
+End misc_scaled.
 End misc.
 
 Module dist_of_Dist.
@@ -136,6 +219,8 @@ Section dist_of_Dist_lemmas.
 Variable (A : choiceType) (d : Dist A).
 Lemma dist_of_DistE i : dist_of_Dist d i = d (fsval i).
 Proof. by rewrite /dist_of_Dist; unlock; rewrite ffunE; reflexivity. Qed.
+Lemma dist_of_DistDE : dist_of_Dist.D d = [finType of finsupp d].
+Proof. reflexivity. Qed.
 End dist_of_Dist_lemmas.
 
 Module Convn_indexed_over_finType.
@@ -190,18 +275,15 @@ Proof.
 rewrite /Convn_indexed_over_finType.
 rewrite S1_convn /=.
 evar (X : nat -> scaled_pt A).
-set Y := LHS.
-have -> : Y = \big[addpt (A:=A)/Zero A]_(i < Convn_indexed_over_finType.n T) X i.
+transitivity (\big[addpt (A:=A)/Zero A]_(i < Convn_indexed_over_finType.n T) X i).
 - apply eq_bigr => -[i Hi] _.
   set (i' := nat_of_ord (Ordinal Hi)).
   rewrite ffunE.
   rewrite /Convn_indexed_over_finType.enum /=.
-  set X' := LHS.
   set F := (fun i => 
            scalept (d (nth (Convn_indexed_over_finType.t0 d) (index_enum T) i))
           (S1 (f (nth (Convn_indexed_over_finType.t0 d) (index_enum T) i)))).
-  change X' with (F i').
-  exact: erefl.
+  transitivity (F i'); by exact: erefl.
 move: (@big_mkord
          (scaled_pt A)
          (@Zero _)
@@ -209,7 +291,6 @@ move: (@big_mkord
          (Convn_indexed_over_finType.n T)
          xpredT
          X) => <-.
-rewrite /X {X}.
 rewrite /Convn_indexed_over_finType.n cardE -filter_index_enum.
 have -> : [seq x <- index_enum T | T x] = index_enum T.
 - rewrite -[in RHS](filter_predT (index_enum T)).
@@ -525,18 +606,42 @@ Definition eps0 : forall {C : convType}, Dist C -> C
   := fun C d => Convn_indexed_over_finType
                   (dist_of_Dist d)
                   (fun x : finsupp d => (fsval x)).
-Definition DistBind_fmap' (A B : choiceType) (f : A -> B) (d : Dist A) : Dist B
+
+(* morphism part of Dist *)
+Definition Dist_mor' (A B : choiceType) (f : A -> B) (d : Dist A) : Dist B
   := DistBind.d d (fun a => Dist1.d (f a)).
-Definition DistBind_fmap (A B : choiceType) (f : A -> B) : {affine Dist A -> Dist B}.
-refine (@AffineFunction.Pack _ _ _ (DistBind_fmap' f) _).
+Definition Dist_mor (A B : choiceType) (f : A -> B) : {affine Dist A -> Dist B}.
+refine (@AffineFunction.Pack _ _ _ (Dist_mor' f) _).
 move=> x y t.
 rewrite/affine_function_at.
-rewrite/DistBind_fmap'.
 exact: Conv2Dist.bind_left_distr.
 Defined.
-Definition join0 (C : choiceType) (d : Dist (Dist C)) : Dist C :=
-  DistBind.d d (DistBind_fmap idfun).
 
+(* Dist_mor induces maps between supports *)
+Definition Dist_mor_supp (A B : choiceType) (f : A -> B) (d : Dist A) :
+  [finType of finsupp d] -> [finType of finsupp ((Dist_mor f) d)].
+Proof.
+move=> x.
+apply (@FSetSub _ _ (f (fsval x))).
+rewrite /= /Dist_mor' DistBind.supp imfset_id.
+apply/bigfcupP.
+exists (Dist1.d (f (fsval x))).
+- rewrite andbT.
+  apply (in_imfset _ (fun x => Dist1.d (f x))) => /=.
+  by move:x; case:d.
+- rewrite mem_finsupp Dist1.dE /Dist1.f /= fsfunE inE eqxx.
+  by apply/eqP/R1_neq_R0.
+Defined.
+Arguments Dist_mor_supp [A B] f d.
+Lemma fsval_Dist_mor_supp (A B : choiceType) (f : A -> B) d i :
+  fsval ((Dist_mor_supp f d) i) = f (fsval i).
+Proof. by case: i. Qed.
+  
+(* join operator for Dist *)
+Definition join0 (C : choiceType) (d : Dist (Dist C)) : Dist C :=
+  DistBind.d d (Dist_mor idfun).
+
+(* join0 is ((coercion) \o eps0) *)
 Section eps0_correct.
 Import ScaledConvex.
 Local Open Scope R_scope.
@@ -551,16 +656,10 @@ rewrite (@S1_proj_Convn_indexed_over_finType _ _ (fun D : Dist C => D x));
 rewrite big_scaleR.
 rewrite DistBind.dE /DistBind.f fsfunE.
 case: ifP => [_ | ].
-- set X := LHS.
-  have -> : X = \sum_(i | true) (dist_of_Dist d i) * ((fsval i) x).
+- transitivity (\sum_(i : dist_of_Dist.D d | true) d (fsval i) * (fsval i) x).
   + apply eq_bigr => -[v vP] _.
     move/scaleR_scalept:(dist_ge0 (dist_of_Dist d) [` vP]%fset) ->.
-    by rewrite Scaled1RK.
-  move => {X}; set X := LHS.
-  evar (Y : dist_of_Dist.D d -> R).
-  have -> : X = \sum_(i | true) Y i
-    by apply eq_bigr => i _; rewrite dist_of_DistE; exact: erefl.
-  rewrite /Y => {Y} {X}.
+    by rewrite Scaled1RK dist_of_DistE.
   suff -> : finsupp d = [seq fsval i | i in [finType of finsupp d]] :> seq _
     by rewrite big_image; apply eq_bigl => a; rewrite inE.
   by rewrite enum_fsetE /=.
@@ -580,11 +679,57 @@ case: ifP => [_ | ].
 Qed.
 End eps0_correct.
 
-Definition Dist_mor := DistBind_fmap.
-
-Lemma eps0_natural (C D : convType) (f : {affine C -> D}) : f \o eps0 = eps0 \o (Dist_mor f).
+Section eps0_natural.
+Import ScaledConvex.
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Lemma eps0_natural (C D : convType) (f : {affine C -> D}) :
+  f \o eps0 = eps0 \o (Dist_mor f).
 Proof.
-Admitted.
+apply funext => d.
+apply S1_inj.
+rewrite S1_proj_Convn_indexed_over_finType; last by case: f.
+rewrite S1_Convn_indexed_over_finType.
+evar (Y : dist_of_Dist.D ((Dist_mor f) d) -> scaled_pt D).
+transitivity (\big[addpt (A:=D)/Zero D]_i Y i); last first.
+- apply eq_bigr => i _ /=.
+  rewrite dist_of_DistE /=.
+  rewrite DistBind.dE /DistBind.f imfset_id /=.
+  rewrite fsfunE.
+  have -> : fsval i \in (\bigcup_(d0 <- [fset Dist1.d (f a) | a in finsupp d]) finsupp d0)
+    by case: i => v; rewrite DistBind.supp imfset_id.
+  have H : scalept R0 (S1 (fsval i)) = Zero D by rewrite scalept0.
+  have H0 : forall a : C, 0 <= d a * (Dist1.d (f a)) (fsval i)
+      by move=> a; apply mulR_ge0; apply Dist.ge0.
+  rewrite big_scaleptl'; [| done | done] => {H} {H0}.
+  rewrite (bigID (fun i0 => fsval i == f i0)) /=.
+  have -> :
+    (\big[addpt (A:=D)/Zero D]_(i0 <- finsupp d | fsval i != f i0)
+        scalept (d i0 * (Dist1.d (f i0)) (fsval i)) (S1 (fsval i))) = Zero _
+    by rewrite big1 // => c /negbTE Hc; rewrite Dist1.dE /Dist1.f fsfunE inE Hc mulR0 scalept0.
+  rewrite addpt0.
+  rewrite big_seq_fsetE /=.
+  exact: erefl.
+rewrite /Y => {Y}.
+set f' := (Dist_mor_supp f d).
+transitivity (\big[addpt (A:=D)/Zero D]_i scalept (dist_of_Dist d i) (S1 (fsval (f' i)))); first by apply eq_bigr => *; rewrite fsval_Dist_mor_supp.
+rewrite (@partition_big
+           _ _ _ _ (dist_of_Dist.D ((Dist_mor f) d)) _ f' xpredT) /f' //=.
+apply eq_bigr => -[i Hi] _ /=.
+transitivity (\big[addpt (A:=D)/Zero D]_(i0 | Dist_mor_supp f d i0 == [` Hi])
+               scalept (d (fsval i0) * (Dist1.d (f (fsval i0))) i) (S1 i)).
+- apply eq_bigr => i0 /eqP.
+  move/(congr1 (@fsval _ _)); rewrite fsval_Dist_mor_supp /= => Hi0.
+  rewrite dist_of_DistE Dist1.dE /Dist1.f fsfunE /=.
+  have -> : i \in [fset f (fsval i0)] by rewrite -Hi0  inE.
+  by rewrite -Hi0 mulR1.
+apply eq_bigl => i0.
+apply/eqP/eqP; first by move/(congr1 (@fsval _ _)) => /= <-.
+move=> H.
+apply/fsval_inj.
+by rewrite fsval_Dist_mor_supp /= H.
+Qed.
+End eps0_natural.
 
 Axiom eps1 : forall {L : semiLattConvType}, necset L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
 (* for an affine function f, returns a function F#f that to each convex set of dist returns its image by f, f needs to be affine *)
