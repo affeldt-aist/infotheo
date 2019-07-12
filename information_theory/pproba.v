@@ -181,9 +181,9 @@ Module MarginalPostProbability.
 Section def.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Variable y : 'rV[B]_n.
-Hypothesis H : receivable W P y.
+Hypothesis Hy : receivable W P y.
 
-Let f' := fun x : 'rV_n => P `^^ W, H (x | y).
+Let f' := fun x : 'rV_n => P `^^ W, Hy (x | y).
 
 Definition Kmpp : R := / \sum_(t in 'rV_n) f' t.
 
@@ -224,8 +224,8 @@ Qed.
 Definition d i : dist A := makeDist (f0 i) (f1 i).
 
 End def.
-Local Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" :=
-  (@d _ _ W _ P y H n0 a).
+Local Notation "P ''_' n0 '`^^' W ',' Hy '(' a '|' y ')'" :=
+  (@d _ _ W _ P y Hy n0 a).
 Section prop.
 Variables (A B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {set 'rV[A]_n}).

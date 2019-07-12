@@ -31,6 +31,11 @@ If opam is not installed but if the requirements below are met, do:
 6. ~make~
 7. ~make install~
 
+*** About Windows 10
+
+The installation instructions are less simple for Windows 10;
+these [[https://github.com/affeldt-aist/monae/blob/master/installation_windows.org][installation instructions]] from another project using infotheo explain how to install infotheo.
+
 *** Requirements
 
 - [[https://coq.inria.fr][Coq]] 8.9.1
@@ -39,6 +44,7 @@ If opam is not installed but if the requirements below are met, do:
   which requires
   + [[https://github.com/math-comp/bigenough/][bigenough]] first release
   + [[https://github.com/math-comp/finmap][finmap]] 1.2.1
+
 ** License
 
 GNU GPLv3

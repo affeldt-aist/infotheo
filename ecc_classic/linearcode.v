@@ -101,14 +101,14 @@ Qed.
 Lemma mem_kernel_syndrome0 y : (y \in kernel) = (syndrome y == 0).
 Proof. by rewrite memv_ker lfunE. Qed.
 
-Lemma dim_kernel (rankH : \rank H = m) (mn : m <= n) : \dim kernel = (n - m)%N.
+Lemma dim_kernel (Hm : \rank H = m) (mn : m <= n) : \dim kernel = (n - m)%N.
 Proof.
 move: (limg_ker_dim hom_syndrome fullv).
 rewrite (_ : (fullv :&: _)%VS = kernel); last by apply/capv_idPr/subvf.
 rewrite (_ : \dim fullv = n); last by rewrite dimvf /Vector.dim /= mul1n.
 move=> H0; rewrite -{}[in RHS]H0.
 suff -> : \dim (limg hom_syndrome) = m by rewrite addnK.
-set K := castmx (erefl, rankH) (col_base H).
+set K := castmx (erefl, Hm) (col_base H).
 have rankK : \rank K = m.
   rewrite /K mxrank_castmx.
   by move: (col_base_full H) => /eqP ->.
@@ -143,7 +143,7 @@ rewrite basisEfree; apply/and3P; split.
   rewrite trmx_mul.
   transitivity (row m0 K^T *m invmx (col_ebase H)^T *m pid_mx m *m (col_ebase H)^T); last first.
     rewrite -!mulmxA; congr (_ *m (_ *m _)); rewrite mulmxA.
-    by rewrite tr_pid_mx pid_mx_id ?rankH.
+    by rewrite tr_pid_mx pid_mx_id ?Hm.
   by rewrite pid_mx_1 mulmx1 -mulmxA mulVmx ? mulmx1 // unitmx_tr col_ebase_unit.
 - by rewrite size_tuple dim_hom_syndrome_ub.
 Qed.
