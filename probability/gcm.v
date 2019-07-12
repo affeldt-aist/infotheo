@@ -737,10 +737,11 @@ Axiom eps1 : forall {L : semiLattConvType}, necset L -> L (* just flattening of 
 (* for gcm.v *)
 Definition eps1' : forall {L : semiLattConvType}, necset L -> L.
 move => L X.
-set CX := (FSCSet.car (NECSet.car X)).
+set CX := CSet.car (NECSet.car X).
+(*set CX := (FSCSet.car (NECSet.car X)).*)
 Local Open Scope classical_set_scope.
-Check \bigcup_(x in CX) x.
-
+Check \bigcup_(x in CX) id.
+Admitted.
 
 (*
 Axiom F : forall {X Y : convType}, (X -> Y) -> P X -> P Y.
@@ -750,13 +751,15 @@ Fail Axiom F_preserves_affine : forall (X Y : convType) (f : X -> Y),
 
 (* the outputs of P carries a semilattice structure
    (NB: this needs to be reviewed) *)
-Axiom P_semiLattClass : forall X, SemiLattice.class_of (P X).
-Canonical P_semiLattType X := SemiLattice.Pack (P_semiLattClass X).
+(*Axiom P_semiLattClass : forall X, SemiLattice.class_of (P_delta X).
+Canonical P_semiLattType X := SemiLattice.Pack (P_semiLattClass X).*)
 
-Canonical conv_lattType C := @SemiLattice.Pack (P_convType C) (P_semiLattClass _).
+(*Canonical conv_lattType C := @SemiLattice.Pack (P_convType C) (P_semiLattClass _).*)
 
-Definition PD := P \o Dist.
+(*Definition PD := P_delta \o Dist.*)
 
-Definition join {T : choiceType} : PD (PD T) -> PD T := eps1 \o F eps0.
+Axiom F : forall {X Y : convType}, (X -> Y) -> necset X -> necset Y.
+
+Definition join {T : choiceType} : P_delta (P_delta T) -> P_delta T := eps1 \o F eps0.
 
 End P_delta.
