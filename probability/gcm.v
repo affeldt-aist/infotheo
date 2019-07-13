@@ -733,9 +733,8 @@ Canonical P_semiLattType X := SemiLattice.Pack (P_semiLattClass X).*)
 
 (*Definition PD := P_delta \o Dist.*)
 
-Axiom F : forall {X Y : convType}, (X -> Y) -> necset X -> necset Y.
-
-Definition F' (A B : convType) (f : {affine A -> B}) : necset A -> necset B.
+(* the morphism part of necset *)
+Definition necset_mor (A B : convType) (f : {affine A -> B}) : necset_convType A -> necset_convType B.
 case=> car car0.
 apply: (@NECSet.mk _ (@CSet.mk _ (f @` car) _)).
   rewrite /is_convex_set.
@@ -747,6 +746,14 @@ move=> H.
 case/cset0PN : car0 => a carx.
 apply/cset0PN; exists (f a) => /=; by exists a.
 Defined.
+
+(* the results of necset_mor are semiLattConvType-morphisms, i.e., are affine and preserve semilatt operations *)
+Lemma necset_mor_affine (A B : convType) (f : {affine A -> B}) : affine_function (necset_mor f).
+Admitted.
+
+Lemma necset_mor_semilatt_morphism (A B : convType) (f : {affine A -> B}) : 
+  {morph (necset_mor f) : x y / SemiLattOp x y >-> SemiLattOp x y}.
+Admitted.
 
 Definition join {T : choiceType} : P_delta (P_delta T) -> P_delta T := eps1 \o F eps0.
 
