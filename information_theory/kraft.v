@@ -1,9 +1,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-Require FunctionalExtensionality.
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
 From mathcomp Require Import choice fintype tuple bigop finset path ssralg.
 From mathcomp Require Import fingroup zmodp poly ssrnum.
-
+Require FunctionalExtensionality.
 Require Import ssr_ext.
 
 Set Implicit Arguments.

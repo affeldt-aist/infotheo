@@ -1,6 +1,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup perm finalg matrix.
+From mathcomp Require boolp.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import cproba divergence entropy.
@@ -125,7 +126,7 @@ Lemma head_of_fst_belast_last (A : finType) (n : nat) (P : {dist 'rV[A]_n.+2}) :
 Proof.
 rewrite /Multivar.head_of /Bivar.fst /Multivar.to_bivar /Multivar.belast_last.
 rewrite !DistMap.comp; congr (DistMap.d _ P).
-apply FunctionalExtensionality.functional_extensionality => /= v.
+rewrite boolp.funeqE => /= v /=.
 rewrite /rbelast mxE; congr (v ord0 _); exact: val_inj.
 Qed.
 
@@ -155,7 +156,7 @@ Lemma all (A : finType) (n : nat) (P : {dist 'rV[A]_n.+2}) :
   d P (lift ord0 ord_max) = P.
 Proof.
 rewrite /d (_ : row_take (lift ord0 ord_max) = ssrfun.id) ?DistMap.id //.
-apply FunctionalExtensionality.functional_extensionality => v; apply/rowP => i.
+rewrite boolp.funeqE => v; apply/rowP => i.
 rewrite /row_take mxE castmxE /= cast_ord_id; congr (v _ _); exact: val_inj.
 Qed.
 End prop.
@@ -200,9 +201,7 @@ Lemma belast_last_take (j : 'I_n.+1) :
   Multivar.belast_last (Take.d P (lift ord0 j)) = Bivar.fst (PairTake.d PY j).
 Proof.
 rewrite /Multivar.belast_last /Take.d /Bivar.fst /PairTake.d !DistMap.comp.
-congr (DistMap.d _ PY).
-apply FunctionalExtensionality.functional_extensionality => /= -[v b] /=.
-congr (_, _).
+congr (DistMap.d _ PY); rewrite boolp.funeqE => /= -[v b] /=; congr (_, _).
 - apply/rowP => i.
   rewrite /rbelast !mxE !castmxE /=; congr (v _ _); exact: val_inj.
 - rewrite /rlast mxE castmxE /=; congr (v _ _); exact: val_inj.
@@ -222,8 +221,7 @@ Lemma take_nth (A : finType) (n : nat) (P : {dist 'rV[A]_n.+1}) (i : 'I_n.+1) :
   Bivar.snd (Multivar.belast_last (Take.d P (lift ord0 i))) = Nth.d P i.
 Proof.
 rewrite /Bivar.snd /Multivar.belast_last /Take.d /Nth.d !DistMap.comp.
-congr (DistMap.d _ _).
-apply FunctionalExtensionality.functional_extensionality => /= v.
+congr (DistMap.d _ _); rewrite boolp.funeqE => /= v /=.
 rewrite /rlast mxE castmxE /= cast_ord_id /=; congr (v ``_ _); exact: val_inj.
 Qed.
 
@@ -857,7 +855,7 @@ case: ifP => i0.
 congr (CondEntropy.h (Swap.d (Multivar.belast_last _))).
 rewrite /Take.d /Bivar.fst /Multivar.belast_last !DistMap.comp.
 congr (DistMap.d _ P).
-apply FunctionalExtensionality.functional_extensionality => /= v.
+rewrite boolp.funeqE => /= v.
 apply/rowP => j; rewrite !mxE !castmxE /= !mxE /= cast_ord_id; congr (v _ _).
 exact: val_inj.
 Qed.
@@ -1508,7 +1506,7 @@ set Q : {dist A * 'rV[A]_i * 'rV[A]_(n' - i)} := TakeDrop.d P i.
 have H1 : Proj13.d (TripC23.d Q) = Multivar.to_bivar (Take.d P (lift ord0 i)).
   rewrite /Proj13.d /TripC23.d /Multivar.to_bivar /Take.d /Bivar.snd /TripA.d.
   rewrite /TripC12.d /Swap.d /TakeDrop.d !DistMap.comp; congr (DistMap.d _ P).
-  apply FunctionalExtensionality.functional_extensionality => /= v.
+  rewrite boolp.funeqE => /= v /=.
   congr (_, _).
   - rewrite mxE castmxE /= cast_ord_id; congr (v ord0 _); exact: val_inj.
   - apply/rowP => j.

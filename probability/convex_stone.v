@@ -2,8 +2,8 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup perm finalg matrix.
-From mathcomp Require Import boolp classical_sets.
-Require Import Reals Lra ProofIrrelevance FunctionalExtensionality.
+From mathcomp Require boolp.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba convex.
 
@@ -498,7 +498,7 @@ case/boolP : (d ord0 == 1%R) => [|i1].
   by apply prob_ext => /=; rewrite Dist1.dE eqxx.
 rewrite convnE; congr (_ <| _ |> _).
 rewrite (_ : (fun _ => _) = (fun=> g (DelDist.h ord0 ord0))); last first.
-  by apply FunctionalExtensionality.functional_extensionality => x; rewrite (ord1 x).
+  by rewrite boolp.funeqE => x; rewrite (ord1 x).
 rewrite convn1E /DelDist.h ltnn; congr g; exact/val_inj.
 Qed.
 
@@ -553,7 +553,7 @@ Lemma Convn_perm_1 n (d : {dist 'I_n}) (g : 'I_n -> A) :
   \Conv_d g = \Conv_(PermDist.d d 1%g) (g \o (1%g : 'S_n)).
 Proof.
 rewrite PermDist.one; congr (Convn d _).
-apply FunctionalExtensionality.functional_extensionality => i /=; by rewrite perm1.
+by rewrite boolp.funeqE => i /=; rewrite perm1.
 Qed.
 
 Lemma Convn_perm1 (d : {dist 'I_1}) (g : 'I_1 -> A) (s : 'S_1) :
@@ -569,8 +569,7 @@ Lemma Convn_perm2 (d : {dist 'I_2}) (g : 'I_2 -> A) (s : 'S_2) :
 Proof.
 have [->|Hs] := S2.generators s.
   rewrite PermDist.one; congr Convn.
-  apply FunctionalExtensionality.functional_extensionality => i.
-  by rewrite /= perm1.
+  by rewrite boolp.funeqE => i; rewrite /= perm1.
 move: (dist_ge0 d ord0); rewrite leR_eqVlt => -[/esym d00|d00].
   have d11 : d (Ordinal (erefl (1 < 2))) = 1%R.
     rewrite -(epmf1 d) 2!big_ord_recl big_ord0 addR0 d00 add0R; f_equal; exact/val_inj.
@@ -870,8 +869,7 @@ move: s d g.
 apply: S3.suff_generators; last first.
   move=> s s' Hs Hs' d g.
   rewrite Hs Hs' PermDist.mul; congr (Convn _ _).
-  apply: FunctionalExtensionality.functional_extensionality => i.
-  by rewrite /= permE.
+  by rewrite boolp.funeqE => i /=; rewrite permE.
 exact: Convn_perm3_p02.
 exact: Convn_perm3_p01.
 exact: Convn_perm_1.
@@ -916,7 +914,7 @@ congr (Convn _ _).
   suff : s (lift ord0 j) != ord0 by [].
   rewrite -[in X in _ != X]H.
   by apply/eqP => /(@perm_inj _ s).
-apply FunctionalExtensionality.functional_extensionality => j /=.
+rewrite boolp.funeqE => j /=.
 rewrite /DelDist.h /= /s' permE /f /=.
 congr g.
 apply val_inj => /=.
@@ -1074,8 +1072,7 @@ congr (_ <| _ |> _).
         rewrite subR_eq0 => <-.
       by rewrite subRB subRR add0R.
     by rewrite subR_eq0; apply/nesym/eqP.
-    apply FunctionalExtensionality.functional_extensionality => j.
-    by rewrite /= /DelDist.h /= permE H permE /=.
+    by rewrite boolp.funeqE => j; rewrite /= /DelDist.h /= permE H permE.
   apply prob_ext => /=.
   by rewrite !DelDist.dE !D1Dist.dE /= !PermDist.dE H !permE.
 apply prob_ext => /=.
@@ -1103,8 +1100,7 @@ apply (@Sn.suff_generators _ (fun s => forall m : nat,
   \Conv_d g = \Conv_(PermDist.d d s) (g \o s))).
 - move=> s1 s2 H1 H2 m IH nm d g.
   rewrite (H1 m) // (H2 m) // PermDist.mul; congr (Convn _ _).
-  apply FunctionalExtensionality.functional_extensionality => i.
-  by rewrite /= permM.
+  by rewrite boolp.funeqE => i; rewrite /= permM.
 - move=> m IH nm d g.
   case/boolP : (d ord0 == 1%R :> R) => [|dmax1].
     rewrite Dist1.one => /eqP ->.

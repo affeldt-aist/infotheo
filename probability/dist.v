@@ -2,8 +2,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup perm finalg matrix.
 From mathcomp Require Import finmap set.
-From mathcomp Require Rstruct.
-Require Import Reals Lra Nsatz FunctionalExtensionality.
+From mathcomp Require Rstruct boolp.
+Require Import Reals Lra Nsatz.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import proba.
 
@@ -374,6 +374,19 @@ apply: contra => /eqP /prsumr_seq_eq0P L; apply/eqP/L.
 by rewrite fset_uniq.
 move=> a0 _; apply/mulR_ge0; exact/Dist.ge0.
 by rewrite mem_finsupp.
+Qed.
+
+Definition Distfmap (A B : choiceType) (f : A -> B) (d : Dist A) : Dist B :=
+  DistBind.d d (fun a => Dist1.d (f a)).
+
+Lemma Distfmap_id (A : choiceType) : Distfmap (@id A) = @id (Dist A).
+Proof. by rewrite boolp.funeqE => a; rewrite /Distfmap DistBindp1. Qed.
+
+Lemma Distfmap_comp (A B C : choiceType) (g : B -> C) (h : A -> B) :
+  Distfmap (g \o h) = Distfmap g \o Distfmap h.
+Proof.
+rewrite boolp.funeqE => d; rewrite /Distfmap /= DistBindA; congr DistBind.d.
+by rewrite boolp.funeqE => a; rewrite DistBind1f.
 Qed.
 
 Module ConvDist.

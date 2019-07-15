@@ -2,7 +2,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
-Require Import FunctionalExtensionality Reals Lra.
+From mathcomp Require boolp.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb convex.
 
 (** * Results about the Analysis of ln *)
@@ -622,7 +623,7 @@ Proof.
 move=> a0; rewrite /pderivable => x Hx.
 rewrite /log /Log (_ : (fun x0 => ln x0 / ln 2) =
   (mult_real_fct (/ ln 2) (fun x0 => ln x0))); last first.
-  apply functional_extensionality => x0; by rewrite /mult_real_fct mulRC.
+  by rewrite boolp.funeqE => x0; rewrite /mult_real_fct mulRC.
 apply/derivable_pt_scal/derivable_pt_ln/(leR_ltR_trans a0); by case: Hx.
 Qed.
 
@@ -633,17 +634,15 @@ move=> xy x0 y0; apply R_concave_function_atN'.
 set Df := fun x => - / x.
 move: t.
 have HDf : pderivable (fun x => - ln x) (fun x0 => x <= x0 <= y).
-  rewrite (_ : (fun x => - ln x) = comp Ropp ln); last first.
-    exact: functional_extensionality.
+  rewrite (_ : (fun x => - ln x) = comp Ropp ln); last by rewrite boolp.funeqE.
   move=> r xry; apply derivable_pt_comp; last exact: derivable_pt_Ropp.
   apply/derivable_pt_ln/(@ltR_leR_trans x) => //; by case: xry.
 set DDf := fun x => / x^2.
 have HDDf : pderivable Df (fun x0 : R => x <= x0 <= y).
   rewrite /Df (_ : (fun x => - / x) = comp Ropp Rinv); last first.
-    exact: functional_extensionality.
+    by rewrite boolp.funeqE.
   move=> r xry; apply derivable_pt_comp; last exact/derivable_pt_Ropp.
-  rewrite (_ : Rinv = inv_fct (fun x => x)); last first.
-    exact: functional_extensionality.
+  rewrite (_ : Rinv = inv_fct (fun x => x)); last by rewrite boolp.funeqE.
   apply derivable_pt_inv; last exact: derivable_pt_id.
   apply/gtR_eqF/(@ltR_leR_trans x) => //; by case: xry.
 apply: (@second_derivative_convexf_pt _ _ _ HDf Df _ HDDf DDf) => //.

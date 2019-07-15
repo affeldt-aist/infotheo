@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup perm finalg matrix.
 From mathcomp Require Import boolp classical_sets.
-Require Import Reals Lra ProofIrrelevance FunctionalExtensionality.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba.
 
@@ -19,6 +19,7 @@ Reserved Notation "'\Conv_' d f" (at level 36, f at level 36, d at level 0,
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 
+(* TODO *)
 Section PR_to_classical_sets.
 
 Variable T : Type.
@@ -1092,27 +1093,14 @@ Variables (A : Type) (B : convType).
 Let T := A -> B.
 Definition avg (x y : T) (t : prob) := fun a : A => (x a <| t |> y a).
 Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
-Proof.
-apply FunctionalExtensionality.functional_extensionality => a.
-by apply conv1.
-Qed.
+Proof. rewrite funeqE => a; exact/conv1. Qed.
 Lemma avgI (x : T) (p : prob) : avg x x p = x.
-Proof.
-apply FunctionalExtensionality.functional_extensionality => a.
-by apply convmm.
-Qed.
+Proof. rewrite funeqE => a; exact/convmm. Qed.
 Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
-Proof.
-apply FunctionalExtensionality.functional_extensionality => a.
-by apply convC.
-Qed.
+Proof. rewrite funeqE => a; exact/convC. Qed.
 Lemma avgA (p q (*r s*) : prob) (d0 d1 d2 : T) :
   avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
-Proof.
-move=> *.
-apply FunctionalExtensionality.functional_extensionality => a.
-by apply convA.
-Qed.
+Proof. move=> *; rewrite funeqE => a; exact/convA. Qed.
 End funavg.
 End Funavg.
 
@@ -1133,24 +1121,24 @@ Definition avg (x y : T) (t : prob) := fun a : A => (x a <| t |> y a).
 Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
 Proof.
 apply FunctionalExtensionality.functional_extensionality_dep => a.
-by apply conv1.
+exact/conv1.
 Qed.
 Lemma avgI (x : T) (p : prob) : avg x x p = x.
 Proof.
 apply FunctionalExtensionality.functional_extensionality_dep => a.
-by apply convmm.
+exact/convmm.
 Qed.
 Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
 Proof.
 apply FunctionalExtensionality.functional_extensionality_dep => a.
-by apply convC.
+exact/convC.
 Qed.
 Lemma avgA (p q (*r s*) : prob) (d0 d1 d2 : T) :
   avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
 Proof.
 move => *.
 apply FunctionalExtensionality.functional_extensionality_dep => a.
-by apply convA.
+exact/convA.
 Qed.
 End depfunavg.
 End Depfunavg.
@@ -1253,7 +1241,7 @@ Lemma lefun_trans g f h : lefun f g -> lefun g h -> lefun f h.
 Proof. move => Hfg Hgh a; move : (Hfg a) (Hgh a); exact: leconv_trans. Qed.
 Lemma eqfun_le f g : f = g <-> lefun f g /\ lefun g f.
 Proof. split; [move ->; move: lefunR; done |].
-case => Hfg Hgh; apply FunctionalExtensionality.functional_extensionality => a.
+case => Hfg Hgh; rewrite funeqE => a.
 move : (Hfg a) (Hgh a) => Hfg' Hgh'.
 by apply eqconv_le.
 Qed.
@@ -1549,7 +1537,7 @@ Lemma R_concave_functionB (f g : A -> R) :
 Proof.
 move=> H1 H2.
 rewrite (_ : (fun _ => _) = (fun x => - (g x - f x)))%R; last first.
-  apply FunctionalExtensionality.functional_extensionality => x; by rewrite oppRB.
+  by rewrite funeqE => x; rewrite oppRB.
 exact/R_concave_functionN/R_convex_functionB.
 Qed.
 End Rprop2.

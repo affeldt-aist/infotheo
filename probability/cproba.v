@@ -2,6 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
+From mathcomp Require boolp.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 
@@ -42,7 +43,7 @@ Lemma bij_swap A B : bijective (@swap A B).
 Proof. apply Bijective with swap; by case. Qed.
 
 Lemma ide_swap A B : (@swap A B) \o swap = @id (B * A).
-Proof. by apply/FunctionalExtensionality.functional_extensionality => -[]. Qed.
+Proof. by rewrite boolp.funeqE => -[]. Qed.
 
 Module Swap.
 Section def.
@@ -221,7 +222,7 @@ Variables (A B C : finType) (P : {dist A * B * C}).
 Lemma dI : d (d P) = P.
 Proof.
 rewrite /d DistMap.comp (_ : _ \o _ = ssrfun.id) ?DistMap.id //.
-by apply FunctionalExtensionality.functional_extensionality => -[[]].
+by rewrite boolp.funeqE => -[[]].
 Qed.
 Lemma Pr E F G : Pr (d P) (setX (setX E F) G) = Pr P (setX (setX F E) G).
 Proof.
@@ -349,7 +350,7 @@ Lemma Proj13_TripC23 : Proj13.d (TripC23.d P) = Bivar.fst P.
 Proof.
 rewrite /Proj13.d /Bivar.snd /TripA.d /TripC12.d /TripC23.d /Bivar.fst.
 rewrite !DistMap.comp /=; congr (DistMap.d _ _).
-by apply FunctionalExtensionality.functional_extensionality => -[[]].
+by rewrite boolp.funeqE => -[[]].
 Qed.
 End Proj_prop.
 

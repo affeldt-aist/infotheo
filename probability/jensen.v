@@ -2,8 +2,8 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg matrix.
-From mathcomp Require Import boolp classical_sets.
-Require Import Reals ProofIrrelevance FunctionalExtensionality.
+From mathcomp Require Import boolp.
+Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba convex.
 

@@ -3,7 +3,8 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
-Require Import Reals Lra FunctionalExtensionality ProofIrrelevance.
+From mathcomp Require boolp.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba entropy num_occ channel_code channel typ_seq.
 
@@ -87,7 +88,7 @@ Lemma type_ext A n (t1 t2 : P_ n ( A )) : type.f t1 = type.f t2 -> t1 = t2.
 Proof.
 case: t1 t2 => d1 f1 H1 /= [] d2 f2 H2 /= f1f2.
 subst f2.
-suff ? : d1 = d2 by subst d2; congr type.mkType; exact: proof_irrelevance.
+suff ? : d1 = d2 by subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
 apply dist_ext => /= a; by rewrite H1 H2.
 Qed.
 
@@ -101,7 +102,7 @@ Proof.
 case=> d1 f1 H1 [] d2 f2 H2 /=.
 apply: (iffP idP) => [/eqP H|[] _ -> //].
 subst f2.
-suff ? : d1 = d2 by subst d2; congr type.mkType; exact: proof_irrelevance.
+suff ? : d1 = d2 by subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
 apply dist_ext => /= a; by rewrite H1 H2.
 Qed.
 
@@ -176,7 +177,7 @@ destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.
 congr Some.
 set d1 := dist_of_ffun _.
-suff ? : d1 = d by subst d; congr type.mkType; apply proof_irrelevance.
+suff ? : d1 = d by subst d; congr type.mkType; apply boolp.Prop_irrelevance.
 apply dist_ext => /= a; by rewrite ffunE H.
 Qed.
 
@@ -220,7 +221,7 @@ destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.
 f_equal.
 set d1 := dist_of_ffun _.
-suff ? : d1 = d by subst d; congr type.mkType; apply proof_irrelevance.
+suff ? : d1 = d by subst d; congr type.mkType; apply boolp.Prop_irrelevance.
 apply/dist_ext => a; by rewrite ffunE H.
 Qed.
 
@@ -273,7 +274,7 @@ apply uniq_leq_size.
     by rewrite enumT.
   case=> d f Hd [] d2 f2 Hd2 /= ?; subst f2.
   have ? : d = d2 by apply/dist_ext => a; rewrite Hd Hd2.
-  subst d2; congr type.mkType; exact: proof_irrelevance.
+  subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
 move=> /= f Hf; by rewrite mem_enum.
 Qed.
 

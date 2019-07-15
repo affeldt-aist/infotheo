@@ -3,7 +3,8 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
 From mathcomp Require Import ssralg finset fingroup perm finalg matrix.
-Require Import Reals Lra Nsatz FunctionalExtensionality.
+From mathcomp Require boolp.
+Require Import Reals Lra Nsatz.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 
 (** * Formalization of discrete probabilities *)
@@ -304,7 +305,7 @@ Lemma id P : d (@id A) P = P. Proof. by rewrite /d DistBindp1. Qed.
 Lemma comp (g : A -> B) (h : C -> A) P : d g (d h P) = d (g \o h) P.
 Proof.
 rewrite /d DistBindA; congr (DistBind.d _ _).
-by apply/functional_extensionality => c; rewrite DistBind1f.
+by rewrite boolp.funeqE => x; rewrite DistBind1f.
 Qed.
 End prop.
 End DistMap.
@@ -2090,7 +2091,7 @@ Proof.
 rewrite {1}/`V [in X in X = _]/= E_scale_RV.
 pose Y : {RV P -> R} := k `cst* (X `+cst - `E X).
 rewrite (@E_comp_RV_ext _ P ((k `cst* X) `-cst k * `E X) Y) //; last first.
-  apply functional_extensionality => /= x.
+  rewrite boolp.funeqE => /= x.
   rewrite /Y /scale_RV /= /trans_min_RV /trans_add_RV; field.
 rewrite E_comp_RV ?E_scale_RV // => *; field.
 Qed.
@@ -2098,8 +2099,7 @@ Qed.
 Lemma Var_trans m : `V (X `+cst m) = `V X.
 Proof.
 rewrite /Var E_trans_add_RV; congr (`E (_ `^2)).
-apply functional_extensionality => /= u.
-rewrite /trans_add_RV /trans_min_RV /=; field.
+rewrite boolp.funeqE => /= u; rewrite /trans_add_RV /trans_min_RV /=; field.
 Qed.
 
 End variance_prop.

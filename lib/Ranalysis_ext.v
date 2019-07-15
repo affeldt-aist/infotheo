@@ -2,7 +2,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq fintype.
 From mathcomp Require Import tuple finfun bigop.
-Require Import Reals Lra FunctionalExtensionality.
+From mathcomp Require boolp.
+Require Import Reals Lra.
 Require Import ssrR logb Reals_ext.
 
 (** * Additional lemmas about real analysis *)
@@ -21,7 +22,7 @@ Lemma proof_derive_irrelevance g1 g2 x
 Proof.
 move: g1x g2x => [l Hl] [m Hm] Hext.
 move: Hl Hm ; rewrite /derivable_pt_abs => Hl Hm.
-have g1g2 : g1 = g2 by exact: functional_extensionality.
+have g1g2 : g1 = g2 by rewrite boolp.funeqE.
 have ml : l = m by subst g2; exact: (uniqueness_limite g1 x).
 by subst m.
 Qed.
@@ -98,7 +99,7 @@ Defined.
 Lemma derivable_pt_lim_Log b : forall x : R, 0 < x -> derivable_pt_lim (Log b) x (/ ln b * / x).
 Proof.
 move=> x x0.
-rewrite (_ : Log b = comp (fun x => x / ln b) ln); last exact: functional_extensionality.
+rewrite (_ : Log b = comp (fun x => x / ln b) ln); last by rewrite boolp.funeqE.
 apply derivable_pt_lim_comp; first exact: derivable_pt_lim_ln.
 move=> e e0.
 exists (mkposreal _ e0) => h h0 /= he.

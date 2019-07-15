@@ -3,7 +3,8 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
 From mathcomp Require Import choice fintype tuple finfun bigop finset binomial.
 From mathcomp Require Import fingroup perm.
-Require Import Reals FunctionalExtensionality ProofIrrelevance.
+From mathcomp Require boolp.
+Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 Require Import num_occ channel types.
 
@@ -58,9 +59,9 @@ Lemma jtype_ext A B n (t1 t2 : P_ n ( A , B )) : jtype.f t1 = jtype.f t2 -> t1 =
 Proof.
 case: t1 t2 => d1 f1 Hf1 H1 /= [] d2 f2 Hf2 H2 /= ?; subst f2.
 have ? : d1 = d2.
-  apply/Channel1.chan_star_eq/functional_extensionality => a.
-  apply/dist_ext => b; by rewrite H1 H2.
-subst d2; congr jtype.mkJtype; exact: proof_irrelevance.
+  apply/Channel1.chan_star_eq.
+  by rewrite boolp.funeqE => a; apply/dist_ext => b; rewrite H1 H2.
+subst d2; congr jtype.mkJtype; exact/boolp.Prop_irrelevance.
 Qed.
 
 Definition jtype_eq A B n (t1 t2 : P_ n ( A , B )) :=
@@ -74,9 +75,9 @@ case=> d1 f1 Hf1 H1 [] d2 f2 Hf2 H2 /=.
 apply: (iffP idP) => [/eqP H |[] _ -> //].
 subst f2.
 have ? : d1 = d2.
-  apply/Channel1.chan_star_eq/functional_extensionality => a /=.
-  apply/dist_ext => b; by rewrite H1 H2.
-subst d2; congr jtype.mkJtype; exact: proof_irrelevance.
+  apply/Channel1.chan_star_eq.
+  by rewrite boolp.funeqE => a /=; apply/dist_ext => b; rewrite H1 H2.
+subst d2; congr jtype.mkJtype; exact/boolp.Prop_irrelevance.
 Qed.
 
 Definition jtype_eqMixin A B n := EqMixin (@jtype_eqP A B n).
@@ -147,8 +148,8 @@ destruct Sumbool.sumbool_of_bool; last first.
 set d1 := chan_of_jtype _ _ _.
 set d2 := Channel1.mkChan d Hd.
 have d12 : d1 = d2.
-  apply/Channel1.chan_star_eq/functional_extensionality => /= a.
-  apply/dist_ext => b; by rewrite ffunE H.
+  apply/Channel1.chan_star_eq.
+  rewrite boolp.funeqE => /= a; apply/dist_ext => b; by rewrite ffunE H.
 destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
 congr Some; by apply/jtype_eqP => /=.
 Qed.
@@ -205,8 +206,8 @@ rewrite pickleK.
 (*rewrite pcan_pickleK; last by apply valK.*)
 set d1 := chan_of_jtype _ _ _.
 have ? : d1 = Channel1.mkChan c Anot0.
-  apply/Channel1.chan_star_eq/functional_extensionality => a1.
-  apply/dist_ext => b /=; by rewrite ffunE H.
+  apply/Channel1.chan_star_eq.
+  by rewrite boolp.funeqE => a1; apply/dist_ext => b /=; rewrite ffunE H.
 destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
 congr Some; by apply/jtype_eqP => /=.
 Qed.

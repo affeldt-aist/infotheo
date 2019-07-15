@@ -3,7 +3,8 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals FunctionalExtensionality.
+From mathcomp Require boolp.
+Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 
 (** * Asymptotic Equipartition Property (AEP) *)
@@ -70,7 +71,7 @@ elim : n => [|n IH].
   set mlogprodP := @sum_mlog_prod _ _ 1.
   suff -> : mlogprodP = mlogP by [].
   rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_rV1_fun_rV1 /= mxE /=.
-  apply functional_extensionality => ta; by rewrite big_ord_recl big_ord0 addR0.
+  by rewrite boolp.funeqE => ta; rewrite big_ord_recl big_ord0 addR0.
 - rewrite [X in _ \=sum X](_ : _ =
       row_mx (\row_(i < 1) (--log P)) (\row_(i < n.+1) --log P)); last first.
     apply/rowP => b; rewrite !mxE; case: splitP.

@@ -2,6 +2,7 @@
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
 From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
 From mathcomp Require Import finset fingroup finalg matrix.
+From mathcomp Require boolp.
 Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy proba cproba convex binary_entropy_function.
@@ -396,9 +397,8 @@ Proof.
 suff : concave_function (fun P => let PQ := Swap.d (CDist.make_joint P Q) in
                            `H (Bivar.fst PQ) - CondEntropy.h PQ).
   set f := fun _ => _. set g := fun _ => _.
-  rewrite (FunctionalExtensionality.functional_extensionality f g) //.
-  move=> d; rewrite {}/f {}/g /=.
-  by rewrite -MutualInfo.miE -mi_sym.
+  suff -> : f = g by [].
+  by rewrite boolp.funeqE => d; rewrite {}/f {}/g /= -MutualInfo.miE -mi_sym.
 apply R_concave_functionB.
 - move: (entropy_concave B_not_empty) => H.
   apply R_concave_functionN.
