@@ -549,12 +549,12 @@ have et' : #|supp (twisted a (F2_to_GF2 m e))| <= t by rewrite supp_twisted.
 by apply: (size_erreval (rVexp a n) (Errvec et') (const_mx 1)).
 Qed.
 
-Local Notation "'`v'" := (Euclid.v).
+Local Notation "'v'" := (Euclid.v).
 
 Definition BCH_err y : {poly 'F_2} :=
   let r0 : {poly F} := 'X^t.*2 in
   let r1 := \BCHsynp_(rVexp a n, y, t) in
-  let vstop := `v r0 r1 (stop t r0 r1) in
+  let vstop := v r0 r1 (stop t r0 r1) in
   let s := vstop.[0]^-1 *: vstop in
   \poly_(i < n) (if s.[a^- i] == 0 then 1 else 0).
 
