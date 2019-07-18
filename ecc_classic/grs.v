@@ -148,22 +148,16 @@ Lemma rank_GRS_PCM_sq (b : 'rV_n) (rn : r <= n) (b0 : forall i, b ``_i != 0) :
   \rank (GRS_PCM_sq a b r) = r.
 Proof.
 apply mxrank_unit.
-rewrite unitmxE unitfE GRS_PCM_sq_vander //.
-rewrite // det_mulmx mulf_neq0 //; last first.
-  rewrite det_diag prodf_seq_neq0; apply/allP => /= i _.
-  by rewrite mxE b0.
-destruct r as [|r']; first by rewrite det_mx00 oner_neq0.
-rewrite vandermonde.det_vander.
-rewrite prodf_seq_neq0; apply/allP => /= i _.
-rewrite prodf_seq_neq0; apply/allP => /= j _.
-apply/implyP; rewrite ltnNge => ij.
-rewrite !mxE subr_eq0 !inord_val.
-apply: contra ij => /eqP ij.
-move: (@a_inj (inord i) (inord j)).
-rewrite !ffunE ij => /(_ erefl).
+rewrite unitmxE unitfE GRS_PCM_sq_vander // det_mulmx mulf_neq0 //; last first.
+  by rewrite det_diag prodf_seq_neq0; apply/allP => /= i _; rewrite mxE b0.
+case: r rn => [|r' rn]; first by rewrite det_mx00 oner_neq0.
+rewrite vandermonde.det_vander prodf_seq_neq0; apply/allP => /= i _.
+rewrite prodf_seq_neq0; apply/allP => /= j _; apply/implyP.
+rewrite ltnNge => ij; rewrite !mxE subr_eq0; apply: contra ij => /eqP ij.
+move: (@a_inj (inord i) (inord j)); rewrite !ffunE ij => /(_ erefl).
 move/(congr1 (@nat_of_ord n)).
-rewrite inordK // ?(leq_trans (ltn_ord i)) //.
-by rewrite inordK // ?(leq_trans (ltn_ord j)) // => ->.
+rewrite inordK // ?(leq_trans (ltn_ord i)) // => ->.
+by rewrite inordK // (leq_trans (ltn_ord j)).
 Qed.
 
 Lemma rank_GRS_PCM (b : 'rV[F]_n) (rn : r <= n) (b0 : forall i, b ``_i != 0) :

@@ -421,24 +421,26 @@ rewrite (big_addn 0 n.+1 1) subn1 /= big_mkord; apply/eq_bigr => i _; by rewrite
 Qed.
 
 Lemma det_vander n (a : 'rV[R]_n.+1) : \det (vander a) =
-  \prod_(i < n.+1) (\prod_(j < n.+1 | i < j) (a``_(inord j) - a``_(inord i))).
+  \prod_(i < n.+1) (\prod_(j < n.+1 | i < j) (a``_j - a``_i)).
 Proof.
 elim: n a => [a|n IH a].
   rewrite (mx11_scalar (vander a)) det_scalar1 mxE expr0 big_ord_recr /=.
   rewrite big_ord0 mul1r (eq_bigl (xpred0)) ?big_pred0 // => i; by rewrite ord1.
 rewrite det_vander_rec IH.
-rewrite (eq_bigr (fun i : 'I_n.+1 => \prod_(1 <= j < n.+2 | i < j.-1) (a``_(inord j) - a``_(inord i.+1)))); last first.
+rewrite (eq_bigr (fun i : 'I_n.+1 => \prod_(1 <= j < n.+2 | i < j.-1)
+    (a``_(inord j) - a``_(inord i.+1)))); last first.
   move=> i _; rewrite (big_addn O n.+2 1) subn1 /= big_mkord.
-  apply/eq_big; first by move=> j; rewrite addn1.
-  move=> j ij; by rewrite 2!mxE inordK // inordK // addn1.
+  apply/eq_big; first by move=> ?; rewrite addn1.
+  move=> *; by rewrite 2!mxE addn1.
 rewrite [in RHS]big_ord_recl [in RHS]mulrC; congr (_ * _); last first.
-  rewrite [in RHS]big_mkcond /= [in RHS]big_ord_recl ltnn mul1r big_add1 big_mkord.
-  apply/eq_bigr => i _.
-  rewrite lift0 (_ : inord 0 = 0) //.
-  by apply/val_inj => /=; rewrite inordK.
+  rewrite [in RHS]big_mkcond /= [in RHS]big_ord_recl ltnn mul1r big_add1.
+  rewrite big_mkord; apply/eq_bigr => i _; congr (a ``_ _ - _).
+  by apply/val_inj => /=; rewrite inordK // ltnS.
 apply eq_bigr => i _.
-rewrite [in RHS]big_mkcond /= [in RHS]big_ord_recl ltn0 mul1r big_add1 big_mkord.
-rewrite [in LHS]big_mkcond /=; by apply eq_bigr => j _.
+rewrite [in RHS]big_mkcond /= [in RHS]big_ord_recl ltn0 mul1r big_add1.
+rewrite big_mkord [in LHS]big_mkcond /=; apply eq_bigr => j _; rewrite /bump.
+rewrite 2!leq0n 2!add1n ltnS; case: ifPn => // ij.
+by congr (a ``_ _ - a ``_ _); apply val_inj => /=; rewrite inordK // ltnS.
 Qed.
 
 End vandermonde_determinant.

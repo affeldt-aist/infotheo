@@ -329,19 +329,15 @@ Lemma det_B_neq0 t r f (Hr' : r.+1 < t.*2) (Hinj : injective f) :
              BCH.PCM_alt a t (widen_ord (ltnW Hr') i) (f j) in
   \det B != 0.
 Proof.
-rewrite /=.
-set B := \matrix_(_, _) _.
+rewrite /=; set B := \matrix_(_, _) _.
 rewrite BCH_det_mlinear det_vander mulf_neq0 //.
 - rewrite prodf_seq_neq0 /=; apply/allP => /= j _.
   by rewrite !mxE /= expr1 (proj2 a_neq0).
 - rewrite prodf_seq_neq0 /=; apply/allP => /= j _.
   rewrite prodf_seq_neq0 /=; apply/allP => /= k _.
-  apply/implyP => jk.
-  rewrite !mxE /= !expr1 subr_eq0.
-  apply/negP => /eqP.
-  move: (proj1 a_neq0) => /(_ (f (inord k)) (f (inord j))).
-  rewrite 2!ffunE => akj; move/akj/Hinj.
-  rewrite !inord_val; by apply/eqP/negbT/gtn_eqF.
+  apply/implyP => jk; rewrite !mxE /= !expr1 subr_eq0.
+  apply/negP => /eqP; move: (proj1 a_neq0) => /(_ (f k) (f j)).
+  rewrite 2!ffunE => akj /akj/Hinj; exact/eqP/negbT/gtn_eqF.
 Qed.
 
 (** parity-check matrix of a binary (n, k) code capable ot correcting
