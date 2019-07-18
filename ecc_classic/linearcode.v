@@ -270,7 +270,9 @@ Proof.
 rewrite /non_0_cw; case/andP: (xchooseP C_not_trivial); by rewrite wH_eq0.
 Qed.
 
-Definition min_wH_cw := arg_min non_0_cw [pred cw in C | wH cw != O] (@wH F n).
+Definition min_wH_cw := arg_min non_0_cw [pred cw | (cw \in C) && (wH cw != O)] (@wH F n).
+
+(*Definition min_wH_cw := arg_min non_0_cw [pred cw in C | wH cw != O] (@wH F n).*)
 
 Definition min_dist := wH min_wH_cw.
 

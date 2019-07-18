@@ -546,7 +546,7 @@ Qed.
 
 Local Open Scope cyclic_code_scope.
 
-Lemma rs_gen_is_pgen : \gen_(a, d) \is 'pgen[RS.codebook a n' d].
+Lemma rs_gen_is_pgen : \gen_(a, d) \in 'pgen[RS.codebook a n' d].
 Proof.
 apply/forallP => cw; apply/eqP; apply/idP/idP.
   case/rs_genP => x [sz_x ->]; by rewrite dvdp_mulIr.
@@ -926,7 +926,7 @@ Qed.
 
 Local Open Scope cyclic_code_scope.
 
-Lemma rs_gen_is_gen : poly_rV \gen_(a, d) \is 'cgen[Ccode.mk RS_cyclic].
+Lemma rs_gen_is_gen : poly_rV \gen_(a, d) \in 'cgen[Ccode.mk RS_cyclic].
 Proof.
 apply pgen_is_cgen => /=.
   exact: RS_not_trivial.

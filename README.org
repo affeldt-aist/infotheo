@@ -1,7 +1,6 @@
 * infotheo
 
-This is a Coq formalization of information theory and linear
-error-correcting codes.
+[[https://travis-ci.com/affeldt-aist/infotheo][file:https://travis-ci.com/affeldt-aist/infotheo.svg?branch=master]]
 
 ** Installation
 

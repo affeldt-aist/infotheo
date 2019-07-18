@@ -267,9 +267,7 @@ Section polynomial_code_generator.
 
 Variable (F : finFieldType) (n : nat) (C : {set 'rV[F]_n}).
 
-Definition is_pgen := [qualify g | [forall x, (x \in C) == (g %| rVpoly x)]].
-Fact is_pgen_key : pred_key is_pgen. Proof. by []. Qed.
-Canonical is_pgen_keyed := KeyedQualifier is_pgen_key.
+Definition is_pgen := [pred g | [forall x, (x \in C) == (g %| rVpoly x)]].
 
 End polynomial_code_generator.
 
@@ -285,7 +283,7 @@ Record t := mk {
   lcode0 :> Lcode0.t F n ;
   gen : {poly F} ;
   size_gen : size gen < n ;
-  P : gen \is 'pgen[[set cw in lcode0]] }.
+  P : gen \in 'pgen[[set cw in lcode0]] }.
 
 End polynomial_code.
 End Pcode.
@@ -315,17 +313,16 @@ Section cyclic_code_generator.
 Variable (F : finFieldType) (n : nat) (C : Ccode.t F n).
 Hypothesis C_not_trivial : not_trivial C.
 
-(** A nonzero polynomial of lowest degree in the code is called a generator polynomial: *)
-Definition is_cgen := [qualify x | non0_codeword_lowest_deg C x].
-Fact is_cgen_key : pred_key is_cgen. Proof. by []. Qed.
-Canonical is_cgen_keyed := KeyedQualifier is_cgen_key.
+(* A nonzero polynomial of lowest degree in the code is called a generator
+  polynomial: *)
+Definition is_cgen := [pred x | non0_codeword_lowest_deg C x].
 
 Local Notation "''cgen'" := (is_cgen).
 
-Lemma is_cgenE g : g \is 'cgen = non0_codeword_lowest_deg C g.
+Lemma is_cgenE g : g \in 'cgen = non0_codeword_lowest_deg C g.
 Proof. by []. Qed.
 
-Lemma size_is_cgen g : g \is 'cgen -> size (rVpoly g) <= n.
+Lemma size_is_cgen g : g \in 'cgen -> size (rVpoly g) <= n.
 Proof. by rewrite size_poly. Qed.
 
 Definition canonical_cgen : 'rV[F]_n := val (exists_non0_codeword_lowest_deg C_not_trivial).
@@ -403,7 +400,7 @@ by rewrite -mulNr shift_linearity_codeword.
 Qed.
 
 Lemma scale_cgen (g' : 'rV[F]_n) (HC : not_trivial C) :
-  g' \is 'cgen[C] -> { k | (k != 0) && (g' == k *: canonical_cgen HC) }.
+  g' \in 'cgen[C] -> { k | (k != 0) && (g' == k *: canonical_cgen HC) }.
 Proof.
 move=> Hg'.
 set g := canonical_cgen HC.
@@ -455,7 +452,7 @@ by rewrite k0 -(rVpolyK g') g''0 linearZ /= rVpolyK.
 Qed.
 
 Lemma divide_codeword (p : {poly F}) : poly_rV (`[ p ]_n) \in C ->
-  forall g, g \is 'cgen[C] -> rVpoly g %| p.
+  forall g, g \in 'cgen[C] -> rVpoly g %| p.
 Proof.
 move=> pC g Hg.
 case/boolP : (p == 0) => [/eqP -> | p0].
@@ -488,7 +485,7 @@ exists (p %/ rVpoly g).
 by rewrite {1}(divp_eq p (rVpoly g)) rem_0 addr0.
 Qed.
 
-Lemma cgen_divides_Xn_sub_1 g : g \is 'cgen[C] -> rVpoly g %| 'X^n - 1.
+Lemma cgen_divides_Xn_sub_1 g : g \in 'cgen[C] -> rVpoly g %| 'X^n - 1.
 Proof.
 move=> Hg.
 move: (@divide_codeword ('X^n - 1)).
@@ -497,7 +494,7 @@ by rewrite linear0 (proj1 (Lcode0.aclosed C)) => /(_ erefl); apply.
 Qed.
 
 Lemma divides_lowest_size (HC : not_trivial C) (g : {poly F}) (gn : size g <= n) :
-  g \is 'pgen[[set cw in C]] -> size g = lowest_size HC.
+  g \in 'pgen[[set cw in C]] -> size g = lowest_size HC.
 Proof.
 move=> H.
 rewrite -(poly_rV_K gn).
@@ -519,7 +516,7 @@ apply/size_lowest/and3P; split.
   apply: dvdp_leq; by rewrite rVpoly0.
 Qed.
 
-Lemma cgen_is_pgen g : g \is 'cgen[C] -> rVpoly g \is 'pgen[[set cw in C]].
+Lemma cgen_is_pgen g : g \in 'cgen[C] -> rVpoly g \in 'pgen[[set cw in C]].
 Proof.
 move=> Hg; apply/forallP => p; apply/eqP; apply/idP/idP => [p_in_C | g_generated].
 - have H : poly_rV (`[ rVpoly p ]_n) = p.
@@ -536,7 +533,7 @@ move=> Hg; apply/forallP => p; apply/eqP; apply/idP/idP => [p_in_C | g_generated
 Qed.
 
 Lemma pgen_is_cgen (g : 'rV_n) (C_not_trivial : not_trivial C) :
-  rVpoly g \is 'pgen[[set cw in C]] -> g \is 'cgen[C].
+  rVpoly g \in 'pgen[[set cw in C]] -> g \in 'cgen[C].
 Proof.
 move=> Hg.
 rewrite is_cgenE; apply/and3P => [:H1]; split.
@@ -556,7 +553,7 @@ rewrite is_cgenE; apply/and3P => [:H1]; split.
 Qed.
 
 Lemma pgen_cgen (C_not_trivial : not_trivial C) (g : 'rV_n) :
-  (rVpoly g \is 'pgen[[set cw in C]]) = (g \is 'cgen[C]).
+  (rVpoly g \in 'pgen[[set cw in C]]) = (g \in 'cgen[C]).
  apply/idP/idP; [exact: pgen_is_cgen | exact: cgen_is_pgen]. Qed.
 
 (* the dimension of C is n - deg g *)
@@ -619,4 +616,3 @@ exact: (Pcode.P C).
 Qed.
 
 End polynomial_cyclic_equivalence_condition.
-
