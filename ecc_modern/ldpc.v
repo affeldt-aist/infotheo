@@ -85,7 +85,7 @@ Variable a' : A.
 Hypothesis Ha' : receivable (BSC.c card_A p_01) (P `^ 1) (\row_(i < 1) a').
 
 Lemma bsc_post (a : A) :
-  (P `^ 1) `^^ (BSC.c card_A p_01) , Ha' (\row_(i < 1) a | \row_(i < 1) a') =
+  (P `^ 1) `^^ (BSC.c card_A p_01) (\row_(i < 1) a | Ha') =
   (if a == a' then 1 - p else p)%R.
 Proof.
 rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
@@ -426,7 +426,7 @@ Let C := kernel H.
 Let C_not_empty := Lcode0.not_empty C.
 Hypothesis Hy : receivable W (`U C_not_empty) y.
 
-(*Let g := fun n0 (x : 'F_2) => (`U C_not_empty) '_ n0 `^^ W , Hy (x | y).*)
+(*Let g := fun n0 (x : 'F_2) => (`U C_not_empty) '_ n0 `^^ W (x | Hy).*)
 
 Local Notation "''V'" := (Vnext H).
 Local Notation "''F'" := (Fnext H).
@@ -443,7 +443,7 @@ Local Open Scope R_scope.
 
 Lemma estimation_correctness (d : 'rV_n) n0 :
   let b := d ``_ n0 in let P := `U C_not_empty in
-  P '_ n0 `^^ W , Hy (b | y) =
+  P '_ n0 `^^ W (b | Hy) =
     MarginalPostProbability.Kmpp Hy * PosteriorProbability.Kppu W [set cw in C] y *
     W `(y ``_ n0 | b) * \prod_(m0 in 'F n0) alpha m0 n0 d.
 Proof.

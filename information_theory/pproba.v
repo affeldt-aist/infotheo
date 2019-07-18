@@ -17,10 +17,10 @@ Require Import cproba.
 - Section marginal_post_proba_prop.
 *)
 
-Reserved Notation "P '`^^' W ',' H '(' x '|' y ')'" (at level 10,
-  W, y, x, H at next level).
-Reserved Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" (at level 10,
-  n0, W, H, a, y at next level).
+Reserved Notation "P '`^^' W '(' x '|' Hy ')'" (at level 10,
+  W, x, Hy at next level).
+Reserved Notation "P ''_' n0 '`^^' W '(' a '|' Hy ')'" (at level 10,
+  n0, W, a, Hy at next level).
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -116,14 +116,14 @@ Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
 Lemma dE x : d x = P x * W ``(y | x) / den.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
-Local Notation "P '`^^' W ',' H '(' x '|' y ')'" := (@d _ _ W _ P y H x).
+Local Notation "P '`^^' W '(' x '|' Hy ')'" := (@d _ _ W _ P _ Hy x).
 
 (* relation with channel-based information-theoretic definitions *)
 Section chap2.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Local Open Scope channel_scope.
 Lemma ppE (x : 'rV[A]_n) (y : 'rV[B]_n) (Hy : receivable W P y) :
-  P `^^ W , Hy (x | y) = \Pr_(`J(P, W ``^ n))[[set x]|[set y]].
+  P `^^ W (x | Hy) = \Pr_(`J(P, W ``^ n))[[set x]|[set y]].
 Proof.
 rewrite dE /cPr setX1 2!Pr_set1 JointDistChan.dE /=; congr (_ / _).
 rewrite Bivar.sndE /=; apply eq_bigr => x' _; by rewrite JointDistChan.dE /= mulRC.
@@ -140,11 +140,11 @@ Hypothesis Hy : receivable W (`U HC) y.
 Definition Kppu := / \sum_(c in C) W ``(y | c).
 
 Lemma uniformEF (x : 'rV[A]_n) : x \notin C ->
-  (`U HC) `^^ W, Hy (x | y) = 0.
+  (`U HC) `^^ W (x | Hy) = 0.
 Proof. move=> xC; by rewrite dE UniformSupport.dEN // /Rdiv !mul0R. Qed.
 
 Lemma uniformET (x : 'rV[A]_n) : x \in C ->
-  (`U HC) `^^ W, Hy (x | y) = Kppu * W ``(y | x).
+  (`U HC) `^^ W (x | Hy) = Kppu * W ``(y | x).
 Proof.
 move=> Ht.
 rewrite dE UniformSupport.dET // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
@@ -162,7 +162,7 @@ by apply/eqP; rewrite -not_receivable_uniformE Hy.
 Qed.
 
 Lemma uniform_kernel (x : 'rV[A]_n) :
-  (`U HC) `^^ W, Hy (x | y) = (Kppu * INR (x \in C) * W ``(y | x))%R.
+  (`U HC) `^^ W (x | Hy) = (Kppu * INR (x \in C) * W ``(y | x))%R.
 Proof.
 case/boolP : (x \in C) => xC.
 - by rewrite uniformET // ?inE // mulR1.
@@ -172,8 +172,8 @@ Qed.
 End prop.
 End PosteriorProbability.
 
-Notation "P '`^^' W ',' H '(' x '|' y ')'" :=
-  (@PosteriorProbability.d _ _ W _ P y H x) : proba_scope.
+Notation "P '`^^' W '(' x '|' Hy ')'" :=
+  (@PosteriorProbability.d _ _ W _ P _ Hy x) : proba_scope.
 
 Local Open Scope vec_ext_scope.
 
@@ -183,7 +183,7 @@ Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Variable y : 'rV[B]_n.
 Hypothesis Hy : receivable W P y.
 
-Let f' := fun x : 'rV_n => P `^^ W, Hy (x | y).
+Let f' := fun x : 'rV_n => P `^^ W (x | Hy).
 
 Definition Kmpp : R := / \sum_(t in 'rV_n) f' t.
 
@@ -224,8 +224,8 @@ Qed.
 Definition d i : dist A := makeDist (f0 i) (f1 i).
 
 End def.
-Local Notation "P ''_' n0 '`^^' W ',' Hy '(' a '|' y ')'" :=
-  (@d _ _ W _ P y Hy n0 a).
+Local Notation "P ''_' n0 '`^^' W '(' a '|' Hy ')'" :=
+  (@d _ _ W _ P _ Hy n0 a).
 Section prop.
 Variables (A B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {set 'rV[A]_n}).
@@ -235,12 +235,12 @@ Variable y : 'rV[B]_n.
 Hypothesis Hy : receivable W (`U HC) y.
 
 Lemma probaE b n0 :
-  (`U HC) '_ n0 `^^ W, Hy (b | y) =
-  Kmpp Hy * (\sum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W, Hy (t | y)).
+  (`U HC) '_ n0 `^^ W (b | Hy) =
+  Kmpp Hy * (\sum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W (t | Hy)).
 Proof. by rewrite ffunE. Qed.
 
 End prop.
 End MarginalPostProbability.
 
-Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" :=
-  (@MarginalPostProbability.d _ _ W _ P y H n0 a) : proba_scope.
+Notation "P ''_' n0 '`^^' W '(' a '|' Hy ')'" :=
+  (@MarginalPostProbability.d _ _ W _ P _ Hy n0 a) : proba_scope.

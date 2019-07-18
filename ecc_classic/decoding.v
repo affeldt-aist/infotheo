@@ -312,7 +312,7 @@ Variable P : {dist 'rV[A]_n}.
 
 Definition MAP_decoding := forall y (Hy : receivable W P y),
   exists m, dec y = Some m /\
-    P `^^ W , Hy (m | y) = \rmax_(m in C) (P `^^ W , Hy (m | y)).
+    P `^^ W (m | Hy) = \rmax_(m in C) (P `^^ W (m | Hy)).
 
 End MAP_decoding.
 
@@ -378,6 +378,6 @@ Definition MPM_condition := let P := `U C_not_empty in
   forall y (Hy : receivable W P y),
   forall x, dec y = Some x ->
   forall n0,
-    P '_ n0 `^^ W , Hy ((enc x) ``_ n0 | y) = \rmax_(b in 'F_2) P '_ n0 `^^ W , Hy (b | y).
+    P '_ n0 `^^ W ((enc x) ``_ n0 | Hy) = \rmax_(b in 'F_2) P '_ n0 `^^ W (b | Hy).
 
 End MPM_condition.

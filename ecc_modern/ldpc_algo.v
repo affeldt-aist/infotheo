@@ -315,7 +315,7 @@ Let C := kernel H.
 Let C_not_empty := Lcode0.not_empty C.
 Hypothesis Hy : receivable W (`U C_not_empty) y.
 Definition esti_spec n0 (x : 'rV_n) :=
-  `U C_not_empty '_ n0 `^^ W, Hy (x ``_ n0 | y).
+  `U C_not_empty '_ n0 `^^ W (x ``_ n0 | Hy).
 
 Definition estimation_spec := uniq (unzip1 estimations) /\
   forall n0, (inr n0, p01 (esti_spec n0) n0) \in estimations.
