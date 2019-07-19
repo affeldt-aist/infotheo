@@ -1041,7 +1041,9 @@ Open Scope channel_scope.
 Open Scope vec_ext_scope.
 Open Scope proba_scope.
 Variable W : `Ch('F_2, B).
-Variable vb : 'rV[B]_n.
+Let C := kernel H.
+Let C_not_empty := Lcode0.not_empty C.
+Variable vb : (`U C_not_empty).-receivable W.
 Local Notation "''V'" := (Vnext H).
 Local Notation "''F'" := (Fnext H).
 
@@ -1449,8 +1451,8 @@ rewrite IHl; last first.
 by rewrite IH // in_cons eqxx.
 Qed.
 
-Lemma map_apply_seq_eq {A A' B' C : eqType} (f : A -> B' -> A') (g : A -> C)
-      (g' : A' -> C) (cl : seq A) (xl : seq B') :
+Lemma map_apply_seq_eq {A A' B' D : eqType} (f : A -> B' -> A') (g : A -> D)
+      (g' : A' -> D) (cl : seq A) (xl : seq B') :
   (forall c x, c \in cl -> g c = g' (f c x)) -> size cl == size xl ->
   map g cl = map g' (apply_seq (map f cl) xl).
 Proof.
@@ -1515,8 +1517,8 @@ move=> c cl Hc.
 by rewrite IH.
 Qed.
 
-Lemma apply_seqs_but1 {I U V : eqType} {k} {C}
-  (f : tn_tree I k U V -> seq R2 -> C) g in0 cl :
+Lemma apply_seqs_but1 {I U V : eqType} {k} {D}
+  (f : tn_tree I k U V -> seq R2 -> D) g in0 cl :
   uniq (map node_id cl) ->
   apply_seq (map f cl) (seqs_but1 in0 (map g cl)) =
   [seq (f c (in0 ++ [seq g d | d <- cl & node_id d != node_id c])) | c <- cl].
@@ -1657,31 +1659,21 @@ have ->: Finite.enum [finType of 'I_m + 'I_n]
   by rewrite unlock /=.
 rewrite /sum_enum filter_cat map_cat !filter_map -!map_comp.
 transitivity
-  [seq ([eta F] \o [eta inj]) i
-  | i <- Finite.enum (ord_of_kind m n' (negk k))
+  [seq ([eta F] \o [eta inj]) i | i <- Finite.enum (ord_of_kind m n' (negk k))
   & [preim [eta inj] of [set x | tanner_rel H a x] :\: [set inj x | x in s]] i].
-  destruct k; simpl.
-    have Hp: [preim [eta inl] of [set x | tanner_rel H (inl i) x] :\: inr @: s]
-             =i pred0.
-      by move=> x; rewrite /= !inE tanner_relE andbF.
-    by rewrite (eq_filter Hp) filter_pred0.
-  have Hp: [preim [eta inr] of [set x | tanner_rel H (inr i) x] :\: inl @: s]
-           =i pred0
-    by move=> x; rewrite /= !inE tanner_relE andbF.
-  by rewrite (eq_filter Hp) filter_pred0 cats0.
+  have Hp: [preim (id_of_kind k) of
+            [set x | tanner_rel H (id_of_kind k i) x] :\: inj @: s] =i pred0.
+      move=> x; destruct k; by rewrite /= !inE tanner_relE andbF.
+  destruct k; by rewrite (eq_filter Hp) filter_pred0 // cats0.
 congr (map _ _).
-apply eq_filter => x /=.
-rewrite !inE.
-case Hx: (x \in s).
-  by rewrite (mem_imset inj Hx).
-case Hinj: (inj x \in inj @: s) => //.
-move/imsetP: Hinj => [y Hy] /eqP.
-rewrite (inj_eq (@id_of_kind_inj _ _ _)) => /eqP Hxy.
-by rewrite Hxy Hy in Hx.
+apply eq_filter => x /=; rewrite !inE.
+case Hx: (x \in s); first by rewrite mem_imset.
+case /boolP: (inj x \in _) => // /imsetP [y Hy] /id_of_kind_inj xy.
+by rewrite xy Hy in Hx.
 Qed.
 
 Variable d : 'rV['F_2]_n.
-Definition msg_spec' := msg_spec H W vb d.
+Definition msg_spec' := msg_spec vb d.
 
 Lemma msg_spec_alpha_beta a b :
   tanner_rel H a b ->
@@ -1835,7 +1827,7 @@ Lemma push_init_spec s i :
    oapp (msg_spec' ^~ i) (R1,R1) (prec_node s)).
 Proof. by destruct s. Qed.
 
-Local Notation build_computed_tree := (build_computed_tree H W vb d).
+Local Notation build_computed_tree := (build_computed_tree vb d).
 
 Lemma tree_ok h (s : seq id') k (i : ord_of_kind m n' k) :
   let t1 := build_tree_rec H rW h s k i in
@@ -2008,7 +2000,7 @@ rewrite sym_tanner_rel.
 by move/andP/proj1: Hun => /= /andP/proj1.
 Qed.
 
-Corollary computed_tree_ok : computed_tree_spec H W vb d.
+Corollary computed_tree_ok : computed_tree_spec vb d.
 Proof. by apply tree_ok; rewrite // card0 subn0. Qed.
 
 (* Check that the message from a to b meets its specification.
@@ -2124,7 +2116,7 @@ rewrite -tree_ok //.
 by rewrite labels_sumprod_down labels_sumprod_up.
 Qed.
 
-Theorem sumprod_ok : sumprod_spec H W vb d.
+Theorem sumprod_ok : sumprod_spec vb d.
 Proof.
 move=> a b Hgr.
 rewrite computed_tree_ok.
@@ -2308,10 +2300,6 @@ rewrite -tree_ok // labels_sumprod_down labels_sumprod_up in Hn0l.
 by exists (inr n0).
 Qed.
 
-Let C := kernel H.
-Let C_not_empty := Lcode0.not_empty C.
-Hypothesis Hvb : receivable W (`U C_not_empty) vb.
-
 Lemma big_beta_mul (A : finType) (F1 F2 : A -> R) (l : pred A) :
   \big[beta_op/(1,1)]_(i <- enum l) (F1 i, F2 i) =
   (\prod_(i in l) F1 i , \prod_(i in l) F2 i).
@@ -2324,7 +2312,7 @@ by case Ha: (a \in l); rewrite IH.
 Qed.
 
 (* get_esti returns correct estimations *)
-Theorem get_esti_ok : get_esti_spec d Hvb.
+Theorem get_esti_ok : get_esti_spec vb d.
 Proof.
 rewrite /get_esti_spec /esti_spec.
 move=> n0.
@@ -2337,7 +2325,7 @@ congr (_ :: _).
 rewrite !estimation_correctness; last 2 first.
   by apply tanner.
   by apply tanner.
-rewrite -!(K949_lemma Hvb tanner d n0).
+rewrite -!(K949_lemma vb tanner d n0).
 rewrite /K949 /normalize.
 rewrite -big_beta.
 rewrite big_beta_mul /=.
@@ -2378,7 +2366,7 @@ case: ifP => Hi.
 by eapply subseq_trans; [| apply subseq_cons].
 Qed.
 
-Theorem estimation_ok : estimation_spec d Hvb.
+Theorem estimation_ok : estimation_spec vb d.
 Proof.
 split.
   rewrite /build_tree.

@@ -82,10 +82,10 @@ Hypothesis p_01' : 0 < p < 1.
 Let p_01 := Prob.mk (closed p_01').
 Let P : dist A := Uniform.d card_A.
 Variable a' : A.
-Hypothesis Ha' : receivable (BSC.c card_A p_01) (P `^ 1) (\row_(i < 1) a').
+Hypothesis Ha' : Receivable.def (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
 
 Lemma bsc_post (a : A) :
-  (P `^ 1) `^^ (BSC.c card_A p_01) , Ha' (\row_(i < 1) a | \row_(i < 1) a') =
+  (P `^ 1) `^^ (BSC.c card_A p_01) (\row_(i < 1) a | Receivable.mk Ha') =
   (if a == a' then 1 - p else p)%R.
 Proof.
 rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
@@ -421,12 +421,11 @@ Variables (m n' : nat).
 Let n := n'.+1.
 Variable H : 'M['F_2]_(m, n).
 Variable (B : finType) (W : `Ch('F_2, B)).
-Variable y : 'rV[B]_n.
 Let C := kernel H.
 Let C_not_empty := Lcode0.not_empty C.
-Hypothesis Hy : receivable W (`U C_not_empty) y.
+Variable y : (`U C_not_empty).-receivable W.
 
-(*Let g := fun n0 (x : 'F_2) => (`U C_not_empty) '_ n0 `^^ W , Hy (x | y).*)
+(*Let g := fun n0 (x : 'F_2) => (`U C_not_empty) '_ n0 `^^ W (x | Hy).*)
 
 Local Notation "''V'" := (Vnext H).
 Local Notation "''F'" := (Fnext H).
@@ -443,13 +442,13 @@ Local Open Scope R_scope.
 
 Lemma estimation_correctness (d : 'rV_n) n0 :
   let b := d ``_ n0 in let P := `U C_not_empty in
-  P '_ n0 `^^ W , Hy (b | y) =
-    MarginalPostProbability.Kmpp Hy * PosteriorProbability.Kppu W [set cw in C] y *
+  P '_ n0 `^^ W (b | y) =
+    MarginalPostProbability.Kmpp y * PosteriorProbability.Kppu [set cw in C] y *
     W `(y ``_ n0 | b) * \prod_(m0 in 'F n0) alpha m0 n0 d.
 Proof.
 move=> b P.
 rewrite MarginalPostProbability.probaE -2!mulRA; congr (_ * _).
-transitivity (PosteriorProbability.Kppu W [set cw in C] y * (\rsum_(x # setT :\ n0 , d)
+transitivity (PosteriorProbability.Kppu [set cw in C] y * (\rsum_(x # setT :\ n0 , d)
       W ``(y | x) * \prod_(m0 < m) (\delta ('V m0) x)%:R))%R.
   rewrite [RHS]big_distrr [in RHS]/=.
   apply eq_big => t; first by rewrite -freeon_all.
@@ -491,11 +490,11 @@ Definition K949 (n0 : 'I_n) df := /
     W Zp1 (y ``_ n0) * \prod_(m1 in 'F n0) alpha m1 n0 (df `[ n0 := Zp1 ])).
 
 Lemma K949_lemma df n0 : K949 n0 df =
-  MarginalPostProbability.Kmpp Hy * PosteriorProbability.Kppu W [set cw in C] y.
+  MarginalPostProbability.Kmpp y * PosteriorProbability.Kppu [set cw in C] y.
 Proof.
 rewrite /K949 /MarginalPostProbability.Kmpp /PosteriorProbability.Kppu -invRM; last 2 first.
   rewrite epmf1 => ?; lra.
-  apply/eqP; by rewrite -not_receivable_uniformE Hy.
+  apply/eqP; by rewrite -not_receivable_uniformE Receivable.defE.
 congr (/ _).
 transitivity (\sum_(t in 'rV['F_2]_n)
   if t \in kernel H then W ``(y | t) else 0); last first.
@@ -516,11 +515,11 @@ transitivity (\sum_(t in 'rV['F_2]_n)
     rewrite invRM; last 2 first.
       exact/invR_neq0.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
-      apply/eqP; by rewrite -not_receivable_uniformE Hy.
+      apply/eqP; by rewrite -not_receivable_uniformE Receivable.defE.
     rewrite invRK // -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.
     set tmp1 := \sum_(_ | _) _.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
-    by rewrite -not_receivable_uniformE Hy.
+    by rewrite -not_receivable_uniformE Receivable.defE.
   rewrite PosteriorProbability.dE UniformSupport.dEN; last by rewrite inE; exact/negbT.
   by rewrite !(mul0R,div0R).
 rewrite -big_mkcond /=.
