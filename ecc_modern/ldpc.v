@@ -448,8 +448,9 @@ Lemma estimation_correctness (d : 'rV_n) n0 :
 Proof.
 move=> b P.
 rewrite MarginalPostProbability.probaE -2!mulRA; congr (_ * _).
-transitivity (PosteriorProbability.Kppu [set cw in C] y * (\rsum_(x = d [~[set~ n0]])
-      W ``(y | x) * \prod_(m0 < m) (\delta ('V m0) x)%:R))%R.
+transitivity (PosteriorProbability.Kppu [set cw in C] y *
+              (\rsum_(x = d [~ setT :\ n0])
+                W ``(y | x) * \prod_(m0 < m) (\delta ('V m0) x)%:R))%R.
   rewrite [RHS]big_distrr [in RHS]/=.
   apply eq_big => t; first by rewrite -freeon_all.
   rewrite inE andTb => td_n0.
