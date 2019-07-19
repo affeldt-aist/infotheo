@@ -128,7 +128,7 @@ Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
 Lemma dE x : d x = P x * W ``(y | x) / den.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
-Local Notation "P '`^^' W '(' x '|' y ')'" := (d y x).
+Local Notation "P '`^^' W '(' x '|' y ')'" := (@d _ _ W _ P y x).
 
 (* relation with channel-based information-theoretic definitions *)
 Section chap2.
@@ -185,7 +185,7 @@ End PosteriorProbability.
 Arguments PosteriorProbability.Kppu {A} {B} {W} {n} _ {HC}.
 
 Notation "P '`^^' W '(' x '|' y ')'" :=
-  (PosteriorProbability.d y x) : proba_scope.
+  (@PosteriorProbability.d _ _ W _ P y x) : proba_scope.
 
 Local Open Scope vec_ext_scope.
 
@@ -235,7 +235,7 @@ Qed.
 Definition d i : dist A := makeDist (f0 i) (f1 i).
 
 End def.
-Local Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" := (d y n0 a).
+Local Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" := (@d _ _ W _ P y n0 a).
 Section prop.
 Variables (A B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {set 'rV[A]_n}).
@@ -251,5 +251,5 @@ Proof. by rewrite ffunE. Qed.
 End prop.
 End MarginalPostProbability.
 
-Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" :=
-  (MarginalPostProbability.d y n0 a) : proba_scope.
+Local Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" :=
+  (@MarginalPostProbability.d _ _ W _ P y n0 a) : proba_scope.
