@@ -1657,27 +1657,17 @@ have ->: Finite.enum [finType of 'I_m + 'I_n]
   by rewrite unlock /=.
 rewrite /sum_enum filter_cat map_cat !filter_map -!map_comp.
 transitivity
-  [seq ([eta F] \o [eta inj]) i
-  | i <- Finite.enum (ord_of_kind m n' (negk k))
+  [seq ([eta F] \o [eta inj]) i | i <- Finite.enum (ord_of_kind m n' (negk k))
   & [preim [eta inj] of [set x | tanner_rel H a x] :\: [set inj x | x in s]] i].
-  destruct k; simpl.
-    have Hp: [preim [eta inl] of [set x | tanner_rel H (inl i) x] :\: inr @: s]
-             =i pred0.
-      by move=> x; rewrite /= !inE tanner_relE andbF.
-    by rewrite (eq_filter Hp) filter_pred0.
-  have Hp: [preim [eta inr] of [set x | tanner_rel H (inr i) x] :\: inl @: s]
-           =i pred0
-    by move=> x; rewrite /= !inE tanner_relE andbF.
-  by rewrite (eq_filter Hp) filter_pred0 cats0.
+  have Hp: [preim (id_of_kind k) of
+            [set x | tanner_rel H (id_of_kind k i) x] :\: inj @: s] =i pred0.
+      move=> x; destruct k; by rewrite /= !inE tanner_relE andbF.
+  destruct k; by rewrite (eq_filter Hp) filter_pred0 // cats0.
 congr (map _ _).
-apply eq_filter => x /=.
-rewrite !inE.
-case Hx: (x \in s).
-  by rewrite (mem_imset inj Hx).
-case Hinj: (inj x \in inj @: s) => //.
-move/imsetP: Hinj => [y Hy] /eqP.
-rewrite (inj_eq (@id_of_kind_inj _ _ _)) => /eqP Hxy.
-by rewrite Hxy Hy in Hx.
+apply eq_filter => x /=; rewrite !inE.
+case Hx: (x \in s); first by rewrite mem_imset.
+case /boolP: (inj x \in _) => // /imsetP [y Hy] /id_of_kind_inj xy.
+by rewrite xy Hy in Hx.
 Qed.
 
 Variable d : 'rV['F_2]_n.
