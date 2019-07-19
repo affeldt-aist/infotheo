@@ -254,7 +254,9 @@ Variable B : finType.
 Open Scope channel_scope.
 Open Scope proba_scope.
 Variable W : `Ch('F_2, B).
-Variable y : 'rV[B]_n.
+Let C := kernel H.
+Let C_not_empty := Lcode0.not_empty C.
+Hypothesis y : (`U C_not_empty).-receivable W.
 
 Let rW n0 := (W`(y ``_ n0 | 0), W`(y ``_ n0 | 1)).
 
@@ -311,11 +313,8 @@ Definition sumprod_spec := forall a b,
 
 Let estimations := estimation computed_tree.
 
-Let C := kernel H.
-Let C_not_empty := Lcode0.not_empty C.
-Hypothesis Hy : receivable W (`U C_not_empty) y.
 Definition esti_spec n0 (x : 'rV_n) :=
-  `U C_not_empty '_ n0 `^^ W (x ``_ n0 | Hy).
+  `U C_not_empty '_ n0 `^^ W (x ``_ n0 | y).
 
 Definition estimation_spec := uniq (unzip1 estimations) /\
   forall n0, (inr n0, p01 (esti_spec n0) n0) \in estimations.
