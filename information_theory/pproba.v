@@ -251,5 +251,5 @@ Proof. by rewrite ffunE. Qed.
 End prop.
 End MarginalPostProbability.
 
-Local Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" :=
+Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" :=
   (@MarginalPostProbability.d _ _ W _ P y n0 a) : proba_scope.
