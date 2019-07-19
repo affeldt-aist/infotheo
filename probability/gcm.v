@@ -845,20 +845,26 @@ Check \bigcup_(x in CX) id.
 Check bigsetU .
 Admitted.
 
-(*
-Axiom F : forall {X Y : convType}, (X -> Y) -> P X -> P Y.
-Fail Axiom F_preserves_affine : forall (X Y : convType) (f : X -> Y),
-    affine_function f -> affine_function (F f).
-*)
+Definition join1' (C : convType) (s : necset (necset_convType C)) : {convex_set C} := (CSet.mk (convex_hull (bigsetU (NECSet.car s) (fun x => if x \in s then NECSet.car x else cset0 _)))).
 
-(* the outputs of P carries a semilattice structure
-   (NB: this needs to be reviewed) *)
-(*Axiom P_semiLattClass : forall X, SemiLattice.class_of (P_delta X).
-Canonical P_semiLattType X := SemiLattice.Pack (P_semiLattClass X).*)
+Lemma join1'_neq0 (C : convType) (s : necset (necset_convType C)) : join1' s != cset0 _.
+Proof.
+case: s => s Hs.
+rewrite cset0P hull_eq0 set0P.
+case/set0P: (Hs) => -[] y Hy /=.
+case/set0P: (Hy) => x yx /= sy.
+exists x; exists {| NECSet.car := y; NECSet.H := Hy |} => //=.
+  by have -> : {| NECSet.car := y; NECSet.H := Hy |}
+                 \in {| NECSet.car := s; NECSet.H := Hs |}
+  by rewrite inE asboolE.
+Qed.
 
-(*Canonical conv_lattType C := @SemiLattice.Pack (P_convType C) (P_semiLattClass _).*)
+Definition join1 (C : convType) (s : necset (necset_convType C)) : necset C :=
+  NECSet.mk (join1'_neq0 s).
 
-(*Definition PD := P_delta \o Dist.*)
+Lemma eps1_correct (C : convType) (s : necset (necset_convType C)) :
+  eps1 s = join1 s.
+Admitted.
 
 (* the morphism part of necset *)
 Definition necset_mor (A B : convType) (f : {affine A -> B}) : necset_convType A -> necset_convType B.
