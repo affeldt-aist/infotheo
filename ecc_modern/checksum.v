@@ -176,13 +176,13 @@ Local Close Scope R_scope.
 Let C := kernel H.
 Hypothesis HC : 0 < #| [set cw in C] |.
 
-Variable y : 'rV[B]_n.
 Local Open Scope proba_scope.
-Hypothesis Hy : receivable W (`U HC) y.
+Variable y : (`U HC).-receivable W.
 
 Lemma post_proba_uniform_checksubsum (x : 'rV['F_2]_n) :
-  (`U HC) `^^ W, Hy (x | y) =
-    (PosteriorProbability.Kppu W [set cw in C] y * (\prod_m0 (\delta ('V m0) x))%:R * W ``(y | x))%R.
+  (`U HC) `^^ W (x | y) =
+    (PosteriorProbability.Kppu [set cw in C] y *
+     (\prod_m0 (\delta ('V m0) x))%:R * W ``(y | x))%R.
 Proof.
 rewrite PosteriorProbability.uniform_kernel; congr (_ * _ * _)%R.
 by rewrite big_morph_natRM checksubsum_in_kernel inE mem_kernel_syndrome0.

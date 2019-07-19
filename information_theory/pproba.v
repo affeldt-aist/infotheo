@@ -6,10 +6,11 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop proba channel.
 Require Import cproba.
 
-(** * Posterior Probability *)
+(** Posterior Probability *)
 
 (** OUTLINE:
-- Section receivable_def.
+- Module Receivable.
+- Section receivable_prop.
 - Section receivable_uniform.
 - Module PostProbability.
 - Section post_proba_prop.
@@ -17,10 +18,10 @@ Require Import cproba.
 - Section marginal_post_proba_prop.
 *)
 
-Reserved Notation "P '`^^' W ',' H '(' x '|' y ')'" (at level 10,
-  W, y, x, H at next level).
-Reserved Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" (at level 10,
-  n0, W, H, a, y at next level).
+Reserved Notation "P '`^^' W '(' x '|' y ')'" (at level 10,
+  W, x, y at next level).
+Reserved Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" (at level 10,
+  n0, W, a, y at next level).
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -30,14 +31,25 @@ Local Open Scope channel_scope.
 Local Open Scope proba_scope.
 Local Open Scope R_scope.
 
-Section receivable_def.
+Module Receivable.
+Section receivable.
+Variables (A B : finType) (n : nat) (P : {dist 'rV[A]_n}) (W : `Ch(A, B)).
+Definition def y := [exists x, (P x != 0) && (W ``(y | x) != 0)].
+Record t := mk {y :> 'rV[B]_n ; _ : def y }.
+Lemma defE (y : t) : def y. Proof. by case: y. Qed.
+End receivable.
+End Receivable.
+Coercion Receivable.y : Receivable.t >-> matrix.
 
-Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
+Notation "P .-receivable W" := (Receivable.t P W) (at level 2,
+  format "P .-receivable  W").
 
-Definition receivable y := [exists x, (P x != 0) && (W ``(y | x) != 0)].
+Section receivable_prop.
 
-Lemma receivableE (y : 'rV__) :
-  receivable y = (\sum_(x in 'rV[A]_n) P x * W ``(y | x) != 0).
+Variables (A B : finType) (n : nat) (P : {dist 'rV[A]_n}) (W : `Ch(A, B)).
+
+Lemma receivableE (y : P.-receivable W) :
+  Receivable.def P W y = (\sum_(x in 'rV[A]_n) P x * W ``(y | x) != 0).
 Proof.
 apply/idP/idP => [|H].
 - case/existsP => /= x /andP[Px0].
@@ -49,13 +61,13 @@ apply/idP/idP => [|H].
     apply: contra H => /eqP H; apply/eqP.
     rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
   apply: contraNT.
-  rewrite /receivable negb_exists => /forallP /= {H}H.
+  rewrite /Receivable.def negb_exists => /forallP /= {H}H.
   apply/eqP/big1 => x _.
   move: (H x); rewrite negb_and 2!negbK => /orP[|] /eqP ->;
     by rewrite ?(mul0R,mulR0).
 Qed.
 
-End receivable_def.
+End receivable_prop.
 
 Section receivable_uniform.
 
@@ -65,7 +77,7 @@ Hypothesis HC : (0 < #| C |)%nat.
 Variable y : 'rV[B]_n.
 
 Lemma not_receivable_uniformE :
-  ~~ receivable W (`U HC) y = (\sum_(t0 in C) W ``(y | t0) == 0).
+  ~~ Receivable.def (`U HC) W y = (\sum_(t0 in C) W ``(y | t0) == 0).
 Proof.
 apply/idP/idP => [|/eqP].
 - rewrite negb_exists => /forallP H.
@@ -76,7 +88,7 @@ apply/idP/idP => [|/eqP].
 - have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%R.
     move=> ? ?; exact: DMC_ge0.
   move/prsumr_eq0P => H /H {H} H.
-  rewrite /receivable; apply/negP.
+  rewrite /Receivable.def; apply/negP.
   case/existsP => z /andP[].
   rewrite UniformSupport.neq0 => /H ->; by rewrite eqxx.
 Qed.
@@ -87,9 +99,8 @@ End receivable_uniform.
 Module PosteriorProbability.
 Section def.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
-Variable y : 'rV[B]_n.
+Variable y : P.-receivable W.
 Definition den := \sum_(x in 'rV_n) P x * W ``(y | x).
-Hypothesis receivable_y : receivable W P y.
 
 Definition f := [ffun x => P x * W ``(y | x) / den].
 
@@ -101,14 +112,15 @@ Qed.
 Lemma f0 x : 0 <= f x.
 Proof.
 rewrite ffunE; apply divR_ge0; first by apply mulR_ge0; exact/dist_ge0.
-apply/ltRP; rewrite lt0R {1}/den -receivableE receivable_y; exact/leRP/den_ge0.
+apply/ltRP; rewrite lt0R {1}/den -receivableE Receivable.defE /=.
+exact/leRP/den_ge0.
 Qed.
 
 Lemma f1 : \sum_(x in 'rV_n) f x = 1.
 Proof.
 rewrite /f /Rdiv; evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h); last first.
   move=> a _; rewrite ffunE /h; reflexivity.
-by rewrite {}/h -big_distrl /= mulRC mulVR // -receivableE.
+by rewrite {}/h -big_distrl /= mulRC mulVR // -receivableE Receivable.defE.
 Qed.
 
 Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
@@ -116,14 +128,14 @@ Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
 Lemma dE x : d x = P x * W ``(y | x) / den.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
-Local Notation "P '`^^' W ',' H '(' x '|' y ')'" := (@d _ _ W _ P y H x).
+Local Notation "P '`^^' W '(' x '|' y ')'" := (d y x).
 
 (* relation with channel-based information-theoretic definitions *)
 Section chap2.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
 Local Open Scope channel_scope.
-Lemma ppE (x : 'rV[A]_n) (y : 'rV[B]_n) (Hy : receivable W P y) :
-  P `^^ W , Hy (x | y) = \Pr_(`J(P, W ``^ n))[[set x]|[set y]].
+Lemma ppE (x : 'rV[A]_n) (y : P.-receivable W) :
+  P `^^ W (x | y) = \Pr_(`J(P, W ``^ n))[[set x]|[set Receivable.y y]].
 Proof.
 rewrite dE /cPr setX1 2!Pr_set1 JointDistChan.dE /=; congr (_ / _).
 rewrite Bivar.sndE /=; apply eq_bigr => x' _; by rewrite JointDistChan.dE /= mulRC.
@@ -134,17 +146,16 @@ Section prop.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat).
 Variable (C : {set 'rV[A]_n}).
 Hypothesis HC : (0 < #| C |)%nat.
-Variable y : 'rV[B]_n.
-Hypothesis Hy : receivable W (`U HC) y.
+Variable y : (`U HC).-receivable W.
 
 Definition Kppu := / \sum_(c in C) W ``(y | c).
 
 Lemma uniformEF (x : 'rV[A]_n) : x \notin C ->
-  (`U HC) `^^ W, Hy (x | y) = 0.
+  (`U HC) `^^ W (x | y) = 0.
 Proof. move=> xC; by rewrite dE UniformSupport.dEN // /Rdiv !mul0R. Qed.
 
 Lemma uniformET (x : 'rV[A]_n) : x \in C ->
-  (`U HC) `^^ W, Hy (x | y) = Kppu * W ``(y | x).
+  (`U HC) `^^ W (x | y) = Kppu * W ``(y | x).
 Proof.
 move=> Ht.
 rewrite dE UniformSupport.dET // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
@@ -158,11 +169,11 @@ rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
   by move=> *; rewrite UniformSupport.dET.
 rewrite -big_distrr /= mulR_eq0 => -[].
   rewrite div1R; exact/invR_neq0/eqP.
-by apply/eqP; rewrite -not_receivable_uniformE Hy.
+by apply/eqP; rewrite -not_receivable_uniformE Receivable.defE.
 Qed.
 
 Lemma uniform_kernel (x : 'rV[A]_n) :
-  (`U HC) `^^ W, Hy (x | y) = (Kppu * INR (x \in C) * W ``(y | x))%R.
+  (`U HC) `^^ W (x | y) = (Kppu * INR (x \in C) * W ``(y | x))%R.
 Proof.
 case/boolP : (x \in C) => xC.
 - by rewrite uniformET // ?inE // mulR1.
@@ -171,19 +182,19 @@ Qed.
 
 End prop.
 End PosteriorProbability.
+Arguments PosteriorProbability.Kppu {A} {B} {W} {n} _ {HC}.
 
-Notation "P '`^^' W ',' H '(' x '|' y ')'" :=
-  (@PosteriorProbability.d _ _ W _ P y H x) : proba_scope.
+Notation "P '`^^' W '(' x '|' y ')'" :=
+  (PosteriorProbability.d y x) : proba_scope.
 
 Local Open Scope vec_ext_scope.
 
 Module MarginalPostProbability.
 Section def.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
-Variable y : 'rV[B]_n.
-Hypothesis Hy : receivable W P y.
+Variable y : P.-receivable W.
 
-Let f' := fun x : 'rV_n => P `^^ W, Hy (x | y).
+Let f' := fun x : 'rV_n => P `^^ W (x | y).
 
 Definition Kmpp : R := / \sum_(t in 'rV_n) f' t.
 
@@ -193,8 +204,8 @@ evar (x : 'rV[A]_n -> R).
 rewrite (eq_bigr x); last first.
   move=> i _; rewrite /f' PosteriorProbability.dE /Rdiv /x; reflexivity.
 rewrite -big_distrl { x} /= mulR_eq0 => -[/eqP|].
-- apply/negP; by rewrite -receivableE.
-- apply/invR_neq0/eqP; by rewrite -receivableE.
+- by apply/negP; rewrite -receivableE Receivable.defE.
+- by apply/invR_neq0/eqP; rewrite -receivableE Receivable.defE.
 Qed.
 
 Definition f (i : 'I_n) := [ffun a => Kmpp * \sum_(t in 'rV_n | t ``_ i == a) f' t].
@@ -224,23 +235,21 @@ Qed.
 Definition d i : dist A := makeDist (f0 i) (f1 i).
 
 End def.
-Local Notation "P ''_' n0 '`^^' W ',' Hy '(' a '|' y ')'" :=
-  (@d _ _ W _ P y Hy n0 a).
+Local Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" := (d y n0 a).
 Section prop.
 Variables (A B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {set 'rV[A]_n}).
 Hypothesis HC : (0 < #| C |)%nat.
 
-Variable y : 'rV[B]_n.
-Hypothesis Hy : receivable W (`U HC) y.
+Variable y : (`U HC).-receivable W.
 
 Lemma probaE b n0 :
-  (`U HC) '_ n0 `^^ W, Hy (b | y) =
-  Kmpp Hy * (\sum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W, Hy (t | y)).
+  (`U HC) '_ n0 `^^ W (b | y) =
+  Kmpp y * (\sum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W (t | y)).
 Proof. by rewrite ffunE. Qed.
 
 End prop.
 End MarginalPostProbability.
 
-Notation "P ''_' n0 '`^^' W ',' H '(' a '|' y ')'" :=
-  (@MarginalPostProbability.d _ _ W _ P y H n0 a) : proba_scope.
+Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" :=
+  (MarginalPostProbability.d y n0 a) : proba_scope.

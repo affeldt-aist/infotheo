@@ -108,7 +108,7 @@ Variable P : {dist 'rV[A]_n}.
 Local Open Scope R_scope.
 
 Definition ML_decoding :=
-  forall y, receivable W P y ->
+  forall y : P.-receivable W,
   exists x, f y = Some x /\
     W ``(y | x) = \rmax_(x' in C) W ``(y | x').
 
@@ -132,11 +132,11 @@ Proof.
 move=> Hx1 Hx2.
 case/boolP : (W ``(y | x2) == 0%R) => [/eqP ->| Hcase].
   exact: DMC_ge0.
-have : receivable W P y.
+have Hy : Receivable.def P W y.
   apply/existsP; exists x2.
   by rewrite Hcase andbT UniformSupport.neq0 inE.
-case/(ML_dec (y := y)) => x' [].
-rewrite Hx1 => -[<-] ->.
+case: (ML_dec (Receivable.mk Hy)) => x' [].
+rewrite /= Hx1 => -[<-] ->.
 rewrite -big_filter.
 apply (Rle_bigRmax (fun i => W ``(y | i))).
 by rewrite mem_filter /= mem_index_enum andbT.
@@ -172,7 +172,8 @@ rewrite (eq_bigl (fun m => phi tb == Some m)); last by move=> m; rewrite inE.
 rewrite [in X in _ <= X](eq_bigl (fun m => dec tb == Some m)); last by move=> m; rewrite inE.
 (* show that phi_ML succeeds more often than phi *)
 have [dectb_None|dectb_Some] := boolP (dec tb == None).
-  case/boolP : (receivable W P tb) => [/ML_dec[m' [tb_m']] | Htb].
+  case/boolP : (Receivable.def P W tb) => [Hy|Htb].
+    case: (ML_dec (Receivable.mk Hy)) => [m' [tb_m']].
     move: dectb_None; by rewrite {1}/dec {1}ffunE tb_m'.
   have W_tb m : W ``(tb | enc m) = 0%R.
     apply/eqP; apply/contraR : Htb => Htb.
@@ -259,7 +260,7 @@ Variable P : {dist 'rV['F_2]_n}.
 Lemma MD_implies_ML : p < 1/2 -> MD_decoding [set cw in C] f ->
   (forall y, f y != None) -> ML_decoding W C f P.
 Proof.
-move=> p05 MD f_total y _ (* y_receivable *).
+move=> p05 MD f_total y.
 have codebook_not_empty : {c | c \in [set cw in C] }.
   move: (mem0v C); set x := (X in X \in C) => _.
   exists x; by rewrite inE mem0v.
@@ -281,7 +282,7 @@ have -> : W ``(y | c) = g (dH_y c).
   clear cast_card.
   rewrite -/W compatible //.
   move/subsetP : f_img; apply.
-  rewrite inE; apply/existsP; by exists y; apply/eqP.
+  by rewrite inE; apply/existsP; exists (Receivable.y y); apply/eqP.
 transitivity (\big[Rmax/R0]_(c in C) (g (dH_y c))); last first.
   apply eq_bigr => /= c' Hc'.
   move: (DMC_BSC_prop p enc (discard c') y).
@@ -296,7 +297,7 @@ rewrite (@big_rmax_bigminn_helper_vec _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //
 - move=> r; rewrite /g.
   apply mulR_ge0; apply pow_le; [lra | exact/prob_ge0].
 - rewrite inE; move/subsetP: f_img; apply.
-  rewrite inE; apply/existsP; by exists y; apply/eqP.
+  rewrite inE; apply/existsP; by exists (Receivable.y y); apply/eqP.
 - move=> ? _; by rewrite /dH_y max_dH.
 - by rewrite /dH_y MD.
 Qed.
@@ -310,9 +311,9 @@ Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B [finType of 'rV[A]_n] n.
 Variable P : {dist 'rV[A]_n}.
 
-Definition MAP_decoding := forall y (Hy : receivable W P y),
+Definition MAP_decoding := forall (y : P.-receivable W),
   exists m, dec y = Some m /\
-    P `^^ W , Hy (m | y) = \rmax_(m in C) (P `^^ W , Hy (m | y)).
+    P `^^ W (m | y) = \rmax_(m in C) (P `^^ W (m | y)).
 
 End MAP_decoding.
 
@@ -327,10 +328,10 @@ Let P := UniformSupport.d (vspace_not_empty C).
 Lemma MAP_implies_ML : MAP_decoding W C dec P -> ML_decoding W C dec P.
 Proof.
 move=> HMAP.
-rewrite /ML_decoding => /= tb Htb.
+rewrite /ML_decoding => /= tb.
 have Hunpos : INR 1 / INR #| [set cw in C] | > 0.
   rewrite div1R; exact/invR_gt0/ltR0n/vspace_not_empty.
-move: (HMAP _ Htb) => H.
+move: (HMAP tb) => H.
 rewrite /PosteriorProbability.d in H.
 unlock in H.
 simpl in H.
@@ -339,7 +340,8 @@ rewrite /tmp in H.
 evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H; last first.
   move=> v vC; rewrite ffunE /h; reflexivity.
 rewrite -rmax_distrl in H; last first.
-  apply/ltRW/invR_gt0; rewrite ltR_neqAle; split.    apply/eqP; by rewrite eq_sym -receivableE.
+  apply/ltRW/invR_gt0; rewrite ltR_neqAle; split.
+    apply/eqP; by rewrite eq_sym -receivableE Receivable.defE.
   exact/PosteriorProbability.den_ge0.
 move: H.
 rewrite {2 3}/P.
@@ -350,12 +352,12 @@ rewrite (eq_bigr (fun i => 1 / INR #|[set cw in C]| * W ``(tb | i))) in H; last 
 rewrite -rmax_distrr in H; last exact/ltRW/Hunpos.
 exists m'; split; first exact Hm'.
 rewrite /PosteriorProbability.f ffunE in H.
-set x := PosteriorProbability.den _ _ _ in H.
-have x0 : / x <> 0 by apply/eqP/invR_neq0'; rewrite -receivableE.
+set x := PosteriorProbability.den _ in H.
+have x0 : / x <> 0 by apply/eqP/invR_neq0'; rewrite -receivableE Receivable.defE.
 move/(eqR_mul2r x0) in H.
 rewrite /= UniformSupport.dET ?inE // in H; last first.
   move/subsetP : dec_img; apply.
-  rewrite inE; apply/existsP; by exists tb; apply/eqP.
+  rewrite inE; apply/existsP; by exists (Receivable.y tb); apply/eqP.
 move/eqR_mul2l :  H => -> //; exact: gtR_eqF.
 Qed.
 
@@ -375,9 +377,9 @@ Variable dec : decT [finFieldType of 'F_2] [finType of 'rV['F_2]_(n - m)] n.
 Local Open Scope vec_ext_scope.
 
 Definition MPM_condition := let P := `U C_not_empty in
-  forall y (Hy : receivable W P y),
+  forall (y : P.-receivable W),
   forall x, dec y = Some x ->
   forall n0,
-    P '_ n0 `^^ W , Hy ((enc x) ``_ n0 | y) = \rmax_(b in 'F_2) P '_ n0 `^^ W , Hy (b | y).
+    P '_ n0 `^^ W ((enc x) ``_ n0 | y) = \rmax_(b in 'F_2) P '_ n0 `^^ W (b | y).
 
 End MPM_condition.
