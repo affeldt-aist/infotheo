@@ -302,13 +302,13 @@ apply eq_big => /= i.
   apply/andP/forallP.
     case => H1 H2 n1.
     apply/implyP => Hn1.
-    rewrite in_setC in_setD1 negb_and negbK in Hn1.
+    rewrite in_setD1 negb_and negbK in Hn1.
     case/orP : Hn1 => Hn1.
       by rewrite (eqP Hn1) -(eqP H2) /dproj_V dproj_out // in_setD1 eqxx.
     by rewrite -(eqP H2) /dproj_V dproj_out // in_setD1 (negbTE Hn1) andbF.
   move=> H1.
   split.
-    apply/forallP => n1; apply/implyP; rewrite in_setC => Hn1.
+    apply/forallP => n1; apply/implyP => Hn1.
     by rewrite /dproj_V dproj_out.
   rewrite /dproj_V dprojIdef // dproj_freeon //.
   by apply/forallP.
@@ -373,7 +373,7 @@ apply eq_big => /= i.
   apply/andP/forallP.
     case => H1 H2 n1.
     apply/implyP => Hn1.
-    rewrite in_setC in_setD1 negb_and negbK in Hn1.
+    rewrite in_setD1 negb_and negbK in Hn1.
     case/orP : Hn1 => Hn1.
       rewrite (eqP Hn1) -(eqP H2) /dproj_V.
       have K : n0 \notin 'V( m1, n0) :\ n0 by rewrite in_setD1 eqxx.
@@ -382,7 +382,7 @@ apply eq_big => /= i.
   move=> H1.
   split.
     apply/forallP => n1; apply/implyP => Hn1.
-    rewrite in_setC in_setD1 negb_and negbK in Hn1.
+    rewrite in_setD1 negb_and negbK in Hn1.
     case/orP : Hn1 => n1n0.
       move/eqP : n1n0 => ?; subst n1.
       by rewrite /dproj_V dproj_out // in_setD1 eqxx.

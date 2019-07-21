@@ -32,7 +32,7 @@ Section free_on.
 Variables (A : eqType) (n : nat).
 
 Definition freeon (s : {set 'I_n}) (t d : 'rV[A]_n) : bool :=
-  [forall j, (j \in ~: s) ==> (t ``_ j == d ``_ j)].
+  [forall j, (j \notin s) ==> (t ``_ j == d ``_ j)].
 
 Lemma freeon_refl V (t : 'rV[A]_n) : freeon V t t.
 Proof. by apply/forallP => n0; rewrite eqxx implybT. Qed.
@@ -48,7 +48,7 @@ Qed.
 
 Lemma freeon_notin t d n0 V : freeon V d t -> n0 \notin V -> d ``_ n0 = t ``_ n0.
 Proof.
-move/forallP/(_ n0)/implyP; rewrite in_setC => H1 H2; by rewrite (eqP (H1 H2)).
+move/forallP/(_ n0)/implyP => H1 H2; by rewrite (eqP (H1 H2)).
 Qed.
 
 Lemma freeon_all (t d : 'rV_n) n0 : (t ``_ n0 == d ``_ n0) = freeon (setT :\ n0) d t.
@@ -82,7 +82,7 @@ rewrite mxE.
 case: ifPn => [/eqP -> //| bi].
 apply/esym/eqP.
 move: (X b) => /implyP; apply.
-by rewrite in_setC in_set1.
+by rewrite in_set1.
 Qed.
 
 Local Open Scope R_scope.
@@ -170,7 +170,7 @@ transitivity (\sum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
   case/andP : Ht => Ht1 Ht2.
   move/forallP : Ht1.
   move/(_ b).
-  rewrite in_setC bs implyTb.
+  rewrite bs implyTb.
   move/eqP => ->.
   by rewrite /row_of_tuple mxE tcastE.
 transitivity (\sum_(f in {ffun 'I_n -> bool} | freeon s d (\row_i F2_of_bool (f i)))
@@ -219,7 +219,7 @@ rewrite (reindex_onto (fun f => f :|: [set j | (j \notin s) && bool_of_F2 (d ``_
   apply/setP => /= k0.
   rewrite !inE.
   case K : (k0 \in f) => /=; case L : (k0 \in s) => //=;
-    by move/forallP : fs => /(_ k0); rewrite in_setC L implyTb mxE K => /eqP ->.
+    by move/forallP : fs => /(_ k0); rewrite L implyTb mxE K => /eqP ->.
 apply eq_big => /= s0.
   apply/andP/subsetP.
     case=> /forallP H1 H2 /= k0 Hk0.
@@ -228,7 +228,6 @@ apply eq_big => /= s0.
     by case/orP.
   move=> s0s; split.
     apply/forallP => /= k0; apply/implyP => Hk0.
-    rewrite in_setC in Hk0.
     rewrite mxE !inE Hk0 /=.
     case K : (k0 \in s0) => /=; last by rewrite bool_of_F2K.
     move: (s0s k0).

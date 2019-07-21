@@ -52,7 +52,7 @@ Proof. move=> H; by rewrite /dproj; unlock; rewrite mxE H. Qed.
 
 Lemma freeon_dproj d t s : freeon s d (dproj d s t).
 Proof.
-apply/forallP => n1; rewrite in_setC; apply/implyP => n1s; by rewrite dproj_out.
+apply/forallP => n1; apply/implyP => n1s; by rewrite dproj_out.
 Qed.
 
 Lemma dprojIdef d d' t s : dproj d s (dproj d' s t) = dproj d s t.
@@ -440,7 +440,7 @@ Lemma freeon_trans d m0 n0 (m0n0 : n0 \in 'V m0) d' t (Ht : freeon ('V m0 :\ n0)
 Proof.
 move=> Hlhs2.
 apply/forallP => /= n1.
-rewrite in_setC in_setD1 negb_and negbK.
+rewrite in_setD1 negb_and negbK.
 apply/implyP => /orP[/eqP ->{n1}|].
   rewrite -(freeon_notin Hlhs2) ?in_setD1 ?eqxx //.
   by rewrite (freeon_notin Ht) // !inE eqxx.
@@ -461,7 +461,7 @@ Proof.
 move=> <-.
 apply: (freeon_trans m0n0 Ht).
 apply/forallP => /= n1.
-rewrite in_setC in_setD1 negb_and negbK.
+rewrite in_setD1 negb_and negbK.
 apply/implyP => /orP[/eqP ->{n1}|].
   by rewrite comb_dprojs_V2_Vnext // (freeon_notin Ht) // !inE eqxx.
 move=> Hn1.
@@ -496,7 +496,6 @@ apply/andP; split.
     case/andP => m1m0 m1n1.
     apply/forallP => n2.
     apply/implyP => Hn2.
-    rewrite in_setC in Hn2.
     by rewrite /dprojs_V2 dprojs_out.
   rewrite negb_and negbK.
   case/orP => [ | m1n1 /=].
@@ -556,7 +555,7 @@ case/boolP : (n1 \in 'V m0 :\ n0) => K.
   by rewrite dproj_in.
 rewrite dproj_out //.
 move/forallP: d't => /(_ n1).
-rewrite in_setC in_setD1 n1n0 /=.
+rewrite in_setD1 n1n0 /=.
 have -> : n1 \notin `V(m0, n0).
   apply/negP => n1m0n0.
   rewrite in_setD1 negb_and negbK (negbTE n1n0) orFb in K.
