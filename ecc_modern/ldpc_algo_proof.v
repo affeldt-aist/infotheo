@@ -42,38 +42,15 @@ Qed.
 Lemma ext_uniq_path (ac : acyclic' g) a b c s :
   uniq_path b (c :: s) -> g a b -> a \notin s.
 Proof.
-move/andP => [Hp Hun] Hab.
-apply/negP => Has.
-have Hsp := splitPr Has.
+move/andP => [Hp Hun] Hab; apply/negP => /splitPr Hsp.
 destruct Hsp.
-have : false -> False by [].
-apply.
-move: (ac a b (c :: p1)).
-rewrite /cycle.
 case Hli: (last b (c :: p1) == b).
-  simpl in Hli.
-  move: (mem_last c p1).
-  rewrite (eqP Hli).
   move/andP/proj1: Hun.
-  rewrite -cat_cons mem_cat.
-  move/norP/proj1 => Hf Ht.
-  by rewrite Ht in Hf.
-apply.
-  rewrite !in_cons /=.
-  apply/norP; split.
-    move/andP/proj1: Hun.
-    rewrite in_cons mem_cat in_cons.
-    move/norP/proj2/norP/proj2/norP/proj1.
-    by rewrite eq_sym.
-  apply/norP; split.
-    move: Hun => /= /andP/proj2/andP/proj1.
-    rewrite mem_cat in_cons.
-    move/norP/proj2/norP/proj1.
-    by rewrite eq_sym.
-  simpl in Hun.
-  move/andP/proj2/andP/proj2: Hun.
-  rewrite cat_uniq /=.
-  by move/andP/proj2/andP/proj1/norP/proj1.
+  by rewrite -cat_cons mem_cat -(eqP Hli) /= mem_last.
+suff: false by []; rewrite -Hli.
+apply (ac a b (c :: p1)).
+  apply/negP => Ha.
+  by rewrite (cat_uniq [:: b,c & p1] [:: a & p2]) /= Ha /= !andbF in Hun.
 rewrite -cat_rcons -cat_cons cat_path in Hp.
 move/andP/proj1: Hp => /= ->.
 by rewrite Hab.
@@ -109,15 +86,10 @@ Lemma rev_path_rcons a b p :
   path g a (rcons p b) = path g b (rcons (rev p) a).
 Proof.
 move=> HR.
-move: a b.
-elim: p=> [|c p Hp] a b.
-  by rewrite /= HR.
-simpl.
-rewrite rev_cons -(cats1 _ a) cat_path.
-rewrite -Hp /=.
-rewrite last_rcons /=.
-rewrite (HR a).
-by rewrite andbC andbT.
+elim: p a b => [|c p Hp] a b /=.
+  by rewrite HR.
+rewrite rev_cons -(cats1 _ a) cat_path -Hp /= last_rcons /=.
+by rewrite (HR a) andbC andbT.
 Qed.
 
 Lemma inr_inj A' B : injective (@inr A' B).
@@ -137,58 +109,41 @@ Lemma flatten_single x l :
   uniq l -> x \in l -> (forall y, y \in l -> y != x -> f y = [::]) ->
   flatten (map f l) = f x.
 Proof.
-elim: l => [|a l IH] //= Hun Hx Hy.
+elim: l => [|a l IH] //= /andP [Hal Hun] Hx Hy.
 move: Hx.
-rewrite in_cons => /orP [] Hx.
-  have ->: flatten (map f l) = [::].
-    apply/eqP; rewrite -size_eq0 -sum1_size big_flatten /= big_map big_seq_cond.
-    rewrite (eq_bigr (fun=> 0)).
-      by rewrite big_const_seq iter_addn mul0n add0n.
-    move=> b /andP[bl _].
-    rewrite Hy ?big_nil // ?inE ?bl ?orbT //.
-    case/andP: Hun => al _; apply: contra al.
-    by rewrite (eqP Hx) => /eqP <-.
-  by rewrite cats0 (eqP Hx).
-rewrite (Hy a) => //=.
-    apply IH => //.
-      by move/andP/proj2: Hun.
-    move=> y Hyl Hyx; apply Hy => //.
-    by rewrite in_cons Hyl orbT.
-  by rewrite in_cons eqxx.
-apply/negP => Hax.
-by rewrite (eqP Hax) Hx in Hun.
+rewrite in_cons => /orP [/eqP|] Hx.
+  suff ->: flatten (map f l) = [::].
+    by rewrite cats0 Hx.
+  apply/nilP; rewrite /nilp size_flatten sumnE !big_map big_seq big1 //.
+  move=> i Hi; apply/eqP/nilP/Hy.
+  - by rewrite in_cons Hi orbT.
+  - by subst x; apply: contra Hal => /eqP <-.
+rewrite Hy //=.
+- apply IH => // y Hyl; apply Hy.
+  by rewrite in_cons Hyl orbT.
+- by apply mem_head.
+- by apply: contra Hal => /eqP ->.
 Qed.
 
 Lemma uniq_flatten_map x y l :
   has (mem (f x)) (f y) ->
   uniq (flatten (map f l)) -> x \in l -> y \in l -> x = y.
 Proof.
-move=> Hinter.
-elim: l => [|a l IH] Hun Hx Hy //.
-rewrite !in_cons in Hx Hy.
-move/orP: Hx => [] Hx.
-  move/orP: Hy => [] Hy.
-    by rewrite (eqP Hx) (eqP Hy).
-  rewrite /= cat_uniq in Hun.
-  move/andP/proj2/andP/proj1/hasP: Hun.
-  elim.
-  move/hasP: Hinter => [b Hb Hbx].
+move/hasP => [b Hby Hbx].
+elim: l => // a l IH.
+rewrite !in_cons /= cat_uniq => /andP/proj2/andP[Hun1 Hun2] /orP[] Hx /orP[] Hy.
+- by rewrite (eqP Hx) (eqP Hy).
+- move/hasP: Hun1; elim.
   exists b.
     apply/flattenP.
     exists (f y) => //; exact/map_f.
   by rewrite -(eqP Hx).
-move/orP: Hy => [] Hy.
-  rewrite /= cat_uniq in Hun.
-  move/andP/proj2/andP/proj1/hasP: Hun.
-  elim.
-  move/hasP: Hinter => [b Hb Hbx].
+- move/hasP: Hun1; elim.
   exists b.
     apply/flattenP.
     exists (f x) => //; exact/map_f.
   by rewrite -(eqP Hy).
-apply IH => //.
-rewrite /= cat_uniq in Hun.
-by move/andP/proj2/andP/proj2: Hun.
+- by apply IH.
 Qed.
 
 Lemma subseq_flatten (f' : A -> seq B) l :
