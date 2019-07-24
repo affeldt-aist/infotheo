@@ -225,21 +225,6 @@ Fixpoint tn_tree_eq_bool k (a b : tn_tree i k U V) : bool :=
   let eqch := map (@tn_tree_eq_bool (negk k)) (children a) in
   all (fun p => fst p (snd p)) (zip eqch (children b)).
 
-Lemma tn_tree_eq_bool_refl k x : @tn_tree_eq_bool k x x = true.
-Proof.
-pose d := depth x.
-have Hd: depth x <= d by [].
-clearbody d.
-elim: d k x Hd => [|d IHd] k x Hd.
-  by destruct x; rewrite ltn0 in Hd.
-destruct x; simpl in *.
-rewrite !eqxx /=.
-clear -IHd Hd.
-elim: children => [| a ch0 IH] //= in Hd *.
-rewrite IHd /=.
-  apply IH.
-Abort.
-
 Lemma tn_tree_eqP k : Equality.axiom (@tn_tree_eq_bool k).
 Proof.
 move=> x.
@@ -249,51 +234,31 @@ clearbody d.
 elim: d k x Hd => [|d IHd] k x Hd y.
   by destruct x; rewrite ltn0 in Hd.
 case Heq: (tn_tree_eq_bool x y); constructor.
-  destruct x as [id0 tag0 ch0 up0 down0], y as [id1 tag1 ch1 up1 down1]; simpl
-    in *.
-  rewrite big_map in Hd.
-  move: Heq.
-  case Hid: (id0 == id1) => //=.
-  case Htag: (tag0 == tag1) => //=.
-  case Hup: (up0 == up1) => //=.
-  case Hdown: (down0 == down1) => //=.
-  case Hlen: (length ch0 == length ch1) => //=.
-  rewrite (eqP Hid) (eqP Htag) (eqP Hdown) (eqP Hup).
-  move=> Hchildren.
-  suff -> : ch0 = ch1 by [].
-  move: ch1 Hchildren Hlen.
+  case: x y Hd Heq => [id0 tag0 ch0 up0 down0] [id1 tag1 ch1 up1 down1] /= Hd.
+  move=> /andP[]/andP[]/andP[]/andP[]/andP[] /eqP->/eqP->/eqP->/eqP-> Hlen Hall.
+  congr Node.
+  move: ch1 Hall Hlen.
   clear -Hd IHd.
-  elim: ch0 Hd => [| a chld0 IH] Hd chld1 Hch Hlen /=.
-    by destruct chld1.
-  destruct chld1; first by [].
-  simpl in *.
-  rewrite big_cons in Hd.
+  elim: ch0 Hd => [| a chld0 IH] Hd [] // b chld1 /= /andP[ab Hch].
+  rewrite eqSS => Hlen.
+  rewrite /= big_cons in Hd.
   congr (_ :: _).
-    apply/IHd.
-      refine (leq_ltn_trans _ Hd).
-      by rewrite leq_max leqnn.
-    by case: (tn_tree_eq_bool a t) Hch.
-  apply IH.
-      refine (leq_ltn_trans _ Hd).
-      by rewrite leq_maxr.
-    by destruct (tn_tree_eq_bool a t).
-  by rewrite -eqSS.
-move=> Heq'.
-subst y.
-destruct x; simpl in *.
-move: Heq.
-rewrite !eqxx /=.
+    apply/IHd => //.
+    refine (leq_ltn_trans _ Hd).
+    by rewrite leq_max leqnn.
+  apply IH => //.
+  by rewrite (leq_ltn_trans _ Hd) // leq_maxr.
+move=> ?; subst y.
+case: x Hd Heq => /= ? ? children ? ? Hd.
+rewrite !eqxx /= => /negP; apply.
 clear -IHd Hd.
-elim: children => [| a ch0 IH] //= in Hd *.
-rewrite big_cons in Hd.
-case Ha: (tn_tree_eq_bool a a) => /=.
-  apply IH.
+elim: children Hd => //= a ch0 IH.
+rewrite big_cons => Hd.
+rewrite IH ?andbT.
+  apply /IHd => //.
   refine (leq_ltn_trans _ Hd).
-  by rewrite leq_maxr.
-move=> _.
-move/IHd: Ha.
-apply; last by [].
-apply: (leq_ltn_trans _ Hd); by rewrite leq_max leqnn.
+  by rewrite leq_max leqnn.
+by rewrite (leq_ltn_trans _ Hd) // leq_maxr.
 Qed.
 
 Section EqTnTree.
@@ -333,22 +298,18 @@ Lemma build_tree_rec_sound h s k i a b :
 Proof.
 move: h s k i a b.
 elim => [|h Hh] s k i a b /=.
-  by case: ifP => Ha //; case: ifP => Hb //.
-case: ifP => Ha //=.
+  by case: ifP => Ha //; case: ifP => Hb.
+case: ifP => Ha /=.
   rewrite <- map_comp.
-  move /mapP=> [j Hj Hjs]; subst.
-  rewrite select_children_spec in Hj.
-  move /andP: Hj => [Hj _].
+  move /mapP=> [j Hj Hjs]; subst b.
+  move: Hj; rewrite select_children_spec => /andP[Hj _].
   destruct h; by rewrite -(eqP Ha).
-case: ifP => Hb //=.
+case: ifP => Hb /=.
   rewrite <- map_comp.
-  move /mapP=> [j Hj Hjs]; subst.
-  rewrite select_children_spec in Hj.
-  move /andP: Hj => [Hj _].
+  move /mapP=> [j Hj Hjs]; subst a.
+  move: Hj; rewrite select_children_spec => /andP[Hj _].
   destruct h; by rewrite sym_tanner_rel -(eqP Hb).
-rewrite has_map.
-move /hasP=> [j Hj Hjs].
-simpl in Hjs.
+rewrite has_map => /hasP[j Hj Hjs].
 apply (Hh _ _ _ _ _ Hjs).
 Qed.
 
@@ -368,11 +329,9 @@ rewrite /= in_cons /= in Ha.
 case Hai: (a == id_of_kind k i) in Ha.
   rewrite (eqP Hai) in Hi *.
   by exists [::].
-move /flattenP: Ha => [l Hl] Ha.
-rewrite <- map_comp in Hl.
-move /mapP: Hl => [x Hx Hl].
-subst l.
-move: (Hx) => Hsc.
+move /flattenP: Ha => [l].
+rewrite <- map_comp => /mapP [x Hx ->] Ha.
+have Hsc := Hx.
 rewrite select_children_spec /= in Hx.
 move /andP: Hx => [Hx Hxs].
 have Hi':
