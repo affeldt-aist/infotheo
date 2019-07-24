@@ -3,8 +3,8 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
 From mathcomp Require Import fintype div prime bigop finset ssralg finalg.
 From mathcomp Require Import binomial poly polydiv cyclic perm finfun matrix.
 From mathcomp Require Import mxpoly vector mxalgebra zmodp.
-Require Import ssr_ext ssralg_ext poly_ext linearcode decoding.
-Require Import hamming dft poly_decoding euclid grs.
+Require Import ssr_ext ssralg_ext poly_ext channel_code decoding linearcode.
+Require Import hamming dft poly_decoding euclid grs cyclic_code.
 
 (** * Reed-Solomon Codes *)
 
@@ -223,8 +223,6 @@ Notation "'\RSomega_(' a , e )" := (erreval a a e).
 
 Local Open Scope vec_ext_scope.
 
-Require Import cyclic_code.
-
 Section RS_generator_def.
 
 Variables (F : finFieldType) (a : F) (d : nat).
@@ -426,12 +424,10 @@ Variables (a : F) (n' : nat) (d : nat).
 Let n := n'.+1.
 
 Hypothesis dn : RS.redundancy_ub d n.
-Hypothesis qn : coprime q n.
+Hypothesis qn : ~~ (q %| n)%nat.
 
 Lemma RS_Hchar : ([char F]^').-nat n.
-Proof.
-by rewrite -natf_neq0 -(@dvdn_charf _ q) ?char_GFqm // -prime_coprime.
-Qed.
+Proof. by rewrite -natf_neq0 -(@dvdn_charf _ q) ?char_GFqm. Qed.
 
 Lemma RS_min_dist1 c : n.-primitive_root a -> c != 0 ->
   c \in RS.code a n d -> d.+1 <= wH c.
@@ -622,14 +618,14 @@ Variables (a : F) (n' : nat) (d : nat).
 Let n := n'.+1.
 
 Hypothesis dn : RS.redundancy_ub d n.
-Hypothesis qn : coprime q n.
+Hypothesis qn : ~~ (q %| n)%nat.
 
 Let t := d./2.
 
 Local Open Scope ecc_scope.
 
 Lemma RS_repair_is_correct : n.-primitive_root a ->
-  t.-BDD (RS.code a n d, RS_repair a n' d).
+  t.-BDD (RS.code a n d, RS_repair a n.-1 d).
 Proof.
 move=> an; rewrite /BD_decoding /=.
 move=> c e.
@@ -688,7 +684,6 @@ Qed.
 
 End RS_decoding_using_euclid.
 
-Require Import channel_code.
 
 Module RS_encoder.
 

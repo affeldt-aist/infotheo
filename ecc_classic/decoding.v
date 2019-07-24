@@ -311,7 +311,7 @@ Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B [finType of 'rV[A]_n] n.
 Variable P : {dist 'rV[A]_n}.
 
-Definition MAP_decoding := forall (y : P.-receivable W),
+Definition MAP_decoding := forall y : P.-receivable W,
   exists m, dec y = Some m /\
     P `^^ W (m | y) = \rmax_(m in C) (P `^^ W (m | y)).
 
