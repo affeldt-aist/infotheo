@@ -292,6 +292,11 @@ Proof.
 by destruct k; rewrite /= !mem_filter !mem_ord_enum andbT tanner_relE.
 Qed.
 
+Lemma select_children_uniq s k i : uniq (select_children H s k i).
+Proof.
+by destruct k; rewrite /select_children filter_uniq // ord_enum_uniq.
+Qed.
+
 Lemma build_tree_rec_sound h s k i a b :
   graph (build_tree_rec H rW h s k i) a b -> tanner_rel H a b.
 Proof.
@@ -358,18 +363,13 @@ set labels_tree := labels \o _.
 case Ha: (id_of_kind k i \in _) => /=.
   move/flattenP: Ha => [l] /mapP [j Hj ->{l}] Hil.
   rewrite select_children_spec in Hj.
-  case/labels_build_tree_rec: Hil.
-    rewrite /uniq_path /=.
-    rewrite sym_tanner_rel.
-    move/andP: Hj => [] -> ->.
-    by move/andP: Hi => [] /= -> ->.
-  move=> p [/andP[_ /=]].
+  case/labels_build_tree_rec: Hil => [|p [/andP[_ /=]]].
+    rewrite /uniq_path /= sym_tanner_rel.
+    by case/andP: Hj Hi => -> -> /andP /=[-> ->].
   by rewrite mem_cat in_cons eqxx orbT.
 set l := select_children H s k i in Ha *.
-have Hch: uniq l.
-  rewrite /select_children.
-  by destruct k; rewrite filter_uniq // ord_enum_uniq.
-have Hsub: forall x, x \in l -> x \in select_children H s k i by [].
+have Hch: uniq l by apply select_children_uniq.
+have Hsub: {subset l <= select_children H s k i} by [].
 elim: l => //= c l IH in Ha Hch Hsub *.
 rewrite cat_uniq.
 have Hspec: c \in select_children H s k i.
@@ -379,30 +379,28 @@ rewrite select_children_spec in Hspec.
 apply/andP; split.
   (* head *)
   apply Hh.
-  rewrite /uniq_path /=.
-  rewrite sym_tanner_rel.
-  move/andP: Hspec => [] -> ->.
-  by move/andP: Hi => [] /= -> ->.
-rewrite IH ?andbT; first last. (* tail *)
+  rewrite /uniq_path /= sym_tanner_rel.
+  by case/andP: Hspec Hi => -> -> /andP /=[-> ->].
+rewrite {}IH ?andbT; first last. (* tail *)
       by move=> x Hx; apply Hsub; rewrite in_cons Hx orbT.
     by move/andP/proj2: Hch.
   move: Ha; rewrite mem_cat.
   by case Hl: (_ \in labels _).
 (* intersection *)
-apply/hasP => /= -[x Hx Hmem].
-case/labels_build_tree_rec: Hmem => [|p [Hun [Hl Hall]]].
+apply/hasP => /= -[x Hx Hmem] {Ha Hh}.
+case/labels_build_tree_rec: Hmem => [|p [Hun [Hl _]]].
   rewrite /uniq_path /= sym_tanner_rel.
   by case/andP: Hspec Hi => -> -> /andP /=[-> ->].
 move/flattenP: Hx => /= [d /mapP[y Hy ->{d}] Hxd].
 have Hspec': y \in c :: l by rewrite in_cons Hy orbT.
 apply Hsub in Hspec'.
-rewrite select_children_spec in Hspec'.
-case/labels_build_tree_rec: Hxd => [|p' [Hun' [Hl' Hall']]].
+rewrite {Hsub Hspec} select_children_spec in Hspec'.
+case/labels_build_tree_rec: Hxd => [|p' [Hun' [Hl' _]]].
   rewrite /uniq_path /= sym_tanner_rel.
   by case/andP: Hspec' Hi => -> -> /andP /=[-> ->].
 (* Now let's prove we have a cycle *)
 move: (@tanner_acyclic (id_of_kind k i) (id_of_kind (negk k) y)
-                      (rev (belast x p') ++ p)).
+                      (rev (belast x p') ++ p)) {Hspec' Hi}.
 rewrite in_cons mem_cat /=.
 rewrite id_of_kind_neq /=.
 move/andP/proj2: (Hun').
@@ -415,15 +413,11 @@ move/andP/proj2: (Hun).
 rewrite /= cat_uniq /= sym_tanner_rel.
 move/and4P => [_ _] /norP/proj1 Hid _ /(_ Hid){Hid}.
 case Hiy: (tanner_rel H _ _); last first.
-  elimtype False.
-  move/andP/proj1: (Hun').
-  rewrite -cat_rcons cat_path => /andP/proj1 Hpp.
+  move=> _; move/andP/proj1: Hun' Hiy.
+  rewrite -cat_rcons cat_path => /andP/proj1.
   destruct p'; simpl in Hl'.
-    rewrite /= Hl' andbT in Hpp.
-    by rewrite Hpp in Hiy.
-  rewrite lastI Hl' /= rcons_path !last_rcons in Hpp.
-  move/andP/proj2: Hpp => Hpp.
-  by rewrite Hpp in Hiy.
+    by rewrite /= Hl' andbT => ->.
+  by rewrite lastI Hl' /= rcons_path !last_rcons => /andP/proj2 ->.
 rewrite /= rcons_cat cat_path.
 move/andP/proj1: Hun'.
 rewrite cat_path => /andP/proj1 Hun'.
@@ -478,75 +472,63 @@ elim: h k i s => [|h IHh] k i s Hh Hi.
   have His: id_of_kind k i \in s by apply seq_full.
   by rewrite /uniq_path /= His andbF in Hi.
 move=> l.
-have Hab a b: a \in l -> b \in l -> tanner_rel H a b -> id_of_kind k i == a ->
+have Hab b: b \in l -> tanner_rel H (id_of_kind k i) b ->
   b \in [seq node_id i
         | i <- [seq build_tree_rec H rW h (id_of_kind k i :: s) (negk k) j
                | j <- select_children H s k i]].
-  move=> Ha Hb HH Heq.
-  rewrite -(eqP Heq) {a Ha Heq} in HH.
+  move=> Hb HH.
   rewrite -map_comp.
   apply /mapP.
   have [x Hx]: exists x, b = id_of_kind (negk k) x.
-    destruct b as [b|b]; destruct k.
-      by rewrite tanner_relE in HH.
-      by exists b.
-      by exists b.
-      by rewrite tanner_relE in HH.
+    move: HH; clear; rewrite tanner_relE.
+    case: k b i => -[] b i // _; by exists b.
   exists x; last by destruct h.
   rewrite select_children_spec.
-  rewrite -Hx HH.
+  rewrite -Hx HH /=.
   case Hbs: (b \in s).
     have [p [Hp [Ha Hl]]] := labels_build_tree_rec Hb Hi.
     rewrite in_cons Hx eq_sym id_of_kind_neq /=.
     move /andP/proj2: Hp.
-    rewrite /uniq_path.
-    by rewrite cons_uniq mem_cat Hbs orbT /=.
+    by rewrite cons_uniq mem_cat Hbs orbT.
   by rewrite /= in_cons Hbs Hx eq_sym id_of_kind_neq.
 move=> a b Ha Hb HH /=.
-case: ifP => Heq. by apply (Hab a).
+case: ifP => Heq.
+  rewrite -(eqP Heq) in HH; by apply Hab.
 case: ifP => Heq'.
-  apply (Hab b) => //.
-  by rewrite sym_tanner_rel.
+  rewrite sym_tanner_rel -(eqP Heq') in HH; by apply Hab.
 clear Hab.
 simpl in l.
 rewrite /l in_cons eq_sym Heq /= in Ha.
-rewrite /l in_cons eq_sym Heq' /= in Hb.
-clear l.
+rewrite {}/l in_cons eq_sym Heq' /= in Hb.
 move /flattenP: Ha => [sa Ha Hsa].
 move /flattenP: Hb => [sb Hb Hsb].
 rewrite -!map_comp in Ha Hb.
 move /mapP: Ha => [ia Hia Ha].
 move /mapP: Hb => [ib Hib Hb].
+subst sa sb.
 rewrite !select_children_spec in Hia Hib.
 move /andP: Hia => [Hia Hias].
 move /andP: Hib => [Hib Hibs].
 move /andP: (Hi) => [Hpi Hun].
 case Hiab: (ia == ib).
-  rewrite has_map.
+  rewrite has_map /=.
   apply /hasP.
   exists ia.
     rewrite select_children_spec; by apply /andP.
-  simpl.
-  subst sa sb.
   rewrite -(eqP Hiab) in Hsb.
   apply IHh => //.
     by apply card_uniq_seq_decr.
   by apply cons_uniq_path => //; rewrite sym_tanner_rel.
-subst sa sb.
 set sa := id_of_kind (negk k) ia in Hia Hias.
 set sb := id_of_kind (negk k) ib in Hib Hibs.
 set si := id_of_kind k i in Hia Hib Hsa Hsb Hias Hibs.
 have Hiap: uniq_path (tanner_rel H) sa (si :: s).
-  rewrite /uniq_path /=.
-  simpl in Hun.
-  by rewrite sym_tanner_rel Hia Hpi Hun Hias.
+  by rewrite /uniq_path /= sym_tanner_rel Hia Hpi Hias.
 have Hibp: uniq_path (tanner_rel H) sb (si :: s).
-  rewrite /uniq_path /=.
-  simpl in Hun.
-  by rewrite sym_tanner_rel Hib Hpi Hun Hibs.
+  by rewrite /uniq_path /= sym_tanner_rel Hib Hpi Hibs.
 have [p1 [Hp1 [Hal Hpl1]]]:= labels_build_tree_rec Hsa Hiap.
 have [p2 [Hp2 [Hbl Hpl2]]]:= labels_build_tree_rec Hsb Hibp.
-elimtype False; clear Heq Heq'.
+suff: false by [].
 rewrite -/sb -/sa -/si in Hp1 Hp2 Hi Hpi Hun Hal Hbl.
 clear -Hp1 Hp2 Hi Hpi Hun Hal Hbl Hiab HH tanner_acyclic.
 move: (@tanner_acyclic si sb (rev (belast b p2) ++ a :: p1)).
@@ -556,36 +538,30 @@ case Hsasb: (sa == sb).
   rewrite /sa /sb=> eq.
   destruct k; inversion eq; by rewrite H1 eqxx in Hiab.
 move=> Hcy.
-suff : false; first by [].
 move /andP: Hp1 => [Hp1 Hun1].
 move /andP: Hp2 => [Hp2 Hun2].
 apply Hcy; clear Hcy Hsasb.
   rewrite -cat_cons -rev_rcons -{1}Hbl -lastI.
-  rewrite mem_cat mem_rev.
+  rewrite mem_cat mem_rev negb_or.
   have Hsi c p: uniq ((si :: c :: p) ++ s) = uniq (c :: p ++ si :: s).
     apply perm_uniq.
     rewrite -cat1s -(cat1s c) perm_sym -cat1s -(cat1s si).
     rewrite !catA perm_cat2r.
     by rewrite perm_catC catA.
   rewrite -!Hsi !cat_uniq in Hun1 Hun2.
-  move /andP/proj1/andP/proj1/negbTE: Hun2 => ->.
-  by move /andP/proj1/andP/proj1/negbTE: Hun1 => ->.
+  case/andP/proj1/andP: Hun2 => -> _.
+  by case/andP/proj1/andP: Hun1.
 rewrite {Hun1 Hun2} /cycle.
-rewrite -cats1 -cat_cons -rev_rcons -catA cat_path.
-rewrite -{1 2}Hbl -lastI.
-rewrite {1}(_ : si = last b (rcons p2 si)); last by rewrite last_rcons.
-rewrite -{1}(belast_rcons b p2 si).
-rewrite rev_path.
-rewrite rev_cons !lastE.
+rewrite -cats1 -cat_cons -rev_rcons -catA cat_path -{1 2}Hbl -lastI.
+have {1}->: si = last b (rcons p2 si) by rewrite last_rcons.
+rewrite -{1}(belast_rcons b p2 si) rev_path rev_cons !lastE.
 apply /andP; split.
-  rewrite -(eq_path (sym_tanner_rel _)).
+  rewrite -(eq_path (sym_tanner_rel _)) -cats1.
   rewrite -cat1s catA cat_path in Hp2.
-  move /andP/proj1: Hp2 => Hp2.
-  by rewrite -cats1.
+  by case/andP: Hp2.
+rewrite /= sym_tanner_rel HH.
 rewrite -cat1s catA cat_path in Hp1.
-move /andP/proj1: Hp1 => Hp1.
-simpl.
-by rewrite sym_tanner_rel HH.
+by case/andP: Hp1.
 Qed.
 
 Definition tanner_split (s : seq id') : rel id' :=
@@ -610,17 +586,11 @@ Lemma tanner_rel_split (s : seq id') (x : id') p :
   ~~has (mem s) (x::p) -> path (tanner_rel H) x p -> path (tanner_split s) x p.
 Proof.
 move: x s.
-elim: p => [//|/= y p IHp] x s Hs.
-move/andP => [Hx Hp].
+elim: p => //= y p IHp x s Hs /andP[Hx Hp].
 rewrite IHp //.
   rewrite /tanner_split Hx.
-  case: ifP; last by [].
-  simpl in Hs.
-  move /norP: Hs => [Hxs Hs].
-  move /norP: Hs => [Hys Hs].
-  by rewrite (negbTE Hxs) (negbTE Hys).
-rewrite /= in Hs *.
-by move /norP/proj2: Hs.
+  by case/norP: Hs => /negbTE -> /norP[] /negbTE ->.
+by case/norP: Hs.
 Qed.
 
 Lemma tanner_split_uncons (s : seq id') (c x : id') p :
@@ -628,19 +598,11 @@ Lemma tanner_split_uncons (s : seq id') (c x : id') p :
   path (tanner_split (c :: s)) x p.
 Proof.
 move: c x s.
-elim: p => [//|/=y p IHp] c x s Hc.
-move /andP => [Hx Hp].
+elim: p => [//|/=y p IHp] c x s Hc /andP[Hx Hp].
 rewrite IHp //.
-  move: Hx.
-  rewrite /tanner_split /=.
-  rewrite in_cons in_cons.
-  case: ifP; first by [].
-  move /norP => [Hxs Hys].
-  rewrite in_cons in_cons in Hc.
-  move /norP: Hc => [Hxc Hc].
-  move /norP: Hc => [Hyc Hc].
-  rewrite (negbTE Hxs) (negbTE Hys) eq_sym (negbTE Hxc) eq_sym (negbTE Hyc).
-  by move=> ->.
+  move: Hx Hc; rewrite /tanner_split /= 2!(in_cons c).
+  case: ifPn => // /norP[] /negbTE -> /negbTE -> ->.
+  by rewrite 2!in_cons !(eq_sym c) => /norP[/negbTE->] /norP[/negbTE->].
 by move /norP/proj2: Hc.
 Qed.
 
