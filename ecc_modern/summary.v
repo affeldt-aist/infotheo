@@ -13,12 +13,12 @@ Require Import ssr_ext ssralg_ext ssrR Rbigop f2.
 - Section alternative_definitions_of_summary.
 *)
 
-Reserved Notation "\rsum_ ( x '=' d [~ s ] ) F" (at level 41,
+Reserved Notation "\sum_ ( x '=' d [~ s ] ) F" (at level 41,
   F at level 41, x, s, d at level 50,
-    format "'[' \rsum_ ( x  '='  d  [~  s ] ) '/  '  F ']'").
-Reserved Notation "\rsum_ ( x '=' d [~ s ] '|' P ) F" (at level 41,
+    format "'[' \sum_ ( x  '='  d  [~  s ] ) '/  '  F ']'").
+Reserved Notation "\sum_ ( x '=' d [~ s ] '|' P ) F" (at level 41,
   F at level 41, x, s, d at level 50,
-    format "'[' \rsum_ ( x  '='  d  [~  s ]  '|'  P ) '/  '  F ']'").
+    format "'[' \sum_ ( x  '='  d  [~  s ]  '|'  P ) '/  '  F ']'").
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -88,9 +88,9 @@ Qed.
 Local Open Scope R_scope.
 
 (** sum over vectors t whose V projection is free and its complemented fixed by d *)
-Notation "\rsum_ ( x '=' d [~ s ] ) F" :=
+Notation "\sum_ ( x '=' d [~ s ] ) F" :=
   (\sum_( x | freeon s d x ) F) : summary_scope.
-Notation "\rsum_ ( x '=' d [~ s ] '|' P ) F" :=
+Notation "\sum_ ( x '=' d [~ s ] '|' P ) F" :=
   (\sum_( x | freeon s d x && P x) F) : summary_scope.
 
 Local Close Scope R_scope.
@@ -101,7 +101,7 @@ Section rsum_freeon.
 Variable n : nat.
 
 Lemma rsum_freeon0 (d : 'rV['F_2]_n) (F : 'rV_n -> R) :
-  \rsum_(t = d [~set0]) F t = F d.
+  \sum_(t = d [~set0]) F t = F d.
 Proof.
 transitivity (\sum_(t | t == d) F t)%R.
   apply eq_bigl => /= t; by rewrite freeon0 eq_sym.
@@ -109,7 +109,7 @@ by rewrite (big_pred1 d).
 Qed.
 
 Lemma rsum_freeon1 n2 (d : 'rV['F_2]_n) (F : 'rV_n -> R) :
-  \rsum_(t = d [~[set n2]]) F t = (F (d `[ n2 := Zp0 ]) + F (d `[ n2 := Zp1 ]))%R.
+  \sum_(t = d [~[set n2]]) F t = (F (d `[ n2 := Zp0 ]) + F (d `[ n2 := Zp1 ]))%R.
 Proof.
 transitivity (\sum_(t | (t \in [set d `[ n2 := x ] | x in 'F_2])) F t)%R.
   apply eq_bigl => /= t.
@@ -137,7 +137,7 @@ Local Open Scope tuple_ext_scope.
 
 (* used in ldpc_algo_proof.v *)
 Lemma summary_powersetE (s : {set 'I_n}) (d : 'rV['F_2]_n) (e : 'rV['F_2]_n -> R) :
-  \rsum_(t = d [~s]) e t = summary_powerset s d e.
+  \sum_(t = d [~s]) e t = summary_powerset s d e.
 Proof.
 rewrite /summary_powerset.
 transitivity (\sum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)

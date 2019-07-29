@@ -293,9 +293,9 @@ Lemma rmul_rsum_commute0 d n0 (B : finType) (t : 'rV[B]_n)
   (W : forall m, 'rV_m -> 'rV_m -> R) (* channel *)
   (F : 'I_m -> 'rV_n -> R)
   (HF : forall m1 m0 (t' : 'rV_n), m1 \in 'F(m0, n0) -> t' ``_ n0 = d ``_ n0 -> F m1 ((dprojs_V H d n0 t') m0) = F m1 t') :
-  \prod_(m0 in 'F n0) (\rsum_(t' = d [~'V(m0, n0) :\ n0])
+  \prod_(m0 in 'F n0) (\sum_(t' = d [~'V(m0, n0) :\ n0])
     W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * \prod_(m1 in 'F(m0, n0)) F m1 t') =
-  \rsum_(t' = d [~ setT :\ n0]) (\prod_(m0 in 'F n0)
+  \sum_(t' = d [~ setT :\ n0]) (\prod_(m0 in 'F n0)
     (W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * \prod_(m1 in 'F(m0, n0)) F m1 t')).
 Proof.
 rewrite (big_distr_big_dep d [pred x in 'F n0] (fun i => freeon ('V(i, n0) :\ n0) d)) [LHS]/=.
