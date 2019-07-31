@@ -871,11 +871,6 @@ Definition cast_cols {rows} {f : nat -> nat -> nat} {P : nat -> nat -> Type}
   'M[R]_(rows, f k n) -> 'M_(rows, n) :=
   castmx (erefl rows, HPf _ _ HP).
 
-Definition cast_rows {cols} {f : nat -> nat -> nat} {P}
-  (HPf : forall k n, P k n -> f k n = n) {k n} (HP : P k n) :
-  'M[R]_(f k n, cols) -> 'M_(n, cols) :=
-  castmx (HPf _ _ HP, erefl cols).
-
 Lemma mulmx_castmx_cols_comm :
   forall (f : nat -> nat -> nat) (P : nat -> nat -> Type)
   (HPf: forall k n, P k n -> f k n = n) k n (HP : P k n)
@@ -888,17 +883,16 @@ move: (HPf k n HP); rewrite (HPf k n HP) => e.
 by rewrite (eq_irrelevance e (refl_equal n)).
 Qed.
 
-Lemma castmx_cols_mulmx : forall (f : nat -> nat -> nat) P
-  (HPf : forall k n, P k n -> f k n = n) k n (HP : P k n)
-  rows (X : 'M[R]_(rows, f k n)) cols (Y : 'M_(f k n, cols)),
-  castmx (erefl rows, HPf _ _ HP) X *m
-  castmx (HPf _ _ HP, erefl cols) Y = X *m Y.
+Lemma castmx_mulmx_cols_comm :
+  forall (f : nat -> nat -> nat) (P : nat -> nat -> Type)
+  (HPf: forall k n, P k n -> f k n = n) k n (HP : P k n)
+  (x : 'M[R]_(n, k)) (B : 'M_(k, f k n)),
+  (castmx (erefl k, HPf _ _ HP) B) *m x =
+  (B *m castmx (esym (HPf _ _ HP), erefl _) x).
 Proof.
-move=> f P HPf k n HP rows X cols Y; apply/matrixP => i j.
-rewrite !mxE /=.
-move: (HPf _ _ HP) X Y; rewrite (HPf _ _ HP) => e M Y.
-apply eq_bigr => l _ /=.
-by rewrite (eq_irrelevance e (refl_equal n)).
+move=> f P HPf k n_ HP.
+move: (HPf k n_ HP); rewrite (HPf k n_ HP) => e.
+by rewrite (eq_irrelevance e (refl_equal n_)).
 Qed.
 
 Lemma mulmx_castmx_cols_comm2 :
@@ -911,6 +905,20 @@ Proof.
 move=> f P HPf k n_ HP.
 move: (HPf k n_ HP); rewrite (HPf k n_ HP) => e.
 by rewrite (eq_irrelevance e (refl_equal n_)).
+Qed.
+
+
+Lemma castmx_cols_mulmx : forall (f : nat -> nat -> nat) P
+  (HPf : forall k n, P k n -> f k n = n) k n (HP : P k n)
+  rows (X : 'M[R]_(rows, f k n)) cols (Y : 'M_(f k n, cols)),
+  castmx (erefl rows, HPf _ _ HP) X *m
+  castmx (HPf _ _ HP, erefl cols) Y = X *m Y.
+Proof.
+move=> f P HPf k n HP rows X cols Y; apply/matrixP => i j.
+rewrite !mxE /=.
+move: (HPf _ _ HP) X Y; rewrite (HPf _ _ HP) => e M Y.
+apply eq_bigr => l _ /=.
+by rewrite (eq_irrelevance e (refl_equal n)).
 Qed.
 
 Lemma castmx_cols_mulmx2 : forall (f : nat -> nat -> nat) P
@@ -992,8 +1000,7 @@ Lemma H_G_T : 'H *m 'G ^T = 0.
 Proof. by rewrite -trmx0 -G_H_T trmx_mul trmxK. Qed.
 
 (* The encoding function *)
-Definition encode : encT F [finType of 'rV[F]_k] n :=
-  [ffun x => x *m 'G].
+Definition encode : encT F [finType of 'rV[F]_k] n := [ffun x => x *m 'G].
 
 Lemma encode_inj : injective encode.
 Proof.
@@ -1007,9 +1014,15 @@ rewrite memv_ker lfunE /= /encode ffunE /syndrome.
 by rewrite trmx_mul trmxK -mulmxA G_H_T mulmx0.
 Qed.
 
+Definition DIS : 'M[F]_(k, n) := castmx (erefl, subnKC dimlen) (row_mx 1%:M 0).
+
+Local Notation "'D" := DIS.
+
+(* The discarding function *)
+Definition discard : discardT F n [finType of 'rV_k] := [ffun x => x *m 'D^T].
+
 Definition t (repair : repairT F F n)
              (repair_img : oimg repair \subset kernel 'H)
-             (discard : discardT F n [finType of 'rV[F]_k])
              (H : cancel_on (kernel 'H) encode discard) : Lcode.t F F n [finType of 'rV[F]_k].
 apply: (@Lcode.mk _ _ _ _ (kernel 'H)
          (Encoder.mk encode_inj _)
@@ -1031,11 +1044,12 @@ Hypothesis dimlen : k <= n.
 Variable CSM : 'M[F]_(n - k, k).
 Variable repair : repairT F F n.
 Hypothesis repair_img : oimg repair \subset kernel (Syslcode.PCM dimlen CSM).
-Variable discard : discardT F n [finType of 'rV[F]_k].
 Local Notation "'H" := (Syslcode.PCM dimlen CSM).
 Local Notation "'G" := (Syslcode.GEN dimlen CSM).
+Local Notation "'D" := (Syslcode.DIS dimlen CSM).
 
-Hypothesis cancel_discard : cancel_on (kernel 'H) [ffun x => x *m 'G] discard.
+Hypothesis cancel_discard :
+  cancel_on (kernel 'H) (Syslcode.encode dimlen CSM) (Syslcode.discard dimlen).
 Let C : Lcode.t _ _ _ _ := Syslcode.t repair_img cancel_discard.
 
 Lemma encode_image_code (x : 'rV_n) :

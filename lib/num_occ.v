@@ -18,7 +18,7 @@ Require Import ssr_ext f2.
   9. Section cansort.
 *)
 
-Reserved Notation "'N(' a '|' t ')'".
+Reserved Notation "'N(' a '|' t ')'" (format "N( a  |  t )").
 Reserved Notation "'N(' a ',' b '|' ta ',' tb ')'".
 
 Set Implicit Arguments.

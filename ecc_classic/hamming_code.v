@@ -551,7 +551,7 @@ Definition systematic : 'S_n := perm perm_ids_inj.
 
 Definition PCM := col_perm systematic (Hamming.PCM m).
 
-Definition CSM :=
+Definition CSM : 'M_(m, n - m):=
   lsubmx (castmx (erefl m, esym (subnK (Hamming.dim_len m'))) PCM).
 
 Lemma PCM_A_1 : PCM = castmx (erefl, subnK (Hamming.dim_len m')) (row_mx CSM 1).
@@ -585,8 +585,18 @@ apply/val_inj/eqP => /=.
 by rewrite -(eqn_add2l (n - m)) -Hlp -Hj Hk.
 Qed.
 
-Definition GEN' :=
+Definition GEN' : 'M_(n - m, n) :=
   castmx (erefl, subnK (Hamming.dim_len m')) (row_mx 1%:M (- CSM)^T).
+
+Program Definition GEN'' : 'M_(n - m, n) :=
+  @Syslcode.GEN [finFieldType of 'F_2] _ _ _ (castmx (_, erefl (n - m)%nat) CSM).
+Next Obligation. exact: leq_subr. Qed.
+Next Obligation. by rewrite (subnBA _ (Hamming.dim_len m')) addnC addnK. Qed.
+
+Lemma GEN'E : GEN' = GEN''.
+Proof.
+rewrite /GEN' /GEN'' /Syslcode.GEN !F2_mx_opp.
+Abort.
 
 Lemma PCM_GEN' : PCM *m GEN'^T = 0.
 Proof.
@@ -650,6 +660,16 @@ Qed.
 
 Definition mx_discard : 'M['F_2]_(n - m, n) :=
   castmx (erefl, subnK (Hamming.dim_len m')) (row_mx 1%:M 0).
+(*   castmx _ (@Syslcode.DIS _ _ _ _).*)
+
+Definition mx_discard' : 'M_(n - m, n) :=
+  @Syslcode.DIS [finFieldType of 'F_2] _ _ (leq_subr _ _).
+
+Lemma mx_discardE : mx_discard = mx_discard'.
+Proof.
+apply/matrixP => a b.
+rewrite /mx_discard /mx_discard' /Syslcode.DIS !castmxE /= cast_ord_id.
+Abort.
 
 Lemma mx_discard_GEN' : mx_discard *m GEN'^T = 1%:M.
 Proof.

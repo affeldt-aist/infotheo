@@ -18,10 +18,12 @@ Import Prenex Implicits.
 - Section minimum_distance_decoding
     minimum distance
     number of errors that can be decoded using MD-decoding
-- Section majority_code_decoding
+- Section majority_vote_decoding
 *)
 
 Import GRing.Theory.
+
+Local Open Scope num_occ_scope.
 
 (* TODO: move? *)
 Lemma seq_block_inv A : forall r (l : seq A) k,
@@ -41,7 +43,7 @@ Qed.
 
 (* TODO: move? *)
 Lemma dH_num_occ_opp r a (v : 'rV_ r) :
-  dH (const_mx a) v = num_occ (negF2 a) (tuple_of_row v).
+  dH (const_mx a) v = N(negF2 a | tuple_of_row v).
 Proof.
 rewrite /dH /wH.
 rewrite (_ : tuple_of_row _ =
@@ -56,7 +58,7 @@ by case/F2P : a; case/F2P : x.
 Qed.
 
 (* TODO: move? *)
-Lemma num_occ_negF2 a r (v : r.-tuple 'F_2) : num_occ a v + num_occ (negF2 a) v = r.
+Lemma num_occ_negF2 a r (v : r.-tuple 'F_2) : N(a | v) + N(negF2 a | v) = r.
 Proof.
 rewrite /num_occ -[RHS](size_tuple v) -[RHS](count_predC (fun x => a == x) v).
 congr (_ + _).
@@ -67,10 +69,10 @@ Qed.
 
 (* TODO: move? *)
 Lemma num_occ_tuple_F2 a r (v : r.-tuple 'F_2):
-  r./2 < num_occ a v -> num_occ (negF2 a) v <= num_occ a v.
+  r./2 < N(a | v) -> N(negF2 a | v) <= N(a | v).
 Proof.
 move=> H.
-rewrite -(leq_add2l (num_occ a v)) (num_occ_negF2 a v) addnn.
+rewrite -(leq_add2l (N(a | v))) (num_occ_negF2 a v) addnn.
 rewrite (@leq_trans (r./2).*2.+1) // ?ltn_double //.
 rewrite -{1}(odd_double_half r) -addn1 addnC leq_add2l; by case: odd.
 Qed.
@@ -147,23 +149,19 @@ apply/setP => x; apply/idP/idP.
 - by rewrite !inE => /orP[|] /eqP ->; rewrite const_mx_in_code.
 Qed.
 
-Definition mx_discard : 'M['F_2]_(1, n) := row_mx 1%:M 0.
-
-Definition discard : discardT [finType of 'F_2] n [finType of 'rV['F_2]_1] :=
-  fun x => x *m mx_discard^T.
-
-Lemma compatible : cancel_on code (Syslcode.encode dimlen CSM) discard.
+Lemma compatible : cancel_on code (Syslcode.encode dimlen CSM) (Syslcode.discard dimlen).
 Proof.
 move=> /= x; case/codewords' => ->.
-- rewrite (_ : discard _ = const_mx 1) ?encodeE //.
-  rewrite /discard /mx_discard (tr_row_mx 1 0) trmx1 trmx0.
-  by rewrite -(@row_mx_const _ _ 1) (@mul_row_col _ 1 1) !(mulmx1,mulmx0,addr0).
-- rewrite (_ : discard _ = const_mx 0) ?encodeE //.
-  by rewrite /discard /mx_discard (tr_row_mx 1 0) trmx1 trmx0 mul0mx.
+- rewrite (_ : Syslcode.discard _ _ = const_mx 1) ?encodeE //.
+  rewrite /Syslcode.discard ffunE /Syslcode.DIS -trmx_const -trmx_mul.
+  rewrite (@castmx_mulmx_cols_comm _ _ _ subnKC).
+  by rewrite castmx_const -[in LHS]col_mx_const mul_row_col mul1mx mul0mx addr0 trmx_const.
+- rewrite (_ : Syslcode.discard _ _ = const_mx 0) ?encodeE //.
+  by rewrite /Syslcode.discard ffunE /Syslcode.DIS mul0mx.
 Qed.
 
 Definition Lcode_wo_repair (f : repairT _ _ _) (Hf : oimg f \subset code) :=
-  @Syslcode.t _ _ _ dimlen CSM _ Hf discard compatible.
+  @Syslcode.t _ _ _ dimlen CSM _ Hf compatible.
 
 End rep.
 End Rep.
@@ -223,14 +221,14 @@ Proof. by rewrite /mdd_err_cor min_dist_repcode // Hr. Qed.
 
 End minimum_distance_decoding.
 
-Section majority_code_decoding.
+Section majority_vote_decoding.
 
 (* Decoding by majority vote *)
-Definition majority_vote r (l : seq 'F_2) : option ('rV['F_2]_r) :=
-  let cnt := num_occ 1%R l in
-  if r./2 < cnt then Some (const_mx 1)%R
+Definition majority_vote r (s : seq 'F_2) : option 'rV['F_2]_r :=
+  let cnt := N(1 | s) in
+  if r./2 < cnt then Some (const_mx 1)
   else if (r./2 == cnt) && ~~ odd r then None
-  else Some (const_mx 0)%R.
+  else Some 0.
 
 Definition repair r : repairT [finFieldType of 'F_2] [finFieldType of 'F_2] r.+1 :=
   [ffun l => majority_vote r.+1 (tuple_of_row l)].
@@ -268,7 +266,7 @@ rewrite negb_and negbK.
 case/orP => H1 [<-{h}].
 - case: wC => /eqP -> //.
   rewrite 2!dH_num_occ_opp; apply num_occ_tuple_F2.
-  rewrite (_ : num_occ _ _ = r.+1 - num_occ 1%R (tuple_of_row u))%nat; last first.
+  rewrite (_ : N(_ | _) = r.+1 - N(1%R | tuple_of_row u))%nat; last first.
     rewrite -[in X in _ = (X - _)%nat](num_occ_negF2 1%R (tuple_of_row u)).
     by rewrite addnC addnK.
   rewrite (@leq_ltn_trans (r.+1 - (r.+1)./2)%nat) //.
@@ -280,7 +278,7 @@ case/orP => H1 [<-{h}].
   by rewrite -addnn (@leq_ltn_trans r.+1) // ?leq_subr // addnS ltnS ltn_addr.
 - case : wC => /eqP -> //.
   rewrite 2!dH_num_occ_opp; apply num_occ_tuple_F2.
-  rewrite (_ : num_occ _ _ = r.+1 - num_occ 1%R (tuple_of_row u))%nat; last first.
+  rewrite (_ : N(_ | _) = r.+1 - N(1%R | tuple_of_row u))%nat; last first.
     rewrite -[in X in _ = (X - _)%nat](num_occ_negF2 1%R (tuple_of_row u)).
     by rewrite addnC addnK.
   rewrite -ltn_double (_ : _./2.*2 = r.+1 - odd r.+1)%nat; last first.
@@ -294,7 +292,7 @@ case/orP => H1 [<-{h}].
   by rewrite -addnn -addnA addnC addnK ltn_addr.
 Qed.
 
-End majority_code_decoding.
+End majority_vote_decoding.
 
 (* TODO: remove? *)
 Section repetition_code.
