@@ -67,19 +67,28 @@ Definition wH v := count (fun x => x != 0) (tuple_of_row v).
 Lemma max_wH u : wH u <= n.
 Proof. by rewrite /wH (leq_trans (count_size _ _)) // size_tuple. Qed.
 
-Lemma max_wH' u : wH u < n.+1.
-Proof. rewrite ltnS. by apply max_wH. Qed.
+Lemma max_wH' u : wH u < n.+1. Proof. by rewrite ltnS max_wH. Qed.
+
+Lemma wH_sum v : wH v = (\sum_(n0 < n) (v ``_ n0 != 0%R))%nat.
+Proof.
+rewrite /wH 1!count_map -sum1_count /= big_mkcond /=.
+apply congr_big => //=; by rewrite /index_enum -enumT.
+Qed.
+
+Lemma wH_const_mx b : b != 0 -> wH (const_mx b) = n.
+Proof.
+move=> b0; rewrite wH_sum (eq_bigr (fun=> 1%nat)) //.
+- by rewrite sum_nat_const card_ord muln1.
+- by move=> ? _; rewrite mxE b0.
+Qed.
 
 Lemma wH0 : wH 0 = O.
-Proof.
-rewrite /wH (@eq_in_count _ _ pred0) ?count_pred0 // => i /mapP[/= j _].
-by rewrite mxE => ->; rewrite eqxx.
-Qed.
+Proof. by rewrite wH_sum big1 // => i _; rewrite mxE eqxx. Qed.
 
 Lemma wH0_inv v : wH v = O -> v = 0.
 Proof.
-move=> H.
-apply/rowP => i; rewrite mxE; apply/eqP; move/eqP : H; apply: contraTT => H.
+move=> v0.
+apply/rowP => i; rewrite mxE; apply/eqP; move/eqP : v0; apply: contraTT => vi0.
 rewrite -lt0n -has_count; apply/hasP.
 exists (v ``_ i) => //; apply/mapP; exists i => //.
 by rewrite val_ord_tuple mem_enum.
@@ -121,12 +130,6 @@ rewrite count_cat [X in _ + X <= _](_ : count _ _ = O) ?addn0; last first.
   rewrite (@eq_in_count _ _ pred0) ?count_pred0 //.
   move=> i; case/nseqP => -> /= _; by rewrite eqxx.
 by rewrite count_map (leq_trans (count_size _ _)) // size_enum_ord.
-Qed.
-
-Lemma wH_sum (v : 'rV[F]_n) : wH v = (\sum_(n0 < n) (v ``_ n0 != 0%R))%nat.
-Proof.
-rewrite /wH 1!count_map -sum1_count /= big_mkcond /=.
-apply congr_big => //=; by rewrite /index_enum -enumT.
 Qed.
 
 Lemma wH_card_supp u : wH u = #|supp u|%N.
