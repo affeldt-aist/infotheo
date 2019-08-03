@@ -88,14 +88,14 @@ Section frequency_domain_coordinates.
 
 Variables (F : fieldType) (n : nat).
 
-Implicit Types x y a : 'rV[F]_n.
+Implicit Types x y u : 'rV[F]_n.
 
 (** see [McEliece 2002] eqn 9.11 *)
-Definition fdcoor a y i := (rVpoly y).[a ``_ i].
+Definition fdcoor u y i := (rVpoly y).[u ``_ i].
 
-Variable a : 'rV[F]_n.
+Variable u : 'rV[F]_n.
 
-Local Notation "y ^`_ i" := (fdcoor a y i) (at level 9).
+Local Notation "y ^`_ i" := (fdcoor u y i) (at level 9).
 
 Lemma fdcoor0 i : (0 : 'rV_n) ^`_ i = 0.
 Proof. by rewrite /fdcoor linear0 horner0. Qed.
@@ -112,7 +112,7 @@ Proof. by rewrite /fdcoor linearB /= hornerD hornerN. Qed.
 Lemma tdcoorZ k x i : (k *: x) ^`_ i = k * x ^`_ i.
 Proof. by rewrite /fdcoor linearZ /= hornerZ. Qed.
 
-Lemma fdcoorE y i : y ^`_ i = \sum_(j < n) (y ``_ j) * (a ``_ i) ^+ j.
+Lemma fdcoorE y i : y ^`_ i = \sum_(j < n) (y ``_ j) * (u ``_ i) ^+ j.
 Proof.
 rewrite /fdcoor horner_poly; apply eq_bigr => j _; rewrite insubT //= => jn.
 rewrite (_ : Ordinal jn = j) //; by apply/val_inj.

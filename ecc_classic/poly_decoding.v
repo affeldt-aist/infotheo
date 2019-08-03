@@ -357,24 +357,22 @@ Qed.
 
 End characterization_of_error_vector.
 
-Require Import linearcode.
-
 Local Open Scope dft_scope.
 
 Section syndrome_polynomial.
 
 Variables (F : fieldType) (n' : nat).
 Let n := n'.+1.
-Implicit Types a : 'rV[F]_n.
+Implicit Types u : 'rV[F]_n.
 
 (* polynomial of degree <= t.-1 *)
-Definition syndromep a y t := \poly_(k < t) y ^`_(a, inord k.+1).
+Definition syndromep u y t := \poly_(k < t) y ^`_(u, inord k.+1).
 
-Variable a :'rV[F]_n.
+Variable u :'rV[F]_n.
 Variable t : nat.
 
-Lemma syndromepE y : syndromep a y t =
-  \sum_(j in supp y) \sum_(i < t) (y ``_ j * a ``_ (inord i.+1) ^+ j) *: 'X^i.
+Lemma syndromepE y : syndromep u y t =
+  \sum_(j in supp y) \sum_(i < t) (y ``_ j * u ``_ (inord i.+1) ^+ j) *: 'X^i.
 Proof.
 rewrite /syndromep exchange_big /= poly_def; apply/eq_bigr => i _; rewrite /fdcoor horner_poly.
 rewrite (bigID (fun i => i \in supp y)) /= -[RHS]addr0 scalerDl; congr (_ + _).
@@ -385,29 +383,31 @@ move=> j Hj; rewrite insubT // => H; rewrite (_ : Sub _ _ = j); last by apply/va
 move: Hj; rewrite inE negbK => /eqP ->; by rewrite mul0r.
 Qed.
 
-Lemma size_syndromep y : size (syndromep a y t) <= t.
+Lemma size_syndromep y : size (syndromep u y t) <= t.
 Proof.
 rewrite /syndromep poly_def (leq_trans (size_sum _ _ _)) //; apply/bigmax_leqP => i _.
-case/boolP : (fdcoor a y (inord i.+1) == 0) => [/eqP -> | ?].
+case/boolP : (fdcoor u y (inord i.+1) == 0) => [/eqP -> | ?].
 - by rewrite scale0r size_poly0.
 - by rewrite size_scale // size_polyXn.
 Qed.
 
-Lemma syndromepD x y : syndromep a (x + y) t = syndromep a x t + syndromep a y t.
+Lemma syndromepD x y : syndromep u (x + y) t = syndromep u x t + syndromep u y t.
 Proof.
 rewrite /syndromep !poly_def -big_split /=; apply/eq_bigr => i _.
 by rewrite fdcoorD scalerDl.
 Qed.
 
-Lemma syndromepB x y : syndromep a (x - y) t = syndromep a x t - syndromep a y t.
+Lemma syndromepN x : syndromep u (- x) t = - syndromep u x t.
 Proof.
-rewrite /syndromep !poly_def -sumrB /=; apply/eq_bigr => i _; by rewrite fdcoorB scalerBl.
+rewrite /syndromep !poly_def -[RHS]mulN1r big_distrr; apply eq_bigr => /= i _.
+by rewrite fdcoorN mulN1r scaleNr.
 Qed.
 
-Lemma syndromep0 : syndromep a 0 t = 0.
-Proof.
-rewrite /syndromep !poly_def big1 // => /= i _; by rewrite fdcoor0 scale0r.
-Qed.
+Lemma syndromepB x y : syndromep u (x - y) t = syndromep u x t - syndromep u y t.
+Proof. by rewrite syndromepD syndromepN. Qed.
+
+Lemma syndromep0 : syndromep u 0 t = 0.
+Proof. by rewrite -[in LHS](subrr 0) syndromepB subrr. Qed.
 
 End syndrome_polynomial.
 

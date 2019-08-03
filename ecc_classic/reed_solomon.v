@@ -36,7 +36,6 @@ Unset Printing Implicit Defensive.
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
-
 Local Open Scope dft_scope.
 
 Module RS.
