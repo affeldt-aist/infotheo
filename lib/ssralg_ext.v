@@ -115,6 +115,10 @@ move=> ij; apply/rowP => k; rewrite !mxE.
 by case: ifP => // /eqP ->; case: ifPn => //; rewrite (negbTE ij).
 Qed.
 
+Lemma row_setK D n (n0 : 'I_n) (x : D) (d : 'rV_n) :
+  d `[n0 := x] ``_ n0 = x.
+Proof. by rewrite /row_set mxE eqxx. Qed.
+
 Section sub_vec_sect.
 
 Variables (A : Type) (n : nat).

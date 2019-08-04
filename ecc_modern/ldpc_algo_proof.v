@@ -2161,7 +2161,7 @@ by case Ha: (a \in l); rewrite IH.
 Qed.
 
 (* get_esti returns correct estimations *)
-Theorem get_esti_ok : get_esti_spec vb d.
+Theorem get_esti_ok : get_esti_spec vb.
 Proof.
 rewrite /get_esti_spec /esti_spec.
 move=> n0.
@@ -2171,6 +2171,8 @@ rewrite estimation_alpha //; last 2 first.
   rewrite -computed_tree_ok labels_sumprod_down labels_sumprod_up.
   by apply build_tree_full.
 congr (_ :: _).
+rewrite -(row_setK (n0 : 'I_n) 0%R d).
+rewrite -(row_setK (n0 : 'I_n) 1%R d).
 rewrite !estimation_correctness; last 2 first.
   by apply tanner.
   by apply tanner.
@@ -2215,7 +2217,7 @@ case: ifP => Hi.
 by eapply subseq_trans; [| apply subseq_cons].
 Qed.
 
-Theorem estimation_ok : estimation_spec vb d.
+Theorem estimation_ok : estimation_spec vb.
 Proof.
 split.
   rewrite /build_tree.

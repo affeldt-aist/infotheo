@@ -263,7 +263,7 @@ Let rW n0 := (W`(y ``_ n0 | 0), W`(y ``_ n0 | 1)).
 Let computed_tree := sumprod (build_tree H rW (k := kv) 0).
 
 Variable d : 'rV['F_2]_n.
-Let p01 f n0 : R2 := (f (d `[n0 := 0%R]), f (d `[n0 := 1 %R])).
+Let p01 f n0 : R2 := (f (d `[n0 := 0]), f (d `[n0 := 1])).
 Let alpha' := ldpc.alpha H W y.
 Let beta' := ldpc.beta H W y.
 
@@ -313,17 +313,16 @@ Definition sumprod_spec := forall a b,
 
 Let estimations := estimation computed_tree.
 
-Definition esti_spec n0 (x : 'rV_n) :=
-  `U C_not_empty '_ n0 `^^ W (x ``_ n0 | y).
+Definition esti_spec n0 b := `U C_not_empty '_ n0 `^^ W (b | y).
 
 Definition estimation_spec := uniq (unzip1 estimations) /\
-  forall n0, (inr n0, p01 (esti_spec n0) n0) \in estimations.
+  forall n0, (inr n0, (esti_spec n0 0, esti_spec n0 1)) \in estimations.
 
 Definition get_esti (n0 : 'I_n) :=
   pmap (fun (p : id' * R2) =>
           let (i, e) := p in if i == inr n0 then Some e else None).
 
 Definition get_esti_spec := forall n0 : 'I_n,
-    get_esti n0 estimations = [:: p01 (esti_spec n0) n0].
+    get_esti n0 estimations = [:: (esti_spec n0 0, esti_spec n0 1)].
 
 End Specification.
