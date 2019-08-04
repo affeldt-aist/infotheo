@@ -109,14 +109,13 @@ Lemma inj_row_set (A : ringType) n n0 (d : 'rV_n) :
 Proof. move=> a b _ _ /= /rowP /(_ n0); by rewrite mxE eqxx mxE eqxx. Qed.
 
 Lemma row_setC n A (i j : 'I_n) (a b : A) d :
-  i != j -> d `[ j := b ] `[ i := a ] = (d `[ i := a ]) `[ j := b ].
+  i != j -> d `[ j := b ] `[ i := a ] = d `[ i := a ] `[ j := b ].
 Proof.
 move=> ij; apply/rowP => k; rewrite !mxE.
 by case: ifP => // /eqP ->; case: ifPn => //; rewrite (negbTE ij).
 Qed.
 
-Lemma row_setK D n (n0 : 'I_n) (x : D) (d : 'rV_n) :
-  d `[n0 := x] ``_ n0 = x.
+Lemma row_setK n A (i : 'I_n) (a : A) d : d `[i := a] ``_ i = a.
 Proof. by rewrite /row_set mxE eqxx. Qed.
 
 Section sub_vec_sect.
