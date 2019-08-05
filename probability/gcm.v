@@ -454,20 +454,12 @@ End neset_canonical.
 
 Section misc.
 Local Open Scope classical_set_scope.
-Lemma bigsetU_set0P (A I : Type) (S : set I) (F : I -> set A) :
+Lemma bigcup_set0P (A I : Type) (S : set I) (F : I -> set A) :
   reflect (exists i, S i /\ F i !=set0) (bigsetU S F != set0).
 Proof.
 apply: (iffP idP).
 - by case/set0P => a [] i Si Fia; exists i; split; [ | exists a].
 - by case=> i [] Si [] a Fia; apply/set0P; exists a, i.
-Qed.
-
-Lemma bigsetU1 (A I : Type) (F : I -> set A) (x : I) :
-  bigsetU [set x] F = F x.
-Proof.
-apply eqEsubset => i H.
-- by case: H => i' ->.
-- by exists x.
 Qed.
 End misc.
 
@@ -480,7 +472,7 @@ Proof. by apply/set0P; exists x. Qed.
 Lemma neset_bigsetU_neq0 (T I : Type) (S : neset I) (F : I -> neset T) :
       (bigsetU S F) != set0.
 Proof.
-apply/bigsetU_set0P.
+apply/bigcup_set0P.
 case: S => carS /= /set0P [] i Hi.
 exists i; split => //.
 by case: (F i) => carFi /= /set0P.
@@ -1119,7 +1111,7 @@ Lemma pre_op_neq0 X : pre_op X != cset0 A.
 Proof. rewrite cset0P hull_eq0; exact: NESet.H. Qed.
 Definition op X := NECSet.mk (pre_op_neq0 X).
 Lemma op1 x : op `NE [set x] = x.
-Proof. by do 2 apply val_inj => /=; rewrite bigsetU1 hull_cset. Qed.
+Proof. by do 2 apply val_inj => /=; rewrite bigcup1 hull_cset. Qed.
 Lemma op_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
     op (bignesetU S F) = op `NE (op @` (F @` S)).
 Proof.
