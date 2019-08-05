@@ -564,6 +564,7 @@ Lemma neset_hull_neq0' (T : convType) (F : neset T) :
   CSet.mk (convex_hull F) != cset0 _.
 Proof. by rewrite cset0P /= neset_hull_neq0. Qed.
 Canonical neset_hull_necset (T : convType) (F : neset T) := @NECSet.mk T (CSet.mk (convex_hull F)) (neset_hull_neq0' F).
+
 End necset_lemmas.
 
 (* non-empty convex sets of distributions *)
@@ -750,6 +751,35 @@ End Exports.
 End SemiCompSemiLattConvType.
 Export SemiCompSemiLattConvType.Exports.
 
+Module JoetAffine.
+Section ClassDef.
+Local Open Scope classical_set_scope.
+Variables (U V : semiCompSemiLattConvType).
+Record class_of (f : U -> V) : Type := Class {
+  _ : affine_function f ;
+  _ : Joet_morph f ;
+}.
+Structure map (phUV : phant (U -> V)) :=
+  Pack {apply : U -> V ; _ : class_of apply}.
+Local Coercion apply : map >-> Funclass.
+Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
+Definition class := let: Pack _ c as cF' := cF return class_of cF' in c.
+Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
+  @Pack phUV f fA.
+End ClassDef.
+Module Exports.
+Coercion apply : map >-> Funclass.
+Notation JoetMorph fA := (Pack (Phant _) fA).
+Notation "{ 'Joet_affine' fUV }" := (map (Phant fUV))
+  (at level 0, format "{ 'Joet_affine'  fUV }") : convex_scope.
+Notation "[ 'Joet_affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
+  (at level 0, format "[ 'Joet_affine'  'of'  f  'as'  g ]") : convex_scope.
+Notation "[ 'Joet_affine' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
+  (at level 0, format "[ 'Joet_affine'  'of'  f ]") : convex_scope.
+End Exports.
+End JoetAffine.
+Export JoetAffine.Exports.
+
 Section semicompsemilattconvtype_lemmas.
 Local Open Scope latt_scope.
 Local Open Scope convex_scope.
@@ -777,20 +807,7 @@ rewrite (underNE ((Conv x)^~ p @` [set y; z]) [set x <|p|> y; x <|p|> z]) //.
 by rewrite image_setU !image_set1.
 Qed.
 
-(*
-Definition conv_set (p : prob) (X Y : set L) :=
-  [set z | exists x, exists y, X x /\ Y y /\ z = x <| p |> y].
-Lemma conv_set_bigsetU (p : prob) (X Y : set L) :
-  conv_set p X Y =
-  \bigcup_(x in X) [set z | exists y, Y y /\ z = x <| p |> y].
-Proof.
-apply eqEsubset => u.
-- case => x [] y [] xX [] yY ->.
-  by exists x => //; exists y; split.
-- case => x Xx [] y [] Yy ->.
-  by exists x, y; split => //; split.
-Qed.
-*)
+Section convex_neset_lemmas.
 (*
 The three definitions below work more or less the same way,
 although the lemmas are not sufficiently provided in classical_sets.v
@@ -799,6 +816,8 @@ Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
 [set z | exists y, Y y /\ z = x <| p |> y].
 Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
   \bigcup_(y in Y) [set x <| p |> y].
+Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
+  (fun y => x <| p |> y) @` Y.
 *)
 Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
   (fun y => x <| p |> y) @` Y.
@@ -868,15 +887,15 @@ Fixpoint iter_conv_set_neq0 (X : neset L) (n : nat) :
   | 0 => NESet.H X
   | S n' => oplus_conv_set_neq0 X (NESet.mk (iter_conv_set_neq0 X n'))
   end.
-Canonical probset_neset := NESet.mk probset_neq0.
-Canonical natset_neset := NESet.mk natset_neq0.
-Canonical conv_pt_set_neset (p : prob) (x : L) (Y : neset L) :=
+Global Canonical probset_neset := NESet.mk probset_neq0.
+Global Canonical natset_neset := NESet.mk natset_neq0.
+Global Canonical conv_pt_set_neset (p : prob) (x : L) (Y : neset L) :=
   NESet.mk (conv_pt_set_neq0 p x Y).
-Canonical conv_set_neset (p : prob) (X Y : neset L) :=
+Global Canonical conv_set_neset (p : prob) (X Y : neset L) :=
   NESet.mk (conv_set_neq0 p X Y).
-Canonical oplus_conv_set_neset (X Y : neset L) :=
+Global Canonical oplus_conv_set_neset (X Y : neset L) :=
   NESet.mk (oplus_conv_set_neq0 X Y).
-Canonical iter_conv_set_neset (X : neset L) (n : nat) :=
+Global Canonical iter_conv_set_neset (X : neset L) (n : nat) :=
   NESet.mk (iter_conv_set_neq0 X n).
 
 Lemma iter_conv_set_superset (X : neset L) n : X `<=` iter_conv_set X n .
@@ -963,6 +982,8 @@ have H' : oplus_conv_set (hull X) X `<=` oplus_conv_set (hull X) (hull X)
 apply (subset_trans H').
 by rewrite oplus_conv_set_hullmm.
 Qed.
+End convex_neset_lemmas.
+
 Lemma Joet_conv_pt_setE p x (Y : neset L) :
   Joet `NE (conv_pt_set p x Y) = Joet `NE ((Conv x)^~ p @` Y).
 Proof.
@@ -1377,9 +1398,6 @@ exact/val_inj.
 Qed.
 End eps0_natural.
 
-Axiom eps1 : forall {L : semiCompSemiLattConvType}, necset L -> L (* just flattening of lattice joins? preserves oplus and convex hull*).
-(* for an affine function f, returns a function F#f that to each convex set of dist returns its image by f, f needs to be affine *)
-
 (*
   eps1 is the counit of the adjunction (necset -| coercion),
   where the coercion is from semiCompSemiLattConvType to convType.
@@ -1388,7 +1406,7 @@ Section eps1.
 Local Open Scope classical_set_scope.
 Variable L : semiCompSemiLattConvType.
 
-Definition eps1' (X : necset L) : L := Joet `NE X.
+Definition eps1' (X : necset_semiCompSemiLattConvType L) : L := Joet `NE X.
 
 Lemma eps1'_Joet_morph : Joet_morph eps1'.
 Proof.
@@ -1404,7 +1422,26 @@ transitivity (Joet `NE (hull (\bigcup_(x in F) x)));
 by rewrite Joet_hull Joet_bigcup.
 Qed.
 
+Lemma eps1'_affine : affine_function eps1'.
+Proof.
+move=> X Y p.
+rewrite /affine_function_at /eps1'.
+rewrite (underNE (X <|p|> Y) (conv_set p X Y)) ?Joet_conv_setD //.
+rewrite conv_setE /Conv /= /necset_convType.conv /=; unlock => /=.
+rewrite /necset_convType.pre_pre_conv.
+apply eqEsubset=> u.
+- case=> x [] y [] xX [] yY ->.
+  exists x; first by rewrite -in_setE.
+  by exists y; first by rewrite -in_setE.
+- case=> x Xx [] y Yy <-.
+  by exists x, y; rewrite !in_setE.
+Qed.
+
+Definition eps1 : {Joet_affine necset_semiCompSemiLattConvType L -> L} :=
+  JoetAffine.Pack (Phant (necset_semiCompSemiLattConvType L -> L))
+                  (JoetAffine.Class eps1'_affine eps1'_Joet_morph).
 End eps1.
+Arguments eps1 [L].
 
 Definition join1' (C : convType) (s : necset (necset_convType C)) : {convex_set C} := (CSet.mk (convex_hull (bigsetU (NECSet.car s) (fun x => if x \in s then NECSet.car x else cset0 _)))).
 
