@@ -47,7 +47,7 @@ script:
     export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '
     set -ex
     eval \$(opam env)
-    opam install -y -vvv coq-infotheo
+    opam install -y -vvv -t coq-infotheo
     "
 - docker stop COQ  # optional
 - echo -en 'travis_fold:end:script\\r'
