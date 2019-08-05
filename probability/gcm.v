@@ -769,7 +769,12 @@ Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
 End ClassDef.
 Module Exports.
 Coercion apply : map >-> Funclass.
-Notation JoetMorph fA := (Pack (Phant _) fA).
+
+Definition JoetAffine_affine (U V : semiCompSemiLattConvType) (phUV : phant (U -> V)) (m : map phUV) :=
+let: Pack phUV (Class H _) := m in AffineFunction H.
+Fail Canonical JoetAffine_affine.
+
+Notation JoetAffine fA := (Pack (Phant _) fA).
 Notation "{ 'Joet_affine' fUV }" := (map (Phant fUV))
   (at level 0, format "{ 'Joet_affine'  fUV }") : convex_scope.
 Notation "[ 'Joet_affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
@@ -1465,7 +1470,7 @@ Lemma eps1_correct (C : convType) (s : necset (necset_convType C)) :
 Admitted.
 
 (* the morphism part of necset *)
-Definition necset_mor (A B : convType) (f : {affine A -> B}) : necset_convType A -> necset_convType B.
+Definition necset_mor' (A B : convType) (f : {affine A -> B}) : necset_convType A -> necset_convType B.
 case=> car car0.
 apply: (@NECSet.mk _ (@CSet.mk _ (f @` car) _)).
   rewrite /is_convex_set.
@@ -1479,12 +1484,23 @@ apply/cset0PN; exists (f a) => /=; by exists a.
 Defined.
 
 (* the results of necset_mor are semiLattConvType-morphisms, i.e., are affine and preserve semilatt operations *)
-Lemma necset_mor_affine (A B : convType) (f : {affine A -> B}) : affine_function (necset_mor f).
+Lemma necset_mor'_affine (A B : convType) (f : {affine A -> B}) : affine_function (necset_mor' f).
 Admitted.
 
-Lemma necset_mor_Joet_morph (A B : convType) (f : {affine A -> B}) : 
-  Joet_morph (necset_mor f).
+Lemma necset_mor'_Joet_morph (A B : convType) (f : {affine A -> B}) : 
+  Joet_morph (necset_mor' f).
 Admitted.
+
+Definition necset_mor (A B : convType) (f : {affine A -> B}) : {Joet_affine necset_semiCompSemiLattConvType A -> necset_semiCompSemiLattConvType B} :=
+  JoetAffine.Pack (Phant (necset_semiCompSemiLattConvType A -> necset_semiCompSemiLattConvType B))
+                  (JoetAffine.Class (necset_mor'_affine f) (necset_mor'_Joet_morph f)).
+
+(*
+Section eps1_natural.
+Lemma eps1_natural (K L : semiCompSemiLattConvType) (f : {Joet_affine K -> L}) :
+  f \o eps1 = eps1 \o (necset_mor f).
+End eps1_natural.
+*)
 
 Section P_delta.
 (* P_delta = necset \o Dist, where
