@@ -217,7 +217,7 @@ Qed.
 (* hull (X `|` hull Y) = hull (hull (X `|` Y)) = hull (x `|` y);
    the first equality looks like a tensorial strength under hull
    Todo : Check why this is so. *)
-Lemma hull_strr (A : convType) (X Y : set A) :
+Lemma hullU_strr (A : convType) (X Y : set A) :
   hull (X `|` hull Y) = hull (X `|` Y).
 Proof.
 apply/hull_eqEsubset => a.
@@ -229,13 +229,13 @@ apply/hull_eqEsubset => a.
 - by case; rewrite -in_setE => H; rewrite -in_setE; [ | rewrite setUC] ; apply mem_hull_setU_left => //; apply hull_mem.
 Qed.
 
-Lemma hull_strl (A : convType) (X Y : set A) :
+Lemma hullU_strl (A : convType) (X Y : set A) :
   hull (hull X `|` Y) = hull (X `|` Y).
-Proof. by rewrite [in LHS]setUC [in RHS]setUC hull_strr. Qed.
+Proof. by rewrite [in LHS]setUC [in RHS]setUC hullU_strr. Qed.
 
 Lemma hullUA (A : convType) (X Y Z : {convex_set A}) :
   hull (X `|` hull (Y `|` Z)) = hull (hull (X `|` Y) `|` Z).
-Proof. by rewrite hull_strr hull_strl setUA. Qed.
+Proof. by rewrite hullU_strr hullU_strl setUA. Qed.
 End misc_hull.
 
 Section misc_scaled.
@@ -548,7 +548,7 @@ Proof. by []. Qed.
 Definition conv_set p (X Y : set L) := \bigcup_(x in X) conv_pt_set p x Y.
 Lemma conv_setE p X Y : conv_set p X Y = \bigcup_(x in X) conv_pt_set p x Y.
 Proof. by []. Qed.
-Lemma conv_setC p X Y : conv_set p X Y = conv_set `Pr p.~ Y X.
+Lemma convC_set p X Y : conv_set p X Y = conv_set `Pr p.~ Y X.
 Proof.
 by apply eqEsubset=> u; case=> x Xx [] y Yy <-; exists y => //; exists x => //; rewrite -convC.
 Qed.
@@ -572,7 +572,7 @@ by rewrite (conv1_pt_set x Y).
 Qed.
 Lemma conv0_set (X : neset L) Y : conv_set `Pr 0 X Y = Y.
 Proof.
-rewrite conv_setC /= (_ : `Pr 0.~ = `Pr 1) ?conv1_set //.
+rewrite convC_set /= (_ : `Pr 0.~ = `Pr 1) ?conv1_set //.
 by apply prob_ext; rewrite /= onem0.
 Qed.
 Definition probset := @setT prob.
@@ -655,16 +655,16 @@ Proof. by move/conv_pt_set_monotone=> YY' u [] x Xx /YY' HY'; exists x. Qed.
 Lemma oplus_conv_set_monotone (X Y Y' : set L) :
   Y `<=` Y' -> oplus_conv_set X Y `<=` oplus_conv_set X Y'.
 Proof. by move/conv_set_monotone=> YY' u [] p _ /YY' HY'; exists p. Qed.
-Lemma oplus_conv_setC (X Y : set L) :
+Lemma oplus_convC_set (X Y : set L) :
   oplus_conv_set X Y = oplus_conv_set Y X.
 Proof.
 suff H : forall X' Y', oplus_conv_set X' Y' `<=` oplus_conv_set Y' X'
     by apply/eqEsubset/H.
 move=> {X} {Y} X Y u [] p _.
-rewrite conv_setC => H.
+rewrite convC_set => H.
 by exists (`Pr p.~) => //.
 Qed.
-Lemma conv_csetmm (p : prob) (X : {convex_set L}) : conv_set p X X = X.
+Lemma convmm_cset (p : prob) (X : {convex_set L}) : conv_set p X X = X.
 Proof.
 apply eqEsubset=> x.
 - case: X=> X /= /asboolP H.
@@ -672,18 +672,18 @@ apply eqEsubset=> x.
   by rewrite -in_setE; apply H; rewrite in_setE.
 - by move=> Xx; exists x=> //; exists x=> //; rewrite convmm.
 Qed.
-Lemma oplus_conv_csetmm (X : {convex_set L}) : oplus_conv_set X X = X.
+Lemma oplus_convmm_cset (X : {convex_set L}) : oplus_conv_set X X = X.
 Proof.
 apply eqEsubset => x.
 - case=> p _.
-  by rewrite conv_csetmm.
+  by rewrite convmm_cset.
 - move=> Xx.
   exists `Pr 0 => //.
-  by rewrite conv_csetmm.
+  by rewrite convmm_cset.
 Qed.
-Lemma oplus_conv_set_hullmm (X : set L) :
+Lemma oplus_convmm_set_hull (X : set L) :
   oplus_conv_set (hull X) (hull X) = hull X.
-Proof. by rewrite (oplus_conv_csetmm (CSet.mk (convex_hull X))). Qed.
+Proof. by rewrite (oplus_convmm_cset (CSet.mk (convex_hull X))). Qed.
 Lemma hull_iter_conv_set (X : set L) : hull X = \bigcup_(i in natset) iter_conv_set X i.
 Proof.
 apply eqEsubset; first by move=> x [] n [] g [] d [] gX ->; exists n => //; apply Convn_iter_conv_set.
@@ -693,11 +693,11 @@ move=> n IHn _.
 have H : iter_conv_set X n.+1 `<=` oplus_conv_set X (hull X) 
   by apply/oplus_conv_set_monotone/IHn.
 apply (subset_trans H).
-rewrite oplus_conv_setC.
+rewrite oplus_convC_set.
 have H' : oplus_conv_set (hull X) X `<=` oplus_conv_set (hull X) (hull X)
   by apply/oplus_conv_set_monotone/hull_mem'.
 apply (subset_trans H').
-by rewrite oplus_conv_set_hullmm.
+by rewrite oplus_convmm_set_hull.
 Qed.
 End convex_neset_lemmas.
 
@@ -976,13 +976,6 @@ End Exports.
 End JoetAffine.
 Export JoetAffine.Exports.
 
-Variable (U V : semiCompSemiLattConvType) (f : JoetAffine.map (Phant (U -> V))).
-Check f : {affine U -> V}.
-Variable u : U.
-Check f u.
-Check f : U -> V.
-Check f : {Joet_morph U -> V}.
-
 Section semicompsemilattconvtype_lemmas.
 Local Open Scope latt_scope.
 Local Open Scope convex_scope.
@@ -1205,14 +1198,31 @@ apply hull_eqEsubset=> u /=.*)
 rewrite necset_convType.conv_conv_set /=.
 apply eqEsubset=> u /=.
 - case=> x Xx [] y [] n [] g [] d [] gI yg <-.
-(*
-!!!!!
-  exists n, (fun i => x <|p|> y), d.
-  split.
-  + rewrite fullimage_subset=> i.
-    move/fullimage_subset: gI.
-*)
+  exists n, (fun i => x <|p|> g i), d.
+  split; last by rewrite -convnDr yg.
+  rewrite fullimage_subset=> i.
+  move/fullimage_subset/(_ i): gI => [] Y IY Ygi.
+  exists (necset_convType.conv X Y p); first by exists Y.
+  rewrite necset_convType.convE.
+  exists x, (g i).
+  by rewrite !in_setE.
+- case=> n [] g [] d [] /fullimage_subset.
 Admitted.
+
+(* tensorial strength for hull and conv_set *)
+Lemma hull_conv_set_strr (C : convType) (p : prob) (X Y : set C) :
+  hull (conv_set p X (hull Y)) = hull (conv_set p X Y).
+Proof.
+apply hull_eqEsubset=> u.
+- case=> x Xx [] y [] n [] g [] d [] gY yg <-.
+  exists n, (fun i => x <|p|> g i), d.
+  rewrite -convnDr yg; split=> //.
+  by move=> v [] i _ <-; exists x=> //; exists (g i) => //; apply/gY/imageP.
+- case=> x Xx [] y Yy <-.
+  rewrite -in_setE; apply hull_mem; rewrite in_setE.
+  by exists x=> //; exists y=> //; rewrite -in_setE; apply hull_mem; rewrite in_setE.
+Qed.
+
 Definition mixin := @SemiCompSemiLattConvType.Class [choiceType of necset A] (necset_semiCompSemiLattType.mixin A) (necset_convType.mixin A) (SemiCompSemiLattConvType.Mixin axiom).
 End def.
 End necset_semiCompSemiLattConvType.
