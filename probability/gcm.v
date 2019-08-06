@@ -699,6 +699,20 @@ have H' : oplus_conv_set (hull X) X `<=` oplus_conv_set (hull X) (hull X)
 apply (subset_trans H').
 by rewrite oplus_convmm_set_hull.
 Qed.
+
+(* tensorial strength for hull and conv_set *)
+Lemma hull_conv_set_strr (p : prob) (X Y : set L) :
+  hull (conv_set p X (hull Y)) = hull (conv_set p X Y).
+Proof.
+apply hull_eqEsubset=> u.
+- case=> x Xx [] y [] n [] g [] d [] gY yg <-.
+  exists n, (fun i => x <|p|> g i), d.
+  rewrite -convnDr yg; split=> //.
+  by move=> v [] i _ <-; exists x=> //; exists (g i) => //; apply/gY/imageP.
+- case=> x Xx [] y Yy <-.
+  rewrite -in_setE; apply hull_mem; rewrite in_setE.
+  by exists x=> //; exists y=> //; rewrite -in_setE; apply hull_mem; rewrite in_setE.
+Qed.
 End convex_neset_lemmas.
 
 Module NECSet.
@@ -1193,34 +1207,13 @@ Lemma axiom (p : prob) (X : L) (I : neset L) :
     Joet `NE ((fun Y => necset_convType.conv X Y p) @` I).
 Proof.
 do 2 apply val_inj=> /=.
-(*rewrite -hull_cset necset_convType.conv_conv_set /=.
-apply hull_eqEsubset=> u /=.*)
-rewrite necset_convType.conv_conv_set /=.
-apply eqEsubset=> u /=.
-- case=> x Xx [] y [] n [] g [] d [] gI yg <-.
-  exists n, (fun i => x <|p|> g i), d.
-  split; last by rewrite -convnDr yg.
-  rewrite fullimage_subset=> i.
-  move/fullimage_subset/(_ i): gI => [] Y IY Ygi.
+rewrite -hull_cset necset_convType.conv_conv_set /= hull_conv_set_strr.
+congr hull; apply eqEsubset=> u /=.
+- case=> x Xx [] y []Y IY Yy <-.
   exists (necset_convType.conv X Y p); first by exists Y.
-  rewrite necset_convType.convE.
-  exists x, (g i).
-  by rewrite !in_setE.
-- case=> n [] g [] d [] /fullimage_subset.
-Admitted.
-
-(* tensorial strength for hull and conv_set *)
-Lemma hull_conv_set_strr (C : convType) (p : prob) (X Y : set C) :
-  hull (conv_set p X (hull Y)) = hull (conv_set p X Y).
-Proof.
-apply hull_eqEsubset=> u.
-- case=> x Xx [] y [] n [] g [] d [] gY yg <-.
-  exists n, (fun i => x <|p|> g i), d.
-  rewrite -convnDr yg; split=> //.
-  by move=> v [] i _ <-; exists x=> //; exists (g i) => //; apply/gY/imageP.
-- case=> x Xx [] y Yy <-.
-  rewrite -in_setE; apply hull_mem; rewrite in_setE.
-  by exists x=> //; exists y=> //; rewrite -in_setE; apply hull_mem; rewrite in_setE.
+  rewrite necset_convType.conv_conv_set.
+  by exists x=> //; exists y.
+- by case=> U [] Y IY <-; rewrite necset_convType.convE=> -[] x [] y; rewrite !in_setE=> -[] Xx [] Yy ->; exists x=> //; exists y=> //; exists Y.
 Qed.
 
 Definition mixin := @SemiCompSemiLattConvType.Class [choiceType of necset A] (necset_semiCompSemiLattType.mixin A) (necset_convType.mixin A) (SemiCompSemiLattConvType.Mixin axiom).
