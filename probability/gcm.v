@@ -1509,24 +1509,41 @@ Lemma eps1_correct (C : convType) (s : necset (necset_convType C)) :
   eps1 s = join1 s.
 Admitted.
 
+(* TODO: move *)
+Lemma is_convex_set_image (A B : convType) (f : {affine A -> B})
+  (a : convex_set A) : is_convex_set (f @` a).
+Proof.
+rewrite /is_convex_set.
+apply/asboolP => x y p; rewrite 3!in_setE => -[a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
+exists (a0 <|p|> a1) => //.
+by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
+by rewrite (affine_functionP' f).
+Qed.
+
 (* the morphism part of necset *)
 Definition necset_mor' (A B : convType) (f : {affine A -> B}) : necset_convType A -> necset_convType B.
-case=> car car0.
-apply: (@NECSet.mk _ (@CSet.mk _ (f @` car) _)).
-  rewrite /is_convex_set.
-  apply/asboolP => x y p; rewrite 3!in_setE => -[a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
-  exists (a0 <|p|> a1) => //.
-  by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
-  by rewrite (affine_functionP' f).
-move=> H.
-case/cset0PN : car0 => a carx.
-apply/cset0PN; exists (f a) => /=; by exists a.
+move=> car.
+apply: (@NECSet.mk _ (@CSet.mk _ _ (is_convex_set_image f car)) _).
+apply/set0P; exists (f (neset_repr (necset_neset car))) => /=.
+exists (neset_repr (necset_neset car)) => //; exact: repr_in_neset.
 Defined.
 
 (* the results of necset_mor are semiLattConvType-morphisms, i.e., are affine and preserve semilatt operations *)
 Lemma necset_mor'_affine (A B : convType) (f : {affine A -> B}) : affine_function (necset_mor' f).
-Admitted.
-
+Proof.
+move=> a0 a1 p; do 2 apply val_inj => /=; rewrite predeqE => b0; split.
+- case=> a; rewrite necset_convType.convE => -[a0' [a1' [H0 [H1 ->{a}]]]] <-{b0}.
+  rewrite necset_convType.convE; exists (f a0'); exists (f a1'); split.
+    by rewrite in_setE /=; exists a0' => //; rewrite -in_setE.
+  split; last by rewrite affine_functionP' (*NB(rei): naming?*).
+  by rewrite in_setE /=; exists a1' => //; rewrite -in_setE.
+- rewrite necset_convType.convE => -[b0' [b1']].
+  rewrite !in_setE /= => -[[a0' H0] <-{b0'}] -[[a1' h1] <-{b1'}] ->{b0}.
+  exists (a0' <|p|> a1').
+  rewrite necset_convType.convE; exists a0', a1'; split; first by rewrite in_setE.
+  by split => //; rewrite in_setE.
+  by rewrite affine_functionP'.
+Qed.
 Lemma necset_mor'_Joet_morph (A B : convType) (f : {affine A -> B}) : 
   Joet_morph (necset_mor' f).
 Admitted.
@@ -1538,6 +1555,7 @@ Definition necset_mor (A B : convType) (f : {affine A -> B}) : {Joet_affine necs
 Section eps1_natural.
 Lemma eps1_natural (K L : semiCompSemiLattConvType) (f : {Joet_affine K -> L}) :
   f \o eps1 = eps1 \o (necset_mor f).
+Proof.
 Admitted.
 End eps1_natural.
 
