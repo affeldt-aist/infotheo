@@ -93,6 +93,19 @@ apply eqEsubset => b.
 - by case=> a' -> <-.
 - by move->; apply imageP.
 Qed.
+Lemma image_subset (A B : Type) (f : A -> B) (X : set A) (Y : set B) :
+  f @` X `<=` Y <-> forall a, X a -> Y (f a).
+Proof.
+split=> H.
+- by move=> a Xa; apply/H/imageP.
+- by move=> b [] a Xa <-; apply H.
+Qed.
+Lemma fullimage_subset (A B : Type) (f : A -> B) (Y : set B) :
+  f @` setT `<=` Y <-> forall a, Y (f a).
+Proof.
+rewrite (_ : (forall a, Y (f a)) <-> (forall a, setT a -> Y (f a))) ?image_subset //.
+by firstorder.
+Qed.
 Lemma eq_bigcupl (A I : Type) (P Q : set I) (X : I -> set A) :
   P = Q -> bigsetU P X = bigsetU Q X.
 Proof. by move ->. Qed.
@@ -513,6 +526,186 @@ Proof. by move=> H; apply val_inj; rewrite /= H. Qed.
 End neset_lemmas.
 Notation underNE X Y := (@under_neset _ X Y (NESet.H _) (NESet.H _)).
 
+Section convex_neset_lemmas.
+Local Open Scope classical_set_scope.
+Local Open Scope R_scope.
+Variable L : convType.
+(*
+The three definitions below work more or less the same way,
+although the lemmas are not sufficiently provided in classical_sets.v
+to switch between these views.
+Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
+[set z | exists y, Y y /\ z = x <| p |> y].
+Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
+  \bigcup_(y in Y) [set x <| p |> y].
+Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
+  (fun y => x <| p |> y) @` Y.
+*)
+Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
+  (fun y => x <| p |> y) @` Y.
+Lemma conv_pt_setE p x Y :
+  conv_pt_set p x Y = (fun y => x <| p |> y) @` Y.
+Proof. reflexivity. Qed.
+Definition conv_set (p : prob) (X Y : set L) :=
+  \bigcup_(x in X) conv_pt_set p x Y.
+Lemma conv_setE p X Y :
+  conv_set p X Y = \bigcup_(x in X) conv_pt_set p x Y.
+Proof. reflexivity. Qed.
+Lemma conv_setC p X Y :
+  conv_set p X Y = conv_set `Pr p.~ Y X.
+Proof.
+by apply eqEsubset=> u; case=> x Xx [] y Yy <-; exists y => //; exists x => //; rewrite -convC.
+Qed.
+Lemma conv1_pt_set x (Y : neset L) : conv_pt_set `Pr 1 x Y = [set x].
+Proof.
+case: Y=> Y /= /set0P [] y Yy.
+apply eqEsubset => u.
+- by case=> y' Yy' <-; rewrite conv1.
+- by move=> ->; exists y => //; rewrite conv1.
+Qed.
+Lemma conv0_pt_set x (Y : set L) : conv_pt_set `Pr 0 x Y = Y.
+Proof.
+apply eqEsubset => u.
+- by case=> y Yy <-; rewrite conv0.
+- by move=> Yu; exists u=> //; rewrite conv0.
+Qed.
+Lemma conv1_set X (Y : neset L) : conv_set `Pr 1 X Y = X.
+Proof.
+transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_set1 image_idfun.
+congr bigsetU; apply funext => x /=.
+by rewrite (conv1_pt_set x Y).
+Qed.
+Lemma conv0_set (X : neset L) Y : conv_set `Pr 0 X Y = Y.
+Proof.
+rewrite conv_setC /= (_ : `Pr 0.~ = `Pr 1) ?conv1_set //.
+by apply prob_ext; rewrite /= onem0.
+Qed.
+Definition probset := @setT prob.
+Definition natset := @setT nat.
+Definition oplus_conv_set (X Y : set L) :=
+  \bigcup_(p in probset) conv_set p X Y.
+Fixpoint iter_conv_set (X : set L) (n : nat) :=
+  match n with
+  | O => X
+  | S n' => oplus_conv_set X (iter_conv_set X n')
+  end.
+Lemma iter0_conv_set (X : set L) : iter_conv_set X 0 = X.
+Proof. reflexivity. Qed.
+Lemma iterS_conv_set (X : set L) (n : nat) : iter_conv_set X (S n) = oplus_conv_set X (iter_conv_set X n).
+Proof. reflexivity. Qed.
+Lemma probset_neq0 : probset != set0.
+Proof. by apply/set0P; exists `Pr 0. Qed.
+Lemma natset_neq0 : natset != set0.
+Proof. by apply/set0P; exists O. Qed.
+Lemma conv_pt_set_neq0 (p : prob) (x : L) (Y : neset L) : conv_pt_set p x Y != set0.
+Admitted.
+Lemma conv_set_neq0 (p : prob) (X Y : neset L) : conv_set p X Y != set0.
+Admitted.
+Lemma oplus_conv_set_neq0 (X Y : neset L) : oplus_conv_set X Y != set0.
+Admitted.
+Fixpoint iter_conv_set_neq0 (X : neset L) (n : nat) :
+  iter_conv_set X n != set0 :=
+  match n with
+  | 0 => NESet.H X
+  | S n' => oplus_conv_set_neq0 X (NESet.mk (iter_conv_set_neq0 X n'))
+  end.
+Canonical probset_neset := NESet.mk probset_neq0.
+Canonical natset_neset := NESet.mk natset_neq0.
+Canonical conv_pt_set_neset (p : prob) (x : L) (Y : neset L) :=
+  NESet.mk (conv_pt_set_neq0 p x Y).
+Canonical conv_set_neset (p : prob) (X Y : neset L) :=
+  NESet.mk (conv_set_neq0 p X Y).
+Canonical oplus_conv_set_neset (X Y : neset L) :=
+  NESet.mk (oplus_conv_set_neq0 X Y).
+Canonical iter_conv_set_neset (X : neset L) (n : nat) :=
+  NESet.mk (iter_conv_set_neq0 X n).
+
+Lemma iter_conv_set_superset (X : neset L) n : X `<=` iter_conv_set X n .
+Proof.
+move=> x Xx.
+elim:n => // n IHn; rewrite iterS_conv_set.
+exists `Pr 1 => //.
+by rewrite conv1_set.
+Qed.
+
+Lemma Convn_iter_conv_set (n : nat) :
+  forall (g : 'I_n -> L) (d : {dist 'I_n}) (X : set L),
+    g @` setT `<=` X -> iter_conv_set X n (\Conv_d g).
+Proof.
+elim: n; first by move=> g d; move: (distI0_False d).
+move=> n IHn g d X.
+case/boolP: (X == set0);
+  first by move/eqP => -> /(_ (g ord0)) H; apply False_ind; apply/H/imageP.
+move=> Xneq0 gX; set X' := (NESet.mk Xneq0).
+have gXi : forall i : 'I_n.+1, X (g i) by apply fullimage_subset.
+case/boolP: (d ord0 == 1).
+- move/eqP=> d01.
+  suff : X (\Conv_d g) by move/(@iter_conv_set_superset X' n.+1 (\Conv_d g)).
+  rewrite (convn_proj g d01).
+  by apply/gX/imageP.
+- move=> d0n1; rewrite convnE //.
+  exists (probdist d ord0) => //.
+  exists (g ord0) => //.
+  exists (\Conv_(DelDist.d d0n1) (fun x : 'I_n => g (DelDist.h ord0 x))) => //.
+  apply IHn.
+  move=> u [] i _ <-.
+  by apply/gX/imageP.
+Qed.
+Lemma conv_pt_set_monotone (p : prob) (x : L) (Y Y' : set L) :
+  Y `<=` Y' -> conv_pt_set p x Y `<=` conv_pt_set p x Y'.
+Proof. by move=> YY' u [] y /YY' Y'y <-; exists y. Qed.
+Lemma conv_set_monotone (p : prob) (X Y Y' : set L) :
+  Y `<=` Y' -> conv_set p X Y `<=` conv_set p X Y'.
+Proof. by move/conv_pt_set_monotone=> YY' u [] x Xx /YY' HY'; exists x. Qed.
+Lemma oplus_conv_set_monotone (X Y Y' : set L) :
+  Y `<=` Y' -> oplus_conv_set X Y `<=` oplus_conv_set X Y'.
+Proof. by move/conv_set_monotone=> YY' u [] p _ /YY' HY'; exists p. Qed.
+Lemma oplus_conv_setC (X Y : set L) :
+  oplus_conv_set X Y = oplus_conv_set Y X.
+Proof.
+suff H : forall X' Y', oplus_conv_set X' Y' `<=` oplus_conv_set Y' X'
+    by apply/eqEsubset/H.
+move=> {X} {Y} X Y u [] p _.
+rewrite conv_setC => H.
+by exists (`Pr p.~) => //.
+Qed.
+Lemma conv_csetmm (p : prob) (X : {convex_set L}) : conv_set p X X = X.
+Proof.
+apply eqEsubset=> x.
+- case: X=> X /= /asboolP H.
+  case => x0 Xx0 [] x1 Xx1 <-.
+  by rewrite -in_setE; apply H; rewrite in_setE.
+- by move=> Xx; exists x=> //; exists x=> //; rewrite convmm.
+Qed.
+Lemma oplus_conv_csetmm (X : {convex_set L}) : oplus_conv_set X X = X.
+Proof.
+apply eqEsubset => x.
+- case=> p _.
+  by rewrite conv_csetmm.
+- move=> Xx.
+  exists `Pr 0 => //.
+  by rewrite conv_csetmm.
+Qed.
+Lemma oplus_conv_set_hullmm (X : set L) :
+  oplus_conv_set (hull X) (hull X) = hull X.
+Proof. by rewrite (oplus_conv_csetmm (CSet.mk (convex_hull X))). Qed.
+Lemma hull_iter_conv_set (X : set L) : hull X = \bigcup_(i in natset) iter_conv_set X i.
+Proof.
+apply eqEsubset; first by move=> x [] n [] g [] d [] gX ->; exists n => //; apply Convn_iter_conv_set.
+apply bigsubsetU.
+elim; first by move=> _ /=; move: X; apply hull_mem'.
+move=> n IHn _.
+have H : iter_conv_set X n.+1 `<=` oplus_conv_set X (hull X) 
+  by apply/oplus_conv_set_monotone/IHn.
+apply (subset_trans H).
+rewrite oplus_conv_setC.
+have H' : oplus_conv_set (hull X) X `<=` oplus_conv_set (hull X) (hull X)
+  by apply/oplus_conv_set_monotone/hull_mem'.
+apply (subset_trans H').
+by rewrite oplus_conv_set_hullmm.
+Qed.
+End convex_neset_lemmas.
+
 Module NECSet.
 Section def.
 Local Open Scope classical_set_scope.
@@ -756,11 +949,15 @@ Section ClassDef.
 Local Open Scope classical_set_scope.
 Variables (U V : semiCompSemiLattConvType).
 Record class_of (f : U -> V) : Type := Class {
-  _ : affine_function f ;
-  _ : Joet_morph f ;
+  base : affine_function f ;
+  base2 : Joet_morph f ;
 }.
 Structure map (phUV : phant (U -> V)) :=
-  Pack {apply : U -> V ; _ : class_of apply}.
+  Pack {apply : U -> V ; class' : class_of apply}.
+Definition baseType (phUV : phant (U -> V)) (f : map phUV) : {affine U -> V} :=
+  AffineFunction (base (class' f)).
+Definition base2Type (phUV : phant (U -> V)) (f : map phUV) : {Joet_morph U -> V} :=
+  JoetMorph (base2 (class' f)).
 Local Coercion apply : map >-> Funclass.
 Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
 Definition class := let: Pack _ c as cF' := cF return class_of cF' in c.
@@ -768,12 +965,11 @@ Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
   @Pack phUV f fA.
 End ClassDef.
 Module Exports.
-Coercion apply : map >-> Funclass.
-
-Definition JoetAffine_affine (U V : semiCompSemiLattConvType) (phUV : phant (U -> V)) (m : map phUV) :=
-let: Pack phUV (Class H _) := m in AffineFunction H.
-Fail Canonical JoetAffine_affine.
-
+(*Coercion apply : map >-> Funclass.*)
+Coercion baseType : map >-> AffineFunction.map.
+Coercion base2Type : map >-> JoetMorph.map.
+Canonical baseType.
+Canonical base2Type.
 Notation JoetAffine fA := (Pack (Phant _) fA).
 Notation "{ 'Joet_affine' fUV }" := (map (Phant fUV))
   (at level 0, format "{ 'Joet_affine'  fUV }") : convex_scope.
@@ -784,6 +980,13 @@ Notation "[ 'Joet_affine' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
 End Exports.
 End JoetAffine.
 Export JoetAffine.Exports.
+
+Variable (U V : semiCompSemiLattConvType) (f : JoetAffine.map (Phant (U -> V))).
+Check f : {affine U -> V}.
+Variable u : U.
+Check f u.
+Check f : U -> V.
+Check f : {Joet_morph U -> V}.
 
 Section semicompsemilattconvtype_lemmas.
 Local Open Scope latt_scope.
@@ -811,183 +1014,6 @@ rewrite JoetDr /=.
 rewrite (underNE ((Conv x)^~ p @` [set y; z]) [set x <|p|> y; x <|p|> z]) //.
 by rewrite image_setU !image_set1.
 Qed.
-
-Section convex_neset_lemmas.
-(*
-The three definitions below work more or less the same way,
-although the lemmas are not sufficiently provided in classical_sets.v
-to switch between these views.
-Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
-[set z | exists y, Y y /\ z = x <| p |> y].
-Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
-  \bigcup_(y in Y) [set x <| p |> y].
-Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
-  (fun y => x <| p |> y) @` Y.
-*)
-Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
-  (fun y => x <| p |> y) @` Y.
-Lemma conv_pt_setE p x Y :
-  conv_pt_set p x Y = (fun y => x <| p |> y) @` Y.
-Proof. reflexivity. Qed.
-Definition conv_set (p : prob) (X Y : set L) :=
-  \bigcup_(x in X) conv_pt_set p x Y.
-Lemma conv_setE p X Y :
-  conv_set p X Y = \bigcup_(x in X) conv_pt_set p x Y.
-Proof. reflexivity. Qed.
-Lemma conv_setC p X Y :
-  conv_set p X Y = conv_set `Pr p.~ Y X.
-Proof.
-by apply eqEsubset=> u; case=> x Xx [] y Yy <-; exists y => //; exists x => //; rewrite -convC.
-Qed.
-Lemma conv_pt_set1 x (Y : neset L) : conv_pt_set `Pr 1 x Y = [set x].
-Proof.
-case: Y=> Y /= /set0P [] y Yy.
-apply eqEsubset => u.
-- by case=> y' Yy' <-; rewrite conv1.
-- by move=> ->; exists y => //; rewrite conv1.
-Qed.
-Lemma conv_pt_set0 x (Y : set L) : conv_pt_set `Pr 0 x Y = Y.
-Proof.
-apply eqEsubset => u.
-- by case=> y Yy <-; rewrite conv0.
-- by move=> Yu; exists u=> //; rewrite conv0.
-Qed.
-Lemma conv_set1 X (Y : neset L) : conv_set `Pr 1 X Y = X.
-Proof.
-transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_set1 image_idfun.
-congr bigsetU; apply funext => x /=.
-by rewrite (conv_pt_set1 x Y).
-Qed.
-Lemma conv_set0 (X : neset L) Y : conv_set `Pr 0 X Y = Y.
-Proof.
-rewrite conv_setC /= (_ : `Pr 0.~ = `Pr 1) ?conv_set1 //.
-by apply prob_ext; rewrite /= onem0.
-Qed.
-Definition probset := @setT prob.
-Definition natset := @setT nat.
-Definition oplus_conv_set (X Y : set L) :=
-  \bigcup_(p in probset) conv_set p X Y.
-Fixpoint iter_conv_set (X : set L) (n : nat) :=
-  match n with
-  | O => X
-  | S n' => oplus_conv_set X (iter_conv_set X n')
-  end.
-Lemma iter_conv_set0 (X : set L) : iter_conv_set X 0 = X.
-Proof. reflexivity. Qed.
-Lemma iter_conv_setS (X : set L) (n : nat) : iter_conv_set X (S n) = oplus_conv_set X (iter_conv_set X n).
-Proof. reflexivity. Qed.
-Lemma probset_neq0 : probset != set0.
-Admitted.
-Lemma natset_neq0 : natset != set0.
-Admitted.
-Lemma conv_pt_set_neq0 (p : prob) (x : L) (Y : neset L) : conv_pt_set p x Y != set0.
-Admitted.
-Lemma conv_set_neq0 (p : prob) (X Y : neset L) : conv_set p X Y != set0.
-Admitted.
-Lemma oplus_conv_set_neq0 (X Y : neset L) : oplus_conv_set X Y != set0.
-Admitted.
-Fixpoint iter_conv_set_neq0 (X : neset L) (n : nat) :
-  iter_conv_set X n != set0 :=
-  match n with
-  | 0 => NESet.H X
-  | S n' => oplus_conv_set_neq0 X (NESet.mk (iter_conv_set_neq0 X n'))
-  end.
-Global Canonical probset_neset := NESet.mk probset_neq0.
-Global Canonical natset_neset := NESet.mk natset_neq0.
-Global Canonical conv_pt_set_neset (p : prob) (x : L) (Y : neset L) :=
-  NESet.mk (conv_pt_set_neq0 p x Y).
-Global Canonical conv_set_neset (p : prob) (X Y : neset L) :=
-  NESet.mk (conv_set_neq0 p X Y).
-Global Canonical oplus_conv_set_neset (X Y : neset L) :=
-  NESet.mk (oplus_conv_set_neq0 X Y).
-Global Canonical iter_conv_set_neset (X : neset L) (n : nat) :=
-  NESet.mk (iter_conv_set_neq0 X n).
-
-Lemma iter_conv_set_superset (X : neset L) n : X `<=` iter_conv_set X n .
-Proof.
-move=> x Xx.
-elim:n => // n IHn; rewrite iter_conv_setS.
-exists `Pr 1 => //.
-by rewrite conv_set1.
-Qed.
-
-Lemma Convn_iter_conv_set (n : nat) :
-  forall (g : 'I_n -> L) (d : {dist 'I_n}) (X : set L),
-    g @` setT `<=` X -> iter_conv_set X n (\Conv_d g).
-Proof.
-elim: n; first by move=> g d; move: (distI0_False d).
-move=> n IHn g d X.
-case/boolP: (X == set0);
-  first by move/eqP => -> /(_ (g ord0)) H; apply False_ind; apply/H/imageP.
-move=> Xneq0 gX; set X' := (NESet.mk Xneq0).
-have gXi : forall i : 'I_n.+1, X (g i) by move=> i; apply/gX/imageP.
-case/boolP: (d ord0 == 1).
-- move/eqP=> d01.
-  suff : X (\Conv_d g) by move/(@iter_conv_set_superset X' n.+1 (\Conv_d g)).
-  rewrite (convn_proj g d01).
-  by apply/gX/imageP.
-- move=> d0n1; rewrite convnE //.
-  exists (probdist d ord0) => //.
-  exists (g ord0) => //.
-  exists (\Conv_(DelDist.d d0n1) (fun x : 'I_n => g (DelDist.h ord0 x))) => //.
-  apply IHn.
-  move=> u [] i _ <-.
-  by apply/gX/imageP.
-Qed.
-Lemma conv_pt_set_monotone (p : prob) (x : L) (Y Y' : set L) :
-  Y `<=` Y' -> conv_pt_set p x Y `<=` conv_pt_set p x Y'.
-Proof. by move=> YY' u [] y /YY' Y'y <-; exists y. Qed.
-Lemma conv_set_monotone (p : prob) (X Y Y' : set L) :
-  Y `<=` Y' -> conv_set p X Y `<=` conv_set p X Y'.
-Proof. by move/conv_pt_set_monotone=> YY' u [] x Xx /YY' HY'; exists x. Qed.
-Lemma oplus_conv_set_monotone (X Y Y' : set L) :
-  Y `<=` Y' -> oplus_conv_set X Y `<=` oplus_conv_set X Y'.
-Proof. by move/conv_set_monotone=> YY' u [] p _ /YY' HY'; exists p. Qed.
-Lemma oplus_conv_setC (X Y : set L) :
-  oplus_conv_set X Y = oplus_conv_set Y X.
-Proof.
-suff H : forall X' Y', oplus_conv_set X' Y' `<=` oplus_conv_set Y' X'
-    by apply/eqEsubset/H.
-move=> {X} {Y} X Y u [] p _.
-rewrite conv_setC => H.
-by exists (`Pr p.~) => //.
-Qed.
-Lemma conv_setmm (p : prob) (X : {convex_set L}) : conv_set p X X = X.
-Proof.
-apply eqEsubset=> x.
-- case: X=> X /= /asboolP H.
-  case => x0 Xx0 [] x1 Xx1 <-.
-  by rewrite -in_setE; apply H; rewrite in_setE.
-- by move=> Xx; exists x=> //; exists x=> //; rewrite convmm.
-Qed.
-Lemma oplus_conv_setmm (X : {convex_set L}) : oplus_conv_set X X = X.
-Proof.
-apply eqEsubset => x.
-- case=> p _.
-  by rewrite conv_setmm.
-- move=> Xx.
-  exists `Pr 0 => //.
-  by rewrite conv_setmm.
-Qed.
-Lemma oplus_conv_set_hullmm (X : set L) :
-  oplus_conv_set (hull X) (hull X) = hull X.
-Proof. by rewrite (oplus_conv_setmm (CSet.mk (convex_hull X))). Qed.
-Lemma hull_iter_conv_set (X : set L) : hull X = \bigcup_(i in natset) iter_conv_set X i.
-Proof.
-apply eqEsubset; first by move=> x [] n [] g [] d [] gX ->; exists n => //; apply Convn_iter_conv_set.
-apply bigsubsetU.
-elim; first by move=> _ /=; move: X; apply hull_mem'.
-move=> n IHn _.
-have H : iter_conv_set X n.+1 `<=` oplus_conv_set X (hull X) 
-  by apply/oplus_conv_set_monotone/IHn.
-apply (subset_trans H).
-rewrite oplus_conv_setC.
-have H' : oplus_conv_set (hull X) X `<=` oplus_conv_set (hull X) (hull X)
-  by apply/oplus_conv_set_monotone/hull_mem'.
-apply (subset_trans H').
-by rewrite oplus_conv_set_hullmm.
-Qed.
-End convex_neset_lemmas.
 
 Lemma Joet_conv_pt_setE p x (Y : neset L) :
   Joet `NE (conv_pt_set p x Y) = Joet `NE ((Conv x)^~ p @` Y).
@@ -1018,7 +1044,7 @@ Lemma Joet_oplus_conv_setE (X Y : neset L) :
   Joet `NE ((fun p => Joet X <|p|> Joet Y) @` probset).
 Proof.
 rewrite (underNE (oplus_conv_set X Y)
-                 (\bigcup_(p in probset) conv_set p X Y)) // Joet_bigcup.
+                 (\bigcup_(p in probset_neset) conv_set p X Y)) // Joet_bigcup.
 rewrite (underNE (Joet @` ((fun i => `NE (conv_set i X Y)) @` probset))
                  ((fun p => Joet X <|p|> Joet Y) @` probset)) //.
 rewrite imageA.
@@ -1119,10 +1145,16 @@ End def.
 Section lemmas.
 Local Open Scope classical_set_scope.
 Variable A : convType.
-Lemma convE X Y p : (conv X Y p : {convex_set A})=
+Lemma convE X Y p : conv X Y p =
   [set a : A | exists x, exists y, x \in X /\ y \in Y /\ a = x <| p |> y]
     :> set A.
 Proof. rewrite/conv; unlock; reflexivity. Qed.
+Lemma conv_conv_set X Y p : conv X Y p = conv_set p X Y :> set A.
+Proof.
+rewrite convE; apply eqEsubset=> u.
+- by case=> x [] y; rewrite !in_setE; case=> Xx [] Yy ->; exists x => //; exists y.
+- by case=> x Xx [] y Yy <-; exists x, y; rewrite !in_setE.
+Qed.
 End lemmas.
 End necset_convType.
 Canonical necset_convType A := ConvexSpace.Pack (necset_convType.mixin A).
@@ -1168,10 +1200,23 @@ Section def.
 Local Open Scope classical_set_scope.
 Variable (A : convType).
 Let L := necset_semiCompSemiLattType A.
-Lemma axiom : forall (p : prob) (x : L) (I : neset L),
-    (necset_convType.conv x (Joet I) p) =
-    Joet `NE ((fun y => necset_convType.conv x y p) @` I).
+Lemma axiom (p : prob) (X : L) (I : neset L) :
+    (necset_convType.conv X (Joet I) p) =
+    Joet `NE ((fun Y => necset_convType.conv X Y p) @` I).
 Proof.
+do 2 apply val_inj=> /=.
+(*rewrite -hull_cset necset_convType.conv_conv_set /=.
+apply hull_eqEsubset=> u /=.*)
+rewrite necset_convType.conv_conv_set /=.
+apply eqEsubset=> u /=.
+- case=> x Xx [] y [] n [] g [] d [] gI yg <-.
+(*
+!!!!!
+  exists n, (fun i => x <|p|> y), d.
+  split.
+  + rewrite fullimage_subset=> i.
+    move/fullimage_subset: gI.
+*)
 Admitted.
 Definition mixin := @SemiCompSemiLattConvType.Class [choiceType of necset A] (necset_semiCompSemiLattType.mixin A) (necset_convType.mixin A) (SemiCompSemiLattConvType.Mixin axiom).
 End def.
@@ -1280,10 +1325,8 @@ End eps0.
 Arguments eps0 [C].
 
 (* morphism part of Dist *)
-Definition Dist_mor' (A B : choiceType) (f : A -> B) (d : Dist A) : Dist B
-  := DistBind.d d (fun a => Dist1.d (f a)).
 Definition Dist_mor (A B : choiceType) (f : A -> B) : {affine Dist A -> Dist B}.
-refine (@AffineFunction.Pack _ _ _ (Dist_mor' f) _).
+refine (@AffineFunction.Pack _ _ _ (Distfmap f) _).
 move=> x y t.
 rewrite/affine_function_at.
 exact: Conv2Dist.bind_left_distr.
@@ -1295,7 +1338,7 @@ Definition Dist_mor_supp (A B : choiceType) (f : A -> B) (d : Dist A) :
 Proof.
 move=> x.
 apply (@FSetSub _ _ (f (fsval x))).
-rewrite /= /Dist_mor' DistBind.supp imfset_id.
+rewrite /= DistBind.supp imfset_id.
 apply/bigfcupP.
 exists (Dist1.d (f (fsval x))).
 - rewrite andbT.
@@ -1432,8 +1475,7 @@ Proof.
 move=> X Y p.
 rewrite /affine_function_at /eps1'.
 rewrite (underNE (X <|p|> Y) (conv_set p X Y)) ?Joet_conv_setD //.
-rewrite conv_setE /Conv /= /necset_convType.conv /=; unlock => /=.
-rewrite /necset_convType.pre_pre_conv.
+rewrite conv_setE necset_convType.convE.
 apply eqEsubset=> u.
 - case=> x [] y [] xX [] yY ->.
   exists x; first by rewrite -in_setE.
@@ -1495,12 +1537,11 @@ Definition necset_mor (A B : convType) (f : {affine A -> B}) : {Joet_affine necs
   JoetAffine.Pack (Phant (necset_semiCompSemiLattConvType A -> necset_semiCompSemiLattConvType B))
                   (JoetAffine.Class (necset_mor'_affine f) (necset_mor'_Joet_morph f)).
 
-(*
 Section eps1_natural.
 Lemma eps1_natural (K L : semiCompSemiLattConvType) (f : {Joet_affine K -> L}) :
   f \o eps1 = eps1 \o (necset_mor f).
+Admitted.
 End eps1_natural.
-*)
 
 Section P_delta.
 (* P_delta = necset \o Dist, where
