@@ -449,6 +449,7 @@ Arguments H : simpl never.
 Notation neset := t.
 Coercion car : neset >-> set.
 Notation "'`NE' s" := (@mk _ s (H _)) (format "'`NE'  s", at level 6).
+Notation neset_neq0 := H.
 End Exports.
 End NESet.
 Export NESet.Exports.
@@ -482,22 +483,24 @@ Local Open Scope classical_set_scope.
 Lemma set1_neq0 (T : Type) (x : T) : [set x] != set0.
 Proof. by apply/set0P; exists x. Qed.
 
-Lemma neset_bigsetU_neq0 (T I : Type) (S : neset I) (F : I -> neset T) :
-      (bigsetU S F) != set0.
+Definition neset_repr T (A : neset T) : T.
 Proof.
-apply/bigcup_set0P.
-case: S => carS /= /set0P [] i Hi.
-exists i; split => //.
-by case: (F i) => carFi /= /set0P.
-Qed.
+case: A => A /set0P /boolp.constructive_indefinite_description [x _]; exact x.
+Defined.
+Lemma repr_in_neset T (A : neset T) : (A : set T) (neset_repr A).
+Proof. by case: A => A A0 /=; case: cid. Qed.
+Global Opaque neset_repr.
+Local Hint Resolve repr_in_neset.
+
+Lemma neset_bigsetU_neq0 (T I : Type) (S : neset I) (F : I -> neset T) :
+ (bigsetU S F) != set0.
+Proof. by apply/bigcup_set0P; eexists; split => //; eexists. Qed.
 
 Lemma neset_image_neq0 {A B} (f : A -> B) (X : neset A) : f @` X != set0.
-Proof.
-by apply/set0P; case: X => carX /= /set0P [] x Xx; exists (f x); apply/imageP.
-Qed.
+Proof. apply/set0P; eexists; exact/imageP. Qed.
 
 Lemma neset_setU_neq0 (T : Type) (X Y : neset T) : X `|` Y != set0.
-Proof. by apply/set0P; case:X => catX /= [] /set0P [] x Xx; exists x; left. Qed.
+Proof. by apply/set0P; eexists; left. Qed.
 
 Canonical neset1 {A} (x : A) := @NESet.mk A [set x] (set1_neq0 x).
 Canonical bignesetU {A} (I : Type) (S : neset I) (F : I -> neset A) :=
@@ -508,23 +511,20 @@ Canonical nesetU {T} (X Y : neset T) :=
   @NESet.mk _ (X `|` Y) (neset_setU_neq0 X Y).
 
 Lemma neset_hull_neq0 (T : convType) (F : neset T) : hull F != set0.
-Proof. by rewrite hull_eq0 NESet.H. Qed.
+Proof. by rewrite hull_eq0 neset_neq0. Qed.
 
 Canonical neset_hull (T : convType) (F : neset T) := @NESet.mk T (hull F) (neset_hull_neq0 F).
 
 Lemma image_const (A B : Type) (X : neset A) (b : B) :
   (fun _ => b) @` X = [set b].
-Proof.
-apply eqEsubset=> b'.
-- by case => ? _ ->.
-- by case: X=> X /= /set0P [] a Xa ->; exists a.
-Qed.
+Proof. apply eqEsubset=> b'; [by case => ? _ -> | by move=> ?; eexists]. Qed.
 
 Lemma under_neset (T : Type) (X Y : set T) (Xneq0 : X != set0) (Yneq0 : Y != set0) : X = Y -> NESet.mk Xneq0 = NESet.mk Yneq0.
 Proof. by move=> H; apply val_inj; rewrite /= H. Qed.
 
 End neset_lemmas.
-Notation underNE X Y := (@under_neset _ X Y (NESet.H _) (NESet.H _)).
+Notation underNE X Y := (@under_neset _ X Y (neset_neq0 _) (neset_neq0 _)).
+Hint Resolve repr_in_neset.
 
 Section convex_neset_lemmas.
 Local Open Scope classical_set_scope.
@@ -543,25 +543,20 @@ Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
 *)
 Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
   (fun y => x <| p |> y) @` Y.
-Lemma conv_pt_setE p x Y :
-  conv_pt_set p x Y = (fun y => x <| p |> y) @` Y.
-Proof. reflexivity. Qed.
-Definition conv_set (p : prob) (X Y : set L) :=
-  \bigcup_(x in X) conv_pt_set p x Y.
-Lemma conv_setE p X Y :
-  conv_set p X Y = \bigcup_(x in X) conv_pt_set p x Y.
-Proof. reflexivity. Qed.
-Lemma conv_setC p X Y :
-  conv_set p X Y = conv_set `Pr p.~ Y X.
+Lemma conv_pt_setE p x Y : conv_pt_set p x Y = (fun y => x <| p |> y) @` Y.
+Proof. by []. Qed.
+Definition conv_set p (X Y : set L) := \bigcup_(x in X) conv_pt_set p x Y.
+Lemma conv_setE p X Y : conv_set p X Y = \bigcup_(x in X) conv_pt_set p x Y.
+Proof. by []. Qed.
+Lemma conv_setC p X Y : conv_set p X Y = conv_set `Pr p.~ Y X.
 Proof.
 by apply eqEsubset=> u; case=> x Xx [] y Yy <-; exists y => //; exists x => //; rewrite -convC.
 Qed.
 Lemma conv1_pt_set x (Y : neset L) : conv_pt_set `Pr 1 x Y = [set x].
 Proof.
-case: Y=> Y /= /set0P [] y Yy.
 apply eqEsubset => u.
-- by case=> y' Yy' <-; rewrite conv1.
-- by move=> ->; exists y => //; rewrite conv1.
+- by case => y _; rewrite conv1.
+- by move=> ->; eexists => //; rewrite conv1.
 Qed.
 Lemma conv0_pt_set x (Y : set L) : conv_pt_set `Pr 0 x Y = Y.
 Proof.
@@ -590,23 +585,23 @@ Fixpoint iter_conv_set (X : set L) (n : nat) :=
   | S n' => oplus_conv_set X (iter_conv_set X n')
   end.
 Lemma iter0_conv_set (X : set L) : iter_conv_set X 0 = X.
-Proof. reflexivity. Qed.
+Proof. by []. Qed.
 Lemma iterS_conv_set (X : set L) (n : nat) : iter_conv_set X (S n) = oplus_conv_set X (iter_conv_set X n).
-Proof. reflexivity. Qed.
+Proof. by []. Qed.
 Lemma probset_neq0 : probset != set0.
 Proof. by apply/set0P; exists `Pr 0. Qed.
 Lemma natset_neq0 : natset != set0.
 Proof. by apply/set0P; exists O. Qed.
-Lemma conv_pt_set_neq0 (p : prob) (x : L) (Y : neset L) : conv_pt_set p x Y != set0.
-Admitted.
-Lemma conv_set_neq0 (p : prob) (X Y : neset L) : conv_set p X Y != set0.
-Admitted.
+Lemma conv_pt_set_neq0 p (x : L) (Y : neset L) : conv_pt_set p x Y != set0.
+Proof. exact: neset_image_neq0. Qed.
+Lemma conv_set_neq0 p (X Y : neset L) : conv_set p X Y != set0.
+Proof. by rewrite neset_neq0. Qed.
 Lemma oplus_conv_set_neq0 (X Y : neset L) : oplus_conv_set X Y != set0.
-Admitted.
+Proof. apply/set0P; eexists; exists `Pr 1 => //; by rewrite conv1_set. Qed.
 Fixpoint iter_conv_set_neq0 (X : neset L) (n : nat) :
   iter_conv_set X n != set0 :=
   match n with
-  | 0 => NESet.H X
+  | 0 => neset_neq0 X
   | S n' => oplus_conv_set_neq0 X (NESet.mk (iter_conv_set_neq0 X n'))
   end.
 Canonical probset_neset := NESet.mk probset_neq0.
@@ -1166,7 +1161,7 @@ Variable (A : convType).
 Definition pre_op (X : neset (necset A)) : convex_set A
   := CSet.mk (convex_hull `NE (bigsetU X idfun)).
 Lemma pre_op_neq0 X : pre_op X != cset0 A.
-Proof. rewrite cset0P hull_eq0; exact: NESet.H. Qed.
+Proof. by rewrite cset0P hull_eq0 neset_neq0. Qed.
 Definition op X := NECSet.mk (pre_op_neq0 X).
 Lemma op1 x : op `NE [set x] = x.
 Proof. by do 2 apply val_inj => /=; rewrite bigcup1 hull_cset. Qed.
