@@ -621,7 +621,7 @@ rewrite !addptA -addptA -!scalept_comp -?scalept_addpt; try apply prob_ge0.
 by rewrite !(addptC (scalept _.~ _)) !S1_conv.
 Qed.
 
-Lemma distribute (x y z : A) (p q : prob) :
+Lemma convDr (x y z : A) (p q : prob) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
 Proof. by rewrite -{1}(convmm x q) commute. Qed.
 
@@ -758,6 +758,31 @@ Proof.
 apply S1_inj; rewrite !S1_convn -barycenter_convdist.
 apply eq_bigr => i _; by rewrite S1_convn.
 Qed.
+
+Local Open Scope R_scope.
+
+Lemma convn_const (a : A) :
+  forall (n : nat) (d : {dist 'I_n}), \Conv_d (fun _ => a) = a.
+Proof.
+elim; first by move=> d; move/distI0_False: (d).
+move=> n IHn d.
+case/boolP: (d ord0 == 1); first by move/eqP/(convn_proj (fun _ => a)).
+by move=> d0n0; rewrite convnE IHn convmm.
+Qed.
+
+Lemma convnDr :
+  forall (n : nat) (p : prob) (x : A) (g : 'I_n -> A) (d : {dist 'I_n}),
+    x <|p|> \Conv_d g = \Conv_d (fun i : 'I_n => x <|p|> g i).
+Proof.
+elim; first by move=> p x g d; move/distI0_False: (d).
+move=> n IHn p x g d.
+case/boolP: (d ord0 == 1); first by move/eqP=> d01; rewrite (convn_proj g d01) (convn_proj (fun i => x <|p|> g i) d01).
+move=> d0n1.
+rewrite !convnE !IHn.
+congr Convn; apply funext=> i.
+by rewrite convDr.
+Qed.
+   
 End convex_space_prop.
 
 Notation "'\Conv_' d f" := (Convn d f) : convex_scope.
