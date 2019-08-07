@@ -185,7 +185,52 @@ Qed.
 
 Lemma prob10 : `Pr 1 <> `Pr 0.
 Proof. by move/(congr1 Prob.p)/R1_neq_R0. Qed.
+
+(* TODO: move to ssrR *)
+Lemma paddR_neq0 (p q : R) (p0 : 0 <= p) (q0 : 0 <= q) : p + q != 0 <-> p != 0 \/ q != 0.
+Proof.
+split => [H | /orP].
+- apply/orP; rewrite -negb_and; apply: contra H => /andP[/eqP -> /eqP ->].
+  by rewrite addR0.
+- rewrite -negb_and; apply: contra => /eqP/paddR_eq0.
+  case/(_ p0)/(_ q0) => -> ->; by rewrite eqxx.
+Qed.
+
+Lemma add_prob_eq0 (p q : prob) : p + q = `Pr 0 <-> p = `Pr 0 /\ q = `Pr 0.
+Proof.
+split => [/paddR_eq0 | ].
+- move=> /(_ (prob_ge0 _) (prob_ge0 _)) [p0 q0]; split; exact/prob_ext.
+- by case => -> ->; rewrite addR0.
+Qed.
+
+Lemma add_prob_neq0 (p q : prob) : p + q != `Pr 0 <-> p != `Pr 0 \/ q != `Pr 0.
+Proof.
+split => [/paddR_neq0 | ].
+- by move=> /(_ (prob_ge0 _) (prob_ge0 _)).
+- by case; apply: contra => /eqP/add_prob_eq0 [] /eqP ? /eqP.
+Qed.
+
 End misc_prob.
+
+Lemma finsupp_Conv2 (C : convType) p (p0 : p != `Pr 0) (p1 : p != `Pr 1) (d e : Dist C) :
+  finsupp (d <|p|> e) = (finsupp d `|` finsupp e)%fset.
+Proof.
+apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j;
+  rewrite !mem_finsupp !Conv2Dist.dE inE; first by (move=> H ;
+    rewrite 2!mem_finsupp; apply/orP/(paddR_neq0 (Dist.ge0 _ _) (Dist.ge0 _ _));
+    apply: contra H => /eqP/paddR_eq0 => /(_ (Dist.ge0 _ _ ))/(_ (Dist.ge0 _ _)) [-> ->];
+    rewrite 2!mulR0 addR0).
+have [pge0 opge0] := (prob_ge0 p, prob_ge0 (`Pr p.~)).
+move/prob_gt0 in p0.
+move: p1 => /onem_neq0 /prob_gt0 /= p1.
+have [/leRP dgeb0 /leRP egeb0] := (Dist.ge0 d j, Dist.ge0 e j).
+have [xge0 yge0] := (Dist.ge0 d j, Dist.ge0 e j).
+rewrite 2!mem_finsupp => /orP[dj0|ej0]; apply/eqP/gtR_eqF;
+  [apply/addR_gt0wl; last exact/mulR_ge0;
+   apply/mulR_gt0 => //; apply/ltR_neqAle; split => //; exact/nesym/eqP |
+   apply/addR_gt0wr; first exact/mulR_ge0;
+   apply/mulR_gt0 => //; apply/ltR_neqAle; split => //; exact/nesym/eqP].
+Qed.
 
 Lemma Dist_eval_affine (C : choiceType) (x : C) :
   affine_function (fun D : Dist C => D x).
@@ -1288,30 +1333,12 @@ have -> : (\ssum_(i <- finsupp (x <|p|> y) | i \notin finsupp y) scalept (y i) (
 rewrite addpt0 [in RHS]big_fset_condE /=.
 suff H : finsupp y = [fset i | i in finsupp (x <|p|> y) & i \in finsupp y]
   by rewrite [in LHS]H.
-+ have -> : [fset i | i in finsupp (x <|p|> y) & i \in finsupp y]
-            = [fset i | i in finsupp y & i \in finsupp (x <|p|> y)]
++ have -> : [fset i | i in finsupp (x <|p|> y) & i \in finsupp y] =
+           [fset i | i in finsupp y & i \in finsupp (x <|p|> y)]
     by apply eq_imfset => //; move => i /=; rewrite !inE andbC.
   apply/eqP; rewrite eqEfsubset; apply/andP; split; last by apply fset_sub.
   apply/fsubsetP => i Hi.
-  move/fsubsetP: (Conv2Dist.incl_finsupp_conv2dist y x pn0).
-  have Conv2Dist_supp : forall x0 y0 : Dist C, finsupp (x0 <|p|> y0) = finsupp x0 `|` finsupp y0.
-  * (* TODO: factor this out as a lemma *)
-    move=> x0 y0.
-    apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j; rewrite !mem_finsupp !Conv2Dist.dE inE; first by move=> H; (have []: (x0 j != 0) \/ (y0 j != 0) by apply/nandP/negP; case/andP => /eqP H0 /eqP H1; move:H; rewrite H0 H1 !mulR0 addR0 eqxx) => H'; rewrite !mem_finsupp H' ?orTb ?orbT.
-    have pge0 : 0 <= p by apply prob_ge0.
-    move/prob_gt0: (pn0) => pgt0.
-    have opge0 : 0 <= p.~ by apply prob_ge0.
-    move/prob_gt0: (opn0) => /= opgt0.
-    move/leRP : (Dist.ge0 x0 j) => xgeb0.
-    move/leRP : (Dist.ge0 y0 j) => ygeb0.
-    move: (Dist.ge0 x0 j) => xge0.
-    move: (Dist.ge0 y0 j) => yge0.
-    by case /orP; rewrite mem_finsupp => H; apply/eqP; apply gtR_eqF;
-    [apply addR_gt0wl; [apply mulR_gt0|apply mulR_ge0] | apply addR_gt0wr; [apply mulR_ge0|apply mulR_gt0]] => //; apply /ltRP; rewrite ltR_neqAle'; apply/andP; split => //; rewrite eq_sym.
-  have -> : finsupp (y <|p|> x) = finsupp (x <|p|> y)
-      by rewrite !Conv2Dist_supp fsetUC.
-  move/(_ i Hi) => Hi'.
-  by rewrite !inE Hi Hi'.
+  by rewrite !inE /= Hi finsupp_Conv2 // inE Hi orbT.
 Qed.
 
 Definition eps0 (C : convType) : {affine Dist C -> C} := @AffineFunction.Pack (Dist_convType C) C (Phant (Dist C -> C)) (@eps0' C) (@eps0'_affine C).
