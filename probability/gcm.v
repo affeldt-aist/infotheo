@@ -62,7 +62,7 @@ Lemma eq_imagel (A B : Type) (f g : A -> B) (X : set A) :
   (forall a, X a -> f a = g a) -> f @` X = g @` X.
 Proof.
 by move=> H; apply eqEsubset=> a; case => x Xx <-; [rewrite H | rewrite -H] => //; exists x.
-Qed.   
+Qed.
 Lemma eq_imager (A B : Type) (f : A -> B) (X Y : set A) :
   X = Y -> f @` X = f @` Y.
 Proof. by move ->. Qed.
@@ -264,11 +264,9 @@ by rewrite scalept_conv; try apply Dist.ge0.
 Qed.
 
 Lemma big_scalept_conv_split (C : convType) (I : Type) (r : seq I) (P : pred I)
-      (F G : I -> Scaled_convType C) (p : prob):
-  \big[addpt (A:=C)/Zero C]_(i <- r | P i)
-   (F i  <|p|> G i) =
-  ((\big[addpt (A:=C)/Zero C]_(i <- r | P i) F i) : Scaled_convType C)
-    <|p|> (\big[addpt (A:=C)/Zero C]_(i <- r | P i) G i).
+ (F G : I -> Scaled_convType C) (p : prob) :
+  \ssum_(i <- r | P i) (F i <|p|> G i) =
+  ((\ssum_(i <- r | P i) F i) : Scaled_convType C) <|p|> \ssum_(i <- r | P i) G i.
 Proof.
 by rewrite /Conv /= /scaled_conv big_split /= !big_scalept.
 Qed.
@@ -276,7 +274,7 @@ Qed.
 Lemma scalept_addRnneg : forall (A : convType) (x : scaled_pt A),
     {morph (fun (r : Rnneg) => scalept r x) : r s / addRnneg r s >-> addpt r s}.
 Proof. by move=> A x [] r /= /leRP Hr [] s /= /leRP Hs; apply scalept_addR. Qed.
-Definition big_scaleptl (A : convType) (x : scaled_pt A) := 
+Definition big_scaleptl (A : convType) (x : scaled_pt A) :=
   @big_morph
     (@scaled_pt A)
     Rnneg
@@ -291,11 +289,10 @@ Lemma big_scaleptl' (A : convType) (x : scaled_pt A) :
   scalept R0 x = Zero A ->
   forall (I : Type) (r : seq I) (P : pred I) (F : I -> R),
     (forall i : I, 0 <= F i) ->
-    scalept (\big[Rplus/R0]_(i <- r | P i) F i) x =
-    \big[addpt (A:=A)/Zero A]_(i <- r | P i) scalept (F i) x.
+    scalept (\sum_(i <- r | P i) F i) x = \ssum_(i <- r | P i) scalept (F i) x.
 Proof.
 move=> H I r P F H'.
-transitivity (\big[addpt (A:=A)/Zero A]_(i <- r | P i) (fun r0 : Rnneg => scalept r0 x) (mkRnneg (H' i))); last by reflexivity.
+transitivity (\ssum_(i <- r | P i) (fun r0 : Rnneg => scalept r0 x) (mkRnneg (H' i))); last by reflexivity.
 rewrite -big_scaleptl ?scalept0 //.
 congr scalept.
 transitivity (\sum_(i <- r | P i) mkRnneg (H' i)); first by reflexivity.
@@ -381,21 +378,20 @@ Section S1_Convn_indexed_over_finType.
 Import ScaledConvex.
 Variables (A : convType) (T : finType) (d : {dist T}) (f : T -> A).
 Lemma S1_Convn_indexed_over_finType :
-  S1 (Convn_indexed_over_finType d f)
-  = \big[addpt (A:=A)/Zero A]_i scalept (d i) (S1 (f i)).
+  S1 (Convn_indexed_over_finType d f) = \ssum_i scalept (d i) (S1 (f i)).
 Proof.
 rewrite /Convn_indexed_over_finType.
 rewrite S1_convn /=.
 evar (X : nat -> scaled_pt A).
-transitivity (\big[addpt (A:=A)/Zero A]_(i < Convn_indexed_over_finType.n T) X i).
+transitivity (\ssum_(i < Convn_indexed_over_finType.n T) X i).
 - apply eq_bigr => -[i Hi] _.
   set (i' := nat_of_ord (Ordinal Hi)).
   rewrite ffunE.
   rewrite /Convn_indexed_over_finType.enum /=.
-  set F := (fun i => 
+  set F := (fun i =>
            scalept (d (nth (Convn_indexed_over_finType.t0 d) (index_enum T) i))
           (S1 (f (nth (Convn_indexed_over_finType.t0 d) (index_enum T) i)))).
-  transitivity (F i'); by exact: erefl.
+  transitivity (F i'); exact: erefl.
 move: (@big_mkord
          (scaled_pt A)
          (@Zero _)
@@ -427,8 +423,8 @@ Hypothesis prj_affine : affine_function prj.
 Variables (T : finType) (d : {dist T}) (f : T -> A).
 
 Lemma S1_proj_Convn_indexed_over_finType :
-  S1 (prj (Convn_indexed_over_finType d f))
-  = \big[@addpt B/Zero B]_i scalept (d i) (S1 (prj (f i))).
+  S1 (prj (Convn_indexed_over_finType d f)) =
+  \ssum_i scalept (d i) (S1 (prj (f i))).
 Proof.
 set (prj' := AffineFunction.Pack (Phant (A -> B)) prj_affine).
 move: (affine_function_Sum prj') => /= ->.
@@ -690,7 +686,7 @@ apply eqEsubset; first by move=> x [] n [] g [] d [] gX ->; exists n => //; appl
 apply bigsubsetU.
 elim; first by move=> _ /=; move: X; apply hull_mem'.
 move=> n IHn _.
-have H : iter_conv_set X n.+1 `<=` oplus_conv_set X (hull X) 
+have H : iter_conv_set X n.+1 `<=` oplus_conv_set X (hull X)
   by apply/oplus_conv_set_monotone/IHn.
 apply (subset_trans H).
 rewrite oplus_convC_set.
@@ -1246,29 +1242,28 @@ move: (pn1) => /onem_neq0 opn0.
 apply S1_inj.
 rewrite S1_conv.
 rewrite !S1_Convn_indexed_over_finType.
-transitivity (\big[addpt (A:=C)/Zero C]_(i : dist_of_Dist.D (x <|p|> y))
-               scalept ((x <|p|> y) (fsval i)) (S1 (fsval i)));
+transitivity (\ssum_(i : dist_of_Dist.D (x <|p|> y))
+              scalept ((x <|p|> y) (fsval i)) (S1 (fsval i)));
   first by apply eq_bigr => i; rewrite dist_of_DistE.
 rewrite -(@big_seq_fsetE
             _ _ _ _ _ xpredT
             (fun i => scalept ((x <|p|> y) i) (S1 i))
          ) /=.
-transitivity (\big[addpt (A:=C)/Zero C]_(i <- finsupp (x <|p|> y))
-               ((scalept (x i) (S1 i) : Scaled_convType C) <|p|> scalept (y i) (S1 i))); first by apply eq_bigr => i _; rewrite Dist_scalept_conv.
+transitivity (\ssum_(i <- finsupp (x <|p|> y))
+  ((scalept (x i) (S1 i) : Scaled_convType C) <|p|> scalept (y i) (S1 i))); first by apply eq_bigr => i _; rewrite Dist_scalept_conv.
 rewrite big_seq_fsetE big_scalept_conv_split /=.
 rewrite -(@big_seq_fsetE _ _ _ _ _ xpredT (fun i => scalept (x i) (S1 i))).
 rewrite -(@big_seq_fsetE _ _ _ _ _ xpredT (fun i => scalept (y i) (S1 i))) /=.
-have -> : \big[addpt (A:=C)/Zero C]_i scalept (dist_of_Dist x i) (S1 (fsval i))
-          = \big[addpt (A:=C)/Zero C]_(i <- finsupp x) scalept (x i) (S1 i)
+have -> : \ssum_i scalept (dist_of_Dist x i) (S1 (fsval i)) =
+         \ssum_(i <- finsupp x) scalept (x i) (S1 i)
   by rewrite big_seq_fsetE /=; apply eq_bigr => i _; rewrite dist_of_DistE.
-have -> : \big[addpt (A:=C)/Zero C]_i scalept (dist_of_Dist y i) (S1 (fsval i))
-          = \big[addpt (A:=C)/Zero C]_(i <- finsupp y) scalept (y i) (S1 i)
+have -> : \ssum_i scalept (dist_of_Dist y i) (S1 (fsval i)) =
+         \ssum_(i <- finsupp y) scalept (y i) (S1 i)
   by rewrite big_seq_fsetE /=; apply eq_bigr => i _; rewrite dist_of_DistE.
-have -> : \big[addpt (A:=C)/Zero C]_(i <- finsupp x) scalept (x i) (S1 i)
-          = \big[addpt (A:=C)/Zero C]_(i <- finsupp (x <|p|> y)) scalept (x i) (S1 i).
+have -> : \ssum_(i <- finsupp x) scalept (x i) (S1 i) =
+         \ssum_(i <- finsupp (x <|p|> y)) scalept (x i) (S1 i).
 - rewrite [in RHS](bigID (fun i => i \in (finsupp x))) /=.
-  have -> : (\big[addpt (A:=C)/Zero C]_(i <- finsupp (x <|p|> y) | 
-     i \notin finsupp x) scalept (x i) (S1 i)) = Zero C
+  have -> : (\ssum_(i <- finsupp (x <|p|> y) | i \notin finsupp x) scalept (x i) (S1 i)) = Zero C
     by rewrite big1 //= => i Hi; rewrite fsfun_dflt // scalept0.
   rewrite addpt0 [in RHS]big_fset_condE /=.
   suff H : finsupp x = [fset i | i in finsupp (x <|p|> y) & i \in finsupp x]
@@ -1281,40 +1276,38 @@ have -> : \big[addpt (A:=C)/Zero C]_(i <- finsupp x) scalept (x i) (S1 i)
     move/fsubsetP: (Conv2Dist.incl_finsupp_conv2dist x y pn0).
     move/(_ i Hi) => Hi'.
     by rewrite !inE Hi Hi'.
-have -> : \big[addpt (A:=C)/Zero C]_(i <- finsupp y) scalept (y i) (S1 i)
-          = \big[addpt (A:=C)/Zero C]_(i <- finsupp (x <|p|> y)) scalept (y i) (S1 i).
-- rewrite [in RHS](bigID (fun i => i \in (finsupp y))) /=.
-  have -> : (\big[addpt (A:=C)/Zero C]_(i <- finsupp (x <|p|> y) | 
-     i \notin finsupp y) scalept (y i) (S1 i)) = Zero C
-    by rewrite big1 //= => i Hi; rewrite fsfun_dflt // scalept0.
-  rewrite addpt0 [in RHS]big_fset_condE /=.
-  suff H : finsupp y = [fset i | i in finsupp (x <|p|> y) & i \in finsupp y]
-    by rewrite [in LHS]H.
-  + have -> : [fset i | i in finsupp (x <|p|> y) & i \in finsupp y]
-              = [fset i | i in finsupp y & i \in finsupp (x <|p|> y)]
-      by apply eq_imfset => //; move => i /=; rewrite !inE andbC.
-    apply/eqP; rewrite eqEfsubset; apply/andP; split; last by apply fset_sub.
-    apply/fsubsetP => i Hi.
-    move/fsubsetP: (Conv2Dist.incl_finsupp_conv2dist y x pn0).
-    have Conv2Dist_supp : forall x0 y0 : Dist C, finsupp (x0 <|p|> y0) = finsupp x0 `|` finsupp y0.
-    * (* TODO: factor this out as a lemma *)
-      move=> x0 y0.
-      apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j; rewrite !mem_finsupp !Conv2Dist.dE inE; first by move=> H; (have []: (x0 j != 0) \/ (y0 j != 0) by apply/nandP/negP; case/andP => /eqP H0 /eqP H1; move:H; rewrite H0 H1 !mulR0 addR0 eqxx) => H'; rewrite !mem_finsupp H' ?orTb ?orbT.
-      have pge0 : 0 <= p by apply prob_ge0.
-      move/prob_gt0: (pn0) => pgt0.
-      have opge0 : 0 <= p.~ by apply prob_ge0.
-      move/prob_gt0: (opn0) => /= opgt0.
-      move/leRP : (Dist.ge0 x0 j) => xgeb0.
-      move/leRP : (Dist.ge0 y0 j) => ygeb0.
-      move: (Dist.ge0 x0 j) => xge0.
-      move: (Dist.ge0 y0 j) => yge0.
-      by case /orP; rewrite mem_finsupp => H; apply/eqP; apply gtR_eqF;
-      [apply addR_gt0wl; [apply mulR_gt0|apply mulR_ge0] | apply addR_gt0wr; [apply mulR_ge0|apply mulR_gt0]] => //; apply /ltRP; rewrite ltR_neqAle'; apply/andP; split => //; rewrite eq_sym.
-    have -> : finsupp (y <|p|> x) = finsupp (x <|p|> y)
-        by rewrite !Conv2Dist_supp fsetUC.
-    move/(_ i Hi) => Hi'.
-    by rewrite !inE Hi Hi'.
-done.  
+suff -> : \ssum_(i <- finsupp y) scalept (y i) (S1 i) =
+         \ssum_(i <- finsupp (x <|p|> y)) scalept (y i) (S1 i) by [].
+rewrite [in RHS](bigID (fun i => i \in (finsupp y))) /=.
+have -> : (\ssum_(i <- finsupp (x <|p|> y) | i \notin finsupp y) scalept (y i) (S1 i)) = Zero C
+  by rewrite big1 //= => i Hi; rewrite fsfun_dflt // scalept0.
+rewrite addpt0 [in RHS]big_fset_condE /=.
+suff H : finsupp y = [fset i | i in finsupp (x <|p|> y) & i \in finsupp y]
+  by rewrite [in LHS]H.
++ have -> : [fset i | i in finsupp (x <|p|> y) & i \in finsupp y]
+            = [fset i | i in finsupp y & i \in finsupp (x <|p|> y)]
+    by apply eq_imfset => //; move => i /=; rewrite !inE andbC.
+  apply/eqP; rewrite eqEfsubset; apply/andP; split; last by apply fset_sub.
+  apply/fsubsetP => i Hi.
+  move/fsubsetP: (Conv2Dist.incl_finsupp_conv2dist y x pn0).
+  have Conv2Dist_supp : forall x0 y0 : Dist C, finsupp (x0 <|p|> y0) = finsupp x0 `|` finsupp y0.
+  * (* TODO: factor this out as a lemma *)
+    move=> x0 y0.
+    apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j; rewrite !mem_finsupp !Conv2Dist.dE inE; first by move=> H; (have []: (x0 j != 0) \/ (y0 j != 0) by apply/nandP/negP; case/andP => /eqP H0 /eqP H1; move:H; rewrite H0 H1 !mulR0 addR0 eqxx) => H'; rewrite !mem_finsupp H' ?orTb ?orbT.
+    have pge0 : 0 <= p by apply prob_ge0.
+    move/prob_gt0: (pn0) => pgt0.
+    have opge0 : 0 <= p.~ by apply prob_ge0.
+    move/prob_gt0: (opn0) => /= opgt0.
+    move/leRP : (Dist.ge0 x0 j) => xgeb0.
+    move/leRP : (Dist.ge0 y0 j) => ygeb0.
+    move: (Dist.ge0 x0 j) => xge0.
+    move: (Dist.ge0 y0 j) => yge0.
+    by case /orP; rewrite mem_finsupp => H; apply/eqP; apply gtR_eqF;
+    [apply addR_gt0wl; [apply mulR_gt0|apply mulR_ge0] | apply addR_gt0wr; [apply mulR_ge0|apply mulR_gt0]] => //; apply /ltRP; rewrite ltR_neqAle'; apply/andP; split => //; rewrite eq_sym.
+  have -> : finsupp (y <|p|> x) = finsupp (x <|p|> y)
+      by rewrite !Conv2Dist_supp fsetUC.
+  move/(_ i Hi) => Hi'.
+  by rewrite !inE Hi Hi'.
 Qed.
 
 Definition eps0 (C : convType) : {affine Dist C -> C} := @AffineFunction.Pack (Dist_convType C) C (Phant (Dist C -> C)) (@eps0' C) (@eps0'_affine C).
@@ -1349,7 +1342,7 @@ Arguments Dist_mor_supp [A B] f d.
 Lemma fsval_Dist_mor_supp (A B : choiceType) (f : A -> B) d i :
   fsval ((Dist_mor_supp f d) i) = f (fsval i).
 Proof. by case: i. Qed.
-  
+
 (* join operator for Dist *)
 Definition join0 (C : choiceType) (d : Dist (Dist C)) : Dist C :=
   DistBind.d d (Dist_mor idfun).
@@ -1376,7 +1369,7 @@ case: ifP => [_ | ].
     by rewrite Scaled1RK dist_of_DistE.
   suff -> : finsupp d = [seq fsval i | i in [finType of finsupp d]] :> seq _
     by rewrite big_image; apply eq_bigl => a; rewrite inE.
-  by rewrite enum_fsetE /=.
+  by rewrite enum_fsetE.
 - rewrite !imfset_id.
   move/bigfcupP => H.
   have H' : forall i : Dist C, i \in finsupp d -> x \notin finsupp i
@@ -1389,7 +1382,7 @@ case: ifP => [_ | ].
   rewrite dist_of_DistE /= mul1R.
   suff -> : v x = 0 by rewrite mulR0.
   rewrite fsfun_dflt //.
-  by apply H'.
+  exact: H'.
 Qed.
 End eps0_correct.
 
@@ -1405,7 +1398,7 @@ apply S1_inj.
 rewrite S1_proj_Convn_indexed_over_finType; last by case: f.
 rewrite S1_Convn_indexed_over_finType.
 evar (Y : dist_of_Dist.D ((Dist_mor f) d) -> scaled_pt D).
-transitivity (\big[addpt (A:=D)/Zero D]_i Y i); last first.
+transitivity (\ssum_i Y i); last first.
 - apply eq_bigr => i _ /=.
   rewrite dist_of_DistE /=.
   rewrite DistBind.dE /DistBind.f imfset_id /=.
@@ -1417,20 +1410,20 @@ transitivity (\big[addpt (A:=D)/Zero D]_i Y i); last first.
       by move=> a; apply mulR_ge0; apply Dist.ge0.
   rewrite big_scaleptl'; [| done | done] => {H} {H0}.
   rewrite (bigID (fun i0 => fsval i == f i0)) /=.
-  have -> :
-    (\big[addpt (A:=D)/Zero D]_(i0 <- finsupp d | fsval i != f i0)
-        scalept (d i0 * (Dist1.d (f i0)) (fsval i)) (S1 (fsval i))) = Zero _
+  have -> : \ssum_(i0 <- finsupp d | fsval i != f i0)
+             scalept (d i0 * (Dist1.d (f i0)) (fsval i)) (S1 (fsval i)) =
+           Zero _
     by rewrite big1 // => c /negbTE Hc; rewrite Dist1.dE /Dist1.f fsfunE inE Hc mulR0 scalept0.
   rewrite addpt0.
   rewrite big_seq_fsetE /=.
   exact: erefl.
 rewrite /Y => {Y}.
 set f' := (Dist_mor_supp f d).
-transitivity (\big[addpt (A:=D)/Zero D]_i scalept (dist_of_Dist d i) (S1 (fsval (f' i)))); first by apply eq_bigr => *; rewrite fsval_Dist_mor_supp.
+transitivity (\ssum_i scalept (dist_of_Dist d i) (S1 (fsval (f' i)))); first by apply eq_bigr => *; rewrite fsval_Dist_mor_supp.
 rewrite (@partition_big
            _ _ _ _ (dist_of_Dist.D ((Dist_mor f) d)) _ f' xpredT) /f' //=.
 apply eq_bigr => -[i Hi] _ /=.
-transitivity (\big[addpt (A:=D)/Zero D]_(i0 | Dist_mor_supp f d i0 == [` Hi])
+transitivity (\ssum_(i0 | Dist_mor_supp f d i0 == [` Hi])
                scalept (d (fsval i0) * (Dist1.d (f (fsval i0))) i) (S1 i)).
 - apply eq_bigr => i0 /eqP.
   move/(congr1 (@fsval _ _)); rewrite fsval_Dist_mor_supp /= => Hi0.
