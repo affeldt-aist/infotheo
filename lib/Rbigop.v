@@ -23,6 +23,9 @@ Notation "\sum_ ( m <= i < n ) F" := (\big[Rplus/R0]_(m <= i < n) F)
 Notation "\sum_ ( i | P ) F" := (\big[Rplus/R0]_(i | P%B) F)
   (at level 41, F at level 41, i at level 50,
            format "'[' \sum_ ( i  |  P ) '/  '  F ']'") : R_scope .
+Notation "\sum_ i F" := (\big[Rplus/R0]_i F)
+  (at level 41, F at level 41, i at level 0, right associativity,
+  format "'[' \sum_ i '/  '  F ']'") : R_scope.
 Notation "\sum_ ( i : t | P ) F" := (\big[Rplus/R0]_(i : t | P%B) F)
   (at level 41, F at level 41, i at level 50,
            only parsing) : R_scope.
@@ -57,6 +60,9 @@ Notation "\prod_ ( m <= i < n ) F" := (\big[Rmult/R1]_(m <= i < n) F)
 Notation "\prod_ ( i | P ) F" := (\big[Rmult/R1]_(i | P%B) F)
   (at level 36, F at level 36, i at level 50,
            format "'[' \prod_ ( i  |  P ) '/  '  F ']'") : R_scope.
+Notation "\prod_ i F" := (\big[Rmult/R1]_i F)
+  (at level 36, F at level 36, i at level 0,
+  format "'[' \prod_ i '/  '  F ']'") : R_scope.
 Notation "\prod_ ( i : t | P ) F" := (\big[Rmult/R1]_(i : t | P%B) F)
   (at level 36, F at level 36, i at level 50,
            only parsing) : R_scope.
@@ -185,18 +191,18 @@ elim: (index_enum _) => [| h t IH].
   rewrite -{1}[X in X <= _](add0R _); exact/leR_add2r/Qg.
 Qed.
 
-Lemma ler_rsum_l_support (R : pred A) :
+Lemma ler_rsum_l_support (U : pred A) :
   (forall a, 0 <= f a) -> (forall i, P i -> Q i) ->
-  \sum_(i in R | P i) f i <= \sum_(i in R | Q i) f i.
+  \sum_(i in U | P i) f i <= \sum_(i in U | Q i) f i.
 Proof.
 move=> Hf P_Q.
 elim: (index_enum _) => [|h t IH].
 - rewrite !big_nil; exact/leRR.
 - rewrite !big_cons.
-  set cond := _ \in _; move Hcond : cond => []; subst cond => //=.
+  case: (h \in U) => //=.
   case: ifP => // HP.
   + case: ifP => [HQ|].
-    * by apply leR_add2l.
+    * by rewrite leR_add2l.
     * by rewrite (P_Q _ HP).
   + case: ifP => // HQ.
     rewrite -[X in X <= _]add0R; exact/leR_add.
@@ -234,7 +240,7 @@ Qed.
 
 End ler_ltr_rsum.
 
-Lemma ler_rsum_Rabs (A : finType) f : `| \sum_(a : A) f a | <= \sum_(a : A) `| f a |.
+Lemma ler_rsum_Rabs (A : finType) f : `| \sum_a f a | <= \sum_(a : A) `| f a |.
 Proof.
 elim: (index_enum _) => [|h t IH].
   rewrite 2!big_nil Rabs_R0; exact/leRR.
@@ -289,10 +295,10 @@ exact/ler_rsum.
 Qed.*)
 
 Lemma rsumr_gt0 (A : finType) (f : A -> R) (HA : (0 < #|A|)%nat) :
-  (forall i, 0 < f i) -> 0 < \sum_(i in A) f i.
+  (forall a, 0 < f a) -> 0 < \sum_(a in A) f a.
 Proof.
 move=> H.
-rewrite (_ : \sum_(i in A) f i = \sum_(i in [set: A]) f i); last first.
+rewrite (_ : \sum_(a in A) f a = \sum_(a in [set: A]) f a); last first.
   apply eq_bigl => x /=; by rewrite !inE.
 apply: leR_ltR_trans; last first.
   apply ltr_rsum_support with (f := fun=> 0) => //; by rewrite cardsT.
@@ -328,9 +334,9 @@ Qed.
 
 (* TODO: factorize? rename? *)
 Lemma Rle_big_eq (A : finType) (f g : A -> R) (P : pred A) :
-   (forall i : A, P i -> f i <= g i) ->
-   \sum_(i | P i) g i = \sum_(i | P i) f i ->
-   (forall i : A, P i -> g i = f i).
+   (forall a, P a -> f a <= g a) ->
+   \sum_(a | P a) g a = \sum_(a | P a) f a ->
+   (forall a, P a -> g a = f a).
 Proof.
 move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply prsumr_eq0P.
 - move=> i Hi; rewrite leR_subr_addr add0R; exact: H1.
@@ -341,17 +347,17 @@ Qed.
 
 Section ler_ltr_rprod.
 
-Lemma rprodr_gt0 (A : finType) F : (forall i, 0 < F i) ->
-  0 < \prod_(i : A) F i.
+Lemma rprodr_gt0 (A : finType) F : (forall a, 0 < F a) ->
+  0 < \prod_(a : A) F a.
 Proof.
 move=> H.
 elim: (index_enum _) => [| hd tl IH].
 rewrite big_nil; lra.
-rewrite big_cons; apply mulR_gt0 => //; by apply H.
+rewrite big_cons; apply mulR_gt0 => //; exact: H.
 Qed.
 
-Lemma rprodr_ge0 (A : finType) F : (forall i, 0 <= F i) ->
-  0 <= \prod_(i : A) F i.
+Lemma rprodr_ge0 (A : finType) F : (forall a, 0 <= F a) ->
+  0 <= \prod_(a : A) F a.
 Proof.
 move=> H.
 elim: (index_enum _) => [| hd tl IH].
@@ -392,8 +398,8 @@ Qed.
 Local Close Scope vec_ext_scope.
 Local Close Scope ring_scope.
 
-Lemma rprodr_ge1 (A : finType) f : (forall i, 1 <= f i) ->
-  1 <= \prod_(i : A) f i.
+Lemma rprodr_ge1 (A : finType) f : (forall a, 1 <= f a) ->
+  1 <= \prod_(a : A) f a.
 Proof.
 move=> Hf.
 elim: (index_enum _) => [| hd tl IH].
@@ -401,8 +407,8 @@ elim: (index_enum _) => [| hd tl IH].
 - rewrite big_cons -{1}(mulR1 1%R); apply leR_pmul => //; lra.
 Qed.
 
-Lemma ler_rprod (A : finType) f g : (forall i, 0 <= f i <= g i) ->
-  \prod_(i : A) f i <= \prod_(i : A) g i.
+Lemma ler_rprod (A : finType) f g : (forall a, 0 <= f a <= g a) ->
+  \prod_a f a <= \prod_(a : A) g a.
 Proof.
 move=> Hfg.
 case/orP : (orbN [forall i, f i != 0%R]); last first.
@@ -447,12 +453,12 @@ Qed.
 End ler_ltr_rprod.
 
 Lemma classify_big (A : finType) n (f : A -> 'I_n) (F : 'I_n -> R) :
-  \sum_(s : A) F (f s) = \sum_(i < n) INR #|f @^-1: [set i]| * F i.
+  \sum_a F (f a) = \sum_(i < n) INR #|f @^-1: [set i]| * F i.
 Proof.
-transitivity (\sum_(i < n) \sum_(s | true && (f s == i)) F (f s)).
+transitivity (\sum_(i < n) \sum_(a | true && (f a == i)) F (f a)).
   by apply partition_big.
 apply eq_bigr => i _ /=.
-transitivity (\sum_(s | f s == i) F i); first by apply eq_bigr => s /eqP ->.
+transitivity (\sum_(a | f a == i) F i); first by apply eq_bigr => s /eqP ->.
 rewrite big_const iter_addR; congr (INR _ * _).
 apply eq_card => j /=; by rewrite !inE.
 Qed.
@@ -685,24 +691,24 @@ eapply trans_eq.
 apply congr_big => //; by rewrite enumT.
 Qed.
 
-Lemma Rle_bigrmax_R (A : finType) (h : A -> R) (tl : seq A) hd :
-  (forall r, 0 <= h r) ->
-  (forall c : A, c \in tl -> h c <= h hd) ->
-  \rmax_(j <- tl) h j <= h hd.
+Lemma Rle_bigrmax_R (A : finType) (f : A -> R) (s : seq A) a :
+  (forall a0, 0 <= f a0) ->
+  (forall a0, a0 \in s -> f a0 <= f a) ->
+  \rmax_(a0 <- s) f a0 <= f a.
 Proof.
-elim: tl hd => [hd Hh _ | hd1 tl2 IH hd Hhpos Hh].
-  rewrite big_nil; exact/Hh.
+elim: s a => [a f0 _ | a0 s' IH a f0 Hf].
+  rewrite big_nil; exact/f0.
 rewrite big_cons; apply Rmax_lub.
-- apply Hh; by rewrite in_cons eqxx.
-- apply IH => // c0 Hc0; apply Hh.
-  by rewrite in_cons Hc0 orbC.
+- by apply Hf; rewrite mem_head.
+- apply IH => // a1 a1s; apply Hf.
+  by rewrite in_cons a1s orbC.
 Qed.
 
-Lemma bigrmax_max_seq (A : finType) (h : A -> R) (s : seq A) a :
+Lemma bigrmax_max_seq (A : finType) (f : A -> R) (s : seq A) a :
   a \in s ->
-  (forall r, 0 <= h r) ->
-  (forall c, c \in s -> h c <= h a) ->
-  h a = \rmax_(c <- s) h c.
+  (forall a0, 0 <= f a0) ->
+  (forall a0, a0 \in s -> f a0 <= f a) ->
+  f a = \rmax_(a0 <- s) f a0.
 Proof.
 elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
 - move/eqP => -> Hhpos Hh.
@@ -724,26 +730,23 @@ elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
       by rewrite in_cons Hc0 orbC.
 Qed.
 
-Lemma bigrmax_max (A : finType) (C : {set A}) a (h : A -> R):
+Lemma bigrmax_max (A : finType) (C : {set A}) a (f : A -> R):
   a \in C ->
-  (forall r, 0 <= h r) ->
-  (forall c, c \in C -> h c <= h a) ->
-  h a = \rmax_(c | c \in C) h c.
+  (forall a0, 0 <= f a0) ->
+  (forall c, c \in C -> f c <= f a) ->
+  f a = \rmax_(c | c \in C) f c.
 Proof.
-move=> aC Hhpos Hh.
+move=> aC f0 Hf.
 rewrite -big_filter.
 apply bigrmax_max_seq => //.
 - by rewrite mem_filter aC /= mem_index_enum.
-- move=> c0.
-  rewrite mem_filter.
-  case/andP => ? ?.
-  by apply Hh.
+- by move=> a0; rewrite mem_filter mem_index_enum andbT => /Hf.
 Qed.
 
 Local Open Scope R_scope.
 
-Lemma rmax_distrr I a (apos: 0 <= a) r (Q:pred I) F :
-  ((a * \rmax_(i <- r | Q i) F i) = \rmax_(i <- r | Q i) (a * F i)).
+Lemma rmax_distrr I a (a0 : 0 <= a) r (P : pred I) F :
+  (a * \rmax_(i <- r | P i) F i) = \rmax_(i <- r | P i) (a * F i).
 Proof.
 elim: r => [| h t IH].
   by rewrite 2!big_nil mulR0.
@@ -752,14 +755,14 @@ case: ifP => Qh //.
 by rewrite -IH RmaxRmult.
 Qed.
 
-Lemma rmax_distrl I a (apos : 0 <= a) r (Q : pred I) F :
-  ((\rmax_(i <- r | Q i) F i) * a = \rmax_(i <- r | Q i) (F i * a)).
+Lemma rmax_distrl I a (a0 : 0 <= a) r (P : pred I) F :
+  (\rmax_(i <- r | P i) F i) * a = \rmax_(i <- r | P i) (F i * a).
 Proof.
 by rewrite mulRC rmax_distrr //; apply congr_big => // ?; rewrite mulRC.
 Qed.
 
 Notation "\min^ b '_(' a 'in' A ) F" :=
-((fun a => F) (arg_min b (fun x => x \in A) (fun a => F))) : min_scope.
+  ((fun a => F) (arg_min b (fun x => x \in A) (fun a => F))) : min_scope.
 
 Local Open Scope min_scope.
 
