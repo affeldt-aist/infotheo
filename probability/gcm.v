@@ -763,6 +763,10 @@ Lemma neset_hull_neq0' (T : convType) (F : neset T) :
 Proof. by rewrite cset0P /= neset_hull_neq0. Qed.
 Canonical neset_hull_necset (T : convType) (F : neset T) := @NECSet.mk T (CSet.mk (convex_hull F)) (neset_hull_neq0' F).
 
+Lemma cset1_neq0 (T : convType) (x : T) : cset1 x != cset0 _.
+Proof. by rewrite cset0P /= set0P; exists x. Qed.
+Canonical necset1 (T : convType) (x : T) := NECSet.mk (cset1_neq0 x).
+
 End necset_lemmas.
 
 (* non-empty convex sets of distributions *)
@@ -1552,16 +1556,103 @@ Proof.
 Admitted.
 End eps1_natural.
 
+Section choiceType_adjunction.
+Definition gen_choiceType (T : Type) : choiceType :=
+  Choice.Pack (Choice.Class (@gen_eqMixin T) (@gen_choiceMixin T)).
+(*Definition forget_choiceType (C : choiceType) : Type := C.*)
+(*Definition epsC (C : choiceType) : gen_choiceType (forget_choiceType C) -> C.*)
+Definition gen_choiceType_mor (T U : Type) (f : T -> U) :
+  gen_choiceType T -> gen_choiceType U := f.
+Definition epsC {C : choiceType} : gen_choiceType C -> C := idfun.
+Definition epsC_natural (C D : choiceType) (f : C -> D) : f \o epsC = epsC \o f.
+Proof. reflexivity. Qed.
+End choiceType_adjunction.
+
+From monae Require Import monad proba_monad.
+
 Section P_delta.
-(* P_delta = necset \o Dist, where
+(* P_delta = necset \o Dist \o gen_choiceType, where
+   - gen_choiceType is the free choiceType functor,
    - Dist is the free convex space functor, and
    - necset is the convex powerset functor. *)
-Definition P_delta : choiceType -> choiceType := fun x => [choiceType of necset (Dist_convType x)].
 
-Variable C : choiceType.
-Check @eps0 (Dist_convType C).
-Check necset_mor (@eps0 (Dist_convType C)).
+Definition P_delta_left : Type -> semiCompSemiLattConvType
+  := necset_semiCompSemiLattConvType \o Dist_convType \o gen_choiceType.
+Definition P_delta : Type -> Type := P_delta_left.
 
-Definition join {T : choiceType} : P_delta (P_delta T) -> P_delta T := eps1 \o necset_mor eps0.
-
+Definition P_delta_mor (T U : Type) (f : T -> U) : P_delta T -> P_delta U :=
+  necset_mor (Dist_mor (gen_choiceType_mor f)).
 End P_delta.
+
+Section P_delta_functor.
+Lemma P_delta_mor_id : FunctorLaws.id P_delta_mor.
+Admitted.
+
+Lemma P_delta_mor_comp : FunctorLaws.comp P_delta_mor.
+Admitted.
+
+Definition P_delta_functorClass := Functor.Class P_delta_mor_id P_delta_mor_comp.
+
+Definition f : Functor.t := Functor.Pack P_delta_functorClass.
+End P_delta_functor.
+
+Section P_delta_eps.
+Definition eps {L : semiCompSemiLattConvType} : P_delta L -> L :=
+  eps1 \o (necset_mor eps0) \o (necset_mor (Dist_mor epsC)).
+
+(*
+(* We have reached the point where we need category.v *)
+
+Local Notation F1 := necset_mor.
+Local Notation F0 := Dist_mor.
+Lemma F1_id : true.
+Admitted.
+Lemma F1_comp : true.
+Admitted.
+Lemma F0_id : true.
+Admitted.
+Lemma F0_comp : true.
+Admitted.
+*)
+
+Lemma eps_natural (K L : semiCompSemiLattConvType) (f : {Joet_affine K -> L}) :
+  f \o eps = eps \o (P_delta_mor f).
+Proof.
+rewrite/eps /P_delta_mor /gen_choiceType_mor.
+(*
+rewrite compA.
+rewrite compA.
+rewrite eps1_natural.
+rewrite eps0_natural.
+*)
+Admitted.
+End P_delta_eps.
+
+Section P_delta_monad.
+Definition ret : FId ~~> f :=
+  fun (T : Type) (x : T) => necset1 (Dist1.d (x : gen_choiceType T)).
+Definition join : f \O f ~~> f :=
+  fun (T : Type) => @eps (P_delta_left T).
+
+Lemma ret_natural : JoinLaws.ret_naturality ret.
+Admitted.
+Lemma join_natural : JoinLaws.join_naturality join.
+Proof. by move=> A B h; rewrite -eps_natural. Qed.
+Lemma join_left_unit : JoinLaws.left_unit ret join.
+Admitted.
+Lemma join_right_unit : JoinLaws.right_unit ret join.
+Admitted.
+Lemma joinA : JoinLaws.associativity join.
+Admitted.
+
+Definition m : Monad.t :=
+  Monad.Pack
+    (Monad.Class
+       (Monad.Mixin
+          ret_natural
+          join_natural
+          join_left_unit
+          join_right_unit
+          joinA)).
+
+End P_delta_monad.
