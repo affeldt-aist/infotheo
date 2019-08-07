@@ -15,6 +15,26 @@ Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
 Reserved Notation "{ 'convex_set' T }" (format "{ 'convex_set'  T }").
 Reserved Notation "'\Conv_' d f" (at level 36, f at level 36, d at level 0,
   format "\Conv_ d  f").
+Reserved Notation "\ssum_ ( i <- r | P ) F"
+  (at level 41, F at level 41, i, r at level 50,
+  format "'[' \ssum_ ( i  <-  r  |  P ) '/  '  F ']'").
+Reserved Notation "\ssum_ ( i <- r ) F"
+  (at level 41, F at level 41, i, r at level 50,
+  format "'[' \ssum_ ( i  <-  r ) '/  '  F ']'").
+Reserved Notation "\ssum_ ( i | P ) F"
+  (at level 41, F at level 41, i at level 50,
+  format "'[' \ssum_ ( i  |  P ) '/  '  F ']'").
+Reserved Notation "\ssum_ i F"
+  (at level 41, F at level 41, i at level 0, right associativity,
+  format "'[' \ssum_ i '/  '  F ']'").
+Reserved Notation "\ssum_ ( i : t ) F"
+  (at level 41, F at level 41, i at level 50, only parsing).
+Reserved Notation "\ssum_ ( i < n | P ) F"
+  (at level 41, F at level 41, i, n at level 50,
+  format "'[' \ssum_ ( i  <  n  |  P ) '/  '  F ']'").
+Reserved Notation "\ssum_ ( i < n ) F"
+  (at level 41, F at level 41, i, n at level 50,
+  format "'[' \ssum_ ( i  <  n ) '/  '  F ']'").
 
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
@@ -229,6 +249,9 @@ Proof. split; [exact/dist_ge0 | exact/dist_max]. Qed.
 
 Definition probdist (A : finType) (d : dist A) (a : A) := @Prob.mk (d a) (prob_dist d a).
 
+
+Local Open Scope convex_scope.
+
 Module ScaledConvex.
 Section scaled_convex.
 Variable A : convType.
@@ -318,6 +341,12 @@ Definition addpt a b :=
   | _, Zero => a
   | Zero, _ => b
   end.
+
+Local Notation "\ssum_ ( i <- r ) F" := (\big[addpt/Zero]_(i <- r) F).
+Local Notation "\ssum_ ( i : t ) F" := (\big[addpt/Zero]_(i : t) F).
+Local Notation "\ssum_ i F" := (\big[addpt/Zero]_i F).
+Local Notation "\ssum_ ( i < n | P ) F" := (\big[addpt/Zero]_(i < n | P%B) F).
+Local Notation "\ssum_ ( i < n ) F" := (\big[addpt/Zero]_(i < n) F).
 
 Definition scalept p (x : scaled_pt) :=
   match Rlt_dec 0 p, x with
@@ -459,16 +488,14 @@ rewrite convmm; congr Scaled; apply val_inj; by rewrite /= mulRDl.
 Qed.
 
 Lemma scalept_rsum (B : finType) (F : B ->R^+) x :
-  scalept (\sum_(i : B) (F i)) x = \big[addpt/Zero]_(i : B) scalept (F i) x.
+  scalept (\sum_b (F b)) x = \ssum_b scalept (F b) x.
 Proof.
-apply (@proj1 _ (0 <= \sum_(i : B) F i)).
+apply (@proj1 _ (0 <= \sum_b F b)).
 apply (big_ind2 (fun y q => scalept q x = y /\ 0 <= q)).
-+ rewrite scalept0; split => //. apply leRR.
++ rewrite scalept0; split => //; exact: leRR.
 + move=> x1 x2 y1 y2 [Hx1 Hx2] [Hy1 Hy2].
-  split. by rewrite -Hx1 -Hy1 scalept_addR.
-  by apply addR_ge0.
-+ move=> i _; split => //.
-  by apply pos_f_ge0.
+  rewrite -Hx1 -Hy1 scalept_addR //; split => //; exact: addR_ge0.
++ move=> i _; split => //; exact: pos_f_ge0.
 Qed.
 
 Definition scaled_conv x y (p : prob) := addpt (scalept p x) (scalept p.~ y).
@@ -486,11 +513,10 @@ apply (@ConvexSpace.Class _ scaled_conv); rewrite /scaled_conv /=.
 Defined.
 Canonical Scaled_convType := ConvexSpace.Pack Scaled_convMixin.
 
-Definition barycenter (pts : seq scaled_pt) :=
-  \big[addpt/Zero]_(x <- pts) x.
+Definition barycenter (pts : seq scaled_pt) := \ssum_(x <- pts) x.
 
 Lemma barycenter_big_fin (T : finType) (F : T -> scaled_pt) :
-  barycenter [seq F i | i <- enum T] = \big[addpt/Zero]_i F i.
+  barycenter [seq F i | i <- enum T] = \ssum_i F i.
 Proof. by rewrite /barycenter big_map big_filter. Qed.
 
 Lemma weight_bary pts : weight (barycenter pts) = \sum_(x <- pts) weight x.
@@ -501,7 +527,7 @@ Lemma scalept_bary p (H : 0 <= p) pts :
 Proof. by rewrite big_scalept /barycenter big_map. Qed.
 
 Lemma barycenter_perm n (F : 'I_n -> scaled_pt) (pe : 'S_n) :
-  \big[addpt/Zero]_(i < n) F i = \big[addpt/Zero]_(i < n) F (pe i).
+  \ssum_(i < n) F i = \ssum_(i < n) F (pe i).
 Proof.
 rewrite -!barycenter_big_fin /barycenter big_map map_comp big_map.
 exact/perm_big/perm_eq_perm.
@@ -514,9 +540,8 @@ Variable q : 'I_n -> {dist 'I_m}.
 Variable h : 'I_m -> scaled_pt.
 
 Lemma barycenter_convdist :
-  \big[addpt/Zero]_(i < n) scalept (p i)
-     (\big[addpt/Zero]_(j < m) scalept (q i j) (h j))
-  = \big[addpt/Zero]_(j < m) scalept (ConvDist.d p q j) (h j).
+  \ssum_(i < n) scalept (p i) (\ssum_(j < m) scalept (q i j) (h j)) =
+  \ssum_(j < m) scalept (ConvDist.d p q j) (h j).
 Proof.
 rewrite (eq_bigr _ (fun i _ => big_scalept (p i) _ _ _)).
 rewrite exchange_big /=; apply eq_bigr => j _.
@@ -558,6 +583,21 @@ End adjunction.
 End scaled_convex.
 End ScaledConvex.
 Local Notation "a *: v" := (@ScaledConvex.Scaled _ a v).
+
+Notation "\ssum_ ( i <- r | P ) F" :=
+  (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i <- r | P%B) F) : convex_scope.
+Notation "\ssum_ ( i <- r ) F" :=
+  (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i <- r) F) : convex_scope.
+Notation "\ssum_ ( i : t ) F" :=
+  (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i : t) F) : convex_scope.
+Notation "\ssum_ ( i | P ) F" :=
+  (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i | P%B) F) : convex_scope.
+Notation "\ssum_ i F" :=
+  (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_i F) : convex_scope.
+Notation "\ssum_ ( i < n | P ) F" :=
+  (\big[ScaledConvex.addpt/ScaledConvex.Zero]_(i < n | P%B) F) : convex_scope.
+Notation "\ssum_ ( i < n ) F" :=
+  (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i < n) F) : convex_scope.
 
 Section convex_space_prop.
 Variables A : convType.
@@ -648,7 +688,7 @@ Qed.
 
 Lemma S1_convn_proj n (points : 'I_n -> A) d :
   S1 (prj (\Conv_d points)) =
-  \big[@addpt B/Zero B]_(i < n) scalept (d i) (S1 (prj (points i))).
+  \ssum_(i < n) scalept (d i) (S1 (prj (points i))).
 Proof.
 elim: n points d => [|n IH] points d.
   move: (epmf1 d).
@@ -682,7 +722,7 @@ End with_affine_projection.
 
 Lemma S1_convn n (points : 'I_n -> A) d :
   S1 (\Conv_d points) =
-  \big[@addpt A/Zero A]_(i < n) scalept (d i) (S1 (points i)).
+  \ssum_(i < n) scalept (d i) (S1 (points i)).
 Proof. by rewrite (@S1_convn_proj _ (@id A)). Qed.
 
 Lemma eq_convn n g1 g2 (d1 d2 : {dist 'I_n}) :
@@ -1007,7 +1047,7 @@ suff : exists a1, a1 \in scaled_set x /\ exists a2, a2 \in scaled_set y
   + exists `Pr 1; by rewrite conv1.
   + exists `Pr 0; by rewrite conv0.
 move/(f_equal (@S1 _)): Ha; rewrite S1_convn.
-rewrite (bigID (fun i => g i \in x)).
+rewrite (bigID (fun i => g i \in x)) /=.
 set sa1 := \big[_/_]_(i < n | _) _.
 set sa2 := \big[_/_]_(i < n | _) _.
 move=> Hsa.

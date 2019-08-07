@@ -223,7 +223,7 @@ apply/le_INR/leP.
 apply: (@leq_trans (\sum_m #| T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-1: [set Some m]))|)).
 - apply leq_sum => m _.
   by apply subset_leq_card, setSI, shell_subset_output_type.
-- set lhs := \sum_ _ _.
+- set lhs := (\sum__ _)%nat.
   rewrite (_ : lhs = #|\bigcup_(i : M) (T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-1: [set Some i]))) | ); last first.
     subst lhs.
     rewrite -cover_pre_image.
