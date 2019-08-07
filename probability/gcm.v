@@ -764,7 +764,7 @@ Variable A : convType.
 Record t : Type := mk {
   car : convex_set A ;
   (*car : {convex_set A} ;*)
-  H : car != cset0 _ }.
+  H : car != set0 :> set _}.
 End def.
 End NECSet.
 Notation necset := NECSet.t.
@@ -783,10 +783,7 @@ Definition necset_choiceMixin : Choice.mixin_of (necset A) := @gen_choiceMixin (
 Canonical necset_choiceType : choiceType :=
   Eval hnf in Choice.Pack (Choice.Class necset_eqMixin necset_choiceMixin).
 
-Lemma necset_neq0 (t : necset A) : t != set0 :> set A.
-Proof. by case: t => car; rewrite  /cset0P. Qed.
-
-Canonical necset_neset (t : necset A) : neset A := NESet.mk (necset_neq0 t).
+Canonical necset_neset (t : necset A) : neset A := NESet.mk (NECSet.H t).
 
 End necset_canonical.
 
