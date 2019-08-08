@@ -935,17 +935,24 @@ Proof. by rewrite in_setE=> ax; apply: hull_mem; rewrite in_setE; left. Qed.
 
 End hull_prop.
 
+(* TODO: same as model.v from monae *)
+Definition equality_mixin_of_Type (T : Type) : Equality.mixin_of T :=
+  EqMixin (fun x y : T => boolp.asboolP (x = y)).
+Definition choice_of_Type (T : Type) : choiceType :=
+  Choice.Pack (Choice.Class (equality_mixin_of_Type T) boolp.gen_choiceMixin).
+
 Module CSet.
-Section def.
-Local Open Scope classical_set_scope.
+Section cset.
 Variable A : convType.
-Record t : Type := mk {
-  car :> set A ;
-  H : is_convex_set car }.
-End def.
+Record class_of (X : set A) : Type := Class { _ : is_convex_set X }.
+Record t : Type := Pack { car : set A ; class : class_of car }.
+End cset.
+Module Exports.
+Notation convex_set := t.
+Coercion car : convex_set >-> set.
+End Exports.
 End CSet.
-Notation convex_set := CSet.t.
-Coercion CSet.car : convex_set >-> set.
+Export CSet.Exports.
 
 Definition convex_set_of (A : convType) :=
   fun phT : phant (ConvexSpace.car A) => convex_set A.
@@ -953,69 +960,83 @@ Notation "{ 'convex_set' T }" := (convex_set_of (Phant T)) : convex_scope.
 
 Section cset_canonical.
 Variable (A : convType).
-Canonical cset_subType := [subType for @CSet.car A].
-Canonical cset_predType :=
-  Eval hnf in mkPredType (fun t : convex_set A => (fun x => x \in CSet.car t)).
-Definition cset_eqMixin := Eval hnf in [eqMixin of convex_set A by <:].
-Canonical cset_eqType := Eval hnf in EqType (convex_set A) cset_eqMixin.
+Canonical cset_predType := Eval hnf in
+  mkPredType (fun t : convex_set A => (fun x => x \in CSet.car t)).
+Canonical cset_eqType := Equality.Pack (equality_mixin_of_Type (convex_set A)).
+Canonical cset_choiceType := choice_of_Type (convex_set A).
 End cset_canonical.
+
+Section CSet_interface.
+Variable (A : convType).
+Implicit Types X Y : {convex_set A}.
+Lemma convex_setP X : is_convex_set X.
+Proof. by case: X => X []. Qed.
+Lemma cset_ext X Y : X = Y :> set _ -> X = Y.
+Proof.
+move: X Y => -[X HX] [Y HY] /= ?; subst Y.
+congr (CSet.Pack _); exact/Prop_irrelevance.
+Qed.
+End CSet_interface.
 
 Section CSet_prop.
 Local Open Scope classical_set_scope.
 Variable A : convType.
+Implicit Types X Y : {convex_set A}.
 
-Lemma mem_convex_set (x y : A) (p : prob) (X : {convex_set A}) :
-  x \in X -> y \in X -> x <|p|> y \in X.
+Lemma mem_convex_set (x y : A) p X :  x \in X -> y \in X -> x <|p|> y \in X.
 Proof.
-case: X => X convX; move: (convX) => convX_save.
+case: X => X [convX]; move: (convX) => convX_save.
 move/asboolP : convX => convX Hx Hy; exact: convX.
 Qed.
 
-Definition cset0 : {convex_set A} := CSet.mk (is_convex_set0 A).
+Definition cset0 : {convex_set A} := CSet.Pack (CSet.Class (is_convex_set0 A)).
 
-Lemma cset0P (x : {convex_set A}) : (x == cset0) = (x == set0 :> set _).
-Proof. by case: x. Qed.
-
-Lemma cset0PN (x : {convex_set A}) : (x != cset0) <-> (x !=set0).
+Lemma cset0P X : (X == cset0) = (X == set0 :> set _).
 Proof.
-rewrite cset0P; case: x => //= x Hx; split; last first.
+case: X => x [Hx] /=; apply/eqP/eqP => [-[] //| ?]; subst x; exact: cset_ext.
+Qed.
+
+Lemma cset0PN X : X != cset0 <-> X !=set0.
+Proof.
+rewrite cset0P; case: X => //= x Hx; split; last first.
   case=> a xa; apply/eqP => x0; move: xa; by rewrite x0.
 by case/set0P => /= d dx; exists d.
 Qed.
 
-Definition cset1 (x : A) : {convex_set A} := CSet.mk (is_convex_set1 x).
+Definition cset1 (a : A) : {convex_set A} :=
+  CSet.Pack (CSet.Class (is_convex_set1 a)).
 
-Lemma cset1_neq0 (x : A) : cset1 x != cset0.
-Proof. apply/cset0PN; by exists x. Qed.
+Lemma cset1_neq0 (a : A) : cset1 a != cset0.
+Proof. by apply/cset0PN; exists a. Qed.
 
-Lemma hull_cset (x : {convex_set A}) : hull x = x.
+Lemma hull_cset X : hull X = X.
 Proof.
 rewrite predeqE => d; split.
 - move=> -[n [g [e [gX ->{d}]]]].
-  move: (CSet.H x); rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
-  by rewrite in_setE.
+  move: (convex_setP X); rewrite is_convex_setP /is_convex_set_n.
+  by move=> /asboolP/(_ _ g e gX); rewrite in_setE.
 - by rewrite -in_setE => /hull_mem; rewrite in_setE.
 Qed.
 
 Import ScaledConvex.
-Definition scaled_set (D : set A) :=
-  [set x | if x is p *: a then a \in D else True].
+Definition scaled_set (Z : set A) :=
+  [set x | if x is p *: a then a \in Z else True].
 
-Lemma addpt_scaled_set (D : {convex_set A}) x y :
-  x \in scaled_set D -> y \in scaled_set D -> addpt x y \in scaled_set D.
+Lemma addpt_scaled_set X x y :
+  x \in scaled_set X -> y \in scaled_set X -> addpt x y \in scaled_set X.
 Proof.
 case: x => [p x|]; case: y => [q y|] //=; rewrite !in_setE /scaled_set.
-move/CSet.H/asboolP: (D); apply.
+exact: mem_convex_set.
 Qed.
 
-Lemma scalept_scaled_set (D : {convex_set A}) r x :
-  x \in scaled_set D -> scalept r x \in scaled_set D.
+Lemma scalept_scaled_set X r x :
+  x \in scaled_set X -> scalept r x \in scaled_set X.
 Proof.
 rewrite /scalept; case: Rlt_dec => //= Hr; by [case: x | rewrite !in_setE].
 Qed.
 
-Lemma scaled_set_extract (D : {convex_set A}) x (H : (0 < weight _ x)%R) :
-  x \in scaled_set D -> point H \in CSet.car D.
+Lemma scaled_set_extract X x (H : (0 < weight _ x)%R) :
+  x \in scaled_set X -> point H \in X.
 Proof. case: x H => [p x|/ltRR] //=; by rewrite in_setE. Qed.
 
 Lemma split_lshift n m (i : 'I_n) : fintype.split (lshift m i) = inl i.
@@ -1033,7 +1054,8 @@ congr addpt; apply eq_bigr => i _;
   rewrite (scalept_comp (S1 _) (prob_ge0 _) (dist_ge0 _ _));
   by rewrite AddDist.dE (split_lshift,split_rshift).
 Qed.
-Lemma convex_hull (X : set A) : is_convex_set (hull X).
+
+Lemma convex_hull (Z : set A) : is_convex_set (hull Z).
 Proof.
 apply/asboolP => x y p; rewrite 2!in_setE.
 move=> -[n [g [d [gX ->{x}]]]].
@@ -1049,26 +1071,25 @@ rewrite AddDist_conv; congr Conv; apply eq_convn => i //=;
   by rewrite ffunE (split_lshift,split_rshift).
 Qed.
 
-Lemma hullI (X : set A) : hull (hull X) = hull X.
+Lemma hullI (Z : set A) : hull (hull Z) = hull Z.
 Proof.
 rewrite predeqE => d; split.
 - move=> -[n [g [e [gX ->{d}]]]].
-  move: (convex_hull X).
+  move: (convex_hull Z).
   rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
   by rewrite in_setE.
 - by rewrite -in_setE => /hull_mem; rewrite in_setE.
 Qed.
 
-Lemma hull_setU (a : A) (x y : {convex_set A}) :
-  x !=set0 -> y !=set0 -> a \in hull (x `|` y) ->
-  exists a1, a1 \in x /\ exists a2, a2 \in y /\ exists p : prob, a = a1 <| p |> a2.
+Lemma hull_setU (a : A) X Y : X !=set0 -> Y !=set0 -> a \in hull (X `|` Y) ->
+  exists a1, a1 \in X /\ exists a2, a2 \in Y /\ exists p : prob, a = a1 <| p |> a2.
 Proof.
 move=> x0 y0.
 rewrite in_setE.
 case=> n -[g [e [gX Ha]]].
 case: x0 => dx dx_x.
 case: y0 => dy dy_y.
-suff : exists a1, a1 \in scaled_set x /\ exists a2, a2 \in scaled_set y
+suff : exists a1, a1 \in scaled_set X /\ exists a2, a2 \in scaled_set Y
          /\ S1 a = addpt a1 a2.
   case => -[p a1|] [Ha1] [] [q a2|] /= [Ha2] // [Hpq ->];
     (exists a1; split;
@@ -1083,7 +1104,7 @@ suff : exists a1, a1 \in scaled_set x /\ exists a2, a2 \in scaled_set y
   + exists `Pr 1; by rewrite conv1.
   + exists `Pr 0; by rewrite conv0.
 move/(f_equal (@S1 _)): Ha; rewrite S1_convn.
-rewrite (bigID (fun i => g i \in x)) /=.
+rewrite (bigID (fun i => g i \in X)) /=.
 set sa1 := \big[_/_]_(i < n | _) _.
 set sa2 := \big[_/_]_(i < n | _) _.
 move=> Hsa.
@@ -1800,7 +1821,7 @@ apply addR_gt0wl; first by apply mulR_gt0 => //; exact/prob_gt0.
 apply mulR_ge0; [exact/onem_ge0/prob_le1 | exact: ltRW].
 Qed.
 
-Definition Rpos_interval := CSet.mk Rpos_convex.
+Definition Rpos_interval := CSet.Pack (CSet.Class Rpos_convex).
 
 Lemma Rnonneg_convex : is_convex_set (fun x => 0 <= x)%R.
 Proof.
@@ -1808,7 +1829,7 @@ apply/asboolP => x y t; rewrite !in_setE => Hx Hy.
 apply addR_ge0; apply/mulR_ge0 => //; [exact/prob_ge0 | apply/onem_ge0; exact/prob_le1].
 Qed.
 
-Definition Rnonneg_interval := CSet.mk Rnonneg_convex.
+Definition Rnonneg_interval := CSet.Pack (CSet.Class Rnonneg_convex).
 
 Lemma open_interval_convex a b (Hab : (a < b)%R) : is_convex_set (fun x => a < x < b)%R.
 Proof.
@@ -1825,7 +1846,7 @@ Qed.
 Lemma open_unit_interval_convex : is_convex_set (fun x => 0 < x < 1)%R.
 Proof. apply /open_interval_convex /Rlt_0_1. Qed.
 
-Definition open_unit_interval := CSet.mk open_unit_interval_convex.
+Definition open_unit_interval := CSet.Pack (CSet.Class open_unit_interval_convex).
 
 End convex_set_R.
 
