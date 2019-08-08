@@ -1562,9 +1562,46 @@ move=> a0 a1 p; apply necset_ext => /=; rewrite predeqE => b0; split.
   by split => //; rewrite in_setE.
   by rewrite affine_functionP'.
 Qed.
+
+Lemma image_preserves_convex_hull (A B : convType) (f : {affine A -> B})
+  (Z : set A) : image f (hull Z) = hull (f @` Z).
+Proof.
+rewrite predeqE => b; split.
+  case=> a [n [g [e [Hg]]]] ->{a} <-{b}.
+  exists n, (f \o g), e; split.
+    move=> b /= [i _] <-{b} /=.
+    by exists (g i) => //; apply Hg; exists i.
+  by rewrite affine_function_Sum.
+case=> n [g [e [Hg]]] ->{b}.
+suff [h Hh] : exists h : 'I_n -> A, forall i, h i \in Z /\ f (h i) = g i.
+  exists (\Conv_e h).
+    exists n; exists h; exists e; split => //.
+    move=> a [i _] <-.
+    move: (Hh i) => [].
+    by rewrite in_setE.
+  rewrite affine_function_Sum; apply eq_convn => // i /=.
+  by case: (Hh i).
+apply (@fin_all_exists _ _ (fun i hi => hi \in Z /\ f hi = g i)) => i.
+case: (Hg (g i)); first by exists i.
+move=> a // HZa Hfa.
+exists a; split; by rewrite // in_setE.
+Qed.
+
 Lemma necset_mor'_Joet_morph (A B : convType) (f : {affine A -> B}) :
   Joet_morph (necset_mor' f).
-Admitted.
+Proof.
+move=> /= X; apply necset_ext => /=; rewrite funeqE => b.
+rewrite image_preserves_convex_hull; congr (hull _ b) => {b}.
+(* TODO: extract lemma *)
+rewrite funeqE => b; rewrite propeqE; split.
+- case => a [x Xx xa] <-{b}.
+  exists (NECSet.Pack (NECSet.Class (CSet.Class (is_convex_set_image f x))
+    (NESet.Class (neset_image_neq0 f x)))) => /=; last by exists a.
+  exists x => //=.
+  exact/necset_ext.
+case => b0 [a0 Xa0 <-{b0}] [a a0a <-{b}].
+by exists a => //; exists a0.
+Qed.
 
 Definition necset_mor (A B : convType) (f : {affine A -> B}) : {Joet_affine necset_semiCompSemiLattConvType A -> necset_semiCompSemiLattConvType B} :=
   JoetAffine.Pack (Phant (necset_semiCompSemiLattConvType A -> necset_semiCompSemiLattConvType B))
