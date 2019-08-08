@@ -1616,7 +1616,9 @@ Section eps1_natural.
 Lemma eps1_natural (K L : semiCompSemiLattConvType) (f : {Joet_affine K -> L}) :
   f \o eps1 = eps1 \o (necset_mor f).
 Proof.
-Admitted.
+rewrite /eps1 /= funeqE => X /=; case: f => f [] Hf Kf.
+rewrite /JoetAffine.apply /eps1' Kf; congr (Joet `NE _); exact/neset_ext.
+Qed.
 End eps1_natural.
 
 Section choiceType_adjunction.
@@ -1628,7 +1630,7 @@ Definition gen_choiceType_mor (T U : Type) (f : T -> U) :
   gen_choiceType T -> gen_choiceType U := f.
 Definition epsC {C : choiceType} : gen_choiceType C -> C := idfun.
 Definition epsC_natural (C D : choiceType) (f : C -> D) : f \o epsC = epsC \o f.
-Proof. reflexivity. Qed.
+Proof. by []. Qed.
 End choiceType_adjunction.
 
 From monae Require Import monad proba_monad.
