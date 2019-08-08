@@ -1651,10 +1651,17 @@ End P_delta.
 
 Section P_delta_functor.
 Lemma P_delta_mor_id : FunctorLaws.id P_delta_mor.
-Admitted.
+Proof.
+move=> A; rewrite /P_delta_mor; rewrite funeqE => a.
+by apply necset_ext => /=; rewrite Distfmap_id image_idfun.
+Qed.
 
 Lemma P_delta_mor_comp : FunctorLaws.comp P_delta_mor.
-Admitted.
+Proof.
+move=> A B C g h; rewrite funeqE => a.
+apply/necset_ext => /=; rewrite Distfmap_comp !Distfmap_id compfid /=.
+by rewrite imageA -Distfmap_comp.
+Qed.
 
 Definition P_delta_functorClass := Functor.Class P_delta_mor_id P_delta_mor_comp.
 
@@ -1684,10 +1691,10 @@ Lemma eps_natural (K L : semiCompSemiLattConvType) (f : {Joet_affine K -> L}) :
   f \o eps = eps \o (P_delta_mor f).
 Proof.
 rewrite/eps /P_delta_mor /gen_choiceType_mor.
-(*
 rewrite compA.
 rewrite compA.
 rewrite eps1_natural.
+(*
 rewrite eps0_natural.
 *)
 Admitted.
