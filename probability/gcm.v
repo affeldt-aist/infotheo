@@ -1525,7 +1525,12 @@ Definition join1 (C : convType) (s : necset (necset_convType C)) : necset C :=
 
 Lemma eps1_correct (C : convType) (s : necset (necset_convType C)) :
   eps1 s = join1 s.
-Admitted.
+Proof.
+rewrite /eps1 /= /join1 /= /eps1'; apply/necset_ext => /=; congr (hull _).
+rewrite /bigsetU; rewrite funeqE => c; rewrite propeqE; split.
+- by case=> X sX Xc; exists X => //; rewrite -in_setE in sX; rewrite sX.
+- by case=> X sX; rewrite -in_setE in sX; rewrite sX => Xc; exists X => //; rewrite -in_setE.
+Qed.
 
 (* TODO: move *)
 Lemma is_convex_set_image (A B : convType) (f : {affine A -> B})
