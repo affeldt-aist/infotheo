@@ -806,18 +806,11 @@ apply eqEsubset => a.
 - by case => x [] y [] p [] xX [] yY ->; rewrite -in_setE; apply mem_hull_setU.
 Qed.
 
-Lemma neset_hull_neq0' (T : convType) (F : neset T) :
-  CSet.Pack (CSet.Class (convex_hull F)) != set0 :> set _.
-
-Proof. by rewrite /= neset_hull_neq0. Qed.
 Canonical neset_hull_necset (T : convType) (F : neset T) :=
-  NECSet.Pack (NECSet.Class (CSet.Class (convex_hull F)) (NESet.Class (neset_hull_neq0' F))).
-
-Lemma cset1_neq0 (T : convType) (x : T) : cset1 x != set0 :> set _.
-Proof. by rewrite set0P; exists x. Qed.
+  NECSet.Pack (NECSet.Class (CSet.Class (convex_hull F)) (NESet.Class (neset_hull_neq0 F))).
 
 Canonical necset1 (T : convType) (x : T) :=
-  NECSet.Pack (NECSet.Class (CSet.Class (is_convex_set1 x)) (NESet.Class (cset1_neq0 x))).
+  Eval hnf in @NECSet.Pack _ [set x] (NECSet.Class (CSet.Class (is_convex_set1 x)) (NESet.Class (set1_neq0 x))).
 
 End necset_lemmas.
 
