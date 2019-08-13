@@ -1720,7 +1720,19 @@ Qed.
 Lemma join_natural : JoinLaws.join_naturality join.
 Proof. by move=> A B h; rewrite -eps_natural. Qed.
 Lemma join_left_unit : JoinLaws.left_unit ret join.
-Admitted.
+Proof.
+rewrite /JoinLaws.left_unit => A.
+rewrite /join funeqE /f /= => d; apply necset_ext => /=.
+rewrite 2!image_set1 bigcup1 /epsC /Distfmap DistBind1f (_ : idfun d = d) //.
+rewrite hull_cset // funeqE => /= x; congr (NECSet.car _) => {x}.
+rewrite /eps0' /=; apply: (@ScaledConvex.S1_inj _ _ d).
+rewrite S1_Convn_indexed_over_finType /=.
+rewrite (eq_bigr (fun=> ScaledConvex.S1 d)); last first.
+  move=> i _; rewrite dist_of_DistE Dist1.dE /Dist1.f fsfunE /= -(Dist1.supp d).
+  rewrite fsvalP ScaledConvex.scalept1 /=; congr (ScaledConvex.S1 _).
+  case: i => i Hi /=; rewrite Dist1.supp inE in Hi; exact/eqP.
+by rewrite big_const (_ : #| _ | = 1) // -cardfE Dist1.supp cardfs1.
+Qed.
 Lemma join_right_unit : JoinLaws.right_unit ret join.
 Admitted.
 Lemma joinA : JoinLaws.associativity join.
