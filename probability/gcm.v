@@ -1738,6 +1738,7 @@ End P_delta_monad.
 
 Section P_delta_altProbMonad.
 Local Open Scope R_scope.
+Local Open Scope classical_set_scope.
 Local Open Scope proba_scope.
 Local Open Scope convex_scope.
 Local Open Scope latt_scope.
@@ -1746,7 +1747,7 @@ Definition alt A (x y : m A) : m A := x [+] y.
 Definition choice p A (x y : m A) : m A := x <|p|> y.
 
 Lemma altA A : associative (@alt A).
-Admitted.
+Proof. by move=> x y z; rewrite /alt joetA. Qed.
 Lemma bindaltDl : BindLaws.left_distributive (@Bind m) alt.
 Admitted.
 
@@ -1754,13 +1755,13 @@ Definition P_delta_monadAltMixin : MonadAlt.mixin_of m :=
   MonadAlt.Mixin altA bindaltDl.
 Definition mA : altMonad := MonadAlt.Pack (MonadAlt.Class P_delta_monadAltMixin).
 
-Lemma altmm A : idempotent (@Alt mA A).
-Admitted.
+Lemma altxx A : idempotent (@Alt mA A).
+Proof. by move=> x; rewrite /Alt /= /alt joetxx. Qed.
 Lemma altC A : commutative (@Alt mA A).
 Admitted.
 
 Definition P_delta_monadAltCIMixin : MonadAltCI.class_of mA :=
-  MonadAltCI.Class (MonadAltCI.Mixin altmm altC).
+  MonadAltCI.Class (MonadAltCI.Mixin altxx altC).
 Definition mACI : altCIMonad := MonadAltCI.Pack P_delta_monadAltCIMixin.
 
 Lemma choice0 A (x y : m A) : choice `Pr 0 x y = y.
@@ -1787,7 +1788,7 @@ Definition P_delta_monadProbMixin' : MonadProb.mixin_of (Monad.Pack (MonadAlt.ba
 
 Lemma choicealtDr A (p : prob) :
   right_distributive (fun x y : mACI A => choice p x y) (fun x y => Alt x y).
-Admitted.
+Proof. by move=> x y z; rewrite /choice joetDr. Qed.
 
 Definition P_delta_monadAltProbMixin : @MonadAltProb.mixin_of mACI choice :=
   MonadAltProb.Mixin choicealtDr.
