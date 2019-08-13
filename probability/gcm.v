@@ -1794,5 +1794,4 @@ Definition P_delta_monadAltProbMixin : @MonadAltProb.mixin_of mACI choice :=
   MonadAltProb.Mixin choicealtDr.
 Definition P_delta_monadAltProbMixin' : @MonadAltProb.mixin_of mACI (MonadProb.choice P_delta_monadProbMixin) := P_delta_monadAltProbMixin.
 Definition mAP : altProbMonad := MonadAltProb.Pack (MonadAltProb.Class P_delta_monadAltProbMixin').
-
-End P_delta_monad.
+End P_delta_altProbMonad.
