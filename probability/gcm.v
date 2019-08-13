@@ -1690,14 +1690,17 @@ Admitted.
 Lemma eps_natural (K L : semiCompSemiLattConvType) (f : {Joet_affine K -> L}) :
   f \o eps = eps \o (P_delta_mor f).
 Proof.
-rewrite/eps /P_delta_mor /gen_choiceType_mor.
-rewrite compA.
-rewrite compA.
-rewrite eps1_natural.
-(*
-rewrite eps0_natural.
-*)
-Admitted.
+rewrite /eps /P_delta_mor /gen_choiceType_mor.
+rewrite 2!compA eps1_natural -(compA eps1).
+rewrite (_ : necset_mor f \o necset_mor eps0 = necset_mor (affine_function_comp (Dist_mor f) eps0)); last first.
+  rewrite funeqE => /= X; apply/necset_ext => /=.
+  rewrite funeqE => /= l; rewrite imageA.
+  suff -> : JoetAffine.apply f \o eps0' = eps0' \o Distfmap (JoetAffine.apply f) by [].
+  exact: eps0_natural.
+rewrite funeqE => d /=; congr (eps1' _); apply/necset_ext => /=.
+rewrite -imageA; congr (image _ _).
+by rewrite imageA -Distfmap_comp epsC_natural Distfmap_comp imageA.
+Qed.
 End P_delta_eps.
 
 Section P_delta_monad.
