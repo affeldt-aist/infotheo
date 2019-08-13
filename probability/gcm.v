@@ -1633,7 +1633,7 @@ Definition epsC_natural (C D : choiceType) (f : C -> D) : f \o epsC = epsC \o f.
 Proof. by []. Qed.
 End choiceType_adjunction.
 
-From monae Require Import monad proba_monad.
+From monae Require Import monad fail_monad proba_monad.
 
 Section P_delta.
 (* P_delta = necset \o Dist \o gen_choiceType, where
@@ -1726,14 +1726,72 @@ Admitted.
 Lemma joinA : JoinLaws.associativity join.
 Admitted.
 
-Definition m : Monad.t :=
-  Monad.Pack
-    (Monad.Class
-       (Monad.Mixin
-          ret_natural
-          join_natural
-          join_left_unit
-          join_right_unit
-          joinA)).
+Definition P_delta_monadMixin : Monad.mixin_of f :=
+  Monad.Mixin
+    ret_natural
+    join_natural
+    join_left_unit
+    join_right_unit
+    joinA.
+Definition m : monad := Monad.Pack (Monad.Class P_delta_monadMixin).
+End P_delta_monad.
+
+Section P_delta_altProbMonad.
+Local Open Scope R_scope.
+Local Open Scope proba_scope.
+Local Open Scope convex_scope.
+Local Open Scope latt_scope.
+
+Definition alt A (x y : m A) : m A := x [+] y.
+Definition choice p A (x y : m A) : m A := x <|p|> y.
+
+Lemma altA A : associative (@alt A).
+Admitted.
+Lemma bindaltDl : BindLaws.left_distributive (@Bind m) alt.
+Admitted.
+
+Definition P_delta_monadAltMixin : MonadAlt.mixin_of m :=
+  MonadAlt.Mixin altA bindaltDl.
+Definition mA : altMonad := MonadAlt.Pack (MonadAlt.Class P_delta_monadAltMixin).
+
+Lemma altmm A : idempotent (@Alt mA A).
+Admitted.
+Lemma altC A : commutative (@Alt mA A).
+Admitted.
+
+Definition P_delta_monadAltCIMixin : MonadAltCI.class_of mA :=
+  MonadAltCI.Class (MonadAltCI.Mixin altmm altC).
+Definition mACI : altCIMonad := MonadAltCI.Pack P_delta_monadAltCIMixin.
+
+Lemma choice0 A (x y : m A) : choice `Pr 0 x y = y.
+Admitted.
+Lemma choice1 A (x y : m A) : choice `Pr 1 x y = x.
+  (* NB: redundant given choice0 and choiceC, isnt' it? *)
+Admitted.
+Lemma choiceC A p (x y : m A) : choice p x y = choice `Pr p.~ y x.
+Admitted.
+Lemma choicemm A p : idempotent (@choice p A).
+Admitted.
+Lemma choiceA A (p q r s : prob) (x y z : m A) :
+  p = (r * s) :> R /\ s.~ = (p.~ * q.~)%R ->
+  choice p x (choice q y z) = choice s (choice r x y) z.
+Admitted.
+Lemma bindchoiceDl p : BindLaws.left_distributive (@Bind m) (@choice p).
+Admitted.
+
+Definition P_delta_monadProbMixin : MonadProb.mixin_of m :=
+  MonadProb.Mixin choice0 choice1 choiceC choicemm choiceA bindchoiceDl.
+Definition P_delta_monadProbMixin' : MonadProb.mixin_of (Monad.Pack (MonadAlt.base (MonadAltCI.base (MonadAltCI.class mACI)))) := P_delta_monadProbMixin.
+
+(*Definition mp : probMonad := MonadProb.Pack (MonadProb.Class P_delta_monadProbMixin).*)
+
+Lemma choicealtDr A (p : prob) :
+  right_distributive (fun x y : mACI A => choice p x y) (fun x y => Alt x y).
+Admitted.
+
+Definition P_delta_monadAltProbMixin : @MonadAltProb.mixin_of mACI choice :=
+  MonadAltProb.Mixin choicealtDr.
+Definition P_delta_monadAltProbMixin' : @MonadAltProb.mixin_of mACI (MonadProb.choice P_delta_monadProbMixin) := P_delta_monadAltProbMixin.
+Definition mAP : altProbMonad := MonadAltProb.Pack (MonadAltProb.Class P_delta_monadAltProbMixin').
 
 End P_delta_monad.
