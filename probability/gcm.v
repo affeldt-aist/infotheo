@@ -1710,7 +1710,13 @@ Definition join : f \O f ~~> f :=
   fun (T : Type) => @eps (P_delta_left T).
 
 Lemma ret_natural : JoinLaws.ret_naturality ret.
-Admitted.
+Proof.
+rewrite /JoinLaws.ret_naturality => A B h.
+rewrite funeqE => /= a.
+apply/necset_ext => /=.
+rewrite image_set1 funeqE => /= d; congr (_ = _).
+by rewrite /Distfmap /= DistBind1f.
+Qed.
 Lemma join_natural : JoinLaws.join_naturality join.
 Proof. by move=> A B h; rewrite -eps_natural. Qed.
 Lemma join_left_unit : JoinLaws.left_unit ret join.
