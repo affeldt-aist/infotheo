@@ -600,6 +600,7 @@ Canonical neset_hull (T : convType) (F : neset T) :=
 
 End neset_lemmas.
 Hint Resolve repr_in_neset.
+Arguments image_neset : simpl never.
 
 Section convex_neset_lemmas.
 Local Open Scope classical_set_scope.
@@ -1039,7 +1040,7 @@ Module JoetAffine.
 Section ClassDef.
 Local Open Scope classical_set_scope.
 Variables (U V : semiCompSemiLattConvType).
-Record class_of (f : U -> V) : Type := Class {
+Record class_of (f : U -> V) : Prop := Class {
   base : affine_function f ;
   base2 : Joet_morph f ;
 }.
@@ -1670,6 +1671,47 @@ Definition epsC {C : choiceType} : gen_choiceType C -> C := idfun.
 Definition epsC_natural (C D : choiceType) (f : C -> D) : f \o epsC = epsC \o f.
 Proof. by []. Qed.
 End choiceType_adjunction.
+
+Require category.
+
+(* convType as a category *)
+Section convType_category.
+Import category.
+Lemma affine_function_comp_proof' :
+  forall (A B C : convType) (f : A -> B) (g : B -> C),
+    affine_function f -> affine_function g -> affine_function (g \o f).
+Proof. by move=>A B C f g Hf Hg a b t; rewrite /affine_function_at funcompE Hf Hg. Qed.
+Definition convType_category_class : Category.class_of convType :=
+  Category.Class affine_function_id_proof affine_function_comp_proof'.
+Canonical convType_category := Category.Pack convType_category_class.
+End convType_category.
+
+(* semiCompSemiLattConvType as a category *)
+Section semiCompSemiLattConvType_category.
+Import category.
+Local Notation U := semiCompSemiLattConvType.
+Lemma Joet_affine_id_proof (A : U) : JoetAffine.class_of (@id A).
+Proof.
+apply JoetAffine.Class; first by exact: affine_function_id_proof.
+by move=> x; congr Joet; apply neset_ext; rewrite /= image_idfun.
+Qed.
+Lemma Joet_affine_comp_proof (A B C : U) (f : A -> B) (g : B -> C) :
+    JoetAffine.class_of f -> JoetAffine.class_of g ->
+    JoetAffine.class_of (g \o f).
+Proof. 
+case => af jf [] ag jg.
+apply JoetAffine.Class; first by exact: affine_function_comp_proof'.
+move=> x; cbn.
+rewrite jf jg.
+congr Joet; apply neset_ext =>/=.
+by rewrite imageA.
+Qed.
+Definition semiCompSemiLattConvType_category_class :
+  Category.class_of U :=
+  Category.Class Joet_affine_id_proof Joet_affine_comp_proof.
+Canonical semiCompSemiLattConvType_category :=
+  Category.Pack semiCompSemiLattConvType_category_class.
+End semiCompSemiLattConvType_category.
 
 From monae Require Import monad fail_monad proba_monad.
 

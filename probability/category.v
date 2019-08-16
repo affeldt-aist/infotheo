@@ -1075,7 +1075,7 @@ Export Monad_of_bind_ret.Exports.
 
 
 (* interface to monad.v *)
-Require monad.
+From monae Require monad.
 Module Monad_of_category_monad.
 Section def.
 Variable (M : monad Type_category).
