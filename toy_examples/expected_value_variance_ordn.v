@@ -1,4 +1,4 @@
-Require Import Reals Fourier.
+Require Import Reals Lra.
 From mathcomp Require Import all_ssreflect.
 From infotheo Require Import Reals_ext ssrR Rbigop proba.
 
@@ -10,9 +10,10 @@ Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope tuple_ext_scope.
+Local Open Scope R_scope.
 
-Definition ord1 {n} : 'I_n.+2 := lift ord0 ord0.
-Definition ord2 {n} : 'I_n.+3 := lift ord0 ord1.
+Definition ord1 {n} := lift ord0 (@ord0 n).
+Definition ord2 {n} := lift ord0 (@ord1 n).
 
 Lemma ord0E n : 0%nat = @ord0 n. Proof. done. Qed.
 Lemma ord1E n : 1%nat = @ord1 n. Proof. done. Qed.
@@ -26,7 +27,7 @@ Proof.
 apply/forallP => a.
 rewrite /p ffunE /=.
 apply/leRP.
-do! case: ifP => _; fourier.
+do! case: ifP => _; lra.
 Qed.
 
 Definition p' : [finType of 'I_3] ->R+ := mkPosFfun p_nonneg.
@@ -34,7 +35,7 @@ Definition p' : [finType of 'I_3] ->R+ := mkPosFfun p_nonneg.
 Lemma p_sum1 : \sum_(i in 'I_3) p' i == 1.
 Proof.
 apply/eqP.
-rewrite 3!big_ord_recl big_ord0 addR0 /=.
+rewrite 3!big_ord_recl big_ord0 /=.
 rewrite /p !ffunE /=.
 by field.
 Qed.
@@ -48,8 +49,8 @@ Definition X : {RV P -> R} := (fun i => INR i.+1).
 Lemma expected : `E X = 5/3.
 Proof.
 rewrite /Ex.
-rewrite 3!big_ord_recl big_ord0 addR0 /=.
-rewrite /p /X !ffunE /= /bump /= !addn0 addn1.
+rewrite 3!big_ord_recl big_ord0 /=.
+rewrite /p /X !ffunE /= /bump /=.
 rewrite !S_INR (_ : 0%:R = 0) //.
 by field.
 Qed.
@@ -57,9 +58,8 @@ Qed.
 Lemma variance : Var P X = 5/9.
 Proof.
 rewrite VarE expected /Ex /X /sq_RV /comp_RV /=.
-rewrite 3!big_ord_recl big_ord0 addR0 /=.
-rewrite !mul1R !mulR1.
-rewrite !ffunE /bump !addn0 /=.
+rewrite 3!big_ord_recl big_ord0 /=.
+rewrite !ffunE /bump /=.
 rewrite !S_INR (_ : 0%:R = 0) //.
 by field.
 Qed.
