@@ -10,7 +10,6 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
-Local Open Scope tuple_ext_scope.
 Local Open Scope R_scope.
 
 Definition f : {ffun 'I_3 -> R} := [ffun i =>
