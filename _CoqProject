@@ -81,4 +81,5 @@ ecc_modern/ldpc_erasure.v
 ecc_modern/max_subset.v
 ecc_modern/stopping_set.v
 ecc_modern/degree_profile.v
+toy_examples/expected_value_variance.v
 -R . infotheo
