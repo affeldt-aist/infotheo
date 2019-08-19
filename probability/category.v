@@ -99,6 +99,8 @@ Variable C : category.
 Lemma category_idfun_proof : forall (a : C), hom (idfun : El a -> El a).
 Proof. by case: C => [? []]. Qed.
 Canonical idfun_hom a := Hom (locked (category_idfun_proof a)).
+Lemma idfun_homE a : idfun_hom a = Hom (category_idfun_proof a).
+Proof. by rewrite /idfun_hom; unlock. Qed.
 Lemma category_funcomp_proof : forall (a b c : C) (f : {hom b,c}) (g : {hom a,b}),
     hom (f \o g).
 Proof.
@@ -106,6 +108,8 @@ case: C => [car [el hom ? hom_comp]] a b c f g.
 by apply/hom_comp;case:f;case:g.
 Qed.
 Canonical funcomp_hom (a b c : C) (f : {hom b, c}) (g : {hom a, b}) := Hom (locked (category_funcomp_proof f g)).
+Lemma funcomp_homE' a b c f g : @funcomp_hom a b c f g = Hom (@category_funcomp_proof a b c f g).
+Proof. by rewrite /funcomp_hom; unlock. Qed.
 End category_interface.
 
 Section category_lemmas.
@@ -425,6 +429,8 @@ Check Natural.Pack
          ((fun _ _ _ => erefl) :
             (naturality F (F \O FId) (fun a : C => idfun_hom (F a))))).
 *)
+Lemma NIdE : NId  = (fun a => idfun_hom (F a)) :> (_ ~~> _).
+Proof. by []. Qed.
 End id_natural_transformation.
 
 Module NIdEq.
@@ -537,7 +543,11 @@ Section hcomp_lemmas.
 Variables (C D E Z: category).
 Variables (F G : functor C D) (F' G' : functor D E) (F'' G'' : functor E Z).
 Variables (s : F ~> G) (t : F' ~> G') (u : F'' ~> G'').
+Lemma HCompE' : t \h s = HComp s t.
+Proof. by unlock. Qed.
 Lemma HCompE : t \h s = (fun a => [hom of @t (G a) \o F' # (@s a)]) :> (_ ~~> _).
+Proof. by unlock. Qed.
+Lemma HComp_auxE' : t \\h s = HComp_aux s t.
 Proof. by unlock. Qed.
 Lemma HComp_auxE :
   t \\h s = (fun a => [hom of G' # (@s a) \o @t (F a)]) :> (_ ~~> _).
@@ -550,12 +560,12 @@ Proof.
 by unlock; apply nattrans_ext=> a /=; rewrite hom_ext /= (natural t).
 Qed.
 
-Lemma HCompId : s \h NId FId = [NId G , G \O FId] \v s \v [NId F \O FId , F].
+Lemma HCompIdId : s \h NId FId = [NId G , G \O FId] \v s \v [NId F \O FId , F].
 Proof.
 unlock; apply nattrans_ext=> a; rewrite hom_ext /=.
 by rewrite functor_id hom_idfunE !funcompidf !funcompfid.
 Qed.
-Lemma HIdComp : NId FId \h s = [NId G , FId \O G] \v s \v [NId FId \O F , F].
+Lemma HIdIdComp : NId FId \h s = [NId G , FId \O G] \v s \v [NId FId \O F , F].
 Proof.
 unlock; apply nattrans_ext=> a; rewrite hom_ext /=.
 by rewrite !funcompidf !funcompfid.
@@ -583,6 +593,12 @@ unlock; apply nattrans_ext=> a; rewrite hom_ext; cbn; rewrite funcompidf.
 by rewrite functor_id hom_idfunE funcompfid (natural t).
 Qed.
 
+Lemma HCompO : NId (F' \O F) = (NId F') \h (NId F).
+Proof.
+unlock; apply nattrans_ext=> a; rewrite hom_ext; cbn.
+by rewrite functor_id.
+Qed.
+
 (* horizontal and vertical compositions interchange *)
 Variables (H : functor C D) (H' : functor D E).
 Variables (s' : G ~> H) (t' : G' ~> H').
@@ -593,7 +609,7 @@ rewrite functor_o homcomp_hom.
 by rewrite (natural_head t).
 Qed.
 End hcomp_lemmas.
-
+  
 (*** adjoint functor ***)
 (* We define adjointness F -| G in terms of its unit and counit. *)
 Module AdjointFunctor.
