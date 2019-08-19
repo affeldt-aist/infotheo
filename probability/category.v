@@ -555,7 +555,7 @@ Proof.
 unlock; apply nattrans_ext=> a; rewrite hom_ext /=.
 by rewrite functor_id hom_idfunE !funcompidf !funcompfid.
 Qed.
-Lemma HIdCompId : NId FId \h s = [NId G , FId \O G] \v s \v [NId FId \O F , F].
+Lemma HIdComp : NId FId \h s = [NId G , FId \O G] \v s \v [NId FId \O F , F].
 Proof.
 unlock; apply nattrans_ext=> a; rewrite hom_ext /=.
 by rewrite !funcompidf !funcompfid.
@@ -570,6 +570,8 @@ rewrite !funcompidf !funcompfid homcompA.
 by rewrite functor_o homcomp_hom.
 Qed.
 
+(* higher level horizontal composition is a vertical composition of
+   horizontal compositions *)
 Lemma HComp_VH : t \h s = (t \h NId G) \v (NId F' \h s).
 Proof.
 unlock; apply nattrans_ext=> a; rewrite hom_ext /=.
