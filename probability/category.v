@@ -593,7 +593,7 @@ unlock; apply nattrans_ext=> a; rewrite hom_ext; cbn; rewrite funcompidf.
 by rewrite functor_id hom_idfunE funcompfid (natural t).
 Qed.
 
-Lemma HCompO : NId (F' \O F) = (NId F') \h (NId F).
+Lemma NIdO_HComp : NId (F' \O F) = (NId F') \h (NId F).
 Proof.
 unlock; apply nattrans_ext=> a; rewrite hom_ext; cbn.
 by rewrite functor_id.

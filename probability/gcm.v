@@ -2064,7 +2064,7 @@ congr funcomp; congr funcomp.
   rewrite !NIdE funcompidf functor_id.
   by congr [fun of necset_mor _]; rewrite hom_ext /= funcompfid.
 - do 2 rewrite HCompE homcomp_hom NIdE functor_id funcompfid.
-  by rewrite HCompE homcomp_hom -HCompO NIdE funcompidf.
+  by rewrite HCompE homcomp_hom -NIdO_HComp NIdE funcompidf.
 Qed.
 
 Lemma retE'' (T : Type) :
