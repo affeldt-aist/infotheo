@@ -14,7 +14,7 @@ Erik Martin-Dorel (University Toulouse III Paul Sabatier, IRIT research laborato
 The variable-length source coding theorems are a contribution by
 Ryosuke Obi (Chiba U. (M2))
 (commit a67da5e24eaaabb345d225a5bd0f5e86d35413a8)
-(with Manabu Hagiwara)
+(with Manabu Hagiwara and Mitsuharu Yamamoto)
 
 Acknowledgments:
 - The formalization of modern coding theory is a collaboration with

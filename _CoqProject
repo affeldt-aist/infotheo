@@ -57,6 +57,8 @@ information_theory/kraft.v
 information_theory/shannon_fano.v
 information_theory/string_entropy.v
 information_theory/convex_dist.v
+information_theory/source_coding_vl_direct.v
+information_theory/source_coding_vl_converse.v
 ecc_classic/linearcode.v
 ecc_classic/decoding.v
 ecc_classic/mceliece.v
