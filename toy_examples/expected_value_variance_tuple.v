@@ -18,9 +18,9 @@ Definition p : {ffun 'I_3 -> R} := [ffun i => tnth ps i].
 Lemma p_nonneg : [forall a : 'I_3, 0 <b= p a].
 Proof.
 apply/forallP => a.
-rewrite /p ffunE /=.
-move: a; apply/all_tnthP => /=.
-do! (apply/andP; split) => //; apply/leRP; lra.
+rewrite /p ffunE.
+apply/all_tnthP: a => /=.
+rewrite !andb_idr => * //; apply/leRP; lra.
 Qed.
 
 Definition p' : [finType of 'I_3] ->R+ := mkPosFfun p_nonneg.
