@@ -43,16 +43,14 @@ Lemma expected : `E X = 5/3.
 Proof.
 rewrite /Ex.
 rewrite 3!big_ord_recl big_ord0 /=.
-rewrite /X !ffunE !(tnth_nth 0) /= /bump /=.
-rewrite !S_INR (_ : 0%:R = 0) //.
-by field.
+rewrite /X !ffunE !(tnth_nth 0) /=.
+cbv; by field.
 Qed.
 
 Lemma variance : Var P X = 5/9.
 Proof.
 rewrite VarE expected /Ex /X /sq_RV /comp_RV /=.
 rewrite 3!big_ord_recl big_ord0 /=.
-rewrite !ffunE !(tnth_nth 0) /bump /=.
-rewrite !S_INR (_ : 0%:R = 0) //.
-by field.
+rewrite !ffunE !(tnth_nth 0) /=.
+cbv; by field.
 Qed.
