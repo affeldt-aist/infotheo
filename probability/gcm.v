@@ -469,12 +469,12 @@ Module Convn_indexed_over_finType.
 Section def.
 Local Open Scope R_scope.
 Variables (A : convType) (T : finType) (d : {dist T}) (f : T -> A).
-Definition n := #| T |.
+Let n := #| T |.
 Definition t0 : T.
 Proof.
 move/card_gt0P/xchoose: (dist_domain_not_empty d) => t0; exact t0.
 Defined.
-Definition enum : 'I_n -> T := enum_val.
+Let enum : 'I_n -> T := enum_val.
 Definition d_enum := [ffun i => d (enum i)].
 Lemma d_enum0 : forall b, 0 <= d_enum b.
 Proof. move=> ?; rewrite ffunE; exact: dist_ge0. Qed.
@@ -500,11 +500,11 @@ Variables (A : convType) (T : finType) (d : {dist T}) (f : T -> A).
 Lemma S1_Convn_indexed_over_finType :
   S1 (Convn_indexed_over_finType d f) = \ssum_i scalept (d i) (S1 (f i)).
 Proof.
-rewrite /Convn_indexed_over_finType S1_convn /= /Convn_indexed_over_finType.n.
+rewrite /Convn_indexed_over_finType S1_convn /=.
 rewrite (reindex_onto enum_rank enum_val) /=; last by move=> i _; rewrite enum_valK.
 apply eq_big => /=; first by move=> i; rewrite enum_rankK eqxx.
 move=> i _; rewrite /Convn_indexed_over_finType.d_enum ffunE.
-by rewrite /Convn_indexed_over_finType.enum enum_rankK.
+by rewrite enum_rankK.
 Qed.
 End S1_Convn_indexed_over_finType.
 
