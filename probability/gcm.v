@@ -88,6 +88,14 @@ Lemma etaCE' : etaC = Natural etaC'_natural.
 Proof. by rewrite /etaC; unlock. Qed.
 Lemma etaCE (T : Type) : etaC T = idfun :> (_ -> _).
 Proof. by rewrite /etaC; unlock. Qed.
+
+Import homcomp_notation.
+Local Notation F := gen_choiceType_functor.
+Local Notation G := forget_choiceType.
+Lemma triLC c : (epsC (F c)) \o (F # etaC c) = idfun.
+Proof. by rewrite etaCE epsCE. Qed.
+Lemma triRC d : (G # epsC d) \o (etaC (G d)) = idfun.
+Admitted.
 End epsC_etaC.
 
 (* convType as a category *)
@@ -144,6 +152,26 @@ Canonical mulRnneg x y := Rnneg.mk (mulRnneg_0le x y).
 End Rnneg_lemmas.
 
 Section misc.
+
+Section misc_fset.
+Local Open Scope fset_scope.
+Lemma bigfcup_fset1 (T I : choiceType) (P : {fset I}) (f : I -> T) :
+  \bigcup_(x <- P) [fset f x] = f @` P.
+Proof.
+apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> x.
+- case/bigfcupP=> i /andP [] iP _.
+  rewrite inE => /eqP ->.
+  by apply/imfsetP; exists i.
+- case/imfsetP => i /= iP ->; apply/bigfcupP; exists i; rewrite ?andbT //.
+  by apply/imfsetP; exists (f i); rewrite ?inE.
+Qed.
+Lemma eq_fset1 (T : choiceType) (x y : T) : [fset x] = [fset y] -> x = y.
+Proof.
+move/eqP; rewrite eqEfsubset => /andP [] /fsubsetP /(_ x).
+rewrite !inE=> H _.
+by apply/eqP/H.
+Qed.
+End misc_fset.
 
 Section misc_classical_sets.
 Local Open Scope classical_set_scope.
@@ -490,6 +518,18 @@ apply (big_ind2 (fun x y => x = (Rnneg.v y))) => //.
 by move=> x1 [v Hv] y1 y2 -> ->.
 Qed.
 End misc_scaled.
+
+Section misc_Dist.
+Local Open Scope R_scope.
+Lemma eq_Dist1 (A : choiceType) (x y : A) : Dist1.d x = Dist1.d y -> x = y.
+Proof.
+move/(congr1 (fun (d : Dist A) => d x)).
+rewrite !Dist1.dE /Dist1.f /= !fsfunE !inE eqxx=> H.
+apply/eqP/negbNE/negP=> /negbTE xny.
+move: H; rewrite xny.
+exact: R1_neq_R0.
+Qed.
+End misc_Dist.
 End misc.
 
 Module dist_of_Dist.
@@ -1658,6 +1698,121 @@ Lemma eta0E' : eta0 = Natural eta0'_natural.
 Proof. by rewrite /eta0; unlock. Qed.
 Lemma eta0E (T : choiceType) : eta0 T = (@Dist1.d _) :> (_ -> _).
 Proof. by rewrite /eta0; unlock. Qed.
+
+Import homcomp_notation.
+Import ScaledConvex.
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Local Notation F := Dist_functor.
+Local Notation G := forget_convType.
+Lemma triL0 c : (eps0 (F c)) \o (F # eta0 c) = idfun.
+Proof.
+apply funext=> x /=.
+
+rewrite eps0E eta0E; apply: (@S1_inj _ _ x).
+rewrite S1_Convn_indexed_over_finType /=.
+
+have Y : forall (i : finsupp (Distfmap (Dist1.d (A:=c)) x)),
+    exists a_x0 : prod (Dist (Dist c)) (FId c),
+        a_x0.2 \in finsupp x /\
+               a_x0.1 = Dist1.d (Dist1.d a_x0.2) /\
+               fsval i \in finsupp a_x0.1.
+- case=> i /= iP.
+  move: iP; rewrite /Distfmap DistBind.supp=> /bigfcupP [] a /andP [].
+  have-> : [fset Dist1.d (Dist1.d a0) | a0 in [fset a0 | a0 in finsupp x]] =
+           [fset Dist1.d (Dist1.d a0) | a0 in finsupp x]
+    by apply eq_imfset => //; move=> y/= ; rewrite inE /=.
+  case/imfsetP=> x0 /= x0x ax0 _ ia.
+  exists (a, x0).
+  by split=> //; split.
+set Ya := (fun i => match cid (Y i) with exist a_x0 _ => a_x0.1 end).
+set Yx0 := (fun i => match cid (Y i) with exist a_x0 _ => a_x0.2 end).
+set F := fun (i : finsupp (Distfmap (Dist1.d (A:=c)) x)) =>
+           scalept (x (Yx0 i)) (S1 (fsval i)).
+(*set F := fun (i0 : Dist_convType c) => scalept (x XX) (S1 i0).*)
+(*evar (F : Dist c -> scaled_pt (Dist_convType c)).*)
+rewrite (eq_bigr F); last first.
+- move=> i _. 
+  rewrite dist_of_DistE /Distfmap /=.
+  rewrite /F /Yx0.
+  case: i => i /= iP.
+  case: (cid (Y.[iP])%fmap).
+  case => a x0 /= [] x0x [] ax0 [] ia /=.
+(*
+  case=> i /= iP; rewrite dist_of_DistE /Distfmap /=.
+  move: iP; rewrite /Distfmap DistBind.supp=> /bigfcupP [] a /andP [].
+  have-> : [fset Dist1.d (Dist1.d a0) | a0 in [fset a0 | a0 in finsupp x]] =
+           [fset Dist1.d (Dist1.d a0) | a0 in finsupp x]
+    by apply eq_imfset => //; move=> y/= ; rewrite inE /=.
+  case/imfsetP=> x0 /= x0x ax0 _ ia _.
+*)
+  suff -> : (DistBind.d x (fun a0 : c => Dist1.d (Dist1.d a0))) i = x x0 by done.
+  rewrite DistBind.dE /DistBind.f fsfunE.
+  have-> : [fset Dist1.d (Dist1.d a) | a in [fset a | a in finsupp x]] =
+           [fset Dist1.d (Dist1.d a) | a in finsupp x]
+    by apply eq_imfset => //; move=> y/= ; rewrite inE /=.
+  have-> : \sum_(a0 <- finsupp x) x a0 * (Dist1.d (Dist1.d a0)) i =
+           \sum_(a0 <- finsupp x) x a0 * (if i == Dist1.d a0 then 1 else 0)
+    by apply eq_bigr=> a0 _; rewrite Dist1.dE /Dist1.f fsfunE inE.
+  rewrite (bigID (fun a0 => i == Dist1.d a0)) /=.
+  have-> : \sum_(i0 <- finsupp x | i != Dist1.d i0)
+            x i0 * (if i == Dist1.d i0 then 1 else 0) = 0
+    by rewrite big1 //= => a0; move/negbTE ->; rewrite mulR0.
+  have-> : \sum_(i0 <- finsupp x | i == Dist1.d i0)
+            x i0 * (if i == Dist1.d i0 then 1 else 0) =
+           \sum_(i0 <- finsupp x | i == Dist1.d i0) x i0
+    by apply eq_bigr=> a0 ->; rewrite mulR1.
+  rewrite addR0.
+  have/eqP -> : \bigcup_(d <- [fset Dist1.d (Dist1.d a) | a in finsupp x])
+                 finsupp d  == [fset Dist1.d a | a in finsupp x].
+  + rewrite eqEfsubset; apply/andP=> []; split; apply/fsubsetP=> a'.
+    * case/bigfcupP=> x0' /andP [].
+      case/imfsetP=> x1 /= Hx1 -> _.
+      rewrite Dist1.supp inE=> /eqP ->.
+      by apply/imfsetP; exists x1.
+    * case/imfsetP=> x0' /= Hx0' ->; apply/bigfcupP.
+      exists (Dist1.d (Dist1.d x0')) => //=; last by rewrite Dist1.supp inE.
+      rewrite andbT; apply/imfsetP.
+      by exists x0' => //; rewrite Dist1.supp inE.
+  case: ifP.
+  + case/imfsetP=> a' /= Ha' ia'; rewrite ia'.
+    have-> : \sum_(i0 <- finsupp x | Dist1.d a' == Dist1.d i0) x i0 =
+             \sum_(i0 <- finsupp x | a' == i0) x i0.
+    * apply eq_bigl=> i0.
+      apply/eqP; case: ifP; first by move/eqP ->.
+      by move=> H /eq_Dist1 /eqP; rewrite H.
+    have-> : \sum_(i0 <- finsupp x | a' == i0) x i0 =
+             \sum_(i0 <- [:: a']) x i0 by admit.
+    rewrite big_seq1.
+    move: ia; rewrite ax0; rewrite Dist1.supp => /imfsetP [] x1 /=.
+    rewrite inE => /eqP x1x0 ix1.
+    by move: x1x0; rewrite -ix1 ia' => /eq_Dist1 ->.
+  + move: ia; rewrite ax0 Dist1.supp=> /imfsetP [] x1 /=.
+    rewrite inE=> /eqP x1x0 ix1.
+    rewrite ix1 x1x0 /=.
+    by rewrite in_imfset.
+rewrite /F.
+have H : finsupp (Distfmap (Dist1.d (A:=c)) x) =
+         (@Dist1.d _) @` (finsupp x) by admit.
+have H' : forall i, Dist1.d (Yx0 i) = fsval i by admit.
+have H'' : forall x0 : FId c, Dist1.d x0 \in finsupp (Distfmap (@Dist1.d c) x)
+    by admit.
+set x0Y := fun x0 : FId c => FSetSub (H'' x0). 
+have H''' : forall x0 : FId c, Yx0 (x0Y x0) = x0 by admit.
+set D := Yx0 @` (dist_of_Dist.D (Distfmap (Dist1.d (A:=c)) x)).
+Check D.
+Check fun j : D => j.
+Check \ssum_(j <- D) scalept (x j) (S1 (fsval (x0Y j))).
+Check \ssum_(j : D) scalept (x (fsval j)) (S1 (fsval (x0Y (fsval j)))).
+Check (@fsval ((@FId choiceType_category) c) D).
+have -> : \ssum_i scalept (x (Yx0 i)) (S1 (fsval i)) =
+          \ssum_(j <- D) scalept (x j) (S1 (fsval (x0Y j))) by admit.
+Fail rewrite -S1_Convn_indexed_over_finType.
+Admitted.
+
+Lemma triR0 d : (G # eps0 d) \o (eta0 (G d)) = idfun.
+Admitted.
+
 End eps0_eta0.
 
 Section join0.
@@ -1915,6 +2070,15 @@ Lemma eta1E': eta1 = Natural eta1'_natural.
 Proof. by rewrite /eta1; unlock. Qed.
 Lemma eta1E (C : convType) : eta1 C = (@necset1 _) :> (_ -> _).
 Proof. by rewrite /eta1; unlock. Qed.
+
+Import homcomp_notation.
+Local Notation F := necset_functor.
+Local Notation G := forget_semiCompSemiLattConvType.
+Lemma triL1 c : (eps1 (F c)) \o (F # eta1 c) = idfun.
+Admitted.
+Lemma triR1 d : (G # eps1 d) \o (eta1 (G d)) = idfun.
+Admitted.
+
 End eps1_eta1.
 
 Section join1.
@@ -2124,18 +2288,13 @@ Admitted.
 Lemma joinA : JoinLaws.join_associativity join.
 Proof.
 rewrite /JoinLaws.join_associativity=> a.
-move: (natural eps
-               ((P_delta_left \O P_delta_right \O P_delta_left) a)
-               (P_delta_left a)
-               (eps (P_delta_left a))) => n.
-rewrite 2![in RHS]joinE n.
-congr funcomp; first by rewrite joinE.
-rewrite FCompE.
+rewrite 2![in RHS]joinE (natural eps _ _ (eps (P_delta_left a))).
+rewrite joinE FCompE.
 (* NB: maybe worth factoring out? *)
 have-> :
   forall x y (f : {hom x, y}) , P_delta # f = P_delta_left # f :> (_ -> _)
     by move=> x y f; apply funext.
-congr [fun of P_delta_left # _].
+congr funcomp; congr [fun of P_delta_left # _].
 by rewrite hom_ext joinE funeqE.
 Qed.
 
