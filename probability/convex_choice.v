@@ -1770,16 +1770,36 @@ Definition Dist_convMixin :=
 Canonical Dist_convType := ConvexSpace.Pack Dist_convMixin.
 
 (* Reuse the morphisms from R_convex_space. *)
-Import ScaledConvex.
+Import ScaledConvex finmap.
 Lemma convn_convdist (n : nat) (g : 'I_n -> Dist A) (d : {dist 'I_n}) :
-  dist.ConvDist.d (*\Conv_*)d g = ConvDist.d d g.
+  \Conv_d g = ConvDist.d d g.
 Proof.
 apply Dist_ext=> a; rewrite -[LHS]Scaled1RK.
-(*rewrite (@S1_convn_proj _ _ (@^~ a \o @pos_ff _ \o @pmf _)); last first.
+Check S1_convn_proj.
+rewrite (@S1_convn_proj _ _ (fun x : Dist A => finmap.fun_of_fsfun x a));
+  last first.
   move=> p x y /=; by rewrite /Conv /= Conv2Dist.dE.
-rewrite big_scaleR ConvDist.dE; apply eq_bigr => i _.
-rewrite scaleR_scalept ?Scaled1RK //; exact/dist_ge0.
-Qed.*) Abort.
+rewrite big_scaleR ConvDist.dE /= fsfunE.
+case: ifPn => Ha.
+  apply eq_bigr => i _.
+  rewrite scaleR_scalept ?Scaled1RK //; exact/dist_ge0.
+(* TODO: extra lemmas ? *)
+rewrite big1 // => i _.
+move: Ha.
+rewrite /ConvDist.D.
+move/bigfcupP => Hn.
+case /boolP: (d i == R0) => Hdi.
+  by rewrite (eqP Hdi) scalept0.
+case /boolP: (g i a == R0) => Hgia.
+  rewrite (eqP Hgia) scaleR_scalept /= ?mulR0 //.
+  exact: dist_ge0.
+elim: Hn.
+exists i.
+  rewrite mem_index_enum /=.
+  apply/ltRP.
+  by rewrite -dist_gt0.
+by rewrite mem_finsupp.
+Qed.
 End dist_convex_space.
 
 (* TODO *)
