@@ -474,29 +474,16 @@ Definition t0 : T.
 Proof.
 move/card_gt0P/xchoose: (dist_domain_not_empty d) => t0; exact t0.
 Defined.
-Definition enum : 'I_n -> T := fun i => nth t0 (index_enum T) i.
+Definition enum : 'I_n -> T := enum_val.
 Definition d_enum := [ffun i => d (enum i)].
 Lemma d_enum0 : forall b, 0 <= d_enum b.
-Proof.
-move=> b.
-rewrite ffunE.
-by apply dist_ge0.
-Qed.
+Proof. move=> ?; rewrite ffunE; exact: dist_ge0. Qed.
 Lemma d_enum1 : \sum_(b in 'I_n) d_enum b = 1.
 Proof.
-rewrite -(@epmf1 T d).
-rewrite /d_enum.
-transitivity (\sum_(b in 'I_n) d (enum b));
-  first by apply eq_bigr => i; rewrite ffunE.
-rewrite -big_image /=.
-suff -> : (image_mem enum (mem (ordinal n))) = index_enum T
-  by done.
-apply (eq_from_nth (x0 := t0)) => [ | i ];
-  first by rewrite size_image /index_enum -enumT -cardT card_ord.
-rewrite size_image => i_n.
-rewrite (nth_image t0 enum (Ordinal i_n)) /enum /=.
-congr nth.
-by rewrite enum_val_ord /=.
+rewrite -(@epmf1 T d) (eq_bigr (d \o enum)); last by move=> i _; rewrite ffunE.
+rewrite (@reindex _ _ _ _ _ enum_rank) //; last first.
+  by exists enum_val => i; [rewrite enum_rankK | rewrite enum_valK].
+apply eq_bigr => i _; congr (d _); by rewrite -[in RHS](enum_rankK i).
 Qed.
 Definition dist := proba.makeDist d_enum0 d_enum1.
 Definition Convn_indexed_over_finType : A := Convn dist (f \o enum).
@@ -513,39 +500,11 @@ Variables (A : convType) (T : finType) (d : {dist T}) (f : T -> A).
 Lemma S1_Convn_indexed_over_finType :
   S1 (Convn_indexed_over_finType d f) = \ssum_i scalept (d i) (S1 (f i)).
 Proof.
-rewrite /Convn_indexed_over_finType.
-rewrite S1_convn /=.
-evar (X : nat -> scaled_pt A).
-transitivity (\ssum_(i < Convn_indexed_over_finType.n T) X i).
-- apply eq_bigr => -[i Hi] _.
-  set (i' := nat_of_ord (Ordinal Hi)).
-  rewrite ffunE.
-  rewrite /Convn_indexed_over_finType.enum /=.
-  set F := (fun i =>
-           scalept (d (nth (Convn_indexed_over_finType.t0 d) (index_enum T) i))
-          (S1 (f (nth (Convn_indexed_over_finType.t0 d) (index_enum T) i)))).
-  transitivity (F i'); exact: erefl.
-move: (@big_mkord
-         (scaled_pt A)
-         (@Zero _)
-         (@addpt _)
-         (Convn_indexed_over_finType.n T)
-         xpredT
-         X) => <-.
-rewrite /Convn_indexed_over_finType.n cardE -filter_index_enum.
-have -> : [seq x <- index_enum T | T x] = index_enum T.
-- rewrite -[in RHS](filter_predT (index_enum T)).
-  by congr filter.
-set F := (fun x => scalept (d x) (S1 (f x))).
-by move: (@big_nth
-            (scaled_pt A)
-            (@Zero _)
-            (@addpt _)
-            T
-            (Convn_indexed_over_finType.t0 d)
-            (index_enum T)
-            xpredT
-            F) <-.
+rewrite /Convn_indexed_over_finType S1_convn /= /Convn_indexed_over_finType.n.
+rewrite (reindex_onto enum_rank enum_val) /=; last by move=> i _; rewrite enum_valK.
+apply eq_big => /=; first by move=> i; rewrite enum_rankK eqxx.
+move=> i _; rewrite /Convn_indexed_over_finType.d_enum ffunE.
+by rewrite /Convn_indexed_over_finType.enum enum_rankK.
 Qed.
 End S1_Convn_indexed_over_finType.
 
