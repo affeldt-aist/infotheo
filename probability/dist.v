@@ -165,16 +165,16 @@ suff : (p a * g a b = 0)%R.
 apply/H; rewrite ?mem_finsupp // => a0 _; apply/mulR_ge0; exact/Dist.ge0.
 Qed.
 Definition d : Dist B := locked (makeDist f0 f1).
-Lemma dE x : d x = f x.
-Proof. by rewrite /d; unlock. Qed.
+Lemma dE x : d x = if x \in D then \sum_(a <- finsupp p) p a * (g a) x else 0.
+Proof. by rewrite /d; unlock; rewrite fsfunE. Qed.
 Lemma supp : finsupp d = D.
 Proof.
 apply/fsetP => b; rewrite !mem_finsupp; apply/idP/idP => [|].
-  rewrite dE /f fsfunE; case: ifPn => //; by rewrite eqxx.
+  rewrite dE; case: ifPn => //; by rewrite eqxx.
 case/bigfcupP => dB.
 rewrite andbT => /imfsetP[a].
 rewrite !(inE,mem_finsupp) => pa0 ->{dB} gab0.
-rewrite dE /f fsfunE; case: ifPn; last first.
+rewrite dE; case: ifPn; last first.
   apply: contra => _.
   apply/bigfcupP.
   exists (g a); last by rewrite mem_finsupp.
@@ -197,8 +197,7 @@ Lemma DistBind1f (A B : choiceType) (a : A) (f : A -> Dist B) :
   DistBind.d (Dist1.d a) f = f a.
 Proof.
 apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => b.
-rewrite DistBind.dE /= /DistBind.f /= fsfunE /=.
-case: ifPn => [|H].
+rewrite DistBind.dE; case: ifPn => [|H].
   case/bigfcupP => /= d; rewrite andbT.
   case/imfsetP => a0 /= /imfsetP[a1 /=].
   rewrite mem_finsupp Dist1.dE /Dist1.f fsfunE inE.
@@ -218,7 +217,7 @@ Qed.
 Lemma DistBindp1 (A : choiceType) (p : Dist A) : DistBind.d p (@Dist1.d A) = p.
 Proof.
 apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => b.
-rewrite DistBind.dE /DistBind.f fsfunE /=.
+rewrite DistBind.dE.
 case: ifPn => [|H].
   case/bigfcupP => /= d; rewrite andbT.
   case/imfsetP => /= a /imfsetP[a0].
@@ -245,11 +244,10 @@ Lemma DistBindA A B C (m : Dist A) (f : A -> Dist B) (g : B -> Dist C) :
   DistBind.d (DistBind.d m f) g = DistBind.d m (fun x => DistBind.d (f x) g).
 Proof.
 apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => c.
-rewrite !DistBind.dE /DistBind.f !fsfunE /=.
-case: ifPn => [|H].
+rewrite !DistBind.dE; case: ifPn => [|H].
   case/bigfcupP => /= dC.
   rewrite andbT => /imfsetP[b].
-  rewrite !(inE,mem_finsupp) DistBind.dE /DistBind.f fsfunE /=.
+  rewrite !(inE,mem_finsupp) DistBind.dE.
   case: ifPn; last by rewrite eqxx.
   case/bigfcupP => /= dB.
   rewrite andbT => /imfsetP[a].
@@ -266,8 +264,7 @@ case: ifPn => [|H].
     by exists a => //; rewrite !(inE,mem_finsupp).
   rewrite (eq_bigr (fun a => (\sum_(a0 <- finsupp m) m a0 * (f a0) a * (g a) c))); last first.
     move=> b0 _.
-    rewrite DistBind.dE /DistBind.f fsfunE.
-    case: ifPn.
+    rewrite DistBind.dE; case: ifPn.
       case/bigfcupP => dB.
       rewrite andbT => /imfsetP[a0].
       rewrite !(inE,mem_finsupp) => ma00 ->{dB} fa0b0.
@@ -284,7 +281,7 @@ case: ifPn => [|H].
     rewrite andbT; apply/imfsetP; exists a0 => //.
     by rewrite !(inE,mem_finsupp).
   rewrite exchange_big; apply eq_bigr => a0 _ /=.
-  rewrite DistBind.dE /DistBind.f fsfunE.
+  rewrite DistBind.dE.
   case/boolP : (m a0 == R0 :> R) => [/eqP ma00|ma00].
     rewrite ma00 mul0R big1_fset // => b2 _ _.
     by rewrite /multiplication /mul_notation 2!mul0R.
@@ -317,8 +314,7 @@ case: ifPn => [|H].
     case/boolP : (g b1 c == R0 :> R) => [/eqP -> _|gb1c].
       by rewrite /multiplication /mul_notation mulR0.
     case/imfsetP; exists b1 => //.
-    rewrite !(inE,mem_finsupp) fa0b1 andbT DistBind.dE /DistBind.f fsfunE.
-    rewrite ifT.
+    rewrite !(inE,mem_finsupp) fa0b1 andbT DistBind.dE ifT.
     have /eqP K : (m a0 * (f a0 b1) <> R0 :> R) by rewrite mulR_eq0 => -[]; exact/eqP.
     apply/eqP.
     move/prsumr_seq_eq0P => L.
@@ -359,14 +355,13 @@ case: ifPn => [|H].
 rewrite ifF //; apply/negbTE; apply: contra H.
 case/bigfcupP => /= dC.
 rewrite andbT => /imfsetP[x]; rewrite !(inE,mem_finsupp) => mx0 ->{dC}.
-rewrite DistBind.dE /DistBind.f fsfunE.
-case: ifPn; last by rewrite eqxx.
+rewrite DistBind.dE; case: ifPn; last by rewrite eqxx.
 case/bigfcupP => dC; rewrite andbT => /imfsetP[b].
 rewrite !(inE,mem_finsupp) => fxb0 ->{dC} gbc0 K.
 apply/bigfcupP.
 exists (g b); last by rewrite mem_finsupp.
 rewrite andbT; apply/imfsetP; exists b => //.
-rewrite !(inE,mem_finsupp) DistBind.dE /DistBind.f fsfunE.
+rewrite !(inE,mem_finsupp) DistBind.dE.
 case: ifPn; last first.
   apply: contra => _.
   apply/bigfcupP.
@@ -569,10 +564,10 @@ apply/prob_ext; by rewrite p0'.
 Qed.
 Lemma tech1 (B : choiceType) (a b : Dist A) (f : A -> Dist B) (p : prob) (a0 : A) (b0 : B) (b0a0 : b0 \in finsupp (f a0)) :
   p != `Pr 0 ->
-  \sum_(i <- finsupp (a <|p|> b)) (a i * (f i) b0) = (DistBind.f a f) b0.
+  \sum_(i <- finsupp (a <|p|> b)) (a i * (f i) b0) = (DistBind.d a f) b0.
 Proof.
 move=> p0.
-rewrite fsfunE.
+rewrite DistBind.dE.
 case: ifPn.
 - case/bigfcupP => dB.
   rewrite andbT.
@@ -614,12 +609,11 @@ Qed.
 Lemma bind_left_distr (B : choiceType) (p : prob) a b (f : A -> Dist B) :
   DistBind.d (a <| p |> b) f = DistBind.d a f <| p |> DistBind.d b f.
 Proof.
-apply/Dist_ext => b0 /=; rewrite !(DistBind.dE,Conv2Dist.dE) /=.
+apply/Dist_ext => b0 /=; rewrite DistBind.dE Conv2Dist.dE.
 case/boolP : (p == `Pr 0 :> prob) => p0.
-  by rewrite (eqP p0) conv0 mul0R add0R onem0 mul1R.
+  by rewrite (eqP p0) conv0 mul0R add0R onem0 mul1R DistBind.dE.
 case/boolP : (p == `Pr 1 :> prob) => p1.
-  by rewrite (eqP p1) conv1 mul1R onem1 mul0R addR0.
-rewrite fsfunE.
+  by rewrite (eqP p1) conv1 mul1R onem1 mul0R addR0 DistBind.dE.
 case: ifPn.
   case/bigfcupP.
   move=> dB.
@@ -639,7 +633,7 @@ case: ifPn.
   congr (_ * _ + _ * _)%R.
   exact/(@tech1 _ _ _ _ _ a0).
   rewrite convC.
-  apply/(@tech1 _ _ _ _ _ a0) => //.
+  rewrite (@tech1 _ _ _ _ _ a0) //.
   apply: contra p1 => /eqP.
   move/(congr1 (fun x : prob => x.~)).
   rewrite onemK.
@@ -649,13 +643,13 @@ move=> Hb0.
 apply/esym/paddR_eq0.
   apply/mulR_ge0.
   exact/prob_ge0.
-  exact/DistBind_ge0.
+  exact/Dist.ge0.
   apply/mulR_ge0.
   exact/prob_ge0.
-  exact/DistBind_ge0.
+  exact/Dist.ge0.
 split.
 - rewrite mulR_eq0; right.
-  rewrite fsfunE; case: ifPn => // abs.
+  rewrite DistBind.dE; case: ifPn => // abs.
   exfalso.
   move/negP : Hb0; apply.
   case/bigfcupP : abs => dB.
@@ -671,7 +665,7 @@ split.
   apply/fsubsetP.
   by apply/incl_finsupp_conv2dist.
 - (* TODO: copype *) rewrite mulR_eq0; right.
-  rewrite fsfunE; case: ifPn => // abs.
+  rewrite DistBind.dE; case: ifPn => // abs.
   exfalso.
   move/negP : Hb0; apply.
   case/bigfcupP : abs => dB.
