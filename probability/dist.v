@@ -747,7 +747,9 @@ Lemma f0 a : 0 <= f a.
 Proof. rewrite /f ffunE; exact: Dist.ge0. Qed.
 Lemma f1 : \sum_(a in [finType of finsupp P]) f a = 1.
 Proof.
-Admitted.
+rewrite -(Dist.f1 P) /= big_seq_fsetE /=.
+by apply eq_bigr => i _; rewrite /f ffunE.
+Qed.
 Definition d : dist [finType of finsupp P] := proba.makeDist f0 f1.
 End def.
 End Dist_crop0'.
