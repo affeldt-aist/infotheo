@@ -752,7 +752,7 @@ Lemma s_inj : {in finsupp P &, injective s}.
 Proof. exact (can_in_inj H). Qed.
 Lemma r_surj : forall b : B, b \in finsupp P -> exists a : A, b = r a.
 Proof. by move=> b bP; exists (s b); rewrite (H bP). Qed.
-Definition f := [fsfun b in D => P (r b) | 0].
+Let f := [fsfun a in D => P (r a) | 0].
 Lemma f0 a : a \in finsupp f -> 0 < f a.
 Proof.
 rewrite mem_finsupp /f fsfunE.
@@ -760,7 +760,49 @@ case: ifPn => Ha; last by rewrite eqxx.
 rewrite -mem_finsupp.
 apply/Dist.gt0.
 Qed.
+Lemma DsuppE : D = finsupp f.
+Proof.
+apply fsetP => a.
+rewrite /f /D !mem_finsupp !fsfunE.
+case: ifPn.
+- case/imfsetP => b Hb ->.
+  rewrite H //.
+  by rewrite mem_finsupp in Hb.
+- by rewrite eqxx.
+Qed.
 Lemma f1 : \sum_(a <- finsupp f) f a = 1.
+Proof.
+rewrite -DsuppE /D.
+rewrite big_imfset /=; last exact: s_inj.
+rewrite (eq_bigr P).
+  exact: Dist.f1.
+move=> i _.
+rewrite /f fsfunE /D.
+case/boolP: (P i != 0).
++ move=> Hi; case: ifPn => Hsi.
+  * by rewrite H // mem_finsupp.
+  * move/imfsetP: Hsi; elim.
+    exists i => //.
+    by rewrite mem_finsupp.
++ rewrite negbK => /eqP Hi.
+  case: ifPn => //.
+  case/imfsetP => j.
+  rewrite mem_finsupp => Hj.
+  rewrite H //.
+
+(*      
+set tmp := BIG_F.
+rewrite (eq_big (fun a => r a \in finsupp P) (fun a => P (r a))); first last.
+- move=> i; rewrite /f mem_finsupp fsfunE.
+  case: ifPn => //; by rewrite eqxx.
+- move=> a.
+  rewrite /f !mem_finsupp fsfunE /D.
+  case: ifPn => // => /imfsetP.
+  case /boolP: (P (r a) != 0).
+  + move=> Ha; elim.
+    exists (r a).
+      by rewrite mem_finsupp.
+*)
 Admitted.
 Definition d := makeDist f0 f1.
 End def.
