@@ -463,6 +463,28 @@ Lemma dist_of_DistDE : dist_of_Dist.D d = [finType of finsupp d].
 Proof. reflexivity. Qed.
 End dist_of_Dist_lemmas.
 
+Module dist_of_finDist.
+Section def.
+Variable (A : finType) (P : Dist A).
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Local Open Scope reals_ext_scope.
+Definition f := [ffun d : A => P d].
+Lemma f0 b : 0 <= f b. Proof. rewrite ffunE; by apply Dist.ge0. Qed.
+Lemma f1 : \sum_(b in A) f b = 1.
+Proof.
+rewrite -(Dist.f1 P) big_seq_fsetE /=.
+(* apply eq_bigr => a; by rewrite ffunE. *)
+Admitted.
+Definition d : dist A := locked (proba.makeDist f0 f1).
+End def.
+Module Exports.
+Notation dist_of_finDist := d.
+End Exports.
+End dist_of_finDist.
+Export dist_of_finDist.Exports.
+
+
 Module Convn_indexed_over_finType.
 Section def.
 Local Open Scope R_scope.

@@ -730,9 +730,12 @@ Qed.
 Lemma f1 : \sum_(a <- finsupp f) f a = 1.
 Proof.
 rewrite -(Dist.f1 P).
-rewrite big_seq_fsetE /=.
+set tmp := BIG_F.
+symmetry.
+set r := BIG_F.
+rewrite big_seq.
 Admitted.
-Definition d := makeDist f0 f1.
+Definition d : Dist.t [finType of finsupp P] := makeDist f0 f1.
 End def.
 End Dist_crop0.
 
@@ -811,5 +814,6 @@ case/boolP: (P i != 0) => Hi.
 - by move: Hi; rewrite negbK => /eqP.
 Qed.
 Definition d := makeDist f0 f1.
+Check d.
 End def.
 End Dist_lift_supp.
