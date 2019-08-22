@@ -718,12 +718,19 @@ Section def.
 Local Open Scope fset_scope.
 Local Open Scope R_scope.
 Variables (A : choiceType) (P : Dist A).
-Definition D := [fset a : finsupp P | fsval a \in finsupp P].
-Definition f : {fsfun finsupp P -> R with 0} :=
-  [fsfun a in D => P (fsval a) | 0].
+Definition D := [fset a : finsupp P | true].
+Definition f' : {ffun finsupp P -> R} := [ffun a => P (fsval a)].
+Definition f : {fsfun finsupp P -> R with 0} := [fsfun x in D  => f' x | 0].
 Lemma f0 a : a \in finsupp f -> 0 < f a.
-Admitted.
+Proof.
+move=> _; rewrite /f fsfunE ifT.
+  rewrite /f' ffunE; exact: Dist.gt0.
+by rewrite /D inE /= inE.
+Qed.
 Lemma f1 : \sum_(a <- finsupp f) f a = 1.
+Proof.
+rewrite -(Dist.f1 P).
+rewrite big_seq_fsetE /=.
 Admitted.
 Definition d := makeDist f0 f1.
 End def.
