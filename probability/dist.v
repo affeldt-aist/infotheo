@@ -390,6 +390,18 @@ rewrite boolp.funeqE => d; rewrite /Distfmap /= DistBindA; congr DistBind.d.
 by rewrite boolp.funeqE => a; rewrite DistBind1f.
 Qed.
 
+Lemma supp_Distfmap_Dist1 (A : choiceType) d :
+  finsupp (Distfmap (@Dist1.d A) d) = [fset Dist1.d x | x in finsupp d]%fset.
+Proof.
+rewrite /Distfmap DistBind.supp; apply/fsetP => d'.
+apply/bigfcupP/imfsetP => [[D]|].
+  rewrite andbT => /imfsetP[a /=]; rewrite imfset_id => ad ->{D}.
+  by rewrite Dist1.supp inE => /eqP ->{d'}; exists a.
+case=> a /= ad -> {d'}; exists (Dist1.d (Dist1.d a)).
+  rewrite andbT; apply/imfsetP; exists a => //=; by rewrite imfset_id.
+by rewrite Dist1.supp inE.
+Qed.
+
 Module ConvDist.
 Section def.
 Local Open Scope proba_scope.
