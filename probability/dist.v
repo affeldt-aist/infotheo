@@ -821,7 +821,8 @@ case/boolP: (P i != 0) => Hi.
   by rewrite mem_finsupp.
 - by move: Hi; rewrite negbK => /eqP.
 Qed.
-Definition d := makeDist f0 f1.
-Check d.
+Definition d := locked (makeDist f0 f1).
+Lemma dE a : d a = if a \in [fset s b | b in finsupp P] then P (r a) else 0.
+Proof. by rewrite /d; unlock => /=; rewrite fsfunE. Qed.
 End def.
 End Dist_lift_supp.
