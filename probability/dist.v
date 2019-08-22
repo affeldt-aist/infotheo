@@ -28,6 +28,13 @@ case: P => /= f /andP[/allP H _].
 case/boolP : (a \in finsupp f) => [/H/ltRP/ltRW //|].
 rewrite memNfinsupp => /eqP ->; exact/leRR.
 Qed.
+Lemma gt0 (P : t) a : a \in finsupp P -> (0 < P a)%R.
+Proof.
+rewrite mem_finsupp => Pa.
+apply/ltRP.
+rewrite lt0R Pa.
+apply/leRP/ge0.
+Qed.
 Lemma f1 (P : t) : \sum_(a <- finsupp P) P a = 1.
 Proof. by case: P => P /= /andP[_ /eqP]. Qed.
 End dist.
@@ -742,7 +749,12 @@ Lemma r_surj : forall b : B, b \in finsupp P -> exists a : A, b = r a.
 Proof. by move=> b bP; exists (s b); rewrite (H bP). Qed.
 Definition f := [fsfun b in D => P (r b) | 0].
 Lemma f0 a : a \in finsupp f -> 0 < f a.
-Admitted.
+Proof.
+rewrite mem_finsupp /f fsfunE.
+case: ifPn => Ha; last by rewrite eqxx.
+rewrite -mem_finsupp.
+apply/Dist.gt0.
+Qed.
 Lemma f1 : \sum_(a <- finsupp f) f a = 1.
 Admitted.
 Definition d := makeDist f0 f1.
