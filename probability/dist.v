@@ -746,12 +746,12 @@ Section def.
 Local Open Scope fset_scope.
 Local Open Scope R_scope.
 Variables (A B : choiceType) (r : A -> B) (P : Dist B)
-          (s : B -> A) (H : {in finsupp P, cancel s r}).
+          (s : B -> A) (H : cancel s r).
 Definition D := [fset s b | b in finsupp P].
-Lemma s_inj : {in finsupp P &, injective s}.
-Proof. exact (can_in_inj H). Qed.
-Lemma r_surj : forall b : B, b \in finsupp P -> exists a : A, b = r a.
-Proof. by move=> b bP; exists (s b); rewrite (H bP). Qed.
+Lemma s_inj : injective s.
+Proof. exact (can_inj H). Qed.
+Lemma r_surj : forall b : B, exists a : A, b = r a.
+Proof. by move=> b; exists (s b); rewrite H. Qed.
 Let f := [fsfun a in D => P (r a) | 0].
 Lemma f0 a : a \in finsupp f -> 0 < f a.
 Proof.
@@ -773,37 +773,18 @@ Qed.
 Lemma f1 : \sum_(a <- finsupp f) f a = 1.
 Proof.
 rewrite -DsuppE /D.
-rewrite big_imfset /=; last exact: s_inj.
+rewrite big_imfset /=; last by move=> i j _ _; exact: s_inj.
 rewrite (eq_bigr P).
   exact: Dist.f1.
 move=> i _.
-rewrite /f fsfunE /D.
-case/boolP: (P i != 0).
-+ move=> Hi; case: ifPn => Hsi.
-  * by rewrite H // mem_finsupp.
-  * move/imfsetP: Hsi; elim.
-    exists i => //.
-    by rewrite mem_finsupp.
-+ rewrite negbK => /eqP Hi.
-  case: ifPn => //.
-  case/imfsetP => j.
-  rewrite mem_finsupp => Hj.
-  rewrite H //.
-
-(*      
-set tmp := BIG_F.
-rewrite (eq_big (fun a => r a \in finsupp P) (fun a => P (r a))); first last.
-- move=> i; rewrite /f mem_finsupp fsfunE.
-  case: ifPn => //; by rewrite eqxx.
-- move=> a.
-  rewrite /f !mem_finsupp fsfunE /D.
-  case: ifPn => // => /imfsetP.
-  case /boolP: (P (r a) != 0).
-  + move=> Ha; elim.
-    exists (r a).
-      by rewrite mem_finsupp.
-*)
-Admitted.
+rewrite /f fsfunE /D H.
+case: ifPn => //.
+case/boolP: (P i != 0) => Hi.
+- move/imfsetP; elim.
+  exists i => //.
+  by rewrite mem_finsupp.
+- by move: Hi; rewrite negbK => /eqP.
+Qed.
 Definition d := makeDist f0 f1.
 End def.
 End Dist_lift_supp.
