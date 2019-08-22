@@ -113,10 +113,10 @@ Proof. rewrite mem_finsupp fsfunE inE; case: ifPn => //; by rewrite eqxx. Qed.
 Lemma f1 : \sum_(b <- finsupp f) f b = 1.
 Proof. by rewrite suppf big_seq_fset1 /f fsfunE inE eqxx. Qed.
 Definition d : Dist A := locked (makeDist f0 f1).
-Lemma dE a0 : d a0 = f a0.
-Proof. by rewrite /d; unlock. Qed.
+Lemma dE a0 : d a0 = if a0 \in D then 1 else 0.
+Proof. by rewrite /d; unlock; rewrite fsfunE. Qed.
 Lemma supp : finsupp d = D.
-Proof. by rewrite -suppf; apply/fsetP => b; rewrite !mem_finsupp dE. Qed.
+Proof. by rewrite -suppf; apply/fsetP => b; rewrite !mem_finsupp dE fsfunE. Qed.
 End def.
 End Dist1.
 
@@ -200,17 +200,16 @@ apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => b.
 rewrite DistBind.dE; case: ifPn => [|H].
   case/bigfcupP => /= d; rewrite andbT.
   case/imfsetP => a0 /= /imfsetP[a1 /=].
-  rewrite mem_finsupp Dist1.dE /Dist1.f fsfunE inE.
-  case: ifPn; last by rewrite eqxx.
+  rewrite mem_finsupp Dist1.dE inE; case: ifPn; last by rewrite eqxx.
   move/eqP=> ->{a1} _ ->{a0} ->{d}.
   rewrite mem_finsupp => fa1b.
-  rewrite Dist1.supp big_seq_fsetE big_fset1 Dist1.dE /Dist1.f fsfunE /= inE eqxx.
+  rewrite Dist1.supp big_seq_fsetE big_fset1 Dist1.dE /= inE eqxx.
   by rewrite /multiplication /mul_notation mul1R.
 case/boolP : ((f a) b == R0 :> R) => [/eqP ->//|fab0].
 case/bigfcupP : H.
 exists (f a); last by rewrite mem_finsupp.
 rewrite andbT; apply/imfsetP; exists a => //.
-rewrite inE mem_finsupp Dist1.dE /Dist1.f fsfunE inE eqxx.
+rewrite inE mem_finsupp Dist1.dE inE eqxx.
 rewrite /one_notation /zero_notation /zero /one; exact/eqP.
 Qed.
 
@@ -222,19 +221,19 @@ case: ifPn => [|H].
   case/bigfcupP => /= d; rewrite andbT.
   case/imfsetP => /= a /imfsetP[a0].
   rewrite !mem_finsupp => pa00 ->{a} ->{d}.
-  rewrite Dist1.dE /Dist1.f fsfunE inE; case: ifPn => [/eqP ->{b} _|]; last by rewrite eqxx.
-  rewrite (big_fsetD1 a0) ?mem_finsupp //= Dist1.dE /= /Dist1.f fsfunE inE eqxx /=.
+  rewrite Dist1.dE inE; case: ifPn => [/eqP ->{b} _|]; last by rewrite eqxx.
+  rewrite (big_fsetD1 a0) ?mem_finsupp //= Dist1.dE inE eqxx /=.
   rewrite big1_fset ?addR0 //.
     by rewrite /one /one_notation /multiplication /mul_notation mulR1.
   move=> a.
   rewrite !inE => /andP[aa0].
   rewrite mem_finsupp => pa0 _.
-  rewrite Dist1.dE /Dist1.f fsfunE inE eq_sym (negbTE aa0).
+  rewrite Dist1.dE inE eq_sym (negbTE aa0).
   by rewrite /zero /zero_notation /multiplication /mul_notation mulR0.
 case/boolP : (p b == R0 :> R) => [/eqP ->//|pb0].
 case/bigfcupP : H.
 exists (Dist1.d b); last first.
-  rewrite mem_finsupp Dist1.dE /Dist1.f fsfunE inE eqxx.
+  rewrite mem_finsupp Dist1.dE inE eqxx.
   by apply/eqP; rewrite /one /zero /one_notation /zero_notation.
 rewrite andbT; apply/imfsetP; exists b => //.
 by rewrite !(inE,mem_finsupp).

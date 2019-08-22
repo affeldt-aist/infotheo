@@ -424,13 +424,11 @@ End misc_scaled.
 
 Section misc_Dist.
 Local Open Scope R_scope.
-Lemma eq_Dist1 (A : choiceType) (x y : A) : Dist1.d x = Dist1.d y -> x = y.
+Lemma Dist1_inj (C : choiceType) (a b : C) : Dist1.d a = Dist1.d b -> a = b.
 Proof.
-move/(congr1 (fun (d : Dist A) => d x)).
-rewrite !Dist1.dE /Dist1.f /= !fsfunE !inE eqxx=> H.
-apply/eqP/negbNE/negP=> /negbTE xny.
-move: H; rewrite xny.
-exact: R1_neq_R0.
+move/eqP => ab; apply/eqP; apply: contraTT ab => ab.
+apply/eqP => /(congr1 (fun x : Dist.t _ => x a)).
+rewrite !Dist1.dE !inE eqxx (negbTE ab); exact: R1_neq_R0.
 Qed.
 End misc_Dist.
 End misc.
