@@ -736,6 +736,22 @@ Definition d := makeDist f0 f1.
 End def.
 End Dist_crop0.
 
+Module Dist_crop0'.
+Section def.
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Variables (A : choiceType) (P : Dist A).
+Definition D := [fset a : finsupp P | true].
+Definition f : {ffun finsupp P -> R} := [ffun a => P (fsval a)].
+Lemma f0 a : 0 <= f a.
+Proof. rewrite /f ffunE; exact: Dist.ge0. Qed.
+Lemma f1 : \sum_(a in [finType of finsupp P]) f a = 1.
+Proof.
+Admitted.
+Definition d : dist [finType of finsupp P] := proba.makeDist f0 f1.
+End def.
+End Dist_crop0'.
+
 Section misc.
 Local Open Scope fset_scope.
 Local Open Scope R_scope.
