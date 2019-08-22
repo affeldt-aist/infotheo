@@ -700,3 +700,51 @@ Definition Dist_convMixin :=
   (@Conv2Dist.convA' A).
 Canonical Dist_convType := ConvexSpace.Pack Dist_convMixin.
 End Dist_convex_space.
+
+Module Dist_crop0.
+Section def.
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Variables (A : choiceType) (P : Dist A).
+Definition D := [fset a : finsupp P | fsval a \in finsupp P].
+Definition f : {fsfun finsupp P -> R with 0} :=
+  [fsfun a in D => P (fsval a) | 0].
+Lemma f0 a : a \in finsupp f -> 0 < f a.
+Admitted.
+Lemma f1 : \sum_(a <- finsupp f) f a = 1.
+Admitted.
+Definition d := makeDist f0 f1.
+End def.
+End Dist_crop0.
+
+Section misc.
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Variables (A : choiceType) (d : Dist A).
+
+Lemma Dist_supp_neq0 : finsupp d != fset0.
+Proof.
+apply/eqP=> H; move: (Dist.f1 d); rewrite H big_nil => H'.
+by move:R1_neq_R0; rewrite -H'.
+Qed.
+End misc.
+
+Module Dist_lift_supp.
+Section def.
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Variables (A B : choiceType) (r : A -> B) (P : Dist B)
+          (s : B -> A) (H : {in finsupp P, cancel s r}).
+Definition D := [fset s b | b in finsupp P].
+Lemma s_inj : {in finsupp P &, injective s}.
+Proof. exact (can_in_inj H). Qed.
+Lemma r_surj : forall b : B, b \in finsupp P -> exists a : A, b = r a.
+Proof. by move=> b bP; exists (s b); rewrite (H bP). Qed.
+Definition f := [fsfun b in D => P (r b) | 0].
+Lemma f0 a : a \in finsupp f -> 0 < f a.
+Admitted.
+Lemma f1 : \sum_(a <- finsupp f) f a = 1.
+Admitted.
+Definition d := makeDist f0 f1.
+End def.
+End Dist_lift_supp.
