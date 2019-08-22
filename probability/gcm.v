@@ -473,10 +473,14 @@ Definition f := [ffun d : A => P d].
 Lemma f0 b : 0 <= f b. Proof. rewrite ffunE; by apply Dist.ge0. Qed.
 Lemma f1 : \sum_(b in A) f b = 1.
 Proof.
-rewrite -(Dist.f1 P) big_seq_fsetE /=.
-(* apply eq_bigr => a; by rewrite ffunE. *)
-Admitted.
+rewrite -(Dist.f1 P) (bigID (fun x => x \in finsupp P)) /=.
+rewrite [X in _ + X = _](_ : _ = 0) ?addR0.
+  by rewrite big_uniq /= ?fset_uniq //; apply eq_bigr => i _; rewrite ffunE.
+by rewrite big1 // => a; rewrite mem_finsupp negbK ffunE => /eqP.
+Qed.
 Definition d : dist A := locked (proba.makeDist f0 f1).
+Lemma dE a : d a = P a.
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
 Module Exports.
 Notation dist_of_finDist := d.
