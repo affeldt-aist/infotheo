@@ -1502,6 +1502,7 @@ Implicit Types (x y z : T) (A B D X : {set T}) (P Q : {set {set T}}).
 Implicit Types (J : pred I) (F : I -> {set T}).
 Section BigOps.
 Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
+(* TODO: rename: clash with classical_sets *)
 Lemma bigsetU (F0 F1 : {set T}) E :
     [disjoint F0 & F1] ->
   \big[op/idx]_(x in F0 :|: F1) E x =
