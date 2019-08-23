@@ -720,6 +720,33 @@ Canonical oplus_conv_set_neset (X Y : neset L) :=
 Canonical iter_conv_set_neset (X : neset L) (n : nat) :=
   NESet.Pack (NESet.Class (iter_conv_set_neq0 X n)).
 
+Lemma conv_pt_set_monotone (p : prob) (x : L) (Y Y' : set L) :
+  Y `<=` Y' -> conv_pt_set p x Y `<=` conv_pt_set p x Y'.
+Proof. by move=> YY' u [] y /YY' Y'y <-; exists y. Qed.
+Lemma conv_set_monotone (p : prob) (X Y Y' : set L) :
+  Y `<=` Y' -> conv_set p X Y `<=` conv_set p X Y'.
+Proof. by move/conv_pt_set_monotone=> YY' u [] x Xx /YY' HY'; exists x. Qed.
+Lemma oplus_conv_set_monotone (X Y Y' : set L) :
+  Y `<=` Y' -> oplus_conv_set X Y `<=` oplus_conv_set X Y'.
+Proof. by move/conv_set_monotone=> YY' u [] p _ /YY' HY'; exists p. Qed.
+Lemma iter_monotone_conv_set (X : neset L) (m : nat) :
+  forall n, (m <= n)%N -> iter_conv_set X m `<=` iter_conv_set X n .
+Proof.
+elim: m.
+- move=> n _.
+  case: n => // n.
+  rewrite iter0_conv_set iterS_conv_set.
+  by exists `Pr 1 => //; rewrite conv1_set.
+- move=> m IHm.
+  case => // n /(IHm _) mn.
+  rewrite iterS_conv_set=> a [] p _ H.
+  exists p => //.
+  by move: (@conv_set_monotone p X _ _ mn) => /(_ a); apply.
+Qed.  
+Lemma iter_bigcup_conv_set (X : neset L) (n : nat) :
+  iter_conv_set X n `<=` \bigcup_(i in natset) iter_conv_set X i.
+Proof. by move=> a H; exists n. Qed.
+
 Lemma iter_conv_set_superset (X : neset L) n : X `<=` iter_conv_set X n .
 Proof.
 move=> x Xx; elim: n => // n IHn; rewrite iterS_conv_set.
@@ -749,15 +776,6 @@ case/boolP: (d ord0 == 1).
   move=> u [] i _ <-.
   by apply/gX/imageP.
 Qed.
-Lemma conv_pt_set_monotone (p : prob) (x : L) (Y Y' : set L) :
-  Y `<=` Y' -> conv_pt_set p x Y `<=` conv_pt_set p x Y'.
-Proof. by move=> YY' u [] y /YY' Y'y <-; exists y. Qed.
-Lemma conv_set_monotone (p : prob) (X Y Y' : set L) :
-  Y `<=` Y' -> conv_set p X Y `<=` conv_set p X Y'.
-Proof. by move/conv_pt_set_monotone=> YY' u [] x Xx /YY' HY'; exists x. Qed.
-Lemma oplus_conv_set_monotone (X Y Y' : set L) :
-  Y `<=` Y' -> oplus_conv_set X Y `<=` oplus_conv_set X Y'.
-Proof. by move/conv_set_monotone=> YY' u [] p _ /YY' HY'; exists p. Qed.
 Lemma oplus_convC_set (X Y : set L) :
   oplus_conv_set X Y = oplus_conv_set Y X.
 Proof.
