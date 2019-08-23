@@ -473,6 +473,16 @@ by move: H; rewrite addRC => /Rplus_eq_0_l ->.
 Qed.
 Arguments paddR_eq0 {x} {y}.
 
+Lemma paddR_neq0 (p q : R) (p0 : 0 <= p) (q0 : 0 <= q) : p + q != 0 <-> p != 0 \/ q != 0.
+Proof.
+split => [H | /orP].
+- apply/orP; rewrite -negb_and; apply: contra H => /andP[/eqP -> /eqP ->].
+  by rewrite addR0.
+- rewrite -negb_and; apply: contra => /eqP/paddR_eq0.
+  case/(_ p0)/(_ q0) => -> ->; by rewrite eqxx.
+Qed.
+Arguments paddR_neq0 {p} {q}.
+
 Lemma leR_pmul2l m n1 n2 : 0 < m -> (m * n1 <= m * n2) <-> (n1 <= n2).
 Proof.
 move=> m0; split; [exact: Rmult_le_reg_l | exact/Rmult_le_compat_l/ltRW].

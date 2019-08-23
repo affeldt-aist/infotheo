@@ -120,6 +120,13 @@ Proof. by rewrite -suppf; apply/fsetP => b; rewrite !mem_finsupp dE fsfunE. Qed.
 End def.
 End Dist1.
 
+Lemma Dist1_inj (C : choiceType) (a b : C) : Dist1.d a = Dist1.d b -> a = b.
+Proof.
+move/eqP => ab; apply/eqP; apply: contraTT ab => ab.
+apply/eqP => /(congr1 (fun x : Dist.t _ => x a)).
+rewrite !Dist1.dE !inE eqxx (negbTE ab); exact: R1_neq_R0.
+Qed.
+
 Module DistBind.
 Section def.
 Local Open Scope fset_scope.
@@ -826,3 +833,58 @@ Lemma dE a : d a = if a \in [fset s b | b in finsupp P] then P (r a) else 0.
 Proof. by rewrite /d; unlock => /=; rewrite fsfunE. Qed.
 End def.
 End Dist_lift_supp.
+
+Module dist_of_Dist.
+Section def.
+Variable (A : choiceType) (P : Dist A).
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Local Open Scope reals_ext_scope.
+Definition D := [finType of finsupp P] : finType.
+Definition f := [ffun d : D => P (fsval d)].
+Lemma f0 b : 0 <= f b. Proof. rewrite ffunE; by apply Dist.ge0. Qed.
+Lemma f1 : \sum_(b in D) f b = 1.
+Proof.
+rewrite -(Dist.f1 P) big_seq_fsetE /=.
+apply eq_bigr => a; by rewrite ffunE.
+Qed.
+Definition d : dist D := locked (proba.makeDist f0 f1).
+End def.
+Module Exports.
+Notation dist_of_Dist := d.
+End Exports.
+End dist_of_Dist.
+Export dist_of_Dist.Exports.
+
+Section dist_of_Dist_lemmas.
+Variable (A : choiceType) (d : Dist A).
+Lemma dist_of_DistE i : dist_of_Dist d i = d (fsval i).
+Proof. by rewrite /dist_of_Dist; unlock; rewrite ffunE; reflexivity. Qed.
+Lemma dist_of_DistDE : dist_of_Dist.D d = [finType of finsupp d].
+Proof. reflexivity. Qed.
+End dist_of_Dist_lemmas.
+
+Module dist_of_finDist.
+Section def.
+Variable (A : finType) (P : Dist A).
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Local Open Scope reals_ext_scope.
+Definition f := [ffun d : A => P d].
+Lemma f0 b : 0 <= f b. Proof. rewrite ffunE; by apply Dist.ge0. Qed.
+Lemma f1 : \sum_(b in A) f b = 1.
+Proof.
+rewrite -(Dist.f1 P) (bigID (fun x => x \in finsupp P)) /=.
+rewrite [X in _ + X = _](_ : _ = 0) ?addR0.
+  by rewrite big_uniq /= ?fset_uniq //; apply eq_bigr => i _; rewrite ffunE.
+by rewrite big1 // => a; rewrite mem_finsupp negbK ffunE => /eqP.
+Qed.
+Definition d : dist A := locked (proba.makeDist f0 f1).
+Lemma dE a : d a = P a.
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+End def.
+Module Exports.
+Notation dist_of_finDist := d.
+End Exports.
+End dist_of_finDist.
+Export dist_of_finDist.Exports.
