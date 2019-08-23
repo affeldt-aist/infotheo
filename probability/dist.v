@@ -736,37 +736,16 @@ by rewrite /D inE /= inE.
 Qed.
 Lemma f1 : \sum_(a <- finsupp f) f a = 1.
 Proof.
-rewrite [LHS](partition_big_imfset _ (@fsval _ (finsupp P))) /=.
 rewrite -(Dist.f1 P).
-have -> : [fset fsval x | x in finsupp f] = finsupp P.
-  apply/fsetP => x.
-  symmetry.
-  case: imfsetP.
-  - case=> a Ha ->.
-    move: Ha; rewrite !mem_finsupp fsfunE ffunE.
-    by rewrite ifT // inE.
-  - case/boolP: (x \in finsupp P) => // Hx.
-    elim.
-    exists (FSetSub Hx) => //.
-    rewrite mem_finsupp fsfunE ffunE inE /=.
-    by rewrite mem_finsupp in Hx.
-apply eq_bigr => a _.
-rewrite big_fset_condE /=.
-set s := [fset i | i in finsupp f & fsval i == a].
-case/boolP: (a \in finsupp P) => Ha.
-- set i := FSetSub Ha.
-  have -> : s = [fset i].
-    apply/fsetP => j.
-    rewrite !inE mem_finsupp fsfunE inE ffunE /=.
-    by move: (fsvalP j); rewrite mem_finsupp => ->.
-  by rewrite big_seq_fset1 fsfunE ffunE inE.
-- have -> : s = fset0.
-    apply/fsetP => j.
-    rewrite !inE.
-    case/boolP: (fsval j == a :> A) => Hj; rewrite (andbT,andbF) //.
-    rewrite mem_finsupp fsfunE inE ffunE /= (eqP Hj).
-    by rewrite -mem_finsupp (negbTE Ha).
-  move: Ha; by rewrite mem_finsupp negbK big_seq_fset0 => /eqP ->.
+rewrite !big_seq_fsetE /=.
+have hP (a : [finType of finsupp P]) : a \in finsupp f.
+  by rewrite mem_finsupp fsfunE ffunE inE -mem_finsupp fsvalP.
+pose h a := FSetSub (hP a).
+rewrite (reindex h) /=.
+  apply eq_bigr => i _.
+  by rewrite fsfunE ffunE inE.
+exists (@fsval _ _) => //= -[a] *.
+by apply val_inj.
 Qed.
 Definition d : Dist.t [finType of finsupp P] := makeDist f0 f1.
 End def.
