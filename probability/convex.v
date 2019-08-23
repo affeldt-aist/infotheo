@@ -189,21 +189,6 @@ Proof. by rewrite /d'; unlock; rewrite ffunE. Qed.
 End def.
 End CodomDDist.
 
-Lemma r_of_pq_is_r (p q r s : prob) : r != `Pr 0 -> s != `Pr 0 ->
-  p = (r * s)%R :> R -> s.~ = (p.~ * q.~)%R ->
-  [r_of p, q] = r.
-Proof.
-move=> r0 s0 H1 H2.
-apply prob_ext => /=.
-rewrite r_of_pqE eqR_divr_mulr; last first.
-  by rewrite s_of_pqE -H2 onemK.
-rewrite (p_is_rs _ q) /=.
-rewrite {1}s_of_pqE -H2 onemK.
-rewrite r_of_pqE s_of_pqE.
-rewrite -H2 onemK.
-by rewrite /Rdiv -mulRA mulVR ?mulR1.
-Qed.
-
 Module ConvexSpace.
 Record class_of (T : Type) : Type := Class {
   conv : T -> T -> prob -> T where "a <| p |> b" := (conv a b p);

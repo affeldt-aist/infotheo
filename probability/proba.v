@@ -724,6 +724,15 @@ suff : [s_of p, q] != 0 :> R by [].
 by rewrite prob_gt0; apply s_of_gt0.
 Qed.
 
+Lemma r_of_pq_is_r (p q r s : prob) : r != `Pr 0 -> s != `Pr 0 ->
+  p = r * s :> R -> s.~ = p.~ * q.~ -> [r_of p, q] = r.
+Proof.
+move=> r0 s0 H1 H2; apply prob_ext => /=.
+rewrite r_of_pqE eqR_divr_mulr; last by rewrite s_of_pqE -H2 onemK.
+rewrite (p_is_rs _ q) /= {1}s_of_pqE -H2 onemK r_of_pqE s_of_pqE.
+by rewrite -H2 onemK /Rdiv -mulRA mulVR ?mulR1.
+Qed.
+
 Lemma p_of_rs_prob (r s : prob) : 0 <= r * s <= 1.
 Proof.
 move: r s => -[r [r0 r1]] [s [s0 s1]] /=.
