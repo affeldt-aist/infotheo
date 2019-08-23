@@ -120,9 +120,9 @@ Proof. by rewrite -suppf; apply/fsetP => b; rewrite !mem_finsupp dE fsfunE. Qed.
 End def.
 End Dist1.
 
-Lemma Dist1_inj (C : choiceType) (a b : C) : Dist1.d a = Dist1.d b -> a = b.
+Lemma Dist1_inj (C : choiceType) : injective (@Dist1.d C).
 Proof.
-move/eqP => ab; apply/eqP; apply: contraTT ab => ab.
+move=> a b /eqP ab; apply/eqP; apply: contraTT ab => ab.
 apply/eqP => /(congr1 (fun x : Dist.t _ => x a)).
 rewrite !Dist1.dE !inE eqxx (negbTE ab); exact: R1_neq_R0.
 Qed.

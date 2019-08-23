@@ -68,12 +68,8 @@ apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> x.
 - case/imfsetP => i /= iP ->; apply/bigfcupP; exists i; rewrite ?andbT //.
   by apply/imfsetP; exists (f i); rewrite ?inE.
 Qed.
-Lemma eq_fset1 (T : choiceType) (x y : T) : [fset x] = [fset y] -> x = y.
-Proof.
-move/eqP; rewrite eqEfsubset => /andP [] /fsubsetP /(_ x).
-rewrite !inE=> H _.
-by apply/eqP/H.
-Qed.
+Lemma set1_inj (C : choiceType) : injective (@set1 C).
+Proof. by move=> a b; rewrite /set1 => /(congr1 (fun f => f a)) <-. Qed.
 End misc_fset.
 
 Section misc_classical_sets.
