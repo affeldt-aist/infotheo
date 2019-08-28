@@ -484,7 +484,7 @@ Lemma convnE n (g : 'I_n.+1 -> A) (d : {dist 'I_n.+1}) (i1 : d ord0 != 1%R) :
 Proof.
 rewrite /=; case: eqVneq => /= H.
 exfalso; by rewrite H eqxx in i1.
-by rewrite (ProofIrrelevance.proof_irrelevance _ H i1).
+by rewrite (boolp.Prop_irrelevance H i1).
 Qed.
 
 Lemma convn2E (g : 'I_2 -> A) (d : {dist 'I_2}) :

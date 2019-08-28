@@ -1,13 +1,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
-From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
-From mathcomp Require Import mxalgebra vector.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import matrix mxalgebra vector.
 Require Import hamming num_occ ssralg_ext f2 linearcode decoding channel_code.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
 
 (** * Repetition Codes *)
 
@@ -20,6 +14,10 @@ Import Prenex Implicits.
     number of errors that can be decoded using MD-decoding
 - Section majority_vote_decoding
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Import GRing.Theory.
 

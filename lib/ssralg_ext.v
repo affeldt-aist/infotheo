@@ -1,8 +1,6 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
-From mathcomp Require Import div choice fintype tuple finfun bigop prime ssralg.
-From mathcomp Require Import finset fingroup perm finalg zmodp matrix mxalgebra.
-From mathcomp Require Import vector.
+From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg zmodp.
+From mathcomp Require Import matrix mxalgebra vector.
 Require Import ssr_ext f2.
 
 (** * Additional lemmas about algebraic datatypes *)

@@ -1,20 +1,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
-From mathcomp Require Import fintype div prime bigop finset ssralg finalg.
-From mathcomp Require Import binomial poly polydiv cyclic perm finfun matrix.
-From mathcomp Require Import mxpoly vector mxalgebra zmodp.
-
+From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv cyclic.
+From mathcomp Require Import perm matrix mxpoly vector mxalgebra zmodp.
 Require Import ssr_ext ssralg_ext vandermonde linearcode.
 Require Import dft poly_decoding.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Import GRing.Theory.
-Local Open Scope ring_scope.
-
-Local Open Scope vec_ext_scope.
 
 (** * Generalized Reed-Solomon Codes *)
 
@@ -23,6 +11,14 @@ Local Open Scope vec_ext_scope.
 - Section GRS_rank.
 - Section reduced_key_equation.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Import GRing.Theory.
+Local Open Scope ring_scope.
+Local Open Scope vec_ext_scope.
 
 Module GRS.
 

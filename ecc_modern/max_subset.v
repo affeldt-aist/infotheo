@@ -1,10 +1,5 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
-From mathcomp Require Import choice fintype finfun bigop finset.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
+From mathcomp Require Import all_ssreflect.
 
 (** * Maximum Subset Satisfying some Property *)
 
@@ -12,6 +7,10 @@ Unset Printing Implicit Defensive.
 - Module maxsubset.
 - Section max_subset_satisfying_P.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
 
 Module Maxsubset.
 Section maxsubset.

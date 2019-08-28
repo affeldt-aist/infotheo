@@ -1,7 +1,6 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
-From mathcomp Require Import fintype tuple finfun bigop fingroup perm ssralg.
-From mathcomp Require Import zmodp matrix mxalgebra poly polydiv mxpoly.
+From mathcomp Require Import all_ssreflect fingroup perm ssralg zmodp.
+From mathcomp Require Import matrix mxalgebra poly polydiv mxpoly.
 Require Import ssralg_ext.
 
 (** * Additional lemmas about polynomials *)

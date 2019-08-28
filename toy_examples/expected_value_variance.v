@@ -1,5 +1,4 @@
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple finfun bigop.
+From mathcomp Require Import all_ssreflect.
 Require Import Reals Lra.
 From infotheo Require Import ssrR Reals_ext Rbigop proba.
 

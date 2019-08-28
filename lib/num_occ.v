@@ -1,7 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq path.
-From mathcomp Require Import choice fintype tuple finfun bigop finset binomial.
-From mathcomp Require Import fingroup perm zmodp ssralg.
+From mathcomp Require Import all_ssreflect fingroup perm zmodp ssralg.
 Require Import ssr_ext f2.
 
 (** * Number of occurrences *)

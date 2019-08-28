@@ -1,8 +1,6 @@
-Require ProofIrrelevance.
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
-From mathcomp Require Import fintype div bigop ssralg binomial finset fingroup.
-From mathcomp Require Import zmodp poly ssrnum matrix tuple finfun path ssrnum.
-From mathcomp Require Import binomial perm.
+From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
+From mathcomp Require Import matrix perm.
+From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext ssrR proba.
 
 (** * wip *)
@@ -780,10 +778,7 @@ Lemma tbeheadE (t : n.-tuple T) x : tbehead (cons_tuple x t) = t.
 Proof. by apply val_inj. Qed.
 
 Lemma cons_tuple_inj x : injective (@cons_tuple n T x).
-Proof.
-move=> [u Hu] [v Hv] /(f_equal (@tval _ _)) [] Heq.
-by apply val_inj.
-Qed.
+Proof. move=> [u Hu] [v Hv] [] ?; exact/val_inj. Qed.
 End tuple.
 
 Section rel.
@@ -800,7 +795,7 @@ Lemma subrel_refl : subrel r1 r1.
 Proof. by move=> a b. Qed.
 End rel.
 
-Section path.
+Section path_ext.
 Variable T : eqType.
 Variables g g' : rel T.
 
@@ -817,34 +812,16 @@ Qed.
 Variable f : T -> T.
 Hypothesis f_morph : forall x y, g x y = g' (f x) (f y).
 
-Lemma cycle_morph l : cycle g l = cycle g' (map f l).
+Lemma cycle_morph l : path.cycle g l = path.cycle g' (map f l).
 Proof.
 case:l => //= *; by rewrite -map_rcons (@map_path _ _ _ _ g pred0) // has_pred0.
 Qed.
-End path.
+End path_ext.
 
+(* TODO: move? *)
 Section injectivity.
-(* Copied from ldpc_algo_proof. Should share. *)
 Lemma inr_inj A B : injective (@inr A B).
 Proof. by move=> a b []. Qed.
-
-Lemma inl_inj A B : injective (@inl A B).
-Proof. by move=> a b []. Qed.
-
-Lemma imset_inj (A B : finType) (f : A -> B) :
-  injective f -> injective (fun s : {set A} => f @: s).
-Proof.
-move=> Hf x y Hxy.
-apply/setP => z.
-move/setP/(_ (f z)): Hxy.
-case Hy: (z \in y).
-  rewrite (mem_imset _ Hy) // => /imsetP [t Ht Htz].
-  by rewrite (Hf _ _ Htz).
-case Hx: (z \in x) => //.
-rewrite mem_imset // => /eqP.
-rewrite eq_sym => /eqP/imsetP [t Ht Htz].
-by rewrite (Hf _ _ Htz) Ht in Hy.
-Qed.
 End injectivity.
 
 Section enum_val.
@@ -1162,8 +1139,8 @@ case: eqP => Hn /=.
       destruct Hn, Hcn, He.
       subst ed1 ed2.
       rewrite (eq_irrelevance ec1 ec2).
-      have -> : ei1 = ei2 by apply ProofIrrelevance.proof_irrelevance.
-      have -> : eo1 = eo2 by apply ProofIrrelevance.proof_irrelevance.
+      have -> : ei1 = ei2 by apply boolp.Prop_irrelevance.
+      have -> : eo1 = eo2 by apply boolp.Prop_irrelevance.
       by [].
     apply ReflectF => [] [] _ _.
     by move/He.
@@ -2024,38 +2001,6 @@ set A := (X in #|pred_of_set X| = _).
 have -> : A = [set x : {set _} | x \subset ~: P & #|x| == k].
   apply/setP => ?; by rewrite !inE subsets_disjoint setCK andbC.
 by rewrite cards_draws cardsCp.
-(*set epred := (predC (mem P)).
-move: (card_draws (ordinal_finType #| epred |) k).
-rewrite -{1}(@card_imset _ _
-          (fun s : {set 'I_(#|epred|)} => (@enum_val _ epred) @: s));
-  last by apply imset_inj, enum_val_inj.
-rewrite card_ord -[in 'C(_,_)]cardsE cardsCp card_ord => <-.
-do !f_equal.
-apply/setP => x.
-rewrite inE.
-symmetry.
-apply/imsetP.
-case: ifP.
-  move/andP => [Hxk Hxp].
-  rewrite disjoint_subset in Hxp.
-  case e: (x == set0).
-    move /eqP in e.
-    rewrite e cards0 in Hxk.
-    exists set0.
-      by rewrite inE cards0.
-    by rewrite e imset0.
-  exists (enum_val @^-1: x).
-    rewrite inE on_card_preimset //.
-    apply enum_val_bij_on => //.
-    by rewrite e.
-  by apply enum_val_full.
-move=> Hx [y Hy Hxy].
-move/negbT/negP: Hx ; apply.
-rewrite Hxy card_imset; last by apply enum_val_inj.
-rewrite inE in Hy.
-rewrite Hy disjoint_subset /=.
-apply/subsetP => z /imsetP [t Ht ->].
-by apply enum_valP.*)
 Qed.
 
 Section tree_like_step.
@@ -2472,7 +2417,7 @@ rewrite /tree_like => /forallP/(_ (Ordinal Hlen)).
 have Hlen': size ((inl p, false)::p') = (Ordinal Hlen).+1 by [].
 move/forallP/(_ (tcast Hlen' (in_tuple ((inl p, false)::p')))).
 move/negP; apply.
-rewrite /ucycleb /= /cycle /=.
+rewrite /ucycleb /= /path.cycle /=.
 rewrite -(ssr_ext.eq_tcast (t:=in_tuple ((inl p, false)::p'))) in_tupleE //.
 rewrite rcons_path Hun.
 rewrite (sub_path (monotonic_step_rel p i.1 i.2) Hp') Hep /=.
@@ -2499,14 +2444,14 @@ Qed.
 
 Lemma no_cycle_in_known_ports (n : 'I_(#|port|*4)%nat) :
   forall px : (n.+1).-tuple ((port + port) * bool)%type,
-  cycle (graph_rel (step c p i.1 i.2)) px -> uniq px ->
+  path.cycle (graph_rel (step c p i.1 i.2)) px -> uniq px ->
   all (fun x : graph_node port * bool => known_port c x.1) px = false.
 Proof.
 move=> [px Hpx] /= Hcy Hun.
 apply/allP => /= Hin.
 move/'forall_forallP : Hc => /(_ n (Tuple Hpx)).
 rewrite /ucycleb Hun andbT /= => /negP; apply.
-rewrite /cycle /= in Hcy *.
+rewrite /path.cycle /= in Hcy *.
 destruct px as [|a px] => //.
 rewrite (@eq_path_in _ _ (graph_rel c) (fun x => known_port c x.1)) //
   in Hcy; last first.

@@ -1,9 +1,6 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg perm zmodp matrix path.
-From mathcomp Require Import fingraph.
-
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import matrix.
 Require Import ssr_ext.
 
 (** * Bipartite/acyclic graphs, cover/partition properties *)
@@ -77,7 +74,7 @@ by rewrite -{2}(odd_double_half (size t3)) ltnS leq_addl.
 Qed.
 
 Lemma bipartite_cycle_even cy :
-  colorable g kind -> cycle g cy -> ~~ odd (size cy).
+  colorable g kind -> path.cycle g cy -> ~~ odd (size cy).
 Proof.
 case: cy => //= h t Hcol Hcycle; apply/negP => abs.
 suff /Hcol : kind (last h t) = kind h.
@@ -122,7 +119,7 @@ rewrite /acyclic' /acyclic; split => [Hac | ].
   have /eqP H : last b (c :: p) == b by move/Hac : abcp; apply.
   by rewrite /= -H /= mem_last.
 move=> Hac a b p Ha.
-rewrite /cycle rcons_path => /andP [/=/andP[Hab Hp]].
+rewrite /path.cycle rcons_path => /andP [/=/andP[Hab Hp]].
 case : {Hp}(shortenP Hp) => p' Hp' Hun Hmem Hla.
 move: {Hac}(Hac [:: a, b & p']).
 rewrite /ucycle /cycle {3}[b :: p']lock /= -lock Hun Hab rcons_path Hp' Hla.
@@ -498,7 +495,7 @@ Lemma uniq_path_ucycle_extend_3 m n m' l n1 m'1
   ucycle g [:: m'1, n1, m, n, m' & l].
 Proof.
 apply/andP; split.
-  rewrite /cycle -cats1 -(cat1s n1) -(cat1s m) -(cat1s n) -(cat1s m') !catA.
+  rewrite /path.cycle -cats1 -(cat1s n1) -(cat1s m) -(cat1s n) -(cat1s m') !catA.
   rewrite -(catA _ l) cat_path /= andbT mn nm' symmetric_g n1m'1 symmetric_g mn1.
   by rewrite /= cats1 (except_path Hl).
 rewrite -(cat1s m) -(cat1s n) catA -(cat1s n1) catA -(cat1s m'1) catA cat_uniq Hun andbT.
@@ -899,14 +896,14 @@ have {m'v}m'v : connect (except g n) m' v.
     apply/eqP => ?; subst m'.
     apply: (@acyclic_g [:: m ; n ; n']) => //.
     rewrite /ucycle; apply/andP; split.
-      by rewrite /cycle rcons_path /= gmn /= symmetric_g n'm' /= symmetric_g.
+      by rewrite /path.cycle rcons_path /= gmn /= symmetric_g n'm' /= symmetric_g.
     by rewrite /= !inE /= eq_sym negb_or m'm /= andbT (simple_neg Hg) //= eq_sym.
    move: (Hl'); apply sub_path_except => //.
    apply/negP => nl'.
    case/splitPr : nl' => l1 l2 in Hl' l'l Hun Hlast.
    suff : (ucycle g [:: n, m, n', m' & l1]) by apply acyclic_g.
    apply/andP; split.
-     rewrite /cycle rcons_path /= symmetric_g gmn gmn' n'm' /=.
+     rewrite /path.cycle rcons_path /= symmetric_g gmn gmn' n'm' /=.
      move: Hl'.
      by rewrite -cat1s cat_path /= => /and3P[/except_path -> /= /except_rel].
   rewrite [m :: _]lock /= -lock; apply/andP; split.
@@ -920,7 +917,7 @@ have {m'v}m'v : connect (except g n) m' v.
     apply/negP => ml1; case/splitPr: ml1 => l11 l12 in Hl' l'l Hun Hlast.
     suff : ucycle g ([:: m, n', m' & l11]) by apply acyclic_g.
     apply/andP; split.
-    rewrite /cycle rcons_path /= gmn' n'm' /=.
+    rewrite /path.cycle rcons_path /= gmn' n'm' /=.
       move: Hl'; rewrite -catA cat_path.
       by case/andP => /except_path -> /= /andP[] /except_rel.
     rewrite -(cat1s m) -(cat1s n') -(cat1s m') catA cat_uniq andbA.
@@ -1016,7 +1013,7 @@ rewrite !inE; case/orP => [/eqP xn1|].
   case/splitPr : Hx => k1 k2 in Hk' Hunk k'k Hkast.
   suff : ucycle g [:: n1, m, n2, m2 & k1] by apply acyclic_g.
   apply/andP; split.
-    rewrite /cycle rcons_path /= symmetric_g mn1 /= mn2 /= n2m2 /=.
+    rewrite /path.cycle rcons_path /= symmetric_g mn1 /= mn2 /= n2m2 /=.
     move: Hk'; rewrite cat_path => /andP[/except_path -> /=].
     by rewrite exceptE /= => /andP[/andP[]].
   move: (Hunk).

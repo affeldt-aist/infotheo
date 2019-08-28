@@ -1,6 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
-From mathcomp Require Import div fintype tuple finfun bigop.
+From mathcomp Require Import all_ssreflect.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext num_occ.
 

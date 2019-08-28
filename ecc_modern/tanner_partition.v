@@ -1,8 +1,6 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg perm zmodp matrix path.
-From mathcomp Require Import fingraph.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import matrix.
 Require Import ssr_ext subgraph_partition tanner f2 Rbigop.
 
 Set Implicit Arguments.

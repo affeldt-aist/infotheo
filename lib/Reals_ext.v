@@ -1,10 +1,8 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice.
-From mathcomp Require Import path div fintype tuple finfun bigop prime finset.
-From mathcomp Require Import binomial.
-From mathcomp Require Rstruct.
-Require Import ProofIrrelevance Reals Lra.
+From mathcomp Require Import all_ssreflect.
+From mathcomp Require Rstruct boolp.
+Require Import Reals Lra.
 Require Import ssrR.
 
 (** * Additional lemmas about Coq Reals *)
@@ -72,7 +70,7 @@ destruct f as [f Hf].
 destruct g as [g Hg].
 move=> /= ?; subst.
 suff : Hf = Hg by move=> ->.
-by apply proof_irrelevance.
+exact/boolp.Prop_irrelevance.
 Qed.
 
 Lemma iter_mulR x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
@@ -163,7 +161,7 @@ Definition eqprob (x y : prob) := (x == y :> R).
 Lemma eqprobP : Equality.axiom eqprob.
 Proof.
 move=> -[a Ha] -[b Hb]; rewrite /eqprob /=; apply: (iffP idP) => [/eqP ab| [->] //].
-subst a; congr Prob.mk; exact: ProofIrrelevance.proof_irrelevance.
+subst a; congr Prob.mk; exact: boolp.Prop_irrelevance.
 Qed.
 
 Canonical prob_eqMixin := EqMixin eqprobP.
@@ -204,7 +202,7 @@ Qed.
 Lemma prob_ext (p q : prob) : p = q :> R -> p = q.
 Proof.
 move: p q => -[p Hp] [q Hq] /= ?; subst q.
-by rewrite (ProofIrrelevance.proof_irrelevance _ Hp Hq).
+by rewrite (@boolp.Prop_irrelevance _ Hp Hq).
 Qed.
 
 Lemma probK t : t = `Pr (t.~).~ :> prob.

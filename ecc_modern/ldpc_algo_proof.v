@@ -1,8 +1,6 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 Require Import Wf_nat Wf Recdef Reals.
-From mathcomp Require Import ssreflect seq ssrbool eqtype ssrnat ssrfun path.
-From mathcomp Require Import fintype finfun bigop finset fingraph perm zmodp.
-From mathcomp Require Import matrix ssralg.
+From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg.
 Require Import ssrR Reals_ext Rbigop f2 subgraph_partition tanner.
 Require Import proba channel pproba linearcode ssralg_ext.
 Require Import tanner_partition summary ldpc checksum ldpc_algo.
@@ -91,12 +89,6 @@ elim: p a b => [|c p Hp] a b /=.
 rewrite rev_cons -(cats1 _ a) cat_path -Hp /= last_rcons /=.
 by rewrite (HR a) andbC andbT.
 Qed.
-
-Lemma inr_inj A' B : injective (@inr A' B).
-Proof. by move=> a b []. Qed.
-
-Lemma inl_inj A' B : injective (@inl A' B).
-Proof. by move=> a b []. Qed.
 
 Lemma eq_in_map_seqs {B : eqType} (f1 f2 : A -> B) l1 l2 :
   l1 = l2 -> {in l1, f1 =1 f2} -> map f1 l1 = map f2 l2.

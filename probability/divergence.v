@@ -1,7 +1,6 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq fintype.
-From mathcomp Require Import tuple finfun bigop.
+From mathcomp Require Import all_ssreflect.
 Require Import Reals.
 Require Import ssrR Reals_ext ln_facts logb Rbigop proba.
 

@@ -1,16 +1,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import cproba.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-Local Open Scope R_scope.
 
 (* formalization of conditional independence
 contents:
@@ -44,6 +36,12 @@ Reserved Notation "\Pr[ X = a | Y '\in' F ]" (at level 6, X, Y, a, F at next lev
   format "\Pr[  X  =  a  |  Y  '\in'  F  ]").
 Reserved Notation "\Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
   format "\Pr[  X  =  a  |  Y  =  b  ]").
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Open Scope R_scope.
 
 (* TODO: move to lib/ssr_ext.v *)
 Section toolbox.

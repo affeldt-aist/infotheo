@@ -1,16 +1,7 @@
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg perm zmodp matrix.
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import matrix.
 Require Import ssralg_ext.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Import GRing.Theory.
-Local Open Scope ring_scope.
-
-Local Open Scope vec_ext_scope.
 
 (** * Vandermonde Matrices *)
 
@@ -20,6 +11,14 @@ Local Open Scope vec_ext_scope.
 - Section vandermonde_determinant.
 
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Import GRing.Theory.
+Local Open Scope ring_scope.
+Local Open Scope vec_ext_scope.
 
 Section vandermonde_matrix.
 

@@ -1,7 +1,6 @@
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple finfun bigop prime ssralg.
-From mathcomp Require Import poly polydiv finset finalg zmodp matrix mxalgebra.
-From mathcomp Require Import mxpoly vector cyclic perm.
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+From mathcomp Require Import all_ssreflect ssralg poly polydiv finalg zmodp.
+From mathcomp Require Import matrix mxalgebra mxpoly vector cyclic perm.
 Require Import ssr_ext ssralg_ext hamming.
 
 (** * Discrete Fourier transform and BCH argument *)

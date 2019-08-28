@@ -1,19 +1,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
-From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import matrix.
 Require Import f2 ssr_ext ssralg_ext max_subset.
 Require Import num_occ hamming ldpc_erasure tanner linearcode.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Import GroupScope.
-Import GRing.Theory.
-Local Open Scope ring_scope.
-
-Local Open Scope vec_ext_scope.
 
 (** * Combinatorial Result about the Performance of Iterative Decoding *)
 
@@ -31,6 +20,16 @@ Local Open Scope vec_ext_scope.
 - Section starFnext_syndrome_prop.
 - Section combinatorial_characterization_of_iterative_decoder_performance.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Import GroupScope.
+Import GRing.Theory.
+Local Open Scope ring_scope.
+
+Local Open Scope vec_ext_scope.
 
 Section PCM_instance.
 

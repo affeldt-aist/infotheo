@@ -1,8 +1,6 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
-From mathcomp Require Import fintype finfun fingraph tuple div path bigop prime.
-From mathcomp Require Import finset fingroup perm.
+From mathcomp Require Import all_ssreflect fingroup perm.
 Import Coq.NArith.BinNatDef.
 
 (** * Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)

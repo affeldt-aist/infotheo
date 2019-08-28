@@ -1,15 +1,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq choice.
-From mathcomp Require Import fintype div bigop finset ssralg finalg binomial.
-From mathcomp Require Import poly polydiv cyclic perm finfun matrix mxpoly.
+From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv cyclic.
+From mathcomp Require Import perm matrix mxpoly.
 Require Import ssr_ext ssralg_ext cyclic_code dft.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Import GRing.Theory.
-Local Open Scope ring_scope.
 
 (** * Error-locator, error-evaluator, and syndrome polynomials *)
 
@@ -22,6 +14,13 @@ Local Open Scope ring_scope.
 - Section twisted_error_pattern.
 - Section syndromep_prop.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Import GRing.Theory.
+Local Open Scope ring_scope.
 
 (* TODO: move to poly_ext? *)
 Lemma modp_Xn (R : idomainType) j (p : {poly R}) i :

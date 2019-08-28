@@ -1,9 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 Require Import Reals.
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import fintype finfun finset bigop prime fingroup zmodp.
-From mathcomp Require Import ssralg perm matrix tuple poly finalg mxalgebra.
-From mathcomp Require Import mxpoly binomial.
+From mathcomp Require Import all_ssreflect fingroup zmodp ssralg perm matrix.
+From mathcomp Require Import poly finalg mxalgebra mxpoly.
 Require Import ssr_ext ssralg_ext f2 num_occ natbin ssrR Reals_ext Rbigop.
 
 (** * Hamming weight and Hamming distance *)

@@ -1,19 +1,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 Require Program.Wf.
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
-From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import matrix.
 Require Import ssr_ext ssralg_ext num_occ f2 ssrR hamming tanner linearcode.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
-Local Open Scope num_occ_scope.
-Local Open Scope ring_scope.
-Import GRing.Theory.
-
-Local Open Scope vec_ext_scope.
 
 (** * Sum-Product Decoder over the BEC *)
 
@@ -28,6 +17,16 @@ Local Open Scope vec_ext_scope.
 - Section mxSumProd_def : contains the definitions of rowVnextD1, etc.
 - Section SumProdBEC_algo.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Open Scope num_occ_scope.
+Local Open Scope ring_scope.
+Import GRing.Theory.
+
+Local Open Scope vec_ext_scope.
 
 Section letter.
 

@@ -1,8 +1,6 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 Require Import Wf Recdef Reals.
-From mathcomp Require Import ssreflect seq ssrbool eqtype ssrnat ssrfun path.
-From mathcomp Require Import fintype finfun bigop finset fingraph perm zmodp.
-From mathcomp Require Import matrix ssralg.
+From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg.
 Require Import ssrR Reals_ext Rbigop f2 subgraph_partition tanner.
 Require Import proba channel pproba linearcode ssralg_ext.
 Require Import tanner_partition summary ldpc checksum.

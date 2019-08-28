@@ -1,8 +1,6 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
-From mathcomp Require Import div choice fintype tuple finfun bigop prime ssralg.
-From mathcomp Require Import poly polydiv finset fingroup perm finalg zmodp.
-From mathcomp Require Import matrix mxalgebra mxpoly vector.
+From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
+From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
 Require Import ssralg_ext hamming linearcode decoding channel_code.
 
 (** * McEliece Cryptographic Scheme
