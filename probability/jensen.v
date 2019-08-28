@@ -1,11 +1,9 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
-From mathcomp Require Import ssralg finset fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 From mathcomp Require Import boolp.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import proba convex.
+Require Import proba convex_choice.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -62,7 +60,7 @@ have /IH {IH}[IH HDd] : #|dist_supp d| = n.
   by rewrite D1Dist.card_dist_supp // cardA.
 have HXb: 0 <= X b <= 1 by split; [exact/dist_ge0|exact/dist_max].
 split; last first.
-  move/asboolP : (CSet.H D) => /(_ (r b) (\sum_(a in dist_supp d) d a * r a) (Prob.mk HXb)).
+  move/asboolP: (convex_setP D) => /(_ (r b) (\sum_(a in dist_supp d) d a * r a) (Prob.mk HXb)).
   exact.
 move/leR_trans: (convex_f (Prob.mk HXb) (HDr b) HDd); apply => /=.
 rewrite leR_add2l; apply leR_wpmul2l => //; apply/onem_ge0; by case: HXb.

@@ -1,11 +1,9 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
-From mathcomp Require Import ssralg finset fingroup perm finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import proba convex.
+Require Import proba convex_choice.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -1143,7 +1141,7 @@ End affine_function_prop0.
 
 Section convn_convdist.
 Variable A : finType.
-Lemma convn_convdist (n : nat) (g : 'I_n -> dist A) (d : {dist 'I_n}) :
+Lemma convn_convdist (n : nat) (g : 'I_n -> dist_convType A) (d : {dist 'I_n}) :
   \Conv_d g = ConvDist.d d g.
 Proof.
 elim: n g d => /= [g d|n IH g d]; first by move: (distI0_False d).

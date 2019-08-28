@@ -680,7 +680,7 @@ Qed.
 End prop.
 End Conv2Dist.
 
-Require Import convex.
+(*Require Import convex.
 
 Section Dist_convex_space.
 Variable A : choiceType.
@@ -691,4 +691,4 @@ Definition Dist_convMixin :=
   (fun d1 d2 p => @Conv2Dist.convC A p d1 d2)
   (@Conv2Dist.convA' A).
 Canonical Dist_convType := ConvexSpace.Pack Dist_convMixin.
-End Dist_convex_space.
+End Dist_convex_space.*)

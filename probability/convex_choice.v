@@ -1,11 +1,11 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
-From mathcomp Require Import ssralg finset fingroup perm finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require Import boolp classical_sets.
-Require Import Reals Lra ProofIrrelevance FunctionalExtensionality.
+Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba.
+
+(* convex spaces over a choiceType *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -41,7 +41,7 @@ Local Open Scope proba_scope.
 
 Section PR_to_classical_sets.
 
-Variable T : Type.
+Variable T U : Type.
 Implicit Types A B C : set T.
 
 Local Open Scope classical_set_scope.
@@ -74,6 +74,110 @@ apply/existsp_asboolP; rewrite -(negbK `[exists _, _]); apply/negP.
 rewrite existsbE => /forallp_asboolPn H.
 move/negP : A_neq0; apply; apply/eqP; rewrite funeqE => t; rewrite propeqE.
 move: (H t); by rewrite asboolE.
+Qed.
+
+Lemma eq_imagel (f g : T -> U) A :
+  (forall a, A a -> f a = g a) -> f @` A = g @` A.
+Proof.
+by move=> H; apply eqEsubset=> a;
+  case => x Xx <-; [rewrite H | rewrite -H] => //; exists x.
+Qed.
+
+Lemma imageA V (f : T -> U) (g : U -> V) A : g @` (f @` A) = (g \o f) @` A.
+Proof.
+apply eqEsubset => c.
+- by case => b [] a Xa <- <-; apply/imageP.
+- by case => a Xa <-; apply/imageP/imageP.
+Qed.
+
+Lemma image_idfun A : idfun @` A = A.
+Proof.
+apply eqEsubset => a.
+- by case=> /= x Xx <-.
+- by exists a.
+Qed.
+
+Lemma image_setU (f : T -> U) A B : f @` (A `|` B) = f @` A `|` f @` B.
+Proof.
+apply eqEsubset => b.
+- by case=> a [] Ha <-; [left | right]; apply imageP.
+- by case=> -[] a Ha <-; apply imageP; [left | right].
+Qed.
+
+Lemma image_set1 (f : T -> U) (t : T) : f @` [set t] = [set f t].
+Proof.
+apply eqEsubset => b.
+- by case=> a' -> <-.
+- by move->; apply imageP.
+Qed.
+
+Lemma image_subset (f : T -> U) A (Y : set U) :
+  f @` A `<=` Y <-> forall a, A a -> Y (f a).
+Proof.
+split=> H.
+- by move=> a Xa; apply/H/imageP.
+- by move=> b [] a Xa <-; apply H.
+Qed.
+
+Lemma fullimage_subset (f : T -> U) (Y : set U) :
+  f @` setT `<=` Y <-> forall t, Y (f t).
+Proof.
+rewrite (_ : (forall a, Y (f a)) <-> (forall a, setT a -> Y (f a))) ?image_subset //.
+by firstorder.
+Qed.
+
+Lemma eq_bigcupl (P Q : set U) (X : U -> set T) :
+  P = Q -> bigsetU P X = bigsetU Q X.
+Proof. by move ->. Qed.
+
+Lemma eq_bigcupr (P : set U) (X Y : U -> set T) :
+  X =1 Y -> bigsetU P X = bigsetU P Y.
+Proof. by move/funext ->. Qed.
+
+Lemma eq_bigcup (P Q : set U) (X Y : U -> set T) :
+  P = Q -> X =1 Y -> bigsetU P X = bigsetU Q Y.
+Proof. by move=> -> /funext ->. Qed.
+
+Lemma bigcup_set1 (P : set U) (f : U -> T) :
+  \bigcup_(x in P) [set f x] = f @` P.
+Proof.
+apply eqEsubset=> a.
+- by case=> i Pi ->; apply imageP.
+- by case=> i Pi <-; exists i.
+Qed.
+
+Lemma bigcup0 (X : U -> set T) : bigsetU set0 X = set0.
+Proof. by apply eqEsubset => a // [] //. Qed.
+
+Lemma bigcup1 (i : U) (X : U -> set T) : bigsetU [set i] X = X i.
+Proof.
+apply eqEsubset => a.
+- by case=> j ->.
+- by exists i.
+Qed.
+
+Lemma bigcup_const (P : set U) (X : U -> set T) (i : U) :
+  P i -> (forall j, P j -> X j = X i) -> bigsetU P X = X i.
+Proof.
+move=> Pi H; apply eqEsubset=> a.
+- by case=> j /H ->.
+- by exists i.
+Qed.
+
+Lemma bigsubsetU (P : set U) (X : U -> set T) (Y : set T) :
+  (forall i, P i -> X i `<=` Y) <-> bigsetU P X `<=` Y.
+Proof.
+split.
+- by move=> H a [] i Pi Xia; apply (H i).
+- by move=> H i Pi a Xia; apply H; exists i.
+Qed.
+
+Lemma bigcup_set0P (P : set U) (F : U -> set T) :
+  reflect (exists i, P i /\ F i !=set0) (bigsetU P F != set0).
+Proof.
+apply: (iffP idP).
+- by case/set0P => a [] i Si Fia; exists i; split; [ | exists a].
+- by case=> i [] Si [] a Fia; apply/set0P; exists a, i.
 Qed.
 
 End PR_to_classical_sets.
@@ -243,6 +347,7 @@ case: A a b c p q => ? [] f H0 H1 H2 H3 d0 d1 d2 p q; by rewrite /Conv H3.
 Qed.
 End convex_space_interface.
 
+(* TODO: move? *)
 Lemma prob_dist (A : finType) (d : dist A) (a : A) : (0 <= d a <= 1)%R.
 Proof. split; [exact/dist_ge0 | exact/dist_max]. Qed.
 
@@ -1150,11 +1255,11 @@ Qed.
 Definition R_convMixin := ConvexSpace.Class avg1 avgI avgC avgA.
 Canonical R_convType := ConvexSpace.Pack R_convMixin.
 Lemma avg_oppD x y t : (- x <|t|> - y = - (x <|t|> y))%R.
-Proof. rewrite /Conv /= /avg; lra. Qed.
+Proof. by rewrite /Conv /= /avg 2!mulRN -oppRD. Qed.
 Lemma avg_mulDr t : right_distributive Rmult (fun x y => x <|t|> y).
-Proof. move => x y z. rewrite /Conv /= /avg. lra. Qed.
+Proof. by move=> x ? ?; rewrite /Conv /= /avg mulRDr mulRCA (mulRCA x). Qed.
 Lemma avg_mulDl t : left_distributive Rmult (fun x y => x <|t|> y).
-Proof. move => x y z. rewrite /Conv /= /avg. lra. Qed.
+Proof. by move=> x ? ?; rewrite /Conv /= /avg mulRDl -mulRA -(mulRA t.~). Qed.
 (* Introduce morphisms to prove avgnE *)
 Import ScaledConvex.
 Definition scaleR x : R := if x is p *: y then p * y else 0.
@@ -1190,27 +1295,15 @@ Variables (A : choiceType) (B : convType).
 Let T := A -> B.
 Definition avg (x y : T) (t : prob) := fun a : A => (x a <| t |> y a).
 Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
-Proof.
-apply FunctionalExtensionality.functional_extensionality => a.
-by apply conv1.
-Qed.
+Proof. rewrite funeqE => a; exact/conv1. Qed.
 Lemma avgI (x : T) (p : prob) : avg x x p = x.
-Proof.
-apply FunctionalExtensionality.functional_extensionality => a.
-by apply convmm.
-Qed.
+Proof. rewrite funeqE => a; exact/convmm. Qed.
 Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
 Proof.
-apply FunctionalExtensionality.functional_extensionality => a.
-by apply convC.
-Qed.
+Proof. rewrite funeqE => a; exact/convC. Qed.
 Lemma avgA (p q (*r s*) : prob) (d0 d1 d2 : T) :
   avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
-Proof.
-move=> *.
-apply FunctionalExtensionality.functional_extensionality => a.
-by apply convA.
-Qed.
+Proof. move=> *; rewrite funeqE => a; exact/convA. Qed.
 End funavg.
 End Funavg.
 
@@ -1360,10 +1453,10 @@ Proof. move => *; exact: leconvR. Qed.
 Lemma lefun_trans g f h : lefun f g -> lefun g h -> lefun f h.
 Proof. move => Hfg Hgh a; move : (Hfg a) (Hgh a); exact: leconv_trans. Qed.
 Lemma eqfun_le f g : f = g <-> lefun f g /\ lefun g f.
-Proof. split; [move ->; move: lefunR; done |].
-case => Hfg Hgh; apply FunctionalExtensionality.functional_extensionality => a.
-move : (Hfg a) (Hgh a) => Hfg' Hgh'.
-by apply eqconv_le.
+Proof.
+split; [move ->; by move: lefunR |].
+case=> Hfg Hgh; rewrite funeqE => a.
+move : (Hfg a) (Hgh a) => Hfg' Hgh'; exact/eqconv_le.
 Qed.
 End lefun.
 End FunLe.
@@ -1563,18 +1656,17 @@ Qed.
 End definition.
 Section counterexample.
 Local Open Scope R_scope.
+
 Example biconvex_is_not_convex_in_both : exists f : R -> R -> R, biconvex_function f /\ ~ convex_in_both f.
 Proof.
 exists Rmult; split.
 split => [a b0 b1 t | b a0 a1 t] /=; rewrite /Conv /= ; [rewrite avg_mulDr /Conv /=|rewrite avg_mulDl /Conv /=]; exact: leRR.
 move /convex_in_bothP /(_ (-1)%R 1%R 1%R (-1)%R (probinvn 1)).
 rewrite /Leconv /probinvn /Conv /= /avg /=.
-rewrite mul1R !mulR1 !mulRN1.
-rewrite /onem.
-rewrite (_ : (- / (1 + 1) + (1 - / (1 + 1))) = 0); last by lra.
-rewrite mul0R.
-rewrite (_ : - / (1 + 1) + - (1 - / (1 + 1)) = - 1); last by lra.
-by move /leRNlt; apply; lra.
+rewrite !(mul1R,mulR1,mulRN1) -oppRD onemKC.
+rewrite (_ : - / (1 + 1) + (/ (1 + 1)).~ = 0); last first.
+  by rewrite /onem addRCA -oppRD -div1R eps2 addRN.
+rewrite mul0R leR_oppr oppR0 leRNgt; apply; exact/Rlt_0_1.
 Qed.
 End counterexample.
 End biconvex_function.
@@ -1742,6 +1834,30 @@ Qed.
 
 End affine_function_prop.
 
+Local Open Scope classical_set_scope.
+
+Lemma is_convex_set_image (A B : convType) (f : {affine A -> B})
+  (a : convex_set A) : is_convex_set (f @` a).
+Proof.
+rewrite /is_convex_set.
+apply/asboolP => x y p; rewrite 3!in_setE => -[a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
+exists (a0 <|p|> a1) => //.
+by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
+by rewrite (affine_functionP' f).
+Qed.
+
+Lemma is_convex_set_image' (A B : convType) (f : A -> B) (H : affine_function f)
+  (a : convex_set A) : is_convex_set (f @` a).
+Proof.
+rewrite /is_convex_set.
+apply/asboolP => x y p; rewrite 3!in_setE => -[a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
+exists (a0 <|p|> a1) => //.
+by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
+by rewrite H.
+Qed.
+
+Local Close Scope classical_set_scope.
+
 Section R_affine_function_prop.
 Variables (A : convType) (f : A -> R).
 Lemma R_affine_functionN : affine_function f -> affine_function (fun x => - f x)%R.
@@ -1756,9 +1872,20 @@ Definition concave_function_in :=
   forall a b p, a \in D -> b \in D -> concave_function_at f a b p.
 End convex_function_in_def.
 
+Section dist_convex_space.
+Variable A : finType.
+Definition dist_convMixin :=
+  @ConvexSpace.Class (choice_of_Type (dist A)) (@Conv2Dist.d A)
+  (@Conv2Dist.d1 A)
+  (@Conv2Dist.idempotent A)
+  (@Conv2Dist.skewed_commute A)
+  (@Conv2Dist.quasi_assoc A).
+Canonical dist_convType := ConvexSpace.Pack dist_convMixin.
+End dist_convex_space.
+
 Require Import dist.
 
-Section dist_convex_space.
+Section Dist_convex_space.
 Variable A : choiceType.
 
 Definition Dist_convMixin :=
@@ -1800,7 +1927,7 @@ exists i.
   by rewrite -dist_gt0.
 by rewrite mem_finsupp.
 Qed.
-End dist_convex_space.
+End Dist_convex_space.
 
 (* TODO *)
 Section dist_ordered_convex_space.

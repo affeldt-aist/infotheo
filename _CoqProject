@@ -20,7 +20,8 @@ lib/euclid.v
 lib/dft.v
 lib/vandermonde.v
 probability/proba.v
-probability/convex.v
+probability/convex_type.v
+probability/convex_choice.v
 probability/dist.v
 probability/convex_stone.v
 probability/cproba.v
@@ -33,7 +34,6 @@ probability/pinsker_function.v
 probability/log_sum.v
 probability/partition_inequality.v
 probability/pinsker.v
-probability/convex_choice.v
 probability/necset.v
 information_theory/source_code.v
 information_theory/entropy.v

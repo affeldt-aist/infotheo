@@ -1,11 +1,9 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
-Require Import entropy proba cproba convex binary_entropy_function.
+Require Import entropy proba cproba convex_choice binary_entropy_function.
 Require Import log_sum divergence.
 
 Set Implicit Arguments.
@@ -56,8 +54,9 @@ End entropy_log_div.
 Module DominatedPair.
 Section def.
 Variable (A : finType).
-Definition T := {d : dist A * dist A | d.1 << d.2}.
-Lemma avg_dominates_compatible (a b c d : dist A) t : a << b -> c << d -> (a <|t|> c) << (b <|t|> d).
+Definition T := {d : dist_convType A * dist_convType A | d.1 << d.2}.
+Lemma avg_dominates_compatible (a b c d : dist_convType A) t :
+  a << b -> c << d -> (a <|t|> c) << (b <|t|> d).
 Proof.
 rewrite !dominatesP => Hab Hcd i.
 rewrite /Conv/= !Conv2Dist.dE.
@@ -72,8 +71,8 @@ case.
 - by move->; rewrite onem1 mul0R.
 by move/Hcd->; rewrite mulR0.
 Qed.
-Definition avg (x y : T) (t : prob) : T:=
-  let ab := proj1_sig x in
+Definition avg (x y : T) (t : prob) : T :=
+  let ab : dist_convType _ * dist_convType _:= proj1_sig x in
   let Hab := proj2_sig x in
   let cd := proj1_sig y in
   let Hcd := proj2_sig y in
@@ -84,14 +83,13 @@ End def.
 Section proof_irrelevance.
 Lemma eq_sig_irrelevant {A : Type} (P : A -> Prop) (u1 v1 : A) (u2 : P u1) (v2 : P v1) (p : u1 = v1) : exist P u1 u2 = exist P v1 v2.
 have p' : sval (exist P u1 u2) = sval (exist P v1 v2) by exact p.
-apply (eq_sig _ _ p').
-exact: ProofIrrelevance.proof_irrelevance.
+apply (eq_sig _ _ p'); exact/boolp.Prop_irrelevance.
 Qed.
 End proof_irrelevance.
 
 Section prop.
 Variable (A : finType).
-Let T := T A.
+Let T := choice_of_Type (T A).
 Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
 Proof.
   rewrite /avg; case x => x0 H /=.
@@ -133,7 +131,7 @@ Local Open Scope divergence_scope.
 
 (* thm 2.7.2 *)
 (* div restricted to dominated pairs is a convex function; it's actually not a restriction since div is meaningful only on dominated pairs. *)
-Lemma div_convex : convex_function (DominatedPair.simple_elim (@div A)).
+Lemma div_convex : convex_function (DominatedPair.simple_elim (@div A) : (dominatedPairConvType A -> _)).
 Proof.
 (* TODO: clean *)
 rewrite /ConvexFunction.axiom => [] [[p1 q1] /= pq1] [[p2 q2] /= pq2] t.
@@ -214,7 +212,7 @@ field.
 split; exact/eqP.
 Qed.
 
-Lemma div_convex' : forall (p1 p2 q1 q2 : dist A) (t : prob),
+Lemma div_convex' : forall (p1 p2 q1 q2 : dist_convType A) (t : prob),
   p1 << q1 -> p2 << q2 ->
   div (p1 <| t |> p2) (q1 <| t |> q2) <= div p1 q1 <| t |> div p2 q2.
 Proof.
@@ -236,7 +234,7 @@ Let u : {dist A} := Uniform.d A_not_empty'.
 Local Open Scope divergence_scope.
 
 (* thm 2.7.3 *)
-Lemma entropy_concave : concave_function (fun P : dist A => `H P).
+Lemma entropy_concave : concave_function (fun P : dist_convType A => `H P).
 Proof.
 apply R_concave_functionN' => p q t; rewrite /convex_function_at.
 rewrite !(entropy_log_div _ A_not_empty') /=.
@@ -392,9 +390,9 @@ Variables (A B : finType) (Q : A -> dist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 Lemma mutual_information_concave :
-  concave_function (fun P => MutualInfo.mi (CDist.make_joint P Q)).
+  concave_function (fun P : dist_convType _ => MutualInfo.mi (CDist.make_joint P Q)).
 Proof.
-suff : concave_function (fun P => let PQ := Swap.d (CDist.make_joint P Q) in
+suff : concave_function (fun P : dist_convType _ => let PQ := Swap.d (CDist.make_joint P Q) in
                            `H (Bivar.fst PQ) - CondEntropy.h PQ).
   set f := fun _ => _. set g := fun _ => _.
   suff -> : f = g by [].
@@ -409,7 +407,7 @@ apply R_concave_functionB.
   apply: leR_trans (H (Bivar.snd (CDist.make_joint p Q)) (Bivar.snd (CDist.make_joint q Q)) t).
   destruct t. rewrite /Conv /=. (* TODO *)
   rewrite -ProdDist.snd_convex; exact/leRR.
-- suff : affine_function (fun x => CondEntropy.h (Swap.d (CDist.make_joint x Q))) by move /affine_functionP => [].
+- suff : affine_function (fun x : dist_convType _ => CondEntropy.h (Swap.d (CDist.make_joint x Q))) by move /affine_functionP => [].
   move => p q t.
   rewrite /affine_function_at /= (*TODO: lemma?*) /Conv /= /avg /=.
   rewrite /CondEntropy.h /CondEntropy.h1.
@@ -448,7 +446,7 @@ Variables (A B : finType) (P : dist A).
 Local Open Scope divergence_scope.
 
 Lemma mutual_information_convex :
-  convex_function (fun (Q : A -> dist B) => MutualInfo.mi (CDist.make_joint P Q)).
+  convex_function (fun (Q : @depfun_choiceType A (fun=> dist_convType B)) => MutualInfo.mi (CDist.make_joint P Q)).
 Proof.
 move=> p1yx p2yx t.
 pose p1' := CDist.mkt P p1yx.
@@ -472,7 +470,7 @@ have -> : MutualInfo.mi (CDist.make_joint P (fun x : A => p1yx x <| t |> p2yx x)
   congr (_ * log (_ / _)).
   rewrite /qlambdaxy.
   by rewrite ProdDist.dE /= /CDist.make_joint /CDist.joint_of /= ProdDist.fst; congr (_ * _).
-have -> : qlambdaxy = q1xy <| t |> q2xy.
+have -> : qlambdaxy = (q1xy : dist_convType _ ) <| t |> q2xy.
   apply/dist_ext => -[a b].
   rewrite !ProdDist.dE !Conv2Dist.dE /=.
   rewrite /q1xy /q2xy !ProdDist.dE /=.
@@ -482,7 +480,7 @@ have -> : qlambdaxy = q1xy <| t |> q2xy.
   rewrite /plambdaxy /= !ProdDist.dE /= /p1xy /plambdayx.
   rewrite Conv2Dist.dE /=.
   field.
-have -> : plambdaxy = p1xy <| t |> p2xy.
+have -> : plambdaxy = (p1xy : dist_convType _ ) <| t |> p2xy.
   apply/dist_ext => -[a b].
   rewrite !ProdDist.dE !Conv2Dist.dE /=.
   rewrite /p1xy /p2xy !ProdDist.dE /=.

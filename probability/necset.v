@@ -72,126 +72,6 @@ Lemma set1_inj (C : choiceType) : injective (@set1 C).
 Proof. by move=> a b; rewrite /set1 => /(congr1 (fun f => f a)) <-. Qed.
 End misc_fset.
 
-Section misc_classical_sets.
-Local Open Scope classical_set_scope.
-Lemma eq_imagel (A B : Type) (f g : A -> B) (X : set A) :
-  (forall a, X a -> f a = g a) -> f @` X = g @` X.
-Proof.
-by move=> H; apply eqEsubset=> a; case => x Xx <-; [rewrite H | rewrite -H] => //; exists x.
-Qed.
-Lemma eq_imager (A B : Type) (f : A -> B) (X Y : set A) :
-  X = Y -> f @` X = f @` Y.
-Proof. by move ->. Qed.
-Lemma imageA (A B C : Type) (f : A -> B) (g : B -> C) (X : set A) :
-  g @` (f @` X) = (g \o f) @` X.
-Proof.
-apply eqEsubset => c.
-- by case => b [] a Xa <- <-; apply/imageP.
-- by case => a Xa <-; apply/imageP/imageP.
-Qed.
-Lemma image_idfun (A : Type) (X : set A) : idfun @` X = X.
-Proof.
-apply eqEsubset => a.
-- by case=> /= x Xx <-.
-- by exists a.
-Qed.
-Lemma image_setU (A B : Type) (f : A -> B) (X Y : set A) :
-  f @` (X `|` Y) = f @` X `|` f @` Y.
-Proof.
-apply eqEsubset => b.
-- by case=> a [] Ha <-; [left | right]; apply imageP.
-- by case=> -[] a Ha <-; apply imageP; [left | right].
-Qed.
-Lemma image_set1 (A B : Type) (f : A -> B) (a : A) :
-  f @` [set a] = [set f a].
-Proof.
-apply eqEsubset => b.
-- by case=> a' -> <-.
-- by move->; apply imageP.
-Qed.
-Lemma image_subset (A B : Type) (f : A -> B) (X : set A) (Y : set B) :
-  f @` X `<=` Y <-> forall a, X a -> Y (f a).
-Proof.
-split=> H.
-- by move=> a Xa; apply/H/imageP.
-- by move=> b [] a Xa <-; apply H.
-Qed.
-Lemma fullimage_subset (A B : Type) (f : A -> B) (Y : set B) :
-  f @` setT `<=` Y <-> forall a, Y (f a).
-Proof.
-rewrite (_ : (forall a, Y (f a)) <-> (forall a, setT a -> Y (f a))) ?image_subset //.
-by firstorder.
-Qed.
-Lemma eq_bigcupl (A I : Type) (P Q : set I) (X : I -> set A) :
-  P = Q -> bigsetU P X = bigsetU Q X.
-Proof. by move ->. Qed.
-Lemma eq_bigcupr (A I : Type) (P : set I) (X Y : I -> set A) :
-  X =1 Y -> bigsetU P X = bigsetU P Y.
-Proof. by move/funext ->. Qed.
-Lemma eq_bigcup (A I : Type) (P Q : set I) (X Y : I -> set A) :
-  P = Q -> X =1 Y -> bigsetU P X = bigsetU Q Y.
-Proof. by move=> -> /funext ->. Qed.
-Lemma bigcup_set1 (A I : Type) (P : set I) (f : I -> A) :
-  \bigcup_(x in P) [set f x] = f @` P.
-Proof.
-apply eqEsubset=> a.
-- by case=> i Pi ->; apply imageP.
-- by case=> i Pi <-; exists i.
-Qed.
-Lemma bigcup0 (A I : Type) (X : I -> set A) : bigsetU set0 X = set0.
-Proof. by apply eqEsubset => a // [] //. Qed.
-Lemma bigcup1 (A I : Type) (i : I) (X : I -> set A) : bigsetU [set i] X = X i.
-Proof.
-apply eqEsubset => a.
-- by case=> j ->.
-- by exists i.
-Qed.
-Lemma bigcup_const (A I : Type) (P : set I) (X : I -> set A) (i : I) :
-  P i -> (forall j, P j -> X j = X i) -> bigsetU P X = X i.
-Proof.
-move=> Pi H; apply eqEsubset=> a.
-- by case=> j /H ->.
-- by exists i.
-Qed.
-
-Lemma bigsubsetU (A I : Type) (P : set I) (X : I -> set A) (Y : set A) :
-  (forall i, P i -> X i `<=` Y) <-> bigsetU P X `<=` Y.
-Proof.
-split.
-- by move=> H a [] i Pi Xia; apply (H i).
-- by move=> H i Pi a Xia; apply H; exists i.
-Qed.
-
-Lemma bigcup_set0P (A I : Type) (S : set I) (F : I -> set A) :
-  reflect (exists i, S i /\ F i !=set0) (bigsetU S F != set0).
-Proof.
-apply: (iffP idP).
-- by case/set0P => a [] i Si Fia; exists i; split; [ | exists a].
-- by case=> i [] Si [] a Fia; apply/set0P; exists a, i.
-Qed.
-
-Lemma is_convex_set_image (A B : convType) (f : {affine A -> B})
-  (a : convex_set A) : is_convex_set (f @` a).
-Proof.
-rewrite /is_convex_set.
-apply/asboolP => x y p; rewrite 3!in_setE => -[a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
-exists (a0 <|p|> a1) => //.
-by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
-by rewrite (affine_functionP' f).
-Qed.
-
-Lemma is_convex_set_image' (A B : convType) (f : A -> B) (H : affine_function f)
-  (a : convex_set A) : is_convex_set (f @` a).
-Proof.
-rewrite /is_convex_set.
-apply/asboolP => x y p; rewrite 3!in_setE => -[a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
-exists (a0 <|p|> a1) => //.
-by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
-by rewrite H.
-Qed.
-
-End misc_classical_sets.
-
 Section misc_prob.
 Local Open Scope R_scope.
 Lemma p_of_rs1 (r s : prob) :
@@ -897,10 +777,11 @@ Qed.
    a set but not a sequence. *)
 
 (* [Reiterman] p.326, axiom 2 *)
-Lemma Joet_flatten (F : neset (neset L)) : Joet `NE (Joet @` F) = Joet `NE (bigsetU F idfun).
+Lemma Joet_flatten (F : neset (neset L)) :
+  Joet `NE (Joet @` F) = Joet `NE (bigsetU F idfun).
 Proof.
 rewrite Joet_bigsetU; congr (Joet `NE _); apply/neset_ext => /=.
-apply eq_imager; by rewrite image_idfun.
+by rewrite image_idfun.
 Qed.
 
 Definition joet (x y : L) := Joet `NE [set x; y].

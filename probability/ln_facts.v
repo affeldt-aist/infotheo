@@ -4,7 +4,7 @@ From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
 From mathcomp Require Import div fintype tuple finfun bigop.
 From mathcomp Require boolp.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext Ranalysis_ext logb convex.
+Require Import ssrR Reals_ext Ranalysis_ext logb convex_choice.
 
 (** * Results about the Analysis of ln *)
 

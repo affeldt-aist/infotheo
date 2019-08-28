@@ -7,6 +7,8 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba.
 
+(* convex spaces over a Type; use convex_choice instead *)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
