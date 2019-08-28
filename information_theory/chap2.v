@@ -1,6 +1,5 @@
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup perm finalg matrix.
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+From mathcomp Require Import all_ssreflect ssralg finset fingroup perm finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.

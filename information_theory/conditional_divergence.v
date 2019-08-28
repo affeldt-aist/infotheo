@@ -1,8 +1,6 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq path.
-From mathcomp Require Import div choice fintype tuple finfun bigop prime.
-From mathcomp Require Import binomial ssralg finset fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop ln_facts.
 Require Import num_occ proba entropy channel divergence types jtypes.

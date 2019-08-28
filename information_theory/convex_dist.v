@@ -53,23 +53,19 @@ End entropy_log_div.
 (* convexity of relative entropy *)
 Module DominatedPair.
 Section def.
-Variable (A : finType).
+Variable A : finType.
 Definition T := {d : dist_convType A * dist_convType A | d.1 << d.2}.
 Lemma avg_dominates_compatible (a b c d : dist_convType A) t :
   a << b -> c << d -> (a <|t|> c) << (b <|t|> d).
 Proof.
 rewrite !dominatesP => Hab Hcd i.
-rewrite /Conv/= !Conv2Dist.dE.
-rewrite paddR_eq0; [|apply mulR_ge0;[exact:prob_ge0|exact:dist_ge0]|apply mulR_ge0;[exact:prob_ge0|exact:dist_ge0]].
-rewrite !mulR_eq0.
-case; case.
-- move->; case; first by rewrite onem0=>H; have : 1 <> 0 by lra; move /(_ H).
-  by move/Hcd->; rewrite mul0R mulR0 addR0.
-move/Hab->.
-rewrite mulR0 onem_eq0 add0R.
-case.
-- by move->; rewrite onem1 mul0R.
-by move/Hcd->; rewrite mulR0.
+rewrite !Conv2Dist.dE.
+rewrite paddR_eq0; [|apply mulR_ge0;[exact:prob_ge0|exact:dist_ge0]
+                    |apply mulR_ge0;[exact:prob_ge0|exact:dist_ge0]].
+rewrite !mulR_eq0 => -[[->|/Hab ->]]; last first.
+  by rewrite mulR0 add0R => -[->|/Hcd ->]; rewrite !(mul0R,mulR0).
+rewrite mul0R add0R => -[|/Hcd ->];
+  by [rewrite onem0 => /R1_neq_R0 | rewrite mulR0].
 Qed.
 Definition avg (x y : T) (t : prob) : T :=
   let ab : dist_convType _ * dist_convType _:= proj1_sig x in
@@ -77,42 +73,31 @@ Definition avg (x y : T) (t : prob) : T :=
   let cd := proj1_sig y in
   let Hcd := proj2_sig y in
   exist _ (ab <|t|> cd) (avg_dominates_compatible t Hab Hcd).
-Definition simple_elim (U : Type) (f : dist A -> dist A -> U) (x : T) := f (sval x).1 (sval x).2.
+Definition simple_elim U (f : dist A -> dist A -> U) (x : T) :=
+  f (sval x).1 (sval x).2.
 End def.
 
-Section proof_irrelevance.
-Lemma eq_sig_irrelevant {A : Type} (P : A -> Prop) (u1 v1 : A) (u2 : P u1) (v2 : P v1) (p : u1 = v1) : exist P u1 u2 = exist P v1 v2.
-have p' : sval (exist P u1 u2) = sval (exist P v1 v2) by exact p.
+(* NB: same as ProofIrrelevance.ProofIrrelevanceTheory.subset_eq_compat *)
+(* TODO: move *)
+Lemma eq_sig_irrelevant {A} (P : A -> Prop) a1 a2 (P1 : P a1) (P2 : P a2) (p : a1 = a2) :
+  exist _ a1 P1 = exist _ a2 P2.
+Proof.
+have p' : sval (exist _ a1 P1) = sval (exist _ a2 P2) := p.
 apply (eq_sig _ _ p'); exact/boolp.Prop_irrelevance.
 Qed.
-End proof_irrelevance.
 
 Section prop.
 Variable (A : finType).
 Let T := choice_of_Type (T A).
 Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
-Proof.
-  rewrite /avg; case x => x0 H /=.
-  apply eq_sig_irrelevant.
-  exact: conv1.
-Qed.
+Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/conv1. Qed.
 Lemma avgI (x : T) (p : prob) : avg x x p = x.
-Proof.
-  rewrite /avg; case x => x0 H /=.
-  apply eq_sig_irrelevant.
-  exact: convmm.
-Qed.
+Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/convmm. Qed.
 Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
-Proof.
-rewrite /avg; apply eq_sig_irrelevant.
-exact: convC.
-Qed.
+Proof. rewrite /avg; exact/eq_sig_irrelevant/convC. Qed.
 Lemma avgA (p q : prob) (d0 d1 d2 : T) :
   avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
-Proof.
-rewrite /avg /=; apply eq_sig_irrelevant.
-exact: convA.
-Qed.
+Proof. rewrite /avg /=; exact/eq_sig_irrelevant/convA. Qed.
 End prop.
 End DominatedPair.
 
@@ -130,8 +115,10 @@ Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
 Local Open Scope divergence_scope.
 
 (* thm 2.7.2 *)
-(* div restricted to dominated pairs is a convex function; it's actually not a restriction since div is meaningful only on dominated pairs. *)
-Lemma div_convex : convex_function (DominatedPair.simple_elim (@div A) : (dominatedPairConvType A -> _)).
+(* div restricted to dominated pairs is a convex function;
+   it's actually not a restriction since div is meaningful only on dominated pairs. *)
+Lemma div_convex' : convex_function
+  (DominatedPair.simple_elim (@div A) : dominatedPairConvType A -> _).
 Proof.
 (* TODO: clean *)
 rewrite /ConvexFunction.axiom => [] [[p1 q1] /= pq1] [[p2 q2] /= pq2] t.
@@ -141,49 +128,38 @@ rewrite 2!big_distrr /= -big_split /= /div.
 rewrite rsum_setT [in X in _ <= X]rsum_setT.
 apply ler_rsum => a _.
 rewrite 2!Conv2Dist.dE.
-case/boolP : (q2 a == 0) => [|] q2a0.
-  rewrite (eqP q2a0) !(mul0R,mulR0,add0R).
-  have p2a0 : p2 a == 0.
-    apply/eqP.
-    move/dominatesP in pq2.
-    exact/pq2/eqP.
-  rewrite (eqP p2a0) !(mulR0,addR0,mul0R).
-  case/boolP : (q1 a == 0) => [|] q1a0.
-    have p1a0 : p1 a == 0.
-      apply/eqP.
-      move/dominatesP in pq1.
-      exact/pq1/eqP.
-    rewrite (eqP p1a0) !(mulR0,mul0R); exact/leRR.
+case/boolP : (q2 a == 0) => [/eqP |] q2a0.
+  rewrite q2a0 !(mul0R,mulR0,add0R).
+  have -> : p2 a = 0 by move/dominatesP : pq2; exact.
+  rewrite !(mulR0,addR0,mul0R).
+  case/boolP : (q1 a == 0) => [/eqP |] q1a0.
+    have -> : p1 a = 0 by move/dominatesP : pq1; exact.
+    rewrite !(mulR0,mul0R); exact/leRR.
   case/boolP : (t == `Pr 0) => [/eqP /=|] t0.
     rewrite t0 !mul0R; exact/leRR.
   apply/Req_le.
   rewrite mulRA; congr (_ * _ * log _).
-  field.
-  split; exact/eqP.
-case/boolP : (q1 a == 0) => [|] q1a0.
-  rewrite (eqP q1a0) !(mul0R,mulR0,add0R).
-  have p1a0 : p1 a == 0.
-    apply/eqP.
-    move/dominatesP in pq1.
-    exact/pq1/eqP.
-  rewrite (eqP p1a0) !(mulR0,addR0,mul0R,add0R).
+  field; split; exact/eqP.
+case/boolP : (q1 a == 0) => [/eqP |] q1a0.
+  rewrite q1a0 !(mul0R,mulR0,add0R).
+  have -> : p1 a = 0 by move/dominatesP : pq1; exact.
+  rewrite !(mulR0,addR0,mul0R,add0R).
   case/boolP : (t.~ == 0) => [/eqP ->|t0].
     rewrite !mul0R; exact/leRR.
   apply/Req_le.
   rewrite mulRA; congr (_ * _ * log _).
-  field.
-  split; exact/eqP.
+  field; split; exact/eqP.
 set h : dist A -> dist A -> {ffun 'I_2 -> R} := fun p1 p2 => [ffun i => [eta (fun=> 0) with
   ord0 |-> t * p1 a, lift ord0 ord0 |-> t.~ * p2 a] i].
 have hdom : ((h p1 p2) << (h q1 q2)).
   apply/dominatesP => i.
   rewrite /h /= !ffunE; case: ifPn => _.
   rewrite mulR_eq0 => -[->|/eqP].
-  by rewrite mul0R.
+    by rewrite mul0R.
   by rewrite (negbTE q1a0).
   case: ifPn => // _.
   rewrite mulR_eq0 => -[->|/eqP].
-  by rewrite mul0R.
+    by rewrite mul0R.
   by rewrite (negbTE q2a0).
 set f : 'I_2 -> R := h p1 p2.
 set g : 'I_2 -> R := h q1 q2.
@@ -203,24 +179,19 @@ apply/Req_le; congr (_ + _).
   case/boolP : (t == `Pr 0) => [/eqP ->|t0]; first by rewrite !mul0R.
   rewrite mulRA; congr (_ * _ * log _).
   rewrite !eqxx.
-  field.
-  split; exact/eqP.
+  field; split; exact/eqP.
 case/boolP : (t.~ == 0) => [/eqP ->|t1]; first by rewrite !mul0R.
 rewrite mulRA; congr (_ * _ * log _).
 rewrite /=.
-field.
-split; exact/eqP.
+field; split; exact/eqP.
 Qed.
 
-Lemma div_convex' : forall (p1 p2 q1 q2 : dist_convType A) (t : prob),
+Lemma div_convex (p1 p2 q1 q2 : dist_convType A) (t : prob) :
   p1 << q1 -> p2 << q2 ->
   div (p1 <| t |> p2) (q1 <| t |> q2) <= div p1 q1 <| t |> div p2 q2.
 Proof.
-move => p1 p2 q1 q2 t pq1 pq2.
-move:div_convex.
-rewrite/ConvexFunction.axiom/convex_function_at/DominatedPair.simple_elim/=.
-move/(_ (exist _ (p1,q1) pq1) (exist _ (p2,q2) pq2))=>/=.
-by apply.
+move=> pq1 pq2.
+exact: (div_convex' (exist _ (p1, q1) pq1) (exist _ (p2, q2) pq2)).
 Qed.
 End divergence_convex.
 
@@ -241,7 +212,7 @@ rewrite !(entropy_log_div _ A_not_empty') /=.
 rewrite /Leconv /= [in X in _ <= X]/Conv /= /avg /= (* TODO *).
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
 rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
-move: (div_convex' t (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).
+move: (div_convex t (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).
 by rewrite convmm.
 Qed.
 
@@ -446,7 +417,8 @@ Variables (A B : finType) (P : dist A).
 Local Open Scope divergence_scope.
 
 Lemma mutual_information_convex :
-  convex_function (fun (Q : @depfun_choiceType A (fun=> dist_convType B)) => MutualInfo.mi (CDist.make_joint P Q)).
+  convex_function (fun Q : depfun_choiceType (fun _ : A => dist_convType B) =>
+    MutualInfo.mi (CDist.make_joint P Q)).
 Proof.
 move=> p1yx p2yx t.
 pose p1' := CDist.mkt P p1yx.
@@ -495,7 +467,7 @@ have -> : MutualInfo.mi (CDist.make_joint P p2yx) = D(p2xy || q2xy).
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
   by rewrite /q2xy ProdDist.dE /CDist.make_joint /CDist.joint_of /= ProdDist.fst.
-apply: div_convex'.
+apply: div_convex.
 - apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy ProdDist.dE /= mulR_eq0.
   rewrite /p1 /p1xy /CDist.joint_of => -[|].

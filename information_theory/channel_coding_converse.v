@@ -1,9 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Lra.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb ln_facts Rbigop arg_rmax.
 Require Import num_occ proba entropy types jtypes divergence.
 Require Import conditional_divergence error_exponent channel_code channel.
@@ -100,7 +98,7 @@ have Rlt0n : 0 < n%:R.
   rewrite /n0.
   apply mulR_gt0; last exact/invR_gt0.
   rewrite /Rdiv -mulRA.
-  apply mulR_gt0; first by apply expR_gt0; lra.
+  apply mulR_gt0; first exact/expR_gt0/Rlt_0_2.
   apply mulR_gt0;
     [exact/ltR0n/fact_gt0 | exact/invR_gt0/expR_gt0/mulR_gt0].
 destruct n as [|n'].

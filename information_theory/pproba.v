@@ -1,8 +1,6 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg zmodp matrix.
-Require Import Reals Lra.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
+Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop proba channel.
 Require Import cproba.
 

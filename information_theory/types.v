@@ -1,10 +1,8 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype tuple finfun bigop prime binomial.
-From mathcomp Require Import ssralg finset fingroup finalg perm zmodp matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp matrix.
 From mathcomp Require boolp.
-Require Import Reals Lra.
+Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba entropy num_occ channel_code channel typ_seq.
 
@@ -497,7 +495,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
   rewrite big_const iter_addR tuple_dist_type_entropy //.
   do 2 f_equal.
   rewrite card_imset //; exact row_of_tuple_inj.
-- rewrite (_ : (INR #| T_{P} | = 0)%R); first lra.
+- rewrite (_ : (INR #| T_{P} | = 0)%R); first by rewrite mul0R; exact/Rle_0_1.
   rewrite (_ : 0%R = INR 0) //; congr INR; apply/eqP.
   rewrite cards_eq0; apply/negPn.
   move: x_T_P; apply contra; by move/set0Pn/existsP.

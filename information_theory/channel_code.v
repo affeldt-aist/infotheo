@@ -1,8 +1,6 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg matrix.
-Require Import Reals Lra.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+Require Import Reals.
 Require Import Reals_ext ssrR logb Rbigop proba channel.
 
 (** * Definition of a channel code *)
@@ -54,7 +52,7 @@ Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
 Lemma echa_ge0 (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
 apply mulR_ge0.
-- apply divR_ge0; [lra | exact/ltR0n].
+- apply divR_ge0; [exact/Rle_0_1| exact/ltR0n].
 - apply: rsumr_ge0 => ? _; apply: rsumr_ge0 => ? _; exact: DMC_ge0.
 Qed.
 

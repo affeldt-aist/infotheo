@@ -1,8 +1,7 @@
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div choice fintype.
-From mathcomp Require Import tuple finfun bigop prime binomial ssralg finset fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
-From infotheo Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba entropy aep typ_seq.
-From infotheo Require Import natbin source_code.
+From infotheo Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext.
+From infotheo Require Import Rbigop proba entropy aep typ_seq natbin source_code.
 
 (* documentation:
   Ryosuke Obi, Manabu Hagiwara, and Reynald Affeldt.

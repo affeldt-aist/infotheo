@@ -1,13 +1,13 @@
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div choice fintype.
-From mathcomp Require Import tuple finfun bigop prime binomial ssralg finset fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
-From infotheo Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba entropy.
-From infotheo Require Import divergence log_sum source_code.
+From infotheo Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext.
+From infotheo Require Import Rbigop proba entropy divergence log_sum source_code.
 
 (* documentation
    Ryosuke Obi.
-   In MI Lecture Note Workshop on Theorem proving and provers for reliable theory and implementations (TPP2014),
-  Kyushu University, December 3--5, 2014, volume 61, pages 76--78, Dec 2014
+   In MI Lecture Note Workshop on Theorem proving and provers for reliable
+   theory and implementations (TPP2014),
+   Kyushu University, December 3--5, 2014, volume 61, pages 76--78, Dec 2014
 *)
 
 (* quickly patched to compile with infotheo [2019-08-19] *)

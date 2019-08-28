@@ -1,7 +1,5 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat seq div.
-From mathcomp Require Import choice fintype finfun bigop prime binomial ssralg.
-From mathcomp Require Import finset fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext logb proba.
 
@@ -30,7 +28,6 @@ Variable P : dist A.
 End scode_definition.
 
 Local Open Scope proba_scope.
-
 
 Section scode_vl_definition.
 
