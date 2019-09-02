@@ -303,6 +303,21 @@ rewrite boolp.funeqE => d; rewrite /Distfmap /= DistBindA; congr DistBind.d.
 by rewrite boolp.funeqE => a; rewrite DistBind1f.
 Qed.
 
+Definition DistfmapE (A B : choiceType) (f : A -> B) (d : Dist A) b :
+  Distfmap f d b = \sum_(a <- finsupp d | f a == b) d a.
+Proof.
+rewrite {1}/Distfmap [in LHS]DistBind.dE; case: ifPn => Hb.
+  rewrite (bigID (fun a => f a == b)) /=.
+  rewrite [X in (_ + X)%R = _](_ : _ = 0) ?addR0; last first.
+    by rewrite big1 // => a /negbTE fab; rewrite Dist1.dE inE eq_sym fab mulR0.
+  by apply eq_bigr => a fab; rewrite Dist1.dE inE eq_sym fab mulR1.
+rewrite big_seq_cond big1 // => a /andP[ad] fab.
+exfalso; move/negP : Hb; apply.
+apply/bigfcupP; rewrite imfset_id; exists (Dist1.d (f a)).
+  by rewrite andbT; apply/imfsetP => /=; exists a.
+by rewrite Dist1.supp inE eq_sym.
+Qed.
+
 Lemma supp_Distfmap_Dist1 (A : choiceType) d :
   finsupp (Distfmap (@Dist1.d A) d) = [fset Dist1.d x | x in finsupp d]%fset.
 Proof.
@@ -313,6 +328,19 @@ apply/bigfcupP/imfsetP => [[D]|].
 case=> a /= ad -> {d'}; exists (Dist1.d (Dist1.d a)).
   rewrite andbT; apply/imfsetP; exists a => //=; by rewrite imfset_id.
 by rewrite Dist1.supp inE.
+Qed.
+
+Definition Distjoin A (D : Dist (Dist A)) : Dist A := DistBind.d D ssrfun.id.
+
+Lemma DistjoinE A (D : Dist (Dist A)) x :
+  Distjoin D x = \sum_(d <- finsupp D) D d * d x.
+Proof.
+rewrite /Distjoin DistBind.dE 2!imfset_id; case: ifPn => // xD.
+rewrite big_seq_cond (eq_bigr (fun=> 0)) ?big1 // => d.
+rewrite andbT => dD.
+case/boolP : (d x == 0) => [/eqP -> |dx0]; first by rewrite mulR0.
+exfalso; move/negP : xD; apply.
+apply/bigfcupP; exists d; by [rewrite dD | rewrite mem_finsupp].
 Qed.
 
 Module Dist_of_dist.
