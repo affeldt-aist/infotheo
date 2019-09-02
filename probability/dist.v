@@ -318,17 +318,21 @@ apply/bigfcupP; rewrite imfset_id; exists (Dist1.d (f a)).
 by rewrite Dist1.supp inE eq_sym.
 Qed.
 
-Lemma supp_Distfmap_Dist1 (A : choiceType) d :
-  finsupp (Distfmap (@Dist1.d A) d) = [fset Dist1.d x | x in finsupp d]%fset.
+Lemma supp_Distfmap (A : choiceType) (f : A -> Dist A) d :
+  finsupp (Distfmap f d) = [fset f x | x in finsupp d].
 Proof.
 rewrite /Distfmap DistBind.supp; apply/fsetP => d'.
 apply/bigfcupP/imfsetP => [[D]|].
   rewrite andbT => /imfsetP[a /=]; rewrite imfset_id => ad ->{D}.
   by rewrite Dist1.supp inE => /eqP ->{d'}; exists a.
-case=> a /= ad -> {d'}; exists (Dist1.d (Dist1.d a)).
+case=> a /= ad -> {d'}; exists (Dist1.d (f a)).
   rewrite andbT; apply/imfsetP; exists a => //=; by rewrite imfset_id.
 by rewrite Dist1.supp inE.
 Qed.
+
+Lemma Distfmap1 (A B : choiceType) (f : A -> B) x :
+  Distfmap f (Dist1.d x) = Dist1.d (f x).
+Proof. by rewrite /Distfmap DistBind1f. Qed.
 
 Definition Distjoin A (D : Dist (Dist A)) : Dist A := DistBind.d D ssrfun.id.
 
@@ -341,6 +345,12 @@ rewrite andbT => dD.
 case/boolP : (d x == 0) => [/eqP -> |dx0]; first by rewrite mulR0.
 exfalso; move/negP : xD; apply.
 apply/bigfcupP; exists d; by [rewrite dD | rewrite mem_finsupp].
+Qed.
+
+Lemma Distjoin1 (A : choiceType) (D : Dist (Dist A)) : Distjoin (Dist1.d D) = D.
+Proof.
+apply/Dist_ext => d.
+by rewrite DistjoinE Dist1.supp big_imfset // big_seq1 Dist1.dE inE eqxx mul1R.
 Qed.
 
 Module Dist_of_dist.
