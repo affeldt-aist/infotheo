@@ -22,7 +22,7 @@ lib/vandermonde.v
 probability/proba.v
 probability/convex_type.v
 probability/convex_choice.v
-probability/dist.v
+probability/fsdist.v
 probability/convex_stone.v
 probability/cproba.v
 probability/cinde.v
@@ -58,7 +58,7 @@ information_theory/channel_coding_converse.v
 information_theory/kraft.v
 information_theory/shannon_fano.v
 information_theory/string_entropy.v
-information_theory/convex_dist.v
+information_theory/convex_fdist.v
 information_theory/source_coding_vl_direct.v
 information_theory/source_coding_vl_converse.v
 ecc_classic/linearcode.v

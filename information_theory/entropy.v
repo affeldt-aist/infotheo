@@ -33,11 +33,11 @@ case/boolP : (P i == 0) => [/eqP ->|Hi].
      consequence of lim x->0 x log x = 0 *)
   rewrite mul0R oppR0; exact/leRR.
 rewrite mulRC -mulNR.
-apply mulR_ge0; last exact: fdist_ge0.
+apply mulR_ge0 => //.
 apply oppR_ge0.
 rewrite /log -(Log_1 2).
-apply Log_increasing_le => //; last exact: fdist_max.
-apply/ltRP; rewrite lt0R Hi; exact/leRP/fdist_ge0.
+apply Log_increasing_le => //.
+apply/ltRP; rewrite lt0R Hi; exact/leRP.
 Qed.
 
 Hypothesis P_pos : forall b, 0 < P b.
@@ -48,10 +48,10 @@ rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \sum_(_ in _) _ = \sum_(i in A | predT A) - (P i * log (P i))).
   apply rsumr_ge0 => i _.
   rewrite mulRC -mulNR.
-  apply mulR_ge0; last exact: fdist_ge0.
+  apply mulR_ge0 => //.
   apply oppR_ge0.
   rewrite /log -(Log_1 2).
-  apply Log_increasing_le => //; by [by apply P_pos | exact: fdist_max].
+  exact: Log_increasing_le.
 apply eq_bigl => i /=; by rewrite inE.
 Qed.
 
@@ -76,7 +76,7 @@ rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply eq_bigr => a _ ;rewrite /log /Rdiv mulRA mulRC; f_equal.
 rewrite /xlnx; case : ifP => // /ltRP Hcase.
 have : P a = 0; last by move=> ->; rewrite mul0R.
-case (Rle_lt_or_eq_dec 0 (P a)) => //; exact: fdist_ge0.
+by case (Rle_lt_or_eq_dec 0 (P a)).
 Qed.
 
 Lemma entropy_uniform {A : finType} n (HA : #|A| = n.+1) :
@@ -105,7 +105,7 @@ transitivity (\sum_(a|a \in A) P a * log (P a) +
   rewrite Uniform.dE; apply/invR_gt0; rewrite HA; exact/ltR0n.
 rewrite [in X in _ + X](eq_bigr (fun a => P a * - log (/ INR #|A|))); last first.
   by move=> a _; rewrite Uniform.dE.
-rewrite -[in X in _ + X = _]big_distrl /= epmf1 mul1R.
+rewrite -[in X in _ + X = _]big_distrl /= FDist.pmf1 mul1R.
 rewrite addRC /entropy /log LogV ?oppRK ?subR_opp // HA; exact/ltR0n.
 Qed.
 

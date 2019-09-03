@@ -1,7 +1,7 @@
 From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg matrix.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
-Require Import cproba divergence entropy chap2.
+Require Import cproba entropy chap2.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -39,7 +39,7 @@ rewrite -(pair_bigA _ (fun x1 x2 => f (x1, x2))) /=.
 rewrite !big_ord_recl !big_ord0 /f /= !ffunE /=; field.
 Qed.
 
-Definition d : {fdist 'I_4 * 'I_4} := locked (makeFDist f0 f1).
+Definition d : {fdist 'I_4 * 'I_4} := locked (FDist.make f0 f1).
 
 Lemma dE x : d x = f x.
 Proof. by rewrite /d; unlock. Qed.

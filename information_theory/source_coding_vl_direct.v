@@ -292,16 +292,15 @@ rewrite /E_leng_cw (rsum_union' _ (`TS P n'.+1 epsilon)).
 rewrite eq_sizef_Lnt eq_sizef_Lt -!(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
  P `^ n i = 1 - \sum_(i | i \in `TS P n epsilon) P `^ n i); last first.
--by rewrite -(epmf1 P`^n) (rsum_union' _ (`TS P n epsilon)) addRC /Rminus
-       -addRA Rplus_opp_r addR0.
--apply: Rplus_le_compat.
- +rewrite -[X in _ <= X]mulR1; apply: Rmult_le_compat_l.
-  *by apply: (Rplus_le_le_0_compat _ _ _ Rle_0_1); apply: ltRW; apply: Lt_pos.
-  * rewrite -(epmf1 (P `^ n)); apply: ler_rsum_l => // *; [exact/Rle_refl | exact/fdist_ge0].
- +apply: Rmult_le_compat_r.
-  *by apply: (Rplus_le_le_0_compat _ _ (Lnt_nonneg _ P) Rle_0_1).
-  *apply: Rminus_le; rewrite /Rminus addRC addRA; apply: Rle_minus; rewrite addRC.
-    by apply: Pr_TS_1.
+- by rewrite -(FDist.pmf1 P`^n) (rsum_union' _ (`TS P n epsilon)) addRC addRK.
+- apply: Rplus_le_compat.
+  + rewrite -[X in _ <= X]mulR1; apply: Rmult_le_compat_l.
+    * by apply: (Rplus_le_le_0_compat _ _ _ Rle_0_1); apply: ltRW; apply: Lt_pos.
+    * rewrite -(FDist.pmf1 (P `^ n)); apply: ler_rsum_l => // *; exact/leRR.
+  + apply: Rmult_le_compat_r.
+    * by apply: (Rplus_le_le_0_compat _ _ (Lnt_nonneg _ P) Rle_0_1).
+    * apply: Rminus_le; rewrite /Rminus addRC addRA; apply: Rle_minus; rewrite addRC.
+      by apply: Pr_TS_1.
 Qed.
 
 End E_Leng_Cw_Lemma.
@@ -451,7 +450,7 @@ have: (n0 < n0.+1)%nat by[].
 case/v_scode'=> // sc [fphi ccl].
 apply: (ex_intro _ (enc sc)).
 apply: conj=>//.
-by apply: (can_inj fphi).
+exact: (can_inj fphi).
 Qed.
 
 End variable_length_source_coding.

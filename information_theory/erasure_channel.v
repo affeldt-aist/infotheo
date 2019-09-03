@@ -51,7 +51,7 @@ rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /= (proj2 (prsumr_eq0P
 Qed.
 
 Definition c : `Ch(A, [finType of option A]) :=
-  fun a => makeFDist (f0 a) (f1 a).
+  fun a => FDist.make (f0 a) (f1 a).
 
 End EC_sect.
 

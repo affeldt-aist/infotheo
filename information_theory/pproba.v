@@ -53,8 +53,7 @@ apply/idP/idP => [|H].
 - case/existsP => /= x /andP[Px0].
   apply: contra => /eqP/prsumr_eq0P => /= H.
   apply/eqP; rewrite -(@eqR_mul2l (P x)); last exact/eqP.
-  rewrite mulR0 H // => /= x' _.
-  apply mulR_ge0; exact: fdist_ge0.
+  rewrite mulR0 H // => /= x' _; exact: mulR_ge0.
 - have /= : \sum_(x in setT) P x * W ``(y | x) != 0.
     apply: contra H => /eqP H; apply/eqP.
     rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
@@ -83,8 +82,7 @@ apply/idP/idP => [|/eqP].
   move: (H i).
   rewrite negb_and !negbK => /orP[|/eqP //].
   by rewrite -(negbK (_ == _)) UniformSupport.neq0 iC.
-- have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%R.
-    move=> ? ?; exact: DMC_ge0.
+- have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%R by [].
   move/prsumr_eq0P => H /H {H} H.
   rewrite /Receivable.def; apply/negP.
   case/existsP => z /andP[].
@@ -102,14 +100,11 @@ Definition den := \sum_(x in 'rV_n) P x * W ``(y | x).
 
 Definition f := [ffun x => P x * W ``(y | x) / den].
 
-Lemma den_ge0 : 0 <= den.
-Proof.
-apply rsumr_ge0 => x _; apply mulR_ge0; [exact/fdist_ge0 | exact/DMC_ge0].
-Qed.
+Lemma den_ge0 : 0 <= den. Proof. apply rsumr_ge0 => x _; exact: mulR_ge0. Qed.
 
 Lemma f0 x : 0 <= f x.
 Proof.
-rewrite ffunE; apply divR_ge0; first by apply mulR_ge0; exact/fdist_ge0.
+rewrite ffunE; apply divR_ge0; first exact: mulR_ge0.
 apply/ltRP; rewrite lt0R {1}/den -receivableE Receivable.defE /=.
 exact/leRP/den_ge0.
 Qed.
@@ -121,7 +116,7 @@ rewrite /f /Rdiv; evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h); last first.
 by rewrite {}/h -big_distrl /= mulRC mulVR // -receivableE Receivable.defE.
 Qed.
 
-Definition d : {fdist 'rV[A]_n} := locked (makeFDist f0 f1).
+Definition d : {fdist 'rV[A]_n} := locked (FDist.make f0 f1).
 
 Lemma dE x : d x = P x * W ``(y | x) / den.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
@@ -213,9 +208,9 @@ Proof.
 rewrite ffunE; apply mulR_ge0.
 - rewrite /Kmpp.
   apply/ltRW/invR_gt0/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
-    apply rsumr_ge0 => /= ? _; exact: fdist_ge0.
+    apply rsumr_ge0 => /= ? _; exact: FDist.ge0.
   exact/f'_neq0.
-- apply rsumr_ge0 => /= ? _; exact: fdist_ge0.
+- apply rsumr_ge0 => /= ? _; exact: FDist.ge0.
 Qed.
 
 Lemma f1 i : \sum_(a in A) f i a = 1.
@@ -230,7 +225,7 @@ suff : tmp1 = tmp2.
 by rewrite {}/tmp1 {}/tmp2 (partition_big (fun x : 'rV_n => x ``_ i) xpredT).
 Qed.
 
-Definition d i : fdist A := makeFDist (f0 i) (f1 i).
+Definition d i : fdist A := FDist.make (f0 i) (f1 i).
 
 End def.
 Local Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" := (@d _ _ W _ P y n0 a).

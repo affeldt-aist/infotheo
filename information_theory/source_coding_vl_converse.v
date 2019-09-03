@@ -249,7 +249,7 @@ rewrite [X in X = _](_ :_ = \sum_(i | i \in A) P i * log (P i) *
   rewrite big_ord_recl (_ : _ ``_ ord0 = i); last first.
     rewrite mxE; case: splitP => // j Hj; by rewrite mxE.
   rewrite -mulRA.
-  case: (fdist_ge0 P i)=>[ pi_pos| <-]; last by rewrite !mul0R.
+  case: (FDist.ge0 P i) => [ pi_pos| <-]; last by rewrite !mul0R.
   apply:Rmult_eq_compat_l.
   rewrite -Rmult_plus_distr_l.
   rewrite (@eq_bigr _ _ _ _ _ _ (fun x => P ((row_mx (\row_(_ < 1) i) i0) ``_ (lift ord0 x))) (fun x => P i0 ``_ x))=>[|i1 _]; last first.
@@ -264,10 +264,10 @@ rewrite [X in X = _](_ :_ = \sum_(i | i \in A) P i * log (P i) *
     apply/ltRP; rewrite lt0R eq_sym rmul_non0; apply/leRP/rprodr_ge0 => ?; exact: pos_ff_ge0.
   by rewrite /log LogM // !Rmult_plus_distr_l mulRA mulRA.
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
-  by rewrite -(epmf1 (P `^ n0)); apply eq_bigr => i _; rewrite TupleFDist.dE.
+  by rewrite -(FDist.pmf1 (P `^ n0)); apply eq_bigr => i _; rewrite TupleFDist.dE.
 rewrite -big_distrl /= mulR1 [in RHS]addRC.
 apply:Rplus_eq_compat_l.
-rewrite -big_distrl /= epmf1 mul1R; apply eq_bigr => i _.
+rewrite -big_distrl /= FDist.pmf1 mul1R; apply eq_bigr => i _.
 by rewrite TupleFDist.dE.
 Qed.
 
@@ -307,7 +307,7 @@ Qed.
 
 Lemma pmf1N : \sum_(i in 'I_Nmax.+1) [ffun x : 'I__ => @Pr _ P (X @^-1 (INR x))] i = 1.
 Proof.
-rewrite -(epmf1 P).
+rewrite -(FDist.pmf1 P).
 rewrite [in RHS](partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
 apply:eq_bigr=> i _; rewrite ffunE; apply:eq_bigl=>i0.
 rewrite /= inE.
@@ -316,9 +316,9 @@ apply: ord_inj.
 by rewrite -H inordfE.
 Qed.
 
-Definition PN := makeFDist Rle0Pr pmf1N.
+Definition PN := FDist.make Rle0Pr pmf1N.
 
-Lemma EX_ord : @Ex _ P X = \sum_(i in 'I_Nmax.+1) (INR i) * PN i.
+Lemma EX_ord : `E X = \sum_(i in 'I_Nmax.+1) (INR i) * PN i.
 Proof.
 rewrite /Ex (partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
 apply:eq_bigr=> i _.
@@ -329,29 +329,27 @@ rewrite inE; apply/eqP/eqP; first by move<-; rewrite inordfE.
 by move/INR_eq=>H; apply: ord_inj; rewrite -H inordfE.
 Qed.
 
-Lemma le_1_EX : 1 <= @Ex _ P X.
+Lemma le_1_EX : 1 <= `E X.
 Proof.
-rewrite -(epmf1 P).
-apply: ler_rsum => i _.
+rewrite -(FDist.pmf1 P); apply: ler_rsum => i _.
 rewrite -{1}(mul1R ( P i)).
 apply:Rmult_le_compat_r; first by apply pos_ff_ge0.
 rewrite (_ : 1 = INR 1) //; move: (Xpos i).
 by rewrite /= (_ : 0 = INR 0)//; move/INR_lt/lt_le_S/le_INR.
 Qed.
 
-Lemma EX_pos: 0 < @Ex _ P X.
-Proof. by apply:(Rlt_le_trans _ _ _ Rlt_0_1 le_1_EX). Qed.
+Lemma EX_pos : 0 < `E X.
+Proof. exact: (Rlt_le_trans _ _ _ Rlt_0_1 le_1_EX). Qed.
 
-Lemma EX_non0: @Ex _ P X  <> 0.
+Lemma EX_non0 : `E X <> 0.
 Proof. by apply:nesym; apply:Rlt_not_eq; apply: EX_pos. Qed.
 
-
-Lemma entroPN_0 : @Ex _ P X  = 1 -> `H PN = 0.
+Lemma entroPN_0 : `E X  = 1 -> `H PN = 0.
 Proof.
 move=>EX_1.
 have eq_0_P: forall a, X a <> 1 -> 0 = P a.
-  move:EX_1.
-  rewrite -{1}(epmf1 P)=>EX1 a Xnon1.
+  move: EX_1.
+  rewrite -{1}(FDist.pmf1 P)=>EX1 a Xnon1.
   have : forall i : A, i \in A -> P i <= INR (size (f i)) * P i.
     move=> i _; rewrite -{1}(mul1R ( P i)).
     apply:Rmult_le_compat_r; first apply pos_ff_ge0.
@@ -367,7 +365,7 @@ rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 //= => i _.
 rewrite /= /pr_eq /Pr ffunE.
 case (Req_dec (INR i) 1)=>[->| neq0].
   rewrite [X in _ * log X = _](_ : _ = 1); first by rewrite /log Log_1 mulR0.
-  rewrite -{2}(epmf1 P).
+  rewrite -{2}(FDist.pmf1 P).
   rewrite [in RHS](bigID (fun a => a \in [set x | INR (size (f x)) == 1])) /=.
   rewrite [X in _ = _ + X](_ : _ = 0); first by rewrite addR0.
   rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 // => j.
@@ -379,24 +377,24 @@ by move:neq0; rewrite -eq_Xj_i => /eq_0_P.
 Qed.
 
 Lemma le_entroPN_logeEX':
-  `H PN <= @Ex _ P X  * log (@Ex _ P X ) - (@Ex _ P X  - 1) * log((@Ex _ P X ) -1).
+  `H PN <= `E X  * log (`E X) - (`E X  - 1) * log((`E X ) - 1).
 Proof.
 move: EX_pos EX_non0=>EX_pos EX_non0.
 move/Rle_lt_or_eq_dec:le_1_EX=>[lt_EX_1| eq_E_0]; last first.
   rewrite -eq_E_0 /Rminus Rplus_opp_r mul0R Ropp_0 addR0 mul1R /log Log_1.
   by move/esym/entroPN_0:eq_E_0->; apply:Rle_refl.
-have lt_0_EX_1 : 0 < @Ex _ P X  - 1.
+have lt_0_EX_1 : 0 < `E X  - 1.
   apply:(Rplus_lt_reg_r 1).
   by rewrite  addRC -addRA Rplus_opp_l 2!addR0.
-pose alp := (@Ex _ P X  - 1) / @Ex _ P X .
+pose alp := (`E X  - 1) / `E X .
 have gt_alp_1 : alp < 1.
-    apply:(Rmult_lt_reg_r (@Ex _ P X )); first by apply:(Rlt_trans _ _ _ (Rlt_0_1)).
+    apply:(Rmult_lt_reg_r (@Ex _ P X )); first exact: (ltR_trans Rlt_0_1).
     rewrite /alp mul1R -mulRA -Rinv_l_sym // mulR1.
     by apply:Rgt_lt; apply:(tech_Rgt_minus _ _ (Rlt_0_1)).
 have lt_0_alp : 0 < alp.
   rewrite /alp.
   by apply:Rlt_mult_inv_pos=>//.
-have EX_pos' : 0 < 1 - (@Ex _ P X  - 1) * / @Ex _ P X .
+have EX_pos' : 0 < 1 - (`E X  - 1) * / `E X .
   rewrite Rmult_plus_distr_r -Rinv_r_sym // Ropp_mult_distr_l_reverse mul1R.
   rewrite /Rminus Ropp_plus_distr addRA Ropp_involutive addRC Rplus_opp_r addR0.
   by apply: Rinv_0_lt_compat.
@@ -406,7 +404,7 @@ have max_pos: (0 < \max_(a in A) size (f a))%coq_nat.
   apply:(bigmax_sup a)=> //.
   by move:(Xpos a); rewrite /X /= (_ : 0 = INR 0)//;move/INR_lt/ltP.
 
-rewrite [X in _ <= X](_ :_ = log ( alp / (1 - alp)) - (log alp) * @Ex _ P X );
+rewrite [X in _ <= X](_ :_ = log ( alp / (1 - alp)) - (log alp) * `E X);
     last first.
   rewrite /alp /Rdiv /log !LogM  //; last first.
       exact: Rinv_0_lt_compat.
@@ -493,23 +491,23 @@ rewrite (@big_ord_exclude0 _ (fun i => \Pr[X = INR i] * (log \Pr[X = INR i] - lo
 by move: (log_sum_inequality_ord_add1' Nmax dom_by_hg).
 Qed.
 
-Lemma le_entroPN_logeEX : `H PN <= log (@Ex _ P X ) + log (exp 1).
+Lemma le_entroPN_logeEX : `H PN <= log (`E X) + log (exp 1).
 Proof.
 move: EX_pos EX_non0=>EX_pos EX_non0.
 move/Rle_lt_or_eq_dec:le_1_EX=>[? | eq_EX_1]; last first.
   rewrite -eq_EX_1 /log Log_1 add0R.
   by move/esym/entroPN_0:eq_EX_1->; apply:log_exp1_Rle_0.
-have EX_1 : 0 < @Ex _ P X  - 1.
+have EX_1 : 0 < `E X  - 1.
   apply:(Rplus_lt_reg_r 1).
   by rewrite addRC -addRA Rplus_opp_l 2!addR0.
-have neq_EX1_0 :(@Ex _ P X  + -1) <> 0.
+have neq_EX1_0 : (`E X  + -1) <> 0.
   by apply:nesym; apply:Rlt_not_eq.
 apply:(Rle_trans _ (`E X  * log (`E X ) - (`E X  - 1) * log((`E X ) -1)) _).
   by apply: le_entroPN_logeEX'.
 rewrite -{1}(Rplus_minus 1 (`E X)).
 rewrite Rmult_plus_distr_r mul1R /Rminus -addRA; apply:Rplus_le_compat_l.
 rewrite -Ropp_mult_distr_r_reverse -Rmult_plus_distr_l -(mul1R (log (exp 1))).
-rewrite -{3}(Rplus_minus (@Ex _ P X ) 1) -Ropp_minus_distr'.
+rewrite -{3}(Rplus_minus (`E X) 1) -Ropp_minus_distr'.
   rewrite (addR_opp (log (`E X))) -logDiv //.
   apply:div_diff_ub=>//; first by apply:Rlt_le.
 by apply:Rlt_le; apply:(Rlt_trans _ _ _ (Rlt_0_1)).
@@ -523,7 +521,7 @@ Variables (A : finType) (P : fdist A).
 Variable n : nat.
 Variable f : A -> seq bool.
 Local Notation "'Nmax'" := (Nmax f).
-Let X := (INR \o size \o f).
+Let X : {RV P -> R} := (INR \o size \o f).
 Local Notation "'PN'" := (PN P f).
 Hypothesis f_uniq : uniquely_decodable f.
 
@@ -539,7 +537,7 @@ Qed.
 Lemma pmf1_Pf : \sum_(m in 'I_Nmax.+1) \sum_(a in {: m.-tuple bool}) Pf a = 1.
 Proof.
 move:(uniq_dec_inj f_uniq)=> f_inj.
-rewrite -(epmf1 P).
+rewrite -(FDist.pmf1 P).
 rewrite (partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
 apply:eq_bigr=>i _.
 rewrite (big_seq_tuple' i f_inj (fdist_card_neq0 P)) /Pf=>[|x].
@@ -689,13 +687,10 @@ rewrite -[Y in _ = _ + Y]mul1R -(pmf1_Pf' Pr_non0) big_distrl/= -big_split/=.
 by apply:eq_bigr=>? _; rewrite Rmult_plus_distr_l.
 Qed.
 
-
-Lemma apply_max_HPN : `H P <= @Ex _ P X  + `H PN.
+Lemma apply_max_HPN : `H P <= `E X  + `H PN.
 Proof.
-move:(uniq_dec_inj f_uniq)=>f_inj.
-rewrite rewrite_HP_with_HPN addRC (addRC _ (`H _)).
-apply:Rplus_le_compat_l.
-rewrite EX_ord.
+have f_inj := uniq_dec_inj f_uniq.
+rewrite rewrite_HP_with_HPN addRC (addRC _ (`H _)) leR_add2l EX_ord.
 rewrite (eq_bigl (fun m => m \in [set : 'I_Nmax.+1]) (fun x=> INR x * _ ))=>[|?]; last first.
   by rewrite /= in_setT.
 rewrite rsum_disjoints_set.
@@ -709,21 +704,20 @@ rewrite [Y in _ <= Y + _ ](_ :_ = 0).
   pose pmf_Pf' := mkPosFfun (Rle0Pf' H).
   have pmf1'_Pf' : \sum_(a in {: i.-tuple bool}) pmf_Pf' a == 1 :> R.
     by apply/eqP; apply: (pmf1_Pf' H).
-  pose distPf := mkFDist pmf1'_Pf'.
-  move:(entropy_max distPf).
-  rewrite card_tuple/= card_bool -natRexp log_pow (_ : INR 2 = 2)//.
+  pose distPf := FDist.mk pmf1'_Pf'.
+  move: (entropy_max distPf).
+  rewrite card_tuple /= card_bool -natRexp log_pow (_ : INR 2 = 2) //.
   by rewrite /log Log_n // mulR1.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 // => i.
 rewrite inE /PN /==>/eqP->.
 by rewrite mulR0.
 Qed.
 
-Lemma apply_le_HN_logE_loge: `H P <= @Ex _ P X  + log ((exp 1) * (@Ex _ P X )).
+Lemma apply_le_HN_logE_loge : `H P <= `E X  + log ((exp 1) * `E X).
 Proof.
-apply:(Rle_trans _ _ _ apply_max_HPN).
-apply:Rplus_le_compat_l.
-rewrite mulRC /log (LogM _ (EX_pos P f_uniq) (exp_pos 1)).
-by apply:(le_entroPN_logeEX P f_uniq).
+apply: (leR_trans apply_max_HPN).
+rewrite leR_add2l mulRC /log (LogM _ (EX_pos P f_uniq) (exp_pos 1)).
+exact: le_entroPN_logeEX f_uniq.
 Qed.
 
 End v_scode_converse'_1tuple.
@@ -1016,8 +1010,8 @@ rewrite ELC_TupleFDist mulRC (mulRC (INR (m eps))) card_matrix mul1n -natRexp lo
   by rewrite (_ : 0 = INR 0)//; apply: lt_INR; apply/ltP; apply: fdist_card_neq0.
 move/(Rmult_lt_reg_r _ _ _ (mpos eps nnon0))=>H'.
 apply: (Rle_trans _ (E_leng_cw f P)).
-by apply: (le_1_EX (P `^ n) f_uniq).
-by apply: Rlt_le.
+exact: (le_1_EX (P `^ n) f_uniq).
+exact: Rlt_le.
 Qed.
 
 End v_scode_converse'.

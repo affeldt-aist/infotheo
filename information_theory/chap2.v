@@ -392,9 +392,7 @@ apply Log_increasing_le => //; [by rewrite cPr_gt0 | exact: cPr_max].
 Qed.
 
 Lemma h_ge0 : 0 <= h.
-Proof.
-apply rsumr_ge0 => a _; apply mulR_ge0; [exact: fdist_ge0 | exact: h1_ge0].
-Qed.
+Proof. apply rsumr_ge0 => a _; apply mulR_ge0 => //; exact: h1_ge0. Qed.
 
 End condentropy.
 End CondEntropy.
@@ -921,8 +919,7 @@ Qed.
 (* 2.92 *)
 Lemma cmi_ge0 : 0 <= cmi PQR.
 Proof.
-rewrite cmiE2; apply rsumr_ge0 => c _.
-apply mulR_ge0; [exact: fdist_ge0 | exact: cdiv1_ge0].
+rewrite cmiE2; apply rsumr_ge0 => c _; apply mulR_ge0 => //; exact: cdiv1_ge0.
 Qed.
 
 Let P : fdist A := Bivar.fst (TripA.d PQR).

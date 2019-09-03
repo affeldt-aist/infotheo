@@ -57,7 +57,7 @@ Lemma no_0_type A (d : fdist A) (t : {ffun A -> 'I_1}) :
 Proof.
 move=> H.
 apply R1_neq_R0.
-rewrite -(epmf1 d).
+rewrite -(FDist.pmf1 d).
 transitivity (\sum_(a | a \in A) INR (t a) / 0); first exact/eq_bigr.
 rewrite -big_distrl /= -big_morph_natRD.
 rewrite (_ : (\sum_(a in A) _)%nat = O) ?mul0R //.
@@ -75,7 +75,7 @@ have H2 : \sum_(a in A) f a = 1%R.
   by rewrite {}/h -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
 have H : forall a, (N(a | ta) < n.+2)%nat.
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
-refine (@type.mkType _ n.+1 (makeFDist H1 H2)
+refine (@type.mkType _ n.+1 (FDist.make H1 H2)
   [ffun a => @Ordinal n.+2 (N(a | ta)) (H a)] _).
 by move=> a /=; rewrite !ffunE.
 Defined.
@@ -135,7 +135,7 @@ have H : \sum_(a in A) pf a == 1 :> R.
     move=> a _; rewrite ffunE /h; reflexivity.
   rewrite {}/h /= /Rdiv -big_distrl /= -big_morph_natRD.
   move/eqP : Hf => ->; by rewrite mulRV // INR_eq0'.
-exact (mkFDist H).
+exact:(FDist.mk H).
 Defined.
 
 Lemma fdist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})
@@ -155,9 +155,7 @@ Lemma ffun_of_fdist A n (d : fdist A) (t : {ffun A -> 'I_n.+2})
   (H : forall a : A, d a = INR (t a) / INR n.+1) : (\sum_(a in A) t a)%nat == n.+1.
 Proof.
 suff : INR (\sum_(a in A) t a) == INR n.+1 * \sum_(a | a \in A) d a.
-  move/eqP.
-  rewrite (epmf1 d) mulR1.
-  by move/INR_eq/eqP.
+  by move/eqP; rewrite (FDist.pmf1 d) mulR1 => /INR_eq/eqP.
 apply/eqP.
 transitivity (INR n.+1 * (\sum_(a|a \in A) INR (t a) / INR n.+1)).
   by rewrite -big_distrl -big_morph_natRD mulRCA mulRV ?mulR1 // INR_eq0'.
@@ -432,7 +430,7 @@ rewrite (_ : \prod_(a : A) P a ^ (type.f P) a =
   apply eq_bigr => a _.
   case/boolP : (0 == P a) => H; last first.
     have {H}H : 0 < P a.
-      have := fdist_ge0 P a.
+      have := FDist.ge0 P a.
       case/Rle_lt_or_eq_dec => // abs.
       by rewrite abs eqxx in H.
     rewrite -{1}(logK H) -exp2_pow.

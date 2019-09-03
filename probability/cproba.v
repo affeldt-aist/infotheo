@@ -87,21 +87,19 @@ Section def.
 Variable (A : finType) (P : {fdist A}).
 Definition f := [ffun a : A * A => if a.1 == a.2 then P a.1 else 0].
 Lemma f0 x : 0 <= f x.
-Proof.
-rewrite /f ffunE; case: ifPn => [/eqP ->| _]; [exact: fdist_ge0|exact: leRR].
-Qed.
+Proof. rewrite /f ffunE; case: ifPn => [/eqP -> //| _]; exact: leRR. Qed.
 Lemma f1 : \sum_(x in {: A * A}) f x = 1.
 Proof.
 rewrite (eq_bigr (fun a => f (a.1, a.2))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => f (a1, a2))) /=.
-rewrite -(epmf1 P); apply/eq_bigr => a _.
+rewrite -(FDist.pmf1 P); apply/eq_bigr => a _.
 rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
   move=> b _; rewrite ffunE /h; reflexivity.
 rewrite {}/h /= (bigD1 a) //= eqxx.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 //.
 by move=> a' /negbTE; rewrite eq_sym => ->.
 Qed.
-Definition d : {fdist A * A} := locked (makeFDist f0 f1).
+Definition d : {fdist A * A} := locked (FDist.make f0 f1).
 Lemma dE a : d a = if a.1 == a.2 then P a.1 else 0.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
@@ -297,7 +295,7 @@ rewrite /d Bivar.sndE; apply eq_bigr => b _; by rewrite TripA.dE TripC12.dE.
 Qed.
 
 Lemma domin a b c : d (a, c) = 0 -> P (a, b, c) = 0.
-Proof. rewrite dE /= => /prsumr_eq0P -> // b' _; exact: fdist_ge0. Qed.
+Proof. by rewrite dE /= => /prsumr_eq0P ->. Qed.
 
 Lemma dominN a b c : P (a, b, c) != 0 -> d (a, c) != 0.
 Proof. by apply: contra => /eqP H; apply/eqP/domin. Qed.
@@ -319,7 +317,7 @@ Lemma dE x : d x = \sum_(a in A) P (a, x.1, x.2).
 Proof. by rewrite /d Bivar.sndE; apply eq_bigr => a _; rewrite TripA.dE. Qed.
 
 Lemma domin a b c : d (b, c) = 0 -> P (a, b, c) = 0.
-Proof. rewrite dE /= => /prsumr_eq0P -> // a' _; exact: fdist_ge0. Qed.
+Proof. by rewrite dE /= => /prsumr_eq0P ->. Qed.
 
 Lemma dominN a b c : P (a, b, c) != 0 -> d (b, c) != 0.
 Proof. by apply: contra => /eqP H; apply/eqP; apply: domin. Qed.
@@ -439,7 +437,7 @@ rewrite /cPr; case/boolP : (Pr (Bivar.snd P) F == 0) => [/eqP|] H0.
   by rewrite Pr_domin_snd // div0R.
 rewrite leR_pdivr_mulr ?Pr_gt0 // mul1R /Pr big_setX /= exchange_big /=.
 apply ler_rsum => b _.
-rewrite Bivar.sndE; apply ler_rsum_l => // a _; [exact: leRR | exact: fdist_ge0].
+rewrite Bivar.sndE; apply ler_rsum_l => // a _; exact: leRR.
 Qed.
 
 Lemma cPr_gt0 E F : 0 < \Pr_[E | F] <-> \Pr_[E | F] != 0.
@@ -547,7 +545,7 @@ Proof.
 rewrite /cPr (Pr_set1 _ tt).
 rewrite (_ : Bivar.snd _ = FDist1.d tt) ?FDist1.dE ?eqxx ?divR1; last first.
   rewrite /Bivar.snd FDistMap.comp; apply/fdist_ext; case.
-  by rewrite FDistMap.dE FDist1.dE /= (eq_bigl xpredT) // epmf1.
+  by rewrite FDistMap.dE FDist1.dE /= (eq_bigl xpredT) // FDist.pmf1.
 rewrite /Pr big_setX /=; apply eq_bigr => a _; rewrite (big_set1 _ tt) /=.
 rewrite FDistMap.dE (big_pred1 a) // => a0; rewrite inE /=.
 by apply/eqP/eqP => [[] -> | ->].
@@ -584,7 +582,7 @@ rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
   move=> b _; rewrite ffunE /h; reflexivity.
 by rewrite {}/h /cPr -big_distrl /= PrX_snd mulRV // Pr_set1 Swap.snd.
 Qed.
-Definition d : {fdist B} := locked (makeFDist f0 f1).
+Definition d : {fdist B} := locked (FDist.make f0 f1).
 Lemma dE b : d b = \Pr_(Swap.d PQ) [[set b] | [set a]].
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
@@ -670,7 +668,7 @@ Variables (A B : finType) (P : {fdist A * B}).
 Lemma cPr_1 a : Bivar.fst P a != 0 ->
   \sum_(b in B) \Pr_(Swap.d P)[ [set b] | [set a] ] = 1.
 Proof.
-move=> Xa0; rewrite -(epmf1 (CondFDist.d P _ Xa0)).
+move=> Xa0; rewrite -(FDist.pmf1 (CondFDist.d P _ Xa0)).
 apply eq_bigr => b _; by rewrite CondFDist.dE.
 Qed.
 
@@ -797,7 +795,7 @@ transitivity (\sum_(i < n) Pr P (X @^-1 r :&: F i)).
   rewrite big_mkcond /=; apply eq_bigr => i _.
   case: ifPn => //; rewrite negbK => /eqP PFi0.
   rewrite /Pr big1 // => u; rewrite inE => /andP[uXr uFi].
-  move/prsumr_eq0P : PFi0 => -> // u' _; exact/fdist_ge0.
+  by move/prsumr_eq0P : PFi0 => ->.
 rewrite -Pr_big_union_disj; last first.
   move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
   apply/negbTE; rewrite !negb_and.

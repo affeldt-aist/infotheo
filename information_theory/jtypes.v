@@ -105,9 +105,9 @@ set pf := fun a b =>
   then / #|B|%:R
   else (f a b)%:R / ln%:R.
 refine (@Channel1.mkChan A B _ Anot0) => a.
-refine (@mkFDist _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a) _).
+apply: (@FDist.mk _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a)).
 rewrite /=; evar (h : B -> R); rewrite (eq_bigr h); last first.
-    move=> b _; rewrite ffunE /h; reflexivity.
+  move=> b _; rewrite ffunE /h; reflexivity.
 rewrite {}/h.
 case/boolP : (\sum_(b1 in B) (f a b1) == O)%nat => Hcase.
 - by rewrite /Rle big_const iter_addR mulRV // INR_eq0' -lt0n.
@@ -660,7 +660,7 @@ have d1 : (\sum_(b : B) d b)%R = 1%R.
   suff -> : lhs = N(a | ta) by rewrite mulRV // INR_eq0'.
   rewrite /lhs /f /= -[in X in _ = X](Hrow_num_occ Hta a).
   apply eq_bigr => b _; by rewrite ffunE.
-by apply (@type.mkType _ _ (makeFDist d0 d1) f) => b; rewrite ffunE.
+by apply (@type.mkType _ _ (FDist.make d0 d1) f) => b; rewrite ffunE.
 Defined.
 
 Hypothesis ta_sorted : sorted (@le_rank _) ta.
@@ -823,7 +823,7 @@ apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
   rewrite /card_type_of_row; destruct eqVneq.
     rewrite -[X in X <= _]exp2_0.
     apply Exp_le_increasing, mulR_ge0 => //.
-      apply mulR_ge0; by [apply leR0n | apply fdist_ge0].
+      apply mulR_ge0 => //; exact: leR0n.
       exact: entropy_ge0.
   set pta0 := type_of_row Hta Vctyp _.
   rewrite (_ : exp2 _ = exp2 (N(a | ta)%:R * `H pta0)%R).
@@ -1132,10 +1132,10 @@ rewrite {}/h -big_distrl /= -big_morph_natRD exchange_big /=.
 move/eqP : (jtype.sum_f V) => ->; by rewrite mulRV // INR_eq0'.
 Qed.
 
-Definition d : fdist B := makeFDist f0 f1.
+Definition d : fdist B := FDist.make f0 f1.
 
 Definition P : P_ n ( B ).
-refine (@type.mkType _ _ (makeFDist f0 f1) [ffun b => Ordinal (jtype_entry_ub V b)] _).
+refine (@type.mkType _ _ (FDist.make f0 f1) [ffun b => Ordinal (jtype_entry_ub V b)] _).
 by move=> b /=; rewrite !ffunE.
 Defined.
 

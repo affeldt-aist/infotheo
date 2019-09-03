@@ -80,7 +80,7 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Definition d : {fdist 'I_3} := mkFDist pmf1.
+Definition d : {fdist 'I_3} := FDist.mk pmf1.
 
 Definition X : {RV d -> R} := (fun i => INR i.+1).
 

@@ -129,8 +129,7 @@ Lemma ML_err_rate x1 x2 y : repair y = Some x1 ->
   x2 \in C -> W ``(y | x2) <= W ``(y | x1).
 Proof.
 move=> Hx1 Hx2.
-case/boolP : (W ``(y | x2) == 0%R) => [/eqP ->| Hcase].
-  exact: DMC_ge0.
+case/boolP : (W ``(y | x2) == 0%R) => [/eqP -> //| Hcase].
 have Hy : Receivable.def P W y.
   apply/existsP; exists x2.
   by rewrite Hcase andbT UniformSupport.neq0 inE.
@@ -180,9 +179,9 @@ have [dectb_None|dectb_Some] := boolP (dec tb == None).
     rewrite Htb andbT UniformSupport.neq0 inE.
     move/subsetP : enc_img; apply; apply/imsetP; by exists m.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite W_tb.
-  rewrite big1 //; apply rsumr_ge0 => ? _; exact/DMC_ge0.
+  by rewrite big1 //; apply rsumr_ge0.
 case/boolP : (phi tb == None) => [/eqP ->|phi_tb].
-  rewrite big_pred0 //; apply rsumr_ge0 => ? _; exact/DMC_ge0.
+  by rewrite big_pred0 //; apply rsumr_ge0.
 have [m1 Hm1] : exists m', dec tb = Some m' by destruct (dec tb) => //; exists s.
 have [m2 Hm2] : exists m', phi tb = Some m' by destruct (phi tb) => //; exists s.
 rewrite Hm1 {}Hm2.

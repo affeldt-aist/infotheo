@@ -367,8 +367,7 @@ apply/(@leR_trans (\sum_(m | m \in enc_pre_img c P)
   apply Req_le, eq_big => tb // _.
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
-- apply ler_rsum_l => //= i Hi; first exact/leRR.
-  apply: rsumr_ge0 => ? _; exact/fdist_ge0.
+- apply ler_rsum_l => //= i ?; [ exact/leRR | exact: rsumr_ge0].
 Qed.
 
 End success_bound_sect.

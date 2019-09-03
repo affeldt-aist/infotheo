@@ -52,7 +52,7 @@ Let sizes := [seq (size \o f) a| a in A].
 Lemma shannon_fano_is_kraft : is_shannon_fano P f -> kraft_condR T sizes.
 Proof.
 move=> H.
-rewrite /kraft_condR -(epmf1 P).
+rewrite /kraft_condR -(FDist.pmf1 P).
 rewrite /sizes size_map.
 rewrite (eq_bigr (fun i:'I_(size(enum A)) => #|'I_t|%:R ^- size (f (nth a (enum A) i)))); last first.
   move=> i _; by rewrite /= (nth_map a).
@@ -61,7 +61,7 @@ rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
 apply ler_rsum => i _.
 rewrite H.
-have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos; exact/leRP/fdist_ge0.
+have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos; exact/leRP.
 apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
   rewrite div1R LogV //.
   rewrite oppRK LogK //; first exact/leRR.
@@ -75,7 +75,7 @@ rewrite INR_Zabs_nat; last first.
     by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_pos/leRR.
   apply/leR0ceil/ltRW/ltR0Log.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
-  rewrite div1R invR_gt1 // ltR_neqAle; split; [exact/eqP|exact/fdist_max].
+  rewrite div1R invR_gt1 // ltR_neqAle; split => //; exact/eqP.
 by set x := Log _ _; case: (ceilP x).
 Qed.
 
@@ -107,17 +107,16 @@ move=> H; rewrite /average.
 apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log (INR #|T|) (P x) + 1))).
   apply ltR_rsum; [exact: fdist_card_neq0|move=> i].
   apply ltR_pmul2l.
-    apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/fdist_ge0.
+    apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
   rewrite H.
   rewrite (_ : INR #|T| = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
-  have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/fdist_ge0.
+  have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
   rewrite INR_Zabs_nat; last first.
     apply/leR0ceil.
     rewrite /x div1R /log LogV //.
     apply oppR_ge0.
-    rewrite -(Log_1 2); apply Log_increasing_le => //.
-    exact/fdist_max.
+    by rewrite -(Log_1 2); apply Log_increasing_le.
   case: (ceilP x) => _.
   by rewrite -LogV // -/(log _) -(div1R _) /x.
 evar (h : A -> R).
@@ -127,7 +126,7 @@ rewrite {}/h big_split /=; apply leR_add.
   apply Req_le.
   rewrite /entropy big_morph_oppR; apply eq_bigr => i _.
   by rewrite card_ord (_ : INR 2 = 2).
-rewrite epmf1; exact/leRR.
+rewrite FDist.pmf1; exact/leRR.
 Qed.
 
 End shannon_fano_suboptimal.

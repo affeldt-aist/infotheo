@@ -2,7 +2,7 @@ Require Import Reals.
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import boolp classical_sets.
 From mathcomp Require Import finmap.
-Require Import Reals_ext Rbigop ssrR proba dist convex_choice.
+Require Import Reals_ext Rbigop ssrR proba fsdist convex_choice.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -125,19 +125,19 @@ Qed.
 
 End misc_prob.
 
-Lemma finsupp_Conv2 (C : convType) p (p0 : p != `Pr 0) (p1 : p != `Pr 1) (d e : Dist C) :
+Lemma finsupp_Conv2 (C : convType) p (p0 : p != `Pr 0) (p1 : p != `Pr 1) (d e : {dist C}) :
   finsupp (d <|p|> e) = (finsupp d `|` finsupp e)%fset.
 Proof.
 apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j;
-  rewrite !mem_finsupp !Conv2Dist.dE inE; first by (move=> H ;
-    rewrite 2!mem_finsupp; apply/orP/(paddR_neq0 (Dist.ge0 _ _) (Dist.ge0 _ _));
-    apply: contra H => /eqP/paddR_eq0 => /(_ (Dist.ge0 _ _ ))/(_ (Dist.ge0 _ _)) [-> ->];
+  rewrite !mem_finsupp !Conv2FSDist.dE inE; first by (move=> H ;
+    rewrite 2!mem_finsupp; apply/orP/(paddR_neq0 (FSDist.ge0 _ _) (FSDist.ge0 _ _));
+    apply: contra H => /eqP/paddR_eq0 => /(_ (FSDist.ge0 _ _ ))/(_ (FSDist.ge0 _ _)) [-> ->];
     rewrite 2!mulR0 addR0).
 have [pge0 opge0] := (prob_ge0 p, prob_ge0 (`Pr p.~)).
 move/prob_gt0 in p0.
 move: p1 => /onem_neq0 /prob_gt0 /= p1.
-have [/leRP dgeb0 /leRP egeb0] := (Dist.ge0 d j, Dist.ge0 e j).
-have [xge0 yge0] := (Dist.ge0 d j, Dist.ge0 e j).
+have [/leRP dgeb0 /leRP egeb0] := (FSDist.ge0 d j, FSDist.ge0 e j).
+have [xge0 yge0] := (FSDist.ge0 d j, FSDist.ge0 e j).
 rewrite 2!mem_finsupp => /orP[dj0|ej0]; apply/eqP/gtR_eqF;
   [apply/addR_gt0wl; last exact/mulR_ge0;
    apply/mulR_gt0 => //; apply/ltR_neqAle; split => //; exact/nesym/eqP |
@@ -145,9 +145,9 @@ rewrite 2!mem_finsupp => /orP[dj0|ej0]; apply/eqP/gtR_eqF;
    apply/mulR_gt0 => //; apply/ltR_neqAle; split => //; exact/nesym/eqP].
 Qed.
 
-Lemma Dist_eval_affine (C : choiceType) (x : C) :
-  affine_function (fun D : Dist C => D x).
-Proof. by move=> a b p; rewrite /affine_function_at Conv2Dist.dE. Qed.
+Lemma FSDist_eval_affine (C : choiceType) (x : C) :
+  affine_function (fun D : {dist C} => D x).
+Proof. by move=> a b p; rewrite /affine_function_at Conv2FSDist.dE. Qed.
 
 Section misc_hull.
 Implicit Types A B : convType.
@@ -240,13 +240,13 @@ rewrite scalept_addR; try by apply mulR_ge0.
 by rewrite /Conv /= /scaled_conv /= !scalept_comp.
 Qed.
 
-Lemma Dist_scalept_conv (C : convType) (x y : Dist C) (p : prob) (i : C) :
-     scalept ((x <|p|> y) i) (S1 i) =
-     ((scalept (x i) (S1 i)) : Scaled_convType C) <|p|> scalept (y i) (S1 i).
+Lemma FSDist_scalept_conv (C : convType) (x y : {dist C}) (p : prob) (i : C) :
+  scalept ((x <|p|> y) i) (S1 i) =
+  ((scalept (x i) (S1 i)) : Scaled_convType C) <|p|> scalept (y i) (S1 i).
 Proof.
-rewrite Conv2Dist.dE.
+rewrite Conv2FSDist.dE.
 change (p * x i + p.~ * y i) with (x i <|p|> y i).
-by rewrite scalept_conv; try apply Dist.ge0.
+by rewrite scalept_conv; try apply FSDist.ge0.
 Qed.
 
 Lemma big_scalept_conv_split (C : convType) (I : Type) (r : seq I) (P : pred I)
@@ -299,16 +299,15 @@ move/card_gt0P/xchoose: (fdist_card_neq0 d') => t0; exact t0.
 Defined.
 Let enum : 'I_n -> T := enum_val.
 Definition d_enum := [ffun i => d' (enum i)].
-Lemma d_enum0 : forall b, 0 <= d_enum b.
-Proof. move=> ?; rewrite ffunE; exact: fdist_ge0. Qed.
+Lemma d_enum0 : forall b, 0 <= d_enum b. Proof. by move=> ?; rewrite ffunE. Qed.
 Lemma d_enum1 : \sum_(b in 'I_n) d_enum b = 1.
 Proof.
-rewrite -(@epmf1 T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
+rewrite -(@FDist.pmf1 T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
 rewrite (@reindex _ _ _ _ _ enum_rank) //; last first.
   by exists enum_val => i; [rewrite enum_rankK | rewrite enum_valK].
 apply eq_bigr => i _; congr (d' _); by rewrite -[in RHS](enum_rankK i).
 Qed.
-Definition d := makeFDist d_enum0 d_enum1.
+Definition d := FDist.make d_enum0 d_enum1.
 Definition Convn_indexed_over_finType : A := Convn d (f \o enum).
 End def.
 Module Exports.
@@ -1125,8 +1124,8 @@ Local Open Scope classical_set_scope.
 Variable (A : convType).
 Let L := necset_semiCompSemiLattType A.
 Lemma axiom (p : prob) (X : L) (I : neset L) :
-    (necset_convType.conv X (Joet I) p) =
-    Joet `NE ((fun Y => necset_convType.conv X Y p) @` I).
+  necset_convType.conv X (Joet I) p =
+  Joet `NE ((fun Y => necset_convType.conv X Y p) @` I).
 Proof.
 apply necset_ext => /=.
 rewrite -hull_cset necset_convType.conv_conv_set /= hull_conv_set_strr.

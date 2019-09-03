@@ -35,7 +35,7 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Definition P : {fdist 'I_3} := mkFDist p_sum1.
+Definition P : {fdist 'I_3} := FDist.mk p_sum1.
 
 Definition X : {RV P -> R} := (fun i => INR i.+1).
 

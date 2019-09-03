@@ -240,7 +240,7 @@ apply (@leR_trans (\sum_(i | i \in `JTS P W n epsilon)
   apply: ler_rsum_l => i Hi.
   - rewrite inE in Hi.
     rewrite ProdFDist.dE.
-    apply leR_pmul; [exact: fdist_ge0 | exact: fdist_ge0 | | ].
+    apply leR_pmul => //.
     exact: proj2 (typical_sequence1_JTS Hi).
     exact: proj2 (typical_sequence1_JTS' Hi).
   - exact/mulR_ge0.

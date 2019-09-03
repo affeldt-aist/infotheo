@@ -706,7 +706,7 @@ evar (h : fintree_finType tw l -> R); rewrite (eq_bigr h); last first.
 by rewrite {}/h -(@big_morph _ _ RofK 0%R Rplus 0%:R (@GRing.add K)) // f1 RofK1.
 Qed.
 
-Definition tree_ensemble l : ensemble tw l := makeFDist (@f0R l) (@f1R l).
+Definition tree_ensemble l : ensemble tw l := FDist.make (@f0R l) (@f1R l).
 
 End definition.
 

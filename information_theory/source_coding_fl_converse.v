@@ -116,7 +116,7 @@ suff : 1 = a + b by move=> ->; field.
 rewrite /a {a}.
 have -> : b = \sum_(i in [set i | dec sc (enc sc i) == i]) P `^ k.+1 i.
   apply eq_big => // i /=; by rewrite inE.
-rewrite -(epmf1 (P `^ k.+1)).
+rewrite -(FDist.pmf1 (P `^ k.+1)).
 rewrite (bigID [pred a | a \in [set i0 | dec sc (enc sc i0) == i0]]) /= addRC.
 by congr (_ + _); apply eq_bigl => t /=; rewrite !inE.
 Qed.
@@ -137,9 +137,8 @@ Lemma step3 : 1 - (esrc(P , sc)) <=
   \sum_(x in 'rV[A]_k.+1 | x \in ~: `TS P k.+1 delta) P `^ k.+1 x +
   \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) P `^ k.+1 x.
 Proof.
-rewrite step2; apply/leR_add2r/ler_rsum_l => /= i Hi.
+rewrite step2; apply/leR_add2r/ler_rsum_l => //= i Hi.
 exact/leRR.
-exact/fdist_ge0.
 by move: Hi; rewrite in_setI => /andP[].
 Qed.
 

@@ -53,7 +53,7 @@ Lemma echa_ge0 (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
 apply mulR_ge0.
 - apply divR_ge0; [exact/Rle_0_1| exact/ltR0n].
-- apply: rsumr_ge0 => ? _; apply: rsumr_ge0 => ? _; exact: DMC_ge0.
+- apply: rsumr_ge0 => ? _; exact: rsumr_ge0.
 Qed.
 
 Lemma echa1 (HM : (0 < #| M |)%nat) W (c : code) : echa(W , c) <= 1.

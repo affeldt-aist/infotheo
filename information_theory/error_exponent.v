@@ -48,19 +48,17 @@ apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -iter_addR -big_const.
 apply ler_rsum => b _; rewrite addRC.
 apply Rabs_xlnx => //.
-- exact: prob_fdist.
-- exact: prob_fdist.
-- rewrite 2!OutFDist.dE -addR_opp big_morph_oppR -big_split /=.
-  apply: leR_trans; first exact: ler_rsum_Rabs.
-  apply (@leR_trans (d(`J(P , V), `J(P , W)))).
-  + rewrite /var_dist /=.
-    apply (@leR_trans (\sum_(a : A) \sum_(b : B) `| (`J(P, V)) (a, b) - (`J(P, W)) (a, b) |)); last first.
-      apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
-    apply: ler_rsum => a _.
-    rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
-    rewrite 2!JointFDistChan.dE /= !(mulRC (P a)) addR_opp; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
-  + rewrite cdiv_is_div_joint_dist => //.
-    exact/Pinsker_inequality_weak/joint_dominates.
+rewrite 2!OutFDist.dE -addR_opp big_morph_oppR -big_split /=.
+apply: leR_trans; first exact: ler_rsum_Rabs.
+apply (@leR_trans (d(`J(P , V), `J(P , W)))).
+- rewrite /var_dist /=.
+  apply (@leR_trans (\sum_(a : A) \sum_(b : B) `| (`J(P, V)) (a, b) - (`J(P, W)) (a, b) |)); last first.
+    apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
+  apply: ler_rsum => a _.
+  rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
+  rewrite 2!JointFDistChan.dE /= !(mulRC (P a)) addR_opp; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
+- rewrite cdiv_is_div_joint_dist => //.
+  exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
 
 (** Distance from the joint entropy of one channel to another: *)
@@ -76,14 +74,12 @@ apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -2!iter_addR -2!big_const pair_bigA /=.
 apply: ler_rsum; case => a b _; rewrite addRC /=.
 apply Rabs_xlnx => //.
-- exact: prob_fdist.
-- exact: prob_fdist.
-- apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
-    rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
-    rewrite -[X in X <= _]addR0.
-    apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
-  rewrite cdiv_is_div_joint_dist => //.
-  exact/Pinsker_inequality_weak/joint_dominates.
+apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
+- rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
+  rewrite -[X in X <= _]addR0.
+  apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
+- rewrite cdiv_is_div_joint_dist => //.
+ exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
 
 (** * Distance from the mutual information of one channel to another *)

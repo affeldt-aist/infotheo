@@ -80,10 +80,10 @@ rewrite /div [X in _ <= X](_ : _ =
 rewrite leR_oppr oppR0.
 apply (@leR_trans ((\sum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
-  apply ler_rsum => a _; apply div_diff_ub; [exact: fdist_ge0 | | exact: fdist_ge0].
+  apply ler_rsum => a _; apply div_diff_ub => //.
   move/dominatesP : P_dom_by_Q; exact.
 rewrite -{1}(mul0R (log (exp 1))); apply (leR_wpmul2r log_exp1_Rle_0).
-rewrite big_split /= -big_morph_oppR !epmf1 addR_opp subRR; exact/leRR.
+rewrite big_split /= -big_morph_oppR !FDist.pmf1 addR_opp subRR; exact/leRR.
 Qed.
 
 Lemma divPP : D(Q || Q) = 0.
@@ -97,11 +97,9 @@ Lemma div0P : D(P || Q) = 0 <-> P = Q.
 Proof.
 split => [HPQ | ->]; last by rewrite divPP.
 apply/fdist_ext => a.
-apply log_id_diff; [exact: fdist_ge0 | | exact: fdist_ge0 | ].
-  move/dominatesP : P_dom_by_Q; exact.
+apply log_id_diff => //; first by move/dominatesP : P_dom_by_Q; exact.
 apply/esym; move: a (erefl true); apply Rle_big_eq.
-- move=> a' _; apply div_diff_ub;
-    [exact: fdist_ge0 | move/dominatesP : P_dom_by_Q; exact | exact: fdist_ge0].
+- move=> a' _; apply div_diff_ub => //; move/dominatesP : P_dom_by_Q; exact.
 - transitivity 0; last first.
     rewrite -{1}oppR0 -{1}HPQ big_morph_oppR.
     apply eq_bigr => a _; rewrite -mulRN.
@@ -111,7 +109,7 @@ apply/esym; move: a (erefl true); apply Rle_big_eq.
     rewrite -logV; last by apply divR_gt0; rewrite -fdist_gt0.
     rewrite Rinv_Rdiv //; exact/eqP.
   rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
-  by rewrite -big_morph_oppR !epmf1 addR_opp subRR mul0R.
+  by rewrite -big_morph_oppR !FDist.pmf1 addR_opp subRR mul0R.
 Qed.
 
 End divergence_prop.

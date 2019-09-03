@@ -62,12 +62,10 @@ Lemma TS_sup : #| `TS P n epsilon |%:R <= exp2 (n%:R * (`H P + epsilon)).
 Proof.
 suff Htmp : #| `TS P n epsilon |%:R * exp2 (- n%:R * (`H P + epsilon)) <= 1.
   by rewrite -(mulR1 (exp2 _)) mulRC -leR_pdivr_mulr // /Rdiv -exp2_Ropp -mulNR.
-rewrite -(epmf1 (P `^ n)).
+rewrite -(FDist.pmf1 (P `^ n)).
 rewrite (_ : _ * _ = \sum_(x in `TS P n epsilon) (exp2 (- n%:R * (`H P + epsilon)))); last first.
   by rewrite big_const iter_addR.
-apply/ler_rsum_l => //=.
-- move=> i; rewrite inE; by case/andP => /leRP.
-- move=> a _; exact/fdist_ge0.
+by apply/ler_rsum_l => //= i; rewrite inE; case/andP => /leRP.
 Qed.
 
 Lemma typ_seq_definition_equiv x : x \in `TS P n epsilon ->
@@ -127,7 +125,7 @@ have -> : Pr P `^ n.+1 (~: p) =
     - rewrite /typ_seq negb_and => /orP[|] LHS.
       + case/boolP : (P `^ n.+1 i == 0) => /= H1; first by [].
         have {H1}H1 : 0 < P `^ n.+1 i.
-          apply/ltRP; rewrite ltR_neqAle' eq_sym H1; exact/leRP/fdist_ge0.
+          apply/ltRP; rewrite ltR_neqAle' eq_sym H1; exact/leRP.
         apply/andP; split; first exact/ltRP.
         move: LHS; rewrite -ltRNge' => /ltRP/(@Log_increasing 2 _ _ Rlt_1_2 H1).
         rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivr_mulr; last exact/ltR0n.

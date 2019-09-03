@@ -98,8 +98,7 @@ Local Open Scope ring_scope.
    transition matrix. *)
 Definition f (x : 'rV[A]_n) := [ffun y : 'rV[B]_n => (\prod_(i < n) W `(y ``_ i | x ``_ i))%R].
 
-Lemma f0 x y : 0 <= f x y.
-Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: fdist_ge0. Qed.
+Lemma f0 x y : 0 <= f x y. Proof. rewrite ffunE; exact: rprodr_ge0. Qed.
 
 Lemma f1 x : (\sum_(y in 'rV_n) f x y = 1)%R.
 Proof.
@@ -113,10 +112,10 @@ suff H : (\sum_(g : {ffun 'I_n -> B}) \prod_(i < n) f' i (g i) = 1)%R.
   - rewrite inE.
     apply/esym/eqP/rowP => a; by rewrite mxE ffunE.
   - move=> _; rewrite ffunE; apply eq_bigr => i _; by rewrite ffunE.
-by rewrite -bigA_distr_bigA /= /f' big1 // => i _; rewrite epmf1.
+by rewrite -bigA_distr_bigA /= /f' big1 // => i _; rewrite FDist.pmf1.
 Qed.
 
-Definition c : `Ch('rV[A]_n, 'rV[B]_n) := locked (fun x => makeFDist (f0 x) (f1 x)).
+Definition c : `Ch('rV[A]_n, 'rV[B]_n) := locked (fun x => FDist.make (f0 x) (f1 x)).
 
 End def.
 End DMC.
@@ -131,8 +130,8 @@ Lemma DMCE (A B : finType) n (W : `Ch(A, B)) b a :
   W ``(b | a) = \prod_(i < n) W (a ``_ i) (b ``_ i).
 Proof. by rewrite /DMC.c; unlock; rewrite ffunE. Qed.
 
-Lemma DMC_ge0 (A B : finType) n (W : `Ch(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
-Proof. exact: fdist_ge0. Qed.
+(*Lemma DMC_ge0 (A B : finType) n (W : `Ch(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
+Proof. exact: fdist_ge0. Qed.*)
 
 Section DMC_sub_vec.
 
@@ -179,15 +178,15 @@ Section def.
 Variables (A B : finType) (P : fdist A) (W  : `Ch(A, B)).
 Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
 Lemma f0 (b : B) : 0 <= f b.
-Proof. rewrite ffunE; apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/fdist_ge0. Qed.
+Proof. rewrite ffunE; apply: rsumr_ge0 => a _; exact: mulR_ge0. Qed.
 Lemma f1 : \sum_(b in B) f b = 1.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
   move=> a _; rewrite ffunE /h; reflexivity.
-rewrite {}/h exchange_big /= -(epmf1 P).
-apply eq_bigr => a _; by rewrite -big_distrl /= (epmf1 (W a)) mul1R.
+rewrite {}/h exchange_big /= -(FDist.pmf1 P).
+apply eq_bigr => a _; by rewrite -big_distrl /= (FDist.pmf1 (W a)) mul1R.
 Qed.
-Definition d : fdist B := locked (makeFDist f0 f1).
+Definition d : fdist B := locked (FDist.make f0 f1).
 Lemma dE b : d b = \sum_(a in A) W a b * P a.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
@@ -263,7 +262,7 @@ transitivity (\sum_(i | Q i) (P `^ n i * (\sum_(y in 'rV[B]_n) W ``(y | i)))).
   apply eq_bigr => j _.
   by rewrite dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
 transitivity (\sum_(i | Q i) P `^ _ i).
-  apply eq_bigr => i _; by rewrite (epmf1 (W ``(| i))) mulR1.
+  apply eq_bigr => i _; by rewrite (FDist.pmf1 (W ``(| i))) mulR1.
 rewrite /Pr; apply eq_bigl => t; by rewrite !inE.
 Qed.
 Local Open Scope ring_scope.

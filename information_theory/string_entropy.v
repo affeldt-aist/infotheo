@@ -42,7 +42,7 @@ rewrite {}/h /f_div_total -big_distrl -big_morph_natRD.
 by rewrite sum_f_total /= mulRV // INR_eq0'.
 Qed.
 
-Definition seq_nat_fdist := makeFDist f_div_total_pos f_div_total_1.
+Definition seq_nat_fdist := FDist.make f_div_total_pos f_div_total_1.
 
 End seq_nat_fdist.
 
