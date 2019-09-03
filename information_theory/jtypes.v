@@ -58,7 +58,7 @@ Proof.
 case: t1 t2 => d1 f1 Hf1 H1 /= [] d2 f2 Hf2 H2 /= ?; subst f2.
 have ? : d1 = d2.
   apply/Channel1.chan_star_eq.
-  by rewrite boolp.funeqE => a; apply/dist_ext => b; rewrite H1 H2.
+  by rewrite boolp.funeqE => a; apply/fdist_ext => b; rewrite H1 H2.
 subst d2; congr jtype.mkJtype; exact/boolp.Prop_irrelevance.
 Qed.
 
@@ -74,7 +74,7 @@ apply: (iffP idP) => [/eqP H |[] _ -> //].
 subst f2.
 have ? : d1 = d2.
   apply/Channel1.chan_star_eq.
-  by rewrite boolp.funeqE => a /=; apply/dist_ext => b; rewrite H1 H2.
+  by rewrite boolp.funeqE => a /=; apply/fdist_ext => b; rewrite H1 H2.
 subst d2; congr jtype.mkJtype; exact/boolp.Prop_irrelevance.
 Qed.
 
@@ -105,7 +105,7 @@ set pf := fun a b =>
   then / #|B|%:R
   else (f a b)%:R / ln%:R.
 refine (@Channel1.mkChan A B _ Anot0) => a.
-refine (@mkDist _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a) _).
+refine (@mkFDist _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a) _).
 rewrite /=; evar (h : B -> R); rewrite (eq_bigr h); last first.
     move=> b _; rewrite ffunE /h; reflexivity.
 rewrite {}/h.
@@ -142,12 +142,12 @@ destruct Sumbool.sumbool_of_bool; last first.
   exfalso.
   case/card_gt0P : e => a Ha.
   move: e0.
-  by rewrite (dist_domain_not_empty (d a)).
+  by rewrite (fdist_card_neq0 (d a)).
 set d1 := chan_of_jtype _ _ _.
 set d2 := Channel1.mkChan d Hd.
 have d12 : d1 = d2.
   apply/Channel1.chan_star_eq.
-  rewrite boolp.funeqE => /= a; apply/dist_ext => b; by rewrite ffunE H.
+  rewrite boolp.funeqE => /= a; apply/fdist_ext => b; by rewrite ffunE H.
 destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
 congr Some; by apply/jtype_eqP => /=.
 Qed.
@@ -198,14 +198,14 @@ rewrite /jtype_unpickle /jtype_pickle /=.
 destruct V as [[c Anot0] f Hf H].
 destruct Sumbool.sumbool_of_bool; last by rewrite Anot0 in e.
 case/card_gt0P : (e) => a Ha.
-move: (dist_domain_not_empty (c a)) => Bnot0.
+move: (fdist_card_neq0 (c a)) => Bnot0.
 destruct Sumbool.sumbool_of_bool; last by rewrite Bnot0 in e0.
 rewrite pickleK.
 (*rewrite pcan_pickleK; last by apply valK.*)
 set d1 := chan_of_jtype _ _ _.
 have ? : d1 = Channel1.mkChan c Anot0.
   apply/Channel1.chan_star_eq.
-  by rewrite boolp.funeqE => a1; apply/dist_ext => b /=; rewrite ffunE H.
+  by rewrite boolp.funeqE => a1; apply/fdist_ext => b /=; rewrite ffunE H.
 destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
 congr Some; by apply/jtype_eqP => /=.
 Qed.
@@ -244,7 +244,7 @@ rewrite /jtype_enum /=.
 rewrite /jtype_enum_f /=.
 destruct d as [d Anot0].
 case/card_gt0P : (Anot0) => a _.
-move: (dist_domain_not_empty (d a)) => Bnot0.
+move: (fdist_card_neq0 (d a)) => Bnot0.
 set tmp := pmap _ _.
 have -> : tmp = pmap (fun f =>
                         Some {|
@@ -660,7 +660,7 @@ have d1 : (\sum_(b : B) d b)%R = 1%R.
   suff -> : lhs = N(a | ta) by rewrite mulRV // INR_eq0'.
   rewrite /lhs /f /= -[in X in _ = X](Hrow_num_occ Hta a).
   apply eq_bigr => b _; by rewrite ffunE.
-by apply (@type.mkType _ _ (makeDist d0 d1) f) => b; rewrite ffunE.
+by apply (@type.mkType _ _ (makeFDist d0 d1) f) => b; rewrite ffunE.
 Defined.
 
 Hypothesis ta_sorted : sorted (@le_rank _) ta.
@@ -823,7 +823,7 @@ apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
   rewrite /card_type_of_row; destruct eqVneq.
     rewrite -[X in X <= _]exp2_0.
     apply Exp_le_increasing, mulR_ge0 => //.
-      apply mulR_ge0; by [apply leR0n | apply dist_ge0].
+      apply mulR_ge0; by [apply leR0n | apply fdist_ge0].
       exact: entropy_ge0.
   set pta0 := type_of_row Hta Vctyp _.
   rewrite (_ : exp2 _ = exp2 (N(a | ta)%:R * `H pta0)%R).
@@ -1132,10 +1132,10 @@ rewrite {}/h -big_distrl /= -big_morph_natRD exchange_big /=.
 move/eqP : (jtype.sum_f V) => ->; by rewrite mulRV // INR_eq0'.
 Qed.
 
-Definition d : dist B := makeDist f0 f1.
+Definition d : fdist B := makeFDist f0 f1.
 
 Definition P : P_ n ( B ).
-refine (@type.mkType _ _ (makeDist f0 f1) [ffun b => Ordinal (jtype_entry_ub V b)] _).
+refine (@type.mkType _ _ (makeFDist f0 f1) [ffun b => Ordinal (jtype_entry_ub V b)] _).
 by move=> b /=; rewrite !ffunE.
 Defined.
 
@@ -1169,11 +1169,11 @@ Qed.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 
-Lemma output_type_out_dist : forall b, (`tO( V )) b = `O( P , V ) b.
+Lemma output_type_out_fdist : forall b, (`tO( V )) b = `O( P , V ) b.
 Proof.
-rewrite /dist_of_ffun /= /OutType.d /OutType.f => b /=.
+rewrite /fdist_of_ffun /= /OutType.d /OutType.f => b /=.
 rewrite ffunE big_morph_natRD /Rdiv (big_morph _ (morph_mulRDl _) (mul0R _)).
-rewrite OutDist.dE; apply eq_bigr => a _.
+rewrite OutFDist.dE; apply eq_bigr => a _.
 case: (typed_tuples_not_empty P) => /= ta Hta.
 move: (Vctyp).
 rewrite in_set.
@@ -1198,7 +1198,7 @@ Qed.
 Lemma output_type_out_entropy : `H (`tO( V )) = `H(P `o V).
 Proof.
 rewrite /entropy; f_equal.
-apply eq_bigr => b _; by rewrite output_type_out_dist.
+apply eq_bigr => b _; by rewrite output_type_out_fdist.
 Qed.
 
 End output_type_facts.

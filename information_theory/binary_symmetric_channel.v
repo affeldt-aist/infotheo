@@ -38,7 +38,7 @@ Section bsc_capacity_proof.
 
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
-Variable P : dist A.
+Variable P : fdist A.
 Variable p : R.
 Hypothesis p_01' : (0 < p < 1)%R.
 
@@ -55,7 +55,7 @@ rewrite {1}/entropy .
 set a := \sum_(_ in _) _. set b := \sum_(_ <- _) _.
 apply trans_eq with (- (a + (-1) * b)); first by field.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
-rewrite !Set2sumE /= !JointDistChan.dE /BSC.c !Binary.dE /=.
+rewrite !Set2sumE /= !JointFDistChan.dE /BSC.c !Binary.dE /=.
 rewrite !/Binary.f !eqxx /Binary.f eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2 (* TODO *).
 set a := Set2.a _. set b := Set2.b _.
 case: (Req_EM_T (P a) 0) => H1.
@@ -64,10 +64,10 @@ case: (Req_EM_T (P a) 0) => H1.
   rewrite H1 add0R => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log LogM; last 2 first.
-  rewrite -dist_gt0; exact/eqP.
+  rewrite -fdist_gt0; exact/eqP.
   case: p_01' => ? ?; lra.
 rewrite /log LogM; last 2 first.
-  rewrite -dist_gt0; exact/eqP.
+  rewrite -fdist_gt0; exact/eqP.
   by case: p_01'.
 case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 !(mul0R, mulR0, addR0, add0R).
@@ -75,10 +75,10 @@ case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 addR0 => ->.
   rewrite /log Log_1 !(mul0R, mulR0, addR0, add0R, mul1R, mulR1); field.
 rewrite /log LogM; last 2 first.
-  rewrite -dist_gt0; exact/eqP.
+  rewrite -fdist_gt0; exact/eqP.
   by case: p_01'.
 rewrite /log LogM; last 2 first.
-  rewrite -dist_gt0; exact/eqP.
+  rewrite -fdist_gt0; exact/eqP.
   rewrite subR_gt0; by case: p_01'.
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   rewrite /log; by field.
@@ -95,7 +95,7 @@ Qed.
 
 Lemma H_out_max : `H(P `o BSC.c card_A p_01) <= 1.
 Proof.
-rewrite {1}/entropy /= Set2sumE /= !OutDist.dE 2!Set2sumE /=.
+rewrite {1}/entropy /= Set2sumE /= !OutFDist.dE 2!Set2sumE /=.
 set a := Set2.a _. set b := Set2.b _.
 rewrite /BSC.c !Binary.dE !eqxx /= !(eq_sym _ a).
 rewrite (negbTE (Set2.a_neq_b card_A)).
@@ -103,9 +103,9 @@ move: (epmf1 P); rewrite Set2sumE /= -/a -/b => P1.
 have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
   rewrite -{2}P1; by field.
 have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
-  move: (dist_ge0 P a) => H1.
-  move: (dist_max P b) => H4.
-  move: (dist_max P a) => H3.
+  move: (fdist_ge0 P a) => H1.
+  move: (fdist_max P b) => H4.
+  move: (fdist_max P a) => H3.
   case: p_01' => Hp1 Hp2.
   split.
     case/Rle_lt_or_eq_dec : H1 => H1.
@@ -124,7 +124,7 @@ have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
   - apply leR_lt_add.
     + rewrite -{2}(mul1R (P a)); apply leR_wpmul2r; lra.
     + rewrite -{2}(mul1R (P b)); apply ltR_pmul2r => //.
-      apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/dist_ge0].
+      apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP/fdist_ge0].
   - rewrite -H1 mulR0 2!add0R.
     have -> : P b = 1 by rewrite -P1 -H1 add0R.
     by rewrite mulR1.
@@ -140,7 +140,7 @@ Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; lra. Qed.
 
 Lemma H_out_binary_uniform : `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
 Proof.
-rewrite {1}/entropy !Set2sumE /= !OutDist.dE !Set2sumE /=.
+rewrite {1}/entropy !Set2sumE /= !OutFDist.dE !Set2sumE /=.
 rewrite /BSC.c !Binary.dE !eqxx (eq_sym _ (Set2.a _)) !Uniform.dE.
 rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.

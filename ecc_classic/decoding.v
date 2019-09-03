@@ -102,7 +102,7 @@ Section maximum_likelihood_decoding.
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable f : decT B [finType of 'rV[A]_n] n.
-Variable P : {dist 'rV[A]_n}.
+Variable P : {fdist 'rV[A]_n}.
 
 Local Open Scope R_scope.
 
@@ -254,7 +254,7 @@ Variable M : finType.
 Variable discard : discardT [finType of 'F_2] n M.
 Variable enc : encT [finType of 'F_2] M n.
 Hypothesis compatible : cancel_on C enc discard.
-Variable P : {dist 'rV['F_2]_n}.
+Variable P : {fdist 'rV['F_2]_n}.
 
 Lemma MD_implies_ML : p < 1/2 -> MD_decoding [set cw in C] f ->
   (forall y, f y != None) -> ML_decoding W C f P.
@@ -308,7 +308,7 @@ Section MAP_decoding.
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B [finType of 'rV[A]_n] n.
-Variable P : {dist 'rV[A]_n}.
+Variable P : {fdist 'rV[A]_n}.
 
 Definition MAP_decoding := forall y : P.-receivable W,
   exists m, dec y = Some m /\

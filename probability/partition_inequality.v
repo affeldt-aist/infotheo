@@ -24,13 +24,13 @@ Variable A : finType.
 Variable A_ : bool -> {set A}.
 Hypothesis dis : A_ 0 :&: A_ 1 = set0.
 Hypothesis cov : A_ 0 :|: A_ 1 = [set: A].
-Variable P : dist A.
+Variable P : fdist A.
 
 Definition bipart_pmf := [ffun i => \sum_(a in A_ i) P a].
 
-Definition bipart : dist [finType of bool].
-apply makeDist with bipart_pmf.
-- move=> a; rewrite ffunE; apply: rsumr_ge0. by move=> *; exact/dist_ge0.
+Definition bipart : fdist [finType of bool].
+apply makeFDist with bipart_pmf.
+- move=> a; rewrite ffunE; apply: rsumr_ge0. by move=> *; exact/fdist_ge0.
   rewrite Set2sumE /= ?card_bool // => HX; rewrite /bipart_pmf.
   set a := Set2.a HX. set b := Set2.b HX.
   have : a <> b by apply/eqP/Set2.a_neq_b.
@@ -59,7 +59,7 @@ Variable A : finType.
 Variable A_ : bool -> {set A}.
 Hypothesis dis : A_ 0 :&: A_ 1 = set0.
 Hypothesis cov : A_ 0 :|: A_ 1 = setT.
-Variable P Q : dist A.
+Variable P Q : fdist A.
 Hypothesis P_dom_by_Q : P << Q.
 
 Let P_A := bipart dis cov P.
@@ -97,15 +97,15 @@ wlog : a b / (a == 0) && (b == 1).
     exact: Hwlog.
 case/andP => /eqP -> /eqP -> _ {a b}.
 have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
-  apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/dist_ge0.
+  apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/fdist_ge0.
 - have [A1_Q_neq0 | /esym A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
-    apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/dist_ge0.
+    apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/fdist_ge0.
   + have [A0_Q__neq0 | /esym A0_Q_0] : {0 < Q_A 0} + {0%R = Q_A 0}.
-      apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/dist_ge0.
+      apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/fdist_ge0.
     * rewrite /Rdiv /log LogM //; last exact/invR_gt0.
       rewrite LogV //.
       have [A1_P_neq0 | /esym A1_P_0] : {0 < P_A 1} + {0%R = P_A 1}.
-        apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/dist_ge0.
+        apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/fdist_ge0.
       - rewrite /log LogM //; last exact/invR_gt0.
         rewrite LogV //.
         apply Req_le; by field.
@@ -140,7 +140,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
     apply eq_bigl => i; by rewrite cov in_set inE.
     by rewrite -setI_eq0 -dis setIC.
   have [A1_Q_neq0 | /esym A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
-    apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/dist_ge0.
+    apply Rle_lt_or_eq_dec; rewrite ffunE; apply: rsumr_ge0 => i _; exact/fdist_ge0.
   + rewrite A0_P_0 !mul0R !add0R H1 !mul1R.
     rewrite /Rdiv /log LogM; last 2 first.
       lra.

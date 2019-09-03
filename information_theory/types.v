@@ -30,7 +30,7 @@ Variable n : nat.
 (** * Type definition *)
 
 Record type : predArgType := mkType {
-  d :> dist A ;
+  d :> fdist A ;
   f : {ffun A -> 'I_n.+1} ;
   d_f : forall a, d a = INR (f a) / INR n }.
 
@@ -52,7 +52,7 @@ Qed.
 Lemma INR_type_fun A n (P : P_ n ( A )) a : INR ((type.f P) a) / INR n = P a.
 Proof. destruct P as [d f d_f] => /=. by rewrite d_f. Qed.
 
-Lemma no_0_type A (d : dist A) (t : {ffun A -> 'I_1}) :
+Lemma no_0_type A (d : fdist A) (t : {ffun A -> 'I_1}) :
   (forall a, d a = INR (t a) / INR 0) -> False.
 Proof.
 move=> H.
@@ -75,7 +75,7 @@ have H2 : \sum_(a in A) f a = 1%R.
   by rewrite {}/h -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
 have H : forall a, (N(a | ta) < n.+2)%nat.
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
-refine (@type.mkType _ n.+1 (makeDist H1 H2)
+refine (@type.mkType _ n.+1 (makeFDist H1 H2)
   [ffun a => @Ordinal n.+2 (N(a | ta)) (H a)] _).
 by move=> a /=; rewrite !ffunE.
 Defined.
@@ -87,7 +87,7 @@ Proof.
 case: t1 t2 => d1 f1 H1 /= [] d2 f2 H2 /= f1f2.
 subst f2.
 suff ? : d1 = d2 by subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
-apply dist_ext => /= a; by rewrite H1 H2.
+apply fdist_ext => /= a; by rewrite H1 H2.
 Qed.
 
 Definition type_eq A n (t1 t2 : P_ n ( A )) :=
@@ -101,7 +101,7 @@ case=> d1 f1 H1 [] d2 f2 H2 /=.
 apply: (iffP idP) => [/eqP H|[] _ -> //].
 subst f2.
 suff ? : d1 = d2 by subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
-apply dist_ext => /= a; by rewrite H1 H2.
+apply fdist_ext => /= a; by rewrite H1 H2.
 Qed.
 
 Definition type_eqMixin A n := EqMixin (@type_eqP A n).
@@ -127,31 +127,31 @@ refine (@mkPosFfun _ d _); apply/forallP_leRP => a.
 rewrite ffunE; apply divR_ge0; by [apply leR0n | apply ltR0n].
 Defined.
 
-Definition dist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
-  (Hf : (\sum_(a in A) f a)%nat == n.+1) : dist A.
+Definition fdist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
+  (Hf : (\sum_(a in A) f a)%nat == n.+1) : fdist A.
 set pf := pos_fun_of_ffun f.
 have H : \sum_(a in A) pf a == 1 :> R.
   rewrite /pf; evar (h : A -> R); rewrite (eq_bigr h); last first.
     move=> a _; rewrite ffunE /h; reflexivity.
   rewrite {}/h /= /Rdiv -big_distrl /= -big_morph_natRD.
   move/eqP : Hf => ->; by rewrite mulRV // INR_eq0'.
-exact (mkDist H).
+exact (mkFDist H).
 Defined.
 
-Lemma dist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})
+Lemma fdist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : (\sum_(a in A) f a)%nat == n.+1) :
-forall a : A, (dist_of_ffun Hf) a = INR (f a) / INR n.+1.
+forall a : A, (fdist_of_ffun Hf) a = INR (f a) / INR n.+1.
 Proof. by move=> a; rewrite ffunE. Qed.
 
 Definition type_choice_f (A : finType) n (f : {ffun A -> 'I_n.+1}) : option (P_ n ( A )).
 destruct n; first by exact None.
 refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1)%nat with
-          | left H => Some (@type.mkType _ _ (dist_of_ffun H) f (dist_of_ffun_prop H))
+          | left H => Some (@type.mkType _ _ (fdist_of_ffun H) f (fdist_of_ffun_prop H))
           | right _ => None
         end).
 Defined.
 
-Lemma ffun_of_dist A n (d : dist A) (t : {ffun A -> 'I_n.+2})
+Lemma ffun_of_fdist A n (d : fdist A) (t : {ffun A -> 'I_n.+2})
   (H : forall a : A, d a = INR (t a) / INR n.+1) : (\sum_(a in A) t a)%nat == n.+1.
 Proof.
 suff : INR (\sum_(a in A) t a) == INR n.+1 * \sum_(a | a \in A) d a.
@@ -170,13 +170,13 @@ case=> d t H /=.
 destruct n.
   by move: (no_0_type H).
 rewrite /type_choice_f /=; f_equal.
-move: (ffun_of_dist H) => H'.
+move: (ffun_of_fdist H) => H'.
 destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.
 congr Some.
-set d1 := dist_of_ffun _.
+set d1 := fdist_of_ffun _.
 suff ? : d1 = d by subst d; congr type.mkType; apply boolp.Prop_irrelevance.
-apply dist_ext => /= a; by rewrite ffunE H.
+apply fdist_ext => /= a; by rewrite ffunE H.
 Qed.
 
 Lemma type_choiceMixin A n : choiceMixin (P_ n ( A )).
@@ -195,14 +195,11 @@ Definition type_unpickle A n (m : nat) : option (P_ n ( A )).
 destruct n.
   exact None.
 pose unpi : option {ffun A -> 'I_n.+2} := unpickle m.
-(*case: (finfun_countMixin A [finType of 'I_n.+2]) => pi unpi Hcan.
-case: (unpi m); last first.
-  exact None.*)
 case: unpi; last first.
   exact None.
 move=> f.
 refine (match Sumbool.sumbool_of_bool ((\sum_(a in A) f a)%nat == n.+1) with
-          | left H => Some (@type.mkType _ _ (dist_of_ffun H) f (dist_of_ffun_prop H))
+          | left H => Some (@type.mkType _ _ (fdist_of_ffun H) f (fdist_of_ffun_prop H))
           | right _ => None
         end).
 Defined.
@@ -213,14 +210,13 @@ destruct n.
   case=> d t H /=; by move: (no_0_type H).
 case=> d t H /=.
 rewrite pickleK.
-(*rewrite pcan_pickleK; last by apply valK.*)
-move: (ffun_of_dist H) => H'.
+move: (ffun_of_fdist H) => H'.
 destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.
-f_equal.
-set d1 := dist_of_ffun _.
+congr Some.
+set d1 := fdist_of_ffun _.
 suff ? : d1 = d by subst d; congr type.mkType; apply boolp.Prop_irrelevance.
-apply/dist_ext => a; by rewrite ffunE H.
+apply/fdist_ext => a; by rewrite ffunE H.
 Qed.
 
 Definition type_countMixin A n := CountMixin (@type_count_pcancel A n).
@@ -230,7 +226,7 @@ Canonical type_countType A n :=
 Definition type_enum_f (A : finType) n (f : { f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n} ) : option (P_ n ( A )).
 destruct n.
   apply None.
-refine (Some (@type.mkType _ _ (dist_of_ffun (proj2_sig f)) (sval f) (dist_of_ffun_prop (proj2_sig f)))).
+refine (Some (@type.mkType _ _ (fdist_of_ffun (proj2_sig f)) (sval f) (fdist_of_ffun_prop (proj2_sig f)))).
 Defined.
 
 Definition type_enum A n := pmap (@type_enum_f A n)
@@ -241,7 +237,7 @@ Proof.
 destruct n.
   case=> d t H /=; by move: (no_0_type H).
 case=> d t H /=.
-move: (ffun_of_dist H) => H'.
+move: (ffun_of_fdist H) => H'.
 have : Finite.axiom (enum [finType of { f : {ffun A -> 'I_n.+2} | (\sum_(a in A) f a)%nat == n.+1}]).
   rewrite enumT; by apply enumP.
 move/(_ (@exist {ffun A -> 'I_n.+2} (fun f => \sum_(a in A) f a == n.+1)%nat t H')) => <-.
@@ -271,12 +267,12 @@ apply uniq_leq_size.
     move: (enum_uniq (type_finType A n)).
     by rewrite enumT.
   case=> d f Hd [] d2 f2 Hd2 /= ?; subst f2.
-  have ? : d = d2 by apply/dist_ext => a; rewrite Hd Hd2.
+  have ? : d = d2 by apply/fdist_ext => a; rewrite Hd Hd2.
   subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
 move=> /= f Hf; by rewrite mem_enum.
 Qed.
 
-Lemma type_not_empty n : 0 < #|A| -> 0 < #|P_ n.+1(A)|.
+Lemma type_card_neq0 n : 0 < #|A| -> 0 < #|P_ n.+1(A)|.
 Proof.
 case/card_gt0P => a _.
 apply/card_gt0P.
@@ -284,14 +280,14 @@ have [f Hf] : [finType of {f : {ffun A -> 'I_n.+2} | \sum_(a in A) f a == n.+1}]
   exists [ffun a1 => if pred1 a a1 then Ordinal (ltnSn n.+1) else Ordinal (ltn0Sn n.+1)].
   rewrite (bigD1 a) //= big1; first by rewrite ffunE eqxx addn0.
   move=> p /negbTE Hp; by rewrite ffunE Hp.
-exists (@type.mkType _ _ (dist_of_ffun Hf) _ (dist_of_ffun_prop Hf)).
+exists (@type.mkType _ _ (fdist_of_ffun Hf) _ (fdist_of_ffun_prop Hf)).
 by rewrite inE.
 Qed.
 
 Lemma type_empty1 n : #|A| = 0 -> #|P_ n(A)| = 0.
 Proof.
 move=> A0; apply eq_card0; case=> d ? ?.
-move: (dist_domain_not_empty d); by rewrite A0.
+move: (fdist_card_neq0 d); by rewrite A0.
 Qed.
 
 Lemma type_empty2 : #|P_ 0(A)| = 0.
@@ -305,9 +301,7 @@ End type_facts.
 
 Section typed_tuples.
 
-Variable A : finType.
-Variable n : nat.
-Variable P : P_ n ( A ).
+Variables (A : finType) (n : nat) (P : P_ n ( A )).
 
 Local Open Scope nat_scope.
 
@@ -349,7 +343,7 @@ have Hx : size (flatten [seq nseq (type.f P x0) x0 | x0 <- enum A]) == n.
   case: (P) => P' f HP' /=.
   apply/eqP.
   transitivity (\sum_(a in A) f a)%nat; last first.
-     apply/eqP; by apply ffun_of_dist with P'.
+     apply/eqP; by apply ffun_of_fdist with P'.
   apply congr_big => //.
   by rewrite enumT.
   move=> a /= _.
@@ -400,7 +394,7 @@ Lemma tuple_dist_type t : tuple_of_row t \in T_{P} ->
   P `^ n t = \prod_(a : A) P a ^ (type.f P a).
 Proof.
 move=> Hx.
-rewrite TupleDist.dE.
+rewrite TupleFDist.dE.
 rewrite (_ : \prod_(i < n) P (t ``_ i) =
   \prod_(a : A) (\prod_(i < n) (if a == t ``_ i then P t ``_ i else 1))); last first.
   rewrite exchange_big; apply eq_big ; first by [].
@@ -438,7 +432,7 @@ rewrite (_ : \prod_(a : A) P a ^ (type.f P) a =
   apply eq_bigr => a _.
   case/boolP : (0 == P a) => H; last first.
     have {H}H : 0 < P a.
-      have := dist_ge0 P a.
+      have := fdist_ge0 P a.
       case/Rle_lt_or_eq_dec => // abs.
       by rewrite abs eqxx in H.
     rewrite -{1}(logK H) -exp2_pow.

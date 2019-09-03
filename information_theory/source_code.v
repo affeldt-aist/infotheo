@@ -12,8 +12,7 @@ Local Open Scope R_scope.
 (** * Definition of a source code *)
 Section scode_definition.
 
-Variables (A : finType) (B : Type).
-Variables k n : nat.
+Variables (A : finType) (B : Type) (k n : nat).
 
 (** Types for the source encoder and source decoder: *)
 Definition encT := 'rV[A]_k -> B.
@@ -23,7 +22,7 @@ Definition decT := B -> 'rV[A]_k.
 Record scode := mkScode { enc : encT ; dec : decT }.
 
 Variable f : 'rV[A]_n -> B.
-Variable P : dist A.
+Variable P : fdist A.
 
 End scode_definition.
 
@@ -31,13 +30,11 @@ Local Open Scope proba_scope.
 
 Section scode_vl_definition.
 
-Variable A : finType.
-Variables k n : nat.
+Variables (A : finType) (k n : nat).
 
 Definition scode_vl := scode A (seq bool) k.
 
-Variable f : 'rV[A]_n -> seq bool.
-Variable P : dist A.
+Variables (f : 'rV[A]_n -> seq bool) (P : fdist A).
 
 Definition E_leng_cw := `E_(P `^ n) (INR \o size \o f).
 
@@ -45,8 +42,7 @@ End scode_vl_definition.
 
 Section scode_fl_definition.
 
-Variable A : finType.
-Variables k n : nat.
+Variables (A : finType) (k n : nat).
 
 (** Definition of a source code: *)
 
@@ -58,11 +54,8 @@ End scode_fl_definition.
 
 Section code_error_rate.
 
-Variable A : finType.
-Variable B : Type.
-Variable P : dist A.
-Variables k : nat.
-Variable sc : scode A B k.
+Variables (A : finType) (B : Type) (P : fdist A).
+Variables (k : nat) (sc : scode A B k).
 
 (** Error rate of a source code: *)
 
@@ -74,8 +67,7 @@ Notation "esrc( P , sc )" := (SrcErrRate P sc) (at level 40) : source_code_scope
 
 Section extension.
 
-Variable A : finType.
-Variable B : Type.
+Variables (A : finType) (B : Type).
 
 Definition extension (f : A -> seq B) : seq A -> seq B :=
   fun a => flatten (map f a).

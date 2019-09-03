@@ -35,9 +35,7 @@ Hypothesis HminRate : minRate > cap.
 Let Anot0 : (0 < #|A|)%nat. Proof. by case: W. Qed.
 
 Let Bnot0 : (0 < #|B|)%nat.
-Proof.
-case/card_gt0P : Anot0 => a _; exact: (dist_domain_not_empty (W a)).
-Qed.
+Proof. case/card_gt0P : Anot0 => a _; exact: (fdist_card_neq0 (W a)). Qed.
 
 Lemma channel_coding_converse_gen : exists Delta, 0 < Delta /\ forall n',
   let n := n'.+1 in forall (M : finType) (c : code A B M n), (0 < #|M|)%nat ->

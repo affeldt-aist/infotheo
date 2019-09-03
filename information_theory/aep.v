@@ -20,7 +20,7 @@ Local Open Scope vec_ext_scope.
 (* properties of the ``- log P'' random variable *)
 Section mlog_prop.
 
-Variables (A : finType) (P : dist A).
+Variables (A : finType) (P : fdist A).
 
 Lemma E_mlog : `E (--log P) = `H P.
 Proof.
@@ -54,12 +54,12 @@ Proof. rewrite -V_mlog /Var; apply Ex_ge0 => ?; exact: pow_even_ge0. Qed.
 
 End mlog_prop.
 
-Definition sum_mlog_prod A (P : dist A) n : {RV (P `^ n) -> R} :=
+Definition sum_mlog_prod A (P : fdist A) n : {RV (P `^ n) -> R} :=
   (fun t => \sum_(i < n) - log (P t ``_ i))%R.
 
 Arguments sum_mlog_prod {A} _ _.
 
-Lemma sum_mlog_prod_sum_map_mlog A (P : dist A) n :
+Lemma sum_mlog_prod_sum_map_mlog A (P : fdist A) n :
   sum_mlog_prod P n.+1 \=sum (\row_(i < n.+1) --log P).
 Proof.
 elim : n => [|n IH].
@@ -84,7 +84,7 @@ Qed.
 
 Section aep_k0_constant.
 
-Variables (A : finType) (P : dist A).
+Variables (A : finType) (P : fdist A).
 
 Definition aep_bound epsilon := (aep_sigma2 P / epsilon ^ 3)%R.
 
@@ -103,7 +103,7 @@ End aep_k0_constant.
 
 Section AEP.
 
-Variables (A : finType) (P : dist A) (n : nat) (epsilon : R).
+Variables (A : finType) (P : fdist A) (n : nat) (epsilon : R).
 Hypothesis Hepsilon : 0 < epsilon.
 
 Lemma aep : aep_bound P epsilon <= INR n.+1 ->
@@ -127,9 +127,9 @@ have {H1 H2} := (wlln (H1 n) (H2 n) Hsum Hepsilon).
 move/(leR_trans _); apply.
 apply/Pr_incl/subsetP => ta; rewrite 2!inE => /andP[H1].
 rewrite /sum_mlog_prod [--log _]lock /= -lock /= /scale_RV /mlog_RV.
-rewrite TupleDist.dE log_rmul_rsum_mlog //.
-apply: (rprodr_gt0_inv (dist_ge0 P)).
-move: H1; by rewrite TupleDist.dE => /ltRP.
+rewrite TupleFDist.dE log_rmul_rsum_mlog //.
+apply: (rprodr_gt0_inv (fdist_ge0 P)).
+move: H1; by rewrite TupleFDist.dE => /ltRP.
 Qed.
 
 End AEP.

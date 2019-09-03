@@ -35,7 +35,7 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Definition P : {dist 'I_3} := mkDist p_sum1.
+Definition P : {fdist 'I_3} := mkFDist p_sum1.
 
 Definition X : {RV P -> R} := (fun i => INR i.+1).
 
@@ -47,7 +47,7 @@ rewrite /X !ffunE !(tnth_nth 0) /=.
 cbv; by field.
 Qed.
 
-Lemma variance : Var P X = 5/9.
+Lemma variance : `V X = 5/9.
 Proof.
 rewrite VarE expected /Ex /X /sq_RV /comp_RV /=.
 rewrite 3!big_ord_recl big_ord0 /=.

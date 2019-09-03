@@ -84,7 +84,7 @@ Let Anot0 : (0 < #|A|)%nat. Proof. by case: W. Qed.
 
 Let Bnot0 : (0 < #|B|)%nat.
 Proof.
-case/card_gt0P : Anot0 => a _; exact (dist_domain_not_empty (W a)).
+case/card_gt0P : Anot0 => a _; exact (fdist_card_neq0 (W a)).
 Qed.
 
 Lemma typed_success (tc : typed_code B M P) : scha(W, tc) =
@@ -159,7 +159,7 @@ apply/(@leR_trans #| V.-shell (tuple_of_row (enc tc m)) |%:R); last first.
     exact/typed_prop.
   case: (jtype.c V) => _ Anot0.
   case/card_gt0P : (Anot0) => a _.
-  exact: (dist_domain_not_empty (V a)).
+  exact: (fdist_card_neq0 (V a)).
 apply/le_INR/leP/subset_leq_card/setIidPl/setP => tb.
 by rewrite in_set in_set andbC andbA andbb.
 Qed.
@@ -280,7 +280,7 @@ Variable tc : typed_code B M P.
 Let Anot0 : (0 < #|A|)%nat. Proof. by case: (W). Qed.
 
 Let Bnot0 : (0 < #|B|)%nat.
-Proof. case/card_gt0P : Anot0 => a _; exact: (dist_domain_not_empty (W a)). Qed.
+Proof. case/card_gt0P : Anot0 => a _; exact: (fdist_card_neq0 (W a)). Qed.
 
 Let V0 : P_ n (A, B).
 Proof.
@@ -334,7 +334,7 @@ Lemma Anot0 : (0 < #|A|)%nat. Proof. by case: (W) => _ Anot0. Qed.
 
 Let P0 : P_ n ( A ).
 Proof.
-move: (type_not_empty n' Anot0) => H; exact (enum_val (Ordinal H)).
+move: (type_card_neq0 n' Anot0) => H; exact (enum_val (Ordinal H)).
 Defined.
 
 Local Open Scope num_occ_scope.
@@ -368,7 +368,7 @@ apply/(@leR_trans (\sum_(m | m \in enc_pre_img c P)
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
 - apply ler_rsum_l => //= i Hi; first exact/leRR.
-  apply: rsumr_ge0 => ? _; exact/dist_ge0.
+  apply: rsumr_ge0 => ? _; exact/fdist_ge0.
 Qed.
 
 End success_bound_sect.

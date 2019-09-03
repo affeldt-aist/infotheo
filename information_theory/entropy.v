@@ -17,7 +17,7 @@ Local Open Scope R_scope.
 
 Section entropy_definition.
 
-Variables (A : finType) (P : dist A).
+Variables (A : finType) (P : fdist A).
 
 Definition entropy := - \sum_(a in A) P a * log (P a).
 Local Notation "'`H'" := (entropy).
@@ -33,11 +33,11 @@ case/boolP : (P i == 0) => [/eqP ->|Hi].
      consequence of lim x->0 x log x = 0 *)
   rewrite mul0R oppR0; exact/leRR.
 rewrite mulRC -mulNR.
-apply mulR_ge0; last exact: dist_ge0.
+apply mulR_ge0; last exact: fdist_ge0.
 apply oppR_ge0.
 rewrite /log -(Log_1 2).
-apply Log_increasing_le => //; last exact: dist_max.
-apply/ltRP; rewrite lt0R Hi; exact/leRP/dist_ge0.
+apply Log_increasing_le => //; last exact: fdist_max.
+apply/ltRP; rewrite lt0R Hi; exact/leRP/fdist_ge0.
 Qed.
 
 Hypothesis P_pos : forall b, 0 < P b.
@@ -48,10 +48,10 @@ rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \sum_(_ in _) _ = \sum_(i in A | predT A) - (P i * log (P i))).
   apply rsumr_ge0 => i _.
   rewrite mulRC -mulNR.
-  apply mulR_ge0; last exact: dist_ge0.
+  apply mulR_ge0; last exact: fdist_ge0.
   apply oppR_ge0.
   rewrite /log -(Log_1 2).
-  apply Log_increasing_le => //; by [by apply P_pos | exact: dist_max].
+  apply Log_increasing_le => //; by [by apply P_pos | exact: fdist_max].
 apply eq_bigl => i /=; by rewrite inE.
 Qed.
 
@@ -62,13 +62,13 @@ Notation "'`H'" := (entropy) : entropy_scope.
 Local Open Scope entropy_scope.
 Local Open Scope proba_scope.
 
-Lemma entropy_Ex {A} (P : dist A) : `H P = `E (--log P).
+Lemma entropy_Ex {A} (P : fdist A) : `H P = `E (--log P).
 Proof.
 rewrite /entropy /mlog_RV /= big_morph_oppR.
 apply eq_bigr => a _; by rewrite mulRC -mulNR.
 Qed.
 
-Lemma xlnx_entropy {A} (P : dist A) :
+Lemma xlnx_entropy {A} (P : fdist A) :
   `H P = / ln 2 * - \sum_(a : A) xlnx (P a).
 Proof.
 rewrite /entropy mulRN; f_equal.
@@ -76,7 +76,7 @@ rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply eq_bigr => a _ ;rewrite /log /Rdiv mulRA mulRC; f_equal.
 rewrite /xlnx; case : ifP => // /ltRP Hcase.
 have : P a = 0; last by move=> ->; rewrite mul0R.
-case (Rle_lt_or_eq_dec 0 (P a)) => //; exact: dist_ge0.
+case (Rle_lt_or_eq_dec 0 (P a)) => //; exact: fdist_ge0.
 Qed.
 
 Lemma entropy_uniform {A : finType} n (HA : #|A| = n.+1) :
@@ -90,10 +90,10 @@ Qed.
 
 Local Open Scope reals_ext_scope.
 
-Lemma entropy_max (A : finType) (P : dist A) : `H P <= log (INR #|A|).
+Lemma entropy_max (A : finType) (P : fdist A) : `H P <= log (INR #|A|).
 Proof.
 have [n HA] : exists n, #|A| = n.+1.
-  exists (#|A|.-1); rewrite prednK //; exact: (dist_domain_not_empty P).
+  exists (#|A|.-1); rewrite prednK //; exact: (fdist_card_neq0 P).
 have /div_ge0 H : P << (Uniform.d HA) by apply dom_by_uniform.
 rewrite -subR_ge0; apply/(leR_trans H)/Req_le.
 transitivity (\sum_(a|a \in A) P a * log (P a) +
@@ -101,7 +101,7 @@ transitivity (\sum_(a|a \in A) P a * log (P a) +
   rewrite -big_split /=; apply eq_bigr => a _; rewrite -mulRDr.
   case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
   congr (_ * _); rewrite logDiv ?addR_opp //.
-  by rewrite -dist_gt0.
+  by rewrite -fdist_gt0.
   rewrite Uniform.dE; apply/invR_gt0; rewrite HA; exact/ltR0n.
 rewrite [in X in _ + X](eq_bigr (fun a => P a * - log (/ INR #|A|))); last first.
   by move=> a _; rewrite Uniform.dE.
@@ -109,7 +109,7 @@ rewrite -[in X in _ + X = _]big_distrl /= epmf1 mul1R.
 rewrite addRC /entropy /log LogV ?oppRK ?subR_opp // HA; exact/ltR0n.
 Qed.
 
-Lemma entropy_from_bivar (A : finType) n (P : {dist A * 'rV[A]_n}) :
+Lemma entropy_from_bivar (A : finType) n (P : {fdist A * 'rV[A]_n}) :
   `H (Multivar.from_bivar P) = `H P.
 Proof.
 rewrite /entropy /=; congr (- _).
@@ -118,7 +118,7 @@ apply eq_bigr => -[a b] _ /=.
 by rewrite Multivar.from_bivarE /= row_mx_row_ord0 rbehead_row_mx.
 Qed.
 
-Lemma entropy_to_bivar (A : finType) n (P : {dist 'rV[A]_n.+1}) :
+Lemma entropy_to_bivar (A : finType) n (P : {fdist 'rV[A]_n.+1}) :
   `H (Multivar.to_bivar P) = `H P.
 Proof.
 rewrite /entropy /=; congr (- _).

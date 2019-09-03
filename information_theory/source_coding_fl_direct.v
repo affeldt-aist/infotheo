@@ -15,7 +15,7 @@ Local Open Scope ring_scope.
 
 Section encoder_and_decoder.
 
-Variables (A : finType) (P : dist A).
+Variables (A : finType) (P : fdist A).
 Variables n k : nat.
 
 Variable S : {set 'rV[A]_k.+1}.
@@ -99,8 +99,7 @@ Local Open Scope reals_ext_scope.
 
 Section source_coding_direct'.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : fdist A).
 Variables num den : nat.
 
 Let r := (INR num / INR den.+1)%R.
@@ -234,7 +233,7 @@ End source_coding_direct'.
 
 Section source_coding_direct.
 
-Variables (A : finType) (P : dist A).
+Variables (A : finType) (P : fdist A).
 
 (** Source coding theorem (direct part) #<a name="label_source_coding_direct"> </a># *)
 

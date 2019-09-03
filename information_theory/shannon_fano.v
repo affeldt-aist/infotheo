@@ -27,7 +27,7 @@ Coercion encoding_coercion (A T : finType) (c : Encoding.t A T) : {ffun A -> seq
 
 Section shannon_fano_def.
 
-Variables (A T : finType) (P : {dist A}).
+Variables (A T : finType) (P : {fdist A}).
 
 Local Open Scope zarith_ext_scope.
 
@@ -38,10 +38,10 @@ End shannon_fano_def.
 
 Section shannon_fano_is_kraft.
 
-Variables (A : finType) (P : {dist A}).
+Variables (A : finType) (P : {fdist A}).
 Hypothesis Pr_pos : forall s, P s != 0.
 
-Let a : A. by move/card_gt0P: (dist_domain_not_empty P) => /sigW [i]. Qed.
+Let a : A. by move/card_gt0P: (fdist_card_neq0 P) => /sigW [i]. Qed.
 
 Variable t' : nat.
 Let t := t'.+2.
@@ -61,7 +61,7 @@ rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
 apply ler_rsum => i _.
 rewrite H.
-have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos; exact/leRP/dist_ge0.
+have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos; exact/leRP/fdist_ge0.
 apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
   rewrite div1R LogV //.
   rewrite oppRK LogK //; first exact/leRR.
@@ -75,7 +75,7 @@ rewrite INR_Zabs_nat; last first.
     by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_pos/leRR.
   apply/leR0ceil/ltRW/ltR0Log.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
-  rewrite div1R invR_gt1 // ltR_neqAle; split; [exact/eqP|exact/dist_max].
+  rewrite div1R invR_gt1 // ltR_neqAle; split; [exact/eqP|exact/fdist_max].
 by set x := Log _ _; case: (ceilP x).
 Qed.
 
@@ -83,7 +83,7 @@ End shannon_fano_is_kraft.
 
 Section average_length.
 
-Variables (A T : finType) (P : {dist A}).
+Variables (A T : finType) (P : {fdist A}).
 Variable f : {ffun A -> seq T}. (* encoding function *)
 
 Definition average := \sum_(x in A) P x * (size (f x))%:R.
@@ -92,8 +92,7 @@ End average_length.
 
 Section shannon_fano_suboptimal.
 
-Variable A : finType.
-Variable P : {dist A}.
+Variables (A : finType) (P : {fdist A}).
 Hypothesis Pr_pos : forall s, P s != 0.
 
 Let T := [finType of 'I_2].
@@ -106,19 +105,19 @@ Lemma shannon_fano_average_entropy : is_shannon_fano P f ->
 Proof.
 move=> H; rewrite /average.
 apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log (INR #|T|) (P x) + 1))).
-  apply ltR_rsum; [exact: dist_domain_not_empty|move=> i].
+  apply ltR_rsum; [exact: fdist_card_neq0|move=> i].
   apply ltR_pmul2l.
-    apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_ge0.
+    apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/fdist_ge0.
   rewrite H.
   rewrite (_ : INR #|T| = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
-  have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/dist_ge0.
+  have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP/fdist_ge0.
   rewrite INR_Zabs_nat; last first.
     apply/leR0ceil.
     rewrite /x div1R /log LogV //.
     apply oppR_ge0.
     rewrite -(Log_1 2); apply Log_increasing_le => //.
-    exact/dist_max.
+    exact/fdist_max.
   case: (ceilP x) => _.
   by rewrite -LogV // -/(log _) -(div1R _) /x.
 evar (h : A -> R).
@@ -136,8 +135,7 @@ End shannon_fano_suboptimal.
 (* wip *)
 Section kraft_code_is_shannon_fano.
 
-Variables (A : finType).
-Variable P : {dist A}.
+Variables (A : finType) (P : {fdist A}).
 
 Variable (t' : nat).
 Let n := #|A|.-1.+1.
@@ -160,9 +158,9 @@ rewrite -(@nth_uniq _ [::] C (enum_rank x) (enum_rank y)) //; last first.
   exact/enum_uniq.
   exact/injective_sigma.
 rewrite /C /ACode /= /acode size_map size_enum_ord prednK //.
-exact: (dist_domain_not_empty P).
+exact: (fdist_card_neq0 P).
 rewrite /C /ACode /= /acode size_map size_enum_ord prednK //.
-exact: (dist_domain_not_empty P).
+exact: (fdist_card_neq0 P).
 Qed.
 
 Let f := Encoding.mk f_inj.

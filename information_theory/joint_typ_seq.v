@@ -23,7 +23,7 @@ Local Open Scope R_scope.
 Section joint_typ_seq_definition.
 
 Variables A B : finType.
-Variable P : dist A.
+Variable P : fdist A.
 Variable W : `Ch(A, B).
 Variable n : nat.
 Variable epsilon : R.
@@ -64,7 +64,7 @@ Local Open Scope jtyp_seq_scope.
 
 Section jtyp_seq_upper.
 
-Variables (A B : finType) (P : dist A) (W : `Ch(A, B)).
+Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)).
 Variable n : nat.
 Variable epsilon : R.
 
@@ -82,7 +82,7 @@ End jtyp_seq_upper.
 
 Section jtyp_seq_transmitted.
 
-Variables (A B : finType) (P : dist A) (W : `Ch(A, B)).
+Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)).
 Variable epsilon : R.
 
 Local Open Scope zarith_ext_scope.
@@ -112,7 +112,7 @@ have : (JTS_1_bound <= n)%nat ->
     move=> m.
     have : 1 <= 3 by lra.
     move/(set_typ_seq_incl P m (ltRW He)) => Hincl.
-    rewrite (JointDistChan.Pr_DMC_fst P W (fun x => x \notin `TS P m epsilon)).
+    rewrite (JointFDistChan.Pr_DMC_fst P W (fun x => x \notin `TS P m epsilon)).
     apply/Pr_incl/subsetP => i /=; rewrite !inE.
     apply contra.
     move/subsetP : Hincl => /(_ i).
@@ -142,7 +142,7 @@ have : (JTS_1_bound <= n)%nat ->
     move=> m.
     have : 1 <= 3 by lra.
     move/(set_typ_seq_incl (`O(P , W)) m (ltRW He)) => Hincl.
-    rewrite JointDistChan.Pr_DMC_out.
+    rewrite JointFDistChan.Pr_DMC_out.
     apply/Pr_incl/subsetP => i /=; rewrite !inE.
     apply contra.
     move/subsetP : Hincl => /(_ i).
@@ -194,7 +194,7 @@ have : (JTS_1_bound <= n)%nat ->
   move=> Hn.
   rewrite [in X in _ <= X](_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3)%R; last by field.
   move: Hn; rewrite 2!geq_max => /andP[Hn1 /andP[Hn2 Hn3]].
-  rewrite !JointDistChan.Pr_DMC_rV_prod.
+  rewrite !JointFDistChan.Pr_DMC_rV_prod.
   apply leR_add; first by apply leR_add; [exact: HnP | exact: HnPW].
   apply: leR_trans; last exact/HnP_W/Hn3.
   apply/Req_le; congr Pr; apply/setP => /= tab; by rewrite !inE rV_prodK.
@@ -213,7 +213,7 @@ apply (@leR_trans (
  Pr (`J(P , W) `^ n) ([set x | ((rV_prod x).2 \notin `TS (`O( P , W)) n epsilon)] :|:
                       (~: `TS (`J( P , W)) n epsilon)))).
   exact: Pr_union.
-rewrite -addRA !JointDistChan.Pr_DMC_rV_prod.
+rewrite -addRA !JointFDistChan.Pr_DMC_rV_prod.
 apply/leR_add2l; apply: leR_trans; last exact: Pr_union.
 apply/Req_le; congr Pr; apply/setP => t; by rewrite !inE rV_prodK.
 Qed.
@@ -222,7 +222,7 @@ End jtyp_seq_transmitted.
 
 Section non_typicality.
 
-Variables (A B : finType) (P : dist A) (W : `Ch(A, B)).
+Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)).
 Variable n : nat.
 Variable epsilon : R.
 
@@ -239,8 +239,8 @@ apply (@leR_trans (\sum_(i | i \in `JTS P W n epsilon)
     move=> ? ?; by rewrite rV_prodK.
   apply: ler_rsum_l => i Hi.
   - rewrite inE in Hi.
-    rewrite ProdDist.dE.
-    apply leR_pmul; [exact: dist_ge0 | exact: dist_ge0 | | ].
+    rewrite ProdFDist.dE.
+    apply leR_pmul; [exact: fdist_ge0 | exact: fdist_ge0 | | ].
     exact: proj2 (typical_sequence1_JTS Hi).
     exact: proj2 (typical_sequence1_JTS' Hi).
   - exact/mulR_ge0.

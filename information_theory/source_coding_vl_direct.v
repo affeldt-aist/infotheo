@@ -84,7 +84,7 @@ End R_lemma.
 Section Length.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
-Variable P : dist X.
+Variable P : fdist X.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 
@@ -93,15 +93,13 @@ Proof.
  by apply: nesym; apply: Rlt_not_eq; apply: lt_0_INR; apply/ltP.
 Qed.
 
-Lemma dist_support_LB : 1 <= INR #|X|.
-Proof.
-rewrite (_ : 1 = INR 1)  //; exact/le_INR/leP/dist_domain_not_empty.
-Qed.
+Lemma fdist_support_LB : 1 <= INR #|X|.
+Proof. rewrite (_ : 1 = INR 1)  //; exact/le_INR/leP/fdist_card_neq0. Qed.
 
-Lemma dist_supp_lg_add_1_neq_0 : 1 + log (INR #|X|) <> 0.
+Lemma fdist_supp_lg_add_1_neq_0 : 1 + log (INR #|X|) <> 0.
 Proof.
 by apply: nesym; apply: Rlt_not_eq; apply: (Rplus_lt_le_0_compat _ _ Rlt_0_1);
- rewrite -(Log_1 2); apply: (Log_increasing_le _ Rlt_0_1) => //; apply: dist_support_LB.
+ rewrite -(Log_1 2); apply: (Log_increasing_le _ Rlt_0_1) => //; apply: fdist_support_LB.
 Qed.
 
 Definition L_typ := ceil (INR n * (`H P + epsilon)).
@@ -121,7 +119,7 @@ Proof.
 apply: (Rle_trans _ (log (INR #|[set: n.-tuple X]|))); last exact: (proj1 (ceilP _)).
 rewrite -(Log_1 2); apply: (Log_increasing_le _ Rlt_0_1) => //.
 rewrite cardsT card_tuple -natRexp.
-by apply: pow_R1_Rle; apply: dist_support_LB.
+by apply: pow_R1_Rle; apply: fdist_support_LB.
 Qed.
 
 Lemma card_le_TS_Lt : INR #| `TS P n epsilon | <= INR #|[ set : (Z.abs_nat L_typ).-tuple bool]|.
@@ -147,10 +145,10 @@ rewrite {1}(_ : INR (expn #|X| n) = exp2 (log (INR (expn #|X| n)))).
  apply: le_IZR; apply: (Rle_trans _ (log (INR (expn #|X| n)))) => //.
  rewrite /= -(Log_1 2); apply: (Log_increasing_le _ Rlt_0_1) => //.
  rewrite -natRexp.
- by apply: pow_R1_Rle; apply: dist_support_LB.
+ by apply: pow_R1_Rle; apply: fdist_support_LB.
 -rewrite logK //; last rewrite -natRexp.
  apply: pow_lt.
- by apply: (Rlt_le_trans _ 1 _ Rlt_0_1 dist_support_LB).
+ by apply: (Rlt_le_trans _ 1 _ Rlt_0_1 fdist_support_LB).
 Qed.
 
 End Length.
@@ -158,7 +156,7 @@ End Length.
 Section Enc_Dec.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
-Variable P : dist X.
+Variable P : fdist X.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 
@@ -172,9 +170,9 @@ Definition enc_typ x :=
 Lemma  card_le_Xn_Lnt :
   (#|[finType of n.-tuple X] | <= #|[finType of (Z.abs_nat L_not_typ).-tuple bool]|)%nat.
 Proof.
- rewrite -!cardsT.
- apply/leP. 
- apply: (INR_le _ _ (card_le_Xn_Lnt' n' P)).
+rewrite -!cardsT.
+apply/leP.
+apply: (INR_le _ _ (card_le_Xn_Lnt' n' P)).
 Qed.
 
 Definition enc_not_typ x := enum_val (widen_ord card_le_Xn_Lnt (enum_rank x)).
@@ -185,13 +183,13 @@ Proof. by move=> a1 a2 /enum_val_inj [] /ord_inj/enum_rank_inj. Qed.
 Definition f : encT X (seq bool) n := fun x =>
   if x \in `TS P n epsilon then
     true :: enc_typ x
-  else 
+  else
     false :: enc_not_typ (tuple_of_row x).
 
 Lemma f_inj : injective f.
 Proof.
 have card_TS_Lt : (#|`TS P n epsilon| <= (expn 2 (Z.abs_nat L_typ)))%nat.
-  by apply/leP;  apply: INR_le; move: (card_le_TS_Lt n' P eps_pos); 
+  by apply/leP;  apply: INR_le; move: (card_le_TS_Lt n' P eps_pos);
        rewrite {1}cardsT card_tuple /= card_bool.
 move=> t1 t2; rewrite /f.
 case/boolP : (t1 == t2) ; first by move /eqP.
@@ -210,7 +208,7 @@ Definition phi_def : n.-tuple X.
 move Hpick : [pick x | x \in [set: X] ] => p;
 move: Hpick; case: (pickP _)=>[x _ _ | abs]; first apply: [tuple of nseq n x].
 exfalso.
-move: (dist_domain_not_empty P).
+move: (fdist_card_neq0 P).
 rewrite -cardsT card_gt0; case/set0Pn => ?.
 by rewrite abs.
 Defined.
@@ -246,18 +244,18 @@ End Enc_Dec.
 Section E_Leng_Cw_Lemma.
 Variable (X : finType).
 
-Definition E_leng_cw (n : nat) (f : encT X (seq bool) n) (P : dist X):= 
+Definition E_leng_cw (n : nat) (f : encT X (seq bool) n) (P : fdist X) :=
   \sum_(x in 'rV[X]_n)( P `^ n (x) * (INR (size (f x)))).
 
-Lemma E_leng_cw' (n : nat) (f : encT X (seq bool) n) (P : dist X): 
+Lemma E_leng_cw' (n : nat) (f : encT X (seq bool) n) (P : fdist X) :
   E_leng_cw f P = @Ex _ (P `^ n) (fun x => INR (size (f x))).
 Proof. by rewrite /E_leng_cw /= rsum_mulRC. Qed.
 
 Variable (n' : nat).
 Let n := n'.+1.
-Variable P : dist X.
-Variable epsilon:R.
-Hypothesis eps_pos: 0 < epsilon.
+Variable P : fdist X.
+Variable epsilon : R.
+Hypothesis eps_pos : 0 < epsilon.
 Hypothesis aepbound_UB : aep_bound P epsilon <= INR n.
 
 Local Notation "'L_typ'" := (L_typ n' P epsilon).
@@ -299,7 +297,7 @@ rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
 -apply: Rplus_le_compat.
  +rewrite -[X in _ <= X]mulR1; apply: Rmult_le_compat_l.
   *by apply: (Rplus_le_le_0_compat _ _ _ Rle_0_1); apply: ltRW; apply: Lt_pos.
-  * rewrite -(epmf1 (P `^ n)); apply: ler_rsum_l => // *; [exact/Rle_refl | exact/dist_ge0].
+  * rewrite -(epmf1 (P `^ n)); apply: ler_rsum_l => // *; [exact/Rle_refl | exact/fdist_ge0].
  +apply: Rmult_le_compat_r.
   *by apply: (Rplus_le_le_0_compat _ _ (Lnt_nonneg _ P) Rle_0_1).
   *apply: Rminus_le; rewrite /Rminus addRC addRA; apply: Rle_minus; rewrite addRC.
@@ -311,7 +309,7 @@ End E_Leng_Cw_Lemma.
 Section v_scode.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
-Variable P : dist X.
+Variable P : fdist X.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon .
 Definition epsilon':= epsilon / (3 + (3 * log (INR #|X|))).
@@ -322,7 +320,7 @@ Hypothesis n0_Le_n : (n0 < n)%nat.
 
 Lemma n0_eps3 :  2 * (epsilon / (3 * (1 + log (INR #|X|)))) / INR n < epsilon / 3.
 Proof.
-move : (@leng_neq_0 n') (dist_supp_lg_add_1_neq_0 P) R3neqR0 => ? ? ?.
+move : (@leng_neq_0 n') (fdist_supp_lg_add_1_neq_0 P) R3neqR0 => ? ? ?.
 rewrite mulRC /Rdiv -?mulRA; apply: (Rmult_lt_compat_l _ _ _ eps_pos); rewrite ?mulRA (mulRC _ 2).
 apply: (Rmult_lt_reg_l 3); first by apply: Rplus_lt_pos; [apply: Rlt_0_1 | apply: Rlt_0_2].
 rewrite Rinv_mult_distr //  ?mulRA (mulRC 3 2) Rinv_r_simpl_l //.
@@ -339,7 +337,7 @@ rewrite -INR_Zabs_nat.
  apply: (Rplus_lt_le_0_compat _ _ Rlt_0_1).
  rewrite -(Log_1 2).
  apply: (Log_increasing_le _ Rlt_0_1) => //.
- by apply: dist_support_LB.
+ by apply: fdist_support_LB.
 Qed.
 
 Lemma n0_eps4 :  2 * / INR n  < epsilon / 4.
@@ -363,14 +361,14 @@ rewrite -INR_Zabs_nat.
 Qed.
 
 Lemma eps'_pos : 0 < epsilon'.
-Proof. 
+Proof.
 rewrite /epsilon' /Rdiv -(mulR0 epsilon).
 apply: Rmult_lt_compat_l=>//.
 apply: Rinv_0_lt_compat.
 apply: Rplus_lt_le_0_compat; first lra.
 apply: Rmult_le_pos; first lra.
 rewrite -(Log_1 2).
-by apply: (Log_increasing_le _ Rlt_0_1 (dist_support_LB P)).
+by apply: (Log_increasing_le _ Rlt_0_1 (fdist_support_LB P)).
 Qed.
 
 Lemma le_aepbound_n : aep_bound P epsilon' <= INR n.
@@ -381,19 +379,19 @@ rewrite -INR_Zabs_nat.
   apply: ltRW; apply: lt_INR.
   move: n0_Le_n.
   rewrite /n0 !gtn_max.
-  case/andP=> _. 
+  case/andP=> _.
   case/andP=> _ H2.
   by apply/ltP.
 apply: le_IZR; apply: (Rle_trans _ (aep_sigma2 P / epsilon' ^ 3)); last by apply: (proj1 (ceilP _)).
 apply: Rmult_le_pos; first by apply: aep_sigma2_ge0.
 by apply: Rlt_le; apply: Rinv_0_lt_compat; apply: (pow_lt _ _ eps'_pos).
-Qed. 
+Qed.
 
 Lemma lb_entro_plus_eps :
  IZR (L_typ n' P epsilon') + 1 + epsilon' * (IZR (L_not_typ X n') + 1) <
    (`H P + epsilon) * INR n.
 Proof.
-move : (@leng_neq_0 n') (dist_supp_lg_add_1_neq_0 P) R3neqR0 R4neqR0 => ? ? ? ?.
+move : (@leng_neq_0 n') (fdist_supp_lg_add_1_neq_0 P) R3neqR0 R4neqR0 => ? ? ? ?.
 rewrite /L_typ /L_not_typ.
 apply: (Rle_lt_trans _  (INR n'.+1 * (`H P + epsilon') + 1 + 1 +
    epsilon' * (log (INR #|[set: (n'.+1).-tuple X]|) + 1 + 1))).
@@ -401,7 +399,7 @@ apply: (Rle_lt_trans _  (INR n'.+1 * (`H P + epsilon') + 1 + 1 +
  +by apply: Rplus_le_compat; [apply: ltRW; apply: (proj2 (ceilP _)) | apply: Rle_refl].
  +apply: Rmult_le_compat_l; first by apply: Rlt_le; apply: eps'_pos.
    by apply: Rplus_le_compat; [apply: ltRW; apply: (proj2 (ceilP _)) | apply: Rle_refl].
- -rewrite cardsT card_tuple log_pow_INR; last exact: dist_domain_not_empty.
+ -rewrite cardsT card_tuple log_pow_INR; last exact: fdist_card_neq0.
   rewrite -addRA -addRA -addRA addRC addRA addRC addRA -(Rinv_r_simpl_l (INR n) (1 + 1)) //.
   rewrite (mulRC 2 _) -{1}mulRA -Rmult_plus_distr_l -mulRA -Rmult_plus_distr_l
    (mulRC epsilon' _) -mulRA (mulRC _ epsilon') -Rmult_plus_distr_l mulRC.
@@ -420,11 +418,11 @@ apply: (Rle_lt_trans _  (INR n'.+1 * (`H P + epsilon') + 1 + 1 +
 by apply: elevenOverTwelve_le_One.
 Qed.
 
-Lemma v_scode' : exists sc : scode_vl _ n, 
+Lemma v_scode' : exists sc : scode_vl _ n,
   cancel (enc sc) (dec sc) /\
   E_leng_cw (enc sc) P / INR n < `H P + epsilon.
 Proof.
-move : (@leng_neq_0 n') (dist_supp_lg_add_1_neq_0 P) R3neqR0 R4neqR0 => ? ? ? ?.
+move : (@leng_neq_0 n') (fdist_supp_lg_add_1_neq_0 P) R3neqR0 R4neqR0 => ? ? ? ?.
 exists (mkScode (f P epsilon') (phi n' P epsilon')).
 apply: conj=> [ x |]; first by apply: (phi_f _ eps'_pos).
 apply: (Rmult_lt_reg_r (INR n)); first by apply: lt_0_INR; apply/ltP.
@@ -438,8 +436,7 @@ End v_scode.
 
 Section variable_length_source_coding.
 
-Variable X : finType.
-Variable P : dist X.
+Variables (X : finType) (P : fdist X).
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon .
 Local Notation "'n0'" := (n0 P epsilon).

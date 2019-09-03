@@ -226,15 +226,13 @@ Local Open Scope vec_ext_scope.
 
 Section Entropy_lemma.
 
-Variable A : finType.
-Variable P : dist A.
-Variable n : nat.
+Variables (A : finType) (P : fdist A) (n : nat).
 
-Lemma entropy_TupleDist : `H (P `^ n) = (INR n) * `H P.
+Lemma entropy_TupleFDist : `H (P `^ n) = (INR n) * `H P.
 Proof.
 elim:n=>[|n0 IH].
   rewrite /entropy /= mul0R (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?oppR0 // => i _.
-  by rewrite TupleDist.zero /log Log_1 mulR0.
+  by rewrite TupleFDist.zero /log Log_1 mulR0.
 rewrite S_INR Rmult_plus_distr_r mul1R -IH.
 rewrite /entropy -(big_rV_cons_behead _ xpredT xpredT) /=.
 rewrite -Ropp_plus_distr; apply:Ropp_eq_compat.
@@ -247,11 +245,11 @@ rewrite [X in X = _](_ :_ = \sum_(i | i \in A) P i * log (P i) *
   rewrite -mulRA -Rmult_plus_distr_l (mulRC (log (P i))) (big_distrl (log (P i)) _ _) /=.
   rewrite -big_split /= big_distrr/=.
   apply: eq_bigr=>i0 _.
-  rewrite TupleDist.dE.
+  rewrite TupleFDist.dE.
   rewrite big_ord_recl (_ : _ ``_ ord0 = i); last first.
     rewrite mxE; case: splitP => // j Hj; by rewrite mxE.
   rewrite -mulRA.
-  case: (dist_ge0 P i)=>[ pi_pos| <-]; last by rewrite !mul0R.
+  case: (fdist_ge0 P i)=>[ pi_pos| <-]; last by rewrite !mul0R.
   apply:Rmult_eq_compat_l.
   rewrite -Rmult_plus_distr_l.
   rewrite (@eq_bigr _ _ _ _ _ _ (fun x => P ((row_mx (\row_(_ < 1) i) i0) ``_ (lift ord0 x))) (fun x => P i0 ``_ x))=>[|i1 _]; last first.
@@ -266,21 +264,19 @@ rewrite [X in X = _](_ :_ = \sum_(i | i \in A) P i * log (P i) *
     apply/ltRP; rewrite lt0R eq_sym rmul_non0; apply/leRP/rprodr_ge0 => ?; exact: pos_ff_ge0.
   by rewrite /log LogM // !Rmult_plus_distr_l mulRA mulRA.
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
-  rewrite -(TupleDist.f1 P n0).
-  apply eq_bigr => i _.
-  by rewrite /TupleDist.f ffunE.
+  by rewrite -(epmf1 (P `^ n0)); apply eq_bigr => i _; rewrite TupleFDist.dE.
 rewrite -big_distrl /= mulR1 [in RHS]addRC.
 apply:Rplus_eq_compat_l.
-rewrite -big_distrl/= epmf1 mul1R; apply eq_bigr => i _.
-by rewrite TupleDist.dE.
+rewrite -big_distrl /= epmf1 mul1R; apply eq_bigr => i _.
+by rewrite TupleFDist.dE.
 Qed.
 
 End Entropy_lemma.
 
 Section le_entroPN_logeEX.
 
-Variable (A : finType) (P : dist A) (f : A -> seq bool).
-Let X := (*mkRvar P*) (INR \o size \o f).
+Variable (A : finType) (P : fdist A) (f : A -> seq bool).
+Let X : {RV P -> R} := (INR \o size \o f).
 Definition Nmax := (\max_(a in A) size (f a)).
 Hypothesis f_uniq : uniquely_decodable f.
 
@@ -320,7 +316,7 @@ apply: ord_inj.
 by rewrite -H inordfE.
 Qed.
 
-Definition PN := makeDist Rle0Pr pmf1N.
+Definition PN := makeFDist Rle0Pr pmf1N.
 
 Lemma EX_ord : @Ex _ P X = \sum_(i in 'I_Nmax.+1) (INR i) * PN i.
 Proof.
@@ -406,7 +402,7 @@ have EX_pos' : 0 < 1 - (@Ex _ P X  - 1) * / @Ex _ P X .
   by apply: Rinv_0_lt_compat.
 have max_pos: (0 < \max_(a in A) size (f a))%coq_nat.
   apply:ltP.
-  move/card_gt0P:(dist_domain_not_empty P)=>[a _].
+  move/card_gt0P : (fdist_card_neq0 P) => [a _].
   apply:(bigmax_sup a)=> //.
   by move:(Xpos a); rewrite /X /= (_ : 0 = INR 0)//;move/INR_lt/ltP.
 
@@ -523,8 +519,7 @@ End le_entroPN_logeEX.
 
 Section v_scode_converse'_1tuple.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : fdist A).
 Variable n : nat.
 Variable f : A -> seq bool.
 Local Notation "'Nmax'" := (Nmax f).
@@ -547,7 +542,7 @@ move:(uniq_dec_inj f_uniq)=> f_inj.
 rewrite -(epmf1 P).
 rewrite (partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
 apply:eq_bigr=>i _.
-rewrite (big_seq_tuple' i f_inj (dist_domain_not_empty P)) /Pf=>[|x].
+rewrite (big_seq_tuple' i f_inj (fdist_card_neq0 P)) /Pf=>[|x].
   apply:eq_big=>x.
     apply/eqP/eqP=>[H|<-]; first by apply: ord_inj; rewrite -H inordfE.
     by rewrite inordfE.
@@ -587,7 +582,7 @@ rewrite /pr_eq /Pr (eq_bigr (fun x => Pf (f x)))=>[|a ain]; last first.
 rewrite (eq_bigl (fun x =>  size (f x) == m) _)=>[|a]; last first.
   rewrite inE /X/=.
   by apply/eqP/eqP=>[/INR_eq | ->].
-rewrite (big_seq_tuple' m f_inj (dist_domain_not_empty P)) /Pf=>[//|i0].
+rewrite (big_seq_tuple' m f_inj (fdist_card_neq0 P)) /Pf=>[//|i0].
 case:pickP => // ?; first by move/eqP <-; rewrite codom_f.
 by case:ifP.
 Qed.
@@ -617,7 +612,7 @@ rewrite (eq_bigr (fun i0 => Pf (f i0) * log (Pf (f i0))))=>[|a]; last first.
 rewrite (eq_bigl (fun x=> size (f x) == i) _) =>[|x]; last first.
   apply/eqP/eqP=>[<-| H]; first by rewrite inordfE.
   by apply/ord_inj; rewrite inordfE.
-rewrite (@big_seq_tuple' _ i _ f_inj (fun a => Pf a * log (Pf a)) (dist_domain_not_empty P))//.
+rewrite (@big_seq_tuple' _ i _ f_inj (fun a => Pf a * log (Pf a)) (fdist_card_neq0 P))//.
 rewrite /Pf; move=>i0.
 case:(pickP ) => // x; first by move/eqP <-; rewrite codom_f.
 by case:ifP; rewrite mul0R.
@@ -714,7 +709,7 @@ rewrite [Y in _ <= Y + _ ](_ :_ = 0).
   pose pmf_Pf' := mkPosFfun (Rle0Pf' H).
   have pmf1'_Pf' : \sum_(a in {: i.-tuple bool}) pmf_Pf' a == 1 :> R.
     by apply/eqP; apply: (pmf1_Pf' H).
-  pose distPf := mkDist pmf1'_Pf'.
+  pose distPf := mkFDist pmf1'_Pf'.
   move:(entropy_max distPf).
   rewrite card_tuple/= card_bool -natRexp log_pow (_ : INR 2 = 2)//.
   by rewrite /log Log_n // mulR1.
@@ -738,7 +733,7 @@ Section v_scode_converse'_ntuple.
 Variable A : finType.
 Variable n:nat.
 Variable f : encT A (seq bool) n.
-Variable P : dist A.
+Variable P : fdist A.
 Hypothesis f_uniq : uniquely_decodable f.
 
 Lemma converse_case1 : E_leng_cw f P < (INR n) * (log (INR #|A|)) ->
@@ -758,7 +753,7 @@ Lemma converse_case2 :  (INR n) * (log (INR #|A|)) <= E_leng_cw f P ->
  `H (P `^ n) <= E_leng_cw f P.
 Proof.
 move=> H.
-rewrite entropy_TupleDist.
+rewrite entropy_TupleFDist.
 apply: (Rle_trans (INR n * `H P) (INR n * log (INR #|A|)) _); last by apply: H.
 apply: Rmult_le_compat_l; last by apply: entropy_max.
 by rewrite (_ : 0 = INR 0) //; apply:le_INR; apply/leP; apply:leq0n.
@@ -771,7 +766,7 @@ Section Extend_encoder.
 Variable A : finType.
 Variable n m:nat.
 Variable f : encT A (seq bool) n.
-Variable P : dist A.
+Variable P : fdist A.
 Hypothesis f_uniq : uniquely_decodable f.
 Hypothesis m_non0 : 0 <> (INR m).
 Let fm (x : 'rV['rV[A]_n]_m) := extension f (tuple_of_row x).
@@ -798,22 +793,22 @@ elim => /= [| ta1 sta1 IHsta1]; case => [| ta2 sta2] //=.
   by apply/tuple_of_row_inj/eqP.
 Qed.
 
-Lemma ELC_TupleDist : E_leng_cw fm (P `^ n)  = (INR m) * E_leng_cw f P.
+Lemma ELC_TupleFDist : E_leng_cw fm (P `^ n)  = (INR m) * E_leng_cw f P.
 Proof.
 rewrite /E_leng_cw /=  /fm.
 pose X := (*mkRvar (P `^ n)*) (INR \o size \o f).
 elim:m=>[| m'].
   rewrite mul0R /Ex (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 // => i _.
-  rewrite TupleDist.zero ?mulR1.
+  rewrite TupleFDist.zero ?mulR1.
   rewrite [tuple_of_row]lock /= -lock.
   rewrite (_ : tuple_of_row i = [tuple]) //.
   apply: eq_from_tnth.
   by case; case.
 elim:m'=>[_ |m'' _ IH].
   rewrite mul1R.
-  rewrite -[in RHS]E_cast_RV_tupledist1.
+  rewrite -[in RHS]E_cast_RV_tuplefdist1.
   apply:eq_bigr=>i _.
-  rewrite TupleDist.one.
+  rewrite TupleFDist.one.
   apply: Rmult_eq_compat_r.
   rewrite [tuple_of_row]lock /= -lock.
   rewrite (_ : tuple_of_row i = [tuple of [:: i ``_ ord0]]); last first.
@@ -845,17 +840,16 @@ rewrite S_INR mulRDl -IH.
 rewrite addRC.
 congr (Rplus _ _).
   rewrite /Xm1 -/fm1.
-  by rewrite /Ex /p_of TupleDist.tail_of.
+  by rewrite /Ex /p_of TupleFDist.tail_of.
 rewrite -/X mul1R.
-by rewrite /Ex /p_of TupleDist.head_of.
+by rewrite /Ex /p_of TupleFDist.head_of.
 Qed.
 
 End Extend_encoder.
 
 Section v_scode_converse'.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : fdist A).
 Variable n : nat.
 Variable f : encT A (seq bool) n.
 Hypothesis f_uniq : uniquely_decodable f.
@@ -907,9 +901,8 @@ have le_1_alp: 1 <= alp.
   apply: (Rle_trans _ 2); last by apply: leR2e.
   by rewrite -{1}(addR0 1); apply: (Rplus_le_compat_l _ _ _ Rle_0_1).
   rewrite card_matrix -natRexp mul1n log_pow //.
-  by rewrite (_ : 0 = INR 0)//; apply: lt_INR; apply/ltP; apply: dist_domain_not_empty.
-have alppos: 0 < alp.
-  by apply: (Rlt_le_trans _ 1 _ Rlt_0_1).
+  by rewrite (_ : 0 = INR 0)//; apply: lt_INR; apply/ltP; apply: fdist_card_neq0.
+have alppos: 0 < alp  by apply: (Rlt_le_trans _ 1 _ Rlt_0_1).
 have Ypos: 0 < Y.
   apply: Rmult_lt_0_compat => //.
   exact: Rmult_lt_0_compat.
@@ -995,7 +988,7 @@ apply:le_epsilon=>eps epspos.
 pose fm (x : 'rV['rV[A]_n]_((m eps))) := extension f (tuple_of_row x).
 case:(Rle_or_lt  ((INR (m eps)) * (log (INR #| 'rV[A]_n |)))(E_leng_cw fm (P `^ n))).
   move/(@converse_case2 _ _ fm (P `^ n)).
-  rewrite !entropy_TupleDist ELC_TupleDist.
+  rewrite !entropy_TupleFDist ELC_TupleFDist.
   move/(Rmult_le_reg_l _ _ _ (mpos eps nnon0))=>H.
   apply: (Rle_trans _ (E_leng_cw  f P / (INR n)))=>//.
     apply: (Rmult_le_reg_r (INR n)).
@@ -1007,7 +1000,7 @@ have mnon0: INR (m eps) <> 0.
   by apply: (nesym (Rlt_not_eq _ _ (mpos eps nnon0))).
 move=>case2.
 move:(@converse_case1 _ _ _ (P `^ n) (fm_uniq f_uniq (Rlt_not_eq _ _ (mpos eps nnon0))) case2).
-rewrite !entropy_TupleDist ELC_TupleDist -!mulRA mulRA.
+rewrite !entropy_TupleFDist ELC_TupleFDist -!mulRA mulRA.
 move/(Rmult_le_compat_r _ _ _  (Rlt_le _ _ (Rinv_0_lt_compat _ (mpos eps nnon0)))).
 rewrite -mulRA -mulRA mulRC mulRA -mulRA -Rinv_l_sym//.
 rewrite mulR1 Rmult_plus_distr_r (mulRC (INR (m eps))) -mulRA -Rinv_r_sym// mulR1.
@@ -1019,8 +1012,8 @@ apply: Rplus_le_compat_l.
 rewrite mulRA (mulRC (exp 1)) -(mulRA (INR (m eps))).
 apply le_eps => //.
 move:case2.
-rewrite ELC_TupleDist mulRC (mulRC (INR (m eps))) card_matrix mul1n -natRexp log_pow; last first.
-  by rewrite (_ : 0 = INR 0)//; apply: lt_INR; apply/ltP; apply: dist_domain_not_empty.
+rewrite ELC_TupleFDist mulRC (mulRC (INR (m eps))) card_matrix mul1n -natRexp log_pow; last first.
+  by rewrite (_ : 0 = INR 0)//; apply: lt_INR; apply/ltP; apply: fdist_card_neq0.
 move/(Rmult_lt_reg_r _ _ _ (mpos eps nnon0))=>H'.
 apply: (Rle_trans _ (E_leng_cw f P)).
 by apply: (le_1_EX (P `^ n) f_uniq).
@@ -1031,16 +1024,12 @@ End v_scode_converse'.
 
 Section v_scode_converse.
 
-Variable A : finType.
-Variable P : dist A.
+Variables (A : finType) (P : fdist A).
 Variable n : nat.
 Variable f : encT A (seq bool) n.
 Hypothesis f_uniq : uniquely_decodable f.
 
-Theorem v_scode_converse :
-  INR n * `H P <= E_leng_cw f P.
-Proof.
-  by apply:v_scode_converse'=>//.
-Qed.
+Theorem v_scode_converse : INR n * `H P <= E_leng_cw f P.
+Proof. exact: v_scode_converse'. Qed.
 
 End v_scode_converse.

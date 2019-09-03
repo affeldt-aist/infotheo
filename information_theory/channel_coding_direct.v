@@ -20,10 +20,10 @@ Local Open Scope vec_ext_scope.
 
 Module Wght.
 Section wght.
-Variables (A M : finType) (P : dist A) (n : nat).
+Variables (A M : finType) (P : fdist A) (n : nat).
 Definition f := [ffun g : encT A M n => \prod_(m in M) P `^ n (g m)].
 Lemma f0 g : 0 <= f g.
-Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
+Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: fdist_ge0. Qed.
 Lemma f1 : \sum_(g in {ffun M -> 'rV[A]_n}) f g = 1.
 Proof.
 rewrite /f; evar (h : {ffun M -> 'rV[A]_n} -> R); rewrite (eq_bigr h); last first.
@@ -32,7 +32,7 @@ rewrite {}/h -(bigA_distr_bigA (fun _ v => P `^ n v)) /=.
 rewrite [RHS](_ : _ = \prod_(m0 : M | xpredT m0) 1); last by rewrite big1.
 apply eq_bigr => _ _; by rewrite (epmf1 (P `^ n)).
 Qed.
-Definition d : {dist encT A M n} := locked (makeDist f0 f1).
+Definition d : {fdist encT A M n} := locked (makeFDist f0 f1).
 Lemma dE x : d x = f x. Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End wght.
 End Wght.
@@ -51,7 +51,7 @@ Definition jtdec P W epsilon (f : encT A M n) : decT B M n :=
     (prod_rV (f m, tb) \in `JTS P W n epsilon) &&
     [forall m', (m' != m) ==> (prod_rV (f m', tb) \notin `JTS P W n epsilon)]]].
 
-Lemma jtdec_map epsilon (P : dist A) (W : `Ch(A, B)) (f : encT A M n) tb m0 m1 :
+Lemma jtdec_map epsilon (P : fdist A) (W : `Ch(A, B)) (f : encT A M n) tb m0 m1 :
   (prod_rV (f m0, tb) \in `JTS P W n epsilon) &&
   [forall m', (m' != m0) ==> (prod_rV (f m', tb) \notin `JTS P W n epsilon)] ->
   (prod_rV (f m1, tb) \in `JTS P W n epsilon) &&
@@ -80,8 +80,8 @@ apply not_all_not_ex => abs.
 set x := \sum_(f <- _) _ in H.
 have : \sum_(f : encT A M n) Wght.d P f * epsilon <= x.
   rewrite /x; apply ler_rsum_l => //= f _.
-  - apply leR_wpmul2l; [exact/dist_ge0 | exact/Rnot_lt_le/abs].
-  - apply mulR_ge0; [exact/dist_ge0 | exact/echa_ge0].
+  - apply leR_wpmul2l; [exact/fdist_ge0 | exact/Rnot_lt_le/abs].
+  - apply mulR_ge0; [exact/fdist_ge0 | exact/echa_ge0].
 apply/Rlt_not_le/(@ltR_leR_trans epsilon) => //.
 rewrite -big_distrl /= (epmf1 (Wght.d P)) mul1R; exact/leRR.
 Qed.
@@ -101,7 +101,7 @@ apply eq_big => m0.
 - by move=> _; rewrite /o_PI ffunE tpermK.
 Qed.
 
-Lemma error_rate_symmetry (P : {dist A}) (W : `Ch(A, B)) epsilon :
+Lemma error_rate_symmetry (P : {fdist A}) (W : `Ch(A, B)) epsilon :
   0 <= epsilon -> let Jtdec := jtdec P W epsilon in
     forall m m',
       \sum_(f : encT A M n) (Wght.d P f * e(W, mkCode f (Jtdec f)) m) =
@@ -251,7 +251,7 @@ End sum_rV_ffun.
 
 Section random_coding_good_code_existence.
 
-Variables (B A : finType) (W : `Ch(A, B)) (P : dist A).
+Variables (B A : finType) (W : `Ch(A, B)) (P : fdist A).
 
 Definition epsilon0_condition r epsilon epsilon0 :=
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.
@@ -289,7 +289,7 @@ congr P2; rewrite /tbehead tupleE /behead_tuple; exact: val_inj.
 Qed.
 
 (* TODO: move? *)
-Lemma rsum_rmul_tuple_pmf_tnth {C : finType} n k (Q : dist C) :
+Lemma rsum_rmul_tuple_pmf_tnth {C : finType} n k (Q : fdist C) :
   \sum_(t : {:k.-tuple ('rV[C]_n)}) \prod_(m < k) (Q `^ n) t \_ m = 1%R.
 Proof.
 transitivity (\sum_(j : {ffun 'I_k -> 'rV[_]_n}) \prod_(m < k) Q `^ _ (j m)).
@@ -307,7 +307,7 @@ by rewrite iter_mulR exp1R.
 Qed.
 
 (* TODO: move? *)
-Lemma rsum_rmul_tuple_pmf {C} n k (Q : dist C) :
+Lemma rsum_rmul_tuple_pmf {C} n k (Q : fdist C) :
   (\sum_(t in {:k.-tuple ('rV[C]_n)}) \prod_(x <- t) (Q `^ n) x = 1)%R.
 Proof.
 rewrite -[X in _ = X](rsum_rmul_tuple_pmf_tnth n k Q).
@@ -332,7 +332,7 @@ move=> M.
 have M_prednK : #|M|.-1.+1 = #|M| by rewrite card_ord.
 pose E_F_N := @cal_E M n epsilon0.
 rewrite {1}/cal_E.
-case/card_gt0P : (dist_domain_not_empty P) => a _.
+case/card_gt0P : (fdist_card_neq0 P) => a _.
 pose zero := @enum_rank M ord0.
 have : 0%N = zero :> nat by rewrite /zero enum_rank_ord.
 move/(@sum_rV_ffun _ _ _ _ _ (Wght.d P)
@@ -423,9 +423,9 @@ transitivity (\sum_(v in 'rV[A]_n)
   apply eq_bigr => /= v _.
   rewrite big_distrr /=.
   apply eq_bigr => // w _.
-  rewrite DMCE 2!TupleDist.dE -big_split /=.
+  rewrite DMCE 2!TupleFDist.dE -big_split /=.
   apply eq_bigr => /= i _.
-  by rewrite JointDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
+  by rewrite JointFDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
 rewrite /Pr big_rV_prod pair_big_dep /=.
 apply eq_bigl; case=> /= ? ?; by rewrite !inE.
 Qed.
@@ -615,18 +615,18 @@ transitivity (\sum_(ji : 'rV[A]_n) ((P `^ n) ji) *
   ((`O(P , W)) `^ n) y)%R.
   apply eq_bigr => ta _; congr (_ * _)%R.
   apply eq_bigr => /= tb _.
-  rewrite -tuple_pmf_out_dist.
+  rewrite -tuple_pmf_out_fdist.
   apply eq_bigr => i0 _; by rewrite DMCE.
 transitivity (\sum_(v : 'rV[A]_n)
   (\sum_(y | y \in
     [set y0 | prod_rV (v , y0) \in `JTS P W n epsilon0])
     ((P `^ n) `x ((`O(P , W)) `^ n)) (v, y)))%R.
   apply eq_bigr => // v _.
-  rewrite big_distrr /=; apply eq_bigr => w _; by rewrite ProdDist.dE.
+  rewrite big_distrr /=; apply eq_bigr => w _; by rewrite ProdFDist.dE.
 transitivity (\sum_( jiy | prod_rV jiy \in `JTS P W n epsilon0)
   ((P `^ n) `x ((`O(P , W)) `^ n)) jiy)%R.
   rewrite [in LHS]pair_big_dep /=.
-  by apply eq_big => -[? ?] /=; rewrite !inE ?ProdDist.dE.
+  by apply eq_big => -[? ?] /=; rewrite !inE ?ProdFDist.dE.
 apply eq_bigl => tab; by rewrite !inE.
 Qed.
 
@@ -733,7 +733,7 @@ apply (@leR_ltR_trans
   rewrite exchange_big /= -big_split /=.
   apply ler_rsum => /= i _.
   rewrite -big_distrr /= -mulRDr.
-  apply leR_wpmul2l; first exact: dist_ge0.
+  apply leR_wpmul2l; first exact: fdist_ge0.
   rewrite [X in X <= _](_ : _ = Pr (W ``(| i ord0))
     (~: Cal_E i ord0 :|: \bigcup_(i0 : M | i0 != ord0) Cal_E i i0)); last first.
     congr Pr; apply/setP => /= tb.
@@ -817,10 +817,10 @@ Theorem channel_coding (r : CodeRateType) : r < cap ->
     exists n M (c : code A B M n), CodeRate c = r /\ echa(W, c) < epsilon.
 Proof.
 move=> r_I epsilon Hepsilon.
-have [P HP] : exists P : dist A, r < `I(P, W).
+have [P HP] : exists P : fdist A, r < `I(P, W).
   case: Hc => H1 H2.
   apply NNPP => abs.
-  have {abs}abs : forall P : dist A, `I(P, W) <= r.
+  have {abs}abs : forall P : fdist A, `I(P, W) <= r.
     move/not_ex_all_not in abs.
     move=> P; exact/Rnot_lt_le/abs.
   have Hcap : cap <= r by apply/H2 => P; exact/abs.

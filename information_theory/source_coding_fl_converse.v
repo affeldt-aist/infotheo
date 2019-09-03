@@ -17,7 +17,7 @@ Local Open Scope R_scope.
 
 Section source_coding_converse'.
 
-Variables (A : finType) (P : dist A).
+Variables (A : finType) (P : fdist A).
 Variables num den : nat.
 Let r := num%:R / den.+1%:R.
 Hypothesis Hr : 0 < r < `H P.
@@ -139,7 +139,7 @@ Lemma step3 : 1 - (esrc(P , sc)) <=
 Proof.
 rewrite step2; apply/leR_add2r/ler_rsum_l => /= i Hi.
 exact/leRR.
-exact/dist_ge0.
+exact/fdist_ge0.
 by move: Hi; rewrite in_setI => /andP[].
 Qed.
 
@@ -220,7 +220,7 @@ End source_coding_converse'.
 
 Section source_coding_converse.
 
-Variables (A : finType) (P : dist A).
+Variables (A : finType) (P : fdist A).
 
 (** Source coding theorem (converse part) #<a name="label_source_coding_converse"> </a># *)
 

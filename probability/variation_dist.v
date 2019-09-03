@@ -18,7 +18,7 @@ Section variation_distance.
 Variable A : finType.
 
 (** The variation distance of two distributions P and Q on X: *)
-Definition var_dist (P Q : dist A) := \sum_(a : A) `| P a - Q a |.
+Definition var_dist (P Q : fdist A) := \sum_(a : A) `| P a - Q a |.
 
 Local Notation "'d(' P ',' Q ')' " := (var_dist P Q).
 
@@ -30,14 +30,14 @@ Proof. apply: rsumr_ge0 => ? _ ; exact: normR_ge0. Qed.
 
 Lemma def_var_dist p q : d( p , q) = 0 -> p = q.
 Proof.
-rewrite /var_dist => H; apply/dist_ext => a.
+rewrite /var_dist => H; apply/fdist_ext => a.
 rewrite -subR_eq0; apply/normR0_eq0; move: H.
 rewrite (bigD1 a) //= paddR_eq0 => [[] // | |  ].
 exact/normR_ge0.
 apply: rsumr_ge0 => ? _ ; exact/normR_ge0.
 Qed.
 
-Lemma leq_var_dist (p q : dist A) x : `| p x - q x | <= d( p , q ).
+Lemma leq_var_dist (p q : fdist A) x : `| p x - q x | <= d( p , q ).
 Proof.
 rewrite /var_dist (bigD1 x) //= -{1}(addR0 `| p x - q x |).
 apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.

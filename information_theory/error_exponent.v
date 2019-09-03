@@ -19,7 +19,7 @@ Local Open Scope R_scope.
 
 Section mutinfo_distance_bound.
 
-Variables (A B : finType) (V W : `Ch(A, B)) (P : dist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
 Hypothesis V_dom_by_W : P |- V << W.
 Hypothesis cdiv_ub : D(V || W | P) <= (exp(-2)) ^ 2 * / 2.
 
@@ -48,9 +48,9 @@ apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -iter_addR -big_const.
 apply ler_rsum => b _; rewrite addRC.
 apply Rabs_xlnx => //.
-- split; [exact/dist_ge0 | exact/dist_max].
-- split; [exact/dist_ge0 | exact/dist_max].
-- rewrite 2!OutDist.dE -addR_opp big_morph_oppR -big_split /=.
+- exact: prob_fdist.
+- exact: prob_fdist.
+- rewrite 2!OutFDist.dE -addR_opp big_morph_oppR -big_split /=.
   apply: leR_trans; first exact: ler_rsum_Rabs.
   apply (@leR_trans (d(`J(P , V), `J(P , W)))).
   + rewrite /var_dist /=.
@@ -58,7 +58,7 @@ apply Rabs_xlnx => //.
       apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
     apply: ler_rsum => a _.
     rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
-    rewrite 2!JointDistChan.dE /= !(mulRC (P a)) addR_opp; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
+    rewrite 2!JointFDistChan.dE /= !(mulRC (P a)) addR_opp; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
   + rewrite cdiv_is_div_joint_dist => //.
     exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
@@ -76,8 +76,8 @@ apply: leR_trans; first exact: ler_rsum_Rabs.
 rewrite -2!iter_addR -2!big_const pair_bigA /=.
 apply: ler_rsum; case => a b _; rewrite addRC /=.
 apply Rabs_xlnx => //.
-- split; [exact: dist_ge0 | exact: dist_max].
-- split; [exact: dist_ge0 | exact: dist_max].
+- exact: prob_fdist.
+- exact: prob_fdist.
 - apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
     rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
     rewrite -[X in X <= _]addR0.
@@ -115,7 +115,7 @@ Hypothesis minRate_cap : minRate > cap.
 (** * Error exponent bound *)
 
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
-  forall P : dist A, forall V : `Ch(A, B),
+  forall P : fdist A, forall V : `Ch(A, B),
     P |- V << W ->
     Delta <= D(V || W | P) +  +| minRate - `I(P, V) |.
 Proof.

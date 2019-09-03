@@ -51,7 +51,7 @@ rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /= (proj2 (prsumr_eq0P
 Qed.
 
 Definition c : `Ch(A, [finType of option A]) :=
-  fun a => makeDist (f0 a) (f1 a).
+  fun a => makeFDist (f0 a) (f1 a).
 
 End EC_sect.
 
@@ -59,15 +59,15 @@ Section EC_prob.
 
 Variable X : finType.
 Hypothesis card_X : #|X| = 2%nat.
-Variable P : dist X.
+Variable P : fdist X.
 Variable p : R. (* erasure probability *)
 Hypothesis p_01 : 0 <= p <= 1.
 
 Let BEC := @EC.c X p p_01.
 Let q := P (Set2.a card_X).
 Local Notation W := (EC.f p).
-Local Notation P'W := (JointDistChan.d P BEC).
-Local Notation PW := (OutDist.f P BEC).
+Local Notation P'W := (JointFDistChan.d P BEC).
+Local Notation PW := (OutFDist.f P BEC).
 
 Lemma EC_non_flip (a : X) (i : option X):
   (i != None) && (i != Some a) -> 0 = EC.f p a i.

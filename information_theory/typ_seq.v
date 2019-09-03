@@ -20,10 +20,7 @@ Local Open Scope proba_scope.
 
 Section typical_sequence_definition.
 
-Variable A : finType.
-Variable P : dist A.
-Variable n : nat.
-Variable epsilon : R.
+Variables (A : finType) (P : fdist A) (n : nat) (epsilon : R).
 
 (** Definition a typical sequence: *)
 
@@ -38,7 +35,7 @@ Notation "'`TS'" := (set_typ_seq) : typ_seq_scope.
 
 Local Open Scope typ_seq_scope.
 
-Lemma set_typ_seq_incl A (P : dist A) n epsilon : 0 <= epsilon -> forall r, 1 <= r ->
+Lemma set_typ_seq_incl A (P : fdist A) n epsilon : 0 <= epsilon -> forall r, 1 <= r ->
   `TS P n (epsilon / 3) \subset `TS P n epsilon.
 Proof.
 move=> e0 r r1.
@@ -57,9 +54,7 @@ Qed.
 
 Section typ_seq_prop.
 
-Variables (A : finType) (P : dist A).
-Variable epsilon : R.
-Variable n : nat.
+Variables (A : finType) (P : fdist A) (epsilon : R) (n : nat).
 
 (** The total number of typical sequences is upper-bounded by 2^(k*(H P + e)): *)
 
@@ -72,7 +67,7 @@ rewrite (_ : _ * _ = \sum_(x in `TS P n epsilon) (exp2 (- n%:R * (`H P + epsilon
   by rewrite big_const iter_addR.
 apply/ler_rsum_l => //=.
 - move=> i; rewrite inE; by case/andP => /leRP.
-- move=> a _; exact/dist_ge0.
+- move=> a _; exact/fdist_ge0.
 Qed.
 
 Lemma typ_seq_definition_equiv x : x \in `TS P n epsilon ->
@@ -103,9 +98,7 @@ End typ_seq_prop.
 
 Section typ_seq_more_prop.
 
-Variables (A : finType) (P : dist A).
-Variable epsilon : R.
-Variable n : nat.
+Variables (A : finType) (P : fdist A) (epsilon : R) (n : nat).
 
 Hypothesis He : 0 < epsilon.
 
@@ -130,11 +123,11 @@ have -> : Pr P `^ n.+1 (~: p) =
              (`| - (1 / n.+1%:R) * log (P `^ n.+1 x) - `H P | >b epsilon)].
     apply/setP => /= i; rewrite !inE negb_and orbC.
     apply/idP/idP => [/orP[/ltRP|]|].
-    - by rewrite -dist_gt0 => /negP; rewrite negbK => ->.
+    - by rewrite -fdist_gt0 => /negP; rewrite negbK => ->.
     - rewrite /typ_seq negb_and => /orP[|] LHS.
       + case/boolP : (P `^ n.+1 i == 0) => /= H1; first by [].
         have {H1}H1 : 0 < P `^ n.+1 i.
-          apply/ltRP; rewrite ltR_neqAle' eq_sym H1; exact/leRP/dist_ge0.
+          apply/ltRP; rewrite ltR_neqAle' eq_sym H1; exact/leRP/fdist_ge0.
         apply/andP; split; first exact/ltRP.
         move: LHS; rewrite -ltRNge' => /ltRP/(@Log_increasing 2 _ _ Rlt_1_2 H1).
         rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivr_mulr; last exact/ltR0n.

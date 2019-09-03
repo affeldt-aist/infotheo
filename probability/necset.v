@@ -291,25 +291,25 @@ End misc.
 Module Convn_indexed_over_finType.
 Section def.
 Local Open Scope R_scope.
-Variables (A : convType) (T : finType) (d : {dist T}) (f : T -> A).
+Variables (A : convType) (T : finType) (d' : {fdist T}) (f : T -> A).
 Let n := #| T |.
 Definition t0 : T.
 Proof.
-move/card_gt0P/xchoose: (dist_domain_not_empty d) => t0; exact t0.
+move/card_gt0P/xchoose: (fdist_card_neq0 d') => t0; exact t0.
 Defined.
 Let enum : 'I_n -> T := enum_val.
-Definition d_enum := [ffun i => d (enum i)].
+Definition d_enum := [ffun i => d' (enum i)].
 Lemma d_enum0 : forall b, 0 <= d_enum b.
-Proof. move=> ?; rewrite ffunE; exact: dist_ge0. Qed.
+Proof. move=> ?; rewrite ffunE; exact: fdist_ge0. Qed.
 Lemma d_enum1 : \sum_(b in 'I_n) d_enum b = 1.
 Proof.
-rewrite -(@epmf1 T d) (eq_bigr (d \o enum)); last by move=> i _; rewrite ffunE.
+rewrite -(@epmf1 T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
 rewrite (@reindex _ _ _ _ _ enum_rank) //; last first.
   by exists enum_val => i; [rewrite enum_rankK | rewrite enum_valK].
-apply eq_bigr => i _; congr (d _); by rewrite -[in RHS](enum_rankK i).
+apply eq_bigr => i _; congr (d' _); by rewrite -[in RHS](enum_rankK i).
 Qed.
-Definition dist := proba.makeDist d_enum0 d_enum1.
-Definition Convn_indexed_over_finType : A := Convn dist (f \o enum).
+Definition d := makeFDist d_enum0 d_enum1.
+Definition Convn_indexed_over_finType : A := Convn d (f \o enum).
 End def.
 Module Exports.
 Notation Convn_indexed_over_finType := Convn_indexed_over_finType.
@@ -319,7 +319,7 @@ Export Convn_indexed_over_finType.Exports.
 
 Section S1_Convn_indexed_over_finType.
 Import ScaledConvex.
-Variables (A : convType) (T : finType) (d : {dist T}) (f : T -> A).
+Variables (A : convType) (T : finType) (d : {fdist T}) (f : T -> A).
 Lemma S1_Convn_indexed_over_finType :
   S1 (Convn_indexed_over_finType d f) = \ssum_i scalept (d i) (S1 (f i)).
 Proof.
@@ -335,7 +335,7 @@ Section S1_proj_Convn_indexed_over_finType.
 Import ScaledConvex.
 Variables (A B : convType) (prj : A -> B).
 Hypothesis prj_affine : affine_function prj.
-Variables (T : finType) (d : {dist T}) (f : T -> A).
+Variables (T : finType) (d : {fdist T}) (f : T -> A).
 
 Lemma S1_proj_Convn_indexed_over_finType :
   S1 (prj (Convn_indexed_over_finType d f)) =
@@ -541,7 +541,7 @@ elim: m.
   rewrite iterS_conv_set=> a [] p _ H.
   exists p => //.
   by move: (@conv_set_monotone p X _ _ mn) => /(_ a); apply.
-Qed.  
+Qed.
 Lemma iter_bigcup_conv_set (X : neset L) (n : nat) :
   iter_conv_set X n `<=` \bigcup_(i in natset) iter_conv_set X i.
 Proof. by move=> a H; exists n. Qed.
@@ -553,10 +553,10 @@ by exists `Pr 1 => //; rewrite conv1_set.
 Qed.
 
 Lemma Convn_iter_conv_set (n : nat) :
-  forall (g : 'I_n -> L) (d : {dist 'I_n}) (X : set L),
+  forall (g : 'I_n -> L) (d : {fdist 'I_n}) (X : set L),
     g @` setT `<=` X -> iter_conv_set X n (\Conv_d g).
 Proof.
-elim: n; first by move=> g d; move: (distI0_False d).
+elim: n; first by move=> g d; move: (fdistI0_False d).
 move=> n IHn g d X.
 case/boolP: (X == set0);
   first by move/eqP => -> /(_ (g ord0)) H; apply False_ind; apply/H/imageP.
@@ -568,15 +568,14 @@ case/boolP: (d ord0 == 1).
   rewrite (convn_proj g d01).
   by apply/gX/imageP.
 - move=> d0n1; rewrite convnE //.
-  exists (probdist d ord0) => //.
+  exists (probfdist d ord0) => //.
   exists (g ord0) => //.
-  exists (\Conv_(DelDist.d d0n1) (fun x : 'I_n => g (DelDist.h ord0 x))) => //.
+  exists (\Conv_(DelFDist.d d0n1) (fun x : 'I_n => g (DelFDist.f ord0 x))) => //.
   apply IHn.
   move=> u [] i _ <-.
   by apply/gX/imageP.
 Qed.
-Lemma oplus_convC_set (X Y : set L) :
-  oplus_conv_set X Y = oplus_conv_set Y X.
+Lemma oplus_convC_set (X Y : set L) : oplus_conv_set X Y = oplus_conv_set Y X.
 Proof.
 suff H : forall X' Y', oplus_conv_set X' Y' `<=` oplus_conv_set Y' X'
     by apply/eqEsubset/H.
@@ -1101,7 +1100,7 @@ Proof.
 apply necset_ext => /=.
 apply hull_eqEsubset => a.
 - case => x [] i Si Fix xa.
-  exists 1, (fun _ => a), (proba.Dist1.d ord0).
+  exists 1, (fun _ => a), (FDist1.d ord0).
   split; last by rewrite convn1E.
   move=> a0 [] zero _ <-.
   exists (op (F i)); first by  do 2 apply imageP.
@@ -1139,7 +1138,11 @@ congr hull; apply eqEsubset=> u /=.
 - by case=> U [] Y IY <-; rewrite necset_convType.convE=> -[] x [] y; rewrite !in_setE=> -[] Xx [] Yy ->; exists x=> //; exists y=> //; exists Y.
 Qed.
 
-Definition mixin := @SemiCompSemiLattConvType.Class [choiceType of necset A] (necset_semiCompSemiLattType.mixin A) (necset_convType.mixin A) (SemiCompSemiLattConvType.Mixin axiom).
+Definition mixin := @SemiCompSemiLattConvType.Class [choiceType of necset A]
+  (necset_semiCompSemiLattType.mixin A)
+  (necset_convType.mixin A)
+  (SemiCompSemiLattConvType.Mixin axiom).
 End def.
 End necset_semiCompSemiLattConvType.
-Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack (necset_semiCompSemiLattConvType.mixin A).
+Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack
+  (necset_semiCompSemiLattConvType.mixin A).

@@ -31,7 +31,7 @@ Local Open Scope R_scope.
 
 Module Receivable.
 Section receivable.
-Variables (A B : finType) (n : nat) (P : {dist 'rV[A]_n}) (W : `Ch(A, B)).
+Variables (A B : finType) (n : nat) (P : {fdist 'rV[A]_n}) (W : `Ch(A, B)).
 Definition def y := [exists x, (P x != 0) && (W ``(y | x) != 0)].
 Record t := mk {y :> 'rV[B]_n ; _ : def y }.
 Lemma defE (y : t) : def y. Proof. by case: y. Qed.
@@ -44,7 +44,7 @@ Notation "P .-receivable W" := (Receivable.t P W) (at level 2,
 
 Section receivable_prop.
 
-Variables (A B : finType) (n : nat) (P : {dist 'rV[A]_n}) (W : `Ch(A, B)).
+Variables (A B : finType) (n : nat) (P : {fdist 'rV[A]_n}) (W : `Ch(A, B)).
 
 Lemma receivableE (y : P.-receivable W) :
   Receivable.def P W y = (\sum_(x in 'rV[A]_n) P x * W ``(y | x) != 0).
@@ -54,7 +54,7 @@ apply/idP/idP => [|H].
   apply: contra => /eqP/prsumr_eq0P => /= H.
   apply/eqP; rewrite -(@eqR_mul2l (P x)); last exact/eqP.
   rewrite mulR0 H // => /= x' _.
-  apply mulR_ge0; exact: dist_ge0.
+  apply mulR_ge0; exact: fdist_ge0.
 - have /= : \sum_(x in setT) P x * W ``(y | x) != 0.
     apply: contra H => /eqP H; apply/eqP.
     rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
@@ -96,7 +96,7 @@ End receivable_uniform.
 (* posterior probability *)
 Module PosteriorProbability.
 Section def.
-Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Variable y : P.-receivable W.
 Definition den := \sum_(x in 'rV_n) P x * W ``(y | x).
 
@@ -104,12 +104,12 @@ Definition f := [ffun x => P x * W ``(y | x) / den].
 
 Lemma den_ge0 : 0 <= den.
 Proof.
-apply rsumr_ge0 => x _; apply mulR_ge0; [exact/dist_ge0 | exact/DMC_ge0].
+apply rsumr_ge0 => x _; apply mulR_ge0; [exact/fdist_ge0 | exact/DMC_ge0].
 Qed.
 
 Lemma f0 x : 0 <= f x.
 Proof.
-rewrite ffunE; apply divR_ge0; first by apply mulR_ge0; exact/dist_ge0.
+rewrite ffunE; apply divR_ge0; first by apply mulR_ge0; exact/fdist_ge0.
 apply/ltRP; rewrite lt0R {1}/den -receivableE Receivable.defE /=.
 exact/leRP/den_ge0.
 Qed.
@@ -121,7 +121,7 @@ rewrite /f /Rdiv; evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h); last first.
 by rewrite {}/h -big_distrl /= mulRC mulVR // -receivableE Receivable.defE.
 Qed.
 
-Definition d : {dist 'rV[A]_n} := locked (makeDist f0 f1).
+Definition d : {fdist 'rV[A]_n} := locked (makeFDist f0 f1).
 
 Lemma dE x : d x = P x * W ``(y | x) / den.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
@@ -130,13 +130,13 @@ Local Notation "P '`^^' W '(' x '|' y ')'" := (@d _ _ W _ P y x).
 
 (* relation with channel-based information-theoretic definitions *)
 Section chap2.
-Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Local Open Scope channel_scope.
 Lemma ppE (x : 'rV[A]_n) (y : P.-receivable W) :
   P `^^ W (x | y) = \Pr_(`J(P, W ``^ n))[[set x]|[set Receivable.y y]].
 Proof.
-rewrite dE /cPr setX1 2!Pr_set1 JointDistChan.dE /=; congr (_ / _).
-rewrite Bivar.sndE /=; apply eq_bigr => x' _; by rewrite JointDistChan.dE /= mulRC.
+rewrite dE /cPr setX1 2!Pr_set1 JointFDistChan.dE /=; congr (_ / _).
+rewrite Bivar.sndE /=; apply eq_bigr => x' _; by rewrite JointFDistChan.dE /= mulRC.
 Qed.
 End chap2.
 
@@ -189,7 +189,7 @@ Local Open Scope vec_ext_scope.
 
 Module MarginalPostProbability.
 Section def.
-Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {dist 'rV[A]_n}).
+Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Variable y : P.-receivable W.
 
 Let f' := fun x : 'rV_n => P `^^ W (x | y).
@@ -213,9 +213,9 @@ Proof.
 rewrite ffunE; apply mulR_ge0.
 - rewrite /Kmpp.
   apply/ltRW/invR_gt0/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
-    apply rsumr_ge0 => /= ? _; exact: dist_ge0.
+    apply rsumr_ge0 => /= ? _; exact: fdist_ge0.
   exact/f'_neq0.
-- apply rsumr_ge0 => /= ? _; exact: dist_ge0.
+- apply rsumr_ge0 => /= ? _; exact: fdist_ge0.
 Qed.
 
 Lemma f1 i : \sum_(a in A) f i a = 1.
@@ -230,7 +230,7 @@ suff : tmp1 = tmp2.
 by rewrite {}/tmp1 {}/tmp2 (partition_big (fun x : 'rV_n => x ``_ i) xpredT).
 Qed.
 
-Definition d i : dist A := makeDist (f0 i) (f1 i).
+Definition d i : fdist A := makeFDist (f0 i) (f1 i).
 
 End def.
 Local Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" := (@d _ _ W _ P y n0 a).

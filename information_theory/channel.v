@@ -13,11 +13,11 @@ Require Import entropy cproba chap2.
   2. Module DMC.
      nth extension of the discrete memoryless channel
   3. Section DMC_sub_vec.
-  4. Module OutDist.
+  4. Module OutFDist.
      Output distribution for the discrete channel
   5. Section OutDist_prop.
      Output entropy
-  6. Module JointDistChan.
+  6. Module JointFDistChan.
      Joint distribution
   7. Section Pr_rV_prod_sect.
   8. Module CondEntropyChan.
@@ -56,7 +56,7 @@ Variables A B : finType.
 
 (* Definition of a discrete channel of input alphabet A and output alphabet B.
    It is a collection of probability mass functions, one for each a in A: *)
-Local Notation "'`Ch'" := (A -> dist B).
+Local Notation "'`Ch'" := (A -> fdist B).
 
 (* Channels with non-empty alphabet: *)
 Record chan_star := mkChan {
@@ -78,7 +78,7 @@ Coercion chan_star_coercion : Channel1.chan_star >-> Funclass.
 
 Local Open Scope proba_scope.
 
-Notation "'`Ch(' A ',' B ')'" := (A -> {dist B}) : channel_scope.
+Notation "'`Ch(' A ',' B ')'" := (A -> {fdist B}) : channel_scope.
 Local Open Scope channel_scope.
 Notation "'`Ch*(' A ',' B ')'" := (@Channel1.chan_star A B) : channel_scope.
 Notation "W '`(' b '|' a ')'" := ((W : `Ch(_, _)) a b) : channel_scope.
@@ -99,7 +99,7 @@ Local Open Scope ring_scope.
 Definition f (x : 'rV[A]_n) := [ffun y : 'rV[B]_n => (\prod_(i < n) W `(y ``_ i | x ``_ i))%R].
 
 Lemma f0 x y : 0 <= f x y.
-Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: dist_ge0. Qed.
+Proof. rewrite ffunE; apply rprodr_ge0 => ?; exact: fdist_ge0. Qed.
 
 Lemma f1 x : (\sum_(y in 'rV_n) f x y = 1)%R.
 Proof.
@@ -116,7 +116,7 @@ suff H : (\sum_(g : {ffun 'I_n -> B}) \prod_(i < n) f' i (g i) = 1)%R.
 by rewrite -bigA_distr_bigA /= /f' big1 // => i _; rewrite epmf1.
 Qed.
 
-Definition c : `Ch('rV[A]_n, 'rV[B]_n) := locked (fun x => makeDist (f0 x) (f1 x)).
+Definition c : `Ch('rV[A]_n, 'rV[B]_n) := locked (fun x => makeFDist (f0 x) (f1 x)).
 
 End def.
 End DMC.
@@ -132,7 +132,7 @@ Lemma DMCE (A B : finType) n (W : `Ch(A, B)) b a :
 Proof. by rewrite /DMC.c; unlock; rewrite ffunE. Qed.
 
 Lemma DMC_ge0 (A B : finType) n (W : `Ch(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
-Proof. exact: dist_ge0. Qed.
+Proof. exact: fdist_ge0. Qed.
 
 Section DMC_sub_vec.
 
@@ -174,12 +174,12 @@ Proof. by rewrite DMCE -rprod_sub_vec. Qed.
 
 End DMC_sub_vec.
 
-Module OutDist.
+Module OutFDist.
 Section def.
-Variables (A B : finType) (P : dist A) (W  : `Ch(A, B)).
+Variables (A B : finType) (P : fdist A) (W  : `Ch(A, B)).
 Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
 Lemma f0 (b : B) : 0 <= f b.
-Proof. rewrite ffunE; apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/dist_ge0. Qed.
+Proof. rewrite ffunE; apply: rsumr_ge0 => a _; apply: mulR_ge0; exact/fdist_ge0. Qed.
 Lemma f1 : \sum_(b in B) f b = 1.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
@@ -187,27 +187,27 @@ rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
 rewrite {}/h exchange_big /= -(epmf1 P).
 apply eq_bigr => a _; by rewrite -big_distrl /= (epmf1 (W a)) mul1R.
 Qed.
-Definition d : dist B := locked (makeDist f0 f1).
+Definition d : fdist B := locked (makeFDist f0 f1).
 Lemma dE b : d b = \sum_(a in A) W a b * P a.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
-End OutDist.
+End OutFDist.
 
-Notation "'`O(' P , W )" := (OutDist.d P W) : channel_scope.
+Notation "'`O(' P , W )" := (OutFDist.d P W) : channel_scope.
 
-Section OutDist_prop.
+Section OutFDist_prop.
 Variables A B : finType.
 
 Local Open Scope ring_scope.
 
-Lemma tuple_pmf_out_dist (W : `Ch(A, B)) (P : dist A) n (b : 'rV_ _):
+Lemma tuple_pmf_out_fdist (W : `Ch(A, B)) (P : fdist A) n (b : 'rV_ _):
    (\sum_(j : 'rV[A]_n)
       (\prod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
    (`O(P, W)) `^ _ b.
 Proof.
-rewrite TupleDist.dE.
+rewrite TupleFDist.dE.
 apply/esym.
-etransitivity; first by apply eq_bigr => i _; rewrite OutDist.dE; reflexivity.
+etransitivity; first by apply eq_bigr => i _; rewrite OutFDist.dE; reflexivity.
 rewrite bigA_distr_big_dep /=.
 rewrite (reindex_onto (fun p : 'rV_n => [ffun x => p ``_ x]) (fun y => \row_(k < n) y k)) //=; last first.
   move=> i _.
@@ -219,23 +219,23 @@ apply eq_big.
 - move=> a Ha.
   rewrite big_split /=; congr (_ * _)%R.
   + apply eq_bigr => i /= _; by rewrite ffunE.
-  + rewrite TupleDist.dE; by apply eq_bigr => i /= _; rewrite ffunE.
+  + rewrite TupleFDist.dE; by apply eq_bigr => i /= _; rewrite ffunE.
 Qed.
 
-End OutDist_prop.
+End OutFDist_prop.
 
 Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ) )) : channel_scope.
 
-Module JointDistChan.
+Module JointFDistChan.
 Section def.
-Variables (A B : finType) (P : dist A) (W : `Ch(A, B)).
-Definition d : {dist A * B} := locked (ProdDist.d P W).
+Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)).
+Definition d : {fdist A * B} := locked (ProdFDist.d P W).
 Lemma dE ab : d ab = P ab.1 * W ab.1 ab.2.
-Proof. by rewrite /d; unlock => /=; rewrite ProdDist.dE. Qed.
+Proof. by rewrite /d; unlock => /=; rewrite ProdFDist.dE. Qed.
 End def.
-Local Notation "'`J(' P , W )" := (JointDistChan.d P W).
+Local Notation "'`J(' P , W )" := (d P W).
 Section prop.
-Variables (A B : finType) (P : dist A) (W : `Ch(A, B)) (n : nat).
+Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)) (n : nat).
 Lemma Pr_DMC_rV_prod (Q : 'rV_n * 'rV_n -> bool) :
   Pr (`J(P `^ n, W ``^ n)) [set x | Q x] =
   Pr (`J(P, W)) `^ n       [set x | Q (rV_prod x)].
@@ -243,9 +243,9 @@ Proof.
 rewrite /Pr [RHS]big_rV_prod /=.
 apply eq_big => y; first by rewrite !inE prod_rVK.
 rewrite inE => Qy.
-rewrite JointDistChan.dE DMCE TupleDist.dE -big_split /= TupleDist.dE.
+rewrite dE DMCE TupleFDist.dE -big_split /= TupleFDist.dE.
 apply eq_bigr => i /= _.
-by rewrite JointDistChan.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
+by rewrite JointFDistChan.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
 Lemma Pr_DMC_fst (Q : 'rV_n -> bool) :
   Pr (`J(P, W)) `^ n [set x | Q (rV_prod x).1 ] =
@@ -259,9 +259,9 @@ rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=; last first
 transitivity (\sum_(i | Q i) (P `^ n i * (\sum_(y in 'rV[B]_n) W ``(y | i)))).
   apply eq_bigr => ta Sta.
   rewrite big_distrr; apply eq_bigr => tb _ /=.
-  rewrite DMCE [in RHS]TupleDist.dE -[in RHS]big_split /= TupleDist.dE.
+  rewrite DMCE [in RHS]TupleFDist.dE -[in RHS]big_split /= TupleFDist.dE.
   apply eq_bigr => j _.
-  by rewrite JointDistChan.dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
+  by rewrite dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
 transitivity (\sum_(i | Q i) P `^ _ i).
   apply eq_bigr => i _; by rewrite (epmf1 (W ``(| i))) mulR1.
 rewrite /Pr; apply eq_bigl => t; by rewrite !inE.
@@ -280,8 +280,8 @@ rewrite /= /Pr /= exchange_big /=.
 apply eq_big => tb.
   by rewrite !inE.
 move=> Htb.
-rewrite TupleDist.dE.
-etransitivity; last by apply eq_bigr => i _; rewrite OutDist.dE; reflexivity.
+rewrite TupleFDist.dE.
+etransitivity; last by apply eq_bigr => i _; rewrite OutFDist.dE; reflexivity.
 rewrite bigA_distr_bigA /=.
 rewrite (reindex_onto (fun p : 'rV[A]_m => [ffun x => p ord0 x])
   (fun y : {ffun 'I_m -> A} => \row_(i < m) y i)) /=; last first.
@@ -292,26 +292,26 @@ apply eq_big => ta.
   rewrite inE; apply/esym.
   by apply/eqP/rowP => a; rewrite mxE ffunE.
 move=> Hta.
-rewrite TupleDist.dE /=; apply eq_bigr => l _.
-by rewrite JointDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulRC.
+rewrite TupleFDist.dE /=; apply eq_bigr => l _.
+by rewrite dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulRC.
 Qed.
 End prop.
-End JointDistChan.
+End JointFDistChan.
 
-Notation "'`J(' P , W )" := (JointDistChan.d P W) : channel_scope.
+Notation "'`J(' P , W )" := (JointFDistChan.d P W) : channel_scope.
 
 Section relation_channel_cproba.
 
-Variables (A B : finType) (W : `Ch(A, B)) (P : dist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 Let QP := Swap.d (`J(P, W)).
 
 Lemma channel_cPr : forall a b, P a != 0 -> W a b = \Pr_QP[[set b]|[set a]].
 Proof.
 move=> a b Pa0.
-rewrite (@CDist.E _ _ (CDist.mkt P W)) //=; last exact/eqP.
+rewrite (@CFDist.E _ _ (CFDist.mkt P W)) //=; last exact/eqP.
 congr cPr.
-apply/dist_ext => -[b0 a0].
-by rewrite !Swap.dE JointDistChan.dE /= /CDist.joint_of /= ProdDist.dE.
+apply/fdist_ext => -[b0 a0].
+by rewrite !Swap.dE JointFDistChan.dE /= /CFDist.joint_of /= ProdFDist.dE.
 Qed.
 
 End relation_channel_cproba.
@@ -322,7 +322,7 @@ Notation "`H( P , W )" := (`H (`J(P, W)) ) : channel_scope.
 (* Definition of conditional entropy using an input distribution and a channel *)
 Module CondEntropyChan.
 Section def.
-Variables (A B : finType) (W : `Ch(A, B)) (P : dist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 Definition h := `H(P, W) - `H P.
 End def.
 End CondEntropyChan.
@@ -330,21 +330,20 @@ End CondEntropyChan.
 Notation "`H( W | P )" := (CondEntropyChan.h W P) : channel_scope.
 
 Section condentropychan_prop.
-Variables (A B : finType) (W : `Ch(A, B)) (P : dist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 
 Lemma CondEntropyChanE : `H(W | P) = CondEntropy.h (Swap.d (`J(P, W))).
 Proof.
 rewrite /CondEntropyChan.h.
 move: (chain_rule (`J(P, W))); rewrite /JointEntropy.h => ->.
-rewrite /JointDistChan.d; unlock; rewrite ProdDist.fst addRC addRK.
-by rewrite /JointDistChan.d; unlock.
+by rewrite /JointFDistChan.d; unlock; rewrite ProdFDist.fst addRC addRK.
 Qed.
 
 Lemma CondEntropyChanE2 : `H(W | P) = \sum_(a in A) P a * `H (W a).
 Proof.
 rewrite CondEntropyChanE CondEntropy.hE big_morph_oppR; apply eq_bigr => a _.
 rewrite big_morph_oppR /entropy mulRN -mulNR big_distrr; apply eq_bigr => b _.
-rewrite /= Swap.dI JointDistChan.dE /= mulNR mulRA.
+rewrite /= Swap.dI JointFDistChan.dE /= mulNR mulRA.
 case/boolP: (P a == 0) => [/eqP ->|Pa0].
   by rewrite !(mulR0,mul0R).
 by rewrite -channel_cPr.
@@ -356,7 +355,7 @@ Section def.
 Variables A B : finType.
 
 (* Mutual information of distributions *)
-Definition mut_info_dist (P : {dist A * B}) :=
+Definition mut_info_dist (P : {fdist A * B}) :=
   `H (Bivar.fst P) + `H (Bivar.snd P) - `H P.
 
 (* Mutual information of input/output *)
@@ -368,7 +367,7 @@ End MutualInfoChan.
 Notation "`I( P , W )" := (MutualInfoChan.mut_info P W) : channel_scope.
 
 Section mutualinfo_prop.
-Variables (A B : finType) (W : `Ch(A, B)) (P : dist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 
 Lemma mut_info_chanE : `I(P, W) = MutualInfo.mi (Swap.d (`J(P, W))).
 Proof.
@@ -376,9 +375,9 @@ rewrite /MutualInfoChan.mut_info MutualInfo.miE -CondEntropyChanE.
 rewrite /CondEntropyChan.h -[in RHS]addR_opp oppRB addRCA addRA; congr (_ + _ + _).
 congr `H.
 rewrite Swap.fst.
-apply/dist_ext => b.
-rewrite OutDist.dE Bivar.sndE; apply/eq_bigr => a _.
-by rewrite JointDistChan.dE mulRC.
+apply/fdist_ext => b.
+rewrite OutFDist.dE Bivar.sndE; apply/eq_bigr => a _.
+by rewrite JointFDistChan.dE mulRC.
 Qed.
 End mutualinfo_prop.
 

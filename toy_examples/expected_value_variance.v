@@ -80,11 +80,11 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Definition d : {dist 'I_3} := mkDist pmf1.
+Definition d : {fdist 'I_3} := mkFDist pmf1.
 
-Definition X := (fun i => INR i.+1).
+Definition X : {RV d -> R} := (fun i => INR i.+1).
 
-Lemma expected : Ex d X = 5/3.
+Lemma expected : `E X = 5/3.
 Proof.
 rewrite /Ex.
 do 3 rewrite big_ord_recl.
@@ -102,7 +102,7 @@ rewrite ifT; last by I3_eq.
 field.
 Qed.
 
-Lemma variance : Var d X = 5/9.
+Lemma variance : `V X = 5/9.
 Proof.
 rewrite VarE.
 rewrite expected.

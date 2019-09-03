@@ -18,10 +18,9 @@ Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
 Local Hint Resolve leRR.
 Local Hint Resolve leR0n.
 
-Section seq_nat_dist.
+Section seq_nat_fdist.
 
-Variable A : finType.
-Variable f : A -> nat.
+Variables (A : finType) (f : A -> nat).
 Variable total : nat.
 Hypothesis sum_f_total : (\sum_(a in A) f a)%nat = total.
 Hypothesis total_gt0 : total != O.
@@ -43,9 +42,9 @@ rewrite {}/h /f_div_total -big_distrl -big_morph_natRD.
 by rewrite sum_f_total /= mulRV // INR_eq0'.
 Qed.
 
-Definition seq_nat_dist := makeDist f_div_total_pos f_div_total_1.
+Definition seq_nat_fdist := makeFDist f_div_total_pos f_div_total_1.
 
-End seq_nat_dist.
+End seq_nat_fdist.
 
 Section string.
 
@@ -78,7 +77,7 @@ Hypothesis S_nonempty : size S != O.
 
 Definition pchar c := N(c|S) / size S.
 
-Definition num_occ_dist := seq_nat_dist (sum_num_occ S) S_nonempty.
+Definition num_occ_dist := seq_nat_fdist (sum_num_occ S) S_nonempty.
 
 Definition Hs0 := `H num_occ_dist.
 End entropy.
@@ -200,7 +199,7 @@ have Htotal := esym (num_occ_flatten a ss').
 rewrite big_tnth in Htotal.
 have Hnum2 : N(a|flatten ss') != O.
   rewrite -lt0n -ltR0n'; exact/ltRP.
-set d := seq_nat_dist Htotal Hnum2.
+set d := seq_nat_fdist Htotal Hnum2.
 set r := fun i =>
   (size (tnth (in_tuple ss') i))
   / N(a|tnth (in_tuple ss') i).

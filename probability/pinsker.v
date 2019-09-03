@@ -106,8 +106,7 @@ End Pinsker_2_bdist.
 
 Section Pinsker_2.
 
-Variable A : finType.
-Variables P Q : dist A.
+Variables (A : finType) (P Q : fdist A).
 Hypothesis card_A : #|A| = 2%nat.
 Hypothesis P_dom_by_Q : P << Q.
 
@@ -124,8 +123,7 @@ End Pinsker_2.
 
 Section Pinsker.
 
-Variable A : finType.
-Variables P Q : dist A.
+Variables (A : finType) (P Q : fdist A).
 Hypothesis P_dom_by_Q : P << Q.
 
 Local Notation "0" := (false).

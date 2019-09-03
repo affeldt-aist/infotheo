@@ -78,7 +78,7 @@ Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
 Hypothesis p_01' : 0 < p < 1.
 Let p_01 := Prob.mk (closed p_01').
-Let P : dist A := Uniform.d card_A.
+Let P : fdist A := Uniform.d card_A.
 Variable a' : A.
 Hypothesis Ha' : Receivable.def (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
 
@@ -87,9 +87,9 @@ Lemma bsc_post (a : A) :
   (if a == a' then 1 - p else p)%R.
 Proof.
 rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
-rewrite !TupleDist.dE DMCE big_ord_recl big_ord0.
+rewrite !TupleFDist.dE DMCE big_ord_recl big_ord0.
 rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
-  by move=> i _; rewrite /P !TupleDist.dE big_ord_recl big_ord0 !Uniform.dE mulR1.
+  by move=> i _; rewrite /P !TupleFDist.dE big_ord_recl big_ord0 !Uniform.dE mulR1.
 rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
   transitivity (\sum_(i in 'M_1) Binary.d card_A p_01 (i ``_ ord0) a')%R.
     apply eq_bigr => i _.
