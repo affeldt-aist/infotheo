@@ -12,6 +12,34 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope convex_scope.
 
+Section finmap_ext.
+Local Open Scope fset_scope.
+Lemma bigfcup_fset1 (T I : choiceType) (P : {fset I}) (f : I -> T) :
+  \bigcup_(x <- P) [fset f x] = f @` P.
+Proof.
+apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> x.
+- case/bigfcupP=> i /andP [] iP _.
+  rewrite inE => /eqP ->.
+  by apply/imfsetP; exists i.
+- case/imfsetP => i /= iP ->; apply/bigfcupP; exists i; rewrite ?andbT //.
+  by apply/imfsetP; exists (f i); rewrite ?inE.
+Qed.
+Lemma set1_inj (C : choiceType) : injective (@set1 C).
+Proof. by move=> a b; rewrite /set1 => /(congr1 (fun f => f a)) <-. Qed.
+Section fbig_pred1_inj.
+Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
+Lemma fbig_pred1_inj (A C : choiceType) h (k : A -> C) (d : {fset _}) a :
+  a \in d -> injective k -> \big[op/idx]_(a0 <- d | k a0 == k a) h a0 = h a.
+Proof.
+move=> ad inj_k.
+rewrite big_fset_condE -(big_seq_fset1 op); apply eq_fbig => // a0.
+rewrite !inE /=; apply/idP/idP => [|/eqP ->]; last by rewrite eqxx andbT.
+by case/andP => _ /eqP/inj_k ->.
+Qed.
+End fbig_pred1_inj.
+Arguments fbig_pred1_inj [R] [idx] [op] [A] [C] [h] [k].
+End finmap_ext.
+
 Module Rnneg.
 Local Open Scope R_scope.
 Record t := mk {
@@ -54,22 +82,6 @@ Canonical mulRnneg x y := Rnneg.mk (mulRnneg_0le x y).
 End Rnneg_lemmas.
 
 Section misc.
-
-Section misc_fset.
-Local Open Scope fset_scope.
-Lemma bigfcup_fset1 (T I : choiceType) (P : {fset I}) (f : I -> T) :
-  \bigcup_(x <- P) [fset f x] = f @` P.
-Proof.
-apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> x.
-- case/bigfcupP=> i /andP [] iP _.
-  rewrite inE => /eqP ->.
-  by apply/imfsetP; exists i.
-- case/imfsetP => i /= iP ->; apply/bigfcupP; exists i; rewrite ?andbT //.
-  by apply/imfsetP; exists (f i); rewrite ?inE.
-Qed.
-Lemma set1_inj (C : choiceType) : injective (@set1 C).
-Proof. by move=> a b; rewrite /set1 => /(congr1 (fun f => f a)) <-. Qed.
-End misc_fset.
 
 Section misc_prob.
 Local Open Scope R_scope.
