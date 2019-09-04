@@ -92,7 +92,7 @@ Lemma f1 : \sum_(x in {: A * A}) f x = 1.
 Proof.
 rewrite (eq_bigr (fun a => f (a.1, a.2))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => f (a1, a2))) /=.
-rewrite -(FDist.pmf1 P); apply/eq_bigr => a _.
+rewrite -(FDist.f1 P); apply/eq_bigr => a _.
 rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
   move=> b _; rewrite ffunE /h; reflexivity.
 rewrite {}/h /= (bigD1 a) //= eqxx.
@@ -545,7 +545,7 @@ Proof.
 rewrite /cPr (Pr_set1 _ tt).
 rewrite (_ : Bivar.snd _ = FDist1.d tt) ?FDist1.dE ?eqxx ?divR1; last first.
   rewrite /Bivar.snd FDistMap.comp; apply/fdist_ext; case.
-  by rewrite FDistMap.dE FDist1.dE /= (eq_bigl xpredT) // FDist.pmf1.
+  by rewrite FDistMap.dE FDist1.dE /= (eq_bigl xpredT) // FDist.f1.
 rewrite /Pr big_setX /=; apply eq_bigr => a _; rewrite (big_set1 _ tt) /=.
 rewrite FDistMap.dE (big_pred1 a) // => a0; rewrite inE /=.
 by apply/eqP/eqP => [[] -> | ->].
@@ -668,7 +668,7 @@ Variables (A B : finType) (P : {fdist A * B}).
 Lemma cPr_1 a : Bivar.fst P a != 0 ->
   \sum_(b in B) \Pr_(Swap.d P)[ [set b] | [set a] ] = 1.
 Proof.
-move=> Xa0; rewrite -(FDist.pmf1 (CondFDist.d P _ Xa0)).
+move=> Xa0; rewrite -(FDist.f1 (CondFDist.d P _ Xa0)).
 apply eq_bigr => b _; by rewrite CondFDist.dE.
 Qed.
 

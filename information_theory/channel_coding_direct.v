@@ -29,7 +29,7 @@ rewrite /f; evar (h : {ffun M -> 'rV[A]_n} -> R); rewrite (eq_bigr h); last firs
   move=> a _; rewrite ffunE /h; reflexivity.
 rewrite {}/h -(bigA_distr_bigA (fun _ v => P `^ n v)) /=.
 rewrite [RHS](_ : _ = \prod_(m0 : M | xpredT m0) 1); last by rewrite big1.
-apply eq_bigr => _ _; by rewrite (FDist.pmf1 (P `^ n)).
+apply eq_bigr => _ _; by rewrite (FDist.f1 (P `^ n)).
 Qed.
 Definition d : {fdist encT A M n} := locked (FDist.make f0 f1).
 Lemma dE x : d x = f x. Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
@@ -82,7 +82,7 @@ have : \sum_(f : encT A M n) Wght.d P f * epsilon <= x.
   - apply leR_wpmul2l => //; exact/Rnot_lt_le/abs.
   - apply mulR_ge0 => //; exact/echa_ge0.
 apply/Rlt_not_le/(@ltR_leR_trans epsilon) => //.
-rewrite -big_distrl /= (FDist.pmf1 (Wght.d P)) mul1R; exact/leRR.
+rewrite -big_distrl /= (FDist.f1 (Wght.d P)) mul1R; exact/leRR.
 Qed.
 
 Definition o_PI (m m' : M) := fun g : encT A M n => [ffun x => g (tperm m m' x)].
@@ -301,7 +301,7 @@ transitivity (\sum_(j : {ffun 'I_k -> 'rV[_]_n}) \prod_(m < k) Q `^ _ (j m)).
     by rewrite tnth_fgraph ffunE enum_valK.
   - by move=> i _; apply eq_bigr => j _; rewrite ffunE /= tcastE -enum_rank_ord.
 rewrite -(bigA_distr_bigA (fun m xn => Q `^ _ xn)) /= big_const.
-by rewrite FDist.pmf1 iter_mulR exp1R.
+by rewrite FDist.f1 iter_mulR exp1R.
 Qed.
 
 (* TODO: move? *)
@@ -866,8 +866,8 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
     case=> n [[Hn1 [Hn3 Hn4]] Hn2].
     exists n => /=.
     rewrite /n_condition.
-    intuition.
-    congruence.
+    split => //; split => //; split => //.
+    by rewrite -Hr in Hn2.
   split.
     apply/(@leq_trans n1) => //; tauto.
   split.

@@ -42,7 +42,7 @@ have H : forall a : A, p a * log (p a / u a) = RHS a.
 have H0 : \sum_(a in A) p a * log (p a / u a) = \sum_(a in A) RHS a.
   move : H; rewrite /RHS => H.
   exact: eq_bigr.
-rewrite H0 /RHS big_split /= -big_distrl /= (FDist.pmf1 p) mul1R.
+rewrite H0 /RHS big_split /= -big_distrl /= (FDist.f1 p) mul1R.
 by rewrite -addR_opp oppRD addRC -addRA Rplus_opp_l addR0.
 Qed.
 End entropy_log_div.
@@ -52,24 +52,23 @@ Module DominatedPair.
 Section def.
 Variable A : finType.
 Definition T := {d : fdist_convType A * fdist_convType A | d.1 << d.2}.
-Lemma avg_dominates_compatible (a b c d : fdist_convType A) t :
-  a << b -> c << d -> (a <|t|> c) << (b <|t|> d).
+Implicit Types p q : prob.
+Lemma avg_dominates_compatible p (a b c d : fdist_convType A) :
+  a << b -> c << d -> (a <|p|> c) << (b <|p|> d).
 Proof.
-rewrite !dominatesP => Hab Hcd i.
-rewrite !Conv2FDist.dE.
-rewrite paddR_eq0; [|apply mulR_ge0 => //; exact:prob_ge0
-                    |apply mulR_ge0 => //; exact:prob_ge0].
+rewrite !dominatesP => Hab Hcd i; rewrite !ConvFDist.dE.
+rewrite paddR_eq0; [|exact/mulR_ge0 |exact/mulR_ge0].
 rewrite !mulR_eq0 => -[[->|/Hab ->]]; last first.
   by rewrite mulR0 add0R => -[->|/Hcd ->]; rewrite !(mul0R,mulR0).
 rewrite mul0R add0R => -[|/Hcd ->];
   by [rewrite onem0 => /R1_neq_R0 | rewrite mulR0].
 Qed.
-Definition avg (x y : T) (t : prob) : T :=
+Definition avg p (x y : T) : T :=
   let ab : fdist_convType _ * fdist_convType _:= proj1_sig x in
   let Hab := proj2_sig x in
   let cd := proj1_sig y in
   let Hcd := proj2_sig y in
-  exist _ (ab <|t|> cd) (avg_dominates_compatible t Hab Hcd).
+  exist _ (ab <| p |> cd) (avg_dominates_compatible p Hab Hcd).
 Definition simple_elim U (f : fdist A -> fdist A -> U) (x : T) :=
   f (sval x).1 (sval x).2.
 End def.
@@ -86,14 +85,15 @@ Qed.
 Section prop.
 Variable (A : finType).
 Let T := choice_of_Type (T A).
-Lemma avg1 (x y : T) : avg x y (`Pr 1) = x.
+Implicit Types p q : prob.
+Lemma avg1 (x y : T) : avg (`Pr 1) x y = x.
 Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/conv1. Qed.
-Lemma avgI (x : T) (p : prob) : avg x x p = x.
+Lemma avgI p (x : T) : avg p x x = x.
 Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/convmm. Qed.
-Lemma avgC (x y : T) (p : prob) : avg x y p = avg y x `Pr p.~.
+Lemma avgC p (x y : T) : avg p x y = avg (`Pr p.~) y x.
 Proof. rewrite /avg; exact/eq_sig_irrelevant/convC. Qed.
-Lemma avgA (p q : prob) (d0 d1 d2 : T) :
-  avg d0 (avg d1 d2 q) p = avg (avg d0 d1 [r_of p, q]) d2 [s_of p, q].
+Lemma avgA p q (d0 d1 d2 : T) :
+  avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. rewrite /avg /=; exact/eq_sig_irrelevant/convA. Qed.
 End prop.
 End DominatedPair.
@@ -123,8 +123,7 @@ rewrite /DominatedPair.simple_elim /=.
 rewrite /Conv /= /avg /= (* TODO *).
 rewrite 2!big_distrr /= -big_split /= /div.
 rewrite rsum_setT [in X in _ <= X]rsum_setT.
-apply ler_rsum => a _.
-rewrite 2!Conv2FDist.dE.
+apply ler_rsum => a _; rewrite 2!ConvFDist.dE.
 case/boolP : (q2 a == 0) => [/eqP |] q2a0.
   rewrite q2a0 !(mul0R,mulR0,add0R).
   have -> : p2 a = 0 by move/dominatesP : pq2; exact.
@@ -162,7 +161,7 @@ set f : 'I_2 -> R := h p1 p2.
 set g : 'I_2 -> R := h q1 q2.
 have h0 : forall p1 p2, [forall i, 0 <b= h p1 p2 i].
   move=> p1' p2'; apply/forallP_leRP => ?; rewrite /h /= ffunE.
-  case: ifPn => [_ | _]; first by apply mulR_ge0 => //; exact/prob_ge0.
+  case: ifPn => [_ | _]; first exact/mulR_ge0.
   case: ifPn => [_ |  _]; [|exact/leRR].
   apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
 move: (@log_sum _ setT (mkPosFfun (h0 p1 p2)) (mkPosFfun (h0 q1 q2)) hdom).
@@ -384,23 +383,20 @@ apply R_concave_functionB.
   rewrite !Swap.snd !Bivar.fstE !mulRN -oppRD; congr (- _).
   rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
   rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
-  rewrite !ProdFDist.dE /= Conv2FDist.dE /=.
-  rewrite !(mulRA t) !(mulRA t.~).
+  rewrite !ProdFDist.dE /= ConvFDist.dE /= !(mulRA t) !(mulRA t.~).
   case/boolP: (t * p a == 0) => /eqP Hp.
     rewrite Hp.
     case/boolP: (t.~ * q a == 0) => /eqP Hq.
       rewrite Hq; field.
     rewrite !(mul0R,add0R).
-    rewrite -CFDist.E /=; last by rewrite Conv2FDist.dE Hp add0R.
+    rewrite -CFDist.E /=; last by rewrite ConvFDist.dE Hp add0R.
     rewrite -CFDist.E /= //; by move: Hq; rewrite mulR_neq0 => -[].
   case/boolP: (t.~ * q a == 0) => /eqP Hq.
     rewrite Hq !(mul0R,addR0).
-    rewrite -CFDist.E; last by rewrite Conv2FDist.dE Hq addR0.
+    rewrite -CFDist.E; last by rewrite ConvFDist.dE Hq addR0.
     rewrite -CFDist.E /= //; by move: Hp; rewrite mulR_neq0 => -[].
   rewrite -CFDist.E; last first.
-    rewrite /= Conv2FDist.dE paddR_eq0; [tauto | |].
-    apply/mulR_ge0 => //; exact/prob_ge0.
-    apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
+    rewrite /= ConvFDist.dE paddR_eq0; [tauto|exact/mulR_ge0|exact/mulR_ge0].
   rewrite -CFDist.E; last by move: Hp; rewrite mulR_neq0 => -[].
   rewrite -CFDist.E //=; last by move: Hq; rewrite mulR_neq0 => -[].
   field.
@@ -442,19 +438,17 @@ have -> : MutualInfo.mi (CFDist.make_joint P (fun x : A => p1yx x <| t |> p2yx x
   by rewrite ProdFDist.dE /= /CFDist.make_joint /CFDist.joint_of /= ProdFDist.fst; congr (_ * _).
 have -> : qlambdaxy = (q1xy : fdist_convType _ ) <| t |> q2xy.
   apply/fdist_ext => -[a b].
-  rewrite !ProdFDist.dE !Conv2FDist.dE /=.
+  rewrite !ProdFDist.dE !ConvFDist.dE /=.
   rewrite /q1xy /q2xy !ProdFDist.dE /=.
   rewrite /p1 /plambday.
   rewrite !Bivar.sndE !big_distrr /= -big_split /=.
   apply eq_bigr => a0 _.
   rewrite /plambdaxy /= !ProdFDist.dE /= /p1xy /plambdayx.
-  rewrite Conv2FDist.dE /=.
-  field.
+  by rewrite ConvFDist.dE /=; field.
 have -> : plambdaxy = (p1xy : fdist_convType _ ) <| t |> p2xy.
   apply/fdist_ext => -[a b].
-  rewrite !ProdFDist.dE !Conv2FDist.dE /=.
-  rewrite /p1xy /p2xy !ProdFDist.dE /=.
-  field.
+  rewrite !ProdFDist.dE !ConvFDist.dE /=.
+  by rewrite /p1xy /p2xy !ProdFDist.dE /=; field.
 have -> : MutualInfo.mi (CFDist.make_joint P p1yx) = D(p1xy || q1xy).
   rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.

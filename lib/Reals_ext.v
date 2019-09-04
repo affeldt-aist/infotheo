@@ -144,17 +144,21 @@ Notation "p '.~'" := (onem p) : reals_ext_scope.
 
 Module Prob.
 Record t := mk {
-  p : R ;
+  p :> R ;
   Op1 : (0 <= p <= 1)%R }.
 Definition O1 (p : t) := Op1 p.
 Arguments O1 : simpl never.
+Lemma ge0 (p : t) : 0 <= p.
+Proof. by case: p => [? []]. Qed.
 Module Exports.
 Notation prob := t.
 Notation "'`Pr' q" := (@mk q (@O1 _)).
-Coercion p : t >-> R.
 End Exports.
 End Prob.
 Export Prob.Exports.
+Coercion Prob.p : prob >-> R.
+
+Hint Resolve Prob.ge0.
 
 Definition eqprob (x y : prob) := (x == y :> R).
 
@@ -179,16 +183,13 @@ Canonical prob0 := Prob.mk OO1.
 Canonical prob1 := Prob.mk O11.
 Canonical probcplt (p : prob) := @Prob.mk p.~ (onem_prob (Prob.O1 p)).
 
-Lemma prob_ge0 (p : prob) : (0 <= p)%R.
-Proof. by case: p => p []. Qed.
-
 Lemma prob_le1 (p : prob) : (p <= 1)%R.
 Proof. by case: p => p []. Qed.
 
 Lemma prob_gt0 (p : prob) : p != `Pr 0 <-> (0 < p)%R.
 Proof.
 rewrite ltR_neqAle; split=> [H|[/eqP p0 _]].
-split; [exact/nesym/eqP|exact/prob_ge0].
+split => //; exact/nesym/eqP.
 by case: p p0 => p ?; apply: contra => /eqP[/= ->].
 Qed.
 
@@ -241,10 +242,8 @@ Definition probinvn (n : nat) := @Prob.mk (/ INR (1 + n)) (prob_invn n).
 
 Lemma prob_mulR (p q : prob) : (0 <= p * q <= 1)%R.
 Proof.
-split.
-  apply/mulR_ge0; [exact/prob_ge0 | exact/prob_ge0].
-rewrite -(mulR1 1%R); apply leR_pmul; [exact/prob_ge0 |
-    exact/prob_ge0 | exact/prob_le1 | exact/prob_le1].
+split; first exact/mulR_ge0.
+rewrite -(mulR1 1%R); apply leR_pmul => //; [exact/prob_le1 | exact/prob_le1].
 Qed.
 
 Canonical probmuLR (p q : prob) := @Prob.mk (p * q) (prob_mulR p q).

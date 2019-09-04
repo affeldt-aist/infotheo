@@ -62,7 +62,7 @@ Lemma TS_sup : #| `TS P n epsilon |%:R <= exp2 (n%:R * (`H P + epsilon)).
 Proof.
 suff Htmp : #| `TS P n epsilon |%:R * exp2 (- n%:R * (`H P + epsilon)) <= 1.
   by rewrite -(mulR1 (exp2 _)) mulRC -leR_pdivr_mulr // /Rdiv -exp2_Ropp -mulNR.
-rewrite -(FDist.pmf1 (P `^ n)).
+rewrite -(FDist.f1 (P `^ n)).
 rewrite (_ : _ * _ = \sum_(x in `TS P n epsilon) (exp2 (- n%:R * (`H P + epsilon)))); last first.
   by rewrite big_const iter_addR.
 by apply/ler_rsum_l => //= i; rewrite inE; case/andP => /leRP.

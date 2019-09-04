@@ -299,8 +299,7 @@ case/boolP : (p == `Pr 0) => [/eqP|] p0.
     rewrite !Binary.dE subRR eqxx.
     rewrite subR0; lra.
   apply: leR_trans.
-    apply: (@pinsker_function_spec_pos _ q Hc).
-    split; [exact/prob_ge0 | by rewrite -prob_lt1].
+    by apply: (@pinsker_function_spec_pos _ q Hc); rewrite -prob_lt1.
   rewrite /pinsker_function_spec.
   apply Req_le.
   rewrite mul1R div1R /log LogV; [by field |by rewrite subR_gt0 -prob_lt1].

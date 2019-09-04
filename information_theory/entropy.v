@@ -105,7 +105,7 @@ transitivity (\sum_(a|a \in A) P a * log (P a) +
   rewrite Uniform.dE; apply/invR_gt0; rewrite HA; exact/ltR0n.
 rewrite [in X in _ + X](eq_bigr (fun a => P a * - log (/ INR #|A|))); last first.
   by move=> a _; rewrite Uniform.dE.
-rewrite -[in X in _ + X = _]big_distrl /= FDist.pmf1 mul1R.
+rewrite -[in X in _ + X = _]big_distrl /= FDist.f1 mul1R.
 rewrite addRC /entropy /log LogV ?oppRK ?subR_opp // HA; exact/ltR0n.
 Qed.
 

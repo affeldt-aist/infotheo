@@ -264,10 +264,10 @@ rewrite [X in X = _](_ :_ = \sum_(i | i \in A) P i * log (P i) *
     apply/ltRP; rewrite lt0R eq_sym rmul_non0; apply/leRP/rprodr_ge0 => ?; exact: pos_ff_ge0.
   by rewrite /log LogM // !Rmult_plus_distr_l mulRA mulRA.
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
-  by rewrite -(FDist.pmf1 (P `^ n0)); apply eq_bigr => i _; rewrite TupleFDist.dE.
+  by rewrite -(FDist.f1 (P `^ n0)); apply eq_bigr => i _; rewrite TupleFDist.dE.
 rewrite -big_distrl /= mulR1 [in RHS]addRC.
-apply:Rplus_eq_compat_l.
-rewrite -big_distrl /= FDist.pmf1 mul1R; apply eq_bigr => i _.
+congr (_ + _).
+rewrite -big_distrl /= FDist.f1 mul1R; apply eq_bigr => i _.
 by rewrite TupleFDist.dE.
 Qed.
 
@@ -307,7 +307,7 @@ Qed.
 
 Lemma pmf1N : \sum_(i in 'I_Nmax.+1) [ffun x : 'I__ => @Pr _ P (X @^-1 (INR x))] i = 1.
 Proof.
-rewrite -(FDist.pmf1 P).
+rewrite -(FDist.f1 P).
 rewrite [in RHS](partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
 apply:eq_bigr=> i _; rewrite ffunE; apply:eq_bigl=>i0.
 rewrite /= inE.
@@ -331,11 +331,11 @@ Qed.
 
 Lemma le_1_EX : 1 <= `E X.
 Proof.
-rewrite -(FDist.pmf1 P); apply: ler_rsum => i _.
+rewrite -(FDist.f1 P); apply: ler_rsum => i _.
 rewrite -{1}(mul1R ( P i)).
-apply:Rmult_le_compat_r; first by apply pos_ff_ge0.
+apply leR_wpmul2r; first by apply pos_ff_ge0.
 rewrite (_ : 1 = INR 1) //; move: (Xpos i).
-by rewrite /= (_ : 0 = INR 0)//; move/INR_lt/lt_le_S/le_INR.
+by rewrite /= (_ : 0 = INR 0) //; move/INR_lt/lt_le_S/le_INR.
 Qed.
 
 Lemma EX_pos : 0 < `E X.
@@ -349,7 +349,7 @@ Proof.
 move=>EX_1.
 have eq_0_P: forall a, X a <> 1 -> 0 = P a.
   move: EX_1.
-  rewrite -{1}(FDist.pmf1 P)=>EX1 a Xnon1.
+  rewrite -{1}(FDist.f1 P)=>EX1 a Xnon1.
   have : forall i : A, i \in A -> P i <= INR (size (f i)) * P i.
     move=> i _; rewrite -{1}(mul1R ( P i)).
     apply:Rmult_le_compat_r; first apply pos_ff_ge0.
@@ -365,7 +365,7 @@ rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 //= => i _.
 rewrite /= /pr_eq /Pr ffunE.
 case (Req_dec (INR i) 1)=>[->| neq0].
   rewrite [X in _ * log X = _](_ : _ = 1); first by rewrite /log Log_1 mulR0.
-  rewrite -{2}(FDist.pmf1 P).
+  rewrite -{2}(FDist.f1 P).
   rewrite [in RHS](bigID (fun a => a \in [set x | INR (size (f x)) == 1])) /=.
   rewrite [X in _ = _ + X](_ : _ = 0); first by rewrite addR0.
   rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 // => j.
@@ -536,8 +536,8 @@ Qed.
 
 Lemma pmf1_Pf : \sum_(m in 'I_Nmax.+1) \sum_(a in {: m.-tuple bool}) Pf a = 1.
 Proof.
-move:(uniq_dec_inj f_uniq)=> f_inj.
-rewrite -(FDist.pmf1 P).
+move: (uniq_dec_inj f_uniq) => f_inj.
+rewrite -(FDist.f1 P).
 rewrite (partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
 apply:eq_bigr=>i _.
 rewrite (big_seq_tuple' i f_inj (fdist_card_neq0 P)) /Pf=>[|x].

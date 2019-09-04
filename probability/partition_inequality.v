@@ -44,7 +44,7 @@ apply (@FDist.make _ bipart_pmf).
   case/andP => /eqP -> /eqP -> _.
   transitivity (\sum_(a | (a \in A_ 0 :|: A_ 1)) P a).
     by rewrite !ffunE [X in _ = X](@big_union _ _ _ _ (A_ 0) (A_ 1)) // -setI_eq0 setIC dis eqxx.
-  rewrite cov -(FDist.pmf1 P); apply eq_bigl => /= x; by rewrite in_setT inE.
+  rewrite cov -(FDist.f1 P); apply eq_bigl => /= x; by rewrite in_setT inE.
 Defined.
 
 End bipart_sect.
@@ -126,7 +126,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_ff_ge0.
     rewrite H2 !mul0R !addR0.
     have H3 : Q_A 0 = 1%R.
-      rewrite -[X in X = _]addR0 -[X in _ + X = _]A1_Q_0 -(FDist.pmf1 Q).
+      rewrite -[X in X = _]addR0 -[X in _ + X = _]A1_Q_0 -(FDist.f1 Q).
       rewrite !ffunE -big_union //.
       apply eq_bigl => i; by rewrite cov in_set inE.
       by rewrite -setI_eq0 -dis setIC.
@@ -134,7 +134,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
     rewrite LogV; last lra.
     apply Req_le; by field.
 - have H1 : P_A 1 = 1%R.
-    rewrite -[X in X = _]add0R -[X in X + _ = _]A0_P_0 -(FDist.pmf1 P).
+    rewrite -[X in X = _]add0R -[X in X + _ = _]A0_P_0 -(FDist.f1 P).
     rewrite !ffunE -big_union //.
     apply eq_bigl => i; by rewrite cov in_set inE.
     by rewrite -setI_eq0 -dis setIC.

@@ -2,7 +2,7 @@ Require Import Reals.
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import boolp classical_sets.
 From mathcomp Require Import finmap.
-Require Import Reals_ext Rbigop ssrR proba fsdist convex_choice.
+Require Import Reals_ext classical_sets_ext Rbigop ssrR proba fsdist convex_choice.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -112,32 +112,29 @@ Proof. by move/(congr1 Prob.p)/R1_neq_R0. Qed.
 Lemma add_prob_eq0 (p q : prob) : p + q = `Pr 0 <-> p = `Pr 0 /\ q = `Pr 0.
 Proof.
 split => [/paddR_eq0 | ].
-- move=> /(_ (prob_ge0 _) (prob_ge0 _)) [p0 q0]; split; exact/prob_ext.
+- move=> /(_ (Prob.ge0 _) (Prob.ge0 _)) [p0 q0]; split; exact/prob_ext.
 - by case => -> ->; rewrite addR0.
 Qed.
 
 Lemma add_prob_neq0 (p q : prob) : p + q != `Pr 0 <-> p != `Pr 0 \/ q != `Pr 0.
 Proof.
 split => [/paddR_neq0 | ].
-- by move=> /(_ (prob_ge0 _) (prob_ge0 _)).
+- by move=> /(_ (Prob.ge0 _) (Prob.ge0 _)).
 - by case; apply: contra => /eqP/add_prob_eq0 [] /eqP ? /eqP.
 Qed.
 
 End misc_prob.
 
-Lemma finsupp_Conv2 (C : convType) p (p0 : p != `Pr 0) (p1 : p != `Pr 1) (d e : {dist C}) :
+Lemma finsupp_Conv (C : convType) p (p0 : p != `Pr 0) (p1 : p != `Pr 1) (d e : {dist C}) :
   finsupp (d <|p|> e) = (finsupp d `|` finsupp e)%fset.
 Proof.
 apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j;
-  rewrite !mem_finsupp !Conv2FSDist.dE inE; first by (move=> H ;
-    rewrite 2!mem_finsupp; apply/orP/(paddR_neq0 (FSDist.ge0 _ _) (FSDist.ge0 _ _));
+  rewrite !mem_finsupp !ConvFSDist.dE inE; first by
+    move=> H; rewrite 2!mem_finsupp; apply/orP/paddR_neq0 => //;
     apply: contra H => /eqP/paddR_eq0 => /(_ (FSDist.ge0 _ _ ))/(_ (FSDist.ge0 _ _)) [-> ->];
-    rewrite 2!mulR0 addR0).
-have [pge0 opge0] := (prob_ge0 p, prob_ge0 (`Pr p.~)).
+    rewrite 2!mulR0 addR0.
 move/prob_gt0 in p0.
 move: p1 => /onem_neq0 /prob_gt0 /= p1.
-have [/leRP dgeb0 /leRP egeb0] := (FSDist.ge0 d j, FSDist.ge0 e j).
-have [xge0 yge0] := (FSDist.ge0 d j, FSDist.ge0 e j).
 rewrite 2!mem_finsupp => /orP[dj0|ej0]; apply/eqP/gtR_eqF;
   [apply/addR_gt0wl; last exact/mulR_ge0;
    apply/mulR_gt0 => //; apply/ltR_neqAle; split => //; exact/nesym/eqP |
@@ -147,7 +144,7 @@ Qed.
 
 Lemma FSDist_eval_affine (C : choiceType) (x : C) :
   affine_function (fun D : {dist C} => D x).
-Proof. by move=> a b p; rewrite /affine_function_at Conv2FSDist.dE. Qed.
+Proof. by move=> a b p; rewrite /affine_function_at ConvFSDist.dE. Qed.
 
 Section misc_hull.
 Implicit Types A B : convType.
@@ -234,28 +231,21 @@ Lemma scalept_conv (C : convType) (x y : R) (s : scaled_pt C) (p : prob):
   (scalept x s : Scaled_convType C) <|p|> scalept y s.
 Proof.
 move=> Hx Hy.
-move: (prob_ge0 p) => Hp.
 move: (onem_ge0 (prob_le1 p)) => Hnp.
-rewrite scalept_addR; try by apply mulR_ge0.
+rewrite scalept_addR; [|exact/mulR_ge0|exact/mulR_ge0].
 by rewrite /Conv /= /scaled_conv /= !scalept_comp.
 Qed.
 
 Lemma FSDist_scalept_conv (C : convType) (x y : {dist C}) (p : prob) (i : C) :
   scalept ((x <|p|> y) i) (S1 i) =
   ((scalept (x i) (S1 i)) : Scaled_convType C) <|p|> scalept (y i) (S1 i).
-Proof.
-rewrite Conv2FSDist.dE.
-change (p * x i + p.~ * y i) with (x i <|p|> y i).
-by rewrite scalept_conv; try apply FSDist.ge0.
-Qed.
+Proof. by rewrite ConvFSDist.dE scalept_conv. Qed.
 
 Lemma big_scalept_conv_split (C : convType) (I : Type) (r : seq I) (P : pred I)
  (F G : I -> Scaled_convType C) (p : prob) :
   \ssum_(i <- r | P i) (F i <|p|> G i) =
   ((\ssum_(i <- r | P i) F i) : Scaled_convType C) <|p|> \ssum_(i <- r | P i) G i.
-Proof.
-by rewrite /Conv /= /scaled_conv big_split /= !big_scalept.
-Qed.
+Proof. by rewrite /Conv /= /scaled_conv big_split /= !big_scalept. Qed.
 
 Lemma scalept_addRnneg : forall (A : convType) (x : scaled_pt A),
     {morph (fun (r : Rnneg) => scalept r x) : r s / addRnneg r s >-> addpt r s}.
@@ -302,7 +292,7 @@ Definition d_enum := [ffun i => d' (enum i)].
 Lemma d_enum0 : forall b, 0 <= d_enum b. Proof. by move=> ?; rewrite ffunE. Qed.
 Lemma d_enum1 : \sum_(b in 'I_n) d_enum b = 1.
 Proof.
-rewrite -(@FDist.pmf1 T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
+rewrite -(@FDist.f1 T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
 rewrite (@reindex _ _ _ _ _ enum_rank) //; last first.
   by exists enum_val => i; [rewrite enum_rankK | rewrite enum_valK].
 apply eq_bigr => i _; congr (d' _); by rewrite -[in RHS](enum_rankK i).
@@ -861,8 +851,8 @@ Module SemiCompSemiLattConvType.
 Local Open Scope convex_scope.
 Local Open Scope latt_scope.
 Local Open Scope classical_set_scope.
-Record mixin_of (L : semiCompSemiLattType) (op : L -> L -> prob -> L) := Mixin {
-  _ : forall (p : prob) (x : L) (I : neset L), op x (Joet I) p = Joet `NE ((fun y => op x y p) @` I);
+Record mixin_of (L : semiCompSemiLattType) (op : prob -> L -> L -> L) := Mixin {
+  _ : forall (p : prob) (x : L) (I : neset L), op p x (Joet I) = Joet `NE ((op p x) @` I);
 }.
 Record class_of (T : choiceType) : Type := Class {
   base : SemiCompleteSemiLattice.class_of T ;
@@ -946,7 +936,7 @@ congr (Joet `NE _); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
 Lemma Joet_conv_pt_setE p x (Y : neset L) :
-  Joet `NE (conv_pt_set p x Y) = Joet `NE ((Conv x)^~ p @` Y).
+  Joet `NE (conv_pt_set p x Y) = Joet `NE ((Conv p x) @` Y).
 Proof.
 by congr (Joet `NE _); apply/neset_ext.
 Qed.
@@ -1025,10 +1015,10 @@ case/set0P: (neset_neq0 Y) => y; rewrite -in_setE => yY.
 apply/set0P; exists (x <| p |> y); rewrite -in_setE.
 by rewrite inE asboolE; exists x, y.
 Qed.
-Definition conv X Y p : necset A := locked
+Definition conv p X Y : necset A := locked
   (NECSet.Pack (NECSet.Class (CSet.Class (pre_pre_conv_convex X Y p))
                (NESet.Class (pre_conv_neq0 X Y p)))).
-Lemma conv1 X Y : conv X Y `Pr 1 = X.
+Lemma conv1 X Y : conv (`Pr 1) X Y  = X.
 Proof.
 rewrite /conv; unlock; apply necset_ext => /=; apply/eqEsubset => a.
   by case => x [] y [] xX [] yY ->; rewrite -in_setE conv1.
@@ -1036,7 +1026,7 @@ case/set0P: (neset_neq0 Y) => y; rewrite -in_setE => yY.
 rewrite -in_setE => aX.
 by exists a, y; rewrite conv1.
 Qed.
-Lemma convmm X p : conv X X p = X.
+Lemma convmm p X : conv p X X = X.
 Proof.
 rewrite/conv; unlock; apply necset_ext => /=; apply eqEsubset => a.
 - case => x [] y [] xX [] yY ->.
@@ -1044,12 +1034,12 @@ rewrite/conv; unlock; apply necset_ext => /=; apply eqEsubset => a.
 - rewrite -in_setE => aX.
   by exists a, a; rewrite convmm.
 Qed.
-Lemma convC X Y p : conv X Y p = conv Y X `Pr p.~.
+Lemma convC p X Y : conv p X Y = conv (`Pr p.~) Y X.
 Proof.
 by rewrite/conv; unlock; apply necset_ext => /=; apply eqEsubset => a; case => x [] y [] xX [] yY ->; exists y, x; [rewrite convC | rewrite -convC].
 Qed.
 Lemma convA p q X Y Z :
-  conv X (conv Y Z q) p = conv (conv X Y [r_of p, q]) Z [s_of p, q].
+  conv p X (conv q Y Z) = conv [s_of p, q] (conv [r_of p, q] X Y) Z.
 Proof.
 rewrite/conv; unlock; apply/necset_ext => /=; apply eqEsubset => a; case => x [].
 - move=> y [] xX [].
@@ -1067,11 +1057,11 @@ End def.
 Section lemmas.
 Local Open Scope classical_set_scope.
 Variable A : convType.
-Lemma convE X Y p : conv X Y p =
+Lemma convE p X Y : conv p X Y =
   [set a : A | exists x, exists y, x \in X /\ y \in Y /\ a = x <| p |> y]
     :> set A.
 Proof. rewrite/conv; unlock; reflexivity. Qed.
-Lemma conv_conv_set X Y p : conv X Y p = conv_set p X Y :> set A.
+Lemma conv_conv_set p X Y : conv p X Y = conv_set p X Y :> set A.
 Proof.
 rewrite convE; apply eqEsubset=> u.
 - by case=> x [] y; rewrite !in_setE; case=> Xx [] Yy ->; exists x => //; exists y.
@@ -1124,17 +1114,17 @@ Local Open Scope classical_set_scope.
 Variable (A : convType).
 Let L := necset_semiCompSemiLattType A.
 Lemma axiom (p : prob) (X : L) (I : neset L) :
-  necset_convType.conv X (Joet I) p =
-  Joet `NE ((fun Y => necset_convType.conv X Y p) @` I).
+  necset_convType.conv p X (Joet I) = Joet `NE ((necset_convType.conv p X) @` I).
 Proof.
 apply necset_ext => /=.
 rewrite -hull_cset necset_convType.conv_conv_set /= hull_conv_set_strr.
 congr hull; apply eqEsubset=> u /=.
 - case=> x Xx [] y []Y IY Yy <-.
-  exists (necset_convType.conv X Y p); first by exists Y.
+  exists (necset_convType.conv p X Y); first by exists Y.
   rewrite necset_convType.conv_conv_set.
   by exists x=> //; exists y.
-- by case=> U [] Y IY <-; rewrite necset_convType.convE=> -[] x [] y; rewrite !in_setE=> -[] Xx [] Yy ->; exists x=> //; exists y=> //; exists Y.
+- by case=> U [] Y IY <-; rewrite necset_convType.convE=> -[] x [] y;
+    rewrite !in_setE=> -[] Xx [] Yy ->; exists x=> //; exists y=> //; exists Y.
 Qed.
 
 Definition mixin := @SemiCompSemiLattConvType.Class [choiceType of necset A]

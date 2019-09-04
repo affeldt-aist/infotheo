@@ -237,8 +237,7 @@ rewrite -/(Rdiv _ _) -expRB; last 2 first.
   rewrite subR_eq0 => ?.
   move: p05; rewrite ltRNge; apply.
   lra.
-suff -> : (n - d1 - (n - d2) = d2 - d1)%nat.
-  apply pow_incr; split; [exact/prob_ge0|lra].
+suff -> : (n - d1 - (n - d2) = d2 - d1)%nat by apply pow_incr; split => //; lra.
 rewrite -subnDA addnC subnDA subKn //.
 by case/andP : d1d2.
 Qed.
@@ -293,7 +292,7 @@ rewrite (@big_rmax_bigminn_helper_vec _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //
 - apply eq_bigl => /= i; by rewrite inE.
 - by apply bsc_prob_prop.
 - move=> r; rewrite /g.
-  apply mulR_ge0; apply pow_le; [lra | exact/prob_ge0].
+  apply mulR_ge0; apply pow_le => //; lra.
 - rewrite inE; move/subsetP: f_img; apply.
   rewrite inE; apply/existsP; by exists (Receivable.y y); apply/eqP.
 - move=> ? _; by rewrite /dH_y max_dH.

@@ -292,15 +292,14 @@ rewrite /E_leng_cw (rsum_union' _ (`TS P n'.+1 epsilon)).
 rewrite eq_sizef_Lnt eq_sizef_Lt -!(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
  P `^ n i = 1 - \sum_(i | i \in `TS P n epsilon) P `^ n i); last first.
-- by rewrite -(FDist.pmf1 P`^n) (rsum_union' _ (`TS P n epsilon)) addRC addRK.
-- apply: Rplus_le_compat.
-  + rewrite -[X in _ <= X]mulR1; apply: Rmult_le_compat_l.
-    * by apply: (Rplus_le_le_0_compat _ _ _ Rle_0_1); apply: ltRW; apply: Lt_pos.
-    * rewrite -(FDist.pmf1 (P `^ n)); apply: ler_rsum_l => // *; exact/leRR.
-  + apply: Rmult_le_compat_r.
-    * by apply: (Rplus_le_le_0_compat _ _ (Lnt_nonneg _ P) Rle_0_1).
-    * apply: Rminus_le; rewrite /Rminus addRC addRA; apply: Rle_minus; rewrite addRC.
-      by apply: Pr_TS_1.
+- by rewrite -(FDist.f1 P`^n) (rsum_union' _ (`TS P n epsilon)) addRC addRK.
+- apply leR_add.
+  + rewrite -[X in _ <= X]mulR1; apply: leR_wpmul2l => //.
+    + apply: addR_ge0 => //; exact/ltRW/Lt_pos.
+    * rewrite -(FDist.f1 (P `^ n)); apply: ler_rsum_l => // *; exact/leRR.
+  + apply: leR_wpmul2r => //.
+    * apply addR_ge0 => //; exact (Lnt_nonneg _ P).
+    * rewrite leR_subl_addr addRC -leR_subl_addr; exact: Pr_TS_1.
 Qed.
 
 End E_Leng_Cw_Lemma.
@@ -323,7 +322,7 @@ move : (@leng_neq_0 n') (fdist_supp_lg_add_1_neq_0 P) R3neqR0 => ? ? ?.
 rewrite mulRC /Rdiv -?mulRA; apply: (Rmult_lt_compat_l _ _ _ eps_pos); rewrite ?mulRA (mulRC _ 2).
 apply: (Rmult_lt_reg_l 3); first by apply: Rplus_lt_pos; [apply: Rlt_0_1 | apply: Rlt_0_2].
 rewrite Rinv_mult_distr //  ?mulRA (mulRC 3 2) Rinv_r_simpl_l //.
-apply: (Rmult_lt_reg_l (INR n)); first by apply: lt_0_INR; apply/ltP.
+apply: (Rmult_lt_reg_l (INR n)); first exact/ltR0n.
 rewrite mulRC -mulRA (mulRC _ (INR n)) ?mulRA Rinv_r_simpl_l // Rinv_r_simpl_l //.
 apply: (Rle_lt_trans _ _ _ (proj1 (ceilP _))).
 rewrite -INR_Zabs_nat.
@@ -346,7 +345,7 @@ have Fact8 : 4 * 2 = 8 by field.
 move: n0_Le_n; rewrite /n0 !gtn_max;  case/andP=> _;  case/andP=> Hyp _.
 apply: (Rmult_lt_reg_l 4) => //.
 rewrite /Rdiv (mulRC epsilon (/ 4)) mulRA mulRA Rinv_r // Fact8 mul1R.
-apply: (Rmult_lt_reg_l (INR n)); first by apply: lt_0_INR; apply/ltP. 
+apply: (Rmult_lt_reg_l (INR n)); first exact/ltR0n.
 rewrite mulRA (mulRC _ 8) Rinv_r_simpl_l //.
 apply: (Rmult_lt_reg_l ( / epsilon)); first by apply: Rinv_0_lt_compat.
 rewrite mulRC (mulRC (/ epsilon) (INR n * epsilon)) Rinv_r_simpl_l;
@@ -356,14 +355,12 @@ rewrite -INR_Zabs_nat.
 -by apply: lt_INR; apply/ltP.
 -apply: le_IZR;apply: (Rle_trans _ (8 * / epsilon)); last by apply: (proj1 (ceilP _)).
  apply: Rle_mult_inv_pos ; last by apply eps_pos.
- by apply: Rmult_le_pos; apply: ltRW ; [apply: Rlt_0_2 | apply: zero_ge_4]. 
+ by apply: Rmult_le_pos; apply: ltRW ; [apply: Rlt_0_2 | apply: zero_ge_4].
 Qed.
 
 Lemma eps'_pos : 0 < epsilon'.
 Proof.
-rewrite /epsilon' /Rdiv -(mulR0 epsilon).
-apply: Rmult_lt_compat_l=>//.
-apply: Rinv_0_lt_compat.
+rewrite /epsilon' /Rdiv -(mulR0 epsilon); apply ltR_pmul2l => //; apply/invR_gt0.
 apply: Rplus_lt_le_0_compat; first lra.
 apply: Rmult_le_pos; first lra.
 rewrite -(Log_1 2).
@@ -449,8 +446,7 @@ apply: (ex_intro _ (n0.+1)).
 have: (n0 < n0.+1)%nat by[].
 case/v_scode'=> // sc [fphi ccl].
 apply: (ex_intro _ (enc sc)).
-apply: conj=>//.
-exact: (can_inj fphi).
+split => //; exact: (can_inj fphi).
 Qed.
 
 End variable_length_source_coding.

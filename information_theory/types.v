@@ -55,9 +55,8 @@ Proof. destruct P as [d f d_f] => /=. by rewrite d_f. Qed.
 Lemma no_0_type A (d : fdist A) (t : {ffun A -> 'I_1}) :
   (forall a, d a = INR (t a) / INR 0) -> False.
 Proof.
-move=> H.
-apply R1_neq_R0.
-rewrite -(FDist.pmf1 d).
+move=> H; apply R1_neq_R0.
+rewrite -(FDist.f1 d).
 transitivity (\sum_(a | a \in A) INR (t a) / 0); first exact/eq_bigr.
 rewrite -big_distrl /= -big_morph_natRD.
 rewrite (_ : (\sum_(a in A) _)%nat = O) ?mul0R //.
@@ -155,7 +154,7 @@ Lemma ffun_of_fdist A n (d : fdist A) (t : {ffun A -> 'I_n.+2})
   (H : forall a : A, d a = INR (t a) / INR n.+1) : (\sum_(a in A) t a)%nat == n.+1.
 Proof.
 suff : INR (\sum_(a in A) t a) == INR n.+1 * \sum_(a | a \in A) d a.
-  by move/eqP; rewrite (FDist.pmf1 d) mulR1 => /INR_eq/eqP.
+  by move/eqP; rewrite (FDist.f1 d) mulR1 => /INR_eq/eqP.
 apply/eqP.
 transitivity (INR n.+1 * (\sum_(a|a \in A) INR (t a) / INR n.+1)).
   by rewrite -big_distrl -big_morph_natRD mulRCA mulRV ?mulR1 // INR_eq0'.

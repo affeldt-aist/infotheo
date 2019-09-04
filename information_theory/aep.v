@@ -36,7 +36,7 @@ transitivity
   (\sum_(a in A) ((- log (P a))^2 * P a - 2 * `H P * - log (P a) * P a + `H P ^ 2 * P a))%R.
   apply eq_bigr => a _.
   rewrite /scale_RV /mlog_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV /p_of; field.
-rewrite big_split /= big_split /= -big_distrr /= (FDist.pmf1 P) mulR1.
+rewrite big_split /= big_split /= -big_distrr /= (FDist.f1 P) mulR1.
 rewrite (_ : \sum_(a in A) - _ = - (2 * `H P ^ 2))%R; last first.
   rewrite -{1}big_morph_oppR; congr (- _)%R.
   rewrite [X in X = _](_ : _ =

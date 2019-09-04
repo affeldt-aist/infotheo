@@ -747,10 +747,9 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 Lemma cPr_1_RV a : \Pr[X = a] != 0 ->
   \sum_(b <- fin_img Y) \Pr[ Y = b | X = a ] = 1.
 Proof.
-rewrite -RVar.Pr Pr_set1.
-rewrite -{1}(fst_RV2 _ Y) => Xa0.
+rewrite -RVar.Pr Pr_set1 -{1}(fst_RV2 _ Y) => Xa0.
 set Q := CondFDist.d (RVar.d [% X, Y]) _ Xa0.
-rewrite -(FDist.pmf1 Q) [in RHS](bigID (fun b => b \in fin_img Y)) /=.
+rewrite -(FDist.f1 Q) [in RHS](bigID (fun b => b \in fin_img Y)) /=.
 rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   move=> b bY.
   rewrite /Q CondFDist.dE /cPr /Pr !(big_setX,big_set1) /= Swap.dE Swap.snd fst_RV2.

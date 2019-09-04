@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
-(** * Additional lemmas about bigops *)
+(* Additional lemmas about bigops *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

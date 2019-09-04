@@ -112,7 +112,7 @@ suff H : (\sum_(g : {ffun 'I_n -> B}) \prod_(i < n) f' i (g i) = 1)%R.
   - rewrite inE.
     apply/esym/eqP/rowP => a; by rewrite mxE ffunE.
   - move=> _; rewrite ffunE; apply eq_bigr => i _; by rewrite ffunE.
-by rewrite -bigA_distr_bigA /= /f' big1 // => i _; rewrite FDist.pmf1.
+by rewrite -bigA_distr_bigA /= /f' big1 // => i _; rewrite FDist.f1.
 Qed.
 
 Definition c : `Ch('rV[A]_n, 'rV[B]_n) := locked (fun x => FDist.make (f0 x) (f1 x)).
@@ -183,8 +183,8 @@ Lemma f1 : \sum_(b in B) f b = 1.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
   move=> a _; rewrite ffunE /h; reflexivity.
-rewrite {}/h exchange_big /= -(FDist.pmf1 P).
-apply eq_bigr => a _; by rewrite -big_distrl /= (FDist.pmf1 (W a)) mul1R.
+rewrite {}/h exchange_big /= -(FDist.f1 P).
+apply eq_bigr => a _; by rewrite -big_distrl /= (FDist.f1 (W a)) mul1R.
 Qed.
 Definition d : fdist B := locked (FDist.make f0 f1).
 Lemma dE b : d b = \sum_(a in A) W a b * P a.
@@ -262,7 +262,7 @@ transitivity (\sum_(i | Q i) (P `^ n i * (\sum_(y in 'rV[B]_n) W ``(y | i)))).
   apply eq_bigr => j _.
   by rewrite dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
 transitivity (\sum_(i | Q i) P `^ _ i).
-  apply eq_bigr => i _; by rewrite (FDist.pmf1 (W ``(| i))) mulR1.
+  apply eq_bigr => i _; by rewrite (FDist.f1 (W ``(| i))) mulR1.
 rewrite /Pr; apply eq_bigl => t; by rewrite !inE.
 Qed.
 Local Open Scope ring_scope.
