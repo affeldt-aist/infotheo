@@ -773,6 +773,39 @@ rewrite -pq1 p_of_rsE -ltR_pdivr_mulr // divRR ?prob_gt0 //.
 rewrite ltRNge; apply; exact/prob_le1.
 Qed.
 
+Lemma p_of_rs1 (r s : prob) :
+  ([p_of r, s] == `Pr 1 :> prob) = ((r == `Pr 1) && (s == `Pr 1)).
+Proof.
+apply/idP/idP; last by case/andP => /eqP -> /eqP ->; rewrite p_of_r1.
+move/eqP/(congr1 Prob.p); rewrite /= p_of_rsE => /eqP.
+apply contraLR => /nandP H.
+wlog: r s H / r != `Pr 1;
+  first by case: H;
+  [ move => H /(_ r s); rewrite H; apply => //; by left
+  | move => H /(_ s r); rewrite H mulRC; apply => //; by left ].
+move=> Hr.
+case/boolP: (r == `Pr 0 :> prob);
+  first by move/eqP ->; rewrite mul0R eq_sym; apply/eqP/R1_neq_R0.
+case/prob_gt0/ltR_neqAle => /eqP; rewrite [in X in X -> _]eq_sym => /eqP Hr' _.
+apply/eqP => /(@eqR_mul2r (/ r)).
+move/(_ (invR_neq0 _ Hr')).
+rewrite mulRAC mulRV ?mul1R; last exact/eqP.
+move=> srV.
+move: (prob_le1 s); rewrite srV.
+move/eqP : Hr' => /prob_gt0 Hr'.
+rewrite invR_le1 // => Hr''.
+move: (prob_le1 r) => Hr'''.
+suff: r = 1 :> R by apply/eqP; rewrite Hr.
+by apply eqR_le.
+Qed.
+
+Lemma p_of_rs1P r s : reflect (r = `Pr 1 /\ s  = `Pr 1) ([p_of r, s] == `Pr 1).
+Proof.
+move: (p_of_rs1 r s) ->.
+apply: (iffP idP);
+  [by case/andP => /eqP -> /eqP -> | by case => -> ->; rewrite eqxx].
+Qed.
+
 Lemma q_of_rs_prob (r s : prob) : 0 <= (r.~ * s) / [p_of r, s].~ <= 1.
 Proof.
 case/boolP : (r == `Pr 1 :> prob) => r1.

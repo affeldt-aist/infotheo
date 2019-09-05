@@ -40,103 +40,6 @@ End fbig_pred1_inj.
 Arguments fbig_pred1_inj [R] [idx] [op] [A] [C] [h] [k].
 End finmap_ext.
 
-Module Rnneg.
-Local Open Scope R_scope.
-Record t := mk {
-  v : R ;
-  H : 0 <b= v }.
-Definition K (r : t) := H r.
-Arguments K : simpl never.
-Module Exports.
-Notation Rnneg := t.
-Notation "'`Nneg' r" := (@mk r (@K _)) (format "'`Nneg'  r", at level 6).
-Coercion v : t >-> R.
-End Exports.
-End Rnneg.
-Export Rnneg.Exports.
-
-Canonical Rnneg_subType := [subType for Rnneg.v].
-Definition Rnneg_eqMixin := Eval hnf in [eqMixin of Rnneg by <:].
-Canonical Rnneg_eqType := Eval hnf in EqType Rnneg Rnneg_eqMixin.
-Definition Rnneg_choiceMixin := Eval hnf in [choiceMixin of Rnneg by <:].
-Canonical Rnneg_choiceType := Eval hnf in ChoiceType Rnneg Rnneg_choiceMixin.
-
-Section Rnneg_lemmas.
-Local Open Scope R_scope.
-
-Definition mkRnneg x H := @Rnneg.mk x (introT (leRP _ _) H).
-
-Canonical Rnneg0 := @mkRnneg 0 (leRR 0).
-Canonical Rnneg1 := @mkRnneg 1 Rle_0_1.
-
-Lemma Rnneg_0le (x : Rnneg) : 0 <= x.
-Proof. by case: x => p /= /leRP. Qed.
-
-Lemma addRnneg_0le (x y : Rnneg) : 0 <b= x + y.
-Proof. apply/leRP/addR_ge0; apply/Rnneg_0le. Qed.
-Canonical addRnneg x y := Rnneg.mk (addRnneg_0le x y).
-
-Lemma mulRnneg_0le (x y : Rnneg) : 0 <b= x * y.
-Proof. by apply/leRP/mulR_ge0; apply/Rnneg_0le. Qed.
-Canonical mulRnneg x y := Rnneg.mk (mulRnneg_0le x y).
-End Rnneg_lemmas.
-
-Section misc.
-
-Section misc_prob.
-Local Open Scope R_scope.
-Lemma p_of_rs1 (r s : prob) :
-  ([p_of r, s] == `Pr 1) = (r == `Pr 1) && (s == `Pr 1).
-Proof.
-apply/idP/idP; last by case/andP => /eqP -> /eqP ->; rewrite p_of_r1.
-move/eqP/(congr1 Prob.p); rewrite /= p_of_rsE => /eqP.
-apply contraLR => /nandP H.
-wlog: r s H / r != `Pr 1;
-  first by case: H;
-  [ move => H /(_ r s); rewrite H; apply => //; by left
-  | move => H /(_ s r); rewrite H mulRC; apply => //; by left ].
-move=> Hr.
-case/boolP: (r == `Pr 0);
-  first by move/eqP ->; rewrite mul0R eq_sym; apply/eqP/R1_neq_R0.
-case/prob_gt0/ltR_neqAle => /eqP; rewrite [in X in X -> _]eq_sym => /eqP Hr' _.
-apply/eqP => /(@eqR_mul2r (/ r)).
-move/(_ (invR_neq0 _ Hr')).
-rewrite mulRAC mulRV ?mul1R; last exact/eqP.
-move=> srV.
-move: (prob_le1 s); rewrite srV.
-move/eqP : Hr' => /prob_gt0 Hr'.
-rewrite invR_le1 // => Hr''.
-move: (prob_le1 r) => Hr'''.
-suff: r = 1 :> R by apply/eqP; rewrite Hr.
-by apply eqR_le.
-Qed.
-
-Lemma p_of_rs1P r s : reflect (r = `Pr 1 /\ s  = `Pr 1) ([p_of r, s] == `Pr 1).
-Proof.
-move: (p_of_rs1 r s) ->.
-apply: (iffP idP);
-  [by case/andP => /eqP -> /eqP -> | by case => -> ->; rewrite eqxx].
-Qed.
-
-Lemma prob10 : `Pr 1 <> `Pr 0.
-Proof. by move/(congr1 Prob.p)/R1_neq_R0. Qed.
-
-Lemma add_prob_eq0 (p q : prob) : p + q = `Pr 0 <-> p = `Pr 0 /\ q = `Pr 0.
-Proof.
-split => [/paddR_eq0 | ].
-- move=> /(_ (Prob.ge0 _) (Prob.ge0 _)) [p0 q0]; split; exact/prob_ext.
-- by case => -> ->; rewrite addR0.
-Qed.
-
-Lemma add_prob_neq0 (p q : prob) : p + q != `Pr 0 <-> p != `Pr 0 \/ q != `Pr 0.
-Proof.
-split => [/paddR_neq0 | ].
-- by move=> /(_ (Prob.ge0 _) (Prob.ge0 _)).
-- by case; apply: contra => /eqP/add_prob_eq0 [] /eqP ? /eqP.
-Qed.
-
-End misc_prob.
-
 Lemma finsupp_Conv (C : convType) p (p0 : p != `Pr 0) (p1 : p != `Pr 1) (d e : {dist C}) :
   finsupp (d <|p|> e) = (finsupp d `|` finsupp e)%fset.
 Proof.
@@ -288,7 +191,6 @@ apply (big_ind2 (fun x y => x = (Rnneg.v y))) => //.
 by move=> x1 [v Hv] y1 y2 -> ->.
 Qed.
 End misc_scaled.
-End misc.
 
 Module Convn_indexed_over_finType.
 Section def.
