@@ -65,9 +65,6 @@ Section misc_hull.
 Implicit Types A B : convType.
 Local Open Scope classical_set_scope.
 
-Lemma hull_mem' A (X : set A) : X `<=` hull X.
-Proof. by move=> x; rewrite -in_setE; move/hull_mem; rewrite in_setE. Qed.
-
 Lemma hull_monotone A (X Y : set A) :
   (X `<=` Y)%classic -> (hull X `<=` hull Y)%classic.
 Proof.
@@ -81,9 +78,9 @@ Qed.
 Lemma hull_eqEsubset A (X Y : set A) :
   (X `<=` hull Y)%classic -> (Y `<=` hull X)%classic -> hull X = hull Y.
 Proof.
-move/hull_monotone; rewrite hullI => H.
-move/hull_monotone; rewrite hullI => H0.
-by apply/eqEsubset.
+move/hull_monotone; rewrite hull_cset /= => H1.
+move/hull_monotone; rewrite hull_cset /= => H2.
+exact/eqEsubset.
 Qed.
 
 (* hull (X `|` hull Y) = hull (hull (X `|` Y)) = hull (x `|` y);
@@ -92,12 +89,11 @@ Qed.
 Lemma hullU_strr A (X Y : set A) : hull (X `|` hull Y) = hull (X `|` Y).
 Proof.
 apply/hull_eqEsubset => a.
-- case; first by rewrite -in_setE => H; rewrite -in_setE; apply mem_hull_setU_left.
-  case=> n [d [g [H0 H1]]].
-  exists n, d, g; split => //.
-  apply (subset_trans H0) => b Hb.
-  by right.
-- by case; rewrite -in_setE => H; rewrite -in_setE; [ | rewrite setUC] ; apply mem_hull_setU_left => //; apply hull_mem.
+- case; first by move=> ?; apply/subset_hull; left.
+  case=> n [d [g [H0 H1]]]; exists n, d, g; split => //.
+  apply (subset_trans H0) => ? ?; by right.
+- case => [?|?]; first by apply/subset_hull; left.
+  apply/subset_hull; right. exact/subset_hull.
 Qed.
 
 Lemma hullU_strl A (X Y : set A) : hull (hull X `|` Y) = hull (X `|` Y).
@@ -117,18 +113,16 @@ rewrite predeqE => b; split.
     by exists (g i) => //; apply Hg; exists i.
   by rewrite affine_function_Sum.
 case=> n [g [e [Hg]]] ->{b}.
-suff [h Hh] : exists h : 'I_n -> A, forall i, h i \in Z /\ f (h i) = g i.
+suff [h Hh] : exists h : 'I_n -> A, forall i, Z (h i) /\ f (h i) = g i.
   exists (\Conv_e h).
     exists n; exists h; exists e; split => //.
     move=> a [i _] <-.
-    move: (Hh i) => [].
-    by rewrite in_setE.
+    by case: (Hh i).
   rewrite affine_function_Sum; apply eq_convn => // i /=.
   by case: (Hh i).
-apply (@fin_all_exists _ _ (fun i hi => hi \in Z /\ f hi = g i)) => i.
+apply (@fin_all_exists _ _ (fun i hi => Z hi /\ f hi = g i)) => i.
 case: (Hg (g i)); first by exists i.
-move=> a // HZa Hfa.
-exists a; split; by rewrite // in_setE.
+move=> a // HZa Hfa; by exists a.
 Qed.
 
 Lemma image_preserves_convex_hull' A B (f : A -> B) (Hf : affine_function f) (Z : set A) :
@@ -490,7 +484,7 @@ Lemma convmm_cset (p : prob) (X : {convex_set L}) : conv_set p X X = X.
 Proof.
 apply eqEsubset=> x.
 - case => x0 Xx0 [] x1 Xx1 <-; rewrite -in_setE.
-  move/asboolP : (convex_setP X); apply; by rewrite in_setE.
+  by move/asboolP : (convex_setP X); rewrite in_setE; apply.
 - by move=> Xx; exists x=> //; exists x=> //; rewrite convmm.
 Qed.
 Lemma oplus_convmm_cset (X : {convex_set L}) : oplus_conv_set X X = X.
@@ -504,22 +498,19 @@ apply eqEsubset => x.
 Qed.
 Lemma oplus_convmm_set_hull (X : set L) :
   oplus_conv_set (hull X) (hull X) = hull X.
-Proof.
-by rewrite (oplus_convmm_cset (CSet.Pack (CSet.Class (convex_hull X)))).
-Qed.
+Proof. by rewrite oplus_convmm_cset. Qed.
 Lemma hull_iter_conv_set (X : set L) : hull X = \bigcup_(i in natset) iter_conv_set X i.
 Proof.
 apply eqEsubset; first by move=> x [] n [] g [] d [] gX ->; exists n => //; apply Convn_iter_conv_set.
 apply bigsubsetU.
-elim; first by move=> _ /=; move: X; apply hull_mem'.
-move=> n IHn _.
+elim => [_|n IHn _]; first exact/subset_hull.
 have H : iter_conv_set X n.+1 `<=` oplus_conv_set X (hull X)
   by apply/oplus_conv_set_monotone/IHn.
 apply (subset_trans H).
 rewrite oplus_convC_set.
-have H' : oplus_conv_set (hull X) X `<=` oplus_conv_set (hull X) (hull X)
-  by apply/oplus_conv_set_monotone/hull_mem'.
-apply (subset_trans H').
+have : oplus_conv_set (hull X) X `<=` oplus_conv_set (hull X) (hull X).
+  exact/oplus_conv_set_monotone/subset_hull.
+move/subset_trans; apply.
 by rewrite oplus_convmm_set_hull.
 Qed.
 
@@ -532,9 +523,8 @@ apply hull_eqEsubset=> u.
   exists n, (fun i => x <|p|> g i), d.
   rewrite -convnDr yg; split=> //.
   by move=> v [] i _ <-; exists x=> //; exists (g i) => //; apply/gY/imageP.
-- case=> x Xx [] y Yy <-.
-  rewrite -in_setE; apply hull_mem; rewrite in_setE.
-  by exists x=> //; exists y=> //; rewrite -in_setE; apply hull_mem; rewrite in_setE.
+- case=> x Xx [] y Yy <-; apply/subset_hull.
+  by exists x=> //; exists y=> //; exact/subset_hull.
 Qed.
 End convex_neset_lemmas.
 
@@ -583,17 +573,19 @@ Lemma hull_necsetU (X Y : necset A) : hull (X `|` Y) =
   [set u | exists x, exists y, exists p, x \in X /\ y \in Y /\ u = x <| p |> y].
 Proof.
 apply eqEsubset => a.
-- rewrite -in_setE; case/hull_setU; try by apply/set0P/neset_neq0.
+- case/hull_setU; try by apply/set0P/neset_neq0.
   move=> x [] xX [] y [] yY [] p ->.
   by exists x, y, p.
-- by case => x [] y [] p [] xX [] yY ->; rewrite -in_setE; apply mem_hull_setU.
+- by case => x [] y [] p [] xX [] yY ->; apply mem_hull_setU; rewrite -in_setE.
 Qed.
 
 Canonical neset_hull_necset (T : convType) (F : neset T) :=
-  NECSet.Pack (NECSet.Class (CSet.Class (convex_hull F)) (NESet.Class (neset_hull_neq0 F))).
+  NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex F))
+                            (NESet.Class (neset_hull_neq0 F))).
 
-Canonical necset1 (T : convType) (x : T) :=
-  Eval hnf in @NECSet.Pack _ [set x] (NECSet.Class (CSet.Class (is_convex_set1 x)) (NESet.Class (set1_neq0 x))).
+Canonical necset1 (T : convType) (x : T) := Eval hnf in
+  @NECSet.Pack _ [set x] (NECSet.Class (CSet.Class (is_convex_set1 x))
+                                       (NESet.Class (set1_neq0 x))).
 
 End necset_lemmas.
 
@@ -914,9 +906,9 @@ Definition pre_pre_conv (X Y : necset A) (p : prob) : set A :=
 Lemma pre_pre_conv_convex X Y p : is_convex_set (pre_pre_conv X Y p).
 Proof.
 apply/asboolP => u v q.
-rewrite inE => /asboolP [] x0 [] y0 [] x0X [] y0Y ->.
-rewrite inE => /asboolP [] x1 [] y1 [] x1X [] y1Y ->.
-rewrite commute inE asboolE.
+rewrite -in_setE; rewrite inE => /asboolP [] x0 [] y0 [] x0X [] y0Y ->.
+rewrite -in_setE; rewrite inE => /asboolP [] x1 [] y1 [] x1X [] y1Y ->.
+rewrite -in_setE commute inE asboolE.
 exists (x0 <|q|> x1), (y0 <|q|> y1).
 split; [exact: mem_convex_set | split; [exact: mem_convex_set | by []]].
 Qed.
@@ -974,7 +966,7 @@ Variable A : convType.
 Lemma convE p X Y : conv p X Y =
   [set a : A | exists x, exists y, x \in X /\ y \in Y /\ a = x <| p |> y]
     :> set A.
-Proof. rewrite/conv; unlock; reflexivity. Qed.
+Proof. by rewrite/conv; unlock. Qed.
 Lemma conv_conv_set p X Y : conv p X Y = conv_set p X Y :> set A.
 Proof.
 rewrite convE; apply eqEsubset=> u.
@@ -990,15 +982,16 @@ Section def.
 Local Open Scope classical_set_scope.
 Variable (A : convType).
 Definition pre_op (X : neset (necset A)) : convex_set A :=
-  CSet.Pack (CSet.Class (convex_hull `NE (bigsetU X idfun))).
+  CSet.Pack (CSet.Class (hull_is_convex `NE (bigsetU X idfun))).
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
 Definition op (X : neset (necset A)) :=
-  NECSet.Pack (NECSet.Class (CSet.Class (convex_hull `NE (bigsetU X idfun))) (NESet.Class (pre_op_neq0 X))).
+  NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex `NE (bigsetU X idfun)))
+                            (NESet.Class (pre_op_neq0 X))).
 Lemma op1 x : op `NE [set x] = x.
 Proof. by apply necset_ext => /=; rewrite bigcup1 hull_cset. Qed.
 Lemma op_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
-    op (bignesetU S F) = op `NE (op @` (F @` S)).
+   op (bignesetU S F) = op `NE (op @` (F @` S)).
 Proof.
 apply necset_ext => /=.
 apply hull_eqEsubset => a.
@@ -1006,8 +999,8 @@ apply hull_eqEsubset => a.
   exists 1, (fun _ => a), (FDist1.d ord0).
   split; last by rewrite convn1E.
   move=> a0 [] zero _ <-.
-  exists (op (F i)); first by  do 2 apply imageP.
-  by rewrite -in_setE hull_mem // in_setE /=; exists x.
+  exists (op (F i)); first by do 2 apply imageP.
+  by apply/subset_hull; exists x.
 - case => x [] u [] i Si Fiu <-.
   case => n [] g [] d [] /= gx ag.
   exists n, g, d; split => //.

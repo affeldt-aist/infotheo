@@ -60,7 +60,7 @@ have /IH {IH}[IH HDd] : #|fdist_supp d| = n.
   by rewrite D1FDist.card_fdist_supp // cardA.
 split; last first.
   move/asboolP: (convex_setP D) => /(_ (r b) (\sum_(a in fdist_supp d) d a * r a) (probfdist X b)).
-  exact.
+  by rewrite classical_sets.in_setE; apply; rewrite -classical_sets.in_setE.
 move/leR_trans: (convex_f (probfdist X b) (HDr b) HDd); apply => /=.
 by rewrite leR_add2l; apply leR_wpmul2l => //; apply/onem_ge0.
 Qed.
