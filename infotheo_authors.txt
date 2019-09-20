@@ -21,4 +21,4 @@ Acknowledgments:
 K. Kasai, S. Kuzuoka, R. Obi
 - Y. Takahashi collaborated to the formalization of linear error-correcting codes
 - This work was partially supported by a JSPS Grant-in-Aid for Scientific
-Research (Project Number: 25289118).
+Research (Project Number: 25289118), a JSPS Grand-in-Aid for Scientific Research (Project Number: 18H03204)

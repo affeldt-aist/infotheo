@@ -568,7 +568,8 @@ Module AddFDist.
 Section def.
 Variables (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob).
 Definition f := [ffun i : 'I_(n + m) =>
-  match fintype.split i with inl a => p * d1 a | inr a => p.~ * d2 a end].
+  let si := fintype.split i in
+  match si with inl a => (p * d1 a) | inr a => p.~ * d2 a end].
 Lemma f0 i : 0 <= f i.
 Proof. rewrite /f ffunE; case: splitP => a _; exact: mulR_ge0. Qed.
 Lemma f1 : \sum_(i < n + m) f i = 1.

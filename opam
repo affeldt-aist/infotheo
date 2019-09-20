@@ -14,6 +14,8 @@ authors: [
   "Takafumi Saikawa"
   "Naruomi Obata"
   "Erik Martin-Dorel"
+  "Ryosuke Obi"
+  "Mitsuharu Yamamoto"
 ]
 build: [
   ["coq_makefile" "-f" "_CoqProject" "-o" "Makefile"]
@@ -38,5 +40,5 @@ tags: [
   "keyword: probability"
   "keyword: error-correcting codes"
   "logpath:infotheo"
-  "date:2019-08-03"
+  "date:2019-09-17"
 ]

@@ -846,7 +846,7 @@ Section cset_canonical.
 Variable (A : convType).
 Canonical cset_subType := [subType for @CSet.car A].
 Canonical cset_predType :=
-  Eval hnf in mkPredType (fun t : convex_set A => (fun x => x \in CSet.car t)).
+  Eval hnf in PredType (fun t : convex_set A => (fun x => x \in CSet.car t)).
 Definition cset_eqMixin := Eval hnf in [eqMixin of convex_set A by <:].
 Canonical cset_eqType := Eval hnf in EqType (convex_set A) cset_eqMixin.
 End cset_canonical.

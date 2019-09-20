@@ -886,7 +886,7 @@ Notation "{ 'convex_set' T }" := (convex_set_of (Phant T)) : convex_scope.
 Section cset_canonical.
 Variable (A : convType).
 Canonical cset_predType := Eval hnf in
-  mkPredType (fun t : convex_set A => (fun x => x \in CSet.car t)).
+  PredType (fun t : convex_set A => (fun x => x \in CSet.car t)).
 Canonical cset_eqType := Equality.Pack (equality_mixin_of_Type (convex_set A)).
 Canonical cset_choiceType := choice_of_Type (convex_set A).
 End cset_canonical.

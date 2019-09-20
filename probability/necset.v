@@ -265,7 +265,7 @@ Export NESet.Exports.
 Section neset_canonical.
 Variable A : Type.
 Canonical neset_predType :=
-  Eval hnf in mkPredType (fun t : neset A => (fun x => x \in (t : set _))).
+  Eval hnf in PredType (fun t : neset A => (fun x => x \in (t : set _))).
 Canonical neset_eqType := Equality.Pack (equality_mixin_of_Type (neset A)).
 Canonical neset_choiceType := choice_of_Type (neset A).
 End neset_canonical.
@@ -552,7 +552,7 @@ Export NECSet.Exports.
 Section necset_canonical.
 Variable (A : convType).
 Canonical necset_predType :=
-  Eval hnf in mkPredType (fun t : necset A => (fun x => x \in (t : set _))).
+  Eval hnf in PredType (fun t : necset A => (fun x => x \in (t : set _))).
 Canonical necset_eqType := Equality.Pack (equality_mixin_of_Type (necset A)).
 Canonical necset_choiceType := choice_of_Type (necset A).
 (* NB(rei): redundant *)
