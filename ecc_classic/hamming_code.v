@@ -726,7 +726,7 @@ Proof.
 move=> y Hy.
 rewrite /discard /= ffunE.
 rewrite /syndrome in Hy.
-have {Hy}Hy : SysHamming.PCM m' *m row_perm systematic y^T = 0.
+have {}Hy : SysHamming.PCM m' *m row_perm systematic y^T = 0.
   rewrite /SysHamming.PCM.
   rewrite mul_col_perm.
   rewrite 2!row_permE.
@@ -809,7 +809,7 @@ transitivity (perm_mx systematic^-1 *m (castmx (subnK (Hamming.dim_len m'), eref
     by rewrite (mulmx_castmx_cols_comm2 subnK).
   congr castmx.
   by rewrite mul_col_mx mul1mx.
-have {HY}HY : y^T = row_perm (systematic^-1) (castmx (subnK (Hamming.dim_len m'), erefl 1%nat) (col_mx Y1 Y2)).
+have {}HY : y^T = row_perm (systematic^-1) (castmx (subnK (Hamming.dim_len m'), erefl 1%nat) (col_mx Y1 Y2)).
   rewrite -HY.
   rewrite 2!row_permE.
   rewrite mulmxA.

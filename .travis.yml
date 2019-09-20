@@ -14,7 +14,7 @@ env:
   - NJOBS="2"
   - CONTRIB_NAME="infotheo"
   matrix:
-  - DOCKERIMAGE="mathcomp/mathcomp:1.9.0-coq-8.9"
+  - DOCKERIMAGE="mathcomp/mathcomp:1.9.0-coq-8.10"
 
 
 

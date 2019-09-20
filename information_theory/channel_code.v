@@ -8,6 +8,8 @@ Require Import Reals_ext ssrR logb Rbigop proba channel.
 Reserved Notation "e( W , c )" (at level 50).
 Reserved Notation "echa( W , c )" (at level 50).
 
+Declare Scope channel_code_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.

@@ -67,9 +67,9 @@ Notation "`| x |" := (Rabs x) : R_scope.
 
 Notation "n %:R" := (INR n) : R_scope.
 
-Hint Resolve Rlt_R0_R2.
-Hint Resolve Rlt_0_1.
-Hint Resolve Rle_0_1.
+Hint Resolve Rlt_R0_R2 :  core.
+Hint Resolve Rlt_0_1 : core.
+Hint Resolve Rle_0_1 : core.
 
 Definition Reqb (a b : R) : bool :=
   match Req_EM_T a b with left _ => true | _ => false end.

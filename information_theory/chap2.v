@@ -1052,7 +1052,7 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
   rewrite addRC addRK.
   apply eq_bigr => j _.
   case: ifPn => j0.
-  - have {j0}j0 : j = ord0 by move: j0 => /eqP j0; exact/val_inj.
+  - have {}j0 : j = ord0 by move: j0 => /eqP j0; exact/val_inj.
     subst j.
     rewrite /CondEntropy.h /=.
     apply big_rV_1 => // a1.
@@ -1538,7 +1538,7 @@ rewrite (_ : MultivarPerm.d (Take.d _ _) _ =
     rewrite ifF; last first.
       apply/negbTE/eqP => /(congr1 val) /=.
       apply/eqP; by rewrite inordK.
-    case/boolP : (k < i)%nat => {ik}ik.
+    case/boolP : (k < i)%nat => {}ik.
       rewrite inordK // ik.
       move=> [:Hk1].
       have @k1 : 'I_(bump 0 i).

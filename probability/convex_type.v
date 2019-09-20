@@ -7,10 +7,6 @@ Require Import proba.
 
 (* convex spaces over a Type; use convex_choice instead *)
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
 Reserved Notation "{ 'convex_set' T }" (format "{ 'convex_set'  T }").
 Reserved Notation "'\Conv_' d f" (at level 36, f at level 36, d at level 0,
@@ -35,6 +31,13 @@ Reserved Notation "\ssum_ ( i < n | P ) F"
 Reserved Notation "\ssum_ ( i < n ) F"
   (at level 41, F at level 41, i, n at level 50,
   format "'[' \ssum_ ( i  <  n ) '/  '  F ']'").
+
+Declare Scope convex_scope.
+Declare Scope ordered_convex_scope.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
@@ -764,7 +767,7 @@ set D : {fdist 'I_n.+1} := DelFDist.d d01.
 pose G (i : 'I_n.+1) : A := g (DelFDist.f (@ord0 _) i).
 have : G @` setT `<=` X.
   by move=> x -[i _ <-{x}]; rewrite /G /DelFDist.f ltn0; apply gX; exists ((lift ord0 i)).
-move/(IH _ D) => {IH}IH.
+move/(IH _ D) => {}IH.
 rewrite convnE //.
 move/asboolP : H; apply => //.
 rewrite in_setE; exact/gX/classical_sets.imageP.
@@ -1493,7 +1496,7 @@ Proof.
 move=> H1 H2 p q t.
 rewrite /convex_function_at /=.
 rewrite {3}/Conv /= /avg /= (* TODO *) 2!mulRBr addRAC addRA.
-move: (H1 p q t) => {H1}H1.
+move: (H1 p q t) => {}H1.
 rewrite -addR_opp -addRA; apply leR_add => //.
 rewrite -2!mulRN addRC; exact: (R_convex_functionN H2).
 Qed.

@@ -6,10 +6,6 @@ Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 Require Import num_occ channel types.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
 Reserved Notation "'P_' n '(' A ',' B ')'" (at level 9,
   n at next level, A at next level, B at next level).
 Reserved Notation "V '.-shell' ta" (at level 5,
@@ -19,6 +15,10 @@ Reserved Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" (at level 50,
 Reserved Notation "'\nu^{' B '}' '(' P ')'" (at level 50,
   B, P at next level, format "'\nu^{' B '}' '(' P ')'").
 Reserved Notation "'`tO(' V )" (at level 10).
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Local Open Scope R_scope.
 Local Open Scope channel_scope.
@@ -758,7 +758,7 @@ elim.
   rewrite -(expn0 #|B|) -[X in _ <= expn _ X](sum_num_occ_0 ta) -card_tuple -cardsT.
   by apply subset_leq_card, subsetT.
 - move=> k IH HSk /=.
-  move: (IH (ltnW HSk)) => {IH}IH.
+  move: (IH (ltnW HSk)) => {}IH.
   rewrite (bigD1 (Ordinal HSk)) //=.
   rewrite (eq_bigl (fun i : 'I_#|A| => i < k) _); last first.
     move=> i /=.
@@ -1220,7 +1220,7 @@ Proof.
 case: (tuple_exist_perm_sort (@le_rank A) ta) => /= s Hta'.
 have H : sort (@le_rank _) ta =
   perm_tuple (s^-1) ta by rewrite {2}Hta' perm_tuple_comp mulVg perm_tuple_id.
-have {Hta'}Hta': ta = perm_tuple s (sort_tuple (@le_rank _) ta) by rewrite {1}Hta'.
+have {}Hta': ta = perm_tuple s (sort_tuple (@le_rank _) ta) by rewrite {1}Hta'.
 rewrite (card_shelled_tuples_perm V ta (s^-1)).
 rewrite Hta' perm_tuple_comp mulVg perm_tuple_id.
 apply card_shell_leq_exp_entropy => //.

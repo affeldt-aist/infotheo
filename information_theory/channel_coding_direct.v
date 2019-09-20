@@ -172,7 +172,7 @@ apply/idP/idP.
     rewrite ffunE.
     case: (pickP _) => [m1 Hm1 | Hm1].
     * f_equal.
-      have {Hm0}Hm0 : (prod_rV ((o_PI m m' g) m, tb) \in `JTS P W n epsilon) &&
+      have {}Hm0 : (prod_rV ((o_PI m m' g) m, tb) \in `JTS P W n epsilon) &&
         [forall m'0, (m'0 != m) ==>
            (prod_rV ((o_PI m m' g) m'0, tb) \notin `JTS P W n epsilon)].
         apply/andP; split.
@@ -818,7 +818,7 @@ move=> r_I epsilon Hepsilon.
 have [P HP] : exists P : fdist A, r < `I(P, W).
   case: Hc => H1 H2.
   apply NNPP => abs.
-  have {abs}abs : forall P : fdist A, `I(P, W) <= r.
+  have {}abs : forall P : fdist A, `I(P, W) <= r.
     move/not_ex_all_not in abs.
     move=> P; exact/Rnot_lt_le/abs.
   have Hcap : cap <= r by apply/H2 => P; exact/abs.

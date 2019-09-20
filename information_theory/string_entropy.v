@@ -15,8 +15,8 @@ Local Coercion INR : nat >-> R.
 
 Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
 
-Local Hint Resolve leRR.
-Local Hint Resolve leR0n.
+Local Hint Resolve leRR : core.
+Local Hint Resolve leR0n : core.
 
 Section seq_nat_fdist.
 

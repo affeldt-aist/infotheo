@@ -53,10 +53,6 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
   25. Section weak_law_of_large_numbers.
 *)
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
-
 Reserved Notation "{ 'fdist' T }" (at level 0, format "{ 'fdist'  T }").
 Reserved Notation "'`U' HC " (at level 10, HC at next level).
 Reserved Notation "P `^ n" (at level 5).
@@ -90,7 +86,13 @@ Reserved Notation "Z \= X '@+' Y" (at level 50).
 Reserved Notation "X @^-1 x" (at level 10).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
 
+Declare Scope proba_scope.
+
 Notation "X @^-1 x" := ([set h | X h == x]) : proba_scope.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
@@ -126,8 +128,8 @@ Canonical fdist_subType A := Eval hnf in [subType for @FDist.f A].
 Definition fdist_eqMixin A := [eqMixin of fdist A by <:].
 Canonical dist_eqType A := Eval hnf in EqType _ (fdist_eqMixin A).
 
-Hint Resolve FDist.ge0.
-Hint Resolve FDist.le1.
+Hint Resolve FDist.ge0 : core.
+Hint Resolve FDist.le1 : core.
 
 Definition fdist_of (A : finType) := fun phT : phant (Finite.sort A) => fdist A.
 
@@ -443,7 +445,7 @@ Proof.
 destruct P as [[pf pf0] pf1].
 have r01 : 0 <= 1 - pf (Set2.a card_A) <= 1.
   move: (FDist.le1 (FDist.mk pf1) (Set2.a card_A)) => /= H1.
-  have {pf1}pf1 : \sum_(a in A) pf a = 1 by rewrite -(eqP pf1); apply eq_bigr.
+  have {}pf1 : \sum_(a in A) pf a = 1 by rewrite -(eqP pf1); apply eq_bigr.
   move/forallP_leRP : pf0 => /(_ (Set2.a card_A)) => H0.
   split; first lra.
   suff : forall a, a <= 1 -> 0 <= a -> 1 - a <= 1 by apply.
@@ -2200,7 +2202,7 @@ have H2 : forall y, Pr (Bivar.snd P) (Y @^-1 y) = Pr P [set xy | Y xy.2 == y].
   by rewrite exchange_big; apply eq_bigr => b _; rewrite Bivar.sndE.
 split=> [H /= x y|/= H x y].
 - rewrite /inde_events.
-  move: (H x y) => {H}H.
+  move: (H x y) => {}H.
   rewrite -H1 -H2 -{}H; congr Pr; by apply/setP => /= ab; rewrite !inE.
 - rewrite /inde_events in H.
   rewrite (H1 x) (H2 y) -{}H; congr Pr; by apply/setP => /= ab; rewrite !inE.

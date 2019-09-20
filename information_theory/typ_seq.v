@@ -5,16 +5,17 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext logb Rbigop.
 Require Import proba entropy aep.
 
-Local Open Scope R_scope.
-
 (** * Typical Sequences *)
 
 Reserved Notation "'`TS'".
+
+Declare Scope typ_seq_scope.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Local Open Scope R_scope.
 Local Open Scope entropy_scope.
 Local Open Scope proba_scope.
 
@@ -124,7 +125,7 @@ have -> : Pr P `^ n.+1 (~: p) =
     - by rewrite -fdist_gt0 => /negP; rewrite negbK => ->.
     - rewrite /typ_seq negb_and => /orP[|] LHS.
       + case/boolP : (P `^ n.+1 i == 0) => /= H1; first by [].
-        have {H1}H1 : 0 < P `^ n.+1 i.
+        have {}H1 : 0 < P `^ n.+1 i.
           apply/ltRP; rewrite ltR_neqAle' eq_sym H1; exact/leRP.
         apply/andP; split; first exact/ltRP.
         move: LHS; rewrite -ltRNge' => /ltRP/(@Log_increasing 2 _ _ Rlt_1_2 H1).
@@ -148,14 +149,14 @@ have -> : Pr P `^ n.+1 (~: p) =
       move/(@Log_increasing_le 2 _ _ Rlt_1_2 (exp2_gt0 _)) : H2.
       rewrite /exp2 ExpK // mulRC mulRN -mulNR -leR_pdivl_mulr ?oppRD; last exact/ltR0n.
       move => H2.
-      have /(_ _ _ _ H2) {H2}H2 : forall a b c, - a + - b <= c -> - c - a <= b.
+      have /(_ _ _ _ H2) {}H2 : forall a b c, - a + - b <= c -> - c - a <= b.
         by move=> *; lra.
       move/ltRP in H1.
       move/(@Log_increasing_le 2 _ _ Rlt_1_2 H1) : H3.
       rewrite /exp2 ExpK //.
       rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltR0n.
       rewrite oppRD oppRK div1R mulRC mulRN => H3.
-      have /(_ _ _ _ H3) {H3}H3 : forall a b c, a <= - c + b -> - b <= - a - c.
+      have /(_ _ _ _ H3) {}H3 : forall a b c, a <= - c + b -> - b <= - a - c.
         by move=> *; lra.
       rewrite leR_Rabsl; apply/andP; split; exact/leRP.
   rewrite Pr_union_disj // disjoints_subset; apply/subsetP => /= i.

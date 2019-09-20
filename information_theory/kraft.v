@@ -27,7 +27,7 @@ Proof. move/card0_eq => T0; by case=> // h; move: (T0 h); rewrite !inE. Qed.
 
 Lemma sorted_leq_last s : sorted leq s -> forall i, i \in s -> i <= last 0 s.
 Proof.
-move=> H /= i; case/(nthP O) => {i}i Hi <-; rewrite -nth_last.
+move=> H /= i; case/(nthP O) => {}i Hi <-; rewrite -nth_last.
 case/boolP : (i == (size s).-1) => [/eqP <- //|si].
 apply (sorted_lt_nth leq_trans) => //.
 by rewrite inE prednK // (leq_trans _ Hi).
@@ -74,7 +74,7 @@ case/prefixP => t /eqP <-{s} /prefixP[t'].
 wlog : t t' a b / size a <= size b.
   move=> H.
   case/boolP : (size a <= size b) => [? K|]; first exact: (H t t').
-  rewrite leqNgt negbK => /ltnW /(H t' t) {H} H /eqP/esym/eqP; tauto.
+  rewrite leqNgt negbK => /ltnW /(H t' t) {}H /eqP/esym/eqP; tauto.
 move=> ab H; left; apply/prefixP; exists (take (size b - size a) t).
 move/eqP : H => /(congr1 (take (size b))).
 by rewrite take_cat ltnn subnn take0 cats0 take_cat ltnNge ab /= => <-.
@@ -176,7 +176,7 @@ Qed.
 
 Lemma size_ary_of_nat k : k != 0 -> forall n, n < t ^ k -> size (ary_of_nat n) <= k.
 Proof.
-elim: k.+1 {-2}k (ltnSn k) => // {k}k IH [_ //|n].
+elim: k.+1 {-2}k (ltnSn k) => // {}k IH [_ //|n].
 rewrite ltnS => nk _ m mt.
 rewrite ary_of_nat_unfold; case: ifPn => //.
 rewrite -leqNgt => tm; rewrite size_rcons ltnS IH //.
@@ -412,7 +412,7 @@ wlog : i j i0 j0 ij / i < j.
   move: ij; rewrite neq_ltn => /orP[|] ij.
   - apply Hwlog => //; by move/negbT : (ltn_eqF ij).
   - apply/esym; apply Hwlog => //; by move/negbT : (ltn_eqF ij).
-move=> {ij}ij /esym.
+move=> {}ij /esym.
 rewrite /w (bigID (fun i1 : 'I__ => i1 < i)) /=.
 set a := (X in X + _ = _ -> _). set b := (X in _ = X -> _).
 set c := (X in _ + X = _ -> _).

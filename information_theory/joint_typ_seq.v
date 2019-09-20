@@ -8,6 +8,8 @@ Require Import proba entropy aep typ_seq channel.
 
 Reserved Notation "'`JTS'".
 
+Declare Scope jtyp_seq_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.

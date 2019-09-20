@@ -105,6 +105,8 @@ Reserved Notation "\min^ b '_(' a 'in' A ) F" (at level 41,
   F at level 41, a, A at level 50,
    format "'[' \min^ b '_(' a  'in'  A ) '/  '  F ']'").
 
+Declare Scope min_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -417,7 +419,7 @@ case/orP : (orbN [forall i, f i != 0%R]); last first.
 - move=> /forallP Hf.
   have Hprodf : 0 < \prod_(i : A) f i.
     apply rprodr_gt0 => a.
-    move: (Hf a) (Hfg a) => {Hf}Hf {Hfg}[Hf2 _].
+    move: (Hf a) (Hfg a) => {}Hf {Hfg}[Hf2 _].
     apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
   apply (@leR_pmul2r (1 * / \prod_(i : A) f i) _ _).
     apply divR_gt0 => //; lra.
@@ -498,7 +500,7 @@ rewrite big_ord_recl /= LogM; last 2 first.
 set tl := \row_(i < n.+1) ta ``_ (lift ord0 i).
 have : forall i0 : 'I_n.+1, 0 < f tl ``_ i0.
   move=> i; rewrite mxE; exact/Hi.
-move/IH => {IH}IH.
+move/IH => {}IH.
 have -> : (\prod_(i < n.+1) f ta ``_ (lift ord0 i) = \prod_(i < n.+1) f tl ``_ i)%R.
   apply eq_bigr => i _; by rewrite mxE.
 rewrite oppRD [X in _ = X]big_ord_recl IH.

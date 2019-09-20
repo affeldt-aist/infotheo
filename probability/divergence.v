@@ -9,6 +9,8 @@ Require Import ssrR Reals_ext ln_facts logb Rbigop proba.
 Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level,
   format "'D(' P  '||'  Q ')'").
 
+Declare Scope divergence_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.

@@ -53,7 +53,7 @@ have : (\sum_(m0 : 'I_m) wH (row m0 H) = rho * m)%nat.
     apply eq_bigr => i _; by apply Hrho.
   by rewrite big_const iter_addn addn0 card_ord.
 rewrite sum_wH_row => Htmp.
-have {Htmp}Htmp : (lam * n = rho * m)%nat.
+have {}Htmp : (lam * n = rho * m)%nat.
   rewrite -Htmp.
   transitivity (\sum_(n0 < n) lam)%nat.
     by rewrite big_const iter_addn addn0 card_ord.

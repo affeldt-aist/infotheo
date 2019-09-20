@@ -7,6 +7,8 @@ Require Import ssrR Reals_ext Ranalysis_ext logb Rbigop proba ln_facts.
 
 Reserved Notation "'d(' P ',' Q ')'".
 
+Declare Scope variation_distance_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.

@@ -17,6 +17,7 @@ Ryosuke Obi (Chiba U. (M2))
 (with Manabu Hagiwara and Mitsuharu Yamamoto)
 
 Acknowledgments:
+- commit 64814f529c1819684c4b8060d0779c24c6339041 was originally by Karl Palmskog
 - The formalization of modern coding theory is a collaboration with
 K. Kasai, S. Kuzuoka, R. Obi
 - Y. Takahashi collaborated to the formalization of linear error-correcting codes

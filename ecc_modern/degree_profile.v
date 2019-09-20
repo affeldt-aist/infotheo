@@ -930,7 +930,7 @@ wlog: A B HAB HA HB / A == x.
     apply => //.
     by rewrite eq_sym.
   by move=> _; apply HC.
-move=> /eqP {HA}HA.
+move=> /eqP {}HA.
 move/orP: HB => [/eqP|] HB.
   by rewrite HA HB eqxx in HAB.
 rewrite HA disjoints_subset.
@@ -1830,7 +1830,7 @@ case: (lastP p) Hp Hl => /=.
   move=> _ /eqP [] -> _.
   exists [:: (inr ep, false)]; exists true.
   by rewrite eqxx /= sp_in_step_edom step_edges_sp_ep eqxx.
-move=> {p}p x' Hp Hl.
+move=> {}p x' Hp Hl.
 rewrite last_rcons in Hl.
 elimtype False; move: Hp.
 rewrite (eqP Hl) rcons_path /graph_rel => /andP [_] /=.
@@ -2092,7 +2092,7 @@ Lemma card_nodes2 k p :
   else 'C(#|port|.-1 - #|known_coports c|, k).
 Proof.
 move => Hp.
-have {Hp}Hp: p \notin (graph_dom (conodes c)).
+have {}Hp: p \notin (graph_dom (conodes c)).
   move: Hp.
   by rewrite /free_coports !inE.
 case: ifPn => Hp'.

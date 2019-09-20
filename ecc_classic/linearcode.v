@@ -504,7 +504,7 @@ Lemma min_dist_double v w d m : f v = Some m ->
 Proof.
 move=> vm wC H.
 rewrite (leq_trans (dH_tri_ine v _ _)) // -addnn leq_add //.
-have {wC}wC : w \in [set cw in C] by rewrite inE.
+have {}wC : w \in [set cw in C] by rewrite inE.
 by rewrite dH_sym (leq_trans (MD_dec_f vm wC)).
 Qed.
 
@@ -520,7 +520,7 @@ have [m0 Hm0] : exists m0, f y = Some m0.
 case/boolP : (odd (min_dist C_not_trivial)) => [odd_d | even_d].
 - rewrite (mdd_oddE odd_d) in enc_m_v.
   apply/eqP/negPn/negP => abs.
-  have {abs}abs : m0 != x by apply: contra abs; rewrite Hm0 => /eqP ->.
+  have {}abs : m0 != x by apply: contra abs; rewrite Hm0 => /eqP ->.
   have : min_dist C_not_trivial <= (min_dist C_not_trivial)./2.*2.
     move: abs.
     rewrite eq_sym => /(min_dist_prop C_not_trivial)/leq_trans; apply => //.
@@ -530,7 +530,7 @@ case/boolP : (odd (min_dist C_not_trivial)) => [odd_d | even_d].
   by rewrite -{1}(odd_double_half (min_dist C_not_trivial)) odd_d ltnNge leqnn.
 - rewrite (mdd_evenE even_d) in enc_m_v.
   apply/eqP/negPn/negP => abs.
-  have {abs}abs : m0 != x by apply: contra abs; rewrite Hm0 => /eqP ->.
+  have {}abs : m0 != x by apply: contra abs; rewrite Hm0 => /eqP ->.
   have : (min_dist C_not_trivial)./2 <= (min_dist C_not_trivial)./2 - 1.
     move: (odd_double_half (min_dist C_not_trivial)); rewrite -leq_double (negbTE even_d) /= add0n => ->.
     move: abs.

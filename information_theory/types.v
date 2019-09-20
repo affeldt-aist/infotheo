@@ -12,6 +12,8 @@ Reserved Notation "'P_' n '(' A ')'" (at level 9, n, A at next level).
 Reserved Notation "'T_{' P '}'" (at level 9).
 Reserved Notation "P '.-typed_code' c" (at level 50, c at next level).
 
+Declare Scope types_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -428,7 +430,7 @@ rewrite (_ : \prod_(a : A) P a ^ (type.f P) a =
              \prod_(a : A) exp2 (P a * log (P a) * INR n)); last first.
   apply eq_bigr => a _.
   case/boolP : (0 == P a) => H; last first.
-    have {H}H : 0 < P a.
+    have {}H : 0 < P a.
       have := FDist.ge0 P a.
       case/Rle_lt_or_eq_dec => // abs.
       by rewrite abs eqxx in H.
@@ -607,7 +609,7 @@ rewrite /= add0R big_imset.
   rewrite in_set.
   case: set0Pn => [/existsP //| ?]; exact/existsP.
 move=> P Q; rewrite 2!in_set => HP HQ HPQ /=.
-move: (enc_pre_img_injective HP HPQ) => {HP HQ HPQ}HPQ.
+move: (enc_pre_img_injective HP HPQ) => {HP HQ} {}HPQ.
 case: P HPQ => /= Pd Pf HP HPQ.
 case: Q HPQ => /= Qd Qf HQ HPQ.
 apply/type_eqP => /=.

@@ -25,6 +25,8 @@ Require Import entropy cproba chap2.
   10. Section capacity_definition.
 *)
 
+Declare Scope channel_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.

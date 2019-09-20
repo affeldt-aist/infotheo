@@ -888,7 +888,7 @@ case/bigcupP => m'.
 rewrite 3!inE => /andP[m'm n'm'].
 rewrite /subgraph !inE n'm' /= => m'v.
 move/negP : H1; apply.
-have {m'v}m'v : connect (except g n) m' v.
+have {}m'v : connect (except g n) m' v.
   case/connectP : m'v => l Hpath Hlast.
   case/shortenP : Hpath Hlast => l' Hl' Hun l'l Hlast.
   apply/connectP; exists l' => //.

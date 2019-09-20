@@ -20,7 +20,7 @@ Variable D : {convex_set R}.
 Hypothesis convex_f : convex_function_in D f.
 Variables A : finType.
 
-Local Hint Resolve leRR.
+Local Hint Resolve leRR : core.
 
 Lemma jensen_dist (r : A -> R) (X : fdist A) :
   (forall a, r a \in D) ->
@@ -32,7 +32,7 @@ rewrite [in X in _ <= X]rsum_fdist_supp [in X in X <= _]rsum_fdist_supp /=.
 apply: (@fdist_ind A (fun X =>
    f (\sum_(a in fdist_supp X) X a * r a) <=
    \sum_(a in fdist_supp X) X a * f (r a) /\ _)) => //.
-move=> n IH {X}X b cardA Hb.
+move=> n IH {}X b cardA Hb.
 case/boolP : (X b == 1) => [/eqP|]Xb1.
   move/eqP : (Xb1); rewrite FDist1.dE1 => /eqP ->.
   by rewrite FDist1.supp !big_set1 FDist1.dE !eqxx /= !mul1R.

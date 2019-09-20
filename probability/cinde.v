@@ -832,7 +832,7 @@ Qed.
 
 Lemma cinde_drv_3C : X _|_ Y | [% Z, W] -> X _|_ Y | [% W, Z].
 Proof.
-move=> H; move=> a b -[d c]; move: (H a b (c, d)) => {H}H.
+move=> H; move=> a b -[d c]; move: (H a b (c, d)) => {}H.
 by rewrite RV_Pr_rC H RV_Pr_rC; congr (_ * _); rewrite RV_Pr_rC.
 Qed.
 
@@ -893,7 +893,7 @@ transitivity (\Pr[ X = a | Z = c] * \Pr[ Y = b | [% Z, W] = (c, d)]).
   - by rewrite (cindeP _ H).
 case/boolP : (\Pr[ [% Z, W] = (c, d) ] == 0) => [/eqP|] ?.
 - by rewrite [X in _ * X = _ * X]RV_cPrE RV_Pr_domin_snd ?(div0R,mulR0).
-- have {H}H : X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
+- have {}H : X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
   by rewrite [in X in _ = X * _]RV_Pr_rC (cindeP _ H) // RV_Pr_C.
 Qed.
 
@@ -997,7 +997,7 @@ have <- : \sum_(d <- fin_img W)
       by rewrite RV_Pr_C RV_Pr_A RV_Pr_AC => ->.
     - move: (P0 b c d); apply: contra => /eqP/(RV_Pr_domin_snd [% Y, W] (b, d)).
       by rewrite RV_Pr_AC => ->.
-  have {H2}H2 : forall d, \Pr[ X = a | [% Y, Z] = (b, c)] =
+  have {}H2 : forall d, \Pr[ X = a | [% Y, Z] = (b, c)] =
                      \Pr[ X = a | [% W, Z, Y] = (d, c, b)].
     move=> d; move: {H2}(H2 a d (c, b)).
     rewrite RV_product_rule.
@@ -1006,7 +1006,7 @@ have <- : \sum_(d <- fin_img W)
       by move: (P0 b c d); apply: contra => /eqP/(RV_Pr_domin_fst W d) ->.
     move/eqR_mul2r => /(_ H0){H0}/esym.
     by rewrite RV_Pr_rC RV_Pr_rA.
-  have {H1}H1 : forall d, \Pr[ X = a | [% W, Z] = (d, c)] =
+  have {}H1 : forall d, \Pr[ X = a | [% W, Z] = (d, c)] =
                      \Pr[ X = a | [% Y, W, Z] = (b, d, c)].
     move=> d; move: {H1}(H1 a b (c, d)).
     rewrite RV_product_rule.

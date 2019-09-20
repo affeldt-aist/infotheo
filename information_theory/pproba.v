@@ -58,7 +58,7 @@ apply/idP/idP => [|H].
     apply: contra H => /eqP H; apply/eqP.
     rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
   apply: contraNT.
-  rewrite /Receivable.def negb_exists => /forallP /= {H}H.
+  rewrite /Receivable.def negb_exists => /forallP /= {}H.
   apply/eqP/big1 => x _.
   move: (H x); rewrite negb_and 2!negbK => /orP[|] /eqP ->;
     by rewrite ?(mul0R,mulR0).
@@ -83,7 +83,7 @@ apply/idP/idP => [|/eqP].
   rewrite negb_and !negbK => /orP[|/eqP //].
   by rewrite -(negbK (_ == _)) UniformSupport.neq0 iC.
 - have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%R by [].
-  move/prsumr_eq0P => H /H {H} H.
+  move/prsumr_eq0P => H /H {}H.
   rewrite /Receivable.def; apply/negP.
   case/existsP => z /andP[].
   rewrite UniformSupport.neq0 => /H ->; by rewrite eqxx.

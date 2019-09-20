@@ -426,7 +426,7 @@ have : exists cy, (2 < size cy)%nat /\ ucycleb (tanner_rel H) cy.
     rewrite cons_uniq H2' andbC /= inE /= mem_cat /= negb_or.
     apply/andP; split => //.
     apply/negP => abs'.
-    have {abs'}abs' : inr n0 \in s' by rewrite s1s2 mem_cat abs'.
+    have {}abs' : inr n0 \in s' by rewrite s1s2 mem_cat abs'.
     case/(nthP (inl m0)) : abs' => i Hi abs'.
     move/pathP : H1'.
     move/( _ (inl m0) _ Hi).
@@ -508,7 +508,7 @@ have : exists cy, (2 < size cy)%nat /\ ucycleb (tanner_rel H) cy.
     rewrite cons_uniq H2' andbC /= inE /= mem_cat /= negb_or.
     apply/andP; split => //.
     apply/negP => abs'.
-    have {abs'}abs' : inr n0 \in s' by rewrite s1s2 mem_cat abs'.
+    have {}abs' : inr n0 \in s' by rewrite s1s2 mem_cat abs'.
     case/(nthP (inl m0)) : abs' => i Hi abs'.
     move/pathP : H1'.
     move/( _ (inl m0) _ Hi).
@@ -560,11 +560,11 @@ have : 'V(m0, n0) :\ n0 \in Vgraph_part_vnode n0.
   case: imsetP => // abs'.
   exfalso.
   apply abs'; exists m0 => //; by rewrite FnextE.
-move/abs => {abs}abs.
+move/abs => {}abs.
 have : 'V(m1, n0) :\ n0 \in Vgraph_part_vnode n0.
    case: imsetP => // abs'; exfalso.
    apply abs'; exists m1 => //; by rewrite FnextE.
-move/abs => {abs}abs.
+move/abs => {}abs.
 move: (abs Hdiff) => {abs}abs'.
 move/disjoint_setI0 : abs' => abs'.
 move: abs'; apply/eqP.
@@ -723,7 +723,7 @@ Proof.
 move=> Hset0.
 move=> abs.
 apply/eqP/negPn/negP => n1n2.
-have {Hset0}Hset0 : \bigcup_(m1 in 'F n1 :\ m0) 'F(m1, n1) != set0.
+have {}Hset0 : \bigcup_(m1 in 'F n1 :\ m0) 'F(m1, n1) != set0.
   apply: contra Hset0; exact: bigcup_succ_set0.
 case/set0Pn : Hset0 => /= m1 Habs.
 move: (Habs).
@@ -1021,7 +1021,7 @@ Lemma trivIset_Vgraph_part_Vgraph m0 n0 : n0 \in 'V m0 ->
   trivIset (Vgraph_part_Vgraph m0 n0).
 Proof.
 move=> m0n0.
-have {m0n0}m0n0 : tanner_rel H (inl m0) (inr n0) by rewrite VnextE sym_tanner_rel in m0n0.
+have {}m0n0 : tanner_rel H (inl m0) (inr n0) by rewrite VnextE sym_tanner_rel in m0n0.
 move: (@trivIset_subgraph_succ2_D1 _ _ (sym_tanner_rel H)
   Hacyclic (simple_tanner_rel _) (inl m0) (inr n0) m0n0) => K.
 apply: (@trivIsetS_f _ _ inr) K => /= z.

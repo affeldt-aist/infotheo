@@ -259,7 +259,7 @@ Proof.
 move=> Hn1; rewrite /comb_V (@comb_in _ _ _ _ f _ _ m0) //.
 case: pickP => [m1 Hm1 | ].
   case/boolP : (m0 == m1) => [/eqP -> // | m0m1].
-  have {Hm1}Hm1 : n1 \in 'V(m1, n0).
+  have {}Hm1 : n1 \in 'V(m1, n0).
     move: Hm1; rewrite in_setD1; by case/andP.
   move: Hn1; rewrite in_setD1; case/andP => n1n0 Hn1.
   move: (disjoint_Vgraph Hacyclic n1n0 m0m1 Hn1); by rewrite Hm1.

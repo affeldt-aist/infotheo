@@ -953,7 +953,7 @@ case: ifP => Hi1 /=.
 case: ifP => Hi2 /=.
   rewrite -(eqP Hi2) !in_cons eqxx /=.
   rewrite !orbF => Hi1'.
-  case: ifP => {Hi1}Hi1 //.
+  case: ifP => {}Hi1 //.
   by rewrite Hi1 orbT in Hi1'.
 rewrite size_flatten.
 move=> Hch.
@@ -1044,7 +1044,7 @@ elim: ch0 => [//| a l IHc] /= in IH Hun *.
 rewrite size_cat.
 rewrite cat_uniq in Hun.
 move /andP: Hun => [Hni] /andP [Huna] /andP [Hal Hunl].
-have {IHc}IHc: size (flatten [seq msg i1 i2 None i | i <- l]) =
+have {}IHc: size (flatten [seq msg i1 i2 None i | i <- l]) =
           has (fun n0 => graph n0 i1 i2) l.
   apply IHc.
     move=> t' Ht'; apply IH.
@@ -1238,7 +1238,7 @@ rewrite /image_mem /enum_mem.
 rewrite !filter_index_enum.
 set f := 'V m0 :\ n0.
 rewrite {2 3 5 6}(set_mem f).
-have {Hn0}Hn0 : n0 \notin enum f by rewrite mem_enum setD11.
+have {}Hn0 : n0 \notin enum f by rewrite mem_enum setD11.
 have Hl : {subset enum f <= f} by move=> ?; rewrite mem_enum.
 elim: (enum (mem _)) (enum_uniq (mem f)) => [|a l IH] /= Hun in Hn0 Hl *.
   rewrite /checksubsum.
@@ -1557,7 +1557,7 @@ Lemma cycle_in_subtree a b s h k i :
   b = id_of_kind k i.
 Proof.
 move=> t1 Hun Hgr Hb.
-have {Hb}Hb: b \in labels t1.
+have {}Hb : b \in labels t1.
   rewrite [X in _ \in X ++ _]/= mem_cat in Hb.
   move /orP: Hb => [] Hb //.
   rewrite mem_seq1 in Hb.

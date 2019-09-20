@@ -4,6 +4,8 @@ From mathcomp Require Import boolp classical_sets.
 From mathcomp Require Import finmap.
 Require Import Reals_ext classical_sets_ext Rbigop ssrR proba fsdist convex_choice.
 
+Declare Scope latt_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -294,7 +296,7 @@ Defined.
 Lemma repr_in_neset A (X : neset A) : (X : set A) (neset_repr X).
 Proof. by case: X => X [] X0 /=; case: cid. Qed.
 Global Opaque neset_repr.
-Local Hint Resolve repr_in_neset.
+Local Hint Resolve repr_in_neset : core.
 
 Lemma image_const A B (X : neset A) (b : B) :
   (fun _ => b) @` X = [set b].
@@ -324,7 +326,7 @@ Canonical neset_hull (T : convType) (F : neset T) :=
   NESet.Pack (NESet.Class (neset_hull_neq0 F)).
 
 End neset_lemmas.
-Hint Resolve repr_in_neset.
+Local Hint Resolve repr_in_neset : core.
 Arguments image_neset : simpl never.
 
 Section convex_neset_lemmas.

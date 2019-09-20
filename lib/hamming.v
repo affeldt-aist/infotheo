@@ -671,7 +671,7 @@ elim.
     rewrite ltnS in Hj.
     rewrite Hsz.
     move/(_ Hj).
-    move/K => /= {K}K.
+    move/K => /= {}K.
     apply Bool.not_true_is_false.
     by apply/eqP.
   + rewrite add0n.

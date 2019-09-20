@@ -195,7 +195,7 @@ move=> t1 t2; rewrite /f.
 case/boolP : (t1 == t2) ; first by move /eqP.
 move=> mainCase.
 case: ifP=>?; case: ifP=>? //; case=> H; last by apply/tuple_of_row_inj/inj_enc_not_typ/val_inj.
--  have {H}H : seq.index t1 (enum (`TS P n epsilon)) =
+-  have {}H : seq.index t1 (enum (`TS P n epsilon)) =
               seq.index t2 (enum (`TS P n epsilon))
      by apply (@bitseq_of_nat_inj (Z.abs_nat L_typ)) => //;  apply: (leq_trans _ card_TS_Lt);
      apply: seq_index_enum_card => //;  apply: enum_uniq.

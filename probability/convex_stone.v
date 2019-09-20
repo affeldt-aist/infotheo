@@ -277,7 +277,7 @@ rewrite /bump leq0n add1n inordK; last first.
   by rewrite permK => ->.
 rewrite prednK // ?lt0n; last first.
   apply: contra L1 => /eqP L1.
-  have {L1}L1 : s (lift ord0 (inord i.-1)) = ord0 by exact/val_inj.
+  have {}L1 : s (lift ord0 (inord i.-1)) = ord0 by exact/val_inj.
   rewrite -L1 permK.
   exact/eqP.
 by rewrite -Hi.
@@ -1087,7 +1087,7 @@ apply (@Sn.suff_generators _ (fun s => forall m : nat,
     rewrite FDist1.dE1 => /eqP ->.
     by rewrite ConvnFDist1 PermFDist.d1 ConvnFDist1 /= permKV.
   by apply Convn_perm_tperm with m.
-- move=> {s}s H.
+- move=> {}s H.
   move=> m IH nm d g.
   case/boolP : (d ord0 == 1%R :> R) => [|dmax1].
     rewrite FDist1.dE1 => /eqP ->.

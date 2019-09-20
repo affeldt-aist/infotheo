@@ -26,6 +26,8 @@ Require Import vandermonde dft euclid grs f2.
 Reserved Notation "'\BCHsynp_(' a , e , t )" (at level 3).
 Reserved Notation "'\BCHomega_(' a , e )" (at level 3).
 
+Declare Scope bch_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -401,7 +403,7 @@ have Hf : \sum_(i < (wH x).-1.+1)
 set r' := (wH x).-1.
 have Hr' : r'.+1 < t.*2.
   by rewrite /r' prednK // ?lt0n ?wH_eq0 // (leq_trans abs) // -addnn -{1}(add0n t) ltn_add2r.
-have {Hf}Hf : \sum_(i < r'.+1) GF2_of_F2 x ``_ (f i) *:
+have {}Hf : \sum_(i < r'.+1) GF2_of_F2 x ``_ (f i) *:
     \col_(j < r'.+1) (BCH.PCM_alt a t (widen_ord (ltnW Hr') j) (f i)) = 0.
   apply/colP => j.
   rewrite mxE summxE.

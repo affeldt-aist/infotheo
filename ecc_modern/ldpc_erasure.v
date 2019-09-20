@@ -18,6 +18,9 @@ Require Import ssr_ext ssralg_ext num_occ f2 ssrR hamming tanner linearcode.
 - Section SumProdBEC_algo.
 *)
 
+Declare Scope letter_scope.
+Declare Scope bec_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.

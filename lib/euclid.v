@@ -222,7 +222,7 @@ have {abs} : forall k : nat, k < (size r0).+1 -> r k != 0.
 move/size_r => {size_r}.
 rewrite subnn leqn0 leqNgt => /eqP size_r0.
 apply/negP => abs.
-have {abs}abs : (size (r 0)).+1 < i.+1 by [].
+have {}abs : (size (r 0)).+1 < i.+1 by [].
 move: (Pi (Ordinal abs)).
 by rewrite /= size_r0 leqn0 -(negbK (_ == _)) -lt0n.
 Qed.
@@ -252,7 +252,7 @@ rewrite leqNgt; apply/negP => abs.
 suff /ij : euclid_cont i.+1 by rewrite ltnn.
 apply/forallP => /= x.
 case/boolP : (x == ord_max) => [/eqP->//|Hx].
-have {Hx}Hx : x < i.+1 by rewrite ltn_neqAle Hx /= -ltnS.
+have {}Hx : x < i.+1 by rewrite ltn_neqAle Hx /= -ltnS.
 by move/forallP : Hi => /(_ (Ordinal Hx)).
 Qed.
 
@@ -573,7 +573,7 @@ transitivity ((\sum_(k < l.+1) (size (q k.+1)).-1 + (size (q l.+2)).-1 + (size (
 rewrite -addnA.
 congr addn.
 have H1 : 0 < size (q l.+2) by rewrite (ltn_trans _ (ltn_size_q tr0 r1_ltn_r0 lEu)).
-  have {lEu}lEu : is_true (0 < l.+1 < stop) by rewrite lEu.
+  have {}lEu : is_true (0 < l.+1 < stop) by rewrite lEu.
 rewrite Euclid.rE size_addl; last first.
   rewrite size_mul; last 2 first.
     by rewrite -size_poly_eq0 -lt0n.
@@ -719,7 +719,7 @@ move=> key_eqn Hmu Hnu Hsize j'.
 move: (euclid_lemma Hsize) => [H2 Hj].
 set j := stop _ _ _ in H2, Hj.
 move: (Euclid.ruv r0 r1 j) => E1.
-have {key_eqn}key_eqn : R = (- U) * r0 + V * r1 by rewrite key_eqn addrC mulNr addrK.
+have {}key_eqn : R = (- U) * r0 + V * r1 by rewrite key_eqn addrC mulNr addrK.
 move/(congr1 (fun x => V * x)) : (E1); rewrite mulrDr !mulrA => E1'.
 move/(congr1 (fun x => v j * x)) : (key_eqn); rewrite mulrDr !mulrA => key_eqn'.
 have step1 : r j * V = R * v j.

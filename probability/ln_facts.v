@@ -282,7 +282,7 @@ case/boolP : (x == 0) => [/eqP ->|x0].
 - rewrite xlnx_0; apply xlnx_neg.
   exact: (conj (@leR_ltR_trans x _ _ _ _) (leR_ltR_trans y2 ltRinve1)).
 - rewrite -[X in _ < X]oppRK ltR_oppr.
-  have {x0}x0 : 0 < x by apply/ltRP; rewrite lt0R x0; exact/leRP.
+  have {}x0 : 0 < x by apply/ltRP; rewrite lt0R x0; exact/leRP.
   have {x1 y1}y0 : 0 < y by exact: (@ltR_trans x).
   exact: (derive_increasing_ad_hoc (exp_pos _) xlnx_sdecreasing_0_Rinv_e_helper).
 Qed.

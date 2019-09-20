@@ -391,7 +391,7 @@ unlock.
 move Herk : (Gaussian_elimination A) => LUr /= Htmp.
 move: (mulmx_ebase A) => Heq.
 rewrite -Heq !mulmxA in Hab.
-have {Hab}Hab :
+have {}Hab :
   a *m col_ebase A *m pid_mx (\rank A) *m row_ebase A *m (invmx (row_ebase A)) =
   b *m col_ebase A *m pid_mx (\rank A) *m row_ebase A *m (invmx (row_ebase A)).
   by rewrite Hab.
@@ -400,7 +400,7 @@ rewrite mulmx1 !mulmxA /mxrank /= in Hab.
 unlock in Hab.
 rewrite !Htmp in Hab.
 move: {Heq}(@pid_mx_inj _ _ _ (a *m col_ebase A) (b *m col_ebase A) Hmn Hab) => Heq.
-have {Hab}Hab : a *m col_ebase A *m (invmx (col_ebase A)) =
+have {}Hab : a *m col_ebase A *m (invmx (col_ebase A)) =
   b *m col_ebase A *m (invmx (col_ebase A)) by rewrite Heq.
 rewrite -!mulmxA mulmxV in Hab; last by apply: col_ebase_unit.
 by rewrite !mulmx1 in Hab.

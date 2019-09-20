@@ -20,6 +20,8 @@ Reserved Notation "'`[' P ']_' n" (at level 4).
 Reserved Notation "''pgen[' C ]" (at level 8, format "''pgen[' C ]").
 Reserved Notation "''cgen[' C ]" (at level 8, format "''cgen[' C ]").
 
+Declare Scope cyclic_code_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -352,7 +354,7 @@ Lemma shift_codeword (c : {poly F}) (cn : size c <= n) : poly_rV c \in C ->
 Proof.
 move=> gC; elim=> [| k ih] /=.
 - by rewrite (_ : 'X^0 = 1) // mul1r modp_small // (leq_ltn_trans cn) // size_Xn_sub_1.
-- have {ih}ih : poly_rV `[ 'X^k * c ]_ n \in [set cs in C] by rewrite inE.
+- have {}ih : poly_rV `[ 'X^k * c ]_ n \in [set cs in C] by rewrite inE.
   move: (Ccode.P ih); rewrite rcs_rcs_poly poly_rV_K; last first.
     rewrite -ltnS -(_ : size (('X^n : {poly F}) - 1) = n.+1); last by rewrite size_Xn_sub_1.
     by apply/ltn_modpN0/monic_neq0/monic_Xn_sub_1.
@@ -501,7 +503,7 @@ apply/size_lowest/and3P; split.
   rewrite inE => /eqP ->.
   by rewrite poly_rV_K.
 - apply/eqP => abs.
-  have {H}H : forall p, p \in [set cw in C] -> p = 0.
+  have {}H : forall p, p \in [set cw in C] -> p = 0.
     move=> p Hp.
     move/forallP : H => /(_ p).
     rewrite Hp => /eqP/esym.
@@ -538,7 +540,7 @@ rewrite is_cgenE; apply/and3P => [:H1]; split.
 - abstract: H1.
   by move/forallP : Hg => /(_ g); rewrite inE => /eqP ->.
 - apply/eqP => abs.
-  have {Hg}Hg : forall p, p \in [set cw in C] -> p = 0.
+  have {}Hg : forall p, p \in [set cw in C] -> p = 0.
     move=> p Hp.
     move/forallP : Hg => /(_ p); rewrite Hp => /eqP/esym.
     by rewrite abs linear0 dvd0p rVpoly0 => /eqP.

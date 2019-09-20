@@ -18,6 +18,8 @@ Reserved Notation "\sum_ ( x '=' d [~ s ] '|' P ) F" (at level 41,
   F at level 41, x, s, d at level 50,
     format "'[' \sum_ ( x  '='  d  [~  s ]  '|'  P ) '/  '  F ']'").
 
+Declare Scope summary_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.

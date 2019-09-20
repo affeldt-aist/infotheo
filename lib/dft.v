@@ -19,6 +19,8 @@ Require Import ssr_ext ssralg_ext hamming.
 
 Reserved Notation "v ^`_( f , i )" (at level 9).
 
+Declare Scope dft_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -299,7 +301,7 @@ have abs : n.-primitive_root a^-1.
   by rewrite invr1 exprVn.
 have : 0 < j - i < n.
   by rewrite subn_gt0 ij /= (leq_ltn_trans _ (ltn_ord j)) // leq_subr.
-move/(primitive_is_principal abs) => {abs}abs.
+move/(primitive_is_principal abs) => {}abs.
 apply/eqP.
 rewrite -[in RHS]abs; apply/eq_bigr => k _.
 by rewrite exprVn mulnC.

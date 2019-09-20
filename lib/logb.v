@@ -18,7 +18,7 @@ Lemma ln_pos x : 1 < x -> 0 < ln x.
 Proof. move=> x0; rewrite -ln_1; exact: ln_increasing. Qed.
 
 Lemma ln2_gt0 : 0 < ln 2. Proof. apply ln_pos; lra. Qed.
-Local Hint Resolve ln2_gt0.
+Local Hint Resolve ln2_gt0 : core.
 
 Lemma ln2_neq0 : ln 2 != 0. Proof. exact/eqP/gtR_eqF. Qed.
 
@@ -123,7 +123,7 @@ Proof. move=> xpos; by apply Rge_le, Rminus_ge, Rle_ge, exp_dev_ge0. Qed.
 End exp_lower_bound.
 
 End addtional_lemmas_about_ln_exp.
-Hint Resolve ln2_gt0.
+Hint Resolve ln2_gt0 : core.
 
 (** log_n x *)
 
@@ -259,8 +259,8 @@ Qed.
 
 Lemma Exp_gt0 n x : 0 < Exp n x. Proof. rewrite /Exp; exact: exp_pos. Qed.
 Lemma Exp_ge0 n x : 0 <= Exp n x. Proof. exact/ltRW/Exp_gt0. Qed.
-Hint Resolve Exp_gt0.
-Hint Resolve Exp_ge0.
+Hint Resolve Exp_gt0 : core.
+Hint Resolve Exp_ge0 : core.
 
 Lemma Exp_0 n : Exp n 0 = 1.
 Proof. by rewrite /Exp mul0R exp_0. Qed.
@@ -302,11 +302,11 @@ Definition exp2 (x : R) := Exp 2 x.
 
 Lemma exp2_gt0 x : 0 < exp2 x. Proof. exact: Exp_gt0. Qed.
 Lemma exp2_ge0 x : 0 <= exp2 x. Proof. exact: Exp_ge0. Qed.
-Hint Resolve exp2_gt0.
-Hint Resolve exp2_ge0.
+Hint Resolve exp2_gt0 : core.
+Hint Resolve exp2_ge0 : core.
 
 Lemma exp2_neq0 l : exp2 l <> 0. Proof. exact/gtR_eqF. Qed.
-Hint Resolve exp2_neq0.
+Hint Resolve exp2_neq0 : core.
 
 Lemma exp2_0 : exp2 0 = 1.
 Proof. by rewrite /exp2 -/(Exp 2 0) Exp_0. Qed.
@@ -330,7 +330,7 @@ Lemma Rle_exp2_log1_L a b : 0 < b -> exp2 a <b= b = (a <b= log b).
 Proof.
 move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
 - move/leRP in H1.
-  have {H1}H1 : a <= log b.
+  have {}H1 : a <= log b.
     rewrite (_ : a = log (exp2 a)); last by rewrite exp2K.
     exact: Log_increasing_le.
   move/leRP in H1; by rewrite H1.
@@ -346,7 +346,7 @@ Lemma Rle_exp2_log2_R b c : 0 < b -> b <b= exp2 c = (log b <b= c).
 Proof.
 move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
 - move/leRP in H1.
-  have {H1}H1 : log b <= c.
+  have {}H1 : log b <= c.
     rewrite (_ : c = log (exp2 c)); last by rewrite exp2K.
     apply Log_increasing_le => //; exact: exp2_pos.
   by move/leRP in H1.

@@ -5,12 +5,15 @@ Import Coq.NArith.BinNatDef.
 
 (** * Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
+Declare Scope tuple_ext_scope.
+Declare Scope vec_ext_scope.
 
 Notation "t '\_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
 Reserved Notation "n .-bseq" (at level 2, format "n .-bseq").
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Lemma addb_tri_ine a b c : a (+) b <= (a (+) c) + (c (+) b).
 Proof. move: a b c; by case; case; case. Qed.

@@ -23,6 +23,8 @@ Require Import ssrR.
       non-negative reals
 *)
 
+Declare Scope reals_ext_scope.
+
 Reserved Notation "T '->R^+' " (at level 10, format "'[' T  ->R^+ ']'").
 Reserved Notation "T '->R+' " (at level 10, format "'[' T  ->R+ ']'").
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
@@ -51,7 +53,7 @@ Local Open Scope reals_ext_scope.
 Section reals_ext.
 
 Lemma Rlt_1_2 : 1 < 2. Proof. lra. Qed.
-Local Hint Resolve Rlt_1_2.
+Local Hint Resolve Rlt_1_2 : core.
 
 Lemma forallP_leRP (A : finType) (f : A -> R) : reflect (forall a, 0 <= f a) [forall a, 0 <b= f a].
 Proof.
@@ -178,13 +180,13 @@ Lemma frac_part_mult a b : frac_part a = 0 -> frac_part b = 0 ->
 Proof.
 rewrite /frac_part /Int_part !minus_IZR //.
 move=> Ha Hb.
-have {Ha}Ha : IZR (up a) = a + 1.
+have {}Ha : IZR (up a) = a + 1.
   move: Ha.
   set x := IZR (up a).
   move=> Ha.
   rewrite -[X in X = _](add0R _) -Ha.
   by field.
-have {Hb}Hb : IZR (up b) = b + 1.
+have {}Hb : IZR (up b) = b + 1.
   move: Hb.
   set x := IZR (up b).
   move=> Hb.
@@ -274,7 +276,7 @@ move=> [H1 H2] [H H3]; case: (Rtotal_order a b) => [H0|[H0|H0]].
 Qed.
 
 End reals_ext.
-Hint Resolve Rlt_1_2.
+Hint Resolve Rlt_1_2 : core.
 
 Section pos_finfun.
 Variable (T : finType).
@@ -377,7 +379,7 @@ End Prob.
 Export Prob.Exports.
 Coercion Prob.p : prob >-> R.
 
-Hint Resolve Prob.ge0.
+Hint Resolve Prob.ge0 : core.
 
 Definition eqprob (x y : prob) := (x == y :> R).
 

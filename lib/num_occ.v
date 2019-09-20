@@ -19,6 +19,8 @@ Require Import ssr_ext f2.
 Reserved Notation "'N(' a '|' t ')'" (format "N( a  |  t )").
 Reserved Notation "'N(' a ',' b '|' ta ',' tb ')'".
 
+Declare Scope num_occ_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -466,7 +468,7 @@ case/boolP : (lt_rank ta\_l (enum_val k)) => Hcase.
       rewrite -sum_num_occ_rec; apply/negP; rewrite -leqNgt.
       by rewrite (leq_trans _ Hlm1) // sum_num_occ_inc.
   by rewrite sum1_card set_predleq_size enum_rankK // -{2}(enum_rankK ta\_l) -sum_num_occ_rec sum_num_occ_leq_n.
-- have {abs Hcase} Hcase : lt_rank (enum_val k) ta\_l.
+- have {abs} {}Hcase : lt_rank (enum_val k) ta\_l.
     rewrite lt_rank_alt; rewrite lt_rank_alt -leqNgt in Hcase.
     rewrite ltn_neqAle; apply/andP; split => //.
     rewrite enum_valK.
@@ -506,7 +508,7 @@ case/boolP : (lt_rank ta\_l (enum_val k)) => Hcase.
       apply H2 ; by [rewrite -{2}(prednK lt0m) ; apply ltnSn | apply Hcase2].
   rewrite -(subnKC Hlm1) in H.
   set lhs := #| _ | in H.
-  have {H}H : lhs <= #|[set i : 'I_n | nat_of_ord i \in iota (sum_num_occ k) (l - sum_num_occ k)]|.
+  have {}H : lhs <= #|[set i : 'I_n | nat_of_ord i \in iota (sum_num_occ k) (l - sum_num_occ k)]|.
     apply (leq_trans H), eq_leq.
     by apply eq_card => /= i; rewrite !inE mem_iota.
   rewrite set_predleq_size in H; last by rewrite (subnKC Hlm1) ltnW.

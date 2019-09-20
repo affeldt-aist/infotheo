@@ -110,7 +110,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
         apply Req_le; by field.
       - rewrite A1_P_0 !mul0R addR0; exact/Req_le.
     * rewrite ffunE in A0_Q_0; move/prsumr_eq0P in A0_Q_0.
-      have {A0_Q_0}A0_Q_0 : forall i : A, i \in A_ 0 -> P i = 0%R.
+      have {}A0_Q_0 : forall i : A, i \in A_ 0 -> P i = 0%R.
         move=> i ?; rewrite (dominatesE P_dom_by_Q) // A0_Q_0 // => a ?; exact/pos_ff_ge0.
       have Habs : P_A 0 = 0%R.
         transitivity (\sum_(H|H \in A_ 0) 0%R).

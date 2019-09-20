@@ -45,7 +45,7 @@ End fsdist.
 End FSDist.
 Coercion FSDist.f : FSDist.t >-> fsfun.
 
-Hint Resolve FSDist.ge0.
+Hint Resolve FSDist.ge0 : core.
 
 Section FSDist_canonical.
 Variable A : choiceType.

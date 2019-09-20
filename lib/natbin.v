@@ -328,7 +328,7 @@ case/orP => X.
   contradict Y.
   by rewrite -Y revK.
 - rewrite {1}size_rev leq_eqVlt X orbC /= size_rev => abs.
-  move: (nseq_cat abs) => {abs}abs.
+  move: (nseq_cat abs) => {}abs.
   have W : bitseq_of_N (bin_of_nat i) = nseq (size (rev (bitseq_of_N (bin_of_nat i)))) false.
     by rewrite -[LHS]revK abs rev_nseq !size_nseq.
   exact: bitseq_of_N_nseq_false Hi W.
@@ -528,7 +528,7 @@ move=> Hi Hj /matrixP Heq.
 apply/esym.
 apply (@eq_from_nth _ false _ _ Hj) => i0 Hi0.
 rewrite Hj in Hi0.
-have {Hi0}Hi0 : (i0 < n)%nat.
+have {}Hi0 : (i0 < n)%nat.
   apply leq_ltn_trans with ((size i).-1)%nat;
     rewrite -ltnS prednK //; by apply leq_ltn_trans with i0.
 move: (Heq 0 (Ordinal Hi0)).
