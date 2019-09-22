@@ -46,8 +46,21 @@ If opam is not installed but if the requirements are met, do:
 
 *** About Windows 10
 
-The installation instructions are less simple for Windows 10;
-these [[https://github.com/affeldt-aist/monae/blob/master/installation_windows.org][installation instructions]] from another project using infotheo explain how to install infotheo.
+Installation of infotheo on Windows is less simple.
+See [[https://github.com/affeldt-aist/mathcomp-install/blob/master/install-windows-en.org][this page]] for instructions to install MathComp on Windows 10
+(or [[https://staff.aist.go.jp/reynald.affeldt/ssrcoq/install.html][this page]] for instructions in Japanese).
+Once MathComp is install, two options:
+1. You have installed MathComp with opam.
+   Then do:
+   + ~opam install coq-infotheo~ or ~git clone git@github.com:affeldt-aist/infotheo.git; opam install .~
+2. You have installed MathComp using unzip, untar, cd, make, make install.
+   Then do:
+   + Install MathComp-Analysis using unzip, untar, cd, make, make install
+     1. Install bigenough 1.0.0 ([[https://github.com/math-comp/bigenough][download]])
+     2. Install finmap 1.2.1 ([[https://github.com/math-comp/finmap][download]])
+     3. Install analysis 0.2.2 ([[https://github.com/math-comp/analysis][download]])
+   + Install infotheo using ~coq_makefile~, ~make~, ~make install~ as explained above
+     * [[https://github.com/affeldt-aist/infotheo][download]]
 
 ** License
 
