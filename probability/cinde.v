@@ -141,6 +141,10 @@ Variables (U : finType) (P : fdist U).
 Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
 Implicit Types (E : {set A}) (F : {set B}).
 
+Goal forall a b, \Pr[ X = a | Y = b ] = \Pr_(FDistMap.d [% X, Y] P)[ [set a] | [set b] ].
+by [].
+Abort.
+
 Lemma Pr_RV2C E F :
   \Pr[ [% X, Y] \in setX E F] = \Pr[ [% Y, X] \in setX F E].
 Proof.
@@ -786,7 +790,7 @@ Qed.
 
 Lemma reasoning_by_cases E F :
   \Pr[ X \in E | Y \in F ] =
-  \sum_(z <- fin_img Z) \Pr[ [% X, Z] \in (setX E [set z]) | Y \in F ].
+  \sum_(z <- fin_img Z) \Pr[ [% X, Z] \in setX E [set z] | Y \in F ].
 Proof.
 rewrite RV_cPrE_set total_RV2 -[in RHS]big_distrl /= (snd_RV3 _ Z); congr (_ / _).
 by apply eq_bigr => c _; rewrite RVar.Pr_set.

@@ -303,7 +303,7 @@ Qed.
 Module FDistMap.
 Section def.
 Variables (A B : finType) (g : A -> B) (p : fdist A).
-Definition d : fdist B := FDistBind.d p (fun a => FDist1.d (g a)).
+Definition d : {fdist B} := FDistBind.d p (fun a => FDist1.d (g a)).
 Lemma dE (b : B) : d b = \sum_(a in A | g a == b) p a.
 Proof.
 rewrite /d FDistBind.dE [in RHS]big_mkcond /=; apply eq_bigr => a _.

@@ -201,6 +201,7 @@ Let u : {fdist A} := Uniform.d A_not_empty'.
 Local Open Scope divergence_scope.
 
 (* thm 2.7.3 *)
+(* TODO: explicit mention of fdist_convType *)
 Lemma entropy_concave : concave_function (fun P : fdist_convType A => `H P).
 Proof.
 apply R_concave_functionN' => p q t; rewrite /convex_function_at.
@@ -358,7 +359,7 @@ Variables (A B : finType) (Q : A -> fdist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 Lemma mutual_information_concave :
-  concave_function (fun P : fdist_convType _ => MutualInfo.mi (CFDist.make_joint P Q)).
+  concave_function (fun P : fdist_convType A => MutualInfo.mi (CFDist.make_joint P Q)).
 Proof.
 suff : concave_function (fun P : fdist_convType _ => let PQ := Swap.d (CFDist.make_joint P Q) in
                            `H (Bivar.fst PQ) - CondEntropy.h PQ).
