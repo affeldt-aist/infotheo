@@ -6,6 +6,10 @@ Require Import Reals_ext classical_sets_ext Rbigop ssrR proba fsdist convex_choi
 
 Declare Scope latt_scope.
 
+Reserved Notation "x <| p |>: Y" (format "x  <| p |>:  Y", at level 50).
+Reserved Notation "X :<| p |>: Y" (format "X  :<| p |>:  Y", at level 50).
+Reserved Notation "x [+] y" (format "x  [+]  y", at level 50).
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -346,11 +350,11 @@ Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
 *)
 Definition conv_pt_set (p : prob) (x : L) (Y : set L) :=
   locked (fun y => x <| p |> y) @` Y.
-Local Notation "x <| p |>: Y" := (conv_pt_set p x Y) (format "x  <| p |>:  Y", at level 50).
+Local Notation "x <| p |>: Y" := (conv_pt_set p x Y).
 Lemma conv_pt_setE p x Y : x <| p |>: Y = (fun y => x <| p |> y) @` Y.
 Proof. by rewrite /conv_pt_set; unlock. Qed.
 Definition conv_set p (X Y : set L) := \bigcup_(x in X) (x <| p |>: Y).
-Local Notation "X :<| p |>: Y" := (conv_set p X Y) (format "X  :<| p |>:  Y", at level 50).
+Local Notation "X :<| p |>: Y" := (conv_set p X Y).
 Lemma conv_setE p X Y : X :<| p |>: Y = \bigcup_(x in X) (x <| p |>: Y).
 Proof. by []. Qed.
 Lemma convC_set p X Y : X :<| p |>: Y = Y :<| `Pr p.~ |>: X.
@@ -397,7 +401,7 @@ Lemma probset_neq0 : probset != set0.
 Proof. by apply/set0P; exists `Pr 0. Qed.
 Lemma natset_neq0 : natset != set0.
 Proof. by apply/set0P; exists O. Qed.
-Lemma conv_pt_set_neq0 p (x : L) (Y : neset L) : conv_pt_set p x Y != set0.
+Lemma conv_pt_set_neq0 p (x : L) (Y : neset L) : x <| p |>: Y != set0.
 Proof. exact: neset_image_neq0. Qed.
 Lemma conv_set_neq0 p (X Y : neset L) : X :<| p |>: Y != set0.
 Proof. by rewrite neset_neq0. Qed.
@@ -424,13 +428,13 @@ Lemma conv_pt_set_monotone (p : prob) (x : L) (Y Y' : set L) :
   Y `<=` Y' -> x <| p |>: Y `<=` x <| p |>: Y'.
 Proof. by move=> YY' u [] y /YY' Y'y <-; exists y. Qed.
 Lemma conv_set_monotone (p : prob) (X Y Y' : set L) :
-  Y `<=` Y' -> conv_set p X Y `<=` conv_set p X Y'.
+  Y `<=` Y' -> X :<| p |>: Y `<=` X :<| p |>: Y'.
 Proof. by move/conv_pt_set_monotone=> YY' u [] x Xx /YY' HY'; exists x. Qed.
 Lemma oplus_conv_set_monotone (X Y Y' : set L) :
   Y `<=` Y' -> oplus_conv_set X Y `<=` oplus_conv_set X Y'.
 Proof. by move/conv_set_monotone=> YY' u [] p _ /YY' HY'; exists p. Qed.
 Lemma iter_monotone_conv_set (X : neset L) (m : nat) :
-  forall n, (m <= n)%N -> iter_conv_set X m `<=` iter_conv_set X n .
+  forall n, (m <= n)%N -> iter_conv_set X m `<=` iter_conv_set X n.
 Proof.
 elim: m.
 - move=> n _.
@@ -485,7 +489,7 @@ move=> {X} {Y} X Y u [] p _.
 rewrite convC_set => H.
 by exists (`Pr p.~) => //.
 Qed.
-Lemma convmm_cset (p : prob) (X : {convex_set L}) : conv_set p X X = X.
+Lemma convmm_cset (p : prob) (X : {convex_set L}) : X :<| p |>: X = X.
 Proof.
 apply eqEsubset=> x.
 - case => x0 Xx0; rewrite conv_pt_setE => -[] x1 Xx1 <-; rewrite -in_setE.
@@ -521,7 +525,7 @@ Qed.
 
 (* tensorial strength for hull and conv_set *)
 Lemma hull_conv_set_strr (p : prob) (X Y : set L) :
-  hull (conv_set p X (hull Y)) = hull (conv_set p X Y).
+  hull (X :<| p |>: hull Y) = hull (X :<| p |>: Y).
 Proof.
 apply hull_eqEsubset=> u.
 - case=> x Xx; rewrite conv_pt_setE=> -[] y [] n [] g [] d [] gY yg <-.
@@ -532,6 +536,9 @@ apply hull_eqEsubset=> u.
   by exists x=> //; exists y=> //; exact/subset_hull.
 Qed.
 End convex_neset_lemmas.
+
+Notation "x <| p |>: Y" := (conv_pt_set p x Y) : convex_scope.
+Notation "X :<| p |>: Y" := (conv_set p X Y) : convex_scope.
 
 Module NECSet.
 Section def.
@@ -622,9 +629,6 @@ End Exports.
 End SemiCompleteSemiLattice.
 Export SemiCompleteSemiLattice.Exports.
 
-(* TODO: move to top when deemed useful *)
-Reserved Notation "x [+] y" (format "x  [+]  y", at level 50).
-
 Section semicompletesemilattice_lemmas.
 Local Open Scope classical_set_scope.
 
@@ -713,7 +717,7 @@ Proof. by rewrite joetC joetUK joetC. Qed.
 Lemma joetUKC y x : y [+] x [+] y = x [+] y.
 Proof. by rewrite joetAC joetC joetxx. Qed.
 End semicompletesemilattice_lemmas.
-Notation "x [+] y" := (joet x y) (format "x  [+]  y", at level 50) : latt_scope.
+Notation "x [+] y" := (joet x y) : latt_scope.
 
 Section Joet_morph.
 Local Open Scope classical_set_scope.
@@ -847,31 +851,30 @@ congr (Joet `NE _); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
 Lemma Joet_conv_pt_setE p x (Y : neset L) :
-  Joet `NE (conv_pt_set p x Y) = Joet `NE ((Conv p x) @` Y).
+  Joet `NE (x <| p |>: Y) = Joet `NE ((Conv p x) @` Y).
 Proof.
 by congr (Joet `NE _); apply/neset_ext => /=; rewrite conv_pt_setE.
 Qed.
 Lemma Joet_conv_pt_setD p x (Y : neset L) :
-  Joet `NE (conv_pt_set p x Y) = x <|p|> Joet Y.
+  Joet `NE (x <| p |>: Y) = x <|p|> Joet Y.
 Proof. by rewrite Joet_conv_pt_setE -JoetDr. Qed.
 Lemma Joet_conv_setE p (X Y : neset L) :
-  Joet `NE (conv_set p X Y) =
-  Joet `NE ((fun x => x <|p|> Joet Y) @` X).
+  Joet `NE (X :<| p |>: Y) = Joet `NE ((fun x => x <|p|> Joet Y) @` X).
 Proof.
-transitivity (Joet `NE (\bigcup_(x in X) conv_pt_set p x Y)).
+transitivity (Joet `NE (\bigcup_(x in X) (x <| p |>: Y))).
   by congr (Joet `NE _); apply neset_ext.
 rewrite Joet_bigcup //; congr (Joet `NE _); apply neset_ext => /=.
 rewrite imageA; congr image; apply funext => x /=.
 by rewrite Joet_conv_pt_setD.
 Qed.
 Lemma Joet_conv_setD p (X Y : neset L) :
-  Joet `NE (conv_set p X Y) = Joet X <|p|> Joet Y.
+  Joet `NE (X :<| p |>: Y) = Joet X <|p|> Joet Y.
 Proof. by rewrite Joet_conv_setE JoetDl. Qed.
 Lemma Joet_oplus_conv_setE (X Y : neset L) :
   Joet `NE (oplus_conv_set X Y) =
   Joet `NE ((fun p => Joet X <|p|> Joet Y) @` probset).
 Proof.
-transitivity (Joet `NE (\bigcup_(p in probset_neset) conv_set p X Y)).
+transitivity (Joet `NE (\bigcup_(p in probset_neset) (X :<| p |>: Y))).
   by congr (Joet `NE _); apply/neset_ext.
 rewrite Joet_bigcup //.
 congr (Joet `NE _); apply/neset_ext => /=.
@@ -972,7 +975,7 @@ Lemma convE p X Y : conv p X Y =
   [set a : A | exists x, exists y, x \in X /\ y \in Y /\ a = x <| p |> y]
     :> set A.
 Proof. by rewrite/conv; unlock. Qed.
-Lemma conv_conv_set p X Y : conv p X Y = conv_set p X Y :> set A.
+Lemma conv_conv_set p X Y : conv p X Y = X :<| p |>: Y :> set A.
 Proof.
 rewrite convE; apply eqEsubset=> u.
 - by case=> x [] y; rewrite !in_setE; case=> Xx [] Yy ->; exists x => //; rewrite conv_pt_setE; exists y.
