@@ -916,7 +916,7 @@ Proof.
 apply/asboolP => u v q.
 rewrite -in_setE; rewrite inE => /asboolP [] x0 [] y0 [] x0X [] y0Y ->.
 rewrite -in_setE; rewrite inE => /asboolP [] x1 [] y1 [] x1X [] y1Y ->.
-rewrite -in_setE commute inE asboolE.
+rewrite -in_setE convACA inE asboolE.
 exists (x0 <|q|> x1), (y0 <|q|> y1).
 split; [exact: mem_convex_set | split; [exact: mem_convex_set | by []]].
 Qed.

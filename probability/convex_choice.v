@@ -585,7 +585,7 @@ Qed.
 
 Import ScaledConvex.
 
-Lemma commute (x1 y1 x2 y2 : A) p q :
+Lemma convACA (x1 y1 x2 y2 : A) p q :
   (x1 <|q|> y1) <|p|> (x2 <|q|> y2) = (x1 <|p|> x2) <|q|> (y1 <|p|> y2).
 Proof.
 apply S1_inj; rewrite ![in LHS]S1_conv [LHS]/Conv /= /scaled_conv.
@@ -597,7 +597,7 @@ Qed.
 
 Lemma convDr (x y z : A) (p q : prob) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
-Proof. by rewrite -{1}(convmm x q) commute. Qed.
+Proof. by rewrite -{1}(convmm x q) convACA. Qed.
 
 Local Open Scope vec_ext_scope.
 

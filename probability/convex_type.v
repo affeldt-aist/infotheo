@@ -573,7 +573,7 @@ Qed.
 
 Import ScaledConvex.
 
-Lemma commute (x1 y1 x2 y2 : A) p q :
+Lemma convACA (x1 y1 x2 y2 : A) p q :
   (x1 <|q|> y1) <|p|> (x2 <|q|> y2) = (x1 <|p|> x2) <|q|> (y1 <|p|> y2).
 Proof.
 apply S1_inj; rewrite ![in LHS]S1_conv [LHS]/Conv /= /scaled_conv.
@@ -583,9 +583,9 @@ rewrite !addptA -addptA -!scalept_comp -?scalept_addpt //.
 by rewrite !(addptC (scalept _.~ _)) !S1_conv.
 Qed.
 
-Lemma distribute (x y z : A) (p q : prob) :
+Lemma convDr (x y z : A) (p q : prob) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
-Proof. by rewrite -{1}(convmm x q) commute. Qed.
+Proof. by rewrite -{1}(convmm x q) convACA. Qed.
 
 Local Open Scope vec_ext_scope.
 
@@ -716,6 +716,30 @@ Proof.
 apply S1_inj; rewrite !S1_convn -barycenter_convnfdist.
 apply eq_bigr => i _; by rewrite S1_convn.
 Qed.
+
+Local Open Scope R_scope.
+
+Lemma convn_const (a : A) :
+  forall (n : nat) (d : {fdist 'I_n}), \Conv_d (fun _ => a) = a.
+Proof.
+elim; first by move=> d; move/fdistI0_False: (d).
+move=> n IHn d.
+case/boolP: (d ord0 == 1); first by move/eqP/(convn_proj (fun _ => a)).
+by move=> d0n0; rewrite convnE IHn convmm.
+Qed.
+
+Lemma convnDr :
+  forall (n : nat) (p : prob) (x : A) (g : 'I_n -> A) (d : {fdist 'I_n}),
+    x <|p|> \Conv_d g = \Conv_d (fun i : 'I_n => x <|p|> g i).
+Proof.
+elim; first by move=> p x g d; move/fdistI0_False: (d).
+move=> n IHn p x g d.
+case/boolP: (d ord0 == 1); first by move/eqP=> d01; rewrite (convn_proj g d01) (convn_proj (fun i => x <|p|> g i) d01).
+move=> d0n1.
+rewrite !convnE !IHn.
+congr Convn; apply funext=> i.
+by rewrite convDr.
+Qed.
 End convex_space_prop.
 
 Notation "'\Conv_' d f" := (Convn d f) : convex_scope.
@@ -725,22 +749,19 @@ Local Open Scope classical_set_scope.
 Variable A : convType.
 
 Definition is_convex_set (D : set A) : bool :=
-  `[<forall x y t, x \in D -> y \in D -> x <| t |> y \in D>].
+  `[< forall x y t, D x -> D y -> D (x <| t |> y) >].
 
 Lemma is_convex_set0 : is_convex_set set0.
-Proof. apply/asboolP => x y p; by rewrite in_setE. Qed.
+Proof. by apply/asboolP => x y p. Qed.
 
 Lemma is_convex_set1 a : is_convex_set [set a].
-Proof.
-apply/asboolP => x y p; rewrite 2!in_setE /= => -> ->.
-by rewrite convmm in_setE.
-Qed.
+Proof. by apply/asboolP => x y p -> ->; rewrite convmm. Qed.
 
 Lemma is_convex_setT : is_convex_set setT.
-Proof. apply/asboolP => ? ? ? _ _; by rewrite in_setE. Qed.
+Proof. by apply/asboolP => ? ? ? _ _. Qed.
 
 Definition is_convex_set_n (X : set A) : bool :=
-  `[< forall n (g : 'I_n -> A) (d : {fdist 'I_n}), g @` setT `<=` X -> \Conv_d g \in X >].
+  `[< forall n (g : 'I_n -> A) (d : {fdist 'I_n}), g @` setT `<=` X -> X (\Conv_d g) >].
 
 Lemma is_convex_setP (X : set A) : is_convex_set X = is_convex_set_n X.
 Proof.
@@ -748,7 +769,7 @@ apply/idP/idP => H; apply/asboolP; last first.
   move=> x y p xX yX.
   case/boolP : (p == `Pr 1) => [/eqP ->|p1]; first by rewrite conv1.
   set g : 'I_2 -> A := fun i => if i == ord0 then x else y.
-  have gX : g @` setT `<=` X by move=> a -[i _ <-]; rewrite -in_setE /g; case: ifPn.
+  have gX : g @` setT `<=` X by move=> a -[i _ <-]; rewrite /g; case: ifPn.
   move/asboolP : H => /(_ _ g (I2FDist.d p) gX).
   rewrite convnE; first by rewrite I2FDist.dE eqxx.
   move=> p1'.
@@ -758,10 +779,10 @@ apply/idP/idP => H; apply/asboolP; last first.
 elim => [g d|n IH g d]; first by move: (fdistI0_False d).
 destruct n as [|n] => gX.
   rewrite {IH} (@convn_proj _ _ _ _ ord0) //.
-  rewrite in_setE; exact/gX/classical_sets.imageP.
+  exact/gX/classical_sets.imageP.
   by apply/eqP; rewrite FDist1.dE1 (FDist1.I1 d).
 case/boolP : (d ord0 == 1%R) => [/eqP|]d01.
-  suff -> : \Conv_d g = g ord0 by rewrite in_setE; apply gX; exists ord0.
+  suff -> : \Conv_d g = g ord0 by apply gX; exists ord0.
   by rewrite (@convn_proj _ _ _ _ ord0).
 set D : {fdist 'I_n.+1} := DelFDist.d d01.
 pose G (i : 'I_n.+1) : A := g (DelFDist.f (@ord0 _) i).
@@ -770,7 +791,7 @@ have : G @` setT `<=` X.
 move/(IH _ D) => {}IH.
 rewrite convnE //.
 move/asboolP : H; apply => //.
-rewrite in_setE; exact/gX/classical_sets.imageP.
+exact/gX/classical_sets.imageP.
 Qed.
 End is_convex_set.
 
@@ -782,12 +803,12 @@ End hull_def.
 
 Section hull_prop.
 Variable A : convType.
-Lemma hull_mem (X : set A) x : x \in X -> x \in hull X.
+Implicit Types X Y : set A.
+Implicit Types a : A.
+Lemma subset_hull X : (X `<=` hull X)%classic.
 Proof.
-move=> xX.
-rewrite in_setE /hull.
-exists 1, (fun=> x), (FDist1.d ord0); split; last by rewrite convn1E.
-move=> d -[i _ <-]; by rewrite -in_setE.
+move=> x xX; rewrite /hull; exists 1, (fun=> x), (FDist1.d ord0).
+split => [d [i _ <-] //|]; by rewrite convn1E.
 Qed.
 Lemma hull0 : hull set0 = set0 :> set A.
 Proof.
@@ -800,14 +821,14 @@ Qed.
 Lemma hull_eq0 (X : set A) : (hull X == set0) = (X == set0).
 Proof.
 apply/idP/idP=> [/eqP abs|]; last by move=> /eqP ->; rewrite hull0.
-apply/negPn/negP => /set0P[/= d]; rewrite -in_setE => dX.
+apply/negPn/negP => /set0P[/= d] => dX.
 move: abs; rewrite funeqE => /(_ d); rewrite propeqE /set0 => -[H _]; apply H.
-by rewrite -in_setE; apply: hull_mem.
+exact/subset_hull.
 Qed.
 Lemma mem_hull_setU (x y : set A) (a0 a1 : A) p :
-  a0 \in x -> a1 \in y -> a0 <| p |> a1 \in hull (x `|` y).
+  x a0 -> y a1 -> (hull (x `|` y)) (a0 <| p |> a1).
 Proof.
-rewrite 3!in_setE => a0x a1y.
+move => a0x a1y.
 exists 2, (fun i => if i == ord0 then a0 else a1), (I2FDist.d p); split => /=.
   move=> a2.
   case => i _ <-{a2} /=.
@@ -824,9 +845,6 @@ rewrite I2FDist.dE (eq_sym (lift _ _)) (negbTE (neq_lift _ _)).
 rewrite I2FDist.dE eqxx divRR ?eqxx //.
 by move: H; rewrite I2FDist.dE eqxx onem_neq0.
 Qed.
-Lemma mem_hull_setU_left (x y : set A) (a : A) : a \in x -> a \in hull (x `|` y).
-Proof. by rewrite in_setE=> ax; apply: hull_mem; rewrite in_setE; left. Qed.
-
 End hull_prop.
 
 Module CSet.
@@ -854,6 +872,18 @@ Definition cset_eqMixin := Eval hnf in [eqMixin of convex_set A by <:].
 Canonical cset_eqType := Eval hnf in EqType (convex_set A) cset_eqMixin.
 End cset_canonical.
 
+Section CSet_interface.
+Variable (A : convType).
+Implicit Types X Y : {convex_set A}.
+Lemma convex_setP X : is_convex_set X.
+Proof. by case: X => X []. Qed.
+Lemma cset_ext X Y : X = Y :> set _ -> X = Y.
+Proof.
+move: X Y => -[X HX] [Y HY] /= ?; subst Y.
+congr (CSet.mk _); exact/Prop_irrelevance.
+Qed.
+End CSet_interface.
+
 Section CSet_prop.
 Local Open Scope classical_set_scope.
 Variable A : convType.
@@ -862,7 +892,8 @@ Lemma mem_convex_set (x y : A) (p : prob) (X : {convex_set A}) :
   x \in X -> y \in X -> x <|p|> y \in X.
 Proof.
 case: X => X convX; move: (convX) => convX_save.
-move/asboolP : convX => convX Hx Hy; exact: convX.
+move/asboolP : convX => convX Hx Hy.
+by rewrite in_setE; apply: convX; rewrite -in_setE.
 Qed.
 
 Definition cset0 : {convex_set A} := CSet.mk (is_convex_set0 A).
@@ -884,22 +915,53 @@ Proof. apply/cset0PN; by exists x. Qed.
 
 Lemma hull_cset (x : {convex_set A}) : hull x = x.
 Proof.
-rewrite predeqE => d; split.
-- move=> -[n [g [e [gX ->{d}]]]].
-  move: (CSet.H x); rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
-  by rewrite in_setE.
-- by rewrite -in_setE => /hull_mem; rewrite in_setE.
+rewrite predeqE => d; split; last exact/subset_hull.
+move=> -[n [g [e [gX ->{d}]]]].
+move: (convex_setP x); rewrite is_convex_setP /is_convex_set_n.
+by move=> /asboolP/(_ _ g e gX).
 Qed.
 
+Lemma split_lshift n m (i : 'I_n) : fintype.split (lshift m i) = inl i.
+Proof. by rewrite -/(unsplit (inl i)) unsplitK. Qed.
+Lemma split_rshift n m (i : 'I_m) : fintype.split (rshift n i) = inr i.
+Proof. by rewrite -/(unsplit (inr i)) unsplitK. Qed.
+
 Import ScaledConvex.
+
+Lemma AddFDist_conv n m p (g : 'I_(n + m) -> A) (d : {fdist 'I_n}) (e : {fdist 'I_m}) :
+  \Conv_(AddFDist.d d e p) g =
+  \Conv_d (g \o @lshift n m) <|p|> \Conv_e (g \o @rshift n m).
+Proof.
+apply S1_inj; rewrite S1_conv !S1_convn.
+rewrite /Conv /= /scaled_conv big_split_ord !big_scalept /=.
+congr addpt; apply eq_bigr => i _;
+  rewrite (scalept_comp (S1 _) (Prob.ge0 _) (FDist.ge0 _ _));
+  by rewrite AddFDist.dE (split_lshift,split_rshift).
+Qed.
+
+Lemma hull_is_convex (Z : set A) : is_convex_set (hull Z).
+Proof.
+apply/asboolP => x y p [n [g [d [gX ->{x}]]]] [m [h [e [hX ->{y}]]]].
+exists (n + m).
+exists [ffun i => match fintype.split i with inl a => g a | inr a => h a end].
+exists (AddFDist.d d e p).
+split.
+  move=> a -[i _]; rewrite ffunE.
+  case: splitP => j _ <-; by [apply gX; exists j | apply hX; exists j].
+rewrite AddFDist_conv; congr Conv; apply eq_convn => i //=;
+  by rewrite ffunE (split_lshift,split_rshift).
+Qed.
+
+Canonical hull_is_convex_set (Z : set A) : convex_set A :=
+  CSet.mk (hull_is_convex Z).
+
 Definition scaled_set (D : set A) :=
-  [set x | if x is p *: a then a \in D else True].
+  [set x | if x is p *: a then D a else True].
 
 Lemma addpt_scaled_set (D : {convex_set A}) x y :
   x \in scaled_set D -> y \in scaled_set D -> addpt x y \in scaled_set D.
 Proof.
-case: x => [p x|]; case: y => [q y|] //=; rewrite !in_setE /scaled_set.
-move/CSet.H/asboolP: (D); apply.
+case: x => [p x|]; case: y => [q y|] //=; exact: mem_convex_set.
 Qed.
 
 Lemma scalept_scaled_set (D : {convex_set A}) r x :
@@ -912,53 +974,25 @@ Lemma scaled_set_extract (D : {convex_set A}) x (H : (0 < weight _ x)%R) :
   x \in scaled_set D -> point H \in CSet.car D.
 Proof. case: x H => [p x|/ltRR] //=; by rewrite in_setE. Qed.
 
-Lemma split_lshift n m (i : 'I_n) : fintype.split (lshift m i) = inl i.
-Proof. by rewrite -/(unsplit (inl i)) unsplitK. Qed.
-Lemma split_rshift n m (i : 'I_m) : fintype.split (rshift n i) = inr i.
-Proof. by rewrite -/(unsplit (inr i)) unsplitK. Qed.
-
-Lemma AddFDist_conv n m p (g : 'I_(n + m) -> A) (d : {fdist 'I_n}) (e : {fdist 'I_m}) :
-  \Conv_(AddFDist.d d e p) g =
-  \Conv_d (g \o @lshift n m) <|p|> \Conv_e (g \o @rshift n m).
-Proof.
-apply S1_inj; rewrite S1_conv !S1_convn.
-rewrite /Conv /= /scaled_conv big_split_ord !big_scalept /=.
-congr addpt; apply eq_bigr => i _;
-  rewrite (scalept_comp (S1 _) (Prob.ge0 _) (FDist.ge0 _ _));
-  by rewrite AddFDist.dE (split_lshift,split_rshift).
-Qed.
-Lemma convex_hull (X : set A) : is_convex_set (hull X).
-Proof.
-apply/asboolP => x y p; rewrite 2!in_setE.
-move=> -[n [g [d [gX ->{x}]]]].
-move=> -[m [h [e [hX ->{y}]]]].
-rewrite in_setE.
-exists (n + m).
-exists [ffun i => match fintype.split i with inl a => g a | inr a => h a end].
-exists (AddFDist.d d e p).
-split.
-  move=> a -[i _]; rewrite ffunE.
-  case: splitP => j _ <-; by [apply gX; exists j | apply hX; exists j].
-rewrite AddFDist_conv; congr Conv; apply eq_convn => i //=;
-  by rewrite ffunE (split_lshift,split_rshift).
-Qed.
-
+(* NB(saikawa): hullI was removed from convex_choice.v as it was judged
+   useless.  However, I want to keep it here since it exhibits a fundamental
+   algebraic property of hull, and since I expect there should be some 
+   cases where inference of canonical structure does not work well for hulls
+   and a user needs to manually rewrite using such algebraic properties. *)
 Lemma hullI (X : set A) : hull (hull X) = hull X.
 Proof.
 rewrite predeqE => d; split.
 - move=> -[n [g [e [gX ->{d}]]]].
-  move: (convex_hull X).
-  rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
-  by rewrite in_setE.
-- by rewrite -in_setE => /hull_mem; rewrite in_setE.
+  move: (hull_is_convex X).
+  by rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
+- by move/subset_hull.
 Qed.
 
 Lemma hull_setU (a : A) (x y : {convex_set A}) :
-  x !=set0 -> y !=set0 -> a \in hull (x `|` y) ->
+  x !=set0 -> y !=set0 -> (hull (x `|` y)) a ->
   exists a1, a1 \in x /\ exists a2, a2 \in y /\ exists p : prob, a = a1 <| p |> a2.
 Proof.
 move=> x0 y0.
-rewrite in_setE.
 case=> n -[g [e [gX Ha]]].
 case: x0 => dx dx_x.
 case: y0 => dy dy_y.
@@ -985,14 +1019,13 @@ exists sa1; split.
   rewrite /sa1; apply big_ind.
   + by rewrite in_setE.
   + apply addpt_scaled_set.
-  + move=> i Hi; apply scalept_scaled_set.
-    by rewrite in_setE.
+  + by move=> i Hi; apply scalept_scaled_set.
 exists sa2; split.
   rewrite /sa2; apply big_ind.
   + by rewrite in_setE.
   + apply addpt_scaled_set.
   + move=> i Hi; apply scalept_scaled_set.
-    rewrite in_setE /= -[_ \in _]orFb -(negbTE Hi).
+    rewrite -[_ \in _]orFb -(negbTE Hi).
     apply/orP; rewrite 2!in_setE; exact/gX/imageP.
 by [].
 Qed.
@@ -1644,11 +1677,60 @@ Lemma rsum_Conv (A : finType) (p : prob) (dx dy : fdist A):
   \sum_(a in A) dx a <|p|> \sum_(a in A) dy a)%R.
 Proof. by rewrite /Conv /= /avg big_split /= -2!big_distrr. Qed.
 
+(* TODO: move up? *)
+Require Import fsdist.
+
+Section FSDist_convex_space.
+Variable A : choiceType.
+Definition FSDist_convMixin :=
+  @ConvexSpace.Class (FSDist.t A) (@ConvFSDist.d A)
+  (@ConvFSDist.conv1 A)
+  (@ConvFSDist.convmm A)
+  (@ConvFSDist.convC A)
+  (@ConvFSDist.convA' A).
+Canonical FSDist_convType := ConvexSpace.Pack FSDist_convMixin.
+
+(* Reuse the morphisms from R_convex_space. *)
+Import ScaledConvex finmap.
+Lemma convn_convnfsdist (n : nat) (g : 'I_n -> {dist A}) (d : {fdist 'I_n}) :
+  \Conv_d g = ConvnFSDist.d d g.
+Proof.
+apply FSDist_ext=> a; rewrite -[LHS]Scaled1RK.
+rewrite (@S1_convn_proj _ _ (fun x : {dist A} => finmap.fun_of_fsfun x a));
+  last first.
+  move=> p x y /=; by rewrite /Conv /= ConvFSDist.dE.
+rewrite big_scaleR ConvnFSDist.dE /= fsfunE.
+case: ifPn => Ha.
+  by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
+(* TODO: extra lemmas ? *)
+rewrite big1 // => i _.
+move: Ha.
+rewrite /ConvnFSDist.D.
+move/bigfcupP => Hn.
+case /boolP: (d i == R0) => Hdi.
+  by rewrite (eqP Hdi) scalept0.
+case /boolP: (g i a == R0) => Hgia.
+  by rewrite (eqP Hgia) scaleR_scalept /= ?mulR0.
+elim: Hn.
+exists i.
+  rewrite mem_index_enum /=.
+  apply/ltRP.
+  by rewrite -fdist_gt0.
+by rewrite mem_finsupp.
+Qed.
+End FSDist_convex_space.
+
+(* TODO *)
+Section fsdist_ordered_convex_space.
+Variable A : choiceType.
+Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin (FSDist_convType A).
+End fsdist_ordered_convex_space.
+
 Section convex_set_R.
 
 Lemma Rpos_convex : is_convex_set (fun x => 0 < x)%R.
 Proof.
-apply/asboolP => x y t; rewrite !in_setE => Hx Hy.
+apply/asboolP => x y t Hx Hy.
 case/boolP : (t == `Pr 0) => [/eqP ->| Ht0]; first by rewrite conv0.
 apply addR_gt0wl; first by apply mulR_gt0 => //; exact/prob_gt0.
 apply mulR_ge0; [exact/onem_ge0/prob_le1 | exact: ltRW].
@@ -1658,14 +1740,14 @@ Definition Rpos_interval := CSet.mk Rpos_convex.
 
 Lemma Rnonneg_convex : is_convex_set (fun x => 0 <= x)%R.
 Proof.
-apply/asboolP=> x y t; rewrite !in_setE => Hx Hy; apply addR_ge0; exact/mulR_ge0.
+apply/asboolP=> x y t Hx Hy; apply addR_ge0; exact/mulR_ge0.
 Qed.
 
 Definition Rnonneg_interval := CSet.mk Rnonneg_convex.
 
 Lemma open_interval_convex a b (Hab : (a < b)%R) : is_convex_set (fun x => a < x < b)%R.
 Proof.
-apply/asboolP => x y t; rewrite !in_setE => -[xa xb] [ya yb].
+apply/asboolP => x y t -[xa xb] [ya yb].
 case/boolP : (t == `Pr 0) => [/eqP|]t0; first by rewrite t0 conv0.
 case/boolP : (t == `Pr 1) => [/eqP|]t1; first by rewrite t1 conv1.
 apply conj.
