@@ -11,12 +11,12 @@
 
 *** Last stable version:
 
-Version 0.0.4:
+Version 0.0.5:
 3. ~opam install coq-infotheo~
 
 **** Requirements
 
-- [[https://coq.inria.fr][Coq]] 8.9.1
+- [[https://coq.inria.fr][Coq]] 8.10
 - [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.9.0
 - [[https://github.com/math-comp/analysis][MathComp-Analysis]] 0.2.2
   which requires
