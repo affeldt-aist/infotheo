@@ -31,18 +31,17 @@ All versions available from opam.
 
 With Coq 8.10.
 
-3. ~git clone git@github.com:affeldt-aist/infotheo.git~
-4. ~cd infotheo~
+1. ~git clone git@github.com:affeldt-aist/infotheo.git~
+2. ~cd infotheo~
 
 If opam is installed, do:
 
-5. ~opam install .~
+3. ~opam install .~
 
 If opam is not installed but if the requirements are met, do:
 
-5. ~coq_makefile -f _CoqProject -o Makefile~
-6. ~make~
-7. ~make install~
+3. ~make~
+4. ~make install~
 
 *** About Windows 10
 

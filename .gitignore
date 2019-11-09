@@ -2,6 +2,5 @@
 *.v.d
 *.glob
 *~
-Makefile
 Makefile.conf
 *.aux

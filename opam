@@ -18,7 +18,6 @@ authors: [
   "Mitsuharu Yamamoto"
 ]
 build: [
-  ["coq_makefile" "-f" "_CoqProject" "-o" "Makefile"]
   [make "-j%{jobs}%"]
   [make "-C" "extraction" "tests"] {with-test}
 ]
