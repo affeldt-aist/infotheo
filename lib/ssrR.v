@@ -602,6 +602,11 @@ Proof. move=> ? ?; by rewrite {1}/Rdiv invRM // mulRA. Qed.
 Lemma divR_neq0' (x y : R) : x != 0 -> y != 0 -> x / y != 0.
 Proof. by move => x0 y0; rewrite mulR_neq0' x0 /= invR_neq0'. Qed.
 
+Lemma divRDl : left_distributive Rdiv Rplus.
+Proof. by move=> *; rewrite /Rdiv -mulRDl. Qed.
+
+Lemma divN1R x : -1 / x = - / x. Proof. by rewrite /Rdiv mulN1R. Qed.
+
 Definition mulRV (x : R) : x != 0 -> x * / x = 1 := divRR x.
 
 (* Rinv_l_sym *)
