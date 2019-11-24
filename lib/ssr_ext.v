@@ -498,7 +498,7 @@ by exists i => //; rewrite !inE /= K1.
 Qed.
 
 Lemma cardsltn1P A (E : {set A}) :
-  (1 < #| E |) = [exists a, exists b, (a \in E) && (b \in E) && (a != b)].
+  (1 < #| E |) = [exists a, exists b, [&& (a \in E), (b \in E) & (a != b)]].
 Proof.
 case/boolP : (E == set0) => [/eqP -> | /set0Pn [] /= a Ha].
   rewrite cards0; apply/esym/negbTE.
@@ -510,14 +510,30 @@ case/boolP : (E :\ a == set0) => [/eqP Ea0 | ].
   rewrite negb_exists; apply/forallP => b.
   rewrite negb_exists; apply/forallP => c.
   rewrite 2!in_set1 2!negb_and negbK.
-  case/boolP : (b == c) => [_|bc]; first by rewrite orbT.
+  case/boolP : (b == c) => [_|bc]; first by rewrite !orbT.
   rewrite orbF.
   case/boolP : (b == a) => //= /eqP <-; by rewrite eq_sym.
 case/set0Pn => b Hb.
 have -> : 1 < #| E | by rewrite (cardsD1 a E) Ha /= (cardsD1 b (E :\ a)) Hb.
 apply/esym; apply/existsP; exists a; apply/existsP; exists b.
-rewrite !inE eq_sym andbC in Hb.
-by rewrite -andbA Hb andbT.
+by rewrite !inE eq_sym andbC in Hb; rewrite Hb Ha.
+Qed.
+
+Lemma cards2P (A : finType) (E : {set A}) :
+  (#| E | == 2) = [exists a, exists b, (E == [set a; b]) && (a != b)].
+Proof.
+apply/idP/idP => [s2|]; last first.
+  by move/existsP => -[a /existsP[b /andP[/eqP -> ab]]]; rewrite cards2 ab.
+move: (s2) => /eqP/esym/eq_leq.
+rewrite cardsltn1P => /existsP[a /existsP[b /and3P[aE bE ab]]].
+apply/existsP; exists a; apply/existsP; exists b; rewrite ab andbT; apply/eqP.
+rewrite -(setD1K aE) -(setD1K bE); apply/setP => i; rewrite !inE.
+have [/eqP->{i} //|/= ia] := boolP (i == a).
+have [/eqP->{i} //|/= ib] := boolP (i == b).
+apply/negbTE/negP => iE.
+move/eqP : s2; rewrite (cardsD1 a) aE add1n => -[].
+rewrite (cardD1 b) !inE eq_sym ab bE add1n => -[].
+by rewrite (cardD1 i) !inE ib ia iE add1n.
 Qed.
 
 Lemma set1_set2 A (E : {set A}) a :
@@ -541,17 +557,17 @@ End finset_ext.
 Module Set2.
 Section set2.
 
-Variable X : finType.
-Hypothesis HX : #|X| = 2%nat.
+Variable A : finType.
+Hypothesis A2 : #|A| = 2%nat.
 
-Definition a := enum_val (cast_ord (esym HX) ord0).
-Definition b := enum_val (cast_ord (esym HX) (lift ord0 ord0)).
+Definition a := enum_val (cast_ord (esym A2) ord0).
+Definition b := enum_val (cast_ord (esym A2) (lift ord0 ord0)).
 
-Lemma enumE : enum X = a :: b :: [::].
+Lemma enumE : enum A = a :: b :: [::].
 Proof.
-apply (@eq_from_nth _ a); first by rewrite -cardE HX.
+apply (@eq_from_nth _ a); first by rewrite -cardE A2.
 case=> [_|]; first by rewrite [X in _ = X]/= {2}/a (enum_val_nth a).
-case=> [_ |i]; last by rewrite -cardE HX.
+case=> [_ |i]; last by rewrite -cardE A2.
 by rewrite [X in _ = X]/= {1}/b (enum_val_nth a).
 Qed.
 
@@ -559,11 +575,15 @@ Lemma a_neq_b : a != b.
 Proof. rewrite /a /b. apply/eqP. by move/enum_val_inj. Qed.
 
 Lemma neq_a_b x : x != a -> x == b.
-Proof. have : x \in X by []. by rewrite -mem_enum enumE !inE => /orP[->|]. Qed.
+Proof. have : x \in A by []. by rewrite -mem_enum enumE !inE => /orP[->|]. Qed.
 
-Lemma ind (C : X -> Type) : C a -> C b -> forall a, C a.
+Lemma ind (P : A -> Type) : P a -> P b -> forall a, P a.
+Proof. by move=> ?? c; have [/eqP->//|/neq_a_b/eqP ->] := boolP (c == a). Qed.
+
+Lemma E : setT = [set a; b].
 Proof.
-move=> H1 H2 c; by case/boolP : (c == a) => [/eqP -> //|/neq_a_b/eqP ->].
+apply/setP => x; rewrite !inE; apply/esym; move: x.
+by apply: (@ind (fun x => (x == a) || (x == b))); rewrite eqxx ?orbT ?orTb.
 Qed.
 
 End set2.

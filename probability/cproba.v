@@ -4,7 +4,14 @@ From mathcomp Require boolp.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 
-(* tentative definition of conditional probability
+(******************************************************************************)
+(*                      Conditional probabilities                             *)
+(*                                                                            *)
+(* \Pr_P [ A | B ] == conditional probability of A given B where P is a joint *)
+(*                    distribution                                            *)
+(******************************************************************************)
+
+(*
 OUTLINE:
 - Various distributions (Swap.d, Self.d, TripA.d, TripA'.d, TripC12.d, TripC23.d,
   TripC13.d, Proj13.d, Proj23.d)
@@ -457,6 +464,21 @@ End conditional_probability_def.
 
 Notation "\Pr_ P [ E | F ]" := (cPr P E F) : proba_scope.
 
+(* NB: wip *)
+Lemma cPrE (A B : finType) (d : {fdist A * B}) (E : {set A}) (F : {set B}) :
+  cPr d E F = cPr0 d [set x | x.1 \in E] [set x | x.2 \in F].
+Proof.
+rewrite /cPr /cPr0; congr (_ / _); last first.
+  rewrite /Pr.
+  rewrite (eq_bigr (fun a => d (a.1, a.2))); last by case.
+  under eq_bigr do rewrite Bivar.sndE.
+  rewrite exchange_big /= pair_big_dep /=.
+  by apply eq_bigl => -[a b] /=; rewrite !inE.
+congr (Pr d _).
+apply/setP => -[a b].
+by rewrite !inE /=.
+Qed.
+
 Lemma Pr_FDistMap_r (A B B' : finType) (f : B -> B') (d : {fdist A * B}) (E : {set A}) (F : {set B}):
   injective f ->
   cPr d E F = cPr (FDistMap.d (fun x => (x.1, f x.2)) d) E (f @: F).
@@ -710,7 +732,7 @@ Proof.
 move=> disE covE.
 rewrite (eq_bigr (fun i => Pr QP (setX F (E i)))); last first.
   by move=> i _; rewrite product_rule0 mulRC Swap.snd.
-rewrite -Pr_big_union_disj; last first.
+rewrite -Boole_eq; last first.
   move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => -[b a]; rewrite inE.
   move: (disE _ _ ij); rewrite -setI_eq0 => /eqP/setP/(_ a).
   by rewrite !inE /= andbACA andbb => ->; rewrite andbF.
@@ -796,7 +818,7 @@ transitivity (\sum_(i < n) Pr P (X @^-1 r :&: F i)).
   case: ifPn => //; rewrite negbK => /eqP PFi0.
   rewrite /Pr big1 // => u; rewrite inE => /andP[uXr uFi].
   by move/prsumr_eq0P : PFi0 => ->.
-rewrite -Pr_big_union_disj; last first.
+rewrite -Boole_eq; last first.
   move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
   apply/negbTE; rewrite !negb_and.
   case/boolP : (X u == r) => Xur //=.

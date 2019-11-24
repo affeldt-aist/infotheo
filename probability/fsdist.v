@@ -4,7 +4,28 @@ From mathcomp Require Rstruct boolp.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop proba.
 
-(* probability distributions with finite support using choiceType *)
+(******************************************************************************)
+(*                    Finitely-supported distribution                         *)
+(*                                                                            *)
+(* This file provides a formalization of finitely-supported probability       *)
+(* distributions. It generalizes the finite discrete probability              *)
+(* distributions over a finType from proba.v and makes it possible to         *)
+(* talk about distributions of distributions to turn distributions into       *)
+(* a genuine monad.                                                           *)
+(*                                                                            *)
+(* {dist A} == the type of finitely-supported distributions over A where A is *)
+(*             a choiceType                                                   *)
+(******************************************************************************)
+
+(* OUTLINE
+  1. Module FSDist.
+       FSDist.t A (notation: {dist A}) where A is a choiceType is the type of
+       finitely-supported distributions over A (see proba.v for distributions
+       over a finType)
+  2. Module FSDist1.
+  3. Module FSDistBind.
+  4. ...
+*)
 
 Reserved Notation "{ 'dist' T }" (at level 0, format "{ 'dist'  T }").
 

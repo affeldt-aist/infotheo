@@ -4,7 +4,9 @@ From mathcomp Require Import all_ssreflect.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts bigop_ext Rbigop.
 
-(** * The log-sum Inequality *)
+(******************************************************************************)
+(*                     The log-sum Inequality                                 *)
+(******************************************************************************)
 
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.

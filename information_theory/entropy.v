@@ -5,7 +5,16 @@ Require Import Reals.
 Require Import ssrR Reals_ext ssralg_ext Rbigop bigop_ext logb ln_facts.
 Require Import proba divergence.
 
-(** * Entropy of a distribution *)
+(******************************************************************************)
+(*                        Entropy of a distribution                           *)
+(*                                                                            *)
+(* `H P == the entropy of the (finite) probability distribution P             *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   entropy_ge0 == the entropy is non-negative                               *)
+(*   entropy_max == the entropy is bounded by log |A| where A is the support  *)
+(*                  of the distribution                                       *)
+(******************************************************************************)
 
 Reserved Notation "'`H'" (at level 5).
 
@@ -40,7 +49,7 @@ apply Log_increasing_le => //.
 apply/ltRP; rewrite lt0R Hi; exact/leRP.
 Qed.
 
-Hypothesis P_pos : forall b, 0 < P b.
+(*Hypothesis P_pos : forall b, 0 < P b.
 
 Lemma entropy_pos_P_pos : 0 <= `H.
 Proof.
@@ -53,7 +62,7 @@ rewrite (_ : \sum_(_ in _) _ = \sum_(i in A | predT A) - (P i * log (P i))).
   rewrite /log -(Log_1 2).
   exact: Log_increasing_le.
 apply eq_bigl => i /=; by rewrite inE.
-Qed.
+Qed.*)
 
 End entropy_definition.
 
@@ -90,7 +99,7 @@ Qed.
 
 Local Open Scope reals_ext_scope.
 
-Lemma entropy_max (A : finType) (P : fdist A) : `H P <= log (INR #|A|).
+Lemma entropy_max (A : finType) (P : fdist A) : `H P <= log #|A|%:R.
 Proof.
 have [n HA] : exists n, #|A| = n.+1.
   exists (#|A|.-1); rewrite prednK //; exact: (fdist_card_neq0 P).

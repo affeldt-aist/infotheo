@@ -7,7 +7,13 @@ Require Import num_occ proba entropy types jtypes divergence.
 Require Import conditional_divergence error_exponent channel_code channel.
 Require Import success_decode_bound.
 
-(** * Converse of the Channel Coding Theorem *)
+(******************************************************************************)
+(*                 Channel coding theorem (converse part)                     *)
+(*                                                                            *)
+(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
+(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
+(* 53(1):63--103, 2014                                                        *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

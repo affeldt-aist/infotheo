@@ -4,7 +4,15 @@ From mathcomp Require Import matrix mxalgebra mxpoly vector fieldext finfield.
 Require Import ssralg_ext hamming linearcode decoding cyclic_code poly_decoding.
 Require Import vandermonde dft euclid grs f2.
 
-(** * Binary BCH Codes *)
+(******************************************************************************)
+(*                        Binary BCH codes                                    *)
+(*                                                                            *)
+(* The main result of this file is the proof that binary BCH codes implement  *)
+(* bounded-distance decoding (Lemma BCH_repair_is_correct).                   *)
+(*                                                                            *)
+(* Main reference: Robert McEliece, The Theory of Information and Coding,     *)
+(* Cambridge University Press, 2002                                           *)
+(******************************************************************************)
 
 (** OUTLINE
 - Module BCH.

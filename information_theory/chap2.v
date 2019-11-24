@@ -1,12 +1,21 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import all_ssreflect ssralg finset fingroup perm finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg finset fingroup perm finalg.
+From mathcomp Require Import matrix.
 From mathcomp Require boolp.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import cproba divergence entropy.
 
-(* tentative formalization Cover and Thomas, Chapter 2
-see also convex_dist.v
+(******************************************************************************)
+(*                Chapter 2 of Elements of Information Theory                 *)
+(*                                                                            *)
+(* Formalization of the chapter 2 of:                                         *)
+(* Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, Wiley,     *)
+(* 2005                                                                       *)
+(* See also entropy.v and convex_dist.v                                       *)
+(******************************************************************************)
+
+(*
 Contents:
 - Various distributions (Take.d, Nth.d, PairNth.d, PairTake.d, MargDist.d,
   MultivarPerm.d, TakeDrop.d)

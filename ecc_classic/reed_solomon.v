@@ -4,7 +4,18 @@ From mathcomp Require Import perm matrix mxpoly vector mxalgebra zmodp.
 Require Import ssr_ext ssralg_ext poly_ext channel_code decoding linearcode.
 Require Import hamming dft poly_decoding euclid grs cyclic_code.
 
-(** * Reed-Solomon Codes *)
+(******************************************************************************)
+(*                        Reed-Solomon codes                                  *)
+(*                                                                            *)
+(* The main result of this file is the proof that Reed-Solomon codes          *)
+(* implement bounded-distance decoding (Lemma RS_repair_is_correct).          *)
+(*                                                                            *)
+(* Main references:                                                           *)
+(* - Robert McEliece, The Theory of Information and Coding,  Cambridge        *)
+(*   University Press, 2002                                                   *)
+(* - Manabu Hagiwara, Coding Theory: Mathematics for Digital Communication,   *)
+(*   Nippon Hyoron Sha, 2012 (in Japanese)                                    *)
+(******************************************************************************)
 
 (** OUTLINE
 - Section reed_solomon_min_dist_errors.
@@ -680,7 +691,6 @@ by rewrite -(@RS_err_is_correct _ _ _ _ (primitive_uroot_neq0 an) l e) // /y add
 Qed.
 
 End RS_decoding_using_euclid.
-
 
 Module RS_encoder.
 

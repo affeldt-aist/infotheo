@@ -4,7 +4,13 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb Rbigop proba entropy aep typ_seq source_code.
 
-(** * Source coding theorem (converse part) *)
+(******************************************************************************)
+(*         Source coding theorem (fixed length, converse part)                *)
+(*                                                                            *)
+(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
+(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
+(* 53(1):63--103, 2014                                                        *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

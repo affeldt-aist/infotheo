@@ -3,16 +3,16 @@ Require Import Reals.
 From infotheo Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext.
 From infotheo Require Import Rbigop proba entropy divergence log_sum source_code.
 
-(* Shannon's source coding theorem (variable length) *)
-
-(* documentation
-   Ryosuke Obi.
-   In MI Lecture Note Workshop on Theorem proving and provers for reliable
-   theory and implementations (TPP2014),
-   Kyushu University, December 3--5, 2014, volume 61, pages 76--78, Dec 2014
-*)
-
-(* quickly patched to compile with infotheo [2019-08-19] and simplified afterwards *)
+(******************************************************************************)
+(*        Source coding theorem (variable length, converse part)              *)
+(*                                                                            *)
+(* For details, see Ryosuke Obi. In MI Lecture Note Workshop on Theorem       *)
+(* proving and provers for reliable theory and implementations (TPP2014),     *)
+(* Kyushu University, December 3--5, 2014, volume 61, pages 76--78, Dec 2014  *)
+(*                                                                            *)
+(* original source file from R. Obi, quickly patched to compile with infotheo *)
+(* [2019-08-19] and simplified afterwards                                     *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

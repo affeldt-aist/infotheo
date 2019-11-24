@@ -3,9 +3,11 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import ssralg_ext.
 
-(** * Vandermonde Matrices *)
+(******************************************************************************)
+(*                         Vandermonde Matrices                               *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section vandermonde_matrix.
 - Section vandermonde_k_matrix.
 - Section vandermonde_determinant.

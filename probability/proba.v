@@ -5,7 +5,44 @@ From mathcomp Require boolp.
 Require Import Reals Lra Nsatz.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 
-(** * Formalization of discrete probabilities *)
+(******************************************************************************)
+(*                          Finite probabilities                              *)
+(*                                                                            *)
+(* This file provides a formalization of finite probabilities using           *)
+(* distributions over a finite type (see fsdist.v for finitely-supported      *)
+(* distributions) that ends with a proof of the weak law of large numbers.    *)
+(*                                                                            *)
+(*  {fdist A}       == the type of distributions over a finType A             *)
+(*  Pr d E          == probability of event E over the distribution d         *)
+(*  {RV P -> T}     == the type of random variables over an ambient           *)
+(*                     distribution P                                         *)
+(*  \Pr[ X = a ]    == the probability that the random variable X is a        *)
+(* `Pr_ P [ A | B ] == conditional probability                                *)
+(*  P |= X _|_ Y    == the random variables X and Y over the ambient          *)
+(*                     distribution P are independent                         *)
+(* `E X             == expected value of the random variable X                *)
+(* `V X             == the variance of the random variable X                  *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*  E_sum_2              == the expected value of a sum is the sum of         *)
+(*                          expected values, whether or not the  summands     *)
+(*                           are mutually independent (the ``First            *)
+(*                           Fundamental Mystery of Probability'')            *)
+(*  V_sum_2              == the variance of the sum is the sum of variances   *)
+(*                           for any two independent random variables         *)
+(*  Var_average          == The variance of the average for independent       *)
+(*                            random variables                                *)
+(*  Pr_bigcup            == union bound/Boole's inequality                    *)
+(*  Boole_eq             == Boole's equality                                  *)
+(*  law_of_total_probability, law_of_total_probability_cond ==                *)
+(*                          laws of total probability                        *)
+(*  bayes_theorem        == Bayes' theorem                                    *)
+(*  Pr_bigcup_incl_excl  == an algebraic proof (by Erik Martin-Dorel) of the  *)
+(*                          formula of inclusion-exclusion                   *)
+(*  markov               == Markov inequality                                 *)
+(*  chebyshev_inequality == Chebyshev's inequality                            *)
+(*  wlln                 == weak law of large numbers                         *)
+(******************************************************************************)
 
 (** OUTLINE
   1. Module FDist.
@@ -37,7 +74,6 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
       Section expected_value_prop.
         Properties of the expected value of standard random variables
   20. Section probability_inclusion_exclusion.
-        An algebraic proof of the formula of inclusion-exclusion (by Erik Martin-Dorel)
   21. Section markov_inequality.
   22. Section variance_def.
       Section variance_prop.
@@ -80,6 +116,10 @@ Reserved Notation "'`E_'" (at level 5, format "'`E_'").
 Reserved Notation "X '\=sum' Xs" (at level 50).
 Reserved Notation "'`V'" (at level 5).
 Reserved Notation "'`V_' x" (at level 5, format "'`V_' x").
+Reserved Notation "`Pr_ P [ A | B ]" (at level 6, P, A, B at next level,
+  format "`Pr_ P [ A  |  B ]").
+Reserved Notation "`Pr_[ A | B ]" (at level 6, A, B at next level,
+  format "`Pr_[ A  |  B ]").
 Reserved Notation "P |= X _|_ Y" (at level 50, X, Y at next level,
   format "P  |=  X  _|_  Y").
 Reserved Notation "Z \= X '@+' Y" (at level 50).
@@ -1405,7 +1445,7 @@ Qed.
 Lemma Pr_union_disj E1 E2 : [disjoint E1 & E2] -> Pr (E1 :|: E2) = Pr E1 + Pr E2.
 Proof. move=> ?; rewrite -bigU //=; apply eq_bigl => a; by rewrite inE. Qed.
 
-Lemma Pr_big_union_disj n (F : 'I_n -> {set A}) :
+Let Pr_big_union_disj n (F : 'I_n -> {set A}) :
   (forall i j, i != j -> [disjoint F i & F j]) ->
   Pr (\bigcup_(i < n) F i) = \sum_(i < n) Pr (F i).
 Proof.
@@ -1414,6 +1454,34 @@ rewrite big_ord_recl /= Pr_union_disj; last first.
   rewrite -setI_eq0 big_distrr /=; apply/eqP/big1 => i _; apply/eqP.
   rewrite setI_eq0; exact: H.
 rewrite big_ord_recl IH // => i j ij; by rewrite H.
+Qed.
+
+Lemma Boole_eq (I : finType) (F : I -> {set A}) :
+  (forall i j, i != j -> [disjoint F i & F j]) ->
+  Pr (\bigcup_(i in I) F i) = \sum_(i in I) Pr (F i).
+Proof.
+move=> H.
+rewrite (@reindex_onto _ _ _ _ _ enum_val enum_rank _ F) /=; last first.
+  by move=> *; exact: enum_rankK.
+rewrite [in RHS](@reindex_onto _ _ _ _ _ enum_val enum_rank) /=; last first.
+  by move=> *; exact: enum_rankK.
+rewrite (eq_bigl xpredT); last by move=> i; rewrite enum_valK eqxx.
+rewrite Pr_big_union_disj; last first.
+  move=> i j ij.
+  suff : enum_val i != enum_val j by move/H.
+  by apply: contra ij => /eqP/enum_val_inj ->.
+by rewrite [in RHS](eq_bigl xpredT) // => i; rewrite enum_valK eqxx.
+Qed.
+
+Lemma law_of_total_probability (I : finType) (E : {set A}) (F : I -> {set A}) :
+  (forall i j, i != j -> [disjoint F i & F j]) ->
+  cover [set F i | i in I] = [set: A] ->
+  Pr E = \sum_(i in I) Pr (E :&: F i).
+Proof.
+move=> dis cov; have {1}-> : E = \bigcup_(i in I) (E :&: F i).
+  by rewrite cover_imset in cov; rewrite -big_distrr /= cov setIT.
+rewrite Boole_eq // => i j /dis; rewrite -2!setI_eq0 -setIIr => /eqP ->.
+by rewrite setI0.
 Qed.
 
 Lemma Pr_diff E1 E2 : Pr (E1 :\: E2) = Pr E1 - Pr (E1 :&: E2).
@@ -1743,8 +1811,6 @@ Proof.
 move=> f.
 rewrite /cast_RV_tupledist1 /=; apply big_rV_1 => // m; by rewrite -TupleFDist.one.
 Qed.
-
-(** ** An algebraic proof of the formula of inclusion-exclusion *)
 
 Section probability_inclusion_exclusion.
 (** This section gathers a proof of the formula of inclusion-exclusion
@@ -2171,7 +2237,109 @@ Definition inde_events := Pr d (E :&: F) = Pr d E * Pr d F.
 
 End independent_events.
 
-Section independent_discrete_random_variables.
+Section conditional_probablity.
+Variables (A : finType) (d : {fdist A}).
+
+Definition cPr0 (E F : {set A}) := Pr d (E :&: F) / Pr d F.
+Local Notation "`Pr_[ E | F ]" := (cPr0 E F).
+
+Lemma inde_events_cPr0 (E F : {set A}) : Pr d F != 0 -> inde_events d E F ->
+  `Pr_[E | F] = Pr d E.
+Proof. by move=> F0 EF; rewrite /cPr0 EF /Rdiv -mulRA mulRV ?mulR1. Qed.
+
+Section bayes.
+Variables (I : finType) (E : {set A}) (F : I -> {set A}).
+Hypothesis dis : forall i j, i != j -> [disjoint F i & F j].
+Hypothesis Fi0 : forall i, Pr d (F i) != 0.
+Hypothesis cov : cover [set F i | i in I] = [set: A].
+
+Lemma law_of_total_probability_cond  :
+  Pr d E = \sum_(i in I) `Pr_[E | F i] * Pr d (F i).
+Proof.
+rewrite (law_of_total_probability _ _ dis cov); apply eq_bigr; move=> i _.
+by rewrite /cPr0 /Rdiv -mulRA ?mulVR // mulR1.
+Qed.
+
+Lemma Bayes_theorem : Pr d E != 0 -> forall j,
+  `Pr_[F j | E] = `Pr_[E | F j] * Pr d (F j) / \sum_(i in I) `Pr_[E | F i] * Pr d (F i).
+Proof.
+move=> E0 j.
+rewrite /cPr0 {1}setIC {2 3}/Rdiv -!mulRA; congr (_ * _).
+by rewrite mulRA mulVR ?mul1R // law_of_total_probability_cond.
+Qed.
+
+End bayes.
+
+End conditional_probablity.
+
+Notation "`Pr_ P [ E | F ]" := (cPr0 P E F) : proba_scope.
+
+Section k_wise_independence.
+
+Variables (A I : finType) (k : nat) (d : fdist A) (E : I -> {set A}).
+
+Definition kwide_inde := forall (J : {set I}), (#|J| <= k)%nat ->
+  Pr d (\bigcap_(i in J) E i) = \prod_(i in J) Pr d (E i).
+
+End k_wise_independence.
+
+Section pairwise_independence.
+
+Variables (A I : finType) (d : fdist A) (E : I -> {set A}).
+
+Definition pairwise_inde := @kwide_inde A I 2%nat d E.
+
+Lemma pairwise_indeE :
+  pairwise_inde <-> (forall (i j : I), i != j -> inde_events d (E i) (E j)).
+Proof.
+split => [pi i j ij|].
+  red in pi.
+  red in pi.
+  have /pi : (#|[set i; j]| <= 2)%nat by rewrite cards2 ij.
+  rewrite bigcap_setU !big_set1 => H.
+  by rewrite /inde_events H (big_setD1 i) ?inE ?eqxx ?orTb //= setU1K ?inE // big_set1.
+move=> H s.
+move sn : (#| s |) => n.
+case: n sn => [|[|[|//]]].
+  by move/eqP; rewrite cards_eq0 => /eqP ->{s} _; rewrite !big_set0 Pr_setT.
+  by move/eqP/cards1P => [i ->{s}] _; rewrite !big_set1.
+move/eqP; rewrite cards2P => /existsP[a /existsP[b /andP[/eqP ->{s} ab]]] _.
+rewrite !bigcap_setU !big_set1 (big_setD1 a) ?inE ?eqxx ?orTb //=.
+by rewrite setU1K ?inE // big_set1 H.
+Qed.
+
+End pairwise_independence.
+
+Section mutual_independence.
+
+Variables (A I : finType) (d : fdist A) (E : I -> {set A}).
+
+Definition mutual_inde := (forall k, @kwide_inde A I k.+1 d E).
+
+Lemma mutual_indeE :
+  mutual_inde <-> (forall J : {set I}, J \subset I ->
+    Pr d (\bigcap_(i in J) E i) = \prod_(i in J) Pr d (E i)).
+Proof.
+rewrite /mutual_inde; split => [H J JI|H k J JI].
+  have [/eqP->{J JI}|J0] := boolP (J == set0).
+  by rewrite !big_set0 Pr_setT.
+  by rewrite (H #|J|.-1) ?prednK // card_gt0.
+by rewrite H //; apply/subsetP => i ij; rewrite inE.
+Qed.
+
+Lemma mutual_indeE' : #|I| != O -> mutual_inde <-> kwide_inde #|I| d E.
+Proof.
+move=> I0.
+rewrite /mutual_inde; split => [H J JI|].
+  have [/eqP->{J JI}|J0] := boolP (J == set0).
+  by rewrite !big_set0 Pr_setT.
+  by rewrite (H #|J|.-1) ?prednK // card_gt0.
+by move=> H k J Jk; rewrite H // max_card.
+Qed.
+
+End mutual_independence.
+
+Section independent_random_variables.
 
 Variables (A B : finType) (P : {fdist A * B}).
 Variables (TA TB : eqType).
@@ -2223,7 +2391,7 @@ rewrite big_distrl /=; apply eq_big.
   + by move=> b _; rewrite {1}H /= ProdFDist.dE.
 Qed.
 
-End independent_discrete_random_variables.
+End independent_random_variables.
 
 Notation "P |= X _|_ Y" := (@inde_drv _ _ P _ _ X Y) : proba_scope.
 
@@ -2249,9 +2417,6 @@ Let P2 := Multivar.tail_of P.
 
 Local Open Scope vec_ext_scope.
 
-(* The expected value of a sum is the sum of expected values, whether or not the
-   summands are mutually independent (the ``First Fundamental Mystery of
-   Probability'' \cite[Theorem 6.2]{probook}): *)
 Lemma E_sum_2 : X \= X1 @+ X2 -> `E X = `E_P1 X1 + `E_P2 X2.
 Proof.
 move=> Hsum.
@@ -2354,8 +2519,6 @@ rewrite !big_split /=; congr (_ + _ + _).
   + congr (_ * _); by rewrite Bivar.sndE.
 Qed.
 
-(* The variance of the sum is the sum of variances for any two
-  independent random variables %(\cite[Theorem 6.8]{probook})%: *)
 Lemma V_sum_2 : X \= X1 @+ X2 -> (Multivar.to_bivar `p_X) |= X1 _|_ X2  ->
   `V X = `V_P1 X1 + `V_P2 X2.
 Proof.
@@ -2471,7 +2634,6 @@ case=> [_ | n IH] Xsum Xs Hsum s Hs.
     by rewrite (@row_mxEr _ _ 1).
 Qed.
 
-(* The variance of the average for independent random variables: *)
 Lemma Var_average n (P : fdist A) (X : 'rV[A]_n -> R) Xs (sum_Xs : X \=sum Xs) :
   forall sigma2, (forall i, `V_P (Xs ``_ i) = sigma2) ->
   INR n * `V_(P `^ n) (X `/ n) = sigma2.

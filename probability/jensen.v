@@ -5,6 +5,10 @@ Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import proba convex_choice.
 
+(******************************************************************************)
+(*                            Jensen's inequality                             *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.

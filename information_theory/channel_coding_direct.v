@@ -5,7 +5,13 @@ Require Import Reals Lra Classical.
 Require Import ssrZ ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import proba entropy aep typ_seq joint_typ_seq channel channel_code.
 
-(** * Channel Coding Theorem (direct part) *)
+(******************************************************************************)
+(*                 Channel coding theorem (direct part)                       *)
+(*                                                                            *)
+(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
+(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
+(* 53(1):63--103, 2014                                                        *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

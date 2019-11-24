@@ -5,7 +5,13 @@ Require Import Reals Lra.
 Require Import ssrZ ssrR Reals_ext ssr_ext ssralg_ext logb natbin Rbigop proba.
 Require Import entropy aep typ_seq source_code.
 
-(** * Source coding theorem (direct part) *)
+(******************************************************************************)
+(*        Source coding theorem (fixed length, direct part)                   *)
+(*                                                                            *)
+(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
+(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
+(* 53(1):63--103, 2014                                                        *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

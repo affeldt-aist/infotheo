@@ -3,14 +3,18 @@ Require Import Reals Lra.
 From infotheo Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext.
 From infotheo Require Import Rbigop proba entropy aep typ_seq natbin source_code.
 
-(* documentation:
-  Ryosuke Obi, Manabu Hagiwara, and Reynald Affeldt.
-  Formalization of variable-length source coding theorem: Direct part.
-  In International Symposium on Information Theory and Its Applications (ISITA 2014),
-  Melbourne, Australia, October 26--29, 2014, pages 201--205.
-  IEICE. IEEE Xplore, Oct 2014 *)
-
-(* quickly patched to compile with infotheo [2019-08-19] *)
+(******************************************************************************)
+(*        Source coding theorem (variable length, direct part)                *)
+(*                                                                            *)
+(* For details, see Ryosuke Obi, Manabu Hagiwara, and Reynald Affeldt.        *)
+(* Formalization of variable-length source coding theorem: Direct part.       *)
+(* International Symposium on Information Theory and Its Applications (ISITA  *)
+(* 2014), Melbourne, Australia, October 26--29, 2014, pages 201--205. IEICE.  *)
+(* IEEE Xplore, Oct 2014                                                      *)
+(*                                                                            *)
+(* original source file by R. Obi, quickly patched to compile with infotheo   *)
+(* [2019-08-19] and simplified afterwards                                     *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -29,35 +33,23 @@ Variable f0 : X -> R.
 Let n := n'.+1.
 Variable S : {set  X}.
 
-Lemma rsum_mulRC g Cond: \sum_(i| Cond  i) f0 i * g i = \sum_(i| Cond i) g i * f0 i.
-Proof. by apply: eq_bigr=>? _; rewrite mulRC. Qed.
-
-Lemma rsum_union':
-  \sum_(x| x \in X) f0 x = \sum_(x| x \in S ) f0 x + \sum_(x| x \in ~: S) f0 x.
+Lemma rsum_split:
+  \sum_(x| x \in X) f0 x = \sum_(x| x \in S) f0 x + \sum_(x| x \in ~: S) f0 x.
 Proof.
-rewrite [X in X = _] (_ : _ = \sum_(x in [set : X]) f0(x)).
-- rewrite -big_union //=.
-  + by apply: eq_big => // ?; rewrite !inE orbN.
-  + by rewrite disjoints_subset setCS.
--by apply: eq_bigl => ?; rewrite in_setT.
+rewrite (bigID (fun x => x \in S)) /=; congr (_ + _).
+by apply eq_bigl => x /=; rewrite inE.
 Qed.
 
-Lemma log_pow_INR m k : (m > 0)%nat ->
-  log (INR (expn m k)) = (INR k) * log (INR m).
+Lemma log_pow_INR m k : (m > 0)%nat -> log (expn m k)%:R = k%:R * log m%:R.
 Proof.
-move => Hyp.
-elim: k => [| k IH].
-- by rewrite mul0R expn0 /log Log_1.
-- rewrite expnS mult_INR /log LogM  //.
-  + rewrite /log in IH.
-    by rewrite IH -addn1 plus_INR mulRDl addRC mul1R.
-  + exact/lt_0_INR/ltP.
-  + by apply: lt_0_INR; apply/ltP; rewrite expn_gt0 /orb Hyp.
+move=> m0; elim: k => [|k ih]; first by rewrite expn0 /log Log_1 mul0R.
+rewrite expnS natRM /log LogM ?ltR0n // ?expn_gt0 ?m0 // -!/(log _) ih.
+by rewrite -addn1 natRD addRC mulRDl mul1R.
 Qed.
 
 Lemma R3neqR0 : 3 <> 0.
 Proof.
-  by apply: nesym;apply: Rlt_not_eq; apply: Rplus_lt_pos; [apply: Rlt_0_1 | apply: Rlt_0_2].
+by apply: nesym;apply: Rlt_not_eq; apply: Rplus_lt_pos; [apply: Rlt_0_1 | apply: Rlt_0_2].
 Qed.
 
 Lemma zero_ge_4 : 0 < 4.
@@ -66,17 +58,17 @@ Proof. by apply: Rmult_lt_0_compat; apply: Rlt_0_2. Qed.
 Lemma R4neqR0 : 4 <> 0.
 Proof.  by apply: Rgt_not_eq; apply: zero_ge_4. Qed.
 
-Lemma elevenOverTwelve_le_One : / 4+ / 3 + / 3 < 1.
+Lemma elevenOverTwelve_le_One : / 4 + / 3 + / 3 < 1.
 Proof.
-  move : R3neqR0 R4neqR0 => ? ?.
-  apply: (Rmult_lt_reg_r 3); first by apply: Rplus_lt_pos; [apply: Rlt_0_1 | apply: Rlt_0_2].
-  rewrite Rmult_plus_distr_r Rmult_plus_distr_r -Rinv_l_sym // mul1R mulRC.
-  apply: (Rmult_lt_reg_r 4); first  by apply: Rmult_lt_0_compat; apply: Rlt_0_2.
-  rewrite 2!Rmult_plus_distr_r -mulRA -Rinv_l_sym //=.
-  rewrite !(mulR1, mul1R) 2!Rmult_plus_distr_r !mul1R.
-  rewrite addRC; apply: Rplus_lt_compat_l.
-  apply: Rplus_lt_compat_r; apply: (Rlt_le_trans _ _ _ (Rlt_plus_1 _)).
-  lra.
+move : R3neqR0 R4neqR0 => ? ?.
+apply: (Rmult_lt_reg_r 3); first by apply: Rplus_lt_pos; [apply: Rlt_0_1 | apply: Rlt_0_2].
+rewrite Rmult_plus_distr_r Rmult_plus_distr_r -Rinv_l_sym // mul1R mulRC.
+apply: (Rmult_lt_reg_r 4); first  by apply: Rmult_lt_0_compat; apply: Rlt_0_2.
+rewrite 2!Rmult_plus_distr_r -mulRA -Rinv_l_sym //=.
+rewrite !(mulR1, mul1R) 2!Rmult_plus_distr_r !mul1R.
+rewrite addRC; apply: Rplus_lt_compat_l.
+apply: Rplus_lt_compat_r; apply: (Rlt_le_trans _ _ _ (Rlt_plus_1 _)).
+lra.
 Qed.
 
 End R_lemma.
@@ -88,10 +80,8 @@ Variable P : fdist X.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 
-Lemma leng_neq_0 : INR n <> 0.
-Proof.
- by apply: nesym; apply: Rlt_not_eq; apply: lt_0_INR; apply/ltP.
-Qed.
+Lemma leng_neq_0 : n%:R <> 0.
+Proof. by apply gtR_eqF; rewrite ltR0n. Qed.
 
 Lemma fdist_support_LB : 1 <= INR #|X|.
 Proof. rewrite (_ : 1 = INR 1)  //; exact/le_INR/leP/fdist_card_neq0. Qed.
@@ -195,8 +185,8 @@ move=> t1 t2; rewrite /f.
 case/boolP : (t1 == t2) ; first by move /eqP.
 move=> mainCase.
 case: ifP=>?; case: ifP=>? //; case=> H; last by apply/tuple_of_row_inj/inj_enc_not_typ/val_inj.
--  have {}H : seq.index t1 (enum (`TS P n epsilon)) =
-              seq.index t2 (enum (`TS P n epsilon))
+-  have {}H : index t1 (enum (`TS P n epsilon)) =
+              index t2 (enum (`TS P n epsilon))
      by apply (@bitseq_of_nat_inj (Z.abs_nat L_typ)) => //;  apply: (leq_trans _ card_TS_Lt);
      apply: seq_index_enum_card => //;  apply: enum_uniq.
  rewrite -(@nth_index _ t1 t1 (enum (`TS P n epsilon))); last by rewrite mem_enum.
@@ -242,14 +232,14 @@ Qed.
 End Enc_Dec.
 
 Section E_Leng_Cw_Lemma.
-Variable (X : finType).
+Variables (X : finType).
 
 Definition E_leng_cw (n : nat) (f : encT X (seq bool) n) (P : fdist X) :=
-  \sum_(x in 'rV[X]_n)( P `^ n (x) * (INR (size (f x)))).
+  \sum_(x in 'rV[X]_n) (P `^ n) x * (size (f x))%:R.
 
-Lemma E_leng_cw' (n : nat) (f : encT X (seq bool) n) (P : fdist X) :
-  E_leng_cw f P = @Ex _ (P `^ n) (fun x => INR (size (f x))).
-Proof. by rewrite /E_leng_cw /= rsum_mulRC. Qed.
+Lemma E_leng_cwE (n : nat) (f : encT X (seq bool) n) (P : fdist X) :
+  E_leng_cw f P = Ex (P `^ n) (fun x => (size (f x))%:R).
+Proof. by rewrite /E_leng_cw /=; under eq_bigr do rewrite mulRC. Qed.
 
 Variable (n' : nat).
 Let n := n'.+1.
@@ -285,14 +275,14 @@ rewrite /= -addn1 size_tuple plus_INR INR_Zabs_nat.
 -by apply: le_IZR; apply: (Lnt_nonneg _ P).
 Qed.
 
-Lemma E_leng_cw_le_Length : E_leng_cw (f (n':=n') P epsilon) P <= (IZR L_typ + 1)
- + epsilon * (IZR L_not_typ + 1) .
+Lemma E_leng_cw_le_Length : E_leng_cw (f (n':=n') P epsilon) P <=
+  (IZR L_typ + 1) + epsilon * (IZR L_not_typ + 1) .
 Proof.
-rewrite /E_leng_cw (rsum_union' _ (`TS P n'.+1 epsilon)).
+rewrite /E_leng_cw (rsum_split _ (`TS P n'.+1 epsilon)).
 rewrite eq_sizef_Lnt eq_sizef_Lt -!(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
  P `^ n i = 1 - \sum_(i | i \in `TS P n epsilon) P `^ n i); last first.
-- by rewrite -(FDist.f1 P`^n) (rsum_union' _ (`TS P n epsilon)) addRC addRK.
+- by rewrite -(FDist.f1 P`^n) (rsum_split _ (`TS P n epsilon)) addRC addRK.
 - apply leR_add.
   + rewrite -[X in _ <= X]mulR1; apply: leR_wpmul2l => //.
     + apply: addR_ge0 => //; exact/ltRW/Lt_pos.

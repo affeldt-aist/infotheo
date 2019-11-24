@@ -4,7 +4,16 @@ From mathcomp Require Import all_ssreflect.
 Require Import Reals.
 Require Import ssrR Reals_ext ln_facts logb Rbigop proba.
 
-(** * divergence (or the Kullback-Leibler distance or relative entropy) *)
+(******************************************************************************)
+(*    Divergence (or the Kullback-Leibler distance or relative entropy)       *)
+(*                                                                            *)
+(* D(P || Q) == divergence between the (finite) probability distributions P   *)
+(*              Q                                                             *)
+(* Lemmas:                                                                    *)
+(*   div_ge0 == divergence is non-negative                                    *)
+(*   divPP   == D(P || P) = 0                                                 *)
+(*   div0P   == D(P || Q) = 0 <-> P = Q                                       *)
+(******************************************************************************)
 
 Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level,
   format "'D(' P  '||'  Q ')'").

@@ -1,0 +1,4 @@
+0.0.6 (wip):
+
+renaming:
+- Pr_big_union_disj renamed and generalized to Boole_eq

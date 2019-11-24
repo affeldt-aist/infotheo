@@ -6,7 +6,9 @@ Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop ln_facts.
 Require Import num_occ proba entropy channel divergence types jtypes.
 Require Import cproba chap2.
 
-(** * Conditional divergence *)
+(******************************************************************************)
+(*                        Conditional divergence                              *)
+(******************************************************************************)
 
 Reserved Notation "P '|-' V '<<' W" (at level 5, V, W at next level).
 Reserved Notation "P '|-' V '<<b' W" (at level 5, V, W at next level).

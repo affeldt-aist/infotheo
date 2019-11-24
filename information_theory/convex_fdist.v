@@ -4,20 +4,40 @@ From mathcomp Require boolp.
 Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy proba cproba convex_choice binary_entropy_function.
-Require Import log_sum divergence.
+Require Import log_sum divergence chap2.
+
+(******************************************************************************)
+(*                Section 2.7 of Elements of Information Theory               *)
+(*                                                                            *)
+(* Formalization of the section 2.7 of:                                       *)
+(* Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, Wiley,     *)
+(* 2005                                                                       *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   entropy_concave == the entropy is concave                                *)
+(*   mutual_information_concave == the mutual information is concave w.r.t.   *)
+(*     its first argument                                                     *)
+(*   mutual_information_convex == the mutual information is convex w.r.t.　　　*)
+(*     its second argument                                                    *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(* concavity of relative entropy and of mutual information
-   Cover and Thomas, Chapter 2 *)
 
 Local Open Scope R_scope.
 Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
 Local Open Scope entropy_scope.
+
+(* TODO: move *)
+Lemma eq_sig_irrelevant {A} (P : A -> Prop) a1 a2 (P1 : P a1) (P2 : P a2) (p : a1 = a2) :
+  exist _ a1 P1 = exist _ a2 P2.
+Proof.
+have p' : sval (exist _ a1 P1) = sval (exist _ a2 P2) := p.
+apply (eq_sig _ _ p'); exact/boolp.Prop_irrelevance.
+Qed.
 
 Section entropy_log_div.
 Variables (A : finType) (p : fdist A) (n : nat) (A_not_empty : #|A| = n.+1).
@@ -72,15 +92,6 @@ Definition avg p (x y : T) : T :=
 Definition simple_elim U (f : fdist A -> fdist A -> U) (x : T) :=
   f (sval x).1 (sval x).2.
 End def.
-
-(* NB: same as ProofIrrelevance.ProofIrrelevanceTheory.subset_eq_compat *)
-(* TODO: move *)
-Lemma eq_sig_irrelevant {A} (P : A -> Prop) a1 a2 (P1 : P a1) (P2 : P a2) (p : a1 = a2) :
-  exist _ a1 P1 = exist _ a2 P2.
-Proof.
-have p' : sval (exist _ a1 P1) = sval (exist _ a2 P2) := p.
-apply (eq_sig _ _ p'); exact/boolp.Prop_irrelevance.
-Qed.
 
 Section prop.
 Variable (A : finType).
@@ -349,9 +360,6 @@ by apply /R_convex_function_atN /concavity_of_entropy_x_le_y.
 Qed.
 
 End entropy_concave_alternative_proof_binary_case.
-
-(* TODO: move up *)
-Require Import chap2.
 
 Section mutual_information_concave.
 

@@ -5,6 +5,19 @@ From mathcomp Require Import fingroup zmodp poly ssrnum.
 Require FunctionalExtensionality.
 Require Import ssr_ext.
 
+(******************************************************************************)
+(*                       Kraft's inequality                                   *)
+(*                                                                            *)
+(* For details, see: Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. *)
+(* Examples of formal proofs about data compression. International Symposium  *)
+(* on Information Theory and Its Applications (ISITA 2018), Singapore,        *)
+(* October 28--31, 2018, pages 633--637. IEEE, Oct 2018                       *)
+(*                                                                            *)
+(* Main references:                                                           *)
+(* - Robert McEliece, The Theory of Information and Coding,  Cambridge        *)
+(*   University Press, 2002                                                   *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
