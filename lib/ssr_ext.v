@@ -3,7 +3,9 @@
 From mathcomp Require Import all_ssreflect fingroup perm.
 Import Coq.NArith.BinNatDef.
 
-(** * Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm *)
+(******************************************************************************)
+(* Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm  *)
+(******************************************************************************)
 
 Declare Scope tuple_ext_scope.
 Declare Scope vec_ext_scope.
@@ -556,7 +558,6 @@ End finset_ext.
 
 Module Set2.
 Section set2.
-
 Variable A : finType.
 Hypothesis A2 : #|A| = 2%nat.
 

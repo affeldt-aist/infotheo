@@ -3,9 +3,17 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
 Require Import hamming num_occ ssralg_ext f2 linearcode decoding channel_code.
 
-(** * Repetition Codes *)
+(******************************************************************************)
+(*                       Repetition Codes                                     *)
+(*                                                                            *)
+(* Rep.code r == definition of the r-repetition code                          *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   min_dist_repcode    == The minimum distance is r.+1                      *)
+(*   repcode_MD_decoding == Decoding by majority vote implements MD-decoding  *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Module Rep
     definition of repetition codes using systematic form
     no repair function yet
@@ -198,7 +206,6 @@ move: H1; rewrite H inE => /orP[|].
 - by rewrite inE (negbTE H2).
 Qed.
 
-(* The minimum distance is r.+1  *)
 Lemma min_dist_repcode (Hr : odd r.+1) : min_dist not_trivial_replcode = r.+1.
 Proof.
 rewrite /min_dist /= (_ : min_wH_cw _ = const_mx 1) ?wH_const_mx //.
@@ -246,7 +253,6 @@ case: ifPn => // _ /eqP [<-].
 by rewrite -mem_kernel_syndrome0 mem0v.
 Qed.
 
-(* Decoding by majority vote implements MD-decoding *)
 Lemma repcode_MD_decoding r : MD_decoding [set cw in Rep.code r]
   (Decoder.repair (Lcode.dec (Rep.Lcode_wo_repair (@reprepair_img r)))).
 Proof.

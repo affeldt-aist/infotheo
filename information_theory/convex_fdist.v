@@ -176,12 +176,8 @@ have h0 : forall p1 p2, [forall i, 0 <b= h p1 p2 i].
   case: ifPn => [_ |  _]; [|exact/leRR].
   apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
 move: (@log_sum _ setT (mkPosFfun (h0 p1 p2)) (mkPosFfun (h0 q1 q2)) hdom).
-rewrite /=.
-have rsum_setT' : forall (f : 'I_2 -> R),
-  \sum_(i < 2) f i = \sum_(i in [set: 'I_2]) f i.
-  move=> f0; by apply eq_bigl => i; rewrite inE.
-rewrite -!rsum_setT' !big_ord_recl !big_ord0 !addR0.
-rewrite /h /= !ffunE; move/leR_trans; apply.
+rewrite /= -!rsum_ord_setT !big_ord_recl !big_ord0 !addR0.
+rewrite /h /= !ffunE => /leR_trans; apply.
 apply/Req_le; congr (_ + _).
   case/boolP : (t == `Pr 0) => [/eqP ->|t0]; first by rewrite !mul0R.
   rewrite mulRA; congr (_ * _ * log _).

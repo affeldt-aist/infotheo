@@ -5,8 +5,12 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
 Require Import Rbigop proba divergence log_sum variation_dist.
 
-(* Partition inequality
-   (special case for distributions other sets with 2 elements) *)
+(******************************************************************************)
+(*                      Partition inequality                                  *)
+(*                                                                            *)
+(* Special case for distributions other sets with 2 elements, to be use in    *)
+(* the proof of Pinsker's inequality.                                         *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -31,19 +35,9 @@ Definition bipart_pmf := [ffun i => \sum_(a in A_ i) P a].
 Definition bipart : fdist [finType of bool].
 apply (@FDist.make _ bipart_pmf).
 - by move=> a; rewrite ffunE; apply: rsumr_ge0.
-- rewrite Set2sumE /= ?card_bool // => HX; rewrite /bipart_pmf.
-  set a := Set2.a HX. set b := Set2.b HX.
-  have : a <> b by apply/eqP/Set2.a_neq_b.
-  wlog : a b / (a == false) && (b == true).
-    move=> Hwlog b01.
-    have : ((a, b) == (true, false)) || ((a, b) == (false, true)).
-      move: a b b01; by case; case.
-    case/orP; case/eqP => -> ->.
-    - by rewrite addRC Hwlog.
-    - exact: Hwlog.
-  case/andP => /eqP -> /eqP -> _.
+- rewrite big_bool /= /bipart_pmf /= !ffunE.
   transitivity (\sum_(a | (a \in A_ 0 :|: A_ 1)) P a).
-    by rewrite !ffunE [X in _ = X](@big_union _ _ _ _ (A_ 0) (A_ 1)) // -setI_eq0 setIC dis eqxx.
+    by rewrite [X in _ = X](@big_union _ _ _ _ (A_ 0) (A_ 1)) // -setI_eq0 setIC dis eqxx.
   rewrite cov -(FDist.f1 P); apply eq_bigl => /= x; by rewrite in_setT inE.
 Defined.
 
@@ -79,22 +73,8 @@ apply: (leR_trans _ step2) => {step2}.
 rewrite [X in _ <= X](_ : _ =
   P_A 0 * log ((P_A 0) / (Q_A 0)) + P_A 1 * log ((P_A 1) / (Q_A 1))); last first.
   by rewrite !ffunE.
-rewrite /div Set2sumE ?card_bool // => B.
+rewrite /div big_bool.
 rewrite [P_A]lock [Q_A]lock /= -!lock.
-move: (Set2.a_neq_b B).
-set a := Set2.a B. set b := Set2.b B.
-wlog : a b / (a == 0) && (b == 1).
-  move=> Hwlog i0i1.
-  have : ((a, b) == (1, 0)) || ((a, b) == (0, 1)).
-    destruct a; destruct b => //.
-    move: a b i0i1.
-    case=> //.
-      case=> // _ _.
-      rewrite addRC.
-      exact: Hwlog.
-    case=> // _ _.
-    exact: Hwlog.
-case/andP => /eqP -> /eqP -> _ {a b}.
 have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
   by apply Rle_lt_or_eq_dec; rewrite ffunE; exact: rsumr_ge0.
 - have [A1_Q_neq0 | /esym A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.

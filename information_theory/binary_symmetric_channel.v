@@ -1,11 +1,19 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg perm zmodp matrix.
+From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg perm.
+From mathcomp Require Import  zmodp matrix.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import entropy binary_entropy_function channel hamming channel_code.
 
-(** * Capacity of the binary symmetric channel *)
+(******************************************************************************)
+(*                Capacity of the binary symmetric channel                    *)
+(*                                                                            *)
+(* BSC.c == Definition of the binary symmetric channel (BSC)                  *)
+(*                                                                            *)
+(* Lemma:                                                                     *)
+(*   BSC_capacity == the capacity of a BSC is 1 - H p                         *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -14,11 +22,8 @@ Import Prenex Implicits.
 Local Open Scope channel_scope.
 Local Open Scope R_scope.
 
-(** Definition of the Binary Symmetric Channel (BSC) *)
-
 Module BSC.
 Section BSC_sect.
-
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable p : prob.
@@ -29,7 +34,7 @@ End BSC_sect.
 End BSC.
 
 Lemma closed p : 0 < p < 1 -> 0 <= p <= 1.
-Proof. case => ?; split; by apply Rlt_le. Qed.
+Proof. case => ?; split; exact/ltRW. Qed.
 
 Local Open Scope channel_scope.
 Local Open Scope entropy_scope.
@@ -158,8 +163,6 @@ Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
 Hypothesis p_01' : 0 < p < 1.
 Let p_01 := Prob.mk (closed p_01').
-
-(** The capacity of a Binary Symmetric Channel: *)
 
 Theorem BSC_capacity : capacity (BSC.c card_A p_01) (1 - H2 p).
 Proof.

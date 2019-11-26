@@ -4,7 +4,9 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
-(* Additional lemmas about bigops *)
+(******************************************************************************)
+(*                     Additional lemmas about bigops                         *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -31,14 +33,25 @@ Arguments big_cast_rV {R} {idx} {op} {n} {m} _ {A} _ _.
 Section bigop_add_law.
 
 Variables (R : Type) (idx : R) (op : R -> R -> R) (M : Monoid.add_law idx op).
-Variable A : finType.
 
-Lemma Set2sumE (f : A -> R) (card_A : #|A| = 2%nat) :
+Lemma Set2sumE (A : finType) (f : A -> R) (card_A : #|A| = 2%nat) :
  \big[M/idx]_(i in A) (f i) = M (f (Set2.a card_A)) (f (Set2.b card_A)).
 Proof.
 by rewrite /index_enum -enumT Set2.enumE !big_cons big_nil (Monoid.addm0 M) !enum_valP.
 Qed.
 
+Lemma big_bool (f : bool -> R) : \big[M/idx]_(i in {:bool}) f i = M (f false) (f true).
+Proof.
+set h : 'I_2 -> bool := [eta (fun=>false) with ord0 |-> false, lift ord0 ord0 |-> true].
+set h' : bool -> 'I_2 := fun x => match x with false => ord0 | true => lift ord0 ord0 end.
+rewrite (reindex_onto h h') /=; last by move=> i _; rewrite /h /h'; case: ifP.
+rewrite (eq_bigl xpredT); last first.
+  move=> i; move: (ord2 i) => /orP[|] /eqP -> /=; first by rewrite eqxx.
+  exact/eqP/val_inj.
+by rewrite big_ord_recl /= big_ord_recl big_ord0 Monoid.addm0.
+Qed.
+
+Variable (A : finType).
 Local Open Scope ring_scope.
 Lemma big_rV_0 f (P : pred 'rV[A]_0) (a : A) : \big[M/idx]_(v in 'rV[A]_0 | P v) f v =
   if P (\row_(i < 0) a) then f (\row_(i < 0) a) else idx.

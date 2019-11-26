@@ -4,7 +4,9 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
-(** * Instantiation of canonical big operators with Coq reals *)
+(******************************************************************************)
+(*    Instantiation of MathComp's canonical big operators with Coq reals      *)
+(******************************************************************************)
 
 Notation "\sum_ ( i <- r | P ) F" := (\big[Rplus/R0]_(i <- r | P%B) F)
   (at level 41, F at level 41, i, r at level 50,
@@ -150,9 +152,14 @@ Proof. elim: k => // k Hk; by rewrite iterS Hk Rmax_right. Qed.
 
 (** Rle, Rlt lemmas for big sums of reals *)
 
+(* TODO: use finset.big_set *)
 Lemma rsum_setT (A : finType) (f : A -> R) (P : pred A) :
   \sum_(i in A | P i) f i = \sum_(i in [set: A] | P i) f i.
 Proof. apply eq_bigl => x /=; by rewrite !inE. Qed.
+
+Lemma rsum_ord_setT (n : nat) (f : 'I_n -> R) :
+  \sum_(i < n) f i = \sum_(i in [set: 'I_n]) f i.
+Proof. by apply eq_bigl => i; rewrite inE. Qed.
 
 Section ler_ltr_rsum.
 

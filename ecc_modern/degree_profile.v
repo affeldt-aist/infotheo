@@ -3,7 +3,16 @@ From mathcomp Require Import matrix perm.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext ssrR proba.
 
-(** * wip *)
+(******************************************************************************)
+(*                  Work in progress about LDPC codes                         *)
+(*                                                                            *)
+(* For details, see                                                           *)
+(* Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. Formalization of  *)
+(* Reed-Solomon codes and progress report on formalization of LDPC codes.     *)
+(* I nternational Symposium on Information Theory and Its Applications (ISITA *)
+(* 2016), Monterey, California, USA, October 30--November 2, 2016, pages      *)
+(* 537--541. IEICE. IEEE Xplore, Oct 2016.                                    *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

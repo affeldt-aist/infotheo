@@ -6,7 +6,9 @@ Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
 Require Import Rbigop proba divergence variation_dist pinsker_function.
 Require Import partition_inequality.
 
-(** * Pinsker's Inequality *)
+(******************************************************************************)
+(*                       Pinsker's Inequality                                 *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -89,7 +91,7 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
     by apply/invR_gt0; rewrite subR_gt0 -prob_lt1.
   rewrite LogV ?subR_gt0 //; last by rewrite -prob_lt1.
   ring.
-do 2 f_equal.
+congr (_ - _ * _).
 by rewrite /var_dist Set2sumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
 Qed.
 
@@ -175,17 +177,7 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
           rewrite subR_lt0; apply ltr_rsum_support => // a.
           rewrite /A1 in_set; by move/ltRP.
         by rewrite -big_morph_oppR.
-  rewrite Set2sumE ?card_bool // => HX; rewrite /bipart_pmf.
-  set a := Set2.a HX. set b := Set2.b HX.
-  have : a <> b by apply/eqP/Set2.a_neq_b.
-  wlog : a b / (a == false) && (b == true).
-    move=> Hwlog ab.
-    have : ((a, b) == (true, false)) || ((a, b) == (false, true)).
-      move: a b ab; by case; case.
-    case/orP; case/eqP => -> ->.
-    - by rewrite (Hwlog false true) //= addRC.
-    - by apply Hwlog.
-  case/andP => /eqP ? /eqP ?; by subst a b.
+  by rewrite big_bool /= /bipart_pmf !ffunE /=.
 rewrite step2.
 apply (Pinsker_2_inequality card_bool).
 (* TODO: lemma *)

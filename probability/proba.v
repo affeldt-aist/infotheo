@@ -1497,6 +1497,7 @@ Lemma Pr_inter_eq E1 E2 : Pr (E1 :&: E2) = Pr E1 + Pr E2 - Pr (E1 :|: E2).
 Proof. by rewrite Pr_union_eq subRBA addRC addRK. Qed.
 
 End probability.
+Arguments law_of_total_probability {_} _ {_} _ _.
 
 Lemma Pr_FDistMap (A B : finType) (f : A -> B) (d : fdist A) (E : {set A}) : injective f ->
   Pr d E = Pr (FDistMap.d f d) (f @: E).
@@ -2231,9 +2232,21 @@ End chebyshev.
 
 Section independent_events.
 
-Variables (A : finType) (d : fdist A) (E F : {set A}).
+Variables (A : finType) (d : fdist A).
 
-Definition inde_events := Pr d (E :&: F) = Pr d E * Pr d F.
+Definition inde_events (E F : {set A}) := Pr d (E :&: F) = Pr d E * Pr d F.
+
+Lemma inde_events_cplt (E F : {set A}) :
+  inde_events E F -> inde_events E (~: F).
+Proof.
+rewrite /inde_events => EF; have : Pr d E = Pr d (E :&: F) + Pr d (E :&: ~:F).
+  rewrite (law_of_total_probability d E (fun b => if b then F else ~:F)) /=; last 2 first.
+    move=> i j ij; rewrite -setI_eq0.
+    by case: ifPn ij => Hi; case: ifPn => //= Hj _; rewrite ?setICr // setIC setICr.
+    by rewrite cover_imset big_bool /= setUC setUCr.
+  by rewrite big_bool addRC.
+by rewrite addRC -subR_eq EF -{1}(mulR1 (Pr d E)) -mulRBr -Pr_of_cplt.
+Qed.
 
 End independent_events.
 
@@ -2256,7 +2269,7 @@ Hypothesis cov : cover [set F i | i in I] = [set: A].
 Lemma law_of_total_probability_cond  :
   Pr d E = \sum_(i in I) `Pr_[E | F i] * Pr d (F i).
 Proof.
-rewrite (law_of_total_probability _ _ dis cov); apply eq_bigr; move=> i _.
+rewrite (law_of_total_probability _ _ _ dis cov); apply eq_bigr; move=> i _.
 by rewrite /cPr0 /Rdiv -mulRA ?mulVR // mulR1.
 Qed.
 
