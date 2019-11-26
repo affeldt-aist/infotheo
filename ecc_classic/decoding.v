@@ -5,9 +5,23 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
 
-(** * The variety of decoders *)
+(******************************************************************************)
+(*                      The variety of decoders                               *)
+(*                                                                            *)
+(* MD_decoding  == minimum distance decoding (a.k.a. nearest neighbor         *)
+(*                 decoding)                                                  *)
+(* BD_decoding  == bounded-distance decoding                                  *)
+(*                 Notation: t .-BDD f                                        *)
+(* ML_decoding  == maximum likelihood decoding                                *)
+(* MAP_decoding == maximum aposteriori decoding                               *)
+(* MPM_decoding == maximum posterior marginal decoding                        *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   MD_implies_ML  == MD decoding implies ML decoding of a BSC with p < 1/2  *)
+(*   MAP_implies_ML == MAP decoding implies ML decoding                       *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section minimum_distance_decoding.
 - Section bounded_distance_decoding.
 - Section maximum_likelihood_decoding.
@@ -360,7 +374,7 @@ Qed.
 
 End MAP_decoding_prop.
 
-Section MPM_condition.
+Section MPM_decoding.
 
 (* in the special case of a binary code... *)
 Variable W : `Ch('F_2, [finType of 'F_2]).
@@ -373,10 +387,10 @@ Variable dec : decT [finFieldType of 'F_2] [finType of 'rV['F_2]_(n - m)] n.
 
 Local Open Scope vec_ext_scope.
 
-Definition MPM_condition := let P := `U C_not_empty in
+Definition MPM_decoding := let P := `U C_not_empty in
   forall (y : P.-receivable W),
   forall x, dec y = Some x ->
   forall n0,
     P '_ n0 `^^ W ((enc x) ``_ n0 | y) = \rmax_(b in 'F_2) P '_ n0 `^^ W (b | y).
 
-End MPM_condition.
+End MPM_decoding.

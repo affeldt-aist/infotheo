@@ -5,9 +5,29 @@ Require Import ssr_ext ssralg_ext f2 linearcode natbin ssrR hamming bigop_ext.
 Require Import Rbigop proba channel channel_code decoding.
 Require Import binary_symmetric_channel.
 
-(** * Hamming Codes *)
+(******************************************************************************)
+(*                            Hamming Codes                                   *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(* Hamming.PCM == definition of Hamming codes parameterized by the height r   *)
+(*   of the parity check matrix. See [F.J. MacWilliams and N.J.A. Sloane, The *)
+(*   Theory of Error-Correcting Codes, 1977] (p.25). r > 1 because with       *)
+(*   r = 1, the parity check matrix would be the identity matrix of           *)
+(*   dimension 1 x 1, therefore the only codeword is 0, and the minimum       *)
+(*   distance is undefined.                                                   *)
+(* hamming_repair    == repair (decoding w.o. discarding) function for        *)
+(*                      Hamming codes                                         *)
+(* Module SysHamming == Hamming codes in systematic form                      *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   hamming_min_dist    == the minimum distance of Hamming codes is 3        *)
+(*   hamming_MD_decoding == the function hamming_repair implements            *)
+(*                          minimum distance decoding                         *)
+(*   hamming_error_rat e == closed formula for the error rate of Hamming      *)
+(*                          codes                                             *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Module Hamming.
   - Section hamming_code_definition.
   - Section helper_lemmas.
@@ -29,13 +49,6 @@ Import GRing.Theory.
 Local Open Scope ring_scope.
 
 Module Hamming.
-
-(** Definition of Hamming codes parameterized by the height r of the
-  parity check matrix. See [F.J. MacWilliams and N.J.A. Sloane, The
-  Theory of Error-Correcting Codes, 1977] (p.25). r > 1 because with
-  r = 1, the parity check matrix would be the identity matrix of
-  dimension 1 x 1, therefore the only codeword is 0, and the minimum
-  distance is undefined. *)
 
 Section hamming_code_definition.
 

@@ -5,6 +5,18 @@ From mathcomp Require Import finfield falgebra fieldext.
 Require Import ssr_ext ssralg_ext vandermonde linearcode.
 Require Import dft poly_decoding grs bch.
 
+(******************************************************************************)
+(*            Work in progress about alternant and Goppa codes                *)
+(******************************************************************************)
+
+(* OUTLINE:
+- Section location_polynomial.
+- Section grs_polynomial.
+- Section injection_into_extension_field.
+- Section alternant_code.
+- Section narrow_sense_BCH_are_Goppa. (wip)
+*)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -13,16 +25,6 @@ Import GRing.Theory.
 Local Open Scope ring_scope.
 
 Local Open Scope vec_ext_scope.
-
-(** * Alternant, Goppa codes *)
-
-(** OUTLINE:
-- Section location_polynomial.
-- Section grs_polynomial.
-- Section injection_into_extension_field.
-- Section alternant_code.
-- Section narrow_sense_BCH_are_Goppa. (wip)
-*)
 
 Section location_polynomial.
 

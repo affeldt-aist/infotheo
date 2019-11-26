@@ -3,9 +3,44 @@ From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
 Require Import ssr_ext ssralg_ext poly_ext f2 hamming decoding channel_code.
 
-(** * Definition of Linear Codes and Basic Properties *)
+(******************************************************************************)
+(*           Definition of Linear Error-correcting Codes (ECCs)               *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*         Lcode0.t == type of linear ECCs as a vector space of row-vectors   *)
+(*          kernel  == definition of a linear ECC as the kernel of a          *)
+(*                     parity-check matrices (PCMs)                           *)
+(*         min_dist == the minimum distance is the minimum Hamming weight of  *)
+(*                     non-zero codewords or the smallest number of columns   *)
+(*                     of a PCM that are linearly independent                 *)
+(*      mdd_err_cor == the number of errors that can be corrected by minimum  *)
+(*                     distance decoding                                      *)
+(*          perfect == perfect codes                                          *)
+(*        Encoder.t == type of an encoder                                     *)
+(*        Decoder.t == type of a decoder                                      *)
+(*                                                                            *)
+(* Linear Codes in Systematic Form:                                           *)
+(*     Syslcode.CSM == check symbols matrix                                   *)
+(*     Syslcode.PCM == PCM of a linear ECC in systematic form, defined using  *)
+(*                     the check symbols matrix                               *)
+(*     Syslcode.GEN == generating matrix                                      *)
+(*  Syslcode.encode == encoding function                                      *)
+(* Syslcode.discard == function to discard check symbols                      *)
+(*                                                                            *)
+(*          Rcode.t == definition of "restricted code" (see BCH.v)            *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   dim_kernel      == dimension of the kernel                               *)
+(*   exists_non0_codeword_lowest_deg == Any code that contains more than the  *)
+(*                   zero polynomial has a nonzero polynomial of lowest       *)
+(*                   degree.                                                  *)
+(*            MD_BDD == minimum distance decoding is bounded distance         *)
+(*                      decoding                                              *)
+(*   singleton_bound == singleton bound                                       *)
+(*   hamming_bound   == Hamming bound                                         *)
+(******************************************************************************)
 
-(**
+(*
 OUTLINE:
 - Module Lcode0: definition of linear codes as vector spaces
 - Section syndrome_and_kernel
@@ -148,7 +183,7 @@ Qed.
 
 End syndrome_and_kernel.
 
-(** wip *)
+(* wip *)
 Section dual_code.
 
 Variables (F : finFieldType) (m n : nat) (H : 'M[F]_(m, n)).
@@ -204,9 +239,6 @@ Definition codeword_lowest_deg c :=
 Definition non0_codeword_lowest_deg c :=
   [&& c \in C, c != 0 & codeword_lowest_deg c].
 
-(** Any code that contains more than the zero polynomial has a nonzero
-   polynomial of lowest degree. *)
-
 Lemma exists_non0_codeword_lowest_deg : { c : 'rV_n | non0_codeword_lowest_deg c }.
 Proof.
 apply: sigW.
@@ -249,10 +281,6 @@ Qed.
 End not_trivial_code_properties.
 
 Section minimum_distance.
-
-(** The minimum distance is the minimum Hamming weight of non-zero
-    codewords or the smallest number of columns of a PCM that are
-    linearly independent. *)
 
 Variables (F : finFieldType) (n : nat) (C : Lcode0.t F n).
 
@@ -328,7 +356,6 @@ by apply Lcode0.aclosed => //; rewrite Lcode0.oclosed.
 by rewrite subr_eq0.
 Qed.
 
-(** The number of errors that can be corrected by minimum distance decoding *)
 Definition mdd_err_cor := min_dist.-1./2.
 
 Lemma mdd_oddE : odd min_dist -> mdd_err_cor = min_dist./2.
@@ -493,8 +520,6 @@ End not_trivial_binary_codes.
 
 Section min_dist_decoding_prop.
 
-(** Minimum Distance Decoding (a.k.a. nearest neighbor decoding) *)
-
 Variables (F : finFieldType) (n : nat) (C : Lcode0.t F n).
 Variable (f : repairT F F n).
 Hypothesis MD_dec_f : MD_decoding [set cw in C] f.
@@ -544,10 +569,8 @@ case/boolP : (odd (min_dist C_not_trivial)) => [odd_d | even_d].
   rewrite leq_eqVlt => /orP[/eqP->//|]; by rewrite ltnS leqn0 => /eqP/min_dist_neq0.
 Qed.
 
-(** The number of errors MD-decoding can decode for an arbitrary
-linear code.  See for example [F.J. MacWilliams and N.J.A. Sloane, The
+(* see for example [F.J. MacWilliams and N.J.A. Sloane, The
 Theory of Error-Correcting Codes, 1977] (Theorem 2, p.10). *)
-
 Lemma mddP' w v : f (w + v) != None ->
   w \in C ->
   wH v <= mdd_err_cor C_not_trivial -> f (w + v) = Some w.
@@ -752,8 +775,6 @@ Variables (F : finFieldType) (n : nat) (C : Lcode0.t F n).
 Variable (f : repairT F F n).
 Hypothesis C_not_trivial : not_trivial C.
 
-(** MD-decoding is BD-decoding *)
-
 Local Open Scope ecc_scope.
 
 Lemma MD_BDD (Himg : oimg f \subset C) :
@@ -905,7 +926,6 @@ move: (HPf k n_ HP); rewrite (HPf k n_ HP) => e.
 by rewrite (eq_irrelevance e (refl_equal n_)).
 Qed.
 
-
 Lemma castmx_cols_mulmx : forall (f : nat -> nat -> nat) P
   (HPf : forall k n, P k n -> f k n = n) k n (HP : P k n)
   rows (X : 'M[R]_(rows, f k n)) cols (Y : 'M_(f k n, cols)),
@@ -956,15 +976,6 @@ Qed.
 
 End AboutCasts2.
 
-(** Linear Codes in Systematic Form
-
-  Formal definition of linear codes such that the encoding matrix is
-  in systematic form. The essential part is ``check symbols matrix''
-  (CSM) (<<(-A)^T>> below). The parity check matrix is defined using
-  the CSM.
-
-*)
-
 Module Syslcode.
 
 Section systematic_lcode_def.
@@ -977,7 +988,6 @@ Variable CSM : 'M[F]_(n - k, k).
 
 Definition PCM : 'M_(n - k, n) := castmx (erefl, subnKC dimlen) (row_mx CSM 1%:M).
 
-(** The generating matrix *)
 Definition GEN : 'M_(k, n) := castmx (erefl, subnKC dimlen) (row_mx 1%:M (- CSM)^T).
 
 Local Notation "'A" := CSM.
@@ -987,7 +997,7 @@ Local Notation "'H" := PCM.
 Lemma rank_GEN : \rank 'G = k.
 Proof. rewrite /GEN mxrank_castmx; by apply rank_row_mx, rank_I. Qed.
 
-(** H^T is the right kernel of G *)
+(* H^T is the right kernel of G *)
 Lemma G_H_T : 'G *m 'H ^T = 0.
 Proof.
 rewrite /GEN /PCM trmx_cast /= (castmx_cols_mulmx subnKC) tr_row_mx.
@@ -997,7 +1007,6 @@ Qed.
 Lemma H_G_T : 'H *m 'G ^T = 0.
 Proof. by rewrite -trmx0 -G_H_T trmx_mul trmxK. Qed.
 
-(* The encoding function *)
 Definition encode : encT F [finType of 'rV[F]_k] n := [ffun x => x *m 'G].
 
 Lemma encode_inj : injective encode.
@@ -1016,7 +1025,6 @@ Definition DIS : 'M[F]_(k, n) := castmx (erefl, subnKC dimlen) (row_mx 1%:M 0).
 
 Local Notation "'D" := DIS.
 
-(* The discarding function *)
 Definition discard : discardT F n [finType of 'rV_k] := [ffun x => x *m 'D^T].
 
 Definition t (repair : repairT F F n)
