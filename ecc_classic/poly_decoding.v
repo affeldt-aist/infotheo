@@ -3,9 +3,24 @@ From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv cyclic.
 From mathcomp Require Import perm matrix mxpoly.
 Require Import ssr_ext ssralg_ext cyclic_code dft.
 
-(** * Error-locator, error-evaluator, and syndrome polynomials *)
+(******************************************************************************)
+(*        Error-locator, error-evaluator, and syndrome polynomials            *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*   \sigma_(a , e )  == error locator polynomial for the vector e            *)
+(*   \sigma_(a, e, i) == the ith punctured locator polynomial for             *)
+(*   t.-rV[R]_ n      == error vector with support of cardinal <= t           *)
+(*   \omega_(f, a, e) == error evaluator polynomial                           *)
+(*   syndromep        == syndrome polynomial                                  *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   coprime_errloc_erreval == the error locator and evaluator polynomials    *)
+(*                             are coprime                                    *)
+(*   erreval_vecE == characterization of an error vector in terms of the      *)
+(*                   error and the evaluator polynomials                      *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section error_locator_polynomial.
 - Section error_evaluator_polynomial_def.
 - Section error_evaluator_polynomial_prop.
@@ -14,6 +29,11 @@ Require Import ssr_ext ssralg_ext cyclic_code dft.
 - Section twisted_error_pattern.
 - Section syndromep_prop.
 *)
+
+Reserved Notation "'\sigma_(' a , e )" (at level 3).
+Reserved Notation "'\sigma_(' a , e , i )" (at level 3).
+Reserved Notation "t '.-'rV[' R ]_ n" (only parsing, at level 2).
+Reserved Notation "'\omega_(' f , a , e )" (at level 3).
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -182,11 +202,8 @@ Qed.
 
 End error_locator_polynomial.
 
-(** the locator polynomial for e *)
-Notation "'\sigma_(' a , e )" := (errloc a (supp e)) (at level 3).
-
-(** the ith punctured locator polynomial for e *)
-Notation "'\sigma_(' a , e , i )" := (errloc a (supp e :\ i)) (at level 3).
+Notation "'\sigma_(' a , e )" := (errloc a (supp e)).
+Notation "'\sigma_(' a , e , i )" := (errloc a (supp e :\ i)).
 
 Lemma errloc_puncture (F : fieldType) n (f : 'rV[F]_n) (y : 'rV[F]_n) i :
   i \in supp y -> \sigma_(f, y) = (1 - f ``_ i *: 'X ) * \sigma_(f, y, i).
@@ -199,7 +216,7 @@ Record errvec n (F : fieldType) t := Errvec {
   errvect :> 'rV[F]_n ;
   errsupp : #| supp errvect | <= t }.
 
-Notation "t '.-'rV[' R ]_ n" := (@errvec n R t) (only parsing, at level 2).
+Notation "t '.-'rV[' R ]_ n" := (@errvec n R t).
 
 Lemma supp_neq0 n (F : fieldType) t (e : t.-'rV[F]_n) : supp e != set0 -> t != O.
 Proof.
@@ -215,7 +232,7 @@ Definition erreval (b a : 'rV[F]_n) e :=
 
 End error_evaluator_polynomial_def.
 
-Notation "'\omega_(' f , a , e )" := (erreval f a e) (at level 3).
+Notation "'\omega_(' f , a , e )" := (erreval f a e).
 
 Section error_evaluator_polynomial_prop.
 

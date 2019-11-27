@@ -3,17 +3,24 @@ From mathcomp Require Import all_ssreflect.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb.
 
-(** * The "natural entropy function" *)
+(******************************************************************************)
+(*                    The natural entropy function                            *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*   H2ln p == the binary entropy function except that we replace the         *)
+(*             logarithm in base 2 by its natural version                     *)
+(*   H2 p == the binary entropy function                                      *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   H2ln_max == H2ln is upper bounded by ln 2                                *)
+(*   H2_max   == the binary entropy function is bounded by 1                  *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
-
-(** We first find the maximum of the "natural entropy function"
-    (the same the binary entropy function except that we replace
-    the logarithm in base 2 by its natural version). *)
 
 Definition H2ln := fun p => - p * ln p - (1 - p) * ln (1 - p).
 
@@ -119,8 +126,6 @@ case: (Rlt_le_dec q (1/2)) => [H1|].
   apply decreasing_on_half_to_1 => //; lra.
 Qed.
 
-(** * The Binary Entropy Function *)
-
 Definition H2 p := - (p * log p) + - ((1 - p) * log (1 - p)).
 
 Lemma bin_ent_0eq0 : H2 0 = 0.
@@ -135,8 +140,6 @@ rewrite /H2 /log.
 by rewrite !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
                        add0R, addR0, subR0, subRR).
 Qed.
-
-(** The binary entropy function is bounded by 1: *)
 
 Lemma H2_max : forall p, 0 < p < 1 -> H2 p <= 1.
 Proof.

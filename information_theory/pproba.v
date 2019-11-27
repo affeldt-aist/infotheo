@@ -4,9 +4,21 @@ Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop proba channel.
 Require Import cproba.
 
-(** Posterior Probability *)
+(******************************************************************************)
+(*                         Posterior Probability                              *)
+(*                                                                            *)
+(* P `^^ W (x | y) == channel-based information-theoretic definition of       *)
+(*                    posterior probability in terms of a distribution of     *)
+(*                    inputs P and of a channel W                             *)
+(* P ''_ n0 `^^ W ( a | y ) == marginal posterior probability                 *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   ppE == relation between P `^^ W (x | y) and the conditional probability  *)
+(*          w.r.t. the joint distribution `J(P, W ``^ n)                      *)
+(*                                                                            *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Module Receivable.
 - Section receivable_prop.
 - Section receivable_uniform.
@@ -91,7 +103,6 @@ Qed.
 
 End receivable_uniform.
 
-(* posterior probability *)
 Module PosteriorProbability.
 Section def.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
@@ -123,7 +134,6 @@ Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 End def.
 Local Notation "P '`^^' W '(' x '|' y ')'" := (@d _ _ W _ P y x).
 
-(* relation with channel-based information-theoretic definitions *)
 Section chap2.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Local Open Scope channel_scope.

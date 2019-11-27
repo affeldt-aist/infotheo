@@ -489,6 +489,16 @@ Qed.
 Lemma setX1 A B (a : A) (b : B) : setX [set a] [set b] = [set (a, b)].
 Proof. by apply/setP => -[a0 b0]; rewrite !inE /= xpair_eqE. Qed.
 
+Lemma setX1r (A B : finType) (E : {set A}) (b : B) :
+  setX E [set b] = [set (a, b) | a in E].
+Proof. by rewrite -imset2_pair imset2_set1r. Qed.
+
+Lemma setX0r (A B : finType) (E : {set A}) : setX E (@set0 B) = set0.
+Proof.
+apply/setP/subset_eqP/andP; split; apply/subsetP => -[a b]; rewrite !inE //.
+by move/andP => [].
+Qed.
+
 Lemma bigcup_setX A B n (E : 'I_n -> {set A}) (F : {set B}) :
   \bigcup_(i < n) setX F (E i) = setX F (\bigcup_(i < n) (E i)).
 Proof.

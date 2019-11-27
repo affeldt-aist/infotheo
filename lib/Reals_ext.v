@@ -149,13 +149,10 @@ case: (base_Int_part r) => H1 H2.
 rewrite -(up_tech r (Int_part r)) // plus_IZR //; lra.
 Qed.
 
-Lemma Int_part_pos a : 0 <= a -> (0 <= Int_part a)%Z.
+Lemma Int_part_ge0 a : 0 <= a -> (0 <= Int_part a)%Z.
 Proof.
-move/up_pos => ?.
-rewrite /Int_part.
-rewrite (_ : 0 = Z.succ 0 - 1)%Z //.
-apply Z.sub_le_mono => //.
-by apply Zlt_le_succ.
+move/up_pos => ?; rewrite /Int_part (_ : 0 = Z.succ 0 - 1)%Z //.
+apply Z.sub_le_mono => //; exact/Zlt_le_succ.
 Qed.
 
 Lemma frac_part_INR m : frac_part (INR m) = 0.
@@ -230,7 +227,6 @@ Qed.
 
 Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.
 Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(leR_trans _ K). Qed.
-
 
 Lemma ltR_Rabsl a b : `| a | <b b = (- b <b a <b b).
 Proof.

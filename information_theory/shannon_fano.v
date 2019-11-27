@@ -3,6 +3,15 @@ From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 Require Import Reals.
 Require Import ssrZ ssrR logb Reals_ext Rbigop ssr_ext proba entropy kraft.
 
+(******************************************************************************)
+(*                       Shannon-Fano codes                                   *)
+(*                                                                            *)
+(* For details, see: Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. *)
+(* Examples of formal proofs about data compression. International Symposium  *)
+(* on Information Theory and Its Applications (ISITA 2018), Singapore,        *)
+(* October 28--31, 2018, pages 633--637. IEEE, Oct 2018                       *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -32,14 +41,14 @@ Variables (A T : finType) (P : {fdist A}).
 Local Open Scope zarith_ext_scope.
 
 Definition is_shannon_fano (f : Encoding.t A T) :=
-  forall s, size (f s) = '| ceil (Log (INR #|T|) (1 / P s)%R) |.
+  forall s, size (f s) = '| ceil (Log #|T|%:R (1 / P s)%R) |.
 
 End shannon_fano_def.
 
 Section shannon_fano_is_kraft.
 
 Variables (A : finType) (P : {fdist A}).
-Hypothesis Pr_pos : forall s, P s != 0.
+Hypothesis Pr0 : forall s, P s != 0.
 
 Let a : A. by move/card_gt0P: (fdist_card_neq0 P) => /sigW [i]. Qed.
 
@@ -60,7 +69,7 @@ rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
 apply ler_rsum => i _.
 rewrite H.
-have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos; exact/leRP.
+have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr0; exact/leRP.
 apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
   rewrite div1R LogV //.
   rewrite oppRK LogK //; first exact/leRR.
@@ -71,7 +80,7 @@ apply/leR_inv/Exp_le_increasing => //.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite INR_Zabs_nat; last first.
   case/boolP : (P i == 1) => [/eqP ->|Pj1].
-    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_pos/leRR.
+    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_ge0/leRR.
   apply/leR0ceil/ltRW/ltR0Log.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
   rewrite div1R invR_gt1 // ltR_neqAle; split => //; exact/eqP.
@@ -103,12 +112,12 @@ Lemma shannon_fano_average_entropy : is_shannon_fano P f ->
   average P f < `H P  + 1.
 Proof.
 move=> H; rewrite /average.
-apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log (INR #|T|) (P x) + 1))).
+apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
   apply ltR_rsum; [exact: fdist_card_neq0|move=> i].
   apply ltR_pmul2l.
     apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
   rewrite H.
-  rewrite (_ : INR #|T| = 2) // ?card_ord // -!/(log _).
+  rewrite (_ : #|T|%:R = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
   have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
   rewrite INR_Zabs_nat; last first.
@@ -124,7 +133,7 @@ rewrite (eq_bigr h); last first.
 rewrite {}/h big_split /= FDist.f1 leR_add2r.
 apply Req_le.
 rewrite /entropy big_morph_oppR; apply eq_bigr => i _.
-by rewrite card_ord (_ : INR 2 = 2).
+by rewrite card_ord (_ : 2%:R = 2).
 Qed.
 
 End shannon_fano_suboptimal.

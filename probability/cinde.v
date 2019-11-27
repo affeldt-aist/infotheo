@@ -4,7 +4,11 @@ Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
 Require Import cproba.
 
-(* formalization of conditional independence
+(******************************************************************************)
+(*           Conditional independence and graphoid axioms                     *)
+(******************************************************************************)
+
+(*
 contents:
 - Various distributions (Proj124.d, Proj14d, QuadA23.d)
 - Section pair_of_RVs.
@@ -45,15 +49,6 @@ Local Open Scope R_scope.
 
 (* TODO: move to lib/ssr_ext.v *)
 Section toolbox.
-Lemma setX1' (A B : finType) (E : {set A}) (b : B) :
-  [set (a, b) | a in E] = setX E [set b].
-Proof. by rewrite -imset2_pair imset2_set1r. Qed.
-
-Lemma setX0 (A B : finType) (E : {set A}) : setX E (@set0 B) = set0.
-Proof.
-apply/setP/subset_eqP/andP; split; apply/subsetP => -[a b]; rewrite !inE //.
-by move/andP => [].
-Qed.
 
 Lemma bigcup_preimset (I : finType) (P : pred I)
       (A B : finType) (F : A -> B) (E : I -> {set B}) :
@@ -75,9 +70,6 @@ apply/subset_eqP/andP; split; apply/subsetP => b; rewrite mem_undup; case/boolP 
   case/imsetP => a _ bfa.
     by move: (bfx a); rewrite bfa => /eqP.
 Qed.
-
-Lemma mulRinv x y : x * / y = x / y.
-Proof. reflexivity. Qed.
 
 End toolbox.
 
@@ -241,7 +233,7 @@ Lemma RV_Pr_cPr_unit_set (U : finType) (P : fdist U) (A : finType)
 Proof.
 rewrite RV_cPrE_set pr_eq_set1 unit_RV1 divR1.
 rewrite (@RV_Pr_comp_set _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
-by apply eq_bigl => u; rewrite setX1'.
+by apply eq_bigl => u; rewrite setX1r.
 Qed.
 
 (* TODO: change the definition of \Pr[ X = a ] and obsolete pr_eq_set1 *)
@@ -820,7 +812,7 @@ Proof.
 move=> K /eqP H0.
 rewrite RV_cPrE -(eqR_mul2r H0) -mulRA mulVR ?mulR1; last by apply/eqP.
 have H1 : /(\Pr[ Z = c ]) <> 0 by apply invR_neq0; move/(RV_Pr_domin_snd Y b).
-by rewrite RV_Pr_A -(eqR_mul2r H1) -mulRA !mulRinv -!RV_cPrE K.
+by rewrite RV_Pr_A -(eqR_mul2r H1) -mulRA -!divRE -!RV_cPrE K.
 Qed.
 
 Section cinde_drv_prop.

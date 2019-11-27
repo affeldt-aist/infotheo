@@ -3,9 +3,9 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
 Require Import ZArith.
 
-(***********************************)
-(* SSReflect-like lemmas for Coq Z *)
-(***********************************)
+(******************************************************************************)
+(*                       SSReflect-like lemmas for Coq Z                      *)
+(******************************************************************************)
 
 Declare Scope zarith_ext_scope.
 

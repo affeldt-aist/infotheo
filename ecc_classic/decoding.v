@@ -34,6 +34,8 @@ Require Import channel_code channel binary_symmetric_channel hamming pproba.
 
 Reserved Notation "t .-BDD f" (at level 2, format "t  .-BDD  f").
 
+Declare Scope ecc_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -275,7 +277,7 @@ move=> p05 MD f_total y.
 have codebook_not_empty : {c | c \in [set cw in C] }.
   move: (mem0v C); set x := (X in X \in C) => _.
   exists x; by rewrite inE mem0v.
-have {MD}MD : MD_decoding_alt f codebook_not_empty.
+have {}MD : MD_decoding_alt f codebook_not_empty.
   apply MD_decoding_equiv => //.
   apply/subsetP => y' Hy'.
   move/subsetP : f_img => /(_ _ Hy'); by rewrite inE.

@@ -8,6 +8,14 @@ Require Import proba entropy aep typ_seq joint_typ_seq channel channel_code.
 (******************************************************************************)
 (*                 Channel coding theorem (direct part)                       *)
 (*                                                                            *)
+(* Definitions:                                                               *)
+(*   jtdec == joint typicality decoding                                       *)
+(*   cal_E M n epsilong f == the set of output vb such that (f m, vb) is      *)
+(*                           jointly typical                                  *)
+(*                                                                            *)
+(* Theorem:                                                                   *)
+(*   channel_coding == channel coding theorem (direct part)                   *)
+(*                                                                            *)
 (* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
 (* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
 (* 53(1):63--103, 2014                                                        *)
@@ -48,8 +56,6 @@ Section joint_typicality_decoding.
 
 Variables A B M : finType.
 Variable n : nat.
-
-(** Joint typicality decoding *)
 
 Definition jtdec P W epsilon (f : encT A M n) : decT B M n :=
   [ffun tb => [pick m |
@@ -264,8 +270,6 @@ Definition epsilon0_condition r epsilon epsilon0 :=
 Definition n_condition r epsilon0 n :=
   (O < n)%nat /\ - log epsilon0 / epsilon0 < INR n /\
   frac_part (exp2 (INR n * r)) = 0 /\ (JTS_1_bound P W epsilon0 <= n)%nat.
-
-(** the set of output tb such that (f m, tb) is jointly typical: *)
 
 Definition cal_E M n epsilon (f : encT A M n) m :=
   [set vb | prod_rV (f m, vb) \in `JTS P W n epsilon].
@@ -812,8 +816,6 @@ Variables (A B : finType) (W : `Ch(A, B)).
 Variable cap : R.
 Hypothesis Hc : capacity W cap.
 
-(** Channel Coding Theorem (direct part) *)
-
 Local Open Scope zarith_ext_scope.
 
 Theorem channel_coding (r : CodeRateType) : r < cap ->
@@ -883,7 +885,7 @@ case: (random_coding_good_code (ltRW Hepsilon) Hepsilon0 Hn) =>
   M [HM [M_k H]].
 case: (good_code_sufficient_condition HM H) => f Hf.
 exists n, M, (mkCode f (jtdec P W epsilon0 f)); split => //.
-rewrite /CodeRate M_k INR_Zabs_nat; last exact/Int_part_pos.
+rewrite /CodeRate M_k INR_Zabs_nat; last exact/Int_part_ge0.
 suff -> : IZR (Int_part (exp2 (INR n * r))) = exp2 (INR n * r).
   rewrite exp2K /Rdiv -mulRA mulRCA mulRV ?INR_eq0' -?lt0n ?mulR1 //; by case: Hn.
 apply frac_Int_part; by case: Hn => _ [_ []].

@@ -580,6 +580,8 @@ Qed.
 Lemma ltR_inv x y : 0 < x -> 0 < y -> y < x -> / x < / y.
 Proof. by move=> xo y0; apply/Rinv_lt_contravar/mulR_gt0. Qed.
 
+Lemma divRE x y : x / y = x * / y. Proof. by []. Qed.
+
 Definition divRR (x : R) : x != 0 -> x / x = 1.
 Proof. move=> x0; rewrite /Rdiv Rinv_r //; exact/eqP. Qed.
 

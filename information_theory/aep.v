@@ -5,7 +5,13 @@ From mathcomp Require boolp.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
 
-(** * Asymptotic Equipartition Property (AEP) *)
+(******************************************************************************)
+(*              Asymptotic Equipartition Property (AEP)                       *)
+(*                                                                            *)
+(* Definition aep_bound == constant used in the statement of AEP              *)
+(* Lemma aep            == AEP                                                *)
+(*                                                                            *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -79,8 +85,6 @@ elim : n => [|n IH].
   rewrite /sum_mlog_prod /= big_ord_recl /=; congr (_ + _)%R.
   apply eq_bigr => i _; by rewrite mxE.
 Qed.
-
-(** Constant used in the statement of AEP: *)
 
 Section aep_k0_constant.
 

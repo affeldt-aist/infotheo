@@ -1,4 +1,7 @@
-0.0.6 (wip):
-
-renaming:
-- Pr_big_union_disj renamed and generalized to Boole_eq
+from 0.0.5 to 0.0.6 (wip):
+--------------------------
+renamings:
+- Pr_big_union_disj -> Boole_eq (generalization)
+- setX1' -> setX1r (direction change)
+- setX0 -> setX0r
+- Int_part_pos -> Int_part_ge0

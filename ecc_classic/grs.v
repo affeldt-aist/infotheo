@@ -4,9 +4,11 @@ From mathcomp Require Import perm matrix mxpoly vector mxalgebra zmodp.
 Require Import ssr_ext ssralg_ext vandermonde linearcode.
 Require Import dft poly_decoding.
 
-(** * Generalized Reed-Solomon Codes *)
+(******************************************************************************)
+(*                  Generalized Reed-Solomon Codes                            *)
+(******************************************************************************)
 
-(** OUTLINE
+(* OUTLINE
 - Module GRS.
 - Section GRS_rank.
 - Section reduced_key_equation.
