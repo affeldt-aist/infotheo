@@ -8,7 +8,7 @@ Require Import ssrR Reals_ext ln_facts logb Rbigop proba.
 (*    Divergence (or the Kullback-Leibler distance or relative entropy)       *)
 (*                                                                            *)
 (* D(P || Q) == divergence between the (finite) probability distributions P   *)
-(*              Q                                                             *)
+(*              and Q                                                         *)
 (* Lemmas:                                                                    *)
 (*   div_ge0 == divergence is non-negative                                    *)
 (*   divPP   == D(P || P) = 0                                                 *)

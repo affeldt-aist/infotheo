@@ -3,7 +3,11 @@ From mathcomp Require Import all_ssreflect.
 Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext logb Rbigop proba ln_facts.
 
-(** * The Variation Distance *)
+(******************************************************************************)
+(*                   The Variation Distance                                   *)
+(*                                                                            *)
+(* 'd(P, Q) == The variation distance of two distributions P and Q            *)
+(******************************************************************************)
 
 Reserved Notation "'d(' P ',' Q ')'".
 
@@ -19,7 +23,6 @@ Section variation_distance.
 
 Variable A : finType.
 
-(** The variation distance of two distributions P and Q on X: *)
 Definition var_dist (P Q : fdist A) := \sum_(a : A) `| P a - Q a |.
 
 Local Notation "'d(' P ',' Q ')' " := (var_dist P Q).

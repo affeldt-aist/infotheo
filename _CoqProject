@@ -31,7 +31,6 @@ probability/jensen.v
 probability/ln_facts.v
 probability/divergence.v
 probability/variation_dist.v
-probability/pinsker_function.v
 probability/log_sum.v
 probability/partition_inequality.v
 probability/pinsker.v

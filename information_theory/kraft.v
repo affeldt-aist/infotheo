@@ -13,7 +13,7 @@ Require Import ssr_ext.
 (* on Information Theory and Its Applications (ISITA 2018), Singapore,        *)
 (* October 28--31, 2018, pages 633--637. IEEE, Oct 2018                       *)
 (*                                                                            *)
-(* Main references:                                                           *)
+(* Main reference:                                                            *)
 (* - Robert McEliece, The Theory of Information and Coding,  Cambridge        *)
 (*   University Press, 2002                                                   *)
 (******************************************************************************)

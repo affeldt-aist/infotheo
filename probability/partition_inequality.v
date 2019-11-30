@@ -8,7 +8,7 @@ Require Import Rbigop proba divergence log_sum variation_dist.
 (******************************************************************************)
 (*                      Partition inequality                                  *)
 (*                                                                            *)
-(* Special case for distributions other sets with 2 elements, to be use in    *)
+(* Special case for distributions other sets with 2 elements, to be used in   *)
 (* the proof of Pinsker's inequality.                                         *)
 (******************************************************************************)
 
