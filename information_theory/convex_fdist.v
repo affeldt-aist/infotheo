@@ -2,8 +2,8 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals Ranalysis_ext Lra.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
-Require Import entropy proba cproba convex_choice binary_entropy_function.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
+Require Import entropy fdist jfdist convex_choice binary_entropy_function.
 Require Import log_sum divergence chap2.
 
 (******************************************************************************)
@@ -363,9 +363,9 @@ Variables (A B : finType) (Q : A -> fdist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 Lemma mutual_information_concave :
-  concave_function (fun P : fdist_convType A => MutualInfo.mi (CFDist.make_joint P Q)).
+  concave_function (fun P : fdist_convType A => MutualInfo.mi (CJFDist.make_joint P Q)).
 Proof.
-suff : concave_function (fun P : fdist_convType _ => let PQ := Swap.d (CFDist.make_joint P Q) in
+suff : concave_function (fun P : fdist_convType _ => let PQ := Swap.d (CJFDist.make_joint P Q) in
                            `H (Bivar.fst PQ) - CondEntropy.h PQ).
   set f := fun _ => _. set g := fun _ => _.
   suff -> : f = g by [].
@@ -377,10 +377,10 @@ apply R_concave_functionB.
   rewrite 3!Swap.fst.
   move : H.
   move /R_convex_functionN' => H.
-  apply: leR_trans (H (Bivar.snd (CFDist.make_joint p Q)) (Bivar.snd (CFDist.make_joint q Q)) t).
+  apply: leR_trans (H (Bivar.snd (CJFDist.make_joint p Q)) (Bivar.snd (CJFDist.make_joint q Q)) t).
   destruct t. rewrite /Conv /=. (* TODO *)
   rewrite -ProdFDist.snd_convex; exact/leRR.
-- suff : affine_function (fun x : fdist_convType _ => CondEntropy.h (Swap.d (CFDist.make_joint x Q))) by move /affine_functionP => [].
+- suff : affine_function (fun x : fdist_convType _ => CondEntropy.h (Swap.d (CJFDist.make_joint x Q))) by move /affine_functionP => [].
   move => p q t.
   rewrite /affine_function_at /= (*TODO: lemma?*) /Conv /= /avg /=.
   rewrite /CondEntropy.h /CondEntropy.h1.
@@ -394,16 +394,16 @@ apply R_concave_functionB.
     case/boolP: (t.~ * q a == 0) => /eqP Hq.
       rewrite Hq; field.
     rewrite !(mul0R,add0R).
-    rewrite -CFDist.E /=; last by rewrite ConvFDist.dE Hp add0R.
-    rewrite -CFDist.E /= //; by move: Hq; rewrite mulR_neq0 => -[].
+    rewrite -CJFDist.E /=; last by rewrite ConvFDist.dE Hp add0R.
+    rewrite -CJFDist.E /= //; by move: Hq; rewrite mulR_neq0 => -[].
   case/boolP: (t.~ * q a == 0) => /eqP Hq.
     rewrite Hq !(mul0R,addR0).
-    rewrite -CFDist.E; last by rewrite ConvFDist.dE Hq addR0.
-    rewrite -CFDist.E /= //; by move: Hp; rewrite mulR_neq0 => -[].
-  rewrite -CFDist.E; last first.
+    rewrite -CJFDist.E; last by rewrite ConvFDist.dE Hq addR0.
+    rewrite -CJFDist.E /= //; by move: Hp; rewrite mulR_neq0 => -[].
+  rewrite -CJFDist.E; last first.
     rewrite /= ConvFDist.dE paddR_eq0; [tauto|exact/mulR_ge0|exact/mulR_ge0].
-  rewrite -CFDist.E; last by move: Hp; rewrite mulR_neq0 => -[].
-  rewrite -CFDist.E //=; last by move: Hq; rewrite mulR_neq0 => -[].
+  rewrite -CJFDist.E; last by move: Hp; rewrite mulR_neq0 => -[].
+  rewrite -CJFDist.E //=; last by move: Hq; rewrite mulR_neq0 => -[].
   field.
 Qed.
 
@@ -417,30 +417,30 @@ Local Open Scope divergence_scope.
 
 Lemma mutual_information_convex :
   convex_function (fun Q : depfun_choiceType (fun _ : A => fdist_convType B) =>
-    MutualInfo.mi (CFDist.make_joint P Q)).
+    MutualInfo.mi (CJFDist.make_joint P Q)).
 Proof.
 move=> p1yx p2yx t.
-pose p1' := CFDist.mkt P p1yx.
-pose p2' := CFDist.mkt P p2yx.
-pose p1xy := CFDist.joint_of p1'.
-pose p2xy := CFDist.joint_of p2'.
+pose p1' := CJFDist.mkt P p1yx.
+pose p2' := CJFDist.mkt P p2yx.
+pose p1xy := CJFDist.joint_of p1'.
+pose p2xy := CJFDist.joint_of p2'.
 pose p1 := Bivar.snd p1xy.
 pose p2 := Bivar.snd p2xy.
 pose plambdayx := fun a : A => p1yx a <| t |> p2yx a.
-pose plambda' := CFDist.mkt P plambdayx.
-pose plambdaxy := CFDist.joint_of plambda'.
+pose plambda' := CJFDist.mkt P plambdayx.
+pose plambdaxy := CJFDist.joint_of plambda'.
 pose plambday := Bivar.snd plambdaxy.
 pose qlambdaxy := P `x plambday.
 pose q1xy := P `x p1.
 pose q2xy := P `x p2.
 rewrite /convex_function_at.
-have -> : MutualInfo.mi (CFDist.make_joint P (fun x : A => p1yx x <| t |> p2yx x)) =
+have -> : MutualInfo.mi (CJFDist.make_joint P (fun x : A => p1yx x <| t |> p2yx x)) =
        D(plambdaxy || qlambdaxy).
   rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
   rewrite /qlambdaxy.
-  by rewrite ProdFDist.dE /= /CFDist.make_joint /CFDist.joint_of /= ProdFDist.fst; congr (_ * _).
+  by rewrite ProdFDist.dE /= /CJFDist.make_joint /CJFDist.joint_of /= ProdFDist.fst; congr (_ * _).
 have -> : qlambdaxy = (q1xy : fdist_convType _ ) <| t |> q2xy.
   apply/fdist_ext => -[a b].
   rewrite !ProdFDist.dE !ConvFDist.dE /=.
@@ -454,25 +454,25 @@ have -> : plambdaxy = (p1xy : fdist_convType _ ) <| t |> p2xy.
   apply/fdist_ext => -[a b].
   rewrite !ProdFDist.dE !ConvFDist.dE /=.
   by rewrite /p1xy /p2xy !ProdFDist.dE /=; field.
-have -> : MutualInfo.mi (CFDist.make_joint P p1yx) = D(p1xy || q1xy).
+have -> : MutualInfo.mi (CJFDist.make_joint P p1yx) = D(p1xy || q1xy).
   rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
-  by rewrite /q1xy ProdFDist.dE /CFDist.make_joint /CFDist.joint_of /= ProdFDist.fst.
-have -> : MutualInfo.mi (CFDist.make_joint P p2yx) = D(p2xy || q2xy).
+  by rewrite /q1xy ProdFDist.dE /CJFDist.make_joint /CJFDist.joint_of /= ProdFDist.fst.
+have -> : MutualInfo.mi (CJFDist.make_joint P p2yx) = D(p2xy || q2xy).
   rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
-  by rewrite /q2xy ProdFDist.dE /CFDist.make_joint /CFDist.joint_of /= ProdFDist.fst.
+  by rewrite /q2xy ProdFDist.dE /CJFDist.make_joint /CJFDist.joint_of /= ProdFDist.fst.
 apply: div_convex.
 - apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy ProdFDist.dE /= mulR_eq0.
-  rewrite /p1 /p1xy /CFDist.joint_of => -[|].
+  rewrite /p1 /p1xy /CJFDist.joint_of => -[|].
     by rewrite ProdFDist.dE => ->; rewrite mul0R.
   by rewrite Bivar.sndE => /prsumr_eq0P ->.
 -  apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy ProdFDist.dE /= mulR_eq0.
-  rewrite /p1 /p1xy /CFDist.joint_of => -[|].
+  rewrite /p1 /p1xy /CJFDist.joint_of => -[|].
     by rewrite ProdFDist.dE => ->; rewrite mul0R.
   by rewrite Bivar.sndE => /prsumr_eq0P /= ->.
 Qed.

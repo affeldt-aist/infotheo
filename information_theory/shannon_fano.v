@@ -1,7 +1,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 Require Import Reals.
-Require Import ssrZ ssrR logb Reals_ext Rbigop ssr_ext proba entropy kraft.
+Require Import ssrZ ssrR logb Reals_ext Rbigop ssr_ext fdist entropy kraft.
 
 (******************************************************************************)
 (*                       Shannon-Fano codes                                   *)

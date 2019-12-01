@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
-Require Import Rbigop proba divergence log_sum variation_dist.
+Require Import Rbigop fdist divergence log_sum variation_dist.
 
 (******************************************************************************)
 (*                      Partition inequality                                  *)

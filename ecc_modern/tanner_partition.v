@@ -3,17 +3,19 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import ssr_ext subgraph_partition tanner f2 Rbigop.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Import Prenex Implicits.
+(******************************************************************************)
+(*               Cover/partition properties of Tanner graphs                  *)
+(******************************************************************************)
 
-(** * Cover/partition properties of Tanner graphs *)
-
-(** OUTLINE:
+(* OUTLINE:
 - Section tanner_rel_no_hypo.
 - Section acyclic_tanner_rel.
 - Section tanner_partition.
 *)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
 
 Import GRing.
 Local Open Scope ring_scope.

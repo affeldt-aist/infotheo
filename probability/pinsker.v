@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
-Require Import Rbigop proba divergence variation_dist partition_inequality.
+Require Import Rbigop fdist divergence variation_dist partition_inequality.
 
 (******************************************************************************)
 (*                       Pinsker's Inequality                                 *)

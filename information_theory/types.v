@@ -1,10 +1,11 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import matrix.
 From mathcomp Require boolp.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import proba entropy num_occ channel_code channel typ_seq.
+Require Import fdist entropy num_occ channel_code channel typ_seq.
 
 (* TODO: document *)
 

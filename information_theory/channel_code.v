@@ -1,9 +1,11 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
-Require Import Reals_ext ssrR logb Rbigop proba channel.
+Require Import Reals_ext ssrR logb Rbigop fdist channel.
 
-(** * Definition of a channel code *)
+(******************************************************************************)
+(*                        Definition of a channel code                        *)
+(******************************************************************************)
 
 Reserved Notation "e( W , c )" (at level 50).
 Reserved Notation "echa( W , c )" (at level 50).

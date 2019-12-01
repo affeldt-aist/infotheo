@@ -3,9 +3,15 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import bigop_ext ssralg_ext f2 subgraph_partition.
 
-(** * Tanner Graphs *)
+(******************************************************************************)
+(*                           Tanner Graphs                                    *)
+(*                                                                            *)
+(* 'F(m0, n0) == function nodes of the subgraph rooted at edge m0-n0          *)
+(* ‘V(m0, n0) == the variable nodes of the subgraph rooted at edge m0-n0      *)
+(*               (to which we add n0)                                         *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Module Tanner.
 - Section tanner_relation.
 - Section next_graph.
@@ -176,7 +182,7 @@ apply/andP; split => //.
 by rewrite last_rcons.
 Qed.
 
-Lemma Fgraph_Vnext2_Vgraph m0 n0 m1 n1 : 
+Lemma Fgraph_Vnext2_Vgraph m0 n0 m1 n1 :
   m1 \in 'F(m0, n0) -> n1 \in 'V m1 -> n0 \in 'V m0 -> n1 \in 'V(m0, n0).
 Proof.
 move=> Hm1 Hn1 Hm0.

@@ -3,9 +3,11 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import ssr_ext.
 
-(** * Bipartite/acyclic graphs, cover/partition properties *)
+(******************************************************************************)
+(*          Cover/partition properties of bipartite-acyclic graphs            *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section colorable.
 - Section bipartite.
 - Section simple.

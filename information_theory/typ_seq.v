@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb Rbigop.
-Require Import proba entropy aep.
+Require Import fdist entropy aep.
 
 (** * Typical Sequences *)
 

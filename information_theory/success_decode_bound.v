@@ -2,7 +2,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
 Require Import ln_facts arg_rmax num_occ types jtypes divergence.
 Require Import conditional_divergence entropy channel_code channel.
 

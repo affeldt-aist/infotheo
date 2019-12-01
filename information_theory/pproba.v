@@ -1,8 +1,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop proba channel.
-Require Import cproba.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist channel.
+Require Import jfdist.
 
 (******************************************************************************)
 (*                         Posterior Probability                              *)
@@ -15,7 +15,6 @@ Require Import cproba.
 (* Lemmas:                                                                    *)
 (*   ppE == relation between P `^^ W (x | y) and the conditional probability  *)
 (*          w.r.t. the joint distribution `J(P, W ``^ n)                      *)
-(*                                                                            *)
 (******************************************************************************)
 
 (* OUTLINE:

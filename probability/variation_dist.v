@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect.
 Require Import Reals.
-Require Import ssrR Reals_ext Ranalysis_ext logb Rbigop proba ln_facts.
+Require Import ssrR Reals_ext Ranalysis_ext logb Rbigop fdist ln_facts.
 
 (******************************************************************************)
 (*                   The Variation Distance                                   *)

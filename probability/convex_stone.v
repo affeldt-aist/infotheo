@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import proba convex_choice.
+Require Import fdist convex_choice.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -1,7 +1,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 From mathcomp Require Import matrix perm.
 From mathcomp Require boolp.
-Require Import ssr_ext ssralg_ext ssrR proba.
+Require Import ssr_ext ssralg_ext ssrR fdist.
 
 (******************************************************************************)
 (*                  Work in progress about LDPC codes                         *)

@@ -2,12 +2,14 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
-Require Import entropy cproba chap2.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
+Require Import entropy jfdist chap2.
 
-(** * Definition of channels and of the capacity *)
+(******************************************************************************)
+(*                 Definition of channels and of the capacity                 *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
   1. Module Channel1.
      Probability transition matrix
   2. Module DMC.
@@ -309,10 +311,10 @@ Let QP := Swap.d (`J(P, W)).
 Lemma channel_cPr : forall a b, P a != 0 -> W a b = \Pr_QP[[set b]|[set a]].
 Proof.
 move=> a b Pa0.
-rewrite (@CFDist.E _ _ (CFDist.mkt P W)) //=; last exact/eqP.
+rewrite (@CJFDist.E _ _ (CJFDist.mkt P W)) //=; last exact/eqP.
 congr cPr.
 apply/fdist_ext => -[b0 a0].
-by rewrite !Swap.dE JointFDistChan.dE /= /CFDist.joint_of /= ProdFDist.dE.
+by rewrite !Swap.dE JointFDistChan.dE /= /CJFDist.joint_of /= ProdFDist.dE.
 Qed.
 
 End relation_channel_cproba.

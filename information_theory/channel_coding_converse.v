@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb ln_facts Rbigop arg_rmax.
-Require Import num_occ proba entropy types jtypes divergence.
+Require Import num_occ fdist entropy types jtypes divergence.
 Require Import conditional_divergence error_exponent channel_code channel.
 Require Import success_decode_bound.
 

@@ -1,14 +1,17 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
-From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg perm zmodp matrix.
+From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg perm.
+From mathcomp Require Import zmodp matrix.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
 Require Import binary_entropy_function channel hamming channel_code.
+
+(******************************************************************************)
+(*                     Definition of erasure channel                          *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(** * Definition of erasure channel *)
 
 Local Open Scope channel_scope.
 Local Open Scope R_scope.

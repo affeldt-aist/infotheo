@@ -1,11 +1,18 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
-Require Import cproba.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
+Require Import jfdist.
 
 (******************************************************************************)
 (*           Conditional independence and graphoid axioms                     *)
+(*                                                                            *)
+(* P |= X _|_  Y | Z == X is conditionally independent of Y given Z in the    *)
+(*                      distribution P for all values a, b, and c (belonging  *)
+(*                      resp. to the codomains of X, Y , and Z)               *)
+(* Lemmas:                                                                    *)
+(*  Graphoid axioms: symmetry, decomposition, weak_union, contraction,        *)
+(*  intersection                                                              *)
 (******************************************************************************)
 
 (*
@@ -297,17 +304,17 @@ Lemma imset_TripA_f :
   [set TripA.f x | x in setX (setX E F) G] = setX E (setX F G).
 Proof.
 apply/setP=> -[a [b c]]; apply/imsetP/idP.
-- rewrite ex2C; move=> [[[a' b'] c']] /eqP. 
+- rewrite ex2C; move=> [[[a' b'] c']] /eqP.
   by rewrite /TripA.f !inE !xpair_eqE /= => /andP [] /eqP -> /andP [] /eqP -> /eqP -> /andP [] /andP [] -> -> ->.
 - by rewrite !inE /= => /andP [aE /andP [bF cG]]; exists ((a, b), c); rewrite // !inE /= aE bF cG.
 Qed.
 
-Lemma imset_TripC23_f :
-  [set TripC23.f x | x in setX (setX E F) G] = setX (setX E G) F.
+Lemma imset_TripAC_f :
+  [set TripAC.f x | x in setX (setX E F) G] = setX (setX E G) F.
 Proof.
 apply/setP => -[[a c] b]; apply/imsetP/idP.
 - rewrite ex2C; move=> [[[a' b'] c']] /eqP.
-  by rewrite /TripC23.f !inE !xpair_eqE /= => /andP [] /andP [] /eqP -> /eqP -> /eqP -> /andP [] /andP [] -> -> ->.
+  by rewrite /TripAC.f !inE !xpair_eqE /= => /andP [] /andP [] /eqP -> /eqP -> /eqP -> /andP [] /andP [] -> -> ->.
 - by rewrite !inE /= => /andP [] /andP [] aE cG bF; exists ((a, b), c); rewrite // !inE  /= aE cG bF.
 Qed.
 
@@ -477,7 +484,7 @@ Lemma RV_Pr_rAC (U : finType) (P : fdist U) (A B C D : finType)
   \Pr[ X \in E | [% Y, Z, W] = (b, c, d) ] =
   \Pr[ X \in E | [% Y, W, Z] = (b, d, c) ].
 Proof.
-by rewrite (Pr_FDistMap_r TripC23.inj_f) /= !FDistMap.comp imset_set1.
+by rewrite (Pr_FDistMap_r TripAC.inj_f) /= !FDistMap.comp imset_set1.
 Qed.
 
 Lemma RV_Pr_rCA (U : finType) (P : fdist U) (A B C D : finType)
@@ -485,7 +492,7 @@ Lemma RV_Pr_rCA (U : finType) (P : fdist U) (A B C D : finType)
   \Pr[ X \in E | [% Y, [% Z, W]] = (b, (c, d)) ] =
   \Pr[ X \in E | [% Y, [% W, Z]] = (b, (d, c)) ].
 Proof.
-rewrite (Pr_FDistMap_r (inj_comp TripA.inj_f (inj_comp TripC23.inj_f TripA'.inj_f))).
+rewrite (Pr_FDistMap_r (inj_comp TripA.inj_f (inj_comp TripAC.inj_f TripA'.inj_f))).
 by rewrite /= !FDistMap.comp // !imset_set1.
 Qed.
 
@@ -744,11 +751,11 @@ Lemma cPr_1_RV a : \Pr[X = a] != 0 ->
   \sum_(b <- fin_img Y) \Pr[ Y = b | X = a ] = 1.
 Proof.
 rewrite -RVar.Pr Pr_set1 -{1}(fst_RV2 _ Y) => Xa0.
-set Q := CondFDist.d (RVar.d [% X, Y]) _ Xa0.
+set Q := (RVar.d [% X, Y]) `(| a ).
 rewrite -(FDist.f1 Q) [in RHS](bigID (fun b => b \in fin_img Y)) /=.
 rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   move=> b bY.
-  rewrite /Q CondFDist.dE /cPr /Pr !(big_setX,big_set1) /= Swap.dE Swap.snd fst_RV2.
+  rewrite /Q CondJFDist.dE // /cPr /Pr !(big_setX,big_set1) /= Swap.dE Swap.snd fst_RV2.
   rewrite !RVar.dE /pr_eq /Pr big1 ?div0R // => u.
   rewrite inE => /eqP[Yub ?].
   exfalso.
@@ -757,7 +764,7 @@ rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
 rewrite big_const iter_addR mulR0 addR0.
 rewrite big_uniq; last by rewrite /fin_img undup_uniq.
 apply eq_bigr => b; rewrite mem_undup => /mapP[u _ bWu].
-by rewrite /Q CondFDist.dE Swap_RV2.
+by rewrite /Q CondJFDist.dE // Swap_RV2.
 Qed.
 
 End cPr_1_RV.

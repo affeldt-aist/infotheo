@@ -2,7 +2,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect.
 Require Import Reals.
-Require Import ssrR Reals_ext ln_facts logb Rbigop proba.
+Require Import ssrR Reals_ext ln_facts logb Rbigop fdist.
 
 (******************************************************************************)
 (*    Divergence (or the Kullback-Leibler distance or relative entropy)       *)

@@ -1,7 +1,7 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
-Require Import ssrR Reals_ext logb proba.
+Require Import ssrR Reals_ext logb fdist.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -10,6 +10,7 @@ Import Prenex Implicits.
 Local Open Scope R_scope.
 
 (** * Definition of a source code *)
+
 Section scode_definition.
 
 Variables (A : finType) (B : Type) (k n : nat).

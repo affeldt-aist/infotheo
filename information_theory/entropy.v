@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext ssralg_ext Rbigop bigop_ext logb ln_facts.
-Require Import proba divergence.
+Require Import fdist divergence.
 
 (******************************************************************************)
 (*                        Entropy of a distribution                           *)

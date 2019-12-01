@@ -3,9 +3,20 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
 Require Import Reals.
 Require Import ssr_ext ssralg_ext ssrR Rbigop f2.
 
-(** * The Summary Operator *)
+(******************************************************************************)
+(*                        The Summary Operator                                *)
+(*                                                                            *)
+(* This file provides a formalization of the summary operator used in         *)
+(* pencil-and-paper proofs in modern coding theory.                           *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*   \sum_( x = d [~ s]) F == summation over the vectors x equal to d on all  *)
+(*                            components except the freely enumerated         *)
+(*                            indices in s                                    *)
+(*   summary_fold r d e    == alternative expression of \sum_( x = d [~ r]) e *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section free_on.
 - Section rsum_freeon.
 - Section alternative_definitions_of_summary.

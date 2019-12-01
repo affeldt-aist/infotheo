@@ -2,7 +2,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
-Require Import ssrZ ssrR Reals_ext ssr_ext ssralg_ext logb natbin Rbigop proba.
+Require Import ssrZ ssrR Reals_ext ssr_ext ssralg_ext logb natbin Rbigop fdist.
 Require Import entropy aep typ_seq source_code.
 
 (******************************************************************************)

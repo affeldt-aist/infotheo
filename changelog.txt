@@ -6,6 +6,14 @@ renamings:
 - setX1' -> setX1r (direction change)
 - setX0 -> setX0r
 - Int_part_pos -> Int_part_ge0
+- CFDist -> CJFDist
+- CondFDist -> CondJFDist0
+- CondFDistT -> CondJFDist
 
-files
+notations:
+- P `(| a ) for CondFDistT.d
+
+files:
 - pinsker_fun.v has been integrated into pinsker.v
+- proba.v renamed to fdist.v (proba.v kept for compatibility)
+- cproba.v renamed to jfdist.v

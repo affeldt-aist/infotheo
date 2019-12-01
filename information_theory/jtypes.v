@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect fingroup perm.
 From mathcomp Require boolp.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop proba entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
 Require Import num_occ channel types.
 
 Reserved Notation "'P_' n '(' A ',' B ')'" (at level 9,

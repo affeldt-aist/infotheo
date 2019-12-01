@@ -2,10 +2,10 @@ From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import finmap.
 From mathcomp Require Rstruct boolp.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop proba.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 
 (******************************************************************************)
-(*                    Finitely-supported distribution                         *)
+(*                    Finitely-supported distributions                        *)
 (*                                                                            *)
 (* This file provides a formalization of finitely-supported probability       *)
 (* distributions. It generalizes the finite discrete probability              *)

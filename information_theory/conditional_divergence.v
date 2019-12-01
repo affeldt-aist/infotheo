@@ -3,8 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop ln_facts.
-Require Import num_occ proba entropy channel divergence types jtypes.
-Require Import cproba chap2.
+Require Import num_occ fdist entropy channel divergence types jtypes.
+Require Import jfdist chap2.
 
 (******************************************************************************)
 (*                        Conditional divergence                              *)
@@ -112,13 +112,13 @@ End conditional_divergence_prop.
 Section conditional_divergence_vs_conditional_relative_entropy.
 
 Variables (A B : finType) (P' Q' : A -> {fdist B}) (R : fdist A).
-Let P := CFDist.mkt R P'.
-Let Q := CFDist.mkt R Q'.
+Let P := CJFDist.mkt R P'.
+Let Q := CJFDist.mkt R Q'.
 
 Local Open Scope divergence_scope.
 Local Open Scope reals_ext_scope.
 
-Lemma cre_compat : (CFDist.joint_of P) << (CFDist.joint_of Q) ->
+Lemma cre_compat : (CJFDist.joint_of P) << (CJFDist.joint_of Q) ->
   cre P Q = D(P || Q | R).
 Proof.
 move=> PQ.
@@ -128,23 +128,23 @@ rewrite /div.
 evar (f : A -> Rdefinitions.R); rewrite (eq_bigr f); last first.
   move=> b _; rewrite big_distrr /= /f; reflexivity.
 rewrite {}/f pair_big /=; apply eq_bigr => -[a b] _ /=.
-rewrite (_ : JointFDistChan.d R P (a, b) = (CFDist.joint_of P) (a, b)); last first.
+rewrite (_ : JointFDistChan.d R P (a, b) = (CJFDist.joint_of P) (a, b)); last first.
   by rewrite JointFDistChan.dE ProdFDist.dE.
-rewrite (_ : JointFDistChan.d R Q (a, b) = (CFDist.joint_of Q) (a, b)); last first.
+rewrite (_ : JointFDistChan.d R Q (a, b) = (CJFDist.joint_of Q) (a, b)); last first.
   by rewrite JointFDistChan.dE ProdFDist.dE.
 rewrite mulRA.
 rewrite {1}/cPr.
 rewrite Swap.snd ProdFDist.fst Pr_set1.
 case/boolP : (R a == 0) => [/eqP|] H.
-  by rewrite H 2!mul0R /P /CFDist.joint_of /= ProdFDist.dE H !mul0R.
+  by rewrite H 2!mul0R /P /CJFDist.joint_of /= ProdFDist.dE H !mul0R.
 congr (_ * log _).
   rewrite setX1 Pr_set1 Swap.dE ProdFDist.dE /=.
   field.
   exact/eqP.
 rewrite /cPr !setX1 !Pr_set1 !Swap.dE.
 rewrite !Swap.snd.
-case/boolP : (CFDist.joint_of Q (a, b) == 0) => [/eqP|] H'.
-  have : (CFDist.joint_of P) (a, b) = 0 by move/dominatesP : PQ => ->.
+case/boolP : (CJFDist.joint_of Q (a, b) == 0) => [/eqP|] H'.
+  have : (CJFDist.joint_of P) (a, b) = 0 by move/dominatesP : PQ => ->.
   rewrite /P ProdFDist.dE /= mulR_eq0 => -[| -> ].
     move/eqP : H; tauto.
   by rewrite !(mulR0,mul0R,div0R).

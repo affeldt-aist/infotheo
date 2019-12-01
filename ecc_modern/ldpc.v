@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix vector.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext num_occ bigop_ext Rbigop.
-Require Import proba channel pproba f2 linearcode subgraph_partition tanner.
+Require Import fdist channel pproba f2 linearcode subgraph_partition tanner.
 Require Import tanner_partition hamming binary_symmetric_channel decoding.
 Require Import channel_code summary checksum summary_tanner.
 

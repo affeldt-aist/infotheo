@@ -2,7 +2,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import proba entropy convex_choice ln_facts jensen num_occ.
+Require Import fdist entropy convex_choice ln_facts jensen num_occ.
 
 (******************************************************************************)
 (*                        String entropy                                      *)

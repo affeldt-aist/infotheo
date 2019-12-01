@@ -1,7 +1,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 From infotheo Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext.
-From infotheo Require Import Rbigop proba entropy aep typ_seq natbin source_code.
+From infotheo Require Import Rbigop fdist entropy aep typ_seq natbin source_code.
 
 (******************************************************************************)
 (*        Source coding theorem (variable length, direct part)                *)
