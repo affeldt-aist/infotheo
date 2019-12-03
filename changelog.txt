@@ -1,6 +1,5 @@
 from 0.0.5 to 0.0.6 (wip):
 --------------------------
-
 renamings:
 - Pr_big_union_disj -> Boole_eq (generalization)
 - setX1' -> setX1r (direction change)
@@ -9,10 +8,9 @@ renamings:
 - CFDist -> CJFDist
 - CondFDist -> CondJFDist0
 - CondFDistT -> CondJFDist
-
-notations:
+- scha moved from success_decode_bound.v to channel_code.v
+new notation:
 - P `(| a ) for CondFDistT.d
-
 files:
 - pinsker_fun.v has been integrated into pinsker.v
 - proba.v renamed to fdist.v (proba.v kept for compatibility)

@@ -12,9 +12,9 @@ Require Import jfdist divergence entropy.
 (* Formalization of the chapter 2 of:                                         *)
 (* Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, Wiley,     *)
 (* 2005                                                                       *)
-(* See also entropy.v and convex_dist.v                                       *)
+(* See also entropy.v and convex_fdist.v                                       *)
 (*                                                                            *)
-(* Extra:                                                                     *)
+(* Extra lemma:                                                                     *)
 (*  han == Han's inequality                                                   *)
 (******************************************************************************)
 

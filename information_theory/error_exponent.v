@@ -6,6 +6,24 @@ Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts Rbigop fdist entropy.
 Require Import channel_code channel divergence conditional_divergence.
 Require Import variation_dist pinsker.
 
+(******************************************************************************)
+(*                         Error exponent bound                               *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   out_entropy_dist_ub == Distance from the output entropy of one channel   *)
+(*                          to another                                        *)
+(* joint_entropy_dist_ub == Distance from the joint entropy of one channel    *)
+(*                          to another                                        *)
+(*      mut_info_dist_ub == Distance from the mutual information of one       *)
+(*                          channel to another                                *)
+(*  error_exponent_bound == intermediate step in the proof of the converse of *)
+(*                          the channel coding theorem                        *)
+(*                                                                            *)
+(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
+(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
+(* 53(1):63--103, 2014                                                        *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -35,8 +53,6 @@ Qed.
 
 Local Open Scope variation_distance_scope.
 
-(** Distance from the output entropy of one channel to another: *)
-
 Lemma out_entropy_dist_ub : `| `H(P `o V) - `H(P `o W) | <=
   / ln 2 * #|B|%:R * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
@@ -61,8 +77,6 @@ apply (@leR_trans (d(`J(P , V), `J(P , W)))).
   exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
 
-(** Distance from the joint entropy of one channel to another: *)
-
 Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
   / ln 2 * #|A|%:R * #|B|%:R * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
@@ -81,8 +95,6 @@ apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
 - rewrite cdiv_is_div_joint_dist => //.
  exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
-
-(** * Distance from the mutual information of one channel to another *)
 
 Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
   / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) * - xlnx (sqrt (2 * D(V || W | P))).
@@ -107,8 +119,6 @@ Variable cap : R.
 Hypothesis W_cap : capacity W cap.
 Variable minRate : R.
 Hypothesis minRate_cap : minRate > cap.
-
-(** * Error exponent bound *)
 
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
   forall P : fdist A, forall V : `Ch(A, B),

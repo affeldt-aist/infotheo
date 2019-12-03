@@ -6,6 +6,25 @@ Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
 Require Import ln_facts arg_rmax num_occ types jtypes divergence.
 Require Import conditional_divergence entropy channel_code channel.
 
+(******************************************************************************)
+(*         Lemmas for the converse of the channel coding theorem              *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*   success_factor       == bound of the success rate of decoding for typed  *)
+(*                           codes using conditional divergence               *)
+(*   success_factor_bound == bound of the success rate of decoding for typed  *)
+(*                           codes                                            *)
+(*                                                                            *)
+(* Lemmmas:                                                                   *)
+(*   typed_success_bound  == bound of the success rate of decoding for typed  *)
+(*                           codes using mutual information                   *)
+(*          success_bound == bound of the success rate of decoding            *)
+(*                                                                            *)
+(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
+(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
+(* 53(1):63--103, 2014                                                        *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -16,48 +35,6 @@ Local Open Scope channel_scope.
 Local Open Scope entropy_scope.
 Local Open Scope tuple_ext_scope.
 Local Open Scope reals_ext_scope.
-
-Reserved Notation "scha( W , C )" (at level 50).
-
-Section scha_def.
-
-Variables (B A M : finType) (n : nat).
-
-(** Decoding success rate: *)
-
-Definition scha (W : `Ch(A, B)) (c : code A B M n) := 1 - echa(W , c).
-
-End scha_def.
-
-Notation "scha( W , C )" := (scha W C) : channel_code_scope.
-
-Section scha_facts.
-
-Variables B A M : finType.
-Hypothesis Mnot0 : (0 < #|M|)%nat.
-Variable n : nat.
-
-Lemma scha_pos (W : `Ch(A, B)) (c : code A B M n) : 0 <= scha(W, c).
-Proof. rewrite /scha; by apply Rge_le, Rge_minus, Rle_ge, echa1. Qed.
-
-(** Expression of the success rate of decoding: *)
-
-Lemma success_decode (W : `Ch(A, B)) (c : code A B M n) :
-  scha(W, c) = 1 / #|M|%:R *
-    \sum_(m : M) \sum_(tb | dec c tb == Some m) (W ``(| enc c m)) tb.
-Proof.
-set rhs := \sum_(m | _ ) _.
-have {rhs}-> : rhs = \sum_(m in M) (1 - e(W, c) m).
-  apply eq_bigr => i Hi; rewrite -Pr_to_cplt.
-  apply eq_bigl => t /=; by rewrite inE.
-set rhs := \sum_(m | _ ) _.
-have {rhs}-> : rhs = #|M|%:R - \sum_(m in M) e(W, c) m.
-  by rewrite /rhs {rhs} big_split /= big_const iter_addR mulR1 -big_morph_oppR.
-by rewrite mulRDr -mulRA mulVR ?mulR1 ?INR_eq0' -?lt0n // mulRN.
-Qed.
-
-End scha_facts.
-
 Local Open Scope types_scope.
 Local Open Scope divergence_scope.
 Local Open Scope set_scope.
@@ -71,9 +48,6 @@ Hypothesis Mnot0 : (0 < #|M|)%nat.
 Variable n' : nat.
 Let n := n'.+1.
 Variable P : P_ n ( A ).
-
-(** Bound of the success rate of decoding for typed codes
-   using conditional divergence: *)
 
 Definition success_factor (tc : typed_code B M P) (V : P_ n (A , B)) :=
   exp2 (- n%:R * `H(V | P)) / #|M|%:R *
@@ -90,7 +64,7 @@ Qed.
 Lemma typed_success (tc : typed_code B M P) : scha(W, tc) =
   \sum_ (V | V \in \nu^{B}(P)) exp_cdiv P V W * success_factor tc V.
 Proof.
-rewrite success_decode // div1R.
+rewrite schaE // div1R.
 symmetry.
 transitivity (/ #|M|%:R * \sum_(m : M) \sum_(V | V \in \nu^{B}(P))
     exp_cdiv P V W * #| V.-shell (tuple_of_row (enc tc m)) :&:
@@ -134,8 +108,6 @@ Variable n' : nat.
 Let n := n'.+1.
 Variable V : P_ n ( A , B ).
 Variable P : P_ n ( A ).
-
-(** * Bound of the success rate of decoding for typed codes *)
 
 Definition success_factor_bound :=
   exp2(- n%:R * +| log #|M|%:R / n%:R - `I(P, V) |).
@@ -207,7 +179,7 @@ case/boolP : (tb \in cover partition_pre_image) => Hcase.
 Qed.
 
 Lemma success_factor_bound_part2 :
-  success_factor tc V <=  exp2(n%:R * `I(P, V)) / #|M|%:R.
+  success_factor tc V <= exp2(n%:R * `I(P, V)) / #|M|%:R.
 Proof.
 rewrite /success_factor -mulRA (mulRC (/ #|M|%:R)) !mulRA.
 apply leR_wpmul2r; first exact/ltRW/invR_gt0/ltR0n.
@@ -289,9 +261,6 @@ Qed.
 
 Let exp_cdiv_bound := fun V => exp_cdiv P V W * success_factor_bound M V P.
 
-(** Bound of the success rate of decoding for typed codes
-   using mutual information: *)
-
 Lemma typed_success_bound :
   let Vmax := arg_rmax V0 [pred V | V \in \nu^{B}(P)] exp_cdiv_bound in
   scha(W, tc) <= n.+1%:R ^ (#|A| * #|B|) * exp_cdiv_bound Vmax.
@@ -339,8 +308,6 @@ Defined.
 
 Local Open Scope num_occ_scope.
 
-(** * Bound of the success rate of decoding *)
-
 Lemma success_bound :
   let Pmax := arg_rmax P0 predT (fun P => scha(W, P.-typed_code c)) in
   scha(W, c) <= n.+1%:R ^ #|A| * scha(W, Pmax.-typed_code c).
@@ -355,11 +322,11 @@ apply (@leR_trans (\sum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
     by rewrite big_const iter_addR.
   apply ler_rsum => P _.
   exact: (@arg_rmax2 _ P0 xpredT (fun P1 : P_ n (A) => scha(W, P1.-typed_code c))).
-rewrite success_decode // -(sum_messages_types c).
+rewrite schaE // -(sum_messages_types c).
 rewrite div1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply ler_rsum => P _.
 rewrite mulRC leR_pdivr_mulr; last exact/ltR0n.
-rewrite success_decode // div1R -mulRA mulRCA mulVR ?INR_eq0' -?lt0n // mulR1.
+rewrite schaE // div1R -mulRA mulRCA mulVR ?INR_eq0' -?lt0n // mulR1.
 apply/(@leR_trans (\sum_(m | m \in enc_pre_img c P)
                      \sum_(y | (dec (P.-typed_code c)) y == Some m)
                      (W ``(|(enc (P.-typed_code c)) m)) y)).
