@@ -6,6 +6,21 @@ Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
 Require Import num_occ channel types.
 
+(******************************************************************************)
+(*                            Joint Types                                     *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*   jtype == type of joint type, notation: P_n(A, B)                         *)
+(*   shell = shell, notation: V.-shell t                                      *)
+(*   cond_type == conditional type, notation: \nu{V}(P)                       *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   bound_card_jtype == upper-bound of the number of conditional types       *)
+(*    jtype_not_empty == joint types are not empty                            *)
+(*         occ_co_occ == Relation between the number of symbol occurrences    *)
+(*                       and the number of pairs of symbols occurrences       *)
+(******************************************************************************)
+
 Reserved Notation "'P_' n '(' A ',' B ')'" (at level 9,
   n at next level, A at next level, B at next level).
 Reserved Notation "V '.-shell' ta" (at level 5,
@@ -30,8 +45,6 @@ Section jtype_def.
 Variables A B : finType.
 Variable n : nat.
 Local Open Scope nat_scope.
-
-(** * Joint Types *)
 
 Record jtype : predArgType := mkJtype {
   c :> `Ch*(A, B) ;
@@ -315,8 +328,6 @@ exfalso.
 by apply/eqP : abs; apply/invR_neq0'; rewrite INR_eq0' H'.
 Qed.
 
-(** Upper-bound of the number of conditional types: *)
-
 Lemma bound_card_jtype : #| P_ n (A , B) | <= expn n.+1 (#|A| * #|B|).
 Proof.
 rewrite -(card_ord n.+1) mulnC expnM -2!card_ffun cardE /enum_mem.
@@ -335,8 +346,6 @@ destruct t as [c f Hf cf] => /=.
 apply/mapP.
 by exists f.
 Qed.
-
-(** As defined, channels are never empty: *)
 
 Lemma jtype_not_empty : 0 < #|A| -> 0 < #|B| -> 0 < #|P_ n (A , B)|.
 Proof.
@@ -373,8 +382,6 @@ Variable V : P_ n (A , B).
 
 Local Open Scope nat_scope.
 
-(** * Shells *)
-
 Definition shell :=
   [set tb : n.-tuple B | [forall a, [forall b, N(a, b |ta, tb) == (jtype.f V) a b]]].
 
@@ -391,8 +398,6 @@ Variable V : P_ n ( A , B).
 Variable ta : n.-tuple A.
 Variable tb : n.-tuple B.
 Hypothesis Htb : tb \in V.-shell ta.
-
-(** Relation between the number of symbol occurrences and the number of pairs of symbols occurences (original lemma: N(a, b|ta, tb) = N(a | ta) V(b | a)) *)
 
 Lemma occ_co_occ : forall a b, N(a, b| ta, tb) = (jtype.f V) a b.
 Proof.
@@ -600,8 +605,7 @@ Definition take_shell (k : nat) : {set (sum_num_occ ta k).-tuple B} :=
      tcast (minn_sum_num_occ_n ta k) [tuple of take (sum_num_occ ta k) b])
   @: (V.-shell ta).
 
-(** Same set modulo cast: *)
-
+(* Same set modulo cast: *)
 Lemma full_take_shell : #| take_shell #|A| | = #| V.-shell ta |.
 Proof.
 apply card_imset; rewrite /injective => /= v v' vv'.
@@ -745,10 +749,11 @@ eapply leq_trans; first by apply (subset_leq_card_split_tuple (card_take_shell_i
 by rewrite cardsX cards1 muln1.
 Qed.
 
-Definition card_type_of_row (i : 'I_#|A|) := match eqVneq N(enum_val i | ta) 0 with
-| left _ => 1
-| right Ha => #| T_{type_of_row Ha} |
-end.
+Definition card_type_of_row (i : 'I_#|A|) :=
+  match Bool.bool_dec (N(enum_val i | ta) == O) true with
+  | left _ => 1
+  | right Ha => #| T_{type_of_row (Bool.eq_true_not_negb _ Ha)} |
+  end.
 
 Lemma split_nocc_rec : forall k, k <= #|A| ->
   #|take_shell ta V k| <= \prod_ (i < #|A| | i < k) card_type_of_row i.
@@ -767,15 +772,14 @@ elim.
       by rewrite andbC /= ltnW.
     - rewrite andbC -ltn_neqAle.
       by move/negbTE : Hcase => ->.
-  rewrite /card_type_of_row; destruct eqVneq.
+  rewrite /card_type_of_row; case: Bool.bool_dec => [e|/Bool.eq_true_not_negb e].
     rewrite mul1n.
-    move/eqP in e.
     eapply leq_trans; [exact: (card_take_shell0 e) | by []].
-  apply (leq_trans (card_take_shell i)).
+  apply (leq_trans (card_take_shell e)).
   rewrite mulnC leq_pmul2l //.
   apply/card_gt0P.
-  set Q := type_of_row i.
-  case: (typed_tuples_not_empty_alt i Q) => tb Htb.
+  set Q := type_of_row e.
+  case: (typed_tuples_not_empty_alt e Q) => tb Htb.
   by exists tb.
 Qed.
 
@@ -820,7 +824,7 @@ apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
   apply ler_rprod => a.
   split; first exact/leR0n.
   rewrite -exp2_pow mulRA.
-  rewrite /card_type_of_row; destruct eqVneq.
+  rewrite /card_type_of_row; case: Bool.bool_dec => [e|/Bool.eq_true_not_negb e].
     rewrite -[X in X <= _]exp2_0.
     apply Exp_le_increasing, mulR_ge0 => //.
       apply mulR_ge0 => //; exact: leR0n.
@@ -833,7 +837,7 @@ apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
   + rewrite /entropy.
     apply Ropp_eq_compat, eq_bigr => b _.
     rewrite /pta0 (jtype.c_f V) /= (Vctyp Hta a) -{1 4}(enum_rankK a).
-    move/negbTE : (i) => ->; by rewrite !ffunE /= enum_rankK.
+    move/negbTE : (e) => ->; by rewrite !ffunE /= enum_rankK.
 Qed.
 
 End card_shell_ub.

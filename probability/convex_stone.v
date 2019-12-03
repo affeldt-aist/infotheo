@@ -5,6 +5,12 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist convex_choice.
 
+(****************************************************************************)
+(* Direct formalization of the Lemma 2 from M. H. Stone. Postulates for the *)
+(* barycentric calculus. Ann. Mat. Pura Appl., 29(1):25–30, 1949. The files *)
+(* convex_{choice,type}.v contain a shorter proof.                          *)
+(****************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -429,26 +435,10 @@ Lemma distribute (x y z : A) (p q : prob) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
 Proof. by rewrite -{1}(convmm x q) commute. Qed.
 
-(*Local Open Scope vec_ext_scope.
-
-Fixpoint Convn n : {dist 'I_n} -> ('I_n -> A) -> A :=
-  match n return forall (e : {dist 'I_n}) (g : 'I_n -> A), A with
-  | O => fun e g => False_rect A (distI0_False e)
-  | m.+1 => fun e g =>
-    match eqVneq (e ord0) 1%R with
-    | left _ => g ord0
-    | right H => let G := fun i => g (DelDist.h ord0 i) in
-      g ord0 <| probdist e ord0 |> Convn (DelDist.d H) G
-    end
-  end.
-
-Local Notation "'\Sum_' d f" := (Convn d f).
-*)
-
 Lemma ConvnFDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Conv_(FDist1.d j) g = g j.
 Proof.
 elim: n j g => [[] [] //|n IH j g /=].
-case: eqVneq => [|b01].
+case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
   rewrite FDist1.dE; case j0 : (_ == _) => /=.
   by move=> _; rewrite (eqP j0).
   rewrite (_ : (0%:R)%R = 0%R) //; lra.
@@ -475,15 +465,15 @@ Qed.
 
 Lemma convn1E a e : \Conv_ e (fun _ : 'I_1 => a) = a.
 Proof.
-rewrite /=; case: eqVneq => [//|H]; exfalso; move/eqP: H; apply.
+rewrite /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H; exfalso; move/eqP: H; apply.
 by apply/eqP; rewrite FDist1.dE1 (FDist1.I1 e).
 Qed.
 
 Lemma convnE n (g : 'I_n.+1 -> A) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%R) :
   \Conv_d g = g ord0 <| probfdist d ord0 |> \Conv_(DelFDist.d i1) (fun x => g (DelFDist.f ord0 x)).
 Proof.
-rewrite /=; case: eqVneq => /= H.
-exfalso; by rewrite H eqxx in i1.
+rewrite /=; case: Bool.bool_dec => /= [|/Bool.eq_true_not_negb] H.
+exfalso; by rewrite (eqP H) eqxx in i1.
 by rewrite (boolp.Prop_irrelevance H i1).
 Qed.
 
@@ -1061,7 +1051,6 @@ by rewrite subR_eq0; apply/nesym/eqP.
 by rewrite boolp.funeqE => j; rewrite /= permE H permE.
 Qed.
 
-(* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2*)
 Lemma Convn_perm (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> A) (s : 'S_n) :
   \Conv_d g = \Conv_(PermFDist.d d s) (g \o s).
 Proof.
@@ -1100,14 +1089,14 @@ End convex_space_prop.
 Section R_convex_space.
 Lemma avgnE n (g : 'I_n -> R) e : \Conv_e g = avgn g e.
 elim: n g e => /= [g e|n IH g e]; first by move: (fdistI0_False e).
-case: eqVneq => H /=.
+case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb] H /=.
   rewrite /avgn big_ord_recl /= H mul1R big1 ?addR0 // => j _.
   by move/eqP/FDist1.P : H => ->; rewrite ?mul0R.
 rewrite /avgn big_ord_recl /=.
 rewrite /Conv /= /avg /=; congr (_ + _)%R.
 rewrite IH /avgn big_distrr /=; apply eq_bigr => j _.
 rewrite DelFDist.dE D1FDist.dE eq_sym (negbTE (neq_lift _ _)).
-by rewrite mulRAC mulRC -mulRA mulVR ?onem_neq0 // mulR1.
+rewrite mulRAC mulRC -mulRA mulVR ?mulR1 //; exact/onem_neq0.
 Qed.
 End R_convex_space.
 
@@ -1128,7 +1117,7 @@ Lemma convn_convnfdist (n : nat) (g : 'I_n -> fdist_convType A) (d : {fdist 'I_n
   \Conv_d g = ConvnFDist.d d g.
 Proof.
 elim: n g d => /= [g d|n IH g d]; first by move: (fdistI0_False d).
-case: eqVneq => H.
+case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb] H.
   apply/fdist_ext => a.
   rewrite ConvnFDist.dE big_ord_recl H mul1R big1 ?addR0 //= => j _.
   by move/eqP/FDist1.P : H => -> //; rewrite ?mul0R.
@@ -1136,6 +1125,6 @@ apply/fdist_ext => a.
 rewrite ConvFDist.dE ConvnFDist.dE /= big_ord_recl; congr (_ + _)%R.
 rewrite IH ConvnFDist.dE big_distrr /=; apply eq_bigr => i _.
 rewrite DelFDist.dE D1FDist.dE eq_sym (negbTE (neq_lift _ _)).
-by rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?onem_neq0 // mulR1.
+rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?mulR1 //; exact/onem_neq0.
 Qed.
 End convn_convnfdist.

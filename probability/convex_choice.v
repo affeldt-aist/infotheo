@@ -605,10 +605,10 @@ Fixpoint Convn n : {fdist 'I_n} -> ('I_n -> A) -> A :=
   match n return forall (e : {fdist 'I_n}) (g : 'I_n -> A), A with
   | O => fun e g => False_rect A (fdistI0_False e)
   | m.+1 => fun e g =>
-    match eqVneq (e ord0) 1%R with
+    match Bool.bool_dec (e ord0 == 1%R) true with
     | left _ => g ord0
     | right H => let G := fun i => g (DelFDist.f ord0 i) in
-      g ord0 <| probfdist e ord0 |> Convn (DelFDist.d H) G
+      g ord0 <| probfdist e ord0 |> Convn (DelFDist.d (Bool.eq_true_not_negb _ H)) G
     end
   end.
 
@@ -640,16 +640,15 @@ Proof.
 elim: n points d => [|n IH] points d.
   move: (FDist.f1 d); rewrite /= big_ord0 => /Rlt_not_eq; elim.
   exact: Rlt_0_1.
-rewrite /=.
-case: eqVneq => Hd.
-  rewrite (bigD1 ord0) ?inE // Hd big1 /=.
+rewrite /=; case: Bool.bool_dec => [/eqP|]Hd.
+  rewrite (bigD1 ord0) //= Hd big1 /=.
     rewrite addpt0 (scalept_gt0 _ _ Rlt_0_1).
     by congr Scaled; apply val_inj; rewrite /= mulR1.
   move=> i Hi; have := FDist.f1 d.
   rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ R1)).
   rewrite addRK subRR => /prsumr_eq0P -> //.
   by rewrite scalept0.
-set d' := DelFDist.d Hd.
+set d' := DelFDist.d (Bool.eq_true_not_negb _ Hd).
 set points' := fun i => points (DelFDist.f ord0 i).
 rewrite /index_enum -enumT (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
 rewrite -big_filter (perm_big (map (lift ord0) (enum 'I_n)));
@@ -660,7 +659,7 @@ rewrite /barycenter 2!big_map [in RHS]big_map.
 apply eq_bigr => i _.
 rewrite scalept_comp // DelFDist.dE D1FDist.dE /=.
 rewrite /Rdiv (mulRC (d _)) mulRA mulRV ?mul1R //.
-by move: (Hd); apply contra => /eqP Hd'; rewrite -onem0 -Hd' onemK.
+by move: (Bool.eq_true_not_negb _ Hd); apply contra => /eqP Hd'; rewrite -onem0 -Hd' onemK.
 Qed.
 End with_affine_projection.
 
@@ -689,16 +688,16 @@ Proof. by apply convn_proj; rewrite FDist1.dE eqxx. Qed.
 
 Lemma convn1E g (e : {fdist 'I_1}) : \Conv_ e g = g ord0.
 Proof.
-rewrite /=; case: eqVneq => [//|H]; exfalso; move/eqP: H; apply.
+rewrite /=; case: Bool.bool_dec => // H; exfalso; move/eqP: (Bool.eq_true_not_negb _ H); apply.
 by apply/eqP; rewrite FDist1.dE1 (FDist1.I1 e).
 Qed.
 
 Lemma convnE n g (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%R) :
   \Conv_d g = g ord0 <| probfdist d ord0 |> \Conv_(DelFDist.d i1) (fun x => g (DelFDist.f ord0 x)).
 Proof.
-rewrite /=; case: eqVneq => /= H.
-exfalso; by rewrite H eqxx in i1.
-by rewrite (eq_irrelevance H i1).
+rewrite /=; case: Bool.bool_dec => /= H.
+exfalso; by rewrite (eqP H) eqxx in i1.
+by rewrite (eq_irrelevance (Bool.eq_true_not_negb _ H) i1).
 Qed.
 
 Lemma convn2E g (d : {fdist 'I_2}) :
@@ -843,16 +842,16 @@ exists 2, (fun i => if i == ord0 then a0 else a1), (I2FDist.d p); split => /=.
   move=> a2.
   case => i _ <-{a2} /=.
   case: ifPn => _; [by left | by right].
-case: eqVneq => [|H].
+case: Bool.bool_dec => [/eqP|H].
   rewrite I2FDist.dE eqxx /= => p1.
   suff -> : p = `Pr 1 by rewrite conv1.
   exact/prob_ext.
 congr (_ <| _ |> _); first by apply prob_ext => /=; rewrite I2FDist.dE eqxx.
-case: eqVneq => H' //.
+case: Bool.bool_dec => // H'.
 exfalso.
 move: H'; rewrite DelFDist.dE D1FDist.dE (eq_sym (lift _ _)) (negbTE (neq_lift _ _)).
 rewrite I2FDist.dE (eq_sym (lift _ _)) (negbTE (neq_lift _ _)) I2FDist.dE eqxx divRR ?eqxx //.
-by move: H; rewrite I2FDist.dE eqxx onem_neq0.
+by move: (Bool.eq_true_not_negb _ H); rewrite I2FDist.dE eqxx onem_neq0.
 Qed.
 End hull_prop.
 
