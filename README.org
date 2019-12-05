@@ -1,5 +1,7 @@
 * infotheo
 
+[[https://travis-ci.com/affeldt-aist/infotheo][file:https://travis-ci.com/affeldt-aist/infotheo.svg?branch=master]]
+
 ** Installation
 
    The preferred way to install infotheo is with opam because it takes
@@ -11,25 +13,20 @@
 
 *** Last stable version:
 
-Version 0.0.5:
+Version 0.0.6:
 3. ~opam install coq-infotheo~
 
 **** Requirements
 
 - [[https://coq.inria.fr][Coq]] 8.10
-- [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.9.0
-- [[https://github.com/math-comp/analysis][MathComp-Analysis]] 0.2.2
+- [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.9.0 or 1.10.0
+- [[https://github.com/math-comp/analysis][MathComp-Analysis]] 0.2.2 or 0.2.3
   which requires
-  + [[https://github.com/math-comp/bigenough/][bigenough]] first release
-  + [[https://github.com/math-comp/finmap][finmap]] 1.2.1
+  + [[https://github.com/math-comp/finmap][finmap]] 1.2.0 or greater
 
 All versions available from opam.
 
 *** Development version (git master):
-
-[[https://travis-ci.com/affeldt-aist/infotheo][file:https://travis-ci.com/affeldt-aist/infotheo.svg?branch=master]]
-
-With Coq 8.10.
 
 1. ~git clone git@github.com:affeldt-aist/infotheo.git~
 2. ~cd infotheo~

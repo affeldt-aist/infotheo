@@ -1,5 +1,5 @@
-from 0.0.5 to 0.0.6 (wip):
---------------------------
+from 0.0.5 to 0.0.6 :
+---------------------
 renamings:
 - Pr_big_union_disj -> Boole_eq (generalization)
 - setX1' -> setX1r (direction change)
