@@ -248,7 +248,7 @@ rewrite mulRN 3!mulNR oppRK; congr (_ * log _).
 move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
 move: (HV); rewrite in_set => /cond_type_equiv => /(_ _ Hx a) sumB.
 move: Hx; rewrite in_set => /forallP/(_ a)/eqP => HPa.
-rewrite (jtype.c_f V) /=.
+rewrite (JType.c_f V) /=.
 case: ifPn => [/eqP|] HP.
 - rewrite HPa -sumB HP div0R mulR0 mul0R.
   move/eqP : HP; rewrite sum_nat_eq0 => /forallP/(_ b).
@@ -322,7 +322,7 @@ case : ifP => Hcase.
   rewrite lt0n.
   move: Htb ; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP ->.
   move: H => /=.
-  rewrite (jtype.c_f V) /=.
+  rewrite (JType.c_f V) /=.
   move: (Vctyp).
   rewrite in_set.
   move/cond_type_equiv => /(_ _ Hta a) ->.

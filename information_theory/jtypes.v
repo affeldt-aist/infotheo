@@ -38,15 +38,12 @@ Import Prenex Implicits.
 Local Open Scope R_scope.
 Local Open Scope channel_scope.
 
-Module jtype.
-
-Section jtype_def.
-
-Variables A B : finType.
-Variable n : nat.
+Module JType.
+Section def.
+Variables (A B : finType) (n : nat).
 Local Open Scope nat_scope.
 
-Record jtype : predArgType := mkJtype {
+Record t : predArgType := mk {
   c :> `Ch*(A, B) ;
   f : {ffun A -> {ffun B -> 'I_n.+1}} ;
   sum_f : \sum_(a in A) \sum_(b in B) f a b == n ;
@@ -55,29 +52,28 @@ Record jtype : predArgType := mkJtype {
                             then / #|B|%:R
                             else ((f a b)%:R / row%:R)%R }.
 
-End jtype_def.
+End def.
+End JType.
 
-End jtype.
+Coercion jtype_coercion := JType.c.
 
-Coercion jtype_coercion := jtype.c.
-
-Notation "'P_' n '(' A ',' B ')'" := (jtype.jtype A B n) : types_scope.
+Notation "'P_' n '(' A ',' B ')'" := (JType.t A B n) : types_scope.
 Local Open Scope types_scope.
 
-Definition ffun_of_jtype A B n (i : P_ n ( A , B )) := let: jtype.mkJtype _ f _ _ := i in f.
+Definition ffun_of_jtype A B n (i : P_ n ( A , B )) := let: JType.mk _ f _ _ := i in f.
 
-Lemma jtype_ext A B n (t1 t2 : P_ n ( A , B )) : jtype.f t1 = jtype.f t2 -> t1 = t2.
+Lemma jtype_ext A B n (t1 t2 : P_ n ( A , B )) : JType.f t1 = JType.f t2 -> t1 = t2.
 Proof.
 case: t1 t2 => d1 f1 Hf1 H1 /= [] d2 f2 Hf2 H2 /= ?; subst f2.
 have ? : d1 = d2.
   apply/Channel1.chan_star_eq.
   by rewrite boolp.funeqE => a; apply/fdist_ext => b; rewrite H1 H2.
-subst d2; congr jtype.mkJtype; exact/boolp.Prop_irrelevance.
+subst d2; congr JType.mk; exact/boolp.Prop_irrelevance.
 Qed.
 
 Definition jtype_eq A B n (t1 t2 : P_ n ( A , B )) :=
   match t1, t2 with
-    | jtype.mkJtype _ f1 _ _, jtype.mkJtype _ f2 _ _ => f1 == f2
+    | JType.mk _ f1 _ _, JType.mk _ f2 _ _ => f1 == f2
   end.
 
 Lemma jtype_eqP A B n : Equality.axiom (@jtype_eq A B n).
@@ -88,7 +84,7 @@ subst f2.
 have ? : d1 = d2.
   apply/Channel1.chan_star_eq.
   by rewrite boolp.funeqE => a /=; apply/fdist_ext => b; rewrite H1 H2.
-subst d2; congr jtype.mkJtype; exact/boolp.Prop_irrelevance.
+subst d2; congr JType.mk; exact/boolp.Prop_irrelevance.
 Qed.
 
 Definition jtype_eqMixin A B n := EqMixin (@jtype_eqP A B n).
@@ -135,7 +131,7 @@ match Sumbool.sumbool_of_bool (0 < #|A|)%nat with
     match Sumbool.sumbool_of_bool (0 < #|B|)%nat with
       |left Bnot0 =>
        match Sumbool.sumbool_of_bool (\sum_(a in A) \sum_(b in B) f a b == n)%nat with
-         | left Hf => Some (@jtype.mkJtype A B n (chan_of_jtype Anot0 Bnot0 f) f Hf _)
+         | left Hf => Some (@JType.mk A B n (chan_of_jtype Anot0 Bnot0 f) f Hf _)
          | right _ => None
        end
       | right _ => None
@@ -145,7 +141,7 @@ end).
 move=> a b; by rewrite ffunE.
 Defined.
 
-Lemma jtype_choice_pcancel (A B : finType) n : pcancel (@jtype.f A B n) (@jtype_choice_f A B n).
+Lemma jtype_choice_pcancel (A B : finType) n : pcancel (@JType.f A B n) (@jtype_choice_f A B n).
 Proof.
 case=> d f Hf H /=.
 rewrite /jtype_choice_f /=.
@@ -200,7 +196,7 @@ refine (match Sumbool.sumbool_of_bool (\sum_(a in A) \sum_(b in B) f a b == n)%n
           | left Hf => _
           | right _ => None
         end).
-refine (Some (@jtype.mkJtype A B n (chan_of_jtype Anot0 Bnot0 f) f Hf _)).
+refine (Some (@JType.mk A B n (chan_of_jtype Anot0 Bnot0 f) f Hf _)).
 by move=> a b; rewrite ffunE.
 Defined.
 
@@ -240,7 +236,7 @@ refine (
         end
       | right _ => None
     end).
-refine (Some (@jtype.mkJtype A B n (@chan_of_jtype _ _ Anot0 Bnot0 n (sval f)) (sval f) (proj2_sig f) _)).
+refine (Some (@JType.mk A B n (@chan_of_jtype _ _ Anot0 Bnot0 n (sval f)) (sval f) (proj2_sig f) _)).
 by move=> a b; rewrite ffunE.
 Defined.
 
@@ -261,10 +257,10 @@ move: (fdist_card_neq0 (d a)) => Bnot0.
 set tmp := pmap _ _.
 have -> : tmp = pmap (fun f =>
                         Some {|
-                            jtype.c := chan_of_jtype Anot0 Bnot0 (sval f);
-                            jtype.f := (sval f);
-                            jtype.sum_f := proj2_sig f;
-                            jtype.c_f := fun a b =>
+                            JType.c := chan_of_jtype Anot0 Bnot0 (sval f);
+                            JType.f := (sval f);
+                            JType.sum_f := proj2_sig f;
+                            JType.c_f := fun a b =>
 eq_ind_r
                                      (eq^~ (if (\sum_(b0 in B) sval f a b0)%nat == 0%N
                                             then / #|B|%:R
@@ -305,9 +301,9 @@ Variable ta : n.-tuple A.
 
 Local Open Scope nat_scope.
 
-Lemma jtype_entry_ub (V : P_ n ( A , B )) b : (\sum_ (a : A) (jtype.f V) a b < n.+1)%nat.
+Lemma jtype_entry_ub (V : P_ n ( A , B )) b : \sum_(a : A) (JType.f V) a b < n.+1.
 Proof.
-apply (@leq_ltn_trans (\sum_ (a : A) \sum_ (b : B) (jtype.f V) a b)).
+apply (@leq_ltn_trans (\sum_ (a : A) \sum_ (b : B) (JType.f V) a b)).
 - apply leq_sum => a _.
   by rewrite (bigD1 b) //= leq_addr.
 - case: V => c f Hf H /=.
@@ -315,7 +311,7 @@ apply (@leq_ltn_trans (\sum_ (a : A) \sum_ (b : B) (jtype.f V) a b)).
   by rewrite Hf.
 Qed.
 
-Lemma jtype_0_jtypef (V : P_ n ( A , B )) a b : V a b = 0%R -> ((jtype.f V) a) b = ord0.
+Lemma jtype_0_jtypef (V : P_ n ( A , B )) a b : V a b = 0%R -> (JType.f V) a b = ord0.
 Proof.
 destruct V as [V1 V2 V3 V4] => /=.
 rewrite V4 /=.
@@ -365,7 +361,7 @@ have Htmp' : (forall a b,
         (let ln := \sum_(b0 in B) (tmp a) b0 in
          if ln == 0 then / #|B|%:R else (((tmp a) b)%:R / ln%:R)%R)).
   by move=> a0 b0; rewrite ffunE.
-exists (@jtype.mkJtype _ _ _ (chan_of_jtype Anot0 Bnot0 tmp) tmp Htmp Htmp').
+exists (@JType.mk _ _ _ (chan_of_jtype Anot0 Bnot0 tmp) tmp Htmp Htmp').
 by rewrite inE.
 Qed.
 
@@ -383,7 +379,7 @@ Variable V : P_ n (A , B).
 Local Open Scope nat_scope.
 
 Definition shell :=
-  [set tb : n.-tuple B | [forall a, [forall b, N(a, b |ta, tb) == (jtype.f V) a b]]].
+  [set tb : n.-tuple B | [forall a, [forall b, N(a, b |ta, tb) == (JType.f V) a b]]].
 
 End shell_def.
 
@@ -399,7 +395,7 @@ Variable ta : n.-tuple A.
 Variable tb : n.-tuple B.
 Hypothesis Htb : tb \in V.-shell ta.
 
-Lemma occ_co_occ : forall a b, N(a, b| ta, tb) = (jtype.f V) a b.
+Lemma occ_co_occ : forall a b, N(a, b| ta, tb) = (JType.f V) a b.
 Proof.
 move: Htb => Htb' x0 y0 ; rewrite /shell inE in Htb'.
 apply/eqP; move: y0; apply/forallP; move: x0; apply/forallP; exact Htb'.
@@ -409,7 +405,7 @@ Variable P : P_ n ( A ).
 Hypothesis Hta : ta \in T_{P}.
 
 Lemma type_co_occ a b :
-  ((type.f P) a * (jtype.f V) a b = N(a, b | ta, tb) * N(a | ta))%nat.
+  ((type.f P) a * (JType.f V) a b = N(a, b | ta, tb) * N(a | ta))%nat.
 Proof. by rewrite occ_co_occ mulnC (type_numocc Hta a). Qed.
 
 End shelled_tuples_facts.
@@ -616,14 +612,13 @@ End take_shell_def.
 
 Section row_num_occ_sect.
 
-Variable A : finType.
-Variable n : nat.
+Variables (A : finType) (n : nat).
 Variable P : P_ n ( A ).
 Variable B : finType.
 Variable V : P_ n (A , B).
 
 Definition row_num_occ := forall ta, ta \in T_{P} ->
-  forall a, (\sum_(b in B) (jtype.f V) a b)%nat = N(a | ta).
+  forall a, (\sum_(b in B) (JType.f V) a b)%nat = N(a | ta).
 
 Hypothesis H : row_num_occ.
 Variable ta : n.-tuple A.
@@ -631,7 +626,7 @@ Hypothesis Hta : ta \in T_{P}.
 Variable a : A.
 Variable b : B.
 
-Lemma ctyp_element_ub : ((jtype.f V) a b < N(a | ta).+1)%nat .
+Lemma ctyp_element_ub : ((JType.f V) a b < N(a | ta).+1)%nat .
 Proof. by rewrite ltnS -(H Hta) (bigD1 b) // leq_addr. Qed.
 
 End row_num_occ_sect.
@@ -836,7 +831,7 @@ apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
   + by rewrite -type_fun_type // (type_numocc Hta).
   + rewrite /entropy.
     apply Ropp_eq_compat, eq_bigr => b _.
-    rewrite /pta0 (jtype.c_f V) /= (Vctyp Hta a) -{1 4}(enum_rankK a).
+    rewrite /pta0 (JType.c_f V) /= (Vctyp Hta a) -{1 4}(enum_rankK a).
     move/negbTE : (e) => ->; by rewrite !ffunE /= enum_rankK.
 Qed.
 
@@ -911,20 +906,18 @@ Local Open Scope nat_scope.
 Lemma shell_not_empty' : exists sb : seq B,
   exists Hsb : size sb == n, Tuple Hsb \in V.-shell ta.
 Proof.
-exists (flatten (map (fun a => flatten (map (fun b => nseq (jtype.f V a b) b) (enum B))) (enum A))).
+exists (flatten (map (fun a => flatten (map (fun b => nseq (JType.f V a b) b) (enum B))) (enum A))).
 set cdom := flatten _.
-have Hy : size cdom == n.
-  rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
-  apply/eqP ; symmetry.
-  rewrite -{1}(sum_num_occ_all ta).
-  rewrite (reindex_onto (fun x => enum_rank x) (fun y => enum_val y)) /= => [|i _] ; last by rewrite enum_valK.
-  rewrite -filter_index_enum filter_predT.
+have /eqP Hy : size cdom = n.
+  rewrite size_flatten /shape -map_comp sumn_big_addn big_map [LHS]big_filter.
+  rewrite -[RHS](sum_num_occ_all ta).
+  rewrite [RHS](reindex_onto enum_rank enum_val) => [|i _] ; last by rewrite enum_valK.
   apply eq_big.
   - move=> ? /=; by rewrite enum_rankK eqxx.
-  - move=> a _.
-    rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
-    rewrite -filter_index_enum filter_predT enum_rankK.
-    rewrite (_ : \sum_(b1 : B) (size \o (fun b => nseq (jtype.f V a b) b)) b1 = \sum_(b : B) jtype.f V a b) ; last first.
+  - move=> a _ /=.
+    rewrite [in RHS]enum_rankK.
+    rewrite size_flatten /shape -map_comp sumn_big_addn big_map big_filter.
+    transitivity (\sum_(b : B) JType.f V a b).
       apply eq_bigr => ? _ /=; by rewrite size_nseq.
     by rewrite (Hrow_num_occ Hta).
 exists Hy.
@@ -941,21 +934,21 @@ rewrite (@sorted_is_flattened _ _ (@le_rank_trans _)
   move=> ? _; by rewrite mem_enum.
 have -> : [seq filter (pred1 elt) ta | elt <- enum A] = [seq nseq N(x0 | ta) x0 | x0 <- enum A].
   apply eq_in_map => ? _; by rewrite filter_pred1_num_occ.
-have sz_flat : forall a, size (flatten [seq nseq (jtype.f V a b) b | b <- enum B]) = N(a | ta).
+have sz_flat : forall a, size (flatten [seq nseq (JType.f V a b) b | b <- enum B]) = N(a | ta).
   move=> a'; rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
   rewrite -(Hrow_num_occ Hta a') /= enumT.
   apply eq_bigr => b' _; by rewrite size_nseq.
 set dom := flatten _.
 have Hdom : size dom = n.
   rewrite /dom size_flatten /shape -map_comp sumn_big_addn big_map.
-  rewrite -filter_index_enum filter_predT -[X in _ = X](sum_num_occ_alt ta).
+  rewrite big_filter -[RHS](sum_num_occ_alt ta).
   apply eq_bigr => a' _ /=; by rewrite size_nseq.
 move/eqP in Hy.
 rewrite -size_filter (_ : filter _ _ = filter
   (predI (fun x => x.2 == b) (fun x => x.1 == a)) (zip dom cdom)); last first.
   apply eq_in_filter; case=> i1 i2 Hi /=; by rewrite xpair_eqE andbC.
 rewrite filter_predI (@filter_zip_L _ _ n) //.
-have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (jtype.f V a b) b | b <- enum B].
+have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (JType.f V a b) b | b <- enum B].
   have [A1 [A2 A12]] : exists A1 A2, enum A = A1 ++ a :: A2.
     have /splitPr[A1 A2] : a \in enum A by rewrite mem_enum.
     by exists A1, A2.
@@ -970,7 +963,7 @@ have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (jtype.f V a b) b | 
   rewrite mask_cat; last first.
     by rewrite size_map /= cats0 sz_flat size_nseq.
   transitivity (mask (map (pred1 a) (flatten [seq nseq N(a1 | ta) a1 | a1 <- [:: a]]))
-     (flatten [seq flatten [seq nseq (jtype.f V a1 b1) b1 | b1 <- enum B] | a1 <- [:: a]])).
+     (flatten [seq flatten [seq nseq (JType.f V a1 b1) b1 | b1 <- enum B] | a1 <- [:: a]])).
     move: (enum_uniq A); rewrite A12 cat_uniq /= negb_or /=.
     case/andP => uniqA1 /andP [] /andP [a_A1 _] /andP [a_A2 _].
     rewrite {1}(_ : mask _ _ = [::]); last by rewrite map_pred1_nseq // mask_false.
@@ -995,8 +988,8 @@ rewrite size_zip size_mask; last first.
 rewrite size_filter.
 set x1 := count _ _. set x2 := count _ _.
 have -> : x1 = x2 by rewrite /x1 /x2 count_map; apply eq_in_count.
-have -> : x2 = jtype.f V a b.
-  rewrite /x2 -size_filter (_ : filter _ _ = nseq (jtype.f V a b) b); last first.
+have -> : x2 = JType.f V a b.
+  rewrite /x2 -size_filter (_ : filter _ _ = nseq (JType.f V a b) b); last first.
     by rewrite filter_flatten map_filter_pred1_nseq // ?enum_uniq // ?mem_enum.
   by rewrite size_nseq.
 by apply/minn_idPl.
@@ -1068,7 +1061,7 @@ Qed.
 
 Lemma shell_injective (V V' : P_ n (A , B)) (Vctyp : V \in \nu^{B}(P))
   ta (Hta : ta \in T_{P}) : V.-shell ta = V'.-shell ta ->
-  forall a b, (jtype.f V) a b = (jtype.f V') a b.
+  forall a b, (JType.f V) a b = (JType.f V') a b.
 Proof.
 move=> H a b.
 rewrite /cond_type in_set in Vctyp.
@@ -1123,7 +1116,7 @@ Variable n' : nat.
 Let n := n'.+1.
 Variable V : P_ n ( A , B ).
 
-Definition f := [ffun b => ((\sum_(a in A) (jtype.f V) a b)%:R / n%:R)%R].
+Definition f := [ffun b => ((\sum_(a in A) (JType.f V) a b)%:R / n%:R)%R].
 
 Lemma f0 (b : B) : (0 <= f b)%R.
 Proof. rewrite ffunE; apply divR_ge0; [exact/leR0n | exact/ltR0n]. Qed.
@@ -1133,7 +1126,7 @@ Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
   move=> b _; rewrite ffunE /h; reflexivity.
 rewrite {}/h -big_distrl /= -big_morph_natRD exchange_big /=.
-move/eqP : (jtype.sum_f V) => ->; by rewrite mulRV // INR_eq0'.
+move/eqP : (JType.sum_f V) => ->; by rewrite mulRV // INR_eq0'.
 Qed.
 
 Definition d : fdist B := FDist.make f0 f1.
@@ -1182,7 +1175,7 @@ case: (typed_tuples_not_empty P) => /= ta Hta.
 move: (Vctyp).
 rewrite in_set.
 move/cond_type_equiv/(_ _ Hta a) => sum_V.
-rewrite (jtype.c_f V) /=.
+rewrite (JType.c_f V) /=.
 case: ifP => [/eqP |] Hcase.
   rewrite Hcase in sum_V.
   rewrite in_set in Hta.
@@ -1268,7 +1261,7 @@ have Htmp' : (forall a b,
         (let ln := (\sum_(b0 in B) (f a) b0)%nat in
          if ln == O then / #|B|%:R else (((f a) b)%:R / ln%:R))%R).
   by move=> a b; rewrite ffunE.
-exact (@jtype.mkJtype _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf Htmp').
+exact (@JType.mk _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf Htmp').
 Defined.
 
 Definition relYn (ta : n.-tuple A) (tb tb' : n.-tuple B) :=

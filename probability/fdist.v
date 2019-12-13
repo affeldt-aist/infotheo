@@ -1581,7 +1581,7 @@ Definition pr_eq_set (U A : finType) (P : fdist U) (X : {RV P -> A}) (E : {set A
   Pr `p_X (X @^-1: E).
 Notation "\Pr[ X '\in' E ]" := (pr_eq_set X E) : proba_scope.
 
-Lemma pr_eq0 (U A : finType) (P : fdist U) (X : {RV (P) -> (A)}) (a : A) :
+Lemma pr_eq0 (U : finType) (A : eqType) (P : fdist U) (X : {RV (P) -> (A)}) (a : A) :
   a \notin fin_img X -> \Pr[ X = a ] = 0.
 Proof.
 move=> Xa; rewrite /pr_eq /Pr big1 // => u; rewrite inE => /eqP Xua.

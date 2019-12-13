@@ -129,7 +129,7 @@ rewrite mulRC leR_pdivr_mulr // ?mul1R.
 apply/(@leR_trans #| V.-shell (tuple_of_row (enc tc m)) |%:R); last first.
   apply card_shelled_tuples => //.
     exact/typed_prop.
-  case: (jtype.c V) => _ Anot0.
+  case: (JType.c V) => _ Anot0.
   case/card_gt0P : (Anot0) => a _.
   exact: (fdist_card_neq0 (V a)).
 apply/le_INR/leP/subset_leq_card/setIidPl/setP => tb.
