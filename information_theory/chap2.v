@@ -108,28 +108,6 @@ rewrite (@row_mxEr _ _ 1%nat); congr (_ _ _); apply val_inj => /=; by rewrite su
 Qed.
 End row_mxA'.
 
-Lemma ltnS' n m : (n < m.+1)%nat -> (n <= m)%nat.
-Proof. by rewrite ltnS. Qed.
-
-Section rV_take_drop.
-Variables (A : finType) (n : nat).
-Implicit Types (i : 'I_n.+1) (v : 'rV[A]_n).
-Local Open Scope ring_scope.
-
-Definition row_take i v : 'rV_i :=
-  lsubmx (castmx (erefl, esym (subnKC (ltnS' (ltn_ord i)))) v).
-
-Definition row_drop i v : 'rV_(n - i):=
-  rsubmx (castmx (erefl, esym (subnKC (ltnS' (ltn_ord i)))) v).
-
-Lemma row_mx_take_drop i v :
-  v = castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx (row_take i v) (row_drop i v)).
-Proof.
-rewrite hsubmxK; apply/rowP => j; rewrite !castmxE /= !cast_ord_id.
-congr (v ord0 _); exact: val_inj.
-Qed.
-End rV_take_drop.
-
 (* TODO: move? *)
 Lemma head_of_fst_belast_last (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+2}) :
   Multivar.head_of (Bivar.fst (Multivar.belast_last P)) = Multivar.head_of P.

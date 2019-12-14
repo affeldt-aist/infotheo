@@ -1,30 +1,42 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
 Require Import ssr_ext f2.
 
-(** * Additional lemmas about algebraic datatypes *)
+(******************************************************************************)
+(*     Additional lemmas about row vectors and other types from ssralg.v      *)
+(*                                                                            *)
+(*  v ``_ i       == the ith element of v                                     *)
+(*  supp v        == the set of indices of elements from v that are not 0     *)
+(*  v `[ i := x ] == v where the ith element has been replaced with x         *)
+(*  v # S         == the vector of size #|S| containing the elements of       *)
+(*                    index i \in S                                           *)
+(*                                                                            *)
+(* Section prod_rV:                                                           *)
+(*   Technical lemmas to switch between products of vectors (A^n x B^n) and   *)
+(*   vectors of products (A x B)^n                                            *)
+(* Section AboutRowTuple:                                                     *)
+(*   Conversions between row vectors and tuples                               *)
+(* Several seq-like definitions for row vectors:                              *)
+(*   rbehead, rbelast, rlast, row_take, row_drop                              *)
+(* Some lemmas about matrices (and their rank)                                *)
+(*                                                                            *)
+(*   GF2_of_F2    == morphism between F_2 and GF(2^m)                         *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Import GRing.Theory.
+Local Open Scope ring_scope.
+
 Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
 Reserved Notation "v `[ i := x ]" (at level 20).
 Reserved Notation "t # V" (at level 55, V at next level).
 
-Import GRing.Theory.
-Local Open Scope ring_scope.
-
-Lemma sum_char2 (F : fieldType) (_ : 2 \in [char F]) k (f : 'I_k -> F) :
-  (\sum_(i < k) (f i)) ^+ 2 = \sum_(i < k) (f i) ^+ 2.
-Proof.
-elim/big_ind2 : _ => [|x1 x2 y1 y2 <- <-|//] /=; first by rewrite expr0n.
-by rewrite sqrrD mulr2n addrr_char2 // addr0.
-Qed.
-
 Section AboutRingType.
-
 Variable R : ringType.
 
 Lemma iter_addr0 : forall n x, iter n (+%R (0 : R)) x = x.
@@ -32,59 +44,28 @@ Proof. elim=> //= n IH x. by rewrite IH add0r. Qed.
 
 Lemma iter_addr0_cV r : forall n (x : 'cV[R]_r), iter n (+%R 0) x = x.
 Proof. elim=> //= n IH x; by rewrite IH add0r. Qed.
-
 End AboutRingType.
 
 Local Open Scope vec_ext_scope.
 
-(** * (A^n x B^n) <-> (A x B)^n *)
-
-(** Technical lemmas to switch between products of vectors (A^n x B^n) and
-   vectors of products (A x B)^n: *)
-
-Section prod_rV.
-
-Variables A B : finType.
-
-Definition prod_rV n (x : 'rV[A]_n * 'rV[B]_n) : 'rV[A * B]_n :=
-  \row_(k < n) (x.1 ``_ k, x.2 ``_ k).
-
-Definition rV_prod n (x : 'rV[A * B]_n) : {: 'rV[A]_n * 'rV[B]_n} :=
-  (\row_(k < n) (x ``_ k).1, \row_(k < n) (x ``_ k).2).
-
-Lemma prod_rVK n (x : 'rV[A]_n * 'rV[B]_n) : rV_prod (prod_rV x) = x.
-Proof. case: x => x1 x2; congr (_ , _); apply/rowP => b; by rewrite !mxE. Qed.
-
-Lemma rV_prodK n (x : 'rV[A * B]_n) : prod_rV (rV_prod x) = x.
-Proof. apply/rowP => b; rewrite !mxE; by case: (x ``_ b). Qed.
-
-Lemma fst_tnth_prod_rV n (x : {: 'rV[A]_n * 'rV[B]_n}) i :
-  x.1 ``_ i = ((prod_rV x) ``_ i).1.
-Proof. by rewrite mxE. Qed.
-
-Lemma snd_tnth_prod_rV n (x : {: 'rV[A]_n * 'rV[B]_n}) i :
-  x.2 ``_ i = ((prod_rV x) ``_ i).2.
-Proof. by rewrite mxE. Qed.
-
-End prod_rV.
-
 Section support_set.
+Variables (R : ringType) (n : nat).
+Implicit Types e : 'rV[R]_n.
 
-Variables (R : ringType) (n : nat) (e : 'rV[R]_n).
+Definition supp e : {set 'I_n} := [set i | e ``_ i != 0].
 
-Definition supp : {set 'I_n} := [set i | e ``_ i != 0].
-
-Lemma insupp i : (i \in supp) = (e ``_ i != 0).
+Lemma insupp e i : (i \in supp e) = (e ``_ i != 0).
 Proof. by rewrite in_set. Qed.
 
-Lemma sum_supp x : \sum_(i < n) e ``_ i * x ^+ i = \sum_(i in supp) e ``_ i * x ^+ i.
+Lemma sum_supp e x :
+  \sum_(i < n) e ``_ i * x ^+ i = \sum_(i in supp e) e ``_ i * x ^+ i.
 Proof.
-rewrite (bigID (mem supp)) /= addrC (eq_bigr (fun=> 0)); last first.
+rewrite (bigID (mem (supp e))) /= addrC (eq_bigr (fun=> 0)); last first.
   move=> ?; rewrite inE /= negbK => /eqP ->; by rewrite mul0r.
 by rewrite big_const /= iter_addr0 add0r.
 Qed.
 
-Lemma supp_set0 : (supp == set0) = (e == 0).
+Lemma supp_set0 e : (supp e == set0) = (e == 0).
 Proof.
 apply/idP/idP => [/eqP/setP HE |/eqP ]; last first.
   rewrite /supp => ->; by apply/eqP/setP => i; rewrite !inE /= mxE eqxx.
@@ -92,10 +73,10 @@ apply/eqP/rowP => i; rewrite mxE.
 move: (HE i); by rewrite !inE /= => /negbT; rewrite negbK => /eqP.
 Qed.
 
-End support_set.
-
-Lemma supp0 n (R : ringType) : supp (0 : 'rV[R]_n) = set0.
+Lemma supp0 : supp (0 : 'rV[R]_n) = set0.
 Proof. apply/setP => i; by rewrite !inE mxE eqxx. Qed.
+
+End support_set.
 
 Definition row_set B n (n0 : 'I_n) (x : B) (d : 'rV_n) :=
   \row_(i < n) if i == n0 then x else d ``_ i.
@@ -126,130 +107,34 @@ Definition sub_vec (t : 'rV[A]_n) (S : {set 'I_n}) : 'rV[A]_#| S | :=
 
 End sub_vec_sect.
 
-Notation "t # V" := (sub_vec t V) : vec_ext_scope.
+Notation "t # S" := (sub_vec t S) : vec_ext_scope.
 
-Section row_mx_ext.
+Section prod_rV.
+Variables A B : Type.
 
-Context {A : Type} {n : nat}.
+Definition prod_rV n (x : 'rV[A]_n * 'rV[B]_n) : 'rV[A * B]_n :=
+  \row_(k < n) (x.1 ``_ k, x.2 ``_ k).
 
-Definition rbehead (x : 'rV[A]_n.+1) := col' ord0 x.
+Definition rV_prod n (x : 'rV[A * B]_n) : {: 'rV[A]_n * 'rV[B]_n} :=
+  (\row_(k < n) (x ``_ k).1, \row_(k < n) (x ``_ k).2).
 
-Lemma rbehead_row_mx (x : 'rV_n) a : rbehead (row_mx (\row_(j < 1) a) x) = x.
-Proof.
-apply/rowP => i; rewrite mxE (_ : lift _ _ = rshift 1%nat i); last exact/val_inj.
-by rewrite (@row_mxEr _ _ 1).
-Qed.
+Lemma prod_rVK n (x : 'rV[A]_n * 'rV[B]_n) : rV_prod (prod_rV x) = x.
+Proof. case: x => x1 x2; congr (_ , _); apply/rowP => b; by rewrite !mxE. Qed.
 
-Lemma row_mx_row_ord0 (x : 'rV[A]_n) a : (row_mx (\row_(k < 1) a) x) ``_ 0 = a.
-Proof.
-rewrite [X in _ _ X = _](_ : _ = lshift n 0 :> 'I_(1 + n)); last exact/val_inj.
-by rewrite row_mxEl mxE.
-Qed.
+Lemma rV_prodK n (x : 'rV[A * B]_n) : prod_rV (rV_prod x) = x.
+Proof. apply/rowP => b; rewrite !mxE; by case: (x ``_ b). Qed.
 
-Lemma row_mx_rbehead (x : 'rV_(1 + n)) : row_mx (\row__ (x ``_ 0)) (rbehead x) = x.
-Proof.
-apply/rowP => i; rewrite mxE; case: splitP=> [j|j i1j].
-- rewrite (ord1 j) mxE => i0; congr (x _ _); exact/val_inj.
-- rewrite mxE; congr (x _ _); exact/val_inj.
-Qed.
+Lemma fst_tnth_prod_rV n (x : {: 'rV[A]_n * 'rV[B]_n}) i :
+  x.1 ``_ i = ((prod_rV x) ``_ i).1.
+Proof. by rewrite mxE. Qed.
 
-Definition rbelast (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (widen_ord (leqnSn _) i).
+Lemma snd_tnth_prod_rV n (x : {: 'rV[A]_n * 'rV[B]_n}) i :
+  x.2 ``_ i = ((prod_rV x) ``_ i).2.
+Proof. by rewrite mxE. Qed.
 
-Definition rlast (x : 'rV[A]_n.+1) := x ``_ ord_max.
-
-Lemma row_mx_row_ord_max (x : 'rV[A]_n) a :
-  rlast (castmx (erefl 1%nat, addn1 n) (row_mx x (\row_(k < 1) a))) = a.
-Proof.
-rewrite /rlast castmxE /= mxE /=; case: splitP => [j Hj|k _].
-by move: (ltn_ord j); rewrite -Hj ltnn.
-by rewrite (ord1 k) mxE.
-Qed.
-
-Lemma row_mx_rbelast (x : 'rV_n.+1) :
-  castmx (erefl 1%N, addn1 n) (row_mx (rbelast x) (\row__ (rlast x))) = x.
-Proof.
-apply/rowP => i; rewrite castmxE /= mxE; case: splitP => [j /= ij|k /=].
-rewrite mxE; congr (x _ _); exact/val_inj.
-rewrite (ord1 k) addn0 => ni; rewrite mxE; congr (x _ _); exact/val_inj.
-Qed.
-
-Lemma rbelast_row_mx (x : 'rV_n) a :
-  rbelast (castmx (erefl 1%N, addn1 n) (row_mx x (\row_(j < 1) a))) = x.
-Proof.
-apply/rowP => i; rewrite !(mxE,castmxE) /=; case: splitP => [j /= ij|k /=].
-by congr (x _ _); apply/val_inj.
-rewrite (ord1 k) addn0 => ni; move: (ltn_ord i); by rewrite ni ltnn.
-Qed.
-
-End row_mx_ext.
-
-Lemma col_matrix (R : ringType) m n (A : 'I_m -> 'cV[R]_(n.+1)) (i : 'I_m) :
-  col i (\matrix_(a < n.+1, b < m) (A b) a ord0) = A i.
-Proof. apply/colP => a; by rewrite !mxE. Qed.
-
-Section AboutPermPid.
-
-Variable R : comRingType.
-
-(* s : 0 -> s0; 1 -> s1, etc.
-in column 0, there is a 1 at line s0
-
-         | 0 1 |
-[a b ] * | 1 0 |  = [b a]
-*)
-Lemma vec_perm_mx n (s : 'S_n) (z : 'rV[R]_n) :
-  z *m perm_mx s = \matrix_(i < 1, j < n) z i ((s^-1)%g j).
-Proof.
-apply/rowP => j; rewrite !mxE (bigID (pred1 ((s^-1)%g j))) /=.
-rewrite big_pred1_eq !mxE {2}permE perm_invK eqxx mulr1 (eq_bigr (fun _ => 0)).
-- by rewrite big_const_seq iter_addr0 addr0.
-- move=> i H.
-  rewrite !mxE (_ : (s i == j) = false); first by rewrite mulr0.
-  apply/eqP; move/eqP in H; contradict H.
-  by rewrite -H -permM (mulgV s) perm1.
-Qed.
-
-Lemma perm_mx_vec n (s : 'S_n) (z : 'cV[R]_n) :
-  perm_mx s *m z = \matrix_(i < n, j < 1) z (s i) j.
-Proof.
-apply/colP => i; rewrite !mxE (bigID (pred1 (s i))) /=.
-rewrite big_pred1_eq {1}/perm_mx !mxE eqxx mul1r (eq_bigr (fun _ => 0)).
-- by rewrite big_const_seq iter_addr0 addr0.
-- move=> j; move/negbTE => H.
-  by rewrite !mxE eq_sym H /= mul0r.
-Qed.
-
-Lemma pid_mx_inj r n (a b : 'rV[R]_r) : r <= n ->
-  a *m (@pid_mx _ r n r) = b *m (@pid_mx _ r n r) -> a = b.
-Proof.
-move=> Hrn /matrixP Heq.
-apply/matrixP => x y.
-move: {Heq}(Heq x (widen_ord Hrn y)).
-rewrite !mxE (ord1 x){x} (bigID (pred1 y)) /= big_pred1_eq (eq_bigr (fun _ => 0)); last first.
-  move=> i Hiy.
-  rewrite mxE /= (_ : nat_of_ord _ == nat_of_ord _ = false) /=; last first.
-    by move/negbTE : Hiy.
-  by rewrite mulr0.
-rewrite big_const_seq iter_addr0 (bigID (pred1 y)) /= big_pred1_eq (eq_bigr (fun _ => 0)); last first.
-  move=> i Hiy.
-  rewrite mxE /= (_ : nat_of_ord i == nat_of_ord y = false) /=; last first.
-    by move/negbTE : Hiy.
-  by rewrite mulr0.
-by rewrite big_const_seq iter_addr0 !addr0 !mxE /= eqxx /= (ltn_ord y) /= 2!mulr1.
-Qed.
-
-End AboutPermPid.
-
-(* NB: similar to mulmx_sum_row in matrix.v *)
-Lemma mulmx_sum_col : forall {R : comRingType} m n (u : 'cV[R]_n) (A : 'M_(m, n)),
-  A *m u = \sum_i u i 0 *: col i A.
-Proof.
-move=> R m n u A; apply/colP=> j; rewrite mxE summxE; apply: eq_bigr => i _.
-by rewrite !mxE mulrC.
-Qed.
+End prod_rV.
 
 Section AboutRowTuple.
-
 Variables A B : predArgType.
 
 Definition tuple_of_row n (v : 'rV[A]_n) := [tuple v ``_ i | i < n].
@@ -337,6 +222,147 @@ Definition rowF2_tuplebool {n : nat} (M : 'rV['F_2]_n) : n.-tuple bool :=
   [tuple of map (fun x => x != 0) (tuple_of_row M)].
 Definition row_of_bitseq := row_of_seq F2_of_bool false.
 Definition col_of_bitseq := col_of_seq F2_of_bool false.
+
+Section row_mx_ext.
+Context {A : Type} {n : nat}.
+
+Definition rbehead (x : 'rV[A]_n.+1) := col' ord0 x.
+
+Lemma rbehead_row_mx (x : 'rV_n) a : rbehead (row_mx (\row_(j < 1) a) x) = x.
+Proof.
+apply/rowP => i; rewrite mxE (_ : lift _ _ = rshift 1%nat i); last exact/val_inj.
+by rewrite (@row_mxEr _ _ 1).
+Qed.
+
+Lemma row_mx_row_ord0 (x : 'rV[A]_n) a : (row_mx (\row_(k < 1) a) x) ``_ 0 = a.
+Proof.
+rewrite [X in _ _ X = _](_ : _ = lshift n 0 :> 'I_(1 + n)); last exact/val_inj.
+by rewrite row_mxEl mxE.
+Qed.
+
+Lemma row_mx_rbehead (x : 'rV_(1 + n)) : row_mx (\row__ (x ``_ 0)) (rbehead x) = x.
+Proof.
+apply/rowP => i; rewrite mxE; case: splitP=> [j|j i1j].
+- rewrite (ord1 j) mxE => i0; congr (x _ _); exact/val_inj.
+- rewrite mxE; congr (x _ _); exact/val_inj.
+Qed.
+
+Definition rbelast (x : 'rV[A]_n.+1) := \row_(i < n) x ``_ (widen_ord (leqnSn _) i).
+
+Definition rlast (x : 'rV[A]_n.+1) := x ``_ ord_max.
+
+Lemma row_mx_row_ord_max (x : 'rV[A]_n) a :
+  rlast (castmx (erefl 1%nat, addn1 n) (row_mx x (\row_(k < 1) a))) = a.
+Proof.
+rewrite /rlast castmxE /= mxE /=; case: splitP => [j Hj|k _].
+by move: (ltn_ord j); rewrite -Hj ltnn.
+by rewrite (ord1 k) mxE.
+Qed.
+
+Lemma row_mx_rbelast (x : 'rV_n.+1) :
+  castmx (erefl 1%N, addn1 n) (row_mx (rbelast x) (\row__ (rlast x))) = x.
+Proof.
+apply/rowP => i; rewrite castmxE /= mxE; case: splitP => [j /= ij|k /=].
+rewrite mxE; congr (x _ _); exact/val_inj.
+rewrite (ord1 k) addn0 => ni; rewrite mxE; congr (x _ _); exact/val_inj.
+Qed.
+
+Lemma rbelast_row_mx (x : 'rV_n) a :
+  rbelast (castmx (erefl 1%N, addn1 n) (row_mx x (\row_(j < 1) a))) = x.
+Proof.
+apply/rowP => i; rewrite !(mxE,castmxE) /=; case: splitP => [j /= ij|k /=].
+by congr (x _ _); apply/val_inj.
+rewrite (ord1 k) addn0 => ni; move: (ltn_ord i); by rewrite ni ltnn.
+Qed.
+
+End row_mx_ext.
+
+Lemma col_matrix (R : ringType) m n (A : 'I_m -> 'cV[R]_(n.+1)) (i : 'I_m) :
+  col i (\matrix_(a < n.+1, b < m) (A b) a ord0) = A i.
+Proof. apply/colP => a; by rewrite !mxE. Qed.
+
+Lemma ltnS' n m : (n < m.+1)%nat -> (n <= m)%nat.
+Proof. by rewrite ltnS. Qed.
+
+Section rV_take_drop.
+Variables (A : Type) (n : nat).
+Implicit Types (i : 'I_n.+1) (v : 'rV[A]_n).
+Local Open Scope ring_scope.
+
+Definition row_take i v : 'rV_i :=
+  lsubmx (castmx (erefl, esym (subnKC (ltnS' (ltn_ord i)))) v).
+
+Definition row_drop i v : 'rV_(n - i):=
+  rsubmx (castmx (erefl, esym (subnKC (ltnS' (ltn_ord i)))) v).
+
+Lemma row_mx_take_drop i v :
+  v = castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx (row_take i v) (row_drop i v)).
+Proof.
+rewrite hsubmxK; apply/rowP => j; rewrite !castmxE /= !cast_ord_id.
+congr (v ord0 _); exact: val_inj.
+Qed.
+End rV_take_drop.
+
+Section AboutPermPid.
+
+Variable R : comRingType.
+
+(* s : 0 -> s0; 1 -> s1, etc.
+in column 0, there is a 1 at line s0
+
+         | 0 1 |
+[a b ] * | 1 0 |  = [b a]
+*)
+Lemma vec_perm_mx n (s : 'S_n) (z : 'rV[R]_n) :
+  z *m perm_mx s = \matrix_(i < 1, j < n) z i ((s^-1)%g j).
+Proof.
+apply/rowP => j; rewrite !mxE (bigID (pred1 ((s^-1)%g j))) /=.
+rewrite big_pred1_eq !mxE {2}permE perm_invK eqxx mulr1 (eq_bigr (fun _ => 0)).
+- by rewrite big_const_seq iter_addr0 addr0.
+- move=> i H.
+  rewrite !mxE (_ : (s i == j) = false); first by rewrite mulr0.
+  apply/eqP; move/eqP in H; contradict H.
+  by rewrite -H -permM (mulgV s) perm1.
+Qed.
+
+Lemma perm_mx_vec n (s : 'S_n) (z : 'cV[R]_n) :
+  perm_mx s *m z = \matrix_(i < n, j < 1) z (s i) j.
+Proof.
+apply/colP => i; rewrite !mxE (bigID (pred1 (s i))) /=.
+rewrite big_pred1_eq {1}/perm_mx !mxE eqxx mul1r (eq_bigr (fun _ => 0)).
+- by rewrite big_const_seq iter_addr0 addr0.
+- move=> j; move/negbTE => H.
+  by rewrite !mxE eq_sym H /= mul0r.
+Qed.
+
+Lemma pid_mx_inj r n (a b : 'rV[R]_r) : r <= n ->
+  a *m (@pid_mx _ r n r) = b *m (@pid_mx _ r n r) -> a = b.
+Proof.
+move=> Hrn /matrixP Heq.
+apply/matrixP => x y.
+move: {Heq}(Heq x (widen_ord Hrn y)).
+rewrite !mxE (ord1 x){x} (bigID (pred1 y)) /= big_pred1_eq (eq_bigr (fun _ => 0)); last first.
+  move=> i Hiy.
+  rewrite mxE /= (_ : nat_of_ord _ == nat_of_ord _ = false) /=; last first.
+    by move/negbTE : Hiy.
+  by rewrite mulr0.
+rewrite big_const_seq iter_addr0 (bigID (pred1 y)) /= big_pred1_eq (eq_bigr (fun _ => 0)); last first.
+  move=> i Hiy.
+  rewrite mxE /= (_ : nat_of_ord i == nat_of_ord y = false) /=; last first.
+    by move/negbTE : Hiy.
+  by rewrite mulr0.
+by rewrite big_const_seq iter_addr0 !addr0 !mxE /= eqxx /= (ltn_ord y) /= 2!mulr1.
+Qed.
+
+End AboutPermPid.
+
+(* NB: similar to mulmx_sum_row in matrix.v *)
+Lemma mulmx_sum_col : forall {R : comRingType} m n (u : 'cV[R]_n) (A : 'M_(m, n)),
+  A *m u = \sum_i u i 0 *: col i A.
+Proof.
+move=> R m n u A; apply/colP=> j; rewrite mxE summxE; apply: eq_bigr => i _.
+by rewrite !mxE mulrC.
+Qed.
 
 Lemma trmx_cV_0 {k} (x : 'cV['F_2]_k) : (x ^T == 0) = (x == 0).
 Proof.
@@ -470,6 +496,13 @@ apply/eqP/eq_from_tnth => i; by rewrite tnth_mktuple !mxE g'g.
 Qed.
 
 End about_row_vectors_on_prime_fields.
+
+Lemma sum_char2 (F : fieldType) (_ : 2 \in [char F]) k (f : 'I_k -> F) :
+  (\sum_(i < k) (f i)) ^+ 2 = \sum_(i < k) (f i) ^+ 2.
+Proof.
+elim/big_ind2 : _ => [|x1 x2 y1 y2 <- <-|//] /=; first by rewrite expr0n.
+by rewrite sqrrD mulr2n addrr_char2 // addr0.
+Qed.
 
 From mathcomp Require Import finfield.
 

@@ -1,3 +1,4 @@
+
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
@@ -10,6 +11,9 @@ Require Import jfdist.
 (* P |= X _|_  Y | Z == X is conditionally independent of Y given Z in the    *)
 (*                      distribution P for all values a, b, and c (belonging  *)
 (*                      resp. to the codomains of X, Y , and Z)               *)
+(* \Pr[ X = a | Y = b ] == probability that the random variable X is a        *)
+(*                         knowing that the random variable Y is b            *)
+(*                                                                            *)
 (* Lemmas:                                                                    *)
 (*  Graphoid axioms: symmetry, decomposition, weak_union, contraction,        *)
 (*  intersection                                                              *)
@@ -1007,3 +1011,24 @@ by rewrite RV_Pr_AC => /eqP/(RV_Pr_domin_snd [% Y, W] (b, D_not_empty)) ->.
 Qed.
 
 End intersection.
+
+(* wip*)
+
+Section vector_of_RVs.
+Variables (U : finType) (P : fdist U).
+Variables (A : finType) (n : nat) (X : 'rV[{RV P -> A}]_n).
+Local Open Scope ring_scope.
+Local Open Scope vec_ext_scope.
+Definition RVn : {RV P -> 'rV[A]_n} := fun x => \row_(i < n) (X ``_ i) x.
+End vector_of_RVs.
+
+Section prob_chain_rule.
+Variables (U : finType) (P : {fdist U}).
+Variables (A : finType) (n : nat) (X : 'rV[{RV P -> A}]_n.+1).
+Local Open Scope vec_ext_scope.
+Lemma prob_chain_rule : forall x, \Pr[ (RVn X) = x ] =
+    \prod_(i < n.+1) \Pr[ (X ``_ i) = (x ``_ i) |
+                          (RVn (row_drop (inord i) X)) = (row_drop (inord i) x) ].
+Abort.
+
+End prob_chain_rule.
