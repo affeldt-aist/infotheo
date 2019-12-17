@@ -5,11 +5,30 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext logb Rbigop.
 Require Import fdist entropy aep.
 
-(** * Typical Sequences *)
-
-Reserved Notation "'`TS'".
+(******************************************************************************)
+(*                            Typical Sequences                               *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*   `TS P n epsilon == epsilon-typical sequence of size n given an input     *)
+(*                      distribution P                                        *)
+(*   TS_0            == the typical sequence of index 0                       *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   TS_sup           == the total number of typical sequences is             *)
+(*                       upper-bounded by 2 ^ (k * (H P + e))                 *)
+(*   set_typ_seq_not0 == for k big enough, the set of typical sequences is    *)
+(*                       not empty                                            *)
+(*   TS_inf           == the total number of typical sequences is             *)
+(*                       lower-bounded by (1 - e) * 2 ^ (k * (H P - e))       *)
+(*                       for k big enough                                     *)
+(*                                                                            *)
+(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
+(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
+(* 53(1):63--103, 2014                                                        *)
+(******************************************************************************)
 
 Declare Scope typ_seq_scope.
+Reserved Notation "'`TS'".
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -22,8 +41,6 @@ Local Open Scope proba_scope.
 Section typical_sequence_definition.
 
 Variables (A : finType) (P : fdist A) (n : nat) (epsilon : R).
-
-(** Definition a typical sequence: *)
 
 Definition typ_seq (t : 'rV[A]_n) :=
   exp2 (- n%:R * (`H P + epsilon)) <b= P `^ n t <b= exp2 (- n%:R * (`H P - epsilon)).
@@ -56,8 +73,6 @@ Qed.
 Section typ_seq_prop.
 
 Variables (A : finType) (P : fdist A) (epsilon : R) (n : nat).
-
-(** The total number of typical sequences is upper-bounded by 2^(k*(H P + e)): *)
 
 Lemma TS_sup : #| `TS P n epsilon |%:R <= exp2 (n%:R * (`H P + epsilon)).
 Proof.
@@ -170,8 +185,6 @@ Qed.
 
 Variable He1 : epsilon < 1.
 
-(** In particular, for k big enough, the set of typical sequences is not empty: *)
-
 Lemma set_typ_seq_not0 : aep_bound P epsilon <= n.+1%:R ->
   #| `TS P n.+1 epsilon | <> O.
 Proof.
@@ -181,8 +194,6 @@ rewrite cards_eq0 => /eqP Heq.
 rewrite Heq Pr_set0 in H.
 lra.
 Qed.
-
-(** the typical sequence of index 0 *)
 
 Definition TS_0 (H : aep_bound P epsilon <= n.+1%:R) : [finType of 'rV[A]_n.+1].
 apply (@enum_val _ (pred_of_set (`TS P n.+1 epsilon))).
@@ -196,9 +207,6 @@ Defined.
 Lemma TS_0_is_typ_seq (k_k0 : aep_bound P epsilon <= n.+1%:R) :
   TS_0 k_k0 \in `TS P n.+1 epsilon.
 Proof. rewrite /TS_0. apply/enum_valP. Qed.
-
-(** The total number of typical sequences is lower-bounded by (1 - e)*2^(k*(H P - e))
-    for k big enough: *)
 
 Lemma TS_inf : aep_bound P epsilon <= n.+1%:R ->
   (1 - epsilon) * exp2 (n.+1%:R * (`H P - epsilon)) <= #| `TS P n.+1 epsilon |%:R.

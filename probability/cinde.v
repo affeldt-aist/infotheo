@@ -1024,11 +1024,24 @@ End vector_of_RVs.
 
 Section prob_chain_rule.
 Variables (U : finType) (P : {fdist U}).
-Variables (A : finType) (n : nat) (X : 'rV[{RV P -> A}]_n.+1).
+Variables (A : finType) .
 Local Open Scope vec_ext_scope.
-Lemma prob_chain_rule : forall x, \Pr[ (RVn X) = x ] =
-    \prod_(i < n.+1) \Pr[ (X ``_ i) = (x ``_ i) |
-                          (RVn (row_drop (inord i) X)) = (row_drop (inord i) x) ].
+Lemma prob_chain_rule : forall (n : nat) (X : 'rV[{RV P -> A}]_n.+1) x,
+  \Pr[ (RVn X) = x ] =
+  \prod_(i < n.+1)
+    if i == ord0 then
+      \Pr[ (X ``_ ord0) = (x ``_ ord0)   ]
+    else
+      \Pr[ (X ``_ i) = (x ``_ i) |
+           (RVn (row_drop (inord (n - i.+1)) X)) = (row_drop (inord (n - i.+1)) x) ].
+Proof.
+elim => [X /= x|n ih X /= x].
+  rewrite big_ord_recl big_ord0 mulR1.
+  apply eq_bigl => u.
+  rewrite !inE /RVn.
+  apply/eqP/eqP => [<-|H]; first by rewrite mxE.
+  by apply/rowP => i; rewrite {}(ord1 i) !mxE.
+rewrite big_ord_recr /=.
 Abort.
 
 End prob_chain_rule.

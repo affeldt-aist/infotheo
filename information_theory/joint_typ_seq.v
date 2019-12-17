@@ -1,14 +1,38 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 Require Import ssrZ ssrR Reals_ext ssr_ext logb ssralg_ext bigop_ext Rbigop.
 Require Import fdist entropy aep typ_seq channel.
 
-(** * Jointly typical sequences *)
-
-Reserved Notation "'`JTS'".
+(******************************************************************************)
+(*                        Jointly typical sequences                           *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*   JTS P W n epsilon == epsilon-jointly typical sequences of size n for an  *)
+(*                        input distribution P and  a channel W               *)
+(*                        JTS(n,e) is a subset of TS_{P,W}(n,e) such that     *)
+(*                        (x,y) \in JTS(n,e) <->                              *)
+(*                        x \in TS_P(n,e) /\ y \in TS_{PW}(n,e)               *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*  JTS_sup               == Upper-bound for the set of jointly typical       *)
+(*                           sequences                                        *)
+(*  JTS_1                 == when they are very long, the jointly typical     *)
+(*                           sequences coincide with the typical sequences of *)
+(*                           the joint distribution                           *)
+(*  non_typical_sequences == the probability of the same event (joint         *)
+(*                           typicality) taken over the product distribution  *)
+(*                           of the inputs and the out-puts considered        *)
+(*                           independently tends to 0 asngets large           *)
+(*                                                                            *)
+(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
+(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
+(* 53(1):63--103, 2014                                                        *)
+(******************************************************************************)
 
 Declare Scope jtyp_seq_scope.
+Reserved Notation "'`JTS'".
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -19,8 +43,6 @@ Local Open Scope channel_scope.
 Local Open Scope entropy_scope.
 Local Open Scope proba_scope.
 Local Open Scope R_scope.
-
-(** Definition of jointly typical sequences: *)
 
 Section joint_typ_seq_definition.
 
@@ -38,9 +60,6 @@ Definition jtyp_seq (t : 'rV[A * B]_n) :=
 Definition set_jtyp_seq : {set 'rV[A * B]_n} := [set tab | jtyp_seq tab].
 
 Local Notation "'`JTS'" := (set_jtyp_seq).
-
-(** JTS(n,e) is a subset of TS_{P,W}(n,e) such that
-   (x,y) \in JTS(n,e) <-> x \in TS_P(n,e) /\ y \in TS_{PW}(n,e) *)
 
 Lemma typical_sequence1_JTS x : prod_rV x \in `JTS ->
   exp2 (- INR n * (`H P + epsilon)) <= P `^ n x.1 <= exp2 (- INR n * (`H P - epsilon)).
@@ -61,8 +80,6 @@ End joint_typ_seq_definition.
 
 Notation "'`JTS'" := (set_jtyp_seq) : jtyp_seq_scope.
 Local Open Scope jtyp_seq_scope.
-
-(** Upper-bound for the set of jointly typical sequences: *)
 
 Section jtyp_seq_upper.
 
@@ -96,8 +113,6 @@ Definition JTS_1_bound :=
 
 Variable n : nat.
 Hypothesis He : 0 < epsilon.
-
-(** #<img src="http://staff.aist.go.jp/reynald.affeldt/shannon/typ_seq1-10.png"># *)
 
 Lemma JTS_1 : (JTS_1_bound <= n)%nat ->
   1 - epsilon <= Pr (`J(P , W) `^ n) (`JTS P W n epsilon).
@@ -227,8 +242,6 @@ Section non_typicality.
 Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)).
 Variable n : nat.
 Variable epsilon : R.
-
-(** #<img src="http://staff.aist.go.jp/reynald.affeldt/shannon/typ_seq2-10.png"># *)
 
 Lemma non_typical_sequences :
   Pr ((P `^ n) `x ((`O(P , W)) `^ n))

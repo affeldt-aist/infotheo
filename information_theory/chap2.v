@@ -236,6 +236,8 @@ move=> x y; rewrite /col_perm => /matrixP xy; apply/matrixP => i j.
 by move: (xy i (s^-1%g j)); rewrite !mxE permKV.
 Qed.
 
+Local Open Scope entropy_scope.
+
 Module MultivarPerm.
 Section def.
 Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n).
@@ -249,7 +251,6 @@ Qed.
 End def.
 Section prop.
 Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n).
-Local Open Scope entropy_scope.
 Lemma entropy : `H P = `H (d P s).
 Proof.
 rewrite /entropy; congr (- _) => /=.
@@ -304,11 +305,8 @@ Qed.
 End def.
 End TakeDrop.
 
-Local Open Scope entropy_scope.
-
 Module JointEntropy.
-Local Open Scope entropy_scope.
-Section jointentropy.
+Section def.
 Variables (A B : finType) (P : {fdist A * B}).
 
 (* eqn 2.8 *)
@@ -325,22 +323,30 @@ rewrite (eq_bigr (fun a => P (a.1, a.2) * log (P (a.1, a.2)))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => P (a1, a2) * log (P (a1, a2)))) /=.
 rewrite exchange_big pair_big; apply eq_bigr => -[a b] _; by rewrite Swap.dE.
 Qed.
-
-End jointentropy.
+End def.
+Section rV.
+Lemma entropyE (A : finType) n (P : {fdist 'rV[A]_n.+1}) :
+  `H P = h (Multivar.belast_last P).
+Proof.
+rewrite /h /entropy; congr (- _) => /=.
+rewrite -(big_rV_belast_last _ xpredT xpredT) /=.
+rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
+by rewrite Multivar.belast_lastE.
+Qed.
+End rV.
 End JointEntropy.
 
 Section joint_entropy_prop.
-
 Variable (A : finType) (P : {fdist A}).
 
-Lemma joint_entropy_self : `H (Self.d P) = `H P.
+Lemma joint_entropy_self : JointEntropy.h (Self.d P) = `H P.
 Proof.
-rewrite /entropy; congr (- _).
-rewrite (eq_bigr  (fun a => Self.d P (a.1, a.2) * log (Self.d P (a.1, a.2)))); last by case.
+congr (- _).
+rewrite (eq_bigr (fun a => Self.d P (a.1, a.2) * log (Self.d P (a.1, a.2)))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => Self.d P (a1, a2) * log (Self.d P (a1, a2)))) /=.
 apply/eq_bigr => a _.
-rewrite (bigD1 a) //= !Self.dE /= eqxx (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 //.
-move=> a' /negbTE; rewrite Self.dE /= eq_sym => ->; by rewrite mul0R.
+rewrite (bigD1 a) //= !Self.dE /= eqxx big1 ?addR0 //.
+by move=> a' /negbTE; rewrite Self.dE /= eq_sym => ->; rewrite mul0R.
 Qed.
 
 End joint_entropy_prop.
@@ -458,8 +464,7 @@ apply/esym.
 rewrite (eq_bigr (fun a => (Multivar.to_bivar P) (a.1, a.2) * log ((Multivar.to_bivar P) (a.1, a.2)))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => (Multivar.to_bivar P) (a1, a2) * log ((Multivar.to_bivar P) (a1, a2)))) /=.
 rewrite -(big_rV_cons_behead _ xpredT xpredT) /=.
-apply eq_bigr => a _; apply eq_bigr => v _.
-by rewrite Multivar.to_bivarE /=.
+by apply eq_bigr => a _; under eq_bigr do rewrite Multivar.to_bivarE.
 Qed.
 
 Local Open Scope ring_scope.
@@ -475,10 +480,9 @@ Definition put_back (n : nat) (i : 'I_n.+1) : 'I_n.+1 -> 'I_n.+1 := fun j =>
     if (j <= i)%nat then inord (j.-1) else
       j.
 
-Lemma put_front_inj (n : nat) (i : 'I_n.+1) : injective (put_front i).
+Lemma put_backK n (i : 'I_n.+1) : cancel (put_front i) (put_back i).
 Proof.
-apply: (@can_inj _ _ (put_front i) (put_back i)) => j.
-rewrite /put_back /put_front; case: (ifPn (j == i)) => [ji|].
+move=> j; rewrite /put_back /put_front; case: (ifPn (j == i)) => [ji|].
   rewrite eqxx; exact/esym/eqP.
 rewrite neq_ltn => /orP[|] ji.
   rewrite ji ifF; last first.
@@ -491,83 +495,76 @@ rewrite ltnNge (ltnW ji) /= ifF; last first.
 by rewrite leqNgt ji.
 Qed.
 
-Definition put_front_perm (n : nat) i : 'S_n.+1 := perm (@put_front_inj n i).
+Lemma put_front_inj (n : nat) (i : 'I_n.+1) : injective (put_front i).
+Proof. exact: (can_inj (put_backK i)). Qed.
+Arguments put_front_inj {n} _.
+
+Definition put_front_perm (n : nat) i : 'S_n.+1 := perm (put_front_inj i).
 
 (* TODO: clean *)
+Lemma MargFDistd_put_front n (A : finType) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1) :
+  i != ord0 ->
+  MargFDist.d P i = Bivar.snd (Multivar.to_bivar (MultivarPerm.d P (put_front_perm i))).
+Proof.
+move=> i0; apply/fdist_ext => /= v; rewrite MargFDist.dE Bivar.sndE.
+destruct n as [|n']; first by rewrite (ord1 i) eqxx in i0.
+transitivity (\sum_(x : A) P
+  (\row_(k < n'.+2) (if k == i then x else v ``_ (inord (unbump i k)))))%R.
+  rewrite (reindex_onto (fun a => \row_k (if k == i then a else v ``_ (inord (unbump i k))))
+    (fun w => w ``_ i)); last first.
+    move=> w wv.
+    apply/rowP => j.
+    rewrite !mxE; case: ifPn => [/eqP -> //|ji].
+    rewrite -(eqP wv) mxE; congr (w _ _).
+    move: ji; rewrite neq_ltn => /orP[|] ji.
+      apply val_inj => /=.
+      rewrite inordK; last first.
+        by rewrite /unbump (ltnNge i j) (ltnW ji) subn0 (leq_trans ji) // -ltnS.
+      by rewrite unbumpK //= inE ltn_eqF.
+    apply val_inj => /=.
+    rewrite inordK; last first.
+      rewrite /unbump ji subn1 prednK //; by [rewrite -ltnS | rewrite (leq_ltn_trans _ ji)].
+    by rewrite unbumpK //= inE gtn_eqF.
+  apply eq_bigl => a /=.
+  apply/andP; split.
+    apply/eqP/rowP => k.
+    rewrite !mxE eq_sym (negbTE (neq_lift _ _)).
+    congr (v _ _).
+    apply val_inj => /=.
+    by rewrite bumpK inordK.
+  by rewrite mxE eqxx.
+under [RHS] eq_bigr do rewrite Multivar.to_bivarE MultivarPerm.dE.
+apply/eq_bigr => a _; congr (P _); apply/rowP => k /=.
+rewrite /col_perm /= 2!mxE /=.
+rewrite /put_front_perm /= permE /put_front.
+case: ifPn => [ki|]; first by rewrite row_mx_row_ord0.
+rewrite neq_ltn => /orP[|] ki.
+  rewrite ki.
+  rewrite (_ : inord _ = rshift 1 (inord k)); last first.
+    apply/val_inj => /=.
+    rewrite add1n inordK /=.
+      by rewrite inordK // (leq_trans ki) // -ltnS.
+    by rewrite ltnS (leq_trans ki) // -ltnS.
+  rewrite (@row_mxEr _ _ 1); congr (v ``_ _).
+  apply val_inj => /=.
+  rewrite /unbump ltnNge (ltnW ki) subn0 inordK //.
+  by rewrite (leq_trans ki) // -ltnS.
+rewrite ltnNge (ltnW ki) /=; move: ki.
+have [/eqP -> //|k0] := boolP (k == ord0).
+rewrite (_ : k = rshift 1 (inord k.-1)); last first.
+  by apply val_inj => /=; rewrite add1n inordK ?prednK // ?lt0n // -ltnS.
+rewrite (@row_mxEr _ 1 1) /=.
+rewrite inordK ?prednK ?lt0n // -1?ltnS // ltnS add1n prednK ?lt0n // => ik.
+by congr (v _ _); apply val_inj => /=; rewrite /unbump ik subn1.
+Qed.
+
 Lemma chain_rule_multivar (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1) :
   i != ord0 ->
   (`H P = `H (MargFDist.d P i) + CondEntropy.h (Multivar.to_bivar (MultivarPerm.d P (put_front_perm i))))%R.
 Proof.
-move=> i0.
-rewrite -(Swap.dI (Multivar.to_bivar _)).
-set PQ : {fdist 'rV[A]_n * A} := Swap.d (Multivar.to_bivar _).
-have -> : MargFDist.d P i = Bivar.fst PQ.
-  apply/fdist_ext => /= v.
-  rewrite MargFDist.dE.
-  rewrite Bivar.fstE.
-  rewrite {}/PQ.
-  apply/esym; evar (f : A -> R); rewrite (eq_bigr f); last first.
-    move=> a _; rewrite Swap.dE /f; reflexivity.
-  rewrite {}/f.
-  apply/esym.
-  destruct n as [|n']; first by rewrite (ord1 i) eqxx in i0.
-  transitivity (\sum_(x : A) P
-    (\row_(k < n'.+2) (if k == i then x else v ``_ (inord (unbump i k)))))%R.
-    rewrite (reindex_onto (fun a => \row_k (if k == i then a else v ``_ (inord (unbump i k))))
-      (fun w => w ``_ i)); last first.
-      move=> w wv.
-      apply/rowP => j.
-      rewrite !mxE; case: ifPn => [/eqP -> //|ji].
-      rewrite -(eqP wv) mxE; congr (w _ _).
-      move: ji; rewrite neq_ltn => /orP[|] ji.
-        apply val_inj => /=.
-        rewrite inordK; last first.
-          by rewrite /unbump (ltnNge i j) (ltnW ji) subn0 (leq_trans ji) // -ltnS.
-        by rewrite unbumpK //= inE ltn_eqF.
-      apply val_inj => /=.
-      rewrite inordK; last first.
-        rewrite /unbump ji subn1 prednK //; by [rewrite -ltnS | rewrite (leq_ltn_trans _ ji)].
-      by rewrite unbumpK //= inE gtn_eqF.
-    apply eq_bigl => a /=.
-    apply/andP; split.
-      apply/eqP/rowP => k.
-      rewrite !mxE eq_sym (negbTE (neq_lift _ _)).
-      congr (v _ _).
-      apply val_inj => /=.
-      by rewrite bumpK inordK.
-    by rewrite mxE eqxx.
-  transitivity (\sum_(i1 in A) (MultivarPerm.d P (put_front_perm i)) (row_mx (\row_(i < 1) i1) v))%R; last first.
-    apply eq_bigr => a _.
-    by rewrite Multivar.to_bivarE.
-  apply/esym; evar (f : A -> R); rewrite (eq_bigr f); last first.
-    move=> a _.
-    rewrite MultivarPerm.dE /f; reflexivity.
-  rewrite {}/f.
-  apply/eq_bigr => a _.
-  congr (P _); apply/rowP => k.
-  rewrite /col_perm /= 2!mxE /=.
-  rewrite /put_front_perm /= permE /put_front.
-  case: ifPn => [ki|]; first by rewrite row_mx_row_ord0.
-  rewrite neq_ltn => /orP[|] ki.
-    rewrite ki mxE; case: splitP => [j|j].
-      by rewrite (ord1 j) inordK // (leq_ltn_trans _ (ltn_ord i)).
-   rewrite inordK; last by rewrite (leq_ltn_trans _ (ltn_ord i)).
-   rewrite add1n => -[] kj.
-   congr (v _ _); apply val_inj => /=.
-   rewrite /unbump ltnNge (ltnW ki) subn0 inordK; last first.
-      rewrite (_ : nat_of_ord k = nat_of_ord j) //.
-      by rewrite kj.
-   rewrite ltnNge (ltnW ki) /= mxE; case: splitP => [j|k' kk'].
-     rewrite (ord1 j){j} => k0.
-     by rewrite k0 ltn0 in ki.
-   congr (v _ _).
-   apply val_inj => /=.
-   rewrite kk' /unbump -kk' ki subn1 inordK.
-   by rewrite kk' add1n.
-   rewrite prednK //.
-   by rewrite -ltnS.
-   by rewrite (leq_ltn_trans _ ki).
-by rewrite -chain_rule JointEntropy.hC Swap.dI -to_bivar_entropy -MultivarPerm.entropy.
+move=> i0; rewrite MargFDistd_put_front // -Swap.fst.
+rewrite -{2}(Swap.dI (Multivar.to_bivar _)) -chain_rule JointEntropy.hC Swap.dI.
+by rewrite -to_bivar_entropy -MultivarPerm.entropy.
 Qed.
 
 End chain_rule_generalization.
@@ -624,7 +621,7 @@ Lemma CondEntrop_self : CondEntropy.h (Self.d P) = 0.
 Proof.
 move: (@chain_rule _ _ (Self.d P)).
 rewrite !Self.fst Self.swap addRC -subR_eq => <-.
-by rewrite /JointEntropy.h joint_entropy_self subRR.
+by rewrite joint_entropy_self subRR.
 Qed.
 
 End conditional_entropy_prop3.
@@ -764,22 +761,12 @@ Lemma chain_rule_rV (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) :
 Proof.
 elim: n P => [P|n IH P].
   by rewrite big_ord_recl /= big_ord0 addR0 -entropy_head_of1.
-transitivity (JointEntropy.h (Multivar.belast_last P)).
-  (* TODO: lemma? *)
-  rewrite /JointEntropy.h /entropy; congr (- _) => /=.
-  rewrite -(big_rV_belast_last _ xpredT xpredT) /=.
-  rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
-  by rewrite Multivar.belast_lastE.
-rewrite chain_rule {}IH [in RHS]big_ord_recr /=; congr (_ + _); last first.
-  by rewrite Take.all.
-apply eq_bigr => i _.
-case: ifP => i0.
-  rewrite /entropy; congr (- _).
-  apply eq_bigr => a _; by rewrite head_of_fst_belast_last.
+rewrite JointEntropy.entropyE chain_rule {}IH [in RHS]big_ord_recr /=.
+rewrite Take.all; congr (_ + _); apply eq_bigr => i _.
+case: ifP => i0; first by rewrite head_of_fst_belast_last.
 congr (CondEntropy.h (Swap.d (Multivar.belast_last _))).
 rewrite /Take.d /Bivar.fst /Multivar.belast_last !FDistMap.comp.
-congr (FDistMap.d _ P).
-rewrite boolp.funeqE => /= v.
+congr (FDistMap.d _ P); rewrite boolp.funeqE => /= v.
 apply/rowP => j; rewrite !mxE !castmxE /= !mxE /= cast_ord_id; congr (v _ _).
 exact: val_inj.
 Qed.
