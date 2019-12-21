@@ -4,9 +4,27 @@ From mathcomp Require Import matrix.
 Require Import f2 ssr_ext ssralg_ext max_subset.
 Require Import num_occ hamming ldpc_erasure tanner linearcode.
 
-(** * Combinatorial Result about the Performance of Iterative Decoding *)
+(******************************************************************************)
+(*     Combinatorial Result about the Performance of Iterative Decoding       *)
+(*                                                                            *)
+(* Formalization of Lemma 1.1 from Di, C., Proietti, D., Telatar, I.E.,       *)
+(* Richardson, T.J., Urbanke, R.L.: Finite-length analysis of low-density     *)
+(* parity-check codes on the binary erasure channel. IEEE Trans. Inf. Theory  *)
+(* 48(6), 1570–1579 (2002)                                                    *)
+(* Combinatorial Characterization of Iterative Decoder Performance:           *)
+(* "Let E denote the subset of the set of variables nodes which is erased by  *)
+(* the channel. Then the set of erasures which remain when the decoder stops  *)
+(* is equal to the unique maximal stopping set of E."                         *)
+(* see Section                                                                *)
+(* combinatorial_characterization_of_iterative_decoder_performance            *)
+(*                                                                            *)
+(* For details, see Obata, N.: Formalization of theorems about stopping sets  *)
+(* and the decoding performance of LDPC codes. Department of Communications   *)
+(* and Computer Engineering, Graduate School of Science and Engineering,      *)
+(* Tokyo Institute of Technology, Master’s thesis (2015). (in Japanese).      *)
+(******************************************************************************)
 
-(** OUTLINE
+(* OUTLINE
 - Section PCM_instance.
 - Section stopping_set.
 - Section test_stopset.
@@ -319,7 +337,7 @@ by rewrite mxE (mxSum_Star stopset_s Hcols n0s m1n0) => ->.
 Qed.
 
 Lemma Prod_colFNext_mxSum_stopset (stopset_s : stopset H s) M :
-  cols_starblank H M s -> forall n0, n0 \in s -> 
+  cols_starblank H M s -> forall n0, n0 \in s ->
   Prod (colFnext H (y ``_ n0) (col n0 (mxSum H M)) n0) = Star.
 Proof. move=> ? ? ?; by apply/Prod_starblank_is_Star/all_starblank_colFNext_mxSum_stopset. Qed.
 
@@ -338,7 +356,7 @@ by move: Hx; rewrite !mem_enum in_setD1 => /andP[].
 Qed.
 
 Lemma Prod_colFNextD1_mxSum_stopset (stopset_s : stopset H s) m0 n0 M :
-  cols_starblank H M s -> n0 \in s -> 
+  cols_starblank H M s -> n0 \in s ->
   Prod (colFnextD1 H (y ``_ n0) (col n0 (mxSum H M)) n0 m0) = Star.
 Proof. move=> ? ?; by apply/Prod_starblank_is_Star/all_starblank_colFNextD1_mxSum_stopset. Qed.
 
@@ -402,7 +420,7 @@ Proof.
 apply/'forall_forallP => /= m0 n0; rewrite (ord1 m0){m0}.
 rewrite 2!mxE; case: ifPn => // n1E; by rewrite lell.
 Qed.
- 
+
 Local Open Scope bec_scope.
 
 Lemma BEC_IO_erase m (H : 'M['F_2]_(m, n)) c E :
@@ -797,7 +815,7 @@ have : (forall n1, all
     (enum (`F n1 :\ m0))).
   move=> n2; apply/allP => m2 m2n2.
   move: (all_starletter_iSP_BEC0 Hc E l.+1).
-  move/(_ n2) => /allP/(_ m2). 
+  move/(_ n2) => /allP/(_ m2).
   by move: m2n2; rewrite 2!mem_enum in_setD1 => /andP[m2m0 m2Fn2] /(_ m2Fn2).
 move/(@Prod_erase_Star _ _ H c E m0 n0 (mxSum H (PiSP_BEC0 H y l))).
 move/(_ H1) => [H2 H3].
@@ -854,14 +872,6 @@ Qed.
 End starFnext_syndrome_prop.
 
 Section combinatorial_characterization_of_iterative_decoder_performance.
-
-(** see [Finite-Length Analysis of LDPC Codes on the BEC, Di et al.,
-IEEE TIT 48(6) (2002)], Lemma 1.1 (Combinatorial Characterization of
-Iterative Decoder Performance): "Let E denote the subset of the set of
-variables nodes which is erased by the channel. Then the set of
-erasures which remain when the decoder stops is equal to the unique
-maximal stopping set of E." *)
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "'`F'" := (Fnext H).

@@ -5,19 +5,20 @@ From mathcomp Require boolp.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb convex_choice.
 
-(** * Results about the Analysis of ln *)
-
-(* contents:
-- Section ln_id_sect.
-   about the function x |-> ln x - (x - 1)
-- Section xlnx_sect.
-   about the function x |-> x * ln x
-  + Section diff_xlnx
-     about the function x |-> xlnx (1 - x) - xlnx x.
-  + Section Rabs_xlnx
-     proof of the lemma Rabs_xlnx
-- Section log_concave
-*)
+(******************************************************************************)
+(*                      Results about the Analysis of ln                      *)
+(*                                                                            *)
+(* Section ln_id_sect.                                                        *)
+(*   about the function x |-> ln x - (x - 1)                                  *)
+(* Section xlnx_sect.                                                         *)
+(*   about the function x |-> x * ln x                                        *)
+(* Section diff_xlnx                                                          *)
+(*   about the function x |-> xlnx (1 - x) - xlnx x.                          *)
+(* Section Rabs_xlnx                                                          *)
+(*   proof that | x - y | <= a implies | xlnx x - xlnx y | <= - xlnx a        *)
+(* Section log_concave                                                        *)
+(*   concavity of log                                                         *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

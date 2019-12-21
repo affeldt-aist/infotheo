@@ -4,9 +4,14 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import ssr_ext ssralg_ext num_occ f2 ssrR hamming tanner linearcode.
 
-(** * Sum-Product Decoder over the BEC *)
+(******************************************************************************)
+(*                   Sum-Product Decoder over the BEC                         *)
+(*                                                                            *)
+(* This file provides an implementation of the Sum-Product algorithm over the *)
+(* binary erasure channel as a recursive function (SP_BEC0_rec).              *)
+(******************************************************************************)
 
-(** OUTLINE
+(* OUTLINE
 - Section letter.
 - Section Sum_Prod_def.
 - Section Sum_prop.

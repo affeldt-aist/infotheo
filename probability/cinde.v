@@ -796,7 +796,7 @@ End conditionnally_independent_discrete_random_variables.
 Notation "X _|_  Y | Z" := (cinde_drv X Y Z) : proba_scope.
 Notation "P |= X _|_  Y | Z" := (@cinde_drv _ P _ _ _ X Y Z) : proba_scope.
 
-Lemma cindeP (U : finType) (P : fdist U) (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
+Lemma cindeP (U : finType) (P : {fdist U}) (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
   P |= X _|_ Y | Z ->
   \Pr[ [% Y, Z] = (b, c)] != 0 ->
   \Pr[ X = a | [% Y, Z] = (b, c)] = \Pr[X = a | Z = c].

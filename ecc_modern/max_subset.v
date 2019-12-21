@@ -1,9 +1,11 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect.
 
-(** * Maximum Subset Satisfying some Property *)
+(******************************************************************************)
+(*                   Maximum Subset Satisfying some Property                  *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Module maxsubset.
 - Section max_subset_satisfying_P.
 *)
