@@ -3,9 +3,30 @@ From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly polydiv vector.
 Require Import ssralg_ext poly_ext f2 hamming linearcode dft.
 
-(** * Cyclic codes *)
+(******************************************************************************)
+(*                               Cyclic codes                                 *)
+(*                                                                            *)
+(* Messages and codewords can be represented either as (row-)vectors or as    *)
+(* polynomials. Cyclic codes are stable by right cyclic shift. We define it   *)
+(* in several equivalent ways:                                                *)
+(* - rcs_poly is defined using (pseudo-)division for polynomials              *)
+(* - rcs is a definition for row-vectors using a permutation                  *)
+(* - rcs' is a direct definition for row-vectors                              *)
+(*                                                                            *)
+(* Definition:                                                                *)
+(*  rcsP == stability by right-cyclic-shift                                   *)
+(*  'pgen[ C ] == the set of polynomial generators                            *)
+(*  'cgen[ C ] == the set of cyclic generators                                *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*  rcs_rcs_poly   == Equivalence right-cyclic shift vectors <-> polynomials  *)
+(*                    (see [McEliece 2002], Theorem 8.1)                      *)
+(*  shift_codeword == see [McEliece 2002],  Theorem 8.2, Lemma 2(a)(b),       *)
+(*                    Theorem 8.3(a)(b)                                       *)
+(*                                                                            *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section right_cyclic_shift
 - Section fdcoor_cyclic
 - Section polynomial_code_generator.
@@ -31,13 +52,6 @@ Import GRing.Theory.
 Local Open Scope ring_scope.
 
 Section right_cyclic_shift.
-
-(** Messages and codewords can be represented either as (row-)vectors
-or as polynomials.  Cyclic codes are stable by right cyclic shift. We
-define it in several equivalent ways:
-- rcs_poly is defined using (pseudo-)division for polynomials.  rcs is
-- a definition for row-vectors using a permutation.  rcs' is a direct
-- definition for row-vectors. *)
 
 Definition rcs_perm_ffun n : {ffun 'I_n.+1 -> 'I_n.+1} :=
   [ffun x : 'I_n.+1 => if x == ord0 then ord_max else inord x.-1].
@@ -70,7 +84,6 @@ Defined.
 Definition rcs_perm n : {perm 'I_n} :=
   if n is n.+1 then Perm (rcs_perm_ffun_injectiveb n) else 1.
 
-(** right-cyclic shift with vectors: *)
 Definition rcs (R : idomainType) n (x : 'rV[R]_n) := col_perm (rcs_perm n) x.
 
 Lemma size_rcs (R : idomainType) n (x : 'rV[R]_n.+1) :
@@ -144,7 +157,6 @@ rewrite ltnS => in0' ji; exfalso; move/negP : in0; apply.
 by rewrite eqn_leq ltnW //= (leq_trans n0i (leq_pred i)).
 Qed.
 
-(** right-cyclic shift with polynomials: *)
 Definition rcs_poly (R : idomainType) (p : {poly R}) n := ('X * p) %% ('X^n - 1).
 
 Lemma size_rcs_poly (R : idomainType) n (x : {poly R}) (xn : size x <= n) :
@@ -169,9 +181,6 @@ destruct n as [|n'].
 by rewrite size_rcs_poly // size_poly.
 Qed.
 
-(** Equivalence right-cyclic shift vectors <-> polynomials (see
-[McEliece 2002], Theorem 8.1) *)
-
 Lemma rcs_rcs_poly (F : fieldType) n0 (x : 'rV[F]_n0) : rcs x = poly_rV (rcs_poly (rVpoly x) n0).
 Proof.
 destruct n0 as [|n0].
@@ -193,7 +202,6 @@ Lemma rcs_poly_rcs (F : fieldType) n0 (x : {poly F}) (xn0 : size x <= n0.+1) :
   rcs_poly x n0.+1 = rVpoly (@rcs _ n0.+1 (poly_rV x)).
 Proof. rewrite rcs_rcs_poly poly_rV_K // poly_rV_K //; by apply size_rcs_poly. Qed.
 
-(** stability by right-cyclic-shift: *)
 Definition rcsP (F: finFieldType) n (C : {set 'rV[F]_n}) :=
   forall x, x \in C -> rcs x \in C.
 
@@ -348,7 +356,6 @@ Variable n' : nat.
 Let n := n'.+1.
 Variables (F : finFieldType) (C : Ccode.t F n).
 
-(** see [McEliece 2002],  Theorem 8.2, Lemma 2(a)(b), Theorem 8.3(a)(b) *)
 Lemma shift_codeword (c : {poly F}) (cn : size c <= n) : poly_rV c \in C ->
   forall k, poly_rV (`[ 'X^k * c ]_n) \in C.
 Proof.

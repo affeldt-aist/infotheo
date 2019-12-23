@@ -3,9 +3,24 @@ From mathcomp Require Import all_ssreflect ssralg poly polydiv finalg zmodp.
 From mathcomp Require Import matrix mxalgebra mxpoly vector cyclic perm.
 Require Import ssr_ext ssralg_ext hamming.
 
-(** * Discrete Fourier transform and BCH argument *)
+(******************************************************************************)
+(*                  Discrete Fourier transform and BCH argument               *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*  not_uroot_on a n       == not a kth root of unity of a for k \in (0,n)    *)
+(*  fdcoor u y i           == the frequency-domain coordinates                *)
+(*                            notation: y ^`_(u, i)                           *)
+(*  idft_coef              == inverse of the discrete Fourier transform       *)
+(*                            (see [McEliece 2002], eqn 9.12)  dd             *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*  primitive_is_principal == a is a principal nth root of unity              *)
+(*  BCH_argument_lemma     == a.k.a. BCH_bound (see [Classification by        *)
+(*                             Isometry], p.238)                              *)
+(*                                                                            *)
+(******************************************************************************)
 
-(** OUTLINE
+(* OUTLINE
 - Section not_nth_root_of_unity.
 - Section rVexp.
 - Section frequency_domain_coordinates.
@@ -34,7 +49,6 @@ Section not_nth_root_of_unity.
 
 Variables (F : fieldType) (a : F) (n : nat).
 
-(** not a kth root of unity for k \in (0,n): *)
 Definition not_uroot_on := forall k, 0 < k < n -> a ^+ k != 1 (*~~ k.-unity_root a*).
 
 Hypotheses (a0 : a != 0) (H : not_uroot_on).
@@ -91,7 +105,7 @@ Variables (F : fieldType) (n : nat).
 
 Implicit Types x y u : 'rV[F]_n.
 
-(** see [McEliece 2002] eqn 9.11 *)
+(* see [McEliece 2002] eqn 9.11 *)
 Definition fdcoor u y i := (rVpoly y).[u ``_ i].
 
 Variable u : 'rV[F]_n.
@@ -201,7 +215,6 @@ move/prim_expr_order : abs.
 by rewrite expr0n /= => /eqP; rewrite eq_sym oner_eq0.
 Qed.
 
-(** a is a principal nth root of unity: *)
 Lemma primitive_is_principal : n.-primitive_root a ->
   forall k, 1 <= k < n -> \sum_(j < n) a ^+ (j * k) = 0.
 Proof.
@@ -232,7 +245,6 @@ Section inverse_dft.
 Variables (F : fieldType) (n' : nat) (a : F).
 Let n := n'.+1.
 
-(** inverse of the discrete Fourier transform (see [McEliece 2002], eqn 9.12) *)
 Definition idft_coef (f : 'rV[F]_n) (j : nat) := (n%:R^-1) * \sum_(k < n) (f ``_ k) * a ^- (j * k).
 
 Definition idft (f : 'rV[F]_n) : 'rV[F]_n := \row_(i < n) idft_coef f i.
@@ -245,13 +257,13 @@ rewrite (eq_bigr (fun=> 0)); first by rewrite big_const iter_addr0.
 move=> j _; by rewrite mxE mul0r.
 Qed.
 
-(** the characteristic of F is not a prime divisor of n: *)
+(* the characteristic of F is not a prime divisor of n: *)
 Hypothesis Hchar : ([char F]^').-nat n.
 
 Hypothesis an : n.-primitive_root a.
 Let a_neq0 : (a != 0) := primitive_uroot_neq0 an.
 
-(** see [McEliece 2002], problem 9.8 *)
+(* see [McEliece 2002], problem 9.8 *)
 Lemma dftK (v : 'rV[F]_n) : idft (dft (rVexp a n) n v) = v.
 Proof.
 apply/rowP => i; rewrite !mxE.
@@ -324,7 +336,7 @@ Hypothesis Hchar : ([char F]^').-nat n.
 
 Hypothesis an : n.-primitive_root a.
 
-(** see [McEliece 2002], eqn 9.16 *)
+(* see [McEliece 2002], eqn 9.16 *)
 Lemma tdcoor_of_fdcoor i (v : 'rV[F]_n) :
   v``_i = n%:R^-1 * (rVpoly (dft (rVexp a n) n v)).[a ^- i].
 Proof.
@@ -358,7 +370,7 @@ apply eq_count => i /=.
 by rewrite !mxE !mulf_eq0 !negb_or !expf_neq0.
 Qed.
 
-(** see [McEliece 2002], eqn 9.18 *)
+(* see [McEliece 2002], eqn 9.18 *)
 Lemma time_shift (an1 : a ^+ n = 1) (v : 'rV[F]_n) (m : nat) :
   dft (rVexp a n) n (phase_shift v m) = \row_i ((dft (rVexp a n) n v)``_(inord ((m + i) %% n))).
 Proof.
@@ -415,7 +427,6 @@ Hypothesis (Hchar : ([char F]^').-nat n).
 Variable (a : F).
 Hypothesis an : n.-primitive_root a.
 
-(** a.k.a. BCH_bound (see [Classification by Isometry], p.238)  *)
 Lemma BCH_argument_lemma (w : 'rV[F0]_n) (m : nat) (mn : m < n) : w != 0 ->
   (forall i : 'I_n, n - m <= i < n -> (dft (rVexp a n) n (\row_i (gmorph w``_ i))) ``_ i = 0) ->
   m.+1 <= wH w.
@@ -453,7 +464,7 @@ suff : n - m > count (fun i : 'I_n => (rVpoly w)`_i == 0) (enum 'I_n).
   rewrite ltn_add2l.
   move/leq_trans; apply.
   by apply/eq_leq/eq_count.
-rewrite (_ : count _ _ = count (fun i : 'I_n => 
+rewrite (_ : count _ _ = count (fun i : 'I_n =>
   (rVpoly (dft (rVexp a n) n (\row_i gmorph w ``_ i))).[a ^- i] == 0) (enum 'I_n)); last first.
   apply eq_count => i.
   rewrite coef_poly (ltn_ord i) insubT // => ni.

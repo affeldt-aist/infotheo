@@ -5,23 +5,24 @@ From mathcomp Require Rstruct boolp.
 Require Import Reals Lra.
 Require Import ssrR.
 
-(* Additional lemmas and definition about Coq Reals:
-  - Section reals_ext.
-      various lemmas about up, Int_part, frac_part, Rabs
-      define ceil and floor
-  - Section pos_finfun.
-      functions that return non-negative reals.
-  - Section onem.
-      p.~ =def= 1 - p
-  - Module Prob.
-      probabilities (0 <= p <= 1)
-  - non-negative rationals
-  - Section dominance.
-  - Module Rpos.
-      positive reals
-  - Module Rnneg
-      non-negative reals
-*)
+(******************************************************************************)
+(*               Additional lemmas and definitions about Coq reals            *)
+(*                                                                            *)
+(* Section reals_ext.                                                         *)
+(*   various lemmas about up, Int_part, frac_part, Rabs define ceil and floor *)
+(* Section pos_finfun.                                                        *)
+(*   T ->R^+/->R+ == functions that return non-negative reals.                *)
+(* Section onem.                                                              *)
+(*   p.~ == 1 - p                                                             *)
+(* Module Prob.                                                               *)
+(*   Type of "probabilities": reals p s.t. 0 <= p <= 1                        *)
+(* non-negative rationals                                                     *)
+(* Section dominance.                                                         *)
+(* Module Rpos.                                                               *)
+(*   Type of positive reals                                                   *)
+(* Module Rnneg                                                               *)
+(*   Type of non-negative reals                                               *)
+(******************************************************************************)
 
 Declare Scope reals_ext_scope.
 
