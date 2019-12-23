@@ -1,6 +1,23 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype.
-From mathcomp Require Import bigop ssralg poly polydiv matrix.
+From mathcomp Require Import all_ssreflect ssralg poly polydiv matrix.
+
+(******************************************************************************)
+(*                     Euclidean algorithm for decoding                       *)
+(*                                                                            *)
+(* This file contains a formalization of the Euclidean algorithm for          *)
+(* decoding. It follows the presentation in:                                  *)
+(*   Robert McEliece, The Theory of Information and Coding, Cambridge         *)
+(*   University Press, 2002.                                                  *)
+(* It used to formalize decoders for Reed-Solomon and BCH codes (see the      *)
+(* ecc_classic directory.                                                     *)
+(*                                                                            *)
+(******************************************************************************)
+
+(* OUTLINE:
+- Module Euclid.
+- Section euclid_stop.
+- Section euclid_lemma.
+*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -9,13 +26,6 @@ Unset Printing Implicit Defensive.
 Import GRing.Theory.
 Local Open Scope ring_scope.
 
-(** * Euclidean algorithm for decoding *)
-
-(** OUTLINE:
-- Module Euclid.
-- Section euclid_stop.
-- Section euclid_lemma.
-*)
 
 Lemma pair_ind (P : nat -> Type) :
   P O -> P 1%nat ->
@@ -626,7 +636,7 @@ End euclid_stop.
 
 Section euclid_lemma.
 
-(** see [McEliece 2002], 9.4 *)
+(* see [McEliece 2002], 9.4 *)
 Variables (F : fieldType).
 Variable r0 r1 : {poly F}.
 Hypothesis r1_leq_r0 : size r1 <= size r0.
@@ -705,7 +715,7 @@ Local Notation "'u'" := (Euclid.u r0 r1).
 Variables V R U : {poly F}.
 Hypotheses (v_neq0 : V != 0) (r1_neq0 : r1 != 0).
 
-(** see [McEliece 2002], Theorem 9.5, p.246 *)
+(* see [McEliece 2002], Theorem 9.5, p.246 *)
 Lemma solve_key_equation m t :
   V * (r 1) = R + U * (r 0) ->
   size V <= m -> size R <= t ->

@@ -4,7 +4,23 @@ From mathcomp Require Import fintype tuple.
 Require Import BinPos BinNat PArith.
 Require Import ssr_ext.
 
-(** * Equivalence bitstrings <-> natural numbers *)
+(******************************************************************************)
+(*                 Equivalence bitstrings <-> natural numbers                 *)
+(*                                                                            *)
+(* bitseq_of_pos       == conversion positive -> bitseq                       *)
+(* bitseq_of_N         == conversion N -> bitseq                              *)
+(* rem_lea_false       == remove leading false's                              *)
+(* N_of_bitseq         == conversion bitseq -> N                              *)
+(* tuple2N             == conversion tuple -> N                               *)
+(* bitseq_of_nat i n   == conversion i < 2 ^ n to bitseq (of length n)        *)
+(* rV_of_nat           == encoding of naturals as vectors, e.g.,              *)
+(*                        rV_of_nat 3 1 = [ 0 0 1 ]                           *)
+(*                        rV_of_nat 3 2 = [ 0 1 0 ]                           *)
+(*                        rV_of_nat 3 3 = [ 0 1 1 ]                           *)
+(* nat_of_rV           == conversion 'rV['F_2]_n -> nat                       *)
+(* cV_of_nat/nat_of_cV == the same using column vectors                       *)
+(*                                                                            *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -33,8 +49,6 @@ move: X; rewrite !subSn //= => -[] X.
 apply IH => //.
 by rewrite /pad_seqL /= Hi Hj !subSS.
 Qed.
-
-(** Conversion BinPos.positive / bitseq *)
 
 Fixpoint bitseq_of_pos (p : positive) : bitseq :=
   match p with
@@ -106,8 +120,6 @@ elim=> [|p ih [|h t] //]; first by destruct l.
     by rewrite leq_mul2l /= ih.
   by rewrite Pos2Nat.inj_xO expnS multE ltn_mul2l /= ih.
 Qed.
-
-(** Conversion BinNat.N / bitseq *)
 
 Definition bitseq_of_N (x : N) :=
   match x with
@@ -221,7 +233,6 @@ Lemma size_bitseq_of_N_lb i n : 2 ^ n <= i ->
   n < size (bitseq_of_N (bin_of_nat i)).
 Proof. move=> Hn; by rewrite size_bitseq_of_N_lb' // bin_of_natK. Qed.
 
-(** remove leading false's: *)
 Fixpoint rem_lea_false s :=
   match s with
     | [::] => [::]
@@ -302,8 +313,6 @@ apply size_bitseq_of_N_ub'.
   by apply nat_of_pos_not_0.
 by rewrite -Hbs bin_of_natK -Nto_natE N_of_bitseq_up.
 Qed.
-
-(** Conversion i < 2 ^ n to bitseq (of length n) *)
 
 Definition bitseq_of_nat (i : nat) n :=
   pad_seqL false (rev (bitseq_of_N (bin_of_nat i))) n.
@@ -407,8 +416,6 @@ rewrite !ifT //.
 by apply leqW.
 Qed.
 
-(** Conversion tuple / N *)
-
 Definition tuple2N {m} (x : m.-tuple bool) := match x with Tuple x _ => N_of_bitseq x end.
 
 Lemma tuple2N_0 n : forall p, tuple2N p = N0 -> p = [tuple of nseq n false].
@@ -418,7 +425,7 @@ apply val_inj => /=.
 apply N_of_bitseq_0 => //; by apply/eqP.
 Qed.
 
-(** sample vectors *)
+(* sample vectors *)
 
 Lemma rev7_neq0 n : (7 * 2 ^ (n - 3))%nat <> O.
 Proof.
@@ -474,17 +481,11 @@ f_equal.
 by rewrite bin_of_natK.
 Qed.
 
+(* TODO: move *)
 From mathcomp Require Import bigop zmodp ssralg matrix.
 Require Import ssralg_ext f2.
 
 Import GRing.Theory.
-
-(** Encoding of Naturals as Vectors *)
-
-(** Function that transforms natural numbers into their binary encodings, e.g.:
-  nat2bin 3 1 = [ 0 0 1 ],
-  nat2bin 3 2 = [ 0 1 0 ],
-  nat2bin 3 3 = [ 0 1 1 ]. *)
 
 Section rV_and_nat_def.
 

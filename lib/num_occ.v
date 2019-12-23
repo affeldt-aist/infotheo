@@ -2,9 +2,15 @@
 From mathcomp Require Import all_ssreflect fingroup perm zmodp ssralg.
 Require Import ssr_ext f2.
 
-(** * Number of occurrences *)
+(******************************************************************************)
+(*                 Number of occurrences in a tuple                           *)
+(*                                                                            *)
+(*   N(a | t)           == number of occurrences of a in t                    *)
+(*   N((a,b) | (ta,tb)) == number of occurrences of (a,b) in zip ta tb        *)
+(*                                                                            *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
   1. Section num_occ_def (Number of symbol occurrences)
   2. Section num_occ_prop.
   3. Section num_occ_tuple.

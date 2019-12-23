@@ -947,9 +947,8 @@ move=> H1 H2.
 suff : X _|_ Y | Z by apply contraction.
 move=> a b c; apply/esym.
 rewrite [in X in X * _ = _](reasoning_by_cases W).
-evar (h : D -> R); rewrite (eq_bigr h); last first.
-  move=> d _; rewrite setX1 /h; reflexivity.
-rewrite {}/h big_distrl /=.
+under eq_bigr do rewrite setX1.
+rewrite big_distrl /=.
 have <- : \sum_(d <- fin_img W)
            \Pr[ [% X, Y] = (a, b) | Z = c] * \Pr[ W = d | Z = c] =
          \sum_(d <- fin_img W)

@@ -1,10 +1,26 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 Require Import Reals.
 From mathcomp Require Import all_ssreflect fingroup zmodp ssralg perm matrix.
 From mathcomp Require Import poly finalg mxalgebra mxpoly.
 Require Import ssr_ext ssralg_ext f2 num_occ natbin ssrR Reals_ext Rbigop.
 
-(** * Hamming weight and Hamming distance *)
+(******************************************************************************)
+(*                    Hamming weight and Hamming distance                     *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*  wH v   == Hamming weight of v : 'rV[F]_n where F is a ringType            *)
+(*  dH u v == wH (u - v)                                                      *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   dH_tri_ine          == triangular inequality                             *)
+(*   wH_3                == wH (rV_of_nat n 3) = 2                            *)
+(*   wH_7                == wH (rV_of_nat n 7) = 3                            *)
+(*   card_sphere q n k x == the number of points ('rV['F_q]_n) at distance k  *)
+(*                          from x is 'C(n, k) * q.-1 ^ k                     *)
+(*   binomial_theorem                                                         *)
+(*                                                                            *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -4,7 +4,17 @@ From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext.
 
-(** * log_n x and n ^ x *)
+(******************************************************************************)
+(*                          log_n x and n ^ x                                 *)
+(*                                                                            *)
+(* Definitions and lemmas about the logarithm and the exponential in base n.  *)
+(*                                                                            *)
+(* Definitions:                                                               *)
+(*   Log == log_n x                                                           *)
+(*   Exp == n ^ x                                                             *)
+(*   log == Log in base 2                                                     *)
+(*   exp2 == 2 ^ x                                                            *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -125,8 +135,6 @@ End exp_lower_bound.
 End addtional_lemmas_about_ln_exp.
 Hint Resolve ln2_gt0 : core.
 
-(** log_n x *)
-
 Definition Log (n : R) x := ln x / ln n.
 
 Lemma Log_expR (a b : R) (n : nat) : 0 < a -> Log b (a ^ n) = n%:R * Log b a.
@@ -189,8 +197,6 @@ case/Rle_lt_or_eq_dec; first by move/(Log_lt_inv n1 Hx Hy)/ltRW.
 move/(Log_inv n1 Hx Hy) => ->; exact/leRR.
 Qed.
 
-(** Log base 2 *)
-
 (* NB: log is 0 for input < 0 *)
 Definition log x := Log 2 x.
 
@@ -231,7 +237,6 @@ Proof. by rewrite /log /Log ln_exp div1R. Qed.
 Lemma log_exp1_Rle_0 : 0 <= log (exp 1).
 Proof. rewrite logexp1E; exact/leRP/ltRW'/ltRP/invR_gt0. Qed.
 
-(** n ^ x *)
 Definition Exp (n : R) x := exp (x * ln n).
 
 Lemma pow_Exp x n : 0 < x -> x ^ n = Exp x n%:R.
@@ -295,8 +300,6 @@ Qed.
 
 Lemma Exp_Ropp n x : Exp n (- x) = / Exp n x.
 Proof. by rewrite /Exp mulNR exp_Ropp. Qed.
-
-(** 2 ^ x *)
 
 Definition exp2 (x : R) := Exp 2 x.
 

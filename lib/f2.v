@@ -2,11 +2,15 @@
 From mathcomp Require Import all_ssreflect fingroup perm ssralg zmodp.
 From mathcomp Require Import matrix mxalgebra poly polydiv mxpoly.
 
-Import GRing.Theory.
+(******************************************************************************)
+(*                       Small lemmas about 'F_2                              *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Import GRing.Theory.
 
 Local Open Scope ring_scope.
 
