@@ -5,6 +5,10 @@ Require Import Reals.
 Require Import ssralg_ext ssrR Reals_ext f2 fdist channel tanner linearcode.
 Require Import Rbigop pproba.
 
+(******************************************************************************)
+(*                         Checksum Operator                                  *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -12,9 +16,8 @@ Import Prenex Implicits.
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-(** * Checksum Operator *)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section checksubsum_parity.
 - Section post_proba_checksubsum.
 *)

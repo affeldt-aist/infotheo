@@ -7,9 +7,18 @@ Require Import fdist channel pproba f2 linearcode subgraph_partition tanner.
 Require Import tanner_partition hamming binary_symmetric_channel decoding.
 Require Import channel_code summary checksum summary_tanner.
 
-(** * LDPC Codes and Sum-Product Decoding *)
+(******************************************************************************)
+(*                   LDPC Codes and Sum-Product Decoding                      *)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(*   estimation_correctness == Correctness of the estimation of the           *)
+(*                             sum-product algorithm, i.e., proof that it     *)
+(*                             computes the marginal aposteriori probability  *)
+(*   recursive_computation  == Proof that alpha message can be computed       *)
+(*                             recursively                                    *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section regular_ldpc.
 - Section post_proba_bsc_unif.
 - Section sub_vec_channel.
@@ -249,7 +258,7 @@ Local Close Scope R_scope.
 
 Definition dproj_V m0 n0 (d t : 'rV['F_2]_n) := dproj d ('V(m0, n0) :\ n0) t.
 
-(** only the value of d ``_ n0 matters to alpha and beta *)
+(* only the value of d ``_ n0 matters to alpha and beta *)
 
 Lemma alpha_inva n0 m0 (d d' : 'rV_n) :
   n0 \in 'V m0 -> d ``_ n0 = d' ``_ n0 ->
@@ -433,8 +442,6 @@ Local Notation "''F(' x ',' y ')'" := (Fgraph H x y).
 Variable tanner : Tanner.acyclic_graph (tanner_rel H).
 
 Local Notation "'alpha'" := (alpha H W y).
-
-(** Correctness of the estimation of the sum-product algorithm *)
 
 Local Open Scope R_scope.
 
@@ -777,7 +784,7 @@ transitivity
 by rewrite -big_distrr /= recursive_computation_helper.
 Qed.
 
-(** some properties of alpha and beta messages: *)
+(* some properties of alpha and beta messages: *)
 Lemma beta_one_successor n1 m1 d :
   'F n1 = [set m1] -> beta n1 m1 d = W (d ``_ n1) (y ``_ n1).
 Proof.

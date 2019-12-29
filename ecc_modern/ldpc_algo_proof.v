@@ -5,9 +5,15 @@ Require Import ssrR Reals_ext Rbigop f2 subgraph_partition tanner.
 Require Import fdist channel pproba linearcode ssralg_ext.
 Require Import tanner_partition summary ldpc checksum ldpc_algo.
 
-(** * Verification of the Sum-Product decoder *)
+(******************************************************************************)
+(*                   Verification of a Sum-Product decoder                    *)
+(*                                                                            *)
+(* Formal verification of the implementation of sum-product decoding from     *)
+(* the file ldpc_algo.v.                                                      *)
+(*                                                                            *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section Extras.
 - Section TnTreeEq.
 - Section BuildTreeOk.
@@ -56,9 +62,8 @@ Qed.
 
 Lemma sumn_eq0P l : reflect (forall i, i \in l -> i == 0) (sumn l == 0).
 Proof.
-case: (natnseq0P l) => [-> | Hl]; [apply ReflectT | apply ReflectF].
-  by move=> i /nseqP [] ->.
-contradict Hl; by apply/all_pred1P/allP.
+apply/(iffP (natnseq0P l)); last by move/allP/all_pred1P.
+by move=> -> ?; rewrite mem_nseq => /andP[].
 Qed.
 
 Lemma count_sumn {B} (p : B -> bool) (l : seq B) :
@@ -1085,6 +1090,24 @@ Lemma beta_def n0 m0 (d : 'rV_n) :
   beta (rW n0) [seq (alpha' m1 n0 d0, alpha' m1 n0 d1) | m1 in 'F n0 :\ m0]
   = (beta' n0 m0 d0, beta' n0 m0 d1).
 Proof.
+(*move=> d0 d1.
+rewrite /beta.
+rewrite /beta'.
+rewrite /ldpc.beta.
+rewrite -big_filter.
+rewrite -[in X in _ = (_, X)]big_filter.
+rewrite foldlE /=.
+rewrite big_cons /=.
+rewrite /d0 /d1 /row_set !mxE !eqxx.
+rewrite big_map.
+rewrite big_enum /=.
+rewrite -big_filter.
+have [e He [_ _ _]] := big_enumP _.
+elim: e He.
+  move=> He.
+  by rewrite !big_nil.
+move=> h t ih He.
+rewrite !big_cons /=.*)
 rewrite /rW /beta' /alpha' /ldpc.beta /=.
 rewrite /image_mem /enum_mem.
 rewrite -big_filter.
@@ -1425,66 +1448,13 @@ destruct t; simpl.
 by destruct (push_init dn).
 Qed.
 
-Lemma alpha_opA : associative alpha_op.
-move=> [a1 a2] [b1 b2] [c1 c2].
-rewrite /alpha_op /=.
-f_equal; ring.
-Qed.
+Lemma alpha_map {A} F (l : seq A) :
+  alpha (map F l) = \big[alpha_op/(R1,R0)]_(i <- l) F i.
+Proof. by rewrite /alpha foldrE big_map. Qed.
 
-Lemma beta_opA : associative beta_op.
-move=> [a1 a2] [b1 b2] [c1 c2].
-rewrite /beta_op /=.
-f_equal; ring.
-Qed.
-
-Lemma alpha_opC : commutative alpha_op.
-move=> [a1 a2] [b1 b2].
-rewrite /alpha_op /=; f_equal; ring.
-Qed.
-
-Lemma beta_opC : commutative beta_op.
-move=> [a1 a2] [b1 b2].
-rewrite /beta_op /=; f_equal; ring.
-Qed.
-
-Definition alpha_law : @Monoid.law R2 (R1,R0).
-econstructor.
-- apply alpha_opA.
-- move=> [a b]. rewrite /alpha_op /=; f_equal; ring.
-- move=> [a b]. rewrite /alpha_op /=; f_equal; ring.
-Defined.
-
-Lemma beta_left_id : left_id (R1, R1) beta_op.
-Proof. move=> [a b]. rewrite /beta_op /=; f_equal; ring. Qed.
-Lemma beta_right_id : right_id (R1, R1) beta_op.
-Proof. move=> [a b]. rewrite /beta_op /=; f_equal; ring. Qed.
-
-Definition beta_law := Monoid.Law beta_opA beta_left_id beta_right_id.
-
-Definition alpha_com_law := @Monoid.ComLaw R2 _ alpha_law alpha_opC.
-Definition beta_com_law := @Monoid.ComLaw R2 _ beta_law beta_opC.
-
-Canonical alpha_monoid := alpha_law.
-Canonical alpha_comoid := alpha_com_law.
-Canonical beta_monoid := beta_law.
-Canonical beta_comoid := beta_com_law.
-
-Lemma big_alpha {A} F (l : seq A) :
-  \big[alpha_op/(R1,R0)]_(i <- l) F i = alpha (map F l).
-Proof.
-elim: l => [|a l IH] /=.
-  by rewrite big_nil.
-by rewrite big_cons IH.
-Qed.
-
-Lemma big_beta {A} F w (l : seq A) :
-  beta_op w (\big[beta_op/(R1,R1)]_(i <- l) F i) = beta w (map F l).
-Proof.
-rewrite /beta.
-elim: l w => [|a l IH] w /=.
-  by rewrite big_nil beta_right_id.
-by rewrite big_cons beta_opA IH.
-Qed.
+Lemma beta_map {A} F w (l : seq A) :
+  beta w (map F l) = beta_op w (\big[beta_op/(R1,R1)]_(i <- l) F i).
+Proof. by rewrite /beta foldlE /= big_cons big_map. Qed.
 
 Lemma kind_filter {A : eqType} k i (s : {set ord_of_kind m n' (negk k)})
       (F : id' -> A) :
@@ -1618,12 +1588,9 @@ Lemma eq_alpha_beta {A : eqType} F {k} (t1 t2 : tag k) (l1 l2 : list A) :
   alpha_beta t1 (map F l1) = alpha_beta t2 (map F l2).
 Proof.
 move=> Ht ?; rewrite /alpha_beta; case: t1 t2 Ht => [|v] t2 <-.
-- rewrite -!big_alpha; exact/perm_big.
-- rewrite -!big_beta; congr beta_op; exact/perm_big.
+- rewrite !alpha_map; exact/perm_big.
+- rewrite !beta_map; congr beta_op; exact/perm_big.
 Qed.
-
-(*Lemma seq1_inj {A:eqType} : injective (fun x : A => [:: x]).
-Proof. by move=> a b []. Qed.*)
 
 Lemma id_of_kind_select_children x s k i :
   x \in [seq id_of_kind (negk k) j | j <- select_children H s k i] =
@@ -2031,7 +1998,7 @@ case Hid: (node_id t == inr n0).
     destruct s as [|s s0].
       (* at tree root *)
       rewrite -/set0 -(imset0 (id_of_kind (negk kv))) kind_filter /=.
-      rewrite setD0 beta_right_id.
+      rewrite setD0 Monoid.mulm1.
       congr beta.
       rewrite /image_mem /enum_mem.
       apply eq_in_map_seqs => //.
@@ -2042,15 +2009,13 @@ case Hid: (node_id t == inr n0).
     destruct s; [ | ]; last first.
       by rewrite tanner_relE in Hun.
     rewrite set1F -imset_set1 (kind_filter (k:=kv)).
-    rewrite -!big_beta.
-    rewrite -beta_opA.
-    congr beta_op.
+    rewrite !beta_map -Monoid.mulmA; congr beta_op.
     rewrite big_filter (eq_bigr (fun j => msg_spec' (inl j) (inr i))) //.
-    rewrite beta_opC -big_filter.
+    rewrite Monoid.mulmC -big_filter.
     rewrite -msg_spec_alpha_beta; last first.
       rewrite sym_tanner_rel.
       by move/andP/proj1: Hun => /= /andP/proj1.
-    rewrite -(big_seq1 beta_law o (fun j => msg_spec' (inl j) (inr i))).
+    rewrite -(big_seq1 beta_op_monoid_law o (fun j => msg_spec' (inl j) (inr i))).
     rewrite -big_cat.
     apply/perm_big/uniq_perm.
      - rewrite /= filter_uniq.
@@ -2170,8 +2135,7 @@ rewrite !estimation_correctness; last 2 first.
   by apply tanner.
 rewrite -!(K949_lemma vb tanner d n0).
 rewrite /K949 /normalize.
-rewrite -big_beta.
-rewrite big_beta_mul /=.
+rewrite beta_map big_beta_mul /=.
 rewrite /Rdiv.
 congr pair.
   rewrite mulRC /alpha' !mxE.

@@ -5,9 +5,18 @@ Require Import ssrR Reals_ext Rbigop f2 subgraph_partition tanner.
 Require Import fdist channel pproba linearcode ssralg_ext.
 Require Import tanner_partition summary ldpc checksum.
 
-(** * Sum-Product Decoder *)
+(******************************************************************************)
+(*                         A Sum-Product Decoder                              *)
+(*                                                                            *)
+(* This file provides an implementation of sum-product decoding that is       *)
+(* verified in the file ldpc_algo_proof.v.                                    *)
+(*                                                                            *)
+(* Definition:                                                                *)
+(*   sumprod == an implementation of sum-product decoding                     *)
+(*                                                                            *)
+(******************************************************************************)
 
-(** OUTLINE:
+(* OUTLINE:
 - Section Tree.
 - Section Algo.
 - Section ToGraph.
@@ -68,12 +77,32 @@ Definition alpha_op (out inp : R2) :=
   (o*i + o'*i', o*i' + o'*i).
 Definition alpha := foldr alpha_op (1,0).
 
+Program Definition alpha_op_monoid_law : Monoid.law (R1, R0) := @Monoid.Law _ _ alpha_op _ _ _.
+Next Obligation. by move=> -[a0 a1] [b0 b1] [c0 c1] /=; f_equal; ring. Qed.
+Next Obligation. by move=> -[a0 a1] /=; f_equal; ring. Qed.
+Next Obligation. by move=> -[a0 a1] /=; f_equal; ring. Qed.
+Canonical alpha_op_monoid_law.
+
+Program Definition alpha_op_monoid_com_law := @Monoid.ComLaw R2 _ alpha_op_monoid_law _.
+Next Obligation. by move=> -[a0 a1] [b0 b1] /=; f_equal; ring. Qed.
+Canonical alpha_op_monoid_com_law.
+
 (** β[m0,n0](x) = W(y_n0|x) Π_{m1 ∈ F(n0)\{m0}} α[m1,n0](x) *)
 
 (** Compute (β[m0,m0](0), β[m0,n0](1)) *)
 Definition beta_op (out inp : R2) :=
   let (o,o') := out in let (i,i') := inp in (o*i, o'*i').
 Definition beta := foldl beta_op.
+
+Program Definition beta_op_monoid_law : Monoid.law (R1, R1) := @Monoid.Law _ _ beta_op _ _ _.
+Next Obligation. by move=> -[a0 a1] [b0 b1] [c0 c1] /=; rewrite !mulRA. Qed.
+Next Obligation. by move=> -[a0 a1]; rewrite /beta_op !mul1R. Qed.
+Next Obligation. by move=> -[a0 a1]; rewrite /beta_op !mulR1. Qed.
+Canonical beta_op_monoid_law.
+
+Program Definition beta_op_monoid_com_law : Monoid.com_law (R1, R1) := @Monoid.ComLaw _ _ beta_op_monoid_law _.
+Next Obligation. by move=> -[a0 a1] [b0 b1]; rewrite /beta_op (mulRC a0) (mulRC a1). Qed.
+Canonical beta_op_monoid_com_law.
 
 (** Select α or β according to node kind *)
 Definition alpha_beta {b} (t : tag b) :=

@@ -3,15 +3,14 @@ From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
 Require Import ssralg_ext hamming linearcode decoding channel_code.
 
-(** * McEliece Cryptographic Scheme
-
-   The McEliece cryptographic scheme can be defined for any linear
-   code but is only known to be secure for Goppa codes [Engelbert
-   2007]. Our purpose here is just to define encryption and decryption
-   and to verify that the latter undoes the former.  We just assume
-   bounded distance decoding.
-
-*)
+(******************************************************************************)
+(*                       McEliece Cryptographic Scheme                        *)
+(*                                                                            *)
+(* The McEliece cryptographic scheme can be defined for any linear code but   *)
+(* is only known to be secure for Goppa codes [Engelbert 2007]. Our purpose   *)
+(* here is just to define encryption and decryption and to verify that the    *)
+(* latter undoes the former. We just assume bounded distance decoding.        *)
+(******************************************************************************)
 
 Import GRing.Theory.
 
@@ -23,11 +22,9 @@ Local Open Scope ring_scope.
 
 Module McEliece.
 
-(** Key Generation:
+(* Key Generation:
     Alice chooses a binary (n,k)-linear code C that can correct t errors
-    (and for which an efficient decoding algorithm is known)
-*)
-
+    (and for which an efficient decoding algorithm is known) *)
 Section mceliece.
 
 Variable k n' : nat.
@@ -52,38 +49,30 @@ Local Open Scope ecc_scope.
 
 Variable bdd : t.-BDD (C, repair).
 
-(** Alice chooses
+(* Alice chooses
    (1) a random non-singular matrix S (the ``row scrambler'' matrix) and
-   (2) a random permutation matrix P:
-*)
-
+   (2) a random permutation matrix P: *)
 Variable S : 'M['F_2]_k.
 Variable S_inv : S \in unitmx.
 Variables p : 'S_n.
 Definition P : 'M['F_2]_n := perm_mx p.
 
-(** S, G (the generator matrix of the code), and P form the private key.
+(* S, G (the generator matrix of the code), and P form the private key.
    \hat{G} and t form the public key. *)
-
 Definition pubkey : 'M_(k, n) := S *m 'G *m P.
 
-(** Encryption
+(* Encryption
    Bob's message is a vector of k bits.
-   Bob chooses a random error vector of n bits with t 1's
-*)
-
+   Bob chooses a random error vector of n bits with t 1's  *)
 Variable msg : 'rV['F_2]_k.
 Variable z : 'rV['F_2]_n.
 Variable Hz : wH z = t.
 
-(** The corresponding ciphertext is: *)
-
+(* The corresponding ciphertext is: *)
 Definition cyp : 'rV_n := msg *m pubkey + z.
 
-(** Decryption:
-   Decryption consists of decoding and matrix multiplications as follows:
-*)
-
+(* Decryption:
+   Decryption consists of decoding and matrix multiplications as follows: *)
 Definition cyp_hat : 'rV_n := cyp *m P^-1.
 
 Variable msg_hat : {m | decode cyp_hat = Some m}.

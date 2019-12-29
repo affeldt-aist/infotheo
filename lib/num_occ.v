@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect fingroup perm zmodp ssralg.
 Require Import ssr_ext f2.
 
 (******************************************************************************)
-(*                 Number of occurrences in a tuple                           *)
+(*                  Number of occurrences in a tuple                          *)
 (*                                                                            *)
 (*   N(a | t)           == number of occurrences of a in t                    *)
 (*   N((a,b) | (ta,tb)) == number of occurrences of (a,b) in zip ta tb        *)
