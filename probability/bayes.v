@@ -81,19 +81,26 @@ apply: (iffP existsP) => -[p].
     by rewrite (eqP Hab) eqxx.
   apply/forallP => a'.
   apply/implyP.
-  rewrite !inE => /andP [Ha'b] /orP [] Haa'.
+  elim: p a Hp Hab => [|c p IH] a Hp Hab.
+    rewrite /= !inE.
+    case Ha'b: (a' == b) => //=.
+    rewrite orbF => /eqP ->.
+    apply/existsP.
+    exists b.
+    move: Hp => /andP [Hac _].
+    rewrite !inE !eqxx orbT Hac /=.
+    apply/eqP/setP => k.
+    rewrite !inE.
+    case Hka: (k == a).
+      by rewrite (eqP Hka) ltnn.
+    case Hkb: (k == b).
+      by rewrite (eqP Hkb) ltnn andbF.
+    done.
+  move: Hp => /= /andP [Hac Hp].
+  rewrite !inE => /andP [Ha'b] /= /orP [] Haa'.
     rewrite (eqP Haa') in Ha'b *.
     apply/existsP.
-    exists (head b (rcons p b)).
-    case: p Hp => [|c p] /= [] /andP [Hac Hp].
-      rewrite !inE !eqxx orbT Hac /=.
-      apply/eqP/setP => k.
-      rewrite !inE.
-      case Hka: (k == a).
-        by rewrite (eqP Hka) ltnn.
-      case Hkb: (k == b).
-        by rewrite (eqP Hkb) ltnn andbF.
-      done.
+    exists c.
     rewrite !inE !eqxx /= orbT Hac /=.
     apply/eqP/setP => k.
     rewrite !inE.
@@ -105,6 +112,7 @@ apply: (iffP existsP) => -[p].
     case Hkp: (k \in rcons p b).
       by rewrite (ltnNge k) (leq_eqVlt c) (path_lt Hp Hkp) orbT andbF.
     done.
+  move: (IH c Hp).
 Admitted.
 End descendant.
 
