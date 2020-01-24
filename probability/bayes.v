@@ -54,6 +54,59 @@ Qed.
 Lemma in_last (A : eqType) (a : A) p : a \in rcons p a.
 Proof. by rewrite mem_rcons in_cons eqxx. Qed.
 
+Lemma desc_max b (p : {set 'I_n}) c :
+  [forall i in p :\ b,
+      [exists j in p, parent i j && ([set k in p | i < k < j] == set0)]] ->
+  c \in p -> c <= b.
+Proof.
+set h := #|p|.
+have Hh: #|p| <= h by [].
+clearbody h.
+elim: h c p Hh => [|h IH] c p Hh /forallP Hp.
+  rewrite leqn0 in Hh.
+  by rewrite (cards0_eq (eqP Hh)) in_set0.
+move=> Hc.
+case Hcb: (c == b).
+  by rewrite (eqP Hcb) leqnn.
+have Hcp: c \in p :\ b by rewrite !inE Hcb.
+move: (Hp c) => /implyP/(_ Hcp)/existsP [d] /and3P [Hd Hcd _].
+apply (leq_trans (ltnW (is_topo Hcd))).
+apply (IH d [set x in p | c < x]).
+- rewrite -ltnS (leq_trans _ Hh) //.
+  apply (@leq_ltn_trans (#|p :\ c|)).
+    apply subset_leq_card.
+    apply/subsetP => x.
+    rewrite !inE.
+    case Hx: (x == c) => /=.
+      by rewrite (eqP Hx) ltnn andbC.
+    by case: (x \in _).
+  rewrite cardsD.
+  have -> : p :&: [set c] = [set c].
+    apply/setP => k. rewrite !inE.
+    case Hk: (k == c).
+      by move: Hcp; rewrite inE (eqP Hk) => /andP [_] ->.
+    by rewrite andbF.
+  rewrite cards1 subn1.
+  case Hh': #|p|.
+    by rewrite (cards0_eq Hh') inE in Hc.
+  done.
+- apply/forallP => e.
+  rewrite !inE.
+  apply/implyP => /and3P [Heb Hep Hec].
+  move/implyP: (Hp e).
+  rewrite !inE Heb Hep => /(_ isT) /existsP [j] /and3P [Hjp Hej /eqP <-].
+  apply/existsP; exists j.
+  rewrite Hej !inE Hjp /=.
+  rewrite (ltn_trans Hec) /=.
+    apply/eqP/setP => x.
+    rewrite !inE.
+    case Hex: (e < x).
+      by rewrite (ltn_trans Hec Hex) andbT.
+    by rewrite !andbF.
+  by apply is_topo.
+- by rewrite !inE Hd is_topo.
+Qed.
+
 Lemma descendantP a b :
   reflect (exists p, path parent a (rcons p b)) (descendant a b).
 Proof.
@@ -65,7 +118,7 @@ apply: (iffP existsP) => -[p].
     by rewrite (cards0_eq Hh) in_set0 in Hb.
   move Hp': [seq i <- ord_enum n | (i \in p) && (a < i < b)] => [|a' p'].
     rewrite /= andbT.
-    move/(_ a): Hp => /implyP/(_ Ha)/existsP [a'] /and3P [Ha' Ha'p].
+    move: (Hp a) => /implyP/(_ Ha)/existsP [a'] /and3P [Ha' Ha'p].
     move: Hp'.
     move/eqP.
     rewrite -(negbK (_ == [::])) -has_filter => /hasPn.
@@ -77,8 +130,33 @@ apply: (iffP existsP) => -[p].
       by rewrite Hb' eqxx in Ha'b.
     move/eqP/setP/(_ b).
     rewrite !inE Hb Hb'.
+    move/forallP in Hp.
+    move: Ha; rewrite !inE.
+    case Hab: (a == b) => //= Hap.
+    have: a <= b by apply (desc_max Hp).
+    rewrite leq_eqVlt.
+    case Hab': (a < b) => //=.
+    rewrite orbF => /eqP /ord_inj H.
+    by rewrite H eqxx in Hab.
+  rewrite rcons_cons /=.
+  have Hrp': p' = [seq i <- ord_enum n | i \in p & a' < i < b].
     admit.
-  admit.
+  rewrite Hrp' IH //.
+  move: (Hp a) => /implyP/(_ Ha)/existsP [c] /and3P [Hcp Hac Hci].
+  case Ha'c: (a' < c).
+    have: a' \in [seq i <- ord_enum n | i \in p & a < i < b].
+      by rewrite Hp' mem_head.
+    rewrite mem_filter mem_ord_enum andbT => /and3P [Ha'p Haa' _].
+    move/eqP/setP/(_ a'): Hci.
+    by rewrite !inE Ha'p Haa' Ha'c.
+  case Hca': (c < a').
+    admit.
+  move/negP/negP in Ha'c.
+  move/negP/negP in Hca'.
+  rewrite -!leqNgt in Ha'c Hca'.
+  have Ha'c': a' = c.
+    by apply/ord_inj/eqP; rewrite eqn_leq Ha'c Hca'.
+  by rewrite Ha'c' Hac.
 - move=> Hp.
   exists [set i | i \in a :: rcons p b].
   rewrite !inE eqxx /= mem_rcons /= !inE eqxx orbT !andbT.
