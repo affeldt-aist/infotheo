@@ -44,7 +44,15 @@ Definition descendant : rel 'I_n := fun a b =>
           [exists j in p, parent i j && ([set k in p | i < k < j] == set0)]]].
 
 Lemma path_lt a b p : path parent a p -> b \in p -> a < b.
-Admitted.
+Proof.
+elim: p a => [|c p IH] a //= /andP [Hac Hp'].
+rewrite in_cons => /orP [/eqP -> | Hb].
+  by rewrite is_topo.
+by apply (ltn_trans (is_topo Hac)), IH.
+Qed.
+
+Lemma in_last (A : eqType) (a : A) p : a \in rcons p a.
+Proof. by rewrite mem_rcons in_cons eqxx. Qed.
 
 Lemma descendantP a b :
   reflect (exists p, path parent a (rcons p b)) (descendant a b).
@@ -75,9 +83,7 @@ apply: (iffP existsP) => -[p].
   exists [set i | i \in a :: rcons p b].
   rewrite !inE eqxx /= mem_rcons /= !inE eqxx orbT !andbT.
   case Hab: (a == b) => /=.
-    have: b \in rcons p b.
-      by rewrite mem_rcons in_cons eqxx.
-    move/(path_lt Hp)/ltn_eqF.
+    move/(path_lt Hp)/ltn_eqF: (in_last b p).
     by rewrite (eqP Hab) eqxx.
   apply/forallP => a'.
   apply/implyP.
@@ -112,7 +118,23 @@ apply: (iffP existsP) => -[p].
     case Hkp: (k \in rcons p b).
       by rewrite (ltnNge k) (leq_eqVlt c) (path_lt Hp Hkp) orbT andbF.
     done.
-  move: (IH c Hp).
+  case Hcb: (c == b).
+    move: (path_lt Hp (in_last b p)).
+    by rewrite (eqP Hcb) ltnn.
+  move: {IH} (IH c Hp Hcb).
+  rewrite 4!inE Ha'b Haa' => /(_ isT) /existsP [d] /and3P [Hd Ha'd] /eqP <-.
+  apply/existsP; exists d.
+  rewrite inE in Hd.
+  rewrite inE in_cons Hd orbT Ha'd /=.
+  apply/eqP/setP => k.
+  rewrite !inE.
+  case Hka: (k == a) => //=.
+  rewrite (eqP Hka).
+  rewrite -in_cons in Haa'.
+  have /ltnW: a < a'.
+    by rewrite (path_lt _ Haa') //= Hac Hp.
+  rewrite (ltnNge a' a) => -> //.
+  by rewrite !andbF.
 Admitted.
 End descendant.
 
