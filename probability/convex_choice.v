@@ -997,6 +997,19 @@ Lemma scaled_set_extract X x (H : (0 < weight _ x)%R) :
   x \in scaled_set X -> point H \in X.
 Proof. case: x H => [p x|/ltRR] //=; by rewrite in_setE. Qed.
 
+(* NB(saikawa): hullI exhibits a fundamental
+   algebraic property of hull, and since I expect there should be some
+   cases where inference of canonical structure does not work well for hulls
+   and a user needs to manually rewrite using such algebraic properties *)
+Lemma hullI (X : set A) : hull (hull X) = hull X.
+Proof.
+rewrite predeqE => d; split.
+- move=> -[n [g [e [gX ->{d}]]]].
+  move: (hull_is_convex X).
+  by rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
+- by move/subset_hull.
+Qed.
+
 Lemma hull_setU (a : A) X Y : X !=set0 -> Y !=set0 -> (hull (X `|` Y)) a ->
   exists a1, a1 \in X /\ exists a2, a2 \in Y /\ exists p : prob, a = a1 <| p |> a2.
 Proof.
