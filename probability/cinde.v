@@ -126,6 +126,11 @@ Proof. by rewrite /Bivar.snd /d FDistMap.comp. Qed.
 End prop.
 End QuadA23.
 
+Section unit_RV.
+Variables (U : finType) (P : fdist U).
+Definition RV0 : {RV P -> unit} := fun _ => tt.
+End unit_RV.
+
 Section pair_of_RVs.
 Variables (U : finType) (P : fdist U).
 Variables (A : finType) (X : {RV P -> A}) (B : finType) (Y : {RV P -> B}).
@@ -165,6 +170,12 @@ Proof. by rewrite /Bivar.snd /RVar.d FDistMap.comp. Qed.
 
 Lemma Swap_RV2 : Swap.d (RVar.d [% X, Y]) = RVar.d [% Y, X].
 Proof. by rewrite /Swap.d /RVar.d FDistMap.comp. Qed.
+
+Lemma RV20 : fst \o [% X, RV0 P] =1 X.
+Proof. by []. Qed.
+
+Lemma RV02 : snd \o [% RV0 P, X] =1 X.
+Proof. by []. Qed.
 
 End RV2_prop.
 

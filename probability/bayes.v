@@ -29,7 +29,7 @@ Definition aRV2 (x y : aRV) :=
   let: mkRV B Y := y in
   mkRV [% X, Y].
 
-Definition aRV0 := mkRV (fun _ => tt).
+Definition aRV0 := mkRV (RV0 P).
 
 Section topological.
 Variable parent : rel 'I_n.
