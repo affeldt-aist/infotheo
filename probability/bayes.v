@@ -19,38 +19,34 @@ Section bn.
 Variable U : finType.
 Variable P : fdist U.
 Variable n : nat.
+Variable types : 'I_n -> finType.
+Variable vars : forall i, {RV P -> types i}.
 
-Variant aRV := mkRV : forall A : finType, {RV P -> A} -> aRV. 
-Definition aRV_type (v : aRV) :=
-  let: mkRV A V := v in A.
-
-Definition aRV2 (x y : aRV) :=
-  let: mkRV A X := x in
-  let: mkRV B Y := y in
-  mkRV [% X, Y].
-
-Definition aRV0 := mkRV (RV0 P).
-
-Section topological.
+Section Imap.
 Variable parent : rel 'I_n.
+Variable vals : forall i, types i.
+
 Definition topological := forall i j : 'I_n, parent i j -> i < j.
-End topological.
+
+Definition preim_vars (I : {set 'I_n}) :=
+  \bigcap_(i < n) if i \in I then vars i @^-1 (vals i) else setT.
+
+Definition independence (i j : 'I_n) :=
+  ~~ closure parent [set i] j ->
+  let E := preim_vars [set i] in
+  let F := preim_vars [set j] in
+  let parents := [set k | closure parent [set k] i] in
+  let G := preim_vars parents in
+  (`Pr_ P [ E :&: F | G ] = `Pr_ P [ E | G ] * `Pr_ P [ F | G ])%R.
+End Imap.
 
 (* Koller and Friedman, Definition 3.1, page 57 *)
 
-Variable types : 'I_n -> finType.
-
 Record t := mkBN
-  { vars : forall i, {RV P -> types i};
-    parent: rel 'I_n;
+  { parent: rel 'I_n;
     topo: topological parent;
-    indep: forall i j : 'I_n,
-        ~~ closure parent [set i] j ->
-        let X := vars i in
-        let Y := vars j in
-        let: mkRV C Z :=
-           \big[aRV2/aRV0]_(k < n | closure parent [set k] i) mkRV (vars k) in
-        X _|_ Y | Z }.
+    indep: forall vals i j, independence parent vals i j
+  }.
 End bn.
 End BN.
 
@@ -60,27 +56,16 @@ Variable U : finType.
 Variable P : fdist U.
 Variable n : nat.
 Variable types : 'I_n -> finType.
-Variable bn : t P types.
-
-Definition RV_domains :=
-  [seq types i | i <- [tuple i | i < n]].
-
-Definition RV_domain := foldr prod_finType unit_finType RV_domains.
-
-Variant aRVV := mkRVV : forall V : aRV P, aRV_type V -> aRVV.
-
-Variables vals : forall i, types i.
-
-Definition preim_vars (I : {set 'I_n}) :=
-  \bigcap_(i < n) if i \in I then vars bn i @^-1 (vals i) else setT.
+Variable vars : forall i, {RV P -> types i}.
+Variable bn : t vars.
 
 (* Theorem 3.1, page 62 *)
 
-Theorem BN_factorization :
-  Pr P (preim_vars setT) =
+Theorem BN_factorization vals :
+  Pr P (preim_vars vars vals setT) =
   \big[Rmult/R1]_(i < n)
    let parents := [set k | closure (parent bn) [set k] i] in
-   `Pr_ P [ preim_vars [set i] | preim_vars parents ].
+   `Pr_ P [ preim_vars vars vals [set i] | preim_vars vars vals parents ].
 Abort.
 
 End Factorization.
