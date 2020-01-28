@@ -24,20 +24,23 @@ Variable vars : forall i, {RV P -> types i}.
 
 Section Imap.
 Variable parent : rel 'I_n.
-Variable vals : forall i, types i.
 
 Definition topological := forall i j : 'I_n, parent i j -> i < j.
 
-Definition preim_vars (I : {set 'I_n}) :=
+Definition preim_vars (I : {set 'I_n}) (vals : forall i, types i) :=
   \bigcap_(i in I) vars i @^-1 (vals i).
+
+Definition cinde_preim (e f g : {set 'I_n}) :=
+  forall vals,
+    let E := preim_vars e vals in
+    let F := preim_vars f vals in
+    let G := preim_vars g vals in
+    (`Pr_ P [ E :&: F | G ] = `Pr_ P [ E | G ] * `Pr_ P [ F | G ])%R.
 
 Definition independence (i j : 'I_n) :=
   ~~ closure parent [set i] j ->
-  let E := preim_vars [set i] in
-  let F := preim_vars [set j] in
   let parents := [set k | closure parent [set k] i] in
-  let G := preim_vars parents in
-  (`Pr_ P [ E :&: F | G ] = `Pr_ P [ E | G ] * `Pr_ P [ F | G ])%R.
+  cinde_preim [set i] [set j] parents.
 End Imap.
 
 (* Koller and Friedman, Definition 3.1, page 57 *)
@@ -45,7 +48,7 @@ End Imap.
 Record t := mkBN
   { parent: rel 'I_n;
     topo: topological parent;
-    indep: forall vals i j, independence parent vals i j
+    indep: forall i j, independence parent i j
   }.
 End bn.
 End BN.
@@ -63,10 +66,10 @@ Variable bn : t vars.
 Local Open Scope R_scope.
 
 Theorem BN_factorization vals :
-  Pr P (preim_vars vars vals setT) =
+  Pr P (preim_vars vars setT vals) =
   \prod_(i < n)
    let parents := [set k | closure (parent bn) [set k] i] in
-   `Pr_ P [ preim_vars vars vals [set i] | preim_vars vars vals parents ].
+   `Pr_ P [ preim_vars vars [set i] vals | preim_vars vars parents vals ].
 Abort.
 
 End Factorization.
