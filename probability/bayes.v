@@ -35,12 +35,33 @@ Definition cinde_preim (e f g : {set 'I_n}) :=
     let G := preim_vars g vals in
     `Pr_ P [ E :&: F | G ] = `Pr_ P [ E | G ] * `Pr_ P [ F | G ].
 
+Parameter rvar_choice : forall A : finType, {RV P -> A} -> A.
+
+Definition set_val (i : 'I_n) (v : types i) (vals : forall j, types j) :=
+  fun j : 'I_n =>
+    match Nat.eq_dec i j return types j with
+    | left ij => eq_rect i (fun i => Finite.sort (types i)) v j (ord_inj ij)
+    | right _ => vals j
+    end.
+
 Lemma cinde_preim_ok (i j k : 'I_n) :
   cinde_preim [set i] [set j] [set k] <-> vars i _|_ vars j | (vars k).
 Proof.
 rewrite /cinde_drv /cinde_preim /preim_vars.
 split.
-- move=> Hpreim a b c. admit.
+- move=> Hpreim a b c.
+  set vals := set_val a (set_val b (set_val c (fun i => rvar_choice (vars i)))).
+  move/(_ vals): Hpreim.
+  rewrite !big_set1.
+  rewrite /cPr /cPr0 !setX1.
+  rewrite !snd_RV3 !snd_RV2.
+  rewrite ![Pr _ [set _]]/Pr !big_set1.
+  rewrite /RVar.d !FDistMap.dE.
+  rewrite /Pr.
+  set lhs1 := _ / _.
+  move => Hpreim.
+  set lhs2 := _ / _.
+  admit.
 - move=> Hdrv vals.
   move/(_ (vals i) (vals j) (vals k)): Hdrv.
   rewrite !big_set1.
