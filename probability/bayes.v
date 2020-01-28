@@ -60,10 +60,11 @@ Variable vars : forall i, {RV P -> types i}.
 Variable bn : t vars.
 
 (* Theorem 3.1, page 62 *)
+Local Open Scope R_scope.
 
 Theorem BN_factorization vals :
   Pr P (preim_vars vars vals setT) =
-  \big[Rmult/R1]_(i < n)
+  \prod_(i < n)
    let parents := [set k | closure (parent bn) [set k] i] in
    `Pr_ P [ preim_vars vars vals [set i] | preim_vars vars vals parents ].
 Abort.
