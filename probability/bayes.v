@@ -29,7 +29,7 @@ Variable vals : forall i, types i.
 Definition topological := forall i j : 'I_n, parent i j -> i < j.
 
 Definition preim_vars (I : {set 'I_n}) :=
-  \bigcap_(i < n) if i \in I then vars i @^-1 (vals i) else setT.
+  \bigcap_(i in I) vars i @^-1 (vals i).
 
 Definition independence (i j : 'I_n) :=
   ~~ closure parent [set i] j ->
