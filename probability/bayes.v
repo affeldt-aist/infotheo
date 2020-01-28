@@ -38,16 +38,18 @@ End topological.
 
 (* Koller and Friedman, Definition 3.1, page 57 *)
 
+Variable types : 'I_n -> finType.
+
 Record t := mkBN
-  { vars: 'I_n -> aRV;
+  { vars : forall i, {RV P -> types i};
     parent: rel 'I_n;
     topo: topological parent;
     indep: forall i j : 'I_n,
         ~~ closure parent [set i] j ->
-        let: mkRV A X := vars i in
-        let: mkRV B Y := vars j in
+        let X := vars i in
+        let Y := vars j in
         let: mkRV C Z :=
-           \big[aRV2/aRV0]_(k < n | closure parent [set k] i) vars k in
+           \big[aRV2/aRV0]_(k < n | closure parent [set k] i) mkRV (vars k) in
         X _|_ Y | Z }.
 End bn.
 End BN.
@@ -57,22 +59,20 @@ Import BN.
 Variable U : finType.
 Variable P : fdist U.
 Variable n : nat.
-Variable bn : t P n.
+Variable types : 'I_n -> finType.
+Variable bn : t P types.
 
 Definition RV_domains :=
-  [seq aRV_type (vars bn i) | i <- [tuple i | i < n]].
+  [seq types i | i <- [tuple i | i < n]].
 
 Definition RV_domain := foldr prod_finType unit_finType RV_domains.
 
 Variant aRVV := mkRVV : forall V : aRV P, aRV_type V -> aRVV.
 
-Variables vs : 'I_n -> aRVV.
-Hypothesis vs_ok : forall i, let: mkRVV AV _ := vs i in vars bn i = AV.
+Variables vals : forall i, types i.
 
 Definition preim_vars (I : {set 'I_n}) :=
-  \bigcap_(i < n)
-   let: mkRVV (mkRV A X) a := vs i in
-   if i \in I then X @^-1 a else setT.
+  \bigcap_(i < n) if i \in I then vars bn i @^-1 (vals i) else setT.
 
 (* Theorem 3.1, page 62 *)
 
