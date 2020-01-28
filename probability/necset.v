@@ -610,14 +610,14 @@ Module SemiCompleteSemiLattice.
 Section def.
 Local Open Scope classical_set_scope.
 (* a semicomplete semilattice has an infinitary operation *)
-Record class_of (T : choiceType) : Type := Class {
+Record mixin_of (T : choiceType) : Type := Class {
   op : neset T -> T;
   _ : forall x : T, op `NE [set x] = x;
   _ : forall (I : Type) (S : neset I) (F : I -> neset T),
                op (`NE (bigsetU S F)) = op (`NE (op @` (F @` S)));
 }.
 Structure type :=
-  Pack {sort : choiceType; _ : class_of sort}.
+  Pack {sort : choiceType; _ : mixin_of sort}.
 End def.
 Module Exports.
 Definition Joet {T : type} : neset (sort T) -> sort T :=
@@ -770,8 +770,8 @@ Record mixin_of (L : semiCompSemiLattType) (op : prob -> L -> L -> L) := Mixin {
   _ : forall (p : prob) (x : L) (I : neset L), op p x (Joet I) = Joet `NE ((op p x) @` I);
 }.
 Record class_of (T : choiceType) : Type := Class {
-  base : SemiCompleteSemiLattice.class_of T ;
-  base2 : ConvexSpace.class_of (SemiCompleteSemiLattice.Pack base) ;
+  base : SemiCompleteSemiLattice.mixin_of T ;
+  base2 : ConvexSpace.mixin_of (SemiCompleteSemiLattice.Pack base) ;
   mixin : @mixin_of (SemiCompleteSemiLattice.Pack base) (@Conv (ConvexSpace.Pack base2)) ;
 }.
 Structure t : Type := Pack { sort : choiceType ; class : class_of sort }.
@@ -965,7 +965,7 @@ rewrite/conv; unlock; apply/necset_ext => /=; apply eqEsubset => a; case => x []
   split => //.
   by rewrite inE asboolE /= -convA; split; try exists y, z.
 Qed.
-Definition mixin : ConvexSpace.class_of [choiceType of necset A] :=
+Definition mixin : ConvexSpace.mixin_of [choiceType of necset A] :=
   @ConvexSpace.Class _ conv conv1 convmm convC convA.
 End def.
 Section lemmas.

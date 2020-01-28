@@ -149,7 +149,7 @@ End def.
 End CodomDFDist.
 
 Module ConvexSpace.
-Record class_of (T : choiceType) : Type := Class {
+Record mixin_of (T : choiceType) : Type := Class {
   conv : prob -> T -> T -> T where "a <| p |> b" := (conv p a b);
   _ : forall a b, a <| `Pr 1 |> b = a ;
   _ : forall p a, a <| p |> a = a ;
@@ -157,7 +157,7 @@ Record class_of (T : choiceType) : Type := Class {
   _ : forall (p q : prob) (a b c : T),
       a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c
 }.
-Structure t : Type := Pack { car : choiceType ; class : class_of car }.
+Structure t : Type := Pack { car : choiceType ; class : mixin_of car }.
 Module Exports.
 Definition Conv (T : t) : prob -> car T -> car T -> car T :=
   match T return prob -> car T -> car T -> car T with Pack _ (Class x _ _ _ _) => x end.
@@ -449,7 +449,7 @@ apply (big_ind2 (fun y q => scalept q x = y /\ 0 <= q)).
 Qed.
 
 Definition scaled_conv p x y := addpt (scalept p x) (scalept p.~ y).
-Definition Scaled_convMixin : ConvexSpace.class_of [choiceType of scaled_pt].
+Definition Scaled_convMixin : ConvexSpace.mixin_of [choiceType of scaled_pt].
 apply (@ConvexSpace.Class _ scaled_conv); rewrite /scaled_conv /=.
 + by move=> a b; rewrite onem1 scalept1 scalept0 addpt0.
 + by move=> a p; rewrite -scalept_addR // onemKC scalept1.
@@ -1216,7 +1216,7 @@ Record mixin_of (T : convType) : Type := Mixin {
   _ : forall b a c, a <= b -> b <= c -> a <= c;
   _ : forall a b, a = b <-> a <= b /\ b <= a }.
 Record class_of (car : choiceType) := Class {
-  base : ConvexSpace.class_of car;
+  base : ConvexSpace.mixin_of car;
   mixin : mixin_of (ConvexSpace.Pack base);
 }.
 Structure t : Type := Pack {car : choiceType; class : class_of car}.
@@ -1681,7 +1681,7 @@ Qed.
 End R_affine_function_prop.
 
 Section convex_function_in_def.
-Variables (A : convType) (D : convex_set A) (f : A -> R).
+Variables (A : convType) (B : orderedConvType) (D : convex_set A) (f : A -> B).
 Definition convex_function_in :=
   forall a b p, a \in D -> b \in D -> convex_function_at f a b p.
 Definition concave_function_in :=
