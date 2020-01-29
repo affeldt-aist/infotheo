@@ -62,6 +62,14 @@ case: Nat.eq_dec => Hi; last by elim Hi.
 congr left; by rewrite (Eqdep_dec.UIP_refl_nat _ Hi).
 Qed.
 
+Lemma set_val_hd i (v : types i) vs : set_val v vs i = v.
+rewrite /set_val eq_dec_refl -Eqdep_dec.eq_rect_eq_dec //; exact: ord_eq_dec.
+Qed.
+
+Lemma set_val_tl i (v : types i) vs j : i <> j -> set_val v vs j = vs j.
+rewrite /set_val => nij; case: Nat.eq_dec => ij //; elim nij; exact: ord_inj.
+Qed.
+
 Lemma Rxx2 x : x = x * x -> x = 0 \/ x = 1.
 Proof.
 case/boolP: (x == 0) => Hx.
@@ -80,9 +88,7 @@ split.
   move/(_ vals): Hpreim.
   rewrite !big_set1 /cPr /cPr0 !setX1 !snd_RV3 !snd_RV2.
   rewrite ![Pr _ [set _]]/Pr !big_set1 /RVar.d !FDistMap.dE /Pr /=.
-  have vi : vals i = a.
-    rewrite /vals /set_val eq_dec_refl.
-    rewrite -Eqdep_dec.eq_rect_eq_dec //; exact: ord_eq_dec.
+  have vi : vals i = a by rewrite /vals set_val_hd.
   have Hvals := erefl vals.
   rewrite {2}/vals in Hvals.
   wlog: c vals vi Hvals / vals k = c.
@@ -103,9 +109,7 @@ split.
       by rewrite /Rdiv !mul0R.
     move=> nik c vals Ha Hvals.
     apply => //.
-    rewrite Hvals /set_val eq_dec_refl.
-    case: Nat.eq_dec => ik; first by elim nik; apply ord_inj.
-    rewrite -Eqdep_dec.eq_rect_eq_dec //; exact: ord_eq_dec.
+    by rewrite Hvals set_val_tl // set_val_hd.
   move=> vk.
   wlog: b vals vi vk Hvals / vals j = b.
     case: (ord_eq_dec i j) b Hvals.
@@ -175,10 +179,7 @@ split.
       by rewrite /Rdiv !mul0R.
     move=> nkj nij b Hvals.
     apply => //.
-    rewrite Hvals /set_val eq_dec_refl.
-    case: Nat.eq_dec => ij; first by elim nij; apply ord_inj.
-    case: Nat.eq_dec => kj; first by elim nkj; apply ord_inj.
-    rewrite -Eqdep_dec.eq_rect_eq_dec //; exact: ord_eq_dec.
+    by rewrite Hvals set_val_tl // set_val_tl // set_val_hd.
   rewrite vi vk => ->.
   set lhs1 := _ / _ => Hpreim.
   set lhs2 := _ / _.
