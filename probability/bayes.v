@@ -85,79 +85,65 @@ rewrite /cinde_drv /cinde_preim /preim_vars.
 split.
 - move=> Hpreim a b c.
   set vals := set_val a (set_val c (set_val b (fun i => rvar_choice (vars i)))).
-  move/(_ vals): Hpreim.
-  rewrite !big_set1 /cPr /cPr0 !setX1 !snd_RV3 !snd_RV2.
-  rewrite ![Pr _ [set _]]/Pr !big_set1 /RVar.d !FDistMap.dE /Pr /=.
   have vi : vals i = a by rewrite /vals set_val_hd.
-  have Hvals := erefl vals.
-  rewrite {2}/vals in Hvals.
-  wlog: c vals vi Hvals / vals k = c.
-    case: (ord_eq_dec i k) c vals vi Hvals.
-      move=> <- {k} c.
+  move: (erefl vals) {Hpreim} (Hpreim vals).
+  rewrite {2}/vals /cPr /cPr0 /Pr /RVar.d; clearbody vals.
+  rewrite !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
+  wlog: c / vals k = c.
+    case: (ord_eq_dec i k) c vi.
+      move=> <- {k} c vi.
       case ac: (a == c).
-        rewrite -(eqP ac) {ac c}.
-        move=> vals Ha Hvals; by apply.
-      set num := \sum_(d | _) P d.
-      have -> : num = 0.
-        apply prsumr_eq0P => // u /andP [] /andP [] /= /eqP ->.
-        by rewrite ac.
+        rewrite -(eqP ac); by apply.
+      move=> _ _ _.
+      rewrite big1; last by move=> u /andP [] /andP [] /= /eqP ->; rewrite ac.
       rewrite div0R.
-      set num' := \sum_(d | _) P d.
-      have -> : num' = 0.
-        apply prsumr_eq0P => // u /andP [] /= /eqP ->.
-        by rewrite ac.
-      by rewrite /Rdiv !mul0R.
-    move=> nik c vals Ha Hvals.
-    apply => //.
+      rewrite big1; last by move=> u /andP [] /= /eqP ->; rewrite ac.
+      by rewrite div0R mul0R.
+    move=> nik c vi HG Hvals; apply: HG => //.
     by rewrite Hvals set_val_tl // set_val_hd.
   move=> vk.
-  wlog: b vals vi vk Hvals / vals j = b.
-    case: (ord_eq_dec i j) b Hvals.
+  wlog: b / vals j = b.
+    case: (ord_eq_dec i j) b.
       move=> <- {j} b.
       case ab: (a == b).
-        rewrite -(eqP ab); move=> Hvals; by apply.
-      move=> Hvals _.
+        rewrite -(eqP ab); by apply.
+      move=> _ _.
       rewrite setIid vi vk.
       set x := _ / _.
       move/Rxx2 => [].
         move/mulR_eq0 => [] Hx.
-        - set num := \sum_(u | _) _.
-          have -> : num = 0.
-            apply prsumr_eq0P => // u /andP [] /andP [] /= /eqP ->.
-            by rewrite ab.
-          symmetry.
-          rewrite (_ : \sum_(u | _) _ = 0).
+        - rewrite big1; last
+            by move=> u /andP [] /andP [] /= /eqP ->; rewrite ab.
+          rewrite div0R (_ : \sum_(u | _) _ = 0).
             by rewrite !div0R mul0R.
           rewrite -Hx.
-          apply eq_bigl => u.
-          by rewrite !inE.
+          apply eq_bigl => ?; by rewrite !inE.
         - rewrite /Rdiv (_ : / _ = 0) ?mulR0 // -Hx; congr (/ _).
-          by apply eq_bigl => u; rewrite !inE.
+          apply eq_bigl => ?; by rewrite !inE.
       move=> Hx.
       set den := \sum_(u | _ c) _.
       case/boolP: (den == 0) => Hden.
-        have Hden': forall a, vars k a == c -> P a = 0.
-          move=> u Hu.
+        have Hden' u : vars k u == c -> P u = 0.
+          move=> Hu.
           by move/eqP/prsumr_eq0P: Hden => ->.
-        rewrite !(proj2 (prsumr_eq0P _)) //;
-          try by move=> u /andP [] /= _; apply Hden'.
+        rewrite !big1; try by move=> u /andP [] /= _; apply Hden'.
         by rewrite !div0R mul0R.
       set num := \sum_(u | _ == (b, c)) _.
       case/boolP: (num == 0) => /eqP Hnum.
-        rewrite Hnum (proj2 (prsumr_eq0P _)) //.
+        rewrite Hnum big1.
           by rewrite div0R !mulR0.
-        move=> u /andP [] /andP [] /= /eqP -> //.
+        move=> u /andP [] /andP [] /= /eqP ->.
         by rewrite ab.
       elim Hnum.
-      apply prsumr_eq0P => // u /andP [] /= Hi Hk.
+      apply big1 => u /andP [] /= Hi Hk.
       move: Hx; subst x.
-      rewrite (_ : \sum_(u in _ @^-1 c) _ = den); last first.
+      have -> : \sum_(u in vars k @^-1 c) P u = den.
         by apply eq_bigl => ?; rewrite !inE.
       move/(f_equal (Rmult ^~ den)).
       rewrite /Rdiv -mulRA mulVR // mulR1 mul1R.
       rewrite /den (bigID (fun u => vars i u == a) (fun u => _ == c)) /=.
       set ca := \sum_(v | _ && _) _.
-      rewrite (_ : \sum_(v in _) _ = ca); last first.
+      rewrite (_ : \sum_(v in _) _ = ca); last
         by apply eq_bigl => v; rewrite !inE andbC.
       move/(f_equal (Rminus ^~ ca)).
       rewrite subRR addRC addRK => /esym /prsumr_eq0P; apply => //.
@@ -165,22 +151,15 @@ split.
     case: (ord_eq_dec k j).
       move=> <- {j} ik b.
       case cb: (c == b).
-        rewrite -(eqP cb) => Hvals; by apply.
-      move=> Hvals _ _.
-      set num := \sum_(d | _) P d.
-      have -> : num = 0.
-        apply prsumr_eq0P => // u /andP [] /andP [] /= _ /eqP ->.
-        by rewrite eq_sym cb.
-      rewrite div0R mulRC.
-      set num' := \sum_(d | _) P d.
-      have -> : num' = 0.
-        apply prsumr_eq0P => // u /andP [] /= /eqP ->.
-        by rewrite eq_sym cb.
-      by rewrite /Rdiv !mul0R.
-    move=> nkj nij b Hvals.
-    apply => //.
+        rewrite -(eqP cb); by apply.
+      move=> _ _ _.
+      rewrite big1; last
+        by move => u /andP [] /andP [] /= _ /eqP ->; rewrite eq_sym cb.
+      rewrite div0R mulRC big1 /Rdiv ?mul0R // => // u /andP [] /= /eqP ->.
+      by rewrite eq_sym cb.
+    move=> nkj nij b HG Hvals; apply: HG => //.
     by rewrite Hvals set_val_tl // set_val_tl // set_val_hd.
-  rewrite vi vk => ->.
+  rewrite vi vk => -> _.
   set lhs1 := _ / _ => Hpreim.
   set lhs2 := _ / _.
   have <- : lhs1 = lhs2.
@@ -189,8 +168,8 @@ split.
   by congr ((_/_) * (_/_)); apply eq_bigl => u; rewrite !inE.
 - move=> Hdrv vals.
   move/(_ (vals i) (vals j) (vals k)): Hdrv.
-  rewrite !big_set1 /cPr /cPr0 !setX1 !snd_RV3 !snd_RV2.
-  rewrite ![Pr _ [set _]]/Pr !big_set1 /RVar.d !FDistMap.dE /Pr.
+  rewrite /cPr /cPr0 /Pr /RVar.d.
+  rewrite !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
   set lhs1 := _ / _ => Hdrv.
   set lhs2 := _ / _.
   have -> : lhs2 = lhs1.
