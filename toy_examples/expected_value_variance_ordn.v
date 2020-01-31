@@ -1,12 +1,12 @@
 Require Import Reals Lra.
 From mathcomp Require Import all_ssreflect.
-From infotheo Require Import Reals_ext ssrR Rbigop proba.
+Require Import Reals_ext ssrR Rbigop fdist proba.
+
+(* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, without inord *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, without inord *)
 
 Local Open Scope reals_ext_scope.
 Local Open Scope tuple_ext_scope.

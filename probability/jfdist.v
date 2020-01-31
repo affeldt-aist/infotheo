@@ -3,6 +3,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
+Require Import proba.
 
 (******************************************************************************)
 (*        Conditional probabilities over joint finite distributions           *)

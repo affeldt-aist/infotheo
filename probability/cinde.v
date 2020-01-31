@@ -1,9 +1,8 @@
-
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import jfdist.
+Require Import proba jfdist.
 
 (******************************************************************************)
 (*           Conditional independence and graphoid axioms                     *)

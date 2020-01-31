@@ -9,7 +9,7 @@ Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 (*                                                                            *)
 (* This file provides a formalization of finitely-supported probability       *)
 (* distributions. It generalizes the finite discrete probability              *)
-(* distributions over a finType from proba.v and makes it possible to         *)
+(* distributions over a finType from fdist.v and makes it possible to         *)
 (* talk about distributions of distributions to turn distributions into       *)
 (* a genuine monad.                                                           *)
 (*                                                                            *)

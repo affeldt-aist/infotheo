@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect fingroup perm matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext ssralg_ext Rbigop bigop_ext logb ln_facts.
-Require Import fdist jfdist divergence.
+Require Import fdist proba jfdist divergence.
 
 (******************************************************************************)
 (*                        Entropy of a distribution                           *)

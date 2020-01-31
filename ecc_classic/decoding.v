@@ -2,7 +2,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix vector.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
 
 (******************************************************************************)

@@ -1,7 +1,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
-From infotheo Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext.
-From infotheo Require Import Rbigop fdist entropy divergence log_sum source_code.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext.
+Require Import Rbigop fdist proba entropy divergence log_sum source_code.
 
 (******************************************************************************)
 (*        Source coding theorem (variable length, converse part)              *)

@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 Require Import ssrZ ssrR Reals_ext ssr_ext logb ssralg_ext bigop_ext Rbigop.
-Require Import fdist entropy aep typ_seq channel.
+Require Import fdist proba entropy aep typ_seq channel.
 
 (******************************************************************************)
 (*                        Jointly typical sequences                           *)

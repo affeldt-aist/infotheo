@@ -3,7 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix perm.
 Require Import Reals Lra Classical.
 Require Import ssrZ ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
-Require Import fdist entropy aep typ_seq joint_typ_seq channel channel_code.
+Require Import fdist proba entropy aep typ_seq joint_typ_seq channel.
+Require Import channel_code.
 
 (******************************************************************************)
 (*                 Channel coding theorem (direct part)                       *)

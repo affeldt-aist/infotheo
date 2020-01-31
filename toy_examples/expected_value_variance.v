@@ -1,6 +1,6 @@
 From mathcomp Require Import all_ssreflect.
 Require Import Reals Lra.
-From infotheo Require Import ssrR Reals_ext Rbigop proba.
+Require Import ssrR Reals_ext Rbigop fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2 *)
 

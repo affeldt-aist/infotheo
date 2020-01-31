@@ -1,7 +1,7 @@
 From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg matrix.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop proba.
-Require Import jfdist entropy chap2.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
+Require Import proba jfdist entropy chap2.
 
 (******************************************************************************)
 (* Example 2.2.1 of T. M. Cover and J. A. Thomas. Elements of information     *)

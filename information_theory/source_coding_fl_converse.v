@@ -2,7 +2,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext logb Rbigop fdist entropy aep typ_seq source_code.
+Require Import ssrR Reals_ext logb Rbigop fdist proba entropy aep typ_seq.
+Require Import source_code.
 
 (******************************************************************************)
 (*         Source coding theorem (fixed length, converse part)                *)

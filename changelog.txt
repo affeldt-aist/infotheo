@@ -15,7 +15,8 @@ new notation:
 - E `* F for setX E F
 lemmas:
 - (bij_inj bij_swap) instead of inj_swap 
-
+files:
+- fdist.v split into fdist.v (distributions) and proba.v (probabilities)
 
 --------------------
 from 0.0.5 to 0.0.6:

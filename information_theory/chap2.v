@@ -4,7 +4,7 @@ From mathcomp Require Import matrix.
 From mathcomp Require boolp.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import jfdist divergence entropy.
+Require Import proba jfdist divergence entropy.
 
 (******************************************************************************)
 (*                Chapter 2 of Elements of Information Theory                 *)

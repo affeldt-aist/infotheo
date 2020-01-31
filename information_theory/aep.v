@@ -3,7 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist proba.
+Require Import entropy.
 
 (******************************************************************************)
 (*              Asymptotic Equipartition Property (AEP)                       *)

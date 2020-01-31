@@ -1,8 +1,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist channel.
-Require Import jfdist.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist proba.
+Require Import channel jfdist.
 
 (******************************************************************************)
 (*                         Posterior Probability                              *)

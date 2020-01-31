@@ -5,9 +5,11 @@ From mathcomp Require Import matrix.
 From mathcomp Require boolp.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import fdist entropy num_occ channel_code channel typ_seq.
+Require Import fdist proba entropy num_occ channel_code channel typ_seq.
 
-(* TODO: document *)
+(******************************************************************************)
+(*          Elements of the theory of types (in information theory)           *)
+(******************************************************************************)
 
 Reserved Notation "'P_' n '(' A ')'" (at level 9, n, A at next level).
 Reserved Notation "'T_{' P '}'" (at level 9).

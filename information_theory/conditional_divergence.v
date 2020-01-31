@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop ln_facts.
 Require Import num_occ fdist entropy channel divergence types jtypes.
-Require Import jfdist chap2.
+Require Import proba jfdist chap2.
 
 (******************************************************************************)
 (*                        Conditional divergence                              *)

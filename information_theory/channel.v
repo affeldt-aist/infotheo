@@ -3,10 +3,28 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import entropy jfdist chap2.
+Require Import proba entropy jfdist chap2.
 
 (******************************************************************************)
 (*                 Definition of channels and of the capacity                 *)
+(*                                                                            *)
+(* `Ch(A, B)  == definition of a discrete channel of input alphabet A and     *)
+(*               output alphabet B; it is a collection of probability mass    *)
+(*               functions, one for each a in A                               *)
+(* `Ch*(A, B) == channels with non-empty alphabet                             *)
+(* W `(b | a) == probability of receiving b knowing a was sent over the       *)
+(*               channel W                                                    *)
+(* W ``^ n, W ``(| x), W ``(y | x) == definition of a discrete memoryless     *)
+(*               channel (DMC); W(y|x) = \Pi_i W_0(y_i|x_i) where W_0 is a    *)
+(*               probability transition matrix                                *)
+(* `O(P, W)   == output distribution                                          *)
+(* `H(P `o W) == output entropy                                               *)
+(* `J(P, W)   == joint distribution                                           *)
+(* `H(P , W)  == mutual entropy                                               *)
+(* `H(W | P)  == definition of conditional entropy using an input             *)
+(*               distribution and a channel                                   *)
+(* `I(P, W)   ==mMutual information of input/output                           *)
+(* capacity   == relation defining the capacity of a channel                  *)
 (******************************************************************************)
 
 (* OUTLINE:
@@ -58,11 +76,8 @@ Module Channel1.
 Section channel1.
 Variables A B : finType.
 
-(* Definition of a discrete channel of input alphabet A and output alphabet B.
-   It is a collection of probability mass functions, one for each a in A: *)
 Local Notation "'`Ch'" := (A -> fdist B).
 
-(* Channels with non-empty alphabet: *)
 Record chan_star := mkChan {
   c :> `Ch ;
   input_not_0 : (0 < #|A|)%nat }.
@@ -97,9 +112,6 @@ Variables (A B : finType) (W : `Ch(A, B)) (n : nat).
 
 Local Open Scope ring_scope.
 
-(* Definition of a discrete memoryless channel (DMC).
-   W(y|x) = \Pi_i W_0(y_i|x_i) where W_0 is a probability
-   transition matrix. *)
 Definition f (x : 'rV[A]_n) := [ffun y : 'rV[B]_n => (\prod_(i < n) W `(y ``_ i | x ``_ i))%R].
 
 Lemma f0 x y : 0 <= f x y. Proof. rewrite ffunE; exact: rprodr_ge0. Qed.
@@ -319,10 +331,8 @@ Qed.
 
 End relation_channel_cproba.
 
-(* Mutual entropy *)
 Notation "`H( P , W )" := (`H (`J(P, W)) ) : channel_scope.
 
-(* Definition of conditional entropy using an input distribution and a channel *)
 Module CondEntropyChan.
 Section def.
 Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
@@ -361,7 +371,6 @@ Variables A B : finType.
 Definition mut_info_dist (P : {fdist A * B}) :=
   `H (Bivar.fst P) + `H (Bivar.snd P) - `H P.
 
-(* Mutual information of input/output *)
 Definition mut_info P (W : `Ch(A, B)) := `H P + `H(P `o W) - `H(P , W).
 
 End def.
@@ -387,8 +396,6 @@ End mutualinfo_prop.
 Section capacity_definition.
 
 Variables A B : finType.
-
-(** Relation defining the capacity of a channel: *)
 
 Definition ubound {S : Type} (f : S -> R) (ub : R) := forall a, f a <= ub.
 
