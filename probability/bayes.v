@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals. (* Lra Nsatz. *)
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
-Require Import fdist jfdist cinde.
+Require Import fdist proba jfdist cinde.
 
 Local Open Scope tuple_ext_scope.
 Local Open Scope proba_scope.
