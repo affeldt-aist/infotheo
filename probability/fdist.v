@@ -17,11 +17,13 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (*  {RV P -> T}     == the type of random variables over an ambient           *)
 (*                     distribution P                                         *)
 (*  \Pr[ X = a ]    == the probability that the random variable X is a        *)
-(* `Pr_ P [ A | B ] == conditional probability                                *)
+(*  \Pr[ X >= r ]    == the probability that the random variable X is greater  *)
+(*                     or equal to a                                          *)
+(*  `Pr_P [ A | B ] == conditional probability                                *)
 (*  P |= X _|_ Y    == the random variables X and Y over the ambient          *)
 (*                     distribution P are independent                         *)
-(* `E X             == expected value of the random variable X                *)
-(* `V X             == the variance of the random variable X                  *)
+(*  `E X            == expected value of the random variable X                *)
+(*  `V X            == the variance of the random variable X                  *)
 (*                                                                            *)
 (* Lemmas:                                                                    *)
 (*  E_sum_2              == the expected value of a sum is the sum of         *)
@@ -2136,7 +2138,7 @@ Proof. move=> ?; rewrite /Rdiv leR_pdivl_mulr // mulRC; exact/Ex_lb. Qed.
 
 End markov_inequality.
 
-Notation "'Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
+Notation "'\Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
 
 Section thm61.
 Variables (U : finType) (P : fdist U) (X : {RV P -> R}) (phi : R -> R).

@@ -7,11 +7,15 @@ renamings:
   + jtype.mkJtype -> JType.mk
   + jtype.f -> JType.f
   + etc.
+- MultivarPerm.entropy -> entropy_multivarperm
+- head_of_nth0 -> Nth.head_ofE
+- MargFDist.zero -> MargFDist.tail_ofE
 - ide_swap -> swapK
 new notation:
 - E `* F for setX E F
 lemmas:
 - (bij_inj bij_swap) instead of inj_swap 
+
 
 --------------------
 from 0.0.5 to 0.0.6:

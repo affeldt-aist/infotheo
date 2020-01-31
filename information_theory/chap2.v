@@ -1,5 +1,5 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import all_ssreflect ssralg finset fingroup perm finalg.
+From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg.
 From mathcomp Require Import matrix.
 From mathcomp Require boolp.
 Require Import Reals Lra.
@@ -20,8 +20,6 @@ Require Import jfdist divergence entropy.
 
 (*
 Contents:
-- Various distributions (Take.d, Nth.d, PairNth.d, PairTake.d, MargDist.d,
-  MultivarPerm.d, TakeDrop.d)
 - Module JointEntropy.
   Section joint_entropy_prop.
 - Module CondEntropy.
@@ -51,259 +49,8 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 Local Open Scope proba_scope.
-
-(* TODO: move? *)
-Section row_mxA'.
-Variables (A : finType) (n : nat) (i : 'I_n.+1).
-Lemma row_mxA' (w1 : 'rV_(n - i)) (a : A) (w : 'rV_i) (H1 : (n.+1 - i)%nat = (n - i)%nat.+1)
-  (H2 : _) (H3 : (i + 1%nat + (n - i))%nat = n.+1) :
-  castmx (erefl 1%nat, H3) (row_mx (row_mx w (\row__ a)) w1) =
-  castmx (erefl 1%nat, H2) (row_mx w (castmx (erefl 1%nat, esym H1) (row_mx (\row_(_ < 1) a) w1))).
-Proof.
-apply/rowP => j.
-rewrite !castmxE /= !cast_ord_id /=.
-case: (ltnP j i) => [ji|].
-  move=> [:Hj0].
-  have @j0 : 'I_(i + 1) by apply: (@Ordinal _ j); abstract: Hj0; rewrite addn1 ltnS ltnW.
-  rewrite (_ : cast_ord _ _ = lshift (n - i) j0); last exact/val_inj.
-  rewrite row_mxEl.
-  rewrite (_ : cast_ord _ _ = lshift (n.+1 - i) (Ordinal ji)); last exact/val_inj.
-  rewrite row_mxEl.
-  rewrite (_ : j0 = lshift 1 (Ordinal ji)); last exact/val_inj.
-  by rewrite row_mxEl.
-rewrite leq_eqVlt => /orP[/eqP|]ij.
-  move=> [:Hj0].
-  have @j0 : 'I_(i + 1) by apply: (@Ordinal _ j); abstract: Hj0; by rewrite addn1 ij ltnS.
-  rewrite (_ : cast_ord _ _ = lshift (n - i) j0); last exact/val_inj.
-  rewrite row_mxEl.
-  rewrite (_ : j0 = rshift i ord0); last first.
-    by apply val_inj => /=; rewrite ij addn0.
-  rewrite row_mxEr mxE.
-  move=> [:Hj1].
-  have @j1 : 'I_(n.+1 - i).
-    by apply: (@Ordinal _ 0); abstract: Hj1; rewrite subn_gt0.
-  rewrite (_ : cast_ord _ _ = rshift i j1); last first.
-    by apply/val_inj => /=; rewrite ij addn0.
-  rewrite row_mxEr castmxE /= cast_ord_id esymK.
-  have @j2 : 'I_1 := ord0.
-  rewrite (_ : cast_ord _ _ = lshift (n - i) j2); last exact/val_inj.
-  by rewrite (@row_mxEl _ _ 1%nat) mxE.
-move=> [:Hj0].
-have @j0 : 'I_(n - i).
-  apply: (@Ordinal _ (j - i.+1)); abstract: Hj0.
-  by rewrite subnS prednK ?subn_gt0 // leq_sub2r // -ltnS.
-rewrite (_ : cast_ord _ _ = rshift (i + 1) j0); last first.
-  apply/val_inj => /=; by rewrite addn1 subnKC.
-rewrite row_mxEr.
-have @j1 : 'I_(n.+1 - i) by apply: (@Ordinal _ (j - i)); rewrite ltn_sub2r.
-rewrite (_ : cast_ord _ _ = rshift i j1); last first.
-  by apply val_inj => /=; rewrite subnKC // ltnW.
-rewrite row_mxEr castmxE /= cast_ord_id.
-have @j2 : 'I_(n - i).
-  apply: (@Ordinal _ (j1 - 1)).
-  by rewrite /= subn1 prednK ?subn_gt0 // leq_sub2r // -ltnS.
-rewrite (_ : cast_ord _ _ = rshift 1 j2); last first.
-  apply/val_inj => /=; by rewrite subnKC // subn_gt0.
-rewrite (@row_mxEr _ _ 1%nat); congr (_ _ _); apply val_inj => /=; by rewrite subnS subn1.
-Qed.
-End row_mxA'.
-
-(* TODO: move? *)
-Lemma head_of_fst_belast_last (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+2}) :
-  Multivar.head_of (Bivar.fst (Multivar.belast_last P)) = Multivar.head_of P.
-Proof.
-rewrite /Multivar.head_of /Bivar.fst /Multivar.to_bivar /Multivar.belast_last.
-rewrite !FDistMap.comp; congr (FDistMap.d _ P).
-rewrite boolp.funeqE => /= v /=.
-rewrite /rbelast mxE; congr (v ord0 _); exact: val_inj.
-Qed.
-
-Module Take.
-Section def.
-Variable (A : finType) (n : nat) (P : {fdist 'rV[A]_n}).
-Definition d (i : 'I_n.+1) : {fdist 'rV[A]_i} := FDistMap.d (row_take i) P.
-Lemma dE i v : d i v = \sum_(w in 'rV[A]_(n - i))
-  P (castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx v w)).
-Proof.
-rewrite FDistMap.dE /=.
-rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n] [finType of 'rV[A]_(n - i)]
-  (fun w => castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w))
-  (@row_drop A n i)) /=; last first.
-  move=> w wv; apply/rowP => j.
-  rewrite castmxE /= cast_ord_id /row_drop mxE; case: splitP => [j0 /= jj0|k /= jik].
-  - rewrite -(eqP wv) mxE castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
-  - rewrite mxE /= castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
-apply eq_bigl => w; rewrite inE; apply/andP; split; apply/eqP/rowP => j.
-- by rewrite !mxE !castmxE /= !cast_ord_id esymK cast_ordK row_mxEl.
-- by rewrite !mxE !castmxE /= cast_ord_id esymK cast_ordK cast_ord_id row_mxEr.
-Qed.
-End def.
-Section prop.
-Local Open Scope vec_ext_scope.
-Lemma all (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+2}) :
-  d P (lift ord0 ord_max) = P.
-Proof.
-rewrite /d (_ : row_take (lift ord0 ord_max) = ssrfun.id) ?FDistMap.id //.
-rewrite boolp.funeqE => v; apply/rowP => i.
-rewrite /row_take mxE castmxE /= cast_ord_id; congr (v _ _); exact: val_inj.
-Qed.
-End prop.
-End Take.
-Arguments Take.dE {A} {n} _ _ _.
-
-Module Nth.
-Section def.
-Local Open Scope vec_ext_scope.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (i : 'I_n).
-Definition d : {fdist A} := FDistMap.d (fun v : 'rV[A]_n => v ord0 i) P.
-Lemma dE a : d a = \sum_(x : 'rV[A]_n | x ``_ i == a) P x.
-Proof. by rewrite FDistMap.dE. Qed.
-End def.
-End Nth.
-
-Module PairNth.
-Section def.
-Local Open Scope vec_ext_scope.
-Variables (A B : finType) (n : nat) (P : {fdist 'rV[A]_n * B}) (i : 'I_n).
-Definition d : {fdist A * B} := FDistMap.d (fun x : 'rV[A]_n * B => (x.1 ord0 i, x.2)) P.
-Lemma dE ab : d ab = \sum_(x : 'rV[A]_n * B | (x.1 ``_ i == ab.1) && (x.2 == ab.2)) P x.
-Proof. by rewrite FDistMap.dE. Qed.
-End def.
-End PairNth.
-
-Module PairTake.
-Section def.
-Variables (A B : finType) (n : nat) (P : {fdist 'rV[A]_n.+1 * B}) (i : 'I_n.+1).
-Definition d : {fdist 'rV_i * A * B} :=
-  FDistMap.d (fun x : 'rV[A]_n.+1 * B => (row_take (widen_ord (leqnSn _) i) x.1, x.1 ord0 i, x.2)) P.
-End def.
-End PairTake.
-
-Section to_bivar_last_take.
-
-Variables (A B : finType).
-Variables (n : nat) (PY : {fdist 'rV[A]_n.+1 * B}).
-Let P : {fdist 'rV[A]_n.+1} := Bivar.fst PY.
-
-Lemma belast_last_take (j : 'I_n.+1) :
-  Multivar.belast_last (Take.d P (lift ord0 j)) = Bivar.fst (PairTake.d PY j).
-Proof.
-rewrite /Multivar.belast_last /Take.d /Bivar.fst /PairTake.d !FDistMap.comp.
-congr (FDistMap.d _ PY); rewrite boolp.funeqE => /= -[v b] /=; congr (_, _).
-- apply/rowP => i.
-  rewrite /rbelast !mxE !castmxE /=; congr (v _ _); exact: val_inj.
-- rewrite /rlast mxE castmxE /=; congr (v _ _); exact: val_inj.
-Qed.
-
-End to_bivar_last_take.
-
-Lemma head_of_nth0 (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) :
-  Multivar.head_of P = Nth.d P ord0.
-Proof.
-by rewrite /Multivar.head_of /Nth.d /Bivar.fst /Multivar.to_bivar FDistMap.comp.
-Qed.
-
-Local Open Scope vec_ext_scope.
-
-Lemma take_nth (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1) :
-  Bivar.snd (Multivar.belast_last (Take.d P (lift ord0 i))) = Nth.d P i.
-Proof.
-rewrite /Bivar.snd /Multivar.belast_last /Take.d /Nth.d !FDistMap.comp.
-congr (FDistMap.d _ _); rewrite boolp.funeqE => /= v /=.
-rewrite /rlast mxE castmxE /= cast_ord_id /=; congr (v ``_ _); exact: val_inj.
-Qed.
-
-Module MargFDist.
-Section def.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1).
-Definition d : {fdist 'rV[A]_n} := FDistMap.d (fun v => col' i v) P.
-Lemma dE v : d v = \sum_(x : 'rV[A]_n.+1 | col' i x == v) P x.
-Proof. by rewrite FDistMap.dE. Qed.
-End def.
-Section prop.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
-Lemma zero : d P ord0 = Multivar.tail_of P.
-Proof.
-by rewrite /d /Multivar.tail_of /Bivar.snd /Multivar.to_bivar FDistMap.comp.
-Qed.
-End prop.
-End MargFDist.
-
-(*TODO: move*)
-Lemma col_perm_inj n (s : 'S_n) T m : injective (@col_perm T m n s).
-Proof.
-move=> x y; rewrite /col_perm => /matrixP xy; apply/matrixP => i j.
-by move: (xy i (s^-1%g j)); rewrite !mxE permKV.
-Qed.
-
 Local Open Scope entropy_scope.
-
-Module MultivarPerm.
-Section def.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n).
-Definition d : {fdist 'rV[A]_n} := FDistMap.d (col_perm s^-1) P.
-Lemma dE v : d v = P (col_perm s v).
-Proof.
-rewrite FDistMap.dE /= {1}(_ : v = col_perm s^-1 (col_perm s v)); last first.
-  by rewrite -col_permM mulVg col_perm1.
-rewrite big_pred1_inj //; exact: col_perm_inj.
-Qed.
-End def.
-Section prop.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n).
-Lemma entropy : `H P = `H (d P s).
-Proof.
-rewrite /entropy; congr (- _) => /=.
-rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ s) xpredT); last first.
-  exact: col_perm_inj.
-apply eq_bigr => v _; by rewrite MultivarPerm.dE.
-Qed.
-End prop.
-End MultivarPerm.
-
-Module TakeDrop.
-Section def.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1).
-Definition d : {fdist A * 'rV[A]_i * 'rV[A]_(n - i)} :=
-  FDistMap.d (fun x : 'rV[A]_n.+1 => (x ord0 ord0, row_take i (rbehead x), row_drop i (rbehead x))) P.
-Let g (x : 'rV[A]_n.+1) : A * 'rV[A]_i * 'rV[A]_(n - i) :=
-  (x ``_ ord0,
-   row_take i (rbehead x),
-   row_drop i (rbehead x)).
-Lemma inj_g : injective g.
-Proof.
-move=> a b; rewrite /g => -[H1 H2 H3].
-rewrite -(row_mx_rbehead a) -(row_mx_rbehead b) H1; congr (@row_mx _ 1%nat 1%nat _ _ _).
-rewrite (row_mx_take_drop i (rbehead a)) (row_mx_take_drop i (rbehead b)).
-by rewrite H2 H3.
-Qed.
-Lemma dE x : d x = P (row_mx (\row_(_ < 1) x.1.1) (castmx (erefl 1%nat, @subnKC i n (ltnS' (ltn_ord i))) (row_mx x.1.2 x.2))).
-Proof.
-rewrite /d FDistMap.dE /=.
-rewrite (eq_bigl (fun a => g a == x)) //.
-rewrite {1}(_ : x = g (row_mx (\row_(k<1) x.1.1) (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx x.1.2 x.2)))); last first.
-  move: x => /= -[[x11 x12] x2].
-  rewrite /g row_mx_row_ord0 /=; congr (_, _, _).
-  apply/rowP => j; rewrite !mxE !castmxE /= cast_ord_id mxE esymK.
-  have @k : 'I_n.
-    by apply: (@Ordinal _ j); rewrite (leq_trans (ltn_ord j)) // -ltnS.
-  rewrite (_ : lift _ _ = rshift 1%nat k); last first.
-    by apply val_inj => /=; rewrite /bump leq0n.
-  rewrite (@row_mxEr _ 1%nat 1%nat) // castmxE /= cast_ord_id.
-  rewrite (_ : cast_ord _ k = lshift (n - i) j).
-  by rewrite row_mxEl.
-  exact: val_inj.
-  apply/rowP => j; rewrite mxE castmxE /= cast_ord_id mxE esymK.
-  have @k0 : 'I_n by apply: (@Ordinal _ (i + j)); rewrite -ltn_subRL.
-  rewrite (_ : lift _ _ = rshift 1%nat k0); last first.
-    apply val_inj => /=; by rewrite /bump leq0n.
-  rewrite (@row_mxEr _ 1%nat 1%nat) castmxE /=.
-  rewrite (_ : cast_ord _ _ = rshift i j); last exact: val_inj.
-  by rewrite row_mxEr cast_ord_id.
-by rewrite (big_pred1_inj inj_g).
-Qed.
-End def.
-End TakeDrop.
+Local Open Scope vec_ext_scope.
 
 Module JointEntropy.
 Section def.
@@ -564,7 +311,7 @@ Lemma chain_rule_multivar (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) (i :
 Proof.
 move=> i0; rewrite MargFDistd_put_front // -Swap.fst.
 rewrite -{2}(Swap.dI (Multivar.to_bivar _)) -chain_rule JointEntropy.hC Swap.dI.
-by rewrite -to_bivar_entropy -MultivarPerm.entropy.
+by rewrite -to_bivar_entropy entropy_multivarperm.
 Qed.
 
 End chain_rule_generalization.
@@ -1276,11 +1023,9 @@ Proof.
 rewrite chain_rule_rV; apply ler_rsum => /= i _.
 case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
-  rewrite head_of_nth0; exact/leRR.
+  rewrite Nth.head_ofE; exact/leRR.
 apply: leR_trans; first exact: information_cant_hurt.
-rewrite Swap.fst.
-apply Req_le; congr (`H _).
-by rewrite take_nth.
+rewrite Swap.fst take_nth; exact/leRR.
 Qed.
 
 End independence_bound_on_entropy.
@@ -1569,7 +1314,7 @@ rewrite -big_split /= -{1}(card_ord n) -sum1_card big_morph_natRD big_distrl /=.
 apply ler_rsum => i _; rewrite mul1R.
 case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
-  rewrite MargFDist.zero /Multivar.tail_of /Multivar.head_of.
+  rewrite -MargFDist.tail_ofE /Multivar.tail_of /Multivar.head_of.
   rewrite -{1}(Multivar.to_bivarK P) entropy_from_bivar.
   move: (chain_rule (Multivar.to_bivar P)); rewrite /JointEntropy.h => ->.
   rewrite [in X in _ <= X]addRC leR_add2l -Swap.fst; exact: information_cant_hurt.

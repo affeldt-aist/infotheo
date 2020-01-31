@@ -1,9 +1,9 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import all_ssreflect matrix.
+From mathcomp Require Import all_ssreflect fingroup perm matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext ssralg_ext Rbigop bigop_ext logb ln_facts.
-Require Import fdist divergence.
+Require Import fdist jfdist divergence.
 
 (******************************************************************************)
 (*                        Entropy of a distribution                           *)
@@ -134,3 +134,14 @@ rewrite /entropy /=; congr (- _).
 rewrite -(big_rV_cons_behead _ xpredT xpredT) /= pair_bigA /=.
 apply eq_bigr => -[a b] _ /=; by rewrite Multivar.to_bivarE /=.
 Qed.
+
+Section multivarperm_prop.
+Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n).
+Lemma entropy_multivarperm : `H (MultivarPerm.d P s) = `H P.
+Proof.
+rewrite /entropy; congr (- _) => /=; apply/esym.
+rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ s) xpredT); last first.
+  exact: col_perm_inj.
+apply eq_bigr => v _; by rewrite MultivarPerm.dE.
+Qed.
+End multivarperm_prop.
