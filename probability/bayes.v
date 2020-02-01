@@ -35,18 +35,11 @@ Definition cinde_preim (e f g : {set 'I_n}) :=
     let G := preim_vars g vals in
     `Pr_ P [ E :&: F | G ] = `Pr_ P [ E | G ] * `Pr_ P [ F | G ].
 
-Definition rvar_choice : forall A : finType, {RV P -> A} -> A.
-move=> A X.
+Definition rvar_choice (A : finType) (X : {RV P -> A}) : A.
 move: (fdist_card_neq0 (RVar.d X)).
 move He: (enum A) => [|a l] //.
 move/(f_equal size): He.
 by rewrite -cardE => ->.
-Defined.
-
-Definition ord_eq_dec (i j : 'I_n) : {i = j}+{i <> j}.
-case (Nat.eq_dec i j); intro ij.
-- left; now apply ord_inj.
-- right; intro ij'; apply ij; now f_equal.
 Defined.
 
 Definition set_val (i : 'I_n) (v : types i) (vals : forall j, types j) :=
@@ -61,6 +54,12 @@ Proof.
 case: Nat.eq_dec => Hi; last by elim Hi.
 congr left; by rewrite (Eqdep_dec.UIP_refl_nat _ Hi).
 Qed.
+
+Definition ord_eq_dec (i j : 'I_n) : {i = j}+{i <> j}.
+case (Nat.eq_dec i j); intro ij.
+- left; now apply ord_inj.
+- right; intro ij'; apply ij; now f_equal.
+Defined.
 
 Lemma set_val_hd i (v : types i) vs : set_val v vs i = v.
 rewrite /set_val eq_dec_refl -Eqdep_dec.eq_rect_eq_dec //; exact: ord_eq_dec.
