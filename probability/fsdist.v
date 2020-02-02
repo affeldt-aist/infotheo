@@ -13,8 +13,10 @@ Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 (* talk about distributions of distributions to turn distributions into       *)
 (* a genuine monad.                                                           *)
 (*                                                                            *)
-(* {dist A} == the type of finitely-supported distributions over A where A is *)
-(*             a choiceType                                                   *)
+(* {dist A}          == the type of finitely-supported distributions over A   *)
+(*                      where A is a choiceType                               *)
+(* FSDist_choiceType == instance of choiceType with finitely-supported        *)
+(*                      distributions                                         *)
 (******************************************************************************)
 
 (* OUTLINE

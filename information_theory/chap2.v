@@ -83,6 +83,16 @@ Qed.
 End rV.
 End JointEntropy.
 
+Require Import cinde.
+Section notation_with_random_variables.
+Section jointentropy_drv.
+Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+Definition jointentropy_drv := JointEntropy.h (FDistMap.d [% X, Y] P).
+End jointentropy_drv.
+Local Notation "'`H2(' X ',' Y ')'" := (jointentropy_drv X Y)
+  (format "'`H2(' X ','  Y ')'").
+End notation_with_random_variables.
+
 Section joint_entropy_prop.
 Variable (A : finType) (P : {fdist A}).
 

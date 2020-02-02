@@ -11,6 +11,7 @@ renamings:
 - head_of_nth0 -> Nth.head_ofE
 - MargFDist.zero -> MargFDist.tail_ofE
 - ide_swap -> swapK
+- notation \Conv_ -> <|>_
 new notation:
 - E `* F for setX E F
 lemmas:

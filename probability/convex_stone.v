@@ -7,8 +7,8 @@ Require Import fdist convex_choice.
 
 (****************************************************************************)
 (* Direct formalization of the Lemma 2 from M. H. Stone. Postulates for the *)
-(* barycentric calculus. Ann. Mat. Pura Appl., 29(1):25–30, 1949. The files *)
-(* convex_{choice,type}.v contain a shorter proof.                          *)
+(* barycentric calculus. Ann. Mat. Pura Appl., 29(1):25–30, 1949. The file  *)
+(* convex_choice.v contains a shorter proof.                                *)
 (****************************************************************************)
 
 Set Implicit Arguments.
@@ -435,7 +435,7 @@ Lemma distribute (x y z : A) (p q : prob) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
 Proof. by rewrite -{1}(convmm x q) commute. Qed.
 
-Lemma ConvnFDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Conv_(FDist1.d j) g = g j.
+Lemma ConvnFDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): <|>_(FDist1.d j) g = g j.
 Proof.
 elim: n j g => [[] [] //|n IH j g /=].
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
@@ -463,14 +463,14 @@ rewrite IH /DelFDist.f ltn0; congr g.
 by apply val_inj => /=; rewrite /bump leq0n add1n prednK // lt0n.
 Qed.
 
-Lemma convn1E a e : \Conv_ e (fun _ : 'I_1 => a) = a.
+Lemma convn1E a e : <|>_e (fun _ : 'I_1 => a) = a.
 Proof.
 rewrite /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H; exfalso; move/eqP: H; apply.
 by apply/eqP; rewrite FDist1.dE1 (FDist1.I1 e).
 Qed.
 
 Lemma convnE n (g : 'I_n.+1 -> A) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%R) :
-  \Conv_d g = g ord0 <| probfdist d ord0 |> \Conv_(DelFDist.d i1) (fun x => g (DelFDist.f ord0 x)).
+  <|>_d g = g ord0 <| probfdist d ord0 |> <|>_(DelFDist.d i1) (fun x => g (DelFDist.f ord0 x)).
 Proof.
 rewrite /=; case: Bool.bool_dec => /= [|/Bool.eq_true_not_negb] H.
 exfalso; by rewrite (eqP H) eqxx in i1.
@@ -478,7 +478,7 @@ by rewrite (boolp.Prop_irrelevance H i1).
 Qed.
 
 Lemma convn2E (g : 'I_2 -> A) (d : {fdist 'I_2}) :
-  \Conv_d g = g ord0 <| probfdist d ord0 |> g (Ordinal (erefl (1 < 2))).
+  <|>_d g = g ord0 <| probfdist d ord0 |> g (Ordinal (erefl (1 < 2))).
 Proof.
 case/boolP : (d ord0 == 1%R) => [|i1].
   rewrite FDist1.dE1 => /eqP ->; rewrite ConvnFDist1.
@@ -493,7 +493,7 @@ Qed.
 Lemma convn3E (g : 'I_3 -> A) (d : {fdist 'I_3}) (p : prob) :
   d ord0 != 1%R ->
   p = (d (lift ord0 ord0) / (1 - d ord0))%R :> R ->
-  \Conv_d g = g ord0 <| probfdist d ord0 |> (g (Ordinal (erefl (1 < 3)%nat)) <| p |> g (Ordinal (erefl (2 < 3)%nat))).
+  <|>_d g = g ord0 <| probfdist d ord0 |> (g (Ordinal (erefl (1 < 3)%nat)) <| p |> g (Ordinal (erefl (2 < 3)%nat))).
 Proof.
 move=> i1 Hp.
 case/boolP : (p == `Pr 1) => p1.
@@ -512,7 +512,7 @@ exact/val_inj.
 Qed.
 
 Lemma convn_proj n (g : 'I_n -> A) (d : {fdist 'I_n}) i :
-  d i = R1 -> \Conv_d g = g i.
+  d i = R1 -> <|>_d g = g i.
 Proof.
 elim: n g d i => [d d0|n IH g d i di1]; first by move: (fdistI0_False d0).
 case/boolP : (i == ord0) => [/eqP|]i0.
@@ -538,14 +538,14 @@ Qed.
 (* goal: Conv_perm *)
 
 Lemma Convn_perm_1 n (d : {fdist 'I_n}) (g : 'I_n -> A) :
-  \Conv_d g = \Conv_(PermFDist.d d 1%g) (g \o (1%g : 'S_n)).
+  <|>_d g = <|>_(PermFDist.d d 1%g) (g \o (1%g : 'S_n)).
 Proof.
 rewrite PermFDist.dE1; congr (Convn d _).
 by rewrite boolp.funeqE => i /=; rewrite perm1.
 Qed.
 
 Lemma Convn_perm1 (d : {fdist 'I_1}) (g : 'I_1 -> A) (s : 'S_1) :
-  \Conv_d g = \Conv_(PermFDist.d d s) (g \o s).
+  <|>_d g = <|>_(PermFDist.d d s) (g \o s).
 Proof.
 have s1 : s = 1%g.
   apply/permP => i; by case: (s i) => -[|//] ?; rewrite perm1 (ord1 i); exact/val_inj.
@@ -553,7 +553,7 @@ by rewrite s1 -Convn_perm_1.
 Qed.
 
 Lemma Convn_perm2 (d : {fdist 'I_2}) (g : 'I_2 -> A) (s : 'S_2) :
-  \Conv_d g = \Conv_(PermFDist.d d s) (g \o s).
+  <|>_d g = <|>_(PermFDist.d d s) (g \o s).
 Proof.
 have [->|Hs] := S2.generators s.
   rewrite PermFDist.dE1; congr Convn.
@@ -588,7 +588,7 @@ f_equal; exact/val_inj.
 Qed.
 
 Lemma Convn_perm3_p01 (d : {fdist 'I_3}) (g : 'I_3 -> A) :
-  \Conv_d g = \Conv_(PermFDist.d d S3.p01) (g \o S3.p01).
+  <|>_d g = <|>_(PermFDist.d d S3.p01) (g \o S3.p01).
 Proof.
 have : (d ord0 + d (lift ord0 ord0) = 0 \/ d (lift ord0 ord0) + d ord_max = 0 \/
   (0 < d ord0 + d (lift ord0 ord0) /\ 0 < d (lift ord0 ord0) + d ord_max))%R.
@@ -722,7 +722,7 @@ by rewrite /= /S3.p01 permE.
 Qed.
 
 Lemma Convn_perm3_p02 (d : {fdist 'I_3}) (g : 'I_3 -> A) :
-  \Conv_d g = \Conv_(PermFDist.d d S3.p02) (g \o S3.p02).
+  <|>_d g = <|>_(PermFDist.d d S3.p02) (g \o S3.p02).
 Proof.
 (* TODO(rei): redundant part with Convn_perm3_p02 *)
 have : (d ord0 + d (lift ord0 ord0) = 0 \/ d (lift ord0 ord0) + d ord_max = 0 \/
@@ -841,7 +841,7 @@ by rewrite addRA.
 Qed.
 
 Lemma Convn_perm3 (d : {fdist 'I_3}) (g : 'I_3 -> A) (s : 'S_3) :
-  \Conv_d g = \Conv_(PermFDist.d d s) (g \o s).
+  <|>_d g = <|>_(PermFDist.d d s) (g \o s).
 Proof.
 move: s d g.
 apply: S3.suff_generators; last first.
@@ -856,15 +856,15 @@ Qed.
 Lemma Convn_perm_projection n (d : {fdist 'I_n.+2})
   (g : 'I_n.+2 -> A) (s : 'S_n.+2) (H : s ord0 = ord0) (dmax1 : d ord0 != 1%R)
   (m : nat) (nm : n.+1 < m) (IH : forall n : nat, n < m -> forall (d : {fdist 'I_n}) (g : 'I_n -> A) (s : 'S_n),
-    \Conv_d g = \Conv_(PermFDist.d d s) (g \o s)) :
-  \Conv_d g = \Conv_(PermFDist.d d s) (g \o s).
+    <|>_d g = <|>_(PermFDist.d d s) (g \o s)) :
+  <|>_d g = <|>_(PermFDist.d d s) (g \o s).
 Proof.
-transitivity (g ord0 <| probfdist d ord0 |> (\Conv_(DelFDist.d dmax1) (fun x => g (DelFDist.f ord0 x)))).
+transitivity (g ord0 <| probfdist d ord0 |> (<|>_(DelFDist.d dmax1) (fun x => g (DelFDist.f ord0 x)))).
   by rewrite convnE.
 set s' : 'S_n.+1 := PermDef.perm (Sn.proj0_inj H).
-transitivity (g ord0 <| probfdist d ord0 |> (\Conv_(PermFDist.d (DelFDist.d dmax1) s') ((fun x => g (DelFDist.f ord0 x)) \o s'))).
+transitivity (g ord0 <| probfdist d ord0 |> (<|>_(PermFDist.d (DelFDist.d dmax1) s') ((fun x => g (DelFDist.f ord0 x)) \o s'))).
   by rewrite -IH.
-transitivity (g (s ord0) <| probfdist d ord0 |> (\Conv_(PermFDist.d (DelFDist.d dmax1) s') ((fun x => g (DelFDist.f ord0 x)) \o s'))).
+transitivity (g (s ord0) <| probfdist d ord0 |> (<|>_(PermFDist.d (DelFDist.d dmax1) s') ((fun x => g (DelFDist.f ord0 x)) \o s'))).
   by rewrite H.
 rewrite [in RHS]convnE //.
   by rewrite PermFDist.dE H.
@@ -914,8 +914,8 @@ Lemma Convn_perm_tperm (n : nat) (d : {fdist 'I_n.+3})
   (g : 'I_n.+3 -> A) (s : 'S_n.+3) (H : s = tperm ord0 (lift ord0 ord0)) (dmax1 : d ord0 != 1%R)
   (m : nat) (nm : n.+3 < m.+1) (IH : forall n : nat, n < m ->
        forall (d : {fdist 'I_n}) (g : 'I_n -> A) (s : 'S_n),
-       \Conv_d g = \Conv_(PermFDist.d d s) (g \o s)) :
-  \Conv_d g = \Conv_(PermFDist.d d s) (g \o s).
+       <|>_d g = <|>_(PermFDist.d d s) (g \o s)) :
+  <|>_d g = <|>_(PermFDist.d d s) (g \o s).
 Proof.
 case/boolP : (d (lift ord0 ord0) == 1 - d ord0 :> R)%R => K.
   case/boolP : (d (lift ord0 ord0) == 1%R :> R) => [|d11].
@@ -924,12 +924,12 @@ case/boolP : (d (lift ord0 ord0) == 1 - d ord0 :> R)%R => K.
   rewrite [in RHS]convnE.
     by rewrite PermFDist.dE H permE.
   move=> K'.
-  rewrite (_ : \Conv_ _ _ = g (lift ord0 ord0)); last first.
+  rewrite (_ : <|>_ _ _ = g (lift ord0 ord0)); last first.
     have /eqP : (DelFDist.d dmax1) ord0 = 1%R.
       by rewrite DelFDist.dE D1FDist.dE /= (eqP K) divRR // subR_eq0' eq_sym.
     rewrite FDist1.dE1 => /eqP ->.
     by rewrite ConvnFDist1.
-  rewrite (_ : \Conv_ _ _ = g ord0); last first.
+  rewrite (_ : <|>_ _ _ = g ord0); last first.
     have /eqP : (DelFDist.d K') ord0 = 1%R.
       rewrite DelFDist.dE D1FDist.dE /= !PermFDist.dE H !permE /=.
       rewrite (eqP K) subRB subRR add0R divRR //.
@@ -979,7 +979,7 @@ have H1 : (DelFDist.d dmax1) ord0 != 1%R.
 pose G : 'I_3 -> A := [eta (fun=>g ord0) with
   ord0 |-> g ord0,
   lift ord0 ord0 |-> g (lift ord0 ord0),
-  ord_max |-> \Conv_(DelFDist.d H1) (fun i : 'I_n.+1 => g (lift ord0 (lift ord0 i)))].
+  ord_max |-> <|>_(DelFDist.d H1) (fun i : 'I_n.+1 => g (lift ord0 (lift ord0 i)))].
 transitivity (Convn D G).
   erewrite convn3E.
   rewrite convnE.
@@ -1034,7 +1034,7 @@ congr (_ <| _ |> _).
 by rewrite /= /G /= !permE /= /DelFDist.f ltnn H permE /=.
 pose s' : 'S_n.+1 := 1%g.
 rewrite (@IH _ _ _ _ s') //; last by rewrite -ltnS ltnW.
-transitivity (\Conv_(DelFDist.d H1) (fun i : 'I_n.+1 => g (lift ord0 (lift ord0 i)))).
+transitivity (<|>_(DelFDist.d H1) (fun i : 'I_n.+1 => g (lift ord0 (lift ord0 i)))).
   by rewrite /G [in LHS]/= !permE [in LHS]/=.
 congr (Convn _ _).
   apply/fdist_ext => j.
@@ -1052,7 +1052,7 @@ by rewrite boolp.funeqE => j; rewrite /= permE H permE.
 Qed.
 
 Lemma Convn_perm (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> A) (s : 'S_n) :
-  \Conv_d g = \Conv_(PermFDist.d d s) (g \o s).
+  <|>_d g = <|>_(PermFDist.d d s) (g \o s).
 Proof.
 move: d g s.
 elim: n.+1 {-2}n (ltnSn n) => {n} // m IH n nm d g s.
@@ -1064,10 +1064,10 @@ move: m IH nm d g.
 apply (@Sn.suff_generators _ (fun s => forall m : nat,
   (forall n0, n0 < m ->
    forall (d : {fdist 'I_n0}) (g : 'I_n0 -> A) (s0 : 'S_n0),
-   \Conv_d g = \Conv_(PermFDist.d d s0) (g \o s0)) ->
+   <|>_d g = <|>_(PermFDist.d d s0) (g \o s0)) ->
   n.+4 < m.+1 ->
   forall (d : {fdist 'I_n.+4}) (g : 'I_n.+4 -> A),
-  \Conv_d g = \Conv_(PermFDist.d d s) (g \o s))).
+  <|>_d g = <|>_(PermFDist.d d s) (g \o s))).
 - move=> s1 s2 H1 H2 m IH nm d g.
   rewrite (H1 m) // (H2 m) // PermFDist.mul; congr (Convn _ _).
   by rewrite boolp.funeqE => i; rewrite /= permM.
@@ -1087,7 +1087,7 @@ Qed.
 End convex_space_prop.
 
 Section R_convex_space.
-Lemma avgnE n (g : 'I_n -> R) e : \Conv_e g = avgn g e.
+Lemma avgnE n (g : 'I_n -> R) e : <|>_e g = avgn g e.
 elim: n g e => /= [g e|n IH g e]; first by move: (fdistI0_False e).
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb] H /=.
   rewrite /avgn big_ord_recl /= H mul1R big1 ?addR0 // => j _.
@@ -1102,7 +1102,7 @@ End R_convex_space.
 
 Section affine_function_prop0.
 Lemma affine_function_Sum (A B : convType) (f : {affine A -> B}) (n : nat) (g : 'I_n -> A) (e : {fdist 'I_n}) :
-  f (\Conv_e g) = \Conv_e (f \o g).
+  f (<|>_e g) = <|>_e (f \o g).
 Proof.
 elim: n g e => [g e|n IH g e]; first by move: (fdistI0_False e).
 case/boolP : (e ord0 == 1%R :> R) => [|e01].
@@ -1114,7 +1114,7 @@ End affine_function_prop0.
 Section convn_convnfdist.
 Variable A : finType.
 Lemma convn_convnfdist (n : nat) (g : 'I_n -> fdist_convType A) (d : {fdist 'I_n}) :
-  \Conv_d g = ConvnFDist.d d g.
+  <|>_d g = ConvnFDist.d d g.
 Proof.
 elim: n g d => /= [g d|n IH g d]; first by move: (fdistI0_False d).
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb] H.

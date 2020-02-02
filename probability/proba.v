@@ -379,7 +379,7 @@ have -> : \big[aop/idx]_(x in B :\: [set h x | x in I])
   move/imsetP; apply.
   by exists i.
 rewrite big1_eq Monoid.mulm1.
- set B' := B :&: [set h x | x in I].
+set B' := B :&: [set h x | x in I].
 set A := h @^-1: B'.
 have -> : B' = h @: A by rewrite imset_preimset //; apply subsetIr.
 have Hright : forall j, j \in h @: A -> \big[aop/idx]_(i in I | h i == j) F i = \big[aop/idx]_(i in A | h i == j) F i.

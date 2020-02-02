@@ -120,7 +120,7 @@ rewrite predeqE => b; split.
   by rewrite affine_function_Sum.
 case=> n [g [e [Hg]]] ->{b}.
 suff [h Hh] : exists h : 'I_n -> A, forall i, Z (h i) /\ f (h i) = g i.
-  exists (\Conv_e h).
+  exists (<|>_e h).
     exists n; exists h; exists e; split => //.
     move=> a [i _] <-.
     by case: (Hh i).
@@ -459,7 +459,7 @@ Qed.
 
 Lemma Convn_iter_conv_set (n : nat) :
   forall (g : 'I_n -> L) (d : {fdist 'I_n}) (X : set L),
-    g @` setT `<=` X -> iter_conv_set X n (\Conv_d g).
+    g @` setT `<=` X -> iter_conv_set X n (<|>_d g).
 Proof.
 elim: n; first by move=> g d; move: (fdistI0_False d).
 move=> n IHn g d X.
@@ -469,14 +469,14 @@ move=> Xneq0 gX; set X' := NESet.Pack (NESet.Class Xneq0).
 have gXi : forall i : 'I_n.+1, X (g i) by apply fullimage_subset.
 case/boolP: (d ord0 == 1).
 - move/eqP=> d01.
-  suff : X (\Conv_d g) by move/(@iter_conv_set_superset X' n.+1 (\Conv_d g)).
+  suff : X (<|>_d g) by move/(@iter_conv_set_superset X' n.+1 (<|>_d g)).
   rewrite (convn_proj g d01).
   by apply/gX/imageP.
 - move=> d0n1; rewrite convnE //.
   exists (probfdist d ord0) => //.
   exists (g ord0) => //.
   rewrite conv_pt_setE.
-  exists (\Conv_(DelFDist.d d0n1) (fun x : 'I_n => g (DelFDist.f ord0 x))) => //.
+  exists (<|>_(DelFDist.d d0n1) (fun x : 'I_n => g (DelFDist.f ord0 x))) => //.
   apply IHn.
   move=> u [] i _ <-.
   by apply/gX/imageP.

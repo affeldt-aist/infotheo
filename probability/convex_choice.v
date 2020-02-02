@@ -5,12 +5,34 @@ Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist.
 
-(* convex spaces over a choiceType *)
+(******************************************************************************)
+(*                   Convex spaces over a choiceType                          *)
+(*                                                                            *)
+(* convType       == the type of convex spaces, i.e., a choiceType with an    *)
+(*                   operator x <| p |> y where p is a probability            *)
+(*                   satisfying the axioms of ConvexSpace.mixin_of            *)
+(* <|>_d f        == generalization of the operator . <| . |> . over a        *)
+(*                   distribution d for a sequence of points f                *)
+(* is_convex_set  == Boolean predicate that characterizes convex sets over a  *)
+(*                   convType                                                 *)
+(* {convex_set A} == an object X of type "set A" where A is a convType and X  *)
+(*                   is convex                                                *)
+(*                                                                            *)
+(* The type scale_pt associated with add_pt and scalept define a real cone    *)
+(* [Varacca & Winskell, MSCS, 2006]:                                          *)
+(* scaled_pt      == Zero or a pair of a positive real with a point in a      *)
+(*                   convType (i.e., a "scaled point")                        *)
+(* add_pt         == the addition of scaled points, i.e.,                     *)
+(*                   rx + qy = (r+q)(x <| r/(r+q) |> y)                       *)
+(* scalept        == scaling of a scaled point, i.e.,                         *)
+(*                   scalept r qy = (r*q)y                                    *)
+(*                                                                            *)
+(******************************************************************************)
 
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
 Reserved Notation "{ 'convex_set' T }" (format "{ 'convex_set'  T }").
-Reserved Notation "'\Conv_' d f" (at level 36, f at level 36, d at level 0,
-  format "\Conv_ d  f").
+Reserved Notation "'<|>_' d f" (at level 36, f at level 36, d at level 0,
+  format "<|>_ d  f").
 Reserved Notation "\ssum_ ( i <- r | P ) F"
   (at level 41, F at level 41, i, r at level 50,
   format "'[' \ssum_ ( i  <-  r  |  P ) '/  '  F ']'").
@@ -160,11 +182,12 @@ Record mixin_of (T : choiceType) : Type := Class {
 Structure t : Type := Pack { car : choiceType ; class : mixin_of car }.
 Module Exports.
 Definition Conv (T : t) : prob -> car T -> car T -> car T :=
-  match T return prob -> car T -> car T -> car T with Pack _ (Class x _ _ _ _) => x end.
+  match T return prob -> car T -> car T -> car T with
+  Pack _ (Class x _ _ _ _) => x end.
 Arguments Conv {T} : simpl never.
 Notation "x <| p |> y" := (Conv p x y) : convex_scope.
 Notation convType := t.
-Coercion car : convType >-> choiceType (*Sortclass*).
+Coercion car : convType >-> choiceType.
 End Exports.
 End ConvexSpace.
 Export ConvexSpace.Exports.
@@ -187,6 +210,22 @@ Proof.
 case: A a b c p q => ? [] f H0 H1 H2 H3 d0 d1 d2 p q; by rewrite /Conv H3.
 Qed.
 End convex_space_interface.
+
+Section convn.
+Variable A : convType.
+Fixpoint Convn n : {fdist 'I_n} -> ('I_n -> A) -> A :=
+  match n return forall (e : {fdist 'I_n}) (g : 'I_n -> A), A with
+  | O => fun e g => False_rect A (fdistI0_False e)
+  | m.+1 => fun e g =>
+    match Bool.bool_dec (e ord0 == 1%R) true with
+    | left _ => g ord0
+    | right H => let G := fun i => g (DelFDist.f ord0 i) in
+      g ord0 <| probfdist e ord0 |> Convn (DelFDist.d (Bool.eq_true_not_negb _ H)) G
+    end
+  end.
+
+End convn.
+Notation "'<|>_' d f" := (Convn d f) : convex_scope.
 
 Module ScaledConvex.
 Section scaled_convex.
@@ -280,10 +319,9 @@ rewrite [in RHS]addRC onem_div.
 by apply Rpos_neq0.
 Qed.
 
-(* scaled_pt associated with the following operations define
-   a real cone [Varacca & Winskell, MSCS, 2006]
-   In the following we annotate the lemmas with the corresponding
-   axiom in definition 2.1 [VW] (the numbers are 1-7 and 13)  *)
+(* In the following we annotate the lemmas with the corresponding
+   axiom in definition 2.1 [Varacca & Winskell, MSCS, 2006] (the
+   numbers are 1-7 and 13) *)
 
 Definition addpt a b :=
   match a, b with
@@ -601,19 +639,6 @@ Proof. by rewrite -{1}(convmm x q) convACA. Qed.
 
 Local Open Scope vec_ext_scope.
 
-Fixpoint Convn n : {fdist 'I_n} -> ('I_n -> A) -> A :=
-  match n return forall (e : {fdist 'I_n}) (g : 'I_n -> A), A with
-  | O => fun e g => False_rect A (fdistI0_False e)
-  | m.+1 => fun e g =>
-    match Bool.bool_dec (e ord0 == 1%R) true with
-    | left _ => g ord0
-    | right H => let G := fun i => g (DelFDist.f ord0 i) in
-      g ord0 <| probfdist e ord0 |> Convn (DelFDist.d (Bool.eq_true_not_negb _ H)) G
-    end
-  end.
-
-Local Notation "'\Conv_' d f" := (Convn d f).
-
 Section with_affine_projection.
 Variable B : convType.
 Variable prj : A -> B.
@@ -634,7 +659,7 @@ move=> [q x|] [r y|] /=; rewrite /Conv /= /scaled_conv ?scaleptR0 //.
 Qed.
 
 Lemma S1_convn_proj n (points : 'I_n -> A) d :
-  S1 (prj (\Conv_d points)) =
+  S1 (prj (<|>_d points)) =
   \ssum_(i < n) scalept (d i) (S1 (prj (points i))).
 Proof.
 elim: n points d => [|n IH] points d.
@@ -664,17 +689,18 @@ Qed.
 End with_affine_projection.
 
 Lemma S1_convn n (points : 'I_n -> A) d :
-  S1 (\Conv_d points) = \ssum_(i < n) scalept (d i) (S1 (points i)).
+  S1 (<|>_d points) = \ssum_(i < n) scalept (d i) (S1 (points i)).
 Proof. by rewrite (@S1_convn_proj _ (@id A)). Qed.
 
-Lemma eq_convn n g1 g2 (d1 d2 : {fdist 'I_n}) :
-  g1 =1 g2 -> d1 =1 d2 -> \Conv_d1 g1 = \Conv_d2 g2.
+Lemma eq_convn n (g1 g2 : 'I_n -> A) (d1 d2 : {fdist 'I_n}) :
+  g1 =1 g2 -> d1 =1 d2 -> <|>_d1 g1 = <|>_d2 g2.
 Proof.
 move=> Hg Hd; apply S1_inj; rewrite !S1_convn.
 apply congr_big => // i _; by rewrite Hg Hd.
 Qed.
 
-Lemma convn_proj n g (d : {fdist 'I_n}) i : d i = R1 -> \Conv_d g = g i.
+Lemma convn_proj n (g : 'I_n -> A) (d : {fdist 'I_n}) i :
+  d i = R1 -> <|>_d g = g i.
 Proof.
 move=> Hd; apply S1_inj.
 rewrite S1_convn (bigD1 i) ?inE //=.
@@ -683,25 +709,25 @@ move=> j Hj.
 move/eqP/FDist1.P: Hd => -> //; by rewrite scalept0.
 Qed.
 
-Lemma ConvnFDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): \Conv_(FDist1.d j) g = g j.
+Lemma ConvnFDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): <|>_(FDist1.d j) g = g j.
 Proof. by apply convn_proj; rewrite FDist1.dE eqxx. Qed.
 
-Lemma convn1E g (e : {fdist 'I_1}) : \Conv_ e g = g ord0.
+Lemma convn1E (g : 'I_1 -> A) (e : {fdist 'I_1}) : <|>_ e g = g ord0.
 Proof.
 rewrite /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H; exfalso; move/eqP: H; apply.
 by apply/eqP; rewrite FDist1.dE1 (FDist1.I1 e).
 Qed.
 
-Lemma convnE n g (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%R) :
-  \Conv_d g = g ord0 <| probfdist d ord0 |> \Conv_(DelFDist.d i1) (fun x => g (DelFDist.f ord0 x)).
+Lemma convnE n (g : 'I_n.+1 -> A) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%R) :
+  <|>_d g = g ord0 <| probfdist d ord0 |> <|>_(DelFDist.d i1) (fun x => g (DelFDist.f ord0 x)).
 Proof.
 rewrite /=; case: Bool.bool_dec => /= [|/Bool.eq_true_not_negb] H.
 exfalso; by rewrite (eqP H) eqxx in i1.
 by rewrite (eq_irrelevance H i1).
 Qed.
 
-Lemma convn2E g (d : {fdist 'I_2}) :
-  \Conv_d g = g ord0 <| probfdist d ord0 |> g (lift ord0 ord0).
+Lemma convn2E (g : 'I_2 -> A) (d : {fdist 'I_2}) :
+  <|>_d g = g ord0 <| probfdist d ord0 |> g (lift ord0 ord0).
 Proof.
 case/boolP : (d ord0 == 1%R) => [|i1].
   rewrite FDist1.dE1 => /eqP ->; rewrite ConvnFDist1.
@@ -713,7 +739,7 @@ Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2 *)
 Lemma Convn_perm (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> A) (s : 'S_n) :
-  \Conv_d g = \Conv_(PermFDist.d d s) (g \o s).
+  <|>_d g = <|>_(PermFDist.d d s) (g \o s).
 Proof.
 apply S1_inj; rewrite !S1_convn (barycenter_perm _ s).
 apply eq_bigr => i _; by rewrite PermFDist.dE.
@@ -722,7 +748,7 @@ Qed.
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 4 *)
 Theorem Convn_convnfdist (n m : nat) (d : {fdist 'I_n})
         (e : 'I_n -> {fdist 'I_m}) (x : 'I_m -> A) :
-  \Conv_d (fun i => \Conv_(e i) x) = \Conv_(ConvnFDist.d d e) x.
+  <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x.
 Proof.
 apply S1_inj; rewrite !S1_convn -barycenter_convnfdist.
 apply eq_bigr => i _; by rewrite S1_convn.
@@ -731,7 +757,7 @@ Qed.
 Local Open Scope R_scope.
 
 Lemma convn_const (a : A) :
-  forall (n : nat) (d : {fdist 'I_n}), \Conv_d (fun _ => a) = a.
+  forall (n : nat) (d : {fdist 'I_n}), <|>_d (fun _ => a) = a.
 Proof.
 elim; first by move=> d; move/fdistI0_False: (d).
 move=> n IHn d.
@@ -741,7 +767,7 @@ Qed.
 
 Lemma convnDr :
   forall (n : nat) (p : prob) (x : A) (g : 'I_n -> A) (d : {fdist 'I_n}),
-    x <|p|> \Conv_d g = \Conv_d (fun i : 'I_n => x <|p|> g i).
+    x <|p|> <|>_d g = <|>_d (fun i => x <|p|> g i).
 Proof.
 elim; first by move=> p x g d; move/fdistI0_False: (d).
 move=> n IHn p x g d.
@@ -754,7 +780,7 @@ Qed.
 
 End convex_space_prop.
 
-Notation "'\Conv_' d f" := (Convn d f) : convex_scope.
+Notation "'<|>_' d f" := (Convn d f) : convex_scope.
 
 Section is_convex_set.
 Local Open Scope classical_set_scope.
@@ -773,7 +799,8 @@ Lemma is_convex_setT : is_convex_set setT.
 Proof. exact/asboolP. Qed.
 
 Definition is_convex_set_n (X : set A) : bool :=
-  `[< forall n (g : 'I_n -> A) (d : {fdist 'I_n}), g @` setT `<=` X -> X (\Conv_d g) >].
+  `[< forall n (g : 'I_n -> A) (d : {fdist 'I_n}),
+    g @` setT `<=` X -> X (<|>_d g) >].
 
 Lemma is_convex_setP (X : set A) : is_convex_set X = is_convex_set_n X.
 Proof.
@@ -787,14 +814,14 @@ apply/idP/idP => H; apply/asboolP; last first.
   move=> p1'.
   rewrite {1}/g eqxx (_ : probfdist _ _ = p); last first.
     by apply prob_ext => /=; rewrite I2FDist.dE eqxx.
-  by rewrite (_ : \Conv_ _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?convn1E.
+  by rewrite (_ : <|>_ _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?convn1E.
 elim => [g d|n IH g d]; first by move: (fdistI0_False d).
 destruct n as [|n] => gX.
   rewrite {IH} (@convn_proj _ _ _ _ ord0) //.
   exact/gX/classical_sets.imageP.
   by apply/eqP; rewrite FDist1.dE1 (FDist1.I1 d).
 case/boolP : (d ord0 == 1%R) => [/eqP|]d01.
-  suff -> : \Conv_d g = g ord0 by apply gX; exists ord0.
+  suff -> : <|>_d g = g ord0 by apply gX; exists ord0.
   by rewrite (@convn_proj _ _ _ _ ord0).
 set D : {fdist 'I_n.+1} := DelFDist.d d01.
 pose G (i : 'I_n.+1) : A := g (DelFDist.f (@ord0 _) i).
@@ -809,7 +836,7 @@ End is_convex_set.
 Section hull_def.
 Local Open Scope classical_set_scope.
 Definition hull (T : convType) (X : set T) : set T :=
-  [set p : T | exists n (g : 'I_n -> T) d, g @` setT `<=` X /\ p = \Conv_d g].
+  [set p : T | exists n (g : 'I_n -> T) d, g @` setT `<=` X /\ p = <|>_d g].
 End hull_def.
 
 Section hull_prop.
@@ -953,8 +980,8 @@ Lemma split_rshift n m (i : 'I_m) : fintype.split (rshift n i) = inr i.
 Proof. by rewrite -/(unsplit (inr i)) unsplitK. Qed.
 
 Lemma AddFDist_conv n m p (g : 'I_(n+m) -> A)(d : {fdist 'I_n})(e : {fdist 'I_m}) :
-  \Conv_(AddFDist.d d e p) g =
-  \Conv_d (g \o @lshift n m) <|p|> \Conv_e (g \o @rshift n m).
+  <|>_(AddFDist.d d e p) g =
+  <|>_d (g \o @lshift n m) <|p|> <|>_e (g \o @rshift n m).
 Proof.
 apply S1_inj; rewrite S1_conv !S1_convn.
 rewrite /Conv /= /scaled_conv big_split_ord !big_scalept /=.
@@ -1102,7 +1129,7 @@ by rewrite -r0 scalept0 mul0R.
 Qed.
 Definition big_scaleR := big_morph scaleR scaleR_addpt scaleR0.
 Definition avgn n (g : 'I_n -> R) (e : {fdist 'I_n}) := (\sum_(i < n) e i * g i)%R.
-Lemma avgnE n (g : 'I_n -> R) e : \Conv_e g = avgn g e.
+Lemma avgnE n (g : 'I_n -> R) e : <|>_e g = avgn g e.
 Proof.
 rewrite -[LHS]Scaled1RK S1_convn big_scaleR.
 by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
@@ -1354,7 +1381,7 @@ Definition convex_function_at (f : A -> B) a b p :=
 
 (* NB(rei): move from 'I_n -> A to 'rV[A]_n? *)
 Definition convex_function_at_Convn (f : A -> B) n (a : 'I_n -> A) (t : {fdist 'I_n}) :=
-  f (\Conv_t a) <= \Conv_t (f \o a).
+  f (<|>_t a) <= <|>_t (f \o a).
 
 Definition strictly_convexf_at (f : A -> B) := forall a b (t : prob),
   a <> b -> (0 < t < 1)%R -> convex_function_at f a b t.
@@ -1626,7 +1653,7 @@ Definition affine_function_comp (A B C : convType) (f : {affine A -> B}) (g : {a
   {affine A -> C} := AffineFunction (affine_function_comp_proof f g).
 Lemma affine_function_Sum (A B : convType) (f : {affine A -> B}) (n : nat)
                           (g : 'I_n -> A) (e : {fdist 'I_n}) :
-  f (\Conv_e g) = \Conv_e (f \o g).
+  f (<|>_e g) = <|>_e (f \o g).
 Proof.
 Import ScaledConvex.
 apply S1_inj; rewrite S1_convn S1_convn_proj //.
@@ -1715,7 +1742,7 @@ Canonical FSDist_convType := ConvexSpace.Pack FSDist_convMixin.
 (* Reuse the morphisms from R_convex_space. *)
 Import ScaledConvex finmap.
 Lemma convn_convnfsdist (n : nat) (g : 'I_n -> {dist A}) (d : {fdist 'I_n}) :
-  \Conv_d g = ConvnFSDist.d d g.
+  <|>_d g = ConvnFSDist.d d g.
 Proof.
 apply FSDist_ext=> a; rewrite -[LHS]Scaled1RK.
 rewrite (@S1_convn_proj _ _ (fun x : {dist A} => finmap.fun_of_fsfun x a));
