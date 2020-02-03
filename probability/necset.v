@@ -2,7 +2,13 @@ Require Import Reals.
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import boolp classical_sets.
 From mathcomp Require Import finmap.
-Require Import Reals_ext classical_sets_ext Rbigop ssrR fdist fsdist convex_choice.
+Require Import Reals_ext classical_sets_ext Rbigop ssrR fdist fsdist.
+Require Import convex_choice.
+
+(******************************************************************************)
+(*                                                                            *)
+(* neset T == the type of non-empty sets over T                               *)
+(* semiCompSemiLattType == the type of semi-complete semi-lattice             *)
 
 Declare Scope latt_scope.
 
@@ -256,9 +262,9 @@ Reserved Notation "'`NE' s" (format "'`NE'  s", at level 6).
 Module NESet.
 Section neset.
 Local Open Scope classical_set_scope.
-Variable A : Type.
-Record class_of (X : set A) : Type := Class { _ : X != set0 }.
-Record t : Type := Pack { car : set A ; class : class_of car }.
+Variable T : Type.
+Record mixin_of (X : set T) : Type := Mixin { _ : X != set0 }.
+Record t : Type := Pack { car : set T ; class : mixin_of car }.
 End neset.
 Module Exports.
 Notation neset := t.
@@ -315,19 +321,19 @@ Proof. apply/set0P; eexists; exact/imageP. Qed.
 Lemma neset_setU_neq0 A (X Y : neset A) : X `|` Y != set0.
 Proof. by apply/set0P; eexists; left. Qed.
 
-Canonical neset1 {A} (x : A) := NESet.Pack (NESet.Class (set1_neq0 x)).
+Canonical neset1 {A} (x : A) := NESet.Pack (NESet.Mixin (set1_neq0 x)).
 Canonical bignesetU {A} I (S : neset I) (F : I -> neset A) :=
-  NESet.Pack (NESet.Class (neset_bigsetU_neq0 S F)).
+  NESet.Pack (NESet.Mixin (neset_bigsetU_neq0 S F)).
 Canonical image_neset {A B} (f : A -> B) (X : neset A) :=
-  NESet.Pack (NESet.Class (neset_image_neq0 f X)).
+  NESet.Pack (NESet.Mixin (neset_image_neq0 f X)).
 Canonical nesetU {T} (X Y : neset T) :=
-  NESet.Pack (NESet.Class (neset_setU_neq0 X Y)).
+  NESet.Pack (NESet.Mixin (neset_setU_neq0 X Y)).
 
 Lemma neset_hull_neq0 (T : convType) (F : neset T) : hull F != set0.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
 
 Canonical neset_hull (T : convType) (F : neset T) :=
-  NESet.Pack (NESet.Class (neset_hull_neq0 F)).
+  NESet.Pack (NESet.Mixin (neset_hull_neq0 F)).
 
 End neset_lemmas.
 Local Hint Resolve repr_in_neset : core.
@@ -411,18 +417,18 @@ Fixpoint iter_conv_set_neq0 (X : neset L) (n : nat) :
   iter_conv_set X n != set0 :=
   match n with
   | 0 => neset_neq0 X
-  | S n' => oplus_conv_set_neq0 X (NESet.Pack (NESet.Class (iter_conv_set_neq0 X n')))
+  | S n' => oplus_conv_set_neq0 X (NESet.Pack (NESet.Mixin (iter_conv_set_neq0 X n')))
   end.
-Canonical probset_neset := NESet.Pack (NESet.Class probset_neq0).
-Canonical natset_neset := NESet.Pack (NESet.Class natset_neq0).
+Canonical probset_neset := NESet.Pack (NESet.Mixin probset_neq0).
+Canonical natset_neset := NESet.Pack (NESet.Mixin natset_neq0).
 Canonical conv_pt_set_neset (p : prob) (x : L) (Y : neset L) :=
-  NESet.Pack (NESet.Class (conv_pt_set_neq0 p x Y)).
+  NESet.Pack (NESet.Mixin (conv_pt_set_neq0 p x Y)).
 Canonical conv_set_neset (p : prob) (X Y : neset L) :=
-  NESet.Pack (NESet.Class (conv_set_neq0 p X Y)).
+  NESet.Pack (NESet.Mixin (conv_set_neq0 p X Y)).
 Canonical oplus_conv_set_neset (X Y : neset L) :=
-  NESet.Pack (NESet.Class (oplus_conv_set_neq0 X Y)).
+  NESet.Pack (NESet.Mixin (oplus_conv_set_neq0 X Y)).
 Canonical iter_conv_set_neset (X : neset L) (n : nat) :=
-  NESet.Pack (NESet.Class (iter_conv_set_neq0 X n)).
+  NESet.Pack (NESet.Mixin (iter_conv_set_neq0 X n)).
 
 Lemma conv_pt_set_monotone (p : prob) (x : L) (Y Y' : set L) :
   Y `<=` Y' -> x <| p |>: Y `<=` x <| p |>: Y'.
@@ -465,7 +471,7 @@ elim: n; first by move=> g d; move: (fdistI0_False d).
 move=> n IHn g d X.
 case/boolP: (X == set0);
   first by move/eqP => -> /(_ (g ord0)) H; apply False_ind; apply/H/imageP.
-move=> Xneq0 gX; set X' := NESet.Pack (NESet.Class Xneq0).
+move=> Xneq0 gX; set X' := NESet.Pack (NESet.Mixin Xneq0).
 have gXi : forall i : 'I_n.+1, X (g i) by apply fullimage_subset.
 case/boolP: (d ord0 == 1).
 - move/eqP=> d01.
@@ -545,7 +551,7 @@ Section def.
 Local Open Scope classical_set_scope.
 Variable A : convType.
 Record class_of (X : set A) : Type := Class {
-  base : CSet.class_of X ; mixin : NESet.class_of X }.
+  base : CSet.class_of X ; mixin : NESet.mixin_of X }.
 Record t : Type := Pack { car : set A ; class : class_of car }.
 Definition baseType (M : t) := CSet.Pack (base (class M)).
 Definition mixinType (M : t) := NESet.Pack (mixin (class M)).
@@ -593,11 +599,11 @@ Qed.
 
 Canonical neset_hull_necset (T : convType) (F : neset T) :=
   NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex F))
-                            (NESet.Class (neset_hull_neq0 F))).
+                            (NESet.Mixin (neset_hull_neq0 F))).
 
 Canonical necset1 (T : convType) (x : T) := Eval hnf in
   @NECSet.Pack _ [set x] (NECSet.Class (CSet.Class (is_convex_set1 x))
-                                       (NESet.Class (set1_neq0 x))).
+                                       (NESet.Mixin (set1_neq0 x))).
 
 End necset_lemmas.
 
@@ -606,13 +612,16 @@ End necset_lemmas.
 Notation "{ 'csdist+' T }" := (necset (Dist_convType T)) (format "{ 'csdist+'  T }") : convex_scope.
 *)
 
+Reserved Notation "'OP' s" (format "'OP'  s", at level 6).
+
 Module SemiCompleteSemiLattice.
 Section def.
 Local Open Scope classical_set_scope.
 (* a semicomplete semilattice has an infinitary operation *)
 Record mixin_of (T : choiceType) : Type := Class {
-  op : neset T -> T;
-  _ : forall x : T, op `NE [set x] = x;
+  op : forall T (x : set T), phant (neset T) -> T where "'OP' s" := (@op _ s (Phant (neset _)));
+  op' : neset T -> T := fun s => @op _ s phant_id ;
+  _ : forall x, OP [set x] = x;
   _ : forall (I : Type) (S : neset I) (F : I -> neset T),
                op (`NE (bigsetU S F)) = op (`NE (op @` (F @` S)));
 }.
@@ -931,7 +940,7 @@ by rewrite inE asboolE; exists x, y.
 Qed.
 Definition conv p X Y : necset A := locked
   (NECSet.Pack (NECSet.Class (CSet.Class (pre_pre_conv_convex X Y p))
-               (NESet.Class (pre_conv_neq0 X Y p)))).
+               (NESet.Mixin (pre_conv_neq0 X Y p)))).
 Lemma conv1 X Y : conv (`Pr 1) X Y  = X.
 Proof.
 rewrite /conv; unlock; apply necset_ext => /=; apply/eqEsubset => a.
@@ -995,7 +1004,7 @@ Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
 Definition op (X : neset (necset A)) :=
   NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex `NE (bigsetU X idfun)))
-                            (NESet.Class (pre_op_neq0 X))).
+                            (NESet.Mixin (pre_op_neq0 X))).
 Lemma op1 x : op `NE [set x] = x.
 Proof. by apply necset_ext => /=; rewrite bigcup1 hull_cset. Qed.
 Lemma op_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
