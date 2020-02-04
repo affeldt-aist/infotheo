@@ -119,6 +119,9 @@ Lemma addRAC : right_commutative Rplus. Proof. move=> ? ? ?; ring. Qed.
 Lemma addRK (a : R) : cancel (Rplus^~ a) (Rminus^~ a).
 Proof. move=> ?; ring. Qed.
 
+Lemma addRR r : r + r = 2 * r.
+Proof. by field. Qed.
+
 Lemma addRN r : r + - r = 0.
 Proof. exact: Rplus_opp_r r. Qed.
 
@@ -726,6 +729,10 @@ Lemma exp1R n : 1 ^ n = 1. Proof. exact: pow1. Qed.
 Lemma expRS x (n : nat) : x ^ n.+1 = x * x ^ n.
 Proof. by rewrite tech_pow_Rmult. Qed.
 
+Lemma expR1 x : x ^ 1 = x. Proof. exact: pow_1. Qed.
+
+Lemma mulRR x : x * x = x ^ 2. Proof. by rewrite expRS expR1. Qed.
+
 Lemma expRV x (n : nat) : x != 0 -> (/ x ) ^ n = x ^- n.
 Proof.
 move/eqP => x_not0.
@@ -770,11 +777,18 @@ Proof. rewrite /= !mulR1 !mulRDr !mulRBl /=; field. Qed.
 Lemma sqrRD a b : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2.
 Proof. rewrite /= !mulR1 !mulRDl !mul1R !mulRDr /=; field. Qed.
 
+Lemma subR_sqr x y : x ^ 2 - y ^ 2 = (x - y) * (x + y).
+Proof.
+rewrite mulRDr 2!mulRDl -addRA (addRA (- y * x)) (mulRC x y) (addRC _ (y * x)).
+by rewrite mulNR addRN add0R mulNR addR_opp 2!mulRR.
+Qed.
+
 Definition normR0 : `| 0 | = 0 := Rabs_R0.
 Definition normRN x : `|- x| = `|x| := Rabs_Ropp x.
 
 Definition normR_ge0 x : 0 <= `|x| := Rabs_pos x.
-Lemma normR0_eq0 r : `| r | = 0 -> r = 0. Proof. move: (Rabs_no_R0 r); tauto. Qed.
+Lemma normR0_eq0 r : `| r | = 0 -> r = 0.
+Proof. move: (Rabs_no_R0 r); tauto. Qed.
 
 Lemma leR0_norm x : x <= 0 -> `|x| = - x. Proof. exact: Rabs_left1. Qed.
 Lemma ltR0_norm x : x < 0 -> `|x| = - x. Proof. by move/ltRW/leR0_norm. Qed.
