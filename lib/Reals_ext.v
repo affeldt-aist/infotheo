@@ -6,7 +6,7 @@ Require Import Reals Lra.
 Require Import ssrR.
 
 (******************************************************************************)
-(*               Additional lemmas and definitions about Coq reals            *)
+(*              Additional lemmas and definitions about Coq reals             *)
 (*                                                                            *)
 (* Section reals_ext.                                                         *)
 (*   various lemmas about up, Int_part, frac_part, Rabs define ceil and floor *)
@@ -15,13 +15,17 @@ Require Import ssrR.
 (* Section onem.                                                              *)
 (*   p.~ == 1 - p                                                             *)
 (* Module Prob.                                                               *)
-(*   Type of "probabilities": reals p s.t. 0 <= p <= 1                        *)
+(*   Type of "probabilities", i.e., reals p s.t. 0 <= p <= 1                  *)
+(*   x%:pr == tries to infer that x : R is actually of type prob              *)
 (* non-negative rationals                                                     *)
 (* Section dominance.                                                         *)
 (* Module Rpos.                                                               *)
 (*   Type of positive reals                                                   *)
+(*   x%:pos == tries to infer that x : R is actually a Rpos                   *)
 (* Module Rnneg                                                               *)
 (*   Type of non-negative reals                                               *)
+(*   x%:nng == tries to infer that x : R is actually a Rnneg                  *)
+(*                                                                            *)
 (******************************************************************************)
 
 Declare Scope reals_ext_scope.
@@ -33,6 +37,9 @@ Reserved Notation "P '<<' Q" (at level 10, Q at next level).
 Reserved Notation "P '<<b' Q" (at level 10).
 Reserved Notation "p '.~'" (format "p .~", at level 5).
 Reserved Notation "'`Pr' p " (format "`Pr  p", at level 6).
+Reserved Notation "x %:pr" (at level 0, format "x %:pr").
+Reserved Notation "x %:pos" (at level 0, format "x %:pos").
+Reserved Notation "x %:nng" (at level 0, format "x %:nng").
 
 Notation "'min(' x ',' y ')'" := (Rmin x y)
   (format "'min(' x ','  y ')'") : reals_ext_scope.
@@ -370,7 +377,7 @@ Lemma ge0 (p : t) : 0 <= p.
 Proof. by case: p => [? []]. Qed.
 Module Exports.
 Notation prob := t.
-Notation "'`Pr' q" := (@mk q (@O1 _)).
+Notation "q %:pr" := (@mk q (@O1 _)).
 End Exports.
 End Prob.
 Export Prob.Exports.
@@ -404,14 +411,14 @@ Canonical probcplt (p : prob) := @Prob.mk p.~ (onem_prob (Prob.O1 p)).
 Lemma prob_le1 (p : prob) : (p <= 1)%R.
 Proof. by case: p => p []. Qed.
 
-Lemma prob_gt0 (p : prob) : p != `Pr 0 <-> (0 < p)%R.
+Lemma prob_gt0 (p : prob) : p != 0%:pr <-> (0 < p)%R.
 Proof.
 rewrite ltR_neqAle; split=> [H|[/eqP p0 _]].
 split => //; exact/nesym/eqP.
 by case: p p0 => p ?; apply: contra => /eqP[/= ->].
 Qed.
 
-Lemma prob_lt1 (p : prob) : p != `Pr 1 <-> (p < 1)%R.
+Lemma prob_lt1 (p : prob) : p != 1%:pr <-> (p < 1)%R.
 Proof.
 rewrite ltR_neqAle; split=> [H|[/eqP p1 _]].
 split; [exact/eqP|exact/prob_le1].
@@ -424,7 +431,7 @@ move: p q => -[p Hp] [q Hq] /= ?; subst q.
 by rewrite (@boolp.Prop_irrelevance _ Hp Hq).
 Qed.
 
-Lemma probK t : t = `Pr (t.~).~ :> prob.
+Lemma probK t : t = (t.~).~%:pr :> prob.
 Proof. by apply prob_ext => /=; rewrite onemK. Qed.
 
 Lemma prob_IZR (p : positive) : (R0 <= / IZR (Zpos p) <= R1)%R.
@@ -466,14 +473,14 @@ Qed.
 
 Canonical probmuLR (p q : prob) := @Prob.mk (p * q) (prob_mulR p q).
 
-Lemma probadd_eq0 (p q : prob) : p + q = `Pr 0 <-> p = `Pr 0 /\ q = `Pr 0.
+Lemma probadd_eq0 (p q : prob) : p + q = 0%:pr <-> p = 0%:pr /\ q = 0%:pr.
 Proof.
 split => [/paddR_eq0 | ].
 - move=> /(_ (Prob.ge0 _) (Prob.ge0 _)) [p0 q0]; split; exact/prob_ext.
 - by case => -> ->; rewrite addR0.
 Qed.
 
-Lemma probadd_neq0 (p q : prob) : p + q != `Pr 0 <-> p != `Pr 0 \/ q != `Pr 0.
+Lemma probadd_neq0 (p q : prob) : p + q != 0%:pr <-> p != 0%:pr \/ q != 0%:pr.
 Proof.
 split => [/paddR_neq0 | ].
 - by move=> /(_ (Prob.ge0 _) (Prob.ge0 _)).
@@ -539,7 +546,7 @@ Definition K (r : t) := H r.
 Arguments K : simpl never.
 Module Exports.
 Notation Rpos := t.
-Notation "'`Pos' r" := (@mk r (@K _)) (format "'`Pos'  r", at level 6).
+Notation "r %:pos" := (@mk r (@K _)) : reals_ext_scope.
 Coercion v : t >-> R.
 End Exports.
 End Rpos.
@@ -573,7 +580,7 @@ Lemma divRpos_gt0 (x y : Rpos) : x / y >b 0.
 Proof. by apply/ltRP/divR_gt0; apply/Rpos_gt0. Qed.
 Canonical divRpos x y := Rpos.mk (divRpos_gt0 x y).
 
-Lemma prob_divRposxxy (x y : Rpos) : (0 <= `Pos (x / (x + y)) <= 1)%R.
+Lemma prob_divRposxxy (x y : Rpos) : (0 <= (x / (x + y))%:pos <= 1)%R.
 Proof.
 split.
   apply/divR_ge0; [exact/ltRW/Rpos_gt0 | exact/ltRP/addRpos_gt0].
@@ -592,7 +599,7 @@ Definition K (r : t) := H r.
 Arguments K : simpl never.
 Module Exports.
 Notation Rnneg := t.
-Notation "'`Nneg' r" := (@mk r (@K _)) (format "'`Nneg'  r", at level 6).
+Notation "r %:nng" := (@mk r (@K _)).
 Coercion v : t >-> R.
 End Exports.
 End Rnneg.

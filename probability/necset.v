@@ -6,12 +6,14 @@ Require Import Reals_ext classical_sets_ext Rbigop ssrR fdist fsdist.
 Require Import convex_choice.
 
 (******************************************************************************)
-(*                                                                            *)
-(* neset T == the type of non-empty sets over T                               *)
+(* neset T              == the type of non-empty sets over T                  *)
+(* x%:ne                == try to infer whether x : set T isn't neset T       *)
 (* semiCompSemiLattType == the type of semi-complete semi-lattice             *)
+(******************************************************************************)
 
 Declare Scope latt_scope.
 
+Reserved Notation "x %:ne" (at level 0, format "x %:ne").
 Reserved Notation "x <| p |>: Y" (format "x  <| p |>:  Y", at level 50).
 Reserved Notation "X :<| p |>: Y" (format "X  :<| p |>:  Y", at level 50).
 Reserved Notation "x [+] y" (format "x  [+]  y", at level 50).
@@ -52,7 +54,7 @@ End fbig_pred1_inj.
 Arguments fbig_pred1_inj [R] [idx] [op] [A] [C] [h] [k].
 End finmap_ext.
 
-Lemma finsupp_Conv (C : convType) p (p0 : p != `Pr 0) (p1 : p != `Pr 1) (d e : {dist C}) :
+Lemma finsupp_Conv (C : convType) p (p0 : p != 0%:pr) (p1 : p != 1%:pr) (d e : {dist C}) :
   finsupp (d <|p|> e) = (finsupp d `|` finsupp e)%fset.
 Proof.
 apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j;
@@ -256,20 +258,17 @@ exact: S1_Convn_indexed_over_finType.
 Qed.
 End S1_proj_Convn_indexed_over_finType.
 
-(* TODO: move to top of the file when deemed useful *)
-Reserved Notation "'`NE' s" (format "'`NE'  s", at level 6).
-
 Module NESet.
 Section neset.
 Local Open Scope classical_set_scope.
 Variable T : Type.
-Record mixin_of (X : set T) : Type := Mixin { _ : X != set0 }.
+Record mixin_of (X : set T) : Type := Mixin { neq0 : X != set0 }.
 Record t : Type := Pack { car : set T ; class : mixin_of car }.
 End neset.
 Module Exports.
 Notation neset := t.
+Notation "s %:ne" := (@Pack _ s (class _)).
 Coercion car : neset >-> set.
-Notation "'`NE' s" := (@Pack _ s (class _)).
 End Exports.
 End NESet.
 Export NESet.Exports.
@@ -321,7 +320,7 @@ Proof. apply/set0P; eexists; exact/imageP. Qed.
 Lemma neset_setU_neq0 A (X Y : neset A) : X `|` Y != set0.
 Proof. by apply/set0P; eexists; left. Qed.
 
-Canonical neset1 {A} (x : A) := NESet.Pack (NESet.Mixin (set1_neq0 x)).
+Canonical neset1 {A} (x : A) := @NESet.Pack A [set x] (NESet.Mixin (set1_neq0 x)).
 Canonical bignesetU {A} I (S : neset I) (F : I -> neset A) :=
   NESet.Pack (NESet.Mixin (neset_bigsetU_neq0 S F)).
 Canonical image_neset {A B} (f : A -> B) (X : neset A) :=
@@ -363,32 +362,32 @@ Definition conv_set p (X Y : set L) := \bigcup_(x in X) (x <| p |>: Y).
 Local Notation "X :<| p |>: Y" := (conv_set p X Y).
 Lemma conv_setE p X Y : X :<| p |>: Y = \bigcup_(x in X) (x <| p |>: Y).
 Proof. by []. Qed.
-Lemma convC_set p X Y : X :<| p |>: Y = Y :<| `Pr p.~ |>: X.
+Lemma convC_set p X Y : X :<| p |>: Y = Y :<| p.~%:pr |>: X.
 Proof.
 by apply eqEsubset=> u; case=> x Xx; rewrite conv_pt_setE => -[] y Yy <-;
   exists y => //; rewrite conv_pt_setE; exists x => //; rewrite -convC.
 Qed.
-Lemma conv1_pt_set x (Y : neset L) : x <| `Pr 1 |>: Y = [set x].
+Lemma conv1_pt_set x (Y : neset L) : x <| 1%:pr |>: Y = [set x].
 Proof.
 apply eqEsubset => u; rewrite conv_pt_setE.
 - by case => y _; rewrite conv1.
 - by move=> ->; eexists => //; rewrite conv1.
 Qed.
-Lemma conv0_pt_set x (Y : set L) : x <| `Pr 0 |>: Y = Y.
+Lemma conv0_pt_set x (Y : set L) : x <| 0%:pr |>: Y = Y.
 Proof.
 apply eqEsubset => u; rewrite conv_pt_setE.
 - by case=> y Yy <-; rewrite conv0.
 - by move=> Yu; exists u=> //; rewrite conv0.
 Qed.
-Lemma conv1_set X (Y : neset L) : X :<| `Pr 1 |>: Y = X.
+Lemma conv1_set X (Y : neset L) : X :<| 1%:pr |>: Y = X.
 Proof.
 transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_set1 image_idfun.
 congr bigsetU; apply funext => x /=.
 by rewrite (conv1_pt_set x Y).
 Qed.
-Lemma conv0_set (X : neset L) Y : X :<| `Pr 0 |>: Y = Y.
+Lemma conv0_set (X : neset L) Y : X :<| 0%:pr |>: Y = Y.
 Proof.
-rewrite convC_set /= (_ : `Pr 0.~ = `Pr 1) ?conv1_set //.
+rewrite convC_set /= (_ : 0.~%:pr = 1%:pr) ?conv1_set //.
 by apply prob_ext; rewrite /= onem0.
 Qed.
 Definition probset := @setT prob.
@@ -404,7 +403,7 @@ Proof. by []. Qed.
 Lemma iterS_conv_set (X : set L) (n : nat) : iter_conv_set X (S n) = oplus_conv_set X (iter_conv_set X n).
 Proof. by []. Qed.
 Lemma probset_neq0 : probset != set0.
-Proof. by apply/set0P; exists `Pr 0. Qed.
+Proof. by apply/set0P; exists 0%:pr. Qed.
 Lemma natset_neq0 : natset != set0.
 Proof. by apply/set0P; exists O. Qed.
 Lemma conv_pt_set_neq0 p (x : L) (Y : neset L) : x <| p |>: Y != set0.
@@ -412,7 +411,7 @@ Proof. exact: neset_image_neq0. Qed.
 Lemma conv_set_neq0 p (X Y : neset L) : X :<| p |>: Y != set0.
 Proof. by rewrite neset_neq0. Qed.
 Lemma oplus_conv_set_neq0 (X Y : neset L) : oplus_conv_set X Y != set0.
-Proof. apply/set0P; eexists; exists `Pr 1 => //; by rewrite conv1_set. Qed.
+Proof. apply/set0P; eexists; exists 1%:pr => //; by rewrite conv1_set. Qed.
 Fixpoint iter_conv_set_neq0 (X : neset L) (n : nat) :
   iter_conv_set X n != set0 :=
   match n with
@@ -446,7 +445,7 @@ elim: m.
 - move=> n _.
   case: n => // n.
   rewrite iter0_conv_set iterS_conv_set.
-  by exists `Pr 1 => //; rewrite conv1_set.
+  by exists 1%:pr => //; rewrite conv1_set.
 - move=> m IHm.
   case => // n /(IHm _) mn.
   rewrite iterS_conv_set=> a [] p _ H.
@@ -460,7 +459,7 @@ Proof. by move=> a H; exists n. Qed.
 Lemma iter_conv_set_superset (X : neset L) n : X `<=` iter_conv_set X n .
 Proof.
 move=> x Xx; elim: n => // n IHn; rewrite iterS_conv_set.
-by exists `Pr 1 => //; rewrite conv1_set.
+by exists 1%:pr => //; rewrite conv1_set.
 Qed.
 
 Lemma Convn_iter_conv_set (n : nat) :
@@ -493,7 +492,7 @@ suff H : forall X' Y', oplus_conv_set X' Y' `<=` oplus_conv_set Y' X'
     by apply/eqEsubset/H.
 move=> {X} {Y} X Y u [] p _.
 rewrite convC_set => H.
-by exists (`Pr p.~) => //.
+by exists p.~%:pr => //.
 Qed.
 Lemma convmm_cset (p : prob) (X : {convex_set L}) : X :<| p |>: X = X.
 Proof.
@@ -508,7 +507,7 @@ apply eqEsubset => x.
 - case=> p _.
   by rewrite convmm_cset.
 - move=> Xx.
-  exists `Pr 0 => //.
+  exists 0%:pr => //.
   by rewrite convmm_cset.
 Qed.
 Lemma oplus_convmm_set_hull (X : set L) :
@@ -619,11 +618,10 @@ Section def.
 Local Open Scope classical_set_scope.
 (* a semicomplete semilattice has an infinitary operation *)
 Record mixin_of (T : choiceType) : Type := Class {
-  op : forall T (x : set T), phant (neset T) -> T where "'OP' s" := (@op _ s (Phant (neset _)));
-  op' : neset T -> T := fun s => @op _ s phant_id ;
-  _ : forall x, OP [set x] = x;
-  _ : forall (I : Type) (S : neset I) (F : I -> neset T),
-               op (`NE (bigsetU S F)) = op (`NE (op @` (F @` S)));
+  op : neset T -> T ;
+  _ : forall x : T, op [set x]%:ne = x;
+  _ : forall I (s : neset I) (f : I -> neset T),
+        op (\bigcup_(i in s) f i)%:ne = op (op @` (f @` s))%:ne;
 }.
 Structure type :=
   Pack {sort : choiceType; _ : mixin_of sort}.
@@ -652,15 +650,15 @@ Variable (L : semiCompSemiLattType).
 *)
 
 (* [Reiterman] p.326, axiom 3 *)
-Lemma Joet1 : forall x : L, Joet `NE [set x] = x.
+Lemma Joet1 : forall x : L, Joet [set x]%:ne = x.
 Proof. by case: L => [? []]. Qed.
 (* NB: bigsetU (bigsetI too) is the bind operator for the poserset monad *)
 Lemma Joet_bigsetU : forall (I : Type) (S : neset I) (F : I -> neset L),
-    Joet (bignesetU S F) = Joet `NE (Joet @` (F @` S)).
+    Joet (bignesetU S F) = Joet (Joet @` (F @` S))%:ne.
 Proof. by case: L => [? []]. Qed.
 
 Lemma Joet_bigcup (I : Type) (S : neset I) (F : I -> neset L) :
-    Joet `NE (\bigcup_(i in S) F i) = Joet `NE (Joet @` (F @` S)).
+    Joet (\bigcup_(i in S) F i)%:ne = Joet (Joet @` (F @` S))%:ne.
 Proof. by rewrite Joet_bigsetU. Qed.
 
 Lemma setU_bigsetU T (I J : set T) : I `|` J = bigsetU [set I; J] idfun.
@@ -670,17 +668,18 @@ by case=> K [] -> Hx; [left | right].
 Qed.
 
 Lemma nesetU_bigsetU T (I J : neset T) :
-  `NE (I `|` J) = `NE (bigsetU [set I; J] idfun).
+  (I `|` J)%:ne = (bigsetU [set I; J] idfun)%:ne.
 Proof.
 apply/neset_ext => /=; apply eqEsubset => x.
   by case=> Hx; [exists I => //; left | exists J => //; right].
 by case=> K [] -> Hx; [left | right].
 Qed.
 
-Lemma Joet_setU (I J : neset L) : Joet `NE (I `|` J) = Joet `NE [set (Joet I); (Joet J)].
+Lemma Joet_setU (I J : neset L) :
+  Joet (I `|` J)%:ne = Joet [set Joet I; Joet J]%:ne.
 Proof.
 rewrite nesetU_bigsetU Joet_bigsetU.
-congr (Joet `NE _); apply/neset_ext => /=.
+congr (Joet _%:ne); apply/neset_ext => /=.
 by rewrite image_idfun /= image_setU !image_set1.
 Qed.
 
@@ -689,13 +688,13 @@ Qed.
 
 (* [Reiterman] p.326, axiom 2 *)
 Lemma Joet_flatten (F : neset (neset L)) :
-  Joet `NE (Joet @` F) = Joet `NE (bigsetU F idfun).
+  Joet (Joet @` F)%:ne = Joet (bigsetU F idfun)%:ne.
 Proof.
-rewrite Joet_bigsetU; congr (Joet `NE _); apply/neset_ext => /=.
+rewrite Joet_bigsetU; congr (Joet _%:ne); apply/neset_ext => /=.
 by rewrite image_idfun.
 Qed.
 
-Definition joet (x y : L) := Joet `NE [set x; y].
+Definition joet (x y : L) := Joet [set x; y]%:ne.
 Global Arguments joet : simpl never.
 Local Notation "x [+] y" := (joet x y).
 
@@ -733,15 +732,15 @@ Local Open Scope classical_set_scope.
 Local Open Scope latt_scope.
 Variables (L M : semiCompSemiLattType).
 Definition Joet_morph (f : L -> M) :=
-  forall (X : neset L), f (Joet X) = Joet `NE (f @` X).
+  forall (X : neset L), f (Joet X) = Joet (f @` X)%:ne.
 Definition joet_morph (f : L -> M) :=
   forall (x y : L), f (x [+] y) = f x [+] f y.
 Lemma Joet_joet_morph (f : L -> M) : Joet_morph f -> joet_morph f.
 Proof.
 move=> H x y.
-move: (H `NE [set x; y]) => ->.
-transitivity (Joet `NE [set f x; f y]) => //.
-congr (Joet `NE _); apply/neset_ext => /=.
+move: (H [set x; y]%:ne) => ->.
+transitivity (Joet [set f x; f y]%:ne) => //.
+congr (Joet _%:ne); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
 End Joet_morph.
@@ -776,7 +775,7 @@ Local Open Scope convex_scope.
 Local Open Scope latt_scope.
 Local Open Scope classical_set_scope.
 Record mixin_of (L : semiCompSemiLattType) (op : prob -> L -> L -> L) := Mixin {
-  _ : forall (p : prob) (x : L) (I : neset L), op p x (Joet I) = Joet `NE ((op p x) @` I);
+  _ : forall (p : prob) (x : L) (I : neset L), op p x (Joet I) = Joet ((op p x) @` I)%:ne;
 }.
 Record class_of (T : choiceType) : Type := Class {
   base : SemiCompleteSemiLattice.mixin_of T ;
@@ -842,10 +841,10 @@ Local Open Scope classical_set_scope.
 Variable L : semiCompSemiLattConvType.
 
 Lemma JoetDr : forall (p : prob) (x : L) (Y : neset L),
-  x <|p|> Joet Y = Joet `NE ((fun y => x <|p|> y) @` Y).
+  x <|p|> Joet Y = Joet ((fun y => x <|p|> y) @` Y)%:ne.
 Proof. by case: L => ? [? ? []]. Qed.
 Lemma JoetDl (p : prob) (X : neset L) (y : L) :
-  Joet X <|p|> y = Joet `NE ((fun x => x <|p|> y) @` X).
+  Joet X <|p|> y = Joet ((fun x => x <|p|> y) @` X)%:ne.
 Proof.
 rewrite convC JoetDr.
 congr Joet; apply/neset_ext/eq_imagel=> x Xx.
@@ -855,61 +854,61 @@ Lemma joetDr p : right_distributive (fun x y => x <|p|> y) (@joet L).
 Proof.
 move=> x y z.
 rewrite JoetDr.
-transitivity (Joet `NE [set x <|p|> y; x <|p|> z]) => //.
-congr (Joet `NE _); apply/neset_ext => /=.
+transitivity (Joet [set x <|p|> y; x <|p|> z]%:ne) => //.
+congr (Joet _%:ne); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
 Lemma Joet_conv_pt_setE p x (Y : neset L) :
-  Joet `NE (x <| p |>: Y) = Joet `NE ((Conv p x) @` Y).
+  Joet (x <| p |>: Y)%:ne = Joet ((Conv p x) @` Y)%:ne.
 Proof.
-by congr (Joet `NE _); apply/neset_ext => /=; rewrite conv_pt_setE.
+by congr (Joet _%:ne); apply/neset_ext => /=; rewrite conv_pt_setE.
 Qed.
 Lemma Joet_conv_pt_setD p x (Y : neset L) :
-  Joet `NE (x <| p |>: Y) = x <|p|> Joet Y.
+  Joet (x <| p |>: Y)%:ne = x <|p|> Joet Y.
 Proof. by rewrite Joet_conv_pt_setE -JoetDr. Qed.
 Lemma Joet_conv_setE p (X Y : neset L) :
-  Joet `NE (X :<| p |>: Y) = Joet `NE ((fun x => x <|p|> Joet Y) @` X).
+  Joet (X :<| p |>: Y)%:ne = Joet ((fun x => x <|p|> Joet Y) @` X)%:ne.
 Proof.
-transitivity (Joet `NE (\bigcup_(x in X) (x <| p |>: Y))).
-  by congr (Joet `NE _); apply neset_ext.
-rewrite Joet_bigcup //; congr (Joet `NE _); apply neset_ext => /=.
+transitivity (Joet (\bigcup_(x in X) (x <| p |>: Y))%:ne).
+  by congr (Joet _%:ne); apply neset_ext.
+rewrite Joet_bigcup //; congr (Joet _%:ne); apply neset_ext => /=.
 rewrite imageA; congr image; apply funext => x /=.
 by rewrite Joet_conv_pt_setD.
 Qed.
 Lemma Joet_conv_setD p (X Y : neset L) :
-  Joet `NE (X :<| p |>: Y) = Joet X <|p|> Joet Y.
+  Joet (X :<| p |>: Y)%:ne = Joet X <|p|> Joet Y.
 Proof. by rewrite Joet_conv_setE JoetDl. Qed.
 Lemma Joet_oplus_conv_setE (X Y : neset L) :
-  Joet `NE (oplus_conv_set X Y) =
-  Joet `NE ((fun p => Joet X <|p|> Joet Y) @` probset).
+  Joet (oplus_conv_set X Y)%:ne =
+  Joet ((fun p => Joet X <|p|> Joet Y) @` probset)%:ne.
 Proof.
-transitivity (Joet `NE (\bigcup_(p in probset_neset) (X :<| p |>: Y))).
-  by congr (Joet `NE _); apply/neset_ext.
+transitivity (Joet (\bigcup_(p in probset_neset) (X :<| p |>: Y))%:ne).
+  by congr (Joet _%:ne); apply/neset_ext.
 rewrite Joet_bigcup //.
-congr (Joet `NE _); apply/neset_ext => /=.
+congr (Joet _%:ne); apply/neset_ext => /=.
 rewrite imageA; congr image; apply funext => p /=.
 by rewrite Joet_conv_setD.
 Qed.
 Lemma Joet_iter_conv_set (X : neset L) (n : nat) :
-  Joet `NE (iter_conv_set X n) = Joet X.
+  Joet (iter_conv_set X n)%:ne = Joet X.
 Proof.
 elim: n => [|n IHn /=]; first by congr Joet; apply/neset_ext.
-rewrite Joet_oplus_conv_setE.
-transitivity (Joet `NE [set Joet X]); last by rewrite Joet1.
-congr (Joet `NE _); apply/neset_ext => /=.
+rewrite (Joet_oplus_conv_setE _ (iter_conv_set X n)%:ne).
+transitivity (Joet [set Joet X]%:ne); last by rewrite Joet1.
+congr (Joet _%:ne); apply/neset_ext => /=.
 transitivity ((fun _ => Joet X) @` probset); last by rewrite image_const.
 by congr image; apply funext=> p; rewrite IHn convmm.
 Qed.
 
-Lemma Joet_hull (X : neset L) : Joet `NE (hull X) = Joet X.
+Lemma Joet_hull (X : neset L) : Joet (hull X)%:ne = Joet X.
 Proof.
-transitivity (Joet `NE (\bigcup_(i in natset) iter_conv_set X i));
+transitivity (Joet (\bigcup_(i in natset) iter_conv_set X i)%:ne);
   first by congr Joet; apply neset_ext; rewrite /= hull_iter_conv_set.
 rewrite Joet_bigsetU /=.
 rewrite -[in RHS](Joet1 (Joet X)).
-transitivity (Joet `NE ((fun _ => Joet X) @` natset)); last first.
+transitivity (Joet ((fun _ => Joet X) @` natset)%:ne); last first.
   by congr Joet; apply/neset_ext/image_const.
-congr (Joet `NE _); apply/neset_ext => /=.
+congr (Joet _%:ne); apply/neset_ext => /=.
 rewrite imageA; congr image; apply funext=> n /=.
 by rewrite Joet_iter_conv_set.
 Qed.
@@ -941,7 +940,7 @@ Qed.
 Definition conv p X Y : necset A := locked
   (NECSet.Pack (NECSet.Class (CSet.Class (pre_pre_conv_convex X Y p))
                (NESet.Mixin (pre_conv_neq0 X Y p)))).
-Lemma conv1 X Y : conv (`Pr 1) X Y  = X.
+Lemma conv1 X Y : conv 1%:pr X Y  = X.
 Proof.
 rewrite /conv; unlock; apply necset_ext => /=; apply/eqEsubset => a.
   by case => x [] y [] xX [] yY ->; rewrite -in_setE conv1.
@@ -957,7 +956,7 @@ rewrite/conv; unlock; apply necset_ext => /=; apply eqEsubset => a.
 - rewrite -in_setE => aX.
   by exists a, a; rewrite convmm.
 Qed.
-Lemma convC p X Y : conv p X Y = conv (`Pr p.~) Y X.
+Lemma convC p X Y : conv p X Y = conv p.~%:pr Y X.
 Proof.
 by rewrite/conv; unlock; apply necset_ext => /=; apply eqEsubset => a; case => x [] y [] xX [] yY ->; exists y, x; [rewrite convC | rewrite -convC].
 Qed.
@@ -999,16 +998,16 @@ Section def.
 Local Open Scope classical_set_scope.
 Variable (A : convType).
 Definition pre_op (X : neset (necset A)) : convex_set A :=
-  CSet.Pack (CSet.Class (hull_is_convex `NE (bigsetU X idfun))).
+  CSet.Pack (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne)).
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
 Definition op (X : neset (necset A)) :=
-  NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex `NE (bigsetU X idfun)))
+  NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne))
                             (NESet.Mixin (pre_op_neq0 X))).
-Lemma op1 x : op `NE [set x] = x.
+Lemma op1 x : op [set x]%:ne = x.
 Proof. by apply necset_ext => /=; rewrite bigcup1 hull_cset. Qed.
 Lemma op_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
-   op (bignesetU S F) = op `NE (op @` (F @` S)).
+   op (bignesetU S F) = op (op @` (F @` S))%:ne.
 Proof.
 apply necset_ext => /=.
 apply hull_eqEsubset => a.
@@ -1038,7 +1037,7 @@ Local Open Scope classical_set_scope.
 Variable (A : convType).
 Let L := necset_semiCompSemiLattType A.
 Lemma axiom (p : prob) (X : L) (I : neset L) :
-  necset_convType.conv p X (Joet I) = Joet `NE ((necset_convType.conv p X) @` I).
+  necset_convType.conv p X (Joet I) = Joet ((necset_convType.conv p X) @` I)%:ne.
 Proof.
 apply necset_ext => /=.
 rewrite -hull_cset necset_convType.conv_conv_set /= hull_conv_set_strr.

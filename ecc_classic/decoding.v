@@ -223,7 +223,7 @@ Lemma bsc_prob_prop n : p < 1 / 2 ->
   ((1 - p) ^ (n - n2) * p ^ n2 <= (1 - p) ^ (n - n1) * p ^ n1)%R.
 Proof.
 move=> p05 d1 d2 d1d2.
-case/boolP : (p == `Pr 0) => [/eqP ->|p0].
+case/boolP : (p == 0%:pr) => [/eqP ->|p0].
   destruct d2 as [|d2].
     destruct d1 as [|d1]; [exact/leRR | by []].
   rewrite !subR0 /= !mul0R !mulR0.

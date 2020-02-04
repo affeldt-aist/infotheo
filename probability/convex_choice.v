@@ -173,9 +173,9 @@ End CodomDFDist.
 Module ConvexSpace.
 Record mixin_of (T : choiceType) : Type := Class {
   conv : prob -> T -> T -> T where "a <| p |> b" := (conv p a b);
-  _ : forall a b, a <| `Pr 1 |> b = a ;
+  _ : forall a b, a <| 1%:pr|> b = a ;
   _ : forall p a, a <| p |> a = a ;
-  _ : forall p a b, a <| p |> b = b <| `Pr p.~ |> a;
+  _ : forall p a b, a <| p |> b = b <| p.~%:pr |> a;
   _ : forall (p q : prob) (a b c : T),
       a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c
 }.
@@ -198,11 +198,11 @@ Section convex_space_interface.
 Variables A : convType.
 Implicit Types a b c : A.
 Implicit Types p q r s : prob.
-Lemma conv1 a b : a <| `Pr 1 |> b = a.
+Lemma conv1 a b : a <| 1%:pr |> b = a.
 Proof. by case: A a b => ? []. Qed.
 Lemma convmm a p : a <| p |> a = a.
 Proof. by case: A a => ? []. Qed.
-Lemma convC a b p : a <| p |> b = b <| `Pr p.~ |> a.
+Lemma convC a b p : a <| p |> b = b <| p.~%:pr |> a.
 Proof. by case: A a b => ? []. Qed.
 Lemma convA p q a b c :
   a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c.
@@ -261,7 +261,7 @@ Canonical scaled_pt_choiceType := Eval hnf in ChoiceType scaled_pt scaled_pt_cho
 
 Local Notation "a *: v" := (Scaled a v).
 
-Definition S1 x : [choiceType of scaled_pt] := `Pos 1 *: x.
+Definition S1 x : [choiceType of scaled_pt] := 1%:pos *: x.
 
 Lemma Scaled_inj p : injective (Scaled p).
 Proof. by move=> x y []. Qed.
@@ -293,7 +293,7 @@ Qed.
 Lemma weight0_Zero x : weight x = 0 -> x = Zero.
 Proof. case: x => //= r c /esym Hr; by move/ltR_eqF: (Rpos_gt0 r). Qed.
 
-Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / `Pos (r + q) <= 1.
+Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / (r + q)%:pos <= 1.
 Proof.
 split.
 + apply /ltRW /divR_gt0; by apply /Rpos_gt0.
@@ -303,7 +303,7 @@ split.
   by apply /leR_addl /ltRW /Rpos_gt0.
 Qed.
 Definition Rpos_prob (r q : Rpos) :=
-  @Prob.mk (r / `Pos (r + q)) (Rpos_prob_Op1 _ _).
+  @Prob.mk (r / (r + q)%:pos) (Rpos_prob_Op1 _ _).
 
 Lemma onem_div p q : q != 0 -> (p/q).~ = (q-p)/q.
 Proof.
@@ -311,7 +311,7 @@ move=> Hq.
 by rewrite /onem -(divRR q) // /Rdiv /Rminus -mulNR -mulRDl.
 Qed.
 
-Lemma Rpos_probC r q : Rpos_prob q r = `Pr (Rpos_prob r q).~.
+Lemma Rpos_probC r q : Rpos_prob q r = (Rpos_prob r q).~%:pr.
 Proof.
 apply prob_ext => /=.
 rewrite [in RHS]addRC onem_div.
@@ -325,7 +325,7 @@ Qed.
 
 Definition addpt a b :=
   match a, b with
-  | r *: x, q *: y => `Pos (r + q) *: (x <| `Pr (`Pos (r / (r + q))) |> y)
+  | r *: x, q *: y => (r + q)%:pos *: (x <| ((r / (r + q))%:pos)%:pr |> y)
   | _, Zero => a
   | Zero, _ => b
   end.
@@ -338,7 +338,7 @@ Local Notation "\ssum_ ( i < n ) F" := (\big[addpt/Zero]_(i < n) F).
 
 Definition scalept p (x : scaled_pt) :=
   match Rlt_dec 0 p, x with
-  | left Hr, q *: y => `Pos (mkRpos Hr * q) *: y
+  | left Hr, q *: y => (mkRpos Hr * q)%:pos *: y
   | _, _ => Zero
   end.
 
@@ -357,7 +357,7 @@ rewrite convC; congr Conv; exact/prob_ext/onem_divRxxy.
 Qed.
 
 Lemma s_of_Rpos_probA (p q r : Rpos) :
-  [s_of `Pr `Pos (p / (p + (q + r))), `Pr `Pos (q / (q + r))] = `Pr `Pos ((p + q) / (p + q + r)).
+  [s_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] = ((p + q) / (p + q + r))%:pos%:pr.
 (*  [s_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob (`Pos (p + q)) r.*)
 Proof.
 apply prob_ext => /=; rewrite s_of_pqE /onem /=; field.
@@ -365,7 +365,7 @@ split; exact/eqP/Rpos_neq0.
 Qed.
 
 Lemma r_of_Rpos_probA (p q r : Rpos) :
-  [r_of `Pr `Pos (p / (p + (q + r))), `Pr `Pos (q / (q + r))] = `Pr `Pos (p / (p + q)).
+  [r_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] = (p / (p + q))%:pos%:pr.
 (*  [r_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob p q.*)
 Proof.
 apply/prob_ext => /=; rewrite r_of_pqE s_of_pqE /onem /=; field.
@@ -405,7 +405,7 @@ Lemma scaleptR0 p : scalept p Zero = Zero.
 Proof. by rewrite /scalept; case: Rlt_dec. Qed.
 
 Lemma scalept_gt0 p (q : Rpos) x (H : 0 < p) :
-  scalept p (q *: x) = `Pos (mkRpos H * q) *: x.
+  scalept p (q *: x) = (mkRpos H * q)%:pos *: x.
 Proof.
 rewrite /scalept; case: Rlt_dec => // Hr.
 congr Scaled; by apply val_inj.
@@ -541,7 +541,7 @@ Section adjunction.
 Variable p : prob.
 
 Lemma adjunction_1 a b :
-  addpt (scalept 1 (S1 a)) (scalept 0 (S1 b)) = S1 (a <|`Pr 1|> b).
+  addpt (scalept 1 (S1 a)) (scalept 0 (S1 b)) = S1 (a <| 1%:pr |> b).
 Proof. by rewrite scalept0 scalept1 addpt0 conv1. Qed.
 
 Lemma adjunction_2 x y :
@@ -587,9 +587,9 @@ Notation "\ssum_ ( i < n ) F" :=
 Section convex_space_prop.
 Variables A : convType.
 Implicit Types a b : A.
-Lemma conv0 a b : a <| `Pr 0 |> b = b.
+Lemma conv0 a b : a <| 0%:pr |> b = b.
 Proof.
-rewrite convC (_ : `Pr _ = `Pr 1) ?conv1 //=; apply prob_ext; exact: onem0.
+rewrite convC (_ : _%:pr = 1%:pr) ?conv1 //=; apply prob_ext; exact: onem0.
 Qed.
 
 Lemma convA0 (p q r s : prob) a b c :
@@ -597,15 +597,15 @@ Lemma convA0 (p q r s : prob) a b c :
   a <| p |> (b <| q |> c) = (a <| r |> b) <| s |> c.
 Proof.
 move=> H1 H2.
-case/boolP : (r == `Pr 0) => r0.
-  rewrite (eqP r0) conv0 (_ : p = `Pr 0) ?conv0; last first.
+case/boolP : (r == 0%:pr) => r0.
+  rewrite (eqP r0) conv0 (_ : p = 0%:pr) ?conv0; last first.
     by apply/prob_ext; rewrite H1 (eqP r0) mul0R.
   congr (_ <| _ |> _); move: H2; rewrite H1 (eqP r0) mul0R onem0 mul1R.
   move/(congr1 onem); rewrite !onemK => ?; exact/prob_ext.
-case/boolP : (s == `Pr 0) => s0.
-  have p0 : p = `Pr 0 by apply/prob_ext; rewrite H1 (eqP s0) mulR0.
+case/boolP : (s == 0%:pr) => s0.
+  have p0 : p = 0%:pr by apply/prob_ext; rewrite H1 (eqP s0) mulR0.
   rewrite (eqP s0) conv0 p0 // ?conv0.
-  rewrite (_ : q = `Pr 0) ?conv0 //.
+  rewrite (_ : q = 0%:pr) ?conv0 //.
   move: H2; rewrite p0 onem0 mul1R => /(congr1 onem); rewrite !onemK => sq.
   rewrite -(eqP s0); exact/prob_ext.
 rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
@@ -613,10 +613,10 @@ rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
 by rewrite (@r_of_pq_is_r  _ _ r s).
 Qed.
 
-Lemma convA' (r s : prob) a b c : [p_of r, s] != `Pr 1 ->
+Lemma convA' (r s : prob) a b c : [p_of r, s] != 1%:pr ->
   a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = (a <| r |> b) <| s |> c.
 Proof.
-move=> H; case/boolP : (s == `Pr 0) => s0.
+move=> H; case/boolP : (s == 0%:pr) => s0.
 - by rewrite (eqP s0) p_of_r0 conv0 q_of_r0 conv0 conv0.
 - by rewrite convA s_of_pqK // r_of_pqK.
 Qed.
@@ -731,7 +731,7 @@ Lemma convn2E (g : 'I_2 -> A) (d : {fdist 'I_2}) :
 Proof.
 case/boolP : (d ord0 == 1%R) => [|i1].
   rewrite FDist1.dE1 => /eqP ->; rewrite ConvnFDist1.
-  rewrite (_ : probfdist _ _ = `Pr 1) ?conv1 //.
+  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
   by apply prob_ext => /=; rewrite FDist1.dE eqxx.
 rewrite convnE; congr (_ <| _ |> _).
 by rewrite convn1E /DelFDist.f ltnn.
@@ -806,7 +806,7 @@ Lemma is_convex_setP (X : set A) : is_convex_set X = is_convex_set_n X.
 Proof.
 apply/idP/idP => H; apply/asboolP; last first.
   move=> x y p xX yX.
-  case/boolP : (p == `Pr 1) => [/eqP ->|p1]; first by rewrite conv1.
+  case/boolP : (p == 1%:pr) => [/eqP ->|p1]; first by rewrite conv1.
   set g : 'I_2 -> A := fun i => if i == ord0 then x else y.
   have gX : g @` setT `<=` X by move=> a -[i _ <-]; rewrite /g; case: ifPn.
   move/asboolP : H => /(_ _ g (I2FDist.d p) gX).
@@ -871,7 +871,7 @@ exists 2, (fun i => if i == ord0 then a0 else a1), (I2FDist.d p); split => /=.
   case: ifPn => _; [by left | by right].
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb H].
   rewrite I2FDist.dE eqxx /= => p1.
-  suff -> : p = `Pr 1 by rewrite conv1.
+  suff -> : p = 1%:pr by rewrite conv1.
   exact/prob_ext.
 congr (_ <| _ |> _); first by apply prob_ext => /=; rewrite I2FDist.dE eqxx.
 case: Bool.bool_dec => // H'.
@@ -1054,8 +1054,8 @@ suff : exists x1, x1 \in scaled_set X /\ exists x2, x2 \in scaled_set Y /\
       apply scaled_set_extract)
      || (exists dy; split; first by rewrite in_setE).
   + esplit; congr Conv.
-  + exists `Pr 1; by rewrite conv1.
-  + exists `Pr 0; by rewrite conv0.
+  + exists 1%:pr; by rewrite conv1.
+  + exists 0%:pr; by rewrite conv0.
 move/(f_equal (@S1 _)): Ha; rewrite S1_convn.
 rewrite (bigID (fun i => g i \in X)) /=.
 set sa1 := \big[_/_]_(i < n | _) _.
@@ -1080,11 +1080,11 @@ End CSet_prop.
 Section R_convex_space.
 Implicit Types p q : prob.
 Definition avg p a b := (p * a + p.~ * b)%R.
-Lemma avg1 a b : avg (`Pr 1) a b = a.
+Lemma avg1 a b : avg 1%:pr a b = a.
 Proof. by rewrite /avg /= mul1R onem1 mul0R addR0. Qed.
 Lemma avgI p x : avg p x x = x.
 Proof. by rewrite /avg -mulRDl onemKC mul1R. Qed.
-Lemma avgC p x y : avg p x y = avg (`Pr p.~) y x.
+Lemma avgC p x y : avg p x y = avg p.~%:pr y x.
 Proof. by rewrite /avg onemK addRC. Qed.
 Lemma avgA p q (d0 d1 d2 : R) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
@@ -1142,11 +1142,11 @@ Variables (A : choiceType) (B : convType).
 Let T := A -> B.
 Implicit Types p q : prob.
 Definition avg p (x y : T) := fun a : A => (x a <| p |> y a).
-Lemma avg1 (x y : T) : avg (`Pr 1) x y = x.
+Lemma avg1 (x y : T) : avg 1%:pr x y = x.
 Proof. rewrite funeqE => a; exact/conv1. Qed.
 Lemma avgI p (x : T) : avg p x x = x.
 Proof. rewrite funeqE => a; exact/convmm. Qed.
-Lemma avgC p (x y : T) : avg p x y = avg (`Pr p.~) y x.
+Lemma avgC p (x y : T) : avg p x y = avg p.~%:pr y x.
 Proof. rewrite funeqE => a; exact/convC. Qed.
 Lemma avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
@@ -1179,7 +1179,7 @@ Variables (A : choiceType) (B : A -> convType).
 Let T := depfun_choiceType B.
 Implicit Types p q : prob.
 Definition avg p (x y : T) := fun a : A => (x a <| p |> y a).
-Lemma avg1 (x y : T) : avg (`Pr 1) x y = x.
+Lemma avg1 (x y : T) : avg 1%:pr x y = x.
 Proof.
 apply FunctionalExtensionality.functional_extensionality_dep => a; exact/conv1.
 Qed.
@@ -1187,7 +1187,7 @@ Lemma avgI p (x : T) : avg p x x = x.
 Proof.
 apply FunctionalExtensionality.functional_extensionality_dep => a; exact/convmm.
 Qed.
-Lemma avgC p (x y : T) : avg p x y = avg (`Pr p.~) y x.
+Lemma avgC p (x y : T) : avg p x y = avg p.~%:pr y x.
 Proof.
 apply FunctionalExtensionality.functional_extensionality_dep => a; exact/convC.
 Qed.
@@ -1215,11 +1215,11 @@ Variables (A B : convType).
 Let T := prod A B.
 Implicit Types p q : prob.
 Definition avg p (x y : T) := (fst x <| p |> fst y , snd x <| p |> snd y).
-Lemma avg1 (x y : T) : avg (`Pr 1) x y = x.
+Lemma avg1 (x y : T) : avg 1%:pr x y = x.
 Proof. rewrite /avg (conv1 (fst x)) (conv1 (snd x)); by case x. Qed.
 Lemma avgI p (x : T) : avg p x x = x.
 Proof. rewrite /avg (convmm (fst x)) (convmm (snd x)); by case x. Qed.
-Lemma avgC p (x y : T) : avg p x y = avg (`Pr p.~) y x.
+Lemma avgC p (x y : T) : avg p x y = avg p.~%:pr y x.
 Proof. by congr (pair _ _); apply convC. Qed.
 Lemma avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
@@ -1335,11 +1335,11 @@ Notation T := (T A).
 Implicit Types p q : prob.
 Definition unbox (x : T) := match x with mkOpp x' => x' end.
 Definition avg p a b := mkOpp (unbox a <| p |> unbox b).
-Lemma avg1 a b : avg (`Pr 1) a b = a.
+Lemma avg1 a b : avg 1%:pr a b = a.
 Proof. by case a;case b=>b' a';rewrite/avg/unbox/=conv1. Qed.
 Lemma avgI p x : avg p x x = x.
 Proof. by case x=>x';rewrite/avg/unbox/=convmm. Qed.
-Lemma avgC p x y : avg p x y = avg (`Pr p.~) y x.
+Lemma avgC p x y : avg p x y = avg p.~%:pr y x.
 Proof. by case x;case y=>y' x'; rewrite/avg/unbox/=convC. Qed.
 Lemma avgA p q d0 d1 d2 :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
@@ -1430,7 +1430,7 @@ Variable (A : convType) (B C : orderedConvType).
 Lemma convex_function_sym (f : A -> B) a b : (forall t, convex_function_at f a b t) ->
   forall t, convex_function_at f b a t.
 Proof.
-move => H t; move: (H (`Pr t.~)).
+move => H t; move: (H t.~%:pr).
 by rewrite /convex_function_at /= convC -probK (convC (f a)) -probK.
 Qed.
 
@@ -1802,7 +1802,7 @@ Section convex_set_R.
 Lemma Rpos_convex : is_convex_set (fun x => 0 < x)%R.
 Proof.
 apply/asboolP => x y t Hx Hy.
-case/boolP : (t == `Pr 0) => [/eqP ->| Ht0]; first by rewrite conv0.
+case/boolP : (t == 0%:pr) => [/eqP ->| Ht0]; first by rewrite conv0.
 apply addR_gt0wl; first by apply mulR_gt0 => //; exact/prob_gt0.
 apply mulR_ge0 => //; exact: ltRW.
 Qed.
@@ -1817,8 +1817,8 @@ Definition Rnonneg_interval := CSet.Pack (CSet.Class Rnonneg_convex).
 Lemma open_interval_convex a b (Hab : (a < b)%R) : is_convex_set (fun x => a < x < b)%R.
 Proof.
 apply/asboolP => x y t [xa xb] [ya yb].
-case/boolP : (t == `Pr 0) => [/eqP|]t0; first by rewrite t0 conv0.
-case/boolP : (t == `Pr 1) => [/eqP|]t1; first by rewrite t1 conv1.
+case/boolP : (t == 0%:pr) => [/eqP|]t0; first by rewrite t0 conv0.
+case/boolP : (t == 1%:pr) => [/eqP|]t1; first by rewrite t1 conv1.
 apply conj.
 - rewrite -[X in (X < t * x + t.~ * y)%R]mul1R -(onemKC t) mulRDl.
   apply ltR_add; rewrite ltR_pmul2l //; [exact/prob_gt0 | exact/onem_gt0/prob_lt1].
@@ -1848,7 +1848,7 @@ exact: leR_wpmul2r.
 Qed.
 
 Lemma convexf_at_onem x y (t : prob) f : (0 < x -> 0 < y -> x < y ->
-  convex_function_at f x y t -> convex_function_at f y x (`Pr t.~))%R.
+  convex_function_at f x y t -> convex_function_at f y x t.~%:pr)%R.
 Proof.
 move=> x0 y0 xy H; rewrite /convex_function_at.
 rewrite {2}/Conv /= /avg /= onemK addRC.
@@ -1858,7 +1858,7 @@ apply: (leR_trans H); rewrite addRC; exact/leRR.
 Qed.
 
 Lemma concavef_at_onem x y (t : prob) f : (0 < x -> 0 < y -> x < y ->
-  concave_function_at f x y t -> concave_function_at f y x (`Pr t.~))%R.
+  concave_function_at f x y t -> concave_function_at f y x t.~%:pr)%R.
 Proof.
 move=>x0 y0 xy; rewrite/concave_function_at/convex_function_at.
 rewrite !conv_leoppD !leoppP/=.
@@ -1914,7 +1914,7 @@ have : (a <= x <= b)%R.
   rewrite /x; split.
   - apply (@leR_trans (t * a + t.~ * a)).
       rewrite -mulRDl addRCA addR_opp subRR addR0 mul1R; exact/leRR.
-    case/boolP : (t == `Pr 1) => [/eqP ->|t1].
+    case/boolP : (t == 1%:pr) => [/eqP ->|t1].
       rewrite /onem subRR !mul0R !addR0; exact/leRR.
     rewrite leR_add2l; apply leR_wpmul2l => //; exact/ltRW.
   - apply (@leR_trans (t * b + t.~ * b)); last first.

@@ -569,7 +569,7 @@ case/boolP : (p == R0 :> R) => [/eqP |] p0.
   rewrite p0 mul0R add0R onem0 mul1R.
   apply/esym/eqP; rewrite -memNfinsupp.
   apply: contra H => H.
-  rewrite (_ : p = `Pr 0) //; last exact/prob_ext.
+  rewrite (_ : p = 0%:pr) //; last exact/prob_ext.
   rewrite I2FDist.p0 (_ : Ordinal _ = @ord_max 1); last exact/val_inj.
   (* TODO: generalize *)
   suff : ConvnFSDist.D (FDist1.d ord_max) (fun i : 'I_2 => if i == ord0 then d1 else d2) = finsupp d2 by move=> ->.
@@ -599,13 +599,13 @@ Variables (A : choiceType).
 Implicit Types a b c : {dist A}.
 Local Notation "x <| p |> y" := (d p x y).
 Local Open Scope reals_ext_scope.
-Lemma conv0 (mx my : {dist A}) : mx <| `Pr 0 |> my = my.
+Lemma conv0 (mx my : {dist A}) : mx <| 0%:pr |> my = my.
 Proof. by apply/FSDist_ext => a; rewrite dE /= mul0R add0R onem0 mul1R. Qed.
-Lemma conv1 (mx my : {dist A}) : mx <| `Pr 1 |> my = mx.
+Lemma conv1 (mx my : {dist A}) : mx <| 1%:pr |> my = mx.
 Proof. by apply/FSDist_ext => a; rewrite dE /= mul1R onem1 mul0R addR0. Qed.
 Lemma convmm p : idempotent (fun x y => x <| p |> y : {dist A}).
 Proof. by move=> d; apply/FSDist_ext => a; rewrite dE -mulRDl onemKC mul1R. Qed.
-Lemma convC (p : prob) (mx my : {dist A}) : mx <| p |> my = my <| `Pr p.~ |> mx.
+Lemma convC (p : prob) (mx my : {dist A}) : mx <| p |> my = my <| p.~%:pr |> mx.
 Proof. by apply/FSDist_ext => a; rewrite 2!dE /= onemK addRC. Qed.
 Lemma convA (p q r s : prob) (mx my mz : {dist A}) :
   p = r * s :> R /\ s.~ = p.~ * q.~ ->
@@ -618,10 +618,10 @@ rewrite !mulRA; congr (_ * _)%R.
 rewrite -p_of_rsE in Hp.
 move/(congr1 onem) : Hs; rewrite onemK => Hs.
 rewrite -s_of_pqE in Hs.
-case/boolP : (r == `Pr 0 :> prob) => [/eqP | ] r0.
+case/boolP : (r == 0%:pr :> prob) => [/eqP | ] r0.
   rewrite r0 /= onem0 mulR1 Hs s_of_pqE.
   by rewrite Hp p_of_rsE r0 /= mul0R onem0 !mul1R onemK.
-case/boolP : (s == `Pr 0 :> prob) => [/eqP | ] s0.
+case/boolP : (s == 0%:pr :> prob) => [/eqP | ] s0.
   rewrite Hp p_of_rsE s0 /= mulR0 onem0 mul0R mul1R.
   by move: Hs; rewrite s_of_pqE Hp p_of_rsE s0 /= mulR0 onem0 mul1R onemK.
 rewrite p_of_rsE in Hp.
@@ -637,13 +637,13 @@ Lemma convA' (p q : prob) (a b c : {dist A}) :
 Proof.
 rewrite (convA (r := r_of_pq p q) (s := s_of_pq p q)) //.
 rewrite {2}s_of_pqE onemK; split => //.
-case/boolP : (s_of_pq p q == `Pr 0 :> prob) => s0.
+case/boolP : (s_of_pq p q == 0%:pr :> prob) => s0.
 - rewrite (eqP s0) mulR0; apply/eqP; move: s0.
   by apply: contraTT => /(s_of_gt0 q); rewrite prob_gt0.
 - by rewrite -p_is_rs.
 Qed.
 Lemma incl_finsupp_conv2fsdist (a b : {dist A}) (p : prob) :
-  p != `Pr 0 -> finsupp a `<=` finsupp (a <|p|> b).
+  p != 0%:pr -> finsupp a `<=` finsupp (a <|p|> b).
 Proof.
 move=> p0.
 apply/fsubsetP => a1.
@@ -659,8 +659,9 @@ exfalso.
 move/eqP : p0; apply.
 apply/prob_ext; by rewrite p0'.
 Qed.
-Lemma tech1 (B : choiceType) (a b : {dist A}) (f : A -> {dist B}) (p : prob) (a0 : A) (b0 : B) (b0a0 : b0 \in finsupp (f a0)) :
-  p != `Pr 0 ->
+Lemma tech1 (B : choiceType) (a b : {dist A}) (f : A -> {dist B}) (p : prob)
+  (a0 : A) (b0 : B) (b0a0 : b0 \in finsupp (f a0)) :
+  p != 0%:pr ->
   \sum_(i <- finsupp (a <|p|> b)) (a i * (f i) b0) = (FSDistBind.d a f) b0.
 Proof.
 move=> p0.
@@ -687,9 +688,9 @@ Lemma bind_left_distr (B : choiceType) (p : prob) a b (f : A -> {dist B}) :
   FSDistBind.d (a <| p |> b) f = FSDistBind.d a f <| p |> FSDistBind.d b f.
 Proof.
 apply/FSDist_ext => b0 /=; rewrite FSDistBind.dE dE.
-case/boolP : (p == `Pr 0 :> prob) => [/eqP -> | p0].
+case/boolP : (p == 0%:pr :> prob) => [/eqP -> | p0].
   by rewrite conv0 mul0R add0R onem0 mul1R FSDistBind.dE.
-case/boolP : (p == `Pr 1 :> prob) => [/eqP -> | p1].
+case/boolP : (p == 1%:pr :> prob) => [/eqP -> | p1].
   by rewrite conv1 mul1R onem1 mul0R addR0 FSDistBind.dE.
 case: ifPn => [/bigfcupP[dB] | ].
   rewrite andbT.

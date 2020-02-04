@@ -97,11 +97,11 @@ Section prop.
 Variable (A : finType).
 Let T := choice_of_Type (T A).
 Implicit Types p q : prob.
-Lemma avg1 (x y : T) : avg (`Pr 1) x y = x.
+Lemma avg1 (x y : T) : avg 1%:pr x y = x.
 Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/conv1. Qed.
 Lemma avgI p (x : T) : avg p x x = x.
 Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/convmm. Qed.
-Lemma avgC p (x y : T) : avg p x y = avg (`Pr p.~) y x.
+Lemma avgC p (x y : T) : avg p x y = avg p.~%:pr y x.
 Proof. rewrite /avg; exact/eq_sig_irrelevant/convC. Qed.
 Lemma avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
@@ -142,7 +142,7 @@ case/boolP : (q2 a == 0) => [/eqP |] q2a0.
   case/boolP : (q1 a == 0) => [/eqP |] q1a0.
     have -> : p1 a = 0 by move/dominatesP : pq1; exact.
     rewrite !(mulR0,mul0R); exact/leRR.
-  case/boolP : (t == `Pr 0) => [/eqP /=|] t0.
+  case/boolP : (t == 0%:pr) => [/eqP /=|] t0.
     rewrite t0 !mul0R; exact/leRR.
   apply/Req_le.
   rewrite mulRA; congr (_ * _ * log _).
@@ -179,7 +179,7 @@ move: (@log_sum _ setT (mkPosFfun (h0 p1 p2)) (mkPosFfun (h0 q1 q2)) hdom).
 rewrite /= -!rsum_ord_setT !big_ord_recl !big_ord0 !addR0.
 rewrite /h /= !ffunE => /leR_trans; apply.
 apply/Req_le; congr (_ + _).
-  case/boolP : (t == `Pr 0) => [/eqP ->|t0]; first by rewrite !mul0R.
+  case/boolP : (t == 0%:pr) => [/eqP ->|t0]; first by rewrite !mul0R.
   rewrite mulRA; congr (_ * _ * log _).
   rewrite !eqxx.
   field; split; exact/eqP.

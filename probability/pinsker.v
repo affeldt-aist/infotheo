@@ -184,9 +184,9 @@ Variables p q : prob.
 Lemma pinsker_fun_p c : pinsker_fun p c p = 0.
 Proof.
 rewrite /pinsker_fun /= /div_fct /comp subRR mul0R mulR0 subR0.
-case/boolP: (p == `Pr 0) => [/eqP |] p0.
+case/boolP: (p == 0%:pr) => [/eqP |] p0.
   by rewrite p0 mul0R !subR0 add0R mul1R div1R invR1 /log Log_1.
-case/boolP: (p == `Pr 1) => [/eqP |] p1.
+case/boolP: (p == 1%:pr) => [/eqP |] p1.
   by rewrite p1 divR1 /log Log_1 subRR mul0R mulR0 addR0.
 rewrite divRR; last by rewrite subR_eq0' eq_sym.
 rewrite /log Log_1 divRR //.
@@ -296,11 +296,11 @@ Lemma pinsker_fun_pos c : 0 <= c <= / (2 * ln 2) -> 0 <= pinsker_fun p c q.
 Proof.
 move=> Hc.
 set a := Set2.a card_A. set b := Set2.b card_A.
-case/boolP : (p == `Pr 0) => [/eqP|] p0.
+case/boolP : (p == 0%:pr) => [/eqP|] p0.
   subst p.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l,subR0).
-  case/boolP : (q == `Pr 1) => [/eqP|] q1.
+  case/boolP : (q == 1%:pr) => [/eqP|] q1.
     subst q.
     exfalso.
     move/dominatesP : P_dom_by_Q => /(_ a).
@@ -311,10 +311,10 @@ case/boolP : (p == `Pr 0) => [/eqP|] p0.
   rewrite /pinsker_function_spec.
   apply Req_le.
   rewrite mul1R div1R /log LogV; [by field |by rewrite subR_gt0 -prob_lt1].
-case/boolP : (p == `Pr 1) => [/eqP|] p1.
+case/boolP : (p == 1%:pr) => [/eqP|] p1.
   subst p.
   rewrite /pinsker_fun /div_fct /comp subRR mul0R addR0.
-  case/boolP : (q == `Pr 0) => [/eqP|] q0.
+  case/boolP : (q == 0%:pr) => [/eqP|] q0.
     subst q.
     exfalso.
     move/dominatesP : P_dom_by_Q => /(_ b).
@@ -329,7 +329,7 @@ case/boolP : (p == `Pr 1) => [/eqP|] p1.
   apply Req_le.
   rewrite mul1R div1R /log LogV -?prob_gt0 //.
   rewrite /id (_ : 1 - (1 - q) = q) //; by field.
-case/boolP : (q == `Pr 0) => [/eqP|] q0.
+case/boolP : (q == 0%:pr) => [/eqP|] q0.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite (_ : id 0 = 0) //.
@@ -337,7 +337,7 @@ case/boolP : (q == `Pr 0) => [/eqP|] q0.
   move/dominatesP : P_dom_by_Q => /(_ b).
   rewrite !Binary.dE eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) p0_.
   move/eqP : p0; apply; apply/prob_ext; by rewrite p0_.
-case/boolP : (q == `Pr 1) => [/eqP|] q1.
+case/boolP : (q == 1%:pr) => [/eqP|] q1.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
   exfalso.
@@ -398,9 +398,9 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   rewrite [X in _ = _ + _ - X]mulRA.
   rewrite [in X in _ = _ + _ - X](mulRC c).
   congr (_ - _).
-  case/boolP : (p == `Pr 0) => [/eqP |] p0.
+  case/boolP : (p == 0%:pr) => [/eqP |] p0.
     rewrite p0 !mul0R subR0 addR0 add0R !mul1R /log (*_Log_1*) /Rdiv.
-    case/boolP : (q == `Pr 1) => [/eqP |] q1.
+    case/boolP : (q == 1%:pr) => [/eqP |] q1.
       move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
       rewrite -/pi -/qi Hqi q1 subRR => /(_ erefl).
       rewrite Hpi p0 subR0 => ?. exfalso. lra.
@@ -408,14 +408,14 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
       lra.
       by apply/invR_gt0; rewrite subR_gt0 -prob_lt1.
       by rewrite LogV ?subR_gt0 -?prob_lt1 // Log_1.
-  case/boolP : (q == `Pr 0) => [/eqP |] q0.
+  case/boolP : (q == 0%:pr) => [/eqP |] q0.
     move/dominatesP : P_dom_by_Q => /(_ (Set2.b card_A)).
     rewrite -/pj -/qj Hqj q0 => /(_ erefl).
     rewrite Hpj => abs.
-    have : p == `Pr 0 by apply/eqP/prob_ext.
+    have : p == 0%:pr by apply/eqP/prob_ext.
     by rewrite (negbTE p0).
   rewrite /div_fct /comp /= (_ : id q = q) //.
-  case/boolP : (p == `Pr 1) => [/eqP |] p1.
+  case/boolP : (p == 1%:pr) => [/eqP |] p1.
     rewrite p1 subRR !mul0R /Rdiv /log LogM; last 2 first.
       done.
       apply/invR_gt0; by rewrite -prob_gt0.
@@ -425,11 +425,11 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
     apply/invR_gt0; by rewrite -prob_gt0.
   rewrite LogV //; last first.
     by rewrite -prob_gt0.
-  case/boolP : (q == `Pr 1) => [/eqP |] q1.
+  case/boolP : (q == 1%:pr) => [/eqP |] q1.
     move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
     rewrite -/pi -/qi Hqi q1 subRR => /(_ erefl).
     rewrite Hpi subR_eq0 => abs.
-    have : p == `Pr 1 by apply/eqP/prob_ext.
+    have : p == 1%:pr by apply/eqP/prob_ext.
     by rewrite (negbTE p1).
   rewrite /Rdiv LogM ?subR_gt0 //; last 2 first.
     by rewrite -prob_lt1.
