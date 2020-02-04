@@ -547,7 +547,7 @@ Arguments K : simpl never.
 Module Exports.
 Notation Rpos := t.
 Notation "r %:pos" := (@mk r (@K _)) : reals_ext_scope.
-Coercion v : t >-> R.
+Coercion v : Rpos >-> R.
 End Exports.
 End Rpos.
 Export Rpos.Exports.

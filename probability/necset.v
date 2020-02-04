@@ -8,7 +8,11 @@ Require Import convex_choice.
 (******************************************************************************)
 (* neset T              == the type of non-empty sets over T                  *)
 (* x%:ne                == try to infer whether x : set T isn't neset T       *)
+(* necset T             == the type of non-empty convex sets over T           *)
 (* semiCompSemiLattType == the type of semi-complete semi-lattice             *)
+(*                         1. nchoice of a singleton is the single element    *)
+(*                         2. nchoice of union is nchoice of nchoice          *)
+(* semiCompSemiLattConvType == add distribution of pchoice over nchoice       *)
 (******************************************************************************)
 
 Declare Scope latt_scope.
@@ -74,75 +78,6 @@ Qed.
 Lemma FSDist_eval_affine (C : choiceType) (x : C) :
   affine_function (fun D : {dist C} => D x).
 Proof. by move=> a b p; rewrite /affine_function_at ConvFSDist.dE. Qed.
-
-Section misc_hull.
-Implicit Types A B : convType.
-Local Open Scope classical_set_scope.
-
-Lemma hull_monotone A (X Y : set A) :
-  (X `<=` Y)%classic -> (hull X `<=` hull Y)%classic.
-Proof.
-move=> H a.
-case => n [g [d [H0 H1]]].
-exists n, g, d.
-split => //.
-by eapply subset_trans; first by exact: H0.
-Qed.
-
-Lemma hull_eqEsubset A (X Y : set A) :
-  (X `<=` hull Y)%classic -> (Y `<=` hull X)%classic -> hull X = hull Y.
-Proof.
-move/hull_monotone; rewrite hull_cset /= => H1.
-move/hull_monotone; rewrite hull_cset /= => H2.
-exact/eqEsubset.
-Qed.
-
-(* hull (X `|` hull Y) = hull (hull (X `|` Y)) = hull (x `|` y);
-   the first equality looks like a tensorial strength under hull
-   Todo : Check why this is so. *)
-Lemma hullU_strr A (X Y : set A) : hull (X `|` hull Y) = hull (X `|` Y).
-Proof.
-apply/hull_eqEsubset => a.
-- case; first by move=> ?; apply/subset_hull; left.
-  case=> n [d [g [H0 H1]]]; exists n, d, g; split => //.
-  apply (subset_trans H0) => ? ?; by right.
-- case => [?|?]; first by apply/subset_hull; left.
-  apply/subset_hull; right. exact/subset_hull.
-Qed.
-
-Lemma hullU_strl A (X Y : set A) : hull (hull X `|` Y) = hull (X `|` Y).
-Proof. by rewrite [in LHS]setUC [in RHS]setUC hullU_strr. Qed.
-
-Lemma hullUA A (X Y Z : {convex_set A}) :
-  hull (X `|` hull (Y `|` Z)) = hull (hull (X `|` Y) `|` Z).
-Proof. by rewrite hullU_strr hullU_strl setUA. Qed.
-
-Lemma image_preserves_convex_hull A B (f : {affine A -> B}) (Z : set A) :
-  image f (hull Z) = hull (f @` Z).
-Proof.
-rewrite predeqE => b; split.
-  case=> a [n [g [e [Hg]]]] ->{a} <-{b}.
-  exists n, (f \o g), e; split.
-    move=> b /= [i _] <-{b} /=.
-    by exists (g i) => //; apply Hg; exists i.
-  by rewrite affine_function_Sum.
-case=> n [g [e [Hg]]] ->{b}.
-suff [h Hh] : exists h : 'I_n -> A, forall i, Z (h i) /\ f (h i) = g i.
-  exists (<|>_e h).
-    exists n; exists h; exists e; split => //.
-    move=> a [i _] <-.
-    by case: (Hh i).
-  rewrite affine_function_Sum; apply eq_convn => // i /=.
-  by case: (Hh i).
-apply (@fin_all_exists _ _ (fun i hi => Z hi /\ f hi = g i)) => i.
-case: (Hg (g i)); first by exists i.
-move=> a // HZa Hfa; by exists a.
-Qed.
-
-Lemma image_preserves_convex_hull' A B (f : A -> B) (Hf : affine_function f) (Z : set A) :
-  image f (hull Z) = hull (f @` Z).
-Proof. by rewrite (image_preserves_convex_hull (AffineFunction Hf)). Qed.
-End misc_hull.
 
 Section misc_scaled.
 Import ScaledConvex.
@@ -259,12 +194,9 @@ Qed.
 End S1_proj_Convn_indexed_over_finType.
 
 Module NESet.
-Section neset.
 Local Open Scope classical_set_scope.
-Variable T : Type.
-Record mixin_of (X : set T) : Type := Mixin { neq0 : X != set0 }.
-Record t : Type := Pack { car : set T ; class : mixin_of car }.
-End neset.
+Record mixin_of (T : Type) (X : set T) := Mixin {_ : X != set0 }.
+Record t (T : Type) : Type := Pack { car : set T ; class : mixin_of car }.
 Module Exports.
 Notation neset := t.
 Notation "s %:ne" := (@Pack _ s (class _)).
@@ -547,10 +479,9 @@ Notation "X :<| p |>: Y" := (conv_set p X Y) : convex_scope.
 
 Module NECSet.
 Section def.
-Local Open Scope classical_set_scope.
 Variable A : convType.
 Record class_of (X : set A) : Type := Class {
-  base : CSet.class_of X ; mixin : NESet.mixin_of X }.
+  base : CSet.mixin_of X ; mixin : NESet.mixin_of X }.
 Record t : Type := Pack { car : set A ; class : class_of car }.
 Definition baseType (M : t) := CSet.Pack (base (class M)).
 Definition mixinType (M : t) := NESet.Pack (mixin (class M)).
