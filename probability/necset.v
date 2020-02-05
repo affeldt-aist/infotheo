@@ -6,19 +6,31 @@ Require Import Reals_ext classical_sets_ext Rbigop ssrR fdist fsdist.
 Require Import convex_choice.
 
 (******************************************************************************)
-(*                         About non-empty sets                               *)
+(*        Non-empty convex sets and semi-complete/lattice structures          *)
 (*                                                                            *)
 (* neset T              == the type of non-empty sets over T                  *)
 (* x%:ne                == try to infer whether x : set T isn't neset T       *)
 (* necset T             == the type of non-empty convex sets over T           *)
-(* semiCompSemiLattType == the type of semi-complete semi-lattice             *)
-(*                         provides an operator Joet : neset T -> T with the  *)
-(*                         following axioms:                                  *)
+(* necset_convType A    == instance of convType with elements of type         *)
+(*                         necset A and with operator                         *)
+(*                           X <| p |> Y = {x<|p|>y | x \in X, y \in Y}       *)
+(*                                                                            *)
+(* semiCompSemiLattType == the type of semi-complete semi-lattice provides    *)
+(*                         an operator Joet : neset T -> T with the following *)
+(*                         axioms:                                            *)
 (*          1. Joet [set x] = x                                               *)
 (*          2. Joet (\bigcup_(i in s) f i) = Joet (Joet @` (f @` s))          *)
+(*                                                                            *)
+(* necset_semiCompSemiLattType == instance of semiCompSemiLattType with       *)
+(*                         elements of type necset A and with operator        *)
+(*                         Joet X = hull (bigsetU X idfun)                    *)
+(*                                                                            *)
 (* semiCompSemiLattConvType == extends semiCompSemiLattType and convType with *)
 (*                         the following axiom:                               *)
 (*          3. x <| p |> Joet I = Joet ((fun y => x <| p |> y) @` I)          *)
+(*                                                                            *)
+(* necset_semiCompSemiLattConvType == instance of semiCompSemiLattConvType    *)
+(*                         with elements of type necset A                     *)
 (******************************************************************************)
 
 Declare Scope latt_scope.
@@ -889,17 +901,17 @@ Module necset_semiCompSemiLattType.
 Section def.
 Local Open Scope classical_set_scope.
 Variable (A : convType).
-Definition pre_op (X : neset (necset A)) : convex_set A :=
+Definition pre_op (X : neset (necset A)) : {convex_set A} :=
   CSet.Pack (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne)).
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
-Definition op (X : neset (necset A)) :=
+Definition joet (X : neset (necset A)) : necset A :=
   NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne))
                             (NESet.Mixin (pre_op_neq0 X))).
-Lemma op1 x : op [set x]%:ne = x.
+Lemma joet1 x : joet [set x]%:ne = x.
 Proof. by apply necset_ext => /=; rewrite bigcup1 hull_cset. Qed.
-Lemma op_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
-  op (bignesetU S F) = op (op @` (F @` S))%:ne.
+Lemma joet_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
+  joet (bignesetU S F) = joet (joet @` (F @` S))%:ne.
 Proof.
 apply necset_ext => /=.
 apply hull_eqEsubset => a.
@@ -907,21 +919,21 @@ apply hull_eqEsubset => a.
   exists 1, (fun _ => a), (FDist1.d ord0).
   split; last by rewrite convn1E.
   move=> a0 [] zero _ <-.
-  exists (op (F i)); first by do 2 apply imageP.
+  exists (joet (F i)); first by do 2 apply imageP.
   by apply/subset_hull; exists x.
 - case => x [] u [] i Si Fiu <-.
   case => n [] g [] d [] /= gx ag.
   exists n, g, d; split => //.
   apply (subset_trans gx).
   move => a0 [] x0 ux0 x0a0.
-  exists x0 => //.
-  exists i => //.
+  exists x0 => //; exists i => //.
   by rewrite Fiu.
 Qed.
-Definition mixin := SemiCompleteSemiLattice.Class op1 op_bigsetU.
+Definition mixin := SemiCompleteSemiLattice.Class joet1 joet_bigsetU.
 End def.
 End necset_semiCompSemiLattType.
-Canonical necset_semiCompSemiLattType A := SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.mixin A).
+Canonical necset_semiCompSemiLattType A :=
+  SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.mixin A).
 
 Module necset_semiCompSemiLattConvType.
 Section def.
