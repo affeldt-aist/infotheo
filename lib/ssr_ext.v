@@ -158,23 +158,6 @@ move=> l.
 by rewrite mem_iota /f (subnKC Hab).
 Qed.
 
-Lemma take_take : forall (n m :nat) l, take n (take (n + m) l) = take n l.
-Proof.
-elim=> [* | n0 IH m0 z0].
-- by rewrite !take0.
-- destruct z0 => //=; by rewrite IH.
-Qed.
-
-Lemma take_drop_take : forall m n l,
-  m + n <= size l -> take n (drop m (take (m + n) l)) = (drop m (take (m + n) l)).
-Proof.
-elim=> [n0 z Hsz | m IH n1 [|hd tl] //=].
-- rewrite drop0 add0n take_oversize // size_take.
-  case: ifP => // {Hsz}.
-  move/negbT; by rewrite -leqNgt.
-rewrite addnC addnS => ?; by rewrite IH // addnC.
-Qed.
-
 Lemma zip_mask : forall bs l (k : seq B),
   zip (mask bs l) (mask bs k) = mask bs (zip l k).
 Proof.
@@ -449,6 +432,12 @@ rewrite -val_enum_ord -map_comp.
 transitivity ([seq i | i <- enum 'I_m.+1]); first by rewrite map_id.
 apply eq_map => i /=; by rewrite inord_val.
 Qed.
+
+Lemma split_lshift n m (i : 'I_n) : fintype.split (lshift m i) = inl i.
+Proof. by rewrite -/(unsplit (inl i)) unsplitK. Qed.
+
+Lemma split_rshift n m (i : 'I_m) : fintype.split (rshift n i) = inr i.
+Proof. by rewrite -/(unsplit (inr i)) unsplitK. Qed.
 
 Lemma inj_card (A B : finType) (f : {ffun A -> B}) :
   injective f -> #| A | <= #| B |.

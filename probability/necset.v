@@ -6,13 +6,19 @@ Require Import Reals_ext classical_sets_ext Rbigop ssrR fdist fsdist.
 Require Import convex_choice.
 
 (******************************************************************************)
+(*                         About non-empty sets                               *)
+(*                                                                            *)
 (* neset T              == the type of non-empty sets over T                  *)
 (* x%:ne                == try to infer whether x : set T isn't neset T       *)
 (* necset T             == the type of non-empty convex sets over T           *)
 (* semiCompSemiLattType == the type of semi-complete semi-lattice             *)
-(*                         1. nchoice of a singleton is the single element    *)
-(*                         2. nchoice of union is nchoice of nchoice          *)
-(* semiCompSemiLattConvType == add distribution of pchoice over nchoice       *)
+(*                         provides an operator Joet : neset T -> T with the  *)
+(*                         following axioms:                                  *)
+(*          1. Joet [set x] = x                                               *)
+(*          2. Joet (\bigcup_(i in s) f i) = Joet (Joet @` (f @` s))          *)
+(* semiCompSemiLattConvType == extends semiCompSemiLattType and convType with *)
+(*                         the following axiom:                               *)
+(*          3. x <| p |> Joet I = Joet ((fun y => x <| p |> y) @` I)          *)
 (******************************************************************************)
 
 Declare Scope latt_scope.
@@ -83,56 +89,11 @@ Section misc_scaled.
 Import ScaledConvex.
 Local Open Scope R_scope.
 
-Lemma scalept_conv (C : convType) (x y : R) (s : scaled_pt C) (p : prob):
-  0 <= x -> 0 <= y ->
-  scalept (x <|p|> y) s =
-  (scalept x s : Scaled_convType C) <|p|> scalept y s.
-Proof.
-move=> Hx Hy.
-move: (onem_ge0 (prob_le1 p)) => Hnp.
-rewrite scalept_addR; [|exact/mulR_ge0|exact/mulR_ge0].
-by rewrite /Conv /= /scaled_conv /= !scalept_comp.
-Qed.
-
 Lemma FSDist_scalept_conv (C : convType) (x y : {dist C}) (p : prob) (i : C) :
   scalept ((x <|p|> y) i) (S1 i) =
   ((scalept (x i) (S1 i)) : Scaled_convType C) <|p|> scalept (y i) (S1 i).
 Proof. by rewrite ConvFSDist.dE scalept_conv. Qed.
 
-Lemma big_scalept_conv_split (C : convType) (I : Type) (r : seq I) (P : pred I)
- (F G : I -> Scaled_convType C) (p : prob) :
-  \ssum_(i <- r | P i) (F i <|p|> G i) =
-  ((\ssum_(i <- r | P i) F i) : Scaled_convType C) <|p|> \ssum_(i <- r | P i) G i.
-Proof. by rewrite /Conv /= /scaled_conv big_split /= !big_scalept. Qed.
-
-Lemma scalept_addRnneg : forall (A : convType) (x : scaled_pt A),
-    {morph (fun (r : Rnneg) => scalept r x) : r s / addRnneg r s >-> addpt r s}.
-Proof. by move=> A x [] r /= /leRP Hr [] s /= /leRP Hs; apply scalept_addR. Qed.
-Definition big_scaleptl (A : convType) (x : scaled_pt A) :=
-  @big_morph
-    (@scaled_pt A)
-    Rnneg
-    (fun r : Rnneg => scalept r x)
-    (Zero A)
-    (@addpt A)
-    Rnneg0
-    addRnneg
-    (@scalept_addRnneg A x).
-Local Open Scope R_scope.
-Lemma big_scaleptl' (A : convType) (x : scaled_pt A) :
-  scalept R0 x = Zero A ->
-  forall (I : Type) (r : seq I) (P : pred I) (F : I -> R),
-    (forall i : I, 0 <= F i) ->
-    scalept (\sum_(i <- r | P i) F i) x = \ssum_(i <- r | P i) scalept (F i) x.
-Proof.
-move=> H I r P F H'.
-transitivity (\ssum_(i <- r | P i) (fun r0 : Rnneg => scalept r0 x) (mkRnneg (H' i))); last by reflexivity.
-rewrite -big_scaleptl ?scalept0 //.
-congr scalept.
-transitivity (\sum_(i <- r | P i) mkRnneg (H' i)); first by reflexivity.
-apply (big_ind2 (fun x y => x = (Rnneg.v y))) => //.
-by move=> x1 [v Hv] y1 y2 -> ->.
-Qed.
 End misc_scaled.
 
 Module Convn_indexed_over_finType.
@@ -561,7 +522,7 @@ Module Exports.
 Definition Joet {T : type} : neset (sort T) -> sort T :=
   let: Pack _ (Class op _ _) := T in op.
 Arguments Joet {T} : simpl never.
-Notation semiCompSemiLattType := type.
+Notation semiCompSemiLattType:= type.
 Coercion sort : semiCompSemiLattType >-> choiceType.
 End Exports.
 End SemiCompleteSemiLattice.
@@ -938,7 +899,7 @@ Definition op (X : neset (necset A)) :=
 Lemma op1 x : op [set x]%:ne = x.
 Proof. by apply necset_ext => /=; rewrite bigcup1 hull_cset. Qed.
 Lemma op_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
-   op (bignesetU S F) = op (op @` (F @` S))%:ne.
+  op (bignesetU S F) = op (op @` (F @` S))%:ne.
 Proof.
 apply necset_ext => /=.
 apply hull_eqEsubset => a.

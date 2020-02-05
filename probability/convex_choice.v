@@ -6,24 +6,26 @@ Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist fsdist.
 
 (******************************************************************************)
-(*                             Convexity                                      *)
+(*                              Convexity                                     *)
 (*                                                                            *)
 (* This file provides the definition of convex spaces over a choiceType and   *)
 (* of real cones, and use them to define convex sets, hulls, to show that     *)
 (* probability distributions form convex spaces, and to define convex         *)
 (* functions.                                                                 *)
 (*                                                                            *)
+(* Convex spaces:                                                             *)
 (* convType       == the type of convex spaces, i.e., a choiceType with an    *)
 (*                   operator x <| p |> y where p is a probability            *)
-(*                   satisfying the axioms of ConvexSpace.mixin_of            *)
+(*                   satisfying the following axioms:                         *)
+(*          conv1 == a <| 1%:pr |> b = a.                                     *)
+(*         convmm == a <| p |> a = a.                                         *)
+(*          convC == a <| p |> b = b <| p.~%:pr |> a.                         *)
+(*          convA == a <| p |> (b <| q |> c) =                                *)
+(*                     (a <| [r_of p, q] |> b) <| [s_of p, q] |> c.           *)
 (* <|>_d f        == generalization of the operator . <| . |> . over a        *)
 (*                   distribution d for a sequence of points f                *)
-(* hull X         == the convex hull of set X : set T where T is a convType   *)
-(* is_convex_set  == Boolean predicate that characterizes convex sets over a  *)
-(*                   convType                                                 *)
-(* {convex_set A} == an object X of type "set A" where A is a convType and X  *)
-(*                   is convex                                                *)
 (*                                                                            *)
+(* Real cones:                                                                *)
 (* The type scale_pt associated with add_pt and scalept define a real cone    *)
 (* [Varacca & Winskell, MSCS, 2006]:                                          *)
 (* scaled_pt      == Zero or a pair of a positive real with a point in a      *)
@@ -33,9 +35,20 @@ Require Import fdist fsdist.
 (* scalept        == scaling of a scaled point, i.e.,                         *)
 (*                   scalept r qy = (r*q)y                                    *)
 (*                                                                            *)
-(* Instances of convex spaces:                                                 *)
+(* More lemmas about convex spaces:                                           *)
+(* convACA        == (x1 <|q|> y1) <|p|> (x2 <|q|> y2) =                      *)
+(*                     (x1 <|p|> x2) <|q|> (y1 <|p|> y2)                      *)
+(* etc.                                                                       *)
+(*                                                                            *)
+(* hull X         == the convex hull of set X : set T where T is a convType   *)
+(* is_convex_set  == Boolean predicate that characterizes convex sets over a  *)
+(*                   convType                                                 *)
+(* {convex_set A} == an object X of type "set A" where A is a convType and X  *)
+(*                   is convex                                                *)
+(*                                                                            *)
+(* Instances of convex spaces:                                                *)
 (* R_convType     == R                                                        *)
-(* funConvType    == functions A -> B with A a choiceType and B is a convType *)
+(* funConvType    == functions A -> B with A a choiceType and B a convType    *)
 (* depfunConvType == functions forall (a:A), B a with A a choiceType and B is *)
 (*                   a A -> convType                                          *)
 (* pairConvType   == pairs of convTypes                                       *)
@@ -43,10 +56,15 @@ Require Import fdist fsdist.
 (* FSDist_convType == finitely-supported distributions                        *)
 (*                                                                            *)
 (* orderedConvType == a convType augmented with an order                      *)
-(* instances: R_orderedConvType, fun_orderedConvType, oppConvType             *)
+(* Instances: R_orderedConvType, fun_orderedConvType, oppConvType             *)
 (*                                                                            *)
-(* definitions of convex, concave, affine functions                           *)
+(* Definitions of convex, concave, affine functions                           *)
+(* Lemmas:                                                                    *)
+(* image_preserves_convex_hull == the image of a convex hull is the convex    *)
+(*                                hull of the image                           *)
 (*                                                                            *)
+(* Application to real analysis:                                              *)
+(* Definition of convex sets for R                                            *)
 (* Lemma second_derivative_convexf_pt == twice derivable is convex            *)
 (******************************************************************************)
 
@@ -86,7 +104,6 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 
 Section tmp.
-Local Open Scope proba_scope.
 Variables (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob).
 Lemma ConvnFDist_Add (A : finType) (g : 'I_n -> fdist A) (h : 'I_m -> fdist A) :
   ConvnFDist.d (AddFDist.d d1 d2 p)
@@ -775,14 +792,12 @@ apply S1_inj; rewrite !S1_convn -barycenter_convnfdist.
 apply eq_bigr => i _; by rewrite S1_convn.
 Qed.
 
-Local Open Scope R_scope.
-
 Lemma convn_const (a : A) :
   forall (n : nat) (d : {fdist 'I_n}), <|>_d (fun _ => a) = a.
 Proof.
 elim; first by move=> d; move/fdistI0_False: (d).
 move=> n IHn d.
-case/boolP: (d ord0 == 1); first by move/eqP/(convn_proj (fun _ => a)).
+case/boolP: (d ord0 == 1%R); first by move/eqP/(convn_proj (fun _ => a)).
 by move=> d0n0; rewrite convnE IHn convmm.
 Qed.
 
@@ -792,7 +807,8 @@ Lemma convnDr :
 Proof.
 elim; first by move=> p x g d; move/fdistI0_False: (d).
 move=> n IHn p x g d.
-case/boolP: (d ord0 == 1); first by move/eqP=> d01; rewrite (convn_proj g d01) (convn_proj (fun i => x <|p|> g i) d01).
+case/boolP: (d ord0 == 1%R).
+  by move/eqP=> d01; rewrite (convn_proj g d01) (convn_proj (fun i => x <|p|> g i) d01).
 move=> d0n1.
 rewrite !convnE !IHn.
 congr Convn; apply funext=> i.
@@ -810,14 +826,17 @@ Definition hull (T : convType) (X : set T) : set T :=
 End hull_def.
 
 Section hull_prop.
+Local Open Scope classical_set_scope.
 Variable A : convType.
 Implicit Types X Y : set A.
 Implicit Types a : A.
-Lemma subset_hull X : (X `<=` hull X)%classic.
+
+Lemma subset_hull X : X `<=` hull X.
 Proof.
 move=> x xX; rewrite /hull; exists 1, (fun=> x), (FDist1.d ord0).
 split => [d [i _ <-] //|]; by rewrite convn1E.
 Qed.
+
 Lemma hull0 : hull set0 = set0 :> set A.
 Proof.
 rewrite funeqE => d; rewrite propeqE; split => //.
@@ -825,6 +844,7 @@ move=> [n [g [e [gX ->{d}]]]].
 destruct n as [|n]; first by move: (fdistI0_False e).
 exfalso; apply: (gX (g ord0)); exact/imageP.
 Qed.
+
 Lemma hull_eq0 X : (hull X == set0) = (X == set0).
 Proof.
 apply/idP/idP=> [/eqP abs|]; last by move=> /eqP ->; rewrite hull0.
@@ -832,7 +852,9 @@ apply/negPn/negP => /set0P[/= d] => dX.
 move: abs; rewrite funeqE => /(_ d); rewrite propeqE /set0 => -[H _]; apply H.
 exact/subset_hull.
 Qed.
-Lemma mem_hull_setU X Y a0 a1 p : X a0 -> Y a1 -> (hull (X `|` Y)) (a0 <| p |> a1).
+
+Lemma mem_hull_setU X Y a0 a1 p :
+  X a0 -> Y a1 -> (hull (X `|` Y)) (a0 <| p |> a1).
 Proof.
 move=> a0X a1y.
 exists 2, (fun i => if i == ord0 then a0 else a1), (I2FDist.d p); split => /=.
@@ -850,13 +872,11 @@ move: H'; rewrite DelFDist.dE D1FDist.dE (eq_sym (lift _ _)) (negbTE (neq_lift _
 rewrite I2FDist.dE (eq_sym (lift _ _)) (negbTE (neq_lift _ _)) I2FDist.dE eqxx divRR ?eqxx //.
 by move: H; rewrite I2FDist.dE eqxx onem_neq0.
 Qed.
-Lemma hull_monotone X Y : (X `<=` Y)%classic -> (hull X `<=` hull Y)%classic.
+
+Lemma hull_monotone X Y : X `<=` Y -> hull X `<=` hull Y.
 Proof.
-move=> H a.
-case => n [g [d [H0 H1]]].
-exists n, g, d.
-split => //.
-by eapply subset_trans; first by exact: H0.
+move=> H a [n [g [d [H0 H1]]]]; exists n, g, d; split => //.
+by eapply subset_trans; first exact: H0.
 Qed.
 End hull_prop.
 
@@ -929,7 +949,7 @@ Definition convex_set_of (A : convType) :=
   fun phT : phant (ConvexSpace.car A) => convex_set A.
 Notation "{ 'convex_set' T }" := (convex_set_of (Phant T)) : convex_scope.
 
-(* NB: was duplicate in monae_lib.v before *)
+(* NB: was duplicated in monae_lib.v before *)
 Section choice_cast.
 
 Definition equality_mixin_of_Type (T : Type) : Equality.mixin_of T :=
@@ -1006,16 +1026,12 @@ Qed.
 
 End CSet_prop.
 
-Lemma split_lshift n m (i : 'I_n) : fintype.split (lshift m i) = inl i.
-Proof. by rewrite -/(unsplit (inl i)) unsplitK. Qed.
-Lemma split_rshift n m (i : 'I_m) : fintype.split (rshift n i) = inr i.
-Proof. by rewrite -/(unsplit (inr i)) unsplitK. Qed.
-
 Section hull_is_convex.
 Variable A : convType.
 Import ScaledConvex.
 
-Lemma AddFDist_conv n m p (g : 'I_(n+m) -> A)(d : {fdist 'I_n})(e : {fdist 'I_m}) :
+Lemma AddFDist_conv n m p (g : 'I_(n + m) -> A)
+  (d : {fdist 'I_n}) (e : {fdist 'I_m}) :
   <|>_(AddFDist.d d e p) g =
   <|>_d (g \o @lshift n m) <|p|> <|>_e (g \o @rshift n m).
 Proof.
@@ -1045,11 +1061,12 @@ Canonical hull_is_convex_set (Z : set A) : convex_set A :=
 End hull_is_convex.
 
 Section hull_convex_set.
-Variable A : convType.
 Local Open Scope classical_set_scope.
+Variable A : convType.
+Implicit Types X Y Z : set A.
 
-Lemma hull_eqEsubset (X Y : set A) :
-  (X `<=` hull Y)%classic -> (Y `<=` hull X)%classic -> hull X = hull Y.
+Lemma hull_eqEsubset X Y :
+  X `<=` hull Y -> Y `<=` hull X -> hull X = hull Y.
 Proof.
 move/hull_monotone; rewrite hull_cset /= => H1.
 move/hull_monotone; rewrite hull_cset /= => H2.
@@ -1059,7 +1076,7 @@ Qed.
 (* hull (X `|` hull Y) = hull (hull (X `|` Y)) = hull (x `|` y);
    the first equality looks like a tensorial strength under hull
    Todo : Check why this is so. *)
-Lemma hullU_strr (X Y : set A) : hull (X `|` hull Y) = hull (X `|` Y).
+Lemma hullU_strr X Y : hull (X `|` hull Y) = hull (X `|` Y).
 Proof.
 apply/hull_eqEsubset => a.
 - case; first by move=> ?; apply/subset_hull; left.
@@ -1069,38 +1086,12 @@ apply/hull_eqEsubset => a.
   apply/subset_hull; right. exact/subset_hull.
 Qed.
 
-Lemma hullU_strl (X Y : set A) : hull (hull X `|` Y) = hull (X `|` Y).
+Lemma hullU_strl X Y : hull (hull X `|` Y) = hull (X `|` Y).
 Proof. by rewrite [in LHS]setUC [in RHS]setUC hullU_strr. Qed.
 
-Lemma hullUA (X Y Z : {convex_set A}) :
+Lemma hullUA X Y Z :
   hull (X `|` hull (Y `|` Z)) = hull (hull (X `|` Y) `|` Z).
 Proof. by rewrite hullU_strr hullU_strl setUA. Qed.
-
-End hull_convex_set.
-
-Section hull_setU.
-Variable A : convType.
-Local Open Scope classical_set_scope.
-Import ScaledConvex.
-
-Definition scaled_set (Z : set A) :=
-  [set x | if x is p *: a then Z a else True].
-
-Lemma addpt_scaled_set (X : {convex_set A}) x y :
-  x \in scaled_set X -> y \in scaled_set X -> addpt x y \in scaled_set X.
-Proof.
-case: x => [p x|]; case: y => [q y|] //=; exact: mem_convex_set.
-Qed.
-
-Lemma scalept_scaled_set X r x :
-  x \in scaled_set X -> scalept r x \in scaled_set X.
-Proof.
-rewrite /scalept; case: Rlt_dec => //= Hr; by [case: x | rewrite !in_setE].
-Qed.
-
-Lemma scaled_set_extract X x (H : (0 < weight _ x)%R) :
-  x \in scaled_set X -> point H \in X.
-Proof. case: x H => [p x|/ltRR] //=; by rewrite in_setE. Qed.
 
 (* NB(saikawa): hullI exhibits a fundamental
    algebraic property of hull, and since I expect there should be some
@@ -1113,6 +1104,32 @@ rewrite predeqE => d; split.
   move: (hull_is_convex X).
   by rewrite is_convex_setP /is_convex_set_n => /asboolP/(_ _ g e gX).
 - by move/subset_hull.
+Qed.
+
+End hull_convex_set.
+
+Section hull_setU.
+Local Open Scope classical_set_scope.
+Variable A : convType.
+Import ScaledConvex.
+Implicit Types Z : set A.
+
+Definition scaled_set Z := [set x | if x is p *: a then Z a else True].
+
+Lemma scalept_scaled_set Z r x :
+  x \in scaled_set Z -> scalept r x \in scaled_set Z.
+Proof.
+rewrite /scalept; case: Rlt_dec => //= Hr; by [case: x | rewrite !in_setE].
+Qed.
+
+Lemma scaled_set_extract Z x (H : (0 < weight _ x)%R) :
+  x \in scaled_set Z -> point H \in Z.
+Proof. case: x H => [p x|/ltRR] //=; by rewrite in_setE. Qed.
+
+Lemma addpt_scaled_set (X : {convex_set A}) x y :
+  x \in scaled_set X -> y \in scaled_set X -> addpt x y \in scaled_set X.
+Proof.
+case: x => [p x|]; case: y => [q y|] //=; exact: mem_convex_set.
 Qed.
 
 Lemma hull_setU (a : A) (X Y : {convex_set A}) : X !=set0 -> Y !=set0 -> (hull (X `|` Y)) a ->
@@ -1366,6 +1383,59 @@ by rewrite mem_finsupp.
 Qed.
 End FSDist_convex_space.
 
+Section misc_scaled.
+Import ScaledConvex.
+Local Open Scope R_scope.
+
+Lemma scalept_conv (C : convType) (x y : R) (s : scaled_pt C) (p : prob):
+  0 <= x -> 0 <= y ->
+  scalept (x <|p|> y) s =
+  (scalept x s : Scaled_convType C) <|p|> scalept y s.
+Proof.
+move=> Hx Hy.
+move: (onem_ge0 (prob_le1 p)) => Hnp.
+rewrite scalept_addR; [|exact/mulR_ge0|exact/mulR_ge0].
+by rewrite /Conv /= /scaled_conv /= !scalept_comp.
+Qed.
+
+Lemma big_scalept_conv_split (C : convType) (I : Type) (r : seq I) (P : pred I)
+ (F G : I -> Scaled_convType C) (p : prob) :
+  \ssum_(i <- r | P i) (F i <|p|> G i) =
+  ((\ssum_(i <- r | P i) F i) : Scaled_convType C) <|p|> \ssum_(i <- r | P i) G i.
+Proof. by rewrite /Conv /= /scaled_conv big_split /= !big_scalept. Qed.
+
+Lemma scalept_addRnneg : forall (A : convType) (x : scaled_pt A),
+    {morph (fun (r : Rnneg) => scalept r x) : r s / addRnneg r s >-> addpt r s}.
+Proof. by move=> A x [] r /= /leRP Hr [] s /= /leRP Hs; apply scalept_addR. Qed.
+
+Definition big_scaleptl (A : convType) (x : scaled_pt A) :=
+  @big_morph
+    (@scaled_pt A)
+    Rnneg
+    (fun r : Rnneg => scalept r x)
+    (Zero A)
+    (@addpt A)
+    Rnneg0
+    addRnneg
+    (@scalept_addRnneg A x).
+
+Lemma big_scaleptl' (A : convType) (x : scaled_pt A) :
+  scalept R0 x = Zero A ->
+  forall (I : Type) (r : seq I) (P : pred I) (F : I -> R),
+    (forall i : I, 0 <= F i) ->
+    scalept (\sum_(i <- r | P i) F i) x = \ssum_(i <- r | P i) scalept (F i) x.
+Proof.
+move=> H I r P F H'.
+transitivity (\ssum_(i <- r | P i) (fun r0 : Rnneg => scalept r0 x) (mkRnneg (H' i))); last by reflexivity.
+rewrite -big_scaleptl ?scalept0 //.
+congr scalept.
+transitivity (\sum_(i <- r | P i) mkRnneg (H' i)); first by reflexivity.
+apply (big_ind2 (fun x y => x = (Rnneg.v y))) => //.
+by move=> x1 [v Hv] y1 y2 -> ->.
+Qed.
+
+End misc_scaled.
+
 Module OrderedConvexSpace.
 Record mixin_of (T : convType) : Type := Mixin {
   leconv : T -> T -> Prop where "a <= b" := (leconv a b);
@@ -1605,7 +1675,7 @@ Lemma convex_in_bothP :
 Proof.
 split => [H a0 a1 b0 b1 t | H];
   first by move: (H (a0,b0) (a1,b1) t); rewrite /convex_function_at /prod_curry.
-by case => a0 b0 [a1 b1] t; move:(H a0 a1 b0 b1 t); rewrite /convex_function_at /prod_curry.
+by case => a0 b0 [a1 b1] t; move:(H a0 a1 b0 b1 t).
 Qed.
 End convex_in_both.
 
@@ -1613,7 +1683,8 @@ Section biconvex_function.
 Local Open Scope ordered_convex_scope.
 Section definition.
 Variables (A B : convType) (C : orderedConvType) (f : A -> B -> C).
-Definition biconvex_function := (forall a, convex_function (f a)) /\ (forall b, convex_function (f^~ b)).
+Definition biconvex_function :=
+  (forall a, convex_function (f a)) /\ (forall b, convex_function (f^~ b)).
 (*
 Lemma biconvex_functionP : biconvex_function <-> convex_function f /\ @convex_function B (fun_orderedConvType A C) (fun b a => f a b).
 Proof.
@@ -1826,11 +1897,12 @@ Qed.
 
 End affine_function_prop.
 
-Section affine_function_prop'.
+Section affine_function_image.
+Local Open Scope classical_set_scope.
 Variables A B : convType.
 
 Lemma image_preserves_convex_hull (f : {affine A -> B}) (Z : set A) :
-  image f (hull Z) = hull (f @` Z).
+  f @` (hull Z) = hull (f @` Z).
 Proof.
 rewrite predeqE => b; split.
   case=> a [n [g [e [Hg]]]] ->{a} <-{b}.
@@ -1852,11 +1924,11 @@ move=> a // HZa Hfa; by exists a.
 Qed.
 
 Lemma image_preserves_convex_hull' (f : A -> B) (Hf : affine_function f) (Z : set A) :
-  image f (hull Z) = hull (f @` Z).
+  f @` (hull Z) = hull (f @` Z).
 Proof. by rewrite (image_preserves_convex_hull (AffineFunction Hf)). Qed.
 
-Lemma is_convex_set_image (f : {affine A -> B})
-  (a : convex_set A) : is_convex_set (f @` a).
+Lemma is_convex_set_image (f : {affine A -> B}) (a : {convex_set A}) :
+  is_convex_set (f @` a).
 Proof.
 rewrite /is_convex_set.
 apply/asboolP => x y p [a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
@@ -1865,8 +1937,8 @@ by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
 by rewrite (affine_functionP' f).
 Qed.
 
-Lemma is_convex_set_image' (f : A -> B) (H : affine_function f)
-  (a : convex_set A) : is_convex_set (f @` a).
+Lemma is_convex_set_image' (f : A -> B) (H : affine_function f) (a : convex_set A) :
+  is_convex_set (f @` a).
 Proof.
 rewrite /is_convex_set.
 apply/asboolP => x y p [a0 Ha0 <-{x}] [a1 Ha1 <-{y}]; exists (a0 <|p|> a1) => //.
@@ -1874,7 +1946,7 @@ by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
 by rewrite H.
 Qed.
 
-End affine_function_prop'.
+End affine_function_image.
 
 Section R_affine_function_prop.
 Variables (A : convType) (f : A -> R).

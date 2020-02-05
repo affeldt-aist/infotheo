@@ -676,19 +676,15 @@ case/imsetP => tb' Htb_1 Htb_2.
 symmetry in Htb_2; move/tcast2tval in Htb_2; rewrite /= in Htb_2.
 rewrite /split_tuple /= in_setX.
 apply/andP; split.
-- rewrite /take_shell /=.
-  apply/imsetP.
-  exists tb' => //.
+- apply/imsetP; exists tb' => //.
   apply val_inj => /=.
   apply eq_tcast2.
-  by rewrite -Htb_2 sum_num_occ_rec take_take.
+  by rewrite -Htb_2 sum_num_occ_rec take_take // leq_addr.
 - rewrite in_set.
   set t := Tuple _.
-  apply/eqP.
-  apply val_inj => /=.
-  transitivity ([::] : seq B)                     .
-    by rewrite -Ha take0.
-  by apply eq_tcast2.
+  apply/eqP/val_inj => /=.
+  apply eq_tcast2 => /=.
+  by rewrite -Ha take0.
 Qed.
 
 Lemma card_take_shell_incl (k : 'I_#|A|) (Ha : N(enum_val k | ta) != 0 ) tb :
@@ -702,12 +698,10 @@ case/imsetP => tb Htb_1 Htb_2.
 symmetry in Htb_2; move/tcast2tval in Htb_2; rewrite /= in Htb_2.
 rewrite /split_tuple /= in_setX.
 apply/andP; split.
-- rewrite /take_shell /=.
-  apply/imsetP.
-  exists tb => //.
+- apply/imsetP; exists tb => //.
   apply val_inj => /=.
   apply eq_tcast2.
-  by rewrite -Htb_2 sum_num_occ_rec take_take.
+  by rewrite -Htb_2 sum_num_occ_rec take_take // leq_addr.
 - rewrite in_set.
   set t := Tuple _.
   have Ht : tval t = take N(enum_val k | ta) (drop (sum_num_occ ta k) sb) by [].
@@ -720,12 +714,10 @@ apply/andP; split.
   rewrite -Htb_2 in Ht.
   apply/eqP.
   have Ht2 : tval t = drop (sum_num_occ ta k) (take (sum_num_occ ta k.+1) tb).
-    rewrite Ht {1}sum_num_occ_rec take_drop_take //.
-    + by rewrite sum_num_occ_rec.
-    + rewrite size_tuple -sum_num_occ_rec //; by apply sum_num_occ_leq_n.
-do 2 f_equal.
-symmetry.
-by apply num_occ_num_co_occ.
+    rewrite Ht {1}sum_num_occ_rec take_drop take_take; last by rewrite addnC.
+    by rewrite addnC sum_num_occ_rec.
+  congr (_ %:R / _%:R)%R.
+  exact/esym/num_occ_num_co_occ.
 Qed.
 
 Lemma card_take_shell (k : 'I_#|A|) (Ha : N(enum_val k | ta) != 0) :
