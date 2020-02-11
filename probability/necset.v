@@ -9,7 +9,7 @@ Require Import convex_choice.
 (*        Non-empty convex sets and semi-complete/lattice structures          *)
 (*                                                                            *)
 (* neset T              == the type of non-empty sets over T                  *)
-(* x%:ne                == try to infer whether x : set T isn't neset T       *)
+(* x%:ne                == try to infer whether x : set T is neset T          *)
 (* necset T             == the type of non-empty convex sets over T           *)
 (* necset_convType A    == instance of convType with elements of type         *)
 (*                         necset A and with operator                         *)
@@ -521,18 +521,17 @@ Module SemiCompleteSemiLattice.
 Section def.
 Local Open Scope classical_set_scope.
 (* a semicomplete semilattice has an infinitary operation *)
-Record mixin_of (T : choiceType) : Type := Class {
+Record mixin_of (T : choiceType) : Type := Mixin {
   op : neset T -> T ;
-  _ : forall x : T, op [set x]%:ne = x;
+  _ : forall x : T, op [set x]%:ne = x ;
   _ : forall I (s : neset I) (f : I -> neset T),
-        op (\bigcup_(i in s) f i)%:ne = op (op @` (f @` s))%:ne;
-}.
+        op (\bigcup_(i in s) f i)%:ne = op (op @` (f @` s))%:ne }.
 Structure type :=
   Pack {sort : choiceType; _ : mixin_of sort}.
 End def.
 Module Exports.
 Definition Joet {T : type} : neset (sort T) -> sort T :=
-  let: Pack _ (Class op _ _) := T in op.
+  let: Pack _ (Mixin op _ _) := T in op.
 Arguments Joet {T} : simpl never.
 Notation semiCompSemiLattType:= type.
 Coercion sort : semiCompSemiLattType >-> choiceType.
@@ -679,8 +678,8 @@ Local Open Scope convex_scope.
 Local Open Scope latt_scope.
 Local Open Scope classical_set_scope.
 Record mixin_of (L : semiCompSemiLattType) (op : prob -> L -> L -> L) := Mixin {
-  _ : forall (p : prob) (x : L) (I : neset L), op p x (Joet I) = Joet ((op p x) @` I)%:ne;
-}.
+  _ : forall (p : prob) (x : L) (I : neset L),
+    op p x (Joet I) = Joet ((op p x) @` I)%:ne }.
 Record class_of (T : choiceType) : Type := Class {
   base : SemiCompleteSemiLattice.mixin_of T ;
   base2 : ConvexSpace.mixin_of (SemiCompleteSemiLattice.Pack base) ;
@@ -929,7 +928,7 @@ apply hull_eqEsubset => a.
   exists x0 => //; exists i => //.
   by rewrite Fiu.
 Qed.
-Definition mixin := SemiCompleteSemiLattice.Class joet1 joet_bigsetU.
+Definition mixin := SemiCompleteSemiLattice.Mixin joet1 joet_bigsetU.
 End def.
 End necset_semiCompSemiLattType.
 Canonical necset_semiCompSemiLattType A :=

@@ -558,14 +558,15 @@ exact/perm_big/perm_eq_perm.
 Qed.
 
 Section convfdist.
-Variables n m : nat.
+Variables (n : nat) (B : finType).
 Variable p : {fdist 'I_n}.
-Variable q : 'I_n -> {fdist 'I_m}.
-Variable h : 'I_m -> scaled_pt.
+Variable q : 'I_n -> {fdist B}.
+Variable h : B -> scaled_pt.
 
 Lemma barycenter_convnfdist :
-  \ssum_(i < n) scalept (p i) (\ssum_(j < m) scalept (q i j) (h j)) =
-  \ssum_(j < m) scalept (ConvnFDist.d p q j) (h j).
+  (* TODO: \ssum_(j in B) notation? *)
+  \ssum_(i < n) scalept (p i) (\ssum_(j <- enum B) scalept (q i j) (h j)) =
+  \ssum_(j <- enum B) scalept (ConvnFDist.d p q j) (h j).
 Proof.
 rewrite (eq_bigr _ (fun i _ => big_scalept (p i) _ _ _)).
 rewrite exchange_big /=; apply eq_bigr => j _; rewrite ConvnFDist.dE.
@@ -788,8 +789,8 @@ Theorem Convn_convnfdist (n m : nat) (d : {fdist 'I_n})
         (e : 'I_n -> {fdist 'I_m}) (x : 'I_m -> A) :
   <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x.
 Proof.
-apply S1_inj; rewrite !S1_convn -barycenter_convnfdist.
-apply eq_bigr => i _; by rewrite S1_convn.
+apply S1_inj; rewrite !S1_convn -[in RHS]big_enum -barycenter_convnfdist.
+apply eq_bigr => i _; by rewrite big_enum S1_convn.
 Qed.
 
 Lemma convn_const (a : A) :
