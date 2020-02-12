@@ -1856,25 +1856,29 @@ End AffineFunction.
 Include AffineFunction.Exports.
 
 Section affine_function_prop0.
-Lemma affine_functionP' (A B : convType) (f : {affine A -> B}) a b t :
+Implicit Types A B C : convType.
+
+Lemma affine_functionP' A B (f : {affine A -> B}) a b t :
   affine_function_at f a b t.
 Proof. by case: f => f0; apply. Qed.
-Lemma affine_function_id_proof (A : convType) :
-  affine_function (ssrfun.id : A -> A).
+Lemma affine_function_id_proof A : affine_function (ssrfun.id : A -> A).
 Proof. by []. Qed.
-Definition affine_function_id (A : convType) : {affine A -> A} :=
+Definition affine_function_id A : {affine A -> A} :=
   AffineFunction (@affine_function_id_proof A).
-Lemma affine_function_comp_proof (A B C : convType) (f : {affine A -> B})
-  (g : {affine B -> C}) : affine_function (g \o f).
+Lemma affine_function_comp_proof' A B C (f : A -> B) (g : B -> C) :
+  affine_function f -> affine_function g -> affine_function (g \o f).
+Proof. by move=> Hf Hg a b t; rewrite /affine_function_at /= Hf Hg. Qed.
+Lemma affine_function_comp_proof A B C
+  (f : {affine A -> B}) (g : {affine B -> C}) :
+  affine_function (g \o f).
 Proof.
-move=> a b t; rewrite /affine_function_at /=.
-by rewrite (affine_functionP' f) (affine_functionP' g).
+exact (affine_function_comp_proof' (affine_functionP' f) (affine_functionP' g)).
 Qed.
-Definition affine_function_comp (A B C : convType)
+Definition affine_function_comp A B C
   (f : {affine A -> B}) (g : {affine B -> C}) : {affine A -> C} :=
   AffineFunction (affine_function_comp_proof f g).
-Lemma affine_function_Sum
-  (A B : convType) (f : {affine A -> B}) n (g : 'I_n -> A) (d : {fdist 'I_n}) :
+Lemma affine_function_Sum A B
+  (f : {affine A -> B}) n (g : 'I_n -> A) (d : {fdist 'I_n}) :
   f (<|>_d g) = <|>_d (f \o g).
 Proof.
 Import ScaledConvex.
