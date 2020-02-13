@@ -961,3 +961,84 @@ End def.
 End necset_semiCompSemiLattConvType.
 Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack
   (necset_semiCompSemiLattConvType.mixin A).
+
+Section Convn_fsdist.
+Local Open Scope classical_set_scope.
+Variable C : convType.
+Definition Convn_fsdist (d : {dist C}) : C :=
+  Convn_indexed_over_finType (fdist_of_Dist d) (fun x : finsupp d => fsval x).
+Local Notation G := Convn_fsdist.
+Lemma Convn_fsdist_affine (p : prob) (dx dy : {dist C}) : G dx <|p|> G dy = G (dx <|p|> dy).
+Admitted.
+End Convn_fsdist.
+
+Module necset_join.
+Section def.
+Local Open Scope classical_set_scope.
+Definition F (T : Type) := necset_convType (FSDist_convType (choice_of_Type T)).
+Variable T : Type.
+Definition L := F T.
+Definition L' := necset (F T).
+Definition LL := F (F T).
+Local Notation G := Convn_fsdist.
+Definition bary' (X : LL) : set L := [set x : L | exists y : {dist L}, y \in X /\ x = G y].
+Lemma bary'_convex X : is_convex_set (bary' X).
+apply/asboolP=> x y p [] dx []; rewrite in_setE=> dxX xGdx [] dy []; rewrite in_setE=> dyX yGdy.
+exists (dx <|p|>dy).
+split; first by rewrite in_setE; move/asboolP:(convex_setP X); apply.
+  by rewrite xGdx yGdy Convn_fsdist_affine.
+Qed.
+Lemma bary'_neq0 X : (bary' X) != set0.
+apply/set0P.
+case/set0P:(neset_neq0 X)=> x Xx.
+  by exists (G (x : {dist (F T)})), x; split; first by move:Xx; rewrite in_setE.
+Qed.
+Definition bary : LL -> L' := fun X => NECSet.Pack (NECSet.Class (CSet.Class (bary'_convex X)) (NESet.Mixin (bary'_neq0 X))).
+
+Definition join1' (X : L') : convex_set (FSDist_convType (choice_of_Type T)) :=
+  CSet.Pack (CSet.Class (hull_is_convex (classical_sets.bigsetU X (fun x => if x \in X then (x : set _) else cset0 _)))).
+Lemma join1'_neq0 (X : L') : join1' X != set0 :> set _.
+Proof.
+rewrite hull_eq0 set0P.
+case/set0P: (neset_neq0 X) => y.
+case/set0P: (neset_neq0 y) => x yx sy.
+exists x; exists y => //.
+rewrite -in_setE in sy.
+by rewrite sy.
+Qed.
+Definition join1 : L' -> L := fun X => 
+  NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex _))
+                            (NESet.Mixin (join1'_neq0 X))).
+Definition join : LL -> L := join1 \o bary.
+End def.
+Module Exports.
+Definition necset_join := Eval hnf in join.
+End Exports.
+End necset_join.
+Export necset_join.Exports.
+
+Section necset_bind.
+Local Open Scope classical_set_scope.
+Local Notation M := (necset_join.F).
+Section ret.
+Variable a : Type.
+Definition necset_ret (x : a) : M a :=  necset1 (FSDist1.d (x : choice_of_Type a)).
+End ret.
+Section fmap.
+Variables (a b : Type) (f : a -> b).
+Definition necset_fmap' (ma : M a) :=
+  (FSDistfmap (f : choice_of_Type a -> choice_of_Type b)) @` ma.
+Lemma necset_fmap'_convex ma : is_convex_set (necset_fmap' ma).
+Admitted.
+Lemma necset_fmap'_neq0 ma : (necset_fmap' ma) != set0.
+Admitted.
+Definition necset_fmap : M a -> M b :=
+  fun ma => 
+    NECSet.Pack (NECSet.Class (CSet.Class (necset_fmap'_convex ma))
+                              (NESet.Mixin (necset_fmap'_neq0 ma))).
+End fmap.
+Section bind.
+Variables a b : Type.
+Definition necset_bind (ma : M a) (f : a -> M b) : M b := necset_join (necset_fmap f ma).
+End bind.
+End necset_bind.
