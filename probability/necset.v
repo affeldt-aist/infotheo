@@ -968,7 +968,7 @@ Variable C : convType.
 Definition Convn_fsdist (d : {dist C}) : C :=
   Convn_indexed_over_finType (fdist_of_Dist d) (fun x : finsupp d => fsval x).
 Local Notation G := Convn_fsdist.
-Lemma Convn_fsdist_affine (p : prob) (dx dy : {dist C}) : G dx <|p|> G dy = G (dx <|p|> dy).
+Lemma Convn_fsdist_affine : affine_function G.
 Admitted.
 End Convn_fsdist.
 
@@ -980,20 +980,18 @@ Variable T : Type.
 Definition L := F T.
 Definition L' := necset (F T).
 Definition LL := F (F T).
-Local Notation G := Convn_fsdist.
-Definition bary' (X : LL) : set L := [set x : L | exists y : {dist L}, y \in X /\ x = G y].
-Lemma bary'_convex X : is_convex_set (bary' X).
-apply/asboolP=> x y p [] dx []; rewrite in_setE=> dxX xGdx [] dy []; rewrite in_setE=> dyX yGdy.
-exists (dx <|p|>dy).
-split; first by rewrite in_setE; move/asboolP:(convex_setP X); apply.
-  by rewrite xGdx yGdy Convn_fsdist_affine.
+Definition F1join0' (X : LL) : set L := (@Convn_fsdist L) @` X.
+Lemma F1join0'_convex X : is_convex_set (F1join0' X).
+apply/asboolP=> x y p [] dx Xdx [] Cdxx [] dy Xdy Cdyy.
+exists (dx <|p|>dy); first by move/asboolP: (convex_setP X); apply.
+by rewrite Convn_fsdist_affine Cdxx Cdyy.
 Qed.
-Lemma bary'_neq0 X : (bary' X) != set0.
+Lemma F1join0'_neq0 X : (F1join0' X) != set0.
 apply/set0P.
 case/set0P:(neset_neq0 X)=> x Xx.
-  by exists (G (x : {dist (F T)})), x; split; first by move:Xx; rewrite in_setE.
+by exists (Convn_fsdist (x : {dist (F T)})), x.
 Qed.
-Definition bary : LL -> L' := fun X => NECSet.Pack (NECSet.Class (CSet.Class (bary'_convex X)) (NESet.Mixin (bary'_neq0 X))).
+Definition F1join0 : LL -> L' := fun X => NECSet.Pack (NECSet.Class (CSet.Class (F1join0'_convex X)) (NESet.Mixin (F1join0'_neq0 X))).
 
 Definition join1' (X : L') : convex_set (FSDist_convType (choice_of_Type T)) :=
   CSet.Pack (CSet.Class (hull_is_convex (classical_sets.bigsetU X (fun x => if x \in X then (x : set _) else cset0 _)))).
@@ -1009,7 +1007,7 @@ Qed.
 Definition join1 : L' -> L := fun X => 
   NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex _))
                             (NESet.Mixin (join1'_neq0 X))).
-Definition join : LL -> L := join1 \o bary.
+Definition join : LL -> L := join1 \o F1join0.
 End def.
 Module Exports.
 Definition necset_join := Eval hnf in join.
@@ -1019,6 +1017,8 @@ Export necset_join.Exports.
 
 Section necset_bind.
 Local Open Scope classical_set_scope.
+Local Open Scope proba_scope.
+Local Open Scope R_scope.
 Local Notation M := (necset_join.F).
 Section ret.
 Variable a : Type.
@@ -1028,10 +1028,24 @@ Section fmap.
 Variables (a b : Type) (f : a -> b).
 Definition necset_fmap' (ma : M a) :=
   (FSDistfmap (f : choice_of_Type a -> choice_of_Type b)) @` ma.
+Lemma FSDistfmap_affine :
+  affine_function (FSDistfmap (f : choice_of_Type a -> choice_of_Type b)).
+Proof.
+by move=> *; rewrite /FSDistfmap /affine_function_at ConvFSDist.bind_left_distr.
+Qed.
 Lemma necset_fmap'_convex ma : is_convex_set (necset_fmap' ma).
-Admitted.
+Proof.
+apply/asboolP=> x y p [] dx madx fdxx [] dy mady fdyy.
+exists (dx <|p|> dy); first by move/asboolP: (convex_setP ma); apply.
+by rewrite FSDistfmap_affine fdxx fdyy.
+Qed.
 Lemma necset_fmap'_neq0 ma : (necset_fmap' ma) != set0.
-Admitted.
+Proof.
+case/set0P: (neset_neq0 ma)=> x max.
+apply/set0P.
+rewrite /nonempty.
+by exists (FSDistfmap (f : choice_of_Type a -> choice_of_Type b) x), x.
+Qed.
 Definition necset_fmap : M a -> M b :=
   fun ma => 
     NECSet.Pack (NECSet.Class (CSet.Class (necset_fmap'_convex ma))
