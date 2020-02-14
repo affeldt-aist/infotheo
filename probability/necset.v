@@ -1161,15 +1161,7 @@ case/boolP: (x \in finsupp d)=> xfd;
 by rewrite fsfun_dflt // mem_fsetD1 // FSDist.f1 addR0 subRR.
 Qed.
 
-(* TODO: move to fsdist.v *)
-Lemma FSDist_le1 (x : C) : d x <= 1.
-Proof.
-have [xd|?] := boolP (x \in finsupp d); last by rewrite fsfun_dflt.
-rewrite -(FSDist.f1 d) (big_fsetD1 _ xd) /= addRC -leR_subl_addr subRR.
-apply rsumr_ge0 => ? _; exact: FSDist.ge0.
-Qed.
-
-Definition FSDist_prob (x : C) : prob := Prob.mk (conj (FSDist.ge0 d x) (FSDist_le1 x)).
+Definition FSDist_prob (x : C) : prob := Prob.mk (conj (FSDist.ge0 d x) (FSDist.le1 d x)).
 End fsdist_misc.
 Canonical FSDist_prob.
 

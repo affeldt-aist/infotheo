@@ -57,6 +57,12 @@ rewrite mem_finsupp => Pa; apply/ltRP; rewrite lt0R Pa; exact/leRP/ge0.
 Qed.
 Lemma f1 (d : t) : \sum_(a <- finsupp d) d a = 1.
 Proof. by case: d => d /= /andP[_ /eqP]. Qed.
+Lemma le1 (d : t) a : d a <= 1.
+Proof.
+have [ad|?] := boolP (a \in finsupp d); last by rewrite fsfun_dflt.
+rewrite -(f1 d) (big_fsetD1 _ ad) /= addRC -leR_subl_addr subRR.
+apply rsumr_ge0 => ? _; exact: ge0.
+Qed.
 Obligation Tactic := idtac.
 Program Definition make (f : {fsfun A -> R with 0})
   (H0 : forall a, a \in finsupp f -> 0 < f a)
