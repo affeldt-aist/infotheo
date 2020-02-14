@@ -975,64 +975,62 @@ Variable C : convType.
 Definition Convn_fsdist (d : {dist C}) : C :=
   Convn_indexed_over_finType (fdist_of_Dist d) (fun x : finsupp d => fsval x).
 Import ScaledConvex.
+
+Lemma ssum_seq_finsuppE' (d x : {dist C}) :
+  \ssum_(i : fdist_of_FSDist.D d) scalept (x (fsval i)) (S1 (fsval i)) =
+  \ssum_(i <- finsupp d) scalept (x i) (S1 i).
+Proof.
+by rewrite -(@big_seq_fsetE
+               _ _ _ _ _ xpredT
+               (fun i => scalept (x i) (S1 i))).
+Qed.
+
+Lemma ssum_seq_finsuppE (d : {dist C}) :
+  \ssum_i scalept (fdist_of_Dist d i) (S1 (fsval i)) =
+  \ssum_(i <- finsupp d) scalept (d i) (S1 i).
+Proof.
+under eq_bigr do rewrite fdist_of_FSDistE.
+by rewrite ssum_seq_finsuppE'.
+Qed.
+
+Lemma ssum_widen_finsupp (x : {dist C}) X :
+  (finsupp x `<=` X)%fset ->
+  \ssum_(i <- finsupp x) scalept (x i) (S1 i) =
+  \ssum_(i <- X) scalept (x i) (S1 i).
+Proof.  
+move=> xX.
+rewrite [in RHS](bigID (fun i => i \in finsupp x)) /=.
+have -> : (\ssum_(i <- X | i \notin finsupp x) scalept (x i) (S1 i)) = Zero C
+  by rewrite big1 //= => i Hi; rewrite fsfun_dflt // scalept0.
+rewrite addpt0 [in RHS]big_fset_condE /=.
+suff H : finsupp x = [fset i | i in X & i \in finsupp x]%fset
+  by rewrite [in LHS]H.
+apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> c; rewrite !inE /=.
+- by move=> cfx; move/fsubsetP/(_ c):xX ->.
+- by case/andP.
+Qed.
+
 Lemma Convn_fsdist_affine : affine_function Convn_fsdist.
 Proof.
 move => x y p.
 rewrite /affine_function_at.
 case/boolP : (p == 0%:pr) => [|pn0]; first by move/eqP ->; rewrite !conv0.
 case/boolP : (p == 1%:pr) => [|pn1]; first by move/eqP ->; rewrite !conv1.
-move: (pn1) => /onem_neq0 opn0.
+have opn0 : p.~ != 0%:pr by apply onem_neq0.
 apply S1_inj.
 rewrite S1_conv.
 rewrite !S1_Convn_indexed_over_finType.
-transitivity (\ssum_(i : fdist_of_FSDist.D (x <|p|> y))
-              scalept ((x <|p|> y) (fsval i)) (S1 (fsval i)));
-  first by apply eq_bigr => i; rewrite fdist_of_FSDistE.
-rewrite -(@big_seq_fsetE
-            _ _ _ _ _ xpredT
-            (fun i => scalept ((x <|p|> y) i) (S1 i))
-         ) /=.
-transitivity (\ssum_(i <- finsupp (x <|p|> y))
-  ((scalept (x i) (S1 i) : Scaled_convType C) <|p|> scalept (y i) (S1 i))); first by apply eq_bigr => i _; rewrite FSDist_scalept_conv.
+rewrite ssum_seq_finsuppE.
+under eq_bigr do rewrite FSDist_scalept_conv.
 rewrite big_seq_fsetE big_scalept_conv_split /=.
-rewrite -(@big_seq_fsetE _ _ _ _ _ xpredT (fun i => scalept (x i) (S1 i))).
-rewrite -(@big_seq_fsetE _ _ _ _ _ xpredT (fun i => scalept (y i) (S1 i))) /=.
-have -> : \ssum_i scalept (fdist_of_Dist x i) (S1 (fsval i)) =
-         \ssum_(i <- finsupp x) scalept (x i) (S1 i)
-  by rewrite big_seq_fsetE /=; apply eq_bigr => i _; rewrite fdist_of_FSDistE.
-have -> : \ssum_i scalept (fdist_of_Dist y i) (S1 (fsval i)) =
-         \ssum_(i <- finsupp y) scalept (y i) (S1 i)
-  by rewrite big_seq_fsetE /=; apply eq_bigr => i _; rewrite fdist_of_FSDistE.
+rewrite 2!ssum_seq_finsuppE' 2!ssum_seq_finsuppE.
 have -> : \ssum_(i <- finsupp x) scalept (x i) (S1 i) =
-         \ssum_(i <- finsupp (x <|p|> y)) scalept (x i) (S1 i).
-- rewrite [in RHS](bigID (fun i => i \in finsupp x)) /=.
-  have -> : (\ssum_(i <- finsupp (x <|p|> y) | i \notin finsupp x) scalept (x i) (S1 i)) = Zero C
-    by rewrite big1 //= => i Hi; rewrite fsfun_dflt // scalept0.
-  rewrite addpt0 [in RHS]big_fset_condE /=.
-  suff H : finsupp x = [fset i | i in finsupp (x <|p|> y) & i \in finsupp x]%fset
-    by rewrite [in LHS]H.
-  + have -> : [fset i | i in finsupp (x <|p|> y) & i \in finsupp x]%fset
-              = [fset i | i in finsupp x & i \in finsupp (x <|p|> y)]%fset
-      by apply eq_imfset => //; move => i /=; rewrite !inE andbC.
-    apply/eqP; rewrite eqEfsubset; apply/andP; split; last by apply fset_sub.
-    apply/fsubsetP => i Hi.
-    move/fsubsetP: (ConvFSDist.incl_finsupp_conv2fsdist x y pn0).
-    move/(_ i Hi) => Hi'.
-    by rewrite !inE Hi Hi'.
-suff -> : \ssum_(i <- finsupp y) scalept (y i) (S1 i) =
-         \ssum_(i <- finsupp (x <|p|> y)) scalept (y i) (S1 i) by [].
-rewrite [in RHS](bigID (fun i => i \in finsupp y)) /=.
-have -> : (\ssum_(i <- finsupp (x <|p|> y) | i \notin finsupp y) scalept (y i) (S1 i)) = Zero C
-  by rewrite big1 //= => i Hi; rewrite fsfun_dflt // scalept0.
-rewrite addpt0 [in RHS]big_fset_condE /=.
-suff H : finsupp y = [fset i | i in finsupp (x <|p|> y) & i \in finsupp y]%fset
-  by rewrite [in LHS]H.
-+ have -> : ([fset i | i in finsupp (x <|p|> y) & i \in finsupp y] =
-           [fset i | i in finsupp y & i \in finsupp (x <|p|> y)])%fset
-    by apply eq_imfset => //; move => i /=; rewrite !inE andbC.
-  apply/eqP; rewrite eqEfsubset; apply/andP; split; last by apply fset_sub.
-  apply/fsubsetP => i Hi.
-  by rewrite !inE /= Hi finsupp_Conv // inE Hi orbT.
+         \ssum_(i <- finsupp (x <|p|> y)) scalept (x i) (S1 i)
+  by apply/ssum_widen_finsupp/ConvFSDist.incl_finsupp_conv2fsdist.
+have -> : \ssum_(i <- finsupp y) scalept (y i) (S1 i) =
+         \ssum_(i <- finsupp (x <|p|> y)) scalept (y i) (S1 i)
+  by rewrite convC; apply/ssum_widen_finsupp/ConvFSDist.incl_finsupp_conv2fsdist.
+done.
 Qed.
 End Convn_fsdist.
 
