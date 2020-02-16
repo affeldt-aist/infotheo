@@ -1165,6 +1165,58 @@ Definition FSDist_prob (x : C) : prob := Prob.mk (conj (FSDist.ge0 d x) (FSDist.
 End fsdist_misc.
 Canonical FSDist_prob.
 
+Section convex_misc.
+Import ScaledConvex.
+Local Open Scope fset_scope.
+Local Open Scope R_scope.
+Local Open Scope convex_scope.
+Lemma Convn_fsdist_FSDist1 (C : convType) (x : C) : Convn_fsdist (FSDist1.d x) = x.
+Proof.
+apply: (@ScaledConvex.S1_inj _ _ x).
+rewrite S1_Convn_indexed_over_finType /=.
+rewrite (eq_bigr (fun=> ScaledConvex.S1 x)); last first.
+  move=> i _; rewrite fdist_of_FSDistE FSDist1.dE /= -(FSDist1.supp x).
+  rewrite fsvalP ScaledConvex.scalept1 /=; congr (ScaledConvex.S1 _).
+  case: i => i Hi /=; rewrite FSDist1.supp inE in Hi; exact/eqP.
+by rewrite big_const (_ : #| _ | = 1%N) // -cardfE FSDist1.supp cardfs1.
+Qed.
+
+Lemma Convn_fsdist_FSDistfmap (C D : convType) (f : C -> D) (d : {dist C}) :
+  affine_function f -> f (Convn_fsdist d) = Convn_fsdist (FSDistfmap f d).
+Proof.
+move=> f_aff.
+apply S1_inj => /=.
+rewrite S1_proj_Convn_indexed_over_finType // S1_Convn_indexed_over_finType.
+set X := LHS.
+under eq_bigr do rewrite fdist_of_FSDistE.
+rewrite ssum_seq_finsuppE' supp_FSDistfmap.
+under eq_bigr do rewrite FSDistBind.dE imfset_id.
+have Hsupp : forall y,
+    y \in [fset f x | x in finsupp d] ->
+    y \in \bigcup_(d0 <- [fset FSDist1.d (f a) | a in finsupp d]) finsupp d0.
+- move=> y.
+  case/imfsetP=> x /= xfd ->.
+  apply/bigfcupP.
+  exists (FSDist1.d (f x)); last by rewrite FSDist1.supp inE.
+  by rewrite andbT; apply/imfsetP; exists x.
+rewrite big_seq; under eq_bigr=> y Hy.
+- rewrite (Hsupp y Hy).
+  rewrite big_scaleptl'; [| by rewrite scalept0 | by move=> j; apply mulR_ge0].
+  under eq_bigr=> i do rewrite FSDist1.dE inE.
+  over.
+rewrite -big_seq exchange_big /= big_seq; under eq_bigr=> x Hx.
+- rewrite (big_fsetD1 (f x)) /=; last by apply/imfsetP; exists x.
+  rewrite eqxx mulR1.
+  rewrite big_seq.
+  under eq_bigr=> y do [rewrite in_fsetD1=> /andP [] /negbTE -> Hy; rewrite mulR0 scalept0].
+  rewrite big1 // addpt0.
+  over.
+rewrite /X.
+under eq_bigr do rewrite fdist_of_FSDistE.
+by rewrite ssum_seq_finsuppE'' big_seq.
+Qed.
+End convex_misc.
+
 Section necset_triL0.
 Import ScaledConvex.
 Local Open Scope fset_scope.
