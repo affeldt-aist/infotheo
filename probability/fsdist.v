@@ -346,7 +346,7 @@ apply/bigfcupP; rewrite imfset_id; exists (FSDist1.d (f a)).
 by rewrite FSDist1.supp inE eq_sym.
 Qed.
 
-Lemma supp_FSDistfmap (A : choiceType) (f : A -> {dist A}) d :
+Lemma supp_FSDistfmap (A B : choiceType) (f : A -> B) d :
   finsupp (FSDistfmap f d) = [fset f x | x in finsupp d].
 Proof.
 rewrite /FSDistfmap FSDistBind.supp; apply/fsetP => d'.
