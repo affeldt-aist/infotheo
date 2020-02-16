@@ -215,8 +215,7 @@ Record mixin_of (T : choiceType) : Type := Class {
   _ : forall p a, a <| p |> a = a ;
   _ : forall p a b, a <| p |> b = b <| p.~%:pr |> a;
   _ : forall (p q : prob) (a b c : T),
-      a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c
-}.
+      a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c }.
 Structure t : Type := Pack { car : choiceType ; class : mixin_of car }.
 Module Exports.
 Definition Conv (T : t) : prob -> car T -> car T -> car T :=
@@ -1826,7 +1825,7 @@ Section affine_function_def.
 Local Open Scope ordered_convex_scope.
 Variables (A B : convType).
 Definition affine_function_at (f : A -> B) a b t :=
-  (f (a <| t |> b) = f a <| t |> f b).
+  f (a <| t |> b) = f a <| t |> f b.
 End affine_function_def.
 
 Module AffineFunction.

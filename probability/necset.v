@@ -55,6 +55,15 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope convex_scope.
 
+Section moveme.
+Local Open Scope classical_set_scope.
+Lemma setU_bigsetU T (I J : set T) : I `|` J = bigsetU [set I; J] idfun.
+Proof.
+apply eqEsubset => x; [case=> Hx; by [exists I => //; left | exists J => //; right] |].
+by case=> K [] -> Hx; [left | right].
+Qed.
+End moveme.
+
 Section finmap_ext.
 Local Open Scope fset_scope.
 Lemma bigfcup_fset1 (T I : choiceType) (P : {fset I}) (f : I -> T) :
@@ -650,12 +659,6 @@ Lemma Joet_bigcup (I : Type) (S : neset I) (F : I -> neset L) :
     Joet (\bigcup_(i in S) F i)%:ne = Joet (Joet @` (F @` S))%:ne.
 Proof. by rewrite Joet_bigsetU. Qed.
 
-Lemma setU_bigsetU T (I J : set T) : I `|` J = bigsetU [set I; J] idfun.
-Proof.
-apply eqEsubset => x; [case=> Hx; by [exists I => //; left | exists J => //; right] |].
-by case=> K [] -> Hx; [left | right].
-Qed.
-
 Lemma nesetU_bigsetU T (I J : neset T) :
   (I `|` J)%:ne = (bigsetU [set I; J] idfun)%:ne.
 Proof.
@@ -821,6 +824,23 @@ Notation "[ 'Joet_affine' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
 End Exports.
 End JoetAffine.
 Export JoetAffine.Exports.
+
+Lemma Joet_affine_id_proof (A : semiCompSemiLattConvType) : JoetAffine.class_of (@id A).
+Proof.
+apply JoetAffine.Class; first exact: affine_function_id_proof.
+by move=> x; congr Joet; apply neset_ext; rewrite /= image_idfun.
+Qed.
+Lemma Joet_affine_comp_proof (A B C : semiCompSemiLattConvType) (f : A -> B) (g : B -> C) :
+  JoetAffine.class_of f -> JoetAffine.class_of g ->
+  JoetAffine.class_of (g \o f).
+Proof.
+case => af jf [] ag jg.
+apply JoetAffine.Class; first exact: affine_function_comp_proof'.
+move=> x; cbn.
+rewrite jf jg.
+congr Joet; apply neset_ext =>/=.
+by rewrite imageA.
+Qed.
 
 Section semicompsemilattconvtype_lemmas.
 Local Open Scope latt_scope.
@@ -1004,7 +1024,7 @@ Lemma ssum_widen_finsupp (x : {dist C}) X :
   (finsupp x `<=` X)%fset ->
   \ssum_(i <- finsupp x) scalept (x i) (S1 i) =
   \ssum_(i <- X) scalept (x i) (S1 i).
-Proof.  
+Proof.
 move=> xX.
 rewrite [in RHS](bigID (fun i => i \in finsupp x)) /=.
 have -> : (\ssum_(i <- X | i \notin finsupp x) scalept (x i) (S1 i)) = Zero C
@@ -1051,13 +1071,15 @@ Definition L' := necset (F T).
 Definition LL := F (F T).
 Definition F1join0' (X : LL) : set L := (@Convn_fsdist L) @` X.
 Lemma F1join0'_convex X : is_convex_set (F1join0' X).
-apply/asboolP=> x y p [] dx Xdx [] Cdxx [] dy Xdy Cdyy.
+Proof.
+apply/asboolP=> x y p [] dx Xdx <-{x} [] dy Xdy <-{y}.
 exists (dx <|p|>dy); first by move/asboolP: (convex_setP X); apply.
-by rewrite Convn_fsdist_affine Cdxx Cdyy.
+by rewrite Convn_fsdist_affine.
 Qed.
 Lemma F1join0'_neq0 X : (F1join0' X) != set0.
+Proof.
 apply/set0P.
-case/set0P:(neset_neq0 X)=> x Xx.
+case/set0P: (neset_neq0 X) => x Xx.
 by exists (Convn_fsdist (x : {dist (F T)})), x.
 Qed.
 Definition F1join0 : LL -> L' := fun X => NECSet.Pack (NECSet.Class (CSet.Class (F1join0'_convex X)) (NESet.Mixin (F1join0'_neq0 X))).
