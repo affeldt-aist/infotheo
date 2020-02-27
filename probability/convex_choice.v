@@ -27,7 +27,7 @@ Require Import fdist fsdist.
 (*                                                                            *)
 (* Real cones:                                                                *)
 (* The type scale_pt associated with add_pt and scalept define a real cone    *)
-(* [Varacca & Winskell, MSCS, 2006]:                                          *)
+(* [Varacca & Winskel, MSCS, 2006]:                                           *)
 (* scaled_pt      == Zero or a pair of a positive real with a point in a      *)
 (*                   convType (i.e., a "scaled point")                        *)
 (* add_pt         == the addition of scaled points, i.e.,                     *)
