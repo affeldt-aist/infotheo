@@ -778,33 +778,6 @@ congr (Joet _%:ne); apply/neset_ext => /=.
 rewrite imageA; congr image; apply funext=> n /=.
 by rewrite Joet_iter_conv_set.
 Qed.
-
-Corollary Varacca_Winskel_Lemma_5_6 (A : semiCompSemiLattConvType) (Y Z : neset A) :
-  hull Y = hull Z -> Joet Y = Joet Z.
-Proof.
-move=> H.
-rewrite-[in LHS]Joet_hull -[in RHS]Joet_hull.
-by congr Joet; apply neset_ext.
-Qed.
-
-Corollary Beaulieu_technical_equality
-      (A : semiCompSemiLattConvType) (x y : A) :
-  joet x y = Joet ((fun p => x <| p |> y) @` probset)%:ne.
-Proof.
-rewrite /joet -[in LHS]Joet_hull.
-congr Joet.
-apply neset_ext => /=.
-apply eqEsubset=> i /=.
-- move/set0P: (set1_neq0 x)=> Hx.
-  move/set0P: (set1_neq0 y)=> Hy.
-  move/(@hull_setU _ _ (necset1 x) (necset1 y) Hx Hy)=> [] a [].
-  rewrite inE=> /asboolP ->.
-  case=> b []; rewrite inE=> /asboolP ->.
-  case=> p ->.
-  by eexists.
-- case=> p ? <-.
-  by apply/mem_hull_setU.
-Qed.
 End semicompsemilattconvtype_lemmas.
 
 Section Convn_of_FSDist.
@@ -1300,3 +1273,32 @@ Variables a b : Type.
 Definition necset_bind (ma : M a) (f : a -> M b) : M b := necset_join (necset_fmap f ma).
 End bind.
 End necset_bind.
+
+Section technical_corollaries.
+Variable L : semiCompSemiLattConvType.
+Corollary Varacca_Winskel_Lemma_5_6 (Y Z : neset L) :
+  hull Y = hull Z -> Joet Y = Joet Z.
+Proof.
+move=> H.
+rewrite-[in LHS]Joet_hull -[in RHS]Joet_hull.
+by congr Joet; apply neset_ext.
+Qed.
+
+Corollary Beaulieu_technical_equality (x y : L):
+  joet x y = Joet ((fun p => x <| p |> y) @` probset)%:ne.
+Proof.
+rewrite /joet -[in LHS]Joet_hull.
+congr Joet.
+apply neset_ext => /=.
+apply eqEsubset=> i /=.
+- move/set0P: (set1_neq0 x)=> Hx.
+  move/set0P: (set1_neq0 y)=> Hy.
+  move/(@hull_setU _ _ (necset1 x) (necset1 y) Hx Hy)=> [] a [].
+  rewrite inE=> /asboolP ->.
+  case=> b []; rewrite inE=> /asboolP ->.
+  case=> p ->.
+  by eexists.
+- case=> p ? <-.
+  by apply/mem_hull_setU.
+Qed.
+End technical_corollaries.
