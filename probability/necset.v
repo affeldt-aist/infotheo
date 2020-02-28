@@ -24,7 +24,7 @@ Require Import convex_choice.
 (*          3. x <| p |> Joet I = Joet ((fun y => x <| p |> y) @` I)          *)
 (*                                                                            *)
 (* Convn_indexed_over_finType d f == <|>_d (f \o enum_val)                    *)
-(* Convn_fsdist                                                               *)
+(* Convn_of_FSDist                                                            *)
 (*                                                                            *)
 (* necset T             == the type of non-empty convex sets over T           *)
 (* necset_convType A    == instance of convType with elements of type         *)
@@ -780,10 +780,10 @@ by rewrite Joet_iter_conv_set.
 Qed.
 End semicompsemilattconvtype_lemmas.
 
-Section Convn_fsdist.
+Section Convn_of_FSDist.
 Local Open Scope classical_set_scope.
 Variable C : convType.
-Definition Convn_fsdist (d : {dist C}) : C :=
+Definition Convn_of_FSDist (d : {dist C}) : C :=
   Convn_indexed_over_finType (fdist_of_Dist d) (fun x : finsupp d => fsval x).
 Import ScaledConvex.
 
@@ -828,7 +828,7 @@ apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> c; rewrite !i
 - by case/andP.
 Qed.
 
-Lemma Convn_fsdist_affine : affine_function Convn_fsdist.
+Lemma Convn_of_FSDist_affine : affine_function Convn_of_FSDist.
 Proof.
 move => x y p.
 rewrite /affine_function_at.
@@ -850,7 +850,7 @@ have -> : \ssum_(i <- finsupp y) scalept (y i) (S1 i) =
   by rewrite convC; apply/ssum_widen_finsupp/ConvFSDist.incl_finsupp_conv2fsdist.
 done.
 Qed.
-End Convn_fsdist.
+End Convn_of_FSDist.
 
 
 (*Section fset_misc.
@@ -898,7 +898,7 @@ Import ScaledConvex.
 Local Open Scope fset_scope.
 Local Open Scope R_scope.
 Local Open Scope convex_scope.
-Lemma Convn_fsdist_FSDist1 (C : convType) (x : C) : Convn_fsdist (FSDist1.d x) = x.
+Lemma Convn_of_FSDist_FSDist1 (C : convType) (x : C) : Convn_of_FSDist (FSDist1.d x) = x.
 Proof.
 apply: (@ScaledConvex.S1_inj _ _ x).
 rewrite S1_Convn_indexed_over_finType /=.
@@ -909,8 +909,8 @@ rewrite (eq_bigr (fun=> ScaledConvex.S1 x)); last first.
 by rewrite big_const (_ : #| _ | = 1%N) // -cardfE FSDist1.supp cardfs1.
 Qed.
 
-Lemma Convn_fsdist_FSDistfmap (C D : convType) (f : C -> D) (d : {dist C}) :
-  affine_function f -> f (Convn_fsdist d) = Convn_fsdist (FSDistfmap f d).
+Lemma Convn_of_FSDist_FSDistfmap (C D : convType) (f : C -> D) (d : {dist C}) :
+  affine_function f -> f (Convn_of_FSDist d) = Convn_of_FSDist (FSDistfmap f d).
 Proof.
 move=> f_aff.
 apply S1_inj => /=.
@@ -951,7 +951,7 @@ Local Open Scope fset_scope.
 Local Open Scope R_scope.
 Variable C : choiceType.
 Lemma triangular_laws_left0 (d : {dist C}) :
-  Convn_fsdist (FSDistfmap (FSDist1.d (A:=C)) d) = d.
+  Convn_of_FSDist (FSDistfmap (FSDist1.d (A:=C)) d) = d.
 Proof.
 apply FSDist_ext=> x.
 apply S1_inj.
@@ -1197,18 +1197,18 @@ Variable T : Type.
 Definition L := F T.
 Definition L' := necset (F T).
 Definition LL := F (F T).
-Definition F1join0' (X : LL) : set L := (@Convn_fsdist L) @` X.
+Definition F1join0' (X : LL) : set L := (@Convn_of_FSDist L) @` X.
 Lemma F1join0'_convex X : is_convex_set (F1join0' X).
 Proof.
 apply/asboolP=> x y p [] dx Xdx <-{x} [] dy Xdy <-{y}.
 exists (dx <|p|>dy); first by move/asboolP: (convex_setP X); apply.
-by rewrite Convn_fsdist_affine.
+by rewrite Convn_of_FSDist_affine.
 Qed.
 Lemma F1join0'_neq0 X : (F1join0' X) != set0.
 Proof.
 apply/set0P.
 case/set0P: (neset_neq0 X) => x Xx.
-by exists (Convn_fsdist (x : {dist (F T)})), x.
+by exists (Convn_of_FSDist (x : {dist (F T)})), x.
 Qed.
 Definition F1join0 : LL -> L' := fun X => NECSet.Pack (NECSet.Class (CSet.Class (F1join0'_convex X)) (NESet.Mixin (F1join0'_neq0 X))).
 
