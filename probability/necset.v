@@ -14,17 +14,19 @@ Require Import convex_choice.
 (* X :<| p |>: Y        == \bigcup_(x in X) (x <| p |>: Y)                    *)
 (*                                                                            *)
 (* semiCompSemiLattType == the type of semi-complete semi-lattice provides    *)
-(*                         an operator Joet : neset T -> T with the following *)
+(*                         an operator |_| : neset T -> T with the following  *)
 (*                         axioms:                                            *)
-(*          1. Joet [set x] = x                                               *)
-(*          2. Joet (\bigcup_(i in s) f i) = Joet (Joet @` (f @` s))          *)
+(*          1. |_| [set x] = x                                                *)
+(*          2. |_| (\bigcup_(i in s) f i) = |_| (|_| @` (f @` s))             *)
 (*                                                                            *)
 (* semiCompSemiLattConvType == extends semiCompSemiLattType and convType with *)
 (*                         the following axiom:                               *)
-(*          3. x <| p |> Joet I = Joet ((fun y => x <| p |> y) @` I)          *)
+(*          3. x <| p |> |_| I = |_| ((fun y => x <| p |> y) @` I)            *)
 (*                                                                            *)
-(* Convn_indexed_over_finType d f == <|>_d (f \o enum_val)                    *)
-(* Convn_of_FSDist                                                            *)
+(*           <$>_d f == <|>_d (f \o enum_val) with d a finite distribution    *)
+(*                      over a finite type T and f a function from T to some  *)
+(*                      convType A                                            *)
+(* Convn_of_FSDist d == <$>_(fdist_of_Dist d) (fun x : finsupp d => fsval x)  *)
 (*                                                                            *)
 (* necset T             == the type of non-empty convex sets over T           *)
 (* necset_convType A    == instance of convType with elements of type         *)
@@ -32,7 +34,7 @@ Require Import convex_choice.
 (*                           X <| p |> Y = {x<|p|>y | x \in X, y \in Y}       *)
 (* necset_semiCompSemiLattType == instance of semiCompSemiLattType with       *)
 (*                         elements of type necset A and with operator        *)
-(*                         Joet X = hull (bigsetU X idfun)                    *)
+(*                         |_| X = hull (bigsetU X idfun)                     *)
 (*                                                                            *)
 (* necset_semiCompSemiLattConvType == instance of semiCompSemiLattConvType    *)
 (*                         with elements of type necset A                     *)
@@ -47,6 +49,9 @@ Reserved Notation "x %:ne" (at level 0, format "x %:ne").
 Reserved Notation "x <| p |>: Y" (format "x  <| p |>:  Y", at level 50).
 Reserved Notation "X :<| p |>: Y" (format "X  :<| p |>:  Y", at level 50).
 Reserved Notation "x [+] y" (format "x  [+]  y", at level 50).
+Reserved Notation "'<$>_' d f" (at level 36, f at level 36, d at level 0,
+  format "<$>_ d  f").
+Reserved Notation "'|_|' f" (at level 36, f at level 36, format "|_|  f").
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -125,7 +130,9 @@ Proof. by rewrite ConvFSDist.dE scalept_conv. Qed.
 
 End misc_scaled.
 
-Module Convn_indexed_over_finType.
+(* Convn indexed over a finType rather than the type of an ordinal as
+   in Convn *)
+Module Convn_finType.
 Section def.
 Local Open Scope R_scope.
 Variables (A : convType) (T : finType) (d' : {fdist T}) (f : T -> A).
@@ -144,44 +151,43 @@ rewrite (@reindex _ _ _ _ _ enum_rank) //; last first.
   by exists enum_val => i; [rewrite enum_rankK | rewrite enum_valK].
 apply eq_bigr => i _; congr (d' _); by rewrite -[in RHS](enum_rankK i).
 Qed.
-Definition d := FDist.make d_enum0 d_enum1.
-Definition Convn_indexed_over_finType : A := <|>_d (f \o enum).
+Definition d : {fdist 'I_n} := FDist.make d_enum0 d_enum1.
+Definition Convn_finType : A := <|>_d (f \o enum).
 End def.
 Module Exports.
-Notation Convn_indexed_over_finType := Convn_indexed_over_finType.
+Notation "'<$>_' d f" := (Convn_finType d f) : convex_scope.
 End Exports.
-End Convn_indexed_over_finType.
-Export Convn_indexed_over_finType.Exports.
+End Convn_finType.
+Export Convn_finType.Exports.
 
-Section S1_Convn_indexed_over_finType.
+Section S1_Convn_finType.
 Import ScaledConvex.
 Variables (A : convType) (T : finType) (d : {fdist T}) (f : T -> A).
-Lemma S1_Convn_indexed_over_finType :
-  S1 (Convn_indexed_over_finType d f) = \ssum_i scalept (d i) (S1 (f i)).
+Lemma S1_Convn_finType :
+  S1 (<$>_d f) = \ssum_i scalept (d i) (S1 (f i)).
 Proof.
-rewrite /Convn_indexed_over_finType S1_convn /=.
+rewrite /Convn_finType.Convn_finType S1_convn /=.
 rewrite (reindex_onto enum_rank enum_val) /=; last by move=> i _; rewrite enum_valK.
 apply eq_big => /=; first by move=> i; rewrite enum_rankK eqxx.
-move=> i _; rewrite /Convn_indexed_over_finType.d_enum ffunE.
+move=> i _; rewrite /Convn_finType.d_enum ffunE.
 by rewrite enum_rankK.
 Qed.
-End S1_Convn_indexed_over_finType.
+End S1_Convn_finType.
 
-Section S1_proj_Convn_indexed_over_finType.
+Section S1_proj_Convn_finType.
 Import ScaledConvex.
 Variables (A B : convType) (prj : A -> B).
 Hypothesis prj_affine : affine_function prj.
 Variables (T : finType) (d : {fdist T}) (f : T -> A).
 
-Lemma S1_proj_Convn_indexed_over_finType :
-  S1 (prj (Convn_indexed_over_finType d f)) =
-  \ssum_i scalept (d i) (S1 (prj (f i))).
+Lemma S1_proj_Convn_finType :
+  S1 (prj (<$>_d f)) = \ssum_i scalept (d i) (S1 (prj (f i))).
 Proof.
 set (prj' := AffineFunction.Pack (Phant (A -> B)) prj_affine).
 move: (affine_function_Sum prj') => /= ->.
-exact: S1_Convn_indexed_over_finType.
+exact: S1_Convn_finType.
 Qed.
-End S1_proj_Convn_indexed_over_finType.
+End S1_proj_Convn_finType.
 
 Module NESet.
 Local Open Scope classical_set_scope.
@@ -482,14 +488,16 @@ Structure type :=
   Pack {sort : choiceType; _ : mixin_of sort}.
 End def.
 Module Exports.
-Definition Joet {T : type} : neset (sort T) -> sort T :=
+Definition scsl_op {T : type} : neset (sort T) -> sort T :=
   let: Pack _ (Mixin op _ _) := T in op.
-Arguments Joet {T} : simpl never.
-Notation semiCompSemiLattType:= type.
+Arguments scsl_op {T} : simpl never.
+Notation semiCompSemiLattType := type.
+Notation "|_| f" := (scsl_op f) : latt_scope.
 Coercion sort : semiCompSemiLattType >-> choiceType.
 End Exports.
 End SemiCompleteSemiLattice.
 Export SemiCompleteSemiLattice.Exports.
+Local Open Scope latt_scope.
 
 Section semicompletesemilattice_lemmas.
 Local Open Scope classical_set_scope.
@@ -505,16 +513,16 @@ Variable (L : semiCompSemiLattType).
 *)
 
 (* [Reiterman] p.326, axiom 3 *)
-Lemma Joet1 : forall x : L, Joet [set x]%:ne = x.
+Lemma scsl_op1 : forall x : L, |_| [set x]%:ne = x.
 Proof. by case: L => [? []]. Qed.
 (* NB: bigsetU (bigsetI too) is the bind operator for the poserset monad *)
-Lemma Joet_bigsetU : forall (I : Type) (S : neset I) (F : I -> neset L),
-    Joet (bignesetU S F) = Joet (Joet @` (F @` S))%:ne.
+Lemma scsl_op_bigsetU : forall (I : Type) (S : neset I) (F : I -> neset L),
+    |_| (bignesetU S F) = |_| (scsl_op @` (F @` S))%:ne.
 Proof. by case: L => [? []]. Qed.
 
-Lemma Joet_bigcup (I : Type) (S : neset I) (F : I -> neset L) :
-    Joet (\bigcup_(i in S) F i)%:ne = Joet (Joet @` (F @` S))%:ne.
-Proof. by rewrite Joet_bigsetU. Qed.
+Lemma scsl_op_bigcup (I : Type) (S : neset I) (F : I -> neset L) :
+  |_| (\bigcup_(i in S) F i)%:ne = |_| (scsl_op @` (F @` S))%:ne.
+Proof. by rewrite scsl_op_bigsetU. Qed.
 
 Lemma nesetU_bigsetU T (I J : neset T) :
   (I `|` J)%:ne = (bigsetU [set I; J] idfun)%:ne.
@@ -524,100 +532,107 @@ apply/neset_ext => /=; apply eqEsubset => x.
 by case=> K [] -> Hx; [left | right].
 Qed.
 
-Lemma Joet_setU (I J : neset L) :
-  Joet (I `|` J)%:ne = Joet [set Joet I; Joet J]%:ne.
+Lemma scsl_op_setU (I J : neset L) :
+  |_| (I `|` J)%:ne = |_| [set |_| I; |_| J]%:ne.
 Proof.
-rewrite nesetU_bigsetU Joet_bigsetU.
-congr (Joet _%:ne); apply/neset_ext => /=.
+rewrite nesetU_bigsetU scsl_op_bigsetU.
+congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_idfun /= image_setU !image_set1.
 Qed.
 
-(* NB: [Reiterman] p.326, axiom 1 is trivial, since our Joet operation receives
+(* NB: [Reiterman] p.326, axiom 1 is trivial, since our |_| operator receives
    a set but not a sequence. *)
 
 (* [Reiterman] p.326, axiom 2 *)
-Lemma Joet_flatten (F : neset (neset L)) :
-  Joet (Joet @` F)%:ne = Joet (bigsetU F idfun)%:ne.
+Lemma scsl_op_flatten (F : neset (neset L)) :
+  |_| (scsl_op @` F)%:ne = |_| (bigsetU F idfun)%:ne.
 Proof.
-rewrite Joet_bigsetU; congr (Joet _%:ne); apply/neset_ext => /=.
+rewrite scsl_op_bigsetU; congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_idfun.
 Qed.
 
-Definition joet (x y : L) := Joet [set x; y]%:ne.
-Global Arguments joet : simpl never.
-Local Notation "x [+] y" := (joet x y).
+Definition scsl_binary (x y : L) := |_| [set x; y]%:ne.
+Global Arguments scsl_binary : simpl never.
+Local Notation "x [+] y" := (scsl_binary x y).
 
-Lemma joetC : commutative joet.
-Proof. by move=> x y; congr Joet; apply neset_ext => /=; rewrite /joet setUC. Qed.
-Lemma joetA : associative joet.
+Lemma scsl_binaryC : commutative scsl_binary.
 Proof.
-by move=> x y z; rewrite /joet -[in LHS](Joet1 x) -[in RHS](Joet1 z) -!Joet_setU; congr Joet; apply neset_ext => /=; rewrite setUA.
+by move=> x y; congr scsl_op; apply neset_ext => /=; rewrite /scsl_binary setUC.
 Qed.
-Lemma joetxx : idempotent joet.
+Lemma scsl_binaryA : associative scsl_binary.
 Proof.
-by move=> x; rewrite -[in RHS](Joet1 x); congr Joet; apply neset_ext => /=; rewrite setUid.
+move=> x y z; rewrite /scsl_binary -[in LHS](scsl_op1 x) -[in RHS](scsl_op1 z).
+by rewrite -!scsl_op_setU; congr (|_| _); apply neset_ext => /=; rewrite setUA.
+Qed.
+Lemma scsl_binaryxx : idempotent scsl_binary.
+Proof.
+move=> x; rewrite -[in RHS](scsl_op1 x); congr (|_| _); apply neset_ext => /=.
+by rewrite setUid.
 Qed.
 
-Lemma joetAC : right_commutative joet.
-Proof. by move=> x y z; rewrite -!joetA [X in _ [+] X]joetC. Qed.
-Lemma joetCA : left_commutative joet.
-Proof. by move=> x y z; rewrite !joetA [X in X [+] _]joetC. Qed.
-Lemma joetACA : interchange joet joet.
-Proof. by move=> x y z t; rewrite !joetA [X in X [+] _]joetAC. Qed.
+Lemma scsl_binaryAC : right_commutative scsl_binary.
+Proof. by move=> x y z; rewrite -!scsl_binaryA [X in _ [+] X]scsl_binaryC. Qed.
+Lemma scsl_binaryCA : left_commutative scsl_binary.
+Proof. by move=> x y z; rewrite !scsl_binaryA [X in X [+] _]scsl_binaryC. Qed.
+Lemma scsl_binaryACA : interchange scsl_binary scsl_binary.
+Proof.
+by move=> x y z t; rewrite !scsl_binaryA [X in X [+] _]scsl_binaryAC.
+Qed.
 
-Lemma joetKU y x : x [+] (x [+] y) = x [+] y.
-Proof. by rewrite joetA joetxx. Qed.
-Lemma joetUK y x : (x [+] y) [+] y = x [+] y.
-Proof. by rewrite -joetA joetxx. Qed.
-Lemma joetKUC y x : x [+] (y [+] x) = x [+] y.
-Proof. by rewrite joetC joetUK joetC. Qed.
-Lemma joetUKC y x : y [+] x [+] y = x [+] y.
-Proof. by rewrite joetAC joetC joetxx. Qed.
+Lemma scsl_binaryKU y x : x [+] (x [+] y) = x [+] y.
+Proof. by rewrite scsl_binaryA scsl_binaryxx. Qed.
+Lemma scsl_binaryUK y x : (x [+] y) [+] y = x [+] y.
+Proof. by rewrite -scsl_binaryA scsl_binaryxx. Qed.
+Lemma scsl_binaryKUC y x : x [+] (y [+] x) = x [+] y.
+Proof. by rewrite scsl_binaryC scsl_binaryUK scsl_binaryC. Qed.
+Lemma scsl_binaryUKC y x : y [+] x [+] y = x [+] y.
+Proof. by rewrite scsl_binaryAC scsl_binaryC scsl_binaryxx. Qed.
 End semicompletesemilattice_lemmas.
-Notation "x [+] y" := (joet x y) : latt_scope.
+Notation "x [+] y" := (scsl_binary x y) : latt_scope.
 
-Section Joet_morph.
+Section scsl_op_morph.
 Local Open Scope classical_set_scope.
 Local Open Scope latt_scope.
 Variables (L M : semiCompSemiLattType).
-Definition Joet_morph (f : L -> M) :=
-  forall (X : neset L), f (Joet X) = Joet (f @` X)%:ne.
-Definition joet_morph (f : L -> M) :=
+Definition scsl_op_morph (f : L -> M) :=
+  forall (X : neset L), f (|_| X) = |_| (f @` X)%:ne.
+Definition scsl_binary_morph (f : L -> M) :=
   forall (x y : L), f (x [+] y) = f x [+] f y.
-Lemma Joet_joet_morph (f : L -> M) : Joet_morph f -> joet_morph f.
+Lemma scsl_op_scsl_binary_morph (f : L -> M) :
+  scsl_op_morph f -> scsl_binary_morph f.
 Proof.
 move=> H x y.
 move: (H [set x; y]%:ne) => ->.
-transitivity (Joet [set f x; f y]%:ne) => //.
-congr (Joet _%:ne); apply/neset_ext => /=.
+transitivity (|_| [set f x; f y]%:ne) => //.
+congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
-End Joet_morph.
+End scsl_op_morph.
 
-Module JoetMorph.
+Module ScslOpMorph.
 Section ClassDef.
 Local Open Scope classical_set_scope.
 Variables (U V : semiCompSemiLattType).
 Structure map (phUV : phant (U -> V)) :=
-  Pack {apply : U -> V ; _ : Joet_morph apply}.
+  Pack {apply : U -> V ; _ : scsl_op_morph apply}.
 Local Coercion apply : map >-> Funclass.
 Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
-Definition class := let: Pack _ c as cF' := cF return Joet_morph cF' in c.
+Definition class := let: Pack _ c as cF' := cF return scsl_op_morph cF' in c.
 Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
   @Pack phUV f fA.
 End ClassDef.
 Module Exports.
 Coercion apply : map >-> Funclass.
-Notation JoetMorph fA := (Pack (Phant _) fA).
-Notation "{ 'Joet_morph' fUV }" := (map (Phant fUV))
-  (at level 0, format "{ 'Joet_morph'  fUV }") : convex_scope.
-Notation "[ 'Joet_morph' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
-  (at level 0, format "[ 'Joet_morph'  'of'  f  'as'  g ]") : convex_scope.
-Notation "[ 'Joet_morph' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
-  (at level 0, format "[ 'Joet_morph'  'of'  f ]") : convex_scope.
+Notation ScslOpMorph fA := (Pack (Phant _) fA).
+Notation "{ 'Scsl_morph' fUV }" := (map (Phant fUV))
+  (at level 0, format "{ 'Scsl_morph'  fUV }") : convex_scope.
+Notation "[ 'Scsl_morph' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
+  (at level 0, format "[ 'Scsl_morph'  'of'  f  'as'  g ]") : convex_scope.
+Notation "[ 'Scsl_morph' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
+  (at level 0, format "[ 'Scsl_morph'  'of'  f ]") : convex_scope.
 End Exports.
-End JoetMorph.
-Export JoetMorph.Exports.
+End ScslOpMorph.
+Export ScslOpMorph.Exports.
 
 Module SemiCompSemiLattConvType.
 Local Open Scope convex_scope.
@@ -625,7 +640,7 @@ Local Open Scope latt_scope.
 Local Open Scope classical_set_scope.
 Record mixin_of (L : semiCompSemiLattType) (op : prob -> L -> L -> L) := Mixin {
   _ : forall (p : prob) (x : L) (I : neset L),
-    op p x (Joet I) = Joet ((op p x) @` I)%:ne }.
+    op p x (|_| I) = |_| ((op p x) @` I)%:ne }.
 Record class_of (T : choiceType) : Type := Class {
   base : SemiCompleteSemiLattice.mixin_of T ;
   base2 : ConvexSpace.mixin_of (SemiCompleteSemiLattice.Pack base) ;
@@ -645,20 +660,20 @@ End Exports.
 End SemiCompSemiLattConvType.
 Export SemiCompSemiLattConvType.Exports.
 
-Module JoetAffine.
+Module ScslOpAffine.
 Section ClassDef.
 Local Open Scope classical_set_scope.
 Variables (U V : semiCompSemiLattConvType).
 Record class_of (f : U -> V) : Prop := Class {
   base : affine_function f ;
-  base2 : Joet_morph f ;
+  base2 : scsl_op_morph f ;
 }.
 Structure map (phUV : phant (U -> V)) :=
   Pack {apply : U -> V ; class' : class_of apply}.
 Definition baseType (phUV : phant (U -> V)) (f : map phUV) : {affine U -> V} :=
   AffineFunction (base (class' f)).
-Definition base2Type (phUV : phant (U -> V)) (f : map phUV) : {Joet_morph U -> V} :=
-  JoetMorph (base2 (class' f)).
+Definition base2Type (phUV : phant (U -> V)) (f : map phUV) : {Scsl_morph U -> V} :=
+  ScslOpMorph (base2 (class' f)).
 Local Coercion apply : map >-> Funclass.
 Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
 Definition class := let: Pack _ c as cF' := cF return class_of cF' in c.
@@ -668,34 +683,34 @@ End ClassDef.
 Module Exports.
 Coercion apply : map >-> Funclass.
 Coercion baseType : map >-> AffineFunction.map.
-Coercion base2Type : map >-> JoetMorph.map.
+Coercion base2Type : map >-> ScslOpMorph.map.
 Canonical baseType.
 Canonical base2Type.
-Notation JoetAffine fA := (Pack (Phant _) fA).
-Notation "{ 'Joet_affine' fUV }" := (map (Phant fUV))
-  (at level 0, format "{ 'Joet_affine'  fUV }") : convex_scope.
-Notation "[ 'Joet_affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
-  (at level 0, format "[ 'Joet_affine'  'of'  f  'as'  g ]") : convex_scope.
-Notation "[ 'Joet_affine' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
-  (at level 0, format "[ 'Joet_affine'  'of'  f ]") : convex_scope.
+Notation Scsl_Affine fA := (Pack (Phant _) fA).
+Notation "{ 'Scsl__affine' fUV }" := (map (Phant fUV))
+  (at level 0, format "{ 'Scsl__affine'  fUV }") : convex_scope.
+Notation "[ 'Scsl__affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
+  (at level 0, format "[ 'Scsl__affine'  'of'  f  'as'  g ]") : convex_scope.
+Notation "[ 'Scsl__affine' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
+  (at level 0, format "[ 'Scsl__affine'  'of'  f ]") : convex_scope.
 End Exports.
-End JoetAffine.
-Export JoetAffine.Exports.
+End ScslOpAffine.
+Export ScslOpAffine.Exports.
 
-Lemma Joet_affine_id_proof (A : semiCompSemiLattConvType) : JoetAffine.class_of (@id A).
+Lemma scsl_op_affine_id_proof (A : semiCompSemiLattConvType) : ScslOpAffine.class_of (@id A).
 Proof.
-apply JoetAffine.Class; first exact: affine_function_id_proof.
-by move=> x; congr Joet; apply neset_ext; rewrite /= image_idfun.
+apply ScslOpAffine.Class; first exact: affine_function_id_proof.
+by move=> x; congr (|_| _); apply neset_ext; rewrite /= image_idfun.
 Qed.
-Lemma Joet_affine_comp_proof (A B C : semiCompSemiLattConvType) (f : A -> B) (g : B -> C) :
-  JoetAffine.class_of f -> JoetAffine.class_of g ->
-  JoetAffine.class_of (g \o f).
+Lemma scsl_op_affine_comp_proof (A B C : semiCompSemiLattConvType) (f : A -> B) (g : B -> C) :
+  ScslOpAffine.class_of f -> ScslOpAffine.class_of g ->
+  ScslOpAffine.class_of (g \o f).
 Proof.
 case => af jf [] ag jg.
-apply JoetAffine.Class; first exact: affine_function_comp_proof'.
+apply ScslOpAffine.Class; first exact: affine_function_comp_proof'.
 move=> x; cbn.
 rewrite jf jg.
-congr Joet; apply neset_ext =>/=.
+congr (|_| _); apply neset_ext =>/=.
 by rewrite imageA.
 Qed.
 
@@ -706,77 +721,77 @@ Local Open Scope classical_set_scope.
 
 Variable L : semiCompSemiLattConvType.
 
-Lemma JoetDr : forall (p : prob) (x : L) (Y : neset L),
-  x <|p|> Joet Y = Joet ((fun y => x <|p|> y) @` Y)%:ne.
+Lemma scsl_opDr : forall (p : prob) (x : L) (Y : neset L),
+  x <|p|> |_| Y = |_| ((fun y => x <|p|> y) @` Y)%:ne.
 Proof. by case: L => ? [? ? []]. Qed.
-Lemma JoetDl (p : prob) (X : neset L) (y : L) :
-  Joet X <|p|> y = Joet ((fun x => x <|p|> y) @` X)%:ne.
+Lemma scsl_opDl (p : prob) (X : neset L) (y : L) :
+  |_| X <|p|> y = |_| ((fun x => x <|p|> y) @` X)%:ne.
 Proof.
-rewrite convC JoetDr.
-congr Joet; apply/neset_ext/eq_imagel=> x Xx.
+rewrite convC scsl_opDr.
+congr (|_| _); apply/neset_ext/eq_imagel=> x Xx.
 by rewrite -convC.
 Qed.
-Lemma joetDr p : right_distributive (fun x y => x <|p|> y) (@joet L).
+Lemma scsl_binaryDr p : right_distributive (fun x y => x <|p|> y) (@scsl_binary L).
 Proof.
 move=> x y z.
-rewrite JoetDr.
-transitivity (Joet [set x <|p|> y; x <|p|> z]%:ne) => //.
-congr (Joet _%:ne); apply/neset_ext => /=.
+rewrite scsl_opDr.
+transitivity (|_| [set x <|p|> y; x <|p|> z]%:ne) => //.
+congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
-Lemma Joet_conv_pt_setE p x (Y : neset L) :
-  Joet (x <| p |>: Y)%:ne = Joet ((Conv p x) @` Y)%:ne.
+Lemma scsl_op_conv_pt_setE p x (Y : neset L) :
+  |_| (x <| p |>: Y)%:ne = |_| ((Conv p x) @` Y)%:ne.
 Proof.
-by congr (Joet _%:ne); apply/neset_ext => /=; rewrite conv_pt_setE.
+by congr (|_| _%:ne); apply/neset_ext => /=; rewrite conv_pt_setE.
 Qed.
-Lemma Joet_conv_pt_setD p x (Y : neset L) :
-  Joet (x <| p |>: Y)%:ne = x <|p|> Joet Y.
-Proof. by rewrite Joet_conv_pt_setE -JoetDr. Qed.
-Lemma Joet_conv_setE p (X Y : neset L) :
-  Joet (X :<| p |>: Y)%:ne = Joet ((fun x => x <|p|> Joet Y) @` X)%:ne.
+Lemma scsl_op_conv_pt_setD p x (Y : neset L) :
+  |_| (x <| p |>: Y)%:ne = x <|p|> |_| Y.
+Proof. by rewrite scsl_op_conv_pt_setE -scsl_opDr. Qed.
+Lemma scsl_op_conv_setE p (X Y : neset L) :
+  |_| (X :<| p |>: Y)%:ne = |_| ((fun x => x <|p|> |_| Y) @` X)%:ne.
 Proof.
-transitivity (Joet (\bigcup_(x in X) (x <| p |>: Y))%:ne).
-  by congr (Joet _%:ne); apply neset_ext.
-rewrite Joet_bigcup //; congr (Joet _%:ne); apply neset_ext => /=.
+transitivity (|_| (\bigcup_(x in X) (x <| p |>: Y))%:ne).
+  by congr (|_| _%:ne); apply neset_ext.
+rewrite scsl_op_bigcup //; congr (|_| _%:ne); apply neset_ext => /=.
 rewrite imageA; congr image; apply funext => x /=.
-by rewrite Joet_conv_pt_setD.
+by rewrite scsl_op_conv_pt_setD.
 Qed.
-Lemma Joet_conv_setD p (X Y : neset L) :
-  Joet (X :<| p |>: Y)%:ne = Joet X <|p|> Joet Y.
-Proof. by rewrite Joet_conv_setE JoetDl. Qed.
-Lemma Joet_oplus_conv_setE (X Y : neset L) :
-  Joet (oplus_conv_set X Y)%:ne =
-  Joet ((fun p => Joet X <|p|> Joet Y) @` probset)%:ne.
+Lemma scsl_op_conv_setD p (X Y : neset L) :
+  |_| (X :<| p |>: Y)%:ne = |_| X <|p|> |_| Y.
+Proof. by rewrite scsl_op_conv_setE scsl_opDl. Qed.
+Lemma scsl_oplus_conv_setE (X Y : neset L) :
+  |_| (oplus_conv_set X Y)%:ne =
+  |_| ((fun p => |_| X <|p|> |_| Y) @` probset)%:ne.
 Proof.
-transitivity (Joet (\bigcup_(p in probset_neset) (X :<| p |>: Y))%:ne).
-  by congr (Joet _%:ne); apply/neset_ext.
-rewrite Joet_bigcup //.
-congr (Joet _%:ne); apply/neset_ext => /=.
+transitivity (|_| (\bigcup_(p in probset_neset) (X :<| p |>: Y))%:ne).
+  by congr (|_| _%:ne); apply/neset_ext.
+rewrite scsl_op_bigcup //.
+congr (|_| _%:ne); apply/neset_ext => /=.
 rewrite imageA; congr image; apply funext => p /=.
-by rewrite Joet_conv_setD.
+by rewrite scsl_op_conv_setD.
 Qed.
-Lemma Joet_iter_conv_set (X : neset L) (n : nat) :
-  Joet (iter_conv_set X n)%:ne = Joet X.
+Lemma scsl_op_iter_conv_set (X : neset L) (n : nat) :
+  |_| (iter_conv_set X n)%:ne = |_| X.
 Proof.
-elim: n => [|n IHn /=]; first by congr Joet; apply/neset_ext.
-rewrite (Joet_oplus_conv_setE _ (iter_conv_set X n)%:ne).
-transitivity (Joet [set Joet X]%:ne); last by rewrite Joet1.
-congr (Joet _%:ne); apply/neset_ext => /=.
-transitivity ((fun _ => Joet X) @` probset); last by rewrite image_const.
+elim: n => [|n IHn /=]; first by congr (|_| _); apply/neset_ext.
+rewrite (scsl_oplus_conv_setE _ (iter_conv_set X n)%:ne).
+transitivity (|_| [set |_| X]%:ne); last by rewrite scsl_op1.
+congr (|_| _%:ne); apply/neset_ext => /=.
+transitivity ((fun _ => |_| X) @` probset); last by rewrite image_const.
 by congr image; apply funext=> p; rewrite IHn convmm.
 Qed.
 
-Lemma Joet_hull (X : neset L) : Joet (hull X)%:ne = Joet X.
+Lemma scsl_op_hull (X : neset L) : |_| (hull X)%:ne = |_| X.
 Proof.
-transitivity (Joet (\bigcup_(i in natset) iter_conv_set X i)%:ne);
-  first by congr Joet; apply neset_ext; rewrite /= hull_iter_conv_set.
-rewrite Joet_bigsetU /=.
-rewrite -[in RHS](Joet1 (Joet X)).
-transitivity (Joet ((fun _ => Joet X) @` natset)%:ne); last first.
-  by congr Joet; apply/neset_ext/image_const.
-congr (Joet _%:ne); apply/neset_ext => /=.
-rewrite imageA; congr image; apply funext=> n /=.
-by rewrite Joet_iter_conv_set.
+transitivity (|_| (\bigcup_(i in natset) iter_conv_set X i)%:ne);
+  first by congr (|_| _); apply neset_ext; rewrite /= hull_iter_conv_set.
+rewrite scsl_op_bigsetU /=.
+rewrite -[in RHS](scsl_op1 (|_| X)).
+transitivity (|_| ((fun _ => |_| X) @` natset)%:ne); last first.
+  by congr (|_| _); apply/neset_ext/image_const.
+congr (|_| _%:ne); apply/neset_ext => /=.
+rewrite imageA; congr image; apply funext => n /=.
+by rewrite scsl_op_iter_conv_set.
 Qed.
 End semicompsemilattconvtype_lemmas.
 
@@ -784,7 +799,7 @@ Section Convn_of_FSDist.
 Local Open Scope classical_set_scope.
 Variable C : convType.
 Definition Convn_of_FSDist (d : {dist C}) : C :=
-  Convn_indexed_over_finType (fdist_of_Dist d) (fun x : finsupp d => fsval x).
+  <$>_(fdist_of_Dist d) (fun x : finsupp d => fsval x).
 Import ScaledConvex.
 
 Lemma ssum_seq_finsuppE'' (D : convType) (f : C -> D) (d x : {dist C}) :
@@ -837,7 +852,7 @@ case/boolP : (p == 1%:pr) => [|pn1]; first by move/eqP ->; rewrite !conv1.
 have opn0 : p.~ != 0%:pr by apply onem_neq0.
 apply S1_inj.
 rewrite S1_conv.
-rewrite !S1_Convn_indexed_over_finType.
+rewrite !S1_Convn_finType.
 rewrite ssum_seq_finsuppE.
 under eq_bigr do rewrite FSDist_scalept_conv.
 rewrite big_seq_fsetE big_scalept_conv_split /=.
@@ -898,10 +913,11 @@ Import ScaledConvex.
 Local Open Scope fset_scope.
 Local Open Scope R_scope.
 Local Open Scope convex_scope.
-Lemma Convn_of_FSDist_FSDist1 (C : convType) (x : C) : Convn_of_FSDist (FSDist1.d x) = x.
+Lemma Convn_of_FSDist_FSDist1 (C : convType) (x : C) :
+  Convn_of_FSDist (FSDist1.d x) = x.
 Proof.
 apply: (@ScaledConvex.S1_inj _ _ x).
-rewrite S1_Convn_indexed_over_finType /=.
+rewrite S1_Convn_finType /=.
 rewrite (eq_bigr (fun=> ScaledConvex.S1 x)); last first.
   move=> i _; rewrite fdist_of_FSDistE FSDist1.dE /= -(FSDist1.supp x).
   rewrite fsvalP ScaledConvex.scalept1 /=; congr (ScaledConvex.S1 _).
@@ -914,7 +930,7 @@ Lemma Convn_of_FSDist_FSDistfmap (C D : convType) (f : C -> D) (d : {dist C}) :
 Proof.
 move=> f_aff.
 apply S1_inj => /=.
-rewrite S1_proj_Convn_indexed_over_finType // S1_Convn_indexed_over_finType.
+rewrite S1_proj_Convn_finType // S1_Convn_finType.
 set X := LHS.
 under eq_bigr do rewrite fdist_of_FSDistE.
 rewrite ssum_seq_finsuppE' supp_FSDistfmap.
@@ -951,11 +967,11 @@ Local Open Scope fset_scope.
 Local Open Scope R_scope.
 Variable C : choiceType.
 Lemma triangular_laws_left0 (d : {dist C}) :
-  Convn_of_FSDist (FSDistfmap (FSDist1.d (A:=C)) d) = d.
+  Convn_of_FSDist (FSDistfmap (@FSDist1.d C) d) = d.
 Proof.
 apply FSDist_ext=> x.
 apply S1_inj.
-rewrite (S1_proj_Convn_indexed_over_finType (FSDist_eval_affine x)).
+rewrite (S1_proj_Convn_finType (FSDist_eval_affine x)).
 under eq_bigr do rewrite fdist_of_FSDistE.
 rewrite (ssum_seq_finsuppE'' (fun i : {dist C} => i x)).
 rewrite supp_FSDistfmap.
@@ -1131,13 +1147,13 @@ Definition pre_op (X : neset (necset A)) : {convex_set A} :=
   CSet.Pack (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne)).
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
-Definition joet (X : neset (necset A)) : necset A :=
+Definition scsl_necset (X : neset (necset A)) : necset A :=
   NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne))
                             (NESet.Mixin (pre_op_neq0 X))).
-Lemma joet1 x : joet [set x]%:ne = x.
+Lemma scsl_necset1 x : scsl_necset [set x]%:ne = x.
 Proof. by apply necset_ext => /=; rewrite bigcup1 hull_cset. Qed.
-Lemma joet_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
-  joet (bignesetU S F) = joet (joet @` (F @` S))%:ne.
+Lemma scsl_necset_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
+  scsl_necset (bignesetU S F) = scsl_necset (scsl_necset @` (F @` S))%:ne.
 Proof.
 apply necset_ext => /=.
 apply hull_eqEsubset => a.
@@ -1145,7 +1161,7 @@ apply hull_eqEsubset => a.
   exists 1, (fun _ => a), (FDist1.d ord0).
   split; last by rewrite convn1E.
   move=> a0 [] zero _ <-.
-  exists (joet (F i)); first by do 2 apply imageP.
+  exists (scsl_necset (F i)); first by do 2 apply imageP.
   by apply/subset_hull; exists x.
 - case => x [] u [] i Si Fiu <-.
   case => n [] g [] d [] /= gx ag.
@@ -1155,7 +1171,7 @@ apply hull_eqEsubset => a.
   exists x0 => //; exists i => //.
   by rewrite Fiu.
 Qed.
-Definition mixin := SemiCompleteSemiLattice.Mixin joet1 joet_bigsetU.
+Definition mixin := SemiCompleteSemiLattice.Mixin scsl_necset1 scsl_necset_bigsetU.
 End def.
 End necset_semiCompSemiLattType.
 Canonical necset_semiCompSemiLattType A :=
@@ -1167,7 +1183,7 @@ Local Open Scope classical_set_scope.
 Variable (A : convType).
 Let L := necset_semiCompSemiLattType A.
 Lemma axiom (p : prob) (X : L) (I : neset L) :
-  necset_convType.conv p X (Joet I) = Joet ((necset_convType.conv p X) @` I)%:ne.
+  necset_convType.conv p X (|_| I) = |_| ((necset_convType.conv p X) @` I)%:ne.
 Proof.
 apply necset_ext => /=.
 rewrite -hull_cset necset_convType.conv_conv_set /= hull_conv_set_strr.
@@ -1277,18 +1293,18 @@ End necset_bind.
 Section technical_corollaries.
 Variable L : semiCompSemiLattConvType.
 Corollary Varacca_Winskel_Lemma_5_6 (Y Z : neset L) :
-  hull Y = hull Z -> Joet Y = Joet Z.
+  hull Y = hull Z -> |_| Y = |_| Z.
 Proof.
 move=> H.
-rewrite-[in LHS]Joet_hull -[in RHS]Joet_hull.
-by congr Joet; apply neset_ext.
+rewrite-[in LHS]scsl_op_hull -[in RHS]scsl_op_hull.
+by congr (|_| _); apply neset_ext.
 Qed.
 
 Corollary Beaulieu_technical_equality (x y : L):
-  joet x y = Joet ((fun p => x <| p |> y) @` probset)%:ne.
+  x [+] y = |_| ((fun p => x <| p |> y) @` probset)%:ne.
 Proof.
-rewrite /joet -[in LHS]Joet_hull.
-congr Joet.
+rewrite /scsl_binary -[in LHS]scsl_op_hull.
+congr (|_| _).
 apply neset_ext => /=.
 apply eqEsubset=> i /=.
 - move/set0P: (set1_neq0 x)=> Hx.

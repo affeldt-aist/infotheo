@@ -2,6 +2,13 @@
 from 0.0.7 to ? :
 -----------------
 new lemma FSDist.le1
+renamings:
+- Joet -> scsl_op
+- joet -> scsl_binary
+- Convn_indexed_over_finType -> Convn_finType
+notations:
+- <$>_ for Convn__finType (on the model of <|>_)
+- |_| fr scsl_op (still [+] for scsl_binary)
 
 ---------------------
 from 0.0.6 to 0.0.7 :
