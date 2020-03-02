@@ -1906,7 +1906,7 @@ Section affine_function_image.
 Local Open Scope classical_set_scope.
 Variables A B : convType.
 
-Lemma image_preserves_convex_hull (f : {affine A -> B}) (Z : set A) :
+Proposition image_preserves_convex_hull (f : {affine A -> B}) (Z : set A) :
   f @` (hull Z) = hull (f @` Z).
 Proof.
 rewrite predeqE => b; split.
