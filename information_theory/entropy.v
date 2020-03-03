@@ -18,6 +18,8 @@ Require Import fdist proba jfdist divergence.
 
 Reserved Notation "'`H'" (at level 5).
 
+Declare Scope entropy_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
