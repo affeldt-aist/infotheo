@@ -1,4 +1,4 @@
--arg "-w -notation-overridden"
+-arg -w -arg -notation-overridden
 
 lib/ssrZ.v
 lib/ssrR.v
