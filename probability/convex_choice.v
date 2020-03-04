@@ -1094,7 +1094,7 @@ Lemma hullUA X Y Z :
   hull (X `|` hull (Y `|` Z)) = hull (hull (X `|` Y) `|` Z).
 Proof. by rewrite hullU_strr hullU_strl setUA. Qed.
 
-(* NB(saikawa): hullI exhibits a fundamental
+(* NB: hullI exhibits a fundamental
    algebraic property of hull, and since I expect there should be some
    cases where inference of canonical structure does not work well for hulls
    and a user needs to manually rewrite using such algebraic properties *)
@@ -2062,7 +2062,7 @@ by rewrite addRC [in X in Leconv _ X -> _]addRC.
 Qed.
 End convex_function_R.
 
-(* NB(saikawa):
+(* NB:
 Assume f is twice differentiable on an open interval I.
 Let Df and DDf be the first and second derivatives of f.
 Further assume DDf is always positive.  By applying MVT, we have :
