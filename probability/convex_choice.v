@@ -819,12 +819,9 @@ Lemma convn_weak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> A) :
   <|>_d (g \o u) = <|>_(FDistMap.d u d) g.
 Proof.
 apply S1_inj.
-rewrite !S1_convn.
-Search scalept.
-rewrite (@partition_big _ _ _ _ _ _ u (fun _=> true)) //=.
+rewrite !S1_convn (@partition_big _ _ _ _ _ _ u (fun _=> true)) //=.
 apply eq_bigr => i _.
 rewrite FDistMap.dE /=.
-Check scalept_rsum.
 have HF : forall a : 'I_m, (0 <= d a)%R by [].
 rewrite (@scalept_rsum A _ _ (mkPosFun HF)) /=.
 by apply eq_bigr => a /eqP ->.
@@ -856,8 +853,8 @@ Record altConv_mixin_of (T : choiceType) : Type := Class {
              <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x ;
   cnweak : forall n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
              <|>_d (g \o u) = <|>_(FDistMap.d u d) g ;
-  cnidem : forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
-             (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <|>_d g = a }.
+  cncst : forall (a : T) (n : nat) (d : {fdist 'I_n}),
+             <|>_d (fun _ => a) = a }.
 Structure altConvType : Type :=
   Pack { car :> choiceType ; class : altConv_mixin_of car }.
 End AltConvexSpace.
@@ -867,7 +864,7 @@ Section BinToN.
 Variable T : convType.
 Definition altConv_mixin : AltConvexSpace.altConv_mixin_of T :=
   AltConvexSpace.Class (@Convn_perm T) (@Convn_convnfdist T)
-                       (@convn_weak T) (@convn_idem T).
+                       (@convn_weak T) (@convn_const T).
 End BinToN.
 
 Section NToBin.
@@ -876,6 +873,64 @@ Variable T : altConvType.
 Definition S := class T.
 Definition conv p (a b : T) :=
   convn S (I2FDist.d p) (fun x : 'I_2 => if x == ord0 then a else b).
+Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
+  (forall i : 'I_n, (d i != 0)%R -> g i = a) -> convn S d g = a.
+Proof.
+move=> Ha.
+set supp := fdist_supp d.
+set f : 'I_#|supp| -> 'I_n := enum_val.
+have [x Hx] : exists x, x \in supp.
+  apply/existsP.
+  case/boolP: [exists x, _] => //.
+  rewrite negb_exists => /forallP Hx.
+  move: (FDist.f1 d).
+  rewrite -[LHS]mulR1 big_distrl.
+  rewrite rsum_fdist_supp big1.
+    move => H.
+    move: Rstruct.R1_neq_0.
+    by rewrite H eqxx.
+  move=> /= i Hi.
+  move: (Hx i).
+  by rewrite Hi.
+set f' : 'I_n -> 'I_#|supp| := enum_rank_in Hx.
+set d' := FDistMap.d f' d.
+have -> : d = FDistMap.d f d'.
+  apply fdist_ext => i /=.
+  rewrite FDistMap.dE /=.
+  case/boolP: (i \in supp) => Hi.
+    rewrite (bigD1 (f' i)) //=; last by rewrite /f /f' enum_rankK_in.
+    rewrite big1; last first.
+      move=> j /andP[] /eqP <-.
+      by rewrite /f /f' enum_valK_in eqxx.
+    rewrite /d' FDistMap.dE /= (bigD1 i) //= big1 ?addR0 //.
+    move=> j /andP[] /eqP /enum_rank_in_inj.
+    case/boolP: (j \in supp).
+      move=> _ -> //; try by rewrite eqxx.
+    by rewrite inE negbK => /eqP ->.
+  rewrite big1.
+    move: Hi.
+    by rewrite inE negbK => /eqP ->.
+  move=> j /eqP Hj.
+  rewrite /d' FDistMap.dE /= (bigD1 i) //=; last first.
+    by rewrite -Hj /f /f' enum_valK_in.
+  rewrite big1 ?addR0.
+    move: Hi.
+    by rewrite inE negbK => /eqP ->.
+  move=> k /andP[] /eqP.
+  case/boolP: (k \in supp) => Hk.
+    move/(f_equal f).
+    rewrite Hj /f /f' enum_rankK_in // => <-.
+    by rewrite eqxx.
+  move: Hk; by rewrite inE negbK => /eqP ->.
+rewrite -cnweak.
+have -> : g \o f = fun _ => a.
+  apply funext => i.
+  rewrite /f /= Ha //.
+  move: (enum_valP i).
+  by rewrite inE.
+by rewrite cncst.
+Qed.
+
 Definition conv_mixin : ConvexSpace.mixin_of T.
 apply (@ConvexSpace.Class _ conv); rewrite /conv /=.
 - move=> a b.
@@ -913,15 +968,14 @@ apply (@ConvexSpace.Class _ conv); rewrite /conv /=.
     symmetry.
     apply cnidem => i.
     rewrite FDist1.dE /=.
-    case/boolP: (i == ord0) => /eqP /=.
-      by move => ->.
+    case/boolP: (i == ord0) => [/eqP /= -> // |].
     by rewrite INR_eq0' eqxx.
   set d1 := FDistMap.d _ _.
   rewrite [X in convn S _ X](_ : _ =
     (fun x : 'I_2 => convn S (if x == ord0 then FDist1.d ord0 else d1) g));
     last first.
     apply funext => i.
-    by rewrite (fun_if (fun d => convn S d g) (i == ord0) (FDist1.d ord0) d1).
+    by rewrite (fun_if (fun d => convn S d g)).
   rewrite cndist.
   symmetry.
   rewrite [X in convn S (I2FDist.d [r_of p, q]) X]
@@ -933,8 +987,7 @@ apply (@ConvexSpace.Class _ conv); rewrite /conv /=.
     symmetry.
     apply cnidem => i.
     rewrite FDist1.dE /=.
-    case/boolP: (i == Ordinal _) => /eqP /=.
-      by move => ->.
+    case/boolP: (i == Ordinal _) => [/eqP /= -> // |].
     by rewrite INR_eq0' eqxx.
   set d2 := FDistMap.d _ _.
   rewrite [X in convn S _ X](_ : _ =
@@ -942,18 +995,12 @@ apply (@ConvexSpace.Class _ conv); rewrite /conv /=.
         convn S (if x == ord0 then d2 else FDist1.d (Ordinal (ltnSn 2))) g));
     last first.
     apply funext => i.
-    by rewrite (fun_if (fun d => convn S d g)
-                       (i == ord0) d2 (FDist1.d (Ordinal (ltnSn 2)))).
+    by rewrite (fun_if (fun d => convn S d g)).
   rewrite cndist.
   congr convn.
   apply fdist_ext => j.
-  rewrite !ConvnFDist.dE.
-  rewrite !big_ord_recl !big_ord0 eqxx.
-  rewrite !I2FDist.dE.
-  rewrite !FDistMap.dE !eqxx !FDist1.dE.
-  move: (neq_lift (ord0 : 'I_2) ord0).
-  rewrite eq_sym.
-  case: (_ == _) => //= _.
+  rewrite !ConvnFDist.dE !big_ord_recl !big_ord0 eqxx.
+  rewrite !I2FDist.dE !FDistMap.dE !eqxx !FDist1.dE /=.
   case: j => -[|[|[]]] //= Hj.
   - rewrite (bigD1 ord0) /=; last exact/eqP/val_inj.
     rewrite big1; last by case => -[].
@@ -993,8 +1040,7 @@ Import AltConvexSpace.
 Variable T : altConvType.
 Let S := class T.
 Definition T2 := ConvexSpace.Pack (conv_mixin T).
-Lemma equiv2 n (d : {fdist 'I_n}) (g : 'I_n -> T) :
-  convn S d g = @Convn T2 _ d g.
+Lemma equiv2 n (d : {fdist 'I_n}) g : convn S d g = @Convn T2 _ d g.
 Proof.
 elim: n d g.
   move=> d.
@@ -1003,10 +1049,8 @@ elim: n d g.
 move=> n IH d g /=.
 case: Bool.bool_dec => b.
   move/FDist1.P in b.
-  rewrite (@cnidem _ _ (g ord0)) // => i.
-  case/boolP: (i == ord0)%R.
-    by move/eqP => ->.
-  move/b => ->.
+  rewrite (@cnidem _ (g ord0)) // => i.
+  case/boolP: (i == ord0)%R => [/eqP | /b] -> //.
   by rewrite eqxx.
 rewrite -IH.
 have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
@@ -1017,23 +1061,20 @@ rewrite cnweak.
 rewrite /Conv /= /conv.
 set d' := FDistMap.d _ _.
 rewrite (_ : (fun x : 'I_2 => _) =
-             (fun x : 'I_2 =>
-                convn S (if x == ord0 then FDist1.d ord0 else d') g));
+             (fun x => convn S (if x == ord0 then FDist1.d ord0 else d') g));
   last first.
   apply funext => i.
   rewrite (fun_if (fun d => convn S d g)).
-  rewrite (@cnidem _ S (g ord0) _ (FDist1.d ord0)) // => j.
+  rewrite (@cnidem T (g ord0) _ (FDist1.d ord0)) // => j.
   rewrite FDist1.dE.
-  case/boolP: (j == _) => /=.
-    by move/eqP => ->.
+  case/boolP: (j == _) => [/eqP -> // |].
   by rewrite INR_eq0' eqxx.
 rewrite cndist.
 congr convn.
 apply fdist_ext => i.
 rewrite ConvnFDist.dE !big_ord_recl big_ord0 addR0 /= !I2FDist.dE /=.
 rewrite FDist1.dE /d' FDistMap.dE /=.
-case/boolP: (i == ord0).
-  move/eqP => ->.
+case/boolP: (i == ord0) => [/eqP -> |].
   by rewrite big1 // mulR0 mulR1 addR0.
 rewrite /= mulR0 add0R.
 case: (unliftP ord0 i) => //= [j|] -> // Hj.
