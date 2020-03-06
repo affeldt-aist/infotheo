@@ -849,10 +849,10 @@ Record altConv_mixin_of (T : choiceType) : Type := Class {
           where "'<|>_' d f" := (convn d f) ;
   cndist : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
              <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x ;
-  cnweak : forall n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
-             <|>_d (g \o u) = <|>_(FDistMap.d u d) g ;
-  cnconst : forall (a : T) (n : nat) (d : {fdist 'I_n}),
-             <|>_d (fun _ => a) = a }.
+  cnidem : forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
+             (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <|>_d g = a }.
+(*  cnconst : forall (a : T) (n : nat) (d : {fdist 'I_n}),
+             <|>_d (fun _ => a) = a }. *)
 Structure altConvType : Type :=
   Pack { car :> choiceType ; class : altConv_mixin_of car }.
 End AltConvexSpace.
@@ -861,7 +861,7 @@ Module AltConvexSpaceEquiv.
 Section BinToN.
 Variable T : convType.
 Definition altConv_mixin : AltConvexSpace.altConv_mixin_of T :=
-  AltConvexSpace.Class (@Convn_convnfdist T) (@convn_weak T) (@convn_const T).
+  AltConvexSpace.Class (@Convn_convnfdist T) (@convn_idem T).
 End BinToN.
 
 Section NToBin.
@@ -869,6 +869,27 @@ Import AltConvexSpace.
 Variable T : altConvType.
 Definition S := class T.
 
+Lemma cnweak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
+  convn S d (g \o u) = convn S (FDistMap.d u d) g.
+Proof.
+have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
+  apply fdist_ext => i.
+  rewrite FDistMap.dE ConvnFDist.dE big_mkcond /=.
+  apply eq_bigr => j _.
+  rewrite FDist1.dE.
+  case: ifP => [/eqP <- |] /=.
+    by rewrite eqxx mulR1.
+  rewrite eq_sym => ->.
+  by rewrite mulR0.
+rewrite -cndist.
+congr convn; apply funext => i /=.
+symmetry; apply cnidem.
+move=> j; rewrite FDist1.dE.
+case/boolP: (j == u i) => [/eqP -> // |].
+by rewrite INR_eq0' eqxx.
+Qed.
+
+(*
 Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
   (forall i : 'I_n, (d i != 0)%R -> g i = a) -> convn S d g = a.
 Proof.
@@ -920,6 +941,7 @@ have -> : g \o f = fun _ => a.
   by rewrite inE.
 by rewrite cnconst.
 Qed.
+*)
 
 Lemma cnfdist1 n (i : 'I_n) (g : 'I_n -> T) : convn S (FDist1.d i) g = g i.
 Proof.
@@ -1020,7 +1042,7 @@ Definition T1 := AltConvexSpace.Pack (altConv_mixin T).
 Lemma equiv1 p (a b : T) : a <| p |> b = @cnconv T1 p a b.
 Proof.
 rewrite /cnconv /AltConvexSpace.convn.
-rewrite [let (convn, _, _, _) := S T1 in convn]/=.
+rewrite [let (convn, _, _) := S T1 in convn]/=.
 Import ScaledConvex.
 apply S1_inj. rewrite S1_conv S1_convn.
 by rewrite !big_ord_recl big_ord0 /= !I2FDist.dE /= addpt0.
@@ -1041,7 +1063,7 @@ elim: n d g.
 move=> n IH d g /=.
 case: Bool.bool_dec => b.
   move/FDist1.P in b.
-  rewrite (@cnidem _ (g ord0)) // => i.
+  rewrite (@cnidem _ S (g ord0)) // => i.
   case/boolP: (i == ord0)%R => [/eqP | /b] -> //.
   by rewrite eqxx.
 rewrite -IH.
@@ -1057,7 +1079,7 @@ rewrite (_ : (fun x : 'I_2 => _) =
   last first.
   apply funext => i.
   rewrite (fun_if (fun d => convn S d g)).
-  rewrite (@cnidem T (g ord0) _ (FDist1.d ord0)) // => j.
+  rewrite (@cnidem _ S (g ord0) _ (FDist1.d ord0)) // => j.
   rewrite FDist1.dE.
   case/boolP: (j == _) => [/eqP -> // |].
   by rewrite INR_eq0' eqxx.
