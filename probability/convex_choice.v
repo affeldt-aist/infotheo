@@ -877,13 +877,7 @@ Lemma cnweak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
 Proof.
 have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
   apply fdist_ext => i.
-  rewrite FDistMap.dE ConvnFDist.dE big_mkcond /=.
-  apply eq_bigr => j _.
-  rewrite FDist1.dE.
-  case: ifP => [/eqP <- |] /=.
-    by rewrite eqxx mulR1.
-  rewrite eq_sym => ->.
-  by rewrite mulR0.
+  by rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
 rewrite -cndist.
 congr convn; apply funext => i /=.
 symmetry; exact: cndelta.
@@ -998,11 +992,6 @@ rewrite [X in convn S (I2FDist.d [r_of p, q]) X]
 rewrite 2!cnweak.
 set d1 := FDistMap.d _ _.
 set d2 := FDistMap.d _ _.
-have cn1 i : convn S (FDist1.d i) g = g i.
-  apply cnidem => j.
-  rewrite FDist1.dE /=.
-  case/boolP: (j == i) => [/eqP /= -> // |].
-  by rewrite INR_eq0' eqxx.
 rewrite (_ : a = g ord0) // -(cndelta S).
 rewrite (_ : c = g (Ordinal (ltnSn 2))) // -(cndelta S).
 rewrite (_ : (fun x => _) =
@@ -1089,10 +1078,7 @@ rewrite (_ : (fun x : 'I_2 => _) =
   last first.
   apply funext => i.
   rewrite (fun_if (fun d => convn S d g)).
-  rewrite (@cnidem T (g ord0) _ (FDist1.d ord0)) // => j.
-  rewrite FDist1.dE.
-  case/boolP: (j == _) => [/eqP -> // |].
-  by rewrite INR_eq0' eqxx.
+  by rewrite cndelta.
 rewrite cndist.
 congr convn.
 apply fdist_ext => i.
