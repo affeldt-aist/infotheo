@@ -871,8 +871,7 @@ Section NToBin.
 Import AltConvexSpace.
 Variable T : altConvType.
 Definition S := class T.
-Definition conv p (a b : T) :=
-  convn S (I2FDist.d p) (fun x : 'I_2 => if x == ord0 then a else b).
+
 Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
   (forall i : 'I_n, (d i != 0)%R -> g i = a) -> convn S d g = a.
 Proof.
@@ -931,103 +930,114 @@ have -> : g \o f = fun _ => a.
 by rewrite cncst.
 Qed.
 
-Definition conv_mixin : ConvexSpace.mixin_of T.
-apply (@ConvexSpace.Class _ conv); rewrite /conv /=.
-- move=> a b.
+Definition cnconv p (a b : T) :=
+  convn S (I2FDist.d p) (fun x : 'I_2 => if x == ord0 then a else b).
+
+Lemma cnconvC p a b : cnconv p a b = cnconv (p.~)%:pr b a.
+Proof.
+rewrite /cnconv (@cnperm _ _ _ _ _
+                   (tperm ord0 (Ordinal (erefl (1 < 2))) : {perm 'I_2})).
+congr convn.
+- apply fdist_ext => i.
+  rewrite PermFDist.dE !I2FDist.dE.
+  case/orP: (ord2 i) => /eqP ->.
+    rewrite tpermL eqxx.
+    by case/boolP: (Ordinal _ == _).
+  rewrite tpermR eqxx.
+  case/boolP: (Ordinal _ == _) => //.
+  by rewrite onemK.
+- apply funext => i.
+  case/orP: (ord2 i) => /eqP -> /=.
+    rewrite tpermL.
+    by case/boolP: (Ordinal _ == _).
+  by rewrite tpermR eqxx.
+Qed.
+
+Lemma cnconvA p q a b c :
+  cnconv p a (cnconv q b c) = cnconv [s_of p, q] (cnconv [r_of p, q] a b) c.
+Proof.
+rewrite /cnconv.
+set g := fun i : 'I_3 => if i <= 0 then a else if i <= 1 then b else c.
+rewrite [X in convn S (I2FDist.d q) X](_ : _ = g \o lift ord0); last first.
+  apply funext => /= i.
+  by case/orP: (ord2 i) => /eqP ->.
+rewrite cnweak.
+rewrite {1}(_ : a = convn S (FDist1.d (ord0 : 'I_3)) g); last first.
+  symmetry.
   apply cnidem => i.
+  rewrite FDist1.dE /=.
+  case/boolP: (i == ord0) => [/eqP /= -> // |].
+  by rewrite INR_eq0' eqxx.
+set d1 := FDistMap.d _ _.
+rewrite [X in convn S _ X](_ : _ =
+  (fun x : 'I_2 => convn S (if x == ord0 then FDist1.d ord0 else d1) g));
+  last first.
+  apply funext => i.
+  by rewrite (fun_if (fun d => convn S d g)).
+rewrite cndist.
+symmetry.
+rewrite [X in convn S (I2FDist.d [r_of p, q]) X]
+        (_ : _ = g \o (widen_ord (leqnSn 2))); last first.
+  apply funext => /= i.
+  by case/orP: (ord2 i) => /eqP ->.
+rewrite cnweak.
+rewrite {1}(_ : c = convn S (FDist1.d (Ordinal (ltnSn 2))) g); last first.
+  symmetry.
+  apply cnidem => i.
+  rewrite FDist1.dE /=.
+  case/boolP: (i == Ordinal _) => [/eqP /= -> // |].
+  by rewrite INR_eq0' eqxx.
+set d2 := FDistMap.d _ _.
+rewrite [X in convn S _ X](_ : _ =
+  (fun x : 'I_2 =>
+     convn S (if x == ord0 then d2 else FDist1.d (Ordinal (ltnSn 2))) g));
+  last first.
+  apply funext => i.
+  by rewrite (fun_if (fun d => convn S d g)).
+rewrite cndist.
+congr convn.
+apply fdist_ext => j.
+rewrite !ConvnFDist.dE !big_ord_recl !big_ord0 eqxx.
+rewrite !I2FDist.dE !FDistMap.dE !eqxx !FDist1.dE /=.
+case: j => -[|[|[]]] //= Hj.
+- rewrite (bigD1 ord0) /=; last exact/eqP/val_inj.
+  rewrite big1; last by case => -[].
+  rewrite big1; last by case => -[].
+  rewrite I2FDist.dE eqxx !(mulR0,addR0) mulR1.
+  by rewrite mulRC -p_is_rs.
+- rewrite (bigD1 (Ordinal (ltnSn 1))) /=; last exact/eqP/val_inj.
+  rewrite big1; last by case => -[|[]].
+  rewrite (bigD1 ord0) /=; last exact/eqP/val_inj.
+  rewrite big1; last by case => -[].
+  rewrite !I2FDist.dE !eqxx !(mulR0,addR0,add0R).
+  rewrite {1}/onem mulRDr mulR1 mulRN mulRC -p_is_rs s_of_pqE'.
+  by rewrite (addRC p) -addRA addRN addR0.
+- rewrite big1; last by case => -[|[]].
+  rewrite (bigD1 (Ordinal (ltnSn 1))) /=; last exact/eqP/val_inj.
+  rewrite big1; last by case => -[|[]].
+  rewrite !I2FDist.dE !(mulR0,addR0,add0R,mulR1).
+  by rewrite s_of_pqE onemK.
+Qed.
+
+Definition conv_mixin : ConvexSpace.mixin_of T.
+apply (@ConvexSpace.Class _ cnconv).
+- move=> a b; apply cnidem => i.
   rewrite I2FDist.dE.
   case: ifP => //=.
   by rewrite /onem subRR eqxx.
-- move=> p a.
-  apply cnidem => i.
+- move=> p a; apply cnidem => i.
   by case: ifP.
-- move=> p a b.
-  rewrite (@cnperm _ _ _ _ _
-                   (tperm ord0 (Ordinal (erefl (1 < 2))) : {perm 'I_2})).
-  congr convn.
-  + apply fdist_ext => i.
-    rewrite PermFDist.dE !I2FDist.dE.
-    case/orP: (ord2 i) => /eqP ->.
-      rewrite tpermL eqxx.
-      by case/boolP: (Ordinal _ == _).
-    rewrite tpermR eqxx.
-    case/boolP: (Ordinal _ == _) => //.
-    by rewrite onemK.
-  + apply funext => i.
-    case/orP: (ord2 i) => /eqP -> /=.
-      rewrite tpermL.
-      by case/boolP: (Ordinal _ == _).
-    by rewrite tpermR eqxx.
-- move=> p q a b c.
-  set g := fun i : 'I_3 => if i <= 0 then a else if i <= 1 then b else c.
-  rewrite [X in convn S (I2FDist.d q) X](_ : _ = g \o lift ord0); last first.
-    apply funext => /= i.
-    by case/orP: (ord2 i) => /eqP ->.
-  rewrite cnweak.
-  rewrite {1}(_ : a = convn S (FDist1.d (ord0 : 'I_3)) g); last first.
-    symmetry.
-    apply cnidem => i.
-    rewrite FDist1.dE /=.
-    case/boolP: (i == ord0) => [/eqP /= -> // |].
-    by rewrite INR_eq0' eqxx.
-  set d1 := FDistMap.d _ _.
-  rewrite [X in convn S _ X](_ : _ =
-    (fun x : 'I_2 => convn S (if x == ord0 then FDist1.d ord0 else d1) g));
-    last first.
-    apply funext => i.
-    by rewrite (fun_if (fun d => convn S d g)).
-  rewrite cndist.
-  symmetry.
-  rewrite [X in convn S (I2FDist.d [r_of p, q]) X]
-          (_ : _ = g \o (widen_ord (leqnSn 2))); last first.
-    apply funext => /= i.
-    by case/orP: (ord2 i) => /eqP ->.
-  rewrite cnweak.
-  rewrite {1}(_ : c = convn S (FDist1.d (Ordinal (ltnSn 2))) g); last first.
-    symmetry.
-    apply cnidem => i.
-    rewrite FDist1.dE /=.
-    case/boolP: (i == Ordinal _) => [/eqP /= -> // |].
-    by rewrite INR_eq0' eqxx.
-  set d2 := FDistMap.d _ _.
-  rewrite [X in convn S _ X](_ : _ =
-     (fun x : 'I_2 =>
-        convn S (if x == ord0 then d2 else FDist1.d (Ordinal (ltnSn 2))) g));
-    last first.
-    apply funext => i.
-    by rewrite (fun_if (fun d => convn S d g)).
-  rewrite cndist.
-  congr convn.
-  apply fdist_ext => j.
-  rewrite !ConvnFDist.dE !big_ord_recl !big_ord0 eqxx.
-  rewrite !I2FDist.dE !FDistMap.dE !eqxx !FDist1.dE /=.
-  case: j => -[|[|[]]] //= Hj.
-  - rewrite (bigD1 ord0) /=; last exact/eqP/val_inj.
-    rewrite big1; last by case => -[].
-    rewrite big1; last by case => -[].
-    rewrite I2FDist.dE eqxx !(mulR0,addR0) mulR1.
-    by rewrite mulRC -p_is_rs.
-  - rewrite (bigD1 (Ordinal (ltnSn 1))) /=; last exact/eqP/val_inj.
-    rewrite big1; last by case => -[|[]].
-    rewrite (bigD1 ord0) /=; last exact/eqP/val_inj.
-    rewrite big1; last by case => -[].
-    rewrite !I2FDist.dE !eqxx !(mulR0,addR0,add0R).
-    rewrite {1}/onem mulRDr mulR1 mulRN mulRC -p_is_rs s_of_pqE'.
-    by rewrite (addRC p) -addRA addRN addR0.
-  - rewrite big1; last by case => -[|[]].
-    rewrite (bigD1 (Ordinal (ltnSn 1))) /=; last exact/eqP/val_inj.
-    rewrite big1; last by case => -[|[]].
-    rewrite !I2FDist.dE !(mulR0,addR0,add0R,mulR1).
-    by rewrite s_of_pqE onemK.
+- exact cnconvC.
+- exact cnconvA.
 Defined.
 End NToBin.
 
 Section Equiv1.
 Variable T : convType.
 Definition T1 := AltConvexSpace.Pack (altConv_mixin T).
-Lemma equiv1 p (a b : T) : a <| p |> b = @conv T1 p a b.
+Lemma equiv1 p (a b : T) : a <| p |> b = @cnconv T1 p a b.
 Proof.
-rewrite /conv /AltConvexSpace.convn.
+rewrite /cnconv /AltConvexSpace.convn.
 rewrite [let (convn, _, _, _, _) := S T1 in convn]/=.
 Import ScaledConvex.
 apply S1_inj. rewrite S1_conv S1_convn.
@@ -1058,7 +1068,7 @@ have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
   by rewrite /DelFDist.f ltn0.
 symmetry.
 rewrite cnweak.
-rewrite /Conv /= /conv.
+rewrite /Conv /= /cnconv.
 set d' := FDistMap.d _ _.
 rewrite (_ : (fun x : 'I_2 => _) =
              (fun x => convn S (if x == ord0 then FDist1.d ord0 else d') g));
