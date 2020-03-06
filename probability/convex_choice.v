@@ -856,6 +856,7 @@ Record altConv_mixin_of (T : choiceType) : Type := Class {
              <|>_d (g \o u) = <|>_(FDistMap.d u d) g ;
   cnconst : forall (a : T) (n : nat) (d : {fdist 'I_n}),
              <|>_d (fun _ => a) = a }. *)
+(* cndist + cndelta = cndist + cnidem = cndist + cnweak + cnconst *)
 Structure altConvType : Type :=
   Pack { car :> choiceType ; class : altConv_mixin_of car }.
 End AltConvexSpace.
