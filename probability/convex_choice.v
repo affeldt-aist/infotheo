@@ -853,7 +853,7 @@ Record altConv_mixin_of (T : choiceType) : Type := Class {
              <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x ;
   cnweak : forall n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
              <|>_d (g \o u) = <|>_(FDistMap.d u d) g ;
-  cncst : forall (a : T) (n : nat) (d : {fdist 'I_n}),
+  cnconst : forall (a : T) (n : nat) (d : {fdist 'I_n}),
              <|>_d (fun _ => a) = a }.
 Structure altConvType : Type :=
   Pack { car :> choiceType ; class : altConv_mixin_of car }.
@@ -885,12 +885,10 @@ have [x Hx] : exists x, x \in supp.
   move: (FDist.f1 d).
   rewrite -[LHS]mulR1 big_distrl.
   rewrite rsum_fdist_supp big1.
-    move => H.
+    move=> H.
     move: Rstruct.R1_neq_0.
     by rewrite H eqxx.
-  move=> /= i Hi.
-  move: (Hx i).
-  by rewrite Hi.
+  by move=> /= i /(negP (Hx i)).
 set f' : 'I_n -> 'I_#|supp| := enum_rank_in Hx.
 set d' := FDistMap.d f' d.
 have -> : d = FDistMap.d f d'.
@@ -907,27 +905,30 @@ have -> : d = FDistMap.d f d'.
       move=> _ -> //; try by rewrite eqxx.
     by rewrite inE negbK => /eqP ->.
   rewrite big1.
-    move: Hi.
-    by rewrite inE negbK => /eqP ->.
+    move: Hi; by rewrite inE negbK => /eqP ->.
   move=> j /eqP Hj.
   rewrite /d' FDistMap.dE /= (bigD1 i) //=; last first.
     by rewrite -Hj /f /f' enum_valK_in.
   rewrite big1 ?addR0.
-    move: Hi.
-    by rewrite inE negbK => /eqP ->.
+    move: Hi; by rewrite inE negbK => /eqP ->.
   move=> k /andP[] /eqP.
-  case/boolP: (k \in supp) => Hk.
-    move/(f_equal f).
-    rewrite Hj /f /f' enum_rankK_in // => <-.
-    by rewrite eqxx.
-  move: Hk; by rewrite inE negbK => /eqP ->.
+  case/boolP: (k \in supp) => [Hk /(f_equal f) |].
+    by rewrite Hj /f /f' enum_rankK_in // => <- /eqP.
+  by rewrite inE negbK => /eqP ->.
 rewrite -cnweak.
 have -> : g \o f = fun _ => a.
   apply funext => i.
   rewrite /f /= Ha //.
   move: (enum_valP i).
   by rewrite inE.
-by rewrite cncst.
+by rewrite cnconst.
+Qed.
+
+Lemma cnfdist1 n (i : 'I_n) (g : 'I_n -> T) : convn S (FDist1.d i) g = g i.
+Proof.
+apply cnidem => j; rewrite FDist1.dE /=.
+case/boolP: (j == i) => [/eqP /= -> // |].
+by rewrite INR_eq0' eqxx.
 Qed.
 
 Definition cnconv p (a b : T) :=
@@ -939,18 +940,10 @@ rewrite /cnconv (@cnperm _ _ _ _ _
                    (tperm ord0 (Ordinal (erefl (1 < 2))) : {perm 'I_2})).
 congr convn.
 - apply fdist_ext => i.
-  rewrite PermFDist.dE !I2FDist.dE.
-  case/orP: (ord2 i) => /eqP ->.
-    rewrite tpermL eqxx.
-    by case/boolP: (Ordinal _ == _).
-  rewrite tpermR eqxx.
-  case/boolP: (Ordinal _ == _) => //.
-  by rewrite onemK.
+  rewrite PermFDist.dE !I2FDist.dE onemK.
+  case/orP: (ord2 i) => /eqP -> /=; by rewrite (tpermL,tpermR).
 - apply funext => i.
-  case/orP: (ord2 i) => /eqP -> /=.
-    rewrite tpermL.
-    by case/boolP: (Ordinal _ == _).
-  by rewrite tpermR eqxx.
+  case/orP: (ord2 i) => /eqP -> /=; by rewrite (tpermL,tpermR).
 Qed.
 
 Lemma cnconvA p q a b c :
@@ -961,60 +954,45 @@ set g := fun i : 'I_3 => if i <= 0 then a else if i <= 1 then b else c.
 rewrite [X in convn S (I2FDist.d q) X](_ : _ = g \o lift ord0); last first.
   apply funext => /= i.
   by case/orP: (ord2 i) => /eqP ->.
-rewrite cnweak.
-rewrite {1}(_ : a = convn S (FDist1.d (ord0 : 'I_3)) g); last first.
-  symmetry.
-  apply cnidem => i.
-  rewrite FDist1.dE /=.
-  case/boolP: (i == ord0) => [/eqP /= -> // |].
-  by rewrite INR_eq0' eqxx.
-set d1 := FDistMap.d _ _.
-rewrite [X in convn S _ X](_ : _ =
-  (fun x : 'I_2 => convn S (if x == ord0 then FDist1.d ord0 else d1) g));
-  last first.
-  apply funext => i.
-  by rewrite (fun_if (fun d => convn S d g)).
-rewrite cndist.
-symmetry.
 rewrite [X in convn S (I2FDist.d [r_of p, q]) X]
         (_ : _ = g \o (widen_ord (leqnSn 2))); last first.
   apply funext => /= i.
   by case/orP: (ord2 i) => /eqP ->.
-rewrite cnweak.
-rewrite {1}(_ : c = convn S (FDist1.d (Ordinal (ltnSn 2))) g); last first.
-  symmetry.
-  apply cnidem => i.
-  rewrite FDist1.dE /=.
-  case/boolP: (i == Ordinal _) => [/eqP /= -> // |].
-  by rewrite INR_eq0' eqxx.
+rewrite 2!cnweak.
+set d1 := FDistMap.d _ _.
 set d2 := FDistMap.d _ _.
-rewrite [X in convn S _ X](_ : _ =
+have cn1 i : convn S (FDist1.d i) g = g i.
+  apply cnidem => j.
+  rewrite FDist1.dE /=.
+  case/boolP: (j == i) => [/eqP /= -> // |].
+  by rewrite INR_eq0' eqxx.
+rewrite (_ : a = g ord0) // -cnfdist1.
+rewrite (_ : c = g (Ordinal (ltnSn 2))) // -cnfdist1.
+rewrite (_ : (fun x => _) =
+  (fun x : 'I_2 => convn S (if x == ord0 then FDist1.d ord0 else d1) g));
+  last by apply funext => i; rewrite (fun_if (fun d => convn S d g)).
+rewrite [in RHS](_ : (fun x => _) =
   (fun x : 'I_2 =>
      convn S (if x == ord0 then d2 else FDist1.d (Ordinal (ltnSn 2))) g));
-  last first.
-  apply funext => i.
-  by rewrite (fun_if (fun d => convn S d g)).
-rewrite cndist.
+  last by apply funext => i; rewrite (fun_if (fun d => convn S d g)).
+rewrite 2!cndist.
 congr convn.
 apply fdist_ext => j.
 rewrite !ConvnFDist.dE !big_ord_recl !big_ord0 eqxx.
 rewrite !I2FDist.dE !FDistMap.dE !eqxx !FDist1.dE /=.
 case: j => -[|[|[]]] //= Hj.
-- rewrite (bigD1 ord0) /=; last exact/eqP/val_inj.
-  rewrite big1; last by case => -[].
-  rewrite big1; last by case => -[].
+- rewrite [in RHS](bigD1 ord0) /=; last exact/eqP/val_inj.
+  rewrite !big1; try by case => -[].
   rewrite I2FDist.dE eqxx !(mulR0,addR0) mulR1.
   by rewrite mulRC -p_is_rs.
-- rewrite (bigD1 (Ordinal (ltnSn 1))) /=; last exact/eqP/val_inj.
-  rewrite big1; last by case => -[|[]].
-  rewrite (bigD1 ord0) /=; last exact/eqP/val_inj.
-  rewrite big1; last by case => -[].
+- rewrite (bigD1 ord0) /=; last exact/eqP/val_inj.
+  rewrite [in RHS](bigD1 (Ordinal (ltnSn 1))) /=; last exact/eqP/val_inj.
+  rewrite !big1; try by case => -[|[]].
   rewrite !I2FDist.dE !eqxx !(mulR0,addR0,add0R).
-  rewrite {1}/onem mulRDr mulR1 mulRN mulRC -p_is_rs s_of_pqE'.
+  rewrite {2}/onem mulRDr mulR1 mulRN [in RHS]mulRC -p_is_rs s_of_pqE'.
   by rewrite (addRC p) -addRA addRN addR0.
-- rewrite big1; last by case => -[|[]].
-  rewrite (bigD1 (Ordinal (ltnSn 1))) /=; last exact/eqP/val_inj.
-  rewrite big1; last by case => -[|[]].
+- rewrite (bigD1 (Ordinal (ltnSn 1))) /=; last exact/eqP/val_inj.
+  rewrite !big1; try by case => -[|[]].
   rewrite !I2FDist.dE !(mulR0,addR0,add0R,mulR1).
   by rewrite s_of_pqE onemK.
 Qed.
