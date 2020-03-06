@@ -146,6 +146,14 @@ rewrite big_const iter_addR mulR0 add0R [in RHS]big_seq_cond.
 apply eq_bigl => a; by rewrite !inE andbC /index_enum -enumT mem_enum inE.
 Qed.
 
+Lemma fdist_supp_neq0 (d : fdist A) : fdist_supp d != set0.
+Proof.
+apply/eqP => H; move: (FDist.f1 d).
+rewrite -[LHS]mulR1 big_distrl rsum_fdist_supp H big1 //=.
+  move/esym; exact: R1_neq_R0.
+by move=> i; rewrite inE.
+Qed.
+
 Lemma fdist_ind (P : fdist A -> Type) :
   (forall n : nat, (forall X, #|fdist_supp X| = n -> P X) ->
     forall X b, #|fdist_supp X| = n.+1 -> X b != 0 -> P X) ->

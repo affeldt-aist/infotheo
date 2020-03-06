@@ -889,17 +889,9 @@ Proof.
 move=> Ha.
 set supp := fdist_supp d.
 set f : 'I_#|supp| -> 'I_n := enum_val.
-have [x Hx] : exists x, x \in supp.
-  apply/existsP.
-  case/boolP: [exists x, _] => //.
-  rewrite negb_exists => /forallP Hx.
-  move: (FDist.f1 d).
-  rewrite -[LHS]mulR1 big_distrl.
-  rewrite rsum_fdist_supp big1.
-    move=> H.
-    move: Rstruct.R1_neq_0.
-    by rewrite H eqxx.
-  by move=> /= i /(negP (Hx i)).
+have [x Hx] : {x | x \in supp}.
+  move: (fdist_supp_neq0 d).
+  by case: (set_0Vmem supp) => // /eqP ->.
 set f' : 'I_n -> 'I_#|supp| := enum_rank_in Hx.
 set d' := FDistMap.d f' d.
 have -> : d = FDistMap.d f d'.
@@ -1056,8 +1048,7 @@ Definition T2 := ConvexSpace.Pack (conv_mixin T).
 Lemma equiv2 n (d : {fdist 'I_n}) g : convn S d g = @Convn T2 _ d g.
 Proof.
 elim: n d g.
-  move=> d.
-  move: (fdist_card_neq0 d).
+  move=> d; move: (fdist_card_neq0 d).
   by rewrite card_ord.
 move=> n IH d g /=.
 case: Bool.bool_dec => b.
@@ -1065,23 +1056,18 @@ case: Bool.bool_dec => b.
   rewrite (@cnidem T (g ord0)) // => i.
   case/boolP: (i == ord0)%R => [/eqP | /b] -> //.
   by rewrite eqxx.
-rewrite -IH.
+rewrite -{}IH.
 have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
   apply funext => i.
   by rewrite /DelFDist.f ltn0.
 symmetry.
-rewrite cnweak.
-rewrite /Conv /= /cnconv.
+rewrite cnweak /Conv /= /cnconv.
 set d' := FDistMap.d _ _.
 rewrite (_ : (fun x : 'I_2 => _) =
              (fun x => convn S (if x == ord0 then FDist1.d ord0 else d') g));
-  last first.
-  apply funext => i.
-  rewrite (fun_if (fun d => convn S d g)).
-  by rewrite cndelta.
+  last by apply funext => i; rewrite (fun_if (fun d => convn S d g)) cndelta.
 rewrite cndist.
-congr convn.
-apply fdist_ext => i.
+congr convn; apply fdist_ext => i.
 rewrite ConvnFDist.dE !big_ord_recl big_ord0 addR0 /= !I2FDist.dE /=.
 rewrite FDist1.dE /d' FDistMap.dE /=.
 case/boolP: (i == ord0) => [/eqP -> |].
@@ -1089,10 +1075,8 @@ case/boolP: (i == ord0) => [/eqP -> |].
 rewrite /= mulR0 add0R.
 case: (unliftP ord0 i) => //= [j|] -> // Hj.
 rewrite (bigD1 j) //= big1; last first.
-  move=> k /andP [] /eqP /lift_inj ->.
-  by rewrite eqxx.
-rewrite addR0 DelFDist.dE D1FDist.dE /= /onem.
-rewrite mulRC -mulRA mulVR ?mulR1 //.
+  move=> k /andP [] /eqP /lift_inj ->; by rewrite eqxx.
+rewrite addR0 DelFDist.dE D1FDist.dE /= /onem mulRC -mulRA mulVR ?mulR1 //.
 apply/eqP => /(f_equal (Rplus (d ord0))).
 rewrite addR0 addRA -(addRC R1) -addRA addRN addR0 => b'.
 by elim b; rewrite -b' eqxx.
