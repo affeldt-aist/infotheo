@@ -882,7 +882,9 @@ Coercion baseType : altConvType >-> choiceType.
 Canonical baseType.
 End Exports.
 End AltConvexSpace.
-Export AltConvexSpace.Exports.
+
+Module AltConvexSpaceEquiv.
+Import AltConvexSpace.Exports.
 
 Section AltConvexSpace_lemmas.
 Variable T : altConvType.
@@ -893,7 +895,6 @@ Lemma cndelta n (i : 'I_n) (g : 'I_n -> T) : <a>_(FDist1.d i) g = g i.
 Proof. by case: T n i g => ? [? []]. Qed.
 End AltConvexSpace_lemmas.
 
-Module AltConvexSpaceEquiv.
 Section BinToN.
 Variable T : convType.
 Definition altConv_mixin : AltConvexSpace.mixin_of T :=
@@ -901,7 +902,6 @@ Definition altConv_mixin : AltConvexSpace.mixin_of T :=
 End BinToN.
 
 Section NToBin.
-Import AltConvexSpace.
 Variable T : altConvType.
 
 (* In this module we use funext to avoid explicitly handling the congruence
@@ -1050,7 +1050,6 @@ Qed.
 End Equiv1.
 
 Section Equiv2.
-Import AltConvexSpace.
 Variable T : altConvType.
 Local Canonical T2 := ConvexSpace.Pack (ConvexSpace.Class (conv_mixin T)).
 Lemma equiv_convn n (d : {fdist 'I_n}) g : <a>_d g = <|>_d g.
