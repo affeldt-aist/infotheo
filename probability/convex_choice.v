@@ -850,6 +850,8 @@ Record altConv_mixin_of (T : choiceType) : Type := Class {
   cndist : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
              <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x ;
   cndelta : forall  n (i : 'I_n) (g : 'I_n -> T), <|>_(FDist1.d i) g = g i }.
+(* cncongr : forall n (g1 g2 : 'I_n -> T) (d1 d2 : {fdist 'I_n}),
+             d1 =1 d2 -> g1 =1 g2 -> <|>_d1 g1 = <|>_d2 g2 }. *)
 (*  cnidem : forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
              (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <|>_d g = a }.
   cnmap : forall n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
@@ -1043,12 +1045,10 @@ elim: n d g.
   move=> d; move: (fdist_card_neq0 d).
   by rewrite card_ord.
 move=> n IH d g /=.
-case: Bool.bool_dec => b.
-  move/FDist1.P in b.
-  rewrite (@cnidem T (g ord0)) // => i.
-  case/boolP: (i == ord0)%R => [/eqP | /b] -> //.
-  by rewrite eqxx.
-rewrite -{}IH.
+case: Bool.bool_dec.
+  rewrite FDist1.dE1 => /eqP ->.
+  by rewrite cndelta.
+move=> b; rewrite -{}IH.
 have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
   apply funext => i.
   by rewrite /DelFDist.f ltn0.
@@ -1066,11 +1066,10 @@ case/boolP: (i == ord0) => [/eqP -> |].
   by rewrite big1 // mulR0 mulR1 addR0.
 rewrite /= mulR0 add0R.
 case: (unliftP ord0 i) => //= [j|] -> // Hj.
-rewrite (bigD1 j) //= big1; last first.
-  move=> k /andP [] /eqP /lift_inj ->; by rewrite eqxx.
-rewrite addR0 DelFDist.dE D1FDist.dE /= /onem mulRC -mulRA mulVR ?mulR1 //.
+rewrite (big_pred1 j) //=.
+rewrite DelFDist.dE D1FDist.dE /= /onem mulRC -mulRA mulVR ?mulR1 //.
 apply/eqP => /(f_equal (Rplus (d ord0))).
-rewrite addR0 addRA -(addRC R1) -addRA addRN addR0 => b'.
+rewrite addR0 addRCA addRN addR0 => b'.
 by elim b; rewrite -b' eqxx.
 Qed.
 End Equiv2.
