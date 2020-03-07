@@ -877,6 +877,7 @@ Import AltConvexSpace.
 Variable T : altConvType.
 Definition S := class T.
 
+(* cnweak and cnconst are consequences of cndist + cndelta *)
 Lemma cnweak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
   convn S d (g \o u) = convn S (FDistMap.d u d) g.
 Proof.
@@ -888,6 +889,14 @@ congr convn; apply funext => i /=.
 symmetry; exact: cndelta.
 Qed.
 
+Lemma cnconst (a : T) (n : nat) (d : {fdist 'I_n}) : convn S d (fun=> a) = a.
+Proof.
+have -> : (fun _:'I_n => a) = (fun=> convn S (FDist1.d (ord0 : 'I_1)) (fun=>a)).
+  by apply funext => i; rewrite cndelta.
+by rewrite cndist ConvnFDist.cst cndelta.
+Qed.
+
+(* cnidem is a consequence of cndist + cnweak + cnconst *)
 Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
   (forall i : 'I_n, (d i != 0)%R -> g i = a) -> convn S d g = a.
 Proof.
@@ -929,21 +938,11 @@ have -> : g \o f = fun _ => a.
   rewrite /f /= Ha //.
   move: (enum_valP i).
   by rewrite inE.
-(* by rewrite cnconst. *)
-rewrite (_ : (fun=> a) =
-             (fun i : 'I_#|supp| => convn S (FDist1.d (ord0 : 'I_1)) (fun=>a)));
-  last by apply funext => i; rewrite cndelta.
-rewrite cndist.
-rewrite (_ : ConvnFDist.d _ _ = FDist1.d ord0).
-  by rewrite cndelta.
-apply fdist_ext => i.
-rewrite ConvnFDist.dE /=.
-under eq_bigr => j _ do rewrite FDist1.dE (ord1 i) eqxx mulR1.
-by rewrite FDist.f1 FDist1.dE (ord1 i) eqxx.
+by rewrite cnconst.
 Qed.
 
-(*
-Lemma cnfdist1 n (i : 'I_n) (g : 'I_n -> T) : convn S (FDist1.d i) g = g i.
+(* cndelta is a consequence of cnidem
+Lemma cndelta n (i : 'I_n) (g : 'I_n -> T) : convn S (FDist1.d i) g = g i.
 Proof.
 apply cnidem => j; rewrite FDist1.dE /=.
 case/boolP: (j == i) => [/eqP /= -> // |].
