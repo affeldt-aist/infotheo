@@ -853,9 +853,9 @@ Module AltConvexSpace.
 Record mixin_of (T : choiceType) : Type := Mixin {
   convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T
           where "'<|>_' d f" := (convn d f) ;
-  _ : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
+  cndist : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
              <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x ;
-  _ : forall  n (i : 'I_n) (g : 'I_n -> T), <|>_(FDist1.d i) g = g i }.
+  cndelta : forall  n (i : 'I_n) (g : 'I_n -> T), <|>_(FDist1.d i) g = g i }.
 (* cncongr : forall n (g1 g2 : 'I_n -> T) (d1 d2 : {fdist 'I_n}),
              d1 =1 d2 -> g1 =1 g2 -> <|>_d1 g1 = <|>_d2 g2 }. *)
 (*  cnidem : forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
@@ -874,8 +874,7 @@ Structure t : Type := Pack { car : Type ; class : class_of car }.
 Definition baseType (T : t) := Choice.Pack (base (class T)).
 Module Exports.
 Definition aConvn (T : t) : forall n, {fdist 'I_n} -> ('I_n -> car T) -> car T :=
-  match T return forall n, {fdist 'I_n} -> ('I_n -> car T) -> car T with
-  Pack _ (Class _ (Mixin x _ _)) => x end.
+  match T with Pack _ (Class _ (Mixin x _ _)) => x end.
 Arguments aConvn {T} {n} : simpl never.
 Notation "'<a>_' d f" := (aConvn d f) : convex_scope.
 Notation altConvType := t.
@@ -922,7 +921,7 @@ Qed.
 Lemma cnconst (a : T) (n : nat) (d : {fdist 'I_n}) : <a>_d (fun=> a) = a.
 Proof. by rewrite -(cndelta (@ord0 0) (fun=>a)) cndist ConvnFDist.cst. Qed.
 
-(* cnidem is a consequence of cndist + cnmap + cnconst *)
+(* cnidem is a consequence of cnmap + cnconst *)
 Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
   (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <a>_d g = a.
 Proof.
