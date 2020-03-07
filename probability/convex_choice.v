@@ -890,16 +890,11 @@ have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
   apply fdist_ext => i.
   by rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
 rewrite -cndist.
-congr convn; apply funext => i /=.
-by rewrite cndelta.
+congr convn; apply funext => i /=; by rewrite cndelta.
 Qed.
 
 Lemma cnconst (a : T) (n : nat) (d : {fdist 'I_n}) : convn S d (fun=> a) = a.
-Proof.
-have -> : (fun _:'I_n => a) = (fun=> convn S (FDist1.d (ord0 : 'I_1)) (fun=>a)).
-  by apply funext => i; rewrite cndelta.
-by rewrite cndist ConvnFDist.cst cndelta.
-Qed.
+Proof. by rewrite -(cndelta S (@ord0 0) (fun=>a)) cndist ConvnFDist.cst. Qed.
 
 (* cnidem is a consequence of cndist + cnmap + cnconst *)
 Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
@@ -917,18 +912,16 @@ have -> : d = FDistMap.d f d'.
   apply fdist_ext => i /=.
   rewrite FDistMap.comp FDistMap.dE /=.
   case/boolP: (i \in supp) => Hi.
-    rewrite (bigD1 i) /=; last by rewrite /f /f' enum_rankK_in.
+  - rewrite (bigD1 i) /=; last by rewrite /f /f' enum_rankK_in.
     rewrite big1; first by rewrite addR0.
     move=> j /andP[] /eqP <-.
     case/boolP: (j \in supp).
       move=> Hj; by rewrite /f /f' enum_rankK_in // eqxx.
     by rewrite inE negbK => /eqP.
-  rewrite big1.
-    move: Hi; by rewrite inE negbK => /eqP.
-  move=> j /eqP.
-  case/boolP: (j \in supp).
-    move=> Hj; rewrite /f /f' enum_rankK_in // => ji; by rewrite -ji Hj in Hi.
-  by rewrite inE negbK => /eqP.
+  - rewrite big_pred0.
+      move: Hi; by rewrite inE negbK => /eqP.
+    move=> j; apply/negP => /eqP Hj.
+    by move: Hi; rewrite -Hj enum_valP.
 rewrite -cnmap.
 have -> : g \o f = fun=> a.
   apply funext => i; rewrite /f /= Ha //.
@@ -991,8 +984,8 @@ have -> : a = g ord0 by [].
 have -> : c = g ord23 by [].
 rewrite -2!(cndelta S) 2!convn_if 2!cndist.
 congr convn; apply fdist_ext => j.
-rewrite !ConvnFDist.dE !big_ord_recl !big_ord0 eqxx.
-rewrite !I2FDist.dE !FDistMap.dE !eqxx !FDist1.dE /= !addR0.
+rewrite !ConvnFDist.dE !big_ord_recl !big_ord0 /=.
+rewrite !I2FDist.dE !FDistMap.dE !FDist1.dE !addR0 /=.
 case: j => -[|[|[]]] //= Hj.
 - rewrite [in RHS](big_pred1 ord0) //.
   rewrite big1; last by case => -[].
@@ -1066,7 +1059,6 @@ rewrite addRCA addRN !addR0 => b'.
 by elim b; rewrite -b' eqxx.
 Qed.
 End Equiv2.
-
 End AltConvexSpaceEquiv.
 
 Notation "'<|>_' d f" := (Convn d f) : convex_scope.
