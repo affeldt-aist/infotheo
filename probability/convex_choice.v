@@ -852,10 +852,10 @@ End convex_space_prop.
 Module AltConvexSpace.
 Record mixin_of (T : choiceType) : Type := Mixin {
   convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T
-          where "'<|>_' d f" := (convn d f) ;
+          where "'<a>_' d f" := (convn d f) ;
   cndist : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
-             <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x ;
-  cndelta : forall  n (i : 'I_n) (g : 'I_n -> T), <|>_(FDist1.d i) g = g i }.
+             <a>_d (fun i => <a>_(e i) x) = <a>_(ConvnFDist.d d e) x ;
+  cndelta : forall  n (i : 'I_n) (g : 'I_n -> T), <a>_(FDist1.d i) g = g i }.
 (* cncongr : forall n (g1 g2 : 'I_n -> T) (d1 d2 : {fdist 'I_n}),
              d1 =1 d2 -> g1 =1 g2 -> <|>_d1 g1 = <|>_d2 g2 }. *)
 (*  cnidem : forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
@@ -1081,6 +1081,32 @@ rewrite addRCA addRN !addR0 => b'.
 by elim b; rewrite -b' eqxx.
 Qed.
 End Equiv2.
+
+Section Beaulieu.
+Variable T : altConvType.
+Definition ax_dist :=
+  forall n m (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) (g : 'I_m -> T),
+    <a>_d (fun i => <a>_(e i) g) = <a>_(ConvnFDist.d d e) g.
+Definition ax_union1 :=
+  forall n m (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) (g : 'I_m -> T),
+    injective (@fdist_supp _ \o e) ->
+    trivIset [set fdist_supp (e i) | i : 'I_n] ->
+    <a>_d (fun i => <a>_(e i) g) = <a>_(ConvnFDist.d d e) g.
+Definition ax_union2 :=
+  forall n m (d : {fdist 'I_m}) (K : 'I_m -> 'I_n) (g : 'I_m -> T)
+         (NE : forall i, #|[set j | (K j == i) && (d j != 0%R)]| > 0),
+    <a>_d g = <a>_(FDistMap.d K d) (fun i => <a>_(UniformSupport.d (NE i)) g).
+(* This should not be UniformSupport; need to define restriction *)
+Definition ax_idem :=
+  forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
+    (forall i, i \in fdist_supp d -> g i = a) -> <a>_d g = a.
+
+Lemma cnunion : ax_union1.
+Proof. move=> *. apply cndist. Qed.
+
+Lemma cnidem' : ax_idem.
+Proof. move=> a n d g Hd. apply cnidem => i; move: (Hd i); by rewrite inE. Qed.
+End Beaulieu.
 End AltConvexSpaceEquiv.
 
 Section hull_def.
