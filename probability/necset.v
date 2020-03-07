@@ -484,16 +484,20 @@ Record mixin_of (T : choiceType) : Type := Mixin {
   _ : forall x : T, op [set x]%:ne = x ;
   _ : forall I (s : neset I) (f : I -> neset T),
         op (\bigcup_(i in s) f i)%:ne = op (op @` (f @` s))%:ne }.
-Structure type :=
-  Pack {sort : choiceType; _ : mixin_of sort}.
+Record class_of (T : Type) : Type := Class {
+  base : Choice.class_of T ;
+  mixin : mixin_of (Choice.Pack base) }.
+Structure type := Pack {sort : Type ; class : class_of sort}.
+Definition baseType (T : type) := Choice.Pack (base (class T)).
 End def.
 Module Exports.
 Definition lub_op {T : type} : neset (sort T) -> sort T :=
-  let: Pack _ (Mixin op _ _) := T in op.
+  let: Pack _ (Class _ (Mixin op _ _)) := T in op.
 Arguments lub_op {T} : simpl never.
 Notation semiCompSemiLattType := type.
 Notation "|_| f" := (lub_op f) : latt_scope.
-Coercion sort : semiCompSemiLattType >-> choiceType.
+Coercion baseType : semiCompSemiLattType >-> choiceType.
+Canonical baseType.
 End Exports.
 End SemiCompleteSemiLattice.
 Export SemiCompleteSemiLattice.Exports.
@@ -514,11 +518,11 @@ Variable (L : semiCompSemiLattType).
 
 (* [Reiterman] p.326, axiom 3 *)
 Lemma lub_op1 : forall x : L, |_| [set x]%:ne = x.
-Proof. by case: L => [? []]. Qed.
+Proof. by case: L => [? [? []]]. Qed.
 (* NB: bigsetU (bigsetI too) is the bind operator for the poserset monad *)
 Lemma lub_op_bigsetU : forall (I : Type) (S : neset I) (F : I -> neset L),
     |_| (bignesetU S F) = |_| (lub_op @` (F @` S))%:ne.
-Proof. by case: L => [? []]. Qed.
+Proof. by case: L => [? [? []]]. Qed.
 
 Lemma lub_op_bigcup (I : Type) (S : neset I) (F : I -> neset L) :
   |_| (\bigcup_(i in S) F i)%:ne = |_| (lub_op @` (F @` S))%:ne.
@@ -641,21 +645,22 @@ Local Open Scope classical_set_scope.
 Record mixin_of (L : semiCompSemiLattType) (op : prob -> L -> L -> L) := Mixin {
   _ : forall (p : prob) (x : L) (I : neset L),
     op p x (|_| I) = |_| ((op p x) @` I)%:ne }.
-Record class_of (T : choiceType) : Type := Class {
-  base : SemiCompleteSemiLattice.mixin_of T ;
-  base2 : ConvexSpace.mixin_of (SemiCompleteSemiLattice.Pack base) ;
-  mixin : @mixin_of (SemiCompleteSemiLattice.Pack base) (@Conv (ConvexSpace.Pack base2)) ;
-}.
-Structure t : Type := Pack { sort : choiceType ; class : class_of sort }.
+Record class_of T : Type := Class {
+  base : SemiCompleteSemiLattice.class_of T ;
+  mixin_conv : ConvexSpace.mixin_of (SemiCompleteSemiLattice.Pack base) ;
+  mixin_scsl : @mixin_of (SemiCompleteSemiLattice.Pack base)
+    (@Conv (ConvexSpace.Pack (ConvexSpace.Class mixin_conv))) }.
+Structure t : Type := Pack { car : Type ; class : class_of car }.
 Definition baseType (T : t) : semiCompSemiLattType :=
   SemiCompleteSemiLattice.Pack (base (class T)).
-Definition base2Type (T : t) : convType := ConvexSpace.Pack (base2 (class T)).
+Definition scsl_of_scslconv (T : t) :=
+  ConvexSpace.Pack (ConvexSpace.Class (mixin_conv (class T))).
 Module Exports.
 Notation semiCompSemiLattConvType := t.
 Coercion baseType : semiCompSemiLattConvType >-> semiCompSemiLattType.
-Coercion base2Type : semiCompSemiLattConvType >-> convType.
+Coercion scsl_of_scslconv : semiCompSemiLattConvType >-> convType.
 Canonical baseType.
-Canonical base2Type.
+Canonical scsl_of_scslconv.
 End Exports.
 End SemiCompSemiLattConvType.
 Export SemiCompSemiLattConvType.Exports.
@@ -666,8 +671,7 @@ Local Open Scope classical_set_scope.
 Variables (U V : semiCompSemiLattConvType).
 Record class_of (f : U -> V) : Prop := Class {
   base : affine_function f ;
-  base2 : lub_op_morph f ;
-}.
+  base2 : lub_op_morph f }.
 Structure map (phUV : phant (U -> V)) :=
   Pack {apply : U -> V ; class' : class_of apply}.
 Definition baseType (phUV : phant (U -> V)) (f : map phUV) : {affine U -> V} :=
@@ -921,7 +925,7 @@ rewrite S1_Convn_finType /=.
 rewrite (eq_bigr (fun=> ScaledConvex.S1 x)); last first.
   move=> i _; rewrite fdist_of_FSDistE FSDist1.dE /= -(FSDist1.supp x).
   rewrite fsvalP ScaledConvex.scalept1 /=; congr (ScaledConvex.S1 _).
-  case: i => i Hi /=; rewrite FSDist1.supp inE in Hi; exact/eqP.
+  by case: i => i Hi /=; rewrite FSDist1.supp inE in Hi; rewrite (eqP Hi).
 by rewrite big_const (_ : #| _ | = 1%N) // -cardfE FSDist1.supp cardfs1.
 Qed.
 
@@ -948,10 +952,12 @@ rewrite big_seq; under eq_bigr=> y Hy.
   rewrite big_scaleptl'; [| by rewrite scalept0 | by move=> j; apply mulR_ge0].
   under eq_bigr=> i do rewrite FSDist1.dE inE.
   over.
-rewrite -big_seq exchange_big /= big_seq; under eq_bigr=> x Hx.
+rewrite -big_seq exchange_big /=.
+rewrite (@big_seq _ _ _ _ (finsupp d)).
+under eq_bigr=> x Hx.
 - rewrite (big_fsetD1 (f x)) /=; last by apply/imfsetP; exists x.
   rewrite eqxx mulR1.
-  rewrite big_seq.
+  rewrite (@big_seq _ _ _ _ ([fset f x0 | x0 in finsupp d] `\ f x)).
   under eq_bigr=> y do [rewrite in_fsetD1=> /andP [] /negbTE -> Hy; rewrite mulR0 scalept0].
   rewrite big1 // addpt0.
   over.
@@ -1119,8 +1125,8 @@ rewrite/conv; unlock; apply/necset_ext => /=; apply eqEsubset => a; case => x []
   split => //.
   by rewrite inE asboolE /= -convA; split; try exists y, z.
 Qed.
-Definition mixin : ConvexSpace.mixin_of [choiceType of necset A] :=
-  @ConvexSpace.Class _ conv conv1 convmm convC convA.
+Definition mixin : ConvexSpace.mixin_of _ :=
+  @ConvexSpace.Mixin _ conv conv1 convmm convC convA.
 End def.
 Section lemmas.
 Local Open Scope classical_set_scope.
@@ -1137,7 +1143,8 @@ rewrite convE; apply eqEsubset=> u.
 Qed.
 End lemmas.
 End necset_convType.
-Canonical necset_convType A := ConvexSpace.Pack (necset_convType.mixin A).
+Canonical necset_convType A :=
+  ConvexSpace.Pack (ConvexSpace.Class (necset_convType.mixin A)).
 
 Module necset_semiCompSemiLattType.
 Section def.
@@ -1173,10 +1180,11 @@ apply hull_eqEsubset => a.
 Qed.
 Definition mixin :=
   SemiCompleteSemiLattice.Mixin lub_necset1 lub_necset_bigsetU.
+Definition class := SemiCompleteSemiLattice.Class mixin.
 End def.
 End necset_semiCompSemiLattType.
 Canonical necset_semiCompSemiLattType A :=
-  SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.mixin A).
+  SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.class A).
 
 Module necset_semiCompSemiLattConvType.
 Section def.
@@ -1197,14 +1205,13 @@ congr hull; apply eqEsubset=> u /=.
     rewrite !in_setE=> -[] Xx [] Yy ->; exists x=> //; rewrite conv_pt_setE; exists y=> //; exists Y.
 Qed.
 
-Definition mixin := @SemiCompSemiLattConvType.Class [choiceType of necset A]
-  (necset_semiCompSemiLattType.mixin A)
-  (necset_convType.mixin A)
+Definition class := @SemiCompSemiLattConvType.Class _
+  (necset_semiCompSemiLattType.class A) (necset_convType.mixin A)
   (SemiCompSemiLattConvType.Mixin axiom).
 End def.
 End necset_semiCompSemiLattConvType.
 Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack
-  (necset_semiCompSemiLattConvType.mixin A).
+  (necset_semiCompSemiLattConvType.class A).
 
 Module necset_join.
 Section def.
@@ -1287,7 +1294,8 @@ Definition necset_fmap : M a -> M b :=
 End fmap.
 Section bind.
 Variables a b : Type.
-Definition necset_bind (ma : M a) (f : a -> M b) : M b := necset_join (necset_fmap f ma).
+Definition necset_bind (ma : M a) (f : a -> M b) : M b :=
+  necset_join (necset_fmap f ma).
 End bind.
 End necset_bind.
 

@@ -73,6 +73,8 @@ Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
 Reserved Notation "{ 'convex_set' T }" (format "{ 'convex_set'  T }").
 Reserved Notation "'<|>_' d f" (at level 36, f at level 36, d at level 0,
   format "<|>_ d  f").
+Reserved Notation "'<a>_' d f" (at level 36, f at level 36, d at level 0,
+  format "<a>_ d  f").
 Reserved Notation "\ssum_ ( i <- r | P ) F"
   (at level 41, F at level 41, i, r at level 50,
   format "'[' \ssum_ ( i  <-  r  |  P ) '/  '  F ']'").
@@ -210,22 +212,26 @@ End def.
 End CodomDFDist.
 
 Module ConvexSpace.
-Record mixin_of (T : choiceType) : Type := Class {
+Record mixin_of (T : choiceType) : Type := Mixin {
   conv : prob -> T -> T -> T where "a <| p |> b" := (conv p a b);
   _ : forall a b, a <| 1%:pr|> b = a ;
   _ : forall p a, a <| p |> a = a ;
   _ : forall p a b, a <| p |> b = b <| p.~%:pr |> a;
   _ : forall (p q : prob) (a b c : T),
       a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c }.
-Structure t : Type := Pack { car : choiceType ; class : mixin_of car }.
+Record class_of (T : Type) := Class {
+  base : Choice.class_of T ; mxin : mixin_of (Choice.Pack base) }.
+Structure t : Type := Pack { car : Type ; class : class_of car }.
+Definition baseType (T : t) := Choice.Pack (base (class T)).
 Module Exports.
 Definition Conv (T : t) : prob -> car T -> car T -> car T :=
   match T return prob -> car T -> car T -> car T with
-  Pack _ (Class x _ _ _ _) => x end.
+  Pack _ (Class _ (Mixin x _ _ _ _)) => x end.
 Arguments Conv {T} : simpl never.
 Notation "x <| p |> y" := (Conv p x y) : convex_scope.
 Notation convType := t.
-Coercion car : convType >-> choiceType.
+Coercion baseType : convType >-> choiceType.
+Canonical baseType.
 End Exports.
 End ConvexSpace.
 Export ConvexSpace.Exports.
@@ -237,15 +243,15 @@ Variables A : convType.
 Implicit Types a b c : A.
 Implicit Types p q r s : prob.
 Lemma conv1 a b : a <| 1%:pr |> b = a.
-Proof. by case: A a b => ? []. Qed.
+Proof. by case: A a b => ? [? []]. Qed.
 Lemma convmm a p : a <| p |> a = a.
-Proof. by case: A a => ? []. Qed.
+Proof. by case: A a => ? [? []]. Qed.
 Lemma convC a b p : a <| p |> b = b <| p.~%:pr |> a.
-Proof. by case: A a b => ? []. Qed.
+Proof. by case: A a b => ? [? []]. Qed.
 Lemma convA p q a b c :
   a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c.
 Proof.
-case: A a b c p q => ? [] f H0 H1 H2 H3 d0 d1 d2 p q; by rewrite /Conv H3.
+case: A a b c p q => ? [? []] f H0 H1 H2 H3 d0 d1 d2 p q; by rewrite /Conv H3.
 Qed.
 End convex_space_interface.
 
@@ -299,7 +305,7 @@ Canonical scaled_pt_choiceType := Eval hnf in ChoiceType scaled_pt scaled_pt_cho
 
 Local Notation "a *: v" := (Scaled a v).
 
-Definition S1 x : [choiceType of scaled_pt] := 1%:pos *: x.
+Definition S1 x := 1%:pos *: x.
 
 Lemma Scaled_inj p : injective (Scaled p).
 Proof. by move=> x y []. Qed.
@@ -526,8 +532,8 @@ apply (big_ind2 (fun y q => scalept q x = y /\ 0 <= q)).
 Qed.
 
 Definition scaled_conv p x y := addpt (scalept p x) (scalept p.~ y).
-Definition Scaled_convMixin : ConvexSpace.mixin_of [choiceType of scaled_pt].
-apply (@ConvexSpace.Class _ scaled_conv); rewrite /scaled_conv /=.
+Definition Scaled_convMixin : ConvexSpace.mixin_of scaled_pt_choiceType.
+apply: (@ConvexSpace.Mixin _ scaled_conv); rewrite /scaled_conv /=.
 + by move=> a b; rewrite onem1 scalept1 scalept0 addpt0.
 + by move=> a p; rewrite -scalept_addR // onemKC scalept1.
 + move=> a b p; by rewrite [RHS]addptC onemK.
@@ -536,7 +542,7 @@ apply (@ConvexSpace.Class _ scaled_conv); rewrite /scaled_conv /=.
     by rewrite (p_is_rs p q) mulRC.
   by rewrite pq_is_rs mulRC s_of_pqE onemK.
 Defined.
-Canonical Scaled_convType := ConvexSpace.Pack Scaled_convMixin.
+Canonical Scaled_convType := Eval hnf in ConvexSpace.Pack (ConvexSpace.Class Scaled_convMixin).
 
 Definition barycenter (pts : seq scaled_pt) := \ssum_(x <- pts) x.
 
@@ -684,7 +690,7 @@ Variable B : convType.
 Variable prj : A -> B.
 Hypothesis prj_affine : forall p, {morph prj : x y / x <|p|> y >-> x <|p|> y}.
 
-Definition map_scaled (x : [choiceType of scaled_pt A]) : [choiceType of scaled_pt B] :=
+Definition map_scaled (x : scaled_pt A) : scaled_pt B :=
   if x is p *: a then p *: prj a else @Zero B.
 
 Lemma map_scaled_affine p :
@@ -844,7 +850,7 @@ Qed.
 End convex_space_prop.
 
 Module AltConvexSpace.
-Record altConv_mixin_of (T : choiceType) : Type := Class {
+Record mixin_of (T : choiceType) : Type := Mixin {
   convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T
           where "'<|>_' d f" := (convn d f) ;
   cndist : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
@@ -861,44 +867,64 @@ Record altConv_mixin_of (T : choiceType) : Type := Class {
 (* cndist + cndelta = cndist + cnidem = cndist + cnmap + cnconst *)
 (* or more precisely:
    cndist |- cndelta   <->   cnidem   <->   cnmap /\ cnconst  *)
-
-
-Structure altConvType : Type :=
-  Pack { car :> choiceType ; class : altConv_mixin_of car }.
+Record class_of (T : Type) := Class {
+  base : Choice.class_of T ;
+  mixin : mixin_of (Choice.Pack base) }.
+Structure t : Type := Pack { car : Type ; class : class_of car }.
+Definition baseType (T : t) := Choice.Pack (base (class T)).
+Module Exports.
+Definition aConvn (T : t) : forall n, {fdist 'I_n} -> ('I_n -> car T) -> car T :=
+  match T return forall n, {fdist 'I_n} -> ('I_n -> car T) -> car T with
+  Pack _ (Class _ (Mixin x _ _)) => x end.
+Arguments aConvn {T} {n} : simpl never.
+Notation "'<a>_' d f" := (aConvn d f) : convex_scope.
+Notation altConvType := t.
+Coercion baseType : altConvType >-> choiceType.
+Canonical baseType.
+End Exports.
 End AltConvexSpace.
+Export AltConvexSpace.Exports.
+
+Section AltConvexSpace_lemmas.
+Variable T : altConvType.
+Lemma Cndist (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x :
+  <a>_d (fun i => <a>_(e i) x) = <a>_(ConvnFDist.d d e) x :> T.
+Proof. by case: T n m d e x => ? [? []]. Qed.
+Lemma Cndelta n (i : 'I_n) (g : 'I_n -> T) : <a>_(FDist1.d i) g = g i.
+Proof. by case: T n i g => ? [? []]. Qed.
+End AltConvexSpace_lemmas.
 
 Module AltConvexSpaceEquiv.
 Section BinToN.
 Variable T : convType.
-Definition altConv_mixin : AltConvexSpace.altConv_mixin_of T :=
-  AltConvexSpace.Class (@Convn_convnfdist T) (@ConvnFDist1 T).
+Definition altConv_mixin : AltConvexSpace.mixin_of T :=
+  AltConvexSpace.Mixin (@Convn_convnfdist T) (@ConvnFDist1 T).
 End BinToN.
 
 Section NToBin.
 Import AltConvexSpace.
 Variable T : altConvType.
-Definition S := class T.
 
 (* In this module we use funext to avoid explicitly handling the congruence
    of convn (cf. eq_convn in for the iterated version). *)
 
 (* cnmap and cnconst are consequences of cndist + cndelta *)
 Lemma cnmap n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
-  convn S d (g \o u) = convn S (FDistMap.d u d) g.
+  <a>_d (g \o u) = <a>_(FDistMap.d u d) g.
 Proof.
 have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
   apply fdist_ext => i.
   by rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
-rewrite -cndist.
-congr convn; apply funext => i /=; by rewrite cndelta.
+rewrite -Cndist.
+by congr (<a>_ _ _); apply funext => i /=; rewrite Cndelta.
 Qed.
 
-Lemma cnconst (a : T) (n : nat) (d : {fdist 'I_n}) : convn S d (fun=> a) = a.
-Proof. by rewrite -(cndelta S (@ord0 0) (fun=>a)) cndist ConvnFDist.cst. Qed.
+Lemma cnconst (a : T) (n : nat) (d : {fdist 'I_n}) : <a>_d (fun=> a) = a.
+Proof. by rewrite -(Cndelta (@ord0 0) (fun=>a)) Cndist ConvnFDist.cst. Qed.
 
 (* cnidem is a consequence of cndist + cnmap + cnconst *)
 Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
-  (forall i : 'I_n, (d i != 0)%R -> g i = a) -> convn S d g = a.
+  (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <a>_d g = a.
 Proof.
 move=> Ha.
 set supp := fdist_supp d.
@@ -930,7 +956,7 @@ by rewrite cnconst.
 Qed.
 
 (* cndelta is a consequence of cnidem *)
-Lemma cndelta' n (i : 'I_n) (g : 'I_n -> T) : convn S (FDist1.d i) g = g i.
+Lemma cndelta' n (i : 'I_n) (g : 'I_n -> T) : <a>_(FDist1.d i) g = g i.
 Proof.
 apply cnidem => j; rewrite FDist1.dE /=.
 case/boolP: (j == i) => [/eqP /= -> // |].
@@ -939,7 +965,7 @@ Qed.
 
 (* Definition of conv based on convn *)
 Definition cnconv p (a b : T) :=
-  convn S (I2FDist.d p) (fun x : 'I_2 => if x == ord0 then a else b).
+  <a>_(I2FDist.d p) (fun x : 'I_2 => if x == ord0 then a else b).
 
 Lemma cnconvC p a b : cnconv p a b = cnconv (p.~)%:pr b a.
 Proof.
@@ -951,7 +977,7 @@ have -> : g1 = g2 \o tperm ord0 (Ordinal (erefl (1 < 2))).
   apply funext => i /=.
   by case/orP: (ord2 i) => /eqP -> /=; rewrite (tpermL,tpermR).
 rewrite cnmap.
-congr convn; apply fdist_ext => i.
+congr (<a>_ _ _); apply fdist_ext => i.
 rewrite FDistMap.dE (bigD1 (tperm ord0 (Ordinal (erefl (1 < 2))) i)) /=;
   last by rewrite tpermK.
 rewrite big1.
@@ -961,19 +987,19 @@ move=> j /andP[] /eqP <-.
 by rewrite tpermK eqxx.
 Qed.
 
-Lemma convn_if A n (p : A -> bool) (d1 d2 : {fdist 'I_n}) g :
-  (fun x => if p x then convn S d1 g else convn S d2 g) =
-  (fun x => convn S (if p x then d1 else d2) g).
-Proof. apply funext => x; by rewrite (fun_if (fun d => convn S d g)). Qed.
+Lemma convn_if A n (p : A -> bool) (d1 d2 : {fdist 'I_n}) (g : _ -> T):
+  (fun x => if p x then <a>_d1 g else <a>_d2 g) =
+  (fun x => <a>_(if p x then d1 else d2) g).
+Proof. apply funext => x; by rewrite (fun_if (fun d => <a>_d g)). Qed.
 
 Lemma cnconvA p q a b c :
   cnconv p a (cnconv q b c) = cnconv [s_of p, q] (cnconv [r_of p, q] a b) c.
 Proof.
 rewrite /cnconv.
 set g := fun i : 'I_3 => if i <= 0 then a else if i <= 1 then b else c.
-rewrite [X in convn S (I2FDist.d q) X](_ : _ = g \o lift ord0);
+rewrite [X in <a>_(I2FDist.d q) X](_ : _ = g \o lift ord0);
   last by apply funext => i; case/orP: (ord2 i) => /eqP ->.
-rewrite [X in convn S (I2FDist.d [r_of p, q]) X]
+rewrite [X in <a>_(I2FDist.d [r_of p, q]) X]
         (_ : _ = g \o (widen_ord (leqnSn 2)));
   last by apply funext => i; case/orP: (ord2 i) => /eqP ->.
 rewrite 2!cnmap.
@@ -982,8 +1008,8 @@ set d2 := FDistMap.d _ _.
 set ord23 := Ordinal (ltnSn 2).
 have -> : a = g ord0 by [].
 have -> : c = g ord23 by [].
-rewrite -2!(cndelta S) 2!convn_if 2!cndist.
-congr convn; apply fdist_ext => j.
+rewrite -2!Cndelta 2!convn_if 2!Cndist.
+congr (<a>_ _ _); apply fdist_ext => j.
 rewrite !ConvnFDist.dE !big_ord_recl !big_ord0 /=.
 rewrite !I2FDist.dE !FDistMap.dE !FDist1.dE !addR0 /=.
 case: j => -[|[|[]]] //= Hj.
@@ -1000,7 +1026,7 @@ case: j => -[|[|[]]] //= Hj.
 Qed.
 
 Definition conv_mixin : ConvexSpace.mixin_of T.
-apply (@ConvexSpace.Class _ cnconv).
+apply (@ConvexSpace.Mixin _ cnconv).
 - move=> a b; apply cnidem => i.
   rewrite I2FDist.dE.
   case: ifP => //=.
@@ -1014,11 +1040,10 @@ End NToBin.
 
 Section Equiv1.
 Variable T : convType.
-Definition T1 := AltConvexSpace.Pack (altConv_mixin T).
+Definition T1 := AltConvexSpace.Pack (AltConvexSpace.Class (altConv_mixin T)).
 Lemma equiv_conv p (a b : T) : a <| p |> b = @cnconv T1 p a b.
 Proof.
-rewrite /cnconv /AltConvexSpace.convn.
-rewrite [let (convn, _, _) := S T1 in convn]/=.
+rewrite /cnconv.
 Import ScaledConvex.
 apply S1_inj. rewrite S1_conv S1_convn.
 by rewrite !big_ord_recl big_ord0 /= !I2FDist.dE /= addpt0.
@@ -1028,9 +1053,8 @@ End Equiv1.
 Section Equiv2.
 Import AltConvexSpace.
 Variable T : altConvType.
-Let S := class T.
-Definition T2 := ConvexSpace.Pack (conv_mixin T).
-Lemma equiv_convn n (d : {fdist 'I_n}) g : convn S d g = @Convn T2 _ d g.
+Local Canonical T2 := ConvexSpace.Pack (ConvexSpace.Class (conv_mixin T)).
+Lemma equiv_convn n (d : {fdist 'I_n}) g : <a>_d g = <|>_d g.
 Proof.
 elim: n d g.
   move=> d; move: (fdist_card_neq0 d).
@@ -1038,14 +1062,14 @@ elim: n d g.
 move=> n IH d g /=.
 case: Bool.bool_dec.
   rewrite FDist1.dE1 => /eqP ->.
-  by rewrite cndelta.
+  by rewrite Cndelta.
 move=> b; rewrite -{}IH.
 have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
   apply funext => i; by rewrite /DelFDist.f ltn0.
 symmetry; rewrite cnmap /Conv /= /cnconv.
 set d' := FDistMap.d _ _.
-rewrite -(cndelta S ord0) convn_if cndist.
-congr convn; apply fdist_ext => i.
+rewrite -(Cndelta ord0) convn_if Cndist.
+congr (<a>_ _ _); apply fdist_ext => i.
 rewrite ConvnFDist.dE !big_ord_recl big_ord0 addR0 /= !I2FDist.dE /=.
 rewrite FDist1.dE /d' FDistMap.dE /=.
 case/boolP: (i == ord0) => [/eqP -> |].
@@ -1060,8 +1084,6 @@ by elim b; rewrite -b' eqxx.
 Qed.
 End Equiv2.
 End AltConvexSpaceEquiv.
-
-Notation "'<|>_' d f" := (Convn d f) : convex_scope.
 
 Section hull_def.
 Local Open Scope classical_set_scope.
@@ -1440,8 +1462,8 @@ rewrite {2}(s_of_pqE p q) onemK; congr (_ + _)%R.
 rewrite 2!mulRA; congr (_ * _)%R.
 by rewrite pq_is_rs -/r -/s mulRC.
 Qed.
-Definition R_convMixin := ConvexSpace.Class avg1 avgI avgC avgA.
-Canonical R_convType := ConvexSpace.Pack R_convMixin.
+Definition R_convMixin := ConvexSpace.Mixin avg1 avgI avgC avgA.
+Canonical R_convType := ConvexSpace.Pack (ConvexSpace.Class R_convMixin).
 Lemma avg_oppD p x y : (- x <| p |> - y = - (x <| p |> y))%R.
 Proof. by rewrite /Conv /= /avg 2!mulRN -oppRD. Qed.
 Lemma avg_mulDr p : right_distributive Rmult (fun x y => x <| p |> y).
@@ -1497,9 +1519,9 @@ End Funavg.
 Section fun_convex_space.
 Variables (A : choiceType) (B : convType).
 
-Definition funConvMixin := ConvexSpace.Class
+Definition funConvMixin := ConvexSpace.Mixin
   (@Funavg.avg1 A B) (@Funavg.avgI A B) (@Funavg.avgC A B) (@Funavg.avgA A B).
-Canonical funConvType := ConvexSpace.Pack funConvMixin.
+Canonical funConvType := ConvexSpace.Pack (ConvexSpace.Class funConvMixin).
 
 End fun_convex_space.
 
@@ -1543,9 +1565,9 @@ End Depfunavg.
 Section depfun_convex_space.
 Variables (A : choiceType) (B : A -> convType).
 
-Definition depfunConvMixin := ConvexSpace.Class
+Definition depfunConvMixin := ConvexSpace.Mixin
   (@Depfunavg.avg1 A B) (@Depfunavg.avgI A B) (@Depfunavg.avgC A B) (@Depfunavg.avgA A B).
-Canonical depfunConvType := ConvexSpace.Pack depfunConvMixin.
+Canonical depfunConvType := ConvexSpace.Pack (ConvexSpace.Class depfunConvMixin).
 
 End depfun_convex_space.
 
@@ -1570,32 +1592,32 @@ End Pairavg.
 Section pair_convex_space.
 Variables (A B : convType).
 
-Definition pairConvMixin := ConvexSpace.Class
+Definition pairConvMixin := ConvexSpace.Mixin
   (@Pairavg.avg1 A B) (@Pairavg.avgI A B) (@Pairavg.avgC A B) (@Pairavg.avgA A B).
-Canonical pairConvType := ConvexSpace.Pack pairConvMixin.
+Canonical pairConvType := ConvexSpace.Pack (ConvexSpace.Class pairConvMixin).
 
 End pair_convex_space.
 
 Section fdist_convex_space.
 Variable A : finType.
 Definition fdist_convMixin :=
-  @ConvexSpace.Class (choice_of_Type (fdist A)) (@ConvFDist.d A)
+  @ConvexSpace.Mixin (choice_of_Type (fdist A)) (@ConvFDist.d A)
   (@ConvFDist.d1 A)
   (@ConvFDist.idempotent A)
   (@ConvFDist.skewed_commute A)
   (@ConvFDist.quasi_assoc A).
-Canonical fdist_convType := ConvexSpace.Pack fdist_convMixin.
+Canonical fdist_convType := ConvexSpace.Pack (ConvexSpace.Class fdist_convMixin).
 End fdist_convex_space.
 
 Section FSDist_convex_space.
 Variable A : choiceType.
 Definition FSDist_convMixin :=
-  @ConvexSpace.Class (FSDist_choiceType A) (@ConvFSDist.d A)
+  @ConvexSpace.Mixin (FSDist_choiceType A) (@ConvFSDist.d A)
   (@ConvFSDist.conv1 A)
   (@ConvFSDist.convmm A)
   (@ConvFSDist.convC A)
   (@ConvFSDist.convA' A).
-Canonical FSDist_convType := ConvexSpace.Pack FSDist_convMixin.
+Canonical FSDist_convType := ConvexSpace.Pack (ConvexSpace.Class FSDist_convMixin).
 
 (* Reuse the morphisms from R_convex_space. *)
 Import ScaledConvex finmap.
@@ -1633,8 +1655,7 @@ Local Open Scope R_scope.
 
 Lemma scalept_conv (C : convType) (x y : R) (s : scaled_pt C) (p : prob):
   0 <= x -> 0 <= y ->
-  scalept (x <|p|> y) s =
-  (scalept x s : Scaled_convType C) <|p|> scalept y s.
+  scalept (x <|p|> y) s = scalept x s <|p|> scalept y s.
 Proof.
 move=> Hx Hy.
 move: (onem_ge0 (prob_le1 p)) => Hnp.
@@ -1645,7 +1666,7 @@ Qed.
 Lemma big_scalept_conv_split (C : convType) (I : Type) (r : seq I) (P : pred I)
  (F G : I -> Scaled_convType C) (p : prob) :
   \ssum_(i <- r | P i) (F i <|p|> G i) =
-  ((\ssum_(i <- r | P i) F i) : Scaled_convType C) <|p|> \ssum_(i <- r | P i) G i.
+  (\ssum_(i <- r | P i) F i) <|p|> \ssum_(i <- r | P i) G i.
 Proof. by rewrite /Conv /= /scaled_conv big_split /= !big_scalept. Qed.
 
 Lemma scalept_addRnneg : forall (A : convType) (x : scaled_pt A),
@@ -1687,7 +1708,7 @@ Record mixin_of (T : convType) : Type := Mixin {
   _ : forall b a c, a <= b -> b <= c -> a <= c;
   _ : forall a b, a = b <-> a <= b /\ b <= a }.
 Record class_of (car : choiceType) := Class {
-  base : ConvexSpace.mixin_of car;
+  base : ConvexSpace.class_of car;
   mixin : mixin_of (ConvexSpace.Pack base);
 }.
 Structure t : Type := Pack {car : choiceType; class : class_of car}.
@@ -1788,14 +1809,14 @@ Proof. by case x;case y=>y' x'; rewrite/avg/unbox/=convC. Qed.
 Lemma avgA p q d0 d1 d2 :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. by case d0;case d1;case d2=>d2' d1' d0';rewrite/avg/unbox/=convA. Qed.
-Definition oppConvMixin := ConvexSpace.Class avg1 avgI avgC avgA.
+Definition oppConvMixin := ConvexSpace.Mixin avg1 avgI avgC avgA.
 End convtype.
 End OppositeOrderedConvexSpace.
 
 Section opposite_ordered_convex_space.
 Import OppositeOrderedConvexSpace.
 Variable A : orderedConvType.
-Canonical oppConvType := ConvexSpace.Pack (oppConvMixin A).
+Canonical oppConvType := ConvexSpace.Pack (ConvexSpace.Class (oppConvMixin A)).
 Definition opposite_orderedConvMixin :=
   @OrderedConvexSpace.Mixin oppConvType (@leopp A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
 Canonical opposite_orderedConvType :=
@@ -2273,7 +2294,7 @@ End convex_set_R.
 
 Section convex_function_R.
 
-Implicit Types f : R_convType -> R.
+Implicit Types f : R -> R.
 
 Lemma concave_function_atN f x y t : concave_function_at f x y t ->
   forall k, (0 <= k)%R -> concave_function_at (fun x => f x * k)%R x y t.

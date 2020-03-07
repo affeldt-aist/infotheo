@@ -1299,3 +1299,4 @@ Qed.
 End wolfowitz_counting.
 
 Local Close Scope ring_scope.
+

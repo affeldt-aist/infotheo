@@ -112,9 +112,10 @@ End DominatedPair.
 Section dominated_pair_convex_space.
 Import DominatedPair.
 Variable (A : finType).
-Definition dominatedPairConvMixin := ConvexSpace.Class
+Definition dominatedPairConvMixin := ConvexSpace.Mixin
   (@avg1 A) (@avgI A) (@avgC A) (@avgA A).
-Canonical dominatedPairConvType := ConvexSpace.Pack dominatedPairConvMixin.
+Canonical dominatedPairConvType :=
+  ConvexSpace.Pack (ConvexSpace.Class dominatedPairConvMixin).
 End dominated_pair_convex_space.
 
 Section divergence_convex.
