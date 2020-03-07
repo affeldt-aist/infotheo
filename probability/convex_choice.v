@@ -853,9 +853,9 @@ Module AltConvexSpace.
 Record mixin_of (T : choiceType) : Type := Mixin {
   convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T
           where "'<|>_' d f" := (convn d f) ;
-  cndist : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
+  _ : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
              <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x ;
-  cndelta : forall  n (i : 'I_n) (g : 'I_n -> T), <|>_(FDist1.d i) g = g i }.
+  _ : forall  n (i : 'I_n) (g : 'I_n -> T), <|>_(FDist1.d i) g = g i }.
 (* cncongr : forall n (g1 g2 : 'I_n -> T) (d1 d2 : {fdist 'I_n}),
              d1 =1 d2 -> g1 =1 g2 -> <|>_d1 g1 = <|>_d2 g2 }. *)
 (*  cnidem : forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
@@ -887,10 +887,10 @@ Export AltConvexSpace.Exports.
 
 Section AltConvexSpace_lemmas.
 Variable T : altConvType.
-Lemma Cndist (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x :
+Lemma cndist (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x :
   <a>_d (fun i => <a>_(e i) x) = <a>_(ConvnFDist.d d e) x :> T.
 Proof. by case: T n m d e x => ? [? []]. Qed.
-Lemma Cndelta n (i : 'I_n) (g : 'I_n -> T) : <a>_(FDist1.d i) g = g i.
+Lemma cndelta n (i : 'I_n) (g : 'I_n -> T) : <a>_(FDist1.d i) g = g i.
 Proof. by case: T n i g => ? [? []]. Qed.
 End AltConvexSpace_lemmas.
 
@@ -915,12 +915,12 @@ Proof.
 have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
   apply fdist_ext => i.
   by rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
-rewrite -Cndist.
-by congr (<a>_ _ _); apply funext => i /=; rewrite Cndelta.
+rewrite -cndist.
+by congr (<a>_ _ _); apply funext => i /=; rewrite cndelta.
 Qed.
 
 Lemma cnconst (a : T) (n : nat) (d : {fdist 'I_n}) : <a>_d (fun=> a) = a.
-Proof. by rewrite -(Cndelta (@ord0 0) (fun=>a)) Cndist ConvnFDist.cst. Qed.
+Proof. by rewrite -(cndelta (@ord0 0) (fun=>a)) cndist ConvnFDist.cst. Qed.
 
 (* cnidem is a consequence of cndist + cnmap + cnconst *)
 Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
@@ -1008,7 +1008,7 @@ set d2 := FDistMap.d _ _.
 set ord23 := Ordinal (ltnSn 2).
 have -> : a = g ord0 by [].
 have -> : c = g ord23 by [].
-rewrite -2!Cndelta 2!convn_if 2!Cndist.
+rewrite -2!cndelta 2!convn_if 2!cndist.
 congr (<a>_ _ _); apply fdist_ext => j.
 rewrite !ConvnFDist.dE !big_ord_recl !big_ord0 /=.
 rewrite !I2FDist.dE !FDistMap.dE !FDist1.dE !addR0 /=.
@@ -1062,13 +1062,13 @@ elim: n d g.
 move=> n IH d g /=.
 case: Bool.bool_dec.
   rewrite FDist1.dE1 => /eqP ->.
-  by rewrite Cndelta.
+  by rewrite cndelta.
 move=> b; rewrite -{}IH.
 have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
   apply funext => i; by rewrite /DelFDist.f ltn0.
 symmetry; rewrite cnmap /Conv /= /cnconv.
 set d' := FDistMap.d _ _.
-rewrite -(Cndelta ord0) convn_if Cndist.
+rewrite -(cndelta ord0) convn_if cndist.
 congr (<a>_ _ _); apply fdist_ext => i.
 rewrite ConvnFDist.dE !big_ord_recl big_ord0 addR0 /= !I2FDist.dE /=.
 rewrite FDist1.dE /d' FDistMap.dE /=.
