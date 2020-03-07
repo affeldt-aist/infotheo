@@ -1022,7 +1022,7 @@ End NToBin.
 Section Equiv1.
 Variable T : convType.
 Definition T1 := AltConvexSpace.Pack (altConv_mixin T).
-Lemma equiv1 p (a b : T) : a <| p |> b = @cnconv T1 p a b.
+Lemma equiv_conv p (a b : T) : a <| p |> b = @cnconv T1 p a b.
 Proof.
 rewrite /cnconv /AltConvexSpace.convn.
 rewrite [let (convn, _, _) := S T1 in convn]/=.
@@ -1037,7 +1037,7 @@ Import AltConvexSpace.
 Variable T : altConvType.
 Let S := class T.
 Definition T2 := ConvexSpace.Pack (conv_mixin T).
-Lemma equiv2 n (d : {fdist 'I_n}) g : convn S d g = @Convn T2 _ d g.
+Lemma equiv_convn n (d : {fdist 'I_n}) g : convn S d g = @Convn T2 _ d g.
 Proof.
 elim: n d g.
   move=> d; move: (fdist_card_neq0 d).
