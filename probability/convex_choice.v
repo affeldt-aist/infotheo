@@ -849,16 +849,16 @@ Record altConv_mixin_of (T : choiceType) : Type := Class {
           where "'<|>_' d f" := (convn d f) ;
   cndist : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
              <|>_d (fun i => <|>_(e i) x) = <|>_(ConvnFDist.d d e) x ;
-  cndelta :forall  n (i : 'I_n) (g : 'I_n -> T), <|>_(FDist1.d i) g = g i }.
+  cndelta : forall  n (i : 'I_n) (g : 'I_n -> T), <|>_(FDist1.d i) g = g i }.
 (*  cnidem : forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
              (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <|>_d g = a }.
-  cnweak : forall n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
+  cnmap : forall n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
              <|>_d (g \o u) = <|>_(FDistMap.d u d) g ;
   cnconst : forall (a : T) (n : nat) (d : {fdist 'I_n}),
              <|>_d (fun _ => a) = a }. *)
-(* cndist + cndelta = cndist + cnidem = cndist + cnweak + cnconst *)
+(* cndist + cndelta = cndist + cnidem = cndist + cnmap + cnconst *)
 (* or more precisely:
-   cndist |- cndelta   <->   cnidem   <->   cnweak /\ cnconst  *)
+   cndist |- cndelta   <->   cnidem   <->   cnmap /\ cnconst  *)
 
 
 Structure altConvType : Type :=
@@ -877,8 +877,8 @@ Import AltConvexSpace.
 Variable T : altConvType.
 Definition S := class T.
 
-(* cnweak and cnconst are consequences of cndist + cndelta *)
-Lemma cnweak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
+(* cnmap and cnconst are consequences of cndist + cndelta *)
+Lemma cnmap n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
   convn S d (g \o u) = convn S (FDistMap.d u d) g.
 Proof.
 have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
@@ -896,7 +896,7 @@ have -> : (fun _:'I_n => a) = (fun=> convn S (FDist1.d (ord0 : 'I_1)) (fun=>a)).
 by rewrite cndist ConvnFDist.cst cndelta.
 Qed.
 
-(* cnidem is a consequence of cndist + cnweak + cnconst *)
+(* cnidem is a consequence of cndist + cnmap + cnconst *)
 Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
   (forall i : 'I_n, (d i != 0)%R -> g i = a) -> convn S d g = a.
 Proof.
@@ -932,7 +932,7 @@ have -> : d = FDistMap.d f d'.
   case/boolP: (k \in supp) => [Hk /(f_equal f) |].
     by rewrite Hj /f /f' enum_rankK_in // => <- /eqP.
   by rewrite inE negbK => /eqP ->.
-rewrite -cnweak.
+rewrite -cnmap.
 have -> : g \o f = fun _ => a.
   apply funext => i.
   rewrite /f /= Ha //.
@@ -962,7 +962,7 @@ have -> : g1 = g2 \o tperm ord0 (Ordinal (erefl (1 < 2))).
   rewrite /g1 /g2 /=.
   apply funext => i /=.
   by case/orP: (ord2 i) => /eqP -> /=; rewrite (tpermL,tpermR).
-rewrite cnweak.
+rewrite cnmap.
 congr convn; apply fdist_ext => i.
 rewrite FDistMap.dE (bigD1 (tperm ord0 (Ordinal (erefl (1 < 2))) i)) /=;
   last by rewrite tpermK.
@@ -985,7 +985,7 @@ rewrite [X in convn S (I2FDist.d [r_of p, q]) X]
         (_ : _ = g \o (widen_ord (leqnSn 2))); last first.
   apply funext => /= i.
   by case/orP: (ord2 i) => /eqP ->.
-rewrite 2!cnweak.
+rewrite 2!cnmap.
 set d1 := FDistMap.d _ _.
 set d2 := FDistMap.d _ _.
 rewrite (_ : a = g ord0) // -(cndelta S).
@@ -1065,7 +1065,7 @@ have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
   apply funext => i.
   by rewrite /DelFDist.f ltn0.
 symmetry.
-rewrite cnweak /Conv /= /cnconv.
+rewrite cnmap /Conv /= /cnconv.
 set d' := FDistMap.d _ _.
 rewrite (_ : (fun x : 'I_2 => _) =
              (fun x => convn S (if x == ord0 then FDist1.d ord0 else d') g));
