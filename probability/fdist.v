@@ -154,6 +154,11 @@ rewrite -[LHS]mulR1 big_distrl rsum_fdist_supp H big1 //=.
 by move=> i; rewrite inE.
 Qed.
 
+Lemma fdist_supp_mem (d : fdist A) : {i | i \in fdist_supp d}.
+Proof.
+case: (set_0Vmem (fdist_supp d)) (fdist_supp_neq0 d) => // ->; by rewrite eqxx.
+Qed.
+
 Lemma fdist_ind (P : fdist A -> Type) :
   (forall n : nat, (forall X, #|fdist_supp X| = n -> P X) ->
     forall X b, #|fdist_supp X| = n.+1 -> X b != 0 -> P X) ->
