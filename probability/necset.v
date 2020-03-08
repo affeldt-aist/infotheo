@@ -125,7 +125,7 @@ Local Open Scope R_scope.
 
 Lemma FSDist_scalept_conv (C : convType) (x y : {dist C}) (p : prob) (i : C) :
   scalept ((x <|p|> y) i) (S1 i) =
-  ((scalept (x i) (S1 i)) : Scaled_convType C) <|p|> scalept (y i) (S1 i).
+    scalept (x i) (S1 i) <|p|> scalept (y i) (S1 i).
 Proof. by rewrite ConvFSDist.dE scalept_conv. Qed.
 
 End misc_scaled.
@@ -485,8 +485,7 @@ Record mixin_of (T : choiceType) : Type := Mixin {
   _ : forall I (s : neset I) (f : I -> neset T),
         op (\bigcup_(i in s) f i)%:ne = op (op @` (f @` s))%:ne }.
 Record class_of (T : Type) : Type := Class {
-  base : Choice.class_of T ;
-  mixin : mixin_of (Choice.Pack base) }.
+  base : Choice.class_of T ; mixin : mixin_of (Choice.Pack base) }.
 Structure type := Pack {sort : Type ; class : class_of sort}.
 Definition baseType (T : type) := Choice.Pack (base (class T)).
 End def.
@@ -650,7 +649,7 @@ Record class_of T : Type := Class {
   mixin_conv : ConvexSpace.mixin_of (SemiCompleteSemiLattice.Pack base) ;
   mixin_scsl : @mixin_of (SemiCompleteSemiLattice.Pack base)
     (@Conv (ConvexSpace.Pack (ConvexSpace.Class mixin_conv))) }.
-Structure t : Type := Pack { car : Type ; class : class_of car }.
+Structure t : Type := Pack { sort : Type ; class : class_of sort }.
 Definition baseType (T : t) : semiCompSemiLattType :=
   SemiCompleteSemiLattice.Pack (base (class T)).
 Definition scsl_of_scslconv (T : t) :=
@@ -837,7 +836,7 @@ Lemma ssum_widen_finsupp (x : {dist C}) X :
 Proof.
 move=> xX.
 rewrite [in RHS](bigID (fun i => i \in finsupp x)) /=.
-have -> : (\ssum_(i <- X | i \notin finsupp x) scalept (x i) (S1 i)) = Zero C
+have -> : (\ssum_(i <- X | i \notin finsupp x) scalept (x i) (S1 i)) = Zero
   by rewrite big1 //= => i Hi; rewrite fsfun_dflt // scalept0.
 rewrite addpt0 [in RHS]big_fset_condE /=.
 suff H : finsupp x = [fset i | i in X & i \in finsupp x]%fset
@@ -1046,7 +1045,7 @@ Lemma hull_necsetU (X Y : necset A) : hull (X `|` Y) =
 Proof.
 apply eqEsubset => a.
 - case/hull_setU; try by apply/set0P/neset_neq0.
-  move=> x [] xX [] y [] yY [] p ->; by exists x, y, p.
+  move=> x xX [] y yY [] p ->; by exists x, y, p.
 - by case => x [] y [] p [] xX [] yY ->; apply mem_hull_setU; rewrite -in_setE.
 Qed.
 
@@ -1234,7 +1233,8 @@ apply/set0P.
 case/set0P: (neset_neq0 X) => x Xx.
 by exists (Convn_of_FSDist (x : {dist (F T)})), x.
 Qed.
-Definition F1join0 : LL -> L' := fun X => NECSet.Pack (NECSet.Class (CSet.Class (F1join0'_convex X)) (NESet.Mixin (F1join0'_neq0 X))).
+Definition F1join0 : LL -> L' := fun X => NECSet.Pack (NECSet.Class
+  (CSet.Class (F1join0'_convex X)) (NESet.Mixin (F1join0'_neq0 X))).
 
 Definition join1' (X : L') : convex_set (FSDist_convType (choice_of_Type T)) :=
   CSet.Pack (CSet.Class (hull_is_convex (bigsetU X (fun x => if x \in X then (x : set _) else cset0 _)))).
@@ -1318,9 +1318,9 @@ apply neset_ext => /=.
 apply eqEsubset=> i /=.
 - move/set0P: (set1_neq0 x)=> Hx.
   move/set0P: (set1_neq0 y)=> Hy.
-  move/(@hull_setU _ _ (necset1 x) (necset1 y) Hx Hy)=> [] a [].
+  move/(@hull_setU _ _ (necset1 x) (necset1 y) Hx Hy)=> [] a.
   rewrite inE=> /asboolP ->.
-  case=> b []; rewrite inE=> /asboolP ->.
+  case=> b; rewrite inE=> /asboolP ->.
   case=> p ->.
   by eexists.
 - case=> p ? <-.

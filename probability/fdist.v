@@ -169,7 +169,7 @@ move: {-2}(#|fdist_supp d|) (erefl (#|fdist_supp d|)) => n; move: n d.
 elim=> [d /esym /card0_eq Hd0|].
   move: (FDist.f1 d).
   rewrite -[X in X = _]mulR1 big_distrl rsum_fdist_supp big1 => [H01|a].
-    by elim: (gtR_eqF _ _ Rlt_0_1).
+    by elim: (gtR_eqF 0 1).
   by rewrite Hd0.
 move=> n IH d n13.
 have [b Hb] : {b : A | d b != 0}.
@@ -1304,4 +1304,3 @@ Qed.
 End wolfowitz_counting.
 
 Local Close Scope ring_scope.
-

@@ -281,8 +281,7 @@ apply leR_wpmul2r; first exact: FDist.ge0.
 by move: (Xpos i); rewrite (_ : 1 = 1%:R) //= (_ : 0 = 0%:R) // ltR_nat leR_nat.
 Qed.
 
-Lemma EX_gt0 : 0 < `E X.
-Proof. exact: (ltR_leR_trans Rlt_0_1 le_1_EX). Qed.
+Lemma EX_gt0 : 0 < `E X. Proof. exact: ltR_leR_trans le_1_EX. Qed.
 
 Lemma entroPN_0 : `E X = 1 -> `H PN = 0.
 Proof.
@@ -761,7 +760,7 @@ have le_1_alp : 1 <= alp.
     by rewrite (_ : 1 = 1%:R) // (_ : 2 = 2%:R) // leR_nat.
   rewrite card_matrix -natRexp mul1n log_pow //.
   by rewrite (_ : 0 = INR 0) //; apply/lt_INR/ltP/fdist_card_neq0.
-have alppos : 0 < alp by exact: (ltR_leR_trans Rlt_0_1).
+have alppos : 0 < alp by exact: (@ltR_leR_trans 1).
 have Ypos : 0 < Y by apply/mulR_gt0 => //; apply/mulR_gt0.
 apply: (Rmult_le_reg_r (INR (m eps) * INR n)).
   by apply: mulR_gt0 => //; apply/mpos.
@@ -793,7 +792,7 @@ apply: (@leR_trans (2 * x - (eps * INR n * ln 2))).
   apply: (@leR_trans (ln alp + Y)); last first.
     by rewrite /Y (mulRC eps); exact: proj1 (ceilP _).
   apply/addR_ge0; last exact/ltRW.
-  by rewrite -(ln_exp 0) exp_0; apply: ln_increasing_le=> //; apply: Rlt_0_1.
+  by rewrite -(ln_exp 0) exp_0; exact: ln_increasing_le.
 rewrite -(mulRA _ eps) -(mulRA _ (eps * INR n)).
 rewrite mulRBl mul1R leR_add2r.
 apply: (Rmult_le_reg_r (/ Y * 2 * / x)).
@@ -811,7 +810,7 @@ rewrite INR_Zabs_nat.
   rewrite (mulRC n%:R); exact/leRR.
 apply: le_IZR.
 apply: (@leR_trans ((4 * / (INR n * eps * ln 2)))); last exact: proj1 (ceilP _).
-apply: Rle_mult_inv_pos; first exact: ltRW (mulR_gt0 _ _ Rlt_0_2 Rlt_0_2).
+apply: Rle_mult_inv_pos; first exact: ltRW (@mulR_gt0 2 2 _ _).
 by rewrite (mulRC n%:R).
 Qed.
 

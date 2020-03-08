@@ -87,7 +87,8 @@ End FSDist_canonical.
 
 Definition FSDist_of (A : choiceType) := fun phT : phant (Choice.sort A) => FSDist.t A.
 
-Notation "{ 'dist' T }" := (FSDist_of (Phant T)).
+Notation "{ 'dist' T }" := (FSDist_of (Phant T)) : proba_scope.
+Local Open Scope proba_scope.
 
 Section FSDist_prop.
 Variable A : choiceType.
@@ -515,7 +516,6 @@ Export fdist_of_finFSDist.Exports.
 
 Module ConvnFSDist.
 Section def.
-Local Open Scope proba_scope.
 Variables (A : choiceType) (n : nat) (e : {fdist 'I_n}) (g : 'I_n -> {dist A}).
 Definition D : {fset A} := \big[fsetU/fset0]_(i < n | 0 <b e i) finsupp (g i).
 Definition f := [fsfun a in D => \sum_(i < n) e i * g i a | 0].

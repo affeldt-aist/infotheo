@@ -221,12 +221,11 @@ Record mixin_of (T : choiceType) : Type := Mixin {
       a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c }.
 Record class_of (T : Type) := Class {
   base : Choice.class_of T ; mxin : mixin_of (Choice.Pack base) }.
-Structure t : Type := Pack { car : Type ; class : class_of car }.
+Structure t : Type := Pack { sort : Type ; class : class_of sort }.
 Definition baseType (T : t) := Choice.Pack (base (class T)).
 Module Exports.
-Definition Conv (T : t) : prob -> car T -> car T -> car T :=
-  match T return prob -> car T -> car T -> car T with
-  Pack _ (Class _ (Mixin x _ _ _ _)) => x end.
+Definition Conv (T : t) : prob -> sort T -> sort T -> sort T :=
+  match T with Pack _ (Class _ (Mixin x _ _ _ _)) => x end.
 Arguments Conv {T} : simpl never.
 Notation "x <| p |> y" := (Conv p x y) : convex_scope.
 Notation convType := t.
@@ -307,6 +306,8 @@ Local Notation "a *: v" := (Scaled a v).
 
 Definition S1 x := 1%:pos *: x.
 
+Lemma S1_neq0 a : S1 a != Zero. Proof. by []. Qed.
+
 Lemma Scaled_inj p : injective (Scaled p).
 Proof. by move=> x y []. Qed.
 
@@ -322,8 +323,8 @@ Definition weight := mkPosFun weight_ge0.
 
 Definition point pt : weight pt > 0 -> A.
 destruct pt as [t c|].
-+ move=> _; exact c.
-+ case/ltRR.
+- move=> _; exact c.
+- case/ltRR.
 Defined.
 
 Lemma point_Scaled p x H : @point (p *: x) H = x.
@@ -334,21 +335,36 @@ Proof.
 case: x H => [p x|] H; by [congr Scaled; apply val_inj | elim: (ltRR 0)].
 Qed.
 
+Lemma weight_gt0 x : x != Zero -> (0 < weight x)%R.
+Proof. by case: x => // p a _ /=. Qed.
+
+Lemma weight_gt0b x : x != Zero -> (weight x >b 0)%R.
+Proof. move=> ?; exact/ltRP/weight_gt0. Qed.
+
+Definition weight_neq0 x (x0 : x != Zero) := Rpos.mk (weight_gt0b x0).
+
+Local Notation "[ 'point' 'of' x ]" := (point (weight_gt0 x))
+  (at level 0, format "[ 'point'  'of'  x ]").
+Local Notation "[ 'weight' 'of' x ]" := (weight_neq0 x)
+  (at level 0, format "[ 'weight'  'of'  x ]").
+
+Lemma point_S1 a : [point of S1_neq0 a] = a.
+Proof. by []. Qed.
+
 Lemma weight0_Zero x : weight x = 0 -> x = Zero.
 Proof. case: x => //= r c /esym Hr; by move/ltR_eqF: (Rpos_gt0 r). Qed.
 
+(* TODO: move to Reals_ext.v? *)
 Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / (r + q)%:pos <= 1.
 Proof.
-split.
-+ apply /ltRW /divR_gt0; by apply /Rpos_gt0.
-+ apply leR_pdivr_mulr.
-    by apply /Rpos_gt0.
-  rewrite mul1R.
-  by apply /leR_addl /ltRW /Rpos_gt0.
+split; first exact/ltRW/divR_gt0.
+apply leR_pdivr_mulr => //.
+rewrite mul1R; exact/leR_addl/ltRW.
 Qed.
 Definition Rpos_prob (r q : Rpos) :=
   @Prob.mk (r / (r + q)%:pos) (Rpos_prob_Op1 _ _).
 
+(* TODO: move along with onem *)
 Lemma onem_div p q : q != 0 -> (p/q).~ = (q-p)/q.
 Proof.
 move=> Hq.
@@ -373,6 +389,17 @@ Definition addpt a b :=
   | _, Zero => a
   | Zero, _ => b
   end.
+
+Lemma addptE a b (a0 : a != Zero) (b0 : b != Zero) :
+  let p := [weight of a0] in
+  let q := [weight of b0] in
+  let x := [point of a0] in
+  let y := [point of b0] in
+  addpt a b = (p + q)%:pos *: (x <| ((p / (p + q))%:pos)%:pr |> y).
+Proof.
+move: a b => [p x|//] [pb y|//] /= in a0 b0 *.
+congr (_ *: (_ <| _ |> _)); [exact: val_inj | exact: prob_ext].
+Qed.
 
 Local Notation "\ssum_ ( i <- r ) F" := (\big[addpt/Zero]_(i <- r) F).
 Local Notation "\ssum_ ( i : t ) F" := (\big[addpt/Zero]_(i : t) F).
@@ -403,7 +430,6 @@ Qed.
 
 Lemma s_of_Rpos_probA (p q r : Rpos) :
   [s_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] = ((p + q) / (p + q + r))%:pos%:pr.
-(*  [s_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob (`Pos (p + q)) r.*)
 Proof.
 apply prob_ext => /=; rewrite s_of_pqE /onem /=; field.
 split; exact/eqP/Rpos_neq0.
@@ -411,7 +437,6 @@ Qed.
 
 Lemma r_of_Rpos_probA (p q r : Rpos) :
   [r_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] = (p / (p + q))%:pos%:pr.
-(*  [r_of Rpos_prob p (`Pos (q + r)), Rpos_prob q r] = Rpos_prob p q.*)
 Proof.
 apply/prob_ext => /=; rewrite r_of_pqE s_of_pqE /onem /=; field.
 do 3 (split; first exact/eqP/Rpos_neq0).
@@ -472,8 +497,8 @@ Proof.
 rewrite /scalept.
 case: Rlt_dec => Hp; case: Rlt_dec => Hpq //.
 - congr Scaled; apply val_inj; by rewrite /= mulR1.
-- elim Hpq; by apply /mulR_gt0 /Rpos_gt0.
-- elim Hp; move/pmulR_lgt0: Hpq; apply; apply Rpos_gt0.
+- elim Hpq; by apply /mulR_gt0.
+- elim Hp; move/pmulR_lgt0: Hpq; exact.
 Qed.
 
 Lemma scalept_weight p x : 0 <= p -> weight (scalept p x) = p * weight x.
@@ -532,7 +557,7 @@ apply (big_ind2 (fun y q => scalept q x = y /\ 0 <= q)).
 Qed.
 
 Definition scaled_conv p x y := addpt (scalept p x) (scalept p.~ y).
-Definition Scaled_convMixin : ConvexSpace.mixin_of scaled_pt_choiceType.
+Definition scaled_pt_convMixin : ConvexSpace.mixin_of scaled_pt_choiceType.
 apply: (@ConvexSpace.Mixin _ scaled_conv); rewrite /scaled_conv /=.
 + by move=> a b; rewrite onem1 scalept1 scalept0 addpt0.
 + by move=> a p; rewrite -scalept_addR // onemKC scalept1.
@@ -542,7 +567,8 @@ apply: (@ConvexSpace.Mixin _ scaled_conv); rewrite /scaled_conv /=.
     by rewrite (p_is_rs p q) mulRC.
   by rewrite pq_is_rs mulRC s_of_pqE onemK.
 Defined.
-Canonical Scaled_convType := Eval hnf in ConvexSpace.Pack (ConvexSpace.Class Scaled_convMixin).
+Canonical scale_pt_convType :=
+  Eval hnf in ConvexSpace.Pack (ConvexSpace.Class scaled_pt_convMixin).
 
 Definition barycenter (pts : seq scaled_pt) := \ssum_(x <- pts) x.
 
@@ -612,9 +638,13 @@ Proof. move=> a b. by rewrite -adjunction_2. Qed.
 End adjunction.
 
 End scaled_convex.
+Arguments Zero {A}.
 End ScaledConvex.
 Local Notation "a *: v" := (@ScaledConvex.Scaled _ a v).
-
+Notation "[ 'point' 'of' x ]" := (ScaledConvex.point (ScaledConvex.weight_gt0 x))
+  (at level 0, format "[ 'point'  'of'  x ]") : convex_scope.
+Notation "[ 'weight' 'of' x ]" := (ScaledConvex.weight_neq0 x)
+  (at level 0, format "[ 'weight'  'of'  x ]") : convex_scope.
 Notation "\ssum_ ( i <- r | P ) F" :=
   (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i <- r | P%B) F) : convex_scope.
 Notation "\ssum_ ( i <- r ) F" :=
@@ -709,11 +739,10 @@ Lemma S1_convn_proj n (points : 'I_n -> A) d :
   \ssum_(i < n) scalept (d i) (S1 (prj (points i))).
 Proof.
 elim: n points d => [|n IH] points d.
-  move: (FDist.f1 d); rewrite /= big_ord0 => /Rlt_not_eq; elim.
-  exact: Rlt_0_1.
+  by move: (FDist.f1 d); rewrite /= big_ord0 => /Rlt_not_eq; elim.
 rewrite /=; case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb]Hd.
   rewrite (bigD1 ord0) //= Hd big1 /=.
-    rewrite addpt0 (scalept_gt0 _ _ Rlt_0_1).
+    rewrite addpt0 (@scalept_gt0 _ 1).
     by congr Scaled; apply val_inj; rewrite /= mulR1.
   move=> i Hi; have := FDist.f1 d.
   rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ R1)).
@@ -1393,7 +1422,7 @@ End CSet.
 Export CSet.Exports.
 
 Definition convex_set_of (A : convType) :=
-  fun phT : phant (ConvexSpace.car A) => convex_set A.
+  fun phT : phant (ConvexSpace.sort A) => convex_set A.
 Notation "{ 'convex_set' T }" := (convex_set_of (Phant T)) : convex_scope.
 
 (* NB: was duplicated in monae_lib.v before *)
@@ -1569,9 +1598,9 @@ Proof.
 rewrite /scalept; case: Rlt_dec => //= Hr; by [case: x | rewrite !in_setE].
 Qed.
 
-Lemma scaled_set_extract Z x (H : (0 < weight _ x)%R) :
-  x \in scaled_set Z -> point H \in Z.
-Proof. case: x H => [p x|/ltRR] //=; by rewrite in_setE. Qed.
+Lemma scaled_set_extract Z x (x0 : x != Zero) :
+  x \in scaled_set Z -> [point of x0] \in Z.
+Proof. by case: x x0. Qed.
 
 Lemma addpt_scaled_set (X : {convex_set A}) x y :
   x \in scaled_set X -> y \in scaled_set X -> addpt x y \in scaled_set X.
@@ -1579,43 +1608,47 @@ Proof.
 case: x => [p x|]; case: y => [q y|] //=; exact: mem_convex_set.
 Qed.
 
-Lemma hull_setU (a : A) (X Y : {convex_set A}) : X !=set0 -> Y !=set0 -> (hull (X `|` Y)) a ->
-  exists a1, a1 \in X /\ exists a2, a2 \in Y /\ exists p : prob, a = a1 <| p |> a2.
+Lemma ssum_scaled_set n (P : pred 'I_n) (X : {convex_set A}) (d : {fdist 'I_n})
+  (g : 'I_n -> A) : (forall j, P j -> g j \in X) ->
+  \ssum_(i | P i) scalept (d i) (S1 (g i)) \in scaled_set X.
 Proof.
-move=> [dx dx_x] [dy dy_y].
-case=> n -[g [e [gX Ha]]].
-suff : exists x1, x1 \in scaled_set X /\ exists x2, x2 \in scaled_set Y /\
-    S1 a = addpt x1 x2.
-  case => -[p a1|] [Ha1] [] [q a2|] /= [Ha2] // [Hpq ->];
-    (exists a1; split;
-      first by rewrite -(@point_Scaled _ p a1 (Rpos_gt0 _));
-      apply scaled_set_extract)
-     || (exists dx; split; first by rewrite in_setE);
-    (exists a2; split;
-      first by rewrite -(@point_Scaled _ q a2 (Rpos_gt0 _));
-      apply scaled_set_extract)
-     || (exists dy; split; first by rewrite in_setE).
-  + esplit; congr Conv.
-  + exists 1%:pr; by rewrite conv1.
-  + exists 0%:pr; by rewrite conv0.
-move/(f_equal (@S1 _)): Ha; rewrite S1_convn.
+move=> PX; apply big_ind.
+- by rewrite in_setE.
+- exact: addpt_scaled_set.
+- by move=> i /PX => giX; exact: scalept_scaled_set.
+Qed.
+
+Local Open Scope reals_ext_scope.
+
+Lemma hull_setU (a : A) (X Y : {convex_set A}) : X !=set0 -> Y !=set0 ->
+  hull (X `|` Y) a ->
+  exists2 b, b \in X & exists2 c, c \in Y & exists p, a = b <| p |> c.
+Proof.
+move=> [dx ?] [dy ?] [n -[g [d [gX ag]]]].
+suff [x] : exists2 x, x \in scaled_set X & exists2 y, y \in scaled_set Y &
+    S1 a = addpt x y.
+  have [/eqP -> _ [y yY]|x0 xX [y]] := boolP (x == Zero).
+    rewrite add0pt => S1ac.
+    exists dx; rewrite ?in_setE //; exists a; last by exists 0%:pr; rewrite conv0.
+    by rewrite -(point_S1 a); apply: scaled_set_extract; rewrite S1ac.
+  have [/eqP -> _|y0 yY] := boolP (y == Zero).
+    rewrite addpt0 => S1ab.
+    exists a; last by exists dy; rewrite ?in_setE //; exists 1%:pr; rewrite conv1.
+    by rewrite -(point_S1 a); apply: scaled_set_extract; rewrite S1ab.
+  rewrite addptE => -[_ abc].
+  exists [point of x0]; first exact: (@scaled_set_extract _ x).
+  exists [point of y0]; first exact: scaled_set_extract.
+  by eexists; rewrite abc.
+move/(congr1 (@S1 _)): ag; rewrite S1_convn.
 rewrite (bigID (fun i => g i \in X)) /=.
-set sa1 := \big[_/_]_(i < n | _) _.
-set sa2 := \big[_/_]_(i < n | _) _.
-move=> Hsa.
-exists sa1; split.
-  rewrite /sa1; apply big_ind.
-  + by rewrite in_setE.
-  + apply addpt_scaled_set.
-  + move=> i Hi; exact: scalept_scaled_set.
-exists sa2; split.
-  rewrite /sa2; apply big_ind.
-  + by rewrite in_setE.
-  + apply addpt_scaled_set.
-  + move=> i Hi; apply scalept_scaled_set.
-    rewrite -[_ \in _]orFb -(negbTE Hi).
-    apply/orP; rewrite 2!in_setE; exact/gX/imageP.
-by [].
+set b := \big[_/_]_(i < n | _) _.
+set c := \big[_/_]_(i < n | _) _.
+move=> abc.
+exists b; first exact: ssum_scaled_set.
+exists c => //.
+apply: (@ssum_scaled_set _ [pred i | g i \notin X]) => i /=.
+move/asboolP; rewrite in_setE.
+by case: (gX (g i) (imageP _ I)).
 Qed.
 
 End hull_setU.
@@ -1663,7 +1696,7 @@ rewrite /Conv /= /avg /Rpos_prob /= onem_div /Rdiv; last by apply Rpos_neq0.
 rewrite -!(mulRC (/ _)%R) mulRDr !mulRA mulRV; last by apply Rpos_neq0.
 by rewrite !mul1R (addRC p) addRK.
 Qed.
-Lemma scaleR0 : scaleR (@Zero _) = R0. by []. Qed.
+Lemma scaleR0 : scaleR Zero = R0. by []. Qed.
 Lemma scaleR_scalept r x : (0 <= r -> scaleR (scalept r x) = r * scaleR x)%R.
 Proof.
 case: x => [q y|]; last by rewrite scaleptR0 mulR0.
@@ -1845,9 +1878,9 @@ by rewrite /Conv /= /scaled_conv /= !scalept_comp.
 Qed.
 
 Lemma big_scalept_conv_split (C : convType) (I : Type) (r : seq I) (P : pred I)
- (F G : I -> Scaled_convType C) (p : prob) :
-  \ssum_(i <- r | P i) (F i <|p|> G i) =
-  (\ssum_(i <- r | P i) F i) <|p|> \ssum_(i <- r | P i) G i.
+  (F G : I -> scaled_pt C) (p : prob) :
+    \ssum_(i <- r | P i) (F i <|p|> G i) =
+    (\ssum_(i <- r | P i) F i) <|p|> \ssum_(i <- r | P i) G i.
 Proof. by rewrite /Conv /= /scaled_conv big_split /= !big_scalept. Qed.
 
 Lemma scalept_addRnneg : forall (A : convType) (x : scaled_pt A),
@@ -1859,14 +1892,14 @@ Definition big_scaleptl (A : convType) (x : scaled_pt A) :=
     (@scaled_pt A)
     Rnneg
     (fun r : Rnneg => scalept r x)
-    (Zero A)
+    Zero
     (@addpt A)
     Rnneg0
     addRnneg
     (@scalept_addRnneg A x).
 
 Lemma big_scaleptl' (A : convType) (x : scaled_pt A) :
-  scalept R0 x = Zero A ->
+  scalept R0 x = Zero ->
   forall (I : Type) (r : seq I) (P : pred I) (F : I -> R),
     (forall i : I, 0 <= F i) ->
     scalept (\sum_(i <- r | P i) F i) x = \ssum_(i <- r | P i) scalept (F i) x.
@@ -2152,13 +2185,13 @@ Local Open Scope R_scope.
 Example biconvex_is_not_convex_in_both : exists f : R -> R -> R, biconvex_function f /\ ~ convex_in_both f.
 Proof.
 exists Rmult; split.
-split => [a b0 b1 t | b a0 a1 t] /=; rewrite /Conv /= ; [rewrite avg_mulDr /Conv /=|rewrite avg_mulDl /Conv /=]; exact: leRR.
+split => [a b0 b1 t | b a0 a1 t] /=; rewrite /Conv /=; [rewrite avg_mulDr /Conv /=|rewrite avg_mulDl /Conv /=]; exact: leRR.
 move /convex_in_bothP /(_ (-1)%R 1%R 1%R (-1)%R (probinvn 1)).
 rewrite /Leconv /probinvn /Conv /= /avg /=.
 rewrite !(mul1R,mulR1,mulRN1) -oppRD onemKC.
 rewrite (_ : - / (1 + 1) + (/ (1 + 1)).~ = 0); last first.
   by rewrite /onem addRCA -oppRD -div1R eps2 addRN.
-rewrite mul0R leR_oppr oppR0 leRNgt; apply; exact/Rlt_0_1.
+rewrite mul0R leR_oppr oppR0 leRNgt; exact.
 Qed.
 End counterexample.
 End biconvex_function.
@@ -2467,7 +2500,7 @@ apply conj.
 Qed.
 
 Lemma open_unit_interval_convex : is_convex_set (fun x => 0 < x < 1)%R.
-Proof. apply /open_interval_convex /Rlt_0_1. Qed.
+Proof. exact: open_interval_convex. Qed.
 
 Definition open_unit_interval := CSet.Pack (CSet.Class open_unit_interval_convex).
 

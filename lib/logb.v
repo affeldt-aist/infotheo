@@ -245,12 +245,11 @@ Proof. by move=> x0; rewrite /Exp exp_pow exp_ln. Qed.
 Lemma LogK n x : 1 < n -> 0 < x -> Exp n (Log n x) = x.
 Proof.
 move=> n1 x0.
-rewrite /Log /Exp -mulRA mulVR ?mulR1; last first.
-  rewrite -ln_1.
-  apply/eqP => /ln_inv H.
-  have : 0 < n by lra.
-  move/H => /(_ Rlt_0_1) ?; lra.
-by rewrite exp_ln.
+rewrite /Log /Exp -mulRA mulVR ?mulR1 ?exp_ln //.
+rewrite -ln_1.
+apply/eqP => /ln_inv H.
+have : 0 < n by lra.
+move/H => /(_ Rlt_0_1) ?; lra.
 Qed.
 
 Lemma ExpK n x : 1 < n -> Log n (Exp n x) = x.

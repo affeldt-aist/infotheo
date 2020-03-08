@@ -58,10 +58,10 @@ Canonical R_choiceType := ChoiceType R Rstruct.R_choiceMixin.
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
-Section reals_ext.
-
 Lemma Rlt_1_2 : 1 < 2. Proof. lra. Qed.
-Local Hint Resolve Rlt_1_2 : core.
+Hint Resolve Rlt_1_2 : core.
+
+Section reals_ext.
 
 Lemma forallP_leRP (A : finType) (f : A -> R) : reflect (forall a, 0 <= f a) [forall a, 0 <b= f a].
 Proof.
@@ -280,7 +280,6 @@ move=> [H1 H2] [H H3]; case: (Rtotal_order a b) => [H0|[H0|H0]].
 Qed.
 
 End reals_ext.
-Hint Resolve Rlt_1_2 : core.
 
 Section pos_finfun.
 Variable (T : finType).
@@ -437,8 +436,7 @@ Proof. by apply prob_ext => /=; rewrite onemK. Qed.
 Lemma prob_IZR (p : positive) : (R0 <= / IZR (Zpos p) <= R1)%R.
 Proof.
 split; first exact/Rlt_le/Rinv_0_lt_compat/IZR_lt/Pos2Z.is_pos.
-rewrite -[X in (_ <= X)%R]Rinv_1; apply Rle_Rinv.
-- exact: Rlt_0_1.
+rewrite -[X in (_ <= X)%R]Rinv_1; apply Rle_Rinv => //.
 - exact/IZR_lt/Pos2Z.is_pos.
 - exact/IZR_le/Pos2Z.pos_le_pos/Pos.le_1_l.
 Qed.
@@ -562,30 +560,28 @@ Definition mkRpos x H := @Rpos.mk x (introT (ltRP _ _) H).
 
 Canonical Rpos1 := @mkRpos 1 Rlt_0_1.
 
-Lemma Rpos_gt0 (x : Rpos) : x > 0.
+Lemma Rpos_gt0 (x : Rpos) : 0 < x.
 Proof. by case: x => p /= /ltRP. Qed.
 
-Lemma Rpos_neq0 (x : Rpos) : val x != 0.
-Proof. case: x => p /=. by rewrite /gtRb lt0R => /andP []. Qed.
+Hint Resolve Rpos_gt0 : core.
 
-Lemma addRpos_gt0 (x y : Rpos) : x + y >b 0.
-Proof. by apply/ltRP/addR_gt0; apply/Rpos_gt0. Qed.
+Lemma Rpos_neq0 (x : Rpos) : val x != 0.
+Proof. case: x => p /=. by rewrite /gtRb lt0R => /andP[]. Qed.
+
+Lemma addRpos_gt0 (x y : Rpos) : x + y >b 0. Proof. exact/ltRP/addR_gt0. Qed.
 Canonical addRpos x y := Rpos.mk (addRpos_gt0 x y).
 
-Lemma mulRpos_gt0 (x y : Rpos) : x * y >b 0.
-Proof. by apply/ltRP/mulR_gt0; apply/Rpos_gt0. Qed.
+Lemma mulRpos_gt0 (x y : Rpos) : x * y >b 0. Proof. exact/ltRP/mulR_gt0. Qed.
 Canonical mulRpos x y := Rpos.mk (mulRpos_gt0 x y).
 
-Lemma divRpos_gt0 (x y : Rpos) : x / y >b 0.
-Proof. by apply/ltRP/divR_gt0; apply/Rpos_gt0. Qed.
+Lemma divRpos_gt0 (x y : Rpos) : x / y >b 0. Proof. exact/ltRP/divR_gt0. Qed.
 Canonical divRpos x y := Rpos.mk (divRpos_gt0 x y).
 
 Lemma prob_divRposxxy (x y : Rpos) : (0 <= (x / (x + y))%:pos <= 1)%R.
 Proof.
-split.
-  apply/divR_ge0; [exact/ltRW/Rpos_gt0 | exact/ltRP/addRpos_gt0].
+split; first by apply/divR_ge0; [exact/ltRW | exact/ltRP/addRpos_gt0].
 rewrite leR_pdivr_mulr ?mul1R; last exact/ltRP/addRpos_gt0.
-by rewrite leR_addl; apply/ltRW/Rpos_gt0.
+by rewrite leR_addl; apply/ltRW.
 Qed.
 
 Canonical divRposxxt (x y : Rpos) := @Prob.mk _ (prob_divRposxxy x y).
