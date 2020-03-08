@@ -1251,16 +1251,12 @@ case/boolP: (j == p.2) => [/eqP -> | Hj]; last first.
 rewrite (big_pred1 p.1) /=; last first.
   move=> i; rewrite inE -(enum_valK k) (can_eq enum_rankK).
   by rewrite (surjective_pairing (enum_val k)) xpair_eqE eqxx andbT.
-case/boolP: (\sum_(i < n) d i * e i p.2 == 0)%R.
-  move/eqP => Hp.
+case/boolP: (\sum_(i < n) d i * e i p.2 == 0)%R => [/eqP|] Hp.
   rewrite Hp mul0R (proj1 (prsumr_eq0P _) Hp) //.
   move=> *; by apply mulR_ge0.
-move=> Hp.
-rewrite [RHS]mulRC !fdistE CondJFDist.dE; last first.
-  rewrite fdistE /=.
+rewrite [RHS]mulRC !fdistE CondJFDist.dE !fdistE /=; last first.
   by under eq_bigr do rewrite Swap.dE ProdFDist.dE /=.
-rewrite Swap.dI /cPr /proba.Pr.
-rewrite (big_pred1 p);
+rewrite /cPr /proba.Pr (big_pred1 p);
   last by move=> i; rewrite !inE -xpair_eqE -!surjective_pairing.
 rewrite (big_pred1 p.2); last by move=> i; rewrite !inE.
 rewrite eqxx mulR1 Bivar.sndE /= ProdFDist.dE.
