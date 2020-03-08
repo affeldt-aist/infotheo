@@ -850,31 +850,16 @@ Qed.
 End convex_space_prop.
 
 Module AltConvexSpace.
-Record mixin_of (T : choiceType) : Type := Mixin {
-  convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T
-          where "'<a>_' d f" := (convn d f) ;
-  cndist : forall (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x,
-             <a>_d (fun i => <a>_(e i) x) = <a>_(ConvnFDist.d d e) x ;
-  cndelta : forall  n (i : 'I_n) (g : 'I_n -> T), <a>_(FDist1.d i) g = g i }.
-(* cncongr : forall n (g1 g2 : 'I_n -> T) (d1 d2 : {fdist 'I_n}),
-             d1 =1 d2 -> g1 =1 g2 -> <|>_d1 g1 = <|>_d2 g2 }. *)
-(*  cnidem : forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
-             (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <|>_d g = a }.
-  cnmap : forall n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
-             <|>_d (g \o u) = <|>_(FDistMap.d u d) g ;
-  cnconst : forall (a : T) (n : nat) (d : {fdist 'I_n}),
-             <|>_d (fun _ => a) = a }. *)
-(* cndist + cndelta = cndist + cnidem = cndist + cnmap + cnconst *)
-(* or more precisely:
-   cndist |- cndelta   <->   cnidem   <->   cnmap /\ cnconst  *)
+Record mixin_of (T : choiceType) : Type :=
+  Mixin { convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T }.
 Record class_of (T : Type) := Class {
   base : Choice.class_of T ;
   mixin : mixin_of (Choice.Pack base) }.
 Structure t : Type := Pack { car : Type ; class : class_of car }.
 Definition baseType (T : t) := Choice.Pack (base (class T)).
 Module Exports.
-Definition aConvn (T : t) : forall n, {fdist 'I_n} -> ('I_n -> car T) -> car T :=
-  match T with Pack _ (Class _ (Mixin x _ _)) => x end.
+Definition aConvn (T : t) : forall n, {fdist 'I_n} -> ('I_n -> car T) -> car T
+  := match T with Pack _ (Class _ (Mixin x)) => x end.
 Arguments aConvn {T} {n} : simpl never.
 Notation "'<a>_' d f" := (aConvn d f) : convex_scope.
 Notation altConvType := t.
@@ -886,23 +871,39 @@ End AltConvexSpace.
 Module AltConvexSpaceEquiv.
 Import AltConvexSpace.Exports.
 
-Section AltConvexSpace_lemmas.
-Variable T : altConvType.
-Lemma cndist (n m : nat) (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) x :
-  <a>_d (fun i => <a>_(e i) x) = <a>_(ConvnFDist.d d e) x :> T.
-Proof. by case: T n m d e x => ? [? []]. Qed.
-Lemma cndelta n (i : 'I_n) (g : 'I_n -> T) : <a>_(FDist1.d i) g = g i.
-Proof. by case: T n i g => ? [? []]. Qed.
-End AltConvexSpace_lemmas.
+Module Type AltConvSpace.
+Parameter T : altConvType.
+Parameter cndist :
+  forall n m (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) (x : 'I_m -> T),
+    <a>_d (fun i => <a>_(e i) x) = <a>_(ConvnFDist.d d e) x.
+Parameter cndelta :
+  forall  n (i : 'I_n) (g : 'I_n -> T), <a>_(FDist1.d i) g = g i.
+(* cncongr : forall n (g1 g2 : 'I_n -> T) (d1 d2 : {fdist 'I_n}),
+             d1 =1 d2 -> g1 =1 g2 -> <|>_d1 g1 = <|>_d2 g2 }. *)
+(*  cnidem : forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
+             (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <|>_d g = a }.
+  cnmap : forall n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
+             <|>_d (g \o u) = <|>_(FDistMap.d u d) g ;
+  cnconst : forall (a : T) (n : nat) (d : {fdist 'I_n}),
+             <|>_d (fun _ => a) = a }. *)
+(* cndist + cndelta = cndist + cnidem = cndist + cnmap + cnconst *)
+(* or more precisely:
+   cndist |- cndelta   <->   cnidem   <->   cnmap /\ cnconst  *)
+End AltConvSpace.
 
-Section BinToN.
-Variable T : convType.
-Definition altConv_mixin : AltConvexSpace.mixin_of T :=
-  AltConvexSpace.Mixin (@Convn_convnfdist T) (@ConvnFDist1 T).
+Module Type ConvType. Axiom T : convType. End ConvType.
+
+Module BinToN(C : ConvType) <: AltConvSpace.
+Import AltConvexSpace.
+Definition altConv_mixin : mixin_of C.T := Mixin (@Convn C.T).
+
+Definition T : altConvType := Pack (Class altConv_mixin).
+Definition cndist := (@Convn_convnfdist C.T).
+Definition cndelta := (@ConvnFDist1 C.T).
 End BinToN.
 
-Section NToBin.
-Variable T : altConvType.
+Module NToBin(A : AltConvSpace).
+Export A.
 
 (* In this module we use funext to avoid explicitly handling the congruence
    of convn (cf. eq_convn in for the iterated version). *)
@@ -1033,12 +1034,16 @@ apply (@ConvexSpace.Mixin _ cnconv).
 - exact cnconvC.
 - exact cnconvA.
 Defined.
+
+Definition T2 := ConvexSpace.Pack (ConvexSpace.Class conv_mixin).
 End NToBin.
 
-Section Equiv1.
-Variable T : convType.
-Definition T1 := AltConvexSpace.Pack (AltConvexSpace.Class (altConv_mixin T)).
-Lemma equiv_conv p (a b : T) : a <| p |> b = @cnconv T1 p a b.
+Module Equiv1(C : ConvType).
+Module A := BinToN(C).
+Module B := NToBin(A).
+Import A B.
+
+Lemma equiv_conv p (a b : T) : a <| p |> b = cnconv p a b.
 Proof.
 rewrite /cnconv.
 Import ScaledConvex.
@@ -1047,9 +1052,12 @@ by rewrite !big_ord_recl big_ord0 /= !I2FDist.dE /= addpt0.
 Qed.
 End Equiv1.
 
-Section Equiv2.
-Variable T : altConvType.
-Local Canonical T2 := ConvexSpace.Pack (ConvexSpace.Class (conv_mixin T)).
+Module Equiv2(A : AltConvSpace).
+Module B := NToBin(A).
+Import A B.
+
+Local Canonical T2 := B.T2.
+
 Lemma equiv_convn n (d : {fdist 'I_n}) g : <a>_d g = <|>_d g.
 Proof.
 elim: n d g.
@@ -1098,15 +1106,36 @@ Definition ax_union2 :=
 Definition ax_idem :=
   forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
     (forall i, i \in fdist_supp d -> g i = a) -> <a>_d g = a.
+Definition ax_delta :=
+  forall  n (i : 'I_n) (g : 'I_n -> T), <a>_(FDist1.d i) g = g i.
+End Beaulieu.
 
-Lemma cnunion : ax_union1.
+Module Type BeaulieuSpace.
+Parameter T : altConvType.
+Parameter cnunion : ax_union1 T.
+Parameter cnidem : ax_idem T.
+End BeaulieuSpace.
+
+Module AltToBeaulieu(A : AltConvSpace) <: BeaulieuSpace.
+Module B := NToBin(A).
+Import A B.
+Definition T := A.T.
+
+Lemma cnunion : ax_union1 T.
 Proof. move=> *. apply cndist. Qed.
 
-Lemma cnidem' : ax_idem.
+Lemma cnidem : ax_idem T.
 Proof. move=> a n d g Hd. apply cnidem => i; move: (Hd i); by rewrite inE. Qed.
+End AltToBeaulieu.
 
-Lemma cnunion_cnmap (cnunion : ax_union1) (cnidem : ax_idem)
-      n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
+Module BeaulieuToAlt(B : BeaulieuSpace) <: AltConvSpace.
+Import B.
+Definition T := B.T.
+
+Lemma cndelta : ax_delta T.
+Proof. move=> *; apply cnidem => j; by rewrite FDist1.supp inE => /eqP ->. Qed.
+
+Lemma cnmap n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
   injective u -> <a>_d (g \o u) = <a>_(FDistMap.d u d) g.
 Proof.
 move=> Hu.
@@ -1126,9 +1155,8 @@ rewrite -cnunion.
   by rewrite -iux -iuy eqxx in UV.
 Qed.
 
-Lemma cnunion_cndist (cnunion : ax_union1) (cnidem : ax_idem) : ax_dist.
+Lemma cndist : ax_dist T.
 Proof.
-set cnmap := cnunion_cnmap 
 move=> n m d e g.
 set f : 'I_n * 'I_m -> 'I_#|[finType of 'I_n * 'I_m]| := enum_rank.
 set f' : 'I_#|[finType of 'I_n * 'I_m]| -> 'I_n * 'I_m := enum_val.
@@ -1139,7 +1167,7 @@ rewrite (_ : (fun i => _) = (fun i => <a>_(FDistMap.d (h i) (e i)) (g \o h')));
   apply funext => i.
   have {1}-> : g = (g \o h') \o h i.
     apply funext => j; by rewrite /h' /h /= /f' /f enum_rankK.
-  rewrite cnunion_cnmap //.
+  rewrite cnmap //.
   move=> x y; by rewrite /h => /enum_rank_inj [].
 rewrite cnunion; first last.
 - apply/trivIsetP => U V /imsetP[x _ ->] /imsetP[y _ ->] /eqP UV.
@@ -1171,10 +1199,9 @@ set e' := fun j : 'I_m =>
   FDistMap.d f (ProdFDist.d (CondJFDist.d (Swap.d (ProdFDist.d d e)) j)
                             (fun=> FDist1.d j)).
 have {2}-> : g = (fun j => <a>_(e' j) (g \o h')).
-  apply funext => j; symmetry; apply cnidem => k.
-  rewrite FDistMap.dE (big_pred1 (f' k)) /=; last first.
-    move=> i. rewrite inE.
-    by rewrite -{1}(enum_valK k) /f (can_eq enum_rankK).
+  apply funext => j; symmetry; apply cnidem => k //.
+  rewrite inE /e' FDistMap.dE (big_pred1 (f' k)) /=; last first.
+    move=> i; by rewrite inE -{1}(enum_valK k) /f (can_eq enum_rankK).
   rewrite ProdFDist.dE FDist1.dE.
   case: (@eqP _ _ j) => [<- // | Hj].
   by rewrite mulR0 eqxx.
@@ -1193,10 +1220,8 @@ rewrite [RHS]cnunion; first last.
   rewrite (big_pred1 (f' k)) in ky; last first.
     move=> a; by rewrite -{1}(enum_valK k) (can_eq enum_rankK) eq_sym pred1E.
   move: kx ky; rewrite !ProdFDist.dE !FDist1.dE.
-  case/boolP: ((f' k).2 == x) xy => [/eqP <-|] xy.
-    case/boolP: ((f' k).2 == y) xy => [/eqP <-|] //.
-    by rewrite mulR0 eqxx.
-  by rewrite mulR0 eqxx.
+  case/boolP: ((f' k).2 == x) xy => [/eqP <-|] xy; last by rewrite mulR0 eqxx.
+  case/boolP: ((f' k).2 == y) xy => [/eqP <-|] //; by rewrite mulR0 eqxx.
 - move=> x y /=.
   have [k0 Hk0] := (fdist_supp_mem (e' x)).
   move/setP/(_ k0); rewrite Hk0.
@@ -1245,7 +1270,7 @@ rewrite eqxx mulR1 Bivar.sndE /= ProdFDist.dE.
 under eq_bigr do rewrite ProdFDist.dE /=.
 by rewrite -mulRA mulVR ?mulR1.
 Qed.
-End Beaulieu.
+End BeaulieuToAlt.
 End AltConvexSpaceEquiv.
 
 Section hull_def.
