@@ -1106,6 +1106,119 @@ Proof. move=> *. apply cndist. Qed.
 
 Lemma cnidem' : ax_idem.
 Proof. move=> a n d g Hd. apply cnidem => i; move: (Hd i); by rewrite inE. Qed.
+
+Lemma cnunion_cnmap (cnunion : ax_union1)
+      n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
+  injective u -> <a>_d (g \o u) = <a>_(FDistMap.d u d) g.
+Proof.
+move=> Hu.
+have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
+  apply fdist_ext => i.
+  by rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
+rewrite -cnunion.
+- by congr (<a>_ _ _); apply funext => i /=; rewrite cndelta.
+- move=> x y /= /setP /(_ (u x)).
+  by rewrite !FDist1.supp !inE /= eqxx => /esym /eqP /Hu.
+- apply/trivIsetP => U V /imsetP[x Hx ->] /imsetP[y Hy ->].
+  rewrite !FDist1.supp /eqP => UV.
+  rewrite -setI_eq0.
+  apply/eqP/setP => i.
+  rewrite !inE.
+  case/boolP: (i == u x) => // /eqP -> /=.
+  apply/eqP => xy.
+  by rewrite xy eqxx in UV.
+Qed.
+
+Require Import jfdist.
+
+Lemma cnunion_cndist (cnunion : ax_union1) : ax_dist.
+Proof.
+move=> n m d e g.
+have [n0 Hn0] : {i | i \in fdist_supp d}.
+  move: (fdist_supp_neq0 d).
+  case: (set_0Vmem (fdist_supp d)) => // ->.
+  by rewrite eqxx.
+have m0 : 'I_m.
+  case: m e {g}.
+    move/(_ n0)/fdist_card_neq0; by rewrite card_ord ltnn.
+  move=> *; exact ord0.
+set f : 'I_n * 'I_m -> 'I_#|[finType of 'I_n * 'I_m]| := enum_rank.
+set f' : 'I_#|[finType of 'I_n * 'I_m]| -> 'I_n * 'I_m := enum_val.
+set h := fun k i => f (k, i).
+set h' := fun i => snd (f' i).
+rewrite (_ : (fun i => _) = (fun i => <a>_(FDistMap.d (h i) (e i)) (g \o h')));
+  last first.
+  apply funext => i.
+  have {1}-> : g = (g \o h') \o h i.
+    apply funext => j; by rewrite /h' /h /= /f' /f enum_rankK.
+  rewrite cnunion_cnmap //.
+  move=> x y; by rewrite /h => /enum_rank_inj [].
+rewrite cnunion; first last.
+- apply/trivIsetP => U V /imsetP[x Hx ->] /imsetP[y Hy ->].
+  move/eqP => UV.
+  rewrite -setI_eq0.
+  apply/eqP/setP => i.
+  rewrite !inE !FDistMap.dE.
+  admit.
+- admit.
+set d1 := ConvnFDist.d _ _.
+set d1' := FDistMap.d f' d1.
+Check fun j => FDistMap.d (h ^~ j) (CondJFDist.d (Swap.d (ProdFDist.d d e)) j).
+Search ({fdist _}).
+have {2}-> : g = (fun j : 'I_m =>
+                    <a>_(FDistMap.d f
+                           (ProdFDist.d
+                              (CondJFDist.d (Swap.d (ProdFDist.d d e)) j)
+                              (fun=> FDist1.d j)))
+                        (g \o h')).
+  apply funext => j. symmetry; apply cnidem => k.
+  rewrite FDistMap.dE (big_pred1 (f' k)) /=; last first.
+    move=> i. rewrite inE.
+    by rewrite -{1}(enum_valK k) /f (can_eq enum_rankK).
+  rewrite ProdFDist.dE FDist1.dE.
+  case: (@eqP _ _ j) => [<- // | Hj].
+  by rewrite mulR0 eqxx.
+rewrite [RHS]cnunion; first last.
+- apply/trivIsetP => U V. admit.
+- move=> x y /=. move/setP/(_ (h n0 x)).
+  rewrite !inE !FDistMap.dE /= (big_pred1 (n0,x)) /=; last first.
+    move=> j; by rewrite inE /f (can_eq enum_rankK).
+  rewrite (big_pred1 (n0,x)) /=; last first.
+    move=> j; by rewrite inE /f (can_eq enum_rankK).
+  rewrite !ProdFDist.dE !FDist1.dE /= eqxx mulR1.
+  case: (@eqP _ x y) => // xy.
+  rewrite mulR0 eqxx /= => /negbFE.
+  admit.
+congr aConvn.
+apply fdist_ext => k.
+rewrite /d1 !ConvnFDist.dE.
+under eq_bigr do rewrite FDistMap.dE big_distrr big_mkcond /=.
+rewrite exchange_big /=.
+apply eq_bigr => j _.
+rewrite ConvnFDist.dE FDistMap.dE -big_mkcond /=.
+rewrite (big_pred1 (f' k));
+  last by move=> a; rewrite inE -{1}(enum_valK k) /f (can_eq enum_rankK).
+set p := f' k => /=.
+case/boolP: (j == p.2) => [/eqP -> | Hj]; last first.
+  rewrite big_pred0; first last.
+  - move=> i; apply/eqP.
+    rewrite -(enum_valK k) => /enum_rank_inj.
+    rewrite (surjective_pairing (enum_val k)) -/f' => -[] _ /eqP Hj'.
+    by rewrite Hj' in Hj.
+  by rewrite ProdFDist.dE FDist1.dE eq_sym (negbTE Hj) !mulR0.
+rewrite (big_pred1 p.1) /=; last first.
+  move=> i; rewrite inE /h /f -(enum_valK k) (can_eq enum_rankK). 
+  by rewrite (surjective_pairing (enum_val k)) xpair_eqE eqxx andbT.
+rewrite [RHS]mulRC ProdFDist.dE FDist1.dE CondJFDist.dE; last first.
+  admit.
+rewrite Swap.dI /cPr /proba.Pr.
+rewrite (big_pred1 p);
+  last by move=> i; rewrite !inE -xpair_eqE -!surjective_pairing.
+rewrite (big_pred1 p.2); last by move=> i; rewrite !inE.
+rewrite eqxx mulR1 Bivar.sndE /= ProdFDist.dE.
+under eq_bigr do rewrite ProdFDist.dE /=.
+rewrite -mulRA mulVR ?mulR1 //.
+Abort.
 End Beaulieu.
 End AltConvexSpaceEquiv.
 
