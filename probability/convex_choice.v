@@ -1120,18 +1120,18 @@ End Equiv2.
 Definition fdistE :=
   (FDistMap.dE,FDist1.dE,ProdFDist.dE,Swap.dI,Swap.dE,ConvnFDist.dE,Bivar.fstE).
 
-Module FDistSub.
-Section fdistsub.
+Module FDistPart.
+Section fdistpart.
 Variables (n m : nat) (e : {fdist 'I_m}) (K : 'I_m -> 'I_n) (i : 'I_n).
 Definition d :=
   CondJFDist.d (Swap.d (ProdFDist.d e (fun j : 'I_m => FDist1.d (K j)))) i.
 Lemma dE j :
-  (forall k, [set j | (K j == k) && (e j != 0%R)] != finset.set0) ->
+  [set j | (K j == i) && (e j != 0%R)] != finset.set0 ->
   d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%R.
 Proof.
 move=> NE.
 rewrite CondJFDist.dE; last first.
-  move: (NE i); apply contra => /eqP H.
+  move: NE; apply contra => /eqP H.
   apply/eqP/setP => a; rewrite !inE.
   suff: (e a * (i == K a)%:R = 0)%R.
     rewrite eq_sym mulR_eq0 => -[->|].
@@ -1158,8 +1158,8 @@ under eq_bigr => k _ do rewrite -big_mkcond /= big_pred1_eq !fdistE /=.
 congr (_ / _)%R; apply eq_bigr => k _.
 rewrite eq_sym; case: ifP; by rewrite (mulR1,mulR0).
 Qed.
-End fdistsub.
-End FDistSub.
+End fdistpart.
+End FDistPart.
 
 Section Beaulieu.
 Variable T : altConvType.
@@ -1175,7 +1175,7 @@ Definition ax_union2 :=
   forall n m (d : {fdist 'I_m}) (K : 'I_m -> 'I_n) (g : 'I_m -> T),
     (forall i, [set j | (K j == i) && (d j != 0%R)] != finset.set0) ->
     (* forall i, (K @^-1: [set i] :&: fdist_supp d) != finset.set0 *)
-    <a>_d g = <a>_(FDistMap.d K d) (fun i => <a>_(FDistSub.d d K i) g).
+    <a>_d g = <a>_(FDistMap.d K d) (fun i => <a>_(FDistPart.d d K i) g).
 Definition ax_idem :=
   forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
     (forall i, i \in fdist_supp d -> g i = a) -> <a>_d g = a.
