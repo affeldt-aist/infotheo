@@ -1122,7 +1122,7 @@ Definition fdistE :=
 
 Module FDistPart.
 Section fdistpart.
-Variables (n m : nat) (e : {fdist 'I_m}) (K : 'I_m -> 'I_n) (i : 'I_n).
+Variables (n m : nat) (K : 'I_m -> 'I_n) (e : {fdist 'I_m}) (i : 'I_n).
 Definition d :=
   CondJFDist.d (Swap.d (ProdFDist.d e (fun j : 'I_m => FDist1.d (K j)))) i.
 Definition den :=
@@ -1141,21 +1141,21 @@ Lemma dE j :
   FDistMap.d K e i != 0%R ->
   d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%R.
 Proof.
-move=> NE.
-rewrite CondJFDist.dE; last by rewrite -denE in NE.
-rewrite /cPr /proba.Pr.
+rewrite -denE => NE.
+rewrite CondJFDist.dE // {NE} /cPr /proba.Pr.
 rewrite (big_pred1 (j,i)); last first.
   move=> k; by rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
 rewrite (big_pred1 i); last by move=> k; rewrite !inE.
 rewrite !fdistE big_mkcond [in RHS]big_mkcond /=.
+congr (_ / _)%R.
 under eq_bigr => k do rewrite {2}(surjective_pairing k).
 rewrite -(pair_bigA _ (fun k l =>
           if l == i
           then ProdFDist.d e (fun j0 : 'I_m => FDist1.d (K j0)) (k, l)
           else R0))%R /=.
-under eq_bigr => k _ do rewrite -big_mkcond /= big_pred1_eq !fdistE /=.
-congr (_ / _)%R; apply eq_bigr => k _.
-rewrite eq_sym; case: ifP; by rewrite (mulR1,mulR0).
+apply eq_bigr => k _.
+rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
+case: ifP; by rewrite (mulR1,mulR0).
 Qed.
 End fdistpart.
 End FDistPart.
@@ -1171,10 +1171,10 @@ Definition ax_union1 :=
     trivIset [set fdist_supp (e i) | i : 'I_n] ->
     <a>_d (fun i => <a>_(e i) g) = <a>_(ConvnFDist.d d e) g.
 Definition ax_union2 :=
-  forall n m (d : {fdist 'I_m}) (K : 'I_m -> 'I_n) (g : 'I_m -> T),
+  forall n m (K : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_m -> T),
     (*forall i, [set j | (K j == i) && (d j != 0%R)] != finset.set0 *)
     (* forall i, (K @^-1: [set i] :&: fdist_supp d) != finset.set0 *)
-    <a>_d g = <a>_(FDistMap.d K d) (fun i => <a>_(FDistPart.d d K i) g).
+    <a>_d g = <a>_(FDistMap.d K d) (fun i => <a>_(FDistPart.d K d i) g).
 Definition ax_idem :=
   forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
     (forall i, i \in fdist_supp d -> g i = a) -> <a>_d g = a.
@@ -1198,6 +1198,32 @@ Proof. move=> *. apply cndist. Qed.
 
 Lemma cnidem : ax_idem T.
 Proof. move=> a n d g Hd. apply cnidem => i; move: (Hd i); by rewrite inE. Qed.
+
+Lemma cnuion2 : ax_union2 T.
+Proof.
+move=> n m K d g; rewrite cndist.
+congr aConvn.
+apply fdist_ext => /= j.
+rewrite !fdistE.
+under eq_bigr => /= a _.
+  case/boolP: (FDistMap.d K d a == 0%R) => Ka0.
+    rewrite (eqP Ka0) mul0R.
+    have Hd : (d j * (a == K j)%:R = 0)%R.
+      case Kj: (a == K j); last by rewrite mulR0.
+      move/eqP: Ka0; rewrite fdistE /=.
+      rewrite eq_sym in Kj.
+      move/prsumr_eq0P => -> //.
+      by rewrite mul0R.
+    rewrite -Hd.
+  over.
+  rewrite FDistPart.dE // fdistE /= mulRCA mulRV ?mulR1;
+    last by rewrite fdistE in Ka0.
+over.
+move=> /=.
+rewrite (bigD1 (K j)) //= eqxx mulR1.
+rewrite big1 ?addR0 // => i /negbTE ->.
+by rewrite mulR0.
+Qed.
 End AltToBeaulieu.
 
 Module BeaulieuToAlt(B : BeaulieuSpace) <: AltConvSpace.
