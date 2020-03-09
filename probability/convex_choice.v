@@ -1125,25 +1125,24 @@ Section fdistpart.
 Variables (n m : nat) (e : {fdist 'I_m}) (K : 'I_m -> 'I_n) (i : 'I_n).
 Definition d :=
   CondJFDist.d (Swap.d (ProdFDist.d e (fun j : 'I_m => FDist1.d (K j)))) i.
+Definition den :=
+  Bivar.fst (Swap.d (ProdFDist.d e (fun j : 'I_m => FDist1.d (K j)))) i.
+Lemma denE : den = FDistMap.d K e i.
+Proof.
+rewrite /den !fdistE [RHS]big_mkcond /=.
+under eq_bigl do rewrite inE.
+apply/eq_bigr => a _.
+rewrite !fdistE /= (big_pred1 (a,i)) ?fdistE /=;
+    last by case=> x y; rewrite /swap /= !xpair_eqE andbC.
+rewrite eq_sym.
+case: eqP => // _; by rewrite (mulR0,mulR1).
+Qed.
 Lemma dE j :
-  [set j | (K j == i) && (e j != 0%R)] != finset.set0 ->
+  FDistMap.d K e i != 0%R ->
   d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%R.
 Proof.
 move=> NE.
-rewrite CondJFDist.dE; last first.
-  move: NE; apply contra => /eqP H.
-  apply/eqP/setP => a; rewrite !inE.
-  suff: (e a * (i == K a)%:R = 0)%R.
-    rewrite eq_sym mulR_eq0 => -[->|].
-      by rewrite eqxx andbF.
-    by case: eqP => //= _ /R1_neq_R0.
-  move: H; rewrite !fdistE /=.
-  under eq_bigr => k _ do
-    (rewrite !fdistE (big_pred1 (k,i)) ?fdistE /=;
-      last by case=> x y; rewrite /swap /= !xpair_eqE andbC).
-  move/(proj1 (prsumr_eq0P _)) => /= -> // b _.
-  apply mulR_ge0 => //.
-  case: eqP => // _; exact: leRR.
+rewrite CondJFDist.dE; last by rewrite -denE in NE.
 rewrite /cPr /proba.Pr.
 rewrite (big_pred1 (j,i)); last first.
   move=> k; by rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
@@ -1173,7 +1172,7 @@ Definition ax_union1 :=
     <a>_d (fun i => <a>_(e i) g) = <a>_(ConvnFDist.d d e) g.
 Definition ax_union2 :=
   forall n m (d : {fdist 'I_m}) (K : 'I_m -> 'I_n) (g : 'I_m -> T),
-    (forall i, [set j | (K j == i) && (d j != 0%R)] != finset.set0) ->
+    (*forall i, [set j | (K j == i) && (d j != 0%R)] != finset.set0 *)
     (* forall i, (K @^-1: [set i] :&: fdist_supp d) != finset.set0 *)
     <a>_d g = <a>_(FDistMap.d K d) (fun i => <a>_(FDistPart.d d K i) g).
 Definition ax_idem :=
