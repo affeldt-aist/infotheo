@@ -1138,34 +1138,23 @@ rewrite CondJFDist.dE; last first.
       by rewrite eqxx andbF.
     by case: eqP => //= _ /R1_neq_R0.
   move: H; rewrite !fdistE /=.
-  under eq_bigr => k _.
-    rewrite !fdistE.
-    rewrite (big_pred1 (k,i)) /=; last first.
-      case=> x y; by rewrite /swap /= !xpair_eqE andbC.
-    rewrite !fdistE /=.
-    over.
+  under eq_bigr => k _ do
+    (rewrite !fdistE (big_pred1 (k,i)) ?fdistE /=;
+      last by case=> x y; rewrite /swap /= !xpair_eqE andbC).
   move/(proj1 (prsumr_eq0P _)) => /= -> // b _.
   apply mulR_ge0 => //.
-  case: eqP => // _.
-  exact: leRR.
+  case: eqP => // _; exact: leRR.
 rewrite /cPr /proba.Pr.
 rewrite (big_pred1 (j,i)); last first.
   move=> k; by rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
 rewrite (big_pred1 i); last by move=> k; rewrite !inE.
-rewrite !fdistE /=.
+rewrite !fdistE big_mkcond [in RHS]big_mkcond /=.
 under eq_bigr => k do rewrite {2}(surjective_pairing k).
-rewrite big_mkcond /=.
 rewrite -(pair_bigA _ (fun k l =>
           if l == i
           then ProdFDist.d e (fun j0 : 'I_m => FDist1.d (K j0)) (k, l)
           else R0))%R /=.
-under eq_bigr => k _.
-  rewrite -big_mkcond /=.
-  rewrite big_pred1_eq.
-  rewrite !fdistE /=.
-  over.
-move=> /=.
-rewrite [in RHS]big_mkcond /=.
+under eq_bigr => k _ do rewrite -big_mkcond /= big_pred1_eq !fdistE /=.
 congr (_ / _)%R; apply eq_bigr => k _.
 rewrite eq_sym; case: ifP; by rewrite (mulR1,mulR0).
 Qed.
@@ -1184,7 +1173,7 @@ Definition ax_union1 :=
     <a>_d (fun i => <a>_(e i) g) = <a>_(ConvnFDist.d d e) g.
 Definition ax_union2 :=
   forall n m (d : {fdist 'I_m}) (K : 'I_m -> 'I_n) (g : 'I_m -> T),
-    (forall i, #|[set j | (K j == i) && (d j != 0%R)]| > 0) ->
+    (forall i, [set j | (K j == i) && (d j != 0%R)] != finset.set0) ->
     (* forall i, (K @^-1: [set i] :&: fdist_supp d) != finset.set0 *)
     <a>_d g = <a>_(FDistMap.d K d) (fun i => <a>_(FDistSub.d d K i) g).
 Definition ax_idem :=
