@@ -1158,6 +1158,29 @@ rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
 case: ifP; by rewrite (mulR1,mulR0).
 Qed.
 End fdistpart.
+
+Lemma dK n m K (e : {fdist 'I_m}) j :
+  e j = (\sum_(i < n) FDistMap.d K e i * d K e i j)%R.
+Proof.
+under eq_bigr => /= a _.
+  case/boolP: (FDistMap.d K e a == 0%R) => Ka0.
+    rewrite (eqP Ka0) mul0R.
+    have He : (e j * (a == K j)%:R = 0)%R.
+      case Kj: (a == K j); last by rewrite mulR0.
+      move/eqP: Ka0; rewrite fdistE /=.
+      rewrite eq_sym in Kj.
+      move/prsumr_eq0P => -> //.
+      by rewrite mul0R.
+    rewrite -He.
+  over.
+  rewrite FDistPart.dE // fdistE /= mulRCA mulRV ?mulR1;
+    last by rewrite fdistE in Ka0.
+over.
+move=> /=.
+rewrite (bigD1 (K j)) //= eqxx mulR1.
+rewrite big1 ?addR0 // => i /negbTE ->.
+by rewrite mulR0.
+Qed.
 End FDistPart.
 
 Section Beaulieu.
@@ -1184,7 +1207,7 @@ End Beaulieu.
 
 Module Type BeaulieuSpace.
 Parameter T : altConvType.
-Parameter cnunion : ax_union1 T.
+Parameter cnunion : ax_union2 T.
 Parameter cnidem : ax_idem T.
 End BeaulieuSpace.
 
@@ -1193,36 +1216,18 @@ Module B := NToBin(A).
 Import A B.
 Definition T := A.T.
 
-Lemma cnunion : ax_union1 T.
+Lemma cnunion1 : ax_union1 T.
 Proof. move=> *. apply cndist. Qed.
 
 Lemma cnidem : ax_idem T.
 Proof. move=> a n d g Hd. apply cnidem => i; move: (Hd i); by rewrite inE. Qed.
 
-Lemma cnuion2 : ax_union2 T.
+Lemma cnunion : ax_union2 T.
 Proof.
 move=> n m K d g; rewrite cndist.
 congr aConvn.
 apply fdist_ext => /= j.
-rewrite !fdistE.
-under eq_bigr => /= a _.
-  case/boolP: (FDistMap.d K d a == 0%R) => Ka0.
-    rewrite (eqP Ka0) mul0R.
-    have Hd : (d j * (a == K j)%:R = 0)%R.
-      case Kj: (a == K j); last by rewrite mulR0.
-      move/eqP: Ka0; rewrite fdistE /=.
-      rewrite eq_sym in Kj.
-      move/prsumr_eq0P => -> //.
-      by rewrite mul0R.
-    rewrite -Hd.
-  over.
-  rewrite FDistPart.dE // fdistE /= mulRCA mulRV ?mulR1;
-    last by rewrite fdistE in Ka0.
-over.
-move=> /=.
-rewrite (bigD1 (K j)) //= eqxx mulR1.
-rewrite big1 ?addR0 // => i /negbTE ->.
-by rewrite mulR0.
+by rewrite !fdistE -FDistPart.dK.
 Qed.
 End AltToBeaulieu.
 
@@ -1232,6 +1237,58 @@ Definition T := B.T.
 
 Lemma cndelta : ax_delta T.
 Proof. move=> *; apply cnidem => j; by rewrite FDist1.supp inE => /eqP ->. Qed.
+
+Lemma cnunion1 : ax_union1 T.
+Proof.
+move=> n m d e g HI HP.
+have f j :
+  {i | [forall i, j \notin fdist_supp (e i)] || (j \in fdist_supp (e i))}.
+  case/boolP: [forall i, j \notin fdist_supp (e i)].
+    move=> _. by exists (proj1_sig (fdist_supp_mem d)).
+  rewrite negb_forall => He /=.
+  suff: ([set i | j \in fdist_supp (e i)] != finset.set0).
+    case: (set_0Vmem [set i | j \in fdist_supp (e i)])
+      => /=[/eqP -> // | [i]].
+    rewrite inE => Hi _; by exists i.
+  case/existsP: He => i.
+  rewrite negbK => Hi.
+  apply/eqP => /setP/(_ i).
+  by rewrite inE Hi inE.
+rewrite /= in f.
+rewrite [RHS](cnunion (fun i => proj1_sig (f i))).
+congr aConvn.
+  apply fdist_ext => /= i.
+  rewrite fdistE big_mkcond /=.
+  under eq_bigr do rewrite fdistE.
+  rewrite (eq_bigr (fun j => d i * e i j)%R).
+    by rewrite -big_distrr FDist.f1 /= mulR1.
+  move=> /= a _.
+  case: (f a) => j /= /orP[/forallP /= |] Ha.
+    have Ha0 k : e k a = R0.
+      move: (Ha k); by rewrite inE negbK => /eqP ->.
+    rewrite (proj2 (prsumr_eq0P _)) ?(if_same,Ha0,mulR0) //.
+      move=> k _; by apply mulR_ge0.
+    move=> k _; by rewrite Ha0 mulR0.
+  have neqj k : a \in fdist_supp (e j) -> k != j -> (d k * e k a = 0)%R.
+    move=> Haj kj.
+    move/trivIsetP: HP => /(_ (fdist_supp (e j)) (fdist_supp (e k))).
+    rewrite mem_imset // mem_imset //.
+    case: eqP => /= [/HI jk | _ /(_ isT isT isT)].
+      by rewrite jk eqxx in kj.
+    rewrite -setI_eq0 => /eqP/setP/(_ a).
+    rewrite inE Haj !inE /= => /negbFE /eqP ->.
+    by rewrite mulR0.
+  case: eqP => Hi.
+    subst i.
+    rewrite (bigD1 j) //= big1 ?addR0 // => *; by rewrite neqj.
+  move/eqP in Hi; by rewrite neqj // eq_sym.
+apply funext => i /=.
+congr aConvn.
+apply fdist_ext => j.
+case/boolP: (FDistMap.d (fun k => sval (f k)) (ConvnFDist.d d e) i == R0). 
+  rewrite !fdistE /= => /eqP.
+  under eq_bigr do rewrite !fdistE.
+Abort.
 
 Lemma cnmap n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
   injective u -> <a>_d (g \o u) = <a>_(FDistMap.d u d) g.
