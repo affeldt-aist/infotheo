@@ -1127,6 +1127,7 @@ Definition d :=
   CondJFDist.d (Swap.d (ProdFDist.d e (fun j : 'I_m => FDist1.d (K j)))) i.
 Definition den :=
   Bivar.fst (Swap.d (ProdFDist.d e (fun j : 'I_m => FDist1.d (K j)))) i.
+
 Lemma denE : den = FDistMap.d K e i.
 Proof.
 rewrite /den !fdistE [RHS]big_mkcond /=.
@@ -1137,6 +1138,7 @@ rewrite !fdistE /= (big_pred1 (a,i)) ?fdistE /=;
 rewrite eq_sym.
 case: eqP => // _; by rewrite (mulR0,mulR1).
 Qed.
+
 Lemma dE j :
   FDistMap.d K e i != 0%R ->
   d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%R.
@@ -1190,13 +1192,13 @@ Definition ax_dist :=
     <a>_d (fun i => <a>_(e i) g) = <a>_(ConvnFDist.d d e) g.
 Definition ax_union1 :=
   forall n m (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) (g : 'I_m -> T),
+    (*forall i j,
+        (fdist_supp (e i) :&: fdist_supp (e j) != finset.set0) -> i = j) ->*)
     injective (@fdist_supp _ \o e) ->
     trivIset [set fdist_supp (e i) | i : 'I_n] ->
     <a>_d (fun i => <a>_(e i) g) = <a>_(ConvnFDist.d d e) g.
 Definition ax_union2 :=
   forall n m (K : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_m -> T),
-    (*forall i, [set j | (K j == i) && (d j != 0%R)] != finset.set0 *)
-    (* forall i, (K @^-1: [set i] :&: fdist_supp d) != finset.set0 *)
     <a>_d g = <a>_(FDistMap.d K d) (fun i => <a>_(FDistPart.d K d i) g).
 Definition ax_idem :=
   forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
@@ -1238,57 +1240,145 @@ Definition T := B.T.
 Lemma cndelta : ax_delta T.
 Proof. move=> *; apply cnidem => j; by rewrite FDist1.supp inE => /eqP ->. Qed.
 
+Lemma existb_sig (A : finType) (P : {pred A}) :
+  [exists x, P x] -> {x | P x}.
+Proof.
+move=> He.
+suff: [set x | P x] != finset.set0.
+  case: (set_0Vmem [set x | P x]) => /=[/eqP -> // | [x]].
+  rewrite inE => Hx _; by exists x.
+case/existsP: He => x Px.
+apply/eqP => /setP/(_ x).
+by rewrite inE Px inE.
+Qed.
+
 Lemma cnunion1 : ax_union1 T.
 Proof.
 move=> n m d e g HI HP.
+have [n0 Hn0] := fdist_supp_mem d.
+set h' : 'I_n -> 'I_#|fdist_supp d| := enum_rank_in Hn0.
+set h : 'I_#|fdist_supp d| -> 'I_n := enum_val.
 have f j :
-  {i | [forall i, j \notin fdist_supp (e i)] || (j \in fdist_supp (e i))}.
-  case/boolP: [forall i, j \notin fdist_supp (e i)].
-    move=> _. by exists (proj1_sig (fdist_supp_mem d)).
-  rewrite negb_forall => He /=.
-  suff: ([set i | j \in fdist_supp (e i)] != finset.set0).
-    case: (set_0Vmem [set i | j \in fdist_supp (e i)])
-      => /=[/eqP -> // | [i]].
-    rewrite inE => Hi _; by exists i.
-  case/existsP: He => i.
-  rewrite negbK => Hi.
-  apply/eqP => /setP/(_ i).
-  by rewrite inE Hi inE.
+  {i | [forall i, j \notin fdist_supp (e (h i))]||(j \in fdist_supp (e (h i)))}.
+  case/boolP: [forall i, j \notin fdist_supp (e (h i))].
+    move=> _. by exists (proj1_sig (fdist_supp_mem (FDistMap.d h' d))).
+  by rewrite -negb_exists negbK => /existb_sig.
 rewrite /= in f.
-rewrite [RHS](cnunion (fun i => proj1_sig (f i))).
-congr aConvn.
-  apply fdist_ext => /= i.
+rewrite [LHS](cnunion h').
+rewrite [RHS](cnunion (fun j => proj1_sig (f j))).
+have trivIK i j x : x \in fdist_supp (e i) -> x \in fdist_supp (e j) -> i = j.
+  move=> xi xj.
+  move/trivIsetP: HP => /(_ (fdist_supp (e i)) (fdist_supp (e j))).
+  rewrite mem_imset // mem_imset //.
+  case: eqP => /= [/HI ij // | _ /(_ isT isT isT)].
+  rewrite -setI_eq0 => /eqP/setP/(_ x).
+  by rewrite inE xi xj inE.
+have neqj j a k :
+  a \in fdist_supp (e (h j)) -> k != (h j) -> (d k * e k a = 0)%R.
+  move=> Haj kj.
+  case/boolP: (a \in fdist_supp (e k)) => [ak|].
+    by rewrite (trivIK _ _ _ Haj ak) eqxx in kj.
+  rewrite inE negbK => /eqP ->.
+  by rewrite mulR0.
+have Hmap' i : FDistMap.d h' d i = (\sum_j d (h i) * e (h i) j)%R.
+  rewrite -big_distrr fdistE /= FDist.f1 /= mulR1.
+  rewrite (bigD1 (h i)) /=; last by rewrite /h /h' enum_valK_in eqxx.
+  rewrite big1 /= ?addR0 // => j /andP[] /eqP <-.
+  case /boolP: (j \in fdist_supp d) => Hj.
+    by rewrite /h /h' (enum_rankK_in Hn0 Hj) eqxx.
+  move: Hj; by rewrite inE negbK => /eqP.
+have Hmap i :
+  FDistMap.d (fun j : 'I_m => sval (f j)) (ConvnFDist.d d e) i =
+  FDistMap.d h' d i.
   rewrite fdistE big_mkcond /=.
   under eq_bigr do rewrite fdistE.
-  rewrite (eq_bigr (fun j => d i * e i j)%R).
-    by rewrite -big_distrr FDist.f1 /= mulR1.
+  rewrite (eq_bigr (fun j => d (h i) * e (h i) j)%R).
+    by rewrite Hmap'.
   move=> /= a _.
   case: (f a) => j /= /orP[/forallP /= |] Ha.
-    have Ha0 k : e k a = R0.
-      move: (Ha k); by rewrite inE negbK => /eqP ->.
+    have Ha0 k : (d k * e k a = 0)%R.
+      case/boolP: (k \in fdist_supp d) => Hk.
+        move: (Ha (h' k)).
+        rewrite inE negbK /h/h' enum_rankK_in // => /eqP ->; by rewrite mulR0.
+      move: Hk; rewrite inE negbK => /eqP -> ; by rewrite mul0R.
     rewrite (proj2 (prsumr_eq0P _)) ?(if_same,Ha0,mulR0) //.
-      move=> k _; by apply mulR_ge0.
-    move=> k _; by rewrite Ha0 mulR0.
-  have neqj k : a \in fdist_supp (e j) -> k != j -> (d k * e k a = 0)%R.
-    move=> Haj kj.
-    move/trivIsetP: HP => /(_ (fdist_supp (e j)) (fdist_supp (e k))).
-    rewrite mem_imset // mem_imset //.
-    case: eqP => /= [/HI jk | _ /(_ isT isT isT)].
-      by rewrite jk eqxx in kj.
-    rewrite -setI_eq0 => /eqP/setP/(_ a).
-    rewrite inE Haj !inE /= => /negbFE /eqP ->.
-    by rewrite mulR0.
+    move=> k _; by apply mulR_ge0.
   case: eqP => Hi.
     subst i.
-    rewrite (bigD1 j) //= big1 ?addR0 // => *; by rewrite neqj.
-  move/eqP in Hi; by rewrite neqj // eq_sym.
+    rewrite (bigD1 (h j)) //= big1 ?addR0 // => *; by rewrite (neqj j).
+  rewrite (neqj j) //; move/eqP: Hi; by apply contra => /eqP/enum_val_inj ->.
+congr aConvn.
+  apply fdist_ext => /= i; by rewrite Hmap.
 apply funext => i /=.
+have HF : FDistMap.d h' d i != 0%R.
+  rewrite fdistE /=.
+  apply/eqP => /prsumr_eq0P => H.
+  have: h i \in fdist_supp d by apply enum_valP.
+  by rewrite inE H ?eqxx // /h /h' enum_valK_in.
+rewrite (@cnidem (<a>_(e (h i)) g)); last first.
+  move=> /= j; rewrite inE.
+  rewrite FDistPart.dE //.
+  case/boolP: (j \in fdist_supp d) => [Hj|].
+    case: (@eqP _ i) => [-> |].
+      by rewrite /h /h' (enum_rankK_in _ Hj).
+    by rewrite /Rdiv mulR0 mul0R eqxx.
+  rewrite inE negbK => /eqP ->.
+  by rewrite /Rdiv !mul0R eqxx.
 congr aConvn.
 apply fdist_ext => j.
-case/boolP: (FDistMap.d (fun k => sval (f k)) (ConvnFDist.d d e) i == R0). 
-  rewrite !fdistE /= => /eqP.
-  under eq_bigr do rewrite !fdistE.
-Abort.
+rewrite FDistPart.dE; last first.
+  rewrite !fdistE /=.
+  under eq_bigr do rewrite fdistE.
+  rewrite exchange_big /=.
+  rewrite (bigD1 (h i)) //=.
+  rewrite -big_distrr big_mkcond /=.
+  rewrite (eq_bigr (e (h i))).
+    rewrite FDist.f1 mulR1.
+    apply paddR_neq0 => //.
+      apply/rsumr_ge0 => *.
+      apply/rsumr_ge0 => *.
+      by apply/mulR_ge0.
+    left; move: (enum_valP i); by rewrite inE.
+  move=> /= k _.
+  case: ifP => //.
+  case: (f k) => /= x /orP[].
+    move/forallP/(_ i).
+    by rewrite !inE negbK => /eqP ->.
+  move=> Hkx Hx.
+  case/boolP: (k \in fdist_supp (e (h i))) => [Hki |].
+    move/eqP: (trivIK _ _ _ Hkx Hki) Hx.
+    by rewrite (can_eq (enum_valK_in Hn0)) => ->.
+  by rewrite inE negbK => /eqP ->.
+move: (Hmap i).
+rewrite fdistE /= => ->.
+rewrite fdistE.
+case: (f j) => /= k /orP[Hn|].
+  move/forallP/(_ i): (Hn).
+  rewrite inE negbK => /eqP ->.
+  rewrite big1 /Rdiv ?mul0R //.
+  move=> a _.
+  move/forallP/(_ (h' a)): Hn.
+  case/boolP: (a \in fdist_supp d).
+    rewrite /h /h'.
+    move/(enum_rankK_in _) ->.
+    rewrite inE negbK => /eqP ->.
+    by rewrite mulR0.
+  rewrite inE negbK => /eqP ->.
+  by rewrite mul0R.
+move=> jk.
+rewrite (bigD1 (h k)) //= big1 ?addR0; last first.
+  move=> a Ha; by apply (neqj k).
+case/boolP: (j \in fdist_supp (e (h i))) => ji.
+  have /enum_val_inj H := trivIK _ _ _ jk ji.
+  subst k => {jk}.
+  move: HF; rewrite eqxx mulR1 Hmap'.
+  rewrite -big_distrr /= FDist.f1 mulR1 => HF.
+  by rewrite /Rdiv mulRAC mulRV // mul1R.
+case: eqP ji => ik.
+  subst k; by rewrite jk.
+rewrite inE negbK => /eqP ->.
+by rewrite mulR0 div0R.
+Qed.
 
 Lemma cnmap n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
   injective u -> <a>_d (g \o u) = <a>_(FDistMap.d u d) g.
@@ -1296,7 +1386,7 @@ Proof.
 move=> Hu.
 have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
   apply fdist_ext => i; by rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
-rewrite -cnunion.
+rewrite -cnunion1.
 - congr (<a>_ _ _); apply funext => j /=; symmetry; apply cnidem => i.
   by rewrite FDist1.supp inE => /eqP ->.
 - move=> x y /= /setP /(_ (u x)).
@@ -1322,7 +1412,7 @@ rewrite (_ : (fun i => _) = (fun i => <a>_(FDistMap.d (h i) (e i)) (g \o h')));
     apply funext => j; by rewrite /h' /h /= /f' /f enum_rankK.
   rewrite cnmap //.
   move=> x y; by rewrite /h => /enum_rank_inj [].
-rewrite cnunion; first last.
+rewrite cnunion1; first last.
 - apply/trivIsetP => U V /imsetP[x _ ->] /imsetP[y _ ->] /eqP UV.
   rewrite -setI_eq0.
   case/boolP: (x == y) => [/eqP|] xy.
@@ -1356,7 +1446,7 @@ have {2}-> : g = (fun j => <a>_(e' j) (g \o h')).
   rewrite !fdistE.
   case: (@eqP _ _ j) => [<- // | Hj].
   by rewrite mulR0 eqxx.
-rewrite [RHS]cnunion; first last.
+rewrite [RHS]cnunion1; first last.
 - apply/trivIsetP => U V /imsetP[x _ ->] /imsetP[y _ ->] /eqP UV.
   rewrite -setI_eq0.
   case/boolP: (x == y) => [/eqP|] xy.
