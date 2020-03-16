@@ -131,8 +131,7 @@ Lemma div_convex' : convex_function
 Proof.
 (* TODO: clean *)
 rewrite /ConvexFunction.axiom => [] [[p1 q1] /= pq1] [[p2 q2] /= pq2] t.
-rewrite /DominatedPair.simple_elim /=.
-rewrite /Conv /= /avg /= (* TODO *).
+rewrite /DominatedPair.simple_elim /= avgE.
 rewrite 2!big_distrr /= -big_split /= /div.
 rewrite rsum_setT [in X in _ <= X]rsum_setT.
 apply ler_rsum => a _; rewrite 2!ConvFDist.dE.
@@ -213,8 +212,7 @@ Local Open Scope divergence_scope.
 Lemma entropy_concave : concave_function (fun P : fdist_convType A => `H P).
 Proof.
 apply R_concave_functionN' => p q t; rewrite /convex_function_at.
-rewrite !(entropy_log_div _ A_not_empty') /=.
-rewrite /Leconv /= [in X in _ <= X]/Conv /= /avg /= (* TODO *).
+rewrite !(entropy_log_div _ A_not_empty') /= /Leconv /= [in X in _ <= X]avgE.
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
 rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
 move: (div_convex t (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).
@@ -383,8 +381,7 @@ apply R_concave_functionB.
   rewrite -ProdFDist.snd_convex; exact/leRR.
 - suff : affine_function (fun x : fdist_convType _ => CondEntropy.h (Swap.d (CJFDist.make_joint x Q))) by move /affine_functionP => [].
   move => p q t.
-  rewrite /affine_function_at /= (*TODO: lemma?*) /Conv /= /avg /=.
-  rewrite /CondEntropy.h /CondEntropy.h1.
+  rewrite /affine_function_at /= avgE /CondEntropy.h /CondEntropy.h1.
   rewrite 2!big_distrr -big_split /=; apply eq_bigr => a _.
   rewrite !Swap.snd !Bivar.fstE !mulRN -oppRD; congr (- _).
   rewrite !big_distrr -big_split /=; apply eq_bigr => b _.

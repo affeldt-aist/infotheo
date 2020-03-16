@@ -391,7 +391,7 @@ move=> H; case/boolP : (s == 0%:pr) => s0.
 - by rewrite convA s_of_pqK // r_of_pqK.
 Qed.
 
-Lemma commute (x1 y1 x2 y2 : A) p q :
+Lemma convACA (x1 y1 x2 y2 : A) p q :
   (x1 <|q|> y1) <|p|> (x2 <|q|> y2) = (x1 <|p|> x2) <|q|> (y1 <|p|> y2).
 Proof.
 case/boolP : (p == 0%:pr) => [/eqP|] p0; first by rewrite p0 !conv0.
@@ -433,7 +433,7 @@ Qed.
 
 Lemma distribute (x y z : A) (p q : prob) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
-Proof. by rewrite -{1}(convmm x q) commute. Qed.
+Proof. by rewrite -{1}(convmm x q) convACA. Qed.
 
 Lemma ConvnFDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): <|>_(FDist1.d j) g = g j.
 Proof.
@@ -1092,8 +1092,7 @@ elim: n g e => /= [g e|n IH g e]; first by move: (fdistI0_False e).
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb] H /=.
   rewrite /avgn big_ord_recl /= H mul1R big1 ?addR0 // => j _.
   by move/eqP/FDist1.P : H => ->; rewrite ?mul0R.
-rewrite /avgn big_ord_recl /=.
-rewrite /Conv /= /avg /=; congr (_ + _)%R.
+rewrite /avgn big_ord_recl /= avgE /=; congr (_ + _)%R.
 rewrite IH /avgn big_distrr /=; apply eq_bigr => j _.
 rewrite DelFDist.dE D1FDist.dE eq_sym (negbTE (neq_lift _ _)).
 rewrite mulRAC mulRC -mulRA mulVR ?mulR1 //; exact/onem_neq0.

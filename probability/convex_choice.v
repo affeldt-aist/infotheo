@@ -37,8 +37,8 @@ Require Import fdist jfdist fsdist.
 (*                   scalept r qy = (r*q)y                                    *)
 (*                                                                            *)
 (* More lemmas about convex spaces:                                           *)
-(* convACA        == (x1 <|q|> y1) <|p|> (x2 <|q|> y2) =                      *)
-(*                     (x1 <|p|> x2) <|q|> (y1 <|p|> y2)                      *)
+(* convACA        == (a <|q|> b) <|p|> (c <|q|> d) =                          *)
+(*                     (a <|p|> c) <|q|> (b <|p|> d)                          *)
 (* etc.                                                                       *)
 (*                                                                            *)
 (* hull X         == the convex hull of set X : set T where T is a convType   *)
@@ -252,6 +252,11 @@ Lemma convA p q a b c :
 Proof.
 case: A a b c p q => ? [? []] f H0 H1 H2 H3 d0 d1 d2 p q; by rewrite /Conv H3.
 Qed.
+
+Lemma conv0 a b : a <| 0%:pr |> b = b.
+Proof.
+by rewrite convC /= (_ : _ %:pr = 1%:pr) ?conv1 //; apply/prob_ext/onem0.
+Qed.
 End convex_space_interface.
 
 Section convn.
@@ -302,9 +307,9 @@ Canonical scaled_pt_eqType := Eval hnf in EqType scaled_pt scaled_pt_eqMixin.
 Definition scaled_pt_choiceMixin := CanChoiceMixin sum_of_scaled_ptK.
 Canonical scaled_pt_choiceType := Eval hnf in ChoiceType scaled_pt scaled_pt_choiceMixin.
 
-Local Notation "a *: v" := (Scaled a v).
+Local Notation "p *: a" := (Scaled p a).
 
-Definition S1 x := 1%:pos *: x.
+Definition S1 (a  : A) : scaled_pt := 1%:pos *: a.
 
 Lemma S1_neq0 a : S1 a != Zero. Proof. by []. Qed.
 
@@ -492,7 +497,7 @@ case: x => [r c|]; rewrite ?scaleptR0 // scalept_gt0.
 congr Scaled; apply val_inj; by rewrite /= mul1R.
 Qed.
 
-Lemma scalept_Scaled p q x : scalept p (q *: x) = scalept (p*q) (S1 x).
+Lemma scalept_Scaled p q x : scalept p (q *: x) = scalept (p * q) (S1 x).
 Proof.
 rewrite /scalept.
 case: Rlt_dec => Hp; case: Rlt_dec => Hpq //.
@@ -556,20 +561,6 @@ apply (big_ind2 (fun y q => scalept q x = y /\ 0 <= q)).
 + move=> i _; split => //; exact/pos_f_ge0.
 Qed.
 
-Definition scaled_conv p x y := addpt (scalept p x) (scalept p.~ y).
-Definition scaled_pt_convMixin : ConvexSpace.mixin_of scaled_pt_choiceType.
-apply: (@ConvexSpace.Mixin _ scaled_conv); rewrite /scaled_conv /=.
-+ by move=> a b; rewrite onem1 scalept1 scalept0 addpt0.
-+ by move=> a p; rewrite -scalept_addR // onemKC scalept1.
-+ move=> a b p; by rewrite [RHS]addptC onemK.
-+ move=> p q a b c.
-  rewrite !scalept_addpt ?scalept_comp // -[RHS]addptA; congr addpt.
-    by rewrite (p_is_rs p q) mulRC.
-  by rewrite pq_is_rs mulRC s_of_pqE onemK.
-Defined.
-Canonical scale_pt_convType :=
-  Eval hnf in ConvexSpace.Pack (ConvexSpace.Class scaled_pt_convMixin).
-
 Definition barycenter (pts : seq scaled_pt) := \ssum_(x <- pts) x.
 
 Lemma barycenter_big_fin (T : finType) (F : T -> scaled_pt) :
@@ -609,27 +600,48 @@ by rewrite scalept_comp.
 Qed.
 End convfdist.
 
+Section convpt_convex_space.
+Let convpt p x y := addpt (scalept p x) (scalept p.~ y).
+Let convpt_conv1 a b : convpt 1 a b = a.
+Proof. by rewrite /convpt onem1 scalept1 scalept0 addpt0. Qed.
+Let convpt_convmm (p : prob) a : convpt p a a = a.
+Proof. by rewrite /convpt -scalept_addR // onemKC scalept1. Qed.
+Let convpt_convC (p : prob) a b : convpt p a b = convpt (p.~)%:pr b a.
+Proof. by rewrite [RHS]addptC onemK. Qed.
+Let convpt_convA (p q : prob) a b c :
+  convpt p a (convpt q b c) = convpt [s_of p, q] (convpt [r_of p, q] a b) c.
+Proof.
+rewrite /convpt !scalept_addpt ?scalept_comp // -[RHS]addptA; congr addpt.
+  by rewrite (p_is_rs p q) mulRC.
+by rewrite pq_is_rs mulRC s_of_pqE onemK.
+Qed.
+
+Definition scaled_pt_convMixin : ConvexSpace.mixin_of scaled_pt_choiceType :=
+  ConvexSpace.Mixin convpt_conv1 convpt_convmm convpt_convC convpt_convA.
+Canonical scale_pt_convType :=
+  Eval hnf in ConvexSpace.Pack (ConvexSpace.Class scaled_pt_convMixin).
+
+Lemma convptE p (a b : scaled_pt) : a <| p |> b = convpt p a b.
+Proof. by []. Qed.
+
+End convpt_convex_space.
+
 Section adjunction.
 Variable p : prob.
 
-Lemma adjunction_1 a b :
-  addpt (scalept 1 (S1 a)) (scalept 0 (S1 b)) = S1 (a <| 1%:pr |> b).
-Proof. by rewrite scalept0 scalept1 addpt0 conv1. Qed.
+Let adjunction_1 a b : S1 a <| 1%:pr |> S1 b = S1 (a <| 1%:pr |> b).
+Proof. by rewrite convptE onem1 scalept0 scalept1 addpt0 conv1. Qed.
 
-Lemma adjunction_2 x y :
-  addpt (scalept p (S1 x)) (scalept p.~ (S1 y)) = S1 (x <| p |> y).
+Lemma adjunction_2 x y : S1 x <| p |> S1 y = S1 (x <| p |> y).
 Proof.
 case/Prob.ge0: p => Hp; last first.
-  rewrite -Hp /= convC addptC onem0 adjunction_1.
-  by congr (_ (_ <|_|> _)); apply prob_ext; rewrite /= -Hp onem0.
+  rewrite (_ : p = 0%:pr) ?conv0 //; exact/prob_ext.
 case/prob_le1: p => Hp1; last first.
-  rewrite Hp1 /= onem1 adjunction_1.
-  by congr (_ (_ <|_|> _)); apply prob_ext; rewrite /= Hp1.
-rewrite (scalept_gt0 _ _ Hp) (@scalept_gt0 p.~) => [|H].
-   by rewrite ltR_subRL addR0.
-congr Scaled.
-  apply val_inj; by rewrite /= !mulR1 onemKC.
-congr Conv; apply prob_ext => /=.
+  rewrite (_ : p = 1%:pr) ?adjunction_1 //; exact/prob_ext.
+rewrite convptE (scalept_gt0 _ _ Hp) (@scalept_gt0 p.~) => [|H].
+  exact/onem_gt0.
+congr Scaled => /=; first by apply val_inj; rewrite /= !mulR1 onemKC.
+congr (_ <| _ |> _); apply prob_ext => /=.
 by rewrite !mulR1 /= addRC subRK divR1.
 Qed.
 
@@ -663,10 +675,6 @@ Notation "\ssum_ ( i < n ) F" :=
 Section convex_space_prop.
 Variables A : convType.
 Implicit Types a b : A.
-Lemma conv0 a b : a <| 0%:pr |> b = b.
-Proof.
-rewrite convC (_ : _%:pr = 1%:pr) ?conv1 //=; apply prob_ext; exact: onem0.
-Qed.
 
 Lemma convA0 (p q r s : prob) a b c :
   p = (r * s)%R :> R -> (s.~ = p.~ * q.~)%R ->
@@ -699,12 +707,12 @@ Qed.
 
 Import ScaledConvex.
 
-Lemma convACA (x1 y1 x2 y2 : A) p q :
-  (x1 <|q|> y1) <|p|> (x2 <|q|> y2) = (x1 <|p|> x2) <|q|> (y1 <|p|> y2).
+Lemma convACA (a b c d : A) p q :
+  (a <|q|> b) <|p|> (c <|q|> d) = (a <|p|> c) <|q|> (b <|p|> d).
 Proof.
-apply S1_inj; rewrite ![in LHS]S1_conv [LHS]/Conv /= /scaled_conv.
+apply S1_inj; rewrite ![in LHS]S1_conv !convptE.
 rewrite !scalept_addpt ?scalept_comp //.
-rewrite !(mulRC p) !(mulRC p.~) addptA addptC (addptC (scalept (q*p) _)).
+rewrite !(mulRC p) !(mulRC p.~) addptA addptC (addptC (scalept (q * p) _)).
 rewrite !addptA -addptA -!scalept_comp -?scalept_addpt //.
 by rewrite !(addptC (scalept _.~ _)) !S1_conv.
 Qed.
@@ -726,7 +734,7 @@ Definition map_scaled (x : scaled_pt A) : scaled_pt B :=
 Lemma map_scaled_affine p :
   {morph map_scaled : x y / x <|p|> y >-> x <|p|> y}.
 Proof.
-move=> [q x|] [r y|] /=; rewrite /Conv /= /scaled_conv ?scaleptR0 //.
+move=> [q x|] [r y|] /=; rewrite 2!convptE ?scaleptR0 //.
 + rewrite !(scalept_Scaled p) !(scalept_Scaled p.~) /= /scalept.
   case: Rlt_dec => Hpq; case: Rlt_dec => Hpr //=; congr Scaled.
   by rewrite prj_affine.
@@ -1532,8 +1540,7 @@ exists 2, (fun i => if i == ord0 then a0 else a1), (I2FDist.d p); split => /=.
   case: ifPn => _; [by left | by right].
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb H].
   rewrite I2FDist.dE eqxx /= => p1.
-  suff -> : p = 1%:pr by rewrite conv1.
-  exact/prob_ext.
+  rewrite (_ : p = 1%:pr) ?conv1 //; exact/prob_ext.
 congr (_ <| _ |> _); first by apply prob_ext => /=; rewrite I2FDist.dE eqxx.
 case: Bool.bool_dec => // H'.
 exfalso.
@@ -1705,7 +1712,7 @@ Lemma AddFDist_conv n m p (g : 'I_(n + m) -> A)
   <|>_d (g \o @lshift n m) <|p|> <|>_e (g \o @rshift n m).
 Proof.
 apply S1_inj; rewrite S1_conv !S1_convn.
-rewrite /Conv /= /scaled_conv big_split_ord !big_scalept /=.
+rewrite convptE big_split_ord !big_scalept /=.
 congr addpt; apply eq_bigr => i _;
   rewrite (scalept_comp (S1 _) (Prob.ge0 _) (FDist.ge0 _ _));
   by rewrite AddFDist.dE (split_lshift,split_rshift).
@@ -1848,14 +1855,14 @@ End hull_setU.
 
 Section R_convex_space.
 Implicit Types p q : prob.
-Definition avg p a b := (p * a + p.~ * b)%R.
-Lemma avg1 a b : avg 1%:pr a b = a.
+Let avg p a b := (p * a + p.~ * b)%R.
+Let avg1 a b : avg 1%:pr a b = a.
 Proof. by rewrite /avg /= mul1R onem1 mul0R addR0. Qed.
-Lemma avgI p x : avg p x x = x.
+Let avgI p x : avg p x x = x.
 Proof. by rewrite /avg -mulRDl onemKC mul1R. Qed.
-Lemma avgC p x y : avg p x y = avg p.~%:pr y x.
+Let avgC p x y : avg p x y = avg p.~%:pr y x.
 Proof. by rewrite /avg onemK addRC. Qed.
-Lemma avgA p q (d0 d1 d2 : R) :
+Let avgA p q (d0 d1 d2 : R) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof.
 rewrite /avg /onem.
@@ -1871,12 +1878,13 @@ by rewrite pq_is_rs -/r -/s mulRC.
 Qed.
 Definition R_convMixin := ConvexSpace.Mixin avg1 avgI avgC avgA.
 Canonical R_convType := ConvexSpace.Pack (ConvexSpace.Class R_convMixin).
+Lemma avgE p (x y : R) : x <| p |> y = avg p x y. Proof. by []. Qed.
 Lemma avg_oppD p x y : (- x <| p |> - y = - (x <| p |> y))%R.
-Proof. by rewrite /Conv /= /avg 2!mulRN -oppRD. Qed.
+Proof. by rewrite avgE /avg 2!mulRN -oppRD. Qed.
 Lemma avg_mulDr p : right_distributive Rmult (fun x y => x <| p |> y).
-Proof. by move=> x ? ?; rewrite /Conv /= /avg mulRDr mulRCA (mulRCA x). Qed.
+Proof. by move=> x ? ?; rewrite avgE /avg mulRDr mulRCA (mulRCA x). Qed.
 Lemma avg_mulDl p : left_distributive Rmult (fun x y => x <| p |> y).
-Proof. by move=> x ? ?; rewrite /Conv /= /avg mulRDl -mulRA -(mulRA p.~). Qed.
+Proof. by move=> x ? ?; rewrite avgE /avg mulRDl -mulRA -(mulRA p.~). Qed.
 (* Introduce morphisms to prove avgnE *)
 Import ScaledConvex.
 Definition scaleR x : R := if x is p *: y then p * y else 0.
@@ -2067,14 +2075,14 @@ Proof.
 move=> Hx Hy.
 move: (onem_ge0 (prob_le1 p)) => Hnp.
 rewrite scalept_addR; [|exact/mulR_ge0|exact/mulR_ge0].
-by rewrite /Conv /= /scaled_conv /= !scalept_comp.
+by rewrite convptE !scalept_comp.
 Qed.
 
 Lemma big_scalept_conv_split (C : convType) (I : Type) (r : seq I) (P : pred I)
   (F G : I -> scaled_pt C) (p : prob) :
     \ssum_(i <- r | P i) (F i <|p|> G i) =
     (\ssum_(i <- r | P i) F i) <|p|> \ssum_(i <- r | P i) G i.
-Proof. by rewrite /Conv /= /scaled_conv big_split /= !big_scalept. Qed.
+Proof. by rewrite convptE big_split /= !big_scalept. Qed.
 
 Lemma scalept_addRnneg : forall (A : convType) (x : scaled_pt A),
     {morph (fun (r : Rnneg) => scalept r x) : r s / addRnneg r s >-> addpt r s}.
@@ -2380,7 +2388,7 @@ Proof.
 exists Rmult; split.
 split => [a b0 b1 t | b a0 a1 t] /=; rewrite /Conv /=; [rewrite avg_mulDr /Conv /=|rewrite avg_mulDl /Conv /=]; exact: leRR.
 move /convex_in_bothP /(_ (-1)%R 1%R 1%R (-1)%R (probinvn 1)).
-rewrite /Leconv /probinvn /Conv /= /avg /=.
+rewrite /Leconv /probinvn /= 3!avgE /=.
 rewrite !(mul1R,mulR1,mulRN1) -oppRD onemKC.
 rewrite (_ : - / (1 + 1) + (/ (1 + 1)).~ = 0); last first.
   by rewrite /onem addRCA -oppRD -div1R eps2 addRN.
@@ -2477,7 +2485,7 @@ Lemma R_convex_functionB f (g : A -> R) :
 Proof.
 move=> H1 H2 p q t.
 rewrite /convex_function_at /=.
-rewrite {3}/Conv /= /avg /= (* TODO *) 2!mulRBr addRAC addRA.
+rewrite avgE 2!mulRBr addRAC addRA.
 move: (H1 p q t) => {}H1.
 rewrite -addR_opp -addRA; apply leR_add => //.
 rewrite -2!mulRN addRC; exact: (R_convex_functionN H2).
@@ -2707,8 +2715,7 @@ Lemma concave_function_atN f x y t : concave_function_at f x y t ->
   forall k, (0 <= k)%R -> concave_function_at (fun x => f x * k)%R x y t.
 Proof.
 move=> H k k0; rewrite /concave_function_at /convex_function_at.
-rewrite conv_leoppD leoppP.
-rewrite {2}/Conv /= /avg /= (* TODO *).
+rewrite conv_leoppD leoppP avgE.
 rewrite /Leconv /= -avg_mulDl.
 exact: leR_wpmul2r.
 Qed.
@@ -2717,9 +2724,9 @@ Lemma convexf_at_onem x y (t : prob) f : (0 < x -> 0 < y -> x < y ->
   convex_function_at f x y t -> convex_function_at f y x t.~%:pr)%R.
 Proof.
 move=> x0 y0 xy H; rewrite /convex_function_at.
-rewrite {2}/Conv /= /avg /= onemK addRC.
-rewrite /convex_function_at /Conv /= /avg /= in H.
-rewrite /Conv /= /avg /= onemK addRC.
+rewrite [in X in Leconv _ X]avgE /= onemK addRC.
+rewrite /convex_function_at !avgE in H.
+rewrite avgE /= onemK addRC.
 apply: (leR_trans H); rewrite addRC; exact/leRR.
 Qed.
 
@@ -2728,7 +2735,7 @@ Lemma concavef_at_onem x y (t : prob) f : (0 < x -> 0 < y -> x < y ->
 Proof.
 move=>x0 y0 xy; rewrite/concave_function_at/convex_function_at.
 rewrite !conv_leoppD !leoppP/=.
-rewrite /Conv /= /avg /= onemK.
+rewrite !avgE /= onemK.
 by rewrite addRC [in X in Leconv _ X -> _]addRC.
 Qed.
 End convex_function_R.

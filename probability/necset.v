@@ -993,9 +993,7 @@ have nx0 :
   by rewrite FSDist_finsuppD1.
 case/boolP: (x \in finsupp d) => xfd.
 - rewrite (big_fsetD1 x) //= nx0 eqxx.
-  rewrite (adjunction_2 (d x)%:pr).
-  congr (_ _).
-  by rewrite /Conv /= /avg mulR0 addR0 mulR1.
+  by rewrite -convptE adjunction_2 avgE mulR0 addR0 mulR1.
 by rewrite -(mem_fsetD1 xfd) nx0 fsfun_dflt // onem0 scalept1.
 Qed.
 End triangular_laws_left_convn.

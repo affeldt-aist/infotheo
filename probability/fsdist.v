@@ -85,7 +85,8 @@ Definition FSDist_choiceMixin := [choiceMixin of @FSDist.t A by <:].
 Canonical FSDist_choiceType := Eval hnf in ChoiceType _ FSDist_choiceMixin.
 End FSDist_canonical.
 
-Definition FSDist_of (A : choiceType) := fun phT : phant (Choice.sort A) => FSDist.t A.
+Definition FSDist_of (A : choiceType) :=
+  fun phT : phant (Choice.sort A) => FSDist.t A.
 
 Notation "{ 'dist' T }" := (FSDist_of (Phant T)) : proba_scope.
 Local Open Scope proba_scope.
