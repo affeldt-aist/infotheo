@@ -1090,6 +1090,26 @@ have -> : g \o f = fun=> a.
 by rewrite cnconst.
 Qed.
 
+(* It is also an easy consequence of cndist + cnproj *)
+Lemma cnidem' : ax_idem T.
+Proof.
+move=> a n d g Hd.
+have [n0 Hn0] := fdist_supp_mem d.
+have -> : g =
+          (fun i => <a>_(FDist1.d (if i \in fdist_supp d then n0 else i)) g).
+  apply funext => i.
+  rewrite cnproj.
+  case: ifP => // /Hd ->.
+  by rewrite (Hd _ Hn0).
+rewrite cndist.
+rewrite (_ : ConvnFDist.d _ _ = FDist1.d n0).
+  by rewrite cnproj Hd.
+apply fdist_ext => /= i.
+rewrite !fdistE rsum_fdist_supp.
+under eq_bigr => j /= -> do rewrite fdistE.
+by rewrite -rsum_fdist_supp -big_distrl FDist.f1 /= mul1R.
+Qed.
+
 (* cnproj is a consequence of cnidem *)
 Lemma cnproj' n (i : 'I_n) (g : 'I_n -> T) : <a>_(FDist1.d i) g = g i.
 Proof.
