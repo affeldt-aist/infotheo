@@ -46,8 +46,8 @@ Require Import convex_choice.
 Declare Scope latt_scope.
 
 Reserved Notation "x %:ne" (at level 0, format "x %:ne").
-Reserved Notation "x <| p |>: Y" (format "x  <| p |>:  Y", at level 50).
-Reserved Notation "X :<| p |>: Y" (format "X  :<| p |>:  Y", at level 50).
+Reserved Notation "x <| p |>: Y" (format "x  <| p |>:  Y", at level 49).
+Reserved Notation "X :<| p |>: Y" (format "X  :<| p |>:  Y", at level 49).
 Reserved Notation "x [+] y" (format "x  [+]  y", at level 50).
 Reserved Notation "'<$>_' d f" (at level 36, f at level 36, d at level 0,
   format "<$>_ d  f").
@@ -993,7 +993,7 @@ have nx0 :
   by rewrite FSDist_finsuppD1.
 case/boolP: (x \in finsupp d) => xfd.
 - rewrite (big_fsetD1 x) //= nx0 eqxx.
-  by rewrite -convptE adjunction_2 avgE mulR0 addR0 mulR1.
+  by rewrite -convptE adjunction_2 avgRE mulR0 addR0 mulR1.
 by rewrite -(mem_fsetD1 xfd) nx0 fsfun_dflt // onem0 scalept1.
 Qed.
 End triangular_laws_left_convn.

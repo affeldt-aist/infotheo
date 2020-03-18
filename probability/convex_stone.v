@@ -1086,19 +1086,6 @@ Qed.
 
 End convex_space_prop.
 
-Section R_convex_space.
-Lemma avgnE n (g : 'I_n -> R) e : <|>_e g = avgn g e.
-elim: n g e => /= [g e|n IH g e]; first by move: (fdistI0_False e).
-case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb] H /=.
-  rewrite /avgn big_ord_recl /= H mul1R big1 ?addR0 // => j _.
-  by move/eqP/FDist1.P : H => ->; rewrite ?mul0R.
-rewrite /avgn big_ord_recl /= avgE /=; congr (_ + _)%R.
-rewrite IH /avgn big_distrr /=; apply eq_bigr => j _.
-rewrite DelFDist.dE D1FDist.dE eq_sym (negbTE (neq_lift _ _)).
-rewrite mulRAC mulRC -mulRA mulVR ?mulR1 //; exact/onem_neq0.
-Qed.
-End R_convex_space.
-
 Section affine_function_prop0.
 Lemma affine_function_Sum (A B : convType) (f : {affine A -> B}) (n : nat) (g : 'I_n -> A) (e : {fdist 'I_n}) :
   f (<|>_e g) = <|>_e (f \o g).

@@ -63,7 +63,7 @@ Reserved Notation "'`U' HC " (at level 10, HC at next level).
 Reserved Notation "P `^ n" (at level 5).
 Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "P1 `, P2" (at level 6).
-Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 50).
+Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
 
 Declare Scope proba_scope.
 
@@ -916,7 +916,7 @@ Qed.
 End prop.
 End ConvFDist.
 
-Local Notation "x <| p |> y" := (ConvFDist.d p x y) : proba_scope.
+(*Local Notation "x <| p |> y" := (ConvFDist.d p x y) : proba_scope.*)
 
 Module PermFDist.
 Section def.

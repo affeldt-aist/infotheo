@@ -13,8 +13,15 @@ Require Import log_sum divergence chap2.
 (* Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, Wiley,     *)
 (* 2005                                                                       *)
 (*                                                                            *)
+(* dom_pair A == type of dominated pairs, i.e., a pair of distributions       *)
+(*               (d, e) s.t. d << e                                           *)
+(*                                                                            *)
 (* Lemmas:                                                                    *)
-(*   entropy_concave == the entropy is concave                                *)
+(*       div_convex' == divergence restricted to dominated pairs is a convex  *)
+(*                      function; it's actually not a restriction since div   *)
+(*                      is meaningful only on dominated pairs.                *)
+(*                      (thm 2.7.2)                                           *)
+(*   entropy_concave == entropy is concave (thm 2.7.3)                        *)
 (*   mutual_information_concave == the mutual information is concave w.r.t.   *)
 (*     its first argument                                                     *)
 (*   mutual_information_convex == the mutual information is convex w.r.t.　　　*)
@@ -68,70 +75,55 @@ Qed.
 End entropy_log_div.
 
 (* convexity of relative entropy *)
-Module DominatedPair.
-Section def.
+Section dominated_pair.
 Variable A : finType.
-Definition T := {d : fdist_convType A * fdist_convType A | d.1 << d.2}.
 Implicit Types p q : prob.
-Lemma avg_dominates_compatible p (a b c d : fdist_convType A) :
+Definition dom_pair := {d : fdist A * fdist A | d.1 << d.2}.
+Lemma dom_conv p (a b c d : fdist A) :
   a << b -> c << d -> (a <|p|> c) << (b <|p|> d).
 Proof.
-rewrite !dominatesP => Hab Hcd i; rewrite !ConvFDist.dE.
+rewrite !dominatesP => ab cd i; rewrite !ConvFDist.dE.
 rewrite paddR_eq0; [|exact/mulR_ge0 |exact/mulR_ge0].
-rewrite !mulR_eq0 => -[[->|/Hab ->]]; last first.
-  by rewrite mulR0 add0R => -[->|/Hcd ->]; rewrite !(mul0R,mulR0).
-rewrite mul0R add0R => -[|/Hcd ->];
+rewrite !mulR_eq0 => -[[->|/ab ->]]; last first.
+  by rewrite mulR0 add0R => -[->|/cd ->]; rewrite !(mul0R,mulR0).
+rewrite mul0R add0R => -[|/cd ->];
   by [rewrite onem0 => /R1_neq_R0 | rewrite mulR0].
 Qed.
-Definition avg p (x y : T) : T :=
-  let ab : fdist_convType _ * fdist_convType _:= proj1_sig x in
-  let Hab := proj2_sig x in
+Definition avg_dom_pair p (x y : dom_pair) : dom_pair :=
+  let ab := proj1_sig x in
+  let b_dom_a := proj2_sig x in
   let cd := proj1_sig y in
-  let Hcd := proj2_sig y in
-  exist _ (ab <| p |> cd) (avg_dominates_compatible p Hab Hcd).
-Definition simple_elim U (f : fdist A -> fdist A -> U) (x : T) :=
+  let d_dom_c := proj2_sig y in
+  exist _ (ab <| p |> cd) (dom_conv p b_dom_a d_dom_c).
+Definition uncurry_dom_pair U (f : fdist A -> fdist A -> U) (x : dom_pair) :=
   f (sval x).1 (sval x).2.
-End def.
 
-Section prop.
-Variable (A : finType).
-Let T := choice_of_Type (T A).
-Implicit Types p q : prob.
-Lemma avg1 (x y : T) : avg 1%:pr x y = x.
+Let dom_pair_choiceType := choice_of_Type dom_pair.
+Let avg := avg_dom_pair.
+Let avg1 (x y : dom_pair_choiceType) : avg 1%:pr x y = x.
 Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/conv1. Qed.
-Lemma avgI p (x : T) : avg p x x = x.
+Let avgI p x : avg p x x = x.
 Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/convmm. Qed.
-Lemma avgC p (x y : T) : avg p x y = avg p.~%:pr y x.
+Let avgC p x y : avg p x y = avg p.~%:pr y x.
 Proof. rewrite /avg; exact/eq_sig_irrelevant/convC. Qed.
-Lemma avgA p q (d0 d1 d2 : T) :
+Let avgA p q d0 d1 d2 :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. rewrite /avg /=; exact/eq_sig_irrelevant/convA. Qed.
-End prop.
-End DominatedPair.
-
-Section dominated_pair_convex_space.
-Import DominatedPair.
-Variable (A : finType).
-Definition dominatedPairConvMixin := ConvexSpace.Mixin
-  (@avg1 A) (@avgI A) (@avgC A) (@avgA A).
+Definition dominatedPairConvMixin := ConvexSpace.Mixin avg1 avgI avgC avgA.
 Canonical dominatedPairConvType :=
   ConvexSpace.Pack (ConvexSpace.Class dominatedPairConvMixin).
-End dominated_pair_convex_space.
+End dominated_pair.
 
 Section divergence_convex.
 Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
 
 Local Open Scope divergence_scope.
 
-(* thm 2.7.2 *)
-(* div restricted to dominated pairs is a convex function;
-   it's actually not a restriction since div is meaningful only on dominated pairs. *)
-Lemma div_convex' : convex_function
-  (DominatedPair.simple_elim (@div A) : dominatedPairConvType A -> _).
+Lemma div_convex' : convex_function (uncurry_dom_pair (@div A)).
 Proof.
 (* TODO: clean *)
 rewrite /ConvexFunction.axiom => [] [[p1 q1] /= pq1] [[p2 q2] /= pq2] t.
-rewrite /DominatedPair.simple_elim /= avgE.
+rewrite /uncurry_dom_pair /= avgRE.
 rewrite 2!big_distrr /= -big_split /= /div.
 rewrite rsum_setT [in X in _ <= X]rsum_setT.
 apply ler_rsum => a _; rewrite 2!ConvFDist.dE.
@@ -189,12 +181,12 @@ rewrite /=.
 field; split; exact/eqP.
 Qed.
 
-Lemma div_convex (p1 p2 q1 q2 : fdist_convType A) (t : prob) :
-  p1 << q1 -> p2 << q2 ->
-  div (p1 <| t |> p2) (q1 <| t |> q2) <= div p1 q1 <| t |> div p2 q2.
+Lemma div_convex (d1 d2 e1 e2 : fdist_convType A) (p : prob) :
+  d1 << e1 -> d2 << e2 ->
+  D(d1 <| p |> d2 || e1 <| p |> e2) <= D(d1 || e1) <| p |> D(d2 || e2).
 Proof.
-move=> pq1 pq2.
-exact: (div_convex' (exist _ (p1, q1) pq1) (exist _ (p2, q2) pq2)).
+move=> de1 de2.
+exact: (div_convex' (exist _ (d1, e1) de1) (exist _ (d2, e2) de2)).
 Qed.
 End divergence_convex.
 
@@ -207,15 +199,13 @@ Let u : {fdist A} := Uniform.d A_not_empty'.
 
 Local Open Scope divergence_scope.
 
-(* thm 2.7.3 *)
-(* TODO: explicit mention of fdist_convType *)
-Lemma entropy_concave : concave_function (fun P : fdist_convType A => `H P).
+Lemma entropy_concave : concave_function (fun P : fdist A => `H P).
 Proof.
 apply R_concave_functionN' => p q t; rewrite /convex_function_at.
-rewrite !(entropy_log_div _ A_not_empty') /= /Leconv /= [in X in _ <= X]avgE.
+rewrite !(entropy_log_div _ A_not_empty') /= /Leconv /= [in X in _ <= X]avgRE.
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
 rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
-move: (div_convex t (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty')).
+have := div_convex t (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty').
 by rewrite convmm.
 Qed.
 
@@ -377,11 +367,12 @@ apply R_concave_functionB.
   move : H.
   move /R_convex_functionN' => H.
   apply: leR_trans (H (Bivar.snd (CJFDist.make_joint p Q)) (Bivar.snd (CJFDist.make_joint q Q)) t).
-  destruct t. rewrite /Conv /=. (* TODO *)
+  destruct t.
+  rewrite /Conv /=. (* TODO *)
   rewrite -ProdFDist.snd_convex; exact/leRR.
 - suff : affine_function (fun x : fdist_convType _ => CondEntropy.h (Swap.d (CJFDist.make_joint x Q))) by move /affine_functionP => [].
   move => p q t.
-  rewrite /affine_function_at /= avgE /CondEntropy.h /CondEntropy.h1.
+  rewrite /affine_function_at /= avgRE /CondEntropy.h /CondEntropy.h1.
   rewrite 2!big_distrr -big_split /=; apply eq_bigr => a _.
   rewrite !Swap.snd !Bivar.fstE !mulRN -oppRD; congr (- _).
   rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
