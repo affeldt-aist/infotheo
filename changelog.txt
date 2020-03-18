@@ -11,6 +11,7 @@ notations:
 - <$>_ for Convn__finType (on the model of <|>_)
 - |_| fr lub_op (still [+] for lub_binary)
 - _ <| _ |> _ lowered to level 49
+- << and <<b changed to `<< and `<<b (level change)
 
 ---------------------
 from 0.0.6 to 0.0.7 :

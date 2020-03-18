@@ -17,15 +17,20 @@ Require Import log_sum divergence chap2.
 (*               (d, e) s.t. d << e                                           *)
 (*                                                                            *)
 (* Lemmas:                                                                    *)
-(*       div_convex' == divergence restricted to dominated pairs is a convex  *)
-(*                      function; it's actually not a restriction since div   *)
-(*                      is meaningful only on dominated pairs.                *)
-(*                      (thm 2.7.2)                                           *)
-(*   entropy_concave == entropy is concave (thm 2.7.3)                        *)
-(*   mutual_information_concave == the mutual information is concave w.r.t.   *)
-(*     its first argument                                                     *)
-(*   mutual_information_convex == the mutual information is convex w.r.t.　　　*)
-(*     its second argument                                                    *)
+(*              convex_div == divergence restricted to dominated pairs is a   *)
+(*                            convex function; it's actually not a            *)
+(*                            restriction since div is meaningful only on     *)
+(*                            dominated pairs                                 *)
+(* convex_relative_entropy == convexity of relative entropy                   *)
+(*                            (thm 2.7.2)                                     *)
+(*         entropy_concave == entropy is concave (thm 2.7.3)                  *)
+(* mutual_information_concave == the mutual information is concave w.r.t.     *)
+(*                            its first argument (thm 2.7.4)                  *)
+(* mutual_information_convex == the mutual information is convex w.r.t.　　  　*)
+(*                            its second argument (thm 2.7.4)                 *)
+(*                                                                            *)
+(* ref: Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, 2nd   *)
+(* edition, Wiley, 2005                                                       *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -78,9 +83,9 @@ End entropy_log_div.
 Section dominated_pair.
 Variable A : finType.
 Implicit Types p q : prob.
-Definition dom_pair := {d : fdist A * fdist A | d.1 << d.2}.
+Definition dom_pair := {d : fdist A * fdist A | d.1 `<< d.2}.
 Lemma dom_conv p (a b c d : fdist A) :
-  a << b -> c << d -> (a <|p|> c) << (b <|p|> d).
+  a `<< b -> c `<< d -> a <|p|> c `<< b <|p|> d.
 Proof.
 rewrite !dominatesP => ab cd i; rewrite !ConvFDist.dE.
 rewrite paddR_eq0; [|exact/mulR_ge0 |exact/mulR_ge0].
@@ -119,74 +124,61 @@ Variables (A : finType) (n : nat) (A_not_empty : #|A| = n.+1).
 
 Local Open Scope divergence_scope.
 
-Lemma div_convex' : convex_function (uncurry_dom_pair (@div A)).
+Lemma convex_div : convex_function (uncurry_dom_pair (@div A)).
 Proof.
-(* TODO: clean *)
-rewrite /ConvexFunction.axiom => [] [[p1 q1] /= pq1] [[p2 q2] /= pq2] t.
-rewrite /uncurry_dom_pair /= avgRE.
-rewrite 2!big_distrr /= -big_split /= /div.
-rewrite rsum_setT [in X in _ <= X]rsum_setT.
+move=> [x Hx] [y Hy] p /=; rewrite /uncurry_dom_pair /= avgRE.
+rewrite 2!big_distrr /= -big_split /=.
+rewrite /div [in X in X <= _]rsum_setT [in X in _ <= X]rsum_setT.
 apply ler_rsum => a _; rewrite 2!ConvFDist.dE.
-case/boolP : (q2 a == 0) => [/eqP |] q2a0.
-  rewrite q2a0 !(mul0R,mulR0,add0R).
-  have -> : p2 a = 0 by move/dominatesP : pq2; exact.
-  rewrite !(mulR0,addR0,mul0R).
-  case/boolP : (q1 a == 0) => [/eqP |] q1a0.
-    have -> : p1 a = 0 by move/dominatesP : pq1; exact.
-    rewrite !(mulR0,mul0R); exact/leRR.
-  case/boolP : (t == 0%:pr) => [/eqP /=|] t0.
-    rewrite t0 !mul0R; exact/leRR.
-  apply/Req_le.
-  rewrite mulRA; congr (_ * _ * log _).
+case/boolP : (y.2 a == 0) => [/eqP|] y2a0.
+  rewrite y2a0 (_ : y.1 a = 0) ?(mulR0,addR0,mul0R); last first.
+    by move/dominatesP : Hy; exact.
+  case/boolP : (x.2 a == 0) => [/eqP |] x2a0.
+    rewrite (_ : x.1 a = 0) ?(mul0R,mulR0); last by move/dominatesP : Hx; exact.
+    exact/leRR.
+  case/boolP : (p == 0%:pr) => [/eqP /=|] p0.
+    rewrite p0 ?mul0R; exact/leRR.
+  apply/Req_le; rewrite mulRA; congr (_ * _ * log _).
   field; split; exact/eqP.
-case/boolP : (q1 a == 0) => [/eqP |] q1a0.
-  rewrite q1a0 !(mul0R,mulR0,add0R).
-  have -> : p1 a = 0 by move/dominatesP : pq1; exact.
-  rewrite !(mulR0,addR0,mul0R,add0R).
-  case/boolP : (t.~ == 0) => [/eqP ->|t0].
-    rewrite !mul0R; exact/leRR.
-  apply/Req_le.
-  rewrite mulRA; congr (_ * _ * log _).
+case/boolP : (x.2 a == 0) => [/eqP |] x2a0.
+  rewrite x2a0 (_ : x.1 a = 0) ?(mulR0,add0R,mul0R); last first.
+    by move/dominatesP : Hx; exact.
+  case/boolP : (p.~ == 0) => [/eqP ->|t0]; first by rewrite !mul0R; exact/leRR.
+  apply/Req_le; rewrite mulRA; congr (_ * _ * log _).
   field; split; exact/eqP.
-set h : fdist A -> fdist A -> {ffun 'I_2 -> R} := fun p1 p2 => [ffun i => [eta (fun=> 0) with
-  ord0 |-> t * p1 a, lift ord0 ord0 |-> t.~ * p2 a] i].
-have hdom : ((h p1 p2) << (h q1 q2)).
+set h : fdist A -> fdist A -> {ffun 'I_2 -> R} :=
+  fun p1 p2 => [ffun i => [eta (fun=> 0) with ord0 |-> p * p1 a,
+                                       lift ord0 ord0 |-> p.~ * p2 a] i].
+have hdom : h x.1 y.1 `<< h x.2 y.2.
   apply/dominatesP => i.
   rewrite /h /= !ffunE; case: ifPn => _.
-  rewrite mulR_eq0 => -[->|/eqP].
-    by rewrite mul0R.
-  by rewrite (negbTE q1a0).
+  rewrite mulR_eq0 => -[->|/eqP]; by [rewrite mul0R | rewrite (negbTE x2a0)].
   case: ifPn => // _.
-  rewrite mulR_eq0 => -[->|/eqP].
-    by rewrite mul0R.
-  by rewrite (negbTE q2a0).
-set f : 'I_2 -> R := h p1 p2.
-set g : 'I_2 -> R := h q1 q2.
+  rewrite mulR_eq0 => -[->|/eqP]; by [rewrite mul0R | rewrite (negbTE y2a0)].
+set f : 'I_2 -> R := h x.1 y.1.
+set g : 'I_2 -> R := h x.2 y.2.
 have h0 : forall p1 p2, [forall i, 0 <b= h p1 p2 i].
   move=> p1' p2'; apply/forallP_leRP => ?; rewrite /h /= ffunE.
   case: ifPn => [_ | _]; first exact/mulR_ge0.
   case: ifPn => [_ |  _]; [|exact/leRR].
   apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
-move: (@log_sum _ setT (mkPosFfun (h0 p1 p2)) (mkPosFfun (h0 q1 q2)) hdom).
+move: (log_sum setT (mkPosFfun (h0 x.1 y.1)) (mkPosFfun (h0 x.2 y.2)) hdom).
 rewrite /= -!rsum_ord_setT !big_ord_recl !big_ord0 !addR0.
 rewrite /h /= !ffunE => /leR_trans; apply.
-apply/Req_le; congr (_ + _).
-  case/boolP : (t == 0%:pr) => [/eqP ->|t0]; first by rewrite !mul0R.
-  rewrite mulRA; congr (_ * _ * log _).
-  rewrite !eqxx.
-  field; split; exact/eqP.
-case/boolP : (t.~ == 0) => [/eqP ->|t1]; first by rewrite !mul0R.
-rewrite mulRA; congr (_ * _ * log _).
-rewrite /=.
-field; split; exact/eqP.
+rewrite !eqxx eq_sym (negbTE (neq_lift ord0 ord0)).
+rewrite -!mulRA; apply/Req_le; congr (_  + _ ).
+  case/boolP : (p == 0%:pr) => [/eqP ->|t0]; first by rewrite !mul0R.
+  congr (_ * (_ * log _)); field; split; exact/eqP.
+case/boolP : (p.~ == 0) => [/eqP ->|t1]; first by rewrite !mul0R.
+congr (_ * (_ * log _)); field; split; exact/eqP.
 Qed.
 
-Lemma div_convex (d1 d2 e1 e2 : fdist_convType A) (p : prob) :
-  d1 << e1 -> d2 << e2 ->
+Lemma convex_relative_entropy (d1 d2 e1 e2 : fdist_convType A) (p : prob) :
+  d1 `<< e1 -> d2 `<< e2 ->
   D(d1 <| p |> d2 || e1 <| p |> e2) <= D(d1 || e1) <| p |> D(d2 || e2).
 Proof.
 move=> de1 de2.
-exact: (div_convex' (exist _ (d1, e1) de1) (exist _ (d2, e2) de2)).
+exact: (convex_div (exist _ (d1, e1) de1) (exist _ (d2, e2) de2)).
 Qed.
 End divergence_convex.
 
@@ -205,7 +197,8 @@ apply R_concave_functionN' => p q t; rewrite /convex_function_at.
 rewrite !(entropy_log_div _ A_not_empty') /= /Leconv /= [in X in _ <= X]avgRE.
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
 rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t) onemKC mul1R -addRA leR_add2l.
-have := div_convex t (dom_by_uniform p A_not_empty') (dom_by_uniform q A_not_empty').
+have := convex_relative_entropy t (dom_by_uniform p A_not_empty')
+                                  (dom_by_uniform q A_not_empty').
 by rewrite convmm.
 Qed.
 
@@ -227,35 +220,34 @@ apply derivable_pt_comp.
 apply derivable_pt_Rminus.
 apply derivable_pt_Log.
 lra.
-(* NB : transparent definition is required to proceed with a forward proof, later in concavity_of_entropy_x_le_y *)
+(* NB : transparent definition is required to proceed with a forward proof,
+   later in concavity_of_entropy_x_le_y *)
 Defined.
 
 Lemma expand_interval_closed_to_open a b c d :
   a < b -> b < c -> c < d -> forall x, b <= x <= c -> a < x < d.
 Proof.
-  move => Hab Hbc Hcd x [Hbx Hxc].
-  by apply conj; [eapply Rlt_le_trans|eapply Rle_lt_trans]; [exact Hab|exact Hbx|exact Hxc|exact Hcd].
+move=> ? ? ? x [? ?]; split;
+  [exact: (@ltR_leR_trans b)|exact: (@leR_ltR_trans c)].
 Qed.
 
 Lemma expand_internal_closed_to_closed a b c d :
   a <= b -> b < c -> c <= d -> forall x, b <= x <= c -> a <= x <= d.
 Proof.
-  move => Hab Hbc Hcd x [Hbx Hxc].
-  by apply conj; [eapply Rle_trans|eapply Rle_trans]; [exact Hab|exact Hbx|exact Hxc|exact Hcd].
+move=> ? ? ? ? [? ?]; split; [exact: (@leR_trans b)|exact: (@leR_trans c)].
 Qed.
 
 Lemma expand_interval_open_to_open a b c d :
   a < b -> b < c -> c < d -> forall x, b < x < c -> a < x < d.
 Proof.
-  move => Hab Hbc Hcd x [Hbx Hxc].
-  by apply conj; [eapply Rlt_trans|eapply Rlt_trans]; [exact Hab|exact Hbx|exact Hxc|exact Hcd].
+move=> ? ? ? x [? ?]; split; [exact: (@ltR_trans b)|exact: (@ltR_trans c)].
 Qed.
 
 Lemma expand_interval_open_to_closed a b c d :
   a <= b -> b < c -> c <= d -> forall x, b < x < c -> a <= x <= d.
 Proof.
-  move => Hab Hbc Hcd x [Hbx Hxc].
-  by apply conj; [eapply Rle_trans|eapply Rle_trans]; [exact Hab|apply or_introl; exact Hbx|apply or_introl; exact Hxc|exact Hcd].
+move=> ? ? ? x [? ?]; split;
+  [exact/ltRW/(@leR_ltR_trans b)|exact/ltRW/(@ltR_leR_trans c)].
 Qed.
 
 Lemma concavity_of_entropy_x_le_y x y (t : prob) :
@@ -453,7 +445,7 @@ have -> : MutualInfo.mi (CJFDist.make_joint P p2yx) = D(p2xy || q2xy).
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
   by rewrite /q2xy ProdFDist.dE /CJFDist.make_joint /CJFDist.joint_of /= ProdFDist.fst.
-apply: div_convex.
+apply: convex_relative_entropy.
 - apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy ProdFDist.dE /= mulR_eq0.
   rewrite /p1 /p1xy /CJFDist.joint_of => -[|].

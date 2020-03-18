@@ -11,6 +11,23 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (* This file provides a formalization of finite probability distributions.    *)
 (*                                                                            *)
 (*  {fdist A}       == the type of distributions over a finType A             *)
+(*  FDist1.d        == point-supported distribution                           *)
+(*  FDistMap.d      == map of the "probability monad"                         *)
+(*  Uniform.d       == uniform distribution other a finite type               *)
+(* `U H             == the uniform distribution with support C, where H is a  *)
+(*                     proof that some set C is not empty                     *)
+(*  Binary.d H p    == where H is a proof of #|A| = 2%N and p is a            *)
+(*                     probability: binary distribution over A with bias p    *)
+(*  ConvFDist.d     == convex combination of distributions                    *)
+(*                                                                            *)
+(* About bivariate (joint) distributions:                                     *)
+(*  Bivar.fst       == marginal left                                          *)
+(*  Bivar.snd       == marginal right                                         *)
+(*                                                                            *)
+(*  P1 `x P2        == product distribution                                   *)
+(*  P `^ n          == product distribution over a row vector                 *)
+(*  wolfowitz       == Wolfowitz's counting principle                         *)
+(*                                                                            *)
 (******************************************************************************)
 
 (* OUTLINE
@@ -337,8 +354,7 @@ case: domain_non_empty => x' ->; by rewrite INR_eq0.
 Qed.
 End Uniform.
 
-Lemma dom_by_uniform A (P : fdist A) n (HA : #|A| = n.+1) :
-  P << (Uniform.d HA).
+Lemma dom_by_uniform A (P : fdist A) n (HA : #|A| = n.+1) : P `<< Uniform.d HA.
 Proof.
 apply/dominatesP => a; rewrite Uniform.dE => /esym abs; exfalso.
 move: abs; rewrite HA; exact/ltR_eqF/invR_gt0/ltR0n.
@@ -916,8 +932,6 @@ Qed.
 End prop.
 End ConvFDist.
 
-(*Local Notation "x <| p |> y" := (ConvFDist.d p x y) : proba_scope.*)
-
 Module PermFDist.
 Section def.
 Variables (n : nat) (P : {fdist 'I_n}) (s : 'S_n).
@@ -960,12 +974,10 @@ Qed.
 End prop.
 End PermFDist.
 
-(* bivariate (joint) distribution *)
 Module Bivar.
 Section def.
 Variables (A B : finType) (P : {fdist A * B}).
 
-(* marginal left *)
 Definition fst : fdist A := FDistMap.d fst P.
 
 Lemma fstE a : fst a = \sum_(i in B) P (a, i).
@@ -979,7 +991,6 @@ Proof. rewrite fstE => /prsumr_eq0P -> // ? _; exact: fdist_ge0. Qed.
 Lemma dom_by_fstN a b : P (a, b) != 0 -> fst a != 0.
 Proof. by apply: contra => /eqP /dom_by_fst ->. Qed.
 
-(* marginal right *)
 Definition snd : fdist B := FDistMap.d snd P.
 
 Lemma sndE b : snd b = \sum_(i in A) P (i, b).
@@ -1112,7 +1123,6 @@ Qed.
 End prop.
 End ProdFDist.
 
-(* notation for product distribution *)
 Notation "P1 `x P2" := (ProdFDist.d P1 (fun _ => P2)) : proba_scope.
 
 Section prod_dominates_joint.
@@ -1120,7 +1130,7 @@ Variables (A B : finType) (P : {fdist A * B}).
 Let P1 := Bivar.fst P. Let P2 := Bivar.snd P.
 
 Local Open Scope reals_ext_scope.
-Lemma Prod_dominates_Joint : P << P1 `x P2.
+Lemma Prod_dominates_Joint : P `<< P1 `x P2.
 Proof.
 apply/dominatesP => -[a b].
 rewrite ProdFDist.dE /= mulR_eq0 => -[P1a|P2b];
@@ -1128,16 +1138,13 @@ rewrite ProdFDist.dE /= mulR_eq0 => -[P1a|P2b];
 Qed.
 End prod_dominates_joint.
 
-Lemma ProdFDistsnd (A B : finType) (P1 : fdist A) (P2 : fdist B) : Bivar.snd (P1 `x P2) = P2.
+Lemma ProdFDistsnd A B (P1 : fdist A) (P2 : fdist B) : Bivar.snd (P1 `x P2) = P2.
 Proof.
-apply/fdist_ext => b.
-rewrite Bivar.sndE.
-erewrite eq_bigr => /=; last first.
-  move=> a Ha; rewrite ProdFDist.dE /=; reflexivity.
-by rewrite -big_distrl /= FDist.f1 mul1R.
+apply/fdist_ext => b; rewrite Bivar.sndE.
+under eq_bigr do rewrite ProdFDist.dE.
+by rewrite /= -big_distrl /= FDist.f1 mul1R.
 Qed.
 
-(* product distribution over a row vector *)
 Module TupleFDist.
 Local Open Scope vec_ext_scope.
 Section def.
@@ -1265,7 +1272,6 @@ Defined.
 
 End tuple_prod_cast.*)
 
-(* Wolfowitz's counting principle *)
 Section wolfowitz_counting.
 
 Variables (C : finType) (P : fdist C) (k : nat) (s : {set 'rV[C]_k}).

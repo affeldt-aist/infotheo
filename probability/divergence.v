@@ -76,7 +76,7 @@ Local Open Scope reals_ext_scope.
 Section divergence_prop.
 
 Variables (A : finType) (P Q : fdist A).
-Hypothesis P_dom_by_Q : P << Q.
+Hypothesis P_dom_by_Q : P `<< Q.
 
 Lemma div_ge0 : 0 <= D(P || Q).
 Proof.

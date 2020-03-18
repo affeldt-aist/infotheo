@@ -28,7 +28,7 @@ Local Open Scope R_scope.
 Section log_sum_ord.
 Variable n : nat.
 Variable f g : nat ->R^+.
-Hypothesis f_dom_by_g : f << g.
+Hypothesis f_dom_by_g : f `<< g.
 
 Lemma log_sum_inequality_ord_add1 :
   (\sum_(i < n) f i.+1) *
@@ -41,7 +41,7 @@ have newRle0f_1: [forall x : 'I_n, 0 <b= [ffun x : 'I_n => f x.+1] x].
   by apply/forallP_leRP => ?; rewrite ffunE.
 have newRle0g_1: [forall x : 'I_n, 0 <b= [ffun x : 'I_n => g x.+1] x].
   by apply/forallP_leRP => ?; rewrite ffunE.
-have f_dom_by_g1 : (mkPosFfun newRle0f_1) << (mkPosFfun newRle0g_1).
+have f_dom_by_g1 : mkPosFfun newRle0f_1 `<< mkPosFfun newRle0g_1.
   apply/dominatesP => a; move/dominatesP : f_dom_by_g.
   rewrite /= !ffunE; exact.
 have H : forall h,
@@ -388,7 +388,7 @@ have Pr_ge0' (i : nat) : 0 <= Pr P (X @^-1 (INR i)) by exact: Pr_ge0.
 have alpi_ge0 (i : nat) : 0 <= alp ^ i by exact/pow_le/ltRW.
 pose h := mkPosFun Pr_ge0'.
 pose g := mkPosFun alpi_ge0.
-have dom_by_hg:  h << g.
+have dom_by_hg :  h `<< g.
   apply/dominatesP => i.
   rewrite /g /= => alp0.
   move: lt_0_alp.
@@ -847,7 +847,7 @@ rewrite mulRA (mulRC (exp 1)) -(mulRA (m eps)%:R).
 apply le_eps => //.
 move:case2.
 rewrite ELC_TupleFDist mulRC (mulRC (m eps)%:R) card_matrix mul1n -natRexp log_pow; last first.
-  by rewrite (_ : 0 = INR 0)//; apply/lt_INR/ltP/fdist_card_neq0.
+  by rewrite (_ : 0 = INR 0) //; apply/lt_INR/ltP/fdist_card_neq0.
 move/(ltR_pmul2r (mpos eps nnon0)) => /ltRW.
 apply: leR_trans; exact/le_1_EX.
 Qed.

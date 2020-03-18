@@ -14,6 +14,12 @@ Require Import proba jfdist divergence entropy.
 (* 2005                                                                       *)
 (* See also entropy.v and convex_fdist.v                                      *)
 (*                                                                            *)
+(* chain_rule == (thm 2.1.1)                                                  *)
+(* chain_rule_rV == chain rule for entropy (thm 2.5.1)                        *)
+(* chain_rule_information == chain rule for information (thm 2.5.2)           *)
+(* chain_rule_relative_entropy == chain rule for relative entropy (thm 2.5.3) *)
+(* data_processing_inequality == (thm 2.8.1)                                  *)
+(*                                                                            *)
 (* Extra lemma:                                                               *)
 (*  han == Han's inequality                                                   *)
 (******************************************************************************)
@@ -24,7 +30,7 @@ Contents:
   Section joint_entropy_prop.
 - Module CondEntropy.
   Section conditional_entropy_prop.
-- Section chain_rule. (thm 2.1.1)
+- Section chain_rule.
 - Section chain_rule_generalization.
 - Section entropy_chain_rule_corollary.
 - Section conditional_entropy_prop2.
@@ -35,7 +41,7 @@ Contents:
 - Section divergence_conditional_distributions.
 - Section conditional_mutual_information.
 - Section conditional_relative_entropy.
-- Section chain_rule_for_information. ( thm 2.5.1 )
+- Section chain_rule_for_information.
 - Section conditioning_reduces_entropy.
 - Section independence_bound_on_entropy.
 - Section markov_chain.
@@ -181,7 +187,6 @@ Variables (A B : finType) (PQ : {fdist A * B}).
 Let P := Bivar.fst PQ.
 Let QP := Swap.d PQ.
 
-(* thm 2.1.1 *)
 Lemma chain_rule : JointEntropy.h PQ = `H P + CondEntropy.h QP. (* 2.14 *)
 Proof.
 rewrite /JointEntropy.h {1}/entropy.
@@ -508,7 +513,6 @@ rewrite Multivar.to_bivarE /=; congr (P _ * log (P _)).
   by rewrite (ord1 i) !mxE; case: splitP => // i0; rewrite (ord1 i0) mxE.
 Qed.
 
-(* thm 2.5.1 *)
 Lemma chain_rule_rV (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) :
   `H P = \sum_(i < n.+1)
           if i == O :> nat then
@@ -709,8 +713,8 @@ Let Qj : {fdist B * A} := Swap.d (CJFDist.joint_of Q).
 Let P1 : {fdist A} := CJFDist.P P.
 Let Q1 : {fdist A} := CJFDist.P Q.
 
-(* thm 2.5.3 *)
-Lemma chain_rule_relative_entropy : Pj << Qj -> D(Pj || Qj) = D(P1 || Q1) + cre P Q.
+Lemma chain_rule_relative_entropy :
+  Pj `<< Qj -> D(Pj || Qj) = D(P1 || Q1) + cre P Q.
 Proof.
 move=> PQ.
 rewrite {2}/div /cre -big_split /= {1}/div /=.
@@ -750,7 +754,7 @@ Qed.
 End prop.
 End conditional_relative_entropy.
 
-Section chain_rule_for_information. (* thm 2.5.1 *)
+Section chain_rule_for_information.
 
 Variables (A : finType).
 Let B := A. (* need in the do-not-delete-me step *)
@@ -1102,7 +1106,6 @@ Qed.
 
 Let PR := Proj13.d PQR.
 
-(* thm 2.8.1 *)
 Lemma data_processing_inequality : markov_chain ->
   MutualInfo.mi PR <= MutualInfo.mi PQ.
 Proof.

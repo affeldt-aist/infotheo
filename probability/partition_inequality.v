@@ -53,7 +53,7 @@ Variable A_ : bool -> {set A}.
 Hypothesis dis : A_ 0 :&: A_ 1 = set0.
 Hypothesis cov : A_ 0 :|: A_ 1 = setT.
 Variable P Q : fdist A.
-Hypothesis P_dom_by_Q : P << Q.
+Hypothesis P_dom_by_Q : P `<< Q.
 
 Let P_A := bipart dis cov P.
 Let Q_A := bipart dis cov Q.

@@ -15,7 +15,7 @@ Local Notation "'\sum_{' C '}' f" :=
   (\sum_(a | a \in C) f a) (at level 10, format "\sum_{ C }  f").
 
 Definition log_sum_stmt {A : finType} (C : {set A}) (f g : A ->R+) :=
-  f << g ->
+  f `<< g ->
   \sum_{C} f * log (\sum_{C} f / \sum_{C} g) <= \sum_(a | a \in C) f a * log (f a / g a).
 
 Lemma log_sum1 {A : finType} (C : {set A}) (f g : A ->R+) :
@@ -51,11 +51,11 @@ wlog : Fnot0 g Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   have kg_pos : [forall a, 0 <b= [ffun x => k * g x] a].
     apply/forallP.
     move=> a; rewrite ffunE; apply/leRP/mulR_ge0; by [apply ltRW | apply pos_ff_ge0].
-  have kabs_con : f << (mkPosFfun (T:=A) (pos_ff:=[ffun x => k * g x]) kg_pos).
+  have kabs_con : f `<< mkPosFfun kg_pos.
     apply/dominates_scale => //; exact/eqP/gtR_eqF.
-  have kgspos : forall a, a \in C -> 0 < (mkPosFfun (T:=A) (pos_ff:=[ffun x => k * g x]) kg_pos) a.
+  have kgspos : forall a, a \in C -> 0 < (mkPosFfun kg_pos) a.
     move=> a a_C; rewrite ffunE; apply mulR_gt0 => //; by apply gspos.
-  have Hkg : \sum_{C} (mkPosFfun (T:=A) (pos_ff:=[ffun x => k * g x]) kg_pos) = \sum_{C} f.
+  have Hkg : \sum_{C} (mkPosFfun kg_pos) = \sum_{C} f.
     transitivity (\sum_(a in C) k * g a).
       by apply eq_bigr => a aC; rewrite /= ffunE.
     by rewrite -big_distrr /= /k /Rdiv -mulRA mulRC mulVR // mul1R.

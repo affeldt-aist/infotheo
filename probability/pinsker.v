@@ -290,7 +290,7 @@ Variables p q : prob .
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Hypothesis P_dom_by_Q :
-  (Binary.d card_A p (Set2.a card_A)) << (Binary.d card_A q (Set2.a card_A)).
+  Binary.d card_A p (Set2.a card_A) `<< Binary.d card_A q (Set2.a card_A).
 
 Lemma pinsker_fun_pos c : 0 <= c <= / (2 * ln 2) -> 0 <= pinsker_fun p c q.
 Proof.
@@ -373,7 +373,7 @@ Hypothesis card_A : #|A| = 2%nat.
 Let P := Binary.d card_A p (Set2.a card_A).
 Let Q := Binary.d card_A q (Set2.a card_A).
 
-Hypothesis P_dom_by_Q : P << Q.
+Hypothesis P_dom_by_Q : P `<< Q.
 
 Lemma pinsker_fun_p_eq c : pinsker_fun p c q = D(P || Q) - c * d(P , Q) ^ 2.
 Proof.
@@ -455,7 +455,7 @@ Section Pinsker_2.
 
 Variables (A : finType) (P Q : fdist A).
 Hypothesis card_A : #|A| = 2%nat.
-Hypothesis P_dom_by_Q : P << Q.
+Hypothesis P_dom_by_Q : P `<< Q.
 
 Lemma Pinsker_2_inequality : / (2 * ln 2) * d(P , Q) ^ 2 <= D(P || Q).
 Proof.
@@ -471,7 +471,7 @@ End Pinsker_2.
 Section Pinsker.
 
 Variables (A : finType) (P Q : fdist A).
-Hypothesis P_dom_by_Q : P << Q.
+Hypothesis P_dom_by_Q : P `<< Q.
 
 Local Notation "0" := (false).
 Local Notation "1" := (true).

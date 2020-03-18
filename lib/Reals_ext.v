@@ -10,20 +10,22 @@ Require Import ssrR.
 (*                                                                            *)
 (* Section reals_ext.                                                         *)
 (*   various lemmas about up, Int_part, frac_part, Rabs define ceil and floor *)
+(*                                                                            *)
 (* Section pos_finfun.                                                        *)
-(*   T ->R^+/->R+ == functions that return non-negative reals.                *)
-(* Section onem.                                                              *)
-(*   p.~ == 1 - p                                                             *)
-(* Module Prob.                                                               *)
-(*   Type of "probabilities", i.e., reals p s.t. 0 <= p <= 1                  *)
+(*  T ->R^+/->R+ == functions that return non-negative reals.                 *)
+(*                                                                            *)
+(*     p.~ == 1 - p                                                           *)
+(*                                                                            *)
+(*    prob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1         *)
 (*   x%:pr == tries to infer that x : R is actually of type prob              *)
-(* non-negative rationals                                                     *)
-(* Section dominance.                                                         *)
-(* Module Rpos.                                                               *)
-(*   Type of positive reals                                                   *)
+(*                                                                            *)
+(*    Qplus == type of non-negative rationals                                 *)
+(*  P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0        *)
+(*                                                                            *)
+(*     Rpos == type of positive reals                                         *)
 (*   x%:pos == tries to infer that x : R is actually a Rpos                   *)
-(* Module Rnneg                                                               *)
-(*   Type of non-negative reals                                               *)
+(*                                                                            *)
+(*    Rnneg == Type of non-negative reals                                     *)
 (*   x%:nng == tries to infer that x : R is actually a Rnneg                  *)
 (*                                                                            *)
 (******************************************************************************)
@@ -33,8 +35,8 @@ Declare Scope reals_ext_scope.
 Reserved Notation "T '->R^+' " (at level 10, format "'[' T  ->R^+ ']'").
 Reserved Notation "T '->R+' " (at level 10, format "'[' T  ->R+ ']'").
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
-Reserved Notation "P '<<' Q" (at level 10, Q at next level).
-Reserved Notation "P '<<b' Q" (at level 10).
+Reserved Notation "P '`<<' Q" (at level 51).
+Reserved Notation "P '`<<b' Q" (at level 51).
 Reserved Notation "p '.~'" (format "p .~", at level 5).
 Reserved Notation "'`Pr' p " (format "`Pr  p", at level 6).
 Reserved Notation "x %:pr" (at level 0, format "x %:pr").
@@ -500,30 +502,29 @@ rewrite /Rdiv mulRCA mulRV; last by apply/negP => /eqP ?; subst r; lra.
 rewrite -mulRC; exact: leR_wpmul2r.
 Qed.*)
 
-(* P is dominated by Q: *)
 Section dominance.
 
 Definition dominates {A : Type} (Q P : A -> R) := locked (forall a, Q a = 0 -> P a = 0).
 
-Local Notation "P '<<' Q" := (dominates Q P).
+Local Notation "P '`<<' Q" := (dominates Q P).
 
-Lemma dominatesP A (Q P : A -> R) : P << Q <-> forall a, Q a = 0 -> P a = 0.
+Lemma dominatesP A (Q P : A -> R) : P `<< Q <-> forall a, Q a = 0 -> P a = 0.
 Proof. by rewrite /dominates; unlock. Qed.
 
-Lemma dominatesxx A (P : A -> R) : P << P.
+Lemma dominatesxx A (P : A -> R) : P `<< P.
 Proof. by apply/dominatesP. Qed.
 
-Let dominatesN A (Q P : A -> R) : P << Q -> forall a, P a != 0 -> Q a != 0.
+Let dominatesN A (Q P : A -> R) : P `<< Q -> forall a, P a != 0 -> Q a != 0.
 Proof. by move/dominatesP => H a; apply: contra => /eqP /H ->. Qed.
 
-Lemma dominatesE A (Q P : A -> R) a : P << Q -> Q a = 0 -> P a = 0.
+Lemma dominatesE A (Q P : A -> R) a : P `<< Q -> Q a = 0 -> P a = 0.
 Proof. move/dominatesP; exact. Qed.
 
-Lemma dominatesEN A (Q P : A -> R) a : P << Q -> P a != 0 -> Q a != 0.
+Lemma dominatesEN A (Q P : A -> R) a : P `<< Q -> P a != 0 -> Q a != 0.
 Proof. move/dominatesN; exact. Qed.
 
-Lemma dominates_scale (A : finType) (Q P : A -> R) : P << Q ->
-  forall k, k != 0 -> P << [ffun a : A => k * Q a].
+Lemma dominates_scale (A : finType) (Q P : A -> R) : P `<< Q ->
+  forall k, k != 0 -> P `<< [ffun a : A => k * Q a].
 Proof.
 move=> PQ k k0; apply/dominatesP => a /eqP.
 by rewrite ffunE mulR_eq0' (negbTE k0) /= => /eqP/(dominatesE PQ).
@@ -533,8 +534,8 @@ Definition dominatesb {A : finType} (Q P : A -> R) := [forall b, (Q b == 0) ==> 
 
 End dominance.
 
-Notation "P '<<' Q" := (dominates Q P) : reals_ext_scope.
-Notation "P '<<b' Q" := (dominatesb Q P) : reals_ext_scope.
+Notation "P '`<<' Q" := (dominates Q P) : reals_ext_scope.
+Notation "P '`<<b' Q" := (dominatesb Q P) : reals_ext_scope.
 
 Module Rpos.
 Record t := mk {

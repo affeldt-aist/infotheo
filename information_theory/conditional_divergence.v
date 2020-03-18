@@ -31,9 +31,9 @@ Local Open Scope types_scope.
 Section conditional_dominance.
 Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
 
-Definition cdom_by := forall a, P a != 0 -> (V a) << (W a).
+Definition cdom_by := forall a, P a != 0 -> V a `<< W a.
 
-Lemma dom_by_cdom_by : (`J(P , V) << `J(P , W)) <-> cdom_by.
+Lemma dom_by_cdom_by : `J(P , V) `<< `J(P , W) <-> cdom_by.
 Proof.
 split; [move/dominatesP => H | move=> H; apply/dominatesP].
 - move=> a p_not_0; apply/dominatesP => b; move: (H (a, b)).
@@ -50,14 +50,14 @@ Qed.
 End conditional_dominance.
 
 Notation "P '|-' V '<<' W" := (cdom_by V W P) : divergence_scope.
-Notation "P '|-' V '<<b' W" := ([forall a, (P a != 0) ==> (V a) <<b (W a)])
+Notation "P '|-' V '<<b' W" := ([forall a, (P a != 0) ==> V a `<<b W a])
   : divergence_scope.
 
 Section joint_dom.
 
 Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
 
-Lemma joint_dominates : P |- V << W -> (`J(P, V)) << (`J(P, W)).
+Lemma joint_dominates : P |- V << W -> `J(P, V) `<< `J(P, W).
 Proof.
 move=> V_dom_by_W /=; apply/dominatesP => ab Hab.
 case/leR_eqVlt : (FDist.ge0 P ab.1) => [/esym|] Hab1.
@@ -118,7 +118,7 @@ Let Q := CJFDist.mkt R Q'.
 Local Open Scope divergence_scope.
 Local Open Scope reals_ext_scope.
 
-Lemma cre_compat : (CJFDist.joint_of P) << (CJFDist.joint_of Q) ->
+Lemma cre_compat : CJFDist.joint_of P `<< CJFDist.joint_of Q ->
   cre P Q = D(P || Q | R).
 Proof.
 move=> PQ.
