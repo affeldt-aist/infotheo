@@ -39,7 +39,10 @@ Require Import fdist jfdist fsdist.
 (* More lemmas about convex spaces:                                           *)
 (* convACA        == (a <|q|> b) <|p|> (c <|q|> d) =                          *)
 (*                     (a <|p|> c) <|q|> (b <|p|> d)                          *)
-(* etc.                                                                       *)
+(*                                                                            *)
+(* altConvType    == alternative definition of the type of convex spaces      *)
+(*                   using a multiary operator; module AltConvexSpaceEquiv    *)
+(*                   provides equivalence proofs between different axiomatics *)
 (*                                                                            *)
 (* hull X         == the convex hull of set X : set T where T is a convType   *)
 (* is_convex_set  == Boolean predicate that characterizes convex sets over a  *)
@@ -2287,10 +2290,10 @@ Coercion apply : map >-> Funclass.
 Notation ConvexFunction fA := (Pack (Phant _) fA).
 Notation "{ 'convex' fUV }" := (map (Phant fUV))
   (at level 0, format "{ 'convex'  fUV }") : convex_scope.
-Notation "[ 'convex' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
+(*Notation "[ 'convex' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
   (at level 0, format "[ 'convex'  'of'  f  'as'  g ]") : convex_scope.
 Notation "[ 'convex' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
-  (at level 0, format "[ 'convex'  'of'  f ]") : convex_scope.
+  (at level 0, format "[ 'convex'  'of'  f ]") : convex_scope.*)
 End Exports.
 End ConvexFunction.
 Include ConvexFunction.Exports.
@@ -2375,7 +2378,8 @@ End definition.
 Section counterexample.
 Local Open Scope R_scope.
 
-Example biconvex_is_not_convex_in_both : exists f : R -> R -> R, biconvex_function f /\ ~ convex_in_both f.
+Example biconvex_is_not_convex_in_both :
+  exists f : R -> R -> R, biconvex_function f /\ ~ convex_in_both f.
 Proof.
 exists Rmult; split.
 split => [a b0 b1 t | b a0 a1 t] /=; rewrite avgRE; [rewrite avgR_mulDr|rewrite avgR_mulDl]; exact: leRR.
@@ -2422,10 +2426,10 @@ Coercion apply : map >-> Funclass.
 Notation ConcaveFunction fA := (Pack (Phant _) fA).
 Notation "{ 'concave' fUV }" := (map (Phant fUV))
   (at level 0, format "{ 'concave'  fUV }") : convex_scope.
-Notation "[ 'concave' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
+(*Notation "[ 'concave' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
   (at level 0, format "[ 'concave'  'of'  f  'as'  g ]") : convex_scope.
 Notation "[ 'concave' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
-  (at level 0, format "[ 'concave'  'of'  f ]") : convex_scope.
+  (at level 0, format "[ 'concave'  'of'  f ]") : convex_scope.*)
 End Exports.
 End ConcaveFunction.
 Include ConcaveFunction.Exports.
@@ -2518,10 +2522,10 @@ Coercion apply : map >-> Funclass.
 Notation AffineFunction fA := (Pack (Phant _) fA).
 Notation "{ 'affine' fUV }" := (map (Phant fUV))
   (at level 0, format "{ 'affine'  fUV }") : convex_scope.
-Notation "[ 'affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
+(*Notation "[ 'affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
   (at level 0, format "[ 'affine'  'of'  f  'as'  g ]") : convex_scope.
 Notation "[ 'affine' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
-  (at level 0, format "[ 'affine'  'of'  f ]") : convex_scope.
+  (at level 0, format "[ 'affine'  'of'  f ]") : convex_scope.*)
 End Exports.
 End AffineFunction.
 Include AffineFunction.Exports.
@@ -2673,7 +2677,7 @@ apply addR_gt0wl; first by apply mulR_gt0 => //; exact/prob_gt0.
 apply mulR_ge0 => //; exact: ltRW.
 Qed.
 
-Definition Rpos_interval := CSet.Pack (CSet.Class Rpos_convex).
+Definition Rpos_interval : {convex_set R} := CSet.Pack (CSet.Class Rpos_convex).
 
 Lemma Rnonneg_convex : is_convex_set (fun x => 0 <= x)%R.
 Proof. apply/asboolP=> x y t Hx Hy; apply addR_ge0; exact/mulR_ge0. Qed.

@@ -1,8 +1,10 @@
------------------
-from 0.0.7 to ? :
------------------
+-------------------
+from 0.0.7 to 0.1 :
+-------------------
 new lemmas:
 - FSDist.le1
+new type:
+- altConvType, together with equivalence proofs of several axiomatics
 renamings:
 - Joet -> lub_op
 - joet -> lub_binary
