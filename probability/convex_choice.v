@@ -1017,6 +1017,10 @@ Definition ax_dist_part :=
                  fdist_supp (e i) :&: fdist_supp (e j) = finset.set0) ->
     <a>_d (fun i => <a>_(e i) g) = <a>_(ConvnFDist.d d e) g.
 
+(* Restriction of ax_map to injective maps *)
+Definition ax_inj_map :=
+  forall (n m : nat) (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
+    injective u -> <a>_d (g \o u) = <a>_(FDistMap.d u d) g.
 End Axioms.
 
 (* We will prove:
@@ -1048,10 +1052,10 @@ End BinToN.
 Module NToBin(A : AltConvSpace).
 Export A.
 
-(* cnmap and cnconst are consequences of cndist + cnproj *)
-Lemma cnmap n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
-  <a>_d (g \o u) = <a>_(FDistMap.d u d) g.
+(* cnmap, cnconst and cnidem are consequences of cndist + cnproj *)
+Lemma cnmap : ax_map T.
 Proof.
+move=> n m u d g.
 have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
   apply fdist_ext => i.
   by rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
@@ -1059,67 +1063,27 @@ rewrite -cndist.
 by congr (<a>_ _ _); apply funext => i /=; rewrite cnproj.
 Qed.
 
-Lemma cnconst (a : T) (n : nat) (d : {fdist 'I_n}) : <a>_d (fun=> a) = a.
-Proof. by rewrite -(cnproj (@ord0 0) (fun=>a)) cndist ConvnFDist.cst. Qed.
-
-(* cnidem is a consequence of cnmap + cnconst *)
-Lemma cnidem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
-  (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <a>_d g = a.
+Lemma cnconst : ax_const T.
 Proof.
-move=> Ha.
-set supp := fdist_supp d.
-set f : 'I_#|supp| -> 'I_n := enum_val.
-have [x Hx] := fdist_supp_mem d.
-set f' : 'I_n -> 'I_#|supp| := enum_rank_in Hx.
-set d' := FDistMap.d f' d.
-have -> : d = FDistMap.d f d'.
-  apply fdist_ext => i /=.
-  rewrite FDistMap.comp FDistMap.dE /=.
-  case/boolP: (i \in supp) => Hi.
-  - rewrite (bigD1 i) /=; last by rewrite /f /f' enum_rankK_in.
-    rewrite big1; first by rewrite addR0.
-    move=> j /andP[] /eqP <-.
-    case/boolP: (j \in supp).
-      move=> Hj; by rewrite /f /f' enum_rankK_in // eqxx.
-    by rewrite inE negbK => /eqP.
-  - rewrite big_pred0.
-      move: Hi; by rewrite inE negbK => /eqP.
-    move=> j; apply/negP => /eqP Hj.
-    by move: Hi; rewrite -Hj enum_valP.
-rewrite -cnmap.
-have -> : g \o f = fun=> a.
-  apply funext => i; rewrite /f /= Ha //.
-  move: (enum_valP i); by rewrite inE.
-by rewrite cnconst.
+move=> a n d; by rewrite -(cnproj (@ord0 0) (fun=>a)) cndist ConvnFDist.cst.
 Qed.
 
-(* It is also an easy consequence of cndist + cnproj *)
-Lemma cnidem' : ax_idem T.
+Lemma cnidem : ax_idem T.
 Proof.
 move=> a n d g Hd.
-have [n0 Hn0] := fdist_supp_mem d.
-have -> : g =
-          (fun i => <a>_(FDist1.d (if i \in fdist_supp d then n0 else i)) g).
-  apply funext => i.
-  rewrite cnproj.
-  case: ifP => // /Hd ->.
-  by rewrite (Hd _ Hn0).
-rewrite cndist.
-rewrite (_ : ConvnFDist.d _ _ = FDist1.d n0).
-  by rewrite cnproj Hd.
-apply fdist_ext => /= i.
-rewrite !fdistE rsum_fdist_supp.
+have /=[k Hk] := fdist_supp_mem d.
+have -> : g = (fun i => <a>_(FDist1.d (if i \in fdist_supp d then k else i)) g).
+  apply funext => i; rewrite cnproj.
+  case: ifP => // /Hd ->; by rewrite (Hd k).
+rewrite cndist (_ : ConvnFDist.d _ _ = FDist1.d k) ?cnproj ?Hd //.
+apply fdist_ext => /= i; rewrite !fdistE rsum_fdist_supp.
 under eq_bigr => j /= -> do rewrite fdistE.
 by rewrite -rsum_fdist_supp -big_distrl FDist.f1 /= mul1R.
 Qed.
 
-(* cnproj is a consequence of cnidem *)
-Lemma cnproj' n (i : 'I_n) (g : 'I_n -> T) : <a>_(FDist1.d i) g = g i.
-Proof.
-apply cnidem => j; rewrite FDist1.dE /=.
-case/boolP: (j == i) => [/eqP /= -> // |].
-by rewrite INR_eq0' eqxx.
-Qed.
+(* cnconst is also a corollary of cnidem *)
+Corollary cnconst' : ax_const T.
+Proof. move=> a n d; by apply cnidem. Qed.
 
 (* Definition of conv based on convn *)
 Definition cnconv p (a b : T) :=
@@ -1186,7 +1150,7 @@ Qed.
 Definition conv_mixin : ConvexSpace.mixin_of T.
 apply (@ConvexSpace.Mixin _ cnconv).
 - move=> a b; apply cnidem => i.
-  rewrite I2FDist.dE.
+  rewrite inE I2FDist.dE.
   case: ifP => //=.
   by rewrite /onem subRR eqxx.
 - move=> p a; apply cnidem => i.
@@ -1250,6 +1214,46 @@ rewrite addRCA addRN !addR0 => b'.
 by elim b; rewrite -b' eqxx.
 Qed.
 End Equiv2.
+
+Module Type MapConst.
+Parameter T : altConvType.
+Parameter cnmap : ax_map T.
+Parameter cnconst : ax_const T.
+End MapConst.
+
+(* cnidem is a consequence of cnmap + cnconst *)
+Module MapConstToIdem(A : MapConst).
+Import A.
+
+Lemma cnidem : ax_idem T.
+Proof.
+move=> a n d g Ha.
+set supp := fdist_supp d.
+set f : 'I_#|supp| -> 'I_n := enum_val.
+have [x Hx] := fdist_supp_mem d.
+set f' : 'I_n -> 'I_#|supp| := enum_rank_in Hx.
+set d' := FDistMap.d f' d.
+have -> : d = FDistMap.d f d'.
+  apply fdist_ext => i /=.
+  rewrite FDistMap.comp FDistMap.dE /=.
+  case/boolP: (i \in supp) => Hi.
+  - rewrite (bigD1 i) /=; last by rewrite /f /f' enum_rankK_in.
+    rewrite big1; first by rewrite addR0.
+    move=> j /andP[] /eqP <-.
+    case/boolP: (j \in supp).
+      move=> Hj; by rewrite /f /f' enum_rankK_in // eqxx.
+    by rewrite inE negbK => /eqP.
+  - rewrite big_pred0.
+      move: Hi; by rewrite inE negbK => /eqP.
+    move=> j; apply/negP => /eqP Hj.
+    by move: Hi; rewrite -Hj enum_valP.
+rewrite -cnmap.
+have -> : g \o f = fun=> a.
+  apply funext => i; rewrite /f /= Ha //.
+  move: (enum_valP i); by rewrite inE.
+by rewrite cnconst.
+Qed.
+End MapConstToIdem.
 
 (* Prove equivalence of axioms with Beaulieu's presentation *)
 
@@ -1422,10 +1426,9 @@ rewrite inE negbK => /eqP ->.
 by rewrite mulR0 div0R.
 Qed.
 
-Lemma cnmap n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
-  injective u -> <a>_d (g \o u) = <a>_(FDistMap.d u d) g.
+Lemma cnmap : ax_inj_map T.
 Proof.
-move=> Hu.
+move=> n m u d g Hu.
 have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
   apply fdist_ext => i; by rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
 rewrite -cnpartd.
