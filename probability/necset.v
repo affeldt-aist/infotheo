@@ -309,9 +309,8 @@ apply eqEsubset => u; rewrite conv_pt_setE.
 Qed.
 Lemma conv1_set X (Y : neset L) : X :<| 1%:pr |>: Y = X.
 Proof.
-transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_set1 image_idfun.
-congr bigsetU; apply funext => x /=.
-by rewrite (conv1_pt_set x Y).
+transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_set1 image_id.
+by congr bigsetU; apply funext => x /=; rewrite conv1_pt_set.
 Qed.
 Lemma conv0_set (X : neset L) Y : X :<| 0%:pr |>: Y = Y.
 Proof.
@@ -538,9 +537,8 @@ Qed.
 Lemma lub_op_setU (I J : neset L) :
   |_| (I `|` J)%:ne = |_| [set |_| I; |_| J]%:ne.
 Proof.
-rewrite nesetU_bigsetU lub_op_bigsetU.
-congr (|_| _%:ne); apply/neset_ext => /=.
-by rewrite image_idfun /= image_setU !image_set1.
+rewrite nesetU_bigsetU lub_op_bigsetU; congr (|_| _%:ne); apply/neset_ext => /=.
+by rewrite image_id /= image_setU !image_set1.
 Qed.
 
 (* NB: [Reiterman] p.326, axiom 1 is trivial, since our |_| operator receives
@@ -551,7 +549,7 @@ Lemma lub_op_flatten (F : neset (neset L)) :
   |_| (lub_op @` F)%:ne = |_| (bigsetU F idfun)%:ne.
 Proof.
 rewrite lub_op_bigsetU; congr (|_| _%:ne); apply/neset_ext => /=.
-by rewrite image_idfun.
+by rewrite image_id.
 Qed.
 
 Definition lub_binary (x y : L) := |_| [set x; y]%:ne.
@@ -703,18 +701,20 @@ Export LubOpAffine.Exports.
 Lemma lub_op_affine_id_proof (A : semiCompSemiLattConvType) : LubOpAffine.class_of (@id A).
 Proof.
 apply LubOpAffine.Class; first exact: affine_function_id_proof.
-by move=> x; congr (|_| _); apply neset_ext; rewrite /= image_idfun.
+by move=> x; congr (|_| _); apply neset_ext; rewrite /= image_id.
 Qed.
-Lemma lub_op_affine_comp_proof (A B C : semiCompSemiLattConvType) (f : A -> B) (g : B -> C) :
+
+Lemma lub_op_affine_comp_proof (A B C : semiCompSemiLattConvType)
+  (f : A -> B) (g : B -> C) :
   LubOpAffine.class_of f -> LubOpAffine.class_of g ->
   LubOpAffine.class_of (g \o f).
 Proof.
-case => af jf [] ag jg.
+move=> [af jf] [ag jg].
 apply LubOpAffine.Class; first exact: affine_function_comp_proof'.
 move=> x; cbn.
 rewrite jf jg.
-congr (|_| _); apply neset_ext =>/=.
-by rewrite imageA.
+congr (|_| _); apply neset_ext => /=.
+by rewrite image_comp.
 Qed.
 
 Section semicompsemilattconvtype_lemmas.
@@ -756,7 +756,7 @@ Proof.
 transitivity (|_| (\bigcup_(x in X) (x <| p |>: Y))%:ne).
   by congr (|_| _%:ne); apply neset_ext.
 rewrite lub_op_bigcup //; congr (|_| _%:ne); apply neset_ext => /=.
-rewrite imageA; congr image; apply funext => x /=.
+rewrite image_comp; congr image; apply funext => x /=.
 by rewrite lub_op_conv_pt_setD.
 Qed.
 Lemma lub_op_conv_setD p (X Y : neset L) :
@@ -770,7 +770,7 @@ transitivity (|_| (\bigcup_(p in probset_neset) (X :<| p |>: Y))%:ne).
   by congr (|_| _%:ne); apply/neset_ext.
 rewrite lub_op_bigcup //.
 congr (|_| _%:ne); apply/neset_ext => /=.
-rewrite imageA; congr image; apply funext => p /=.
+rewrite image_comp; congr image; apply funext => p /=.
 by rewrite lub_op_conv_setD.
 Qed.
 Lemma lub_op_iter_conv_set (X : neset L) (n : nat) :
@@ -793,7 +793,7 @@ rewrite -[in RHS](lub_op1 (|_| X)).
 transitivity (|_| ((fun _ => |_| X) @` natset)%:ne); last first.
   by congr (|_| _); apply/neset_ext/image_const.
 congr (|_| _%:ne); apply/neset_ext => /=.
-rewrite imageA; congr image; apply funext => n /=.
+rewrite image_comp; congr image; apply funext => n /=.
 by rewrite lub_op_iter_conv_set.
 Qed.
 End semicompsemilattconvtype_lemmas.

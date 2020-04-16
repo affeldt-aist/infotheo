@@ -1,4 +1,10 @@
 -------------------
+from 0.0.7 to ??? :
+-------------------
+renamings:
+- imageA -> image_comp (deprecated)
+- image_idfun -> image_id (deprecated)
+-------------------
 from 0.0.7 to 0.1 :
 -------------------
 new lemmas:

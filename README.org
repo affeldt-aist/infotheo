@@ -18,7 +18,7 @@ Version 0.1:
 
 **** Requirements
 
-- [[https://coq.inria.fr][Coq]] 8.10.2
+- [[https://coq.inria.fr][Coq]] 8.10.2 or 8.11
 - [[https://github.com/math-comp/math-comp][Mathematical Components library]] 1.10.0
 - [[https://github.com/math-comp/analysis][MathComp-Analysis]] 0.2.3
   which requires

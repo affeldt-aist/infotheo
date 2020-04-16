@@ -11,15 +11,6 @@ Implicit Types A B C : set T.
 
 Local Open Scope classical_set_scope.
 
-Lemma set0U A : set0 `|` A = A.
-Proof. rewrite funeqE => t; rewrite propeqE; split; by [case|right]. Qed.
-
-Lemma setU0 A : A `|` set0 = A.
-Proof. rewrite funeqE => t; rewrite propeqE; split; by [case|left]. Qed.
-
-Lemma sub0set A : set0 `<=` A.
-Proof. by []. Qed.
-
 Lemma subset0 A : (A `<=` set0) = (A = set0).
 Proof. rewrite propeqE; split => [?|-> //]; exact/eqEsubset. Qed.
 
@@ -28,9 +19,6 @@ Proof.
 rewrite propeqE; split => [H|H]; first by split => x Hx; apply H; [left|right].
 move=> x [] Hx; [exact: (proj1 H)|exact: (proj2 H)].
 Qed.
-
-Lemma setU_eq0 A B : (A `|` B = set0) = ((A = set0) /\ (B = set0)).
-Proof. by rewrite -!subset0 subUset. Qed.
 
 Lemma set0P A : (A != set0) <-> (A !=set0).
 Proof.
@@ -48,19 +36,15 @@ by move=> H; apply eqEsubset=> a;
   case => x Xx <-; [rewrite H | rewrite -H] => //; exists x.
 Qed.
 
-Lemma imageA V (f : T -> U) (g : U -> V) A : g @` (f @` A) = (g \o f) @` A.
+Lemma image_comp V (f : T -> U) (g : U -> V) A : g @` (f @` A) = (g \o f) @` A.
 Proof.
 apply eqEsubset => c.
 - by case => b [] a Xa <- <-; apply/imageP.
 - by case => a Xa <-; apply/imageP/imageP.
 Qed.
 
-Lemma image_idfun A : idfun @` A = A.
-Proof.
-apply eqEsubset => a.
-- by case=> /= x Xx <-.
-- by exists a.
-Qed.
+Lemma image_id A : id @` A = A.
+Proof. by apply eqEsubset => a; [case=> /= x Xx <-|exists a]. Qed.
 
 Lemma image_setU (f : T -> U) A B : f @` (A `|` B) = f @` A `|` f @` B.
 Proof.
@@ -70,11 +54,7 @@ apply eqEsubset => b.
 Qed.
 
 Lemma image_set1 (f : T -> U) (t : T) : f @` [set t] = [set f t].
-Proof.
-apply eqEsubset => b.
-- by case=> a' -> <-.
-- by move->; apply imageP.
-Qed.
+Proof. by apply eqEsubset => b; [case=> a' -> <- | move->; apply imageP]. Qed.
 
 Lemma image_subset (f : T -> U) A (Y : set U) :
   f @` A `<=` Y <-> forall a, A a -> Y (f a).
@@ -154,3 +134,6 @@ apply eqEsubset=> x.
 Qed.
 
 End PR_to_classical_sets.
+
+Notation imageA := (deprecate imageA image_comp _) (only parsing).
+Notation image_idfun := (deprecate image_idfun image_id _) (only parsing).
