@@ -102,7 +102,7 @@ case/boolP : (odd j) => [odd_j|even_j]; last first.
   by rewrite (negbTE even_j) add0n => ->.
 move: (IH j.-1./2).
 rewrite -{1}divn2 leq_divLR; last first.
-  rewrite dvdn2 -subn1 odd_sub; last by destruct j.
+  rewrite dvdn2 -subn1 oddB; last by destruct j.
   by rewrite /= addbT odd_j.
 have -> : (j.-1 <= i * 2)%N.
   rewrite muln2 -addnn -subn1 leq_subLR addnA add1n (leq_trans ji) //.
