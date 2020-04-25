@@ -1289,8 +1289,9 @@ have HB : \sum_(x in s) P `^ _ x <= INR #|s| * B.
     rewrite -big_filter /= big_const_seq /= iter_addR /=.
     apply leR_wpmul2r; first lra.
     apply Req_le.
-    rewrite filter_index_enum count_predT cardE; congr (INR (size _)).
-    apply eq_enum => i; by rewrite /in_mem /= andbC.
+    have [/= l el [ul ls] [pl sl]] := big_enumP _.
+    rewrite count_predT sl; congr (_%:R)%R.
+    by apply: eq_card => /= v; rewrite inE andbT.
   apply/(leR_trans _ HB)/Req_le/eq_bigl => i; by rewrite andbC.
 have HA : INR #|s| * A <= \sum_(x in s) P `^ _ x.
   have HA : INR #|s| * A <= \sum_(x in s | predT s) P `^ _ x.
@@ -1299,8 +1300,9 @@ have HA : INR #|s| * A <= \sum_(x in s) P `^ _ x.
     rewrite -big_filter /= big_const_seq /= iter_addR /=.
     apply leR_wpmul2r; first lra.
     apply Req_le.
-    rewrite filter_index_enum count_predT cardE; congr (INR (size _)).
-    apply eq_enum => i; by rewrite /in_mem /= andbC.
+    have [/= l el [ul ls] [pl sl]] := big_enumP _.
+    rewrite count_predT sl; congr (_%:R)%R.
+    by apply: eq_card => /= v; rewrite inE andbT.
   apply/(leR_trans HA)/Req_le/eq_bigl => i; by rewrite andbC.
 split.
 - rewrite leR_pdivr_mulr //; move/leR_trans : Ha; exact.

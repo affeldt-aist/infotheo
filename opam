@@ -25,8 +25,8 @@ install: [
   [make "install"]
 ]
 depends: [
-  "coq" {>= "8.10~"}
-  "coq-mathcomp-field" {>= "1.10.0"}
+  "coq" {(>= "8.10" & < "8.12~"}
+  "coq-mathcomp-field" {>= "1.11" & < "1.12~"}
   "coq-mathcomp-analysis"   {(>= "0.2.0" & <= "0.2.3")}
 ]
 synopsis: "Infotheo"

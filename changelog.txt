@@ -1,6 +1,8 @@
 -------------------
-from 0.0.7 to ??? :
+from 0.1 to 0.1.1 :
 -------------------
+added:
+- order canonical structures in ssrR.v
 renamings:
 - imageA -> image_comp (deprecated)
 - image_idfun -> image_id (deprecated)
@@ -8,6 +10,12 @@ renamings:
 added:
 - <&>_ notation for the operator of naryContType
   + _ <& _ &> _ for its binary version
+removed:
+- Lemma to_bivar_entropy (redundant with entropy_to_bivar)
+- file arg_rmax.v
+replaced:
+- custom arg_rmax with new order.v's [arg max_(i > i0) F]%O
+
 -------------------
 from 0.0.7 to 0.1 :
 -------------------

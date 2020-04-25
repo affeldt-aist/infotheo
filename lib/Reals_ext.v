@@ -43,10 +43,6 @@ Reserved Notation "x %:pr" (at level 0, format "x %:pr").
 Reserved Notation "x %:pos" (at level 0, format "x %:pos").
 Reserved Notation "x %:nng" (at level 0, format "x %:nng").
 
-Notation "'min(' x ',' y ')'" := (Rmin x y)
-  (format "'min(' x ','  y ')'") : reals_ext_scope.
-Notation "'max(' x ',' y ')'" := (Rmax x y)
-  (format "'max(' x ','  y ')'") : reals_ext_scope.
 Notation "+| r |" := (Rmax 0 r) : reals_ext_scope.
 
 Set Implicit Arguments.
@@ -54,8 +50,6 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Arguments INR : simpl never.
-
-Canonical R_choiceType := ChoiceType R Rstruct.R_choiceMixin.
 
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
@@ -282,6 +276,17 @@ move=> [H1 H2] [H H3]; case: (Rtotal_order a b) => [H0|[H0|H0]].
 Qed.
 
 End reals_ext.
+
+Section rExtrema.
+Variables (I : finType) (i0 : I) (F : I -> R).
+
+Lemma arg_rmax2 : forall j, (F j <= F [arg max_(i > i0) F i]%O)%O.
+Proof.
+move=> j; case: (@Order.TotalTheory.arg_maxP _ _ I i0 xpredT F isT) => i _.
+exact.
+Qed.
+
+End rExtrema.
 
 Section pos_finfun.
 Variable (T : finType).

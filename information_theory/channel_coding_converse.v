@@ -2,10 +2,9 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb ln_facts Rbigop arg_rmax.
-Require Import num_occ fdist entropy types jtypes divergence.
-Require Import conditional_divergence error_exponent channel_code channel.
-Require Import success_decode_bound.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb ln_facts Rbigop num_occ.
+Require Import fdist entropy types jtypes divergence conditional_divergence.
+Require Import error_exponent channel_code channel success_decode_bound.
 
 (******************************************************************************)
 (*                 Channel coding theorem (converse part)                     *)
@@ -48,16 +47,17 @@ Lemma channel_coding_converse_gen : exists Delta, 0 < Delta /\ forall n',
     minRate <= CodeRate c ->
       scha(W, c) <= n.+1%:R ^ (#|A| + #|A| * #|B|) * exp2 (- n%:R * Delta).
 Proof.
-move: error_exponent_bound => /(_ _ _ Bnot0 W _ Hc _ HminRate); case => Delta [Delta_pos HDelta].
+move: error_exponent_bound => /(_ _ _ Bnot0 W _ Hc _ HminRate).
+case => Delta [Delta_pos HDelta].
 exists Delta; split => // n' n M c Mnot0 H.
 apply: (leR_trans (success_bound W Mnot0 c)).
-set Pmax := arg_rmax _ _ _.
+set Pmax := [arg max_(P > _) _]%O.
 set tc :=  _.-typed_code _.
 rewrite pow_add -mulRA.
 apply leR_wpmul2l; first exact/pow_le/leR0n.
-apply (leR_trans (typed_success_bound W Mnot0 (Pmax.-typed_code c))).
+apply: (leR_trans (typed_success_bound W Mnot0 (Pmax.-typed_code c))).
 apply leR_wpmul2l; first exact/pow_le/leR0n.
-set Vmax := arg_rmax _ _ _.
+set Vmax := [arg max_(V > _) _]%O.
 rewrite /success_factor_bound /exp_cdiv.
 case : ifP => Hcase; last by rewrite mul0R.
 rewrite -ExpD.
