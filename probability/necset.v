@@ -309,7 +309,8 @@ apply eqEsubset => u; rewrite conv_pt_setE.
 Qed.
 Lemma conv1_set X (Y : neset L) : X :<| 1%:pr |>: Y = X.
 Proof.
-transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_set1 image_id.
+transitivity (\bigcup_(x in X) [set x]); last first.
+  by rewrite bigcup_of_singleton image_id.
 by congr bigsetU; apply funext => x /=; rewrite conv1_pt_set.
 Qed.
 Lemma conv0_set (X : neset L) Y : X :<| 0%:pr |>: Y = Y.
@@ -327,7 +328,8 @@ Fixpoint iter_conv_set (X : set L) (n : nat) :=
   end.
 Lemma iter0_conv_set (X : set L) : iter_conv_set X 0 = X.
 Proof. by []. Qed.
-Lemma iterS_conv_set (X : set L) (n : nat) : iter_conv_set X (S n) = oplus_conv_set X (iter_conv_set X n).
+Lemma iterS_conv_set (X : set L) (n : nat) :
+  iter_conv_set X (S n) = oplus_conv_set X (iter_conv_set X n).
 Proof. by []. Qed.
 Lemma probset_neq0 : probset != set0.
 Proof. by apply/set0P; exists 0%:pr. Qed.

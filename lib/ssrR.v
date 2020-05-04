@@ -873,4 +873,3 @@ Proof.
 apply/idP/idP => [/leRP/leR_max[] /leRP -> /leRP -> //|].
 case/andP=> /leRP ? /leRP ?; exact/leRP/leR_max.
 Qed.
-

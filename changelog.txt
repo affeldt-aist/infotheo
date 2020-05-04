@@ -6,6 +6,10 @@ added:
 renamings:
 - imageA -> image_comp (deprecated)
 - image_idfun -> image_id (deprecated)
+- bigcup0 -> bigcup_set0
+- bigcup1 -> bigcup_set1
+- bigcup_set1 -> bigcup_of_singletons
+- bigcup_const -> bigcup_of_const
 - altConvType -> naryConvType
 added:
 - <&>_ notation for the operator of naryContType
