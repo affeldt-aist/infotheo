@@ -94,4 +94,4 @@ toy_examples/expected_value_variance_tuple.v
 toy_examples/conditional_entropy.v
 
 -R . infotheo
--R ../analysis/theories mathcomp.analysis
+
