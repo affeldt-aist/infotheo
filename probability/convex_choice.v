@@ -1812,9 +1812,9 @@ End hull_convex_set.
 
 Section hull_setU.
 Local Open Scope classical_set_scope.
-Variable A : convType.
+Variable T : convType.
 Import ScaledConvex.
-Implicit Types Z : set A.
+Implicit Types Z : set T.
 
 Definition scaled_set Z := [set x | if x is p *: a then Z a else True].
 
@@ -1828,14 +1828,14 @@ Lemma scaled_set_extract Z x (x0 : x != Zero) :
   x \in scaled_set Z -> [point of x0] \in Z.
 Proof. by case: x x0. Qed.
 
-Lemma addpt_scaled_set (X : {convex_set A}) x y :
+Lemma addpt_scaled_set (X : {convex_set T}) x y :
   x \in scaled_set X -> y \in scaled_set X -> addpt x y \in scaled_set X.
 Proof.
 case: x => [p x|]; case: y => [q y|] //=; exact: mem_convex_set.
 Qed.
 
-Lemma ssum_scaled_set n (P : pred 'I_n) (X : {convex_set A}) (d : {fdist 'I_n})
-  (g : 'I_n -> A) : (forall j, P j -> g j \in X) ->
+Lemma ssum_scaled_set n (P : pred 'I_n) (X : {convex_set T}) (d : {fdist 'I_n})
+  (g : 'I_n -> T) : (forall j, P j -> g j \in X) ->
   \ssum_(i | P i) scalept (d i) (S1 (g i)) \in scaled_set X.
 Proof.
 move=> PX; apply big_ind.
@@ -1846,35 +1846,35 @@ Qed.
 
 Local Open Scope reals_ext_scope.
 
-Lemma hull_setU (a : A) (X Y : {convex_set A}) : X !=set0 -> Y !=set0 ->
-  hull (X `|` Y) a ->
-  exists2 b, b \in X & exists2 c, c \in Y & exists p, a = b <| p |> c.
+Lemma hull_setU (z : T) (X Y : {convex_set T}) : X !=set0 -> Y !=set0 ->
+  hull (X `|` Y) z ->
+  exists2 x, x \in X & exists2 y, y \in Y & exists p, z = x <| p |> y.
 Proof.
-move=> [dx ?] [dy ?] [n -[g [d [gX ag]]]].
-suff [x] : exists2 x, x \in scaled_set X & exists2 y, y \in scaled_set Y &
-    S1 a = addpt x y.
-  have [/eqP -> _ [y yY]|x0 xX [y]] := boolP (x == Zero).
-    rewrite add0pt => S1ac.
-    exists dx; rewrite ?in_setE //; exists a; last by exists 0%:pr; rewrite conv0.
-    by rewrite -(point_S1 a); apply: scaled_set_extract; rewrite S1ac.
-  have [/eqP -> _|y0 yY] := boolP (y == Zero).
-    rewrite addpt0 => S1ab.
-    exists a; last by exists dy; rewrite ?in_setE //; exists 1%:pr; rewrite conv1.
-    by rewrite -(point_S1 a); apply: scaled_set_extract; rewrite S1ab.
-  rewrite addptE => -[_ abc].
-  exists [point of x0]; first exact: (@scaled_set_extract _ x).
-  exists [point of y0]; first exact: scaled_set_extract.
-  by eexists; rewrite abc.
-move/(congr1 (@S1 _)): ag; rewrite S1_convn.
+move=> [dx ?] [dy ?] [n -[g [d [gT zg]]]].
+suff [a] : exists2 a, a \in scaled_set X & exists2 b, b \in scaled_set Y &
+    S1 z = addpt a b.
+  have [/eqP -> _ [b bY]|a0 aX [b]] := boolP (a == Zero).
+    rewrite add0pt => S1zy.
+    exists dx; rewrite ?in_setE //; exists z; last by exists 0%:pr; rewrite conv0.
+    by rewrite -(point_S1 z); apply: scaled_set_extract; rewrite S1zy.
+  have [/eqP -> _|b0 bY] := boolP (b == Zero).
+    rewrite addpt0 => S1zx.
+    exists z; last by exists dy; rewrite ?in_setE //; exists 1%:pr; rewrite conv1.
+    by rewrite -(point_S1 z); apply: scaled_set_extract; rewrite S1zx.
+  rewrite addptE => -[_ zxy].
+  exists [point of a0]; first exact: (@scaled_set_extract _ a).
+  exists [point of b0]; first exact: scaled_set_extract.
+  by eexists; rewrite zxy.
+move/(congr1 (@S1 _)): zg; rewrite S1_convn.
 rewrite (bigID (fun i => g i \in X)) /=.
-set b := \big[_/_]_(i < n | _) _.
-set c := \big[_/_]_(i < n | _) _.
-move=> abc.
+set b := \ssum_(i | _) _.
+set c := \ssum_(i | _) _.
+move=> zbc.
 exists b; first exact: ssum_scaled_set.
 exists c => //.
 apply: (@ssum_scaled_set _ [pred i | g i \notin X]) => i /=.
 move/asboolP; rewrite in_setE.
-by case: (gX (g i) (imageP _ I)).
+by case: (gT (g i) (imageP _ I)).
 Qed.
 
 End hull_setU.
