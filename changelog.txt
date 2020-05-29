@@ -4,6 +4,10 @@ from 0.0.7 to ??? :
 renamings:
 - imageA -> image_comp (deprecated)
 - image_idfun -> image_id (deprecated)
+- altConvType -> naryConvType
+added:
+- <&>_ notation for the operator of naryContType
+  + _ <& _ &> _ for its binary version
 -------------------
 from 0.0.7 to 0.1 :
 -------------------
