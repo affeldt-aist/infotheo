@@ -776,11 +776,7 @@ Local Open Scope min_scope.
 Lemma bigminn_min (A : finType) (C : {set A}) (cnot0 : {c0 | c0 \in C})
   a (Ha : a \in C) (h : A -> nat) :
   (\min^ (sval cnot0) _(c in C) h c <= h a)%nat.
-Proof.
-case: arg_minP.
-by destruct cnot0.
-move=> a0 a0C; exact.
-Qed.
+Proof. by case: arg_minnP; [case: cnot0|move=> a0 a0C; exact]. Qed.
 
 (* TODO: useless ? *)
 Lemma big_rmax_bigminn_helper (A : finType) n (g : nat -> R) :

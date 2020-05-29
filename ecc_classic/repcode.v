@@ -37,10 +37,10 @@ Lemma seq_block_inv A : forall r (l : seq A) k,
 Proof.
 elim=> [l r | r IH l [ | k H] ].
 - rewrite !mul0n => Hl.
-  exists l, nil; by rewrite cats0.
+  by exists l, nil; rewrite cats0.
 - rewrite muln1 => H.
   exists (take (r.+1) l), nil.
-  rewrite cats0 take_oversize; by [rewrite muln0 | rewrite H].
+  by rewrite cats0 take_oversize; [rewrite muln0 | rewrite H].
 - exists (take (r.+1) l), (drop (r.+1) l).
   rewrite cat_take_drop size_drop H size_take H ltn_Pmulr //.
   repeat (split => //).
@@ -210,7 +210,7 @@ Lemma min_dist_repcode (Hr : odd r.+1) : min_dist not_trivial_replcode = r.+1.
 Proof.
 rewrite /min_dist /= (_ : min_wH_cw _ = const_mx 1) ?wH_const_mx //.
 rewrite /min_wH_cw.
-case: arg_minP => /=.
+case: arg_minnP => /=.
   rewrite non_0_codeword_replcode (Rep.const_mx_in_code r 1) /= wH_eq0 /=.
   by apply/eqP => /matrixP/(_ 0 0); rewrite !mxE.
 move=> i Hi _.

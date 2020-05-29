@@ -812,15 +812,14 @@ Canonical R_choiceType := ChoiceType R Rstruct.R_choiceMixin.
 
 Module ROrder.
 
-Lemma minRE x y : min(x, y) = if (x <b= y)%R then x else y.
+Lemma minRE x y : min(x, y) = if (x <b y)%R then x else y.
 Proof.
-case: ifP => /leRP; by [move/Rmin_left | rewrite -ltRNge => /ltRW/Rmin_right].
+by case: ifP => /ltRP; [move/ltRW/Rmin_left|rewrite -leRNgt => /Rmin_right].
 Qed.
 
-Lemma maxRE x y : max(x, y) = if (y <b= x)%N then x else y.
+Lemma maxRE x y : max(x, y) = if (x <b y)%N then y else x.
 Proof.
-case: ifP => /leRP; first by move/Rmax_left.
-by rewrite -ltRNge => /ltRW/Rmax_right.
+by case: ifP => /ltRP; [move/ltRW/Rmax_right|rewrite -leRNgt => /Rmax_left].
 Qed.
 
 Lemma ltR_def x y : (x <b y)%R = (y != x) && (x <b= y)%R.
@@ -843,7 +842,7 @@ Definition orderMixin :=
 
 End ROrder.
 
-Canonical porderType := POrderType total_display R ROrder.orderMixin.
+Canonical porderType := POrderType ssrnum.ring_display R ROrder.orderMixin.
 Canonical latticeType := LatticeType R ROrder.orderMixin.
 Canonical distrLatticeType := DistrLatticeType R ROrder.orderMixin.
 Canonical orderType := OrderType R ROrder.orderMixin.

@@ -1149,15 +1149,20 @@ Module necset_semiCompSemiLattType.
 Section def.
 Local Open Scope classical_set_scope.
 Variable (A : convType).
+
 Definition pre_op (X : neset (necset A)) : {convex_set A} :=
   CSet.Pack (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne)).
+
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
+
 Definition lub_necset (X : neset (necset A)) : necset A :=
   NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne))
                             (NESet.Mixin (pre_op_neq0 X))).
+
 Lemma lub_necset1 x : lub_necset [set x]%:ne = x.
-Proof. by apply necset_ext => /=; rewrite bigcup1 hull_cset. Qed.
+Proof. by apply necset_ext => /=; rewrite bigcup_set1 hull_cset. Qed.
+
 Lemma lub_necset_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
   lub_necset (bignesetU S F) = lub_necset (lub_necset @` (F @` S))%:ne.
 Proof.
@@ -1177,11 +1182,15 @@ apply hull_eqEsubset => a.
   exists x0 => //; exists i => //.
   by rewrite Fiu.
 Qed.
+
 Definition mixin :=
   SemiCompleteSemiLattice.Mixin lub_necset1 lub_necset_bigsetU.
+
 Definition class := SemiCompleteSemiLattice.Class mixin.
+
 End def.
 End necset_semiCompSemiLattType.
+
 Canonical necset_semiCompSemiLattType A :=
   SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.class A).
 

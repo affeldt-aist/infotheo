@@ -331,13 +331,13 @@ have syndrome_not_0 : syndrome (Hamming.PCM m) y != 0.
   by rewrite /hamming_err syndrome_is_0 nat_of_rV_0 addr0 dHE subrr wH0.
 move=> dHy.
 suff : dH y x != O.
-  move: dHy; rewrite leq_eqVlt => /orP[/eqP //|]; by rewrite ltnS leqn0 => ->.
+  by move: dHy; rewrite leq_eqVlt => /orP[/eqP //|]; rewrite ltnS leqn0 => ->.
 apply/negP => abs.
 have : y = x by move: abs; rewrite dHE wH_eq0 subr_eq0 => /eqP.
-rewrite /x; case: arg_minP => [|/=]; first by case: C_not_empty.
+rewrite /x; case: arg_minnP => [|/=]; first by case: C_not_empty.
 move=> y' Hy' _ yy'; rewrite -{}yy' in Hy'.
 move/negP : syndrome_not_0; apply.
-rewrite -mem_kernel_syndrome0; by rewrite inE in Hy'.
+by rewrite -mem_kernel_syndrome0; rewrite inE in Hy'.
 Qed.
 
 Lemma hamming_repair_img : oimg hamming_repair \subset Hamming.code m.
@@ -380,14 +380,14 @@ case Hi : (0 < wH i^T).
   exists (Ordinal H0) => //.
   apply/trmx_inj.
   rewrite col_matrix /= trmxK -{1}(nat_of_rVK i^T) subn1 prednK // lt0n nat_of_rV_eq0.
-  apply/eqP => abs; by rewrite abs lt0n wH0 eqxx in Hi.
+  by apply/eqP => abs; rewrite abs lt0n wH0 eqxx in Hi.
 apply/esym/negbTE; move/negbT : Hi; apply contra.
 case/imsetP => j Hj ->.
 case HwH : (wH (col j (Hamming.PCM m))^T); last by [].
 exfalso.
 move/eqP: HwH.
 rewrite col_matrix wH_eq0 trmxK => /eqP.
-apply rV_of_nat_neq0 => //; by apply Hamming.len_two_m.
+by apply rV_of_nat_neq0 => //; apply Hamming.len_two_m.
 Qed.
 
 Lemma col_PCM_inj : injective (fun i => col i (Hamming.PCM m)).
@@ -421,7 +421,7 @@ case HwH : (wH i^T == _).
   rewrite !mxE /=.
   move/setP/(_ j): Hx.
   rewrite in_set1 in_set tnth_mktuple mxE => <-.
-  rewrite F2_eq1; by case: F2P.
+  by rewrite F2_eq1; case: F2P.
 apply/negbTE; move/negbT: HwH; apply contra.
 case/imsetP => x Hx ->.
 by apply/eqP/wH_col_1.
@@ -431,7 +431,7 @@ Lemma cols_1_inj : injective (fun i => col i 1 : 'cV['F_2]_m).
 Proof.
 move=> i j /= /matrixP/(_ j 0).
 rewrite !mxE eqxx /=.
-case Hji : (j == i) => // _. by apply/esym/eqP.
+by case Hji : (j == i) => // _; apply/esym/eqP.
 Qed.
 
 Definition non_unit_cols := [set c : 'cV['F_2]_m | wH c^T > 1].
@@ -443,12 +443,12 @@ Proof.
 rewrite /non_unit_cols /unit_cols.
 transitivity #|[set c : 'cV['F_2]_m | wH c^T >= 1%nat]|.
   apply eq_card=> c; by rewrite !in_set orbC eq_sym -leq_eqVlt.
-rewrite cols_PCM card_imset ?card_ord //; exact: col_PCM_inj.
+by rewrite cols_PCM card_imset ?card_ord //; exact: col_PCM_inj.
 Qed.
 
 Lemma card_unit_cols : #|unit_cols| = m.
 Proof.
-rewrite /unit_cols cols_1 card_imset; by [apply card_ord | apply cols_1_inj].
+by rewrite /unit_cols cols_1 card_imset; [apply card_ord | apply cols_1_inj].
 Qed.
 
 Lemma card_non_unit : #|non_unit_cols| = (n - m)%nat.
@@ -475,11 +475,11 @@ have Hin : col i 1 \in image (fun j => col j (Hamming.PCM m)) 'I_n.
     rewrite -cols_PCM inE.
     have : col i 1 \in [set c : 'cV['F_2]_m | wH c^T == 1%nat].
       rewrite cols_1.
-      apply/imsetP; by exists i.
+      by apply/imsetP; exists i.
     by rewrite inE => /eqP ->.
   case/imsetP : Hi => j Hj Hj'.
-  exists j => //; by rewrite mem_enum.
-exists (iinv Hin); by apply (f_iinv Hin).
+  by exists j => //; rewrite mem_enum.
+by exists (iinv Hin); apply (f_iinv Hin).
 Defined.
 
 Definition ord_split (i : 'I_n) : 'I_(n - m + m) :=
@@ -509,7 +509,7 @@ have Hcols x : x \in non_unit_cols -> x \in [set col i (Hamming.PCM m) | i : 'I_
 case Hc : (c \in non_unit_cols).
   apply/imsetP.
   case/imsetP: (Hcols _ Hc) => x Hx Hx'.
-  exists x => //; by rewrite inE -Hx'.
+  by exists x => //; rewrite inE -Hx'.
 apply/negbTE.
 move/negbT: Hc; apply contra.
 case/imsetP => x Hx Hx'.
@@ -555,7 +555,7 @@ have Hij : i' = j'.
   apply cols_1_inj.
   by rewrite -(proj2_sig (ids1 i')) -(proj2_sig (ids1 j')) Htmp.
 rewrite Hij -Hj' /= in Hi'.
-by apply val_inj.
+exact: val_inj.
 Qed.
 
 Definition systematic : 'S_n := perm perm_ids_inj.
@@ -576,7 +576,7 @@ case/boolP : (j < n - m) => Hcond.
   rewrite castmxE /=.
   rewrite /PCM 2!cast_ord_id.
   rewrite esymK [in X in _ = X]mxE.
-  congr (Hamming.PCM m _ (systematic _)); by apply val_inj.
+  by congr (Hamming.PCM m _ (systematic _)); exact: val_inj.
 rewrite [in X in _ = X]mxE.
 move: (splitP (cast_ord (esym (subnK (Hamming.dim_len m'))) j)) => [k Hk|k Hk].
   have jk : j = k :> nat by [].
@@ -901,9 +901,9 @@ move=> /= y c Hy c'.
 rewrite !(dH_sym _ y).
 move: (@hamming_MD_alt r' y c).
 move=> ->.
-- case: arg_minP.
+- case: arg_minnP.
     by destruct C_not_empty.
-  move => /= i Hi; by apply.
+  by move => /= i Hi; apply.
 - by rewrite -Hy /Decoder.repair /= /hamming_repair ffunE.
 Defined.
 
