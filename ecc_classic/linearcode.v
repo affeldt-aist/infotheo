@@ -244,7 +244,7 @@ Proof.
 apply: sigW.
 case: C_not_trivial => g /andP[gC g0].
 have := erefl [arg min_(g' < g | (g' \in C) && (g' != 0)) (size (rVpoly g'))].
-case: arg_minP => /=; [by apply/andP | move=> g'].
+case: arg_minnP => /=; [by apply/andP | move=> g'].
 case/andP=> g'C g'0 g_min _.
 exists g'.
 rewrite /non0_codeword_lowest_deg g'C g'0 /= /codeword_lowest_deg.
@@ -293,36 +293,34 @@ Proof. by rewrite /non_0_cw; case/andP: (xchooseP C_not_trivial). Qed.
 
 Lemma wH_non_0_cw : wH non_0_cw != O.
 Proof.
-rewrite /non_0_cw; case/andP: (xchooseP C_not_trivial); by rewrite wH_eq0.
+by rewrite /non_0_cw; case/andP: (xchooseP C_not_trivial); rewrite wH_eq0.
 Qed.
 
-Definition min_wH_cw := arg_min non_0_cw [pred cw | (cw \in C) && (wH cw != O)] (@wH F n).
-
-(*Definition min_wH_cw := arg_min non_0_cw [pred cw in C | wH cw != O] (@wH F n).*)
+Definition min_wH_cw :=
+  arg_min non_0_cw [pred cw | (cw \in C) && (wH cw != O)] (@wH F n).
 
 Definition min_dist := wH min_wH_cw.
 
 Lemma min_dist_is_min c : c \in C -> c != 0 -> min_dist <= wH c.
 Proof.
-move=> cC c0.
-rewrite /min_dist /min_wH_cw.
-case: arg_minP => /= [|c1 /andP [] Hc1 wHc1].
+move=> cC c0; rewrite /min_dist /min_wH_cw.
+case: arg_minnP => /= [|c1 /andP [] Hc1 wHc1].
   by rewrite non_0_cw_mem wH_non_0_cw.
-apply; by rewrite cC /= wH_eq0.
+by apply; rewrite cC /= wH_eq0.
 Qed.
 
 Lemma min_dist_achieved : exists c, c \in C /\ c <> 0 /\ wH c = min_dist.
 Proof.
 exists min_wH_cw; split.
   rewrite /min_wH_cw /=.
-  case: arg_minP => /=.
+  case: arg_minnP => /=.
     by rewrite non_0_cw_mem wH_non_0_cw.
   by move=> /= c /andP[].
 split; last reflexivity.
 rewrite /min_wH_cw /=.
-case: arg_minP => /=.
+case: arg_minnP => /=.
   by rewrite non_0_cw_mem wH_non_0_cw.
-move=> /= c /andP[_ /negP]; by rewrite wH_eq0 => /negP/eqP.
+by move=> /= c /andP[_ /negP]; rewrite wH_eq0 => /negP/eqP.
 Qed.
 
 Lemma min_dist_neq0 : min_dist <> O.
@@ -339,7 +337,7 @@ Lemma min_distP d :
 Proof.
 case=> H1 [y [yC [y0 yd]]].
 rewrite /min_dist /min_wH_cw.
-case: arg_minP => /=.
+case: arg_minnP => /=.
   by rewrite non_0_cw_mem wH_non_0_cw.
 move=> x /andP[xC x0] H.
 apply/eqP.
@@ -371,7 +369,7 @@ move=> even_d.
 rewrite /mdd_err_cor (_ : min_dist.-1./2 = min_dist./2 - 1)%N //.
 move Hd : min_dist => d.
 case: d Hd even_d => //= d -> /=.
-rewrite negbK uphalf_half => ->; by rewrite add1n subn1.
+by rewrite negbK uphalf_half => ->; rewrite add1n subn1.
 Qed.
 
 Definition sbound_f' k (H : k.-1 <= n) :=
@@ -379,17 +377,17 @@ Definition sbound_f' k (H : k.-1 <= n) :=
 
 Lemma sbound_f'Z k (H : k.-1 <= n) a y :
   sbound_f' H (a *: y) = a *: sbound_f' H y.
-Proof. apply/rowP => i; by rewrite !mxE. Qed.
+Proof. by apply/rowP => i; rewrite !mxE. Qed.
 
 Lemma sbound_f'D k (H : k.-1 <= n) y y' :
   sbound_f' H (y + y') = sbound_f' H y + sbound_f' H y'.
 Proof. by apply/rowP => i; rewrite !mxE. Qed.
 
 Lemma sbound_f'N k (H : k.-1 <= n) y : sbound_f' H (- y) = - sbound_f' H y.
-Proof. apply/rowP => i; by rewrite !mxE. Qed.
+Proof. by apply/rowP => i; rewrite !mxE. Qed.
 
 Lemma additive_sbound_f' k (H : k.-1 <= n) : additive (sbound_f' H).
-Proof. move=> x y; by rewrite sbound_f'D sbound_f'N. Qed.
+Proof. by move=> x y; rewrite sbound_f'D sbound_f'N. Qed.
 
 Definition sbound_f_linear k (H : k.-1 <= n) :
   {linear 'rV[F]_n -> 'rV[F]_k.-1} :=
@@ -439,9 +437,8 @@ have Kcw : wH cw <= n - k + 1.
     move/rowP => /= /(_ (Ordinal Hi)).
     rewrite !mxE /=.
     set x := widen_ord _ _.
-    suff -> : x = i.
-      by move/eqP.
-    by apply val_inj.
+    suff -> : x = i by move/eqP.
+    exact: val_inj.
   have X : forall i : 'I_n, ~~ (i < k.-1) -> (cw ord0 i != 0) <= 1.
     move=> i Hi.
     by case: (_ != _).
@@ -471,8 +468,7 @@ have Kcw : wH cw <= n - k + 1.
     move: dimCn.
     by rewrite prednK // not_trivial_dim.
   by rewrite addn1.
-apply: (leq_trans _ Kcw).
-by apply min_dist_is_min.
+exact/(leq_trans _ Kcw)/min_dist_is_min.
 Qed.
 
 Definition maximum_distance_separable := (min_dist == n - \dim C + 1)%N.
@@ -502,7 +498,8 @@ have gk : size (rVpoly g) <= size (rVpoly k).
   - apply: contra j0.
     by rewrite /k subr_eq addrC -subr_eq subrr eq_sym.
   - rewrite /k; move: abs; apply contra; by rewrite subr_eq0.
-suff kg : size (rVpoly k) < size (rVpoly g) by move: (leq_ltn_trans gk kg); rewrite ltnn.
+suff kg : size (rVpoly k) < size (rVpoly g).
+  by move: (leq_ltn_trans gk kg); rewrite ltnn.
 rewrite /k linearB /=; case/boolP: (1 < size (rVpoly g)) => size_1g.
 - apply: size_sub => //=; last by apply lead_coef_F2.
   apply/eqP; apply: contra g0; by rewrite rVpoly0.
@@ -510,7 +507,7 @@ rewrite /k linearB /=; case/boolP: (1 < size (rVpoly g)) => size_1g.
   (* this means that g is constant *)
   have sz_g1 : size (rVpoly g) = 1%N.
     have : size (rVpoly g) != O by rewrite size_poly_eq0 rVpoly0.
-    case: (size _) size_1g => //; by case.
+    by case: (size _) size_1g => //; case.
   rewrite (@size1_polyC_F2 _ sz_g1).
   rewrite gj in sz_g1.
   by rewrite (@size1_polyC_F2 _ sz_g1) size_polyC subrr size_poly0.
@@ -549,24 +546,26 @@ case/boolP : (odd (min_dist C_not_trivial)) => [odd_d | even_d].
   have : min_dist C_not_trivial <= (min_dist C_not_trivial)./2.*2.
     move: abs.
     rewrite eq_sym => /(min_dist_prop C_not_trivial)/leq_trans; apply => //.
-    move/subsetP : f_img; apply.
-    rewrite inE; apply/existsP; exists y; by apply/eqP.
+      move/subsetP : f_img; apply.
+      by rewrite inE; apply/existsP; exists y; apply/eqP.
     by rewrite (@min_dist_double y).
   by rewrite -{1}(odd_double_half (min_dist C_not_trivial)) odd_d ltnNge leqnn.
 - rewrite (mdd_evenE even_d) in enc_m_v.
   apply/eqP/negPn/negP => abs.
   have {}abs : m0 != x by apply: contra abs; rewrite Hm0 => /eqP ->.
   have : (min_dist C_not_trivial)./2 <= (min_dist C_not_trivial)./2 - 1.
-    move: (odd_double_half (min_dist C_not_trivial)); rewrite -leq_double (negbTE even_d) /= add0n => ->.
+    move: (odd_double_half (min_dist C_not_trivial)).
+    rewrite -leq_double (negbTE even_d) /= add0n => ->.
     move: abs.
     rewrite eq_sym.
     move/(min_dist_prop C_not_trivial)/leq_trans; apply => //.
-    move/subsetP: f_img; apply.
-    rewrite inE; apply/existsP; exists y; by apply/eqP.
+      move/subsetP: f_img; apply.
+      by rewrite inE; apply/existsP; exists y; apply/eqP.
     by rewrite (@min_dist_double y).
   apply/negP.
   rewrite -ltnNge subn1 prednK // half_gt0 ltnNge; apply: contra even_d.
-  rewrite leq_eqVlt => /orP[/eqP->//|]; by rewrite ltnS leqn0 => /eqP/min_dist_neq0.
+  rewrite leq_eqVlt => /orP[/eqP->//|].
+  by rewrite ltnS leqn0 => /eqP/min_dist_neq0.
 Qed.
 
 (* see for example [F.J. MacWilliams and N.J.A. Sloane, The

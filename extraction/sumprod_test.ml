@@ -1,6 +1,12 @@
 (* #load "sumprod.cmo" *)
 open Sumprod;;
 
+let rabst = RbaseSymbolsImpl.coq_Rabst
+let rrepr = RbaseSymbolsImpl.coq_Rrepr
+
+let to_r2 (x,y) = rabst x, rabst y
+let of_r2 (x,y) = rrepr x, rrepr y
+
 type ('a,'b) sum = Inl of 'a | Inr of 'b;;
 let rec iota m n = if m >= n then [] else m :: iota (succ m) n;;
 
@@ -17,7 +23,7 @@ end;;
 
 module BT (C : Code) = struct
   open C
-    
+
   let select_children s i =
     match i with
     | Inl i ->
@@ -42,9 +48,10 @@ module BT (C : Code) = struct
      children = chrn; up = (); down = ()}
 
   let decode _W =
+    let _W i = to_r2 (_W i) in
     let tree = build_tree_rec _W [] (Inr (List.hd enum_n)) in
     let computed_tree = sumprod Kv tree in
-    estimation Kv computed_tree
+    List.map (fun (a, x) -> a, of_r2 x) (estimation Kv computed_tree)
 end;;
 
 (* A practical example, based on a simpler variant of the fig. 6 of
@@ -149,7 +156,7 @@ end;;
 
 module BTC' = BT(C');;
 
-let f0 : three ord -> r2 = function
+let f0 : three ord -> float * float = function
   | OZ -> (0.2, 0.8)
   | OS OZ -> (0.2, 0.8)
   | OS (OS OZ) -> (0.8, 0.2)

@@ -1,7 +1,8 @@
 (* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
+From mathcomp Require Import all_ssreflect.
 Require Import Reals.
+From mathcomp Require Rstruct.
 
 (*****************************************************************************)
 (*               SSReflect-like lemmas for Coq Reals                         *)
@@ -59,6 +60,8 @@ Reserved Notation "a '>b' b" (at level 70).
 Reserved Notation "a '<b=' b '<b=' c" (at level 70, b at next level).
 Reserved Notation "a '<b' b '<b' c" (at level 70, b at next level).
 Reserved Notation "n %:R" (at level 2, left associativity, format "n %:R").
+Reserved Notation "'min(' x ',' y ')'" (format "'min(' x ','  y ')'").
+Reserved Notation "'max(' x ',' y ')'" (format "'max(' x ','  y ')'").
 
 Local Open Scope R_scope.
 
@@ -802,18 +805,60 @@ Definition sqR_norm x : `| x | ^ 2 = x ^ 2 := pow2_abs x.
 
 Definition distRC x y : `|x - y| = `|y - x| := Rabs_minus_sym x y.
 
+Notation "'min(' x ',' y ')'" := (Rmin x y) : R_scope.
+Notation "'max(' x ',' y ')'" := (Rmax x y) : R_scope.
+
+Canonical R_choiceType := ChoiceType R Rstruct.R_choiceMixin.
+
+Module ROrder.
+
+Lemma minRE x y : min(x, y) = if (x <b y)%R then x else y.
+Proof.
+by case: ifP => /ltRP; [move/ltRW/Rmin_left|rewrite -leRNgt => /Rmin_right].
+Qed.
+
+Lemma maxRE x y : max(x, y) = if (x <b y)%N then y else x.
+Proof.
+by case: ifP => /ltRP; [move/ltRW/Rmax_right|rewrite -leRNgt => /Rmax_left].
+Qed.
+
+Lemma ltR_def x y : (x <b y)%R = (y != x) && (x <b= y)%R.
+Proof. by rewrite ltR_neqAle' eq_sym. Qed.
+
+Lemma anti_leR : antisymmetric (fun x y => x <b= y).
+Proof. by move=> x y /andP[/leRP xy /leRP yx]; rewrite eqR_le. Qed.
+
+Lemma leR_trans : transitive (fun x y => x <b= y).
+Proof. by move=> z x y => /leRP xz /leRP zy; apply/leRP/(leR_trans xz). Qed.
+
+Lemma leR_total : forall x y, (x <b= y) || (y <b= x).
+Proof.
+by move => x y; case: (Rle_or_lt x y) => xy; apply/orP;
+  [left; exact/leRP|right; exact/leRP/ltRW].
+Qed.
+
+Definition orderMixin :=
+  LeOrderMixin ltR_def minRE maxRE anti_leR leR_trans leR_total.
+
+End ROrder.
+
+Canonical porderType := POrderType ssrnum.ring_display R ROrder.orderMixin.
+Canonical latticeType := LatticeType R ROrder.orderMixin.
+Canonical distrLatticeType := DistrLatticeType R ROrder.orderMixin.
+Canonical orderType := OrderType R ROrder.orderMixin.
+
 Definition maxRA : associative Rmax := Rmax_assoc.
 Definition maxRC : commutative Rmax := Rmax_comm.
 
 Lemma maxRR : idempotent Rmax.
 Proof. move=> x; rewrite Rmax_left //; exact/leRR. Qed.
 
-Definition leR_maxl m n : m <= Rmax m n := Rmax_l m n.
-Definition leR_maxr m n : n <= Rmax m n := Rmax_r m n.
-Definition geR_minl m n : Rmin m n <= m := Rmin_l m n.
-Definition geR_minr m n : Rmin m n <= n := Rmin_r m n.
+Definition leR_maxl m n : m <= max(m, n) := Rmax_l m n.
+Definition leR_maxr m n : n <= max(m, n) := Rmax_r m n.
+Definition geR_minl m n : min(m, n) <= m := Rmin_l m n.
+Definition geR_minr m n : min(m, n) <= n := Rmin_r m n.
 
-Lemma leR_max x y z : (Rmax y z <= x) <-> (y <= x) /\ (z <= x).
+Lemma leR_max x y z : max(y, z) <= x <-> (y <= x) /\ (z <= x).
 Proof.
 split => [| [yx zx] ].
   move/leRP; rewrite leR_eqVlt' => /orP[/eqP <-|/ltRP/Rmax_Rlt].
@@ -822,7 +867,7 @@ split => [| [yx zx] ].
 rewrite -(Rmax_right _ _ yx); exact: Rle_max_compat_l.
 Qed.
 
-Lemma leR_max' x y z : (Rmax y z <b= x) = (y <b= x) && (z <b= x).
+Lemma leR_max' x y z : (max(y, z) <b= x) = (y <b= x) && (z <b= x).
 Proof.
 apply/idP/idP => [/leRP/leR_max[] /leRP -> /leRP -> //|].
 case/andP=> /leRP ? /leRP ?; exact/leRP/leR_max.

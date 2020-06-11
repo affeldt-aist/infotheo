@@ -1090,37 +1090,16 @@ Lemma beta_def n0 m0 (d : 'rV_n) :
   beta (rW n0) [seq (alpha' m1 n0 d0, alpha' m1 n0 d1) | m1 in 'F n0 :\ m0]
   = (beta' n0 m0 d0, beta' n0 m0 d1).
 Proof.
-(*move=> d0 d1.
-rewrite /beta.
-rewrite /beta'.
-rewrite /ldpc.beta.
-rewrite -big_filter.
-rewrite -[in X in _ = (_, X)]big_filter.
-rewrite foldlE /=.
-rewrite big_cons /=.
-rewrite /d0 /d1 /row_set !mxE !eqxx.
-rewrite big_map.
-rewrite big_enum /=.
-rewrite -big_filter.
-have [e He [_ _ _]] := big_enumP _.
-elim: e He.
-  move=> He.
-  by rewrite !big_nil.
-move=> h t ih He.
-rewrite !big_cons /=.*)
 rewrite /rW /beta' /alpha' /ldpc.beta /=.
 rewrite /image_mem /enum_mem.
 rewrite -big_filter.
 rewrite -[in X in _ = (_, X)]big_filter.
-rewrite !filter_index_enum.
+have [e He [ue Pe perme]] := big_enumP _.
 rewrite {3 5}/row_set !mxE !eqxx /=.
 move: (W 0 (vb ``_ n0)) (W 1 (vb ``_ n0)).
-elim: (enum (mem _)) => [|a l IH] p0 p1.
-  rewrite !big_nil /=.
-  by rewrite !mulR1.
-rewrite !big_cons /=.
-rewrite IH.
-by rewrite !mulRA.
+elim: e {He ue Pe perme} => [|a l IH] p0 p1.
+  by rewrite /= !big_nil !mulR1.
+by rewrite /= !big_cons /= IH // !mulRA.
 Qed.
 
 Local Open Scope R_scope.
@@ -1258,6 +1237,7 @@ rewrite [in X in _ = (_, X)](eq_bigr (fun t : 'rV_n =>
   move=> i _; by rewrite (checksubsum_D1 _ Hn0) eq_sym.
 rewrite !summary_powersetE !summary_foldE /summary_fold /=.
 rewrite /image_mem /enum_mem.
+
 rewrite !filter_index_enum.
 set f := 'V m0 :\ n0.
 rewrite {2 3 5 6}(set_mem f).

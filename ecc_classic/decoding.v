@@ -85,10 +85,10 @@ Proof.
 split => [H /= y x yx x' x'C | H /= y x yx].
 - move: {H}(H _ _ yx) => H.
   rewrite dH_sym H dH_sym.
-  case: arg_minP; first by case: c_not_empty.
+  case: arg_minnP; first by case: c_not_empty.
   move=> /= i ic ij; by rewrite dH_sym (dH_sym x') ij.
 - move: {H}(H _ _ yx) => H.
-  case: arg_minP; first by case: c_not_empty.
+  case: arg_minnP; first by case: c_not_empty.
   move=> /= i Hi /(_ x) Ki.
   apply/eqP; rewrite eqn_leq; apply/andP; split.
   - by rewrite dH_sym (dH_sym y) H.

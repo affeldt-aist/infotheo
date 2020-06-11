@@ -18,7 +18,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Import GRing.Theory.
+Import Order.TTheory GRing.Theory Num.Def Num.Theory.
 Local Open Scope ring_scope.
 
 Section SumCoef.
@@ -54,8 +54,6 @@ End DegreeDistribution.
 
 Definition degdistp := DegreeDistribution.p.
 Coercion degdistp : DegreeDistribution.Lambda >-> poly_of.
-
-Import Num.Theory.
 
 Lemma sum_coef_pos (K : numFieldType) (p : DegreeDistribution.Lambda K) : p.[1] > 0.
 Proof.
@@ -482,8 +480,8 @@ case/boolP : (size p > 0)%nat => [Hp|].
   case/boolP : (p`_(size p).-1 > 0) => [Hp'|].
     move: Hp.
     rewrite -(ltr0n K) => /(divr_gt0 Hp') H1 /eqP H2.
-    by rewrite H2 ltrr in H1.
-  rewrite ltr_def p0 andbT negbK lead_coef_eq0 => /eqP ->.
+    by rewrite H2 ltxx in H1.
+  rewrite lt_def p0 andbT negbK lead_coef_eq0 => /eqP ->.
   by rewrite size_poly0.
 by rewrite lt0n negbK.
 Qed.
@@ -513,7 +511,7 @@ Definition norm_deg (p : DegreeDistribution.Lambda K) :
 apply (@NormalizedDegreeDistribution.mkL _ (norm p)).
   move=> i.
   rewrite /norm coefZ mulr_ge0 //; last by destruct p.
-  by rewrite invr_ge0 ltrW // sum_coef_pos.
+  by rewrite invr_ge0 ltW // sum_coef_pos.
 by rewrite /norm hornerZ mulVf // lt0r_neq0 // sum_coef_pos.
 Defined.
 
@@ -578,7 +576,7 @@ move Hs : l.+1.*2 => [ // | [|s]].
 move=> t.
 rewrite (tree_node_children t).
 case Hch: (tree_children t).
-  by apply lerr.
+  by apply lexx.
 rewrite /tree_dist_children.
 apply mulr_ge0.
   by apply LR_pos.
@@ -2753,19 +2751,19 @@ Proof.
 move=> Hr1p Hr2p HGp HF HG Hr1.
 have HGneq0 : forall i, i \in P -> r2 <= F i / G i -> G i != 0.
   move=> i Hi Hir2.
-  have : 0 < F i / G i by apply (ltr_le_trans Hr2p).
+  have : 0 < F i / G i by apply (Order.POrderTheory.lt_le_trans Hr2p).
   move: (HF i Hi) (HG i Hi).
   rewrite le0r.
   move/orP => [|] HFi HGi.
-    by rewrite (eqP HFi) mul0r ltrr.
+    by rewrite (eqP HFi) mul0r ltxx.
   rewrite pmulr_rgt0 // => /lt0r_neq0 HGi1.
   by rewrite -(invrK (G i)) invr_neq0.
-apply (@ler_trans K ((\sum_(i in P | r2 <= F i / G i) G i / \sum_(i in P) G i) * (\sum_(i in P | r2 <= F i / G i) F i / \sum_(i in P | r2 <= F i / G i) G i))).
-  apply ler_pmul; try by assumption || apply ltrW.
+apply (@Order.POrderTheory.le_trans _ K ((\sum_(i in P | r2 <= F i / G i) G i / \sum_(i in P) G i) * (\sum_(i in P | r2 <= F i / G i) F i / \sum_(i in P | r2 <= F i / G i) G i))).
+  apply ler_pmul; try by assumption || apply ltW.
     rewrite -big_distrl -(mulr1 r1) -(mulfV (lt0r_neq0 HGp)) mulrA /=.
     apply ler_pmul => //.
-      by rewrite mulr_ge0 // ltrW.
-    by rewrite invr_ge0 ltrW.
+      by rewrite mulr_ge0 // ltW.
+    by rewrite invr_ge0 ltW.
   rewrite -big_distrl /=.
   rewrite (_ : \sum_(i in P | r2 <= F i / G i) F i =
           \sum_(i in P | r2 <= F i / G i) (F i / G i) * G i); first last.
@@ -2773,29 +2771,29 @@ apply (@ler_trans K ((\sum_(i in P | r2 <= F i / G i) G i / \sum_(i in P) G i) *
     rewrite -mulrA (mulrC _ (G i)) mulfV ?mulr1 //.
     by apply HGneq0.
   have HGp' : \sum_(i in P | r2 <= F i / G i) G i > 0.
-    apply (@ltr_le_trans K (r1 * (\sum_(i in P) G i))) => //.
+    apply (@Order.POrderTheory.lt_le_trans _ K (r1 * (\sum_(i in P) G i))) => //.
     by apply mulr_gt0.
   rewrite -{1}(mulr1 r2) -(mulfV (lt0r_neq0 HGp')).
   rewrite mulrA big_distrr /=.
   apply ler_pmul => //.
       apply sumr_ge0 => i /andP [Hi Hir2].
-      rewrite mulr_ge0 //; try by apply ltrW.
+      rewrite mulr_ge0 //; try by apply ltW.
       by apply HG.
-    by rewrite ltrW // invr_gt0.
+    by rewrite ltW // invr_gt0.
   apply ler_sum => i /andP [Hi Hir2].
-  apply ler_pmul => //; try by apply ltrW.
+  apply ler_pmul => //; try by apply ltW.
   by apply HG.
-apply (@ler_trans K (\sum_(i in P | r2 <= F i / G i) F i / \sum_(i in P) G i)).
+apply (@Order.POrderTheory.le_trans _ K (\sum_(i in P | r2 <= F i / G i) F i / \sum_(i in P) G i)).
   rewrite -!big_distrl /= mulrC -mulrA (mulrA _ _ (\sum_(i in P) G i)^-1).
   rewrite mulVf ?mul1r //.
   apply lt0r_neq0.
-  eapply ltr_le_trans; try apply Hr1.
+  apply: @Order.POrderTheory.lt_le_trans; try apply Hr1.
   by apply mulr_gt0.
 rewrite -big_distrl /=.
 apply ler_pmul => //.
     apply sumr_ge0 => i /andP [Hi Hir2].
     by apply HF.
-  by rewrite ltrW // invr_gt0.
+  by rewrite ltW // invr_gt0.
 rewrite [\sum_(i in P) F i](bigID (fun i => r2 <= F i / G i)) /=.
 apply ler_paddr => //.
 apply sumr_ge0 => i /andP [Hi Hir2].
@@ -2988,7 +2986,7 @@ Lemma weighted_count_it_ge0 i r k P c c' : 0 < r -> 0 <= weighted_count P
   [seq step_dist_it c r (i :: tval y) | y in dest_ports c' k].
 Proof.
 rewrite /weighted_count big_map => ?.
-apply sumr_ge0 => ? _; by rewrite step_dist_it_ge0 // ltrW.
+apply sumr_ge0 => ? _; by rewrite step_dist_it_ge0 // ltW.
 Qed.
 
 Lemma tree_like_empty_border c r :
@@ -3046,7 +3044,7 @@ rewrite [X in _ <= X](bigID (fun i : port * {set port} => i.2 \notin conodes c))
 apply ler_paddr; first by apply sumr_ge0 => i _; apply weighted_count_it_ge0.
 (* simplify rhs formula *)
 set F := BIG_F.
-apply (@ler_trans _
+apply (@Order.POrderTheory.le_trans _ _
   (\sum_(i in dest_port c | tree_like (step c (bnext c) i.1 i.2)) F i)).
   rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0; last first.
     by move=> ?; rewrite andbF.
@@ -3061,12 +3059,12 @@ apply (@ler_trans _
   move: (tree_like_step Htl Hhead (leq_trans Hmax Hlam') Hpc).
   rewrite /weighted_count 2!big_map big_enum_in -2!big_distrl /=.
   rewrite -2!big_distrr /= 2!mul1r big_mkcond big_enum_in -big_mkcondr /=.
-  rewrite -3!mulf_div (@mulfV _ r) ?gtr_eqF // mulfV; last first.
+  rewrite -3!mulf_div (@mulfV _ r) ?gt_eqF // mulfV; last first.
     by rewrite invr_neq0 // pnatr_eq0 -lt0n.
   rewrite mul1r /bnext eqb /= => ->.
-  by rewrite ler_pmul // ?ler_nat ?leq_subr // ?invr_ge0 ltrW // ltr0n.
+  by rewrite ler_pmul // ?ler_nat ?leq_subr // ?invr_ge0 ltW // ltr0n.
 (* prove this is equal to the original rhs *)
-rewrite {}/F ler_eqVlt.
+rewrite {}/F le_eqVlt.
 apply /orP /or_introl /eqP.
 (* remove impossible cases from sum *)
 rewrite (bigID (fun i => dest_dist c i.2 == 0)) /= big1; last first.
@@ -3105,10 +3103,10 @@ move: (free_step_coports_gt Hlam Hhead Hi Hd) => Hlam1.
 move/(_ Hk (connected_step Hpc) Htl' Hrd Hlam1).
 rewrite /weighted_count /step_dist_it eqb /= /(step_dist c r s i).
 rewrite (enum_step_border eqb Hi) -/r'.
-apply ler_trans.
+apply Order.POrderTheory.le_trans.
 rewrite /r2 /r1.
 apply ler_expn2r.
-  by rewrite nnegrE ltrW.
+  by rewrite nnegrE ltW.
   by rewrite nnegrE divr_ge0 // ler0n.
 rewrite ler_pmul // ?invr_ge0 ?ler0n //.
   rewrite ler_nat mulnS subnDA leq_sub2r // -subnDA leq_sub2l //.
@@ -3352,7 +3350,7 @@ Lemma weighted_count_switch_ge0 P lam rho c c' r i l :
     | y in dest_ports_seqs c' l] >= 0.
 Proof.
 rewrite /weighted_count big_map => Hr.
-by apply sumr_ge0 => ? _; rewrite switch_step_dist_it_ge0 // ltrW.
+by apply sumr_ge0 => ? _; rewrite switch_step_dist_it_ge0 // ltW.
 Qed.
 
 Lemma switch_step_dist_it_const lam rho c r y :
@@ -3575,7 +3573,7 @@ rewrite [X in _ <= X](bigID(fun i : _ .-tuple _ => tree_like (step_it c i))) /=.
 apply ler_paddr; first by apply sumr_ge0 => i _;apply weighted_count_switch_ge0.
 (* simplify rhs formula *)
 set F := BIG_F.
-apply (@ler_trans _ (\sum_(i in dest_ports c #|border (nodes c)|
+apply (@Order.POrderTheory.le_trans _ _ (\sum_(i in dest_ports c #|border (nodes c)|
                            | tree_like (step_it c i)) F i)).
   rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0; last first.
     by move=> ?; rewrite andbF.
@@ -3630,8 +3628,8 @@ apply (@ler_trans _ (\sum_(i in dest_ports c #|border (nodes c)|
     apply (leq_ltn_trans (leq_subr _ _)).
     apply (leq_ltn_trans Hclen).
     by rewrite (leq_ltn_trans _ Hlenmax) // leq_addr.
-  apply ler_trans.
-  apply (@ler_trans K (r0 ^+ len)).
+  apply Order.POrderTheory.le_trans.
+  apply (@Order.POrderTheory.le_trans _ K (r0 ^+ len)).
     rewrite /r1.
     apply ler_expn2r.
         by rewrite rpred_div // nnegrE ler0n.
@@ -3665,7 +3663,7 @@ apply (@ler_trans _ (\sum_(i in dest_ports c #|border (nodes c)|
     by rewrite ltr0n ltn_subRL addn0 mulnC.
   by rewrite invr_gt0 ltr0n.
 (* prove this is equal to the original rhs *)
-rewrite {}/F ler_eqVlt.
+rewrite {}/F le_eqVlt.
 apply /orP /or_introl /eqP.
 (* remove impossible cases from sum *)
 rewrite (bigID (fun i : _ .-tuple _  => (step_dist_it lam c r i).2 == 0))
@@ -3710,11 +3708,11 @@ have Hlen': (#|known_coports (switch (step_it c i))| <= len')%nat.
   rewrite /known_coports /ports part_nodes_step_it.
   by rewrite /len' mulnS (leq_trans Hlen) // leq_addr.
 have Hd': (step_dist_it lam c r i).2 > 0.
-  by rewrite ltr_def Hd step_dist_it_ge0 // ltrW.
+  by rewrite lt_def Hd step_dist_it_ge0 // ltW.
 have Hlenmaxrec: (len' * tree_max l.+1 < #|port|)%nat.
   by rewrite (leq_ltn_trans _ Hlenmax) // leq_addl.
 move/(_ Hlen' (border_nodes_step_it Hi) Hd' Hlenmaxrec) => /=.
-apply ler_trans.
+apply Order.POrderTheory.le_trans.
 apply ler_expn2r.
     by rewrite rpred_div // nnegrE ler0n.
   by rewrite rpred_div // nnegrE ler0n.
@@ -4394,7 +4392,7 @@ rewrite /start_dist.
 case: ifP => Hi0; try by rewrite eqxx.
 rewrite mulf_eq0 => Hi.
 move: (@max_card port (mem i)); rewrite -bin_gt0.
-rewrite -(ltr0n K) -invr_gt0 ltr_def => /andP [HC _].
+rewrite -(ltr0n K) -invr_gt0 lt_def => /andP [HC _].
 rewrite (negbTE HC) orbF in Hi.
 move/leq_sizeP/(_ #|i|.-1): (leq_maxl (size lam) (size rho)).
 rewrite -/maxdeg.
@@ -4482,7 +4480,7 @@ apply le_sum_all.
 - move=> i.
   case: ifP => // Hi _.
   rewrite (@weighted_count_switch_it maxdeg def_port maxdeg) //.
-  + rewrite ltr_def Hi /=; exact: start_dist_ge0.
+  + rewrite lt_def Hi /=; exact: start_dist_ge0.
   + by rewrite card_ports_nodes_start // Hi.
   + by rewrite /known_coports /ports /= big_set0 cards0.
 - move=> /= i.
@@ -4492,7 +4490,7 @@ apply le_sum_all.
   + by apply tree_like_start.
   + by rewrite card_ports_nodes_start // Hi.
   + by rewrite /known_coports /ports /= big_set0 cards0.
-  + rewrite ltr_def Hi /=; exact: start_dist_ge0.
+  + rewrite lt_def Hi /=; exact: start_dist_ge0.
 Qed.
 
 End tree_like_start.

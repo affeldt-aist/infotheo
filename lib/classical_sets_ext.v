@@ -20,14 +20,14 @@ rewrite propeqE; split => [H|H]; first by split => x Hx; apply H; [left|right].
 move=> x [] Hx; [exact: (proj1 H)|exact: (proj2 H)].
 Qed.
 
-Lemma set0P A : (A != set0) <-> (A !=set0).
+(*Lemma set0P A : (A != set0) <-> (A !=set0).
 Proof.
 split; [move=> A_neq0|by case=> t tA; apply/negP => /eqP A0; rewrite A0 in tA].
 apply/existsp_asboolP; rewrite -(negbK `[exists _, _]); apply/negP.
 rewrite existsbE => /forallp_asboolPn H.
 move/negP : A_neq0; apply; apply/eqP; rewrite funeqE => t; rewrite propeqE.
 move: (H t); by rewrite asboolE.
-Qed.
+Qed.*)
 
 Lemma eq_imagel (f g : T -> U) A :
   (forall a, A a -> f a = g a) -> f @` A = g @` A.
@@ -71,9 +71,9 @@ rewrite (_ : (forall a, Y (f a)) <-> (forall a, setT a -> Y (f a))) ?image_subse
 by firstorder.
 Qed.
 
-Lemma eq_bigcupl (P Q : set U) (X : U -> set T) :
+(*Lemma eq_bigcupl (P Q : set U) (X : U -> set T) :
   P = Q -> bigsetU P X = bigsetU Q X.
-Proof. by move ->. Qed.
+Proof. by move ->. Qed.*)
 
 Lemma eq_bigcupr (P : set U) (X Y : U -> set T) :
   X =1 Y -> bigsetU P X = bigsetU P Y.
@@ -83,31 +83,30 @@ Lemma eq_bigcup (P Q : set U) (X Y : U -> set T) :
   P = Q -> X =1 Y -> bigsetU P X = bigsetU Q Y.
 Proof. by move=> -> /funext ->. Qed.
 
-Lemma bigcup_set1 (P : set U) (f : U -> T) :
+Lemma bigcup_of_singleton (P : set U) (f : U -> T) :
   \bigcup_(x in P) [set f x] = f @` P.
 Proof.
-apply eqEsubset=> a.
-- by case=> i Pi ->; apply imageP.
-- by case=> i Pi <-; exists i.
+apply eqEsubset=> a;
+  by [case=> i Pi ->; apply imageP | case=> i Pi <-; exists i].
 Qed.
 
-Lemma bigcup0 (X : U -> set T) : bigsetU set0 X = set0.
+Lemma bigcup_set0 (X : U -> set T) : \bigcup_(i in set0) X i = set0.
 Proof. by apply eqEsubset => a // [] //. Qed.
 
-Lemma bigcup1 (i : U) (X : U -> set T) : bigsetU [set i] X = X i.
+Lemma bigcup_set1 (i : U) (X : U -> set T) : \bigcup_(i in [set i]) X i = X i.
+Proof. apply eqEsubset => a; by [case=> j -> | exists i]. Qed.
+
+Lemma bigcup_image V (P : set V) (f : V -> U) (X : U -> set T) :
+  \bigcup_(x in f @` P) X x = \bigcup_(x in P) X (f x).
 Proof.
-apply eqEsubset => a.
-- by case=> j ->.
-- by exists i.
+apply eqEsubset=> x.
+- by case=> j [] i pi <- Xfix; exists i.
+- by case=> i Pi Xfix; exists (f i); first by  exists i.
 Qed.
 
-Lemma bigcup_const (P : set U) (X : U -> set T) (i : U) :
-  P i -> (forall j, P j -> X j = X i) -> bigsetU P X = X i.
-Proof.
-move=> Pi H; apply eqEsubset=> a.
-- by case=> j /H ->.
-- by exists i.
-Qed.
+Lemma bigcup_of_const (P : set U) (X : U -> set T) (i : U) :
+  P i -> (forall j, P j -> X j = X i) -> \bigcup_(j in P) X j = X i.
+Proof. move=> Pi H; apply eqEsubset=> a; by [case=> j /H -> | exists i]. Qed.
 
 Lemma bigsubsetU (P : set U) (X : U -> set T) (Y : set T) :
   (forall i, P i -> X i `<=` Y) <-> bigsetU P X `<=` Y.
@@ -125,15 +124,11 @@ apply: (iffP idP).
 - by case=> i [] Si [] a Fia; apply/set0P; exists a, i.
 Qed.
 
-Lemma bigcup_image V (P : set V) (f : V -> U) (X : U -> set T) :
-  \bigcup_(x in f @` P) X x = \bigcup_(x in P) X (f x).
-Proof.
-apply eqEsubset=> x.
-- by case=> j [] i pi <- Xfix; exists i.
-- by case=> i Pi Xfix; exists (f i); first by  exists i.
-Qed.
-
 End PR_to_classical_sets.
 
 Notation imageA := (deprecate imageA image_comp _) (only parsing).
 Notation image_idfun := (deprecate image_idfun image_id _) (only parsing).
+(*Notation bigcup_set1 := (deprecate bigcup_set1 bigcup_of_singleton _) (only parsing).*)
+Notation bigcup0 := (deprecate bigcup0 bigcup_set0 _) (only parsing).
+Notation bigcup1 := (deprecate bigcup1 bigcup_set1 _) (only parsing).
+Notation bigcup_const := (deprecate bigcup_const bigcup_of_const _) (only parsing).

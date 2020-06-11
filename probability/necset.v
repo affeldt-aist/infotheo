@@ -309,7 +309,8 @@ apply eqEsubset => u; rewrite conv_pt_setE.
 Qed.
 Lemma conv1_set X (Y : neset L) : X :<| 1%:pr |>: Y = X.
 Proof.
-transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_set1 image_id.
+transitivity (\bigcup_(x in X) [set x]); last first.
+  by rewrite bigcup_of_singleton image_id.
 by congr bigsetU; apply funext => x /=; rewrite conv1_pt_set.
 Qed.
 Lemma conv0_set (X : neset L) Y : X :<| 0%:pr |>: Y = Y.
@@ -327,7 +328,8 @@ Fixpoint iter_conv_set (X : set L) (n : nat) :=
   end.
 Lemma iter0_conv_set (X : set L) : iter_conv_set X 0 = X.
 Proof. by []. Qed.
-Lemma iterS_conv_set (X : set L) (n : nat) : iter_conv_set X (S n) = oplus_conv_set X (iter_conv_set X n).
+Lemma iterS_conv_set (X : set L) (n : nat) :
+  iter_conv_set X (S n) = oplus_conv_set X (iter_conv_set X n).
 Proof. by []. Qed.
 Lemma probset_neq0 : probset != set0.
 Proof. by apply/set0P; exists 0%:pr. Qed.
@@ -1070,9 +1072,9 @@ Definition pre_pre_conv (X Y : necset A) (p : prob) : set A :=
 Lemma pre_pre_conv_convex X Y p : is_convex_set (pre_pre_conv X Y p).
 Proof.
 apply/asboolP => u v q.
-rewrite -in_setE; rewrite inE => /asboolP [] x0 [] y0 [] x0X [] y0Y ->.
-rewrite -in_setE; rewrite inE => /asboolP [] x1 [] y1 [] x1X [] y1Y ->.
-rewrite -in_setE convACA inE asboolE.
+rewrite -in_setE => /asboolP [] x0 [] y0 [] x0X [] y0Y ->.
+rewrite -in_setE => /asboolP [] x1 [] y1 [] x1X [] y1Y ->.
+rewrite -in_setE convACA asboolE.
 exists (x0 <|q|> x1), (y0 <|q|> y1).
 split; [exact: mem_convex_set | split; [exact: mem_convex_set | by []]].
 Qed.
@@ -1083,7 +1085,7 @@ Proof.
 case/set0P: (neset_neq0 X) => x; rewrite -in_setE => xX.
 case/set0P: (neset_neq0 Y) => y; rewrite -in_setE => yY.
 apply/set0P; exists (x <| p |> y); rewrite -in_setE.
-by rewrite inE asboolE; exists x, y.
+by rewrite asboolE; exists x, y.
 Qed.
 Definition conv p X Y : necset A := locked
   (NECSet.Pack (NECSet.Class (CSet.Class (pre_pre_conv_convex X Y p))
@@ -1116,11 +1118,11 @@ rewrite/conv; unlock; apply/necset_ext => /=; apply eqEsubset => a; case => x []
 - move=> y [] xX [].
   rewrite in_setE => -[] y0 [] z0 [] y0Y [] z0Z -> ->.
   exists (x <| [r_of p, q] |> y0), z0.
-  by rewrite inE asboolE /= convA; split; try exists x, y0.
+  by rewrite asboolE /= convA; split; try exists x, y0.
 - move=> z []; rewrite in_setE => -[] x0 [] y [] x0X [] yY -> [] zZ ->.
   exists x0, (y <| q |> z).
   split => //.
-  by rewrite inE asboolE /= -convA; split; try exists y, z.
+  by rewrite asboolE /= -convA; split; try exists y, z.
 Qed.
 Definition mixin : ConvexSpace.mixin_of _ :=
   @ConvexSpace.Mixin _ conv conv1 convmm convC convA.
@@ -1147,15 +1149,20 @@ Module necset_semiCompSemiLattType.
 Section def.
 Local Open Scope classical_set_scope.
 Variable (A : convType).
+
 Definition pre_op (X : neset (necset A)) : {convex_set A} :=
   CSet.Pack (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne)).
+
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
+
 Definition lub_necset (X : neset (necset A)) : necset A :=
   NECSet.Pack (NECSet.Class (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne))
                             (NESet.Mixin (pre_op_neq0 X))).
+
 Lemma lub_necset1 x : lub_necset [set x]%:ne = x.
-Proof. by apply necset_ext => /=; rewrite bigcup1 hull_cset. Qed.
+Proof. by apply necset_ext => /=; rewrite bigcup_set1 hull_cset. Qed.
+
 Lemma lub_necset_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
   lub_necset (bignesetU S F) = lub_necset (lub_necset @` (F @` S))%:ne.
 Proof.
@@ -1175,11 +1182,15 @@ apply hull_eqEsubset => a.
   exists x0 => //; exists i => //.
   by rewrite Fiu.
 Qed.
+
 Definition mixin :=
   SemiCompleteSemiLattice.Mixin lub_necset1 lub_necset_bigsetU.
+
 Definition class := SemiCompleteSemiLattice.Class mixin.
+
 End def.
 End necset_semiCompSemiLattType.
+
 Canonical necset_semiCompSemiLattType A :=
   SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.class A).
 
@@ -1316,12 +1327,11 @@ apply neset_ext => /=.
 apply eqEsubset=> i /=.
 - move/set0P: (set1_neq0 x)=> Hx.
   move/set0P: (set1_neq0 y)=> Hy.
-  move/(@hull_setU _ _ (necset1 x) (necset1 y) Hx Hy)=> [] a.
-  rewrite inE=> /asboolP ->.
-  case=> b; rewrite inE=> /asboolP ->.
+  move/(@hull_setU _ _ (necset1 x) (necset1 y) Hx Hy)=> [] a /asboolP ->.
+  case=> b /asboolP ->.
   case=> p ->.
   by eexists.
 - case=> p ? <-.
-  by apply/mem_hull_setU.
+  exact/mem_hull_setU.
 Qed.
 End technical_corollaries.

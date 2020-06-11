@@ -264,9 +264,7 @@ apply (@leR_trans (\sum_(i | i \in `JTS P W n epsilon)
 rewrite (_ : \sum_(_ | _) _ =
   INR #| `JTS P W n epsilon| *
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W) - epsilon))); last first.
-  rewrite big_const_seq /= (_ : count _ _ = #|`JTS P W n epsilon|); last first.
-    by rewrite -size_filter filter_index_enum -cardE.
-  by rewrite iter_addR -mulRA.
+  by rewrite big_const iter_addR mulRA.
 apply (@leR_trans (exp2 (INR n * (`H( P , W ) + epsilon)) *
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W ) - epsilon)))).
   do 2 apply leR_wpmul2r => //.

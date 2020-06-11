@@ -217,18 +217,6 @@ End chain_rule.
 
 Section chain_rule_generalization.
 
-(* TODO: move *)
-Lemma to_bivar_entropy (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) :
-  `H P = `H (Multivar.to_bivar P).
-Proof.
-rewrite /entropy /=; congr (- _).
-apply/esym.
-rewrite (eq_bigr (fun a => (Multivar.to_bivar P) (a.1, a.2) * log ((Multivar.to_bivar P) (a.1, a.2)))); last by case.
-rewrite -(pair_bigA _ (fun a1 a2 => (Multivar.to_bivar P) (a1, a2) * log ((Multivar.to_bivar P) (a1, a2)))) /=.
-rewrite -(big_rV_cons_behead _ xpredT xpredT) /=.
-by apply eq_bigr => a _; under eq_bigr do rewrite Multivar.to_bivarE.
-Qed.
-
 Local Open Scope ring_scope.
 
 (* TODO: move *)
@@ -320,13 +308,14 @@ rewrite inordK ?prednK ?lt0n // -1?ltnS // ltnS add1n prednK ?lt0n // => ik.
 by congr (v _ _); apply val_inj => /=; rewrite /unbump ik subn1.
 Qed.
 
-Lemma chain_rule_multivar (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1) :
-  i != ord0 ->
-  (`H P = `H (MargFDist.d P i) + CondEntropy.h (Multivar.to_bivar (MultivarPerm.d P (put_front_perm i))))%R.
+Lemma chain_rule_multivar (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1})
+  (i : 'I_n.+1) : i != ord0 ->
+  (`H P = `H (MargFDist.d P i) +
+    CondEntropy.h (Multivar.to_bivar (MultivarPerm.d P (put_front_perm i))))%R.
 Proof.
 move=> i0; rewrite MargFDistd_put_front // -Swap.fst.
 rewrite -{2}(Swap.dI (Multivar.to_bivar _)) -chain_rule JointEntropy.hC Swap.dI.
-by rewrite -to_bivar_entropy entropy_multivarperm.
+by rewrite entropy_to_bivar entropy_multivarperm.
 Qed.
 
 End chain_rule_generalization.

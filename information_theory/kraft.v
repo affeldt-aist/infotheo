@@ -1,6 +1,6 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
-From mathcomp Require Import choice fintype tuple bigop finset path ssralg.
+From mathcomp Require Import choice fintype order tuple bigop finset path ssralg.
 From mathcomp Require Import fingroup zmodp poly ssrnum.
 Require FunctionalExtensionality.
 Require Import ssr_ext.
@@ -506,7 +506,7 @@ move=> /= a b [] /eqP.
 rewrite eqseq_cat // => /andP[_ /eqP ab]; by apply val_inj.
 Qed.
 
-Import Num.Theory GRing.Theory.
+Import Order.TTheory GRing.Theory Num.Def Num.Theory.
 
 Section prefix_implies_kraft_cond.
 
@@ -583,7 +583,7 @@ rewrite (eq_bigr (fun i : 'I_n => #|suffixes C``_i|%:R)%R); last first.
   by apply/leq_lmax/nthP; exists i.
   by rewrite unitfE pnatr_eq0 -lt0n.
 (*\color{comment}{\framebox{the goal is now $\sum_{i < n} | \{ x | \prefix{c_i}{x} \} | \leq |T|^{\ell_{\mathrm{max}}}$}} *)
-apply (@ler_trans _ (#|\bigcup_(i < n) suffixes (C ``_ i)|%:R)%R).
+apply (@le_trans _ _ (#|\bigcup_(i < n) suffixes (C ``_ i)|%:R)%R).
   rewrite -sum1_card.
   rewrite partition_disjoint_bigcup /=.
     rewrite natr_sum ler_sum // => i _.
@@ -632,7 +632,7 @@ rewrite (eq_bigr (fun j : 'I__ => #|T|%:R ^-nth O l j))%R; last first.
     by rewrite (leq_trans (ltn_ord i)) // ltnW.
     by rewrite unitfE pnatr_eq0.
   by rewrite mulrA mulVr ?unitfE -?natrX ?pnatr_eq0 ?expn_eq0 // mul1r.
-rewrite ler_subr_addr natrX (ler_trans _ H') //.
+rewrite ler_subr_addr natrX (le_trans _ H') //.
 rewrite [X in (X <= _)%R](_ : _ = \sum_(k < j.+1) #|T|%:R^-nth O l k)%R; last first.
   by rewrite big_ord_recr /= card_ord.
 rewrite (@big_ord_widen _ _ _ j.+1 n (fun i => #|T|%:R ^- nth O l i))%R //.
@@ -753,7 +753,7 @@ have H2 : (r - 1 < (w j)%:R)%R. (* \color{comment}{\framebox{here we prove $r - 
     rewrite ltr_pdivr_mulr; [|by rewrite -natrX ltr0n expn_gt0 card_ord].
     by rewrite mul1r -natrX ltr_nat ltn_mod expn_gt0 card_ord.
   by rewrite {}wkE ltr_sub_addl addrC ltr_add2r.
-by rewrite ltr_subl_addl addrC ltrNge H1 in H2.
+by rewrite ltr_subl_addl addrC ltNge H1 in H2.
 Qed.
 End kraft_cond_implies_prefix.
 

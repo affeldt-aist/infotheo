@@ -157,6 +157,8 @@ Fixpoint estimation {k} (n : tn_tree' k R2 R2) :=
 
 End Algo.
 
+Require Import Extraction.
+
 Extract Inductive unit => "unit" [ "()" ].
 Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive seq => "list" [ "[]" "(::)" ].
@@ -165,6 +167,13 @@ Extract Inductive option => "option" ["Some" "None"].
 Extract Inlined Constant R => "float".
 Extract Inlined Constant R0 => "0.".
 Extract Inlined Constant R1 => "1.".
+Extract Constant RbaseSymbolsImpl.R => "float".
+Extract Constant RbaseSymbolsImpl.R0 => "0.".
+Extract Constant RbaseSymbolsImpl.R1 => "1.".
+Extract Constant ConstructiveCauchyReals.CReal => "float".
+Extract Constant ClassicalDedekindReals.DReal => "float".
+Extract Constant ClassicalDedekindReals.DRealQlim => "Obj.magic".
+Extract Constant ClassicalDedekindReals.DRealAbstr => "(fun x -> x)".
 Extract Constant Rmult => "( *.)".
 Extract Constant Rplus => "(+.)".
 Extract Constant Rinv  => "fun x -> 1. /. x".

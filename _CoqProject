@@ -18,7 +18,6 @@ lib/natbin.v
 lib/binary_entropy_function.v
 lib/num_occ.v
 lib/hamming.v
-lib/arg_rmax.v
 lib/poly_ext.v
 lib/euclid.v
 lib/dft.v
@@ -93,4 +92,5 @@ toy_examples/expected_value_variance.v
 toy_examples/expected_value_variance_ordn.v
 toy_examples/expected_value_variance_tuple.v
 toy_examples/conditional_entropy.v
+
 -R . infotheo

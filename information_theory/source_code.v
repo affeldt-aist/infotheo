@@ -17,6 +17,8 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 
+Declare Scope source_code_scope.
+
 Section scode_definition.
 Variables (A : finType) (B : Type) (k n : nat).
 

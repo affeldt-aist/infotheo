@@ -3,8 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
-Require Import ln_facts arg_rmax num_occ types jtypes divergence.
-Require Import conditional_divergence entropy channel_code channel.
+Require Import ln_facts num_occ types jtypes divergence conditional_divergence.
+Require Import entropy channel_code channel.
 
 (******************************************************************************)
 (*         Lemmas for the converse of the channel coding theorem              *)
@@ -259,32 +259,31 @@ Proof.
 move: (jtype_not_empty n Anot0 Bnot0) => H; exact (enum_val (Ordinal H)).
 Qed.
 
+Hypothesis HV0 : V0 \in \nu^{B}(P).
+
 Let exp_cdiv_bound := fun V => exp_cdiv P V W * success_factor_bound M V P.
 
+Let Vmax := [arg max_(V > V0) exp_cdiv_bound V]%O.
+
 Lemma typed_success_bound :
-  let Vmax := arg_rmax V0 [pred V | V \in \nu^{B}(P)] exp_cdiv_bound in
   scha(W, tc) <= n.+1%:R ^ (#|A| * #|B|) * exp_cdiv_bound Vmax.
 Proof.
-move=> Vmax.
 rewrite (typed_success W Mnot0 tc).
 apply (@leR_trans ( \sum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
   exp2 (- n%:R *  +| log #|M|%:R * / n%:R - `I(P, V) |))).
-  apply: ler_rsum => V HV.
+  apply: ler_rsum => V Vnu.
   rewrite -mulRA; apply leR_wpmul2l.
-    rewrite /exp_cdiv.
-    case : ifP => _ //; exact/leRR.
-  rewrite /success_factor mulRA; exact: success_factor_ub.
+    by rewrite /exp_cdiv; case : ifP => _ //; exact/leRR.
+  by rewrite /success_factor mulRA; exact: success_factor_ub.
 apply (@leR_trans (\sum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
                     exp2 (- n%:R * +| log #|M|%:R * / n%:R - `I(P, Vmax)|))).
   apply ler_rsum => V HV.
-  move: (@arg_rmax2 [finType of (P_ n (A, B))] V0 [pred V | V \in \nu^{B}(P) ]
-                    (fun V => exp_cdiv P V W * success_factor_bound M V P)).
-  apply => //; by exists V.
-rewrite big_const iter_addR /success_factor_bound.
-apply leR_wpmul2r.
+  by move/leRP: (@arg_rmax2 [finType of (P_ n (A, B))] V0
+    (fun V => exp_cdiv P V W * success_factor_bound M V P) V).
+rewrite big_const iter_addR /success_factor_bound; apply leR_wpmul2r.
 - apply mulR_ge0; last exact/exp2_ge0.
-  rewrite /exp_cdiv; case: ifP => _ //; exact/leRR.
-- rewrite natRexp; exact/le_INR/leP/card_nu.
+  by rewrite /exp_cdiv; case: ifP => _ //; exact/leRR.
+- by rewrite natRexp; exact/le_INR/leP/card_nu.
 Qed.
 
 End typed_success_bound_sect.
@@ -309,7 +308,7 @@ Defined.
 Local Open Scope num_occ_scope.
 
 Lemma success_bound :
-  let Pmax := arg_rmax P0 predT (fun P => scha(W, P.-typed_code c)) in
+  let Pmax := [arg max_(P > P0) scha(W, P.-typed_code c)]%O in
   scha(W, c) <= n.+1%:R ^ #|A| * scha(W, Pmax.-typed_code c).
 Proof.
 move=> Pmax.
@@ -321,7 +320,7 @@ apply (@leR_trans (\sum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
              \sum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)); last first.
     by rewrite big_const iter_addR.
   apply ler_rsum => P _.
-  exact: (@arg_rmax2 _ P0 xpredT (fun P1 : P_ n (A) => scha(W, P1.-typed_code c))).
+  by move/leRP : (arg_rmax2 P0 (fun P1 : P_ n (A) => scha(W, P1.-typed_code c)) P).
 rewrite schaE // -(sum_messages_types c).
 rewrite div1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply ler_rsum => P _.
@@ -334,7 +333,7 @@ apply/(@leR_trans (\sum_(m | m \in enc_pre_img c P)
   apply Req_le, eq_big => tb // _.
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
-- apply ler_rsum_l => //= i ?; [ exact/leRR | exact: rsumr_ge0].
+- by apply ler_rsum_l => //= i ?; [exact/leRR | exact: rsumr_ge0].
 Qed.
 
 End success_bound_sect.
