@@ -13,21 +13,15 @@ Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 (* talk about distributions of distributions to turn distributions into       *)
 (* a genuine monad.                                                           *)
 (*                                                                            *)
-(* {dist A}          == the type of finitely-supported distributions over A   *)
-(*                      where A is a choiceType                               *)
+(*          {dist A} == the type of finitely-supported distributions over A   *)
+(*                      where A is a choiceType (see proba.v for              *)
+(*                      distributions over a finType)                         *)
+(*    Module FSDist1 == unit of the probability monad                         *)
+(* Module FSDistBind == bind of the probability monad                         *)
+(*        FSDistfmap == map of the probability monad                          *)
 (* FSDist_choiceType == instance of choiceType with finitely-supported        *)
 (*                      distributions                                         *)
 (******************************************************************************)
-
-(* OUTLINE
-  1. Module FSDist.
-       FSDist.t A (notation: {dist A}) where A is a choiceType is the type of
-       finitely-supported distributions over A (see proba.v for distributions
-       over a finType)
-  2. Module FSDist1.
-  3. Module FSDistBind.
-  4. ...
-*)
 
 Reserved Notation "{ 'dist' T }" (at level 0, format "{ 'dist'  T }").
 
@@ -37,6 +31,32 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 Local Open Scope fset_scope.
+
+(* TODO: move? *)
+Section finmap_ext.
+Lemma bigfcup_fset1 (T I : choiceType) (P : {fset I}) (f : I -> T) :
+  \bigcup_(x <- P) [fset f x] = f @` P.
+Proof.
+apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> x.
+- case/bigfcupP=> i /andP [] iP _.
+  rewrite inE => /eqP ->.
+  by apply/imfsetP; exists i.
+- case/imfsetP => i /= iP ->; apply/bigfcupP; exists i; rewrite ?andbT //.
+  by apply/imfsetP; exists (f i); rewrite ?inE.
+Qed.
+Section fbig_pred1_inj.
+Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
+Lemma fbig_pred1_inj (A C : choiceType) h (k : A -> C) (d : {fset _}) a :
+  a \in d -> injective k -> \big[op/idx]_(a0 <- d | k a0 == k a) h a0 = h a.
+Proof.
+move=> ad inj_k.
+rewrite big_fset_condE -(big_seq_fset1 op); apply eq_fbig => // a0.
+rewrite !inE /=; apply/idP/idP => [|/eqP ->]; last by rewrite eqxx andbT.
+by case/andP => _ /eqP/inj_k ->.
+Qed.
+End fbig_pred1_inj.
+Arguments fbig_pred1_inj [R] [idx] [op] [A] [C] [h] [k].
+End finmap_ext.
 
 Module FSDist.
 Section fsdist.
@@ -363,6 +383,33 @@ Qed.
 Lemma FSDistfmap1 (A B : choiceType) (f : A -> B) x :
   FSDistfmap f (FSDist1.d x) = FSDist1.d (f x).
 Proof. by rewrite /FSDistfmap FSDistBind1f. Qed.
+
+Lemma FSDistfmap_FSDist1 (C : choiceType) (d : {dist C}) (i : C) :
+  FSDistfmap (FSDist1.d (A:=C)) d (FSDist1.d i) = d i.
+Proof.
+rewrite FSDistfmapE.
+case/boolP: (i \in finsupp d)=> ifd; first by rewrite fbig_pred1_inj //; apply:FSDist1_inj.
+transitivity(\sum_(a <- finsupp d | a == i) d a);
+  first by apply eq_bigl=> j; apply/eqtype.inj_eq/FSDist1_inj.
+rewrite big_seq_cond big_pred0;
+  last by move=> j; apply/andP; case=> jfd /eqP ji; move: jfd; rewrite ji (negbTE ifd).
+by rewrite fsfun_dflt.
+Qed.
+
+Local Open Scope reals_ext_scope.
+Lemma FSDist_finsuppD1 (C : choiceType) (d : {dist C}) (x : C) :
+  \sum_(i <- finsupp d `\ x) d i = (d x).~.
+Proof.
+rewrite -subR_eq0 subR_onem.
+case/boolP: (x \in finsupp d)=> xfd;
+  first by rewrite addRC -big_fsetD1 //= FSDist.f1 subRR.
+by rewrite fsfun_dflt // mem_fsetD1 // FSDist.f1 addR0 subRR.
+Qed.
+Local Close Scope reals_ext_scope.
+
+Definition FSDist_prob (C : choiceType) (d : {dist C}) (x : C) : prob :=
+  Prob.mk (conj (FSDist.ge0 d x) (FSDist.le1 d x)).
+Canonical FSDist_prob.
 
 Definition FSDistjoin A (D : {dist (FSDist_choiceType A)}) : {dist A} :=
   FSDistBind.d D ssrfun.id.

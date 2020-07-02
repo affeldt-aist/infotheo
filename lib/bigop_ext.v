@@ -175,7 +175,7 @@ move/(_ isT) => IH.
 transitivity (\big[M/idx]_(i <- enum A) g i); first by rewrite enumT.
 rewrite IH.
 apply eq_bigr => i _.
-apply congr_big => //; by rewrite enumT.
+by apply congr_big => //; rewrite enumT.
 Qed.
 
 End bigop_add_law_eqtype.
@@ -270,19 +270,6 @@ rewrite (reindex_onto (fun j => \row_(i < 1) j) (fun p => p ``_ ord0)) /=.
   move=> _; by rewrite mxE.
 - move=> t _; apply/rowP => a; by rewrite (ord1 a) mxE.
 Qed.
-
-(*Lemma big_1_tuple F G P Q :
-  (forall i : 1.-tuple A, F i = G (thead i)) ->
-  (forall i : 1.-tuple A, P i = Q (thead i)) ->
-  \big[M/idx]_(i in {: 1.-tuple A} | P i) F i = \big[M/idx]_(i in A | Q i) G i.
-Proof.
-move=> FG PQ.
-rewrite (reindex_onto (fun i => [tuple of [:: i]]) (fun p => thead p)) /=; last first.
-  case/tupleP => h t X; by rewrite theadE (tuple0 t).
-apply eq_big => x //.
-by rewrite (PQ [tuple x]) /= theadE eqxx andbC.
-move=> X; by rewrite FG.
-Qed.*)
 
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.

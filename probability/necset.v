@@ -14,8 +14,8 @@ Require Import convex_choice.
 (* X :<| p |>: Y        == \bigcup_(x in X) (x <| p |>: Y)                    *)
 (*                                                                            *)
 (* semiCompSemiLattType == the type of semi-complete semi-lattice provides    *)
-(*                         an operator |_| : neset T -> T with the following  *)
-(*                         axioms:                                            *)
+(*                         an infinitary operator |_| : neset T -> T with the *)
+(*                         following axioms:                                  *)
 (*          1. |_| [set x] = x                                                *)
 (*          2. |_| (\bigcup_(i in s) f i) = |_| (|_| @` (f @` s))             *)
 (*                                                                            *)
@@ -69,34 +69,6 @@ apply eqEsubset => x; [case=> Hx; by [exists I => //; left | exists J => //; rig
 by case=> K [] -> Hx; [left | right].
 Qed.
 End moveme.
-
-Section finmap_ext.
-Local Open Scope fset_scope.
-Lemma bigfcup_fset1 (T I : choiceType) (P : {fset I}) (f : I -> T) :
-  \bigcup_(x <- P) [fset f x] = f @` P.
-Proof.
-apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> x.
-- case/bigfcupP=> i /andP [] iP _.
-  rewrite inE => /eqP ->.
-  by apply/imfsetP; exists i.
-- case/imfsetP => i /= iP ->; apply/bigfcupP; exists i; rewrite ?andbT //.
-  by apply/imfsetP; exists (f i); rewrite ?inE.
-Qed.
-Lemma set1_inj (C : choiceType) : injective (@set1 C).
-Proof. by move=> a b; rewrite /set1 => /(congr1 (fun f => f a)) <-. Qed.
-Section fbig_pred1_inj.
-Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
-Lemma fbig_pred1_inj (A C : choiceType) h (k : A -> C) (d : {fset _}) a :
-  a \in d -> injective k -> \big[op/idx]_(a0 <- d | k a0 == k a) h a0 = h a.
-Proof.
-move=> ad inj_k.
-rewrite big_fset_condE -(big_seq_fset1 op); apply eq_fbig => // a0.
-rewrite !inE /=; apply/idP/idP => [|/eqP ->]; last by rewrite eqxx andbT.
-by case/andP => _ /eqP/inj_k ->.
-Qed.
-End fbig_pred1_inj.
-Arguments fbig_pred1_inj [R] [idx] [op] [A] [C] [h] [k].
-End finmap_ext.
 
 Lemma finsupp_Conv (C : convType) p (p0 : p != 0%:pr) (p1 : p != 1%:pr) (d e : {dist C}) :
   finsupp (d <|p|> e) = (finsupp d `|` finsupp e)%fset.
@@ -479,7 +451,6 @@ Notation "X :<| p |>: Y" := (conv_set p X Y) : convex_scope.
 Module SemiCompleteSemiLattice.
 Section def.
 Local Open Scope classical_set_scope.
-(* a semicomplete semilattice has an infinitary operation *)
 Record mixin_of (T : choiceType) : Type := Mixin {
   op : neset T -> T ;
   _ : forall x : T, op [set x]%:ne = x ;
@@ -871,47 +842,6 @@ have -> : \ssum_(i <- finsupp y) scalept (y i) (S1 i) =
 done.
 Qed.
 End Convn_of_FSDist.
-
-
-(*Section fset_misc.
-Local Open Scope fset_scope.
-Lemma fsetD1r (K : choiceType) (x a : K) (B : {fset K}) : x \in B `\ a -> x \in B.
-Proof. by case/fsetD1P. Qed.
-End fset_misc.*)
-
-Section onem_misc.
-Local Open Scope R_scope.
-Lemma subR_onem x y : x - y.~ = x + y - 1.
-Proof. rewrite /onem; ring. Qed.
-End onem_misc.
-
-Section fsdist_misc.
-Local Open Scope R_scope.
-Local Open Scope fset_scope.
-Variables (C : choiceType) (d : {dist C}).
-(* TODO: move? *)
-Lemma FSDistfmap_FSDist1 (i : C) : FSDistfmap (FSDist1.d (A:=C)) d (FSDist1.d i) = d i.
-Proof.
-rewrite FSDistfmapE.
-case/boolP: (i \in finsupp d)=> ifd; first by rewrite fbig_pred1_inj //; apply:FSDist1_inj.
-transitivity(\sum_(a <- finsupp d | a == i) d a);
-  first by apply eq_bigl=> j; apply/inj_eq/FSDist1_inj.
-rewrite big_seq_cond big_pred0;
-  last by move=> j; apply/andP; case=> jfd /eqP ji; move: jfd; rewrite ji (negbTE ifd).
-by rewrite fsfun_dflt.
-Qed.
-
-Lemma FSDist_finsuppD1 (x : C) : \sum_(i <- finsupp d `\ x) d i = (d x).~.
-Proof.
-rewrite -subR_eq0 subR_onem.
-case/boolP: (x \in finsupp d)=> xfd;
-  first by rewrite addRC -big_fsetD1 //= FSDist.f1 subRR.
-by rewrite fsfun_dflt // mem_fsetD1 // FSDist.f1 addR0 subRR.
-Qed.
-
-Definition FSDist_prob (x : C) : prob := Prob.mk (conj (FSDist.ge0 d x) (FSDist.le1 d x)).
-End fsdist_misc.
-Canonical FSDist_prob.
 
 Section convex_misc.
 Import ScaledConvex.

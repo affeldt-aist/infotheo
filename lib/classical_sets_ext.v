@@ -56,6 +56,10 @@ Qed.
 Lemma image_set1 (f : T -> U) (t : T) : f @` [set t] = [set f t].
 Proof. by apply eqEsubset => b; [case=> a' -> <- | move->; apply imageP]. Qed.
 
+(* TODO: useful? *)
+Lemma set1_inj : injective (@set1 T).
+Proof. by move=> a b; rewrite /set1 => /(congr1 (fun f => f a)) <-. Qed.
+
 Lemma image_subset (f : T -> U) A (Y : set U) :
   f @` A `<=` Y <-> forall a, A a -> Y (f a).
 Proof.
