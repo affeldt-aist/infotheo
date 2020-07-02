@@ -2504,15 +2504,15 @@ End concave_function_prop.
 Section affine_function_def.
 Local Open Scope ordered_convex_scope.
 Variables (T U : convType).
-Definition affine_function_at (f : T -> U) a b t :=
-  f (a <| t |> b) = f a <| t |> f b.
+Definition affine_function_at (f : T -> U) x y t :=
+  f (x <| t |> y) = f x <| t |> f y.
 End affine_function_def.
 
 Module AffineFunction.
 Section ClassDef.
 Local Open Scope ordered_convex_scope.
 Variables (U V : convType).
-Definition axiom (f : U -> V) := forall a b (t : prob), affine_function_at f a b t.
+Definition axiom (f : U -> V) := forall x y (t : prob), affine_function_at f x y t.
 Structure map (phUV : phant (U -> V)) := Pack {apply; _ : axiom apply}.
 Local Coercion apply : map >-> Funclass.
 Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
