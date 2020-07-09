@@ -327,20 +327,15 @@ Implicit Type r : R.
 Definition onem r := 1 - r.
 Local Notation "p '.~'" := (onem p).
 
-Lemma onem0 : 0.~ = 1.
-Proof. by rewrite /onem subR0. Qed.
+Lemma onem0 : 0.~ = 1. Proof. by rewrite /onem subR0. Qed.
 
-Lemma onem1 : 1.~ = 0.
-Proof. by rewrite /onem subRR. Qed.
+Lemma onem1 : 1.~ = 0. Proof. by rewrite /onem subRR. Qed.
 
-Lemma onem_ge0 r : r <= 1 -> 0 <= r.~.
-Proof. move=> r1; rewrite /onem; lra. Qed.
+Lemma onem_ge0 r : r <= 1 -> 0 <= r.~. Proof. move=> ?; rewrite /onem; lra. Qed.
 
-Lemma onem_le1 r : 0 <= r -> r.~ <= 1.
-Proof. move=> r0; rewrite /onem; lra. Qed.
+Lemma onem_le1 r : 0 <= r -> r.~ <= 1. Proof. move=> ?; rewrite /onem; lra. Qed.
 
-Lemma onemKC r : r + r.~ = 1.
-Proof. rewrite /onem; by field. Qed.
+Lemma onemKC r : r + r.~ = 1. Proof. rewrite /onem; by field. Qed.
 
 Lemma onemK r : r.~.~ = r.
 Proof. by rewrite /onem subRBA addRC addRK. Qed.
@@ -357,17 +352,18 @@ case=> rO r1; split; by [rewrite leR_subr_addr add0R|
   rewrite leR_subl_addr -(addR0 1) leR_add2l].
 Qed.
 
-Lemma onem_eq0 r : r.~ = 0 <-> r = 1.
-Proof. rewrite /onem; lra. Qed.
+Lemma onem_eq0 r : r.~ = 0 <-> r = 1. Proof. rewrite /onem; lra. Qed.
 
-Lemma onem_eq1 r : r.~ = 1 <-> r = 0.
-Proof. rewrite /onem; lra. Qed.
+Lemma onem_eq1 r : r.~ = 1 <-> r = 0. Proof. rewrite /onem; lra. Qed.
 
 Lemma onem_neq0 r : r.~ != 0 <-> r != 1.
 Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 
 Lemma onem_gt0 r : r < 1 -> 0 < r.~. Proof. rewrite /onem; lra. Qed.
 Lemma onem_lt1 r : 0 < r -> r.~ < 1. Proof. rewrite /onem; lra. Qed.
+
+Lemma subR_onem x y : x - y.~ = x + y - 1.
+Proof. by rewrite /onem -addR_opp oppRB addRA. Qed.
 
 End onem.
 

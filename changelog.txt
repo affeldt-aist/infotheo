@@ -1,4 +1,16 @@
 -------------------
+from 0.1.1 to ??? :
+-------------------
+- moved:
+  + subR_onem from necset.v to Reals_ext.v
+  + from necset.v to fsdist.v
+    * bigfcup_fset1
+    * fbig_pred1_inj
+    * FSDistfmap_FSDist1
+    * FSDist_finsuppD1
+    * FSDist_prob
+  + set1_inj from necset.v to classical_sets_ext.v
+-------------------
 from 0.1 to 0.1.1 :
 -------------------
 added:
