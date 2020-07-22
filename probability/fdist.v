@@ -14,66 +14,26 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (*  FDist1.d        == point-supported distribution                           *)
 (*  FDistMap.d      == map of the "probability monad"                         *)
 (*  Uniform.d       == uniform distribution other a finite type               *)
-(* `U H             == the uniform distribution with support C, where H is a  *)
-(*                     proof that some set C is not empty                     *)
+(*  `U H            == the uniform distribution with support C, where H is a  *)
+(*                     proof that the set C is not empty                      *)
 (*  Binary.d H p    == where H is a proof of #|A| = 2%N and p is a            *)
 (*                     probability: binary distribution over A with bias p    *)
+(*  D1FDist.d X P   == distribution built from X where the entry b has been   *)
+(*                     removed (where P is a proof that X b != 1)             *)
 (*  ConvFDist.d     == convex combination of distributions                    *)
 (*                                                                            *)
 (* About bivariate (joint) distributions:                                     *)
 (*  Bivar.fst       == marginal left                                          *)
 (*  Bivar.snd       == marginal right                                         *)
+(* About multivariate (joint) distributions                                   *)
+(*  head_of         == head marginal                                          *)
+(*  tail_of         == tail marginal                                          *)
 (*                                                                            *)
 (*  P1 `x P2        == product distribution                                   *)
 (*  P `^ n          == product distribution over a row vector                 *)
 (*  wolfowitz       == Wolfowitz's counting principle                         *)
 (*                                                                            *)
 (******************************************************************************)
-
-(* OUTLINE
-  1. Module FDist.
-  2. Module FDist1.
-  3. Module FDistBind.
-  4. Module FDistMap.
-  5. Module Uniform.
-  6. Module UniformSupport.
-       Uniform distribution with a restricted support
-  7. Module Binary.
-      Distributions over sets with two elements
-  8. Module BinarySupport.
-  9. Module D1Dist.
-       construction of a distribution from another
-       by removing one element from the support
-  10. Module ConvnFDist.
-  11. Module ConvFDist.
-  12. Module Bivar.
-       Joint (Bivariate) Distribution
-  13. Module Multivar
-       Joint (Multivariate) distribution
-      Section joint_tuple_dist.
-  14. Module ProdFDist.
-  15. Module TupleFDist.
-  16. Section wolfowitz_counting.
-  17. Section probability.
-  18. Section random_variable.
-  19. Section expected_value_def.
-      Section expected_value_prop.
-        Properties of the expected value of standard random variables
-  20. Section probability_inclusion_exclusion.
-  21. Section markov_inequality.
-  22. Section variance_def.
-      Section variance_prop.
-  23. Section chebyshev.
-        Chebyshev's Inequality
-  24. independence
-      Section sum_two_rand_var_def.
-        The sum of two random variables
-      Section sum_two_rand_var.
-      Section sum_n_rand_var_def.
-        The sum of n >= 1 independent random variable(s)
-      Section sum_n_rand_var.
-  25. Section weak_law_of_large_numbers.
-*)
 
 Reserved Notation "{ 'fdist' T }" (at level 0, format "{ 'fdist'  T }").
 Reserved Notation "'`U' HC " (at level 10, HC at next level).
@@ -463,6 +423,7 @@ Qed.
 
 End binary_distribution_prop.
 
+(* TODO: document *)
 Module BinarySupport.
 Section prop.
 Variables (A : finType) (d : fdist A).

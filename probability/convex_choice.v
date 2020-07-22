@@ -46,7 +46,7 @@ Require Import fdist jfdist fsdist.
 (*                   of convex spaces such as [Bonchi 2017]; different        *)
 (*                   axiomatics are possible, they are provided with their    *)
 (*                   equivalencs by the module NaryConvexSpaceEquiv           *)
-(*        <&>_d f == notation for the operator of naryConvType                 *)
+(*        <&>_d f == notation for the operator of naryConvType                *)
 (*    a <& p &> b == binary instance of the <&>_ operator                     *)
 (*                                                                            *)
 (*         hull X == the convex hull of set X : set T where T is a convType   *)

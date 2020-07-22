@@ -5,7 +5,7 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import proba jfdist.
 
 (******************************************************************************)
-(*           Conditional independence and graphoid axioms                     *)
+(*            Conditional independence and graphoid axioms                    *)
 (*                                                                            *)
 (* P |= X _|_  Y | Z == X is conditionally independent of Y given Z in the    *)
 (*                      distribution P for all values a, b, and c (belonging  *)

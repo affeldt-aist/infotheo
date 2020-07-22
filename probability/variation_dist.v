@@ -4,7 +4,7 @@ Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext logb Rbigop fdist ln_facts.
 
 (******************************************************************************)
-(*                   The Variation Distance                                   *)
+(*                        The Variation Distance                              *)
 (*                                                                            *)
 (* 'd(P, Q) == The variation distance of two distributions P and Q            *)
 (******************************************************************************)
