@@ -5,14 +5,16 @@ Require Import Reals. (* Lra Nsatz. *)
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import fdist proba jfdist cinde.
 
+(******************************************************************************)
+(* wip                                                                        *)
+(******************************************************************************)
+
 Local Open Scope tuple_ext_scope.
 Local Open Scope proba_scope.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-(* wip *)
 
 Module BN.
 Section bn.
