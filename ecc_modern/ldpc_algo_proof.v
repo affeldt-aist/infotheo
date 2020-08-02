@@ -1680,7 +1680,7 @@ destruct s; simpl.
     move=> x /= Hx.
     rewrite mem_filter !inE in Hx.
     apply Hspec'.
-    apply cons_uniq_path => //.
+    apply: cons_uniq_path => //.
       by move/andP/proj1/andP/proj2: Hx; rewrite sym_tanner_rel.
     by rewrite mem_seq1 eq_sym id_of_kind_neq.
   (* up *)
@@ -1698,7 +1698,7 @@ destruct s; simpl.
   move=> x /= Hx.
   rewrite mem_filter !inE in Hx.
   apply Hspec'.
-  apply cons_uniq_path => //.
+  apply: cons_uniq_path => //.
     by move/andP/proj1/andP/proj2: Hx; rewrite sym_tanner_rel.
   by rewrite mem_seq1 eq_sym id_of_kind_neq.
 (* Inner node *)
@@ -1778,7 +1778,7 @@ congr {| children := _; up := _; down := _ |}.
   move=> x /=.
   rewrite mem_filter !inE /= sym_tanner_rel => /andP [] /andP [Hx1 Hx2] _.
   rewrite -/msg_spec' Hspec' //.
-  apply cons_uniq_path => //.
+  apply: cons_uniq_path => //.
   rewrite !in_cons !negb_or.
   rewrite (ext_uniq_path tanner_acyclic Hun) //.
   rewrite (eq_sym (id_of_kind _ x)) id_of_kind_neq //=.
@@ -1891,7 +1891,7 @@ destruct (@msg_nonnil a b (Some e) _ c) as [Hac Hbc].
   move: Hrl.
   by destruct (msg _ _ _ _).
 have Hunj: uniq_path (tanner_rel H) (inj j) (e :: s).
-  apply cons_uniq_path => //.
+  apply: cons_uniq_path => //.
     move/andP/proj1: Hj.
     by rewrite sym_tanner_rel.
   by move/andP/proj2: Hj.
@@ -2055,7 +2055,7 @@ rewrite select_children_spec in Hj.
 have Hunj :
   uniq_path (tanner_rel H) (id_of_kind (negk k) j) (id_of_kind k i :: s).
   move/andP: Hj => [Hij Hun'].
-  apply cons_uniq_path => //.
+  apply: cons_uniq_path => //.
   by rewrite sym_tanner_rel.
 (* get estimation by IH *)
 rewrite -(IH [:: id_of_kind k i & s] (negk k) j Hh') //.
@@ -2072,7 +2072,7 @@ have Huny:
   uniq_path (tanner_rel H) (id_of_kind (negk k) y) (id_of_kind k i :: s).
   rewrite select_children_spec in Hy.
   move/andP: Hy => [Hiy Hun'].
-  apply cons_uniq_path => //.
+  apply: cons_uniq_path => //.
   by rewrite sym_tanner_rel.
 rewrite -tree_ok // labels_sumprod_down labels_sumprod_up.
 have Hun':= uniq_labels_build_tree_rec tanner_acyclic rW h.+1 Hun.

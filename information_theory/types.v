@@ -264,7 +264,7 @@ rewrite cardE /enum_mem.
 apply (@leq_trans (size (map (@ffun_of_type A n) (Finite.enum (type_finType A n))))).
   by rewrite 2!size_map.
 rewrite cardE.
-apply uniq_leq_size.
+apply: uniq_leq_size.
   rewrite map_inj_uniq //.
     move: (enum_uniq (type_finType A n)).
     by rewrite enumT.
