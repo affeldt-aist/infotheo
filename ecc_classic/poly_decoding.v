@@ -20,19 +20,9 @@ Require Import ssr_ext ssralg_ext cyclic_code dft.
 (*                   error and the evaluator polynomials                      *)
 (******************************************************************************)
 
-(* OUTLINE:
-- Section error_locator_polynomial.
-- Section error_evaluator_polynomial_def.
-- Section error_evaluator_polynomial_prop.
-- Section characterization_of_error_vector.
-- Section syndrome_polynomial.
-- Section twisted_error_pattern.
-- Section syndromep_prop.
-*)
-
 Reserved Notation "'\sigma_(' a , e )" (at level 3).
 Reserved Notation "'\sigma_(' a , e , i )" (at level 3).
-Reserved Notation "t '.-'rV[' R ]_ n" (only parsing, at level 2).
+Reserved Notation "t '.-'rV[' R ]_ n" (at level 2).
 Reserved Notation "'\omega_(' f , a , e )" (at level 3).
 
 Set Implicit Arguments.
@@ -216,7 +206,7 @@ Record errvec n (F : fieldType) t := Errvec {
   errvect :> 'rV[F]_n ;
   errsupp : #| supp errvect | <= t }.
 
-Notation "t '.-'rV[' R ]_ n" := (@errvec n R t).
+Notation "t '.-'rV[' R ]_ n" := (@errvec n R t) (only parsing).
 
 Lemma supp_neq0 n (F : fieldType) t (e : t.-'rV[F]_n) : supp e != set0 -> t != O.
 Proof.

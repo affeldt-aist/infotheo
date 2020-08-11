@@ -21,17 +21,6 @@ Require Import channel_code channel binary_symmetric_channel hamming pproba.
 (*   MAP_implies_ML == MAP decoding implies ML decoding                       *)
 (******************************************************************************)
 
-(* OUTLINE:
-- Section minimum_distance_decoding.
-- Section bounded_distance_decoding.
-- Section maximum_likelihood_decoding.
-- Section maximum_likelihood_decoding_prop.
-- Section MD_ML_decoding.
-- Section MAP_decoding.
-- Section MAP_decoding_prop.
-- Section MPM_condition.
-*)
-
 Reserved Notation "t .-BDD f" (at level 2, format "t  .-BDD  f").
 
 Declare Scope ecc_scope.

@@ -1,7 +1,7 @@
 (* seplog (c) AIST 2005-2013. R. Affeldt, N. Marti, et al. GNU GPLv3. *)
 (* seplog (c) AIST 2014-2018. R. Affeldt et al. GNU GPLv3. *)
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
-Require Import ZArith.
+Require Import ZArith Lia.
 
 (******************************************************************************)
 (*                       SSReflect-like lemmas for Coq Z                      *)
@@ -114,7 +114,7 @@ Definition oppZ0 := Z.opp_0.
 Definition ltZW {m n} : m < n -> m <= n := Z.lt_le_incl m n.
 (* aka Zlt_le_weak *)
 Lemma ltZW' {m n} : m <? n -> m <=? n.
-Proof. move/ltZP => ?; apply/leZP; omega. Qed.
+Proof. by move/ltZP => ?; apply/leZP; lia. Qed.
 
 Lemma leZ_eqVlt m n : (m <= n) <-> (m = n) \/ (m < n).
 Proof.
@@ -139,8 +139,8 @@ Qed.
 Lemma ltZ_neqAle' m n : (m <? n) = (m != n) && (m <=? n).
 Proof.
 apply/idP/idP => [/ltZP mn|].
-  apply/andP; split; [apply/eqP; omega | exact/ltZW'/ltZP].
-case/andP => /eqP H1 /leZP H2; apply/ltZP; omega.
+  by apply/andP; split; [apply/eqP; lia | exact/ltZW'/ltZP].
+by case/andP => /eqP H1 /leZP H2; apply/ltZP; lia.
 Qed.
 
 Definition mul0Z : left_zero 0 Z.mul := Zmult_0_l.
@@ -244,10 +244,10 @@ Proof. by rewrite 2!(addZC p) ltZ_add2r'. Qed.
 (* TODO: Zmult_lt_0_reg_r *)
 
 Lemma leZ_sub2r n {m p} : n <= m -> n - p <= m - p.
-Proof. move=> H; omega. Qed.
+Proof. by move=> ?; lia. Qed.
 
 Lemma ltZ_sub2r {n m p} : n < m -> n - p < m - p.
-Proof. move=> H; omega. Qed.
+Proof. by move=> ?; lia. Qed.
 
 Definition mulZ_gt0 := Z.mul_pos_pos.       (* 0 < n -> 0 < m -> 0 < n * m *)
 (* aka Zmult_lt_0_compat *)
@@ -316,7 +316,7 @@ split => H.
 - by apply (@leZ_add2l m); rewrite subZKC.
 Qed.
 
-Lemma ltZadd1 {m n} : m < n + 1 <-> m <= n. Proof. omega. Qed.
+Lemma ltZadd1 {m n} : m < n + 1 <-> m <= n. Proof. by lia. Qed.
 
 Lemma leZsub1 a b : a <= b - 1 <-> a < b.
 Proof. by rewrite leZ_subRL addZC -ltZadd1 ltZ_add2r. Qed.
@@ -366,19 +366,19 @@ Lemma normZ_ge0 : forall z, 0 <= `| z |. Proof. by case. Qed.
 Lemma ltZ_norml x y : `|x| < y <-> (- y < x < y).
 Proof.
 split => [H | [H1 H2] ].
-- case: (Z_le_gt_dec x 0) => x0; first by rewrite Zabs_non_eq // in H; omega.
-  rewrite Z.abs_eq // in H; last omega.
-  split; [omega | by []].
+- case: (Z_le_gt_dec x 0) => x0; first by rewrite Zabs_non_eq // in H; lia.
+  rewrite Z.abs_eq // in H; last by lia.
+  by split => //; lia.
 - case: (Z_le_gt_dec 0 x) => x0; first by rewrite Z.abs_eq.
-  rewrite Zabs_non_eq; [omega | exact/ltZW/Z.gt_lt].
+  by rewrite Zabs_non_eq; [lia | exact/ltZW/Z.gt_lt].
 Qed.
 
 Lemma leZ_norml x y : `|x| <= y <-> (- y <= x <= y).
 Proof.
 split => [H | [H1 H2] ].
-- case: (Z_le_gt_dec x 0) => x0; first by rewrite Zabs_non_eq // in H; omega.
-  rewrite Z.abs_eq // in H; last omega.
-  split; [omega | by []].
+- case: (Z_le_gt_dec x 0) => x0; first by rewrite Zabs_non_eq // in H; lia.
+  rewrite Z.abs_eq // in H; last by lia.
+  by split => //; lia.
 - case: (Z_le_gt_dec 0 x) => x0; first by rewrite Z.abs_eq.
-  rewrite Zabs_non_eq; [omega | exact/ltZW/Z.gt_lt].
+  by rewrite Zabs_non_eq; [lia | exact/ltZW/Z.gt_lt].
 Qed.

@@ -25,9 +25,9 @@ install: [
   [make "install"]
 ]
 depends: [
-  "coq" {>= "8.10" & < "8.12~"}
+  "coq" {>= "8.11" & < "8.13~"}
   "coq-mathcomp-field" {>= "1.11" & < "1.12~"}
-  "coq-mathcomp-analysis"   {>= "0.3.1" & < "0.4~"}
+  "coq-mathcomp-analysis"   {>= "0.3.2" & < "0.4~"}
 ]
 synopsis: "Infotheo"
 description: """
@@ -39,5 +39,5 @@ tags: [
   "keyword: probability"
   "keyword: error-correcting codes"
   "logpath:infotheo"
-  "date:2020-06-12"
+  "date:2020-08-11"
 ]
