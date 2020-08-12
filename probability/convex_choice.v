@@ -97,7 +97,7 @@ Reserved Notation "\ssum_ i F"
   (at level 41, F at level 41, i at level 0, right associativity,
   format "'[' \ssum_ i '/  '  F ']'").
 Reserved Notation "\ssum_ ( i : t ) F"
-  (at level 41, F at level 41, i at level 50, only parsing).
+  (at level 41, F at level 41, i at level 50).
 Reserved Notation "\ssum_ ( i < n | P ) F"
   (at level 41, F at level 41, i, n at level 50,
   format "'[' \ssum_ ( i  <  n  |  P ) '/  '  F ']'").
@@ -416,7 +416,7 @@ congr (_ *: (_ <| _ |> _)); [exact: val_inj | exact: prob_ext].
 Qed.
 
 Local Notation "\ssum_ ( i <- r ) F" := (\big[addpt/Zero]_(i <- r) F).
-Local Notation "\ssum_ ( i : t ) F" := (\big[addpt/Zero]_(i : t) F).
+Local Notation "\ssum_ ( i : t ) F" := (\big[addpt/Zero]_(i : t) F) (only parsing).
 Local Notation "\ssum_ i F" := (\big[addpt/Zero]_i F).
 Local Notation "\ssum_ ( i | P ) F" := (\big[addpt/Zero]_(i | P) F).
 Local Notation "\ssum_ ( i < n | P ) F" := (\big[addpt/Zero]_(i < n | P%B) F).
@@ -671,7 +671,7 @@ Notation "\ssum_ ( i <- r | P ) F" :=
 Notation "\ssum_ ( i <- r ) F" :=
   (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i <- r) F) : convex_scope.
 Notation "\ssum_ ( i : t ) F" :=
-  (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i : t) F) : convex_scope.
+  (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i : t) F)  (only parsing) : convex_scope.
 Notation "\ssum_ ( i | P ) F" :=
   (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i | P%B) F) : convex_scope.
 Notation "\ssum_ i F" :=

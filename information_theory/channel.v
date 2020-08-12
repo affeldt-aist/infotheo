@@ -10,14 +10,16 @@ Require Import proba entropy jfdist chap2.
 (*                                                                            *)
 (* `Ch(A, B)  == definition of a discrete channel of input alphabet A and     *)
 (*               output alphabet B; it is a collection of probability mass    *)
-(*               functions, one for each a in A                               *)
+(*               functions, one for each a in A (i.e., a probability          *)
+(*               transition matrix                                            *)
 (* `Ch*(A, B) == channels with non-empty alphabet                             *)
 (* W `(b | a) == probability of receiving b knowing a was sent over the       *)
 (*               channel W                                                    *)
 (* W ``^ n, W ``(| x), W ``(y | x) == definition of a discrete memoryless     *)
-(*               channel (DMC); W(y|x) = \Pi_i W_0(y_i|x_i) where W_0 is a    *)
+(*               channel (DMC, or nth extension of the discrete memoryless    *)
+(*               channel); W(y|x) = \Pi_i W_0(y_i|x_i) where W_0 is a         *)
 (*               probability transition matrix                                *)
-(* `O(P, W)   == output distribution                                          *)
+(* `O(P, W)   == output distribution for the discrete channel                 *)
 (* `H(P `o W) == output entropy                                               *)
 (* `J(P, W)   == joint distribution                                           *)
 (* `H(P , W)  == mutual entropy                                               *)
@@ -27,35 +29,15 @@ Require Import proba entropy jfdist chap2.
 (* capacity   == relation defining the capacity of a channel                  *)
 (******************************************************************************)
 
-(* OUTLINE:
-  1. Module Channel1.
-     Probability transition matrix
-  2. Module DMC.
-     nth extension of the discrete memoryless channel
-  3. Section DMC_sub_vec.
-  4. Module OutFDist.
-     Output distribution for the discrete channel
-  5. Section OutDist_prop.
-     Output entropy
-  6. Module JointFDistChan.
-     Joint distribution
-  7. Section Pr_rV_prod_sect.
-  8. Module CondEntropyChan.
-  9. Module MutualInfoChan
-  10. Section capacity_definition.
-*)
-
 Declare Scope channel_scope.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Reserved Notation "'`Ch(' A ',' B ')'" (at level 10, A, B at next level,
-  only parsing).
+Reserved Notation "'`Ch(' A ',' B ')'" (at level 10, A, B at next level).
 Reserved Notation "'`Ch*(' A ',' B ')'" (at level 10, A, B at next level).
-Reserved Notation "W '`(' b '|' a ')'" (at level 10, b, a at next level,
-  only parsing).
+Reserved Notation "W '`(' b '|' a ')'" (at level 10, b, a at next level).
 Reserved Notation "W '``^' n" (at level 10).
 Reserved Notation "W '``(|' x ')'" (at level 10, x at next level).
 Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level).
@@ -76,7 +58,7 @@ Module Channel1.
 Section channel1.
 Variables A B : finType.
 
-Local Notation "'`Ch'" := (A -> fdist B).
+Local Notation "'`Ch'" := (A -> fdist B) (only parsing).
 
 Record chan_star := mkChan {
   c :> `Ch ;
@@ -97,10 +79,10 @@ Coercion chan_star_coercion : Channel1.chan_star >-> Funclass.
 
 Local Open Scope proba_scope.
 
-Notation "'`Ch(' A ',' B ')'" := (A -> {fdist B}) : channel_scope.
+Notation "'`Ch(' A ',' B ')'" := (A -> {fdist B}) (only parsing) : channel_scope.
 Local Open Scope channel_scope.
 Notation "'`Ch*(' A ',' B ')'" := (@Channel1.chan_star A B) : channel_scope.
-Notation "W '`(' b '|' a ')'" := ((W : `Ch(_, _)) a b) : channel_scope.
+Notation "W '`(' b '|' a ')'" := ((W : `Ch(_, _)) a b) (only parsing) : channel_scope.
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
 Local Open Scope entropy_scope.

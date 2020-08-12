@@ -330,7 +330,7 @@ rewrite -(card_ord n.+1) mulnC expnM -2!card_ffun cardE /enum_mem.
 apply (@leq_trans (size (map (@ffun_of_jtype A B n) (Finite.enum (jtype_finType A B n))))).
   by rewrite 2!size_map.
 rewrite cardE.
-apply uniq_leq_size.
+apply: uniq_leq_size.
   rewrite map_inj_uniq.
   rewrite -enumT; by apply enum_uniq.
   move=> [c f Hf Hc] [c1 f1 Hf1 Hc1] /= ?; subst f1.
