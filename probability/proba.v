@@ -510,7 +510,7 @@ Proof. rewrite -big_split; apply eq_bigr => a _ /=; by rewrite -mulRDl. Qed.
 
 Lemma E_sub_RV : `E (X `- Y) = `E X - `E Y.
 Proof.
-rewrite {3}/Ex -addR_opp (big_morph Ropp oppRD oppR0) -big_split /=.
+rewrite {3}/Ex -addR_opp big_morph_oppR -big_split /=.
 apply eq_bigr => u _; by rewrite -mulNR -mulRDl.
 Qed.
 
@@ -778,9 +778,7 @@ rewrite [in X in _ * X = _]big_pred0 in Halg; last by move=> i; rewrite inE.
 do [erewrite eq_bigl; (* to replace later with under *)
   last by move=> j; rewrite !inE /negb /= ] in Halg.
 rewrite mulR1 -Ind_bigcap bigcap_ord_const in Halg.
-rewrite {}Halg.
-rewrite (big_morph Ropp oppRD oppR0).
-rewrite big_nat [RHS]big_nat.
+rewrite {}Halg big_morph_oppR big_nat [RHS]big_nat.
 apply: eq_bigr => i Hi; rewrite /SumIndCap /Efull.
 rewrite m1powD; last first.
   by case/andP: Hi => Hi _ K0; rewrite K0 in Hi.
