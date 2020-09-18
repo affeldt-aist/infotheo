@@ -24,6 +24,24 @@ Variable n : nat.
 Variable types : 'I_n -> finType.
 Variable vars : forall i, {RV P -> types i}.
 
+Section prod_vars.
+Variable I : {set 'I_n}.
+
+Definition prod_types :=
+  [finType of
+   {dffun forall i : 'I_n, if i \in I then types i else unit_finType}].
+
+Definition prod_vars' : {RV P -> prod_types}.
+move=> u.
+refine [ffun i => _].
+case: (i \in I).
+- exact: vars i u.
+- exact: tt.
+Defined.
+(* fun u => [ffun i => if i \in I then vars i u else tt] *)
+Definition prod_vars : {RV P -> prod_types} := Eval hnf in prod_vars'.
+End prod_vars.
+
 Section preim.
 Local Open Scope R_scope.
 
@@ -178,6 +196,10 @@ split.
   rewrite Hdrv.
   by congr ((_/_) * (_/_)); apply eq_bigl => u; rewrite !inE.
 Qed.
+
+Lemma cinde_preim_ok' (e f g : {set 'I_n}) :
+  cinde_preim e f g <-> prod_vars e _|_ prod_vars f | (prod_vars g).
+Abort.
 End preim.
 
 Section Imap.
