@@ -1,3 +1,89 @@
+-----------------
+from 0.1.2 to ???
+-----------------
+- renamed:
+  + in Rbigop.v:
+    * rsumr_ge0 -> sumR_ge0
+    * rsumr_gt0 -> sumR_gt0
+    * ler_rsum_support -> leR_sumR_support
+    * ler_rsum -> leR_sumR
+    * ler_rsum_l -> leR_sumRl
+    * ler_rsum_l_support -> leR_sumRl_support
+    * ltr_rsum_support -> ltR_sumR_support
+    * ltr_rsum -> ltR_sumR
+    * rsum_setT -> sumR_setT
+    * rsum_ord_setT -> sumR_ord_setT
+    * prsumr_seq_eq0P -> psumR_seq_eq0P
+    * prsumr_eq0P -> psumR_eq0P
+    * ler_rsum_Rabs -> leR_sumR_Rabs
+    * ler_rsum_predU-> leR_sumR_predU
+    * classify_big -> classify_sumR
+    * Rle_big_eq -> leR_sumR_eq
+    * sum_f_R0_rsum -> sum_f_R0_sumR
+    * bigmul_eq0 -> rprod_eq0
+    * rprodr_gt0 -> prodR_gt0
+    * rprodr_ge0 -> prodR_ge0
+    * rprodr_gt0_inv-> prodR_gt0_inv
+    * rprodr_ge1 -> prodR_ge1
+    * ler_rprod -> leR_prodR
+    * log_rmul_rsum_mlog -> log_prodR_sumR_mlog
+    * Rle_bigRmax -> leR_bigmaxR
+    * Rle_0_bigRmax -> bigmaxR_ge0
+    * bigrmax_undup -> bigmaxR_undup
+    * bigrmax_cat -> bigmaxR_cat
+    * bigrmax_perm -> bigmaxR_perm
+    * bigrmax_eqi -> bigmaxR_eqi
+    * rmax_imset -> bigmaxR_imset
+    * rmax_imset' -> bigmaxR_imset_helper
+    * Rle_bigrmax_R -> leR_bigmaxRl
+    * bigrmax_max_seq -> bigmaxR_seq_eq
+    * bigrmax_max - bigmaxR_eq
+    * rmax_distrr -> bigmaxR_distrr
+    * rmax_distrl -> bigmaxR_distrl
+    * bigminn_min -> leq_bigmin
+    * big_rmax_bigminn -> bigmaxR_bigmin
+    * big_rmax_bigminn_vec -> bigmaxR_bigmin_vec
+    * bigmul_constE -> prodR_constE
+    * bigmul_card_constE -> prodR_card_constE
+    * bigmul_m1pow -> prodRN
+    * E_sumr -> E_sumR
+  + \Pr[ X = a ] -> `Pr[ X = a ]
+  + \Pr[ X >= a ] -> `Pr[ X >= a ]
+  + RVar.d -> dist_of_RV
+  + RVar.dE -> RVardE
+  + RVar.Pr -> RVarPr
+  + RVar.Pr_Set -> RVarPr_Set
+  + p_of -> ambient_dist
+  + cPr -> jcPr
+  + cPr0 -> cPr
+  + cPr0_Pr -> cPrET
+  + cPr0_set0 - cPrE0
+  + PrX_setT -> Pr_XsetT
+  + bayes -> jBayes
+  + law_of_total_probability -> total_prob
+  + total_prob -> jtotal_prob_cond
+  + product_rule -> jproduct_rule_cond
+  + product_rule0 -> jproduct_rule
+- added:
+  + divRBl in ssrR.v
+  + notation `d_ for RVar.d
+  + notation `o for comp_RV
+  + sumR_neq0
+  + bigcup_set1
+  + simple technical lemmas to deal with `*T, T*`, and `* (setX)
+  + Pr_setTX
+  + CondFDist in proba.v
+  + lemmas about cPr proba.v (cPrE0, Pr_cPr_gt0, cPr_cplt, product_rule, cPr_diff, cPr_union_eq)
+- changed:
+  + generalize pr_geq to any porderType
+  + definition of notation @^-1 now uses preim instead of finset notations
+  + capacity changed from a relation to a definition using Rstruct.real_sup
+  + slight generalization of bigcup_setX, bigcup_set0
+- removed:
+  + notations `E_, `V_
+  + duplicate of E_leng_cw
+  + PrX_diff, PrX_union
+
 ---------------------
 from 0.1.1 to 0.1.2 :
 ---------------------

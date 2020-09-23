@@ -136,22 +136,21 @@ Proof.
 rewrite /h big_morph_oppR /=; apply eq_bigr => a _.
 rewrite /h1 mulRN big_distrr /=; congr (- _); apply eq_bigr => b _.
 rewrite mulRA; congr (_ * _).
-by rewrite mulRC -(Pr_set1 P a) -product_rule0 setX1 Swap.dE Pr_set1.
+by rewrite mulRC -(Pr_set1 P a) -jproduct_rule setX1 Swap.dE Pr_set1.
 Qed.
 
 Lemma h1_ge0 a : 0 <= h1 a.
 Proof.
-rewrite /h1 big_morph_oppR; apply rsumr_ge0 => b _.
-rewrite -mulRN.
+rewrite /h1 big_morph_oppR; apply sumR_ge0 => b _; rewrite -mulRN.
 case/boolP : (\Pr_QP[[set b]|[set a]] == 0) => [/eqP|] H0.
   rewrite H0 mul0R; exact/leRR.
-apply mulR_ge0; [exact: cPr_ge0|].
+apply mulR_ge0; [exact: jcPr_ge0|].
 rewrite -oppR0 -(Log_1 2) /log leR_oppr oppRK.
-apply Log_increasing_le => //; [by rewrite cPr_gt0 | exact: cPr_max].
+by apply Log_increasing_le => //; [rewrite jcPr_gt0 | exact: jcPr_max].
 Qed.
 
 Lemma h_ge0 : 0 <= h.
-Proof. apply rsumr_ge0 => a _; apply mulR_ge0 => //; exact: h1_ge0. Qed.
+Proof. by apply sumR_ge0 => a _; apply mulR_ge0 => //; exact: h1_ge0. Qed.
 
 End condentropy.
 End CondEntropy.
@@ -165,7 +164,7 @@ Lemma h1TripAC b c :
   CondEntropy.h1 (TripA.d (TripAC.d PQR)) (c, b).
 Proof.
 rewrite /CondEntropy.h1; congr (- _).
-by apply eq_bigr => a _; rewrite -!setX1 cPr_TripA_TripAC.
+by apply eq_bigr => a _; rewrite -!setX1 jcPr_TripA_TripAC.
 Qed.
 
 Lemma hTripAC :
@@ -195,7 +194,7 @@ transitivity (- (\sum_(a in A) \sum_(b in B)
   congr (- _); rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
   congr (_ * log _); case/boolP : (P a == 0) => [/eqP|] H0.
   - by rewrite (Bivar.dom_by_fst _ H0) H0 mul0R.
-  - by rewrite -(Pr_set1 P a) /P -(Swap.snd PQ) mulRC -product_rule0 setX1 Pr_set1 Swap.dE.
+  - by rewrite -(Pr_set1 P a) /P -(Swap.snd PQ) mulRC -jproduct_rule setX1 Pr_set1 Swap.dE.
 transitivity (
   - (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a))
   - (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (\Pr_QP [ [set b] | [set a] ]))). (* 2.17 *)
@@ -204,7 +203,7 @@ transitivity (
   case/boolP : (PQ (a, b) == 0) => [/eqP H0|H0].
   - by rewrite H0 !mul0R addR0.
   - rewrite -mulRDr; congr (_ * _); rewrite mulRC logM //.
-    by rewrite -cPr_Pr_setX_gt0 setX1 Pr_set1 Swap.dE -fdist_gt0.
+    by rewrite -Pr_jcPr_gt0 setX1 Pr_set1 Swap.dE -fdist_gt0.
     rewrite -fdist_gt0; exact: Bivar.dom_by_fstN H0.
 rewrite [in X in _ + X = _]big_morph_oppR; congr (_ + _).
 - rewrite /entropy; congr (- _); apply eq_bigr => a _.
@@ -341,8 +340,8 @@ rewrite !(Swap.dE,TripA.dE,TripC12.dE) /= -mulRDr.
 case/boolP : (PQR (a, b, c) == 0) => [/eqP H0|H0].
   by rewrite H0 !mul0R.
 rewrite -logM; last 2 first.
-  rewrite -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
-  by rewrite -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1 TripA.dE /= TripC12.dE.
+  rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
+  by rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1 TripA.dE /= TripC12.dE.
 congr (_ * log _).
 by rewrite -setX1 product_ruleC !setX1 mulRC.
 Qed.
@@ -411,7 +410,7 @@ rewrite miE0.
 transitivity (\sum_(a in A) \sum_(b in B)
     PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ] / P a)).
   apply eq_bigr => a _; apply eq_bigr => b _.
-  rewrite /cPr setX1 2!Pr_set1 /= -/Q.
+  rewrite /jcPr setX1 2!Pr_set1 /= -/Q.
   case/boolP : (PQ (a, b) == 0) => [/eqP H0 | H0].
   - by rewrite H0 !mul0R.
   - congr (_ * log _).
@@ -427,7 +426,7 @@ transitivity (- (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a)) +
   case/boolP : (PQ (a, b) == 0) => [/eqP ->| H0].
   - by rewrite !mul0R.
   - congr (_ * _); rewrite logDiv //.
-    + by rewrite -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1.
+    + by rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1.
     + rewrite -fdist_gt0; exact: Bivar.dom_by_fstN H0.
 rewrite -subR_opp; congr (_ - _).
 - rewrite /entropy; congr (- _); apply/eq_bigr => a _.
@@ -437,7 +436,7 @@ rewrite -subR_opp; congr (_ - _).
   rewrite mulRN; congr (- _).
   rewrite big_distrr /=; apply eq_bigr=> a _ /=.
   rewrite mulRA; congr (_ * _); rewrite -/Q.
-  by rewrite -[in LHS]Pr_set1 -setX1 product_rule0 Pr_set1 -/Q mulRC.
+  by rewrite -[in LHS]Pr_set1 -setX1 jproduct_rule Pr_set1 -/Q mulRC.
 Qed.
 
 Lemma miE2 : mi PQ = `H Q - CondEntropy.h QP. (* 2.40 *)
@@ -549,8 +548,8 @@ Qed.
 Lemma cdiv1_ge0 z : 0 <= cdiv1 z.
 Proof.
 case/boolP : (Bivar.snd PQR z == 0) => [/eqP|] z0.
-  apply rsumr_ge0 => -[a b] _.
-  rewrite {1}/cPr setX1 Pr_set1 (Bivar.dom_by_snd _ z0) div0R mul0R.
+  apply sumR_ge0 => -[a b] _.
+  rewrite {1}/jcPr setX1 Pr_set1 (Bivar.dom_by_snd _ z0) div0R mul0R.
   exact: leRR.
 have Hc : Bivar.fst (Swap.d PQR) z != 0.
   by rewrite Swap.fst.
@@ -562,12 +561,12 @@ rewrite cdiv1_is_div //; apply div_ge0.
 (* TODO: lemma *)
 apply/dominatesP => -[a b].
 rewrite ProdFDist.dE !CondJFDist.dE //= mulR_eq0 => -[|].
-- rewrite /cPr !setX1 !Pr_set1 !mulR_eq0 => -[|].
+- rewrite /jcPr !setX1 !Pr_set1 !mulR_eq0 => -[|].
   rewrite !Swap.dI.
   move/Proj13.domin => ->; by left.
   rewrite !Swap.dI.
   rewrite Proj13.snd /Rdiv => ->; by right.
-- rewrite /cPr !setX1 !Pr_set1 !mulR_eq0 => -[|].
+- rewrite /jcPr !setX1 !Pr_set1 !mulR_eq0 => -[|].
   rewrite !Swap.dI.
   move/Proj23.domin => ->; by left.
   rewrite !Swap.dI.
@@ -614,17 +613,17 @@ rewrite Swap.dE TripA.dE /= -mulRN -mulRDr.
 case/boolP : (PQR (a, b, c) == 0) => [/eqP ->| H0]; first by rewrite !mul0R.
 congr (_ * _).
 rewrite addRC addR_opp -logDiv; last 2 first.
-  rewrite -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1; exact: TripA.dominN H0.
-  rewrite -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
+  rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: TripA.dominN H0.
+  rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
 congr (log _).
 rewrite divRM; last 2 first.
   apply/eqP.
-  rewrite -cPr_gt0 -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
+  rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
   apply/eqP.
-  rewrite -cPr_gt0 -cPr_Pr_setX_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj23.dominN H0.
+  rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj23.dominN H0.
 rewrite {2}/Rdiv -mulRA mulRCA {1}/Rdiv [in LHS]mulRC; congr (_ * _).
-rewrite -[in X in _ = X * _]setX1 product_rule setX1 -mulRA mulRV ?mulR1 //.
-rewrite /cPr divR_neq0' // ?setX1 !Pr_set1.
+rewrite -[in X in _ = X * _]setX1 jproduct_rule_cond setX1 -mulRA mulRV ?mulR1 //.
+rewrite /jcPr divR_neq0' // ?setX1 !Pr_set1.
 exact: Proj23.dominN H0.
 rewrite Proj23.snd; exact: Bivar.dom_by_sndN H0.
 Qed.
@@ -643,14 +642,14 @@ rewrite -(pair_bigA _ (fun x1 x2 => PQR (x1, x2) * log
 rewrite exchange_big; apply eq_bigr => c _ /=.
 rewrite big_distrr /=; apply eq_bigr => -[a b] _ /=; rewrite mulRA; congr (_ * _).
 rewrite mulRC.
-move: (product_rule0 PQR [set (a, b)] [set c]); rewrite -/R Pr_set1 => <-.
+move: (jproduct_rule PQR [set (a, b)] [set c]); rewrite -/R Pr_set1 => <-.
 by rewrite setX1 Pr_set1.
 Qed.
 
 (* 2.92 *)
 Lemma cmi_ge0 : 0 <= cmi PQR.
 Proof.
-rewrite cmiE2; apply rsumr_ge0 => c _; apply mulR_ge0 => //; exact: cdiv1_ge0.
+by rewrite cmiE2; apply sumR_ge0 => c _; apply mulR_ge0 => //; exact: cdiv1_ge0.
 Qed.
 
 Let P : fdist A := Bivar.fst (TripA.d PQR).
@@ -676,7 +675,7 @@ rewrite exchange_big pair_big; apply eq_bigr => -[c a] _ /=; congr (_ * _).
   by rewrite !(Swap.dE,TripA.dE,TripC12.dE).
 rewrite /CondEntropy.h1; congr (- _).
 apply eq_bigr => b _.
-by rewrite -setX1 cPr_TripA_TripC12 setX1.
+by rewrite -setX1 jcPr_TripA_TripC12 setX1.
 Qed.
 End prop.
 End conditional_mutual_information.
@@ -714,7 +713,7 @@ rewrite [in X in _ = X * _ + _](_ : P1 a = Bivar.snd Pj a); last first.
   by rewrite /P Swap.snd ProdFDist.fst.
 rewrite Bivar.sndE big_distrl /= big_distrr /= -big_split /=; apply eq_bigr => b _.
 rewrite mulRA (_ : P1 a * _ = Pj (b, a)); last first.
-  rewrite /cPr Pr_set1 -/P1 mulRCA setX1 Pr_set1 {1}/Pj Swap.snd ProdFDist.fst.
+  rewrite /jcPr Pr_set1 -/P1 mulRCA setX1 Pr_set1 {1}/Pj Swap.snd ProdFDist.fst.
   case/boolP : (P1 a == 0) => [/eqP|] P2a0.
     have Pba0 : Pj (b, a) = 0 by rewrite /P Swap.dE ProdFDist.dE P2a0 mul0R.
     by rewrite Pba0 mul0R.
@@ -730,9 +729,9 @@ have Q2a0 : Q1 a != 0.
   apply: contra Qba0; rewrite /Q Swap.dE ProdFDist.dE => /eqP ->; by rewrite mul0R.
 rewrite -logM; last 2 first.
   by apply/divR_gt0; rewrite -fdist_gt0.
-  apply/divR_gt0; by rewrite -cPr_Pr_setX_gt0 setX1 Pr_set1 -fdist_gt0.
+  apply/divR_gt0; by rewrite -Pr_jcPr_gt0 setX1 Pr_set1 -fdist_gt0.
 congr (log _).
-rewrite /cPr !setX1 !Pr_set1.
+rewrite /jcPr !setX1 !Pr_set1.
 rewrite !Swap.dE !Swap.snd !ProdFDist.fst !ProdFDist.dE /=.
 rewrite -/P1 -/Q1; field.
 split; first exact/eqP.
@@ -840,11 +839,11 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
       rewrite 2!Bivar.sndE; apply eq_bigr => a _; by rewrite H1.
     rewrite /CondEntropy.h1; congr (- _).
     apply eq_bigr => a _; congr (_ * log _).
-    + rewrite /cPr /Pr !big_setX /= !big_set1.
+    + rewrite /jcPr /Pr !big_setX /= !big_set1.
       rewrite H1; congr (_ / _).
       rewrite !Bivar.sndE; apply eq_bigr => a0 _.
       by rewrite H1.
-    + rewrite /cPr /Pr !big_setX /= !big_set1.
+    + rewrite /jcPr /Pr !big_setX /= !big_set1.
       rewrite H1; congr (_ / _).
       rewrite !Bivar.sndE; apply eq_bigr => a0 _.
       by rewrite H1.
@@ -860,7 +859,7 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
       move=> v b a H1'.
       rewrite /YP /Swap.d /Multivar.belast_last /Take.d /Multivar.from_bivar.
       rewrite /TripA.d /TripC12.d /PairTake.d !FDistMap.comp !FDistMap.dE /=.
-      apply eq_bigl => -[w b0]; rewrite /= /swap /=.
+      apply eq_bigl => -[w b0]; rewrite /= /swap /= !inE /=.
       rewrite (_ : rlast _ = w ``_ j); last first.
         rewrite /rlast !mxE !castmxE /= cast_ord_id.
         rewrite (_ : cast_ord _ _ = rshift 1%nat j); last exact/val_inj.
@@ -939,7 +938,7 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
       exact: eq_irrelevance.
     rewrite /CondEntropy.h1; congr (- _).
     apply eq_bigr => a _.
-    rewrite /cPr /Pr !big_setX /= !big_set1.
+    rewrite /jcPr /Pr !big_setX /= !big_set1.
     rewrite !H2 //=.
     congr (_ / _ * log (_ / _)).
     + rewrite 2!Bivar.sndE; apply eq_bigr => a' _; by rewrite H2.
@@ -964,7 +963,7 @@ case: ifPn => j0.
       by rewrite !TripA.dE /= Swap.dE TripC12.dE /= TripA.dE.
     * (* TODO: lemma? *)
       rewrite /CondEntropy.h1; congr (- _); apply eq_bigr => a _.
-      by rewrite -!setX1 -cPr_TripA_TripAC /TripAC.d TripC12.dI.
+      by rewrite -!setX1 -jcPr_TripA_TripAC /TripAC.d TripC12.dI.
 Qed.
 
 End chain_rule_for_information.
@@ -1023,12 +1022,12 @@ Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
 (* thm 2.6.6 TODO: with equality in case of independence *)
 Lemma independence_bound_on_entropy : `H P <= \sum_(i < n.+1) `H (Nth.d P i).
 Proof.
-rewrite chain_rule_rV; apply ler_rsum => /= i _.
+rewrite chain_rule_rV; apply leR_sumR => /= i _.
 case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
   rewrite Nth.head_ofE; exact/leRR.
 apply: leR_trans; first exact: information_cant_hurt.
-rewrite Swap.fst take_nth; exact/leRR.
+by rewrite Swap.fst take_nth; exact/leRR.
 Qed.
 
 End independence_bound_on_entropy.
@@ -1058,7 +1057,7 @@ rewrite (_ : _ / _ = 1); first by rewrite /log Log_1 mulR0.
 rewrite eqR_divr_mulr ?mul1R; last first.
   rewrite mulR_neq0'; apply/andP; split.
     (* TODO: lemma? *)
-    rewrite /cPr divR_neq0' //.
+    rewrite /jcPr divR_neq0' //.
       rewrite setX1 Pr_set1.
       case: x => [[x11 x12] x2] in H0 *.
       exact: Proj13.dominN H0.
@@ -1066,7 +1065,7 @@ rewrite eqR_divr_mulr ?mul1R; last first.
     case: x => [x1 x2] in H0 *.
     exact: Bivar.dom_by_sndN H0.
   (* TODO: lemma? *)
-  rewrite /cPr divR_neq0' //.
+  rewrite /jcPr divR_neq0' //.
     rewrite setX1 Pr_set1.
     case: x => [[x11 x12] x2] in H0 *.
     exact: Proj23.dominN H0.
@@ -1075,20 +1074,20 @@ rewrite eqR_divr_mulr ?mul1R; last first.
   exact: Bivar.dom_by_sndN H0.
 (* TODO: lemma? *) (* 2.118 *)
 transitivity (Pr PRQ [set x] / Pr Q [set x.2]).
-  rewrite /cPr setX1 {2}/PRQ TripAC.snd -/Q; by case: x H0.
+  rewrite /jcPr setX1 {2}/PRQ TripAC.snd -/Q; by case: x H0.
 transitivity (Pr PQ [set (x.1.1,x.2)] * \Pr_RQ[[set x.1.2]|[set x.2]] / Pr Q [set x.2]).
   congr (_ / _).
   case: x H0 => [[a c] b] H0 /=.
   rewrite /PRQ Pr_set1 TripAC.dE /= mc; congr (_ * _).
-  rewrite /cPr {2}/QP Swap.snd -/P Pr_set1 mulRCA mulRV ?mulR1; last first.
+  rewrite /jcPr {2}/QP Swap.snd -/P Pr_set1 mulRCA mulRV ?mulR1; last first.
     apply Bivar.dom_by_fstN with b.
     apply Bivar.dom_by_fstN with c.
     by rewrite TripAC.dE in H0.
   by rewrite /QP -Swap.Pr setX1.
 rewrite {1}/Rdiv -mulRA mulRCA mulRC; congr (_ * _).
-  rewrite /cPr Proj13.snd -/Q {2}/PRQ TripAC.snd -/Q -/(Rdiv _ _); congr (_ / _).
+  rewrite /jcPr Proj13.snd -/Q {2}/PRQ TripAC.snd -/Q -/(Rdiv _ _); congr (_ / _).
   by rewrite /PRQ /PQ setX1 Proj13_TripAC.
-rewrite /cPr Proj23.snd; congr (_ / _).
+rewrite /jcPr Proj23.snd; congr (_ / _).
 - by rewrite /RQ /PRQ /Proj23.d TripAC.sndA.
 - by rewrite /RQ Swap.snd TripA.fst_snd /PRQ TripAC.snd.
 Qed.
@@ -1125,7 +1124,7 @@ rewrite /markov_chain => H c b a.
 rewrite TripC13.dE /=.
 rewrite {}H.
 rewrite TripC13.fst_fst.
-rewrite (bayes _ [set a] [set b]).
+rewrite (jBayes _ [set a] [set b]).
 rewrite Swap.dI.
 rewrite Swap.fst.
 rewrite Swap.snd.
@@ -1133,13 +1132,13 @@ rewrite (mulRC (_ a)) -mulRA.
 rewrite [in RHS]mulRCA -[in RHS]mulRA.
 congr (_ * _).
   by rewrite TripC13.sndA.
-rewrite (bayes _ [set c] [set b]).
+rewrite (jBayes _ [set c] [set b]).
 rewrite Swap.dI.
 rewrite [in LHS]mulRCA -[in LHS]mulRA.
 rewrite [in RHS](mulRC (_ c)) -[in RHS](mulRA _ (_ c)).
 rewrite [in RHS]mulRCA.
 congr (_ * _).
-  congr cPr.
+  congr (\Pr_ _ [_ | _]).
   by rewrite TripC13.fst Swap.dI.
 rewrite !Pr_set1.
 rewrite [in RHS]mulRCA.
@@ -1198,11 +1197,11 @@ have H2 : CondEntropy.h (TripA.d (TripAC.d Q)) = CondEntropy.h (Multivar.to_biva
     by rewrite TripA.dE /= Multivar.to_bivarE /= /Q TakeDrop.dE.
   - rewrite /CondEntropy.h1; congr (- _)%R; apply eq_bigr => a _.
     congr (_ * log _)%R.
-    + rewrite /cPr !(Pr_set1,setX1) TripA.dE /= /Q TakeDrop.dE /= Multivar.to_bivarE /=.
+    + rewrite /jcPr !(Pr_set1,setX1) TripA.dE /= /Q TakeDrop.dE /= Multivar.to_bivarE /=.
       congr (_ / _)%R.
       rewrite !Bivar.sndE; apply eq_bigr => a0 _.
       by rewrite TripA.dE TakeDrop.dE Multivar.to_bivarE.
-    + rewrite /cPr !(Pr_set1,setX1) TripA.dE /= /Q TakeDrop.dE /= Multivar.to_bivarE /=.
+    + rewrite /jcPr !(Pr_set1,setX1) TripA.dE /= /Q TakeDrop.dE /= Multivar.to_bivarE /=.
       congr (_ / _)%R.
       rewrite !Bivar.sndE; apply eq_bigr => a0 _.
       by rewrite TripA.dE TakeDrop.dE Multivar.to_bivarE.
@@ -1313,14 +1312,14 @@ Lemma han : n.-1%:R * `H P <= \sum_(i < n) `H (MargFDist.d P i).
 Proof.
 rewrite -subn1 natRB // mulRBl mul1R leR_subl_addr {2}(chain_rule_rV P).
 rewrite -big_split /= -{1}(card_ord n) -sum1_card big_morph_natRD big_distrl /=.
-apply ler_rsum => i _; rewrite mul1R.
+apply leR_sumR => i _; rewrite mul1R.
 case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
   rewrite -MargFDist.tail_ofE /Multivar.tail_of /Multivar.head_of.
   rewrite -{1}(Multivar.to_bivarK P) entropy_from_bivar.
   move: (chain_rule (Multivar.to_bivar P)); rewrite /JointEntropy.h => ->.
-  rewrite [in X in _ <= X]addRC leR_add2l -Swap.fst; exact: information_cant_hurt.
-rewrite (chain_rule_multivar _ i0) leR_add2l; exact/han_helper.
+  by rewrite [in X in _ <= X]addRC leR_add2l -Swap.fst; exact: information_cant_hurt.
+by rewrite (chain_rule_multivar _ i0) leR_add2l; exact/han_helper.
 Qed.
 
 End Han_inequality.

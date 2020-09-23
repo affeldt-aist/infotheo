@@ -10,6 +10,8 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (*                                                                            *)
 (* This file provides a formalization of finite probability distributions.    *)
 (*                                                                            *)
+(*  f @^-1 y        == preimage of the point y via the function f where the   *)
+(*                     type of x is an eqType                                 *)
 (*  {fdist A}       == the type of distributions over a finType A             *)
 (*  FDist1.d        == point-supported distribution                           *)
 (*  FDistMap.d      == map of the "probability monad"                         *)
@@ -31,6 +33,8 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (*                                                                            *)
 (*  P1 `x P2        == product distribution                                   *)
 (*  P `^ n          == product distribution over a row vector                 *)
+(*  P1 <| p |> P1   == convex combination of distributions P1 and P2 with     *)
+(*                     probability p                                          *)
 (*  wolfowitz       == Wolfowitz's counting principle                         *)
 (*                                                                            *)
 (******************************************************************************)
@@ -39,8 +43,8 @@ Reserved Notation "{ 'fdist' T }" (at level 0, format "{ 'fdist'  T }").
 Reserved Notation "'`U' HC " (at level 10, HC at next level).
 Reserved Notation "P `^ n" (at level 5).
 Reserved Notation "P1 `x P2" (at level 6).
-Reserved Notation "P1 `, P2" (at level 6).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
+Reserved Notation "f @^-1 y" (at level 10).
 
 Declare Scope proba_scope.
 
@@ -50,6 +54,8 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
+
+Notation "f @^-1 y" := (preim f (pred1 y)) : proba_scope.
 
 Module FDist.
 Section fdist.
@@ -64,7 +70,7 @@ Proof. by case: d => f /= /eqP. Qed.
 Lemma le1 (d : t) a : d a <= 1.
 Proof.
 rewrite -(f1 d) (_ : d a = \sum_(a' in A | a' == a) d a').
-  apply (@ler_rsum_l_support _ _ _ xpredT) => // ?; exact/ge0.
+  apply (@leR_sumRl_support _ _ _ xpredT) => // ?; exact/ge0.
 by rewrite big_pred1_eq.
 Qed.
 Definition make (f : {ffun A -> R}) (H0 : forall a, 0 <= f a)
@@ -196,7 +202,7 @@ Proof.
 apply: (iffP idP) => [/eqP H b ?|H].
 - move : (FDist.f1 d); rewrite (bigD1 a) //= H => /esym/eqP.
   rewrite addRC -subR_eq' subRR.
-  move/eqP/esym/prsumr_eq0P => -> // c ca; exact/fdist_ge0.
+  move/eqP/esym/psumR_eq0P => -> // c ca; exact/fdist_ge0.
 - move: (FDist.f1 d); rewrite (bigD1 a) //= => /esym.
   by rewrite -subR_eq => <-; rewrite big1 // subR0.
 Qed.
@@ -227,7 +233,7 @@ Section def.
 Variables (A B : finType) (p : fdist A) (g : A -> fdist B).
 Definition f := [ffun b => \sum_(a in A) p a * (g a) b].
 Lemma f0 b : 0 <= f b.
-Proof. rewrite /f ffunE; apply rsumr_ge0 => a _; exact: mulR_ge0. Qed.
+Proof. rewrite /f ffunE; apply sumR_ge0 => a _; exact: mulR_ge0. Qed.
 Lemma f1 : \sum_(b in B) f b = 1.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
@@ -270,11 +276,11 @@ Module FDistMap.
 Section def.
 Variables (A B : finType) (g : A -> B) (p : fdist A).
 Definition d : {fdist B} := FDistBind.d p (fun a => FDist1.d (g a)).
-Lemma dE (b : B) : d b = \sum_(a in A | g a == b) p a.
+Lemma dE (b : B) : d b = \sum_(a in A | a \in g @^-1 b) p a.
 Proof.
 rewrite /d FDistBind.dE [in RHS]big_mkcond /=; apply eq_bigr => a _.
-case: ifPn => [/eqP ->|]; rewrite FDist1.dE; [by rewrite eqxx mulR1|].
-move/negbTE; rewrite eq_sym => ->; by rewrite mulR0.
+case: ifPn => [|]; first by rewrite inE => /eqP->; rewrite FDist1.dE eqxx mulR1.
+by rewrite !inE => gab; rewrite FDist1.dE eq_sym (negbTE gab) mulR0.
 Qed.
 End def.
 Section prop.
@@ -606,7 +612,7 @@ Section def.
 Variables (A : finType) (n : nat) (e : {fdist 'I_n}) (g : 'I_n -> fdist A).
 Definition f := [ffun a => \sum_(i < n) e i * g i a].
 Lemma f0 a : 0 <= f a.
-Proof. by rewrite ffunE; apply: rsumr_ge0 => /= i _; apply mulR_ge0. Qed.
+Proof. by rewrite ffunE; apply: sumR_ge0 => /= i _; apply mulR_ge0. Qed.
 Lemma f1 : \sum_(a in A) f a = 1.
 Proof.
 rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
@@ -943,11 +949,11 @@ Definition fst : fdist A := FDistMap.d fst P.
 
 Lemma fstE a : fst a = \sum_(i in B) P (a, i).
 Proof.
-by rewrite /fst FDistMap.dE -(pair_big_fst _ _ (pred1 a)) //= big_pred1_eq.
+by rewrite /fst FDistMap.dE /= -(pair_big_fst _ _ (pred1 a)) //= ?big_pred1_eq.
 Qed.
 
 Lemma dom_by_fst a b : fst a = 0 -> P (a, b) = 0.
-Proof. rewrite fstE => /prsumr_eq0P -> // ? _; exact: fdist_ge0. Qed.
+Proof. rewrite fstE => /psumR_eq0P -> // ? _; exact: fdist_ge0. Qed.
 
 Lemma dom_by_fstN a b : P (a, b) != 0 -> fst a != 0.
 Proof. by apply: contra => /eqP /dom_by_fst ->. Qed.
@@ -961,7 +967,7 @@ apply eq_bigr => a ?; by rewrite big_pred1_eq.
 Qed.
 
 Lemma dom_by_snd a b : snd b = 0 -> P (a, b) = 0.
-Proof. rewrite sndE => /prsumr_eq0P -> // ? _; exact: fdist_ge0. Qed.
+Proof. rewrite sndE => /psumR_eq0P -> // ? _; exact: fdist_ge0. Qed.
 
 Lemma dom_by_sndN a b : P (a, b) != 0 -> snd b != 0.
 Proof. by apply: contra => /eqP /dom_by_snd ->. Qed.
@@ -1099,6 +1105,13 @@ rewrite ProdFDist.dE /= mulR_eq0 => -[P1a|P2b];
 Qed.
 End prod_dominates_joint.
 
+Lemma ProdFDistfst A B (P1 : fdist A) (P2 : fdist B) : Bivar.fst (P1 `x P2) = P1.
+Proof.
+apply/fdist_ext => b; rewrite Bivar.fstE.
+under eq_bigr do rewrite ProdFDist.dE.
+by rewrite /= -big_distrr /= FDist.f1 mulR1.
+Qed.
+
 Lemma ProdFDistsnd A B (P1 : fdist A) (P2 : fdist B) : Bivar.snd (P1 `x P2) = P2.
 Proof.
 apply/fdist_ext => b; rewrite Bivar.sndE.
@@ -1114,7 +1127,7 @@ Variables (A : finType) (P : fdist A) (n : nat).
 Definition f := [ffun t : 'rV[A]_n => \prod_(i < n) P t ``_ i].
 
 Lemma f0 t : 0 <= f t.
-Proof. by rewrite ffunE; apply rprodr_ge0. Qed.
+Proof. by rewrite ffunE; apply prodR_ge0. Qed.
 
 Lemma f1 : \sum_(t in 'rV_n) f t = 1.
 Proof.
@@ -1246,7 +1259,7 @@ move=> A0 B0 [Ha Hb] H.
 have HB : \sum_(x in s) P `^ _ x <= INR #|s| * B.
   have HB : \sum_(x in s | predT s ) P `^ _ x <= INR #|s| * B.
     apply (@leR_trans (\sum_(x in s | predT s) [fun _ => B] x)).
-      apply ler_rsum_support => /= i iA _; by apply H.
+      apply leR_sumR_support => /= i iA _; by apply H.
     rewrite -big_filter /= big_const_seq /= iter_addR /=.
     apply leR_wpmul2r; first lra.
     apply Req_le.
@@ -1257,7 +1270,7 @@ have HB : \sum_(x in s) P `^ _ x <= INR #|s| * B.
 have HA : INR #|s| * A <= \sum_(x in s) P `^ _ x.
   have HA : INR #|s| * A <= \sum_(x in s | predT s) P `^ _ x.
     apply (@leR_trans (\sum_(x in s | predT s) [fun _ => A] x)); last first.
-      apply ler_rsum_support => i Hi _; by case: (H i Hi).
+      apply leR_sumR_support => i Hi _; by case: (H i Hi).
     rewrite -big_filter /= big_const_seq /= iter_addR /=.
     apply leR_wpmul2r; first lra.
     apply Req_le.

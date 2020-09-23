@@ -57,7 +57,7 @@ rewrite /conditional_entropy /CondEntropy.h /=.
 rewrite !big_ord_recl big_ord0 !Bivar.sndE /=.
 rewrite !big_ord_recl !big_ord0 !dE /f /=.
 rewrite /CondEntropy.h1 /=.
-rewrite !big_ord_recl !big_ord0 /cPr /Pr !(big_setX,big_set1) !dE /f /=.
+rewrite !big_ord_recl !big_ord0 /jcPr /Pr !(big_setX,big_set1) !dE /f /=.
 rewrite !Bivar.sndE /=.
 rewrite !big_ord_recl !big_ord0 !dE /f !ffunE /=.
 rewrite !(addR0,add0R,div0R,mul0R).

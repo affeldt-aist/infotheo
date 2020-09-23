@@ -808,7 +808,7 @@ apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
   rewrite (_ : \prod_(j | enum_val (enum_rank j) == j) _ =
                \prod_(j : A) (card_type_of_row Hta Vctyp (enum_rank j))%:R); last first.
       apply eq_bigl => a; rewrite enum_rankK; by apply/eqP.
-  apply ler_rprod => a.
+  apply leR_prodR => a.
   split; first exact/leR0n.
   rewrite -exp2_pow mulRA.
   rewrite /card_type_of_row; case: Bool.bool_dec => [e|/Bool.eq_true_not_negb e].
@@ -818,13 +818,13 @@ apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
       exact: entropy_ge0.
   set pta0 := type_of_row Hta Vctyp _.
   rewrite (_ : exp2 _ = exp2 (N(a | ta)%:R * `H pta0)%R).
-    rewrite -[in X in _ <= exp2 (X * _)](enum_rankK a); by apply card_typed_tuples.
-  do 2 f_equal.
+    by rewrite -[in X in _ <= exp2 (X * _)](enum_rankK a); apply card_typed_tuples.
+  congr (exp2 (_ * _)).
   + by rewrite -type_fun_type // (type_numocc Hta).
   + rewrite /entropy.
     apply Ropp_eq_compat, eq_bigr => b _.
     rewrite /pta0 (JType.c_f V) /= (Vctyp Hta a) -{1 4}(enum_rankK a).
-    move/negbTE : (e) => ->; by rewrite !ffunE /= enum_rankK.
+    by move/negbTE : (e) => ->; rewrite !ffunE /= enum_rankK.
 Qed.
 
 End card_shell_ub.

@@ -72,7 +72,7 @@ Qed.
 Local Open Scope proba_scope.
 
 Lemma Jensen (P : fdist A) (X : {RV P -> R}) : (forall x, X x \in D) ->
-  f (`E X) <= `E (comp_RV X f).
+  f (`E X) <= `E (f `o X).
 Proof.
 move=> H.
 rewrite {2}/Ex; erewrite eq_bigr; last by move=> a _; rewrite mulRC; reflexivity.

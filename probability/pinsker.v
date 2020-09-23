@@ -476,6 +476,19 @@ Hypothesis P_dom_by_Q : P `<< Q.
 Local Notation "0" := (false).
 Local Notation "1" := (true).
 
+Lemma bipart_dominates :
+  let A_ := fun b => if b then [set a | P a <b Q a] else [set a | Q a <b= P a] in 
+  forall (cov : A_ 0 :|: A_ 1 = [set: A]) (dis : A_ 0 :&: A_ 1 = set0),
+  bipart dis cov P `<< bipart dis cov Q.
+Proof.
+move=> A_ cov dis; apply/dominatesP => /= b.
+rewrite !ffunE => /psumR_eq0P H.
+transitivity (\sum_(a | a \in A_ b) 0%R).
+  apply eq_bigr => // a ?.
+  by rewrite (dominatesE P_dom_by_Q) // H // => a' ?; exact/pos_ff_ge0.
+by rewrite big_const iter_addR mulR0.
+Qed.
+
 Lemma Pinsker_inequality : / (2 * ln 2) * d(P , Q) ^ 2 <= D(P || Q).
 Proof.
 pose A0 := [set a | Q a <b= P a].
@@ -496,7 +509,7 @@ pose Q_A := bipart dis cov Q.
 have step1 : D(P_A || Q_A) <= D(P || Q) by apply partition_inequality; exact P_dom_by_Q.
 suff : / (2 * ln 2) * d(P , Q) ^2 <= D(P_A || Q_A).
   move=> ?; apply (@leR_trans (D(P_A || Q_A))) => //; exact/Rge_le.
-have step2 : d( P , Q ) = d( P_A , Q_A ).
+have -> : d( P , Q ) = d( P_A , Q_A ).
   rewrite /var_dist.
   transitivity (\sum_(a | a \in A0) `| P a - Q a | + \sum_(a | a \in A1) `| P a - Q a |).
     rewrite -big_union //; last by rewrite -setI_eq0 -dis /A_ setIC.
@@ -508,7 +521,7 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
         apply eq_bigr => a; rewrite /A0 in_set => /leRP Ha.
         by rewrite geR0_norm ?subR_ge0.
       rewrite big_split /= geR0_norm; last first.
-        rewrite subR_ge0; rewrite !ffunE; apply ler_rsum => ?; by rewrite inE => /leRP.
+        by rewrite subR_ge0; rewrite !ffunE; apply leR_sumR => ?; by rewrite inE => /leRP.
       by rewrite -big_morph_oppR // 2!ffunE addR_opp.
     - rewrite /P_A /Q_A /bipart /= !ffunE /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
@@ -519,19 +532,11 @@ have step2 : d( P , Q ) = d( P_A , Q_A ).
           apply eq_bigr => a; rewrite /A1 in_set => Ha.
           rewrite ltR0_norm // subR_lt0; exact/ltRP.
         rewrite -big_morph_oppR // big_split /= ltR0_norm; last first.
-          rewrite subR_lt0; apply ltr_rsum_support => // a.
+          rewrite subR_lt0; apply ltR_sumR_support => // a.
           rewrite /A1 in_set; by move/ltRP.
         by rewrite -big_morph_oppR.
   by rewrite big_bool /= /bipart_pmf !ffunE /=.
-rewrite step2.
-apply (Pinsker_2_inequality card_bool).
-(* TODO: lemma *)
-apply/dominatesP => /= b.
-rewrite !ffunE.
-move/prsumr_eq0P => H.
-transitivity (\sum_(a | a \in A_ b) 0%R).
-  apply eq_bigr => // a ?; rewrite (dominatesE P_dom_by_Q) // H // => a' ?; exact/pos_ff_ge0.
-by rewrite big_const iter_addR mulR0.
+exact/(Pinsker_2_inequality card_bool)/bipart_dominates.
 Qed.
 
 Lemma Pinsker_inequality_weak : d(P , Q) <= sqrt (2 * D(P || Q)).
@@ -548,7 +553,7 @@ apply leR_inv => //; first exact/mulR_gt0.
 rewrite -[X in _ <= X]mulR1.
 apply leR_wpmul2l; first lra.
 rewrite [X in _ <= X](_ : 1%R = ln (exp 1)); last by rewrite ln_exp.
-apply ln_increasing_le; [lra | exact leR2e].
+by apply ln_increasing_le; [lra | exact leR2e].
 Qed.
 
 End Pinsker.

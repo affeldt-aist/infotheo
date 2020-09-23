@@ -2,8 +2,8 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect fingroup perm matrix.
 Require Import Reals.
-Require Import ssrR Reals_ext ssralg_ext Rbigop bigop_ext logb ln_facts.
-Require Import fdist proba jfdist divergence.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop bigop_ext logb ln_facts.
+Require Import fdist proba jfdist binary_entropy_function divergence.
 
 (******************************************************************************)
 (*                        Entropy of a distribution                           *)
@@ -38,7 +38,7 @@ Proof.
 rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
 rewrite (_ : \sum_(_ in _) _ = \sum_(i in A | predT A) - (P i * log (P i))); last first.
   apply eq_bigl => i /=; by rewrite inE.
-apply rsumr_ge0 => i _.
+apply sumR_ge0 => i _.
 case/boolP : (P i == 0) => [/eqP ->|Hi].
   (* NB: this step in a standard textbook would be handled as a
      consequence of lim x->0 x log x = 0 *)
@@ -99,6 +99,13 @@ rewrite big_const iter_addR mulRA mulRV; last by rewrite INR_eq0' HA.
 rewrite mul1R /log LogV ?oppRK //; by rewrite HA; apply/ltR0n.
 Qed.
 
+Lemma entropy_H2 (A : finType) (card_A : #|A| = 2%nat) (p : prob) :
+  H2 p = entropy (Binary.d card_A p (Set2.a card_A)).
+Proof.
+rewrite /H2 /entropy Set2sumE /= !Binary.dE eqxx /=.
+by rewrite eq_sym (negbTE (Set2.a_neq_b _)) oppRD addRC.
+Qed.
+
 Local Open Scope reals_ext_scope.
 
 Lemma entropy_max (A : finType) (P : fdist A) : `H P <= log #|A|%:R.
@@ -144,6 +151,6 @@ Proof.
 rewrite /entropy; congr (- _) => /=; apply/esym.
 rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ s) xpredT); last first.
   exact: col_perm_inj.
-apply eq_bigr => v _; by rewrite MultivarPerm.dE.
+by apply eq_bigr => v _; rewrite MultivarPerm.dE.
 Qed.
 End multivarperm_prop.

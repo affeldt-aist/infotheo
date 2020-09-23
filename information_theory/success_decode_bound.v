@@ -123,7 +123,7 @@ rewrite mulRV ?INR_eq0' -?lt0n // mul1R.
 rewrite -iter_addR -big_const /=.
 rewrite (_ : \sum_(m | m \in M ) 1 = \sum_(m : M) 1); last exact/eq_bigl.
 rewrite big_distrr /=.
-apply: ler_rsum => m _.
+apply: leR_sumR => m _.
 rewrite mulNR exp2_Ropp.
 rewrite mulRC leR_pdivr_mulr // ?mul1R.
 apply/(@leR_trans #| V.-shell (tuple_of_row (enc tc m)) |%:R); last first.
@@ -271,13 +271,13 @@ Proof.
 rewrite (typed_success W Mnot0 tc).
 apply (@leR_trans ( \sum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
   exp2 (- n%:R *  +| log #|M|%:R * / n%:R - `I(P, V) |))).
-  apply: ler_rsum => V Vnu.
+  apply: leR_sumR => V Vnu.
   rewrite -mulRA; apply leR_wpmul2l.
     by rewrite /exp_cdiv; case : ifP => _ //; exact/leRR.
   by rewrite /success_factor mulRA; exact: success_factor_ub.
 apply (@leR_trans (\sum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
                     exp2 (- n%:R * +| log #|M|%:R * / n%:R - `I(P, Vmax)|))).
-  apply ler_rsum => V HV.
+  apply leR_sumR => V HV.
   by move/leRP: (@arg_rmax2 [finType of (P_ n (A, B))] V0
     (fun V => exp_cdiv P V W * success_factor_bound M V P) V).
 rewrite big_const iter_addR /success_factor_bound; apply leR_wpmul2r.
@@ -319,21 +319,21 @@ apply (@leR_trans (\sum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
   rewrite (_ : #| P_ n ( A ) |%:R * scha W (Pmax.-typed_code c) =
              \sum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)); last first.
     by rewrite big_const iter_addR.
-  apply ler_rsum => P _.
+  apply leR_sumR => P _.
   by move/leRP : (arg_rmax2 P0 (fun P1 : P_ n (A) => scha(W, P1.-typed_code c)) P).
 rewrite schaE // -(sum_messages_types c).
 rewrite div1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
-apply ler_rsum => P _.
+apply leR_sumR => P _.
 rewrite mulRC leR_pdivr_mulr; last exact/ltR0n.
 rewrite schaE // div1R -mulRA mulRCA mulVR ?INR_eq0' -?lt0n // mulR1.
 apply/(@leR_trans (\sum_(m | m \in enc_pre_img c P)
                      \sum_(y | (dec (P.-typed_code c)) y == Some m)
                      (W ``(|(enc (P.-typed_code c)) m)) y)).
-  apply ler_rsum => m Hm.
+  apply leR_sumR => m Hm.
   apply Req_le, eq_big => tb // _.
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
-- by apply ler_rsum_l => //= i ?; [exact/leRR | exact: rsumr_ge0].
+- by apply leR_sumRl => //= i ?; [exact/leRR | exact: sumR_ge0].
 Qed.
 
 End success_bound_sect.

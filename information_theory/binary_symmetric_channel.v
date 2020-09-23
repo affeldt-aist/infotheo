@@ -2,6 +2,7 @@
 (* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
 From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg perm.
 From mathcomp Require Import zmodp matrix.
+From mathcomp Require Import Rstruct classical_sets.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import entropy binary_entropy_function channel hamming channel_code.
@@ -164,20 +165,26 @@ Variable p : R.
 Hypothesis p_01' : 0 < p < 1.
 Let p_01 := Prob.mk (closed p_01').
 
-Theorem BSC_capacity : capacity (BSC.c card_A p_01) (1 - H2 p).
+Theorem BSC_capacity : capacity (BSC.c card_A p_01) = 1 - H2 p.
 Proof.
-rewrite /capacity; split.
-- move=> d.
-  move: (@IPW _ card_A d _ p_01') => tmp.
+rewrite /capacity; set E := (fun y : R => _); set p' := Prob.mk (closed p_01').
+have has_sup_E : has_sup E.
+  split.
+    set d := Binary.d card_A p' (Set2.a card_A).
+    by exists (`I(d, BSC.c card_A p')), d.
+  exists 1 => y [P _ <-{y}].
+  rewrite IPW; apply/RleP/leR_subl_addr/(leR_trans (H_out_max card_A P p_01')).
+  rewrite addRC -leR_subl_addr subRR.
+  by rewrite (entropy_H2 card_A (Prob.mk (closed p_01'))); exact/entropy_ge0.
+apply eqR_le; split.
+  apply real_sup_is_lub => // x [d _ dx].
   suff : `H(d `o BSC.c card_A p_01) <= 1.
-    move=> ?.
-    unfold p_01 in *.
-    lra.
+    move: (@IPW _ card_A d _ p_01') => ?.
+    by unfold p_01 in *; lra.
   exact: H_out_max.
-- move=> d Hd.
-  move: (@IPW _ card_A (Uniform.d card_A) _ p_01').
-  rewrite H_out_binary_uniform => <-.
-  exact: Hd.
+move: (@IPW _ card_A (Uniform.d card_A) _ p_01').
+rewrite H_out_binary_uniform => <-.
+by apply/RleP/(@real_sup_ub) => //;exists (Uniform.d card_A).
 Qed.
 
 End bsc_capacity_theorem.

@@ -81,7 +81,7 @@ Lemma le1 (d : t) a : d a <= 1.
 Proof.
 have [ad|?] := boolP (a \in finsupp d); last by rewrite fsfun_dflt.
 rewrite -(f1 d) (big_fsetD1 _ ad) /= addRC -leR_subl_addr subRR.
-apply rsumr_ge0 => ? _; exact: ge0.
+by apply sumR_ge0 => ? _; exact: ge0.
 Qed.
 Obligation Tactic := idtac.
 Program Definition make (f : {fsfun A -> R with 0})
@@ -163,7 +163,7 @@ Definition f : {fsfun B -> R with 0} :=
 Lemma f0 b : b \in finsupp f -> 0 < f b.
 Proof.
 rewrite mem_finsupp fsfunE; case: ifPn => [_ /eqP/nesym ?|]; last by rewrite eqxx.
-rewrite ltR_neqAle; split => //; apply rsumr_ge0 => a _; exact/mulR_ge0.
+by rewrite ltR_neqAle; split => //; apply sumR_ge0 => a _; exact/mulR_ge0.
 Qed.
 Lemma f1 : \sum_(b <- finsupp f) f b = 1.
 Proof.
@@ -190,7 +190,7 @@ apply/idP/idP => [|gab0]; first by rewrite mem_filter mem_finsupp => /andP[].
 rewrite mem_filter 2!mem_finsupp gab0 /= /f fsfunE ifT; last first.
   apply/bigfcupP; exists (g a); rewrite ?mem_finsupp // andbT.
   by apply/imfsetP; exists a => //; rewrite inE mem_finsupp.
-apply: contra gab0 => /eqP/prsumr_seq_eq0P.
+apply: contra gab0 => /eqP/psumR_seq_eq0P.
 rewrite fset_uniq => /(_ isT) H.
 suff : p a * g a b = 0.
  by rewrite mulR_eq0 => -[/eqP|->//]; rewrite (negbTE pa0).
@@ -216,7 +216,7 @@ apply/eqP => H.
 have : (p a0) * (g a0) b <> 0.
   by rewrite mulR_eq0 => -[]; apply/eqP; rewrite -mem_finsupp.
 apply.
-move/prsumr_seq_eq0P : H; apply => // b0 _; exact/mulR_ge0.
+move/psumR_seq_eq0P : H; apply => // b0 _; exact/mulR_ge0.
 Qed.
 End def.
 End FSDistBind.
@@ -314,7 +314,7 @@ case: ifPn => [/bigfcupP[dC] | Hc].
       rewrite mulR_eq0 => -[].
       exact/eqP.
       by apply/eqP; rewrite -mem_finsupp.
-    apply/eqP => /prsumr_seq_eq0P => L.
+    apply/eqP => /psumR_seq_eq0P => L.
     move/eqP : K; apply.
     apply L => //.
     - move=> a1 _; exact: mulR_ge0.
@@ -327,7 +327,7 @@ suff : \sum_(i <- finsupp (FSDistBind.d m f)) (f a0) i * (g i) c = R0 :> R.
   evar (h : B -> R); rewrite (eq_bigr h); last first.
     move=> ? _; rewrite -mulRA /h; reflexivity.
   by rewrite -(big_distrr (m a0)) /= L !mulR0.
-apply/prsumr_seq_eq0P.
+apply/psumR_seq_eq0P.
 - exact: fset_uniq.
 - move=> b1 _; exact: mulR_ge0.
 - move=> a1 Ha1.
@@ -579,13 +579,13 @@ rewrite mem_index_enum /= => /ltRP ei0.
 rewrite mem_finsupp => gia0.
 apply: contra gia0 => /eqP H; apply/eqP.
 rewrite -(@eqR_mul2l (e i)) ?mulR0; last exact/gtR_eqF.
-move/prsumr_eq0P : H; apply => //= j _; exact/mulR_ge0.
+move/psumR_eq0P : H; apply => //= j _; exact/mulR_ge0.
 Qed.
 Lemma f0 a : a \in finsupp f -> 0 < f a.
 Proof.
 rewrite mem_finsupp fsfunE; case: ifPn => [_ ?|]; last by rewrite eqxx.
 rewrite ltR_neqAle; split; first exact/nesym/eqP.
-apply/rsumr_ge0 => i _; exact/mulR_ge0.
+by apply/sumR_ge0 => i _; exact/mulR_ge0.
 Qed.
 Lemma f1 : \sum_(a <- finsupp f) f a = 1.
 Proof.
@@ -705,8 +705,8 @@ rewrite !mem_finsupp => aa1.
 rewrite dE.
 apply: contra aa1 => /eqP.
 rewrite paddR_eq0; last 2 first.
-  apply/mulR_ge0 => //; exact/prob_ge0.
-  apply/mulR_ge0 => //; exact/prob_ge0.
+  exact/mulR_ge0.
+  exact/mulR_ge0.
 case.
 rewrite mulR_eq0 => -[p0'|/eqP //].
 exfalso.
@@ -727,7 +727,7 @@ case: ifPn => [/bigfcupP[dB] | ].
     exact/incl_finsupp_conv2fsdist.
   by move=> a3 Ha3; rewrite memNfinsupp => /eqP ->; rewrite mul0R.
 - move=> Hb0.
-  apply/prsumr_seq_eq0P.
+  apply/psumR_seq_eq0P.
   + exact/fset_uniq.
   + move=> a1 _; exact/mulR_ge0.
   + move=> a1 Ha1.
@@ -763,8 +763,8 @@ case: ifPn => [/bigfcupP[dB] | ].
   exact/eqP/prob_ext.
 move=> Hb0.
 apply/esym/paddR_eq0.
-  apply/mulR_ge0 => //; exact/prob_ge0.
-  apply/mulR_ge0 => //; exact/prob_ge0.
+  exact/mulR_ge0.
+  exact/mulR_ge0.
 split.
 - rewrite mulR_eq0; right.
   rewrite FSDistBind.dE; case: ifPn => // abs.

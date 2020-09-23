@@ -37,7 +37,7 @@ Module Wght.
 Section wght.
 Variables (A M : finType) (P : fdist A) (n : nat).
 Definition f := [ffun g : encT A M n => \prod_(m in M) P `^ n (g m)].
-Lemma f0 g : 0 <= f g. Proof. rewrite ffunE; exact: rprodr_ge0. Qed.
+Lemma f0 g : 0 <= f g. Proof. rewrite ffunE; exact: prodR_ge0. Qed.
 Lemma f1 : \sum_(g in {ffun M -> 'rV[A]_n}) f g = 1.
 Proof.
 rewrite /f; evar (h : {ffun M -> 'rV[A]_n} -> R); rewrite (eq_bigr h); last first.
@@ -91,11 +91,11 @@ move=> H.
 apply not_all_not_ex => abs.
 set x := \sum_(f <- _) _ in H.
 have : \sum_(f : encT A M n) Wght.d P f * epsilon <= x.
-  rewrite /x; apply ler_rsum_l => //= f _.
-  - apply leR_wpmul2l => //; exact/Rnot_lt_le/abs.
-  - apply mulR_ge0 => //; exact/echa_ge0.
+  rewrite /x; apply leR_sumRl => //= f _.
+  - by apply leR_wpmul2l => //; exact/Rnot_lt_le/abs.
+  - by apply mulR_ge0 => //; exact/echa_ge0.
 apply/Rlt_not_le/(@ltR_leR_trans epsilon) => //.
-rewrite -big_distrl /= (FDist.f1 (Wght.d P)) mul1R; exact/leRR.
+by rewrite -big_distrl /= (FDist.f1 (Wght.d P)) mul1R; exact/leRR.
 Qed.
 
 Definition o_PI (m m' : M) := fun g : encT A M n => [ffun x => g (tperm m m' x)].
@@ -740,7 +740,7 @@ apply (@leR_ltR_trans
   \sum_(i | i != ord0)
   \sum_(f : encT A M n) Wght.d P f * Pr (W ``(| f ord0)) (Cal_E f i))%R).
   rewrite exchange_big /= -big_split /=.
-  apply ler_rsum => /= i _.
+  apply leR_sumR => /= i _.
   rewrite -big_distrr /= -mulRDr.
   apply leR_wpmul2l; first exact: FDist.ge0.
   rewrite [X in X <= _](_ : _ = Pr (W ``(| i ord0))
@@ -753,11 +753,11 @@ apply (@leR_ltR_trans
   exact/leR_add2l/Pr_bigcup.
 rewrite first_summand //.
 set lhs := (\sum_(_ < _ | _) _)%R.
-have -> : lhs = (INR #| M |.-1 * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0])%R.
+have -> : lhs = (#| M |.-1%:R * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0])%R.
   rewrite {}/lhs.
   rewrite [RHS](_ : _ = \sum_(H0 < k.+1 | H0 != ord0)
     Pr ((P `^ n) `x ((`O( P , W )) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0])%R; last first.
-    rewrite big_const /= iter_addR; congr (INR _ * _)%R.
+    rewrite big_const /= iter_addR; congr (_%:R * _)%R.
     rewrite card_ord /=.
     transitivity (#| setT :\ (@ord0 k)|).
       move: (cardsD1 (@ord0 k) setT) => /=.
@@ -766,16 +766,16 @@ have -> : lhs = (INR #| M |.-1 * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | pr
     rewrite cardsE.
     apply eq_card => m_.
     by rewrite -!topredE /= !in_set andbC.
-    apply eq_big => //; exact: second_summand.
+  by apply eq_big => //; exact: second_summand.
 rewrite card_ord /=.
-apply (@leR_ltR_trans (epsilon0 + INR k *
+apply (@leR_ltR_trans (epsilon0 + k%:R *
    Pr P `^ n `x (`O(P , W)) `^ n [set x | prod_rV x \in `JTS P W n epsilon0])%R).
   apply leR_add2r.
   rewrite Pr_of_cplt leR_subl_addr addRC -leR_subl_addr; apply/JTS_1 => //.
   by case: Hepsilon0.
   by case: Hn => _ [_ []].
 apply (@leR_ltR_trans (epsilon0 +
-    INR #| M | * exp2 (- INR n * (`I(P, W ) - 3 * epsilon0)))).
+    #| M |%:R * exp2 (- n%:R * (`I(P, W ) - 3 * epsilon0)))).
   apply/leR_add2l/leR_pmul.
     exact: leR0n.
     exact: Pr_ge0.
@@ -788,11 +788,11 @@ have -> : INR #| M | = exp2 (log (INR #| M |)).
   rewrite logK // (_ : 0 = INR 0)%R //.
   apply lt_INR. rewrite card_ord. exact/ltP.
 rewrite -ExpD.
-rewrite (_ : _ + _ = - INR n * (`I(P, W) - log (INR #| M |) / INR n - 3 * epsilon0))%R; last first.
+rewrite (_ : _ + _ = - n%:R * (`I(P, W) - log #| M |%:R / n%:R - 3 * epsilon0))%R; last first.
   field.
   apply/eqP; rewrite INR_eq0' gtn_eqF //; by case: Hn.
 rewrite (_ : _ / _ = r)%R; last by rewrite -Hk card_ord.
-apply (@ltR_trans (exp2 (- INR n * epsilon0))).
+apply (@ltR_trans (exp2 (- n%:R * epsilon0))).
   apply Exp_increasing => //.
   rewrite !mulNR ltR_oppr oppRK; apply/ltR_pmul2l.
   - apply ltR0n; by case: Hn.
@@ -805,8 +805,8 @@ apply (@ltR_leR_trans (exp2 (- (- (log epsilon0) / epsilon0) * epsilon0))).
   - rewrite /epsilon0_condition in Hepsilon0; tauto.
   - rewrite ltR_oppr oppRK; by case: Hn => _ [Hn2 _].
     rewrite !mulNR -mulRA mulVR ?mulR1 ?oppRK; last first.
-      apply/eqP/gtR_eqF; by case: Hepsilon0.
-    rewrite logK; [exact/leRR | by case: Hepsilon0].
+      by apply/eqP/gtR_eqF; case: Hepsilon0.
+    by rewrite logK; [exact/leRR | case: Hepsilon0].
 Qed.
 
 End random_coding_good_code_existence.
@@ -814,23 +814,25 @@ End random_coding_good_code_existence.
 Section channel_coding_theorem.
 
 Variables (A B : finType) (W : `Ch(A, B)).
-Variable cap : R.
-Hypothesis Hc : capacity W cap.
+Hypothesis set_of_I_nonempty : classical_sets.nonempty (fun y => exists P, `I(P, W) = y).
 
 Local Open Scope zarith_ext_scope.
 
-Theorem channel_coding (r : CodeRateType) : r < cap ->
+Theorem channel_coding (r : CodeRateType) : r < capacity W ->
   forall epsilon, 0 < epsilon ->
     exists n M (c : code A B M n), CodeRate c = r /\ echa(W, c) < epsilon.
 Proof.
 move=> r_I epsilon Hepsilon.
 have [P HP] : exists P : fdist A, r < `I(P, W).
-  case: Hc => H1 H2.
   apply NNPP => abs.
   have {}abs : forall P : fdist A, `I(P, W) <= r.
     move/not_ex_all_not in abs.
     move=> P; exact/Rnot_lt_le/abs.
-  have Hcap : cap <= r by apply/H2 => P; exact/abs.
+  have ? : capacity W <= r.
+    apply Rstruct.real_sup_is_lub.
+      case: set_of_I_nonempty => [x [P H1]]; split; first by exists x, P.
+      by exists (rate r) => _ [Q _ <-]; exact/Rstruct.RleP/abs.
+    by move=> x [P _ <-{x}]; exact: abs.
   lra.
 have [epsilon0 Hepsilon0] : exists epsilon0,
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.
@@ -889,7 +891,7 @@ exists n, M, (mkCode f (jtdec P W epsilon0 f)); split => //.
 rewrite /CodeRate M_k INR_Zabs_nat; last exact/Int_part_ge0.
 suff -> : IZR (Int_part (exp2 (INR n * r))) = exp2 (INR n * r).
   rewrite exp2K /Rdiv -mulRA mulRCA mulRV ?INR_eq0' -?lt0n ?mulR1 //; by case: Hn.
-apply frac_Int_part; by case: Hn => _ [_ []].
+by apply frac_Int_part; case: Hn => _ [_ []].
 Qed.
 
 End channel_coding_theorem.

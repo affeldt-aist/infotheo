@@ -89,7 +89,7 @@ Proof.
 rewrite /Ex.
 do 3 rewrite big_ord_recl.
 rewrite big_ord0 addR0.
-rewrite /p_of /= /X mul1R.
+rewrite /X mul1R.
 rewrite /f !ffunE /= ifT; last by I3_eq.
 rewrite (_ : INR _ = 2) //.
 rewrite /= ifF; last by I3_neq.

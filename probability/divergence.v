@@ -91,10 +91,10 @@ rewrite /div [X in _ <= X](_ : _ =
 rewrite leR_oppr oppR0.
 apply (@leR_trans ((\sum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
-  apply ler_rsum => a _; apply div_diff_ub => //.
-  move/dominatesP : P_dom_by_Q; exact.
+  apply leR_sumR => a _; apply div_diff_ub => //.
+  by move/dominatesP : P_dom_by_Q; exact.
 rewrite -{1}(mul0R (log (exp 1))); apply (leR_wpmul2r log_exp1_Rle_0).
-rewrite big_split /= -big_morph_oppR !FDist.f1 addR_opp subRR; exact/leRR.
+by rewrite big_split /= -big_morph_oppR !FDist.f1 addR_opp subRR; exact/leRR.
 Qed.
 
 Lemma divPP : D(Q || Q) = 0.
@@ -109,7 +109,7 @@ Proof.
 split => [HPQ | ->]; last by rewrite divPP.
 apply/fdist_ext => a.
 apply log_id_diff => //; first by move/dominatesP : P_dom_by_Q; exact.
-apply/esym; move: a (erefl true); apply Rle_big_eq.
+apply/esym; move: a (erefl true); apply leR_sumR_eq.
 - move=> a' _; apply div_diff_ub => //; move/dominatesP : P_dom_by_Q; exact.
 - transitivity 0; last first.
     rewrite -{1}oppR0 -{1}HPQ big_morph_oppR.

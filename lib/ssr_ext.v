@@ -12,6 +12,7 @@ Declare Scope vec_ext_scope.
 
 Notation "t '\_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
 Reserved Notation "n .-bseq" (at level 2, format "n .-bseq").
+Reserved Notation "A `* B"  (at level 46, left associativity).
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -475,28 +476,36 @@ apply IH.
 - apply/setD1P; by rewrite eq_sym.
 Qed.
 
-Lemma setX1 A B (a : A) (b : B) : setX [set a] [set b] = [set (a, b)].
+Local Notation "A `* B" := (setX A B).
+
+Lemma setX1 A B (a : A) (b : B) : [set a] `* [set b] = [set (a, b)].
 Proof. by apply/setP => -[a0 b0]; rewrite !inE /= xpair_eqE. Qed.
 
 Lemma setX1r (A B : finType) (E : {set A}) (b : B) :
-  setX E [set b] = [set (a, b) | a in E].
+  E `* [set b] = [set (a, b) | a in E].
 Proof. by rewrite -imset2_pair imset2_set1r. Qed.
 
-Lemma setX0r (A B : finType) (E : {set A}) : setX E (@set0 B) = set0.
+Lemma setX0 (A B : finType) (E : {set A}) : E `* set0 = set0 :> {set A * B}.
 Proof.
 apply/setP/subset_eqP/andP; split; apply/subsetP => -[a b]; rewrite !inE //.
 by move/andP => [].
 Qed.
 
-Lemma bigcup_setX A B n (E : 'I_n -> {set A}) (F : {set B}) :
-  \bigcup_(i < n) setX F (E i) = setX F (\bigcup_(i < n) (E i)).
+Lemma set0X (A B : finType) (F : {set B}) : set0 `* F = set0 :> {set A * B}.
 Proof.
-apply/setP => -[b a] /=; rewrite !inE /=.
-apply/bigcupP/andP => [[/= i _]|[K1] /bigcupP[/= i _ aEi]].
-  rewrite !inE /= => /andP[xb yai]; rewrite xb; split => //.
-  by apply/bigcupP; exists i.
-by exists i => //; rewrite !inE /= K1.
+by apply/setP/subset_eqP/andP; split; apply/subsetP => -[a b]; rewrite !inE.
 Qed.
+
+Lemma setIX (A B : finType) (E E' : {set A}) (F F' : {set B}) :
+  E `* F :&: E' `* F' = (E :&: E') `* (F :&: F').
+Proof.
+apply/setP => -[a b]; rewrite !inE /= !andbA; congr (_ && _).
+by rewrite -!andbA; congr (_ && _); rewrite andbC.
+Qed.
+
+Lemma setCX (A B : finType) (E : {set A}) :
+  ~: E `* setT = ~: (E `* setT) :> {set A * B}.
+Proof. by apply/setP => -[a b]; rewrite !inE !andbT. Qed.
 
 Lemma cardsltn1P A (E : {set A}) :
   (1 < #| E |) = [exists a, exists b, [&& (a \in E), (b \in E) & (a != b)]].
@@ -553,7 +562,33 @@ Proof.
 case=> b /andP[bC]; apply: contra => /eqP Ca; move: bC; by rewrite Ca !inE.
 Qed.
 
+Definition fin_img (A : finType) (B : eqType) (f : A -> B) : seq B := undup (map f (enum A)).
+
+Lemma fin_img_imset (A B : finType) (f : A -> B) : fin_img f =i f @: A.
+Proof.
+apply/subset_eqP/andP; split; apply/subsetP => b; rewrite mem_undup; case/boolP : [exists a, b  == f a].
+- by case/existsP => a /eqP ->; rewrite mem_imset.
+- rewrite negb_exists; move/forallP=> bfx.
+  case/mapP => a _ bfa.
+    by move: (bfx a); rewrite bfa => /eqP.
+- by case/existsP => a /eqP -> _; apply/mapP; exists a; rewrite // mem_enum.
+- rewrite negb_exists; move/forallP=> bfx.
+  case/imsetP => a _ bfa.
+    by move: (bfx a); rewrite bfa => /eqP.
+Qed.
+
+Lemma imset_preimset (I J : finType) (h : I -> J) (B : {set J}) :
+  B \subset h @: I -> h @: (h @^-1: B) = B.
+Proof.
+move/subsetP=> B_covered.
+apply/setP/subset_eqP/andP. (* or, apply/eqP; rewrite eqEsubset; apply/andP. *)
+split; apply/subsetP => x; first by case/imsetP => i; rewrite inE => H ->.
+move=> xB; case/(B_covered x)/imsetP: (xB) => y yI xhy.
+by apply/imsetP; exists y => //; rewrite inE -xhy.
+Qed.
+
 End finset_ext.
+Notation "A `* B" := (setX A B) : set_scope.
 
 Module Set2.
 Section set2.

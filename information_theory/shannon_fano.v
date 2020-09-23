@@ -67,7 +67,7 @@ rewrite (eq_bigr (fun i:'I_(size(enum A)) => #|'I_t|%:R ^- size (f (nth a (enum 
 rewrite -(big_mkord xpredT (fun i => #|T|%:R ^- size (f (nth a (enum A) i)))).
 rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
-apply ler_rsum => i _.
+apply leR_sumR => i _.
 rewrite H.
 have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr0; exact/leRP.
 apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
@@ -113,7 +113,7 @@ Lemma shannon_fano_average_entropy : is_shannon_fano P f ->
 Proof.
 move=> H; rewrite /average.
 apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
-  apply ltR_rsum; [exact: fdist_card_neq0|move=> i].
+  apply ltR_sumR; [exact: fdist_card_neq0|move=> i].
   apply ltR_pmul2l.
     apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
   rewrite H.
