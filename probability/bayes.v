@@ -28,7 +28,7 @@ Section prod_vars.
 Variable I : {set 'I_n}.
 
 Definition prod_types :=
-  [finType of
+  [eqType of
    {dffun forall i : 'I_n, if i \in I then types i else unit_finType}].
 
 Definition prod_vars' : {RV P -> prod_types}.
@@ -46,7 +46,7 @@ Section preim.
 Local Open Scope R_scope.
 
 Definition preim_vars (I : {set 'I_n}) (vals : forall i, types i) :=
-  \bigcap_(i in I) vars i @^-1 (vals i).
+  \bigcap_(i in I) finset (vars i @^-1 (vals i)).
 
 Definition cinde_preim (e f g : {set 'I_n}) :=
   forall vals,
@@ -56,7 +56,7 @@ Definition cinde_preim (e f g : {set 'I_n}) :=
     `Pr_ P [ E :&: F | G ] = `Pr_ P [ E | G ] * `Pr_ P [ F | G ].
 
 Definition rvar_choice (A : finType) (X : {RV P -> A}) : A.
-move: (fdist_card_neq0 (RVar.d X)).
+move: (fdist_card_neq0 (`d_ X)).
 move He: (enum A) => [|a l] //.
 move/(f_equal size): He.
 by rewrite -cardE => ->.
@@ -65,7 +65,7 @@ Defined.
 Definition set_val (i : 'I_n) (v : types i) (vals : forall j, types j) :=
   fun j : 'I_n =>
     match Nat.eq_dec i j return types j with
-    | left ij => eq_rect i (fun i => Finite.sort (types i)) v j (ord_inj ij)
+    | left ij => eq_rect i (fun i => (types i : Type)) v j (ord_inj ij)
     | right _ => vals j
     end.
 
@@ -106,7 +106,7 @@ split.
   set vals := set_val a (set_val c (set_val b (fun i => rvar_choice (vars i)))).
   have vi : vals i = a by rewrite /vals set_val_hd.
   move: (erefl vals) {Hpreim} (Hpreim vals).
-  rewrite {2}/vals /cPr /cPr0 /Pr /RVar.d; clearbody vals.
+  rewrite {2}/vals /jcPr /cPr /Pr /dist_of_RV; clearbody vals.
   rewrite !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
   wlog: c / vals k = c.
     case: (ord_eq_dec i k) c vi.
@@ -144,7 +144,7 @@ split.
       case/boolP: (den == 0) => Hden.
         have Hden' u : vars k u == c -> P u = 0.
           move=> Hu.
-          by move/eqP/prsumr_eq0P: Hden => ->.
+          by move/eqP/psumR_eq0P: Hden => ->.
         rewrite !big1; try by move=> u /andP [] /= _; apply Hden'.
         by rewrite !div0R mul0R.
       set num := \sum_(u | _ == (b, c)) _.
@@ -156,7 +156,7 @@ split.
       elim Hnum.
       apply big1 => u /andP [] /= Hi Hk.
       move: Hx; subst x.
-      have -> : \sum_(u in vars k @^-1 c) P u = den.
+      have -> : \sum_(u in finset (vars k @^-1 c)) P u = den.
         by apply eq_bigl => ?; rewrite !inE.
       move/(f_equal (Rmult ^~ den)).
       rewrite /Rdiv -mulRA mulVR // mulR1 mul1R.
@@ -165,7 +165,7 @@ split.
       rewrite (_ : \sum_(v in _) _ = ca); last
         by apply eq_bigl => v; rewrite !inE andbC.
       move/(f_equal (Rminus ^~ ca)).
-      rewrite subRR addRC addRK => /esym /prsumr_eq0P; apply => //.
+      rewrite subRR addRC addRK => /esym /psumR_eq0P; apply => //.
       by rewrite Hk (eqP Hi) eq_sym ab.
     case: (ord_eq_dec k j).
       move=> <- {j} ik b.
@@ -187,7 +187,7 @@ split.
   by congr ((_/_) * (_/_)); apply eq_bigl => u; rewrite !inE.
 - move=> Hdrv vals.
   move/(_ (vals i) (vals j) (vals k)): Hdrv.
-  rewrite /cPr /cPr0 /Pr /RVar.d.
+  rewrite /jcPr /cPr /Pr /dist_of_RV.
   rewrite !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
   set lhs1 := _ / _ => Hdrv.
   set lhs2 := _ / _.
@@ -216,7 +216,7 @@ split.
   set vals :=
     set_vals A (set_vals C (set_vals B (fun i => rvar_choice (vars i)))).
   move: (erefl vals) {Hpreim} (Hpreim vals).
-  rewrite {2}/vals /cPr /cPr0 /Pr /RVar.d; clearbody vals.
+  rewrite {2}/vals /jcPr /cPr /Pr /dist_of_RV; clearbody vals.
   rewrite !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
 Abort.
 End preim.
