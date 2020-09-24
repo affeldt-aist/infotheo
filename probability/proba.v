@@ -31,7 +31,7 @@ Require Import fdist.
 (*  P |= X _|_ Y    == the random variables X and Y over the ambient          *)
 (*                     distribution P are independent                         *)
 (*  Z \= X @+ Y     == Z is the sum of two random variables                   *)
-(*  X \=sum Xs      == X is the sum of the n>=1 random variables Xs           *)
+(*  X \=sum Xs      == X is the sum of the n>=1 iid random variables Xs       *)
 (*  `cst*, `*cst, `o, `/, `+, `-, `+cst, `-cst, `^2, --log  == construction   *)
 (*                     of various random variables                            *)
 (*  [% X, Y, ..., Z] == successive pairings of RVs                            *)
@@ -1111,16 +1111,16 @@ Hint Resolve cPr_ge0 : core.
 
 Module CondFDist.
 Section def.
-Variables (A : finType) (P : {fdist A}) (B : {set A}).
-Hypothesis HB : Pr P B != 0.
-Definition f := [ffun a => `Pr_P [[set a] | B]].
+Variables (A : finType) (P : {fdist A}) (E : {set A}).
+Hypothesis E0 : Pr P E != 0.
+Definition f := [ffun a => `Pr_P [[set a] | E]].
 Lemma f0 a : 0 <= f a. Proof. by rewrite ffunE. Qed.
 Lemma f1 : \sum_(a in A) f a = 1.
 Proof.
 rewrite /f.
 under eq_bigr do rewrite ffunE.
 rewrite /cPr -big_distrl /= -divRE eqR_divr_mulr // mul1R.
-rewrite (total_prob P B (fun i => [set i])); last 2 first.
+rewrite (total_prob P E (fun i => [set i])); last 2 first.
   move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => // a.
   by rewrite !inE; apply/negbTE; apply: contra ij => /andP[/eqP ->].
   apply/setP => // a; rewrite !inE; apply/bigcupP.
@@ -1130,10 +1130,22 @@ Qed.
 Definition d : {fdist A} := locked (FDist.make f0 f1).
 End def.
 Section prop.
-Variables (A : finType) (P : {fdist A}) (B : {set A}).
-Hypothesis HB : Pr P B != 0.
-Lemma dE a : d HB a = `Pr_P [[set a] | B].
+Variables (A : finType) (P : {fdist A}) (E : {set A}).
+Hypothesis E0 : Pr P E != 0.
+Lemma dE a : d E0 a = `Pr_P [[set a] | E].
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Lemma Pr G : Pr (d E0) G = `Pr_P [ G | E ].
+Proof.
+rewrite /Pr; under eq_bigr do rewrite dE.
+rewrite -big_distrl /=; congr (_ / _).
+rewrite (_ : _ :&: _ = \bigcup_(i in G) ([set i] :&: E)); last first.
+  by rewrite -big_distrl /= -bigcup_set1.
+rewrite [in RHS]/Pr big_bigcup_partition // => i j ij.
+rewrite -setI_eq0; apply/eqP/setP => a; rewrite !inE.
+apply/negbTE; rewrite !negb_and.
+have [//|/negPn/eqP ->] := boolP (a != i).
+by rewrite ij /= orbT.
+Qed.
 End prop.
 End CondFDist.
 
@@ -1153,7 +1165,7 @@ Variables (A I : finType) (d : fdist A) (E : I -> {set A}).
 Definition pairwise_inde := @kwide_inde A I 2%nat d E.
 
 Lemma pairwise_indeE :
-  pairwise_inde <-> (forall (i j : I), i != j -> inde_events d (E i) (E j)).
+  pairwise_inde <-> (forall i j, i != j -> inde_events d (E i) (E j)).
 Proof.
 split => [pi i j ij|].
   red in pi.
