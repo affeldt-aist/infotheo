@@ -197,8 +197,27 @@ split.
   by congr ((_/_) * (_/_)); apply eq_bigl => u; rewrite !inE.
 Qed.
 
+Definition set_vals' (I : {set 'I_n}) (v : prod_types I)
+           (vals : forall j, types j) : forall j, types j.
+move=> j.
+move: (v j).
+case: (j \in I) => a.
+- exact: a.
+- exact: vals j.
+Defined.
+Definition set_vals := Eval hnf in set_vals'.
+
 Lemma cinde_preim_ok' (e f g : {set 'I_n}) :
   cinde_preim e f g <-> prod_vars e _|_ prod_vars f | (prod_vars g).
+Proof.
+rewrite /cinde_drv /cinde_preim /preim_vars.
+split.
+- move=> Hpreim A B C.
+  set vals :=
+    set_vals A (set_vals C (set_vals B (fun i => rvar_choice (vars i)))).
+  move: (erefl vals) {Hpreim} (Hpreim vals).
+  rewrite {2}/vals /cPr /cPr0 /Pr /RVar.d; clearbody vals.
+  rewrite !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
 Abort.
 End preim.
 
