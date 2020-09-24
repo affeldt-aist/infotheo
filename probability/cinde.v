@@ -782,7 +782,7 @@ Lemma cindeP (U : finType) (P : {fdist U}) (A B C : finType) (X : {RV P -> A}) (
   \Pr[ X = a | [% Y, Z] = (b, c)] = \Pr[X = a | Z = c].
 Proof.
 move=> K /eqP H0.
-rewrite RV_jcPrE -(eqR_mul2r H0) -mulRA mulVR ?mulR1; last by apply/eqP.
+rewrite [in LHS]RV_jcPrE -(eqR_mul2r H0) -mulRA mulVR ?mulR1; last by apply/eqP.
 have H1 : /(`Pr[ Z = c ]) <> 0 by apply invR_neq0; move/(RV_Pr_domin_snd Y b).
 by rewrite RV_Pr_A -(eqR_mul2r H1) -mulRA -!divRE -!RV_jcPrE K.
 Qed.
@@ -972,7 +972,7 @@ have <- : \sum_(d <- fin_img W)
       rewrite RV_jcPrE RV_Pr_CA RV_Pr_C divR_neq0' // RV_Pr_C.
       by move: (P0 b c d); apply: contra => /eqP/(RV_Pr_domin_fst W d) ->.
     move/eqR_mul2r => /(_ H0){H0}/esym.
-    by rewrite RV_Pr_rC RV_Pr_rA.
+    by rewrite [in LHS]RV_Pr_rC RV_Pr_rA.
   have {}H1 : forall d, \Pr[ X = a | [% W, Z] = (d, c)] =
                      \Pr[ X = a | [% Y, W, Z] = (b, d, c)].
     move=> d; move: {H1}(H1 a b (c, d)).
@@ -982,7 +982,7 @@ have <- : \sum_(d <- fin_img W)
       move: (P0 b c d); apply: contra => /eqP/(RV_Pr_domin_snd Y b).
       by rewrite RV_Pr_A => ->.
     move/eqR_mul2r => /(_ H0){H0}/esym.
-    by rewrite RV_Pr_rC RV_Pr_rA RV_Pr_rAC.
+    by rewrite [in LHS]RV_Pr_rC RV_Pr_rA RV_Pr_rAC.
   by move=> d; rewrite {H2}(H2 d) {}H1 RV_Pr_rC RV_Pr_rA.
 rewrite -big_distrr /= jcPr_1_RV ?mulR1 //.
 move: (P0 b c D_not_empty); apply: contra.
