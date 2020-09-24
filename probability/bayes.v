@@ -28,7 +28,7 @@ Section prod_vars.
 Variable I : {set 'I_n}.
 
 Definition prod_types :=
-  [eqType of
+  [finType of
    {dffun forall i : 'I_n, if i \in I then types i else unit_finType}].
 
 Definition prod_vars' : {RV P -> prod_types}.
@@ -207,16 +207,88 @@ case: (j \in I) => a.
 Defined.
 Definition set_vals := Eval hnf in set_vals'.
 
+Lemma set_vals_hd vs2 I (v : prod_types I) vs1 i :
+  i \in I -> set_vals v vs1 i = set_vals v vs2 i.
+Proof. rewrite /set_vals; by case: (i \in I) (v i). Qed.
+
+Lemma set_vals_tl I (v : prod_types I) vs i :
+  i \notin I -> set_vals v vs i = vs i.
+Proof. rewrite /set_vals; by case: (i \in I) (v i). Qed.
+
+Definition prod_vals' (I : {set 'I_n}) (vals : forall j, types j)
+  : prod_types I.
+refine [ffun i => _].
+move: (vals i).
+case: (i \in I) => a.
+- exact: a.
+- exact: tt.
+Defined.
+Definition prod_vals (I : {set 'I_n}) vals : prod_types I :=
+  Eval hnf in prod_vals' I vals.
+Print prod_vals.
+
+Definition vals0 := fun i => rvar_choice (vars i).
+
+Lemma prod_vars_inter (e g : {set 'I_n}) vals i u :
+  i \in e -> i \in g ->
+  set_vals (prod_vars e u) vals i = set_vals (prod_vars g u) vals i.
+Proof.
+rewrite /set_vals /prod_vars !ffunE.
+by case: (i \in e) (i \in g) => // -[].
+Qed.
+
 Lemma cinde_preim_ok' (e f g : {set 'I_n}) :
   cinde_preim e f g <-> prod_vars e _|_ prod_vars f | (prod_vars g).
 Proof.
-rewrite /cinde_drv /cinde_preim /preim_vars.
+rewrite /cinde_drv /cinde_preim.
 split.
 - move=> Hpreim A B C.
-  set vals :=
-    set_vals A (set_vals C (set_vals B (fun i => rvar_choice (vars i)))).
-  move: (erefl vals) {Hpreim} (Hpreim vals).
-  rewrite {2}/vals /jcPr /cPr /Pr /dist_of_RV; clearbody vals.
+  set vals := set_vals C (set_vals A (set_vals B vals0)).
+  case /boolP: [forall i, (i \in e) ==> (vals i == (set_vals A vals0) i)];
+    last first.
+    rewrite negb_forall => /existsP [i].
+    rewrite negb_imply => /andP [Hie] /eqP Hvi.
+    case /boolP: (i \in g) => Hig; last first.
+      elim Hvi; by rewrite /vals set_vals_tl // (set_vals_hd vals0).
+    rewrite /jcPr /cPr /Pr !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
+    rewrite /vals (set_vals_hd vals0) // in Hvi.
+    rewrite big1.
+      symmetry; rewrite big1.
+        by rewrite !div0R mul0R.
+      move=> u; rewrite inE /= /RV2 => Hprod; elim: Hvi.
+      case/eqP: Hprod => <- <-; exact: prod_vars_inter.
+    move=> u; rewrite inE /= /RV2 => Hprod; elim: Hvi.
+    case/eqP: Hprod => <- _ <-; exact: prod_vars_inter.
+  move/forallP => /= He.
+  case /boolP: [forall i, (i \in f) ==> (vals i == (set_vals B vals0) i)];
+    last first.
+    rewrite negb_forall => /existsP [i].
+    rewrite negb_imply => /andP [Hif] /eqP Hvi.
+    case /boolP: (i \in g) => Hig.
+      rewrite /jcPr /cPr /Pr !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
+      rewrite /vals (set_vals_hd vals0) // in Hvi.
+      rewrite big1.
+        symmetry.
+        rewrite mulRC big1.
+          by rewrite !div0R mul0R.
+        move=> u; rewrite inE /= /RV2 => Hprod; elim: Hvi.
+        case/eqP: Hprod => <- <-; exact: prod_vars_inter.
+      move=> u; rewrite inE /= /RV2 => Hprod; elim: Hvi.
+      case/eqP: Hprod => _ <- <-; exact: prod_vars_inter.
+    rewrite /vals set_vals_tl // in Hvi.
+    case /boolP: (i \in e) => Hie; last first.
+      elim Hvi; by rewrite /vals set_vals_tl // (set_vals_hd vals0).
+    rewrite (set_vals_hd vals0) // in Hvi.
+    move: (Hpreim vals).
+    admit.
+  move/forallP => /= Hf.
+  move: (Hpreim vals).
+  rewrite /jcPr /cPr /Pr !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
+  rewrite /RV2.
+  admit.
+- move=> Hdrv vals.
+  move/(_ (prod_vals e vals) (prod_vals f vals) (prod_vals g vals)): Hdrv.
+  rewrite /jcPr /cPr /Pr /dist_of_RV.
   rewrite !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
 Abort.
 End preim.
