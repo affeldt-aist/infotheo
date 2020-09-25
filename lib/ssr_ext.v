@@ -507,6 +507,9 @@ Lemma setCX (A B : finType) (E : {set A}) :
   ~: E `* setT = ~: (E `* setT) :> {set A * B}.
 Proof. by apply/setP => -[a b]; rewrite !inE !andbT. Qed.
 
+Lemma setTX (A B : finType) : setT `* setT = setT :> {set A * B}.
+Proof. by apply/setP => -[/= a b]; rewrite !inE. Qed.
+
 Lemma cardsltn1P A (E : {set A}) :
   (1 < #| E |) = [exists a, exists b, [&& (a \in E), (b \in E) & (a != b)]].
 Proof.

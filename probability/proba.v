@@ -20,22 +20,26 @@ Require Import fdist.
 (*  {RV P -> T}     == the type of random variables over an ambient           *)
 (*                     distribution P where T can be an eqType                *)
 (*  `p_X            == P when X : {RV P -> R}                                 *)
-(*  `Pr[ X = a ]    == the probability that the random variable X is a        *)
-(*  `d_X            == the {fdist A} distribution corresponding to `Pr[X = a] *)
-(*  `Pr[ X >= r ]    == the probability that the random variable X is greater *)
-(*                     or equal to a                                          *)
-(*  `Pr[ X <= r ]    == the probability that the random variable X is less    *)
-(*                     or equal to a                                          *)
-(*  `Pr[ X \in E ]  == the probability that the random variable X is in E     *)
-(*  `Pr_P [ A | B ] == conditional probability                                *)
-(*  P |= X _|_ Y    == the random variables X and Y over the ambient          *)
-(*                     distribution P are independent                         *)
-(*  Z \= X @+ Y     == Z is the sum of two random variables                   *)
-(*  X \=sum Xs      == X is the sum of the n>=1 identically distributed       *)
-(*                     random variables Xs                                    *)
 (*  `cst*, `*cst, `o, `/, `+, `-, `+cst, `-cst, `^2, --log  == construction   *)
 (*                     of various random variables                            *)
 (*  [% X, Y, ..., Z] == successive pairings of RVs                            *)
+(*  `Pr[ X = a ]    == the probability that the random variable X is a        *)
+(*  `d_X            == the {fdist A} distribution corresponding to `Pr[X = a] *)
+(*  `Pr[ X >= r ]   == the probability that the random variable X is greater  *)
+(*                     or equal to a                                          *)
+(*  `Pr[ X <= r ]   == the probability that the random variable X is less     *)
+(*                     or equal to a                                          *)
+(*  `Pr[ X \in E ]  == the probability that the random variable X is in E     *)
+(*                     (expect finTypes)                                      *)
+(*  `Pr_P [ A | B ] == conditional probability for events                     *)
+(*  `Pr[ X = a | Y = b ], `Pr[ X \in E | Y \in F ] == conditional probability *)
+(*                     for random variables                                   *)
+(*  P `= X | Y | Z  == the random variable X is conditionally independent of  *)
+(*                     the random variable Y given Z in a distribution P      *)
+(*  P |= X _|_ Y    == unconditional independence                             *)
+(*  Z \= X @+ Y     == Z is the sum of two random variables                   *)
+(*  X \=sum Xs      == X is the sum of the n>=1 independent and identically   *)
+(*                     distributed random variables Xs                        *)
 (*  `E X            == expected value of the random variable X                *)
 (*  `E_[ X | F ]    == conditional expectation of X given an event F          *)
 (*  `V X            == the variance of the random variable X                  *)
@@ -55,9 +59,11 @@ Require Import fdist.
 (*  Bayes, Bayes_extended == Bayes' theorems                                  *)
 (*  Pr_bigcup_incl_excl  == an algebraic proof (by Erik Martin-Dorel) of the  *)
 (*                          formula of inclusion-exclusion                    *)
+(*  reasoning_by_cases, creasoning_by_cases == Reasoning by cases             *)
 (*  markov               == Markov inequality                                 *)
 (*  chebyshev_inequality == Chebyshev's inequality                            *)
 (*  inde_events          == independent events                                *)
+(*  cinde_events         == conditionally independent events                  *)
 (*  wlln                 == weak law of large numbers                         *)
 (******************************************************************************)
 
@@ -96,6 +102,11 @@ Reserved Notation "`Pr_[ A | B ]" (at level 6, A, B at next level,
   format "`Pr_[ A  |  B ]").
 Reserved Notation "`E_[ X | B ]" (at level 6, X, B at next level,
   format "`E_[ X  |  B ]").
+Reserved Notation "`Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
+  format "`Pr[  X  =  a  |  Y  =  b  ]").
+Reserved Notation "`Pr[ X '\in' E | Y '\in' F ]" (at level 6, X, Y, E, F at next level,
+  format "`Pr[  X  '\in'  E  |  Y  '\in'  F  ]").
+Reserved Notation "P `= X _|_  Y | Z" (at level 10, X, Y, Z at next level).
 Reserved Notation "P |= X _|_ Y" (at level 50, X, Y at next level,
   format "P  |=  X  _|_  Y").
 Reserved Notation "Z \= X '@+' Y" (at level 50).
@@ -289,6 +300,24 @@ End probability.
 Arguments total_prob {_} _ {_} _ _.
 Local Hint Resolve Pr_ge0 : core.
 
+Lemma Pr_domin_setI (A : finType) (d : {fdist A}) (E F : {set A}) :
+  Pr d E = 0 -> Pr d (E :&: F) = 0.
+Proof.
+move=> PE0; apply/psumR_eq0P => // a; rewrite inE => /andP[aE aF].
+by move/psumR_eq0P : PE0; apply.
+Qed.
+
+Lemma Pr_domin_setX (A B : finType) (P : {fdist A * B}) E F :
+  Pr (Bivar.fst P) E = 0 -> Pr P (E `* F) = 0.
+Proof.
+move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
+by rewrite inE /= => /andP[/H /Bivar.dom_by_fst ->].
+Qed.
+
+Lemma Pr_domin_setXN (A B : finType) (P : {fdist A * B}) E F :
+  Pr P (E `* F) != 0 -> Pr (Bivar.fst P) E != 0.
+Proof. apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
+
 Lemma Pr_FDistMap (A B : finType) (f : A -> B) (d : fdist A) (E : {set A}) :
   injective f ->
   Pr d E = Pr (FDistMap.d f d) (f @: E).
@@ -301,28 +330,6 @@ apply eq_bigr => a aE; rewrite (big_pred1 (f a)) // => b /=.
 rewrite !inE andb_idl //= => /eqP <-{b}; apply/imsetP; by exists a.
 Qed.
 Arguments Pr_FDistMap [A] [B] [f] [d] [E].
-
-Lemma Pr_domin_fst (A B : finType) (P : {fdist A * B}) a b :
-  Pr (Bivar.fst P) a = 0 -> Pr P (setX a b) = 0.
-Proof.
-move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
-by rewrite inE /= => /andP[/H /Bivar.dom_by_fst ->].
-Qed.
-
-Lemma Pr_domin_fstN (A B : finType) (P : {fdist A * B}) a b :
-  Pr P (setX a b) != 0 -> Pr (Bivar.fst P) a != 0.
-Proof. apply/contra => /eqP/Pr_domin_fst => ?; exact/eqP. Qed.
-
-Lemma Pr_domin_snd (A B : finType) (P : {fdist A * B}) a b :
-  Pr (Bivar.snd P) b = 0 -> Pr P (setX a b) = 0.
-Proof.
-move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
-by rewrite inE /= => /andP[_ /H /Bivar.dom_by_snd ->].
-Qed.
-
-Lemma Pr_domin_sndN (A B : finType) (P : {fdist A * B}) a b :
-  Pr P (setX a b) != 0 -> Pr (Bivar.snd P) b != 0.
-Proof. apply/contra => /eqP/Pr_domin_snd => ?; exact/eqP. Qed.
 
 Lemma Pr_ProdFDist (A B : finType) (P1 : {fdist A}) (P2 : {fdist B})
   (E1 : {set A}) (E2 : {set B}) :
@@ -467,33 +474,32 @@ Notation "'`Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
 Notation "'`Pr[' X '<=' r ']'" := (pr_leq X r) : proba_scope.
 
 Section random_variable_finType.
-Variables (U A : finType) (P : fdist U).
+Variables (U : finType) (P : fdist U) (A : finType).
 
 Definition pr_eq_set (X : {RV P -> A}) (E : {set A}) :=
   locked (Pr `p_X (X @^-1: E)).
 Local Notation "`Pr[ X '\in' E ]" := (pr_eq_set X E).
 
+Lemma pr_eq_setE (X : {RV P -> A}) (E : {set A}) :
+  `Pr[ X \in E ] = Pr `p_X (X @^-1: E).
+Proof. by rewrite /pr_eq_set; unlock. Qed.
+
 Definition dist_of_RV (X : {RV P -> A}) : {fdist A} := FDistMap.d X P.
 Local Notation "`d_ X" := (dist_of_RV X).
 
-Lemma RVardE (X : {RV P -> A}) (a : A) : `d_X a = `Pr[ X = a ].
+Lemma pr_eqE' (X : {RV P -> A}) (a : A) : `Pr[ X = a ] = `d_X a.
 Proof.
 by rewrite /dist_of_RV FDistMap.dE pr_eqE /Pr /=; apply eq_bigl => i; rewrite inE.
 Qed.
 
-Lemma RVarPr_set (X : {RV P -> A}) (E : {set A}) : Pr `d_X E = `Pr[ X \in E ].
+Lemma pr_inE' (X : {RV P -> A}) (E : {set A}) : `Pr[ X \in E ] = Pr `d_X E.
 Proof.
-rewrite /pr_eq_set; unlock.
-rewrite [in RHS]/Pr partition_big_preimset /=.
-apply eq_bigr => a aE.
-by rewrite /dist_of_RV FDistMap.dE.
+rewrite pr_eq_setE /Pr partition_big_preimset /=.
+by apply eq_bigr => a aE; rewrite /dist_of_RV FDistMap.dE.
 Qed.
 
-Lemma RVarPr (X : {RV P -> A}) a : Pr `d_X [set a] = `Pr[ X = a ].
-Proof. by rewrite -RVardE Pr_set1. Qed.
-
 Lemma pr_eq_set1 (X : {RV P -> A}) x : `Pr[ X \in [set x] ] = `Pr[ X = x ].
-Proof. by rewrite -RVarPr_set RVarPr. Qed.
+Proof. by rewrite pr_inE' Pr_set1 pr_eqE'. Qed.
 
 End random_variable_finType.
 Notation "`Pr[ X '\in' E ]" := (pr_eq_set X E) : proba_scope.
@@ -517,7 +523,7 @@ Definition trans_add_RV (X : {RV P -> R}) m : {RV P -> R} := fun x => X x + m.
 Definition trans_min_RV (X : {RV P -> R}) m : {RV P -> R} := fun x => X x - m.
 Definition sq_RV (X : {RV P -> R}) : {RV P -> R} := (fun x => x ^ 2) `o X.
 Definition mlog_RV : {RV P -> R} := fun x => - log (P x).
-Definition unit_RV : {RV P -> unit} := fun _ => tt.
+Definition unit_RV : {RV P -> unit} := fun=> tt.
 
 End random_variables.
 
@@ -539,6 +545,96 @@ Definition RV2 : {RV P -> A * B} := fun x => (X x, Y x).
 End pair_of_RVs.
 
 Notation "'[%' x , y , .. , z ']'" := (RV2 .. (RV2 x y) .. z).
+
+Lemma fst_RV2 (U : finType) (P : fdist U) (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) : Bivar.fst `d_[% X, Y] = `d_X.
+Proof. by rewrite /Bivar.fst /dist_of_RV FDistMap.comp. Qed.
+
+Lemma snd_RV2 (U : finType) (P : fdist U) (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) : Bivar.snd `d_[% X, Y] = `d_Y.
+Proof. by rewrite /Bivar.snd /dist_of_RV FDistMap.comp. Qed.
+
+Lemma pr_eq_unit (U : finType) (P : fdist U) : `Pr[ (unit_RV P) = tt ] = 1.
+Proof. by rewrite pr_eqE'; apply/eqP/FDist1.P; case. Qed.
+
+Lemma Pr_FDistMap_RV2 (U : finType) (P : fdist U) (A B : finType)
+  (E : {set A}) (F : {set B}) (X : {RV P -> A}) (Z : {RV P -> B}) :
+  Pr (FDistMap.d [% X, Z] P) (E `* F) = Pr P ([set x | preim X (mem E) x] :&: [set x | preim Z (mem F) x]).
+Proof.
+rewrite /Pr.
+transitivity (\sum_(a in ([% X, Z] @^-1: (E `* F))) P a); last first.
+  by apply eq_bigl => u; rewrite !inE.
+rewrite [in RHS]partition_big_preimset /=.
+apply eq_big => // -[a c]; rewrite inE => /andP[/= aE cF].
+by rewrite FDistMap.dE.
+Qed.
+
+Section pr_pair.
+Variables (U : finType) (P : fdist U).
+Variables (A B C : finType) (TA TB TC : eqType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+Variables (TX : {RV P -> TA}) (TY : {RV P -> TB}) (TZ : {RV P -> TC}).
+
+Lemma pr_in_pairC E F : `Pr[ [% Y, X] \in F `* E ] = `Pr[ [% X, Y] \in E `* F].
+Proof. by rewrite 2!pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbC. Qed.
+
+Lemma pr_eq_pairC a b : `Pr[ [% Y, X] = (b, a) ] = `Pr[ [% X, Y] = (a, b)].
+Proof. by rewrite !pr_eqE; congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE andbC. Qed.
+
+Lemma pr_in_pairA E F G :
+  `Pr[ [% X, [% Y, Z]] \in E `* (F `* G) ] = `Pr[ [% [% X, Y], Z] \in (E `* F) `* G].
+Proof. by rewrite !pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbA. Qed.
+
+Lemma pr_eq_pairA a b c :
+  `Pr[ [% [% X, Y], Z] = ((a, b), c)] = `Pr[ [% X, [% Y, Z]] = (a, (b, c)) ].
+Proof. by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbA. Qed.
+
+Lemma pr_in_pairAC E F G :
+`Pr[ [% X, Y, Z] \in (E `* F) `* G] = `Pr[ [% X, Z, Y] \in (E `* G) `* F].
+Proof. by rewrite !pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbAC. Qed.
+
+Lemma pr_eq_pairAC a b c :
+`Pr[ [% X, Y, Z] = (a, b, c) ] = `Pr[ [% X, Z, Y] = (a, c, b)].
+Proof. by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbAC. Qed.
+
+Lemma pr_in_pairCA E F G :
+`Pr[ [% X, [%Y, Z]] \in E `* (F `* G) ] = `Pr[ [% Y, [%X, Z]] \in F `* (E `* G)].
+Proof. by rewrite !pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbCA. Qed.
+
+Lemma pr_eq_pairCA  a b c :
+`Pr[ [% X, [%Y, Z]] = (a, (b, c)) ] = `Pr[ [% Y, [%X, Z]] = (b, (a, c))].
+Proof. by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbCA. Qed.
+
+Lemma pr_in_comp (f : A -> B) E : injective f ->
+  `Pr[ X \in E ] = `Pr[ (f `o X) \in f @: E ].
+Proof.
+by move=> inj_f; rewrite 2!pr_inE' (Pr_FDistMap inj_f) FDistMap.comp.
+Qed.
+
+Lemma pr_eq_comp (f : A -> B) a : injective f ->
+  `Pr[ X = a ] = `Pr[ (f `o X) = f a ].
+Proof.
+move=> inj_f.
+by rewrite -!pr_eq_set1 !pr_inE' (Pr_FDistMap inj_f) FDistMap.comp imset_set1.
+Qed.
+
+End pr_pair.
+
+Section RV_domin.
+Variables (U : finType) (P : fdist U) (A B : finType) (TA TB : eqType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+Variables (TX : {RV P -> A}) (TY : {RV P -> B}).
+
+Lemma pr_in_domin_RV2 E F : `Pr[ X \in E] = 0 -> `Pr[ [% X, Y] \in E `* F] = 0.
+Proof.
+move=> H; by rewrite pr_inE' Pr_domin_setX // fst_RV2 -pr_inE'.
+Qed.
+
+Lemma pr_eq_domin_RV2 a b : `Pr[ TX = a ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
+Proof.
+move=> H.
+by rewrite -pr_eq_set1 -setX1 pr_inE' Pr_domin_setX // fst_RV2 -pr_inE' pr_eq_set1.
+Qed.
+
+End RV_domin.
 
 Local Open Scope vec_ext_scope.
 
@@ -937,8 +1033,7 @@ Proof.
 rewrite /Ex.
 rewrite (sum_parti_finType _ X (fun u => (phi `o X) u * `p_(phi `o X) u)) /=.
 apply eq_bigr => a _.
-rewrite /pr_eq; unlock.
-rewrite /Pr big_distrr /=; apply eq_big.
+rewrite pr_eqE /Pr big_distrr /=; apply eq_big.
 by move=> u; rewrite inE.
 by move=> u /eqP Xua; rewrite /comp_RV -Xua.
 Qed.
@@ -1043,165 +1138,6 @@ Qed.
 
 End independent_events.
 
-Lemma setI_dominates (A : finType) (d : {fdist A}) (E F : {set A}) :
-  Pr d E = 0 -> Pr d (E :&: F) = 0.
-Proof.
-move=> PE0; apply/psumR_eq0P => // a; rewrite inE => /andP[aE aF].
-by move/psumR_eq0P : PE0; apply.
-Qed.
-
-Section conditional_probablity.
-Variables (A : finType) (d : {fdist A}).
-Implicit Types A B : {set A}.
-
-Definition cPr E F := Pr d (E :&: F) / Pr d F.
-Local Notation "`Pr_[ E | F ]" := (cPr E F).
-
-Lemma cPr_ge0 E F : 0 <= `Pr_[E | F].
-Proof.
-rewrite /cPr; have [/eqP PF0|PF0] := boolP (Pr d F == 0).
-  by rewrite setIC (setI_dominates E PF0) div0R; exact/leRR.
-by apply divR_ge0 => //; rewrite Pr_gt0.
-Qed.
-Local Hint Resolve cPr_ge0 : core.
-
-Lemma cPr_max E F : `Pr_[E | F] <= 1.
-Proof.
-rewrite /cPr.
-have [/eqP PF0|PF0] := boolP (Pr d F == 0).
-  by rewrite setIC (setI_dominates E PF0) div0R.
-apply leR_pdivr_mulr; first by rewrite Pr_gt0.
-rewrite mul1R /Pr; apply leR_sumRl => //.
-by move=> a _; exact/leRR.
-by move=> a; rewrite inE => /andP[].
-Qed.
-
-Lemma cPrET E : `Pr_[E | setT] = Pr d E.
-Proof. by rewrite /cPr setIT Pr_setT divR1. Qed.
-
-Lemma cPrE0 (E : {set A}) : `Pr_[E | set0] = 0.
-Proof. by rewrite /cPr setI0 Pr_set0 div0R. Qed.
-
-Lemma cPr_gt0 E F : 0 < `Pr_[E | F] <-> `Pr_[E | F] != 0.
-Proof.
-split; rewrite /cPr; first by rewrite ltR_neqAle => -[/eqP H1 _]; rewrite eq_sym.
-by rewrite ltR_neqAle eq_sym => /eqP H; split => //; exact: cPr_ge0.
-Qed.
-
-Lemma Pr_cPr_gt0 E F : 0 < Pr d (E :&: F) <-> 0 < `Pr_[E | F].
-Proof.
-rewrite Pr_gt0; split => H; last first.
-  by move/cPr_gt0 : H; apply: contra => /eqP; rewrite /cPr => ->; rewrite div0R.
-rewrite /cPr; apply/divR_gt0; rewrite Pr_gt0 //.
-by apply: contra H; rewrite setIC => /eqP F0; apply/eqP/setI_dominates.
-Qed.
-
-Lemma cPr_diff F1 F2 E : `Pr_[F1 :\: F2 | E] = `Pr_[F1 | E] - `Pr_[F1 :&: F2 | E].
-Proof. by rewrite /cPr -divRBl setIDAC Pr_diff setIAC. Qed.
-
-Lemma cPr_union_eq F1 F2 E :
-  `Pr_[F1 :|: F2 | E] = `Pr_[F1 | E] + `Pr_[F2 | E] - `Pr_[F1 :&: F2 | E].
-Proof. by rewrite /cPr -divRDl -divRBl setIUl Pr_union_eq setIACA setIid. Qed.
-
-Lemma Bayes (E F : {set A}) : `Pr_[E | F] = `Pr_[F | E] * Pr d E / Pr d F.
-Proof.
-have [/eqP PE0|PE0] := boolP (Pr d E == 0).
-  by rewrite /cPr [in RHS]setIC !(setI_dominates F PE0) !(div0R,mul0R).
-by rewrite /cPr -mulRA mulVR // mulR1 setIC.
-Qed.
-
-Lemma product_rule (E F : {set A}) : Pr d (E :&: F) = `Pr_[E | F] * Pr d F.
-Proof.
-rewrite /cPr.
-have [/eqP PF0|PF0] := boolP (Pr d F == 0).
-  by rewrite setIC (setI_dominates E PF0) div0R mul0R.
-by rewrite -mulRA mulVR ?mulR1.
-Qed.
-
-Lemma product_rule_cond E F G : `Pr_[E :&: F | G] = `Pr_[E | F :&: G] * `Pr_[F | G].
-Proof. by rewrite /cPr mulRA -setIA {1}product_rule. Qed.
-
-Lemma cPr_cplt E F : Pr d E != 0 -> `Pr_[ ~: F | E] = 1 - `Pr_[F | E].
-Proof.
-move=> PE0; rewrite /cPr -(divRR _ PE0) -divRBl; congr (_ / _).
-apply/esym; rewrite subR_eq addRC.
-rewrite -{1}(@setIT _ E) -(setUCr F) setIC setIUl Pr_union_disj //.
-by rewrite -setI_eq0 setIACA setICr set0I.
-Qed.
-
-Lemma inde_events_cPr (E F : {set A}) : Pr d F != 0 -> inde_events d E F ->
-  `Pr_[E | F] = Pr d E.
-Proof. by move=> F0 EF; rewrite /cPr EF /Rdiv -mulRA mulRV ?mulR1. Qed.
-
-Section bayes_extended.
-Variables (I : finType) (E : {set A}) (F : I -> {set A}).
-Hypothesis dis : forall i j, i != j -> [disjoint F i & F j].
-Hypothesis cov : cover (F @: I) = [set: A].
-
-Lemma total_prob_cond :
-  Pr d E = \sum_(i in I) `Pr_[E | F i] * Pr d (F i).
-Proof.
-rewrite (total_prob _ _ _ dis cov); apply eq_bigr; move=> i _.
-by rewrite product_rule.
-Qed.
-
-Lemma Bayes_extended j : `Pr_[F j | E] =
-  `Pr_[E | F j] * Pr d (F j) / \sum_(i in I) `Pr_[E | F i] * Pr d (F i).
-Proof.
-have [/eqP PE0|PE0] := boolP (Pr d E == 0).
-  by rewrite {1 2}/cPr setIC (setI_dominates (F j) PE0) !(div0R,mul0R).
-rewrite -total_prob_cond /cPr -!mulRA; congr (_ / _).
-have [/eqP Fj0|Fj0] := boolP (Pr d (F j) == 0).
-  by rewrite Fj0 !mulR0 (setI_dominates E Fj0).
-by rewrite setIC mulVR ?mulR1.
-Qed.
-
-End bayes_extended.
-
-End conditional_probablity.
-Notation "`Pr_ P [ E | F ]" := (cPr P E F) : proba_scope.
-Hint Resolve cPr_ge0 : core.
-
-Module CondFDist.
-Section def.
-Variables (A : finType) (P : {fdist A}) (E : {set A}).
-Hypothesis E0 : Pr P E != 0.
-Definition f := [ffun a => `Pr_P [[set a] | E]].
-Lemma f0 a : 0 <= f a. Proof. by rewrite ffunE. Qed.
-Lemma f1 : \sum_(a in A) f a = 1.
-Proof.
-rewrite /f.
-under eq_bigr do rewrite ffunE.
-rewrite /cPr -big_distrl /= -divRE eqR_divr_mulr // mul1R.
-rewrite (total_prob P E (fun i => [set i])); last 2 first.
-  move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => // a.
-  by rewrite !inE; apply/negbTE; apply: contra ij => /andP[/eqP ->].
-  apply/setP => // a; rewrite !inE; apply/bigcupP.
-  by exists [set a]; rewrite ?inE //; apply/imsetP; exists a.
-by apply eq_bigr => a _; rewrite setIC.
-Qed.
-Definition d : {fdist A} := locked (FDist.make f0 f1).
-End def.
-Section prop.
-Variables (A : finType) (P : {fdist A}) (E : {set A}).
-Hypothesis E0 : Pr P E != 0.
-Lemma dE a : d E0 a = `Pr_P [[set a] | E].
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-Lemma Pr G : Pr (d E0) G = `Pr_P [ G | E ].
-Proof.
-rewrite /Pr; under eq_bigr do rewrite dE.
-rewrite -big_distrl /=; congr (_ / _).
-rewrite (_ : _ :&: _ = \bigcup_(i in G) ([set i] :&: E)); last first.
-  by rewrite -big_distrl /= -bigcup_set1.
-rewrite [in RHS]/Pr big_bigcup_partition // => i j ij.
-rewrite -setI_eq0; apply/eqP/setP => a; rewrite !inE.
-apply/negbTE; rewrite !negb_and.
-have [//|/negPn/eqP ->] := boolP (a != i).
-by rewrite ij /= orbT.
-Qed.
-End prop.
-End CondFDist.
-
 Section k_wise_independence.
 
 Variables (A I : finType) (k : nat) (d : fdist A) (E : I -> {set A}).
@@ -1267,6 +1203,301 @@ Qed.
 
 End mutual_independence.
 
+Section conditional_probablity.
+Variables (A : finType) (d : {fdist A}).
+Implicit Types E F : {set A}.
+
+Definition cPr E F := Pr d (E :&: F) / Pr d F.
+Local Notation "`Pr_[ E | F ]" := (cPr E F).
+
+Lemma cPr_ge0 E F : 0 <= `Pr_[E | F].
+Proof.
+rewrite /cPr; have [/eqP PF0|PF0] := boolP (Pr d F == 0).
+  by rewrite setIC (Pr_domin_setI _ PF0) div0R; exact/leRR.
+by apply divR_ge0 => //; rewrite Pr_gt0.
+Qed.
+Local Hint Resolve cPr_ge0 : core.
+
+Lemma cPr_eq0 E F : `Pr_[E | F] = 0 <-> Pr d (E :&: F) = 0.
+Proof.
+split; rewrite /cPr; last by move=> ->; rewrite div0R.
+rewrite /cPr /Rdiv mulR_eq0 => -[//|/invR_eq0].
+by rewrite setIC; exact: Pr_domin_setI.
+Qed.
+
+Lemma cPr_max E F : `Pr_[E | F] <= 1.
+Proof.
+rewrite /cPr.
+have [/eqP PF0|PF0] := boolP (Pr d F == 0).
+  by rewrite setIC (Pr_domin_setI E PF0) div0R.
+apply leR_pdivr_mulr; first by rewrite Pr_gt0.
+rewrite mul1R /Pr; apply leR_sumRl => //.
+by move=> a _; exact/leRR.
+by move=> a; rewrite inE => /andP[].
+Qed.
+
+Lemma cPrET E : `Pr_[E | setT] = Pr d E.
+Proof. by rewrite /cPr setIT Pr_setT divR1. Qed.
+
+Lemma cPrE0 (E : {set A}) : `Pr_[E | set0] = 0.
+Proof. by rewrite /cPr setI0 Pr_set0 div0R. Qed.
+
+Lemma cPr_gt0 E F : 0 < `Pr_[E | F] <-> `Pr_[E | F] != 0.
+Proof.
+split; rewrite /cPr; first by rewrite ltR_neqAle => -[/eqP H1 _]; rewrite eq_sym.
+by rewrite ltR_neqAle eq_sym => /eqP H; split => //; exact: cPr_ge0.
+Qed.
+
+Lemma Pr_cPr_gt0 E F : 0 < Pr d (E :&: F) <-> 0 < `Pr_[E | F].
+Proof.
+rewrite Pr_gt0; split => H; last first.
+  by move/cPr_gt0 : H; apply: contra => /eqP; rewrite /cPr => ->; rewrite div0R.
+rewrite /cPr; apply/divR_gt0; rewrite Pr_gt0 //.
+by apply: contra H; rewrite setIC => /eqP F0; apply/eqP/Pr_domin_setI.
+Qed.
+
+Lemma cPr_diff F1 F2 E : `Pr_[F1 :\: F2 | E] = `Pr_[F1 | E] - `Pr_[F1 :&: F2 | E].
+Proof. by rewrite /cPr -divRBl setIDAC Pr_diff setIAC. Qed.
+
+Lemma cPr_union_eq F1 F2 E :
+  `Pr_[F1 :|: F2 | E] = `Pr_[F1 | E] + `Pr_[F2 | E] - `Pr_[F1 :&: F2 | E].
+Proof. by rewrite /cPr -divRDl -divRBl setIUl Pr_union_eq setIACA setIid. Qed.
+
+Lemma Bayes (E F : {set A}) : `Pr_[E | F] = `Pr_[F | E] * Pr d E / Pr d F.
+Proof.
+have [/eqP PE0|PE0] := boolP (Pr d E == 0).
+  by rewrite /cPr [in RHS]setIC !(Pr_domin_setI F PE0) !(div0R,mul0R).
+by rewrite /cPr -mulRA mulVR // mulR1 setIC.
+Qed.
+
+Lemma product_rule (E F : {set A}) : Pr d (E :&: F) = `Pr_[E | F] * Pr d F.
+Proof.
+rewrite /cPr.
+have [/eqP PF0|PF0] := boolP (Pr d F == 0).
+  by rewrite setIC (Pr_domin_setI E PF0) div0R mul0R.
+by rewrite -mulRA mulVR ?mulR1.
+Qed.
+
+Lemma product_rule_cond E F G : `Pr_[E :&: F | G] = `Pr_[E | F :&: G] * `Pr_[F | G].
+Proof. by rewrite /cPr mulRA -setIA {1}product_rule. Qed.
+
+Lemma cPr_cplt E F : Pr d E != 0 -> `Pr_[ ~: F | E] = 1 - `Pr_[F | E].
+Proof.
+move=> PE0; rewrite /cPr -(divRR _ PE0) -divRBl; congr (_ / _).
+apply/esym; rewrite subR_eq addRC.
+rewrite -{1}(@setIT _ E) -(setUCr F) setIC setIUl Pr_union_disj //.
+by rewrite -setI_eq0 setIACA setICr set0I.
+Qed.
+
+Lemma inde_events_cPr (E F : {set A}) : Pr d F != 0 -> inde_events d E F ->
+  `Pr_[E | F] = Pr d E.
+Proof. by move=> F0 EF; rewrite /cPr EF /Rdiv -mulRA mulRV ?mulR1. Qed.
+
+Section bayes_extended.
+Variables (I : finType) (E : {set A}) (F : I -> {set A}).
+Hypothesis dis : forall i j, i != j -> [disjoint F i & F j].
+Hypothesis cov : cover (F @: I) = [set: A].
+
+Lemma total_prob_cond :
+  Pr d E = \sum_(i in I) `Pr_[E | F i] * Pr d (F i).
+Proof.
+rewrite (total_prob _ _ _ dis cov); apply eq_bigr; move=> i _.
+by rewrite product_rule.
+Qed.
+
+Lemma Bayes_extended j : `Pr_[F j | E] =
+  `Pr_[E | F j] * Pr d (F j) / \sum_(i in I) `Pr_[E | F i] * Pr d (F i).
+Proof.
+have [/eqP PE0|PE0] := boolP (Pr d E == 0).
+  by rewrite {1 2}/cPr setIC (Pr_domin_setI (F j) PE0) !(div0R,mul0R).
+rewrite -total_prob_cond /cPr -!mulRA; congr (_ / _).
+have [/eqP Fj0|Fj0] := boolP (Pr d (F j) == 0).
+  by rewrite Fj0 !mulR0 (Pr_domin_setI E Fj0).
+by rewrite setIC mulVR ?mulR1.
+Qed.
+
+End bayes_extended.
+
+End conditional_probablity.
+Notation "`Pr_ P [ E | F ]" := (cPr P E F) : proba_scope.
+Hint Resolve cPr_ge0 : core.
+
+Module CondFDist.
+Section def.
+Variables (A : finType) (P : {fdist A}) (E : {set A}).
+Hypothesis E0 : Pr P E != 0.
+Definition f := [ffun a => `Pr_P [[set a] | E]].
+Lemma f0 a : 0 <= f a. Proof. by rewrite ffunE. Qed.
+Lemma f1 : \sum_(a in A) f a = 1.
+Proof.
+rewrite /f.
+under eq_bigr do rewrite ffunE.
+rewrite /cPr -big_distrl /= -divRE eqR_divr_mulr // mul1R.
+rewrite (total_prob P E (fun i => [set i])); last 2 first.
+  move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => // a.
+  by rewrite !inE; apply/negbTE; apply: contra ij => /andP[/eqP ->].
+  apply/setP => // a; rewrite !inE; apply/bigcupP.
+  by exists [set a]; rewrite ?inE //; apply/imsetP; exists a.
+by apply eq_bigr => a _; rewrite setIC.
+Qed.
+Definition d : {fdist A} := locked (FDist.make f0 f1).
+End def.
+Section prop.
+Variables (A : finType) (P : {fdist A}) (E : {set A}).
+Hypothesis E0 : Pr P E != 0.
+Lemma dE a : d E0 a = `Pr_P [[set a] | E].
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Lemma Pr G : Pr (d E0) G = `Pr_P [ G | E ].
+Proof.
+rewrite /Pr; under eq_bigr do rewrite dE.
+rewrite -big_distrl /=; congr (_ / _).
+rewrite (_ : _ :&: _ = \bigcup_(i in G) ([set i] :&: E)); last first.
+  by rewrite -big_distrl /= -bigcup_set1.
+rewrite [in RHS]/Pr big_bigcup_partition // => i j ij.
+rewrite -setI_eq0; apply/eqP/setP => a; rewrite !inE.
+apply/negbTE; rewrite !negb_and.
+have [//|/negPn/eqP ->] := boolP (a != i).
+by rewrite ij /= orbT.
+Qed.
+End prop.
+End CondFDist.
+
+Section conditionally_independent_events.
+
+Variables (A : finType) (d : {fdist A}).
+
+Definition cinde_events (E F G : {set A}) :=
+  `Pr_d[ E :&: F | G] = `Pr_d[E | G] * `Pr_d[F | G].
+
+Lemma cinde_events_alt (E F G : {set A}) : cinde_events E F G <->
+  `Pr_d[ E | F :&: G] = `Pr_d[E | G] \/ Pr d (F :&: G) = 0.
+Proof.
+split=> [|[|FG0]]; rewrite /cinde_events.
+- rewrite product_rule_cond => H.
+  have [/eqP/cPr_eq0 EG0|EG0] := boolP (`Pr_d[F | G] == 0).
+    by rewrite /cPr EG0; right.
+  by left; move/eqR_mul2r : H ; apply; apply/eqP.
+- by rewrite product_rule_cond => ->.
+- by rewrite /cPr -setIA setIC Pr_domin_setI // div0R FG0 div0R mulR0.
+Qed.
+
+Lemma cinde_events_unit (E F : {set A}) : inde_events d E F <->
+  cinde_events E F setT.
+Proof. by split; rewrite /cinde_events /inde_events !cPrET. Qed.
+
+End conditionally_independent_events.
+
+Section crandom_variable_eqType.
+Variables (U : finType) (A B : eqType) (P : {fdist U}).
+
+Definition cpr_eq (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :=
+  locked (`Pr_P[ finset (X @^-1 a) | finset (Y @^-1 b)]).
+Local Notation "`Pr[ X = a | Y = b ]" := (cpr_eq X a Y b).
+
+Lemma cpr_eqE (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :
+  `Pr[ X = a | Y = b ] = `Pr_P [ finset (X @^-1 a) | finset (Y @^-1 b) ].
+Proof. by rewrite /cpr_eq; unlock. Qed.
+
+End crandom_variable_eqType.
+Notation "`Pr[ X = a | Y = b ]" := (cpr_eq X a Y b) : proba_scope.
+
+Lemma cpr_eq_unit (U : finType) (A : eqType) (P : {fdist U}) (X : {RV P -> A}) (a : A) :
+  `Pr[ X = a | (fun=> tt) = tt ] = `Pr[ X = a ].
+Proof. by rewrite cpr_eqE cPrET pr_eqE. Qed.
+
+Section crandom_variable_finType.
+Variables (U A B : finType) (P : {fdist U}).
+
+Definition cpr_eq_set (X : {RV P -> A}) (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :=
+  locked (`Pr_P [ X @^-1: E | Y @^-1: F ]).
+Local Notation "`Pr[ X \in E | Y \in F ]" := (cpr_eq_set X E Y F).
+
+Lemma cpr_eq_setE (X : {RV P -> A}) (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :
+  `Pr[ X \in E | Y \in F ] = `Pr_P [ X @^-1: E | Y @^-1: F ].
+Proof. by rewrite /cpr_eq_set; unlock. Qed.
+
+Lemma cpr_eq_set1 (X : {RV P -> A}) x (Y : {RV P -> B}) y :
+  `Pr[ X \in [set x] | Y \in [set y] ] = `Pr[ X = x | Y = y ].
+Proof. by rewrite cpr_eq_setE cpr_eqE; congr cPr; apply/setP => u; rewrite !inE. Qed.
+
+End crandom_variable_finType.
+Notation "`Pr[ X \in E | Y \in F ]" := (cpr_eq_set X E Y F) : proba_scope.
+Notation "`Pr[ X '\in' E | Y = b ]" := (`Pr[ X \in E | Y \in [set b]]) : proba_scope.
+Notation "`Pr[ X = a | Y '\in' F ]" := (`Pr[ X \in [set a] | Y \in F]) : proba_scope.
+
+Lemma cpr_inE (U : finType) (P : fdist U) (A B : finType)
+    (X : {RV P -> A}) (Z : {RV P -> B}) E F :
+  `Pr[X \in E | Z \in F] = `Pr[ [%X, Z] \in E `* F]  / `Pr[Z \in F].
+Proof.
+rewrite /cpr_eq_set; unlock.
+rewrite !pr_eq_setE /cPr; congr (Pr _ _ * _).
+by apply/setP => u; rewrite !inE.
+Qed.
+
+Lemma cpr_inE' (U : finType) (P : fdist U) (A B : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (E : {set A}) (F : {set B}) :
+  `Pr[ X \in E | Y \in F ] = `Pr_(`d_ [% X, Y]) [(E `*T) | (T`* F)].
+Proof.
+rewrite cpr_eq_setE /cPr /dist_of_RV; congr (_ / _).
+  rewrite setTE EsetT setIX setIT setTI.
+  by rewrite Pr_FDistMap_RV2.
+by rewrite setTE Pr_FDistMap_RV2; congr Pr; apply/setP => u; rewrite !inE.
+Qed.
+
+
+Lemma reasoning_by_cases (U : finType) (P : fdist U)
+  (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) E :
+  `Pr[ X \in E ] = \sum_(b <- fin_img Y) `Pr[ [% X, Y] \in (E `* [set b])].
+Proof.
+rewrite pr_eq_setE.
+have -> : X @^-1: E = \bigcup_d [% X, Y] @^-1: ((E `* [set d])).
+  rewrite bigcup_preimset; apply/setP => u; rewrite !inE; apply/idP/bigcupP.
+  by move=> XuE; exists (Y u) => //; rewrite !inE /= XuE /=.
+  by case=> b _; rewrite !inE => /andP[] ->.
+rewrite bigcup_preimset /Pr partition_big_preimset /=.
+rewrite partition_disjoint_bigcup /=; last first.
+  move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
+  by apply/negbTE/negP=> /andP[] /andP[] -> /eqP -> /=; move/negP: ij; exact.
+apply/esym; set F := BIG_F.
+transitivity (\sum_(b in B) F b).
+  rewrite [in RHS](bigID (mem (fin_img Y))) /=.
+  rewrite [X in _ = _ + X]big1 ?addR0 //.
+    by rewrite big_uniq // undup_uniq.
+  by move=> b bY; rewrite {}/F pr_in_pairC pr_in_domin_RV2 // pr_eq_set1 pr_eq0.
+by apply eq_bigr => b _; rewrite /F pr_eq_setE /Pr partition_big_preimset.
+Qed.
+
+Lemma creasoning_by_cases (U : finType) (P : fdist U)
+  (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) E F :
+  `Pr[ X \in E | Z \in F ] = \sum_(b <- fin_img Y) `Pr[ [% X, Y] \in (E `* [set b]) | Z \in F].
+Proof.
+rewrite cpr_inE; under eq_bigr do rewrite cpr_inE.
+rewrite -big_distrl /= (reasoning_by_cases _ Y); congr (_ / _).
+by apply eq_bigr => b _; rewrite pr_in_pairAC.
+Qed.
+
+Section conditionnally_independent_discrete_random_variables.
+
+Variables (U : finType) (P : fdist U) (A B C : eqType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+
+Definition cinde_rv := forall a b c,
+  `Pr[ [% X, Y] = (a, b) | Z = c ] = `Pr[ X = a | Z = c ] * `Pr[ Y = b | Z = c].
+
+Lemma cinde_rv_events : cinde_rv <->
+  (forall x y z, cinde_events P (finset (X @^-1 x)) (finset (Y @^-1 y)) (finset (Z @^-1 z))).
+Proof.
+split=> [H /= x y z|/= H x y z].
+- rewrite /cinde_events -2!cpr_eqE -H cpr_eqE; congr cPr.
+  by apply/setP => /= ab; rewrite !inE.
+- rewrite (cpr_eqE _ x) (cpr_eqE _ y) -H cpr_eqE; congr cPr.
+  by apply/setP => /= ab; rewrite !inE.
+Qed.
+
+End conditionnally_independent_discrete_random_variables.
+
+Notation "P `= X _|_  Y | Z" := (@cinde_rv _ P _ _ _ X Y Z) : proba_scope.
+
 Section independent_rv.
 
 Variables (A : finType) (P : {fdist A}) (TA TB : eqType).
@@ -1275,40 +1506,33 @@ Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 Definition inde_rv := forall (x : TA) (y : TB),
   `Pr[ [% X, Y] = (x, y)] = `Pr[ X = x ] * `Pr[ Y = y ].
 
+Lemma cinde_rv_unit : inde_rv <-> cinde_rv X Y (fun x => tt).
+Proof.
+split => [H a b []|H a b]; first by rewrite !cpr_eq_unit H.
+by have := H a b tt; rewrite !cpr_eq_unit.
+Qed.
+
 Lemma inde_rv_events : inde_rv <->
   (forall x y, inde_events P (finset (X @^-1 x)) (finset (Y @^-1 y))).
 Proof.
-split=> [H /= x y|/= H x y].
-- rewrite /inde_events -2!pr_eqE -H pr_eqE; congr Pr.
-  by apply/setP => /= ab; rewrite !inE.
-- rewrite (pr_eqE _ x) (pr_eqE _ y) -H pr_eqE; congr Pr.
-  by apply/setP => /= ab; rewrite !inE.
+split => [/cinde_rv_unit/cinde_rv_events H a b|H].
+  exact/cinde_events_unit/(H _ _ tt).
+by apply/cinde_rv_unit/cinde_rv_events => a b []; exact/cinde_events_unit/H.
 Qed.
 
 End independent_rv.
 
-Section independent_rv_lemma.
-
-Variables (A B : finType) (P1 : {fdist A}) (P2 : {fdist B}) (TA TB : eqType).
-Variable (X : {RV P1 -> TA}) (Y : {RV P2 -> TB}).
-Let P := P1 `x P2.
-Let X' : {RV P -> TA} := fun x => X x.1.
-Let Y' : {RV P -> TB} := fun x => Y x.2.
-Let XY : {RV P -> (TA * TB)%type} := fun x => (X' x, Y' x).
-
-Lemma prod_dist_inde_rv : inde_rv X' Y'.
-Proof.
-apply/inde_rv_events => x y.
-rewrite (_ : [set _ | _ ] = finset (X @^-1 x) `*T); last first.
-  by apply/setP => -[a b]; rewrite !inE.
-rewrite (_ : [set x | preim Y' (pred1 y) x] = T`* finset (Y @^-1 y)); last first.
-  by apply/setP => -[a b]; rewrite !inE.
-by rewrite /P /inde_events -Pr_ProdFDist.
-Qed.
-
-End independent_rv_lemma.
-
 Notation "P |= X _|_ Y" := (@inde_rv _ P _ _ X Y) : proba_scope.
+
+Lemma pr_eq_pair_setT (U : finType) (P : {fdist U}) (A B : finType) (E : {set A})
+    (X : {RV P -> A}) (Y : {RV P -> B}) :
+  `Pr[ [% X, Y] \in E `*T ] = `Pr[ X \in E ].
+Proof.
+apply/esym.
+rewrite (@pr_in_comp _ _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
+rewrite 2!pr_eq_setE; congr Pr; apply/setP => u; rewrite !inE /=.
+by apply/imsetP/idP => [[a aE [] ->//]|XuE]; exists (X u).
+Qed.
 
 Section sum_two_rand_var_def.
 
@@ -1396,8 +1620,7 @@ have -> : `Pr[ X2 = r' ] = `Pr[ X2' = r' ].
   rewrite 2!pr_eqE /P1 /Multivar.head_of Pr_Bivarsnd Pr_Multivar2; congr Pr.
   by apply/setP => /= v; rewrite !inE /X2'.
 rewrite -Hinde.
-rewrite /pr_eq; unlock.
-rewrite /ambient_dist /Pr.
+rewrite pr_eqE /ambient_dist /Pr.
 transitivity (\sum_(a : 'rV_n.+2 | (X1 (a ``_ ord0) == r) && (X2 (rbehead a) == r')) P a).
   by rewrite -(big_rV_cons_behead _ [pred x | X1 x == r] [pred x | X2 x == r']) /=.
 apply eq_bigl => /= v.
@@ -1436,7 +1659,7 @@ rewrite !big_split /=; congr (_ + _ + _).
   transitivity (X2 t ^ 2 * \sum_(i in A) (Multivar.to_bivar `p_ X) (i, t)).
   + rewrite big_distrr /=; apply eq_bigr => i _.
     by rewrite rbehead_row_mx Multivar.to_bivarE.
-  + congr (_ * _); by rewrite Bivar.sndE.
+  + by congr (_ * _); rewrite Bivar.sndE.
 Qed.
 
 Lemma V_sum_2 : X \= X1 @+ X2 -> P |= X1' _|_ X2'  ->
@@ -1470,8 +1693,7 @@ transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
   rewrite -(pair_bigA _ (fun u1 u2 => X u1 * Y u2 * `p_XmY (u1, u2))) /=.
   rewrite (sum_parti_finType _ X) /=; apply eq_bigr => x _.
   rewrite exchange_big /= (sum_parti_finType _ Y) /=; apply eq_bigr => y _.
-  rewrite /pr_eq; unlock.
-  rewrite /Pr big_distrr /= exchange_big pair_big /=.
+  rewrite pr_eqE /Pr big_distrr /= exchange_big pair_big /=.
   apply eq_big.
   by move=> -[a b] /=; rewrite inE.
   by case=> a b /= /andP[/eqP -> /eqP ->].
@@ -1512,6 +1734,52 @@ where "X '\=sum' Xs" := (sum_n X Xs) : proba_scope.
 End sum_n_rand_var_def.
 
 Notation "X '\=sum' Xs" := (sum_n X Xs) : proba_scope.
+
+Section independent_rv_lemma.
+
+Variables (A B : finType) (P1 : {fdist A}) (P2 : {fdist B}) (TA TB : eqType).
+Variable (X : {RV P1 -> TA}) (Y : {RV P2 -> TB}).
+Let P := P1 `x P2.
+Let X' : {RV P -> TA} := fun x => X x.1.
+Let Y' : {RV P -> TB} := fun x => Y x.2.
+Let XY : {RV P -> (TA * TB)%type} := fun x => (X' x, Y' x).
+
+Lemma prod_dist_inde_rv : inde_rv X' Y'.
+Proof.
+apply/inde_rv_events => x y.
+rewrite (_ : [set _ | _ ] = finset (X @^-1 x) `*T); last first.
+  by apply/setP => -[a b]; rewrite !inE.
+rewrite (_ : [set x | preim Y' (pred1 y) x] = T`* finset (Y @^-1 y)); last first.
+  by apply/setP => -[a b]; rewrite !inE.
+by rewrite /P /inde_events -Pr_ProdFDist.
+Qed.
+
+End independent_rv_lemma.
+
+Local Open Scope vec_ext_scope.
+Lemma prod_dist_inde_rv_vec (A : finType) (P : {fdist A})
+    n (X : A -> R) (Y : {RV (P `^ n) -> R}) x y :
+  `Pr[ ([% (fun v => X v ``_ ord0) : {RV (P`^n.+1) -> _},
+           (fun v => Y (rbehead v) : _ )]) = (x, y) ] =
+  `Pr[ ((fun v => X v ``_ ord0) : {RV (P`^n.+1) -> _}) = x ] *
+  `Pr[ ((fun v => Y (rbehead v)) : {RV (P`^n.+1) -> _}) = y ].
+Proof.
+have /= := @prod_dist_inde_rv _ _ P (P `^ n) _ _ X Y x y.
+rewrite !pr_eqE -!TupleFDist.to_bivar.
+rewrite (_ : [set x0 | _] = (finset (X @^-1 x)) `* (finset (Y @^-1 y))); last first.
+  by apply/setP => -[a b]; rewrite !inE /= xpair_eqE.
+rewrite Pr_Multivar (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
+  by apply/setP => a; rewrite !inE.
+rewrite Pr_Multivar1 (_ : [set x0 | _] = T`* (finset (Y @^-1 y))); last first.
+  by apply/setP => a; rewrite !inE.
+move=> Hinde.
+apply: eq_trans.
+  apply: eq_trans; last exact: Hinde.
+  by congr Pr; apply/setP => v; rewrite !inE xpair_eqE.
+by rewrite Pr_Multivar2; congr (Pr _ _ * Pr (P `^ n.+1) _);
+  apply/setP => v; rewrite !inE.
+Qed.
+Local Close Scope vec_ext_scope.
 
 Section sum_n_rand_var.
 
@@ -1562,24 +1830,7 @@ case=> [_ | n IH] Xsum Xs Hsum s Hs.
   subst Z n0 Xs.
   move: {IH}(IH Y _ H2) => IH.
   rewrite S_INR mulRDl -IH.
-  + rewrite mul1R addRC (V_sum_2 H3) //; last first.
-      move=> /= x y.
-      have Hinde := (@prod_dist_inde_rv A [finType of 'rV[A]_n.+1] P (P `^ n.+1) R_eqType R_eqType X Y x y).
-      move: Hinde.
-      rewrite !pr_eqE -!TupleFDist.to_bivar.
-      rewrite (_ : [set x0 | _] = (finset (X @^-1 x)) `* (finset (Y @^-1 y))); last first.
-        by apply/setP => -[a b]; rewrite !inE /= xpair_eqE.
-      rewrite Pr_Multivar (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
-        by apply/setP => a; rewrite !inE.
-      rewrite Pr_Multivar1 (_ : [set x0 | _] = T`* (finset (Y @^-1 y))); last first.
-        by apply/setP => a; rewrite !inE.
-      move=> Hinde.
-      apply: eq_trans.
-        apply: eq_trans; last exact: Hinde.
-        congr Pr; by apply/setP => v; rewrite !inE xpair_eqE.
-      rewrite Pr_Multivar2; congr (Pr _ _ * _).
-        by apply/setP => v; rewrite !inE.
-      by congr Pr; apply/setP => v; rewrite !inE.
+  + rewrite mul1R addRC (V_sum_2 H3) //; last exact: prod_dist_inde_rv_vec.
     by rewrite -(Hs ord0) /= row_mx_row_ord0 // TupleFDist.head_of TupleFDist.tail_of.
   + move=> i; rewrite -(Hs (lift ord0 i)).
     congr (`V _).

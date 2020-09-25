@@ -100,7 +100,7 @@ Qed.
 Lemma cinde_preim_ok (i j k : 'I_n) :
   cinde_preim [set i] [set j] [set k] <-> vars i _|_ vars j | (vars k).
 Proof.
-rewrite /cinde_drv /cinde_preim /preim_vars.
+rewrite /jcinde_rv /cinde_preim /preim_vars.
 split.
 - move=> Hpreim a b c.
   set vals := set_val a (set_val c (set_val b (fun i => rvar_choice (vars i)))).
@@ -307,7 +307,7 @@ Qed.
 Lemma cinde_preim_ok' (e f g : {set 'I_n}) :
   cinde_preim e f g <-> prod_vars e _|_ prod_vars f | (prod_vars g).
 Proof.
-rewrite /cinde_drv /cinde_preim.
+rewrite /jcinde_rv /cinde_preim.
 split.
 - move=> Hpreim A B C.
   set vals := set_vals C (set_vals A (set_vals B vals0)).

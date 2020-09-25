@@ -579,8 +579,8 @@ Lemma jproduct_rule E F : Pr P (E `* F) = \Pr_P[E | F] * Pr (Bivar.snd P) F.
 Proof.
 have [/eqP PF0|PF0] := boolP (Pr (Bivar.snd P) F == 0).
   rewrite jcPrE /cPr -{1}(setIT E) -{1}(setIT F) -setIX.
-  rewrite setI_dominates; last by rewrite Pr_domin_snd.
-  by rewrite setIC setI_dominates ?(div0R,mul0R) // setTE Pr_setTX.
+  rewrite Pr_domin_setI; last by rewrite Swap.Pr Pr_domin_setX // Swap.fst.
+  by rewrite setIC Pr_domin_setI ?(div0R,mul0R) // setTE Pr_setTX.
 rewrite -{1}(setIT E) -{1}(setIT F) -setIX product_rule.
 rewrite -EsetT setTT cPrET Pr_setT mulR1 jcPrE.
 rewrite /cPr {1}setTE {1}EsetT.
