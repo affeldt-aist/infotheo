@@ -237,6 +237,73 @@ rewrite /set_vals /prod_vars !ffunE.
 by case: (i \in e) (i \in g) => // -[].
 Qed.
 
+Lemma preim_prod_vars (g : {set 'I_n}) (C : prod_types g) vals :
+  finset (prod_vars g @^-1 C) = preim_vars g (set_vals C vals).
+Proof.
+apply/setP => x.
+rewrite !inE.
+case/boolP: (x \in _) => Hx.
+- apply/eqP/ffunP => /= i.
+  rewrite ffunE.
+  move: Hx.
+  rewrite /preim_vars.
+  move/bigcapP => /(_ i).
+  rewrite /set_vals.
+  case: (i \in g) (C i) => /= Ci.
+    move/(_ isT).
+    by rewrite inE /= => /eqP.
+  by case: Ci.
+- apply/negP => /eqP/ffunP /= Hprod.
+  move/negP: Hx; apply.
+  apply/bigcapP => i.
+  move: (Hprod i).
+  rewrite ffunE /set_vals.
+  case: (i \in g) (C i) => //= Ci.
+  by rewrite inE /= => /eqP.
+Qed.
+
+Lemma preim_inter (T S : finType) (e : U -> T) (g : U -> S) (A : T) (C : S) :
+  finset (preim (fun x => (e x, g x)) (pred1 (A, C))) =
+  finset (preim e (pred1 A)) :&:
+  finset (preim g (pred1 C)).
+Proof.
+apply/setP => u.
+rewrite !inE.
+apply/andP => /=.
+case: ifPn.
+  by move/andP.
+by move/negP => H /andP /H.
+Qed.
+
+Lemma preim_vars_vals (e : {set 'I_n}) (A : prod_types e) vals1 vals2 :
+  (forall x, (x \in e) ==> (vals1 x == vals2 x)) ->
+  preim_vars e vals1 = preim_vars e vals2.
+Proof.
+suff: forall vals1 vals2 u, (forall x, (x \in e) ==> (vals1 x == vals2 x)) ->
+         u \in preim_vars e vals1 -> u \in preim_vars e vals2.
+  move=> H Hvals.
+  apply/setP => u.
+  case /boolP: (u \in preim_vars _ vals2).
+    apply H => x; by rewrite eq_sym.
+  move/negP => Hu.
+  apply/negP => Hu'; elim Hu; move: Hu'.
+  exact: H.
+move=> {vals1 vals2} vals1 vals2 u Hvals.
+move/bigcapP => Hpre.
+apply/bigcapP => i ie.
+move: (Hpre _ ie).
+rewrite !inE => /eqP ->.
+by apply/implyP: ie.
+Qed.
+
+Lemma prod_vals_vars (e : {set 'I_n}) (vals : forall i, types i) i :
+  (i \in e) ==> (set_vals (prod_vals e vals) vals i == vals i).
+Proof.
+apply/implyP => _.
+rewrite /set_vals /prod_vals ffunE.
+by case: (i \in e) (vals i).
+Qed.
+
 Lemma cinde_preim_ok' (e f g : {set 'I_n}) :
   cinde_preim e f g <-> prod_vars e _|_ prod_vars f | (prod_vars g).
 Proof.
@@ -244,8 +311,7 @@ rewrite /cinde_drv /cinde_preim.
 split.
 - move=> Hpreim A B C.
   set vals := set_vals C (set_vals A (set_vals B vals0)).
-  case /boolP: [forall i, (i \in e) ==> (vals i == (set_vals A vals0) i)];
-    last first.
+  case /boolP: [forall i in e, vals i == set_vals A vals0 i]; last first.
     rewrite negb_forall => /existsP [i].
     rewrite negb_imply => /andP [Hie] /eqP Hvi.
     case /boolP: (i \in g) => Hig; last first.
@@ -260,8 +326,7 @@ split.
     move=> u; rewrite inE /= /RV2 => Hprod; elim: Hvi.
     case/eqP: Hprod => <- _ <-; exact: prod_vars_inter.
   move/forallP => /= He.
-  case /boolP: [forall i, (i \in f) ==> (vals i == (set_vals B vals0) i)];
-    last first.
+  case /boolP: [forall i in f, vals i == set_vals B vals0 i]; last first.
     rewrite negb_forall => /existsP [i].
     rewrite negb_imply => /andP [Hif] /eqP Hvi.
     case /boolP: (i \in g) => Hig.
@@ -285,11 +350,16 @@ split.
   move: (Hpreim vals).
   rewrite /jcPr /cPr /Pr !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
   rewrite /RV2.
-  admit.
+  rewrite (preim_vars_vals _ He) // (preim_vars_vals _ Hf) //.
+  by rewrite -!preim_prod_vars -!preim_inter !big_set.
 - move=> Hdrv vals.
   move/(_ (prod_vals e vals) (prod_vals f vals) (prod_vals g vals)): Hdrv.
-  rewrite /jcPr /cPr /Pr /dist_of_RV.
-  rewrite !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
+  rewrite /jcPr /cPr /Pr !setX1 !big_set1 !snd_RV3 !snd_RV2 !FDistMap.dE /=.
+  rewrite /RV2.
+  rewrite -(preim_vars_vals (prod_vals e vals) (prod_vals_vars e vals)).
+  rewrite -(preim_vars_vals (prod_vals f vals) (prod_vals_vars f vals)).
+  rewrite -(preim_vars_vals (prod_vals g vals) (prod_vals_vars g vals)).
+  by rewrite -!preim_prod_vars -!preim_inter !big_set.
 Abort.
 End preim.
 
