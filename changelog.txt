@@ -62,6 +62,7 @@ from 0.1.2 to ???
   + pr_eq_pairCA, pr_in_pairCA
   + cpr_in_Eset1, cpr_in_set1F
   + reasoning_by_cases, creasoning_by_cases
+  + cpr_in_pair* lemmas in proba.v
 - changed:
   + generalize pr_geq to any porderType
   + definition of notation @^-1 now uses preim instead of finset notations
@@ -77,6 +78,7 @@ from 0.1.2 to ???
   + Pr_domin_snd
   + RVarPr
   + most marginal_* lemmas and technical lemmas from cinde.v
+  + RV_Pr_lC, etc. from cinde.v
 
 ---------------------
 from 0.1.1 to 0.1.2 :

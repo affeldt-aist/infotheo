@@ -98,6 +98,9 @@ Qed.
 End prop3.
 End Swap.
 
+Lemma Swap_RV2 (U : finType) (P : fdist U) (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) : Swap.d `d_[% X, Y] = `d_[% Y, X].
+Proof. by rewrite /Swap.d /dist_of_RV FDistMap.comp. Qed.
+
 Module Self.
 Section def.
 Variable (A : finType) (P : {fdist A}).
@@ -679,6 +682,30 @@ Qed.
 End def.
 End CondJFDist.
 Notation "P `(| a ')'" := (CondJFDist.d P a).
+
+Lemma cPr_1 (U : finType) (P : fdist U) (A B : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) a : `Pr[X = a] != 0 ->
+  \sum_(b <- fin_img Y) `Pr[ Y = b | X = a ] = 1.
+Proof.
+rewrite -pr_eq_set1 pr_inE' Pr_set1 -{1}(fst_RV2 _ Y) => Xa0.
+set Q := `d_[% X, Y] `(| a ).
+rewrite -(FDist.f1 Q) [in RHS](bigID (mem (fin_img Y))) /=.
+rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
+  move=> b bY.
+  rewrite /Q CondJFDist.dE // /jcPr /Pr !(big_setX,big_set1) /= Swap.dE Swap.snd fst_RV2.
+  rewrite -!pr_eqE' !pr_eqE.
+  rewrite /Pr big1 ?div0R // => u.
+  rewrite inE => /eqP[Yub ?].
+  exfalso.
+  move/negP : bY; apply.
+  rewrite mem_undup; apply/mapP; exists u => //; by rewrite mem_enum.
+rewrite big_const iter_addR mulR0 addR0.
+rewrite big_uniq; last by rewrite /fin_img undup_uniq.
+apply eq_bigr => b; rewrite mem_undup => /mapP[u _ bWu].
+rewrite /Q CondJFDist.dE // Swap_RV2.
+rewrite jcPrE -cpr_inE'.
+by rewrite cpr_eq_set1.
+Qed.
 
 Section condjfdist_prop.
 
