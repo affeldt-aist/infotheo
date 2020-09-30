@@ -682,7 +682,8 @@ End bseq_def.
 
 Notation "n .-bseq" := (bseq_of n) : type_scope.
 
-Program Definition bseq0 n T : n.-bseq T := @Bseq n T [::] _.
+Definition bseq0 n T : n.-bseq T := @Bseq n T [::] (leq0n _).
+Canonical bseq0.
 
 Definition bseq_of_tuple n T (t : seq T) : n.-bseq T :=
   match Bool.bool_dec (size t <= n) true with
