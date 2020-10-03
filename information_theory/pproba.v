@@ -62,7 +62,7 @@ Lemma receivableE (y : P.-receivable W) :
 Proof.
 apply/idP/idP => [|H].
 - case/existsP => /= x /andP[Px0].
-  apply: contra => /eqP/prsumr_eq0P => /= H.
+  apply: contra => /eqP/psumR_eq0P => /= H.
   apply/eqP; rewrite -(@eqR_mul2l (P x)); last exact/eqP.
   rewrite mulR0 H // => /= x' _; exact: mulR_ge0.
 - have /= : \sum_(x in setT) P x * W ``(y | x) != 0.
@@ -94,7 +94,7 @@ apply/idP/idP => [|/eqP].
   rewrite negb_and !negbK => /orP[|/eqP //].
   by rewrite -(negbK (_ == _)) UniformSupport.neq0 iC.
 - have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%R by [].
-  move/prsumr_eq0P => H /H {}H.
+  move/psumR_eq0P => H /H {}H.
   rewrite /Receivable.def; apply/negP.
   case/existsP => z /andP[].
   rewrite UniformSupport.neq0 => /H ->; by rewrite eqxx.
@@ -110,7 +110,7 @@ Definition den := \sum_(x in 'rV_n) P x * W ``(y | x).
 
 Definition f := [ffun x => P x * W ``(y | x) / den].
 
-Lemma den_ge0 : 0 <= den. Proof. apply rsumr_ge0 => x _; exact: mulR_ge0. Qed.
+Lemma den_ge0 : 0 <= den. Proof. by apply sumR_ge0 => x _; exact: mulR_ge0. Qed.
 
 Lemma f0 x : 0 <= f x.
 Proof.
@@ -137,9 +137,9 @@ Section chap2.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Local Open Scope channel_scope.
 Lemma ppE (x : 'rV[A]_n) (y : P.-receivable W) :
-  P `^^ W (x | y) = \Pr_(`J(P, W ``^ n))[[set x]|[set Receivable.y y]].
+  P `^^ W (x | y) = \Pr_(`J(P, W ``^ n))[[set x] | [set Receivable.y y]].
 Proof.
-rewrite dE /cPr setX1 2!Pr_set1 JointFDistChan.dE /=; congr (_ / _).
+rewrite dE /jcPr setX1 2!Pr_set1 JointFDistChan.dE /=; congr (_ / _).
 rewrite Bivar.sndE /=; apply eq_bigr => x' _; by rewrite JointFDistChan.dE /= mulRC.
 Qed.
 End chap2.
@@ -217,9 +217,9 @@ Proof.
 rewrite ffunE; apply mulR_ge0.
 - rewrite /Kmpp.
   apply/ltRW/invR_gt0/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
-    apply rsumr_ge0 => /= ? _; exact: FDist.ge0.
+    by apply sumR_ge0 => /= ? _; exact: FDist.ge0.
   exact/f'_neq0.
-- apply rsumr_ge0 => /= ? _; exact: FDist.ge0.
+- by apply sumR_ge0 => /= ? _; exact: FDist.ge0.
 Qed.
 
 Lemma f1 i : \sum_(a in A) f i a = 1.

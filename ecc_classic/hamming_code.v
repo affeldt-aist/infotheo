@@ -319,9 +319,9 @@ have : dH y c = O \/ dH y c = 1%nat.
 have c_is_cw : c \in [set cw in Hamming.code m].
   by rewrite inE -yc mem_kernel_syndrome0 syndromeD syndrome_hamming_err F2_addmx.
 case=> [dH0 | dH1].
-  move: (@bigminn_min _ _ C_not_empty c c_is_cw (dH y)).
+  move: (@leq_bigmin _ _ C_not_empty c c_is_cw (dH y)).
   by rewrite dH0 leqn0 => /eqP.
-move: (@bigminn_min _ _ C_not_empty c c_is_cw (dH y)).
+move: (@leq_bigmin _ _ C_not_empty c c_is_cw (dH y)).
 rewrite dH1.
 set x := arg_min _ _ _.
 rewrite -yc /hamming_repair in dH1.

@@ -25,8 +25,8 @@ Require Import proba entropy jfdist chap2.
 (* `H(P , W)  == mutual entropy                                               *)
 (* `H(W | P)  == definition of conditional entropy using an input             *)
 (*               distribution and a channel                                   *)
-(* `I(P, W)   ==mMutual information of input/output                           *)
-(* capacity   == relation defining the capacity of a channel                  *)
+(* `I(P, W)   == mutual information of input/output                           *)
+(* capacity   == capacity of a channel                                        *)
 (******************************************************************************)
 
 Declare Scope channel_scope.
@@ -96,7 +96,7 @@ Local Open Scope ring_scope.
 
 Definition f (x : 'rV[A]_n) := [ffun y : 'rV[B]_n => (\prod_(i < n) W `(y ``_ i | x ``_ i))%R].
 
-Lemma f0 x y : 0 <= f x y. Proof. rewrite ffunE; exact: rprodr_ge0. Qed.
+Lemma f0 x y : 0 <= f x y. Proof. rewrite ffunE; exact: prodR_ge0. Qed.
 
 Lemma f1 x : (\sum_(y in 'rV_n) f x y = 1)%R.
 Proof.
@@ -176,7 +176,7 @@ Section def.
 Variables (A B : finType) (P : fdist A) (W  : `Ch(A, B)).
 Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
 Lemma f0 (b : B) : 0 <= f b.
-Proof. rewrite ffunE; apply: rsumr_ge0 => a _; exact: mulR_ge0. Qed.
+Proof. by rewrite ffunE; apply: sumR_ge0 => a _; exact: mulR_ge0. Qed.
 Lemma f1 : \sum_(b in B) f b = 1.
 Proof.
 rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
@@ -306,7 +306,7 @@ Lemma channel_cPr : forall a b, P a != 0 -> W a b = \Pr_QP[[set b]|[set a]].
 Proof.
 move=> a b Pa0.
 rewrite (@CJFDist.E _ _ (CJFDist.mkt P W)) //=; last exact/eqP.
-congr cPr.
+congr (\Pr_ _ [_ | _ ]).
 apply/fdist_ext => -[b0 a0].
 by rewrite !Swap.dE JointFDistChan.dE /= /CJFDist.joint_of /= ProdFDist.dE.
 Qed.
@@ -375,19 +375,8 @@ by rewrite JointFDistChan.dE mulRC.
 Qed.
 End mutualinfo_prop.
 
-Section capacity_definition.
+From mathcomp Require Import classical_sets.
+Local Open Scope classical_set_scope.
 
-Variables A B : finType.
-
-Definition ubound {S : Type} (f : S -> R) (ub : R) := forall a, f a <= ub.
-
-Definition lubound {S : Type} (f : S -> R) (lub : R) :=
-  ubound f lub /\ forall ub, ubound f ub -> lub <= ub.
-
-Definition capacity (W : `Ch(A, B)) cap := lubound (fun P => `I(P , W)) cap.
-
-Lemma capacity_uniq (W : `Ch(A, B)) r1 r2 :
-  capacity W r1 -> capacity W r2 -> r1 = r2.
-Proof. move=> [? H1] [? H2]; rewrite eqR_le; split; [exact: H1| exact: H2]. Qed.
-
-End capacity_definition.
+Definition capacity (A B : finType) (W : `Ch(A, B)) :=
+  Rstruct.real_sup [set `I(P, W) | P in @setT (fdist A)].

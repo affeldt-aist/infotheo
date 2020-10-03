@@ -81,15 +81,12 @@ suff Htmp : #| `TS P n epsilon |%:R * exp2 (- n%:R * (`H P + epsilon)) <= 1.
 rewrite -(FDist.f1 (P `^ n)).
 rewrite (_ : _ * _ = \sum_(x in `TS P n epsilon) (exp2 (- n%:R * (`H P + epsilon)))); last first.
   by rewrite big_const iter_addR.
-by apply/ler_rsum_l => //= i; rewrite inE; case/andP => /leRP.
+by apply/leR_sumRl => //= i; rewrite inE; case/andP => /leRP.
 Qed.
 
 Lemma typ_seq_definition_equiv x : x \in `TS P n epsilon ->
   exp2 (- n%:R * (`H P + epsilon)) <= P `^ n x <= exp2 (- n%:R * (`H P - epsilon)).
-Proof.
-rewrite inE /typ_seq.
-case/andP => H1 H2; split; by apply/leRP.
-Qed.
+Proof. by rewrite inE /typ_seq => /andP[? ?]; split; apply/leRP. Qed.
 
 Lemma typ_seq_definition_equiv2 x : x \in `TS P n.+1 epsilon ->
   `H P - epsilon <= - (1 / n.+1%:R) * log (P `^ n.+1 x) <= `H P + epsilon.
@@ -180,7 +177,7 @@ rewrite {1}/Pr (eq_bigr (fun=> 0)); last by move=> /= v; rewrite inE => /eqP.
 rewrite big_const iter_addR mulR0 add0R.
 apply/(leR_trans _ (aep He k0_k))/Pr_incl/subsetP => /= t.
 rewrite !inE /= => /andP[-> /= H3]; apply/ltRW'.
-by rewrite /mlog_RV /= /scale_RV /= mulRN -mulNR.
+by rewrite /mlog_RV /= /scalel_RV /= mulRN -mulNR.
 Qed.
 
 Variable He1 : epsilon < 1.

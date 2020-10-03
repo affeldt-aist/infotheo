@@ -144,7 +144,7 @@ Lemma step3 : 1 - (esrc(P , sc)) <=
   \sum_(x in 'rV[A]_k.+1 | x \in ~: `TS P k.+1 delta) P `^ k.+1 x +
   \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) P `^ k.+1 x.
 Proof.
-rewrite step2; apply/leR_add2r/ler_rsum_l => //= i Hi.
+rewrite step2; apply/leR_add2r/leR_sumRl => //= i Hi.
 exact/leRR.
 by move: Hi; rewrite in_setI => /andP[].
 Qed.
@@ -161,7 +161,7 @@ apply/(leR_trans step3)/leR_add.
 - apply (@leR_trans
     (\sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
       exp2 (- k.+1%:R * (`H P - delta)))).
-    apply ler_rsum => /= i.
+    apply leR_sumR => /= i.
     rewrite in_setI => /andP[i_B i_TS].
     move: (typ_seq_definition_equiv2 i_TS) => [H1 _].
     apply (@Log_le_inv 2) => //.
@@ -171,7 +171,7 @@ apply/(leR_trans step3)/leR_add.
     + rewrite /exp2 ExpK //.
       rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltR0n.
       rewrite leR_oppr /Rdiv mulRC; by rewrite div1R mulNR in H1.
-  rewrite big_const iter_addR; exact/leRR.
+  by rewrite big_const iter_addR; exact/leRR.
 Qed.
 
 Lemma step5 : 1 - (esrc(P , sc)) <= delta + exp2 (- k.+1%:R * (e0 - delta)).

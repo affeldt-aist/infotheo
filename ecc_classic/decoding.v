@@ -141,7 +141,7 @@ have Hy : Receivable.def P W y.
 case: (ML_dec (Receivable.mk Hy)) => x' [].
 rewrite /= Hx1 => -[<-] ->.
 rewrite -big_filter.
-apply (Rle_bigRmax (fun i => W ``(y | i))).
+apply (leR_bigmaxR (fun i => W ``(y | i))).
 by rewrite mem_filter /= mem_index_enum andbT.
 Qed.
 
@@ -170,7 +170,7 @@ rewrite [in X in X <= _](eq_bigr
 rewrite 2!big_split /= leR_add2l.
 rewrite -2!big_morph_oppR leR_oppr oppRK /Pr (exchange_big_dep xpredT) //=.
 rewrite [in X in (_ <= X)%R](exchange_big_dep xpredT) //=.
-apply ler_rsum => /= tb _.
+apply leR_sumR => /= tb _.
 rewrite (eq_bigl (fun m => phi tb == Some m)); last by move=> m; rewrite inE.
 rewrite [in X in _ <= X](eq_bigl (fun m => dec tb == Some m)); last by move=> m; rewrite inE.
 (* show that phi_ML succeeds more often than phi *)
@@ -184,9 +184,9 @@ have [dectb_None|dectb_Some] := boolP (dec tb == None).
     rewrite Htb andbT UniformSupport.neq0 inE.
     move/subsetP : enc_img; apply; apply/imsetP; by exists m.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite W_tb.
-  by rewrite big1 //; apply rsumr_ge0.
+  by rewrite big1 //; apply sumR_ge0.
 case/boolP : (phi tb == None) => [/eqP ->|phi_tb].
-  by rewrite big_pred0 //; apply rsumr_ge0.
+  by rewrite big_pred0 //; apply sumR_ge0.
 have [m1 Hm1] : exists m', dec tb = Some m' by destruct (dec tb) => //; exists s.
 have [m2 Hm2] : exists m', phi tb = Some m' by destruct (phi tb) => //; exists s.
 rewrite Hm1 {}Hm2.
@@ -293,7 +293,7 @@ transitivity (\big[Rmax/R0]_(c in C) (g (dH_y c))); last first.
   by rewrite -/W compatible.
 (* the function maxed over is decreasing so we may look for its minimizer,
    which is given by minimum distance decoding *)
-rewrite (@big_rmax_bigminn_helper_vec _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
+rewrite (@bigmaxR_bigmin_vec_helper _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
 - apply eq_bigl => /= i; by rewrite inE.
 - by apply bsc_prob_prop.
 - move=> r; rewrite /g.
@@ -341,7 +341,7 @@ set tmp := \rmax_(_ <- _ | _) _ in H.
 rewrite /tmp in H.
 evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H; last first.
   move=> v vC; rewrite ffunE /h; reflexivity.
-rewrite -rmax_distrl in H; last first.
+rewrite -bigmaxR_distrl in H; last first.
   apply/ltRW/invR_gt0; rewrite ltR_neqAle; split.
     apply/eqP; by rewrite eq_sym -receivableE Receivable.defE.
   exact/PosteriorProbability.den_ge0.
@@ -351,7 +351,7 @@ case => [m' [Hm' H]].
 set r := index_enum _ in H.
 rewrite (eq_bigr (fun i => 1 / INR #|[set cw in C]| * W ``(tb | i))) in H; last first.
   move=> i iC; by rewrite UniformSupport.dET // inE.
-rewrite -rmax_distrr in H; last exact/ltRW/Hunpos.
+rewrite -bigmaxR_distrr in H; last exact/ltRW/Hunpos.
 exists m'; split; first exact Hm'.
 rewrite /PosteriorProbability.f ffunE in H.
 set x := PosteriorProbability.den _ in H.

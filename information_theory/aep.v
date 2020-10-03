@@ -9,8 +9,9 @@ Require Import entropy.
 (******************************************************************************)
 (*              Asymptotic Equipartition Property (AEP)                       *)
 (*                                                                            *)
-(* Definition aep_bound == constant used in the statement of AEP              *)
-(* Lemma aep            == AEP                                                *)
+(* Lemmas E_mlog, V_mlog == properties of the ``- log P'' random variable     *)
+(* Definition aep_bound  == constant used in the statement of AEP             *)
+(* Lemma aep             == AEP                                               *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -24,7 +25,6 @@ Local Open Scope entropy_scope.
 Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
 
-(* properties of the ``- log P'' random variable *)
 Section mlog_prop.
 
 Variables (A : finType) (P : fdist A).
@@ -42,7 +42,8 @@ rewrite /Var E_trans_RV_id_rem E_mlog /aep_sigma2.
 transitivity
   (\sum_(a in A) ((- log (P a))^2 * P a - 2 * `H P * - log (P a) * P a + `H P ^ 2 * P a))%R.
   apply eq_bigr => a _.
-  rewrite /scale_RV /mlog_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV /p_of; field.
+  rewrite /scalel_RV /mlog_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV.
+  by rewrite /ambient_dist; field.
 rewrite big_split /= big_split /= -big_distrr /= (FDist.f1 P) mulR1.
 rewrite (_ : \sum_(a in A) - _ = - (2 * `H P ^ 2))%R; last first.
   rewrite -{1}big_morph_oppR; congr (- _)%R.
@@ -70,7 +71,7 @@ Lemma sum_mlog_prod_sum_map_mlog A (P : fdist A) n :
   sum_mlog_prod P n.+1 \=sum (\row_(i < n.+1) --log P).
 Proof.
 elim : n => [|n IH].
-- move: (@sum_n_1 A (\row_i --log P)).
+- move: (@sum_n_1 A P (\row_i --log P)).
   set mlogP := cast_rV1_fun_rV1 _.
   move => HmlogP.
   set mlogprodP := @sum_mlog_prod _ _ 1.
@@ -89,7 +90,7 @@ Qed.
 
 Section aep_k0_constant.
 
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 
 Definition aep_bound epsilon := (aep_sigma2 P / epsilon ^ 3)%R.
 
@@ -108,10 +109,10 @@ End aep_k0_constant.
 
 Section AEP.
 
-Variables (A : finType) (P : fdist A) (n : nat) (epsilon : R).
+Variables (A : finType) (P : {fdist A}) (n : nat) (epsilon : R).
 Hypothesis Hepsilon : 0 < epsilon.
 
-Lemma aep : aep_bound P epsilon <= INR n.+1 ->
+Lemma aep : aep_bound P epsilon <= n.+1%:R ->
   Pr (P `^ n.+1) [set t | (0 <b P `^ n.+1 t) &&
     (`| (--log (P `^ n.+1) `/ n.+1) t - `H P | >b= epsilon) ] <= epsilon.
 Proof.
@@ -131,10 +132,10 @@ have H2 : forall k i, `V ((\row_(i < k.+1) --log P) ``_ i) = aep_sigma2 P.
 have {H1 H2} := (wlln (H1 n) (H2 n) Hsum Hepsilon).
 move/(leR_trans _); apply.
 apply/Pr_incl/subsetP => ta; rewrite 2!inE => /andP[H1].
-rewrite /sum_mlog_prod [--log _]lock /= -lock /= /scale_RV /mlog_RV.
-rewrite TupleFDist.dE log_rmul_rsum_mlog //.
-apply: (rprodr_gt0_inv (FDist.ge0 P)).
-move: H1; by rewrite TupleFDist.dE => /ltRP.
+rewrite /sum_mlog_prod [--log _]lock /= -lock /= /scalel_RV /mlog_RV.
+rewrite TupleFDist.dE log_prodR_sumR_mlog //.
+apply: (prodR_gt0_inv (FDist.ge0 P)).
+by move: H1; rewrite TupleFDist.dE => /ltRP.
 Qed.
 
 End AEP.

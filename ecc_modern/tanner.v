@@ -203,32 +203,22 @@ Lemma bigcup_Fgraph_set0 m0 n0 :
   [set \bigcup_(m1 in 'F n1 :\ m0) 'F(m1, n1) | n1 in 'V m0 :\ n0] == set0 ->
   'V m0 :\ n0 == set0.
 Proof.
-move/set0Pn => abs.
-apply/set0Pn => abs'.
-apply abs => {abs}.
-case: abs' => n1 abs' /=.
+move/set0Pn => abs; apply/set0Pn => -[n1 Hn1 /=]; apply abs => {abs}.
 exists (\bigcup_(m1 in 'F n1 :\ m0) 'F(m1, n1)).
-apply/imsetP.
-exists n1 => //.
+by apply/imsetP; exists n1.
 Qed.
 
 Lemma bigcup_succ_set0 n1 m0 :
   \bigcup_(m1 in 'F n1 :\ m0) 'F(m1, n1) == set0 -> 'F n1 :\ m0 == set0.
 Proof.
-set tmp := (X in _ -> X).
+set goal := (X in _ -> X).
 case/boolP : ('F n1 :\ m0 == set0) => //.
-rewrite /tmp.
-move=> abs.
-apply (@bigcup_set0 n _ _ _ (fun x => 'F x :\ m0)).
-case/set0Pn : abs => m1 Hm1.
-exists m1 => //.
-rewrite Hm1 /=.
-apply/set0Pn.
-rewrite !inE /= in Hm1.
-exists m1.
-apply Fgraph_m0.
-rewrite -FnextE.
-by case/andP : Hm1 => _.
+rewrite /goal.
+case/set0Pn => m1 Hm1.
+apply (@bigcup_set0 _ _ _ _ (fun x => 'F x :\ m0) _ m1); first by rewrite Hm1.
+apply/set0Pn; exists m1.
+rewrite Fgraph_m0 // -FnextE.
+by move: Hm1; rewrite !inE => /andP[].
 Qed.
 
 End next_graph.

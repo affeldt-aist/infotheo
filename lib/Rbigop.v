@@ -6,6 +6,9 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
 (******************************************************************************)
 (*    Instantiation of MathComp's canonical big operators with Coq reals      *)
+(*                                                                            *)
+(* Various lemmas for iterated sum, prod, and max                             *)
+(*                                                                            *)
 (******************************************************************************)
 
 Notation "\sum_ ( i <- r | P ) F" := (\big[Rplus/R0]_(i <- r | P%B) F)
@@ -153,101 +156,145 @@ Proof. elim: k => // k Hk; by rewrite iterS Hk Rmax_right. Qed.
 (** Rle, Rlt lemmas for big sums of reals *)
 
 (* TODO: use finset.big_set *)
-Lemma rsum_setT (A : finType) (f : A -> R) (P : pred A) :
+Lemma sumR_setT (A : finType) (f : A -> R) (P : pred A) :
   \sum_(i in A | P i) f i = \sum_(i in [set: A] | P i) f i.
 Proof. apply eq_bigl => x /=; by rewrite !inE. Qed.
 
-Lemma rsum_ord_setT (n : nat) (f : 'I_n -> R) :
+Lemma sumR_ord_setT (n : nat) (f : 'I_n -> R) :
   \sum_(i < n) f i = \sum_(i in [set: 'I_n]) f i.
 Proof. by apply eq_bigl => i; rewrite inE. Qed.
 
-Section ler_ltr_rsum.
+Lemma sumR_ge0 (A : eqType) (d : seq A) (P : pred A) f
+  (H : forall i, P i -> 0 <= f i) : 0 <= \sum_(i <- d | P i) f i.
+Proof.
+elim: d => [|h t IH]; first by rewrite big_nil; exact/leRR.
+rewrite big_cons; case: ifPn => // Ph; apply/addR_ge0 => //; exact: H.
+Qed.
+
+Lemma sumR_neq0 (U : eqType) (P : U -> R) (s : seq.seq U) :
+  (forall i, 0 <= P i) ->
+  \sum_(a0 <- s) P a0 != 0 <-> exists i : U, i \in s /\ 0 < P i.
+Proof.
+move=> P0; elim: s => [|]; first by rewrite big_nil eqxx; split => // -[] u [].
+move=> h t ih; rewrite big_cons; have [Ph0|Ph0] := boolP (P h == 0).
+  rewrite (eqP Ph0) add0R; split.
+    by move/ih => [u [ut Pu0]]; exists u; split => //; rewrite inE ut orbT.
+  move=> [u []]; rewrite inE => /orP[/eqP ->|ut Pu0]; last by apply/ih; exists u.
+  by rewrite (eqP Ph0) => /ltRR.
+split=> _.
+  exists h; rewrite inE eqxx /=; split => //.
+  by rewrite ltR_neqAle; split; [exact/nesym/eqP|exact: P0].
+by apply/paddR_neq0 => //; [apply sumR_ge0 => u _; exact: P0 | left].
+Qed.
+
+Lemma sumR_gt0 (A : finType) (f : A -> R) (HA : (0 < #|A|)%nat) :
+  (forall a, 0 < f a) -> 0 < \sum_(a in A) f a.
+Proof.
+move=> f0; rewrite ltR_neqAle; split; last by apply sumR_ge0 => a _; apply/ltRW.
+apply/nesym/eqP/sumR_neq0; last by move/card_gt0P : HA => [a _]; exists a.
+by move=> a; apply/ltRW/f0.
+Qed.
+
+Lemma psumR_seq_eq0P (A : eqType) (l : seq A) f :
+  uniq l ->
+  (forall a, a \in l -> 0 <= f a) ->
+  \sum_(a <- l) f a = 0 <-> (forall a, a \in l -> f a = 0).
+Proof.
+move=> ul Hf; split=> [H a al|h]; last first.
+  by rewrite (eq_big_seq (fun=> 0)) ?big1.
+suff : f a = 0 /\ \sum_(i <- l|i != a) f i = 0 by case.
+apply: Rplus_eq_R0.
+- exact/Hf.
+- by rewrite big_seq_cond; apply: sumR_ge0 => ? /andP[? ?]; apply Hf.
+- by rewrite -bigD1_seq.
+Qed.
+
+Lemma psumR_eq0P (A : finType) (P : pred A) f :
+  (forall a, P a -> 0 <= f a) ->
+  \sum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
+Proof.
+move=> Hf; split=> [H a Ha|h]; last first.
+  by rewrite (eq_bigr (fun=> 0)) // big_const iter_addR mulR0.
+suff : f a = 0 /\ \sum_(i | P i && (i != a)) f i = 0 by case.
+apply: Rplus_eq_R0.
+- exact/Hf/Ha.
+- apply: sumR_ge0 => ? /andP[? ?]; by apply Hf.
+- rewrite -bigD1 /=; [exact H | exact Ha].
+Qed.
+
+Section leR_ltR_sumR.
 
 Variables (A : finType) (f g : A -> R) (P Q : pred A).
 
-Lemma ler_rsum_support (X : {set A}) :
+Lemma leR_sumR_support (X : {set A}) :
   (forall i, i \in X -> P i -> f i <= g i) ->
   \sum_(i in X | P i) f i <= \sum_(i in X | P i) g i.
 Proof.
-move=> H.
-elim: (index_enum _) => [|h t IH].
-- rewrite !big_nil; exact/leRR.
-- rewrite !big_cons.
-  set K := _ && _; move HK : K => []; subst K => //.
-  apply leR_add => //; case/andP : HK; exact: H.
+move=> H; elim/big_rec2 : _ => // a x y /andP[aX Pa] yx.
+by apply leR_add => //; apply: H.
 Qed.
 
-Lemma ler_rsum : (forall i, P i -> f i <= g i) ->
+Lemma leR_sumR : (forall i, P i -> f i <= g i) ->
   \sum_(i | P i) f i <= \sum_(i | P i) g i.
 Proof.
-move=> H; rewrite rsum_setT [in X in _ <= X]rsum_setT.
-apply ler_rsum_support => a _; exact: H.
+move=> H; rewrite sumR_setT [in X in _ <= X]sumR_setT.
+by apply leR_sumR_support => a _; exact: H.
 Qed.
 
-Lemma ler_rsum_l : (forall i, P i -> f i <= g i) ->
-  (forall i, Q i -> 0 <= g i) ->
-  (forall i, P i -> Q i) ->
+Lemma leR_sumRl : (forall i, P i -> f i <= g i) ->
+  (forall i, Q i -> 0 <= g i) -> (forall i, P i -> Q i) ->
   \sum_(i | P i) f i <= \sum_(i | Q i) g i.
 Proof.
-move=> f_g Qg H.
-elim: (index_enum _) => [| h t IH].
-- rewrite !big_nil; exact/leRR.
+move=> f_g Qg H; elim: (index_enum _) => [| h t IH].
+- by rewrite !big_nil; exact/leRR.
 - rewrite !big_cons /=; case: ifP => [Ph|Ph].
-    rewrite (H _ Ph); apply leR_add => //; exact: f_g.
+    by rewrite (H _ Ph); apply leR_add => //; exact: f_g.
   case: ifP => // Qh; apply: (leR_trans IH).
-  rewrite -{1}[X in X <= _](add0R _); exact/leR_add2r/Qg.
+  by rewrite -{1}[X in X <= _](add0R _); exact/leR_add2r/Qg.
 Qed.
 
-Lemma ler_rsum_l_support (U : pred A) :
+Lemma leR_sumRl_support (U : pred A) :
   (forall a, 0 <= f a) -> (forall i, P i -> Q i) ->
   \sum_(i in U | P i) f i <= \sum_(i in U | Q i) f i.
 Proof.
-move=> Hf P_Q.
-elim: (index_enum _) => [|h t IH].
-- rewrite !big_nil; exact/leRR.
-- rewrite !big_cons.
-  case: (h \in U) => //=.
-  case: ifP => // HP.
-  + case: ifP => [HQ|].
-    * by rewrite leR_add2l.
-    * by rewrite (P_Q _ HP).
-  + case: ifP => // HQ.
-    rewrite -[X in X <= _]add0R; exact/leR_add.
+move=> Hf P_Q; elim: (index_enum _) => [|h t IH].
+- by rewrite !big_nil; exact/leRR.
+- rewrite !big_cons; case: (h \in U) => //=; case: ifP => // Ph.
+  + by case: ifP => [Qh|]; [rewrite leR_add2l | rewrite (P_Q _ Ph)].
+  + by case: ifP => // Qh; rewrite -[X in X <= _]add0R; exact/leR_add.
 Qed.
 
-Lemma ltr_rsum_support (X : {set A}) : (0 < #|X|)%nat ->
+Lemma ltR_sumR_support (X : {set A}) : (0 < #|X|)%nat ->
   (forall i, i \in X -> f i < g i) ->
   \sum_(i in X) f i < \sum_(i in X) g i.
 Proof.
-move Hn : #|X| => n.
-elim: n X Hn => // n IH X Hn _ H.
+move Hn : #|X| => n; elim: n X Hn => // n IH X Hn _ H.
 move: (ltn0Sn n); rewrite -Hn card_gt0; case/set0Pn => a0 Ha0.
 rewrite (@big_setD1 _ _ _ _ a0 _ f) //= (@big_setD1 _ _ _ _ a0 _ g) //=.
 case: n => [|n] in IH Hn.
-  rewrite (_ : X :\ a0 = set0); last first.
-    move: Hn.
-    by rewrite (cardsD1 a0) Ha0 /= add1n => -[] /eqP; rewrite cards_eq0 => /eqP.
-  rewrite !big_set0 2!addR0; exact: H.
+  rewrite (_ : X :\ a0 = set0); first by rewrite !big_set0 2!addR0; exact: H.
+  move: Hn.
+  by rewrite (cardsD1 a0) Ha0 /= add1n => -[] /eqP; rewrite cards_eq0 => /eqP.
 apply ltR_add; first exact/H.
 apply IH => //.
-- move: Hn; rewrite (cardsD1 a0) Ha0 /= add1n; by case.
-- move=> a; rewrite in_setD inE => /andP[_ ?]; exact: H.
+- by move: Hn; rewrite (cardsD1 a0) Ha0 /= add1n => -[].
+- by move=> a; rewrite in_setD inE => /andP[_ ?]; exact: H.
 Qed.
 
-Lemma ltR_rsum : (O < #|A|)%nat -> (forall i, f i < g i) ->
+Lemma ltR_sumR : (O < #|A|)%nat -> (forall i, f i < g i) ->
   \sum_(i in A) f i < \sum_(i in A) g i.
 Proof.
 move=> A0 H0.
 have : forall i : A, i \in [set: A] -> f i < g i by move=> a _; exact/H0.
-move/ltr_rsum_support; rewrite cardsT => /(_ A0).
+move/ltR_sumR_support; rewrite cardsT => /(_ A0).
 rewrite big_mkcond /= [in X in _ < X]big_mkcond /=.
 rewrite (eq_bigr f) //; last by move=> *; rewrite inE.
-rewrite [in X in _ < X](eq_bigr g) //; by move=> *; rewrite inE.
+by rewrite [in X in _ < X](eq_bigr g) // => *; rewrite inE.
 Qed.
 
-End ler_ltr_rsum.
+End leR_ltR_sumR.
 
-Lemma ler_rsum_Rabs (A : finType) f : `| \sum_a f a | <= \sum_(a : A) `| f a |.
+Lemma leR_sumR_Rabs (A : finType) f : `| \sum_a f a | <= \sum_(a : A) `| f a |.
 Proof.
 elim: (index_enum _) => [|h t IH].
   rewrite 2!big_nil Rabs_R0; exact/leRR.
@@ -256,7 +303,7 @@ apply (@leR_trans (`| f h | + `| \sum_(j <- t) f j |));
   [exact/Rabs_triang |exact/leR_add2l].
 Qed.
 
-Lemma ler_rsum_predU (A : finType) (f : A -> R) (P Q : pred A) :
+Lemma leR_sumR_predU (A : finType) (f : A -> R) (P Q : pred A) :
   (forall a, 0 <= f a) -> \sum_(i in A | [predU P & Q] i) f i <=
   \sum_(i in A | P i) f i + \sum_(i in A | Q i) f i.
 Proof.
@@ -286,103 +333,102 @@ case: ifPn => /=.
   exact/IH.
 Qed.
 
-Lemma rsumr_ge0 (A : eqType) (d : seq A) (P : pred A) f (H : forall i, P i -> 0 <= f i) :
-  0 <= \sum_(i <- d | P i) f i.
+Lemma classify_big (A : finType) n (f : A -> 'I_n) (F : 'I_n -> R) :
+  \sum_a F (f a) = \sum_(i < n) INR #|f @^-1: [set i]| * F i.
 Proof.
-elim: d => [|h t IH]; first by rewrite big_nil; exact/leRR.
-rewrite big_cons; case: ifPn => // Ph; apply/addR_ge0 => //; exact: H.
-Qed.
-
-(*Lemma rsumr_ge0 (A : finType) (P : pred A) f (H : forall i, P i -> 0 <= f i) :
-  0 <= \rsum_(i in A | P i) f i.
-Proof.
-apply (@leR_trans (\rsum_(i | (i \in A) && P i) (fun=> 0) i)).
-rewrite big_const iter_addR mulR0 /=; exact/leRR.
-exact/ler_rsum.
-Qed.*)
-
-Lemma rsumr_gt0 (A : finType) (f : A -> R) (HA : (0 < #|A|)%nat) :
-  (forall a, 0 < f a) -> 0 < \sum_(a in A) f a.
-Proof.
-move=> H.
-rewrite (_ : \sum_(a in A) f a = \sum_(a in [set: A]) f a); last first.
-  apply eq_bigl => x /=; by rewrite !inE.
-apply: leR_ltR_trans; last first.
-  apply ltr_rsum_support with (f := fun=> 0) => //; by rewrite cardsT.
-rewrite big_const_seq iter_addR mulR0; exact/leRR.
-Qed.
-
-Lemma prsumr_seq_eq0P (A : eqType) (l : seq A) f :
-  uniq l ->
-  (forall a, a \in l -> 0 <= f a) ->
-  \sum_(a <- l) f a = 0 <-> (forall a, a \in l -> f a = 0).
-Proof.
-move=> ul Hf; split=> [H a al|h]; last first.
-  by rewrite (eq_big_seq (fun=> 0)) ?big1.
-suff : f a = 0 /\ \sum_(i <- l|i != a) f i = 0 by case.
-apply: Rplus_eq_R0.
-- exact/Hf.
-- by rewrite big_seq_cond; apply: rsumr_ge0 => ? /andP[? ?]; apply Hf.
-- by rewrite -bigD1_seq.
-Qed.
-
-Lemma prsumr_eq0P (A : finType) (P : pred A) f :
-  (forall a, P a -> 0 <= f a) ->
-  \sum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
-Proof.
-move=> Hf; split=> [H a Ha|h]; last first.
-  by rewrite (eq_bigr (fun=> 0)) // big_const iter_addR mulR0.
-suff : f a = 0 /\ \sum_(i | P i && (i != a)) f i = 0 by case.
-apply: Rplus_eq_R0.
-- exact/Hf/Ha.
-- apply: rsumr_ge0 => ? /andP[? ?]; by apply Hf.
-- rewrite -bigD1 /=; [exact H | exact Ha].
+transitivity (\sum_(i < n) \sum_(a | true && (f a == i)) F (f a)).
+  by apply partition_big.
+apply eq_bigr => i _ /=.
+transitivity (\sum_(a | f a == i) F i); first by apply eq_bigr => s /eqP ->.
+rewrite big_const iter_addR; congr (INR _ * _).
+apply eq_card => j /=; by rewrite !inE.
 Qed.
 
 (* TODO: factorize? rename? *)
-Lemma Rle_big_eq (A : finType) (f g : A -> R) (P : pred A) :
+Lemma leR_sumR_eq (A : finType) (f g : A -> R) (P : pred A) :
    (forall a, P a -> f a <= g a) ->
    \sum_(a | P a) g a = \sum_(a | P a) f a ->
    (forall a, P a -> g a = f a).
 Proof.
-move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply prsumr_eq0P.
+move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply psumR_eq0P.
 - move=> i Hi; rewrite leR_subr_addr add0R; exact: H1.
 - by rewrite big_split /= -big_morph_oppR subR_eq0 H2.
 Qed.
 
-(** Rle, Rlt lemmas for big-mult of reals *)
+Section pascal.
 
-Section ler_ltr_rprod.
-
-Lemma rprodr_gt0 (A : finType) F : (forall a, 0 < F a) ->
-  0 < \prod_(a : A) F a.
+Lemma sum_f_R0_sumR : forall n (f : nat -> R),
+  sum_f_R0 f n = \sum_(i < n.+1) f i.
 Proof.
-move=> H.
-elim: (index_enum _) => [| hd tl IH].
-rewrite big_nil; lra.
-rewrite big_cons; apply mulR_gt0 => //; exact: H.
+elim => [f|n IH f] /=; first by rewrite big_ord_recl /= big_ord0 addR0.
+by rewrite big_ord_recr /= IH.
 Qed.
 
-Lemma rprodr_ge0 (A : finType) F : (forall a, 0 <= F a) ->
-  0 <= \prod_(a : A) F a.
+Theorem RPascal k (a b : R) :
+  (a + b) ^ k = \sum_(i < k.+1) INR ('C(k, i))* (a ^ (k - i) * b ^ i).
 Proof.
-move=> H.
-elim: (index_enum _) => [| hd tl IH].
-  rewrite big_nil; lra.
-rewrite big_cons; apply mulR_ge0 => //; exact H.
+rewrite addRC Binomial.binomial sum_f_R0_sumR.
+apply eq_bigr => i _.
+rewrite combinaisonE; last by rewrite -ltnS.
+rewrite -minusE; field.
+Qed.
+
+End pascal.
+
+Section leR_ltR_rprod.
+
+Lemma prodR_gt0 (A : finType) F : (forall a, 0 < F a) ->
+  0 < \prod_(a : A) F a.
+Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulR_gt0. Qed.
+
+Lemma prodR_ge0 (A : finType) F : (forall a, 0 <= F a) ->
+  0 <= \prod_(a : A) F a.
+Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulR_ge0. Qed.
+
+Lemma prodR_eq0 (A : finType) (p : pred A) (F : A -> R) :
+  (exists2 i : A, p i & F i = 0%R) <-> \prod_(i : A | p i) F i = 0%R.
+Proof.
+split.
+{ by case => [i Hi Hi0]; rewrite (bigD1 i) //= Hi0 mul0R. }
+apply big_ind.
+- by move=> K; exfalso; auto with real.
+- by move=> ? ? ? ?; rewrite mulR_eq0 => -[]; tauto.
+- by move=> i Hi Hi0; exists i.
+Qed.
+
+Lemma prodR_ge1 (A : finType) f : (forall a, 1 <= f a) ->
+  1 <= \prod_(a : A) f a.
+Proof.
+elim/big_ind : _ => // [|x y Hx Hy *]; first by move=> _; exact/leRR.
+by rewrite -{1}(mulR1 1); apply/leR_pmul => //; [exact: Hx | exact: Hy].
+Qed.
+
+Lemma prodR_constE (x0 : R) (k : nat) : \prod_(i < k) x0 = x0 ^ k.
+Proof. by rewrite big_const cardT size_enum_ord iter_mulR. Qed.
+
+Lemma prodR_card_constE (I : finType) (B : pred I) x0 : \prod_(i in B) x0 = x0 ^ #|B|.
+Proof. by rewrite big_const iter_mulR. Qed.
+
+Lemma prodRN (I : finType) (p : pred I) (F : I -> R) :
+  \prod_(i in p) - F i = (-1) ^ #|p| * \prod_(i in p) F i.
+Proof.
+rewrite -prodR_card_constE.
+apply: (big_rec3 (fun a b c => a = b * c)).
+{ by rewrite mul1R. }
+move=> i a b c Hi Habc; rewrite Habc; ring.
 Qed.
 
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-Lemma rprodr_gt0_inv (B : finType) F (HF: forall a, 0 <= F a) :
+Lemma prodR_gt0_inv (B : finType) F (HF: forall a, 0 <= F a) :
   forall n (x : 'rV[B]_n.+1),
   0 < \prod_(i < n.+1) F (x ``_ i) -> forall i, 0 < F (x ``_ i).
 Proof.
 elim => [x | n IH].
   rewrite big_ord_recr /= big_ord0 mul1R => Hi i.
   suff : i = ord_max by move=> ->.
-  rewrite (ord1 i); exact/val_inj.
+  by rewrite (ord1 i); exact/val_inj.
 move=> x.
 set t := \row_(i < n.+1) (x ``_ (lift ord0 i)).
 rewrite big_ord_recl /=.
@@ -405,96 +451,52 @@ Qed.
 Local Close Scope vec_ext_scope.
 Local Close Scope ring_scope.
 
-Lemma rprodr_ge1 (A : finType) f : (forall a, 1 <= f a) ->
-  1 <= \prod_(a : A) f a.
-Proof.
-move=> Hf.
-elim: (index_enum _) => [| hd tl IH].
-- rewrite big_nil; exact/leRR.
-- rewrite big_cons -{1}(mulR1 1%R); apply leR_pmul => //; lra.
-Qed.
-
-Lemma ler_rprod (A : finType) f g : (forall a, 0 <= f a <= g a) ->
+Lemma leR_prodR (A : finType) f g : (forall a, 0 <= f a <= g a) ->
   \prod_a f a <= \prod_(a : A) g a.
 Proof.
-move=> Hfg.
-case/orP : (orbN [forall i, f i != 0%R]); last first.
-- rewrite negb_forall => /existsP Hf.
-  case: Hf => i0 /negPn/eqP Hi0.
-  rewrite (bigD1 i0) //= Hi0 mul0R; apply rprodr_ge0.
-  move=> i ; move: (Hfg i) => [Hi1 Hi2]; exact: (leR_trans Hi1 Hi2).
-- move=> /forallP Hf.
-  have Hprodf : 0 < \prod_(i : A) f i.
-    apply rprodr_gt0 => a.
-    move: (Hf a) (Hfg a) => {}Hf {Hfg}[Hf2 _].
-    apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
-  apply (@leR_pmul2r (1 * / \prod_(i : A) f i) _ _).
-    apply divR_gt0 => //; lra.
-  rewrite mul1R mulRV; last exact/eqP/gtR_eqF.
-  set inv_spec := fun r => if r == 0 then 0 else / r.
-  rewrite (_ : / (\prod_(a : A) f a) = inv_spec (\prod_(a : A) f a)); last first.
-    rewrite /inv_spec (_ : \prod_(a : A) f a == 0 = false) //.
-    exact/eqP/gtR_eqF.
-  rewrite (@big_morph _ _ (inv_spec) R1 Rmult R1 Rmult _); last 2 first.
+move=> fg.
+have [/forallP Hf|] := boolP [forall i, f i != 0%R]; last first.
+  rewrite negb_forall => /existsP[i0 /negPn/eqP fi0].
+  rewrite (bigD1 i0) //= fi0 mul0R; apply prodR_ge0.
+  by move=> i ; move: (fg i) => [Hi1 Hi2]; exact: (leR_trans Hi1 Hi2).
+have Hprodf : 0 < \prod_(i : A) f i.
+  apply prodR_gt0 => a.
+  move: (Hf a) (fg a) => {}Hf {fg}[Hf2 _].
+  apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
+apply (@leR_pmul2r (1 * / \prod_(i : A) f i) _ _).
+  apply divR_gt0 => //; lra.
+rewrite mul1R mulRV; last exact/eqP/gtR_eqF.
+set inv_spec := fun r => if r == 0 then 0 else / r.
+rewrite (_ : / (\prod_(a : A) f a) = inv_spec (\prod_(a : A) f a)); last first.
+  rewrite /inv_spec (_ : \prod_(a : A) f a == 0 = false) //.
+  exact/eqP/gtR_eqF.
+rewrite (@big_morph _ _ (inv_spec) R1 Rmult R1 Rmult _); last 2 first.
   - move=> a b /=.
     case/boolP : ((a != 0) && (b != 0)).
-    - move=> /andP [/negbTE Ha /negbTE Hb]; rewrite /inv_spec Ha Hb.
+    + move=> /andP [/negbTE Ha /negbTE Hb]; rewrite /inv_spec Ha Hb.
       move/negbT in Ha ; move/negbT in Hb.
       have -> : (a * b)%R == 0 = false by rewrite mulR_eq0' (negbTE Ha) (negbTE Hb).
-      rewrite invRM //; exact/eqP.
-    - rewrite negb_and !negbK => /orP[|]/eqP ->;
-        by rewrite /inv_spec !(eqxx,mul0R,mulR0).
-  - rewrite /inv_spec ifF ?invR1 //; exact/negbTE/eqP/R1_neq_R0.
-  rewrite -big_split /=.
-  apply rprodr_ge1 => a.
-  move/(_ a) in Hf.
-  move: Hfg => /(_ a) [Hf2 Hfg].
-  rewrite /inv_spec.
-  move/negbTE in Hf; rewrite Hf; move/negbT in Hf.
-  rewrite -(mulRV (f a)) //.
-  apply leR_wpmul2r => //.
-  rewrite -(mul1R (/ f a)).
-  apply divR_ge0; [lra | apply/ltRP; rewrite lt0R Hf; exact/leRP].
+      by rewrite invRM //; exact/eqP.
+    + rewrite negb_and !negbK => /orP[|]/eqP ->;
+      by rewrite /inv_spec !(eqxx,mul0R,mulR0).
+  - by rewrite /inv_spec ifF ?invR1 //; exact/negbTE/eqP/R1_neq_R0.
+rewrite -big_split /=; apply prodR_ge1 => a.
+move/(_ a) in Hf.
+move: fg => /(_ a) [Hf2 fg].
+rewrite /inv_spec.
+move/negbTE in Hf; rewrite Hf; move/negbT in Hf.
+rewrite -(mulRV (f a)) //.
+apply leR_wpmul2r => //.
+rewrite -(mul1R (/ f a)).
+apply divR_ge0; [lra | apply/ltRP; rewrite lt0R Hf; exact/leRP].
 Qed.
 
-End ler_ltr_rprod.
-
-Lemma classify_big (A : finType) n (f : A -> 'I_n) (F : 'I_n -> R) :
-  \sum_a F (f a) = \sum_(i < n) INR #|f @^-1: [set i]| * F i.
-Proof.
-transitivity (\sum_(i < n) \sum_(a | true && (f a == i)) F (f a)).
-  by apply partition_big.
-apply eq_bigr => i _ /=.
-transitivity (\sum_(a | f a == i) F i); first by apply eq_bigr => s /eqP ->.
-rewrite big_const iter_addR; congr (INR _ * _).
-apply eq_card => j /=; by rewrite !inE.
-Qed.
-
-Section pascal.
-
-Lemma sum_f_R0_rsum : forall n (f : nat -> R),
-  sum_f_R0 f n = \sum_(i < n.+1) f i.
-Proof.
-elim => [f|n IH f] /=; first by rewrite big_ord_recl /= big_ord0 addR0.
-by rewrite big_ord_recr /= IH.
-Qed.
-
-Theorem RPascal k (a b : R) :
-  (a + b) ^ k = \sum_(i < k.+1) INR ('C(k, i))* (a ^ (k - i) * b ^ i).
-Proof.
-rewrite addRC Binomial.binomial sum_f_R0_rsum.
-apply eq_bigr => i _.
-rewrite combinaisonE; last by rewrite -ltnS.
-rewrite -minusE; field.
-Qed.
-
-End pascal.
+End leR_ltR_rprod.
 
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-(* TODO: rename *)
-Lemma log_rmul_rsum_mlog {A : finType} k (f : A ->R+) : forall n (ta : 'rV[A]_n.+1),
+Lemma log_prodR_sumR_mlog {A : finType} k (f : A ->R+) : forall n (ta : 'rV[A]_n.+1),
   (forall i, 0 < f ta ``_ i) ->
   (- Log k (\prod_(i < n.+1) f ta ``_ i) = \sum_(i < n.+1) - Log k (f ta ``_ i))%R.
 Proof.
@@ -503,7 +505,7 @@ elim => [i Hi | n IH].
 move=> ta Hi.
 rewrite big_ord_recl /= LogM; last 2 first.
   exact/Hi.
-  apply rprodr_gt0 => ?; exact/Hi.
+  by apply prodR_gt0 => ?; exact/Hi.
 set tl := \row_(i < n.+1) ta ``_ (lift ord0 i).
 have : forall i0 : 'I_n.+1, 0 < f tl ``_ i0.
   move=> i; rewrite mxE; exact/Hi.
@@ -518,18 +520,18 @@ Qed.
 Local Close Scope vec_ext_scope.
 Local Close Scope ring_scope.
 
-Section bigrmax_sect.
+Section bigmaxR.
 
 Variables (A : eqType) (F : A -> R) (s : seq A).
 
-Lemma Rle_bigRmax : forall m, m \in s -> F m <= \rmax_(m <- s) (F m).
+Lemma leR_bigmaxR : forall m, m \in s -> F m <= \rmax_(m <- s) (F m).
 Proof.
 elim: s => // hd tl IH m; rewrite in_cons; case/orP.
 - move/eqP => ->; rewrite big_cons; exact/leR_maxl.
 - move/IH => H; rewrite big_cons; exact/(leR_trans H)/leR_maxr.
 Qed.
 
-Lemma Rle_0_bigRmax : (forall r, r \in s -> 0 <= F r) -> 0 <= \rmax_(m <- s) (F m).
+Lemma bigmaxR_ge0 : (forall r, r \in s -> 0 <= F r) -> 0 <= \rmax_(m <- s) (F m).
 Proof.
 case: s => [_ | hd tl Hr].
 - rewrite big_nil; exact/leRR.
@@ -537,31 +539,30 @@ case: s => [_ | hd tl Hr].
   apply Hr; by rewrite in_cons eqxx.
 Qed.
 
-End bigrmax_sect.
+End bigmaxR.
 
-Lemma bigrmax_undup (I : eqType) g : forall (s : seq I),
+Lemma bigmaxR_undup (I : eqType) g : forall (s : seq I),
    \rmax_(c <- s) g c = \rmax_(c <- undup s) g c.
 Proof.
 elim=> // hd tl IH /=.
 rewrite big_cons.
 case: ifP => Hcase.
-- rewrite -IH Rmax_right //; exact: Rle_bigRmax.
+- rewrite -IH Rmax_right //; exact: leR_bigmaxR.
 - by rewrite big_cons IH.
 Qed.
 
-Lemma bigrmax_cat (I : eqType) g : forall (s1 s2 : seq I),
+Lemma bigmaxR_cat (I : eqType) g : forall (s1 s2 : seq I),
   (forall x, x \in s1 ++ s2 -> 0 <= g x) ->
   \rmax_(c <- s1 ++ s2) g c = Rmax (\rmax_(c <- s1) g c) (\rmax_(c <- s2) g c).
 Proof.
 elim => [s2 Hg /= | h1 t1 IH s2 Hg /=].
-  rewrite big_nil Rmax_right //.
-  by apply Rle_0_bigRmax.
+  by rewrite big_nil Rmax_right //; exact: bigmaxR_ge0.
 rewrite 2!big_cons IH ?maxRA //.
 move=> x Hx; apply Hg.
 by rewrite /= in_cons Hx orbC.
 Qed.
 
-Lemma bigrmax_perm (I : eqType) g : forall (s1 s2 : seq I),
+Lemma bigmaxR_perm (I : eqType) g : forall (s1 s2 : seq I),
   (forall r, r \in s2 -> 0 <= g r) ->
   perm_eq s1 s2 -> uniq s1 -> uniq s2 ->
   \rmax_(c0 <- s1) g c0 = \rmax_(c0 <- s2) g c0.
@@ -599,18 +600,18 @@ rewrite (IH1 _ H1 _ Hg' Hs2'); last 2 first.
   rewrite cat_uniq K2 K3 /= andbC /=.
   rewrite negb_or in K4.
   by case/andP : K4.
-rewrite bigrmax_cat // maxRA (maxRC (g h1)) -maxRA ht2 bigrmax_cat; last first.
+rewrite bigmaxR_cat // maxRA (maxRC (g h1)) -maxRA ht2 bigmaxR_cat; last first.
   move=> x Hx; apply Hg; by rewrite ht2.
 by rewrite big_cons.
 Qed.
 
-Lemma bigrmax_eqi (I : finType) g (s1 s2 : seq I) :
+Lemma bigmaxR_eqi (I : finType) g (s1 s2 : seq I) :
   (forall r : I, r \in s1 -> 0 <= g r) -> s1 =i s2 ->
   \rmax_(c0 <- s1) g c0 = \rmax_(c0 <- s2) g c0.
 Proof.
 move=> Hg s1s2.
-rewrite (bigrmax_undup _ s1) (bigrmax_undup g s2).
-apply bigrmax_perm; [ | | by rewrite undup_uniq | by rewrite undup_uniq].
+rewrite (bigmaxR_undup _ s1) (bigmaxR_undup g s2).
+apply bigmaxR_perm; [ | | by rewrite undup_uniq | by rewrite undup_uniq].
 - move=> r Hr; apply Hg.
   rewrite mem_undup in Hr.
   by rewrite s1s2.
@@ -618,11 +619,11 @@ apply bigrmax_perm; [ | | by rewrite undup_uniq | by rewrite undup_uniq].
   move=> i; by rewrite !mem_undup.
 Qed.
 
-Lemma rmax_imset' (M I : finType) h (g : I -> R) (s : seq M) :
+Lemma bigmaxR_imset_helper (M I : finType) h (g : I -> R) (s : seq M) :
   (forall r : I, r \in enum [set h x | x in s] -> 0 <= g r) ->
   \rmax_(c0 <- enum [set h x | x in s]) g c0 = \rmax_(m <- s) g (h m).
 Proof.
-elim: s.
+elim: s => [|hd tl IH Hg /=].
   rewrite big_nil.
   set tmp := enum _.
   suff -> : tmp = [::] by rewrite big_nil.
@@ -631,7 +632,6 @@ elim: s.
   rewrite !inE.
   apply/imsetP. case => m.
   by rewrite in_nil.
-move=> hd tl IH Hg /=.
 rewrite big_cons -IH; last first.
   move=> r Hr.
   apply Hg.
@@ -642,7 +642,7 @@ rewrite big_cons -IH; last first.
   exists x => //.
   by rewrite in_cons xtl orbC.
 transitivity (\rmax_(c0 <- h hd :: enum [set h x | x in tl]) g c0).
-apply bigrmax_eqi => // x.
+apply bigmaxR_eqi => // x.
 rewrite inE !mem_enum.
 move Hlhs : (x \in [set _ _ | _ in _]) => lhs.
 destruct lhs.
@@ -670,14 +670,14 @@ destruct lhs.
 by rewrite big_cons.
 Qed.
 
-Lemma rmax_imset (M I : finType) h (g : I -> R) :
+Lemma bigmaxR_imset (M I : finType) h (g : I -> R) :
   (forall r : I, r \in [set h x | x in M] -> 0 <= g r) ->
   \rmax_(c0 in [set h x | x in M]) g c0 = \rmax_(m in M) g (h m).
 Proof.
 move=> Hg.
 eapply trans_eq.
   eapply trans_eq; last first.
-    apply (@rmax_imset' _ I h g (enum M)).
+    apply (@bigmaxR_imset_helper _ I h g (enum M)).
     move=> r; rewrite mem_enum; case/imsetP => x; rewrite mem_enum => Hx ->.
     apply Hg; apply/imsetP; by exists x.
   rewrite big_filter /=.
@@ -698,7 +698,7 @@ eapply trans_eq.
 apply congr_big => //; by rewrite enumT.
 Qed.
 
-Lemma Rle_bigrmax_R (A : finType) (f : A -> R) (s : seq A) a :
+Lemma leR_bigmaxRl (A : finType) (f : A -> R) (s : seq A) a :
   (forall a0, 0 <= f a0) ->
   (forall a0, a0 \in s -> f a0 <= f a) ->
   \rmax_(a0 <- s) f a0 <= f a.
@@ -711,7 +711,7 @@ rewrite big_cons; apply Rmax_lub.
   by rewrite in_cons a1s orbC.
 Qed.
 
-Lemma bigrmax_max_seq (A : finType) (f : A -> R) (s : seq A) a :
+Lemma bigmaxR_seq_eq (A : finType) (f : A -> R) (s : seq A) a :
   a \in s ->
   (forall a0, 0 <= f a0) ->
   (forall a0, a0 \in s -> f a0 <= f a) ->
@@ -721,7 +721,7 @@ elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
 - move/eqP => -> Hhpos Hh.
   rewrite big_cons.
   rewrite Rmax_left //.
-  apply Rle_bigrmax_R => //.
+  apply leR_bigmaxRl => //.
   move=> c0 Hc0; apply Hh.
   by rewrite in_cons Hc0 orbC.
 - move=> atl Hhpos Hh.
@@ -737,7 +737,7 @@ elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
       by rewrite in_cons Hc0 orbC.
 Qed.
 
-Lemma bigrmax_max (A : finType) (C : {set A}) a (f : A -> R):
+Lemma bigmaxR_eq (A : finType) (C : {set A}) a (f : A -> R):
   a \in C ->
   (forall a0, 0 <= f a0) ->
   (forall c, c \in C -> f c <= f a) ->
@@ -745,14 +745,14 @@ Lemma bigrmax_max (A : finType) (C : {set A}) a (f : A -> R):
 Proof.
 move=> aC f0 Hf.
 rewrite -big_filter.
-apply bigrmax_max_seq => //.
+apply bigmaxR_seq_eq => //.
 - by rewrite mem_filter aC /= mem_index_enum.
 - by move=> a0; rewrite mem_filter mem_index_enum andbT => /Hf.
 Qed.
 
 Local Open Scope R_scope.
 
-Lemma rmax_distrr I a (a0 : 0 <= a) r (P : pred I) F :
+Lemma bigmaxR_distrr I a (a0 : 0 <= a) r (P : pred I) F :
   (a * \rmax_(i <- r | P i) F i) = \rmax_(i <- r | P i) (a * F i).
 Proof.
 elim: r => [| h t IH].
@@ -762,10 +762,10 @@ case: ifP => Qh //.
 by rewrite -IH RmaxRmult.
 Qed.
 
-Lemma rmax_distrl I a (a0 : 0 <= a) r (P : pred I) F :
+Lemma bigmaxR_distrl I a (a0 : 0 <= a) r (P : pred I) F :
   (\rmax_(i <- r | P i) F i) * a = \rmax_(i <- r | P i) (F i * a).
 Proof.
-by rewrite mulRC rmax_distrr //; apply congr_big => // ?; rewrite mulRC.
+by rewrite mulRC bigmaxR_distrr //; apply congr_big => // ?; rewrite mulRC.
 Qed.
 
 Notation "\min^ b '_(' a 'in' A ) F" :=
@@ -773,13 +773,12 @@ Notation "\min^ b '_(' a 'in' A ) F" :=
 
 Local Open Scope min_scope.
 
-Lemma bigminn_min (A : finType) (C : {set A}) (cnot0 : {c0 | c0 \in C})
+Lemma leq_bigmin (A : finType) (C : {set A}) (cnot0 : {c0 | c0 \in C})
   a (Ha : a \in C) (h : A -> nat) :
   (\min^ (sval cnot0) _(c in C) h c <= h a)%nat.
 Proof. by case: arg_minnP; [case: cnot0|move=> a0 a0C; exact]. Qed.
 
-(* TODO: useless ? *)
-Lemma big_rmax_bigminn_helper (A : finType) n (g : nat -> R) :
+Lemma bigmaxR_bigmin_helper (A : finType) n (g : nat -> R) :
   (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
   (forall r, 0 <= g r) ->
   forall (C : {set n.-tuple A}) c (_ : c \in C) (d : n.-tuple A -> nat)
@@ -789,13 +788,14 @@ Lemma big_rmax_bigminn_helper (A : finType) n (g : nat -> R) :
   g (d c) = \rmax_(c in C) g (d c).
 Proof.
 move=> Hdecr Hr C c cC d Hd cnot0 H.
-apply (@bigrmax_max _ C c (fun a => g (d a))) => //.
+apply (@bigmaxR_eq _ C c (fun a => g (d a))) => //.
 move=> /= c0 c0C.
 apply/Hdecr/andP; split; [|exact: Hd].
-rewrite H; exact: bigminn_min.
+rewrite H; exact: leq_bigmin.
 Qed.
 
-Lemma big_rmax_bigminn (A M : finType) n (f : {ffun M -> n.-tuple A}) (g : nat -> R)
+(* TODO: useful for? *)
+Lemma bigmaxR_bigmin (A M : finType) n (f : {ffun M -> n.-tuple A}) (g : nat -> R)
   (cnot0 : {c0 | c0 \in f @: M } ) :
   (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
   (forall r, 0 <= g r) ->
@@ -805,12 +805,12 @@ Lemma big_rmax_bigminn (A M : finType) n (f : {ffun M -> n.-tuple A}) (g : nat -
   g (d (f m)) = \rmax_(m | m \in M) g (d (f m)).
 Proof.
 move=> n1n2 Hg m d H Hd.
-transitivity (\rmax_(c in [set f x | x in M]) g (d c)); last by rewrite rmax_imset.
-apply big_rmax_bigminn_helper with cnot0 => //.
+transitivity (\rmax_(c in [set f x | x in M]) g (d c)); last by rewrite bigmaxR_imset.
+apply bigmaxR_bigmin_helper with cnot0 => //.
 apply/imsetP; by exists m.
 Qed.
 
-Lemma big_rmax_bigminn_helper_vec (A : finType) n (g : nat -> R) :
+Lemma bigmaxR_bigmin_vec_helper (A : finType) n (g : nat -> R) :
   (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
   (forall r, 0 <= g r) ->
   forall (C : {set 'rV[A]_n}) c (_ : c \in C) (d : 'rV[A]_n -> nat)
@@ -820,13 +820,13 @@ Lemma big_rmax_bigminn_helper_vec (A : finType) n (g : nat -> R) :
   g (d c) = \rmax_(c in C) g (d c).
 Proof.
 move=> Hdecr Hr C c cC d Hd cnot0 H.
-apply (@bigrmax_max _ C c (fun a => g (d a))) => //.
+apply (@bigmaxR_eq _ C c (fun a => g (d a))) => //.
 move=> /= c0 c0C.
 apply/Hdecr/andP; split; [|exact: Hd].
-rewrite H; exact: bigminn_min.
+rewrite H; exact: leq_bigmin.
 Qed.
 
-Lemma big_rmax_bigminn_vec (A M : finType) n (f : {ffun M -> 'rV[A]_n}) (g : nat -> R)
+Lemma bigmaxR_bigmin_vec (A M : finType) n (f : {ffun M -> 'rV[A]_n}) (g : nat -> R)
   (cnot0 : {c0 | c0 \in f @: M } ) :
   (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
   (forall r, 0 <= g r) ->
@@ -836,7 +836,7 @@ Lemma big_rmax_bigminn_vec (A M : finType) n (f : {ffun M -> 'rV[A]_n}) (g : nat
   g (d (f m)) = \rmax_(m in M) g (d (f m)).
 Proof.
 move=> n1n2 Hg m d H Hd.
-transitivity (\rmax_(c in f @: M) g (d c)); last by rewrite rmax_imset.
-apply big_rmax_bigminn_helper_vec with cnot0 => //.
-apply/imsetP; by exists m.
+transitivity (\rmax_(c in f @: M) g (d c)); last by rewrite bigmaxR_imset.
+apply bigmaxR_bigmin_vec_helper with cnot0 => //.
+by apply/imsetP; exists m.
 Qed.

@@ -128,8 +128,8 @@ Lemma convex_div : convex_function (uncurry_dom_pair (@div A)).
 Proof.
 move=> [x Hx] [y Hy] p /=; rewrite /uncurry_dom_pair /= avgRE.
 rewrite 2!big_distrr /= -big_split /=.
-rewrite /div [in X in X <= _]rsum_setT [in X in _ <= X]rsum_setT.
-apply ler_rsum => a _; rewrite 2!ConvFDist.dE.
+rewrite /div [in X in X <= _]sumR_setT [in X in _ <= X]sumR_setT.
+apply leR_sumR => a _; rewrite 2!ConvFDist.dE.
 case/boolP : (y.2 a == 0) => [/eqP|] y2a0.
   rewrite y2a0 (_ : y.1 a = 0) ?(mulR0,addR0,mul0R); last first.
     by move/dominatesP : Hy; exact.
@@ -163,7 +163,7 @@ have h0 : forall p1 p2, [forall i, 0 <b= h p1 p2 i].
   case: ifPn => [_ |  _]; [|exact/leRR].
   apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
 move: (log_sum setT (mkPosFfun (h0 x.1 y.1)) (mkPosFfun (h0 x.2 y.2)) hdom).
-rewrite /= -!rsum_ord_setT !big_ord_recl !big_ord0 !addR0.
+rewrite /= -!sumR_ord_setT !big_ord_recl !big_ord0 !addR0.
 rewrite /h /= !ffunE => /leR_trans; apply.
 rewrite !eqxx eq_sym (negbTE (neq_lift ord0 ord0)).
 rewrite -!mulRA; apply/Req_le; congr (_  + _ ).
@@ -450,12 +450,12 @@ apply: convex_relative_entropy.
   rewrite /q1xy /p1xy ProdFDist.dE /= mulR_eq0.
   rewrite /p1 /p1xy /CJFDist.joint_of => -[|].
     by rewrite ProdFDist.dE => ->; rewrite mul0R.
-  by rewrite Bivar.sndE => /prsumr_eq0P ->.
+  by rewrite Bivar.sndE => /psumR_eq0P ->.
 -  apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy ProdFDist.dE /= mulR_eq0.
   rewrite /p1 /p1xy /CJFDist.joint_of => -[|].
     by rewrite ProdFDist.dE => ->; rewrite mul0R.
-  by rewrite Bivar.sndE => /prsumr_eq0P /= ->.
+  by rewrite Bivar.sndE => /psumR_eq0P /= ->.
 Qed.
 
 End mutual_information_convex.

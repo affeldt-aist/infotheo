@@ -28,8 +28,6 @@ Definition decT := B -> 'rV[A]_k.
 
 Record scode := mkScode { enc : encT ; dec : decT }.
 
-(*Variable f : 'rV[A]_n -> B.
-Variable P : fdist A.*)
 End scode_definition.
 
 Local Open Scope proba_scope.
@@ -39,9 +37,9 @@ Variables (A : finType) (k n : nat).
 
 Definition scode_vl := scode A (seq bool) k.
 
-Variables (f : 'rV[A]_n -> seq bool) (P : fdist A).
+Variables (P : fdist A) (f : {RV (P `^ n) -> seq bool}).
 
-Definition E_leng_cw := `E_(P `^ n) (INR \o size \o f).
+Definition E_leng_cw := `E ((INR \o size) `o f).
 
 End scode_vl_definition.
 

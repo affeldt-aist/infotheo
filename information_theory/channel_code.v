@@ -61,7 +61,7 @@ Lemma echa_ge0 (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
 apply mulR_ge0.
 - apply divR_ge0; [exact/Rle_0_1| exact/ltR0n].
-- apply: rsumr_ge0 => ? _; exact: rsumr_ge0.
+- by apply: sumR_ge0 => ? _; exact: sumR_ge0.
 Qed.
 
 Lemma echa_le1 (HM : (0 < #| M |)%nat) W (c : code) : echa(W , c) <= 1.
@@ -69,7 +69,7 @@ Proof.
 rewrite /CodeErrRate div1R.
 apply (@leR_pmul2l (INR #|M|)); first exact/ltR0n.
 rewrite mulRA mulRV ?INR_eq0' -?lt0n // mul1R -iter_addR -big_const.
-apply: ler_rsum => m _; exact: Pr_1.
+by apply: leR_sumR => m _; exact: Pr_1.
 Qed.
 
 Definition scha (W : `Ch(A, B)) (c : code) := (1 - echa(W , c))%R.

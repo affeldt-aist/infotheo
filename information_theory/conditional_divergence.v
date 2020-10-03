@@ -133,7 +133,7 @@ rewrite (_ : JointFDistChan.d R P (a, b) = (CJFDist.joint_of P) (a, b)); last fi
 rewrite (_ : JointFDistChan.d R Q (a, b) = (CJFDist.joint_of Q) (a, b)); last first.
   by rewrite JointFDistChan.dE ProdFDist.dE.
 rewrite mulRA.
-rewrite {1}/cPr.
+rewrite {1}/jcPr.
 rewrite Swap.snd ProdFDist.fst Pr_set1.
 case/boolP : (R a == 0) => [/eqP|] H.
   by rewrite H 2!mul0R /P /CJFDist.joint_of /= ProdFDist.dE H !mul0R.
@@ -141,7 +141,7 @@ congr (_ * log _).
   rewrite setX1 Pr_set1 Swap.dE ProdFDist.dE /=.
   field.
   exact/eqP.
-rewrite /cPr !setX1 !Pr_set1 !Swap.dE.
+rewrite /jcPr !setX1 !Pr_set1 !Swap.dE.
 rewrite !Swap.snd.
 case/boolP : (CJFDist.joint_of Q (a, b) == 0) => [/eqP|] H'.
   have : (CJFDist.joint_of P) (a, b) = 0 by move/dominatesP : PQ => ->.

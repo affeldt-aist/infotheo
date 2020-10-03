@@ -93,15 +93,11 @@ End bigop_add_law.
 
 Arguments big_rV_0 {R} {idx} {op} {M} {A} _ _ _.
 
+(** Switching from a sum on the domain to a sum on the image of function *)
 Section bigop_add_law_eqtype.
 
 Variables (A : finType) (B : eqType).
-
-(** Switching from a sum on the domain to a sum on the image of function *)
-
-Definition fin_img (f : A -> B) : seq B := undup (map f (enum A)).
-
-Variables (R : eqType) (idx : R) (op : R -> R -> R) (M : Monoid.add_law idx op).
+Variables (R : Type) (idx : R) (op : R -> R -> R) (M : Monoid.add_law idx op).
 
 Lemma sum_parti (p : seq A) (f : A -> B) : forall g, uniq p ->
   \big[M/idx]_(i <- p) (g i) =
@@ -180,6 +176,63 @@ Qed.
 
 End bigop_add_law_eqtype.
 
+Section BigOps.
+Variables (R : Type) (idx : R).
+Variables (op : Monoid.law idx) (aop : Monoid.com_law idx).
+Variables I J : finType.
+Implicit Type A B : {set I}.
+Implicit Type h : I -> J.
+Implicit Type P : pred I.
+Implicit Type F : I -> R.
+Lemma partition_big_preimset h (B : {set J}) F :
+  \big[aop/idx]_(i in h @^-1: B) F i =
+     \big[aop/idx]_(j in B) \big[aop/idx]_(i in I | h i == j) F i.
+Proof.
+have HA : [disjoint B :&: [set h x | x in I] & B :\: [set h x | x in I]]
+    by rewrite -setI_eq0 -setIA setIDA [in _ :&: B]setIC -setIDA setDv !setI0.
+have Hha : [disjoint h @^-1: (B :&: [set h x | x in I])
+                             & h @^-1: (B :\: [set h x | x in I])].
+  rewrite -setI_eq0 -preimsetI.
+  suff // : [disjoint B :&: [set h x | x in I] & B :\: [set h x | x in I]]
+    by rewrite -setI_eq0; move/eqP => ->; rewrite preimset0.
+rewrite -(setID B (h @: I)) /= preimsetU.
+evar (p : pred I); rewrite (eq_bigl p); last first.
+  move=> i; rewrite in_setU /p; reflexivity.
+rewrite {}/p bigU //.
+evar (p : pred J); rewrite (eq_bigl p); last first.
+  move=> j; rewrite in_setU /p; reflexivity.
+rewrite {}/p bigU //.
+have -> : h @^-1: (B :\: [set h x | x in I]) = set0.
+  apply/setP/subset_eqP/andP; rewrite sub0set; split => //.
+  apply/subsetP=> i; rewrite !inE; case/andP.
+  move/imsetP=> H _; elimtype False; apply H.
+    by exists i; rewrite ?inE.
+rewrite big_set0 Monoid.mulm1.
+have -> : \big[aop/idx]_(x in B :\: [set h x | x in I])
+           \big[aop/idx]_(i | h i == x) F i
+          = \big[aop/idx]_(x in B :\: [set h x | x in I])
+             idx.
+  apply eq_bigr => j.
+  rewrite inE; case/andP => Hj Hj'.
+  apply big_pred0 => i.
+  apply/negP => /eqP hij.
+  move: Hj; rewrite -hij.
+  move/imsetP; apply.
+  by exists i.
+rewrite big1_eq Monoid.mulm1.
+set B' := B :&: [set h x | x in I].
+set A := h @^-1: B'.
+have -> : B' = h @: A by rewrite imset_preimset //; apply subsetIr.
+have Hright : forall j, j \in h @: A -> \big[aop/idx]_(i in I | h i == j) F i = \big[aop/idx]_(i in A | h i == j) F i.
+  move=> j Hj; apply eq_bigl => i; apply andb_id2r; move/eqP => hij.
+  move: Hj; rewrite -hij !inE.
+  case/imsetP => x; rewrite /A /B' !inE => /andP [H H0] ->.
+  by rewrite H H0.
+rewrite [in RHS](eq_bigr _ Hright).
+by apply: partition_big_imset.
+Qed.
+End BigOps.
+
 Section big_pred1_inj.
 Variables (R : Type) (idx : R) (op : Monoid.law idx).
 Lemma big_pred1_inj (A C : finType) h i (k : A -> C) : injective k ->
@@ -227,7 +280,7 @@ case=> /= ? ?; by rewrite PQ.
 Qed.
 
 Lemma big_setX (a : {set A}) (b : {set B}) f :
-  \big[M/idx]_(x in setX a b) f x = \big[M/idx]_(x in a) \big[M/idx]_(y in b) f (x, y).
+  \big[M/idx]_(x in a `* b) f x = \big[M/idx]_(x in a) \big[M/idx]_(y in b) f (x, y).
 Proof.
 rewrite (eq_bigl (fun x => (x.1 \in a) && (x.2 \in b))); last first.
   by case=> x y; rewrite in_setX.
@@ -343,6 +396,43 @@ Arguments pair_big_snd {R} {idx} {M} {A} {B} _.
 Arguments big_rV_belast_last {R} {idx} {M} {A} {n} _ _ _.
 Arguments big_rV_cons_behead {R} {idx} {M} {A} {n} _ _ _.
 
+Section bigcup_ext.
+Variables I A B : finType.
+
+Lemma bigcup_set0 i (D : I -> {set B}) (F : B -> I -> {set A}) b :
+  b \in D i -> F b i != set0 ->
+  \bigcup_(b' in D i) F b' i == set0 -> D i == set0.
+Proof.
+move=> bDi Fbi0 /set0Pn F0; apply/set0Pn => -[b' b'i]; apply F0 => {F0}.
+by case/set0Pn : Fbi0 => a tA; exists a; apply/bigcupP; exists b.
+Qed.
+
+Lemma bigcup_setX (E : I -> {set A}) (F : {set B}) :
+  \bigcup_(i in I) (F `* E i) = F `* (\bigcup_(i in I) (E i)).
+Proof.
+apply/setP => -[b a] /=; rewrite !inE /=.
+apply/bigcupP/andP => [[/= i _]|[K1] /bigcupP[/= i _ aEi]].
+  rewrite !inE /= => /andP[xb yai]; rewrite xb; split => //.
+  by apply/bigcupP; exists i.
+by exists i => //; rewrite !inE /= K1.
+Qed.
+
+Lemma bigcup_preimset (P : pred I) (F : A -> B) (E : I -> {set B}) :
+  \bigcup_(i | P i) F @^-1: E i = F @^-1: \bigcup_(i | P i) E i.
+Proof.
+rewrite/preimset.
+apply/setP=> x; rewrite inE; apply/bigcupP/bigcupP => -[] i HPi; rewrite ?inE => HFxEi; exists i => //=; by rewrite inE.
+Qed.
+
+Lemma bigcup_set1 (E : {set A}) : E = \bigcup_(a in E) [set a].
+Proof.
+apply/setP => a; apply/idP/bigcupP => [aE|[a' a'E]].
+by exists a => //; rewrite inE.
+by rewrite inE => /eqP ->.
+Qed.
+
+End bigcup_ext.
+
 Section MyPartitions.
 
 Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
@@ -386,6 +476,31 @@ Qed.
 
 End MyPartitions.
 
+Section bigcap_ext.
+Variable A : finType.
+
+Lemma bigcap_seq_const I (B : {set A}) (r : seq.seq I) :
+  (0 < size r)%nat -> \bigcap_(i <- r) B = B.
+Proof.
+elim: r => [//|a r IHr] _; rewrite big_cons.
+case: r IHr => [|b r] IHr; first by rewrite big_nil setIT.
+by rewrite IHr // setIid.
+Qed.
+
+Lemma bigcap_ord_const n' (B : {set A}) :
+  \bigcap_(i < n'.+1) B = B.
+Proof. by rewrite bigcap_seq_const // /index_enum -enumT size_enum_ord. Qed.
+
+Lemma bigcap_const (I : eqType) (B : {set A}) (r : seq.seq I) (p : pred I) :
+  (exists2 i : I, i \in r & p i) -> \bigcap_(i <- r | p i) B = B.
+Proof.
+case=> i H1 H2; rewrite -big_filter bigcap_seq_const //.
+rewrite size_filter- has_count.
+by apply/hasP; exists i.
+Qed.
+
+End bigcap_ext.
+
 Section big_tuple_ffun.
 
 Import Monoid.Theory.
@@ -416,17 +531,3 @@ by apply enum_val_nth.
 Qed.
 
 End big_tuple_ffun.
-
-Lemma bigcup_set0 n i (T T' : finType) (D : 'I_n -> {set T'}) (A : T' -> 'I_n -> {set T}) :
-  (exists t', (t' \in D i) && (A t' i != set0)) ->
-  \bigcup_(t' in D i) A t' i == set0 -> D i == set0.
-Proof.
-move=> abs.
-move/set0Pn => Hset0.
-apply/set0Pn.
-move=> abs'; apply Hset0 => {Hset0}.
-case: abs' => t' t'i.
-case: abs => t'' /andP[t''i].
-case/set0Pn => t tA.
-exists t; apply/bigcupP; by exists t''.
-Qed.

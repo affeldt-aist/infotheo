@@ -60,19 +60,20 @@ rewrite 2!xlnx_entropy.
 rewrite -addR_opp -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
 rewrite -mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
 rewrite oppRK big_morph_oppR -big_split /=.
-apply: leR_trans; first exact: ler_rsum_Rabs.
+apply: leR_trans; first exact: leR_sumR_Rabs.
 rewrite -iter_addR -big_const.
-apply ler_rsum => b _; rewrite addRC.
+apply leR_sumR => b _; rewrite addRC.
 apply Rabs_xlnx => //.
 rewrite 2!OutFDist.dE -addR_opp big_morph_oppR -big_split /=.
-apply: leR_trans; first exact: ler_rsum_Rabs.
+apply: leR_trans; first exact: leR_sumR_Rabs.
 apply (@leR_trans (d(`J(P , V), `J(P , W)))).
 - rewrite /var_dist /=.
   apply (@leR_trans (\sum_(a : A) \sum_(b : B) `| (`J(P, V)) (a, b) - (`J(P, W)) (a, b) |)); last first.
     apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
-  apply: ler_rsum => a _.
+  apply: leR_sumR => a _.
   rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
-  rewrite 2!JointFDistChan.dE /= !(mulRC (P a)) addR_opp; apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
+  rewrite 2!JointFDistChan.dE /= !(mulRC (P a)) addR_opp.
+  by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.
 - rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
@@ -84,16 +85,16 @@ rewrite 2!xlnx_entropy.
 rewrite -addR_opp -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
 rewrite -2!mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
 rewrite oppRK big_morph_oppR -big_split /=.
-apply: leR_trans; first exact: ler_rsum_Rabs.
+apply: leR_trans; first exact: leR_sumR_Rabs.
 rewrite -2!iter_addR -2!big_const pair_bigA /=.
-apply: ler_rsum; case => a b _; rewrite addRC /=.
+apply: leR_sumR; case => a b _; rewrite addRC /=.
 apply Rabs_xlnx => //.
 apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
 - rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
   rewrite -[X in X <= _]addR0.
-  apply/leR_add2l/rsumr_ge0 => ? _; exact/normR_ge0.
+  by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.
 - rewrite cdiv_is_div_joint_dist => //.
- exact/Pinsker_inequality_weak/joint_dominates.
+  exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
 
 Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
@@ -115,17 +116,16 @@ Section error_exponent_lower_bound.
 Variables A B : finType.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 Variable W : `Ch(A, B).
-Variable cap : R.
-Hypothesis W_cap : capacity W cap.
 Variable minRate : R.
-Hypothesis minRate_cap : minRate > cap.
+Hypothesis minRate_cap : minRate > capacity W.
+Hypothesis set_of_I_has_ubound : classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
   forall P : fdist A, forall V : `Ch(A, B),
     P |- V << W ->
     Delta <= D(V || W | P) +  +| minRate - `I(P, V) |.
 Proof.
-set gamma := / (#|B|%:R + #|A|%:R * #|B|%:R) * (ln 2 * ((minRate - cap) / 2)).
+set gamma := / (#|B|%:R + #|A|%:R * #|B|%:R) * (ln 2 * ((minRate - capacity W) / 2)).
 have : min(exp (-2), gamma) > 0.
   apply Rmin_Rgt_r; split; apply Rlt_gt; first exact: exp_pos.
   apply mulR_gt0.
@@ -146,7 +146,7 @@ rewrite /R_dist {2}/xlnx ltRR' subR0 ltR0_norm; last first.
   apply xlnx_neg; split => //; rewrite /x.
   exact: leR_ltR_trans (geR_minr _ _) ltRinve21.
 move=> Hx.
-set Delta := min((minRate - cap) / 2, x ^ 2 / 2).
+set Delta := min((minRate - capacity W) / 2, x ^ 2 / 2).
 exists Delta; split.
   apply Rmin_case.
   - apply mulR_gt0; [exact/subR_gt0 | exact/invR_gt0].
@@ -155,18 +155,20 @@ move=> P V v_dom_by_w.
 case/boolP : (Delta <b= D(V || W | P)) => [/leRP| /leRP/ltRNge] Hcase.
   apply (@leR_trans (D(V || W | P))) => //.
   rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.
-suff HminRate : (minRate - cap) / 2 <= minRate - (`I(P, V)).
+suff HminRate : (minRate - capacity W) / 2 <= minRate - (`I(P, V)).
   clear -Hcase v_dom_by_w HminRate.
   apply (@leR_trans +| minRate - `I(P, V) |); last first.
     rewrite -[X in X <= _]add0R; exact/leR_add2r/cdiv_ge0.
   apply: leR_trans; last exact: leR_maxr.
   apply: (leR_trans _ HminRate); exact: geR_minl.
-have : `I(P, V) <= cap + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
+have : `I(P, V) <= capacity W + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                (- xlnx (sqrt (2 * D(V || W | P)))).
   apply (@leR_trans (`I(P, W) + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                - xlnx (sqrt (2 * D(V || W | P))))); last first.
-    apply/leR_add2r.
-    move: W_cap; rewrite /capacity /lub; case; by move/(_ P).
+    apply/leR_add2r/Rstruct.RleP/Rstruct.real_sup_ub; last by exists P.
+    split; first by exists (`I(P, W)), P.
+    case: set_of_I_has_ubound => y Hy.
+    by exists y => _ [Q _ <-]; apply Hy; exists Q.
   rewrite addRC -leR_subl_addr.
   apply (@leR_trans `| `I(P, V) + - `I(P, W) |); first exact: Rle_abs.
   suff : D(V || W | P) <= exp (-2) ^ 2 * / 2 by apply mut_info_dist_ub.
@@ -179,7 +181,7 @@ rewrite -[X in _ <= X]oppRK => /leR_oppr/(@leR_add2l minRate).
 move/(leR_trans _); apply.
 suff x_gamma : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite oppRD addRA addRC -leR_subl_addr.
-  rewrite [X in X <= _](_ : _ = - ((minRate + - cap) / 2)); last by field.
+  rewrite [X in X <= _](_ : _ = - ((minRate + - capacity W) / 2)); last by field.
   rewrite leR_oppr oppRK -mulRA mulRC.
   rewrite leR_pdivr_mulr // mulRC -leR_pdivl_mulr; last first.
     apply addR_gt0wl; first exact/ltR0n.
@@ -203,7 +205,7 @@ apply xlnx_sdecreasing_0_Rinv_e => //.
   apply/ltRW/exp_increasing; lra.
 - split; first exact: ltRW.
   apply (@leR_trans (exp (-2))); first exact: geR_minr.
-  apply/ltRW/exp_increasing; lra.
+  by apply/ltRW/exp_increasing; lra.
 Qed.
 
 End error_exponent_lower_bound.

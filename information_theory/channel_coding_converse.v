@@ -31,11 +31,9 @@ Local Open Scope R_scope.
 Section channel_coding_converse_intermediate_lemma.
 
 Variables (A B : finType) (W : `Ch*(A, B)).
-Variable cap : R.
-Hypothesis Hc : capacity W cap.
-
 Variable minRate : R.
-Hypothesis HminRate : minRate > cap.
+Hypothesis HminRate : minRate > capacity W.
+Hypothesis set_of_I_has_ubound : classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
 Let Anot0 : (0 < #|A|)%nat. Proof. by case: W. Qed.
 
@@ -47,7 +45,7 @@ Lemma channel_coding_converse_gen : exists Delta, 0 < Delta /\ forall n',
     minRate <= CodeRate c ->
       scha(W, c) <= n.+1%:R ^ (#|A| + #|A| * #|B|) * exp2 (- n%:R * Delta).
 Proof.
-move: error_exponent_bound => /(_ _ _ Bnot0 W _ Hc _ HminRate).
+move: error_exponent_bound => /(_ _ _ Bnot0 W _ HminRate set_of_I_has_ubound).
 case => Delta [Delta_pos HDelta].
 exists Delta; split => // n' n M c Mnot0 H.
 apply: (leR_trans (success_bound W Mnot0 c)).
@@ -76,16 +74,13 @@ End channel_coding_converse_intermediate_lemma.
 
 Section channel_coding_converse.
 
-Variables A B : finType.
-Variable W : `Ch*(A, B).
-Variable cap : R.
-Hypothesis w_cap : capacity W cap.
-
-Variable epsilon : R.
-Hypothesis eps_gt0 : 0 < epsilon.
-
+Variables (A B : finType) (W : `Ch*(A, B)).
 Variable minRate : R.
-Hypothesis minRate_cap : minRate > cap.
+Hypothesis minRate_cap : minRate > capacity W.
+Hypothesis set_of_I_has_ubound : classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
+
+Variable epsilon : R. (* TODO: use posnum *)
+Hypothesis eps_gt0 : 0 < epsilon.
 
 (** Converse of the Channel Coding Theorem #<a name="label_channel_coding_converse"> </a># *)
 
@@ -93,7 +88,7 @@ Theorem channel_coding_converse : exists n0,
   forall n M (c : code A B M n),
     (0 < #|M|)%nat -> n0 < n%:R -> minRate <= CodeRate c -> scha(W, c) < epsilon.
 Proof.
-case: (channel_coding_converse_gen w_cap minRate_cap) => Delta [Delta_pos HDelta].
+case: (channel_coding_converse_gen minRate_cap set_of_I_has_ubound) => Delta [Delta_pos HDelta].
 pose K := (#|A| + #|A| * #|B|)%nat.
 pose n0 := 2 ^ K * K.+1`!%:R / ((Delta * ln 2) ^ K.+1) / epsilon.
 exists n0 => n M c HM n0_n HminRate.
@@ -163,3 +158,4 @@ rewrite expRM -mulRA; apply leR_pmul => //.
 Qed.
 
 End channel_coding_converse.
+

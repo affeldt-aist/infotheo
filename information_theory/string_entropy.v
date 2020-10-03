@@ -158,7 +158,7 @@ Proof.
 rewrite (eq_bigr _ (fun i _ => szHs_is_nHs i)).*)
 rewrite exchange_big /nHs /=.
 (* (2) Move to per-character inequalities *)
-apply ler_rsum=> a _.
+apply leR_sumR => a _.
 (* Remove strings containing no occurrences *)
 rewrite (bigID (fun s => N(a|s) == O)) /=.
 rewrite big1; last by move=> i ->.

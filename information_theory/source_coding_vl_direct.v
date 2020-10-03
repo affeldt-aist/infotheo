@@ -228,14 +228,6 @@ End Enc_Dec.
 
 Section E_Leng_Cw_Lemma.
 Variables (X : finType).
-
-Definition E_leng_cw (n : nat) (f : encT X (seq bool) n) (P : fdist X) :=
-  \sum_(x in 'rV[X]_n) (P `^ n) x * (size (f x))%:R.
-
-Lemma E_leng_cwE (n : nat) (f : encT X (seq bool) n) (P : fdist X) :
-  E_leng_cw f P = Ex (P `^ n) (fun x => (size (f x))%:R).
-Proof. by rewrite /E_leng_cw /=; under eq_bigr do rewrite mulRC. Qed.
-
 Variable (n' : nat).
 Let n := n'.+1.
 Variable P : fdist X.
@@ -270,21 +262,23 @@ rewrite /= -addn1 size_tuple plus_INR INR_Zabs_nat.
 -by apply: le_IZR; apply: (Lnt_nonneg _ P).
 Qed.
 
-Lemma E_leng_cw_le_Length : E_leng_cw (f (n':=n') P epsilon) P <=
+Lemma E_leng_cw_le_Length : @E_leng_cw _ _ P (f (n':=n') P epsilon) <=
   (IZR L_typ + 1) + epsilon * (IZR L_not_typ + 1) .
 Proof.
-rewrite /E_leng_cw (rsum_split _ (`TS P n'.+1 epsilon)).
+rewrite /E_leng_cw /Ex /=.
+under eq_bigr do rewrite mulRC.
+rewrite (rsum_split _ (`TS P n'.+1 epsilon)).
 rewrite eq_sizef_Lnt eq_sizef_Lt -!(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
  P `^ n i = 1 - \sum_(i | i \in `TS P n epsilon) P `^ n i); last first.
 - by rewrite -(FDist.f1 P`^n) (rsum_split _ (`TS P n epsilon)) addRC addRK.
 - apply leR_add.
   + rewrite -[X in _ <= X]mulR1; apply: leR_wpmul2l => //.
-    + apply: addR_ge0 => //; exact/ltRW/Lt_pos.
-    * rewrite -(FDist.f1 (P `^ n)); apply: ler_rsum_l => // *; exact/leRR.
+    * by apply: addR_ge0 => //; exact/ltRW/Lt_pos.
+    * by rewrite -(FDist.f1 (P `^ n)); apply: leR_sumRl => // *; exact/leRR.
   + apply: leR_wpmul2r => //.
-    * apply addR_ge0 => //; exact (Lnt_nonneg _ P).
-    * rewrite leR_subl_addr addRC -leR_subl_addr; exact: Pr_TS_1.
+    * by apply addR_ge0 => //; exact (Lnt_nonneg _ P).
+    * by rewrite leR_subl_addr addRC -leR_subl_addr; exact: Pr_TS_1.
 Qed.
 
 End E_Leng_Cw_Lemma.
@@ -401,7 +395,7 @@ Qed.
 
 Lemma v_scode' : exists sc : scode_vl _ n,
   cancel (enc sc) (dec sc) /\
-  E_leng_cw (enc sc) P / INR n < `H P + epsilon.
+  @E_leng_cw _ _ P (enc sc) / INR n < `H P + epsilon.
 Proof.
 move : (@leng_neq_0 n') (fdist_supp_lg_add_1_neq_0 P) R3neqR0 R4neqR0 => ? ? ? ?.
 exists (mkScode (f P epsilon') (phi n' P epsilon')).
@@ -425,13 +419,13 @@ Local Notation "'n0'" := (n0 P epsilon).
 Theorem v_scode_direct : exists n: nat,
   exists f : encT X (seq bool) n,
     injective f /\
-    E_leng_cw f P / INR n < `H P + epsilon.
+    @E_leng_cw _ _ P f / n%:R < `H P + epsilon.
 Proof.
 apply: (ex_intro _ (n0.+1)).
 have: (n0 < n0.+1)%nat by[].
 case/v_scode'=> // sc [fphi ccl].
 apply: (ex_intro _ (enc sc)).
-split => //; exact: (can_inj fphi).
+by split => //; exact: (can_inj fphi).
 Qed.
 
 End variable_length_source_coding.

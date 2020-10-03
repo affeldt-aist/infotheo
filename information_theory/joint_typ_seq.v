@@ -252,15 +252,12 @@ apply (@leR_trans (\sum_(i | i \in `JTS P W n epsilon)
     (exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W ) - epsilon))))) => /=.
   rewrite (reindex_onto (fun y => prod_rV y) (fun x => rV_prod x)) /=; last first.
     move=> ? ?; by rewrite rV_prodK.
-  apply: ler_rsum_l => i Hi.
-  - rewrite inE in Hi.
-    rewrite ProdFDist.dE.
-    apply leR_pmul => //.
-    exact: proj2 (typical_sequence1_JTS Hi).
-    exact: proj2 (typical_sequence1_JTS' Hi).
+  apply: leR_sumRl => i; rewrite inE => iJTS.
+  - rewrite ProdFDist.dE; apply leR_pmul => //.
+    exact: proj2 (typical_sequence1_JTS iJTS).
+    exact: proj2 (typical_sequence1_JTS' iJTS).
   - exact/mulR_ge0.
-  - rewrite inE in Hi.
-    by rewrite prod_rVK eqxx andbC.
+  - by rewrite prod_rVK eqxx andbC.
 rewrite (_ : \sum_(_ | _) _ =
   INR #| `JTS P W n epsilon| *
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W) - epsilon))); last first.
@@ -269,10 +266,9 @@ apply (@leR_trans (exp2 (INR n * (`H( P , W ) + epsilon)) *
   exp2 (- INR n * (`H P - epsilon)) * exp2 (- INR n * (`H( P `o W ) - epsilon)))).
   do 2 apply leR_wpmul2r => //.
   exact/JTS_sup.
-apply Req_le.
-rewrite -2!ExpD.
-congr (exp2 _).
-rewrite /MutualInfoChan.mut_info !mulRDr 2!Rmult_opp_opp (_ : 3 * epsilon = epsilon + epsilon + epsilon); by field.
+apply Req_le; rewrite -2!ExpD; congr (exp2 _).
+rewrite /MutualInfoChan.mut_info !mulRDr 2!Rmult_opp_opp.
+by rewrite (_ : 3 * epsilon = epsilon + epsilon + epsilon); field.
 Qed.
 
 End non_typicality.
