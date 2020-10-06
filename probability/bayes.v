@@ -200,7 +200,6 @@ Definition prod_proj i (x : prod_types types [set i]) := set_vals x vals0 i.
 
 Lemma prod_vars1 (i : 'I_n) : RV_equiv (prod_vars [set i]) (vars i).
 Proof.
-rewrite /RV_equiv.
 apply/setP => s.
 apply/imsetP; case: ifPn.
   move/imsetP => [x Hx ->].
@@ -230,14 +229,13 @@ case/boolP: (vars i u == _) => Hv.
   rewrite /prod_vars.
   rewrite (proj2 (prod_vals_eqP [set i] (vals_at u) (set_vals x vals0))).
     rewrite !ffunE.
-    by case: (j \in _) (x j) => // -[].
+    by case: (j \in _) (x j) => [|[]].
   move=> /= k.
   rewrite inE ffunE => /eqP ->.
   by rewrite (eqP Hv).
 apply/negP => /eqP Hux.
 elim: (negP Hv).
-rewrite -Hux.
-rewrite /prod_proj !ffunE.
+rewrite -Hux /prod_proj !ffunE.
 move: (vars i u); by rewrite inE eqxx.
 Qed.
 
