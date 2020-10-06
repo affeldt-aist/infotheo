@@ -56,24 +56,24 @@ move: (A x) (B x) {AB Hx} => /=.
 by rewrite (negbTE xe) => -[] [].
 Qed.
 
-Definition set_vals' (v : prod_types) (vals : forall j, types j)
-  : forall j, types j.
-move=> j.
+Definition set_vals' (v : prod_types) (vals : univ_types) : univ_types.
+refine [ffun j => _].
 case: (j \in I) (v j) => a.
 - exact: a.
 - exact: vals j.
 Defined.
-Definition set_vals := Eval hnf in set_vals'.
+Definition set_vals : prod_types -> univ_types -> univ_types :=
+  Eval hnf in set_vals'.
 
 Lemma set_vals_hd vs2 (v : prod_types) vs1 i :
   i \in I -> set_vals v vs1 i = set_vals v vs2 i.
-Proof. rewrite /set_vals; by case: (i \in I) (v i). Qed.
+Proof. rewrite !ffunE; by case: (i \in I) (v i). Qed.
 
 Lemma set_vals_tl (v : prod_types) vs i :
   i \notin I -> set_vals v vs i = vs i.
-Proof. rewrite /set_vals; by case: (i \in I) (v i). Qed.
+Proof. rewrite !ffunE; by case: (i \in I) (v i). Qed.
 
-Definition prod_vals' (vals : forall j, types j) : prod_types.
+Definition prod_vals' (vals : univ_types) : prod_types.
 refine [ffun i => _].
 move: (vals i).
 case: (i \in I) => a.
@@ -84,27 +84,37 @@ Definition prod_vals vals : prod_types := Eval hnf in prod_vals' vals.
 
 Lemma set_vals_prod_vals_id vals i :
   set_vals (prod_vals vals) vals i = vals i.
-Proof. rewrite /set_vals /prod_vals ffunE; by case: (i \in _) (vals i). Qed.
+Proof. rewrite !ffunE; by case: (i \in _) (vals i). Qed.
 
 Lemma set_vals_prod_vals vals vals' i :
   i \in I -> set_vals (prod_vals vals) vals' i = vals i.
 Proof.
-rewrite /set_vals /prod_vals ffunE => ie.
+rewrite !ffunE => ie.
 move: (vals i); by rewrite ie.
 Qed.
 
-Lemma prod_vals_eq vals1 vals2 i :
-  i \in I -> prod_vals vals1 = prod_vals vals2 -> vals1 i = vals2 i.
+Lemma prod_vals_eqP vals1 vals2 :
+  prod_vals vals1 = prod_vals vals2 <-> forall i, i \in I -> vals1 i = vals2 i.
 Proof.
-move=> Hie /(f_equal (fun x : prod_types => x i)).
-rewrite /prod_vals !ffunE /=.
-move: (vals1 i) (vals2 i); by rewrite Hie.
+split.
+  move=> Heq i Hie.
+  move: (f_equal (fun x : prod_types => x i) Heq).
+  rewrite !ffunE /=.
+  move: (vals1 i) (vals2 i); by rewrite Hie.
+move=> Heq; apply/ffunP => i.
+move: (Heq i).
+rewrite !ffunE.
+case Hi: (i \in I) (vals1 i) (vals2 i) => // v1 v2; exact.
 Qed.
+
+Lemma prod_vals_eq (vals1 vals2 : univ_types) i :
+  i \in I -> prod_vals vals1 = prod_vals vals2 -> vals1 i = vals2 i.
+Proof. by move=> Hi /prod_vals_eqP/(_ _ Hi). Qed.
 
 Lemma set_vals_eq (A B : prod_types) vals i :
   set_vals A vals i == set_vals B vals i = (A i == B i) || (i \notin I).
 Proof.
-rewrite /set_vals.
+rewrite !ffunE.
 case: (i \in I) (A i) (B i) => a b.
 - by rewrite orbF.
 - by rewrite eqxx orbT.
@@ -120,6 +130,35 @@ case: ifP.
   by rewrite inE.
 by move=> _ [] [].
 Qed.
+
+Section set_val.
+Definition set_val (i : 'I_n) (v : types i) (vals : univ_types) : univ_types :=
+  [ffun j : 'I_n =>
+    match Nat.eq_dec i j return types j with
+    | left ij => eq_rect i (fun i => (types i : Type)) v j (ord_inj ij)
+    | right _ => vals j
+    end].
+
+Lemma eq_dec_refl i : Nat.eq_dec i i = left (erefl i).
+Proof.
+case: Nat.eq_dec => Hi; last by elim Hi.
+congr left; by rewrite (Eqdep_dec.UIP_refl_nat _ Hi).
+Qed.
+
+Definition ord_eq_dec (i j : 'I_n) : {i = j}+{i <> j}.
+case (Nat.eq_dec i j); intro ij.
+- left; now apply ord_inj.
+- right; intro ij'; apply ij; now f_equal.
+Defined.
+
+Lemma set_val_hd i (v : types i) vs : set_val v vs i = v.
+rewrite ffunE eq_dec_refl -Eqdep_dec.eq_rect_eq_dec //; exact: ord_eq_dec.
+Qed.
+
+Lemma set_val_tl i (v : types i) vs j : i <> j -> set_val v vs j = vs j.
+rewrite ffunE => nij; case: Nat.eq_dec => ij //; elim nij; exact: ord_inj.
+Qed.
+End set_val.
 
 End univ_types.
 
@@ -150,6 +189,62 @@ Lemma prod_vars_inter (e g : {set 'I_n}) vals i u :
   set_vals (prod_vars e u) vals i = set_vals (prod_vars g u) vals i.
 Proof. move=> ie ig; by rewrite !set_vals_prod_vals. Qed.
 
+Definition RV_equiv (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) :=
+  [set finset (X @^-1 a) | a : A] = [set finset (Y @^-1 b) | b : B].
+
+Definition vals0 : univ_types types := [ffun i => rvar_choice (vars i)].
+
+Definition prod_vals1 i (x : types i) := prod_vals [set i] (set_val x vals0).
+
+Definition prod_proj i (x : prod_types types [set i]) := set_vals x vals0 i.
+
+Lemma prod_vars1 (i : 'I_n) : RV_equiv (prod_vars [set i]) (vars i).
+Proof.
+rewrite /RV_equiv.
+apply/setP => s.
+apply/imsetP; case: ifPn.
+  move/imsetP => [x Hx ->].
+  exists (prod_vals1 x).
+    by rewrite inE.
+  apply/setP => u.
+  rewrite !inE /prod_vars /prod_vals1 /=.
+  symmetry.
+  case Hiu: (vars i u == x).
+    rewrite -(eqP Hiu).
+    apply/eqP/prod_vals_eqP => j.
+    rewrite inE => /eqP ->.
+    by rewrite set_val_hd ffunE.
+  apply/negP => /eqP/prod_vals_eqP/(_ i).
+  rewrite inE eqxx set_val_hd ffunE => Hv.
+  move: Hiu; by rewrite Hv // eqxx.
+move=> Hs [x] _ Hx.
+elim: (negP Hs).
+subst s.
+apply/imsetP.
+exists (prod_proj x).
+  by rewrite inE.
+apply/setP => u.
+rewrite !inE.
+case/boolP: (vars i u == _) => Hv.
+  apply/eqP/ffunP => /= j.
+  rewrite /prod_vars.
+  rewrite (proj2 (prod_vals_eqP [set i] (vals_at u) (set_vals x vals0))).
+    rewrite !ffunE.
+    by case: (j \in _) (x j) => // -[].
+  move=> /= k.
+  rewrite inE ffunE => /eqP ->.
+  by rewrite (eqP Hv).
+apply/negP => /eqP Hux.
+elim: (negP Hv).
+rewrite -Hux.
+rewrite /prod_proj !ffunE.
+move: (vars i u); by rewrite inE eqxx.
+Qed.
+
+Lemma prod_vars_pair (I J : {set 'I_n}) :
+  RV_equiv (prod_vars (I :|: J)) (RV2 (prod_vars I) (prod_vars J)).
+Abort.
+
 Section preim.
 Local Open Scope R_scope.
 
@@ -157,7 +252,7 @@ Definition preim_vars (I : {set 'I_n}) (vals : forall i, types i) :=
   \bigcap_(i in I) finset (vars i @^-1 (vals i)).
 
 Definition cinde_preim (e f g : {set 'I_n}) :=
-  forall vals,
+  forall vals : univ_types types,
     cinde_events P (preim_vars e vals)
                    (preim_vars f vals)
                    (preim_vars g vals).
@@ -188,33 +283,6 @@ Qed.
 
 (* Simple version, using singletons *)
 
-Definition set_val (i : 'I_n) (v : types i) (vals : forall j, types j) :=
-  fun j : 'I_n =>
-    match Nat.eq_dec i j return types j with
-    | left ij => eq_rect i (fun i => (types i : Type)) v j (ord_inj ij)
-    | right _ => vals j
-    end.
-
-Lemma eq_dec_refl i : Nat.eq_dec i i = left (erefl i).
-Proof.
-case: Nat.eq_dec => Hi; last by elim Hi.
-congr left; by rewrite (Eqdep_dec.UIP_refl_nat _ Hi).
-Qed.
-
-Definition ord_eq_dec (i j : 'I_n) : {i = j}+{i <> j}.
-case (Nat.eq_dec i j); intro ij.
-- left; now apply ord_inj.
-- right; intro ij'; apply ij; now f_equal.
-Defined.
-
-Lemma set_val_hd i (v : types i) vs : set_val v vs i = v.
-rewrite /set_val eq_dec_refl -Eqdep_dec.eq_rect_eq_dec //; exact: ord_eq_dec.
-Qed.
-
-Lemma set_val_tl i (v : types i) vs j : i <> j -> set_val v vs j = vs j.
-rewrite /set_val => nij; case: Nat.eq_dec => ij //; elim nij; exact: ord_inj.
-Qed.
-
 Lemma Rxx2 x : x = x * x -> x = 0 \/ x = 1.
 Proof.
 case/boolP: (x == 0) => Hx.
@@ -230,7 +298,7 @@ rewrite /cinde_preim /preim_vars.
 split.
 - move=> Hpreim.
   apply/cinde_rv_events => a b c.
-  set vals := set_val a (set_val c (set_val b (fun i => rvar_choice (vars i)))).
+  set vals := set_val a (set_val c (set_val b vals0)).
   have vi : vals i = a by rewrite /vals set_val_hd.
   move: (erefl vals) {Hpreim} (Hpreim vals).
   rewrite {2}/vals /cinde_events; clearbody vals.
@@ -343,7 +411,7 @@ move: (Hpre _ ie).
 by rewrite !inE Hvals.
 Qed.
 
-Lemma Pr_preim_vars_sub (e f : {set 'I_n}) vals :
+Lemma Pr_preim_vars_sub (e f : {set 'I_n}) (vals : univ_types types) :
   f \subset e ->
   Pr P (preim_vars (e :\: f) vals) =
   \sum_(A : prod_types types f) Pr P (preim_vars e (set_vals A vals)).
@@ -442,8 +510,6 @@ rewrite 2!(_ : _ :\: _ :|: _ = (e :&: f) :|: g);
   try by apply/setP => j; cases_in j.
 by rewrite setUid.
 Qed.
-
-Definition vals0 := fun i => rvar_choice (vars i).
 
 Lemma cinde_events_vals (e f g : {set 'I_n}) (A : prod_types types e)
   (B : prod_types types f) (C : prod_types types g) :
