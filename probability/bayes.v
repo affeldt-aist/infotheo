@@ -191,7 +191,8 @@ Lemma prod_vars_inter (e g : {set 'I_n}) vals i u :
 Proof. move=> ie ig; by rewrite !set_vals_prod_vals. Qed.
 
 Definition RV_equiv (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) :=
-  [set finset (X @^-1 a) | a : A] = [set finset (Y @^-1 b) | b : B].
+  [set finset (X @^-1 a) | a : A] :\: [set set0] =
+  [set finset (Y @^-1 b) | b : B] :\: [set set0].
 
 Definition vals0 : univ_types types := [ffun i => rvar_choice (vars i)].
 
@@ -202,6 +203,8 @@ Definition prod_proj i (x : prod_types types [set i]) := set_vals x vals0 i.
 Lemma prod_vars1 (i : 'I_n) : RV_equiv (prod_vars [set i]) (vars i).
 Proof.
 apply/setP => s.
+rewrite !inE.
+case: (s == set0) => //.
 apply/imsetP; case: ifPn.
   move/imsetP => [x Hx ->].
   exists (prod_vals1 x).
@@ -250,13 +253,14 @@ Definition prod_proj2 (x : prod_types types (I :|: J)) :=
   (prod_vals I (set_vals x vals0), prod_vals J (set_vals x vals0)).
 
 Lemma prod_vars_pair :
-  [disjoint I & J] ->
   RV_equiv (prod_vars (I :|: J)) (RV2 (prod_vars I) (prod_vars J)).
 Proof.
-move=> Disj.
 apply/setP => s.
+rewrite !inE.
+case/boolP: (s == set0) => // Hs.
 apply/imsetP; case: ifPn.
-  move/imsetP => [x _ ->].
+  move=> Hs'.
+  move/imsetP: Hs' Hs => [x _ ->] Hs.
   exists (prod_vals2 x).
     by rewrite inE.
   apply/setP => u.
@@ -276,17 +280,32 @@ apply/imsetP; case: ifPn.
   apply/negP => /eqP/ffunP /=.
   move: Hu.
   case/boolP: (_ == x1) => /=.
-    move/eqP => <- /=.
-    move/prod_types_neq => [i] /andP [iJ Hi] /(_ i).
-    move/prod_vals_eqP.
-    rewrite inE iJ orbT.
-    move/disjoint_setI0/setP/(_ i): Disj Hi.
-    rewrite 2!inE {1}iJ andbT => /negP/negP iI.
+    move/eqP => Hx1.
+    rewrite -Hx1 /=.
+    move/prod_types_neq => [i] /andP [iJ Hi].
+    case/boolP: (i \in I) => iI.
+      elim: (negP Hs).
+      apply/eqP/setP => u'.
+      rewrite !inE xpair_eqE.
+      apply/negP => /andP [] /eqP /(f_equal (set_vals (I:=I) ^~ vals0)).
+      move/ffunP/(_ i).
+      rewrite set_vals_prod_vals // => x1i.
+      move/eqP/(f_equal (set_vals (I:=J) ^~ vals0))/ffunP/(_ i).
+      rewrite set_vals_prod_vals // x1i => x2i.
+      rewrite -Hx1 in x2i.
+      rewrite (prod_vars_inter vals0 _ iI iJ) in x2i.
+      elim: (negP Hi).
+      move: x2i.
+      rewrite /set_vals /prod_vars /prod_vals !ffunE.
+      by move: (vars i u) (x2 i); rewrite iJ => ? ? ->.
+    move/(_ i)/prod_vals_eqP.
     rewrite set_vals_tl //.
+    move: Hi.
     rewrite /prod_vals {1}/set_vals 3!ffunE.
     move: (vals_at u i) (x2 i).
     rewrite iJ => _ x Hx Hx'.
-    by rewrite Hx' ?eqxx in Hx.
+    rewrite Hx' ?eqxx // in Hx.
+    by rewrite inE iJ orbT.
   move/prod_types_neq => [i] /andP [iI Hi] _ /(_ i).
   move/prod_vals_eqP.
   rewrite inE iI => /=.
@@ -295,7 +314,7 @@ apply/imsetP; case: ifPn.
   move: (vals_at u i) (x1 i).
   rewrite iI => _ x Hx Hx'.
   by rewrite Hx' ?eqxx in Hx.
-move=> Hs [x] _ Hx.
+move=> {}Hs [x] _ Hx.
 elim: (negP Hs).
 subst s.
 apply/imsetP.
