@@ -26,9 +26,53 @@ move/(f_equal size): He.
 by rewrite -cardE => ->.
 Defined.
 
-Definition RV_equiv (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) :=
-  [set finset (X @^-1 a) | a : A] :\: [set set0] =
-  [set finset (Y @^-1 b) | b : B] :\: [set set0].
+Section RV_equiv.
+Variables A B : finType.
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Definition RV_equivb :=
+  [set finset (X @^-1 a) | a : A] :\ set0 ==
+  [set finset (Y @^-1 b) | b : B] :\ set0.
+
+Definition RV_equiv := forall u v, (X u == X v) = (Y u == Y v).
+
+Lemma RV_equiv_sub (RVE : RV_equiv) :
+  [set finset (X @^-1 a) | a : A] :\ set0
+     \subset [set finset (Y @^-1 b) | b : B] :\ set0.
+Proof.
+apply/subsetP => s; rewrite !inE.
+case/boolP: (s == set0) => //= Hs /imsetP [a] _ /esym/setP Ha.
+move/set0Pn: (Hs) => [u] Hu.
+move: (Ha u); rewrite Hu !inE => Xu.
+apply/imsetP.
+exists (Y u) => //.
+apply/esym/setP => v.
+move: (Ha v); rewrite !inE.
+case/boolP: (v \in s) => Hv.
+  by rewrite -(eqP Xu) RVE.
+apply/contraFF.
+by rewrite -RVE (eqP Xu).
+Qed.
+End RV_equiv.
+
+Theorem RV_equivP A B X Y : reflect (@RV_equiv A B X Y) (RV_equivb X Y).
+Proof.
+case/boolP: (RV_equivb X Y) => E; constructor.
+- move=> u v.
+  move/eqP/setP/(_ (finset (X @^-1 (X u)))): E; rewrite !inE.
+  case/boolP: (_ == set0).
+    move/eqP/setP/(_ u); by rewrite !inE eqxx.
+  rewrite !andTb => _.
+  move/imsetP; case: imsetP.
+    move=> [b] _ /setP Hb [a] _ /setP Ha.
+    move: (Ha u) (Hb u) (Hb v).
+    rewrite !inE !eqxx => /esym /eqP -> /esym /eqP ->.
+    by rewrite (eq_sym a) (eq_sym b).
+  move=> _; elim.
+  by exists (X u).
+move=> RVE; elim: (negP E).
+by rewrite /RV_equivb eqEsubset !RV_equiv_sub.
+Qed.
 
 End proba.
 
@@ -231,127 +275,38 @@ Lemma prod_vars_inter (I J : {set 'I_n}) vals i u :
   set_vals (prod_vars I u) vals i = set_vals (prod_vars J u) vals i.
 Proof. move=> *; by rewrite !set_vals_prod_vals. Qed.
 
-Section prod_vars1.
-Variable i : 'I_n.
-
-Definition prod_vals1 (x : types i) := prod_vals [set i] (set_val x vals0).
-
-Definition prod_proj (x : prod_types types [set i]) := set_vals x vals0 i.
-
-Lemma prod_vars1 : RV_equiv (prod_vars [set i]) (vars i).
+Lemma prod_vars1 (i : 'I_n) : RV_equiv (prod_vars [set i]) (vars i).
 Proof.
-apply/setP => s.
-rewrite !inE.
-case: (s == set0) => //; rewrite !andTb.
-apply/imsetP; case: ifPn.
-  move/imsetP => [x Hx ->].
-  exists (prod_vals1 x) => //.
-  apply/setP => u.
-  rewrite !inE /prod_vars /prod_vals1 /=.
-  symmetry.
-  case/boolP: (vars i u == x).
-    move/eqP => <-.
-    apply/eqP/ffunP => j; apply/prod_vals_eqP => /set1P ->.
-    by rewrite set_val_hd ffunE.
-  apply/contraNF => /eqP/(prod_types_app i)/prod_vals_eqP.
-  by rewrite inE eqxx set_val_hd ffunE => ->.
-move=> Hs [x] _ Hx.
-elim: (negP Hs) => /=.
-subst s.
-apply/imsetP.
-exists (prod_proj x) => //.
-apply/setP => u.
-rewrite !inE.
-case/boolP: (vars i u == _).
-  move/eqP => Hv.
-  apply/eqP/ffunP => /= j.
-  rewrite (prod_vals_eq (vals2:=set_vals x vals0)).
-    apply/(set_vals_inj (vals:=set_vals x vals0)).
-    by rewrite set_vals_prod_vals_id set_vals_id.
-  by rewrite ffunE => /set1P ->.
-apply/contraNF => /eqP <-.
-by rewrite /prod_proj set_vals_prod_vars // inE.
+move=> u v.
+apply/esym.
+case/boolP: (prod_vars _ _ == _).
+  move/eqP/(f_equal (set_vals (types:=types) (I:=[set i]) ^~ vals0)).
+  move/ffunP/(_ i).
+  rewrite !set_vals_prod_vars ?inE // => ->.
+  by rewrite eqxx.
+apply/contraNF => /eqP Hv.
+apply/eqP/ffunP => j.
+apply/prod_vals_eq => /set1P ->.
+by rewrite !ffunE.
 Qed.
 
-End prod_vars1.
-
-Section prod_vars_pair.
-Variables I J : {set 'I_n}.
-
-Definition prod_vals2 (x : prod_types types I * prod_types types J) :=
-  prod_vals (I :|: J) (set_vals (fst x) (set_vals (snd x) vals0)).
-
-Definition prod_proj2 (x : prod_types types (I :|: J)) :=
-  (prod_vals I (set_vals x vals0), prod_vals J (set_vals x vals0)).
-
-Lemma prod_vars_neq_set0 (B : prod_types types J) u i :
-  i \in I -> i \in J -> prod_vars J u i != B i ->
- [set x | [% prod_vars I, prod_vars J] @^-1 (prod_vars I u, B) x] = set0.
+Lemma prod_vars_pair (I J : {set 'I_n}) :
+  RV_equiv (prod_vars (I :|: J)) [% prod_vars I, prod_vars J].
 Proof.
-move=> iI iJ HB; apply/setP => u'.
-rewrite !inE xpair_eqE.
-apply/contraNF: HB.
-case/andP => /eqP/wrap_set_vals/ffunP/(_ i).
-rewrite set_vals_prod_vals // => x1i /eqP/wrap_set_vals/ffunP/(_ i).
-rewrite set_vals_prod_vals // x1i (prod_vars_inter vals0 _ iI iJ).
-by move/set_vals_inj => <-.
-Qed.
-
-Lemma prod_vars_pair :
-  RV_equiv (prod_vars (I :|: J)) (RV2 (prod_vars I) (prod_vars J)).
-Proof.
-apply/setP => s.
-rewrite !inE.
-case/boolP: (s == set0) => // Hs; rewrite !andTb.
-apply/imsetP; case: ifPn => Hs'.
-  move/imsetP: Hs' Hs => [[x1 x2] _ ->] Hs.
-  exists (prod_vals2 (x1,x2)) => //.
-  apply/setP => u.
-  rewrite !inE /prod_vars /prod_vals2 /RV2 /=.
-  symmetry.
-  case/boolP: (_ == (x1,x2)); rewrite xpair_eqE.
-    case/andP => /eqP <- /eqP <-.
-    apply/eqP/ffunP => j.
-    apply/prod_vals_eqP => iIJ.
-    by rewrite set_vals_prod_vals_join set_vals_prod_vals.
-  apply/contraNF => /eqP/ffunP.
-  case/boolP: (_ == x1) => /=.
-    move/eqP => Hx1; subst x1.
-    case/boolP: (_ == x2) => //=.
-    move/prod_types_neq => [i] /andP [iJ Hx2].
-    case/boolP: (i \in I) => iI.
-      elim: (negP Hs). by rewrite (prod_vars_neq_set0 iI).
-    move/(_ i)/prod_vals_eqP.
-    rewrite set_vals_tl // inE iJ orbT => /(_ isT) Hv.
-    elim: (negP Hx2); apply/eqP/(set_vals_inj (vals:=vals0)).
-    by rewrite set_vals_prod_vals.
-  move/prod_types_neq => [i] /andP [iI Hx1] /(_ i) /prod_vals_eqP.
-  rewrite inE iI => /(_ isT) Hv.
-  elim: (negP Hx1).
-  apply/eqP/(set_vals_inj (vals:=set_vals x2 vals0)).
-  by rewrite set_vals_prod_vals.
-move=> [x] _ Hx.
-elim: (negP Hs'); subst s.
-apply/imsetP.
-exists (prod_proj2 x) => //.
-apply/setP => u.
-rewrite !inE.
-symmetry.
-case/boolP: (_ == x).
-  move/eqP => <-.
+move=> u v.
+apply/esym.
+case/boolP: (prod_vars _ _ == _).
+  move/eqP/ffunP => Hv.
   rewrite xpair_eqE.
   apply/andP; split; apply/eqP/ffunP => i; apply/prod_vals_eqP => Hi;
-    by rewrite set_vals_prod_vals // inE Hi // orbT.
-apply/contraNF => Hux.
+    move/(_ i)/prod_vals_eqP: Hv; apply; by rewrite inE Hi ?orbT.
+apply/contraNF.
+rewrite xpair_eqE => /andP[] /eqP HI /eqP HJ.
 apply/eqP/ffunP => i.
-move: Hux; rewrite xpair_eqE /prod_vars.
-case/andP => /eqP/(prod_types_app i) HI /eqP/(prod_types_app i) HJ.
-rewrite (prod_vals_eq (vals2 := set_vals x vals0)).
-  apply (set_vals_inj (vals:=set_vals x vals0)).
-  by rewrite set_vals_prod_vals_id set_vals_id.
-rewrite inE => /orP [] Hi; [move: HI | move: HJ] => /prod_vals_eqP; exact.
+apply/(set_vals_inj (vals:=vals0)).
+rewrite -!set_vals_prod_vals_join -/(prod_vars I u) -/(prod_vars J u).
+by rewrite HI HJ.
 Qed.
-End prod_vars_pair.
 
 Section preim.
 Local Open Scope R_scope.
