@@ -34,8 +34,9 @@ Require Import fdist.
 (*  `Pr_P [ A | B ] == conditional probability for events                     *)
 (*  `Pr[ X = a | Y = b ], `Pr[ X \in E | Y \in F ] == conditional probability *)
 (*                     for random variables                                   *)
-(*  P |= X _|_ Y | Z == the random variable X is conditionally independent of *)
-(*                     the random variable Y given Z in a distribution P      *)
+(*  P |= X _|_ Y | Z, X _|_  Y | Z == the random variable X is conditionally  *)
+(*                     independent of the random variable Y given Z in a      *)
+(*                     distribution P                                          *)
 (*  P |= X _|_ Y    == unconditional independence                             *)
 (*  Z \= X @+ Y     == Z is the sum of two random variables                   *)
 (*  X \=sum Xs      == X is the sum of the n>=1 independent and identically   *)
@@ -110,6 +111,7 @@ Reserved Notation "`Pr[ X '\in' E | Y = F ]" (at level 6, X, Y, E, F at next lev
   format "`Pr[  X  '\in'  E  |  Y  =  F  ]").
 Reserved Notation "`Pr[ X = E | Y '\in' F ]" (at level 6, X, Y, E, F at next level,
   format "`Pr[  X  =  E  |  Y  '\in'  F  ]").
+Reserved Notation "X _|_  Y | Z" (at level 50, Y, Z at next level).
 Reserved Notation "P |= X _|_  Y | Z" (at level 50, X, Y, Z at next level).
 Reserved Notation "P |= X _|_ Y" (at level 50, X, Y at next level,
   format "P  |=  X  _|_  Y").
@@ -1645,6 +1647,7 @@ Qed.
 End conditionnally_independent_discrete_random_variables.
 
 Notation "P |= X _|_  Y | Z" := (@cinde_rv _ P _ _ _ X Y Z) : proba_scope.
+Notation "X _|_  Y | Z" := (cinde_rv X Y Z) : proba_scope.
 
 Section independent_rv.
 
@@ -2038,3 +2041,38 @@ by move/leR_trans: (chebyshev_inequality (X `/ n.+1) e0); apply; exact/leRR.
 Qed.
 
 End weak_law_of_large_numbers.
+
+(* wip*)
+
+Section vector_of_RVs.
+Variables (U : finType) (P : fdist U).
+Variables (A : finType) (n : nat) (X : 'rV[{RV P -> A}]_n).
+Local Open Scope ring_scope.
+Local Open Scope vec_ext_scope.
+Definition RVn : {RV P -> 'rV[A]_n} := fun x => \row_(i < n) (X ``_ i) x.
+End vector_of_RVs.
+
+Section prob_chain_rule.
+Variables (U : finType) (P : {fdist U}).
+Variables (A : finType) .
+Local Open Scope vec_ext_scope.
+Lemma prob_chain_rule : forall (n : nat) (X : 'rV[{RV P -> A}]_n.+1) x,
+  `Pr[ (RVn X) = x ] =
+  \prod_(i < n.+1)
+    if i == ord0 then
+      `Pr[ (X ``_ ord0) = (x ``_ ord0)   ]
+    else
+      `Pr[ (X ``_ i) = (x ``_ i) |
+        (RVn (row_drop (inord (n - i.+1)) X)) = (row_drop (inord (n - i.+1)) x) ].
+Proof.
+elim => [X /= x|n ih X /= x].
+  rewrite big_ord_recl big_ord0 mulR1.
+  rewrite /pr_eq; unlock.
+  apply eq_bigl => u.
+  rewrite !inE /RVn.
+  apply/eqP/eqP => [<-|H]; first by rewrite mxE.
+  by apply/rowP => i; rewrite {}(ord1 i) !mxE.
+rewrite big_ord_recr /=.
+Abort.
+
+End prob_chain_rule.

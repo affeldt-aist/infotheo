@@ -89,7 +89,6 @@ Qed.
 End rV.
 End JointEntropy.
 
-Require Import cinde.
 Section notation_with_random_variables.
 Section jointentropy_drv.
 Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).

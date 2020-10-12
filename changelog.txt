@@ -1,6 +1,8 @@
 -----------------
-from 0.1.2 to ???
+from 0.1.2 to 0.2
 -----------------
+warning: this changelog entry is not exhaustive
+
 - renamed:
   + in Rbigop.v:
     * rsumr_ge0 -> sumR_ge0, rsumr_gt0 -> sumR_gt0
@@ -63,6 +65,7 @@ from 0.1.2 to ???
   + cpr_in_Eset1, cpr_in_set1F
   + reasoning_by_cases, creasoning_by_cases
   + cpr_in_pair* lemmas in proba.v
+  + cinde.v -> graphoid.v
 - changed:
   + generalize pr_geq to any porderType
   + definition of notation @^-1 now uses preim instead of finset notations
@@ -78,7 +81,7 @@ from 0.1.2 to ???
   + Pr_domin_snd
   + RVarPr
   + most marginal_* lemmas and technical lemmas from cinde.v
-  + RV_Pr_lC, etc. from cinde.v
+  + RV_Pr_lC, etc., RV2_Pr*congr* lemmas, from cinde.v
 
 ---------------------
 from 0.1.1 to 0.1.2 :

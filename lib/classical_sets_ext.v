@@ -54,12 +54,13 @@ apply eqEsubset=> a;
   by [case=> i Pi ->; apply imageP | case=> i Pi <-; exists i].
 Qed.
 
+(* TODO: PR in progress in mathcomp-analysis *)
 Lemma bigcup_set0 (X : U -> set T) : \bigcup_(i in set0) X i = set0.
 Proof. by apply eqEsubset => a // [] //. Qed.
 
-(* NB: less general lemma with the same name in mathcomp-analysis *)
 Lemma bigcup_set1 (i : U) (X : U -> set T) : \bigcup_(i in [set i]) X i = X i.
 Proof. apply eqEsubset => a; by [case=> j -> | exists i]. Qed.
+(* TODO: end PR *)
 
 Lemma bigcup_image V (P : set V) (f : V -> U) (X : U -> set T) :
   \bigcup_(x in f @` P) X x = \bigcup_(x in P) X (f x).
