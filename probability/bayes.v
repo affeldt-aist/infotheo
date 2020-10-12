@@ -19,60 +19,109 @@ Import Prenex Implicits.
 Section proba. (* proba.v ? *)
 Variables (U : finType) (P : fdist U).
 
-Definition rvar_choice (A : finType) (X : {RV P -> A}) : A.
-move: (fdist_card_neq0 (`d_ X)).
-move He: (enum A) => [|a l] //.
+Definition fdist_choice' : U.
+move: (fdist_card_neq0 P).
+move He: (enum U) => [|u l] //.
 move/(f_equal size): He.
 by rewrite -cardE => ->.
 Defined.
+Definition fdist_choice := Eval hnf in fdist_choice'.
+Print fdist_choice.
+
+Definition rvar_choice (A : eqType) (X : {RV P -> A}) := X fdist_choice.
 
 Section RV_equiv.
-Variables A B : finType.
+Variables A B : eqType.
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
 Definition RV_equivb :=
-  [set finset (X @^-1 a) | a : A] :\ set0 ==
-  [set finset (Y @^-1 b) | b : B] :\ set0.
+  preim_partition X setT == preim_partition Y setT.
 
 Definition RV_equiv := forall u v, (X u == X v) = (Y u == Y v).
 
-Lemma RV_equiv_sub (RVE : RV_equiv) :
-  [set finset (X @^-1 a) | a : A] :\ set0
-     \subset [set finset (Y @^-1 b) | b : B] :\ set0.
+Lemma RV_equivP : reflect RV_equiv RV_equivb.
 Proof.
-apply/subsetP => s; rewrite !inE.
-case/boolP: (s == set0) => //= Hs /imsetP [a] _ /esym/setP Ha.
-move/set0Pn: (Hs) => [u] Hu.
-move: (Ha u); rewrite Hu !inE => Xu.
-apply/imsetP.
-exists (Y u) => //.
-apply/esym/setP => v.
-move: (Ha v); rewrite !inE.
-case/boolP: (v \in s) => Hv.
-  by rewrite -(eqP Xu) RVE.
-apply/contraFF.
-by rewrite -RVE (eqP Xu).
-Qed.
-End RV_equiv.
-
-Theorem RV_equivP A B X Y : reflect (@RV_equiv A B X Y) (RV_equivb X Y).
-Proof.
-case/boolP: (RV_equivb X Y) => E; constructor.
+case/boolP: RV_equivb => E; constructor.
 - move=> u v.
-  move/eqP/setP/(_ (finset (X @^-1 (X u)))): E; rewrite !inE.
-  case/boolP: (_ == set0).
-    move/eqP/setP/(_ u); by rewrite !inE eqxx.
-  rewrite !andTb => _.
+  move/eqP/setP/(_ (finset (X @^-1 (X u)))): E.
   move/imsetP; case: imsetP.
     move=> [b] _ /setP Hb [a] _ /setP Ha.
-    move: (Ha u) (Hb u) (Hb v).
-    rewrite !inE !eqxx => /esym /eqP -> /esym /eqP ->.
-    by rewrite (eq_sym a) (eq_sym b).
-  move=> _; elim.
-  by exists (X u).
+    move: (Ha v) (Hb u) (Hb v).
+    rewrite !inE !eqxx /= => /esym /eqP.
+    by rewrite (eq_sym (X u)); case: ifP => //= _ _ /esym /eqP ->.
+  move=> HY; elim.
+  exists u => //.
+  by apply/setP => w; rewrite !inE eq_sym.
 move=> RVE; elim: (negP E).
-by rewrite /RV_equivb eqEsubset !RV_equiv_sub.
+rewrite /RV_equivb /preim_partition /equivalence_partition.
+apply/eqP/setP => u.
+apply/imsetP; case: imsetP.
+  case=> v _ ->.
+  exists v => //.
+  apply/setP => w.
+  by rewrite !inE RVE.
+move=> H [v _ Hv].
+elim H; subst u.
+exists v => //.
+apply/setP => w.
+by rewrite !inE /= RVE.
 Qed.
+
+Section fin_img.
+Variables (T : finType) (d : T) (S : eqType) (f : T -> S).
+
+Definition Tfin_img := 'I_(size (fin_img f)).
+Definition index_fin_img (x : T) : Tfin_img.
+apply (@Ordinal _ (index (f x) (fin_img f))).
+abstract (by rewrite index_mem mem_undup map_f // mem_enum).
+Defined.
+Definition rev_fin_img (i : Tfin_img) : T.
+refine (iinv (A:=predT) (f:=f) (y:=nth (f d) (fin_img f) i) _).
+abstract (move/mem_nth: (ltn_ord i); rewrite -mem_undup; exact).
+Defined.
+Lemma rev_fin_imgK i : index_fin_img (rev_fin_img i) = i.
+Proof.
+rewrite /index_fin_img /rev_fin_img.
+destruct i; apply val_inj => /=.
+by rewrite f_iinv nthK // undup_uniq.
+Qed.
+Lemma index_fin_imgK x : f (rev_fin_img (index_fin_img x)) = f x.
+Proof.
+rewrite /index_fin_img /rev_fin_img.
+by rewrite f_iinv nth_index // mem_undup map_f // mem_enum.
+Qed.
+End fin_img.
+
+Definition CX := Tfin_img X.
+Definition CY := Tfin_img Y.
+
+Definition XC : U -> CX := index_fin_img X.
+Definition YC : U -> CY := index_fin_img Y.
+
+Hypothesis RVE : RV_equiv.
+Let f (x : CX) : CY := YC (rev_fin_img fdist_choice x).
+Let g (y : CY) : CX := XC (rev_fin_img fdist_choice y).
+
+Lemma RV_equiv_bij : { f : CX -> CY | bijective f & YC =1 f \o XC }.
+Proof.
+exists f.
+  apply: (Bijective (g:=g)); rewrite /f /g /= /XC /YC => i.
+    destruct i; apply val_inj => /=.
+    set tmp := rev_fin_img _ _.
+    have -> : X tmp = X (rev_fin_img fdist_choice (Ordinal i)).
+      apply/eqP; by rewrite RVE index_fin_imgK.
+    by case: (rev_fin_imgK fdist_choice (Ordinal i)).
+  destruct i; apply val_inj => /=.
+  set tmp := rev_fin_img _ _.
+  have -> : Y tmp = Y (rev_fin_img fdist_choice (Ordinal i)).
+    apply/eqP; by rewrite -RVE index_fin_imgK.
+  by case: (rev_fin_imgK fdist_choice (Ordinal i)).
+rewrite /YC /XC => u.
+apply val_inj => /=.
+congr index.
+by apply/eqP; rewrite -RVE index_fin_imgK.
+Qed.
+End RV_equiv.
 
 End proba.
 
@@ -304,8 +353,7 @@ apply/contraNF.
 rewrite xpair_eqE => /andP[] /eqP HI /eqP HJ.
 apply/eqP/ffunP => i.
 apply/(set_vals_inj (vals:=vals0)).
-rewrite -!set_vals_prod_vals_join -/(prod_vars I u) -/(prod_vars J u).
-by rewrite HI HJ.
+by rewrite -!set_vals_prod_vals_join [prod_vals _ _]HI [prod_vals _ _]HJ.
 Qed.
 
 Section preim.
@@ -723,6 +771,24 @@ Record t := mkBN
     indep: forall i j, independence parent i j
   }.
 End bn.
+
+Section equiv.
+Variable U : finType.
+Variable P : fdist U.
+Variable n : nat.
+Variables types1 types2 : 'I_n -> finType.
+Variable vars1 : forall i, {RV P -> types1 i}.
+Variable vars2 : forall i, {RV P -> types2 i}.
+Hypothesis varsE : forall i, RV_equiv (vars1 i) (vars2 i).
+
+Lemma cinde_preim_equiv (I J K : {set 'I_n}) :
+  cinde_preim vars2 I J K -> cinde_preim vars1 I J K.
+Proof.
+rewrite /cinde_preim => CI vals1.
+Abort.
+End equiv.
+
+
 End BN.
 
 Section Factorization.
