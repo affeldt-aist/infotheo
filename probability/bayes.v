@@ -75,10 +75,16 @@ Definition index_fin_img (x : T) : Tfin_img.
 apply (@Ordinal _ (index (f x) (fin_img f))).
 abstract (by rewrite index_mem mem_undup map_f // mem_enum).
 Defined.
+Definition nth_fin_img (i : Tfin_img) : S := nth (f d) (fin_img f) i.
 Definition rev_fin_img (i : Tfin_img) : T.
-refine (iinv (A:=predT) (f:=f) (y:=nth (f d) (fin_img f) i) _).
+refine (iinv (A:=predT) (f:=f) (y:=nth_fin_img i) _).
 abstract (move/mem_nth: (ltn_ord i); rewrite -mem_undup; exact).
 Defined.
+Lemma nth_fin_imgK x : nth_fin_img (index_fin_img x) = f x.
+Proof.
+rewrite /nth_fin_img /index_fin_img => /=.
+by rewrite nth_index // mem_undup map_f // mem_enum.
+Qed.
 Lemma rev_fin_imgK i : index_fin_img (rev_fin_img i) = i.
 Proof.
 rewrite /index_fin_img /rev_fin_img.
@@ -88,7 +94,7 @@ Qed.
 Lemma index_fin_imgK x : f (rev_fin_img (index_fin_img x)) = f x.
 Proof.
 rewrite /index_fin_img /rev_fin_img.
-by rewrite f_iinv nth_index // mem_undup map_f // mem_enum.
+by rewrite f_iinv nth_fin_imgK.
 Qed.
 End fin_img.
 
@@ -128,15 +134,15 @@ End proba.
 Section univ_types.
 (* heterogeneous types *)
 Variable n : nat.
-Variable types : 'I_n -> finType.
-Definition univ_types := [finType of {dffun forall i, types i}].
+Variable types : 'I_n -> eqType.
+Definition univ_types := [eqType of {dffun forall i, types i}].
 
 Section prod_types.
 (* sets of indices *)
 Variable I : {set 'I_n}.
 
 Definition prod_types :=
-  [finType of
+  [eqType of
    {dffun forall i : 'I_n, if i \in I then types i else unit_finType}].
 
 Lemma prod_types_app i (A B : prod_types) : A = B -> A i = B i.
@@ -299,7 +305,7 @@ Section bn.
 Variable U : finType.
 Variable P : fdist U.
 Variable n : nat.
-Variable types : 'I_n -> finType.
+Variable types : 'I_n -> eqType.
 Variable vars : forall i, {RV P -> types i}.
 
 Definition vals0 : univ_types types := [ffun i => rvar_choice (vars i)].
@@ -491,7 +497,7 @@ rewrite !inE set_vals_tl //.
 move: (eg i); by rewrite !inE ig andbT => ->.
 Qed.
 
-Lemma preim_inter (T S : finType) (e : U -> T) (g : U -> S) (A : T) (C : S) :
+Lemma preim_inter (T S : eqType) (e : U -> T) (g : U -> S) (A : T) (C : S) :
   finset (preim (fun x => (e x, g x)) (pred1 (A, C))) =
   finset (preim e (pred1 A)) :&: finset (preim g (pred1 C)).
 Proof.
@@ -522,14 +528,20 @@ move: (Hpre _ ie).
 by rewrite !inE Hvals.
 Qed.
 
+Definition u0 := fdist_choice P.
+
 Lemma Pr_preim_vars_sub (e f : {set 'I_n}) (vals : univ_types types) :
   f \subset e ->
   Pr P (preim_vars (e :\: f) vals) =
-  \sum_(A : prod_types types f) Pr P (preim_vars e (set_vals A vals)).
+  \sum_(A : Tfin_img (prod_vars f))
+   Pr P (preim_vars e (set_vals (nth_fin_img u0 A) vals)).
 Proof.
 rewrite /preim_vars /Pr => fe.
 rewrite -partition_disjoint_bigcup; last first.
-  move=> A B AB.
+  move=> /= A B.
+  rewrite -(eqtype.inj_eq (@ord_inj _)).
+  rewrite -(nth_uniq (prod_vars f u0) (s:=fin_img (prod_vars f))
+                     (ltn_ord A) (ltn_ord B)) ?undup_uniq // => AB.
   rewrite -setI_eq0.
   apply/eqP/setP => u.
   rewrite !inE.
@@ -549,10 +561,10 @@ case: bigcupP.
   move: Hu; by rewrite !inE set_vals_tl.
 move=> HN.
 apply/negP => /bigcapP /= Hu; elim: HN.
-exists (prod_vars f u) => //.
+exists (index_fin_img (prod_vars f) u) => //.
 apply/bigcapP => /= i ie.
 move/(_ i): Hu.
-rewrite !inE.
+rewrite !inE nth_fin_imgK.
 case/boolP: (i \in f) => Hif.
   by rewrite set_vals_prod_vars.
 by rewrite set_vals_tl // ie => ->.
@@ -569,8 +581,8 @@ Proof.
 rewrite /cinde_preim => ee' e'e Hef vals.
 have ee'g : (e :\: e') :&: g = set0.
   apply/setP => i; move/subsetP/(_ i): ee'; by cases_in i.
-transitivity (\sum_(A : prod_types types (e :\: e'))
-          let v := set_vals A vals in
+transitivity (\sum_(A : Tfin_img (prod_vars (e :\: e')))
+          let v := set_vals (nth_fin_img u0 A) vals in
           `Pr_P[preim_vars e v :&: preim_vars f v | preim_vars g v]).
   rewrite /cPr.
   rewrite -!preim_vars_inter.
@@ -715,7 +727,31 @@ split.
       last by apply/setP => j; cases_in j.
     rewrite Pr_preim_vars_sub;
       last by apply/subsetP => j; cases_in j.
-    rewrite (bigD1 (prod_vals ((e :&: f) :\: g) vals)) //=.
+    case/boolP: (prod_vals ((e :&: f) :\: g) vals \in
+                    fin_img (prod_vars ((e :&: f) :\: g))) => HA; last first.
+      suff Hnum0 : num = 0.
+        rewrite Hnum0 div0R in Hnum.
+        by move/esym/R1_neq_R0 in Hnum.
+      rewrite /num -preim_vars_inter.
+      have -> : e :&: f :|: g = (e :&: f :\: g) :|: g.
+        apply/setP => k; by cases_in k.
+      apply Pr_set0P => v.
+      rewrite preim_vars_inter !inE => /andP [HA'].
+      elim: (negP HA).
+      rewrite mem_undup.
+      apply/mapP.
+      exists v.
+        by rewrite mem_enum.
+      rewrite /prod_vars.
+      apply/ffunP => k.
+      apply/prod_vals_eq => Hk.
+      rewrite [RHS]ffunE.
+      move/bigcapP/(_ k Hk): HA'.
+      by rewrite !inE => /eqP ->.
+    move: HA.
+    rewrite mem_undup => /mapP => -[v _ Hv].
+    set a := index_fin_img (prod_vars ((e :&: f) :\: g)) v.
+    rewrite (bigD1 a) //= nth_fin_imgK -Hv.
     rewrite /num (@preim_vars_vals _ (prod_vals (e :&: f :|: g) vals) _ vals);
       last by move=> j; rewrite set_vals_prod_vals_id.
     move/(f_equal (Rminus^~ (Pr P (preim_vars (e :&: f :|: g) vals)))).
@@ -723,11 +759,22 @@ split.
     move=> Hnum2.
     have : Pr P (preim_vars (e :&: f :|: g)
          (set_vals (prod_vals (e :&: f :\: g) (set_vals B vals)) vals)) = 0.
-      apply: (proj1 (psumR_eq0P _) Hnum2).
+      rewrite (_ : prod_vals _ _ = prod_vars (e :&: f :\: g) u); last first.
+        apply/ffunP => k; apply/prod_vals_eq => Hk.
+        rewrite -HB set_vals_prod_vars ?ffunE //.
+        move: Hk; cases_in k.
+      rewrite -(nth_fin_imgK u0 (prod_vars (e :&: f :\: g))).
+      apply/(proj1 (psumR_eq0P _) Hnum2).
         move => *; by apply sumR_ge0.
-      apply/eqP => /(f_equal (fun x : prod_types _ _ => x i)) /prod_vals_eqP Hi.
+      apply/eqP => /(f_equal (fun x => nth_fin_img u0 x)).
+      rewrite !nth_fin_imgK => /(f_equal (fun x : prod_types _ _ => x i)).
+      move/prod_vals_eqP => Hi.
       elim: Hvi.
-      by rewrite -(He i Hie) (set_vals_hd vals) // Hi // !inE Hif Hig Hie.
+      rewrite /prod_vars in Hv.
+      rewrite -(He i Hie) //.
+      have iefg : i \in e :&: f :\: g by move: Hif Hig Hie; cases_in i.
+      rewrite (proj1 (prod_vals_eqP _ _ _ _) (prod_types_app i Hv)) //.
+      by rewrite -HB set_vals_prod_vars // -Hi // ffunE.
     move/Pr_set0P; apply.
     apply/bigcapP => j Hj.
     rewrite !inE.
