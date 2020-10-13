@@ -1,7 +1,6 @@
-(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import ssreflect ssrbool ssrfun eqtype ssrnat div seq.
-From mathcomp Require Import choice fintype order tuple bigop finset path ssralg.
-From mathcomp Require Import fingroup zmodp poly ssrnum.
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+From mathcomp Require Import all_ssreflect path ssralg fingroup zmodp poly ssrnum.
 Require FunctionalExtensionality.
 Require Import ssr_ext.
 

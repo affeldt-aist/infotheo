@@ -3,7 +3,7 @@ maintainer: "reynald.affeldt@aist.go.jp"
 homepage: "https://github.com/affeldt-aist/infotheo"
 bug-reports: "https://github.com/affeldt-aist/infotheo/issues"
 dev-repo: "git+https://github.com/affeldt-aist/infotheo.git"
-license: "GPL-3.0-or-later"
+license: "LGPL-2.1-or-later"
 authors: [
   "Reynald Affeldt"
   "Manabu Hagiwara"
@@ -39,5 +39,5 @@ tags: [
   "keyword: probability"
   "keyword: error-correcting codes"
   "logpath:infotheo"
-  "date:2020-08-11"
+  "date:2020-10-13"
 ]

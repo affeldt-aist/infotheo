@@ -1,4 +1,5 @@
-(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 Require Import Reals.
 Require Import ssrZ ssrR logb Reals_ext Rbigop ssr_ext fdist entropy kraft.

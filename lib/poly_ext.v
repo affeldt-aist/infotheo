@@ -1,9 +1,12 @@
-(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect fingroup perm ssralg zmodp.
 From mathcomp Require Import matrix mxalgebra poly polydiv mxpoly.
 Require Import ssralg_ext.
 
-(** * Additional lemmas about polynomials *)
+(******************************************************************************)
+(*                  Additional lemmas about polynomials                       *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

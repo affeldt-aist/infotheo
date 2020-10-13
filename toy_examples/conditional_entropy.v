@@ -1,4 +1,6 @@
-From mathcomp Require Import all_ssreflect ssralg finset fingroup finalg matrix.
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import proba jfdist entropy chap2.

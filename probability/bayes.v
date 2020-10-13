@@ -1,5 +1,5 @@
-(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
-From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require boolp.
 Require Import Reals. (* Lra Nsatz. *)
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.

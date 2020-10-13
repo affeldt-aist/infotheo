@@ -1,4 +1,5 @@
-(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix vector.
 Require Import Reals.
@@ -9,18 +10,17 @@ Require Import Rbigop pproba.
 (*                         Checksum Operator                                  *)
 (******************************************************************************)
 
+(* OUTLINE:
+- Section checksubsum_parity.
+- Section post_proba_checksubsum.
+*)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
-
-
-(* OUTLINE:
-- Section checksubsum_parity.
-- Section post_proba_checksubsum.
-*)
 
 Import GRing.Theory.
 

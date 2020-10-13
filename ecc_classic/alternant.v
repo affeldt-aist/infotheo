@@ -1,4 +1,5 @@
-(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv.
 From mathcomp Require Import cyclic perm matrix mxpoly vector mxalgebra zmodp.
 From mathcomp Require Import finfield falgebra fieldext.
