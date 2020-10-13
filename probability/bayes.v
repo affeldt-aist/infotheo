@@ -96,6 +96,12 @@ Proof.
 rewrite /index_fin_img /rev_fin_img.
 by rewrite f_iinv nth_fin_imgK.
 Qed.
+Lemma fin_imgP y : reflect (exists x : T, y = f x) (y \in fin_img f).
+Proof.
+rewrite mem_undup; apply/(iffP mapP) => -[x].
+- move=> _ ->. by exists x.
+- move=> ->. by exists x; rewrite // mem_enum.
+Qed.
 End fin_img.
 
 Definition CX := Tfin_img X.
@@ -727,29 +733,23 @@ split.
       last by apply/setP => j; cases_in j.
     rewrite Pr_preim_vars_sub;
       last by apply/subsetP => j; cases_in j.
-    case/boolP: (prod_vals ((e :&: f) :\: g) vals \in
-                    fin_img (prod_vars ((e :&: f) :\: g))) => HA; last first.
+    have : prod_vals ((e :&: f) :\: g) vals
+                   \in fin_img (prod_vars ((e :&: f) :\: g)).
+      case/boolP: (_ \in _) => // /negP HA.
       suff Hnum0 : num = 0.
-        rewrite Hnum0 div0R in Hnum.
-        by move/esym/R1_neq_R0 in Hnum.
+        move: Hnum; by rewrite Hnum0 div0R => /esym/R1_neq_R0.
       rewrite /num -preim_vars_inter.
       have -> : e :&: f :|: g = (e :&: f :\: g) :|: g.
         apply/setP => k; by cases_in k.
       apply Pr_set0P => v.
       rewrite preim_vars_inter !inE => /andP [HA'].
-      elim: (negP HA).
-      rewrite mem_undup.
-      apply/mapP.
+      elim: HA; apply/fin_imgP.
       exists v.
-        by rewrite mem_enum.
-      rewrite /prod_vars.
       apply/ffunP => k.
       apply/prod_vals_eq => Hk.
-      rewrite [RHS]ffunE.
       move/bigcapP/(_ k Hk): HA'.
-      by rewrite !inE => /eqP ->.
-    move: HA.
-    rewrite mem_undup => /mapP => -[v _ Hv].
+      by rewrite !inE [RHS]ffunE => /eqP.
+    case/fin_imgP => v Hv.
     set a := index_fin_img (prod_vars ((e :&: f) :\: g)) v.
     rewrite (bigD1 a) //= nth_fin_imgK -Hv.
     rewrite /num (@preim_vars_vals _ (prod_vals (e :&: f :|: g) vals) _ vals);
