@@ -13,7 +13,7 @@
 
 *** Last stable version:
 
-Version 0.1.2:
+Version 0.2:
 3. ~opam install coq-infotheo~
 
 **** Requirements
@@ -59,7 +59,10 @@ Once MathComp is installed, two options:
 
 ** License
 
-GNU GPLv3
+LGPL-2.1-or-later
+
+(Before version 0.2, infotheo was distributed under the terms of the
+~GPL-3.0-or-later~ license.)
 
 ** Authors
 

@@ -1,4 +1,5 @@
-(* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect fingroup perm zmodp ssralg.
 Require Import ssr_ext f2.
 

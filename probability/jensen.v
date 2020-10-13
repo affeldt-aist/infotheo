@@ -1,4 +1,5 @@
-(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 From mathcomp Require Import boolp.
 Require Import Reals.
@@ -6,7 +7,7 @@ Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist proba convex_choice.
 
 (******************************************************************************)
-(*                            Jensen's inequality                             *)
+(*                           Jensen's inequality                              *)
 (******************************************************************************)
 
 Set Implicit Arguments.

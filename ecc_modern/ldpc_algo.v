@@ -1,4 +1,5 @@
-(* infotheo v2 (c) AIST, Nagoya University. GNU GPLv3. *)
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 Require Import Wf Recdef Reals.
 From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg.
 Require Import ssrR Reals_ext Rbigop f2 subgraph_partition tanner.

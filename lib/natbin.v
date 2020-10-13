@@ -1,4 +1,5 @@
-(* infotheo (c) AIST. R. Affeldt, M. Hagiwara, J. Senizergues. GNU GPLv3. *)
+(* infotheo: information theory and error-correcting codes in Coq               *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice.
 From mathcomp Require Import fintype tuple.
 Require Import BinPos BinNat PArith.
