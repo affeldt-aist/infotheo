@@ -5,38 +5,19 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import proba jfdist.
 
 (******************************************************************************)
-(*   Conditional independence over joint distributions and graphoid axioms    *)
+(*                              Graphoid axioms                               *)
 (*                                                                            *)
-(*         X _|_  Y | Z == X is conditionally independent of Y given Z in the *)
-(*                      distribution P for all values a, b, and c (belonging  *)
-(*                      resp. to the codomains of X, Y , and Z); equivalent   *)
-(*                      to P |= X _|_ Y | Z from proba.v                      *)
-(* \Pr[ X = a | Y = b ] == probability that the random variable X is a        *)
-(*                         knowing that the random variable Y is b            *)
-(*                                                                            *)
-(* Lemmas:                                                                    *)
-(*  Graphoid axioms: symmetry, decomposition, weak_union, contraction,        *)
-(*  intersection, derived rules                                               *)
+(* The main purpose of this file is to provide a formalization of the         *)
+(* graphoid axioms (symmetry, decomposition, weak_union, contraction, and     *)
+(* intersection) and derived rules.                                           *)
 (******************************************************************************)
 
 (*
 contents:
 - Various distributions (Proj124.d, Proj14d, QuadA23.d)
-- Section pair_of_RVs.
 - Section RV2_prop.
 - Section RV3_prop.
-- Section conditionnally_independent_discrete_random_variables.
 *)
-
-Reserved Notation "X _|_  Y | Z" (at level 50, Y, Z at next level).
-Reserved Notation "\Pr[ X '\in' E | Y '\in' F ]" (at level 6, X, Y, E, F at next level,
-  format "\Pr[  X  '\in'  E  |  Y  '\in'  F  ]").
-Reserved Notation "\Pr[ X '\in' E | Y = b ]" (at level 6, X, Y, E, b at next level,
-  format "\Pr[  X  '\in'  E  |  Y  =  b  ]").
-Reserved Notation "\Pr[ X = a | Y '\in' F ]" (at level 6, X, Y, a, F at next level,
-  format "\Pr[  X  =  a  |  Y  '\in'  F  ]").
-Reserved Notation "\Pr[ X = a | Y = b ]" (at level 6, X, Y, a, b at next level,
-  format "\Pr[  X  =  a  |  Y  =  b  ]").
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -45,6 +26,19 @@ Import Prenex Implicits.
 Local Open Scope R_scope.
 Local Open Scope proba_scope.
 
+(* TODO: move? *)
+Section setX_structural_lemmas.
+Variables (A B C : finType).
+Variables (E : {set A}) (F : {set B}).
+
+Lemma imset_fst b : b \in F -> [set x.1 | x in E `* F] = E.
+Proof.
+move=> bF; apply/setP => a; apply/imsetP/idP.
+- by rewrite ex2C; move=> -[[a' b']] /= ->; rewrite inE => /andP [] ->.
+- by move=> aE; exists (a, b); rewrite // inE; apply/andP; split.
+Qed.
+
+End setX_structural_lemmas.
 Module Proj124.
 Section proj124.
 Variables (A B D C : finType) (P : {fdist A * B * D * C}).
@@ -85,19 +79,10 @@ Proof. by rewrite /Bivar.snd /d FDistMap.comp. Qed.
 End prop.
 End QuadA23.
 
-Notation "\Pr[ X '\in' E | Y '\in' F ]" := (\Pr_(`d_[% X, Y])[ E | F ]).
-Notation "\Pr[ X '\in' E | Y = b ]" := (\Pr[ X \in E | Y \in [set b]]).
-Notation "\Pr[ X = a | Y '\in' F ]" := (\Pr[ X \in [set a] | Y \in F]).
-Notation "\Pr[ X = a | Y = b ]" := (\Pr[ X \in [set a] | Y \in [set b]]).
-
 Section RV2_prop.
 Variables (U : finType) (P : fdist U).
 Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
 Implicit Types (E : {set A}) (F : {set B}).
-
-Goal forall a b, \Pr[ X = a | Y = b ] = \Pr_(FDistMap.d [% X, Y] P)[ [set a] | [set b] ].
-by [].
-Abort.
 
 Lemma RV20 : fst \o [% X, unit_RV P] =1 X.
 Proof. by []. Qed.
@@ -128,42 +113,10 @@ Proof. by rewrite /TripC12.d /dist_of_RV /TripA.d FDistMap.comp. Qed.
 
 End RV3_prop.
 
-(* TODO: move *)
-Section setX_structural_lemmas.
-Variables (A B C : finType).
-Variables (E : {set A}) (F : {set B}).
-
-Lemma imset_fst b : b \in F -> [set x.1 | x in E `* F] = E.
-Proof.
-move=> bF; apply/setP => a; apply/imsetP/idP.
-- by rewrite ex2C; move=> -[[a' b']] /= ->; rewrite inE => /andP [] ->.
-- by move=> aE; exists (a, b); rewrite // inE; apply/andP; split.
-Qed.
-
-End setX_structural_lemmas.
-
-Section conditionnally_independent_discrete_random_variables.
-
-Variables (U : finType) (P : fdist U) (A B C : finType).
-Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
-
-Definition jcinde_rv := forall a b c,
-  \Pr[ [% X, Y] = (a, b) | Z = c ] = \Pr[ X = a | Z = c ] * \Pr[ Y = b | Z = c].
-
-End conditionnally_independent_discrete_random_variables.
-
-Notation "X _|_  Y | Z" := (jcinde_rv X Y Z) : proba_scope.
-
 Section cinde_rv_prop.
 
 Variables (U : finType) (P : fdist U) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
-
-Lemma jcinde_cinde_rv : X _|_ Y | Z <-> P |= X _|_ Y | Z.
-Proof.
-split; rewrite /jcinde_rv /cinde_rv; by
-  move=> H a b c; have {H} := H a b c; rewrite 3!jcPrE -!cpr_inE' !cpr_eq_set1.
-Qed.
 
 Lemma cinde_drv_2C : P |= X _|_ [% Y, W] | Z -> P |= X _|_ [% W, Y] | Z.
 Proof.
@@ -366,38 +319,3 @@ by rewrite pr_eq_pairC => ->.
 Qed.
 
 End intersection.
-
-(* wip*)
-
-Section vector_of_RVs.
-Variables (U : finType) (P : fdist U).
-Variables (A : finType) (n : nat) (X : 'rV[{RV P -> A}]_n).
-Local Open Scope ring_scope.
-Local Open Scope vec_ext_scope.
-Definition RVn : {RV P -> 'rV[A]_n} := fun x => \row_(i < n) (X ``_ i) x.
-End vector_of_RVs.
-
-Section prob_chain_rule.
-Variables (U : finType) (P : {fdist U}).
-Variables (A : finType) .
-Local Open Scope vec_ext_scope.
-Lemma prob_chain_rule : forall (n : nat) (X : 'rV[{RV P -> A}]_n.+1) x,
-  `Pr[ (RVn X) = x ] =
-  \prod_(i < n.+1)
-    if i == ord0 then
-      `Pr[ (X ``_ ord0) = (x ``_ ord0)   ]
-    else
-      \Pr[ (X ``_ i) = (x ``_ i) |
-        (RVn (row_drop (inord (n - i.+1)) X)) = (row_drop (inord (n - i.+1)) x) ].
-Proof.
-elim => [X /= x|n ih X /= x].
-  rewrite big_ord_recl big_ord0 mulR1.
-  rewrite /pr_eq; unlock.
-  apply eq_bigl => u.
-  rewrite !inE /RVn.
-  apply/eqP/eqP => [<-|H]; first by rewrite mxE.
-  by apply/rowP => i; rewrite {}(ord1 i) !mxE.
-rewrite big_ord_recr /=.
-Abort.
-
-End prob_chain_rule.

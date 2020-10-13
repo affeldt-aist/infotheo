@@ -29,7 +29,7 @@ probability/fsdist.v
 probability/convex_choice.v
 probability/convex_stone.v
 probability/jfdist.v
-probability/cinde.v
+probability/graphoid.v
 probability/jensen.v
 probability/ln_facts.v
 probability/divergence.v

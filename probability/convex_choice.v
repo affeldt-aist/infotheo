@@ -115,6 +115,14 @@ Import Prenex Implicits.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 
+(* TODO: PR to mathcomp-analysis in progress *)
+Section depfun.
+Variable (I : Type) (T : I -> choiceType).
+Definition depfun_choiceClass :=
+  Choice.Class (Equality.class (dep_arrow_eqType T)) gen_choiceMixin.
+Definition dep_arrow_choiceType := Choice.Pack depfun_choiceClass.
+End depfun.
+
 Section tmp.
 Variables (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob).
 Lemma ConvnFDist_Add (A : finType) (g : 'I_n -> fdist A) (h : 'I_m -> fdist A) :
@@ -1939,19 +1947,9 @@ Definition funConvMixin := ConvexSpace.Mixin avg1 avgI avgC avgA.
 Canonical funConvType := ConvexSpace.Pack (ConvexSpace.Class funConvMixin).
 End fun_convex_space.
 
-From mathcomp Require Import topology.
-
-(* TODO: move to topology? *)
-Section depfun.
-Variable (I : Type) (T : I -> choiceType).
-Definition depfun_choiceClass :=
-  Choice.Class (Equality.class (dep_arrow_eqType T)) gen_choiceMixin.
-Definition depfun_choiceType := Choice.Pack depfun_choiceClass.
-End depfun.
-
 Section depfun_convex_space.
 Variables (A : choiceType) (B : A -> convType).
-Let T := depfun_choiceType B.
+Let T := dep_arrow_choiceType B.
 Implicit Types p q : prob.
 Let avg p (x y : T) := fun a : A => (x a <| p |> y a).
 Let avg1 (x y : T) : avg 1%:pr x y = x.
