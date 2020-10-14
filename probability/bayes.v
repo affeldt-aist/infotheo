@@ -16,6 +16,15 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Section ssr_ext.
+Lemma tnth_uniq (T : eqType) n (t : n.-tuple T) (i j : 'I_n) :
+  uniq t -> (t \_ i == t \_ j) = (i == j).
+Proof.
+pose a := t \_ i; rewrite 2!(tnth_nth a) => *.
+by rewrite nth_uniq // size_tuple.
+Qed.
+End ssr_ext.
+
 Section proba. (* proba.v ? *)
 Variables (U : finType) (P : fdist U).
 
@@ -68,14 +77,14 @@ by rewrite !inE /= RVE.
 Qed.
 
 Section fin_img.
-Variables (T : finType) (d : T) (S : eqType) (f : T -> S).
+Variables (T : finType) (S : eqType) (f : T -> S).
 
 Definition Tfin_img := 'I_(size (fin_img f)).
 Definition index_fin_img (x : T) : Tfin_img.
 apply (@Ordinal _ (index (f x) (fin_img f))).
 abstract (by rewrite index_mem mem_undup map_f // mem_enum).
 Defined.
-Definition nth_fin_img (i : Tfin_img) : S := nth (f d) (fin_img f) i.
+Definition nth_fin_img (i : Tfin_img) : S := tnth (in_tuple (fin_img f)) i.
 Definition rev_fin_img (i : Tfin_img) : T.
 refine (iinv (A:=predT) (f:=f) (y:=nth_fin_img i) _).
 abstract (move/mem_nth: (ltn_ord i); rewrite -mem_undup; exact).
@@ -83,7 +92,7 @@ Defined.
 Lemma nth_fin_imgK x : nth_fin_img (index_fin_img x) = f x.
 Proof.
 rewrite /nth_fin_img /index_fin_img => /=.
-by rewrite nth_index // mem_undup map_f // mem_enum.
+by rewrite (tnth_nth (f x)) nth_index // mem_undup map_f // mem_enum.
 Qed.
 Lemma rev_fin_imgK i : index_fin_img (rev_fin_img i) = i.
 Proof.
@@ -111,23 +120,23 @@ Definition XC : U -> CX := index_fin_img X.
 Definition YC : U -> CY := index_fin_img Y.
 
 Hypothesis RVE : RV_equiv.
-Let f (x : CX) : CY := YC (rev_fin_img fdist_choice x).
-Let g (y : CY) : CX := XC (rev_fin_img fdist_choice y).
+Let f (x : CX) : CY := YC (rev_fin_img x).
+Let g (y : CY) : CX := XC (rev_fin_img y).
 
 Lemma RV_equiv_bij : { f : CX -> CY | bijective f & YC =1 f \o XC }.
 Proof.
 exists f.
   apply: (Bijective (g:=g)); rewrite /f /g /= /XC /YC => i.
     destruct i; apply val_inj => /=.
-    set tmp := rev_fin_img _ _.
-    have -> : X tmp = X (rev_fin_img fdist_choice (Ordinal i)).
+    set tmp := rev_fin_img _.
+    have -> : X tmp = X (rev_fin_img (Ordinal i)).
       apply/eqP; by rewrite RVE index_fin_imgK.
-    by case: (rev_fin_imgK fdist_choice (Ordinal i)).
+    by case: (rev_fin_imgK (Ordinal i)).
   destruct i; apply val_inj => /=.
-  set tmp := rev_fin_img _ _.
-  have -> : Y tmp = Y (rev_fin_img fdist_choice (Ordinal i)).
+  set tmp := rev_fin_img _.
+  have -> : Y tmp = Y (rev_fin_img (Ordinal i)).
     apply/eqP; by rewrite -RVE index_fin_imgK.
-  by case: (rev_fin_imgK fdist_choice (Ordinal i)).
+  by case: (rev_fin_imgK (Ordinal i)).
 rewrite /YC /XC => u.
 apply val_inj => /=.
 congr index.
@@ -534,20 +543,16 @@ move: (Hpre _ ie).
 by rewrite !inE Hvals.
 Qed.
 
-Definition u0 := fdist_choice P.
-
 Lemma Pr_preim_vars_sub (e f : {set 'I_n}) (vals : univ_types types) :
   f \subset e ->
   Pr P (preim_vars (e :\: f) vals) =
   \sum_(A : Tfin_img (prod_vars f))
-   Pr P (preim_vars e (set_vals (nth_fin_img u0 A) vals)).
+   Pr P (preim_vars e (set_vals (nth_fin_img A) vals)).
 Proof.
 rewrite /preim_vars /Pr => fe.
 rewrite -partition_disjoint_bigcup; last first.
   move=> /= A B.
-  rewrite -(eqtype.inj_eq (@ord_inj _)).
-  rewrite -(nth_uniq (prod_vars f u0) (s:=fin_img (prod_vars f))
-                     (ltn_ord A) (ltn_ord B)) ?undup_uniq // => AB.
+  rewrite -(tnth_uniq A B (t:=in_tuple _)) ?undup_uniq => // AB.
   rewrite -setI_eq0.
   apply/eqP/setP => u.
   rewrite !inE.
@@ -588,7 +593,7 @@ rewrite /cinde_preim => ee' e'e Hef vals.
 have ee'g : (e :\: e') :&: g = set0.
   apply/setP => i; move/subsetP/(_ i): ee'; by cases_in i.
 transitivity (\sum_(A : Tfin_img (prod_vars (e :\: e')))
-          let v := set_vals (nth_fin_img u0 A) vals in
+          let v := set_vals (nth_fin_img A) vals in
           `Pr_P[preim_vars e v :&: preim_vars f v | preim_vars g v]).
   rewrite /cPr.
   rewrite -!preim_vars_inter.
@@ -763,10 +768,10 @@ split.
         apply/ffunP => k; apply/prod_vals_eq => Hk.
         rewrite -HB set_vals_prod_vars ?ffunE //.
         move: Hk; cases_in k.
-      rewrite -(nth_fin_imgK u0 (prod_vars (e :&: f :\: g))).
+      rewrite -(@nth_fin_imgK U).
       apply/(proj1 (psumR_eq0P _) Hnum2).
         move => *; by apply sumR_ge0.
-      apply/eqP => /(f_equal (fun x => nth_fin_img u0 x)).
+      apply/eqP => /(f_equal (fun x => nth_fin_img x)).
       rewrite !nth_fin_imgK => /(f_equal (fun x : prod_types _ _ => x i)).
       move/prod_vals_eqP => Hi.
       elim: Hvi.
