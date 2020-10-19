@@ -13,37 +13,37 @@ Require Import fdist.
 (* distributions over a finite type (see fsdist.v for finitely-supported      *)
 (* distributions) that ends with a proof of the weak law of large numbers.    *)
 (*                                                                            *)
-(*  E `* F          == the set of pairs (x, y) with x in E and y in F         *)
-(*  E `*T           == the set of pairs (x, y) with x in E                    *)
-(*  T`* F           == the set of pairs (x, y) with y in F                    *)
-(*  Pr d E          == probability of event E over the distribution d         *)
-(*  {RV P -> T}     == the type of random variables over an ambient           *)
-(*                     distribution P where T can be an eqType                *)
-(*  `p_X            == P when X : {RV P -> R}                                 *)
+(*  E `* F           == the set of pairs (x, y) with x in E and y in F        *)
+(*  E `*T            == the set of pairs (x, y) with x in E                   *)
+(*  T`* F            == the set of pairs (x, y) with y in F                   *)
+(*  Pr d E           == probability of event E over the distribution d        *)
+(*  {RV P -> T}      == the type of random variables over an ambient          *)
+(*                      distribution P where T can be an eqType               *)
+(*  `p_X             == P when X : {RV P -> R}                                *)
 (*  `cst*, `*cst, `o, `/, `+, `-, `+cst, `-cst, `^2, --log  == construction   *)
-(*                     of various random variables                            *)
+(*                      of various random variables                           *)
 (*  [% X, Y, ..., Z] == successive pairings of RVs                            *)
-(*  `Pr[ X = a ]    == the probability that the random variable X is a        *)
-(*  `d_X            == the {fdist A} distribution corresponding to `Pr[X = a] *)
-(*  `Pr[ X >= r ]   == the probability that the random variable X is greater  *)
-(*                     or equal to a                                          *)
-(*  `Pr[ X <= r ]   == the probability that the random variable X is less     *)
-(*                     or equal to a                                          *)
-(*  `Pr[ X \in E ]  == the probability that the random variable X is in E     *)
-(*                     (expect finTypes)                                      *)
-(*  `Pr_P [ A | B ] == conditional probability for events                     *)
-(*  `Pr[ X = a | Y = b ], `Pr[ X \in E | Y \in F ] == conditional probability *)
-(*                     for random variables                                   *)
+(*  `Pr[ X = a ]     == the probability that the random variable X is a       *)
+(*  `d_X             == the {fdist A} distribution corresponding to `Pr[X = a]*)
+(*  `Pr[ X >= r ]     == the probability that the random variable X is        *)
+(*                      greater or equal to r                                 *)
+(*  `Pr[ X <= r ]     == the probability that the random variable X is less   *)
+(*                      or equal to r                                         *)
+(*  `Pr[ X \in E ]   == the probability that the random variable X is in E    *)
+(*                      (expect finTypes)                                     *)
+(*  `Pr_P [ A | B ]  == conditional probability for events                    *)
+(*  `Pr[ X = a | Y = b ] == conditional probability for random variables      *)
+(*  `Pr[ X \in E | Y \in F ] == ..                                            *)
 (*  P |= X _|_ Y | Z, X _|_  Y | Z == the random variable X is conditionally  *)
-(*                     independent of the random variable Y given Z in a      *)
-(*                     distribution P                                          *)
-(*  P |= X _|_ Y    == unconditional independence                             *)
-(*  Z \= X @+ Y     == Z is the sum of two random variables                   *)
-(*  X \=sum Xs      == X is the sum of the n>=1 independent and identically   *)
-(*                     distributed random variables Xs                        *)
-(*  `E X            == expected value of the random variable X                *)
-(*  `E_[ X | F ]    == conditional expectation of X given an event F          *)
-(*  `V X            == the variance of the random variable X                  *)
+(*                      independent of the random variable Y given Z in a     *)
+(*                      distribution P                                        *)
+(*  P |= X _|_ Y     == unconditional independence                            *)
+(*  Z \= X @+ Y      == Z is the sum of two random variables                  *)
+(*  X \=sum Xs       == X is the sum of the n>=1 independent and identically  *)
+(*                      distributed random variables Xs                       *)
+(*  `E X             == expected value of the random variable X               *)
+(*  `E_[ X | F ]     == conditional expectation of X given an event F         *)
+(*  `V X             == the variance of the random variable X                 *)
 (*                                                                            *)
 (* Lemmas:                                                                    *)
 (*  E_sum_2              == the expected value of a sum is the sum of         *)
@@ -51,13 +51,13 @@ Require Import fdist.
 (*                          are mutually independent (the ``First             *)
 (*                          Fundamental Mystery of Probability'')             *)
 (*  V_sum_2              == the variance of the sum is the sum of variances   *)
-(*                           for any two independent random variables         *)
+(*                          for any two independent random variables          *)
 (*  Var_average          == The variance of the average for independent       *)
-(*                            random variables                                *)
+(*                          random variables                                  *)
 (*  Pr_bigcup            == union bound/Boole's inequality                    *)
 (*  Boole_eq             == Boole's equality                                  *)
 (*  total_prob, total_prob_cond == laws of total probability                  *)
-(*  Bayes, Bayes_extended == Bayes' theorems                                  *)
+(*  Bayes/Bayes_extended == Bayes' theorems                                   *)
 (*  Pr_bigcup_incl_excl  == an algebraic proof (by Erik Martin-Dorel) of the  *)
 (*                          formula of inclusion-exclusion                    *)
 (*  reasoning_by_cases, creasoning_by_cases == Reasoning by cases             *)
@@ -623,6 +623,16 @@ by rewrite -!pr_eq_set1 !pr_inE' (Pr_FDistMap inj_f) FDistMap.comp imset_set1.
 Qed.
 
 End pr_pair.
+
+Lemma pr_eq_pair_setT (U : finType) (P : {fdist U}) (A B : finType) (E : {set A})
+    (X : {RV P -> A}) (Y : {RV P -> B}) :
+  `Pr[ [% X, Y] \in E `*T ] = `Pr[ X \in E ].
+Proof.
+apply/esym.
+rewrite (@pr_in_comp _ _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
+rewrite 2!pr_eq_setE; congr Pr; apply/setP => u; rewrite !inE /=.
+by apply/imsetP/idP => [[a aE [] ->//]|XuE]; exists (X u).
+Qed.
 
 Section RV_domin.
 Variables (U : finType) (P : fdist U) (A B : finType) (TA TB : eqType).
@@ -1685,17 +1695,6 @@ rewrite [in LHS]cpr_eqE -(eqR_mul2r H0) -mulRA mulVR ?mulR1; last by apply/eqP.
 have H1 : / (`Pr[ Z = c ]) <> 0.
   by apply invR_neq0; rewrite pr_eq_pairC in H0; move/(pr_eq_domin_RV2 Y b).
 by rewrite pr_eq_pairA -(eqR_mul2r H1) -mulRA -!divRE -!cpr_eqE K.
-Qed.
-
-(* TODO: move above *)
-Lemma pr_eq_pair_setT (U : finType) (P : {fdist U}) (A B : finType) (E : {set A})
-    (X : {RV P -> A}) (Y : {RV P -> B}) :
-  `Pr[ [% X, Y] \in E `*T ] = `Pr[ X \in E ].
-Proof.
-apply/esym.
-rewrite (@pr_in_comp _ _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
-rewrite 2!pr_eq_setE; congr Pr; apply/setP => u; rewrite !inE /=.
-by apply/imsetP/idP => [[a aE [] ->//]|XuE]; exists (X u).
 Qed.
 
 Section sum_two_rand_var_def.
