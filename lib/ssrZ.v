@@ -7,12 +7,17 @@ Require Import ZArith Lia.
 (*                       SSReflect-like lemmas for Coq Z                      *)
 (******************************************************************************)
 
+Reserved Notation "n %:Z" (at level 2, left associativity, format "n %:Z").
+
 Declare Scope zarith_ext_scope.
 
 Local Open Scope Z_scope.
 
 Notation "`| x |" := (Z.abs x) : zarith_ext_scope.
-Notation "'Z<=nat'" := (Z.of_nat) (at level 9) : zarith_ext_scope.
+Definition natZ := nosimpl Z_of_nat.
+Notation "n %:Z" := (natZ n) : zarith_ext_scope.
+Notation "z .+1Z" := (Z.succ z) (at level 2, left associativity,
+  format "z .+1Z") : zarith_ext_scope.
 Notation "'| x |" := (Z.abs_nat x) : zarith_ext_scope.
 Notation "'gcdZ'" := Z.gcd : zarith_ext_scope.
 Notation "'sgZ'" := Z.sgn : zarith_ext_scope.
@@ -28,8 +33,14 @@ Canonical Z_eqType := Eval hnf in EqType Z Z_eqMixin.
 
 Arguments eqZP {x y}.
 
+Lemma natZ0 : 0%:Z = 0%Z. Proof. exact: Nat2Z.inj_0. Qed.
+
+Lemma natZS n : n.+1%:Z = n%:Z.+1Z. Proof. by rewrite -Zpos_P_of_succ_nat. Qed.
+
 Definition addZ0 := Zplus_0_r.
 Definition add0Z := Zplus_0_l.
+
+Lemma add1Z z : (1 + z)%Z = z.+1Z. Proof. by rewrite Z.add_1_l. Qed.
 
 Definition addZC : commutative Zplus := Zplus_comm.
 Definition addZA : associative Zplus := Zplus_assoc.
@@ -342,13 +353,13 @@ Proof. exact: Nat2Z.inj. Qed.
 Lemma Z_of_nat_inj_neq x y : Z_of_nat x <> Z_of_nat y -> x <> y.
 Proof. move=> H H'; by apply H; f_equal. Qed.
 
-Lemma Z_of_nat_le n m : (n <= m)%nat = (Z<=nat n <=? Z<=nat m).
+Lemma leZ_nat n m : (n <= m)%nat = (n%:Z <=? m%:Z).
 Proof.
 case/boolP : (n <= m)%nat => H; first by apply/esym/leZP/Nat2Z.inj_le/leP.
 apply/esym/negbTE; by apply: contra H => /leZP/Nat2Z.inj_le/leP.
 Qed.
 
-Lemma Z_of_nat_lt n m : (n < m)%nat = (Z<=nat n <? Z<=nat m).
+Lemma ltZ_nat n m : (n < m)%nat = (n%:Z <? m%:Z).
 Proof.
 case/boolP : (n < m)%nat => H; first by apply/esym/ltZP/Nat2Z.inj_lt/ltP.
 apply/esym/negbTE; by apply: contra H => /ltZP/Nat2Z.inj_lt/ltP.

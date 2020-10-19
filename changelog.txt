@@ -1,3 +1,12 @@
+---------------
+from 0.2 to 0.?
+---------------
+
+- changed:
+ + in ssrZ.v:
+   * Z_of_nat_le -> leZ_nat, Z_of_nat_lt -> ltZ_nat
+   * Z<=nat -> %:Z
+
 -----------------
 from 0.1.2 to 0.2
 -----------------
