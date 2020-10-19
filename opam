@@ -29,9 +29,10 @@ depends: [
   "coq-mathcomp-field" {>= "1.11" & < "1.12~"}
   "coq-mathcomp-analysis"   {>= "0.3.2" & < "0.4~"}
 ]
-synopsis: "Infotheo"
+synopsis: "Discrete probabilities and information theory for Coq"
 description: """
-a Coq formalization of information theory and linear error-correcting codes
+Infotheo is a Coq library for reasoning about discrete probabilities,
+information theory, and linear error-correcting codes.
 """
 tags: [
   "category:Computer Science/Data Types and Data Structures"
