@@ -25,6 +25,43 @@ by rewrite nth_uniq // size_tuple.
 Qed.
 End ssr_ext.
 
+Section fin_img.
+Variables (T : finType) (S : eqType) (f : T -> S).
+
+Definition Tfin_img := 'I_(size (fin_img f)).
+Definition index_fin_img x (H : x \in fin_img f) : Tfin_img.
+apply (@Ordinal _ (index x (fin_img f))).
+abstract (by rewrite index_mem).
+Defined.
+Definition map_fin_img (x : T) : Tfin_img.
+refine (@index_fin_img (f x) _).
+abstract (by rewrite mem_undup map_f // mem_enum).
+Defined.
+Definition nth_fin_img (i : Tfin_img) : S := tnth (in_tuple (fin_img f)) i.
+Definition rev_fin_img (i : Tfin_img) : T.
+refine (iinv (A:=predT) (f:=f) (y:=nth_fin_img i) _).
+abstract (move/mem_nth: (ltn_ord i); rewrite -mem_undup; exact).
+Defined.
+Lemma nth_fin_imgK x : nth_fin_img (map_fin_img x) = f x.
+Proof.
+rewrite /nth_fin_img /index_fin_img => /=.
+by rewrite (tnth_nth (f x)) nth_index // mem_undup map_f // mem_enum.
+Qed.
+Lemma rev_fin_imgK i : map_fin_img (rev_fin_img i) = i.
+Proof.
+case: i => i isz; apply val_inj => /=.
+by rewrite f_iinv nthK // undup_uniq.
+Qed.
+Lemma map_fin_imgK x : f (rev_fin_img (map_fin_img x)) = f x.
+Proof. by rewrite /rev_fin_img f_iinv nth_fin_imgK. Qed.
+Lemma fin_imgP y : reflect (exists x : T, y = f x) (y \in fin_img f).
+Proof.
+rewrite mem_undup; apply/(iffP mapP) => -[x].
+- move=> _ ->. by exists x.
+- move=> ->. by exists x; rewrite // mem_enum.
+Qed.
+End fin_img.
+
 Section proba. (* proba.v ? *)
 Variables (U : finType) (P : fdist U).
 
@@ -76,48 +113,11 @@ apply/setP => w.
 by rewrite !inE /= RVE.
 Qed.
 
-Section fin_img.
-Variables (T : finType) (S : eqType) (f : T -> S).
-
-Definition Tfin_img := 'I_(size (fin_img f)).
-Definition index_fin_img (x : T) : Tfin_img.
-apply (@Ordinal _ (index (f x) (fin_img f))).
-abstract (by rewrite index_mem mem_undup map_f // mem_enum).
-Defined.
-Definition nth_fin_img (i : Tfin_img) : S := tnth (in_tuple (fin_img f)) i.
-Definition rev_fin_img (i : Tfin_img) : T.
-refine (iinv (A:=predT) (f:=f) (y:=nth_fin_img i) _).
-abstract (move/mem_nth: (ltn_ord i); rewrite -mem_undup; exact).
-Defined.
-Lemma nth_fin_imgK x : nth_fin_img (index_fin_img x) = f x.
-Proof.
-rewrite /nth_fin_img /index_fin_img => /=.
-by rewrite (tnth_nth (f x)) nth_index // mem_undup map_f // mem_enum.
-Qed.
-Lemma rev_fin_imgK i : index_fin_img (rev_fin_img i) = i.
-Proof.
-rewrite /index_fin_img /rev_fin_img.
-destruct i; apply val_inj => /=.
-by rewrite f_iinv nthK // undup_uniq.
-Qed.
-Lemma index_fin_imgK x : f (rev_fin_img (index_fin_img x)) = f x.
-Proof.
-rewrite /index_fin_img /rev_fin_img.
-by rewrite f_iinv nth_fin_imgK.
-Qed.
-Lemma fin_imgP y : reflect (exists x : T, y = f x) (y \in fin_img f).
-Proof.
-rewrite mem_undup; apply/(iffP mapP) => -[x].
-- move=> _ ->. by exists x.
-- move=> ->. by exists x; rewrite // mem_enum.
-Qed.
-End fin_img.
-
 Definition CX := Tfin_img X.
 Definition CY := Tfin_img Y.
 
-Definition XC : U -> CX := index_fin_img X.
-Definition YC : U -> CY := index_fin_img Y.
+Definition XC : U -> CX := map_fin_img X.
+Definition YC : U -> CY := map_fin_img Y.
 
 Hypothesis RVE : RV_equiv.
 Let f (x : CX) : CY := YC (rev_fin_img x).
@@ -130,19 +130,23 @@ exists f.
     destruct i; apply val_inj => /=.
     set tmp := rev_fin_img _.
     have -> : X tmp = X (rev_fin_img (Ordinal i)).
-      apply/eqP; by rewrite RVE index_fin_imgK.
+      apply/eqP; by rewrite RVE map_fin_imgK.
     by case: (rev_fin_imgK (Ordinal i)).
   destruct i; apply val_inj => /=.
   set tmp := rev_fin_img _.
   have -> : Y tmp = Y (rev_fin_img (Ordinal i)).
-    apply/eqP; by rewrite -RVE index_fin_imgK.
+    apply/eqP; by rewrite -RVE map_fin_imgK.
   by case: (rev_fin_imgK (Ordinal i)).
 rewrite /YC /XC => u.
 apply val_inj => /=.
 congr index.
-by apply/eqP; rewrite -RVE index_fin_imgK.
+by apply/eqP; rewrite -RVE map_fin_imgK.
 Qed.
 End RV_equiv.
+
+Lemma RV_equivC (A B : eqType) (X : {RV P -> A}) (Y : {RV P -> B}) :
+  RV_equiv X Y <-> RV_equiv Y X.
+Proof. split=> H a b; exact/esym/H. Qed.
 
 End proba.
 
@@ -572,7 +576,7 @@ case: bigcupP.
   move: Hu; by rewrite !inE set_vals_tl.
 move=> HN.
 apply/negP => /bigcapP /= Hu; elim: HN.
-exists (index_fin_img (prod_vars f) u) => //.
+exists (map_fin_img (prod_vars f) u) => //.
 apply/bigcapP => /= i ie.
 move/(_ i): Hu.
 rewrite !inE nth_fin_imgK.
@@ -755,7 +759,7 @@ split.
       move/bigcapP/(_ k Hk): HA'.
       by rewrite !inE [RHS]ffunE => /eqP.
     case/fin_imgP => v Hv.
-    set a := index_fin_img (prod_vars ((e :&: f) :\: g)) v.
+    set a := map_fin_img (prod_vars ((e :&: f) :\: g)) v.
     rewrite (bigD1 a) //= nth_fin_imgK -Hv.
     rewrite /num (@preim_vars_vals _ (prod_vals (e :&: f :|: g) vals) _ vals);
       last by move=> j; rewrite set_vals_prod_vals_id.
@@ -833,10 +837,77 @@ Variable vars1 : forall i, {RV P -> types1 i}.
 Variable vars2 : forall i, {RV P -> types2 i}.
 Hypothesis varsE : forall i, RV_equiv (vars1 i) (vars2 i).
 
+Definition vals1to2' (vals1 : univ_types types1) : univ_types types2.
+refine [ffun i => _].
+case: (RV_equiv_bij (varsE i)) => f bij_f eq_f.
+set a := vals1 i.
+rewrite /= in a.
+case/boolP: (a \in fin_img (vars1 i)) => Ha.
+  exact (nth_fin_img (f (index_fin_img Ha))).
+exact (rvar_choice (vars2 i)).
+Defined.
+
+Lemma boolPT (p : bool) (R : Type) (H : is_true p) (T : is_true p -> R)
+      (F : is_true (~~ p) -> R) :
+  match boolP p with
+  | AltTrue HT => T HT
+  | AltFalse HF => F HF
+  end = T H.
+Proof.
+destruct boolP.
+- congr T.
+  case: p => // in H T F i *.
+  by rewrite (Eqdep_dec.UIP_refl_bool true i) (Eqdep_dec.UIP_refl_bool true H).
+- by elim: (negP i).
+Qed.
+
+Definition vals1to2d (vals1 : univ_types types1) :
+  {vals2 : univ_types types2 |
+   forall i, (exists u, vals1 i = vars1 i u /\ vals2 i = vars2 i u)
+           \/ vals1 i \notin fin_img (vars1 i)}.
+exists (vals1to2' vals1) => i.
+case/boolP: (vals1 i \in _); last by right.
+move=> Hv; move: (Hv).
+rewrite mem_undup => /mapP [u _ Hu].
+left; exists u; split => //.
+rewrite ffunE => /=.
+case: RV_equiv_bij => f bij_f eq_f.
+rewrite boolPT.
+move: {eq_f} (eq_f u).
+move: Hv; rewrite Hu => Hv.
+rewrite /YC /XC /= => /(f_equal (nth_fin_img (f:=vars2 i))).
+rewrite nth_fin_imgK => ->.
+do 2!f_equal.
+by apply val_inj.
+Qed.
+
+Lemma preim_vars12 I (vals1 : univ_types types1) :
+  preim_vars vars2 I (proj1_sig (vals1to2d vals1)) = preim_vars vars1 I vals1.
+Proof.
+rewrite /preim_vars.
+apply/setP => u.
+apply/bigcapP; case: ifP => /bigcapP H1.
+- move=> i /H1.
+  rewrite !inE => Hv1.
+  case: vals1to2d (Hv1) => /= vals2 /(_ i) [].
+    case=> v [] -> ->.
+    by rewrite (varsE i u v).
+  move/negP; elim.
+  by rewrite -(eqP Hv1) mem_undup map_f // mem_enum.
+- move=> Hu; elim: H1 => /= i /Hu.
+  rewrite !inE => Hv2.
+  case: vals1to2d (Hv2) => /= vals2 /(_ i) [].
+    case=> v [] -> ->.
+    by rewrite (varsE i u v).
+  rewrite (eqP Hv2) /=.
+Abort.
+
 Lemma cinde_preim_equiv (I J K : {set 'I_n}) :
   cinde_preim vars2 I J K -> cinde_preim vars1 I J K.
 Proof.
-rewrite /cinde_preim => CI vals1.
+  rewrite /cinde_preim => CI vals1.
+move: (CI (proj1_sig (vals1to2d vals1))).
+rewrite /cinde_events.
 Abort.
 End equiv.
 
