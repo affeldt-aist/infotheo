@@ -23,6 +23,20 @@ Proof.
 pose a := t \_ i; rewrite 2!(tnth_nth a) => *.
 by rewrite nth_uniq // size_tuple.
 Qed.
+
+Lemma boolPT (p : bool) (R : Type) (H : is_true p) (T : is_true p -> R)
+      (F : is_true (~~ p) -> R) :
+  match boolP p with
+  | AltTrue HT => T HT
+  | AltFalse HF => F HF
+  end = T H.
+Proof.
+destruct boolP.
+- congr T.
+  case: p => // in H T F i *.
+  by rewrite (Eqdep_dec.UIP_refl_bool true i) (Eqdep_dec.UIP_refl_bool true H).
+- by elim: (negP i).
+Qed.
 End ssr_ext.
 
 Section fin_img.
@@ -79,75 +93,21 @@ Definition rvar_choice (A : eqType) (X : {RV P -> A}) := X fdist_choice.
 Section RV_equiv.
 Variables A B : eqType.
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+Definition cancel_both (fg : (A -> B) * (B -> A)) :=
+  cancel fg.1 fg.2 /\ cancel fg.2 fg.1.
 
-Definition RV_equivb :=
-  preim_partition X setT == preim_partition Y setT.
-
-Definition RV_equiv := forall u v, (X u == X v) = (Y u == Y v).
-
-Lemma RV_equivP : reflect RV_equiv RV_equivb.
-Proof.
-case/boolP: RV_equivb => E; constructor.
-- move=> u v.
-  move/eqP/setP/(_ (finset (X @^-1 (X u)))): E.
-  move/imsetP; case: imsetP.
-    move=> [b] _ /setP Hb [a] _ /setP Ha.
-    move: (Ha v) (Hb u) (Hb v).
-    rewrite !inE !eqxx /= => /esym /eqP.
-    by rewrite (eq_sym (X u)); case: ifP => //= _ _ /esym /eqP ->.
-  move=> HY; elim.
-  exists u => //.
-  by apply/setP => w; rewrite !inE eq_sym.
-move=> RVE; elim: (negP E).
-rewrite /RV_equivb /preim_partition /equivalence_partition.
-apply/eqP/setP => u.
-apply/imsetP; case: imsetP.
-  case=> v _ ->.
-  exists v => //.
-  apply/setP => w.
-  by rewrite !inE RVE.
-move=> H [v _ Hv].
-elim H; subst u.
-exists v => //.
-apply/setP => w.
-by rewrite !inE /= RVE.
-Qed.
-
-Definition CX := Tfin_img X.
-Definition CY := Tfin_img Y.
-
-Definition XC : U -> CX := map_fin_img X.
-Definition YC : U -> CY := map_fin_img Y.
-
-Hypothesis RVE : RV_equiv.
-Let f (x : CX) : CY := YC (rev_fin_img x).
-Let g (y : CY) : CX := XC (rev_fin_img y).
-
-Lemma RV_equiv_bij : { f : CX -> CY | bijective f & YC =1 f \o XC }.
-Proof.
-exists f.
-  apply: (Bijective (g:=g)); rewrite /f /g /= /XC /YC => i.
-    destruct i; apply val_inj => /=.
-    set tmp := rev_fin_img _.
-    have -> : X tmp = X (rev_fin_img (Ordinal i)).
-      apply/eqP; by rewrite RVE map_fin_imgK.
-    by case: (rev_fin_imgK (Ordinal i)).
-  destruct i; apply val_inj => /=.
-  set tmp := rev_fin_img _.
-  have -> : Y tmp = Y (rev_fin_img (Ordinal i)).
-    apply/eqP; by rewrite -RVE map_fin_imgK.
-  by case: (rev_fin_imgK (Ordinal i)).
-rewrite /YC /XC => u.
-apply val_inj => /=.
-congr index.
-by apply/eqP; rewrite -RVE map_fin_imgK.
-Qed.
+Definition RV_equiv := {fg | cancel_both fg & Y =1 fg.1 \o X}.
 End RV_equiv.
 
 Lemma RV_equivC (A B : eqType) (X : {RV P -> A}) (Y : {RV P -> B}) :
-  RV_equiv X Y <-> RV_equiv Y X.
-Proof. split=> H a b; exact/esym/H. Qed.
-
+  RV_equiv X Y -> RV_equiv Y X.
+Proof.
+case=> -[f g] []/= cfg cgf Hf.
+exists (g,f) => //.
+move=> u /=.
+move/(f_equal g): (Hf u).
+by rewrite cfg.
+Qed.
 End proba.
 
 Section univ_types.
@@ -351,34 +311,62 @@ Proof. move=> *; by rewrite !set_vals_prod_vals. Qed.
 
 Lemma prod_vars1 (i : 'I_n) : RV_equiv (prod_vars [set i]) (vars i).
 Proof.
-move=> u v.
-apply/esym.
-case/boolP: (prod_vars _ _ == _).
-  move/eqP/(f_equal (set_vals (types:=types) (I:=[set i]) ^~ vals0)).
-  move/ffunP/(_ i).
-  rewrite !set_vals_prod_vars ?inE // => ->.
-  by rewrite eqxx.
-apply/contraNF => /eqP Hv.
-apply/eqP/ffunP => j.
-apply/prod_vals_eq => /set1P ->.
-by rewrite !ffunE.
+exists ((fun A : prod_types types [set i] => set_vals A vals0 i),
+        prod_vals [set i] \o set_val (i:=i) ^~ vals0).
+  split => x /=.
+    apply/ffunP => /= j.
+    apply (set_vals_inj (vals := vals0)).
+    case/boolP: (j \in [set i]) => Hj.
+      rewrite set_vals_prod_vals //.
+      rewrite inE in Hj.
+      move/eqP: Hj (set_vals _ _) => -> v.
+      by rewrite set_val_hd.
+    by rewrite !set_vals_tl.
+  by rewrite set_vals_prod_vals ?inE // set_val_hd.
+move=> u /=.
+by rewrite set_vals_prod_vars // inE.
 Qed.
 
 Lemma prod_vars_pair (I J : {set 'I_n}) :
+  [disjoint I & J] ->
   RV_equiv (prod_vars (I :|: J)) [% prod_vars I, prod_vars J].
 Proof.
-move=> u v.
-apply/esym.
-case/boolP: (prod_vars _ _ == _).
-  move/eqP/ffunP => Hv.
-  rewrite xpair_eqE.
-  apply/andP; split; apply/eqP/ffunP => i; apply/prod_vals_eqP => Hi;
-    move/(_ i)/prod_vals_eqP: Hv; apply; by rewrite inE Hi ?orbT.
-apply/contraNF.
-rewrite xpair_eqE => /andP[] /eqP HI /eqP HJ.
-apply/eqP/ffunP => i.
-apply/(set_vals_inj (vals:=vals0)).
-by rewrite -!set_vals_prod_vals_join [prod_vals _ _]HI [prod_vals _ _]HJ.
+move=> Disj.
+exists ((fun A : prod_types types (I :|: J) =>
+          (prod_vals I (set_vals A vals0), prod_vals J (set_vals A vals0))),
+        (fun A : prod_types types I * prod_types types J =>
+            prod_vals (I :|: J) (set_vals (fst A) (set_vals (snd A) vals0)))).
+  split.
+    move=> x /=.
+    apply/ffunP => /= j.
+    apply (set_vals_inj (vals := vals0)).
+    case/boolP: (j \in I) => Hj.
+      rewrite ?set_vals_prod_vals //.
+      by rewrite inE Hj.
+    case/boolP: (j \in J) => HjJ.
+      rewrite set_vals_prod_vals.
+        rewrite set_vals_tl //.
+        rewrite set_vals_prod_vals //.
+      by rewrite inE HjJ orbT.
+    by rewrite !set_vals_tl // inE (negbTE Hj) (negbTE HjJ).
+  move=> [x y] /=.
+  congr pair.
+    apply/ffunP => /= j.
+    apply (set_vals_inj (vals := vals0)).
+    case/boolP: (j \in I) => Hj.
+      rewrite ?set_vals_prod_vals //.
+        by apply set_vals_hd.
+      by rewrite inE Hj.
+    by rewrite !set_vals_tl.
+  apply/ffunP => /= j.
+  apply (set_vals_inj (vals := vals0)).
+  case/boolP: (j \in J) => Hj; last by rewrite !set_vals_tl.
+  rewrite ?set_vals_prod_vals // ?(inE,Hj,orbT) // set_vals_tl //.
+  move: Disj; rewrite -setI_eq0 => /eqP/setP/(_ j).
+  by rewrite !inE Hj andbT => ->.
+move=> u /=.
+congr pair; apply/ffunP => i; apply prod_vals_eq => Hi;
+  rewrite set_vals_prod_vars ?ffunE //; by rewrite inE Hi ?orbT.
 Qed.
 
 Section preim.
@@ -837,80 +825,37 @@ Variable vars1 : forall i, {RV P -> types1 i}.
 Variable vars2 : forall i, {RV P -> types2 i}.
 Hypothesis varsE : forall i, RV_equiv (vars1 i) (vars2 i).
 
-Definition vals1to2' (vals1 : univ_types types1) : univ_types types2.
+Definition vals1to2 (vals1 : univ_types types1) : univ_types types2.
 refine [ffun i => _].
-case: (RV_equiv_bij (varsE i)) => f bij_f eq_f.
-set a := vals1 i.
-rewrite /= in a.
-case/boolP: (a \in fin_img (vars1 i)) => Ha.
-  exact (nth_fin_img (f (index_fin_img Ha))).
-exact (rvar_choice (vars2 i)).
+case: (varsE i) => -[f g] _ _.
+exact (f (vals1 i)).
 Defined.
 
-Lemma boolPT (p : bool) (R : Type) (H : is_true p) (T : is_true p -> R)
-      (F : is_true (~~ p) -> R) :
-  match boolP p with
-  | AltTrue HT => T HT
-  | AltFalse HF => F HF
-  end = T H.
-Proof.
-destruct boolP.
-- congr T.
-  case: p => // in H T F i *.
-  by rewrite (Eqdep_dec.UIP_refl_bool true i) (Eqdep_dec.UIP_refl_bool true H).
-- by elim: (negP i).
-Qed.
-
-Definition vals1to2d (vals1 : univ_types types1) :
-  {vals2 : univ_types types2 |
-   forall i, (exists u, vals1 i = vars1 i u /\ vals2 i = vars2 i u)
-           \/ vals1 i \notin fin_img (vars1 i)}.
-exists (vals1to2' vals1) => i.
-case/boolP: (vals1 i \in _); last by right.
-move=> Hv; move: (Hv).
-rewrite mem_undup => /mapP [u _ Hu].
-left; exists u; split => //.
-rewrite ffunE => /=.
-case: RV_equiv_bij => f bij_f eq_f.
-rewrite boolPT.
-move: {eq_f} (eq_f u).
-move: Hv; rewrite Hu => Hv.
-rewrite /YC /XC /= => /(f_equal (nth_fin_img (f:=vars2 i))).
-rewrite nth_fin_imgK => ->.
-do 2!f_equal.
-by apply val_inj.
-Qed.
-
-Lemma preim_vars12 I (vals1 : univ_types types1) :
-  preim_vars vars2 I (proj1_sig (vals1to2d vals1)) = preim_vars vars1 I vals1.
+Lemma preim_vars12 (I : {set 'I_n}) (vals1 : univ_types types1) :
+  preim_vars vars2 I (vals1to2 vals1) = preim_vars vars1 I vals1.
 Proof.
 rewrite /preim_vars.
-apply/setP => u.
+apply/setP => v.
 apply/bigcapP; case: ifP => /bigcapP H1.
-- move=> i /H1.
-  rewrite !inE => Hv1.
-  case: vals1to2d (Hv1) => /= vals2 /(_ i) [].
-    case=> v [] -> ->.
-    by rewrite (varsE i u v).
-  move/negP; elim.
-  by rewrite -(eqP Hv1) mem_undup map_f // mem_enum.
-- move=> Hu; elim: H1 => /= i /Hu.
-  rewrite !inE => Hv2.
-  case: vals1to2d (Hv2) => /= vals2 /(_ i) [].
-    case=> v [] -> ->.
-    by rewrite (varsE i u v).
-  rewrite (eqP Hv2) /=.
-Abort.
+- move=> i Hvi.
+  move/H1: (Hvi).
+  rewrite !inE ffunE.
+  by case: varsE => -[f g] [/= fK gK] /(_ v) -> /eqP <-.
+- move=> Hv; elim: H1 => /= i Hvi.
+  move/Hv: (Hvi).
+  rewrite !inE ffunE.
+  case: varsE => -[f g] [/= fK gK] /(_ v) -> /eqP /(f_equal g).
+  by rewrite !fK => ->.
+Qed.
 
 Lemma cinde_preim_equiv (I J K : {set 'I_n}) :
   cinde_preim vars2 I J K -> cinde_preim vars1 I J K.
 Proof.
-  rewrite /cinde_preim => CI vals1.
-move: (CI (proj1_sig (vals1to2d vals1))).
-rewrite /cinde_events.
-Abort.
+rewrite /cinde_preim => CI vals1.
+move: (CI (vals1to2 vals1)).
+by rewrite !preim_vars12.
+Qed.
 End equiv.
-
 
 End BN.
 
