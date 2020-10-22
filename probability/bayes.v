@@ -525,17 +525,11 @@ Lemma preim_vars_vals (e : {set 'I_n}) (A : prod_types types e) vals1 vals2 :
   (forall x, x \in e -> vals1 x = vals2 x) ->
   preim_vars e vals1 = preim_vars e vals2.
 Proof.
-suff: forall vals1 vals2 u, (forall x, x \in e -> vals1 x = vals2 x) ->
-         u \in preim_vars e vals1 -> u \in preim_vars e vals2.
-  move=> H Hvals.
-  apply/setP => u.
-  case /boolP: (u \in preim_vars _ vals2).
-    apply H => x Hx. by rewrite Hvals.
-  move/negP => Hu; apply/negP => Hu'; elim Hu; move: Hu'.
-  exact: H.
-move=> /= {vals1 vals2} vals1 vals2 u Hvals /preim_varsP /= Hpre.
-apply/preim_varsP => i ie.
-by rewrite Hpre // Hvals.
+move=> Hvals.
+apply/setP => u.
+case /boolP: (u \in preim_vars e vals2) => /preim_varsP Hu.
+  apply/preim_varsP => i Hi; by rewrite Hvals // Hu.
+apply/negP => /preim_varsP Hu'; elim: Hu => i Hi; by rewrite Hu' // Hvals.
 Qed.
 
 Lemma Pr_preim_vars_sub (e f : {set 'I_n}) (vals : univ_types types) :
@@ -690,17 +684,15 @@ move=> u; rewrite !inE => /andP [] /eqP HB /eqP HC.
 move: (Hnum).
 rewrite /den (_ : g = (e :&: f :|: g) :\: ((e :&: f) :\: g));
   last by apply/setP => j; cases_in j.
-rewrite Pr_preim_vars_sub;
-  last by apply/subsetP => j; cases_in j.
+rewrite -{}Hnum {den} in Hden.
+rewrite Pr_preim_vars_sub; last by apply/subsetP => j; cases_in j.
 have : prod_vals ((e :&: f) :\: g) vals
                  \in fin_img (prod_vars ((e :&: f) :\: g)).
   case/boolP: (_ \in _) => // /negP HA.
-  suff Hnum0 : num = 0.
-    by rewrite -Hnum Hnum0 eqxx in Hden.
-  rewrite /num -preim_vars_inter.
+  elim: (negP Hden); rewrite /num -preim_vars_inter.
   have -> : e :&: f :|: g = (e :&: f :\: g) :|: g.
     apply/setP => k; by cases_in k.
-  apply Pr_set0P => v.
+  apply/eqP/Pr_set0P => v.
   rewrite preim_vars_inter !inE => /andP [HA'].
   elim: HA; apply/fin_imgP.
   exists v.
@@ -708,14 +700,13 @@ have : prod_vals ((e :&: f) :\: g) vals
   apply/prod_vals_eq => Hk.
   move/preim_varsP/(_ k Hk): HA' => <-.
   by rewrite ffunE.
-case/fin_imgP => v Hv.
+case/fin_imgP => v Hv {Hden}.
 set a := map_fin_img (prod_vars ((e :&: f) :\: g)) v.
 rewrite (bigD1 a) //= nth_fin_imgK -Hv.
 rewrite /num (@preim_vars_vals _ (prod_vals (e :&: f :|: g) vals) _ vals);
   last by move=> j; rewrite set_vals_prod_vals_id.
 move/(f_equal (Rminus^~ (Pr P (preim_vars (e :&: f :|: g) vals)))).
-rewrite -preim_vars_inter subRR addRC /Rminus -addRA addRN addR0 => /esym.
-move=> Hnum2.
+rewrite -preim_vars_inter subRR addRC /Rminus -addRA addRN addR0 => /esym Hnum.
 have : Pr P (preim_vars (e :&: f :|: g)
       (set_vals (prod_vals (e :&: f :\: g) (set_vals B vals)) vals)) = 0.
   rewrite (_ : prod_vals _ _ = prod_vars (e :&: f :\: g) u); last first.
@@ -723,7 +714,7 @@ have : Pr P (preim_vars (e :&: f :|: g)
     rewrite -HB set_vals_prod_vars ?ffunE //.
     move: Hk; cases_in k.
   rewrite -(@nth_fin_imgK U).
-  apply/(proj1 (psumR_eq0P _) Hnum2).
+  apply/(proj1 (psumR_eq0P _) Hnum).
     move => *; by apply sumR_ge0.
   apply/eqP => /(f_equal (fun x => nth_fin_img x)).
   rewrite !nth_fin_imgK => /(f_equal (fun x : prod_types _ _ => x i)).
