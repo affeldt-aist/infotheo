@@ -191,21 +191,12 @@ Proof. rewrite !ffunE; by case: (i \in _) (vals i). Qed.
 
 Lemma set_vals_prod_vals vals vals' i :
   i \in I -> set_vals (prod_vals vals) vals' i = vals i.
-Proof.
-rewrite !ffunE => ie.
-move: (vals i); by rewrite ie.
-Qed.
+Proof. rewrite !ffunE => ie. move: (vals i); by rewrite ie. Qed.
 
 Lemma prod_vals_eqP vals1 vals2 i :
   prod_vals vals1 i = prod_vals vals2 i <-> (i \in I -> vals1 i = vals2 i).
 Proof.
-split.
-  move=> Heq Hie.
-  move: Heq.
-  rewrite !ffunE /=.
-  move: (vals1 i) (vals2 i); by rewrite Hie.
-rewrite !ffunE.
-case Hi: (i \in I) (vals1 i) (vals2 i) => // v1 v2; exact.
+split; rewrite !ffunE; case: (i \in I) (vals1 i) (vals2 i) => // v1 v2; exact.
 Qed.
 
 Lemma prod_vals_eq (vals1 vals2 : univ_types) i :
@@ -228,8 +219,7 @@ set goal := _ -> _.
 case/boolP: (i \in I) => Hi; subst goal.
   move/eqP; rewrite set_vals_eq orbC.
   by move: (A i) (B i); rewrite Hi => a b /= /eqP.
-move=> _.
-exact: prod_types_out.
+move=> _; exact: prod_types_out.
 Qed.
 
 End prod_types.
@@ -316,12 +306,11 @@ exists ((fun A : prod_types types [set i] => set_vals A vals0 i),
   split => x /=.
     apply/ffunP => /= j.
     apply (set_vals_inj (vals := vals0)).
-    case/boolP: (j \in [set i]) => Hj.
-      rewrite set_vals_prod_vals //.
-      rewrite inE in Hj.
-      move/eqP: Hj (set_vals _ _) => -> v.
-      by rewrite set_val_hd.
-    by rewrite !set_vals_tl.
+    case/boolP: (j \in [set i]) => Hj; last by rewrite !set_vals_tl.
+    rewrite set_vals_prod_vals //.
+    rewrite inE in Hj.
+    move/eqP: Hj (set_vals _ _) => -> v.
+    by rewrite set_val_hd.
   by rewrite set_vals_prod_vals ?inE // set_val_hd.
 move=> u /=.
 by rewrite set_vals_prod_vars // inE.
@@ -341,27 +330,17 @@ exists ((fun A : prod_types types (I :|: J) =>
     apply/ffunP => /= j.
     apply (set_vals_inj (vals := vals0)).
     case/boolP: (j \in I) => Hj.
-      rewrite ?set_vals_prod_vals //.
-      by rewrite inE Hj.
+      by rewrite !set_vals_prod_vals // inE Hj.
     case/boolP: (j \in J) => HjJ.
-      rewrite set_vals_prod_vals.
-        rewrite set_vals_tl //.
-        rewrite set_vals_prod_vals //.
-      by rewrite inE HjJ orbT.
+      rewrite set_vals_prod_vals ?(inE,HjJ,orbT) //.
+      by rewrite set_vals_tl // set_vals_prod_vals.
     by rewrite !set_vals_tl // inE (negbTE Hj) (negbTE HjJ).
   move=> [x y] /=.
-  congr pair.
-    apply/ffunP => /= j.
-    apply (set_vals_inj (vals := vals0)).
-    case/boolP: (j \in I) => Hj.
-      rewrite ?set_vals_prod_vals //.
-        by apply set_vals_hd.
-      by rewrite inE Hj.
-    by rewrite !set_vals_tl.
-  apply/ffunP => /= j.
-  apply (set_vals_inj (vals := vals0)).
+  congr pair; apply/ffunP => /= j; apply/(set_vals_inj (vals := vals0)).
+    case/boolP: (j \in I) => Hj; last by rewrite !set_vals_tl.
+    by rewrite !set_vals_prod_vals // ?(inE,Hj) // (set_vals_hd vals0).
   case/boolP: (j \in J) => Hj; last by rewrite !set_vals_tl.
-  rewrite ?set_vals_prod_vals // ?(inE,Hj,orbT) // set_vals_tl //.
+  rewrite !set_vals_prod_vals // ?(inE,Hj,orbT) // set_vals_tl //.
   move: Disj; rewrite -setI_eq0 => /eqP/setP/(_ j).
   by rewrite !inE Hj andbT => ->.
 move=> u /=.
@@ -401,12 +380,12 @@ rewrite !inE; symmetry.
 apply/preim_varsP; case: ifP.
 - move/eqP => <- i ig.
   by rewrite set_vals_prod_vals // ffunE.
-- move/negP => Hf Hcap.
-  elim: Hf.
+- move/negP => Hf Hcap; elim: Hf.
   apply/eqP/ffunP => /= i.
-  move/(_ i): Hcap.
-  rewrite !ffunE /set_vals.
-  by case: (i \in g) (C i) => /= [Ci /(_ isT) | []].
+  apply/(set_vals_inj (vals:=vals)).
+  case/boolP: (i \in g) => ig.
+    by rewrite -(Hcap _ ig) set_vals_prod_vars.
+  by rewrite !set_vals_tl.
 Qed.
 
 (* Simple version, using singletons *)
@@ -526,10 +505,8 @@ Lemma preim_vars_vals (e : {set 'I_n}) (A : prod_types types e) vals1 vals2 :
   preim_vars e vals1 = preim_vars e vals2.
 Proof.
 move=> Hvals.
-apply/setP => u.
-case /boolP: (u \in preim_vars e vals2) => /preim_varsP Hu.
-  apply/preim_varsP => i Hi; by rewrite Hvals // Hu.
-apply/negP => /preim_varsP Hu'; elim: Hu => i Hi; by rewrite Hu' // Hvals.
+apply eq_bigr => /= i ie.
+apply/setP => u; by rewrite !inE Hvals.
 Qed.
 
 Lemma Pr_preim_vars_sub (e f : {set 'I_n}) (vals : univ_types types) :
@@ -674,6 +651,7 @@ move=> Hnum.
 move/eqP in Hden.
 have {}Hnum : num = den.
   by rewrite -[RHS]mul1R -Hnum /Rdiv -mulRA mulVR // mulR1.
+rewrite -Hnum in Hden.
 rewrite (proj2 (Pr_set0P _ _)); last first.
   move=> u; rewrite !inE => /andP[] /andP[] /eqP HA /eqP HB.
   by rewrite -HA -HB !set_vals_prod_vars in Hvi.
@@ -681,10 +659,9 @@ symmetry; rewrite mulRC.
 rewrite (proj2 (Pr_set0P _ _)).
   by rewrite !div0R !mul0R.
 move=> u; rewrite !inE => /andP [] /eqP HB /eqP HC.
-move: (Hnum).
-rewrite /den (_ : g = (e :&: f :|: g) :\: ((e :&: f) :\: g));
+move: Hnum.
+rewrite {}/den (_ : g = (e :&: f :|: g) :\: ((e :&: f) :\: g));
   last by apply/setP => j; cases_in j.
-rewrite -{}Hnum {den} in Hden.
 rewrite Pr_preim_vars_sub; last by apply/subsetP => j; cases_in j.
 have : prod_vals ((e :&: f) :\: g) vals
                  \in fin_img (prod_vars ((e :&: f) :\: g)).
@@ -843,14 +820,12 @@ Lemma preim_vars12 (I : {set 'I_n}) (vals1 : univ_types types1) :
 Proof.
 rewrite /preim_vars.
 apply/setP => v.
-apply/preim_varsP; case: ifP => /preim_varsP H1.
-- move=> i Hvi.
-  move/H1: (Hvi).
-  rewrite ffunE.
+apply/preim_varsP; case: ifP => /preim_varsP /= H1.
+- move=> i iI; rewrite ffunE.
+  move/H1: (iI).
   by case: varsE => -[f g] [/= fK gK] /(_ v) -> <-.
-- move=> Hv; elim: H1 => /= i Hvi.
-  move/Hv: (Hvi).
-  rewrite ffunE.
+- move=> Hv; elim: H1 => /= i iI.
+  move/Hv: (iI); rewrite ffunE.
   case: varsE => -[f g] [/= fK gK] /(_ v) -> /(f_equal g).
   by rewrite !fK => ->.
 Qed.
