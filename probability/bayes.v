@@ -316,33 +316,39 @@ move=> u /=.
 by rewrite set_vals_prod_vars // inE.
 Qed.
 
+Lemma cancel_both_disjoint (I J : {set 'I_n}) :
+  [disjoint I & J] ->
+  cancel_both
+    ((fun A : prod_types types (I :|: J) =>
+        (prod_vals I (set_vals A vals0), prod_vals J (set_vals A vals0))),
+     (fun A : prod_types types I * prod_types types J =>
+        prod_vals (I :|: J) (set_vals (fst A) (set_vals (snd A) vals0)))).
+Proof.
+move=> Disj; split.
+  move=> x /=.
+  apply/ffunP => /= j.
+  apply (set_vals_inj (vals := vals0)).
+  case/boolP: (j \in I) => Hj.
+    by rewrite !set_vals_prod_vals // inE Hj.
+  case/boolP: (j \in J) => HjJ.
+    rewrite set_vals_prod_vals ?(inE,HjJ,orbT) //.
+    by rewrite set_vals_tl // set_vals_prod_vals.
+  by rewrite !set_vals_tl // inE negb_or Hj.
+move=> [x y] /=.
+congr pair; apply/ffunP => /= j; apply/(set_vals_inj (vals := vals0)).
+  case/boolP: (j \in I) => Hj; last by rewrite !set_vals_tl.
+  by rewrite !set_vals_prod_vals // ?(inE,Hj) // (set_vals_hd vals0).
+case/boolP: (j \in J) => Hj; last by rewrite !set_vals_tl.
+rewrite !set_vals_prod_vals // ?(inE,Hj,orbT) // set_vals_tl //.
+by move/setDidPl/setP/(_ j): Disj; rewrite inE Hj => <-.
+Qed.
+
 Lemma prod_vars_pair (I J : {set 'I_n}) :
   [disjoint I & J] ->
   RV_equiv (prod_vars (I :|: J)) [% prod_vars I, prod_vars J].
 Proof.
 move=> Disj.
-exists ((fun A : prod_types types (I :|: J) =>
-          (prod_vals I (set_vals A vals0), prod_vals J (set_vals A vals0))),
-        (fun A : prod_types types I * prod_types types J =>
-            prod_vals (I :|: J) (set_vals (fst A) (set_vals (snd A) vals0)))).
-  split.
-    move=> x /=.
-    apply/ffunP => /= j.
-    apply (set_vals_inj (vals := vals0)).
-    case/boolP: (j \in I) => Hj.
-      by rewrite !set_vals_prod_vals // inE Hj.
-    case/boolP: (j \in J) => HjJ.
-      rewrite set_vals_prod_vals ?(inE,HjJ,orbT) //.
-      by rewrite set_vals_tl // set_vals_prod_vals.
-    by rewrite !set_vals_tl // inE (negbTE Hj) (negbTE HjJ).
-  move=> [x y] /=.
-  congr pair; apply/ffunP => /= j; apply/(set_vals_inj (vals := vals0)).
-    case/boolP: (j \in I) => Hj; last by rewrite !set_vals_tl.
-    by rewrite !set_vals_prod_vals // ?(inE,Hj) // (set_vals_hd vals0).
-  case/boolP: (j \in J) => Hj; last by rewrite !set_vals_tl.
-  rewrite !set_vals_prod_vals // ?(inE,Hj,orbT) // set_vals_tl //.
-  move: Disj; rewrite -setI_eq0 => /eqP/setP/(_ j).
-  by rewrite !inE Hj andbT => ->.
+esplit. exact: cancel_both_disjoint.
 move=> u /=.
 congr pair; apply/ffunP => i; apply prod_vals_eq => Hi;
   rewrite set_vals_prod_vars ?ffunE //; by rewrite inE Hi ?orbT.
@@ -481,7 +487,7 @@ Lemma preim_vars_set_vals_tl (g e : {set 'I_n}) (A : prod_types types e) vals :
   preim_vars g (set_vals A vals) = preim_vars g vals.
 Proof.
 move=> /setP eg.
-apply eq_bigr => /= i ig.
+apply/eq_bigr => /= i ig.
 apply/setP => u.
 rewrite !inE set_vals_tl //.
 move: (eg i); by rewrite !inE ig andbT => ->.
@@ -505,8 +511,25 @@ Lemma preim_vars_vals (e : {set 'I_n}) (A : prod_types types e) vals1 vals2 :
   preim_vars e vals1 = preim_vars e vals2.
 Proof.
 move=> Hvals.
-apply eq_bigr => /= i ie.
+apply/eq_bigr => /= i ie.
 apply/setP => u; by rewrite !inE Hvals.
+Qed.
+
+Lemma disjoint_preim_vars (e f : {set 'I_n}) (A B : prod_types types f) vals :
+  f \subset e -> A != B ->
+  [disjoint preim_vars e (set_vals A vals) & preim_vars e (set_vals B vals)].
+Proof.
+move=> fe AB.
+rewrite -setI_eq0.
+apply/eqP/setP => u.
+rewrite !inE.
+apply/negP => /andP [] /preim_varsP /= HA /preim_varsP /= HB.
+case: (prod_types_neq AB) => /= i /andP [Hif HAB].
+have ie : i \in e by move/subsetP: fe; apply.
+move/(_ _ ie)/eqP: HB.
+rewrite HA // set_vals_eq => /orP [] H.
+- by rewrite H in HAB.
+- by rewrite Hif in H.
 Qed.
 
 Lemma Pr_preim_vars_sub (e f : {set 'I_n}) (vals : univ_types types) :
@@ -515,34 +538,22 @@ Lemma Pr_preim_vars_sub (e f : {set 'I_n}) (vals : univ_types types) :
   \sum_(A : Tfin_img (prod_vars f))
    Pr P (preim_vars e (set_vals (nth_fin_img A) vals)).
 Proof.
-rewrite /preim_vars /Pr => fe.
+rewrite /Pr => fe.
 rewrite -partition_disjoint_bigcup; last first.
   move=> /= A B.
   rewrite -(tnth_uniq A B (t:=in_tuple _)) ?undup_uniq => // AB.
-  rewrite -setI_eq0.
-  apply/eqP/setP => u.
-  rewrite !inE.
-  apply/negP => /andP [] /preim_varsP /= HA /preim_varsP /= HB.
-  case: (prod_types_neq AB) => /= i /andP [Hif HAB].
-  have ie : i \in e by move/subsetP: fe; apply.
-  move/(_ _ ie)/eqP: HB.
-  rewrite (HA _ ie) set_vals_eq => /orP [] H.
-  - by rewrite H in HAB.
-  - by rewrite Hif in H.
-apply eq_bigl => u.
-case: bigcupP.
+  exact: disjoint_preim_vars.
+apply/eq_bigl => u.
+apply/esym/bigcupP/(equivPif idP).
   move=> [A _ /preim_varsP HA].
   apply/preim_varsP => /= i /setDP [/HA -> Hif].
   by rewrite set_vals_tl.
-move=> /= HN.
-apply/negP => /preim_varsP /= Hu; elim: HN.
+move=> /= /preim_varsP /= Hu.
 exists (map_fin_img (prod_vars f) u) => //.
 apply/preim_varsP => /= i ie.
-move/(_ i): Hu.
-rewrite nth_fin_imgK !inE.
 case/boolP: (i \in f) => Hif.
-  by rewrite set_vals_prod_vars.
-by rewrite ie set_vals_tl // => ->.
+  by rewrite nth_fin_imgK set_vals_prod_vars.
+by rewrite set_vals_tl // Hu // inE Hif.
 Qed.
 
 Ltac cases_in i :=
