@@ -620,7 +620,7 @@ rewrite 2!(_ : _ :\: _ :|: _ = (e :&: f) :|: g);
 by rewrite setUid.
 Qed.
 
-Section cinde_preim_sub.
+Section cinde_preim_lemmas.
 Variables e f g : {set 'I_n}.
 Variables (A : prod_types types e) (B : prod_types types f)
           (C : prod_types types g).
@@ -642,7 +642,7 @@ apply/Pr_set0P => u; rewrite !inE => Hprod; elim: Hvi.
 case/andP: Hprod => /eqP <- /eqP <-; exact: prod_vars_inter.
 Qed.
 
-Lemma cinde_events1 i :
+Lemma cinde_events1 (i : 'I_n) :
   let vals := set_vals C (set_vals A (set_vals B vals0)) in
   (forall x : 'I_n, x \in e -> vals x = set_vals A vals0 x) ->
   i \in e -> i \in f -> i \notin g ->
@@ -655,21 +655,20 @@ Proof.
 move=> vals He Hie Hif Hig Hvi.
 rewrite /cinde_events /cPr.
 set den := (X in _ / X).
-case/boolP: (den == 0) => /eqP Hden.
+case/boolP: (den == 0) => [/eqP|] Hden.
   by rewrite setIC Pr_domin_setI // ?div0R => /esym/R1_neq_R0.
-set num := Pr _ _.
-move=> Hnum.
-move/eqP in Hden.
+set num := Pr _ _ => Hnum.
 have {}Hnum : num = den.
   by rewrite -[RHS]mul1R -Hnum /Rdiv -mulRA mulVR // mulR1.
 rewrite -Hnum in Hden.
 rewrite (proj2 (Pr_set0P _ _)); last first.
   move=> u; rewrite !inE => /andP[] /andP[] /eqP HA /eqP HB.
   by rewrite -HA -HB !set_vals_prod_vars in Hvi.
-symmetry; rewrite mulRC.
-rewrite (proj2 (Pr_set0P _ _)).
-  by rewrite !div0R !mul0R.
-move=> u; rewrite !inE => /andP [] /eqP HB /eqP HC.
+suff : `Pr_P[finset (prod_vars f @^-1 B) | finset (prod_vars g @^-1 C)] = 0.
+  by rewrite /cPr => ->; rewrite mulR0 div0R.
+(* prove incompatibility between B and C *)
+apply/cPr_eq0/Pr_set0P => u.
+rewrite !inE => /andP [] /eqP HB /eqP HC.
 move: Hnum.
 rewrite {}/den (_ : g = (e :&: f :|: g) :\: ((e :&: f) :\: g));
   last by apply/setP => j; cases_in j.
@@ -681,20 +680,17 @@ have : prod_vals ((e :&: f) :\: g) vals
   have -> : e :&: f :|: g = (e :&: f :\: g) :|: g.
     apply/setP => k; by cases_in k.
   apply/eqP/Pr_set0P => v.
-  rewrite preim_vars_inter !inE => /andP [HA'].
+  rewrite preim_vars_inter inE => /andP [/preim_varsP /= HA'].
   elim: HA; apply/fin_imgP.
-  exists v.
-  apply/ffunP => k.
-  apply/prod_vals_eq => Hk.
-  move/preim_varsP/(_ k Hk): HA' => <-.
+  exists v; apply/ffunP => k.
+  apply/prod_vals_eq => /HA' <-.
   by rewrite ffunE.
 case/fin_imgP => v Hv {Hden}.
 set a := map_fin_img (prod_vars ((e :&: f) :\: g)) v.
 rewrite (bigD1 a) //= nth_fin_imgK -Hv.
 rewrite /num (@preim_vars_vals _ (prod_vals (e :&: f :|: g) vals) _ vals);
   last by move=> j; rewrite set_vals_prod_vals_id.
-move/(f_equal (Rminus^~ (Pr P (preim_vars (e :&: f :|: g) vals)))).
-rewrite -preim_vars_inter subRR addRC /Rminus -addRA addRN addR0 => /esym Hnum.
+rewrite -preim_vars_inter addRC => /subR_eq; rewrite subRR => /esym Hnum.
 have : Pr P (preim_vars (e :&: f :|: g)
       (set_vals (prod_vals (e :&: f :\: g) (set_vals B vals)) vals)) = 0.
   rewrite (_ : prod_vals _ _ = prod_vars (e :&: f :\: g) u); last first.
@@ -702,15 +698,13 @@ have : Pr P (preim_vars (e :&: f :|: g)
     rewrite -HB set_vals_prod_vars ?ffunE //.
     move: Hk; cases_in k.
   rewrite -(@nth_fin_imgK U).
-  apply/(proj1 (psumR_eq0P _) Hnum).
+  move/psumR_eq0P: Hnum; apply.
     move => *; by apply sumR_ge0.
   apply/eqP => /(f_equal (fun x => nth_fin_img x)).
-  rewrite !nth_fin_imgK => /(f_equal (fun x : prod_types _ _ => x i)).
-  move/prod_vals_eqP => Hi.
-  elim: Hvi.
-  rewrite -(He i Hie) //.
+  rewrite !nth_fin_imgK => /(prod_types_app i) /prod_vals_eqP Hi.
+  elim: Hvi; rewrite -He //.
   have iefg : i \in e :&: f :\: g by move: Hif Hig Hie; cases_in i.
-  rewrite (proj1 (prod_vals_eqP _ _ _ _) (prod_types_app i Hv)) //.
+  move/(prod_types_app i)/prod_vals_eqP: Hv => -> //.
   by rewrite -HB set_vals_prod_vars // -Hi // ffunE.
 move/Pr_set0P; apply.
 apply/preim_varsP => j Hj.
@@ -721,7 +715,7 @@ rewrite -HB set_vals_prod_vals ?set_vals_prod_vars //.
   move: Hj; by rewrite inE => /andP[].
 by rewrite inE Hj jg.
 Qed.
-End cinde_preim_sub.
+End cinde_preim_lemmas.
 
 Lemma cinde_preim_ok' (e f g : {set 'I_n}) :
   cinde_preim e f g <-> P |= prod_vars e _|_ prod_vars f | (prod_vars g).
