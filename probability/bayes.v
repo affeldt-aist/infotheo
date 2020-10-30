@@ -24,8 +24,9 @@ pose a := t \_ i; rewrite 2!(tnth_nth a) => *.
 by rewrite nth_uniq // size_tuple.
 Qed.
 
-Lemma boolPT (p : bool) (R : Type) (H : is_true p) (T : is_true p -> R)
-      (F : is_true (~~ p) -> R) :
+Section boolP.
+Variables (p : bool) (R : Type) (T : is_true p -> R) (F : is_true (~~ p) -> R).
+Lemma boolPT  (H : is_true p) :
   match boolP p with
   | AltTrue HT => T HT
   | AltFalse HF => F HF
@@ -33,10 +34,24 @@ Lemma boolPT (p : bool) (R : Type) (H : is_true p) (T : is_true p -> R)
 Proof.
 destruct boolP.
 - congr T.
-  case: p => // in H T F i *.
+  case: p => // in H i *.
   by rewrite (Eqdep_dec.UIP_refl_bool true i) (Eqdep_dec.UIP_refl_bool true H).
 - by elim: (negP i).
 Qed.
+
+Lemma boolPF  (H : is_true (~~ p)) :
+  match boolP p with
+  | AltTrue HT => T HT
+  | AltFalse HF => F HF
+  end = F H.
+Proof.
+destruct boolP.
+- by elim: (negP H).
+- congr F.
+  case: p => // in H i *.
+  by rewrite (Eqdep_dec.UIP_refl_bool true i) (Eqdep_dec.UIP_refl_bool true H).
+Qed.
+End boolP.
 End ssr_ext.
 
 Section fin_img.
@@ -520,6 +535,7 @@ Lemma disjoint_preim_vars (e f : {set 'I_n}) (A B : prod_types types f) vals :
   [disjoint preim_vars e (set_vals A vals) & preim_vars e (set_vals B vals)].
 Proof.
 move=> fe AB.
+Search disjoint.
 rewrite -setI_eq0.
 apply/eqP/setP => u.
 rewrite !inE.
