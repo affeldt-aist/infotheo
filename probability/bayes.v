@@ -535,7 +535,6 @@ Lemma disjoint_preim_vars (e f : {set 'I_n}) (A B : prod_types types f) vals :
   [disjoint preim_vars e (set_vals A vals) & preim_vars e (set_vals B vals)].
 Proof.
 move=> fe AB.
-Search disjoint.
 rewrite -setI_eq0.
 apply/eqP/setP => u.
 rewrite !inE.
