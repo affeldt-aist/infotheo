@@ -587,15 +587,14 @@ transitivity (\sum_(A : Tfin_img (prod_vars (e :\: e')))
           `Pr_P[preim_vars e v :&: preim_vars f v | preim_vars g v]).
   rewrite /cPr.
   rewrite -!preim_vars_inter.
-  rewrite (_ : e' :|: f :|: g = (e :|: f :|: g) :\: (e :\: e')); last first.
+  have -> : e' :|: f :|: g = (e :|: f :|: g) :\: (e :\: e').
     apply/setP => i.
     move/subsetP/(_ i): e'e.
     move/subsetP/(_ i): ee'.
     by cases_in i.
   rewrite Pr_preim_vars_sub; last by apply/subsetP=> i; cases_in i.
-  under [in RHS]eq_bigr => A _
-    do rewrite -!preim_vars_inter (@preim_vars_set_vals_tl g) //.
-  by rewrite -big_distrl.
+  rewrite /Rdiv big_distrl; apply eq_bigr => A _ /=.
+  by rewrite -!preim_vars_inter (@preim_vars_set_vals_tl g).
 under eq_bigr => A _ /=.
   rewrite Hef (@preim_vars_set_vals_tl g) // (@preim_vars_set_vals_tl f).
     over.
@@ -603,7 +602,7 @@ under eq_bigr => A _ /=.
 rewrite -2!big_distrl /=.
 congr (_ / _ * _).
 rewrite -preim_vars_inter.
-rewrite (_ : e' :|: g = (e :|: g) :\: (e :\: e')); last first.
+have -> : e' :|: g = (e :|: g) :\: (e :\: e').
   apply/setP => i.
   move/subsetP/(_ i): e'e.
   move/subsetP/(_ i): ee'.
@@ -657,7 +656,7 @@ apply/Pr_set0P => u; rewrite !inE => Hprod; elim: Hvi.
 case/andP: Hprod => /eqP <- /eqP <-; exact: prod_vars_inter.
 Qed.
 
-Lemma cinde_events1 (i : 'I_n) :
+Lemma cinde_events_cPr1 (i : 'I_n) :
   let vals := set_vals C (set_vals A (set_vals B vals0)) in
   (forall x : 'I_n, x \in e -> vals x = set_vals A vals0 x) ->
   i \in e -> i \in f -> i \notin g ->
@@ -684,9 +683,9 @@ suff : `Pr_P[finset (prod_vars f @^-1 B) | finset (prod_vars g @^-1 C)] = 0.
 (* prove incompatibility between B and C *)
 apply/cPr_eq0/Pr_set0P => u.
 rewrite !inE => /andP [] /eqP HB /eqP HC.
-move: Hnum.
-rewrite {}/den (_ : g = (e :&: f :|: g) :\: ((e :&: f) :\: g));
-  last by apply/setP => j; cases_in j.
+move: Hnum; rewrite /den.
+have -> : g = (e :&: f :|: g) :\: ((e :&: f) :\: g).
+  by apply/setP => j; cases_in j.
 rewrite Pr_preim_vars_sub; last by apply/subsetP => j; cases_in j.
 have : prod_vals ((e :&: f) :\: g) vals
                  \in fin_img (prod_vars ((e :&: f) :\: g)).
@@ -774,7 +773,7 @@ split.
   move/cinde_preimC/cinde_preim_inter/(_ vals): Hpreim.
   rewrite {1}/cinde_events -!preim_vars_inter setUid /=.
   case/Rxx2.
-    (* Pr = 0 *)
+    (* cPr = 0 *)
     move/cPr_eq0/Pr_set0P => Hx.
     have HAC :
       Pr P (finset (prod_vars e @^-1 A) :&: finset (prod_vars g @^-1 C)) = 0.
@@ -791,8 +790,8 @@ split.
     apply/Pr_set0P => u Hu.
     apply(proj1 (Pr_set0P _ _) HAC).
     move: Hu; by rewrite !inE => /andP[] /andP[] -> _ ->.
-  (* Pr = 1 *)
-  exact: (cinde_events1 (i:=i)).
+  (* cPr = 1 *)
+  exact: (cinde_events_cPr1 (i:=i)).
 - move=> Hdrv vals.
   move/cinde_rv_events: Hdrv.
   move/(_ (prod_vals e vals) (prod_vals f vals) (prod_vals g vals)).
