@@ -6,6 +6,8 @@ from 0.2 to 0.?
  + in ssrZ.v:
    * Z_of_nat_le -> leZ_nat, Z_of_nat_lt -> ltZ_nat
    * Z<=nat -> %:Z
+- removed:
+ + in classical_sets_ext: set1_inj
 
 -----------------
 from 0.1.2 to 0.2
