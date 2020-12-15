@@ -1,0 +1,170 @@
+fullname: A Coq formalization of information theory and linear error correcting codes
+shortname: infotheo
+organization: affeldt-aist
+opam_name: coq-infotheo
+community: false
+action: true
+coqdoc: false
+
+synopsis: >-
+  Discrete probabilities and information theory for Coq
+description: |-
+  Infotheo is a Coq library for reasoning about discrete probabilities,
+  information theory, and linear error-correcting codes.
+authors:
+- name: Reynald Affeldt, AIST
+  initial: true
+- name: Manabu Hagiwara, Chiba U. (previously AIST)
+  initial: true
+- name: Jonas Senizergues, ENS Cachan (internship at AIST)
+  initial: true
+- name: Jacques Garrigue, Nagoya U.
+  initial: false
+- name: Kazuhiko Sakaguchi, Tsukuba U.
+  initial: false
+- name: Taku Asai, Nagoya U. (M2)
+  initial: false
+- name: Takafumi Saikawa, Nagoya U.
+  initial: false
+- name: Naruomi Obata, Titech (M2)
+  initial: false
+
+opam-file-maintainer: Reynald Affeldt <reynald.affeldt@aist.go.jp>
+
+opam-file-version: dev
+
+license:
+  fullname: LGPL-2.1-or-later
+  identifier: LGPL-2.1-or-later
+  file: LICENSE
+
+supported_coq_versions:
+  text: Coq 8.11 to 8.12
+  opam: '{ (>= "8.11" & < "8.13~") | (= "dev") }'
+
+tested_coq_opam_versions:
+- version: '1.11.0-coq-8.11'
+  repo: 'mathcomp/mathcomp'
+- version: '1.11.0-coq-8.12'
+  repo: 'mathcomp/mathcomp'
+
+dependencies:
+- opam:
+    name: coq-mathcomp-ssreflect
+    version: '{ (>= "1.11.0" & < "1.12~") }'
+  description: |-
+    [MathComp ssreflect 1.11](https://math-comp.github.io)
+- opam:
+    name: coq-mathcomp-fingroup
+    version: '{ (>= "1.11.0" & < "1.12~") }'
+  description: |-
+    [MathComp fingroup 1.11](https://math-comp.github.io)
+- opam:
+    name: coq-mathcomp-algebra
+    version: '{ (>= "1.11.0" & < "1.12~") }'
+  description: |-
+    [MathComp algebra 1.11](https://math-comp.github.io)
+- opam:
+    name: coq-mathcomp-solvable
+    version: '{ (>= "1.11.0" & < "1.12~") }'
+  description: |-
+    [MathComp solvable 1.11](https://math-comp.github.io)
+- opam:
+    name: coq-mathcomp-field
+    version: '{ (>= "1.11.0" & < "1.12~") }'
+  description: |-
+    [MathComp field 1.11](https://math-comp.github.io)
+- opam:
+    name: coq-mathcomp-analysis
+    version: '{ (= "0.3.4") }'
+  description: |-
+    [MathComp analysis 0.3.4](https://github.com/math-comp/analysis)
+namespace: infotheo
+
+keywords:
+- name: information theory
+- name: probability
+- name: error-correcting codes
+
+publications:
+- pub_url: https://arxiv.org/abs/2004.12713
+  pub_title: Formal Adventures in Convex and Conical Spaces
+  pub_doi: 10.1007/978-3-030-53518-6_2
+- pub_url: https://link.springer.com/article/10.1007/s10817-019-09538-8
+  pub_title: A Library for Formalization of Linear Error-Correcting Codes
+  pub_doi: 10.1007/s10817-019-09538-8
+- pub_url: https://www.jstage.jst.go.jp/article/jssst/37/3/37_3_79/_article/-char/en
+  pub_title: Reasoning with Conditional Probabilities and Joint Distributions in Coq
+  pub_doi: 10.11309/jssst.37.3_79
+- pub_url: http://staff.aist.go.jp/reynald.affeldt/documents/compression-isita2018.pdf
+  pub_title: Examples of formal proofs about data compression
+  pub_doi: 10.23919/ISITA.2018.8664276
+- pub_url: http://staff.aist.go.jp/reynald.affeldt/documents/rs_isita2016_author_version.pdf
+  pub_title: Formalization of Reed-Solomon codes and progress report on formalization of LDPC codes
+- pub_url: http://staff.aist.go.jp/reynald.affeldt/documents/eccITP2015_authorsversion.pdf
+  pub_title:  Formalization of error-correcting codes---from Hamming to modern coding theory
+  pub_doi: 10.1007/978-3-319-22102-1_2
+- pub_url: https://link.springer.com/article/10.1007%2Fs10817-013-9298-1
+  pub_title: Formalization of Shannon’s Theorems
+  pub_doi: 10.1007/s10817-013-9298-1
+
+#make_target: [
+#    [make "-j%{jobs}%" ]
+#    [make "-C" "extraction" "tests"] {with-test}
+#  ]
+
+documentation: |-
+  ## Acknowledgments
+
+  Many thanks to [various contributors](https://github.com/affeldt-aist/infotheo/graphs/contributors)
+
+  The principle of inclusion-exclusion is a contribution by 
+  Erik Martin-Dorel (University Toulouse III Paul Sabatier, IRIT research laboratory)
+  (main theorem: Pr_bigcup_incl_excl; commit 956096859ed89325b2bb74033690ac882bbcd64e)
+
+  The variable-length source coding theorems are a contribution by
+  Ryosuke Obi (Chiba U. (M2))
+  (commit a67da5e24eaaabb345d225a5bd0f5e86d35413a8)
+  (with Manabu Hagiwara and Mitsuharu Yamamoto)
+
+  Commit 64814f529c1819684c4b8060d0779c24c6339041 was originally by Karl Palmskog
+
+  The formalization of modern coding theory is a collaboration with
+  K. Kasai, S. Kuzuoka, R. Obi
+
+  Y. Takahashi collaborated to the formalization of linear error-correcting codes
+
+  This work was partially supported by a JSPS Grant-in-Aid for Scientific
+  Research (Project Number: 25289118), a JSPS Grand-in-Aid for Scientific Research (Project Number: 18H03204)
+
+  ## Documentation
+
+  Each file is documented in its header.
+
+  Changes are documented in [changelog.txt](changelog.txt).
+  
+  ## Installation with Windows 10 (TODO: update)
+
+  Installation of infotheo on Windows is less simple.
+  See [this page](https://github.com/affeldt-aist/mathcomp-install/blob/master/install-windows-en.org)
+  for instructions to install MathComp on Windows 10
+  (or [this page](https://staff.aist.go.jp/reynald.affeldt/ssrcoq/install.html) for instructions in Japanese).
+  Once MathComp is installed, two options:
+
+  1. You have installed MathComp with opam.
+     Then do:
+     `opam install coq-infotheo` or `git clone git@github.com:affeldt-aist/infotheo.git; opam install .`
+
+  2. You have installed MathComp using unzip, untar, cd, make, make install.
+     Then do:
+     - Install MathComp-Analysis using unzip, untar, cd, make, make install
+       + Install bigenough 1.0.0 [download](https://github.com/math-comp/bigenough)
+       + Install finmap 1.5.0 [download](https://github.com/math-comp/finmap)
+       + Install analysis 0.3.2 [download](https://github.com/math-comp/analysis)
+     - Install infotheo using `coq_makefile`, `make`, `make install` as explained above
+       [download](https://github.com/affeldt-aist/infotheo)
+
+  ## Original License
+
+  Before version 0.2, infotheo was distributed under the terms of the
+  `GPL-3.0-or-later` license.

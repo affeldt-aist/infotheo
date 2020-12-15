@@ -1763,7 +1763,7 @@ Lemma hull_eqEsubset X Y :
 Proof.
 move/hull_monotone; rewrite hull_cset /= => H1.
 move/hull_monotone; rewrite hull_cset /= => H2.
-exact/eqEsubset.
+by rewrite eqEsubset.
 Qed.
 
 (* hull (X `|` hull Y) = hull (hull (X `|` Y)) = hull (x `|` y);
