@@ -113,10 +113,31 @@ publications:
 #    [make "-C" "extraction" "tests"] {with-test}
 #  ]
 
+build: |-
+  ## Building and installation instructions
+
+  The easiest way to install the latest released version of A Coq formalization of information theory and linear error correcting codes
+  is via [OPAM](https://opam.ocaml.org/doc/Install.html):
+
+  ```shell
+  opam repo add coq-released https://coq.inria.fr/opam/released
+  opam install coq-infotheo
+  ```
+
+  To instead build and install manually, do:
+
+  ``` shell
+  git clone https://github.com/affeldt-aist/infotheo.git
+  cd infotheo
+  make   # or make -j <number-of-cores-on-your-machine> 
+  make -C extraction tests
+  make install
+  ```
+
 documentation: |-
   ## Acknowledgments
 
-  Many thanks to [various contributors](https://github.com/affeldt-aist/infotheo/graphs/contributors)
+  Many thanks to several contributors ([committers](https://github.com/affeldt-aist/infotheo/graphs/contributors)).
 
   The principle of inclusion-exclusion is a contribution by 
   Erik Martin-Dorel (University Toulouse III Paul Sabatier, IRIT research laboratory)

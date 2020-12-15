@@ -18,7 +18,7 @@ information theory, and linear error-correcting codes."""
 build: [
     [make "-j%{jobs}%" ]
     [make "-C" "extraction" "tests"] {with-test}
-  ]
+]
 install: [make "install"]
 depends: [
   "coq" { (>= "8.11" & < "8.13~") | (= "dev") }

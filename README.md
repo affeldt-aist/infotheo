@@ -61,13 +61,13 @@ To instead build and install manually, do:
 git clone https://github.com/affeldt-aist/infotheo.git
 cd infotheo
 make   # or make -j <number-of-cores-on-your-machine> 
+make -C extraction tests
 make install
 ```
 
-
 ## Acknowledgments
 
-Many thanks to [various contributors](https://github.com/affeldt-aist/infotheo/graphs/contributors)
+Many thanks to several contributors ([committers](https://github.com/affeldt-aist/infotheo/graphs/contributors)).
 
 The principle of inclusion-exclusion is a contribution by 
 Erik Martin-Dorel (University Toulouse III Paul Sabatier, IRIT research laboratory)
