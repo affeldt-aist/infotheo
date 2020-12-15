@@ -31,7 +31,7 @@ authors:
 
 opam-file-maintainer: Reynald Affeldt <reynald.affeldt@aist.go.jp>
 
-opam-file-version: dev
+#opam-file-version: dev
 
 license:
   fullname: LGPL-2.1-or-later
