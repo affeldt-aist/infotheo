@@ -1,19 +1,21 @@
 ---------------
-from 0.2 to 0.?
+from 0.2.1 to ?
 ---------------
+
+-----------------
+from 0.2 to 0.2.1
+-----------------
 
 - changed:
   + in ssrZ.v:
     * Z_of_nat_le -> leZ_nat, Z_of_nat_lt -> ltZ_nat
     * Z<=nat -> %:Z
-- removed:
-  + in classical_sets_ext:
-    set1_inj
 - renamed:
   + in classical_sets_ext.v: 
     image_subset -> subset_image
-- remove:
+- removed:
   + in classical_sets_ext.v:
+    set1_inj
     fullimage_subset
 
 -----------------
