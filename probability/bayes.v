@@ -238,6 +238,16 @@ case/boolP: (i \in I) => Hi; subst goal.
 move=> _; exact: prod_types_out.
 Qed.
 
+Lemma prod_vals_set_vals (A : prod_types) vals :
+  prod_vals (set_vals A vals) = A.
+Proof.
+apply/ffunP => j.
+apply (set_vals_inj (vals := vals)).
+case/boolP: (j \in I) => Hj.
+  by rewrite set_vals_prod_vals.
+by rewrite !set_vals_tl.
+Qed.
+
 End prod_types.
 
 Lemma set_vals_prod_vals_join (I J : {set 'I_n}) vals vals' :
@@ -251,6 +261,19 @@ rewrite set_vals_tl //.
 case/boolP: (i \in J) => iJ.
   by rewrite !set_vals_prod_vals // inE iJ orbT.
 by rewrite !set_vals_tl // inE negb_or iI.
+Qed.
+
+Lemma set_valsC I J (A : prod_types I) (B : prod_types J) V :
+  [disjoint I & J] -> set_vals A (set_vals B V) = set_vals B (set_vals A V).
+Proof.
+move/setDidPl/setP => Disj.
+apply/ffunP => /= i.
+case/boolP: (i \in I) => iI.
+  move: (Disj i); rewrite inE iI andbT => /set_vals_tl ->.
+  by rewrite (set_vals_hd V).
+case/boolP: (i \in J) => iJ.
+  by rewrite set_vals_tl //; apply set_vals_hd.
+by rewrite !set_vals_tl.
 Qed.
 
 Section set_val.
@@ -340,23 +363,10 @@ Lemma cancel_both_disjoint (I J : {set 'I_n}) :
      (fun A : prod_types types I * prod_types types J =>
         prod_vals (I :|: J) (set_vals (fst A) (set_vals (snd A) vals0)))).
 Proof.
-move=> Disj; split.
-  move=> x /=.
-  apply/ffunP => /= j.
-  apply (set_vals_inj (vals := vals0)).
-  case/boolP: (j \in I) => Hj.
-    by rewrite !set_vals_prod_vals // inE Hj.
-  case/boolP: (j \in J) => HjJ.
-    rewrite set_vals_prod_vals ?(inE,HjJ,orbT) //.
-    by rewrite set_vals_tl // set_vals_prod_vals.
-  by rewrite !set_vals_tl // inE negb_or Hj.
-move=> [x y] /=.
-congr pair; apply/ffunP => /= j; apply/(set_vals_inj (vals := vals0)).
-  case/boolP: (j \in I) => Hj; last by rewrite !set_vals_tl.
-  by rewrite !set_vals_prod_vals // ?(inE,Hj) // (set_vals_hd vals0).
-case/boolP: (j \in J) => Hj; last by rewrite !set_vals_tl.
-rewrite !set_vals_prod_vals // ?(inE,Hj,orbT) // set_vals_tl //.
-by move/setDidPl/setP/(_ j): Disj; rewrite inE Hj => <-.
+move=> Disj; split => [A | [A B]] /=.
+  by rewrite set_vals_prod_vals_join !prod_vals_set_vals.
+congr pair; last rewrite setUC set_valsC //;
+by rewrite -set_vals_prod_vals_join !prod_vals_set_vals.
 Qed.
 
 Lemma prod_vars_pair (I J : {set 'I_n}) :
@@ -397,17 +407,15 @@ Proof. by apply/(iffP bigcapP) => H i /H; rewrite !inE => /eqP. Qed.
 Lemma preim_prod_vars (g : {set 'I_n}) (C : prod_types types g) vals :
   finset (prod_vars g @^-1 C) = preim_vars g (set_vals C vals).
 Proof.
-apply/setP => x.
-rewrite !inE; symmetry.
-apply/preim_varsP; case: ifP.
+apply/setP => x; rewrite !inE.
+apply/esym/preim_varsP; case: ifP.
 - move/eqP => <- i ig.
   by rewrite set_vals_prod_vals // ffunE.
-- move/negP => Hf Hcap; elim: Hf.
+- move/negP => /= Hf Hcap; elim: Hf.
   apply/eqP/ffunP => /= i.
-  apply/(set_vals_inj (vals:=vals)).
-  case/boolP: (i \in g) => ig.
-    by rewrite -(Hcap _ ig) set_vals_prod_vars.
-  by rewrite !set_vals_tl.
+  rewrite /prod_vars (prod_vals_eq (vals2:=set_vals C vals)).
+    by rewrite prod_vals_set_vals.
+  rewrite ffunE; exact: Hcap.
 Qed.
 
 (* Simple version, using singletons *)
@@ -586,8 +594,7 @@ have ee'g : (e :\: e') :&: g = set0.
 transitivity (\sum_(A : Tfin_img (prod_vars (e :\: e')))
           let v := set_vals (nth_fin_img A) vals in
           `Pr_P[preim_vars e v :&: preim_vars f v | preim_vars g v]).
-  rewrite /cPr.
-  rewrite -!preim_vars_inter.
+  rewrite /cPr -!preim_vars_inter.
   have -> : e' :|: f :|: g = (e :|: f :|: g) :\: (e :\: e').
     apply/setP => i.
     move/subsetP/(_ i): e'e.
