@@ -523,7 +523,7 @@ destruct (ids1 j) => /= Hij.
 have Hlti : i < size idsA by rewrite size_idsA.
 move: (mem_nth 0 Hlti).
 rewrite Hij => Hi.
-move: (mem_imset (fun i => col i (Hamming.PCM m)) Hi).
+move: (imset_f (fun i => col i (Hamming.PCM m)) Hi).
 rewrite /idsA e.
 case/imsetP => y Hy Hy'.
 rewrite mem_filter -Hy' in Hy.

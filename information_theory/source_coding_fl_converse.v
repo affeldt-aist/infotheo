@@ -91,24 +91,21 @@ Proof.
 apply (@leR_trans (exp2 n%:R)).
   rewrite /no_failure.
   have Hsubset : [set x | dec sc (enc sc x) == x] \subset dec sc @: (enc sc @: [set: 'rV[A]_k.+1]).
-    apply/subsetP => x.
-    rewrite inE => Hx.
-    apply/imsetP.
-    exists (enc sc x).
-    - apply mem_imset; by rewrite inE.
-    - by move/eqP in Hx.
+    apply/subsetP => x; rewrite inE => /eqP Hx.
+    by apply/imsetP; exists (enc sc x) => //; rewrite imset_f.
   apply (@leR_trans #| dec sc @: (enc sc @: [set: 'rV[A]_k.+1]) |%:R).
     by apply/le_INR/leP; case/subset_leqif_cards : Hsubset.
   apply (@leR_trans #| dec sc @: [set: 'rV[bool]_n] |%:R).
-    apply/le_INR/leP/subset_leqif_cards/imsetS/subsetP => x Hx; by rewrite inE.
+    by apply/le_INR/leP/subset_leqif_cards/imsetS/subsetP => x Hx; rewrite inE.
   apply (@leR_trans #| [set: 'rV[bool]_n] |%:R).
-    apply/le_INR/leP/leq_imset_card.
-    rewrite cardsT card_matrix /= card_bool natRexp2 mul1n; exact/leRR.
+    exact/le_INR/leP/leq_imset_card.
+  by rewrite cardsT card_matrix /= card_bool natRexp2 mul1n; exact/leRR.
 apply Exp_le_increasing => //.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply (@leR_pmul2r (1 / r)) => //.
-apply divR_gt0; [lra | tauto].
-rewrite -mulRA div1R mulRV ?mulR1; last by case: Hr => /ltRP; rewrite lt0R => /andP[].
+  by apply divR_gt0; [lra | tauto].
+rewrite -mulRA div1R mulRV ?mulR1; last first.
+  by case: Hr => /ltRP; rewrite lt0R => /andP[].
 by case/leR_max : Hk.
 Qed.
 

@@ -41,7 +41,7 @@ Lemma sorted_leq_last s : sorted leq s -> forall i, i \in s -> i <= last 0 s.
 Proof.
 move=> H /= i; case/(nthP O) => {}i Hi <-; rewrite -nth_last.
 case/boolP : (i == (size s).-1) => [/eqP <- //|si].
-apply (sorted_lt_nth leq_trans) => //.
+apply (sorted_ltn_nth leq_trans) => //.
 by rewrite inE prednK // (leq_trans _ Hi).
 by rewrite ltn_neqAle si /= -ltnS prednK // (leq_trans _ Hi).
 Qed.
@@ -429,9 +429,9 @@ rewrite /w (bigID (fun i1 : 'I__ => i1 < i)) /=.
 set a := (X in X + _ = _ -> _). set b := (X in _ = X -> _).
 set c := (X in _ + X = _ -> _).
 have ab : a >= b.
-  rewrite {}/a {}/b big_ord_narrow; [by apply ltnW|move=> H].
+  rewrite {}/a {}/b big_ord_narrow; [exact: ltnW|move=> H].
   apply: leq_sum => k _; rewrite leq_exp2l ?card_ord // leq_sub //.
-  apply/(sorted_lt_nth leq_trans) => //; by rewrite inE l_n.
+  by apply/(sorted_ltn_nth leq_trans) => //; rewrite inE l_n.
 have c0 : 0 < c.
   rewrite {}/c lt0n sum_nat_eq0 negb_forall.
   apply/existsP; exists (Ordinal ij); by rewrite /= ltnn /= expn_eq0 card_ord.
@@ -627,7 +627,7 @@ rewrite mulrBr mulVr ?unitfE ?mulr1 ?pnatr_eq0 ?expn_eq0 //.
 rewrite /w // natr_sum big_distrr /=.
 rewrite (eq_bigr (fun j : 'I__ => #|T|%:R ^-nth O l j))%R; last first.
   move=> i _; rewrite !natrX card_ord exprB; last 2 first.
-    apply/(sorted_lt_nth leq_trans) => //; rewrite inE l_n //.
+    apply/(sorted_ltn_nth leq_trans) => //; rewrite inE l_n //.
     by rewrite (leq_trans (ltn_ord i)) // ltnW.
     by rewrite unitfE pnatr_eq0.
   by rewrite mulrA mulVr ?unitfE -?natrX ?pnatr_eq0 ?expn_eq0 // mul1r.
@@ -664,7 +664,7 @@ rewrite ltn_neqAle; apply/andP; split.
 rewrite size_sigma //; last by rewrite -/t -(card_ord t) w_sub.
 rewrite size_sigma //; last by rewrite -/t -(card_ord t) w_sub.
 move: ba; rewrite leq_eqVlt => /orP[/eqP ->//|ba].
-by apply/(sorted_lt_nth leq_trans) => //; rewrite inE l_n.
+by apply/(sorted_ltn_nth leq_trans) => //; rewrite inE l_n.
 Qed.
 
 End kraft_code.
@@ -705,11 +705,11 @@ have H1 : (r >= (w j)%:R + (1 : R))%R. (*\color{comment}{\framebox{here we prove
       by rewrite unitfE expf_eq0 card_ord pnatr_eq0 andbF.
     apply: (@mulIr _ (#|T|%:R ^+ (l``_k - l``_j))%R) => //.
     rewrite natrX -mulrA mulVr // mulr1 exprB; last 2 first.
-      apply/(sorted_lt_nth leq_trans) => //; rewrite inE l_n //.
+      apply/(sorted_ltn_nth leq_trans) => //; rewrite inE l_n //.
       by rewrite (leq_trans (ltn_ord i)) // ltnW.
       by rewrite unitfE pnatr_eq0 card_ord.
     rewrite exprB; last 2 first.
-      by apply/(sorted_lt_nth leq_trans) => //; rewrite inE l_n.
+      by apply/(sorted_ltn_nth leq_trans) => //; rewrite inE l_n.
       by rewrite unitfE pnatr_eq0 card_ord.
     rewrite mulrCA mulrAC mulrV // ?mul1r //.
     by rewrite unitfE -natrX pnatr_eq0 expn_eq0 card_ord.
@@ -723,7 +723,7 @@ have H1 : (r >= (w j)%:R + (1 : R))%R. (*\color{comment}{\framebox{here we prove
     rewrite /r' /u -(big_mkord xpredT f)%R natr_sum.
     rewrite (eq_bigr (fun i : 'I__ => f i)); last first.
       move=> i _; rewrite natrX exprB //.
-      apply/(sorted_lt_nth leq_trans) => //; rewrite inE l_n //.
+      apply/(sorted_ltn_nth leq_trans) => //; rewrite inE l_n //.
       by rewrite (leq_trans (ltn_ord i)) // ltnW.
       by rewrite unitfE pnatr_eq0 card_ord.
     by rewrite -(big_mkord xpredT f)%R -big_cat_nat //= ltnW.

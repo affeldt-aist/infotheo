@@ -41,7 +41,7 @@ move=> ij H0.
 have H : forall n, lead_coef 'X^n \is a GRing.unit
   by move=> ??; rewrite lead_coefXn GRing.unitr1.
 rewrite (Pdiv.IdomainUnit.divp_eq (H R j) p).
-rewrite (Pdiv.IdomainUnit.modp_add (H R i)).
+rewrite (Pdiv.IdomainUnit.modpD (H R i)).
 rewrite modp_eq0; last by rewrite dvdp_mull // dvdp_exp2l.
 by rewrite add0r -(Pdiv.IdomainUnit.divp_eq (H R j) p) modp_small // size_polyXn.
 Qed.
@@ -116,7 +116,7 @@ rewrite /errloc (big_setD1 f) //= derivM IH; last first.
   move: (cardsD1 f E); rewrite Hf /= add1n Em; by case.
 rewrite derivB derivC sub0r linearZ /= derivX.
 rewrite [in RHS](big_setD1 f) //=; congr (_ + _).
-  by rewrite alg_polyC -mul_polyC polyC_opp.
+  by rewrite alg_polyC -mul_polyC polyCN.
 rewrite big_distrr /=; apply eq_bigr => i Hi.
 rewrite mulrC -!mul_polyC -mulrA; congr (_ * _).
 rewrite [in RHS](big_setD1 f) //=; last first.
@@ -131,9 +131,9 @@ Proof.
 move=> a0.
 rewrite /errloc (eq_bigr (fun i : 'I_n => (- a ``_ i)%:P * ('X - (a ``_ i)^-1%:P))).
   by rewrite big_split.
-move=> i Hi.
-rewrite -polyC_opp mulrDr -polyC_mul mulrNN divff //.
-by rewrite polyC1 -(addrC 1) polyC_opp mulNr mul_polyC.
+move=> i iE.
+rewrite -polyCN mulrDr -polyCM mulrNN divff //.
+by rewrite polyC1 -(addrC 1) polyCN mulNr mul_polyC.
 Qed.
 
 Lemma errloc_neq0 a E : errloc a E != 0.
@@ -160,7 +160,7 @@ move=> Ha; apply/idP/idP => H.
   apply/rootP.
   rewrite (decomp_errloc _ (proj2 Ha)) ?unitfE //= rootM negb_or.
   apply/andP; split.
-    rewrite -(@big_morph _ _ _ _ _ 1 _ (@polyC_mul F)) // rootC prodf_seq_neq0 /=.
+    rewrite -(@big_morph _ _ _ _ _ 1 _ (@polyCM F)) // rootC prodf_seq_neq0 /=.
     apply/allP => n0 _.
     apply/implyP => _; by rewrite oppr_eq0 (proj2 Ha).
   move: (root_prod_XsubC [seq (a ``_ x)^-1 | x : 'I_n <- enum E] (a ``_ i)^-1).
@@ -257,7 +257,7 @@ suff no_root_p : forall x, root p x -> False.
   move : p_sigma; rewrite (decomp_errloc _ (proj2 Ha)) //.
   move/(dvdp_mull (\prod_(i in supp E) (- a ``_ i)^-1%:P)).
   rewrite mulrA -big_split /= (eq_bigr (fun=> 1%:P)); last first.
-    move=> i _; by rewrite -polyC_mul mulVr // unitrN unitfE (proj2 Ha).
+    move=> i _; by rewrite -polyCM mulVr // unitrN unitfE (proj2 Ha).
   rewrite big1 // mul1r -big_filter; case/dvdp_prod_XsubC => bs.
   set mask_bs := mask bs _.
   case size_bsE : (size mask_bs).

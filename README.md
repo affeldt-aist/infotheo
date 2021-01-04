@@ -29,11 +29,11 @@ information theory, and linear error-correcting codes.
 - License: [LGPL-2.1-or-later](LICENSE)
 - Compatible Coq versions: Coq 8.11 to 8.12
 - Additional dependencies:
-  - [MathComp ssreflect 1.11](https://math-comp.github.io)
-  - [MathComp fingroup 1.11](https://math-comp.github.io)
-  - [MathComp algebra 1.11](https://math-comp.github.io)
-  - [MathComp solvable 1.11](https://math-comp.github.io)
-  - [MathComp field 1.11](https://math-comp.github.io)
+  - [MathComp ssreflect 1.12](https://math-comp.github.io)
+  - [MathComp fingroup 1.12](https://math-comp.github.io)
+  - [MathComp algebra 1.12](https://math-comp.github.io)
+  - [MathComp solvable 1.12](https://math-comp.github.io)
+  - [MathComp field 1.12](https://math-comp.github.io)
   - [MathComp analysis 0.3.4](https://github.com/math-comp/analysis)
 - Coq namespace: `infotheo`
 - Related publication(s):

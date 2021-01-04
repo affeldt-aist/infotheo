@@ -346,7 +346,7 @@ rewrite BCH_det_mlinear det_vander mulf_neq0 //.
   rewrite prodf_seq_neq0 /=; apply/allP => /= k _.
   apply/implyP => jk; rewrite !mxE /= !expr1 subr_eq0.
   apply/negP => /eqP; move: (proj1 a_neq0) => /(_ (f k) (f j)).
-  rewrite 2!ffunE => akj /akj/Hinj; exact/eqP/negbT/gtn_eqF.
+  by rewrite 2!ffunE => akj /akj/Hinj; exact/eqP/negbT/gtn_eqF.
 Qed.
 
 (** parity-check matrix of a binary (n, k) code capable ot correcting
@@ -523,7 +523,7 @@ rewrite mxE -mulrA; congr (_ * _).
   apply/eq_big.
     by move=> j; rewrite in_setD1 andbC.
   move=> j _; by rewrite mxE.
-by rewrite -polyC_mul -exprSr -exprM mulnC.
+by rewrite -polyCM -exprSr -exprM mulnC.
 Qed.
 
 Hypothesis (tn : t.*2 < n).
@@ -674,7 +674,7 @@ set x' := map_mx _ _.
 have [M HM] : exists M, `[ 'X * rVpoly x' ]_ n = 'X * rVpoly x' + M * ('X^n - 1).
   exists (- ('X * rVpoly x') %/ ('X^n - 1)).
   move/eqP: (divp_eq ('X * rVpoly x') ('X^n - 1)); rewrite addrC -subr_eq => /eqP <-.
-  by rewrite divp_opp mulNr.
+  by rewrite divpN mulNr.
 rewrite HM /fdcoor poly_rV_K //; last first.
   rewrite -HM.
   move: (ltn_modp ('X * rVpoly x') ('X^n - 1)).

@@ -1010,12 +1010,12 @@ case: (tuple_exist_perm_sort (@le_rank A) ta) => s /=.
 rewrite /sort_tuple /=.
 set t' := Tuple _.
 move=> ta_t'.
-have t'ta : t' = perm_tuple s^-1 ta by rewrite ta_t' perm_tuple_comp mulVg perm_tuple_id.
+have t'ta : t' = perm_tuple s^-1 ta.
+  by rewrite ta_t' perm_tuple_comp mulVg perm_tuple_id.
 have sorted_t' : sorted (@le_rank A) t' by exact/sort_sorted/le_rank_total.
 have Ht' : t' \in T_{P} by rewrite t'ta; apply/perm_tuple_in_Ttuples.
 case: (shell_not_empty_sorted sorted_t' Hrow_num_occ Ht') => tb Htb.
-exists (perm_tuple s tb).
-rewrite ta_t' perm_Stuples_Stuples_perm; by apply mem_imset.
+by exists (perm_tuple s tb); rewrite ta_t' perm_Stuples_Stuples_perm imset_f.
 Qed.
 
 End shell_not_empty.
