@@ -95,5 +95,6 @@ Proof. by move=> /eqP ->; apply/eqP/rowP => i; rewrite !mxE coef0. Qed.
 
 End AboutPoly.
 
-Lemma morph_modp (F : fieldType) (p : {poly F}) : {morph (fun x : {poly F} => x %% p) : x y / x + y}.
-Proof. move=> x y; by rewrite modp_add. Qed.
+Lemma morph_modp (F : fieldType) (p : {poly F}) :
+  {morph (fun x : {poly F} => x %% p) : x y / x + y}.
+Proof. move=> x y; by rewrite modpD. Qed.

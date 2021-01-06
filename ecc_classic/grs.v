@@ -85,12 +85,12 @@ rewrite (eq_bigr (fun i : 'I_r => 'X^i * (syndrome_coord_supp i y)%:P)); last fi
 rewrite /syndrome_coord_supp.
 rewrite (eq_bigr (fun i : 'I_r => (\sum_(j in supp y) 'X^i * (y ``_ j * b ``_ j * a ``_ j ^+ i)%:P))); last first.
   move=> i _.
-  by rewrite -big_distrr /= (big_morph (id1:=0) (fun x => x%:P) (@polyC_add _)).
+  by rewrite -big_distrr /= (big_morph (id1:=0) (fun x => x%:P) (@polyCD _)).
 rewrite exchange_big /=.
 rewrite (eq_bigr (fun j => (y ``_ j * b ``_ j)%:P * \sum_(l < r) ((a ``_ j ^+ l)%:P * 'X^l))) //.
 move=> i isupp.
 rewrite !big_distrr /=; apply eq_bigr => j _.
-by rewrite mulrC mulrA polyC_mul.
+by rewrite mulrC mulrA polyCM.
 Qed.
 
 Lemma syndromep_syndrome r y : (syndrome r y == 0) = (syndromep r y == 0).
@@ -224,7 +224,7 @@ rewrite /GRS_mod big_distrl /= /Omega /erreval -big_split /=.
 rewrite GRS.syndomepE big_distrr /=.
 apply eq_bigr => i iy.
 rewrite -3!scalerAl -scalerA -scalerDr.
-rewrite polyC_mul -!mulrA mulrCA !mulrA mul_polyC -!scalerAl; congr (_ *: _).
+rewrite polyCM -!mulrA mulrCA !mulrA mul_polyC -!scalerAl; congr (_ *: _).
 rewrite /Sigma /errloc (bigD1 i) //= mulrC -!mulrA mulrBl mul1r.
 set x := (X in _ * X = _).
 rewrite (_ : x = (b ``_ i)%:P * (1 - (a ``_ i ^+ r)%:P * 'X^r)); last first.
@@ -239,7 +239,7 @@ rewrite (_ : x = (b ``_ i)%:P * (1 - (a ``_ i ^+ r)%:P * 'X^r)); last first.
     apply/eqP; rewrite subr_eq0; apply/eqP.
     apply eq_bigr => j _.
     rewrite -!scalerAl mulrCA -exprS !scalerAl; congr (_ * _).
-    by rewrite -mul_polyC -polyC_mul -exprS.
+    by rewrite -mul_polyC -polyCM -exprS.
   by rewrite -mulrCA -scalerAl -exprS 2!mul_polyC scalerA -exprSr.
 rewrite mulrA mulrBr mulr1 mulrC -mul_polyC; congr (_ * _ + _).
  apply/eq_bigl => j; by rewrite in_setD1 andbC.

@@ -395,7 +395,7 @@ elim: l k x => [|l IH] k x.
 rewrite (tree_node_children x).
 rewrite -(@finseqs_deg n l k (tree_enum l (negk k))); last by [].
 rewrite {IH} /=.
-f_equal.
+congr addn.
 - rewrite eqtype.inj_eq //.
   by apply Node_inj.
 - rewrite count_map.
@@ -662,7 +662,7 @@ case: l => [|l].
 rewrite doubleS -addn1 /=.
 rewrite big_cons add0r big_map big_flatten.
 rewrite big_map /=.
-rewrite (iota_addl 1 0) big_map.
+rewrite (iotaDl 1 0) big_map.
 rewrite /tree_dist_children.
 transitivity (\sum_(0 <= d < tw) (LR kv)`_d); last first.
   have: (size (LR kv) <= tw)%nat.
@@ -854,14 +854,10 @@ symmetry.
 apply/imsetP.
 case: ifPn => Hyx.
   rewrite -(@can2_in_imset_pre _ _ (enum_rank_in (Hxp _ Hyx))).
-      esplit.
-        by apply mem_imset, Hyx.
-      rewrite enum_rankK_in //.
-      by apply Hxp.
-    move=> z Hz.
-    by apply (enum_rankK_in _ (Hxp _ Hz)).
-  move=> z Hz.
-  by rewrite enum_valK_in.
+      esplit; first exact/imset_f/Hyx.
+      by rewrite enum_rankK_in // Hxp.
+    by move=> z Hz; exact: (enum_rankK_in _ (Hxp _ Hz)).
+  by move=> z Hz; rewrite enum_valK_in.
 move=> [z Hz Hzy].
 rewrite /preimset inE in Hz.
 by rewrite Hzy Hz in Hyx.
@@ -1034,7 +1030,7 @@ Lemma curry_imset2l_dep :
   [set f x y | x in D1, y in D2 x] = \bigcup_(x in D1) f x @: D2 x.
 Proof.
 apply/setP=> y; apply/imset2P/bigcupP => [[x1 x2 Dx1 Dx2 ->{y}] | [x1 Dx1]].
-  by exists x1; rewrite // mem_imset.
+  by exists x1; rewrite // imset_f.
 by case/imsetP=> x2 Dx2 ->{y}; exists x1 x2.
 Qed.
 End imset2.
@@ -1357,7 +1353,7 @@ case: ifP.
   case: ifP => Hys.
     by rewrite !inE eqxx.
   rewrite inE; apply/orP; right.
-  by rewrite -edom_codom mem_imset.
+  by rewrite -edom_codom imset_f.
 Qed.
 
 Lemma step_edges_inj : {in step_edom &, injective step_edges}.
@@ -1372,12 +1368,12 @@ case: ifP => [/andP [Htriv Hcond]|Hcond] x y Hx Hy.
     move=> Hey.
     have Hy': y \in edom c by apply step_edom_edom.
     move/andP: Hcond => [_].
-    by rewrite /step_end_cond in_setD -edom_codom Hey mem_imset.
+    by rewrite /step_end_cond in_setD -edom_codom Hey imset_f.
   case: ifPn => Hys.
     move=> Hex.
     have Hx': x \in edom c by apply step_edom_edom.
     move/andP: Hcond => [_].
-    by rewrite /step_end_cond in_setD -edom_codom -Hex mem_imset.
+    by rewrite /step_end_cond in_setD -edom_codom -Hex imset_f.
   by move=> Heq; apply (@edges_inj _ c x y); auto using step_edom_edom.
 rewrite /step_edom /step_nodes Hcond in Hx Hy.
 by move=> Heq; apply (@edges_inj _ c x y).
@@ -1422,7 +1418,7 @@ Proof.
 move=> x Hx.
 rewrite /switch_edges ffunE.
 rewrite /switch_edom -(edom_codom c).
-rewrite mem_imset //.
+rewrite imset_f //.
 case: pickP.
   move=> y /andP [/eqP Hyx Hyc].
   by rewrite (edges_inj Hyc Hx Hyx).
@@ -1437,7 +1433,7 @@ rewrite /switch_edom -edom_codom.
 apply/imsetP.
 case: ifP => Hx.
 - exists (edges c x).
-    by rewrite mem_imset.
+    by rewrite imset_f.
   by rewrite switch_edges_cancel.
 - move => [y Hy Hxy].
   move/imsetP: Hy => [x' Hx' Hyx'].
@@ -1468,9 +1464,9 @@ Definition switch :=
 Lemma switch_edges_cancel2 : {in switch_edom, cancel switch_edges (edges c)}.
 Proof.
 move=> x Hx.
-have Hxc: switch_edges x \in edom c by rewrite -switch_edom_codom mem_imset.
+have Hxc: switch_edges x \in edom c by rewrite -switch_edom_codom imset_f.
 apply switch_edges_inj => //.
-  by rewrite /switch_edom -edom_codom mem_imset //.
+  by rewrite /switch_edom -edom_codom imset_f.
 by rewrite switch_edges_cancel.
 Qed.
 
@@ -1524,7 +1520,7 @@ case: x y => [[x|x][|]] [[y|y][|]] //=.
   move: (Hdom).
   rewrite inE => /andP [_] ->.
   move/setP/(_ y): (edom_codom c).
-  rewrite -(eqP Hed) mem_imset // inE.
+  rewrite -(eqP Hed) imset_f // inE.
   by move/esym/andP => [_] ->.
 - move/existsP => [s] /and4P[Hsg Hos Ho0s Hoo0].
   by split; split => //; apply/bigcupP; exists s.
@@ -1532,7 +1528,7 @@ case: x y => [[x|x][|]] [[y|y][|]] //=.
   move: (Hdom).
   rewrite inE => /andP [_] ->.
   move/setP/(_ x): (edom_codom c).
-  rewrite -(eqP Hed) mem_imset // inE.
+  rewrite -(eqP Hed) imset_f // inE.
   by move/esym/andP => [_] ->.
 - move/existsP => [s] /and4P[Hsg Hos Ho0s Hoo0].
   by split; split => //; apply/bigcupP; exists s.
@@ -1635,7 +1631,7 @@ case: ifP => Hp.
     by rewrite -Hx.
   move/(_ (edges c p)).
   rewrite switch_edges_cancel // eqxx /=.
-  by rewrite /edom -edom_codom mem_imset.
+  by rewrite /edom -edom_codom imset_f.
 by rewrite edges_out // inE Hp.
 Qed.
 
@@ -1668,14 +1664,14 @@ Proof.
 case Hx: (x \in _) => /=.
   case Hxy: (edges c x == y).
     rewrite -(eqP Hxy) switch_edges_cancel // eqxx andbT.
-    by rewrite -edom_codom mem_imset.
+    by rewrite -edom_codom imset_f.
   case Hy: (y \in _) => //=.
   case Hyx: (_ == _) => //.
   by rewrite -(eqP Hyx) switch_edges_cancel2 // eqxx in Hxy.
 case Hy: (y \in _) => //=.
 case Hyx: (_ == _) => //.
 rewrite -switch_edom_codom -(eqP Hyx) in Hx.
-by rewrite mem_imset in Hx.
+by rewrite imset_f in Hx.
 Qed.
 
 Lemma switch_graph_rel x y :
@@ -1797,7 +1793,7 @@ case: imsetP.
   by rewrite (inr_inj Hyy') Hy'.
 case Hyen: (y \in en) => //.
 move/imsetP.
-by rewrite mem_imset.
+by rewrite imset_f.
 Qed.
 
 Section connected_step_out.
@@ -2279,7 +2275,7 @@ case Hij: (j == i) => /=.
     rewrite prednK // lt0n.
     by move/eqP: Hk.
   case His: (_ && _ && _).
-    by rewrite mem_imset // inE andbC.
+    by rewrite imset_f // inE andbC.
   apply/imsetP => [] [s' Hs' [Hss']].
   by rewrite -Hss' !inE -topredE /= andbC His in Hs'.
 rewrite andbF.
@@ -2412,7 +2408,7 @@ have Hb2: b2 = true.
   case Hedge: (edges c b == _) => //=.
   move/andP: Hsc => [Hsp].
   rewrite /step_end_cond inE.
-  move/(mem_imset (edges c)): Hbdom.
+  move/(imset_f (edges c)): Hbdom.
   by rewrite edom_codom (eqP Hedge) => ->.
 subst b2.
 have Hlen: (size p' < #|port|*4)%nat.
@@ -2553,7 +2549,7 @@ have Hix': x' = i.1.
     by rewrite eq_sym => /eqP.
   move: (step_edom_edom Htriv Hsc (negbT Hx''p) Hex'') => Hx''e Hed.
   move/setP/(_ x'): (edom_codom c).
-  rewrite -{1}(eqP Hed) mem_imset //= => /esym.
+  rewrite -{1}(eqP Hed) imset_f //= => /esym.
   rewrite !inE => /andP [_] Hx'p.
   elim (negP Hxkp).
   apply/bigcupP; exists i.2 => //.
@@ -2569,7 +2565,7 @@ have Hix: x = i.1.
     by rewrite eq_sym => /eqP.
   move: (step_edom_edom Htriv Hsc (negbT Hx''p) Hex'') => Hx''e Hed.
   move/setP/(_ x): (edom_codom c).
-  rewrite -{1}(eqP Hed) mem_imset //= => /esym.
+  rewrite -{1}(eqP Hed) imset_f //= => /esym.
   rewrite !inE => /andP [_] Hx'p.
   elim (negP Hxkp).
   apply/bigcupP; exists i.2 => //.

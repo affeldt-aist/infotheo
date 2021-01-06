@@ -382,7 +382,7 @@ have -> : `[ \sum_(i < size p) (p`_i *: ('X^i * c)) ]_n  =
   by rewrite (big_morph (id1 := 0) _ (@morph_modp _ _)) // mod0p.
 have -> : \sum_(i < size p) `[ p`_i *: ('X^i * c) ]_n  =
           \sum_(i < size p) (p`_i *: `[ 'X^i * c ]_ n ).
-  apply eq_bigr => k _; by rewrite modp_scalel.
+  apply eq_bigr => k _; by rewrite modpZl.
 apply Lcode0.mem_poly_rV => j.
 rewrite linearZ /= Lcode0.sclosed //; by apply shift_codeword.
 Qed.
@@ -400,9 +400,9 @@ have -> : r = `[ r ]_n.
   by rewrite size_Xn_sub_1 // ltnS.
 rewrite (_ : r = rVpoly p - rVpoly p %/ c * c); last first.
   by rewrite {1}Hdivp_g addrAC subrr add0r.
-rewrite modp_add linearD /=.
+rewrite modpD linearD /=.
 have -> : `[ rVpoly p ]_n = rVpoly p.
-  rewrite modp_small // size_Xn_sub_1 // ltnS; by apply: size_poly.
+  by rewrite modp_small // size_Xn_sub_1 // ltnS size_poly.
 rewrite rVpolyK; apply Lcode0.aclosed => //.
 by rewrite -mulNr shift_linearity_codeword.
 Qed.
@@ -472,7 +472,7 @@ have size_rem : size (p %% rVpoly g) < size (rVpoly g).
 have rem_n : size (p %% rVpoly g) <= n.
   by rewrite ltnW //; apply/(leq_trans size_rem)/(size_is_cgen Hg).
 rewrite modp_small; last by rewrite size_Xn_sub_1.
-rewrite modp_add modp_opp => pmodg.
+rewrite modpD modpN => pmodg.
 have rem_in_C : poly_rV (p %% rVpoly g) \in C.
   rewrite pmodg linearD /= (proj2 (Lcode0.aclosed C)) // linearN /= Lcode0.oclosed //.
   apply/shift_linearity_codeword => //.
@@ -582,7 +582,7 @@ split.
   by rewrite inE linear0 dvdp0.
 move=> k a b; rewrite !inE => ga gb.
 case/boolP : (k == 0) => [/eqP ->|k0]; first by rewrite scale0r add0r.
-by rewrite linearD linearZ /= dvdp_addr // dvdp_scaler.
+by rewrite linearD linearZ /= dvdp_addr // dvdpZr.
 Qed.
 
 Lemma divides_Xn_sub_1_is_cyclic (g : {poly F}) : g %| 'X^n - 1 ->

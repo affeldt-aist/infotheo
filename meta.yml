@@ -43,40 +43,40 @@ supported_coq_versions:
   opam: '{ (>= "8.11" & < "8.13~") | (= "dev") }'
 
 tested_coq_opam_versions:
-- version: '1.11.0-coq-8.11'
+- version: '1.12.0-coq-8.11'
   repo: 'mathcomp/mathcomp'
-- version: '1.11.0-coq-8.12'
+- version: '1.12.0-coq-8.12'
   repo: 'mathcomp/mathcomp'
 
 dependencies:
 - opam:
     name: coq-mathcomp-ssreflect
-    version: '{ (>= "1.11.0" & < "1.12~") }'
+    version: '{ (>= "1.12.0" & < "1.13~") }'
   description: |-
-    [MathComp ssreflect 1.11](https://math-comp.github.io)
+    [MathComp ssreflect 1.12](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-fingroup
-    version: '{ (>= "1.11.0" & < "1.12~") }'
+    version: '{ (>= "1.12.0" & < "1.13~") }'
   description: |-
-    [MathComp fingroup 1.11](https://math-comp.github.io)
+    [MathComp fingroup 1.12](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-algebra
-    version: '{ (>= "1.11.0" & < "1.12~") }'
+    version: '{ (>= "1.12.0" & < "1.13~") }'
   description: |-
-    [MathComp algebra 1.11](https://math-comp.github.io)
+    [MathComp algebra 1.12](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-solvable
-    version: '{ (>= "1.11.0" & < "1.12~") }'
+    version: '{ (>= "1.12.0" & < "1.13~") }'
   description: |-
-    [MathComp solvable 1.11](https://math-comp.github.io)
+    [MathComp solvable 1.12](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-field
-    version: '{ (>= "1.11.0" & < "1.12~") }'
+    version: '{ (>= "1.12.0" & < "1.13~") }'
   description: |-
-    [MathComp field 1.11](https://math-comp.github.io)
+    [MathComp field 1.12](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-analysis
-    version: '{ (= "0.3.4") }'
+    version: '{ (>= "0.3.4") }'
   description: |-
     [MathComp analysis 0.3.4](https://github.com/math-comp/analysis)
 namespace: infotheo

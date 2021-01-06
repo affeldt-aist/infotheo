@@ -284,7 +284,7 @@ case/connectP : nv => t' /shortenP[t nt uniq_nt _] ->{v t'}.
 case: t => [|h t] in nt uniq_nt *.
   by exists [set n]; rewrite !inE // eqxx.
 exists (subgraph g h n).
-  rewrite inE /subgraph_succ (mem_imset ((subgraph g)^~ n)) ?orbT //.
+  rewrite inE /subgraph_succ (imset_f ((subgraph g)^~ n)) ?orbT //.
   rewrite inE; rewrite /= in nt; by case/andP : nt.
 rewrite inE /=.
 rewrite /= in nt.
@@ -403,7 +403,7 @@ case => [_ /= _ _ ? | h t' /=].
   by subst v; rewrite eqxx in vm.
 case/andP; rewrite {1}exceptE /= => /and3P[mh mn hn] H4 Hun t't vt.
 exists (subgraph g h m).
-  by rewrite (mem_imset (subgraph g ^~ m)) // !inE hn.
+  by rewrite (imset_f (subgraph g ^~ m)) // !inE hn.
 rewrite /subgraph inE mh /=.
 apply/connectP; exists t' => //.
 case/andP : Hun; rewrite inE negb_or => /andP[m_neq_h mt'] _.

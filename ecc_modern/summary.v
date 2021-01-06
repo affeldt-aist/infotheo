@@ -346,7 +346,7 @@ case: ifP => [Hi|Hi].
   move/subsetP: Hj; apply => k Hk.
   move: (Hjs _ Hk).
   rewrite !inE => /orP[/eqP ?|//].
-  subst n1; by rewrite Hk in Hn1j.
+  by subst n1; rewrite Hk in Hn1j.
 Qed.
 
 End alternative_definitions_of_summary.

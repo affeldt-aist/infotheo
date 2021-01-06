@@ -824,9 +824,9 @@ Lemma solve_key_equation_coprimep p t :
   exists k, k <> 0 /\ v stop = k *: V /\ r stop = k *: R.
 Proof.
 move=> H1 Hmu Hnu H2 Hco j.
-case: (solve_key_equation H1 Hmu Hnu H2) => l [l_neq0 [vvi rrj]].
+have [l [l_neq0 [vvi rrj]]] := solve_key_equation H1 Hmu Hnu H2.
 move: Hco.
-rewrite {1}vvi {1}rrj coprimep_mulr coprimep_mull coprimepp => /andP[/andP[]].
+rewrite {1}vvi {1}rrj coprimepMr coprimepMl coprimepp => /andP[/andP[]].
 case/size_poly1P => k k_neq0 lk _ _.
 exists k^-1; split; first by apply/eqP; rewrite invr_eq0.
 split.

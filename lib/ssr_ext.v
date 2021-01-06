@@ -296,10 +296,10 @@ elim=> [[]// k _ _ _ Hk H|] /=.
   by rewrite !inE eqxx orTb in_nil => /(_ isT).
 move=> n0 IH [|hd tl] // v [lst_sz] lst_uniq lst_sorted v_sorted Hincl.
 have X1 : v = filter (pred1 hd) v ++ filter (predC (pred1 hd)) v.
-  apply eq_sorted with leT => //.
+  apply: (@sorted_eq _ leT) => //.
   - apply: sorted_cat.
-    + by apply sorted_filter.
-    + by apply sorted_filter.
+    + exact: sorted_filter.
+    + exact: sorted_filter.
     + move=> a.
       rewrite mem_filter => /andP[/= /eqP ?]; subst hd => av b.
       rewrite mem_filter => /andP[/= ba /Hincl].
@@ -307,10 +307,10 @@ have X1 : v = filter (pred1 hd) v ++ filter (predC (pred1 hd)) v.
       * move/eqP => ?; by subst b.
       * move=> btl.
         rewrite /sorted in lst_sorted.
-        move: (@subseq_order_path _ _ (Htrans) a [:: b] tl).
-        rewrite /= andbC /=.
-        apply => //; by rewrite sub1seq.
-  - rewrite perm_sym; by apply permEl, perm_filterC.
+        have /= := @subseq_path _ _ Htrans a [:: b] tl.
+        rewrite andbT.
+        by apply => //; rewrite sub1seq.
+  - by rewrite perm_sym; apply permEl, perm_filterC.
 rewrite {1}X1 {X1} /=.
 congr (_ ++ _).
 move: lst_uniq => /= /andP[hdtl tl_uniq].
@@ -328,7 +328,7 @@ rewrite (IH tl (filter (predC (pred1 hd)) v) lst_sz tl_uniq).
 - exact: sorted_filter.
 - move=> i.
   rewrite mem_filter /= => /andP[ihd] /Hincl.
-  rewrite inE => /orP[|//]; by rewrite (negbTE ihd).
+  by rewrite inE => /orP[|//]; rewrite (negbTE ihd).
 Qed.
 
 Lemma filter_zip_L m (l : seq A) (k : seq B) a :
@@ -570,7 +570,7 @@ Definition fin_img (A : finType) (B : eqType) (f : A -> B) : seq B := undup (map
 Lemma fin_img_imset (A B : finType) (f : A -> B) : fin_img f =i f @: A.
 Proof.
 apply/subset_eqP/andP; split; apply/subsetP => b; rewrite mem_undup; case/boolP : [exists a, b  == f a].
-- by case/existsP => a /eqP ->; rewrite mem_imset.
+- by case/existsP => a /eqP ->; rewrite imset_f.
 - rewrite negb_exists; move/forallP=> bfx.
   case/mapP => a _ bfa.
     by move: (bfx a); rewrite bfa => /eqP.

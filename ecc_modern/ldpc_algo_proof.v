@@ -1459,7 +1459,7 @@ transitivity
   destruct k; by rewrite (eq_filter Hp) filter_pred0 // cats0.
 congr (map _ _).
 apply eq_filter => x /=; rewrite !inE.
-case Hx: (x \in s); first by rewrite mem_imset.
+case/boolP : (x \in s) => /= Hx; first by rewrite imset_f.
 case /boolP: (inj x \in _) => // /imsetP [y Hy] /id_of_kind_inj xy.
 by rewrite xy Hy in Hx.
 Qed.
@@ -2166,9 +2166,8 @@ split.
 move=> n0.
 have Hn0 := get_esti_ok n0.
 set estimations := estimation _ in Hn0 *.
-have Hsq := get_esti_subseq n0 estimations.
-rewrite Hn0 /= in Hsq.
-by rewrite -sub1seq.
+have := get_esti_subseq n0 estimations.
+by rewrite Hn0 /= -sub1seq.
 Qed.
 
 End AlgoProof.

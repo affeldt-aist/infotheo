@@ -300,8 +300,8 @@ rewrite -!scalerAl; congr (_ *: _ ).
 rewrite -mulrA; congr (_ * _).
   apply eq_big.
     by move=> j; rewrite in_setD1 andbC.
-  move=> j; by rewrite mxE.
-by rewrite mxE -polyC_mul -exprSr -exprM mulnC.
+  by move=> j; rewrite mxE.
+by rewrite mxE -polyCM -exprSr -exprM mulnC.
 Qed.
 
 Lemma RS_key_equation y :
