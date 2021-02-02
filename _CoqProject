@@ -27,6 +27,7 @@ probability/fdist.v
 probability/proba.v
 probability/fsdist.v
 probability/convex_choice.v
+probability/convex_equiv.v
 probability/convex_stone.v
 probability/jfdist.v
 probability/graphoid.v
