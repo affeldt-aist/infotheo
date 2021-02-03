@@ -39,13 +39,11 @@ license:
   file: LICENSE
 
 supported_coq_versions:
-  text: Coq 8.11 to 8.12
-  opam: '{ (>= "8.11" & < "8.13~") | (= "dev") }'
+  text: Coq 8.13
+  opam: '{ (>= "8.13" & < "8.14~") | (= "dev") }'
 
 tested_coq_opam_versions:
-- version: '1.12.0-coq-8.11'
-  repo: 'mathcomp/mathcomp'
-- version: '1.12.0-coq-8.12'
+- version: '1.12.0-coq-8.13'
   repo: 'mathcomp/mathcomp'
 
 dependencies:

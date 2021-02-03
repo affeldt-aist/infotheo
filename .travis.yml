@@ -14,8 +14,7 @@ env:
   - NJOBS="2"
   - CONTRIB_NAME="infotheo"
   matrix:
-  - DOCKERIMAGE="mathcomp/mathcomp:1.12.0-coq-8.11"
-  - DOCKERIMAGE="mathcomp/mathcomp:1.12.0-coq-8.12"
+  - DOCKERIMAGE="mathcomp/mathcomp:1.12.0-coq-8.13"
 
 install: |
   # Prepare the COQ container
