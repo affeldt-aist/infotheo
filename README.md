@@ -27,7 +27,7 @@ information theory, and linear error-correcting codes.
   - Takafumi Saikawa, Nagoya U.
   - Naruomi Obata, Titech (M2)
 - License: [LGPL-2.1-or-later](LICENSE)
-- Compatible Coq versions: Coq 8.11 to 8.12
+- Compatible Coq versions: Coq 8.13
 - Additional dependencies:
   - [MathComp ssreflect 1.12](https://math-comp.github.io)
   - [MathComp fingroup 1.12](https://math-comp.github.io)
