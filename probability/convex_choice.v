@@ -60,6 +60,9 @@ Require Import fdist jfdist fsdist.
 (* orderedConvType == a convType augmented with an order                      *)
 (* Instances: R_orderedConvType, fun_orderedConvType, oppConvType             *)
 (*                                                                            *)
+(* Reference: R. Affeldt, J. Garrigue, T. Saikawa. Formal adventures in       *)
+(* convex and conical spaces. CICM 2020                                       *)
+(*                                                                            *)
 (* Definitions of convex, concave, affine functions                           *)
 (* Lemmas:                                                                    *)
 (* image_preserves_convex_hull == the image of a convex hull is the convex    *)
@@ -104,14 +107,6 @@ Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
-
-(* TODO: PR to mathcomp-analysis in progress *)
-Section depfun.
-Variable (I : Type) (T : I -> choiceType).
-Definition depfun_choiceClass :=
-  Choice.Class (Equality.class (dep_arrow_eqType T)) gen_choiceMixin.
-Definition dep_arrow_choiceType := Choice.Pack depfun_choiceClass.
-End depfun.
 
 Section tmp.
 Variables (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob).

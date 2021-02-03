@@ -1,5 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
+From mathcomp Require Import boolp classical_sets.
+Require Import Reals.
+Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
+Require Import fdist jfdist fsdist convex_choice.
+
 (******************************************************************************)
 (*                  Equivalence of Convexity Definitions                      *)
 (*                                                                            *)
@@ -10,13 +16,10 @@
 (*                   equivalencs by the module NaryConvexSpaceEquiv           *)
 (*        <&>_d f == notation for the operator of naryConvType                *)
 (*    a <& p &> b == binary instance of the <&>_ operator                     *)
+(*                                                                            *)
+(* Reference: R. Affeldt, J. Garrigue, T. Saikawa. Formal adventures in       *)
+(* convex and conical spaces. CICM 2020                                       *)
 (******************************************************************************)
-
-From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
-From mathcomp Require Import boolp classical_sets.
-Require Import Reals.
-Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import fdist jfdist fsdist convex_choice.
 
 Reserved Notation "'<&>_' d f" (at level 36, f at level 36, d at level 0,
   format "<&>_ d  f").
@@ -53,7 +56,7 @@ Module NaryConvexSpaceEquiv.
 Import NaryConvexSpace.Exports.
 
 (* In this module we use funext to avoid explicitly handling the congruence
-   of convn (cf. eq_convn in for the iterated version). *)
+   of convn (cf. eq_convn in convex_choice.v for the iterated version). *)
 
 (* These definitions about distributions should probably be elsewhere *)
 Definition fdistE :=

@@ -398,7 +398,7 @@ Variables (A B : finType) (P : fdist A).
 Local Open Scope divergence_scope.
 
 Lemma mutual_information_convex :
-  convex_function (fun Q : dep_arrow_choiceType (fun _ : A => fdist_convType B) =>
+  convex_function (fun Q : classical_sets.dep_arrow_choiceType (fun _ : A => fdist_convType B) =>
     MutualInfo.mi (CJFDist.make_joint P Q)).
 Proof.
 move=> p1yx p2yx t.
