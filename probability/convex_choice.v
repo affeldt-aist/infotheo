@@ -214,7 +214,7 @@ End def.
 End CodomDFDist.
 
 Module ConvexSpace.
-Record mixin_of (T : choiceType) : Type := Mixin {
+Record mixin_of (T : choiceType) := Mixin {
   conv : prob -> T -> T -> T where "a <| p |> b" := (conv p a b);
   _ : forall a b, a <| 1%:pr|> b = a ;
   _ : forall p a, a <| p |> a = a ;
@@ -1895,30 +1895,35 @@ Implicit Types T U V : convType.
 Lemma affine_functionP' T U (f : {affine T -> U}) a b t :
   affine_function_at f a b t.
 Proof. by case: f => f0; apply. Qed.
+
 Lemma affine_function_id_proof T : affine_function (ssrfun.id : T -> T).
 Proof. by []. Qed.
+
 Definition affine_function_id T : {affine T -> T} :=
   AffineFunction (@affine_function_id_proof T).
+
 Lemma affine_function_comp_proof' T U V (f : T -> U) (g : U -> V) :
   affine_function f -> affine_function g -> affine_function (g \o f).
 Proof. by move=> Hf Hg a b t; rewrite /affine_function_at /= Hf Hg. Qed.
-Lemma affine_function_comp_proof T U V
-  (f : {affine T -> U}) (g : {affine U -> V}) :
-  affine_function (g \o f).
+
+Lemma affine_function_comp_proof T U V (f : {affine T -> U}) (g : {affine U -> V})
+  : affine_function (g \o f).
 Proof.
-exact (affine_function_comp_proof' (affine_functionP' f) (affine_functionP' g)).
+exact: (affine_function_comp_proof' (affine_functionP' f) (affine_functionP' g)).
 Qed.
-Definition affine_function_comp T U V
-  (f : {affine T -> U}) (g : {affine U -> V}) : {affine T -> V} :=
+
+Definition affine_function_comp T U V (f : {affine T -> U}) (g : {affine U -> V})
+    : {affine T -> V} :=
   AffineFunction (affine_function_comp_proof f g).
-Lemma affine_function_Sum T U
-  (f : {affine T -> U}) n (g : 'I_n -> T) (d : {fdist 'I_n}) :
+
+Lemma affine_function_Sum T U (f : {affine T -> U}) n (g : 'I_n -> T) (d : {fdist 'I_n}) :
   f (<|>_d g) = <|>_d (f \o g).
 Proof.
 Import ScaledConvex.
 apply S1_inj; rewrite S1_convn S1_convn_proj //.
 by move=> p x y; rewrite affine_functionP'.
 Qed.
+
 End affine_function_prop0.
 
 Section affine_function_prop.

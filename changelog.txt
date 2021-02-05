@@ -1,6 +1,25 @@
----------------
-from 0.2.1 to ?
----------------
+-----------------
+from 0.2.2 to 0.3
+-----------------
+
+- renames:
+  + lub_op1 -> lub1
+  + lub_op_bigsetU -> lub_bignesetU
+  + lub_op_bigcup -> lub_bigcup
+  + lub_op_setU -> lub_setU
+  + lub_of_flatten -> lub_flatten
+  + lub_op_morph -> lub_morph
+  + LubOpMorph -> LubMorph
+  + LubOpAffine -> LubAffine
+  + lub_op_affine_id_proof -> lub_affine_id_proof
+  + lub_op_affine_comp_proof -> lub_affine_comp_proof
+  + lub_opD{r,l} -> lubD{r,l}
+  + lub_op_conv_pt_setE -> lub_conv_pt_setE
+  + lub_op_conv_pt_setD -> lub_conv_pt_setD
+  + lub_op_conv_set -> lub_conv_setE
+  + lub_op_conv_setD -> lub_conv_setD
+  + lub_op_iter_conv_set -> lub_iter_conv_set
+  + lub_op_hull -> lub_hull
 
 -----------------
 from 0.2 to 0.2.1

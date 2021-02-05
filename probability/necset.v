@@ -451,7 +451,7 @@ Notation "X :<| p |>: Y" := (conv_set p X Y) : convex_scope.
 Module SemiCompleteSemiLattice.
 Section def.
 Local Open Scope classical_set_scope.
-Record mixin_of (T : choiceType) : Type := Mixin {
+Record mixin_of (T : choiceType) := Mixin {
   op : neset T -> T ;
   _ : forall x : T, op [set x]%:ne = x ;
   _ : forall I (s : neset I) (f : I -> neset T),
@@ -488,16 +488,16 @@ Variable (L : semiCompSemiLattType).
 *)
 
 (* [Reiterman] p.326, axiom 3 *)
-Lemma lub_op1 : forall x : L, |_| [set x]%:ne = x.
+Lemma lub1 : forall x : L, |_| [set x]%:ne = x.
 Proof. by case: L => [? [? []]]. Qed.
 (* NB: bigsetU (bigsetI too) is the bind operator for the poserset monad *)
-Lemma lub_op_bigsetU : forall (I : Type) (S : neset I) (F : I -> neset L),
+Lemma lub_bignesetU : forall (I : Type) (S : neset I) (F : I -> neset L),
     |_| (bignesetU S F) = |_| (lub_op @` (F @` S))%:ne.
 Proof. by case: L => [? [? []]]. Qed.
 
-Lemma lub_op_bigcup (I : Type) (S : neset I) (F : I -> neset L) :
+Lemma lub_bigcup (I : Type) (S : neset I) (F : I -> neset L) :
   |_| (\bigcup_(i in S) F i)%:ne = |_| (lub_op @` (F @` S))%:ne.
-Proof. by rewrite lub_op_bigsetU. Qed.
+Proof. by rewrite lub_bignesetU. Qed.
 
 Lemma nesetU_bigsetU T (I J : neset T) :
   (I `|` J)%:ne = (bigsetU [set I; J] idfun)%:ne.
@@ -507,10 +507,10 @@ apply/neset_ext => /=; rewrite eqEsubset; split => x.
 by case=> K [] -> Hx; [left | right].
 Qed.
 
-Lemma lub_op_setU (I J : neset L) :
+Lemma lub_setU (I J : neset L) :
   |_| (I `|` J)%:ne = |_| [set |_| I; |_| J]%:ne.
 Proof.
-rewrite nesetU_bigsetU lub_op_bigsetU; congr (|_| _%:ne); apply/neset_ext => /=.
+rewrite nesetU_bigsetU lub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_id /= image_setU !image_set1.
 Qed.
 
@@ -518,10 +518,10 @@ Qed.
    a set but not a sequence. *)
 
 (* [Reiterman] p.326, axiom 2 *)
-Lemma lub_op_flatten (F : neset (neset L)) :
+Lemma lub_flatten (F : neset (neset L)) :
   |_| (lub_op @` F)%:ne = |_| (bigsetU F idfun)%:ne.
 Proof.
-rewrite lub_op_bigsetU; congr (|_| _%:ne); apply/neset_ext => /=.
+rewrite lub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_id.
 Qed.
 
@@ -535,12 +535,12 @@ by move=> x y; congr lub_op; apply neset_ext => /=; rewrite /lub_binary setUC.
 Qed.
 Lemma lub_binaryA : associative lub_binary.
 Proof.
-move=> x y z; rewrite /lub_binary -[in LHS](lub_op1 x) -[in RHS](lub_op1 z).
-by rewrite -!lub_op_setU; congr (|_| _); apply neset_ext => /=; rewrite setUA.
+move=> x y z; rewrite /lub_binary -[in LHS](lub1 x) -[in RHS](lub1 z).
+by rewrite -!lub_setU; congr (|_| _); apply neset_ext => /=; rewrite setUA.
 Qed.
 Lemma lub_binaryxx : idempotent lub_binary.
 Proof.
-move=> x; rewrite -[in RHS](lub_op1 x); congr (|_| _); apply neset_ext => /=.
+move=> x; rewrite -[in RHS](lub1 x); congr (|_| _); apply neset_ext => /=.
 by rewrite setUid.
 Qed.
 
@@ -564,16 +564,16 @@ Proof. by rewrite lub_binaryAC lub_binaryC lub_binaryxx. Qed.
 End semicompletesemilattice_lemmas.
 Notation "x [+] y" := (lub_binary x y) : latt_scope.
 
-Section lub_op_morph.
+Section lub_morph.
 Local Open Scope classical_set_scope.
 Local Open Scope latt_scope.
 Variables (L M : semiCompSemiLattType).
-Definition lub_op_morph (f : L -> M) :=
+Definition lub_morph (f : L -> M) :=
   forall (X : neset L), f (|_| X) = |_| (f @` X)%:ne.
 Definition lub_binary_morph (f : L -> M) :=
   forall (x y : L), f (x [+] y) = f x [+] f y.
-Lemma lub_op_lub_binary_morph (f : L -> M) :
-  lub_op_morph f -> lub_binary_morph f.
+Lemma lub_lub_binary_morph (f : L -> M) :
+  lub_morph f -> lub_binary_morph f.
 Proof.
 move=> H x y.
 move: (H [set x; y]%:ne) => ->.
@@ -581,23 +581,23 @@ transitivity (|_| [set f x; f y]%:ne) => //.
 congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
-End lub_op_morph.
+End lub_morph.
 
-Module LubOpMorph.
+Module LubMorph.
 Section ClassDef.
 Local Open Scope classical_set_scope.
 Variables (U V : semiCompSemiLattType).
 Structure map (phUV : phant (U -> V)) :=
-  Pack {apply : U -> V ; _ : lub_op_morph apply}.
+  Pack {apply : U -> V ; _ : lub_morph apply}.
 Local Coercion apply : map >-> Funclass.
 Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
-Definition class := let: Pack _ c as cF' := cF return lub_op_morph cF' in c.
+Definition class := let: Pack _ c as cF' := cF return lub_morph cF' in c.
 Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
   @Pack phUV f fA.
 End ClassDef.
 Module Exports.
 Coercion apply : map >-> Funclass.
-Notation LubOpMorph fA := (Pack (Phant _) fA).
+Notation LubMorph fA := (Pack (Phant _) fA).
 Notation "{ 'Lub_morph' fUV }" := (map (Phant fUV))
   (at level 0, format "{ 'Lub_morph'  fUV }") : convex_scope.
 Notation "[ 'Lub_morph' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
@@ -605,16 +605,16 @@ Notation "[ 'Lub_morph' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
 Notation "[ 'Lub_morph' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
   (at level 0, format "[ 'Lub_morph'  'of'  f ]") : convex_scope.
 End Exports.
-End LubOpMorph.
-Export LubOpMorph.Exports.
+End LubMorph.
+Export LubMorph.Exports.
 
 Module SemiCompSemiLattConvType.
 Local Open Scope convex_scope.
 Local Open Scope latt_scope.
 Local Open Scope classical_set_scope.
-Record mixin_of (L : semiCompSemiLattType) (op : prob -> L -> L -> L) := Mixin {
+Record mixin_of (L : semiCompSemiLattType) (conv : prob -> L -> L -> L) := Mixin {
   _ : forall (p : prob) (x : L) (I : neset L),
-    op p x (|_| I) = |_| ((op p x) @` I)%:ne }.
+    conv p x (|_| I) = |_| ((conv p x) @` I)%:ne }.
 Record class_of T : Type := Class {
   base : SemiCompleteSemiLattice.class_of T ;
   mixin_conv : ConvexSpace.mixin_of (SemiCompleteSemiLattice.Pack base) ;
@@ -635,19 +635,19 @@ End Exports.
 End SemiCompSemiLattConvType.
 Export SemiCompSemiLattConvType.Exports.
 
-Module LubOpAffine.
+Module LubAffine.
 Section ClassDef.
 Local Open Scope classical_set_scope.
 Variables (U V : semiCompSemiLattConvType).
 Record class_of (f : U -> V) : Prop := Class {
   base : affine_function f ;
-  base2 : lub_op_morph f }.
+  base2 : lub_morph f }.
 Structure map (phUV : phant (U -> V)) :=
   Pack {apply : U -> V ; class' : class_of apply}.
 Definition baseType (phUV : phant (U -> V)) (f : map phUV) : {affine U -> V} :=
   AffineFunction (base (class' f)).
 Definition base2Type (phUV : phant (U -> V)) (f : map phUV) : {Lub_morph U -> V} :=
-  LubOpMorph (base2 (class' f)).
+  LubMorph (base2 (class' f)).
 Local Coercion apply : map >-> Funclass.
 Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
 Definition class := let: Pack _ c as cF' := cF return class_of cF' in c.
@@ -657,7 +657,7 @@ End ClassDef.
 Module Exports.
 Coercion apply : map >-> Funclass.
 Coercion baseType : map >-> AffineFunction.map.
-Coercion base2Type : map >-> LubOpMorph.map.
+Coercion base2Type : map >-> LubMorph.map.
 Canonical baseType.
 Canonical base2Type.
 Notation Lub_Affine fA := (Pack (Phant _) fA).
@@ -668,22 +668,23 @@ Notation "[ 'Lub_affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
 Notation "[ 'Lub_affine' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
   (at level 0, format "[ 'Lub_affine'  'of'  f ]") : convex_scope.
 End Exports.
-End LubOpAffine.
-Export LubOpAffine.Exports.
+End LubAffine.
+Export LubAffine.Exports.
 
-Lemma lub_op_affine_id_proof (A : semiCompSemiLattConvType) : LubOpAffine.class_of (@id A).
+Lemma lub_affine_id_proof (A : semiCompSemiLattConvType) :
+  LubAffine.class_of (@id A).
 Proof.
-apply LubOpAffine.Class; first exact: affine_function_id_proof.
+apply LubAffine.Class; first exact: affine_function_id_proof.
 by move=> x; congr (|_| _); apply neset_ext; rewrite /= image_id.
 Qed.
 
-Lemma lub_op_affine_comp_proof (A B C : semiCompSemiLattConvType)
+Lemma lub_affine_comp_proof (A B C : semiCompSemiLattConvType)
   (f : A -> B) (g : B -> C) :
-  LubOpAffine.class_of f -> LubOpAffine.class_of g ->
-  LubOpAffine.class_of (g \o f).
+  LubAffine.class_of f -> LubAffine.class_of g ->
+  LubAffine.class_of (g \o f).
 Proof.
 move=> [af jf] [ag jg].
-apply LubOpAffine.Class; first exact: affine_function_comp_proof'.
+apply LubAffine.Class; first exact: affine_function_comp_proof'.
 move=> x; cbn.
 rewrite jf jg.
 congr (|_| _); apply neset_ext => /=.
@@ -697,78 +698,83 @@ Local Open Scope classical_set_scope.
 
 Variable L : semiCompSemiLattConvType.
 
-Lemma lub_opDr : forall (p : prob) (x : L) (Y : neset L),
+Lemma lubDr : forall (p : prob) (x : L) (Y : neset L),
   x <|p|> |_| Y = |_| ((fun y => x <|p|> y) @` Y)%:ne.
 Proof. by case: L => ? [? ? []]. Qed.
-Lemma lub_opDl (p : prob) (X : neset L) (y : L) :
+
+Lemma lubDl (p : prob) (X : neset L) (y : L) :
   |_| X <|p|> y = |_| ((fun x => x <|p|> y) @` X)%:ne.
 Proof.
-rewrite convC lub_opDr.
-congr (|_| _); apply/neset_ext/eq_imagel=> x Xx.
+rewrite convC lubDr; congr (|_| _); apply/neset_ext/eq_imagel=> x ?.
 by rewrite -convC.
 Qed.
+
 Lemma lub_binaryDr p : right_distributive (fun x y => x <|p|> y) (@lub_binary L).
 Proof.
-move=> x y z.
-rewrite lub_opDr.
+move=> x y z; rewrite lubDr.
 transitivity (|_| [set x <|p|> y; x <|p|> z]%:ne) => //.
 congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
-Lemma lub_op_conv_pt_setE p x (Y : neset L) :
+
+Lemma lub_conv_pt_setE p x (Y : neset L) :
   |_| (x <| p |>: Y)%:ne = |_| ((Conv p x) @` Y)%:ne.
 Proof.
 by congr (|_| _%:ne); apply/neset_ext => /=; rewrite conv_pt_setE.
 Qed.
-Lemma lub_op_conv_pt_setD p x (Y : neset L) :
+
+Lemma lub_conv_pt_setD p x (Y : neset L) :
   |_| (x <| p |>: Y)%:ne = x <|p|> |_| Y.
-Proof. by rewrite lub_op_conv_pt_setE -lub_opDr. Qed.
-Lemma lub_op_conv_setE p (X Y : neset L) :
+Proof. by rewrite lub_conv_pt_setE -lubDr. Qed.
+
+Lemma lub_conv_setE p (X Y : neset L) :
   |_| (X :<| p |>: Y)%:ne = |_| ((fun x => x <|p|> |_| Y) @` X)%:ne.
 Proof.
 transitivity (|_| (\bigcup_(x in X) (x <| p |>: Y))%:ne).
   by congr (|_| _%:ne); apply neset_ext.
-rewrite lub_op_bigcup //; congr (|_| _%:ne); apply neset_ext => /=.
+rewrite lub_bigcup //; congr (|_| _%:ne); apply neset_ext => /=.
 rewrite image_comp; congr image; apply funext => x /=.
-by rewrite lub_op_conv_pt_setD.
+by rewrite lub_conv_pt_setD.
 Qed.
-Lemma lub_op_conv_setD p (X Y : neset L) :
+
+Lemma lub_conv_setD p (X Y : neset L) :
   |_| (X :<| p |>: Y)%:ne = |_| X <|p|> |_| Y.
-Proof. by rewrite lub_op_conv_setE lub_opDl. Qed.
+Proof. by rewrite lub_conv_setE lubDl. Qed.
+
 Lemma lub_oplus_conv_setE (X Y : neset L) :
   |_| (oplus_conv_set X Y)%:ne =
   |_| ((fun p => |_| X <|p|> |_| Y) @` probset)%:ne.
 Proof.
 transitivity (|_| (\bigcup_(p in probset_neset) (X :<| p |>: Y))%:ne).
   by congr (|_| _%:ne); apply/neset_ext.
-rewrite lub_op_bigcup //.
-congr (|_| _%:ne); apply/neset_ext => /=.
+rewrite lub_bigcup //; congr (|_| _%:ne); apply/neset_ext => /=.
 rewrite image_comp; congr image; apply funext => p /=.
-by rewrite lub_op_conv_setD.
+by rewrite lub_conv_setD.
 Qed.
-Lemma lub_op_iter_conv_set (X : neset L) (n : nat) :
+
+Lemma lub_iter_conv_set (X : neset L) (n : nat) :
   |_| (iter_conv_set X n)%:ne = |_| X.
 Proof.
 elim: n => [|n IHn /=]; first by congr (|_| _); apply/neset_ext.
 rewrite (lub_oplus_conv_setE _ (iter_conv_set X n)%:ne).
-transitivity (|_| [set |_| X]%:ne); last by rewrite lub_op1.
+transitivity (|_| [set |_| X]%:ne); last by rewrite lub1.
 congr (|_| _%:ne); apply/neset_ext => /=.
 transitivity ((fun _ => |_| X) @` probset); last by rewrite image_const.
 by congr image; apply funext=> p; rewrite IHn convmm.
 Qed.
 
-Lemma lub_op_hull (X : neset L) : |_| (hull X)%:ne = |_| X.
+Lemma lub_hull (X : neset L) : |_| (hull X)%:ne = |_| X.
 Proof.
 transitivity (|_| (\bigcup_(i in natset) iter_conv_set X i)%:ne);
   first by congr (|_| _); apply neset_ext; rewrite /= hull_iter_conv_set.
-rewrite lub_op_bigsetU /=.
-rewrite -[in RHS](lub_op1 (|_| X)).
+rewrite lub_bignesetU /= -[in RHS](lub1 (|_| X)).
 transitivity (|_| ((fun _ => |_| X) @` natset)%:ne); last first.
   by congr (|_| _); apply/neset_ext/image_const.
 congr (|_| _%:ne); apply/neset_ext => /=.
 rewrite image_comp; congr image; apply funext => n /=.
-by rewrite lub_op_iter_conv_set.
+by rewrite lub_iter_conv_set.
 Qed.
+
 End semicompsemilattconvtype_lemmas.
 
 Section Convn_of_FSDist.
@@ -1243,17 +1249,14 @@ Variable L : semiCompSemiLattConvType.
 Corollary Varacca_Winskel_Lemma_5_6 (Y Z : neset L) :
   hull Y = hull Z -> |_| Y = |_| Z.
 Proof.
-move=> H.
-rewrite-[in LHS]lub_op_hull -[in RHS]lub_op_hull.
+move=> H; rewrite -[in LHS]lub_hull -[in RHS]lub_hull.
 by congr (|_| _); apply neset_ext.
 Qed.
 
 Corollary Beaulieu_technical_equality (x y : L):
   x [+] y = |_| ((fun p => x <| p |> y) @` probset)%:ne.
 Proof.
-rewrite /lub_binary -[in LHS]lub_op_hull.
-congr (|_| _).
-apply neset_ext => /=.
+rewrite /lub_binary -[in LHS]lub_hull; congr (|_| _); apply neset_ext => /=.
 rewrite eqEsubset; split=> i /=.
 - move/set0P: (set1_neq0 x)=> Hx.
   move/set0P: (set1_neq0 y)=> Hy.
@@ -1261,7 +1264,6 @@ rewrite eqEsubset; split=> i /=.
   case=> b /asboolP ->.
   case=> p ->.
   by eexists.
-- case=> p ? <-.
-  exact/mem_hull_setU.
+- by case=> p ? <-; exact/mem_hull_setU.
 Qed.
 End technical_corollaries.
