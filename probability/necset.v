@@ -448,6 +448,67 @@ End convex_neset_lemmas.
 Notation "x <| p |>: Y" := (conv_pt_set p x Y) : convex_scope.
 Notation "X :<| p |>: Y" := (conv_set p X Y) : convex_scope.
 
+(* (saikawa) I am aware that ssreflect/order.v has definitions of porder and lattice.
+   For now, I write down the following definition of semilattice independently of the
+   two, as it seems hard to insert a new layer in the ssreflect hierarchy. *)
+Module SemiLattice.
+Section def.
+Record mixin_of (T : choiceType) := Mixin {
+  op : T -> T -> T ;
+  _ : commutative op;
+  _ : associative op;
+  _ : idempotent op; }.
+Record class_of (T : Type) : Type := Class {
+  base : Choice.class_of T ; mixin : mixin_of (Choice.Pack base) }.
+Structure type := Pack {sort : Type ; class : class_of sort}.
+Definition baseType (T : type) := Choice.Pack (base (class T)).
+End def.
+Module Exports.
+Definition lub {T : type} : (sort T) -> (sort T) -> sort T :=
+  let: Pack _ (Class _ (Mixin op _ _ _)) := T in op.
+Arguments lub {T} : simpl never.
+Notation semiLattType := type.
+Notation "x [+] y" := (lub x y) : latt_scope.
+Coercion baseType : semiLattType >-> choiceType.
+Canonical baseType.
+End Exports.
+End SemiLattice.
+Export SemiLattice.Exports.
+Local Open Scope latt_scope.
+
+Section semilattice_lemmas.
+Variable L : semiLattType.
+Local Notation lub := (@lub L).
+Lemma lubC : commutative lub.
+Proof.
+exact (let: SemiLattice.Pack _ (SemiLattice.Class _ (SemiLattice.Mixin _ H _ _)) := L in H).
+Qed.
+Lemma lubA : associative lub.
+Proof.
+exact (let: SemiLattice.Pack _ (SemiLattice.Class _ (SemiLattice.Mixin _ _ H _)) := L in H).
+Qed.
+Lemma lubxx : idempotent lub.
+Proof.
+exact (let: SemiLattice.Pack _ (SemiLattice.Class _ (SemiLattice.Mixin _ _ _ H)) := L in H).
+Qed.
+Lemma lubAC : right_commutative lub.
+Proof. by move=> x y z; rewrite -!lubA [X in _ [+] X]lubC. Qed.
+Lemma lubCA : left_commutative lub.
+Proof. by move=> x y z; rewrite !lubA [X in X [+] _]lubC. Qed.
+Lemma lubACA : interchange lub lub.
+Proof.
+by move=> x y z t; rewrite !lubA [X in X [+] _]lubAC.
+Qed.
+Lemma lubKU (y x : L) : x [+] (x [+] y) = x [+] y.
+Proof. by rewrite lubA lubxx. Qed.
+Lemma lubUK (y x : L) : (x [+] y) [+] y = x [+] y.
+Proof. by rewrite -lubA lubxx. Qed.
+Lemma lubKUC (y x : L) : x [+] (y [+] x) = x [+] y.
+Proof. by rewrite lubC lubUK lubC. Qed.
+Lemma lubUKC (y x : L) : y [+] x [+] y = x [+] y.
+Proof. by rewrite lubAC lubC lubxx. Qed.
+End semilattice_lemmas.
+
 Module SemiCompleteSemiLattice.
 Section def.
 Local Open Scope classical_set_scope.
@@ -525,44 +586,28 @@ rewrite biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_id.
 Qed.
 
-Definition lub (x y : L) := |_| [set x; y]%:ne.
-Global Arguments lub : simpl never.
-Local Notation "x [+] y" := (lub x y).
-
-Lemma lubC : commutative lub.
+Definition lub_binary (x y : L) := |_| [set x; y]%:ne.
+Lemma lub_binaryE x y : lub_binary x y = |_| [set x; y]%:ne.
+Proof. reflexivity. Qed.
+Lemma lub_binaryC : commutative lub_binary.
 Proof.
-by move=> x y; congr biglub; apply neset_ext => /=; rewrite /lub setUC.
+by move=> x y; congr biglub; apply neset_ext => /=; rewrite setUC.
 Qed.
-Lemma lubA : associative lub.
+Lemma lub_binaryA : associative lub_binary.
 Proof.
-move=> x y z; rewrite /lub -[in LHS](biglub1 x) -[in RHS](biglub1 z).
+move=> x y z; rewrite /lub_binary -[in LHS](biglub1 x) -[in RHS](biglub1 z).
 by rewrite -!biglub_setU; congr (|_| _); apply neset_ext => /=; rewrite setUA.
 Qed.
-Lemma lubxx : idempotent lub.
+Lemma lub_binaryxx : idempotent lub_binary.
 Proof.
 move=> x; rewrite -[in RHS](biglub1 x); congr (|_| _); apply neset_ext => /=.
 by rewrite setUid.
 Qed.
-
-Lemma lubAC : right_commutative lub.
-Proof. by move=> x y z; rewrite -!lubA [X in _ [+] X]lubC. Qed.
-Lemma lubCA : left_commutative lub.
-Proof. by move=> x y z; rewrite !lubA [X in X [+] _]lubC. Qed.
-Lemma lubACA : interchange lub lub.
-Proof.
-by move=> x y z t; rewrite !lubA [X in X [+] _]lubAC.
-Qed.
-
-Lemma lubKU y x : x [+] (x [+] y) = x [+] y.
-Proof. by rewrite lubA lubxx. Qed.
-Lemma lubUK y x : (x [+] y) [+] y = x [+] y.
-Proof. by rewrite -lubA lubxx. Qed.
-Lemma lubKUC y x : x [+] (y [+] x) = x [+] y.
-Proof. by rewrite lubC lubUK lubC. Qed.
-Lemma lubUKC y x : y [+] x [+] y = x [+] y.
-Proof. by rewrite lubAC lubC lubxx. Qed.
+Definition biglub_lub_mixin := SemiLattice.Mixin lub_binaryC lub_binaryA lub_binaryxx.
+Definition biglub_semiLattType := SemiLattice.Pack (SemiLattice.Class biglub_lub_mixin).
 End semicompletesemilattice_lemmas.
-Notation "x [+] y" := (lub x y) : latt_scope.
+Canonical biglub_semiLattType.
+Coercion biglub_semiLattType : semiCompSemiLattType >-> semiLattType.
 
 Section biglub_morph.
 Local Open Scope classical_set_scope.
@@ -1256,7 +1301,8 @@ Qed.
 Corollary Beaulieu_technical_equality (x y : L):
   x [+] y = |_| ((fun p => x <| p |> y) @` probset)%:ne.
 Proof.
-rewrite /lub -[in LHS]biglub_hull; congr (|_| _); apply neset_ext => /=.
+rewrite /lub; cbn.  (* simpl does not work *)
+rewrite lub_binaryE -[in LHS]biglub_hull; congr (|_| _); apply neset_ext => /=.
 rewrite eqEsubset; split=> i /=.
 - move/set0P: (set1_neq0 x)=> Hx.
   move/set0P: (set1_neq0 y)=> Hy.
