@@ -2,6 +2,21 @@
 from 0.2.2 to 0.3
 -----------------
 
+- moved:
+  + from convex_choice.v to fsdist.v
+    * FSDist_convType
+    * convn_convnfsdist
+    * fsdist_orderedConvMixin
+  + from necset.v to fsdist.v
+    * finsupp_Conv
+    * FSDist_eval_affine
+    * FSDist_scalept_conv
+    * Convn_of_FSDist
+    * Convn_of_FSDist_affine
+    * Convn_of_FSDist_FSDist1
+    * Convn_of_FSDist_FSDistfmap
+    * triangular_laws_left0
+
 - renamed:
   + lub_op -> biglub
   + lub_op1 -> biglub1
