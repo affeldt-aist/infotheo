@@ -1,6 +1,39 @@
----------------
-from 0.2.1 to ?
----------------
+-----------------
+from 0.2.2 to 0.3
+-----------------
+
+- renamed:
+  + lub_op -> biglub
+  + lub_op1 -> biglub1
+  + lub_op_bigsetU -> biglub_bignesetU
+  + lub_op_bigcup -> biglub_bigcup
+  + lub_op_setU -> biglub_setU
+  + lub_of_flatten -> biglub_flatten
+  + lub_binary -> lub
+  + lub_binaryC -> lubC
+  + lub_binaryA -> lubA
+  + lub_binaryxx -> lubxx
+  + lub_binaryAC -> lubAC
+  + lub_binaryCA -> lubCA
+  + lub_binaryACA -> lubACA
+  + lub_binaryKU -> lubKU
+  + lub_binaryUK -> lubUK
+  + lub_binaryKUC -> lubKUC
+  + lub_binaryUKC -> lubUKC
+  + lub_binaryD{r,l} -> lubD{r,l}
+  + lub_op_morph -> biglub_morph
+  + lub_lub_binary_morph -> biglub_lub_morph
+  + LubOpMorph -> BiglubMorph
+  + LubOpAffine -> BiglubAffine
+  + lub_op_affine_id_proof -> biglub_affine_id_proof
+  + lub_op_affine_comp_proof -> biglub_affine_comp_proof
+  + lub_opD{r,l} -> biglubD{r,l}
+  + lub_op_conv_pt_setE -> biglub_conv_pt_setE
+  + lub_op_conv_pt_setD -> biglub_conv_pt_setD
+  + lub_op_conv_set -> biglub_conv_setE
+  + lub_op_conv_setD -> biglub_conv_setD
+  + lub_op_iter_conv_set -> biglub_iter_conv_set
+  + lub_op_hull -> biglub_hull
 
 -----------------
 from 0.2 to 0.2.1
