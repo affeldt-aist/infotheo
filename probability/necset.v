@@ -571,6 +571,103 @@ End Exports.
 End BiglubMorph.
 Export BiglubMorph.Exports.
 
+(*** Semilattice convex space:
+     This structure is a combination of convex space and semilattice structures
+     with the distributive law of convex operation over lattice operation.
+     This is the algebra carried by the interface of combined choice monads,
+     which is described in monae.MonadAltProb.
+     Although semilattice convex space is what precisely corresponds to
+     MonadAltProb, we prefer the easeness of its completion
+     (semicomplete semilattice convex space, the next module after this one)
+     when defining our instance of MonadAltProb in monae.{gcm_model, altprob_model}. ***)
+
+Module SemiLattConvType.
+Local Open Scope convex_scope.
+Local Open Scope latt_scope.
+Local Open Scope classical_set_scope.
+Record mixin_of (L : semiLattType) (conv : prob -> L -> L -> L) := Mixin {
+  _ : forall (p : prob) (x y z : L),
+    conv p x (y [+] z) = (conv p x y) [+] (conv p x z) }.
+Record class_of T : Type := Class {
+  base : SemiLattice.class_of T ;
+  mixin_conv : ConvexSpace.mixin_of (SemiLattice.Pack base) ;
+  mixin_scsl : @mixin_of (SemiLattice.Pack base)
+    (@Conv (ConvexSpace.Pack (ConvexSpace.Class mixin_conv))) }.
+Structure t : Type := Pack { sort : Type ; class : class_of sort }.
+Definition baseType (T : t) : semiLattType :=
+  SemiLattice.Pack (base (class T)).
+Definition sl_of_slconv (T : t) :=
+  ConvexSpace.Pack (ConvexSpace.Class (mixin_conv (class T))).
+Module Exports.
+Notation semiLattConvType := t.
+Coercion baseType : semiLattConvType >-> semiLattType.
+Coercion sl_of_slconv : semiLattConvType >-> convType.
+Canonical baseType.
+Canonical sl_of_slconv.
+End Exports.
+End SemiLattConvType.
+Export SemiLattConvType.Exports.
+
+
+(*** Homomorphism between semilattice convex spaces ***)
+(* TODO: define LubAffine for semiLattConvType *)
+
+
+(*** Interfaces and lemmas for semilattice convex space ***)
+
+Section semilattconvtype_lemmas.
+Local Open Scope latt_scope.
+Local Open Scope convex_scope.
+
+Variable L : semiLattConvType.
+
+Section interface.
+Import SemiLattConvType.
+Lemma lubDr p : right_distributive (fun x y => x <|p|> y) (@lub L).
+Proof. exact (let: Pack _ (Class _ _ (Mixin H)):= L in H p). Qed.
+End interface.
+
+Lemma lubDl p : left_distributive (fun x y => x <|p|> y) (@lub L).
+Proof. by move=> x y z; rewrite convC lubDr -(convC x z) -(convC y z). Qed.
+
+(*
+  The proof of the next lemma is essentially based on the canonical order structure
+  induced by semilattice structure: x <= y is defined to be x [+] y = y.
+  Immediately from the definition,
+    x [+] y  <=  x [+] y [+] x <|p|> y and
+    x [+] y [+] x <|p|> y  <=  x [+] y [+] x <|p|> y [+] y <|p|> x holds.
+  Now that x [+] y [+] x <|p|> y [+] y <|p|> x can be rewritten into x [+] y
+  by distributivity, we can conclude x [+] y = x [+] y [+] x <|p|> y by antisymmmetry.
+  This proof might be a motivation to base our semilattice over ssreflect.order.POrder.
+ *)
+Lemma lub_absorbs_conv (x y : L) p : x [+] y = x [+] y [+] x <|p|> y.
+Proof.
+have H: x [+] y = (x [+] y [+] x <|p|> y) [+] y <|p|> x by
+      rewrite -[in LHS](convmm (x [+] y) p) lubDl 2!lubDr 2!convmm lubCA lubC (lubAC x).
+rewrite {1}H.
+have {2}<-: x [+] y [+] (x [+] y [+] x <|p|> y) = x [+] y [+] x <|p|> y
+    by rewrite lubA lubxx.
+rewrite [in RHS]lubC.
+have <-: x [+] y [+] x <|p|> y [+] (x [+] y [+] x <|p|> y [+] y <|p|> x) =
+         (x [+] y [+] x <|p|> y [+] y <|p|> x)
+  by rewrite lubA lubxx.
+by rewrite -H.
+Qed.
+
+(* The next lemma corresponds to biglub_hull.
+   In order to type check its statement,
+   we need some bigop-like machinery for semilattice,
+   which is unfortunately only a semigroup and not a monoid *)
+Local Notation "\lub_ ( i < n ) F" := False
+         (at level 41, F at level 41, i, n at level 50,
+          format "'[' \lub_ ( i  <  n ) '/  '  F ']'").
+Fail Lemma lub_absorbs_convn (n : nat) (d : {fdist 'I_n}) (f : 'I_n -> L) :
+  \lub_(i < n) f i = (\lub_(i < n) f i) [+] (<|>_d f).
+End semilattconvtype_lemmas.
+
+
+(*** Semicomplete semilattice convex space ***)
+
 Module SemiCompSemiLattConvType.
 Local Open Scope convex_scope.
 Local Open Scope latt_scope.
@@ -634,6 +731,7 @@ End Exports.
 End BiglubAffine.
 Export BiglubAffine.Exports.
 
+Section biglub_affine_functor_laws.
 Lemma biglub_affine_id_proof (A : semiCompSemiLattConvType) :
   BiglubAffine.class_of (@id A).
 Proof.
@@ -653,6 +751,7 @@ rewrite jf jg.
 congr (|_| _); apply neset_ext => /=.
 by rewrite image_comp.
 Qed.
+End biglub_affine_functor_laws.
 
 Section semicompsemilattconvtype_lemmas.
 Local Open Scope latt_scope.
@@ -670,14 +769,6 @@ Lemma biglubDl (p : prob) (X : neset L) (y : L) :
 Proof.
 rewrite convC biglubDr; congr (|_| _); apply/neset_ext/eq_imagel=> x ?.
 by rewrite -convC.
-Qed.
-
-Lemma lubDr p : right_distributive (fun x y => x <|p|> y) (@lub L).
-Proof.
-move=> x y z; rewrite biglubDr.
-transitivity (|_| [set x <|p|> y; x <|p|> z]%:ne) => //.
-congr (|_| _%:ne); apply/neset_ext => /=.
-by rewrite image_setU !image_set1.
 Qed.
 
 Lemma biglub_conv_pt_setE p x (Y : neset L) :
@@ -737,7 +828,20 @@ congr (|_| _%:ne); apply/neset_ext => /=.
 rewrite image_comp; congr image; apply funext => n /=.
 by rewrite biglub_iter_conv_set.
 Qed.
+
+(* Semicomplete semilattice convex space is a semilattice convex space *)
+Lemma lub_binaryDr p : right_distributive (fun x y => x <|p|> y) (@lub L).
+Proof.
+move=> x y z; rewrite biglubDr.
+transitivity (|_| [set x <|p|> y; x <|p|> z]%:ne) => //.
+congr (|_| _%:ne); apply/neset_ext => /=.
+by rewrite image_setU !image_set1.
+Qed.
+Definition biglubDr_semiLattConvType :=
+  SemiLattConvType.Pack (SemiLattConvType.Class (SemiLattConvType.Mixin lub_binaryDr)).
 End semicompsemilattconvtype_lemmas.
+Canonical biglubDr_semiLattConvType.
+Coercion biglubDr_semiLattConvType : semiCompSemiLattConvType >-> semiLattConvType.
 
 Module NECSet.
 Section def.
