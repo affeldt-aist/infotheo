@@ -74,7 +74,7 @@ apply: (iffP idP).
 - by case=> i [] Si [] a Fia; apply/set0P; exists a, i.
 Qed.
 
-Lemma bigcupset2E (A B : set T) : \bigcup_(i in [set A; B]) i = A `|` B.
+Lemma bigcupsetU2E (A B : set T) : \bigcup_(i in [set A; B]) i = A `|` B.
 Proof.
 (* TODO: use bigcup2E when available through mathcomp-analysis? *)
 rewrite eqEsubset;split => x.
