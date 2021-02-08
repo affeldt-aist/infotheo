@@ -15,19 +15,25 @@ Require Import fdist jfdist.
 (* functions.                                                                 *)
 (*                                                                            *)
 (* Convex spaces:                                                             *)
-(*       convType == the type of convex spaces, i.e., a choiceType with an    *)
-(*                   operator x <| p |> y where p is a probability            *)
-(*                   satisfying the following axioms:                         *)
-(*          conv1 == a <| 1%:pr |> b = a.                                     *)
-(*         convmm == a <| p |> a = a.                                         *)
-(*          convC == a <| p |> b = b <| p.~%:pr |> a.                         *)
-(*          convA == a <| p |> (b <| q |> c) =                                *)
-(*                     (a <| [r_of p, q] |> b) <| [s_of p, q] |> c.           *)
-(*       <|>_d f  == generalization of the operator . <| . |> . over a        *)
-(*                   finite distribution d : {fdist 'I_n} for a sequence of   *)
-(*                   points f : 'I_n -> A, where A is a convType              *)
+(*        convType == the type of convex spaces, i.e., a choiceType with an   *)
+(*                    operator x <| p |> y where p is a probability           *)
+(*                    satisfying the following axioms:                        *)
+(* {affine T -> U} == affine function: homomorphism between convex spaces     *)
+(*           conv1 == a <| 1%:pr |> b = a.                                    *)
+(*          convmm == a <| p |> a = a.                                        *)
+(*           convC == a <| p |> b = b <| p.~%:pr |> a.                        *)
+(*           convA == a <| p |> (b <| q |> c) =                               *)
+(*                    (a <| [r_of p, q] |> b) <| [s_of p, q] |> c.            *)
+(*         <|>_d f == generalization of the operator . <| . |> . over a       *)
+(*                    finite distribution d : {fdist 'I_n} for a sequence of  *)
+(*                    points f : 'I_n -> A, where A is a convType             *)
+(*         <$>_d f == indexed over a finType rather than the type of an       *)
+(*                    ordinal as in Convn; defined as <|>_d (f \o enum_val)   *)
+(*                    with d a finite distribution over a finite type T and f *)
+(*                    a function from T to some convType A                    *)
 (*                                                                            *)
-(* Real cones:                                                                *)
+(* Module ScaledConvex == the canonical embedding of convex spaces into real  *)
+(*                        cones                                               *)
 (* The type scale_pt associated with add_pt and scalept define a real cone    *)
 (* [Varacca & Winskel, MSCS, 2006]:                                           *)
 (*      scaled_pt == Zero or a pair of a positive real with a point in a      *)
@@ -37,7 +43,7 @@ Require Import fdist jfdist.
 (*        scalept == scaling of a scaled point, i.e.,                         *)
 (*                   scalept r qy = (r*q)y                                    *)
 (*                                                                            *)
-(* More lemmas about convex spaces:                                           *)
+(* More lemmas about convex spaces, including key lemmas by Stone:            *)
 (*        convACA == the entropic identity, i.e.,                             *)
 (*                     c(a <|q|> b) <|p|> (c <|q|> d) =                       *)
 (*                       (a <|p|> c) <|q|> (b <|p|> d)                        *)
@@ -63,6 +69,8 @@ Require Import fdist jfdist.
 (* convex and conical spaces. CICM 2020                                       *)
 (*                                                                            *)
 (* Definitions of convex, concave, affine functions                           *)
+(*  affine_functionP == characterization of affine functions in terms of      *)
+(*                      convex functions                                      *)
 (* Lemmas:                                                                    *)
 (* image_preserves_convex_hull == the image of a convex hull is the convex    *)
 (*                                hull of the image                           *)
@@ -109,9 +117,7 @@ Import Prenex Implicits.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 
-
-(*** Prelude; lemmas on fdist (which should be refactored) ***)
-
+(* TODO: the following lemmas about fdist should be cleaned and moved to a more suitable location *)
 Section tmp.
 Variables (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob).
 Lemma ConvnFDist_Add (A : finType) (g : 'I_n -> fdist A) (h : 'I_m -> fdist A) :
@@ -215,9 +221,6 @@ Lemma dE' (x : set A) (gX : g @` setT `<=` x `|` y)
 Proof. by rewrite /d'; unlock; rewrite ffunE. Qed.
 End def.
 End CodomDFDist.
-
-
-(*** Convex space ***)
 
 Module ConvexSpace.
 Record mixin_of (T : choiceType) := Mixin {
@@ -355,10 +358,7 @@ Lemma affine_function_Sum T U (f : {affine T -> U}) n (g : 'I_n -> T) (d : {fdis
 
 End affine_function_prop0.
 
-
-(*** ScaledConvex: the canonical embedding of convex spaces into real cones;
-     this section is too long and contains lemmas to be moved to other files ***)
-
+(* TODO: this section is too long and contains lemmas to be moved to other files *)
 Module ScaledConvex.
 Section scaled_convex.
 Variable A : convType.
@@ -756,9 +756,6 @@ Notation "\ssum_ ( i < n | P ) F" :=
 Notation "\ssum_ ( i < n ) F" :=
   (\big[(@ScaledConvex.addpt _)/(@ScaledConvex.Zero _)]_(i < n) F) : convex_scope.
 
-
-(*** Lemmas on convex space; especially, key lemmas by Stone ***)
-
 Section convex_space_prop1.
 Variables T : convType.
 Implicit Types a b : T.
@@ -985,9 +982,6 @@ by rewrite convDr.
 Qed.
 
 End convex_space_prop2.
-
-
-(*** Convex hull ***)
 
 Section hull_def.
 Local Open Scope classical_set_scope.
@@ -1352,9 +1346,6 @@ Qed.
 
 End hull_setU.
 
-
-(*** Instances of convex space ***)
-
 Section R_convex_space.
 Implicit Types p q : prob.
 Let avg p a b := (p * a + p.~ * b)%R.
@@ -1489,10 +1480,7 @@ Definition fdist_convMixin :=
 Canonical fdist_convType := ConvexSpace.Pack (ConvexSpace.Class fdist_convMixin).
 End fdist_convex_space.
 
-
-(*** More lemmas on ScaledConvex that depend on R_convType ***)
-
-Section misc_scaled.
+Section scaled_convex_lemmas_depending_on_T_convType.
 Import ScaledConvex.
 Local Open Scope R_scope.
 
@@ -1542,13 +1530,8 @@ apply (big_ind2 (fun x y => x = (Rnneg.v y))) => //.
 by move=> x1 [v Hv] y1 y2 -> ->.
 Qed.
 
-End misc_scaled.
+End scaled_convex_lemmas_depending_on_T_convType.
 
-
-(*** Convn_finType ***)
-
-(* Convn indexed over a finType rather than the type of an ordinal as
-   in Convn *)
 Module Convn_finType.
 Section def.
 Local Open Scope R_scope.
@@ -1744,9 +1727,6 @@ Proof. reflexivity. Qed.
 Lemma leoppP (a b : T A) : a <= b <-> unbox b <= unbox a.
 Proof. by case a;case b=>*;rewrite !unboxK. Qed.
 End opposite_ordered_convex_space_prop.
-
-
-(*** Convex function ***)
 
 Section convex_function_def.
 Local Open Scope ordered_convex_scope.
@@ -1992,9 +1972,6 @@ Qed.
 End Rprop2.
 End concave_function_prop.
 
-
-(*** Characterization of affine functions in terms of convex functions ***)
-
 Section affine_function_prop.
 Variables (T : convType) (U : orderedConvType).
 
@@ -2100,9 +2077,6 @@ Proof. by rewrite /Conv /= /avg big_split /= -2!big_distrr. Qed.
 
 TODO: see convex_type.v
 *)
-
-
-(*** Real analysis ***)
 
 Section convex_set_R.
 

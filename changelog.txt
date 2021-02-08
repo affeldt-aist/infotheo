@@ -50,6 +50,9 @@ from 0.2.2 to 0.3
   + lub_op_iter_conv_set -> biglub_iter_conv_set
   + lub_op_hull -> biglub_hull
 
+- changed:
+  + setU_bigsetU in necset.v changed to bigcupset2E in classical_sets.v
+
 -----------------
 from 0.2 to 0.2.1
 -----------------

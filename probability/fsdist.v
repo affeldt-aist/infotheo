@@ -24,6 +24,16 @@ Require Import convex_choice.
 (*        FSDistfmap == map of the probability monad                          *)
 (* FSDist_choiceType == instance of choiceType with finitely-supported        *)
 (*                      distributions                                         *)
+(*                                                                            *)
+(* Free convex spaces in terms of finitely-supported distributions:           *)
+(*  FSDist_convType   == shows that finitely-supported distributions over a   *)
+(*                       choiceType form a convex space                       *)
+(*  Convn_of_FSDist d == <$>_(fdist_of_Dist d) (fun x : finsupp d => fsval x),*)
+(*                       a variant of Convn whose input data (points and      *)
+(*                       weights) are provided by a single FSDist; this is    *)
+(*                       the counit of the adjunction that produces the       *)
+(*                       probability monad (see monae, gcm_model.v)           *)
+(*                                                                            *)
 (******************************************************************************)
 
 Reserved Notation "{ 'dist' T }" (at level 0, format "{ 'dist'  T }").
@@ -97,7 +107,7 @@ End fsdist.
 End FSDist.
 Coercion FSDist.f : FSDist.t >-> fsfun.
 
-Hint Resolve FSDist.ge0 : core.
+Global Hint Resolve FSDist.ge0 : core.
 
 Section FSDist_canonical.
 Variable A : choiceType.
@@ -811,21 +821,9 @@ Definition Dist_convMixin :=
 Canonical Dist_convType := ConvexSpace.Pack Dist_convMixin.
 End Dist_convex_space.*)
 
-
-
-(******************************************************************************)
-(*      Free convex spaces in terms of finitely-supported distributions       *)
-(*                                                                            *)
-(* FSDist_convType == finitely-supported distributions                        *)
-(* Convn_of_FSDist d == <$>_(fdist_of_Dist d) (fun x : finsupp d => fsval x)  *)
-(*                                                                            *)
-(******************************************************************************)
-
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope convex_scope.
-
-(*** Finitely-supported distributions over a choiceType form a convex space ***)
 
 Section FSDist_convex_space.
 Variable A : choiceType.
@@ -872,9 +870,7 @@ Variable A : choiceType.
 Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin (FSDist_convType A).
 End fsdist_ordered_convex_space.
 
-
-(*** Some (unorganized) lemmas ***)
-
+(* TODO: these lemmas could be better organized *)
 Section misc_lemmas.
 
 Lemma finsupp_Conv (C : convType) p (p0 : p != 0%:pr) (p1 : p != 1%:pr) (d e : {dist C}) :
@@ -910,12 +906,6 @@ Proof. by rewrite ConvFSDist.dE scalept_conv. Qed.
 End misc_scaled.
 
 End misc_lemmas.
-
-
-(*** Convn_of_FSDist: a variant of Convn whose input data (points and weights)
-     are provided by a single FSDist;
-     this is the counit of the adjunction that produces the probability monad
-     (see monae.gcm_model) ***)
 
 Section Convn_of_FSDist.
 Local Open Scope classical_set_scope.

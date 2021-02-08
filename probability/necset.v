@@ -6,14 +6,19 @@ From mathcomp Require Import boolp classical_sets.
 From mathcomp Require Import finmap.
 Require Import Reals_ext classical_sets_ext Rbigop ssrR fdist fsdist.
 Require Import convex_choice.
- 
+
 (******************************************************************************)
 (*       Semi-complete semilattice structures and non-empty convex sets       *)
 (*                                                                            *)
 (* neset T              == the type of non-empty sets over T                  *)
 (* x%:ne                == try to infer whether x : set T is neset T          *)
+(*                         (NB: worth moving to a dedicated file?)            *)
 (* x <| p |>: Y         == (fun y => x <| p |> y) @` Y                        *)
 (* X :<| p |>: Y        == \bigcup_(x in X) (x <| p |>: Y)                    *)
+(*                                                                            *)
+(* Module SemiLattice   == (Finitary) semilattice                             *)
+(* Module SemiCompleteSemiLattice == Semicomplete semilattice, or infinitary  *)
+(*                         semilattice which may come without a bottom element*)
 (*                                                                            *)
 (* semiCompSemiLattType == the type of semi-complete semi-lattice provides    *)
 (*                         an infinitary operator |_| : neset T -> T with the *)
@@ -21,27 +26,43 @@ Require Import convex_choice.
 (*          1. |_| [set x] = x                                                *)
 (*          2. |_| (\bigcup_(i in s) f i) = |_| (|_| @` (f @` s))             *)
 (*                                                                            *)
-(* semiCompSemiLattConvType == extends semiCompSemiLattType and convType with *)
-(*                         the following axiom:                               *)
+(* biglub_semiLattType == Semicomplete semilattice is a semilattice           *)
+(*                                                                            *)
+(* {Biglub_morph U -> V} == Homomorphism between semicomplete semilattices    *)
+(*                                                                            *)
+(* semiCompSemiLattConvType == Semicomplete semilattice convex space: a       *)
+(*     combination of convex space and semicomplete semilattice structures    *)
+(*     with the distributive law of convex operation over lattice operation;  *)
+(*     this is the algebra carried by the combined choice monad, which is     *)
+(*     described in monae (files gcm_model.v and altprob_model.v),            *)
+(*     extends semiCompSemiLattType and convType with the following axiom:    *)
 (*          3. x <| p |> |_| I = |_| ((fun y => x <| p |> y) @` I)            *)
 (*                                                                            *)
-(*           <$>_d f == <|>_d (f \o enum_val) with d a finite distribution    *)
-(*                      over a finite type T and f a function from T to some  *)
-(*                      convType A                                            *)
+(* {Biglub_affine U -> V} == Homomorphism between semicomplete semilattice    *)
+(*                           convex spaces                                    *)
 (*                                                                            *)
-(* necset T             == the type of non-empty convex sets over T           *)
-(* necset_convType A    == instance of convType with elements of type         *)
-(*                         necset A and with operator                         *)
+(* necset T             == the type of non-empty convex sets over T, the      *)
+(*                         object part of the third adjunction that appears   *)
+(*                         in the definition of the combined choice monad     *)
+(* necset_convType A    == convex space structure on necset, instance of      *)
+(*                         convType with elements of type necset A and with   *)
+(*                         operator                                           *)
 (*                           X <| p |> Y = {x<|p|>y | x \in X, y \in Y}       *)
-(* necset_semiCompSemiLattType == instance of semiCompSemiLattType with       *)
+(* necset_semiCompSemiLattType == semicomplete semilattice structure on       *)
+(*                         necset, instance of semiCompSemiLattType with      *)
 (*                         elements of type necset A and with operator        *)
 (*                         |_| X = hull (bigsetU X idfun)                     *)
 (*                                                                            *)
-(* necset_semiCompSemiLattConvType == instance of semiCompSemiLattConvType    *)
-(*                         with elements of type necset A                     *)
+(* necset_semiCompSemiLattConvType == the combined structure on necset,       *)
+(*                         instance of semiCompSemiLattConvType with elements *)
+(*                         of type necset A                                   *)
 (*                                                                            *)
-(* necset_join                                                                *)
-(* necset_bind                                                                *)
+(* necset_join, necset_bind == elementary definition of the multiplication    *)
+(*                             and bind operations of the combined choice     *)
+(*                             monad                                          *)
+(*                                                                            *)
+(* Section technical_corollaries == proofs of some subtle lemmas in the       *)
+(*                                  literature                                *)
 (******************************************************************************)
 
 Declare Scope latt_scope.
@@ -59,22 +80,6 @@ Unset Printing Implicit Defensive.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope convex_scope.
-
-
-(*** Move me to some appropriate file! ***)
-
-Section moveme.
-Local Open Scope classical_set_scope.
-Lemma setU_bigsetU T (I J : set T) : I `|` J = bigsetU [set I; J] idfun.
-Proof.
-rewrite eqEsubset;split => x.
-  by case=> ?; [exists I => //; left|exists J => //; right].
-by case=> K [] -> Hx; [left | right].
-Qed.
-End moveme.
-
-
-(*** Non-empty sets; should be moved to lib/neset.v? ***)
 
 Module NESet.
 Local Open Scope classical_set_scope.
@@ -154,10 +159,7 @@ End neset_lemmas.
 Local Hint Resolve repr_in_neset : core.
 Arguments image_neset : simpl never.
 
-
-(*** Low-level lemmas on non-empty convex sets ***)
-
-Section convex_neset_lemmas.
+Section low_level_lemmas_on_non_empty_convex_sets.
 Local Open Scope classical_set_scope.
 Local Open Scope R_scope.
 Variable L : convType.
@@ -358,17 +360,15 @@ apply hull_eqEsubset=> u.
 - case=> x Xx [] y Yy <-; apply/subset_hull.
   by exists x=> //; exists y=> //; exact/subset_hull.
 Qed.
-End convex_neset_lemmas.
+End low_level_lemmas_on_non_empty_convex_sets.
 
 Notation "x <| p |>: Y" := (conv_pt_set p x Y) : convex_scope.
 Notation "X :<| p |>: Y" := (conv_set p X Y) : convex_scope.
 
-
-(*** (Finitary) semilattice ***)
-
-(* (saikawa) I am aware that ssreflect/order.v has definitions of porder and lattice.
-   For now, I write down the following definition of semilattice independently of the
-   two, as it seems hard to insert a new layer in the ssreflect hierarchy. *)
+(* (saikawa) I am aware that ssreflect/order.v has definitions of porder and
+   lattice. For now, I write down the following definition of semilattice
+   independently of the two, as it seems hard to insert a new layer in the
+   mathcomp hierarchy. *)
 Module SemiLattice.
 Section def.
 Record mixin_of (T : choiceType) := Mixin {
@@ -427,10 +427,6 @@ Lemma lubUKC (y x : L) : y [+] x [+] y = x [+] y.
 Proof. by rewrite lubAC lubC lubxx. Qed.
 End semilattice_lemmas.
 
-
-(*** Semicomplete semilattice,
-     or infinitary semilattice which may come without a bottom element ***)
-
 Module SemiCompleteSemiLattice.
 Section def.
 Local Open Scope classical_set_scope.
@@ -473,7 +469,7 @@ Variable (L : semiCompSemiLattType).
 (* [Reiterman] p.326, axiom 3 *)
 Lemma biglub1 : forall x : L, |_| [set x]%:ne = x.
 Proof. by case: L => [? [? []]]. Qed.
-(* NB: bigsetU (bigsetI too) is the bind operator for the poserset monad *)
+(* NB: bigsetU (bigsetI too) is the bind operator for the powerset monad *)
 Lemma biglub_bignesetU : forall (I : Type) (S : neset I) (F : I -> neset L),
     |_| (bignesetU S F) = |_| (biglub @` (F @` S))%:ne.
 Proof. by case: L => [? [? []]]. Qed.
@@ -508,7 +504,6 @@ rewrite biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_id.
 Qed.
 
-(* Semicomplete semilattice is a semilattice *)
 Definition lub_binary (x y : L) := |_| [set x; y]%:ne.
 Lemma lub_binaryE x y : lub_binary x y = |_| [set x; y]%:ne.
 Proof. reflexivity. Qed.
@@ -531,9 +526,6 @@ Definition biglub_semiLattType := SemiLattice.Pack (SemiLattice.Class biglub_lub
 End semicompletesemilattice_lemmas.
 Canonical biglub_semiLattType.
 Coercion biglub_semiLattType : semiCompSemiLattType >-> semiLattType.
-
-
-(*** Homomorphism between semicomplete semilattices ***)
 
 Section biglub_morph.
 Local Open Scope classical_set_scope.
@@ -579,13 +571,6 @@ End Exports.
 End BiglubMorph.
 Export BiglubMorph.Exports.
 
-
-(*** Semicomplete semilattice convex space:
-     a combination of convex space and semicomplete semilattice structures
-     with the distributive law of convex operation over lattice operation;
-     this is the algebra carried by the combined choice monad,
-     which is described in monae.{gcm_model, altprob_model} ***)
-
 Module SemiCompSemiLattConvType.
 Local Open Scope convex_scope.
 Local Open Scope latt_scope.
@@ -612,9 +597,6 @@ Canonical scsl_of_scslconv.
 End Exports.
 End SemiCompSemiLattConvType.
 Export SemiCompSemiLattConvType.Exports.
-
-
-(*** Homomorphism between semicomplete semilattice convex spaces ***)
 
 Module BiglubAffine.
 Section ClassDef.
@@ -757,10 +739,6 @@ by rewrite biglub_iter_conv_set.
 Qed.
 End semicompsemilattconvtype_lemmas.
 
-
-(*** Non-empty convex set; the object part of the third adjunction that appear in
-     the definition of the combined choice monad ***)
-
 Module NECSet.
 Section def.
 Variable A : convType.
@@ -819,9 +797,6 @@ Canonical necset1 (T : convType) (x : T) := Eval hnf in
                                        (NESet.Mixin (set1_neq0 x))).
 
 End necset_lemmas.
-
-
-(*** Convex space structure on NECSet ***)
 
 Module necset_convType.
 Section def.
@@ -904,9 +879,6 @@ End necset_convType.
 Canonical necset_convType A :=
   ConvexSpace.Pack (ConvexSpace.Class (necset_convType.mixin A)).
 
-
-(*** Semicomplete semilattice structure on NECSet ***)
-
 Module necset_semiCompSemiLattType.
 Section def.
 Local Open Scope classical_set_scope.
@@ -956,9 +928,6 @@ End necset_semiCompSemiLattType.
 Canonical necset_semiCompSemiLattType A :=
   SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.class A).
 
-
-(*** The combined structure on NECSet ***)
-
 Module necset_semiCompSemiLattConvType.
 Section def.
 Local Open Scope classical_set_scope.
@@ -985,10 +954,6 @@ End def.
 End necset_semiCompSemiLattConvType.
 Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack
   (necset_semiCompSemiLattConvType.class A).
-
-
-(*** Elementary definition of the multiplication and bind operations of
-     the combined choice monad ***)
 
 Module necset_join.
 Section def.
@@ -1076,9 +1041,6 @@ Definition necset_bind (ma : M a) (f : a -> M b) : M b :=
   necset_join (necset_fmap f ma).
 End bind.
 End necset_bind.
-
-
-(*** Applications: proofs of some subtle lemmas in the literature ***)
 
 Section technical_corollaries.
 Variable L : semiCompSemiLattConvType.
