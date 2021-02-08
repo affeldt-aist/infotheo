@@ -74,10 +74,18 @@ apply: (iffP idP).
 - by case=> i [] Si [] a Fia; apply/set0P; exists a, i.
 Qed.
 
+Lemma bigcupsetU2E (A B : set T) : \bigcup_(i in [set A; B]) i = A `|` B.
+Proof.
+(* TODO: use bigcup2E when available through mathcomp-analysis? *)
+rewrite eqEsubset;split => x.
+  by case=> K [] -> Hx; [left | right].
+by case=> ?; [exists A => //; left|exists B => //; right].
+Qed.
+
 End PR_to_classical_sets.
 
-Notation imageA := (deprecate imageA image_comp _) (only parsing).
+(*Notation imageA := (deprecate imageA image_comp _) (only parsing).
 Notation image_idfun := (deprecate image_idfun image_id _) (only parsing).
 Notation bigcup0 := (deprecate bigcup0 bigcup_set0 _) (only parsing).
 Notation bigcup1 := (deprecate bigcup1 bigcup_set1 _) (only parsing).
-Notation bigcup_const := (deprecate bigcup_const bigcup_of_const _) (only parsing).
+Notation bigcup_const := (deprecate bigcup_const bigcup_of_const _) (only parsing).*)
