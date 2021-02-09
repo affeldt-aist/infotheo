@@ -417,7 +417,7 @@ Definition leR_sub_addr := (leR_subl_addr, leR_subr_addr).
 
 Definition ltR_subr_addl := ltR_subRL.
 
-Lemma ltr_subl_addl x y z : (x - y < z) <-> (x < y + z).
+Lemma ltR_subl_addl x y z : (x - y < z) <-> (x < y + z).
 Proof.
 split => [/(@ltR_add2r y)|/(@ltR_add2r (- y))]; first by rewrite subRK addRC.
 by rewrite addR_opp (addRC y) addR_opp addRK.
