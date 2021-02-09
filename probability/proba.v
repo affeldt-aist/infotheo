@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
+From mathcomp Require Import Rstruct.
 Require Import Reals Lra Nsatz.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import fdist.
@@ -304,7 +305,7 @@ Qed.
 
 End probability.
 Arguments total_prob {_} _ {_} _ _.
-Local Hint Resolve Pr_ge0 : core.
+Global Hint Resolve Pr_ge0 : core.
 
 Lemma Pr_domin_setI (A : finType) (d : {fdist A}) (E F : {set A}) :
   Pr d E = 0 -> Pr d (E :&: F) = 0.
@@ -465,7 +466,7 @@ Qed.
 
 End random_variable_eqType.
 Notation "`Pr[ X = a ]" := (pr_eq X a) : proba_scope.
-Hint Resolve pr_eq_ge0 : core.
+Global Hint Resolve pr_eq_ge0 : core.
 
 Section random_variable_order.
 Variables (U : finType) (d : unit) (T : porderType d) (P : {fdist U}).
@@ -1336,7 +1337,7 @@ End bayes_extended.
 
 End conditional_probablity.
 Notation "`Pr_ P [ E | F ]" := (cPr P E F) : proba_scope.
-Hint Resolve cPr_ge0 : core.
+Global Hint Resolve cPr_ge0 : core.
 
 Module CondFDist.
 Section def.

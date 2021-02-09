@@ -3,6 +3,7 @@
 From mathcomp Require Import all_ssreflect fingroup perm.
 From mathcomp Require boolp.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
 Require Import num_occ channel types.
 

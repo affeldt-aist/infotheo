@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist proba.
 Require Import channel jfdist.
 
@@ -246,8 +247,7 @@ Hypothesis HC : (0 < #| C |)%nat.
 
 Variable y : (`U HC).-receivable W.
 
-Lemma probaE b n0 :
-  (`U HC) '_ n0 `^^ W (b | y) =
+Lemma probaE b n0 : (`U HC) '_ n0 `^^ W (b | y) =
   Kmpp y * (\sum_(t in 'rV_n | t ``_ n0 == b) (`U HC) `^^ W (t | y)).
 Proof. by rewrite ffunE. Qed.
 

@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require boolp.
+From mathcomp Require Import Rstruct.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb convex_choice.
 
@@ -36,7 +37,8 @@ rewrite /pderivable => x Hx.
 rewrite /ln_id.
 apply derivable_pt_plus.
 - apply derivable_pt_ln, Hx.
-- apply derivable_pt_opp, derivable_pt_minus ; [apply derivable_pt_id | apply derivable_pt_cst].
+- apply derivable_pt_opp, derivable_pt_minus;
+    [apply derivable_pt_id | apply derivable_pt_cst].
 Defined.
 
 Definition ln_id' x (H : 0 < x <= 1) := derive_pt ln_id x (pderivable_ln_id_xle1 H).
@@ -65,7 +67,7 @@ Proof.
 rewrite {2}(_ : 0 = ln_id 1); last by rewrite /ln_id ln_1 2!subRR.
 move=> x Hx.
 have lt01 : 0 < 1 by lra.
-apply (derive_increasing_ad_hoc lt01 derive_pt_ln_id_xle1_ge0).
+apply (pderive_increasing lt01 derive_pt_ln_id_xle1_ge0).
 - by split; [apply Hx | apply ltRW, Hx].
 - lra.
 - by apply Hx.
@@ -89,7 +91,7 @@ case (total_order_T x 1).
 Qed.
 
 Lemma ln_id_cmp x : 0 < x -> ln x <= x - 1.
-Proof. move=> Hx ; apply Rminus_le ; apply ln_idgt0 ; exact Hx. Qed.
+Proof. by move=> Hx; apply Rminus_le; apply ln_idgt0; exact Hx. Qed.
 
 Lemma log_id_cmp x : 0 < x -> log x <= (x - 1) * log (exp 1).
 Proof.
@@ -285,7 +287,7 @@ case/boolP : (x == 0) => [/eqP ->|x0].
 - rewrite -[X in _ < X]oppRK ltR_oppr.
   have {}x0 : 0 < x by apply/ltRP; rewrite lt0R x0; exact/leRP.
   have {x1 y1}y0 : 0 < y by exact: (@ltR_trans x).
-  exact: (derive_increasing_ad_hoc (exp_pos _) xlnx_sdecreasing_0_Rinv_e_helper).
+  exact: (pderive_increasing (exp_pos _) xlnx_sdecreasing_0_Rinv_e_helper).
 Qed.
 
 Lemma xlnx_decreasing_0_Rinv_e x y :
@@ -293,7 +295,7 @@ Lemma xlnx_decreasing_0_Rinv_e x y :
 Proof.
 move=> Hx Hy Hxy.
 case/boolP : (x == y) => [/eqP ->|/eqP H]; first exact/leRR.
-- apply/ltRW/xlnx_sdecreasing_0_Rinv_e => //; by rewrite ltR_neqAle.
+by apply/ltRW/xlnx_sdecreasing_0_Rinv_e => //; rewrite ltR_neqAle.
 Qed.
 
 End xlnx.
@@ -351,101 +353,6 @@ Lemma derive_diff_xlnx_pos x (Hx : 0 < x < 1) (pr : derivable_pt diff_xlnx x) :
 Proof.
 rewrite (proof_derive_irrelevance _ (derivable_pt_diff_xlnx Hx)) //.
 exact: derive_diff_xlnx_neg_aux.
-Qed.
-
-Lemma MVT_cor1_pderivable_new f a b : forall (prd : pderivable f (fun x => a < x < b)) (prc : forall x (Hx : a <= x <= b), continuity_pt f x),
-  a < b ->
-  exists c (Hc : a < c < b),
-    f b - f a = derive_pt f c (prd c Hc) * (b - a) /\ a < c < b.
-Proof.
-intros prd prc ab.
-have H0 : forall c : R, a < c < b -> derivable_pt f c.
-  move=> c Hc.
-  apply prd.
-  case: Hc => ? ?; lra.
-have H1 : forall c : R, a < c < b -> derivable_pt id c.
-  move=> c _; by apply derivable_pt_id.
-have H2 : forall c, a <= c <= b -> continuity_pt f c.
-  move=> x Hc.
-  by apply prc.
-have H3 : forall c, a <= c <= b -> continuity_pt id c.
-  move=> x Hc; by apply derivable_continuous_pt, derivable_pt_id.
-case: (MVT f id a b H0 H1 ab H2 H3) => c [Hc H'].
-exists c.
-exists Hc.
-split => //.
-cut (derive_pt id c (H1 c Hc) = derive_pt id c (derivable_pt_id c));
-    [ intro | apply pr_nu ].
-rewrite H (derive_pt_id c) mulR1 in H'.
-rewrite -H' /= /id mulRC.
-f_equal.
-by apply pr_nu.
-Qed.
-
-Lemma MVT_cor1_pderivable_new_var f a b : forall (prd : pderivable f (fun x => a < x < b)) (prca : continuity_pt f a) (prcb : continuity_pt f b),
-  a < b ->
-  exists c (Hc : a < c < b),
-    f b - f a = derive_pt f c (prd c Hc) * (b - a) /\ a < c < b.
-Proof.
-intros prd prca prcb ab.
-have prc : forall x (Hx : a <= x <= b), continuity_pt f x.
-  move=> x Hx.
-  case/boolP : (x == a) => [/eqP -> //|/eqP /nesym xnota].
-  case/boolP : (x == b) => [/eqP -> //|/eqP xnotb].
-  apply derivable_continuous_pt, prd.
-  split; rewrite ltR_neqAle.
-  - split => //; exact/(proj1 Hx).
-  - split => //; exact/(proj2 Hx).
-have H0 : forall c : R, a < c < b -> derivable_pt f c.
-  move=> c Hc.
-  apply prd.
-  case: Hc => ? ?; lra.
-have H1 : forall c : R, a < c < b -> derivable_pt id c.
-  move=> c _; by apply derivable_pt_id.
-have H2 : forall c, a <= c <= b -> continuity_pt f c.
-  move=> x Hc.
-  by apply prc.
-have H3 : forall c, a <= c <= b -> continuity_pt id c.
-  move=> x Hc; by apply derivable_continuous_pt, derivable_pt_id.
-case: (MVT f id a b H0 H1 ab H2 H3) => c [Hc H'].
-exists c.
-exists Hc.
-split => //.
-cut (derive_pt id c (H1 c Hc) = derive_pt id c (derivable_pt_id c));
-    [ intro | apply pr_nu ].
-rewrite H (derive_pt_id c) mulR1 in H'.
-rewrite -H' /= /id mulRC.
-f_equal.
-by apply pr_nu.
-Qed.
-
-Lemma derive_sincreasing_interv a b (f:R -> R) (pr: pderivable f (fun x => a < x < b)) (prc : forall x (Hx : a <= x <= b), continuity_pt f x) :
-    a < b ->
-    ((forall t:R, forall (prt : derivable_pt f t), a < t < b -> 0 < derive_pt f t prt) ->
-      forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x < f y).
-Proof.
-intros H H0 x y H1 H2 H3.
-rewrite -subR_gt0.
-have prd' : pderivable f (fun z => x < z < y).
-  move=> z /= [Hz1 Hz2] ; apply pr.
-  split.
-  - apply (@leR_ltR_trans x) => //; by apply H1.
-  - apply (@ltR_leR_trans y) => //; by apply H2.
-have H0' : forall t (Ht : x < t < y), 0 < derive_pt f t (prd' t Ht).
-  move=> z /= [Hz0 Hz1].
-  apply H0.
-  split.
-  - apply (@leR_ltR_trans x) => //; by apply H1.
-  - apply (@ltR_leR_trans y) => //; by apply H2.
-have prcx : continuity_pt f x by apply prc; split; apply H1.
-have prcy : continuity_pt f y by apply prc; split; apply H2.
-have aux : a < b.
-  apply (@leR_ltR_trans x) ; first by apply H1.
-  apply (@ltR_leR_trans y) => //; by apply H2.
-case: (MVT_cor1_pderivable_new_var prd' prcx prcy H3); intros x0 [x1 [H7 H8]].
-rewrite H7.
-apply mulR_gt0; first by apply H0'.
-by rewrite subR_gt0.
 Qed.
 
 Lemma diff_xlnx_sincreasing_0_Rinv_e2 : forall x y : R, 0 <= x <= exp (-2) -> 0 <= y <= exp (-2) -> x < y -> diff_xlnx x < diff_xlnx y.
