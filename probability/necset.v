@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 Require Import Reals.
 From mathcomp Require Import all_ssreflect.
-From mathcomp Require Import boolp classical_sets.
+From mathcomp Require Import boolp classical_sets Rstruct.
 From mathcomp Require Import finmap.
 Require Import Reals_ext classical_sets_ext Rbigop ssrR fdist fsdist.
 Require Import convex_choice.

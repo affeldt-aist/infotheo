@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
-From mathcomp Require Import boolp.
+From mathcomp Require Import boolp Rstruct.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist proba convex_choice.
@@ -64,7 +64,8 @@ rewrite 2!{}HsumXD1.
 have /IH {IH}[IH HDd] : #|fdist_supp d| = n.
   by rewrite D1FDist.card_fdist_supp // cardA.
 split; last first.
-  move/asboolP: (convex_setP D) => /(_ (r b) (\sum_(a in fdist_supp d) d a * r a) (probfdist X b)).
+  move/asboolP: (convex_setP D).
+  move/(_ (r b) (\sum_(a in fdist_supp d) d a * r a) (probfdist X b)).
   by rewrite classical_sets.in_setE; apply; rewrite -classical_sets.in_setE.
 move/leR_trans: (convex_f (probfdist X b) (HDr b) HDd); apply => /=.
 by rewrite leR_add2l; apply leR_wpmul2l => //; apply/onem_ge0.
@@ -105,7 +106,7 @@ Proof.
 move=> HDr.
 rewrite -[X in _ <= X]oppRK leR_oppr.
 apply/(leR_trans (jensen_dist convex_g X HDr))/Req_le.
-rewrite big_morph_oppR; by apply eq_bigr => a _; rewrite mulRN.
+by rewrite big_morph_oppR; apply eq_bigr => a _; rewrite mulRN.
 Qed.
 
 End jensen_concave.

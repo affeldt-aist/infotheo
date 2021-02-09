@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect.
 Require Import Reals Lra.
+From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
 Require Import Rbigop fdist divergence variation_dist partition_inequality.
 
@@ -137,7 +138,7 @@ Defined.
 Lemma pinsker_fun_increasing_on_0_to_1 (c : R) (Hc : c <= / (2 * ln 2)) : forall x y,
   0 <= x < 1 -> 0 <= y < 1 -> x <= y -> pinsker_function_spec c x <= pinsker_function_spec c y.
 Proof.
-apply derive_increasing_interv_right with (pderivable_pinsker_function_spec c).
+apply pderive_increasing_closed_open with (pderivable_pinsker_function_spec c).
 lra.
 move=> t Ht.
 rewrite derive_pt_pinsker_function_spec // /pinsker_function_spec'.
@@ -161,7 +162,7 @@ have H2 : -2 <= - 8 * t * (1 - t).
   rewrite leR_oppr oppRK [X in _ <= X](_ : 2 = 8 * / 4); last by field.
   apply leR_wpmul2l; [lra | exact: x_x2_max].
 apply (@leR_trans (2 - 2)); first lra.
-apply leR_add; [exact/leRR | by rewrite -mulRA -mulNR mulRA].
+by apply leR_add; [exact/leRR | by rewrite -mulRA -mulNR mulRA].
 Qed.
 
 Lemma pinsker_function_spec_pos c q :
@@ -209,8 +210,8 @@ Proof.
 move=> x y Hx Hy xy.
 rewrite -[X in _ <= X]oppRK leR_oppr.
 move: x y Hx Hy xy.
-apply derive_increasing_interv_left with (pinsker_fun_pderivable1 c Hp').
-by case: Hp'.
+apply pderive_increasing_open_closed with (pinsker_fun_pderivable1 c Hp').
+  by case: Hp'.
 move=> t [Ht1 Ht2].
 rewrite /pinsker_fun_pderivable1.
 rewrite derive_pt_opp.
@@ -249,7 +250,7 @@ Defined.
 Lemma pinsker_fun_increasing_on_p_to_1 (c : R) (Hc : c <= / (2 * ln 2)) (Hp' : 0 < p < 1) :
   forall x y, p <= x < 1 -> p <= y < 1 -> x <= y -> pinsker_fun p c x <= pinsker_fun p c y.
 Proof.
-apply derive_increasing_interv_right with (pinsker_fun_pderivable2 c Hp').
+apply pderive_increasing_closed_open with (pinsker_fun_pderivable2 c Hp').
   by case: Hp'.
 move=> t [Ht1 Ht2].
 rewrite /pinsker_fun_pderivable2.

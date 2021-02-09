@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 Require Import Reals Lra.
 From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import Rstruct.
 Require Import Reals_ext ssrR Rbigop fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, without inord *)

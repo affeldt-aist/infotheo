@@ -3,6 +3,7 @@
 Require Import Reals.
 From mathcomp Require Import all_ssreflect fingroup zmodp ssralg perm matrix.
 From mathcomp Require Import poly finalg mxalgebra mxpoly.
+From mathcomp Require Rstruct.
 Require Import ssr_ext ssralg_ext f2 num_occ natbin ssrR Reals_ext Rbigop.
 
 (******************************************************************************)
@@ -869,11 +870,10 @@ Lemma hamming_01 m p :
     (1 - p) ^ (m - wH u) * p ^ wH u =
   (1 - p) ^ m + m%:R * p * (1 - p) ^ (m - 1).
 Proof.
-rewrite (bigID [pred i | wH i == O]) /=.
+rewrite (@bigID _ _ addR_comoid(*TODO: we shouldn't need to pass this argument*) _ _ [pred i | wH i == O]) /=.
 rewrite (big_pred1 (GRing.zero _)) /=; last first.
-  move=> i /=.
-  by rewrite !inE -wH_eq0 andb_idl // => /eqP ->.
-rewrite wH0 pow_O subn0 mulR1; f_equal.
+  by move=> i /=; rewrite !inE -wH_eq0 andb_idl // => /eqP ->.
+rewrite wH0 pow_O subn0 mulR1; congr (_ + _).
 transitivity (\sum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^ (m - 1) * p ^ 1)).
   transitivity (\sum_(i|(wH (i : 'rV['F_2]_m) == 1)%nat)
       ((1 - p) ^ (m - wH i) * p ^ wH i)).

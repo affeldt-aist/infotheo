@@ -3,12 +3,23 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 From mathcomp Require boolp.
+From mathcomp Require Import Rstruct.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist proba entropy num_occ channel_code channel typ_seq.
 
 (******************************************************************************)
 (*          Elements of the theory of types (in information theory)           *)
+(*                                                                            *)
+(* P_n(A)                  == type                                            *)
+(* type_counting           == Upper-bound of the number of types              *)
+(* T_{P}                   == typed tuples, tuples that are representative of *)
+(*                            a type                                          *)
+(* tuple_dist_type_entropy == probability of tuples representative of a type  *)
+(*                            using the entropy                               *)
+(* card_typed_tuples       == Upper-bound of the number of tuples             *)
+(*                            representative of a type using the entropy      *)
+(*                                                                            *)
 (******************************************************************************)
 
 Reserved Notation "'P_' n '(' A ')'" (at level 9, n, A at next level).
@@ -32,8 +43,6 @@ Section type_def.
 Variable A : finType.
 Variable n : nat.
 
-(** * Type definition *)
-
 Record type : predArgType := mkType {
   d :> fdist A ;
   f : {ffun A -> 'I_n.+1} ;
@@ -49,16 +58,19 @@ Notation "'P_' n '(' A ')'" := (type.type A n) : types_scope.
 
 Local Open Scope types_scope.
 
-Lemma type_fun_type A n (_ : n != O) (P : P_ n ( A )) a : INR ((type.f P) a) = INR n * P a.
+Definition ffun_of_type A n (P : P_ n ( A )) := let: type.mkType _ f _ := P in f.
+
+Lemma type_fun_type A n (_ : n != O) (P : P_ n ( A )) a :
+  ((type.f P) a)%:R = n%:R * P a.
 Proof.
 case: P => /= d f d_f; by rewrite d_f mulRCA mulRV ?INR_eq0' // mulR1.
 Qed.
 
-Lemma INR_type_fun A n (P : P_ n ( A )) a : INR ((type.f P) a) / INR n = P a.
+Lemma INR_type_fun A n (P : P_ n ( A )) a : ((type.f P) a)%:R / n%:R = P a.
 Proof. destruct P as [d f d_f] => /=. by rewrite d_f. Qed.
 
 Lemma no_0_type A (d : fdist A) (t : {ffun A -> 'I_1}) :
-  (forall a, d a = INR (t a) / INR 0) -> False.
+  (forall a, d a = (t a)%:R / 0%:R) -> False.
 Proof.
 move=> H; apply R1_neq_R0.
 rewrite -(FDist.f1 d).
@@ -70,7 +82,7 @@ by rewrite big_const iter_addn.
 Qed.
 
 Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
-set f := [ffun a => INR N(a | ta) / INR n.+1].
+set f := [ffun a => N(a | ta)%:R / n.+1%:R].
 assert (H1 : forall a, (0 <= f a)%R).
   move=> a; rewrite ffunE; apply divR_ge0; by [apply leR0n | apply ltR0n].
 have H2 : \sum_(a in A) f a = 1%R.
@@ -83,8 +95,6 @@ refine (@type.mkType _ n.+1 (FDist.make H1 H2)
   [ffun a => @Ordinal n.+2 (N(a | ta)) (H a)] _).
 by move=> a /=; rewrite !ffunE.
 Defined.
-
-Definition ffun_of_type A n (P : P_ n ( A )) := let: type.mkType _ f _ := P in f.
 
 Lemma type_ext A n (t1 t2 : P_ n ( A )) : type.f t1 = type.f t2 -> t1 = t2.
 Proof.
@@ -255,8 +265,6 @@ Section type_facts.
 Variable A : finType.
 Local Open Scope nat_scope.
 
-(** Upper-bound of the number of types: *)
-
 Lemma type_counting n : #| P_ n ( A ) | <= expn (n.+1) #|A|.
 Proof.
 rewrite -(card_ord n.+1) -card_ffun /=.
@@ -306,10 +314,6 @@ Section typed_tuples.
 Variables (A : finType) (n : nat) (P : P_ n ( A )).
 
 Local Open Scope nat_scope.
-
-(** * Typed Tuples *)
-
-(** Tuples that are representative of a type: *)
 
 Definition typed_tuples :=
   [set t : n.-tuple A | [forall a, P a == (INR N(a | t) / INR n)%R] ].
@@ -423,8 +427,6 @@ Qed.
 
 Local Close Scope tuple_ext_scope.
 
-(** Probability of tuples representative of a type using the entropy: *)
-
 Lemma tuple_dist_type_entropy t : tuple_of_row t \in T_{P} ->
   P `^ n t = exp2 (- INR n * `H P).
 Proof.
@@ -463,12 +465,6 @@ rewrite /set_typ_seq inE /typ_seq tuple_dist_type_entropy; last first.
 by rewrite addR0 subR0 !leRR'.
 Qed.
 
-(* TODO: move? *)
-Lemma row_of_tuple_inj {C : finType} {m} : injective (@row_of_tuple C m).
-Proof. move=> a b ab; by rewrite -(row_of_tupleK b) -ab row_of_tupleK. Qed.
-
-(** Upper-bound of the number of tuples representative of a type using the entropy: *)
-
 Lemma card_typed_tuples : INR #| T_{ P } | <= exp2 (INR n * `H P).
 Proof.
 rewrite -(invRK (exp2 (INR n * `H P))%R) => //.
@@ -490,7 +486,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
     case/imsetP : Hta' => x Hx ->. by rewrite row_of_tupleK.
   rewrite big_const iter_addR tuple_dist_type_entropy //.
   do 2 f_equal.
-  rewrite card_imset //; exact row_of_tuple_inj.
+  rewrite card_imset //; exact: row_of_tuple_inj.
 - rewrite (_ : (INR #| T_{P} | = 0)%R); first by rewrite mul0R; exact/Rle_0_1.
   rewrite (_ : 0%R = INR 0) //; congr INR; apply/eqP.
   rewrite cards_eq0; apply/negPn.
@@ -502,12 +498,9 @@ Proof.
 apply (@leR_trans (INR #| `TS P n 0 |)).
   apply/le_INR/leP.
   apply: leq_trans; last first.
-    apply subset_leq_card.
-    exact: typed_tuples_are_typ_seq.
-  rewrite card_imset //.
-  exact row_of_tuple_inj.
-apply: (leR_trans (TS_sup _ _ _)).
-rewrite addR0; exact/leRR.
+    by apply subset_leq_card; exact: typed_tuples_are_typ_seq.
+  by rewrite card_imset //; exact: row_of_tuple_inj.
+by apply: (leR_trans (TS_sup _ _ _)); rewrite addR0; exact/leRR.
 Qed.
 
 Lemma perm_tuple_in_Ttuples ta (s : 'S_n) :

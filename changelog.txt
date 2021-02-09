@@ -16,6 +16,9 @@ from 0.2.2 to 0.3
     * Convn_of_FSDist_FSDist1
     * Convn_of_FSDist_FSDistfmap
     * triangular_laws_left0
+  + row_of_tuple_inj from types.v to ssralg_ext
+  + derive_sincreasing_interv moved to Ranalysis_ext.v
+  + num_occ_flatten from string_entropy.v to num_occ.v
 
 - renamed:
   + lub_op -> biglub
@@ -52,6 +55,23 @@ from 0.2.2 to 0.3
 
 - changed:
   + setU_bigsetU in necset.v changed to bigcupsetU2E in classical_sets.v
+  + MVT_cor1_pderivable_new in ln_facts changed to MVT_cor1_pderivable_closed_continuity
+    and moved to Ranalysis_ext.v
+  + MVT_cor1_pderivable_new_var in ln_facts.v changed to MVT_cor1_pderivable_open_continuity
+    and moved to Ranalysis_ext.v
+  + sum_num_occ renamed to sum_num_occ_size from and moved from string_entropy.v to num_occ.v
+
+- renamed:
+  + derive_increasing_interv_ax_left -> pderive_increasing_ax_open_closed
+  + derive_increasing_interv_ax_right -> pderive_increasing_ax_closed_open
+  + derive_increasing_interv_left -> pderive_increasing_open_closed
+  + derive_increasing_interv_right -> pderive_increasing_closed_open
+  + derive_increasing_ad_hoc -> pderive_ad_hoc
+
+- removed:
+  + from ssrR.v:
+    * Reqb, eqRP, R_eqMixin, R_eqType, R_choiceType, ROrder.orderMixin,
+      R_porderType, R_latticeType, R_distrLatticeType, R_orderType
 
 -----------------
 from 0.2 to 0.2.1

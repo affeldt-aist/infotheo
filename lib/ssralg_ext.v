@@ -146,6 +146,9 @@ Definition row_of_tuple n (t : n.-tuple A) := \row_(i < n) (t \_ i).
 Lemma row_of_tupleK n (t : n.-tuple A) : tuple_of_row (row_of_tuple t) = t.
 Proof. apply eq_from_tnth => n0; by rewrite tnth_mktuple mxE. Qed.
 
+Lemma row_of_tuple_inj n : injective (@row_of_tuple n).
+Proof. by move=> a b ab; rewrite -(row_of_tupleK b) -ab row_of_tupleK. Qed.
+
 Lemma tuple_of_row_inj n : injective (@tuple_of_row n).
 Proof.
 move=> i j ij.

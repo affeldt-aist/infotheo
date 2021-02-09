@@ -71,16 +71,14 @@ Defined.
 Lemma increasing_on_0_to_half : forall x y,
   0 < x <= 1/2 -> 0 < y <= 1/2 -> x <= y -> H2ln x <= H2ln y.
 Proof.
-apply derive_increasing_interv_left with (pr := pderivable_H2ln); first lra.
+apply pderive_increasing_open_closed with (pr := pderivable_H2ln); first lra.
 move=> t [Ht1 Ht2].
 rewrite /H2ln /pderivable_H2ln derive_pt_minus 2!derive_pt_mult /=.
-destruct (Rlt_le_dec 0 t) => /=; last first.
-  exfalso.
-  lra.
+destruct (Rlt_le_dec 0 t) => /=; last by exfalso; lra.
 rewrite derive_pt_comp /= mulRA.
 apply (@leR_trans (- ln t + ln (1 - t))); last first.
   apply Req_le; field.
-  split=> ?; lra.
+  by split=> ?; lra.
 rewrite -ln_Rinv // -ln_mult; last 2 first.
   exact/invR_gt0.
   lra.
@@ -88,28 +86,26 @@ rewrite -ln_1.
 apply ln_increasing_le; first lra.
 apply (@leR_pmul2l t) => //.
 rewrite mulRA mulRV; last exact/eqP/gtR_eqF.
-rewrite mulR1 mul1R; lra.
+by rewrite mulR1 mul1R; lra.
 Qed.
 
-Lemma decreasing_on_half_to_1 : forall x y : R,
+Lemma decreasing_on_half_to_1 (x y : R) :
   1/2 <= x < 1 -> 1/2 <= y < 1 -> x <= y -> H2ln y <= H2ln x.
 Proof.
-move=> x y Hx Hy xy.
+move=> Hx Hy xy.
 rewrite -[X in _ <= X]oppRK leR_oppr.
 move: x y Hx Hy xy.
-apply derive_increasing_interv_right with (pr := pderivable_Ropp_H2ln); first lra.
+apply pderive_increasing_closed_open with (pr := pderivable_Ropp_H2ln); first lra.
 move=> t [Ht1 Ht2].
 rewrite /H2ln /pderivable_Ropp_H2ln derive_pt_comp derive_pt_minus 2!derive_pt_mult /=.
 destruct (Rlt_le_dec 0 t) => /=; last first.
-  exfalso.
-  lra.
+  by exfalso; lra.
 rewrite derive_pt_comp /= mulRA.
 apply (@leR_trans (ln t - ln (1 - t))); last first.
   apply Req_le; field.
-  split => ?; lra.
-suff : ln ( 1 - t) <= ln t.
-  move=> ?; lra.
-apply ln_increasing_le; lra.
+  by split => ?; lra.
+suff : ln ( 1 - t) <= ln t by move=> ?; lra.
+by apply ln_increasing_le; lra.
 Qed.
 
 Lemma H2ln_max (q : R) : 0 < q < 1 -> - q * ln q - (1 - q) * ln (1 - q) <= ln 2.
@@ -122,9 +118,9 @@ apply (@leR_trans (H2ln (1/2))); last first.
   rewrite div1R ln_Rinv; [by field | lra].
 rewrite -/(H2ln q).
 case: (Rlt_le_dec q (1/2)) => [H1|].
-- apply increasing_on_0_to_half => //; lra.
+- by apply increasing_on_0_to_half => //; lra.
 - case/Rle_lt_or_eq_dec => [H1|<-]; last exact: leRR.
-  apply decreasing_on_half_to_1 => //; lra.
+  by apply decreasing_on_half_to_1 => //; lra.
 Qed.
 
 Definition H2 p := - (p * log p) + - ((1 - p) * log (1 - p)).

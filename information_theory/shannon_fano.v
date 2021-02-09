@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import ssrZ ssrR logb Reals_ext Rbigop ssr_ext fdist entropy kraft.
 
 (******************************************************************************)
@@ -19,8 +20,6 @@ Unset Printing Implicit Defensive.
 
 Local Open Scope R_scope.
 
-(* NB(rei): redefine kraft_cond in R instead of with an rcfType *)
-(* TODO: use mathcomp.analysis? or build an ad-hoc interface to bridge R and rcfType as a temporary fix? *)
 Definition kraft_condR (T : finType) (sizes : seq nat) :=
   let n := size sizes in
   (\sum_(i < n) #|T|%:R^-(nth O sizes i) <= (1 : R))%R.

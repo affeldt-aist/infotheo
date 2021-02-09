@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect.
 Require Import Reals.
-From mathcomp Require Rstruct.
+From mathcomp Require Import Rstruct.
 
 (*****************************************************************************)
 (*                SSReflect-like lemmas for Coq Reals                        *)
@@ -72,18 +72,9 @@ Notation "`| x |" := (Rabs x) : R_scope.
 
 Notation "n %:R" := (INR n) : R_scope.
 
-Hint Resolve Rlt_R0_R2 :  core.
-Hint Resolve Rlt_0_1 : core.
-Hint Resolve Rle_0_1 : core.
-
-Definition Reqb (a b : R) : bool :=
-  match Req_EM_T a b with left _ => true | _ => false end.
-
-Lemma eqRP : Equality.axiom Reqb.
-Proof. move=> a b; apply: (iffP idP); rewrite /Reqb; by case: Req_EM_T. Qed.
-
-Canonical R_eqMixin := EqMixin eqRP.
-Canonical R_eqType := Eval hnf in EqType R R_eqMixin.
+Global Hint Resolve Rlt_R0_R2 :  core.
+Global Hint Resolve Rlt_0_1 : core.
+Global Hint Resolve Rle_0_1 : core.
 
 Definition leRb a b := if Rle_dec a b is left _ then true else false.
 Notation "a '<b=' b" := (leRb a b) : R_scope.
@@ -685,7 +676,7 @@ move=> z0; apply/idP/idP => /ltRP.
 Qed.
 
 Lemma invR_le1 x : 0 < x -> (/ x <= 1) <-> (1 <= x).
-Proof. move=> x0; by rewrite -(div1R x) leR_pdivr_mulr // mul1R. Qed.
+Proof. by move=> x0; rewrite -(div1R x) leR_pdivr_mulr // mul1R. Qed.
 Lemma invR_le1' x : 0 < x -> (/ x <b= 1) = (1 <b= x).
 Proof. by move=> x0; apply/idP/idP => /leRP/(invR_le1 _ x0)/leRP. Qed.
 
@@ -718,7 +709,7 @@ move: (pow_nonzero x n.+1); tauto.
 Qed.
 
 Lemma expR_gt0 x : 0 < x -> forall n : nat, 0 < x ^ n.
-Proof. move=> ?; elim => [/= | n IH] => //; exact: mulR_gt0. Qed.
+Proof. by move=> ?; elim => [/= | n IH] => //; exact: mulR_gt0. Qed.
 
 Lemma expR_ge0 x : 0 <= x -> forall n : nat, 0 <= x ^ n.
 Proof.
@@ -811,8 +802,6 @@ Definition distRC x y : `|x - y| = `|y - x| := Rabs_minus_sym x y.
 Notation "'min(' x ',' y ')'" := (Rmin x y) : R_scope.
 Notation "'max(' x ',' y ')'" := (Rmax x y) : R_scope.
 
-Canonical R_choiceType := ChoiceType R Rstruct.R_choiceMixin.
-
 Module ROrder.
 
 Lemma minRE x y : min(x, y) = if (x <b y)%R then x else y.
@@ -840,15 +829,7 @@ by move => x y; case: (Rle_or_lt x y) => xy; apply/orP;
   [left; exact/leRP|right; exact/leRP/ltRW].
 Qed.
 
-Definition orderMixin :=
-  LeOrderMixin ltR_def minRE maxRE anti_leR leR_trans leR_total.
-
 End ROrder.
-
-Canonical R_porderType := POrderType ssrnum.ring_display R ROrder.orderMixin.
-Canonical R_latticeType := LatticeType R ROrder.orderMixin.
-Canonical R_distrLatticeType := DistrLatticeType R ROrder.orderMixin.
-Canonical R_orderType := OrderType R ROrder.orderMixin.
 
 Definition maxRA : associative Rmax := Rmax_assoc.
 Definition maxRC : commutative Rmax := Rmax_comm.
@@ -867,7 +848,7 @@ split => [| [yx zx] ].
   move/leRP; rewrite leR_eqVlt' => /orP[/eqP <-|/ltRP/Rmax_Rlt].
     split; [exact: leR_maxl | exact: leR_maxr].
   case=> ?; split; exact/ltRW.
-rewrite -(Rmax_right _ _ yx); exact: Rle_max_compat_l.
+by rewrite -(Rmax_right _ _ yx); exact: Rle_max_compat_l.
 Qed.
 
 Lemma leR_max' x y z : (max(y, z) <b= x) = (y <b= x) && (z <b= x).

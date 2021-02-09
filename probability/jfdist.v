@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
+From mathcomp Require Import Rstruct.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import proba.
@@ -20,10 +21,10 @@ Require Import proba.
 (*                          given a Same as CondJFDist0.d when                *)
 (*                          Bivar.fst PQ a != 0.                              *)
 (*           PQ `(| a |) == notation CondJFDist.d PQ a                        *)
+(*                                                                            *)
 (******************************************************************************)
 
-(*
-OUTLINE:
+(* TODO: complete documentation using the following (outdated?) information:
 - Various distributions (Swap.d, Self.d, TripA.d, TripA'.d, TripC12.d, TripC23.d,
   TripC13.d, Proj13.d, Proj23.d)
 - Section conditional_probability_def.
@@ -99,7 +100,8 @@ Qed.
 End prop3.
 End Swap.
 
-Lemma Swap_RV2 (U : finType) (P : fdist U) (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) : Swap.d `d_[% X, Y] = `d_[% Y, X].
+Lemma Swap_RV2 (U : finType) (P : fdist U) (A B : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) : Swap.d `d_[% X, Y] = `d_[% Y, X].
 Proof. by rewrite /Swap.d /dist_of_RV FDistMap.comp. Qed.
 
 Module Self.

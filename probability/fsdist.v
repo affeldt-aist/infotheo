@@ -2,8 +2,9 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import finmap.
-From mathcomp Require Rstruct boolp.
+From mathcomp Require boolp.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import convex_choice.
 
@@ -1051,7 +1052,7 @@ have nx0 :
    scalept (d i) (S1 (if x == i then 1 else 0)) = scalept (d x).~ (S1 0).
 - transitivity (scalept (\sum_(i <- finsupp d `\ x) (d i)) (S1 0)).
   + rewrite big_scaleptl' //; last by rewrite scalept0.
-    erewrite eq_fbigr; first by reflexivity.
+    erewrite eq_fbigr; first reflexivity.
     by move=> y /fsetD1P []; rewrite eq_sym=> /negbTE ->.
   congr (_ _ _).
   by rewrite FSDist_finsuppD1.

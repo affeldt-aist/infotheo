@@ -2,11 +2,14 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
+From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb Rbigop fdist proba entropy aep typ_seq.
 Require Import source_code.
 
 (******************************************************************************)
 (*         Source coding theorem (fixed length, converse part)                *)
+(*                                                                            *)
+(* Main lemma: source_coding_converse                                         *)
 (*                                                                            *)
 (* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
 (* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
@@ -50,13 +53,13 @@ Hypothesis Hk : SrcConverseBound <= k.+1%:R.
 Lemma Hr1 : 0 < (`H P - r) / 2.
 Proof.
 apply divR_gt0; last lra.
-case: Hr => ? ?; lra.
+by case: Hr => ? ?; lra.
 Qed.
 
 Lemma Hepsilon1 : 0 < (1 - epsilon) / 2.
 Proof.
 apply divR_gt0; last lra.
-case: Hepsilon => ? ?; lra.
+by case: Hepsilon => ? ?; lra.
 Qed.
 
 Lemma lambda0 : 0 < lambda.
@@ -224,8 +227,6 @@ End source_coding_converse'.
 Section source_coding_converse.
 
 Variables (A : finType) (P : fdist A).
-
-(** Source coding theorem (converse part) #<a name="label_source_coding_converse"> </a># *)
 
 Theorem source_coding_converse : forall epsilon, 0 < epsilon < 1 ->
   forall r : Qplus, 0 < r < `H P ->

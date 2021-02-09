@@ -1,6 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat.
+From mathcomp Require Import Rstruct.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext.
 
@@ -25,7 +26,7 @@ Local Open Scope R_scope.
 Section addtional_lemmas_about_ln_exp.
 
 Lemma ln_pos x : 1 < x -> 0 < ln x.
-Proof. move=> x0; rewrite -ln_1; exact: ln_increasing. Qed.
+Proof. by move=> x0; rewrite -ln_1; exact: ln_increasing. Qed.
 
 Lemma ln2_gt0 : 0 < ln 2. Proof. apply ln_pos; lra. Qed.
 Local Hint Resolve ln2_gt0 : core.
@@ -304,11 +305,11 @@ Definition exp2 (x : R) := Exp 2 x.
 
 Lemma exp2_gt0 x : 0 < exp2 x. Proof. exact: Exp_gt0. Qed.
 Lemma exp2_ge0 x : 0 <= exp2 x. Proof. exact: Exp_ge0. Qed.
-Hint Resolve exp2_gt0 : core.
-Hint Resolve exp2_ge0 : core.
+Global Hint Resolve exp2_gt0 : core.
+Global Hint Resolve exp2_ge0 : core.
 
 Lemma exp2_neq0 l : exp2 l <> 0. Proof. exact/gtR_eqF. Qed.
-Hint Resolve exp2_neq0 : core.
+Global Hint Resolve exp2_neq0 : core.
 
 Lemma exp2_0 : exp2 0 = 1.
 Proof. by rewrite /exp2 -/(Exp 2 0) Exp_0. Qed.
@@ -384,5 +385,5 @@ split.
   by rewrite -{1}(muln1 n) leq_mul2l HP orbC.
 rewrite natRM -mulRA (mulRCA den%:R) mulRV // ?mulR1; last first.
   by rewrite INR_eq0' -lt0n.
-rewrite exp2_pow logK; [exact/frac_part_pow/frac_part_INR | exact/ltR0n].
+by rewrite exp2_pow logK; [exact/frac_part_pow/frac_part_INR | exact/ltR0n].
 Qed.

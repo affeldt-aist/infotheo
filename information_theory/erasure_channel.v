@@ -3,6 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
 Require Import binary_entropy_function channel hamming channel_code.
 

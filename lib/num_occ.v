@@ -101,6 +101,22 @@ elim => [|hd tl IH]; first by rewrite big_nil num_occ0.
 rewrite /num_occ /= -/(N(true | tl)) IH big_cons; by case: hd.
 Qed.
 
+Lemma sum_num_occ_size (A : finType) s : (\sum_(a in A) N(a|s))%nat = size s.
+Proof.
+elim: s => [|a s IH] /=.
++ by apply big1_eq.
++ rewrite big_split /= IH -big_mkcond /= (big_pred1 a) //.
+  by move=> i; rewrite eq_sym.
+Qed.
+
+Lemma num_occ_flatten (A : finType) (a : A) ss :
+  N(a|flatten ss) = (\sum_(s <- ss) N(a|s))%nat.
+Proof.
+rewrite /num_occ.
+elim: ss => [|s ss IH] /=; first by rewrite big_nil.
+by rewrite big_cons /= count_cat IH.
+Qed.
+
 Section num_occ_tuple.
 
 Lemma num_occ_leq_n {A : eqType} n a (t : n.-tuple A) : N(a | t) <= n.

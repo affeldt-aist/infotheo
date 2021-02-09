@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
+From mathcomp Require Import Rstruct.
 Require Import Reals Lra Nsatz.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 
@@ -87,8 +88,8 @@ Canonical fdist_subType A := Eval hnf in [subType for @FDist.f A].
 Definition fdist_eqMixin A := [eqMixin of fdist A by <:].
 Canonical dist_eqType A := Eval hnf in EqType _ (fdist_eqMixin A).
 
-Hint Resolve FDist.ge0 : core.
-Hint Resolve FDist.le1 : core.
+Global Hint Resolve FDist.ge0 : core.
+Global Hint Resolve FDist.le1 : core.
 
 Definition fdist_of (A : finType) := fun phT : phant (Finite.sort A) => fdist A.
 

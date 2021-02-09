@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import proba entropy jfdist chap2.
 
@@ -27,6 +28,7 @@ Require Import proba entropy jfdist chap2.
 (*               distribution and a channel                                   *)
 (* `I(P, W)   == mutual information of input/output                           *)
 (* capacity   == capacity of a channel                                        *)
+(*                                                                            *)
 (******************************************************************************)
 
 Declare Scope channel_scope.
@@ -379,4 +381,4 @@ From mathcomp Require Import classical_sets.
 Local Open Scope classical_set_scope.
 
 Definition capacity (A B : finType) (W : `Ch(A, B)) :=
-  Rstruct.real_sup [set `I(P, W) | P in @setT (fdist A)].
+  real_sup [set `I(P, W) | P in @setT (fdist A)].

@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist entropy convex_choice ln_facts jensen num_occ.
 
@@ -64,34 +65,13 @@ Section string.
 
 Variable A : finType.
 
-(* TODO: move?*)
-Section num_occ.
-
-Lemma sum_num_occ s : (\sum_(a in A) N(a|s))%nat = size s.
-Proof.
-elim: s => [|a s IH] /=.
-+ by apply big1_eq.
-+ rewrite big_split /= IH -big_mkcond /= (big_pred1 a) //.
-  by move=> i; rewrite eq_sym.
-Qed.
-
-Lemma num_occ_flatten (a:A) ss :
-  N(a|flatten ss) = (\sum_(s <- ss) N(a|s))%nat.
-Proof.
-rewrite /num_occ.
-elim: ss => [|s ss IH] /=; first by rewrite big_nil.
-by rewrite big_cons /= count_cat IH.
-Qed.
-
-End num_occ.
-
 Section entropy.
 Variable S : seq A.
 Hypothesis S_nonempty : size S != O.
 
 Definition pchar c := N(c|S) / size S.
 
-Definition num_occ_dist := seq_nat_fdist (sum_num_occ S) S_nonempty.
+Definition num_occ_dist := seq_nat_fdist (sum_num_occ_size S) S_nonempty.
 
 Definition Hs0 := `H num_occ_dist.
 End entropy.

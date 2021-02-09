@@ -1,7 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect.
-From mathcomp Require Rstruct boolp.
+From mathcomp Require Import Rstruct.
+From mathcomp Require boolp.
 Require Import Reals Lra.
 Require Import ssrR.
 
@@ -55,7 +56,7 @@ Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
 Lemma Rlt_1_2 : 1 < 2. Proof. lra. Qed.
-Hint Resolve Rlt_1_2 : core.
+Global Hint Resolve Rlt_1_2 : core.
 
 Section reals_ext.
 
@@ -385,7 +386,7 @@ End Prob.
 Export Prob.Exports.
 Coercion Prob.p : prob >-> R.
 
-Hint Resolve Prob.ge0 : core.
+Global Hint Resolve Prob.ge0 : core.
 
 Definition eqprob (x y : prob) := (x == y :> R).
 
@@ -565,7 +566,7 @@ Canonical Rpos1 := @mkRpos 1 Rlt_0_1.
 Lemma Rpos_gt0 (x : Rpos) : 0 < x.
 Proof. by case: x => p /= /ltRP. Qed.
 
-Hint Resolve Rpos_gt0 : core.
+Global Hint Resolve Rpos_gt0 : core.
 
 Lemma Rpos_neq0 (x : Rpos) : val x != 0.
 Proof. case: x => p /=. by rewrite /gtRb lt0R => /andP[]. Qed.

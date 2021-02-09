@@ -2,12 +2,15 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb ln_facts Rbigop num_occ.
 Require Import fdist entropy types jtypes divergence conditional_divergence.
 Require Import error_exponent channel_code channel success_decode_bound.
 
 (******************************************************************************)
 (*                 Channel coding theorem (converse part)                     *)
+(*                                                                            *)
+(* main theorem: channel_coding_converse                                      *)
 (*                                                                            *)
 (* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
 (* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
@@ -81,8 +84,6 @@ Hypothesis set_of_I_has_ubound : classical_sets.has_ubound (fun y => exists P, `
 
 Variable epsilon : R. (* TODO: use posnum *)
 Hypothesis eps_gt0 : 0 < epsilon.
-
-(** Converse of the Channel Coding Theorem #<a name="label_channel_coding_converse"> </a># *)
 
 Theorem channel_coding_converse : exists n0,
   forall n M (c : code A B M n),
@@ -158,4 +159,3 @@ rewrite expRM -mulRA; apply leR_pmul => //.
 Qed.
 
 End channel_coding_converse.
-

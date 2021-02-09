@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import Reals_ext ssrR logb Rbigop fdist proba channel.
 
 (******************************************************************************)
