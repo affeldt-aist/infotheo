@@ -441,7 +441,7 @@ Lemma point_S1 a : [point of S1_neq0 a] = a.
 Proof. by []. Qed.
 
 Lemma weight0_Zero x : weight x = 0 -> x = Zero.
-Proof. case: x => //= r c /esym Hr; by move/ltR_eqF: (Rpos_gt0 r). Qed.
+Proof. by case: x => //= r c /esym Hr; move/ltR_eqF: (Rpos_gt0 r) => /eqP. Qed.
 
 (* TODO: move to Reals_ext.v? *)
 Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / (r + q)%:pos <= 1.
@@ -504,10 +504,7 @@ Definition scalept p (x : scaled_pt) :=
   end.
 
 Lemma onem_divRxxy (r q : Rpos) : (r / (r + q)).~ = q / (q + r).
-Proof.
-rewrite /onem subR_eq (addRC r) -mulRDl mulRV //.
-exact/eqP/gtR_eqF/ltRP/addRpos_gt0.
-Qed.
+Proof. by rewrite /onem subR_eq (addRC r) -mulRDl mulRV // ?gtR_eqF. Qed.
 
 (* 1 *)
 Lemma addptC : commutative addpt.
@@ -603,10 +600,10 @@ rewrite /scalept; case: Rlt_dec => // Hr x y.
 case: x => [p x|]; last by rewrite !add0pt.
 case: y => [q y|]; last by rewrite !addpt0.
 congr Scaled. by apply val_inj => /=; rewrite mulRDr.
-have Hr0 : r <> 0 by apply gtR_eqF.
+have Hr0 : r != 0 by apply gtR_eqF.
 congr Conv; apply prob_ext; rewrite /= -mulRDr divRM //.
   rewrite /Rdiv -(mulRAC r) mulRV ?mul1R //; by apply /eqP.
-by apply/eqP/Rpos_neq0.
+exact/Rpos_neq0.
 Qed.
 
 Definition big_scalept q :=
@@ -2181,7 +2178,7 @@ Lemma LE x : L x = ((b - x) / (b - a) * f a + (x - a) / (b - a) * f b)%R.
 Proof.
 rewrite /L mulRBr [in LHS]addRA addRAC; congr (_ + _)%R.
 rewrite addR_opp -{1}(mul1R (f a)) -mulRBl; congr (_ * _)%R.
-rewrite -(mulRV (b - a)); last by rewrite subR_eq0'; exact/eqP/gtR_eqF.
+rewrite -(mulRV (b - a)); last by rewrite subR_eq0'; exact/gtR_eqF.
 by rewrite -mulRBl -addR_opp oppRB addRA subRK addR_opp.
 Qed.
 
@@ -2205,11 +2202,11 @@ rewrite LE //.
 have -> : ((b - x) / (b - a) = t)%R.
   rewrite /x -addR_opp oppRD addRCA mulRBl mul1R oppRB (addRCA b).
   rewrite addR_opp subRR addR0 -mulRN addRC -mulRDr addR_opp.
-  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0'; exact/eqP/gtR_eqF.
+  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0'; exact/gtR_eqF.
 have -> : ((x - a) / (b - a) = t.~)%R.
   rewrite /x -addR_opp addRAC -{1}(oppRK a) mulRN -mulNR -{2}(mul1R (- a)%R).
   rewrite -mulRDl (addRC _ R1) addR_opp -mulRDr addRC addR_opp.
-  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0'; exact/eqP/gtR_eqF.
+  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0'; exact/gtR_eqF.
 exact/leRR.
 Qed.
 
@@ -2217,7 +2214,7 @@ Lemma second_derivative_convexf_pt : forall t : prob, convex_function_at f a b t
 Proof.
 have note1 : forall x, R1 = ((x - a) / (b - a) + (b - x) / (b - a))%R.
   move=> x; rewrite -mulRDl addRC addRA subRK addR_opp mulRV // subR_eq0'.
-  exact/eqP/gtR_eqF.
+  exact/gtR_eqF.
 have step1 : forall x, f x = ((x - a) / (b - a) * f x + (b - x) / (b - a) * f x)%R.
   by move=> x; rewrite -mulRDl -note1 mul1R.
 apply convexf_ptP => // x axb.
@@ -2227,7 +2224,7 @@ case: axb.
   rewrite /L subRR div0R mul0R addR0 subRR; exact/leRR.
 move=> ax.
 rewrite leR_eqVlt => -[->|].
-rewrite /L /Rdiv mulRV ?mul1R; last by rewrite subR_eq0'; exact/eqP/gtR_eqF.
+rewrite /L /Rdiv mulRV ?mul1R; last by rewrite subR_eq0'; exact/gtR_eqF.
 rewrite addRC subRK subRR; exact/leRR.
 move=> xb.
 have {step1}step2 : (L x - f x =
@@ -2243,9 +2240,9 @@ have {step1}step2 : (L x - f x =
   rewrite -(oppRK (f a - f x)) mulRN addR_opp oppRB.
   congr (_ + _)%R.
   - rewrite {1}/Rdiv -!mulRA; congr (_ * _)%R; rewrite mulRCA; congr (_ * _)%R.
-    rewrite mulRCA mulRV ?mulR1 // subR_eq0'; exact/eqP/gtR_eqF.
+    rewrite mulRCA mulRV ?mulR1 // subR_eq0'; exact/gtR_eqF.
   - rewrite -!mulNR -!mulRA; congr (_ * _)%R; rewrite mulRCA; congr (_ * _)%R.
-    rewrite mulRCA mulRV ?mulR1 // subR_eq0'; exact/eqP/gtR_eqF.
+    rewrite mulRCA mulRV ?mulR1 // subR_eq0'; exact/gtR_eqF.
 have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%R.
   have H : pderivable f (fun x0 => x <= x0 <= b)%R.
     move=> z [z1 z2]; apply HDf; split => //.
@@ -2253,7 +2250,7 @@ have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%R
   case: (@MVT_cor1_pderivable x b f H xb) => c2 [Ic2 [H1 H2]].
   exists c2; split => //.
   rewrite H1 /Rdiv -mulRA mulRV ?mulR1; last first.
-    by rewrite subR_eq0'; exact/eqP/gtR_eqF.
+    by rewrite subR_eq0'; exact/gtR_eqF.
   rewrite DfE; last by move=> ?; exact: proof_derive_irrelevance.
   split.
     apply (@leR_trans x); [exact/ltRW | by case: Ic2 H1].
@@ -2265,7 +2262,7 @@ have [c1 [Ic1 Hc1]] : exists c1, (a < c1 < x /\ (f x - f a) / (x - a) = Df c1)%R
   case: (@MVT_cor1_pderivable a x f H ax) => c1 [Ic1 [H1 H2]].
   exists c1; split => //.
   rewrite H1 /Rdiv -mulRA mulRV ?mulR1; last first.
-    by rewrite subR_eq0'; exact/eqP/gtR_eqF.
+    by rewrite subR_eq0'; exact/gtR_eqF.
   rewrite DfE; last by move=> ?; exact: proof_derive_irrelevance.
   split.
   - by case: H2 => /ltRW.
@@ -2277,7 +2274,7 @@ have {step2 Hc1 Hc2}step3 : (L x - f x =
   (b - x) * (x - a) * (c2 - c1) / (b - a) * ((Df c2 - Df c1) / (c2 - c1)))%R.
   rewrite {}step2 Hc2 Hc1 (mulRC (x - a)%R) -mulRBr {1}/Rdiv -!mulRA.
   congr (_ * (_ * _))%R; rewrite mulRCA; congr (_ * _)%R.
-  rewrite mulRCA mulRV ?mulR1 // subR_eq0'; by move/gtR_eqF/eqP : c1c2.
+  rewrite mulRCA mulRV ?mulR1 // subR_eq0'; by move/gtR_eqF : c1c2.
 have [d [Id H]] : exists d, (c1 < d < c2 /\ (Df c2 - Df c1) / (c2 - c1) = DDf d)%R.
   have H : pderivable Df (fun x0 => c1 <= x0 <= c2)%R.
     move=> z [z1 z2]; apply HDDf; split => //.
@@ -2286,11 +2283,11 @@ have [d [Id H]] : exists d, (c1 < d < c2 /\ (Df c2 - Df c1) / (c2 - c1) = DDf d)
   case: (@MVT_cor1_pderivable c1 c2 Df H c1c2) => d [Id [H1 H2]].
   exists d; split => //.
   rewrite H1 /Rdiv -mulRA mulRV ?mulR1; last first.
-    by rewrite subR_eq0'; exact/eqP/gtR_eqF.
+    by rewrite subR_eq0'; exact/gtR_eqF.
   rewrite DDfE; last by move=> ?; exact: proof_derive_irrelevance.
   split.
   - apply (@leR_trans c1); last by case: Id H1.
-    apply/ltRW; by case: Ic1.
+    by apply/ltRW; case: Ic1.
   - apply (@leR_trans c2); last by case: Ic2 => _ /ltRW.
     by case: H2 => _ /ltRW.
 rewrite {}step3 {}H.
@@ -2305,7 +2302,7 @@ apply/mulR_ge0; last first.
 apply/mulR_ge0; last by apply/ltRW/invR_gt0; rewrite subR_gt0.
 apply/mulR_ge0; last first.
   by rewrite subR_ge0; case: Id => Id1 Id2; apply (@leR_trans d); exact/ltRW.
-apply/mulR_ge0; rewrite subR_ge0; exact/ltRW.
+by apply/mulR_ge0; rewrite subR_ge0; exact/ltRW.
 Qed.
 
 End twice_derivable_convex.

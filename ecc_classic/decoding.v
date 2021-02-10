@@ -225,13 +225,12 @@ apply (@leR_pmul2l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
   rewrite subR_gt0; lra.
   by rewrite -prob_gt0.
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
-  apply/expR_neq0; rewrite subR_eq0'; apply/eqP/gtR_eqF; lra.
+  apply/expR_neq0; rewrite subR_eq0'; apply/gtR_eqF; lra.
 rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
-  apply/expR_neq0/eqP/gtR_eqF.
-  by rewrite -prob_gt0.
-rewrite -expRV; last by apply/eqP/gtR_eqF; rewrite -prob_gt0.
-rewrite -expRV; last by rewrite subR_eq0'; apply/eqP/gtR_eqF; lra.
-rewrite mulRC expRV; last by apply/eqP/gtR_eqF; rewrite -prob_gt0.
+  by apply/expR_neq0/gtR_eqF; rewrite -prob_gt0.
+rewrite -expRV; last by apply/gtR_eqF; rewrite -prob_gt0.
+rewrite -expRV; last by rewrite subR_eq0'; apply/gtR_eqF; lra.
+rewrite mulRC expRV; last by apply/gtR_eqF; rewrite -prob_gt0.
 rewrite -/(Rdiv _ _) -expRB; last 2 first.
   by case/andP : d1d2.
   exact/eqP.
@@ -362,7 +361,7 @@ move/(eqR_mul2r x0) in H.
 rewrite /= UniformSupport.dET ?inE // in H; last first.
   move/subsetP : dec_img; apply.
   rewrite inE; apply/existsP; by exists (Receivable.y tb); apply/eqP.
-move/eqR_mul2l :  H => -> //; exact: gtR_eqF.
+move/eqR_mul2l :  H => -> //; exact/eqP/gtR_eqF.
 Qed.
 
 End MAP_decoding_prop.

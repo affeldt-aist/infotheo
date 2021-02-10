@@ -69,7 +69,7 @@ have H : forall a : A, p a * log (p a / u a) = RHS a.
   - rewrite Uniform.dE.
     change (p a * log (p a / / #|A|%:R)) with (p a * log (p a * / / #|A|%:R)).
     have H0 : 0 < #|A|%:R by rewrite A_not_empty ltR0n.
-    have H1 : #|A|%:R <> 0 by apply gtR_eqF.
+    have /eqP H1 : #|A|%:R <> 0 by apply/eqP/gtR_eqF.
     rewrite invRK // logM // mulRDr.
     by instantiate (RHS := fun a => p a * log (p a) + p a * log #|A|%:R).
   - by rewrite /RHS -H /= 3!mul0R add0R.
@@ -275,8 +275,7 @@ have @derive_pt_f : forall z (Hz : x <= z <= y),
   rewrite derive_pt_id derive_pt_comp 2!derive_pt_Log /=.
   rewrite mul1R mulN1R mulRN1.
   rewrite [X in z * X]mulRC [X in (1 - z) * - X]mulRC mulRN 2!mulRA.
-  rewrite !mulRV; [|by apply/eqP => /subR_eq0 /gtR_eqF | exact/eqP/gtR_eqF].
-  rewrite mul1R -2!oppRD oppRK.
+  rewrite !mulRV ?gtR_eqF // ?subR_gt0 // mul1R -2!oppRD oppRK.
   by rewrite [X in X + - _]addRC oppRD addRA addRC !addRA Rplus_opp_l add0R addR_opp.
 have @pderivable_Df : pderivable Df (fun z => x <= z <= y).
   move => z [Hxz Hzy].
@@ -294,26 +293,24 @@ have derive_pt_Df : forall z (Hz : x <= z <= y), DDf z = derive_pt Df z (pderiva
   rewrite derive_pt_minus derive_pt_comp 2!derive_pt_Log /=.
   rewrite mulRN1 -[X in _ = X]addR_opp oppRK.
   rewrite -mulRDr [X in _ = X]mulRC.
-  have Hzn0 : z != 0 by apply/eqP/gtR_eqF/(ltR_leR_trans H0x Hxz).
+  have Hzn0 : z != 0 by apply/gtR_eqF/(ltR_leR_trans H0x Hxz).
   have H1zn0 : 1 - z != 0.
-    apply /eqP; move => /subR_eq0 /gtR_eqF H.
-    by apply /H /leR_ltR_trans; [exact Hzy| exact Hy1].
+    by rewrite subR_eq0' ?gtR_eqF //; apply/leR_ltR_trans; [exact Hzy| exact Hy1].
   have Hzn0' : z <> 0 by move : Hzn0 => /eqP.
   have H1zn0' : 1 - z <> 0 by move : H1zn0 => /eqP.
-  have Hz1zn0 : z * (1 - z) <> 0 by rewrite mulR_neq0.
-  have ln2n0 : ln 2 <> 0 by move : ln2_gt0 => /gtR_eqF.
+  have /eqP Hz1zn0 : z * (1 - z) <> 0 by rewrite mulR_neq0.
   have -> : / z = (1 - z) / (z * (1 - z)).
     change (/ z = (1 - z) * / (z * (1 - z))).
     by rewrite invRM // [X in _ = _ * X]mulRC mulRA mulRV // mul1R.
   have -> : / (1 - z) = z  / (z * (1 - z)).
     change (/ (1 - z) = z * / (z * (1 - z))).
     by rewrite invRM // mulRA mulRV // mul1R.
-  by rewrite -Rdiv_plus_distr -addRA Rplus_opp_l addR0 div1R -invRM.
+  by rewrite -Rdiv_plus_distr -addRA Rplus_opp_l addR0 div1R -invRM // ln2_neq0.
 have DDf_nonneg : forall z, x <= z <= y -> 0 <= DDf z.
   move => z [Hxz Hzy].
   have Hz : 0 < z by apply /ltR_leR_trans; [exact H0x| exact Hxz].
   have H1z : 0 < 1 - z by apply /subR_gt0 /leR_ltR_trans; [exact Hzy| exact Hy1].
-  apply/or_introl/invR_gt0/mulR_gt0; [exact/mulR_gt0 | exact/ln2_gt0].
+  by apply/or_introl/invR_gt0/mulR_gt0; [exact/mulR_gt0 | exact/ln2_gt0].
 exact: (@second_derivative_convexf_pt _ _ _ _ Df _ _ DDf).
 Qed.
 

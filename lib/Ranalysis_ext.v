@@ -287,7 +287,7 @@ have H0' : forall t (Ht : x <= t <= y), 0 < if t == y then 1 else derive_pt f t 
     - apply: (leR_trans Hz1); by apply H2.
   move: (H0 z) => H02.
   have Hz2 : ~~ (z == b).
-    apply/eqP/ltR_eqF.
+    apply/ltR_eqF.
     clear Hz0 H1 H3 pr' H H0 x.
     move/eqP in Hcase.
     apply (@ltR_leR_trans y).
@@ -295,14 +295,14 @@ have H0' : forall t (Ht : x <= t <= y), 0 < if t == y then 1 else derive_pt f t 
       - exact Hzy.
       - contradict Hcase ; exact Hzy.
       - lra.
-    - apply H2.
+    - by apply H2.
   move/negbTE in Hz2.
   rewrite Hz2 in H02.
   by apply H02.
 case: (MVT_cor1_pderivable pr' H3); intros x0 [x1 [H7 H8]].
 rewrite H7.
 apply mulR_gt0; last lra.
-have Hx0 : ~~ (x0 == y) by apply/eqP; apply ltR_eqF, H8.
+have Hx0 : ~~ (x0 == y) by rewrite ltR_eqF //; case: H8.
 move/negbTE in Hx0.
 by move: (H0' x0); rewrite Hx0; exact.
 Qed.

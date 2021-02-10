@@ -150,12 +150,11 @@ Lemma fdist_ind (P : fdist A -> Type) :
 Proof.
 move=> H1 d.
 move: {-2}(#|fdist_supp d|) (erefl (#|fdist_supp d|)) => n; move: n d.
-elim=> [d /esym /card0_eq Hd0|].
+elim=> [d /esym /card0_eq Hd0|n IH d n13].
   move: (FDist.f1 d).
   rewrite -[X in X = _]mulR1 big_distrl rsum_fdist_supp big1 => [H01|a].
-    by elim: (gtR_eqF 0 1).
+  by exfalso; move: H01; apply/eqP; rewrite ltR_eqF.
   by rewrite Hd0.
-move=> n IH d n13.
 have [b Hb] : {b : A | d b != 0}.
   suff : {x | x \in fdist_supp d} by case => a; rewrite inE => ?; exists a.
   apply/sigW/set0Pn; by rewrite -cards_eq0 -n13.
@@ -164,14 +163,14 @@ Qed.
 
 Lemma fdist_gt0 d a : (d a != 0) <-> (0 < d a).
 Proof.
-split => H; [|by move/gtR_eqF : H => /eqP].
-rewrite ltR_neqAle; split => //; exact/nesym/eqP.
+split => H; [|by move/gtR_eqF : H].
+by rewrite ltR_neqAle; split => //; exact/nesym/eqP.
 Qed.
 
 Lemma fdist_lt1 d a : (d a != 1) <-> (d a < 1).
 Proof.
 split=> H; first by rewrite ltR_neqAle; split => //; exact/eqP.
-exact/eqP/ltR_eqF.
+exact/ltR_eqF.
 Qed.
 
 Lemma fdist_ext d d' : (forall x, pos_ff d x = pos_ff d' x) -> d = d'.
@@ -324,7 +323,7 @@ End Uniform.
 Lemma dom_by_uniform A (P : fdist A) n (HA : #|A| = n.+1) : P `<< Uniform.d HA.
 Proof.
 apply/dominatesP => a; rewrite Uniform.dE => /esym abs; exfalso.
-move: abs; rewrite HA; exact/ltR_eqF/invR_gt0/ltR0n.
+by move: abs; rewrite HA; apply/eqP; rewrite ltR_eqF //; apply/invR_gt0/ltR0n.
 Qed.
 
 Module UniformSupport.

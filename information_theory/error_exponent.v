@@ -49,7 +49,7 @@ apply pow2_Rle_inv; [ exact: sqrt_pos | exact/ltRW/exp_pos | ].
 rewrite [in X in X <= _]/= mulR1 sqrt_sqrt; last first.
   apply mulR_ge0; [lra | exact: cdiv_ge0].
 apply/leRP; rewrite -(leR_pmul2r' (/ 2)); last exact/ltRP/invR_gt0.
-rewrite -mulRA mulRCA mulRV ?mulR1; [exact/leRP | exact/eqP/gtR_eqF].
+by rewrite -mulRA mulRCA mulRV ?mulR1; [exact/leRP | exact/gtR_eqF].
 Qed.
 
 Local Open Scope variation_distance_scope.
@@ -139,7 +139,7 @@ have x_gt0 : 0 < x.
   apply mulR_gt0 => //; exact: invR_gt0.
 have /mu_cond : D_x no_cond 0 x /\ R_dist x 0 < mu.
   split.
-  - split => //; exact/ltR_eqF.
+  - by split => //; exact/eqP/ltR_eqF.
   - rewrite /R_dist subR0 gtR0_norm // /x.
     apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
     rewrite ltR_pdivr_mulr //; lra.

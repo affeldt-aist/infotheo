@@ -53,7 +53,7 @@ wlog : Fnot0 g Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
     apply/forallP.
     move=> a; rewrite ffunE; apply/leRP/mulR_ge0; by [apply ltRW | apply pos_ff_ge0].
   have kabs_con : f `<< mkPosFfun kg_pos.
-    apply/dominates_scale => //; exact/eqP/gtR_eqF.
+    by apply/dominates_scale => //; exact/gtR_eqF.
   have kgspos : forall a, a \in C -> 0 < (mkPosFfun kg_pos) a.
     move=> a a_C; rewrite ffunE; apply mulR_gt0 => //; by apply gspos.
   have Hkg : \sum_{C} (mkPosFfun kg_pos) = \sum_{C} f.
@@ -107,21 +107,21 @@ apply (@leR_trans (\sum_(a | a \in C) f a * (1 - g a / f a))).
   case: (Req_EM_T (g a) 0).
     move=> ->; by rewrite div0R mulR0.
   move=> ga_not_0.
-  field; exact/gtR_eqF/(fspos _ a_C).
+  field; exact/eqP/gtR_eqF/(fspos _ a_C).
 apply: leR_sumR => a C_a.
 apply leR_wpmul2l; first exact/ltRW/fspos.
 rewrite -[X in _ <= X]oppRK leR_oppr -ln_Rinv; last first.
   apply divR_gt0; by [apply fspos | apply gspos].
 rewrite invRM; last 2 first.
   exact/gtR_eqF/(fspos _ C_a).
-  exact/invR_neq0/gtR_eqF/(gspos _ C_a).
+  by rewrite invR_neq0' // gtR_eqF //; exact/(gspos _ C_a).
 rewrite invRK; last exact/gtR_eqF/(gspos _ C_a).
 rewrite mulRC.
 apply: leR_trans.
   apply ln_id_cmp.
   apply divR_gt0; by [apply gspos | apply fspos].
 apply Req_le.
-field; exact/gtR_eqF/(fspos _ C_a).
+field; exact/eqP/gtR_eqF/(fspos _ C_a).
 Qed.
 
 Lemma log_sum {A : finType} (C : {set A}) (f g : A ->R+) :

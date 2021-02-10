@@ -38,9 +38,9 @@ move=> x0 yx /leR_eqVlt[/esym|] y0.
 - case/leR_eqVlt : x0 => [/esym ->|x0].
   + rewrite mul0R subR0; apply mulR_ge0; [exact: ltRW | exact: log_exp1_Rle_0].
   + rewrite (_ : y - x = x * (y / x - 1)); last first.
-      rewrite mulRDr mulRCA mulRV ?mulR1 ?mulRN1 //; exact/eqP/gtR_eqF.
+      by rewrite mulRDr mulRCA mulRV ?mulR1 ?mulRN1 //; exact/gtR_eqF.
     rewrite -mulRA; apply (leR_wpmul2l (ltRW x0)).
-    apply/log_id_cmp/mulR_gt0 => //; exact/invR_gt0.
+    by apply/log_id_cmp/mulR_gt0 => //; exact/invR_gt0.
 Qed.
 
 Lemma log_id_diff x y : 0 <= x -> (y = 0 -> x = 0) -> 0 <= y ->
@@ -50,12 +50,12 @@ move=> Hx Hxy /leR_eqVlt[/esym|] y0 Hxy2; first by rewrite y0 Hxy.
 case/leR_eqVlt : Hx => [/esym|] x0.
 - move/esym : Hxy2; rewrite x0 mul0R subR0 mulR_eq0 => -[] //.
   by rewrite logexp1E => /invR_eq0/eqP; rewrite (negbTE ln2_neq0).
-- apply/esym; rewrite -(@eqR_mul2l (/ x)) //; last exact/nesym/ltR_eqF/invR_gt0.
-  rewrite mulVR //; last exact/eqP/gtR_eqF.
+- apply/esym; rewrite -(@eqR_mul2l (/ x)) //; last exact/nesym/eqP/ltR_eqF/invR_gt0.
+  rewrite mulVR //; last exact/gtR_eqF.
   apply log_id_eq; first by apply mulR_gt0 => //; exact: invR_gt0.
-  rewrite -(@eqR_mul2l x); last exact/gtR_eqF.
+  rewrite -(@eqR_mul2l x); last exact/eqP/gtR_eqF.
   rewrite {1}(mulRC _ y) Hxy2 mulRA mulRBr; congr (_ * _).
-  field; exact/gtR_eqF.
+  field; exact/eqP/gtR_eqF.
 Qed.
 
 End log_facts.

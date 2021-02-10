@@ -806,7 +806,7 @@ apply (@ltR_leR_trans (exp2 (- (- (log epsilon0) / epsilon0) * epsilon0))).
   - rewrite /epsilon0_condition in Hepsilon0; tauto.
   - rewrite ltR_oppr oppRK; by case: Hn => _ [Hn2 _].
     rewrite !mulNR -mulRA mulVR ?mulR1 ?oppRK; last first.
-      by apply/eqP/gtR_eqF; case: Hepsilon0.
+      by apply/gtR_eqF; case: Hepsilon0.
     by rewrite logK; [exact/leRR | case: Hepsilon0].
 Qed.
 

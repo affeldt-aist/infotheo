@@ -175,7 +175,7 @@ Local Hint Resolve Pr_ge0 : core.
 
 Lemma Pr_gt0 E : 0 < Pr E <-> Pr E != R0.
 Proof.
-split => H; first by move/gtR_eqF : H => /eqP.
+split => H; first by move/gtR_eqF : H.
 by rewrite ltR_neqAle; split => //; exact/nesym/eqP.
 Qed.
 
@@ -2030,7 +2030,7 @@ Lemma wlln epsilon : 0 < epsilon ->
     sigma2 / (n.+1%:R * epsilon ^ 2).
 Proof.
 move=> e0.
-rewrite divRM ?INR_eq0 //; last exact/gtR_eqF/expR_gt0.
+rewrite divRM ?INR_eq0' //; last exact/gtR_eqF/expR_gt0.
 have <- : `V (X `/ n.+1) = sigma2 / n.+1%:R.
   by rewrite -(Var_average X_Xs V_Xs) Var_scale //; field; exact/INR_eq0.
 have <- : `E (X `/ n.+1) = miu.

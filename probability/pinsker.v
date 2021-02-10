@@ -38,7 +38,7 @@ apply derivable_pt_minus.
       apply derivable_pt_mult.
         apply derivable_pt_const.
       apply derivable_pt_inv.
-      exact/gtR_eqF.
+      exact/eqP/gtR_eqF.
       apply derivable_pt_id.
     apply derivable_pt_Log.
     exact: divR_gt0.
@@ -224,18 +224,18 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
     apply (@leR_trans  (8 * / (2 * ln 2))).
       apply leR_wpmul2l => //; lra.
     rewrite invRM; last 2 first.
-      move=> ?; lra.
-      exact/eqP/ln2_neq0.
+      by apply/eqP.
+      exact/ln2_neq0.
     rewrite mulRA; apply leR_wpmul2r => //; lra.
   rewrite invRM; last 2 first.
-    apply/gtR_eqF/mulR_gt0; lra.
-    exact/eqP/ln2_neq0.
+    by apply/gtR_eqF/mulR_gt0; lra.
+    exact/ln2_neq0.
   apply leR_wpmul2r => //.
-  rewrite -(invRK 4) //.
+  rewrite -(invRK 4); last exact/eqP.
   apply leR_inv => //.
-    apply/mulR_gt0 => //; lra.
+    by apply/mulR_gt0 => //; lra.
   exact: x_x2_max.
-rewrite /inv_fct -mulNR; apply mulR_ge0 => //; lra.
+by rewrite /inv_fct -mulNR; apply mulR_ge0 => //; lra.
 Qed.
 
 Lemma pinsker_fun_pderivable2 c (Hp' : 0 < p < 1) :
@@ -261,20 +261,20 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   have : forall a b, b <= a -> 0 <= a - b by move=> *; lra.
   apply.
   have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
-  have Hlocal2 : t * (1 - t) <> 0 by apply/gtR_eqF/mulR_gt0; lra.
+  have /eqP Hlocal2 : t * (1 - t) <> 0 by apply/eqP/gtR_eqF/mulR_gt0; lra.
   apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans (8 * / (2 * ln 2))).
       apply/leRP.
       rewrite leR_pmul2l'; [exact/leRP | by apply/ltRP; lra].
-    rewrite invRM; last 2 first.
-      move=> ?; lra.
-      exact/eqP/ln2_neq0.
-    rewrite mulRA.
-    apply leR_wpmul2r => //; lra.
-  rewrite invRM //; last exact/eqP/ln2_neq0.
+    rewrite invRM ?mulRA; last 2 first.
+      exact/eqP.
+      exact/ln2_neq0.
+    by apply leR_wpmul2r => //; lra.
+  rewrite invRM //; last exact/ln2_neq0.
   apply leR_wpmul2r => //.
-  rewrite -(invRK 4) //=; apply leR_inv => //.
-    apply/mulR_gt0; lra.
+  rewrite -(invRK 4) //=; last exact/eqP.
+  apply leR_inv => //.
+    by apply/mulR_gt0; lra.
   exact: x_x2_max.
 rewrite /inv_fct; apply mulR_ge0 => //; lra.
 Qed.
@@ -546,7 +546,7 @@ rewrite -(sqrt_Rsqr (d(P , Q))); last exact/pos_var_dist.
 apply sqrt_le_1_alt.
 apply (@leR_pmul2l (/ 2)); first by apply invR_gt0; lra.
 apply (@leR_trans (D(P || Q))); last first.
-  rewrite mulRA mulVR // ?mul1R; [exact/leRR | exact/eqP/gtR_eqF].
+  by rewrite mulRA mulVR // ?mul1R; [exact/leRR | exact/gtR_eqF].
 apply: (leR_trans _ Pinsker_inequality).
 rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow mulR1.
 apply leR_wpmul2r; first exact: pow_even_ge0.

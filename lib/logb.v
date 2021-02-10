@@ -31,7 +31,7 @@ Proof. by move=> x0; rewrite -ln_1; exact: ln_increasing. Qed.
 Lemma ln2_gt0 : 0 < ln 2. Proof. apply ln_pos; lra. Qed.
 Local Hint Resolve ln2_gt0 : core.
 
-Lemma ln2_neq0 : ln 2 != 0. Proof. exact/eqP/gtR_eqF. Qed.
+Lemma ln2_neq0 : ln 2 != 0. Proof. exact/gtR_eqF. Qed.
 
 Lemma ln_expR (a : R) (n : nat) : 0 < a -> ln (a ^ n) = n%:R * ln a.
 Proof.
@@ -84,9 +84,7 @@ Proof.
 rewrite /exp_dev derive_pt_minus derive_pt_exp; congr (_ - _).
 rewrite derive_pt_mult derive_pt_const mulR0 addR0 derive_pt_pow.
 rewrite mulRC mulRA mulRC; congr (_ * _).
-rewrite factS natRM invRM; last 2 first.
-  exact/INR_eq0.
-  apply/eqP; by rewrite INR_eq0' -lt0n fact_gt0.
+rewrite factS natRM invRM ?INR_eq0' //; last by rewrite -lt0n fact_gt0.
 by rewrite mulRC mulRA mulRV ?mul1R // INR_eq0'.
 Qed.
 
@@ -148,12 +146,10 @@ Lemma Log_1 (n : R) : Log n 1 = 0.
 Proof. by rewrite /Log ln_1 div0R. Qed.
 
 Lemma Log_n (n : R) : 1 < n -> Log n n = 1.
-Proof. move=> n1; rewrite /Log /Rdiv mulRV //; exact/eqP/gtR_eqF/ln_pos. Qed.
+Proof. by move=> n1; rewrite /Log /Rdiv mulRV //; exact/gtR_eqF/ln_pos. Qed.
 
 Lemma LogV n x : 0 < x -> Log n (/ x) = - Log n x.
-Proof.
-by move=> x0; rewrite /Log ln_Rinv // -mulNR.
-Qed.
+Proof. by move=> x0; rewrite /Log ln_Rinv // -mulNR. Qed.
 
 Lemma LogM n x y : 0 < x -> 0 < y -> Log n (x * y) = Log n x + Log n y.
 Proof. move=> *; by rewrite /Log -mulRDl ln_mult. Qed.
@@ -171,15 +167,14 @@ Qed.
 Lemma Log_increasing n a b : 1 < n -> 0 < a -> a < b -> Log n a < Log n b.
 Proof.
 move=> n1 Ha a_b.
-rewrite /Log.
-apply ltR_pmul2r; last exact: ln_increasing.
+rewrite /Log; apply ltR_pmul2r; last exact: ln_increasing.
 exact/invR_gt0/ln_pos.
 Qed.
 
 Lemma Log_inv n x y : 1 < n -> 0 < x -> 0 < y -> Log n x = Log n y -> x = y.
 Proof.
 move=> n1 Hx Hy.
-rewrite /Log /Rdiv eqR_mul2r; last exact/invR_neq0/gtR_eqF/ln_pos.
+rewrite /Log /Rdiv eqR_mul2r; last exact/invR_neq0/eqP/gtR_eqF/ln_pos.
 apply ln_inv => //; exact: H.
 Qed.
 
@@ -308,7 +303,7 @@ Lemma exp2_ge0 x : 0 <= exp2 x. Proof. exact: Exp_ge0. Qed.
 Global Hint Resolve exp2_gt0 : core.
 Global Hint Resolve exp2_ge0 : core.
 
-Lemma exp2_neq0 l : exp2 l <> 0. Proof. exact/gtR_eqF. Qed.
+Lemma exp2_neq0 l : exp2 l <> 0. Proof. exact/eqP/gtR_eqF. Qed.
 Global Hint Resolve exp2_neq0 : core.
 
 Lemma exp2_0 : exp2 0 = 1.
