@@ -501,8 +501,8 @@ Lemma K949_lemma df n0 : K949 n0 df =
   MarginalPostProbability.Kmpp y * PosteriorProbability.Kppu [set cw in C] y.
 Proof.
 rewrite /K949 /MarginalPostProbability.Kmpp /PosteriorProbability.Kppu -invRM; last 2 first.
-  rewrite FDist.f1 => ?; lra.
-  apply/eqP; by rewrite -not_receivable_uniformE Receivable.defE.
+  apply/eqP; rewrite FDist.f1 => ?; lra.
+  by rewrite -not_receivable_uniformE Receivable.defE.
 congr (/ _).
 transitivity (\sum_(t in 'rV['F_2]_n)
   if t \in kernel H then W ``(y | t) else 0); last first.
@@ -521,10 +521,11 @@ transitivity (\sum_(t in 'rV['F_2]_n)
     congr (_ * _).
     rewrite mul1R UniformSupport.restrict /= UniformSupport.big_distrr /=; last first.
     rewrite invRM; last 2 first.
-      exact/invR_neq0.
+      exact/eqP/invR_neq0.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
-      apply/eqP; by rewrite -not_receivable_uniformE Receivable.defE.
-    rewrite invRK // -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.
+      by rewrite -not_receivable_uniformE Receivable.defE.
+    rewrite invRK //; last  exact/eqP.
+    rewrite -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.
     set tmp1 := \sum_(_ | _) _.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
     by rewrite -not_receivable_uniformE Receivable.defE.

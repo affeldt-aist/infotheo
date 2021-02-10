@@ -147,7 +147,7 @@ Definition f : {fsfun A -> R with 0} := [fsfun b in D => 1 | 0].
 Lemma suppf : finsupp f = D.
 Proof.
 apply/fsetP => b; rewrite mem_finsupp /f fsfunE inE.
-case: ifPn => ba; [exact/eqP/gtR_eqF | by rewrite eqxx].
+by case: ifPn => ba; [exact/gtR_eqF | by rewrite eqxx].
 Qed.
 Lemma f0 b : b \in finsupp f -> 0 < f b.
 Proof. rewrite mem_finsupp fsfunE inE; case: ifPn => //; by rewrite eqxx. Qed.
@@ -592,7 +592,7 @@ case/bigfcupP : aD => /= i.
 rewrite mem_index_enum /= => /ltRP ei0.
 rewrite mem_finsupp => gia0.
 apply: contra gia0 => /eqP H; apply/eqP.
-rewrite -(@eqR_mul2l (e i)) ?mulR0; last exact/gtR_eqF.
+rewrite -(@eqR_mul2l (e i)) ?mulR0; last exact/eqP/gtR_eqF.
 move/psumR_eq0P : H; apply => //= j _; exact/mulR_ge0.
 Qed.
 Lemma f0 a : a \in finsupp f -> 0 < f a.
@@ -884,7 +884,7 @@ apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j;
     rewrite 2!mulR0 addR0.
 move/prob_gt0 in p0.
 move: p1 => /onem_neq0 /prob_gt0 /= p1.
-rewrite 2!mem_finsupp => /orP[dj0|ej0]; apply/eqP/gtR_eqF;
+by rewrite 2!mem_finsupp => /orP[dj0|ej0]; apply/gtR_eqF;
   [apply/addR_gt0wl; last exact/mulR_ge0;
    apply/mulR_gt0 => //; apply/ltR_neqAle; split => //; exact/nesym/eqP |
    apply/addR_gt0wr; first exact/mulR_ge0;

@@ -61,6 +61,9 @@ from 0.2.2 to 0.3
     and moved to Ranalysis_ext.v
   + sum_num_occ renamed to sum_num_occ_size from and moved from string_entropy.v to num_occ.v
 
+- changed:
+  + in ssrR.v, gtR_eqF, ltR_eqF, invRK, invRM have now hypotheses in bool instead of Prop
+
 - renamed:
   + derive_increasing_interv_ax_left -> pderive_increasing_ax_open_closed
   + derive_increasing_interv_ax_right -> pderive_increasing_ax_closed_open

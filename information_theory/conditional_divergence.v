@@ -65,9 +65,9 @@ case/leR_eqVlt : (FDist.ge0 P ab.1) => [/esym|] Hab1.
 - by rewrite JointFDistChan.dE Hab1 mul0R.
 - rewrite JointFDistChan.dE in Hab.
   rewrite JointFDistChan.dE (dominatesE (V_dom_by_W _ _)) ?mulR0 //.
-  + exact/eqP/gtR_eqF.
+  + exact/gtR_eqF.
   + move: Hab; rewrite mulR_eq0 => -[|//].
-    by move: (gtR_eqF _ _ Hab1).
+    by move: (gtR_eqF _ _ Hab1) => /eqP.
 Qed.
 
 End joint_dom.
@@ -98,7 +98,7 @@ congr (_ * _).
 case/boolP : (V a b == 0) => [/eqP -> | Vab0]; first by rewrite !mul0R.
 congr (_ * _).
 have Wab0 : W a b != 0 := dominatesEN (V_dom_by_W Pa0) Vab0.
-rewrite JointFDistChan.dE /= {2}/Rdiv (mulRC _ (W a b)) (invRM (W a b)); [|exact/eqP|exact/eqP].
+rewrite JointFDistChan.dE /= {2}/Rdiv (mulRC _ (W a b)) (invRM (W a b)) //.
 by rewrite -mulRA (mulRCA (P a)) mulRV // mulR1.
 Qed.
 

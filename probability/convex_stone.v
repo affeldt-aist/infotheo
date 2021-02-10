@@ -697,11 +697,9 @@ congr (_ <| _ |> _).
   rewrite s_of_pqE /= /onem.
   rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
   field.
-  split.
-    rewrite subR_eq0; exact/nesym.
+  split; first by rewrite subR_eq0; exact/nesym.
   rewrite -addR_opp oppRB -addR_opp oppRB addRC addRA subRK.
-  apply gtR_eqF.
-  by rewrite addRC.
+  by apply/eqP; rewrite gtR_eqF // addRC.
 by rewrite /= /S3.p01 permE /=; congr g; exact/val_inj.
 congr (_ <| _ |> _).
   apply prob_ext => /=.
@@ -714,11 +712,9 @@ congr (_ <| _ |> _).
     apply/nesym/eqP.
     apply: contra ds01.
     rewrite /S3.p01 permE /= (_ : Ordinal _ = lift ord0 ord0) //; exact/val_inj.
-  split.
-    rewrite subR_eq0; exact/nesym.
+  split; first by rewrite subR_eq0; exact/nesym.
   rewrite -addR_opp oppRB -addR_opp oppRB addRC addRA subRK.
-  apply gtR_eqF.
-  by rewrite addRC.
+  by apply/eqP; rewrite gtR_eqF // addRC.
 by congr g; apply val_inj => /=; rewrite /S3.p01 permE.
 by rewrite /= /S3.p01 permE.
 Qed.
@@ -1111,6 +1107,6 @@ apply/fdist_ext => a.
 rewrite ConvFDist.dE ConvnFDist.dE /= big_ord_recl; congr (_ + _)%R.
 rewrite IH ConvnFDist.dE big_distrr /=; apply eq_bigr => i _.
 rewrite DelFDist.dE D1FDist.dE eq_sym (negbTE (neq_lift _ _)).
-rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?mulR1 //; exact/onem_neq0.
+by rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?mulR1 //; exact/onem_neq0.
 Qed.
 End convn_convnfdist.

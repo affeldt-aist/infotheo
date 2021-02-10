@@ -466,11 +466,11 @@ have Hprodf : 0 < \prod_(i : A) f i.
   apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
 apply (@leR_pmul2r (1 * / \prod_(i : A) f i) _ _).
   apply divR_gt0 => //; lra.
-rewrite mul1R mulRV; last exact/eqP/gtR_eqF.
+rewrite mul1R mulRV; last exact/gtR_eqF.
 set inv_spec := fun r => if r == 0 then 0 else / r.
 rewrite (_ : / (\prod_(a : A) f a) = inv_spec (\prod_(a : A) f a)); last first.
   rewrite /inv_spec (_ : \prod_(a : A) f a == 0 = false) //.
-  exact/eqP/gtR_eqF.
+  exact/negbTE/gtR_eqF.
 rewrite (@big_morph _ _ (inv_spec) R1 Rmult R1 Rmult _); last 2 first.
   - move=> a b /=.
     case/boolP : ((a != 0) && (b != 0)).

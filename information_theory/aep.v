@@ -124,7 +124,7 @@ apply (@leR_trans (aep_sigma2 P / (n.+1%:R * epsilon ^ 2))); last first.
     apply divR_ge0; [exact/ltRW/Hepsilon | exact/ltR0n].
   rewrite [in X in _ <= X]mulRCA mulRV ?INR_eq0' // ?mulR1 in Hbound.
   apply/(leR_trans _ Hbound)/Req_le; field.
-  split; [by rewrite INR_eq0 | exact: gtR_eqF].
+  by split; [by rewrite INR_eq0 | exact/eqP/gtR_eqF].
 have Hsum := sum_mlog_prod_sum_map_mlog P n.
 have H1 : forall k i, `E ((\row_(i < k.+1) --log P) ``_ i) = `H P.
   by move=> k i; rewrite mxE E_mlog.

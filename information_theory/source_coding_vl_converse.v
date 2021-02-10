@@ -331,11 +331,11 @@ have lt_0_EX_1 : 0 < `E X - 1 by rewrite subR_gt0.
 pose alp := (`E X - 1) / `E X .
 have gt_alp_1 : alp < 1.
   rewrite -(ltR_pmul2r EX_gt0) // mul1R.
-  rewrite /alp -mulRA mulVR ?mulR1; last exact/eqP/gtR_eqF/EX_gt0.
+  rewrite /alp -mulRA mulVR ?mulR1; last exact/gtR_eqF/EX_gt0.
   by rewrite -ltR_subr_addl subRR -ltR_oppl oppR0.
 have lt_0_alp : 0 < alp by rewrite /alp; exact/divR_gt0/EX_gt0.
 have EX_pos' : 0 < 1 - (`E X  - 1) / `E X .
-  rewrite divRDl divRR; last exact/eqP/gtR_eqF/EX_gt0.
+  rewrite divRDl divRR; last exact/gtR_eqF/EX_gt0.
   rewrite divN1R addR_opp subRB subRR add0R; exact/invR_gt0/EX_gt0.
 have max_pos: (0 < \max_(a in A) size (f a))%coq_nat.
   apply/ltP.
@@ -353,7 +353,7 @@ rewrite [X in _ <= X](_ :_ = log ( alp / (1 - alp)) - (log alp) * `E X);
   rewrite [in LHS]mulRC -addR_opp; congr (_ + _).
   rewrite [in LHS]mulRDl mulRC oppRD mulN1R oppRK; congr (_ + _).
   rewrite -[in RHS]addRA -[LHS]addR0; congr (_ + _).
-  rewrite mulRDl mulRV; last exact/eqP/gtR_eqF/EX_gt0.
+  rewrite mulRDl mulRV; last exact/gtR_eqF/EX_gt0.
   rewrite mulN1R !addR_opp subRB subRR add0R invRK ?Rplus_opp_l //.
   exact/gtR_eqF/EX_gt0.
 apply: (@leR_trans (log (alp * (1 - (alp ^ (\max_(a | a \in A) size (f a))))
@@ -369,7 +369,7 @@ apply: (@leR_trans (log (alp * (1 - (alp ^ (\max_(a | a \in A) size (f a))))
   apply/leR_wpmul2r; first by apply/ltRW/invR_gt0; rewrite subR_gt0.
   rewrite -addR_opp addRC -leR_subr_addr subRR leR_oppl oppR0.
   exact/expR_ge0/ltRW.
-rewrite EX_ord -big_pow1; last exact: ltR_eqF.
+rewrite EX_ord -big_pow1; last exact/eqP/ltR_eqF.
 rewrite mulRC (big_morph _ (morph_mulRDl _) (mul0R _)).
 rewrite -(@leR_add2r (\sum_(i < Nmax.+1) i%:R * `Pr[ X = i%:R ] * log alp)).
 rewrite -addRA (_ : - _ + _ = 0) ?addR0; last first.
@@ -390,7 +390,7 @@ have pmf1' : \sum_(i < Nmax) `Pr[X = i.+1%:R] = 1.
   rewrite /pr_eq; unlock.
   rewrite /Pr big1 // => i.
   rewrite inE; move/eqP =>  Xi_0.
-  by move/gtR_eqF: (Xpos i); rewrite Xi_0.
+  by move/gtR_eqF: (Xpos i); rewrite Xi_0 => /eqP.
 rewrite -{1}(Log_1 2) -pmf1'.
 have Pr_ge0' (i : nat) : 0 <= `Pr[ X = i%:R] by [].
 have alpi_ge0 (i : nat) : 0 <= alp ^ i by exact/pow_le/ltRW.
@@ -407,7 +407,7 @@ rewrite big_ord_recl [X in _ <= X + _](_ : _ = 0) ?add0R; last first.
   rewrite /Pr.
   have -> : [set x | X x == INR 0] = set0; last by rewrite big_set0 mul0R.
   apply/setP => i; rewrite inE /= in_set0.
-  exact/eqP/nesym/ltR_eqF/Xpos.
+  by apply/negbTE; rewrite gtR_eqF //; exact: Xpos.
 exact: (log_sum_inequality_ord_add1' Nmax dom_by_hg).
 Qed.
 
@@ -417,14 +417,14 @@ move/Rle_lt_or_eq_dec : le_1_EX => [?|eq_EX_1]; last first.
   rewrite -eq_EX_1 /log Log_1 add0R.
   by move/esym/entroPN_0 : eq_EX_1 ->; apply: log_exp1_Rle_0.
 have EX_1 : 0 < `E X  - 1 by rewrite subR_gt0.
-have neq_EX1_0 : (`E X  + -1) <> 0 by exact/gtR_eqF.
+have /eqP neq_EX1_0 : (`E X  + -1) != 0 by exact/gtR_eqF.
 apply: (@leR_trans (`E X  * log (`E X ) - (`E X  - 1) * log((`E X ) -1))).
   exact: le_entroPN_logeEX'.
 rewrite -{1}(Rplus_minus 1 (`E X)) mulRDl mul1R /Rminus -addRA leR_add2l.
 rewrite -mulRN -mulRDr -(mul1R (log (exp 1))) -{3}(subRKC (`E X) 1) -oppRB.
 rewrite (addR_opp (log (`E X))) -logDiv //; last exact EX_gt0.
-apply: div_diff_ub; [exact/ltRW |
-  by move=> EX0; exfalso; move: EX0; apply/gtR_eqF/EX_gt0 |
+by apply: div_diff_ub; [exact/ltRW |
+  by move=> EX0; exfalso; move: EX0; apply/eqP/gtR_eqF/EX_gt0 |
   exact/ltRW/EX_gt0].
 Qed.
 
@@ -776,7 +776,7 @@ have Ypos : 0 < Y by apply/mulR_gt0 => //; apply/mulR_gt0.
 apply: (Rmult_le_reg_r (INR (m eps) * INR n)).
   by apply: mulR_gt0 => //; apply/mpos.
 rewrite -mulRA (mulRC (/ INR n) _ ) -mulRA -mulRA -Rinv_r_sym; last exact: nesym.
-rewrite mulR1 mulVR ?mulR1; last exact/eqP/gtR_eqF/mpos/ltR_eqF.
+rewrite mulR1 mulVR ?mulR1; last exact/gtR_eqF/mpos/eqP/ltR_eqF.
 apply: (@leR_trans ((x ^ 2 / 2 - 1) * eps * (INR n))); last first.
   rewrite -mulRA mulRC -mulRA; apply: leR_wpmul2l; first exact: ltRW.
   rewrite mulRC; apply: leR_wpmul2r; first exact/ltRW.
@@ -808,12 +808,12 @@ rewrite -(mulRA _ eps) -(mulRA _ (eps * INR n)).
 rewrite mulRBl mul1R leR_add2r.
 apply: (Rmult_le_reg_r (/ Y * 2 * / x)).
   apply/mulR_gt0; [apply/mulR_gt0 => //; exact/invR_gt0|exact/invR_gt0].
-rewrite mulRC -mulRA (mulRC (/ x)) -mulRA -mulRA mulRV; last exact/eqP/gtR_eqF.
+rewrite mulRC -mulRA (mulRC (/ x)) -mulRA -mulRA mulRV; last exact/gtR_eqF.
 rewrite mulR1 mulRC mulRA mulRA (mulRC _ (/x)) /= mulR1 mulRA (mulRC _ 2).
-rewrite -(mulRA _ Y) mulRV ?mulR1; last exact/eqP/gtR_eqF.
+rewrite -(mulRA _ Y) mulRV ?mulR1; last exact/gtR_eqF.
 rewrite (mulRC 2) !mulRA -(mulRA _ _ 2) !mulVR // ?(mul1R,mulR1); last 2 first.
   exact/eqP.
-  exact/eqP/gtR_eqF.
+  exact/gtR_eqF.
 apply: (@leR_trans (m'' eps)%:R); last exact/le_INR/leP/leq_maxr.
 apply: (@leR_trans (m''' eps)%:R); last exact/le_INR/leP/leq_maxl.
 rewrite INR_Zabs_nat.
@@ -831,7 +831,7 @@ case: (Req_dec 0 (INR n))=>[<-|nnon0].
   by rewrite mul0R; apply/ltRW/(EX_gt0 (P `^ n) f_uniq).
 have npos : 0 < n%:R by rewrite (_ : 0 = INR 0) // ltR_neqAle leR_nat leq0n.
 rewrite -(@leR_pmul2r (/ n%:R)); last exact/invR_gt0.
-rewrite (mulRC (INR n)) -mulRA mulRV ?mulR1; last exact/eqP/gtR_eqF.
+rewrite (mulRC (INR n)) -mulRA mulRV ?mulR1; last exact/gtR_eqF.
 apply: le_epsilon => eps eps0.
 pose fm (x : 'rV['rV[A]_n]_((m eps))) := extension f (tuple_of_row x).
 case: (Rle_or_lt ((m eps)%:R * (log #| 'rV[A]_n |%:R)) (@E_leng_cw _ _ (P `^ n) fm)).
@@ -841,7 +841,7 @@ case: (Rle_or_lt ((m eps)%:R * (log #| 'rV[A]_n |%:R)) (@E_leng_cw _ _ (P `^ n) 
   apply: (@leR_trans (@E_leng_cw _ _ P f / n%:R)) => //.
     by rewrite leR_pdivl_mulr // mulRC.
   rewrite leR_addl; exact/ltRW.
-have mnon0 : (m eps)%:R <> 0 by exact/gtR_eqF/mpos.
+have mnon0 : (m eps)%:R <> 0 by exact/eqP/gtR_eqF/mpos.
 move => case2.
 move: (@converse_case1 _ _ _ (P `^ n)
   (fm_uniq f_uniq (Rlt_not_eq _ _ (mpos eps nnon0))) case2).
@@ -850,7 +850,7 @@ move/(Rmult_le_compat_r _ _ _  (Rlt_le _ _ (Rinv_0_lt_compat _ (mpos eps nnon0))
 rewrite -mulRA -mulRA mulRC mulRA -mulRA mulVR ?mulR1; last exact/eqP.
 rewrite mulRDl (mulRC (m eps)%:R) -mulRA ?mulRV ?mulR1; last exact/eqP.
 move/(Rmult_le_compat_r _ _ _  (Rlt_le _ _ (Rinv_0_lt_compat _ npos))).
-rewrite (mulRC (INR n)) -mulRA mulRV ?mulR1; last exact/eqP/gtR_eqF.
+rewrite (mulRC (INR n)) -mulRA mulRV ?mulR1; last exact/gtR_eqF.
 rewrite mulRDl.
 move/leR_trans; apply.
 rewrite leR_add2l.

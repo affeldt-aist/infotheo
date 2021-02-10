@@ -80,11 +80,11 @@ Proof.
 rewrite /e0 /delta /lambda -/r.
 apply Rmin_case_strong => H1; first by lra.
 apply Rmin_case_strong => H2.
-- apply/gtR_eqF; apply: leR_ltR_trans.
+- apply/eqP/gtR_eqF; apply: leR_ltR_trans.
   + apply: (leR_trans _ H2).
     rewrite leR_pdivr_mulr //; apply leR_pmulr; [lra|exact/ltRW/Hepsilon1].
   * rewrite ltR_pdivr_mulr //; lra.
-- rewrite /Rdiv -mulRA (_ : ( _ * / 2 ) = / 4); [lra | by field].
+- by rewrite /Rdiv -mulRA (_ : ( _ * / 2 ) = / 4); [lra | field].
 Qed.
 
 Definition no_failure := [set x : 'rV[A]_k.+1 | dec sc (enc sc x) == x].
@@ -213,12 +213,11 @@ Proof.
 apply: (leR_trans _ step6).
 rewrite -[X in _ <= X]oppRK leR_oppr oppRB leR_subl_addr addRC.
 apply (@leR_pmul2l (/ 2)); first lra.
-rewrite mulRA mulVR ?mul1R; last exact/eqP/gtR_eqF.
-rewrite /delta.
+rewrite mulRA mulVR ?mul1R /delta; last exact/eqP.
 have H1 : lambda / 2 <= / 2 * (1 - epsilon).
   apply (@leR_trans lambda).
-    rewrite leR_pdivr_mulr //; apply leR_pmulr; [lra | exact/ltRW/lambda0].
- rewrite /lambda mulRC; exact: geR_minl.
+    by rewrite leR_pdivr_mulr //; apply leR_pmulr; [lra | exact/ltRW/lambda0].
+  by rewrite /lambda mulRC; exact: geR_minl.
 apply Rmin_case_strong => ? //; exact: (@leR_trans (lambda / 2)).
 Qed.
 

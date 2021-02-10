@@ -111,7 +111,7 @@ rewrite mulVR ?INR_eq0' //.
 move/(@ltR_pmul2l epsilon) => /(_ eps_gt0); rewrite mulR1 => H1'.
 apply: (leR_ltR_trans _ H1') => {H1'}.
 rewrite /n0 [in X in _ <= X]mulRC -2![in X in _ <= X]mulRA.
-rewrite mulVR ?mulR1; last exact/eqP/gtR_eqF.
+rewrite mulVR ?mulR1 ?gtR_eqF //.
 apply Rge_le; rewrite mulRC -2!mulRA; apply Rle_ge.
 set aux := _%:R * (_ * _).
 have aux_gt0 : 0 < aux.
@@ -143,17 +143,17 @@ rewrite expRM -mulRA; apply leR_pmul => //.
       exact/gtR_eqF/expR_gt0/invR_gt0.
       exact/gtR_eqF.
     rewrite -/(Rdiv _ _) divRM; last 2 first.
-      by apply/eqP; rewrite INR_eq0' gtn_eqF // fact_gt0.
-      apply/nesym/ltR_eqF/mulR_gt0; last exact/invR_gt0.
+      by rewrite INR_eq0' gtn_eqF // fact_gt0.
+      rewrite gtR_eqF //; apply/mulR_gt0; last exact/invR_gt0.
       exact/invR_gt0/expR_gt0/mulR_gt0.
     rewrite -mulRA mulRC invRM; last 2 first.
-    - apply/invR_neq0/eqP; rewrite expR_eq0 mulR_neq0' ln2_neq0 andbT; exact/eqP/gtR_eqF.
-    - apply/invR_neq0/eqP; by rewrite INR_eq0'.
+    - by apply/eqP/invR_neq0/eqP; rewrite expR_eq0 mulR_neq0' ln2_neq0 andbT; exact/gtR_eqF.
+    - by apply/eqP/invR_neq0/eqP; by rewrite INR_eq0'.
     - rewrite invRK; last first.
-        apply/eqP; rewrite expR_eq0 mulR_neq0' ln2_neq0 andbT; exact/eqP/gtR_eqF.
-      rewrite invRK; last by apply/eqP; rewrite INR_eq0'.
+        by rewrite expR_eq0 mulR_neq0' ln2_neq0 andbT; exact/gtR_eqF.
+      rewrite invRK; last by rewrite INR_eq0'.
       rewrite (_ : / (/ n%:R) ^ K = n%:R ^ K); last first.
-        rewrite expRV ?INR_eq0' // invRK //; apply/eqP/expR_neq0; by rewrite INR_eq0'.
+        rewrite expRV ?INR_eq0' // invRK //; apply/expR_neq0; by rewrite INR_eq0'.
       rewrite -mulRA {1}/Rdiv (mulRA n%:R) -expRS mulRA -expRM.
       by rewrite -/(Rdiv _ _) mulRCA -mulRA (mulRC (ln 2)).
 Qed.

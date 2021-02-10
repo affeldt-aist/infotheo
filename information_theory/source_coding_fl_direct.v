@@ -2,11 +2,14 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
+From mathcomp Require Import Rstruct.
 Require Import ssrZ ssrR Reals_ext ssr_ext ssralg_ext logb natbin Rbigop fdist.
 Require Import proba entropy aep typ_seq source_code.
 
 (******************************************************************************)
-(*        Source coding theorem (fixed length, direct part)                   *)
+(*         Source coding theorem (fixed length, direct part)                  *)
+(*                                                                            *)
+(* Main theorem: source_coding_direct                                         *)
 (*                                                                            *)
 (* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
 (* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
@@ -218,9 +221,9 @@ apply/negPn/negPn.
     move/leR_max : Hdelta => [_ Hlambda].
     apply (@leR_pmul2r (2 / lambda)%R); first exact lambdainv2.
     rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
-      exact/gtR_eqF/lambda0.
-      move=> ?; lra.
-      rewrite mulRV ?mulR1 //; exact/eqP/gtR_eqF/halflambda0.
+      by apply/eqP; rewrite gtR_eqF //; exact/lambda0.
+      by move=> ?; lra.
+      by rewrite mulRV ?mulR1 //; exact/gtR_eqF/halflambda0.
   apply: leR_trans; first exact/leR_add2l/TS_sup.
   apply (@leR_trans (exp2 (INR k* (`H P + lambda / 2)) +
                         exp2 (INR k * (`H P + lambda / 2)))%R).
@@ -232,7 +235,7 @@ apply/negPn/negPn.
     apply Rlt_le; exact: halflambda0.
   + rewrite (_ : forall a, a + a = 2 * a)%R; last by move=> ?; field.
     rewrite {1}(_ : 2 = exp2 (log 2)); last by rewrite logK //; lra.
-    rewrite -ExpD {1}/log Log_n //; exact/leRR.
+    by rewrite -ExpD {1}/log Log_n //; exact/leRR.
 Qed.
 
 End source_coding_direct'.
@@ -240,8 +243,6 @@ End source_coding_direct'.
 Section source_coding_direct.
 
 Variables (A : finType) (P : fdist A).
-
-(** Source coding theorem (direct part) #<a name="label_source_coding_direct"> </a># *)
 
 Theorem source_coding_direct : forall epsilon, 0 < epsilon < 1 ->
   forall r : Qplus, `H P < r ->

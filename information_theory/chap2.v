@@ -414,11 +414,8 @@ transitivity (\sum_(a in A) \sum_(b in B)
   rewrite /jcPr setX1 2!Pr_set1 /= -/Q.
   case/boolP : (PQ (a, b) == 0) => [/eqP H0 | H0].
   - by rewrite H0 !mul0R.
-  - congr (_ * log _).
-    rewrite divRM; last 2 first.
-      apply/eqP; exact: Bivar.dom_by_fstN H0.
-      apply/eqP; exact: Bivar.dom_by_sndN H0.
-    by rewrite mulRAC.
+  - by congr (_ * log _); rewrite divRM 1?mulRAC //; [
+      exact: Bivar.dom_by_fstN H0 | exact: Bivar.dom_by_sndN H0].
 transitivity (- (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a)) +
   \sum_(a in A) \sum_(b in B) PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ])). (* 2.37 *)
   rewrite big_morph_oppR -big_split; apply/eq_bigr => a _ /=.
@@ -618,10 +615,8 @@ rewrite addRC addR_opp -logDiv; last 2 first.
   rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
 congr (log _).
 rewrite divRM; last 2 first.
-  apply/eqP.
-  rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
-  apply/eqP.
-  rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj23.dominN H0.
+  by rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj13.dominN H0.
+  by rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: Proj23.dominN H0.
 rewrite {2}/Rdiv -mulRA mulRCA {1}/Rdiv [in LHS]mulRC; congr (_ * _).
 rewrite -[in X in _ = X * _]setX1 jproduct_rule_cond setX1 -mulRA mulRV ?mulR1 //.
 rewrite /jcPr divR_neq0' // ?setX1 !Pr_set1.

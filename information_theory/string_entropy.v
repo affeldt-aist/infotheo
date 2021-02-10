@@ -225,9 +225,7 @@ rewrite !big_distrl /=.
 rewrite (eq_bigr
   (fun i => N(a|i) * log (size i / N(a|i))));
   last first.
-  move=> i _.
-  rewrite mulRAC -!mulRA (mulRA (/ _)) mulVR ?mul1R //.
-  exact/eqP/gtR_eqF.
+  by move=> i _; rewrite mulRAC -!mulRA (mulRA (/ _)) mulVR ?mul1R // gtR_eqF.
 move/leR_trans; apply. (* LHS matches *)
 rewrite mulRC -num_occ_flatten big_filter.
 rewrite (eq_bigr

@@ -85,8 +85,7 @@ rewrite -ln_Rinv // -ln_mult; last 2 first.
 rewrite -ln_1.
 apply ln_increasing_le; first lra.
 apply (@leR_pmul2l t) => //.
-rewrite mulRA mulRV; last exact/eqP/gtR_eqF.
-by rewrite mulR1 mul1R; lra.
+by rewrite mulRA mulRV ?gtR_eqF // mulR1 mul1R; lra.
 Qed.
 
 Lemma decreasing_on_half_to_1 (x y : R) :

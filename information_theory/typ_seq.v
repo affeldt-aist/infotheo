@@ -157,7 +157,7 @@ have -> : Pr P `^ n.+1 (~: p) =
         * apply: (leR_trans (ltRW LHS)); lra.
     - rewrite -negb_and; apply: contraTN.
       rewrite negb_or /typ_seq => /andP[H1 /andP[/leRP H2 /leRP H3]].
-      apply/andP; split; first exact/eqP/gtR_eqF/ltRP.
+      apply/andP; split; first exact/gtR_eqF/ltRP.
       rewrite negb_and H1 /= -leRNgt'.
       move/(@Log_increasing_le 2 _ _ Rlt_1_2 (exp2_gt0 _)) : H2.
       rewrite /exp2 ExpK // mulRC mulRN -mulNR -leR_pdivl_mulr ?oppRD; last exact/ltR0n.
@@ -216,8 +216,7 @@ have H2 : (forall x, x \in `TS P n.+1 epsilon ->
   exp2 (- n.+1%:R * (`H P + epsilon)) <= P `^ n.+1 x <= exp2 (- n.+1%:R * (`H P - epsilon))).
   by move=> x; rewrite inE /typ_seq => /andP[/leRP ? /leRP].
 move: (wolfowitz (exp2_gt0 _) (exp2_gt0 _) H1 H2).
-rewrite mulNR exp2_Ropp {1}/Rdiv invRK; last exact/nesym/ltR_eqF.
-by case.
+by rewrite mulNR exp2_Ropp {1}/Rdiv invRK ?gtR_eqF //; case.
 Qed.
 
 End typ_seq_more_prop.

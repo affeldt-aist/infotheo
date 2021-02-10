@@ -165,14 +165,13 @@ move=> Ht.
 rewrite dE UniformSupport.dET // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
 rewrite /den UniformSupport.restrict.
 have C0 : INR #|C| != 0 by rewrite INR_eq0' -lt0n.
-rewrite div1R -invRM.
+rewrite div1R -invRM //.
   rewrite /Kppu; congr Rinv; rewrite big_distrr /=; apply eq_bigr => i iC.
   by rewrite UniformSupport.dET // div1R mulRA mulRV // mul1R.
-  exact/eqP.
 rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
   by move=> *; rewrite UniformSupport.dET.
-rewrite -big_distrr /= mulR_eq0 => -[].
-  rewrite div1R; exact/invR_neq0/eqP.
+apply/eqP; rewrite -big_distrr /= mulR_eq0 => -[].
+  by rewrite div1R; exact/invR_neq0/eqP.
 by apply/eqP; rewrite -not_receivable_uniformE Receivable.defE.
 Qed.
 

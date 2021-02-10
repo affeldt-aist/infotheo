@@ -103,15 +103,15 @@ Lemma ln_id_eq x : 0 < x -> ln x = x - 1 -> x = 1.
 Proof.
 move=> Hx' Hx.
 case (total_order_T x 1) => [ [] // Hx2 | Hx2]; contradict Hx.
-- apply/ltR_eqF; rewrite -subR_lt0.
+- apply/eqP/ltR_eqF; rewrite -subR_lt0.
   apply ln_idlt0_xlt1; split; [exact Hx' | exact Hx2].
-- apply/ltR_eqF; rewrite -subR_lt0; exact: ln_idlt0_xgt1.
+- by apply/eqP/ltR_eqF; rewrite -subR_lt0; exact: ln_idlt0_xgt1.
 Qed.
 
 Lemma log_id_eq x : 0 < x -> log x = (x - 1) * log (exp 1) -> x = 1.
 Proof.
 move=> Hx'; rewrite logexp1E.
-rewrite eqR_mul2r; last exact/nesym/ltR_eqF/invR_gt0.
+rewrite eqR_mul2r; last exact/nesym/eqP/ltR_eqF/invR_gt0.
 apply ln_id_eq; by [apply Hx' | apply Hx].
 Qed.
 
@@ -185,27 +185,29 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
         rewrite -(mulR0 (exp X)) ltR_pmul2l => //; exact: exp_pos.
       rewrite -mulRN.
       apply (@ltR_pmul2r (/ - X)); first exact/invR_gt0/oppR_gt0.
-      rewrite -mulRA mulRV ?mulR1; last by rewrite oppR_eq0; apply/eqP/ltR_eqF.
-      rewrite -(invRK 2) //.
+      rewrite -mulRA mulRV ?mulR1; last by rewrite oppR_eq0; apply/ltR_eqF.
+      rewrite -(invRK 2); last exact/eqP.
       rewrite -mulRA ( _ : forall r, r * r = r ^ 2); last by move=> ?; rewrite /pow mulR1.
-      rewrite expRV; last exact/eqP/not_eq_sym/ltR_eqF/oppR_gt0.
+      rewrite expRV; last exact/eqP/not_eq_sym/eqP/ltR_eqF/oppR_gt0.
       rewrite -invRM; last 2 first.
-        apply invR_neq0; exact/gtR_eqF.
-        apply/eqP; rewrite expR_eq0 oppR_eq0; exact/eqP/ltR_eqF.
+        by rewrite invR_neq0' //; exact/gtR_eqF.
+        by rewrite expR_eq0 oppR_eq0; exact/ltR_eqF.
       rewrite -(invRK (exp X)); last exact/gtR_eqF/exp_pos.
       apply ltR_inv => //.
         exact/invR_gt0/exp_pos.
-        apply/mulR_gt0; [lra | apply expR_gt0; lra].
+        by apply/mulR_gt0; [lra | apply expR_gt0; lra].
       rewrite -exp_Ropp mulRC (_ : 2 = INR 2`!) //.
       exact/exp_strict_lb/oppR_gt0.
     * apply (@leR_pmul2r (/ 2)); first exact/invR_gt0.
-      rewrite mulRC mulRA mulVR ?mul1R //; last exact/eqP/gtR_eqF.
+      rewrite mulRC mulRA mulVR ?mul1R //; last exact/gtR_eqF.
       rewrite -(invRK eps); last exact/gtR_eqF.
-      rewrite -invRM //; last exact/gtR_eqF/invR_gt0.
+      rewrite -invRM //; last 2 first.
+        exact/gtR_eqF/invR_gt0.
+        exact/eqP.
       apply leR_inv => //.
-      - apply/mulR_gt0 => //; exact: invR_gt0.
+      - by apply/mulR_gt0 => //; exact: invR_gt0.
       - rewrite leR_oppr mulRC -mulNR.
-        apply/exp_le_inv/ltRW; subst X; by rewrite exp_ln.
+        by apply/exp_le_inv/ltRW; subst X; rewrite exp_ln.
   + by rewrite subRR normR0.
 - exists (- r); split; first exact: oppR_gt0.
   move=> x [[_ Hx1] Hx2].
@@ -251,10 +253,9 @@ Proof. by rewrite -derive_pt_f_eq_g. Qed.
 Lemma derive_xlnx_aux2 x (x_pos : 0 < x) : derive_pt xlnx x (derivable_pt_xlnx x_pos) = ln x + 1.
 Proof.
 rewrite derive_xlnx_aux1 /f derive_pt_mult derive_pt_ln.
-rewrite mulRV; last exact/eqP/gtR_eqF.
+rewrite mulRV ?gtR_eqF //.
 rewrite (_ : derive_pt ssrfun.id x (derivable_id x) = 1) ; first by rewrite mul1R.
-rewrite -(derive_pt_id x).
-by apply proof_derive_irrelevance.
+by rewrite -(derive_pt_id x); apply proof_derive_irrelevance.
 Qed.
 
 Lemma derive_pt_xlnx x (x_pos : 0 < x) (pr : derivable_pt xlnx x) : derive_pt xlnx x pr = ln x + 1.
@@ -478,10 +479,9 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
   apply (@leR_trans (- xlnx `| x - y |)).
     apply xlnx_delta_bound.
     - split.
-      - exact/Rabs_pos_lt/ltR_eqF/subR_lt0.
-      - apply (@leR_trans a) => //; by apply Ha.
-    - split => //.
-      by rewrite leR_subr_addr -Haux.
+      - exact/Rabs_pos_lt/eqP/ltR_eqF/subR_lt0.
+      - by apply (@leR_trans a) => //; apply Ha.
+    - by split => //; rewrite leR_subr_addr -Haux.
   rewrite leR_oppr oppRK.
   apply xlnx_decreasing_0_Rinv_e => //.
   - split; first exact: normR_ge0.
@@ -504,8 +504,8 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
   apply (@leR_trans (- xlnx `| y - x |)).
     apply xlnx_delta_bound.
     - split.
-      - exact/Rabs_pos_lt/ltR_eqF/subR_lt0.
-      - apply (@leR_trans a) => //; by apply Ha.
+      - exact/Rabs_pos_lt/eqP/ltR_eqF/subR_lt0.
+      - by apply (@leR_trans a) => //; apply Ha.
     - split => //.
       by rewrite leR_subr_addr -Haux.
   rewrite leR_oppr oppRK.
@@ -551,7 +551,7 @@ have HDDf : pderivable Df (fun x0 : R => x <= x0 <= y).
   move=> r xry; apply derivable_pt_comp; last exact/derivable_pt_Ropp.
   rewrite (_ : Rinv = inv_fct (fun x => x)); last by rewrite boolp.funeqE.
   apply derivable_pt_inv; last exact: derivable_pt_id.
-  apply/gtR_eqF/(@ltR_leR_trans x) => //; by case: xry.
+  by apply/eqP/gtR_eqF/(@ltR_leR_trans x) => //; case: xry.
 apply: (@second_derivative_convexf_pt _ _ _ HDf Df _ HDDf DDf) => //.
 - move=> r xry; rewrite /Df.
   have r0 : 0 < r by apply (@ltR_leR_trans x) => //; case: xry.
@@ -560,7 +560,7 @@ apply: (@second_derivative_convexf_pt _ _ _ HDf Df _ HDDf DDf) => //.
     by rewrite derive_pt_comp /= mulN1R.
   exact: proof_derive_irrelevance.
 - move=> r xry; rewrite /DDf /Df.
-  have r0 : r <> 0 by apply/gtR_eqF/(@ltR_leR_trans x) => //; case: xry.
+  have /eqP r0 : r != 0 by apply/gtR_eqF/(@ltR_leR_trans x) => //; case: xry.
   transitivity (derive_pt (comp Ropp Rinv) _
     (derivable_pt_comp Rinv Ropp _
       (derivable_pt_inv _ _ r0 (derivable_pt_id _)) (derivable_pt_Ropp _))).
@@ -568,7 +568,7 @@ apply: (@second_derivative_convexf_pt _ _ _ HDf Df _ HDDf DDf) => //.
     by rewrite /Rdiv mulNR oppRK mul1R Rsqr_pow2 (* TODO: rename? *).
   exact/proof_derive_irrelevance.
 - move=> r; rewrite /DDf => -[x11 x12].
-  rewrite -expRV; last by apply/eqP/gtR_eqF/(@ltR_leR_trans x).
+  rewrite -expRV; last by apply/gtR_eqF/(@ltR_leR_trans x).
   exact/expR_ge0/ltRW/invR_gt0/(@ltR_leR_trans x).
 Qed.
 
@@ -592,6 +592,8 @@ rewrite (probK t); apply: concavef_at_onem => //; exact: log_concave_at_gt0W.
 Qed.
 
 Lemma log_concave : concave_function_in Rpos_interval log.
-Proof. by move=> x y t; rewrite !classical_sets.in_setE => Hx Hy; apply log_concave_at_gt0. Qed.
+Proof.
+by move=> x y t; rewrite !classical_sets.in_setE => Hx Hy; apply log_concave_at_gt0.
+Qed.
 
 End log_concave.
