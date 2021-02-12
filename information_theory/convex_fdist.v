@@ -5,8 +5,8 @@ From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import entropy fdist jfdist convex_choice binary_entropy_function.
-Require Import log_sum divergence chap2.
+Require Import entropy fdist jfdist convex binary_entropy_function log_sum.
+Require Import divergence chap2.
 
 (******************************************************************************)
 (*                Section 2.7 of Elements of Information Theory               *)

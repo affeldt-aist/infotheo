@@ -26,7 +26,7 @@ lib/classical_sets_ext.v
 probability/fdist.v
 probability/proba.v
 probability/fsdist.v
-probability/convex_choice.v
+probability/convex.v
 probability/convex_equiv.v
 probability/convex_stone.v
 probability/jfdist.v

@@ -5,7 +5,7 @@ From mathcomp Require boolp.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import fdist convex_choice.
+Require Import fdist convex.
 
 (****************************************************************************)
 (* Direct formalization of the Lemma 2 from M. H. Stone. Postulates for the *)

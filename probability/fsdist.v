@@ -6,7 +6,7 @@ From mathcomp Require boolp.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import convex_choice.
+Require Import convex.
 
 (******************************************************************************)
 (*                    Finitely-supported distributions                        *)
