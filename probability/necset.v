@@ -5,7 +5,7 @@ From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import boolp classical_sets Rstruct.
 From mathcomp Require Import finmap.
 Require Import Reals_ext classical_sets_ext Rbigop ssrR fdist fsdist.
-Require Import convex_choice.
+Require Import convex.
 
 (******************************************************************************)
 (*       Semi-complete semilattice structures and non-empty convex sets       *)

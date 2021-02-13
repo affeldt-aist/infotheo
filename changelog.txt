@@ -72,6 +72,7 @@ from 0.2.2 to 0.3
   + derive_increasing_interv_right -> pderive_increasing_closed_open
   + derive_increasing_ad_hoc -> pderive_ad_hoc
   + ltr_subl_addl -> ltR_subl_addl
+  + convex_choice.v -> convex.v
 
 - removed:
   + from ssrR.v:

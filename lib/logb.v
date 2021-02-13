@@ -132,7 +132,7 @@ Proof. move=> xpos; by apply Rge_le, Rminus_ge, Rle_ge, exp_dev_ge0. Qed.
 End exp_lower_bound.
 
 End addtional_lemmas_about_ln_exp.
-Hint Resolve ln2_gt0 : core.
+Global Hint Resolve ln2_gt0 : core.
 
 Definition Log (n : R) x := ln x / ln n.
 
@@ -259,8 +259,8 @@ Qed.
 
 Lemma Exp_gt0 n x : 0 < Exp n x. Proof. rewrite /Exp; exact: exp_pos. Qed.
 Lemma Exp_ge0 n x : 0 <= Exp n x. Proof. exact/ltRW/Exp_gt0. Qed.
-Hint Resolve Exp_gt0 : core.
-Hint Resolve Exp_ge0 : core.
+Global Hint Resolve Exp_gt0 : core.
+Global Hint Resolve Exp_ge0 : core.
 
 Lemma Exp_0 n : Exp n 0 = 1.
 Proof. by rewrite /Exp mul0R exp_0. Qed.

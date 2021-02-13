@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 From mathcomp Require Import boolp Rstruct.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import fdist proba convex_choice.
+Require Import fdist proba convex.
 
 (******************************************************************************)
 (*                           Jensen's inequality                              *)
