@@ -209,7 +209,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       - rewrite leR_oppr mulRC -mulNR.
         by apply/exp_le_inv/ltRW; subst X; rewrite exp_ln.
   + by rewrite subRR normR0.
-- exists (- r); split; first exact: oppR_gt0.
+- exists (- r); split; first exact/oppR_gt0.
   move=> x [[_ Hx1] Hx2].
   rewrite /R_dist /xlnx.
   have -> : 0 <b x = false.

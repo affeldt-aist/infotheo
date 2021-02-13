@@ -63,6 +63,7 @@ from 0.2.2 to 0.3
 
 - changed:
   + in ssrR.v, gtR_eqF, ltR_eqF, invRK, invRM have now hypotheses in bool instead of Prop
+  + in ssrR.v, oppR_lt0 and oppR_gt0 are now equivalences
 
 - renamed:
   + derive_increasing_interv_ax_left -> pderive_increasing_ax_open_closed
@@ -76,6 +77,7 @@ from 0.2.2 to 0.3
   + from ssrR.v:
     * Reqb, eqRP, R_eqMixin, R_eqType, R_choiceType, ROrder.orderMixin,
       R_porderType, R_latticeType, R_distrLatticeType, R_orderType
+
 
 -----------------
 from 0.2 to 0.2.1

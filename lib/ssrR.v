@@ -254,11 +254,17 @@ Proof. apply/eqP/eqP => [<-|->]; by rewrite oppRK. Qed.
 Lemma oppR_ge0 x : x <= 0 -> 0 <= - x.
 Proof. move/Rle_ge; exact: Ropp_0_ge_le_contravar. Qed.
 
-Lemma oppR_lt0 x : 0 < x -> 0 > - x.
-Proof. exact: Ropp_0_lt_gt_contravar. Qed.
+Lemma oppR_lt0 x : 0 < x <-> 0 > - x.
+Proof.
+split; first exact: Ropp_0_lt_gt_contravar.
+by move/Ropp_gt_lt_contravar; rewrite oppRK oppR0.
+Qed.
 
-Lemma oppR_gt0 x : 0 > x -> 0 < - x.
-Proof. exact: Ropp_0_gt_lt_contravar. Qed.
+Lemma oppR_gt0 x : 0 > x <-> 0 < - x.
+Proof.
+split; first exact: Ropp_0_gt_lt_contravar.
+by move/Ropp_gt_lt_contravar; rewrite oppRK oppR0.
+Qed.
 
 Lemma leRNlt m n : (m <= n) <-> ~ (n < m).
 Proof. split; [exact: Rle_not_lt | exact: Rnot_lt_le]. Qed.
