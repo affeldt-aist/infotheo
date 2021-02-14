@@ -55,7 +55,7 @@ opam repo add coq-released https://coq.inria.fr/opam/released
 opam install coq-infotheo
 ```
 
-To instead build and install manually, do:
+To instead build and install manually, do (using GNU `make`):
 
 ``` shell
 git clone https://github.com/affeldt-aist/infotheo.git
