@@ -448,6 +448,9 @@ split => [/(@ltR_add2r y)|/(@ltR_add2r (- y))]; first by rewrite subRK addRC.
 by rewrite addR_opp (addRC y) addR_opp addRK.
 Qed.
 
+Lemma ltR_subr_addr x y z : (x < y - z) <-> (x + z < y).
+Proof. by rewrite ltR_subr_addl addRC. Qed.
+
 Lemma leR_addl x y : (x <= x + y) <-> (0 <= y).
 Proof. by rewrite -{1}(addR0 x) leR_add2l. Qed.
 Lemma leR_addr x y : (x <= y + x) <-> (0 <= y).
