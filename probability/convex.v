@@ -142,7 +142,7 @@ Section tmp2.
 Variables (A : finType) (n : nat) (g : 'I_n.+1 -> fdist A) (P : {fdist 'I_n.+1}).
 Lemma DelDistConvex (j : 'I_n.+1) (H : (0 <= P j <= 1)%R) (Pj1 : P j != 1%R) :
   let g' := fun i : 'I_n => g (DelFDist.f j i) in
-  ConvnFDist.d P g = ConvFDist.d (Prob.mk H) (g j) (ConvnFDist.d (DelFDist.d Pj1) g').
+  ConvnFDist.d P g = ConvFDist.d (Prob.mk_ H) (g j) (ConvnFDist.d (DelFDist.d Pj1) g').
 Proof.
 move=> g' /=; apply/fdist_ext => a.
 rewrite ConvFDist.dE /= ConvnFDist.dE (bigD1 j) //=; congr (_ + _)%R.
@@ -450,7 +450,7 @@ apply leR_pdivr_mulr => //.
 rewrite mul1R; exact/leR_addl/ltRW.
 Qed.
 Definition Rpos_prob (r q : Rpos) :=
-  @Prob.mk (r / (r + q)%:pos) (Rpos_prob_Op1 _ _).
+  Eval hnf in @Prob.mk_ (r / (r + q)%:pos) (Rpos_prob_Op1 _ _).
 
 (* TODO: move along with onem *)
 Lemma onem_div p q : q != 0 -> (p/q).~ = (q-p)/q.

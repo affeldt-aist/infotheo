@@ -422,7 +422,7 @@ Qed.
 Local Close Scope reals_ext_scope.
 
 Definition FSDist_prob (C : choiceType) (d : {dist C}) (x : C) : prob :=
-  Prob.mk (conj (FSDist.ge0 d x) (FSDist.le1 d x)).
+  Eval hnf in Prob.mk_ (conj (FSDist.ge0 d x) (FSDist.le1 d x)).
 Canonical FSDist_prob.
 
 Definition FSDistjoin A (D : {dist (FSDist_choiceType A)}) : {dist A} :=

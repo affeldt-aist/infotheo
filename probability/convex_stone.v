@@ -618,7 +618,7 @@ have d01 : d ord0 <> 1%R.
   by rewrite add0R; move/ltRR.
 move=> [:Hp].
 have @p : prob.
-  apply: (@Prob.mk (d (lift ord0 ord0) / (1 - d ord0))).
+  apply: (@Prob.mk_ (d (lift ord0 ord0) / (1 - d ord0))).
   abstract: Hp.
   split.
     apply/divR_ge0 => //.
@@ -683,7 +683,7 @@ case/boolP : (d (S3.p01 ord0) == 1 :> R)%R => ds01.
   rewrite conv1 /S3.p01 permE /= (_ : Ordinal _ = lift ord0 ord0) //; exact/val_inj.
 move=> [:Hq].
 have @q : prob.
-  apply: (@Prob.mk ((PermFDist.d d S3.p01) (lift ord0 ord0) / (1 - (PermFDist.d d S3.p01) ord0))).
+  apply: (@Prob.mk_ ((PermFDist.d d S3.p01) (lift ord0 ord0) / (1 - (PermFDist.d d S3.p01) ord0))).
   abstract: Hq.
   rewrite !PermFDist.dE.
   split; first by apply/divR_ge0 => //; rewrite subR_gt0 -fdist_lt1.
@@ -749,7 +749,7 @@ have d01 : d ord0 <> 1%R.
   by rewrite add0R; move/ltRR.
 move=> [:Hp].
 have @p : prob.
-  apply: (@Prob.mk (d (lift ord0 ord0) / (1 - d ord0))).
+  apply: (@Prob.mk_ (d (lift ord0 ord0) / (1 - d ord0))).
   abstract: Hp.
   split; first by apply/divR_ge0 => //; rewrite subR_gt0 -fdist_lt1; exact/eqP.
   rewrite leR_pdivr_mulr ?mul1R ?subR_gt0 -?fdist_lt1; last exact/eqP.
@@ -788,7 +788,7 @@ have H : [p_of p.~%:pr, (probfdist d ord0).~%:pr] != 1%:pr.
 rewrite -convA'; last by [].
 move=> [:Hq].
 have @q : prob.
-  apply: (@Prob.mk ((PermFDist.d d S3.p02) (lift ord0 ord0) / (1 - (PermFDist.d d S3.p02) ord0))).
+  apply: (@Prob.mk_ ((PermFDist.d d S3.p02) (lift ord0 ord0) / (1 - (PermFDist.d d S3.p02) ord0))).
   abstract: Hq.
   rewrite !PermFDist.dE !permE /= (_ : Ordinal _ = ord_max); last exact/val_inj.
   split.
@@ -990,7 +990,7 @@ rewrite (Convn_perm3 _ _ S3.p01).
 pose q' := (d ord0 / (1 - d (lift ord0 ord0)))%R.
 move=> [:Hq].
 have @q : prob.
-  apply: (@Prob.mk q').
+  apply: (@Prob.mk_ q').
   abstract: Hq.
   split; first by apply/divR_ge0 => //; rewrite subR_gt0 -fdist_lt1.
   rewrite leR_pdivr_mulr.

@@ -98,7 +98,8 @@ Notation "{ 'fdist' T }" := (fdist_of (Phant T)) : proba_scope.
 Lemma fdist_ge0_le1 (A : finType) (d : fdist A) a : 0 <= d a <= 1.
 Proof. by []. Qed.
 
-Definition probfdist (A : finType) (d : fdist A) a := Prob.mk (fdist_ge0_le1 d a).
+Definition probfdist (A : finType) (d : fdist A) a :=
+  Eval hnf in Prob.mk_ (fdist_ge0_le1 d a).
 
 Section FDist_lemmas.
 
@@ -421,7 +422,7 @@ have r01 : 0 <= 1 - pf (Set2.a card_A) <= 1.
   split; first lra.
   suff : forall a, a <= 1 -> 0 <= a -> 1 - a <= 1 by apply.
   move=> *; lra.
-exists (Prob.mk r01).
+exists (Prob.mk_ r01).
 apply/fdist_ext => a /=.
 rewrite Binary.dE; case: ifPn => [/eqP -> /=|Ha/=]; first by rewrite subRB subRR add0R.
 by rewrite -(eqP pf1) /= Set2sumE /= addRC addRK; move/Set2.neq_a_b/eqP : Ha => ->.
@@ -639,7 +640,8 @@ End ConvnFDist.
 (* TODO: move to reals_ext.v? *)
 Lemma s_of_pq_prob (p q : prob) : 0 <= (p.~ * q.~).~ <= 1.
 Proof.
-move: p q => -[p [p0 p1]] [q [q0 q1]] /=; split; last first.
+move: p q => -[] p /= /andP [] /leRP p0 /leRP p1 -[] q /= /andP [] /leRP q0 /leRP q1.
+split; last first.
   apply/onem_le1/mulR_ge0; exact/onem_ge0.
 apply/onem_ge0; rewrite -(mulR1 1); apply leR_pmul;
   [exact/onem_ge0 | exact/onem_ge0 | exact/onem_le1 | exact/onem_le1].
@@ -681,7 +683,8 @@ split.
 - rewrite leR_pdivr_mulr ?mul1R; [exact: ge_s_of | exact: s_of_gt0].
 Qed.
 
-Definition r_of_pq (p q : prob) : prob := locked (Prob.mk (r_of_pq_prob p q)).
+Definition r_of_pq_ (p q : prob) := Eval hnf in Prob.mk_ (r_of_pq_prob p q).
+Definition r_of_pq (p q : prob) : prob := locked (r_of_pq_ p q).
 
 Notation "[ 'r_of' p , q ]" := (r_of_pq p q) (format "[ 'r_of'  p ,  q ]") : proba_scope.
 
@@ -715,11 +718,12 @@ Qed.
 
 Lemma p_of_rs_prob (r s : prob) : 0 <= r * s <= 1.
 Proof.
-move: r s => -[r [r0 r1]] [s [s0 s1]] /=.
+move: r s => -[] r /andP [] /leRP r0 /leRP r1 -[] s /= /andP [] /leRP s0 /leRP s1.
 split; [exact/mulR_ge0 | rewrite -(mulR1 1); exact: leR_pmul].
 Qed.
 
-Definition p_of_rs (r s : prob) : prob := locked (Prob.mk (p_of_rs_prob r s)).
+Definition p_of_rs_ (r s : prob) : prob := Eval hnf in Prob.mk_ (p_of_rs_prob r s).
+Definition p_of_rs (r s : prob) : prob := locked (p_of_rs_ r s).
 
 Notation "[ 'p_of' r , s ]" := (p_of_rs r s) (format "[ 'p_of'  r ,  s ]") : proba_scope.
 
@@ -792,7 +796,8 @@ apply onem_gt0; rewrite p_of_rsE -(mulR1 1); apply/ltR_pmul => //;
   by [rewrite -prob_lt1 | rewrite -prob_lt1].
 Qed.
 
-Definition q_of_rs (r s : prob) : prob := locked (Prob.mk (q_of_rs_prob r s)).
+Definition q_of_rs_ (r s : prob) : prob := Eval hnf in Prob.mk_ (q_of_rs_prob r s).
+Definition q_of_rs (r s : prob) : prob := locked (q_of_rs_ r s).
 
 Notation "[ 'q_of' r , s ]" := (q_of_rs r s) (format "[ 'q_of'  r ,  s ]") : proba_scope.
 
