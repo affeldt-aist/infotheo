@@ -744,7 +744,7 @@ Qed.
 
 Lemma convA'_oprob (r s : oprob) a b c :
   a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = (a <| r |> b) <| s |> c.
-Proof. apply/convA'/oprob_neq1. Qed.
+Proof. exact/convA'/oprob_neq1. Qed.
 
 Import ScaledConvex.
 
@@ -764,7 +764,7 @@ Proof. by rewrite -{1}(convmm x q) convACA. Qed.
 
 Lemma convACA' (a b c d : T) (p q r : oprob) :
 (*
-  let p1 := (q * p)%:opr in 
+  let p1 := (q * p)%:opr in
   let p2 := (q.~ * r)%:opr in
   let r1 := (q * p.~)%:opr in
   let r2 := (q.~ * r.~)%:opr in

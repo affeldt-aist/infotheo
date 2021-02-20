@@ -1,3 +1,41 @@
+-------------------
+from 0.3.1 to 0.3.?
+-------------------
+
+* added:
+
+- in Reals_ext.v:
+  + lemmas onem_le, onem_lt
+  + module OProb for inferring values in the open unit interval
+    * notation %:opr
+    * technical lemmas oprob_gt0, oprobK, oprob_pdivRnnm, oprob_add_gt0, etc.
+    * a canonical instance for the cplt and the multiplication of two oprob's
+  + a canonical instance of Rpos for oprob
+  + lemmas onem_prob, onem_oprob
+  + lemmas prob_trichotomy and prob_trichotomy'
+- in ssrR.v:
+  + lemma ltR_subr_addr
+- in convex.v:
+  + lemmas convA'_oprob, convACA'
+- in fdist.v:
+  + technical lemmas about oprob and s_of, r_of, p_of, q_of
+    * with canonical instances
+- in necset.v:
+  + lemmas conv_in_conv_pt_set, conv_in_conv_set, convA_pt_set, etc.
+  + lemma affine_image_conv_set
+  + lemma conv_pt_cset_is_convex, canonical conv_pt_cset,
+    lemma conv_pt_cset, canonical conv_cset,
+    lemma oplus_conv_cset_is_convex, canonical oplus_conv_cset
+
+* changed:
+  + modify the convex space structure on (convex_set _) to reuse conv_set instead of
+    differently defining another convex combination operation
+  + move and rename convex.{Rpos_prob_Op1, Rpos_prob, Rpos_probC}
+    to Reals_ext.{prob_divRposxxy, divRposxxy, divRposxxyC}.
+
+* moved:
+  + lemma onem_div from convex.v to Reals_ext.v
+
 -----------------
 from 0.3 to 0.3.1
 -----------------
