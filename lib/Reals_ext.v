@@ -376,8 +376,6 @@ Record t := mk {
   Op1 : (0 <= p <= 1)%R }.
 Definition O1 (p : t) := Op1 p.
 Arguments O1 : simpl never.
-Lemma ge0 (p : t) : 0 <= p.
-Proof. by case: p => [? []]. Qed.
 Module Exports.
 Notation prob := t.
 Notation "q %:pr" := (@mk q (@O1 _)).
@@ -385,8 +383,6 @@ End Exports.
 End Prob.
 Export Prob.Exports.
 Coercion Prob.p : prob >-> R.
-
-Global Hint Resolve Prob.ge0 : core.
 
 Definition eqprob (x y : prob) := (x == y :> R).
 
@@ -411,8 +407,13 @@ Canonical prob0 := Prob.mk OO1.
 Canonical prob1 := Prob.mk O11.
 Canonical probcplt (p : prob) := @Prob.mk p.~ (onem_prob (Prob.O1 p)).
 
+Lemma prob_ge0 (p : prob) : (0 <= p)%R.
+Proof. by case: p => p []. Qed.
+Global Hint Resolve prob_ge0 : core.
+
 Lemma prob_le1 (p : prob) : (p <= 1)%R.
 Proof. by case: p => p []. Qed.
+Global Hint Resolve prob_le1 : core.
 
 Lemma prob_gt0 (p : prob) : p != 0%:pr <-> (0 < p)%R.
 Proof.
@@ -424,7 +425,7 @@ Qed.
 Lemma prob_lt1 (p : prob) : p != 1%:pr <-> (p < 1)%R.
 Proof.
 rewrite ltR_neqAle; split=> [H|[/eqP p1 _]].
-split; [exact/eqP|exact/prob_le1].
+by split => //; exact/eqP.
 by case: p p1 => p ?; apply: contra => /eqP[/= ->].
 Qed.
 
@@ -468,25 +469,21 @@ Qed.
 Definition probinvn (n : nat) := @Prob.mk (/ INR (1 + n)) (prob_invn n).
 
 Lemma prob_mulR (p q : prob) : (0 <= p * q <= 1)%R.
-Proof.
-split; first exact/mulR_ge0.
-rewrite -(mulR1 1%R); apply leR_pmul => //; [exact/prob_le1 | exact/prob_le1].
-Qed.
+Proof. by split; [exact/mulR_ge0 |rewrite -(mulR1 1%R); apply leR_pmul]. Qed.
 
 Canonical probmuLR (p q : prob) := @Prob.mk (p * q) (prob_mulR p q).
 
 Lemma probadd_eq0 (p q : prob) : p + q = 0%:pr <-> p = 0%:pr /\ q = 0%:pr.
 Proof.
 split => [/paddR_eq0 | ].
-- move=> /(_ (Prob.ge0 _) (Prob.ge0 _)) [p0 q0]; split; exact/prob_ext.
+- by move=> /(_ _)[] // /prob_ext-> /prob_ext->.
 - by case => -> ->; rewrite addR0.
 Qed.
 
 Lemma probadd_neq0 (p q : prob) : p + q != 0%:pr <-> p != 0%:pr \/ q != 0%:pr.
 Proof.
-split => [/paddR_neq0 | ].
-- by move=> /(_ (Prob.ge0 _) (Prob.ge0 _)).
-- by case; apply: contra => /eqP/probadd_eq0 [] /eqP ? /eqP.
+split => [/paddR_neq0| ]; first by move=> /(_ _ _); apply.
+by case; apply: contra => /eqP/probadd_eq0 [] /eqP ? /eqP.
 Qed.
 
 (* non-negative rationals *)

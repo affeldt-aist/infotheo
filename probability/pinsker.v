@@ -322,8 +322,7 @@ case/boolP : (p == 1%:pr) => [/eqP|] p1.
     rewrite !Binary.dE subRR eq_sym (negbTE (Set2.a_neq_b card_A)) => /=; lra.
   apply: leR_trans.
     have : 0 <= 1 - q < 1.
-      split.
-      rewrite subR_ge0; exact/prob_le1.
+      split; first by rewrite subR_ge0.
       by rewrite ltR_subl_addr -{1}(addR0 1) ltR_add2l -prob_gt0.
     exact: pinsker_function_spec_pos Hc.
   rewrite /pinsker_function_spec.

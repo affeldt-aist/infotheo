@@ -746,7 +746,7 @@ Proof.
 case=> p0 p1; apply/eqP => pq1; move: (p1).
 rewrite [X in _ < X -> _](_ : _ = Prob.p 1%:pr) //.
 rewrite -pq1 p_of_rsE -ltR_pdivr_mulr // divRR ?prob_gt0 //.
-rewrite ltRNge; apply; exact/prob_le1.
+by rewrite ltRNge; exact.
 Qed.
 
 Lemma p_of_rs1 (r s : prob) :
@@ -754,25 +754,19 @@ Lemma p_of_rs1 (r s : prob) :
 Proof.
 apply/idP/idP; last by case/andP => /eqP -> /eqP ->; rewrite p_of_r1.
 move/eqP/(congr1 Prob.p); rewrite /= p_of_rsE => /eqP.
-apply contraLR => /nandP H.
-wlog: r s H / r != 1%:pr;
-  first by case: H;
-  [ move => H /(_ r s); rewrite H; apply => //; by left
-  | move => H /(_ s r); rewrite H mulRC; apply => //; by left ].
-move=> Hr.
-case/boolP: (r == 0%:pr :> prob);
-  first by move/eqP ->; rewrite mul0R eq_sym; apply/eqP/R1_neq_R0.
-case/prob_gt0/ltR_neqAle => /eqP; rewrite [in X in X -> _]eq_sym => /eqP Hr' _.
+apply contraLR => /nandP.
+wlog : r s / r != 1%:pr by move=> H [|] ?; [|rewrite mulRC]; rewrite H //; left.
+move=> r1 _.
+have [/eqP->|/prob_gt0/ltR_neqAle[/nesym r0 _]] := boolP (r == 0%:pr :> prob).
+  by rewrite mul0R eq_sym; apply/eqP.
 apply/eqP => /(@eqR_mul2r (/ r)).
-move/(_ (invR_neq0 _ Hr')).
+move/(_ (invR_neq0 _ r0)).
 rewrite mulRAC mulRV ?mul1R; last exact/eqP.
-move=> srV.
-move: (prob_le1 s); rewrite srV.
-move/eqP : Hr' => /prob_gt0 Hr'.
-rewrite invR_le1 // => Hr''.
-move: (prob_le1 r) => Hr'''.
-suff: r = 1 :> R by apply/eqP; rewrite Hr.
-by apply eqR_le.
+move/eqP/prob_gt0 in r0.
+move=> srV; move: (prob_le1 s); rewrite {}srV.
+rewrite invR_le1 // => r_le1.
+move: (prob_le1 r) => le_r1.
+by move/eqP : r1; apply; apply/prob_ext; apply eqR_le.
 Qed.
 
 Lemma p_of_rs1P r s : reflect (r = 1%:pr /\ s = 1%:pr) ([p_of r, s] == 1%:pr).
@@ -793,7 +787,7 @@ split.
     apply/onem_gt0; rewrite p_of_rsE -(mulR1 1); apply/ltR_pmul => //;
       by [rewrite -prob_lt1 | rewrite -prob_lt1].
 rewrite leR_pdivr_mulr ?mul1R.
-  rewrite p_of_rsE {2}/onem leR_subr_addr -mulRDl addRC onemKC mul1R; exact/prob_le1.
+  by rewrite p_of_rsE {2}/onem leR_subr_addr -mulRDl addRC onemKC mul1R.
 apply onem_gt0; rewrite p_of_rsE -(mulR1 1); apply/ltR_pmul => //;
   by [rewrite -prob_lt1 | rewrite -prob_lt1].
 Qed.
