@@ -34,9 +34,6 @@ Definition c : `Ch(A, A) := Binary.d card_A p.
 End BSC_sect.
 End BSC.
 
-Lemma closed p : 0 < p < 1 -> 0 <= p <= 1.
-Proof. case => ?; split; exact/ltRW. Qed.
-
 Local Open Scope channel_scope.
 Local Open Scope entropy_scope.
 

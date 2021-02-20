@@ -1,11 +1,24 @@
----------------
-from 0.3 to ???
----------------
+-----------------
+from 0.3 to 0.3.1
+-----------------
 
 - removed:
   + lemma Prob.ge0
+  + lemma prob_ext
+  + lemmas eqprob, eqprobP
 - added:
   + lemmas prob_ge0, prob_le1 (also as Hint Resolve)
+  + views leR2P and ltR2P
+  + constructor Prob.mk to build prob from boolean inequalities and
+    Prob.mk_ to build prob from Prop inequalities
+  + definition prob_invp, lemma Prob_invp
+  + lemmas prob_gt0', prob_lt1', probmul_eq1
+- moved:
+  + lemma closed from binary_symmetric_channel.v to Reals_ext.v
+  + lemma Rpos_prob_Op1, Rpos_prob, Rpos_probC, onem_div from convex.v to Reals_ext.v
+- changed:
+  + proof field of Prob.t now in bool
+  + prob_subType declaration for Prob.t 
 
 -----------------
 from 0.2.2 to 0.3

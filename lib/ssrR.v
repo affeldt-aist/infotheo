@@ -97,6 +97,16 @@ Proof. by apply: (iffP idP); rewrite /leRb; case: Rle_dec. Qed.
 Lemma ltRP (a b : R) : reflect (a < b) (a <b b).
 Proof. apply: (iffP idP); by rewrite /ltRb; case: Rlt_dec. Qed.
 
+Lemma leR2P (a b c : R) : reflect (a <= b <= c) (a <b= b <b= c).
+Proof.
+by apply: (iffP idP) => [/andP[/leRP ? /leRP ?]|[/leRP-> /leRP->]].
+Qed.
+
+Lemma ltR2P (a b c : R) : reflect (a < b < c) (a <b b <b c).
+Proof.
+by apply: (iffP idP) => [/andP[/ltRP ? /ltRP ?]|[/ltRP-> /ltRP->]].
+Qed.
+
 Definition add0R : left_id 0 Rplus := Rplus_0_l.
 Definition addR0 : right_id 0 Rplus := Rplus_0_r.
 

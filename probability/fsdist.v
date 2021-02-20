@@ -129,7 +129,7 @@ Section FSDist_prop.
 Variable A : choiceType.
 
 Lemma FSDist_ext (d d' : {dist A}) : (forall x, d x = d' x) -> d = d'.
-Proof. move=> H; exact/val_inj/fsfunP/H. Qed.
+Proof. by move=> ?; exact/val_inj/fsfunP. Qed.
 
 Lemma FSDist_supp_neq0 (d : {dist A}) : finsupp d != fset0.
 Proof.
@@ -464,7 +464,7 @@ have hP (a : [finType of finsupp P]) : a \in finsupp f.
 pose h a := FSetSub (hP a).
 rewrite (reindex h) /=.
   by apply eq_bigr => i _; rewrite fsfunE ffunE inE.
-exists (@fsval _ _) => //= -[a] *; exact: val_inj.
+by exists (@fsval _ _) => //= -[a] *; exact: val_inj.
 Qed.
 Definition d : {dist [finType of finsupp P]} := FSDist.make f0 f1.
 End def.
@@ -637,7 +637,7 @@ case/boolP : (p == R0 :> R) => [/eqP |] p0.
   rewrite p0 mul0R add0R onem0 mul1R.
   apply/esym/eqP; rewrite -memNfinsupp.
   apply: contra H => H.
-  rewrite (_ : p = 0%:pr) //; last exact/prob_ext.
+  rewrite (_ : p = 0%:pr) //; last exact/val_inj.
   rewrite I2FDist.p0 (_ : Ordinal _ = @ord_max 1); last exact/val_inj.
   (* TODO: generalize *)
   suff : ConvnFSDist.D (FDist1.d ord_max) (fun i : 'I_2 => if i == ord0 then d1 else d2) = finsupp d2 by move=> ->.
@@ -725,7 +725,7 @@ case.
 rewrite mulR_eq0 => -[p0'|/eqP //].
 exfalso.
 move/eqP : p0; apply.
-apply/prob_ext; by rewrite p0'.
+by apply/val_inj; rewrite /= p0'.
 Qed.
 Lemma tech1 (B : choiceType) (a b : {dist A}) (f : A -> {dist B}) (p : prob)
   (a0 : A) (b0 : B) (b0a0 : b0 \in finsupp (f a0)) :
@@ -774,7 +774,7 @@ case: ifPn => [/bigfcupP[dB] | ].
   apply: contra p1 => /eqP.
   move/(congr1 (fun x : prob => x.~)).
   rewrite onemK onem0 => p1.
-  exact/eqP/prob_ext.
+  exact/eqP/val_inj.
 move=> Hb0.
 apply/esym/paddR_eq0.
   exact/mulR_ge0.
@@ -804,7 +804,7 @@ split.
   rewrite convC; apply/incl_finsupp_conv2fsdist.
   apply: contra p1 => /eqP.
   move/(congr1 (fun x : prob => x.~)).
-  rewrite onemK onem0 => p1; exact/eqP/prob_ext.
+  by rewrite onemK onem0 => p1; exact/eqP/val_inj.
 Qed.
 End prop.
 End ConvFSDist.
@@ -1057,8 +1057,8 @@ have nx0 :
   congr (_ _ _).
   by rewrite FSDist_finsuppD1.
 case/boolP: (x \in finsupp d) => xfd.
-- rewrite (big_fsetD1 x) //= nx0 eqxx.
-  by rewrite -convptE adjunction_2 avgRE mulR0 addR0 mulR1.
+- rewrite (big_fsetD1 x) //= nx0 eqxx -convptE adjunction_2.
+  by rewrite avgRE mulR0 addR0 mulR1.
 by rewrite -(mem_fsetD1 xfd) nx0 fsfun_dflt // onem0 scalept1.
 Qed.
 End triangular_laws_left_convn.

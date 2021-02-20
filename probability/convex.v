@@ -142,7 +142,8 @@ Section tmp2.
 Variables (A : finType) (n : nat) (g : 'I_n.+1 -> fdist A) (P : {fdist 'I_n.+1}).
 Lemma DelDistConvex (j : 'I_n.+1) (H : (0 <= P j <= 1)%R) (Pj1 : P j != 1%R) :
   let g' := fun i : 'I_n => g (DelFDist.f j i) in
-  ConvnFDist.d P g = ConvFDist.d (Prob.mk_ H) (g j) (ConvnFDist.d (DelFDist.d Pj1) g').
+  ConvnFDist.d P g =
+    ConvFDist.d (Prob.mk_ H) (g j) (ConvnFDist.d (DelFDist.d Pj1) g').
 Proof.
 move=> g' /=; apply/fdist_ext => a.
 rewrite ConvFDist.dE /= ConvnFDist.dE (bigD1 j) //=; congr (_ + _)%R.
@@ -266,7 +267,7 @@ Qed.
 
 Lemma conv0 a b : a <| 0%:pr |> b = b.
 Proof.
-by rewrite convC /= (_ : _ %:pr = 1%:pr) ?conv1 //; apply/prob_ext/onem0.
+by rewrite convC /= (_ : _ %:pr = 1%:pr) ?conv1 //; apply/val_inj/onem0.
 Qed.
 End convex_space_interface.
 
@@ -442,31 +443,6 @@ Proof. by []. Qed.
 Lemma weight0_Zero x : weight x = 0 -> x = Zero.
 Proof. by case: x => //= r c /esym Hr; move/ltR_eqF: (Rpos_gt0 r) => /eqP. Qed.
 
-(* TODO: move to Reals_ext.v? *)
-Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / (r + q)%:pos <= 1.
-Proof.
-split; first exact/ltRW/divR_gt0.
-apply leR_pdivr_mulr => //.
-rewrite mul1R; exact/leR_addl/ltRW.
-Qed.
-Definition Rpos_prob (r q : Rpos) :=
-  Eval hnf in @Prob.mk_ (r / (r + q)%:pos) (Rpos_prob_Op1 _ _).
-
-(* TODO: move along with onem *)
-Lemma onem_div p q : q != 0 -> (p/q).~ = (q-p)/q.
-Proof.
-move=> Hq.
-by rewrite /onem -(divRR q) // /Rdiv /Rminus -mulNR -mulRDl.
-Qed.
-
-Lemma Rpos_probC r q : Rpos_prob q r = (Rpos_prob r q).~%:pr.
-Proof.
-apply prob_ext => /=.
-rewrite [in RHS]addRC onem_div.
-  by rewrite /= addRK.
-by apply Rpos_neq0.
-Qed.
-
 (* In the following we annotate the lemmas with the corresponding
    axiom in definition 2.1 [Varacca & Winskell, MSCS, 2006] (the
    numbers are 1-7 and 13) *)
@@ -486,7 +462,7 @@ Lemma addptE a b (a0 : a != Zero) (b0 : b != Zero) :
   addpt a b = (p + q)%:pos *: (x <| ((p / (p + q))%:pos)%:pr |> y).
 Proof.
 move: a b => [p x|//] [pb y|//] /= in a0 b0 *.
-congr (_ *: (_ <| _ |> _)); [exact: val_inj | exact: prob_ext].
+by congr (_ *: (_ <| _ |> _)); exact: val_inj.
 Qed.
 
 Local Notation "\ssum_ ( i <- r ) F" := (\big[addpt/Zero]_(i <- r) F).
@@ -508,22 +484,24 @@ Proof. by rewrite /onem subR_eq (addRC r) -mulRDl mulRV // ?gtR_eqF. Qed.
 (* 1 *)
 Lemma addptC : commutative addpt.
 Proof.
-move=> [r x|] [q y|] //=.
-congr Scaled. by apply val_inj; rewrite /= addRC.
-rewrite convC; congr Conv; exact/prob_ext/onem_divRxxy.
+move=> [r x|] [q y|] //=; congr Scaled.
+by apply val_inj; rewrite /= addRC.
+by rewrite convC; congr Conv; exact/val_inj/onem_divRxxy.
 Qed.
 
 Lemma s_of_Rpos_probA (p q r : Rpos) :
-  [s_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] = ((p + q) / (p + q + r))%:pos%:pr.
+  [s_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] =
+  ((p + q) / (p + q + r))%:pos%:pr.
 Proof.
-apply prob_ext => /=; rewrite s_of_pqE /onem /=; field.
-split; exact/eqP/Rpos_neq0.
+apply val_inj; rewrite /= s_of_pqE /onem /=; field.
+by split; exact/eqP/Rpos_neq0.
 Qed.
 
 Lemma r_of_Rpos_probA (p q r : Rpos) :
-  [r_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] = (p / (p + q))%:pos%:pr.
+  [r_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] =
+  (p / (p + q))%:pos%:pr.
 Proof.
-apply/prob_ext => /=; rewrite r_of_pqE s_of_pqE /onem /=; field.
+apply/val_inj; rewrite /= r_of_pqE s_of_pqE /onem /=; field.
 do 3 (split; first exact/eqP/Rpos_neq0).
 rewrite (addRC p (q + r)) addRK {4}[in q + r]addRC addRK.
 rewrite mulRC -mulRBr (addRC _ p) addRA addRK mulR_neq0.
@@ -600,7 +578,7 @@ case: x => [p x|]; last by rewrite !add0pt.
 case: y => [q y|]; last by rewrite !addpt0.
 congr Scaled. by apply val_inj => /=; rewrite mulRDr.
 have Hr0 : r != 0 by apply gtR_eqF.
-congr Conv; apply prob_ext; rewrite /= -mulRDr divRM //.
+congr Conv; apply val_inj; rewrite /= -mulRDr divRM //.
   rewrite /Rdiv -(mulRAC r) mulRV ?mul1R //; by apply /eqP.
 exact/Rpos_neq0.
 Qed.
@@ -715,13 +693,13 @@ Proof. by rewrite convptE onem1 scalept0 scalept1 addpt0 conv1. Qed.
 Lemma adjunction_2 x y : S1 x <| p |> S1 y = S1 (x <| p |> y).
 Proof.
 case/prob_ge0 : p => p0; last first.
-  by rewrite (_ : p = 0%:pr) ?conv0 //; exact/prob_ext.
+  by rewrite (_ : p = 0%:pr) ?conv0 //; exact/val_inj.
 case/prob_le1 : p => p1; last first.
-  by rewrite (_ : p = 1%:pr) ?adjunction_1 //; exact/prob_ext.
+  by rewrite (_ : p = 1%:pr) ?adjunction_1 //; exact/val_inj.
 rewrite convptE (scalept_gt0 _ _ p0) (@scalept_gt0 p.~) => [|H].
   exact/onem_gt0.
 congr Scaled => /=; first by apply val_inj; rewrite /= !mulR1 onemKC.
-by congr (_ <| _ |> _); apply prob_ext => /=; rewrite !mulR1 addRC subRK divR1.
+by congr (_ <| _ |> _); apply val_inj; rewrite /= !mulR1 addRC subRK divR1.
 Qed.
 
 Lemma S1_conv : {morph S1 : a b / a <|p|> b >-> a <|p|> b}.
@@ -762,17 +740,17 @@ Proof.
 move=> H1 H2.
 case/boolP : (r == 0%:pr) => r0.
   rewrite (eqP r0) conv0 (_ : p = 0%:pr) ?conv0; last first.
-    by apply/prob_ext; rewrite H1 (eqP r0) mul0R.
+    by apply/val_inj; rewrite /= H1 (eqP r0) mul0R.
   congr (_ <| _ |> _); move: H2; rewrite H1 (eqP r0) mul0R onem0 mul1R.
-  move/(congr1 onem); rewrite !onemK => ?; exact/prob_ext.
+  by move/(congr1 onem); rewrite !onemK => ?; exact/val_inj.
 case/boolP : (s == 0%:pr) => s0.
-  have p0 : p = 0%:pr by apply/prob_ext; rewrite H1 (eqP s0) mulR0.
+  have p0 : p = 0%:pr by apply/val_inj; rewrite /= H1 (eqP s0) mulR0.
   rewrite (eqP s0) conv0 p0 // ?conv0.
   rewrite (_ : q = 0%:pr) ?conv0 //.
   move: H2; rewrite p0 onem0 mul1R => /(congr1 onem); rewrite !onemK => sq.
-  rewrite -(eqP s0); exact/prob_ext.
+  by rewrite -(eqP s0); exact/val_inj.
 rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
-  apply prob_ext => /=; by rewrite s_of_pqE -H2 onemK.
+  by apply val_inj; rewrite /= s_of_pqE -H2 onemK.
 by rewrite (@r_of_pq_is_r  _ _ r s).
 Qed.
 
@@ -907,7 +885,7 @@ Proof.
 case/boolP : (d ord0 == 1%R) => [|i1].
   rewrite FDist1.dE1 => /eqP ->; rewrite ConvnFDist1.
   rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
-  by apply prob_ext => /=; rewrite FDist1.dE eqxx.
+  by apply val_inj; rewrite /= FDist1.dE eqxx.
 rewrite convnE; congr (_ <| _ |> _).
 by rewrite convn1E /DelFDist.f ltnn.
 Qed.
@@ -1022,8 +1000,8 @@ exists 2, (fun i => if i == ord0 then a0 else a1), (I2FDist.d p); split => /=.
   case: ifPn => _; [by left | by right].
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb H].
   rewrite I2FDist.dE eqxx /= => p1.
-  rewrite (_ : p = 1%:pr) ?conv1 //; exact/prob_ext.
-congr (_ <| _ |> _); first by apply prob_ext => /=; rewrite I2FDist.dE eqxx.
+  by rewrite (_ : p = 1%:pr) ?conv1 //; exact/val_inj.
+congr (_ <| _ |> _); first by apply val_inj; rewrite /= I2FDist.dE eqxx.
 case: Bool.bool_dec => // H'.
 exfalso.
 move: H'; rewrite DelFDist.dE D1FDist.dE (eq_sym (lift _ _)) (negbTE (neq_lift _ _)).
@@ -1071,7 +1049,7 @@ apply/idP/idP => H; apply/asboolP; last first.
   rewrite convnE; first by rewrite I2FDist.dE eqxx.
   move=> p1'.
   rewrite {1}/g eqxx (_ : probfdist _ _ = p); last first.
-    by apply prob_ext => /=; rewrite I2FDist.dE eqxx.
+    by apply val_inj; rewrite /= I2FDist.dE eqxx.
   by rewrite (_ : <|>_ _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?convn1E.
 elim => [g d|n IH g d]; first by move: (fdistI0_False d).
 destruct n as [|n] => gX.
