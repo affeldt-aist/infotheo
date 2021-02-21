@@ -231,7 +231,7 @@ Record mixin_of (T : choiceType) := Mixin {
   _ : forall (p q : prob) (a b c : T),
       a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c }.
 Record class_of (T : Type) := Class {
-  base : Choice.class_of T ; mxin : mixin_of (Choice.Pack base) }.
+  base : Choice.class_of T ; mixin : mixin_of (Choice.Pack base) }.
 Structure t : Type := Pack { sort : Type ; class : class_of sort }.
 Definition baseType (T : t) := Choice.Pack (base (class T)).
 Module Exports.
