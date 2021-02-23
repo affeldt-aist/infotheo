@@ -1083,19 +1083,20 @@ Qed.
 End convex_space_prop.
 
 Section affine_function_prop0.
-Lemma affine_function_Sum (A B : convType) (f : {affine A -> B}) (n : nat) (g : 'I_n -> A) (e : {fdist 'I_n}) :
+Lemma affine_function_Sum (A B : convType) (f : {affine A -> B}) (n : nat)
+    (g : 'I_n -> A) (e : {fdist 'I_n}) :
   f (<|>_e g) = <|>_e (f \o g).
 Proof.
 elim: n g e => [g e|n IH g e]; first by move: (fdistI0_False e).
 case/boolP : (e ord0 == 1%R :> R) => [|e01].
   by rewrite FDist1.dE1 => /eqP ->; rewrite 2!ConvnFDist1.
-by rewrite 2!convnE (affine_functionP' f) IH.
+by rewrite 2!convnE affine_conv IH.
 Qed.
 End affine_function_prop0.
 
 Section convn_convnfdist.
 Variable A : finType.
-Lemma convn_convnfdist (n : nat) (g : 'I_n -> fdist_convType A) (d : {fdist 'I_n}) :
+Lemma convn_convnfdist n (g : 'I_n -> fdist_convType A) (d : {fdist 'I_n}) :
   <|>_d g = ConvnFDist.d d g.
 Proof.
 elim: n g d => /= [g d|n IH g d]; first by move: (fdistI0_False d).

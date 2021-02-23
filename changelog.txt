@@ -7,6 +7,31 @@ from 0.3 to ???
 - added:
   + lemmas prob_ge0, prob_le1 (also as Hint Resolve)
 
+- renamed:
+  + Module AffineFunction -> Affine
+  + Notation AffineFunction -> Affine
+  + Notation affine_function -> affine
+  + affine_functionP' -> affine_conv
+- removed:
+  + affine_function_at
+  + image_preserves_convex_hull', is_convex_set_image'
+- added:
+  + Notations [affine of f] and [affine of f as g]
+  + Notation biglub_morph
+- changed:
+  + affine_function_id_proof/affine_function_id ->
+      idfun_is_affine/Canonical idfun_affine
+  + affine_function_comp_proof'/affine_function_comp_proof/affine_function_comp ->
+      comp_is_affine/Canonical comp_affine
+  + in Section with_affine_projection and Section S1_proj_Convn_finType
+    * prj/prj_affine -> prj : {affine ... -> ...}
+  + Convn_of_FSDist_FSDistfmap -> to use {affine ...}
+- changed:
+  + biglub_morph, biglub_lub_morp -> to use {Biglub_morph ...}
+  + multiple inheritance in Module BiglubMorph
+  + biglub_affine_id_proof -> idfun_is_biglub_affine/Canonical idfun_is_biglub_affine
+  + biglub_affine_comp_proof -> comp_is_biglub_affine/Canonical comp_biglub_affine
+
 -----------------
 from 0.2.2 to 0.3
 -----------------

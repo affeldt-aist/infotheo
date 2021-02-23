@@ -69,8 +69,8 @@ Require Import fdist jfdist.
 (* convex and conical spaces. CICM 2020                                       *)
 (*                                                                            *)
 (* Definitions of convex, concave, affine functions                           *)
-(*  affine_functionP == characterization of affine functions in terms of      *)
-(*                      convex functions                                      *)
+(*         affineP == characterization of affine functions in terms of        *)
+(*                    convex functions                                        *)
 (* Lemmas:                                                                    *)
 (* image_preserves_convex_hull == the image of a convex hull is the convex    *)
 (*                                hull of the image                           *)
@@ -288,18 +288,11 @@ Notation "'<|>_' d f" := (Convn d f) : convex_scope.
 
 (* Affine function: homomorphism between convex spaces *)
 
-Section affine_function_def.
-Local Open Scope ordered_convex_scope.
-Variables (T U : convType).
-Definition affine_function_at (f : T -> U) x y t :=
-  f (x <| t |> y) = f x <| t |> f y.
-End affine_function_def.
-
-Module AffineFunction.
+Module Affine.
 Section ClassDef.
 Local Open Scope ordered_convex_scope.
 Variables (U V : convType).
-Definition axiom (f : U -> V) := forall x y (t : prob), affine_function_at f x y t.
+Definition axiom (f : U -> V) := forall p, {morph f : a b / a <| p |> b >-> a <| p |> b}.
 Structure map (phUV : phant (U -> V)) := Pack {apply; _ : axiom apply}.
 Local Coercion apply : map >-> Funclass.
 Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
@@ -308,45 +301,32 @@ Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
   @Pack phUV f fA.
 End ClassDef.
 Module Exports.
-Notation affine_function f := (axiom f).
+Notation affine f := (axiom f).
 Coercion apply : map >-> Funclass.
-Notation AffineFunction fA := (Pack (Phant _) fA).
+Notation Affine fA := (Pack (Phant _) fA).
 Notation "{ 'affine' fUV }" := (map (Phant fUV))
   (at level 0, format "{ 'affine'  fUV }") : convex_scope.
-(*Notation "[ 'affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
+Notation "[ 'affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun Datatypes.id)
   (at level 0, format "[ 'affine'  'of'  f  'as'  g ]") : convex_scope.
-Notation "[ 'affine' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
-  (at level 0, format "[ 'affine'  'of'  f ]") : convex_scope.*)
+Notation "[ 'affine' 'of' f ]" := (@clone _ _ _ f f _ _ Datatypes.id Datatypes.id)
+  (at level 0, format "[ 'affine'  'of'  f ]") : convex_scope.
 End Exports.
-End AffineFunction.
-Include AffineFunction.Exports.
+End Affine.
+Include Affine.Exports.
+
+Lemma affine_conv (U V : convType) (f : {affine U -> V}) : Affine.axiom f.
+Proof. exact: Affine.class. Qed.
 
 Section affine_function_prop0.
-Implicit Types T U V : convType.
+Variables (U V W : convType) (f : {affine V -> W}) (h : {affine U -> V}).
 
-Lemma affine_functionP' T U (f : {affine T -> U}) a b t :
-  affine_function_at f a b t.
-Proof. by case: f => f0; apply. Qed.
-
-Lemma affine_function_id_proof T : affine_function (ssrfun.id : T -> T).
+Fact idfun_is_affine : affine (@idfun U).
 Proof. by []. Qed.
+Canonical idfun_affine := Affine idfun_is_affine.
 
-Definition affine_function_id T : {affine T -> T} :=
-  AffineFunction (@affine_function_id_proof T).
-
-Lemma affine_function_comp_proof' T U V (f : T -> U) (g : U -> V) :
-  affine_function f -> affine_function g -> affine_function (g \o f).
-Proof. by move=> Hf Hg a b t; rewrite /affine_function_at /= Hf Hg. Qed.
-
-Lemma affine_function_comp_proof T U V (f : {affine T -> U}) (g : {affine U -> V})
-  : affine_function (g \o f).
-Proof.
-exact: (affine_function_comp_proof' (affine_functionP' f) (affine_functionP' g)).
-Qed.
-
-Definition affine_function_comp T U V (f : {affine T -> U}) (g : {affine U -> V})
-    : {affine T -> V} :=
-  AffineFunction (affine_function_comp_proof f g).
+Fact comp_is_affine : affine (f \o h).
+Proof. by move=> x y t /=; rewrite 2!affine_conv. Qed.
+Canonical comp_affine := Affine comp_is_affine.
 
 (* The following lemma is placed far below in this file
    since it is proved using ScaledConvex
@@ -804,8 +784,7 @@ Local Open Scope vec_ext_scope.
 
 Section with_affine_projection.
 Variable U : convType.
-Variable prj : T -> U.
-Hypothesis prj_affine : forall p, {morph prj : x y / x <|p|> y >-> x <|p|> y}.
+Variable prj : {affine T -> U}.
 
 Definition map_scaled (x : scaled_pt T) : scaled_pt U :=
   if x is p *: a then p *: prj a else @Zero U.
@@ -816,7 +795,7 @@ Proof.
 move=> [q x|] [r y|] /=; rewrite 2!convptE ?scaleptR0 //.
 + rewrite !(scalept_Scaled p) !(scalept_Scaled p.~) /= /scalept.
   case: Rlt_dec => Hpq; case: Rlt_dec => Hpr //=; congr Scaled.
-  by rewrite prj_affine.
+  by rewrite affine_conv.
 + rewrite !addpt0 !(scalept_Scaled p) /= /scalept; by case: Rlt_dec.
 + rewrite !add0pt !(scalept_Scaled p.~) /= /scalept; by case: Rlt_dec.
 Qed.
@@ -839,7 +818,7 @@ set points' := fun i => points (DelFDist.f ord0 i).
 rewrite /index_enum -enumT (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
 rewrite -big_filter (perm_big (map (lift ord0) (enum 'I_n)));
   last by apply perm_filter_enum_ord.
-rewrite prj_affine S1_conv; congr addpt.
+rewrite affine_conv S1_conv; congr addpt.
 rewrite IH -barycenter_big_fin scalept_bary //.
 rewrite /barycenter 2!big_map [in RHS]big_map.
 apply eq_bigr => i _.
@@ -851,7 +830,7 @@ End with_affine_projection.
 
 Lemma S1_convn n (points : 'I_n -> T) d :
   S1 (<|>_d points) = \ssum_(i < n) scalept (d i) (S1 (points i)).
-Proof. by rewrite (@S1_convn_proj _ (@id T)). Qed.
+Proof. by rewrite (S1_convn_proj [affine of idfun]). Qed.
 
 End convex_space_prop1.
 
@@ -863,8 +842,7 @@ Lemma affine_function_Sum (f : {affine T -> U}) n (g : 'I_n -> T) (d : {fdist 'I
   f (<|>_d g) = <|>_d (f \o g).
 Proof.
 Import ScaledConvex.
-apply S1_inj; rewrite S1_convn S1_convn_proj //.
-by move=> p x y; rewrite affine_functionP'.
+by apply S1_inj; rewrite S1_convn S1_convn_proj.
 Qed.
 
 Lemma eq_convn n (g1 g2 : 'I_n -> T) (d1 d2 : {fdist 'I_n}) :
@@ -889,12 +867,14 @@ Proof. by apply convn_proj; rewrite FDist1.dE eqxx. Qed.
 
 Lemma convn1E (g : 'I_1 -> T) (e : {fdist 'I_1}) : <|>_ e g = g ord0.
 Proof.
-rewrite /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H; exfalso; move/eqP: H; apply.
+rewrite /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H.
+exfalso; move/eqP: H; apply.
 by apply/eqP; rewrite FDist1.dE1 (FDist1.I1 e).
 Qed.
 
 Lemma convnE n (g : 'I_n.+1 -> T) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%R) :
-  <|>_d g = g ord0 <| probfdist d ord0 |> <|>_(DelFDist.d i1) (fun x => g (DelFDist.f ord0 x)).
+  <|>_d g = g ord0 <| probfdist d ord0 |>
+            <|>_(DelFDist.d i1) (fun x => g (DelFDist.f ord0 x)).
 Proof.
 rewrite /=; case: Bool.bool_dec => /= [|/Bool.eq_true_not_negb] H.
 exfalso; by rewrite (eqP H) eqxx in i1.
@@ -968,9 +948,8 @@ Lemma convnDr :
 Proof.
 elim; first by move=> p x g d; move/fdistI0_False: (d).
 move=> n IHn p x g d.
-case/boolP: (d ord0 == 1%R).
-  by move/eqP=> d01; rewrite (convn_proj g d01) (convn_proj (fun i => x <|p|> g i) d01).
-move=> d0n1.
+have [/eqP d01|d0n1] := boolP (d ord0 == 1%R).
+  by rewrite (convn_proj g d01) (convn_proj (fun i => x <|p|> g i) d01).
 rewrite !convnE !IHn.
 congr Convn; apply funext=> i.
 by rewrite convDr.
@@ -1567,17 +1546,12 @@ End S1_Convn_finType.
 
 Section S1_proj_Convn_finType.
 Import ScaledConvex.
-Variables (A B : convType) (prj : A -> B).
-Hypothesis prj_affine : affine_function prj.
+Variables (A B : convType) (prj : {affine A -> B}).
 Variables (T : finType) (d : {fdist T}) (f : T -> A).
 
 Lemma S1_proj_Convn_finType :
   S1 (prj (<$>_d f)) = \ssum_i scalept (d i) (S1 (prj (f i))).
-Proof.
-set (prj' := AffineFunction.Pack (Phant (A -> B)) prj_affine).
-move: (affine_function_Sum prj') => /= ->.
-exact: S1_Convn_finType.
-Qed.
+Proof. by rewrite affine_function_Sum /=; exact: S1_Convn_finType. Qed.
 End S1_proj_Convn_finType.
 
 (* Ordered convex space *)
@@ -1966,13 +1940,13 @@ Section affine_function_prop.
 Variables (T : convType) (U : orderedConvType).
 
 Lemma affine_functionP (f : T -> U) :
-  affine_function f <-> convex_function f /\ concave_function f.
+  affine f <-> convex_function f /\ concave_function f.
 Proof.
 split => [H | [H1 H2] p q t].
   split.
   - move=> p q t; rewrite /convex_function_at /= H //; exact/leconvR.
   - move=> p q t; rewrite /concave_function_at /= H //; exact/leconvR.
-rewrite /affine_function_at eqconv_le; split; [exact/H1|exact/H2].
+by rewrite eqconv_le; split; [exact/H1|exact/H2].
 Qed.
 
 End affine_function_prop.
@@ -2003,35 +1977,20 @@ case: (Hg (g i)); first by exists i.
 move=> a // HZa Hfa; by exists a.
 Qed.
 
-Lemma image_preserves_convex_hull' (f : T -> U) (Hf : affine_function f)
-  (Z : set T) :
-    f @` (hull Z) = hull (f @` Z).
-Proof. by rewrite (image_preserves_convex_hull (AffineFunction Hf)). Qed.
-
 Lemma is_convex_set_image (f : {affine T -> U}) (a : {convex_set T}) :
   is_convex_set (f @` a).
 Proof.
 rewrite /is_convex_set.
 apply/asboolP => x y p [a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
-exists (a0 <|p|> a1) => //.
+exists (a0 <|p|> a1); last by rewrite affine_conv.
 by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
-by rewrite (affine_functionP' f).
-Qed.
-
-Lemma is_convex_set_image' (f : T -> U) (H : affine_function f)
-  (a : convex_set T) : is_convex_set (f @` a).
-Proof.
-rewrite /is_convex_set.
-apply/asboolP => x y p [a0 Ha0 <-{x}] [a1 Ha1 <-{y}]; exists (a0 <|p|> a1) => //.
-by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
-by rewrite H.
 Qed.
 
 End affine_function_image.
 
 Section R_affine_function_prop.
 Variables (T : convType) (f : T -> R).
-Lemma R_affine_functionN : affine_function f -> affine_function (fun x => - f x)%R.
+Lemma R_affine_functionN : affine f -> affine (fun x => - f x)%R.
 Proof.
 move/affine_functionP => [H1 H2]; rewrite affine_functionP.
 split => //; [exact/R_convex_functionN|exact/R_concave_functionN].
