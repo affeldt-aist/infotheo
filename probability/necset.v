@@ -25,7 +25,7 @@ Require Import convex.
 (*          2. |_| (\bigcup_(i in s) f i) = |_| (|_| @` (f @` s))             *)
 (* biglub_semiLattType  == Semicomplete semilattice is a semilattice          *)
 (*                                                                            *)
-(* {Biglub_morph U -> V} == Homomorphism between semicomplete semilattices    *)
+(* {Biglub U -> V}      == Homomorphism between semicomplete semilattices     *)
 (*                                                                            *)
 (* semiLattConvType == semilattice convex space: This structure is a          *)
 (*     combination of convex space and semilattice structures with the        *)
@@ -541,38 +541,22 @@ Coercion biglub_semiLattType : semiCompSemiLattType >-> semiLattType.
 Lemma lubE (L : semiCompSemiLattType) (x y : L) : x [+] y = |_| [set x; y]%:ne.
 Proof. reflexivity. Qed.
 
-Section biglub_morph.
-Local Open Scope classical_set_scope.
-Local Open Scope latt_scope.
-Variables (L M : semiCompSemiLattType).
-Definition biglub_morph (f : L -> M) :=
-  forall (X : neset L), f (|_| X) = |_| (f @` X)%:ne.
-Definition lub_morph (f : L -> M) :=
-  forall (x y : L), f (x [+] y) = f x [+] f y.
-Lemma biglub_lub_morph (f : L -> M) :
-  biglub_morph f -> lub_morph f.
-Proof.
-move=> H x y.
-move: (H [set x; y]%:ne) => ->.
-transitivity (|_| [set f x; f y]%:ne) => //.
-congr (|_| _%:ne); apply/neset_ext => /=.
-by rewrite image_setU !image_set1.
-Qed.
-End biglub_morph.
-
 Module BiglubMorph.
 Section ClassDef.
 Local Open Scope classical_set_scope.
-Variables (U V : semiCompSemiLattType).
+Variables U V : semiCompSemiLattType.
+Definition axiom (f : U -> V) :=
+  forall (X : neset U), f (|_| X) = |_| (f @` X)%:ne.
 Structure map (phUV : phant (U -> V)) :=
-  Pack {apply : U -> V ; _ : biglub_morph apply}.
+  Pack {apply : U -> V ; _ : axiom apply}.
 Local Coercion apply : map >-> Funclass.
 Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
-Definition class := let: Pack _ c as cF' := cF return biglub_morph cF' in c.
+Definition class := let: Pack _ c as cF' := cF return axiom cF' in c.
 Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
   @Pack phUV f fA.
 End ClassDef.
 Module Exports.
+Notation biglubmorph f := (axiom f).
 Coercion apply : map >-> Funclass.
 Notation BiglubMorph fA := (Pack (Phant _) fA).
 Notation "{ 'Biglub_morph' fUV }" := (map (Phant fUV))
@@ -584,6 +568,24 @@ Notation "[ 'Biglub_morph' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
 End Exports.
 End BiglubMorph.
 Export BiglubMorph.Exports.
+
+Lemma biglub_morph (U V : semiCompSemiLattType) (f : {Biglub_morph U -> V}) :
+  forall (X : neset U), f (|_| X) = |_| (f @` X)%:ne.
+Proof. by case: f => []. Qed.
+
+Section biglub_morph.
+Local Open Scope classical_set_scope.
+Local Open Scope latt_scope.
+Variables (L M : semiCompSemiLattType).
+Definition lub_morph (f : L -> M) :=
+  forall (x y : L), f (x [+] y) = f x [+] f y.
+Lemma biglub_lub_morph (f : {Biglub_morph L -> M}) : lub_morph f.
+Proof.
+move=> x y; rewrite biglub_morph.
+congr (|_| _%:ne); apply/neset_ext => /=.
+by rewrite image_setU !image_set1.
+Qed.
+End biglub_morph.
 
 Module SemiLattConvType.
 Local Open Scope convex_scope.
@@ -696,59 +698,76 @@ Export SemiCompSemiLattConvType.Exports.
 Module BiglubAffine.
 Section ClassDef.
 Local Open Scope classical_set_scope.
-Variables (U V : semiCompSemiLattConvType).
+Variables U V : semiCompSemiLattConvType.
 Record class_of (f : U -> V) : Prop := Class {
-  base : affine_function f ;
-  base2 : biglub_morph f }.
+  base : affine f ;
+  mixin : BiglubMorph.axiom f }.
+Local Coercion base : class_of >-> affine.
+Definition base2 f (fLM : class_of f) := mixin fLM.
+Local Coercion base2 : class_of >-> biglubmorph.
 Structure map (phUV : phant (U -> V)) :=
-  Pack {apply : U -> V ; class' : class_of apply}.
-Definition baseType (phUV : phant (U -> V)) (f : map phUV) : {affine U -> V} :=
-  AffineFunction (base (class' f)).
-Definition base2Type (phUV : phant (U -> V)) (f : map phUV) : {Biglub_morph U -> V} :=
-  BiglubMorph (base2 (class' f)).
+  Pack {apply; _ : class_of apply}.
 Local Coercion apply : map >-> Funclass.
 Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
 Definition class := let: Pack _ c as cF' := cF return class_of cF' in c.
-Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
-  @Pack phUV f fA.
+Definition clone :=
+  fun (g : Affine.map phUV) fM & phant_id (Affine.class g) fM =>
+  fun (h : BiglubMorph.map phUV) fZ &
+     phant_id (BiglubMorph.axiom (BiglubMorph.apply h)) fZ =>
+  Pack phUV (@Class f fM fZ).
+Definition pack (fM : biglubmorph f) :=
+  fun (bF : Affine.map phUV) fA & phant_id (Affine.class bF) fA =>
+  Pack phUV (Class fA fM).
+Canonical affine_of_biglub_affine := Affine.Pack phUV class.
+Canonical biglubmorph_of_biglub_affine := BiglubMorph.Pack phUV class.
+Canonical join_affine :=
+  @Affine.Pack _ _ phUV biglubmorph_of_biglub_affine class.
+Canonical join_biglubmorph :=
+  @BiglubMorph.Pack U V phUV biglubmorph_of_biglub_affine class.
 End ClassDef.
 Module Exports.
+Notation biglub_affine f := (class_of f).
+Coercion base : biglub_affine >-> Affine.axiom.
+Coercion base2 : biglub_affine >-> BiglubMorph.axiom.
 Coercion apply : map >-> Funclass.
-Coercion baseType : map >-> AffineFunction.map.
-Coercion base2Type : map >-> BiglubMorph.map.
-Canonical baseType.
-Canonical base2Type.
-Notation Biglub_Affine fA := (Pack (Phant _) fA).
+Notation BiglubAffine fA := (Pack (Phant _) (Class fA fA)).
+Notation AffineBiglub fM := (pack fM id).
 Notation "{ 'Biglub_affine' fUV }" := (map (Phant fUV))
   (at level 0, format "{ 'Biglub_affine'  fUV }") : convex_scope.
 Notation "[ 'Biglub_affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
   (at level 0, format "[ 'Biglub_affine'  'of'  f  'as'  g ]") : convex_scope.
-Notation "[ 'Biglub_affine' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
+Notation "[ 'Biglub_affine' 'of' f ]" := (@clone _ _ _ f _ _ id id)
   (at level 0, format "[ 'Biglub_affine'  'of'  f ]") : convex_scope.
+Coercion affine_of_biglub_affine : map >-> Affine.map.
+Canonical affine_of_biglub_affine.
+Coercion biglubmorph_of_biglub_affine : map >-> BiglubMorph.map.
+Canonical biglubmorph_of_biglub_affine.
+Canonical join_affine.
+Canonical join_biglubmorph.
 End Exports.
 End BiglubAffine.
 Export BiglubAffine.Exports.
 
 Section biglub_affine_functor_laws.
-Lemma biglub_affine_id_proof (A : semiCompSemiLattConvType) :
-  BiglubAffine.class_of (@id A).
+
+Variables (R S T : semiCompSemiLattConvType)
+  (f : {Biglub_affine S -> T}) (g : {Biglub_affine R -> S}).
+
+Fact idfun_is_biglub_affine : biglub_affine (@idfun R).
 Proof.
-apply BiglubAffine.Class; first exact: affine_function_id_proof.
+apply: BiglubAffine.Class => //.
 by move=> x; congr (|_| _); apply neset_ext; rewrite /= image_id.
 Qed.
+Canonical idfun_biglub_affine := AffineBiglub idfun_is_biglub_affine.
 
-Lemma biglub_affine_comp_proof (A B C : semiCompSemiLattConvType)
-  (f : A -> B) (g : B -> C) :
-  BiglubAffine.class_of f -> BiglubAffine.class_of g ->
-  BiglubAffine.class_of (g \o f).
+Fact comp_is_biglub_affine : biglub_affine (f \o g).
 Proof.
-move=> [af jf] [ag jg].
-apply BiglubAffine.Class; first exact: affine_function_comp_proof'.
-move=> x; cbn.
-rewrite jf jg.
-congr (|_| _); apply neset_ext => /=.
-by rewrite image_comp.
+apply: BiglubAffine.Class; first exact: comp_is_affine.
+move=> x; cbn; rewrite !biglub_morph.
+by congr (|_| _); apply neset_ext => /=; rewrite image_comp.
 Qed.
+Canonical comp_biglub_affine := AffineBiglub comp_is_biglub_affine.
+
 End biglub_affine_functor_laws.
 
 Section semicompsemilattconvtype_lemmas.
@@ -1133,15 +1152,14 @@ Definition necset_fmap' (ma : M a) :=
   (FSDistfmap (f : choice_of_Type a -> choice_of_Type b)) @` ma.
 
 Lemma FSDistfmap_affine :
-  affine_function (FSDistfmap (f : choice_of_Type a -> choice_of_Type b)).
-Proof.
-by move=> *; rewrite /FSDistfmap /affine_function_at ConvFSDist.bind_left_distr.
-Qed.
+  affine (FSDistfmap (f : choice_of_Type a -> choice_of_Type b)).
+Proof. by move=> ? ? ?; rewrite /FSDistfmap ConvFSDist.bind_left_distr. Qed.
+Canonical Affine_FSDistfmap_affine := Affine FSDistfmap_affine.
 
 Lemma necset_fmap'_convex ma : is_convex_set (necset_fmap' ma).
 Proof.
 apply/asboolP=> x y p [] dx madx <-{x} [] dy mady <-{y}.
-eexists; last exact: FSDistfmap_affine.
+exists (dx <| p |> dy); last exact: FSDistfmap_affine.
 by move/asboolP: (convex_setP ma); apply.
 Qed.
 

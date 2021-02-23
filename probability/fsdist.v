@@ -842,27 +842,19 @@ Lemma convn_convnfsdist (n : nat) (g : 'I_n -> {dist A}) (d : {fdist 'I_n}) :
   <|>_d g = ConvnFSDist.d d g.
 Proof.
 apply FSDist_ext=> a; rewrite -[LHS]Scaled1RK.
-rewrite (@S1_convn_proj _ _ (fun x : {dist A} => finmap.fun_of_fsfun x a));
-  last first.
-  by move=> p x y /=; rewrite ConvFSDist.dE.
-rewrite big_scaleR ConvnFSDist.dE /= fsfunE.
-case: ifPn => Ha.
+pose f := fun x : {dist A} => finmap.fun_of_fsfun x a.
+have af : affine f by move=> p x y; rewrite /f /= ConvFSDist.dE.
+rewrite (S1_convn_proj (Affine af)) /= big_scaleR ConvnFSDist.dE /= fsfunE.
+case: ifPn => adg.
   by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
 (* TODO: extra lemmas ? *)
 rewrite big1 // => i _.
-move: Ha.
-rewrite /ConvnFSDist.D.
-move/bigfcupP => Hn.
-case /boolP: (d i == R0) => Hdi.
-  by rewrite (eqP Hdi) scalept0.
-case /boolP: (g i a == R0) => Hgia.
-  by rewrite (eqP Hgia) scaleR_scalept /= ?mulR0.
-elim: Hn.
-exists i.
-  rewrite mem_index_enum /=.
-  apply/ltRP.
-  by rewrite -fdist_gt0.
-by rewrite mem_finsupp.
+move: adg; rewrite /ConvnFSDist.D => /bigfcupP Hn.
+have [/eqP ->|di0] := boolP (d i == 0); first by rewrite scalept0.
+have [/eqP gia0|gia0] := boolP (g i a == 0).
+  by rewrite /f gia0 scaleR_scalept /= ?mulR0.
+elim: Hn; exists i; last by rewrite mem_finsupp.
+by rewrite mem_index_enum /=; apply/ltRP; rewrite -fdist_gt0.
 Qed.
 End FSDist_convex_space.
 
@@ -893,8 +885,10 @@ Qed.
 
 (* Evaluation operation of FSDists at some fixed element is affine *)
 Lemma FSDist_eval_affine (C : choiceType) (x : C) :
-  affine_function (fun D : {dist C} => D x).
-Proof. by move=> a b p; rewrite /affine_function_at ConvFSDist.dE. Qed.
+  affine (fun D : {dist C} => D x).
+Proof. by move=> a b p; rewrite ConvFSDist.dE. Qed.
+Canonical Affine_FSDist_eval_affine (C : choiceType) (x : C) :=
+  Affine (FSDist_eval_affine x).
 
 Section misc_scaled.
 Import ScaledConvex.
@@ -957,17 +951,14 @@ apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> c; rewrite !i
 - by case/andP.
 Qed.
 
-Lemma Convn_of_FSDist_affine : affine_function Convn_of_FSDist.
+Lemma Convn_of_FSDist_affine : affine Convn_of_FSDist.
 Proof.
-move => x y p.
-rewrite /affine_function_at.
-case/boolP : (p == 0%:pr) => [|pn0]; first by move/eqP ->; rewrite !conv0.
-case/boolP : (p == 1%:pr) => [|pn1]; first by move/eqP ->; rewrite !conv1.
+move=> p x y.
+case/boolP : (p == 0%:pr) => [/eqP ->|pn0]; first by rewrite !conv0.
+case/boolP : (p == 1%:pr) => [/eqP ->|pn1]; first by rewrite !conv1.
 have opn0 : p.~ != 0%:pr by apply onem_neq0.
 apply S1_inj.
-rewrite S1_conv.
-rewrite !S1_Convn_finType.
-rewrite ssum_seq_finsuppE.
+rewrite S1_conv !S1_Convn_finType ssum_seq_finsuppE.
 under eq_bigr do rewrite FSDist_scalept_conv.
 rewrite big_seq_fsetE big_scalept_conv_split /=.
 rewrite 2!ssum_seq_finsuppE' 2!ssum_seq_finsuppE.
@@ -979,6 +970,7 @@ have -> : \ssum_(i <- finsupp y) scalept (y i) (S1 i) =
   by rewrite convC; apply/ssum_widen_finsupp/ConvFSDist.incl_finsupp_conv2fsdist.
 done.
 Qed.
+Canonical Affine_Convn_of_FSDist_affine := Affine Convn_of_FSDist_affine.
 End Convn_of_FSDist.
 
 Section lemmas_for_probability_monad_and_adjunction.
@@ -997,10 +989,9 @@ rewrite (eq_bigr (fun=> ScaledConvex.S1 x)); last first.
 by rewrite big_const (_ : #| _ | = 1%N) // -cardfE FSDist1.supp cardfs1.
 Qed.
 
-Lemma Convn_of_FSDist_FSDistfmap (C D : convType) (f : C -> D) (d : {dist C}) :
-  affine_function f -> f (Convn_of_FSDist d) = Convn_of_FSDist (FSDistfmap f d).
+Lemma Convn_of_FSDist_FSDistfmap (C D : convType) (f : {affine C -> D}) (d : {dist C}) :
+  f (Convn_of_FSDist d) = Convn_of_FSDist (FSDistfmap f d).
 Proof.
-move=> f_aff.
 apply S1_inj => /=.
 rewrite S1_proj_Convn_finType // S1_Convn_finType.
 set X := LHS.
@@ -1012,8 +1003,7 @@ have Hsupp : forall y,
     y \in \bigcup_(d0 <- [fset FSDist1.d (f a) | a in finsupp d]) finsupp d0.
 - move=> y.
   case/imfsetP=> x /= xfd ->.
-  apply/bigfcupP.
-  exists (FSDist1.d (f x)); last by rewrite FSDist1.supp inE.
+  apply/bigfcupP; exists (FSDist1.d (f x)); last by rewrite FSDist1.supp inE.
   by rewrite andbT; apply/imfsetP; exists x.
 rewrite big_seq; under eq_bigr=> y Hy.
 - rewrite (Hsupp y Hy).
@@ -1039,9 +1029,8 @@ Variable C : choiceType.
 Lemma triangular_laws_left0 (d : {dist C}) :
   Convn_of_FSDist (FSDistfmap (@FSDist1.d C) d) = d.
 Proof.
-apply FSDist_ext=> x.
-apply S1_inj.
-rewrite (S1_proj_Convn_finType (FSDist_eval_affine x)).
+apply FSDist_ext => x; apply S1_inj.
+rewrite (S1_proj_Convn_finType (Affine_FSDist_eval_affine x)).
 under eq_bigr do rewrite fdist_of_FSDistE.
 rewrite (ssum_seq_finsuppE'' (fun i : {dist C} => i x)).
 rewrite supp_FSDistfmap.
