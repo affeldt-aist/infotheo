@@ -1,3 +1,12 @@
+---------------
+from 0.3 to ???
+---------------
+
+- removed:
+  + lemma Prob.ge0
+- added:
+  + lemmas prob_ge0, prob_le1 (also as Hint Resolve)
+
 -----------------
 from 0.2.2 to 0.3
 -----------------

@@ -286,8 +286,7 @@ Fixpoint Convn n : {fdist 'I_n} -> ('I_n -> A) -> A :=
 End convn.
 Notation "'<|>_' d f" := (Convn d f) : convex_scope.
 
-
-(*** Affine function: homomorphism between convex spaces ***)
+(* Affine function: homomorphism between convex spaces *)
 
 Section affine_function_def.
 Local Open Scope ordered_convex_scope.
@@ -715,15 +714,14 @@ Proof. by rewrite convptE onem1 scalept0 scalept1 addpt0 conv1. Qed.
 
 Lemma adjunction_2 x y : S1 x <| p |> S1 y = S1 (x <| p |> y).
 Proof.
-case/Prob.ge0: p => Hp; last first.
-  rewrite (_ : p = 0%:pr) ?conv0 //; exact/prob_ext.
-case/prob_le1: p => Hp1; last first.
-  rewrite (_ : p = 1%:pr) ?adjunction_1 //; exact/prob_ext.
-rewrite convptE (scalept_gt0 _ _ Hp) (@scalept_gt0 p.~) => [|H].
+case/prob_ge0 : p => p0; last first.
+  by rewrite (_ : p = 0%:pr) ?conv0 //; exact/prob_ext.
+case/prob_le1 : p => p1; last first.
+  by rewrite (_ : p = 1%:pr) ?adjunction_1 //; exact/prob_ext.
+rewrite convptE (scalept_gt0 _ _ p0) (@scalept_gt0 p.~) => [|H].
   exact/onem_gt0.
 congr Scaled => /=; first by apply val_inj; rewrite /= !mulR1 onemKC.
-congr (_ <| _ |> _); apply prob_ext => /=.
-by rewrite !mulR1 /= addRC subRK divR1.
+by congr (_ <| _ |> _); apply prob_ext => /=; rewrite !mulR1 addRC subRK divR1.
 Qed.
 
 Lemma S1_conv : {morph S1 : a b / a <|p|> b >-> a <|p|> b}.
@@ -1040,8 +1038,7 @@ by eapply subset_trans; first exact: H0.
 Qed.
 End hull_prop.
 
-
-(*** Convex sets in a convex space ***)
+(* Convex sets in a convex space *)
 
 Section is_convex_set.
 Local Open Scope classical_set_scope.
@@ -1181,8 +1178,7 @@ Proof. by apply/cset0PN; exists a. Qed.
 
 End CSet_prop.
 
-
-(*** Lemmas on hull and convex set ***)
+(* Lemmas on hull and convex set *)
 
 Lemma hull_cset (A : convType) (X : {convex_set A}) : hull X = X.
 Proof.
@@ -1204,7 +1200,7 @@ Proof.
 apply S1_inj; rewrite S1_conv !S1_convn.
 rewrite convptE big_split_ord !big_scalept /=.
 congr addpt; apply eq_bigr => i _;
-  rewrite (scalept_comp (S1 _) (Prob.ge0 _) (FDist.ge0 _ _));
+  rewrite (scalept_comp (S1 _) (prob_ge0 _) (FDist.ge0 _ _));
   by rewrite AddFDist.dE (split_lshift,split_rshift).
 Qed.
 
@@ -1485,9 +1481,7 @@ Lemma scalept_conv (T : convType) (x y : R) (s : scaled_pt T) (p : prob):
   0 <= x -> 0 <= y ->
   scalept (x <|p|> y) s = scalept x s <|p|> scalept y s.
 Proof.
-move=> Hx Hy.
-move: (onem_ge0 (prob_le1 p)) => Hnp.
-rewrite scalept_addR; [|exact/mulR_ge0|exact/mulR_ge0].
+move=> x0 y0; rewrite scalept_addR; [|exact/mulR_ge0|exact/mulR_ge0].
 by rewrite convptE !scalept_comp.
 Qed.
 
@@ -1586,8 +1580,7 @@ exact: S1_Convn_finType.
 Qed.
 End S1_proj_Convn_finType.
 
-
-(*** Ordered convex space ***)
+(* Ordered convex space *)
 
 Module OrderedConvexSpace.
 Record mixin_of (T : convType) : Type := Mixin {
