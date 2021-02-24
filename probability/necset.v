@@ -56,6 +56,7 @@ Require Import convex.
 (*                         convType with elements of type necset A and with   *)
 (*                         operator                                           *)
 (*                           X <| p |> Y = {x<|p|>y | x \in X, y \in Y}       *)
+(*                         Notation: {necset A}                               *)
 (* necset_semiCompSemiLattType == semicomplete semilattice structure on       *)
 (*                         necset, instance of semiCompSemiLattType with      *)
 (*                         elements of type necset A and with operator        *)
@@ -79,6 +80,7 @@ Reserved Notation "x <| p |>: Y" (format "x  <| p |>:  Y", at level 49).
 Reserved Notation "X :<| p |>: Y" (format "X  :<| p |>:  Y", at level 49).
 Reserved Notation "x [+] y" (format "x  [+]  y", at level 50).
 Reserved Notation "'|_|' f" (at level 36, f at level 36, format "|_|  f").
+Reserved Notation "{ 'necset' T }" (at level 0, format "{ 'necset'  T }").
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -1013,12 +1015,16 @@ End necset_convType.
 Canonical necset_convType A :=
   ConvexSpace.Pack (ConvexSpace.Class (necset_convType.mixin A)).
 
+Definition Necset_to_convType (A : convType) :=
+  fun phT : phant (Choice.sort A) => necset_convType A.
+Local Notation "{ 'necset' T }" := (Necset_to_convType (Phant T)).
+
 Module necset_semiCompSemiLattType.
 Section def.
 Local Open Scope classical_set_scope.
 Variable (A : convType).
 
-Definition pre_op (X : neset (necset A)) : {convex_set A} :=
+Definition pre_op (X : neset {necset A}) : {convex_set A} :=
   CSet.Pack (CSet.Class (hull_is_convex (bigsetU X idfun)%:ne)).
 
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
@@ -1088,10 +1094,14 @@ End necset_semiCompSemiLattConvType.
 Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack
   (necset_semiCompSemiLattConvType.class A).
 
+Definition Necset_to_semiCompSemiLattConvType (A : convType) :=
+  fun phT : phant (Choice.sort A) => necset_semiCompSemiLattConvType A.
+Notation "{ 'necset' T }" := (Necset_to_semiCompSemiLattConvType (Phant T)) : convex_scope.
+
 Module necset_join.
 Section def.
 Local Open Scope classical_set_scope.
-Definition F (T : Type) := necset_convType (FSDist_convType (choice_of_Type T)).
+Definition F (T : Type) := {necset {dist (choice_of_Type T)}}.
 Variable T : Type.
 Definition L := F T.
 Definition L' := necset (F T).
@@ -1112,7 +1122,7 @@ Qed.
 Definition F1join0 : LL -> L' := fun X => NECSet.Pack (NECSet.Class
   (CSet.Class (F1join0'_convex X)) (NESet.Mixin (F1join0'_neq0 X))).
 
-Definition join1' (X : L') : convex_set (FSDist_convType (choice_of_Type T)) :=
+Definition join1' (X : L') : convex_set {dist (choice_of_Type T)} :=
   CSet.Pack (CSet.Class (hull_is_convex (bigsetU X (fun x => if x \in X then (x : set _) else cset0 _)))).
 Lemma join1'_neq0 (X : L') : join1' X != set0 :> set _.
 Proof.
@@ -1148,18 +1158,13 @@ End ret.
 Section fmap.
 Variables (a b : Type) (f : a -> b).
 
-Definition necset_fmap' (ma : M a) :=
+Let necset_fmap' (ma : M a) :=
   (FSDistfmap (f : choice_of_Type a -> choice_of_Type b)) @` ma.
-
-Lemma FSDistfmap_affine :
-  affine (FSDistfmap (f : choice_of_Type a -> choice_of_Type b)).
-Proof. by move=> ? ? ?; rewrite /FSDistfmap ConvFSDist.bind_left_distr. Qed.
-Canonical Affine_FSDistfmap_affine := Affine FSDistfmap_affine.
 
 Lemma necset_fmap'_convex ma : is_convex_set (necset_fmap' ma).
 Proof.
 apply/asboolP=> x y p [] dx madx <-{x} [] dy mady <-{y}.
-exists (dx <| p |> dy); last exact: FSDistfmap_affine.
+exists (dx <| p |> dy); last by rewrite affine_conv.
 by move/asboolP: (convex_setP ma); apply.
 Qed.
 
@@ -1169,10 +1174,9 @@ case/set0P : (neset_neq0 ma) => x max; apply/set0P.
 by exists (FSDistfmap (f : choice_of_Type a -> choice_of_Type b) x), x.
 Qed.
 
-Definition necset_fmap : M a -> M b :=
-  fun ma =>
-    NECSet.Pack (NECSet.Class (CSet.Class (necset_fmap'_convex ma))
-                              (NESet.Mixin (necset_fmap'_neq0 ma))).
+Definition necset_fmap : M a -> M b := fun ma =>
+  NECSet.Pack (NECSet.Class (CSet.Class (necset_fmap'_convex ma))
+                            (NESet.Mixin (necset_fmap'_neq0 ma))).
 End fmap.
 
 Section bind.

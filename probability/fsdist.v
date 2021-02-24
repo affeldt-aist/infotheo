@@ -119,11 +119,9 @@ Definition FSDist_choiceMixin := [choiceMixin of @FSDist.t A by <:].
 Canonical FSDist_choiceType := Eval hnf in ChoiceType _ FSDist_choiceMixin.
 End FSDist_canonical.
 
-Definition FSDist_of (A : choiceType) :=
+Definition FSDist_to_Type (A : choiceType) :=
   fun phT : phant (Choice.sort A) => FSDist.t A.
-
-Notation "{ 'dist' T }" := (FSDist_of (Phant T)) : proba_scope.
-Local Open Scope proba_scope.
+Local Notation "{ 'dist' T }" := (FSDist_to_Type (Phant T)).
 
 Section FSDist_prop.
 Variable A : choiceType.
@@ -577,6 +575,7 @@ End fdist_of_finFSDist.
 Export fdist_of_finFSDist.Exports.
 
 Module ConvnFSDist.
+Local Open Scope proba_scope.
 Section def.
 Variables (A : choiceType) (n : nat) (e : {fdist 'I_n}) (g : 'I_n -> {dist A}).
 Definition D : {fset A} := \big[fsetU/fset0]_(i < n | 0 <b e i) finsupp (g i).
@@ -822,19 +821,30 @@ Definition Dist_convMixin :=
 Canonical Dist_convType := ConvexSpace.Pack Dist_convMixin.
 End Dist_convex_space.*)
 
+Definition FSDist_convMixin (A : choiceType) :=
+  @ConvexSpace.Mixin (FSDist_choiceType A) (@ConvFSDist.d A)
+  (@ConvFSDist.conv1 A)
+  (@ConvFSDist.convmm A)
+  (@ConvFSDist.convC A)
+  (@ConvFSDist.convA' A).
+Canonical FSDist_convType (A : choiceType) :=
+  ConvexSpace.Pack (ConvexSpace.Class (FSDist_convMixin A)).
+
+Fact FSDistfmap_affine (A B : choiceType) (f : A -> B) : affine (FSDistfmap f).
+Proof. by move=> ? ? ?; rewrite /FSDistfmap ConvFSDist.bind_left_distr. Qed.
+Canonical Affine_FSDistfmap_affine (A B : choiceType) (f : A -> B) :=
+  Affine (FSDistfmap_affine f).
+
+Definition FSDist_to_convType (A : choiceType) :=
+  fun phT : phant (Choice.sort A) => FSDist_convType A.
+Notation "{ 'dist' T }" := (FSDist_to_convType (Phant T)) : proba_scope.
+
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope convex_scope.
 
 Section FSDist_convex_space.
 Variable A : choiceType.
-Definition FSDist_convMixin :=
-  @ConvexSpace.Mixin (FSDist_choiceType A) (@ConvFSDist.d A)
-  (@ConvFSDist.conv1 A)
-  (@ConvFSDist.convmm A)
-  (@ConvFSDist.convC A)
-  (@ConvFSDist.convA' A).
-Canonical FSDist_convType := ConvexSpace.Pack (ConvexSpace.Class FSDist_convMixin).
 
 (* Reuse the morphisms from R_convex_space. *)
 Import ScaledConvex finmap.
@@ -860,7 +870,7 @@ End FSDist_convex_space.
 
 Section fsdist_ordered_convex_space.
 Variable A : choiceType.
-Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin (FSDist_convType A).
+Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin {dist A}.
 End fsdist_ordered_convex_space.
 
 (* TODO: these lemmas could be better organized *)
