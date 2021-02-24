@@ -1074,7 +1074,7 @@ End is_convex_set.
 Module CSet.
 Section cset.
 Variable A : convType.
-Record mixin_of (X : set A) : Type := Class { _ : is_convex_set X }.
+Record mixin_of (X : set A) : Type := Mixin { _ : is_convex_set X }.
 Record t : Type := Pack { car : set A ; class : mixin_of car }.
 End cset.
 Module Exports.
@@ -1136,7 +1136,7 @@ move/asboolP : convX => convX Hx Hy.
 by rewrite in_setE; apply: convX; rewrite -in_setE.
 Qed.
 
-Definition cset0 : {convex_set A} := CSet.Pack (CSet.Class (is_convex_set0 A)).
+Definition cset0 : {convex_set A} := CSet.Pack (CSet.Mixin (is_convex_set0 A)).
 
 Lemma cset0P X : (X == cset0) = (X == set0 :> set _).
 Proof.
@@ -1150,7 +1150,7 @@ rewrite cset0P; case: X => //= x Hx; split; last first.
 by case/set0P => /= d dx; exists d.
 Qed.
 
-Definition cset1 a : {convex_set A} := CSet.Pack (CSet.Class (is_convex_set1 a)).
+Definition cset1 a : {convex_set A} := CSet.Pack (CSet.Mixin (is_convex_set1 a)).
 
 Lemma cset1_neq0 a : cset1 a != cset0.
 Proof. by apply/cset0PN; exists a. Qed.
@@ -1197,7 +1197,7 @@ rewrite AddFDist_conv; congr Conv; apply eq_convn => i //=;
 Qed.
 
 Canonical hull_is_convex_set (Z : set A) : convex_set A :=
-  CSet.Pack (CSet.Class (hull_is_convex Z)).
+  CSet.Pack (CSet.Mixin (hull_is_convex Z)).
 
 End hull_is_convex.
 
@@ -2037,12 +2037,12 @@ apply addR_gt0wl; first by apply mulR_gt0 => //; exact/prob_gt0.
 apply mulR_ge0 => //; exact: ltRW.
 Qed.
 
-Definition Rpos_interval : {convex_set R} := CSet.Pack (CSet.Class Rpos_convex).
+Definition Rpos_interval : {convex_set R} := CSet.Pack (CSet.Mixin Rpos_convex).
 
 Lemma Rnonneg_convex : is_convex_set (fun x => 0 <= x)%R.
 Proof. apply/asboolP=> x y t Hx Hy; apply addR_ge0; exact/mulR_ge0. Qed.
 
-Definition Rnonneg_interval := CSet.Pack (CSet.Class Rnonneg_convex).
+Definition Rnonneg_interval := CSet.Pack (CSet.Mixin Rnonneg_convex).
 
 Lemma open_interval_convex a b (Hab : (a < b)%R) : is_convex_set (fun x => a < x < b)%R.
 Proof.
@@ -2059,7 +2059,7 @@ Qed.
 Lemma open_unit_interval_convex : is_convex_set (fun x => 0 < x < 1)%R.
 Proof. exact: open_interval_convex. Qed.
 
-Definition open_unit_interval := CSet.Pack (CSet.Class open_unit_interval_convex).
+Definition open_unit_interval := CSet.Pack (CSet.Mixin open_unit_interval_convex).
 
 End convex_set_R.
 
