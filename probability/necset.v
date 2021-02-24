@@ -1015,9 +1015,9 @@ End necset_convType.
 Canonical necset_convType A :=
   ConvexSpace.Pack (ConvexSpace.Class (necset_convType.mixin A)).
 
-Definition Necset_of (A : convType) :=
+Definition Necset_to_convType (A : convType) :=
   fun phT : phant (Choice.sort A) => necset_convType A.
-Notation "{ 'necset' T }" := (Necset_of (Phant T)) : convex_scope.
+Local Notation "{ 'necset' T }" := (Necset_to_convType (Phant T)).
 
 Module necset_semiCompSemiLattType.
 Section def.
@@ -1093,6 +1093,10 @@ End def.
 End necset_semiCompSemiLattConvType.
 Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack
   (necset_semiCompSemiLattConvType.class A).
+
+Definition Necset_to_semiCompSemiLattConvType (A : convType) :=
+  fun phT : phant (Choice.sort A) => necset_semiCompSemiLattConvType A.
+Notation "{ 'necset' T }" := (Necset_to_semiCompSemiLattConvType (Phant T)) : convex_scope.
 
 Module necset_join.
 Section def.
