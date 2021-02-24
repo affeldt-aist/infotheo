@@ -32,6 +32,8 @@ from 0.3 to ???
   + biglub_affine_id_proof -> idfun_is_biglub_affine/Canonical idfun_is_biglub_affine
   + biglub_affine_comp_proof -> comp_is_biglub_affine/Canonical comp_biglub_affine
 
+- renamed:
+  + CSet.Class -> CSet.Mixin
 -----------------
 from 0.2.2 to 0.3
 -----------------
