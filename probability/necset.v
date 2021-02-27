@@ -218,7 +218,7 @@ Qed.
 Lemma conv0_set (X : neset L) Y : X :<| 0%:pr |>: Y = Y.
 Proof.
 rewrite convC_set /= (_ : 0.~%:pr = 1%:pr) ?conv1_set //.
-by apply prob_ext; rewrite /= onem0.
+by apply val_inj; rewrite /= onem0.
 Qed.
 Definition probset := @setT prob.
 Definition natset := @setT nat.

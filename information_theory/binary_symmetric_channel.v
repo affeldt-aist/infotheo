@@ -34,9 +34,6 @@ Definition c : `Ch(A, A) := Binary.d card_A p.
 End BSC_sect.
 End BSC.
 
-Lemma closed p : 0 < p < 1 -> 0 <= p <= 1.
-Proof. case => ?; split; exact/ltRW. Qed.
-
 Local Open Scope channel_scope.
 Local Open Scope entropy_scope.
 
@@ -48,7 +45,7 @@ Variable P : fdist A.
 Variable p : R.
 Hypothesis p_01' : (0 < p < 1)%R.
 
-Let p_01 : prob := Prob.mk (closed p_01').
+Let p_01 : prob := Eval hnf in Prob.mk_ (closed p_01').
 
 Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01) = - H2 p.
 Proof.
@@ -163,11 +160,11 @@ Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
 Hypothesis p_01' : 0 < p < 1.
-Let p_01 := Prob.mk (closed p_01').
+Let p_01 := Eval hnf in Prob.mk_ (closed p_01').
 
 Theorem BSC_capacity : capacity (BSC.c card_A p_01) = 1 - H2 p.
 Proof.
-rewrite /capacity; set E := (fun y : R => _); set p' := Prob.mk (closed p_01').
+rewrite /capacity; set E := (fun y : R => _); set p' := Prob.mk_ (closed p_01').
 have has_sup_E : has_sup E.
   split.
     set d := Binary.d card_A p' (Set2.a card_A).
@@ -175,7 +172,7 @@ have has_sup_E : has_sup E.
   exists 1 => y [P _ <-{y}].
   rewrite IPW; apply/RleP/leR_subl_addr/(leR_trans (H_out_max card_A P p_01')).
   rewrite addRC -leR_subl_addr subRR.
-  by rewrite (entropy_H2 card_A (Prob.mk (closed p_01'))); exact/entropy_ge0.
+  by rewrite (entropy_H2 card_A (Prob.mk_ (closed p_01'))); exact/entropy_ge0.
 apply eqR_le; split.
   apply real_sup_is_lub => // x [d _ dx].
   suff : `H(d `o BSC.c card_A p_01) <= 1.
