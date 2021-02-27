@@ -2,35 +2,21 @@
 from 0.3 to 0.3.1
 -----------------
 
-- removed:
-  + lemma Prob.ge0
-  + lemma prob_ext
-  + lemmas eqprob, eqprobP
 - added:
+  + Notations [affine of f] and [affine of f as g]
+  + Notation biglub_morph
   + lemmas prob_ge0, prob_le1 (also as Hint Resolve)
   + views leR2P and ltR2P
   + constructor Prob.mk to build prob from boolean inequalities and
     Prob.mk_ to build prob from Prop inequalities
   + definition prob_invp, lemma Prob_invp
   + lemmas prob_gt0', prob_lt1', probmul_eq1
-- moved:
-  + lemma closed from binary_symmetric_channel.v to Reals_ext.v
-  + lemma Rpos_prob_Op1, Rpos_prob, Rpos_probC, onem_div from convex.v to Reals_ext.v
-- changed:
-  + proof field of Prob.t now in bool
-  + prob_subType declaration for Prob.t 
-
 - renamed:
   + Module AffineFunction -> Affine
   + Notation AffineFunction -> Affine
   + Notation affine_function -> affine
   + affine_functionP' -> affine_conv
-- removed:
-  + affine_function_at
-  + image_preserves_convex_hull', is_convex_set_image'
-- added:
-  + Notations [affine of f] and [affine of f as g]
-  + Notation biglub_morph
+  + CSet.Class -> CSet.Mixin
 - changed:
   + affine_function_id_proof/affine_function_id ->
       idfun_is_affine/Canonical idfun_affine
@@ -39,14 +25,22 @@ from 0.3 to 0.3.1
   + in Section with_affine_projection and Section S1_proj_Convn_finType
     * prj/prj_affine -> prj : {affine ... -> ...}
   + Convn_of_FSDist_FSDistfmap -> to use {affine ...}
-- changed:
   + biglub_morph, biglub_lub_morp -> to use {Biglub_morph ...}
   + multiple inheritance in Module BiglubMorph
   + biglub_affine_id_proof -> idfun_is_biglub_affine/Canonical idfun_is_biglub_affine
   + biglub_affine_comp_proof -> comp_is_biglub_affine/Canonical comp_biglub_affine
+  + proof field of Prob.t now in bool
+  + prob_subType declaration for Prob.t
+- moved:
+  + lemma closed from binary_symmetric_channel.v to Reals_ext.v
+  + lemma Rpos_prob_Op1, Rpos_prob, Rpos_probC, onem_div from convex.v to Reals_ext.v
+- removed:
+  + affine_function_at
+  + image_preserves_convex_hull', is_convex_set_image'
+  + lemma Prob.ge0
+  + lemma prob_ext
+  + lemmas eqprob, eqprobP
 
-- renamed:
-  + CSet.Class -> CSet.Mixin
 -----------------
 from 0.2.2 to 0.3
 -----------------
@@ -68,7 +62,6 @@ from 0.2.2 to 0.3
   + row_of_tuple_inj from types.v to ssralg_ext
   + derive_sincreasing_interv moved to Ranalysis_ext.v
   + num_occ_flatten from string_entropy.v to num_occ.v
-
 - renamed:
   + lub_op -> biglub
   + lub_op1 -> biglub1
@@ -101,7 +94,6 @@ from 0.2.2 to 0.3
   + lub_op_conv_setD -> biglub_conv_setD
   + lub_op_iter_conv_set -> biglub_iter_conv_set
   + lub_op_hull -> biglub_hull
-
 - changed:
   + setU_bigsetU in necset.v changed to bigcupsetU2E in classical_sets.v
   + MVT_cor1_pderivable_new in ln_facts changed to MVT_cor1_pderivable_closed_continuity
@@ -109,11 +101,8 @@ from 0.2.2 to 0.3
   + MVT_cor1_pderivable_new_var in ln_facts.v changed to MVT_cor1_pderivable_open_continuity
     and moved to Ranalysis_ext.v
   + sum_num_occ renamed to sum_num_occ_size from and moved from string_entropy.v to num_occ.v
-
-- changed:
   + in ssrR.v, gtR_eqF, ltR_eqF, invRK, invRM have now hypotheses in bool instead of Prop
   + in ssrR.v, oppR_lt0 and oppR_gt0 are now equivalences
-
 - renamed:
   + derive_increasing_interv_ax_left -> pderive_increasing_ax_open_closed
   + derive_increasing_interv_ax_right -> pderive_increasing_ax_closed_open
@@ -122,12 +111,10 @@ from 0.2.2 to 0.3
   + derive_increasing_ad_hoc -> pderive_ad_hoc
   + ltr_subl_addl -> ltR_subl_addl
   + convex_choice.v -> convex.v
-
 - removed:
   + from ssrR.v:
     * Reqb, eqRP, R_eqMixin, R_eqType, R_choiceType, ROrder.orderMixin,
       R_porderType, R_latticeType, R_distrLatticeType, R_orderType
-
 
 -----------------
 from 0.2 to 0.2.1
@@ -148,6 +135,7 @@ from 0.2 to 0.2.1
 -----------------
 from 0.1.2 to 0.2
 -----------------
+
 warning: this changelog entry is not exhaustive
 
 - renamed:
@@ -233,6 +221,7 @@ warning: this changelog entry is not exhaustive
 ---------------------
 from 0.1.1 to 0.1.2 :
 ---------------------
+
 - moved:
   + subR_onem from necset.v to Reals_ext.v
   + from necset.v to fsdist.v
@@ -246,6 +235,7 @@ from 0.1.1 to 0.1.2 :
 -------------------
 from 0.1 to 0.1.1 :
 -------------------
+
 added:
 - order canonical structures in ssrR.v
 renamings:
@@ -268,6 +258,7 @@ replaced:
 -------------------
 from 0.0.7 to 0.1 :
 -------------------
+
 new lemmas:
 - FSDist.le1
 new type:
@@ -285,6 +276,7 @@ notations:
 ---------------------
 from 0.0.6 to 0.0.7 :
 ---------------------
+
 renamings:
 - Module jtype -> Module JType
   + jtype.jtype -> JType.t
@@ -311,6 +303,7 @@ files:
 --------------------
 from 0.0.5 to 0.0.6:
 --------------------
+
 renamings:
 - Pr_big_union_disj -> Boole_eq (generalization)
 - setX1' -> setX1r (direction change)
