@@ -88,7 +88,7 @@ Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
 Hypothesis p_01' : 0 < p < 1.
-Let p_01 := Eval hnf in Prob.mk_ (closed p_01').
+Let p_01 := Eval hnf in Prob.mk_ (ltR2W p_01').
 Let P : fdist A := Uniform.d card_A.
 Variable a' : A.
 Hypothesis Ha' : Receivable.def (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
