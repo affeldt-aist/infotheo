@@ -31,8 +31,8 @@ from 0.3 to 0.3.1
   + biglub_affine_comp_proof -> comp_is_biglub_affine/Canonical comp_biglub_affine
   + proof field of Prob.t now in bool
   + prob_subType declaration for Prob.t
+  + generalize binary_symmetric_channel.closed to ssrR.ltR2W
 - moved:
-  + lemma closed from binary_symmetric_channel.v to Reals_ext.v
   + lemma Rpos_prob_Op1, Rpos_prob, Rpos_probC, onem_div from convex.v to Reals_ext.v
 - removed:
   + affine_function_at

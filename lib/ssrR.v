@@ -206,6 +206,13 @@ Definition ltRW {m n} : m < n -> m <= n := Rlt_le m n.
 Lemma ltRW' {a b : R} : a <b b -> a <b= b.
 Proof. by move/ltRP/Rlt_le/leRP. Qed.
 
+Lemma ltR2W (a b c : R) : a < b < c -> a <= b <= c.
+Proof.  by case=> ? ?; split; apply/ltRW. Qed.
+Lemma ltR2W' (a b c : R) : a <b b <b c -> a <b= b <b= c.
+Proof. by move/ltR2P/ltR2W/leR2P. Qed.
+Arguments ltR2W {a b c}.
+Arguments ltR2W' {a b c}.
+
 Lemma gtR_eqF a b : a < b -> b != a.
 Proof. by move=> ab; apply/eqP => ba; move: ab; rewrite ba => /ltRR. Qed.
 

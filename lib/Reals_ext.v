@@ -374,9 +374,6 @@ End onem.
 
 Notation "p '.~'" := (onem p) : reals_ext_scope.
 
-Lemma closed (p : R) : 0 < p < 1 -> 0 <= p <= 1.
-Proof. by case => ?; split; exact/ltRW. Qed.
-
 Module Prob.
 Record t := mk {
   p :> R ;
