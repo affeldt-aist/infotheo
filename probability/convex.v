@@ -742,6 +742,10 @@ move=> H; case/boolP : (s == 0%:pr) => s0.
 - by rewrite convA s_of_pqK // r_of_pqK.
 Qed.
 
+Lemma convA'_oprob (r s : oprob) a b c :
+  a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = (a <| r |> b) <| s |> c.
+Proof. exact/convA'/oprob_neq1. Qed.
+
 Import ScaledConvex.
 
 Lemma convACA (a b c d : T) p q :
@@ -757,6 +761,27 @@ Qed.
 Lemma convDr (x y z : T) (p q : prob) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
 Proof. by rewrite -{1}(convmm x q) convACA. Qed.
+
+Lemma convACA' (a b c d : T) (p q r : oprob) :
+(*
+  let p1 := (q * p)%:opr in
+  let p2 := (q.~ * r)%:opr in
+  let r1 := (q * p.~)%:opr in
+  let r2 := (q.~ * r.~)%:opr in
+  let q' := ((p1 + p2) / (p1 + p2 + (r1 + r2)))%:opr in
+  let p' := (p1 / (p1 + p2))%:opr in
+  let r' := (r1 / (r1 + r2))%:opr in
+  (a <|p|> b) <|q|> (c <|r|> d) = (a <|p'|> c) <|q'|> (b <|r'|> d).
+*)
+  exists p' q' r', (a <|p|> b) <|q|> (c <|r|> d) = (a <|p'|> c) <|q'|> (b <|r'|> d).
+Proof.
+rewrite (convC _ _ p).
+rewrite convA convC !convA.
+set C0 := _.~%:pr; rewrite (_ : C0 = C0%:opr) //.
+set C1 := _.~%:pr; rewrite (_ : C1 = C1%:opr) //.
+rewrite -convA'_oprob (convC d) convC.
+by eexists; eexists; eexists; congr ((_ <|_|> _) <|_|> (_ <|_|> _)).
+Qed.
 
 Local Open Scope vec_ext_scope.
 
@@ -1336,7 +1361,7 @@ Proof. by move=> x /=; rewrite mul1R. Qed.
 Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> (x + y)%R}.
 Proof.
 move=> [p x|] [q y|] /=; rewrite ?(add0R,addR0) //.
-rewrite avgRE /avg /Rpos_prob /= onem_div /Rdiv; last by apply Rpos_neq0.
+rewrite avgRE /avg /divRposxxy /= onem_div /Rdiv; last by apply Rpos_neq0.
 rewrite -!(mulRC (/ _)%R) mulRDr !mulRA mulRV; last by apply Rpos_neq0.
 by rewrite !mul1R (addRC p) addRK.
 Qed.
