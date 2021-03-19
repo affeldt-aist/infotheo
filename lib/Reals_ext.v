@@ -507,6 +507,24 @@ Qed.
 Lemma prob_lt1' p : p != 1 :> R <-> (p < 1)%R.
 Proof. exact: prob_lt1. Qed.
 
+Lemma prob_trichotomy (p : prob) : p = 0%:pr  \/ p = 1%:pr \/ 0 < p < 1.
+Proof.
+case/boolP: (p == 0%:pr); first by move/eqP ->; left.
+move=> pneq0; right.
+case/boolP: (p == 1%:pr); first by move/eqP ->; left.
+by move=> pneq1; right; split; [apply prob_gt0 | apply prob_lt1].
+Qed.
+
+Lemma prob_trichotomy' (p : prob) (P : prob -> Prop) :
+  P 0%:pr -> P 1%:pr -> (forall o : oprob, P o) -> P p.
+Proof.
+move=> p0 p1 po.
+case: (prob_trichotomy p); first by move->.
+case; first by move->.
+move/oprob_oprobb=> H.
+exact: (po (OProb.mk H)).
+Qed.
+
 End prob_lemmas.
 
 Lemma probK t : t = (t.~).~%:pr :> prob.
