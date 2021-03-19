@@ -82,6 +82,9 @@ rewrite eqEsubset;split => x.
 by case=> ?; [exists A => //; left|exists B => //; right].
 Qed.
 
+Lemma set1_inj (x y : T) : [set x] = [set y] -> x = y.
+Proof. by case/seteqP; move/(_ x)/(_ erefl) ->. Qed.
+
 End PR_to_classical_sets.
 
 (*Notation imageA := (deprecate imageA image_comp _) (only parsing).
