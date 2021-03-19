@@ -359,20 +359,14 @@ Qed.
 
 Lemma onem_prob r : (0%R <b= r <b= R1)%R -> (0%R <b= r.~ <b= R1)%R.
 Proof.
-case/andP=> /leRP rO /leRP r1; apply/andP; split; apply/leRP;
-              by [rewrite leR_subr_addr add0R | rewrite leR_subl_addr -(addR0 1) leR_add2l].
+by case/leR2P=> ? ?; apply/leR2P; split;
+   [rewrite leR_subr_addr add0R | rewrite leR_subl_addr -(addR0 1) leR_add2l].
 Qed.
 
-Lemma onem_oprob r : (0%R < r < R1)%R -> (0%R < r.~ < R1)%R.
+Lemma onem_oprob r : (0%R <b r <b R1)%R -> (0%R <b r.~ <b R1)%R.
 Proof.
-by case=> rO r1; split;
-            by [rewrite ltR_subr_addr add0R | rewrite ltR_subl_addr -(addR0 1) ltR_add2l].
-Qed.
-
-Lemma onem_oprobb r : (0%R <b r <b R1)%R -> (0%R <b r.~ <b R1)%R.
-Proof.
-case/andP=> /ltRP rO /ltRP r1; apply/andP; split; apply/ltRP;
-              by [rewrite ltR_subr_addr add0R | rewrite ltR_subl_addr -(addR0 1) ltR_add2l].
+by case/ltR2P=> ? ?; apply/ltR2P; split;
+   [rewrite ltR_subr_addr add0R | rewrite ltR_subl_addr -(addR0 1) ltR_add2l].
 Qed.
 
 Lemma onem_eq0 r : r.~ = 0 <-> r = 1. Proof. rewrite /onem; lra. Qed.
@@ -397,7 +391,6 @@ Record t := mk {
   p :> R ;
   Op1 : (0 <b= p <b= 1)%R }.
 Definition O1 (p : t) : 0 <b= p <b= 1 := Op1 p.
-(*Definition O1P (p : t) : 0 <= p <= 1 := elimT (@leR2P _ _ _) (O1 p).*)
 Arguments O1 : simpl never.
 Definition mk_ (q : R) (Oq1 : 0 <= q <= 1) := mk (introT (@leR2P _ _ _) Oq1).
 Module Exports.
@@ -411,14 +404,6 @@ End Prob.
 Export Prob.Exports.
 Coercion Prob.p : prob >-> R.
 
-Lemma oprob_prob r : 0 < r < 1 -> 0 <= r <= 1.
-Proof. by case=> /ltRW ? /ltRW ?; split. Qed.
-
-Lemma oprob_oprobb x  : 0 < x < 1 -> 0 <b x <b 1.
-Proof. by case=> *; apply/andP; split; apply/ltRP. Qed.
-Lemma oprobb_oprob x  : 0 <b x <b 1 -> 0 < x < 1.
-Proof. by case/andP=> /ltRP ? /ltRP ?; split. Qed.
-
 Module OProb.
 Section def.
 Record t := mk {
@@ -426,20 +411,6 @@ Record t := mk {
   Op1 : (0 <b p <b 1)%R }.
 Definition O1 (p : t) : 0 <b p <b 1 := Op1 p.
 Arguments O1 : simpl never.
-(*
-Lemma oprob_probMixin (p : R) : 0 < p < 1 -> 0 <b= p <b= 1.
-Proof. by case => /ltRP /ltRW' -> /ltRP /ltRW' ->. Qed.
-Definition mk_ (q : R) (Oq1 : 0 < q < 1) : t.
-Proof.
-refine (@mk (Prob.mk (oprob_probMixin Oq1))%:pr (match Oq1 with conj Oq q1 => _ end)).
-simpl.
-by move/ltRP: Oq ->; move/ltRP: q1 ->.
-Defined.
-*)
-(*
-Lemma oprob_probMixin (p : t) : 0 <b= p <b= 1.
-Proof. by case/andP: (Op1 p) => /ltRW' -> /ltRW' ->. Qed.
-*)
 End def.
 Module Exports.
 Notation oprob := t.
@@ -454,14 +425,14 @@ Coercion OProb.p : oprob >-> prob.
 
 Lemma probpK p H : Prob.p (@Prob.mk p H) = p. Proof. by []. Qed.
 
-Lemma OO1 : (R0 <= R0 <= R1)%R. Proof. lra. Qed.
+Lemma OO1 : (R0 <b= R0 <b= R1)%R. Proof. apply/leR2P; lra. Qed.
 
-Lemma O11 : (R0 <= R1 <= R1)%R. Proof. lra. Qed.
+Lemma O11 : (R0 <b= R1 <b= R1)%R. Proof. apply/leR2P; lra. Qed.
 
-Canonical prob0 := Eval hnf in Prob.mk_ OO1.
-Canonical prob1 := Eval hnf in Prob.mk_ O11.
-Canonical probcplt (p : prob) := Eval hnf in Prob.mk (onem_probb (Prob.O1 p)).
-Canonical oprobcplt (p : oprob) := Eval hnf in OProb.mk (onem_oprobb (OProb.O1 p)).
+Canonical prob0 := Eval hnf in Prob.mk OO1.
+Canonical prob1 := Eval hnf in Prob.mk O11.
+Canonical probcplt (p : prob) := Eval hnf in Prob.mk (onem_prob (Prob.O1 p)).
+Canonical oprobcplt (p : oprob) := Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)).
 
 Lemma prob_ge0 (p : prob) : 0 <= p%R.
 Proof. by case: p => p /= /leR2P[]. Qed.
@@ -521,7 +492,7 @@ Proof.
 move=> p0 p1 po.
 case: (prob_trichotomy p); first by move->.
 case; first by move->.
-move/oprob_oprobb=> H.
+move/ltR2P=> H.
 exact: (po (OProb.mk H)).
 Qed.
 
@@ -531,34 +502,34 @@ Lemma probK t : t = (t.~).~%:pr :> prob.
 Proof. by apply val_inj => /=; rewrite onemK. Qed.
 
 Lemma oprobK t : t = (t.~).~%:opr :> oprob.
-Proof. by apply val_inj => /=; rewrite onemK. Qed.
+Proof. by apply/val_inj/val_inj=> /=; rewrite onemK. Qed.
 
-Lemma prob_IZR (p : positive) : (R0 <= / IZR (Zpos p) <= R1)%R.
+Lemma prob_IZR (p : positive) : (R0 <b= / IZR (Zpos p) <b= R1)%R.
 Proof.
-split; first exact/Rlt_le/Rinv_0_lt_compat/IZR_lt/Pos2Z.is_pos.
+apply/leR2P; split; first exact/Rlt_le/Rinv_0_lt_compat/IZR_lt/Pos2Z.is_pos.
 rewrite -[X in (_ <= X)%R]Rinv_1; apply Rle_Rinv => //.
 - exact/IZR_lt/Pos2Z.is_pos.
 - exact/IZR_le/Pos2Z.pos_le_pos/Pos.le_1_l.
 Qed.
 
-Canonical probIZR (p : positive) := Eval hnf in @Prob.mk_ _ (prob_IZR p).
+Canonical probIZR (p : positive) := Eval hnf in Prob.mk (prob_IZR p).
 
 Definition divRnnm n m := INR n / INR (n + m).
 
-Lemma prob_divRnnm n m : (0 <= divRnnm n m <= 1)%R.
+Lemma prob_divRnnm n m : (0 <b= divRnnm n m <b= 1)%R.
 Proof.
-rewrite /divRnnm.
-have [/eqP ->|n0] := boolP (n == O); first by rewrite div0R; exact OO1.
+apply/leR2P; rewrite /divRnnm.
+have [/eqP ->|n0] := boolP (n == O); first by rewrite div0R; apply/leR2P/OO1.
 split; first by apply divR_ge0; [exact: leR0n | rewrite ltR0n addn_gt0 lt0n n0].
 by rewrite leR_pdivr_mulr ?mul1R ?leR_nat ?leq_addr // ltR0n addn_gt0 lt0n n0.
 Qed.
 
 Canonical probdivRnnm (n m : nat) :=
-  Eval hnf in @Prob.mk_ (divRnnm n m) (prob_divRnnm n m).
+  Eval hnf in @Prob.mk (divRnnm n m) (prob_divRnnm n m).
 
-Lemma prob_invn (m : nat) : (R0 <= / (1 + m)%:R <= R1)%R.
+Lemma prob_invn (m : nat) : (R0 <b= / (1 + m)%:R <b= R1)%R.
 Proof.
-rewrite -(mul1R (/ _)%R) (_ : 1%R = INR 1) // -/(Rdiv _ _); exact: prob_divRnnm.
+apply/leR2P; rewrite -(mul1R (/ _)%R) (_ : 1%R = INR 1) // -/(Rdiv _ _); apply/leR2P; exact: prob_divRnnm.
 Qed.
 
 Lemma oprob_pdivRnnm n m : (0 < n)%nat -> (0 < m)%nat -> (0 < divRnnm n m < 1)%R.
@@ -566,36 +537,35 @@ Proof.
 rewrite /divRnnm.
 split; first by apply divR_gt0; [rewrite ltR0n | rewrite ltR0n addn_gt0 H orTb].
 rewrite ltR_pdivr_mulr ?mul1R ?ltR_nat // ?ltR0n ?addn_gt0 ?H ?orTb //.
-by rewrite -{1}(addn0 n) ltn_add2l.
+by rewrite -[X in (X < _)%nat](addn0 n) ltn_add2l.
 Qed.
 
-(* was Canonical *)
-Definition probinvn (n : nat) :=
-  Eval hnf in @Prob.mk_ (/ INR (1 + n)) (prob_invn n).
+Canonical probinvn (n : nat) :=
+  Eval hnf in @Prob.mk (/ INR (1 + n)) (prob_invn n).
 
-Lemma prob_invp (p : prob) : (0 <= 1 / (1 + p) <= 1)%R.
+Lemma prob_invp (p : prob) : (0 <b= 1 / (1 + p) <b= 1)%R.
 Proof.
-split.
+apply/leR2P; split.
 - by apply divR_ge0 => //; exact: addR_gt0wl.
 - rewrite leR_pdivr_mulr ?mul1R; last exact: addR_gt0wl.
   by rewrite addRC -leR_subl_addr subRR.
 Qed.
-Definition Prob_invp (p : prob) := Prob.mk_ (prob_invp p).
+Definition Prob_invp (p : prob) := Prob.mk (prob_invp p).
 
-Lemma prob_mulR (p q : prob) : (0 <= p * q <= 1)%R.
-Proof. by split; [exact/mulR_ge0 |rewrite -(mulR1 1%R); apply leR_pmul]. Qed.
+Lemma prob_mulR (p q : prob) : (0 <b= p * q <b= 1)%R.
+Proof. by apply/leR2P; split; [exact/mulR_ge0 |rewrite -(mulR1 1%R); apply leR_pmul]. Qed.
 
 Canonical probmulR (p q : prob) :=
-  Eval hnf in @Prob.mk_ (p * q) (prob_mulR p q).
+  Eval hnf in @Prob.mk (p * q) (prob_mulR p q).
 
-Lemma oprob_mulR (p q : oprob) : (0 < p * q < 1)%R.
+Lemma oprob_mulR (p q : oprob) : (0 <b p * q <b 1)%R.
 Proof.
-split; first by apply/mulR_gt0/oprob_gt0/oprob_gt0.
+apply/ltR2P; split; first by apply/mulR_gt0/oprob_gt0/oprob_gt0.
 by rewrite -(mulR1 1%R); apply ltR_pmul;
   [exact/oprob_ge0 | exact/oprob_ge0 | exact/oprob_lt1 | exact/oprob_lt1].
 Qed.
 Canonical oprobmulR (p q : oprob) :=
-  Eval hnf in @OProb.mk (p * q)%:pr (oprob_oprobb (oprob_mulR p q)).
+  Eval hnf in @OProb.mk (p * q)%:pr (oprob_mulR p q).
 
 Lemma probadd_eq0 (p q : prob) : p + q = 0%:pr <-> p = 0%:pr /\ q = 0%:pr.
 Proof.
@@ -721,36 +691,26 @@ Canonical mulRpos x y := Rpos.mk (mulRpos_gt0 x y).
 Lemma divRpos_gt0 (x y : Rpos) : x / y >b 0. Proof. exact/ltRP/divR_gt0. Qed.
 Canonical divRpos x y := Rpos.mk (divRpos_gt0 x y).
 
-Lemma Rpos_prob_Op1 (r q : Rpos) : 0 <= r / (r + q)%:pos <= 1.
+Canonical oprob_Rpos (p : oprob) := @mkRpos p (oprob_gt0 p).
+
+Lemma oprob_divRposxxy (x y : Rpos) : (0 <b (x / (x + y)) <b 1)%R.
 Proof.
-split; first exact/ltRW/divR_gt0.
-apply leR_pdivr_mulr => //.
-rewrite mul1R; exact/leR_addl/ltRW.
+apply/ltR2P; split; first by apply/divR_gt0.
+rewrite ltR_pdivr_mulr ?mul1R; last exact/ltRP/addRpos_gt0.
+by rewrite ltR_addl.
 Qed.
+Lemma prob_divRposxxy (x y : Rpos) : (0 <b= (x / (x + y)) <b= 1)%R.
+Proof. by apply/leR2P/ltR2W/ltR2P/oprob_divRposxxy. Qed.
+Canonical divRposxxy (x y : Rpos) :=
+  Eval hnf in Prob.mk (prob_divRposxxy x y).
+Canonical divRposxxy_oprob (x y : Rpos) :=
+  Eval hnf in OProb.mk (oprob_divRposxxy x y).
 
-Definition Rpos_prob (r q : Rpos) := Eval hnf in Prob.mk_ (Rpos_prob_Op1 r q).
-
-Lemma Rpos_probC r q : Rpos_prob q r = (Rpos_prob r q).~%:pr.
+Lemma divRposxxyC r q : divRposxxy q r = (divRposxxy r q).~%:pr.
 Proof.
 apply val_inj => /=; rewrite [in RHS]addRC onem_div ?addRK //.
 exact: Rpos_neq0.
 Qed.
-
-Canonical oprob_Rpos (p : oprob) := @mkRpos p (oprob_gt0 p).
-
-Lemma oprob_divRposxxy (x y : Rpos) : (0 < (x / (x + y)) < 1)%R.
-Proof.
-split; first by apply/divR_gt0.
-rewrite ltR_pdivr_mulr ?mul1R; last exact/ltRP/addRpos_gt0.
-by rewrite ltR_addl.
-Qed.
-Lemma prob_divRposxxy (x y : Rpos) : (0 <= (x / (x + y)) <= 1)%R.
-Proof. by apply/oprob_prob/oprob_divRposxxy. Qed.
-Canonical divRposxxt (x y : Rpos) :=
-  Eval hnf in @Prob.mk _ (prob_probb (prob_divRposxxy x y)).
-Canonical divRposxxt_oprob (x y : Rpos) :=
-  Eval hnf in @OProb.mk _ (oprob_oprobb (oprob_divRposxxy x y)).
-
 
 Module Rnneg.
 Local Open Scope R_scope.

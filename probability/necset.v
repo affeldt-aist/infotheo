@@ -190,8 +190,22 @@ Lemma conv_pt_setE p x Y : x <| p |>: Y = (fun y => x <| p |> y) @` Y.
 Proof. by rewrite /conv_pt_set; unlock. Qed.
 Definition conv_set p (X Y : set L) := \bigcup_(x in X) (x <| p |>: Y).
 Local Notation "X :<| p |>: Y" := (conv_set p X Y).
+
 Lemma conv_setE p X Y : X :<| p |>: Y = \bigcup_(x in X) (x <| p |>: Y).
 Proof. by []. Qed.
+
+Lemma conv_in_conv_pt_set p (Y : set L) x y : Y y -> (x <|p|>: Y) (x <|p|> y).
+Proof. by move=> ?; rewrite conv_pt_setE; exists y. Qed.
+
+Lemma conv_in_conv_set p (X Y : set L) x y : X x -> Y y -> (X :<|p|>: Y) (x <|p|> y).
+Proof. by move=> *; exists x=> //; rewrite conv_pt_setE; exists y. Qed.
+
+Lemma conv_in_conv_set' p X Y u :
+ (X :<|p|>: Y) u -> exists x, exists y, X x /\ Y y /\ u = x <|p|> y.
+Proof.
+case=> x ?; rewrite conv_pt_setE=> -[] y ? <-; exists x, y; by split; [|split].
+Qed.
+
 Lemma convC_set p X Y : X :<| p |>: Y = Y :<| p.~%:pr |>: X.
 Proof.
 by rewrite eqEsubset; split=> u; case=> x Xx; rewrite conv_pt_setE => -[] y Yy <-;
@@ -203,12 +217,9 @@ Lemma convA_pt_set p q x Y Z :
 Proof.
 rewrite eqEsubset; split=> u; rewrite conv_pt_setE.
 - case=> yz [] y Yy; rewrite conv_pt_setE=> -[] z Zz <- <-.
-  exists (x <|[r_of p, q]|> y); first by rewrite conv_pt_setE; exists y.
-  rewrite conv_pt_setE; exists z=> //.
-  by rewrite convA.
+  by rewrite convA; apply conv_in_conv_set=> //; apply conv_in_conv_pt_set.
 - case=> xy [] y Yy <-; rewrite conv_pt_setE; case=> z Zz <-.
-  rewrite conv_pt_setE; exists (y <|q|> z); last by rewrite convA.
-  by exists y=> //; rewrite conv_pt_setE; exists z => //.
+  by rewrite -convA; apply conv_in_conv_pt_set=> //; apply conv_in_conv_set.
 Qed.
 
 Lemma convA_set p q X Y Z :
@@ -242,9 +253,15 @@ Proof.
 rewrite convC_set /= (_ : 0.~%:pr = 1%:pr) ?conv1_set //.
 by apply val_inj; rewrite /= onem0.
 Qed.
+
 Definition probset := @setT prob.
 Definition natset := @setT nat.
+
 Definition oplus_conv_set (X Y : set L) := \bigcup_(p in probset) (X :<| p |>: Y).
+Lemma conv_in_oplus_conv_set p (X Y : set L) x y :
+  X x -> Y y -> (oplus_conv_set X Y) (x <|p|> y).
+Proof. by move=> *; exists p=> //; exact: conv_in_conv_set. Qed.
+
 Fixpoint iter_conv_set (X : set L) (n : nat) :=
   match n with
   | O => X
@@ -255,6 +272,7 @@ Proof. by []. Qed.
 Lemma iterS_conv_set (X : set L) (n : nat) :
   iter_conv_set X (S n) = oplus_conv_set X (iter_conv_set X n).
 Proof. by []. Qed.
+
 Lemma probset_neq0 : probset != set0.
 Proof. by apply/set0P; exists 0%:pr. Qed.
 Lemma natset_neq0 : natset != set0.
@@ -293,20 +311,19 @@ apply/imageP.
 by move/asboolP:(convex_setP Y); apply.
 Qed.          
 Canonical conv_pt_cset (p : prob) (x : L) (Y : {convex_set L}) :=
-  CSet.Pack (CSet.Class (conv_pt_cset_is_convex p x Y)).
+  CSet.Pack (CSet.Mixin (conv_pt_cset_is_convex p x Y)).
 Lemma conv_cset_is_convex (p : prob) (X Y : {convex_set L}) :
   is_convex_set (conv_set p X Y).
 Proof.
 apply/asboolP=> u v q.
-rewrite conv_setE.
-case=> x0 Xx0; rewrite conv_pt_setE=> -[] y0 Yy0 <-.
-case=> x1 Xx1; rewrite conv_pt_setE=> -[] y1 Yy1 <-.
-exists (x0 <|q|> x1); first by move/asboolP: (convex_setP X); apply.
-rewrite conv_pt_setE; exists (y0 <|q|> y1); first by move/asboolP: (convex_setP Y); apply.
-by rewrite convACA.
+case/conv_in_conv_set'=> x0 [] y0 [] ? [] ? ->.
+case/conv_in_conv_set'=> x1 [] y1 [] ? [] ? ->.
+rewrite convACA.
+by apply/conv_in_conv_set;
+ [move/asboolP: (convex_setP X); apply | move/asboolP: (convex_setP Y); apply].
 Qed.
 Canonical conv_cset (p : prob) (X Y : {convex_set L}) :=
-  CSet.Pack (CSet.Class (conv_cset_is_convex p X Y)).
+  CSet.Pack (CSet.Mixin (conv_cset_is_convex p X Y)).
 
 Lemma oplus_conv_cset_is_convex (X Y : {convex_set L}) :
   is_convex_set (oplus_conv_set X Y).
@@ -314,65 +331,41 @@ Proof.
 apply/asboolP=> u v p.
 case=> q _ [] xu Xxu; rewrite conv_pt_setE=> -[] yu Yyu <-.
 case=> r _ [] xv Xxv; rewrite conv_pt_setE=> -[] yv Yyv <-.
-apply (prob_trichotomy' p);
-  [ by rewrite conv0; exists r => //; exists xv=> //; rewrite conv_pt_setE; exists yv |
-    by rewrite conv1; exists q => //; exists xu=> //; rewrite conv_pt_setE; exists yu | ].
+apply (prob_trichotomy' p); rewrite ?conv0 ?conv1;
+  [by apply conv_in_oplus_conv_set | by apply conv_in_oplus_conv_set | ].
 move=> op.
 apply (prob_trichotomy' q).
-- rewrite conv0.
-  rewrite (convC _ _ r) convA convC.
-  exists ([s_of op, (r.~)%:pr].~)%:pr => //.
-  exists xv => //.
-  rewrite conv_pt_setE.
-  by exists (yu <|[r_of op, (r.~)%:pr]|> yv);
-              first by move/asboolP: (convex_setP Y); apply.
-- rewrite conv1.
-  rewrite convA.
-  exists [s_of op, r] => //.
-  exists (xu <|[r_of op, r]|> xv); first by move/asboolP: (convex_setP X); apply.
-  rewrite conv_pt_setE.
-  by exists yv.
+- rewrite conv0 (convC _ _ r) convA convC.
+  apply conv_in_oplus_conv_set=> //.
+  by move/asboolP: (convex_setP Y); apply.
+- rewrite conv1 convA.
+  apply conv_in_oplus_conv_set=> //.
+  by move/asboolP: (convex_setP X); apply.
 move=> oq.
 apply (prob_trichotomy' r).
-- rewrite conv0.
-  rewrite -convA' ?oprob_neq1 //.
-  exists [p_of oq, op] => //.
-  exists xu=> //.
-  rewrite conv_pt_setE.
-  by exists (yu <|[q_of oq, op]|> yv); first by move/asboolP: (convex_setP Y); apply.
-- rewrite conv1.
-  rewrite convC convA.
-  exists [s_of (op.~)%:pr, oq] => //.
-  exists (xv <|[r_of (op.~)%:pr, oq]|> xu); first by move/asboolP: (convex_setP X); apply.
-  rewrite conv_pt_setE.
-  by exists yu.
+- rewrite conv0 -convA' ?oprob_neq1 //.
+  apply conv_in_oplus_conv_set=> //.
+  by move/asboolP: (convex_setP Y); apply.
+- rewrite conv1 convC convA.
+  apply conv_in_oplus_conv_set=> //.
+  by move/asboolP: (convex_setP X); apply.
 move=> or.
-rewrite (convC _ _ oq).
-rewrite convA convC !convA.
-rewrite -convA' (_ : ([s_of op, or].~)%:pr = ([s_of op, or].~)%:opr) //;
-                last by apply/p_of_neq1/oprobb_oprob/OProb.O1.
-rewrite convC.
-exists (([p_of [s_of [r_of ([s_of op, or].~)%:opr, [r_of op, or]], 
-        (oq.~)%:pr], [s_of ([s_of op, or].~)%:opr, [r_of op, or]]].~)%:pr)=> //.
-exists (xu <|[q_of [s_of [r_of ([s_of op, or].~)%:opr, [r_of op, or]], 
-        (oq.~)%:pr], [s_of ([s_of op, or].~)%:opr, [r_of op, or]]]|> xv);
-  first by move/asboolP: (convex_setP X); apply.
-rewrite conv_pt_setE.
-by exists (yv <|[r_of [r_of ([s_of op, or].~)%:opr, [r_of op, or]], (oq.~)%:pr]|> yu);
-  first by move/asboolP: (convex_setP Y); apply.
+case: (convACA' xu yu xv yv oq op or)=> q' [] p' [] r' ->.
+by apply conv_in_oplus_conv_set;
+ [move/asboolP: (convex_setP X); apply | move/asboolP: (convex_setP Y); apply].
 Qed.
 Canonical oplus_conv_cset (X Y : {convex_set L}) :=
-  CSet.Pack (CSet.Class (oplus_conv_cset_is_convex X Y)).
+  CSet.Pack (CSet.Mixin (oplus_conv_cset_is_convex X Y)).
 
 Fixpoint iter_conv_cset_is_convex (X : {convex_set L}) (n : nat) :
   is_convex_set (iter_conv_set X n) :=
   match n with
   | 0 => convex_setP X
   | n'.+1 => oplus_conv_cset_is_convex
-               X (CSet.Pack (CSet.Class (iter_conv_cset_is_convex X n')))
+               X (CSet.Pack (CSet.Mixin (iter_conv_cset_is_convex X n')))
   end.
 Canonical iter_conv_cset (X : {convex_set L}) (n : nat) :=
-  CSet.Pack (CSet.Class (iter_conv_cset_is_convex X n)).
+  CSet.Pack (CSet.Mixin (iter_conv_cset_is_convex X n)).
 
 Lemma conv_pt_set_monotone (p : prob) (x : L) (Y Y' : set L) :
   Y `<=` Y' -> x <| p |>: Y `<=` x <| p |>: Y'.
@@ -441,9 +434,8 @@ Qed.
 Lemma convmm_cset (p : prob) (X : {convex_set L}) : X :<| p |>: X = X.
 Proof.
 rewrite eqEsubset; split=> x.
-- case => x0 Xx0; rewrite conv_pt_setE => -[] x1 Xx1 <-; rewrite -in_setE.
-  by move/asboolP : (convex_setP X); rewrite in_setE; apply.
-- by move=> Xx; exists x=> //; rewrite conv_pt_setE; exists x=> //; rewrite convmm.
+- by case/conv_in_conv_set' => x0 [] x1 [] ? [] ? ->; move/asboolP : (convex_setP X); apply.
+- by move=> ?; rewrite -(convmm x p); apply conv_in_conv_set.
 Qed.
 Lemma oplus_convmm_cset (X : {convex_set L}) : oplus_conv_set X X = X.
 Proof.
@@ -479,7 +471,7 @@ apply hull_eqEsubset=> u.
 - case=> x Xx; rewrite conv_pt_setE=> -[] y [] n [] g [] d [] gY yg <-.
   exists n, (fun i => x <|p|> g i), d.
   rewrite -convnDr yg; split=> //.
-  by move=> v [] i _ <-; exists x=> //; rewrite conv_pt_setE; exists (g i) => //; apply/gY/imageP.
+  by move=> v [] i _ <-; exists x=> //; apply/conv_in_conv_pt_set/gY/imageP.
 - case=> x Xx [] y Yy <-; apply/subset_hull.
   by exists x=> //; exists y=> //; exact/subset_hull.
 Qed.
@@ -1039,7 +1031,7 @@ Section def.
 Variable A : convType.
 
 Definition conv p (X Y : necset A) : necset A := locked
-  (NECSet.Pack (NECSet.Class (CSet.Class (conv_cset_is_convex p X Y))
+  (NECSet.Pack (NECSet.Class (CSet.Mixin (conv_cset_is_convex p X Y))
                              (NESet.Mixin (conv_set_neq0 p X Y)))).
 
 Lemma convE p (X Y : necset A) : conv p X Y = conv_set p X Y :> set A.

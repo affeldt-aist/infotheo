@@ -831,7 +831,7 @@ Proof.
 rewrite q_of_rsE p_of_rsE.
 have->: r.~ * s / (r * s).~ = (s.~ / (r * s).~).~
   by rewrite /onem; field; move/eqP: (oprob_neq0 ((r * s).~)%:opr).
-apply onem_oprobb.
+apply onem_oprob.
 apply/andP; split; apply/ltRP.
 - by apply/divR_gt0/oprob_gt0/oprob_gt0.
 - apply/(@ltR_pmul2r (r * s).~); first by apply/oprob_gt0.
