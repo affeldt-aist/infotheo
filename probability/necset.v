@@ -244,6 +244,13 @@ rewrite eqEsubset; split=> u.
 - by case=> xy -[] x Xx xYxy; exists x=> //; rewrite convA_pt_set; exists xy.
 Qed.
 
+Lemma conv_cset1 (p : prob) (x y : A) :
+  [set x] :<|p|>: [set y] = [set x <|p|> y].
+Proof.
+rewrite eqEsubset; split=> [u|u ->]; last exact: conv_in_conv_set.
+by case/conv_in_conv_set'=> x' [] y' [] -> [] -> ->.
+Qed.
+
 Lemma conv1_pt_set x (Y : neset A) : x <| 1%:pr |>: Y = [set x].
 Proof.
 rewrite eqEsubset;split => u; rewrite conv_pt_setE.

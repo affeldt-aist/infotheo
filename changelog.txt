@@ -26,6 +26,9 @@ from 0.3.1 to 0.3.?
   + lemma conv_pt_cset_is_convex, canonical conv_pt_cset,
     lemma conv_pt_cset, canonical conv_cset,
     lemma oplus_conv_cset_is_convex, canonical oplus_conv_cset
+  + lemma conv_set1
+- in classical_sets_ext.v:
+  + lemma set1_inj
 
 * changed:
   + modify the convex space structure on (convex_set _) to reuse conv_set instead of
