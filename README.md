@@ -34,7 +34,7 @@ information theory, and linear error-correcting codes.
   - [MathComp algebra 1.12](https://math-comp.github.io)
   - [MathComp solvable 1.12](https://math-comp.github.io)
   - [MathComp field 1.12](https://math-comp.github.io)
-  - [MathComp analysis 0.3.4](https://github.com/math-comp/analysis)
+  - [MathComp analysis 0.3.6](https://github.com/math-comp/analysis)
 - Coq namespace: `infotheo`
 - Related publication(s):
   - [Formal Adventures in Convex and Conical Spaces](https://arxiv.org/abs/2004.12713) doi:[10.1007/978-3-030-53518-6_2](https://doi.org/10.1007/978-3-030-53518-6_2)

@@ -74,15 +74,16 @@ dependencies:
     [MathComp field 1.12](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-analysis
-    version: '{ (>= "0.3.4") }'
+    version: '{ (>= "0.3.6") }'
   description: |-
-    [MathComp analysis 0.3.4](https://github.com/math-comp/analysis)
+    [MathComp analysis 0.3.6](https://github.com/math-comp/analysis)
 namespace: infotheo
 
 keywords:
 - name: information theory
 - name: probability
 - name: error-correcting codes
+- name: convexity
 
 publications:
 - pub_url: https://arxiv.org/abs/2004.12713

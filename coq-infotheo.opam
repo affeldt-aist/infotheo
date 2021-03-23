@@ -16,9 +16,9 @@ Infotheo is a Coq library for reasoning about discrete probabilities,
 information theory, and linear error-correcting codes."""
 
 build: [
-    [make "-j%{jobs}%" ]
-    [make "-C" "extraction" "tests"] {with-test}
-  ]
+  [make "-j%{jobs}%" ]
+  [make "-C" "extraction" "tests"] {with-test}
+]
 install: [make "install"]
 depends: [
   "coq" { (>= "8.13" & < "8.14~") | (= "dev") }
@@ -27,7 +27,7 @@ depends: [
   "coq-mathcomp-algebra" { (>= "1.12.0" & < "1.13~") }
   "coq-mathcomp-solvable" { (>= "1.12.0" & < "1.13~") }
   "coq-mathcomp-field" { (>= "1.12.0" & < "1.13~") }
-  "coq-mathcomp-analysis" { (>= "0.3.4") }
+  "coq-mathcomp-analysis" { (>= "0.3.6") }
 ]
 
 tags: [
