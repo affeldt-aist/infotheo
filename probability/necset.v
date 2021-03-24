@@ -1031,16 +1031,6 @@ move: a b => -[a Ha] -[b Hb] /= ?; subst a.
 congr NECSet.Pack; exact/Prop_irrelevance.
 Qed.
 
-Local Open Scope classical_set_scope.
-Lemma hull_necsetU (X Y : necset A) : hull (X `|` Y) =
-  [set u | exists x, exists y, exists p, x \in X /\ y \in Y /\ u = x <| p |> y].
-Proof.
-rewrite eqEsubset; split => a.
-- case/hull_setU; try by apply/set0P/neset_neq0.
-  move=> x xX [] y yY [] p ->; by exists x, y, p.
-- by case => x [] y [] p [] xX [] yY ->; apply mem_hull_setU; rewrite -in_setE.
-Qed.
-
 Canonical neset_hull_necset (T : convType) (F : neset T) :=
   NECSet.Pack (NECSet.Class (CSet.Mixin (hull_is_convex F))
                             (NESet.Mixin (neset_hull_neq0 F))).
@@ -1048,7 +1038,6 @@ Canonical neset_hull_necset (T : convType) (F : neset T) :=
 Canonical necset1 (T : convType) (x : T) := Eval hnf in
   @NECSet.Pack _ [set x] (NECSet.Class (CSet.Mixin (is_convex_set1 x))
                                        (NESet.Mixin (set1_neq0 x))).
-
 End necset_lemmas.
 
 Module necset_convType.
