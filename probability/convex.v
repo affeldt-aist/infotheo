@@ -117,10 +117,11 @@ Import Prenex Implicits.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 
-(* TODO: the following lemmas about fdist should be cleaned and moved to a more suitable location *)
+(* TODO: the following lemmas are currently not in use. Maybe remove? *)
 Section tmp.
-Variables (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob).
-Lemma ConvnFDist_Add (A : finType) (g : 'I_n -> fdist A) (h : 'I_m -> fdist A) :
+Lemma ConvnFDist_Add
+      (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob)
+      (A : finType) (g : 'I_n -> fdist A) (h : 'I_m -> fdist A) :
   ConvnFDist.d (AddFDist.d d1 d2 p)
     [ffun i => match fintype.split i with inl a => g a | inr a => h a end] =
   ConvFDist.d p (ConvnFDist.d d1 g) (ConvnFDist.d d2 h).
@@ -136,11 +137,10 @@ move: (ltn_ord j); by rewrite -ij -ltn_subRL subnn ltn0.
 move/eqP : ij; rewrite eqn_add2l => /eqP ij.
 rewrite mulRA; congr (_ * d2 _ * (h _) a)%R; exact/val_inj.
 Qed.
-End tmp.
 
-Section tmp2.
-Variables (A : finType) (n : nat) (g : 'I_n.+1 -> fdist A) (P : {fdist 'I_n.+1}).
-Lemma DelDistConvex (j : 'I_n.+1) (H : (0 <= P j <= 1)%R) (Pj1 : P j != 1%R) :
+Lemma DelDistConvex
+      (A : finType) (n : nat) (g : 'I_n.+1 -> fdist A) (P : {fdist 'I_n.+1})
+      (j : 'I_n.+1) (H : (0 <= P j <= 1)%R) (Pj1 : P j != 1%R) :
   let g' := fun i : 'I_n => g (DelFDist.f j i) in
   ConvnFDist.d P g =
     ConvFDist.d (Prob.mk_ H) (g j) (ConvnFDist.d (DelFDist.d Pj1) g').
@@ -176,7 +176,7 @@ rewrite DelFDist.dE D1FDist.dE ltnNge ji /= ifF; last first.
 rewrite /Rdiv mulRAC [in RHS] mulRC -mulRA mulVR // ?mulR1 ?onem_neq0 //.
 by rewrite /g' /DelFDist.f ltnNge ji.
 Qed.
-End tmp2.
+End tmp.
 
 Module CodomDFDist.
 Section def.
