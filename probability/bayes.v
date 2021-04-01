@@ -2,6 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
+From mathcomp Require Import Rstruct.
 Require Import Reals. (* Lra Nsatz. *)
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import fdist proba.
@@ -313,6 +314,9 @@ Section bn.
 Variable U : finType.
 Variable P : fdist U.
 Variable n : nat.
+
+Section preim.
+Local Open Scope R_scope.
 Variable types : 'I_n -> eqType.
 Variable vars : forall i, {RV P -> types i}.
 
@@ -380,9 +384,6 @@ congr pair; apply/ffunP => i; apply prod_vals_eq => Hi;
   rewrite set_vals_prod_vars ?ffunE //; by rewrite inE Hi ?orbT.
 Qed.
 
-Section preim.
-Local Open Scope R_scope.
-
 Definition preim_vars (I : {set 'I_n}) (vals : forall i, types i) :=
   \bigcap_(i in I) finset (vars i @^-1 (vals i)).
 
@@ -428,7 +429,7 @@ move/(f_equal (Rdiv ^~ x)).
 rewrite divRR // /Rdiv -mulRA mulRV // mulR1 => <-; by right.
 Qed.
 
-Lemma cinde_preim_ok (i j k : 'I_n) :
+Lemma cinde_preim_ok1 (i j k : 'I_n) :
   cinde_preim [set i] [set j] [set k] <-> P |= (vars i) _|_ (vars j) | (vars k).
 Proof.
 rewrite /cinde_preim /preim_vars.
@@ -739,7 +740,7 @@ by rewrite inE Hj jg.
 Qed.
 End cinde_preim_lemmas.
 
-Lemma cinde_preim_ok' (e f g : {set 'I_n}) :
+Lemma cinde_preim_ok (e f g : {set 'I_n}) :
   cinde_preim e f g <-> P |= prod_vars e _|_ prod_vars f | (prod_vars g).
 Proof.
 split.
@@ -808,12 +809,11 @@ split.
   rewrite -(preim_vars_vals (prod_vals g vals) (set_vals_prod_vals _ vals)).
   by rewrite -!preim_prod_vars.
 Qed.
-End preim.
 
 Section Imap.
 Variable parent : rel 'I_n.
 
-Definition topological := forall i j : 'I_n, parent i j -> i < j.
+Definition topological := forall i j : 'I_n, parent i j -> (i < j)%nat.
 
 Definition independence (i j : 'I_n) :=
   ~~ closure parent [set i] j ->
@@ -828,12 +828,9 @@ Record t := mkBN
     topo: topological parent;
     indep: forall i j, independence parent i j
   }.
-End bn.
+End preim.
 
 Section equiv.
-Variable U : finType.
-Variable P : fdist U.
-Variable n : nat.
 Variables types1 types2 : 'I_n -> finType.
 Variable vars1 : forall i, {RV P -> types1 i}.
 Variable vars2 : forall i, {RV P -> types2 i}.
@@ -857,7 +854,7 @@ apply/preim_varsP; case: ifP => /preim_varsP /= H1.
   by rewrite !fK => ->.
 Qed.
 
-Lemma cinde_preim_equiv (I J K : {set 'I_n}) :
+Lemma cinde_preim_equiv1 (I J K : {set 'I_n}) :
   cinde_preim vars2 I J K -> cinde_preim vars1 I J K.
 Proof.
 rewrite /cinde_preim => CI vals1.
@@ -866,6 +863,14 @@ by rewrite !preim_vars12.
 Qed.
 End equiv.
 
+Lemma cinde_preim_equiv (types1 types2 : 'I_n -> finType)
+      (vars1 : forall i : 'I_n, {RV P -> types1 i})
+      (vars2 : forall i : 'I_n, {RV P -> types2 i}) I J K :
+  (forall i : 'I_n, RV_equiv (vars1 i) (vars2 i)) ->
+  cinde_preim vars1 I J K <-> cinde_preim vars2 I J K.
+Proof. split; apply cinde_preim_equiv1 => // i; by apply RV_equivC. Qed.
+
+End bn.
 End BN.
 
 Section Factorization.
