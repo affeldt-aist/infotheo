@@ -9,6 +9,19 @@ Require Import fdist proba.
 
 (******************************************************************************)
 (* wip                                                                        *)
+(* goal: BN_factorization
+   main definitions:
+   * RV_equiv
+   * univ_types / prod_types
+   * preim_vars
+   * cinde_preim
+   * bayesian network (Koller & Friedmann p 57)
+   main theorems:
+   * cinde_preim_ok
+   * prod_vars1
+   * cinde_preim_equiv
+   * BN_factorization
+ *)
 (******************************************************************************)
 
 Local Open Scope tuple_ext_scope.
