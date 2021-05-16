@@ -38,6 +38,8 @@ license:
   identifier: LGPL-2.1-or-later
   file: LICENSE
 
+nix: true
+
 supported_coq_versions:
   text: Coq 8.13
   opam: '{ (>= "8.13" & < "8.14~") | (= "dev") }'
