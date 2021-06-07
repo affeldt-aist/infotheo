@@ -1981,7 +1981,7 @@ move=> a // HZa Hfa; by exists a.
 Qed.
 
 Lemma is_convex_set_image (f : {affine T -> U}) (a : {convex_set T}) :
-  is_convex_set (f @` a).
+  is_convex_set (f @` (a : set _)).
 Proof.
 rewrite /is_convex_set.
 apply/asboolP => x y p [a0 Ha0 <-{x}] [a1 Ha1 <-{y}].
