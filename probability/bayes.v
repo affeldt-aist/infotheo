@@ -116,7 +116,6 @@ move/(f_equal size): He.
 by rewrite -cardE => ->.
 Defined.
 Definition fdist_choice := Eval hnf in fdist_choice'.
-Print fdist_choice.
 
 Definition rvar_choice (A : eqType) (X : {RV P -> A}) := X fdist_choice.
 

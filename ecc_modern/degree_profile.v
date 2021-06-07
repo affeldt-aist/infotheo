@@ -992,16 +992,12 @@ End trivIset.
 Lemma enum_cons (s : {set T}) (x : T) :
   ohead (enum s) = Some x -> enum s = x :: enum (s :\ x).
 Proof.
-rewrite -!filter_index_enum /index_enum -enumT.
-elim: (enum _) (enum_uniq T) => //= y l IH /andP [Hy Hl].
-rewrite !topredE.
-case: ifP => /= Hif.
-  move=> [Heq]; subst y.
-  rewrite !inE eqxx /=.
-  apply f_equal, eq_in_filter => z Hz.
-  rewrite !topredE !inE.
-  by case: eqP Hz Hy => // -> ->.
-by move=> Ho; rewrite IH //= !inE Hif andbF.
+rewrite /enum_mem -enumT.
+elim: (enum T) (enum_uniq T) => //= y l ih /andP [yl ul].
+case: ifP => /= [ys [<-]|yNs oxs].
+  rewrite !inE eqxx /=; congr cons; apply eq_in_filter => z zl.
+  by rewrite !inE; case: eqP zl yl => // -> ->.
+by rewrite ih //= !inE yNs andbF.
 Qed.
 
 Section bigop.
