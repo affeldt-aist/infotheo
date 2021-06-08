@@ -76,9 +76,9 @@ dependencies:
     [MathComp field 1.12](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-analysis
-    version: '{ (>= "0.3.6") & (<= "0.3.7") }'
+    version: '{ >= "0.3.8" & < "0.4~" }'
   description: |-
-    [MathComp analysis 0.3.{6,7}](https://github.com/math-comp/analysis)
+    [MathComp analysis 0.3.8](https://github.com/math-comp/analysis)
 namespace: infotheo
 
 keywords:
