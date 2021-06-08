@@ -630,10 +630,8 @@ Qed.
 Lemma biglub_setU (I J : neset L) :
   |_| (I `|` J)%:ne = |_| [set |_| I; |_| J]%:ne.
 Proof.
-rewrite nesetU_bigsetU biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext.
-pose a := [set |_| x | x in [set idfun x | x in [set I] `|` [set J]]].
-transitivity a => //.
-by rewrite {}/a image_id /= image_setU !image_set1.
+rewrite nesetU_bigsetU biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
+by rewrite image_comp /= image_setU !image_set1.
 Qed.
 
 (* NB: [Reiterman] p.326, axiom 1 is trivial, since our |_| operator receives
@@ -643,10 +641,8 @@ Qed.
 Lemma biglub_flatten (F : neset (neset L)) :
   |_| (biglub @` (F : set _))%:ne = |_| (bigsetU F idfun)%:ne.
 Proof.
-rewrite biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext.
-pose a := [set |_| x | x in [set idfun x | x in (F : set _)]].
-transitivity a => //.
-by rewrite {}/a image_id.
+rewrite biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
+by rewrite image_comp.
 Qed.
 
 Let lub_binary (x y : L) := |_| [set x; y]%:ne.
@@ -940,12 +936,10 @@ Lemma biglub_conv_setE p (X Y : neset L) :
 Proof.
 transitivity (|_| (\bigcup_(x in X) (x <| p |>: Y))%:ne).
   by congr (|_| _%:ne); apply neset_ext.
-rewrite biglub_bigcup //; congr (|_| _%:ne); apply neset_ext.
-set a := [set |_| x | x in ((conv_pt_set_neset p)^~ Y) @` (X : set _)].
-transitivity a => //.
-rewrite {}/a image_comp /=.
-(*by rewrite biglub_conv_pt_setD.
-Qed.*) Admitted.
+rewrite biglub_bigcup //; congr (|_| _%:ne); apply neset_ext => /=.
+rewrite image_comp /=; apply: eq_imagel => /= a Xa.
+by rewrite biglub_conv_pt_setD.
+Qed.
 
 Lemma biglub_conv_setD p (X Y : neset L) :
   |_| (X :<| p |>: Y)%:ne = |_| X <|p|> |_| Y.
@@ -958,9 +952,8 @@ Proof.
 transitivity (|_| (\bigcup_(p in probset_neset) (X :<| p |>: Y))%:ne).
   by congr (|_| _%:ne); apply/neset_ext.
 rewrite biglub_bigcup //; congr (|_| _%:ne); apply/neset_ext => /=.
-(*rewrite image_comp; congr image; apply funext => p /=.
-by rewrite biglub_conv_setD.
-Qed.*) Admitted.
+by rewrite image_comp /=; apply eq_imagel => p pp; rewrite biglub_conv_setD.
+Qed.
 
 Lemma biglub_iter_conv_set (X : neset L) (n : nat) :
   |_| (iter_conv_set X n)%:ne = |_| X.
@@ -970,20 +963,20 @@ rewrite (biglub_oplus_conv_setE _ (iter_conv_set X n)%:ne).
 transitivity (|_| [set |_| X]%:ne); last by rewrite biglub1.
 congr (|_| _%:ne); apply/neset_ext => /=.
 transitivity ((fun _ => |_| X) @` probset); last by rewrite image_const.
-(*by congr image; apply funext=> p; rewrite IHn convmm.
-Qed.*) Admitted.
+by apply eq_imagel => p pp; rewrite IHn convmm.
+Qed.
 
 Lemma biglub_hull (X : neset L) : |_| (hull X)%:ne = |_| X.
 Proof.
 transitivity (|_| (\bigcup_(i in natset) iter_conv_set X i)%:ne);
   first by congr (|_| _); apply neset_ext; rewrite /= hull_iter_conv_set.
-rewrite biglub_bignesetU /= -[in RHS](biglub1 (|_| X)).
+rewrite biglub_bignesetU -[in RHS](biglub1 (|_| X)).
 transitivity (|_| ((fun _ => |_| X) @` natset)%:ne); last first.
   by congr (|_| _); apply/neset_ext/image_const.
-(*congr (|_| _%:ne); apply/neset_ext => /=.
-rewrite image_comp; congr image; apply funext => n /=.
+congr (|_| _%:ne); apply/neset_ext => /=.
+rewrite image_comp; apply eq_imagel => n /= _.
 by rewrite biglub_iter_conv_set.
-Qed.*) Admitted.
+Qed.
 
 Let lubDr p : right_distributive (fun x y => x <|p|> y) (@lub L).
 Proof.
