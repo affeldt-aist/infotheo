@@ -29,13 +29,13 @@ Import Prenex Implicits.
 
 Open Scope seq_scope.
 
+(* TODO: move to lib/ *)
 Section Extras.
 
 Variable A : eqType.
 Variable g : rel A.
 
-Definition uniq_path a p :=
-  path g a p && uniq (a :: p).
+Definition uniq_path a p := path g a p && uniq (a :: p).
 
 Lemma cons_uniq_path a b s :
   g a b -> a \notin b :: s -> uniq_path b s -> uniq_path a (b :: s).
@@ -60,12 +60,6 @@ apply (ac a b (c :: p1)).
 rewrite -cat_rcons -cat_cons cat_path in Hp.
 move/andP/proj1: Hp => /= ->.
 by rewrite Hab.
-Qed.
-
-Lemma sumn_eq0P l : reflect (forall i, i \in l -> i == 0) (sumn l == 0).
-Proof.
-apply/(iffP (natnseq0P l)); last by move/allP/all_pred1P.
-by move=> -> ?; rewrite mem_nseq => /andP[].
 Qed.
 
 Lemma count_sumn {B} (p : B -> bool) (l : seq B) :
@@ -966,9 +960,9 @@ rewrite size_flatten.
 move=> Hch.
 rewrite /shape.
 rewrite -map_comp.
-apply/eqP/sumn_eq0P.
-move=> i' /mapP [l Hl] -> /=.
-apply/eqP/IH => //.
+rewrite sumnE.
+rewrite big_seq_cond big1 //= => i'; rewrite andbT => /mapP [l Hl] -> /=.
+apply/IH => //.
 case Hi1l: (i1 \notin _); first by [].
 case Hi2l: (i2 \notin _); first by [].
 simpl; symmetry.
@@ -1049,34 +1043,24 @@ rewrite (eq_map (msg_none_eq _ _)); first last.
   by rewrite Hi1.
 elim: ch0 => [//| a l IHc] /= in IH Hun *.
 rewrite size_cat.
-rewrite cat_uniq in Hun.
-move /andP: Hun => [Hni] /andP [Huna] /andP [Hal Hunl].
+move: Hun; rewrite cat_uniq => /andP[Hni] /andP [Huna] /andP [Hal Hunl].
 have {}IHc: size (flatten [seq msg i1 i2 None i | i <- l]) =
           has (fun n0 => graph n0 i1 i2) l.
-  apply IHc.
-    move=> t' Ht'; apply IH.
-    by rewrite in_cons Ht' orbT.
-  rewrite mem_cat in Hni.
-  by move/norP: Hni => [] _ ->.
+  apply: IHc.
+    by move=> t' t'l /IH; apply; rewrite in_cons t'l orbT.
+  by move: Hni; rewrite mem_cat => /norP[_ ->].
 case Ha: (graph a i1 i2).
   have Hsz:= f_equal nat_of_bool Ha.
   rewrite -(IH _ _ Huna) in Hsz; last by rewrite in_cons eqxx.
   have Hsz': size (msg i1 i2 None a) > 0 by rewrite Hsz.
-  have {Hsz'}[Hi1' Hi2']:= msg_nonnil Hsz'.
-  rewrite /= in Hi1' Hi2'.
-  have Hsz': size (flatten [seq msg i1 i2 None i | i <- l]) = 0.
-    rewrite size_flatten.
-    apply/eqP/sumn_eq0P => i.
-    rewrite /shape -map_comp.
-    move/mapP => [x Hx] -> /=.
-    apply /eqP/msg_nil => /=.
-    apply/orP; left.
-    apply/contra: Hal => Hi1x.
-    apply/hasP.
-    exists i1; last by [].
-    apply/flattenP.
-    exists (labels x) => //; exact/(map_f labels).
-  by rewrite Hsz' addn0.
+  have {Hsz'}[/= Hi1' Hi2']:= msg_nonnil Hsz'.
+  suff ->: size (flatten [seq msg i1 i2 None i | i <- l]) = 0 by rewrite addn0.
+  rewrite size_flatten sumnE big_seq_cond/= big1// => i; rewrite andbT.
+  rewrite /shape -map_comp => /mapP[x xl] -> /=.
+  apply/msg_nil => /=; apply/orP; left.
+  apply/contra: Hal => Hi1x.
+  apply/hasP; exists i1; last by [].
+  by apply/flattenP; exists (labels x) => //; exact/(map_f labels).
 rewrite IH => //=; last by rewrite in_cons eqxx.
 by rewrite Ha /= add0n.
 Qed.
@@ -1238,9 +1222,7 @@ rewrite [in X in _ = (_, X)](eq_bigr (fun t : 'rV_n =>
   (\prod_(n1 in 'V m0 :\ n0) beta' n1 m0 t))); last first.
   move=> i _; by rewrite (checksubsum_D1 _ Hn0) eq_sym.
 rewrite !summary_powersetE !summary_foldE /summary_fold /=.
-rewrite /image_mem /enum_mem.
-
-rewrite !filter_index_enum.
+rewrite /image_mem.
 set f := 'V m0 :\ n0.
 rewrite {2 3 5 6}(set_mem f).
 have {}Hn0 : n0 \notin enum f by rewrite mem_enum setD11.
@@ -1933,22 +1915,20 @@ by rewrite get_esti_cat IH.
 Qed.
 
 Lemma get_esti_nil n0 k (t : tn_tree' k) :
-  inr n0 \notin labels t -> size (get_esti n0 (estimation t)) == 0%N.
+  inr n0 \notin labels t -> size (get_esti n0 (estimation t)) = 0%N.
 Proof.
 move: k t; refine (children_ind _) => k [id0 tag0 ch0 up0 down0] /= IH.
 rewrite in_cons => /norP [Hid0 Hfl].
-suff : size (get_esti n0 (flatten [seq estimation i | i <- ch0])) == 0%N.
+suff : size (get_esti n0 (flatten [seq estimation i | i <- ch0])) = 0%N.
   destruct tag0; first by [].
   by rewrite /= (eq_sym id0) (negbTE Hid0).
-rewrite get_esti_flatten size_flatten.
-apply /sumn_eq0P => i.
-rewrite /shape -!map_comp => /mapP [x Hx] -> /=.
+rewrite get_esti_flatten size_flatten sumnE big_seq_cond/= big1// => i.
+rewrite andbT /shape -!map_comp => /mapP[x Hx] -> /=.
 apply IH => //.
 apply/negP => Hlx.
 apply/negP: Hfl.
 rewrite negbK.
-apply/flattenP.
-exists (labels x); last by [].
+apply/flattenP; exists (labels x); last by [].
 exact: (map_f labels).
 Qed.
 
@@ -2015,10 +1995,8 @@ case Hid: (node_id t == inr n0).
   (* ensure it is the unique solution *)
   rewrite get_esti_flatten.
   apply/nilP.
-  rewrite /nilp size_flatten.
-  apply /sumn_eq0P => e.
-  rewrite /shape -!map_comp.
-  move/mapP => [x Hx] -> /=.
+  rewrite /nilp size_flatten sumnE big_seq_cond/= big1// => e.
+  rewrite andbT /shape -!map_comp => /mapP[x Hx] -> /=.
   apply get_esti_nil.
   have Hunx : uniq_path (tanner_rel H) (inl x) [:: id_of_kind kv i & s].
     rewrite mem_filter in Hx.
@@ -2026,7 +2004,7 @@ case Hid: (node_id t == inr n0).
     rewrite /=.
     move: Hun.
     rewrite tanner_relE.
-    by apply cons_uniq_path.
+    exact: cons_uniq_path.
   rewrite -tree_ok // labels_sumprod_down labels_sumprod_up.
   apply/negP => Hi.
   have Hl := uniq_labels_build_tree_rec tanner_acyclic rW h.+1 Hun.
@@ -2067,8 +2045,7 @@ rewrite (flatten_single (x:=j)) => //.
   by rewrite select_children_spec.
 (* ensure this is the only answer *)
 move=> y Hy Hyj /=.
-apply/nilP.
-rewrite /nilp.
+apply/nilP/eqP.
 apply get_esti_nil.
 have Huny:
   uniq_path (tanner_rel H) (id_of_kind (negk k) y) (id_of_kind k i :: s).
