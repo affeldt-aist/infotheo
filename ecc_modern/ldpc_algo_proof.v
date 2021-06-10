@@ -961,7 +961,7 @@ move=> Hch.
 rewrite /shape.
 rewrite -map_comp.
 rewrite sumnE.
-rewrite big_seq_cond big1 //= => i'; rewrite andbT => /mapP [l Hl] -> /=.
+rewrite big_seq big1 //= => i' /mapP[l Hl] -> /=.
 apply/IH => //.
 case Hi1l: (i1 \notin _); first by [].
 case Hi2l: (i2 \notin _); first by [].
@@ -1055,7 +1055,7 @@ case Ha: (graph a i1 i2).
   have Hsz': size (msg i1 i2 None a) > 0 by rewrite Hsz.
   have {Hsz'}[/= Hi1' Hi2']:= msg_nonnil Hsz'.
   suff ->: size (flatten [seq msg i1 i2 None i | i <- l]) = 0 by rewrite addn0.
-  rewrite size_flatten sumnE big_seq_cond/= big1// => i; rewrite andbT.
+  rewrite size_flatten sumnE big_seq/= big1// => i.
   rewrite /shape -map_comp => /mapP[x xl] -> /=.
   apply/msg_nil => /=; apply/orP; left.
   apply/contra: Hal => Hi1x.
@@ -1922,8 +1922,8 @@ rewrite in_cons => /norP [Hid0 Hfl].
 suff : size (get_esti n0 (flatten [seq estimation i | i <- ch0])) = 0%N.
   destruct tag0; first by [].
   by rewrite /= (eq_sym id0) (negbTE Hid0).
-rewrite get_esti_flatten size_flatten sumnE big_seq_cond/= big1// => i.
-rewrite andbT /shape -!map_comp => /mapP[x Hx] -> /=.
+rewrite get_esti_flatten size_flatten sumnE big_seq/= big1// => i.
+rewrite /shape -!map_comp => /mapP[x Hx] -> /=.
 apply IH => //.
 apply/negP => Hlx.
 apply/negP: Hfl.
@@ -1995,8 +1995,8 @@ case Hid: (node_id t == inr n0).
   (* ensure it is the unique solution *)
   rewrite get_esti_flatten.
   apply/nilP.
-  rewrite /nilp size_flatten sumnE big_seq_cond/= big1// => e.
-  rewrite andbT /shape -!map_comp => /mapP[x Hx] -> /=.
+  rewrite /nilp size_flatten sumnE big_seq/= big1// => e.
+  rewrite /shape -!map_comp => /mapP[x Hx] -> /=.
   apply get_esti_nil.
   have Hunx : uniq_path (tanner_rel H) (inl x) [:: id_of_kind kv i & s].
     rewrite mem_filter in Hx.

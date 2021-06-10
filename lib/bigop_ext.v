@@ -122,8 +122,8 @@ transitivity (M
   by apply eq_bigr => b0 _ /=; apply: perm_big; rewrite perm_sym.
 have -> : \big[M/idx]_(j <- bs) \big[M/idx]_(i <- h ++ t | f i == j) F i =
   \big[M/idx]_(j <- bs) \big[M/idx]_(i <- t | f i == j) F i.
-  rewrite [in LHS]big_seq_cond [in RHS]big_seq_cond /=.
-  apply/esym/eq_bigr => b0; rewrite andbT => b0bs.
+  rewrite [in LHS]big_seq [in RHS]big_seq /=.
+  apply/esym/eq_bigr => b0 b0bs.
   rewrite big_cat /=.
   rewrite (_ : \big[M/idx]_(i0 <- h | f i0 == b0) F i0 = idx); first by rewrite Monoid.add0m.
   transitivity (\big[M/idx]_(i0 <- h | false) F i0); last by rewrite big_pred0.
@@ -153,8 +153,7 @@ have -> : \big[M/idx]_(i <- t | f i == b) F i = idx.
   by rewrite /= fabs.
 rewrite Monoid.addm0 big_seq_cond /=.
 apply/esym.
-rewrite big_seq_cond /=; apply congr_big => //= a.
-rewrite andbT.
+rewrite big_seq /=; apply congr_big => //= a.
 case/boolP : (a \in h) => ah //=; apply/esym.
 have : f a \in [:: b] by rewrite -H2 mem_undup; apply/mapP; exists a.
 by rewrite in_cons /= in_nil orbC.

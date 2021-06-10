@@ -430,8 +430,7 @@ Lemma FSDistjoinE A (D : {dist (FSDist_choiceType A)}) x :
   FSDistjoin D x = \sum_(d <- finsupp D) D d * d x.
 Proof.
 rewrite /FSDistjoin FSDistBind.dE 2!imfset_id; case: ifPn => // xD.
-rewrite big_seq_cond (eq_bigr (fun=> 0)) ?big1 // => d.
-rewrite andbT => dD.
+rewrite big_seq (eq_bigr (fun=> 0)) ?big1 // => d dD.
 case/boolP : (d x == 0) => [/eqP -> |dx0]; first by rewrite mulR0.
 exfalso; move/negP : xD; apply.
 apply/bigfcupP; exists d; by [rewrite dD | rewrite mem_finsupp].

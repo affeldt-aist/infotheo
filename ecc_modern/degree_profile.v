@@ -617,8 +617,8 @@ rewrite (@big_mkord _ _ _ tw').
 apply eq_bigr => d _.
 transitivity (\sum_(s <- nseqs (tree_enum tw l (negk k)) d)
                 (LR k)`_d * \prod_(t <- s) tree_dist t).
-  rewrite big_seq_cond [in X in _ = X]big_seq_cond.
-  apply eq_bigr => s /andP [] /size_nseqs /= -> _.
+  rewrite big_seq [in X in _ = X]big_seq.
+  apply eq_bigr => s /size_nseqs /= ->.
   by rewrite /tree_dist_children big_map.
 rewrite -big_distrr /=.
 rewrite -[X in _ = X]mulr1.
@@ -678,9 +678,9 @@ apply eq_bigr => d _.
 rewrite -/(addn l.*2 1).
 transitivity (\sum_(s <- nseqs (tree_enum tw (l.*2+1) kf) (1+d))
                 (LR kv)`_d * \prod_(t <- s) tree_dist t).
-  rewrite big_seq_cond [in X in _ = X]big_seq_cond.
-  apply eq_bigr => s /andP [] /size_nseqs.
-  case: s => [|a s] // [] Hs _.
+  rewrite big_seq [in X in _ = X]big_seq.
+  apply eq_bigr => s /size_nseqs.
+  case: s => [|a s] // [] Hs.
   by rewrite big_map /= Hs.
 move: (1+d)%nat => d'.
 rewrite -big_distrr /=.
