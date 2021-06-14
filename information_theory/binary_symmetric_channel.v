@@ -164,7 +164,9 @@ Let p_01 := Eval hnf in Prob.mk_ (ltR2W p_01').
 
 Theorem BSC_capacity : capacity (BSC.c card_A p_01) = 1 - H2 p.
 Proof.
-rewrite /capacity; set E := (fun y : R => _); set p' := Prob.mk_ (ltR2W p_01').
+rewrite /capacity /image.
+set E := (fun y : R => _).
+set p' := Prob.mk_ (ltR2W p_01').
 have has_sup_E : has_sup E.
   split.
     set d := Binary.d card_A p' (Set2.a card_A).
