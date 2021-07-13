@@ -1,3 +1,11 @@
+----------
+from 0.3.3
+----------
+
+* removed:
+- in convex.v:
+  + definition choice_of_Object
+
 -------------------
 from 0.3.2 to 0.3.3
 -------------------
