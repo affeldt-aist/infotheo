@@ -1003,6 +1003,27 @@ apply/mapP => /= -[x Hx].
 move/(f_equal (@nat_of_ord _)).
 by apply/eqP/neq_lift.
 Qed.
+
+Lemma perm_on_Sn (s : 'S_n) : perm_on [set x | x \in enum 'I_n] s.
+Proof. apply/subsetP=> /= x _; by rewrite !in_set mem_enum. Qed.
+
+(* TODO: check if used *)
+Lemma perm_eq_enum (s : 'S_n) : perm_eq (enum 'I_n) (map (s^-1)%g (enum 'I_n)).
+Proof.
+apply uniq_perm.
+- by apply enum_uniq.
+- rewrite map_inj_uniq; by [apply enum_uniq | apply: perm_inj].
+- move=> /= xi.
+  case Hi : (xi \in enum 'I_n).
+  + symmetry; apply/mapP; exists (s xi).
+    * move: (perm_closed xi (perm_on_Sn s)).
+      by rewrite !in_set => ->.
+    * by rewrite permK.
+  + symmetry; apply/mapP; case=> x Hx Hxxi.
+    move: (perm_closed x (perm_on_Sn (s^-1)%g)).
+    by rewrite !in_set -Hxxi Hx Hi.
+Qed.
+
 End perm_enum.
 
 Lemma connect_sym1 (D : finType) (r : rel D) : symmetric r ->

@@ -79,7 +79,7 @@ Qed.
 (*Lemma Rplus_le_lt_reg_pos_r r1 r2 r3 : 0 < r2 -> r1 + r2 <= r3 -> r1 < r3.
 Proof. move=> *. lra. Qed.*)
 
-Lemma INR_Zabs_nat x : (0 <= x)%Z -> INR (Z.abs_nat x) = IZR x.
+Lemma INR_Zabs_nat x : (0 <= x)%Z -> (Z.abs_nat x)%:R = IZR x.
 Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
 
 Section about_the_pow_function.

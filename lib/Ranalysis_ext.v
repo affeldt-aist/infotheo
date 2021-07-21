@@ -99,10 +99,7 @@ Defined.
 
 Lemma derivable_pt_ln x : 0 < x -> derivable_pt ln x.
 Proof.
-move=> Hx.
-exists (/ x).
-apply derivable_pt_lim_ln.
-assumption.
+move=> Hx; exists (/ x); apply derivable_pt_lim_ln; assumption.
 Defined.
 
 Lemma derivable_pt_lim_Log b (x : R) : 0 < x ->

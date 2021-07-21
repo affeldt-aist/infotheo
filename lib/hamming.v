@@ -323,27 +323,6 @@ Section wH_permutation.
 
 Variable n : nat.
 
-(* TODO: move? *)
-Lemma perm_on_Sn (s : 'S_n) : perm_on [set x | x \in enum 'I_n] s.
-Proof. apply/subsetP=> /= x _; by rewrite !in_set mem_enum. Qed.
-
-(* TODO: move? *)
-Lemma perm_eq_enum (s : 'S_n) : perm_eq (enum 'I_n) (map (s^-1)%g (enum 'I_n)).
-Proof.
-apply uniq_perm.
-- by apply enum_uniq.
-- rewrite map_inj_uniq; by [apply enum_uniq | apply: perm_inj].
-- move=> /= xi.
-  case Hi : (xi \in enum 'I_n).
-  + symmetry; apply/mapP; exists (s xi).
-    * move: (perm_closed xi (perm_on_Sn s)).
-      by rewrite !in_set => ->.
-    * by rewrite permK.
-  + symmetry; apply/mapP; case=> x Hx Hxxi.
-    move: (perm_closed x (perm_on_Sn (s^-1)%g)).
-    by rewrite !in_set -Hxxi Hx Hi.
-Qed.
-
 Lemma wH_perm_mx (s : 'S_n) (z : 'rV['F_2]_n) : wH (z *m perm_mx s) = wH z.
 Proof.
 rewrite !wH_num_occ.

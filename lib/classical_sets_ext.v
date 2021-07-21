@@ -86,9 +86,3 @@ Lemma set1_inj (x y : T) : [set x] = [set y] -> x = y.
 Proof. by case/seteqP; move/(_ x)/(_ erefl) ->. Qed.
 
 End PR_to_classical_sets.
-
-(*Notation imageA := (deprecate imageA image_comp _) (only parsing).
-Notation image_idfun := (deprecate image_idfun image_id _) (only parsing).
-Notation bigcup0 := (deprecate bigcup0 bigcup_set0 _) (only parsing).
-Notation bigcup1 := (deprecate bigcup1 bigcup_set1 _) (only parsing).
-Notation bigcup_const := (deprecate bigcup_const bigcup_of_const _) (only parsing).*)
