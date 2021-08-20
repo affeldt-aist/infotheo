@@ -141,7 +141,8 @@ Proof.
 rewrite eqEsubset; split=> b'; [by case => ? _ -> | by move=> ?; eexists].
 Qed.
 
-Lemma neset_bigsetU_neq0 A B (X : neset A) (F : A -> neset B) : bigsetU X F != set0.
+Lemma neset_bigsetU_neq0 A B (X : neset A) (F : A -> neset B) :
+  \bigcup_(i in X) F i != set0.
 Proof. by apply/bigcup_set0P; eexists; split => //; eexists. Qed.
 
 Lemma neset_image_neq0 A B (f : A -> B) (X : neset A) : f @` X != set0.
@@ -269,7 +270,7 @@ Lemma conv1_set X (Y : neset A) : X :<| 1%:pr |>: Y = X.
 Proof.
 transitivity (\bigcup_(x in X) [set x]); last first.
   by rewrite bigcup_of_singleton image_id.
-by congr bigsetU; apply funext => x /=; rewrite conv1_pt_set.
+by apply eq_bigcupr => x; rewrite conv1_pt_set.
 Qed.
 
 Lemma conv0_set (X : neset A) Y : X :<| 0%:pr |>: Y = Y.
@@ -619,8 +620,8 @@ Lemma biglub_bigcup (I : Type) (S : neset I) (F : I -> neset L) :
   |_| (\bigcup_(i in S) F i)%:ne = |_| (biglub @` (F @` S))%:ne.
 Proof. by rewrite biglub_bignesetU. Qed.
 
-Lemma nesetU_bigsetU T (I J : neset T) :
-  (I `|` J)%:ne = (bigsetU [set I; J] idfun)%:ne.
+Lemma nesetU_bigcup T (I J : neset T) :
+  (I `|` J)%:ne = (\bigcup_(i in [set I; J]) idfun i)%:ne.
 Proof.
 apply/neset_ext => /=; rewrite eqEsubset; split => x.
   by case=> Hx; [exists I => //; left | exists J => //; right].
@@ -630,7 +631,7 @@ Qed.
 Lemma biglub_setU (I J : neset L) :
   |_| (I `|` J)%:ne = |_| [set |_| I; |_| J]%:ne.
 Proof.
-rewrite nesetU_bigsetU biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
+rewrite nesetU_bigcup biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_id /= image_setU !image_set1.
 Qed.
 
@@ -639,7 +640,7 @@ Qed.
 
 (* [Reiterman] p.326, axiom 2 *)
 Lemma biglub_flatten (F : neset (neset L)) :
-  |_| (biglub @` F)%:ne = |_| (bigsetU F idfun)%:ne.
+  |_| (biglub @` F)%:ne = |_| (\bigcup_(i in F) idfun i)%:ne.
 Proof.
 rewrite biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_id.
@@ -1089,14 +1090,15 @@ Local Open Scope classical_set_scope.
 Variable (A : convType).
 
 Definition pre_op (X : neset {necset A}) : {convex_set A} :=
-  CSet.Pack (CSet.Mixin (hull_is_convex (bigsetU X idfun)%:ne)).
+  CSet.Pack (CSet.Mixin (hull_is_convex (\bigcup_(i in X) idfun i)%:ne)).
 
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
 
 Definition biglub_necset (X : neset (necset A)) : necset A :=
-  NECSet.Pack (NECSet.Class (CSet.Mixin (hull_is_convex (bigsetU X idfun)%:ne))
-                            (NESet.Mixin (pre_op_neq0 X))).
+  NECSet.Pack (NECSet.Class
+    (CSet.Mixin (hull_is_convex (\bigcup_(i in X) idfun i)%:ne))
+    (NESet.Mixin (pre_op_neq0 X))).
 
 Lemma biglub_necset1 x : biglub_necset [set x]%:ne = x.
 Proof. by apply necset_ext => /=; rewrite bigcup_set1 hull_cset. Qed.
@@ -1168,28 +1170,35 @@ Section def.
 Local Open Scope classical_set_scope.
 Definition F (T : Type) := {necset {dist (choice_of_Type T)}}.
 Variable T : Type.
+
 Definition L := F T.
+
 Definition L' := necset (F T).
+
 Definition LL := F (F T).
+
 Definition F1join0' (X : LL) : set L := (@Convn_of_FSDist L) @` X.
+
 Lemma F1join0'_convex X : is_convex_set (F1join0' X).
 Proof.
 apply/asboolP=> x y p [] dx Xdx <-{x} [] dy Xdy <-{y}.
 exists (dx <|p|>dy); first by move/asboolP: (convex_setP X); apply.
 by rewrite Convn_of_FSDist_affine.
 Qed.
+
 Lemma F1join0'_neq0 X : (F1join0' X) != set0.
 Proof.
 apply/set0P.
 case/set0P: (neset_neq0 X) => x Xx.
 by exists (Convn_of_FSDist (x : {dist (F T)})), x.
 Qed.
+
 Definition F1join0 : LL -> L' := fun X => NECSet.Pack (NECSet.Class
   (CSet.Mixin (F1join0'_convex X)) (NESet.Mixin (F1join0'_neq0 X))).
 
 Definition join1' (X : L') : convex_set (FSDist_convType (choice_of_Type T)) :=
   CSet.Pack (CSet.Mixin (hull_is_convex
-    (bigsetU X (fun x => if x \in X then (x : set _) else cset0 _)))).
+    (\bigcup_(i in X) if i \in X then (i : set _) else cset0 _))).
 
 Lemma join1'_neq0 (X : L') : join1' X != set0 :> set _.
 Proof.
@@ -1200,6 +1209,7 @@ exists x; exists y => //.
 rewrite -in_setE in sy.
 by rewrite sy.
 Qed.
+
 Definition join1 : L' -> L := fun X =>
   NECSet.Pack (NECSet.Class (CSet.Mixin (hull_is_convex _))
                             (NESet.Mixin (join1'_neq0 X))).
