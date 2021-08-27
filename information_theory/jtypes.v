@@ -670,22 +670,18 @@ Lemma card_take_shell_incl0 (k : 'I_#|A|) (Ha : 0 = N(enum_val k | ta)) tb :
   tb \in take_shell ta V k.+1 ->
   split_tuple tb \in setX (take_shell ta V k) (set1 (tcast Ha [tuple of ([::] : seq B)])).
 Proof.
-move=> Hlhs.
-destruct tb as [sb Hsb].
-rewrite /take_shell /= in Hlhs. move: Hlhs.
-case/imsetP => tb' Htb_1 Htb_2.
-symmetry in Htb_2; move/tcast2tval in Htb_2; rewrite /= in Htb_2.
-rewrite /split_tuple /= in_setX.
-apply/andP; split.
+move=> tbV.
+destruct tb as [s Hs].
+move: tbV; rewrite /take_shell [in X in X -> _]/= => /imsetP[tb' tb'V].
+move/esym/tcast2tval; rewrite [X in X -> _]/= => tb's.
+rewrite /split_tuple /= in_setX; apply/andP; split.
 - apply/imsetP; exists tb' => //.
-  apply val_inj => /=.
-  apply eq_tcast2.
-  by rewrite -Htb_2 sum_num_occ_rec take_take // leq_addr.
+  apply/val_inj => /=.
+  rewrite eq_tcast /=.
+  by rewrite -tb's sum_num_occ_rec take_take // leq_addr.
 - rewrite in_set.
-  set t := Tuple _.
   apply/eqP/val_inj => /=.
-  apply eq_tcast2 => /=.
-  by rewrite -Ha take0.
+  by rewrite eq_tcast -Ha take0.
 Qed.
 
 Lemma card_take_shell_incl (k : 'I_#|A|) (Ha : N(enum_val k | ta) != 0 ) tb :
@@ -699,10 +695,8 @@ case/imsetP => tb Htb_1 Htb_2.
 symmetry in Htb_2; move/tcast2tval in Htb_2; rewrite /= in Htb_2.
 rewrite /split_tuple /= in_setX.
 apply/andP; split.
-- apply/imsetP; exists tb => //.
-  apply val_inj => /=.
-  apply eq_tcast2.
-  by rewrite -Htb_2 sum_num_occ_rec take_take // leq_addr.
+- apply/imsetP; exists tb => //; apply/val_inj => /=.
+  by rewrite eq_tcast /= -Htb_2 sum_num_occ_rec take_take // leq_addr.
 - rewrite in_set.
   set t := Tuple _.
   have Ht : tval t = take N(enum_val k | ta) (drop (sum_num_occ ta k) sb) by [].

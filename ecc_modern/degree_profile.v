@@ -2419,8 +2419,8 @@ have Hlen': size ((inl p, false)::p') = (Ordinal Hlen).+1 by [].
 move/forallP/(_ (tcast Hlen' (in_tuple ((inl p, false)::p')))).
 move/negP; apply.
 rewrite /ucycleb /= /path.cycle /=.
-rewrite -(ssr_ext.eq_tcast (t:=in_tuple ((inl p, false)::p'))) in_tupleE //.
-rewrite rcons_path Hun.
+rewrite eq_tcast [X in X && _]/=.
+rewrite rcons_path Hun andbT /=.
 rewrite (sub_path (monotonic_step_rel p i.1 i.2) Hp') Hep /=.
 by rewrite sp_in_step_edom // step_edges_sp_ep // eqxx.
 Qed.

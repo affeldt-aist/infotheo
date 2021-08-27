@@ -647,13 +647,8 @@ rewrite (tnth_nth t\_i) [in X in _ = X](tnth_nth t\_i).
 by rewrite -(@nth_take k) // -[in X in _ = X](@nth_take k) // tv.
 Qed.
 
-Lemma eq_tcast n (t : n.-tuple A) m (v : m.-tuple A) (H : m = n) :
-  tval t = tval v -> t = tcast H v.
-Proof. subst m; rewrite tcast_id => tt'; exact: val_inj. Qed.
-
-Lemma eq_tcast2 n (t : seq A) m (v : m.-tuple A) (H : m = n) :
-  t = tval v -> t = tval (tcast H v).
-Proof. subst m. by rewrite tcast_id. Qed.
+Lemma eq_tcast n m (v : m.-tuple A) (H : m = n) : tval (tcast H v) = v.
+Proof. by subst m; rewrite tcast_id. Qed.
 
 Lemma tnth_zip_1 (B : finType) n (x1 : n.-tuple A) (x2 : n.-tuple B) i:
   (tnth [tuple of zip x1 x2] i).1 = tnth x1 i.

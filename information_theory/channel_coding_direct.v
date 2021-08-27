@@ -539,19 +539,17 @@ transitivity (
       apply eq_big => /=; first by move=> x; rewrite enum_rankK eqxx inE.
       move=> i4 _; congr (P `^ _ _).
       rewrite !ffunE; congr (_ \_ _).
-      apply: eq_tcast => /=.
-      apply/esym/eq_tcast2 => /=; congr (_ :: _).
-      apply: eq_tcast2 => /=; congr (_ ++ _).
-      apply: eq_tcast2 => /=; congr (_ :: _).
-      exact/esym/eq_tcast2.
+      apply/val_inj => /=.
+      rewrite [LHS]eq_tcast /= !eq_tcast /= [RHS]eq_tcast eq_tcast /=; congr (_ :: _ ++ _ :: _).
+      by rewrite eq_tcast.
     - apply eq_big.
       + move=> x /=.
         rewrite !inE ffunE.
         rewrite (_ : (_ \_ _) = i2) //=.
         rewrite enum_rank_ord /= tcastE !cast_ord_comp (tnth_nth i0) /=.
-        rewrite (_ : tval (tcast Hq _) = i1 ++ i2 :: i3); last first.
-          apply/esym/eq_tcast2 => /=; congr cat; exact/eq_tcast2.
-        by rewrite -cat_cons nth_cat /= size_tuple prednK ?lt0n // ltnn subnn.
+        rewrite eq_tcast /=.
+        rewrite -cat_cons nth_cat /= size_tuple prednK ?lt0n // ltnn subnn.
+        by rewrite eq_tcast.
       + move=> i4 Hi4.
         rewrite 2!DMCE.
         apply eq_bigr => i5 /= _; congr (W _ _).

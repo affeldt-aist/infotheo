@@ -13,6 +13,9 @@ from 0.3.3 to 0.3.4
 * removed:
 - in convex.v:
   + definition choice_of_Object
+* changed:
+- in ssr_ext.v:
+  + remove eq_tcast in favor of eq_tcast2 (renamed to eq_tcast)
 
 -------------------
 from 0.3.2 to 0.3.3
