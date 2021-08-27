@@ -7,6 +7,9 @@ from 0.3.3 to 0.3.4
   + lemmas ltZ_addl, ltZ_addr, pmulZ_rgt0
 - in ssrR.v:
   + lemma expRn_gt0
+* renamed:
+- in necset.v:
+  + lemma nesetU_bigsetU -> nesetU_bigcup
 * removed:
 - in convex.v:
   + definition choice_of_Object

@@ -30,11 +30,11 @@ split=> H.
 Qed.
 
 Lemma eq_bigcupr (P : set U) (X Y : U -> set T) :
-  X =1 Y -> bigsetU P X = bigsetU P Y.
+  X =1 Y -> \bigcup_(i in P) X i = \bigcup_(i in P) Y i.
 Proof. by move/funext ->. Qed.
 
 Lemma eq_bigcup (P Q : set U) (X Y : U -> set T) :
-  P = Q -> X =1 Y -> bigsetU P X = bigsetU Q Y.
+  P = Q -> X =1 Y -> \bigcup_(i in P) X i = \bigcup_(i in Q) Y i.
 Proof. by move=> -> /funext ->. Qed.
 
 Lemma bigcup_of_singleton (P : set U) (f : U -> T) :
@@ -59,7 +59,7 @@ move=> Pi H; rewrite eqEsubset; split=> a; by [case=> j /H -> | exists i].
 Qed.
 
 Lemma bigsubsetU (P : set U) (X : U -> set T) (Y : set T) :
-  (forall i, P i -> X i `<=` Y) <-> bigsetU P X `<=` Y.
+  (forall i, P i -> X i `<=` Y) <-> \bigcup_(i in P) X i `<=` Y.
 Proof.
 split.
 - by move=> H a [] i Pi Xia; apply (H i).
@@ -67,7 +67,7 @@ split.
 Qed.
 
 Lemma bigcup_set0P (P : set U) (F : U -> set T) :
-  reflect (exists i, P i /\ F i !=set0) (bigsetU P F != set0).
+  reflect (exists i, P i /\ F i !=set0) (\bigcup_(i in P) F i != set0).
 Proof.
 apply: (iffP idP).
 - by case/set0P => a [] i Si Fia; exists i; split; [ | exists a].
