@@ -5,6 +5,7 @@ from 0.3.3 to 0.3.4
 * added:
 - in ssrZ.v:
   + lemmas ltZ_addl, ltZ_addr, pmulZ_rgt0
+  + lemmas intRD, leZ0n
 - in ssrR.v:
   + lemma expRn_gt0
 * renamed:

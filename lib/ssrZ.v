@@ -39,6 +39,9 @@ Lemma natZ0 : 0%:Z = 0%Z. Proof. exact: Nat2Z.inj_0. Qed.
 
 Lemma natZS n : n.+1%:Z = n%:Z.+1Z. Proof. by rewrite -Zpos_P_of_succ_nat. Qed.
 
+(* TODO: is it the right name? *)
+Lemma intRD n m : (n + m)%:Z = (n%:Z + m%:Z)%Z. Proof. exact/Nat2Z.inj_add. Qed.
+
 Definition addZ0 := Zplus_0_r.
 Definition add0Z := Zplus_0_l.
 
@@ -350,6 +353,8 @@ Lemma ltZ_subRL' m n p : (n <? p - m) = (m + n <? p).
 Proof. by apply/idP/idP => /ltZP/ltZ_subRL/ltZP. Qed.
 
 Definition ltZ_addr_subl := ltZ_subRL.
+
+Lemma leZ0n n : 0 <= n%:Z. Proof. exact: Zle_0_nat. Qed.
 
 Lemma Z_S n : Z_of_nat n.+1 = Z_of_nat n + 1.
 Proof. by rewrite inj_S. Qed.
