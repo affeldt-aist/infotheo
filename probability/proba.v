@@ -794,19 +794,19 @@ End Ex_alt.
 
 Section expected_value_prop.
 
-Variables (U : finType) (P : fdist U) (X Y : {RV P -> R}).
+Variables (U : finType) (P : fdist U).
 
-Lemma E_scalel_RV k : `E (k `cst* X) = k * `E X.
+Lemma E_scalel_RV k  (X : {RV P -> R}) : `E (k `cst* X) = k * `E X.
 Proof.
 by rewrite /scalel_RV {2}/Ex big_distrr /=; apply eq_bigr => a _; rewrite mulRA.
 Qed.
 
-Lemma E_scaler_RV k : `E (X `*cst k) = `E X * k.
+Lemma E_scaler_RV  (X : {RV P -> R}) k : `E (X `*cst k) = `E X * k.
 Proof.
 by rewrite big_distrl /=; apply: eq_bigr => i Hi; rewrite mulRAC.
 Qed.
 
-Lemma E_add_RV : `E (X `+ Y) = `E X + `E Y.
+Lemma E_add_RV (X Y : {RV P -> R}) : `E (X `+ Y) = `E X + `E Y.
 Proof. rewrite -big_split; apply eq_bigr => a _ /=; by rewrite -mulRDl. Qed.
 
 Lemma E_sumR I r p (Z : I -> {RV P -> R}) :
@@ -818,43 +818,35 @@ erewrite eq_bigr. (* to replace later with under *)
 by rewrite exchange_big /=; apply: eq_bigr => i Hi.
 Qed.
 
-Lemma E_sub_RV : `E (X `- Y) = `E X - `E Y.
+Lemma E_inv_RV (X : {RV P -> R}) : Ex P (- X)%ring = - `E X.
 Proof.
-rewrite {3}/Ex -addR_opp big_morph_oppR -big_split /=.
-apply eq_bigr => u _; by rewrite -mulNR -mulRDl.
+by rewrite /Ex big_morph_oppR; apply eq_bigr => u _; rewrite -mulNR; congr (_ * _).
 Qed.
+
+Lemma E_sub_RV (X Y : {RV P -> R}) : `E (X `- Y) = `E X - `E Y.
+Proof. by rewrite E_add_RV E_inv_RV. Qed.
 
 Lemma E_const_RV k : `E (const_RV P k) = k.
 Proof. by rewrite /Ex /const_RV /= -big_distrr /= FDist.f1 mulR1. Qed.
 
-Lemma E_trans_add_RV m : `E (X `+cst m) = `E X + m.
-Proof.
-rewrite /trans_add_RV /=.
-transitivity (\sum_(u in U) (X u * `p_X u + m * `p_X u)).
-  by apply eq_bigr => u _ /=; rewrite mulRDl.
-by rewrite big_split /= -big_distrr /= FDist.f1 mulR1.
-Qed.
+Lemma E_trans_add_RV  (X : {RV P -> R}) m : `E (X `+cst m) = `E X + m.
+Proof. by rewrite /trans_add_RV E_add_RV E_const_RV. Qed.
 
-Lemma E_trans_min_RV m : `E (X `-cst m) = `E X - m.
-Proof.
-rewrite /trans_min_RV /=.
-transitivity (\sum_(u in U) (X u * `p_X u + - m * `p_X u)).
-  by apply eq_bigr => u _ /=; rewrite mulRDl.
-by rewrite big_split /= -big_distrr /= FDist.f1 mulR1.
-Qed.
+Lemma E_trans_min_RV  (X : {RV P -> R}) m : `E (X `-cst m) = `E X - m.
+Proof. by rewrite /trans_add_RV E_sub_RV E_const_RV. Qed.
 
-Lemma E_trans_RV_id_rem m :
+Lemma E_trans_RV_id_rem (X : {RV P -> R}) m :
   `E ((X `-cst m) `^2) = `E ((X `^2 `- ((X `*cst m) *+ 2)%ring) `+cst m ^ 2).
 Proof.
 rewrite /sub_RV /trans_add_RV /trans_min_RV /sq_RV.
 by rewrite sqrrB sqrr_cst 2!expr2 -mulRR.
 Qed.
 
-Lemma E_comp_RV f k : (forall x y, f (x * y) = f x * f y) ->
+Lemma E_comp_RV  (X : {RV P -> R}) f k : (forall x y, f (x * y) = f x * f y) ->
   `E (f `o (k `cst* X)) = `E ((f k) `cst* (f `o X)).
 Proof. by move=> H; rewrite /comp_RV /=; apply eq_bigr => u _; rewrite H. Qed.
 
-Lemma E_comp_RV_ext f : X = Y -> `E (f `o X) = `E (f `o Y).
+Lemma E_comp_RV_ext  (X Y : {RV P -> R}) f : X = Y -> `E (f `o X) = `E (f `o Y).
 Proof. move=> H; by rewrite /comp_RV /= H. Qed.
 
 End expected_value_prop.
@@ -1166,7 +1158,10 @@ Definition Var := let miu := `E X in `E ((X `-cst miu) `^2).
    (V(X) = E(X^2) - E(X)^2 \cite[Theorem 6.6]{probook}): *)
 Lemma VarE : Var = `E (X `^2)  - (`E X) ^ 2.
 Proof.
-rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV mulr2n E_add_RV E_scaler_RV; ring.
+rewrite /Var /sq_RV.
+rewrite sqrrB sqrr_cst mulr2n E_add_RV E_sub_RV E_add_RV -addRA.
+congr (_ + _); rewrite E_scaler_RV E_const_RV -mulRR expr2 /GRing.mul /=.
+ring.
 Qed.
 
 End variance_def.
