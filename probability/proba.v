@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
-From mathcomp Require boolp.
-From mathcomp Require Import Rstruct.
+From mathcomp Require boolp classical_sets.
+From mathcomp Require Import Rstruct topology.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import fdist.
@@ -126,6 +126,9 @@ Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 
+Delimit Scope ring_scope with ring.
+
+Import GRing.Theory.
 Import Order.TTheory.
 
 Notation "E `*T" := ([set x | x.1 \in E]) : proba_scope.
@@ -163,6 +166,21 @@ Lemma IsetT E1 E2 : (E1 :&: E2) `*T = (E1 `*T) :&: (E2 `*T) :> {set A * B}.
 Proof. by apply/setP => -[a b]; rewrite !inE. Qed.
 
 End TsetT.
+
+Section Rstruct_ext.
+Lemma ltR0Sn n : 0 < n.+1%:R.
+Proof. by move/ltR_nat:(ltn0Sn n). Qed.
+Lemma lt0n_neqR0 n : (0 < n)%nat <-> n%:R != 0.
+Proof.
+split.
+  by case/ltR_nat/ltR_neqAle => /nesym /eqP.
+move/leR_nat/leRP: (leq0n n) => H /eqP /nesym /eqP H'.
+apply/ltR_nat/ltRP; rewrite ltR_neqAle'.
+by apply/andP; split.
+Qed.
+Lemma lt0n_neqR0' n : (0 < n)%nat = (n%:R != 0).
+Proof. by apply/(sameP idP)/(iffP idP) => /lt0n_neqR0. Qed.
+End Rstruct_ext.
 
 Section probability.
 Variables (A : finType) (P : fdist A).
@@ -512,25 +530,74 @@ End random_variable_finType.
 Notation "`Pr[ X '\in' E ]" := (pr_eq_set X E) : proba_scope.
 Notation "`d_ X" := (dist_of_RV X) : proba_scope.
 
+Section zmod_cst.
+Lemma addR_cst [T : Type] (x y : R) :
+  (@cst T R x + cst y)%ring = cst (x + y).
+Proof. by apply boolp.funext. Qed.
+Lemma subR_cst [T : Type] (x y : R) :
+  (@cst T R x - cst y)%ring = cst (x - y).
+Proof. by apply boolp.funext. Qed.
+End zmod_cst.
+
 Section random_variables.
 
 Variables (U : finType) (P : fdist U).
 
 Definition const_RV (T : eqType) cst : {RV P -> T} := fun=> cst.
+Definition mlog_RV : {RV P -> R} := fun x => - log (P x).
+Definition unit_RV : {RV P -> unit} := fun=> tt.
+
+(* NB(saikawa): why not use ssrfun.comp (f \o X)? *)
 Definition comp_RV (TA TB : eqType) (f : TA -> TB) (X : {RV P -> TA}) : {RV P -> TB} :=
   fun x => f (X x).
 Local Notation "f `o X" := (comp_RV f X).
-Definition scalel_RV k (X : {RV P -> R}) : {RV P -> R} := fun x => k * X x.
-Definition scaler_RV (X : {RV P -> R}) k : {RV P -> R} := fun x => X x * k.
-Definition add_RV (X Y : {RV P -> R}) : {RV P -> R} := fun x => X x + Y x.
-Definition sumR_RV I (r : seq.seq I) (p : pred I) (X : I -> {RV P -> R}) : {RV P -> R} :=
-  fun x => \sum_(i <- r | p i) X i x.
-Definition sub_RV (X Y : {RV P -> R}) : {RV P -> R} := fun x => X x - Y x.
-Definition trans_add_RV (X : {RV P -> R}) m : {RV P -> R} := fun x => X x + m.
-Definition trans_min_RV (X : {RV P -> R}) m : {RV P -> R} := fun x => X x - m.
-Definition sq_RV (X : {RV P -> R}) : {RV P -> R} := (fun x => x ^ 2) `o X.
-Definition mlog_RV : {RV P -> R} := fun x => - log (P x).
-Definition unit_RV : {RV P -> unit} := fun=> tt.
+
+Section zmod_RV.
+Definition add_RV (X Y : {RV P -> R}) : {RV P -> R} := (X + Y)%ring.
+Definition sumR_RV I (r : seq.seq I) (p : pred I) (X : I -> {RV P -> R}) :
+  {RV P -> R} := fun x => \sum_(i <- r | p i) X i x.
+Definition sub_RV (X Y : {RV P -> R}) : {RV P -> R} := (X - Y)%ring.
+Definition trans_add_RV (X : {RV P -> R}) m : {RV P -> R} := (X + cst m)%ring.
+Definition trans_min_RV (X : {RV P -> R}) m : {RV P -> R} := (X - cst m)%ring.
+End zmod_RV.
+
+Section ring_RV.
+Definition fdist_supp_choice : U.
+by move/set0Pn/xchoose:(fdist_supp_neq0 P).
+Defined.
+Canonical fdist_supp_pointedType :=
+  @classical_sets.Pointed.pack U fdist_supp_choice _ _ idfun.
+
+Definition mul_RV (X Y : {RV P -> R}) : {RV P -> R} := (X * Y)%ring.
+Definition sq_RV (X : {RV P -> R}) : {RV P -> R} := (X ^+ 2)%ring.
+
+Definition scalel_RV k (X : {RV P -> R}) : {RV P -> R} := (cst k * X)%ring.
+Definition scaler_RV (X : {RV P -> R}) k : {RV P -> R} := (X * cst k)%ring.
+End ring_RV.
+
+Section ring_cst.
+Lemma mulR_cst (x y : R) :
+  (cst x * cst y)%ring = cst (x * y) :> {RV P -> R}.
+Proof. by apply boolp.funext. Qed.
+Lemma sqrr_cst (m : R) :
+  ((cst m) ^+ 2)%ring = cst (m ^+ 2)%ring :> {RV P -> R}.
+Proof. by apply boolp.funext=> x; rewrite !expr2. Qed.
+End ring_cst.
+
+Lemma scalel_RV_natl (n : nat) X : scalel_RV n%:R X = (X *+ n)%ring.
+Proof.
+rewrite -[in RHS]mulr_natl /scalel_RV.
+elim: n=> // n.
+by rewrite !mulrS -addR_cst !mulrDl=> ->.
+Qed.
+Lemma scaler_RV_natr X (n : nat) : scaler_RV X n%:R = (X *+ n)%ring.
+Proof. by rewrite /scaler_RV mulrC -/(scalel_RV _ _) scalel_RV_natl. Qed.
+
+Lemma sq_RV_pow2 (X : {RV P -> R}) x : sq_RV X x = (X x) ^ 2.
+Proof. by rewrite /sq_RV /GRing.exp /= /GRing.mul /= /GRing.mul /= mulRR. Qed.
+
+Lemma sq_RV_ge0 (X : {RV P -> R}) x : 0 <= sq_RV X x.
+Proof. by rewrite sq_RV_pow2; exact: pow2_ge_0. Qed.
 
 End random_variables.
 
@@ -550,17 +617,10 @@ Variables (U : finType) (P : fdist U).
 Implicit Types X : {RV P -> R}.
 
 Lemma scalel_RVA k l X : scalel_RV (k * l) X = scalel_RV k (scalel_RV l X).
-Proof. by rewrite /scalel_RV boolp.funeqE => u; rewrite mulRA. Qed.
+Proof. by rewrite /scalel_RV boolp.funeqE => u; rewrite mulrA. Qed.
 
 Lemma scaler_RVA X k l : scaler_RV X (k * l) = scaler_RV (scaler_RV X k) l.
-Proof. by rewrite /scaler_RV boolp.funeqE => u; rewrite mulRA. Qed.
-
-Lemma sq_RV_pow2 X x : sq_RV X x = (X x) ^ 2.
-Proof. reflexivity. Qed.
-
-Lemma sq_RV_ge0 X x : 0 <= sq_RV X x.
-Proof. by rewrite sq_RV_pow2; exact: pow2_ge_0. Qed.
-
+Proof. by rewrite /scaler_RV boolp.funeqE => u; rewrite mulrA. Qed.
 End RV_lemmas.
 
 Section pair_of_RVs.
@@ -784,11 +844,10 @@ by rewrite big_split /= -big_distrr /= FDist.f1 mulR1.
 Qed.
 
 Lemma E_trans_RV_id_rem m :
-  `E ((X `-cst m) `^2) = `E ((X `^2 `- (2 * m `cst* X)) `+cst m ^ 2).
+  `E ((X `-cst m) `^2) = `E ((X `^2 `- ((X `*cst m) *+ 2)%ring) `+cst m ^ 2).
 Proof.
-apply eq_bigr => a _.
-rewrite /sub_RV /trans_add_RV /trans_min_RV /sq_RV /= /comp_RV /scalel_RV /=.
-by rewrite /ambient_dist ; field.
+rewrite /sub_RV /trans_add_RV /trans_min_RV /sq_RV.
+by rewrite sqrrB sqrr_cst 2!expr2 -mulRR.
 Qed.
 
 Lemma E_comp_RV f k : (forall x y, f (x * y) = f x * f y) ->
@@ -1107,7 +1166,7 @@ Definition Var := let miu := `E X in `E ((X `-cst miu) `^2).
    (V(X) = E(X^2) - E(X)^2 \cite[Theorem 6.6]{probook}): *)
 Lemma VarE : Var = `E (X `^2)  - (`E X) ^ 2.
 Proof.
-rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV E_scalel_RV; field.
+rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV mulr2n E_add_RV E_scaler_RV; ring.
 Qed.
 
 End variance_def.
@@ -1123,18 +1182,14 @@ Variables (U : finType) (P : fdist U) (X : {RV P -> R}).
 (* The variance is not linear V (k X) = k^2 V (X) \cite[Theorem 6.7]{probook}: *)
 Lemma Var_scale k : `V (k `cst* X) = k ^ 2 * `V X.
 Proof.
-rewrite {1}/`V [in X in X = _]/= E_scalel_RV.
-pose Y : {RV P -> R} := k `cst* (X `+cst - `E X).
-rewrite (@E_comp_RV_ext _ P ((k `cst* X) `-cst k * `E X) Y) //; last first.
-  rewrite boolp.funeqE => /= x.
-  by rewrite /Y /scalel_RV /= /trans_min_RV /trans_add_RV; field.
-by rewrite E_comp_RV ?E_scalel_RV // => *; field.
+by rewrite /`V /sq_RV !E_scalel_RV /trans_min_RV /scalel_RV -(mulR_cst P) -mulrN -mulrDr exprMn expr2 mulR_cst mulRR E_scalel_RV.
 Qed.
 
 Lemma Var_trans m : `V (X `+cst m) = `V X.
 Proof.
 rewrite /Var E_trans_add_RV; congr (`E (_ `^2)).
-rewrite boolp.funeqE => /= u; rewrite /trans_add_RV /trans_min_RV /=; field.
+rewrite /trans_add_RV /trans_min_RV -addR_cst.
+by rewrite (addrC (cst (`E X))) addrKA.
 Qed.
 
 End variance_prop.
@@ -1164,13 +1219,12 @@ apply (@leR_trans (\sum_(a in U | `| X a - `E X | >b= epsilon)
   by apply mulR_ge0 => //; exact: sq_RV_ge0.
 rewrite /Pr big_distrr.
 rewrite  [_ ^2]lock /= -!lock.
-apply leR_sumRl => u; rewrite ?inE => Hu //=.
-- rewrite  -!/(_ ^ 2).
+apply leR_sumRl => u; rewrite ?inE => /RleP Hu //=.
+- rewrite -/(_ ^ 2).
   apply leR_wpmul2r => //.
-  apply (@leR_trans ((X u - `E X) ^ 2)); last exact/leRR.
-  rewrite -(sqR_norm (X u - `E X)).
-  by apply/pow_incr; split => //; [exact/ltRW | exact/leRP].
-- by apply mulR_ge0 => //; exact: sq_RV_ge0.
+  rewrite sq_RV_pow2 -[X in _ <= X]sqR_norm -!mulRR.
+  by apply leR_pmul => //; move/ltRW: He.
+- by rewrite sq_RV_pow2; apply mulR_ge0 => //; exact: pow_even_ge0.
 Qed.
 
 End chebyshev.
@@ -1852,7 +1906,7 @@ rewrite -![in RHS]Ex_altE.
 transitivity (\sum_(i in 'rV_n.+2)
   ((X1 (i ``_ ord0) + X2 (rbehead i)) ^ 2%N * `p_X i)).
   apply eq_bigr => i _; rewrite /sq_RV /=.
-  by rewrite /comp_RV Hsum.
+  by rewrite -!/(sq_RV _) !sq_RV_pow2 Hsum.
 transitivity (\sum_(i in 'rV_n.+2) ((X1 (i ``_ ord0)) ^ 2 +
     2 * X1 (i ``_ ord0) * X2 (rbehead i) + (X2 (rbehead i)) ^ 2) * `p_X i).
   apply eq_bigr => ? _; by rewrite sqrRD.
@@ -1865,7 +1919,7 @@ rewrite !big_split /=; congr (_ + _ + _).
   transitivity (X1 i ^ 2 * \sum_(j in 'rV_n.+1) (Multivar.to_bivar `p_ X) (i, j)).
   + rewrite big_distrr /=; apply eq_bigr => i0 _.
     by rewrite row_mx_row_ord0 Multivar.to_bivarE.
-  + by rewrite Bivar.fstE.
+  + by rewrite sq_RV_pow2 Bivar.fstE.
 - rewrite -mulRA.
   rewrite !Ex_altE.
   rewrite -E_id_rem_helper // big_distrr /=.
@@ -1875,7 +1929,7 @@ rewrite !big_split /=; congr (_ + _ + _).
   transitivity (X2 t ^ 2 * \sum_(i in A) (Multivar.to_bivar `p_ X) (i, t)).
   + rewrite big_distrr /=; apply eq_bigr => i _.
     by rewrite rbehead_row_mx Multivar.to_bivarE.
-  + by congr (_ * _); rewrite Bivar.sndE.
+  + by congr (_ * _); rewrite ?sq_RV_pow2 // Bivar.sndE.
 Qed.
 
 Lemma V_sum_2 : X \= X1 @+ X2 -> P |= X1' _|_ X2'  ->
@@ -2059,7 +2113,9 @@ Lemma Var_average n (X : {RV (P `^ n) -> R}) Xs (sum_Xs : X \=sum Xs) :
   n%:R * `V (X `/ n) = sigma2.
 Proof.
 move=> s Hs; destruct n; first by inversion sum_Xs.
-by rewrite (Var_scale X) // (V_sum_n sum_Xs Hs) //; field; exact/INR_eq0.
+rewrite (Var_scale X) (V_sum_n sum_Xs Hs).
+move/lt0n_neqR0: (ltn0Sn n)=> H.
+by rewrite mul1r -RinvE -?INRE // -mulRR !mulRA mulRV // mul1R mulVR // mul1R.
 Qed.
 
 End sum_n_rand_var.
@@ -2082,12 +2138,13 @@ Lemma wlln epsilon : 0 < epsilon ->
     sigma2 / (n.+1%:R * epsilon ^ 2).
 Proof.
 move=> e0.
+move/lt0n_neqR0: (ltn0Sn n)=> Sn_neq0.
 rewrite divRM ?INR_eq0' //; last exact/gtR_eqF/expR_gt0.
 have <- : `V (X `/ n.+1) = sigma2 / n.+1%:R.
   by rewrite -(Var_average X_Xs V_Xs) Var_scale //; field; exact/INR_eq0.
 have <- : `E (X `/ n.+1) = miu.
   rewrite E_scalel_RV (E_sum_n X_Xs).
-  rewrite div1R mulRC eqR_divr_mulr ?INR_eq0' // (eq_bigr (fun=> miu)) //.
+  rewrite mul1r -RinvE -?INRE // mulRC eqR_divr_mulr ?INR_eq0' // (eq_bigr (fun=> miu)) //.
   by rewrite big_const /= iter_addR cardE /= size_enum_ord mulRC.
 by move/leR_trans: (chebyshev_inequality (X `/ n.+1) e0); apply; exact/leRR.
 Qed.

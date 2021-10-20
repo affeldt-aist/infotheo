@@ -34,34 +34,24 @@ Definition aep_sigma2 := `E ((--log P) `^2) - (`H P)^2.
 
 Lemma aep_sigma2E : aep_sigma2 = \sum_(a in A) P a * (log (P a))^2 - (`H P)^2.
 Proof.
-rewrite /aep_sigma2 /Ex [in LHS]/mlog_RV /sq_RV /comp_RV.
-by under eq_bigr do rewrite mulRC /ambient_dist -mulRR Rmult_opp_opp mulRR.
+rewrite /aep_sigma2 /Ex [in LHS]/mlog_RV /comp_RV.
+by under eq_bigr do rewrite mulRC /ambient_dist sq_RV_pow2-mulRR Rmult_opp_opp mulRR.
 Qed.
-
 Lemma V_mlog : `V (--log P) = aep_sigma2.
 Proof.
-rewrite aep_sigma2E /Var E_trans_RV_id_rem -entropy_Ex.
-transitivity
-    (\sum_(a in A) ((- log (P a))^2 * P a - 2 * `H P * - log (P a) * P a +
-                    `H P ^ 2 * P a))%R.
-  apply eq_bigr => a _.
-  rewrite /scalel_RV /mlog_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV.
-  by rewrite /ambient_dist; field.
-rewrite big_split /= big_split /= -big_distrr /= (FDist.f1 P) mulR1.
-rewrite (_ : \sum_(a in A) - _ = - (2 * `H P ^ 2))%R; last first.
-  rewrite -{1}big_morph_oppR; congr (- _)%R.
-  rewrite [X in X = _](_ : _ =
-    \sum_(a in A) (2 * `H P) * (- (P a * log (P a))))%R; last first.
-    apply eq_bigr => a _; by rewrite -!mulRA (mulRC (P a)) mulNR.
-  rewrite -big_distrr [in LHS]/= -{1}big_morph_oppR.
-  by rewrite -/(entropy P) -mulRA /= mulR1.
-set s := ((\sum_(a in A ) _)%R in LHS).
-rewrite (_ : \sum_(a in A) _ = s)%R; last by apply eq_bigr => a _; field.
-field.
+rewrite aep_sigma2E /Var E_trans_RV_id_rem -entropy_Ex E_trans_add_RV E_sub_RV -scaler_RV_natr.
+rewrite !E_scaler_RV -INRE !entropy_Ex mulRC mulRR -addRR -addR_opp oppRD.
+rewrite -!addRA -(addRC (`E --log P ^ 2)) addR_opp subRR addR0 addR_opp.
+under eq_bigr=> i do rewrite mulRC -mulRR -(Rmult_opp_opp (log (P i)) (log (P i))) mulRR.
+rewrite -/(Ex _ _) /mlog_RV.
+congr (`E _ - _); apply boolp.funext=> u /=.
+by rewrite sq_RV_pow2.
 Qed.
 
 Lemma aep_sigma2_ge0 : 0 <= aep_sigma2.
-Proof. rewrite -V_mlog /Var; apply Ex_ge0 => ?; exact: pow_even_ge0. Qed.
+Proof.
+by rewrite -V_mlog /Var; apply Ex_ge0 => ?; rewrite sq_RV_pow2; exact: pow_even_ge0.
+Qed.
 
 End mlog_prop.
 
@@ -135,8 +125,12 @@ have H2 : forall k i, `V ((\row_(i < k.+1) --log P) ``_ i) = aep_sigma2 P.
 have {H1 H2} := (wlln (H1 n) (H2 n) Hsum Hepsilon).
 move/(leR_trans _); apply.
 apply/Pr_incl/subsetP => ta; rewrite 2!inE => /andP[H1].
-rewrite /sum_mlog_prod [--log _]lock /= -lock /= /scalel_RV /mlog_RV.
-rewrite TupleFDist.dE log_prodR_sumR_mlog //.
+set X := (X in X >b= _); set Y := (Y in ((_ <= Y)%O)).
+suff -> : X = Y by move/leRP/RleP.
+rewrite /X /Y /comp_RV /trans_min_RV.
+rewrite /scalel_RV /GRing.add /GRing.mul /topology.cst /=.
+congr `| _ * _ + _ |.
+rewrite /sum_mlog_prod /mlog_RV TupleFDist.dE log_prodR_sumR_mlog //.
 apply: (prodR_gt0_inv (FDist.ge0 P)).
 by move: H1; rewrite TupleFDist.dE => /ltRP.
 Qed.
