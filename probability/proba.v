@@ -818,13 +818,13 @@ erewrite eq_bigr. (* to replace later with under *)
 by rewrite exchange_big /=; apply: eq_bigr => i Hi.
 Qed.
 
-Lemma E_inv_RV (X : {RV P -> R}) : Ex P (- X)%ring = - `E X.
+Lemma E_opp_RV (X : {RV P -> R}) : Ex P (- X)%ring = - `E X.
 Proof.
 by rewrite /Ex big_morph_oppR; apply eq_bigr => u _; rewrite -mulNR; congr (_ * _).
 Qed.
 
 Lemma E_sub_RV (X Y : {RV P -> R}) : `E (X `- Y) = `E X - `E Y.
-Proof. by rewrite E_add_RV E_inv_RV. Qed.
+Proof. by rewrite E_add_RV E_opp_RV. Qed.
 
 Lemma E_const_RV k : `E (const_RV P k) = k.
 Proof. by rewrite /Ex /const_RV /= -big_distrr /= FDist.f1 mulR1. Qed.
