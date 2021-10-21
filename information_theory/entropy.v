@@ -15,6 +15,11 @@ Require Import fdist proba jfdist binary_entropy_function divergence.
 (*   entropy_ge0 == the entropy is non-negative                               *)
 (*   entropy_max == the entropy is bounded by log |A| where A is the support  *)
 (*                  of the distribution                                       *)
+(*   entropy_Ex  == the entropy is the expectation of the negative logarithm  *)
+(*   xlnx_entropy == the entropy is the natural entropy scaled by ln(2)       *)
+(*   entropy_uniform == the entropy of a uniform distribution is just log     *)
+(*   entropy_H2  == the binary entropy H2 is the entropy over {x, y}          *)
+(*   entropy_max == the entropy is bound by log                               *)
 (******************************************************************************)
 
 Reserved Notation "'`H'" (at level 5).

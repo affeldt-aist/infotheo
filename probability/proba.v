@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
-Require Import Reals Lra Nsatz.
+Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import fdist.
 
@@ -545,6 +545,22 @@ Notation "X '`-cst' m" := (trans_min_RV X m) : proba_scope.
 Notation "X '`^2' " := (sq_RV X) : proba_scope.
 Notation "'--log' P" := (mlog_RV P) : proba_scope.
 
+Section RV_lemmas.
+Variables (U : finType) (P : fdist U).
+Lemma scalel_RVA k l (X : {RV P -> R}) :
+  scalel_RV (k * l) X = scalel_RV k (scalel_RV l X).
+Proof. by rewrite /scalel_RV boolp.funeqE => u; rewrite mulRA. Qed.
+Lemma scaler_RVA (X : {RV P -> R}) k l :
+  scaler_RV X (k * l) = scaler_RV (scaler_RV X k) l.
+Proof. by rewrite /scaler_RV boolp.funeqE => u; rewrite mulRA. Qed.
+
+Lemma sq_RV_pow2 (X : {RV P -> R}) x : sq_RV X x = (X x) ^ 2.
+Proof. reflexivity. Qed.
+Lemma sq_RV_ge0 (X : {RV P -> R}) x : 0 <= sq_RV X x.
+Proof. by rewrite sq_RV_pow2; exact: pow2_ge_0. Qed.
+
+End RV_lemmas.
+
 Section pair_of_RVs.
 Variables (U : finType) (P : fdist U).
 Variables (A : eqType) (X : {RV P -> A}) (B : eqType) (Y : {RV P -> B}).
@@ -740,6 +756,14 @@ Lemma E_trans_add_RV m : `E (X `+cst m) = `E X + m.
 Proof.
 rewrite /trans_add_RV /=.
 transitivity (\sum_(u in U) (X u * `p_X u + m * `p_X u)).
+  by apply eq_bigr => u _ /=; rewrite mulRDl.
+by rewrite big_split /= -big_distrr /= FDist.f1 mulR1.
+Qed.
+
+Lemma E_trans_min_RV m : `E (X `-cst m) = `E X - m.
+Proof.
+rewrite /trans_min_RV /=.
+transitivity (\sum_(u in U) (X u * `p_X u + - m * `p_X u)).
   by apply eq_bigr => u _ /=; rewrite mulRDl.
 by rewrite big_split /= -big_distrr /= FDist.f1 mulR1.
 Qed.
@@ -1121,7 +1145,7 @@ rewrite mulRC /Var.
 apply (@leR_trans (\sum_(a in U | `| X a - `E X | >b= epsilon)
     (((X `-cst `E X) `^2) a  * `p_X a))); last first.
   apply leR_sumRl_support with (Q := xpredT) => // a .
-  by apply mulR_ge0 => //; exact: pow_even_ge0.
+  by apply mulR_ge0 => //; exact: sq_RV_ge0.
 rewrite /Pr big_distrr.
 rewrite  [_ ^2]lock /= -!lock.
 apply leR_sumRl => u; rewrite ?inE => Hu //=.
@@ -1130,7 +1154,7 @@ apply leR_sumRl => u; rewrite ?inE => Hu //=.
   apply (@leR_trans ((X u - `E X) ^ 2)); last exact/leRR.
   rewrite -(sqR_norm (X u - `E X)).
   by apply/pow_incr; split => //; [exact/ltRW | exact/leRP].
-- by apply mulR_ge0 => //; exact: pow_even_ge0.
+- by apply mulR_ge0 => //; exact: sq_RV_ge0.
 Qed.
 
 End chebyshev.

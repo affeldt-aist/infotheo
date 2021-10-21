@@ -562,6 +562,15 @@ Proof. by split => [/INR_lt/ltP|/ltP/lt_INR]. Qed.
 Lemma ltR_nat' m n : (m%:R <b n%:R) = (m < n)%nat.
 Proof. by apply/idP/idP => [/ltRP/ltR_nat|/ltR_nat/ltRP]. Qed.
 
+Lemma ltR0Sn n : 0 < n.+1%:R.
+Proof. by move/ltR_nat: (ltn0Sn n). Qed.
+
+Lemma lt0n_neqR0 n : (0 < n)%nat <-> n%:R != 0.
+Proof. by rewrite lt0n; split => /eqP /INR_eq0 /eqP. Qed.
+
+Lemma lt0n_neqR0' n : (0 < n)%nat = (n%:R != 0).
+Proof. by apply/(sameP idP)/(iffP idP) => /lt0n_neqR0. Qed.
+
 (*************)
 (* invR/divR *)
 (*************)
