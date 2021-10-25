@@ -7,7 +7,7 @@ from 0.3.3 to 0.3.4
   + lemmas ltZ_addl, ltZ_addr, pmulZ_rgt0
   + lemmas intRD, leZ0n
 - in ssrR.v:
-  + lemmas expRn_gt0, ltR0Sn, lt0n_neqR0, lt0n_neqR0'
+  + lemmas expRn_gt0, ltR0n_neq0, lt0Rn_neq0', eqR_divl_mulr
 - in proba.v
   + lemmas scalel_RVA, scaler_RVA, sq_RV_pow2, sq_RV_ge0, E_trans_min_RV
 * renamed:

@@ -547,16 +547,18 @@ Notation "'--log' P" := (mlog_RV P) : proba_scope.
 
 Section RV_lemmas.
 Variables (U : finType) (P : fdist U).
-Lemma scalel_RVA k l (X : {RV P -> R}) :
-  scalel_RV (k * l) X = scalel_RV k (scalel_RV l X).
+Implicit Types X : {RV P -> R}.
+
+Lemma scalel_RVA k l X : scalel_RV (k * l) X = scalel_RV k (scalel_RV l X).
 Proof. by rewrite /scalel_RV boolp.funeqE => u; rewrite mulRA. Qed.
-Lemma scaler_RVA (X : {RV P -> R}) k l :
-  scaler_RV X (k * l) = scaler_RV (scaler_RV X k) l.
+
+Lemma scaler_RVA X k l : scaler_RV X (k * l) = scaler_RV (scaler_RV X k) l.
 Proof. by rewrite /scaler_RV boolp.funeqE => u; rewrite mulRA. Qed.
 
-Lemma sq_RV_pow2 (X : {RV P -> R}) x : sq_RV X x = (X x) ^ 2.
+Lemma sq_RV_pow2 X x : sq_RV X x = (X x) ^ 2.
 Proof. reflexivity. Qed.
-Lemma sq_RV_ge0 (X : {RV P -> R}) x : 0 <= sq_RV X x.
+
+Lemma sq_RV_ge0 X x : 0 <= sq_RV X x.
 Proof. by rewrite sq_RV_pow2; exact: pow2_ge_0. Qed.
 
 End RV_lemmas.
@@ -569,10 +571,12 @@ End pair_of_RVs.
 
 Notation "'[%' x , y , .. , z ']'" := (RV2 .. (RV2 x y) .. z).
 
-Lemma fst_RV2 (U : finType) (P : fdist U) (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) : Bivar.fst `d_[% X, Y] = `d_X.
+Lemma fst_RV2 (U : finType) (P : fdist U) (A B : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) : Bivar.fst `d_[% X, Y] = `d_X.
 Proof. by rewrite /Bivar.fst /dist_of_RV FDistMap.comp. Qed.
 
-Lemma snd_RV2 (U : finType) (P : fdist U) (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) : Bivar.snd `d_[% X, Y] = `d_Y.
+Lemma snd_RV2 (U : finType) (P : fdist U) (A B : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) : Bivar.snd `d_[% X, Y] = `d_Y.
 Proof. by rewrite /Bivar.snd /dist_of_RV FDistMap.comp. Qed.
 
 Lemma pr_eq_unit (U : finType) (P : fdist U) : `Pr[ (unit_RV P) = tt ] = 1.
@@ -580,7 +584,8 @@ Proof. by rewrite pr_eqE'; apply/eqP/FDist1.P; case. Qed.
 
 Lemma Pr_FDistMap_RV2 (U : finType) (P : fdist U) (A B : finType)
   (E : {set A}) (F : {set B}) (X : {RV P -> A}) (Z : {RV P -> B}) :
-  Pr (FDistMap.d [% X, Z] P) (E `* F) = Pr P ([set x | preim X (mem E) x] :&: [set x | preim Z (mem F) x]).
+  Pr (FDistMap.d [% X, Z] P) (E `* F) =
+  Pr P ([set x | preim X (mem E) x] :&: [set x | preim Z (mem F) x]).
 Proof.
 rewrite /Pr.
 transitivity (\sum_(a in ([% X, Z] @^-1: (E `* F))) P a); last first.
@@ -600,15 +605,20 @@ Lemma pr_in_pairC E F : `Pr[ [% Y, X] \in F `* E ] = `Pr[ [% X, Y] \in E `* F].
 Proof. by rewrite 2!pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbC. Qed.
 
 Lemma pr_eq_pairC a b : `Pr[ [% TY, TX] = (b, a) ] = `Pr[ [% TX, TY] = (a, b)].
-Proof. by rewrite !pr_eqE; congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE andbC. Qed.
+Proof.
+by rewrite !pr_eqE; congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE andbC.
+Qed.
 
 Lemma pr_in_pairA E F G :
-  `Pr[ [% X, [% Y, Z]] \in E `* (F `* G) ] = `Pr[ [% [% X, Y], Z] \in (E `* F) `* G].
+  `Pr[ [% X, [% Y, Z]] \in E `* (F `* G) ] =
+  `Pr[ [% [% X, Y], Z] \in (E `* F) `* G].
 Proof. by rewrite !pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbA. Qed.
 
 Lemma pr_eq_pairA a b c :
   `Pr[ [% TX, [% TY, TZ]] = (a, (b, c))] = `Pr[ [% TX, TY, TZ] = (a, b, c) ].
-Proof. by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbA. Qed.
+Proof.
+by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbA.
+Qed.
 
 Lemma pr_in_pairAC E F G :
 `Pr[ [% X, Y, Z] \in (E `* F) `* G] = `Pr[ [% X, Z, Y] \in (E `* G) `* F].
@@ -616,7 +626,9 @@ Proof. by rewrite !pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbAC. Qed.
 
 Lemma pr_eq_pairAC a b c :
 `Pr[ [% TX, TY, TZ] = (a, b, c) ] = `Pr[ [% TX, TZ, TY] = (a, c, b)].
-Proof. by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbAC. Qed.
+Proof.
+by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbAC.
+Qed.
 
 Lemma pr_in_pairCA E F G :
 `Pr[ [% X, [%Y, Z]] \in E `* (F `* G) ] = `Pr[ [% Y, [%X, Z]] \in F `* (E `* G)].
@@ -624,7 +636,9 @@ Proof. by rewrite !pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbCA. Qed.
 
 Lemma pr_eq_pairCA  a b c :
 `Pr[ [% TX, [%TY, TZ]] = (a, (b, c)) ] = `Pr[ [% TY, [% TX, TZ]] = (b, (a, c))].
-Proof. by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbCA. Qed.
+Proof.
+by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbCA.
+Qed.
 
 Lemma pr_in_comp (f : A -> B) E : injective f ->
   `Pr[ X \in E ] = `Pr[ (f `o X) \in f @: E ].
@@ -664,7 +678,8 @@ Qed.
 Lemma pr_eq_domin_RV2 a b : `Pr[ TX = a ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
 move=> H.
-by rewrite -pr_eq_set1 -setX1 pr_inE' Pr_domin_setX // fst_RV2 -pr_inE' pr_eq_set1.
+rewrite -pr_eq_set1 -setX1 pr_inE' Pr_domin_setX // fst_RV2 -pr_inE'.
+by rewrite pr_eq_set1.
 Qed.
 
 End RV_domin.
@@ -675,8 +690,8 @@ Definition cast_RV_tupledist1 U (P : fdist U) (T : eqType) (X : {RV P -> T})
    : {RV (P `^ 1) -> T} :=
   fun x => X (x ``_ ord0).
 
-Definition cast_rV1_RV_tupledist1 U (P : fdist U) (T : eqType) (Xs : 'rV[{RV P -> T}]_1)
-  : {RV (P `^ 1) -> T} :=
+Definition cast_rV1_RV_tupledist1 U (P : fdist U) (T : eqType)
+    (Xs : 'rV[{RV P -> T}]_1) : {RV (P `^ 1) -> T} :=
   cast_RV_tupledist1 (Xs ``_ ord0).
 
 Definition cast_fun_rV1 U (T : eqType) (X : U -> T) : 'rV[U]_1 -> T :=
@@ -796,7 +811,8 @@ Section conditional_expectation_def.
 
 Variable (U : finType) (P : fdist U) (X : {RV P -> R}) (F : {set U}).
 
-Definition cEx := \sum_(r <- fin_img X) r * Pr P (finset (X @^-1 r) :&: F) / Pr P F.
+Definition cEx :=
+  \sum_(r <- fin_img X) r * Pr P (finset (X @^-1 r) :&: F) / Pr P F.
 
 End conditional_expectation_def.
 Notation "`E_[ X | F ]" := (cEx X F).
@@ -1171,7 +1187,8 @@ Proof.
 rewrite /inde_events => EF; have : Pr d E = Pr d (E :&: F) + Pr d (E :&: ~:F).
   rewrite (total_prob d E (fun b => if b then F else ~:F)) /=; last 2 first.
     move=> i j ij; rewrite -setI_eq0.
-    by case: ifPn ij => Hi; case: ifPn => //= Hj _; rewrite ?setICr // setIC setICr.
+    by case: ifPn ij => Hi; case: ifPn => //= Hj _;
+      rewrite ?setICr // setIC setICr.
     by rewrite cover_imset big_bool /= setUC setUCr.
   by rewrite big_bool addRC.
 by rewrite addRC -subR_eq EF -{1}(mulR1 (Pr d E)) -mulRBr -Pr_of_cplt.
@@ -1202,7 +1219,8 @@ split => [pi i j ij|].
   red in pi.
   have /pi : (#|[set i; j]| <= 2)%nat by rewrite cards2 ij.
   rewrite bigcap_setU !big_set1 => H.
-  by rewrite /inde_events H (big_setD1 i) ?inE ?eqxx ?orTb //= setU1K ?inE // big_set1.
+  rewrite /inde_events H (big_setD1 i) ?inE ?eqxx ?orTb //= setU1K ?inE//.
+  by rewrite big_set1.
 move=> H s.
 move sn : (#| s |) => n.
 case: n sn => [|[|[|//]]].
@@ -1297,7 +1315,8 @@ rewrite /cPr; apply/divR_gt0; rewrite Pr_gt0 //.
 by apply: contra H; rewrite setIC => /eqP F0; apply/eqP/Pr_domin_setI.
 Qed.
 
-Lemma cPr_diff F1 F2 E : `Pr_[F1 :\: F2 | E] = `Pr_[F1 | E] - `Pr_[F1 :&: F2 | E].
+Lemma cPr_diff F1 F2 E :
+  `Pr_[F1 :\: F2 | E] = `Pr_[F1 | E] - `Pr_[F1 :&: F2 | E].
 Proof. by rewrite /cPr -divRBl setIDAC Pr_diff setIAC. Qed.
 
 Lemma cPr_union_eq F1 F2 E :
@@ -1319,7 +1338,8 @@ have [/eqP PF0|PF0] := boolP (Pr d F == 0).
 by rewrite -mulRA mulVR ?mulR1.
 Qed.
 
-Lemma product_rule_cond E F G : `Pr_[E :&: F | G] = `Pr_[E | F :&: G] * `Pr_[F | G].
+Lemma product_rule_cond E F G :
+  `Pr_[E :&: F | G] = `Pr_[E | F :&: G] * `Pr_[F | G].
 Proof. by rewrite /cPr mulRA -setIA {1}product_rule. Qed.
 
 Lemma cPr_cplt E F : Pr d E != 0 -> `Pr_[ ~: F | E] = 1 - `Pr_[F | E].
@@ -1442,7 +1462,8 @@ Proof. by rewrite /cpr_eq; unlock. Qed.
 End crandom_variable_eqType.
 Notation "`Pr[ X = a | Y = b ]" := (cpr_eq X a Y b) : proba_scope.
 
-Lemma cpr_eq_unit_RV (U : finType) (A : eqType) (P : {fdist U}) (X : {RV P -> A}) (a : A) :
+Lemma cpr_eq_unit_RV (U : finType) (A : eqType) (P : {fdist U})
+    (X : {RV P -> A}) (a : A) :
   `Pr[ X = a | (unit_RV P) = tt ] = `Pr[ X = a ].
 Proof. by rewrite cpr_eqE' cPrET pr_eqE. Qed.
 
@@ -1456,25 +1477,31 @@ Qed.
 
 Section crandom_variable_finType.
 Variables (U A B : finType) (P : {fdist U}).
+Implicit Types X : {RV P -> A}.
 
-Definition cpr_eq_set (X : {RV P -> A}) (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :=
+Definition cpr_eq_set X (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :=
   locked (`Pr_P [ X @^-1: E | Y @^-1: F ]).
 Local Notation "`Pr[ X \in E | Y \in F ]" := (cpr_eq_set X E Y F).
 
-Lemma cpr_eq_setE (X : {RV P -> A}) (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :
+Lemma cpr_eq_setE X (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :
   `Pr[ X \in E | Y \in F ] = `Pr_P [ X @^-1: E | Y @^-1: F ].
 Proof. by rewrite /cpr_eq_set; unlock. Qed.
 
-Lemma cpr_eq_set1 (X : {RV P -> A}) x (Y : {RV P -> B}) y :
+Lemma cpr_eq_set1 X x (Y : {RV P -> B}) y :
   `Pr[ X \in [set x] | Y \in [set y] ] = `Pr[ X = x | Y = y ].
-Proof. by rewrite cpr_eq_setE cpr_eqE'; congr cPr; apply/setP => u; rewrite !inE. Qed.
+Proof.
+by rewrite cpr_eq_setE cpr_eqE'; congr cPr; apply/setP => u; rewrite !inE.
+Qed.
 
 End crandom_variable_finType.
 Notation "`Pr[ X '\in' E | Y '\in' F ]" := (cpr_eq_set X E Y F) : proba_scope.
-Notation "`Pr[ X '\in' E | Y = b ]" := (`Pr[ X \in E | Y \in [set b]]) : proba_scope.
-Notation "`Pr[ X = a | Y '\in' F ]" := (`Pr[ X \in [set a] | Y \in F]) : proba_scope.
+Notation "`Pr[ X '\in' E | Y = b ]" :=
+  (`Pr[ X \in E | Y \in [set b]]) : proba_scope.
+Notation "`Pr[ X = a | Y '\in' F ]" :=
+  (`Pr[ X \in [set a] | Y \in F]) : proba_scope.
 
-Lemma cpr_in_unit_RV (U A : finType) (P : {fdist U}) (X : {RV P -> A}) (E : {set A}) :
+Lemma cpr_in_unit_RV (U A : finType) (P : {fdist U}) (X : {RV P -> A})
+    (E : {set A}) :
   `Pr[ X \in E | (unit_RV P) = tt ] = `Pr[ X \in E ].
 Proof.
 rewrite cpr_eq_setE (_ : _ @^-1: [set tt] = setT); last first.
@@ -1623,7 +1650,8 @@ Lemma cpr_eq_product_rule (U : finType) (P : fdist U) (A B C : eqType)
   `Pr[ X = a | [% Y, Z] = (b, c) ] * `Pr[ Y = b | Z = c ].
 Proof.
 rewrite cpr_eqE'.
-rewrite (_ : [set x | preim [% X, Y] (pred1 (a, b)) x] = finset (X @^-1 a) :&: finset (Y @^-1 b)); last first.
+rewrite (_ : [set x | preim [% X, Y] (pred1 (a, b)) x] =
+             finset (X @^-1 a) :&: finset (Y @^-1 b)); last first.
   by apply/setP => u; rewrite !inE xpair_eqE.
 rewrite product_rule_cond cpr_eqE'; congr (cPr _ _ _ * _).
 - by apply/setP=> u; rewrite !inE xpair_eqE.

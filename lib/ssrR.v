@@ -562,14 +562,11 @@ Proof. by split => [/INR_lt/ltP|/ltP/lt_INR]. Qed.
 Lemma ltR_nat' m n : (m%:R <b n%:R) = (m < n)%nat.
 Proof. by apply/idP/idP => [/ltRP/ltR_nat|/ltR_nat/ltRP]. Qed.
 
-Lemma ltR0Sn n : 0 < n.+1%:R.
-Proof. by move/ltR_nat: (ltn0Sn n). Qed.
-
-Lemma lt0n_neqR0 n : (0 < n)%nat <-> n%:R != 0.
+Lemma ltR0n_neq0 n : (0 < n)%nat <-> n%:R != 0.
 Proof. by rewrite lt0n; split => /eqP /INR_eq0 /eqP. Qed.
 
-Lemma lt0n_neqR0' n : (0 < n)%nat = (n%:R != 0).
-Proof. by apply/(sameP idP)/(iffP idP) => /lt0n_neqR0. Qed.
+Lemma ltR0n_neq0' n : (0 < n)%nat = (n%:R != 0).
+Proof. by apply/(sameP idP)/(iffP idP) => /ltR0n_neq0. Qed.
 
 (*************)
 (* invR/divR *)
@@ -687,6 +684,9 @@ Proof.
 move=> z0; split => [<-|->]; first by rewrite -mulRA mulVR // mulR1.
 by rewrite /Rdiv -mulRA mulRV // mulR1.
 Qed.
+
+Lemma eqR_divl_mulr z x y : z != 0 -> (x = y / z) <-> (x * z = y).
+Proof. by move=> z0; split; move/esym/eqR_divr_mulr => /(_ z0) ->. Qed.
 
 Lemma leR_pdivr_mulr z x y : 0 < z -> (y / z <= x) <-> (y <= x * z).
 Proof.

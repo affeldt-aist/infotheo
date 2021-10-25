@@ -10,9 +10,9 @@ Require Import entropy.
 (******************************************************************************)
 (*              Asymptotic Equipartition Property (AEP)                       *)
 (*                                                                            *)
-(* Lemma V_mlog == Var(-log P) = E((-log P)^2) - H(P)                         *)
-(* Definition aep_bound  == constant used in the statement of AEP             *)
-(* Lemma aep             == AEP                                               *)
+(*         Lemma V_mlog == Var(-log P) = E((-log P)^2) - H(P)                 *)
+(* Definition aep_bound == constant used in the statement of AEP              *)
+(*            Lemma aep == AEP                                                *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -27,19 +27,23 @@ Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
 
 Section mlog_prop.
-
 Variables (A : finType) (P : fdist A).
+Local Open Scope R_scope.
 
-Definition aep_sigma2 := (`E ((--log P) `^2) - (`H P)^2)%R.
-(* aep_sigma2 = (\sum_(a in A) P a * (log (P a))^2 - (`H P)^2)%R. *)
+Definition aep_sigma2 := `E ((--log P) `^2) - (`H P)^2.
+
+Lemma aep_sigma2E : aep_sigma2 = \sum_(a in A) P a * (log (P a))^2 - (`H P)^2.
+Proof.
+rewrite /aep_sigma2 /Ex [in LHS]/mlog_RV /sq_RV /comp_RV.
+by under eq_bigr do rewrite mulRC /ambient_dist -mulRR Rmult_opp_opp mulRR.
+Qed.
 
 Lemma V_mlog : `V (--log P) = aep_sigma2.
 Proof.
-rewrite /aep_sigma2 /Ex [in RHS]/mlog_RV /sq_RV /comp_RV.
-under eq_bigr do rewrite mulRC /ambient_dist -mulRR Rmult_opp_opp mulRR.
-rewrite /Var E_trans_RV_id_rem -entropy_Ex.
+rewrite aep_sigma2E /Var E_trans_RV_id_rem -entropy_Ex.
 transitivity
-  (\sum_(a in A) ((- log (P a))^2 * P a - 2 * `H P * - log (P a) * P a + `H P ^ 2 * P a))%R.
+    (\sum_(a in A) ((- log (P a))^2 * P a - 2 * `H P * - log (P a) * P a +
+                    `H P ^ 2 * P a))%R.
   apply eq_bigr => a _.
   rewrite /scalel_RV /mlog_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV.
   by rewrite /ambient_dist; field.
@@ -52,7 +56,7 @@ rewrite (_ : \sum_(a in A) - _ = - (2 * `H P ^ 2))%R; last first.
   rewrite -big_distrr [in LHS]/= -{1}big_morph_oppR.
   by rewrite -/(entropy P) -mulRA /= mulR1.
 set s := ((\sum_(a in A ) _)%R in LHS).
-rewrite [in RHS](_ : \sum_(a in A) _ = s)%R; last by apply eq_bigr => a _; field.
+rewrite (_ : \sum_(a in A) _ = s)%R; last by apply eq_bigr => a _; field.
 field.
 Qed.
 
