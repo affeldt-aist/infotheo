@@ -7,16 +7,24 @@ from 0.3.3 to 0.3.4
   + lemmas ltZ_addl, ltZ_addr, pmulZ_rgt0
   + lemmas intRD, leZ0n
 - in ssrR.v:
-  + lemma expRn_gt0
+  + lemmas expRn_gt0, ltR0n_neq0, lt0Rn_neq0', eqR_divl_mulr
+- in proba.v
+  + lemmas scalel_RVA, scaler_RVA, sq_RV_pow2, sq_RV_ge0, E_trans_min_RV
 * renamed:
 - in necset.v:
   + lemma nesetU_bigsetU -> nesetU_bigcup
 * removed:
 - in convex.v:
   + definition choice_of_Object
+- in aep.v
+  + lemma E_mlog (since it is equivalent to entropy.entropy_Ex)
 * changed:
 - in ssr_ext.v:
   + remove eq_tcast in favor of eq_tcast2 (renamed to eq_tcast)
+- in aep.v
+  + a cleaner expression for aep_sigma2
+- in proba.v
+  + stopped importing the unused Nsatz
 
 -------------------
 from 0.3.2 to 0.3.3
