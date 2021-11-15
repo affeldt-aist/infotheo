@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 From mathcomp Require Import matrix perm.
 From mathcomp Require boolp.
@@ -363,7 +363,7 @@ Proof.
 rewrite max_deg_all.
 elim: {1 2}n => [ | m IH ].
   by case: xs.
-rewrite /finseqs /mkseq -addn1 iota_add map_cat flatten_cat count_cat.
+rewrite /finseqs /mkseq -addn1 iotaD map_cat flatten_cat count_cat.
 rewrite [in X in (_ + X)%nat = _]/= cats0 IH.
 case: leqP => Hm.
   rewrite ltnW //= (_ : count_mem _ _ = O) // ?addn0 //.
@@ -1038,7 +1038,7 @@ Lemma sum_poly_weaken (l : {poly K}) s :
   (size l <= s)%nat -> \sum_(0 <= i < s) l`_i = \sum_(i < size l) l`_i.
 Proof.
 move=> Hl.
-rewrite -{1}(subnKC Hl) // {1}/index_iota subn0 iota_add big_cat /=.
+rewrite -{1}(subnKC Hl) // {1}/index_iota subn0 iotaD big_cat /=.
 rewrite -{1}(subn0 (size l)) big_mkord // -[RHS]addr0; congr (_ + _).
 rewrite big_nat_cond big1 // add0n => i /andP[/andP[Hi _] _].
 by apply/leq_sizeP : Hi.
@@ -4400,12 +4400,13 @@ by rewrite ltnS /= => ->.
 Qed.
 
 (* NB: was an intermediate step in weighted_count_start_is_dist *)
-Lemma partition_big_nodes_arities {A : finType} (f : {set A} -> K) (P : pred {set A}):
+Lemma partition_big_nodes_arities {A : finType} (f : {set A} -> K)
+    (P : pred {set A}):
   \sum_(x | P x) f x =
   \sum_(j < #|A|.+1) \sum_(i : {set A} | P i && (#|i| == j)) f i.
 Proof.
-rewrite (@partition_big _ _ _ [finType of {set A}] [finType of 'I_#|A|.+1]
-  P (fun pn => nth ord0 (enum 'I_#|A|.+1) #|pn|) predT) //=.
+rewrite (@partition_big _ _ _ _ _ _ P
+  (fun pn => nth ord0 (enum 'I_#|A|.+1) #|pn|) predT) //=.
 apply eq_bigr => j _; apply eq_bigl => x.
 have x_ub : (#|x| < #|A|.+1)%nat by rewrite ltnS; apply max_card.
 by rewrite (@nth_ord_enum #|A|.+1 ord0 (Ordinal x_ub)).

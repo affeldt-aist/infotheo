@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require Import Reals.
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import boolp classical_sets Rstruct.
@@ -268,9 +268,8 @@ Qed.
 
 Lemma conv1_set X (Y : neset A) : X :<| 1%:pr |>: Y = X.
 Proof.
-transitivity (\bigcup_(x in X) [set x]); last first.
-  by rewrite bigcup_of_singleton image_id.
-by apply eq_bigcupr => x; rewrite conv1_pt_set.
+transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_imset1 image_id.
+by apply :eq_bigcupr => x; rewrite conv1_pt_set.
 Qed.
 
 Lemma conv0_set (X : neset A) Y : X :<| 0%:pr |>: Y = Y.

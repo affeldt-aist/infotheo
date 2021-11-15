@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require Import Reals.
 From mathcomp Require Import all_ssreflect fingroup zmodp ssralg perm matrix.
 From mathcomp Require Import poly finalg mxalgebra mxpoly.

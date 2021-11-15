@@ -102,7 +102,7 @@ apply (@leR_trans (exp2 n%:R)).
     by apply/le_INR/leP/subset_leqif_cards/imsetS/subsetP => x Hx; rewrite inE.
   apply (@leR_trans #| [set: 'rV[bool]_n] |%:R).
     exact/le_INR/leP/leq_imset_card.
-  by rewrite cardsT card_matrix /= card_bool natRexp2 mul1n; exact/leRR.
+  by rewrite cardsT card_mx /= card_bool natRexp2 mul1n; exact/leRR.
 apply Exp_le_increasing => //.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply (@leR_pmul2r (1 / r)) => //.

@@ -1,10 +1,10 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require Import Wf_nat Wf Recdef Reals.
 From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext Rbigop f2 subgraph_partition tanner.
-Require Import fdist channel pproba linearcode ssralg_ext.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop f2.
+Require Import fdist channel pproba linearcode subgraph_partition tanner.
 Require Import tanner_partition summary ldpc checksum ldpc_algo.
 
 (******************************************************************************)
@@ -28,137 +28,6 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Open Scope seq_scope.
-
-(* TODO: move to lib/ *)
-Section Extras.
-
-Variable A : eqType.
-Variable g : rel A.
-
-Definition uniq_path a p := path g a p && uniq (a :: p).
-
-Lemma cons_uniq_path a b s :
-  g a b -> a \notin b :: s -> uniq_path b s -> uniq_path a (b :: s).
-Proof.
-move=> Hab Has /andP /= [Hpi Hun].
-rewrite /uniq_path /=.
-by rewrite Hun Hpi Hab Has.
-Qed.
-
-Lemma ext_uniq_path (ac : acyclic' g) a b c s :
-  uniq_path b (c :: s) -> g a b -> a \notin s.
-Proof.
-move/andP => [Hp Hun] Hab; apply/negP => /splitPr Hsp.
-destruct Hsp.
-case Hli: (last b (c :: p1) == b).
-  move/andP/proj1: Hun.
-  by rewrite -cat_cons mem_cat -(eqP Hli) /= mem_last.
-suff: false by []; rewrite -Hli.
-apply (ac a b (c :: p1)).
-  apply/negP => Ha.
-  by rewrite (cat_uniq [:: b,c & p1] [:: a & p2]) /= Ha /= !andbF in Hun.
-rewrite -cat_rcons -cat_cons cat_path in Hp.
-move/andP/proj1: Hp => /= ->.
-by rewrite Hab.
-Qed.
-
-Lemma count_sumn {B} (p : B -> bool) (l : seq B) :
-  sumn (map (nat_of_bool \o p) l) = count p l.
-Proof.
-elim: l => [|a l IH] //=.
-by rewrite IH.
-Qed.
-
-Lemma leq_bigmax_seq (F : A -> nat) x (l : seq A) :
-  x \in l -> F x <= \max_(i <- l) F i.
-Proof.
-elim: l => [//|y l IH].
-rewrite in_cons big_cons.
-case Hx: (x == y) => /= Hl.
-  by rewrite (eqP Hx) leq_maxl.
-apply (leq_trans (IH Hl)).
-by rewrite leq_maxr.
-Qed.
-
-Lemma rev_path_rcons a b p :
-  symmetric g ->
-  path g a (rcons p b) = path g b (rcons (rev p) a).
-Proof.
-move=> HR.
-elim: p a b => [|c p Hp] a b /=.
-  by rewrite HR.
-rewrite rev_cons -(cats1 _ a) cat_path -Hp /= last_rcons /=.
-by rewrite (HR a) andbC andbT.
-Qed.
-
-Lemma eq_in_map_seqs {B : eqType} (f1 f2 : A -> B) l1 l2 :
-  l1 = l2 -> {in l1, f1 =1 f2} -> map f1 l1 = map f2 l2.
-Proof. by move=> <-; apply eq_in_map. Qed.
-
-Section Flatten.
-Variables (B : eqType) (f : A -> seq B).
-
-Lemma flatten_single x l :
-  uniq l -> x \in l -> (forall y, y \in l -> y != x -> f y = [::]) ->
-  flatten (map f l) = f x.
-Proof.
-elim: l => [|a l IH] //= /andP [Hal Hun] Hx Hy.
-move: Hx.
-rewrite in_cons => /orP [/eqP|] Hx.
-  suff ->: flatten (map f l) = [::].
-    by rewrite cats0 Hx.
-  apply/nilP; rewrite /nilp size_flatten sumnE !big_map big_seq big1 //.
-  move=> i Hi; apply/eqP/nilP/Hy.
-  - by rewrite in_cons Hi orbT.
-  - by subst x; apply: contra Hal => /eqP <-.
-rewrite Hy //=.
-- apply IH => // y Hyl; apply Hy.
-  by rewrite in_cons Hyl orbT.
-- by apply mem_head.
-- by apply: contra Hal => /eqP ->.
-Qed.
-
-Lemma uniq_flatten_map x y l :
-  has (mem (f x)) (f y) ->
-  uniq (flatten (map f l)) -> x \in l -> y \in l -> x = y.
-Proof.
-move/hasP => [b Hby Hbx].
-elim: l => // a l IH.
-rewrite !in_cons /= cat_uniq => /andP/proj2/andP[Hun1 Hun2] /orP[] Hx /orP[] Hy.
-- by rewrite (eqP Hx) (eqP Hy).
-- move/hasP: Hun1; elim.
-  exists b.
-    apply/flattenP.
-    exists (f y) => //; exact/map_f.
-  by rewrite -(eqP Hx).
-- move/hasP: Hun1; elim.
-  exists b.
-    apply/flattenP.
-    exists (f x) => //; exact/map_f.
-  by rewrite -(eqP Hy).
-- by apply IH.
-Qed.
-
-Lemma subseq_flatten (f' : A -> seq B) l :
-  (forall x, x \in l -> subseq (f x) (f' x)) ->
-  subseq (flatten (map f l)) (flatten (map f' l)).
-Proof.
-elim: l => [|a l IH] //= Hl.
-rewrite cat_subseq //.
-  by apply Hl; rewrite in_cons eqxx.
-by apply IH => x Hx; apply Hl; rewrite in_cons Hx orbT.
-Qed.
-
-Lemma map_flatten (h : A -> B) l :
-  map h (flatten l) = flatten (map (map h) l).
-Proof.
-elim: l => [|a l IH] //=.
-by rewrite map_cat IH.
-Qed.
-
-End Flatten.
-
-End Extras.
 
 Section TnTreeEq.
 
@@ -920,7 +789,7 @@ apply cat_subseq => //; exact: sub0seq.
 Qed.
 
 Lemma children_ind {i U V : eqType}
-      (P : forall k, @tn_tree i k U V -> Prop) :
+    (P : forall k, @tn_tree i k U V -> Prop) :
   (forall k t, (forall t', t' \in children t -> P _ t') -> P k t) ->
   forall k t, P k t.
 Proof.
@@ -932,11 +801,10 @@ move: k t.
 elim: h => [|h IH] k t Hh.
   by destruct t.
 destruct t; simpl in *.
+rewrite ltnS in Hh.
 apply HP => /= t' Ht'.
 apply IH.
-refine (leq_ltn_trans _ Hh).
-rewrite big_map.
-by apply (leq_bigmax_seq depth).
+by rewrite (leq_trans _ Hh)// big_map (leq_bigmax_seq depth).
 Qed.
 
 Lemma msg_nil i1 i2 (i : option id') {k} t :

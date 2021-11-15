@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
@@ -44,14 +44,6 @@ Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
 Local Open Scope entropy_scope.
-
-(* TODO: move *)
-Lemma eq_sig_irrelevant {A} (P : A -> Prop) a1 a2 (P1 : P a1) (P2 : P a2) (p : a1 = a2) :
-  exist _ a1 P1 = exist _ a2 P2.
-Proof.
-have p' : sval (exist _ a1 P1) = sval (exist _ a2 P2) := p.
-apply (eq_sig _ _ p'); exact/boolp.Prop_irrelevance.
-Qed.
 
 Section entropy_log_div.
 Variables (A : finType) (p : fdist A) (n : nat) (A_not_empty : #|A| = n.+1).
@@ -105,17 +97,17 @@ Definition avg_dom_pair p (x y : dom_pair) : dom_pair :=
 Definition uncurry_dom_pair U (f : fdist A -> fdist A -> U) (x : dom_pair) :=
   f (sval x).1 (sval x).2.
 
-Let dom_pair_choiceType := choice_of_Type dom_pair.
+Let dom_pair_choiceType := boolp.choice_of_Type dom_pair.
 Let avg := avg_dom_pair.
 Let avg1 (x y : dom_pair_choiceType) : avg 1%:pr x y = x.
-Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/conv1. Qed.
+Proof. rewrite /avg; case x => x0 H /=; exact/boolp.eq_exist/conv1. Qed.
 Let avgI p x : avg p x x = x.
-Proof. rewrite /avg; case x => x0 H /=; exact/eq_sig_irrelevant/convmm. Qed.
+Proof. rewrite /avg; case x => x0 H /=; exact/boolp.eq_exist/convmm. Qed.
 Let avgC p x y : avg p x y = avg p.~%:pr y x.
-Proof. rewrite /avg; exact/eq_sig_irrelevant/convC. Qed.
+Proof. rewrite /avg; exact/boolp.eq_exist/convC. Qed.
 Let avgA p q d0 d1 d2 :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
-Proof. rewrite /avg /=; exact/eq_sig_irrelevant/convA. Qed.
+Proof. rewrite /avg /=; exact/boolp.eq_exist/convA. Qed.
 Definition dominatedPairConvMixin := ConvexSpace.Mixin avg1 avgI avgC avgA.
 Canonical dominatedPairConvType :=
   ConvexSpace.Pack (ConvexSpace.Class dominatedPairConvMixin).

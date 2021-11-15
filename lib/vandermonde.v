@@ -75,7 +75,7 @@ elim: k => [n0 i ni|k IH].
 rewrite ltnS => kn i ni M.
 case: ifPn => [|i0].
   move/eqP => ?; subst i.
-  rewrite /vander_k -{2}(add1n k) iota_add rev_cat foldl_cat addn1.
+  rewrite /vander_k -{2}(add1n k) iotaD rev_cat foldl_cat addn1.
   rewrite -subSn // subSS -/(vander_k a _ k) subSS /= /mat_lc.
   case: ifP => [|nk0].
     move/eqP => /(congr1 (fun x => nat_of_ord x)) /=.
@@ -93,7 +93,7 @@ case: ifPn => [|i0].
   rewrite eqxx (_ : inord 0 = 0) //.
   apply/val_inj => /=.
   by rewrite inordK.
-rewrite {1}/vander_k -{2}(add1n k) iota_add rev_cat foldl_cat.
+rewrite {1}/vander_k -{2}(add1n k) iotaD rev_cat foldl_cat.
 rewrite addn1 -subSn // subSS -/(vander_k a _ k) subSS /= /mat_lc.
 case: ifP => [|nk0].
   move/eqP/(congr1 (fun x => nat_of_ord x)) => /=.
@@ -127,9 +127,7 @@ case: ifPn => [|nik].
   rewrite {1}(eqP ink) -subnS subSn // subnS => abs.
   exfalso.
   move: abs.
-  rewrite ltnNge => /negP.
-  apply.
-  by rewrite leq_pred.
+  by rewrite ltnNge => /negP; rewrite leq_pred.
 rewrite ni andbT.
 case: ifPn => nki.
   rewrite /lc IH //; last by rewrite ltnW.
@@ -147,8 +145,7 @@ case: ifP => // abs.
 exfalso.
 rewrite -ltnNge in nki.
 rewrite subSn // in abs.
-move: (ltn_trans nki abs).
-by rewrite ltnn.
+by move: (ltn_trans nki abs); rewrite ltnn.
 Qed.
 
 Definition vander_last n (a : 'rV[R]_n.+1) :=
@@ -189,7 +186,8 @@ rewrite inordK // inordK // (ltn_trans _ (ltn_ord i)) // -subn1.
 by rewrite -{2}(subn0 i) ltn_sub2l // lt0n.
 Qed.
 
-Lemma vander_k_max n (a : 'rV[R]_n.+1) (M : 'M[R]_n.+1) : vander_k a M n.+1 = vander_k a M n.
+Lemma vander_k_max n (a : 'rV[R]_n.+1) (M : 'M[R]_n.+1) :
+  vander_k a M n.+1 = vander_k a M n.
 Proof.
 apply/row_matrixP => i.
 rewrite (_ : i = inord i); last first.
@@ -219,8 +217,7 @@ rewrite /lc /= (@determinant_multilinear _ _ _
   rewrite subSS.
   rewrite leq_subr andbT subn_eq0.
   case: ifPn => [nk|].
-    move: (leq_ltn_trans nk kn).
-    by rewrite ltnn.
+    by move: (leq_ltn_trans nk kn); rewrite ltnn.
   rewrite -ltnNge => kn'.
   rewrite leqnn /lc inordK; last by rewrite ltnS leq_subr.
   rewrite vander_k_rec //; last 2 first.

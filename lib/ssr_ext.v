@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect fingroup perm.
 Import Coq.NArith.BinNatDef.
 
@@ -11,7 +11,6 @@ Declare Scope tuple_ext_scope.
 Declare Scope vec_ext_scope.
 
 Notation "t '\_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
-Reserved Notation "n .-bseq" (at level 2, format "n .-bseq").
 Reserved Notation "A `* B"  (at level 46, left associativity).
 
 Set Implicit Arguments.
@@ -116,6 +115,66 @@ apply/setP => /= -[b a]; rewrite !inE /=; apply/idP/imsetP => [H|].
 - by case=> -[a0 b0]; rewrite inE /= => ? [-> ->].
 Qed.
 
+Section Flatten.
+Variables (A B : eqType) (f : A -> seq B).
+
+Lemma flatten_single x l :
+  uniq l -> x \in l -> (forall y, y \in l -> y != x -> f y = [::]) ->
+  flatten (map f l) = f x.
+Proof.
+elim: l => [|a l IH] //= /andP [Hal Hun] Hx Hy.
+move: Hx.
+rewrite in_cons => /orP [/eqP|] Hx.
+  suff ->: flatten (map f l) = [::].
+    by rewrite cats0 Hx.
+  apply/nilP; rewrite /nilp size_flatten sumnE !big_map big_seq big1 //.
+  move=> i Hi; apply/eqP/nilP/Hy.
+  - by rewrite in_cons Hi orbT.
+  - by subst x; apply: contra Hal => /eqP <-.
+rewrite Hy //=.
+- apply IH => // y Hyl; apply Hy.
+  by rewrite in_cons Hyl orbT.
+- by apply mem_head.
+- by apply: contra Hal => /eqP ->.
+Qed.
+
+Lemma uniq_flatten_map x y l :
+  has (mem (f x)) (f y) ->
+  uniq (flatten (map f l)) -> x \in l -> y \in l -> x = y.
+Proof.
+move/hasP => [b Hby Hbx].
+elim: l => // a l IH.
+rewrite !in_cons /= cat_uniq => /andP/proj2/andP[Hun1 Hun2] /orP[] Hx /orP[] Hy.
+- by rewrite (eqP Hx) (eqP Hy).
+- move/hasP: Hun1; elim.
+  exists b.
+    apply/flattenP.
+    by exists (f y) => //; exact/map_f.
+  by rewrite -(eqP Hx).
+- move/hasP: Hun1; elim.
+  exists b.
+    apply/flattenP.
+    by exists (f x) => //; exact/map_f.
+  by rewrite -(eqP Hy).
+- by apply IH.
+Qed.
+
+Lemma subseq_flatten (f' : A -> seq B) l :
+  (forall x, x \in l -> subseq (f x) (f' x)) ->
+  subseq (flatten (map f l)) (flatten (map f' l)).
+Proof.
+elim: l => [|a l IH] //= Hl.
+rewrite cat_subseq //.
+  by apply Hl; rewrite in_cons eqxx.
+by apply IH => x Hx; apply Hl; rewrite in_cons Hx orbT.
+Qed.
+
+End Flatten.
+
+Lemma eq_in_map_seqs {A B : eqType} (f1 f2 : A -> B) l1 l2 :
+  l1 = l2 -> {in l1, f1 =1 f2} -> map f1 l1 = map f2 l2.
+Proof. by move=> <-; apply eq_in_map. Qed.
+
 Section seq_ext.
 
 Variables A B : Type.
@@ -131,32 +190,31 @@ elim s => [|a l HR] /= ; first by rewrite big_nil.
 by rewrite -cat1s big_cat /= big_seq1 HR.
 Qed.
 
-Lemma filter_flatten T u (s : seq (seq T)) : filter u (flatten s) = flatten (map (filter u) s).
+Lemma count_sumn (p : B -> bool) (l : seq B) :
+  sumn (map (nat_of_bool \o p) l) = count p l.
 Proof.
-elim s => // hd tl HR.
-rewrite -cat1s map_cat !flatten_cat filter_cat -HR.
-f_equal ; by rewrite /flatten /= 2!cats0.
+elim: l => [|a l IH] //=.
+by rewrite IH.
 Qed.
 
 Lemma drop_take_iota a b c : a <= b <= c ->
-  drop a (take b (iota 0 c)) = filter (fun n => a <= n < b) (iota 0 c).
+  drop a (take b (iota 0 c)) = [seq n <- iota 0 c | a <= n < b].
 Proof.
-move=> /andP [Hab Hbc].
+move=> /andP[ab bc].
 set f := fun n => a <= n < b.
-rewrite -(subnKC Hbc) iota_add take_cat size_iota subnn take0 add0n (ltnn b) cats0 filter_cat.
+rewrite -(subnKC bc) iotaD take_cat size_iota subnn take0 add0n (ltnn b) cats0 filter_cat.
 rewrite (_ : filter f (iota b (c-b)) = [::]) ; last first.
   apply/eqP/negPn ; rewrite -has_filter ; apply/hasPn => l.
-  rewrite mem_iota (subnKC Hbc) /f negb_and => /andP [H _].
-  by rewrite -leqNgt H orbT.
-rewrite cats0 -(subnKC Hab) iota_add drop_cat size_iota subnn drop0 add0n (ltnn a) filter_cat.
+  rewrite mem_iota (subnKC bc) /f negb_and => /andP [bl _].
+  by rewrite -leqNgt bl orbT.
+rewrite cats0 -(subnKC ab) iotaD drop_cat size_iota subnn drop0 add0n (ltnn a) filter_cat.
 rewrite (_ : filter f (iota 0 a) = [::]) ; last first.
   apply/eqP/negPn ; rewrite -has_filter ; apply/hasPn => l.
   rewrite mem_iota /f negb_and add0n => /andP [_ H].
   by rewrite -ltnNge H orTb.
 rewrite cat0s.
-symmetry ; apply/all_filterP/allP.
-move=> l.
-by rewrite mem_iota /f (subnKC Hab).
+apply/esym/all_filterP/allP => l.
+by rewrite mem_iota /f (subnKC ab).
 Qed.
 
 Lemma zip_mask : forall bs l (k : seq B),
@@ -188,11 +246,11 @@ Proof. elim => // n ih; by rewrite /= rev_cons ih -nseq_S. Qed.
 
 Lemma nseq_cat l l' n : l ++ l' = nseq n a -> l' = nseq (n - size l) a.
 Proof.
-move=> H2; move/(congr1 (drop (size l))) : (H2).
+move=> ll'na; move/(congr1 (drop (size l))) : (ll'na).
 rewrite drop_cat ltnn subnn drop0 => ->.
 move: (nseq_add (size l) a (n - size l)).
-rewrite subnKC; last by rewrite -(size_nseq n a) -H2 size_cat leq_addr.
-move=> ->; by rewrite drop_cat size_nseq ltnn subnn drop0.
+rewrite subnKC; last by rewrite -(size_nseq n a) -ll'na size_cat leq_addr.
+by move=> ->; rewrite drop_cat size_nseq ltnn subnn drop0.
 Qed.
 
 End seq_ext.
@@ -258,7 +316,7 @@ have Has : a < size s by exact/(leq_ltn_trans _ Hbs)/ltnW.
 have H : subseq [:: f a ; f b] s.
   rewrite -(map_nth_iota_id a0 s) (_ : [:: f a; f b] = map f [:: a ; b]) //.
   apply: map_subseq.
-  rewrite -(subnK Has) addnC iota_add add0n (_ : [:: a; b] = [::a] ++ [::b]) //.
+  rewrite -(subnK Has) addnC iotaD add0n (_ : [:: a; b] = [::a] ++ [::b]) //.
   apply cat_subseq; rewrite sub1seq mem_iota.
   - by rewrite add0n leq0n ltnSn.
   - by rewrite Hab subnKC.
@@ -696,117 +754,16 @@ Defined.
 
 End tuple_ext.
 
-Section bseq_def.
-
-Variables (n : nat) (T : Type).
-
-Structure bseq_of : Type := Bseq {bseqval :> seq T; _ : size bseqval <= n}.
-
-Lemma bseqval_inj : injective bseqval.
-Proof.
-move=> [a Ha] [b Hb] /= H.
-move: Ha Hb; rewrite H => Ha Hb.
-congr Bseq; exact: eq_irrelevance.
-Qed.
-
-Canonical bseq_subType := Eval hnf in [subType for bseqval].
-
-End bseq_def.
-
-Notation "n .-bseq" := (bseq_of n) : type_scope.
-
-Definition bseq0 n T : n.-bseq T := @Bseq n T [::] (leq0n _).
-Canonical bseq0.
-
-Definition bseq_of_tuple n T (t : seq T) : n.-bseq T :=
-  match Bool.bool_dec (size t <= n) true with
-    left H => Bseq H | right _ => @bseq0 n T
-  end.
-
-Lemma size_bseq n T (bs : n.-bseq T) : size bs <= n.
-Proof. by case: bs. Qed.
-
-Lemma rcons_bseqP n T (t : n.-bseq T) x : size (rcons t x) <= n.+1.
-Proof. by rewrite size_rcons ltnS size_bseq. Qed.
-Canonical rcons_bseq n T (t : n.-bseq T) x := Bseq (rcons_bseqP t x).
-
-Definition bseq n T (t : n.-bseq T) mkT : bseq_of n T :=
-  mkT (let: Bseq _ tP := t return size t <= n in tP).
-
-Notation "[ 'bseq' 'of' s ]" := (@bseq _ _ _ (fun sP => @Bseq _ _ s sP))
-  (at level 0, format "[ 'bseq'  'of'  s ]") : type_scope.
-
-Section bseq_structures.
-
-Variable n : nat.
-
-Definition bseq_eqMixin (T : eqType) := Eval hnf in [eqMixin of n.-bseq T by <:].
-Canonical bseq_eqType (T : eqType) := Eval hnf in EqType (n.-bseq T) (bseq_eqMixin T).
-Canonical bseq_predType (T : eqType) :=
-  Eval hnf in PredType (fun t : n.-bseq T => mem_seq t). (* TODO: warning *)
-Definition bseq_choiceMixin (T : choiceType) := [choiceMixin of n.-bseq T by <:].
-Canonical bseq_choiceType (T : choiceType) :=
-  Eval hnf in ChoiceType (n.-bseq T) (bseq_choiceMixin T).
-Definition bseq_countMixin (T : countType) := [countMixin of n.-bseq T by <:].
-Canonical bseq_countType (T : countType) :=
-  Eval hnf in CountType (n.-bseq T) (bseq_countMixin T).
-Canonical bseq_subCountType (T : countType) := Eval hnf in [subCountType of n.-bseq T].
-
-Definition bseq_enum (T : finType) : seq (n.-bseq T) :=
-  flatten (map (fun m => map (@bseq_of_tuple n _) (map (@tval _ _) (enum {: m.-tuple T})))
-               (iota 0 n.+1)).
-
-Lemma bseq_of_tuple_inj T m (mn : m <= n) :
-  injective (bseq_of_tuple n (T:=T) \o @tval m T).
-Proof.
-move=> /= [a Ha] [b Hb] /=.
-rewrite /bseq_of_tuple.
-case: Bool.bool_dec; last by rewrite (eqP Ha) mn.
-move=> Ha'.
-case: Bool.bool_dec => [Hb'|]; last by rewrite (eqP Hb) mn.
-case => ?; subst a.
-congr Tuple; exact: eq_irrelevance.
-Qed.
-
-Lemma bseq_enumP T : Finite.axiom (bseq_enum T).
-Proof.
-case=> s sn.
-rewrite count_flatten -[in iota _ _](subnKC sn) -addnS iota_add !map_cat.
-rewrite sumn_cat add0n /= addnCA -sumn_cat -!map_cat count_uniq_mem; last first.
-  rewrite -map_comp map_inj_uniq //; by [rewrite enum_uniq | exact: bseq_of_tuple_inj].
-rewrite -map_comp (_ : _ \in _); last first.
-  apply/mapP => /=.
-  exists (in_tuple s); first by rewrite mem_enum inE.
-  rewrite /bseq_of_tuple.
-  case: Bool.bool_dec; last by rewrite size_tuple sn.
-  move=> sn'; congr Bseq; exact: eq_irrelevance.
-rewrite add1n; congr S; apply/eqP/natnseq0P/all_pred1P/allP => /= m.
-rewrite -map_comp; case/mapP => /= l Hl ->.
-move: Hl; rewrite mem_cat => /orP[|].
-  rewrite mem_iota add0n leq0n /= => ls.
-  apply/eqP/count_memPn/mapP => /= -[s' /mapP[t' _ ->]].
-  rewrite /bseq_of_tuple.
-  case: Bool.bool_dec => ln; case => ?; subst s.
-  by rewrite size_tuple ltnn in ls.
-  by rewrite ltn0 in ls.
-rewrite mem_iota => /andP[sl].
-rewrite addSn subnKC // ltnS => ln.
-apply/eqP/count_memPn/mapP => /= -[s' /mapP[t' _ ->]].
-rewrite /bseq_of_tuple.
-case: Bool.bool_dec; last by rewrite size_tuple ln.
-move=> _ln'; case => ?; subst s.
-by rewrite size_tuple ltnn in sl.
-Qed.
-
-Canonical bseq_finMixin (T : finType) := Eval hnf in FinMixin (@bseq_enumP T).
-Canonical bseq_finType (T : finType) := Eval hnf in FinType (n.-bseq T) (bseq_finMixin T).
-Canonical bseq_subFinType (T: finType) := Eval hnf in [subFinType of n.-bseq T].
-
-End bseq_structures.
-
 Section bseq_lemmas.
 
 Variables (n : nat) (T : Type).
+
+Lemma bseqval_inj : injective (@bseqval n T).
+Proof.
+move=> [a Ha] [b Hb] /= H.
+move: Ha Hb; rewrite H => Ha Hb.
+by congr Bseq; exact: eq_irrelevance.
+Qed.
 
 Lemma leq_take (s : seq T) k : size s <= n -> size (take k s) <= n.
 Proof.
@@ -1055,3 +1012,31 @@ Lemma connect_sym (D : finType) (r : rel D) : symmetric r -> connect_sym r.
 Proof.
 move=> ?; rewrite /connect_sym => ? ?; apply/idP/idP => /connect_sym1; exact.
 Qed.
+
+Section uniq_path.
+
+Variable A : eqType.
+Variable g : rel A.
+
+Definition uniq_path a p := path g a p && uniq (a :: p).
+
+Lemma cons_uniq_path a b s :
+  g a b -> a \notin b :: s -> uniq_path b s -> uniq_path a (b :: s).
+Proof.
+move=> Hab Has /andP /= [Hpi Hun].
+rewrite /uniq_path /=.
+by rewrite Hun Hpi Hab Has.
+Qed.
+
+Lemma rev_path_rcons a b p :
+  symmetric g ->
+  path g a (rcons p b) = path g b (rcons (rev p) a).
+Proof.
+move=> HR.
+elim: p a b => [|c p Hp] a b /=.
+  by rewrite HR.
+rewrite rev_cons -(cats1 _ a) cat_path -Hp /= last_rcons /=.
+by rewrite (HR a) andbC andbT.
+Qed.
+
+End uniq_path.

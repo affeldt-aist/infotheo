@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import boolp classical_sets.
 
@@ -29,28 +29,9 @@ split=> H.
 - by move=> b [] a Xa <-; apply H.
 Qed.
 
-Lemma eq_bigcupr (P : set U) (X Y : U -> set T) :
-  X =1 Y -> \bigcup_(i in P) X i = \bigcup_(i in P) Y i.
-Proof. by move/funext ->. Qed.
-
 Lemma eq_bigcup (P Q : set U) (X Y : U -> set T) :
   P = Q -> X =1 Y -> \bigcup_(i in P) X i = \bigcup_(i in Q) Y i.
 Proof. by move=> -> /funext ->. Qed.
-
-Lemma bigcup_of_singleton (P : set U) (f : U -> T) :
-  \bigcup_(x in P) [set f x] = f @` P.
-Proof.
-rewrite eqEsubset; split=> a;
-  by [case=> i Pi ->; apply imageP | case=> i Pi <-; exists i].
-Qed.
-
-Lemma bigcup_image V (P : set V) (f : V -> U) (X : U -> set T) :
-  \bigcup_(x in f @` P) X x = \bigcup_(x in P) X (f x).
-Proof.
-rewrite eqEsubset; split=> x.
-- by case=> j [] i pi <- Xfix; exists i.
-- by case=> i Pi Xfix; exists (f i); first by  exists i.
-Qed.
 
 Lemma bigcup_of_const (P : set U) (X : U -> set T) (i : U) :
   P i -> (forall j, P j -> X j = X i) -> \bigcup_(j in P) X j = X i.
@@ -72,14 +53,6 @@ Proof.
 apply: (iffP idP).
 - by case/set0P => a [] i Si Fia; exists i; split; [ | exists a].
 - by case=> i [] Si [] a Fia; apply/set0P; exists a, i.
-Qed.
-
-Lemma bigcupsetU2E (A B : set T) : \bigcup_(i in [set A; B]) i = A `|` B.
-Proof.
-(* TODO: use bigcup2E when available through mathcomp-analysis? *)
-rewrite eqEsubset;split => x.
-  by case=> K [] -> Hx; [left | right].
-by case=> ?; [exists A => //; left|exists B => //; right].
 Qed.
 
 Lemma set1_inj (x y : T) : [set x] = [set y] -> x = y.

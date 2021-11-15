@@ -436,7 +436,7 @@ elim: l => [kr | l IH HSl].
                \sum_(i in [set i0 : 'I_r | nat_of_ord i0 \in iota k l]) 1); last first.
     apply eq_bigl => i; rewrite !in_set.
     case/boolP : (i != Ordinal HSl) => Hcase.
-    - rewrite andbT -addn1 iota_add /= mem_cat !inE.
+    - rewrite andbT -addn1 iotaD /= mem_cat !inE.
       set tmp := _ == _ + _.
       suff -> : tmp = false by rewrite orbC.
       apply/eqP/eqP.

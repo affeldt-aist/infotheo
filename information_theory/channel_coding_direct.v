@@ -286,7 +286,7 @@ Lemma big_tuple_cons_behead {C : finType} n (F : n.+1.-tuple C -> R)
   \sum_(p in {: n.+1.-tuple C} | (P1 (thead p)) && (P2 (tbehead p)) ) (F p).
 Proof.
 apply/esym.
-rewrite (@partition_big _ _ _ _ _ _ (fun x => thead x) (fun x => P1 x)) //=; last first.
+rewrite (partition_big (fun x => thead x) (fun x => P1 x)) //=; last first.
   move=> t; by case/andP.
 apply eq_bigr => i Hi.
 rewrite (reindex_onto (fun j : {: n.-tuple C} => [tuple of (i :: j)])

@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 From mathcomp Require Import Rstruct.
 Require Import Reals Lra.
@@ -224,7 +224,16 @@ apply: Rplus_eq_R0.
 Qed.
 
 Section leR_ltR_sumR.
+Variable A : Type.
+Implicit Types (f g : A -> R) (P Q : pred A).
 
+Lemma leR_sumR r P f g : (forall i, P i -> f i <= g i) ->
+  \sum_(i <- r | P i) f i <= \sum_(i <- r | P i) g i.
+Proof. move=> leE12. elim/big_ind2: _ => // m1 m2 n1 n2. lra. Qed.
+
+End leR_ltR_sumR.
+
+Section leR_ltR_sumR_finType.
 Variables (A : finType) (f g : A -> R) (P Q : pred A).
 
 Lemma leR_sumR_support (X : {set A}) :
@@ -233,13 +242,6 @@ Lemma leR_sumR_support (X : {set A}) :
 Proof.
 move=> H; elim/big_rec2 : _ => // a x y /andP[aX Pa] yx.
 by apply leR_add => //; apply: H.
-Qed.
-
-Lemma leR_sumR : (forall i, P i -> f i <= g i) ->
-  \sum_(i | P i) f i <= \sum_(i | P i) g i.
-Proof.
-move=> H; rewrite sumR_setT [in X in _ <= X]sumR_setT.
-by apply leR_sumR_support => a _; exact: H.
 Qed.
 
 Lemma leR_sumRl : (forall i, P i -> f i <= g i) ->
@@ -293,7 +295,7 @@ rewrite (eq_bigr f) //; last by move=> *; rewrite inE.
 by rewrite [in X in _ < X](eq_bigr g) // => *; rewrite inE.
 Qed.
 
-End leR_ltR_sumR.
+End leR_ltR_sumR_finType.
 
 Lemma leR_sumR_Rabs (A : finType) f : `| \sum_a f a | <= \sum_(a : A) `| f a |.
 Proof.

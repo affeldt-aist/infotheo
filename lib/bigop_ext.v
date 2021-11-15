@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
@@ -11,6 +11,14 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Lemma leq_bigmax_seq (A : eqType) (F : A -> nat) x (l : seq A) :
+  x \in l -> F x <= \max_(i <- l) F i.
+Proof.
+elim: l => // y l ih; rewrite inE big_cons => /predU1P[->|xl].
+  by rewrite leq_maxl.
+by rewrite (leq_trans (ih xl))// leq_maxr.
+Qed.
 
 Section bigop_no_law.
 
@@ -62,9 +70,9 @@ rewrite (_ : e = [:: \row_(i < 0) a]).
   by rewrite /= big_cons big_nil Monoid.addm0.
 rewrite /e.
 apply (@eq_from_nth _ (\row_(i < 0) a)).
-  by rewrite -cardE card_matrix muln0 expn0.
+  by rewrite -cardE card_mx muln0 expn0.
 move=> i.
-rewrite -cardE card_matrix muln0 expn0 ltnS leqn0 => /eqP ->{i}.
+rewrite -cardE card_mx muln0 expn0 ltnS leqn0 => /eqP ->{i}.
 rewrite -/e.
 destruct e => //.
 apply val_inj => /=.
@@ -80,9 +88,9 @@ rewrite (_ : e = [:: row_of_tuple [tuple]]).
   by rewrite /= big_cons big_nil Monoid.addm0.
 rewrite /e.
 apply (@eq_from_nth _ (row_of_tuple [tuple])).
-  by rewrite -cardE card_matrix muln0 expn0.
+  by rewrite -cardE card_mx muln0 expn0.
 move=> i.
-rewrite -cardE card_matrix muln0 expn0 ltnS leqn0 => /eqP ->{i}.
+rewrite -cardE card_mx muln0 expn0 ltnS leqn0 => /eqP ->{i}.
 rewrite -/e.
 destruct e => //.
 apply val_inj => /=.
@@ -530,3 +538,4 @@ by apply enum_val_nth.
 Qed.
 
 End big_tuple_ffun.
+
