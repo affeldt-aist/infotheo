@@ -15,7 +15,10 @@ description: """
 Infotheo is a Coq library for reasoning about discrete probabilities,
 information theory, and linear error-correcting codes."""
 
-build: [make "-j%{jobs}%"]
+build: [
+  [make "-j%{jobs}%" ]
+  [make "-C" "extraction" "tests"] {with-test}
+]
 install: [make "install"]
 depends: [
   "coq" { (>= "8.13" & < "8.15~") | (= "dev") }
