@@ -31,13 +31,13 @@ information theory, and linear error-correcting codes.
   - Takafumi Saikawa, Nagoya U.
   - Naruomi Obata, Titech (M2)
 - License: [LGPL-2.1-or-later](LICENSE)
-- Compatible Coq versions: Coq 8.13
+- Compatible Coq versions: Coq 8.13, Coq 8.14
 - Additional dependencies:
-  - [MathComp ssreflect 1.12](https://math-comp.github.io)
-  - [MathComp fingroup 1.12](https://math-comp.github.io)
-  - [MathComp algebra 1.12](https://math-comp.github.io)
-  - [MathComp solvable 1.12](https://math-comp.github.io)
-  - [MathComp field 1.12](https://math-comp.github.io)
+  - [MathComp ssreflect](https://math-comp.github.io)
+  - [MathComp fingroup](https://math-comp.github.io)
+  - [MathComp algebra](https://math-comp.github.io)
+  - [MathComp solvable](https://math-comp.github.io)
+  - [MathComp field](https://math-comp.github.io)
   - [MathComp analysis](https://github.com/math-comp/analysis)
 - Coq namespace: `infotheo`
 - Related publication(s):

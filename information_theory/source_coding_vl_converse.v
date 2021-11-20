@@ -769,7 +769,7 @@ have le_1_alp : 1 <= alp.
   apply/leR_pmul => //.
     rewrite mulR1; apply: (@leR_trans 2); last exact: leR2e.
     by rewrite (_ : 1 = 1%:R) // (_ : 2 = 2%:R) // leR_nat.
-  rewrite card_matrix -natRexp mul1n log_pow //.
+  rewrite card_mx -natRexp mul1n log_pow //.
   by rewrite (_ : 0 = INR 0) //; apply/lt_INR/ltP/fdist_card_neq0.
 have alppos : 0 < alp by exact: (@ltR_leR_trans 1).
 have Ypos : 0 < Y by apply/mulR_gt0 => //; apply/mulR_gt0.
@@ -857,7 +857,7 @@ rewrite leR_add2l.
 rewrite mulRA (mulRC (exp 1)) -(mulRA (m eps)%:R).
 apply le_eps => //.
 move:case2.
-rewrite ELC_TupleFDist mulRC (mulRC (m eps)%:R) card_matrix mul1n -natRexp log_pow; last first.
+rewrite ELC_TupleFDist mulRC (mulRC (m eps)%:R) card_mx mul1n -natRexp log_pow; last first.
   by rewrite (_ : 0 = INR 0) //; apply/lt_INR/ltP/fdist_card_neq0.
 move/(ltR_pmul2r (mpos eps nnon0)) => /ltRW.
 apply: leR_trans; exact/le_1_EX.

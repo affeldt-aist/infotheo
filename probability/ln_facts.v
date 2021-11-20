@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
@@ -26,6 +26,8 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
+
+Import Order.Theory.
 
 Section ln_id_sect.
 
@@ -78,16 +80,17 @@ Proof.
 move=> x0 x1.
 rewrite /ln_id; apply/subR_lt0/exp_lt_inv.
 rewrite (exp_ln _ x0) -{1}(addR0 x) -(subRR 1) addRCA.
-exact/exp_ineq1/subR_gt0.
+have ? : x - 1 <> 0 by exact/eqP/gtR_eqF/subR_gt0. (* for Coq 8.14 *)
+have ? : 0 < x - 1 by exact/subR_gt0. (* for Coq 8.13 *)
+exact/exp_ineq1.
 Qed.
 
 Lemma ln_idgt0 x : 0 < x -> ln_id x <= 0.
 Proof.
-move=> Hx.
-case (total_order_T x 1).
-- case => Hx2; first exact/ltRW/ln_idlt0_xlt1.
-  + subst x; rewrite /ln_id ln_1 2!subRR; exact/leRR.
-- move=> Hx2; apply/ltRW/ln_idlt0_xgt1; by [apply Hx | apply Rgt_lt, Hx2].
+case: (ltgtP x 1) => [| |] x1 x0.
+- by apply/ltRW/ln_idlt0_xlt1; split=> //; apply/RltP.
+- by apply/ltRW/ln_idlt0_xgt1 => //; exact/RltP.
+- by rewrite x1 /ln_id ln_1 2!subRR; exact/leRR.
 Qed.
 
 Lemma ln_id_cmp x : 0 < x -> ln x <= x - 1.
@@ -95,7 +98,7 @@ Proof. by move=> Hx; apply Rminus_le; apply ln_idgt0; exact Hx. Qed.
 
 Lemma log_id_cmp x : 0 < x -> log x <= (x - 1) * log (exp 1).
 Proof.
-move=> Hx; rewrite logexp1E; apply leR_wpmul2r;
+by move=> x0; rewrite logexp1E; apply leR_wpmul2r;
   [exact/ltRW/invR_gt0 | exact/ln_id_cmp].
 Qed.
 

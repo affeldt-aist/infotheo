@@ -1,6 +1,7 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect path ssralg fingroup zmodp poly ssrnum.
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import all_ssreflect path ssralg fingroup zmodp poly.
+From mathcomp Require Import ssrnum.
 Require FunctionalExtensionality.
 Require Import ssr_ext.
 
@@ -225,7 +226,7 @@ congr addn.
     rewrite -(big_mkord xpredT
       (fun i => nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i))).
     rewrite -big_filter -[in RHS]big_filter; apply congr_big => //.
-    rewrite /index_iota !subn0 iota_add filter_cat add0n.
+    rewrite /index_iota !subn0 iotaD filter_cat add0n.
     rewrite (@eq_in_filter _ _ predT) ?filter_predT; last first.
       by move=> ?; rewrite mem_iota leq0n /= => ->.
     rewrite (@eq_in_filter _ _ pred0) ?filter_pred0 ?cats0 //.
@@ -238,7 +239,7 @@ transitivity (\sum_(size s1 <= i < size s1 + size s2)
   rewrite -(big_mkord (fun i => ~~ (i < size s1))
     (fun i => nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i))).
   rewrite -big_filter; apply congr_big => //.
-  rewrite /index_iota subn0 iota_add filter_cat add0n.
+  rewrite /index_iota subn0 iotaD filter_cat add0n.
   rewrite (@eq_in_filter _ _ pred0) ?filter_pred0 //; last first.
       move=> i; by rewrite mem_iota leq0n /= add0n => ->.
   rewrite cat0s addnC addnK (@eq_in_filter _ _ predT) ?filter_predT //.
@@ -768,7 +769,7 @@ Record code_set_cw M := CodeSetCw {
 Definition code_set_cw_of_code_set (c : code_set T) : code_set_cw (foldr maxn O (map size c)).
 Proof.
 set M := foldr maxn O (map size c).
-pose l : seq (M.-bseq T) := map (@bseq_of_tuple M T) (codeset c).
+pose l : seq (M.-bseq T) := map (@insub_bseq M T) (codeset c).
 apply CodeSetCw.
 exact: [set x | x in l].
 Defined.
@@ -778,7 +779,7 @@ set x := fintype.enum (codesetcw c).
 pose l : seq (seq T) := map (@bseqval _ _) x.
 apply CodeSet with l.
 rewrite map_inj_uniq.
-by rewrite enum_uniq.
+  by rewrite enum_uniq.
 exact: bseqval_inj.
 Defined.
 

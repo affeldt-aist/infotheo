@@ -15,19 +15,16 @@ description: """
 Infotheo is a Coq library for reasoning about discrete probabilities,
 information theory, and linear error-correcting codes."""
 
-build: [
-  [make "-j%{jobs}%" ]
-  [make "-C" "extraction" "tests"] {with-test}
-]
+build: [make "-j%{jobs}%"]
 install: [make "install"]
 depends: [
-  "coq" { (>= "8.13" & < "8.14~") | (= "dev") }
-  "coq-mathcomp-ssreflect" { (>= "1.12.0" & < "1.13~") }
-  "coq-mathcomp-fingroup" { (>= "1.12.0" & < "1.13~") }
-  "coq-mathcomp-algebra" { (>= "1.12.0" & < "1.13~") }
-  "coq-mathcomp-solvable" { (>= "1.12.0" & < "1.13~") }
-  "coq-mathcomp-field" { (>= "1.12.0" & < "1.13~") }
-  "coq-mathcomp-analysis" { (>= "0.3.6") & (<= "0.3.7") & (<= "0.3.9") & (<= "0.3.10")}
+  "coq" { (>= "8.13" & < "8.15~") | (= "dev") }
+  "coq-mathcomp-ssreflect" { (>= "1.13.0" & < "1.14~") | (= "dev") }
+  "coq-mathcomp-fingroup" { (>= "1.13.0" & < "1.14~") | (= "dev")  }
+  "coq-mathcomp-algebra" { (>= "1.13.0" & < "1.14~") | (= "dev")  }
+  "coq-mathcomp-solvable" { (>= "1.13.0" & < "1.14~") | (= "dev")  }
+  "coq-mathcomp-field" { (>= "1.13.0" & < "1.14~") | (= "dev")  }
+  "coq-mathcomp-analysis" { (>= "0.3.11") & (< "0.4~")}
 ]
 
 tags: [

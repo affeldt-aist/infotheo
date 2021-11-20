@@ -1170,7 +1170,7 @@ have H1 : Proj13.d (TripAC.d Q) = Multivar.to_bivar (Take.d P (lift ord0 i)).
     exact: val_inj.
 have H2 : CondEntropy.h (TripA.d (TripAC.d Q)) = CondEntropy.h (Multivar.to_bivar P).
   rewrite -hTripAC /CondEntropy.h /=.
-  rewrite (@partition_big _ _ _ _ _ xpredT (@row_take A _ i) xpredT) //=.
+  rewrite (partition_big (@row_take A _ i) xpredT) //=.
   rewrite (eq_bigr (fun a => (Bivar.snd (TripA.d Q)) (a.1, a.2) *
            CondEntropy.h1 (TripA.d Q) (a.1, a.2))%R); last by case.
   rewrite -(pair_bigA _ (fun a1 a2 => (Bivar.snd (TripA.d Q)) (a1, a2) *

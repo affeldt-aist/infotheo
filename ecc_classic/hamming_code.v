@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
 From mathcomp Require Import Rstruct.
@@ -1058,7 +1058,7 @@ eapply eq_trans.
 rewrite mulRA /=.
 set den := INR _.
 have -> : 1 / den * den = 1.
-  by rewrite div1R mulVR // ?INR_eq0' card_matrix /= mul1n expn_eq0 negb_and card_F2.
+  by rewrite div1R mulVR // ?INR_eq0' card_mx /= mul1n expn_eq0 negb_and card_F2.
 rewrite mul1R.
 have toleft A B C D : A + C + D = B -> A = B - C - D by move => <-; ring.
 apply toleft.

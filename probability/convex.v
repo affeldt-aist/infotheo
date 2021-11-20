@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require Import boolp classical_sets Rstruct.
 Require Import Reals.
@@ -937,7 +937,7 @@ Lemma convn_weak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
   <|>_d (g \o u) = <|>_(FDistMap.d u d) g.
 Proof.
 apply S1_inj.
-rewrite !S1_convn (@partition_big _ _ _ _ _ _ u (fun _=> true)) //=.
+rewrite !S1_convn (partition_big u (fun _=> true)) //=.
 apply eq_bigr => i _.
 rewrite FDistMap.dE /=.
 have HF : forall a : 'I_m, (0 <= d a)%R by [].
@@ -1090,17 +1090,6 @@ Export CSet.Exports.
 Definition convex_set_of (A : convType) :=
   fun phT : phant (ConvexSpace.sort A) => convex_set A.
 Notation "{ 'convex_set' T }" := (convex_set_of (Phant T)) : convex_scope.
-
-(* NB: was duplicated in monae_lib.v before *)
-Section choice_cast.
-
-Definition equality_mixin_of_Type (T : Type) : Equality.mixin_of T :=
-  EqMixin (fun x y : T => boolp.asboolP (x = y)).
-
-Definition choice_of_Type (T : Type) : choiceType :=
-  Choice.Pack (Choice.Class (equality_mixin_of_Type T) boolp.gen_choiceMixin).
-
-End choice_cast.
 
 Section cset_canonical.
 Variable (A : convType).

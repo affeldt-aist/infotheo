@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require Program.Wf.
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
@@ -841,11 +841,9 @@ move=> y M BEC_y lelM SP_BEC0_rec M0 filtered_var H0 Heq_anonymous.
 case: (SP_BEC0_rec _ _ _ _) => H' [H'fix [H'app [k Htmp]]].
 split => //=.
 split; first by apply: (lel_trans_mat H'app).
-exists k.+1; by rewrite -addn1 iter_add.
+exists k.+1; by rewrite -addn1 iterD.
 Qed.
-Next Obligation.
-by apply/Wf.measure_wf/Wf_nat.lt_wf.
-Defined.
+Next Obligation. exact/Wf.measure_wf/Wf_nat.lt_wf. Defined.
 
 Variable (y : 'rV[letter]_n).
 Hypothesis BEC_y : exists c : 'rV['F_2]_n, c BEC( H ) y.

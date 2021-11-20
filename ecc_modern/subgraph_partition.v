@@ -114,6 +114,23 @@ Definition acyclic := forall p, 2 < size p -> ~ path.ucycle g p.
 Definition acyclic' := forall a b p,
   a \notin b :: p -> path.cycle g [:: a, b & p] -> last b p == b.
 
+Lemma ext_uniq_path (ac : acyclic') a b c s :
+  uniq_path g b (c :: s) -> g a b -> a \notin s.
+Proof.
+move/andP => [Hp Hun] Hab; apply/negP => /splitPr Hsp.
+destruct Hsp.
+case Hli: (last b (c :: p1) == b).
+  move/andP/proj1: Hun.
+  by rewrite -cat_cons mem_cat -(eqP Hli) /= mem_last.
+suff: false by []; rewrite -Hli.
+apply (ac a b (c :: p1)).
+  apply/negP => Ha.
+  by rewrite (cat_uniq [:: b,c & p1] [:: a & p2]) /= Ha /= !andbF in Hun.
+rewrite -cat_rcons -cat_cons cat_path in Hp.
+move/andP/proj1: Hp => /= ->.
+by rewrite Hab.
+Qed.
+
 Lemma acyclic_equiv : acyclic' <-> acyclic.
 Proof.
 rewrite /acyclic' /acyclic; split => [Hac | ].

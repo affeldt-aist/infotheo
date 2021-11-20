@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
@@ -181,6 +181,13 @@ Qed.
 
 Lemma Pr_1 E : Pr E <= 1.
 Proof. rewrite -(FDist.f1 P); apply leR_sumRl => // a _; exact/leRR. Qed.
+
+Lemma Pr_lt1 E : Pr E < 1 <-> Pr E != 1.
+Proof.
+split => H; move: (Pr_1 E); rewrite leR_eqVlt.
+  by move=> [Pr1|]; [move: H; rewrite Pr1 => /ltRR|exact: ltR_eqF].
+by move=> [Pr1|//]; rewrite Pr1 eqxx in H.
+Qed.
 
 Lemma Pr_set0 : Pr set0 = 0.
 Proof. by rewrite /Pr big_pred0 // => a; rewrite in_set0. Qed.

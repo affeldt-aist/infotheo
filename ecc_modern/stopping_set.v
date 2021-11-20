@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import f2 ssr_ext ssralg_ext max_subset.
@@ -390,7 +390,7 @@ rewrite /iSP_BEC0.
 rewrite {}Halpha => Hbeta.
 move: x alpha Hbeta Hn0.
 elim => [ //= | lmax IHmax ] alpha Hbeta.
-rewrite -(addn1 lmax) iter_add => Htmp.
+rewrite -(addn1 lmax) iterD => EstiStar(*NB: not used?*).
 apply IHmax.
   rewrite /= /cols_starblank => n1 Hns1; apply/colP => m1.
   rewrite !mxE.
@@ -399,7 +399,7 @@ apply IHmax.
   rewrite (negbTE m1n1).
   by move: (Hbeta _ Hns1) => /colP/(_ m1); rewrite !mxE (negbTE m1n1).
 rewrite mxE.
-by apply/eqP/Prod_colFNext_mxSum_stopset.
+exact/eqP/Prod_colFNext_mxSum_stopset.
 Qed.
 
 End subset_erasures.

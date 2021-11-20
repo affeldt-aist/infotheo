@@ -450,7 +450,7 @@ have Kcw : wH cw <= n - k + 1.
     rewrite -(big_mkord (fun i => ~~ (i < k.-1)) (fun=> 1%N)).
     rewrite {1}/index_iota subn0.
     rewrite {1}(_ : n = k.-1 + (n - k.-1))%N; last by rewrite subnKC // ltnW.
-    rewrite iota_add big_cat /=.
+    rewrite iotaD big_cat /=.
     rewrite sum1_count.
     rewrite (@eq_in_count _ _ xpred0); last first.
       move=> i.
@@ -744,7 +744,7 @@ suff : \sum_(c in C) #|ball c t| <= q ^ n.
     rewrite /= => c cC; by rewrite card_ballE.
   by rewrite big_const iter_addn_0 mulnC.
 have -> : q ^ n = #| 'rV['F_q]_n |.
-  by rewrite card_matrix mul1n card_ord Fp_cast.
+  by rewrite card_mx mul1n card_ord Fp_cast.
 set P : {set {set _}} := [set ball c t | c in C].
 have trivIP : trivIset P.
   apply/trivIsetP => /= s1 s2 /imsetP[/= c1 c1C] -> /imsetP[/= c2 c2C] -> s1s2.
@@ -853,7 +853,7 @@ Proof.
 move=> F1.
 case : C =>  cws [] /= f.
 move/inj_card => /=.
-by rewrite !card_matrix !mul1n leq_exp2l.
+by rewrite !card_mx !mul1n leq_exp2l.
 Qed.
 
 Lemma min_dist_prop_old (M : finType) (C : t A B n M) (C_not_trivial : not_trivial C) m m' :
