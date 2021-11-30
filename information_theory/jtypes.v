@@ -102,7 +102,7 @@ move=> a.
 refine (@mkPosFfun _ (pf a) _); apply/forallP_leRP => b.
 rewrite /pf ffunE.
 case: ifP => [_ | Hcase].
-- exact/ltRW/invR_gt0/ltR0n.
+- exact/invR_ge0/ltR0n.
 - apply divR_ge0; first exact/leR0n.
   by apply/ltRP; rewrite lt0R INR_eq0' Hcase /= leR0n'.
 Defined.
@@ -651,7 +651,7 @@ have d0 : forall b, (0 <= d b)%R.
   move=> b.
   rewrite /d /= ffunE.
   apply mulR_ge0; first exact/leR0n.
-  apply/ltRW/invR_gt0/ltR0n; by rewrite lt0n.
+  apply/invR_ge0/ltR0n; by rewrite lt0n.
 have d1 : (\sum_(b : B) d b)%R = 1%R.
   rewrite /=; evar (h : B -> R); rewrite (eq_bigr h); last first.
     move=> b _; rewrite ffunE /h; reflexivity.

@@ -218,7 +218,7 @@ rewrite derive_pt_opp.
 destruct Hp' as [Hp'1 Hp'2].
 rewrite derive_pt_pinsker_fun //; last lra.
 rewrite /pinsker_fun' /div_fct.
-have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
+have Hlocal : 0 <= / ln 2 by exact/invR_ge0.
 have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   rewrite subR_ge0; apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans  (8 * / (2 * ln 2))).
@@ -260,7 +260,7 @@ rewrite /pinsker_fun' /div_fct.
 have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   have : forall a b, b <= a -> 0 <= a - b by move=> *; lra.
   apply.
-  have Hlocal : 0 <= / ln 2 by exact/ltRW/invR_gt0.
+  have Hlocal : 0 <= / ln 2 by exact/invR_ge0.
   have /eqP Hlocal2 : t * (1 - t) <> 0 by apply/eqP/gtR_eqF/mulR_gt0; lra.
   apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans (8 * / (2 * ln 2))).
@@ -446,7 +446,7 @@ set lhs := _ * _.
 set rhs := D(_ || _).
 rewrite -subR_ge0 -pinsker_fun_p_eq.
 apply pinsker_fun_pos with A card_A => //.
-split; [exact/ltRW/invR_gt0/mulR_gt0 | exact/leRR].
+split; [exact/invR_ge0/mulR_gt0 | exact/leRR].
 Qed.
 
 End Pinsker_2_bdist.

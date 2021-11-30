@@ -471,7 +471,7 @@ Lemma f0 : forall a, 0 <= f a.
 Proof.
 move=> a; rewrite /f ffunE.
 case: ifPn => [_ |ab]; first exact/leRR.
-apply mulR_ge0 => //; exact/ltRW/invR_gt0/subR_gt0/fdist_lt1.
+apply mulR_ge0 => //; exact/invR_ge0/subR_gt0/fdist_lt1.
 Qed.
 Lemma f1 : \sum_(a in B) f a = 1.
 Proof.

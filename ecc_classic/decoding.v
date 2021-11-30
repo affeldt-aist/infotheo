@@ -159,7 +159,7 @@ Lemma ML_smallest_err_rate phi :
   echa(W, mkCode enc dec) <= echa(W, mkCode enc phi).
 Proof.
 move=> dec.
-apply leR_wpmul2l; first by apply/mulR_ge0 => //; exact/ltRW/invR_gt0/ltR0n.
+apply leR_wpmul2l; first by apply/mulR_ge0 => //; exact/invR_ge0/ltR0n.
 rewrite /ErrRateCond /= [in X in _ <= X](eq_bigr
   (fun m => 1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m])); last first.
   move=> m _; rewrite Pr_to_cplt; congr (_ - Pr _ _).
@@ -343,7 +343,7 @@ rewrite /tmp in H.
 evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H; last first.
   move=> v vC; rewrite ffunE /h; reflexivity.
 rewrite -bigmaxR_distrl in H; last first.
-  apply/ltRW/invR_gt0; rewrite ltR_neqAle; split.
+  apply/invR_ge0; rewrite ltR_neqAle; split.
     apply/eqP; by rewrite eq_sym -receivableE Receivable.defE.
   exact/PosteriorProbability.den_ge0.
 move: H.

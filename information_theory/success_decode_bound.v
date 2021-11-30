@@ -183,7 +183,7 @@ Lemma success_factor_bound_part2 :
   success_factor tc V <= exp2(n%:R * `I(P, V)) / #|M|%:R.
 Proof.
 rewrite /success_factor -mulRA (mulRC (/ #|M|%:R)) !mulRA.
-apply leR_wpmul2r; first exact/ltRW/invR_gt0/ltR0n.
+apply leR_wpmul2r; first exact/invR_ge0/ltR0n.
 rewrite /MutualInfoChan.mut_info -addR_opp addRC addRA.
 rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last first.
   by rewrite /CondEntropyChan.h; field.

@@ -217,7 +217,7 @@ Lemma f0 i a : 0 <= f i a.
 Proof.
 rewrite ffunE; apply mulR_ge0.
 - rewrite /Kmpp.
-  apply/ltRW/invR_gt0/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
+  apply/invR_ge0/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
     by apply sumR_ge0 => /= ? _; exact: FDist.ge0.
   exact/f'_neq0.
 - by apply sumR_ge0 => /= ? _; exact: FDist.ge0.

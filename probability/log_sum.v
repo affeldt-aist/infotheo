@@ -98,7 +98,7 @@ suff : 0 <= \sum_(a | a \in C) f a * ln (f a / g a).
     rewrite /rhs.
     apply eq_bigr => a a_C; by rewrite /Rdiv -mulRA.
   rewrite -big_distrl /=.
-  apply mulR_ge0 => //; exact/ltRW/invR_gt0.
+  apply mulR_ge0 => //; exact/invR_ge0.
 apply (@leR_trans (\sum_(a | a \in C) f a * (1 - g a / f a))).
   apply (@leR_trans (\sum_(a | a \in C) (f a - g a))).
     rewrite big_split /= -big_morph_oppR Htmp addRN; exact/leRR.

@@ -2241,7 +2241,7 @@ apply/mulR_ge0; last first.
   apply (@leR_trans c2).
     by case: Id => _ /ltRW.
   apply/ltRW; by case: Ic2.
-apply/mulR_ge0; last by apply/ltRW/invR_gt0; rewrite subR_gt0.
+apply/mulR_ge0; last by apply/invR_ge0; rewrite subR_gt0.
 apply/mulR_ge0; last first.
   by rewrite subR_ge0; case: Id => Id1 Id2; apply (@leR_trans d); exact/ltRW.
 by apply/mulR_ge0; rewrite subR_ge0; exact/ltRW.

@@ -575,6 +575,9 @@ Proof. by apply/(sameP idP)/(iffP idP) => /ltR0n_neq0. Qed.
 Lemma invR_gt0 x : 0 < x -> 0 < / x.
 Proof. by move=> x0; apply Rinv_0_lt_compat. Qed.
 
+Lemma invR_ge0 x : 0 < x -> 0 <= / x.
+Proof. by move=> x0; apply/ltRW/invR_gt0. Qed.
+
 (* Rinv_neq_0_compat : forall r : R, r <> 0 -> / r <> 0 *)
 Lemma invR_neq0 (x : R) : x <> 0 -> / x <> 0.
 Proof. exact: Rinv_neq_0_compat. Qed.
@@ -628,7 +631,7 @@ Lemma div0R (x : R) : 0 / x = 0.
 Proof. by rewrite /Rdiv mul0R. Qed.
 
 Lemma divR_ge0 (x y : R) : 0 <= x -> 0 < y -> 0 <= x / y.
-Proof. move=> x0 y0; apply mulR_ge0 => //; exact/ltRW/invR_gt0. Qed.
+Proof. move=> x0 y0; apply mulR_ge0 => //; exact/invR_ge0. Qed.
 
 Lemma divR_gt0 (x y : R) : 0 < x -> 0 < y -> 0 < x / y.
 Proof. exact: Rdiv_lt_0_compat x y. Qed.

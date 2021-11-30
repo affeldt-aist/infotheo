@@ -99,7 +99,7 @@ Proof. by move=> Hx; apply Rminus_le; apply ln_idgt0; exact Hx. Qed.
 Lemma log_id_cmp x : 0 < x -> log x <= (x - 1) * log (exp 1).
 Proof.
 by move=> x0; rewrite logexp1E; apply leR_wpmul2r;
-  [exact/ltRW/invR_gt0 | exact/ln_id_cmp].
+  [exact/invR_ge0 | exact/ln_id_cmp].
 Qed.
 
 Lemma ln_id_eq x : 0 < x -> ln x = x - 1 -> x = 1.

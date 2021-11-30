@@ -366,7 +366,7 @@ apply: (@leR_trans (log (alp * (1 - (alp ^ (\max_(a | a \in A) size (f a))))
     by case/(pow_lt_1_compat _ _)/(_ max_pos).
   rewrite /Rdiv -mulRA; apply/(leR_wpmul2l (ltRW lt_0_alp)).
   rewrite -{2}(mul1R (/ (1 - alp))).
-  apply/leR_wpmul2r; first by apply/ltRW/invR_gt0; rewrite subR_gt0.
+  apply/leR_wpmul2r; first by apply/invR_ge0; rewrite subR_gt0.
   rewrite -addR_opp addRC -leR_subr_addr subRR leR_oppl oppR0.
   exact/expR_ge0/ltRW.
 rewrite EX_ord -big_pow1; last exact/eqP/ltR_eqF.
