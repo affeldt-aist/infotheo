@@ -121,50 +121,47 @@ Local Open Scope divergence_scope.
 Lemma convex_div : convex_function (uncurry_dom_pair (@div A)).
 Proof.
 move=> [x Hx] [y Hy] p /=; rewrite /uncurry_dom_pair /= avgRE.
-rewrite 2!big_distrr /= -big_split /=.
-rewrite /div [in X in X <= _]sumR_setT [in X in _ <= X]sumR_setT.
+rewrite 2!big_distrr /= -big_split /= /div.
 apply leR_sumR => a _; rewrite 2!ConvFDist.dE.
-case/boolP : (y.2 a == 0) => [/eqP|] y2a0.
+have [y2a0|y2a0] := eqVneq (y.2 a) 0.
   rewrite y2a0 (_ : y.1 a = 0) ?(mulR0,addR0,mul0R); last first.
     by move/dominatesP : Hy; exact.
-  case/boolP : (x.2 a == 0) => [/eqP |] x2a0.
-    rewrite (_ : x.1 a = 0) ?(mul0R,mulR0); last by move/dominatesP : Hx; exact.
-    exact/leRR.
-  case/boolP : (p == 0%:pr) => [/eqP /=|] p0.
-    rewrite p0 ?mul0R; exact/leRR.
+  have [x2a0|x2a0] := eqVneq (x.2 a) 0.
+    by rewrite (_ : x.1 a = 0) ?(mul0R,mulR0);
+      [exact/leRR|exact/((dominatesP _ _).1 Hx)].
+  have [p0|p0] := eqVneq p 0%:pr; first by rewrite p0 ?mul0R; exact/leRR.
   apply/Req_le; rewrite mulRA; congr (_ * _ * log _).
-  field; split; exact/eqP.
-case/boolP : (x.2 a == 0) => [/eqP |] x2a0.
+  by field; split; exact/eqP.
+have [x2a0|x2a0] := eqVneq (x.2 a) 0.
   rewrite x2a0 (_ : x.1 a = 0) ?(mulR0,add0R,mul0R); last first.
     by move/dominatesP : Hx; exact.
   case/boolP : (p.~ == 0) => [/eqP ->|t0]; first by rewrite !mul0R; exact/leRR.
   apply/Req_le; rewrite mulRA; congr (_ * _ * log _).
-  field; split; exact/eqP.
+  by field; split; exact/eqP.
 set h : fdist A -> fdist A -> {ffun 'I_2 -> R} :=
   fun p1 p2 => [ffun i => [eta (fun=> 0) with ord0 |-> p * p1 a,
                                        lift ord0 ord0 |-> p.~ * p2 a] i].
 have hdom : h x.1 y.1 `<< h x.2 y.2.
-  apply/dominatesP => i.
-  rewrite /h /= !ffunE; case: ifPn => _.
-  rewrite mulR_eq0 => -[->|/eqP]; by [rewrite mul0R | rewrite (negbTE x2a0)].
+  apply/dominatesP => i; rewrite /h /= !ffunE; case: ifPn => _.
+    by rewrite mulR_eq0 => -[->|/eqP]; [rewrite mul0R | rewrite (negbTE x2a0)].
   case: ifPn => // _.
-  rewrite mulR_eq0 => -[->|/eqP]; by [rewrite mul0R | rewrite (negbTE y2a0)].
+  by rewrite mulR_eq0 => -[->|/eqP]; [rewrite mul0R | rewrite (negbTE y2a0)].
 set f : 'I_2 -> R := h x.1 y.1.
 set g : 'I_2 -> R := h x.2 y.2.
-have h0 : forall p1 p2, [forall i, 0 <b= h p1 p2 i].
-  move=> p1' p2'; apply/forallP_leRP => ?; rewrite /h /= ffunE.
+have h0 p1 p2 : [forall i, 0 <b= h p1 p2 i].
+  apply/forallP_leRP => ?; rewrite /h /= ffunE.
   case: ifPn => [_ | _]; first exact/mulR_ge0.
   case: ifPn => [_ |  _]; [|exact/leRR].
-  apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
+  by apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
 move: (log_sum setT (mkPosFfun (h0 x.1 y.1)) (mkPosFfun (h0 x.2 y.2)) hdom).
 rewrite /= -!sumR_ord_setT !big_ord_recl !big_ord0 !addR0.
 rewrite /h /= !ffunE => /leR_trans; apply.
 rewrite !eqxx eq_sym (negbTE (neq_lift ord0 ord0)).
 rewrite -!mulRA; apply/Req_le; congr (_  + _ ).
-  case/boolP : (p == 0%:pr) => [/eqP ->|t0]; first by rewrite !mul0R.
-  congr (_ * (_ * log _)); field; split; exact/eqP.
-case/boolP : (p.~ == 0) => [/eqP ->|t1]; first by rewrite !mul0R.
-congr (_ * (_ * log _)); field; split; exact/eqP.
+  have [->|t0] := eqVneq p 0%:pr; first by rewrite !mul0R.
+  by congr (_ * (_ * log _)); field; split; exact/eqP.
+have [->|t1] := eqVneq p.~ 0; first by rewrite !mul0R.
+by congr (_ * (_ * log _)); field; split; exact/eqP.
 Qed.
 
 Lemma convex_relative_entropy (d1 d2 e1 e2 : fdist_convType A) (p : prob) :

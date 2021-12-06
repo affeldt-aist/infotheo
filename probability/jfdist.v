@@ -389,8 +389,8 @@ Implicit Types (E : {set A}) (F : {set B}).
 Lemma Pr_XsetT E : Pr P (E `* [set: B]) = Pr (Bivar.fst P) E.
 Proof.
 rewrite [in RHS]/Pr; under [in RHS]eq_bigr do rewrite Bivar.fstE.
-rewrite /Pr big_setX /=; apply eq_bigr => a aE.
-by rewrite [in RHS]sumR_setT; apply eq_bigl => b; rewrite andbT.
+rewrite /Pr big_setX /=; apply: eq_bigr => a aE.
+by apply: eq_bigl => b; rewrite !inE.
 Qed.
 
 Lemma Pr_setTX F : Pr P ([set: A] `* F) = Pr (Bivar.snd P) F.
@@ -401,15 +401,15 @@ Qed.
 
 Lemma PrX_snd F : \sum_(a in A) Pr P ([set a] `* F) = Pr (Bivar.snd P) F.
 Proof.
-rewrite -Pr_setTX /Pr sumR_setT big_setX /=.
-by apply eq_big => a; rewrite andbT // => _; rewrite big_setX /= big_set1.
+rewrite -Pr_setTX /Pr big_setX; apply: eq_big => a; first by rewrite !inE.
+by rewrite big_setX /= big_set1.
 Qed.
 
 Lemma PrX_fst E : \sum_(b in B) Pr P (E `* [set b]) = Pr (Bivar.fst P) E.
 Proof.
-rewrite -Pr_XsetT /Pr sumR_setT big_setX /= [in RHS]exchange_big /=.
-apply eq_big => b /=; rewrite andbT // => _.
-by rewrite big_setX /= exchange_big big_set1.
+rewrite -Pr_XsetT /Pr big_setX /= [in RHS]exchange_big /=; apply: eq_big => b.
+  by rewrite !inE.
+by move=> _; rewrite big_setX /= exchange_big big_set1.
 Qed.
 
 End Pr_extra.
