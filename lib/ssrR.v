@@ -467,10 +467,9 @@ Proof.
 split => [|?]; first by move/leR_subr_addr; rewrite add0R.
 by apply/leR_subr_addr; rewrite add0R.
 Qed.
-Lemma subr_le0  x y : (y - x <= 0) <-> (y <= x).
+Lemma subR_le0 x y : (y - x <= 0) <-> (y <= x).
 Proof.
-split => [|?]; first by move/leR_subl_addr; rewrite add0R.
-by apply/leR_subl_addr; rewrite add0R.
+by split => [/leR_subl_addr|?]; [|apply/leR_subl_addr]; rewrite add0R.
 Qed.
 
 (***********************************)

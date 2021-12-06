@@ -156,11 +156,6 @@ Proof. elim: k => // k Hk; by rewrite iterS Hk Rmax_right. Qed.
 
 (** Rle, Rlt lemmas for big sums of reals *)
 
-(* TODO: use finset.big_set *)
-Lemma sumR_setT (A : finType) (f : A -> R) (P : pred A) :
-  \sum_(i in A | P i) f i = \sum_(i in [set: A] | P i) f i.
-Proof. apply eq_bigl => x /=; by rewrite !inE. Qed.
-
 Lemma sumR_ord_setT (n : nat) (f : 'I_n -> R) :
   \sum_(i < n) f i = \sum_(i in [set: 'I_n]) f i.
 Proof. by apply eq_bigl => i; rewrite inE. Qed.

@@ -521,28 +521,11 @@ apply eq_from_nth with false.
   by apply F2_of_bool_0_inv.
 Qed.
 
-(* TODO: move? *)
-Lemma row_nth (i j : bitseq) : (size i <= n)%nat -> size j = size i ->
-  \row_(i0 < n) F2_of_bool (nth false i i0) =
-  \row_(i0 < n) F2_of_bool (nth false j i0) -> i = j.
-Proof.
-move=> Hi Hj /matrixP Heq.
-apply/esym.
-apply (@eq_from_nth _ false _ _ Hj) => i0 Hi0.
-rewrite Hj in Hi0.
-have {}Hi0 : (i0 < n)%nat.
-  apply leq_ltn_trans with ((size i).-1)%nat;
-    rewrite -ltnS prednK //; by apply leq_ltn_trans with i0.
-move: (Heq 0 (Ordinal Hi0)).
-rewrite !mxE /=; by do 2 case: nth.
-Qed.
-
 Lemma rV_of_nat_inj i j : (i < expn 2 n)%nat -> (j < expn 2 n)%nat ->
   rV_of_nat n i = rV_of_nat n j -> i = j.
 Proof.
-move=> Hi Hj /row_nth => X.
-apply (@bitseq_of_nat_inj n) => //.
-apply X; by rewrite !(eqP (size_bitseq_of_nat _ _)).
+move=> Hi Hj /bitseq_row_nth => h; apply (@bitseq_of_nat_inj n) => //.
+by apply h; rewrite !(eqP (size_bitseq_of_nat _ _)).
 Qed.
 
 Local Open Scope nat_scope.

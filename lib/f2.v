@@ -4,7 +4,11 @@ From mathcomp Require Import all_ssreflect fingroup perm ssralg zmodp.
 From mathcomp Require Import matrix mxalgebra poly polydiv mxpoly.
 
 (******************************************************************************)
-(*                       Small lemmas about 'F_2                              *)
+(*                        Small lemmas about 'F_2                             *)
+(*                                                                            *)
+(*   F2_of_bool b == coercion from bool to 'F_2                               *)
+(*   bool_of_F2 x == boolean corresponding to x : 'F_2                        *)
+(*        negF2 x == boolean negation over 'F_2                               *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -84,6 +88,16 @@ Lemma F2_addmx0 m n (a b : 'M['F_2]_(m, n)) : a + b = 0 -> a = b.
 Proof. by move/eqP; rewrite addr_eq0 F2_mx_opp => /eqP. Qed.
 
 End AboutF2.
+
+(* NB: maybe not very interesting as a lemma *)
+Lemma bitseq_row_nth n (i j : bitseq) : (size i <= n)%nat -> size i = size j ->
+  \row_(k < n) F2_of_bool (nth false i k) =
+  \row_(k < n) F2_of_bool (nth false j k) -> i = j.
+Proof.
+move=> ni ij /rowP h; apply/(@eq_from_nth _ false _ _ ij) => k kj.
+have kn : (k < n)%nat by rewrite (leq_trans kj)// ji.
+by move: (h (Ordinal kn)); rewrite !mxE /=; do 2 case: nth.
+Qed.
 
 Section AboutPolyF2.
 

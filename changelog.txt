@@ -5,6 +5,13 @@ from 0.3.4 to ?.?.?
 * added
 - in ssrR.v
   + lemma invR_ge0
+* renamed:
+- in ssrR.v
+  + subr_le0 -> subR_le0
+* changed:
+- row_nth moved and renamed to bitseq_row_nth
+* removed:
+  + sumR_setT
 
 -------------------
 from 0.3.3 to 0.3.4
