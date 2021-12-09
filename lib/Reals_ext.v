@@ -456,6 +456,9 @@ Qed.
 Lemma probK p : p = (p.~).~%:pr.
 Proof. by apply val_inj => /=; rewrite onemK. Qed.
 
+Lemma probKC (p : prob) : p + p.~ = 1 :> R.
+Proof. by rewrite onemKC. Qed.
+
 Lemma probadd_eq0 p q : p + q = 0%:pr <-> p = 0%:pr /\ q = 0%:pr.
 Proof.
 split => [/paddR_eq0 | ].
