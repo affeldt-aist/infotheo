@@ -126,9 +126,8 @@ move=> PQ.
 rewrite /cre cdiv_is_div_joint_dist; last first.
   by apply/dom_by_cdom_by; rewrite /JointFDistChan.d; unlock.
 rewrite /div.
-evar (f : A -> Rdefinitions.R); rewrite (eq_bigr f); last first.
-  move=> b _; rewrite big_distrr /= /f; reflexivity.
-rewrite {}/f pair_big /=; apply eq_bigr => -[a b] _ /=.
+under eq_bigr do rewrite big_distrr /=.
+rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
 rewrite (_ : JointFDistChan.d R P (a, b) = (CJFDist.joint_of P) (a, b)); last first.
   by rewrite JointFDistChan.dE ProdFDist.dE.
 rewrite (_ : JointFDistChan.d R Q (a, b) = (CJFDist.joint_of Q) (a, b)); last first.
@@ -147,10 +146,10 @@ rewrite !Swap.snd.
 case/boolP : (CJFDist.joint_of Q (a, b) == 0) => [/eqP|] H'.
   have : (CJFDist.joint_of P) (a, b) = 0 by move/dominatesP : PQ => ->.
   rewrite /P ProdFDist.dE /= mulR_eq0 => -[| -> ].
-    move/eqP : H; tauto.
+    by move/eqP : H; tauto.
   by rewrite !(mulR0,mul0R,div0R).
 rewrite 2!ProdFDist.fst /=; field.
-split; exact/eqP.
+by split; exact/eqP.
 Qed.
 
 End conditional_divergence_vs_conditional_relative_entropy.

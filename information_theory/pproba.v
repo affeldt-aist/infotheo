@@ -123,9 +123,8 @@ Qed.
 
 Lemma f1 : \sum_(x in 'rV_n) f x = 1.
 Proof.
-rewrite /f /Rdiv; evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h); last first.
-  move=> a _; rewrite ffunE /h; reflexivity.
-by rewrite {}/h -big_distrl /= mulRC mulVR // -receivableE Receivable.defE.
+under eq_bigr do rewrite ffunE /=.
+by rewrite -big_distrl /= mulRC mulVR // -receivableE Receivable.defE.
 Qed.
 
 Definition d : {fdist 'rV[A]_n} := locked (FDist.make f0 f1).
@@ -203,10 +202,8 @@ Definition Kmpp : R := / \sum_(t in 'rV_n) f' t.
 
 Lemma f'_neq0 : \sum_(t in 'rV_n) f' t <> 0.
 Proof.
-evar (x : 'rV[A]_n -> R).
-rewrite (eq_bigr x); last first.
-  move=> i _; rewrite /f' PosteriorProbability.dE /Rdiv /x; reflexivity.
-rewrite -big_distrl { x} /= mulR_eq0 => -[/eqP|].
+under eq_bigr do rewrite /f' PosteriorProbability.dE /Rdiv.
+rewrite -big_distrl /= mulR_eq0 => -[/eqP|].
 - by apply/negP; rewrite -receivableE Receivable.defE.
 - by apply/invR_neq0/eqP; rewrite -receivableE Receivable.defE.
 Qed.
@@ -225,9 +222,8 @@ Qed.
 
 Lemma f1 i : \sum_(a in A) f i a = 1.
 Proof.
-rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
-  move=> a _; rewrite ffunE /h; reflexivity.
-rewrite {}/h -big_distrr /= /Kmpp.
+under eq_bigr do rewrite ffunE /=.
+rewrite -big_distrr /= /Kmpp.
 set tmp1 := \sum_( _ | _ ) _.
 set tmp2 := \sum_( _ | _ ) _.
 suff : tmp1 = tmp2.

@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
@@ -61,7 +61,7 @@ case/I3P.
   rewrite eqxx; lra.
 Qed.
 
-Definition pmf : [finType of 'I_3] ->R+ := mkPosFfun f_nonneg.
+Definition pmf : [finType of 'I_3] ->R+ := mkNNFinfun f_nonneg.
 
 Ltac I3_eq := rewrite (_ : _ == _ = true); last by
               apply/eqP/val_inj => /=; rewrite inordK.

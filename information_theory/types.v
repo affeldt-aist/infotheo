@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 From mathcomp Require boolp.
@@ -86,9 +86,8 @@ set f := [ffun a => N(a | ta)%:R / n.+1%:R].
 assert (H1 : forall a, (0 <= f a)%R).
   move=> a; rewrite ffunE; apply divR_ge0; by [apply leR0n | apply ltR0n].
 have H2 : \sum_(a in A) f a = 1%R.
-  rewrite /f; evar (h : A -> R); rewrite (eq_bigr h); last first.
-    move=> a _; rewrite ffunE /h; reflexivity.
-  by rewrite {}/h -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
+  under eq_bigr do rewrite ffunE /=.
+  by rewrite -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
 have H : forall a, (N(a | ta) < n.+2)%nat.
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
 refine (@type.mkType _ n.+1 (FDist.make H1 H2)
@@ -135,20 +134,19 @@ move: {H}(H a); rewrite H1 H2 eqR_mul2r //.
 apply/invR_neq0; by rewrite INR_eq0.
 Qed.
 
-Definition pos_fun_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2}) : pos_ffun A.
+Definition nneg_fun_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2}) : nneg_finfun A.
 set d := [ffun a : A => INR (f a) / INR n.+1].
-refine (@mkPosFfun _ d _); apply/forallP_leRP => a.
-rewrite ffunE; apply divR_ge0; by [apply leR0n | apply ltR0n].
+refine (@mkNNFinfun _ d _); apply/forallP_leRP => a.
+by rewrite ffunE; apply divR_ge0; [apply leR0n | apply ltR0n].
 Defined.
 
 Definition fdist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : (\sum_(a in A) f a)%nat == n.+1) : fdist A.
-set pf := pos_fun_of_ffun f.
+set pf := nneg_fun_of_ffun f.
 have H : \sum_(a in A) pf a == 1 :> R.
-  rewrite /pf; evar (h : A -> R); rewrite (eq_bigr h); last first.
-    move=> a _; rewrite ffunE /h; reflexivity.
-  rewrite {}/h /= /Rdiv -big_distrl /= -big_morph_natRD.
-  move/eqP : Hf => ->; by rewrite mulRV // INR_eq0'.
+  rewrite /pf; under eq_bigr do rewrite ffunE /=.
+  rewrite /Rdiv -big_distrl /= -big_morph_natRD.
+  by move/eqP : Hf => ->; rewrite mulRV // INR_eq0'.
 exact:(FDist.mk H).
 Defined.
 

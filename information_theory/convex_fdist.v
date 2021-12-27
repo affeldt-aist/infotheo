@@ -55,9 +55,8 @@ Lemma entropy_log_div : entropy p = log #|A|%:R - D(p || u).
 Proof.
 rewrite /entropy /div.
 evar (RHS : A -> R).
-have H : forall a : A, p a * log (p a / u a) = RHS a.
-  move => a.
-  move : (pos_ff_ge0 p a) => [H|H].
+have H a : p a * log (p a / u a) = RHS a.
+  case : (nneg_finfun_ge0 p a) => H.
   - rewrite Uniform.dE.
     change (p a * log (p a / / #|A|%:R)) with (p a * log (p a * / / #|A|%:R)).
     have H0 : 0 < #|A|%:R by rewrite A_not_empty ltR0n.
@@ -65,15 +64,13 @@ have H : forall a : A, p a * log (p a / u a) = RHS a.
     rewrite invRK // logM // mulRDr.
     by instantiate (RHS := fun a => p a * log (p a) + p a * log #|A|%:R).
   - by rewrite /RHS -H /= 3!mul0R add0R.
-have H0 : \sum_(a in A) p a * log (p a / u a) = \sum_(a in A) RHS a.
-  move : H; rewrite /RHS => H.
-  exact: eq_bigr.
-rewrite H0 /RHS big_split /= -big_distrl /= (FDist.f1 p) mul1R.
+have -> : \sum_(a in A) p a * log (p a / u a) = \sum_(a in A) RHS a.
+  by move : H; rewrite /RHS => H; exact: eq_bigr.
+rewrite /RHS big_split /= -big_distrl /= (FDist.f1 p) mul1R.
 by rewrite -addR_opp oppRD addRC -addRA Rplus_opp_l addR0.
 Qed.
 End entropy_log_div.
 
-(* convexity of relative entropy *)
 Section dominated_pair.
 Variable A : finType.
 Implicit Types p q : prob.
@@ -153,7 +150,7 @@ have h0 p1 p2 : [forall i, 0 <b= h p1 p2 i].
   case: ifPn => [_ | _]; first exact/mulR_ge0.
   case: ifPn => [_ |  _]; [|exact/leRR].
   by apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
-move: (log_sum setT (mkPosFfun (h0 x.1 y.1)) (mkPosFfun (h0 x.2 y.2)) hdom).
+move: (log_sum setT (mkNNFinfun (h0 x.1 y.1)) (mkNNFinfun (h0 x.2 y.2)) hdom).
 rewrite /= -!sumR_ord_setT !big_ord_recl !big_ord0 !addR0.
 rewrite /h /= !ffunE => /leR_trans; apply.
 rewrite !eqxx eq_sym (negbTE (neq_lift ord0 ord0)).

@@ -26,7 +26,7 @@ apply/all_tnthP: a => /=.
 rewrite !andb_idr => * //; apply/leRP; lra.
 Qed.
 
-Definition p' : [finType of 'I_3] ->R+ := mkPosFfun p_nonneg.
+Definition p' : [finType of 'I_3] ->R+ := mkNNFinfun p_nonneg.
 
 Lemma p_sum1 : \sum_(i in 'I_3) p' i == 1.
 Proof.

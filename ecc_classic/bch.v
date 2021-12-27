@@ -465,16 +465,14 @@ Lemma BCH_key_equation_old (y : 'rV[F]_n) : a ^+ n = 1 ->
 Proof.
 move=> an1.
 rewrite dftE big_distrr /=.
-evar (tmp : 'I_n -> {poly F}).
-rewrite (eq_bigr (fun i => tmp i)); last first.
+under eq_bigr.
   move=> i ie.
   rewrite -scalerAr.
   rewrite (_ : \sigma_(rVexp a n, y) =
     \sigma_(rVexp a n, y, i) * (1 - ((rVexp a n) ``_ i) *: 'X)); last first.
     rewrite /errloc (bigD1 i) //= mulrC; congr (_ * _).
     apply eq_bigl => ij; by rewrite in_setD1 andbC.
-  rewrite /tmp; reflexivity.
-rewrite {}/tmp.
+  over.
 transitivity (\sum_(i in supp y) y ``_ i *:
      (\sigma_(rVexp a n, y, i) * (1 - a ^+ (i * n) *: 'X^n))).
   apply eq_bigr => /= i ie; congr (_ *: _).

@@ -203,17 +203,15 @@ have Hha : [disjoint h @^-1: (B :&: [set h x | x in I])
   suff // : [disjoint B :&: [set h x | x in I] & B :\: [set h x | x in I]]
     by rewrite -setI_eq0; move/eqP => ->; rewrite preimset0.
 rewrite -(setID B (h @: I)) /= preimsetU.
-evar (p : pred I); rewrite (eq_bigl p); last first.
-  move=> i; rewrite in_setU /p; reflexivity.
-rewrite {}/p bigU //.
-evar (p : pred J); rewrite (eq_bigl p); last first.
-  move=> j; rewrite in_setU /p; reflexivity.
-rewrite {}/p bigU //.
+under eq_bigl do rewrite in_setU.
+rewrite bigU //.
+under [in RHS]eq_bigl do rewrite in_setU.
+rewrite bigU //.
 have -> : h @^-1: (B :\: [set h x | x in I]) = set0.
   apply/setP/subset_eqP/andP; rewrite sub0set; split => //.
   apply/subsetP=> i; rewrite !inE; case/andP.
   move/imsetP=> H _; elimtype False; apply H.
-    by exists i; rewrite ?inE.
+  by exists i; rewrite ?inE.
 rewrite big_set0 Monoid.mulm1.
 have -> : \big[aop/idx]_(x in B :\: [set h x | x in I])
            \big[aop/idx]_(i | h i == x) F i
@@ -230,13 +228,14 @@ rewrite big1_eq Monoid.mulm1.
 set B' := B :&: [set h x | x in I].
 set A := h @^-1: B'.
 have -> : B' = h @: A by rewrite imset_preimset //; apply subsetIr.
-have Hright : forall j, j \in h @: A -> \big[aop/idx]_(i in I | h i == j) F i = \big[aop/idx]_(i in A | h i == j) F i.
-  move=> j Hj; apply eq_bigl => i; apply andb_id2r; move/eqP => hij.
+have Hright j : j \in h @: A -> \big[aop/idx]_(i in I | h i == j) F i =
+                               \big[aop/idx]_(i in A | h i == j) F i.
+  move=> Hj; apply eq_bigl => i; apply andb_id2r; move/eqP => hij.
   move: Hj; rewrite -hij !inE.
   case/imsetP => x; rewrite /A /B' !inE => /andP [H H0] ->.
   by rewrite H H0.
 rewrite [in RHS](eq_bigr _ Hright).
-by apply: partition_big_imset.
+exact: partition_big_imset.
 Qed.
 End BigOps.
 
