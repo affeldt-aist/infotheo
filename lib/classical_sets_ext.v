@@ -14,13 +14,6 @@ Implicit Types A B C : set T.
 
 Local Open Scope classical_set_scope.
 
-Lemma eq_imagel (f g : T -> U) A :
-  (forall a, A a -> f a = g a) -> f @` A = g @` A.
-Proof.
-by move=> H; rewrite eqEsubset; split=> a;
-  case => x Xx <-; [rewrite H | rewrite -H] => //; exists x.
-Qed.
-
 Lemma subset_image (f : T -> U) A (Y : set U) :
   f @` A `<=` Y <-> forall a, A a -> Y (f a).
 Proof.
@@ -28,10 +21,6 @@ split=> H.
 - by move=> a Xa; apply/H/imageP.
 - by move=> b [] a Xa <-; apply H.
 Qed.
-
-Lemma eq_bigcup (P Q : set U) (X Y : U -> set T) :
-  P = Q -> X =1 Y -> \bigcup_(i in P) X i = \bigcup_(i in Q) Y i.
-Proof. by move=> -> /funext ->. Qed.
 
 Lemma bigcup_of_const (P : set U) (X : U -> set T) (i : U) :
   P i -> (forall j, P j -> X j = X i) -> \bigcup_(j in P) X j = X i.

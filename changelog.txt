@@ -12,6 +12,8 @@ from 0.3.4 to ?.?.?
 - row_nth moved and renamed to bitseq_row_nth
 * removed:
   + sumR_setT
+  + eq_imagel
+  + eq_bigcup
 
 -------------------
 from 0.3.3 to 0.3.4
