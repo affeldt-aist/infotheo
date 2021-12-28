@@ -5,6 +5,8 @@ from 0.3.4 to ?.?.?
 * added
 - in ssrR.v
   + lemma invR_ge0
+- in ssrZ.v
+  + lemmas addZAC, addZCA, neq_Zlt
 * renamed:
 - in ssrR.v
   + subr_le0 -> subR_le0

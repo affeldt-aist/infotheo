@@ -50,6 +50,10 @@ Lemma add1Z z : (1 + z)%Z = z.+1Z. Proof. by rewrite Z.add_1_l. Qed.
 Definition addZC : commutative Zplus := Zplus_comm.
 Definition addZA : associative Zplus := Zplus_assoc.
 
+Lemma addZAC : right_commutative Zplus. Proof. by move=> ? ? ?; ring. Qed.
+
+Lemma addZCA : left_commutative Zplus. Proof. by move=> ? ? ?; ring. Qed.
+
 Definition addZZ := Zplus_diag_eq_mult_2.
 
 Definition subZ0 := Z.sub_0_r.
@@ -105,6 +109,11 @@ Definition ltZ_eqF := Z.lt_neq.
 
 Lemma gtZ_eqF a b : a < b -> b <> a.
 Proof. by move/ltZ_eqF/nesym. Qed.
+
+Lemma neq_Zlt (a b : Z) : (a != b) <-> (a < b)%Z \/ (b < a)%Z.
+Proof.
+by split => [/eqP/not_Zeq//|[ab|ba]]; [exact/eqP/ltZ_eqF|exact/eqP/gtZ_eqF].
+Qed.
 
 Definition leZZ := Z.le_refl.
 Definition leZZ' := Z.leb_refl.
