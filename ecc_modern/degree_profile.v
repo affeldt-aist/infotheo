@@ -710,9 +710,8 @@ Proof. rewrite ffunE; apply RofKpos, f0. Qed.
 
 Lemma f1R l : (\sum_(t : @fintree tw l) [ffun x => RofK (@fintree_dist l x)] t = 1)%R.
 Proof.
-evar (h : fintree_finType tw l -> R); rewrite (eq_bigr h); last first.
-  move=> i _; rewrite ffunE /h; reflexivity.
-by rewrite {}/h -(@big_morph _ _ RofK 0%R Rplus 0%:R (@GRing.add K)) // f1 RofK1.
+under eq_bigr do rewrite ffunE /=.
+by rewrite -(@big_morph _ _ RofK 0%R Rplus 0%:R (@GRing.add K)) // f1 RofK1.
 Qed.
 
 Definition tree_ensemble l : ensemble tw l := FDist.make (@f0R l) (@f1R l).

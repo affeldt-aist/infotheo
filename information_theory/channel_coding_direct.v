@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix perm.
 Require Import Reals Lra Classical.
 From mathcomp Require Import Rstruct.
@@ -41,11 +41,10 @@ Definition f := [ffun g : encT A M n => \prod_(m in M) P `^ n (g m)].
 Lemma f0 g : 0 <= f g. Proof. rewrite ffunE; exact: prodR_ge0. Qed.
 Lemma f1 : \sum_(g in {ffun M -> 'rV[A]_n}) f g = 1.
 Proof.
-rewrite /f; evar (h : {ffun M -> 'rV[A]_n} -> R); rewrite (eq_bigr h); last first.
-  move=> a _; rewrite ffunE /h; reflexivity.
-rewrite {}/h -(bigA_distr_bigA (fun _ v => P `^ n v)) /=.
+under eq_bigr do rewrite ffunE /=.
+rewrite -(bigA_distr_bigA (fun _ v => P `^ n v)) /=.
 rewrite [RHS](_ : _ = \prod_(m0 : M | xpredT m0) 1); last by rewrite big1.
-apply eq_bigr => _ _; by rewrite (FDist.f1 (P `^ n)).
+by apply eq_bigr => _ _; rewrite (FDist.f1 (P `^ n)).
 Qed.
 Definition d : {fdist encT A M n} := locked (FDist.make f0 f1).
 Lemma dE x : d x = f x. Proof. by rewrite /d; unlock; rewrite ffunE. Qed.

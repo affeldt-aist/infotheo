@@ -74,7 +74,7 @@ Record t := mk {
   f :> A ->R+ ;
   _ : \sum_(a in A) f a == 1 :> R }.
 Lemma ge0 (d : t) a : 0 <= d a.
-Proof. by case: d => /= f _; apply/pos_ff_ge0. Qed.
+Proof. by case: d => /= f _; exact/nneg_finfun_ge0. Qed.
 Lemma f1 (d : t) : \sum_(a in A) d a = 1 :> R.
 Proof. by case: d => f /= /eqP. Qed.
 Lemma le1 (d : t) a : d a <= 1.
@@ -84,7 +84,7 @@ rewrite -(f1 d) (_ : d a = \sum_(a' in A | a' == a) d a').
 by rewrite big_pred1_eq.
 Qed.
 Definition make (f : {ffun A -> R}) (H0 : forall a, 0 <= f a)
-  (H1 : \sum_(a in A) f a = 1) := @mk (@mkPosFfun _ f
+  (H1 : \sum_(a in A) f a = 1) := @mk (@mkNNFinfun _ f
   (proj1 (@reflect_iff _ _ (forallP_leRP _)) H0)) (introT eqP H1).
 End fdist.
 Module Exports.
@@ -92,7 +92,7 @@ Notation fdist := t.
 End Exports.
 End FDist.
 Export FDist.Exports.
-Coercion FDist.f : fdist >-> pos_ffun.
+Coercion FDist.f : fdist >-> nneg_finfun.
 Canonical fdist_subType A := Eval hnf in [subType for @FDist.f A].
 Definition fdist_eqMixin A := [eqMixin of fdist A by <:].
 Canonical dist_eqType A := Eval hnf in EqType _ (fdist_eqMixin A).
@@ -183,8 +183,8 @@ split=> H; first by rewrite ltR_neqAle; split => //; exact/eqP.
 exact/ltR_eqF.
 Qed.
 
-Lemma fdist_ext d d' : (forall x, pos_ff d x = pos_ff d' x) -> d = d'.
-Proof. move=> ?; exact/val_inj/val_inj/ffunP. Qed.
+Lemma fdist_ext d d' : (forall x, d x = d' x) -> d = d'.
+Proof. by move=> ?; exact/val_inj/val_inj/ffunP. Qed.
 
 End FDist_lemmas.
 
@@ -194,7 +194,7 @@ Module FDist1.
 Section fdist1.
 Variables (A : finType) (a : A).
 Definition f := [ffun b => INR (b == a)%bool].
-Lemma f0 b : 0 <= f b. Proof. rewrite ffunE; exact: leR0n. Qed.
+Lemma f0 b : 0 <= f b. Proof. by rewrite ffunE; exact: leR0n. Qed.
 Lemma f1 : \sum_(b in A) f b = 1.
 Proof.
 rewrite (bigD1 a) //= {1}/f ffunE eqxx /= (eq_bigr (fun=> 0)); last first.

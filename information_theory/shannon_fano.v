@@ -127,10 +127,8 @@ apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
     by rewrite -(Log_1 2); apply Log_increasing_le.
   case: (ceilP x) => _.
   by rewrite -LogV // -/(log _) -(div1R _) /x.
-evar (h : A -> R).
-rewrite (eq_bigr h); last first.
-  move=> i _; rewrite mulRDr mulR1 mulRN  /h; reflexivity.
-rewrite {}/h big_split /= FDist.f1 leR_add2r.
+under eq_bigr do rewrite mulRDr mulR1 mulRN.
+rewrite big_split /= FDist.f1 leR_add2r.
 apply Req_le.
 rewrite /entropy big_morph_oppR; apply eq_bigr => i _.
 by rewrite card_ord (_ : 2%:R = 2).

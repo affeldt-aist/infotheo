@@ -388,7 +388,7 @@ Definition raw_weight pt : R :=
 Lemma weight_ge0 pt : 0 <= raw_weight pt.
 Proof. case: pt => /= [[x] /= /ltRP/ltRW //|]; by apply leRR. Qed.
 
-Definition weight := mkPosFun weight_ge0.
+Definition weight := mkNNFun weight_ge0.
 
 Definition point pt : weight pt > 0 -> A.
 destruct pt as [t c|].
@@ -595,8 +595,8 @@ apply (@proj1 _ (0 <= \sum_(i | P i) F i)).
 apply (big_ind2 (fun y q => scalept q x = y /\ 0 <= q)).
 + by rewrite scalept0.
 + move=> x1 x2 y1 y2 [Hx1 Hx2] [Hy1 Hy2].
-  rewrite -Hx1 -Hy1 scalept_addR //; split => //; exact: addR_ge0.
-+ move=> i _; split => //; exact/pos_f_ge0.
+  by rewrite -Hx1 -Hy1 scalept_addR //; split => //; exact: addR_ge0.
++ by move=> i _; split => //; exact/nneg_f_ge0.
 Qed.
 
 Definition barycenter (pts : seq scaled_pt) := \ssum_(x <- pts) x.
@@ -632,8 +632,8 @@ Lemma barycenter_convnfdist :
 Proof.
 rewrite (eq_bigr _ (fun i _ => big_scalept (p i) _ _ _)).
 rewrite exchange_big /=; apply eq_bigr => j _; rewrite ConvnFDist.dE.
-have HF : forall i, 0 <= p i * q i j by move=> i; apply/mulR_ge0.
-rewrite (scalept_rsum _ (mkPosFun HF)) /=; apply eq_bigr => i _.
+have HF i : 0 <= p i * q i j by exact/mulR_ge0.
+rewrite (scalept_rsum _ (mkNNFun HF)) /=; apply eq_bigr => i _.
 by rewrite scalept_comp.
 Qed.
 End convfdist.
@@ -941,7 +941,7 @@ rewrite !S1_convn (partition_big u (fun _=> true)) //=.
 apply eq_bigr => i _.
 rewrite FDistMap.dE /=.
 have HF : forall a : 'I_m, (0 <= d a)%R by [].
-rewrite (@scalept_rsum T _ _ (mkPosFun HF)) /=.
+rewrite (@scalept_rsum T _ _ (mkNNFun HF)) /=.
 by apply eq_bigr => a /eqP ->.
 Qed.
 

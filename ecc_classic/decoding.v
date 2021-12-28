@@ -341,7 +341,7 @@ simpl in H.
 set tmp := \rmax_(_ <- _ | _) _ in H.
 rewrite /tmp in H.
 evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H; last first.
-  move=> v vC; rewrite ffunE /h; reflexivity.
+  by move=> v vC; rewrite ffunE /h; reflexivity.
 rewrite -bigmaxR_distrl in H; last first.
   apply/invR_ge0; rewrite ltR_neqAle; split.
     apply/eqP; by rewrite eq_sym -receivableE Receivable.defE.
@@ -360,8 +360,8 @@ have x0 : / x <> 0 by apply/eqP/invR_neq0'; rewrite -receivableE Receivable.defE
 move/(eqR_mul2r x0) in H.
 rewrite /= UniformSupport.dET ?inE // in H; last first.
   move/subsetP : dec_img; apply.
-  rewrite inE; apply/existsP; by exists (Receivable.y tb); apply/eqP.
-move/eqR_mul2l :  H => -> //; exact/eqP/gtR_eqF.
+  by rewrite inE; apply/existsP; exists (Receivable.y tb); apply/eqP.
+by move/eqR_mul2l :  H => -> //; exact/eqP/gtR_eqF.
 Qed.
 
 End MAP_decoding_prop.

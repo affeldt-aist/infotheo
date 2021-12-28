@@ -91,15 +91,15 @@ Qed.
 Definition jtype_eqMixin A B n := EqMixin (@jtype_eqP A B n).
 Canonical jtype_eqType A B n := Eval hnf in EqType _ (@jtype_eqMixin A B n).
 
-Definition pos_fun_of_pre_jtype (A B : finType) (Bnot0 : (0 < #|B|)%nat) n
-  (f : {ffun A -> {ffun B -> 'I_n.+1}}) : A -> pos_ffun B.
+Definition nneg_fun_of_pre_jtype (A B : finType) (Bnot0 : (0 < #|B|)%nat) n
+  (f : {ffun A -> {ffun B -> 'I_n.+1}}) : A -> nneg_finfun B.
 pose pf := fun a => [ffun b : B =>
   let ln := (\sum_(b1 in B) (f a b1))%nat in
   if ln == O
     then / #|B|%:R
     else (f a b)%:R / ln%:R].
 move=> a.
-refine (@mkPosFfun _ (pf a) _); apply/forallP_leRP => b.
+refine (@mkNNFinfun _ (pf a) _); apply/forallP_leRP => b.
 rewrite /pf ffunE.
 case: ifP => [_ | Hcase].
 - exact/invR_ge0/ltR0n.
@@ -115,10 +115,8 @@ set pf := fun a b =>
   then / #|B|%:R
   else (f a b)%:R / ln%:R.
 refine (@Channel1.mkChan A B _ Anot0) => a.
-apply: (@FDist.mk _ (@pos_fun_of_pre_jtype _ _ Bnot0 n f a)).
-rewrite /=; evar (h : B -> R); rewrite (eq_bigr h); last first.
-  move=> b _; rewrite ffunE /h; reflexivity.
-rewrite {}/h.
+apply: (@FDist.mk _ (@nneg_fun_of_pre_jtype _ _ Bnot0 n f a)).
+under eq_bigr do rewrite ffunE /=.
 case/boolP : (\sum_(b1 in B) (f a b1) == O)%nat => Hcase.
 - by rewrite /Rle big_const iter_addR mulRV // INR_eq0' -lt0n.
 - rewrite big_morph_natRD /Rdiv -big_distrl /= mulRV //.
@@ -653,9 +651,8 @@ have d0 : forall b, (0 <= d b)%R.
   apply mulR_ge0; first exact/leR0n.
   apply/invR_ge0/ltR0n; by rewrite lt0n.
 have d1 : (\sum_(b : B) d b)%R = 1%R.
-  rewrite /=; evar (h : B -> R); rewrite (eq_bigr h); last first.
-    move=> b _; rewrite ffunE /h; reflexivity.
-  rewrite {}/h -big_distrl /= -big_morph_natRD.
+  under eq_bigr do rewrite ffunE /=.
+  rewrite -big_distrl /= -big_morph_natRD.
   set lhs := \sum_i _.
   suff -> : lhs = N(a | ta) by rewrite mulRV // INR_eq0'.
   rewrite /lhs /f /= -[in X in _ = X](Hrow_num_occ Hta a).
@@ -1110,10 +1107,9 @@ Proof. rewrite ffunE; apply divR_ge0; [exact/leR0n | exact/ltR0n]. Qed.
 
 Lemma f1 : (\sum_(b in B) f b = 1)%R.
 Proof.
-rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
-  move=> b _; rewrite ffunE /h; reflexivity.
-rewrite {}/h -big_distrl /= -big_morph_natRD exchange_big /=.
-move/eqP : (JType.sum_f V) => ->; by rewrite mulRV // INR_eq0'.
+under eq_bigr do rewrite ffunE /=.
+rewrite -big_distrl /= -big_morph_natRD exchange_big /=.
+by move/eqP : (JType.sum_f V) => ->; rewrite mulRV // INR_eq0'.
 Qed.
 
 Definition d : fdist B := FDist.make f0 f1.

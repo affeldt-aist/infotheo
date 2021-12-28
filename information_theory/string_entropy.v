@@ -51,9 +51,8 @@ Qed.
 
 Lemma f_div_total_1 : \sum_(a in A) [ffun a : A => f a / total] a = 1.
 Proof.
-evar (h : A -> R); rewrite (eq_bigr h); last first.
-  move=> a _ /=; rewrite /f_div_total ffunE /h; reflexivity.
-rewrite {}/h /f_div_total -big_distrl -big_morph_natRD.
+under eq_bigr do rewrite ffunE /=.
+rewrite /f_div_total -big_distrl -big_morph_natRD.
 by rewrite sum_f_total /= mulRV // INR_eq0'.
 Qed.
 
@@ -207,12 +206,8 @@ have Hr: forall i, r i \in Rpos_interval.
 (* (5) Apply Jensen *)
 move: (jensen_dist_concave log_concave d Hr).
 rewrite /d /r /=.
-evar (h : 'I_(size ss') -> R); rewrite (eq_bigr h); last first.
-  move=> i _; rewrite ffunE /h; reflexivity.
-rewrite {}/h.
-evar (h : 'I_(size ss') -> R); rewrite [X in _ <= log X -> _](eq_bigr h); last first.
-  move=> i _; rewrite ffunE /h; reflexivity.
-rewrite {}/h.
+under eq_bigr do rewrite ffunE /=.
+under [X in _ <= log X -> _]eq_bigr do rewrite ffunE /=.
 rewrite -(big_tnth _ _ _ xpredT
   (fun s => (N(a|s) / N(a|flatten ss')) *
            log ((size s) / N(a|s)))).

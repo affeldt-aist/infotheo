@@ -12,8 +12,8 @@ Require Import ssrR.
 (* Section reals_ext.                                                         *)
 (*   various lemmas about up, Int_part, frac_part, Rabs define ceil and floor *)
 (*                                                                            *)
-(* Section pos_finfun.                                                        *)
-(*  T ->R^+/->R+ == functions that return non-negative reals.                 *)
+(*  T ->R+ == finite functions that return non-negative reals.                *)
+(* T ->R^+ == functions that return non-negative reals.                       *)
 (*                                                                            *)
 (*     p.~ == 1 - p                                                           *)
 (*                                                                            *)
@@ -288,30 +288,30 @@ Qed.
 
 End rExtrema.
 
-Section pos_finfun.
+Section nneg_finfun.
 Variable (T : finType).
 
-Record pos_ffun := mkPosFfun {
-  pos_ff :> {ffun T -> R} ;
-  _ : [forall a, 0 <b= pos_ff a] }.
+Record nneg_finfun := mkNNFinfun {
+  nneg_ff :> {ffun T -> R} ;
+  _ : [forall a, 0 <b= nneg_ff a] }.
 
-Canonical pos_ffun_subType := Eval hnf in [subType for pos_ff].
-Definition pos_ffun_eqMixin := [eqMixin of pos_ffun by <:].
-Canonical pos_ffun_eqType := Eval hnf in EqType _ pos_ffun_eqMixin.
-End pos_finfun.
+Canonical nneg_finfun_subType := Eval hnf in [subType for nneg_ff].
+Definition nneg_finfun_eqMixin := [eqMixin of nneg_finfun by <:].
+Canonical nneg_finfun_eqType := Eval hnf in EqType _ nneg_finfun_eqMixin.
+End nneg_finfun.
 
-Notation "T '->R+' " := (pos_ffun T) : reals_ext_scope.
+Notation "T '->R+' " := (nneg_finfun T) : reals_ext_scope.
 
-Lemma pos_ff_ge0 (T : finType) (f : T ->R+) : forall a, 0 <= pos_ff f a.
+Lemma nneg_finfun_ge0 (T : finType) (f : T ->R+) : forall a, 0 <= f a.
 Proof. by case: f => f /= /forallP H a; apply/leRP/H. Qed.
 
-Record pos_fun (T : Type) := mkPosFun {
-  pos_f :> T -> R ;
-  pos_f_ge0 : forall a, 0 <= pos_f a }.
+Record nneg_fun (T : Type) := mkNNFun {
+  nneg_f :> T -> R ;
+  nneg_f_ge0 : forall a, 0 <= nneg_f a }.
 
-Notation "T '->R^+' " := (pos_fun T) : reals_ext_scope.
+Notation "T '->R^+' " := (nneg_fun T) : reals_ext_scope.
 
-Lemma pos_fun_eq {C : Type} (f g : C ->R^+) : pos_f f = pos_f g -> f = g.
+Lemma nneg_fun_eq {C : Type} (f g : C ->R^+) : nneg_f f = nneg_f g -> f = g.
 Proof.
 destruct f as [f Hf].
 destruct g as [g Hg].

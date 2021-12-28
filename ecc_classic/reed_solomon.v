@@ -170,9 +170,9 @@ rewrite (bigD1 i') //= coefXn insubT //= => Hj.
 rewrite eqxx mulr1 (_ : Ordinal Hj = j); last by apply val_inj.
 rewrite mxE inordK; last by rewrite ltnS (leq_trans (ltn_ord i)).
 rewrite mulrC; apply/eqP.
-  rewrite addrC -subr_eq subrr; apply/eqP/esym.
+rewrite addrC -subr_eq subrr; apply/eqP/esym.
 rewrite big1 // => k ki'; rewrite coefXn (_ : (_ == _) = false) ?mulr0 //.
-apply: contraNF ki'; by rewrite -val_eqE /= eq_sym.
+by apply: contraNF ki'; rewrite -val_eqE /= eq_sym.
 Qed.
 
 Lemma codebook_syndrome (c : 'rV_n) :
@@ -859,13 +859,12 @@ suff H : size (rVpoly (encoder m - c)) <= d.
     case: (RS.addr_closed a n' d) => _.
     move/(_ _ (- c) Hencm); apply.
     by rewrite RS.oppr_closed.
-  case/(@RS.deg_lb _ a _ _ dn a_neq0 a_not_uroot_on)/orP => [/eqP -> | ].
+  case/(@RS.deg_lb _ a _ _ dn a_neq0 a_not_uroot_on)/orP => [/eqP ->|].
     apply/eqP/polyP => i.
     rewrite coef_poly coef0.
     case: ifP => // _.
-    case: (insub i) => // ?; by rewrite mxE.
-  move=> H'.
-  by move: (leq_trans H' H); rewrite ltnn.
+    by case: (insub i) => // ?; rewrite mxE.
+  by move=> /leq_trans/(_ H); rewrite ltnn.
 rewrite /encoder ffunE linearB /= poly_rV_K; last first.
   rewrite (leq_trans (size_add _ _)) // geq_max.
   apply/andP; split.
@@ -892,11 +891,12 @@ rewrite /RS_discard -/(high c); apply RS_enc_surjective.
 by rewrite -RS.lcode0_codebook // ?inE.
 Qed.
 
-Definition RS_as_lcode (an1 : a ^+ n = 1) (Hchar : ([char F]^').-nat n) : Lcode.t _ _ _ [finType of 'rV_(n - d.+1).+1] :=
- @Lcode.mk _ _ _ _ _
-   (Encoder.mk RS_enc_injective RS_enc_img)
-   (Decoder.mk (RS_repair_img an1 Hchar) RS_discard)
-   RS_enc_discard_is_id.
+Definition RS_as_lcode (an1 : a ^+ n = 1) (Hchar : ([char F]^').-nat n) :
+  Lcode.t _ _ _ [finType of 'rV_(n - d.+1).+1] :=
+    @Lcode.mk _ _ _ _ _
+      (Encoder.mk RS_enc_injective RS_enc_img)
+      (Decoder.mk (RS_repair_img an1 Hchar) RS_discard)
+      RS_enc_discard_is_id.
 
 End RS_encoder_sect.
 
@@ -931,8 +931,7 @@ Local Open Scope cyclic_code_scope.
 
 Lemma rs_gen_is_gen : poly_rV \gen_(a, d) \in 'cgen[Ccode.mk RS_cyclic].
 Proof.
-apply pgen_is_cgen => /=.
-  exact: RS_not_trivial.
+apply pgen_is_cgen => /=; first exact: RS_not_trivial.
 apply/forallP => /= p; apply/eqP; apply/idP/idP.
   move=> Hp.
   move: (proj1 (rs_genP dn a0 (prim_root_not_uroot_on an) p)).
@@ -947,8 +946,7 @@ rewrite -(@RS.codebook_syndrome _ a n' d) //.
 apply: (proj2 (rs_genP dn a0 (prim_root_not_uroot_on an) p)).
 rewrite poly_rV_K // ?size_rs_gen // in Hp.
 case/dvdpP : Hp => x Hx.
-exists x; split => //.
-by apply: RS_message_size Hx.
+by exists x; split => //; exact: RS_message_size Hx.
 Qed.
 
 End RS_cyclic.

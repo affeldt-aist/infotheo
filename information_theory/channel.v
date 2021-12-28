@@ -181,10 +181,9 @@ Lemma f0 (b : B) : 0 <= f b.
 Proof. by rewrite ffunE; apply: sumR_ge0 => a _; exact: mulR_ge0. Qed.
 Lemma f1 : \sum_(b in B) f b = 1.
 Proof.
-rewrite /f; evar (h : B -> R); rewrite (eq_bigr h); last first.
-  move=> a _; rewrite ffunE /h; reflexivity.
-rewrite {}/h exchange_big /= -(FDist.f1 P).
-apply eq_bigr => a _; by rewrite -big_distrl /= (FDist.f1 (W a)) mul1R.
+under eq_bigr do rewrite ffunE /=.
+rewrite exchange_big /= -(FDist.f1 P).
+by apply eq_bigr => a _; rewrite -big_distrl /= (FDist.f1 (W a)) mul1R.
 Qed.
 Definition d : fdist B := locked (FDist.make f0 f1).
 Lemma dE b : d b = \sum_(a in A) W a b * P a.

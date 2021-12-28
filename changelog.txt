@@ -10,6 +10,10 @@ from 0.3.4 to ?.?.?
 * renamed:
 - in ssrR.v
   + subr_le0 -> subR_le0
+- in reals_ext.v
+  + pos_ffun -> nneg_finfun
+  + pos_ff_ge0 -> nneg_finfun_ge0
+  + pos_fun -> nneg_fun
 * changed:
 - row_nth moved and renamed to bitseq_row_nth
 * removed:

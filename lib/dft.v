@@ -156,23 +156,14 @@ Lemma dftE (v : 'rV[F]_n) :
   rVpoly (dft v) = \sum_(i in supp v) (v ``_ i *: \sum_(j < t) (a ``_ (inord j)) ^+ i *: 'X^j).
 Proof.
 rewrite /dft.
-evar (tmp : 'I_n -> {poly F}).
-rewrite [in RHS](eq_bigr (fun i => tmp i)); last first.
-  move=> i iv.
-  rewrite scaler_sumr /tmp; reflexivity.
-rewrite {}/tmp exchange_big /= /rVpoly poly_def; apply eq_bigr => i _.
-evar (tmp : 'I_n -> {poly F}).
-rewrite [in RHS](eq_bigr (fun i => tmp i)); last first.
-  move=> j jv.
-  rewrite scalerA /tmp; reflexivity.
-rewrite {}/tmp /fdcoor -scaler_suml; congr (_ *: _).
+under eq_bigr do rewrite scaler_sumr.
+rewrite exchange_big /= /rVpoly poly_def; apply eq_bigr => i _.
+under [in RHS]eq_bigr do rewrite scalerA.
+rewrite /fdcoor -scaler_suml; congr (_ *: _).
 rewrite insubT // => ni.
 rewrite mxE (@horner_coef_wide _ n); last by rewrite /rVpoly size_poly.
-evar (tmp : 'I_n -> F).
-rewrite [in RHS](eq_bigr (fun i => tmp i)); last first.
-  move=> j jv; rewrite /tmp; reflexivity.
-rewrite {}/tmp -sum_supp; apply eq_bigr => j _.
-rewrite coef_rVpoly_ord (_ : Sub _ _ = i) //; by apply val_inj.
+rewrite -sum_supp; apply eq_bigr => j _.
+by rewrite coef_rVpoly_ord (_ : Sub _ _ = i) //; apply val_inj.
 Qed.
 
 End discrete_Fourier_transform.

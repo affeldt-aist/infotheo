@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require Import Reals Lra.
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import Rstruct.
@@ -33,7 +33,7 @@ apply/leRP.
 do! case: ifP => _; lra.
 Qed.
 
-Definition p' : [finType of 'I_3] ->R+ := mkPosFfun p_nonneg.
+Definition p' : [finType of 'I_3] ->R+ := mkNNFinfun p_nonneg.
 
 Lemma p_sum1 : \sum_(i in 'I_3) p' i == 1.
 Proof.
