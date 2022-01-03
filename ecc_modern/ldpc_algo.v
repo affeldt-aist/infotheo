@@ -103,7 +103,7 @@ Next Obligation. by move=> -[a0 a1]; rewrite /beta_op !mulR1. Qed.
 Canonical beta_op_monoid_law.
 
 Program Definition beta_op_monoid_com_law : Monoid.com_law (R1, R1) := @Monoid.ComLaw _ _ beta_op_monoid_law _.
-Next Obligation. by move=> -[a0 a1] [b0 b1]; rewrite /beta_op (mulRC a0) (mulRC a1). Qed.
+Next Obligation. by move=> -[a0 a1] [b0 b1]; rewrite /beta_op /= (mulRC a0) (mulRC a1). Qed.
 Canonical beta_op_monoid_com_law.
 
 (** Select α or β according to node kind *)
