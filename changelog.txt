@@ -32,9 +32,9 @@ from 0.3.4 to 0.3.5
 * changed:
 - row_nth moved and renamed to bitseq_row_nth
 * removed:
-  + sumR_setT
-  + eq_imagel
-  + eq_bigcup
+  + sumR_setT (use finset.big_set in MathComp)
+  + eq_imagel (use classical_sets.eq_imagel in MathComp-Analysis)
+  + eq_bigcup (use classical_sets.eq_bigcup in MathComp-Analysis)
 
 -------------------
 from 0.3.3 to 0.3.4
