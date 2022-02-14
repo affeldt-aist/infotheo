@@ -71,7 +71,7 @@ make install
 
 ## Acknowledgments
 
-Many thanks to several contributors ([committers](https://github.com/affeldt-aist/infotheo/graphs/contributors)).
+Many thanks to several [contributors](https://github.com/affeldt-aist/infotheo/graphs/contributors).
 
 The principle of inclusion-exclusion is a contribution by 
 Erik Martin-Dorel (University Toulouse III Paul Sabatier, IRIT research laboratory)
