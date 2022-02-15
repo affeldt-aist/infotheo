@@ -41,7 +41,7 @@ license:
 nix: true
 
 supported_coq_versions:
-  text: Coq 8.13, Coq 8.14
+  text: Coq 8.13, Coq 8.14, Coq 8.15
   opam: '{ (>= "8.13" & < "8.16~") | (= "dev") }'
 
 tested_coq_opam_versions:
