@@ -281,7 +281,7 @@ pose g : nat -> R := fun d : nat => (1 - p) ^ (n - d) * p ^ d.
 have -> : W ``(y | c) = g (dH_y c).
   move: (DMC_BSC_prop p enc (discard c) y).
   set cast_card := eq_ind_r _ _ _.
-  rewrite (_ : cast_card = card_F2) //; last by apply eq_irrelevance.
+  rewrite (_ : cast_card = card_F2) //.
   clear cast_card.
   rewrite -/W compatible //.
   move/subsetP : f_img; apply.
@@ -290,7 +290,7 @@ transitivity (\big[Rmax/R0]_(c in C) (g (dH_y c))); last first.
   apply eq_bigr => /= c' Hc'.
   move: (DMC_BSC_prop p enc (discard c') y).
   set cast_card := eq_ind_r _ _ _.
-  rewrite (_ : cast_card = card_F2) //; last by apply eq_irrelevance.
+  rewrite (_ : cast_card = card_F2) //.
   by rewrite -/W compatible.
 (* the function maxed over is decreasing so we may look for its minimizer,
    which is given by minimum distance decoding *)

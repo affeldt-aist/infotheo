@@ -106,7 +106,7 @@ Section neset_canonical.
 Variable A : Type.
 Canonical neset_predType :=
   Eval hnf in PredType (fun t : neset A => (fun x => x \in (t : set _))).
-Canonical neset_eqType := Equality.Pack (equality_mixin_of_Type (neset A)).
+Canonical neset_eqType := Equality.Pack (@gen_eqMixin (neset A)).
 Canonical neset_choiceType := choice_of_Type (neset A).
 End neset_canonical.
 
@@ -1016,7 +1016,7 @@ Section necset_canonical.
 Variable (A : convType).
 Canonical necset_predType :=
   Eval hnf in PredType (fun t : necset A => (fun x => x \in (t : set _))).
-Canonical necset_eqType := Equality.Pack (equality_mixin_of_Type (necset A)).
+Canonical necset_eqType := Equality.Pack (@gen_eqMixin (necset A)).
 Canonical necset_choiceType := choice_of_Type (necset A).
 (* NB(rei): redundant *)
 (*Canonical necset_neset (t : necset A) : neset A := NESet.mk (NECSet.mixin (NECSet.H t)).*)

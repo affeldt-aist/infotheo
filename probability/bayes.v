@@ -50,7 +50,8 @@ Proof.
 destruct boolP.
 - congr T.
   case: p => // in H i *.
-  by rewrite (Eqdep_dec.UIP_refl_bool true i) (Eqdep_dec.UIP_refl_bool true H).
+  exfalso.
+  rewrite H in i.
 - by elim: (negP i).
 Qed.
 
@@ -62,9 +63,7 @@ Lemma boolPF  (H : is_true (~~ p)) :
 Proof.
 destruct boolP.
 - by elim: (negP H).
-- congr F.
-  case: p => // in H i *.
-  by rewrite (Eqdep_dec.UIP_refl_bool true i) (Eqdep_dec.UIP_refl_bool true H).
+- by congr F.
 Qed.
 End boolP.
 End ssr_ext.

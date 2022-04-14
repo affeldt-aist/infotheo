@@ -1091,11 +1091,15 @@ Definition convex_set_of (A : convType) :=
   fun phT : phant (ConvexSpace.sort A) => convex_set A.
 Notation "{ 'convex_set' T }" := (convex_set_of (Phant T)) : convex_scope.
 
+(* kludge 2022-04-14 *)
+Definition choice_of_Type (T : Type) : choiceType :=
+  Choice.Pack (Choice.Class (@gen_eqMixin T) gen_choiceMixin).
+
 Section cset_canonical.
 Variable (A : convType).
 Canonical cset_predType := Eval hnf in
   PredType (fun t : convex_set A => (fun x => x \in CSet.car t)).
-Canonical cset_eqType := Equality.Pack (equality_mixin_of_Type (convex_set A)).
+Canonical cset_eqType := Equality.Pack (@gen_eqMixin (convex_set A)).
 Canonical cset_choiceType := choice_of_Type (convex_set A).
 End cset_canonical.
 
@@ -1770,7 +1774,7 @@ End convex_function_prop'.
 Section convex_in_both.
 Local Open Scope ordered_convex_scope.
 Variables (T U : convType) (V : orderedConvType) (f : T -> U -> V).
-Definition convex_in_both := convex_function (prod_curry f).
+Definition convex_in_both := convex_function (uncurry f).
 Lemma convex_in_bothP :
   convex_in_both
   <->
@@ -1778,7 +1782,7 @@ Lemma convex_in_bothP :
     f (a0 <| t |> a1) (b0 <| t |> b1) <= f a0 b0 <| t |> f a1 b1.
 Proof.
 split => [H a0 a1 b0 b1 t | H];
-  first by move: (H (a0,b0) (a1,b1) t); rewrite /convex_function_at /prod_curry.
+  first by move: (H (a0,b0) (a1,b1) t); rewrite /convex_function_at /uncurry.
 by case => a0 b0 [a1 b1] t; move:(H a0 a1 b0 b1 t).
 Qed.
 End convex_in_both.

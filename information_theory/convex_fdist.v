@@ -94,7 +94,7 @@ Definition avg_dom_pair p (x y : dom_pair) : dom_pair :=
 Definition uncurry_dom_pair U (f : fdist A -> fdist A -> U) (x : dom_pair) :=
   f (sval x).1 (sval x).2.
 
-Let dom_pair_choiceType := boolp.choice_of_Type dom_pair.
+Let dom_pair_choiceType := choice_of_Type dom_pair.
 Let avg := avg_dom_pair.
 Let avg1 (x y : dom_pair_choiceType) : avg 1%:pr x y = x.
 Proof. rewrite /avg; case x => x0 H /=; exact/boolp.eq_exist/conv1. Qed.
@@ -383,7 +383,7 @@ Variables (A B : finType) (P : fdist A).
 Local Open Scope divergence_scope.
 
 Lemma mutual_information_convex :
-  convex_function (fun Q : classical_sets.dep_arrow_choiceType (fun _ : A => fdist_convType B) =>
+  convex_function (fun Q : boolp.dep_arrow_choiceType (fun _ : A => fdist_convType B) =>
     MutualInfo.mi (CJFDist.make_joint P Q)).
 Proof.
 move=> p1yx p2yx t.
