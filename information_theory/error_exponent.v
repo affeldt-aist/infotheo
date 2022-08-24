@@ -165,7 +165,7 @@ have : `I(P, V) <= capacity W + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                (- xlnx (sqrt (2 * D(V || W | P)))).
   apply (@leR_trans (`I(P, W) + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                - xlnx (sqrt (2 * D(V || W | P))))); last first.
-    apply/leR_add2r/Rstruct.RleP/Rstruct.real_sup_ub; last by exists P.
+    apply/leR_add2r/Rstruct.RleP/Rstruct.Rsup_ub; last by exists P.
     split; first by exists (`I(P, W)), P.
     case: set_of_I_has_ubound => y Hy.
     by exists y => _ [Q _ <-]; apply Hy; exists Q.

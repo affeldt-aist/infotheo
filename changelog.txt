@@ -1,4 +1,9 @@
 -------------------
+from 0.3.7 to 0.3.8
+-------------------
+compatibility release
+
+-------------------
 from 0.3.6 to 0.3.7
 -------------------
 compatibility release

@@ -176,14 +176,16 @@ have has_sup_E : has_sup E.
   rewrite addRC -leR_subl_addr subRR.
   by rewrite (entropy_H2 card_A (Prob.mk_ (ltR2W p_01'))); exact/entropy_ge0.
 apply eqR_le; split.
-  apply real_sup_is_lub => // x [d _ dx].
+  apply/RleP.
+  have [_ /(_ (1 - H2 p))] := Rsup_isLub (0 : R) has_sup_E.
+  apply => x [d _ dx]; apply/RleP.
   suff : `H(d `o BSC.c card_A p_01) <= 1.
     move: (@IPW _ card_A d _ p_01') => ?.
     by unfold p_01 in *; lra.
   exact: H_out_max.
 move: (@IPW _ card_A (Uniform.d card_A) _ p_01').
 rewrite H_out_binary_uniform => <-.
-by apply/RleP/(@real_sup_ub) => //;exists (Uniform.d card_A).
+by apply/RleP/Rsup_ub => //=; exists (Uniform.d card_A).
 Qed.
 
 End bsc_capacity_theorem.

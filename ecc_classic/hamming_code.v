@@ -115,7 +115,7 @@ apply rV_of_nat_neq0 => //.
 by rewrite -(addn1 i) addnC -ltn_subRL subn1 -Hamming.len_dim.
 Qed.
 
-Lemma no_weight_2_cw x : wH x = 2 -> syndrome H x <> 0.
+Lemma no_weight_2_cw x : wH x = 2%N -> syndrome H x <> 0.
 Proof.
 move=> /wH_2[i [j [Hij [Hi [Hj Hk]]]]].
 rewrite /syndrome mulmx_sum_col (bigID (pred1 i)) /= big_pred1_eq /=.
@@ -211,14 +211,14 @@ rewrite memv_ker lfunE /= weight_3_cw eqxx /=.
 apply/eqP/rV_of_nat_neq0 => //; [exact: rev7_neq0 | exact: rev7_ub (Hamming.two_len _)].
 Qed.
 
-Lemma hamming_min_dist : min_dist hamming_not_trivial = 3.
+Lemma hamming_min_dist : min_dist hamming_not_trivial = 3%N.
 Proof.
 move: (min_dist_is_min hamming_not_trivial) => Hforall.
 move: (min_dist_achieved hamming_not_trivial) => Hexists.
 move: (min_dist_neq0) => H3.
-suff : min_dist hamming_not_trivial <> 1%nat /\
-       min_dist hamming_not_trivial <> 2 /\
-       min_dist hamming_not_trivial <= 3.
+suff : min_dist hamming_not_trivial <> 1%N /\
+       min_dist hamming_not_trivial <> 2%N /\
+       min_dist hamming_not_trivial <= 3%N.
   move : H3.
   move/(_ _ _ _ hamming_not_trivial).
   destruct (min_dist hamming_not_trivial) as [|p]=> //.
@@ -235,7 +235,7 @@ split => [min2 | ].
   rewrite min2 => /no_weight_2_cw; apply.
   move: Hc; by rewrite memv_ker lfunE /= => /eqP.
 move: (Hforall (rV_of_nat n (7 * 2 ^ (n - 3)))).
-have -> : wH (rV_of_nat n (7 * 2 ^ (n - 3))) = 3.
+have -> : wH (rV_of_nat n (7 * 2 ^ (n - 3))) = 3%N.
   by rewrite -wH_7_rev7 ?Hamming.two_len // wH_7 // Hamming.two_len.
 apply; first by rewrite memv_ker lfun_simp /= weight_3_cw.
 apply/eqP/rV_of_nat_neq0; [exact: rev7_neq0 | exact: rev7_ub (Hamming.two_len _)].
@@ -965,7 +965,7 @@ Section hamming_code_error_rate.
 Variable M : finType.
 Hypothesis M_not_0 : 0 < #|M|.
 Variable p : prob.
-Let card_F2 : #| 'F_2 | = 2. by rewrite card_Fp. Qed.
+Let card_F2 : #| 'F_2 | = 2%N. by rewrite card_Fp. Qed.
 Let W := BSC.c card_F2 p.
 
 Variable m' : nat.

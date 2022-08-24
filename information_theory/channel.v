@@ -380,4 +380,4 @@ From mathcomp Require Import classical_sets.
 Local Open Scope classical_set_scope.
 
 Definition capacity (A B : finType) (W : `Ch(A, B)) :=
-  real_sup [set `I(P, W) | P in @setT (fdist A)].
+  reals.sup [set `I(P, W) | P in @setT (fdist A)].

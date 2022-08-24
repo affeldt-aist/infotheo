@@ -500,7 +500,7 @@ Qed.
 
 End about_row_vectors_on_prime_fields.
 
-Lemma sum_char2 (F : fieldType) (_ : 2 \in [char F]) k (f : 'I_k -> F) :
+Lemma sum_char2 (F : fieldType) (_ : 2%N \in [char F]) k (f : 'I_k -> F) :
   (\sum_(i < k) (f i)) ^+ 2 = \sum_(i < k) (f i) ^+ 2.
 Proof.
 elim/big_ind2 : _ => [|x1 x2 y1 y2 <- <-|//] /=; first by rewrite expr0n.

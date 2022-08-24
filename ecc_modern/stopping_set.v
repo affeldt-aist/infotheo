@@ -129,7 +129,7 @@ case/orP: {Hs1}(Hp _ (Hs1 m0)) => [|{Hp}Hs1].
   move=> Hs1; rewrite cards_eq0 => /eqP Hs2; apply/orP; right.
   by rewrite setIUl Hs2 set0U.
 apply/orP; right.
-by rewrite setIUl cardsU -(addn0 2) -addnBA ?leq_add // subset_leq_card // subsetIr.
+by rewrite setIUl cardsU -(addn0 2%N) -addnBA ?leq_add // subset_leq_card // subsetIr.
 Qed.
 
 Lemma stopsetE_help (s : {set 'I_n}) m0 n0 :

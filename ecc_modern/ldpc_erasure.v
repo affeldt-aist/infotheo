@@ -75,7 +75,7 @@ Qed.
 Definition letter_pickle (l : letter) :=
   match l with
   | Bit a => if a == (Zp0 : 'F_2) then O else 1%N
-  | Star => 2
+  | Star => 2%N
   | Blank => 3%N
   end.
 
