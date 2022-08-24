@@ -48,7 +48,7 @@ Qed.
 
 (* TODO: useful? *)
 Lemma size_one_minus_X (R : idomainType) (a : R) (a0 : a != 0) :
-  size (1 - a *: 'X) = 2.
+  size (1 - a *: 'X) = 2%N.
 Proof.
 rewrite addrC size_addl.
   by rewrite size_opp size_scale ?size_polyX // expf_neq0.

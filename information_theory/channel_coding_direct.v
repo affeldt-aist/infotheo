@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix perm.
 Require Import Reals Lra Classical.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct classical_sets.
 Require Import ssrZ ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import fdist proba entropy aep typ_seq joint_typ_seq channel.
 Require Import channel_code.
@@ -134,7 +134,7 @@ rewrite wght_o_PI; congr (_ * _).
 rewrite /ErrRateCond /= (_ : (o_PI m m' g) m = g m'); last by rewrite ffunE tpermL.
 congr Pr; apply/setP => tb /=.
 rewrite 2!inE.
-apply/negbLR. rewrite in_setC negbK.
+apply/negbLR. rewrite finset.in_setC negbK.
 apply/idP/idP.
 - rewrite {1}/PHI' {1}/jtdec.
   rewrite ffunE.
@@ -653,25 +653,25 @@ apply/idP/idP.
 - rewrite /PHI' /jtdec ffunE.
   case: (pickP _) => [m2 Hm2 | Hm2].
   + move/eqP => m2m0.
-    rewrite in_setU in_setC {1}/Cal_E {1}/cal_E inE; apply/orP; left.
+    rewrite finset.in_setU finset.in_setC {1}/Cal_E {1}/cal_E inE; apply/orP; left.
     case/andP : Hm2 => _ /forallP/(_ ord0)/implyP; apply.
     by move/eqP in m2m0; apply: contra m2m0 => /eqP <-.
   + move=> _.
-    rewrite in_setU.
+    rewrite finset.in_setU.
     move/negbT : {Hm2}(Hm2 ord0).
     rewrite negb_and.
     case/orP => Hm2.
-    * by rewrite in_setC {1}/Cal_E {1}/cal_E inE Hm2.
+    * by rewrite finset.in_setC {1}/Cal_E {1}/cal_E inE Hm2.
     * apply/orP; right.
       apply/negPn.
       move: Hm2; apply contra => Hm2.
       apply/forallP => m_; apply/implyP => m_m0.
       apply: contra Hm2 => Hm2.
       apply/bigcupP; exists m_ => //; by rewrite /Cal_E /cal_E inE.
-- rewrite in_setU ffunE.
+- rewrite finset.in_setU ffunE.
   case: (pickP _) => [m2 Hm2|//].
   case/orP.
-  + rewrite in_setC /cal_E inE => Hy.
+  + rewrite finset.in_setC /cal_E inE => Hy.
     apply/eqP => -[m20].
     by case/andP : Hm2; rewrite m20 (negbTE Hy).
   + case/bigcupP => m Hm; rewrite /cal_E 2!inE => m_tb.
@@ -757,13 +757,13 @@ have -> : lhs = (#| M |.-1%:R * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | pro
     Pr ((P `^ n) `x ((`O( P , W )) `^ n)) [set x | prod_rV x \in `JTS P W n epsilon0])%R; last first.
     rewrite big_const /= iter_addR; congr (_%:R * _)%R.
     rewrite card_ord /=.
-    transitivity (#| setT :\ (@ord0 k)|).
-      move: (cardsD1 (@ord0 k) setT) => /=.
+    transitivity (#| finset.setT :\ (@ord0 k)|).
+      move: (cardsD1 (@ord0 k) finset.setT) => /=.
       rewrite !cardsT !card_ord inE /= add1n.
       case=> H1; by rewrite {1}H1.
     rewrite cardsE.
     apply eq_card => m_.
-    by rewrite -!topredE /= !in_set andbC.
+    by rewrite -!topredE /= !finset.in_set andbC.
   by apply eq_big => //; exact: second_summand.
 rewrite card_ord /=.
 apply (@leR_ltR_trans (epsilon0 + k%:R *
@@ -827,10 +827,13 @@ have [P HP] : exists P : fdist A, r < `I(P, W).
     move/not_ex_all_not in abs.
     move=> P; exact/Rnot_lt_le/abs.
   have ? : capacity W <= r.
-    apply Rstruct.real_sup_is_lub.
+    apply/RleP.
+    have : has_sup [set `I(P, W) | P in [set: fdist A]].
       case: set_of_I_nonempty => [x [P H1]]; split; first by exists x, P.
       by exists (rate r) => _ [Q _ <-]; exact/Rstruct.RleP/abs.
-    by move=> x [P _ <-{x}]; exact: abs.
+    move=> /(@Rsup_isLub 0 [set `I(P, W) | P in [set: fdist A]])[_].
+    apply.
+    by move=> x [P _ <-{x}]; exact/RleP/abs.
   lra.
 have [epsilon0 Hepsilon0] : exists epsilon0,
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.

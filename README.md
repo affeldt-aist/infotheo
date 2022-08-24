@@ -98,11 +98,11 @@ Each file is documented in its header.
 
 Changes are documented in [changelog.txt](changelog.txt).
 
-## Installation with Windows 10
+## Installation with Windows 10 & 11
 
 Installation of infotheo on Windows is less simple.
 See [this page](https://github.com/affeldt-aist/mathcomp-install/blob/master/install-windows-en.org)
-for instructions to install MathComp on Windows 10
+for instructions to install MathComp on Windows 10 & 11
 (or [this page](https://staff.aist.go.jp/reynald.affeldt/ssrcoq/install.html) for instructions in Japanese).
 
 Once MathComp is installed (with opam), do
