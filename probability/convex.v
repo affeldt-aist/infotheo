@@ -1,10 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm finalg matrix.
 From mathcomp Require Import boolp classical_sets Rstruct.
 Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist jfdist.
+Import Order.POrderTheory Num.Theory.
 
 (******************************************************************************)
 (*                              Convexity                                     *)
@@ -270,6 +271,23 @@ Proof.
 by rewrite convC /= (_ : _ %:pr = 1%:pr) ?conv1 //; apply/val_inj/onem0.
 Qed.
 End convex_space_interface.
+
+Section segment.
+Variable A: convType.
+Definition segment (x y: A) := image (@setT prob) (fun p => Conv p x y).
+
+Lemma segment_sym u v x : segment u v x -> segment v u x.
+Proof. by move=> [p _ <-]; exists (p.~%:pr); rewrite -?convC. Qed.
+
+Lemma segmentC u v : segment u v = segment v u.
+Proof. by rewrite eqEsubset; split=>x; apply segment_sym. Qed.
+
+Lemma segmentL x y : segment x y x.
+Proof. by exists 1%:pr; rewrite ?conv1. Qed.
+
+Lemma segmentR x y : segment x y y.
+Proof. by exists 0%:pr; rewrite ?conv0. Qed.
+End segment.
 
 Section convn.
 Variable A : convType.
@@ -734,17 +752,15 @@ rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
 by rewrite (@r_of_pq_is_r  _ _ r s).
 Qed.
 
-Lemma convA' (r s : prob) a b c : [p_of r, s] != 1%:pr ->
-  a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = (a <| r |> b) <| s |> c.
+Lemma convA' (r s : prob) a b c : a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = (a <| r |> b) <| s |> c.
 Proof.
-move=> H; case/boolP : (s == 0%:pr) => s0.
+case H: ([p_of r, s] == 1%:pr).
+   move: H=>/p_of_rs1P [ -> -> ].
+   by rewrite conv1 conv1 -{2}(conv1 a (b <|[q_of (1)%:pr, (1)%:pr]|> c)); congr Conv; rewrite p_of_1s.
+move: H=>/negP/negP H; case/boolP : (s == 0%:pr) => s0.
 - by rewrite (eqP s0) p_of_r0 conv0 q_of_r0 conv0 conv0.
 - by rewrite convA s_of_pqK // r_of_pqK.
 Qed.
-
-Lemma convA'_oprob (r s : oprob) a b c :
-  a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = (a <| r |> b) <| s |> c.
-Proof. exact/convA'/oprob_neq1. Qed.
 
 Import ScaledConvex.
 
@@ -762,7 +778,7 @@ Lemma convDr (x y z : T) (p q : prob) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
 Proof. by rewrite -{1}(convmm x q) convACA. Qed.
 
-Lemma convACA' (a b c d : T) (p q r : oprob) :
+Lemma convACA' (a b c d : T) (p q r : prob) :
 (*
   let p1 := (q * p)%:opr in
   let p2 := (q.~ * r)%:opr in
@@ -777,9 +793,9 @@ Lemma convACA' (a b c d : T) (p q r : oprob) :
 Proof.
 rewrite (convC _ _ p).
 rewrite convA convC !convA.
-set C0 := _.~%:pr; rewrite (_ : C0 = C0%:opr) //.
-set C1 := _.~%:pr; rewrite (_ : C1 = C1%:opr) //.
-rewrite -convA'_oprob (convC d) convC.
+set C0 := _.~%:pr.
+set C1 := _.~%:pr.
+rewrite -convA' (convC d) convC.
 by eexists; eexists; eexists; congr ((_ <|_|> _) <|_|> (_ <|_|> _)).
 Qed.
 
@@ -956,6 +972,27 @@ have [/eqP d01|d0n1] := boolP (d ord0 == 1%R).
 rewrite !convnE !IHn.
 congr Convn; apply funext=> i.
 by rewrite convDr.
+Qed.
+
+Lemma convnDl:
+  forall (n : nat) (p : prob) (x : T) (g : 'I_n -> T) (d : {fdist 'I_n}),
+    <|>_d g <|p|> x = <|>_d (fun i => g i <|p|> x).
+Proof.
+move=> p x g d e.
+rewrite convC convnDr; apply eq_convn=>// i.
+by rewrite -convC.
+Qed.
+
+Lemma convnDlr:
+  forall (n m : nat) (p : prob) (f : 'I_n -> T) (d : {fdist 'I_n}) (g: 'I_m -> T) (e: {fdist 'I_m}),
+    <|>_d f <|p|> <|>_e g = <|>_(AddFDist.d d e p) (fun i => match fintype.split i with inl i => f i | inr i => g i end).
+Proof.
+move=>n m p f d g e.
+apply S1_inj; rewrite S1_conv S1_convn S1_convn S1_convn convptE big_scalept big_scalept big_split_ord; congr addpt; apply congr_big=>// i _; rewrite scalept_comp // AddFDist.dE /fintype.split; case ltnP=>ilt.
+   2: by exfalso; move: ilt=>/=; rewrite leqNgt=>/negP.
+   2: by exfalso; move: ilt=>/=; rewrite addnC {2}[n]/(0+n) -/addn ltn_add2r ltn0.
+   by have ->: Ordinal ilt = i by apply val_inj.
+by have ->: Ordinal (split_subproof ilt) = i by apply val_inj; rewrite /= addnC {2}[n]/(0+n) -/addn subnDr /subn /subn_rec Nat.sub_0_r.
 Qed.
 
 End convex_space_prop2.
@@ -1175,6 +1212,13 @@ rewrite convptE big_split_ord !big_scalept /=.
 congr addpt; apply eq_bigr => i _;
   rewrite (scalept_comp (S1 _) (prob_ge0 _) (FDist.ge0 _ _));
   by rewrite AddFDist.dE (split_lshift,split_rshift).
+Qed.
+
+Lemma segment_is_convex (x y: A): is_convex_set (segment x y).
+Proof.
+apply/asboolP=>u v p [q _ <-] [r _ <-].
+move: (convACA' x y x y q p r)=>[q' [p' [r' ->]]].
+by rewrite convmm convmm; exists p'.
 Qed.
 
 Lemma hull_is_convex (Z : set A) : is_convex_set (hull Z).
