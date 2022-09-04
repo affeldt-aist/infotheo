@@ -1358,6 +1358,81 @@ Qed.
 
 End hull_setU.
 
+Section lmodR_convex_space.
+
+Variable E: lmodType R.
+Implicit Type p q: prob.
+Local Open Scope ring_scope.
+Import GRing.
+Let avg p (a b: E) := ((Prob.p p) *: a + p.~ *: b).
+Let avg1 a b : avg 1%:pr a b = a.
+Proof. by rewrite /avg /= scale1r onem1 scale0r addr0. Qed.
+Let avgI p x : avg p x x = x.
+Proof. rewrite /avg -scalerDl.
+have ->: (Prob.p p) + p.~ = Rplus (Prob.p p) p.~ by [].
+by rewrite onemKC scale1r. Qed.
+Let avgC p x y : avg p x y = avg p.~%:pr y x.
+Proof. by rewrite /avg onemK addrC. Qed.
+Let avgA p q (d0 d1 d2 : E) :
+  avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
+Proof.
+rewrite /avg /onem.
+set s := Prob.p [s_of p, q].
+set r := Prob.p [r_of p, q].
+rewrite (scalerDr s) -addrA (scalerA s) (mulrC s); congr add.
+  by rewrite (p_is_rs p q) -/s.
+rewrite scalerDr (scalerA _ _ d2).
+rewrite -/p.~ -/q.~ -/r.~ -/s.~.
+rewrite {2}/s (s_of_pqE p q) onemK; congr add.
+rewrite 2!scalerA; congr scale.
+have ->: p.~ * q = (p.~ * q)%R by [].
+by rewrite pq_is_rs -/r -/s mulrC.
+Qed.
+Definition lmodR_convMixin := ConvexSpace.Mixin avg1 avgI avgC avgA.
+Canonical lmodR_convType := ConvexSpace.Pack (ConvexSpace.Class lmodR_convMixin).
+Lemma avgrE p (x y : E) : x <| p |> y = avg p x y. Proof. by []. Qed.
+End lmodR_convex_space.
+Section lmodR_convex_space.
+Variable E: lmodType R.
+Implicit Type p q: prob.
+Local Open Scope ring_scope.
+Import GRing.
+Lemma avgr_oppD p (x y: E) : - x <| p |> - y = - (x <| p |> y).
+Proof. by rewrite avgrE 2!scalerN -opprD. Qed.
+Lemma avgr_scalerDr p : right_distributive *:%R (fun x y: E => x <| p |> y).
+Proof. by move=> x ? ?; rewrite 2!avgrE scalerDr !scalerA; congr add; congr scale; apply mulrC. Qed.
+Lemma avgR_scalerDl p : left_distributive *:%R (fun x y: regular_lmodType R_ringType => x <|p|> y).
+Proof. by move=> x ? ?; rewrite avgrE scalerDl -2!scalerA. Qed.
+(* Introduce morphisms to prove avgnE *)
+Import ScaledConvex.
+Definition scaler x : E := if x is Scaled p y then (Rpos.v p) *: y else 0.
+Lemma Scaled1rK : cancel (@S1 (lmodR_convType E)) scaler.
+Proof. by move=> x /=; rewrite scale1r. Qed.
+Lemma scaler_addpt : {morph scaler : x y / addpt x y >-> (x + y)}.
+Proof.
+move=> [p x|] [q y|] /=; rewrite ?(add0r,addr0) //.
+rewrite avgrE /divRposxxy /= onem_div /Rdiv; last by apply Rpos_neq0.
+rewrite -!(mulRC (/ _)%R) scalerDr !scalerA !mulrA.
+have ->: (p + q)%R * (/ (p + q))%R = 1 by apply mulRV; last by apply Rpos_neq0.
+by rewrite !mul1r (addRC p) addRK.
+Qed.
+Lemma scaler0 : scaler Zero = 0. by []. Qed.
+Lemma scaler_scalept r x : (0 <= r -> scaler (scalept r x) = r *: scaler x)%R.
+Proof.
+case: x => [q y|]; last by rewrite scaleptR0 GRing.scaler0.
+case=> r0. by rewrite scalept_gt0 /= scalerA.
+by rewrite -r0 scalept0 scale0r.
+Qed.
+Definition big_scaler := big_morph scaler scaler_addpt scaler0.
+Definition avgnr n (g : 'I_n -> E) (e : {fdist 'I_n}) := \sum_(i < n) e i *: g i.
+Lemma avgnrE n (g : 'I_n -> E) e : <|>_e g = avgnr g e.
+Proof.
+rewrite -[LHS]Scaled1rK S1_convn big_scaler.
+by apply eq_bigr => i _; rewrite scaler_scalept // Scaled1rK.
+Qed.
+End lmodR_convex_space.
+
+(* TOTHINK: Should we keep this section, only define R_convType, or something else ? *)
 Section R_convex_space.
 Implicit Types p q : prob.
 Let avg p a b := (p * a + p.~ * b)%R.
