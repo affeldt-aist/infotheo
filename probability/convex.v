@@ -1166,12 +1166,24 @@ End CSet_prop.
 
 (* Lemmas on hull and convex set *)
 
+Lemma is_convex_segmentP (A: convType) (X: set A): reflect (forall x y: A, X x -> X y -> (segment x y `<=` X)%classic) (is_convex_set X). 
+Proof.
+apply (iffP idP)=>conv.
+   move=>x y xX yX z [p _ <-].
+   by move: conv=>/asboolP/(_ x y p xX yX).
+by apply/asboolP=>x y p xX yX; apply (conv x y xX yX); exists p.
+Qed.
+
+Lemma hull_sub_convex (A: convType) X (Y: {convex_set A}): (X `<=` Y -> hull X `<=` Y)%classic.
+Proof.
+move=>XY x [n [g [d [gX ->]]]].
+move: (convex_setP Y); rewrite is_convex_setP /is_convex_set_n.
+by move=> /asboolP/(_ _ g d (subset_trans gX XY)).
+Qed.
+
 Lemma hull_cset (A : convType) (X : {convex_set A}) : hull X = X.
 Proof.
-rewrite predeqE => d; split; last exact/subset_hull.
-move=> -[n [g [e [gX ->{d}]]]].
-move: (convex_setP X); rewrite is_convex_setP /is_convex_set_n.
-by move=> /asboolP/(_ _ g e gX).
+rewrite predeqE => d; split; [by apply hull_sub_convex | exact/subset_hull].
 Qed.
 
 Section hull_is_convex.
@@ -1220,8 +1232,22 @@ Local Open Scope classical_set_scope.
 Variable A : convType.
 Implicit Types X Y Z : set A.
 
+Lemma segment_hull (x y: A): segment x y = hull [set x; y].
+Proof.
+rewrite eqEsubset; split.
+   by move: (hull_is_convex [set x; y])=>/is_convex_segmentP/(_ x y); apply; apply subset_hull; [ left | right ].
+by apply (@hull_sub_convex _ [set x; y] {| CSet.car := segment x y; CSet.class := CSet.Mixin (segment_is_convex x y) |})=>z; case=>->; [ apply segmentL | apply segmentR ].
+Qed.
+
+Lemma is_convex_hullE X: is_convex_set X = (hull X == X).
+Proof.
+apply/idP/idP.
+   by move=>conv; apply /eqP; exact (hull_cset {| CSet.car := X; CSet.class := CSet.Mixin conv |}).
+by move=>/eqP <-; apply hull_is_convex.
+Qed.
+
 Lemma hull_eqEsubset X Y :
-  X `<=` hull Y -> Y `<=` hull X -> hull X = hull Y.
+  (X `<=` hull Y)%classic -> (Y `<=` hull X)%classic -> hull X = hull Y.
 Proof.
 move/hull_monotone; rewrite hull_cset /= => H1.
 move/hull_monotone; rewrite hull_cset /= => H2.
