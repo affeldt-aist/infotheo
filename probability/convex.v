@@ -1397,6 +1397,8 @@ Variable E: lmodType R.
 Implicit Type p q: prob.
 Local Open Scope ring_scope.
 Import GRing.
+Lemma avgr_addD p (a b c d: E): (a+b) <|p|> (c+d) = (a<|p|>c) + (b<|p|>d).
+Proof. by rewrite !avgrE !scalerDr !addrA; congr add; rewrite -!addrA; congr add; apply addrC. Qed.
 Lemma avgr_oppD p (x y: E) : - x <| p |> - y = - (x <| p |> y).
 Proof. by rewrite avgrE 2!scalerN -opprD. Qed.
 Lemma avgr_scalerDr p : right_distributive *:%R (fun x y: E => x <| p |> y).
@@ -1430,7 +1432,118 @@ Proof.
 rewrite -[LHS]Scaled1rK S1_convn big_scaler.
 by apply eq_bigr => i _; rewrite scaler_scalept // Scaled1rK.
 Qed.
+
+Section split_prod.
+Lemma unsplit_prodp (m n: nat) (i: 'I_m) (j: 'I_n): (i*n+j < m*n)%nat.
+Proof.
+rewrite -addnS.
+apply (@leq_trans (i*n+n)%nat).
+   by rewrite leq_add2l.
+rewrite addnC.
+have->: (n+i*n = i.+1 * n)%nat by rewrite /muln /muln_rec /addn /addn_rec.
+by apply leq_mul.
+Qed.
+
+Definition unsplit_prod (m n: nat) (i:'I_m * 'I_n): 'I_(m*n) := let (i, j) := i in Ordinal (unsplit_prodp i j).
+
+(* TODO: shall we extend the lemmas on Nat.div to divn ? *)
+Definition split_prodpl (m n: nat) (i: 'I_(m*n)): (Nat.div i n < m)%nat.
+Proof.
+case: i=>[i ilt].
+case: m ilt=>[| m] ilt.
+   by exfalso; move: ilt; rewrite /muln /muln_rec ltn0.
+case: n ilt=>[| n] ilt.
+   by exfalso; move: ilt; rewrite mulnC /muln /muln_rec ltn0.
+apply /leP; apply PeanoNat.Nat.div_lt_upper_bound=>//=.
+by move: ilt; rewrite mulnC=>/leP.
+Qed.
+
+Definition split_prodpr (m n: nat) (i: 'I_(m*n)): (Nat.modulo i n < n)%nat.
+Proof.
+case: i=>[i ilt].
+case: m ilt=>[| m] ilt.
+   by exfalso; move: ilt; rewrite /muln /muln_rec ltn0.
+case: n ilt=>[| n] ilt.
+   by exfalso; move: ilt; rewrite mulnC /muln /muln_rec ltn0.
+by apply /leP; apply PeanoNat.Nat.mod_upper_bound.
+Qed.
+
+Definition split_prod (m n: nat) (i: 'I_(m*n)): 'I_m * 'I_n := (Ordinal (split_prodpl i), Ordinal (split_prodpr i)).
+
+(* TODO: find a suitable name *)
+Lemma big_prod_ord [R' : Type] [idx : R'] (op : Monoid.com_law idx) [m n : nat] (P : pred 'I_(m * n)) (F : ordinal_finType (m * n) -> R'): \big[op/idx]_(i | P i) F i = \big[op/idx]_(i | true) \big[op/idx]_(j | P (unsplit_prod (i, j))) F (unsplit_prod (i, j)).
+Proof.
+elim: m P F=>[| m IHm] P F.
+   by do 2 rewrite big_ord0.
+rewrite big_ord_recl.
+move: P F.
+rewrite /muln /muln_rec /= -/muln_rec -/muln -/addn_rec -/addn=>P F.
+rewrite big_split_ord. congr (_ _ _).
+   apply congr_big=>// i.
+      by congr P; apply val_inj.
+   by move=>_; congr F; apply val_inj.
+rewrite IHm; apply congr_big=>// i _.
+have e: forall j, rshift n (unsplit_prod (i, j)) = Ordinal (unsplit_prodp (lift ord0 i) j).
+   move=>j; apply val_inj=>/=.
+   rewrite /bump leq0n.
+   by rewrite addnA.
+by apply congr_big=>// [ j | j _ ]; f_equal.
+Qed.
+
+Lemma split_prodK (n m: nat): cancel (@split_prod n m) (@unsplit_prod n m).
+Proof.
+move=> [i ilt].
+apply val_inj=>/=.
+apply/esym; rewrite mulnC /muln /muln_rec /addn /addn_rec.
+by apply PeanoNat.Nat.div_mod_eq.
+Qed.
+
+Lemma unsplit_prodK (n m: nat): cancel (@unsplit_prod n m) (@split_prod n m).
+Proof.
+move=> [[i ilt] [j jlt]].
+apply pair_equal_spec; split; apply val_inj=>/=.
+   rewrite /muln /muln_rec /addn /addn_rec PeanoNat.Nat.div_add_l.
+      2: by move=>m0; subst m; move: jlt; rewrite ltn0.
+   rewrite PeanoNat.Nat.div_small.
+      2: by apply /leP.
+   by apply/esym; apply plus_n_O.
+rewrite addnC /muln /muln_rec /addn /addn_rec PeanoNat.Nat.mod_add.
+   2: by move=>m0; subst m; move: jlt; rewrite ltn0.
+rewrite PeanoNat.Nat.mod_small=>//.
+by apply /leP.
+Qed.
+End split_prod.
+
+(* TODO: Lemma preim_cancel: ... *)
+
+Lemma avgnr_add n m (f: 'I_n -> E) (d: {fdist 'I_n}) (g: 'I_m -> E) (e: {fdist 'I_m}): <|>_d f + <|>_e g = <|>_(FDistMap.d (@unsplit_prod n m) (ProdFDist.d d (fun _ => e))) (fun i=> let (i, j) := split_prod i in f i + g j).
+Search {fdist _}.
+Proof.
+rewrite -[<|>_e g]scale1r !avgnrE !/avgnr big_prod_ord. 
+have<-: 1%R = 1 by [].
+rewrite -(FDist.f1 d) scaler_suml -big_split; apply congr_big=>// i _.
+transitivity (d i *: (1%R *: f i + \sum_(i0 < m) e i0 *: g i0)).
+   by rewrite scale1r scalerDr.
+rewrite -(FDist.f1 e) scaler_suml -big_split scaler_sumr; apply congr_big=>// j _.
+rewrite scalerDr -!scalerDr scalerA unsplit_prodK; congr scale.
+rewrite FDistMap.dE.
+rewrite (big_pred1 (i, j)) /=.
+   by rewrite ProdFDist.dE.
+move=>[i' j'] /=; rewrite xpair_eqE inE /=.
+apply/eqP/andP.
+   2: by move=>[/eqP-> /eqP->].
+move=>/(f_equal (@split_prod n m))/=.
+by rewrite (unsplit_prodK (i, j)) (unsplit_prodK (i', j'))=>/pair_equal_spec [ii' jj']; split; apply /eqP.
+Qed.
 End lmodR_convex_space.
+Section linear_affine.
+Variable E F: lmodType R.
+Variable f: {linear E -> F}.
+Import GRing.
+Lemma linear_is_affine: affine f.
+Proof. by move=>p x y; rewrite linearD 2!linearZZ. Qed.
+Canonical linear_affine := Affine linear_is_affine.
+End linear_affine.
 
 (* TOTHINK: Should we keep this section, only define R_convType, or something else ? *)
 Section R_convex_space.
@@ -2111,6 +2224,82 @@ exists (a0 <|p|> a1); last by rewrite affine_conv.
 by rewrite -in_setE; apply/mem_convex_set; rewrite in_setE.
 Qed.
 
+Lemma preimage_subset_convex_hull (f: {affine T -> U}) (Z: set U): hull (f @^-1` Z) `<=` f @^-1` (hull Z).
+Proof.
+move=>x [n [g [d [gZ ->]]]] /=.
+rewrite affine_function_Sum. 
+exists n, (f \o g), d; split=>//.
+by move=>y [i _ <-]; apply gZ; exists i.
+Qed.
+End affine_function_image.
+Section linear_function_image.
+Local Open Scope classical_set_scope.
+Local Open Scope ring_scope.
+Variables T U : lmodType R.
+
+(* TODO: rename, move to mathcomp *)
+Lemma factorize_range (A B C: Type) (f: B -> C) (g: A -> C): range g `<=` range f -> exists h: A -> B, g = f \o h.
+Proof.
+move=>sub.
+simple refine (ex_intro _ _ _).
+   move=>a.
+   have: range f (g a) by apply sub; exists a.
+   move=>/= /cid2 [b _ _]; exact b.
+rewrite /ssr_have /=; apply funext=>a /=.
+by case: cid2.
+Qed.
+
+(* TODO: move to mathcomp *)
+Lemma preimage_add_ker (f: {linear T -> U}) (A: set U): ([set (a + b) | a in f @^-1` A & b in f @^-1` [set 0]] = f @^-1` A).
+Proof.
+rewrite eqEsubset; split.
+   move=> x [a /= aA] [b /= bker] xe; subst x.
+   by rewrite GRing.linearD bker GRing.addr0.
+move=> x /= fx.
+exists x=>//.
+by exists 0; [ apply GRing.linear0 | apply GRing.addr0 ].
+Qed.
+
+(* TODO: move to mathcomp *)
+
+Lemma image2_subset {aT bT rT : Type} [f : aT -> bT -> rT] [A B: set aT] [C D : set bT]: (A `<=` B)%classic -> (C `<=` D)%classic -> ([set f x y | x in A & y in C] `<=` [set f x y | x in B & y in D])%classic.
+Proof.
+by move=>AB CD x [a aA [c cC xe]]; subst x; exists a; (try by apply AB); exists c; (try by apply CD).
+Qed.
+
+(* TODO: find how to speak about multilinear maps. *)
+Lemma hull_add (A B: set T): hull [set a + b | a in A & b in B] = [set a + b | a in (hull A) & b in (hull B)].
+Proof.
+rewrite eqEsubset; split.
+   have conv: is_convex_set [set a + b | a in hull A & b in hull B].
+      apply/asboolP=>x y p [ax axA] [bx bxB] <- [ay ayA] [by' byB] <-.
+      rewrite avgr_addD; exists (ax <|p|> ay).
+         by move: (hull_is_convex A)=>/asboolP; apply.
+      exists (bx <|p|> by')=>//.
+      by move: (hull_is_convex B)=>/asboolP; apply.
+   by apply (@hull_sub_convex _ _ (CSet.Pack (CSet.Mixin conv))), image2_subset; apply (@subset_hull (lmodR_convType T)).
+move=>x [a [na [ga [da [gaA ->]]]]] [b [nb [gb [db [gbB ->]]]]] <-.
+rewrite avgnr_add.
+exists (na * nb)%nat, (fun i => let (i, j) := split_prod i in ga i + gb j), (FDistMap.d (unsplit_prod (n:=nb)) da `x db); split=>// y [i _ <-].
+by case: split_prod=>ia ib; exists (ga ia); [ by apply gaA; exists ia |]; exists (gb ib)=>//; apply gbB; exists ib.
+Qed.
+
+Import GRing.
+
+Proposition preimage_preserves_convex_hull (f : {linear T -> U}) (Z : set U) :
+  Z `<=` range f -> f @^-1` (hull Z) = hull (f @^-1` Z).
+Proof.
+rewrite eqEsubset=>Zf; split.
+   2: by apply preimage_subset_convex_hull.
+move=>x [n [g [d [gZ fx]]]].
+move: Zf=>/(subset_trans gZ)/factorize_range [h ge]; subst g.
+rewrite -preimage_add_ker hull_add.
+exists (<|>_d h).
+   by exists n, h, d; split=>// y [z _ <-] /=; apply gZ; exists z.
+exists (x-<|>_d h).
+   by apply subset_hull=>/=; rewrite linearB affine_function_Sum fx subrr.
+by rewrite addrC -addrA [-_+_]addrC subrr addr0.
+Qed.
 End affine_function_image.
 
 Section R_affine_function_prop.
