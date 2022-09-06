@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm finalg matrix.
-From mathcomp Require Import boolp classical_sets Rstruct.
+From mathcomp Require Import boolp classical_sets Rstruct vector.
 Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist jfdist.
@@ -1560,6 +1560,217 @@ move=>/(f_equal (@split_prod n m))/=.
 by rewrite (unsplit_prodK (i, j)) (unsplit_prodK (i', j'))=>/pair_equal_spec [ii' jj']; split; apply /eqP.
 Qed.
 End lmodR_convex_space.
+Section caratheodory.
+Variable E: vectType R.
+Local Open Scope ring_scope.
+Local Open Scope classical_set_scope.
+Import GRing.
+
+Lemma size_index_enum (T: finType): size (index_enum T) = #|T|.
+Proof. by rewrite cardT enumT. Qed.
+
+Lemma index_enum_cast_ord n m (e: n = m): index_enum (ordinal_finType m) = [seq (cast_ord e i) | i <- index_enum (ordinal_finType n)].
+Proof.
+subst m.
+rewrite -{1}(map_id (index_enum (ordinal_finType n))).
+apply eq_map=>[[x xlt]].
+rewrite /cast_ord; congr Ordinal; apply bool_irrelevance.
+Qed.
+
+(*TODO: move to mathcomp. *)
+(*TODO: find a non-ugly proof. *)
+
+Lemma freeN_combination n (s: n.-tuple E): ~free s -> exists k: 'I_n -> R, (\sum_i k i *: s`_i = 0) /\ exists i, k i != 0.
+Proof.
+move=>/negP; rewrite freeNE=>/existsP [[i ilt] /coord_span /= sin].
+move: (ilt) s sin; (have ne: (n = i.+1 + (n-i.+1))%nat by rewrite subnKC); rewrite ne=> ilt' s sin.
+simple refine (let k: 'I_(i.+1 + (n - i.+1)) -> R := _ in _).
+   move=>/fintype.split; case=> [[j jlt] | [j jlt]].
+      exact (if j == i then 1%R else 0%R).
+   refine (-%R (coord (drop_tuple i.+1 s) (@Ordinal _ j _) s`_i)).
+   rewrite addnC -{3}[i.+1]/(0+i.+1)%nat subnDr.
+   by have->: (n-i.+1-0 = n-i.+1)%nat by move: PeanoNat.Nat.sub_0_r.
+simpl in k; exists k; split.
+   2:{ exists (Ordinal ilt'); rewrite /k.
+   move: (splitP (Ordinal ilt')).
+   case: (fintype.split _)=>o sp; inversion sp; subst o.
+      by case: j H1 {sp}=> j jlt /= ->; rewrite eq_refl; apply oner_neq0.
+   by move: H0; rewrite leqnn.
+   }
+rewrite big_split_ord big_ord_recr (congr_big (index_enum (ordinal_finType i)) (fun _ => true) (fun i => 0 *: 0)%R) //.
+rewrite -scaler_suml scaler0.
+   2:{ move=> [j jlt] _; rewrite /k.
+   move: (splitP (lshift (n - i.+1) (widen_ord (leqnSn i) (Ordinal jlt)))).
+   case fintype.split=>o; move=>sp; inversion sp; subst o.
+      case: j0 H1 {sp}=> j0 j0lt /=<-.
+      case ji: (j == i).
+         by move: ji (jlt)=>/eqP ji; subst j; rewrite ltnn.
+      by do 2 rewrite scale0r.
+   by move: H0=>/esym; rewrite ltnNge=>/negP/negP; rewrite ltnNge=>/negP jle; elim jle; apply ltnW.
+   }
+move: (splitP (lshift (n - i.+1) (@ord_max i))); rewrite {1}/k; case fintype.split=>o sp; inversion sp; subst o.
+   2: by move: H0; rewrite leqnn.
+case: j H1 {sp}=> j jlt /=<-; rewrite eq_refl.
+clear j jlt H0.
+rewrite add0r scale1r.
+suff: (\sum_(i1 < n - i.+1) k (rshift i.+1 i1) *: s`_(i.+1 + i1) = - s`_i)
+   by move=>->; apply subrr.
+rewrite sin -sumrN.
+have ne': (i.+1 + (n - i.+1) - i.+1 = n - i.+1)%nat by rewrite -ne.
+rewrite (index_enum_cast_ord ne') big_map; apply congr_big=>// [[x xlt]] _.
+rewrite nth_drop -scaleNr; congr (_ *: _).
+move: (splitP (rshift i.+1 (cast_ord ne' (Ordinal xlt)))); rewrite /k; case: fintype.split=>o sp; inversion sp; subst o.
+   by move: H0; rewrite ltnNge leq_addr.
+case: k0 H1 sp=>k0 k0lt H1 sp; congr (- coord _ _ _).
+apply val_inj=>/=; apply /esym.
+move: H1=>/= /(f_equal (fun x: nat => (x - i.+1)%nat)).
+have np0: forall n, (n = n + 0)%nat by move=>a; rewrite addnC.
+rewrite {2 4}(np0 i.+1) subnDl subnDl.
+have n0: forall n: nat, (n-0 = n)%nat.
+   by move=>a; rewrite (np0 (a-0)%nat); apply subnK.
+by rewrite n0 n0.
+Qed.
+
+Lemma perm_map_bij [T: finType] [f : T -> T] (s: seq T): bijective f -> perm_eq (index_enum T) [seq f i | i <- index_enum T].
+Proof.
+rewrite /index_enum; case: index_enum_key=>/=.
+move=>fbij.
+rewrite /perm_eq -enumT -forallb_tnth; apply /forallP=>i /=.
+inversion fbij.
+rewrite enumT enumP count_map -size_filter (@eq_in_filter _ _ (pred1 (g (tnth
+               (cat_tuple (enum_tuple T) (map_tuple [eta f] (enum_tuple T)))
+               i)))).
+   by rewrite size_filter enumP.
+move=> x _ /=.
+apply/eqP/eqP.
+   by move=>/(f_equal g) <-.
+by move=>->.
+Qed.
+
+Lemma image_mem_pred1 (aT: finType) (rT: eqType) (f: aT -> rT) (x: aT): simpl_of_mem (mem (image_mem f (mem (PredOfSimpl.coerce (pred1 x))))) = pred1 (f x).
+Proof. admit. Admitted.
+
+Lemma caratheodory (A: set (Vector.lmodType E)) x: x \in hull A -> exists (n : nat) (g : 'I_n -> (Vector.lmodType E)) (d : {fdist 'I_n}), (n <= (dimv (@fullv R_fieldType E)).+1)%nat /\ range g `<=` A /\ x = <|>_d g.
+Proof.
+move=>/set_mem [n [g [d [gA ->]]]].
+elim: n g d gA=> [| n IHn] g d gA.
+   by elim (fdistI0_False d).
+case nsgt: (n.+1 <= (dimv (@fullv R_fieldType E)).+1)%nat.
+   by exists n.+1, g, d.
+have: exists mu: 'I_(n.+1) -> R, \sum_(i < n.+1) mu i = 0 /\ \sum_(i < n.+1) (mu i) *: g i = 0 /\ exists i, mu i <> 0.
+   clear IHn.
+   move: nsgt; rewrite ltnNge=>/negP/negP nsgt.
+   case sf: (free (in_tuple [seq (g (lift ord0 i)) - (g ord0) | i <- index_enum (ordinal_finType n) ])).
+      have: basis_of fullv (in_tuple [seq (g (lift ord0 i)) - (g ord0) | i <- index_enum (ordinal_finType n) ]).
+         rewrite basisEfree; apply /andP; split=>//; apply /andP; split.
+            by apply subvf.
+         rewrite size_map size_index_enum /= card_ord.
+         by refine (leq_trans _ nsgt).
+      rewrite in_tupleE basisEdim size_map=>/andP [_ nsge].
+      by move: nsge nsgt; rewrite size_index_enum -pred_Sn card_ord ltnNge=>->.
+      move: sf=>/negP /freeN_combination; rewrite in_tupleE size_map /= size_index_enum card_ord=> [[mu [musum [i mui]]]].
+   exists (fun i => match i with | @Ordinal _ 0 _ => - \sum_i mu i | @Ordinal _ i.+1 ilt => mu (Ordinal (ltnSE ilt)) end).
+   split.
+      rewrite big_ord_recl /= addrC; apply /eqP; rewrite subr_eq0; apply /eqP.
+      apply congr_big=>// [[j jlt]] _.
+      by congr mu; apply val_inj.
+   split.
+      rewrite big_ord_recl /= scaleNr addrC scaler_suml -sumrB -{2}musum.
+      apply congr_big=>// j _.
+      rewrite (nth_map j).
+         2: by rewrite size_index_enum card_ord.
+      rewrite scalerBr; congr add; congr (mu _ *: g (lift ord0 _)).
+         by case: j=>j jlt; apply val_inj.
+      have->: index_enum (ordinal_finType n) = (enum 'I_n) by rewrite enumT.
+      by rewrite nth_ord_enum.
+   by exists (lift ord0 i)=>/=; apply/eqP; rewrite /is_true -{}mui; congr (mu _ != 0); case: i=>[i ilt]; apply val_inj.
+move=>[mu [muR [muE [i mui]]]].
+wlog: mu muR muE mui / mu i > 0.
+   move=> H.
+   case mupos: (0 < mu i).
+      by apply (H mu).
+   apply (H (fun i => - mu i)).
+      + by rewrite sumrN muR oppr0.
+      + by rewrite -{2}oppr0 -{2}muE -sumrN; apply congr_big=>// j _; rewrite scaleNr.
+      + by move=> /(f_equal (@GRing.opp R_zmodType)); rewrite opprK oppr0.
+      + move: mui=>/eqP; rewrite [mu i != 0]real_neqr_lt. move=>/orP; case; [ by rewrite oppr_gt0 | by rewrite mupos ].
+         by apply num_real.
+         by apply num_real.
+move=>/(@Order.TotalTheory.arg_minP _ _ _ i (fun i => 0 < mu i) (fun i => (d i) / (mu i))) [im muip muim]; clear i mui.
+wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
+   set f := fun i: nat => if i == nat_of_ord im then 0%nat else if i == 0%nat then nat_of_ord im else i.
+   have fcan: cancel f f.
+      move=> j; rewrite /f.
+      case jim: (j == im); case j0: (j == 0%nat); case im0: (0%nat == im); rewrite ?eq_refl; rewrite ?jim ?j0; move: jim j0 im0=>/eqP jim /eqP j0 /eqP im0; try subst j; try subst im =>//; try reflexivity; exact im0.
+   have flt: forall i: 'I_n.+1, (f i < n.+1)%nat by move=>[j jlt]; rewrite /f; case jim: (j == im); case j0: (j == 0%nat).
+   set f' := fun i => Ordinal (flt i).
+   have fcan': cancel f' f' by move=>[j jlt]; apply val_inj, fcan.
+   have fbij: bijective f' by exists f'; move=> [j jlt]; apply fcan'.
+   move=>/(_ (fun i => g (f' i)) (FDistMap.d f' d)).
+   have gA': [set g (f' i) | i in [set: 'I_n.+1]] `<=` A by move=>y [i _ <-]; apply gA; eexists.
+   move=>/(_ gA' (fun i => mu (f' i))).
+   have mu'R: \sum_(i0 < n.+1) mu (f' i0) = 0.
+      rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
+      by rewrite big_map -{4}muR; apply congr_big=>// [[j jlt]] _; congr mu; apply fcan'.
+   move=>/(_ mu'R).
+   have mu'E: \sum_(i0 < n.+1) mu (f' i0) *: g (f' i0) = 0.
+      rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
+      rewrite big_map -{4}muE; apply congr_big=>// j _.
+      congr (mu _ *: g _); apply fcan'.
+   move=>/(_ mu'E (f' im)).
+   have muip': 0 < mu (f' (f' im)) by refine (eq_ind _ (fun x => 0 < x) muip _ _); congr mu; rewrite fcan'.
+   move=>/(_ muip').
+   have muim': forall j : ordinal_finType n.+1,
+  0 < mu (f' j) ->
+  FDistMap.d f' d (f' im) / mu (f' (f' im)) <= FDistMap.d f' d j / mu (f' j).
+      move=>j /muim.
+      rewrite fcan' FDistMap.dE (big_pred1 im) /=.
+         2: by move: (@pre_image _ _ f' (bij_inj fbij) (pred1 im))=>/funext/=; rewrite image_mem_pred1=>->.
+      rewrite FDistMap.dE (big_pred1 (f' j)) //.
+      by rewrite -{1}[j]fcan'; move: (@pre_image _ _ f' (bij_inj fbij) (pred1 (f' j)))=>/funext/=; rewrite image_mem_pred1=>->.
+   move=>/(_ muim').
+   have im0: f' im == ord0.
+      by apply /eqP; apply val_inj=>/=; rewrite /f; rewrite eq_refl.
+   move=>/(_ im0) [n' [g' [d' [n'le [g'A e]]]]].
+   exists n', g', d'; split=>//; split=>//; rewrite -e.
+   rewrite 2!avgnrE /avgnr.
+   rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
+   rewrite big_map; apply congr_big=>// j _.
+   rewrite FDistMap.dE (big_pred1 (f' j))=>// k /=.
+   by rewrite unfold_in=>/=; apply/eqP/eqP=>e'; apply (bij_inj fbij); rewrite fcan'.
+move=>/eqP ime; subst im.
+have leS: forall n m, (n <= m -> n < m.+1)%nat by move=> ? ?; rewrite ltnS.
+have mu0: mu ord0 != 0 by apply /eqP=>mu0; move: muip; rewrite mu0 lt0r eq_refl.
+have k0mu0: d ord0 / mu ord0 * mu ord0 = d ord0 by rewrite -{2}[mu ord0]divr1 mulf_div [_*1]mulrC -mulf_div divr1 mulfV // mulr1.
+set ef: 'I_n -> R := finfun (fun i => d (lift ord0 i) - d ord0 / mu ord0 * mu (lift ord0 i)).
+have ef0: forall i, (0 <= ef i)%R.
+   move=>i; apply /RleP; rewrite /ef ffunE subr_ge0.
+   case mujp: (0 < mu (lift ord0 i)).
+      by rewrite -ler_pdivl_mulr //; apply muim.
+   apply (@le_trans _ _ 0).
+      2: apply/leRP; exact (FDist.ge0 d (lift ord0 i)).
+   apply mulr_ge0_le0.
+      apply divr_ge0.
+         apply/leRP; exact (FDist.ge0 d ord0).
+      by move: muip; rewrite lt0r=>/andP [_ ->].
+   rewrite real_leNgt.
+      by rewrite mujp.
+      by apply num_real.
+   by apply num_real.
+have ef1: (\sum_(a in 'I_n) ef a)%R = 1%R.
+   by rewrite -[1%R]subr0 -(mulr0 (d ord0 / mu ord0)) -(FDist.f1 d) -muR mulr_sumr -sumrB big_ord_recl k0mu0 subrr add0r; apply congr_big=>// i _; rewrite /ef ffunE.
+set e := FDist.make ef0 ef1.
+move: IHn=>/(_ (fun i=> g (lift ord0 i)) e).
+have g'A: [set g (lift ord0 i) | i in [set: 'I_n]] `<=` A by move=>y [i _ <-]; apply gA; eexists.
+move=>/(_ g'A) [n' [g' [d' [n'le [g'A' gde]]]]].
+exists n', g', d'.
+split=>//; split=>//.
+rewrite -gde 2!avgnrE /avgnr big_ord_recl -k0mu0 -scalerA.
+move: muE=>/eqP; rewrite big_ord_recl addr_eq0=>/eqP->.
+rewrite scalerN -scaleNr scaler_sumr -big_split; apply congr_big=>// i _.
+by rewrite scalerA /= -scalerDl; congr scale; rewrite addrC mulNr ffunE.
+Qed.
+End caratheodory.
 Section linear_affine.
 Variable E F: lmodType R.
 Variable f: {linear E -> F}.
