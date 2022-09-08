@@ -1470,26 +1470,19 @@ Qed.
 
 Definition unsplit_prod (m n: nat) (i:'I_m * 'I_n): 'I_(m*n) := let (i, j) := i in Ordinal (unsplit_prodp i j).
 
+From mathcomp Require Import div.
+
 (* TODO: shall we extend the lemmas on Nat.div to divn ? *)
-Definition split_prodpl (m n: nat) (i: 'I_(m*n)): (Nat.div i n < m)%nat.
+Definition split_prodpl (m n : nat) (i : 'I_(m * n)): (i %/ n < m)%nat.
 Proof.
-case: i=>[i ilt].
-case: m ilt=>[| m] ilt.
-   by exfalso; move: ilt; rewrite /muln /muln_rec ltn0.
-case: n ilt=>[| n] ilt.
-   by exfalso; move: ilt; rewrite mulnC /muln /muln_rec ltn0.
-apply /leP; apply PeanoNat.Nat.div_lt_upper_bound=>//=.
-by move: ilt; rewrite mulnC=>/leP.
+move: n i => [i|n i]; last by rewrite ltn_divLR.
+by rewrite divn0; move: i; rewrite muln0 => -[].
 Qed.
 
-Definition split_prodpr (m n: nat) (i: 'I_(m*n)): (Nat.modulo i n < n)%nat.
+Definition split_prodpr (m n : nat) (i : 'I_(m * n)): (i %% n < n)%nat.
 Proof.
-case: i=>[i ilt].
-case: m ilt=>[| m] ilt.
-   by exfalso; move: ilt; rewrite /muln /muln_rec ltn0.
-case: n ilt=>[| n] ilt.
-   by exfalso; move: ilt; rewrite mulnC /muln /muln_rec ltn0.
-by apply /leP; apply PeanoNat.Nat.mod_upper_bound.
+move: n i => [i|n i]; last by rewrite ltn_pmod.
+by exfalso; move: i; rewrite muln0 => -[].
 Qed.
 
 Definition split_prod (m n: nat) (i: 'I_(m*n)): 'I_m * 'I_n := (Ordinal (split_prodpl i), Ordinal (split_prodpr i)).
@@ -1514,27 +1507,14 @@ have e: forall j, rshift n (unsplit_prod (i, j)) = Ordinal (unsplit_prodp (lift 
 by apply congr_big=>// [ j | j _ ]; f_equal.
 Qed.
 
-Lemma split_prodK (n m: nat): cancel (@split_prod n m) (@unsplit_prod n m).
-Proof.
-move=> [i ilt].
-apply val_inj=>/=.
-apply/esym; rewrite mulnC /muln /muln_rec /addn /addn_rec.
-by apply PeanoNat.Nat.div_mod_eq.
-Qed.
+Lemma split_prodK n m : cancel (@split_prod n m) (@unsplit_prod n m).
+Proof. by move=> i; apply val_inj => /=; rewrite -divn_eq. Qed.
 
-Lemma unsplit_prodK (n m: nat): cancel (@unsplit_prod n m) (@split_prod n m).
+Lemma unsplit_prodK n m : cancel (@unsplit_prod n m) (@split_prod n m).
 Proof.
-move=> [[i ilt] [j jlt]].
-apply pair_equal_spec; split; apply val_inj=>/=.
-   rewrite /muln /muln_rec /addn /addn_rec PeanoNat.Nat.div_add_l.
-      2: by move=>m0; subst m; move: jlt; rewrite ltn0.
-   rewrite PeanoNat.Nat.div_small.
-      2: by apply /leP.
-   by apply/esym; apply plus_n_O.
-rewrite addnC /muln /muln_rec /addn /addn_rec PeanoNat.Nat.mod_add.
-   2: by move=>m0; subst m; move: jlt; rewrite ltn0.
-rewrite PeanoNat.Nat.mod_small=>//.
-by apply /leP.
+move: m => [[? [[]]]//|m [i j]]; congr (_, _); apply/val_inj => /=.
+- by rewrite divnMDl// divn_small// addn0.
+- by rewrite modnMDl modn_small.
 Qed.
 End split_prod.
 
@@ -1647,9 +1627,6 @@ apply/eqP/eqP.
 by move=>->.
 Qed.
 
-Lemma image_mem_pred1 (aT: finType) (rT: eqType) (f: aT -> rT) (x: aT): simpl_of_mem (mem (image_mem f (mem (PredOfSimpl.coerce (pred1 x))))) = pred1 (f x).
-Proof. admit. Admitted.
-
 Lemma caratheodory (A: set (Vector.lmodType E)) x: x \in hull A -> exists (n : nat) (g : 'I_n -> (Vector.lmodType E)) (d : {fdist 'I_n}), (n <= (dimv (@fullv R_fieldType E)).+1)%nat /\ range g `<=` A /\ x = <|>_d g.
 Proof.
 move=>/set_mem [n [g [d [gA ->]]]].
@@ -1724,10 +1701,14 @@ wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
   0 < mu (f' j) ->
   FDistMap.d f' d (f' im) / mu (f' (f' im)) <= FDistMap.d f' d j / mu (f' j).
       move=>j /muim.
-      rewrite fcan' FDistMap.dE (big_pred1 im) /=.
-         2: by move: (@pre_image _ _ f' (bij_inj fbij) (pred1 im))=>/funext/=; rewrite image_mem_pred1=>->.
+      rewrite fcan' FDistMap.dE (big_pred1 im) /=; last first.
+        (* NB* was proved using axiomatized image_mem_pred1 *)
+        move=> i; apply/idP/idP; rewrite !inE; last by move=> /eqP ->.
+        by move=> /eqP /(bij_inj fbij) /eqP.
       rewrite FDistMap.dE (big_pred1 (f' j)) //.
-      by rewrite -{1}[j]fcan'; move: (@pre_image _ _ f' (bij_inj fbij) (pred1 (f' j)))=>/funext/=; rewrite image_mem_pred1=>->.
+      (* NB: was proved using axiomatized image_mem_pred1 *)
+      by move=> /= i; apply/idP/idP; rewrite !inE => /eqP;
+        [move=> <-; rewrite fcan' | move=> ->; rewrite fcan'].
    move=>/(_ muim').
    have im0: f' im == ord0.
       by apply /eqP; apply val_inj=>/=; rewrite /f; rewrite eq_refl.
@@ -2452,7 +2433,7 @@ Qed.
 Lemma preimage_subset_convex_hull (f: {affine T -> U}) (Z: set U): hull (f @^-1` Z) `<=` f @^-1` (hull Z).
 Proof.
 move=>x [n [g [d [gZ ->]]]] /=.
-rewrite affine_function_Sum. 
+rewrite affine_function_Sum.
 exists n, (f \o g), d; split=>//.
 by move=>y [i _ <-]; apply gZ; exists i.
 Qed.
@@ -2525,7 +2506,7 @@ exists (x-<|>_d h).
    by apply subset_hull=>/=; rewrite linearB affine_function_Sum fx subrr.
 by rewrite addrC -addrA [-_+_]addrC subrr addr0.
 Qed.
-End affine_function_image.
+End linear_function_image.
 
 Section R_affine_function_prop.
 Variables (T : convType) (f : T -> R).
