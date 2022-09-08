@@ -1497,7 +1497,6 @@ End split_prod.
 (* TODO: Lemma preim_cancel: ... *)
 
 Lemma avgnr_add n m (f: 'I_n -> E) (d: {fdist 'I_n}) (g: 'I_m -> E) (e: {fdist 'I_m}): <|>_d f + <|>_e g = <|>_(FDistMap.d (@unsplit_prod n m) (ProdFDist.d d (fun _ => e))) (fun i=> let (i, j) := split_prod i in f i + g j).
-Search {fdist _}.
 Proof.
 rewrite -[<|>_e g]scale1r !avgnrE !/avgnr big_prod_ord. 
 have<-: 1%R = 1 by [].
@@ -1678,11 +1677,9 @@ wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
   FDistMap.d f' d (f' im) / mu (f' (f' im)) <= FDistMap.d f' d j / mu (f' j).
       move=>j /muim.
       rewrite fcan' FDistMap.dE (big_pred1 im) /=; last first.
-        (* NB* was proved using axiomatized image_mem_pred1 *)
         move=> i; apply/idP/idP; rewrite !inE; last by move=> /eqP ->.
         by move=> /eqP /(bij_inj fbij) /eqP.
       rewrite FDistMap.dE (big_pred1 (f' j)) //.
-      (* NB: was proved using axiomatized image_mem_pred1 *)
       by move=> /= i; apply/idP/idP; rewrite !inE => /eqP;
         [move=> <-; rewrite fcan' | move=> ->; rewrite fcan'].
    move=>/(_ muim').
