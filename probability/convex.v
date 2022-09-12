@@ -1446,8 +1446,6 @@ Qed.
 
 Definition unsplit_prod (m n: nat) (i:'I_m * 'I_n): 'I_(m*n) := let (i, j) := i in Ordinal (unsplit_prodp i j).
 
-From mathcomp Require Import div.
-
 (* TODO: shall we extend the lemmas on Nat.div to divn ? *)
 Definition split_prodpl (m n : nat) (i : 'I_(m * n)): (i %/ n < m)%nat.
 Proof.
@@ -1726,6 +1724,7 @@ by rewrite scalerA /= -scalerDl; congr scale; rewrite addrC mulNr ffunE.
 Qed.
 End caratheodory.
 Section linear_affine.
+Open Scope ring_scope.
 Variable E F: lmodType R.
 Variable f: {linear E -> F}.
 Import GRing.
