@@ -403,7 +403,7 @@ case/boolP : (q == 1%:pr) => [/eqP|] q1; first by rewrite q1 !conv1.
 set r := [p_of q, p].
 have r1 : (r != 1%:pr)%R by rewrite p_of_neq1 // -prob_gt0 -prob_lt1.
 rewrite -(convA' x1 y1) //.
-rewrite (convC y1).
+rewrite (convC _ y1).
 set s := [q_of q, p].
 set t := (s.~%:pr * q)%:pr.
 have t1 : (t < 1)%R.
@@ -415,7 +415,7 @@ have t1 : (t < 1)%R.
   by rewrite -{1}(add0R 1%R) leR_add2r.
 rewrite -(convA' x2); last by rewrite prob_lt1 p_of_rsC /= p_of_rsE.
 rewrite -(convA' x1) //; last by rewrite p_of_rsC.
-rewrite (convC y2 y1) /=.
+rewrite (convC _ y2 y1) /=.
 congr (_ <| _ |> _); first by rewrite p_of_rsC.
 congr (_ <| _ |> _).
   (* TODO: lemma? *)
@@ -435,7 +435,7 @@ Qed.
 
 Lemma distribute (x y z : A) (p q : prob) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
-Proof. by rewrite -{1}(convmm x q) convACA. Qed.
+Proof. by rewrite -{1}(convmm q x) convACA. Qed.
 
 Lemma ConvnFDist1 (n : nat) (j : 'I_n) (g : 'I_n -> A): <|>_(FDist1.d j) g = g j.
 Proof.
@@ -652,7 +652,7 @@ case/boolP : (p == 1%:pr :> prob) => [/eqP |p1].
   by rewrite (_ : Ordinal _ = lift ord0 ord0) ?H //; exact/val_inj.
 rewrite (@convn3E _ _ p) //; last exact/eqP.
 rewrite convA.
-rewrite (convC (g ord0)).
+rewrite (convC _ (g ord0)).
 have H : [p_of [r_of probfdist d ord0, p].~%:pr, [s_of probfdist d ord0, p]] != 1%:pr :> R.
   apply p_of_neq1.
   rewrite s_of_pqE /=.
@@ -757,7 +757,7 @@ have @p : prob.
   by rewrite addRC leR_add2l addRC -leR_subl_addr subRR.
 rewrite (@convn3E _ _ p) //; last exact/eqP.
 rewrite convC.
-rewrite (convC _ (g (Ordinal (erefl (2 < 3))))).
+rewrite (convC _ _ (g (Ordinal (erefl (2 < 3))))).
 case/boolP : (d ord_max == 1%R :> R) => dmax1.
   move/FDist1.P in dmax1.
   by move: H1; rewrite dmax1 // dmax1 // addR0 => /ltRR.
@@ -1097,7 +1097,7 @@ End affine_function_prop0.
 
 Section convn_convnfdist.
 Variable A : finType.
-Lemma convn_convnfdist n (g : 'I_n -> fdist_convType A) (d : {fdist 'I_n}) :
+Lemma convn_convnfdist n (g : 'I_n -> fdist A) (d : {fdist 'I_n}) :
   <|>_d g = ConvnFDist.d d g.
 Proof.
 elim: n g d => /= [g d|n IH g d]; first by move: (fdistI0_False d).

@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import finmap.
 From mathcomp Require boolp.
@@ -121,7 +122,7 @@ End FSDist_canonical.
 
 Definition FSDist_to_Type (A : choiceType) :=
   fun phT : phant (Choice.sort A) => FSDist.t A.
-Local Notation "{ 'dist' T }" := (FSDist_to_Type (Phant T)).
+Local Notation "{ 'dist' T }" := (FSDist.t T) (*(FSDist_to_Type (Phant T))*).
 
 Section FSDist_prop.
 Variable A : choiceType.
@@ -820,14 +821,21 @@ Definition Dist_convMixin :=
 Canonical Dist_convType := ConvexSpace.Pack Dist_convMixin.
 End Dist_convex_space.*)
 
-Definition FSDist_convMixin (A : choiceType) :=
+HB.instance Definition FSDist_convMixin (A : choiceType) :=
+  @isConvexSpace.Build {dist A} (Choice.class _) (@ConvFSDist.d A)
+  (@ConvFSDist.conv1 A)
+  (@ConvFSDist.convmm A)
+  (@ConvFSDist.convC A)
+  (@ConvFSDist.convA' A).
+
+(*Definition FSDist_convMixin (A : choiceType) :=
   @ConvexSpace.Mixin (FSDist_choiceType A) (@ConvFSDist.d A)
   (@ConvFSDist.conv1 A)
   (@ConvFSDist.convmm A)
   (@ConvFSDist.convC A)
   (@ConvFSDist.convA' A).
 Canonical FSDist_convType (A : choiceType) :=
-  ConvexSpace.Pack (ConvexSpace.Class (FSDist_convMixin A)).
+  ConvexSpace.Pack (ConvexSpace.Class (FSDist_convMixin A)).*)
 
 Fact FSDistfmap_affine (A B : choiceType) (f : A -> B) : affine (FSDistfmap f).
 Proof. by move=> ? ? ?; rewrite /FSDistfmap ConvFSDist.bind_left_distr. Qed.
@@ -835,8 +843,8 @@ Canonical Affine_FSDistfmap_affine (A B : choiceType) (f : A -> B) :=
   Affine (FSDistfmap_affine f).
 
 Definition FSDist_to_convType (A : choiceType) :=
-  fun phT : phant (Choice.sort A) => FSDist_convType A.
-Notation "{ 'dist' T }" := (FSDist_to_convType (Phant T)) : proba_scope.
+  fun phT : phant (Choice.sort A) => {dist A}(*FSDist_convType A*).
+Notation "{ 'dist' T }" := (FSDist.t T) (*(FSDist_to_convType (Phant T))*) : proba_scope.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
@@ -869,13 +877,13 @@ End FSDist_convex_space.
 
 Section fsdist_ordered_convex_space.
 Variable A : choiceType.
-Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin {dist A}.
+(*Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin {dist A}.*)
 End fsdist_ordered_convex_space.
 
 (* TODO: these lemmas could be better organized *)
 Section misc_lemmas.
 
-Lemma finsupp_Conv (C : convType) p (p0 : p != 0%:pr) (p1 : p != 1%:pr) (d e : {dist C}) :
+Lemma finsupp_Conv (C : choiceType) p (p0 : p != 0%:pr) (p1 : p != 1%:pr) (d e : {dist C}) :
   finsupp (d <|p|> e) = (finsupp d `|` finsupp e)%fset.
 Proof.
 apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j;
@@ -903,7 +911,7 @@ Section misc_scaled.
 Import ScaledConvex.
 Local Open Scope R_scope.
 
-Lemma FSDist_scalept_conv (C : convType) (x y : {dist C}) (p : prob) (i : C) :
+Lemma FSDist_scalept_conv (C : convType) (x y : {dist [choiceType of C]}) (p : prob) (i : C) :
   scalept ((x <|p|> y) i) (S1 i) =
     scalept (x i) (S1 i) <|p|> scalept (y i) (S1 i).
 Proof. by rewrite ConvFSDist.dE scalept_conv. Qed.
@@ -915,11 +923,11 @@ Section Convn_of_FSDist.
 Local Open Scope classical_set_scope.
 Variable C : convType.
 
-Definition Convn_of_FSDist (d : {dist C}) : C :=
+Definition Convn_of_FSDist (d : {dist [choiceType of C]}) : C :=
   <$>_(fdist_of_Dist d) (fun x : finsupp d => fsval x).
 Import ScaledConvex.
 
-Lemma ssum_seq_finsuppE'' (D : convType) (f : C -> D) (d x : {dist C}) :
+Lemma ssum_seq_finsuppE'' (D : convType) (f : C -> D) (d x : {dist [choiceType of C]}) :
   \ssum_(i : fdist_of_FSDist.D d) scalept (x (fsval i)) (S1 (f (fsval i))) =
   \ssum_(i <- finsupp d) scalept (x i) (S1 (f i)).
 Proof.
@@ -928,14 +936,14 @@ by rewrite -(@big_seq_fsetE
                (fun i => scalept (x i) (S1 (f i)))).
 Qed.
 
-Lemma ssum_seq_finsuppE' (d x : {dist C}) :
+Lemma ssum_seq_finsuppE' (d x : {dist [choiceType of C]}) :
   \ssum_(i : fdist_of_FSDist.D d) scalept (x (fsval i)) (S1 (fsval i)) =
   \ssum_(i <- finsupp d) scalept (x i) (S1 i).
 Proof.
 by rewrite (ssum_seq_finsuppE'' idfun).
 Qed.
 
-Lemma ssum_seq_finsuppE (d : {dist C}) :
+Lemma ssum_seq_finsuppE (d : {dist [choiceType of C]}) :
   \ssum_i scalept (fdist_of_Dist d i) (S1 (fsval i)) =
   \ssum_(i <- finsupp d) scalept (d i) (S1 i).
 Proof.
@@ -943,7 +951,7 @@ under eq_bigr do rewrite fdist_of_FSDistE.
 by rewrite ssum_seq_finsuppE'.
 Qed.
 
-Lemma ssum_widen_finsupp (x : {dist C}) X :
+Lemma ssum_widen_finsupp (x : {dist [choiceType of C]}) X :
   (finsupp x `<=` X)%fset ->
   \ssum_(i <- finsupp x) scalept (x i) (S1 i) =
   \ssum_(i <- X) scalept (x i) (S1 i).
@@ -986,7 +994,7 @@ Section lemmas_for_probability_monad_and_adjunction.
 Import ScaledConvex.
 Local Open Scope fset_scope.
 Local Open Scope R_scope.
-Lemma Convn_of_FSDist_FSDist1 (C : convType) (x : C) :
+Lemma Convn_of_FSDist_FSDist1 (C : convType) (x : [choiceType of C]) :
   Convn_of_FSDist (FSDist1.d x) = x.
 Proof.
 apply: (@ScaledConvex.S1_inj _ _ x).
@@ -998,8 +1006,8 @@ rewrite (eq_bigr (fun=> ScaledConvex.S1 x)); last first.
 by rewrite big_const (_ : #| _ | = 1%N) // -cardfE FSDist1.supp cardfs1.
 Qed.
 
-Lemma Convn_of_FSDist_FSDistfmap (C D : convType) (f : {affine C -> D}) (d : {dist C}) :
-  f (Convn_of_FSDist d) = Convn_of_FSDist (FSDistfmap f d).
+Lemma Convn_of_FSDist_FSDistfmap (C D : convType) (f : {affine C -> D}) (d : {dist [choiceType of C]}) :
+  f (Convn_of_FSDist d) = Convn_of_FSDist (FSDistfmap (fun x => f x : [choiceType of D]) d).
 Proof.
 apply S1_inj => /=.
 rewrite S1_proj_Convn_finType // S1_Convn_finType.
@@ -1007,12 +1015,13 @@ set X := LHS.
 under eq_bigr do rewrite fdist_of_FSDistE.
 rewrite ssum_seq_finsuppE' supp_FSDistfmap.
 under eq_bigr do rewrite FSDistBind.dE imfset_id.
+pose f' := fun x => f x : [choiceType of D].
 have Hsupp : forall y,
-    y \in [fset f x | x in finsupp d] ->
-    y \in \bigcup_(d0 <- [fset FSDist1.d (f a) | a in finsupp d]) finsupp d0.
+    y \in [fset f' x | x in finsupp d] ->
+    y \in \bigcup_(d0 <- [fset FSDist1.d (f' a) | a in finsupp d]) finsupp d0.
 - move=> y.
   case/imfsetP=> x /= xfd ->.
-  apply/bigfcupP; exists (FSDist1.d (f x)); last by rewrite FSDist1.supp inE.
+  apply/bigfcupP; exists (FSDist1.d (f' x)); last by rewrite FSDist1.supp inE.
   by rewrite andbT; apply/imfsetP; exists x.
 rewrite big_seq; under eq_bigr=> y Hy.
 - rewrite (Hsupp y Hy).
@@ -1022,9 +1031,9 @@ rewrite big_seq; under eq_bigr=> y Hy.
 rewrite -big_seq exchange_big /=.
 rewrite (@big_seq _ _ _ _ (finsupp d)).
 under eq_bigr=> x Hx.
-- rewrite (big_fsetD1 (f x)) /=; last by apply/imfsetP; exists x.
+- rewrite (big_fsetD1 (f' x)) /=; last by apply/imfsetP; exists x.
   rewrite eqxx mulR1.
-  rewrite (@big_seq _ _ _ _ ([fset f x0 | x0 in finsupp d] `\ f x)).
+  rewrite (@big_seq _ _ _ _ ([fset f' x0 | x0 in finsupp d] `\ f' x)).
   under eq_bigr=> y do [rewrite in_fsetD1=> /andP [] /negbTE -> Hy; rewrite mulR0 scalept0].
   rewrite big1 // addpt0.
   over.
