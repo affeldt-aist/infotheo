@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require Import boolp classical_sets.
 Require Import Reals.
@@ -35,26 +36,24 @@ Local Open Scope proba_scope.
 Local Open Scope convex_scope.
 
 Module NaryConvexSpace.
-Record mixin_of (T : choiceType) : Type :=
-  Mixin { convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T }.
-Record class_of (T : Type) := Class {
-  base : Choice.class_of T ;
-  mixin : mixin_of (Choice.Pack base) }.
-Structure t : Type := Pack { car : Type ; class : class_of car }.
-Definition baseType (T : t) := Choice.Pack (base (class T)).
-Module Exports.
-Definition naryConv (T : t) : forall n, {fdist 'I_n} -> ('I_n -> car T) -> car T
-  := match T with Pack _ (Class _ (Mixin x)) => x end.
-Arguments naryConv {T} {n} : simpl never.
-Notation "'<&>_' d f" := (naryConv d f) : convex_scope.
-Notation naryConvType := t.
-Coercion baseType : naryConvType >-> choiceType.
-Canonical baseType.
-End Exports.
+
+HB.mixin Record isNaryConv (T : Type) := {
+  narychoice : Choice.class_of T ;
+  convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T
+}.
+
+#[short(type=naryConvType)]
+HB.structure Definition NaryConv := {T & isNaryConv T}.
+
+Notation "'<&>_' d f" := (convn _ d f) : convex_scope.
+
+Canonical naryconv_eqType (T : naryConvType) := EqType T narychoice.
+Canonical conv_choiceType (T : naryConvType) := ChoiceType T narychoice.
+
 End NaryConvexSpace.
 
 Module NaryConvexSpaceEquiv.
-Import NaryConvexSpace.Exports.
+Import NaryConvexSpace.
 
 (* In this module we use funext to avoid explicitly handling the congruence
    of convn (cf. eq_convn in convex_choice.v for the iterated version). *)
@@ -181,9 +180,11 @@ Module Type ConvSpace. Axiom T : convType. End ConvSpace.
 
 Module BinToNary(C : ConvSpace) <: NaryConvSpace.
 Import NaryConvexSpace.
-Definition naryConv_mixin : mixin_of C.T := Mixin (@Convn C.T).
 
-Definition T : naryConvType := Pack (Class naryConv_mixin).
+HB.instance Definition _ := @isNaryConv.Build _ (Choice.class _) (@Convn C.T).
+
+(* TODO *)
+Definition T : naryConvType := Choice_sort__canonical__NaryConvexSpace_NaryConv.
 Definition axbary := @Convn_convnfdist C.T.
 Definition axproj := @ConvnFDist1 C.T.
 End BinToNary.
@@ -287,20 +288,27 @@ case: j => -[|[|[]]] //= Hj.
   by rewrite !I2FDist.dE !(mulR0,addR0,add0R,mulR1) s_of_pqE onemK.
 Qed.
 
-Definition conv_mixin : ConvexSpace.mixin_of T.
-apply (@ConvexSpace.Mixin _ binconv).
-- move=> a b; apply axidem => i.
-  rewrite inE I2FDist.dE.
-  case: ifP => //=.
-  by rewrite /onem subRR eqxx.
-- move=> p a; apply axidem => i.
-  by case: ifP.
-- exact binconvC.
-- exact binconvA.
-Defined.
+(* TODO: clean *)
+Lemma T21 a b : binconv 1%:pr a b = a.
+Proof.
+apply axidem => i.
+rewrite inE I2FDist.dE.
+case: ifP => //=.
+by rewrite /onem subRR eqxx.
+Qed.
 
-Definition T2 := ConvexSpace.Pack (ConvexSpace.Class conv_mixin).
+Lemma T22 p a : binconv p a a = a.
+Proof.
+apply axidem => i.
+by case: ifP.
+Qed.
+
+#[export]
+HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) binconv
+  T21 T22 binconvC binconvA.
+
 End NaryToBin.
+HB.reexport NaryToBin.
 
 (* Then prove BinToN and NToBin cancel each other:
    operations should coincide on both sides *)
@@ -314,16 +322,14 @@ Lemma equiv_conv p (a b : T) : a <| p |> b = a <& p &> b.
 Proof.
 rewrite /binconv.
 Import ScaledConvex.
-apply S1_inj. rewrite S1_conv S1_convn.
-by rewrite !big_ord_recl big_ord0 /= !I2FDist.dE /= addpt0.
+apply: S1_inj.
+by rewrite S1_conv.
 Qed.
 End Equiv1.
 
 Module Equiv2(A : NaryConvSpace).
 Module B := NaryToBin(A).
 Import A B.
-
-Local Canonical T2 := B.T2.
 
 Lemma equiv_convn n (d : {fdist 'I_n}) g : <&>_d g = <|>_d g.
 Proof.
@@ -337,9 +343,12 @@ case: Bool.bool_dec.
 move=> b; rewrite -{}IH.
 have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
   apply funext => i; by rewrite /DelFDist.f ltn0.
-symmetry; rewrite axmap /Conv /= /binconv.
+symmetry; rewrite axmap /=.
+rewrite /(_ <| _ |> _)/=.
+rewrite /binconv.
 set d' := FDistMap.d _ _.
-rewrite -(axproj ord0) convn_if axbary.
+rewrite -(axproj ord0).
+rewrite convn_if axbary.
 congr (<&>_ _ _); apply fdist_ext => i.
 rewrite ConvnFDist.dE !big_ord_recl big_ord0 addR0 /= !I2FDist.dE /=.
 rewrite FDist1.dE /d' FDistMap.dE /=.
