@@ -522,6 +522,7 @@ HB.structure Definition SemiLattice := { T & isSemiLattice T }.
 
 Canonical semilattice_eqType (T : semiLattType) := EqType T slchoice.
 Canonical semilattice_choiceType (T : semiLattType) := ChoiceType T slchoice.
+Coercion semilattice_choiceType : semiLattType >-> choiceType.
 
 Notation "x [+] y" := (lub x y) : latt_scope.
 
@@ -1006,7 +1007,7 @@ Proof. by apply necset_ext; rewrite !convE convA_set. Qed.
 
 #[export]
 HB.instance Definition necset_convType :=
-  @isConvexSpace.Build _ (Choice.class (necset_choiceType A)) conv conv1 convmm convC convA.
+  @isConvexSpace.Build (necset A) (Choice.class _) conv conv1 convmm convC convA.
 
 End def.
 
@@ -1022,7 +1023,7 @@ Proof. by rewrite convE. Qed.
 End lemmas.
 End necset_convType.
 
-HB.reexport necset_convType.
+HB.export necset_convType.
 
 Definition Necset_to_convType (A : convType) :=
   fun phT : phant (Choice.sort A) => necset A.
@@ -1078,16 +1079,18 @@ Admitted.
 Lemma lub_xx : idempotent lub_.
 Admitted.
 
-HB.instance Definition _ :=
-  @isSemiLattice.Build _ (Choice.class _)
+#[export]
+HB.instance Definition necset_semiLattType :=
+  @isSemiLattice.Build (necset A) (Choice.class _)
     lub_ lub_C lub_A lub_xx.
+
 
 Lemma lub_E : forall x y, lub_ x y = biglub_necset [set x; y]%:ne.
 Proof. by []. Qed.
 
-Check biglub_necset.
+#[export]
 HB.instance Definition necset_semiCompSemiLattType :=
-  @isSemiCompleteSemiLattice.Build _ (Choice.class _)
+  @isSemiCompleteSemiLattice.Build (necset A) (Choice.class _)
     biglub_necset biglub_necset1 biglub_necset_bigsetU lub_E.
 (*Definition mixin :=
   SemiCompleteSemiLattice.Mixin biglub_necset1 biglub_necset_bigsetU.
@@ -1096,14 +1099,16 @@ Definition class := SemiCompleteSemiLattice.Class mixin.*)
 End def.
 End necset_semiCompSemiLattType.
 
-Canonical necset_semiCompSemiLattType A :=
-  SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.class A).
+HB.export necset_semiCompSemiLattType.
+
+(*Canonical necset_semiCompSemiLattType A :=
+  SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.class A).*)
 
 Module necset_semiCompSemiLattConvType.
 Section def.
 Local Open Scope classical_set_scope.
 Variable (A : convType).
-Let L := necset_semiCompSemiLattType A.
+Let L := [the semiCompSemiLattType of necset A].
 Lemma axiom (p : prob) (X : L) (I : neset L) :
   necset_convType.conv p X (|_| I) = |_| ((necset_convType.conv p X) @` I)%:ne.
 Proof.
@@ -1119,16 +1124,18 @@ congr hull; rewrite eqEsubset; split=> u /=.
   by case=> y Yy yXu; exists y=> //; exists Y.
 Qed.
 
-Definition class := @SemiCompSemiLattConvType.Class _
-  (necset_semiCompSemiLattType.class A) (necset_convType.mixin A)
-  (SemiCompSemiLattConvType.Mixin axiom).
+#[export]
+HB.instance Definition _ := @isSemiCompSemiLattConv.Build (necset A)
+  axiom.
 End def.
 End necset_semiCompSemiLattConvType.
-Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack
-  (necset_semiCompSemiLattConvType.class A).
+HB.export necset_semiCompSemiLattConvType.
+
+(*Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack
+  (necset_semiCompSemiLattConvType.class A).*)
 
 Definition Necset_to_semiCompSemiLattConvType (A : convType) :=
-  fun phT : phant (Choice.sort A) => necset_semiCompSemiLattConvType A.
+  fun phT : phant (Choice.sort A) => (*necset_semiCompSemiLattConvType*)necset A.
 Notation "{ 'necset' T }" := (Necset_to_semiCompSemiLattConvType (Phant T)) : convex_scope.
 
 Module necset_join.
@@ -1137,9 +1144,9 @@ Local Open Scope classical_set_scope.
 Definition F (T : Type) := {necset {dist (choice_of_Type T)}}.
 Variable T : Type.
 
-Definition L := F T.
+Definition L := [the convType of F T].
 
-Definition L' := necset (F T).
+Definition L' := necset L.
 
 Definition LL := F (F T).
 
@@ -1162,7 +1169,7 @@ Qed.
 Definition F1join0 : LL -> L' := fun X => NECSet.Pack (NECSet.Class
   (CSet.Mixin (F1join0'_convex X)) (NESet.Mixin (F1join0'_neq0 X))).
 
-Definition join1' (X : L') : convex_set (FSDist_convType (choice_of_Type T)) :=
+Definition join1' (X : L') : convex_set ([the convType of {dist (choice_of_Type T)}]) :=
   CSet.Pack (CSet.Mixin (hull_is_convex
     (\bigcup_(i in X) if i \in X then (i : set _) else cset0 _))).
 
