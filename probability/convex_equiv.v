@@ -183,7 +183,7 @@ Import NaryConvexSpace.
 
 HB.instance Definition _ := @isNaryConv.Build _ (Choice.class _) (@Convn C.T).
 
-(* TODO *)
+(* NB: is that ok? *)
 Definition T : naryConvType := Choice_sort__canonical__NaryConvexSpace_NaryConv.
 Definition axbary := @Convn_convnfdist C.T.
 Definition axproj := @ConvnFDist1 C.T.
@@ -288,27 +288,20 @@ case: j => -[|[|[]]] //= Hj.
   by rewrite !I2FDist.dE !(mulR0,addR0,add0R,mulR1) s_of_pqE onemK.
 Qed.
 
-(* TODO: clean *)
-Lemma T21 a b : binconv 1%:pr a b = a.
+Lemma binconv1 a b : binconv 1%:pr a b = a.
 Proof.
-apply axidem => i.
-rewrite inE I2FDist.dE.
-case: ifP => //=.
+apply axidem => /= i; rewrite inE I2FDist.dE; case: ifP => //=.
 by rewrite /onem subRR eqxx.
 Qed.
 
-Lemma T22 p a : binconv p a a = a.
-Proof.
-apply axidem => i.
-by case: ifP.
-Qed.
+Lemma binconvmm p a : binconv p a a = a.
+Proof. by apply axidem => i; case: ifP. Qed.
 
-#[export]
-HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) binconv
-  T21 T22 binconvC binconvA.
+#[export,non_forgetful_inheritance]
+HB.instance Definition _ := @isConvexSpace.Build A.T (Choice.class _) binconv
+  binconv1 binconvmm binconvC binconvA.
 
 End NaryToBin.
-HB.reexport NaryToBin.
 
 (* Then prove BinToN and NToBin cancel each other:
    operations should coincide on both sides *)
@@ -319,12 +312,7 @@ Module B := NaryToBin(A).
 Import A B.
 
 Lemma equiv_conv p (a b : T) : a <| p |> b = a <& p &> b.
-Proof.
-rewrite /binconv.
-Import ScaledConvex.
-apply: S1_inj.
-by rewrite S1_conv.
-Qed.
+Proof. by apply: ScaledConvex.S1_inj; rewrite ScaledConvex.S1_conv. Qed.
 End Equiv1.
 
 Module Equiv2(A : NaryConvSpace).
@@ -333,32 +321,26 @@ Import A B.
 
 Lemma equiv_convn n (d : {fdist 'I_n}) g : <&>_d g = <|>_d g.
 Proof.
-elim: n d g.
-  move=> d; move: (fdist_card_neq0 d).
-  by rewrite card_ord.
-move=> n IH d g /=.
-case: Bool.bool_dec.
-  rewrite FDist1.dE1 => /eqP ->.
-  by rewrite axproj.
-move=> b; rewrite -{}IH.
+elim: n d g => [|n IH d g /=].
+  by move=> d; move: (fdist_card_neq0 d); rewrite card_ord.
+case: Bool.bool_dec => [|b].
+  by rewrite FDist1.dE1 => /eqP ->; rewrite axproj.
+rewrite -{}IH.
 have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
-  apply funext => i; by rewrite /DelFDist.f ltn0.
-symmetry; rewrite axmap /=.
-rewrite /(_ <| _ |> _)/=.
-rewrite /binconv.
+  by apply funext => i; rewrite /DelFDist.f ltn0.
+apply/esym; rewrite axmap /=.
+rewrite /(_ <| _ |> _)/= /binconv.
 set d' := FDistMap.d _ _.
-rewrite -(axproj ord0).
-rewrite convn_if axbary.
+rewrite -(axproj ord0) convn_if axbary.
 congr (<&>_ _ _); apply fdist_ext => i.
 rewrite ConvnFDist.dE !big_ord_recl big_ord0 addR0 /= !I2FDist.dE /=.
 rewrite FDist1.dE /d' FDistMap.dE /=.
-case/boolP: (i == ord0) => [/eqP -> |].
-  by rewrite big1 // mulR0 mulR1 addR0.
+have [->|] := eqVneq i ord0; first by rewrite big1 // mulR0 mulR1 addR0.
 rewrite /= mulR0 add0R.
 case: (unliftP ord0 i) => //= [j|] -> // Hj.
 rewrite (big_pred1 j) //=.
 rewrite DelFDist.dE D1FDist.dE /= /onem mulRC -mulRA mulVR ?mulR1 //.
-apply/eqP => /(f_equal (Rplus (d ord0))).
+apply/eqP => /(congr1 (Rplus (d ord0))).
 rewrite addRCA addRN !addR0 => b'.
 by elim b; rewrite -b' eqxx.
 Qed.
@@ -400,7 +382,7 @@ have -> : d = FDistMap.d f d'.
 rewrite -axmap.
 have -> : g \o f = fun=> a.
   apply funext => i; rewrite /f /= Ha //.
-  move: (enum_valP i); by rewrite inE.
+  by move: (enum_valP i); rewrite inE.
 by rewrite axconst.
 Qed.
 End MapConstToIdem.

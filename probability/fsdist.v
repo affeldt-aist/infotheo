@@ -808,20 +808,7 @@ Qed.
 End prop.
 End ConvFSDist.
 
-(*Require Import convex.
-
-Section Dist_convex_space.
-Variable A : choiceType.
-Definition Dist_convMixin :=
-  @ConvexSpace.Class (Dist A) (@Conv2Dist.d A)
-  (@Conv2Dist.conv1 A)
-  (fun d p => @Conv2Dist.convmm A p d)
-  (fun d1 d2 p => @Conv2Dist.convC A p d1 d2)
-  (@Conv2Dist.convA' A).
-Canonical Dist_convType := ConvexSpace.Pack Dist_convMixin.
-End Dist_convex_space.*)
-
-HB.instance Definition _ (A : choiceType) :=
+HB.instance Definition _ (*FSDist_convType*) (A : choiceType) :=
   @isConvexSpace.Build (FSDist.t _) (Choice.class _) (@ConvFSDist.d A)
   (@ConvFSDist.conv1 A)
   (@ConvFSDist.convmm A)
@@ -903,7 +890,7 @@ Section misc_scaled.
 Import ScaledConvex.
 Local Open Scope R_scope.
 
-Lemma FSDist_scalept_conv (C : convType) (x y : FSDist.t C) (p : prob) (i : C) :
+Lemma FSDist_scalept_conv (C : convType) (x y : {dist C}) (p : prob) (i : C) :
   scalept ((x <|p|> y) i) (S1 i) =
     scalept (x i) (S1 i) <|p|> scalept (y i) (S1 i).
 Proof. by rewrite ConvFSDist.dE scalept_conv. Qed.

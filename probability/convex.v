@@ -19,12 +19,12 @@ Require Import fdist jfdist.
 (*        convType == the type of convex spaces, i.e., a choiceType with an   *)
 (*                    operator x <| p |> y where p is a probability           *)
 (*                    satisfying the following axioms:                        *)
-(* {affine T -> U} == affine function: homomorphism between convex spaces     *)
 (*           conv1 == a <| 1%:pr |> b = a.                                    *)
 (*          convmm == a <| p |> a = a.                                        *)
 (*           convC == a <| p |> b = b <| p.~%:pr |> a.                        *)
 (*           convA == a <| p |> (b <| q |> c) =                               *)
 (*                    (a <| [r_of p, q] |> b) <| [s_of p, q] |> c.            *)
+(* {affine T -> U} == affine function: homomorphism between convex spaces     *)
 (*         <|>_d f == generalization of the operator . <| . |> . over a       *)
 (*                    finite distribution d : {fdist 'I_n} for a sequence of  *)
 (*                    points f : 'I_n -> A, where A is a convType             *)
@@ -239,10 +239,13 @@ HB.structure Definition ConvexSpace := {T of isConvexSpace T }.
 End isConvexSpace_.
 Export -(coercions) isConvexSpace_.
 
-Coercion ConvexSpace.isConvexSpace__isConvexSpace_mixin : ConvexSpace.axioms_ >-> isConvexSpace.axioms_.
+Coercion ConvexSpace.isConvexSpace__isConvexSpace_mixin :
+  ConvexSpace.axioms_ >-> isConvexSpace.axioms_.
 
-Canonical conv_eqType (T : convType) := Eval hnf in EqType (ConvexSpace.sort T) convexspacechoiceclass.
-Canonical conv_choiceType (T : convType) := Eval hnf in ChoiceType (ConvexSpace.sort T) convexspacechoiceclass.
+Canonical conv_eqType (T : convType) :=
+  Eval hnf in EqType (ConvexSpace.sort T) convexspacechoiceclass.
+Canonical conv_choiceType (T : convType) :=
+  Eval hnf in ChoiceType (ConvexSpace.sort T) convexspacechoiceclass.
 Coercion conv_choiceType : convType >-> choiceType.
 
 Notation "a <| p |> b" := (conv p a b) : convex_scope.
@@ -251,8 +254,7 @@ Local Open Scope convex_scope.
 
 Section convex_space_lemmas.
 Variables A : convType.
-Implicit Types a b c : A.
-Implicit Types p q r s : prob.
+Implicit Types a b : A.
 
 Lemma conv0 a b : a <| 0%:pr |> b = b.
 Proof.
@@ -644,8 +646,9 @@ rewrite /convpt !scalept_addpt ?scalept_comp // -[RHS]addptA; congr addpt.
 by rewrite pq_is_rs mulRC s_of_pqE onemK.
 Qed.
 
-HB.instance Definition _ := @isConvexSpace.Build scaled_pt (Choice.class scaled_pt_choiceType)
-  convpt convpt_conv1 convpt_convmm convpt_convC convpt_convA.
+HB.instance Definition _ := @isConvexSpace.Build scaled_pt
+  (Choice.class scaled_pt_choiceType) convpt
+  convpt_conv1 convpt_convmm convpt_convC convpt_convA.
 
 Lemma convptE p (a b : scaled_pt) : a <| p |> b = convpt p a b.
 Proof. by []. Qed.
@@ -1323,8 +1326,8 @@ rewrite {2}(s_of_pqE p q) onemK; congr (_ + _)%R.
 rewrite 2!mulRA; congr (_ * _)%R.
 by rewrite pq_is_rs -/r -/s mulRC.
 Qed.
-HB.instance Definition _ := @isConvexSpace.Build R (Choice.class _) _
-  avg1 avgI avgC avgA.
+HB.instance Definition _ (*R_convMixin*) := @isConvexSpace.Build R
+  (Choice.class _) _ avg1 avgI avgC avgA.
 Lemma avgRE p (x y : R) : x <| p |> y = avg p x y. Proof. by []. Qed.
 Lemma avgR_oppD p x y : (- x <| p |> - y = - (x <| p |> y))%R.
 Proof. by rewrite avgRE /avg 2!mulRN -oppRD. Qed.
@@ -1335,7 +1338,7 @@ Proof. by move=> x ? ?; rewrite avgRE /avg mulRDl -mulRA -(mulRA p.~). Qed.
 (* Introduce morphisms to prove avgnE *)
 Import ScaledConvex.
 Definition scaleR x : R := if x is p *: y then p * y else 0.
-Lemma Scaled1RK : cancel (@S1 [the convType of R^o]) scaleR.
+Lemma Scaled1RK : cancel (@S1 _) scaleR.
 Proof. by move=> x /=; rewrite mul1R. Qed.
 Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> (x + y)%R}.
 Proof.
@@ -1374,39 +1377,44 @@ Proof. rewrite funeqE => a; exact/convC. Qed.
 Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. move=> *; rewrite funeqE => a; exact/convA. Qed.
-HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) _ avg1 avgI avgC avgA.
+HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) _
+  avg1 avgI avgC avgA.
 End fun_convex_space.
 
 Section depfun_convex_space.
 Variables (A : choiceType) (B : A -> convType).
-Let T := dep_arrow_choiceType (conv_choiceType \o B).
+Let T := dep_arrow_choiceType B.
 Implicit Types p q : prob.
 Let avg p (x y : T) := fun a : A => (x a <| p |> y a).
 Let avg1 (x y : T) : avg 1%:pr x y = x.
 Proof.
-apply FunctionalExtensionality.functional_extensionality_dep => a; exact/conv1.
+apply FunctionalExtensionality.functional_extensionality_dep => a.
+exact/conv1.
 Qed.
 Let avgI p (x : T) : avg p x x = x.
 Proof.
-apply FunctionalExtensionality.functional_extensionality_dep => a; exact/convmm.
+apply FunctionalExtensionality.functional_extensionality_dep => a.
+exact/convmm.
 Qed.
 Let avgC p (x y : T) : avg p x y = avg p.~%:pr y x.
 Proof.
-apply FunctionalExtensionality.functional_extensionality_dep => a; exact/convC.
+apply FunctionalExtensionality.functional_extensionality_dep => a.
+exact/convC.
 Qed.
 Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof.
 move => *.
-apply FunctionalExtensionality.functional_extensionality_dep => a; exact/convA.
+apply FunctionalExtensionality.functional_extensionality_dep => a.
+exact/convA.
 Qed.
-HB.instance Definition _ := @isConvexSpace.Build _ (Choice.class _)
+HB.instance Definition _ (*depfunConvType*) := @isConvexSpace.Build _ (Choice.class _)
   _ avg1 avgI avgC avgA.
 End depfun_convex_space.
 
 Section pair_convex_space.
 Variables (A B : convType).
-Let T := (conv_choiceType A * conv_choiceType B)%type.
+Let T := (A * B)%type.
 Implicit Types p q : prob.
 Let avg p (x y : T) := (x.1 <| p |> y.1, x.2 <| p |> y.2).
 Let avg1 (x y : T) : avg 1%:pr x y = x.
@@ -1419,13 +1427,14 @@ Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. move => *; congr (pair _ _); by apply convA. Qed.
 
-HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) avg avg1 avgI avgC avgA.
+HB.instance Definition _ (*pairConvType*) :=
+  @isConvexSpace.Build T (Choice.class _) avg avg1 avgI avgC avgA.
 
 End pair_convex_space.
 
 Section fdist_convex_space.
 Variable A : finType.
-HB.instance Definition _ := @isConvexSpace.Build
+HB.instance Definition _ (*fdist_convType*) := @isConvexSpace.Build
   (fdist A) (Choice.class (choice_of_Type (fdist A)))
   (@ConvFDist.d A)
   (@ConvFDist.d1 _)
@@ -1549,14 +1558,16 @@ HB.mixin Record isOrdered (T : Type) := {
 HB.structure Definition OrderedConvexSpace := {T of isOrdered T & ConvexSpace T}.
 
 Canonical ordered_eqType (T : orderedConvType) := EqType T orderedchoiceclass.
-Canonical ordered_choiceType (T : orderedConvType) := ChoiceType T orderedchoiceclass.
+Canonical ordered_choiceType (T : orderedConvType) :=
+  ChoiceType T orderedchoiceclass.
 
 Arguments leconv_trans {s b a c}.
 
 Notation "x <= y" := (leconv x y) : ordered_convex_scope.
 Notation "x <= y <= z" := (leconv x y /\ leconv y z) : ordered_convex_scope.
 
-HB.instance Definition _ := @isOrdered.Build R (Choice.class _) Rle leRR leR_trans eqR_le.
+HB.instance Definition _ (* R_orderedConvType *) :=
+  @isOrdered.Build R (Choice.class _) Rle leRR leR_trans eqR_le.
 
 Module FunLe.
 Section lefun.
@@ -1579,9 +1590,8 @@ End FunLe.
 Section fun_ordered_convex_space.
 Variables (T : convType) (U : orderedConvType).
 Import FunLe.
-(* FIXME: instance not properly registered *)
-HB.instance Definition _ := @isOrdered.Build (T -> U) (Choice.class _) (@lefun T U)
- (@lefunR T U) (@lefun_trans T U) (@eqfun_le T U).
+HB.instance Definition _ (*fun_orderedConvType*) := @isOrdered.Build (T -> U)
+  (Choice.class _) (@lefun T U) (@lefunR T U) (@lefun_trans T U) (@eqfun_le T U).
 End fun_ordered_convex_space.
 
 Module OppositeOrderedConvexSpace.
@@ -1629,12 +1639,13 @@ Proof. by case d0;case d1;case d2=>d2' d1' d0';rewrite/avg/unbox/=convA. Qed.
 HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) _ avg1 avgI avgC avgA.
 End convtype.
 End OppositeOrderedConvexSpace.
-HB.reexport OppositeOrderedConvexSpace.
+HB.export OppositeOrderedConvexSpace.
 
 Section opposite_ordered_convex_space.
 Import OppositeOrderedConvexSpace.
 Variable A : orderedConvType.
-HB.instance Definition _ := @isOrdered.Build (T A) (Choice.class _) (@leopp A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
+HB.instance Definition _ (*oppConvType*):= @isOrdered.Build (T A)
+  (Choice.class _) (@leopp A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
 End opposite_ordered_convex_space.
 Notation "'\opp{' a '}'" := (OppositeOrderedConvexSpace.mkOpp a)
   (at level 10, format "\opp{ a }") : ordered_convex_scope.
@@ -1795,14 +1806,16 @@ Section concave_function_def.
 Local Open Scope ordered_convex_scope.
 Variables (A : convType) (B : orderedConvType).
 Implicit Types f : A -> B.
-Definition concave_function_at f a b t :=
-  @convex_function_at A _ (fun a => \opp{f a} : OppositeOrderedConvexSpace.T B) a b t.
+Definition concave_function_at f a b t := @convex_function_at A _
+  (fun a => \opp{f a}) a b t.
 Definition concave_function_at' f a b t := (f a <| t |> f b <= f (a <| t |> b)).
 Definition strictly_concavef_at f := forall a b (t : prob),
   a <> b -> (0 < t < 1)%R -> concave_function_at f a b t.
-Lemma concave_function_at'P f a b t : concave_function_at' f a b t <-> concave_function_at f a b t.
+Lemma concave_function_at'P f a b t :
+  concave_function_at' f a b t <-> concave_function_at f a b t.
 Proof.
-by rewrite /concave_function_at'/concave_function_at/convex_function_at conv_leoppD leoppP.
+rewrite /concave_function_at'/concave_function_at/convex_function_at.
+by rewrite conv_leoppD leoppP.
 Qed.
 End concave_function_def.
 

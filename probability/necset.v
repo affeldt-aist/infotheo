@@ -561,15 +561,17 @@ HB.mixin Record isSemiCompleteSemiLattice T of isSemiLattice T := {
   (* [Reiterman] p.326, axiom 3 *)
   biglub1 : forall x : T, biglub [set x]%:ne = x ;
   biglub_bignesetU : forall I (s : neset I) (f : I -> neset T),
-        biglub (\bigcup_(i in s) f i)%:ne = biglub (biglub @` (f @` s))%:ne ;
-  lubE : forall x y, x [+] y = biglub [set x; y]%:ne}.
+    biglub (\bigcup_(i in s) f i)%:ne = biglub (biglub @` (f @` s))%:ne ;
+  lubE : forall x y, x [+] y = biglub [set x; y]%:ne }.
 
 #[short(type=semiCompSemiLattType)]
 HB.structure Definition SemiCompleteSemiLattice :=
   { T of @isSemiCompleteSemiLattice T & isSemiLattice T }.
 
-Canonical semicompletesemilattice_eqType (T : semiCompSemiLattType) := EqType T scslchoice.
-Canonical semicompletesemilattice_choiceType (T : semiCompSemiLattType) := ChoiceType T scslchoice.
+Canonical semicompletesemilattice_eqType (T : semiCompSemiLattType) :=
+  EqType T scslchoice.
+Canonical semicompletesemilattice_choiceType (T : semiCompSemiLattType) :=
+  ChoiceType T scslchoice.
 
 Notation "|_| f" := (biglub f) : latt_scope.
 Local Open Scope latt_scope.
@@ -618,7 +620,7 @@ rewrite biglub_bignesetU; congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_id.
 Qed.
 
-Definition lub_binary (x y : L) := |_| [set x; y]%:ne.
+Let lub_binary (x y : L) := |_| [set x; y]%:ne.
 
 Let lub_binaryC : commutative lub_binary.
 Proof. by move=> x y; congr biglub; apply neset_ext => /=; rewrite setUC. Qed.
@@ -635,17 +637,13 @@ move=> x; rewrite -[in RHS](biglub1 x); congr (|_| _); apply neset_ext => /=.
 by rewrite setUid.
 Qed.
 
-HB.instance Definition _ :=
-  @isSemiLattice.Build _ (Choice.class _) lub_binary lub_binaryC lub_binaryA lub_binaryxx.
-(*Definition biglub_semiLattType :=
-  SemiLattice.Pack (SemiLattice.Class biglub_lub_mixin).*)
+(*
+NB: not needed?
+HB.instance Definition _ (*biglub_semiLattType*) := @isSemiLattice.Build _
+  (Choice.class _) lub_binary lub_binaryC lub_binaryA lub_binaryxx.
+*)
 
 End semicompletesemilattice_lemmas.
-(*Canonical biglub_semiLattType.*)
-(*Coercion biglub_semiLattType : semiCompSemiLattType >-> semiLattType.*)
-
-(*Lemma lubE (L : semiCompSemiLattType) (x y : L) : x [+] y = |_| [set x; y]%:ne.
-Proof. reflexivity. Qed.*)
 
 Module BiglubMorph.
 Section ClassDef.
@@ -730,14 +728,15 @@ Proof. by move=> x y z; rewrite convC lubDr -(convC _ x z) -(convC _ y z). Qed.
  *)
 Lemma lub_absorbs_conv (x y : L) p : x [+] y = x [+] y [+] x <|p|> y.
 Proof.
-have H: x [+] y = (x [+] y [+] x <|p|> y) [+] y <|p|> x by
-      rewrite -[in LHS](convmm p (x [+] y)) lubDl 2!lubDr 2!convmm lubCA lubC (lubAC x).
+have H : x [+] y = (x [+] y [+] x <|p|> y) [+] y <|p|> x.
+  rewrite -[in LHS](convmm p (x [+] y)) lubDl 2!lubDr 2!convmm lubCA lubC.
+  by rewrite (lubAC x).
 rewrite {1}H.
-have {2}<-: x [+] y [+] (x [+] y [+] x <|p|> y) = x [+] y [+] x <|p|> y
-    by rewrite lubA lubxx.
+have {2}<- : x [+] y [+] (x [+] y [+] x <|p|> y) = x [+] y [+] x <|p|> y
+   by rewrite lubA lubxx.
 rewrite [in RHS]lubC.
-have <-: x [+] y [+] x <|p|> y [+] (x [+] y [+] x <|p|> y [+] y <|p|> x) =
-         (x [+] y [+] x <|p|> y [+] y <|p|> x)
+have <- : x [+] y [+] x <|p|> y [+] (x [+] y [+] x <|p|> y [+] y <|p|> x) =
+    x [+] y [+] x <|p|> y [+] y <|p|> x
   by rewrite lubA lubxx.
 by rewrite -H.
 Qed.
@@ -753,14 +752,16 @@ Fail Lemma lub_absorbs_convn (n : nat) (d : {fdist 'I_n}) (f : 'I_n -> L) :
   \lub_(i < n) f i = (\lub_(i < n) f i) [+] (<|>_d f).
 End semilattconvtype_lemmas.
 
-HB.mixin Record isSemiCompSemiLattConv L of SemiCompleteSemiLattice L & ConvexSpace L & isSemiLattConv L := {
+HB.mixin Record isSemiCompSemiLattConv L of SemiCompleteSemiLattice L &
+                                            ConvexSpace L := {
   biglubDr : forall (p : prob) (x : L) (I : neset L),
     conv p x (|_| I) = |_| ((conv p x) @` I)%:ne
 }.
 
 #[short(type=semiCompSemiLattConvType)]
 HB.structure Definition SemiCompSemiLattConv :=
-  { L of isSemiCompSemiLattConv L & SemiCompleteSemiLattice L & ConvexSpace L & isSemiLattConv L}.
+  { L of isSemiCompSemiLattConv L & SemiCompleteSemiLattice L & ConvexSpace L &
+         isSemiLattConv L}.
 
 Module BiglubAffine.
 Section ClassDef.
@@ -844,10 +845,6 @@ Local Open Scope classical_set_scope.
 
 Variable L : semiCompSemiLattConvType.
 
-(*Lemma biglubDr : forall (p : prob) (x : L) (Y : neset L),
-  x <|p|> |_| Y = |_| ((fun y => x <|p|> y) @` Y)%:ne.
-Proof. by case: L => ? [? ? []]. Qed.*)
-
 Lemma biglubDl (p : prob) (X : neset L) (y : L) :
   |_| X <|p|> y = |_| ((fun x => x <|p|> y) @` X)%:ne.
 Proof.
@@ -915,23 +912,17 @@ Qed.
 
 Let lubDr p : right_distributive (fun x y => x <|p|> y) (@lub L).
 Proof.
-move=> x y z.
-rewrite !lubE.
-rewrite biglubDr.
-transitivity (|_| [set x <|p|> y; x <|p|> z]%:ne) => //.
+move=> x y z; rewrite !lubE biglubDr.
 congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
 
-HB.instance Definition biglubDr_semiLattConvType := @isSemiLattConv.Build
+(* NB: not needed?
+HB.instance Definition _ (*biglubDr_semiLattConvType*) := @isSemiLattConv.Build
   L lubDr.
-
-(*Definition biglubDr_semiLattConvType :=
-  SemiLattConvType.Pack (SemiLattConvType.Class (SemiLattConvType.Mixin lubDr)).
 *)
+
 End semicompsemilattconvtype_lemmas.
-(*Canonical biglubDr_semiLattConvType.
-Coercion biglubDr_semiLattConvType : semiCompSemiLattConvType >-> semiLattConvType.*)
 
 Module NECSet.
 Section def.
@@ -959,8 +950,6 @@ Canonical necset_predType :=
   Eval hnf in PredType (fun t : necset A => (fun x => x \in (t : set _))).
 Canonical necset_eqType := Equality.Pack (@gen_eqMixin (necset A)).
 Canonical necset_choiceType := choice_of_Type (necset A).
-(* NB(rei): redundant *)
-(*Canonical necset_neset (t : necset A) : neset A := NESet.mk (NECSet.mixin (NECSet.H t)).*)
 End necset_canonical.
 
 Section necset_lemmas.
@@ -1065,67 +1054,51 @@ apply: hull_eqEsubset => a.
   by rewrite Fiu.
 Qed.
 
-Definition lub_ (x y : necset A) : necset A := biglub_necset ([set x; y]%:ne).
+Let lub_ (x y : necset A) : necset A := biglub_necset ([set x; y]%:ne).
+
 Lemma lub_E' (x y : necset A) : lub_ x y = neset_hull_necset (x `|` y)%:ne.
-Proof.
-rewrite /lub_ /biglub_necset /=.
-apply necset_ext.
-by rewrite /= bigcup_setU !bigcup_set1.
-Qed.
+Proof. by apply necset_ext; rewrite /= bigcup_setU !bigcup_set1. Qed.
 
 Lemma lub_C : commutative lub_.
 Proof.
-move=> x y.
-congr biglub_necset.
-apply neset_ext.
-by rewrite /= setUC.
+by move=> x y; congr biglub_necset; apply neset_ext; rewrite /= setUC.
 Qed.
 
 Lemma lub_A : associative lub_.
 Proof.
-move=> x y z.
-rewrite !lub_E'.
-apply necset_ext => /=.
-exact: hullUA.
+by move=> x y z; rewrite !lub_E'; apply necset_ext => /=; exact: hullUA.
 Qed.
 
 Lemma lub_xx : idempotent lub_.
-move=> x.
-rewrite lub_E'.
-apply necset_ext => /=.
-by rewrite setUid hull_cset.
+Proof.
+by move=> x; rewrite lub_E'; apply necset_ext => /=; rewrite setUid hull_cset.
 Qed.
 
 #[export]
-HB.instance Definition necset_semiLattType :=
+HB.instance Definition _ (*necset_semiLattType*) :=
   @isSemiLattice.Build (necset A) (Choice.class _)
     lub_ lub_C lub_A lub_xx.
 
-
-Lemma lub_E : forall x y, lub_ x y = biglub_necset [set x; y]%:ne.
+Let lub_E : forall x y, lub_ x y = biglub_necset [set x; y]%:ne.
 Proof. by []. Qed.
 
 #[export]
-HB.instance Definition necset_semiCompSemiLattType :=
+HB.instance Definition _ (*necset_semiCompSemiLattType*) :=
   @isSemiCompleteSemiLattice.Build (necset A) (Choice.class _)
     biglub_necset biglub_necset1 biglub_necset_bigsetU lub_E.
-(*Definition mixin :=
-  SemiCompleteSemiLattice.Mixin biglub_necset1 biglub_necset_bigsetU.
-Definition class := SemiCompleteSemiLattice.Class mixin.*)
 
 End def.
 End necset_semiCompSemiLattType.
 
 HB.export necset_semiCompSemiLattType.
 
-(*Canonical necset_semiCompSemiLattType A :=
-  SemiCompleteSemiLattice.Pack (necset_semiCompSemiLattType.class A).*)
-
 Module necset_semiCompSemiLattConvType.
 Section def.
 Local Open Scope classical_set_scope.
-Variable (A : convType).
-Let L := [the semiCompSemiLattType of necset A].
+Variable A : convType.
+
+Let L := necset A.
+
 Lemma axiom (p : prob) (X : L) (I : neset L) :
   necset_convType.conv p X (|_| I) = |_| ((necset_convType.conv p X) @` I)%:ne.
 Proof.
@@ -1142,33 +1115,23 @@ congr hull; rewrite eqEsubset; split=> u /=.
 Qed.
 
 Lemma axiom2 (p : prob) (x y z : L) :
-  conv p x (y [+] z) = (conv p x y) [+] (conv p x z).
+  x <|p|> (y [+] z) = (x <|p|> y) [+] (x <|p|> z).
 Proof.
-rewrite /conv /=.
-rewrite lubE axiom.
-rewrite lubE.
-congr (|_| _).
-apply/neset_ext => /=.
-rewrite image_setU.
-by rewrite !image_set1.
+rewrite /conv /=; rewrite lubE axiom lubE; congr (|_| _).
+by apply/neset_ext => /=; rewrite image_setU !image_set1.
 Qed.
 
 #[export]
-HB.instance Definition _ := @isSemiLattConv.Build (necset A)
-  axiom2.
+HB.instance Definition _ := @isSemiLattConv.Build (necset A) axiom2.
 
 #[export]
-HB.instance Definition _ := @isSemiCompSemiLattConv.Build (necset A)
-  axiom.
+HB.instance Definition _ := @isSemiCompSemiLattConv.Build (necset A) axiom.
 End def.
 End necset_semiCompSemiLattConvType.
 HB.export necset_semiCompSemiLattConvType.
 
-(*Canonical necset_semiCompSemiLattConvType A := SemiCompSemiLattConvType.Pack
-  (necset_semiCompSemiLattConvType.class A).*)
-
 Definition Necset_to_semiCompSemiLattConvType (A : convType) :=
-  fun phT : phant (Choice.sort A) => (*necset_semiCompSemiLattConvType*)necset A.
+  fun phT : phant (Choice.sort A) => [the semiCompSemiLattConvType of necset A].
 Notation "{ 'necset' T }" := (Necset_to_semiCompSemiLattConvType (Phant T)) : convex_scope.
 
 Module necset_join.

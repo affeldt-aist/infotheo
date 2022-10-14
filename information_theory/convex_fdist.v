@@ -105,9 +105,8 @@ Proof. rewrite /avg; exact/boolp.eq_exist/convC. Qed.
 Let avgA p q d0 d1 d2 :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. rewrite /avg /=; exact/boolp.eq_exist/convA. Qed.
-HB.instance Definition _ := @isConvexSpace.Build dom_pair (Choice.class (choice_of_Type dom_pair)) avg avg1 avgI avgC avgA.
-(*Canonical dominatedPairConvType :=
-  ConvexSpace.Pack (ConvexSpace.Class dominatedPairConvMixin).*)
+HB.instance Definition _ (* dominatedPairConvType *) := @isConvexSpace.Build dom_pair
+  (Choice.class (choice_of_Type dom_pair)) avg avg1 avgI avgC avgA.
 End dominated_pair.
 
 Section divergence_convex.
@@ -118,9 +117,7 @@ Local Open Scope divergence_scope.
 Lemma convex_div : convex_function (uncurry_dom_pair (@div A)).
 Proof.
 move=> [x Hx] [y Hy] p /=; rewrite /uncurry_dom_pair /=.
-rewrite /convex_function_at/=.
-rewrite avgRE.
-rewrite 2!big_distrr /= -big_split /= /div.
+rewrite /convex_function_at/= avgRE 2!big_distrr /= -big_split /= /div.
 apply leR_sumR => a _; rewrite 2!ConvFDist.dE.
 have [y2a0|y2a0] := eqVneq (y.2 a) 0.
   rewrite y2a0 (_ : y.1 a = 0) ?(mulR0,addR0,mul0R); last first.
@@ -163,8 +160,8 @@ have [->|t1] := eqVneq p.~ 0; first by rewrite !mul0R.
 by congr (_ * (_ * log _)); field; split; exact/eqP.
 Qed.
 
-Lemma convex_relative_entropy (d1 d2 e1 e2 : [the convType of fdist A]) (p : prob) :
-  d1 `<< e1 -> d2 `<< e2 ->
+Lemma convex_relative_entropy (d1 d2 e1 e2 : fdist A)
+    (p : prob) : d1 `<< e1 -> d2 `<< e2 ->
   D(d1 <| p |> d2 || e1 <| p |> e2) <= D(d1 || e1) <| p |> D(d2 || e2).
 Proof.
 move=> de1 de2.
@@ -339,17 +336,13 @@ suff : concave_function (fun P => let PQ := Swap.d (CJFDist.make_joint P Q) in
   suff -> : f = g by [].
   by rewrite boolp.funeqE => d; rewrite {}/f {}/g /= -MutualInfo.miE -mi_sym.
 apply R_concave_functionB.
-- move: (entropy_concave B_not_empty) => H.
-  apply R_concave_functionN.
-  move=> p q t /=.
-  rewrite /convex_function_at.
-  rewrite 3!Swap.fst.
-  move : H.
-  move /R_convex_functionN' => H.
-  apply: leR_trans (H (Bivar.snd (CJFDist.make_joint p Q)) (Bivar.snd (CJFDist.make_joint q Q)) t).
-  destruct t.
-  rewrite /conv /=. (* TODO *)
-  rewrite -ProdFDist.snd_convex; exact/leRR.
+- move: (entropy_concave B_not_empty) => concave_H.
+  apply: R_concave_functionN => p q t /=.
+  rewrite /convex_function_at 3!Swap.fst.
+  move/R_convex_functionN' in concave_H.
+  apply: leR_trans (concave_H (Bivar.snd (CJFDist.make_joint p Q))
+                              (Bivar.snd (CJFDist.make_joint q Q)) t).
+  by rewrite /conv /= (* TODO *) -ProdFDist.snd_convex; exact/leRR.
 - suff : affine (fun x => CondEntropy.h (Swap.d (CJFDist.make_joint x Q))).
    by move=> /affine_functionP[].
   move=> t p q.
@@ -386,8 +379,8 @@ Variables (A B : finType) (P : fdist A).
 Local Open Scope divergence_scope.
 
 Lemma mutual_information_convex :
-  convex_function (fun Q : boolp.dep_arrow_choiceType (fun _ : A => [the convType of fdist B]) =>
-    MutualInfo.mi (CJFDist.make_joint P Q)).
+  convex_function (fun Q : boolp.dep_arrow_choiceType
+    (fun=> [the convType of fdist B]) => MutualInfo.mi (CJFDist.make_joint P Q)).
 Proof.
 move=> p1yx p2yx t.
 pose p1' := CJFDist.mkt P p1yx.
