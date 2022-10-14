@@ -1,4 +1,9 @@
 -------------------
+from 0.3.8 to 0.4.0
+-------------------
+- packed classes redefined with HB
+
+-------------------
 from 0.3.7 to 0.3.8
 -------------------
 compatibility release

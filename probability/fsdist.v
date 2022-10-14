@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import finmap.
 From mathcomp Require boolp.
@@ -807,27 +808,12 @@ Qed.
 End prop.
 End ConvFSDist.
 
-(*Require Import convex.
-
-Section Dist_convex_space.
-Variable A : choiceType.
-Definition Dist_convMixin :=
-  @ConvexSpace.Class (Dist A) (@Conv2Dist.d A)
-  (@Conv2Dist.conv1 A)
-  (fun d p => @Conv2Dist.convmm A p d)
-  (fun d1 d2 p => @Conv2Dist.convC A p d1 d2)
-  (@Conv2Dist.convA' A).
-Canonical Dist_convType := ConvexSpace.Pack Dist_convMixin.
-End Dist_convex_space.*)
-
-Definition FSDist_convMixin (A : choiceType) :=
-  @ConvexSpace.Mixin (FSDist_choiceType A) (@ConvFSDist.d A)
+HB.instance Definition _ (*FSDist_convType*) (A : choiceType) :=
+  @isConvexSpace.Build (FSDist.t _) (Choice.class _) (@ConvFSDist.d A)
   (@ConvFSDist.conv1 A)
   (@ConvFSDist.convmm A)
   (@ConvFSDist.convC A)
   (@ConvFSDist.convA' A).
-Canonical FSDist_convType (A : choiceType) :=
-  ConvexSpace.Pack (ConvexSpace.Class (FSDist_convMixin A)).
 
 Fact FSDistfmap_affine (A B : choiceType) (f : A -> B) : affine (FSDistfmap f).
 Proof. by move=> ? ? ?; rewrite /FSDistfmap ConvFSDist.bind_left_distr. Qed.
@@ -835,7 +821,7 @@ Canonical Affine_FSDistfmap_affine (A B : choiceType) (f : A -> B) :=
   Affine (FSDistfmap_affine f).
 
 Definition FSDist_to_convType (A : choiceType) :=
-  fun phT : phant (Choice.sort A) => FSDist_convType A.
+  fun phT : phant (Choice.sort A) => conv_choiceType [the convType of FSDist.t A].
 Notation "{ 'dist' T }" := (FSDist_to_convType (Phant T)) : proba_scope.
 
 Local Open Scope reals_ext_scope.
@@ -869,13 +855,14 @@ End FSDist_convex_space.
 
 Section fsdist_ordered_convex_space.
 Variable A : choiceType.
-Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin {dist A}.
+(*Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin {dist A}.
+NB: not used?*)
 End fsdist_ordered_convex_space.
 
 (* TODO: these lemmas could be better organized *)
 Section misc_lemmas.
 
-Lemma finsupp_Conv (C : convType) p (p0 : p != 0%:pr) (p1 : p != 1%:pr) (d e : {dist C}) :
+Lemma finsupp_Conv (C : choiceType) p (p0 : p != 0%:pr) (p1 : p != 1%:pr) (d e : {dist C}) :
   finsupp (d <|p|> e) = (finsupp d `|` finsupp e)%fset.
 Proof.
 apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP => j;

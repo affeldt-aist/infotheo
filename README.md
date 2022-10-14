@@ -31,7 +31,7 @@ information theory, and linear error-correcting codes.
   - Takafumi Saikawa, Nagoya U.
   - Naruomi Obata, Titech (M2)
 - License: [LGPL-2.1-or-later](LICENSE)
-- Compatible Coq versions: Coq 8.14, Coq 8.15
+- Compatible Coq versions: Coq 8.15, Coq 8.16
 - Additional dependencies:
   - [MathComp ssreflect](https://math-comp.github.io)
   - [MathComp fingroup](https://math-comp.github.io)
@@ -39,6 +39,7 @@ information theory, and linear error-correcting codes.
   - [MathComp solvable](https://math-comp.github.io)
   - [MathComp field](https://math-comp.github.io)
   - [MathComp analysis](https://github.com/math-comp/analysis)
+  - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
 - Coq namespace: `infotheo`
 - Related publication(s):
   - [Formal Adventures in Convex and Conical Spaces](https://arxiv.org/abs/2004.12713) doi:[10.1007/978-3-030-53518-6_2](https://doi.org/10.1007/978-3-030-53518-6_2)
