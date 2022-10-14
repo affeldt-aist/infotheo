@@ -1000,11 +1000,6 @@ Proof. by apply necset_ext; rewrite !convE convC_set. Qed.
 Lemma convA p q X Y Z :
   conv p X (conv q Y Z) = conv [s_of p, q] (conv [r_of p, q] X Y) Z.
 Proof. by apply necset_ext; rewrite !convE convA_set. Qed.
-
-#[export]
-HB.instance Definition necset_convType :=
-  @isConvexSpace.Build (necset A) (Choice.class _) conv conv1 convmm convC convA.
-
 End def.
 
 Section lemmas.
@@ -1019,7 +1014,13 @@ Proof. by rewrite convE. Qed.
 End lemmas.
 End necset_convType.
 
-HB.export necset_convType.
+HB.instance Definition necset_convType (A : convType) :=
+  @isConvexSpace.Build (necset A) (Choice.class _)
+                       (@necset_convType.conv A)
+                       (@necset_convType.conv1 A)
+                       (@necset_convType.convmm A)
+                       (@necset_convType.convC A)
+                       (@necset_convType.convA A).
 
 Definition Necset_to_convType (A : convType) :=
   fun phT : phant (Choice.sort A) => necset A.
@@ -1123,6 +1124,7 @@ Qed.
 Lemma axiom2 (p : prob) (x y z : L) :
   conv p x (y [+] z) = (conv p x y) [+] (conv p x z).
 Proof.
+rewrite /conv /=.
 rewrite lubE axiom.
 rewrite lubE.
 congr (|_| _).
