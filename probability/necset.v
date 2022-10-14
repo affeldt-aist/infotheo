@@ -555,7 +555,7 @@ Proof. by rewrite lubAC lubC lubxx. Qed.
 
 End semilattice_lemmas.
 
-HB.mixin Record isSemiCompleteSemiLattice T of isSemiLattice T := {
+HB.mixin Record isSemiCompSemiLatt T of isSemiLattice T := {
   scslchoice : Choice.class_of T ;
   biglub : neset T -> T ;
   (* [Reiterman] p.326, axiom 3 *)
@@ -565,20 +565,20 @@ HB.mixin Record isSemiCompleteSemiLattice T of isSemiLattice T := {
   lubE : forall x y, x [+] y = biglub [set x; y]%:ne }.
 
 #[short(type=semiCompSemiLattType)]
-HB.structure Definition SemiCompleteSemiLattice :=
-  { T of @isSemiCompleteSemiLattice T & isSemiLattice T }.
+HB.structure Definition SemiCompSemiLatt :=
+  { T of @isSemiCompSemiLatt T & isSemiLattice T }.
 
-Canonical semicompletesemilattice_eqType (T : semiCompSemiLattType) :=
+Canonical semicompsemilatt_eqType (T : semiCompSemiLattType) :=
   EqType T scslchoice.
-Canonical semicompletesemilattice_choiceType (T : semiCompSemiLattType) :=
+Canonical semicompsemilatt_choiceType (T : semiCompSemiLattType) :=
   ChoiceType T scslchoice.
 
 Notation "|_| f" := (biglub f) : latt_scope.
 Local Open Scope latt_scope.
 
-Section semicompletesemilattice_lemmas.
+Section semicompsemilatt_lemmas.
 Local Open Scope classical_set_scope.
-Variable (L : semiCompSemiLattType).
+Variable L : semiCompSemiLattType.
 
 (*
 [Reiterman]
@@ -643,7 +643,7 @@ HB.instance Definition _ (*biglub_semiLattType*) := @isSemiLattice.Build _
   (Choice.class _) lub_binary lub_binaryC lub_binaryA lub_binaryxx.
 *)
 
-End semicompletesemilattice_lemmas.
+End semicompsemilatt_lemmas.
 
 Module BiglubMorph.
 Section ClassDef.
@@ -752,7 +752,7 @@ Fail Lemma lub_absorbs_convn (n : nat) (d : {fdist 'I_n}) (f : 'I_n -> L) :
   \lub_(i < n) f i = (\lub_(i < n) f i) [+] (<|>_d f).
 End semilattconvtype_lemmas.
 
-HB.mixin Record isSemiCompSemiLattConv L of SemiCompleteSemiLattice L &
+HB.mixin Record isSemiCompSemiLattConv L of SemiCompSemiLatt L &
                                             ConvexSpace L := {
   biglubDr : forall (p : prob) (x : L) (I : neset L),
     conv p x (|_| I) = |_| ((conv p x) @` I)%:ne
@@ -760,7 +760,7 @@ HB.mixin Record isSemiCompSemiLattConv L of SemiCompleteSemiLattice L &
 
 #[short(type=semiCompSemiLattConvType)]
 HB.structure Definition SemiCompSemiLattConv :=
-  { L of isSemiCompSemiLattConv L & SemiCompleteSemiLattice L & ConvexSpace L &
+  { L of isSemiCompSemiLattConv L & SemiCompSemiLatt L & ConvexSpace L &
          isSemiLattConv L}.
 
 Module BiglubAffine.
@@ -1084,7 +1084,7 @@ Proof. by []. Qed.
 
 #[export]
 HB.instance Definition _ (*necset_semiCompSemiLattType*) :=
-  @isSemiCompleteSemiLattice.Build (necset A) (Choice.class _)
+  @isSemiCompSemiLatt.Build (necset A) (Choice.class _)
     biglub_necset biglub_necset1 biglub_necset_bigsetU lub_E.
 
 End def.
