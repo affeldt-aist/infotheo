@@ -2235,60 +2235,42 @@ Qed.
 
 End twice_derivable_convex.
 
-
-Section move_to_ereal.
-Local Open Scope ereal_scope.
-Section for_numDomainType.
-Variable R : numDomainType.
-Lemma addninftye (x : \bar R) : -oo + x = -oo.
-Proof. by case: x. Qed.
-Lemma addeninfty (x : \bar R) : x + -oo = -oo.
-Proof. by case: x. Qed.
-Lemma addroo (x : R) : x%:E + +oo = +oo.
-Proof. by []. Qed.
-Lemma addoor (x : R) : +oo + x%:E = +oo.
-Proof. by []. Qed.
-Lemma addooeoo : +oo + +oo = +oo :> \bar R.
-Proof. by []. Qed.
-End for_numDomainType.
-End move_to_ereal.
-
 Section ereal_convex.
 Local Open Scope proba_scope.
 Local Open Scope ereal_scope.
-Local Open Scope R_scope.
-(* Variable (R : numDomainType). *)
-Let eR := extended R.
 
-Let conv_ereal (p : prob) (x y : eR) := ((p : R)%:E * x + p.~%:E * y)%E.
+Let conv_ereal (p : prob) x y := (p : R)%:E * x + p.~%:E * y.
+
 Let conv_ereal_conv1 a b : conv_ereal 1%:pr a b = a.
 Proof. by rewrite /conv_ereal probpK onem1 /= mul1e mul0e adde0. Qed.
+
 Let conv_ereal_convmm p a : conv_ereal p a a = a.
 Proof.
-rewrite /conv_ereal.
-case/boolP: (a \is a fin_num).
-- move=> ?; rewrite -mulrEDl //.
-  by rewrite -addEFin /GRing.add /= probKC mul1e.
-- rewrite fin_numE negb_and !negbK => /predU1P[-> | /eqP->].
-  + rewrite -ge0_muleDl.
-    * by rewrite -addEFin /GRing.add /= probKC mul1e.
-    * by rewrite lee_fin; apply/RleP/prob_ge0.
-    * by rewrite lee_fin; apply/RleP/prob_ge0.
-  + rewrite -ge0_muleDl.
-    * by rewrite -addEFin /GRing.add /= probKC mul1e.
-    * by rewrite lee_fin; apply/RleP/prob_ge0.
-    * by rewrite lee_fin; apply/RleP/prob_ge0.
+rewrite /conv_ereal; case/boolP : (a \is a fin_num) => [?|].
+  by rewrite -muleDl// -EFinD /GRing.add /= probKC mul1e.
+rewrite fin_numE negb_and !negbK => /predU1P[-> | /eqP->].
+- rewrite -ge0_muleDl.
+  + by rewrite -EFinD /GRing.add /= probKC mul1e.
+  + by rewrite lee_fin; apply/RleP/prob_ge0.
+  + by rewrite lee_fin; apply/RleP/prob_ge0.
+- rewrite -ge0_muleDl.
+  + by rewrite -EFinD /GRing.add /= probKC mul1e.
+  + by rewrite lee_fin; apply/RleP/prob_ge0.
+  + by rewrite lee_fin; apply/RleP/prob_ge0.
 Qed.
+
 Let conv_ereal_convC p a b : conv_ereal p a b = conv_ereal (p.~)%:pr b a.
 Proof. by rewrite [in RHS]/conv_ereal onemK addeC. Qed.
 
-Lemma oprob_sg1 (p : oprob) : Num.sg (Prob.p p) = 1.
+Lemma oprob_sg1 (p : oprob) : Num.sg (Prob.p p) = 1%R.
 Proof.
-by case/ltR2P: (OProb.O1 p)=> /[swap] _ /RltP /(conj Num.Theory.sgr_cp0) [] <- /eqP.
+case/ltR2P: (OProb.O1 p)=> /[swap] _ /RltP /(conj Num.Theory.sgr_cp0) [] <-.
+by move/eqP.
 Qed.
 
 Let conv_ereal_convA p q a b c :
-  conv_ereal p a (conv_ereal q b c) = conv_ereal [s_of p, q] (conv_ereal [r_of p, q] a b) c.
+  conv_ereal p a (conv_ereal q b c) =
+  conv_ereal [s_of p, q] (conv_ereal [r_of p, q] a b) c.
 Proof.
 rewrite /conv_ereal.
 apply (prob_trichotomy' p);
@@ -2307,30 +2289,24 @@ have sgrpq := oprob_sg1 [r_of p, q]%:opr.
 have sgspq := oprob_sg1 [s_of p, q]%:opr.
 have sgonemrpq := oprob_sg1 [r_of p, q].~%:opr.
 have sgonemspq := oprob_sg1 [s_of p, q].~%:opr.
-Ltac mulr_infty X := do ! (rewrite mulrinfty X mul1e).
+Ltac mulr_infty X := do ! (rewrite mulr_infty X mul1e).
 set sg := (sgp,sgq,sgonemp,sgonemq,sgrpq,sgspq,sgonemrpq,sgonemspq).
-set addeE := (addroo,addoor,addooeoo,addeninfty,addninftye).
 case: a=> [a | | ]; case: b=> [b | | ]; case: c=> [c | | ];
-  try mulr_infty sg; rewrite ?addeE //.
-rewrite mulrEDr // addeA.
-congr (_ + _)%E; last by rewrite s_of_pqE onemK mulEFin muleA.
-rewrite mulrEDr //.
-congr (_ + _)%E; first  by rewrite (p_is_rs p q) mulRC mulEFin muleA.
-rewrite muleA -!mulEFin.
+  try by mulr_infty sg.
+rewrite muleDr // addeA.
+congr (_ + _)%E; last by rewrite s_of_pqE onemK EFinM muleA.
+rewrite muleDr //.
+congr (_ + _)%E; first  by rewrite (p_is_rs p q) mulRC EFinM muleA.
+rewrite muleA -!EFinM.
 rewrite /GRing.mul /= (pq_is_rs (OProb.p p) q).
 rewrite mulRA.
 by rewrite (mulRC [r_of p, q].~).
 Qed.
 
-(*
- ``` Definition ereal_convMixin : ConvexSpace.mixin_of eR. ```
- leads to an infinite loop
-*)
-Definition ereal_convMixin : ConvexSpace.mixin_of [choiceType of eR] :=
-  ConvexSpace.Mixin conv_ereal_conv1 conv_ereal_convmm conv_ereal_convC conv_ereal_convA.
-Canonical ereal_convType :=
-  Eval hnf in ConvexSpace.Pack (ConvexSpace.Class ereal_convMixin).
+HB.instance Definition _ (*ereal_convType*) := @isConvexSpace.Build (\bar R)
+  (Choice.class _) _ conv_ereal_conv1 conv_ereal_convmm conv_ereal_convC conv_ereal_convA.
 
-Lemma conv_erealE p (a b : eR) : a <| p |> b = conv_ereal p a b.
+Lemma conv_erealE p (a b : \bar R) : a <| p |> b = conv_ereal p a b.
 Proof. by []. Qed.
+
 End ereal_convex.
