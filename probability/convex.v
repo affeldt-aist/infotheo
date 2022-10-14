@@ -3,6 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require Import boolp classical_sets Rstruct.
+From mathcomp Require Import ssrnum ereal.
 Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist jfdist.
@@ -2233,3 +2234,79 @@ by apply/mulR_ge0; rewrite subR_ge0; exact/ltRW.
 Qed.
 
 End twice_derivable_convex.
+
+Section ereal_convex.
+Local Open Scope proba_scope.
+Local Open Scope ereal_scope.
+
+Let conv_ereal (p : prob) x y := (p : R)%:E * x + p.~%:E * y.
+
+Let conv_ereal_conv1 a b : conv_ereal 1%:pr a b = a.
+Proof. by rewrite /conv_ereal probpK onem1 /= mul1e mul0e adde0. Qed.
+
+Let conv_ereal_convmm p a : conv_ereal p a a = a.
+Proof.
+rewrite /conv_ereal; case/boolP : (a \is a fin_num) => [?|].
+  by rewrite -muleDl// -EFinD /GRing.add /= probKC mul1e.
+rewrite fin_numE negb_and !negbK => /predU1P[-> | /eqP->].
+- rewrite -ge0_muleDl.
+  + by rewrite -EFinD /GRing.add /= probKC mul1e.
+  + by rewrite lee_fin; apply/RleP/prob_ge0.
+  + by rewrite lee_fin; apply/RleP/prob_ge0.
+- rewrite -ge0_muleDl.
+  + by rewrite -EFinD /GRing.add /= probKC mul1e.
+  + by rewrite lee_fin; apply/RleP/prob_ge0.
+  + by rewrite lee_fin; apply/RleP/prob_ge0.
+Qed.
+
+Let conv_ereal_convC p a b : conv_ereal p a b = conv_ereal (p.~)%:pr b a.
+Proof. by rewrite [in RHS]/conv_ereal onemK addeC. Qed.
+
+Lemma oprob_sg1 (p : oprob) : Num.sg (Prob.p p) = 1%R.
+Proof.
+case/ltR2P: (OProb.O1 p)=> /[swap] _ /RltP /(conj Num.Theory.sgr_cp0) [] <-.
+by move/eqP.
+Qed.
+
+Let conv_ereal_convA p q a b c :
+  conv_ereal p a (conv_ereal q b c) =
+  conv_ereal [s_of p, q] (conv_ereal [r_of p, q] a b) c.
+Proof.
+rewrite /conv_ereal.
+apply (prob_trichotomy' p);
+  [ by rewrite s_of_0q r_of_0q !mul0e !add0e !onem0 !mul1e
+  | by rewrite s_of_1q r_of_1q !mul1e !onem1 !mul0e !adde0
+  | rewrite {p}=> p].
+apply (prob_trichotomy' q);
+  [ by rewrite s_of_p0 r_of_p0_oprob onem1 onem0 mul0e !mul1e add0e adde0
+  | by rewrite s_of_p1 r_of_p1 onem1 !mul1e mul0e !adde0
+  | rewrite {q}=> q].
+have sgp := oprob_sg1 p.
+have sgq := oprob_sg1 q.
+have sgonemp := oprob_sg1 p.~%:opr.
+have sgonemq := oprob_sg1 q.~%:opr.
+have sgrpq := oprob_sg1 [r_of p, q]%:opr.
+have sgspq := oprob_sg1 [s_of p, q]%:opr.
+have sgonemrpq := oprob_sg1 [r_of p, q].~%:opr.
+have sgonemspq := oprob_sg1 [s_of p, q].~%:opr.
+Ltac mulr_infty X := do ! (rewrite mulr_infty X mul1e).
+set sg := (sgp,sgq,sgonemp,sgonemq,sgrpq,sgspq,sgonemrpq,sgonemspq).
+case: a=> [a | | ]; case: b=> [b | | ]; case: c=> [c | | ];
+  try by mulr_infty sg.
+rewrite muleDr // addeA.
+congr (_ + _)%E; last by rewrite s_of_pqE onemK EFinM muleA.
+rewrite muleDr //.
+congr (_ + _)%E; first  by rewrite (p_is_rs p q) mulRC EFinM muleA.
+rewrite muleA -!EFinM.
+rewrite /GRing.mul /= (pq_is_rs (OProb.p p) q).
+rewrite mulRA.
+by rewrite (mulRC [r_of p, q].~).
+Qed.
+
+HB.instance Definition _ (*ereal_convType*) := @isConvexSpace.Build (\bar R)
+  (Choice.class _) _ conv_ereal_conv1 conv_ereal_convmm conv_ereal_convC conv_ereal_convA.
+
+Lemma conv_erealE p (a b : \bar R) : a <| p |> b = conv_ereal p a b.
+Proof. by []. Qed.
+
+End ereal_convex.

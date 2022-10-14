@@ -663,6 +663,12 @@ Proof. by apply/val_inj; rewrite /= s_of_pqE onem0 mulR1 onemK. Qed.
 Lemma s_of_0q (q : prob) : [s_of 0%:pr, q] = q.
 Proof. by apply/val_inj; rewrite /= s_of_pqE onem0 mul1R onemK. Qed.
 
+Lemma s_of_p1 (p : prob) : [s_of p, 1%:pr] = 1%:pr.
+Proof. by apply/val_inj; rewrite /= s_of_pqE onem1 mulR0 onem0. Qed.
+
+Lemma s_of_1q (q : prob) : [s_of 1%:pr, q] = 1%:pr.
+Proof. by apply/val_inj; rewrite /= s_of_pqE onem1 mul0R onem0. Qed.
+
 Lemma s_of_pqE' (p q : prob) : [s_of p, q] = p + p.~ * q :> R.
 Proof. rewrite s_of_pqE /= /onem; field. Qed.
 
@@ -717,6 +723,12 @@ Proof. by apply/r_of_p0/oprob_neq0. Qed.
 
 Lemma r_of_0q (q : prob) : [r_of 0%:pr, q] = 0%:pr.
 Proof. by apply/val_inj; rewrite /= r_of_pqE div0R. Qed.
+
+Lemma r_of_p1 (p : prob) : [r_of p, 1%:pr] = p.
+Proof. by apply/val_inj; rewrite /= r_of_pqE s_of_p1 divR1. Qed.
+
+Lemma r_of_1q (q : prob) : [r_of 1%:pr, q] = 1%:pr.
+Proof. by apply/val_inj; rewrite /= r_of_pqE s_of_1q divR1. Qed.
 
 Lemma p_is_rs (p q : prob) : p = [r_of p, q] * [s_of p, q] :> R.
 Proof.

@@ -347,7 +347,7 @@ have : 0%N = zero :> nat by rewrite /zero enum_rank_ord.
 move/(@sum_rV_ffun _ _ _ _ _ (Wght.d P)
   (fun r v => r * Pr (W ``(| v )) (~: [set w | prod_rV (v, w) \in `JTS P W n epsilon0]))%R
   ord0 zero).
-rewrite (_ : nth ord0 (enum M) 0 = ord0); last by rewrite enum_ordS.
+rewrite (_ : nth ord0 (enum M) 0 = ord0); last by rewrite enum_ordSl.
 move=> <- /=.
 transitivity (\sum_(v : 'rV['rV[A]_n]_#|M|) (
     (\prod_(m : M) P `^ n ([ffun x => v ``_ x] (enum_rank m))) *
@@ -379,7 +379,7 @@ transitivity (\sum_(v : 'rV[A]_n)
       apply eq_big => /=.
         move=> ?; by rewrite !inE -[in RHS]Hf !ffunE mxE.
       move=> ? _; by rewrite -[in RHS]Hf !ffunE mxE.
-  rewrite (_ : ord0 = nth ord0 (enum M) 0); last by rewrite enum_ordS.
+  rewrite (_ : ord0 = nth ord0 (enum M) 0); last by rewrite enum_ordSl.
   rewrite -(big_tuple_ffun _ (fun f => \prod_(m : M) P `^ n (f m))
     (fun r => fun yn => r *
       (\sum_(y in ~: [set y0 | prod_rV (yn, y0) \in `JTS P W n epsilon0])

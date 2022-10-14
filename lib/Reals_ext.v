@@ -42,8 +42,8 @@ Reserved Notation "p '.~'" (format "p .~", at level 5).
 Reserved Notation "'`Pr' p " (format "`Pr  p", at level 6).
 Reserved Notation "x %:pr" (at level 0, format "x %:pr").
 Reserved Notation "x %:opr" (at level 0, format "x %:opr").
-Reserved Notation "x %:pos" (at level 0, format "x %:pos").
-Reserved Notation "x %:nng" (at level 0, format "x %:nng").
+Reserved Notation "x %:pos" (at level 2, format "x %:pos").
+Reserved Notation "x %:nng" (at level 2, format "x %:nng").
 
 Notation "+| r |" := (Rmax 0 r) : reals_ext_scope.
 
@@ -455,6 +455,9 @@ Qed.
 
 Lemma probK p : p = (p.~).~%:pr.
 Proof. by apply val_inj => /=; rewrite onemK. Qed.
+
+Lemma probKC (p : prob) : p + p.~ = 1 :> R.
+Proof. by rewrite onemKC. Qed.
 
 Lemma probadd_eq0 p q : p + q = 0%:pr <-> p = 0%:pr /\ q = 0%:pr.
 Proof.
