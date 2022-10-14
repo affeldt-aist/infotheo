@@ -697,7 +697,6 @@ Local Open Scope convex_scope.
 Local Open Scope latt_scope.
 Local Open Scope classical_set_scope.
 
-(*
 HB.mixin Record isSemiLattConv L of ConvexSpace L & SemiLattice L := {
   lubDr : forall (p : prob) (x y z : L),
     conv p x (y [+] z) = (conv p x y) [+] (conv p x z) }.
@@ -754,17 +753,14 @@ Fail Lemma lub_absorbs_convn (n : nat) (d : {fdist 'I_n}) (f : 'I_n -> L) :
   \lub_(i < n) f i = (\lub_(i < n) f i) [+] (<|>_d f).
 End semilattconvtype_lemmas.
 
-FIXME
-*)
-
-HB.mixin Record isSemiCompSemiLattConv L of SemiCompleteSemiLattice L & ConvexSpace L := {
+HB.mixin Record isSemiCompSemiLattConv L of SemiCompleteSemiLattice L & ConvexSpace L & isSemiLattConv L := {
   biglubDr : forall (p : prob) (x : L) (I : neset L),
     conv p x (|_| I) = |_| ((conv p x) @` I)%:ne
 }.
 
 #[short(type=semiCompSemiLattConvType)]
 HB.structure Definition SemiCompSemiLattConv :=
-  { L of isSemiCompSemiLattConv L & SemiCompleteSemiLattice L & ConvexSpace L}.
+  { L of isSemiCompSemiLattConv L & SemiCompleteSemiLattice L & ConvexSpace L & isSemiLattConv L}.
 
 Module BiglubAffine.
 Section ClassDef.
@@ -927,8 +923,8 @@ congr (|_| _%:ne); apply/neset_ext => /=.
 by rewrite image_setU !image_set1.
 Qed.
 
-(*HB.instance Definition biglubDr_semiLattConvType := @isSemiLattConv.Build
-  _ lubDr.*)
+HB.instance Definition biglubDr_semiLattConvType := @isSemiLattConv.Build
+  L lubDr.
 
 (*Definition biglubDr_semiLattConvType :=
   SemiLattConvType.Pack (SemiLattConvType.Class (SemiLattConvType.Mixin lubDr)).
@@ -1123,6 +1119,21 @@ congr hull; rewrite eqEsubset; split=> u /=.
   rewrite convC_set [in X in _ -> X]convC_set.
   by case=> y Yy yXu; exists y=> //; exists Y.
 Qed.
+
+Lemma axiom2 (p : prob) (x y z : L) :
+  conv p x (y [+] z) = (conv p x y) [+] (conv p x z).
+Proof.
+rewrite lubE axiom.
+rewrite lubE.
+congr (|_| _).
+apply/neset_ext => /=.
+rewrite image_setU.
+by rewrite !image_set1.
+Qed.
+
+#[export]
+HB.instance Definition _ := @isSemiLattConv.Build (necset A)
+  axiom2.
 
 #[export]
 HB.instance Definition _ := @isSemiCompSemiLattConv.Build (necset A)
