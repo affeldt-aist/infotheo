@@ -1066,15 +1066,35 @@ apply: hull_eqEsubset => a.
 Qed.
 
 Definition lub_ (x y : necset A) : necset A := biglub_necset ([set x; y]%:ne).
+Lemma lub_E' (x y : necset A) : lub_ x y = neset_hull_necset (x `|` y)%:ne.
+Proof.
+rewrite /lub_ /biglub_necset /=.
+apply necset_ext.
+by rewrite /= bigcup_setU !bigcup_set1.
+Qed.
 
 Lemma lub_C : commutative lub_.
-Admitted.
+Proof.
+move=> x y.
+congr biglub_necset.
+apply neset_ext.
+by rewrite /= setUC.
+Qed.
 
 Lemma lub_A : associative lub_.
-Admitted.
+Proof.
+move=> x y z.
+rewrite !lub_E'.
+apply necset_ext => /=.
+exact: hullUA.
+Qed.
 
 Lemma lub_xx : idempotent lub_.
-Admitted.
+move=> x.
+rewrite lub_E'.
+apply necset_ext => /=.
+by rewrite setUid hull_cset.
+Qed.
 
 #[export]
 HB.instance Definition necset_semiLattType :=
