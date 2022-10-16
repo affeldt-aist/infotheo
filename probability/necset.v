@@ -645,37 +645,18 @@ HB.instance Definition _ (*biglub_semiLattType*) := @isSemiLattice.Build _
 
 End semicompsemilatt_lemmas.
 
-Module BiglubMorph.
-Section ClassDef.
-Local Open Scope classical_set_scope.
-Variables U V : semiCompSemiLattType.
-Definition axiom (f : U -> V) :=
+Definition biglubmorph (U V : semiCompSemiLattType) (f : U -> V) :=
   forall (X : neset U), f (|_| X) = |_| (f @` X)%:ne.
-Structure map (phUV : phant (U -> V)) :=
-  Pack {apply : U -> V ; _ : axiom apply}.
-Local Coercion apply : map >-> Funclass.
-Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
-Definition class := let: Pack _ c as cF' := cF return axiom cF' in c.
-Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
-  @Pack phUV f fA.
-End ClassDef.
-Module Exports.
-Notation biglubmorph f := (axiom f).
-Coercion apply : map >-> Funclass.
-Notation BiglubMorph fA := (Pack (Phant _) fA).
-Notation "{ 'Biglub_morph' fUV }" := (map (Phant fUV))
-  (at level 0, format "{ 'Biglub_morph'  fUV }") : convex_scope.
-Notation "[ 'Biglub_morph' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
-  (at level 0, format "[ 'Biglub_morph'  'of'  f  'as'  g ]") : convex_scope.
-Notation "[ 'Biglub_morph' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
-  (at level 0, format "[ 'Biglub_morph'  'of'  f ]") : convex_scope.
-End Exports.
-End BiglubMorph.
-Export BiglubMorph.Exports.
 
-Lemma biglub_morph (U V : semiCompSemiLattType) (f : {Biglub_morph U -> V}) :
-  forall (X : neset U), f (|_| X) = |_| (f @` X)%:ne.
-Proof. by case: f => []. Qed.
+HB.mixin Record isBiglubMorph (U V : semiCompSemiLattType) (f : U -> V) := {
+  biglub_morph : biglubmorph f }.
+
+HB.structure Definition BiglubMorph (U V : semiCompSemiLattType) :=
+  {f of isBiglubMorph U V f}.
+
+Notation "{ 'Biglub_morph'  T '->'  R }" :=
+  (BiglubMorph.type T R) (at level 36, T, R at next level,
+    format "{ 'Biglub_morph'  T  '->'  R }") : convex_scope.
 
 Section biglub_morph.
 Local Open Scope classical_set_scope.
@@ -763,78 +744,30 @@ HB.structure Definition SemiCompSemiLattConv :=
   { L of isSemiCompSemiLattConv L & SemiCompSemiLatt L & ConvexSpace L &
          isSemiLattConv L}.
 
-Module BiglubAffine.
-Section ClassDef.
-Local Open Scope classical_set_scope.
-Variables U V : semiCompSemiLattConvType.
-Record class_of (f : U -> V) : Prop := Class {
-  base : affine f ;
-  mixin : BiglubMorph.axiom f }.
-Local Coercion base : class_of >-> affine.
-Definition base2 f (fLM : class_of f) := mixin fLM.
-Local Coercion base2 : class_of >-> biglubmorph.
-Structure map (phUV : phant (U -> V)) :=
-  Pack {apply; _ : class_of apply}.
-Local Coercion apply : map >-> Funclass.
-Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
-Definition class := let: Pack _ c as cF' := cF return class_of cF' in c.
-Definition clone :=
-  fun (g : Affine.map phUV) fM & phant_id (Affine.class g) fM =>
-  fun (h : BiglubMorph.map phUV) fZ &
-     phant_id (BiglubMorph.axiom (BiglubMorph.apply h)) fZ =>
-  Pack phUV (@Class f fM fZ).
-Definition pack (fM : biglubmorph f) :=
-  fun (bF : Affine.map phUV) fA & phant_id (Affine.class bF) fA =>
-  Pack phUV (Class fA fM).
-Canonical affine_of_biglub_affine := Affine.Pack phUV class.
-Canonical biglubmorph_of_biglub_affine := BiglubMorph.Pack phUV class.
-Canonical join_affine :=
-  @Affine.Pack _ _ phUV biglubmorph_of_biglub_affine class.
-Canonical join_biglubmorph :=
-  @BiglubMorph.Pack U V phUV biglubmorph_of_biglub_affine class.
-End ClassDef.
-Module Exports.
-Notation biglub_affine f := (class_of f).
-Coercion base : biglub_affine >-> Affine.axiom.
-Coercion base2 : biglub_affine >-> BiglubMorph.axiom.
-Coercion apply : map >-> Funclass.
-Notation BiglubAffine fA := (Pack (Phant _) (Class fA fA)).
-Notation AffineBiglub fM := (pack fM id).
-Notation "{ 'Biglub_affine' fUV }" := (map (Phant fUV))
-  (at level 0, format "{ 'Biglub_affine'  fUV }") : convex_scope.
-Notation "[ 'Biglub_affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
-  (at level 0, format "[ 'Biglub_affine'  'of'  f  'as'  g ]") : convex_scope.
-Notation "[ 'Biglub_affine' 'of' f ]" := (@clone _ _ _ f _ _ id id)
-  (at level 0, format "[ 'Biglub_affine'  'of'  f ]") : convex_scope.
-Coercion affine_of_biglub_affine : map >-> Affine.map.
-Canonical affine_of_biglub_affine.
-Coercion biglubmorph_of_biglub_affine : map >-> BiglubMorph.map.
-Canonical biglubmorph_of_biglub_affine.
-Canonical join_affine.
-Canonical join_biglubmorph.
-End Exports.
-End BiglubAffine.
-Export BiglubAffine.Exports.
+HB.structure Definition BiglubAffine (U V : semiCompSemiLattConvType) :=
+  {f of isAffine U V f & isBiglubMorph U V f}.
+
+Notation "{ 'Biglub_affine'  T '->'  R }" :=
+  (BiglubAffine.type T R) (at level 36, T, R at next level,
+    format "{ 'Biglub_affine'  T  '->'  R }") : convex_scope.
 
 Section biglub_affine_functor_laws.
 
 Variables (R S T : semiCompSemiLattConvType)
   (f : {Biglub_affine S -> T}) (g : {Biglub_affine R -> S}).
 
-Fact idfun_is_biglub_affine : biglub_affine (@idfun R).
+Fact idfun_is_biglub_affine : biglubmorph (@idfun R).
 Proof.
-apply: BiglubAffine.Class => //.
 by move=> x; congr (|_| _); apply neset_ext; rewrite /= image_id.
 Qed.
-Canonical idfun_biglub_affine := AffineBiglub idfun_is_biglub_affine.
+HB.instance Definition _ (*idfun_biglub_affine*) := isBiglubMorph.Build _ _ _ idfun_is_biglub_affine.
 
-Fact comp_is_biglub_affine : biglub_affine (f \o g).
+Fact comp_is_biglub_affine : biglubmorph (f \o g).
 Proof.
-apply: BiglubAffine.Class; first exact: comp_is_affine.
 move=> x; cbn; rewrite !biglub_morph.
 by congr (|_| _); apply neset_ext => /=; rewrite image_comp.
 Qed.
-Canonical comp_biglub_affine := AffineBiglub comp_is_biglub_affine.
+HB.instance Definition _ (*comp_biglub_affine*) := isBiglubMorph.Build _ _ _ comp_is_biglub_affine.
 
 End biglub_affine_functor_laws.
 

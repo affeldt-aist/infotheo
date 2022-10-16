@@ -281,45 +281,29 @@ Notation "'<|>_' d f" := (Convn d f) : convex_scope.
 
 (* Affine function: homomorphism between convex spaces *)
 
-Module Affine.
-Section ClassDef.
-Local Open Scope ordered_convex_scope.
-Variables (U V : convType).
-Definition axiom (f : U -> V) := forall p, {morph f : a b / a <| p |> b >-> a <| p |> b}.
-Structure map (phUV : phant (U -> V)) := Pack {apply; _ : axiom apply}.
-Local Coercion apply : map >-> Funclass.
-Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
-Definition class := let: Pack _ c as cF' := cF return axiom cF' in c.
-Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
-  @Pack phUV f fA.
-End ClassDef.
-Module Exports.
-Notation affine f := (axiom f).
-Coercion apply : map >-> Funclass.
-Notation Affine fA := (Pack (Phant _) fA).
-Notation "{ 'affine' fUV }" := (map (Phant fUV))
-  (at level 0, format "{ 'affine'  fUV }") : convex_scope.
-Notation "[ 'affine' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun Datatypes.id)
-  (at level 0, format "[ 'affine'  'of'  f  'as'  g ]") : convex_scope.
-Notation "[ 'affine' 'of' f ]" := (@clone _ _ _ f f _ _ Datatypes.id Datatypes.id)
-  (at level 0, format "[ 'affine'  'of'  f ]") : convex_scope.
-End Exports.
-End Affine.
-Include Affine.Exports.
+Definition affine (U V : convType) (f : U -> V) :=
+  forall p, {morph f : a b / a <| p |> b >-> a <| p |> b}.
 
-Lemma affine_conv (U V : convType) (f : {affine U -> V}) : Affine.axiom f.
-Proof. exact: Affine.class. Qed.
+HB.mixin Record isAffine (U V : convType) (f : U -> V) := {
+  affine_conv : affine f }.
+
+HB.structure Definition Affine (U V : convType) :=
+  {f of isAffine U V f}.
+
+Notation "{ 'affine'  T '->'  R }" :=
+  (Affine.type T R) (at level 36, T, R at next level,
+    format "{ 'affine'  T  '->'  R }") : convex_scope.
 
 Section affine_function_prop0.
 Variables (U V W : convType) (f : {affine V -> W}) (h : {affine U -> V}).
 
 Fact idfun_is_affine : affine (@idfun U).
 Proof. by []. Qed.
-Canonical idfun_affine := Affine idfun_is_affine.
+HB.instance Definition _ (*idfun_affine*) := isAffine.Build _ _ idfun idfun_is_affine.
 
 Fact comp_is_affine : affine (f \o h).
 Proof. by move=> x y t /=; rewrite 2!affine_conv. Qed.
-Canonical comp_affine := Affine comp_is_affine.
+HB.instance Definition _ (*comp_affine*) := isAffine.Build _ _ (f \o h) comp_is_affine.
 
 (* The following lemma is placed far below in this file
    since it is proved using ScaledConvex
@@ -825,7 +809,7 @@ End with_affine_projection.
 
 Lemma S1_convn n (points : 'I_n -> T) d :
   S1 (<|>_d points) = \ssum_(i < n) scalept (d i) (S1 (points i)).
-Proof. by rewrite (S1_convn_proj [affine of idfun]). Qed.
+Proof. by rewrite (S1_convn_proj [the {affine _ ->_} of idfun]). Qed.
 
 End convex_space_prop1.
 

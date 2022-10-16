@@ -817,8 +817,8 @@ HB.instance Definition _ (*FSDist_convType*) (A : choiceType) :=
 
 Fact FSDistfmap_affine (A B : choiceType) (f : A -> B) : affine (FSDistfmap f).
 Proof. by move=> ? ? ?; rewrite /FSDistfmap ConvFSDist.bind_left_distr. Qed.
-Canonical Affine_FSDistfmap_affine (A B : choiceType) (f : A -> B) :=
-  Affine (FSDistfmap_affine f).
+HB.instance Definition _ (*Affine_FSDistfmap_affine*) (A B : choiceType) (f : A -> B) :=
+  isAffine.Build _ _ _ (FSDistfmap_affine f).
 
 Definition FSDist_to_convType (A : choiceType) :=
   fun phT : phant (Choice.sort A) => conv_choiceType [the convType of FSDist.t A].
@@ -831,15 +831,20 @@ Local Open Scope convex_scope.
 Section FSDist_convex_space.
 Variable A : choiceType.
 
+Let f a := fun x : {dist A} => finmap.fun_of_fsfun x a.
+Let af a : affine (f a).
+Proof.
+by move=> p x y; rewrite /f /= ConvFSDist.dE.
+Qed.
+HB.instance Definition _ a := isAffine.Build _ _ _ (af a).
+
 (* Reuse the morphisms from R_convex_space. *)
 Import ScaledConvex finmap.
 Lemma convn_convnfsdist (n : nat) (g : 'I_n -> {dist A}) (d : {fdist 'I_n}) :
   <|>_d g = ConvnFSDist.d d g.
 Proof.
 apply FSDist_ext=> a; rewrite -[LHS]Scaled1RK.
-pose f := fun x : {dist A} => finmap.fun_of_fsfun x a.
-have af : affine f by move=> p x y; rewrite /f /= ConvFSDist.dE.
-rewrite (S1_convn_proj (Affine af)) /= big_scaleR ConvnFSDist.dE /= fsfunE.
+rewrite (S1_convn_proj [the {affine _ -> _} of f a]) /= big_scaleR ConvnFSDist.dE /= fsfunE.
 case: ifPn => adg.
   by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
 (* TODO: extra lemmas ? *)
@@ -880,11 +885,11 @@ by rewrite 2!mem_finsupp => /orP[dj0|ej0]; apply/gtR_eqF;
 Qed.
 
 (* Evaluation operation of FSDists at some fixed element is affine *)
-Lemma FSDist_eval_affine (C : choiceType) (x : C) :
-  affine (fun D : {dist C} => D x).
-Proof. by move=> a b p; rewrite ConvFSDist.dE. Qed.
-Canonical Affine_FSDist_eval_affine (C : choiceType) (x : C) :=
-  Affine (FSDist_eval_affine x).
+Definition FSDist_eval (C : choiceType) (x : C) := fun D : {dist C} => D x.
+Lemma FSDist_eval_affine (C : choiceType) (x : C) : affine (FSDist_eval x).
+Proof. by move=> a b p; rewrite /FSDist_eval ConvFSDist.dE. Qed.
+HB.instance Definition _ (* Affine_FSDist_eval_affine*) (C : choiceType) (x : C) :=
+  isAffine.Build _ _ _ (FSDist_eval_affine x).
 
 Section misc_scaled.
 Import ScaledConvex.
@@ -966,7 +971,8 @@ have -> : \ssum_(i <- finsupp y) scalept (y i) (S1 i) =
   by rewrite convC; apply/ssum_widen_finsupp/ConvFSDist.incl_finsupp_conv2fsdist.
 done.
 Qed.
-Canonical Affine_Convn_of_FSDist_affine := Affine Convn_of_FSDist_affine.
+HB.instance Definition _ (*Affine_Convn_of_FSDist_affine*) :=
+  isAffine.Build _ _ _ Convn_of_FSDist_affine.
 End Convn_of_FSDist.
 
 Section lemmas_for_probability_monad_and_adjunction.
@@ -1026,7 +1032,7 @@ Lemma triangular_laws_left0 (d : {dist C}) :
   Convn_of_FSDist (FSDistfmap (@FSDist1.d C) d) = d.
 Proof.
 apply FSDist_ext => x; apply S1_inj.
-rewrite (S1_proj_Convn_finType (Affine_FSDist_eval_affine x)).
+rewrite (S1_proj_Convn_finType [the {affine _ -> _} of (FSDist_eval x)]).
 under eq_bigr do rewrite fdist_of_FSDistE.
 rewrite (ssum_seq_finsuppE'' (fun i : {dist C} => i x)).
 rewrite supp_FSDistfmap.
