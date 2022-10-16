@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
+From mathcomp Require Import all_ssreflect ssrnum ssralg fingroup perm finalg matrix vector.
 From mathcomp Require Import boolp classical_sets Rstruct.
 From mathcomp Require Import ssrnum ereal.
 Require Import Reals.
@@ -266,7 +266,7 @@ End convex_space_lemmas.
 
 Section segment.
 Variable A: convType.
-Definition segment (x y: A) := image (@setT prob) (fun p => Conv p x y).
+Definition segment (x y: A) := image (@setT prob) (fun p => conv p x y).
 
 Lemma segment_sym u v x : segment u v x -> segment v u x.
 Proof. by move=> [p _ <-]; exists (p.~%:pr); rewrite -?convC. Qed.
@@ -732,7 +732,7 @@ Lemma convA' (r s : prob) a b c : a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = 
 Proof.
 case H: ([p_of r, s] == 1%:pr).
    move: H=>/p_of_rs1P [ -> -> ].
-   by rewrite conv1 conv1 -{2}(conv1 a (b <|[q_of (1)%:pr, (1)%:pr]|> c)); congr Conv; rewrite p_of_1s.
+   by rewrite conv1 conv1 -{2}(conv1 a (b <|[q_of (1)%:pr, (1)%:pr]|> c)); congr conv; rewrite p_of_1s.
 move: H=>/negP/negP H; case/boolP : (s == 0%:pr) => s0.
 - by rewrite (eqP s0) p_of_r0 conv0 q_of_r0 conv0 conv0.
 - by rewrite convA s_of_pqK // r_of_pqK.
@@ -769,9 +769,9 @@ Lemma convACA' (a b c d : T) (p q r : prob) :
 Proof.
 rewrite (convC p).
 rewrite convA convC !convA.
-set C0 := _.~%:pr; rewrite (_ : C0 = C0%:opr) //.
-set C1 := _.~%:pr; rewrite (_ : C1 = C1%:opr) //.
-rewrite -convA'_oprob (convC _ d) convC.
+set C0 := _.~%:pr.
+set C1 := _.~%:pr.
+rewrite -convA' (convC _ d) convC.
 by eexists; eexists; eexists; congr ((_ <|_|> _) <|_|> (_ <|_|> _)).
 Qed.
 
@@ -1388,8 +1388,8 @@ rewrite 2!scalerA; congr scale.
 have ->: p.~ * q = (p.~ * q)%R by [].
 by rewrite pq_is_rs -/r -/s mulrC.
 Qed.
-Definition lmodR_convMixin := ConvexSpace.Mixin avg1 avgI avgC avgA.
-Canonical lmodR_convType := ConvexSpace.Pack (ConvexSpace.Class lmodR_convMixin).
+HB.instance Definition _ (*lmodR_convType*) := @isConvexSpace.Build E (Choice.class _) _ avg1 avgI avgC avgA.
+
 Lemma avgrE p (x y : E) : x <| p |> y = avg p x y. Proof. by []. Qed.
 End lmodR_convex_space.
 Section lmodR_convex_space.
@@ -1408,7 +1408,7 @@ Proof. by move=> x ? ?; rewrite avgrE scalerDl -2!scalerA. Qed.
 (* Introduce morphisms to prove avgnE *)
 Import ScaledConvex.
 Definition scaler x : E := if x is Scaled p y then (Rpos.v p) *: y else 0.
-Lemma Scaled1rK : cancel (@S1 (lmodR_convType E)) scaler.
+Lemma Scaled1rK : cancel (@S1 (_ E)) scaler.
 Proof. by move=> x /=; rewrite scale1r. Qed.
 Lemma scaler_addpt : {morph scaler : x y / addpt x y >-> (x + y)}.
 Proof.
@@ -2465,7 +2465,7 @@ rewrite eqEsubset; split.
          by move: (hull_is_convex A)=>/asboolP; apply.
       exists (bx <|p|> by')=>//.
       by move: (hull_is_convex B)=>/asboolP; apply.
-   by apply (@hull_sub_convex _ _ (CSet.Pack (CSet.Mixin conv))), image2_subset; apply (@subset_hull (lmodR_convType T)).
+   by apply (@hull_sub_convex _ _ (CSet.Pack (CSet.Mixin conv))), image2_subset; exact (@subset_hull _ _).
 move=>x [a [na [ga [da [gaA ->]]]]] [b [nb [gb [db [gbB ->]]]]] <-.
 rewrite avgnr_add.
 exists (na * nb)%nat, (fun i => let (i, j) := split_prod i in ga i + gb j), (FDistMap.d (unsplit_prod (n:=nb)) da `x db); split=>// y [i _ <-].
