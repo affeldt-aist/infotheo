@@ -2426,15 +2426,15 @@ Local Open Scope ring_scope.
 Variables T U : lmodType R.
 
 (* TODO: rename, move to mathcomp *)
-Lemma factorize_range (A B C: Type) (f: B -> C) (g: A -> C): range g `<=` range f -> exists h: A -> B, g = f \o h.
+Lemma factorize_range (A B C : Type) (f : B -> C) (g : A -> C) :
+  range g `<=` range f ->
+  exists h : A -> B, g = f \o h.
 Proof.
-move=>sub.
-simple refine (ex_intro _ _ _).
-   move=>a.
-   have: range f (g a) by apply sub; exists a.
-   move=>/= /cid2 [b _ _]; exact b.
-rewrite /ssr_have /=; apply funext=>a /=.
-by case: cid2.
+move=> gf; have [h gfh] : {h & forall a, g a = f (h a)}.
+  apply: (@choice _ _ (fun a b => g a = f b)) => a.
+  have /cid2[b _ <-] : range f (g a) by apply gf; exists a.
+  by exists b.
+by exists h; apply/funext => a; rewrite gfh.
 Qed.
 
 (* TODO: move to mathcomp *)
