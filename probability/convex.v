@@ -1600,125 +1600,114 @@ apply/eqP/eqP.
 by move=>->.
 Qed.
 
-Lemma caratheodory (A: set (Vector.lmodType E)) x: x \in hull A -> exists (n : nat) (g : 'I_n -> (Vector.lmodType E)) (d : {fdist 'I_n}), (n <= (dimv (@fullv R_fieldType E)).+1)%nat /\ range g `<=` A /\ x = <|>_d g.
+(* TODO: move *)
+Import Order.TotalTheory.
+
+Lemma caratheodory (A : set (Vector.lmodType E)) x : x \in hull A ->
+  exists (n : nat) (g : 'I_n -> Vector.lmodType E) (d : {fdist 'I_n}),
+    [/\ (n <= (dimv (@fullv R_fieldType E)).+1)%nat, range g `<=` A & x = <|>_d g].
 Proof.
-move=>/set_mem [n [g [d [gA ->]]]].
-elim: n g d gA=> [| n IHn] g d gA.
-   by elim (fdistI0_False d).
-case nsgt: (n.+1 <= (dimv (@fullv R_fieldType E)).+1)%nat.
+move=> /set_mem[n [g [d [gA ->]]]].
+elim: n => [|n IHn] in g d gA *; first by case: (fdistI0_False d).
+have [nsgt|nsgt] := leqP n (dimv (@fullv R_fieldType E)).
    by exists n.+1, g, d.
-have: exists mu: 'I_(n.+1) -> R, \sum_(i < n.+1) mu i = 0 /\ \sum_(i < n.+1) (mu i) *: g i = 0 /\ exists i, mu i <> 0.
-   clear IHn.
-   move: nsgt; rewrite ltnNge=>/negP/negP nsgt.
-   case sf: (free (in_tuple [seq (g (lift ord0 i)) - (g ord0) | i <- index_enum (ordinal_finType n) ])).
-      have: basis_of fullv (in_tuple [seq (g (lift ord0 i)) - (g ord0) | i <- index_enum (ordinal_finType n) ]).
-         rewrite basisEfree; apply /andP; split=>//; apply /andP; split.
-            by apply subvf.
-         rewrite size_map size_index_enum /= card_ord.
-         by refine (leq_trans _ nsgt).
-      rewrite in_tupleE basisEdim size_map=>/andP [_ nsge].
-      by move: nsge nsgt; rewrite size_index_enum -pred_Sn card_ord ltnNge=>->.
-      move: sf=>/negP /freeN_combination; rewrite in_tupleE size_map /= size_index_enum card_ord=> [[mu [musum [i mui]]]].
-   exists (fun i => match i with | @Ordinal _ 0 _ => - \sum_i mu i | @Ordinal _ i.+1 ilt => mu (Ordinal (ltnSE ilt)) end).
-   split.
-      rewrite big_ord_recl /= addrC; apply /eqP; rewrite subr_eq0; apply /eqP.
-      apply congr_big=>// [[j jlt]] _.
-      by congr mu; apply val_inj.
-   split.
-      rewrite big_ord_recl /= scaleNr addrC scaler_suml -sumrB -{2}musum.
-      apply congr_big=>// j _.
-      rewrite (nth_map j).
-         2: by rewrite size_index_enum card_ord.
-      rewrite scalerBr; congr add; congr (mu _ *: g (lift ord0 _)).
-         by case: j=>j jlt; apply val_inj.
-      have->: index_enum (ordinal_finType n) = (enum 'I_n) by rewrite enumT.
-      by rewrite nth_ord_enum.
-   by exists (lift ord0 i)=>/=; apply/eqP; rewrite /is_true -{}mui; congr (mu _ != 0); case: i=>[i ilt]; apply val_inj.
-move=>[mu [muR [muE [i mui]]]].
+have [mu [muR muE [i mui]]] : exists mu : 'I_n.+1 -> R,
+  [/\ \sum_(i < n.+1) mu i = 0, \sum_(i < n.+1) (mu i) *: g i = 0 &
+     exists i, mu i != 0 ].
+  rewrite {IHn}.
+  have [sf|/negP/freeN_combination[mu [musum [i mui]]]] :=
+      boolP (free [tuple g (lift ord0 i) - g ord0 | i < n]).
+    have : basis_of fullv [tuple g (lift ord0 i) - g ord0 | i < n].
+      by rewrite basisEfree size_tuple (ltnW nsgt) andbT sf subvf.
+    rewrite in_tupleE basisEdim size_map => /andP[_].
+    by move=> /leq_ltn_trans => /(_ _ nsgt); rewrite size_tuple ltnn.
+  exists (fun i => match i with
+           @Ordinal _ 0 _ => - \sum_i mu i
+         | @Ordinal _ i.+1 ilt => mu (Ordinal (ltnSE ilt)) end); split.
+  - rewrite big_ord_recl /= addrC; apply/eqP; rewrite subr_eq0; apply/eqP.
+    by apply: eq_bigr => j _; congr mu; exact/val_inj.
+  - rewrite big_ord_recl /= scaleNr addrC scaler_suml -sumrB -{2}musum.
+    apply: eq_bigr => j _; rewrite (nth_map j) ?size_tuple//.
+    rewrite scalerBr; congr (mu _ *: g _ - _); apply/val_inj => //=.
+    by rewrite nth_ord_enum.
+  - by exists (lift ord0 i) => /=; rewrite (_ : Ordinal _ = i)//; exact/val_inj.
 wlog: mu muR muE mui / mu i > 0.
    move=> H.
-   case mupos: (0 < mu i).
-      by apply (H mu).
+   have [mui0|mui0] := ltP 0%R (mu i); first exact: (H mu).
    apply (H (fun i => - mu i)).
-      + by rewrite sumrN muR oppr0.
-      + by rewrite -{2}oppr0 -{2}muE -sumrN; apply congr_big=>// j _; rewrite scaleNr.
-      + by move=> /(f_equal (@GRing.opp R_zmodType)); rewrite opprK oppr0.
-      + move: mui=>/eqP; rewrite [mu i != 0]real_neqr_lt. move=>/orP; case; [ by rewrite oppr_gt0 | by rewrite mupos ].
-         by apply num_real.
-         by apply num_real.
-move=>/(@Order.TotalTheory.arg_minP _ _ _ i (fun i => 0 < mu i) (fun i => (d i) / (mu i))) [im muip muim]; clear i mui.
+   - by rewrite sumrN muR oppr0.
+   - by under eq_bigr do rewrite scaleNr; rewrite sumrN muE oppr0.
+   + by rewrite oppr_eq0.
+   + by rewrite oppr_gt0 lt_neqAle mui.
+move=>/(@arg_minP _ _ _ i (fun i => 0 < mu i) (fun i => d i / mu i)) [im muip muim] {i mui}.
 wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
-   set f := fun i: nat => if i == nat_of_ord im then 0%nat else if i == 0%nat then nat_of_ord im else i.
-   have fcan: cancel f f.
-      move=> j; rewrite /f.
-      case jim: (j == im); case j0: (j == 0%nat); case im0: (0%nat == im); rewrite ?eq_refl; rewrite ?jim ?j0; move: jim j0 im0=>/eqP jim /eqP j0 /eqP im0; try subst j; try subst im =>//; try reflexivity; exact im0.
-   have flt: forall i: 'I_n.+1, (f i < n.+1)%nat by move=>[j jlt]; rewrite /f; case jim: (j == im); case j0: (j == 0%nat).
+   set f := fun i : nat => if i == im :> nat then 0%nat else if i == 0%nat then nat_of_ord im else i.
+   have fcan : cancel f f.
+     move=> m; rewrite /f; have [->|mim] := eqVneq m im.
+       by rewrite eqxx; case: ifPn => // /eqP.
+     have [->|m0] := eqVneq m 0%N; first by rewrite eqxx.
+     by rewrite (negbTE mim) (negbTE m0).
+   have flt (i : 'I_n.+1) : (f i < n.+1)%nat.
+     by rewrite /f; case: ifPn => // iim; case: ifPn.
    set f' := fun i => Ordinal (flt i).
-   have fcan': cancel f' f' by move=>[j jlt]; apply val_inj, fcan.
-   have fbij: bijective f' by exists f'; move=> [j jlt]; apply fcan'.
+   have fcan' : cancel f' f' by move=> [j jlt]; exact/val_inj/fcan.
+   have fbij : bijective f' by exists f'; move=> [j jlt]; exact/fcan'.
    move=>/(_ (fun i => g (f' i)) (FDistMap.d f' d)).
-   have gA': [set g (f' i) | i in [set: 'I_n.+1]] `<=` A by move=>y [i _ <-]; apply gA; eexists.
+   have gA': [set g (f' i) | i in [set: 'I_n.+1]] `<=` A.
+     by move=>y [i _ <-]; apply gA; eexists.
    move=>/(_ gA' (fun i => mu (f' i))).
-   have mu'R: \sum_(i0 < n.+1) mu (f' i0) = 0.
-      rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
-      by rewrite big_map -{4}muR; apply congr_big=>// [[j jlt]] _; congr mu; apply fcan'.
+   have mu'R : \sum_(i0 < n.+1) mu (f' i0) = 0.
+     rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
+     by rewrite big_map -{4}muR; apply congr_big=>// [[j jlt]] _; congr mu; apply fcan'.
    move=>/(_ mu'R).
    have mu'E: \sum_(i0 < n.+1) mu (f' i0) *: g (f' i0) = 0.
       rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
       rewrite big_map -{4}muE; apply congr_big=>// j _.
-      congr (mu _ *: g _); apply fcan'.
+      by congr (mu _ *: g _); exact/fcan'.
    move=>/(_ mu'E (f' im)).
-   have muip': 0 < mu (f' (f' im)) by refine (eq_ind _ (fun x => 0 < x) muip _ _); congr mu; rewrite fcan'.
+   have muip' : 0 < mu (f' (f' im)) by rewrite fcan'.
    move=>/(_ muip').
-   have muim': forall j : ordinal_finType n.+1,
-  0 < mu (f' j) ->
-  FDistMap.d f' d (f' im) / mu (f' (f' im)) <= FDistMap.d f' d j / mu (f' j).
-      move=>j /muim.
-      rewrite fcan' FDistMap.dE (big_pred1 im) /=; last first.
-        move=> i; apply/idP/idP; rewrite !inE; last by move=> /eqP ->.
-        by move=> /eqP /(bij_inj fbij) /eqP.
-      rewrite FDistMap.dE (big_pred1 (f' j)) //.
-      by move=> /= i; apply/idP/idP; rewrite !inE => /eqP;
-        [move=> <-; rewrite fcan' | move=> ->; rewrite fcan'].
+   have muim' (j : ordinal_finType n.+1) :
+     0 < mu (f' j) ->
+     FDistMap.d f' d (f' im) / mu (f' (f' im)) <= FDistMap.d f' d j / mu (f' j).
+     move=> /muim.
+     rewrite fcan' FDistMap.dE (big_pred1 im) /=; last first.
+       move=> i; apply/idP/idP; rewrite !inE; last by move=> /eqP ->.
+       by move=> /eqP /(bij_inj fbij) /eqP.
+     rewrite FDistMap.dE (big_pred1 (f' j)) //.
+     by move=> /= i; apply/idP/idP; rewrite !inE => /eqP;
+       [move=> <-; rewrite fcan' | move=> ->; rewrite fcan'].
    move=>/(_ muim').
-   have im0: f' im == ord0.
-      by apply /eqP; apply val_inj=>/=; rewrite /f; rewrite eq_refl.
-   move=>/(_ im0) [n' [g' [d' [n'le [g'A e]]]]].
-   exists n', g', d'; split=>//; split=>//; rewrite -e.
+   have im0 : f' im == ord0 by apply/eqP/val_inj => /=; rewrite /f eqxx.
+   move=>/(_ im0) [n' [g' [d' [n'le g'A e]]]].
+   exists n', g', d'; split=>//; rewrite -e.
    rewrite 2!avgnrE /avgnr.
    rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
    rewrite big_map; apply congr_big=>// j _.
    rewrite FDistMap.dE (big_pred1 (f' j))=>// k /=.
    by rewrite unfold_in=>/=; apply/eqP/eqP=>e'; apply (bij_inj fbij); rewrite fcan'.
-move=>/eqP ime; subst im.
-have leS: forall n m, (n <= m -> n < m.+1)%nat by move=> ? ?; rewrite ltnS.
-have mu0: mu ord0 != 0 by apply /eqP=>mu0; move: muip; rewrite mu0 lt0r eq_refl.
-have k0mu0: d ord0 / mu ord0 * mu ord0 = d ord0 by rewrite -{2}[mu ord0]divr1 mulf_div [_*1]mulrC -mulf_div divr1 mulfV // mulr1.
-set ef: 'I_n -> R := finfun (fun i => d (lift ord0 i) - d ord0 / mu ord0 * mu (lift ord0 i)).
-have ef0: forall i, (0 <= ef i)%R.
-   move=>i; apply /RleP; rewrite /ef ffunE subr_ge0.
-   case mujp: (0 < mu (lift ord0 i)).
-      by rewrite -ler_pdivl_mulr //; apply muim.
-   apply (@le_trans _ _ 0).
-      2: apply/leRP; exact (FDist.ge0 d (lift ord0 i)).
-   apply mulr_ge0_le0.
-      apply divr_ge0.
-         apply/leRP; exact (FDist.ge0 d ord0).
-      by move: muip; rewrite lt0r=>/andP [_ ->].
-   rewrite real_leNgt.
-      by rewrite mujp.
-      by apply num_real.
-   by apply num_real.
-have ef1: (\sum_(a in 'I_n) ef a)%R = 1%R.
-   by rewrite -[1%R]subr0 -(mulr0 (d ord0 / mu ord0)) -(FDist.f1 d) -muR mulr_sumr -sumrB big_ord_recl k0mu0 subrr add0r; apply congr_big=>// i _; rewrite /ef ffunE.
-set e := FDist.make ef0 ef1.
-move: IHn=>/(_ (fun i=> g (lift ord0 i)) e).
-have g'A: [set g (lift ord0 i) | i in [set: 'I_n]] `<=` A by move=>y [i _ <-]; apply gA; eexists.
-move=>/(_ g'A) [n' [g' [d' [n'le [g'A' gde]]]]].
-exists n', g', d'.
-split=>//; split=>//.
+move=>/eqP ime; move: muip muim; rewrite {im}ime => muip muim.
+have mu0 : mu ord0 != 0 by apply /eqP=>mu0; move: muip; rewrite mu0 lt0r eq_refl.
+have k0mu0 : d ord0 / mu ord0 * mu ord0 = d ord0.
+  by rewrite -{2}[mu ord0]divr1 mulf_div [_*1]mulrC -mulf_div divr1 mulfV // mulr1.
+set ef : 'I_n -> R := finfun (fun i => d (lift ord0 i) - d ord0 / mu ord0 * mu (lift ord0 i)).
+have ef0 i : (0 <= ef i)%R.
+   apply/RleP; rewrite /ef ffunE subr_ge0.
+   have [mujp|mujp] := ltP 0 (mu (lift ord0 i)).
+      by rewrite -ler_pdivl_mulr // muim.
+   rewrite (@le_trans _ _ 0)//; last exact/leRP.
+   by rewrite mulr_ge0_le0//= divr_ge0//; [exact/leRP|exact/ltW].
+have ef1 : (\sum_(a in 'I_n) ef a = 1)%R.
+  rewrite -[1%R]subr0 -(mulr0 (d ord0 / mu ord0)) -(FDist.f1 d) -muR mulr_sumr.
+  rewrite -sumrB big_ord_recl k0mu0 subrr add0r.
+  by apply eq_bigr => i _; rewrite /ef ffunE.
+pose e := FDist.make ef0 ef1.
+have /IHn - /(_ e): [set g (lift ord0 i) | i in [set: 'I_n]] `<=` A.
+  by move=>y [i _ <-]; exact/gA.
+move=> -[n' [g' [d' [n'le g'A' gde]]]].
+exists n', g', d'; split=> //.
 rewrite -gde 2!avgnrE /avgnr big_ord_recl -k0mu0 -scalerA.
-move: muE=>/eqP; rewrite big_ord_recl addr_eq0=>/eqP->.
+move/eqP: muE; rewrite big_ord_recl addr_eq0 => /eqP ->.
 rewrite scalerN -scaleNr scaler_sumr -big_split; apply congr_big=>// i _.
 by rewrite scalerA /= -scalerDl; congr scale; rewrite addrC mulNr ffunE.
 Qed.
