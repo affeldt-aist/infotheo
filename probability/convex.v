@@ -1434,51 +1434,40 @@ by apply eq_bigr => i _; rewrite scaler_scalept // Scaled1rK.
 Qed.
 
 Section split_prod.
-Lemma unsplit_prodp (m n: nat) (i: 'I_m) (j: 'I_n): (i*n+j < m*n)%nat.
+
+Lemma unsplit_prodp (m n : nat) (i : 'I_m) (j : 'I_n): (i * n + j < m * n)%nat.
 Proof.
-rewrite -addnS.
-apply (@leq_trans (i*n+n)%nat).
-   by rewrite leq_add2l.
-rewrite addnC.
-have->: (n+i*n = i.+1 * n)%nat by rewrite /muln /muln_rec /addn /addn_rec.
-by apply leq_mul.
+by rewrite -ltn_subRL -mulnBl (leq_trans (ltn_ord j))// leq_pmull// subn_gt0.
 Qed.
 
-Definition unsplit_prod (m n: nat) (i:'I_m * 'I_n): 'I_(m*n) := let (i, j) := i in Ordinal (unsplit_prodp i j).
+Definition unsplit_prod (m n : nat) (i : 'I_m * 'I_n): 'I_(m * n) :=
+  let (i, j) := i in Ordinal (unsplit_prodp i j).
 
 (* TODO: shall we extend the lemmas on Nat.div to divn ? *)
 Definition split_prodpl (m n : nat) (i : 'I_(m * n)): (i %/ n < m)%nat.
-Proof.
-move: n i => [i|n i]; last by rewrite ltn_divLR.
-by rewrite divn0; move: i; rewrite muln0 => -[].
-Qed.
+Proof. by move: n i => [|n i]; [rewrite muln0 => -[]|rewrite ltn_divLR]. Qed.
 
 Definition split_prodpr (m n : nat) (i : 'I_(m * n)): (i %% n < n)%nat.
-Proof.
-move: n i => [i|n i]; last by rewrite ltn_pmod.
-by exfalso; move: i; rewrite muln0 => -[].
-Qed.
+Proof. by move: n i => [|n i]; [rewrite muln0 => -[]|rewrite ltn_pmod]. Qed.
 
-Definition split_prod (m n: nat) (i: 'I_(m*n)): 'I_m * 'I_n := (Ordinal (split_prodpl i), Ordinal (split_prodpr i)).
+Definition split_prod (m n : nat) (i : 'I_(m * n)): 'I_m * 'I_n :=
+  (Ordinal (split_prodpl i), Ordinal (split_prodpr i)).
 
 (* TODO: find a suitable name *)
-Lemma big_prod_ord [R' : Type] [idx : R'] (op : Monoid.com_law idx) [m n : nat] (P : pred 'I_(m * n)) (F : ordinal_finType (m * n) -> R'): \big[op/idx]_(i | P i) F i = \big[op/idx]_(i | true) \big[op/idx]_(j | P (unsplit_prod (i, j))) F (unsplit_prod (i, j)).
+Lemma big_prod_ord [R' : Type] [idx : R'] (op : Monoid.com_law idx) [m n : nat]
+    (P : pred 'I_(m * n)) (F : 'I_(m * n) -> R') :
+  \big[op/idx]_(i | P i) F i =
+  \big[op/idx]_i \big[op/idx]_(j | P (unsplit_prod (i, j))) F (unsplit_prod (i, j)).
 Proof.
-elim: m P F=>[| m IHm] P F.
-   by do 2 rewrite big_ord0.
-rewrite big_ord_recl.
-move: P F.
-rewrite /muln /muln_rec /= -/muln_rec -/muln -/addn_rec -/addn=>P F.
-rewrite big_split_ord. congr (_ _ _).
-   apply congr_big=>// i.
-      by congr P; apply val_inj.
-   by move=>_; congr F; apply val_inj.
-rewrite IHm; apply congr_big=>// i _.
-have e: forall j, rshift n (unsplit_prod (i, j)) = Ordinal (unsplit_prodp (lift ord0 i) j).
-   move=>j; apply val_inj=>/=.
-   rewrite /bump leq0n.
-   by rewrite addnA.
-by apply congr_big=>// [ j | j _ ]; f_equal.
+elim: m =>[|m IHm] in P F *; first by rewrite 2!big_ord0.
+rewrite big_ord_recl big_split_ord; congr (_ _ _).
+  apply congr_big => //=.
+    by move=> i/=; congr P; exact: val_inj.
+  by move=> i/= _; congr F; exact: val_inj.
+rewrite IHm; apply eq_bigr => i _.
+have e j : rshift n (unsplit_prod (i, j)) = Ordinal (unsplit_prodp (lift ord0 i) j).
+  by apply val_inj => /=; rewrite /bump leq0n addnA.
+by apply: eq_big => // j; rewrite e.
 Qed.
 
 Lemma split_prodK n m : cancel (@split_prod n m) (@unsplit_prod n m).
@@ -1494,9 +1483,11 @@ End split_prod.
 
 (* TODO: Lemma preim_cancel: ... *)
 
-Lemma avgnr_add n m (f: 'I_n -> E) (d: {fdist 'I_n}) (g: 'I_m -> E) (e: {fdist 'I_m}): <|>_d f + <|>_e g = <|>_(FDistMap.d (@unsplit_prod n m) (ProdFDist.d d (fun _ => e))) (fun i=> let (i, j) := split_prod i in f i + g j).
+Lemma avgnr_add n m (f : 'I_n -> E) (d : {fdist 'I_n}) (g : 'I_m -> E) (e : {fdist 'I_m}) :
+  <|>_d f + <|>_e g = <|>_(FDistMap.d (@unsplit_prod n m) (ProdFDist.d d (fun _ => e)))
+                           (fun i => let (i, j) := split_prod i in f i + g j).
 Proof.
-rewrite -[<|>_e g]scale1r !avgnrE !/avgnr big_prod_ord. 
+rewrite -[<|>_e g]scale1r !avgnrE !/avgnr big_prod_ord.
 have<-: 1%R = 1 by [].
 rewrite -(FDist.f1 d) scaler_suml -big_split; apply congr_big=>// i _.
 transitivity (d i *: (1%R *: f i + \sum_(i0 < m) e i0 *: g i0)).
@@ -1507,22 +1498,23 @@ rewrite FDistMap.dE.
 rewrite (big_pred1 (i, j)) /=.
    by rewrite ProdFDist.dE.
 move=>[i' j'] /=; rewrite xpair_eqE inE /=.
-apply/eqP/andP.
-   2: by move=>[/eqP-> /eqP->].
-move=>/(f_equal (@split_prod n m))/=.
-by rewrite (unsplit_prodK (i, j)) (unsplit_prodK (i', j'))=>/pair_equal_spec [ii' jj']; split; apply /eqP.
+apply/eqP/andP => /=; last by case => /eqP -> /eqP ->.
+move=>/(congr1 (@split_prod n m))/=.
+by rewrite (unsplit_prodK (i, j)) (unsplit_prodK (i', j')) => -[-> ->].
 Qed.
 End lmodR_convex_space.
+
 Section caratheodory.
-Variable E: vectType R.
+Variable E : vectType R.
 Local Open Scope ring_scope.
 Local Open Scope classical_set_scope.
 Import GRing.
 
-Lemma size_index_enum (T: finType): size (index_enum T) = #|T|.
+Lemma size_index_enum (T : finType) : size (index_enum T) = #|T|.
 Proof. by rewrite cardT enumT. Qed.
 
-Lemma index_enum_cast_ord n m (e: n = m): index_enum (ordinal_finType m) = [seq (cast_ord e i) | i <- index_enum (ordinal_finType n)].
+Lemma index_enum_cast_ord n m (e : n = m) :
+  index_enum (ordinal_finType m) = [seq cast_ord e i | i <- index_enum (ordinal_finType n)].
 Proof.
 subst m.
 rewrite -{1}(map_id (index_enum (ordinal_finType n))).
@@ -1533,63 +1525,47 @@ Qed.
 (*TODO: move to mathcomp. *)
 (*TODO: find a non-ugly proof. *)
 
-Lemma freeN_combination n (s: n.-tuple E): ~free s -> exists k: 'I_n -> R, (\sum_i k i *: s`_i = 0) /\ exists i, k i != 0.
+Lemma freeN_combination n (s : n.-tuple E) : ~~ free s ->
+  exists k : 'I_n -> R, (\sum_i k i *: s`_i = 0) /\ exists i, k i != 0.
 Proof.
-move=>/negP; rewrite freeNE=>/existsP [[i ilt] /coord_span /= sin].
-move: (ilt) s sin; (have ne: (n = i.+1 + (n-i.+1))%nat by rewrite subnKC); rewrite ne=> ilt' s sin.
-simple refine (let k: 'I_(i.+1 + (n - i.+1)) -> R := _ in _).
-   move=>/fintype.split; case=> [[j jlt] | [j jlt]].
-      exact (if j == i then 1%R else 0%R).
-   refine (-%R (coord (drop_tuple i.+1 s) (@Ordinal _ j _) s`_i)).
-   rewrite addnC -{3}[i.+1]/(0+i.+1)%nat subnDr.
-   by have->: (n-i.+1-0 = n-i.+1)%nat by move: PeanoNat.Nat.sub_0_r.
-simpl in k; exists k; split.
-   2:{ exists (Ordinal ilt'); rewrite /k.
-   move: (splitP (Ordinal ilt')).
-   case: (fintype.split _)=>o sp; inversion sp; subst o.
-      by case: j H1 {sp}=> j jlt /= ->; rewrite eq_refl; apply oner_neq0.
-   by move: H0; rewrite leqnn.
-   }
-rewrite big_split_ord big_ord_recr (congr_big (index_enum (ordinal_finType i)) (fun _ => true) (fun i => 0 *: 0)%R) //.
-rewrite -scaler_suml scaler0.
-   2:{ move=> [j jlt] _; rewrite /k.
-   move: (splitP (lshift (n - i.+1) (widen_ord (leqnSn i) (Ordinal jlt)))).
-   case fintype.split=>o; move=>sp; inversion sp; subst o.
-      case: j0 H1 {sp}=> j0 j0lt /=<-.
-      case ji: (j == i).
-         by move: ji (jlt)=>/eqP ji; subst j; rewrite ltnn.
-      by do 2 rewrite scale0r.
-   by move: H0=>/esym; rewrite ltnNge=>/negP/negP; rewrite ltnNge=>/negP jle; elim jle; apply ltnW.
-   }
-move: (splitP (lshift (n - i.+1) (@ord_max i))); rewrite {1}/k; case fintype.split=>o sp; inversion sp; subst o.
-   2: by move: H0; rewrite leqnn.
-case: j H1 {sp}=> j jlt /=<-; rewrite eq_refl.
-clear j jlt H0.
-rewrite add0r scale1r.
-suff: (\sum_(i1 < n - i.+1) k (rshift i.+1 i1) *: s`_(i.+1 + i1) = - s`_i)
-   by move=>->; apply subrr.
-rewrite sin -sumrN.
-have ne': (i.+1 + (n - i.+1) - i.+1 = n - i.+1)%nat by rewrite -ne.
-rewrite (index_enum_cast_ord ne') big_map; apply congr_big=>// [[x xlt]] _.
+rewrite freeNE => /existsP[[i ilt] /coord_span /=].
+move: (ilt) s.
+have ne : (n = i.+1 + (n - i.+1))%nat by rewrite subnKC.
+rewrite ne => ilt' s sin.
+have hk m : (m < n - i.+1 -> m < i.+1 + (n - i.+1) - i.+1)%nat.
+  by move=> mni; rewrite -addnBAC// subnn add0n.
+pose k (x : 'I_(i.+1 + (n - i.+1))) :=
+  match fintype.split x with
+  | inl (@Ordinal _ m _) => if m == i then 1%R else 0%R
+  | inr (@Ordinal _ m i0) => - coord (drop_tuple i.+1 s) (Ordinal (hk m i0)) s`_i
+  end.
+exists k; split; last first.
+  exists (Ordinal ilt'); rewrite /k; case: splitP.
+    by case=> j ji/= <-; rewrite eqxx; exact/eqP/R1_neq_R0.
+  by case=> j jni/= /eqP; rewrite lt_eqF// ltEnat/= addSn ltnS leq_addr.
+rewrite big_split_ord big_ord_recr/= big1 ?add0r; last first.
+  case=> j ji _; rewrite /k; case: splitP.
+    by case=> m mi /= jm; rewrite -jm lt_eqF ?ltEnat// !scale0r.
+  by case=> m mni /= jim; move: ji; rewrite jim addSnnS -ltn_subRL subnn.
+rewrite {1}/k /=; case: splitP => /=; last first.
+  by move=> m /eqP; rewrite lt_eqF// ltEnat/= addSn ltnS leq_addr.
+case=> j/= ji ij; rewrite [in j == i]ij eqxx scale1r.
+apply/eqP; rewrite addrC addr_eq0 sin -sumrN; apply/eqP.
+have {}ne : (i.+1 + (n - i.+1) - i.+1 = n - i.+1)%nat by rewrite -addnBAC// subnn.
+rewrite (index_enum_cast_ord ne) big_map; apply congr_big=>// [[x xlt]] _.
 rewrite nth_drop -scaleNr; congr (_ *: _).
-move: (splitP (rshift i.+1 (cast_ord ne' (Ordinal xlt)))); rewrite /k; case: fintype.split=>o sp; inversion sp; subst o.
-   by move: H0; rewrite ltnNge leq_addr.
-case: k0 H1 sp=>k0 k0lt H1 sp; congr (- coord _ _ _).
-apply val_inj=>/=; apply /esym.
-move: H1=>/= /(f_equal (fun x: nat => (x - i.+1)%nat)).
-have np0: forall n, (n = n + 0)%nat by move=>a; rewrite addnC.
-rewrite {2 4}(np0 i.+1) subnDl subnDl.
-have n0: forall n: nat, (n-0 = n)%nat.
-   by move=>a; rewrite (np0 (a-0)%nat); apply subnK.
-by rewrite n0 n0.
+rewrite /k; case: splitP.
+  by case=> m + /= ixm; rewrite -ixm -ltn_subRL subnn.
+case=> m/= mni /eqP; rewrite eqn_add2l => /eqP kl.
+by congr (- coord _ _ _); exact/val_inj.
 Qed.
 
-Lemma perm_map_bij [T: finType] [f : T -> T] (s: seq T): bijective f -> perm_eq (index_enum T) [seq f i | i <- index_enum T].
+Lemma perm_map_bij [T : finType] [f : T -> T] (s : seq T) : bijective f ->
+  perm_eq (index_enum T) [seq f i | i <- index_enum T].
 Proof.
-rewrite /index_enum; case: index_enum_key=>/=.
-move=>fbij.
+rewrite /index_enum; case: index_enum_key => /= fbij.
 rewrite /perm_eq -enumT -forallb_tnth; apply /forallP=>i /=.
-inversion fbij.
+case: fbij => g fg gf.
 rewrite enumT enumP count_map -size_filter (@eq_in_filter _ _ (pred1 (g (tnth
                (cat_tuple (enum_tuple T) (map_tuple [eta f] (enum_tuple T)))
                i)))).
@@ -1615,15 +1591,13 @@ have [mu [muR muE [i mui]]] : exists mu : 'I_n.+1 -> R,
   [/\ \sum_(i < n.+1) mu i = 0, \sum_(i < n.+1) (mu i) *: g i = 0 &
      exists i, mu i != 0 ].
   rewrite {IHn}.
-  have [sf|/negP/freeN_combination[mu [musum [i mui]]]] :=
+  have [sf|/freeN_combination[mu [musum [i mui]]]] :=
       boolP (free [tuple g (lift ord0 i) - g ord0 | i < n]).
     have : basis_of fullv [tuple g (lift ord0 i) - g ord0 | i < n].
       by rewrite basisEfree size_tuple (ltnW nsgt) andbT sf subvf.
     rewrite in_tupleE basisEdim size_map => /andP[_].
     by move=> /leq_ltn_trans => /(_ _ nsgt); rewrite size_tuple ltnn.
-  exists (fun i => match i with
-           @Ordinal _ 0 _ => - \sum_i mu i
-         | @Ordinal _ i.+1 ilt => mu (Ordinal (ltnSE ilt)) end); split.
+  exists (fun i => if i is @Ordinal _ i.+1 ilt then mu (Ordinal (ltnSE ilt)) else - \sum_i mu i); split.
   - rewrite big_ord_recl /= addrC; apply/eqP; rewrite subr_eq0; apply/eqP.
     by apply: eq_bigr => j _; congr mu; exact/val_inj.
   - rewrite big_ord_recl /= scaleNr addrC scaler_suml -sumrB -{2}musum.
@@ -1653,7 +1627,7 @@ wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
    have fcan' : cancel f' f' by move=> [j jlt]; exact/val_inj/fcan.
    have fbij : bijective f' by exists f'; move=> [j jlt]; exact/fcan'.
    move=>/(_ (fun i => g (f' i)) (FDistMap.d f' d)).
-   have gA': [set g (f' i) | i in [set: 'I_n.+1]] `<=` A.
+   have gA' : [set g (f' i) | i in [set: 'I_n.+1]] `<=` A.
      by move=>y [i _ <-]; apply gA; eexists.
    move=>/(_ gA' (fun i => mu (f' i))).
    have mu'R : \sum_(i0 < n.+1) mu (f' i0) = 0.
@@ -1712,6 +1686,7 @@ rewrite scalerN -scaleNr scaler_sumr -big_split; apply congr_big=>// i _.
 by rewrite scalerA /= -scalerDl; congr scale; rewrite addrC mulNr ffunE.
 Qed.
 End caratheodory.
+
 Section linear_affine.
 Open Scope ring_scope.
 Variable E F: lmodType R.
