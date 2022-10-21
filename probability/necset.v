@@ -77,6 +77,7 @@ Require Import convex.
 Declare Scope latt_scope.
 
 Reserved Notation "x %:ne" (at level 0, format "x %:ne").
+Reserved Notation "x %:nef" (at level 0, format "x %:nef").
 Reserved Notation "x <| p |>: Y" (format "x  <| p |>:  Y", at level 49).
 Reserved Notation "X :<| p |>: Y" (format "X  :<| p |>:  Y", at level 49).
 Reserved Notation "x [+] y" (format "x  [+]  y", at level 50).
@@ -1255,3 +1256,163 @@ rewrite eqEsubset; split=> i /=.
 - by case=> p ? <-; exact/mem_hull_setU.
 Qed.
 End technical_corollaries.
+
+
+(*** Nonempty finite set ***)
+
+Module NEFSet.
+Record mixin_of (T : choiceType) (X : {fset T}) := Mixin {_ : X != fset0 }.
+Record t (T : choiceType) : Type := Pack { car : {fset T} ; class : mixin_of car }.
+Module Exports.
+Notation nefset := t.
+Notation "s %:nef" := (@Pack _ s (class _)).
+Set Printing All.
+Check fun T : choiceType => {fset T}.
+Coercion car : nefset >-> finset_of.
+End Exports.
+End NEFSet.
+Export NEFSet.Exports.
+
+Section nefset_canonical.
+Variable T : choiceType.
+Canonical nefset_predType :=
+  Eval hnf in PredType (fun t : nefset T => (fun x => x \in (t : {fset _}))).
+Canonical nefset_finpredType :=
+  mkFinPredType (nefset T) (@enum_fset T) (@fset_uniq T)  (fun _ _ => erefl).
+Canonical nefset_eqType := Equality.Pack (equality_mixin_of_Type (nefset T)).
+Canonical nefset_choiceType := choice_of_Type (nefset T).
+Canonical nefset_finpred (T: choiceType) (A : nefset T) :=
+  @FinPred _ _ (enum_fset A)
+     (@IsFinite _ _ (enum_fset A) (fset_uniq _) (fun=> erefl)).
+End nefset_canonical.
+
+Section NEFSet_interface.
+Variable T : choiceType.
+Lemma nefset_neq0 (a : nefset T) : a != fset0 :> {fset _}.
+Proof. by case: a => [? []]. Qed.
+Lemma nefset_ext (a b : nefset T) : a = b :> {fset _} -> a = b.
+Proof.
+move: a b => -[a Ha] -[b Hb] /= ?; subst a.
+congr NEFSet.Pack; exact/Prop_irrelevance.
+Qed.
+End NEFSet_interface.
+
+Section fset_ext.
+Local Open Scope fset_scope.
+Definition bigfsetU (A I : choiceType) (X : {fset I}) (F : I -> {fset A}) : {fset A} :=
+  \bigcup_(x <- X) F x.
+End fset_ext.
+
+Section nefset_lemmas.
+Local Open Scope fset_scope.
+
+Lemma fset1_neq0 (A : choiceType) (a : A) : [fset a] != fset0.
+Proof. by apply/fset0Pn; exists a; rewrite inE. Qed.
+
+Definition nefset_repr (A : choiceType) (X : nefset A) : A.
+Proof.
+case: X => X [] /fset0Pn /boolp.constructive_indefinite_description [] x _; exact x.
+Defined.
+Lemma repr_in_nefset (A : choiceType) (X : nefset A) : (nefset_repr X) \in X.
+Proof. by case: X => X [] X0 /=; case: cid. Qed.
+Global Opaque nefset_repr.
+Local Hint Resolve repr_in_nefset : core.
+
+Lemma imfset_const (A B : choiceType) (X : nefset A) (b : B) : (fun=> b) @` X = [fset b].
+Proof.
+apply/eqP; rewrite eqEfsubset; apply/andP; split; apply/fsubsetP=> x.
+- by rewrite inE => /imfsetP [] b' _ ->.
+- by rewrite inE => /eqP ->; apply/imfsetP; eexists=> //=.
+Qed.
+
+Lemma nefset_bigfsetU_neq0 (A B : choiceType) (X : nefset A) (F : A -> nefset B) :
+  bigfsetU X (fun a => F a) != fset0.
+Proof.
+rewrite /bigfsetU (big_fsetD1 (nefset_repr X)) ?repr_in_nefset //=.
+apply/fset0Pn; exists (nefset_repr (F (nefset_repr X))).
+by apply/fsetUP; left; rewrite repr_in_nefset.
+Qed.
+
+Lemma nefset_image_neq0 (A B : choiceType) (f : A -> B) (X : nefset A) : f @` X != fset0.
+Proof. by apply/fset0Pn; exists (f (nefset_repr X));rewrite in_imfset //=. Qed.
+
+Lemma nefset_fsetU_neq0 (A :choiceType) (X Y : nefset A) : X `|` Y != fset0.
+Proof.
+by apply/fset0Pn; exists (nefset_repr X); apply/fsetUP; left; rewrite repr_in_nefset.
+Qed.
+
+Canonical nefset1 {A : choiceType} (x : A) :=
+  @NEFSet.Pack A [fset x] (NEFSet.Mixin (fset1_neq0 x)).
+Canonical bignefsetU {A : choiceType} I (S : nefset I) (F : I -> nefset A) :=
+  NEFSet.Pack (NEFSet.Mixin (nefset_bigfsetU_neq0 S F)).
+Canonical image_nefset {A B : choiceType} (f : A -> B) (X : nefset A) :=
+  NEFSet.Pack (NEFSet.Mixin (nefset_image_neq0 f X)).
+Canonical nefsetU {T} (X Y : nefset T) :=
+  NEFSet.Pack (NEFSet.Mixin (nefset_fsetU_neq0 X Y)).
+End nefset_lemmas.
+
+Section neset_of_nefset.
+Local Open Scope classical_set_scope.
+Definition classical_set_of_fset (A : choiceType) (X : {fset A}) := [set a : A | a \in X].
+Lemma classical_set_of_nefset_neq0 (A : choiceType) (X : nefset A) :
+  classical_set_of_fset X != set0.
+Proof. by apply set0P; exists (nefset_repr X); exact:repr_in_nefset. Qed.
+Definition neset_mixin_of_nefset (A : choiceType) (X : nefset A) :
+  NESet.mixin_of (classical_set_of_fset X) :=
+  NESet.Mixin (classical_set_of_nefset_neq0 _).
+Definition neset_of_nefset (A : choiceType) (X : nefset A) : neset A :=
+  NESet.Pack (neset_mixin_of_nefset X).
+End neset_of_nefset.
+Canonical neset_of_nefset.
+
+Module FGNECSet.
+Section def.
+Variable A : convType.
+Record mixin_of (car : necset A) : Type := Mixin {
+  _ : exists gen : {fset A}, car = hull (classical_set_of_fset gen) :> set A;
+}.
+Record class_of (car : set A) : Type := Class {
+  base : CSet.mixin_of car ;
+  base2 : NESet.mixin_of car ;
+  mixin : mixin_of (NECSet.Pack (NECSet.Class base base2)) ;
+}.
+Structure t : Type := Pack { car : set A ; class : class_of car }.
+Definition baseType (M : t) := CSet.Pack (base (class M)).
+Definition base2Type (M : t) := NESet.Pack (base2 (class M)).
+Definition necsetType (M : t) :=
+  NECSet.Pack (NECSet.Class (base (class M)) (base2 (class M))).
+End def.
+Module Exports.
+Notation fgnecset := t.
+Canonical baseType.
+Canonical base2Type.
+Canonical necsetType.
+Coercion baseType : fgnecset >-> convex_set.
+Coercion base2Type : fgnecset >-> neset.
+Coercion necsetType : fgnecset >-> necset.
+(*Coercion car : fgnecset >-> set.*)
+End Exports.
+End FGNECSet.
+Export FGNECSet.Exports.
+
+Section fgnecset_canonical.
+Variable (A : convType).
+Canonical fgnecset_predType :=
+  Eval hnf in PredType (fun t : fgnecset A => (fun x => x \in (t : set _))).
+Canonical fgnecset_eqType := Equality.Pack (equality_mixin_of_Type (fgnecset A)).
+Canonical fgnecset_choiceType := choice_of_Type (fgnecset A).
+End fgnecset_canonical.
+
+Section fgnecset_lemmas.
+Variable A : convType.
+
+Lemma fgnecset_ext (a b : fgnecset A) : a = b :> set _ -> a = b.
+Proof.
+move: a b => -[a Ha] -[b Hb] /= ?; subst a.
+congr FGNECSet.Pack; exact/Prop_irrelevance.
+Qed.
+
+Local Open Scope classical_set_scope.
+
+
+End fgnecset_lemmas.
