@@ -47,8 +47,8 @@ Require Import fdist jfdist.
 (*                                                                            *)
 (* More lemmas about convex spaces, including key lemmas by Stone:            *)
 (*        convACA == the entropic identity, i.e.,                             *)
-(*                     c(a <|q|> b) <|p|> (c <|q|> d) =                       *)
-(*                       (a <|p|> c) <|q|> (b <|p|> d)                        *)
+(*                      (a <|q|> b) <|p|> (c <|q|> d) =                       *)
+(*                      (a <|p|> c) <|q|> (b <|p|> d)                         *)
 (*                                                                            *)
 (*         hull X == the convex hull of set X : set T where T is a convType   *)
 (*  is_convex_set == Boolean predicate that characterizes convex sets over a  *)
@@ -65,14 +65,14 @@ Require Import fdist jfdist.
 (*  fdist_convType == finite distributions                                    *)
 (*                                                                            *)
 (* orderedConvType == a convType augmented with an order                      *)
-(* Instances: R_orderedConvType, fun_orderedConvType, oppConvType             *)
+(* Instances: R, T -> U (T convType, U orderedConvType), opposite (see mkOpp) *)
 (*                                                                            *)
 (* Reference: R. Affeldt, J. Garrigue, T. Saikawa. Formal adventures in       *)
 (* convex and conical spaces. CICM 2020                                       *)
 (*                                                                            *)
 (* Definitions of convex, concave, affine functions                           *)
-(*         affineP == characterization of affine functions in terms of        *)
-(*                    convex functions                                        *)
+(*   affine_functionP == characterization of affine functions in terms of     *)
+(*                       convex functions                                     *)
 (* Lemmas:                                                                    *)
 (* image_preserves_convex_hull == the image of a convex hull is the convex    *)
 (*                                hull of the image                           *)
@@ -1582,28 +1582,41 @@ End fun_ordered_convex_space.
 Module OppositeOrderedConvexSpace.
 Section def.
 Variable A : orderedConvType.
+
 CoInductive T := mkOpp : A -> T.
+
 Lemma A_of_TK : cancel (fun t => let: mkOpp a := t in a) mkOpp.
 Proof. by case. Qed.
+
 Definition A_of_T_eqMixin := CanEqMixin A_of_TK.
+
 Canonical A_of_T_eqType := Eval hnf in EqType T A_of_T_eqMixin.
+
 Definition A_of_T_choiceMixin := CanChoiceMixin A_of_TK.
+
 Canonical A_of_T_choiceType := Eval hnf in ChoiceType T A_of_T_choiceMixin.
 End def.
+
 Section leopp.
 Local Open Scope ordered_convex_scope.
 Variable A : orderedConvType.
 Notation T := (T A).
-Definition leopp (x y : T) := match (x,y) with (mkOpp x',mkOpp y') => y' <= x' end.
+Definition leopp (x y : T) :=
+  match (x, y) with (mkOpp x', mkOpp y') => y' <= x' end.
+
 Lemma leoppR x : leopp x x.
 Proof. case x; exact: leconvR. Qed.
+
 Lemma leopp_trans y x z : leopp x y -> leopp y z -> leopp x z.
 Proof. by move: x y z => [x] [y] [z] ? yz; apply: (leconv_trans yz). Qed.
+
 Lemma eqopp_le x y : x = y <-> leopp x y /\ leopp y x.
 Proof.
 by split; [move ->; move: leoppR |move: x y => [x'] [y'] => /eqconv_le ->].
 Qed.
+
 End leopp.
+
 Section convtype.
 Local Open Scope convex_scope.
 Variable A : orderedConvType.
@@ -1611,17 +1624,24 @@ Notation T := (T A).
 Implicit Types p q : prob.
 Definition unbox (x : T) := match x with mkOpp x' => x' end.
 Definition avg p a b := mkOpp (unbox a <| p |> unbox b).
+
 Lemma avg1 a b : avg 1%:pr a b = a.
 Proof. by case a;case b=>b' a';rewrite/avg/unbox/=conv1. Qed.
+
 Lemma avgI p x : avg p x x = x.
 Proof. by case x=>x';rewrite/avg/unbox/=convmm. Qed.
+
 Lemma avgC p x y : avg p x y = avg p.~%:pr y x.
 Proof. by case x;case y=>y' x'; rewrite/avg/unbox/=convC. Qed.
+
 Lemma avgA p q d0 d1 d2 :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. by case d0;case d1;case d2=>d2' d1' d0';rewrite/avg/unbox/=convA. Qed.
+
 #[export]
-HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) _ avg1 avgI avgC avgA.
+HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) _
+  avg1 avgI avgC avgA.
+
 End convtype.
 End OppositeOrderedConvexSpace.
 HB.export OppositeOrderedConvexSpace.
@@ -1629,9 +1649,12 @@ HB.export OppositeOrderedConvexSpace.
 Section opposite_ordered_convex_space.
 Import OppositeOrderedConvexSpace.
 Variable A : orderedConvType.
+
 HB.instance Definition _ (*oppConvType*):= @isOrdered.Build (T A)
   (Choice.class _) (@leopp A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
+
 End opposite_ordered_convex_space.
+
 Notation "'\opp{' a '}'" := (OppositeOrderedConvexSpace.mkOpp a)
   (at level 10, format "\opp{ a }") : ordered_convex_scope.
 
@@ -1639,12 +1662,16 @@ Section opposite_ordered_convex_space_prop.
 Local Open Scope ordered_convex_scope.
 Import OppositeOrderedConvexSpace.
 Variable A : orderedConvType.
+
 Lemma conv_leoppD (a b : A) t : \opp{a} <|t|> \opp{b} = \opp{a <|t|> b}.
 Proof. by []. Qed.
+
 Lemma unboxK (a : A) : unbox (\opp{a}) = a.
 Proof. reflexivity. Qed.
+
 Lemma leoppP (a b : T A) : a <= b <-> unbox b <= unbox a.
 Proof. by case a;case b=>*;rewrite !unboxK. Qed.
+
 End opposite_ordered_convex_space_prop.
 
 Section convex_function_def.
@@ -1755,7 +1782,8 @@ Variables (T U : convType) (V : orderedConvType) (f : T -> U -> V).
 Definition biconvex_function :=
   (forall a, convex_function (f a)) /\ (forall b, convex_function (f^~ b)).
 (*
-Lemma biconvex_functionP : biconvex_function <-> convex_function f /\ @convex_function B (fun_orderedConvType A C) (fun b a => f a b).
+Lemma biconvex_functionP : biconvex_function <->
+  convex_function f /\ @convex_function B (fun_orderedConvType A C) (fun b a => f a b).
 Proof.
 change ((forall (a : A) (a0 b : B) (t : prob),
    f a (a0 <|t|> b) <= f a a0 <|t|> f a b) /\
