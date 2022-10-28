@@ -317,11 +317,11 @@ Variable a : 'rV[F]_n.
 
 Lemma BCH_det_mlinear t r' (f : 'I_r'.+1 -> 'I_n) (rt : r' < t.*2) :
   let B := \matrix_(i, j) BCH.PCM_alt a t (widen_ord rt i) (f j) in
-  let V := vander (row 0 B) in
+  let V := Vandermonde r'.+1 (row 0 B) in
   \det B = \prod_(i < r'.+1) BCH.PCM_alt a t (widen_ord rt 0) (f i) * \det V.
 Proof.
 move=> B V.
-set h := vander (row 0 B).
+set h := Vandermonde r'.+1 (row 0 B).
 set g := fun i => BCH.PCM_alt a t (widen_ord (rt) 0) (f i).
 transitivity (\det (\matrix_(i, j) (h i j * g j))).
   congr (\det _).
@@ -339,7 +339,7 @@ Lemma det_B_neq0 t r f (Hr' : r.+1 < t.*2) (Hinj : injective f) :
   \det B != 0.
 Proof.
 rewrite /=; set B := \matrix_(_, _) _.
-rewrite BCH_det_mlinear det_vander mulf_neq0 //.
+rewrite BCH_det_mlinear det_Vandermonde mulf_neq0 //.
 - rewrite prodf_seq_neq0 /=; apply/allP => /= j _.
   by rewrite !mxE /= expr1 (proj2 a_neq0).
 - rewrite prodf_seq_neq0 /=; apply/allP => /= j _.
