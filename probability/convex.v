@@ -1693,37 +1693,22 @@ Proof. rewrite /convex_function_at !convmm; exact/leconvR. Qed.
 
 End convex_function_def.
 
-Module ConvexFunction. (* see Additive in ssralg *)
-Section ClassDef.
-Local Open Scope ordered_convex_scope.
-Variables (U : convType) (V : orderedConvType).
-Definition axiom (f : U -> V) := forall a b (t : prob), convex_function_at f a b t.
-Structure map (phUV : phant (U -> V)) := Pack {apply; _ : axiom apply}.
-Local Coercion apply : map >-> Funclass.
-Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
-Definition class := let: Pack _ c as cF' := cF return axiom cF' in c.
-Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
-  @Pack phUV f fA.
-End ClassDef.
-Module Exports.
-Notation convex_function f := (axiom f).
-Coercion apply : map >-> Funclass.
-Notation ConvexFunction fA := (Pack (Phant _) fA).
-Notation "{ 'convex' fUV }" := (map (Phant fUV))
-  (at level 0, format "{ 'convex'  fUV }") : convex_scope.
-(*Notation "[ 'convex' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
-  (at level 0, format "[ 'convex'  'of'  f  'as'  g ]") : convex_scope.
-Notation "[ 'convex' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
-  (at level 0, format "[ 'convex'  'of'  f ]") : convex_scope.*)
-End Exports.
-End ConvexFunction.
-Include ConvexFunction.Exports.
+Definition convex_function (U : convType) (V : orderedConvType) (f : U -> V) :=
+ forall a b (t : prob), convex_function_at f a b t.
 
-Section convex_function_prop.
-Variables (U : convType) (V : orderedConvType) (f : {convex U -> V}).
-Lemma convex_functionP a b t : convex_function_at f a b t.
-Proof. by case: f => f0; apply. Qed.
-End convex_function_prop.
+(* see Additive in ssralg *)
+HB.mixin Record isConvexFunction
+    (U : convType) (V : orderedConvType) (f : U -> V) := {
+  convex_functionP : convex_function f }.
+
+HB.structure Definition ConvexFunction (U : convType) (V : orderedConvType) :=
+  { f of isConvexFunction U V f }.
+
+Arguments convex_functionP {U V} s.
+
+Notation "{ 'convex' T '->' R }" :=
+  (ConvexFunction.type T R) (at level 36, T, R at next level,
+    format "{ 'convex'  T  '->'  R }") : convex_scope.
 
 Section convex_function_prop'.
 Local Open Scope ordered_convex_scope.
@@ -1832,45 +1817,40 @@ by rewrite conv_leoppD leoppP.
 Qed.
 End concave_function_def.
 
-Module ConcaveFunction.
-Section ClassDef.
-Local Open Scope ordered_convex_scope.
-Variables (U : convType) (V : orderedConvType).
-Definition axiom (f : U -> V) := forall a b (t : prob), concave_function_at f a b t.
-Structure map (phUV : phant (U -> V)) := Pack {apply; _ : axiom apply}.
-Local Coercion apply : map >-> Funclass.
-Variables (phUV : phant (U -> V)) (f g : U -> V) (cF : map phUV).
-Definition class := let: Pack _ c as cF' := cF return axiom cF' in c.
-Definition clone fA of phant_id g (apply cF) & phant_id fA class :=
-  @Pack phUV f fA.
-End ClassDef.
-Module Exports.
-Notation concave_function f := (axiom f).
-Coercion apply : map >-> Funclass.
-Notation ConcaveFunction fA := (Pack (Phant _) fA).
-Notation "{ 'concave' fUV }" := (map (Phant fUV))
-  (at level 0, format "{ 'concave'  fUV }") : convex_scope.
-(*Notation "[ 'concave' 'of' f 'as' g ]" := (@clone _ _ _ f g _ _ idfun id)
-  (at level 0, format "[ 'concave'  'of'  f  'as'  g ]") : convex_scope.
-Notation "[ 'concave' 'of' f ]" := (@clone _ _ _ f f _ _ id id)
-  (at level 0, format "[ 'concave'  'of'  f ]") : convex_scope.*)
-End Exports.
-End ConcaveFunction.
-Include ConcaveFunction.Exports.
+Definition concave_function (U : convType) (V : orderedConvType) (f : U -> V) :=
+ forall a b (t : prob), concave_function_at f a b t.
+
+HB.mixin Record isConcaveFunction
+    (U : convType) (V : orderedConvType) (f : U -> V) := {
+  concave_functionP : concave_function f }.
+
+HB.structure Definition ConcaveFunction (U : convType) (V : orderedConvType) :=
+  { f of isConcaveFunction U V f }.
+
+Arguments concave_functionP {U V} s.
+
+Notation "{ 'concave' T '->' R }" :=
+  (ConvexFunction.type T R) (at level 36, T, R at next level,
+    format "{ 'concave'  T  '->'  R }") : convex_scope.
 
 Section concave_function_prop.
 Local Open Scope ordered_convex_scope.
 Variable (T : convType) (V : orderedConvType).
+
 Section prop.
 Variable (f : T -> V).
+
 Lemma concave_function_atxx a t : concave_function_at f a a t.
 Proof. exact: convex_function_atxx. Qed.
 End prop.
+
 Section Rprop.
 Implicit Types f : T -> R.
+
 Lemma R_convex_function_atN f a b t :
   concave_function_at f a b t -> convex_function_at (fun x => - f x)%R a b t.
 Proof. by rewrite /convex_function_at /leconv /= avgR_oppD leR_oppl oppRK. Qed.
+
 Lemma R_concave_function_atN f a b t :
   convex_function_at f a b t -> concave_function_at (fun x => - f x)%R a b t.
 Proof.
@@ -1880,29 +1860,38 @@ rewrite avgR_oppD.
 rewrite /leconv/=.
 by rewrite leR_oppl oppRK.
 Qed.
+
 Lemma R_convex_functionN f :
   concave_function f -> convex_function (fun x => - f x)%R.
 Proof. move=> H a b t; exact/R_convex_function_atN/H. Qed.
+
 Lemma R_concave_functionN f :
   convex_function f -> concave_function (fun x => - f x)%R.
 Proof. move=> H a b t; exact/R_concave_function_atN/H. Qed.
+
 Lemma R_convex_function_atN' f a b t :
   concave_function_at (fun x => - f x)%R a b t -> convex_function_at f a b t.
 Proof. by move/(R_convex_function_atN);rewrite/convex_function_at !oppRK. Qed.
+
 Lemma R_concave_function_atN' f a b t :
   convex_function_at (fun x => - f x)%R a b t -> concave_function_at f a b t.
 Proof.
 move/(R_concave_function_atN).
 by rewrite/concave_function_at/convex_function_at !oppRK.
 Qed.
+
 Lemma R_convex_functionN' f :
   concave_function (fun x => - f x)%R -> convex_function f.
 Proof. move=> H a b t; exact/R_convex_function_atN'/H. Qed.
+
 Lemma R_concave_functionN' f :
   convex_function (fun x => - f x)%R -> concave_function f.
 Proof. move=> H a b t; exact/R_concave_function_atN'/H. Qed.
+
 End Rprop.
+
 Section Rprop2.
+
 Lemma R_convex_functionB f (g : T -> R) :
   convex_function f -> concave_function g -> convex_function (fun x => f x - g x)%R.
 Proof.
@@ -1913,6 +1902,7 @@ move: (H1 p q t) => {}H1.
 rewrite -addR_opp -addRA; apply leR_add => //.
 rewrite -2!mulRN addRC; exact: (R_convex_functionN H2).
 Qed.
+
 Lemma R_concave_functionB f (g : T -> R) :
   concave_function f -> convex_function g -> concave_function (fun x => f x - g x)%R.
 Proof.
@@ -1921,7 +1911,9 @@ rewrite (_ : (fun _ => _) = (fun x => - (g x - f x)))%R; last first.
   apply FunctionalExtensionality.functional_extensionality => x; by rewrite oppRB.
 exact/R_concave_functionN/R_convex_functionB.
 Qed.
+
 End Rprop2.
+
 End concave_function_prop.
 
 Section affine_function_prop.
@@ -1987,10 +1979,13 @@ End R_affine_function_prop.
 
 Section convex_function_in_def.
 Variables (T : convType) (U : orderedConvType) (D : convex_set T) (f : T -> U).
+
 Definition convex_function_in :=
   forall a b p, a \in D -> b \in D -> convex_function_at f a b p.
+
 Definition concave_function_in :=
   forall a b p, a \in D -> b \in D -> concave_function_at f a b p.
+
 End convex_function_in_def.
 
 (*
