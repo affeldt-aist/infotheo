@@ -538,3 +538,11 @@ Qed.
 
 End big_tuple_ffun.
 
+(* This is from master branch of math-comp bigop. *)
+Lemma big_ord1_eq (R: Type) (idx: R) (op: Monoid.law idx) (F : nat -> R) i n :
+  \big[op/idx]_(j < n | j == i :> nat) F j = if i < n then F i else idx.
+Proof.
+case: ltnP => [i_lt|i_ge]; first by rewrite (big_pred1_eq _ (Ordinal _)).
+by rewrite big_pred0// => j; apply: contra_leqF i_ge => /eqP <-.
+Qed.
+

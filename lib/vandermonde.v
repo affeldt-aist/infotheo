@@ -25,7 +25,7 @@ Local Open Scope vec_ext_scope.
 
 Section vandermonde_matrix.
 
-Variables (n : nat) (R : ringType) (a : 'rV[R]_n).
+Variables (R : ringType) (n : nat) (a : 'rV[R]_n).
 
 Definition vander_gen (r : nat) := \matrix_(i < r, j < n) (a``_j) ^+ i.
 
@@ -37,9 +37,9 @@ Section vandermonde_k_matrix.
 
 Variable (R : comRingType).
 
-Definition lc n (a : R) (r0 r1 : 'rV[R]_n) := r0 - a *: r1.
+Let lc n (a : R) (r0 r1 : 'rV[R]_n) := r0 - a *: r1.
 
-Definition mat_lc n cst (M : 'M[R]_n.+1) (k : 'I_n.+1) :=
+Let mat_lc n cst (M : 'M[R]_n.+1) (k : 'I_n.+1) :=
   if k == 0 then M else
     \matrix_(i < n.+1) if i == k then
                          lc cst (row i M) (row (inord i.-1) M)
@@ -52,10 +52,10 @@ Definition mat_lc n cst (M : 'M[R]_n.+1) (k : 'I_n.+1) :=
 (* k = 3 -> modifies row n-2, n-1, n *)
 (* k = n.+1 -> modifies row 0, 1, ..., n *)
 (* do not use with k > n.+1 *)
-Definition vander_k n (a : 'rV[R]_n.+1) (M : 'M_n.+1) (k : nat) :=
+Let vander_k n (a : 'rV[R]_n.+1) (M : 'M_n.+1) (k : nat) :=
   foldl (fun acc x => mat_lc (a``_ord0) acc (inord x)) M (rev (iota (n.+1 - k) k)).
 
-Lemma vander_k_rec n (a : 'rV[R]_n.+1) k : k <= n.+1 ->
+Let vander_k_rec n (a : 'rV[R]_n.+1) k : k <= n.+1 ->
   forall i, i <= n ->
   forall M,
   row (inord i) (vander_k a M k) =
@@ -186,7 +186,7 @@ rewrite inordK // inordK // (ltn_trans _ (ltn_ord i)) // -subn1.
 by rewrite -{2}(subn0 i) ltn_sub2l // lt0n.
 Qed.
 
-Lemma vander_k_max n (a : 'rV[R]_n.+1) (M : 'M[R]_n.+1) :
+Let vander_k_max n (a : 'rV[R]_n.+1) (M : 'M[R]_n.+1) :
   vander_k a M n.+1 = vander_k a M n.
 Proof.
 apply/row_matrixP => i.
@@ -332,7 +332,7 @@ rewrite -(leq_add2r k.+1) subnK //; last by rewrite ltnW.
 by rewrite subnK ?ltnn.
 Qed.
 
-Lemma det_vander_k n (a : 'rV[R]_n.+1) (k : nat) (M : 'M[R]_n.+1) :
+Let det_vander_k n (a : 'rV[R]_n.+1) (k : nat) (M : 'M[R]_n.+1) :
   k <= n.+1 -> \det (vander_k a M k) = \det (vander_k a M k.-1).
 Proof.
 rewrite leq_eqVlt => /orP[/eqP ->|];
@@ -353,7 +353,7 @@ Section vandermonde_determinant.
 
 Variable (R : comRingType).
 
-Lemma det_mlinear_rec n (f : 'I_n.+1 -> 'I_n.+1 -> R) (g : 'I_n.+1 -> R) k : k <= n.+1 ->
+Let det_mlinear_rec n (f : 'I_n.+1 -> 'I_n.+1 -> R) (g : 'I_n.+1 -> R) k : k <= n.+1 ->
   \det (\matrix_(j, i) (f i j * g j)) =
   (\prod_(l < k) g (inord l)) * \det (\matrix_(j, i) (f i j * if j >= k then g j else 1)).
 Proof.
@@ -382,7 +382,7 @@ rewrite (_ : _^T = \matrix_(i, j) (f i j * (if k < j then g j else 1))) //.
 by apply/matrixP => i j; rewrite !mxE.
 Qed.
 
-Lemma det_mlinear n (f : 'I_n -> 'I_n -> R) (g : 'I_n -> R) :
+Let det_mlinear n (f : 'I_n -> 'I_n -> R) (g : 'I_n -> R) :
   \det (\matrix_(i, j) (f i j * g j)) = \prod_(i < n) g i * \det (\matrix_(i, j) (f i j)).
 Proof.
 destruct n as [|n]; first by rewrite big_ord0 mul1r !det_mx00.
@@ -394,7 +394,7 @@ rewrite -det_tr; congr (\det _).
 apply/matrixP => i j; by rewrite !mxE ltnNge -ltnS ltn_ord /= mulr1.
 Qed.
 
-Lemma det_vander_rec n (a : 'rV[R]_n.+1) : \det (vander a) =
+Let det_vander_rec n (a : 'rV[R]_n.+1) : \det (vander a) =
   \det (vander (\row_(i < n) a``_(inord i.+1))) * \prod_(1 <= j < n.+1) (a``_(inord j) - a``_0).
 Proof.
 transitivity (\det (vander_last a)); first by rewrite vander_lastE /= det_vander_k_vander.
@@ -443,3 +443,12 @@ by congr (a ``_ _ - a ``_ _); apply val_inj => /=; rewrite inordK // ltnS.
 Qed.
 
 End vandermonde_determinant.
+
+Notation Vandermonde r a := (vander_gen a r).
+
+Lemma det_Vandermonde (R: comRingType) (n:nat) (a: 'rV[R]_n) :
+  \det (Vandermonde n a) = \prod_(i < n) \prod_(j < n | i < j) (a 0 j - a 0 i).
+Proof.
+  case: n a => [a|n a]; first by rewrite det_mx00 big1 // => -[] [].
+  exact: det_vander.
+Qed.

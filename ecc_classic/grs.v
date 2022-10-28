@@ -42,7 +42,7 @@ Definition codebook :=
   [set \row_i ((rVpoly f).[a ``_ i] * (b ``_ i)) | f in 'rV[F]_k].
 
 (* r = d - 1 *)
-Definition PCM r : 'M_(r, n):= vander_gen a r *m diag_mx b.
+Definition PCM r : 'M_(r, n):= Vandermonde r a *m diag_mx b.
 
 Definition syndrome_coord (i : nat) (y : 'rV_n) :=
   \sum_(j < n) y ``_ j * b ``_ j * (a ``_ j) ^+ i.
@@ -120,7 +120,7 @@ Definition GRS_PCM_sq (a b : 'rV[F]_n) r :=
 
 Lemma GRS_PCM_sq_vander (a b : 'rV[F]_n) (rn : r <= n) :
   GRS_PCM_sq a b r =
-    vandermonde.vander_gen (\row_(i < r) a``_(inord i)) r *m
+    vandermonde.Vandermonde r (\row_(i < r) a``_(inord i)) *m
       diag_mx (\row_(i < r) b``_(inord i)).
 Proof.
 apply/matrixP => i j.
@@ -150,7 +150,7 @@ apply mxrank_unit.
 rewrite unitmxE unitfE GRS_PCM_sq_vander // det_mulmx mulf_neq0 //; last first.
   by rewrite det_diag prodf_seq_neq0; apply/allP => /= i _; rewrite mxE b0.
 case: r rn => [|r' rn]; first by rewrite det_mx00 oner_neq0.
-rewrite vandermonde.det_vander prodf_seq_neq0; apply/allP => /= i _.
+rewrite vandermonde.det_Vandermonde prodf_seq_neq0; apply/allP => /= i _.
 rewrite prodf_seq_neq0; apply/allP => /= j _; apply/implyP.
 rewrite ltnNge => ij; rewrite !mxE subr_eq0; apply: contra ij => /eqP ij.
 move: (@a_inj (inord i) (inord j)); rewrite !ffunE ij => /(_ erefl).

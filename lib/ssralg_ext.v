@@ -577,3 +577,55 @@ apply/setP => i; rewrite !inE !mxE; apply/idP/idP; apply: contra.
   move/eqP => ->; by rewrite rmorph0.
 by rewrite GF2_of_F2_eq0.
 Qed.
+
+
+Section Det_mlinear.
+
+Variable (R: comRingType).
+
+Let det_mlinear_rec n (f : 'I_n.+1 -> 'I_n.+1 -> R) (g : 'I_n.+1 -> R) k :
+  k <= n.+1 ->
+  \det (\matrix_(j, i) (f i j * g j)) =
+  (\prod_(l < k) g (inord l)) *
+    \det (\matrix_(j, i) (f i j * if j >= k then g j else 1)).
+Proof.
+elim: k => [_|k IH]; first by rewrite big_ord0 mul1r.
+rewrite ltnS => kn.
+rewrite IH; last by rewrite ltnW.
+rewrite big_ord_recr /= -mulrA; congr (_ * _).
+rewrite (@determinant_multilinear _ _ _
+           (\matrix_(j, i) (f i j * (if k < j then g j else 1)))
+           (\matrix_(j, i) (f i j * (if k <= j then g j else 1)))
+           (inord k) (g (inord k)) 0); last 3 first.
+- rewrite scale0r addr0.
+  apply/rowP => j.
+  rewrite !mxE mulrCA; congr (_ * _).
+  by rewrite inordK // leqnn ltnn mulr1.
+- apply/matrixP => i j; rewrite !mxE.
+  case: ifPn => [H1|].
+    by case: ifPn => //; rewrite (ltnW H1).
+  case: ifPn => //; rewrite -ltnNge ltnS => H1 H2.
+  rewrite mulr1.
+  have /eqP abs : k = lift (inord k) i by apply/eqP; rewrite eqn_leq H1 H2.
+  exfalso.
+  move/eqP : abs; apply/eqP.
+  apply: contra (@neq_lift _ (inord k) i) => /eqP {1}->.
+  by apply/eqP/val_inj; rewrite inord_val.
+- by apply/matrixP => i j; rewrite !mxE.
+- by rewrite mul0r addr0 -det_tr.
+Qed.
+
+Lemma det_mlinear (n: nat) (f : 'I_n -> 'I_n -> R) (g : 'I_n -> R) :
+  \det (\matrix_(i, j) (f i j * g j)) =
+    \prod_(i < n) g i * \det (\matrix_(i, j) (f i j)).
+Proof.
+case: n => [|n] in f g *; first by rewrite big_ord0 mul1r !det_mx00.
+rewrite -det_tr (_ : _^T = \matrix_(j, i) (f i j * g j)); last first.
+  by apply/matrixP => i j; rewrite !mxE.
+rewrite (@det_mlinear_rec _ _ _ n.+1) //; congr (_ * _).
+  by under eq_bigr do rewrite inord_val.
+rewrite -det_tr; congr (\det _).
+by apply/matrixP => i j; rewrite !mxE ltnNge -ltnS ltn_ord /= mulr1.
+Qed.
+
+End Det_mlinear.
