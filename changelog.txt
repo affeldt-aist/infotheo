@@ -1,7 +1,14 @@
 -------------------
 from 0.3.8 to 0.4.0
 -------------------
-- packed classes redefined with HB
+- packed classes (affine, biglub, convex, concave) redefined with HB
+- added:
+  + notation {Biglub_morph T -> R}
+- renamed:
+  + SemiCompleteSemiLattice -> SemiCompSemiLatt
+  + idfun_is_biglub_affine -> idfun_is_biglubmorph
+  + comp_is_biglub_affine -> comp_is_biglubmorph
+  + affineP -> affine_functionP
 
 -------------------
 from 0.3.7 to 0.3.8
