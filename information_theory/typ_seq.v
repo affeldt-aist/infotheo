@@ -177,8 +177,14 @@ have -> : Pr P `^ n.+1 (~: p) =
 rewrite {1}/Pr (eq_bigr (fun=> 0)); last by move=> /= v; rewrite inE => /eqP.
 rewrite big_const iter_addR mulR0 add0R.
 apply/(leR_trans _ (aep He k0_k))/Pr_incl/subsetP => /= t.
-rewrite !inE /= => /andP[-> /= H3]; apply/ltRW'.
-by rewrite /mlog_RV /= /scalel_RV /= mulRN -mulNR.
+rewrite !inE /= => /andP[-> /= /ltRP H3]; apply/ltRW'.
+suff <- : `|- (1 / n.+1%:R) * log (P `^ n.+1 t) - `H P|
+        = `|(--log (P `^ n.+1) `/ n.+1) t - `H P| by apply/ltRP.
+congr `| _  - _ |.
+rewrite /mlog_RV /scalel_RV /topology.cst /= div1R.
+rewrite -RinvE -?INRE -?lt0n_neqR0' ?ltR0Sn //.
+rewrite /GRing.mul /= mul1R  mulNR -mulRN.
+by congr (_ * _)%R.
 Qed.
 
 Variable He1 : epsilon < 1.

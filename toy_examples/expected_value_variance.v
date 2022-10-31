@@ -112,7 +112,7 @@ rewrite expected.
 rewrite /Ex /X.
 do 3 rewrite big_ord_recl.
 rewrite big_ord0 addR0 /=.
-rewrite /sq_RV /comp_RV /=.
+rewrite !sq_RV_pow2 /=.
 rewrite !mul1R.
 rewrite {1}/f !ffunE /=.
 rewrite ifT; last by I3_eq.
