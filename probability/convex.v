@@ -308,9 +308,9 @@ HB.mixin Record isAffine (U V : convType) (f : U -> V) := {
 HB.structure Definition Affine (U V : convType) :=
   {f of isAffine U V f}.
 
-Notation "{ 'affine'  T '->'  R }" :=
+Notation "{ 'affine' T '->' R }" :=
   (Affine.type T R) (at level 36, T, R at next level,
-    format "{ 'affine'  T  '->'  R }") : convex_scope.
+    format "{ 'affine' T  '->' R }") : convex_scope.
 
 Section affine_function_prop0.
 Variables (U V W : convType) (f : {affine V -> W}) (h : {affine U -> V}).
@@ -1694,7 +1694,7 @@ Variable f: {linear E -> F}.
 Import GRing.
 Lemma linear_is_affine: affine f.
 Proof. by move=>p x y; rewrite linearD 2!linearZZ. Qed.
-Canonical linear_affine := Affine linear_is_affine.
+HB.instance Definition _ (*linear_affine*) := isAffine.Build _ _ f linear_is_affine.
 End linear_affine.
 
 (* TOTHINK: Should we keep this section, only define R_convType, or something else ? *)
