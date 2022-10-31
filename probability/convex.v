@@ -110,6 +110,8 @@ Reserved Notation "\ssum_ ( i < n | P ) F"
 Reserved Notation "\ssum_ ( i < n ) F"
   (at level 41, F at level 41, i, n at level 50,
   format "'[' \ssum_ ( i  <  n ) '/  '  F ']'").
+Reserved Notation "{ 'affine' T '->' R }"
+  (at level 36, T, R at next level, format "{ 'affine'  T  '->'  R }").
 
 Declare Scope convex_scope.
 Declare Scope ordered_convex_scope.
@@ -341,20 +343,17 @@ HB.mixin Record isAffine (U V : convType) (f : U -> V) := {
 HB.structure Definition Affine (U V : convType) :=
   {f of isAffine U V f}.
 
-Notation "{ 'affine'  T '->'  R }" :=
-  (Affine.type T R) (at level 36, T, R at next level,
-    format "{ 'affine'  T  '->'  R }") : convex_scope.
+Notation "{ 'affine' T '->' R }" := (Affine.type T R) : convex_scope.
 
-Section affine_function_prop0.
+Section affine_function_instances.
 Variables (U V W : convType) (f : {affine V -> W}) (h : {affine U -> V}).
 
-Fact idfun_is_affine : affine (@idfun U).
-Proof. by []. Qed.
-HB.instance Definition _ (*idfun_affine*) := isAffine.Build _ _ idfun idfun_is_affine.
+Let affine_idfun : affine (@idfun U). Proof. by []. Qed.
+HB.instance Definition _ := isAffine.Build _ _ idfun affine_idfun.
 
-Fact comp_is_affine : affine (f \o h).
+Fact affine_comp : affine (f \o h).
 Proof. by move=> x y t /=; rewrite 2!affine_conv. Qed.
-HB.instance Definition _ (*comp_affine*) := isAffine.Build _ _ (f \o h) comp_is_affine.
+HB.instance Definition _ := isAffine.Build _ _ (f \o h) affine_comp.
 
 (* The following lemma is placed far below in this file
    since it is proved using ScaledConvex
@@ -363,7 +362,7 @@ Lemma affine_function_Sum T U (f : {affine T -> U}) n (g : 'I_n -> T) (d : {fdis
   f (<|>_d g) = <|>_d (f \o g).
 *)
 
-End affine_function_prop0.
+End affine_function_instances.
 
 (* TODO: this section is too long and contains lemmas to be moved to other files *)
 Module ScaledConvex.
@@ -668,12 +667,16 @@ End convfdist.
 
 Section convpt_convex_space.
 Let convpt p x y := addpt (scalept p x) (scalept p.~ y).
+
 Let convpt_conv1 a b : convpt 1 a b = a.
 Proof. by rewrite /convpt onem1 scalept1 scalept0 addpt0. Qed.
+
 Let convpt_convmm (p : prob) a : convpt p a a = a.
 Proof. by rewrite /convpt -scalept_addR // onemKC scalept1. Qed.
+
 Let convpt_convC (p : prob) a b : convpt p a b = convpt (p.~)%:pr b a.
 Proof. by rewrite [RHS]addptC onemK. Qed.
+
 Let convpt_convA (p q : prob) a b c :
   convpt p a (convpt q b c) = convpt [s_of p, q] (convpt [r_of p, q] a b) c.
 Proof.
@@ -1437,22 +1440,26 @@ Qed.
 End split_prod.
 
 Section lmodR_convex_space.
-
 Variable E : lmodType R.
 Implicit Type p q : prob.
 Local Open Scope ring_scope.
 Import GRing.
+
 Let avg p (a b : E) := (Prob.p p) *: a + p.~ *: b.
+
 Let avg1 a b : avg 1%:pr a b = a.
 Proof. by rewrite /avg /= scale1r onem1 scale0r addr0. Qed.
+
 Let avgI p x : avg p x x = x.
 Proof.
 rewrite /avg -scalerDl.
 have ->: (Prob.p p) + p.~ = Rplus (Prob.p p) p.~ by [].
 by rewrite onemKC scale1r.
 Qed.
+
 Let avgC p x y : avg p x y = avg p.~%:pr y x.
 Proof. by rewrite /avg onemK addrC. Qed.
+
 Let avgA p q (d0 d1 d2 : E) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof.
@@ -1468,10 +1475,12 @@ rewrite 2!scalerA; congr scale.
 have ->: p.~ * q = (p.~ * q)%R by [].
 by rewrite pq_is_rs -/r -/s mulrC.
 Qed.
+
 HB.instance Definition _ (*lmodR_convType*) :=
-  @isConvexSpace.Build E (Choice.class _) _ avg1 avgI avgC avgA.
+  @isConvexSpace.Build E (Choice.class _) avg avg1 avgI avgC avgA.
 
 Lemma avgrE p (x y : E) : x <| p |> y = avg p x y. Proof. by []. Qed.
+
 End lmodR_convex_space.
 
 Section lmodR_convex_space_prop.
@@ -1479,26 +1488,35 @@ Variable E : lmodType R.
 Implicit Type p q : prob.
 Local Open Scope ring_scope.
 Import GRing.
-Lemma avgr_addD p (a b c d: E): (a+b) <|p|> (c+d) = (a<|p|>c) + (b<|p|>d).
+
+Lemma avgr_addD p (a b c d : E) :
+  (a + b) <|p|> (c + d) = (a <|p|> c) + (b <|p|> d).
 Proof.
 rewrite !avgrE !scalerDr !addrA; congr add; rewrite -!addrA; congr add.
 exact: addrC.
 Qed.
-Lemma avgr_oppD p (x y: E) : - x <| p |> - y = - (x <| p |> y).
+
+Lemma avgr_oppD p (x y : E) : - x <| p |> - y = - (x <| p |> y).
 Proof. by rewrite avgrE 2!scalerN -opprD. Qed.
-Lemma avgr_scalerDr p : right_distributive *:%R (fun x y: E => x <| p |> y).
+
+Lemma avgr_scalerDr p : right_distributive *:%R (fun x y : E => x <| p |> y).
 Proof.
 by move=> x ? ?; rewrite 2!avgrE scalerDr !scalerA; congr add; congr scale;
   exact: mulrC.
 Qed.
-Lemma avgR_scalerDl p :
+
+Lemma avgr_scalerDl p :
   left_distributive *:%R (fun x y : regular_lmodType R_ringType => x <|p|> y).
 Proof. by move=> x ? ?; rewrite avgrE scalerDl -2!scalerA. Qed.
+
 (* Introduce morphisms to prove avgnE *)
 Import ScaledConvex.
+
 Definition scaler x : E := if x is Scaled p y then (Rpos.v p) *: y else 0.
+
 Lemma Scaled1rK : cancel (@S1 (_ E)) scaler.
 Proof. by move=> x /=; rewrite scale1r. Qed.
+
 Lemma scaler_addpt : {morph scaler : x y / addpt x y >-> (x + y)}.
 Proof.
 move=> [p x|] [q y|] /=; rewrite ?(add0r,addr0) //.
@@ -1507,15 +1525,20 @@ rewrite -!(mulRC (/ _)%R) scalerDr !scalerA !mulrA.
 have ->: (p + q)%R * (/ (p + q))%R = 1 by apply mulRV; last by apply Rpos_neq0.
 by rewrite !mul1r (addRC p) addRK.
 Qed.
+
 Lemma scaler0 : scaler Zero = 0. by []. Qed.
+
 Lemma scaler_scalept r x : (0 <= r -> scaler (scalept r x) = r *: scaler x)%R.
 Proof.
 case: x => [q y|]; last by rewrite scaleptR0 GRing.scaler0.
 case=> r0. by rewrite scalept_gt0 /= scalerA.
 by rewrite -r0 scalept0 scale0r.
 Qed.
+
 Definition big_scaler := big_morph scaler scaler_addpt scaler0.
+
 Definition avgnr n (g : 'I_n -> E) (e : {fdist 'I_n}) := \sum_(i < n) e i *: g i.
+
 Lemma avgnrE n (g : 'I_n -> E) e : <|>_e g = avgnr g e.
 Proof.
 rewrite -[LHS]Scaled1rK S1_convn big_scaler.
@@ -1708,56 +1731,62 @@ move/eqP: muE; rewrite big_ord_recl addr_eq0 => /eqP ->.
 rewrite scalerN -scaleNr scaler_sumr -big_split; apply congr_big=>// i _.
 by rewrite scalerA /= -scalerDl; congr scale; rewrite addrC mulNr ffunE.
 Qed.
+
 End caratheodory.
 
 Section linear_affine.
 Open Scope ring_scope.
-Variable E F: lmodType R.
-Variable f: {linear E -> F}.
+Variables (E F : lmodType R) (f : {linear E -> F}).
 Import GRing.
-Lemma linear_is_affine: affine f.
+
+Let linear_is_affine: affine f.
 Proof. by move=>p x y; rewrite linearD 2!linearZZ. Qed.
+
 HB.instance Definition _ (*linear_affine*) := isAffine.Build _ _ _ linear_is_affine.
+
 End linear_affine.
 
 (* TOTHINK: Should we keep this section, only define R_convType, or something else ? *)
 Section R_convex_space.
 Implicit Types p q : prob.
-Let avg p a b := (p * a + p.~ * b)%R.
-Let avg1 a b : avg 1%:pr a b = a.
-Proof. by rewrite /avg /= mul1R onem1 mul0R addR0. Qed.
-Let avgI p x : avg p x x = x.
-Proof. by rewrite /avg -mulRDl onemKC mul1R. Qed.
-Let avgC p x y : avg p x y = avg p.~%:pr y x.
-Proof. by rewrite /avg onemK addRC. Qed.
+
+Let avg p (a b : [the lmodType R of R^o]) := a <| p |> b.
+
+Let avgE p a b : avg p a b = (p * a + p.~ * b)%R.
+Proof. by []. Qed.
+
+Let avg1 a b : avg 1%:pr a b = a. Proof. by rewrite /avg conv1. Qed.
+
+Let avgI p x : avg p x x = x. Proof. by rewrite /avg convmm. Qed.
+
+Let avgC p x y : avg p x y = avg p.~%:pr y x. Proof. by rewrite /avg convC. Qed.
+
 Let avgA p q (d0 d1 d2 : R) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
-Proof.
-rewrite /avg /onem.
-set s := [s_of p, q].
-set r := [r_of p, q].
-rewrite (mulRDr s) -addRA (mulRA s) (mulRC s); congr (_ + _)%R.
-  by rewrite (p_is_rs p q) -/s.
-rewrite mulRDr (mulRA _ _ d2).
-rewrite -/p.~ -/q.~ -/r.~ -/s.~.
-rewrite {2}(s_of_pqE p q) onemK; congr (_ + _)%R.
-rewrite 2!mulRA; congr (_ * _)%R.
-by rewrite pq_is_rs -/r -/s mulRC.
-Qed.
+Proof. by rewrite /avg convA. Qed.
+
 HB.instance Definition _ (*R_convMixin*) := @isConvexSpace.Build R
   (Choice.class _) _ avg1 avgI avgC avgA.
-Lemma avgRE p (x y : R) : x <| p |> y = avg p x y. Proof. by []. Qed.
+
+Lemma avgRE p (x y : R) : x <| p |> y = (p * x + p.~ * y)%R. Proof. by []. Qed.
+
 Lemma avgR_oppD p x y : (- x <| p |> - y = - (x <| p |> y))%R.
-Proof. by rewrite avgRE /avg 2!mulRN -oppRD. Qed.
+Proof. exact: (@avgr_oppD [lmodType R of R^o]). Qed.
+
 Lemma avgR_mulDr p : right_distributive Rmult (fun x y => x <| p |> y).
-Proof. by move=> x ? ?; rewrite avgRE /avg mulRDr mulRCA (mulRCA x). Qed.
+Proof. exact: (@avgr_scalerDr [lmodType R of R^o]). Qed.
+
 Lemma avgR_mulDl p : left_distributive Rmult (fun x y => x <| p |> y).
-Proof. by move=> x ? ?; rewrite avgRE /avg mulRDl -mulRA -(mulRA p.~). Qed.
+Proof. exact: @avgr_scalerDl. Qed.
+
 (* Introduce morphisms to prove avgnE *)
 Import ScaledConvex.
+
 Definition scaleR x : R := if x is p *: y then p * y else 0.
+
 Lemma Scaled1RK : cancel (@S1 _) scaleR.
 Proof. by move=> x /=; rewrite mul1R. Qed.
+
 Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> (x + y)%R}.
 Proof.
 move=> [p x|] [q y|] /=; rewrite ?(add0R,addR0) //.
@@ -1765,20 +1794,26 @@ rewrite avgRE /avg /divRposxxy /= onem_div /Rdiv; last by apply Rpos_neq0.
 rewrite -!(mulRC (/ _)%R) mulRDr !mulRA mulRV; last by apply Rpos_neq0.
 by rewrite !mul1R (addRC p) addRK.
 Qed.
+
 Lemma scaleR0 : scaleR Zero = R0. by []. Qed.
+
 Lemma scaleR_scalept r x : (0 <= r -> scaleR (scalept r x) = r * scaleR x)%R.
 Proof.
 case: x => [q y|]; last by rewrite scaleptR0 mulR0.
 case=> r0. by rewrite scalept_gt0 /= mulRA.
 by rewrite -r0 scalept0 mul0R.
 Qed.
+
 Definition big_scaleR := big_morph scaleR scaleR_addpt scaleR0.
+
 Definition avgnR n (g : 'I_n -> R) (e : {fdist 'I_n}) := (\sum_(i < n) e i * g i)%R.
+
 Lemma avgnRE n (g : 'I_n -> R) e : <|>_e g = avgnR g e.
 Proof.
 rewrite -[LHS]Scaled1RK S1_convn big_scaleR.
 by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
 Qed.
+
 End R_convex_space.
 
 Section fun_convex_space.
@@ -2407,14 +2442,10 @@ exists n, (f \o g), d; split=>//.
 by move=>y [i _ <-]; apply gZ; exists i.
 Qed.
 End affine_function_image.
-Section linear_function_image.
-Local Open Scope classical_set_scope.
-Local Open Scope ring_scope.
-Variables T U : lmodType R.
 
 (* TODO: rename, move to mathcomp *)
 Lemma factorize_range (A B C : Type) (f : B -> C) (g : A -> C) :
-  range g `<=` range f ->
+  (range g `<=` range f)%classic ->
   exists h : A -> B, g = f \o h.
 Proof.
 move=> gf; have [h gfh] : {h & forall a, g a = f (h a)}.
@@ -2424,39 +2455,52 @@ move=> gf; have [h gfh] : {h & forall a, g a = f (h a)}.
 by exists h; apply/funext => a; rewrite gfh.
 Qed.
 
-(* TODO: move to mathcomp *)
-Lemma preimage_add_ker (f: {linear T -> U}) (A: set U): ([set (a + b) | a in f @^-1` A & b in f @^-1` [set 0]] = f @^-1` A).
+(* TODO: move to mathcomp-analysis *)
+Lemma image2_subset {aT bT rT : Type} [f : aT -> bT -> rT] [A B: set aT] [C D : set bT] :
+  (A `<=` B)%classic -> (C `<=` D)%classic ->
+  ([set f x y | x in A & y in C] `<=` [set f x y | x in B & y in D])%classic.
 Proof.
-rewrite eqEsubset; split.
-   move=> x [a /= aA] [b /= bker] xe; subst x.
-   by rewrite GRing.linearD bker GRing.addr0.
-move=> x /= fx.
-exists x=>//.
-by exists 0; [ apply GRing.linear0 | apply GRing.addr0 ].
+move=> AB CD x [a aA [c cC xe]]; subst x; exists a; (try by apply AB).
+by exists c; (try by apply CD).
 Qed.
 
-(* TODO: move to mathcomp *)
+Section linear_function_image.
+Local Open Scope classical_set_scope.
+Local Open Scope ring_scope.
+Variables T U : lmodType R.
 
-Lemma image2_subset {aT bT rT : Type} [f : aT -> bT -> rT] [A B: set aT] [C D : set bT]: (A `<=` B)%classic -> (C `<=` D)%classic -> ([set f x y | x in A & y in C] `<=` [set f x y | x in B & y in D])%classic.
+(* TODO: move to mathcomp *)
+Lemma preimage_add_ker (f : {linear T -> U}) (A: set U) :
+  [set a + b | a in f @^-1` A & b in f @^-1` [set 0]] = f @^-1` A.
 Proof.
-by move=>AB CD x [a aA [c cC xe]]; subst x; exists a; (try by apply AB); exists c; (try by apply CD).
+rewrite eqEsubset; split.
+-  move=> x [a /= aA] [b /= bker] xe; subst x.
+   by rewrite GRing.linearD bker GRing.addr0.
+- move=> x /= fx; exists x=>//.
+  by exists 0; [ apply GRing.linear0 | apply GRing.addr0].
 Qed.
 
 (* TODO: find how to speak about multilinear maps. *)
-Lemma hull_add (A B: set T): hull [set a + b | a in A & b in B] = [set a + b | a in (hull A) & b in (hull B)].
+Lemma hull_add (A B : set T) :
+  hull [set a + b | a in A & b in B] =
+  [set a + b | a in hull A & b in hull B].
 Proof.
 rewrite eqEsubset; split.
-   have conv: is_convex_set [set a + b | a in hull A & b in hull B].
-      apply/asboolP=>x y p [ax axA] [bx bxB] <- [ay ayA] [by' byB] <-.
-      rewrite avgr_addD; exists (ax <|p|> ay).
-         by move: (hull_is_convex A)=>/asboolP; apply.
-      exists (bx <|p|> by')=>//.
-      by move: (hull_is_convex B)=>/asboolP; apply.
-   by apply (@hull_sub_convex _ _ (CSet.Pack (CSet.Mixin conv))), image2_subset; exact (@subset_hull _ _).
-move=>x [a [na [ga [da [gaA ->]]]]] [b [nb [gb [db [gbB ->]]]]] <-.
-rewrite avgnr_add.
-exists (na * nb)%nat, (fun i => let (i, j) := split_prod i in ga i + gb j), (FDistMap.d (unsplit_prod (n:=nb)) da `x db); split=>// y [i _ <-].
-by case: split_prod=>ia ib; exists (ga ia); [ by apply gaA; exists ia |]; exists (gb ib)=>//; apply gbB; exists ib.
+- have conv : is_convex_set [set a + b | a in hull A & b in hull B].
+    apply/asboolP=>x y p [ax axA] [bx bxB] <- [ay ayA] [by' byB] <-.
+    rewrite avgr_addD; exists (ax <|p|> ay).
+       by move: (hull_is_convex A)=>/asboolP; apply.
+    exists (bx <|p|> by')=>//.
+    by move: (hull_is_convex B)=>/asboolP; apply.
+  apply (@hull_sub_convex _ _ (CSet.Pack (CSet.Mixin conv))), image2_subset;
+  exact (@subset_hull _ _).
+- move=>x [a [na [ga [da [gaA ->]]]]] [b [nb [gb [db [gbB ->]]]]] <-.
+  rewrite avgnr_add.
+  exists (na * nb)%nat,
+    (fun i => let (i, j) := split_prod i in ga i + gb j),
+    (FDistMap.d (unsplit_prod (n:=nb)) da `x db); split=>// y [i _ <-].
+  by case: split_prod=>ia ib; exists (ga ia); [by apply gaA; exists ia |];
+    exists (gb ib)=>//; apply gbB; exists ib.
 Qed.
 
 Import GRing.
@@ -2464,17 +2508,17 @@ Import GRing.
 Proposition preimage_preserves_convex_hull (f : {linear T -> U}) (Z : set U) :
   Z `<=` range f -> f @^-1` (hull Z) = hull (f @^-1` Z).
 Proof.
-rewrite eqEsubset=>Zf; split.
-   2: by apply preimage_subset_convex_hull.
+rewrite eqEsubset=>Zf; split; last by apply preimage_subset_convex_hull.
 move=>x [n [g [d [gZ fx]]]].
 move: Zf=>/(subset_trans gZ)/factorize_range [h ge]; subst g.
 rewrite -preimage_add_ker hull_add.
 exists (<|>_d h).
    by exists n, h, d; split=>// y [z _ <-] /=; apply gZ; exists z.
-exists (x-<|>_d h).
+exists (x - <|>_d h).
    by apply subset_hull=>/=; rewrite linearB affine_function_Sum fx subrr.
 by rewrite addrC -addrA [-_+_]addrC subrr addr0.
 Qed.
+
 End linear_function_image.
 
 Section R_affine_function_prop.
