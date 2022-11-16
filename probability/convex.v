@@ -38,14 +38,15 @@ From mathcomp Require ssrnum vector.
 (*                                                                            *)
 (* Module ScaledConvex == the canonical embedding of convex spaces into real  *)
 (*                        cones                                               *)
-(* The type scale_pt associated with add_pt and scalept define a real cone    *)
+(* The type scale_pt associated with addpt and scalept define a real cone     *)
 (* [Varacca & Winskel, MSCS, 2006]:                                           *)
 (*      scaled_pt == Zero or a pair of a positive real with a point in a      *)
 (*                   convType (i.e., a "scaled point")                        *)
-(*         add_pt == the addition of scaled points, i.e.,                     *)
+(*          addpt == the addition of scaled points, i.e.,                     *)
 (*                   rx + qy = (r+q)(x <| r/(r+q) |> y)                       *)
 (*        scalept == scaling of a scaled point, i.e.,                         *)
 (*                   scalept r qy = (r*q)y                                    *)
+(* \ssum_(i <- r) F == iterated addpt                                         *)
 (*                                                                            *)
 (* More lemmas about convex spaces, including key lemmas by Stone:            *)
 (*        convACA == the entropic identity, i.e.,                             *)
@@ -925,7 +926,7 @@ Qed.
 Lemma convn2E (g : 'I_2 -> T) (d : {fdist 'I_2}) :
   <|>_d g = g ord0 <| probfdist d ord0 |> g (lift ord0 ord0).
 Proof.
-case/boolP : (d ord0 == 1%R) => [|i1].
+have [/eqP|i1] := eqVneq (d ord0) 1%R.
   rewrite FDist1.dE1 => /eqP ->; rewrite ConvnFDist1.
   rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
   by apply val_inj; rewrite /= FDist1.dE eqxx.
@@ -955,7 +956,7 @@ Lemma convn_const (a : T) (n : nat) (d : {fdist 'I_n}) :
 Proof.
 elim: n d; first by move=> d; move/fdistI0_False: (d).
 move=> n IHn d.
-case/boolP: (d ord0 == 1%R); first by move/eqP/(convn_proj (fun _ => a)).
+have [|] := eqVneq (d ord0) 1%R; first by move/(convn_proj (fun=> a)).
 by move=> d0n0; rewrite convnE IHn convmm.
 Qed.
 
@@ -967,8 +968,7 @@ apply S1_inj.
 rewrite S1_convn (eq_bigr (fun i => scalept (d i) (S1 a))).
   by rewrite -S1_convn convn_const.
 move=> /= i _.
-case/boolP: (d i == 0)%R => [/eqP | /Hg] -> //.
-by rewrite !scalept0.
+by have [-> //|/Hg ->//] := eqVneq (d i) 0%R; rewrite !scalept0.
 Qed.
 
 Lemma convn_weak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
@@ -1363,11 +1363,11 @@ Proof.
 move=> [dx ?] [dy ?] [n -[g [d [gT zg]]]].
 suff [a] : exists2 a, a \in scaled_set X & exists2 b, b \in scaled_set Y &
     S1 z = addpt a b.
-  have [/eqP -> _ [b bY]|a0 aX [b]] := boolP (a == Zero).
+  have [-> _ [b bY]|a0 aX [b]] := eqVneq a Zero.
     rewrite add0pt => S1zy.
     exists dx; rewrite ?in_setE //; exists z; last by exists 0%:pr; rewrite conv0.
     by rewrite -(point_S1 z); apply: scaled_set_extract; rewrite S1zy.
-  have [/eqP -> _|b0 bY] := boolP (b == Zero).
+  have [-> _|b0 bY] := eqVneq b Zero.
     rewrite addpt0 => S1zx.
     exists z; last by exists dy; rewrite ?in_setE //; exists 1%:pr; rewrite conv1.
     by rewrite -(point_S1 z); apply: scaled_set_extract; rewrite S1zx.
@@ -1400,7 +1400,6 @@ Qed.
 Definition unsplit_prod (m n : nat) (i : 'I_m * 'I_n) : 'I_(m * n) :=
   let (i, j) := i in Ordinal (unsplit_prodp i j).
 
-(* TODO: shall we extend the lemmas on Nat.div to divn ? *)
 Definition split_prodpl (m n : nat) (i : 'I_(m * n)): (i %/ n < m)%nat.
 Proof. by move: n i => [|n i]; [rewrite muln0 => -[]|rewrite ltn_divLR]. Qed.
 
@@ -2679,7 +2678,7 @@ have : (a <= x <= b)%R.
   rewrite /x; split.
   - apply (@leR_trans (t * a + t.~ * a)).
       rewrite -mulRDl addRCA addR_opp subRR addR0 mul1R; exact/leRR.
-    case/boolP : (t == 1%:pr) => [/eqP ->|t1].
+    have [->|t1] := eqVneq t 1%:pr.
       rewrite /onem subRR !mul0R !addR0; exact/leRR.
     rewrite leR_add2l; apply leR_wpmul2l => //; exact/ltRW.
   - apply (@leR_trans (t * b + t.~ * b)); last first.

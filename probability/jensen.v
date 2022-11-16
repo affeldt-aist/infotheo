@@ -33,7 +33,7 @@ Lemma jensen_dist (r : A -> R) (X : fdist A) :
 Proof.
 move=> HDr.
 apply (@proj1 _ (\sum_(a in fdist_supp X) X a * r a \in D)).
-rewrite [in X in _ <= X]rsum_fdist_supp [in X in X <= _]rsum_fdist_supp /=.
+rewrite [in X in _ <= X]sum_fdist_supp [in X in X <= _]sum_fdist_supp /=.
 apply: (@fdist_ind A (fun X =>
    f (\sum_(a in fdist_supp X) X a * r a) <=
    \sum_(a in fdist_supp X) X a * f (r a) /\ _)) => //.
@@ -77,8 +77,8 @@ Lemma Jensen (P : fdist A) (X : {RV P -> R}) : (forall x, X x \in D) ->
   f (`E X) <= `E (f `o X).
 Proof.
 move=> H.
-rewrite {2}/Ex; erewrite eq_bigr; last by move=> a _; rewrite mulRC; reflexivity.
-rewrite {1}/Ex; erewrite eq_bigr; last by move=> a _; rewrite mulRC; reflexivity.
+rewrite {2}/Ex; erewrite eq_bigr; last by move=> a _; rewrite mulRC.
+rewrite {1}/Ex; erewrite eq_bigr; last by move=> a _; rewrite mulRC.
 exact: jensen_dist H.
 Qed.
 

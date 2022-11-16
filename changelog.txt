@@ -1,4 +1,18 @@
 -------------------
+from 0.4.0 to 0.4.1
+-------------------
+- added:
+  + finsupp_conv_subl
+- renamed:
+  + incl_finsupp_conv2fsdist -> finsupp_conv_subr
+  + tech1 -> FSDistBindE
+  + bigfcup_fset1 -> bigfcup_imfset
+  + fdist_of_Dist -> fdist_of_fs
+  + fdist_of_FSDistE -> fdist_of_fsE
+  + fdist_of_finFSDist -> fdist_of_finfs
+  + rsum_fdist_supp -> sum_fdist_supp
+
+-------------------
 from 0.3.8 to 0.4.0
 -------------------
 - packed classes (affine, biglub, convex, concave) redefined with HB
