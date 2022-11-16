@@ -12,10 +12,10 @@ Require Import fdist jfdist fsdist convex.
 (*                  Equivalence of Convexity Definitions                      *)
 (*                                                                            *)
 (*   naryConvType == type that provides a nary operator intended to represent *)
-(*                   nary convex combination as found in standard             *)
-(*                   of convex spaces such as [Bonchi 2017]; different        *)
-(*                   axiomatics are possible, they are provided with their    *)
-(*                   equivalencs by the module NaryConvexSpaceEquiv           *)
+(*                   nary convex combinations as found in standard convex     *)
+(*                   spaces such as [Bonchi 2017]; different axiomatics are   *)
+(*                   possible, they are provided with their equivalences by   *)
+(*                   the module NaryConvexSpaceEquiv                          *)
 (*        <&>_d f == notation for the operator of naryConvType                *)
 (*    a <& p &> b == binary instance of the <&>_ operator                     *)
 (*                                                                            *)
@@ -197,7 +197,7 @@ Lemma axmap : ax_map T.
 Proof.
 move=> n m u d g.
 have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
-  by apply fdist_ext => i; rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
+  by apply fdist_ext => i; rewrite /FDistMap.d FDistBind.dE.
 rewrite -axbary.
 by congr (<&>_ _ _); apply funext => i /=; rewrite axproj.
 Qed.
@@ -216,9 +216,10 @@ have -> : g = (fun i => <&>_(FDist1.d (if i \in fdist_supp d then k else i)) g).
   apply funext => i; rewrite axproj.
   case: ifP => // /Hd ->; by rewrite (Hd k).
 rewrite axbary (_ : ConvnFDist.d _ _ = FDist1.d k) ?axproj ?Hd //.
-apply fdist_ext => /= i; rewrite !fdistE rsum_fdist_supp.
+apply fdist_ext => /= i.
+rewrite ConvnFDist.dE sum_fdist_supp fdistE.
 under eq_bigr => j /= -> do rewrite fdistE.
-by rewrite -rsum_fdist_supp -big_distrl FDist.f1 /= mul1R.
+by rewrite -sum_fdist_supp -big_distrl FDist.f1 /= mul1R.
 Qed.
 
 (* axconst is also a corollary of axidem *)
@@ -544,7 +545,7 @@ Lemma axinjmap : ax_inj_map T.
 Proof.
 move=> n m u d g Hu.
 have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
-  apply fdist_ext => i; by rewrite /FDistMap.d FDistBind.dE ConvnFDist.dE.
+  by apply fdist_ext => i; rewrite /FDistMap.d FDistBind.dE.
 rewrite -axbarypart.
 - congr (<&>_ _ _); apply funext => j /=; symmetry; apply axidem => i.
   by rewrite FDist1.supp inE => /eqP ->.
