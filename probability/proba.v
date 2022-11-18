@@ -21,8 +21,6 @@ Require Import fdist.
 (*  {RV P -> T}      == the type of random variables over an ambient          *)
 (*                      distribution P where T can be an eqType               *)
 (*  `p_X             == P when X : {RV P -> R}                                *)
-(*  `cst*, `*cst, `o, `/, `+, `-, `+cst, `-cst, `^2, --log  == construction   *)
-(*                      of various random variables                           *)
 (*  [% X, Y, ..., Z] == successive pairings of RVs                            *)
 (*  `Pr[ X = a ]     == the probability that the random variable X is a       *)
 (*  `d_X             == the {fdist A} distribution corresponding to `Pr[X = a]*)
@@ -32,6 +30,10 @@ Require Import fdist.
 (*                      or equal to r                                         *)
 (*  `Pr[ X \in E ]   == the probability that the random variable X is in E    *)
 (*                      (expect finTypes)                                     *)
+(*  `cst*, `*cst, `o, `/, `+, `-, `+cst, `-cst, `^2, --log  == construction   *)
+(*                      of various random variables                           *)
+(*  `E X             == expected value of the random variable X               *)
+(*  `E_[ X | F ]     == conditional expectation of X given an event F         *)
 (*  `Pr_P [ A | B ]  == conditional probability for events                    *)
 (*  `Pr[ X = a | Y = b ] == conditional probability for random variables      *)
 (*  `Pr[ X \in E | Y \in F ] == ..                                            *)
@@ -42,8 +44,6 @@ Require Import fdist.
 (*  Z \= X @+ Y      == Z is the sum of two random variables                  *)
 (*  X \=sum Xs       == X is the sum of the n>=1 independent and identically  *)
 (*                      distributed random variables Xs                       *)
-(*  `E X             == expected value of the random variable X               *)
-(*  `E_[ X | F ]     == conditional expectation of X given an event F         *)
 (*  `V X             == the variance of the random variable X                 *)
 (*                                                                            *)
 (* Lemmas:                                                                    *)
@@ -173,14 +173,14 @@ Definition Pr E := \sum_(a in E) P a.
 Lemma Pr_ge0 E : 0 <= Pr E. Proof. exact: sumR_ge0. Qed.
 Local Hint Resolve Pr_ge0 : core.
 
-Lemma Pr_gt0 E : 0 < Pr E <-> Pr E != R0.
+Lemma Pr_gt0 E : 0 < Pr E <-> Pr E != 0.
 Proof.
 split => H; first by move/gtR_eqF : H.
 by rewrite ltR_neqAle; split => //; exact/nesym/eqP.
 Qed.
 
 Lemma Pr_1 E : Pr E <= 1.
-Proof. rewrite -(FDist.f1 P); apply leR_sumRl => // a _; exact/leRR. Qed.
+Proof. by rewrite -(FDist.f1 P); apply leR_sumRl => // a _; exact/leRR. Qed.
 
 Lemma Pr_lt1 E : Pr E < 1 <-> Pr E != 1.
 Proof.
@@ -206,14 +206,14 @@ Proof. by rewrite /Pr big_set1. Qed.
 Lemma Pr_cplt E : Pr E + Pr (~: E) = 1.
 Proof.
 rewrite /Pr -bigU /=; last by rewrite -subsets_disjoint.
-rewrite -(FDist.f1 P); apply eq_bigl => /= a; by rewrite !inE /= orbN.
+by rewrite -(FDist.f1 P); apply eq_bigl => /= a; rewrite !inE /= orbN.
 Qed.
 
 Lemma Pr_to_cplt E : Pr E = 1 - Pr (~: E).
-Proof. rewrite -(Pr_cplt E); field. Qed.
+Proof. by rewrite -(Pr_cplt E); field. Qed.
 
 Lemma Pr_of_cplt E : Pr (~: E) = 1 - Pr E.
-Proof. rewrite -(Pr_cplt E); field. Qed.
+Proof. by rewrite -(Pr_cplt E); field. Qed.
 
 Lemma Pr_incl E E' : E \subset E' -> Pr E <= Pr E'.
 Proof.
@@ -223,14 +223,11 @@ Qed.
 Lemma Pr_union E1 E2 : Pr (E1 :|: E2) <= Pr E1 + Pr E2.
 Proof.
 rewrite /Pr.
-rewrite (_ : \sum_(i in A | [pred x in E1 :|: E2] i) P i =
-  \sum_(i in A | [predU E1 & E2] i) P i); last first.
+rewrite [X in X <= _](_ : _ = \sum_(i in A | [predU E1 & E2] i) P i); last first.
   by apply eq_bigl => x /=; rewrite inE.
-rewrite (_ : \sum_(i in A | [pred x in E1] i) P i =
-  \sum_(i in A | pred_of_set E1 i) P i); last first.
+rewrite [X in _ <= X + _](_ : _ = \sum_(i in A | pred_of_set E1 i) P i); last first.
   by apply eq_bigl => x /=; rewrite unfold_in.
-rewrite (_ : \sum_(i in A | [pred x in E2] i) P i =
-  \sum_(i in A | pred_of_set E2 i) P i); last first.
+rewrite [X in _ <= _ + X](_ : _ = \sum_(i in A | pred_of_set E2 i) P i); last first.
   by apply eq_bigl => x /=; rewrite unfold_in.
 exact/leR_sumR_predU.
 Qed.
@@ -253,20 +250,20 @@ rewrite big_cons; case: ifP => H1.
   by case/bigcupP : H1 => b Eb hFb; exists b; rewrite -topredE /= Eb.
 apply/(leR_trans IH)/leR_sumR => b Eb; rewrite big_cons.
 case: ifPn => hFb; last exact/leRR.
-rewrite -[X in X <= _]add0R; exact/leR_add2r.
+by rewrite -[X in X <= _]add0R; exact/leR_add2r.
 Qed.
 
 Lemma Pr_union_disj E1 E2 : [disjoint E1 & E2] -> Pr (E1 :|: E2) = Pr E1 + Pr E2.
-Proof. move=> ?; rewrite -bigU //=; apply eq_bigl => a; by rewrite inE. Qed.
+Proof. by move=> ?; rewrite -bigU //=; apply eq_bigl => a; rewrite inE. Qed.
 
 Let Pr_big_union_disj n (F : 'I_n -> {set A}) :
   (forall i j, i != j -> [disjoint F i & F j]) ->
   Pr (\bigcup_(i < n) F i) = \sum_(i < n) Pr (F i).
 Proof.
-elim: n F => [F H|n IH F H]; first by rewrite !big_ord0 Pr_set0.
+elim: n F => [|n IH] F H; first by rewrite !big_ord0 Pr_set0.
 rewrite big_ord_recl /= Pr_union_disj; last first.
   rewrite -setI_eq0 big_distrr /=; apply/eqP/big1 => i _; apply/eqP.
-  rewrite setI_eq0; exact: H.
+  by rewrite setI_eq0; exact: H.
 by rewrite big_ord_recl IH // => i j ij; rewrite H.
 Qed.
 
@@ -287,9 +284,9 @@ Lemma Boole_eq (I : finType) (F : I -> {set A}) :
   Pr (\bigcup_(i in I) F i) = \sum_(i in I) Pr (F i).
 Proof.
 move=> H.
-rewrite (@reindex_onto _ _ _ _ _ enum_val enum_rank _ F) /=; last first.
+rewrite (reindex_onto enum_val enum_rank) /=; last first.
   by move=> *; exact: enum_rankK.
-rewrite [in RHS](@reindex_onto _ _ _ _ _ enum_val enum_rank) /=; last first.
+rewrite [in RHS](reindex_onto  enum_val enum_rank) /=; last first.
   by move=> *; exact: enum_rankK.
 rewrite (eq_bigl xpredT); last by move=> i; rewrite enum_valK eqxx.
 rewrite Pr_big_union_disj; last first.
@@ -330,7 +327,7 @@ Qed.
 
 Lemma Pr_domin_setXN (A B : finType) (P : {fdist A * B}) E F :
   Pr P (E `* F) != 0 -> Pr (Bivar.fst P) E != 0.
-Proof. apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
+Proof. by apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
 
 Lemma Pr_FDistMap (A B : finType) (f : A -> B) (d : fdist A) (E : {set A}) :
   injective f ->
@@ -341,7 +338,7 @@ under [in RHS]eq_bigr do rewrite FDistMap.dE.
 rewrite (exchange_big_dep (mem E)) /=; last first.
    by move=> b a /imsetP[a' a'E ->{b} /eqP] /bf ->.
 apply eq_bigr => a aE; rewrite (big_pred1 (f a)) // => b /=.
-rewrite !inE andb_idl //= => /eqP <-{b}; apply/imsetP; by exists a.
+by rewrite !inE andb_idl //= => /eqP <-{b}; apply/imsetP; exists a.
 Qed.
 Arguments Pr_FDistMap [A] [B] [f] [d] [E].
 
@@ -349,13 +346,13 @@ Lemma Pr_ProdFDist (A B : finType) (P1 : {fdist A}) (P2 : {fdist B})
   (E1 : {set A}) (E2 : {set B}) :
   Pr (P1 `x P2) ((E1 `*T) :&: (T`* E2)) = Pr (P1 `x P2) (E1 `*T) * Pr (P1 `x P2) (T`* E2).
 Proof.
-(* *) rewrite {1}/Pr /=.
+rewrite {1}/Pr /=.
 set P := P1 `x P2.
 rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
 rewrite [in LHS](eq_bigl (fun x => (x.1 \in E1) && (x.2 \in E2))); last first.
   by case=> a b; rewrite !inE.
 rewrite -[in LHS](pair_big _ _ (fun x1 x2 => P (x1, x2))) /=.
-(* *) rewrite {1}/Pr /=.
+rewrite {1}/Pr /=.
 rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
 rewrite [in X in _ = X * _](eq_bigl (fun a => a.1 \in E1)); last first.
   by case=> a b; rewrite !inE.
@@ -363,7 +360,7 @@ rewrite [in RHS](eq_bigl (fun x => (x.1 \in E1) && true)); last first.
   by case=> a b; rewrite !andbT.
 rewrite -[in RHS](pair_big (fun x => x \in E1) xpredT (fun x1 x2 => P (x1, x2))) /=.
 rewrite big_distrl /=; apply eq_big => // a /eqP E1a /=.
-(* *) rewrite {1}/Pr /=.
+rewrite {1}/Pr /=.
 rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
 rewrite [in X in _ = _ * X](eq_bigl (fun a => a.2 \in E2)); last first.
   by move=> b; rewrite !inE.
@@ -371,7 +368,7 @@ rewrite [in RHS](eq_bigl (fun x => true && (x.2 \in E2))) //.
 rewrite -[in RHS](pair_big xpredT (fun x => x \in E2) (fun x1 x2 => P (x1, x2))) /=.
 rewrite exchange_big /= big_distrr /=; apply eq_big => // b E2b.
 rewrite ProdFDist.dE /=; congr (_ * _); under eq_bigr do rewrite ProdFDist.dE /=.
-by rewrite -big_distrr /= FDist.f1 mulR1.
+  by rewrite -big_distrr /= FDist.f1 mulR1.
 by rewrite -big_distrl /= FDist.f1 mul1R.
 Qed.
 
@@ -397,7 +394,8 @@ by rewrite exchange_big.
 Qed.
 
 Local Open Scope vec_ext_scope.
-Lemma Pr_Multivar (A : finType) n (P : {fdist 'rV[A]_n.+1}) (E : {set A}) (F : {set 'rV[A]_n}) :
+Lemma Pr_Multivar (A : finType) n (P : {fdist 'rV[A]_n.+1})
+    (E : {set A}) (F : {set 'rV[A]_n}) :
   Pr (Multivar.to_bivar P) (E `* F) =
   Pr P [set x : 'rV[A]_n.+1 | ((x ``_ ord0) \in E) && ((rbehead x) \in F)].
 Proof.
@@ -463,8 +461,7 @@ case: PXa0 => i ?; rewrite -big_enum; apply/sumR_neq0;
   by [move=> ?; exact: FDist.ge0 | exists i; rewrite mem_enum inE].
 Qed.
 
-Lemma pr_eq0 (X : {RV P -> A}) (a : A) :
-  a \notin fin_img X -> `Pr[ X = a ] = 0.
+Lemma pr_eq0 (X : {RV P -> A}) (a : A) : a \notin fin_img X -> `Pr[ X = a ] = 0.
 Proof.
 move=> aX; apply/eqP/negPn; apply: contra aX => /pr_eq_neq0 [i [iXa Pi0]].
 rewrite mem_undup; apply/mapP; exists i; rewrite ?mem_enum //.
