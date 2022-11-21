@@ -3,6 +3,9 @@ from 0.4.0 to 0.4.1
 -------------------
 - added:
   + finsupp_conv_subl
+  + Convn_of_FSDist_join (moved from monae)
+  + notation fsdist for FSDist.t
+  + definition fsdist1
 - renamed:
   + incl_finsupp_conv2fsdist -> finsupp_conv_subr
   + tech1 -> FSDistBindE
@@ -11,6 +14,69 @@ from 0.4.0 to 0.4.1
   + fdist_of_FSDistE -> fdist_of_fsE
   + fdist_of_finFSDist -> fdist_of_finfs
   + rsum_fdist_supp -> sum_fdist_supp
+  + FSDist_ext -> fsdist_ext
+  + FSDist_supp_neq0 -> fsdist_supp_neq0
+  + FSDist1_inj -> fsdist1_inj
+  + FSDistBind1f -> fsdist1bind
+  + FSDistBindp1 -> fsdistbind1
+  + FSDistBindA -> fsdistbindA
+  + FSDistfmap -> fsdistmap
+  + FSDistfmap_id -> fsdistmap_id
+  + FSDistfmap_comp -> fsdistmap_comp
+  + FSDistfmapE -> fsdistmapE
+  + supp_FSDistfmap -> supp_fsdistmap
+  + FSDistfmap1 -> fsdistmap1
+  + FSDistfmap_FSDist1 -> fsdist1map
+  + FSDist_finsuppD1 -> fsdist_suppD1
+  + FSDistjoin -> fsdistjoin
+  + FSDistjoinE -> fsdistjoinE
+  + FSDistjoin1 -> fsdistjoin1
+  + FSDistfmap_affine -> fsdistmap_affine
+  + FSDist_scalept_conv -> fsdist_scalept_conv
+  + FSDist_eval -> fsdist_eval
+  + FSDist_eval_affine -> fsdist_eval_affine
+  + Convn_of_FSDist -> Convn_of_fsdist
+  + Convn_of_FSDist_affine -> Convn_of_fsdist_affine
+  + Convn_of_FSDist_join -> Convn_of_fsdistjoin
+  + Convn_of_FSDist_FSDist1 -> Convn_of_fsdist1
+  + Convn_of_FSDist_FSDistfmap -> Convn_of_fsdistmap
+  + FSDist1.d -> fsdist1
+  + FSDist1.dE -> fsdist1E
+  + FSDist1.supp -> supp_fsdist1
+  + FSDistBindE -> fsdistbindEwiden
+  + FSDistBind.supp -> supp_fsdistbind
+  + FSDistBind.dE -> fsdistbindE
+  + ConvnFSDist.d -> fsdist_convn
+  + ConvnFSDist.dE -> fsdist_convnE
+  + ConvFSDist.d -> fsdist_conv
+  + ConvFSDist.bind_left_distr -> fsdist_conv_bind_left_distr
+  + finsupp_Conv -> supp_fsdist_conv
+  + ConvFSDist.convA -> fsdist_convA
+  + FDist1.t -> fdist1
+  + FDist1.P -> fdist1P
+  + FDist1.dE1 -> fdist1E1
+  + FDist1.supp -> supp_fdist1
+  + FDistBind.t -> fdistbind
+  + FDistBind.dE -> fdistbindE
+  + FDistBind1f -> fdist1bind
+  + FDistBindp -> fdistbind1
+  + FDistBindA -> fdistbindA
+  + FDistMap.d -> fdistmap
+  + FDistMap.dE -> fdistmapE
+  + FDistMap.id -> fdistmap_id
+  + FDistMap.comp -> fdistmap_comp
+  + Pr_FDistMap -> Pr_fdistmap
+  + ConvnFDist.d -> fdist_convn
+  + ConvnFDist.fdist1 -> fdist_convn1
+  + ConvnFDist.cst -> fdist_convn_cst
+  + ConvFDist.d -> fdist_conv
+  + ConvFDist.dE -> fdist_convE
+  + AddFDist.d -> fdist_add
+  + AddFDist.dE -> fdist_addE
+  + AddFDist_conv -> fdist_convn_add
+  + DelFDist.d -> fdist_del
+  + DelFDist.dE -> fdist_delE
+  + DelFDist.f -> fdist_del_idx
 
 -------------------
 from 0.3.8 to 0.4.0

@@ -726,6 +726,9 @@ apply val_inj => /=; rewrite [in RHS]addRC onem_div ?addRK //.
 exact: Rpos_neq0.
 Qed.
 
+Lemma onem_divRxxy (r q : Rpos) : (r / (r + q)).~ = q / (q + r).
+Proof. by rewrite /onem subR_eq (addRC r) -mulRDl mulRV // ?gtR_eqF. Qed.
+
 Module Rnneg.
 Local Open Scope R_scope.
 Record t := mk {

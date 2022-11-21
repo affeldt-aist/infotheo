@@ -329,18 +329,18 @@ Lemma Pr_domin_setXN (A B : finType) (P : {fdist A * B}) E F :
   Pr P (E `* F) != 0 -> Pr (Bivar.fst P) E != 0.
 Proof. by apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
 
-Lemma Pr_FDistMap (A B : finType) (f : A -> B) (d : fdist A) (E : {set A}) :
+Lemma Pr_fdistmap (A B : finType) (f : A -> B) (d : fdist A) (E : {set A}) :
   injective f ->
-  Pr d E = Pr (FDistMap.d f d) (f @: E).
+  Pr d E = Pr (fdistmap f d) (f @: E).
 Proof.
 move=> bf; rewrite /Pr.
-under [in RHS]eq_bigr do rewrite FDistMap.dE.
+under [in RHS]eq_bigr do rewrite fdistmapE.
 rewrite (exchange_big_dep (mem E)) /=; last first.
    by move=> b a /imsetP[a' a'E ->{b} /eqP] /bf ->.
 apply eq_bigr => a aE; rewrite (big_pred1 (f a)) // => b /=.
 by rewrite !inE andb_idl //= => /eqP <-{b}; apply/imsetP; exists a.
 Qed.
-Arguments Pr_FDistMap [A] [B] [f] [d] [E].
+Arguments Pr_fdistmap [A] [B] [f] [d] [E].
 
 Lemma Pr_ProdFDist (A B : finType) (P1 : {fdist A}) (P2 : {fdist B})
   (E1 : {set A}) (E2 : {set B}) :
@@ -495,18 +495,18 @@ Lemma pr_eq_setE (X : {RV P -> A}) (E : {set A}) :
   `Pr[ X \in E ] = Pr `p_X (X @^-1: E).
 Proof. by rewrite /pr_eq_set; unlock. Qed.
 
-Definition dist_of_RV (X : {RV P -> A}) : {fdist A} := FDistMap.d X P.
+Definition dist_of_RV (X : {RV P -> A}) : {fdist A} := fdistmap X P.
 Local Notation "`d_ X" := (dist_of_RV X).
 
 Lemma pr_eqE' (X : {RV P -> A}) (a : A) : `Pr[ X = a ] = `d_X a.
 Proof.
-by rewrite /dist_of_RV FDistMap.dE pr_eqE /Pr /=; apply eq_bigl => i; rewrite inE.
+by rewrite /dist_of_RV fdistmapE pr_eqE /Pr /=; apply eq_bigl => i; rewrite inE.
 Qed.
 
 Lemma pr_inE' (X : {RV P -> A}) (E : {set A}) : `Pr[ X \in E ] = Pr `d_X E.
 Proof.
 rewrite pr_eq_setE /Pr partition_big_preimset /=.
-by apply eq_bigr => a aE; rewrite /dist_of_RV FDistMap.dE.
+by apply eq_bigr => a aE; rewrite /dist_of_RV fdistmapE.
 Qed.
 
 Lemma pr_eq_set1 (X : {RV P -> A}) x : `Pr[ X \in [set x] ] = `Pr[ X = x ].
@@ -577,18 +577,18 @@ Notation "'[%' x , y , .. , z ']'" := (RV2 .. (RV2 x y) .. z).
 
 Lemma fst_RV2 (U : finType) (P : fdist U) (A B : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) : Bivar.fst `d_[% X, Y] = `d_X.
-Proof. by rewrite /Bivar.fst /dist_of_RV FDistMap.comp. Qed.
+Proof. by rewrite /Bivar.fst /dist_of_RV fdistmap_comp. Qed.
 
 Lemma snd_RV2 (U : finType) (P : fdist U) (A B : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) : Bivar.snd `d_[% X, Y] = `d_Y.
-Proof. by rewrite /Bivar.snd /dist_of_RV FDistMap.comp. Qed.
+Proof. by rewrite /Bivar.snd /dist_of_RV fdistmap_comp. Qed.
 
 Lemma pr_eq_unit (U : finType) (P : fdist U) : `Pr[ (unit_RV P) = tt ] = 1.
-Proof. by rewrite pr_eqE'; apply/eqP/FDist1.P; case. Qed.
+Proof. by rewrite pr_eqE'; apply/eqP/fdist1P; case. Qed.
 
 Lemma Pr_FDistMap_RV2 (U : finType) (P : fdist U) (A B : finType)
   (E : {set A}) (F : {set B}) (X : {RV P -> A}) (Z : {RV P -> B}) :
-  Pr (FDistMap.d [% X, Z] P) (E `* F) =
+  Pr (fdistmap [% X, Z] P) (E `* F) =
   Pr P ([set x | preim X (mem E) x] :&: [set x | preim Z (mem F) x]).
 Proof.
 rewrite /Pr.
@@ -596,7 +596,7 @@ transitivity (\sum_(a in ([% X, Z] @^-1: (E `* F))) P a); last first.
   by apply eq_bigl => u; rewrite !inE.
 rewrite [in RHS]partition_big_preimset /=.
 apply eq_big => // -[a c]; rewrite inE => /andP[/= aE cF].
-by rewrite FDistMap.dE.
+by rewrite fdistmapE.
 Qed.
 
 Section pr_pair.
@@ -647,14 +647,14 @@ Qed.
 Lemma pr_in_comp (f : A -> B) E : injective f ->
   `Pr[ X \in E ] = `Pr[ (f `o X) \in f @: E ].
 Proof.
-by move=> inj_f; rewrite 2!pr_inE' (Pr_FDistMap inj_f) FDistMap.comp.
+by move=> inj_f; rewrite 2!pr_inE' (Pr_fdistmap inj_f) fdistmap_comp.
 Qed.
 
 Lemma pr_eq_comp (f : A -> B) a : injective f ->
   `Pr[ X = a ] = `Pr[ (f `o X) = f a ].
 Proof.
 move=> inj_f.
-by rewrite -!pr_eq_set1 !pr_inE' (Pr_FDistMap inj_f) FDistMap.comp imset_set1.
+by rewrite -!pr_eq_set1 !pr_inE' (Pr_fdistmap inj_f) fdistmap_comp imset_set1.
 Qed.
 
 End pr_pair.

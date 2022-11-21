@@ -79,7 +79,7 @@ Definition dom_pair := {d : fdist A * fdist A | d.1 `<< d.2}.
 Lemma dom_conv p (a b c d : fdist A) :
   a `<< b -> c `<< d -> a <|p|> c `<< b <|p|> d.
 Proof.
-rewrite !dominatesP => ab cd i; rewrite !ConvFDist.dE.
+rewrite !dominatesP => ab cd i; rewrite !fdist_convE.
 rewrite paddR_eq0; [|exact/mulR_ge0 |exact/mulR_ge0].
 rewrite !mulR_eq0 => -[[->|/ab ->]]; last first.
   by rewrite mulR0 add0R => -[->|/cd ->]; rewrite !(mul0R,mulR0).
@@ -118,7 +118,7 @@ Lemma convex_div : convex_function (uncurry_dom_pair (@div A)).
 Proof.
 move=> [x Hx] [y Hy] p /=; rewrite /uncurry_dom_pair /=.
 rewrite /convex_function_at/= avgRE 2!big_distrr /= -big_split /= /div.
-apply leR_sumR => a _; rewrite 2!ConvFDist.dE.
+apply leR_sumR => a _; rewrite 2!fdist_convE.
 have [y2a0|y2a0] := eqVneq (y.2 a) 0.
   rewrite y2a0 (_ : y.1 a = 0) ?(mulR0,addR0,mul0R); last first.
     by move/dominatesP : Hy; exact.
@@ -351,20 +351,20 @@ apply R_concave_functionB.
   rewrite !Swap.snd !Bivar.fstE !mulRN -oppRD; congr (- _).
   rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
   rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
-  rewrite !ProdFDist.dE /= ConvFDist.dE /= !(mulRA t) !(mulRA t.~).
+  rewrite !ProdFDist.dE /= fdist_convE /= !(mulRA t) !(mulRA t.~).
   case/boolP: (t * p a == 0) => /eqP Hp.
     rewrite Hp.
     case/boolP: (t.~ * q a == 0) => /eqP Hq.
       rewrite Hq; field.
     rewrite !(mul0R,add0R).
-    rewrite -CJFDist.E /=; last by rewrite ConvFDist.dE Hp add0R.
+    rewrite -CJFDist.E /=; last by rewrite fdist_convE Hp add0R.
     rewrite -CJFDist.E /= //; by move: Hq; rewrite mulR_neq0 => -[].
   case/boolP: (t.~ * q a == 0) => /eqP Hq.
     rewrite Hq !(mul0R,addR0).
-    rewrite -CJFDist.E; last by rewrite ConvFDist.dE Hq addR0.
+    rewrite -CJFDist.E; last by rewrite fdist_convE Hq addR0.
     rewrite -CJFDist.E /= //; by move: Hp; rewrite mulR_neq0 => -[].
   rewrite -CJFDist.E; last first.
-    rewrite /= ConvFDist.dE paddR_eq0; [tauto|exact/mulR_ge0|exact/mulR_ge0].
+    rewrite /= fdist_convE paddR_eq0; [tauto|exact/mulR_ge0|exact/mulR_ge0].
   rewrite -CJFDist.E; last by move: Hp; rewrite mulR_neq0 => -[].
   rewrite -CJFDist.E //=; last by move: Hq; rewrite mulR_neq0 => -[].
   field.
@@ -406,16 +406,16 @@ have -> : MutualInfo.mi (CJFDist.make_joint P (fun x : A => p1yx x <| t |> p2yx 
   by rewrite ProdFDist.dE /= /CJFDist.make_joint /CJFDist.joint_of /= ProdFDist.fst; congr (_ * _).
 have -> : qlambdaxy = q1xy <| t |> q2xy.
   apply/fdist_ext => -[a b].
-  rewrite !ProdFDist.dE !ConvFDist.dE /=.
+  rewrite !ProdFDist.dE !fdist_convE /=.
   rewrite /q1xy /q2xy !ProdFDist.dE /=.
   rewrite /p1 /plambday.
   rewrite !Bivar.sndE !big_distrr /= -big_split /=.
   apply eq_bigr => a0 _.
   rewrite /plambdaxy /= !ProdFDist.dE /= /p1xy /plambdayx.
-  by rewrite ConvFDist.dE /=; field.
+  by rewrite fdist_convE /=; field.
 have -> : plambdaxy = p1xy <| t |> p2xy.
   apply/fdist_ext => -[a b].
-  rewrite !ProdFDist.dE !ConvFDist.dE /=.
+  rewrite !ProdFDist.dE !fdist_convE /=.
   by rewrite /p1xy /p2xy !ProdFDist.dE /=; field.
 have -> : MutualInfo.mi (CJFDist.make_joint P p1yx) = D(p1xy || q1xy).
   rewrite MutualInfo.miE0 /div pair_big /=.

@@ -39,15 +39,15 @@ apply: (@fdist_ind A (fun X =>
    \sum_(a in fdist_supp X) X a * f (r a) /\ _)) => //.
 move=> n IH {}X b cardA Hb.
 case/boolP : (X b == 1) => [/eqP|]Xb1.
-  move/eqP : (Xb1); rewrite FDist1.dE1 => /eqP ->.
-  by rewrite FDist1.supp !big_set1 FDist1.dE !eqxx /= !mul1R.
+  move/eqP : (Xb1); rewrite fdist1E1 => /eqP ->.
+  by rewrite supp_fdist1 !big_set1 fdist1xx !mul1R.
 have HXb1: (X b).~ != 0 by rewrite onem_neq0.
-set d := D1FDist.d Xb1.
+set d := fdistD1 Xb1.
 have HsumD1 q:
   \sum_(a in fdist_supp d) d a * q a =
   /(X b).~ * \sum_(a in fdist_supp d) X a * q a.
   rewrite (eq_bigr (fun a => /(X b).~ * (X a * q a))); last first.
-    move=> i; rewrite inE D1FDist.dE.
+    move=> i; rewrite inE fdistD1E.
     case: ifP => Hi; first by rewrite eqxx.
     by rewrite /Rdiv mulRCA mulRA.
  by rewrite -big_distrr.
@@ -58,11 +58,11 @@ have {HsumD1}HsumXD1 q:
   rewrite (eq_bigl (fun a : A => a \in fdist_supp d)) //= => i.
   rewrite !inE /=.
   case HXi: (X i == 0) => //=.
-    by rewrite (D1FDist.d_0 _ (eqP HXi)) eqxx.
-  by rewrite D1FDist.d_eq0 // ?HXi // eq_sym.
+    by rewrite (fdistD1_0 _ (eqP HXi)) eqxx.
+  by rewrite fdistD1_eq0 // ?HXi // eq_sym.
 rewrite 2!{}HsumXD1.
 have /IH {IH}[IH HDd] : #|fdist_supp d| = n.
-  by rewrite D1FDist.card_fdist_supp // cardA.
+  by rewrite card_supp_fdistD1 // cardA.
 split; last first.
   move/asboolP: (convex_setP D).
   move/(_ (r b) (\sum_(a in fdist_supp d) d a * r a) (probfdist X b)).

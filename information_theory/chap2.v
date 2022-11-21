@@ -94,7 +94,7 @@ End JointEntropy.
 Section notation_with_random_variables.
 Section jointentropy_drv.
 Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
-Definition jointentropy_drv := JointEntropy.h (FDistMap.d [% X, Y] P).
+Definition jointentropy_drv := JointEntropy.h (fdistmap [% X, Y] P).
 End jointentropy_drv.
 Local Notation "'`H2(' X ',' Y ')'" := (jointentropy_drv X Y)
   (format "'`H2(' X ','  Y ')'").
@@ -512,8 +512,8 @@ rewrite JointEntropy.entropyE chain_rule {}IH [in RHS]big_ord_recr /=.
 rewrite Take.all; congr (_ + _); apply eq_bigr => i _.
 case: ifP => i0; first by rewrite head_of_fst_belast_last.
 congr (CondEntropy.h (Swap.d (Multivar.belast_last _))).
-rewrite /Take.d /Bivar.fst /Multivar.belast_last !FDistMap.comp.
-congr (FDistMap.d _ P); rewrite boolp.funeqE => /= v.
+rewrite /Take.d /Bivar.fst /Multivar.belast_last !fdistmap_comp.
+congr (fdistmap _ P); rewrite boolp.funeqE => /= v.
 apply/rowP => j; rewrite !mxE !castmxE /= !mxE /= cast_ord_id; congr (v _ _).
 exact: val_inj.
 Qed.
@@ -854,7 +854,7 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
       (TripA.d (TripC12.d (PairTake.d PY j))) (a, (v, b)).
       move=> v b a H1'.
       rewrite /YP /Swap.d /Multivar.belast_last /Take.d /Multivar.from_bivar.
-      rewrite /TripA.d /TripC12.d /PairTake.d !FDistMap.comp !FDistMap.dE /=.
+      rewrite /TripA.d /TripC12.d /PairTake.d !fdistmap_comp !fdistmapE /=.
       apply eq_bigl => -[w b0]; rewrite /= /swap /= !inE /=.
       rewrite (_ : rlast _ = w ``_ j); last first.
         rewrite /rlast !mxE !castmxE /= cast_ord_id.
@@ -944,7 +944,7 @@ case: ifPn => j0.
 - rewrite MutualInfo.miE addR_opp; congr (`H _ - _).
   rewrite /Multivar.head_of /Bivar.fst.
   rewrite /Multivar.to_bivar.
-  by rewrite /PairNth.d !FDistMap.comp.
+  by rewrite /PairNth.d !fdistmap_comp.
 - rewrite /cmi /fA -/P; congr (_ - _).
   + congr CondEntropy.h.
     by rewrite /fAC /f Proj13_TripAC TripC12.fst belast_last_take.
@@ -1161,7 +1161,7 @@ rewrite -subR_ge0.
 set Q : {fdist A * 'rV[A]_i * 'rV[A]_(n' - i)} := TakeDrop.d P i.
 have H1 : Proj13.d (TripAC.d Q) = Multivar.to_bivar (Take.d P (lift ord0 i)).
   rewrite /Proj13.d /TripAC.d /Multivar.to_bivar /Take.d /Bivar.snd /TripA.d.
-  rewrite /TripC12.d /Swap.d /TakeDrop.d !FDistMap.comp; congr (FDistMap.d _ P).
+  rewrite /TripC12.d /Swap.d /TakeDrop.d !fdistmap_comp; congr (fdistmap _ P).
   rewrite boolp.funeqE => /= v /=.
   congr (_, _).
   - rewrite mxE castmxE /= cast_ord_id; congr (v ord0 _); exact: val_inj.

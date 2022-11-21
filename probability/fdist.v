@@ -15,29 +15,30 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (*                     type of x is an eqType                                 *)
 (*        {fdist A} == the type of distributions over a finType A             *)
 (*     fdist_supp d := [set a | d a != 0]                                     *)
-(*         FDist1.d == point-supported distribution                           *)
-(*      FDistBind.d == of type fdist A -> (A -> fdist B) -> fdist B           *)
-(*                     bind of the "probability monad"                        *)
-(*       FDistMap.d == map of the "probability monad"                         *)
+(*           fdist1 == point-supported distribution                           *)
+(*        fdistbind == of type fdist A -> (A -> fdist B) -> fdist B           *)
+(*                     bind of the "probability monad", notation >>=, scope   *)
+(*                     fdist_scope (delimiter: fdist)                         *)
+(*         fdistmap == map of the "probability monad"                         *)
 (*        Uniform.d == uniform distribution other a finite type               *)
 (*             `U H == the uniform distribution with support C, where H is a  *)
 (*                     proof that the set C is not empty                      *)
 (*     Binary.d H p == where H is a proof of #|A| = 2%N and p is a            *)
 (*                     probability: binary distribution over A with bias p    *)
-(*    D1FDist.d X P == distribution built from X where the entry b has been   *)
+(*      fdistD1 X P == distribution built from X where the entry b has been   *)
 (*                     removed (where P is a proof that X b != 1)             *)
-(*     ConvnFDist.d == of type {fdist 'I_n} -> ('I_n->{fdist A}) -> {fdist A} *)
+(*      fdist_convn == of type {fdist 'I_n} -> ('I_n->{fdist A}) -> {fdist A} *)
 (*                     convex combination of n finite distributions           *)
-(*      ConvFDist.d == convex combination of two distributions                *)
+(*       fdist_conv == convex combination of two distributions                *)
 (*                     (convex analogue of vector addition)                   *)
 (*                     notation: P1 <| p |> P1 where p is a probability       *)
-(*       AddFDist.d == concatenation of two distributions according to a      *)
+(*        fdist_add == concatenation of two distributions according to a      *)
 (*                     given probability p                                    *)
 (*                     (convex analogue of the canonical presentation of      *)
-(*                      an element of the direct sum of two {fdist _}s)       *)
-(*       DelFDist.d == restriction of the domain of a distribution            *)
+(*                     an element of the direct sum of two {fdist _}s)        *)
+(*        fdist_del == restriction of the domain of a distribution            *)
 (*                     (convex analogue of the projection of a vector         *)
-(*                      to a subspace)                                        *)
+(*                     to a subspace)                                         *)
 (*                                                                            *)
 (* About bivariate (joint) distributions:                                     *)
 (*        Bivar.fst == marginal left                                          *)
@@ -59,7 +60,6 @@ Reserved Notation "P `^ n" (at level 5).
 Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
 Reserved Notation "f @^-1 y" (at level 10).
-
 Declare Scope proba_scope.
 
 Set Implicit Arguments.
@@ -192,24 +192,37 @@ End FDist_lemmas.
 
 Local Open Scope proba_scope.
 
-Module FDist1.
 Section fdist1.
 Variables (A : finType) (a : A).
-Definition f := [ffun b => INR (b == a)%bool].
-Lemma f0 b : 0 <= f b. Proof. by rewrite ffunE; exact: leR0n. Qed.
-Lemma f1 : \sum_(b in A) f b = 1.
+Let f := [ffun b => INR (b == a)%bool].
+
+Let f0 b : 0 <= f b. Proof. by rewrite ffunE; exact: leR0n. Qed.
+
+Let f1 : \sum_(b in A) f b = 1.
 Proof.
 rewrite (bigD1 a) //= {1}/f ffunE eqxx /= (eq_bigr (fun=> 0)); last first.
   by move=> b ba; rewrite /f ffunE (negbTE ba).
 by rewrite big1_eq // addR0.
 Qed.
-Definition d : fdist A := locked (FDist.make f0 f1).
-Lemma dE a0 : d a0 = INR (a0 == a)%bool.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+
+Definition fdist1 : fdist A := locked (FDist.make f0 f1).
+
+Lemma fdist1E a0 : fdist1 a0 = INR (a0 == a)%bool.
+Proof. by rewrite /fdist1; unlock; rewrite ffunE. Qed.
+
+Lemma supp_fdist1 : fdist_supp fdist1 = [set a] :> {set A}.
+Proof.
+apply/setP => a0; rewrite !inE; case/boolP : (_ == _ :> A) => [/eqP ->|a0a].
+by rewrite fdist1E eqxx; apply/negbT => /=; apply/eqP; rewrite INR_eq0.
+by apply/negbTE; rewrite negbK fdist1E (negbTE a0a).
+Qed.
+
 End fdist1.
-Section prop.
+
+Section fdist1_prop.
 Variable A : finType.
-Lemma P (d : {fdist A}) a : reflect (forall i, i != a -> d i = 0) (d a == 1).
+
+Lemma fdist1P (d : {fdist A}) a : reflect (forall i, i != a -> d i = 0) (d a == 1).
 Proof.
 apply: (iffP idP) => [/eqP H b ?|H].
 - move : (FDist.f1 d); rewrite (bigD1 a) //= H => /esym/eqP.
@@ -218,32 +231,34 @@ apply: (iffP idP) => [/eqP H b ?|H].
 - move: (FDist.f1 d); rewrite (bigD1 a) //= => /esym.
   by rewrite -subR_eq => <-; rewrite big1 // subR0.
 Qed.
-Lemma dE1 (d' : fdist A) a : (d' a == 1 :> R) = (d' == d a :> {fdist A}).
+
+Lemma fdist1E1 (d' : fdist A) a : (d' a == 1 :> R) = (d' == fdist1 a :> {fdist A}).
 Proof.
-apply/idP/idP => [Pa1|/eqP ->]; last by rewrite dE eqxx.
-apply/eqP/fdist_ext => a0; rewrite dE.
+apply/idP/idP => [Pa1|/eqP ->]; last by rewrite fdist1E eqxx.
+apply/eqP/fdist_ext => a0; rewrite fdist1E.
 case/boolP : (a0 == a :> A) => Ha.
 by rewrite (eqP Ha); exact/eqP.
-by move/P : Pa1 => ->.
+by move/fdist1P : Pa1 => ->.
 Qed.
-Lemma supp a : fdist_supp (d a) = [set a] :> {set A}.
+
+Lemma fdist1I1 (d : {fdist 'I_1}) : d = fdist1 ord0.
 Proof.
-apply/setP => a0; rewrite !inE; case/boolP : (_ == _ :> A) => [/eqP ->|a0a].
-by rewrite dE eqxx; apply/negbT => /=; apply/eqP; rewrite INR_eq0.
-by apply/negbTE; rewrite negbK dE (negbTE a0a).
-Qed.
-Lemma I1 (d : {fdist 'I_1}) : d = FDist1.d ord0.
-Proof.
-apply/fdist_ext => /= i; rewrite dE (ord1 i) eqxx.
+apply/fdist_ext => /= i; rewrite fdist1E (ord1 i) eqxx.
 by move: (FDist.f1 d); rewrite big_ord_recl big_ord0 addR0.
 Qed.
-End prop.
-End FDist1.
 
-Module FDistBind.
-Section def.
+Lemma fdist1xx (a : A) : fdist1 a a = 1.
+Proof. by rewrite fdist1E eqxx. Qed.
+
+Lemma fdist10 (a a0 : A) : a0 != a -> fdist1 a a0 = 0.
+Proof. by move=> a0a; rewrite fdist1E (negbTE a0a). Qed.
+
+End fdist1_prop.
+
+Section fdistbind.
 Variables (A B : finType) (p : fdist A) (g : A -> fdist B).
-Definition f := [ffun b => \sum_(a in A) p a * (g a) b].
+
+Let f := [ffun b => \sum_(a in A) p a * (g a) b].
 
 Let f0 b : 0 <= f b.
 Proof. rewrite /f ffunE; apply sumR_ge0 => a _; exact: mulR_ge0. Qed.
@@ -256,60 +271,71 @@ rewrite exchange_big /= -[RHS](FDist.f1 p); apply eq_bigr => a _.
 by rewrite -big_distrr /= FDist.f1 mulR1.
 Qed.
 
-Definition d : fdist B := locked (FDist.make f0 f1).
+Definition fdistbind : fdist B := locked (FDist.make f0 f1).
 
-Lemma dE x : d x = \sum_(a in A) p a * (g a) x.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Lemma fdistbindE x : fdistbind x = \sum_(a in A) p a * (g a) x.
+Proof. by rewrite /fdistbind; unlock; rewrite ffunE. Qed.
 
-End def.
-End FDistBind.
+End fdistbind.
 
-Lemma FDistBind1f (A B : finType) (a : A) (f : A -> fdist B) :
-  FDistBind.d (FDist1.d a) f = f a.
+Declare Scope fdist_scope.
+Delimit Scope fdist_scope with fdist.
+Reserved Notation "m >>= f" (at level 49).
+Notation "m >>= f" := (fdistbind m f) : fdist_scope.
+Local Open Scope fdist_scope.
+
+Lemma fdist1bind (A B : finType) (a : A) (f : A -> fdist B) :
+  fdist1 a >>= f = f a.
 Proof.
-apply/fdist_ext => b; rewrite FDistBind.dE /= (bigD1 a) //= FDist1.dE eqxx mul1R.
+apply/fdist_ext => b; rewrite fdistbindE /= (bigD1 a) //= fdist1xx mul1R.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 ?addR0 // => c ca.
-by rewrite FDist1.dE (negbTE ca) mul0R.
+by rewrite fdist10// mul0R.
 Qed.
 
-Lemma FDistBindp1 A (p : fdist A) : FDistBind.d p (@FDist1.d A) = p.
+Lemma fdistbind1 A (p : fdist A) : p >>= @fdist1 A = p.
 Proof.
-apply/fdist_ext => /= a; rewrite FDistBind.dE /= (bigD1 a) // FDist1.dE eqxx mulR1.
+apply/fdist_ext => /= a; rewrite fdistbindE /= (bigD1 a) //= fdist1xx mulR1.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 /= ?addR0 //.
-by move=> b ba; rewrite FDist1.dE eq_sym (negbTE ba) mulR0.
+by move=> b ba; rewrite fdist10 ?mulR0// eq_sym.
 Qed.
 
-Lemma FDistBindA A B C (m : fdist A) (f : A -> fdist B) (g : B -> fdist C) :
-  FDistBind.d (FDistBind.d m f) g = FDistBind.d m (fun x => FDistBind.d (f x) g).
+Lemma fdistbindA A B C (m : fdist A) (f : A -> fdist B) (g : B -> fdist C) :
+  (m >>= f) >>= g = m >>= (fun x => f x >>= g).
 Proof.
-apply/fdist_ext => c; rewrite !FDistBind.dE /=.
+apply/fdist_ext => c; rewrite !fdistbindE /=.
 rewrite (eq_bigr (fun a => \sum_(a0 in A) m a0 * f a0 a * g a c)); last first.
-  move=> b _; by rewrite FDistBind.dE big_distrl.
+  by move=> b _; rewrite fdistbindE big_distrl.
 rewrite exchange_big /=; apply eq_bigr => a _.
-rewrite FDistBind.dE big_distrr /=; apply eq_bigr => b _; by rewrite mulRA.
+by rewrite fdistbindE big_distrr /=; apply eq_bigr => b _; rewrite mulRA.
 Qed.
 
-Module FDistMap.
-Section def.
+Section fdistmap.
 Variables (A B : finType) (g : A -> B) (p : fdist A).
-Definition d : {fdist B} := FDistBind.d p (fun a => FDist1.d (g a)).
-Lemma dE (b : B) : d b = \sum_(a in A | a \in g @^-1 b) p a.
+
+Definition fdistmap : {fdist B} := p >>= (fun a => fdist1 (g a)).
+
+Lemma fdistmapE (b : B) : fdistmap b = \sum_(a in A | a \in g @^-1 b) p a.
 Proof.
-rewrite /d FDistBind.dE [in RHS]big_mkcond /=; apply eq_bigr => a _.
-case: ifPn => [|]; first by rewrite inE => /eqP->; rewrite FDist1.dE eqxx mulR1.
-by rewrite !inE => gab; rewrite FDist1.dE eq_sym (negbTE gab) mulR0.
+rewrite /fdistmap fdistbindE [in RHS]big_mkcond /=; apply eq_bigr => a _.
+case: ifPn => [|]; first by rewrite inE => /eqP->; rewrite fdist1xx mulR1.
+by rewrite !inE => gab; rewrite fdist10 ?mulR0// eq_sym.
 Qed.
-End def.
-Section prop.
+End fdistmap.
+
+Section fdistmap_prop.
 Variables (A B C : finType).
-Lemma id P : d (@id A) P = P. Proof. by rewrite /d FDistBindp1. Qed.
-Lemma comp (g : A -> B) (h : C -> A) P : d g (d h P) = d (g \o h) P.
+
+Lemma fdistmap_id P : fdistmap (@id A) P = P. Proof.
+by rewrite /fdistmap fdistbind1. Qed.
+
+Lemma fdistmap_comp (g : A -> B) (h : C -> A) P :
+  fdistmap g (fdistmap h P) = fdistmap (g \o h) P.
 Proof.
-rewrite /d FDistBindA; congr (FDistBind.d _ _).
-by rewrite boolp.funeqE => x; rewrite FDistBind1f.
+rewrite /fdistmap fdistbindA; congr (_ >>= _).
+by rewrite boolp.funeqE => x; rewrite fdist1bind.
 Qed.
-End prop.
-End FDistMap.
+
+End fdistmap_prop.
 
 Module Uniform.
 Section def.
@@ -476,18 +502,21 @@ Qed.
 End prop.
 End BinarySupport.
 
-Module D1FDist.
-Section def.
+Section fdistD1.
 Variables (B : finType) (X : fdist B) (b : B).
+
 Definition f : B -> R := [ffun a => if a == b then 0 else X a / (1 - X b)].
+
 Hypothesis Xb1 : X b != 1.
-Lemma f0 : forall a, 0 <= f a.
+
+Let f0 : forall a, 0 <= f a.
 Proof.
 move=> a; rewrite /f ffunE.
 case: ifPn => [_ |ab]; first exact/leRR.
 apply mulR_ge0 => //; exact/invR_ge0/subR_gt0/fdist_lt1.
 Qed.
-Lemma f1 : \sum_(a in B) f a = 1.
+
+Let f1 : \sum_(a in B) f a = 1.
 Proof.
 rewrite (bigD1 b) //= {1}/f ffunE eqxx add0R.
 rewrite (eq_bigr (fun c => X c / (1 - X b))); last first.
@@ -499,17 +528,23 @@ have ?: 1 - X b != 0 by rewrite subR_eq0' eq_sym.
 rewrite -(@eqR_mul2r (1 - X b)); last exact/eqP.
 by rewrite mul1R -mulRA mulVR ?mulR1 // H.
 Qed.
-Definition d := locked (FDist.make f0 f1).
-Lemma dE a : d a = if a == b then 0 else X a / (1 - X b).
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-End def.
-Section prop.
+
+Definition fdistD1 := locked (FDist.make f0 f1).
+
+Lemma fdistD1E a : fdistD1 a = if a == b then 0 else X a / (1 - X b).
+Proof. by rewrite /fdistD1; unlock; rewrite ffunE. Qed.
+
+End fdistD1.
+
+Section fdistD1_prop.
 Variables (B : finType) (X : fdist B) (b : B).
+
 Hypothesis Xb1 : X b != 1.
-Lemma card_fdist_supp (Xb0 : X b != 0) : #|fdist_supp (d Xb1)| = #|fdist_supp X|.-1.
+
+Lemma card_supp_fdistD1 (Xb0 : X b != 0) : #|fdist_supp (fdistD1 Xb1)| = #|fdist_supp X|.-1.
 Proof.
 rewrite /fdist_supp (cardsD1 b [set a | X a != 0]) !inE Xb0 add1n /=.
-apply eq_card => i; rewrite !inE dE.
+apply eq_card => i; rewrite !inE fdistD1E.
 case: ifPn => //= ib; first by rewrite eqxx.
 apply/idP/idP; first by apply: contra => /eqP ->; rewrite div0R.
 apply: contra; rewrite /Rdiv mulR_eq0' => /orP[//|H].
@@ -518,19 +553,18 @@ move/negPn/negP : H; apply.
 by apply/invR_neq0'; rewrite subR_eq0' eq_sym.
 Qed.
 
-Lemma d_eq0 a (Xa0 : X a != 0) : ((d Xb1 a == 0) = (b == a))%bool.
+Lemma fdistD1_eq0 a (Xa0 : X a != 0) : ((fdistD1 Xb1 a == 0) = (b == a))%bool.
 Proof.
-rewrite dE; case: ifPn => [/eqP ->|ab]; first by rewrite !eqxx.
+rewrite fdistD1E; case: ifPn => [/eqP ->|ab]; first by rewrite !eqxx.
 apply/idP/idP => [|]; last by rewrite eq_sym (negbTE ab).
 rewrite mulR_eq0' => /orP[]; first by rewrite (negbTE Xa0).
 by move/invR_eq0'; rewrite subR_eq0' eq_sym (negbTE Xb1).
 Qed.
 
-Lemma d_0 a : X a = 0 -> d Xb1 a = 0.
-Proof. move=> Xa0; rewrite dE Xa0 div0R; by case: ifP. Qed.
+Lemma fdistD1_0 a : X a = 0 -> fdistD1 Xb1 a = 0.
+Proof. by move=> Xa0; rewrite fdistD1E Xa0 div0R; case: ifP. Qed.
 
-End prop.
-End D1FDist.
+End fdistD1_prop.
 
 (* TODO: move? *)
 (* about_distributions_of_ordinals.*)
@@ -550,52 +584,61 @@ by case: ifPn => //; move: a => -[[//|[|]//]].
 Qed.
 End def.
 Section prop.
-Lemma p1 : d 1%:pr = FDist1.d ord0.
+Lemma p1 : d 1%:pr = fdist1 ord0.
 Proof.
-apply/fdist_ext => /= i; rewrite dE FDist1.dE; case: ifPn => //= _; exact: onem1.
+by apply/fdist_ext => /= i; rewrite dE fdist1E; case: ifPn => //= _; exact: onem1.
 Qed.
-Lemma p0 : d 0%:pr = FDist1.d (Ordinal (erefl (1 < 2)%nat)).
+Lemma p0 : d 0%:pr = fdist1 (Ordinal (erefl (1 < 2)%nat)).
 Proof.
-apply/fdist_ext => /= i; rewrite dE FDist1.dE; case: ifPn => [/eqP ->//|].
-case: i => -[//|] [|//] i12 _ /=; by rewrite onem0.
+apply/fdist_ext => /= i; rewrite dE fdist1E; case: ifPn => [/eqP ->//|].
+by case: i => -[//|] [|//] i12 _ /=; rewrite onem0.
 Qed.
 End prop.
 End I2FDist.
 
-Module AddFDist.
-Section def.
+Section fdist_add.
 Variables (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob).
-Definition f := [ffun i : 'I_(n + m) =>
+
+Let f := [ffun i : 'I_(n + m) =>
   let si := fintype.split i in
   match si with inl a => (p * d1 a) | inr a => p.~ * d2 a end].
-Lemma f0 i : 0 <= f i.
-Proof. rewrite /f ffunE; case: splitP => a _; exact: mulR_ge0. Qed.
-Lemma f1 : \sum_(i < n + m) f i = 1.
+
+Let f0 i : 0 <= f i.
+Proof. by rewrite /f ffunE; case: splitP => a _; exact: mulR_ge0. Qed.
+
+Let f1 : \sum_(i < n + m) f i = 1.
 Proof.
 rewrite -(onemKC p) -{1}(mulR1 p) -(mulR1 p.~).
 rewrite -{1}(FDist.f1 d1) -(FDist.f1 d2) big_split_ord /=; congr (_ + _).
-- rewrite big_distrr /f /=; apply eq_bigr => i _; rewrite ffunE; case: splitP => [j Hj|k /= Hi].
-  + congr (_ * d1 _); apply/val_inj => /=; by rewrite -Hj.
-  + move: (ltn_ord i); by rewrite Hi -ltn_subRL subnn ltn0.
-- rewrite big_distrr /f /=; apply eq_bigr => i _; rewrite ffunE; case: splitP => [j /= Hi|k /= /eqP].
-  + move: (ltn_ord j); by rewrite -Hi -ltn_subRL subnn ltn0.
-  + rewrite eqn_add2l => /eqP ik; congr (_ * d2 _); exact/val_inj.
+- rewrite big_distrr /f /=; apply eq_bigr => i _; rewrite ffunE.
+  case: splitP => [j Hj|k /= Hi].
+  + by congr (_ * d1 _); apply/val_inj => /=; rewrite -Hj.
+  + by move: (ltn_ord i); rewrite Hi -ltn_subRL subnn ltn0.
+- rewrite big_distrr /f /=; apply eq_bigr => i _; rewrite ffunE.
+  case: splitP => [j /= Hi|k /= /eqP].
+  + by move: (ltn_ord j); rewrite -Hi -ltn_subRL subnn ltn0.
+  + by rewrite eqn_add2l => /eqP ik; congr (_ * d2 _); exact/val_inj.
 Qed.
-Definition d : {fdist 'I_(n + m)} := locked (FDist.make f0 f1).
-Lemma dE i : d i =
-  match fintype.split i with inl a => p * d1 a | inr a => p.~ * d2 a end.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-End def.
-End AddFDist.
 
-Module DelFDist.
-Section def.
+Definition fdist_add : {fdist 'I_(n + m)} := locked (FDist.make f0 f1).
+
+Lemma fdist_addE i : fdist_add i =
+  match fintype.split i with inl a => p * d1 a | inr a => p.~ * d2 a end.
+Proof. by rewrite /fdist_add; unlock; rewrite ffunE. Qed.
+
+End fdist_add.
+
+Section fdist_del.
 Variables (n : nat) (P : {fdist 'I_n.+1}) (j : 'I_n.+1) (Pj_neq1 : P j != 1).
-Let D : {fdist 'I_n.+1} := D1FDist.d Pj_neq1.
+
+Let D : {fdist 'I_n.+1} := fdistD1 Pj_neq1.
+
 Let h (i : 'I_n) := if (i < j)%nat then widen_ord (leqnSn _) i else lift ord0 i.
-Lemma f0 i : 0 <= [ffun x => (D \o h) x] i.
+
+Let f0 i : 0 <= [ffun x => (D \o h) x] i.
 Proof. by rewrite /h ffunE /=; case: ifPn. Qed.
-Lemma f1 : \sum_(i < n) [ffun x => (D \o h) x] i = 1.
+
+Let f1 : \sum_(i < n) [ffun x => (D \o h) x] i = 1.
 Proof.
 rewrite -(FDist.f1 D) /= (bigID (fun i : 'I_n.+1 => (i < j)%nat)) /=.
 rewrite (bigID (fun i : 'I_n => (i < j)%nat)) /=; congr (_ + _).
@@ -605,7 +648,7 @@ rewrite (bigID (fun i : 'I_n => (i < j)%nat)) /=; congr (_ + _).
   rewrite /h /= ltn_ord; exact/val_inj.
 rewrite (bigID (pred1 j)) /= [X in _ = X + _](_ : _ = 0) ?add0R; last first.
   rewrite (big_pred1 j).
-  by rewrite /D D1FDist.dE eqxx.
+  by rewrite /D fdistD1E eqxx.
   by move=> /= i; rewrite -leqNgt andbC andb_idr // => /eqP ->.
 rewrite [in RHS]big_mkcond big_ord_recl.
 set X := (X in _ = addR_monoid _ X).
@@ -614,27 +657,31 @@ rewrite big_mkcond; apply eq_bigr => i _.
 rewrite -2!leqNgt andbC eq_sym -ltn_neqAle ltnS.
 case: ifPn => // ji; by rewrite /h ffunE ltnNge ji.
 Qed.
-Definition d : {fdist 'I_n} := locked (FDist.make f0 f1).
-Lemma dE i : d i = D (h i). Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-Definition f (i : 'I_n) := h i.
-End def.
-End DelFDist.
+
+Definition fdist_del : {fdist 'I_n} := locked (FDist.make f0 f1).
+
+Lemma fdist_delE i : fdist_del i = D (h i).
+Proof. by rewrite /fdist_del; unlock; rewrite ffunE. Qed.
+
+Definition fdist_del_idx (i : 'I_n) := h i.
+
+End fdist_del.
 
 Module BelastFDist.
 Local Open Scope proba_scope.
 Section def.
 Variables (n : nat) (P : {fdist 'I_n.+1}) (Pmax_neq1 : P ord_max != 1).
-Let D : {fdist 'I_n.+1} := D1FDist.d Pmax_neq1.
-Definition d : {fdist 'I_n} := locked (DelFDist.d Pmax_neq1).
+Let D : {fdist 'I_n.+1} := fdistD1 Pmax_neq1.
+Definition d : {fdist 'I_n} := locked (fdist_del Pmax_neq1).
 Lemma dE i : d i = D (widen_ord (leqnSn _) i).
-Proof. by rewrite /d; unlock; rewrite DelFDist.dE ltn_ord. Qed.
+Proof. by rewrite /d; unlock; rewrite fdist_delE ltn_ord. Qed.
 End def.
 End BelastFDist.
 
-Module ConvnFDist.
-Section def.
+Section fdist_convn.
 Variables (A : finType) (n : nat) (e : {fdist 'I_n}) (g : 'I_n -> fdist A).
-Definition f := [ffun a => \sum_(i < n) e i * g i a].
+
+Let f := [ffun a => \sum_(i < n) e i * g i a].
 
 Let f0 a : 0 <= f a.
 Proof. by rewrite ffunE; apply: sumR_ge0 => /= i _; apply mulR_ge0. Qed.
@@ -646,26 +693,29 @@ rewrite exchange_big /= -(FDist.f1 e) /=; apply eq_bigr => i _.
 by rewrite -big_distrr /= FDist.f1 mulR1.
 Qed.
 
-Definition d : fdist A := locked (FDist.make f0 f1).
+Definition fdist_convn : fdist A := locked (FDist.make f0 f1).
 
-Lemma dE a : d a = \sum_(i < n) e i * g i a.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Lemma fdist_convnE a : fdist_convn a = \sum_(i < n) e i * g i a.
+Proof. by rewrite /fdist_convn; unlock; rewrite ffunE. Qed.
 
-End def.
-Section prop.
+End fdist_convn.
+
+Section fdist_convn_prop.
 Variables (A : finType) (n : nat).
 
-Lemma fdist1 (g : 'I_n -> fdist A) a : d (FDist1.d a) g = g a.
+Lemma fdist_convn1 (g : 'I_n -> fdist A) a : fdist_convn (fdist1 a) g = g a.
 Proof.
-apply/fdist_ext => a0; rewrite dE (bigD1 a) //= FDist1.dE eqxx mul1R.
-by rewrite big1 ?addR0 // => i ia; rewrite FDist1.dE (negbTE ia) mul0R.
+apply/fdist_ext => a0; rewrite fdist_convnE (bigD1 a) //= fdist1xx mul1R.
+by rewrite big1 ?addR0 // => i ia; rewrite fdist10// mul0R.
 Qed.
 
-Lemma cst (e : {fdist 'I_n}) (a : {fdist A}) : d e (fun=> a) = a.
-Proof. by apply/fdist_ext => ?; rewrite dE -big_distrl /= FDist.f1 mul1R. Qed.
+Lemma fdist_convn_cst (e : {fdist 'I_n}) (a : {fdist A}) :
+  fdist_convn e (fun=> a) = a.
+Proof.
+by apply/fdist_ext => ?; rewrite fdist_convnE -big_distrl /= FDist.f1 mul1R.
+Qed.
 
-End prop.
-End ConvnFDist.
+End fdist_convn_prop.
 
 Reserved Notation "[ 's_of' p , q ]" (format "[ 's_of'  p ,  q ]").
 Reserved Notation "[ 'r_of' p , q ]" (format "[ 'r_of'  p ,  q ]").
@@ -934,55 +984,48 @@ Qed.
 Lemma r_of_pqK_oprob (r s : oprob) : [r_of [p_of r, s], [q_of r, s]] = r.
 Proof. apply/r_of_pqK/oprob_neq0/oprob_neq1. Qed.
 
-Module ConvFDist.
-Section def.
+Lemma s_of_Rpos_probA (p q r : Rpos) :
+  [s_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] =
+  ((p + q) / (p + q + r))%:pos%:pr.
+Proof.
+apply val_inj; rewrite /= s_of_pqE /onem /=; field.
+by split; exact/eqP/Rpos_neq0.
+Qed.
+
+Lemma r_of_Rpos_probA (p q r : Rpos) :
+  [r_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] =
+  (p / (p + q))%:pos%:pr.
+Proof.
+apply/val_inj; rewrite /= r_of_pqE s_of_pqE /onem /=; field.
+do 3 (split; first exact/eqP/Rpos_neq0).
+rewrite (addRC p (q + r)) addRK {4}[in q + r]addRC addRK.
+rewrite mulRC -mulRBr (addRC _ p) addRA addRK mulR_neq0.
+split; exact/eqP/Rpos_neq0.
+Qed.
+
+Section fdist_conv.
 Variables (A : finType) (p : prob) (d1 d2 : fdist A).
-Definition d : {fdist A} := locked
-  (ConvnFDist.d (I2FDist.d p) (fun i => if i == ord0 then d1 else d2)).
-Lemma dE a : d a = p * d1 a + p.~ * d2 a.
+
+Definition fdist_conv : {fdist A} := locked
+  (fdist_convn (I2FDist.d p) (fun i => if i == ord0 then d1 else d2)).
+
+Lemma fdist_convE a : fdist_conv a = p * d1 a + p.~ * d2 a.
 Proof.
-rewrite /d; unlock => /=.
-by rewrite ConvnFDist.dE !big_ord_recl big_ord0 /= addR0 !I2FDist.dE.
-Qed.
-End def.
-Section prop.
-Variables (A : finType).
-Implicit Types a b c : fdist A.
-
-Local Notation "x <| p |> y" := (d p x y).
-
-Lemma d1 a b : a <| 1%:pr |> b = a.
-Proof. apply/fdist_ext => a0; by rewrite dE /= onem1 mul1R mul0R addR0. Qed.
-
-Lemma skewed_commute p a b : a <| p |> b = b <| p.~%:pr |> a.
-Proof. apply/fdist_ext => a0 /=; by rewrite 2!dE onemK addRC. Qed.
-
-Lemma idempotent p a : a <| p |> a = a.
-Proof. apply/fdist_ext => a0; by rewrite dE mulRBl mul1R addRCA addRN addR0. Qed.
-
-Lemma quasi_assoc p q a b c :
-  a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c.
-Proof.
-apply/fdist_ext => a0 /=; rewrite 4!dE /=.
-set r := r_of_pq p q.  set s := s_of_pq p q.
-transitivity (p * a a0 + p.~ * q * b a0 + p.~ * q.~ * c a0); first lra.
-transitivity (r * s * a a0 + r.~ * s * b a0 + s.~ * c a0); last first.
-  by rewrite 2!(mulRC _ s) -2!mulRA -mulRDr.
-rewrite s_of_pqE onemK; congr (_ + _).
-rewrite (_ : (p.~ * q.~).~ = [s_of p, q]); last by rewrite s_of_pqE.
-by rewrite -pq_is_rs -p_is_rs.
+rewrite /fdist_conv; unlock => /=.
+by rewrite fdist_convnE !big_ord_recl big_ord0 /= addR0 !I2FDist.dE.
 Qed.
 
-Lemma bind_left_distr (B : finType) p a b (f : A -> fdist B) :
-  FDistBind.d (a <| p |> b) f = FDistBind.d a f <| p |> FDistBind.d b f.
+End fdist_conv.
+
+Notation "x <| p |> y" := (fdist_conv p x y) : fdist_scope.
+
+Lemma bind_left_distr (A B : finType) p a b (f : A -> fdist B) :
+  (a <| p |> b) >>= f = (a >>= f) <| p |> (b >>= f).
 Proof.
-apply/fdist_ext => a0 /=; rewrite !(FDistBind.dE,dE) /=.
+apply/fdist_ext => a0 /=; rewrite !(fdistbindE,fdist_convE) /=.
 rewrite 2!big_distrr /= -big_split /=; apply/eq_bigr => a1 _.
-by rewrite dE mulRDl !mulRA.
+by rewrite fdist_convE mulRDl !mulRA.
 Qed.
-
-End prop.
-End ConvFDist.
 
 Module PermFDist.
 Section def.
@@ -1012,15 +1055,15 @@ Lemma dE1 (n : nat) (P : {fdist 'I_n}) : d P 1%g = P.
 Proof. apply/fdist_ext => /= i; by rewrite dE perm1. Qed.
 Lemma mul (n : nat) (P : {fdist 'I_n}) (s s' : 'S_n) : d (d P s) s' = d P (s' * s).
 Proof. by apply/fdist_ext => /= i; rewrite !dE permM. Qed.
-Lemma tperm (n : nat) (a b : 'I_n) : d (FDist1.d a) (tperm a b) = FDist1.d b.
+Lemma tperm (n : nat) (a b : 'I_n) : d (fdist1 a) (tperm a b) = fdist1 b.
 Proof.
-apply/fdist_ext => /= x; rewrite dE !FDist1.dE permE /=.
+apply/fdist_ext => /= x; rewrite dE !fdist1E permE /=.
 case: ifPn => [/eqP ->|xa]; first by rewrite eq_sym.
 case: ifPn; by [rewrite eqxx | move=> _; rewrite (negbTE xa)].
 Qed.
-Lemma d1 (n : nat) (a : 'I_n) (s : 'S_n) : d (FDist1.d a) s = FDist1.d (s^-1 a)%g.
+Lemma d1 (n : nat) (a : 'I_n) (s : 'S_n) : d (fdist1 a) s = fdist1 (s^-1 a)%g.
 Proof.
-apply/fdist_ext => /= i; rewrite dE !FDist1.dE; congr (INR (nat_of_bool _)).
+apply/fdist_ext => /= i; rewrite dE !fdist1E; congr (INR (nat_of_bool _)).
 by apply/eqP/eqP => [<-|->]; rewrite ?permK // ?permKV.
 Qed.
 End prop.
@@ -1030,11 +1073,11 @@ Module Bivar.
 Section def.
 Variables (A B : finType) (P : {fdist A * B}).
 
-Definition fst : fdist A := FDistMap.d fst P.
+Definition fst : fdist A := fdistmap fst P.
 
 Lemma fstE a : fst a = \sum_(i in B) P (a, i).
 Proof.
-by rewrite /fst FDistMap.dE /= -(pair_big_fst _ _ (pred1 a)) //= ?big_pred1_eq.
+by rewrite /fst fdistmapE /= -(pair_big_fst _ _ (pred1 a)) //= ?big_pred1_eq.
 Qed.
 
 Lemma dom_by_fst a b : fst a = 0 -> P (a, b) = 0.
@@ -1043,16 +1086,16 @@ Proof. rewrite fstE => /psumR_eq0P -> // ? _; exact: fdist_ge0. Qed.
 Lemma dom_by_fstN a b : P (a, b) != 0 -> fst a != 0.
 Proof. by apply: contra => /eqP /dom_by_fst ->. Qed.
 
-Definition snd : fdist B := FDistMap.d snd P.
+Definition snd : fdist B := fdistmap snd P.
 
 Lemma sndE b : snd b = \sum_(i in A) P (i, b).
 Proof.
-rewrite /snd FDistMap.dE -(pair_big_snd _ _ (pred1 b)) //=.
-apply eq_bigr => a ?; by rewrite big_pred1_eq.
+rewrite /snd fdistmapE -(pair_big_snd _ _ (pred1 b)) //=.
+by apply eq_bigr => a ?; rewrite big_pred1_eq.
 Qed.
 
 Lemma dom_by_snd a b : snd b = 0 -> P (a, b) = 0.
-Proof. rewrite sndE => /psumR_eq0P -> // ? _; exact: fdist_ge0. Qed.
+Proof. by rewrite sndE => /psumR_eq0P -> // ? _; exact: fdist_ge0. Qed.
 
 Lemma dom_by_sndN a b : P (a, b) != 0 -> snd b != 0.
 Proof. by apply: contra => /eqP /dom_by_snd ->. Qed.
@@ -1071,10 +1114,10 @@ Proof.
 move=> a b -[H1 H2]; rewrite -(row_mx_rbehead a) -(row_mx_rbehead b).
 by rewrite {}H2; congr (@row_mx _ 1 1 n _ _); apply/rowP => i; rewrite !mxE.
 Qed.
-Definition to_bivar : {fdist A * 'rV[A]_n} := FDistMap.d f P.
+Definition to_bivar : {fdist A * 'rV[A]_n} := fdistmap f P.
 Lemma to_bivarE a : to_bivar a = P (row_mx (\row_(i < 1) a.1) a.2).
 Proof.
-case: a => x y; rewrite /to_bivar FDistMap.dE /=.
+case: a => x y; rewrite /to_bivar fdistmapE /=.
 rewrite (_ : (x, y) = f (row_mx (\row_(i < 1) x) y)); last first.
   by rewrite /f row_mx_row_ord0 rbehead_row_mx.
 by rewrite (big_pred1_inj inj_f).
@@ -1088,11 +1131,11 @@ Let inj_g : injective g.
 Proof.
 by move=> a b -[H1 H2]; rewrite -(row_mx_rbelast a) -(row_mx_rbelast b) H1 H2.
 Qed.
-Definition belast_last : {fdist 'rV[A]_n * A} := FDistMap.d g P.
+Definition belast_last : {fdist 'rV[A]_n * A} := fdistmap g P.
 Lemma belast_lastE a : belast_last a =
   P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2))).
 Proof.
-case: a => x y; rewrite /belast_last FDistMap.dE /=.
+case: a => x y; rewrite /belast_last fdistmapE /=.
 rewrite (_ : (x, y) = g (castmx (erefl 1%nat, addn1 n) (row_mx x (\row__ y)))); last first.
   by rewrite /g rbelast_row_mx row_mx_row_ord_max.
 by rewrite (big_pred1_inj inj_g).
@@ -1114,11 +1157,12 @@ move: (H) => /(congr1 (@lsubmx A 1 1 n)); rewrite 2!row_mxKl => /rowP/(_ ord0).
 rewrite !mxE => ->; congr (_, _).
 by move: H => /(congr1 (@rsubmx A 1 1 n)); rewrite 2!row_mxKr.
 Qed.
-Definition from_bivar : {fdist 'rV[A]_n.+1} := FDistMap.d f P.
+
+Definition from_bivar : {fdist 'rV[A]_n.+1} := fdistmap f P.
 
 Lemma from_bivarE a : from_bivar a = P (a ``_ ord0, rbehead a).
 Proof.
-rewrite /from_bivar FDistMap.dE /=.
+rewrite /from_bivar fdistmapE /=.
 rewrite {1}(_ : a = f (a ``_ ord0, rbehead a)); last first.
   by rewrite /f /= row_mx_rbehead.
 by rewrite (big_pred1_inj inj_f).
@@ -1167,15 +1211,15 @@ Qed.
 End def.
 Section prop.
 Variables (A B : finType) (Q : A -> fdist B).
-Lemma fst_convex p (a b : fdist A) : Bivar.fst (d (ConvFDist.d p a b) Q) =
-  ConvFDist.d p (Bivar.fst (d a Q)) (Bivar.fst (d b Q)).
+Lemma fst_convex p (a b : fdist A) : Bivar.fst (d (a <| p |> b) Q) =
+  Bivar.fst (d a Q) <| p |> Bivar.fst (d b Q).
 Proof. by rewrite !fst. Qed.
-Lemma snd_convex p (a b : fdist A) : Bivar.snd (d (ConvFDist.d p a b) Q) =
-  ConvFDist.d p (Bivar.snd (d a Q)) (Bivar.snd (d b Q)).
+Lemma snd_convex p (a b : fdist A) : Bivar.snd (d (a <| p |> b) Q) =
+  Bivar.snd (d a Q) <| p |> Bivar.snd (d b Q).
 Proof.
 apply/fdist_ext => b0.
-rewrite Bivar.sndE ConvFDist.dE !Bivar.sndE 2!big_distrr /=.
-rewrite -big_split; apply eq_bigr => a0 _; rewrite !dE ConvFDist.dE /=; field.
+rewrite Bivar.sndE fdist_convE !Bivar.sndE 2!big_distrr /=.
+by rewrite -big_split; apply eq_bigr => a0 _; rewrite !dE fdist_convE /=; field.
 Qed.
 End prop.
 End ProdFDist.

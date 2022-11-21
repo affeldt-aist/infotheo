@@ -53,7 +53,7 @@ rewrite /d Swap.dE Bivar.sndE; apply eq_bigr => d _.
 by rewrite TripA.dE /= Swap.dE TripA.dE.
 Qed.
 Lemma snd : Bivar.snd d = Bivar.snd P.
-Proof. by rewrite /Bivar.snd /d !FDistMap.comp. Qed.
+Proof. by rewrite /Bivar.snd /d !fdistmap_comp. Qed.
 End proj124.
 End Proj124.
 
@@ -67,17 +67,17 @@ Definition f (x : A * B * D * C) : A * (B * D) * C :=
   (x.1.1.1, (x.1.1.2, x.1.2), x.2).
 Lemma inj_f : injective f.
 Proof. by rewrite /f => -[[[? ?] ?] ?] [[[? ?] ?] ?] /= [-> -> -> ->]. Qed.
-Definition d : {fdist A * (B * D) * C} := FDistMap.d f P.
+Definition d : {fdist A * (B * D) * C} := fdistmap f P.
 Lemma dE x : d x = P (x.1.1, x.1.2.1, x.1.2.2, x.2).
 Proof.
-case: x => -[a [b d] c]; rewrite /def.d FDistMap.dE /= -/(f (a, b, d, c)).
+case: x => -[a [b d] c]; rewrite /def.d fdistmapE /= -/(f (a, b, d, c)).
 by rewrite (big_pred1_inj inj_f).
 Qed.
 End def.
 Section prop.
 Variables (A B C D : finType) (P : {fdist A * B * D * C}).
 Lemma snd : Bivar.snd (QuadA23.d P) = Bivar.snd P.
-Proof. by rewrite /Bivar.snd /d FDistMap.comp. Qed.
+Proof. by rewrite /Bivar.snd /d fdistmap_comp. Qed.
 End prop.
 End QuadA23.
 
@@ -101,17 +101,17 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}
 
 Lemma Proj13_RV3 : Proj13.d `d_[% X, Y, Z] = `d_[% X, Z].
 Proof.
-by rewrite /Proj13.d /Bivar.snd /TripA.d /dist_of_RV /TripC12.d !FDistMap.comp.
+by rewrite /Proj13.d /Bivar.snd /TripA.d /dist_of_RV /TripC12.d !fdistmap_comp.
 Qed.
 
 Lemma snd_RV3 : Bivar.snd `d_[% X, Y, Z] = Bivar.snd `d_[% X, Z].
 Proof. by rewrite -Proj13.snd Proj13_RV3. Qed.
 
 Lemma TripC12_RV3 : TripC12.d `d_[% X, Y, Z] = `d_[% Y, X, Z].
-Proof. by rewrite /TripC12.d /dist_of_RV FDistMap.comp. Qed.
+Proof. by rewrite /TripC12.d /dist_of_RV fdistmap_comp. Qed.
 
 Lemma TripA_RV3 : TripA.d `d_[% X, Y, Z] = `d_[% X, [% Y, Z]].
-Proof. by rewrite /TripC12.d /dist_of_RV /TripA.d FDistMap.comp. Qed.
+Proof. by rewrite /TripC12.d /dist_of_RV /TripA.d fdistmap_comp. Qed.
 
 End RV3_prop.
 
