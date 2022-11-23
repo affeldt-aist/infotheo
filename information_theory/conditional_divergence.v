@@ -129,26 +129,26 @@ rewrite /div.
 under eq_bigr do rewrite big_distrr /=.
 rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
 rewrite (_ : JointFDistChan.d R P (a, b) = (CJFDist.joint_of P) (a, b)); last first.
-  by rewrite JointFDistChan.dE ProdFDist.dE.
+  by rewrite JointFDistChan.dE fdist_prodE.
 rewrite (_ : JointFDistChan.d R Q (a, b) = (CJFDist.joint_of Q) (a, b)); last first.
-  by rewrite JointFDistChan.dE ProdFDist.dE.
+  by rewrite JointFDistChan.dE fdist_prodE.
 rewrite mulRA.
 rewrite {1}/jcPr.
-rewrite Swap.snd ProdFDist.fst Pr_set1.
+rewrite Swap.snd fdist_prod1 Pr_set1.
 case/boolP : (R a == 0) => [/eqP|] H.
-  by rewrite H 2!mul0R /P /CJFDist.joint_of /= ProdFDist.dE H !mul0R.
+  by rewrite H 2!mul0R /P /CJFDist.joint_of /= fdist_prodE H !mul0R.
 congr (_ * log _).
-  rewrite setX1 Pr_set1 Swap.dE ProdFDist.dE /=.
+  rewrite setX1 Pr_set1 Swap.dE fdist_prodE /=.
   field.
   exact/eqP.
 rewrite /jcPr !setX1 !Pr_set1 !Swap.dE.
 rewrite !Swap.snd.
 case/boolP : (CJFDist.joint_of Q (a, b) == 0) => [/eqP|] H'.
   have : (CJFDist.joint_of P) (a, b) = 0 by move/dominatesP : PQ => ->.
-  rewrite /P ProdFDist.dE /= mulR_eq0 => -[| -> ].
+  rewrite /P fdist_prodE /= mulR_eq0 => -[| -> ].
     by move/eqP : H; tauto.
   by rewrite !(mulR0,mul0R,div0R).
-rewrite 2!ProdFDist.fst /=; field.
+rewrite 2!fdist_prod1 /=; field.
 by split; exact/eqP.
 Qed.
 

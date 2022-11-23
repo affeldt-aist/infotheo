@@ -29,7 +29,7 @@ Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable p : prob.
 
-Definition c : `Ch(A, A) := Binary.d card_A p.
+Definition c : `Ch(A, A) := fdist_binary card_A p.
 
 End BSC_sect.
 End BSC.
@@ -58,8 +58,8 @@ rewrite {1}/entropy .
 set a := \sum_(_ in _) _. set b := \sum_(_ <- _) _.
 apply trans_eq with (- (a + (-1) * b)); first by field.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
-rewrite !Set2sumE /= !JointFDistChan.dE /BSC.c !Binary.dE /=.
-rewrite !/Binary.f !eqxx /Binary.f eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2 (* TODO *).
+rewrite !Set2sumE /= !JointFDistChan.dE /BSC.c !fdist_binaryxx !fdist_binaryE/=.
+rewrite eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2 (* TODO *).
 set a := Set2.a _. set b := Set2.b _.
 case: (Req_EM_T (P a) 0) => H1.
   rewrite H1 !(mul0R, mulR0, addR0, add0R).
@@ -100,7 +100,7 @@ Lemma H_out_max : `H(P `o BSC.c card_A p_01) <= 1.
 Proof.
 rewrite {1}/entropy /= Set2sumE /= !OutFDist.dE 2!Set2sumE /=.
 set a := Set2.a _. set b := Set2.b _.
-rewrite /BSC.c !Binary.dE !eqxx /= !(eq_sym _ a).
+rewrite /BSC.c !fdist_binaryxx !fdist_binaryE /= !(eq_sym _ a).
 rewrite (negbTE (Set2.a_neq_b card_A)).
 move: (FDist.f1 P); rewrite Set2sumE /= -/a -/b => P1.
 have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
@@ -144,12 +144,12 @@ Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; lra. Qed.
 Lemma H_out_binary_uniform : `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
 Proof.
 rewrite {1}/entropy !Set2sumE /= !OutFDist.dE !Set2sumE /=.
-rewrite /BSC.c !Binary.dE !eqxx (eq_sym _ (Set2.a _)) !Uniform.dE.
+rewrite /BSC.c !fdist_binaryxx !fdist_binaryE (eq_sym _ (Set2.a _)) !Uniform.dE.
 rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.
 rewrite mul1R (_ : p + (1 - p) = 1); last by field.
 rewrite mul1R -!mulRDl card_A /= (_ : INR 2 = 2) // /log LogV; last lra.
-rewrite Log_n //=; field.
+by rewrite Log_n //=; field.
 Qed.
 
 End bsc_capacity_proof.
@@ -169,7 +169,7 @@ set E := (fun y : R => _).
 set p' := Prob.mk_ (ltR2W p_01').
 have has_sup_E : has_sup E.
   split.
-    set d := Binary.d card_A p' (Set2.a card_A).
+    set d := fdist_binary card_A p' (Set2.a card_A).
     by exists (`I(d, BSC.c card_A p')), d.
   exists 1 => y [P _ <-{y}].
   rewrite IPW; apply/RleP/leR_subl_addr/(leR_trans (H_out_max card_A P p_01')).
@@ -210,10 +210,10 @@ move=> m y d; rewrite DMCE.
 transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
               (\prod_(i < n | (f m) ``_ i != y ``_ i) p))%R.
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=; congr (_ * _).
-    by apply eq_bigr => // i /eqP ->; rewrite /BSC.c Binary.dE eqxx.
-  apply eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c Binary.dE eq_sym Hyi.
+    by apply eq_bigr => // i /eqP ->; rewrite /BSC.c fdist_binaryxx.
+  apply eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c fdist_binaryE eq_sym Hyi.
 congr (_ * _).
-by rewrite big_const /= iter_mulR /= card_dHC.
+  by rewrite big_const /= iter_mulR /= card_dHC.
 by rewrite big_const /= iter_mulR /= card_dH_vec.
 Qed.
 

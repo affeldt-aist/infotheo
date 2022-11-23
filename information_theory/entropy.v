@@ -107,9 +107,9 @@ rewrite mul1R /log LogV ?oppRK //; by rewrite HA; apply/ltR0n.
 Qed.
 
 Lemma entropy_H2 (A : finType) (card_A : #|A| = 2%nat) (p : prob) :
-  H2 p = entropy (Binary.d card_A p (Set2.a card_A)).
+  H2 p = entropy (fdist_binary card_A p (Set2.a card_A)).
 Proof.
-rewrite /H2 /entropy Set2sumE /= !Binary.dE eqxx /=.
+rewrite /H2 /entropy Set2sumE /= fdist_binaryxx !fdist_binaryE.
 by rewrite eq_sym (negbTE (Set2.a_neq_b _)) oppRD addRC.
 Qed.
 

@@ -68,7 +68,7 @@ From mathcomp Require ssrnum vector.
 (*    pairConvType == pairs of convTypes                                      *)
 (*  fdist_convType == finite distributions                                    *)
 (*                                                                            *)
-(* orderedConvType == a convType augmented with an order                      *)
+(* orderedonvType == a convType augmented with an order                      *)
 (* Instances: R, T -> U (T convType, U orderedConvType), opposite (see mkOpp) *)
 (*                                                                            *)
 (* Reference: R. Affeldt, J. Garrigue, T. Saikawa. Formal adventures in       *)
@@ -942,10 +942,10 @@ Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2 *)
 Lemma Convn_perm (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) (s : 'S_n) :
-  <|>_d g = <|>_(PermFDist.d d s) (g \o s).
+  <|>_d g = <|>_(fdist_perm d s) (g \o s).
 Proof.
 apply S1_inj; rewrite !S1_Convn (barycenter_perm _ s).
-apply eq_bigr => i _; by rewrite PermFDist.dE.
+by apply eq_bigr => i _; rewrite fdist_permE.
 Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 4 *)
@@ -1052,23 +1052,21 @@ exact/subset_hull.
 Qed.
 
 Lemma mem_hull_setU X Y a0 a1 p :
-  X a0 -> Y a1 -> (hull (X `|` Y)) (a0 <| p |> a1).
+  X a0 -> Y a1 -> hull (X `|` Y) (a0 <| p |> a1).
 Proof.
 move=> a0X a1y.
-exists 2, (fun i => if i == ord0 then a0 else a1), (I2FDist.d p); split => /=.
-  move=> a2.
-  case => i _ <-{a2} /=.
-  case: ifPn => _; [by left | by right].
+exists 2, (fun i => if i == ord0 then a0 else a1), (fdistI2 p); split => /=.
+  by move=> _ [i _ <-] /=; case: ifPn => _; [left | right].
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb H].
-  rewrite I2FDist.dE eqxx /= => p1.
+  rewrite fdistI2E eqxx /= => p1.
   by rewrite (_ : p = 1%:pr) ?conv1 //; exact/val_inj.
-congr (_ <| _ |> _); first by apply val_inj; rewrite /= I2FDist.dE eqxx.
+congr (_ <| _ |> _); first by apply val_inj; rewrite /= fdistI2E eqxx.
 case: Bool.bool_dec => // H'.
 exfalso.
 move: H'; rewrite fdist_delE fdistD1E (eq_sym (lift _ _)) (negbTE (neq_lift _ _)).
-rewrite I2FDist.dE (eq_sym (lift _ _)) (negbTE (neq_lift _ _)) I2FDist.dE.
+rewrite fdistI2E (eq_sym (lift _ _)) (negbTE (neq_lift _ _)) fdistI2E.
 rewrite eqxx divRR ?eqxx //.
-by move: H; rewrite I2FDist.dE eqxx onem_neq0.
+by move: H; rewrite fdistI2E eqxx onem_neq0.
 Qed.
 
 Lemma hull_monotone X Y : X `<=` Y -> hull X `<=` hull Y.
@@ -1122,11 +1120,11 @@ move=> x y p xX yX.
 have [->|p1] := eqVneq p 1%:pr; first by rewrite conv1.
 set g : 'I_2 -> T := fun i => if i == ord0 then x else y.
 have gX : range g `<=` X by move=> a -[i _ <-]; rewrite /g; case: ifPn.
-move/asboolP : H => /(_ _ g (I2FDist.d p) gX).
-rewrite ConvnIE; first by rewrite I2FDist.dE eqxx.
+move/asboolP : H => /(_ _ g (fdistI2 p) gX).
+rewrite ConvnIE; first by rewrite fdistI2E eqxx.
 move=> p1'.
 rewrite {1}/g eqxx (_ : probfdist _ _ = p); last first.
-  by apply val_inj; rewrite /= I2FDist.dE eqxx.
+  by apply val_inj; rewrite /= fdistI2E eqxx.
 by rewrite (_ : <|>_ _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?ConvnI1E.
 Qed.
 
@@ -1552,8 +1550,9 @@ Qed.
 
 (* TODO: Lemma preim_cancel: ... *)
 
-Lemma avgnr_add n m (f : 'I_n -> E) (d : {fdist 'I_n}) (g : 'I_m -> E) (e : {fdist 'I_m}) :
-  <|>_d f + <|>_e g = <|>_(fdistmap (@unsplit_prod n m) (ProdFDist.d d (fun _ => e)))
+Lemma avgnr_add n m (f : 'I_n -> E) (d : {fdist 'I_n}) (g : 'I_m -> E)
+    (e : {fdist 'I_m}) :
+  <|>_d f + <|>_e g = <|>_(fdistmap (@unsplit_prod n m) (d `x e))
                            (fun i => let (i, j) := split_prod i in f i + g j).
 Proof.
 rewrite -[<|>_e g]scale1r !avgnrE !/avgnr big_prod_ord.
@@ -1563,8 +1562,7 @@ transitivity (d i *: (1%R *: f i + \sum_(i0 < m) e i0 *: g i0)).
    by rewrite scale1r scalerDr.
 rewrite -(FDist.f1 e) scaler_suml -big_split scaler_sumr; apply congr_big=>// j _.
 rewrite scalerDr -!scalerDr scalerA unsplit_prodK; congr scale.
-rewrite fdistmapE (big_pred1 (i, j)) /=.
-   by rewrite ProdFDist.dE.
+rewrite fdistmapE (big_pred1 (i, j)) /= ?fdist_prodE//.
 move=>[i' j'] /=; rewrite xpair_eqE inE /=.
 apply/eqP/andP => /=; last by case => /eqP -> /eqP ->.
 move=>/(congr1 (@split_prod n m))/=.

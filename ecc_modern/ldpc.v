@@ -98,17 +98,17 @@ Lemma bsc_post (a : A) :
   (if a == a' then 1 - p else p)%R.
 Proof.
 rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
-rewrite !TupleFDist.dE DMCE big_ord_recl big_ord0.
+rewrite !fdist_tupleE DMCE big_ord_recl big_ord0.
 rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
-  by move=> i _; rewrite /P !TupleFDist.dE big_ord_recl big_ord0 !Uniform.dE mulR1.
+  by move=> i _; rewrite /P !fdist_tupleE big_ord_recl big_ord0 !Uniform.dE mulR1.
 rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
-  transitivity (\sum_(i in 'M_1) Binary.d card_A p_01 (i ``_ ord0) a')%R.
+  transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a')%R.
     apply eq_bigr => i _.
     by rewrite DMCE big_ord_recl big_ord0 mulR1 /BSC.c mxE.
-  apply/(@big_singl_rV _ _ _ _ (fun i => (Binary.d card_A p_01 i) a')).
-  by rewrite -Binary.d_sum_swap // FDist.f1.
-rewrite mxE mulR1 big_ord_recl big_ord0 /BSC.c Binary.dE /= eq_sym !mxE; field.
-rewrite /P Uniform.dE card_A (_ : 2%:R = 2)%R //; lra.
+  apply/(@big_singl_rV _ _ _ _ (fdist_binary card_A p_01 ^~ a')).
+  by rewrite -sum_fdist_binary_swap // FDist.f1.
+rewrite mxE mulR1 big_ord_recl big_ord0 /BSC.c fdist_binaryE /= eq_sym !mxE; field.
+by rewrite /P Uniform.dE card_A (_ : 2%:R = 2)%R //; lra.
 Qed.
 
 End post_proba_bsc_unif.

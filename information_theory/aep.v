@@ -136,9 +136,9 @@ have {H1 H2} := (wlln (H1 n) (H2 n) Hsum Hepsilon).
 move/(leR_trans _); apply.
 apply/Pr_incl/subsetP => ta; rewrite 2!inE => /andP[H1].
 rewrite /sum_mlog_prod [--log _]lock /= -lock /= /scalel_RV /mlog_RV.
-rewrite TupleFDist.dE log_prodR_sumR_mlog //.
+rewrite fdist_tupleE log_prodR_sumR_mlog //.
 apply: (prodR_gt0_inv (FDist.ge0 P)).
-by move: H1; rewrite TupleFDist.dE => /ltRP.
+by move: H1; rewrite fdist_tupleE => /ltRP.
 Qed.
 
 End AEP.

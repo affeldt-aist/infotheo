@@ -27,6 +27,7 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 
 (* TODO: move? *)
 Section setX_structural_lemmas.
@@ -45,15 +46,15 @@ Module Proj124.
 Section proj124.
 Variables (A B D C : finType) (P : {fdist A * B * D * C}).
 Definition d : {fdist A * B * C} :=
-  Swap.d (Bivar.snd (TripA.d (Swap.d (TripA.d P)))).
+  Swap.d ((TripA.d (Swap.d (TripA.d P)))`2).
 Lemma dE abc : d abc = \sum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
 Proof.
 case: abc => [[a b] c] /=.
-rewrite /d Swap.dE Bivar.sndE; apply eq_bigr => d _.
+rewrite /d Swap.dE fdist_sndE; apply eq_bigr => d _.
 by rewrite TripA.dE /= Swap.dE TripA.dE.
 Qed.
-Lemma snd : Bivar.snd d = Bivar.snd P.
-Proof. by rewrite /Bivar.snd /d !fdistmap_comp. Qed.
+Lemma snd : d`2 = P`2.
+Proof. by rewrite /fdist_snd /d !fdistmap_comp. Qed.
 End proj124.
 End Proj124.
 
@@ -76,8 +77,8 @@ Qed.
 End def.
 Section prop.
 Variables (A B C D : finType) (P : {fdist A * B * D * C}).
-Lemma snd : Bivar.snd (QuadA23.d P) = Bivar.snd P.
-Proof. by rewrite /Bivar.snd /d fdistmap_comp. Qed.
+Lemma snd : (QuadA23.d P)`2 = P`2.
+Proof. by rewrite /fdist_snd /d fdistmap_comp. Qed.
 End prop.
 End QuadA23.
 
@@ -101,10 +102,10 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}
 
 Lemma Proj13_RV3 : Proj13.d `d_[% X, Y, Z] = `d_[% X, Z].
 Proof.
-by rewrite /Proj13.d /Bivar.snd /TripA.d /dist_of_RV /TripC12.d !fdistmap_comp.
+by rewrite /Proj13.d /fdist_snd /TripA.d /dist_of_RV /TripC12.d !fdistmap_comp.
 Qed.
 
-Lemma snd_RV3 : Bivar.snd `d_[% X, Y, Z] = Bivar.snd `d_[% X, Z].
+Lemma snd_RV3 : (`d_[% X, Y, Z])`2 = (`d_[% X, Z])`2.
 Proof. by rewrite -Proj13.snd Proj13_RV3. Qed.
 
 Lemma TripC12_RV3 : TripC12.d `d_[% X, Y, Z] = `d_[% Y, X, Z].

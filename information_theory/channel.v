@@ -203,7 +203,7 @@ Lemma tuple_pmf_out_fdist (W : `Ch(A, B)) (P : fdist A) n (b : 'rV_ _):
       (\prod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
    (`O(P, W)) `^ _ b.
 Proof.
-rewrite TupleFDist.dE.
+rewrite fdist_tupleE.
 apply/esym.
 etransitivity; first by apply eq_bigr => i _; rewrite OutFDist.dE; reflexivity.
 rewrite bigA_distr_big_dep /=.
@@ -216,8 +216,8 @@ apply eq_big.
   by apply/eqP/rowP => a'; rewrite mxE ffunE.
 - move=> a Ha.
   rewrite big_split /=; congr (_ * _)%R.
-  + apply eq_bigr => i /= _; by rewrite ffunE.
-  + rewrite TupleFDist.dE; by apply eq_bigr => i /= _; rewrite ffunE.
+  + by apply eq_bigr => i /= _; rewrite ffunE.
+  + by rewrite fdist_tupleE; apply eq_bigr => i /= _; rewrite ffunE.
 Qed.
 
 End OutFDist_prop.
@@ -227,9 +227,9 @@ Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ) )) : channel_scope.
 Module JointFDistChan.
 Section def.
 Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)).
-Definition d : {fdist A * B} := locked (ProdFDist.d P W).
+Definition d : {fdist A * B} := locked (fdist_prod P W).
 Lemma dE ab : d ab = P ab.1 * W ab.1 ab.2.
-Proof. by rewrite /d; unlock => /=; rewrite ProdFDist.dE. Qed.
+Proof. by rewrite /d; unlock => /=; rewrite fdist_prodE. Qed.
 End def.
 Local Notation "'`J(' P , W )" := (d P W).
 Section prop.
@@ -241,7 +241,7 @@ Proof.
 rewrite /Pr [RHS]big_rV_prod /=.
 apply eq_big => y; first by rewrite !inE prod_rVK.
 rewrite inE => Qy.
-rewrite dE DMCE TupleFDist.dE -big_split /= TupleFDist.dE.
+rewrite dE DMCE fdist_tupleE -big_split /= fdist_tupleE.
 apply eq_bigr => i /= _.
 by rewrite JointFDistChan.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
@@ -257,7 +257,7 @@ rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=; last first
 transitivity (\sum_(i | Q i) (P `^ n i * (\sum_(y in 'rV[B]_n) W ``(y | i)))).
   apply eq_bigr => ta Sta.
   rewrite big_distrr; apply eq_bigr => tb _ /=.
-  rewrite DMCE [in RHS]TupleFDist.dE -[in RHS]big_split /= TupleFDist.dE.
+  rewrite DMCE [in RHS]fdist_tupleE -[in RHS]big_split /= fdist_tupleE.
   apply eq_bigr => j _.
   by rewrite dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
 transitivity (\sum_(i | Q i) P `^ _ i).
@@ -278,7 +278,7 @@ rewrite /= /Pr /= exchange_big /=.
 apply eq_big => tb.
   by rewrite !inE.
 move=> Htb.
-rewrite TupleFDist.dE.
+rewrite fdist_tupleE.
 etransitivity; last by apply eq_bigr => i _; rewrite OutFDist.dE; reflexivity.
 rewrite bigA_distr_bigA /=.
 rewrite (reindex_onto (fun p : 'rV[A]_m => [ffun x => p ord0 x])
@@ -290,7 +290,7 @@ apply eq_big => ta.
   rewrite inE; apply/esym.
   by apply/eqP/rowP => a; rewrite mxE ffunE.
 move=> Hta.
-rewrite TupleFDist.dE /=; apply eq_bigr => l _.
+rewrite fdist_tupleE /=; apply eq_bigr => l _.
 by rewrite dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulRC.
 Qed.
 End prop.
@@ -309,7 +309,7 @@ move=> a b Pa0.
 rewrite (@CJFDist.E _ _ (CJFDist.mkt P W)) //=; last exact/eqP.
 congr (\Pr_ _ [_ | _ ]).
 apply/fdist_ext => -[b0 a0].
-by rewrite !Swap.dE JointFDistChan.dE /= /CJFDist.joint_of /= ProdFDist.dE.
+by rewrite !Swap.dE JointFDistChan.dE /= /CJFDist.joint_of /= fdist_prodE.
 Qed.
 
 End relation_channel_cproba.
@@ -332,7 +332,7 @@ Lemma CondEntropyChanE : `H(W | P) = CondEntropy.h (Swap.d (`J(P, W))).
 Proof.
 rewrite /CondEntropyChan.h.
 move: (chain_rule (`J(P, W))); rewrite /JointEntropy.h => ->.
-by rewrite /JointFDistChan.d; unlock; rewrite ProdFDist.fst addRC addRK.
+by rewrite /JointFDistChan.d; unlock; rewrite fdist_prod1 addRC addRK.
 Qed.
 
 Lemma CondEntropyChanE2 : `H(W | P) = \sum_(a in A) P a * `H (W a).
@@ -348,11 +348,11 @@ End condentropychan_prop.
 
 Module MutualInfoChan.
 Section def.
+Local Open Scope fdist_scope.
 Variables A B : finType.
 
 (* Mutual information of distributions *)
-Definition mut_info_dist (P : {fdist A * B}) :=
-  `H (Bivar.fst P) + `H (Bivar.snd P) - `H P.
+Definition mut_info_dist (P : {fdist A * B}) := `H (P`1) + `H (P`2) - `H P.
 
 Definition mut_info P (W : `Ch(A, B)) := `H P + `H(P `o W) - `H(P , W).
 
@@ -371,7 +371,7 @@ rewrite /CondEntropyChan.h -[in RHS]addR_opp oppRB addRCA addRA; congr (_ + _ + 
 congr `H.
 rewrite Swap.fst.
 apply/fdist_ext => b.
-rewrite OutFDist.dE Bivar.sndE; apply/eq_bigr => a _.
+rewrite OutFDist.dE fdist_sndE; apply/eq_bigr => a _.
 by rewrite JointFDistChan.dE mulRC.
 Qed.
 End mutualinfo_prop.

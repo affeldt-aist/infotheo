@@ -57,11 +57,11 @@ Definition conditional_entropy := CondEntropy.h d.
 Lemma conditional_entropyE : conditional_entropy = 11/8.
 Proof.
 rewrite /conditional_entropy /CondEntropy.h /=.
-rewrite !big_ord_recl big_ord0 !Bivar.sndE /=.
+rewrite !big_ord_recl big_ord0 !fdist_sndE /=.
 rewrite !big_ord_recl !big_ord0 !dE /f /=.
 rewrite /CondEntropy.h1 /=.
 rewrite !big_ord_recl !big_ord0 /jcPr /Pr !(big_setX,big_set1) !dE /f /=.
-rewrite !Bivar.sndE /=.
+rewrite !fdist_sndE /=.
 rewrite !big_ord_recl !big_ord0 !dE /f !ffunE /=.
 rewrite !(addR0,add0R,div0R,mul0R).
 repeat (rewrite logDiv; try lra).

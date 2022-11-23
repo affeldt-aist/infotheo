@@ -77,6 +77,58 @@ from 0.4.0 to 0.4.1
   + DelFDist.d -> fdist_del
   + DelFDist.dE -> fdist_delE
   + DelFDist.f -> fdist_del_idx
+  + DelDistConvex -> fdist_convn_del
+  + D1FDist.d -> fdistD1
+  + D1FDist.dE -> fdistD1E
+  + D1FDist.card_fdist_supp -> card_supp_fdistD1
+  + D1FDist.d_eq0 -> fdistD1_eq0
+  + D1FDist.d_0 -> fdistD1_0
+  + barycenter_convnfdist -> barycenter_fdist_convn
+  + S1_convn_proj -> S1_Convn_proj
+  + S1_convn -> S1_Convn
+  + affine_function_Sum -> Convn_comp
+  + eq_Convn -> eq_convn
+  + convn_proj -> Convn_proj
+  + ConvnFDist1 -> Convn_fdist1
+  + convn1E -> ConvnI1E
+  + convnE -> ConvnIE
+  + convn2E -> ConvnI2E
+  + convn_const -> Convn_cst
+  + convn_idem -> Convn_idem
+  + convn_weak -> Convn_weak
+  + convnDr -> ConvnDr
+  + convnDl -> ConvnDl
+  + convnDlr -> ConvnDlr
+  + Convn_convnfdist -> Convn_fdist_convn
+  + Binary.d -> fdist_binary
+  + Binary.dE -> fdist_binaryE
+  + Binary.d_sum_swap -> fdist_binary_sum_swap
+  + Binary.dxx -> fdist_binaryxx
+  + I2FDist.t -> fdistI2
+  + I2FDist.p1 -> fdistI21
+  + I2FDist.p0 -> fdistI20
+  + bind_left_distr -> fdist_conv_bind_left_distr
+  + PermFDist.d -> fdist_perm
+  + PermFDist.dE -> fdist_permE
+  + PermFDist.dE1 -> fdist_perm1
+  + PermFDist.mul -> fdist_permM
+  + PermFDist.tperm -> fdist_tperm
+  + PermFDist.d1 -> fdist1_perm
+  + ProdFDist.d -> fdist_prod
+  + ProdFDist.dE -> fdist_prodE
+  + ProdFDist.fst -> fdist_prod1
+  + ProdFDist.snd -> fdist_prod2
+  + fst_convex -> fdist_prod1_conv
+  + Pr_ProdFDist -> Pr_fdist_prod
+  + TupleFDist.d -> fdist_tuple
+  + TupleFDist.dE -> fdist_tupleE
+  + TupleFDist.zero0 -> fdist_tuple0
+  + TupleFDist.S -> fdist_tupleS
+  + TupleFDist.one -> fdist_tuple1
+  + TupleFDist.to_bivar -> to_bivar_fdist_tuple
+  + TupleFDist.head_of -> head_of_fdist_tuple
+  + TupleFDist.tail_of -> tail_of_fdist_tuple
+  + Pr_FDistMap_RV2 -> Pr_fdistmap_RV2
 
 -------------------
 from 0.3.8 to 0.4.0

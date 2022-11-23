@@ -254,7 +254,7 @@ apply (@leR_trans (\sum_(i | i \in `JTS P W n epsilon)
   rewrite (reindex_onto (fun y => prod_rV y) (fun x => rV_prod x)) /=; last first.
     move=> ? ?; by rewrite rV_prodK.
   apply: leR_sumRl => i; rewrite inE => iJTS.
-  - rewrite ProdFDist.dE; apply leR_pmul => //.
+  - rewrite fdist_prodE; apply leR_pmul => //.
     exact: proj2 (typical_sequence1_JTS iJTS).
     exact: proj2 (typical_sequence1_JTS' iJTS).
   - exact/mulR_ge0.

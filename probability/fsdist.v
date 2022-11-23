@@ -702,21 +702,21 @@ Section fsdist_conv.
 Variables (A : choiceType) (p : prob) (d1 d2 : {dist A}).
 
 Definition fsdist_conv : {dist A} := locked
-  (fsdist_convn (I2FDist.d p) (fun i => if i == ord0 then d1 else d2)).
+  (fsdist_convn (fdistI2 p) (fun i => if i == ord0 then d1 else d2)).
 Local Open Scope reals_ext_scope.
 
 Lemma fsdist_convE a : (fsdist_conv a = p * d1 a + p.~ * d2 a)%R.
 Proof.
 rewrite /fsdist_conv; unlock => /=; rewrite fsdist_convnE fsfunE.
 case: ifPn => [?|H].
-  rewrite !big_ord_recl big_ord0 /= addR0 !I2FDist.dE.
+  rewrite !big_ord_recl big_ord0 /= addR0 !fdistI2E.
   by rewrite eqxx eq_sym (negbTE (neq_lift _ _)).
 have [p0|p0] := eqVneq (p : R) 0%R.
   rewrite p0 mul0R add0R onem0 mul1R.
   apply/esym/eqP; rewrite -memNfinsupp.
   apply: contra H => H.
   rewrite (_ : p = 0%:pr) //; last exact/val_inj.
-  rewrite I2FDist.p0 (_ : Ordinal _ = @ord_max 1); last exact/val_inj.
+  rewrite fdistI20 (_ : Ordinal _ = @ord_max 1); last exact/val_inj.
   (* TODO: generalize *)
   suff : fsdist_convn_supp (fdist1 ord_max)
     (fun i : 'I_2 => if i == ord0 then d1 else d2) = finsupp d2 by move=> ->.
@@ -729,15 +729,15 @@ have d1a0 : d1 a = 0.
   apply/eqP; rewrite -memNfinsupp.
   apply: contra H => H.
   rewrite /fsdist_convn_supp; apply/bigfcupP; exists ord0; last by rewrite eqxx.
-  by rewrite mem_index_enum /= I2FDist.dE eqxx; exact/ltRP/prob_gt0.
+  by rewrite mem_index_enum /= fdistI2E eqxx; exact/ltRP/prob_gt0.
 rewrite d1a0 mulR0 add0R.
 have [p1|p1] := eqVneq (p : R) 1%R; first by rewrite p1 onem1 mul0R.
 suff : d2 a = 0 by move=> ->; rewrite mulR0.
 apply/eqP; rewrite -memNfinsupp.
 apply: contra H => H.
 rewrite /fsdist_convn_supp; apply/bigfcupP; exists (lift ord0 ord0).
-rewrite mem_index_enum /= I2FDist.dE eq_sym (negbTE (neq_lift _ _)).
-exact/ltRP/onem_gt0/prob_lt1.
+rewrite mem_index_enum /= fdistI2E eq_sym (negbTE (neq_lift _ _)).
+  exact/ltRP/onem_gt0/prob_lt1.
 by rewrite eq_sym (negbTE (neq_lift _ _)).
 Qed.
 

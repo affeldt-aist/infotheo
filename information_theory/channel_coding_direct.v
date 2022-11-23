@@ -432,7 +432,7 @@ transitivity (\sum_(v in 'rV[A]_n)
   apply eq_bigr => /= v _.
   rewrite big_distrr /=.
   apply eq_bigr => // w _.
-  rewrite DMCE 2!TupleFDist.dE -big_split /=.
+  rewrite DMCE 2!fdist_tupleE -big_split /=.
   apply eq_bigr => /= i _.
   by rewrite JointFDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
 rewrite /Pr big_rV_prod pair_big_dep /=.
@@ -629,12 +629,12 @@ transitivity (\sum_(v : 'rV[A]_n)
     [set y0 | prod_rV (v , y0) \in `JTS P W n epsilon0])
     ((P `^ n) `x ((`O(P , W)) `^ n)) (v, y)))%R.
   apply eq_bigr => // v _.
-  rewrite big_distrr /=; apply eq_bigr => w _; by rewrite ProdFDist.dE.
+  rewrite big_distrr /=; apply eq_bigr => w _; by rewrite fdist_prodE.
 transitivity (\sum_( jiy | prod_rV jiy \in `JTS P W n epsilon0)
   ((P `^ n) `x ((`O(P , W)) `^ n)) jiy)%R.
   rewrite [in LHS]pair_big_dep /=.
-  by apply eq_big => -[? ?] /=; rewrite !inE ?ProdFDist.dE.
-apply eq_bigl => tab; by rewrite !inE.
+  by apply eq_big => -[? ?] /=; rewrite !inE ?fdist_prodE.
+by apply eq_bigl => ?; rewrite !inE.
 Qed.
 
 Local Close Scope tuple_ext_scope.
@@ -884,7 +884,7 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
     apply/(@leq_trans n1) => //; tauto.
   split.
     apply (@ltR_leR_trans (INR n1)); [tauto | exact/le_INR/leP].
-  apply leq_trans with n1 => //; tauto.
+  by apply leq_trans with n1 => //; tauto.
 case: (random_coding_good_code (ltRW Hepsilon) Hepsilon0 Hn) =>
   M [HM [M_k H]].
 case: (good_code_sufficient_condition HM H) => f Hf.

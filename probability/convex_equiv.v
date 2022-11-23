@@ -60,15 +60,17 @@ Import NaryConvexSpace.
 
 (* These definitions about distributions should probably be elsewhere *)
 Definition fdistE :=
-  (fdistmapE,fdist1E,ProdFDist.dE,Swap.dI,Swap.dE,fdist_convnE,Bivar.fstE).
+  (fdistmapE,fdist1E,fdist_prodE,Swap.dI,Swap.dE,fdist_convnE,fdist_fstE).
 
 Module FDistPart.
 Section fdistpart.
+Local Open Scope fdist_scope.
 Variables (n m : nat) (K : 'I_m -> 'I_n) (e : {fdist 'I_m}) (i : 'I_n).
+
 Definition d :=
-  CondJFDist.d (Swap.d (ProdFDist.d e (fun j : 'I_m => fdist1 (K j)))) i.
+  CondJFDist.d (Swap.d (fdist_prod e (fun j : 'I_m => fdist1 (K j)))) i.
 Definition den :=
-  Bivar.fst (Swap.d (ProdFDist.d e (fun j : 'I_m => fdist1 (K j)))) i.
+  (Swap.d (fdist_prod e (fun j : 'I_m => fdist1 (K j))))`1 i.
 
 Lemma denE : den = fdistmap K e i.
 Proof.
@@ -94,11 +96,11 @@ congr (_ / _)%R.
 under eq_bigr => k do rewrite {2}(surjective_pairing k).
 rewrite -(pair_bigA _ (fun k l =>
           if l == i
-          then ProdFDist.d e (fun j0 : 'I_m => fdist1 (K j0)) (k, l)
+          then fdist_prod e (fun j0 : 'I_m => fdist1 (K j0)) (k, l)
           else R0))%R /=.
 apply eq_bigr => k _.
 rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
-case: ifP; by rewrite (mulR1,mulR0).
+by case: ifP; rewrite (mulR1,mulR0).
 Qed.
 End fdistpart.
 
@@ -227,7 +229,7 @@ Proof. by move=> a n d; apply axidem. Qed.
 
 (* Definition of conv based on convn *)
 Definition binconv p (a b : T) :=
-  <&>_(I2FDist.d p) (fun x : 'I_2 => if x == ord0 then a else b).
+  <&>_(fdistI2 p) (fun x => if x == ord0 then a else b).
 Notation "a <& p &> b" := (binconv p a b).
 
 Lemma binconvC p a b : a <& p &> b = b <& (p.~)%:pr &> a.
@@ -243,11 +245,10 @@ rewrite axmap.
 congr (<&>_ _ _); apply fdist_ext => i.
 rewrite fdistmapE (bigD1 (tperm ord0 (Ordinal (erefl (1 < 2))) i)) /=; last first.
   by rewrite !inE tpermK.
-rewrite big1.
-  rewrite addR0 !I2FDist.dE onemK.
+rewrite big1 ?addR0.
+  rewrite !fdistI2E onemK.
   by case/orP: (ord2 i) => /eqP -> /=; rewrite (tpermL,tpermR).
-move=> j /andP[] /eqP <-.
-by rewrite tpermK eqxx.
+by move=> j /andP[] /eqP <-; rewrite tpermK eqxx.
 Qed.
 
 Lemma convn_if A n (p : A -> bool) (d1 d2 : {fdist 'I_n}) (g : _ -> T):
@@ -260,11 +261,10 @@ Lemma binconvA p q a b c :
 Proof.
 rewrite /binconv.
 set g := fun i : 'I_3 => if i <= 0 then a else if i <= 1 then b else c.
-rewrite [X in <&>_(I2FDist.d q) X](_ : _ = g \o lift ord0);
-  last by apply funext => i; case/orP: (ord2 i) => /eqP ->.
-rewrite [X in <&>_(I2FDist.d [r_of p, q]) X]
-        (_ : _ = g \o (widen_ord (leqnSn 2)));
-  last by apply funext => i; case/orP: (ord2 i) => /eqP ->.
+rewrite [X in <&>_(fdistI2 q) X](_ : _ = g \o lift ord0); last first.
+  by apply funext => i; case/orP: (ord2 i) => /eqP ->.
+rewrite [X in <&>_(_ [r_of p, q]) X](_ : _ = g \o (widen_ord (leqnSn 2))); last first.
+  by apply funext => i; case/orP: (ord2 i) => /eqP ->.
 rewrite 2!axmap.
 set d1 := fdistmap _ _.
 set d2 := fdistmap _ _.
@@ -274,23 +274,23 @@ have -> : c = g ord23 by [].
 rewrite -2!axproj 2!convn_if 2!axbary.
 congr (<&>_ _ _); apply fdist_ext => j.
 rewrite !fdist_convnE !big_ord_recl !big_ord0 /=.
-rewrite !I2FDist.dE !fdistmapE !fdist1E !addR0 /=.
+rewrite !fdistI2E !fdistmapE !fdist1E !addR0 /=.
 case: j => -[|[|[]]] //= Hj.
 - rewrite [in RHS](big_pred1 ord0) //.
   rewrite big1; last by case => -[].
-  by rewrite I2FDist.dE eqxx !(mulR0,addR0) mulR1 mulRC -p_is_rs.
+  by rewrite fdistI2E eqxx !(mulR0,addR0) mulR1 mulRC -p_is_rs.
 - rewrite (big_pred1 ord0) // (big_pred1 (Ordinal (ltnSn 1))) //.
-  rewrite !I2FDist.dE !eqxx !(mulR0,addR0,add0R).
+  rewrite !fdistI2E !eqxx !(mulR0,addR0,add0R).
   rewrite {2}/onem mulRDr mulR1 mulRN [in RHS]mulRC -p_is_rs s_of_pqE'.
   by rewrite (addRC p) -addRA addRN addR0.
 - rewrite (big_pred1 (Ordinal (ltnSn 1))) //.
   rewrite big1; last by case => -[|[]].
-  by rewrite !I2FDist.dE !(mulR0,addR0,add0R,mulR1) s_of_pqE onemK.
+  by rewrite !fdistI2E !(mulR0,addR0,add0R,mulR1) s_of_pqE onemK.
 Qed.
 
 Lemma binconv1 a b : binconv 1%:pr a b = a.
 Proof.
-apply axidem => /= i; rewrite inE I2FDist.dE; case: ifP => //=.
+apply axidem => /= i; rewrite inE fdistI2E; case: ifP => //=.
 by rewrite /onem subRR eqxx.
 Qed.
 
@@ -333,7 +333,7 @@ rewrite /(_ <| _ |> _)/= /binconv.
 set d' := fdistmap _ _.
 rewrite -(axproj ord0) convn_if axbary.
 congr (<&>_ _ _); apply fdist_ext => i.
-rewrite fdist_convnE !big_ord_recl big_ord0 addR0 /= !I2FDist.dE /=.
+rewrite fdist_convnE !big_ord_recl big_ord0 addR0 /= !fdistI2E /=.
 rewrite fdist1E /d' fdistmapE /=.
 have [->|] := eqVneq i ord0; first by rewrite big1 // mulR0 mulR1 addR0.
 rewrite /= mulR0 add0R.
@@ -580,8 +580,7 @@ rewrite axbarypart; first last.
   move=> k; apply/eqP => hik.
   by move: ij; rewrite -hik /h /f /f' enum_rankK eqxx.
 set e' := fun j : 'I_m =>
-  fdistmap f (ProdFDist.d (CondJFDist.d (Swap.d (ProdFDist.d d e)) j)
-                          (fun=> fdist1 j)).
+  fdistmap f ((CondJFDist.d (Swap.d (fdist_prod d e)) j) `x (fdist1 j)).
 have {2}-> : g = (fun j => <&>_(e' j) (g \o h')).
   apply funext => j; apply/esym/axidem => k //.
   rewrite inE /e' fdistE (big_pred1 (f' k)) /=; last first.
@@ -611,7 +610,7 @@ rewrite !fdistE -big_mkcond /=.
 rewrite (big_pred1 (f' k));
   last by move=> a; rewrite !inE -{1}(enum_valK k) /f (can_eq enum_rankK).
 set p := f' k => /=.
-case/boolP: (j == p.2) => [/eqP -> | Hj]; last first.
+have [->|Hj] := eqVneq j p.2; last first.
   rewrite big_pred0; first last.
     move=> i; apply/negbTE; apply: contra Hj.
     rewrite !inE -(enum_valK k) (can_eq enum_rankK).
@@ -624,13 +623,14 @@ case/boolP: (\sum_(i < n) d i * e i p.2 == 0)%R => [/eqP|] Hp.
   rewrite Hp mul0R (proj1 (psumR_eq0P _) Hp) //.
   move=> *; by apply mulR_ge0.
 rewrite [RHS]mulRC !fdistE CondJFDist.dE !fdistE /=; last first.
-  by under eq_bigr do rewrite Swap.dE ProdFDist.dE /=.
+  by under eq_bigr do rewrite Swap.dE fdist_prodE.
 rewrite /jcPr /proba.Pr (big_pred1 p);
   last by move=> i; rewrite !inE -xpair_eqE -!surjective_pairing.
 rewrite (big_pred1 p.2); last by move=> i; rewrite !inE.
-rewrite eqxx mulR1 Bivar.sndE /= ProdFDist.dE.
-under eq_bigr do rewrite ProdFDist.dE /=.
+rewrite eqxx mulR1 fdist_sndE /= fdist_prodE.
+under eq_bigr do rewrite fdist_prodE /=.
 by rewrite -mulRA mulVR ?mulR1.
 Qed.
+
 End BeaulieuToStandard.
 End NaryConvexSpaceEquiv.
