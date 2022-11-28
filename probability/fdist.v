@@ -54,6 +54,12 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (*        fdist_nth ==                                                        *)
 (*       fdist_col' == marginal distribution                                  *)
 (*       fdist_take ==                                                        *)
+(*           fdistA ==                                                        *)
+(*         fdistC12 ==                                                        *)
+(*          fdistAC ==                                                        *)
+(*         fdistC13 ==                                                        *)
+(*     fdist_proj13 ==                                                        *)
+(*   fdist_prod_nth ==                                                        *)
 (*        wolfowitz == Wolfowitz's counting principle                         *)
 (*                                                                            *)
 (******************************************************************************)
@@ -74,6 +80,10 @@ Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
 Notation "f @^-1 y" := (preim f (pred1 y)) : proba_scope.
+
+(* TODO: move *)
+Definition ex2C (T : Type) (P Q : T -> Prop) : @ex2 T P Q <-> @ex2 T Q P.
+Proof. by split; case=> x H0 H1; exists x. Qed.
 
 Module FDist.
 Section fdist.
@@ -1526,6 +1536,186 @@ rewrite /fdist_snd /fdist_belast_last_of_rV /fdist_take /fdist_nth !fdistmap_com
 congr (fdistmap _ _); rewrite boolp.funeqE => /= v /=.
 by rewrite /rlast mxE castmxE /= cast_ord_id /=; congr (v ``_ _); exact: val_inj.
 Qed.
+
+Section fdistA.
+Variables (A B C : finType) (P : {fdist A * B * C}).
+
+Definition prodA (x : A * B * C) := (x.1.1, (x.1.2, x.2)).
+
+Lemma imsetA E F G : [set prodA x | x in (E `* F) `* G] = E `* (F `* G).
+Proof.
+apply/setP=> -[a [b c]]; apply/imsetP/idP.
+- rewrite ex2C; move=> [[[a' b'] c']] /eqP.
+  by rewrite /f !inE !xpair_eqE /= => /andP [] /eqP -> /andP [] /eqP -> /eqP -> /andP [] /andP [] -> -> ->.
+- by rewrite !inE /= => /andP [aE /andP [bF cG]]; exists ((a, b), c); rewrite // !inE /= aE bF cG.
+Qed.
+
+Definition inj_prodA : injective prodA.
+Proof. by rewrite /f => -[[? ?] ?] [[? ?] ?] /= [-> -> ->]. Qed.
+
+Definition fdistA : {fdist A * (B * C)} := fdistmap prodA P.
+
+Lemma fdistAE x : fdistA x = P (x.1, x.2.1, x.2.2).
+Proof.
+case: x => a [b c]; rewrite /fdistA fdistmapE /= -/(prodA (a, b, c)) big_pred1_inj//.
+exact: inj_prodA.
+Qed.
+
+Lemma fdistA_domin a b c : fdistA (a, (b, c)) = 0 -> P (a, b, c) = 0.
+Proof. by rewrite fdistAE. Qed.
+
+Lemma fdistA_dominN a b c : P (a, b, c) != 0 -> fdistA (a, (b, c)) != 0.
+Proof. by apply: contra => /eqP H; apply/eqP; apply: fdistA_domin H. Qed.
+
+End fdistA.
+Arguments inj_prodA {A B C}.
+
+Section fdistA_prop.
+Variables (A B C : finType) (P : {fdist A * B * C}).
+Implicit Types (E : {set A}) (F : {set B}) (G : {set C}).
+
+Lemma fdistA1 : (fdistA P)`1 = (P`1)`1.
+Proof. by rewrite /fdist_fst /fdistA 2!fdistmap_comp. Qed.
+
+Lemma fdistA21 : ((fdistA P)`2)`1 = (P`1)`2.
+Proof. by rewrite /fdistA /fdist_snd /fdist_fst /= !fdistmap_comp. Qed.
+
+Lemma fdistA22 : ((fdistA P)`2)`2 = P`2.
+Proof. by rewrite /fdistA /fdist_snd !fdistmap_comp. Qed.
+
+Lemma fdistAX2 : (fdistX (fdistA P))`2 = (P`1)`1.
+Proof. by rewrite /fdistA /fdist_snd /fdistX /fdist_fst /= 3!fdistmap_comp. Qed.
+
+Lemma fdistAX12 : ((fdistX (fdistA P))`1)`2 = P`2.
+Proof. by rewrite /fdist_snd /fdist_fst /fdistX !fdistmap_comp. Qed.
+
+End fdistA_prop.
+
+Section fdistC12.
+Variables (A B C : finType) (P : {fdist A * B * C}).
+
+Let f (x : A * B * C) := (x.1.2, x.1.1, x.2).
+
+Let inj_f : injective f.
+Proof. by rewrite /f => -[[? ?] ?] [[? ?] ?] /= [-> -> ->]. Qed.
+
+Definition fdistC12 : {fdist B * A * C} := fdistmap f P.
+
+Lemma fdistC12E x : fdistC12 x = P (x.1.2, x.1.1, x.2).
+Proof.
+case: x => -[b a] c; rewrite /fdistC12 fdistmapE /= -/(f (a, b, c)).
+by rewrite (big_pred1_inj inj_f).
+Qed.
+
+Lemma fdistC12_snd : fdistC12`2 = P`2.
+Proof. by rewrite /fdist_snd /fdistC12 fdistmap_comp. Qed.
+
+Lemma fdistC12_fst : fdistC12`1 = fdistX (P`1).
+Proof. by rewrite /fdist_fst /fdistC12 /fdistX 2!fdistmap_comp. Qed.
+
+Lemma fdistA_C12_fst : (fdistA fdistC12)`1 = (P`1)`2.
+Proof. by rewrite /fdist_fst /fdistA /fdist_snd !fdistmap_comp. Qed.
+
+End fdistC12.
+
+Section fdistC12_prop.
+Variables (A B C : finType) (P : {fdist A * B * C}).
+
+Lemma fdistC12I : fdistC12 (fdistC12 P) = P.
+Proof.
+rewrite /fdistC12 fdistmap_comp (_ : _ \o _ = ssrfun.id) ?fdistmap_id //.
+by rewrite boolp.funeqE => -[[]].
+Qed.
+
+End fdistC12_prop.
+
+Section fdistAC.
+Variables (A B C : finType) (P : {fdist A * B * C}).
+
+Definition prodAC := fun x : A * B * C => (x.1.1, x.2, x.1.2).
+
+Lemma inj_prodAC : injective prodAC.
+Proof. by move=> -[[? ?] ?] [[? ?] ?] [-> -> ->]. Qed.
+
+Lemma imsetAC E F G : [set prodAC x | x in E `* F `* G] = E `* G `* F.
+Proof.
+apply/setP => -[[a c] b]; apply/imsetP/idP.
+- rewrite ex2C; move=> [[[a' b'] c']] /eqP.
+  by rewrite /f !inE !xpair_eqE /= => /andP [] /andP [] /eqP -> /eqP -> /eqP -> /andP [] /andP [] -> -> ->.
+- by rewrite !inE /= => /andP [] /andP [] aE cG bF; exists ((a, b), c); rewrite // !inE  /= aE cG bF.
+Qed.
+
+Definition fdistAC : {fdist A * C * B} := fdistX (fdistA (fdistC12 P)).
+
+Lemma fdistACE x : fdistAC x = P (x.1.1, x.2, x.1.2).
+Proof. by case: x => x1 x2; rewrite /fdistAC fdistXE fdistAE fdistC12E. Qed.
+
+End fdistAC.
+Arguments inj_prodAC {A B C}.
+
+Section fdistAC_prop.
+Variables (A B C : finType) (P : {fdist A * B * C}).
+Implicit Types (E : {set A}) (F : {set B}) (G : {set C}).
+
+Lemma fdistAC2 : (fdistAC P)`2 = (P`1)`2.
+Proof. by rewrite /fdistAC fdistX2 fdistA_C12_fst. Qed.
+
+Lemma fdistA_AC_fst : (fdistA (fdistAC P))`1 = (fdistA P)`1.
+Proof. by rewrite /fdist_fst !fdistmap_comp. Qed.
+
+Lemma fdistA_AC_snd : (fdistA (fdistAC P))`2 = fdistX ((fdistA P)`2).
+Proof. by rewrite /fdist_snd /fdistX !fdistmap_comp. Qed.
+
+Lemma fdistAC_fst_fst : ((fdistAC P)`1)`1 = (P`1)`1.
+Proof. by rewrite /fdist_fst !fdistmap_comp. Qed.
+
+End fdistAC_prop.
+
+Section fdistC13.
+Variables (A B C : finType) (P : {fdist A * B * C}).
+
+Definition fdistC13 : {fdist C * B * A} := fdistC12 (fdistX (fdistA P)).
+
+Lemma fdistC13E x : fdistC13 x = P (x.2, x.1.2, x.1.1).
+Proof. by rewrite /fdistC13 fdistC12E fdistXE fdistAE. Qed.
+
+Lemma fdistC13_fst : fdistC13`1 = fdistX ((fdistA P)`2).
+Proof. by rewrite /fdistC13 /fdist_fst /fdistX !fdistmap_comp. Qed.
+
+Lemma fdistC13_snd : fdistC13`2 = (P`1)`1.
+Proof. by rewrite /fdistC13 fdistC12_snd fdistAX2. Qed.
+
+Lemma fdistC13_fst_fst : (fdistC13`1)`1 = P`2.
+Proof. by rewrite /fdist_fst /fdist_snd !fdistmap_comp. Qed.
+
+Lemma fdistA_C13_snd : (fdistA fdistC13)`2 = fdistX (P`1).
+Proof. by rewrite /fdist_snd /fdistX !fdistmap_comp. Qed.
+
+End fdistC13.
+
+Section fdist_proj13.
+Variables (A B C : finType) (P : {fdist A * B * C}).
+
+Definition fdist_proj13 : {fdist A * C} := (fdistA (fdistC12 P))`2.
+
+Lemma fdist_proj13E x : fdist_proj13 x = \sum_(b in B) P (x.1, b, x.2).
+Proof.
+by rewrite /fdist_proj13 fdist_sndE; apply eq_bigr => b _; rewrite fdistAE fdistC12E.
+Qed.
+
+Lemma fdist_proj13_domin a b c : fdist_proj13 (a, c) = 0 -> P (a, b, c) = 0.
+Proof. by rewrite fdist_proj13E /= => /psumR_eq0P ->. Qed.
+
+Lemma fdist_proj13_dominN a b c : P (a, b, c) != 0 -> fdist_proj13 (a, c) != 0.
+Proof. by apply: contra => /eqP H; apply/eqP/fdist_proj13_domin. Qed.
+
+Lemma fdist_proj13_snd : fdist_proj13`2 = P`2.
+Proof. by rewrite /fdist_proj13 fdistA22 fdistC12_snd. Qed.
+
+Lemma fdist_proj13_fst : fdist_proj13`1 = (fdistA P)`1.
+Proof. by rewrite /fdist_proj13 fdistA21 fdistC12_fst fdistX2 fdistA1. Qed.
+
+End fdist_proj13.
 
 Local Open Scope ring_scope.
 (* TODO: rm? *)

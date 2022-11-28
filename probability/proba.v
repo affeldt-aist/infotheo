@@ -1487,8 +1487,25 @@ rewrite /Pr !big_setX exchange_big /=; apply eq_bigr => b _.
 by apply eq_bigr => a _; rewrite fdistXE.
 Qed.
 
-Section conditionally_independent_events.
+Lemma Pr_fdistA (A B C : finType) (P : {fdist A * B * C}) E F G :
+  Pr (fdistA P) (E `* (F `* G)) = Pr P (E `* F `* G).
+Proof.
+rewrite /fdistA (@Pr_fdistmap _ _ (@prodA A B C))// ?imsetA//.
+exact: inj_prodA.
+Qed.
 
+Lemma Pr_fdistC12 (A B C : finType) (P : {fdist A * B * C}) E F G :
+  Pr (fdistC12 P) (E `* F `* G) = Pr P (F `* E `* G).
+Proof.
+rewrite /Pr !big_setX /= exchange_big; apply eq_bigr => a aF.
+by apply eq_bigr => b bE; apply eq_bigr => c cG; rewrite fdistC12E.
+Qed.
+
+Lemma Pr_fdistAC (A B C : finType) (P : {fdist A * B * C}) E F G :
+  Pr (fdistAC P) (E `* G `* F) = Pr P (E `* F `* G).
+Proof. by rewrite /fdistAC -Pr_fdistX Pr_fdistA Pr_fdistC12. Qed.
+
+Section conditionally_independent_events.
 Variables (A : finType) (d : {fdist A}).
 
 Definition cinde_events (E F G : {set A}) :=

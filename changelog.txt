@@ -187,7 +187,8 @@ from 0.4.0 to 0.4.1
   + Var_cast_RV_tuplefdist1 -> Var_cast_RV_fdist_rV1
   + head_of_fst_belast_last -> head_of_fdist_rV_belast_last
   + entropy_from_bivar -> entropy_fdist_rV_of_prod
-  + Pr_FDistMap_r -> Pr_fdistmap_r
+  + Pr_FDistMap_r -> jcPr_fdistmap_r
+  + Pr_FDistMap_l -> jcPr_fdistmap_l
   + Swap.d -> jfdistX
   + Swap.fst -> jfdistX1
   + Swap.snd -> jfdistX2
@@ -199,7 +200,67 @@ from 0.4.0 to 0.4.1
   + Nth.d -> fdist_nth
   + Nth.dE -> fdist_nthE
   + Nth.head_ofE -> head_of_fdist_rV_fdist_nth
-  + MargDist.d -> fdist_col'.
+  + MargDist.d -> fdist_col'
+  + MargDist.dE -> fdist_col'E
+  + MargDist.tail_ofE -> tail_of_fdist_rV_fdist_col'
+  + Take.d -> fdist_take
+  + Take.dE -> fdist_takeE
+  + Take.all -> fdist_take_all
+  + take_nth -> fdist_take_nth
+  + PairNth.d -> fdist_prod_nth
+  + PairNth.dE -> fdist_prod_nthE
+  + PairTake.d -> fdist_prod_take
+  + TripA.d -> fdistA
+  + TripA.dE -> fdistAE
+  + TripA.domin -> fdistA_domin
+  + TripA.dominN -> fdistA_dominN
+  + TripA.fst -> fdistA1
+  + TripA.fst_snd -> fdistA21
+  + TripA.snd_snd -> fdistA22
+  + TripA.snd_swap -> fdistAX2
+  + TtipA.snd_fst_swap -> fdistAX12
+  + TripA.imset -> imsetA
+  + TripA.Pr -> Pr_fdistA
+  + TripA.f -> prodA
+  + TripA.inj_f -> prodA_inj
+  + TripA_RV3 -> fdistA_RV3
+  + TripC12.d -> fdistC12
+  + TripC12.dE -> fdistC12E
+  + TripC12.fst -> fdistC12_fst
+  + TripC12.snd -> fdistC12_snd
+  + TripC12.fstA -> fdistA_C12_fst
+  + TripC12.dI -> fdistC12I
+  + TripC12.Pr -> Pr_fdistC12
+  + jcPr_TripA_TripC12 -> jcPr_fdistA_C12
+  + TripC12_RV3 -> fdistC12_RV3
+  + TripAC.d -> fdistAC
+  + TripAC.f -> prodAC
+  + TripAC.inj_f -> inj_prodAC
+  + TripAC.snd -> fdistAC2
+  + TripAC.fstA -> fdistA_AC_fst
+  + TripAC.fst_fst -> fdistAC_fst_fst
+  + TripAC.sndA -> fdistA_AC_snd
+  + TripAC.imset -> imsetAC
+  + TripAC.Pr -> Pr_fdistAC
+  + jcPr_TripA_TripAC -> jcPr_fdistA_AC
+  + h1TripAC -> h1_fdistAC
+  + hTripAC -> h_fdistA
+  + TripC13.d -> fdistC13
+  + TripC13.dE -> fdistC13E
+  + TripC13.fst -> fdistC13_fst
+  + TripC13.snd -> fdistC13_snd
+  + TripC13.fst_fst -> fdistC13_fst_fst
+  + TripC13.sndA -> fdistA_C13_snd
+  + Proj13.d -> fdist_proj13
+  + Proj13.dE -> fdist_proj13E
+  + Proj13.domin -> fdist_proj13_domin
+  + Proj13.dominN -> fdist_proj13_dominN
+  + Proj13.snd -> fdist_proj13_snd
+  + Proj13.fst -> fdist_proj13_fst
+  + Proj13_TripAC -> fdist_proj13_AC
+  + Proj13_RV3 -> fdist_proj13_RV3
+- removed:
+  + Module TripA'
 
 -------------------
 from 0.3.8 to 0.4.0
