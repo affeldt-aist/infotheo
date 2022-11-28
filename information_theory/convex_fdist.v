@@ -47,8 +47,8 @@ Local Open Scope convex_scope.
 Local Open Scope entropy_scope.
 
 Section entropy_log_div.
-Variables (A : finType) (p : fdist A) (n : nat) (A_not_empty : #|A| = n.+1).
-Let u := Uniform.d A_not_empty.
+Variables (A : finType) (p : fdist A) (n : nat) (An1 : #|A| = n.+1).
+Let u := fdist_uniform An1.
 
 Local Open Scope divergence_scope.
 
@@ -58,9 +58,9 @@ rewrite /entropy /div.
 evar (RHS : A -> R).
 have H a : p a * log (p a / u a) = RHS a.
   case : (nneg_finfun_ge0 p a) => H.
-  - rewrite Uniform.dE.
+  - rewrite fdist_uniformE.
     change (p a * log (p a / / #|A|%:R)) with (p a * log (p a * / / #|A|%:R)).
-    have H0 : 0 < #|A|%:R by rewrite A_not_empty ltR0n.
+    have H0 : 0 < #|A|%:R by rewrite An1 ltR0n.
     have /eqP H1 : #|A|%:R <> 0 by apply/eqP/gtR_eqF.
     rewrite invRK // logM // mulRDr.
     by instantiate (RHS := fun a => p a * log (p a) + p a * log #|A|%:R).
@@ -105,7 +105,7 @@ Proof. rewrite /avg; exact/boolp.eq_exist/convC. Qed.
 Let avgA p q d0 d1 d2 :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. rewrite /avg /=; exact/boolp.eq_exist/convA. Qed.
-HB.instance Definition _ (* dominatedPairConvType *) := @isConvexSpace.Build dom_pair
+HB.instance Definition _ := @isConvexSpace.Build dom_pair
   (Choice.class (choice_of_Type dom_pair)) avg avg1 avgI avgC avgA.
 End dominated_pair.
 
@@ -174,7 +174,7 @@ Variable (A : finType).
 Hypothesis A_not_empty : (0 < #|A|)%nat.
 Let A_not_empty' : #|A| = #|A|.-1.+1.
 Proof. by rewrite prednK. Qed.
-Let u : {fdist A} := Uniform.d A_not_empty'.
+Let u : {fdist A} := fdist_uniform A_not_empty'.
 
 Local Open Scope divergence_scope.
 
@@ -328,27 +328,27 @@ Variables (A B : finType) (Q : A -> fdist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 Lemma mutual_information_concave :
-  concave_function (fun P => MutualInfo.mi (CJFDist.make_joint P Q)).
+  concave_function (fun P => MutualInfo.mi (make_joint P Q)).
 Proof.
-suff : concave_function (fun P => let PQ := Swap.d (CJFDist.make_joint P Q) in
-                           `H (PQ`1) - CondEntropy.h PQ).
+suff : concave_function (fun P => let PQ := fdistX (make_joint P Q) in
+                                  `H (PQ`1) - CondEntropy.h PQ).
   set f := fun _ => _. set g := fun _ => _.
   suff -> : f = g by [].
   by rewrite boolp.funeqE => d; rewrite {}/f {}/g /= -MutualInfo.miE -mi_sym.
-apply R_concave_functionB.
-- move: (entropy_concave B_not_empty) => concave_H.
+apply: R_concave_functionB.
+- have concave_H := entropy_concave B_not_empty.
   apply: R_concave_functionN => p q t /=.
-  rewrite /convex_function_at 3!Swap.fst.
+  rewrite /convex_function_at 3!fdistX1.
   move/R_convex_functionN' in concave_H.
-  apply: leR_trans (concave_H (CJFDist.make_joint p Q)`2
-                              (CJFDist.make_joint q Q)`2 t).
+  apply: leR_trans (concave_H (make_joint p Q)`2
+                              (make_joint q Q)`2 t).
   by rewrite /conv /= (* TODO *) -fdist_prod2_conv; exact/leRR.
-- suff : affine (fun x => CondEntropy.h (Swap.d (CJFDist.make_joint x Q))).
-   by move=> /affine_functionP[].
+- suff : affine (fun x => CondEntropy.h (fdistX (make_joint x Q))).
+    by move=> /affine_functionP[].
   move=> t p q.
   rewrite /= avgRE /CondEntropy.h /CondEntropy.h1.
   rewrite 2!big_distrr -big_split /=; apply eq_bigr => a _.
-  rewrite !Swap.snd !fdist_fstE !mulRN -oppRD; congr (- _).
+  rewrite !fdistX2 !fdist_fstE !mulRN -oppRD; congr (- _).
   rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
   rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
   rewrite !fdist_prodE /= fdist_convE /= !(mulRA t) !(mulRA t.~).
@@ -357,17 +357,17 @@ apply R_concave_functionB.
     case/boolP: (t.~ * q a == 0) => /eqP Hq.
       rewrite Hq; field.
     rewrite !(mul0R,add0R).
-    rewrite -CJFDist.E /=; last by rewrite fdist_convE Hp add0R.
-    rewrite -CJFDist.E /= //; by move: Hq; rewrite mulR_neq0 => -[].
+    rewrite -jfdist_prodE /=; last by rewrite fdist_convE Hp add0R.
+    rewrite -jfdist_prodE /= //; by move: Hq; rewrite mulR_neq0 => -[].
   case/boolP: (t.~ * q a == 0) => /eqP Hq.
     rewrite Hq !(mul0R,addR0).
-    rewrite -CJFDist.E; last by rewrite fdist_convE Hq addR0.
-    rewrite -CJFDist.E /= //; by move: Hp; rewrite mulR_neq0 => -[].
-  rewrite -CJFDist.E; last first.
+    rewrite -jfdist_prodE; last by rewrite fdist_convE Hq addR0.
+    rewrite -jfdist_prodE /= //; by move: Hp; rewrite mulR_neq0 => -[].
+  rewrite -jfdist_prodE; last first.
     rewrite /= fdist_convE paddR_eq0; [tauto|exact/mulR_ge0|exact/mulR_ge0].
-  rewrite -CJFDist.E; last by move: Hp; rewrite mulR_neq0 => -[].
-  rewrite -CJFDist.E //=; last by move: Hq; rewrite mulR_neq0 => -[].
-  field.
+  rewrite -jfdist_prodE; last by move: Hp; rewrite mulR_neq0 => -[].
+  rewrite -jfdist_prodE //=; last by move: Hq; rewrite mulR_neq0 => -[].
+  by field.
 Qed.
 
 End mutual_information_concave.
@@ -379,31 +379,30 @@ Local Open Scope fdist_scope.
 Variables (A B : finType) (P : fdist A).
 
 Lemma mutual_information_convex :
-  convex_function (fun Q : boolp.dep_arrow_choiceType
-    (fun=> [the convType of fdist B]) => MutualInfo.mi (CJFDist.make_joint P Q)).
+  convex_function (fun Q : A -> fdist B => MutualInfo.mi (make_joint P Q)).
 Proof.
-move=> p1yx p2yx t.
-pose p1' := CJFDist.mkt P p1yx.
-pose p2' := CJFDist.mkt P p2yx.
-pose p1xy := CJFDist.joint_of p1'.
-pose p2xy := CJFDist.joint_of p2'.
+move=> /= p1yx p2yx t.
+pose p1' := mkjfdist_prod_type P p1yx.
+pose p2' := mkjfdist_prod_type P p2yx.
+pose p1xy := jfdist_prod p1'.
+pose p2xy := jfdist_prod p2'.
 pose p1 := p1xy`2.
 pose p2 := p2xy`2.
 pose plambdayx := fun a : A => p1yx a <| t |> p2yx a.
-pose plambda' := CJFDist.mkt P plambdayx.
-pose plambdaxy := CJFDist.joint_of plambda'.
+pose plambda' := mkjfdist_prod_type P plambdayx.
+pose plambdaxy := jfdist_prod plambda'.
 pose plambday := plambdaxy`2.
 pose qlambdaxy := P `x plambday.
 pose q1xy := P `x p1.
 pose q2xy := P `x p2.
 rewrite /convex_function_at.
-have -> : MutualInfo.mi (CJFDist.make_joint P (fun x : A => p1yx x <| t |> p2yx x)) =
+have -> : MutualInfo.mi (make_joint P (fun x => p1yx x <| t |> p2yx x)) =
        D(plambdaxy || qlambdaxy).
   rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
   rewrite /qlambdaxy.
-  by rewrite fdist_prodE /= /CJFDist.make_joint /CJFDist.joint_of /= fdist_prod1; congr (_ * _).
+  by rewrite fdist_prodE /= /make_joint /jfdist_prod /= fdist_prod1; congr (_ * _).
 have -> : qlambdaxy = q1xy <| t |> q2xy.
   apply/fdist_ext => -[a b].
   rewrite !fdist_prodE !fdist_convE /=.
@@ -417,25 +416,25 @@ have -> : plambdaxy = p1xy <| t |> p2xy.
   apply/fdist_ext => -[a b].
   rewrite !fdist_prodE !fdist_convE /=.
   by rewrite /p1xy /p2xy !fdist_prodE /=; field.
-have -> : MutualInfo.mi (CJFDist.make_joint P p1yx) = D(p1xy || q1xy).
+have -> : MutualInfo.mi (make_joint P p1yx) = D(p1xy || q1xy).
   rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
-  by rewrite /q1xy fdist_prodE /CJFDist.make_joint /CJFDist.joint_of /= fdist_prod1.
-have -> : MutualInfo.mi (CJFDist.make_joint P p2yx) = D(p2xy || q2xy).
+  by rewrite /q1xy fdist_prodE /make_joint /jfdist_prod /= fdist_prod1.
+have -> : MutualInfo.mi (make_joint P p2yx) = D(p2xy || q2xy).
   rewrite MutualInfo.miE0 /div pair_big /=.
   apply eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
-  by rewrite /q2xy fdist_prodE /CJFDist.make_joint /CJFDist.joint_of /= fdist_prod1.
+  by rewrite /q2xy fdist_prodE /make_joint /jfdist_prod /= fdist_prod1.
 apply: convex_relative_entropy.
 - apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy fdist_prodE /= mulR_eq0.
-  rewrite /p1 /p1xy /CJFDist.joint_of => -[|].
+  rewrite /p1 /p1xy /jfdist_prod => -[|].
     by rewrite fdist_prodE => ->; rewrite mul0R.
   by rewrite fdist_sndE => /psumR_eq0P ->.
 -  apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy fdist_prodE /= mulR_eq0.
-  rewrite /p1 /p1xy /CJFDist.joint_of => -[|].
+  rewrite /p1 /p1xy /jfdist_prod => -[|].
     by rewrite fdist_prodE => ->; rewrite mul0R.
   by rewrite fdist_sndE => /psumR_eq0P /= ->.
 Qed.

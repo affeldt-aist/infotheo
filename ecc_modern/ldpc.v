@@ -89,7 +89,7 @@ Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
 Hypothesis p_01' : 0 < p < 1.
 Let p_01 := Eval hnf in Prob.mk_ (ltR2W p_01').
-Let P : fdist A := Uniform.d card_A.
+Let P := fdist_uniform card_A.
 Variable a' : A.
 Hypothesis Ha' : Receivable.def (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
 
@@ -98,9 +98,9 @@ Lemma bsc_post (a : A) :
   (if a == a' then 1 - p else p)%R.
 Proof.
 rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
-rewrite !fdist_tupleE DMCE big_ord_recl big_ord0.
+rewrite !fdist_rVE DMCE big_ord_recl big_ord0.
 rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
-  by move=> i _; rewrite /P !fdist_tupleE big_ord_recl big_ord0 !Uniform.dE mulR1.
+  by move=> i _; rewrite /P !fdist_rVE big_ord_recl big_ord0 !fdist_uniformE mulR1.
 rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
   transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a')%R.
     apply eq_bigr => i _.
@@ -108,7 +108,7 @@ rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
   apply/(@big_singl_rV _ _ _ _ (fdist_binary card_A p_01 ^~ a')).
   by rewrite -sum_fdist_binary_swap // FDist.f1.
 rewrite mxE mulR1 big_ord_recl big_ord0 /BSC.c fdist_binaryE /= eq_sym !mxE; field.
-by rewrite /P Uniform.dE card_A (_ : 2%:R = 2)%R //; lra.
+by rewrite /P fdist_uniformE card_A (_ : 2%:R = 2)%R //; lra.
 Qed.
 
 End post_proba_bsc_unif.
@@ -510,7 +510,7 @@ transitivity (\sum_(t in 'rV['F_2]_n)
   apply eq_bigr => /= t Ht.
   case: ifP => HtH.
     rewrite PosteriorProbability.dE.
-    rewrite UniformSupport.dET ?inE //.
+    rewrite fdist_uniform_supp_in ?inE //.
     rewrite /PosteriorProbability.den.
     have HH : #|[set cw in kernel H]|%:R <> 0.
       apply/INR_eq0/eqP.
@@ -519,7 +519,7 @@ transitivity (\sum_(t in 'rV['F_2]_n)
     rewrite -(mulRC (W ``(y | t))) -[X in X = _]mulR1.
     rewrite -!mulRA.
     congr (_ * _).
-    rewrite mul1R UniformSupport.restrict /= UniformSupport.big_distrr /=; last first.
+    rewrite mul1R fdist_uniform_supp_restrict /= fdist_uniform_supp_distrr /=; last first.
     rewrite invRM; last 2 first.
       exact/eqP/invR_neq0.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
@@ -529,7 +529,7 @@ transitivity (\sum_(t in 'rV['F_2]_n)
     set tmp1 := \sum_(_ | _) _.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
     by rewrite -not_receivable_uniformE Receivable.defE.
-  rewrite PosteriorProbability.dE UniformSupport.dEN; last by rewrite inE; exact/negbT.
+  rewrite PosteriorProbability.dE fdist_uniform_supp_notin; last by rewrite inE; exact/negbT.
   by rewrite !(mul0R,div0R).
 rewrite -big_mkcond /=.
 rewrite /alpha.

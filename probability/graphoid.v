@@ -45,13 +45,12 @@ End setX_structural_lemmas.
 Module Proj124.
 Section proj124.
 Variables (A B D C : finType) (P : {fdist A * B * D * C}).
-Definition d : {fdist A * B * C} :=
-  Swap.d ((TripA.d (Swap.d (TripA.d P)))`2).
+Definition d : {fdist A * B * C} := fdistX ((TripA.d (fdistX (TripA.d P)))`2).
 Lemma dE abc : d abc = \sum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
 Proof.
 case: abc => [[a b] c] /=.
-rewrite /d Swap.dE fdist_sndE; apply eq_bigr => d _.
-by rewrite TripA.dE /= Swap.dE TripA.dE.
+rewrite /d fdistXE fdist_sndE; apply eq_bigr => d _.
+by rewrite TripA.dE /= fdistXE TripA.dE.
 Qed.
 Lemma snd : d`2 = P`2.
 Proof. by rewrite /fdist_snd /d !fdistmap_comp. Qed.

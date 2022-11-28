@@ -94,12 +94,12 @@ apply/idP/idP => [|/eqP].
   rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 // => i iC.
   move: (H i).
   rewrite negb_and !negbK => /orP[|/eqP //].
-  by rewrite -(negbK (_ == _)) UniformSupport.neq0 iC.
+  by rewrite -(negbK (_ == _)) fdist_uniform_supp_neq0 iC.
 - have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%R by [].
   move/psumR_eq0P => H /H {}H.
   rewrite /Receivable.def; apply/negP.
   case/existsP => z /andP[].
-  rewrite UniformSupport.neq0 => /H ->; by rewrite eqxx.
+  by rewrite fdist_uniform_supp_neq0 => /H ->; rewrite eqxx.
 Qed.
 
 End receivable_uniform.
@@ -155,20 +155,20 @@ Definition Kppu := / \sum_(c in C) W ``(y | c).
 
 Lemma uniformEF (x : 'rV[A]_n) : x \notin C ->
   (`U HC) `^^ W (x | y) = 0.
-Proof. move=> xC; by rewrite dE UniformSupport.dEN // /Rdiv !mul0R. Qed.
+Proof. move=> xC; by rewrite dE fdist_uniform_supp_notin // /Rdiv !mul0R. Qed.
 
 Lemma uniformET (x : 'rV[A]_n) : x \in C ->
   (`U HC) `^^ W (x | y) = Kppu * W ``(y | x).
 Proof.
 move=> Ht.
-rewrite dE UniformSupport.dET // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
-rewrite /den UniformSupport.restrict.
+rewrite dE fdist_uniform_supp_in // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
+rewrite /den fdist_uniform_supp_restrict.
 have C0 : INR #|C| != 0 by rewrite INR_eq0' -lt0n.
 rewrite div1R -invRM //.
   rewrite /Kppu; congr Rinv; rewrite big_distrr /=; apply eq_bigr => i iC.
-  by rewrite UniformSupport.dET // div1R mulRA mulRV // mul1R.
+  by rewrite fdist_uniform_supp_in // div1R mulRA mulRV // mul1R.
 rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
-  by move=> *; rewrite UniformSupport.dET.
+  by move=> *; rewrite fdist_uniform_supp_in.
 apply/eqP; rewrite -big_distrr /= mulR_eq0 => -[].
   by rewrite div1R; exact/invR_neq0/eqP.
 by apply/eqP; rewrite -not_receivable_uniformE Receivable.defE.

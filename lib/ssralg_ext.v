@@ -280,6 +280,62 @@ Qed.
 
 End row_mx_ext.
 
+Section row_mxA'.
+Variables (A : finType) (n : nat) (i : 'I_n.+1).
+
+Lemma row_mxA' (w1 : 'rV_(n - i)) (a : A) (w : 'rV_i) (H1 : (n.+1 - i)%nat = (n - i)%nat.+1)
+  (H2 : _) (H3 : (i + 1%nat + (n - i))%nat = n.+1) :
+  castmx (erefl 1%nat, H3) (row_mx (row_mx w (\row__ a)) w1) =
+  castmx (erefl 1%nat, H2) (row_mx w (castmx (erefl 1%nat, esym H1) (row_mx (\row_(_ < 1) a) w1))).
+Proof.
+apply/rowP => j.
+rewrite !castmxE /= !cast_ord_id /=.
+case: (ltnP j i) => [ji|].
+  move=> [:Hj0].
+  have @j0 : 'I_(i + 1) by apply: (@Ordinal _ j); abstract: Hj0; rewrite addn1 ltnS ltnW.
+  rewrite (_ : cast_ord _ _ = lshift (n - i) j0); last exact/val_inj.
+  rewrite row_mxEl.
+  rewrite (_ : cast_ord _ _ = lshift (n.+1 - i) (Ordinal ji)); last exact/val_inj.
+  rewrite row_mxEl.
+  rewrite (_ : j0 = lshift 1 (Ordinal ji)); last exact/val_inj.
+  by rewrite row_mxEl.
+rewrite leq_eqVlt => /orP[/eqP|]ij.
+  move=> [:Hj0].
+  have @j0 : 'I_(i + 1) by apply: (@Ordinal _ j); abstract: Hj0; by rewrite addn1 ij ltnS.
+  rewrite (_ : cast_ord _ _ = lshift (n - i) j0); last exact/val_inj.
+  rewrite row_mxEl.
+  rewrite (_ : j0 = rshift i ord0); last first.
+    by apply val_inj => /=; rewrite ij addn0.
+  rewrite row_mxEr mxE.
+  move=> [:Hj1].
+  have @j1 : 'I_(n.+1 - i).
+    by apply: (@Ordinal _ 0); abstract: Hj1; rewrite subn_gt0.
+  rewrite (_ : cast_ord _ _ = rshift i j1); last first.
+    by apply/val_inj => /=; rewrite ij addn0.
+  rewrite row_mxEr castmxE /= cast_ord_id esymK.
+  have @j2 : 'I_1 := ord0.
+  rewrite (_ : cast_ord _ _ = lshift (n - i) j2); last exact/val_inj.
+  by rewrite (@row_mxEl _ _ 1%nat) mxE.
+move=> [:Hj0].
+have @j0 : 'I_(n - i).
+  apply: (@Ordinal _ (j - i.+1)); abstract: Hj0.
+  by rewrite subnS prednK ?subn_gt0 // leq_sub2r // -ltnS.
+rewrite (_ : cast_ord _ _ = rshift (i + 1) j0); last first.
+  apply/val_inj => /=; by rewrite addn1 subnKC.
+rewrite row_mxEr.
+have @j1 : 'I_(n.+1 - i) by apply: (@Ordinal _ (j - i)); rewrite ltn_sub2r.
+rewrite (_ : cast_ord _ _ = rshift i j1); last first.
+  by apply val_inj => /=; rewrite subnKC // ltnW.
+rewrite row_mxEr castmxE /= cast_ord_id.
+have @j2 : 'I_(n - i).
+  apply: (@Ordinal _ (j1 - 1)).
+  by rewrite /= subn1 prednK ?subn_gt0 // leq_sub2r // -ltnS.
+rewrite (_ : cast_ord _ _ = rshift 1 j2); last first.
+  apply/val_inj => /=; by rewrite subnKC // subn_gt0.
+rewrite (@row_mxEr _ _ 1%nat); congr (_ _ _); apply val_inj => /=; by rewrite subnS subn1.
+Qed.
+End row_mxA'.
+
 Lemma col_matrix (R : ringType) m n (A : 'I_m -> 'cV[R]_(n.+1)) (i : 'I_m) :
   col i (\matrix_(a < n.+1, b < m) (A b) a ord0) = A i.
 Proof. apply/colP => a; by rewrite !mxE. Qed.
@@ -365,6 +421,12 @@ Lemma mulmx_sum_col : forall {R : comRingType} m n (u : 'cV[R]_n) (A : 'M_(m, n)
 Proof.
 move=> R m n u A; apply/colP=> j; rewrite mxE summxE; apply: eq_bigr => i _.
 by rewrite !mxE mulrC.
+Qed.
+
+Lemma col_perm_inj n (s : 'S_n) T m : injective (@col_perm T m n s).
+Proof.
+move=> x y; rewrite /col_perm => /matrixP xy; apply/matrixP => i j.
+by move: (xy i (s^-1%g j)); rewrite !mxE permKV.
 Qed.
 
 Lemma trmx_cV_0 {k} (x : 'cV['F_2]_k) : (x ^T == 0) = (x == 0).

@@ -398,7 +398,7 @@ Lemma tuple_dist_type t : tuple_of_row t \in T_{P} ->
   P `^ n t = \prod_(a : A) P a ^ (type.f P a).
 Proof.
 move=> Hx.
-rewrite fdist_tupleE.
+rewrite fdist_rVE.
 rewrite (_ : \prod_(i < n) P (t ``_ i) =
   \prod_(a : A) (\prod_(i < n) (if a == t ``_ i then P t ``_ i else 1))); last first.
   rewrite exchange_big; apply eq_big ; first by [].

@@ -203,13 +203,11 @@ Lemma tuple_pmf_out_fdist (W : `Ch(A, B)) (P : fdist A) n (b : 'rV_ _):
       (\prod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
    (`O(P, W)) `^ _ b.
 Proof.
-rewrite fdist_tupleE.
-apply/esym.
+rewrite fdist_rVE; apply/esym.
 etransitivity; first by apply eq_bigr => i _; rewrite OutFDist.dE; reflexivity.
 rewrite bigA_distr_big_dep /=.
 rewrite (reindex_onto (fun p : 'rV_n => [ffun x => p ``_ x]) (fun y => \row_(k < n) y k)) //=; last first.
-  move=> i _.
-  apply/ffunP => /= n0; by rewrite ffunE mxE.
+  by move=> i _; apply/ffunP => /= n0; rewrite ffunE mxE.
 apply eq_big.
 - move=> a /=.
   apply/andP; split; [by apply/finfun.familyP|].
@@ -217,7 +215,7 @@ apply eq_big.
 - move=> a Ha.
   rewrite big_split /=; congr (_ * _)%R.
   + by apply eq_bigr => i /= _; rewrite ffunE.
-  + by rewrite fdist_tupleE; apply eq_bigr => i /= _; rewrite ffunE.
+  + by rewrite fdist_rVE; apply eq_bigr => i /= _; rewrite ffunE.
 Qed.
 
 End OutFDist_prop.
@@ -241,7 +239,7 @@ Proof.
 rewrite /Pr [RHS]big_rV_prod /=.
 apply eq_big => y; first by rewrite !inE prod_rVK.
 rewrite inE => Qy.
-rewrite dE DMCE fdist_tupleE -big_split /= fdist_tupleE.
+rewrite dE DMCE fdist_rVE -big_split /= fdist_rVE.
 apply eq_bigr => i /= _.
 by rewrite JointFDistChan.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
@@ -257,7 +255,7 @@ rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=; last first
 transitivity (\sum_(i | Q i) (P `^ n i * (\sum_(y in 'rV[B]_n) W ``(y | i)))).
   apply eq_bigr => ta Sta.
   rewrite big_distrr; apply eq_bigr => tb _ /=.
-  rewrite DMCE [in RHS]fdist_tupleE -[in RHS]big_split /= fdist_tupleE.
+  rewrite DMCE [in RHS]fdist_rVE -[in RHS]big_split /= fdist_rVE.
   apply eq_bigr => j _.
   by rewrite dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
 transitivity (\sum_(i | Q i) P `^ _ i).
@@ -278,7 +276,7 @@ rewrite /= /Pr /= exchange_big /=.
 apply eq_big => tb.
   by rewrite !inE.
 move=> Htb.
-rewrite fdist_tupleE.
+rewrite fdist_rVE.
 etransitivity; last by apply eq_bigr => i _; rewrite OutFDist.dE; reflexivity.
 rewrite bigA_distr_bigA /=.
 rewrite (reindex_onto (fun p : 'rV[A]_m => [ffun x => p ord0 x])
@@ -290,7 +288,7 @@ apply eq_big => ta.
   rewrite inE; apply/esym.
   by apply/eqP/rowP => a; rewrite mxE ffunE.
 move=> Hta.
-rewrite fdist_tupleE /=; apply eq_bigr => l _.
+rewrite fdist_rVE /=; apply eq_bigr => l _.
 by rewrite dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulRC.
 Qed.
 End prop.
@@ -301,15 +299,15 @@ Notation "'`J(' P , W )" := (JointFDistChan.d P W) : channel_scope.
 Section relation_channel_cproba.
 
 Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
-Let QP := Swap.d (`J(P, W)).
+Let QP := fdistX (`J(P, W)).
 
 Lemma channel_cPr : forall a b, P a != 0 -> W a b = \Pr_QP[[set b]|[set a]].
 Proof.
 move=> a b Pa0.
-rewrite (@CJFDist.E _ _ (CJFDist.mkt P W)) //=; last exact/eqP.
+rewrite (@jfdist_prodE _ _ (mkjfdist_prod_type P W)) //=; last exact/eqP.
 congr (\Pr_ _ [_ | _ ]).
 apply/fdist_ext => -[b0 a0].
-by rewrite !Swap.dE JointFDistChan.dE /= /CJFDist.joint_of /= fdist_prodE.
+by rewrite !fdistXE JointFDistChan.dE /= /jfdist_prod /= fdist_prodE.
 Qed.
 
 End relation_channel_cproba.
@@ -328,7 +326,7 @@ Notation "`H( W | P )" := (CondEntropyChan.h W P) : channel_scope.
 Section condentropychan_prop.
 Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 
-Lemma CondEntropyChanE : `H(W | P) = CondEntropy.h (Swap.d (`J(P, W))).
+Lemma CondEntropyChanE : `H(W | P) = CondEntropy.h (fdistX (`J(P, W))).
 Proof.
 rewrite /CondEntropyChan.h.
 move: (chain_rule (`J(P, W))); rewrite /JointEntropy.h => ->.
@@ -339,11 +337,11 @@ Lemma CondEntropyChanE2 : `H(W | P) = \sum_(a in A) P a * `H (W a).
 Proof.
 rewrite CondEntropyChanE CondEntropy.hE big_morph_oppR; apply eq_bigr => a _.
 rewrite big_morph_oppR /entropy mulRN -mulNR big_distrr; apply eq_bigr => b _.
-rewrite /= Swap.dI JointFDistChan.dE /= mulNR mulRA.
-case/boolP: (P a == 0) => [/eqP ->|Pa0].
-  by rewrite !(mulR0,mul0R).
+rewrite /= fdistXI JointFDistChan.dE /= mulNR mulRA.
+have [->|Pa0] := eqVneq (P a) 0; first by rewrite !(mulR0,mul0R).
 by rewrite -channel_cPr.
 Qed.
+
 End condentropychan_prop.
 
 Module MutualInfoChan.
@@ -364,12 +362,12 @@ Notation "`I( P , W )" := (MutualInfoChan.mut_info P W) : channel_scope.
 Section mutualinfo_prop.
 Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 
-Lemma mut_info_chanE : `I(P, W) = MutualInfo.mi (Swap.d (`J(P, W))).
+Lemma mut_info_chanE : `I(P, W) = MutualInfo.mi (fdistX (`J(P, W))).
 Proof.
 rewrite /MutualInfoChan.mut_info MutualInfo.miE -CondEntropyChanE.
 rewrite /CondEntropyChan.h -[in RHS]addR_opp oppRB addRCA addRA; congr (_ + _ + _).
 congr `H.
-rewrite Swap.fst.
+rewrite fdistX1.
 apply/fdist_ext => b.
 rewrite OutFDist.dE fdist_sndE; apply/eq_bigr => a _.
 by rewrite JointFDistChan.dE mulRC.

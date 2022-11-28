@@ -30,13 +30,13 @@ Require Import fdist.
 (*                      or equal to r                                         *)
 (*  `Pr[ X \in E ]   == the probability that the random variable X is in E    *)
 (*                      (expect finTypes)                                     *)
-(*  `cst*, `*cst, `o, `/, `+, `-, `+cst, `-cst, `^2, --log  == construction   *)
-(*                      of various random variables                           *)
+(*  `cst*, `*cst, `o, `/, `+, `-, `+cst, `-cst, `^2, `log, `--  ==            *)
+(*                      construction of various random variables              *)
 (*  `E X             == expected value of the random variable X               *)
 (*  `E_[ X | F ]     == conditional expectation of X given an event F         *)
 (*  `Pr_P [ A | B ]  == conditional probability for events                    *)
 (*  `Pr[ X = a | Y = b ] == conditional probability for random variables      *)
-(*  `Pr[ X \in E | Y \in F ] == ..                                            *)
+(*  `Pr[ X \in E | Y \in F ] ==                                               *)
 (*  P |= X _|_ Y | Z, X _|_  Y | Z == the random variable X is conditionally  *)
 (*                      independent of the random variable Y given Z in a     *)
 (*                      distribution P                                        *)
@@ -93,7 +93,8 @@ Reserved Notation "X `- Y" (at level 50).
 Reserved Notation "X '`+cst' m" (at level 50).
 Reserved Notation "X '`-cst' m" (at level 50).
 Reserved Notation "X '`^2' " (at level 49).
-Reserved Notation "'--log' P" (at level 5).
+Reserved Notation "'`--' P" (at level 5).
+Reserved Notation "'`log' P" (at level 5).
 Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
   format "[%  x ,  y ,  .. ,  z ]").
 Reserved Notation "X '\=sum' Xs" (at level 50).
@@ -321,6 +322,39 @@ Qed.
 
 Local Open Scope fdist_scope.
 
+Section Pr_extra.
+
+Variables (A B : finType) (P : {fdist A * B}).
+Implicit Types (E : {set A}) (F : {set B}).
+
+Lemma Pr_XsetT E : Pr P (E `* [set: B]) = Pr (P`1) E.
+Proof.
+rewrite [in RHS]/Pr; under [in RHS]eq_bigr do rewrite fdist_fstE.
+rewrite /Pr big_setX /=; apply: eq_bigr => a aE.
+by apply: eq_bigl => b; rewrite !inE.
+Qed.
+
+Lemma Pr_setTX F : Pr P ([set: A] `* F) = Pr (P`2) F.
+Proof.
+rewrite /Pr big_setX /= exchange_big; apply eq_bigr => a aE.
+by rewrite fdist_sndE /=; apply eq_bigl => b; rewrite inE.
+Qed.
+
+Lemma PrX_snd F : \sum_(a in A) Pr P ([set a] `* F) = Pr (P`2) F.
+Proof.
+rewrite -Pr_setTX /Pr big_setX; apply: eq_big => a; first by rewrite !inE.
+by rewrite big_setX /= big_set1.
+Qed.
+
+Lemma PrX_fst E : \sum_(b in B) Pr P (E `* [set b]) = Pr (P`1) E.
+Proof.
+rewrite -Pr_XsetT /Pr big_setX /= [in RHS]exchange_big /=; apply: eq_big => b.
+  by rewrite !inE.
+by move=> _; rewrite big_setX /= exchange_big big_set1.
+Qed.
+
+End Pr_extra.
+
 Lemma Pr_domin_setX (A B : finType) (P : {fdist A * B}) E F :
   Pr P`1 E = 0 -> Pr P (E `* F) = 0.
 Proof.
@@ -331,6 +365,7 @@ Qed.
 Lemma Pr_domin_setXN (A B : finType) (P : {fdist A * B}) E F :
   Pr P (E `* F) != 0 -> Pr P`1 E != 0.
 Proof. by apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
+
 
 Lemma Pr_fdistmap (A B : finType) (f : A -> B) (d : fdist A) (E : {set A}) :
   injective f ->
@@ -397,31 +432,31 @@ by rewrite exchange_big.
 Qed.
 
 Local Open Scope vec_ext_scope.
-Lemma Pr_Multivar (A : finType) n (P : {fdist 'rV[A]_n.+1})
+Lemma Pr_fdist_prod_of_rV (A : finType) n (P : {fdist 'rV[A]_n.+1})
     (E : {set A}) (F : {set 'rV[A]_n}) :
-  Pr (Multivar.to_bivar P) (E `* F) =
+  Pr (fdist_prod_of_rV P) (E `* F) =
   Pr P [set x : 'rV[A]_n.+1 | ((x ``_ ord0) \in E) && ((rbehead x) \in F)].
 Proof.
-rewrite /Pr (eq_bigr (fun x => Multivar.to_bivar P (x.1, x.2))); last by case.
+rewrite /Pr (eq_bigr (fun x => fdist_prod_of_rV P (x.1, x.2))); last by case.
 rewrite [in LHS](eq_bigl (fun a => (a.1 \in E) && (a.2 \in F))); last first.
   by move=> [a b]; rewrite !inE.
-rewrite -[in LHS](pair_big (mem E) (mem F) (fun x1 x2 => Multivar.to_bivar P (x1, x2))) /=.
+rewrite -[in LHS](pair_big (mem E) (mem F) (fun x1 x2 => fdist_prod_of_rV P (x1, x2))) /=.
 rewrite [in RHS](eq_bigl (fun x : 'rV_n.+1 => (x ``_ ord0 \in E) && (rbehead x \in F))); last first.
   by move=> v; rewrite !inE.
 rewrite -(big_rV_cons_behead _ (mem E) (mem F)) /=.
-by apply eq_bigr => a aE; apply eq_bigr => v _; rewrite Multivar.to_bivarE.
+by apply eq_bigr => a aE; apply eq_bigr => v _; rewrite fdist_prod_of_rVE.
 Qed.
 
-Lemma Pr_Multivar1 (A : finType) n (P : {fdist 'rV[A]_n.+1}) (E : {set A}) :
-  Pr (Multivar.to_bivar P) (E `*T) = Pr P [set x : 'rV[A]_n.+1 | (x ``_ ord0) \in E].
+Lemma Pr_fdist_prod_of_rV1 (A : finType) n (P : {fdist 'rV[A]_n.+1}) (E : {set A}) :
+  Pr (fdist_prod_of_rV P) (E `*T) = Pr P [set x : 'rV[A]_n.+1 | (x ``_ ord0) \in E].
 Proof.
-by rewrite EsetT Pr_Multivar; congr Pr; apply/setP => v; rewrite !inE andbT.
+by rewrite EsetT Pr_fdist_prod_of_rV; congr Pr; apply/setP => v; rewrite !inE andbT.
 Qed.
 
-Lemma Pr_Multivar2 (A : finType) n (P : {fdist 'rV[A]_n.+1}) (E : {set 'rV[A]_n}) :
-  Pr (Multivar.to_bivar P) (T`* E) = Pr P [set x : 'rV[A]_n.+1 | (rbehead x) \in E].
+Lemma Pr_fdist_prod_of_rV2 (A : finType) n (P : {fdist 'rV[A]_n.+1}) (E : {set 'rV[A]_n}) :
+  Pr (fdist_prod_of_rV P) (T`* E) = Pr P [set x : 'rV[A]_n.+1 | (rbehead x) \in E].
 Proof.
-by rewrite setTE Pr_Multivar; congr Pr; apply/setP => v; rewrite !inE.
+by rewrite setTE Pr_fdist_prod_of_rV; congr Pr; apply/setP => v; rewrite !inE.
 Qed.
 
 Local Close Scope vec_ext_scope.
@@ -536,7 +571,8 @@ Definition sub_RV (X Y : {RV P -> R}) : {RV P -> R} := fun x => X x - Y x.
 Definition trans_add_RV (X : {RV P -> R}) m : {RV P -> R} := fun x => X x + m.
 Definition trans_min_RV (X : {RV P -> R}) m : {RV P -> R} := fun x => X x - m.
 Definition sq_RV (X : {RV P -> R}) : {RV P -> R} := (fun x => x ^ 2) `o X.
-Definition mlog_RV : {RV P -> R} := fun x => - log (P x).
+Definition neg_RV (X : {RV P -> R}) : {RV P -> R} := fun x => - X x.
+Definition log_RV : {RV P -> R} := fun x => log (P x).
 Definition unit_RV : {RV P -> unit} := fun=> tt.
 
 End random_variables.
@@ -550,7 +586,8 @@ Notation "X `- Y" := (sub_RV X Y) : proba_scope.
 Notation "X '`+cst' m" := (trans_add_RV X m) : proba_scope.
 Notation "X '`-cst' m" := (trans_min_RV X m) : proba_scope.
 Notation "X '`^2' " := (sq_RV X) : proba_scope.
-Notation "'--log' P" := (mlog_RV P) : proba_scope.
+Notation "'`--' P" := (neg_RV P) : proba_scope.
+Notation "'`log' P" := (log_RV P) : proba_scope.
 
 Section RV_lemmas.
 Variables (U : finType) (P : fdist U).
@@ -693,18 +730,18 @@ End RV_domin.
 
 Local Open Scope vec_ext_scope.
 
-Definition cast_RV_tupledist1 U (P : fdist U) (T : eqType) (X : {RV P -> T})
+Definition cast_RV_fdist_rV1 U (P : fdist U) (T : eqType) (X : {RV P -> T})
    : {RV (P `^ 1) -> T} :=
   fun x => X (x ``_ ord0).
 
-Definition cast_rV1_RV_tupledist1 U (P : fdist U) (T : eqType)
+Definition cast_RV_fdist_rV10 U (P : fdist U) (T : eqType)
     (Xs : 'rV[{RV P -> T}]_1) : {RV (P `^ 1) -> T} :=
-  cast_RV_tupledist1 (Xs ``_ ord0).
+  cast_RV_fdist_rV1 (Xs ``_ ord0).
 
 Definition cast_fun_rV1 U (T : eqType) (X : U -> T) : 'rV[U]_1 -> T :=
   fun x => X (x ``_ ord0).
 
-Definition cast_rV1_fun_rV1 U (T : eqType) (Xs : 'rV[U -> T]_1) : 'rV[U]_1 -> T :=
+Definition cast_fun_rV10 U (T : eqType) (Xs : 'rV[U -> T]_1) : 'rV[U]_1 -> T :=
   cast_fun_rV1 (Xs ``_ ord0).
 
 Local Close Scope vec_ext_scope.
@@ -742,6 +779,11 @@ End Ex_alt.
 Section expected_value_prop.
 
 Variables (U : finType) (P : fdist U) (X Y : {RV P -> R}).
+
+Lemma E_neg_RV : `E (`-- X) = - `E X.
+Proof.
+by rewrite /Ex/= big_morph_oppR/=; apply: eq_bigr => u _; rewrite mulNR.
+Qed.
 
 Lemma E_scalel_RV k : `E (k `cst* X) = k * `E X.
 Proof.
@@ -807,11 +849,11 @@ Proof. move=> H; by rewrite /comp_RV /= H. Qed.
 
 End expected_value_prop.
 
-Lemma E_cast_RV_tuplefdist1 A (P : fdist A) :
-  forall (X : {RV P -> R}), `E (cast_RV_tupledist1 X) = `E X.
+Lemma E_cast_RV_fdist_rV1 A (P : fdist A) :
+  forall (X : {RV P -> R}), `E (cast_RV_fdist_rV1 X) = `E X.
 Proof.
-move=> f; rewrite /cast_RV_tupledist1 /=; apply big_rV_1 => // m.
-by rewrite -fdist_tuple1.
+move=> f; rewrite /cast_RV_fdist_rV1 /=; apply big_rV_1 => // m.
+by rewrite -fdist_rV1.
 Qed.
 
 Section conditional_expectation_def.
@@ -1146,11 +1188,11 @@ Qed.
 
 End variance_prop.
 
-Lemma Var_cast_RV_tuplefdist1 (A : finType) (P : fdist A) (X : {RV P -> R}) :
-  `V (@cast_RV_tupledist1 _ P _ X) = `V X.
+Lemma Var_cast_RV_fdist_rV1 (A : finType) (P : fdist A) (X : {RV P -> R}) :
+  `V (@cast_RV_fdist_rV1 _ P _ X) = `V X.
 Proof.
-rewrite !VarE !E_cast_RV_tuplefdist1; congr (_ - _).
-apply: big_rV_1 => // v; by rewrite fdist_tuple1.
+rewrite !VarE !E_cast_RV_fdist_rV1; congr (_ - _).
+apply: big_rV_1 => // v; by rewrite fdist_rV1.
 Qed.
 
 (* (Probabilistic statement.)
@@ -1438,6 +1480,13 @@ Qed.
 
 End fdist_cond_prop.
 
+Lemma Pr_fdistX (A B : finType) (P : {fdist A * B}) (E : {set A}) (F : {set B}) :
+  Pr P (E `* F) = Pr (fdistX P) (F `* E).
+Proof.
+rewrite /Pr !big_setX exchange_big /=; apply eq_bigr => b _.
+by apply eq_bigr => a _; rewrite fdistXE.
+Qed.
+
 Section conditionally_independent_events.
 
 Variables (A : finType) (d : {fdist A}).
@@ -1631,6 +1680,7 @@ rewrite 2!cpr_eqE; congr (_ / _).
   by rewrite !andbA andbAC.
 by rewrite pr_eq_pairAC.
 Qed.
+
 Lemma cpr_in_pairACr E F G H :
   `Pr[ X \in E | [% Y, Z, W] \in F `* G `* H ] =
   `Pr[ X \in E | [% Y, W, Z] \in F `* H `* G ].
@@ -1783,8 +1833,8 @@ Section sum_two_rand_var.
 Local Open Scope vec_ext_scope.
 
 Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+2}) (X : {RV P -> R}).
-Let P1 := Multivar.head_of P.
-Let P2 := Multivar.tail_of P.
+Let P1 := head_of_fdist_rV P.
+Let P2 := tail_of_fdist_rV P.
 Variables (X1 : {RV P1 -> R}) (X2 : {RV P2 -> R}).
 
 Let X1' : {RV P -> R} := fun x => X1 (x ``_ ord0).
@@ -1797,17 +1847,17 @@ move=> Hsum; transitivity (\sum_(ta in 'rV[A]_n.+2)
   by apply eq_bigr => ta _; rewrite Hsum mulRDl.
 rewrite big_split => //=; congr (_ + _).
 - transitivity (\sum_(a in A)
-    (X1 a * \sum_(ta in 'rV_n.+1) ((Multivar.to_bivar `p_X) (a, ta)))).
+    (X1 a * \sum_(ta in 'rV_n.+1) (fdist_prod_of_rV `p_X (a, ta)))).
   + rewrite -(big_rV_cons_behead _ xpredT xpredT); apply eq_bigr => a _.
     rewrite big_distrr /=; apply eq_bigr => i _.
-    by rewrite row_mx_row_ord0 Multivar.to_bivarE.
-  + apply eq_bigr => a _; by rewrite fdist_fstE.
+    by rewrite row_mx_row_ord0 fdist_prod_of_rVE.
+  + by apply eq_bigr => a _; rewrite fdist_fstE.
 - transitivity (\sum_(ta in 'rV_n.+1)
-    (X2 ta * \sum_(a in A) ((Multivar.to_bivar `p_X) (a, ta)))).
+    (X2 ta * \sum_(a in A) (fdist_prod_of_rV `p_X (a, ta)))).
   + rewrite -(big_rV_cons_behead _ xpredT xpredT) exchange_big /=.
     apply eq_bigr => ta _; rewrite big_distrr /=.
-    apply eq_bigr => a _; by rewrite rbehead_row_mx Multivar.to_bivarE.
-  + apply eq_bigr => ta _; by rewrite fdist_sndE.
+    by apply eq_bigr => a _; rewrite rbehead_row_mx fdist_prod_of_rVE.
+  + by apply eq_bigr => ta _; rewrite fdist_sndE.
 Qed.
 
 Lemma E_id_rem_helper : X \= X1 @+ X2 ->
@@ -1845,10 +1895,10 @@ rewrite -[RHS]mulRA; congr (_ * _).
 rewrite exchange_big /=.
 have {}Hinde := Hinde r r'.
 have -> : `Pr[ X1 = r ] = `Pr[ X1' = r ].
-  rewrite 2!pr_eqE /P1 /Multivar.head_of Pr_fdist_fst Pr_Multivar1; congr Pr.
+  rewrite 2!pr_eqE /P1 /head_of_fdist_rV Pr_fdist_fst Pr_fdist_prod_of_rV1; congr Pr.
   by apply/setP => /= v; rewrite !inE /X1'.
 have -> : `Pr[ X2 = r' ] = `Pr[ X2' = r' ].
-  rewrite 2!pr_eqE /P1 /Multivar.head_of Pr_fdist_snd Pr_Multivar2; congr Pr.
+  rewrite 2!pr_eqE /P1 /tail_of_fdist_rV Pr_fdist_snd Pr_fdist_prod_of_rV2; congr Pr.
   by apply/setP => /= v; rewrite !inE /X2'.
 rewrite -Hinde.
 rewrite pr_eqE /ambient_dist /Pr.
@@ -1877,9 +1927,9 @@ transitivity (\sum_(i in 'rV_n.+2) ((X1 (i ``_ ord0)) ^ 2 * `p_X i + 2 *
 rewrite !big_split /=; congr (_ + _ + _).
 - rewrite Ex_altE -(big_rV_cons_behead _ xpredT xpredT) /=.
   apply eq_bigr => i _.
-  transitivity (X1 i ^ 2 * \sum_(j in 'rV_n.+1) (Multivar.to_bivar `p_ X) (i, j)).
+  transitivity (X1 i ^ 2 * \sum_(j in 'rV_n.+1) (fdist_prod_of_rV `p_ X) (i, j)).
   + rewrite big_distrr /=; apply eq_bigr => i0 _.
-    by rewrite row_mx_row_ord0 Multivar.to_bivarE.
+    by rewrite row_mx_row_ord0 fdist_prod_of_rVE.
   + by rewrite fdist_fstE.
 - rewrite -mulRA.
   rewrite !Ex_altE.
@@ -1887,9 +1937,9 @@ rewrite !big_split /=; congr (_ + _ + _).
   apply eq_bigr => i _; field.
 - rewrite Ex_altE -(big_rV_cons_behead _ xpredT xpredT) exchange_big /=.
   apply eq_bigr => t _.
-  transitivity (X2 t ^ 2 * \sum_(i in A) (Multivar.to_bivar `p_ X) (i, t)).
+  transitivity (X2 t ^ 2 * \sum_(i in A) (fdist_prod_of_rV `p_ X) (i, t)).
   + rewrite big_distrr /=; apply eq_bigr => i _.
-    by rewrite rbehead_row_mx Multivar.to_bivarE.
+    by rewrite rbehead_row_mx fdist_prod_of_rVE.
   + by congr (_ * _); rewrite fdist_sndE.
 Qed.
 
@@ -1955,7 +2005,7 @@ Section sum_n_rand_var_def.
 Variables (A : finType) (P : {fdist A}).
 
 Inductive sum_n : forall n, {RV (P `^ n) -> R} -> 'rV[{RV P -> R}]_n -> Prop :=
-| sum_n_1 : forall X, sum_n (cast_rV1_fun_rV1 X) X
+| sum_n_1 : forall X, sum_n (cast_fun_rV10 X) X
 | sum_n_cons : forall n (Xs : 'rV_n.+1) Y X Z,
   Y \=sum Xs -> Z \= X @+ Y -> Z \=sum (row_mx (\row_(k < 1) X) Xs)
 where "X '\=sum' Xs" := (sum_n X Xs) : proba_scope.
@@ -1994,18 +2044,18 @@ Lemma prod_dist_inde_rv_vec (A : finType) (P : {fdist A})
   `Pr[ ((fun v => Y (rbehead v)) : {RV (P`^n.+1) -> _}) = y ].
 Proof.
 have /= := @prod_dist_inde_rv _ _ P (P `^ n) _ _ X Y x y.
-rewrite !pr_eqE -!to_bivar_fdist_tuple.
+rewrite !pr_eqE -!fdist_prod_of_fdist_rV.
 rewrite (_ : [set x0 | _] = (finset (X @^-1 x)) `* (finset (Y @^-1 y))); last first.
   by apply/setP => -[a b]; rewrite !inE /= xpair_eqE.
-rewrite Pr_Multivar (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
+rewrite Pr_fdist_prod_of_rV (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
   by apply/setP => a; rewrite !inE.
-rewrite Pr_Multivar1 (_ : [set x0 | _] = T`* (finset (Y @^-1 y))); last first.
+rewrite Pr_fdist_prod_of_rV1 (_ : [set x0 | _] = T`* (finset (Y @^-1 y))); last first.
   by apply/setP => a; rewrite !inE.
 move=> Hinde.
 apply: eq_trans.
   apply: eq_trans; last exact: Hinde.
   by congr Pr; apply/setP => v; rewrite !inE xpair_eqE.
-by rewrite Pr_Multivar2; congr (Pr _ _ * Pr (P `^ n.+1) _);
+by rewrite Pr_fdist_prod_of_rV2; congr (Pr _ _ * Pr (P `^ n.+1) _);
   apply/setP => v; rewrite !inE.
 Qed.
 Local Close Scope vec_ext_scope.
@@ -2025,7 +2075,7 @@ elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
   apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
   apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
   subst Xs Xbar.
-  by rewrite big_ord_recl big_ord0 addR0 E_cast_RV_tuplefdist1.
+  by rewrite big_ord_recl big_ord0 addR0 E_cast_RV_fdist_rV1.
 - inversion 1; subst.
   apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
   apply Eqdep_dec.inj_pair2_eq_dec in H2; last exact eq_nat_dec.
@@ -2037,7 +2087,7 @@ elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
     rewrite (_ : lift _ _ = rshift 1 i); last exact: val_inj.
     by rewrite (@row_mxEr _ _ 1).
   rewrite -(IHn _ _ H3) (E_sum_2 H4) row_mx_row_ord0.
-  by rewrite /Ex head_of_fdist_tuple tail_of_fdist_tuple.
+  by rewrite /Ex head_of_fdist_rV_fdist_rV tail_of_fdist_rV_fdist_rV.
 Qed.
 
 Lemma V_sum_n : forall n (X : {RV (P `^ n) -> R}) (Xs : 'rV[{RV P -> R}]_n),
@@ -2052,7 +2102,7 @@ case=> [_ | n IH] Xsum Xs Hsum s Hs.
   apply Eqdep_dec.inj_pair2_eq_dec in H; last exact eq_nat_dec.
   apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
   subst Xs Xsum.
-  by rewrite Var_cast_RV_tuplefdist1 mul1R.
+  by rewrite Var_cast_RV_fdist_rV1 mul1R.
 - move: Hsum; inversion 1.
   apply Eqdep_dec.inj_pair2_eq_dec in H0; last exact eq_nat_dec.
   apply Eqdep_dec.inj_pair2_eq_dec in H1; last exact eq_nat_dec.
@@ -2060,7 +2110,7 @@ case=> [_ | n IH] Xsum Xs Hsum s Hs.
   move: {IH}(IH Y _ H2) => IH.
   rewrite S_INR mulRDl -IH.
   + rewrite mul1R addRC (V_sum_2 H3) //; last exact: prod_dist_inde_rv_vec.
-    by rewrite -(Hs ord0) /= row_mx_row_ord0 // head_of_fdist_tuple tail_of_fdist_tuple.
+    by rewrite -(Hs ord0) /= row_mx_row_ord0 // head_of_fdist_rV_fdist_rV tail_of_fdist_rV_fdist_rV.
   + move=> i; rewrite -(Hs (lift ord0 i)).
     congr (`V _).
     rewrite (_ : lift _ _ = rshift 1 i); last exact: val_inj.

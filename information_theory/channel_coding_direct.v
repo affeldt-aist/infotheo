@@ -432,11 +432,11 @@ transitivity (\sum_(v in 'rV[A]_n)
   apply eq_bigr => /= v _.
   rewrite big_distrr /=.
   apply eq_bigr => // w _.
-  rewrite DMCE 2!fdist_tupleE -big_split /=.
+  rewrite DMCE 2!fdist_rVE -big_split /=.
   apply eq_bigr => /= i _.
   by rewrite JointFDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
 rewrite /Pr big_rV_prod pair_big_dep /=.
-apply eq_bigl; case=> /= ? ?; by rewrite !inE.
+by apply eq_bigl; case=> /= ? ?; rewrite !inE.
 Qed.
 
 (* TODO: move? *)

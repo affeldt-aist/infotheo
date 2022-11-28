@@ -141,10 +141,10 @@ Qed.
 Lemma bsc_out_H_half' : 0 < INR 1 / INR 2 < 1.
 Proof. rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; lra. Qed.
 
-Lemma H_out_binary_uniform : `H(Uniform.d card_A `o BSC.c card_A p_01) = 1.
+Lemma H_out_binary_uniform : `H(fdist_uniform card_A `o BSC.c card_A p_01) = 1.
 Proof.
 rewrite {1}/entropy !Set2sumE /= !OutFDist.dE !Set2sumE /=.
-rewrite /BSC.c !fdist_binaryxx !fdist_binaryE (eq_sym _ (Set2.a _)) !Uniform.dE.
+rewrite /BSC.c !fdist_binaryxx !fdist_binaryE (eq_sym _ (Set2.a _)) !fdist_uniformE.
 rewrite (negbTE (Set2.a_neq_b card_A)).
 rewrite -!mulRDl (_ : 1 - p + p = 1); last by field.
 rewrite mul1R (_ : p + (1 - p) = 1); last by field.
@@ -183,9 +183,9 @@ apply eqR_le; split.
     move: (@IPW _ card_A d _ p_01') => ?.
     by unfold p_01 in *; lra.
   exact: H_out_max.
-move: (@IPW _ card_A (Uniform.d card_A) _ p_01').
+move: (@IPW _ card_A (fdist_uniform card_A) _ p_01').
 rewrite H_out_binary_uniform => <-.
-by apply/RleP/Rsup_ub => //=; exists (Uniform.d card_A).
+by apply/RleP/Rsup_ub => //=; exists (fdist_uniform card_A).
 Qed.
 
 End bsc_capacity_theorem.

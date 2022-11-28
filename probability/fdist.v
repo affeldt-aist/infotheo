@@ -20,8 +20,8 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (*                     bind of the "probability monad", notation >>=, scope   *)
 (*                     fdist_scope (delimiter: fdist)                         *)
 (*         fdistmap == map of the "probability monad"                         *)
-(*        Uniform.d == uniform distribution other a finite type               *)
-(*             `U H == the uniform distribution with support C, where H is a  *)
+(*    fdist_uniform == uniform distribution other a finite type               *)
+(*            `U C0 == the uniform distribution with support C, where C0 is a *)
 (*                     proof that the set C is not empty                      *)
 (* fdist_binary H p == where H is a proof of #|A| = 2%N and p is a            *)
 (*                     probability: binary distribution over A with bias p    *)
@@ -41,23 +41,25 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (*        fdist_del == restriction of the domain of a distribution            *)
 (*                     (convex analogue of the projection of a vector         *)
 (*                     to a subspace)                                         *)
-(*                                                                            *)
+(*         P1 `x P2 == product distribution                                   *)
+(*                     (convex analogue of the simple tensor of two vectors)  *)
 (* About bivariate (joint) distributions:                                     *)
 (*              P`1 == marginal left                                          *)
 (*              P`2 == marginal right                                         *)
+(*         fdistX P == swap the two projections of P : {fdist A * B}          *)
 (* About multivariate (joint) distributions                                   *)
-(*          head_of == head marginal                                          *)
-(*          tail_of == tail marginal                                          *)
-(*                                                                            *)
-(*         P1 `x P2 == product distribution                                   *)
-(*                     (convex analogue of the simple tensor of two vectors)  *)
+(* head_of_fdist_rV == head marginal                                          *)
+(* tail_of_fdist_rV == tail marginal                                          *)
 (*           P `^ n == product distribution over a row vector                 *)
+(*        fdist_nth ==                                                        *)
+(*       fdist_col' == marginal distribution                                  *)
+(*       fdist_take ==                                                        *)
 (*        wolfowitz == Wolfowitz's counting principle                         *)
 (*                                                                            *)
 (******************************************************************************)
 
 Reserved Notation "{ 'fdist' T }" (at level 0, format "{ 'fdist'  T }").
-Reserved Notation "'`U' HC " (at level 10, HC at next level).
+Reserved Notation "'`U' C0 " (at level 10, C0 at next level).
 Reserved Notation "P `^ n" (at level 5).
 Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
@@ -339,11 +341,11 @@ Qed.
 
 End fdistmap_prop.
 
-Module Uniform.
-Section def.
+Section fdist_uniform.
 Variables (A : finType) (n : nat).
+
 Hypothesis domain_not_empty : #|A| = n.+1.
-Definition f := [ffun a : A => INR 1 / INR #|A|].
+Let f := [ffun a : A => INR 1 / INR #|A|].
 
 Let f0 a : 0 <= f a.
 Proof.
@@ -357,38 +359,43 @@ rewrite -big_distrr /= mul1R big_const iter_addR mulRV //.
 by rewrite INR_eq0' domain_not_empty.
 Qed.
 
-Definition d : fdist A := locked (FDist.make f0 f1).
+Definition fdist_uniform : fdist A := locked (FDist.make f0 f1).
 
-Lemma dE a : d a = / INR #|A|.
-Proof. by rewrite /d; unlock => /=; rewrite /f div1R ffunE. Qed.
-End def.
+Lemma fdist_uniformE a : fdist_uniform a = / INR #|A|.
+Proof. by rewrite /fdist_uniform; unlock => /=; rewrite /f div1R ffunE. Qed.
 
-Lemma d_neq0 (C : finType) (domain_non_empty : { m : nat | #| C | = m.+1 }) :
-  forall x, d (projT2 domain_non_empty) x != 0.
+End fdist_uniform.
+
+Section fdist_uniform_prop.
+
+Lemma fdist_uniform_neq0 (C : finType) (domain_non_empty : { m : nat | #| C | = m.+1 }) :
+  forall x, fdist_uniform (projT2 domain_non_empty) x != 0.
 Proof.
-move=> c; rewrite dE invR_neq0' //; apply/eqP.
+move=> c; rewrite fdist_uniformE invR_neq0' //; apply/eqP.
 case: domain_non_empty => x' ->; by rewrite INR_eq0.
 Qed.
 
-End Uniform.
+End fdist_uniform_prop.
 
-Lemma dom_by_uniform A (P : fdist A) n (HA : #|A| = n.+1) : P `<< Uniform.d HA.
+Lemma dom_by_uniform A (P : fdist A) n (An1 : #|A| = n.+1) : P `<< fdist_uniform An1.
 Proof.
-apply/dominatesP => a; rewrite Uniform.dE => /esym abs; exfalso.
-by move: abs; rewrite HA; apply/eqP; rewrite ltR_eqF //; apply/invR_gt0/ltR0n.
+apply/dominatesP => a; rewrite fdist_uniformE => /esym abs; exfalso.
+by move: abs; rewrite An1; apply/eqP; rewrite ltR_eqF //; apply/invR_gt0/ltR0n.
 Qed.
 
-Module UniformSupport.
-Section def.
+Section fdist_uniform_supp.
 Variables (A : finType) (C : {set A}).
-Hypothesis support_not_empty : (0 < #|C|)%nat.
-Definition f := [ffun a : A => if a \in C then 1 / INR #|C| else 0].
-Lemma f0 a : 0 <= f a.
+Hypothesis C0 : (0 < #|C|)%nat.
+
+Let f := [ffun a : A => if a \in C then 1 / INR #|C| else 0].
+
+Let f0 a : 0 <= f a.
 Proof.
 rewrite /f ffunE.
 case e : (a \in C); last exact/leRR.
 apply divR_ge0; [lra|exact/ltR0n].
 Qed.
+
 Lemma f1 : \sum_(a in A) f a = 1.
 Proof.
 rewrite /f.
@@ -400,39 +407,46 @@ have HC'' : \sum_(a in A) (if a \in C then 1 else 0) = #|C|%:R.
   by rewrite -big_mkcondr /= big_const iter_addR mulR1.
 by rewrite /Rdiv -big_distrl HC'' /= mulRV.
 Qed.
-Definition d : fdist A := locked (FDist.make f0 f1).
-End def.
-Local Notation "'`U' HC " := (d HC).
-Section prop.
+
+Definition fdist_uniform_supp : fdist A := locked (FDist.make f0 f1).
+
+End fdist_uniform_supp.
+
+Notation "'`U' C0 " := (fdist_uniform_supp C0).
+
+Section fdist_uniform_supp_prop.
 Variables (A : finType) (C : {set A}) (HC : (0 < #| C |)%nat).
 
-Lemma dET z : z \in C -> (`U HC) z = 1 / INR #|C|.
-Proof. by rewrite /d; unlock; rewrite /= /f ffunE => ->. Qed.
+Lemma fdist_uniform_supp_in z : z \in C -> (`U HC) z = 1 / INR #|C|.
+Proof. by rewrite /fdist_uniform_supp; unlock; rewrite /= /f ffunE => ->. Qed.
 
-Lemma dEN z : z \notin C -> (`U HC) z = 0.
-Proof. by rewrite /d; unlock; move/negbTE; rewrite /= /f ffunE => ->. Qed.
-
-Lemma restrict g : \sum_(t in A) ((`U HC) t * g t) = \sum_(t in C) ((`U HC) t * g t).
+Lemma fdist_uniform_supp_notin z : z \notin C -> (`U HC) z = 0.
 Proof.
-rewrite (bigID (fun x => x \in C)) /= addRC (eq_bigr (fun=> 0)).
-by rewrite big_const // iter_addR mulR0 add0R.
-move=> a aC; by rewrite dEN // mul0R.
+by rewrite /fdist_uniform_supp; unlock; move/negbTE; rewrite /= /f ffunE => ->.
 Qed.
 
-Lemma big_distrr g : \sum_(t in C) ((`U HC) t * g t) = (/ INR #|C| * \sum_(t in C) g t).
+Lemma fdist_uniform_supp_restrict g :
+  \sum_(t in A) ((`U HC) t * g t) = \sum_(t in C) ((`U HC) t * g t).
 Proof.
-rewrite /= big_distrr /=; apply eq_bigr => /= i Hi; by rewrite dET // div1R.
+rewrite (bigID (fun x => x \in C)) /= addRC big1 ?add0R// => a aC.
+by rewrite fdist_uniform_supp_notin // mul0R.
 Qed.
 
-Lemma neq0 z : ((`U HC) z != 0) = (z \in C).
+Lemma fdist_uniform_supp_distrr g :
+  \sum_(t in C) ((`U HC) t * g t) = (/ INR #|C| * \sum_(t in C) g t).
 Proof.
-case/boolP : (z \in C) => [/dET ->|/dEN ->//]; last by rewrite eqxx.
-rewrite div1R; by apply/invR_neq0'; rewrite INR_eq0' -lt0n.
+rewrite /= big_distrr /=; apply eq_bigr => /= i Hi.
+by rewrite fdist_uniform_supp_in // div1R.
 Qed.
-End prop.
-End UniformSupport.
 
-Notation "'`U' HC " := (UniformSupport.d HC) : proba_scope.
+Lemma fdist_uniform_supp_neq0 z : ((`U HC) z != 0) = (z \in C).
+Proof.
+case/boolP : (z \in C) => [/fdist_uniform_supp_in ->|/fdist_uniform_supp_notin ->].
+  by rewrite div1R; apply/invR_neq0'; rewrite INR_eq0' -lt0n.
+by rewrite eqxx.
+Qed.
+
+End fdist_uniform_supp_prop.
 
 Section fdist_binary.
 Variable A : finType.
@@ -488,28 +502,33 @@ Qed.
 
 End fdist_binary_prop.
 
-(* TODO: document *)
-Module BinarySupport.
-Section prop.
+Section fdist_binary_supp.
 Variables (A : finType) (d : fdist A).
+
 Hypothesis Hd : #|fdist_supp d| = 2%nat.
-Definition a := enum_val (cast_ord (esym Hd) ord0).
-Definition b := enum_val (cast_ord (esym Hd) (lift ord0 ord0)).
-Lemma enumE : enum (fdist_supp d) = a :: b :: [::].
+
+Definition fdist_binary_supp0 := enum_val (cast_ord (esym Hd) ord0).
+
+Definition fdist_binary_supp1 := enum_val (cast_ord (esym Hd) (lift ord0 ord0)).
+
+Lemma enum_fdist_binary_supp :
+  enum (fdist_supp d) = fdist_binary_supp0 :: fdist_binary_supp1 :: [::].
 Proof.
-apply (@eq_from_nth _ a); first by rewrite -cardE Hd.
-case=> [_ |]; first by rewrite [X in _ = X]/= {2}/a (enum_val_nth a).
+apply (@eq_from_nth _ fdist_binary_supp0); first by rewrite -cardE Hd.
+case=> [_ |]; first by rewrite [X in _ = X]/= {2}/fdist_binary_supp0 (enum_val_nth fdist_binary_supp0).
 case=> [_ |i]; last by rewrite -cardE Hd.
-by rewrite [X in _ = X]/= {1}/b (enum_val_nth a).
+by rewrite [X in _ = X]/= {1}/fdist_binary_supp1 (enum_val_nth fdist_binary_supp0).
 Qed.
-Lemma rsumE (f : A -> R) : \sum_(i in fdist_supp d) f i = f a + f b.
+
+Lemma sum_fdist_binary_supp (f : A -> R) :
+  \sum_(i in fdist_supp d) f i = f fdist_binary_supp0 + f fdist_binary_supp1.
 Proof.
 transitivity (\sum_(i <- enum (fdist_supp d)) f i); last first.
-  by rewrite enumE 2!big_cons big_nil addR0.
-rewrite big_filter; apply eq_bigl => ?; by rewrite !inE.
+  by rewrite enum_fdist_binary_supp 2!big_cons big_nil addR0.
+by rewrite big_filter; apply eq_bigl => ?; rewrite !inE.
 Qed.
-End prop.
-End BinarySupport.
+
+End fdist_binary_supp.
 
 Section fdistD1.
 Variables (B : finType) (X : fdist B) (b : B).
@@ -684,16 +703,18 @@ Definition fdist_del_idx (i : 'I_n) := h i.
 
 End fdist_del.
 
-Module BelastFDist.
+Section fdist_belast.
 Local Open Scope proba_scope.
-Section def.
 Variables (n : nat) (P : {fdist 'I_n.+1}) (Pmax_neq1 : P ord_max != 1).
+
 Let D : {fdist 'I_n.+1} := fdistD1 Pmax_neq1.
-Definition d : {fdist 'I_n} := locked (fdist_del Pmax_neq1).
-Lemma dE i : d i = D (widen_ord (leqnSn _) i).
-Proof. by rewrite /d; unlock; rewrite fdist_delE ltn_ord. Qed.
-End def.
-End BelastFDist.
+
+Definition fdist_belast : {fdist 'I_n} := locked (fdist_del Pmax_neq1).
+
+Lemma fdist_belastE i : fdist_belast i = D (widen_ord (leqnSn _) i).
+Proof. by rewrite /fdist_belast; unlock; rewrite fdist_delE ltn_ord. Qed.
+
+End fdist_belast.
 
 Section fdist_convn.
 Variables (A : finType) (n : nat) (e : {fdist 'I_n}) (g : 'I_n -> fdist A).
@@ -1137,89 +1158,6 @@ End fdist_fst_snd.
 Notation "d `1" := (fdist_fst d) : fdist_scope.
 Notation "d `2" := (fdist_snd d) : fdist_scope.
 
-(* multivariate (joint) distribution *)
-Module Multivar.
-Section prod_of_rV.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
-
-Let f (v : 'rV[A]_n.+1) : A * 'rV[A]_n := (v ord0 ord0, rbehead v).
-Let inj_f : injective f.
-Proof.
-move=> a b -[H1 H2]; rewrite -(row_mx_rbehead a) -(row_mx_rbehead b).
-by rewrite {}H2; congr (@row_mx _ 1 1 n _ _); apply/rowP => i; rewrite !mxE.
-Qed.
-Definition to_bivar : {fdist A * 'rV[A]_n} := fdistmap f P.
-Lemma to_bivarE a : to_bivar a = P (row_mx (\row_(i < 1) a.1) a.2).
-Proof.
-case: a => x y; rewrite /to_bivar fdistmapE /=.
-rewrite (_ : (x, y) = f (row_mx (\row_(i < 1) x) y)); last first.
-  by rewrite /f row_mx_row_ord0 rbehead_row_mx.
-by rewrite (big_pred1_inj inj_f).
-Qed.
-
-Definition head_of := to_bivar`1.
-Definition tail_of := to_bivar`2.
-
-Let g (v : 'rV[A]_n.+1) : 'rV[A]_n * A := (rbelast v, rlast v).
-
-Let inj_g : injective g.
-Proof.
-by move=> a b -[H1 H2]; rewrite -(row_mx_rbelast a) -(row_mx_rbelast b) H1 H2.
-Qed.
-
-Definition belast_last : {fdist 'rV[A]_n * A} := fdistmap g P.
-
-Lemma belast_lastE a : belast_last a =
-  P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2))).
-Proof.
-case: a => x y; rewrite /belast_last fdistmapE /=.
-rewrite (_ : (x, y) = g (castmx (erefl 1%nat, addn1 n) (row_mx x (\row__ y)))); last first.
-  by rewrite /g rbelast_row_mx row_mx_row_ord_max.
-by rewrite (big_pred1_inj inj_g).
-Qed.
-
-End prod_of_rV.
-
-Section rV_of_prod.
-
-Local Open Scope vec_ext_scope.
-
-Variables (A : finType) (n : nat) (P : {fdist A * 'rV[A]_n}).
-
-Let f (x : A * 'rV[A]_n) : 'rV[A]_n.+1 := row_mx (\row_(_ < 1) x.1) x.2.
-Lemma inj_f : injective f.
-Proof.
-move=> -[x1 x2] -[y1 y2]; rewrite /f /= => H.
-move: (H) => /(congr1 (@lsubmx A 1 1 n)); rewrite 2!row_mxKl => /rowP/(_ ord0).
-rewrite !mxE => ->; congr (_, _).
-by move: H => /(congr1 (@rsubmx A 1 1 n)); rewrite 2!row_mxKr.
-Qed.
-
-Definition from_bivar : {fdist 'rV[A]_n.+1} := fdistmap f P.
-
-Lemma from_bivarE a : from_bivar a = P (a ``_ ord0, rbehead a).
-Proof.
-rewrite /from_bivar fdistmapE /=.
-rewrite {1}(_ : a = f (a ``_ ord0, rbehead a)); last first.
-  by rewrite /f /= row_mx_rbehead.
-by rewrite (big_pred1_inj inj_f).
-Qed.
-
-End rV_of_prod.
-
-Lemma from_bivarK (A : finType) n : cancel (@from_bivar A n) (@to_bivar A n).
-Proof.
-move=> P; apply/fdist_ext => /= -[a b].
-by rewrite to_bivarE /= from_bivarE /= row_mx_row_ord0 rbehead_row_mx.
-Qed.
-
-Lemma to_bivarK (A : finType) n : cancel (@to_bivar A n) (@from_bivar A n).
-Proof.
-move=> P; by apply/fdist_ext => v; rewrite from_bivarE to_bivarE row_mx_rbehead.
-Qed.
-
-End Multivar.
-
 Section fdist_prod.
 Variables (A B : finType) (P : fdist A) (Q : A -> fdist B) (*TODO: sto mat?*).
 
@@ -1278,7 +1216,52 @@ rewrite fdist_prodE /= mulR_eq0 => -[P1a|P2b];
 Qed.
 End prod_dominates_joint.
 
-Section fdist_tuple.
+Lemma bij_swap A B : bijective (@swap A B).
+Proof. apply Bijective with swap; by case. Qed.
+Arguments bij_swap {A B}.
+
+Lemma swapK A B : (@swap A B) \o swap = @id (B * A).
+Proof. by rewrite boolp.funeqE => -[]. Qed.
+
+Local Open Scope fdist_scope.
+
+Section fdistX.
+Variables (A B : finType) (P : {fdist A * B}).
+
+Definition fdistX : {fdist B * A} := fdistmap swap P.
+
+Lemma fdistXE a b : fdistX (b, a) = P (a, b).
+Proof.
+by rewrite fdistmapE /= -/(swap (a, b)) (big_pred1_inj (bij_inj bij_swap)).
+Qed.
+
+Lemma fdistX1 : fdistX`1 = P`2.
+Proof. by rewrite /fdist_fst /fdistX fdistmap_comp. Qed.
+
+Lemma fdistX2 : fdistX`2 = P`1.
+Proof. by rewrite /fdist_snd /fdistX fdistmap_comp. Qed.
+
+End fdistX.
+
+Section fdistX_prop.
+Variables (A B : finType) (P : fdist A) (Q : fdist B) (R S : {fdist A * B}).
+
+Lemma fdistXI : fdistX (fdistX R) = R.
+Proof. by rewrite /fdistX fdistmap_comp swapK fdistmap_id. Qed.
+
+Lemma fdistX_prod : fdistX (Q `x P) = P `x Q.
+Proof. by apply/fdist_ext => -[a b]; rewrite fdistXE !fdist_prodE mulRC. Qed.
+
+Local Open Scope reals_ext_scope.
+
+Lemma fdistX_dom_by : dominates R S -> dominates (fdistX R) (fdistX S).
+Proof.
+by move/dominatesP => H; apply/dominatesP => -[b a]; rewrite !fdistXE => /H.
+Qed.
+
+End fdistX_prop.
+
+Section fdist_rV.
 Local Open Scope vec_ext_scope.
 Variables (A : finType) (P : fdist A) (n : nat).
 
@@ -1302,73 +1285,249 @@ Local Close Scope ring_scope.
   move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
 rewrite -bigA_distr_bigA /= /P'.
 rewrite [RHS](_ : _ = \prod_(i < n) 1); last by rewrite big1.
-apply eq_bigr => i _; exact: FDist.f1.
+by apply eq_bigr => i _; exact: FDist.f1.
 Qed.
 
-Definition fdist_tuple : {fdist 'rV[A]_n} := locked (FDist.make f0 f1).
+Definition fdist_rV : {fdist 'rV[A]_n} := locked (FDist.make f0 f1).
 
-Lemma fdist_tupleE t : fdist_tuple t = \prod_(i < n) P t ``_ i.
-Proof. by rewrite /fdist_tuple; unlock; rewrite ffunE. Qed.
+Lemma fdist_rVE t : fdist_rV t = \prod_(i < n) P t ``_ i.
+Proof. by rewrite /fdist_rV; unlock; rewrite ffunE. Qed.
 
-End fdist_tuple.
+End fdist_rV.
 
-Notation "P `^ n" := (fdist_tuple P n) : proba_scope.
+Notation "P `^ n" := (fdist_rV P n) : proba_scope.
 
-Section fdist_tuple_prop.
+(* multivariate (joint) distribution *)
+Section fdist_prod_of_rV.
+Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
+
+Let f (v : 'rV[A]_n.+1) : A * 'rV[A]_n := (v ord0 ord0, rbehead v).
+
+Let inj_f : injective f.
+Proof.
+move=> a b -[H1 H2]; rewrite -(row_mx_rbehead a) -(row_mx_rbehead b).
+by rewrite {}H2; congr (@row_mx _ 1 1 n _ _); apply/rowP => i; rewrite !mxE.
+Qed.
+
+Definition fdist_prod_of_rV : {fdist A * 'rV[A]_n} := fdistmap f P.
+
+Lemma fdist_prod_of_rVE a : fdist_prod_of_rV a = P (row_mx (\row_(i < 1) a.1) a.2).
+Proof.
+case: a => x y; rewrite /fdist_prod_of_rV fdistmapE /=.
+rewrite (_ : (x, y) = f (row_mx (\row_(i < 1) x) y)); last first.
+  by rewrite /f row_mx_row_ord0 rbehead_row_mx.
+by rewrite (big_pred1_inj inj_f).
+Qed.
+
+Definition head_of_fdist_rV := fdist_prod_of_rV`1.
+Definition tail_of_fdist_rV := fdist_prod_of_rV`2.
+
+Let g (v : 'rV[A]_n.+1) : 'rV[A]_n * A := (rbelast v, rlast v).
+
+Let inj_g : injective g.
+Proof.
+by move=> a b -[H1 H2]; rewrite -(row_mx_rbelast a) -(row_mx_rbelast b) H1 H2.
+Qed.
+
+Definition fdist_belast_last_of_rV : {fdist 'rV[A]_n * A} := fdistmap g P.
+
+Lemma fdist_belast_last_of_rVE a : fdist_belast_last_of_rV a =
+  P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2))).
+Proof.
+case: a => x y; rewrite /fdist_belast_last_of_rV fdistmapE /=.
+rewrite (_ : (x, y) = g (castmx (erefl 1%nat, addn1 n) (row_mx x (\row__ y)))); last first.
+  by rewrite /g rbelast_row_mx row_mx_row_ord_max.
+by rewrite (big_pred1_inj inj_g).
+Qed.
+
+End fdist_prod_of_rV.
+
+Lemma head_of_fdist_rV_belast_last (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+2}) :
+  head_of_fdist_rV ((fdist_belast_last_of_rV P)`1) = head_of_fdist_rV P.
+Proof.
+rewrite /head_of_fdist_rV /fdist_fst /fdist_prod_of_rV /fdist_belast_last_of_rV.
+rewrite !fdistmap_comp; congr (fdistmap _ P).
+rewrite boolp.funeqE => /= v /=.
+rewrite /rbelast mxE; congr (v ord0 _); exact: val_inj.
+Qed.
+
+Section fdist_rV_of_prod.
+Local Open Scope vec_ext_scope.
+Variables (A : finType) (n : nat) (P : {fdist A * 'rV[A]_n}).
+
+Let f (x : A * 'rV[A]_n) : 'rV[A]_n.+1 := row_mx (\row_(_ < 1) x.1) x.2.
+Lemma inj_f : injective f.
+Proof.
+move=> -[x1 x2] -[y1 y2]; rewrite /f /= => H.
+move: (H) => /(congr1 (@lsubmx A 1 1 n)); rewrite 2!row_mxKl => /rowP/(_ ord0).
+rewrite !mxE => ->; congr (_, _).
+by move: H => /(congr1 (@rsubmx A 1 1 n)); rewrite 2!row_mxKr.
+Qed.
+
+Definition fdist_rV_of_prod : {fdist 'rV[A]_n.+1} := fdistmap f P.
+
+Lemma fdist_rV_of_prodE a : fdist_rV_of_prod a = P (a ``_ ord0, rbehead a).
+Proof.
+rewrite /fdist_rV_of_prod fdistmapE /=.
+rewrite {1}(_ : a = f (a ``_ ord0, rbehead a)); last first.
+  by rewrite /f /= row_mx_rbehead.
+by rewrite (big_pred1_inj inj_f).
+Qed.
+
+End fdist_rV_of_prod.
+
+Lemma fdist_prod_of_rVK (A : finType) n : cancel (@fdist_rV_of_prod A n) (@fdist_prod_of_rV A n).
+Proof.
+move=> P; apply/fdist_ext => /= -[a b].
+by rewrite fdist_prod_of_rVE /= fdist_rV_of_prodE /= row_mx_row_ord0 rbehead_row_mx.
+Qed.
+
+Lemma fdist_rV_of_prodK (A : finType) n : cancel (@fdist_prod_of_rV A n) (@fdist_rV_of_prod A n).
+Proof.
+move=> P; apply/fdist_ext => v.
+by rewrite fdist_rV_of_prodE fdist_prod_of_rVE row_mx_rbehead.
+Qed.
+
+Section fdist_rV_prop.
 Local Open Scope vec_ext_scope.
 Variable A : finType.
 
-Lemma fdist_tuple0 (x : 'rV[A]_0) P : P `^ 0 x = 1.
-Proof. by rewrite fdist_tupleE big_ord0. Qed.
+Lemma fdist_rV0 (x : 'rV[A]_0) P : P `^ 0 x = 1.
+Proof. by rewrite fdist_rVE big_ord0. Qed.
 
-Lemma fdist_tupleS n (x : 'rV[A]_n.+1) P :
+Lemma fdist_rVS n (x : 'rV[A]_n.+1) P :
   P `^ n.+1 x = P (x ``_ ord0) * P `^ n (rbehead x).
 Proof.
-rewrite 2!fdist_tupleE big_ord_recl; congr (_ * _).
+rewrite 2!fdist_rVE big_ord_recl; congr (_ * _).
 by apply eq_bigr => i _; rewrite /rbehead mxE.
 Qed.
 
-Lemma fdist_tuple1 (a : 'rV[A]_1) P : (P `^ 1) a = P (a ``_ ord0).
-Proof. by rewrite fdist_tupleS fdist_tuple0 mulR1. Qed.
+Lemma fdist_rV1 (a : 'rV[A]_1) P : (P `^ 1) a = P (a ``_ ord0).
+Proof. by rewrite fdist_rVS fdist_rV0 mulR1. Qed.
 
-Lemma to_bivar_fdist_tuple n (P : fdist A) : Multivar.to_bivar P `^ n.+1 = P `x P `^ n.
+Lemma fdist_prod_of_fdist_rV n (P : fdist A) : fdist_prod_of_rV (P `^ n.+1) = P `x P `^ n.
 Proof.
 apply/fdist_ext => /= -[a b].
-rewrite Multivar.to_bivarE /= fdist_tupleS fdist_prodE; congr (P _ * P `^ n _) => /=.
+rewrite fdist_prod_of_rVE /= fdist_rVS fdist_prodE; congr (P _ * P `^ n _) => /=.
   by rewrite row_mx_row_ord0.
 by rewrite rbehead_row_mx.
 Qed.
 
-End fdist_tuple_prop.
+End fdist_rV_prop.
 
 (* The tuple distribution as a joint distribution *)
 Section joint_tuple_fdist.
 
 Variables (A : finType) (P : fdist A) (n : nat).
 
-Lemma head_of_fdist_tuple : Multivar.head_of (P `^ n.+1) = P.
+Lemma head_of_fdist_rV_fdist_rV : head_of_fdist_rV (P `^ n.+1) = P.
 Proof.
-apply/fdist_ext => a; rewrite /Multivar.head_of fdist_fstE /=.
+apply/fdist_ext => a; rewrite /head_of_fdist_rV fdist_fstE /=.
 under eq_bigr.
-  move=> v _; rewrite Multivar.to_bivarE /= fdist_tupleS.
+  move=> v _; rewrite fdist_prod_of_rVE /= fdist_rVS.
   by rewrite row_mx_row_ord0 rbehead_row_mx; over.
 by rewrite -big_distrr /= FDist.f1 mulR1.
 Qed.
 
-Lemma tail_of_fdist_tuple : Multivar.tail_of (P `^ n.+1) = P `^ n.
+Lemma tail_of_fdist_rV_fdist_rV : tail_of_fdist_rV (P `^ n.+1) = P `^ n.
 Proof.
-apply/fdist_ext => a; rewrite /Multivar.tail_of fdist_sndE /=.
+apply/fdist_ext => a; rewrite /tail_of_fdist_rV fdist_sndE /=.
 under eq_bigr.
-  move=> v _; rewrite Multivar.to_bivarE /= fdist_tupleS.
+  move=> v _; rewrite fdist_prod_of_rVE /= fdist_rVS.
   by rewrite row_mx_row_ord0 rbehead_row_mx; over.
 by rewrite -big_distrl /= FDist.f1 mul1R.
 Qed.
 
 End joint_tuple_fdist.
 
-Local Open Scope ring_scope.
+Section fdist_nth.
 Local Open Scope vec_ext_scope.
+Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (i : 'I_n).
 
+Definition fdist_nth : {fdist A} := fdistmap (fun v : 'rV[A]_n => v ``_ i) P.
+
+Lemma fdist_nthE a : fdist_nth a = \sum_(x : 'rV[A]_n | x ``_ i == a) P x.
+Proof. by rewrite fdistmapE. Qed.
+
+End fdist_nth.
+
+Section fdist_nth_prop.
+
+Lemma head_of_fdist_rV_fdist_nth (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) :
+  head_of_fdist_rV P = fdist_nth P ord0.
+Proof.
+by rewrite /head_of_fdist_rV /fdist_nth /fdist_fst /head_of_fdist_rV fdistmap_comp.
+Qed.
+
+End fdist_nth_prop.
+
+(* marginal distribution *)
+Section fdist_col'.
+Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1).
+
+Definition fdist_col' : {fdist 'rV[A]_n} := fdistmap (col' i) P.
+
+Lemma fdist_col'E v : fdist_col' v = \sum_(x : 'rV[A]_n.+1 | col' i x == v) P x.
+Proof. by rewrite fdistmapE. Qed.
+
+End fdist_col'.
+
+Section fdist_col'_prop.
+Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
+
+Lemma tail_of_fdist_rV_fdist_col' : tail_of_fdist_rV P = fdist_col' P ord0.
+Proof.
+by rewrite /fdist_col' /tail_of_fdist_rV /fdist_snd /tail_of_fdist_rV fdistmap_comp.
+Qed.
+
+End fdist_col'_prop.
+
+Section fdist_take.
+Variable (A : finType) (n : nat) (P : {fdist 'rV[A]_n}).
+
+Definition fdist_take (i : 'I_n.+1) : {fdist 'rV[A]_i} := fdistmap (row_take i) P.
+
+Lemma fdist_takeE i v : fdist_take i v = \sum_(w in 'rV[A]_(n - i))
+  P (castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx v w)).
+Proof.
+rewrite fdistmapE /=.
+rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n] [finType of 'rV[A]_(n - i)]
+  (fun w => castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w))
+  (@row_drop A n i)) /=; last first.
+  move=> w wv; apply/rowP => j.
+  rewrite castmxE /= cast_ord_id /row_drop mxE; case: splitP => [j0 /= jj0|k /= jik].
+  - rewrite -(eqP wv) mxE castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
+  - rewrite mxE /= castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
+apply eq_bigl => w; rewrite inE; apply/andP; split; apply/eqP/rowP => j.
+- by rewrite !mxE !castmxE /= !cast_ord_id esymK cast_ordK row_mxEl.
+- by rewrite !mxE !castmxE /= cast_ord_id esymK cast_ordK cast_ord_id row_mxEr.
+Qed.
+
+End fdist_take.
+
+Section fdist_take_prop.
+
+Lemma fdist_take_all (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+2}) :
+  fdist_take P (lift ord0 ord_max) = P.
+Proof.
+rewrite /fdist_take (_ : row_take (lift ord0 ord_max) = ssrfun.id) ?fdistmap_id //.
+rewrite boolp.funeqE => v; apply/rowP => i.
+by rewrite /row_take mxE castmxE /= cast_ord_id; congr (v _ _); exact: val_inj.
+Qed.
+
+End fdist_take_prop.
+Arguments fdist_takeE {A} {n} _ _ _.
+
+Local Open Scope vec_ext_scope.
+Lemma fdist_take_nth (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1) :
+  (fdist_belast_last_of_rV (fdist_take P (lift ord0 i)))`2 = fdist_nth P i.
+Proof.
+rewrite /fdist_snd /fdist_belast_last_of_rV /fdist_take /fdist_nth !fdistmap_comp.
+congr (fdistmap _ _); rewrite boolp.funeqE => /= v /=.
+by rewrite /rlast mxE castmxE /= cast_ord_id /=; congr (v ``_ _); exact: val_inj.
+Qed.
+
+Local Open Scope ring_scope.
 (* TODO: rm? *)
 Lemma rsum_rmul_rV_pmf_tnth A n k (P : fdist A) :
   \sum_(t : 'rV[ 'rV[A]_n]_k) \prod_(m < k) (P `^ n) t ``_ m = 1.
@@ -1383,6 +1542,128 @@ transitivity (\sum_(j : {ffun 'I_k -> 'rV[A]_n}) \prod_(m : 'I_k) P `^ _ (j m)).
 rewrite -(bigA_distr_bigA (fun m => P `^ _)) /= big_const.
 by rewrite iter_mulR FDist.f1 exp1R.
 Qed.
+Local Close Scope ring_scope.
+Local Close Scope vec_ext_scope.
+
+(* wip *)
+Module Subvec.
+Section def.
+Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : {set 'I_n}).
+Definition d : {fdist 'rV[A]_#|s| } := fdistmap (fun x => sub_vec x s) P.
+End def.
+End Subvec.
+Section subvec_prop.
+Local Open Scope vec_ext_scope.
+Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
+Definition marginal1_cast (i : 'I_n.+1) (v : 'rV[A]_#|[set i]|) : A :=
+  (castmx (erefl, cards1 i) v) ``_ ord0.
+Lemma head_ofE :
+  head_of_fdist_rV P = fdistmap (@marginal1_cast ord0) (@Subvec.d A n.+1 P [set ord0]).
+Proof.
+apply fdist_ext => a.
+rewrite fdistmapE /= /head_of_fdist_rV fdist_fstE /= /head_of_fdist_rV.
+under eq_bigr do rewrite fdistmapE /=.
+rewrite /Subvec.d.
+under [in RHS] eq_bigr do rewrite fdistmapE /=.
+Abort.
+End subvec_prop.
+
+Section fdist_prod_nth.
+Local Open Scope vec_ext_scope.
+Variables (A B : finType) (n : nat) (P : {fdist 'rV[A]_n * B}) (i : 'I_n).
+
+Definition fdist_prod_nth : {fdist A * B} :=
+  fdistmap (fun x : 'rV[A]_n * B => (x.1 ord0 i, x.2)) P.
+
+Lemma fdist_prod_nthE ab :
+  fdist_prod_nth ab = \sum_(x : 'rV[A]_n * B | (x.1 ``_ i == ab.1) && (x.2 == ab.2)) P x.
+Proof. by rewrite fdistmapE. Qed.
+
+End fdist_prod_nth.
+
+Section fdist_prod_take.
+Variables (A B : finType) (n : nat) (P : {fdist 'rV[A]_n.+1 * B}) (i : 'I_n.+1).
+
+Definition fdist_prod_take : {fdist 'rV_i * A * B} :=
+  fdistmap (fun x : 'rV[A]_n.+1 * B => (row_take (widen_ord (leqnSn _) i) x.1, x.1 ord0 i, x.2)) P.
+
+End fdist_prod_take.
+
+Section to_bivar_last_take.
+
+Variables (A B : finType).
+Variables (n : nat) (PY : {fdist 'rV[A]_n.+1 * B}).
+Let P : {fdist 'rV[A]_n.+1} := PY`1.
+
+Lemma belast_last_take (j : 'I_n.+1) :
+  fdist_belast_last_of_rV (fdist_take P (lift ord0 j)) = (fdist_prod_take PY j)`1.
+Proof.
+rewrite /fdist_belast_last_of_rV /fdist_take /fdist_fst /fdist_prod_take !fdistmap_comp.
+congr (fdistmap _ PY); rewrite boolp.funeqE => /= -[v b] /=; congr (_, _).
+- apply/rowP => i.
+  by rewrite /rbelast !mxE !castmxE /=; congr (v _ _); exact: val_inj.
+- by rewrite /rlast mxE castmxE /=; congr (v _ _); exact: val_inj.
+Qed.
+
+End to_bivar_last_take.
+
+Module MultivarPerm.
+Section def.
+Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n).
+Definition d : {fdist 'rV[A]_n} := fdistmap (col_perm s^-1) P.
+Lemma dE v : d v = P (col_perm s v).
+Proof.
+rewrite fdistmapE /= {1}(_ : v = col_perm s^-1 (col_perm s v)); last first.
+  by rewrite -col_permM mulVg col_perm1.
+rewrite big_pred1_inj //; exact: col_perm_inj.
+Qed.
+End def.
+End MultivarPerm.
+
+Module TakeDrop.
+Section def.
+Local Open Scope vec_ext_scope.
+Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1).
+Definition d : {fdist A * 'rV[A]_i * 'rV[A]_(n - i)} :=
+  fdistmap (fun x : 'rV[A]_n.+1 => (x ord0 ord0, row_take i (rbehead x), row_drop i (rbehead x))) P.
+Let g (x : 'rV[A]_n.+1) : A * 'rV[A]_i * 'rV[A]_(n - i) :=
+  (x ``_ ord0,
+   row_take i (rbehead x),
+   row_drop i (rbehead x)).
+Lemma inj_g : injective g.
+Proof.
+move=> a b; rewrite /g => -[H1 H2 H3].
+rewrite -(row_mx_rbehead a) -(row_mx_rbehead b) H1; congr (@row_mx _ 1%nat 1%nat _ _ _).
+rewrite (row_mx_take_drop i (rbehead a)) (row_mx_take_drop i (rbehead b)).
+by rewrite H2 H3.
+Qed.
+Lemma dE x : d x = P (row_mx (\row_(_ < 1) x.1.1) (castmx (erefl 1%nat, @subnKC i n (ltnS' (ltn_ord i))) (row_mx x.1.2 x.2))).
+Proof.
+rewrite /d fdistmapE /=.
+rewrite (eq_bigl (fun a : 'rV_n.+1 => (g a == x)%bool)) //.
+rewrite {1}(_ : x = g (row_mx (\row_(k<1) x.1.1) (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx x.1.2 x.2)))); last first.
+  move: x => /= -[[x11 x12] x2].
+  rewrite /g row_mx_row_ord0 /=; congr (_, _, _).
+  apply/rowP => j; rewrite !mxE !castmxE /= cast_ord_id mxE esymK.
+  have @k : 'I_n.
+    by apply: (@Ordinal _ j); rewrite (leq_trans (ltn_ord j)) // -ltnS.
+  rewrite (_ : lift _ _ = rshift 1%nat k); last first.
+    by apply val_inj => /=; rewrite /bump leq0n.
+  rewrite (@row_mxEr _ 1%nat 1%nat) // castmxE /= cast_ord_id.
+  rewrite (_ : cast_ord _ k = lshift (n - i) j).
+  by rewrite row_mxEl.
+  exact: val_inj.
+  apply/rowP => j; rewrite mxE castmxE /= cast_ord_id mxE esymK.
+  have @k0 : 'I_n by apply: (@Ordinal _ (i + j)); rewrite -ltn_subRL.
+  rewrite (_ : lift _ _ = rshift 1%nat k0); last first.
+    apply val_inj => /=; by rewrite /bump leq0n.
+  rewrite (@row_mxEr _ 1%nat 1%nat) castmxE /=.
+  rewrite (_ : cast_ord _ _ = rshift i j); last exact: val_inj.
+  by rewrite row_mxEr cast_ord_id.
+by rewrite (big_pred1_inj inj_g).
+Qed.
+End def.
+End TakeDrop.
 
 (*Section tuple_prod_cast.
 

@@ -60,17 +60,15 @@ Import NaryConvexSpace.
 
 (* These definitions about distributions should probably be elsewhere *)
 Definition fdistE :=
-  (fdistmapE,fdist1E,fdist_prodE,Swap.dI,Swap.dE,fdist_convnE,fdist_fstE).
+  (fdistmapE,fdist1E,fdist_prodE,fdistXI,fdistXE,fdist_convnE,fdist_fstE).
 
 Module FDistPart.
 Section fdistpart.
 Local Open Scope fdist_scope.
 Variables (n m : nat) (K : 'I_m -> 'I_n) (e : {fdist 'I_m}) (i : 'I_n).
 
-Definition d :=
-  CondJFDist.d (Swap.d (fdist_prod e (fun j : 'I_m => fdist1 (K j)))) i.
-Definition den :=
-  (Swap.d (fdist_prod e (fun j : 'I_m => fdist1 (K j))))`1 i.
+Definition d := jfdist_cond (fdistX (fdist_prod e (fun j => fdist1 (K j)))) i.
+Definition den := (fdistX (fdist_prod e (fun j => fdist1 (K j))))`1 i.
 
 Lemma denE : den = fdistmap K e i.
 Proof.
@@ -87,7 +85,7 @@ Lemma dE j : fdistmap K e i != 0%R ->
   d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%R.
 Proof.
 rewrite -denE => NE.
-rewrite CondJFDist.dE // {NE} /jcPr /proba.Pr.
+rewrite jfdist_condE // {NE} /jcPr /proba.Pr.
 rewrite (big_pred1 (j,i)); last first.
   move=> k; by rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
 rewrite (big_pred1 i); last by move=> k; rewrite !inE.
@@ -579,8 +577,8 @@ rewrite axbarypart; first last.
   rewrite big_pred0 ?eqxx //.
   move=> k; apply/eqP => hik.
   by move: ij; rewrite -hik /h /f /f' enum_rankK eqxx.
-set e' := fun j : 'I_m =>
-  fdistmap f ((CondJFDist.d (Swap.d (fdist_prod d e)) j) `x (fdist1 j)).
+set e' := fun j =>
+  fdistmap f ((jfdist_cond (fdistX (fdist_prod d e)) j) `x (fdist1 j)).
 have {2}-> : g = (fun j => <&>_(e' j) (g \o h')).
   apply funext => j; apply/esym/axidem => k //.
   rewrite inE /e' fdistE (big_pred1 (f' k)) /=; last first.
@@ -620,12 +618,11 @@ rewrite (big_pred1 p.1) /=; last first.
   move=> i; rewrite !inE -(enum_valK k) (can_eq enum_rankK).
   by rewrite (surjective_pairing (enum_val k)) xpair_eqE eqxx andbT.
 case/boolP: (\sum_(i < n) d i * e i p.2 == 0)%R => [/eqP|] Hp.
-  rewrite Hp mul0R (proj1 (psumR_eq0P _) Hp) //.
-  move=> *; by apply mulR_ge0.
-rewrite [RHS]mulRC !fdistE CondJFDist.dE !fdistE /=; last first.
-  by under eq_bigr do rewrite Swap.dE fdist_prodE.
-rewrite /jcPr /proba.Pr (big_pred1 p);
-  last by move=> i; rewrite !inE -xpair_eqE -!surjective_pairing.
+  by rewrite Hp mul0R (proj1 (psumR_eq0P _) Hp) // => *; apply: mulR_ge0.
+rewrite [RHS]mulRC !fdistE jfdist_condE !fdistE /=; last first.
+  by under eq_bigr do rewrite fdistXE fdist_prodE.
+rewrite /jcPr /proba.Pr (big_pred1 p); last first.
+  by move=> i; rewrite !inE -xpair_eqE -!surjective_pairing.
 rewrite (big_pred1 p.2); last by move=> i; rewrite !inE.
 rewrite eqxx mulR1 fdist_sndE /= fdist_prodE.
 under eq_bigr do rewrite fdist_prodE /=.

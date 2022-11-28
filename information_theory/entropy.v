@@ -80,10 +80,10 @@ Notation "'`H'" := (entropy) : entropy_scope.
 Local Open Scope entropy_scope.
 Local Open Scope proba_scope.
 
-Lemma entropy_Ex {A} (P : fdist A) : `H P = `E (--log P).
+Lemma entropy_Ex {A} (P : fdist A) : `H P = `E (`-- (`log P)).
 Proof.
-rewrite /entropy /mlog_RV /= big_morph_oppR.
-apply eq_bigr => a _; by rewrite mulRC -mulNR.
+rewrite /entropy /log_RV /= big_morph_oppR.
+by apply eq_bigr => a _; rewrite mulRC -mulNR.
 Qed.
 
 Lemma xlnx_entropy {A} (P : fdist A) :
@@ -97,13 +97,13 @@ have : P a = 0; last by move=> ->; rewrite mul0R.
 by case (Rle_lt_or_eq_dec 0 (P a)).
 Qed.
 
-Lemma entropy_uniform {A : finType} n (HA : #|A| = n.+1) :
-  `H (Uniform.d HA) = log (INR #|A|).
+Lemma entropy_uniform {A : finType} n (An1 : #|A| = n.+1) :
+  `H (fdist_uniform An1) = log (INR #|A|).
 Proof.
-rewrite /entropy (eq_bigr (fun a => / INR #|A| * log (/INR #|A|))); last first.
-  by move=> a _; rewrite Uniform.dE.
-rewrite big_const iter_addR mulRA mulRV; last by rewrite INR_eq0' HA.
-rewrite mul1R /log LogV ?oppRK //; by rewrite HA; apply/ltR0n.
+rewrite /entropy.
+under eq_bigr do rewrite fdist_uniformE.
+rewrite big_const iter_addR mulRA mulRV; last by rewrite INR_eq0' An1.
+by rewrite mul1R /log LogV ?oppRK //; rewrite An1; apply/ltR0n.
 Qed.
 
 Lemma entropy_H2 (A : finType) (card_A : #|A| = 2%nat) (p : prob) :
@@ -117,42 +117,42 @@ Local Open Scope reals_ext_scope.
 
 Lemma entropy_max (A : finType) (P : fdist A) : `H P <= log #|A|%:R.
 Proof.
-have [n HA] : exists n, #|A| = n.+1.
-  exists (#|A|.-1); rewrite prednK //; exact: (fdist_card_neq0 P).
-have /div_ge0 H := dom_by_uniform P HA.
+have [n An1] : exists n, #|A| = n.+1.
+  by exists (#|A|.-1); rewrite prednK //; exact: (fdist_card_neq0 P).
+have /div_ge0 H := dom_by_uniform P An1.
 rewrite -subR_ge0; apply/(leR_trans H)/Req_le.
 transitivity (\sum_(a|a \in A) P a * log (P a) +
-              \sum_(a|a \in A) P a * - log ((Uniform.d HA) a)).
+              \sum_(a|a \in A) P a * - log (fdist_uniform An1 a)).
   rewrite -big_split /=; apply eq_bigr => a _; rewrite -mulRDr.
   case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
   congr (_ * _); rewrite logDiv ?addR_opp //.
   by rewrite -fdist_gt0.
-  rewrite Uniform.dE; apply/invR_gt0; rewrite HA; exact/ltR0n.
-rewrite [in X in _ + X](eq_bigr (fun a => P a * - log (/ INR #|A|))); last first.
-  by move=> a _; rewrite Uniform.dE.
+  rewrite fdist_uniformE; apply/invR_gt0; rewrite An1; exact/ltR0n.
+under [in X in _ + X]eq_bigr do rewrite fdist_uniformE.
 rewrite -[in X in _ + X = _]big_distrl /= FDist.f1 mul1R.
-rewrite addRC /entropy /log LogV ?oppRK ?subR_opp // HA; exact/ltR0n.
+by rewrite addRC /entropy /log LogV ?oppRK ?subR_opp // An1; exact/ltR0n.
 Qed.
 
-Lemma entropy_from_bivar (A : finType) n (P : {fdist A * 'rV[A]_n}) :
-  `H (Multivar.from_bivar P) = `H P.
+Lemma entropy_fdist_rV_of_prod (A : finType) n (P : {fdist A * 'rV[A]_n}) :
+  `H (fdist_rV_of_prod P) = `H P.
 Proof.
 rewrite /entropy /=; congr (- _).
 rewrite -(big_rV_cons_behead _ xpredT xpredT) /= pair_bigA /=.
 apply eq_bigr => -[a b] _ /=.
-by rewrite Multivar.from_bivarE /= row_mx_row_ord0 rbehead_row_mx.
+by rewrite fdist_rV_of_prodE /= row_mx_row_ord0 rbehead_row_mx.
 Qed.
 
-Lemma entropy_to_bivar (A : finType) n (P : {fdist 'rV[A]_n.+1}) :
-  `H (Multivar.to_bivar P) = `H P.
+Lemma entropy_fdist_prod_of_rV (A : finType) n (P : {fdist 'rV[A]_n.+1}) :
+  `H (fdist_prod_of_rV P) = `H P.
 Proof.
 rewrite /entropy /=; congr (- _).
 rewrite -(big_rV_cons_behead _ xpredT xpredT) /= pair_bigA /=.
-apply eq_bigr => -[a b] _ /=; by rewrite Multivar.to_bivarE /=.
+apply eq_bigr => -[a b] _ /=; by rewrite fdist_prod_of_rVE /=.
 Qed.
 
 Section multivarperm_prop.
 Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n).
+
 Lemma entropy_multivarperm : `H (MultivarPerm.d P s) = `H P.
 Proof.
 rewrite /entropy; congr (- _) => /=; apply/esym.

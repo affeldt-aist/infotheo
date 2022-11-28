@@ -186,7 +186,7 @@ Lemma entropy_TupleFDist : `H (P `^ n) = n%:R * `H P.
 Proof.
 elim:n=>[|n0 IH].
   rewrite mul0R /entropy /= big1 ?oppR0 // => i _.
-  by rewrite fdist_tuple0 /log Log_1 mulR0.
+  by rewrite fdist_rV0 /log Log_1 mulR0.
 rewrite S_INR mulRDl mul1R -IH /entropy -(big_rV_cons_behead _ xpredT xpredT).
 rewrite /= -oppRD; congr (- _).
 rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
@@ -197,7 +197,7 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
   rewrite -mulRA -mulRDr (mulRC (log (P i))) (big_distrl (log (P i)) _ _) /=.
   rewrite -big_split /= big_distrr /=.
   apply: eq_bigr => i0 _.
-  rewrite fdist_tupleE.
+  rewrite fdist_rVE.
   rewrite big_ord_recl (_ : _ ``_ ord0 = i); last first.
     by rewrite mxE; case: splitP => // j Hj; rewrite mxE.
   rewrite -mulRA.
@@ -219,10 +219,10 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
     exact: FDist.ge0.
   by rewrite /log LogM // !mulRDr mulRA mulRA.
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
-  by rewrite -(FDist.f1 (P `^ n0)); apply eq_bigr => i _; rewrite fdist_tupleE.
+  by rewrite -(FDist.f1 (P `^ n0)); apply eq_bigr => i _; rewrite fdist_rVE.
 rewrite -big_distrl /= mulR1 [in RHS]addRC; congr (_ + _).
 rewrite -big_distrl /= FDist.f1 mul1R; apply eq_bigr => i _.
-by rewrite fdist_tupleE.
+by rewrite fdist_rVE.
 Qed.
 
 End Entropy_lemma.
@@ -678,7 +678,7 @@ rewrite /E_leng_cw /=  /fm.
 pose X := INR \o size \o f.
 elim: m => [|m'].
   rewrite mul0R /Ex big1 // => i _.
-  rewrite fdist_tuple0 ?mulR1.
+  rewrite fdist_rV0 ?mulR1.
   rewrite /comp_RV.
   rewrite [tuple_of_row]lock /= -lock.
   rewrite (_ : tuple_of_row i = [tuple]) //.
@@ -686,14 +686,13 @@ elim: m => [|m'].
   by case; case.
 elim: m' => [_ |m'' _ IH].
   rewrite mul1R.
-  rewrite -[in RHS]E_cast_RV_tuplefdist1.
+  rewrite -[in RHS]E_cast_RV_fdist_rV1.
   apply: eq_bigr => i _.
-  rewrite fdist_tuple1.
-  congr (_ * _).
+  rewrite fdist_rV1; congr (_ * _).
   rewrite /comp_RV.
   rewrite [tuple_of_row]lock /= -lock.
   rewrite (_ : tuple_of_row i = [tuple of [:: i ``_ ord0]]); last first.
-    apply eq_from_tnth => a; by rewrite {a}(ord1 a) tnth_mktuple.
+    by apply eq_from_tnth => a; rewrite {a}(ord1 a) tnth_mktuple.
   by rewrite /extension /= cats0.
 pose fm1 (x : 'rV['rV[A]_n]_(m''.+1)) := extension f (tuple_of_row x).
 pose Xm1 := INR \o size \o fm1.
@@ -714,8 +713,8 @@ have X_Xm1_Xm2 : Xm2 \= X @+ Xm1.
     by apply eq_from_tnth => i; rewrite {i}(ord1 i) /= tnth_mktuple mxE.
   by rewrite /= cats0.
 rewrite (E_sum_2 X_Xm1_Xm2) S_INR mulRDl -IH addRC; congr (_ + _)%R.
-  by rewrite /Xm1 -/fm1 /Ex tail_of_fdist_tuple.
-by rewrite -/X mul1R /Ex head_of_fdist_tuple.
+  by rewrite /Xm1 -/fm1 /Ex tail_of_fdist_rV_fdist_rV.
+by rewrite -/X mul1R /Ex head_of_fdist_rV_fdist_rV.
 Qed.
 
 End Extend_encoder.

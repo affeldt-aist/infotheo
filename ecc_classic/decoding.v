@@ -127,7 +127,7 @@ Section maximum_likelihood_decoding_prop.
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable repair : decT B [finType of 'rV[A]_n] n.
-Let P := UniformSupport.d (vspace_not_empty C).
+Let P := fdist_uniform_supp (vspace_not_empty C).
 Hypothesis ML_dec : ML_decoding W C repair P.
 
 Local Open Scope channel_code_scope.
@@ -139,7 +139,7 @@ move=> Hx1 Hx2.
 case/boolP : (W ``(y | x2) == 0%R) => [/eqP -> //| Hcase].
 have Hy : Receivable.def P W y.
   apply/existsP; exists x2.
-  by rewrite Hcase andbT UniformSupport.neq0 inE.
+  by rewrite Hcase andbT fdist_uniform_supp_neq0 inE.
 case: (ML_dec (Receivable.mk Hy)) => x' [].
 rewrite /= Hx1 => -[<-] ->.
 rewrite -big_filter.
@@ -183,7 +183,7 @@ have [dectb_None|dectb_Some] := boolP (dec tb == None).
   have W_tb m : W ``(tb | enc m) = 0%R.
     apply/eqP; apply/contraR : Htb => Htb.
     apply/existsP; exists (enc m).
-    rewrite Htb andbT UniformSupport.neq0 inE.
+    rewrite Htb andbT fdist_uniform_supp_neq0 inE.
     move/subsetP : enc_img; apply; apply/imsetP; by exists m.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite W_tb.
   by rewrite big1 //; apply sumR_ge0.
@@ -199,7 +199,7 @@ rewrite 2!big_pred1_eq; apply ML_err_rate.
   move H : (repair tb) => h.
   case: h H => // a tb_a [<-]; congr Some.
   by rewrite (discard_cancel tb_a).
-move/subsetP : enc_img; apply; apply/imsetP; by exists m2.
+by move/subsetP : enc_img; apply; apply/imsetP; exists m2.
 Qed.
 
 End maximum_likelihood_decoding_prop.
@@ -326,7 +326,7 @@ Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B [finType of 'rV[A]_n] n.
 Variable dec_img : oimg dec \subset C.
-Let P := UniformSupport.d (vspace_not_empty C).
+Let P := fdist_uniform_supp (vspace_not_empty C).
 
 Lemma MAP_implies_ML : MAP_decoding W C dec P -> ML_decoding W C dec P.
 Proof.
@@ -351,14 +351,14 @@ rewrite {2 3}/P.
 case => [m' [Hm' H]].
 set r := index_enum _ in H.
 rewrite (eq_bigr (fun i => 1 / INR #|[set cw in C]| * W ``(tb | i))) in H; last first.
-  move=> i iC; by rewrite UniformSupport.dET // inE.
+  move=> i iC; by rewrite fdist_uniform_supp_in // inE.
 rewrite -bigmaxR_distrr in H; last exact/ltRW/Hunpos.
 exists m'; split; first exact Hm'.
 rewrite /PosteriorProbability.f ffunE in H.
 set x := PosteriorProbability.den _ in H.
 have x0 : / x <> 0 by apply/eqP/invR_neq0'; rewrite -receivableE Receivable.defE.
 move/(eqR_mul2r x0) in H.
-rewrite /= UniformSupport.dET ?inE // in H; last first.
+rewrite /= fdist_uniform_supp_in ?inE // in H; last first.
   move/subsetP : dec_img; apply.
   by rewrite inE; apply/existsP; exists (Receivable.y tb); apply/eqP.
 by move/eqR_mul2l :  H => -> //; exact/eqP/gtR_eqF.
