@@ -108,12 +108,12 @@ from 0.4.0 to 0.4.1
   + I2FDist.p1 -> fdistI21
   + I2FDist.p0 -> fdistI20
   + bind_left_distr -> fdist_conv_bind_left_distr
-  + PermFDist.d -> fdist_perm
-  + PermFDist.dE -> fdist_permE
-  + PermFDist.dE1 -> fdist_perm1
-  + PermFDist.mul -> fdist_permM
-  + PermFDist.tperm -> fdist_tperm
-  + PermFDist.d1 -> fdist1_perm
+  + PermFDist.d -> fdistI_perm
+  + PermFDist.dE -> fdistI_permE
+  + PermFDist.dE1 -> fdistI_perm1
+  + PermFDist.mul -> fdistI_permM
+  + PermFDist.tperm -> fdistI_tperm
+  + PermFDist.d1 -> fdistI_perm_fdist1
   + ProdFDist.d -> fdist_prod
   + ProdFDist.dE -> fdist_prodE
   + ProdFDist.fst -> fdist_prod1
@@ -196,7 +196,7 @@ from 0.4.0 to 0.4.1
   + Swap.dI -> jfdistXI
   + Swap.ProdFDist -> jfdistX_prod
   + Swap.dom_by -> jfdistX_dom_by
-  + Swap_RV2 -> jfdistX_RV2
+  + Swap_RV2 -> fdistX_RV2
   + Nth.d -> fdist_nth
   + Nth.dE -> fdist_nthE
   + Nth.head_ofE -> head_of_fdist_rV_fdist_nth
@@ -259,9 +259,23 @@ from 0.4.0 to 0.4.1
   + Proj13.fst -> fdist_proj13_fst
   + Proj13_TripAC -> fdist_proj13_AC
   + Proj13_RV3 -> fdist_proj13_RV3
+  + Proj23.d -> fdist_proj23
+  + Proj23.dE -> fdist_proj23E
+  + Proj23.domin -> fdist_proj23_domin
+  + Proj23.dominN -> fdist_proj23_dominN
+  + Proj23.fst -> fdist_proj23_fst
+  + Proj23.snd -> fdist_proj23_snd
+  + Proj23.Pr -> Pr_fdist_proj23_domin
+  + Self.d -> fdist_self
+  + Self.dE -> fdist_selfE
+  + Self.fst -> fdist_self1
+  + Self.swap -> fdistX_self
+  + MultivarPerm.d -> fdist_perm
+  + MultivarPerm.dE -> fdist_permE
+  + TakeDrop.d -> fdist_take_drop
 - removed:
   + Module TripA'
-
+  + imset_fst
 -------------------
 from 0.3.8 to 0.4.0
 -------------------

@@ -942,10 +942,10 @@ Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2 *)
 Lemma Convn_perm (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) (s : 'S_n) :
-  <|>_d g = <|>_(fdist_perm d s) (g \o s).
+  <|>_d g = <|>_(fdistI_perm d s) (g \o s).
 Proof.
 apply S1_inj; rewrite !S1_Convn (barycenter_perm _ s).
-by apply eq_bigr => i _; rewrite fdist_permE.
+by apply eq_bigr => i _; rewrite fdistI_permE.
 Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 4 *)

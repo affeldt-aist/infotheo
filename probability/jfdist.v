@@ -40,83 +40,6 @@ Local Open Scope R_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 
-Lemma fdist_RV2 (U : finType) (P : fdist U) (A B : finType)
-  (X : {RV P -> A}) (Y : {RV P -> B}) : fdistX `d_[% X, Y] = `d_[% Y, X].
-Proof. by rewrite /fdistX /dist_of_RV fdistmap_comp. Qed.
-
-Module Self.
-Section def.
-Variable (A : finType) (P : {fdist A}).
-Definition f := [ffun a : A * A => if a.1 == a.2 then P a.1 else 0].
-Lemma f0 x : 0 <= f x.
-Proof. rewrite /f ffunE; case: ifPn => [/eqP -> //| _]; exact: leRR. Qed.
-Lemma f1 : \sum_(x in {: A * A}) f x = 1.
-Proof.
-rewrite (eq_bigr (fun a => f (a.1, a.2))); last by case.
-rewrite -(pair_bigA _ (fun a1 a2 => f (a1, a2))) /=.
-rewrite -(FDist.f1 P); apply/eq_bigr => a _.
-under eq_bigr do rewrite ffunE.
-rewrite /= (bigD1 a) //= eqxx.
-by rewrite big1 ?addR0 // => a' /negbTE; rewrite eq_sym => ->.
-Qed.
-Definition d : {fdist A * A} := locked (FDist.make f0 f1).
-Lemma dE a : d a = if a.1 == a.2 then P a.1 else 0.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-End def.
-Section prop.
-Variables (A : finType) (P : {fdist A}).
-Lemma fst : (d P)`1 = P.
-Proof.
-apply/fdist_ext => a /=; rewrite fdist_fstE (bigD1 a) //= dE eqxx /=.
-by rewrite big1 ?addR0 // => a' /negbTE; rewrite dE /= eq_sym => ->.
-Qed.
-Lemma swap : fdistX (d P) = d P.
-Proof.
-apply/fdist_ext => -[a1 a2].
-by rewrite fdistXE !dE /= eq_sym; case: ifPn => // /eqP ->.
-Qed.
-End prop.
-End Self.
-
-Module Proj23.
-Section def.
-Variables (A B C : finType) (P : {fdist A * B * C}).
-Definition d : {fdist B * C} := (fdistA P)`2.
-Lemma dE x : d x = \sum_(a in A) P (a, x.1, x.2).
-Proof. by rewrite /d fdist_sndE; apply eq_bigr => a _; rewrite fdistAE. Qed.
-
-Lemma domin a b c : d (b, c) = 0 -> P (a, b, c) = 0.
-Proof. by rewrite dE /= => /psumR_eq0P ->. Qed.
-
-Lemma dominN a b c : P (a, b, c) != 0 -> d (b, c) != 0.
-Proof. by apply: contra => /eqP H; apply/eqP; apply: domin. Qed.
-
-Lemma fst : d`1 = (P`1)`2.
-Proof. by rewrite /d fdistA21. Qed.
-Lemma snd : d`2 = P`2.
-Proof. by rewrite /d fdistA22. Qed.
-End def.
-Section prop.
-Variables (A B C : finType) (P : {fdist A * B * C}).
-Implicit Types (E : {set A}) (F : {set B}) (G : {set C}).
-Lemma Pr_domin E F G :
-  Pr (d P) (F `* G) = 0 -> Pr P (E `* F `* G) = 0.
-Proof.
-move/Pr_set0P => H; apply/Pr_set0P => -[[? ?] ?].
-rewrite !inE /= -andbA => /and3P[aE bF cG].
-by apply/domin/H; rewrite inE /= bF cG.
-Qed.
-End prop.
-End Proj23.
-
-Lemma fdist_proj13_AC (A B C : finType) (P : {fdist A * B * C}) :
-  fdist_proj13 (fdistAC P) = P`1.
-Proof.
-rewrite /fdist_proj13 /fdist_snd /fdistA /fdistC12 /fdistAC /fdist_fst.
-rewrite !fdistmap_comp /=; congr (fdistmap _ _).
-by rewrite boolp.funeqE => -[[]].
-Qed.
-
 Section conditional_probability.
 
 Variables (A B : finType) (P : {fdist A * B}).
@@ -286,13 +209,13 @@ Section main.
 Variables (A B C : finType) (P : {fdist A * B * C}).
 Implicit Types (E : {set A}) (F : {set B}) (G : {set C}).
 Lemma jproduct_rule_cond E F G :
-  \Pr_P [E `* F | G] = \Pr_(fdistA P) [E | F `* G] * \Pr_(Proj23.d P) [F | G].
+  \Pr_P [E `* F | G] = \Pr_(fdistA P) [E | F `* G] * \Pr_(fdist_proj23 P) [F | G].
 Proof.
-rewrite /jcPr; rewrite !mulRA; congr (_ * _); last by rewrite Proj23.snd.
-rewrite -mulRA -/(Proj23.d _) -Pr_fdistA.
-case/boolP : (Pr (Proj23.d P) (F `* G) == 0) => H; last by rewrite mulVR ?mulR1.
+rewrite /jcPr; rewrite !mulRA; congr (_ * _); last by rewrite fdist_proj23_snd.
+rewrite -mulRA -/(fdist_proj23 _) -Pr_fdistA.
+case/boolP : (Pr (fdist_proj23 P) (F `* G) == 0) => H; last by rewrite mulVR ?mulR1.
 suff -> : Pr (fdistA P) (E `* (F `* G)) = 0 by rewrite mul0R.
-rewrite Pr_fdistA; exact/Proj23.Pr_domin/eqP.
+rewrite Pr_fdistA; exact/Pr_fdist_proj23_domin/eqP.
 Qed.
 End main.
 
@@ -439,7 +362,7 @@ rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
 rewrite big_const iter_addR mulR0 addR0.
 rewrite big_uniq; last by rewrite /fin_img undup_uniq.
 apply eq_bigr => b; rewrite mem_undup => /mapP[u _ bWu].
-rewrite /Q jfdist_condE // fdist_RV2.
+rewrite /Q jfdist_condE // fdistX_RV2.
 by rewrite jcPrE -cpr_inE' cpr_eq_set1.
 Qed.
 

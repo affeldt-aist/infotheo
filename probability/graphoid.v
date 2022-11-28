@@ -14,13 +14,6 @@ Require Import proba jfdist.
 (* intersection) and derived rules.                                           *)
 (******************************************************************************)
 
-(*
-contents:
-- Various distributions (Proj124.d, Proj14d, QuadA23.d)
-- Section RV2_prop.
-- Section RV3_prop.
-*)
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
@@ -29,19 +22,7 @@ Local Open Scope R_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 
-(* TODO: move? *)
-Section setX_structural_lemmas.
-Variables (A B C : finType).
-Variables (E : {set A}) (F : {set B}).
-
-Lemma imset_fst b : b \in F -> [set x.1 | x in E `* F] = E.
-Proof.
-move=> bF; apply/setP => a; apply/imsetP/idP.
-- by rewrite ex2C; move=> -[[a' b']] /= ->; rewrite inE => /andP [] ->.
-- by move=> aE; exists (a, b); rewrite // inE; apply/andP; split.
-Qed.
-
-End setX_structural_lemmas.
+(* TODO: rename *)
 Module Proj124.
 Section proj124.
 Variables (A B D C : finType) (P : {fdist A * B * D * C}).
@@ -60,6 +41,7 @@ End Proj124.
 Definition Proj14d (A B C D : finType) (d : {fdist A * B * D * C}) : {fdist A * C} :=
   fdist_proj13 (Proj124.d d).
 
+(* TODO: rename *)
 Module QuadA23.
 Section def.
 Variables (A B C D : finType) (P : {fdist A * B * D * C}).
@@ -80,41 +62,6 @@ Lemma snd : (QuadA23.d P)`2 = P`2.
 Proof. by rewrite /fdist_snd /d fdistmap_comp. Qed.
 End prop.
 End QuadA23.
-
-Section RV2_prop.
-Variables (U : finType) (P : fdist U).
-Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
-Implicit Types (E : {set A}) (F : {set B}).
-
-Lemma RV20 : fst \o [% X, unit_RV P] =1 X.
-Proof. by []. Qed.
-
-Lemma RV02 : snd \o [% unit_RV P, X] =1 X.
-Proof. by []. Qed.
-
-End RV2_prop.
-
-(* TODO: see also fdist_RV2 at the top of jfdist.v *)
-Section RV3_prop.
-Variables (U : finType) (P : fdist U).
-Variables (A B C D : finType).
-Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
-
-Lemma fdist_proj13_RV3 : fdist_proj13 `d_[% X, Y, Z] = `d_[% X, Z].
-Proof.
-by rewrite /fdist_proj13 /fdist_snd /fdistA /dist_of_RV /fdistC12 !fdistmap_comp.
-Qed.
-
-Lemma snd_RV3 : (`d_[% X, Y, Z])`2 = (`d_[% X, Z])`2.
-Proof. by rewrite -fdist_proj13_snd fdist_proj13_RV3. Qed.
-
-Lemma fdistC12_RV3 : fdistC12 `d_[% X, Y, Z] = `d_[% Y, X, Z].
-Proof. by rewrite /fdistC12 /dist_of_RV fdistmap_comp. Qed.
-
-Lemma fdistA_RV3 : fdistA `d_[% X, Y, Z] = `d_[% X, [% Y, Z]].
-Proof. by rewrite /fdistC12 /dist_of_RV /fdistA fdistmap_comp. Qed.
-
-End RV3_prop.
 
 Section cinde_rv_prop.
 

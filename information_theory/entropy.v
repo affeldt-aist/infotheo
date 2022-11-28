@@ -58,21 +58,6 @@ apply Log_increasing_le => //.
 apply/ltRP; rewrite lt0R Hi; exact/leRP.
 Qed.
 
-(*Hypothesis P_pos : forall b, 0 < P b.
-
-Lemma entropy_pos_P_pos : 0 <= `H.
-Proof.
-rewrite /entropy big_endo ?oppR0 //; last by move=> *; rewrite oppRD.
-rewrite (_ : \sum_(_ in _) _ = \sum_(i in A | predT A) - (P i * log (P i))).
-  apply rsumr_ge0 => i _.
-  rewrite mulRC -mulNR.
-  apply mulR_ge0 => //.
-  apply oppR_ge0.
-  rewrite /log -(Log_1 2).
-  exact: Log_increasing_le.
-apply eq_bigl => i /=; by rewrite inE.
-Qed.*)
-
 End entropy_definition.
 
 Notation "'`H'" := (entropy) : entropy_scope.
@@ -150,14 +135,11 @@ rewrite -(big_rV_cons_behead _ xpredT xpredT) /= pair_bigA /=.
 apply eq_bigr => -[a b] _ /=; by rewrite fdist_prod_of_rVE /=.
 Qed.
 
-Section multivarperm_prop.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n).
-
-Lemma entropy_multivarperm : `H (MultivarPerm.d P s) = `H P.
+Lemma entropy_fdist_perm (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n) :
+  `H (fdist_perm P s) = `H P.
 Proof.
 rewrite /entropy; congr (- _) => /=; apply/esym.
 rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ s) xpredT); last first.
   exact: col_perm_inj.
-by apply eq_bigr => v _; rewrite MultivarPerm.dE.
+by apply eq_bigr => v _; rewrite fdist_permE.
 Qed.
-End multivarperm_prop.
