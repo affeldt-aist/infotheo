@@ -922,13 +922,12 @@ by rewrite 2!mem_finsupp => /orP[dj0|ej0]; apply/gtR_eqF;
 Qed.
 
 Section misc_scaled.
-Import ScaledConvex.
 Local Open Scope R_scope.
 
 Lemma fsdist_scalept_conv (C : convType) (x y : {dist C}) (p : prob) (i : C) :
-  scalept ((x <|p|> y) i) (S1 i) =
-    scalept (x i) (S1 i) <|p|> scalept (y i) (S1 i).
+  scalept ((x <|p|> y) i) (S1 i) = scalept (x i) (S1 i) <|p|> scalept (y i) (S1 i).
 Proof. by rewrite fsdist_convE scalept_conv. Qed.
+
 End misc_scaled.
 
 Section FSDist_convex_space.
@@ -942,7 +941,7 @@ Proof. by move=> p x y; rewrite /f /= fsdist_convE. Qed.
 HB.instance Definition _ a := isAffine.Build _ _ _ (af a).
 
 (* Reuse the morphisms from R_convex_space. *)
-Import ScaledConvex finmap.
+Import finmap.
 
 Lemma convn_convnfsdist (n : nat) (g : 'I_n -> {dist A}) (d : {fdist 'I_n}) :
   <|>_d g = fsdist_convn d g.
@@ -954,20 +953,21 @@ case: ifPn => adg.
   by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
 (* TODO: extra lemmas ? *)
 rewrite big1 // => i _.
-have [->|di0] := eqVneq (d i) 0; first by rewrite scalept0.
+have [->|di0] := eqVneq (d i) 0; first by rewrite scale0pt.
 have [gia0|gia0] := eqVneq (g i a) 0.
-  by rewrite /f gia0 scaleR_scalept//= ?mulR0.
+  by rewrite /f gia0 scaleR_scalept/= ?mulR0.
 move/bigfcupP : adg => abs; exfalso; apply: abs.
 exists i; last by rewrite mem_finsupp.
 by rewrite mem_index_enum/=; apply/ltRP; rewrite -fdist_gt0.
 Qed.
+
 End FSDist_convex_space.
 
-Section fsdist_ordered_convex_space.
+(*Section fsdist_ordered_convex_space.
 Variable A : choiceType.
 (*Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin {dist A}.
 NB: not used?*)
-End fsdist_ordered_convex_space.
+End fsdist_ordered_convex_space.*)
 
 Definition fsdist_eval (C : choiceType) (x : C) := fun D : {dist C} => D x.
 
@@ -983,7 +983,6 @@ Variable C : convType.
 
 Definition Convn_of_fsdist (d : {dist C}) : C :=
   <$>_(fdist_of_fs d) (fun x : finsupp d => fsval x).
-Import ScaledConvex.
 
 Lemma ssum_seq_finsuppE'' (D : convType) (f : C -> D) (d x : {dist C}) :
   \ssum_(i : fdist_of_FSDist.D d) scalept (x (fsval i)) (S1 (f (fsval i))) =
@@ -1017,7 +1016,7 @@ Proof.
 move=> xX.
 rewrite [in RHS](bigID (fun i => i \in finsupp x)) /=.
 have -> : (\ssum_(i <- X | i \notin finsupp x) scalept (x i) (S1 i)) = Zero
-  by rewrite big1 //= => i Hi; rewrite fsfun_dflt // scalept0.
+  by rewrite big1 //= => i Hi; rewrite fsfun_dflt // scale0pt.
 rewrite addpt0 [in RHS]big_fset_condE /=.
 suff H : finsupp x = [fset i | i in X & i \in finsupp x]%fset
   by rewrite [in LHS]H.
@@ -1032,9 +1031,8 @@ move=> p x y.
 have [->|pn0] := eqVneq p 0%:pr; first by rewrite !conv0.
 have [->|pn1] := eqVneq p 1%:pr; first by rewrite !conv1.
 have opn0 : p.~ != 0%:pr by apply onem_neq0.
-apply S1_inj.
-rewrite S1_conv !S1_Convn_finType ssum_seq_finsuppE.
-under eq_bigr do rewrite fsdist_scalept_conv.
+apply: S1_inj; rewrite affine_conv/= !S1_Convn_finType ssum_seq_finsuppE.
+under [LHS]eq_bigr do rewrite fsdist_scalept_conv.
 rewrite big_seq_fsetE big_scalept_conv_split /=.
 rewrite 2!ssum_seq_finsuppE' 2!ssum_seq_finsuppE.
 rewrite -(@ssum_widen_finsupp x); last exact/finsupp_conv_subr.
@@ -1055,17 +1053,16 @@ by rewrite (scaleR_scalept _ (FDist.ge0 _ _)) fdist_of_fsE Scaled1RK.
 Qed.
 
 Section lemmas_for_probability_monad_and_adjunction.
-Import ScaledConvex.
 Local Open Scope fset_scope.
 Local Open Scope R_scope.
 
 Lemma Convn_of_fsdist1 (C : convType) (x : C) : Convn_of_fsdist (fsdist1 x) = x.
 Proof.
-apply: (@ScaledConvex.S1_inj _ _ x).
+apply: (@S1_inj _ _ x).
 rewrite S1_Convn_finType /=.
-rewrite (eq_bigr (fun=> ScaledConvex.S1 x)); last first.
+rewrite (eq_bigr (fun=> S1 x)); last first.
   move=> i _; rewrite fdist_of_fsE fsdist1E /= -(supp_fsdist1 x).
-  rewrite fsvalP ScaledConvex.scalept1 /=; congr (ScaledConvex.S1 _).
+  rewrite fsvalP scale1pt /=; congr (S1 _).
   by case: i => i /=; rewrite supp_fsdist1 inE => /eqP.
 by rewrite big_const (_ : #| _ | = 1%N) // -cardfE supp_fsdist1 cardfs1.
 Qed.
@@ -1089,7 +1086,7 @@ have Hsupp : forall y,
   by rewrite andbT; apply/imfsetP; exists x.
 rewrite big_seq; under eq_bigr=> y Hy.
 - rewrite (Hsupp y Hy).
-  rewrite big_scaleptl'; [| by rewrite scalept0 | by move=> j; apply mulR_ge0].
+  rewrite big_scaleptl'; [| by rewrite scale0pt | by move=> j; apply mulR_ge0].
   under eq_bigr=> i do rewrite fsdist1E inE.
   over.
 rewrite -big_seq exchange_big /=.
@@ -1099,7 +1096,7 @@ under eq_bigr=> x Hx.
   rewrite eqxx mulR1.
   rewrite (@big_seq _ _ _ _ ([fset f x0 | x0 in finsupp d] `\ f x)).
   under eq_bigr=> y do [rewrite in_fsetD1=> /andP [] /negbTE -> Hy;
-                        rewrite mulR0 scalept0].
+                        rewrite mulR0 scale0pt].
   rewrite big1 // addpt0.
   over.
 rewrite /X.
@@ -1120,20 +1117,18 @@ rewrite (ssum_seq_finsuppE'' (fun i : {dist C} => i x)).
 rewrite supp_fsdistmap.
 rewrite big_imfset /=; last by move=> *; apply: fsdist1_inj.
 under eq_bigr do rewrite fsdist1E inE fsdist1map.
-have nx0 :
-  \ssum_(i <- finsupp d `\ x)
-   scalept (d i) (S1 (if x == i then 1 else 0)) = scalept (d x).~ (S1 0).
-- transitivity (scalept (\sum_(i <- finsupp d `\ x) (d i)) (S1 0)).
-  + rewrite big_scaleptl' //; last by rewrite scalept0.
-    erewrite eq_fbigr; first reflexivity.
-    by move=> y /fsetD1P []; rewrite eq_sym=> /negbTE ->.
-  congr (_ _ _).
-  by rewrite fsdist_suppD1.
-case/boolP: (x \in finsupp d) => xfd.
-- rewrite (big_fsetD1 x) //= nx0 eqxx -convptE adjunction_2.
+have nx0 : \ssum_(i <- finsupp d `\ x)
+    scalept (d i) (S1 (if x == i then 1 else 0)) = scalept (d x).~ (S1 0).
+  transitivity (scalept (\sum_(i <- finsupp d `\ x) (d i)) (S1 0)).
+    rewrite big_scaleptl' //; last by rewrite scale0pt.
+    by apply: eq_fbigr => y /fsetD1P []; rewrite eq_sym=> /negbTE ->.
+  by congr (_ _ _); rewrite fsdist_suppD1.
+case/boolP : (x \in finsupp d) => xfd.
+  rewrite (big_fsetD1 x) //= nx0 eqxx -convptE -affine_conv/=.
   by rewrite avgRE mulR0 addR0 mulR1.
-by rewrite -(mem_fsetD1 xfd) nx0 fsfun_dflt // onem0 scalept1.
+by rewrite -(mem_fsetD1 xfd) nx0 fsfun_dflt // onem0 scale1pt.
 Qed.
+
 End triangular_laws_left_convn.
 
 End lemmas_for_probability_monad_and_adjunction.

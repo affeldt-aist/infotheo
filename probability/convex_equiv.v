@@ -310,7 +310,8 @@ Module B := NaryToBin(A).
 Import A B.
 
 Lemma equiv_conv p (a b : T) : a <| p |> b = a <& p &> b.
-Proof. by apply: ScaledConvex.S1_inj; rewrite ScaledConvex.S1_conv. Qed.
+Proof. by apply: S1_inj; rewrite affine_S1. Qed.
+
 End Equiv1.
 
 Module Equiv2(A : NaryConvSpace).
@@ -566,7 +567,7 @@ rewrite (_ : (fun i => _) = (fun i => <&>_(fdistmap (h i) (e i)) (g \o h')));
   have {1}-> : g = (g \o h') \o h i.
     apply funext => j; by rewrite /h' /h /= /f' /f enum_rankK.
   rewrite axinjmap //.
-  move=> x y; by rewrite /h => /enum_rank_inj [].
+  by move=> x y; rewrite /h => /enum_rank_inj [].
 rewrite axbarypart; first last.
 - move=> i j ij.
   apply/setP => x; rewrite !inE !fdistE.
@@ -584,11 +585,9 @@ have {2}-> : g = (fun j => <&>_(e' j) (g \o h')).
   rewrite inE /e' fdistE (big_pred1 (f' k)) /=; last first.
     by move=> i; rewrite 2!inE -{1}(enum_valK k) /f (can_eq enum_rankK).
   rewrite !fdistE.
-  case/boolP: (_ == j) => [/eqP <- // | Hj].
-  by rewrite mulR0 eqxx.
-rewrite [RHS]axbarypart; first last.
-- move=> i j ij.
-  apply/setP => x.
+  by have [<-//f'kj|] := eqVneq _ j; rewrite mulR0 eqxx.
+rewrite [RHS]axbarypart; last first.
+  move=> i j ij;  apply/setP => x.
   rewrite inE [RHS]inE.
   case/boolP: (_ \in _) => kx //.
   case/boolP: (_ \in _) => ky //.
@@ -617,8 +616,8 @@ have [->|Hj] := eqVneq j p.2; last first.
 rewrite (big_pred1 p.1) /=; last first.
   move=> i; rewrite !inE -(enum_valK k) (can_eq enum_rankK).
   by rewrite (surjective_pairing (enum_val k)) xpair_eqE eqxx andbT.
-case/boolP: (\sum_(i < n) d i * e i p.2 == 0)%R => [/eqP|] Hp.
-  by rewrite Hp mul0R (proj1 (psumR_eq0P _) Hp) // => *; apply: mulR_ge0.
+have [Hp|Hp] := eqVneq (\sum_(i < n) d i * e i p.2)%R 0%R.
+  by rewrite Hp mul0R (proj1 (psumR_eq0P _) Hp) // => *; exact: mulR_ge0.
 rewrite [RHS]mulRC !fdistE jfdist_condE !fdistE /=; last first.
   by under eq_bigr do rewrite fdistXE fdist_prodE.
 rewrite /jcPr /proba.Pr (big_pred1 p); last first.
@@ -630,4 +629,5 @@ by rewrite -mulRA mulVR ?mulR1.
 Qed.
 
 End BeaulieuToStandard.
+
 End NaryConvexSpaceEquiv.

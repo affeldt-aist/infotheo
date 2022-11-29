@@ -26,7 +26,7 @@ Require Import ssrR.
 (*     Rpos == type of positive reals                                         *)
 (*   x%:pos == tries to infer that x : R is actually a Rpos                   *)
 (*                                                                            *)
-(*    Rnneg == Type of non-negative reals                                     *)
+(*     Rnng == Type of non-negative reals                                     *)
 (*   x%:nng == tries to infer that x : R is actually a Rnneg                  *)
 (*                                                                            *)
 (******************************************************************************)
@@ -729,7 +729,7 @@ Qed.
 Lemma onem_divRxxy (r q : Rpos) : (r / (r + q)).~ = q / (q + r).
 Proof. by rewrite /onem subR_eq (addRC r) -mulRDl mulRV // ?gtR_eqF. Qed.
 
-Module Rnneg.
+Module Rnng.
 Local Open Scope R_scope.
 Record t := mk {
   v : R ;
@@ -737,35 +737,39 @@ Record t := mk {
 Definition K (r : t) := H r.
 Arguments K : simpl never.
 Module Exports.
-Notation Rnneg := t.
+Notation Rnng := t.
 Notation "r %:nng" := (@mk r (@K _)).
 Coercion v : t >-> R.
 End Exports.
-End Rnneg.
-Export Rnneg.Exports.
+End Rnng.
+Export Rnng.Exports.
 
-Canonical Rnneg_subType := [subType for Rnneg.v].
-Definition Rnneg_eqMixin := Eval hnf in [eqMixin of Rnneg by <:].
-Canonical Rnneg_eqType := Eval hnf in EqType Rnneg Rnneg_eqMixin.
-Definition Rnneg_choiceMixin := Eval hnf in [choiceMixin of Rnneg by <:].
-Canonical Rnneg_choiceType := Eval hnf in ChoiceType Rnneg Rnneg_choiceMixin.
+Canonical Rnng_subType := [subType for Rnng.v].
+Definition Rnng_eqMixin := Eval hnf in [eqMixin of Rnng by <:].
+Canonical Rnng_eqType := Eval hnf in EqType Rnng Rnng_eqMixin.
+Definition Rnng_choiceMixin := Eval hnf in [choiceMixin of Rnng by <:].
+Canonical Rnng_choiceType := Eval hnf in ChoiceType Rnng Rnng_choiceMixin.
 
-Section Rnneg_lemmas.
+Section Rnng_theory.
 Local Open Scope R_scope.
 
-Definition mkRnneg x H := @Rnneg.mk x (introT (leRP _ _) H).
+Definition mkRnng x H := @Rnng.mk x (introT (leRP _ _) H).
 
-Canonical Rnneg0 := @mkRnneg 0 (leRR 0).
-Canonical Rnneg1 := @mkRnneg 1 Rle_0_1.
-
-Lemma Rnneg_0le (x : Rnneg) : 0 <= x.
+Lemma Rnng_ge0 (x : Rnng) : 0 <= x.
 Proof. by case: x => p /= /leRP. Qed.
+Local Hint Resolve Rnng_ge0.
 
-Lemma addRnneg_0le (x y : Rnneg) : 0 <b= x + y.
-Proof. apply/leRP/addR_ge0; apply/Rnneg_0le. Qed.
-Canonical addRnneg x y := Rnneg.mk (addRnneg_0le x y).
+Canonical Rnng0 := Eval hnf in @mkRnng 0 (leRR 0).
+Canonical Rnng1 := Eval hnf in @mkRnng R1 Rle_0_1.
 
-Lemma mulRnneg_0le (x y : Rnneg) : 0 <b= x * y.
-Proof. by apply/leRP/mulR_ge0; apply/Rnneg_0le. Qed.
-Canonical mulRnneg x y := Rnneg.mk (mulRnneg_0le x y).
-End Rnneg_lemmas.
+Lemma addRnng_ge0 (x y : Rnng) : 0 <b= x + y.
+Proof. exact/leRP/addR_ge0. Qed.
+Canonical addRnneg x y := Rnng.mk (addRnng_ge0 x y).
+
+Lemma mulRnng_ge0 (x y : Rnng) : 0 <b= x * y.
+Proof. exact/leRP/mulR_ge0. Qed.
+Canonical mulRnneg x y := Rnng.mk (mulRnng_ge0 x y).
+
+End Rnng_theory.
+
+Global Hint Resolve Rnng_ge0 : core.

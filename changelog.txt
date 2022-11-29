@@ -6,6 +6,7 @@ from 0.4.0 to 0.4.1
   + Convn_of_FSDist_join (moved from monae)
   + notation fsdist for FSDist.t
   + definition fsdist1
+  + lemma leR01
 - renamed:
   + incl_finsupp_conv2fsdist -> finsupp_conv_subr
   + tech1 -> FSDistBindE
@@ -273,9 +274,32 @@ from 0.4.0 to 0.4.1
   + MultivarPerm.d -> fdist_perm
   + MultivarPerm.dE -> fdist_permE
   + TakeDrop.d -> fdist_take_drop
+  + scalept_rsum -> scalept_sum
+  + Rnneg -> Rnng
+  + big_scalept -> big_morph_scalept
+  + scaled_pt -> scaled
+  + sum_of_scaled_pt -> sum_of_scaled
+  + scaled_pt_of_sum -> scaled_of_sum
+  + sum_of_scaled_ptK -> sum_of_scaledK
+  + scalept0 -> scale0pt
+  + scalept1 -> scale1pt
+  + scalept_comp -> scaleptA
+  + scalept_addpt -> scaleptDr
+  + scalept_addR -> scaleptDl
+  + weight_bary -> weight_barycenter
+  + S1_conv -> affine_S1
+  + scalept_bary -> scalept_barycenter
+  + barycenter_big_fin -> barycenter_map
+  + barycenter_perm -> ssum_perm
+  + barycenter_fdist_convn -> ssum_fdist_convn
 - removed:
   + Module TripA'
   + imset_fst
+  + big_scalept
+- changed:
+  + scaledptR0 (now derived from the interface of quasi real cones)
+    and renamed scalept0
+
 -------------------
 from 0.3.8 to 0.4.0
 -------------------

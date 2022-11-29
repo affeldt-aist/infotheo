@@ -172,10 +172,9 @@ Lemma pinsker_function_spec_pos c q :
 Proof.
 move=> Hc [q0 q1].
 rewrite (_ : 0 = pinsker_function_spec c 0); last first.
-  rewrite /pinsker_function_spec /= subR0 /log Log_1; field.
+  by rewrite /pinsker_function_spec /= subR0 /log Log_1; field.
 apply pinsker_fun_increasing_on_0_to_1 => //.
 by case: Hc.
-lra.
 Qed.
 
 Section pinsker_function_analysis.

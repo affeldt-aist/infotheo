@@ -1096,6 +1096,7 @@ End affine_function_prop0.
 
 Section convn_convnfdist.
 Variable A : finType.
+
 Lemma convn_convnfdist n (g : 'I_n -> fdist A) (d : {fdist 'I_n}) :
   <|>_d g = fdist_convn d g.
 Proof.
@@ -1110,4 +1111,5 @@ rewrite IH fdist_convnE big_distrr /=; apply eq_bigr => i _.
 rewrite fdist_delE fdistD1E eq_sym (negbTE (neq_lift _ _)).
 by rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?mulR1 //; exact/onem_neq0.
 Qed.
+
 End convn_convnfdist.
