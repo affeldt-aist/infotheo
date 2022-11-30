@@ -72,7 +72,8 @@ Reserved Notation "P `^ n" (at level 5).
 Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
 Reserved Notation "f @^-1 y" (at level 10).
-Declare Scope proba_scope.
+Declare Scope fdist_scope.
+Delimit Scope fdist_scope with fdist.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -81,7 +82,8 @@ Import Prenex Implicits.
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
-Notation "f @^-1 y" := (preim f (pred1 y)) : proba_scope.
+Notation "f @^-1 y" := (preim f (pred1 y)) : fdist_scope.
+Local Open Scope fdist_scope.
 
 (* TODO: move *)
 Definition ex2C (T : Type) (P Q : T -> Prop) : @ex2 T P Q <-> @ex2 T Q P.
@@ -129,7 +131,7 @@ Global Hint Resolve FDist.le1 : core.
 
 Definition fdist_of (A : finType) := fun phT : phant (Finite.sort A) => fdist A.
 
-Notation "{ 'fdist' T }" := (fdist_of (Phant T)) : proba_scope.
+Notation "{ 'fdist' T }" := (fdist_of (Phant T)) : fdist_scope.
 
 Lemma fdist_ge0_le1 (A : finType) (d : fdist A) a : 0 <= d a <= 1.
 Proof. by []. Qed.
@@ -212,8 +214,6 @@ Lemma fdist_ext d d' : (forall x, d x = d' x) -> d = d'.
 Proof. by move=> ?; exact/val_inj/val_inj/ffunP. Qed.
 
 End fdist_lemmas.
-
-Local Open Scope proba_scope.
 
 Section fdist1.
 Variables (A : finType) (a : A).
@@ -301,11 +301,8 @@ Proof. by rewrite /fdistbind; unlock; rewrite ffunE. Qed.
 
 End fdistbind.
 
-Declare Scope fdist_scope.
-Delimit Scope fdist_scope with fdist.
 Reserved Notation "m >>= f" (at level 49).
 Notation "m >>= f" := (fdistbind m f) : fdist_scope.
-Local Open Scope fdist_scope.
 
 Lemma fdist1bind (A B : finType) (a : A) (f : A -> fdist B) :
   fdist1 a >>= f = f a.
@@ -723,7 +720,6 @@ Definition fdist_del_idx (i : 'I_n) := h i.
 End fdist_del.
 
 Section fdist_belast.
-Local Open Scope proba_scope.
 Variables (n : nat) (P : {fdist 'I_n.+1}) (Pmax_neq1 : P ord_max != 1).
 
 Let D : {fdist 'I_n.+1} := fdistD1 Pmax_neq1.
@@ -773,292 +769,6 @@ by apply/fdist_ext => ?; rewrite fdist_convnE -big_distrl /= FDist.f1 mul1R.
 Qed.
 
 End fdist_convn_prop.
-
-Reserved Notation "[ 's_of' p , q ]" (format "[ 's_of'  p ,  q ]").
-Reserved Notation "[ 'r_of' p , q ]" (format "[ 'r_of'  p ,  q ]").
-Reserved Notation "[ 'p_of' r , s ]" (format "[ 'p_of'  r ,  s ]").
-Reserved Notation "[ 'q_of' r , s ]" (format "[ 'q_of'  r ,  s ]").
-
-Definition s_of_pq (p q : prob) : prob := locked (p.~ * q.~).~%:pr.
-
-Notation "[ 's_of' p , q ]" := (s_of_pq p q) : proba_scope.
-
-Lemma s_of_pqE (p q : prob) : [s_of p, q] = (p.~ * q.~).~ :> R.
-Proof. by rewrite /s_of_pq; unlock. Qed.
-
-Lemma s_of_pq_oprob (p q : oprob) : 0 <b [s_of p, q] <b 1.
-Proof.
-rewrite s_of_pqE (_ : (p.~ * q.~).~ = (p.~ * q.~).~%:opr) //=; exact: OProb.O1.
-Qed.
-Canonical oprob_of_s_of_pq (p q : oprob) := Eval hnf in OProb.mk (s_of_pq_oprob p q).
-
-Lemma s_of_p0 (p : prob) : [s_of p, 0%:pr] = p.
-Proof. by apply/val_inj; rewrite /= s_of_pqE onem0 mulR1 onemK. Qed.
-
-Lemma s_of_0q (q : prob) : [s_of 0%:pr, q] = q.
-Proof. by apply/val_inj; rewrite /= s_of_pqE onem0 mul1R onemK. Qed.
-
-Lemma s_of_p1 (p : prob) : [s_of p, 1%:pr] = 1%:pr.
-Proof. by apply/val_inj; rewrite /= s_of_pqE onem1 mulR0 onem0. Qed.
-
-Lemma s_of_1q (q : prob) : [s_of 1%:pr, q] = 1%:pr.
-Proof. by apply/val_inj; rewrite /= s_of_pqE onem1 mul0R onem0. Qed.
-
-Lemma s_of_pqE' (p q : prob) : [s_of p, q] = p + p.~ * q :> R.
-Proof. rewrite s_of_pqE /= /onem; field. Qed.
-
-Lemma s_of_gt0 p q : p != 0%:pr -> 0 < [s_of p, q].
-Proof.
-move=> ?; rewrite s_of_pqE';
-  apply addR_gt0wl; [exact/prob_gt0 | exact: mulR_ge0].
-Qed.
-
-Lemma s_of_gt0_oprob (p : oprob) (q : prob) : 0 < [s_of p, q].
-Proof. by apply/s_of_gt0/oprob_neq0. Qed.
-
-Lemma ge_s_of (p q : prob) : p <= [s_of p, q].
-Proof. rewrite s_of_pqE' addRC -leR_subl_addr subRR; exact/mulR_ge0. Qed.
-
-Lemma r_of_pq_prob (p q : prob) : 0 <b= p / [s_of p, q] <b= 1.
-Proof.
-case/boolP : (p == 0%:pr :> prob) => p0.
-  rewrite (eqP p0) div0R; apply/andP; split; apply/leRP => //; exact/leRR.
-case/boolP : (q == 0%:pr :> prob) => q0.
-  rewrite (eqP q0) (s_of_p0 p) divRR //; apply/andP; split; apply/leRP=> //; exact/leRR.
-apply/andP; split; apply/leRP.
-- apply divR_ge0 => //; exact/s_of_gt0.
-- rewrite leR_pdivr_mulr ?mul1R; [exact: ge_s_of | exact: s_of_gt0].
-Qed.
-
-Definition r_of_pq (p q : prob) : prob := locked (Prob.mk (r_of_pq_prob p q)).
-
-Notation "[ 'r_of' p , q ]" := (r_of_pq p q) : proba_scope.
-
-Lemma r_of_pqE (p q : prob) : [r_of p, q] = p / [s_of p, q] :> R.
-Proof. by rewrite /r_of_pq; unlock. Qed.
-
-Lemma r_of_pq_oprob (p q : oprob) : 0 <b [r_of p, q] <b 1.
-Proof.
-rewrite r_of_pqE.
-apply/andP; split; apply/ltRP; first by apply divR_gt0.
-rewrite ltR_pdivr_mulr ?mul1R; last by apply/(oprob_gt0).
-rewrite ltR_neqAle; split; last by apply/ge_s_of.
-rewrite s_of_pqE'; apply/eqP/ltR_eqF/ltR_addl.
-by apply/oprob_gt0.
-Qed.
-Canonical oprob_of_r_of_pq (p q : oprob) := Eval hnf in OProb.mk (r_of_pq_oprob p q).
-
-Lemma r_of_p0 (p : prob) : p != 0%:pr -> [r_of p, 0%:pr] = 1%:pr.
-Proof. by move=> p0; apply val_inj; rewrite /= r_of_pqE s_of_p0 divRR. Qed.
-
-Lemma r_of_p0_oprob (p : oprob) : [r_of p, 0%:pr] = 1%:pr.
-Proof. by apply/r_of_p0/oprob_neq0. Qed.
-
-Lemma r_of_0q (q : prob) : [r_of 0%:pr, q] = 0%:pr.
-Proof. by apply/val_inj; rewrite /= r_of_pqE div0R. Qed.
-
-Lemma r_of_p1 (p : prob) : [r_of p, 1%:pr] = p.
-Proof. by apply/val_inj; rewrite /= r_of_pqE s_of_p1 divR1. Qed.
-
-Lemma r_of_1q (q : prob) : [r_of 1%:pr, q] = 1%:pr.
-Proof. by apply/val_inj; rewrite /= r_of_pqE s_of_1q divR1. Qed.
-
-Lemma p_is_rs (p q : prob) : p = [r_of p, q] * [s_of p, q] :> R.
-Proof.
-case/boolP : (p == 0%:pr :> prob) => p0; first by rewrite (eqP p0) r_of_0q mul0R.
-case/boolP : (q == 0%:pr :> prob) => q0.
-  by rewrite (eqP q0) s_of_p0 r_of_p0 // mul1R.
-rewrite r_of_pqE /Rdiv -mulRA mulVR ?mulR1 //.
-suff : [s_of p, q] != 0 :> R by [].
-by rewrite prob_gt0; apply s_of_gt0.
-Qed.
-
-Lemma r_of_pq_is_r (p q r s : prob) : r != 0%:pr -> s != 0%:pr ->
-  p = r * s :> R -> s.~ = p.~ * q.~ -> [r_of p, q] = r.
-Proof.
-move=> r0 s0 H1 H2; apply val_inj => /=.
-rewrite r_of_pqE eqR_divr_mulr; last by rewrite s_of_pqE -H2 onemK.
-rewrite (p_is_rs _ q) /= {1}s_of_pqE -H2 onemK r_of_pqE s_of_pqE.
-by rewrite -H2 onemK /Rdiv -mulRA mulVR ?mulR1.
-Qed.
-
-Lemma r_of_pq_is_r_oprob (p q : prob) (r s : oprob) :
-  p = r * s :> R -> s.~ = p.~ * q.~ -> [r_of p, q] = r.
-Proof. apply/r_of_pq_is_r/oprob_neq0/oprob_neq0. Qed.
-
-Lemma p_of_rs_prob (r s : prob) : 0 <b= r * s <b= 1.
-Proof.
-move: r s => -[] r /andP [] /leRP r0 /leRP r1 -[] s /= /andP [] /leRP s0 /leRP s1.
-apply/andP; split; apply/leRP; [exact/mulR_ge0 | rewrite -(mulR1 1); exact: leR_pmul].
-Qed.
-
-Definition p_of_rs (r s : prob) : prob := locked (Prob.mk (p_of_rs_prob r s)).
-
-Notation "[ 'p_of' r , s ]" := (p_of_rs r s) : proba_scope.
-
-Lemma p_of_rsE (r s : prob) : [p_of r, s] = r * s :> R.
-Proof. by rewrite /p_of_rs; unlock. Qed.
-
-Lemma p_of_rs_oprob (r s : oprob) : 0 <b [p_of r, s] <b 1.
-Proof. by rewrite p_of_rsE; apply/OProb.O1. Qed.
-Canonical oprob_of_p_of_rs (r s : oprob) := Eval hnf in OProb.mk (p_of_rs_oprob r s).
-
-Lemma p_of_r1 (r : prob) : [p_of r, 1%:pr] = r.
-Proof. by apply val_inj; rewrite /= p_of_rsE mulR1. Qed.
-
-Lemma p_of_1s (s : prob) : [p_of 1%:pr, s] = s.
-Proof. by apply val_inj; rewrite /= p_of_rsE mul1R. Qed.
-
-Lemma p_of_r0 (r : prob) : [p_of r, 0%:pr] = 0%:pr.
-Proof. by apply/val_inj; rewrite /= p_of_rsE mulR0. Qed.
-
-Lemma p_of_0s (s : prob) : [p_of 0%:pr, s] = 0%:pr.
-Proof. by apply/val_inj; rewrite /= p_of_rsE mul0R. Qed.
-
-Lemma p_of_rsC (r s : prob) : [p_of r, s] = [p_of s, r].
-Proof. by apply/val_inj; rewrite /= !p_of_rsE mulRC. Qed.
-
-Lemma p_of_neq1 (p q : prob) : 0 < p < 1 -> [p_of q, p] != 1%:pr.
-Proof.
-case=> p0 p1; apply/eqP => pq1; move: (p1).
-rewrite [X in _ < X -> _](_ : _ = Prob.p 1%:pr) //.
-rewrite -pq1 p_of_rsE -ltR_pdivr_mulr // divRR ?prob_gt0 //.
-by rewrite ltRNge; exact.
-Qed.
-
-Lemma p_of_rs1 (r s : prob) :
-  ([p_of r, s] == 1%:pr :> prob) = ((r == 1%:pr) && (s == 1%:pr)).
-Proof.
-apply/idP/idP; last by case/andP => /eqP -> /eqP ->; rewrite p_of_r1.
-move/eqP/(congr1 Prob.p); rewrite /= p_of_rsE => /eqP.
-apply contraLR => /nandP.
-wlog : r s / r != 1%:pr by move=> H [|] ?; [|rewrite mulRC]; rewrite H //; left.
-move=> r1 _.
-have [/eqP->|/prob_gt0/ltR_neqAle[/nesym r0 _]] := boolP (r == 0%:pr :> prob).
-  by rewrite mul0R eq_sym; apply/eqP.
-apply/eqP => /(@eqR_mul2r (/ r)).
-move/(_ (invR_neq0 _ r0)).
-rewrite mulRAC mulRV ?mul1R; last exact/eqP.
-move/eqP/prob_gt0 in r0.
-move=> srV; move: (prob_le1 s); rewrite {}srV.
-rewrite invR_le1 // => r_le1.
-move: (prob_le1 r) => le_r1.
-by move/eqP : r1; apply; apply/val_inj; apply eqR_le.
-Qed.
-
-Lemma p_of_rs1P r s : reflect (r = 1%:pr /\ s = 1%:pr) ([p_of r, s] == 1%:pr).
-Proof.
-move: (p_of_rs1 r s) ->.
-apply: (iffP idP);
-  [by case/andP => /eqP -> /eqP -> | by case => -> ->; rewrite eqxx].
-Qed.
-
-Lemma q_of_rs_prob (r s : prob) : 0 <b= (r.~ * s) / [p_of r, s].~ <b= 1.
-Proof.
-case/boolP : (r == 1%:pr :> prob) => r1.
-  rewrite (eqP r1) onem1 mul0R div0R; apply/andP; split; apply/leRP => //; exact/leRR.
-case/boolP : (s == 1%:pr :> prob) => s1.
-  rewrite (eqP s1) mulR1 p_of_r1 divRR ?onem_neq0 //; apply/andP; split; apply/leRP => //; exact/leRR.
-apply/andP; split; apply/leRP.
-  apply/divR_ge0; first exact/mulR_ge0.
-    apply/onem_gt0; rewrite p_of_rsE -(mulR1 1); apply/ltR_pmul => //;
-      by [rewrite -prob_lt1 | rewrite -prob_lt1].
-rewrite leR_pdivr_mulr ?mul1R.
-  by rewrite p_of_rsE {2}/onem leR_subr_addr -mulRDl addRC onemKC mul1R.
-apply onem_gt0; rewrite p_of_rsE -(mulR1 1); apply/ltR_pmul => //;
-  by [rewrite -prob_lt1 | rewrite -prob_lt1].
-Qed.
-
-Definition q_of_rs (r s : prob) : prob := locked (Prob.mk (q_of_rs_prob r s)).
-
-Notation "[ 'q_of' r , s ]" := (q_of_rs r s) : proba_scope.
-
-Lemma q_of_rsE (r s : prob) : [q_of r, s] = (r.~ * s) / [p_of r, s].~ :> R.
-Proof. by rewrite /q_of_rs; unlock. Qed.
-
-Lemma q_of_rs_oprob (r s : oprob) : 0 <b [q_of r, s] <b 1.
-Proof.
-rewrite q_of_rsE p_of_rsE.
-have->: r.~ * s / (r * s).~ = (s.~ / (r * s).~).~
-  by rewrite /onem; field; move/eqP: (oprob_neq0 ((r * s).~)%:opr).
-apply onem_oprob.
-apply/andP; split; apply/ltRP.
-- by apply/divR_gt0/oprob_gt0/oprob_gt0.
-- apply/(@ltR_pmul2r (r * s).~); first by apply/oprob_gt0.
-  rewrite divRE mulRAC -mulRA mulRV ?oprob_neq0 // mulR1 mul1R.
-  rewrite -onem_lt.
-  by rewrite -{2}(mul1R s) ltR_pmul2r; [apply/oprob_lt1 | apply/oprob_gt0].
-Qed.
-Canonical oprob_of_q_of_rs (r s : oprob) := Eval hnf in OProb.mk (q_of_rs_oprob r s).
-
-Lemma q_of_r0 (r : prob) : [q_of r, 0%:pr] = 0%:pr.
-Proof. by apply/val_inj => /=; rewrite q_of_rsE mulR0 div0R. Qed.
-
-Lemma q_of_r1 (r : prob) : r != 1%:pr -> [q_of r, 1%:pr] = 1%:pr.
-Proof.
-move=> r1.
-by apply/val_inj => /=; rewrite q_of_rsE /= mulR1 p_of_r1 divRR // onem_neq0.
-Qed.
-
-Lemma q_of_1s (s : prob) : [q_of 1%:pr, s] = 0%:pr.
-Proof. by apply/val_inj => /=; rewrite q_of_rsE onem1 mul0R div0R. Qed.
-
-Lemma pq_is_rs (p q : prob) : p.~ * q = [r_of p, q].~ * [s_of p, q].
-Proof.
-case/boolP : (p == 0%:pr :> prob) => p0.
-  by rewrite (eqP p0) onem0 mul1R r_of_0q onem0 mul1R s_of_0q.
-rewrite r_of_pqE [in RHS]mulRBl mul1R.
-rewrite /Rdiv -mulRA mulVR ?mulR1; last first.
-  rewrite prob_gt0; exact/s_of_gt0.
-by rewrite s_of_pqE' addRC addRK.
-Qed.
-
-Lemma s_of_pqK r s : [p_of r, s] != 1%:pr ->
-  [s_of [p_of r, s], [q_of r, s]] = s.
-Proof.
-move=> H.
-apply/val_inj; rewrite /= s_of_pqE p_of_rsE q_of_rsE p_of_rsE /=.
-rewrite /onem; field.
-rewrite subR_eq0; apply/eqP; apply: contra H => /eqP rs1.
-by apply/eqP/val_inj; rewrite /= p_of_rsE.
-Qed.
-
-Lemma s_of_pqK_oprob (r s : oprob) : [s_of [p_of r, s], [q_of r, s]] = s.
-Proof. apply/s_of_pqK/oprob_neq1. Qed.
-
-Lemma r_of_pqK (r s : prob) : [p_of r, s] != 1%:pr -> s != 0%:pr ->
-  [r_of [p_of r, s], [q_of r, s]] = r.
-Proof.
-move=> H1 s0; apply/val_inj => /=.
-rewrite !(r_of_pqE,s_of_pqE,q_of_rsE,p_of_rsE) /onem; field.
-split; last first.
-  by rewrite 2!subRB subRR add0R mulRBl mul1R addRC subRK; exact/eqP.
-rewrite subR_eq0 => /esym.
-apply/eqP; apply: contra H1 => /eqP H1.
-by apply/eqP/val_inj; rewrite /= p_of_rsE.
-Qed.
-
-Lemma r_of_pqK_oprob (r s : oprob) : [r_of [p_of r, s], [q_of r, s]] = r.
-Proof. apply/r_of_pqK/oprob_neq0/oprob_neq1. Qed.
-
-Lemma s_of_Rpos_probA (p q r : Rpos) :
-  [s_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] =
-  ((p + q) / (p + q + r))%:pos%:pr.
-Proof.
-apply val_inj; rewrite /= s_of_pqE /onem /=; field.
-by split; exact/eqP/Rpos_neq0.
-Qed.
-
-Lemma r_of_Rpos_probA (p q r : Rpos) :
-  [r_of (p / (p + (q + r)))%:pos%:pr, (q / (q + r))%:pos%:pr] =
-  (p / (p + q))%:pos%:pr.
-Proof.
-apply/val_inj; rewrite /= r_of_pqE s_of_pqE /onem /=; field.
-do 3 (split; first exact/eqP/Rpos_neq0).
-rewrite (addRC p (q + r)) addRK {4}[in q + r]addRC addRK.
-rewrite mulRC -mulRBr (addRC _ p) addRA addRK mulR_neq0.
-split; exact/eqP/Rpos_neq0.
-Qed.
 
 Section fdist_conv.
 Variables (A : finType) (p : prob) (d1 d2 : fdist A).
@@ -1234,21 +944,20 @@ Qed.
 
 End fdist_prod_prop.
 
-Notation "P1 `x P2" := (fdist_prod P1 (fun _ => P2)) : proba_scope.
+Notation "P1 `x P2" := (fdist_prod P1 (fun _ => P2)) : fdist_scope.
 
 Section prod_dominates_joint.
+Local Open Scope reals_ext_scope.
 Variables (A B : finType) (P : {fdist A * B}).
 
-Local Open Scope reals_ext_scope.
 Lemma Prod_dominates_Joint : P `<< P`1 `x P`2.
 Proof.
 apply/dominatesP => -[a b].
 rewrite fdist_prodE /= mulR_eq0 => -[P1a|P2b];
   by [rewrite dom_by_fdist_fst | rewrite dom_by_fdist_snd].
 Qed.
-End prod_dominates_joint.
 
-Local Open Scope fdist_scope.
+End prod_dominates_joint.
 
 Section fdistX.
 Variables (A B : finType) (P : {fdist A * B}).
@@ -1320,7 +1029,7 @@ Proof. by rewrite /fdist_rV; unlock; rewrite ffunE. Qed.
 
 End fdist_rV.
 
-Notation "P `^ n" := (fdist_rV P n) : proba_scope.
+Notation "P `^ n" := (fdist_rV P n) : fdist_scope.
 
 Section wolfowitz_counting.
 

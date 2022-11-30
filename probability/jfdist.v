@@ -131,7 +131,7 @@ Section jPr_Pr.
 Variables (U : finType) (P : fdist U) (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
 Variables (E : {set A}) (F : {set B}).
 
-Lemma jPr_Pr : \Pr_(fdistmap [% X, Y] P) [E | F] = `Pr[X \in E |Y \in F].
+Lemma jPr_Pr : \Pr_(`p_[% X, Y]) [E | F] = `Pr[X \in E |Y \in F].
 Proof.
 rewrite /jcPr.
 rewrite Pr_fdistmap_RV2/=.
@@ -158,8 +158,8 @@ Lemma jBayes E F : \Pr_PQ[E | F] = \Pr_QP [F | E] * Pr P E / Pr Q F.
 Proof.
 rewrite 2!jcPrE Bayes /Rdiv -2!mulRA.
 rewrite EsetT Pr_XsetT setTE Pr_setTX /cPr; congr ((_ / _) * (_ / _)).
-by rewrite /QP setIX Pr_fdistX -setIX -EsetT -setTE.
-by rewrite Pr_fdistX -setTE.
+  by rewrite EsetT setTE [in RHS]setIX Pr_fdistX setIX.
+by rewrite setTE Pr_fdistX.
 Qed.
 
 Lemma jBayes_extended (I : finType) (E : I -> {set A}) (F : {set B}) :
@@ -188,15 +188,15 @@ Lemma jcPr_fdistA_AC (E : {set A}) (F : {set B}) (G : {set C}) :
   \Pr_(fdistA (fdistAC P))[E | G `* F] = \Pr_(fdistA P)[E | F `* G].
 Proof.
 rewrite /jcPr 2!Pr_fdistA Pr_fdistAC; congr (_ / _).
-by rewrite fdistA_AC_snd Pr_fdistX fdistXI.
+by rewrite fdistA_AC_snd -Pr_fdistX fdistXI.
 Qed.
 
 Lemma jcPr_fdistA_C12 (E : {set A}) (F : {set B}) (G : {set C}) :
   \Pr_(fdistA (fdistC12 P))[F | E `* G] = \Pr_(fdistA (fdistX (fdistA P)))[F | G `* E].
 Proof.
 rewrite /jcPr; congr (_ / _).
-by rewrite Pr_fdistA Pr_fdistC12 Pr_fdistA [in RHS]Pr_fdistX fdistXI Pr_fdistA.
-rewrite -/(fdist_proj13 _) -(fdistXI (fdist_proj13 P)) Pr_fdistX fdistXI; congr Pr.
+by rewrite Pr_fdistA Pr_fdistC12 Pr_fdistA -[in RHS]Pr_fdistX fdistXI Pr_fdistA.
+rewrite -/(fdist_proj13 _) -(fdistXI (fdist_proj13 P)) -Pr_fdistX fdistXI; congr Pr.
 (* TODO: lemma? *)
 by rewrite /fdist_proj13 /fdistX /fdist_snd /fdistA !fdistmap_comp.
 Qed.
@@ -230,17 +230,19 @@ End variant.
 Section prod.
 Variables (A B : finType) (P : {fdist A * B}).
 Implicit Types (E : {set A}) (F : {set B}).
+
 Lemma jproduct_rule E F : Pr P (E `* F) = \Pr_P[E | F] * Pr (P`2) F.
 Proof.
 have [/eqP PF0|PF0] := boolP (Pr (P`2) F == 0).
   rewrite jcPrE /cPr -{1}(setIT E) -{1}(setIT F) -setIX.
-  rewrite Pr_domin_setI; last by rewrite Pr_fdistX Pr_domin_setX // fdistX1.
+  rewrite Pr_domin_setI; last by rewrite -Pr_fdistX Pr_domin_setX // fdistX1.
   by rewrite setIC Pr_domin_setI ?(div0R,mul0R) // setTE Pr_setTX.
 rewrite -{1}(setIT E) -{1}(setIT F) -setIX product_rule.
 rewrite -EsetT setTT cPrET Pr_setT mulR1 jcPrE.
 rewrite /cPr {1}setTE {1}EsetT.
 by rewrite setIX setTI setIT setTE Pr_setTX -mulRA mulVR ?mulR1.
 Qed.
+
 End prod.
 
 End product_rule.
@@ -348,7 +350,7 @@ Lemma cPr_1 (U : finType) (P : fdist U) (A B : finType)
   \sum_(b <- fin_img Y) `Pr[ Y = b | X = a ] = 1.
 Proof.
 rewrite -pr_eq_set1 pr_inE' Pr_set1 -{1}(fst_RV2 _ Y) => Xa0.
-set Q := `d_[% X, Y] `(| a ).
+set Q := `p_[% X, Y] `(| a ).
 rewrite -(FDist.f1 Q) [in RHS](bigID (mem (fin_img Y))) /=.
 rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   move=> b bY.

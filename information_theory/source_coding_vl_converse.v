@@ -22,8 +22,9 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope tuple_ext_scope.
-Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
+Local Open Scope fdist_scope.
+Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
 Local Open Scope divergence_scope.
 Local Open Scope R_scope.

@@ -132,7 +132,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 
 (* TODO: the following lemmas are currently not in use. Maybe remove? *)
 Section tmp.

@@ -28,7 +28,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope jtyp_seq_scope.
 Local Open Scope channel_code_scope.
 Local Open Scope channel_scope.
@@ -867,8 +867,8 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
         move=> ?; lra.
       apply (@leR_trans (INR '| up (- log epsilon0 / epsilon0) |)).
         case: (Z_lt_le_dec (up (- log epsilon0 / epsilon0)) 0) => H1.
-          apply (@leR_trans 0); [exact/IZR_le/ltZW | exact: leR0n].
-        rewrite INR_Zabs_nat //; exact/leRR.
+          by apply (@leR_trans 0); [exact/IZR_le/ltZW | exact: leR0n].
+        by rewrite INR_Zabs_nat //; exact/leRR.
       apply le_INR.
       rewrite /supermax maxnA.
       apply/leP.
@@ -881,9 +881,9 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
     split => //; split => //; split => //.
     by rewrite -Hr in Hn2.
   split.
-    apply/(@leq_trans n1) => //; tauto.
+    by apply/(@leq_trans n1) => //; tauto.
   split.
-    apply (@ltR_leR_trans (INR n1)); [tauto | exact/le_INR/leP].
+    by apply (@ltR_leR_trans (INR n1)); [tauto | exact/le_INR/leP].
   by apply leq_trans with n1 => //; tauto.
 case: (random_coding_good_code (ltRW Hepsilon) Hepsilon0 Hn) =>
   M [HM [M_k H]].

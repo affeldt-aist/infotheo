@@ -22,7 +22,7 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope channel_scope.
 Local Open Scope divergence_scope.
@@ -119,10 +119,11 @@ Let Q := mkjfdist_prod_type R Q'.
 Local Open Scope divergence_scope.
 Local Open Scope reals_ext_scope.
 
-Lemma cre_compat : jfdist_prod P `<< jfdist_prod Q -> cre P Q = D(P || Q | R).
+Lemma cond_relative_entropy_compat : jfdist_prod P `<< jfdist_prod Q ->
+  cond_relative_entropy P Q = D(P || Q | R).
 Proof.
 move=> PQ.
-rewrite /cre cdiv_is_div_joint_dist; last first.
+rewrite /cond_relative_entropy cdiv_is_div_joint_dist; last first.
   by apply/dom_by_cdom_by; rewrite /JointFDistChan.d; unlock.
 rewrite /div.
 under eq_bigr do rewrite big_distrr /=.
@@ -326,7 +327,7 @@ case : ifP => Hcase.
   move/cond_type_equiv => /(_ _ Hta a) ->.
   move: Hta; rewrite in_set => /forallP/(_ a)/eqP => HPa.
   case: ifPn => Nax; last first.
-    apply: contra => /eqP ->; by rewrite div0R.
+    by apply: contra => /eqP ->; rewrite div0R.
   exfalso.
   move/eqP : Pa; apply.
   by rewrite HPa (eqP Nax) div0R.

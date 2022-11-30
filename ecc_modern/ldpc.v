@@ -78,6 +78,7 @@ by rewrite -natRM -Htmp natRM mulRC.
 Qed.
 
 Local Open Scope ring_scope.
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
 

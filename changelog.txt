@@ -292,10 +292,16 @@ from 0.4.0 to 0.4.1
   + barycenter_big_fin -> barycenter_map
   + barycenter_perm -> ssum_perm
   + barycenter_fdist_convn -> ssum_fdist_convn
+  + `d_ -> `p_
+  + JointEntropy.h -> joint_entropy
+  + JointEntropy.entropyE -> entropy_rV
+  + CondEntropy.h1 -> cond_entropy1
+  + CondEntropy.h -> cond_entropy
 - removed:
   + Module TripA'
   + imset_fst
   + big_scalept
+  + `p_
 - changed:
   + scaledptR0 (now derived from the interface of quasi real cones)
     and renamed scalept0

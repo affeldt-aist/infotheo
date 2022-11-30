@@ -32,7 +32,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
 
 Module NaryConvexSpace.

@@ -16,108 +16,87 @@ Require Import proba jfdist divergence entropy.
 (* 2005                                                                       *)
 (* See also entropy.v and convex_fdist.v                                      *)
 (*                                                                            *)
-(* chain_rule == (thm 2.1.1)                                                  *)
-(* chain_rule_rV == chain rule for entropy (thm 2.5.1)                        *)
-(* chain_rule_information == chain rule for information (thm 2.5.2)           *)
+(*               joint_entropy == entropy of a joint distribution             *)
+(*                cond_entropy == conditional entropy of a joint distribution *)
+(*                  chain_rule == (thm 2.1.1)                                 *)
+(*                 mutual_info == mutual information                          *)
+(*               chain_rule_rV == chain rule for entropy (thm 2.5.1)          *)
+(*      chain_rule_information == chain rule for information (thm 2.5.2)      *)
 (* chain_rule_relative_entropy == chain rule for relative entropy (thm 2.5.3) *)
-(* data_processing_inequality == (thm 2.8.1)                                  *)
+(*  data_processing_inequality == (thm 2.8.1)                                 *)
 (*                                                                            *)
 (* Extra lemma:                                                               *)
 (*  han == Han's inequality                                                   *)
 (******************************************************************************)
 
-(*
-Contents:
-- Module JointEntropy.
-  Section joint_entropy_prop.
-- Module CondEntropy.
-  Section conditional_entropy_prop.
-- Section chain_rule.
-- Section chain_rule_generalization.
-- Section entropy_chain_rule_corollary.
-- Section conditional_entropy_prop2.
-- Section conditional_entropy_prop3.
-- Module MutualInfo.
-- Section mutualinfo_prop.
-- Section chain_rule_for_entropy.
-- Section divergence_conditional_distributions.
-- Section conditional_mutual_information.
-- Section conditional_relative_entropy.
-- Section chain_rule_for_information.
-- Section conditioning_reduces_entropy.
-- Section independence_bound_on_entropy.
-- Section markov_chain.
-- Section markov_chain_prop.
-- Section Han_inequality.
-*)
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Declare Scope chap2_scope.
+Delimit Scope chap2_scope with chap2.
+
+Reserved Notation "`H( P , W )" (at level 10, P, W at next level,
+  format "`H( P ,  W )").
+Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
+Reserved Notation "`I( P ; W )" (at level 50, format "`I( P ;  W )").
+
 Local Open Scope R_scope.
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 
-Module JointEntropy.
-Section def.
+Section joint_entropy.
 Variables (A B : finType) (P : {fdist A * B}).
 
 (* eqn 2.8 *)
-Definition h := `H P.
+Definition joint_entropy := `H P.
 
 (* eqn 2.9 *)
-Lemma hE : h = `E (`-- (`log P)).
-Proof. by rewrite /h entropy_Ex. Qed.
+Lemma joint_entropyE : joint_entropy = `E (`-- (`log P)).
+Proof. by rewrite /joint_entropy entropy_Ex. Qed.
 
-Lemma hC : h = `H (fdistX P).
+Lemma joint_entropyC : joint_entropy = `H (fdistX P).
 Proof.
 congr (- _) => /=.
 rewrite (eq_bigr (fun a => P (a.1, a.2) * log (P (a.1, a.2)))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => P (a1, a2) * log (P (a1, a2)))) /=.
 by rewrite exchange_big pair_big; apply eq_bigr => -[a b] _; rewrite fdistXE.
 Qed.
-End def.
-Section rV.
-Lemma entropyE (A : finType) n (P : {fdist 'rV[A]_n.+1}) :
-  `H P = h (fdist_belast_last_of_rV P).
+
+End joint_entropy.
+
+Lemma entropy_rV (A : finType) n (P : {fdist 'rV[A]_n.+1}) :
+  `H P = joint_entropy (fdist_belast_last_of_rV P).
 Proof.
-rewrite /h /entropy; congr (- _) => /=.
+rewrite /joint_entropy /entropy; congr (- _) => /=.
 rewrite -(big_rV_belast_last _ xpredT xpredT) /=.
 rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
 by rewrite fdist_belast_last_of_rVE.
 Qed.
-End rV.
 
-End JointEntropy.
-
-Section notation_with_random_variables.
-
-Section jointentropy_RV.
+Section joint_entropy_RV_def.
 Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+Definition joint_entropy_RV := joint_entropy `p_[% X, Y].
+End joint_entropy_RV_def.
+Notation "'`H(' X ',' Y ')'" := (joint_entropy_RV X Y) : chap2_scope.
 
-Definition jointentropy_drv := JointEntropy.h (fdistmap [% X, Y] P).
+Local Open Scope chap2_scope.
 
-End jointentropy_RV.
-
-Notation "'`H(' X ',' Y ')'" := (jointentropy_drv X Y) (format "'`H(' X ','  Y ')'").
-
-Section jointentropy_RV_prop.
+Section joint_entropy_RV_prop.
 Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
 
 (* 2.9 *)
-Lemma eqn29 : `H(X, Y) = - `E (`log (fdistmap [% X, Y] P)).
-Proof. by rewrite /jointentropy_drv JointEntropy.hE E_neg_RV. Qed.
+Lemma eqn29 : `H(X, Y) = - `E (`log `p_[% X, Y]).
+Proof. by rewrite /joint_entropy_RV joint_entropyE E_neg_RV. Qed.
 
-End jointentropy_RV_prop.
-
-End notation_with_random_variables.
+End joint_entropy_RV_prop.
 
 Section joint_entropy_prop.
 Variable (A : finType) (P : {fdist A}).
 
-Lemma joint_entropy_self : JointEntropy.h (fdist_self P) = `H P.
+Lemma joint_entropy_self : joint_entropy (fdist_self P) = `H P.
 Proof.
 congr (- _).
 rewrite (eq_bigr (fun a => fdist_self P (a.1, a.2) *
@@ -133,34 +112,33 @@ End joint_entropy_prop.
 
 Local Open Scope fdist_scope.
 
-Module CondEntropy.
-Section condentropy.
+Section conditional_entropy.
 Variables (A B : finType) (QP : {fdist B * A}).
 
 (* H(Y|X = x), see eqn 2.10 *)
-Definition h1 a := - \sum_(b in B)
+Definition cond_entropy1 a := - \sum_(b in B)
   \Pr_QP [ [set b] | [set a] ] * log (\Pr_QP [ [set b] | [set a] ]).
 
 Let P := QP`2.
 
 (*eqn 2.11 *)
-Definition h := \sum_(a in A) P a * h1 a.
+Definition cond_entropy := \sum_(a in A) P a * cond_entropy1 a.
 
 Let PQ := fdistX QP.
 
 (* cover&thomas 2.12 *)
-Lemma hE : h = - \sum_(a in A) \sum_(b in B)
+Lemma cond_entropyE : cond_entropy = - \sum_(a in A) \sum_(b in B)
   PQ (a, b) * log (\Pr_QP [ [set b] | [set a]]).
 Proof.
-rewrite /h big_morph_oppR /=; apply eq_bigr => a _.
-rewrite /h1 mulRN big_distrr /=; congr (- _); apply eq_bigr => b _.
+rewrite /cond_entropy big_morph_oppR /=; apply eq_bigr => a _.
+rewrite /cond_entropy1 mulRN big_distrr /=; congr (- _); apply eq_bigr => b _.
 rewrite mulRA; congr (_ * _).
 by rewrite mulRC -(Pr_set1 P a) -jproduct_rule setX1 fdistXE Pr_set1.
 Qed.
 
-Lemma h1_ge0 a : 0 <= h1 a.
+Lemma cond_entropy1_ge0 a : 0 <= cond_entropy1 a.
 Proof.
-rewrite /h1 big_morph_oppR; apply sumR_ge0 => b _; rewrite -mulRN.
+rewrite /cond_entropy1 big_morph_oppR; apply sumR_ge0 => b _; rewrite -mulRN.
 case/boolP : (\Pr_QP[[set b]|[set a]] == 0) => [/eqP|] H0.
   rewrite H0 mul0R; exact/leRR.
 apply mulR_ge0; [exact: jcPr_ge0|].
@@ -168,55 +146,51 @@ rewrite -oppR0 -(Log_1 2) /log leR_oppr oppRK.
 by apply Log_increasing_le => //; [rewrite jcPr_gt0 | exact: jcPr_max].
 Qed.
 
-Lemma h_ge0 : 0 <= h.
-Proof. by apply sumR_ge0 => a _; apply mulR_ge0 => //; exact: h1_ge0. Qed.
-
-End condentropy.
-End CondEntropy.
-
-(* wip *)
-Section notation_with_random_variables.
-
-Section condentropy_RV.
-Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
-
-Definition h1_RV a := `H (jfdist_cond (fdistmap [% X, Y] P) a).
-
-Lemma h1_RVE a : (fdistmap [% X, Y] P)`1 a != 0 ->
-  h1_RV a = CondEntropy.h1 (fdistX (fdistmap [% X, Y] P)) a.
+Lemma cond_entropy_ge0 : 0 <= cond_entropy.
 Proof.
-move=> a0.
-rewrite /h1_RV /CondEntropy.h1 /entropy; congr (- _).
-apply eq_bigr => b _.
-by rewrite jfdist_condE.
+by apply sumR_ge0 => a _; apply mulR_ge0 => //; exact: cond_entropy1_ge0.
 Qed.
 
-End condentropy_RV.
+End conditional_entropy.
 
-End notation_with_random_variables.
-(* /wip *)
+Section cond_entropy1_RV_prop.
+Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Definition cond_entropy1_RV a := `H (jfdist_cond (`p_[% X, Y]) a).
+
+Lemma cond_entropy1_RVE a : (`p_[% X, Y])`1 a != 0 ->
+  cond_entropy1_RV a = cond_entropy1 `p_[% Y, X] a.
+Proof.
+move=> a0.
+rewrite /cond_entropy1_RV /cond_entropy1 /entropy; congr (- _).
+apply eq_bigr => b _.
+by rewrite jfdist_condE// fdistX_RV2.
+Qed.
+
+End cond_entropy1_RV_prop.
+Notation "'`H(' Y '|' X ')'" := (cond_entropy `p_[% Y, X]) : chap2_scope.
 
 Section conditional_entropy_prop.
 
 Variables (A B C : finType) (PQR : {fdist A * B * C}).
 
-Lemma h1_fdistAC b c : CondEntropy.h1 (fdistA PQR) (b, c) =
-                       CondEntropy.h1 (fdistA (fdistAC PQR)) (c, b).
+Lemma cond_entropy1_fdistAC b c : cond_entropy1 (fdistA PQR) (b, c) =
+                                  cond_entropy1 (fdistA (fdistAC PQR)) (c, b).
 Proof.
-rewrite /CondEntropy.h1; congr (- _).
+rewrite /cond_entropy1; congr (- _).
 by apply eq_bigr => a _; rewrite -!setX1 jcPr_fdistA_AC.
 Qed.
 
-Lemma h_fdistA : CondEntropy.h (fdistA PQR) = CondEntropy.h (fdistA (fdistAC PQR)).
+Lemma cond_entropy_fdistA : cond_entropy (fdistA PQR) = cond_entropy (fdistA (fdistAC PQR)).
 Proof.
-rewrite /CondEntropy.h /=.
+rewrite /cond_entropy /=.
 rewrite (eq_bigr (fun a => (fdistA PQR)`2 (a.1, a.2) *
-                           CondEntropy.h1 (fdistA PQR) (a.1, a.2))); last by case.
+                           cond_entropy1 (fdistA PQR) (a.1, a.2))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => (fdistA PQR)`2 (a1, a2) *
-                                    CondEntropy.h1 (fdistA PQR) (a1, a2))) /=.
+                                    cond_entropy1 (fdistA PQR) (a1, a2))) /=.
 rewrite exchange_big pair_big /=; apply eq_bigr => -[c b] _ /=; congr (_ * _).
   by rewrite fdistA_AC_snd fdistXE.
-by rewrite h1_fdistAC.
+by rewrite cond_entropy1_fdistAC.
 Qed.
 
 End conditional_entropy_prop.
@@ -226,9 +200,9 @@ Variables (A B : finType) (PQ : {fdist A * B}).
 Let P := PQ`1.
 Let QP := fdistX PQ.
 
-Lemma chain_rule : JointEntropy.h PQ = `H P + CondEntropy.h QP. (* 2.14 *)
+Lemma chain_rule : joint_entropy PQ = `H P + cond_entropy QP. (* 2.14 *)
 Proof.
-rewrite /JointEntropy.h {1}/entropy.
+rewrite /joint_entropy {1}/entropy.
 transitivity (- (\sum_(a in A) \sum_(b in B)
     PQ (a, b) * log (P a * \Pr_QP [ [set b] | [set a] ]))). (* 2.16 *)
   congr (- _); rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
@@ -249,11 +223,24 @@ transitivity (
 rewrite [in X in _ + X = _]big_morph_oppR; congr (_ + _).
 - rewrite /entropy; congr (- _); apply eq_bigr => a _.
   by rewrite -big_distrl /= -fdist_fstE.
-- rewrite CondEntropy.hE big_morph_oppR.
+- rewrite cond_entropyE big_morph_oppR.
   by apply eq_bigr => a _; congr (- _); apply eq_bigr => b _; rewrite !fdistXE.
 Qed.
 
 End chain_rule.
+
+Section chain_rule_RV.
+Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Lemma chain_rule_RV : `H(X, Y) = `H `p_X + `H(Y | X).
+Proof.
+rewrite /joint_entropy_RV.
+rewrite chain_rule fst_RV2.
+congr (_ + _).
+by rewrite fdistX_RV2.
+Qed.
+
+End chain_rule_RV.
 
 Section chain_rule_generalization.
 
@@ -351,10 +338,10 @@ Qed.
 Lemma chain_rule_multivar (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1})
   (i : 'I_n.+1) : i != ord0 ->
   (`H P = `H (fdist_col' P i) +
-    CondEntropy.h (fdist_prod_of_rV (fdist_perm P (put_front_perm i))))%R.
+    cond_entropy (fdist_prod_of_rV (fdist_perm P (put_front_perm i))))%R.
 Proof.
 move=> i0; rewrite fdist_col'_put_front // -fdistX1.
-rewrite -{2}(fdistXI (fdist_prod_of_rV _)) -chain_rule JointEntropy.hC fdistXI.
+rewrite -{2}(fdistXI (fdist_prod_of_rV _)) -chain_rule joint_entropyC fdistXI.
 by rewrite entropy_fdist_prod_of_rV entropy_fdist_perm.
 Qed.
 
@@ -367,21 +354,24 @@ Let QPR : {fdist B * (A * C)} := fdistA (fdistC12 PQR).
 
 (* eqn 2.21, H(X,Y|Z) = H(X|Z) + H(Y|X,Z) *)
 Lemma chain_rule_corollary :
-  CondEntropy.h PQR = CondEntropy.h PR + CondEntropy.h QPR.
+  cond_entropy PQR = cond_entropy PR + cond_entropy QPR.
 Proof.
-rewrite !CondEntropy.hE -oppRD; congr (- _).
-rewrite [in X in _ = _ + X](eq_bigr (fun j => \sum_(i in B) (fdistX QPR) ((j.1, j.2), i) * log \Pr_QPR[[set i] | [set (j.1, j.2)]])); last by case.
-rewrite -[in RHS](pair_bigA _ (fun j1 j2 => \sum_(i in B) (fdistX QPR ((j1, j2), i) * log \Pr_QPR[[set i] | [set (j1, j2)]]))) /=.
+rewrite !cond_entropyE -oppRD; congr (- _).
+rewrite [in X in _ = _ + X](eq_bigr (fun j => \sum_(i in B) (fdistX QPR) ((j.1, j.2), i) *
+                                                            log \Pr_QPR[[set i] | [set (j.1, j.2)]])); last by case.
+rewrite -[in RHS](pair_bigA _ (fun j1 j2 => \sum_(i in B) (fdistX QPR ((j1, j2), i) *
+                                                          log \Pr_QPR[[set i] | [set (j1, j2)]]))) /=.
 rewrite [in X in _ = _ + X]exchange_big /= -big_split; apply eq_bigr => c _ /=.
-rewrite [in LHS](eq_bigr (fun j => (fdistX PQR) (c, (j.1, j.2)) * log \Pr_PQR[[set (j.1, j.2)] | [set c]])); last by case.
-rewrite -[in LHS](pair_bigA _ (fun j1 j2 => (fdistX PQR) (c, (j1, j2)) * log \Pr_PQR[[set (j1, j2)] | [set c]])) /=.
+rewrite [in LHS](eq_bigr (fun j => (fdistX PQR) (c, (j.1, j.2)) *
+                                   log \Pr_PQR[[set (j.1, j.2)] | [set c]])); last by case.
+rewrite -[in LHS](pair_bigA _ (fun j1 j2 => (fdistX PQR) (c, (j1, j2)) *
+                                            log \Pr_PQR[[set (j1, j2)] | [set c]])) /=.
 rewrite -big_split; apply eq_bigr => a _ /=.
 rewrite fdistXE fdist_proj13E big_distrl /= -big_split; apply eq_bigr => b _ /=.
 rewrite !(fdistXE,fdistAE,fdistC12E) /= -mulRDr.
-case/boolP : (PQR (a, b, c) == 0) => [/eqP H0|H0].
-  by rewrite H0 !mul0R.
+have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0R.
 rewrite -logM; last 2 first.
-  rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: fdist_proj13_dominN H0.
+  by rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: fdist_proj13_dominN H0.
   by rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1 fdistAE /= fdistC12E.
 congr (_ * log _).
 by rewrite -setX1 product_ruleC !setX1 mulRC.
@@ -396,10 +386,10 @@ Let P := PQ`1.
 Let Q := PQ`2.
 Let QP := fdistX PQ.
 
-Lemma entropyB : `H P - CondEntropy.h PQ = `H Q - CondEntropy.h QP.
+Lemma entropyB : `H P - cond_entropy PQ = `H Q - cond_entropy QP.
 Proof.
-rewrite subR_eq addRAC -subR_eq subR_opp -chain_rule JointEntropy.hC.
-by rewrite -/(JointEntropy.h (fdistX PQ)) chain_rule fdistX1 -/Q fdistXI.
+rewrite subR_eq addRAC -subR_eq subR_opp -chain_rule joint_entropyC.
+by rewrite -/(joint_entropy (fdistX PQ)) chain_rule fdistX1 -/Q fdistXI.
 Qed.
 
 End conditional_entropy_prop2.
@@ -408,7 +398,7 @@ Section conditional_entropy_prop3. (* NB: here because use chain rule *)
 
 Variables (A : finType) (P : {fdist A}).
 
-Lemma CondEntrop_self : CondEntropy.h (fdist_self P) = 0.
+Lemma cond_entropy_self : cond_entropy (fdist_self P) = 0.
 Proof.
 move: (@chain_rule _ _ (fdist_self P)).
 rewrite !fdist_self1 fdistX_self addRC -subR_eq => <-.
@@ -417,37 +407,37 @@ Qed.
 
 End conditional_entropy_prop3.
 
-Module MutualInfo.
+Section mutual_information.
 Local Open Scope divergence_scope.
-Section def.
 Variables (A B : finType) (PQ : {fdist A * B}).
 Let P := PQ`1.
 Let Q := PQ`2.
 Let QP := fdistX PQ.
 
 (* I(X;Y) *)
-Definition mi := D(PQ || P `x Q).
-End def.
-Section prop.
+Definition mutual_info := D(PQ || P `x Q).
+
+End mutual_information.
+
+Section mutual_information_prop.
 Variables (A B : finType) (PQ : {fdist A * B}).
 Let P := PQ`1.
 Let Q := PQ`2.
 Let QP := fdistX PQ.
 
 (* 2.28 *)
-Lemma miE0 : mi PQ =
+Lemma mutual_infoE0 : mutual_info PQ =
   \sum_(a in A) \sum_(b in B) PQ (a, b) * log (PQ (a, b) / (P a * Q b)).
 Proof.
-rewrite /mi /div pair_big /=; apply eq_bigr; case => a b _ /=.
-case/boolP : (PQ (a, b) == 0) => [/eqP H0|H0].
-- by rewrite H0 !mul0R.
-- by rewrite fdist_prodE.
+rewrite /mutual_info /div pair_big /=; apply eq_bigr; case => a b _ /=.
+have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0R.
+by rewrite fdist_prodE.
 Qed.
 
 (* 2.39 *)
-Lemma miE : mi PQ = `H P - CondEntropy.h PQ.
+Lemma mutual_infoE : mutual_info PQ = `H P - cond_entropy PQ.
 Proof.
-rewrite miE0.
+rewrite mutual_infoE0.
 transitivity (\sum_(a in A) \sum_(b in B)
     PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ] / P a)).
   apply eq_bigr => a _; apply eq_bigr => b _.
@@ -469,7 +459,7 @@ transitivity (- (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a)) +
 rewrite -subR_opp; congr (_ - _).
 - rewrite /entropy; congr (- _); apply/eq_bigr => a _.
   by rewrite -big_distrl /= -fdist_fstE.
-- rewrite /CondEntropy.h exchange_big.
+- rewrite /cond_entropy exchange_big.
   rewrite big_morph_oppR; apply eq_bigr=> b _ /=.
   rewrite mulRN; congr (- _).
   rewrite big_distrr /=; apply eq_bigr=> a _ /=.
@@ -477,42 +467,33 @@ rewrite -subR_opp; congr (_ - _).
   by rewrite -[in LHS]Pr_set1 -setX1 jproduct_rule Pr_set1 -/Q mulRC.
 Qed.
 
-Lemma miE2 : mi PQ = `H Q - CondEntropy.h QP. (* 2.40 *)
-Proof. by rewrite miE entropyB. Qed.
+Lemma mutual_infoE2 : mutual_info PQ = `H Q - cond_entropy QP. (* 2.40 *)
+Proof. by rewrite mutual_infoE entropyB. Qed.
 
-Lemma miE3 : mi PQ = `H P + `H Q - `H PQ. (* 2.41 *)
+Lemma mutual_infoE3 : mutual_info PQ = `H P + `H Q - `H PQ. (* 2.41 *)
 Proof.
-rewrite miE; move: (chain_rule QP).
+rewrite mutual_infoE; have := chain_rule QP.
 rewrite addRC -subR_eq -(fdistXI PQ) -/QP => <-.
-by rewrite -addR_opp oppRB fdistX1 -/Q addRA JointEntropy.hC.
+by rewrite -addR_opp oppRB fdistX1 -/Q addRA joint_entropyC.
 Qed.
 
 (* nonnegativity of mutual information 2.90 *)
-Lemma mi_ge0 : 0 <= mi PQ.
+Lemma mutual_info_ge0 : 0 <= mutual_info PQ.
 Proof. exact/div_ge0/Prod_dominates_Joint. Qed.
 
-Lemma mi0P : mi PQ = 0 <-> PQ = P `x Q.
+Lemma mutual_info0P : mutual_info PQ = 0 <-> PQ = P `x Q.
 Proof.
-split; last by rewrite /mi => <-; rewrite div0P //; exact: dominatesxx.
-rewrite /mi div0P //; exact: Prod_dominates_Joint.
+split; last by rewrite /mutual_info => <-; rewrite div0P //; exact: dominatesxx.
+by rewrite /mutual_info div0P //; exact: Prod_dominates_Joint.
 Qed.
-End prop.
-End MutualInfo.
 
-(* wip *)
-Section notation_with_random_variables.
+End mutual_information_prop.
 
-Section mutualinfo_RV.
+Section mutualinfo_RV_def.
 Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
-
-Definition mi_RV := MutualInfo.mi (fdistmap [% X, Y] P).
-
-End mutualinfo_RV.
-
-Notation "'`I(' X ';' Y ')'" := (mi_RV X Y) (format "'`I(' X ';'  Y ')'").
-
-End notation_with_random_variables.
-(* /wip *)
+Definition mutual_info_RV := mutual_info `p_[% X, Y].
+End mutualinfo_RV_def.
+Notation "'`I(' X ';' Y ')'" := (mutual_info_RV X Y) : chap2_scope.
 
 (* TODO: example 2.3.1 *)
 
@@ -521,25 +502,18 @@ Section mutualinfo_prop.
 Local Open Scope divergence_scope.
 
 (* eqn 2.46 *)
-Lemma mi_sym (A B : finType) (PQ : {fdist A * B}) :
-  let P := PQ`1 in
-  let Q := PQ`2 in
-  MutualInfo.mi PQ = MutualInfo.mi (fdistX PQ).
-Proof.
-by move=> P Q; rewrite !MutualInfo.miE entropyB fdistX1.
-Qed.
+Lemma mutual_info_sym (A B : finType) (PQ : {fdist A * B}) :
+  mutual_info PQ = mutual_info (fdistX PQ).
+Proof. by rewrite !mutual_infoE entropyB fdistX1. Qed.
 
 (* eqn 2.47 *)
 Lemma mutual_info_self (A : finType) (P : fdist A) :
-  MutualInfo.mi (fdist_self P) = `H P.
-Proof.
-by rewrite MutualInfo.miE CondEntrop_self subR0 fdist_self1.
-Qed.
+  mutual_info (fdist_self P) = `H P.
+Proof. by rewrite mutual_infoE cond_entropy_self subR0 fdist_self1. Qed.
 
 End mutualinfo_prop.
 
 Section chain_rule_for_entropy.
-
 Local Open Scope vec_ext_scope.
 
 Lemma entropy_head_of1 (A : finType) (P : {fdist 'M[A]_1}) :
@@ -559,14 +533,14 @@ Lemma chain_rule_rV (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) :
           if i == O :> nat then
             `H (head_of_fdist_rV P)
           else
-            CondEntropy.h (fdistX (fdist_belast_last_of_rV (fdist_take P (lift ord0 i)))).
+            cond_entropy (fdistX (fdist_belast_last_of_rV (fdist_take P (lift ord0 i)))).
 Proof.
 elim: n P => [P|n IH P].
   by rewrite big_ord_recl /= big_ord0 addR0 -entropy_head_of1.
-rewrite JointEntropy.entropyE chain_rule {}IH [in RHS]big_ord_recr /=.
+rewrite entropy_rV chain_rule {}IH [in RHS]big_ord_recr /=.
 rewrite fdist_take_all; congr (_ + _); apply eq_bigr => i _.
 case: ifP => i0; first by rewrite head_of_fdist_rV_belast_last.
-congr (CondEntropy.h (fdistX (fdist_belast_last_of_rV _))).
+congr (cond_entropy (fdistX (fdist_belast_last_of_rV _))).
 rewrite /fdist_take /fdist_fst /fdist_belast_last_of_rV !fdistmap_comp.
 congr (fdistmap _ P); rewrite boolp.funeqE => /= v.
 apply/rowP => j; rewrite !mxE !castmxE /= !mxE /= cast_ord_id; congr (v _ _).
@@ -576,7 +550,6 @@ Qed.
 End chain_rule_for_entropy.
 
 Section divergence_conditional_distributions.
-
 Variables (A B C : finType) (PQR : {fdist A * B * C}).
 
 Definition cdiv1 z := \sum_(x in {: A * B})
@@ -631,15 +604,17 @@ Section def.
 Variables (A B C : finType) (PQR : {fdist A * B * C}).
 
 (* I(X;Y|Z) = H(X|Z) - H(X|Y,Z) 2.60 *)
-Definition cmi := CondEntropy.h (fdist_proj13 PQR) - CondEntropy.h (fdistA PQR).
+Definition cond_mutual_info := cond_entropy (fdist_proj13 PQR) - cond_entropy (fdistA PQR).
 End def.
+
 Section prop.
 Variables (A B C : finType) (PQR : {fdist A * B * C}).
-Lemma cmiE : cmi PQR = \sum_(x in {: A * B * C}) PQR x *
+
+Lemma cond_mutual_infoE : cond_mutual_info PQR = \sum_(x in {: A * B * C}) PQR x *
   log (\Pr_PQR[[set x.1] | [set x.2]] /
        (\Pr_(fdist_proj13 PQR)[[set x.1.1] | [set x.2]] * \Pr_(fdist_proj23 PQR)[[set x.1.2] | [set x.2]])).
 Proof.
-rewrite /cmi 2!CondEntropy.hE /= subR_opp big_morph_oppR.
+rewrite /cond_mutual_info 2!cond_entropyE /= subR_opp big_morph_oppR.
 rewrite (eq_bigr (fun a => \sum_(b in A) (fdistX (fdistA PQR)) (a.1, a.2, b) *
                                           log \Pr_(fdistA PQR)[[set b] | [set (a.1, a.2)]])); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => \sum_(b in A) (fdistX (fdistA PQR)) ((a1, a2), b) *
@@ -684,9 +659,9 @@ Qed.
 
 Let R := PQR`2.
 
-Lemma cmiE2 : cmi PQR = \sum_(z in C) R z * cdiv1 PQR z.
+Lemma cond_mutual_infoE2 : cond_mutual_info PQR = \sum_(z in C) R z * cdiv1 PQR z.
 Proof.
-rewrite cmiE.
+rewrite cond_mutual_infoE.
 rewrite (eq_bigr (fun x => PQR (x.1, x.2) * log
   (\Pr_PQR[[set x.1] | [set x.2]] /
     (\Pr_(fdist_proj13 PQR)[[set x.1.1] | [set x.2]] *
@@ -702,39 +677,40 @@ by rewrite setX1 Pr_set1.
 Qed.
 
 (* 2.92 *)
-Lemma cmi_ge0 : 0 <= cmi PQR.
+Lemma cond_mutual_info_ge0 : 0 <= cond_mutual_info PQR.
 Proof.
-by rewrite cmiE2; apply sumR_ge0 => c _; apply mulR_ge0 => //; exact: cdiv1_ge0.
+rewrite cond_mutual_infoE2; apply sumR_ge0 => c _; apply mulR_ge0 => //.
+exact: cdiv1_ge0.
 Qed.
 
 Let P : fdist A := (fdistA PQR)`1.
 Let Q : fdist B := (PQR`1)`2.
 
-Lemma chain_rule_mi : MutualInfo.mi PQR = MutualInfo.mi (fdist_proj13 PQR) + cmi (fdistX (fdistA PQR)).
+Lemma chain_rule_mutual_info : mutual_info PQR = mutual_info (fdist_proj13 PQR) +
+                                                 cond_mutual_info (fdistX (fdistA PQR)).
 Proof.
-rewrite MutualInfo.miE.
-move: (chain_rule (PQR`1)); rewrite /JointEntropy.h => ->.
-have -> : CondEntropy.h PQR = CondEntropy.h (fdist_proj13 PQR) +
-                              CondEntropy.h (fdistA (fdistC12 PQR)).
-  by rewrite chain_rule_corollary.
+rewrite mutual_infoE.
+have := chain_rule (PQR`1); rewrite /joint_entropy => ->.
+rewrite (chain_rule_corollary PQR).
 rewrite -addR_opp oppRD addRCA 2!addRA -(addRA (- _ + _)) addR_opp; congr (_ + _).
-  rewrite MutualInfo.miE addRC; congr (_ - _).
+  rewrite mutual_infoE addRC; congr (_ - _).
   by rewrite fdist_proj13_fst fdistA1.
-rewrite /cmi; congr (CondEntropy.h _ - _).
+rewrite /cond_mutual_info; congr (cond_entropy _ - _).
   by rewrite /fdist_proj13 -/(fdistC13 _) fdistA_C13_snd.
 (* TODO: lemma *)
-rewrite /CondEntropy.h.
+rewrite /cond_entropy.
 rewrite (eq_bigr (fun a => (fdistA (fdistC12 PQR))`2 (a.1, a.2) *
-                            CondEntropy.h1 (fdistA (fdistC12 PQR)) (a.1, a.2))); last by case.
+                            cond_entropy1 (fdistA (fdistC12 PQR)) (a.1, a.2))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => (fdistA (fdistC12 PQR))`2 (a1, a2) *
-                                     CondEntropy.h1 (fdistA (fdistC12 PQR)) (a1, a2))).
+                                     cond_entropy1 (fdistA (fdistC12 PQR)) (a1, a2))).
 rewrite exchange_big pair_big; apply eq_bigr => -[c a] _ /=; congr (_ * _).
   rewrite !fdist_sndE; apply eq_bigr => b _.
   by rewrite !(fdistXE,fdistAE,fdistC12E).
-rewrite /CondEntropy.h1; congr (- _).
+rewrite /cond_entropy1; congr (- _).
 by under eq_bigr do rewrite -setX1 jcPr_fdistA_C12 setX1.
 Qed.
 End prop.
+
 End conditional_mutual_information.
 
 Section conditional_relative_entropy.
@@ -745,8 +721,9 @@ Let Qj : {fdist B * A} := fdistX (jfdist_prod Q).
 Let P1 : {fdist A} := jfdist_prod_type1 P.
 
 (* eqn 2.65 *)
-Definition cre := \sum_(x in A) P1 x * \sum_(y in B)
+Definition cond_relative_entropy := \sum_(x in A) P1 x * \sum_(y in B)
   \Pr_Pj[[set y]|[set x]] * log (\Pr_Pj[[set y]|[set x]] / \Pr_Qj[[set y]|[set x]]).
+
 End def.
 
 Section prop.
@@ -759,10 +736,10 @@ Let P1 : {fdist A} := jfdist_prod_type1 P.
 Let Q1 : {fdist A} := jfdist_prod_type1 Q.
 
 Lemma chain_rule_relative_entropy :
-  Pj `<< Qj -> D(Pj || Qj) = D(P1 || Q1) + cre P Q.
+  Pj `<< Qj -> D(Pj || Qj) = D(P1 || Q1) + cond_relative_entropy P Q.
 Proof.
 move=> PQ.
-rewrite {2}/div /cre -big_split /= {1}/div /=.
+rewrite {2}/div /cond_relative_entropy -big_split /= {1}/div /=.
 rewrite (eq_bigr (fun a => Pj (a.1, a.2) * (log (Pj (a.1, a.2) / (Qj (a.1, a.2)))))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => Pj (a1, a2) * (log (Pj (a1, a2) / (Qj (a1, a2)))))) /=.
 rewrite exchange_big; apply eq_bigr => a _ /=.
@@ -798,6 +775,7 @@ by apply: contra Qba0; rewrite /Qj fdistXE fdist_prodE /= => /eqP ->; rewrite mu
 Qed.
 
 End prop.
+
 End conditional_relative_entropy.
 
 Section chain_rule_for_information.
@@ -815,21 +793,21 @@ Let fA (i : 'I_n.+1) : {fdist A * ('rV[A]_i * B)} := fdistA (f i).
 Local Open Scope vec_ext_scope.
 
 Lemma chain_rule_information :
-  (* 2.62 *) MutualInfo.mi PY = \sum_(i < n.+1)
+  (* 2.62 *) mutual_info PY = \sum_(i < n.+1)
     if i == O :> nat then
-      MutualInfo.mi (fdist_prod_nth PY ord0)
+      mutual_info (fdist_prod_nth PY ord0)
     else
-      cmi (fAC i).
+      cond_mutual_info (fAC i).
 Proof.
-rewrite MutualInfo.miE chain_rule_rV.
-have -> : CondEntropy.h PY = \sum_(j < n.+1)
+rewrite mutual_infoE chain_rule_rV.
+have -> : cond_entropy PY = \sum_(j < n.+1)
   if j == O :> nat then
-    CondEntropy.h (fdist_prod_nth PY ord0)
+    cond_entropy (fdist_prod_nth PY ord0)
   else
-    CondEntropy.h (fA j).
-  move: (chain_rule (fdistX PY)).
+    cond_entropy (fA j).
+  have := chain_rule (fdistX PY).
   rewrite fdistXI addRC -subR_eq fdistX1 -/Y => <-.
-  rewrite /JointEntropy.h.
+  rewrite /joint_entropy.
   (* do-not-delete-me *)
   set YP : {fdist 'rV[A]_n.+2} := fdist_rV_of_prod (fdistX PY).
   transitivity (`H YP - `H Y); first by rewrite /YP entropy_fdist_rV_of_prod.
@@ -842,7 +820,7 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
   case: ifPn => j0.
   - have {}j0 : j = ord0 by move: j0 => /eqP j0; exact/val_inj.
     subst j.
-    rewrite /CondEntropy.h /=.
+    rewrite /cond_entropy /=.
     apply big_rV_1 => // a1.
     have H1 a : (fdistX (fdist_belast_last_of_rV (fdist_take YP (lift ord0 (lift ord0 ord0))))) (a, a1) =
        (fdist_prod_nth PY ord0) (a, a1 ``_ ord0).
@@ -896,7 +874,7 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
       rewrite row_mxEl /=; congr (a1 ``_ _); exact/val_inj.
     congr (_ * _).
       rewrite 2!fdist_sndE; apply eq_bigr => a _; by rewrite H1.
-    rewrite /CondEntropy.h1; congr (- _).
+    rewrite /cond_entropy1; congr (- _).
     apply eq_bigr => a _; congr (_ * log _).
     + rewrite /jcPr /Pr !big_setX /= !big_set1.
       rewrite H1; congr (_ / _).
@@ -907,7 +885,7 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
       rewrite !fdist_sndE; apply eq_bigr => a0 _.
       by rewrite H1.
   - rewrite /fA /f.
-    rewrite /CondEntropy.h /=.
+    rewrite /cond_entropy /=.
     have H1 : bump 0 j = j.+1 by rewrite /bump leq0n.
     rewrite (big_cast_rV H1) /=.
     rewrite -(big_rV_cons_behead _ xpredT xpredT) /= exchange_big /= pair_bigA.
@@ -994,7 +972,7 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
       rewrite -H2.
       congr (fdistX _ (a, castmx (_, _) _)).
       exact: eq_irrelevance.
-    rewrite /CondEntropy.h1; congr (- _).
+    rewrite /cond_entropy1; congr (- _).
     apply eq_bigr => a _.
     rewrite /jcPr /Pr !big_setX /= !big_set1.
     rewrite !H2 //=.
@@ -1003,23 +981,23 @@ have -> : CondEntropy.h PY = \sum_(j < n.+1)
     + rewrite 2!fdist_sndE; apply eq_bigr => a' _; by rewrite H2.
 rewrite -addR_opp big_morph_oppR -big_split /=; apply eq_bigr => j _ /=.
 case: ifPn => j0.
-- rewrite MutualInfo.miE addR_opp; congr (`H _ - _).
+- rewrite mutual_infoE addR_opp; congr (`H _ - _).
   rewrite /head_of_fdist_rV /fdist_fst /fdist_rV_of_prod.
   by rewrite /fdist_prod_nth !fdistmap_comp.
-- rewrite /cmi /fA -/P; congr (_ - _).
-  + congr CondEntropy.h.
+- rewrite /cond_mutual_info /fA -/P; congr (_ - _).
+  + congr cond_entropy.
     by rewrite /fAC /f fdist_proj13_AC fdistC12_fst belast_last_take.
-  + rewrite /fAC /f /fdistAC fdistC12I /CondEntropy.h /=.
+  + rewrite /fAC /f /fdistAC fdistC12I /cond_entropy /=.
     rewrite (eq_bigr (fun a => (fdistA (fdistC12 (fdist_prod_take PY j)))`2 (a.1, a.2) *
-       CondEntropy.h1 (fdistA (fdistC12 (fdist_prod_take PY j))) (a.1, a.2))); last by case.
+       cond_entropy1 (fdistA (fdistC12 (fdist_prod_take PY j))) (a.1, a.2))); last by case.
     rewrite -(pair_bigA _ (fun a1 a2 => (fdistA (fdistC12 (fdist_prod_take PY j)))`2 (a1, a2) *
-       CondEntropy.h1 (fdistA (fdistC12 (fdist_prod_take PY j))) (a1, a2))) /=.
+       cond_entropy1 (fdistA (fdistC12 (fdist_prod_take PY j))) (a1, a2))) /=.
     rewrite exchange_big pair_bigA /=; apply eq_bigr => -[b v] _ /=.
     congr (_ * _).
     * rewrite !fdist_sndE; apply eq_bigr=> a _.
       by rewrite !fdistAE /= fdistXE fdistC12E /= fdistAE.
     * (* TODO: lemma? *)
-      rewrite /CondEntropy.h1; congr (- _); apply eq_bigr => a _.
+      rewrite /cond_entropy1; congr (- _); apply eq_bigr => a _.
       by rewrite -!setX1 -jcPr_fdistA_AC /fdistAC fdistC12I.
 Qed.
 
@@ -1033,22 +1011,23 @@ Let Q := PQ`2.
 Let QP := fdistX PQ.
 
 (* 2.95 *)
-Lemma information_cant_hurt : CondEntropy.h PQ <= `H P.
-Proof. rewrite -subR_ge0 -MutualInfo.miE; exact: MutualInfo.mi_ge0. Qed.
+Lemma information_cant_hurt : cond_entropy PQ <= `H P.
+Proof. by rewrite -subR_ge0 -mutual_infoE; exact: mutual_info_ge0. Qed.
 
-Lemma condentropy_indep : PQ = P `x Q -> CondEntropy.h PQ = `H P.
-Proof. move/MutualInfo.mi0P; by rewrite MutualInfo.miE subR_eq0 => <-. Qed.
+Lemma condentropy_indep : PQ = P `x Q -> cond_entropy PQ = `H P.
+Proof. by move/mutual_info0P; rewrite mutual_infoE subR_eq0 => <-. Qed.
 End prop.
+
 Section prop2.
 Variables (A B C : finType) (PQR : {fdist A * B * C}).
 Let P : fdist A := (fdistA PQR)`1.
 Let Q : fdist B := (PQR`1)`2.
 Let R := PQR`2.
 Lemma mi_bound : PQR`1 = P `x Q (* P and Q independent *) ->
-  MutualInfo.mi (fdist_proj13 PQR) +
-  MutualInfo.mi (fdist_proj23 PQR) <= MutualInfo.mi PQR.
+  mutual_info (fdist_proj13 PQR) +
+  mutual_info (fdist_proj23 PQR) <= mutual_info PQR.
 Proof.
-move=> PQ; rewrite chain_rule_mi leR_add2l /cmi.
+move=> PQ; rewrite chain_rule_mutual_info leR_add2l /cond_mutual_info.
 rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
   rewrite condentropy_indep; last first.
     rewrite fdist_proj13_fst fdistA1 fdistX1 fdistA21 -/Q.
@@ -1058,15 +1037,15 @@ rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
     rewrite fdist_proj13E fdistXE fdist_fstE; apply eq_bigr => c _.
     by rewrite fdistXE fdistAE.
   by rewrite /fdist_proj13 fdistA21 fdistC12_fst fdistX1 fdistX2 fdistA21 -/Q.
-rewrite MutualInfo.miE.
+rewrite mutual_infoE.
 rewrite fdist_proj23_fst -/Q.
 rewrite -oppRB leR_oppl oppRB -!addR_opp leR_add2r.
 (* conditioning cannot increase entropy *)
 (* Q|R,P <= Q|R, lemma *)
 rewrite -subR_ge0.
-move: (cmi_ge0 (fdistC12 PQR)); rewrite /cmi.
+move: (cond_mutual_info_ge0 (fdistC12 PQR)); rewrite /cond_mutual_info.
 rewrite /fdist_proj13 fdistC12I -/(fdist_proj23 _).
-by rewrite h_fdistA /fdistAC fdistC12I.
+by rewrite cond_entropy_fdistA /fdistAC fdistC12I.
 Qed.
 End prop2.
 End conditioning_reduces_entropy.
@@ -1074,7 +1053,6 @@ End conditioning_reduces_entropy.
 (* TODO: example 2.6.1 *)
 
 Section independence_bound_on_entropy.
-
 Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
 
 (* thm 2.6.6 TODO: with equality in case of independence *)
@@ -1106,10 +1084,10 @@ Definition markov_chain := forall (x : A) (y : B) (z : C),
 Let PRQ := fdistAC PQR.
 
 (* X and Z are conditionally independent given Y TODO: iff *)
-Lemma markov_cmi : markov_chain -> cmi (PRQ : {fdist A * C * B}) = 0.
+Lemma markov_cond_mutual_info : markov_chain -> cond_mutual_info (PRQ : {fdist A * C * B}) = 0.
 Proof.
 rewrite /markov_chain => mc.
-rewrite cmiE (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 //= => x _.
+rewrite cond_mutual_infoE (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 //= => x _.
 case/boolP : (PRQ x == 0) => [/eqP ->|H0]; first by rewrite mul0R.
 rewrite (_ : _ / _ = 1); first by rewrite /log Log_1 mulR0.
 rewrite eqR_divr_mulr ?mul1R; last first.
@@ -1141,7 +1119,7 @@ transitivity (Pr PQ [set (x.1.1,x.2)] * \Pr_RQ[[set x.1.2]|[set x.2]] / Pr Q [se
     apply dom_by_fdist_fstN with b.
     apply dom_by_fdist_fstN with c.
     by rewrite fdistACE in H0.
-  by rewrite /QP -Pr_fdistX setX1.
+  by rewrite /QP Pr_fdistX setX1.
 rewrite {1}/Rdiv -mulRA mulRCA mulRC; congr (_ * _).
   rewrite /jcPr fdist_proj13_snd -/Q {2}/PRQ fdistAC2 -/Q -/(Rdiv _ _); congr (_ / _).
   by rewrite /PRQ /PQ setX1 fdist_proj13_AC.
@@ -1153,19 +1131,19 @@ Qed.
 Let PR := fdist_proj13 PQR.
 
 Lemma data_processing_inequality : markov_chain ->
-  MutualInfo.mi PR <= MutualInfo.mi PQ.
+  mutual_info PR <= mutual_info PQ.
 Proof.
 move=> H.
-have H1 : MutualInfo.mi (fdistA PQR) = MutualInfo.mi PR + cmi PQR.
-  rewrite /cmi !MutualInfo.miE addRA; congr (_ - _).
+have H1 : mutual_info (fdistA PQR) = mutual_info PR + cond_mutual_info PQR.
+  rewrite /cond_mutual_info !mutual_infoE addRA; congr (_ - _).
   by rewrite -/PR subRK /PR fdist_proj13_fst.
-have H2 : MutualInfo.mi (fdistA PQR) = MutualInfo.mi PQ + cmi PRQ.
-  transitivity (MutualInfo.mi (fdistA PRQ)).
-    by rewrite !MutualInfo.miE fdistA_AC_fst h_fdistA.
-  rewrite /cmi !MutualInfo.miE addRA; congr (_ - _).
+have H2 : mutual_info (fdistA PQR) = mutual_info PQ + cond_mutual_info PRQ.
+  transitivity (mutual_info (fdistA PRQ)).
+    by rewrite !mutual_infoE fdistA_AC_fst cond_entropy_fdistA.
+  rewrite /cond_mutual_info !mutual_infoE addRA; congr (_ - _).
   by rewrite fdistA1 {1}/PRQ fdist_proj13_AC -/PQ subRK /PQ fdistAC_fst_fst.
-have H3 : cmi PRQ = 0 by rewrite markov_cmi.
-have H4 : 0 <= cmi PQR by exact: cmi_ge0.
+have H3 : cond_mutual_info PRQ = 0 by rewrite markov_cond_mutual_info.
+have H4 : 0 <= cond_mutual_info PQR by exact: cond_mutual_info_ge0.
 move: H2; rewrite {}H3 addR0 => <-.
 by rewrite {}H1 addRC -leR_subl_addr subRR.
 Qed.
@@ -1215,8 +1193,8 @@ Local Open Scope ring_scope.
 
 Lemma information_cant_hurt_cond (A : finType) (n' : nat) (n := n'.+1 : nat)
   (P : {fdist 'rV[A]_n}) (i : 'I_n) (i0 : i != O :> nat) :
-  CondEntropy.h (fdist_prod_of_rV P) <=
-  CondEntropy.h (fdist_prod_of_rV (fdist_take P (lift ord0 i))).
+  cond_entropy (fdist_prod_of_rV P) <=
+  cond_entropy (fdist_prod_of_rV (fdist_take P (lift ord0 i))).
 Proof.
 rewrite -subR_ge0.
 set Q : {fdist A * 'rV[A]_i * 'rV[A]_(n' - i)} := fdist_take_drop P i.
@@ -1229,13 +1207,13 @@ have H1 : fdist_proj13 (fdistAC Q) = fdist_prod_of_rV (fdist_take P (lift ord0 i
   - apply/rowP => j.
     rewrite !mxE !castmxE /= !cast_ord_id !esymK mxE; congr (v ord0 _).
     exact: val_inj.
-have H2 : CondEntropy.h (fdistA (fdistAC Q)) = CondEntropy.h (fdist_prod_of_rV P).
-  rewrite -h_fdistA /CondEntropy.h /=.
+have H2 : cond_entropy (fdistA (fdistAC Q)) = cond_entropy (fdist_prod_of_rV P).
+  rewrite -cond_entropy_fdistA /cond_entropy /=.
   rewrite (partition_big (@row_take A _ i) xpredT) //=.
   rewrite (eq_bigr (fun a => (fdistA Q)`2 (a.1, a.2) *
-           CondEntropy.h1 (fdistA Q) (a.1, a.2))%R); last by case.
+           cond_entropy1 (fdistA Q) (a.1, a.2))%R); last by case.
   rewrite -(pair_bigA _ (fun a1 a2 => (fdistA Q)`2 (a1, a2) *
-           CondEntropy.h1 (fdistA Q) (a1, a2))%R) /=.
+           cond_entropy1 (fdistA Q) (a1, a2))%R) /=.
   apply eq_bigr => v _.
 (* TODO: lemma yyy *)
   rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n'] [finType of 'rV[A]_(n' - i)]
@@ -1252,7 +1230,7 @@ have H2 : CondEntropy.h (fdistA (fdistAC Q)) = CondEntropy.h (fdist_prod_of_rV P
   move=> _; congr (_ * _)%R.
   - rewrite !fdist_sndE; apply eq_bigr => a _.
     by rewrite fdistAE /= fdist_prod_of_rVE /= /Q fdist_take_dropE.
-  - rewrite /CondEntropy.h1; congr (- _)%R; apply eq_bigr => a _.
+  - rewrite /cond_entropy1; congr (- _)%R; apply eq_bigr => a _.
     congr (_ * log _)%R.
     + rewrite /jcPr !(Pr_set1,setX1) fdistAE /= /Q fdist_take_dropE /= fdist_prod_of_rVE /=.
       congr (_ / _)%R.
@@ -1262,14 +1240,14 @@ have H2 : CondEntropy.h (fdistA (fdistAC Q)) = CondEntropy.h (fdist_prod_of_rV P
       congr (_ / _)%R.
       rewrite !fdist_sndE; apply eq_bigr => a0 _.
       by rewrite fdistAE fdist_take_dropE fdist_prod_of_rVE.
-rewrite (_ : _ - _ = cmi (fdistAC Q))%R; last by rewrite /cmi H1 H2.
-exact/cmi_ge0.
+rewrite (_ : _ - _ = cond_mutual_info (fdistAC Q))%R; last by rewrite /cond_mutual_info H1 H2.
+exact/cond_mutual_info_ge0.
 Qed.
 
 Lemma han_helper (A : finType) (n' : nat) (n := n'.+1 : nat)
   (P : {fdist 'rV[A]_n}) (i : 'I_n) (i0 : i != O :> nat) :
-  CondEntropy.h (fdist_prod_of_rV (fdist_perm P (put_front_perm i))) <=
-  CondEntropy.h (fdistX (fdist_belast_last_of_rV (fdist_take P (lift ord0 i)))).
+  cond_entropy (fdist_prod_of_rV (fdist_perm P (put_front_perm i))) <=
+  cond_entropy (fdistX (fdist_belast_last_of_rV (fdist_take P (lift ord0 i)))).
 Proof.
 rewrite (_ : fdistX _ = fdist_prod_of_rV (fdist_perm
     (fdist_take P (lift ord0 i)) (put_front_perm (inord i)))); last first.
@@ -1374,7 +1352,7 @@ case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
   rewrite -tail_of_fdist_rV_fdist_col' /tail_of_fdist_rV /head_of_fdist_rV.
   rewrite -{1}(fdist_rV_of_prodK P) entropy_fdist_rV_of_prod.
-  move: (chain_rule (fdist_prod_of_rV P)); rewrite /JointEntropy.h => ->.
+  move: (chain_rule (fdist_prod_of_rV P)); rewrite /joint_entropy => ->.
   by rewrite [in X in _ <= X]addRC leR_add2l -fdistX1; exact: information_cant_hurt.
 by rewrite (chain_rule_multivar _ i0) leR_add2l; exact/han_helper.
 Qed.

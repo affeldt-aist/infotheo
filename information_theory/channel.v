@@ -79,6 +79,7 @@ End Channel1.
 Definition chan_star_coercion := Channel1.c.
 Coercion chan_star_coercion : Channel1.chan_star >-> Funclass.
 
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Notation "'`Ch(' A ',' B ')'" := (A -> {fdist B}) (only parsing) : channel_scope.
@@ -326,16 +327,17 @@ Notation "`H( W | P )" := (CondEntropyChan.h W P) : channel_scope.
 Section condentropychan_prop.
 Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 
-Lemma CondEntropyChanE : `H(W | P) = CondEntropy.h (fdistX (`J(P, W))).
+(* TODO: rename *)
+Lemma CondEntropyChanE : `H(W | P) = cond_entropy (fdistX (`J(P, W))).
 Proof.
 rewrite /CondEntropyChan.h.
-move: (chain_rule (`J(P, W))); rewrite /JointEntropy.h => ->.
+move: (chain_rule (`J(P, W))); rewrite /joint_entropy => ->.
 by rewrite /JointFDistChan.d; unlock; rewrite fdist_prod1 addRC addRK.
 Qed.
 
 Lemma CondEntropyChanE2 : `H(W | P) = \sum_(a in A) P a * `H (W a).
 Proof.
-rewrite CondEntropyChanE CondEntropy.hE big_morph_oppR; apply eq_bigr => a _.
+rewrite CondEntropyChanE cond_entropyE big_morph_oppR; apply eq_bigr => a _.
 rewrite big_morph_oppR /entropy mulRN -mulNR big_distrr; apply eq_bigr => b _.
 rewrite /= fdistXI JointFDistChan.dE /= mulNR mulRA.
 have [->|Pa0] := eqVneq (P a) 0; first by rewrite !(mulR0,mul0R).
@@ -362,9 +364,9 @@ Notation "`I( P , W )" := (MutualInfoChan.mut_info P W) : channel_scope.
 Section mutualinfo_prop.
 Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 
-Lemma mut_info_chanE : `I(P, W) = MutualInfo.mi (fdistX (`J(P, W))).
+Lemma mut_info_chanE : `I(P, W) = mutual_info (fdistX (`J(P, W))).
 Proof.
-rewrite /MutualInfoChan.mut_info MutualInfo.miE -CondEntropyChanE.
+rewrite /MutualInfoChan.mut_info mutual_infoE -CondEntropyChanE.
 rewrite /CondEntropyChan.h -[in RHS]addR_opp oppRB addRCA addRA; congr (_ + _ + _).
 congr `H.
 rewrite fdistX1.

@@ -162,7 +162,7 @@ case: (Rlt_le_dec (r - `H P) epsilon) => ?.
 - rewrite Rmin_right //; lra.
 Qed.
 
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope typ_seq_scope.
 
 Theorem source_coding' : exists sc : scode_fl A k n,

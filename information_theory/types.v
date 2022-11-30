@@ -390,7 +390,7 @@ Variable P : P_ n ( A ).
 Lemma typed_tuples_not_empty_alt : {t : n.-tuple A | t \in T_{P}}.
 Proof. destruct n => //. apply typed_tuples_not_empty. Qed.
 
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope tuple_ext_scope.
 Local Open Scope vec_ext_scope.
 

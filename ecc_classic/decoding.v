@@ -101,6 +101,7 @@ End bounded_distance_decoding.
 
 Notation "t .-BDD f" := (BD_decoding (fst f) (snd f) t) : ecc_scope.
 
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope channel_scope.
 

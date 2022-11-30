@@ -38,8 +38,9 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope channel_scope.
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
+Local Open Scope channel_scope.
 Local Open Scope R_scope.
 
 Module Receivable.

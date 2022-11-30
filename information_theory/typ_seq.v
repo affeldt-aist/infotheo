@@ -36,8 +36,9 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
-Local Open Scope entropy_scope.
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
+Local Open Scope entropy_scope.
 
 Section typical_sequence_definition.
 

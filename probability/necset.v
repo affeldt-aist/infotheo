@@ -88,7 +88,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope reals_ext_scope.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
 
 Module NESet.
@@ -1088,6 +1088,7 @@ Notation "{ 'necset' T }" :=
 Module necset_join.
 Section def.
 Local Open Scope classical_set_scope.
+Local Open Scope proba_scope.
 Definition F (T : Type) := {necset {dist (choice_of_Type T)}}.
 Variable T : Type.
 

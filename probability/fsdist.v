@@ -646,7 +646,7 @@ End fdist_of_finFSDist.
 Export fdist_of_finFSDist.Exports.
 
 Section fsdist_convn.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Variables (A : choiceType) (n : nat) (e : {fdist 'I_n}) (g : 'I_n -> {dist A}).
 
 Definition fsdist_convn_supp : {fset A} :=
@@ -942,6 +942,7 @@ HB.instance Definition _ a := isAffine.Build _ _ _ (af a).
 
 (* Reuse the morphisms from R_convex_space. *)
 Import finmap.
+Local Open Scope fdist_scope.
 
 Lemma convn_convnfsdist (n : nat) (g : 'I_n -> {dist A}) (d : {fdist 'I_n}) :
   <|>_d g = fsdist_convn d g.

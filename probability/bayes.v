@@ -25,6 +25,7 @@ Require Import fdist proba.
 (******************************************************************************)
 
 Local Open Scope tuple_ext_scope.
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Set Implicit Arguments.

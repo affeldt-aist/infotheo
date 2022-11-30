@@ -36,6 +36,7 @@ rewrite /p !ffunE !(tnth_nth 0) /=.
 by field.
 Qed.
 
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Definition P : {fdist 'I_3} := FDist.mk p_sum1.

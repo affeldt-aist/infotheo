@@ -112,7 +112,7 @@ rewrite -mulRA div1R mulRV ?mulR1; last first.
 by case/leR_max : Hk.
 Qed.
 
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 
 Lemma step1 : (1 - esrc(P , sc)) = \sum_(x in no_failure) P `^ k.+1 x.
 Proof.
