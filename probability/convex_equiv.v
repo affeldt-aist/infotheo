@@ -295,7 +295,7 @@ Qed.
 Lemma binconvmm p a : binconv p a a = a.
 Proof. by apply axidem => i; case: ifP. Qed.
 
-#[export,non_forgetful_inheritance]
+#[export]
 HB.instance Definition _ := @isConvexSpace.Build A.T (Choice.class _) binconv
   binconv1 binconvmm binconvC binconvA.
 
@@ -310,7 +310,11 @@ Module B := NaryToBin(A).
 Import A B.
 
 Lemma equiv_conv p (a b : T) : a <| p |> b = a <& p &> b.
-Proof. by apply: S1_inj; rewrite affine_S1. Qed.
+Proof.
+apply: S1_inj.
+rewrite [LHS](@affine_conv NaryConv_sort__canonical__isConvexSpace__ConvexSpace)/=.
+by rewrite [RHS](@affine_conv NaryConv_sort__canonical__isConvexSpace__ConvexSpace).
+Qed.
 
 End Equiv1.
 
