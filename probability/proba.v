@@ -426,7 +426,7 @@ Proof.
 move=> bf; rewrite /Pr.
 under [in RHS]eq_bigr do rewrite fdistmapE.
 rewrite (exchange_big_dep (mem E)) /=; last first.
-   by move=> b a /imsetP[a' a'E ->{b} /eqP] /bf ->.
+  by move=> _ a /imsetP[a' a'E ->]; rewrite 2!inE => /eqP /bf ->.
 apply eq_bigr => a aE; rewrite (big_pred1 (f a)) // => b /=.
 by rewrite !inE andb_idl //= => /eqP <-{b}; apply/imsetP; exists a.
 Qed.
@@ -856,7 +856,7 @@ rewrite /Ex.
 transitivity (\sum_(r <- fin_img X) \sum_(u in U | X u == r) (X u * P u)).
   apply eq_bigr => /= r _; rewrite pr_eqE big_distrr /=.
   by apply eq_big => //= a; rewrite !inE // => /eqP ->.
-by rewrite -sum_parti_finType.
+by rewrite -partition_big_fin_img.
 Qed.
 
 End Ex_alt.
@@ -1162,15 +1162,17 @@ End markov_inequality.
 
 Section thm61.
 Variables (U : finType) (P : fdist U) (X : {RV P -> R}) (phi : R -> R).
+
 Lemma Ex_comp_RV : `E (phi `o X) = \sum_(r <- fin_img X) phi r * `Pr[ X = r ].
 Proof.
 rewrite /Ex.
-rewrite (sum_parti_finType _ X (fun u => (phi `o X) u * P u)) /=.
-apply eq_bigr => a _.
+rewrite (partition_big_fin_img _ X (fun u => (phi `o X) u * P u)) /=.
+apply: eq_bigr => a _.
 rewrite pr_eqE /Pr big_distrr /=; apply eq_big.
-by move=> u; rewrite inE.
+  by move=> u; rewrite inE.
 by move=> u /eqP Xua; rewrite /comp_RV -Xua.
 Qed.
+
 End thm61.
 
 Section variance_def.
@@ -1931,10 +1933,10 @@ apply trans_eq with (\sum_(a in A) \sum_(j in 'rV[A]_n.+1)
   (X1 a * X2 j * P (row_mx (\row_(k < 1) a) j))).
   apply eq_bigr => a _; apply eq_bigr => ta _.
   by rewrite row_mx_row_ord0 rbehead_row_mx.
-rewrite (sum_parti _ X1); last by rewrite /index_enum -enumT; apply enum_uniq.
+rewrite (partition_big_undup_map _ X1); last by rewrite /index_enum -enumT; apply enum_uniq.
 rewrite /index_enum -enumT.
 apply eq_bigr => /= r _.
-rewrite {1}enumT exchange_big /= (sum_parti _ X2); last first.
+rewrite {1}enumT exchange_big /= (partition_big_undup_map _ X2); last first.
   by rewrite /index_enum -enumT; apply enum_uniq.
 rewrite /index_enum -enumT.
 apply eq_bigr => /= r' _.
@@ -2024,11 +2026,11 @@ transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
     x * y * `Pr[ XY = (x, y) ]).
   rewrite /Ex /= (eq_bigr (fun u => X u.1 * Y u.2 * P (u.1, u.2))); last by case.
   rewrite -(pair_bigA _ (fun u1 u2 => X u1 * Y u2 * P (u1, u2))) /=.
-  rewrite (sum_parti_finType _ X) /=; apply eq_bigr => x _.
-  rewrite exchange_big /= (sum_parti_finType _ Y) /=; apply eq_bigr => y _.
+  rewrite (partition_big_fin_img _ X) /=; apply eq_bigr => x _.
+  rewrite exchange_big /= (partition_big_fin_img _ Y) /=; apply eq_bigr => y _.
   rewrite pr_eqE /Pr big_distrr /= exchange_big pair_big /=.
   apply eq_big.
-  by move=> -[a b] /=; rewrite inE.
+    by move=> -[a b] /=; rewrite inE.
   by case=> a b /= /andP[/eqP -> /eqP ->].
 transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
     x * y * `Pr[ X = x ] * `Pr[ Y = y ]).

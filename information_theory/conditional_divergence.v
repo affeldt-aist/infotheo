@@ -111,16 +111,12 @@ Proof. rewrite cdiv_is_div_joint_dist; exact/div0P/joint_dominates. Qed.
 End conditional_divergence_prop.
 
 Section conditional_divergence_vs_conditional_relative_entropy.
-
-Variables (A B : finType) (P' Q' : A -> {fdist B}) (R : fdist A).
-Let P := mkjfdist_prod_type R P'.
-Let Q := mkjfdist_prod_type R Q'.
-
 Local Open Scope divergence_scope.
 Local Open Scope reals_ext_scope.
+Variables (A B : finType) (P Q : A -> {fdist B}) (R : fdist A).
 
-Lemma cond_relative_entropy_compat : jfdist_prod P `<< jfdist_prod Q ->
-  cond_relative_entropy P Q = D(P || Q | R).
+Lemma cond_relative_entropy_compat : fdist_prod R P `<< fdist_prod R Q ->
+  cond_relative_entropy (R, P) (R, Q) = D(P || Q | R).
 Proof.
 move=> PQ.
 rewrite /cond_relative_entropy cdiv_is_div_joint_dist; last first.
@@ -128,33 +124,29 @@ rewrite /cond_relative_entropy cdiv_is_div_joint_dist; last first.
 rewrite /div.
 under eq_bigr do rewrite big_distrr /=.
 rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
-rewrite (_ : JointFDistChan.d R P (a, b) = (jfdist_prod P) (a, b)); last first.
+rewrite (_ : JointFDistChan.d R P (a, b) = (fdist_prod R P) (a, b)); last first.
   by rewrite JointFDistChan.dE fdist_prodE.
-rewrite (_ : JointFDistChan.d R Q (a, b) = (jfdist_prod Q) (a, b)); last first.
+rewrite (_ : JointFDistChan.d R Q (a, b) = (fdist_prod R Q) (a, b)); last first.
   by rewrite JointFDistChan.dE fdist_prodE.
 rewrite mulRA.
 rewrite {1}/jcPr.
 rewrite fdistX2 fdist_prod1 Pr_set1.
 have [H|H] := eqVneq (R a) 0.
-  by rewrite H 2!mul0R /P /jfdist_prod /= fdist_prodE H !mul0R.
+  by rewrite H 2!mul0R /fdist_prod /= fdist_prodE H !mul0R.
 congr (_ * log _).
-  rewrite setX1 Pr_set1 fdistXE fdist_prodE /=.
-  field.
-  exact/eqP.
+  by rewrite setX1 Pr_set1 fdistXE fdist_prodE /=; field; exact/eqP.
 rewrite /jcPr !setX1 !Pr_set1 !fdistXE !fdistX2.
-have [H'|H'] := eqVneq (jfdist_prod Q (a, b)) 0.
-  have : (jfdist_prod P) (a, b) = 0 by move/dominatesP : PQ => ->.
-  rewrite /P fdist_prodE /= mulR_eq0 => -[| -> ].
+have [H'|H'] := eqVneq (fdist_prod R Q (a, b)) 0.
+  have : (fdist_prod R P) (a, b) = 0 by move/dominatesP : PQ => ->.
+  rewrite fdist_prodE /= mulR_eq0 => -[| -> ].
     by move/eqP : H; tauto.
   by rewrite !(mulR0,mul0R,div0R).
-rewrite 2!fdist_prod1 /=; field.
-by split; exact/eqP.
+by rewrite 2!fdist_prod1 /=; field; split; exact/eqP.
 Qed.
 
 End conditional_divergence_vs_conditional_relative_entropy.
 
 Section dmc_cdiv_cond_entropy.
-
 Variables (A B : finType) (W : `Ch(A, B)).
 Variable n : nat.
 Variable P : P_ n ( A ).

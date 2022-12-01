@@ -163,7 +163,6 @@ from 0.4.0 to 0.4.1
   + CondJFDist.dNE -> jfdist_cond_dflt
   + CJFDist.t -> jfdist_prod0
   + CJFDist.joint_of -> jfdist_prod
-  + CJFDist.make_joint -> make_joint
   + CJFDist.CondJFDistE -> jfdist_prod_cond
   + CJFDist.E -> jfdist_prodE
   + CJFDist.split -> jfdist_split
@@ -297,11 +296,20 @@ from 0.4.0 to 0.4.1
   + JointEntropy.entropyE -> entropy_rV
   + CondEntropy.h1 -> cond_entropy1
   + CondEntropy.h -> cond_entropy
+  + MutualInfo.mi -> mutual_info
+  + sum_parti_finType -> partition_big_fin_img
+  + big_singl_rV -> big_rV1_ord0
+  + R_convex_function_atN' -> RNconvex_function_at
+  + R_concave_function_atN' -> RNconcave_function_at
+  + R_convex_functionN' -> RNconvex_function
+ + R_concave_functionN' -> RNconcave_functionN
 - removed:
   + Module TripA'
   + imset_fst
   + big_scalept
   + `p_
+  + big_rV_0
+  + CJFDist.make_joint
 - changed:
   + scaledptR0 (now derived from the interface of quasi real cones)
     and renamed scalept0

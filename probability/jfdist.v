@@ -21,8 +21,6 @@ Require Import proba.
 (*                          given a; same as jfdist_cond0 when                *)
 (*                          fdist_fst PQ a != 0.                              *)
 (*           PQ `(| a |) == notation jfdist_cond PQ a                         *)
-(*      jfdist_prod_type == pair of a fdist and a stochastic matrix           *)
-(*           jfdist_prod == fdist_prop of jfdist_prod_type                    *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -369,14 +367,12 @@ by rewrite jcPrE -cpr_inE' cpr_eq_set1.
 Qed.
 
 Section condjfdist_prop.
-
 Variables (A B : finType) (P : {fdist A * B}).
 
 Lemma jcPr_1 a : P`1 a != 0 ->
   \sum_(b in B) \Pr_(fdistX P)[ [set b] | [set a] ] = 1.
 Proof.
-move=> Xa0; rewrite -(FDist.f1 (P `(| a ))).
-apply eq_bigr => b _.
+move=> Xa0; rewrite -(FDist.f1 (P `(| a ))); apply eq_bigr => b _.
 by rewrite jfdist_condE.
 Qed.
 
@@ -385,56 +381,36 @@ End condjfdist_prop.
 Section jfdist_prod.
 Variables (A B : finType).
 
-Record jfdist_prod_type := mkjfdist_prod_type {
-  jfdist_prod_type1 : fdist A ;
-  jfdist_prod_type2 :> A -> fdist B }.
-
-Let t := jfdist_prod_type.
-Let P := jfdist_prod_type1.
-Let W := jfdist_prod_type2.
-
-Definition jfdist_prod (x : t) : {fdist A * B} := fdist_prod (P x) (W x).
-
-Definition make_joint (P : fdist A) (W : A -> fdist B) : {fdist A * B} :=
-  jfdist_prod (mkjfdist_prod_type P W).
-
-Lemma jfdist_prod_cond (x : t) : forall a (a0 : (jfdist_prod x)`1 a != 0),
-  x a = (jfdist_prod x) `(| a ).
+Lemma jfdist_prod_cond (P : fdist A) (Q : A -> fdist B) :
+    forall a (a0 : (fdist_prod P Q)`1 a != 0),
+  Q a = (fdist_prod P Q) `(| a ).
 Proof.
 move=> a a0; apply/fdist_ext => b.
-rewrite jfdist_condE // /jcPr setX1 !Pr_set1 /P fdistXE fdistX2 fdist_prod1.
+rewrite jfdist_condE // /jcPr setX1 !Pr_set1 fdistXE fdistX2 fdist_prod1.
 rewrite fdist_prodE /= /Rdiv mulRAC mulRV ?mul1R //.
 by move: a0; rewrite fdist_prod1.
 Qed.
 
-Lemma jfdist_prodE (x : t) a b : (P x) a <> 0 ->
-  x a b = \Pr_(fdistX (jfdist_prod x))[[set b]|[set a]].
+Lemma jfdist_prodE (P : fdist A) (Q : A -> fdist B) a b : P a <> 0 ->
+  Q a b = \Pr_(fdistX (fdist_prod P Q))[[set b]|[set a]].
 Proof.
 move=> Pxa.
-rewrite /jcPr setX1 fdistX2 2!Pr_set1 /jfdist_prod fdistXE fdist_prod1.
+rewrite /jcPr setX1 fdistX2 2!Pr_set1 /fdist_prod fdistXE fdist_prod1.
 by rewrite fdist_prodE /= /Rdiv mulRAC mulRV ?mul1R //; exact/eqP.
 Qed.
 
-Definition jfdist_split (PQ : {fdist A * B}) :=
-  mkjfdist_prod_type (PQ`1) (fun x => PQ `(| x )).
+Definition jfdist_split (PQ : {fdist A * B}) := (PQ`1, fun x => PQ `(| x )).
 
-Lemma jfdist_prodK : cancel jfdist_split jfdist_prod.
+Lemma jfdist_prodK : cancel jfdist_split (uncurry (@fdist_prod A B)).
 Proof.
-move=> PQ.
-rewrite /jfdist_prod /split /=.
-apply/fdist_ext => ab.
+move=> PQ; rewrite /fdist_prod /=; apply/fdist_ext => ab.
 rewrite fdist_prodE.
-case /boolP: (PQ`1 ab.1 == 0) => Ha.
-  rewrite (eqP Ha) mul0R.
-  symmetry.
-  apply (dominatesE (Prod_dominates_Joint PQ)).
-  by rewrite fdist_prodE (eqP Ha) mul0R.
+have [Ha|Ha] := eqVneq (PQ`1 ab.1) 0.
+  rewrite Ha mul0R; apply/esym/(dominatesE (Prod_dominates_Joint PQ)).
+  by rewrite fdist_prodE Ha mul0R.
 rewrite jfdist_condE // -fdistX2 mulRC.
 rewrite -(Pr_set1 _ ab.1) -jproduct_rule setX1 Pr_set1 fdistXE.
-by destruct ab.
+by case ab.
 Qed.
 
 End jfdist_prod.
-
-Definition jfdist_prod_coercion (A B : finType) (x : jfdist_prod_type A B) := jfdist_prod_type2 x.
-Coercion jfdist_prod_coercion : jfdist_prod_type >-> Funclass.

@@ -106,7 +106,7 @@ rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
   transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a')%R.
     apply eq_bigr => i _.
     by rewrite DMCE big_ord_recl big_ord0 mulR1 /BSC.c mxE.
-  apply/(@big_singl_rV _ _ _ _ (fdist_binary card_A p_01 ^~ a')).
+  apply/(@big_rV1_ord0 _ _ _ _ (fdist_binary card_A p_01 ^~ a')).
   by rewrite -sum_fdist_binary_swap // FDist.f1.
 rewrite mxE mulR1 big_ord_recl big_ord0 /BSC.c fdist_binaryE /= eq_sym !mxE; field.
 by rewrite /P fdist_uniformE card_A (_ : 2%:R = 2)%R //; lra.
@@ -115,7 +115,6 @@ Qed.
 End post_proba_bsc_unif.
 
 Section DMC_sub_vec_Fnext_Vgraph.
-
 Variables (B : finType) (W : `Ch('F_2, B)).
 Variable n' : nat.
 Let n := n'.+1.

@@ -2104,7 +2104,7 @@ Arguments leconv_trans {s b a c}.
 Notation "x <= y" := (leconv x y) : ordered_convex_scope.
 Notation "x <= y <= z" := (leconv x y /\ leconv y z) : ordered_convex_scope.
 
-HB.instance Definition _ (* R_orderedConvType *) :=
+HB.instance Definition _ :=
   @isOrdered.Build R (Choice.class _) Rle leRR leR_trans eqR_le.
 
 Module FunLe.
@@ -2276,29 +2276,26 @@ Section convex_function_prop'.
 Local Open Scope ordered_convex_scope.
 Variable (T : convType) (U V : orderedConvType).
 
-Lemma convex_function_sym (f : T -> U) a b : (forall t, convex_function_at f a b t) ->
-  forall t, convex_function_at f b a t.
+Lemma convex_function_sym (f : T -> U) a b :
+  (forall t, convex_function_at f a b t) ->
+  (forall t, convex_function_at f b a t).
 Proof.
-move => H t; move: (H t.~%:pr).
+move=> H t; move: (H t.~%:pr).
 by rewrite /convex_function_at /= convC -probK (convC _ (f a)) -probK.
 Qed.
 
-Lemma convex_function_comp (f : {convex T -> U}) (g : {convex U -> V})
-  (g_monotone_on_hull_Im_f : forall a b t, f (a <|t|> b) <= f a <|t|> f b ->
-    g (f (a <|t|> b)) <= g (f a <|t|> f b)) :
-  convex_function (fun a => g (f a)).
+Lemma convex_function_comp (f : {convex T -> U}) (g : {convex U -> V}) :
+  (forall a b t, f (a <|t|> b) <= f a <|t|> f b ->
+                 g (f (a <|t|> b)) <= g (f a <|t|> f b)) ->
+  convex_function (g \o f).
 Proof.
-move=> a b t.
-move : (convex_functionP g (f a) (f b) t).
-rewrite /convex_function_at => Hg.
-eapply leconv_trans; [| exact Hg] => {Hg}.
-apply g_monotone_on_hull_Im_f.
-exact: (convex_functionP f).
+move=> fg a b t; have := convex_functionP g (f a) (f b) t.
+by move=> Hg; apply/(leconv_trans _ Hg)/fg/convex_functionP.
 Qed.
 
 Lemma convex_function_comp' (f : {convex T -> U}) (g : {convex U -> V})
-    (g_monotone : forall x y, (x <= y) -> (g x <= g y)) :
-  convex_function (fun a => g (f a)).
+    (g_monotone : forall x y, x <= y -> g x <= g y) :
+  convex_function (g \o f).
 Proof. by apply convex_function_comp => // *; exact: g_monotone. Qed.
 
 End convex_function_prop'.
@@ -2402,12 +2399,9 @@ Section concave_function_prop.
 Local Open Scope ordered_convex_scope.
 Variable (T : convType) (V : orderedConvType).
 
-Section prop.
-Variable (f : T -> V).
-
-Lemma concave_function_atxx a t : concave_function_at f a a t.
+Lemma concave_function_atxx (f : T -> V) a t :
+  concave_function_at f a a t.
 Proof. exact: convex_function_atxx. Qed.
-End prop.
 
 Section Rprop.
 Implicit Types f : T -> R.
@@ -2420,60 +2414,57 @@ Lemma R_concave_function_atN f a b t :
   convex_function_at f a b t -> concave_function_at (fun x => - f x)%R a b t.
 Proof.
 rewrite /concave_function_at /convex_function_at.
-rewrite /leconv/= /OppositeOrderedConvexSpace.leopp/=.
-rewrite avgR_oppD.
-rewrite /leconv/=.
-by rewrite leR_oppl oppRK.
+by rewrite /leconv/= /leopp/= avgR_oppD /leconv/= leR_oppl oppRK.
 Qed.
 
 Lemma R_convex_functionN f :
   concave_function f -> convex_function (fun x => - f x)%R.
-Proof. move=> H a b t; exact/R_convex_function_atN/H. Qed.
+Proof. by move=> H a b t; exact/R_convex_function_atN/H. Qed.
 
 Lemma R_concave_functionN f :
   convex_function f -> concave_function (fun x => - f x)%R.
-Proof. move=> H a b t; exact/R_concave_function_atN/H. Qed.
+Proof. by move=> H a b t; exact/R_concave_function_atN/H. Qed.
 
-Lemma R_convex_function_atN' f a b t :
+Lemma RNconvex_function_at f a b t :
   concave_function_at (fun x => - f x)%R a b t -> convex_function_at f a b t.
-Proof. by move/(R_convex_function_atN);rewrite/convex_function_at !oppRK. Qed.
+Proof. by move/(R_convex_function_atN); rewrite/convex_function_at !oppRK. Qed.
 
-Lemma R_concave_function_atN' f a b t :
+Lemma RNconcave_function_at f a b t :
   convex_function_at (fun x => - f x)%R a b t -> concave_function_at f a b t.
 Proof.
 move/(R_concave_function_atN).
 by rewrite/concave_function_at/convex_function_at !oppRK.
 Qed.
 
-Lemma R_convex_functionN' f :
+Lemma RNconvex_function f :
   concave_function (fun x => - f x)%R -> convex_function f.
-Proof. move=> H a b t; exact/R_convex_function_atN'/H. Qed.
+Proof. move=> H a b t; exact/RNconvex_function_at/H. Qed.
 
-Lemma R_concave_functionN' f :
+Lemma RNconcave_function f :
   convex_function (fun x => - f x)%R -> concave_function f.
-Proof. move=> H a b t; exact/R_concave_function_atN'/H. Qed.
+Proof. move=> H a b t; exact/RNconcave_function_at/H. Qed.
 
 End Rprop.
 
 Section Rprop2.
 
 Lemma R_convex_functionB f (g : T -> R) :
-  convex_function f -> concave_function g -> convex_function (fun x => f x - g x)%R.
+  convex_function f -> concave_function g ->
+  convex_function (fun x => f x - g x)%R.
 Proof.
-move=> H1 H2 p q t.
-rewrite /convex_function_at /=.
-rewrite avgRE 2!mulRBr addRAC addRA.
-move: (H1 p q t) => {}H1.
-rewrite -addR_opp -addRA; apply leR_add => //.
-rewrite -2!mulRN addRC; exact: (R_convex_functionN H2).
+move=> Hf Hg p q t.
+rewrite /convex_function_at /= avgRE 2!mulRBr addRAC addRA.
+rewrite -addR_opp -addRA; apply: (leR_add _ _ _ _ (Hf _ _ _)).
+by rewrite -2!mulRN addRC; exact: (R_convex_functionN Hg).
 Qed.
 
 Lemma R_concave_functionB f (g : T -> R) :
-  concave_function f -> convex_function g -> concave_function (fun x => f x - g x)%R.
+  concave_function f -> convex_function g ->
+  concave_function (fun x => f x - g x)%R.
 Proof.
-move=> H1 H2.
+move=> Hf Hg.
 rewrite (_ : (fun _ => _) = (fun x => - (g x - f x)))%R; last first.
-  apply FunctionalExtensionality.functional_extensionality => x; by rewrite oppRB.
+  by apply/funext => x; rewrite oppRB.
 exact/R_concave_functionN/R_convex_functionB.
 Qed.
 
@@ -2487,11 +2478,11 @@ Variables (T : convType) (U : orderedConvType).
 Lemma affine_functionP (f : T -> U) :
   affine f <-> convex_function f /\ concave_function f.
 Proof.
-split => [H | [H1 H2] p q t].
-  split.
-  - move=> p q t; rewrite /convex_function_at /= H //; exact/leconvR.
-  - move=> p q t; rewrite /concave_function_at/= /convex_function_at/= H //; exact/leconvR.
-by rewrite eqconv_le; split; [exact/H1|exact/H2].
+split => [H | [H1 H2] p q t]; last first.
+  by rewrite eqconv_le; split; [exact/H1|exact/H2].
+split => p q t.
+- by rewrite /convex_function_at H; exact/leconvR.
+- by rewrite /concave_function_at/convex_function_at H; exact/leconvR.
 Qed.
 
 End affine_function_prop.

@@ -82,6 +82,7 @@ Import Prenex Implicits.
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
+(* NB: f @^-1: [set y] would require to have finType's *)
 Notation "f @^-1 y" := (preim f (pred1 y)) : fdist_scope.
 Local Open Scope fdist_scope.
 

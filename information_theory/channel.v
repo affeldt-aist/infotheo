@@ -305,10 +305,10 @@ Let QP := fdistX (`J(P, W)).
 Lemma channel_cPr : forall a b, P a != 0 -> W a b = \Pr_QP[[set b]|[set a]].
 Proof.
 move=> a b Pa0.
-rewrite (@jfdist_prodE _ _ (mkjfdist_prod_type P W)) //=; last exact/eqP.
+rewrite (@jfdist_prodE _ _ P W) //=; last exact/eqP.
 congr (\Pr_ _ [_ | _ ]).
 apply/fdist_ext => -[b0 a0].
-by rewrite !fdistXE JointFDistChan.dE /= /jfdist_prod /= fdist_prodE.
+by rewrite !fdistXE JointFDistChan.dE /= /fdist_prod /= fdist_prodE.
 Qed.
 
 End relation_channel_cproba.

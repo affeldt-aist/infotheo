@@ -540,7 +540,7 @@ Qed.
 Lemma ln_concave_at_gt0 x y (t : prob) : x < y ->
   0 < x -> 0 < y -> concave_function_at ln x y t.
 Proof.
-move=> xy x0 y0; apply R_concave_function_atN'.
+move=> xy x0 y0; apply RNconcave_function_at.
 set Df := fun x => - / x.
 move: t.
 have HDf : pderivable (fun x => - ln x) (fun x0 => x <= x0 <= y).

@@ -21,7 +21,6 @@ by rewrite (leq_trans (ih xl))// leq_maxr.
 Qed.
 
 Section bigop_no_law.
-
 Variables (R : Type) (idx : R) (op : R -> R -> R).
 
 Lemma big_tcast n m (n_m : n = m) (A : finType) F (P : pred {: n.-tuple A}) :
@@ -39,7 +38,6 @@ Arguments big_tcast {R} {idx} {op} {n} {m} _ {A} _ _.
 Arguments big_cast_rV {R} {idx} {op} {n} {m} _ {A} _ _.
 
 Section bigop_add_law.
-
 Variables (R : Type) (idx : R) (op : R -> R -> R) (M : Monoid.add_law idx op).
 
 Lemma Set2sumE (A : finType) (f : A -> R) (card_A : #|A| = 2%nat) :
@@ -61,25 +59,9 @@ Qed.
 
 Variable (A : finType).
 Local Open Scope ring_scope.
-Lemma big_rV_0 f (P : pred 'rV[A]_0) (a : A) : \big[M/idx]_(v in 'rV[A]_0 | P v) f v =
-  if P (\row_(i < 0) a) then f (\row_(i < 0) a) else idx.
-Proof.
-rewrite -big_map /= /index_enum -enumT /=.
-set e := enum _.
-rewrite (_ : e = [:: \row_(i < 0) a]).
-  by rewrite /= big_cons big_nil Monoid.addm0.
-rewrite /e.
-apply (@eq_from_nth _ (\row_(i < 0) a)).
-  by rewrite -cardE card_mx muln0 expn0.
-move=> i.
-rewrite -cardE card_mx muln0 expn0 ltnS leqn0 => /eqP ->{i}.
-rewrite -/e.
-destruct e => //.
-apply val_inj => /=.
-by apply/ffunP => /= -[? []].
-Qed.
 
-Lemma big_tuple_0 f (P : pred _) : \big[M/idx]_(v in 'rV[A]_0 | P v) f v =
+Lemma big_rV0_row_of_tuple f (P : pred _) :
+  \big[M/idx]_(v in 'rV[A]_0 | P v) f v =
   if P (row_of_tuple [tuple]) then f (row_of_tuple [tuple]) else idx.
 Proof.
 rewrite -big_map /= /index_enum -enumT /=.
@@ -99,16 +81,13 @@ Qed.
 
 End bigop_add_law.
 
-Arguments big_rV_0 {R} {idx} {op} {M} {A} _ _ _.
-
 (** Switching from a sum on the domain to a sum on the image of function *)
-Section bigop_add_law_eqtype.
-
+Section partition_big_finType_eqType.
 Variables (A : finType) (B : eqType).
 Variables (R : Type) (idx : R) (op : R -> R -> R) (M : Monoid.add_law idx op).
 
-Lemma sum_parti (p : seq A) (f : A -> B) : forall g, uniq p ->
-  \big[M/idx]_(i <- p) (g i) =
+Lemma partition_big_undup_map (p : seq A) (f : A -> B) : forall g, uniq p ->
+  \big[M/idx]_(i <- p) g i =
   \big[M/idx]_(r <- undup (map f p)) \big[M/idx]_(i <- p | f i == r) (g i).
 Proof.
 move Hn : (undup (map f (p))) => n.
@@ -119,21 +98,21 @@ elim: n p f Hn => [p f H F ? | b bs IH p f H F ?].
   by move/eqP; rewrite size_eq0 => /eqP.
 rewrite big_cons.
 have [h [t [H1 [H2 H3]]]] : exists h t,
-  perm_eq p (h ++ t) /\ undup (map f h) = [:: b] /\ undup (map f t) = bs.
+    perm_eq p (h ++ t) /\ undup (map f h) = [:: b] /\ undup (map f t) = bs.
   exact: undup_perm.
 transitivity (\big[M/idx]_(i <- h ++ t) F i); first exact: perm_big.
 transitivity (M
     (\big[M/idx]_(i <- h ++ t | f i == b) F i)
     (\big[M/idx]_(j <- bs) \big[M/idx]_(i <- h ++ t | f i == j) F i)); last first.
   congr (M _ _).
-  by apply: perm_big; rewrite perm_sym.
+    by apply: perm_big; rewrite perm_sym.
   by apply eq_bigr => b0 _ /=; apply: perm_big; rewrite perm_sym.
 have -> : \big[M/idx]_(j <- bs) \big[M/idx]_(i <- h ++ t | f i == j) F i =
-  \big[M/idx]_(j <- bs) \big[M/idx]_(i <- t | f i == j) F i.
+    \big[M/idx]_(j <- bs) \big[M/idx]_(i <- t | f i == j) F i.
   rewrite [in LHS]big_seq [in RHS]big_seq /=.
   apply/esym/eq_bigr => b0 b0bs.
   rewrite big_cat /=.
-  rewrite (_ : \big[M/idx]_(i0 <- h | f i0 == b0) F i0 = idx); first by rewrite Monoid.add0m.
+  rewrite (_ : \big[M/idx]_(i0 <- h | f i0 == b0) F i0 = idx) ?Monoid.add0m//.
   transitivity (\big[M/idx]_(i0 <- h | false) F i0); last by rewrite big_pred0.
   rewrite big_seq_cond; apply eq_bigl => /= a.
   apply/negP => /andP[ah /eqP fai]; subst b0.
@@ -167,21 +146,18 @@ have : f a \in [:: b] by rewrite -H2 mem_undup; apply/mapP; exists a.
 by rewrite in_cons /= in_nil orbC.
 Qed.
 
-(* NB: use finset.partition_big_imset? *)
-Lemma sum_parti_finType (f : A -> B) g :
-   \big[M/idx]_(i in A) (g i) =
-   \big[M/idx]_(r <- fin_img f) \big[M/idx]_(i in A | f i == r) (g i).
+(* NB: compare with finset.partition_big_imset *)
+Lemma partition_big_fin_img (f : A -> B) g :
+  \big[M/idx]_(i in A) (g i) =
+  \big[M/idx]_(r <- fin_img f) \big[M/idx]_(i in A | f i == r) (g i).
 Proof.
-move: (@sum_parti (enum A) f g) => /=.
-rewrite enum_uniq.
-move/(_ isT) => IH.
+have /= := @partition_big_undup_map (enum A) f g.
+rewrite enum_uniq => /(_ isT) H.
 transitivity (\big[M/idx]_(i <- enum A) g i); first by rewrite enumT.
-rewrite IH.
-apply eq_bigr => i _.
-by apply congr_big => //; rewrite enumT.
+by rewrite H; apply eq_bigr => i _; apply congr_big => //; rewrite enumT.
 Qed.
 
-End bigop_add_law_eqtype.
+End partition_big_finType_eqType.
 
 Section BigOps.
 Variables (R : Type) (idx : R).
@@ -191,6 +167,7 @@ Implicit Type A B : {set I}.
 Implicit Type h : I -> J.
 Implicit Type P : pred I.
 Implicit Type F : I -> R.
+
 Lemma partition_big_preimset h (B : {set J}) F :
   \big[aop/idx]_(i in h @^-1: B) F i =
      \big[aop/idx]_(j in B) \big[aop/idx]_(i in I | h i == j) F i.
@@ -200,8 +177,9 @@ have HA : [disjoint B :&: [set h x | x in I] & B :\: [set h x | x in I]]
 have Hha : [disjoint h @^-1: (B :&: [set h x | x in I])
                              & h @^-1: (B :\: [set h x | x in I])].
   rewrite -setI_eq0 -preimsetI.
-  suff // : [disjoint B :&: [set h x | x in I] & B :\: [set h x | x in I]]
+  suff : [disjoint B :&: [set h x | x in I] & B :\: [set h x | x in I]].
     by rewrite -setI_eq0; move/eqP => ->; rewrite preimset0.
+  by [].
 rewrite -(setID B (h @: I)) /= preimsetU.
 under eq_bigl do rewrite in_setU.
 rewrite bigU //.
@@ -213,10 +191,8 @@ have -> : h @^-1: (B :\: [set h x | x in I]) = set0.
   move/imsetP=> H _; elimtype False; apply H.
   by exists i; rewrite ?inE.
 rewrite big_set0 Monoid.mulm1.
-have -> : \big[aop/idx]_(x in B :\: [set h x | x in I])
-           \big[aop/idx]_(i | h i == x) F i
-          = \big[aop/idx]_(x in B :\: [set h x | x in I])
-             idx.
+have -> : \big[aop/idx]_(x in B :\: [set h x | x in I]) \big[aop/idx]_(i | h i == x) F i =
+          \big[aop/idx]_(x in B :\: [set h x | x in I]) idx.
   apply eq_bigr => j.
   rewrite inE; case/andP => Hj Hj'.
   apply big_pred0 => i.
@@ -237,18 +213,20 @@ have Hright j : j \in h @: A -> \big[aop/idx]_(i in I | h i == j) F i =
 rewrite [in RHS](eq_bigr _ Hright).
 exact: partition_big_imset.
 Qed.
+
 End BigOps.
 
 Section big_pred1_inj.
 Variables (R : Type) (idx : R) (op : Monoid.law idx).
+
 Lemma big_pred1_inj (A C : finType) h i (k : A -> C) : injective k ->
   \big[op/idx]_(a | k a == k i) h a = h i.
 Proof. by move=> ?; rewrite (big_pred1 i) // => ?; rewrite eqtype.inj_eq. Qed.
+
 End big_pred1_inj.
 Arguments big_pred1_inj [R] [idx] [op] [A] [C] [h] [i] [k] _.
 
 Section bigop_com_law.
-
 Variables (R : Type) (idx : R) (M : Monoid.com_law idx).
 Variable A : finType.
 
@@ -320,7 +298,7 @@ apply eq_big => a.
 by rewrite FG !mxE.
 Qed.
 
-Lemma big_singl_rV (f : A -> R) k :
+Lemma big_rV1_ord0 (f : A -> R) k :
   \big[M/idx]_(i in A) f i = k -> \big[M/idx]_(i in 'rV[A]_1) f (i ``_ ord0) = k.
 Proof.
 move=> <-.
@@ -508,9 +486,7 @@ Qed.
 End bigcap_ext.
 
 Section big_tuple_ffun.
-
 Import Monoid.Theory.
-
 Variable R : Type.
 Variable times : Monoid.mul_law R0.
 Local Notation "*%M" := times (at level 0).
@@ -539,10 +515,9 @@ Qed.
 End big_tuple_ffun.
 
 (* This is from master branch of math-comp bigop. *)
-Lemma big_ord1_eq (R: Type) (idx: R) (op: Monoid.law idx) (F : nat -> R) i n :
+Lemma big_ord1_eq (R: Type) (idx: R) (op: Monoid.law idx) (F : nat -> R) (i : nat) n :
   \big[op/idx]_(j < n | j == i :> nat) F j = if i < n then F i else idx.
 Proof.
 case: ltnP => [i_lt|i_ge]; first by rewrite (big_pred1_eq _ (Ordinal _)).
 by rewrite big_pred0// => j; apply: contra_leqF i_ge => /eqP <-.
 Qed.
-
