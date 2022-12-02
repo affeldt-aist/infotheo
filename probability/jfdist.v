@@ -381,18 +381,17 @@ End condjfdist_prop.
 Section jfdist_prod.
 Variables (A B : finType).
 
-Lemma jfdist_prod_cond (P : fdist A) (Q : A -> fdist B) :
-    forall a (a0 : (fdist_prod P Q)`1 a != 0),
-  Q a = (fdist_prod P Q) `(| a ).
+Lemma jfdist_prod_cond (P : fdist A) (W : A -> fdist B) (a : A) :
+  (P `X W)`1 a != 0 -> W a = (P `X W) `(| a ).
 Proof.
-move=> a a0; apply/fdist_ext => b.
+move=> a0; apply/fdist_ext => b.
 rewrite jfdist_condE // /jcPr setX1 !Pr_set1 fdistXE fdistX2 fdist_prod1.
 rewrite fdist_prodE /= /Rdiv mulRAC mulRV ?mul1R //.
 by move: a0; rewrite fdist_prod1.
 Qed.
 
-Lemma jfdist_prodE (P : fdist A) (Q : A -> fdist B) a b : P a <> 0 ->
-  Q a b = \Pr_(fdistX (fdist_prod P Q))[[set b]|[set a]].
+Lemma jfdist_prodE (P : fdist A) (W : A -> fdist B) a b : P a <> 0 ->
+  W a b = \Pr_(fdistX (P `X W))[ [set b] | [set a] ].
 Proof.
 move=> Pxa.
 rewrite /jcPr setX1 fdistX2 2!Pr_set1 /fdist_prod fdistXE fdist_prod1.

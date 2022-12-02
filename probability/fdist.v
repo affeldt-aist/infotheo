@@ -42,11 +42,12 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 (*        fdist_del == restriction of the domain of a distribution            *)
 (*                     (convex analogue of the projection of a vector         *)
 (*                     to a subspace)                                         *)
-(*         P1 `x P2 == product distribution                                   *)
-(*                     (convex analogue of the simple tensor of two vectors)  *)
 (* About bivariate (joint) distributions:                                     *)
 (*              P`1 == marginal left                                          *)
 (*              P`2 == marginal right                                         *)
+(*           P `X W == pair of a distribution and a stochastic matrix         *)
+(*         P1 `x P2 == product distribution                                   *)
+(*                     (convex analogue of the simple tensor of two vectors)  *)
 (*         fdistX P == swap the two projections of P : {fdist A * B}          *)
 (*           P `^ n == product distribution over a row vector (fdist_rV)      *)
 (*        wolfowitz == Wolfowitz's counting principle                         *)
@@ -69,6 +70,7 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Reserved Notation "{ 'fdist' T }" (at level 0, format "{ 'fdist'  T }").
 Reserved Notation "'`U' C0 " (at level 10, C0 at next level).
 Reserved Notation "P `^ n" (at level 5).
+Reserved Notation "P `X W" (at level 6).
 Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
 Reserved Notation "f @^-1 y" (at level 10).
@@ -902,22 +904,22 @@ Notation "d `1" := (fdist_fst d) : fdist_scope.
 Notation "d `2" := (fdist_snd d) : fdist_scope.
 
 Section fdist_prod.
-Variables (A B : finType) (P : fdist A) (Q : A -> fdist B) (*TODO: sto mat?*).
+Variables (A B : finType) (P : fdist A) (W : A -> fdist B).
 
-Let f := [ffun ab => P ab.1 * Q ab.1 ab.2].
+Let f := [ffun ab => P ab.1 * W ab.1 ab.2].
 
 Let f0 ab : 0 <= f ab. Proof. by rewrite ffunE; apply/mulR_ge0. Qed.
 
 Let f1 : \sum_(ab in {: A * B}) f ab = 1.
 Proof.
 under eq_bigr do rewrite ffunE.
-rewrite -(pair_bigA _ (fun i j => P i * Q i j)) /= -(FDist.f1 P).
+rewrite -(pair_bigA _ (fun i j => P i * W i j)) /= -(FDist.f1 P).
 by apply eq_bigr => a _; rewrite -big_distrr FDist.f1 /= mulR1.
 Qed.
 
 Definition fdist_prod := locked (FDist.make f0 f1).
 
-Lemma fdist_prodE ab : fdist_prod ab = P ab.1 * Q ab.1 ab.2.
+Lemma fdist_prodE ab : fdist_prod ab = P ab.1 * W ab.1 ab.2.
 Proof. by rewrite /fdist_prod; unlock; rewrite ffunE. Qed.
 
 Lemma fdist_prod1 : fdist_prod`1 = P.
@@ -928,15 +930,17 @@ Qed.
 
 End fdist_prod.
 
+Notation "P `X W" := (fdist_prod P W) : fdist_scope.
+
 Section fdist_prod_prop.
-Variables (A B : finType) (Q : A -> fdist B).
+Variables (A B : finType) (W : A -> fdist B).
 
 Lemma fdist_prod1_conv p (a b : fdist A) :
-  (fdist_prod (a <| p |> b) Q)`1 = (fdist_prod a Q)`1 <| p |> (fdist_prod b Q)`1.
+  ((a <| p |> b) `X W)`1 = (a `X W)`1 <| p |> (b `X W)`1.
 Proof. by rewrite !fdist_prod1. Qed.
 
 Lemma fdist_prod2_conv p (a b : fdist A) :
-  (fdist_prod (a <| p |> b) Q)`2 = (fdist_prod a Q)`2 <| p |> (fdist_prod b Q)`2.
+  ((a <| p |> b) `X W)`2 = (a `X W)`2 <| p |> (b `X W)`2.
 Proof.
 apply/fdist_ext => b0.
 rewrite fdist_sndE fdist_convE !fdist_sndE 2!big_distrr /=.
@@ -944,7 +948,6 @@ by rewrite -big_split; apply eq_bigr => a0 _; rewrite !fdist_prodE fdist_convE /
 Qed.
 
 End fdist_prod_prop.
-
 Notation "P1 `x P2" := (fdist_prod P1 (fun _ => P2)) : fdist_scope.
 
 Section prod_dominates_joint.
@@ -995,6 +998,10 @@ by move/dominatesP => H; apply/dominatesP => -[b a]; rewrite !fdistXE => /H.
 Qed.
 
 End fdistX_prop.
+
+Lemma fdistX_prod2 (A B : finType) (P : fdist A) (W : A -> fdist B) :
+  (fdistX (P `X W))`2 = P.
+Proof. by rewrite fdistX2 fdist_prod1. Qed.
 
 Section fdist_rV.
 Local Open Scope vec_ext_scope.
@@ -1084,7 +1091,8 @@ Qed.
 
 Definition fdist_prod_of_rV : {fdist A * 'rV[A]_n} := fdistmap f P.
 
-Lemma fdist_prod_of_rVE a : fdist_prod_of_rV a = P (row_mx (\row_(i < 1) a.1) a.2).
+Lemma fdist_prod_of_rVE a :
+  fdist_prod_of_rV a = P (row_mx (\row_(i < 1) a.1) a.2).
 Proof.
 case: a => x y; rewrite /fdist_prod_of_rV fdistmapE /=.
 rewrite (_ : (x, y) = f (row_mx (\row_(i < 1) x) y)); last first.

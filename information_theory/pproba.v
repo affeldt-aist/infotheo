@@ -141,8 +141,8 @@ Local Open Scope channel_scope.
 Lemma ppE (x : 'rV[A]_n) (y : P.-receivable W) :
   P `^^ W (x | y) = \Pr_(`J(P, W ``^ n))[[set x] | [set Receivable.y y]].
 Proof.
-rewrite dE /jcPr setX1 2!Pr_set1 JointFDistChan.dE /=; congr (_ / _).
-rewrite fdist_sndE /=; apply eq_bigr => x' _; by rewrite JointFDistChan.dE /= mulRC.
+rewrite dE /jcPr setX1 2!Pr_set1 fdist_prodE /=; congr (_ / _).
+by rewrite fdist_sndE /=; apply eq_bigr => x' _; rewrite fdist_prodE /= mulRC.
 Qed.
 End chap2.
 

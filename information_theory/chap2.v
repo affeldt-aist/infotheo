@@ -19,7 +19,7 @@ Require Import proba jfdist divergence entropy.
 (*               joint_entropy == entropy of a joint distribution             *)
 (*                cond_entropy == conditional entropy of a joint distribution *)
 (*                  chain_rule == (thm 2.1.1)                                 *)
-(*                 mutual_info == mutual information                          *)
+(*                 mutual_info == mutual information (`I(X ; Y))              *)
 (*               chain_rule_rV == chain rule for entropy (thm 2.5.1)          *)
 (*      chain_rule_information == chain rule for information (thm 2.5.2)      *)
 (* chain_rule_relative_entropy == chain rule for relative entropy (thm 2.5.3) *)
@@ -39,7 +39,7 @@ Delimit Scope chap2_scope with chap2.
 Reserved Notation "`H( P , W )" (at level 10, P, W at next level,
   format "`H( P ,  W )").
 Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
-Reserved Notation "`I( P ; W )" (at level 50, format "`I( P ;  W )").
+Reserved Notation "`I( X ; Y )" (at level 50, format "`I( X ;  Y )").
 
 Local Open Scope R_scope.
 Local Open Scope fdist_scope.
@@ -413,7 +413,6 @@ Let P := PQ`1.
 Let Q := PQ`2.
 Let QP := fdistX PQ.
 
-(* I(X;Y) *)
 Definition mutual_info := D(PQ || P `x Q).
 
 End mutual_information.

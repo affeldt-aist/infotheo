@@ -266,7 +266,7 @@ Section random_coding_good_code_existence.
 Variables (B A : finType) (W : `Ch(A, B)) (P : fdist A).
 
 Definition epsilon0_condition r epsilon epsilon0 :=
-  0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.
+  0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P; W) - r) / 4.
 
 Definition n_condition r epsilon0 n :=
   (O < n)%nat /\ - log epsilon0 / epsilon0 < INR n /\
@@ -434,7 +434,7 @@ transitivity (\sum_(v in 'rV[A]_n)
   apply eq_bigr => // w _.
   rewrite DMCE 2!fdist_rVE -big_split /=.
   apply eq_bigr => /= i _.
-  by rewrite JointFDistChan.dE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
+  by rewrite fdist_prodE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
 rewrite /Pr big_rV_prod pair_big_dep /=.
 by apply eq_bigl; case=> /= ? ?; rewrite !inE.
 Qed.
@@ -620,10 +620,8 @@ transitivity (\sum_(ji : 'rV[A]_n) ((P `^ n) ji) *
 transitivity (\sum_(ji : 'rV[A]_n) ((P `^ n) ji) *
   \sum_( y | y \in [set y0 | prod_rV (ji , y0) \in `JTS P W n epsilon0])
   ((`O(P , W)) `^ n) y)%R.
-  apply eq_bigr => ta _; congr (_ * _)%R.
-  apply eq_bigr => /= tb _.
-  rewrite -tuple_pmf_out_fdist.
-  apply eq_bigr => i0 _; by rewrite DMCE.
+  apply eq_bigr => ta _; congr (_ * _)%R; apply eq_bigr => /= tb _.
+  by rewrite fdist_rV_out; apply eq_bigr => i0 _; by rewrite DMCE.
 transitivity (\sum_(v : 'rV[A]_n)
   (\sum_(y | y \in
     [set y0 | prod_rV (v , y0) \in `JTS P W n epsilon0])
@@ -773,22 +771,18 @@ apply (@leR_ltR_trans (epsilon0 + k%:R *
   by case: Hepsilon0.
   by case: Hn => _ [_ []].
 apply (@leR_ltR_trans (epsilon0 +
-    #| M |%:R * exp2 (- n%:R * (`I(P, W ) - 3 * epsilon0)))).
-  apply/leR_add2l/leR_pmul.
-    exact: leR0n.
-    exact: Pr_ge0.
-    apply/le_INR/leP; by rewrite card_ord.
-  exact: non_typical_sequences.
-apply (@ltR_trans (epsilon0 + epsilon0)); last first.
-  case: Hepsilon0 => ? [? ?]; lra.
+    #| M |%:R * exp2 (- n%:R * (`I(P; W ) - 3 * epsilon0)))).
+  apply/leR_add2l/leR_pmul; [exact: leR0n|exact: Pr_ge0| |exact: non_typical_sequences].
+  by apply/le_INR/leP; rewrite card_ord.
+apply (@ltR_trans (epsilon0 + epsilon0)); last by case: Hepsilon0 => ? [? ?]; lra.
 apply ltR_add2l.
 have -> : INR #| M | = exp2 (log (INR #| M |)).
   rewrite logK // (_ : 0 = INR 0)%R //.
-  apply lt_INR. rewrite card_ord. exact/ltP.
+  by apply lt_INR; rewrite card_ord; exact/ltP.
 rewrite -ExpD.
-rewrite (_ : _ + _ = - n%:R * (`I(P, W) - log #| M |%:R / n%:R - 3 * epsilon0))%R; last first.
+rewrite (_ : _ + _ = - n%:R * (`I(P; W) - log #| M |%:R / n%:R - 3 * epsilon0))%R; last first.
   field.
-  apply/eqP; rewrite INR_eq0' gtn_eqF //; by case: Hn.
+  by apply/eqP; rewrite INR_eq0' gtn_eqF //; case: Hn.
 rewrite (_ : _ / _ = r)%R; last by rewrite -Hk card_ord.
 apply (@ltR_trans (exp2 (- n%:R * epsilon0))).
   apply Exp_increasing => //.
@@ -810,9 +804,8 @@ Qed.
 End random_coding_good_code_existence.
 
 Section channel_coding_theorem.
-
 Variables (A B : finType) (W : `Ch(A, B)).
-Hypothesis set_of_I_nonempty : classical_sets.nonempty (fun y => exists P, `I(P, W) = y).
+Hypothesis set_of_I_nonempty : classical_sets.nonempty (fun y => exists P, `I(P; W) = y).
 
 Local Open Scope zarith_ext_scope.
 
@@ -821,24 +814,24 @@ Theorem channel_coding (r : CodeRateType) : r < capacity W ->
     exists n M (c : code A B M n), CodeRate c = r /\ echa(W, c) < epsilon.
 Proof.
 move=> r_I epsilon Hepsilon.
-have [P HP] : exists P : fdist A, r < `I(P, W).
+have [P HP] : exists P : fdist A, r < `I(P; W).
   apply NNPP => abs.
-  have {}abs : forall P : fdist A, `I(P, W) <= r.
+  have {}abs : forall P : fdist A, `I(P; W) <= r.
     move/not_ex_all_not in abs.
     move=> P; exact/Rnot_lt_le/abs.
   have ? : capacity W <= r.
     apply/RleP.
-    have : has_sup [set `I(P, W) | P in [set: fdist A]].
+    have : has_sup [set `I(P; W) | P in [set: fdist A]].
       case: set_of_I_nonempty => [x [P H1]]; split; first by exists x, P.
       by exists (rate r) => _ [Q _ <-]; exact/Rstruct.RleP/abs.
-    move=> /(@Rsup_isLub 0 [set `I(P, W) | P in [set: fdist A]])[_].
+    move=> /(@Rsup_isLub 0 [set `I(P; W) | P in [set: fdist A]])[_].
     apply.
     by move=> x [P _ <-{x}]; exact/RleP/abs.
   lra.
 have [epsilon0 Hepsilon0] : exists epsilon0,
-  0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.
-  exists ((Rmin (epsilon/2) ((`I(P, W) - r) / 4))/2).
-  have H0 : 0 < Rmin (epsilon / 2) ((`I(P, W) - r) / 4).
+  0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P; W) - r) / 4.
+  exists ((Rmin (epsilon/2) ((`I(P; W) - r) / 4))/2).
+  have H0 : 0 < Rmin (epsilon / 2) ((`I(P; W) - r) / 4).
     apply Rmin_pos; apply mulR_gt0 => //; lra.
   split; first by apply mulR_gt0 => //; lra.
   split; [exact/(ltR_leR_trans (Rlt_eps2_eps _ H0))/geR_minl |

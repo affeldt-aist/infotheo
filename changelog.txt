@@ -7,6 +7,8 @@ from 0.4.0 to 0.4.1
   + notation fsdist for FSDist.t
   + definition fsdist1
   + lemma leR01
+  + fdistX_prod1
+  + fdistX_prod_out
 - renamed:
   + incl_finsupp_conv2fsdist -> finsupp_conv_subr
   + tech1 -> FSDistBindE
@@ -118,7 +120,6 @@ from 0.4.0 to 0.4.1
   + ProdFDist.d -> fdist_prod
   + ProdFDist.dE -> fdist_prodE
   + ProdFDist.fst -> fdist_prod1
-  + ProdFDist.snd -> fdist_prod2
   + fst_convex -> fdist_prod1_conv
   + Pr_ProdFDist -> Pr_fdist_prod
   + TupleFDist.d -> fdist_rV
@@ -302,7 +303,12 @@ from 0.4.0 to 0.4.1
   + R_convex_function_atN' -> RNconvex_function_at
   + R_concave_function_atN' -> RNconcave_function_at
   + R_convex_functionN' -> RNconvex_function
- + R_concave_functionN' -> RNconcave_functionN
+  + R_concave_functionN' -> RNconcave_functionN
+  + OutFDist.d -> fdist_out
+  + OutFDist.dE -> fdist_outE
+  + tuple_pmf_out_fdist -> fdist_rV_out
+  + MutualInfoChan.mut_info ->  mutual_info_chan
+  + mut_info_chanE -> mutual_info_chanE
 - removed:
   + Module TripA'
   + imset_fst
@@ -310,6 +316,7 @@ from 0.4.0 to 0.4.1
   + `p_
   + big_rV_0
   + CJFDist.make_joint
+  + JointFDistChan.d
 - changed:
   + scaledptR0 (now derived from the interface of quasi real cones)
     and renamed scalept0

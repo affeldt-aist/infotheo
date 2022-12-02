@@ -101,17 +101,15 @@ Qed.
 End typed_success_decomp_sect.
 
 Section typed_success_factor_bound_sect.
-
 Variables A B M : finType.
 Hypothesis Mnot0 : (0 < #|M|)%nat.
-
 Variable n' : nat.
 Let n := n'.+1.
 Variable V : P_ n ( A , B ).
 Variable P : P_ n ( A ).
 
 Definition success_factor_bound :=
-  exp2(- n%:R * +| log #|M|%:R / n%:R - `I(P, V) |).
+  exp2(- n%:R * +| log #|M|%:R / n%:R - `I(P; V) |).
 
 Variable tc : typed_code B M P.
 Hypothesis Vctyp : V \in \nu^{B}(P).
@@ -180,11 +178,11 @@ case/boolP : (tb \in cover partition_pre_image) => Hcase.
 Qed.
 
 Lemma success_factor_bound_part2 :
-  success_factor tc V <= exp2(n%:R * `I(P, V)) / #|M|%:R.
+  success_factor tc V <= exp2(n%:R * `I(P; V)) / #|M|%:R.
 Proof.
 rewrite /success_factor -mulRA (mulRC (/ #|M|%:R)) !mulRA.
 apply leR_wpmul2r; first exact/invR_ge0/ltR0n.
-rewrite /MutualInfoChan.mut_info -addR_opp addRC addRA.
+rewrite /mutual_info_chan -addR_opp addRC addRA.
 rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last first.
   by rewrite /CondEntropyChan.h; field.
 rewrite mulRDr mulRN -mulNR /exp2 ExpD; apply leR_wpmul2l => //.
@@ -228,7 +226,7 @@ Proof.
 rewrite /success_factor_bound.
 apply Rmax_case.
 - rewrite mulR0 exp2_0; by apply success_factor_bound_part1.
-- apply (@leR_trans (exp2 (n%:R * `I(P, V)) / #|M|%:R)); last first.
+- apply (@leR_trans (exp2 (n%:R * `I(P; V)) / #|M|%:R)); last first.
   + apply/Req_le/esym.
     rewrite mulRDr mulRC.
     rewrite Rmult_opp_opp -mulRA mulRN mulVR ?INR_eq0' //.
@@ -271,13 +269,13 @@ Lemma typed_success_bound :
 Proof.
 rewrite (typed_success W Mnot0 tc).
 apply (@leR_trans ( \sum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
-  exp2 (- n%:R *  +| log #|M|%:R * / n%:R - `I(P, V) |))).
+  exp2 (- n%:R *  +| log #|M|%:R * / n%:R - `I(P; V) |))).
   apply: leR_sumR => V Vnu.
   rewrite -mulRA; apply leR_wpmul2l.
     by rewrite /exp_cdiv; case : ifP => _ //; exact/leRR.
   by rewrite /success_factor mulRA; exact: success_factor_ub.
 apply (@leR_trans (\sum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
-                    exp2 (- n%:R * +| log #|M|%:R * / n%:R - `I(P, Vmax)|))).
+                    exp2 (- n%:R * +| log #|M|%:R * / n%:R - `I(P; Vmax)|))).
   apply leR_sumR => V HV.
   by move/leRP: (@arg_rmax2 [finType of (P_ n (A, B))] V0
     (fun V => exp_cdiv P V W * success_factor_bound M V P) V).

@@ -38,14 +38,14 @@ Lemma dom_by_cdom_by : `J(P , V) `<< `J(P , W) <-> cdom_by.
 Proof.
 split; [move/dominatesP => H | move=> H; apply/dominatesP].
 - move=> a p_not_0; apply/dominatesP => b; move: (H (a, b)).
-  rewrite JointFDistChan.dE /= => H0 H1.
+  rewrite fdist_prodE /= => H0 H1.
   move: H0; rewrite H1 mulR0 => /(_ erefl)/eqP.
-  by rewrite JointFDistChan.dE mulR_eq0' /= (negbTE p_not_0) orFb => /eqP.
+  by rewrite fdist_prodE mulR_eq0' /= (negbTE p_not_0) orFb => /eqP.
 - case=> a p_not_0 b; move: {H}(H a) => H.
-  rewrite JointFDistChan.dE /=.
-  case/boolP : (P a == 0) => [/eqP -> | H1]; first by rewrite mul0R.
+  rewrite fdist_prodE /=.
+  have [->|H1] := eqVneq (P a) 0; first by rewrite mul0R.
   move: {H}(H H1) => /dominatesP ->; first by rewrite mulR0.
-  move/eqP : b; by rewrite JointFDistChan.dE mulR_eq0' /= (negbTE H1) orFb => /eqP.
+  move/eqP : b; by rewrite fdist_prodE mulR_eq0' /= (negbTE H1) orFb => /eqP.
 Qed.
 
 End conditional_dominance.
@@ -62,9 +62,9 @@ Lemma joint_dominates : P |- V << W -> `J(P, V) `<< `J(P, W).
 Proof.
 move=> V_dom_by_W /=; apply/dominatesP => ab Hab.
 case/leR_eqVlt : (FDist.ge0 P ab.1) => [/esym|] Hab1.
-- by rewrite JointFDistChan.dE Hab1 mul0R.
-- rewrite JointFDistChan.dE in Hab.
-  rewrite JointFDistChan.dE (dominatesE (V_dom_by_W _ _)) ?mulR0 //.
+- by rewrite fdist_prodE Hab1 mul0R.
+- rewrite fdist_prodE in Hab.
+  rewrite fdist_prodE (dominatesE (V_dom_by_W _ _)) ?mulR0 //.
   + exact/gtR_eqF.
   + move: Hab; rewrite mulR_eq0 => -[|//].
     by move: (gtR_eqF _ _ Hab1) => /eqP.
@@ -92,13 +92,13 @@ rewrite (_ : D(V || W | P) = \sum_(a in A) (\sum_(b in B)
   by rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite pair_bigA big_mkcond /=.
 apply eq_bigr => -[a b] /= _.
-rewrite JointFDistChan.dE /= (mulRC (P a)) [in RHS]mulRAC.
+rewrite fdist_prodE /= (mulRC (P a)) [in RHS]mulRAC.
 case/boolP : (P a == 0) => [/eqP -> | Pa0]; first by rewrite !mulR0.
 congr (_ * _).
 case/boolP : (V a b == 0) => [/eqP -> | Vab0]; first by rewrite !mul0R.
 congr (_ * _).
 have Wab0 : W a b != 0 := dominatesEN (V_dom_by_W Pa0) Vab0.
-rewrite JointFDistChan.dE /= {2}/Rdiv (mulRC _ (W a b)) (invRM (W a b)) //.
+rewrite fdist_prodE /= {2}/Rdiv (mulRC _ (W a b)) (invRM (W a b)) //.
 by rewrite -mulRA (mulRCA (P a)) mulRV // mulR1.
 Qed.
 
@@ -119,15 +119,12 @@ Lemma cond_relative_entropy_compat : fdist_prod R P `<< fdist_prod R Q ->
   cond_relative_entropy (R, P) (R, Q) = D(P || Q | R).
 Proof.
 move=> PQ.
-rewrite /cond_relative_entropy cdiv_is_div_joint_dist; last first.
-  by apply/dom_by_cdom_by; rewrite /JointFDistChan.d; unlock.
+rewrite /cond_relative_entropy cdiv_is_div_joint_dist; last exact/dom_by_cdom_by.
 rewrite /div.
 under eq_bigr do rewrite big_distrr /=.
 rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
-rewrite (_ : JointFDistChan.d R P (a, b) = (fdist_prod R P) (a, b)); last first.
-  by rewrite JointFDistChan.dE fdist_prodE.
-rewrite (_ : JointFDistChan.d R Q (a, b) = (fdist_prod R Q) (a, b)); last first.
-  by rewrite JointFDistChan.dE fdist_prodE.
+rewrite (_ : (R `X P) (a, b) = (R `X P) (a, b)); last by rewrite fdist_prodE.
+rewrite (_ : (R `X Q) (a, b) = (R `X Q) (a, b)); last by rewrite fdist_prodE.
 rewrite mulRA.
 rewrite {1}/jcPr.
 rewrite fdistX2 fdist_prod1 Pr_set1.

@@ -1153,7 +1153,7 @@ Lemma output_type_out_fdist : forall b, (`tO( V )) b = `O( P , V ) b.
 Proof.
 rewrite /fdist_of_ffun /= /OutType.d /OutType.f => b /=.
 rewrite ffunE big_morph_natRD /Rdiv (big_morph _ (morph_mulRDl _) (mul0R _)).
-rewrite OutFDist.dE; apply eq_bigr => a _.
+rewrite fdist_outE; apply eq_bigr => a _.
 case: (typed_tuples_not_empty P) => /= ta Hta.
 move: (Vctyp).
 rewrite in_set.

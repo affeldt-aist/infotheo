@@ -22,20 +22,22 @@ Require Import proba entropy jfdist chap2.
 (*               probability transition matrix                                *)
 (* `O(P, W)   == output distribution for the discrete channel                 *)
 (* `H(P `o W) == output entropy                                               *)
-(* `J(P, W)   == joint distribution                                           *)
+(* `J(P, W)   := P `X W ("joint distribution")                                *)
 (* `H(P , W)  == mutual entropy                                               *)
 (* `H(W | P)  == definition of conditional entropy using an input             *)
 (*               distribution and a channel                                   *)
-(* `I(P, W)   == mutual information of input/output                           *)
+(* `I(P; W)   == mutual information of input/output                           *)
 (* capacity   == capacity of a channel                                        *)
 (*                                                                            *)
 (******************************************************************************)
 
-Declare Scope channel_scope.
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Declare Scope channel_scope.
+Delimit Scope fdist_scope with channel.
+Local Open Scope channel_scope.
 
 Reserved Notation "'`Ch(' A ',' B ')'" (at level 10, A, B at next level).
 Reserved Notation "'`Ch*(' A ',' B ')'" (at level 10, A, B at next level).
@@ -52,7 +54,7 @@ Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level,
 Reserved Notation "`H( P , W )" (at level 10, P, W at next level,
   format "`H( P ,  W )").
 Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
-Reserved Notation "`I( P , W )" (at level 50, format "`I( P ,  W )").
+Reserved Notation "`I( P ; W )" (at level 50, format "`I( P ;  W )").
 
 Local Open Scope R_scope.
 
@@ -83,9 +85,9 @@ Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Notation "'`Ch(' A ',' B ')'" := (A -> {fdist B}) (only parsing) : channel_scope.
-Local Open Scope channel_scope.
 Notation "'`Ch*(' A ',' B ')'" := (@Channel1.chan_star A B) : channel_scope.
 Notation "W '`(' b '|' a ')'" := ((W : `Ch(_, _)) a b) (only parsing) : channel_scope.
+
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
 Local Open Scope entropy_scope.
@@ -131,13 +133,8 @@ Lemma DMCE (A B : finType) n (W : `Ch(A, B)) b a :
   W ``(b | a) = \prod_(i < n) W (a ``_ i) (b ``_ i).
 Proof. by rewrite /DMC.c; unlock; rewrite ffunE. Qed.
 
-(*Lemma DMC_ge0 (A B : finType) n (W : `Ch(A, B)) b (a : 'rV_n) : 0 <= W ``(b | a).
-Proof. exact: fdist_ge0. Qed.*)
-
 Section DMC_sub_vec.
-
-Variables (A B : finType) (W : `Ch(A, B)).
-Variable n' : nat.
+Variables (A B : finType) (W : `Ch(A, B)) (n' : nat).
 Let n := n'.+1.
 Variable tb : 'rV[B]_n.
 
@@ -148,7 +145,7 @@ Proof.
 case/boolP : (D == set0) => [/eqP -> |].
   rewrite big_set0 big_hasC //.
   apply/hasPn => /=.
-  rewrite cards0; by case.
+  by rewrite cards0; case.
 case/set0Pn => /= i iD.
 pose f : 'I_n -> 'I_#|D| :=
   fun i => match Bool.bool_dec (i \in D) true with
@@ -174,79 +171,82 @@ Proof. by rewrite DMCE -rprod_sub_vec. Qed.
 
 End DMC_sub_vec.
 
-Module OutFDist.
-Section def.
-Variables (A B : finType) (P : fdist A) (W  : `Ch(A, B)).
+Section fdist_out.
+Variables (A B : finType) (P : fdist A) (W  : A -> fdist B).
+
 Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
-Lemma f0 (b : B) : 0 <= f b.
+
+Let f0 (b : B) : 0 <= f b.
 Proof. by rewrite ffunE; apply: sumR_ge0 => a _; exact: mulR_ge0. Qed.
-Lemma f1 : \sum_(b in B) f b = 1.
+
+Let f1 : \sum_(b in B) f b = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
 rewrite exchange_big /= -(FDist.f1 P).
 by apply eq_bigr => a _; rewrite -big_distrl /= (FDist.f1 (W a)) mul1R.
 Qed.
-Definition d : fdist B := locked (FDist.make f0 f1).
-Lemma dE b : d b = \sum_(a in A) W a b * P a.
-Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
-End def.
-End OutFDist.
 
-Notation "'`O(' P , W )" := (OutFDist.d P W) : channel_scope.
+Definition fdist_out : fdist B := locked (FDist.make f0 f1).
 
-Section OutFDist_prop.
+Lemma fdist_outE b : fdist_out b = \sum_(a in A) W a b * P a.
+Proof. by rewrite /fdist_out; unlock; rewrite ffunE. Qed.
+
+End fdist_out.
+
+Notation "'`O(' P , W )" := (fdist_out P W) : channel_scope.
+
+Section fdist_out_prop.
 Variables A B : finType.
 
 Local Open Scope ring_scope.
-
-Lemma tuple_pmf_out_fdist (W : `Ch(A, B)) (P : fdist A) n (b : 'rV_ _):
-   (\sum_(j : 'rV[A]_n)
-      (\prod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R =
-   (`O(P, W)) `^ _ b.
+Lemma fdist_rV_out (W : `Ch(A, B)) (P : fdist A) n (b : 'rV_ _):
+  (`O(P, W)) `^ _ b = (\sum_(j : 'rV[A]_n) (\prod_(i < n) W j ``_ i b ``_ i) * P `^ _ j)%R.
 Proof.
-rewrite fdist_rVE; apply/esym.
-etransitivity; first by apply eq_bigr => i _; rewrite OutFDist.dE; reflexivity.
+rewrite fdist_rVE.
+etransitivity; first by apply eq_bigr => i _; rewrite fdist_outE; reflexivity.
 rewrite bigA_distr_big_dep /=.
-rewrite (reindex_onto (fun p : 'rV_n => [ffun x => p ``_ x]) (fun y => \row_(k < n) y k)) //=; last first.
+rewrite (reindex_onto (fun p : 'rV_n => [ffun x => p ``_ x])
+                      (fun y => \row_(k < n) y k)) //=; last first.
   by move=> i _; apply/ffunP => /= n0; rewrite ffunE mxE.
 apply eq_big.
-- move=> a /=.
-  apply/andP; split; [by apply/finfun.familyP|].
+- move=> a /=; apply/andP; split; [by apply/finfun.familyP|].
   by apply/eqP/rowP => a'; rewrite mxE ffunE.
-- move=> a Ha.
-  rewrite big_split /=; congr (_ * _)%R.
+- move=> a Ha; rewrite big_split /=; congr (_ * _)%R.
   + by apply eq_bigr => i /= _; rewrite ffunE.
   + by rewrite fdist_rVE; apply eq_bigr => i /= _; rewrite ffunE.
 Qed.
+Local Close Scope ring_scope.
 
-End OutFDist_prop.
+Lemma fdistX_prod_out (W : `Ch(A, B)) (P : fdist A) : (fdistX (P `X W))`1 = `O(P, W).
+Proof.
+rewrite fdistX1; apply/fdist_ext => b.
+by rewrite fdist_outE fdist_sndE; apply/eq_bigr => a _; rewrite fdist_prodE mulRC.
+Qed.
+
+End fdist_out_prop.
 
 Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ) )) : channel_scope.
 
-Module JointFDistChan.
-Section def.
-Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)).
-Definition d : {fdist A * B} := locked (fdist_prod P W).
-Lemma dE ab : d ab = P ab.1 * W ab.1 ab.2.
-Proof. by rewrite /d; unlock => /=; rewrite fdist_prodE. Qed.
-End def.
-Local Notation "'`J(' P , W )" := (d P W).
-Section prop.
+Notation "'`J(' P , W )" := (P `X W) : channel_scope.
+
+Section Pr_fdist_prod.
 Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)) (n : nat).
+
 Lemma Pr_DMC_rV_prod (Q : 'rV_n * 'rV_n -> bool) :
-  Pr (`J(P `^ n, W ``^ n)) [set x | Q x] =
-  Pr (`J(P, W)) `^ n       [set x | Q (rV_prod x)].
+  Pr (((P `^ n) `X (W ``^ n))) [set x | Q x] =
+  Pr ((P `X W) `^ n)           [set x | Q (rV_prod x)].
 Proof.
 rewrite /Pr [RHS]big_rV_prod /=.
 apply eq_big => y; first by rewrite !inE prod_rVK.
 rewrite inE => Qy.
-rewrite dE DMCE fdist_rVE -big_split /= fdist_rVE.
+rewrite fdist_prodE DMCE fdist_rVE -big_split /= fdist_rVE.
 apply eq_bigr => i /= _.
-by rewrite JointFDistChan.dE -snd_tnth_prod_rV -fst_tnth_prod_rV.
+by rewrite fdist_prodE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
+
 Lemma Pr_DMC_fst (Q : 'rV_n -> bool) :
-  Pr (`J(P, W)) `^ n [set x | Q (rV_prod x).1 ] =
-  Pr P `^ n [set x | Q x ].
+  Pr ((P `X W) `^ n) [set x | Q (rV_prod x).1 ] =
+  Pr P `^ n          [set x | Q x].
 Proof.
 rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=; last first.
   move=> t /=.
@@ -258,11 +258,12 @@ transitivity (\sum_(i | Q i) (P `^ n i * (\sum_(y in 'rV[B]_n) W ``(y | i)))).
   rewrite big_distrr; apply eq_bigr => tb _ /=.
   rewrite DMCE [in RHS]fdist_rVE -[in RHS]big_split /= fdist_rVE.
   apply eq_bigr => j _.
-  by rewrite dE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
+  by rewrite fdist_prodE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
 transitivity (\sum_(i | Q i) P `^ _ i).
   apply eq_bigr => i _; by rewrite (FDist.f1 (W ``(| i))) mulR1.
-rewrite /Pr; apply eq_bigl => t; by rewrite !inE.
+by rewrite /Pr; apply eq_bigl => t; rewrite !inE.
 Qed.
+
 Local Open Scope ring_scope.
 Lemma Pr_DMC_out m (S : {set 'rV_m}) :
   Pr (`J(P , W) `^ m) [set x | (rV_prod x).2 \notin S] =
@@ -278,7 +279,7 @@ apply eq_big => tb.
   by rewrite !inE.
 move=> Htb.
 rewrite fdist_rVE.
-etransitivity; last by apply eq_bigr => i _; rewrite OutFDist.dE; reflexivity.
+etransitivity; last by apply eq_bigr => i _; rewrite fdist_outE; reflexivity.
 rewrite bigA_distr_bigA /=.
 rewrite (reindex_onto (fun p : 'rV[A]_m => [ffun x => p ord0 x])
   (fun y : {ffun 'I_m -> A} => \row_(i < m) y i)) /=; last first.
@@ -290,26 +291,18 @@ apply eq_big => ta.
   by apply/eqP/rowP => a; rewrite mxE ffunE.
 move=> Hta.
 rewrite fdist_rVE /=; apply eq_bigr => l _.
-by rewrite dE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulRC.
+by rewrite fdist_prodE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulRC.
 Qed.
-End prop.
-End JointFDistChan.
+Local Close Scope ring_scope.
 
-Notation "'`J(' P , W )" := (JointFDistChan.d P W) : channel_scope.
+End Pr_fdist_prod.
 
 Section relation_channel_cproba.
-
 Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 Let QP := fdistX (`J(P, W)).
 
-Lemma channel_cPr : forall a b, P a != 0 -> W a b = \Pr_QP[[set b]|[set a]].
-Proof.
-move=> a b Pa0.
-rewrite (@jfdist_prodE _ _ P W) //=; last exact/eqP.
-congr (\Pr_ _ [_ | _ ]).
-apply/fdist_ext => -[b0 a0].
-by rewrite !fdistXE JointFDistChan.dE /= /fdist_prod /= fdist_prodE.
-Qed.
+Lemma channel_cPr a b : P a != 0 -> W a b = \Pr_QP[ [set b] | [set a] ].
+Proof. by move=> Pa0; rewrite (@jfdist_prodE _ _ P)//; exact/eqP. Qed.
 
 End relation_channel_cproba.
 
@@ -332,52 +325,45 @@ Lemma CondEntropyChanE : `H(W | P) = cond_entropy (fdistX (`J(P, W))).
 Proof.
 rewrite /CondEntropyChan.h.
 move: (chain_rule (`J(P, W))); rewrite /joint_entropy => ->.
-by rewrite /JointFDistChan.d; unlock; rewrite fdist_prod1 addRC addRK.
+by rewrite fdist_prod1 addRC addRK.
 Qed.
 
 Lemma CondEntropyChanE2 : `H(W | P) = \sum_(a in A) P a * `H (W a).
 Proof.
 rewrite CondEntropyChanE cond_entropyE big_morph_oppR; apply eq_bigr => a _.
 rewrite big_morph_oppR /entropy mulRN -mulNR big_distrr; apply eq_bigr => b _.
-rewrite /= fdistXI JointFDistChan.dE /= mulNR mulRA.
+rewrite /= fdistXI fdist_prodE /= mulNR mulRA.
 have [->|Pa0] := eqVneq (P a) 0; first by rewrite !(mulR0,mul0R).
 by rewrite -channel_cPr.
 Qed.
 
 End condentropychan_prop.
 
-Module MutualInfoChan.
-Section def.
+Section mutual_info_chan.
 Local Open Scope fdist_scope.
 Variables A B : finType.
 
-(* Mutual information of distributions *)
-Definition mut_info_dist (P : {fdist A * B}) := `H (P`1) + `H (P`2) - `H P.
+Definition mutual_info_dist (P : {fdist A * B}) := `H (P`1) + `H (P`2) - `H P.
 
-Definition mut_info P (W : `Ch(A, B)) := `H P + `H(P `o W) - `H(P , W).
+Definition mutual_info_chan P (W : `Ch(A, B)) := `H P + `H(P `o W) - `H(P , W).
 
-End def.
-End MutualInfoChan.
+End mutual_info_chan.
 
-Notation "`I( P , W )" := (MutualInfoChan.mut_info P W) : channel_scope.
+Notation "`I( P ; W )" := (mutual_info_chan P W) : channel_scope.
 
-Section mutualinfo_prop.
+Section mutual_info_chan_prop.
 Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
 
-Lemma mut_info_chanE : `I(P, W) = mutual_info (fdistX (`J(P, W))).
+Lemma mutual_info_chanE : `I(P; W) = mutual_info (fdistX (`J(P, W))).
 Proof.
-rewrite /MutualInfoChan.mut_info mutual_infoE -CondEntropyChanE.
-rewrite /CondEntropyChan.h -[in RHS]addR_opp oppRB addRCA addRA; congr (_ + _ + _).
-congr `H.
-rewrite fdistX1.
-apply/fdist_ext => b.
-rewrite OutFDist.dE fdist_sndE; apply/eq_bigr => a _.
-by rewrite JointFDistChan.dE mulRC.
+rewrite /mutual_info_chan mutual_infoE -CondEntropyChanE.
+by rewrite /CondEntropyChan.h -[in RHS]addR_opp oppRB addRCA addRA fdistX_prod_out.
 Qed.
-End mutualinfo_prop.
+
+End mutual_info_chan_prop.
 
 From mathcomp Require Import classical_sets.
 Local Open Scope classical_set_scope.
 
 Definition capacity (A B : finType) (W : `Ch(A, B)) :=
-  reals.sup [set `I(P, W) | P in @setT (fdist A)].
+  reals.sup [set `I(P; W) | P in @setT (fdist A)].
