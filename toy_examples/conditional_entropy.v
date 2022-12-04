@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import proba jfdist entropy chap2.
+Require Import proba jfdist_cond entropy.
 
 (******************************************************************************)
 (* Example 2.2.1 of T. M. Cover and J. A. Thomas. Elements of information     *)
@@ -16,6 +16,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Module conditional_entropy_example.
@@ -52,16 +53,14 @@ Definition d : {fdist 'I_4 * 'I_4} := locked (FDist.make f0 f1).
 Lemma dE x : d x = f x.
 Proof. by rewrite /d; unlock. Qed.
 
-Definition conditional_entropy := CondEntropy.h d.
-
-Lemma conditional_entropyE : conditional_entropy = 11/8.
+Lemma conditional_entropyE : cond_entropy d = 11/8.
 Proof.
-rewrite /conditional_entropy /CondEntropy.h /=.
-rewrite !big_ord_recl big_ord0 !Bivar.sndE /=.
+rewrite /cond_entropy /=.
+rewrite !big_ord_recl big_ord0 !fdist_sndE /=.
 rewrite !big_ord_recl !big_ord0 !dE /f /=.
-rewrite /CondEntropy.h1 /=.
+rewrite /cond_entropy1 /=.
 rewrite !big_ord_recl !big_ord0 /jcPr /Pr !(big_setX,big_set1) !dE /f /=.
-rewrite !Bivar.sndE /=.
+rewrite !fdist_sndE /=.
 rewrite !big_ord_recl !big_ord0 !dE /f !ffunE /=.
 rewrite !(addR0,add0R,div0R,mul0R).
 repeat (rewrite logDiv; try lra).

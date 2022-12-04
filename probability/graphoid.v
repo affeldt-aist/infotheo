@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import proba jfdist.
+Require Import proba jfdist_cond.
 
 (******************************************************************************)
 (*                              Graphoid axioms                               *)
@@ -14,52 +14,34 @@ Require Import proba jfdist.
 (* intersection) and derived rules.                                           *)
 (******************************************************************************)
 
-(*
-contents:
-- Various distributions (Proj124.d, Proj14d, QuadA23.d)
-- Section RV2_prop.
-- Section RV3_prop.
-*)
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
 Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 
-(* TODO: move? *)
-Section setX_structural_lemmas.
-Variables (A B C : finType).
-Variables (E : {set A}) (F : {set B}).
-
-Lemma imset_fst b : b \in F -> [set x.1 | x in E `* F] = E.
-Proof.
-move=> bF; apply/setP => a; apply/imsetP/idP.
-- by rewrite ex2C; move=> -[[a' b']] /= ->; rewrite inE => /andP [] ->.
-- by move=> aE; exists (a, b); rewrite // inE; apply/andP; split.
-Qed.
-
-End setX_structural_lemmas.
+(* TODO: rename *)
 Module Proj124.
 Section proj124.
 Variables (A B D C : finType) (P : {fdist A * B * D * C}).
-Definition d : {fdist A * B * C} :=
-  Swap.d (Bivar.snd (TripA.d (Swap.d (TripA.d P)))).
+Definition d : {fdist A * B * C} := fdistX (fdistA (fdistX (fdistA P)))`2.
 Lemma dE abc : d abc = \sum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
 Proof.
 case: abc => [[a b] c] /=.
-rewrite /d Swap.dE Bivar.sndE; apply eq_bigr => d _.
-by rewrite TripA.dE /= Swap.dE TripA.dE.
+rewrite /d fdistXE fdist_sndE; apply eq_bigr => d _.
+by rewrite fdistAE /= fdistXE fdistAE.
 Qed.
-Lemma snd : Bivar.snd d = Bivar.snd P.
-Proof. by rewrite /Bivar.snd /d !FDistMap.comp. Qed.
+Lemma snd : d`2 = P`2.
+Proof. by rewrite /fdist_snd /d !fdistmap_comp. Qed.
 End proj124.
 End Proj124.
 
 Definition Proj14d (A B C D : finType) (d : {fdist A * B * D * C}) : {fdist A * C} :=
-  Proj13.d (Proj124.d d).
+  fdist_proj13 (Proj124.d d).
 
+(* TODO: rename *)
 Module QuadA23.
 Section def.
 Variables (A B C D : finType) (P : {fdist A * B * D * C}).
@@ -67,53 +49,19 @@ Definition f (x : A * B * D * C) : A * (B * D) * C :=
   (x.1.1.1, (x.1.1.2, x.1.2), x.2).
 Lemma inj_f : injective f.
 Proof. by rewrite /f => -[[[? ?] ?] ?] [[[? ?] ?] ?] /= [-> -> -> ->]. Qed.
-Definition d : {fdist A * (B * D) * C} := FDistMap.d f P.
+Definition d : {fdist A * (B * D) * C} := fdistmap f P.
 Lemma dE x : d x = P (x.1.1, x.1.2.1, x.1.2.2, x.2).
 Proof.
-case: x => -[a [b d] c]; rewrite /def.d FDistMap.dE /= -/(f (a, b, d, c)).
+case: x => -[a [b d] c]; rewrite /def.d fdistmapE /= -/(f (a, b, d, c)).
 by rewrite (big_pred1_inj inj_f).
 Qed.
 End def.
 Section prop.
 Variables (A B C D : finType) (P : {fdist A * B * D * C}).
-Lemma snd : Bivar.snd (QuadA23.d P) = Bivar.snd P.
-Proof. by rewrite /Bivar.snd /d FDistMap.comp. Qed.
+Lemma snd : (QuadA23.d P)`2 = P`2.
+Proof. by rewrite /fdist_snd /d fdistmap_comp. Qed.
 End prop.
 End QuadA23.
-
-Section RV2_prop.
-Variables (U : finType) (P : fdist U).
-Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
-Implicit Types (E : {set A}) (F : {set B}).
-
-Lemma RV20 : fst \o [% X, unit_RV P] =1 X.
-Proof. by []. Qed.
-
-Lemma RV02 : snd \o [% unit_RV P, X] =1 X.
-Proof. by []. Qed.
-
-End RV2_prop.
-
-Section RV3_prop.
-Variables (U : finType) (P : fdist U).
-Variables (A B C D : finType).
-Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
-
-Lemma Proj13_RV3 : Proj13.d `d_[% X, Y, Z] = `d_[% X, Z].
-Proof.
-by rewrite /Proj13.d /Bivar.snd /TripA.d /dist_of_RV /TripC12.d !FDistMap.comp.
-Qed.
-
-Lemma snd_RV3 : Bivar.snd `d_[% X, Y, Z] = Bivar.snd `d_[% X, Z].
-Proof. by rewrite -Proj13.snd Proj13_RV3. Qed.
-
-Lemma TripC12_RV3 : TripC12.d `d_[% X, Y, Z] = `d_[% Y, X, Z].
-Proof. by rewrite /TripC12.d /dist_of_RV FDistMap.comp. Qed.
-
-Lemma TripA_RV3 : TripA.d `d_[% X, Y, Z] = `d_[% X, [% Y, Z]].
-Proof. by rewrite /TripC12.d /dist_of_RV /TripA.d FDistMap.comp. Qed.
-
-End RV3_prop.
 
 Section cinde_rv_prop.
 

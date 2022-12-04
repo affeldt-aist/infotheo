@@ -6,7 +6,7 @@ From mathcomp Require Import boolp classical_sets.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import fdist jfdist fsdist convex.
+Require Import fdist jfdist_cond fsdist convex.
 
 (******************************************************************************)
 (*                  Equivalence of Convexity Definitions                      *)
@@ -32,7 +32,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
 
 Module NaryConvexSpace.
@@ -60,17 +60,17 @@ Import NaryConvexSpace.
 
 (* These definitions about distributions should probably be elsewhere *)
 Definition fdistE :=
-  (FDistMap.dE,FDist1.dE,ProdFDist.dE,Swap.dI,Swap.dE,ConvnFDist.dE,Bivar.fstE).
+  (fdistmapE,fdist1E,fdist_prodE,fdistXI,fdistXE,fdist_convnE,fdist_fstE).
 
 Module FDistPart.
 Section fdistpart.
+Local Open Scope fdist_scope.
 Variables (n m : nat) (K : 'I_m -> 'I_n) (e : {fdist 'I_m}) (i : 'I_n).
-Definition d :=
-  CondJFDist.d (Swap.d (ProdFDist.d e (fun j : 'I_m => FDist1.d (K j)))) i.
-Definition den :=
-  Bivar.fst (Swap.d (ProdFDist.d e (fun j : 'I_m => FDist1.d (K j)))) i.
 
-Lemma denE : den = FDistMap.d K e i.
+Definition d := (fdistX (e `X (fun j => fdist1 (K j)))) `(| i).
+Definition den := (fdistX (e `X (fun j => fdist1 (K j))))`1 i.
+
+Lemma denE : den = fdistmap K e i.
 Proof.
 rewrite /den !fdistE [RHS]big_mkcond /=.
 under eq_bigl do rewrite inE.
@@ -81,33 +81,32 @@ rewrite eq_sym 2!inE.
 by case: eqP => // _; rewrite (mulR0,mulR1).
 Qed.
 
-Lemma dE j :
-  FDistMap.d K e i != 0%R ->
+Lemma dE j : fdistmap K e i != 0%R ->
   d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%R.
 Proof.
 rewrite -denE => NE.
-rewrite CondJFDist.dE // {NE} /jcPr /proba.Pr.
+rewrite jfdist_condE // {NE} /jcPr /proba.Pr.
 rewrite (big_pred1 (j,i)); last first.
-  move=> k; by rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
+  by move=> k; rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
 rewrite (big_pred1 i); last by move=> k; rewrite !inE.
 rewrite !fdistE big_mkcond [in RHS]big_mkcond /=.
 congr (_ / _)%R.
 under eq_bigr => k do rewrite {2}(surjective_pairing k).
 rewrite -(pair_bigA _ (fun k l =>
           if l == i
-          then ProdFDist.d e (fun j0 : 'I_m => FDist1.d (K j0)) (k, l)
+          then e `X (fun j0 : 'I_m => fdist1 (K j0)) (k, l)
           else R0))%R /=.
 apply eq_bigr => k _.
 rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
-case: ifP; by rewrite (mulR1,mulR0).
+by case: ifP; rewrite (mulR1,mulR0).
 Qed.
 End fdistpart.
 
 Lemma dK n m K (e : {fdist 'I_m}) j :
-  e j = (\sum_(i < n) FDistMap.d K e i * d K e i j)%R.
+  e j = (\sum_(i < n) fdistmap K e i * d K e i j)%R.
 Proof.
 under eq_bigr => /= a _.
-  case/boolP: (FDistMap.d K e a == 0%R) => Ka0.
+  case/boolP: (fdistmap K e a == 0%R) => Ka0.
     rewrite (eqP Ka0) mul0R.
     have <- : (e j * (a == K j)%:R = 0)%R.
       have [Kj|] := boolP (a == K j); last by rewrite mulR0.
@@ -128,14 +127,14 @@ Variable T : naryConvType.
 
 Definition ax_bary :=
   forall n m (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) (g : 'I_m -> T),
-    <&>_d (fun i => <&>_(e i) g) = <&>_(ConvnFDist.d d e) g.
+    <&>_d (fun i => <&>_(e i) g) = <&>_(fdist_convn d e) g.
 Definition ax_proj :=
-  forall  n (i : 'I_n) (g : 'I_n -> T), <&>_(FDist1.d i) g = g i.
+  forall  n (i : 'I_n) (g : 'I_n -> T), <&>_(fdist1 i) g = g i.
 
 (* Beaulieu's version [Beaulieu PhD 2008] *)
 Definition ax_part :=
   forall n m (K : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_m -> T),
-    <&>_d g = <&>_(FDistMap.d K d) (fun i => <&>_(FDistPart.d K d i) g).
+    <&>_d g = <&>_(fdistmap K d) (fun i => <&>_(FDistPart.d K d i) g).
 Definition ax_idem :=
   forall (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T),
     (forall i, i \in fdist_supp d -> g i = a) -> <&>_d g = a.
@@ -143,7 +142,7 @@ Definition ax_idem :=
 (* Alternative to ax_proj *)
 Definition ax_map :=
   forall (n m : nat) (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
-    <&>_d (g \o u) = <&>_(FDistMap.d u d) g.
+    <&>_d (g \o u) = <&>_(fdistmap u d) g.
 Definition ax_const :=
   forall (a : T) (n : nat) (d : {fdist 'I_n}),
     <&>_d (fun _ => a) = a.
@@ -153,12 +152,12 @@ Definition ax_bary_part :=
   forall n m (d : {fdist 'I_n}) (e : 'I_n -> {fdist 'I_m}) (g : 'I_m -> T),
     (forall i j, i != j ->
                  fdist_supp (e i) :&: fdist_supp (e j) = finset.set0) ->
-    <&>_d (fun i => <&>_(e i) g) = <&>_(ConvnFDist.d d e) g.
+    <&>_d (fun i => <&>_(e i) g) = <&>_(fdist_convn d e) g.
 
 (* Restriction of ax_map to injective maps *)
 Definition ax_inj_map :=
   forall (n m : nat) (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T),
-    injective u -> <&>_d (g \o u) = <&>_(FDistMap.d u d) g.
+    injective u -> <&>_d (g \o u) = <&>_(fdistmap u d) g.
 End Axioms.
 
 (* We will prove:
@@ -185,8 +184,8 @@ HB.instance Definition _ := @isNaryConv.Build _ (Choice.class _) (@Convn C.T).
 
 (* NB: is that ok? *)
 Definition T : naryConvType := Choice_sort__canonical__NaryConvexSpace_NaryConv.
-Definition axbary := @Convn_convnfdist C.T.
-Definition axproj := @ConvnFDist1 C.T.
+Definition axbary := @Convn_fdist_convn C.T.
+Definition axproj := @Convn_fdist1 C.T.
 End BinToNary.
 
 Module NaryToBin(A : NaryConvSpace).
@@ -196,8 +195,8 @@ Export A.
 Lemma axmap : ax_map T.
 Proof.
 move=> n m u d g.
-have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
-  by apply fdist_ext => i; rewrite /FDistMap.d FDistBind.dE.
+have -> : fdistmap u d = fdist_convn d (fun i : 'I_m => fdist1 (u i)).
+  by apply fdist_ext => i; rewrite /fdistmap fdistbindE.
 rewrite -axbary.
 by congr (<&>_ _ _); apply funext => i /=; rewrite axproj.
 Qed.
@@ -205,19 +204,19 @@ Qed.
 Lemma axconst : ax_const T.
 Proof.
 move=> a n d.
-by rewrite -(axproj (@ord0 0) (fun=>a)) axbary ConvnFDist.cst.
+by rewrite -(axproj (@ord0 0) (fun=>a)) axbary fdist_convn_cst.
 Qed.
 
 Lemma axidem : ax_idem T.
 Proof.
 move=> a n d g Hd.
 have /=[k Hk] := fdist_supp_mem d.
-have -> : g = (fun i => <&>_(FDist1.d (if i \in fdist_supp d then k else i)) g).
+have -> : g = (fun i => <&>_(fdist1 (if i \in fdist_supp d then k else i)) g).
   apply funext => i; rewrite axproj.
   case: ifP => // /Hd ->; by rewrite (Hd k).
-rewrite axbary (_ : ConvnFDist.d _ _ = FDist1.d k) ?axproj ?Hd //.
+rewrite axbary (_ : fdist_convn _ _ = fdist1 k) ?axproj ?Hd //.
 apply fdist_ext => /= i.
-rewrite ConvnFDist.dE sum_fdist_supp fdistE.
+rewrite fdist_convnE sum_fdist_supp fdistE.
 under eq_bigr => j /= -> do rewrite fdistE.
 by rewrite -sum_fdist_supp -big_distrl FDist.f1 /= mul1R.
 Qed.
@@ -228,7 +227,7 @@ Proof. by move=> a n d; apply axidem. Qed.
 
 (* Definition of conv based on convn *)
 Definition binconv p (a b : T) :=
-  <&>_(I2FDist.d p) (fun x : 'I_2 => if x == ord0 then a else b).
+  <&>_(fdistI2 p) (fun x => if x == ord0 then a else b).
 Notation "a <& p &> b" := (binconv p a b).
 
 Lemma binconvC p a b : a <& p &> b = b <& (p.~)%:pr &> a.
@@ -242,13 +241,12 @@ have -> : g1 = g2 \o tperm ord0 (Ordinal (erefl (1 < 2))).
   by case/orP: (ord2 i) => /eqP -> /=; rewrite (tpermL,tpermR).
 rewrite axmap.
 congr (<&>_ _ _); apply fdist_ext => i.
-rewrite FDistMap.dE (bigD1 (tperm ord0 (Ordinal (erefl (1 < 2))) i)) /=; last first.
+rewrite fdistmapE (bigD1 (tperm ord0 (Ordinal (erefl (1 < 2))) i)) /=; last first.
   by rewrite !inE tpermK.
-rewrite big1.
-  rewrite addR0 !I2FDist.dE onemK.
+rewrite big1 ?addR0.
+  rewrite !fdistI2E onemK.
   by case/orP: (ord2 i) => /eqP -> /=; rewrite (tpermL,tpermR).
-move=> j /andP[] /eqP <-.
-by rewrite tpermK eqxx.
+by move=> j /andP[] /eqP <-; rewrite tpermK eqxx.
 Qed.
 
 Lemma convn_if A n (p : A -> bool) (d1 d2 : {fdist 'I_n}) (g : _ -> T):
@@ -261,44 +259,43 @@ Lemma binconvA p q a b c :
 Proof.
 rewrite /binconv.
 set g := fun i : 'I_3 => if i <= 0 then a else if i <= 1 then b else c.
-rewrite [X in <&>_(I2FDist.d q) X](_ : _ = g \o lift ord0);
-  last by apply funext => i; case/orP: (ord2 i) => /eqP ->.
-rewrite [X in <&>_(I2FDist.d [r_of p, q]) X]
-        (_ : _ = g \o (widen_ord (leqnSn 2)));
-  last by apply funext => i; case/orP: (ord2 i) => /eqP ->.
+rewrite [X in <&>_(fdistI2 q) X](_ : _ = g \o lift ord0); last first.
+  by apply funext => i; case/orP: (ord2 i) => /eqP ->.
+rewrite [X in <&>_(_ [r_of p, q]) X](_ : _ = g \o (widen_ord (leqnSn 2))); last first.
+  by apply funext => i; case/orP: (ord2 i) => /eqP ->.
 rewrite 2!axmap.
-set d1 := FDistMap.d _ _.
-set d2 := FDistMap.d _ _.
+set d1 := fdistmap _ _.
+set d2 := fdistmap _ _.
 set ord23 := Ordinal (ltnSn 2).
 have -> : a = g ord0 by [].
 have -> : c = g ord23 by [].
 rewrite -2!axproj 2!convn_if 2!axbary.
 congr (<&>_ _ _); apply fdist_ext => j.
-rewrite !ConvnFDist.dE !big_ord_recl !big_ord0 /=.
-rewrite !I2FDist.dE !FDistMap.dE !FDist1.dE !addR0 /=.
+rewrite !fdist_convnE !big_ord_recl !big_ord0 /=.
+rewrite !fdistI2E !fdistmapE !fdist1E !addR0 /=.
 case: j => -[|[|[]]] //= Hj.
 - rewrite [in RHS](big_pred1 ord0) //.
   rewrite big1; last by case => -[].
-  by rewrite I2FDist.dE eqxx !(mulR0,addR0) mulR1 mulRC -p_is_rs.
+  by rewrite fdistI2E eqxx !(mulR0,addR0) mulR1 mulRC -p_is_rs.
 - rewrite (big_pred1 ord0) // (big_pred1 (Ordinal (ltnSn 1))) //.
-  rewrite !I2FDist.dE !eqxx !(mulR0,addR0,add0R).
+  rewrite !fdistI2E !eqxx !(mulR0,addR0,add0R).
   rewrite {2}/onem mulRDr mulR1 mulRN [in RHS]mulRC -p_is_rs s_of_pqE'.
   by rewrite (addRC p) -addRA addRN addR0.
 - rewrite (big_pred1 (Ordinal (ltnSn 1))) //.
   rewrite big1; last by case => -[|[]].
-  by rewrite !I2FDist.dE !(mulR0,addR0,add0R,mulR1) s_of_pqE onemK.
+  by rewrite !fdistI2E !(mulR0,addR0,add0R,mulR1) s_of_pqE onemK.
 Qed.
 
 Lemma binconv1 a b : binconv 1%:pr a b = a.
 Proof.
-apply axidem => /= i; rewrite inE I2FDist.dE; case: ifP => //=.
+apply axidem => /= i; rewrite inE fdistI2E; case: ifP => //=.
 by rewrite /onem subRR eqxx.
 Qed.
 
 Lemma binconvmm p a : binconv p a a = a.
 Proof. by apply axidem => i; case: ifP. Qed.
 
-#[export,non_forgetful_inheritance]
+#[export]
 HB.instance Definition _ := @isConvexSpace.Build A.T (Choice.class _) binconv
   binconv1 binconvmm binconvC binconvA.
 
@@ -313,7 +310,12 @@ Module B := NaryToBin(A).
 Import A B.
 
 Lemma equiv_conv p (a b : T) : a <| p |> b = a <& p &> b.
-Proof. by apply: ScaledConvex.S1_inj; rewrite ScaledConvex.S1_conv. Qed.
+Proof.
+apply: S1_inj.
+rewrite [LHS](@affine_conv NaryConv_sort__canonical__isConvexSpace__ConvexSpace)/=.
+by rewrite [RHS](@affine_conv NaryConv_sort__canonical__isConvexSpace__ConvexSpace).
+Qed.
+
 End Equiv1.
 
 Module Equiv2(A : NaryConvSpace).
@@ -325,22 +327,22 @@ Proof.
 elim: n d g => [|n IH d g /=].
   by move=> d; move: (fdist_card_neq0 d); rewrite card_ord.
 case: Bool.bool_dec => [|b].
-  by rewrite FDist1.dE1 => /eqP ->; rewrite axproj.
+  by rewrite fdist1E1 => /eqP ->; rewrite axproj.
 rewrite -{}IH.
-have -> : (fun i => g (DelFDist.f ord0 i)) = g \o lift ord0.
-  by apply funext => i; rewrite /DelFDist.f ltn0.
+have -> : (fun i => g (fdist_del_idx ord0 i)) = g \o lift ord0.
+  by apply funext => i; rewrite /fdist_del_idx ltn0.
 apply/esym; rewrite axmap /=.
 rewrite /(_ <| _ |> _)/= /binconv.
-set d' := FDistMap.d _ _.
+set d' := fdistmap _ _.
 rewrite -(axproj ord0) convn_if axbary.
 congr (<&>_ _ _); apply fdist_ext => i.
-rewrite ConvnFDist.dE !big_ord_recl big_ord0 addR0 /= !I2FDist.dE /=.
-rewrite FDist1.dE /d' FDistMap.dE /=.
+rewrite fdist_convnE !big_ord_recl big_ord0 addR0 /= !fdistI2E /=.
+rewrite fdist1E /d' fdistmapE /=.
 have [->|] := eqVneq i ord0; first by rewrite big1 // mulR0 mulR1 addR0.
 rewrite /= mulR0 add0R.
 case: (unliftP ord0 i) => //= [j|] -> // Hj.
 rewrite (big_pred1 j) //=.
-rewrite DelFDist.dE D1FDist.dE /= /onem mulRC -mulRA mulVR ?mulR1 //.
+rewrite fdist_delE fdistD1E /= /onem mulRC -mulRA mulVR ?mulR1 //.
 apply/eqP => /(congr1 (Rplus (d ord0))).
 rewrite addRCA addRN !addR0 => b'.
 by elim b; rewrite -b' eqxx.
@@ -364,10 +366,10 @@ set supp := fdist_supp d.
 set f : 'I_#|supp| -> 'I_n := enum_val.
 have [x Hx] := fdist_supp_mem d.
 set f' : 'I_n -> 'I_#|supp| := enum_rank_in Hx.
-set d' := FDistMap.d f' d.
-have -> : d = FDistMap.d f d'.
+set d' := fdistmap f' d.
+have -> : d = fdistmap f d'.
   apply fdist_ext => i /=.
-  rewrite FDistMap.comp FDistMap.dE /=.
+  rewrite fdistmap_comp fdistmapE /=.
   case/boolP: (i \in supp) => Hi.
   - rewrite (bigD1 i) /=; last first.
       by rewrite !inE /f /f' /= enum_rankK_in.
@@ -419,7 +421,7 @@ Import B.
 Definition T := B.T.
 
 Lemma axproj : ax_proj T.
-Proof. move=> *; apply axidem => j; by rewrite FDist1.supp inE => /eqP ->. Qed.
+Proof. move=> *; apply axidem => j; by rewrite supp_fdist1 inE => /eqP ->. Qed.
 
 Lemma existb_sig (A : finType) (P : {pred A}) :
   [exists x, P x] -> {x | P x}.
@@ -442,7 +444,7 @@ set h : 'I_#|fdist_supp d| -> 'I_n := enum_val.
 have f j :
   {i | [forall i, j \notin fdist_supp (e (h i))]||(j \in fdist_supp (e (h i)))}.
   case/boolP: [forall i, j \notin fdist_supp (e (h i))].
-    move=> _. by exists (proj1_sig (fdist_supp_mem (FDistMap.d h' d))).
+    by move=> _; exists (proj1_sig (fdist_supp_mem (fdistmap h' d))).
   by rewrite -negb_exists negbK => /existb_sig.
 rewrite /= in f.
 rewrite [LHS](axpart h').
@@ -457,7 +459,7 @@ have neqj j a k :
     by rewrite (trivIK _ _ _ Haj ak) eqxx in kj.
   rewrite inE negbK => /eqP ->.
   by rewrite mulR0.
-have Hmap' i : FDistMap.d h' d i = (\sum_j d (h i) * e (h i) j)%R.
+have Hmap' i : fdistmap h' d i = (\sum_j d (h i) * e (h i) j)%R.
   rewrite -big_distrr fdistE /= FDist.f1 /= mulR1.
   rewrite (bigD1 (h i)) /=; last by rewrite /h /h' !inE enum_valK_in eqxx.
   rewrite big1 /= ?addR0 // => j /andP[] /eqP <-.
@@ -465,8 +467,8 @@ have Hmap' i : FDistMap.d h' d i = (\sum_j d (h i) * e (h i) j)%R.
     by rewrite /h /h' (enum_rankK_in Hn0 Hj) eqxx.
   move: Hj; by rewrite inE negbK => /eqP.
 have Hmap i :
-  FDistMap.d (fun j : 'I_m => sval (f j)) (ConvnFDist.d d e) i =
-  FDistMap.d h' d i.
+  fdistmap (fun j : 'I_m => sval (f j)) (fdist_convn d e) i =
+  fdistmap h' d i.
   rewrite fdistE big_mkcond /=.
   under eq_bigr do rewrite fdistE.
   rewrite (eq_bigr (fun j => d (h i) * e (h i) j)%R).
@@ -484,7 +486,7 @@ have Hmap i :
   by rewrite (neqj j) //; apply: contra ji => /eqP/enum_val_inj ->.
 congr (<&>_ _ _); first by apply fdist_ext => /= i; rewrite Hmap.
 apply funext => i /=.
-have HF : FDistMap.d h' d i != 0%R.
+have HF : fdistmap h' d i != 0%R.
   rewrite fdistE /=.
   apply/eqP => /psumR_eq0P => H.
   have: h i \in fdist_supp d by apply enum_valP.
@@ -544,16 +546,16 @@ Qed.
 Lemma axinjmap : ax_inj_map T.
 Proof.
 move=> n m u d g Hu.
-have -> : FDistMap.d u d = ConvnFDist.d d (fun i : 'I_m => FDist1.d (u i)).
-  by apply fdist_ext => i; rewrite /FDistMap.d FDistBind.dE.
+have -> : fdistmap u d = fdist_convn d (fun i : 'I_m => fdist1 (u i)).
+  by apply fdist_ext => i; rewrite /fdistmap fdistbindE.
 rewrite -axbarypart.
 - congr (<&>_ _ _); apply funext => j /=; symmetry; apply axidem => i.
-  by rewrite FDist1.supp inE => /eqP ->.
+  by rewrite supp_fdist1 inE => /eqP ->.
 - move=> x y xy.
   apply/setP => z.
-  rewrite !FDist1.supp !inE.
+  rewrite !supp_fdist1 !inE.
   case: eqP => //= ->.
-  rewrite eqtype.inj_eq //. exact: negbTE.
+  by rewrite eqtype.inj_eq //; exact: negbTE.
 Qed.
 
 Lemma axbary : ax_bary T.
@@ -563,13 +565,13 @@ set f : 'I_n * 'I_m -> 'I_#|[finType of 'I_n * 'I_m]| := enum_rank.
 set f' : 'I_#|[finType of 'I_n * 'I_m]| -> 'I_n * 'I_m := enum_val.
 set h := fun k i => f (k, i).
 set h' := fun i => snd (f' i).
-rewrite (_ : (fun i => _) = (fun i => <&>_(FDistMap.d (h i) (e i)) (g \o h')));
+rewrite (_ : (fun i => _) = (fun i => <&>_(fdistmap (h i) (e i)) (g \o h')));
   last first.
   apply funext => i.
   have {1}-> : g = (g \o h') \o h i.
     apply funext => j; by rewrite /h' /h /= /f' /f enum_rankK.
   rewrite axinjmap //.
-  move=> x y; by rewrite /h => /enum_rank_inj [].
+  by move=> x y; rewrite /h => /enum_rank_inj [].
 rewrite axbarypart; first last.
 - move=> i j ij.
   apply/setP => x; rewrite !inE !fdistE.
@@ -580,19 +582,15 @@ rewrite axbarypart; first last.
   rewrite big_pred0 ?eqxx //.
   move=> k; apply/eqP => hik.
   by move: ij; rewrite -hik /h /f /f' enum_rankK eqxx.
-set e' := fun j : 'I_m =>
-  FDistMap.d f (ProdFDist.d (CondJFDist.d (Swap.d (ProdFDist.d d e)) j)
-                            (fun=> FDist1.d j)).
+set e' := fun j => fdistmap f (((fdistX (d `X e)) `(| j)) `x (fdist1 j)).
 have {2}-> : g = (fun j => <&>_(e' j) (g \o h')).
   apply funext => j; apply/esym/axidem => k //.
   rewrite inE /e' fdistE (big_pred1 (f' k)) /=; last first.
     by move=> i; rewrite 2!inE -{1}(enum_valK k) /f (can_eq enum_rankK).
   rewrite !fdistE.
-  case/boolP: (_ == j) => [/eqP <- // | Hj].
-  by rewrite mulR0 eqxx.
-rewrite [RHS]axbarypart; first last.
-- move=> i j ij.
-  apply/setP => x.
+  by have [<-//f'kj|] := eqVneq _ j; rewrite mulR0 eqxx.
+rewrite [RHS]axbarypart; last first.
+  move=> i j ij;  apply/setP => x.
   rewrite inE [RHS]inE.
   case/boolP: (_ \in _) => kx //.
   case/boolP: (_ \in _) => ky //.
@@ -612,7 +610,7 @@ rewrite !fdistE -big_mkcond /=.
 rewrite (big_pred1 (f' k));
   last by move=> a; rewrite !inE -{1}(enum_valK k) /f (can_eq enum_rankK).
 set p := f' k => /=.
-case/boolP: (j == p.2) => [/eqP -> | Hj]; last first.
+have [->|Hj] := eqVneq j p.2; last first.
   rewrite big_pred0; first last.
     move=> i; apply/negbTE; apply: contra Hj.
     rewrite !inE -(enum_valK k) (can_eq enum_rankK).
@@ -621,17 +619,18 @@ case/boolP: (j == p.2) => [/eqP -> | Hj]; last first.
 rewrite (big_pred1 p.1) /=; last first.
   move=> i; rewrite !inE -(enum_valK k) (can_eq enum_rankK).
   by rewrite (surjective_pairing (enum_val k)) xpair_eqE eqxx andbT.
-case/boolP: (\sum_(i < n) d i * e i p.2 == 0)%R => [/eqP|] Hp.
-  rewrite Hp mul0R (proj1 (psumR_eq0P _) Hp) //.
-  move=> *; by apply mulR_ge0.
-rewrite [RHS]mulRC !fdistE CondJFDist.dE !fdistE /=; last first.
-  by under eq_bigr do rewrite Swap.dE ProdFDist.dE /=.
-rewrite /jcPr /proba.Pr (big_pred1 p);
-  last by move=> i; rewrite !inE -xpair_eqE -!surjective_pairing.
+have [Hp|Hp] := eqVneq (\sum_(i < n) d i * e i p.2)%R 0%R.
+  by rewrite Hp mul0R (proj1 (psumR_eq0P _) Hp) // => *; exact: mulR_ge0.
+rewrite [RHS]mulRC !fdistE jfdist_condE !fdistE /=; last first.
+  by under eq_bigr do rewrite fdistXE fdist_prodE.
+rewrite /jcPr /proba.Pr (big_pred1 p); last first.
+  by move=> i; rewrite !inE -xpair_eqE -!surjective_pairing.
 rewrite (big_pred1 p.2); last by move=> i; rewrite !inE.
-rewrite eqxx mulR1 Bivar.sndE /= ProdFDist.dE.
-under eq_bigr do rewrite ProdFDist.dE /=.
+rewrite eqxx mulR1 fdist_sndE /= fdist_prodE.
+under eq_bigr do rewrite fdist_prodE /=.
 by rewrite -mulRA mulVR ?mulR1.
 Qed.
+
 End BeaulieuToStandard.
+
 End NaryConvexSpaceEquiv.

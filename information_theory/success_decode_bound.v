@@ -101,10 +101,8 @@ Qed.
 End typed_success_decomp_sect.
 
 Section typed_success_factor_bound_sect.
-
 Variables A B M : finType.
 Hypothesis Mnot0 : (0 < #|M|)%nat.
-
 Variable n' : nat.
 Let n := n'.+1.
 Variable V : P_ n ( A , B ).
@@ -184,12 +182,11 @@ Lemma success_factor_bound_part2 :
 Proof.
 rewrite /success_factor -mulRA (mulRC (/ #|M|%:R)) !mulRA.
 apply leR_wpmul2r; first exact/invR_ge0/ltR0n.
-rewrite /MutualInfoChan.mut_info -addR_opp addRC addRA.
-rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last first.
-  by rewrite /CondEntropyChan.h; field.
+rewrite /mutual_info_chan -addR_opp addRC addRA.
+rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last by rewrite /cond_entropy_chan; field.
 rewrite mulRDr mulRN -mulNR /exp2 ExpD; apply leR_wpmul2l => //.
 rewrite -big_morph_natRD; apply (@leR_trans #| T_{`tO( V )} |%:R); last first.
-  rewrite -output_type_out_entropy //; exact: card_typed_tuples.
+  by rewrite -output_type_out_entropy //; exact: card_typed_tuples.
 apply/le_INR/leP.
 apply: (@leq_trans (\sum_m #| T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-1: [set Some m]))|)).
 - apply leq_sum => m _.

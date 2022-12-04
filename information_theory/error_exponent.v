@@ -30,7 +30,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope divergence_scope.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope channel_scope.
 Local Open Scope reals_ext_scope.
@@ -62,18 +62,17 @@ rewrite -addR_opp -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
 rewrite -mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
 rewrite oppRK big_morph_oppR -big_split /=.
 apply: leR_trans; first exact: leR_sumR_Rabs.
-rewrite -iter_addR -big_const.
-apply leR_sumR => b _; rewrite addRC.
-apply Rabs_xlnx => //.
-rewrite 2!OutFDist.dE -addR_opp big_morph_oppR -big_split /=.
+rewrite -iter_addR -big_const; apply leR_sumR => b _; rewrite addRC.
+apply: Rabs_xlnx => //.
+rewrite 2!fdist_outE -addR_opp big_morph_oppR -big_split /=.
 apply: leR_trans; first exact: leR_sumR_Rabs.
-apply (@leR_trans (d(`J(P , V), `J(P , W)))).
+apply: (@leR_trans (d((P `X V), (P `X W)))).
 - rewrite /var_dist /=.
-  apply (@leR_trans (\sum_(a : A) \sum_(b : B) `| (`J(P, V)) (a, b) - (`J(P, W)) (a, b) |)); last first.
-    apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
+  apply (@leR_trans (\sum_a \sum_b `| ((P `X V)) (a, b) - ((P `X W)) (a, b) | )); last first.
+    by apply Req_le; rewrite pair_bigA /=; apply eq_bigr => -[].
   apply: leR_sumR => a _.
   rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
-  rewrite 2!JointFDistChan.dE /= !(mulRC (P a)) addR_opp.
+  rewrite 2!fdist_prodE /= !(mulRC (P a)) addR_opp.
   by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.
 - rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dominates.
@@ -90,7 +89,7 @@ apply: leR_trans; first exact: leR_sumR_Rabs.
 rewrite -2!iter_addR -2!big_const pair_bigA /=.
 apply: leR_sumR; case => a b _; rewrite addRC /=.
 apply Rabs_xlnx => //.
-apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
+apply (@leR_trans (d(P `X V, P `X W))).
 - rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
   rewrite -[X in X <= _]addR0.
   by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.
@@ -101,7 +100,7 @@ Qed.
 Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
   / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
-rewrite /MutualInfoChan.mut_info.
+rewrite /mutual_info_chan.
 rewrite (_ : _ - _ = `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last by field.
 apply: leR_trans; first exact: Rabs_triang.
 rewrite -mulRA mulRDl mulRDr.
@@ -113,13 +112,12 @@ Qed.
 End mutinfo_distance_bound.
 
 Section error_exponent_lower_bound.
-
 Variables A B : finType.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
-Variable W : `Ch(A, B).
-Variable minRate : R.
+Variables (W : `Ch(A, B)) (minRate : R).
 Hypothesis minRate_cap : minRate > capacity W.
-Hypothesis set_of_I_has_ubound : classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
+Hypothesis set_of_I_has_ubound :
+  classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
   forall P : fdist A, forall V : `Ch(A, B),

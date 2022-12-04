@@ -23,10 +23,10 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Local Open Scope typ_seq_scope.
-Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
+Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
+Local Open Scope typ_seq_scope.
 
 Local Open Scope R_scope.
 

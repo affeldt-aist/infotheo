@@ -6,7 +6,7 @@ From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb fdist proba.
 
 (******************************************************************************)
-(*                         Definition of a source code                        *)
+(*                        Definition of a source code                         *)
 (*                                                                            *)
 (* encT, decT     == types for the source encoder and source decoder          *)
 (* scode_fl       == definition of a fixed-length source code                 *)
@@ -32,6 +32,7 @@ Record scode := mkScode { enc : encT ; dec : decT }.
 
 End scode_definition.
 
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Section scode_vl_definition.

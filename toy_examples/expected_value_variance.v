@@ -81,6 +81,7 @@ rewrite ifT; last by I3_eq.
 by field.
 Qed.
 
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Definition d : {fdist 'I_3} := FDist.mk pmf1.

@@ -24,7 +24,7 @@ Definition kraft_condR (T : finType) (sizes : seq nat) :=
   let n := size sizes in
   (\sum_(i < n) #|T|%:R^-(nth O sizes i) <= (1 : R))%R.
 
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 
 Module Encoding.
 Record t (A T : finType) := mk {

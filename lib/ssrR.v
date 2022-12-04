@@ -349,6 +349,9 @@ Proof. by case/leR_eqVlt. Qed.
 Definition leR0n n : 0 <= n%:R := pos_INR n.
 Lemma leR0n' n : (0 <b= n%:R). Proof. exact/leRP/leR0n. Qed.
 
+Lemma leR01 : (R0 <= R1)%R.
+Proof. by []. Qed.
+
 Lemma ltR0n n : (0 < n%:R) <-> (O < n)%nat.
 Proof.
 by split => [/gtR_eqF/eqP/INR_not_0/Nat.neq_0_lt_0/ltP | /ltP/lt_0_INR].

@@ -88,7 +88,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope reals_ext_scope.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
 
 Module NESet.
@@ -448,10 +448,10 @@ have gXi : forall i : 'I_n.+1, X (g i).
   by move=> i; move/subset_image : gX; apply.
 have [/eqP d01|d0n1] := boolP (d ord0 == 1).
 - suff : X (<|>_d g) by move/(@iter_conv_set_superset X' n.+1 (<|>_d g)).
-  by rewrite (convn_proj g d01); exact/gX/imageP.
-- rewrite convnE //; exists (probfdist d ord0) => //; exists (g ord0) => //.
+  by rewrite (Convn_proj g d01); exact/gX/imageP.
+- rewrite ConvnIE //; exists (probfdist d ord0) => //; exists (g ord0) => //.
   rewrite conv_pt_setE.
-  exists (<|>_(DelFDist.d d0n1) (fun x : 'I_n => g (DelFDist.f ord0 x))) => //.
+  exists (<|>_(fdist_del d0n1) (fun x : 'I_n => g (fdist_del_idx ord0 x))) => //.
   by apply IHn => u [] i _ <-; exact/gX/imageP.
 Qed.
 
@@ -501,7 +501,7 @@ Lemma hull_conv_set_strr (p : prob) (X Y : set A) :
 Proof.
 apply hull_eqEsubset=> u.
 - case=> x Xx; rewrite conv_pt_setE=> -[] y [] n [] g [] d [] gY yg <-.
-  exists n, (fun i => x <|p|> g i), d; rewrite -convnDr yg; split=> //.
+  exists n, (fun i => x <|p|> g i), d; rewrite -ConvnDr yg; split=> //.
   by move=> v [] i _ <-; exists x=> //; apply/conv_in_conv_pt_set/gY/imageP.
 - case=> x Xx [] y Yy <-; apply/subset_hull.
   by exists x=> //; exists y=> //; exact/subset_hull.
@@ -992,8 +992,8 @@ Proof.
 apply necset_ext => /=.
 apply: hull_eqEsubset => a.
 - case => x [] i Si Fix xa.
-  exists 1, (fun _ => a), (FDist1.d ord0).
-  split; last by rewrite convn1E.
+  exists 1, (fun _ => a), (fdist1 ord0).
+  split; last by rewrite ConvnI1E.
   move=> a0 [] zero _ <-.
   exists (biglub_necset (F i)); first by do 2 apply imageP.
   by apply/subset_hull; exists x.
@@ -1088,6 +1088,7 @@ Notation "{ 'necset' T }" :=
 Module necset_join.
 Section def.
 Local Open Scope classical_set_scope.
+Local Open Scope proba_scope.
 Definition F (T : Type) := {necset {dist (choice_of_Type T)}}.
 Variable T : Type.
 
@@ -1095,20 +1096,20 @@ Definition L := [the convType of F T].
 
 Definition FFT := F (F T).
 
-Definition F1join0' (X : FFT) : set L := (@Convn_of_FSDist L) @` X.
+Definition F1join0' (X : FFT) : set L := (@Convn_of_fsdist L) @` X.
 
 Lemma F1join0'_convex X : is_convex_set (F1join0' X).
 Proof.
 apply/asboolP=> x y p [] dx Xdx <-{x} [] dy Xdy <-{y}.
 exists (dx <|p|>dy); first by move/asboolP: (convex_setP X); apply.
-by rewrite Convn_of_FSDist_affine.
+by rewrite Convn_of_fsdist_affine.
 Qed.
 
 Lemma F1join0'_neq0 X : (F1join0' X) != set0.
 Proof.
 apply/set0P.
 case/set0P: (neset_neq0 X) => x Xx.
-by exists (Convn_of_FSDist (x : {dist (F T)})), x.
+by exists (Convn_of_fsdist (x : {dist (F T)})), x.
 Qed.
 
 Definition L' := necset L.
@@ -1150,14 +1151,14 @@ Local Notation M := (necset_join.F).
 
 Section ret.
 Variable a : Type.
-Definition necset_ret (x : a) : M a := necset1 (FSDist1.d (x : choice_of_Type a)).
+Definition necset_ret (x : a) : M a := necset1 (fsdist1 (x : choice_of_Type a)).
 End ret.
 
 Section fmap.
 Variables (a b : Type) (f : a -> b).
 
 Let necset_fmap' (ma : M a) :=
-  (FSDistfmap (f : choice_of_Type a -> choice_of_Type b)) @` ma.
+  (fsdistmap (f : choice_of_Type a -> choice_of_Type b)) @` ma.
 
 Lemma necset_fmap'_convex ma : is_convex_set (necset_fmap' ma).
 Proof.
@@ -1169,7 +1170,7 @@ Qed.
 Lemma necset_fmap'_neq0 ma : (necset_fmap' ma) != set0.
 Proof.
 case/set0P : (neset_neq0 ma) => x max; apply/set0P.
-by exists (FSDistfmap (f : choice_of_Type a -> choice_of_Type b) x), x.
+by exists (fsdistmap (f : choice_of_Type a -> choice_of_Type b) x), x.
 Qed.
 
 Definition necset_fmap : M a -> M b := fun ma =>

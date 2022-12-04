@@ -36,8 +36,9 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
-Local Open Scope entropy_scope.
+Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
+Local Open Scope entropy_scope.
 
 Section typical_sequence_definition.
 
@@ -178,7 +179,7 @@ rewrite {1}/Pr (eq_bigr (fun=> 0)); last by move=> /= v; rewrite inE => /eqP.
 rewrite big_const iter_addR mulR0 add0R.
 apply/(leR_trans _ (aep He k0_k))/Pr_incl/subsetP => /= t.
 rewrite !inE /= => /andP[-> /= H3]; apply/ltRW'.
-by rewrite /mlog_RV /= /scalel_RV /= mulRN -mulNR.
+by rewrite /log_RV /= /scalel_RV /= mulRN -mulNR.
 Qed.
 
 Variable He1 : epsilon < 1.

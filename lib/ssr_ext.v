@@ -502,6 +502,9 @@ Lemma inj_card (A B : finType) (f : {ffun A -> B}) :
   injective f -> #| A | <= #| B |.
 Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
 
+Lemma size_index_enum (T : finType) : size (index_enum T) = #|T|.
+Proof. by rewrite cardT enumT. Qed.
+
 Section finset_ext.
 Implicit Types A B : finType.
 

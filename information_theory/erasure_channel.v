@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq              *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later             *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import Reals.
@@ -9,6 +9,9 @@ Require Import binary_entropy_function channel hamming channel_code.
 
 (******************************************************************************)
 (*                     Definition of erasure channel                          *)
+(*                                                                            *)
+(* EC.v == definition of n-ary Erasure Channel (EC)                           *)
+(*                                                                            *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -22,12 +25,8 @@ Local Open Scope reals_ext_scope.
 Module EC.
 
 Section EC_sect.
-
-Variable A : finType.
-Variable p : R.
+Variables (A : finType) (p : R).
 Hypothesis p_01 : 0 <= p <= 1.
-
-(** Definition of n-ary Erasure Channel (EC) *)
 
 Definition f (a : A) := [ffun b =>
   if b is Some a' then
@@ -64,20 +63,20 @@ Section EC_prob.
 
 Variable X : finType.
 Hypothesis card_X : #|X| = 2%nat.
-Variable P : fdist X.
-Variable p : R. (* erasure probability *)
+Variables (P : fdist X) (p : R) (* erasure probability *).
 Hypothesis p_01 : 0 <= p <= 1.
 
 Let BEC := @EC.c X p p_01.
 Let q := P (Set2.a card_X).
 Local Notation W := (EC.f p).
-Local Notation P'W := (JointFDistChan.d P BEC).
-Local Notation PW := (OutFDist.f P BEC).
+Local Notation P'W := (P `X BEC)%fdist.
+Local Notation PW := (`O(P, BEC)).
 
 Lemma EC_non_flip (a : X) (i : option X):
   (i != None) && (i != Some a) -> 0 = EC.f p a i.
 Proof.
-case: i => //= x xa; rewrite ffunE; case: ifP => // ax; move: xa; by rewrite (eqP ax) eqxx.
+case: i => //= x xa; rewrite ffunE; case: ifP => // ax; move: xa.
+by rewrite (eqP ax) eqxx.
 Qed.
 
 End EC_prob.

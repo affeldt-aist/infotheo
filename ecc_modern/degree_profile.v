@@ -140,8 +140,6 @@ Inductive tree : nat -> kind -> Type :=
     seq (tree l (negk k)) ->                       (* list of children *)
     tree l.+1 k.
 
-Local Open Scope proba_scope.
-
 Definition tree_children l k : tree l.+1 k -> seq (tree l (negk k)).
 move Hl1 : _.+1 => l1.
 destruct 1 => //.
@@ -458,6 +456,8 @@ Qed.
 Definition fintree_finMixin n l := Eval hnf in FinMixin (@fintree_enumP n l).
 
 Canonical fintree_finType n l := Eval hnf in FinType _ (fintree_finMixin n l).
+
+Local Open Scope fdist_scope.
 
 Definition ensemble n l := {fdist (@fintree n l)}.
 

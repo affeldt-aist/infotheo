@@ -71,7 +71,6 @@ End divergence_def.
 Notation "'D(' P '||' Q ')' " := (div P Q) : divergence_scope.
 
 Local Open Scope divergence_scope.
-Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 
 Section divergence_prop.

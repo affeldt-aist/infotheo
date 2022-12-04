@@ -29,7 +29,7 @@ probability/fsdist.v
 probability/convex.v
 probability/convex_equiv.v
 probability/convex_stone.v
-probability/jfdist.v
+probability/jfdist_cond.v
 probability/graphoid.v
 probability/jensen.v
 probability/ln_facts.v
@@ -42,7 +42,6 @@ probability/necset.v
 probability/bayes.v
 information_theory/source_code.v
 information_theory/entropy.v
-information_theory/chap2.v
 information_theory/channel.v
 information_theory/pproba.v
 information_theory/channel_code.v
@@ -63,7 +62,7 @@ information_theory/channel_coding_converse.v
 information_theory/kraft.v
 information_theory/shannon_fano.v
 information_theory/string_entropy.v
-information_theory/convex_fdist.v
+information_theory/entropy_convex.v
 information_theory/source_coding_vl_direct.v
 information_theory/source_coding_vl_converse.v
 ecc_classic/linearcode.v

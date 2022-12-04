@@ -176,12 +176,12 @@ Hypothesis HC : 0 < #| [set cw in C] |.
 Local Open Scope proba_scope.
 Variable y : (`U HC).-receivable W.
 
-Lemma post_proba_uniform_checksubsum (x : 'rV['F_2]_n) :
+Lemma post_prob_uniform_checksubsum (x : 'rV['F_2]_n) :
   (`U HC) `^^ W (x | y) =
-    (PosteriorProbability.Kppu [set cw in C] y *
+    (post_prob_uniform_cst [set cw in C] y *
      (\prod_m0 (\delta ('V m0) x))%:R * W ``(y | x))%R.
 Proof.
-rewrite PosteriorProbability.uniform_kernel; congr (_ * _ * _)%R.
+rewrite post_prob_uniform_kernel; congr (_ * _ * _)%R.
 by rewrite big_morph_natRM checksubsum_in_kernel inE mem_kernel_syndrome0.
 Qed.
 
