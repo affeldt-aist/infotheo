@@ -84,7 +84,6 @@ Local Open Scope vec_ext_scope.
 
 (* TODO: move to the file on bsc? *)
 Section post_proba_bsc_unif.
-
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
@@ -92,14 +91,13 @@ Hypothesis p_01' : 0 < p < 1.
 Let p_01 := Eval hnf in Prob.mk_ (ltR2W p_01').
 Let P := fdist_uniform card_A.
 Variable a' : A.
-Hypothesis Ha' : Receivable.def (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
+Hypothesis Ha' : receivable_prop (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
 
 Lemma bsc_post (a : A) :
-  (P `^ 1) `^^ (BSC.c card_A p_01) (\row_(i < 1) a | Receivable.mk Ha') =
+  (P `^ 1) `^^ (BSC.c card_A p_01) (\row_(i < 1) a | mkReceivable Ha') =
   (if a == a' then 1 - p else p)%R.
 Proof.
-rewrite PosteriorProbability.dE /= /PosteriorProbability.den /=.
-rewrite !fdist_rVE DMCE big_ord_recl big_ord0.
+rewrite fdist_post_probE /= !fdist_rVE DMCE big_ord_recl big_ord0.
 rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
   by move=> i _; rewrite /P !fdist_rVE big_ord_recl big_ord0 !fdist_uniformE mulR1.
 rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
@@ -450,18 +448,18 @@ Local Open Scope R_scope.
 Lemma estimation_correctness (d : 'rV_n) n0 :
   let b := d ``_ n0 in let P := `U C_not_empty in
   P '_ n0 `^^ W (b | y) =
-    MarginalPostProbability.Kmpp y * PosteriorProbability.Kppu [set cw in C] y *
+    marginal_post_prob_den y * post_prob_uniform_cst [set cw in C] y *
     W `(y ``_ n0 | b) * \prod_(m0 in 'F n0) alpha m0 n0 d.
 Proof.
 move=> b P.
-rewrite MarginalPostProbability.probaE -2!mulRA; congr (_ * _).
-transitivity (PosteriorProbability.Kppu [set cw in C] y *
+rewrite fdist_marginal_post_probE -2!mulRA; congr (_ * _).
+transitivity (post_prob_uniform_cst [set cw in C] y *
               (\sum_(x = d [~ setT :\ n0])
                 W ``(y | x) * \prod_(m0 < m) (\delta ('V m0) x)%:R))%R.
   rewrite [RHS]big_distrr [in RHS]/=.
   apply eq_big => t; first by rewrite -freeon_all.
   rewrite inE andTb => td_n0.
-  rewrite PosteriorProbability.uniform_kernel -mulRA; congr (_ * _)%R.
+  rewrite post_prob_uniform_kernel -mulRA; congr (_ * _)%R.
   rewrite mulRC; congr (_ * _)%R.
   by rewrite checksubsum_in_kernel inE mem_kernel_syndrome0.
 congr (_ * _)%R.
@@ -480,7 +478,8 @@ transitivity (
     \prod_(m0 in 'F n0) \prod_(m1 in 'F(m0, n0)) (\delta ('V m1) x)%:R).
   apply eq_bigr => /= t Ht.
   congr (_ * _)%R.
-  by rewrite -(rprod_Fgraph_part_fnode (Tanner.connected tanner) (Tanner.acyclic tanner) (fun m0 => (\delta ('V m0) t)%:R)).
+  by rewrite -(rprod_Fgraph_part_fnode (Tanner.connected tanner) (Tanner.acyclic tanner)
+      (fun m0 => (\delta ('V m0) t)%:R)).
 transitivity (
   \sum_(x = d [~ setT :\ n0]) \prod_(m0 in 'F n0)
     (W ``(y # 'V(m0, n0) :\ n0 | x # 'V(m0, n0) :\ n0) *
@@ -498,24 +497,22 @@ Definition K949 (n0 : 'I_n) df := /
     W Zp1 (y ``_ n0) * \prod_(m1 in 'F n0) alpha m1 n0 (df `[ n0 := Zp1 ])).
 
 Lemma K949_lemma df n0 : K949 n0 df =
-  MarginalPostProbability.Kmpp y * PosteriorProbability.Kppu [set cw in C] y.
+  marginal_post_prob_den y * post_prob_uniform_cst [set cw in C] y.
 Proof.
-rewrite /K949 /MarginalPostProbability.Kmpp /PosteriorProbability.Kppu -invRM; last 2 first.
+rewrite /K949 /marginal_post_prob_den /post_prob_uniform_cst -invRM; last 2 first.
   apply/eqP; rewrite FDist.f1 => ?; lra.
-  by rewrite -not_receivable_uniformE Receivable.defE.
+  by rewrite -not_receivable_prop_uniform receivableP.
 congr (/ _).
 transitivity (\sum_(t in 'rV['F_2]_n)
   if t \in kernel H then W ``(y | t) else 0); last first.
   rewrite big_distrl /=.
   apply eq_bigr => /= t Ht.
   case: ifP => HtH.
-    rewrite PosteriorProbability.dE.
-    rewrite fdist_uniform_supp_in ?inE //.
-    rewrite /PosteriorProbability.den.
+    rewrite fdist_post_probE fdist_uniform_supp_in ?inE //.
     have HH : #|[set cw in kernel H]|%:R <> 0.
       apply/INR_eq0/eqP.
       rewrite cards_eq0.
-      apply/set0Pn; exists t; by rewrite inE.
+      by apply/set0Pn; exists t; rewrite inE.
     rewrite -(mulRC (W ``(y | t))) -[X in X = _]mulR1.
     rewrite -!mulRA.
     congr (_ * _).
@@ -523,13 +520,13 @@ transitivity (\sum_(t in 'rV['F_2]_n)
     rewrite invRM; last 2 first.
       exact/eqP/invR_neq0.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
-      by rewrite -not_receivable_uniformE Receivable.defE.
+      by rewrite -not_receivable_prop_uniform receivableP.
     rewrite invRK //; last  exact/eqP.
     rewrite -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.
     set tmp1 := \sum_(_ | _) _.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
-    by rewrite -not_receivable_uniformE Receivable.defE.
-  rewrite PosteriorProbability.dE fdist_uniform_supp_notin; last by rewrite inE; exact/negbT.
+    by rewrite -not_receivable_prop_uniform receivableP.
+  rewrite fdist_post_probE fdist_uniform_supp_notin; last by rewrite inE; exact/negbT.
   by rewrite !(mul0R,div0R).
 rewrite -big_mkcond /=.
 rewrite /alpha.
@@ -544,9 +541,11 @@ transitivity (W Zp0 (y ``_ n0) *
       (W ``(y # 'V(m1, n0) :\ n0 | ta # 'V(m1, n0) :\ n0) *
       (\prod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R)))).
   congr (_ * _ + _ * _).
-    rewrite (rmul_rsum_commute0 (Tanner.connected tanner) (Tanner.acyclic tanner) y (fun m x y => W ``(x | y))) // => m1 m0 t Hm1 tdf.
+    rewrite (rmul_rsum_commute0 (Tanner.connected tanner) (Tanner.acyclic tanner) y
+             (fun m x y => W ``(x | y))) // => m1 m0 t Hm1 tdf.
     by rewrite checksubsum_dprojs_V.
-  rewrite (rmul_rsum_commute0 (Tanner.connected tanner) (Tanner.acyclic tanner) y (fun m x y => W ``(x | y))) // => m1 m0 t Hm1 tdf.
+  rewrite (rmul_rsum_commute0 (Tanner.connected tanner) (Tanner.acyclic tanner) y
+           (fun m x y => W ``(x | y))) // => m1 m0 t Hm1 tdf.
   by rewrite checksubsum_dprojs_V.
 transitivity (\sum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
     \prod_(m1 in 'F n0)

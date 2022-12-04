@@ -6,8 +6,8 @@ From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import entropy fdist jfdist convex binary_entropy_function log_sum.
-Require Import divergence chap2.
+Require Import jfdist_cond entropy convex binary_entropy_function log_sum.
+Require Import divergence.
 
 (******************************************************************************)
 (*                Section 2.7 of Elements of Information Theory               *)
@@ -29,7 +29,7 @@ Require Import divergence chap2.
 (*         entropy_concave == entropy is concave (thm 2.7.3)                  *)
 (* mutual_information_concave == the mutual information is concave w.r.t.     *)
 (*                            its first argument (thm 2.7.4)                  *)
-(* mutual_information_convex == the mutual information is convex w.r.t.　　  　*)
+(* mutual_information_convex == the mutual information is convex w.r.t        *)
 (*                            its second argument (thm 2.7.4)                 *)
 (*                                                                            *)
 (* ref: Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, 2nd   *)
@@ -308,47 +308,46 @@ Qed.
 Lemma concavity_of_entropy : concave_function_in open_unit_interval H2.
 Proof.
 rewrite /concave_function_in => x y t Hx Hy.
-apply RNconcave_function_at.
+apply: RNconcave_function_at.
 (* wlogつかう. まず関係ない変数を戻し, *)
-move : t.
+move: t.
 (* 不等号をorでつないだやつを用意して *)
-move : (Rtotal_order x y) => Hxy.
+have Hxy := Rtotal_order x y.
 (* その不等号のひとつを固定してwlogする *)
 wlog : x y Hx Hy Hxy / x < y.
-  move => H.
-  case Hxy; [apply H|] => //.
-  case => [-> t|]; [exact/convex_function_atxx|].
-  move => Hxy' t.
+  move=> H.
+  case: Hxy.
+    by apply H => //; lra.
+  case => [-> t|Hxy' t]; first exact/convex_function_atxx.
   apply: convex_function_sym => // t0.
-  apply H => //.
-  by apply or_introl.
-move => Hxy' t.
-by apply /R_convex_function_atN /concavity_of_entropy_x_le_y.
+  by apply H => //; left.
+move=> Hxy' t.
+exact/R_convex_function_atN /concavity_of_entropy_x_le_y.
 Qed.
 
 End entropy_concave_alternative_proof_binary_case.
 
 Section mutual_information_concave.
 Local Open Scope fdist_scope.
-Variables (A B : finType) (Q : A -> fdist B).
+Variables (A B : finType) (W : A -> fdist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 Lemma mutual_information_concave :
-  concave_function (fun P => mutual_info (fdist_prod P Q)).
+  concave_function (fun P => mutual_info (P `X W)).
 Proof.
-suff : concave_function (fun P => let PQ := fdistX (fdist_prod P Q) in
-                                  `H (PQ`1) - cond_entropy PQ).
+suff : concave_function
+  (fun P => let PQ := fdistX (P `X W) in `H PQ`1 - cond_entropy PQ).
   set f := fun _ => _. set g := fun _ => _.
   suff -> : f = g by [].
   by rewrite boolp.funeqE => d; rewrite {}/f {}/g /= -mutual_infoE -mutual_info_sym.
 apply: R_concave_functionB.
-  have concave_H := entropy_concave B_not_empty.
+  have /RNconvex_function concave_H := entropy_concave B_not_empty.
   apply: R_concave_functionN => p q t /=.
   rewrite /convex_function_at 3!fdistX1.
-  move/RNconvex_function in concave_H.
-  apply: leR_trans (concave_H (fdist_prod p Q)`2 (fdist_prod q Q)`2 t).
-  by rewrite /conv /= (* TODO *) -fdist_prod2_conv; exact/leRR.
-suff : affine (fun x => cond_entropy (fdistX (fdist_prod x Q))).
+  apply: leR_trans (concave_H (p `X W)`2 (q `X W)`2 t).
+  under eq_bigr do rewrite fdist_prod2_conv.
+  exact/leRR.
+suff : affine (fun x => cond_entropy (fdistX (x `X W))).
   by move=> /affine_functionP[].
 move=> t p q.
 rewrite /= avgRE /cond_entropy /cond_entropy1.
@@ -357,22 +356,19 @@ rewrite !fdistX2 !fdist_fstE !mulRN -oppRD; congr (- _).
 rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
 rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
 rewrite !fdist_prodE /= fdist_convE /= !(mulRA t) !(mulRA t.~).
-case/boolP: (t * p a == 0) => /eqP Hp.
+have [Hp|/eqP Hp] := eqVneq (t * p a) 0.
   rewrite Hp.
-  case/boolP: (t.~ * q a == 0) => /eqP Hq.
-    rewrite Hq; field.
-  rewrite !(mul0R,add0R).
-  rewrite /fdist_prod.
-  rewrite -jfdist_prodE /=; last by rewrite fdist_convE Hp add0R.
-  rewrite -jfdist_prodE /= //; by move: Hq; rewrite mulR_neq0 => -[].
+  have [->|/eqP Hq] := eqVneq (t.~ * q a) 0; first by field.
+  rewrite !(mul0R,add0R) jcPr_fdistX_prod /=; last by rewrite fdist_convE Hp add0R.
+  by rewrite jcPr_fdistX_prod //=; move: Hq; rewrite mulR_neq0 => -[].
 have [Hq|Hq] := eqVneq (t.~ * q a) 0.
   rewrite Hq !(mul0R,addR0).
-  rewrite -jfdist_prodE; last by rewrite fdist_convE Hq addR0.
-  by rewrite -jfdist_prodE /= //; move: Hp; rewrite mulR_neq0 => -[].
-rewrite -jfdist_prodE; last first.
+  rewrite jcPr_fdistX_prod; last by rewrite fdist_convE Hq addR0.
+  by rewrite jcPr_fdistX_prod //=; move: Hp; rewrite mulR_neq0 => -[].
+rewrite jcPr_fdistX_prod; last first.
   by rewrite /= fdist_convE paddR_eq0; [tauto|exact/mulR_ge0|exact/mulR_ge0].
-rewrite -jfdist_prodE; last by move: Hp; rewrite mulR_neq0 => -[].
-rewrite -jfdist_prodE //=; last by move/eqP: Hq; rewrite mulR_neq0 => -[].
+rewrite jcPr_fdistX_prod; last by move: Hp; rewrite mulR_neq0 => -[].
+rewrite jcPr_fdistX_prod //=; last by move/eqP: Hq; rewrite mulR_neq0 => -[].
 by field.
 Qed.
 
@@ -384,54 +380,42 @@ Local Open Scope fdist_scope.
 Variables (A B : finType) (P : fdist A).
 
 Lemma mutual_information_convex :
-  convex_function (fun Q : A -> fdist B => mutual_info (fdist_prod P Q)).
+  convex_function (fun W : A -> fdist B => mutual_info (P `X W)).
 Proof.
 move=> /= p1yx p2yx t.
-pose p1' := (P, p1yx).
-pose p2' := (P, p2yx).
-pose p1xy := fdist_prod p1'.1 p1'.2.
-pose p2xy := fdist_prod p2'.1 p2'.2.
+pose p1xy := P `X p1yx.
+pose p2xy := P `X p2yx.
 pose p1 := p1xy`2.
 pose p2 := p2xy`2.
-pose plambdayx := fun a : A => p1yx a <| t |> p2yx a.
-pose plambda' := (P, plambdayx).
-pose plambdaxy := fdist_prod plambda'.1 plambda'.2.
+pose plambdayx := fun a => p1yx a <| t |> p2yx a.
+pose plambdaxy := P `X plambdayx.
 pose plambday := plambdaxy`2.
 pose qlambdaxy := P `x plambday.
 pose q1xy := P `x p1.
 pose q2xy := P `x p2.
 rewrite /convex_function_at.
-have -> : mutual_info (fdist_prod P (fun x => p1yx x <| t |> p2yx x)) =
-       D(plambdaxy || qlambdaxy).
+have -> : mutual_info (P `X (fun x => p1yx x <| t |> p2yx x)) = D(plambdaxy || qlambdaxy).
   rewrite mutual_infoE0 /div pair_big /=; apply: eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
-  rewrite /qlambdaxy.
-  by rewrite fdist_prodE /= /fdist_prod /= fdist_prod1; congr (_ * _).
+  by rewrite /qlambdaxy fdist_prodE /= fdist_prod1.
 have -> : qlambdaxy = q1xy <| t |> q2xy.
   apply/fdist_ext => -[a b].
-  rewrite !fdist_prodE !fdist_convE /=.
-  rewrite /q1xy /q2xy !fdist_prodE /=.
-  rewrite /p1 /plambday.
-  rewrite !fdist_sndE !big_distrr /= -big_split /=.
-  apply eq_bigr => a0 _.
-  rewrite /plambdaxy /= !fdist_prodE /= /p1xy /plambdayx.
-  by rewrite fdist_convE /=; field.
+  rewrite !fdist_prodE !fdist_convE /= /q1xy /q2xy !fdist_prodE /= /p1 /plambday.
+  rewrite !fdist_sndE !big_distrr /= -big_split /=; apply eq_bigr => a0 _.
+  by rewrite /plambdaxy /= !fdist_prodE /= /p1xy /plambdayx fdist_convE /=; field.
 have -> : plambdaxy = p1xy <| t |> p2xy.
   apply/fdist_ext => -[a b].
-  rewrite !fdist_prodE !fdist_convE /=.
-  by rewrite /p1xy /p2xy !fdist_prodE /=; field.
-have -> : mutual_info (fdist_prod P p1yx) = D(p1xy || q1xy).
+  by rewrite !fdist_prodE !fdist_convE /= /p1xy /p2xy !fdist_prodE /=; field.
+have -> : mutual_info (P `X p1yx) = D(p1xy || q1xy).
   rewrite mutual_infoE0 /div pair_big /=; apply: eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
-  by rewrite /q1xy fdist_prodE /fdist_prod /= fdist_prod1.
-have -> : mutual_info (fdist_prod P p2yx) = D(p2xy || q2xy).
-  rewrite mutual_infoE0 /div pair_big /=.
-  apply: eq_bigr => -[a b] _ /=; congr (_ * log (_ / _)).
-  by rewrite /q2xy fdist_prodE /fdist_prod /= fdist_prod1.
+  by rewrite /q1xy fdist_prodE /= fdist_prod1.
+have -> : mutual_info (P `X p2yx) = D(p2xy || q2xy).
+  rewrite mutual_infoE0 /div pair_big /=; apply: eq_bigr => -[a b] _ /=.
+  by congr (_ * log (_ / _)); rewrite /q2xy fdist_prodE fdist_prod1.
 apply: convex_relative_entropy.
 - apply/dominatesP => -[a b].
-  rewrite /q1xy /p1xy fdist_prodE /= mulR_eq0.
-  rewrite /p1 /p1xy => -[|].
+  rewrite /q1xy /p1xy fdist_prodE /= mulR_eq0 /p1 /p1xy => -[|].
     by rewrite fdist_prodE => ->; rewrite mul0R.
   by rewrite fdist_sndE => /psumR_eq0P ->.
 - apply/dominatesP => -[a b].

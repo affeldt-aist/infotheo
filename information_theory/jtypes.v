@@ -239,7 +239,8 @@ refine (Some (@JType.mk A B n (@chan_of_jtype _ _ Anot0 Bnot0 n (sval f)) (sval 
 by move=> a b; rewrite ffunE.
 Defined.
 
-Definition jtype_enum A B n := pmap (@jtype_enum_f A B n) (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}} | (\sum_(a in A) \sum_(b in B) f a b == n)%nat}]).
+Definition jtype_enum A B n := pmap (@jtype_enum_f A B n)
+  (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}} | (\sum_(a in A) \sum_(b in B) f a b == n)%nat}]).
 
 Lemma jtype_enumP A B n : Finite.axiom (@jtype_enum A B n).
 Proof.
@@ -293,10 +294,7 @@ Definition jtype_finMixin A B n := Eval hnf in FinMixin (@jtype_enumP A B n).
 Canonical jtype_finType A B n := Eval hnf in FinType _ (@jtype_finMixin A B n).
 
 Section jtype_facts.
-
-Variables A B : finType.
-Variable n : nat.
-Variable ta : n.-tuple A.
+Variables (A B : finType) (n : nat) (ta : n.-tuple A).
 
 Local Open Scope nat_scope.
 
@@ -774,9 +772,7 @@ End take_shell_row_num_occ.
 Local Open Scope entropy_scope.
 
 Section card_shell_ub.
-
-Variables A B : finType.
-Variable n' : nat.
+Variables (A B : finType) (n' : nat).
 Let n := n'.+1.
 Variable V : P_ n ( A , B).
 Variable P : P_ n ( A ).
@@ -789,7 +785,7 @@ Hypothesis Bnot0 : (0 < #|B|)%nat.
 Lemma card_shell_leq_exp_entropy :
   #| V.-shell ta |%:R <= exp2 (n%:R * `H(V | P)).
 Proof.
-rewrite CondEntropyChanE2.
+rewrite cond_entropy_chanE2.
 apply (@leR_trans (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
 - exact/le_INR/leP/card_shelled_tuples_leq_prod_card.
 - rewrite exp2_pow big_morph_natRM.
@@ -1312,9 +1308,7 @@ Qed.
 End shell_partition.
 
 Section sum_tuples_ctypes.
-
-Variables A B : finType.
-Variable n' : nat.
+Variables (A B : finType) (n' : nat).
 Let n := n'.+1.
 Variable ta : n.-tuple A.
 Variable P : P_ n ( A ).

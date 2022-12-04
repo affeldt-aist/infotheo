@@ -44,7 +44,6 @@ Defined.
 
 End bipart_sect.
 
-Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 
 Section bipart_lem.

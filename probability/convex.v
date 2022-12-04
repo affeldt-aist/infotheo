@@ -6,7 +6,7 @@ From mathcomp Require Import boolp classical_sets Rstruct.
 From mathcomp Require Import ssrnum ereal.
 Require Import Reals.
 Require Import ssrR Reals_ext Lra Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import fdist jfdist.
+Require Import fdist.
 From mathcomp Require ssrnum vector.
 
 (******************************************************************************)
@@ -2885,7 +2885,6 @@ Qed.
 End twice_derivable_convex.
 
 Section ereal_convex.
-Local Open Scope proba_scope.
 Local Open Scope ereal_scope.
 
 Let conv_ereal (p : prob) x y := (p : R)%:E * x + p.~%:E * y.

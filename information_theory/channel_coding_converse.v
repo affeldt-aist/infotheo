@@ -36,7 +36,7 @@ Variables (A B : finType) (W : `Ch*(A, B)).
 Variable minRate : R.
 Hypothesis HminRate : minRate > capacity W.
 Hypothesis set_of_I_has_ubound :
-  classical_sets.has_ubound (fun y => exists P, `I(P; W) = y).
+  classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
 Let Anot0 : (0 < #|A|)%nat. Proof. by case: W. Qed.
 
@@ -80,7 +80,7 @@ Variables (A B : finType) (W : `Ch*(A, B)).
 Variable minRate : R.
 Hypothesis minRate_cap : minRate > capacity W.
 Hypothesis set_of_I_has_ubound :
-  classical_sets.has_ubound (fun y => exists P, `I(P; W) = y).
+  classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
 Variable epsilon : R. (* TODO: use posnum *)
 Hypothesis eps_gt0 : 0 < epsilon.

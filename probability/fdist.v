@@ -948,7 +948,7 @@ by rewrite -big_split; apply eq_bigr => a0 _; rewrite !fdist_prodE fdist_convE /
 Qed.
 
 End fdist_prod_prop.
-Notation "P1 `x P2" := (fdist_prod P1 (fun _ => P2)) : fdist_scope.
+Notation "P1 `x P2" := (P1 `X (fun _ => P2)) : fdist_scope.
 
 Section prod_dominates_joint.
 Local Open Scope reals_ext_scope.

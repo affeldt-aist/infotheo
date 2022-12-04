@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import proba jfdist.
+Require Import proba jfdist_cond.
 
 (******************************************************************************)
 (*                              Graphoid axioms                               *)

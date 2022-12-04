@@ -5,7 +5,7 @@ Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop ln_facts.
 Require Import num_occ fdist entropy channel divergence types jtypes.
-Require Import proba jfdist chap2.
+Require Import proba jfdist_cond.
 
 (******************************************************************************)
 (*                        Conditional divergence                              *)
@@ -34,7 +34,7 @@ Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
 
 Definition cdom_by := forall a, P a != 0 -> V a `<< W a.
 
-Lemma dom_by_cdom_by : `J(P , V) `<< `J(P , W) <-> cdom_by.
+Lemma dom_by_cdom_by : (P `X V) `<< (P `X W) <-> cdom_by.
 Proof.
 split; [move/dominatesP => H | move=> H; apply/dominatesP].
 - move=> a p_not_0; apply/dominatesP => b; move: (H (a, b)).
@@ -55,10 +55,10 @@ Notation "P '|-' V '<<b' W" := ([forall a, (P a != 0) ==> V a `<<b W a])
   : divergence_scope.
 
 Section joint_dom.
-
 Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
 
-Lemma joint_dominates : P |- V << W -> `J(P, V) `<< `J(P, W).
+(* TODO: rename *)
+Lemma joint_dominates : P |- V << W -> (P `X V) `<< (P `X W).
 Proof.
 move=> V_dom_by_W /=; apply/dominatesP => ab Hab.
 case/leR_eqVlt : (FDist.ge0 P ab.1) => [/esym|] Hab1.
@@ -84,7 +84,7 @@ Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
 
 Hypothesis V_dom_by_W : P |- V << W.
 
-Lemma cdiv_is_div_joint_dist : D(V || W | P) = D(`J(P , V) || `J(P , W)).
+Lemma cdiv_is_div_joint_dist : D(V || W | P) = D((P `X V) || (P `X W)).
 Proof.
 rewrite (_ : D(V || W | P) = \sum_(a in A) (\sum_(b in B)
     V a b * (log (V a b / W a b)) * P a)); last first.
@@ -105,7 +105,7 @@ Qed.
 Lemma cdiv_ge0 : 0 <= D(V || W | P).
 Proof. rewrite cdiv_is_div_joint_dist //; exact/div_ge0/joint_dominates. Qed.
 
-Lemma cdiv0P : D(V || W | P) = 0 <-> `J(P, V) = `J(P, W).
+Lemma cdiv0P : D(V || W | P) = 0 <-> (P `X V) = (P `X W).
 Proof. rewrite cdiv_is_div_joint_dist; exact/div0P/joint_dominates. Qed.
 
 End conditional_divergence_prop.
@@ -115,7 +115,7 @@ Local Open Scope divergence_scope.
 Local Open Scope reals_ext_scope.
 Variables (A B : finType) (P Q : A -> {fdist B}) (R : fdist A).
 
-Lemma cond_relative_entropy_compat : fdist_prod R P `<< fdist_prod R Q ->
+Lemma cond_relative_entropy_compat : R `X P `<< R `X Q ->
   cond_relative_entropy (R, P) (R, Q) = D(P || Q | R).
 Proof.
 move=> PQ.
@@ -129,12 +129,12 @@ rewrite mulRA.
 rewrite {1}/jcPr.
 rewrite fdistX2 fdist_prod1 Pr_set1.
 have [H|H] := eqVneq (R a) 0.
-  by rewrite H 2!mul0R /fdist_prod /= fdist_prodE H !mul0R.
+  by rewrite H 2!mul0R fdist_prodE H !mul0R.
 congr (_ * log _).
   by rewrite setX1 Pr_set1 fdistXE fdist_prodE /=; field; exact/eqP.
 rewrite /jcPr !setX1 !Pr_set1 !fdistXE !fdistX2.
-have [H'|H'] := eqVneq (fdist_prod R Q (a, b)) 0.
-  have : (fdist_prod R P) (a, b) = 0 by move/dominatesP : PQ => ->.
+have [H'|H'] := eqVneq ((R `X Q) (a, b)) 0.
+  have : (R `X P) (a, b) = 0 by move/dominatesP : PQ => ->.
   rewrite fdist_prodE /= mulR_eq0 => -[| -> ].
     by move/eqP : H; tauto.
   by rewrite !(mulR0,mul0R,div0R).
@@ -197,7 +197,7 @@ Hypothesis Hn : n != O.
 Lemma dmc_cdiv_cond_entropy :
   W ``(y | x) = exp2 (- INR n * (D(V || W | P) + `H(V | P))).
 Proof.
-rewrite dmc_cdiv_cond_entropy_aux CondEntropyChanE2.
+rewrite dmc_cdiv_cond_entropy_aux cond_entropy_chanE2.
 rewrite /cdiv /entropy -big_split /=.
 rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
 rewrite (big_morph _ morph_exp2_plus exp2_0).
@@ -248,9 +248,7 @@ Qed.
 End dmc_cdiv_cond_entropy.
 
 Section cdiv_specialized.
-
-Variables A B : finType.
-Variable n : nat.
+Variables (A B : finType) (n : nat).
 Variable P : P_ n ( A ).
 Variable V : P_ n ( A , B ).
 Variable W : `Ch*(A, B).
@@ -271,9 +269,7 @@ Qed.
 End cdiv_specialized.
 
 Section dmc_cdiv_cond_entropy_spec.
-
-Variables A B : finType.
-Variable W : `Ch*(A, B).
+Variables (A B : finType) (W : `Ch*(A, B)).
 Variable n' : nat.
 Let n := n'.+1.
 Variable P : P_ n ( A ).

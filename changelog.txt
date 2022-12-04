@@ -164,10 +164,10 @@ from 0.4.0 to 0.4.1
   + CondJFDist.dNE -> jfdist_cond_dflt
   + CJFDist.t -> jfdist_prod0
   + CJFDist.joint_of -> jfdist_prod
-  + CJFDist.CondJFDistE -> jfdist_prod_cond
-  + CJFDist.E -> jfdist_prodE
-  + CJFDist.split -> jfdist_split
-  + CJFDist.splitE -> jfdist_prodK
+  + CJFDist.CondJFDistE -> fdist_cond_prod
+  + CJFDist.E -> jcPr_fdistX_prod
+  + CJFDist.split -> fdist_split
+  + CJFDist.splitE -> fdist_prodK
   + Multivar.to_bivar -> fdist_prod_of_rV
   + Multivar.to_bivarE -> fdist_prod_of_rVE
   + Multivar.belast_last -> fdist_belast_last_of_rV
@@ -309,7 +309,21 @@ from 0.4.0 to 0.4.1
   + tuple_pmf_out_fdist -> fdist_rV_out
   + MutualInfoChan.mut_info ->  mutual_info_chan
   + mut_info_chanE -> mutual_info_chanE
-- removed:
+  + jcPr_max -> jcPr_le1
+  + CondEntropyChan.h -> cond_entropy_chan
+  + CondEntropyChanE -> cond_entropy_chanE
+  + CondEntropyChanE2 -> cond_entropy_chanE2
+  + Receivable.t -> receivable
+  + Receivable.def -> receivable_prop
+  + Receivable.mk -> mkReceivable
+  + receivableE -> receivable_propE
+  + not_receivable_uniformE -> not_receivable_prop_uniform
+  + PosteriorProbability.d -> fdist_post_prob
+  + PosteriorProbability.dE -> fdist_post_probE
+  + PosteriorProbability.ppE -> post_probE
+  + PosteriorProbability.Kppu -> post_prob_uniform_cst
+  + MarginalPostProbability.d -> fdist_marginal_post_prob
+- Removed:
   + Module TripA'
   + imset_fst
   + big_scalept
@@ -317,6 +331,7 @@ from 0.4.0 to 0.4.1
   + big_rV_0
   + CJFDist.make_joint
   + JointFDistChan.d
+  + `J(P, W) notation
 - changed:
   + scaledptR0 (now derived from the interface of quasi real cones)
     and renamed scalept0

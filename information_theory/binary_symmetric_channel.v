@@ -20,6 +20,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Local Open Scope fdist_scope.
 Local Open Scope channel_scope.
 Local Open Scope R_scope.
 
@@ -34,7 +35,6 @@ Definition c : `Ch(A, A) := fdist_binary card_A p.
 End BSC_sect.
 End BSC.
 
-Local Open Scope channel_scope.
 Local Open Scope entropy_scope.
 
 Section bsc_capacity_proof.
@@ -48,10 +48,10 @@ Let p_01 : prob := Eval hnf in Prob.mk_ (ltR2W p_01').
 Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01) = - H2 p.
 Proof.
 rewrite {2}/entropy /=.
-rewrite (eq_bigr (fun a => (`J( P, (BSC.c card_A p_01))) (a.1, a.2) *
-  log ((`J( P, (BSC.c card_A p_01))) (a.1, a.2)))); last by case.
-rewrite -(pair_big xpredT xpredT (fun a b => (`J( P, (BSC.c card_A p_01)))
-  (a, b) * log ((`J( P, (BSC.c card_A p_01))) (a, b)))) /=.
+rewrite (eq_bigr (fun a => ((P `X (BSC.c card_A p_01))) (a.1, a.2) *
+  log (((P `X (BSC.c card_A p_01))) (a.1, a.2)))); last by case.
+rewrite -(pair_big xpredT xpredT (fun a b => (P `X (BSC.c card_A p_01))
+  (a, b) * log ((P `X (BSC.c card_A p_01)) (a, b)))) /=.
 rewrite {1}/entropy .
 set a := \sum_(_ in _) _. set b := \sum_(_ <- _) _.
 apply trans_eq with (- (a + (-1) * b)); first by field.
@@ -86,7 +86,7 @@ transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
 by move: (FDist.f1 P); rewrite Set2sumE /= -/a -/b => ->; rewrite /log; field.
 Qed.
 
-Lemma IPW : `I(P; BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
+Lemma IPW : `I(P, BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
 Proof.
 rewrite /mutual_info_chan addRC.
 set a := `H(_ `o _).
@@ -136,8 +136,8 @@ apply: (@leR_trans (H2 q)); last exact: H2_max.
 by rewrite /H2 !mulNR; apply Req_le; field.
 Qed.
 
-Lemma bsc_out_H_half' : 0 < INR 1 / INR 2 < 1.
-Proof. by rewrite /= (_ : INR 1 = 1) // (_ : INR 2 = 2) //; lra. Qed.
+Lemma bsc_out_H_half' : 0 < 1%:R / 2%:R < 1.
+Proof. by rewrite /= (_ : 1%:R = 1) // (_ : 2%:R = 2) //; lra. Qed.
 
 Lemma H_out_binary_uniform : `H(fdist_uniform card_A `o BSC.c card_A p_01) = 1.
 Proof.
@@ -167,7 +167,7 @@ set p' := Prob.mk_ (ltR2W p_01').
 have has_sup_E : has_sup E.
   split.
     set d := fdist_binary card_A p' (Set2.a card_A).
-    by exists (`I(d; BSC.c card_A p')), d.
+    by exists (`I(d, BSC.c card_A p')), d.
   exists 1 => y [P _ <-{y}].
   rewrite IPW; apply/RleP/leR_subl_addr/(leR_trans (H_out_max card_A P p_01')).
   rewrite addRC -leR_subl_addr subRR.

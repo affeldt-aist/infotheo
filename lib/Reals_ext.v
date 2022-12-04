@@ -761,7 +761,7 @@ Definition mkRnng x H := @Rnng.mk x (introT (leRP _ _) H).
 
 Lemma Rnng_ge0 (x : Rnng) : 0 <= x.
 Proof. by case: x => p /= /leRP. Qed.
-Local Hint Resolve Rnng_ge0.
+Local Hint Resolve Rnng_ge0 : core.
 
 Canonical Rnng0 := Eval hnf in @mkRnng 0 (leRR 0).
 Canonical Rnng1 := Eval hnf in @mkRnng R1 Rle_0_1.

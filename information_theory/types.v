@@ -259,7 +259,6 @@ Definition type_finMixin A n := Eval hnf in FinMixin (@type_enumP A n).
 Canonical type_finType A n := Eval hnf in FinType _ (@type_finMixin A n).
 
 Section type_facts.
-
 Variable A : finType.
 Local Open Scope nat_scope.
 
@@ -308,7 +307,6 @@ Qed.
 End type_facts.
 
 Section typed_tuples.
-
 Variables (A : finType) (n : nat) (P : P_ n ( A )).
 
 Local Open Scope nat_scope.
@@ -321,9 +319,7 @@ End typed_tuples.
 Notation "'T_{' P '}'" := (typed_tuples P) : types_scope.
 
 Section typed_tuples_facts.
-
-Variable A : finType.
-Variable n' : nat.
+Variables (A : finType) (n' : nat).
 Let n := n'.+1.
 Variable P : P_ n ( A ).
 
@@ -335,7 +331,7 @@ move/forallP/(_ a)/eqP.
 destruct P as [d f H] => /= Htmp.
 apply/INR_eq/esym; move: Htmp.
 rewrite H eqR_mul2r //.
-apply/invR_neq0; by rewrite INR_eq0.
+by apply/invR_neq0; rewrite INR_eq0.
 Qed.
 
 Lemma typed_tuples_not_empty' : exists x : seq A,
@@ -381,9 +377,7 @@ Qed.
 End typed_tuples_facts.
 
 Section typed_tuples_facts_continued.
-
-Variable A : finType.
-Variable n : nat.
+Variables (A : finType) (n : nat).
 Hypothesis Hn : n != O.
 Variable P : P_ n ( A ).
 
@@ -484,7 +478,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
     case/imsetP : Hta' => x Hx ->. by rewrite row_of_tupleK.
   rewrite big_const iter_addR tuple_dist_type_entropy //.
   do 2 f_equal.
-  rewrite card_imset //; exact: row_of_tuple_inj.
+  by rewrite card_imset //; exact: row_of_tuple_inj.
 - rewrite (_ : (INR #| T_{P} | = 0)%R); first by rewrite mul0R; exact/Rle_0_1.
   rewrite (_ : 0%R = INR 0) //; congr INR; apply/eqP.
   rewrite cards_eq0; apply/negPn.
@@ -511,9 +505,7 @@ Qed.
 End typed_tuples_facts_continued.
 
 Section enc_pre_img_partition.
-
-Variables A B M : finType.
-Variable n' : nat.
+Variables (A B M : finType) (n' : nat).
 Let n := n'.+1.
 Variable c : code A B M n.
 
@@ -582,9 +574,7 @@ Qed.
 End enc_pre_img_partition.
 
 Section sum_messages_types.
-
-Variables A B M : finType.
-Variable n' : nat.
+Variables (A B M : finType) (n' : nat).
 Let n := n'.+1.
 Variable c : code A B M n.
 
@@ -626,9 +616,7 @@ Qed.
 End sum_messages_types.
 
 Section typed_code_def.
-
-Variables A B M : finType.
-Variable n : nat.
+Variables (A B M : finType) (n : nat).
 Variable P : P_ n ( A ).
 
 Record typed_code := mkTypedCode {
@@ -638,9 +626,7 @@ Record typed_code := mkTypedCode {
 End typed_code_def.
 
 Section typed_code_of_code.
-
-Variables A B M : finType.
-Variable n' : nat.
+Variables (A B M : finType) (n' : nat).
 Let n := n'.+1.
 Variable P : P_ n ( A ).
 Variable c : code A B M n.

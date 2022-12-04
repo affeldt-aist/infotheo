@@ -30,7 +30,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope divergence_scope.
-Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope channel_scope.
 Local Open Scope reals_ext_scope.
@@ -66,10 +66,10 @@ rewrite -iter_addR -big_const; apply leR_sumR => b _; rewrite addRC.
 apply: Rabs_xlnx => //.
 rewrite 2!fdist_outE -addR_opp big_morph_oppR -big_split /=.
 apply: leR_trans; first exact: leR_sumR_Rabs.
-apply: (@leR_trans (d(`J(P , V), `J(P , W)))).
+apply: (@leR_trans (d((P `X V), (P `X W)))).
 - rewrite /var_dist /=.
-  apply (@leR_trans (\sum_a \sum_b `| (`J(P, V)) (a, b) - (`J(P, W)) (a, b) |)); last first.
-    apply Req_le; rewrite pair_bigA /=; apply eq_bigr; by case.
+  apply (@leR_trans (\sum_a \sum_b `| ((P `X V)) (a, b) - ((P `X W)) (a, b) | )); last first.
+    by apply Req_le; rewrite pair_bigA /=; apply eq_bigr => -[].
   apply: leR_sumR => a _.
   rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
   rewrite 2!fdist_prodE /= !(mulRC (P a)) addR_opp.
@@ -89,7 +89,7 @@ apply: leR_trans; first exact: leR_sumR_Rabs.
 rewrite -2!iter_addR -2!big_const pair_bigA /=.
 apply: leR_sumR; case => a b _; rewrite addRC /=.
 apply Rabs_xlnx => //.
-apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
+apply (@leR_trans (d(P `X V, P `X W))).
 - rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
   rewrite -[X in X <= _]addR0.
   by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.
@@ -97,7 +97,7 @@ apply (@leR_trans (d(`J(P , V) , `J(P , W)))).
   exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
 
-Lemma mut_info_dist_ub : `| `I(P; V) - `I(P; W) | <=
+Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
   / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) * - xlnx (sqrt (2 * D(V || W | P))).
 Proof.
 rewrite /mutual_info_chan.
@@ -117,12 +117,12 @@ Hypothesis Bnot0 : (0 < #|B|)%nat.
 Variables (W : `Ch(A, B)) (minRate : R).
 Hypothesis minRate_cap : minRate > capacity W.
 Hypothesis set_of_I_has_ubound :
-  classical_sets.has_ubound (fun y => exists P, `I(P; W) = y).
+  classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
   forall P : fdist A, forall V : `Ch(A, B),
     P |- V << W ->
-    Delta <= D(V || W | P) +  +| minRate - `I(P; V) |.
+    Delta <= D(V || W | P) +  +| minRate - `I(P, V) |.
 Proof.
 set gamma := / (#|B|%:R + #|A|%:R * #|B|%:R) * (ln 2 * ((minRate - capacity W) / 2)).
 have : min(exp (-2), gamma) > 0.
@@ -153,22 +153,22 @@ move=> P V v_dom_by_w.
 case/boolP : (Delta <b= D(V || W | P)) => [/leRP| /leRP/ltRNge] Hcase.
   apply (@leR_trans (D(V || W | P))) => //.
   by rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.
-suff HminRate : (minRate - capacity W) / 2 <= minRate - (`I(P; V)).
+suff HminRate : (minRate - capacity W) / 2 <= minRate - (`I(P, V)).
   clear -Hcase v_dom_by_w HminRate.
-  apply (@leR_trans +| minRate - `I(P; V) |); last first.
+  apply (@leR_trans +| minRate - `I(P, V) |); last first.
     by rewrite -[X in X <= _]add0R; exact/leR_add2r/cdiv_ge0.
   apply: leR_trans; last exact: leR_maxr.
   by apply: (leR_trans _ HminRate); exact: geR_minl.
-have : `I(P; V) <= capacity W + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
+have : `I(P, V) <= capacity W + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                (- xlnx (sqrt (2 * D(V || W | P)))).
-  apply (@leR_trans (`I(P; W) + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
+  apply (@leR_trans (`I(P, W) + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                - xlnx (sqrt (2 * D(V || W | P))))); last first.
     apply/leR_add2r/Rstruct.RleP/Rstruct.Rsup_ub; last by exists P.
-    split; first by exists (`I(P; W)), P.
+    split; first by exists (`I(P, W)), P.
     case: set_of_I_has_ubound => y Hy.
     by exists y => _ [Q _ <-]; apply Hy; exists Q.
   rewrite addRC -leR_subl_addr.
-  apply (@leR_trans `| `I(P; V) + - `I(P; W) |); first exact: Rle_abs.
+  apply (@leR_trans `| `I(P, V) + - `I(P, W) |); first exact: Rle_abs.
   suff : D(V || W | P) <= exp (-2) ^ 2 * / 2 by apply mut_info_dist_ub.
   clear -Hcase x_gt0.
   apply/ltRW/(ltR_leR_trans Hcase).

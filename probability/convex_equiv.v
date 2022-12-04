@@ -6,7 +6,7 @@ From mathcomp Require Import boolp classical_sets.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import fdist jfdist fsdist convex.
+Require Import fdist jfdist_cond fsdist convex.
 
 (******************************************************************************)
 (*                  Equivalence of Convexity Definitions                      *)
@@ -67,8 +67,8 @@ Section fdistpart.
 Local Open Scope fdist_scope.
 Variables (n m : nat) (K : 'I_m -> 'I_n) (e : {fdist 'I_m}) (i : 'I_n).
 
-Definition d := jfdist_cond (fdistX (fdist_prod e (fun j => fdist1 (K j)))) i.
-Definition den := (fdistX (fdist_prod e (fun j => fdist1 (K j))))`1 i.
+Definition d := (fdistX (e `X (fun j => fdist1 (K j)))) `(| i).
+Definition den := (fdistX (e `X (fun j => fdist1 (K j))))`1 i.
 
 Lemma denE : den = fdistmap K e i.
 Proof.
@@ -87,14 +87,14 @@ Proof.
 rewrite -denE => NE.
 rewrite jfdist_condE // {NE} /jcPr /proba.Pr.
 rewrite (big_pred1 (j,i)); last first.
-  move=> k; by rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
+  by move=> k; rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
 rewrite (big_pred1 i); last by move=> k; rewrite !inE.
 rewrite !fdistE big_mkcond [in RHS]big_mkcond /=.
 congr (_ / _)%R.
 under eq_bigr => k do rewrite {2}(surjective_pairing k).
 rewrite -(pair_bigA _ (fun k l =>
           if l == i
-          then fdist_prod e (fun j0 : 'I_m => fdist1 (K j0)) (k, l)
+          then e `X (fun j0 : 'I_m => fdist1 (K j0)) (k, l)
           else R0))%R /=.
 apply eq_bigr => k _.
 rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
@@ -582,8 +582,7 @@ rewrite axbarypart; first last.
   rewrite big_pred0 ?eqxx //.
   move=> k; apply/eqP => hik.
   by move: ij; rewrite -hik /h /f /f' enum_rankK eqxx.
-set e' := fun j =>
-  fdistmap f ((jfdist_cond (fdistX (fdist_prod d e)) j) `x (fdist1 j)).
+set e' := fun j => fdistmap f (((fdistX (d `X e)) `(| j)) `x (fdist1 j)).
 have {2}-> : g = (fun j => <&>_(e' j) (g \o h')).
   apply funext => j; apply/esym/axidem => k //.
   rewrite inE /e' fdistE (big_pred1 (f' k)) /=; last first.

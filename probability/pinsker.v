@@ -279,7 +279,6 @@ Qed.
 
 End pinsker_function_analysis.
 
-Local Open Scope proba_scope.
 Local Open Scope reals_ext_scope.
 
 Section pinsker_fun_pos.

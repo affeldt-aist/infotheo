@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import proba jfdist entropy chap2.
+Require Import proba jfdist_cond entropy.
 
 (******************************************************************************)
 (* Example 2.2.1 of T. M. Cover and J. A. Thomas. Elements of information     *)
