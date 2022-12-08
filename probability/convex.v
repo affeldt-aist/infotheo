@@ -541,7 +541,7 @@ Section real_cone_theory.
 Variable A : realCone.
 
 Lemma scalept_sum (B : finType) (P : pred B) (F : B ->R^+) (x : A) :
-  scalept (\sum_(i | P i) (F i)) x = \ssum_(b | P b) scalept (F b) x.
+  scalept (\sum_(i | P i) F i) x = \ssum_(b | P b) scalept (F b) x.
 Proof.
 apply: (@proj1 _ (0 <= \sum_(i | P i) F i))%R.
 apply: (big_ind2 (fun y q => scalept q x = y /\ 0 <= q))%R.
@@ -688,7 +688,7 @@ by rewrite pq_is_rs mulRC s_of_pqE onemK.
 Qed.
 
 HB.instance Definition __cone := @isConvexSpace.Build (scaled A)
-  (Choice.class [the choiceType of (scaled A)]) convpt convpt1 convptmm convptC
+  (Choice.class [the choiceType of scaled A]) convpt convpt1 convptmm convptC
   convptA.
 
 Lemma convptE p (a b : scaled A) : a <| p |> b = convpt p a b.
@@ -802,8 +802,8 @@ Qed.
 Lemma convACA (a b c d : T) p q :
   (a <|q|> b) <|p|> (c <|q|> d) = (a <|p|> c) <|q|> (b <|p|> d).
 Proof.
-apply: S1_inj; rewrite ![in LHS]affine_conv !convptE.
-rewrite !scaleptDr ?scaleptA // !(mulRC p) !(mulRC p.~) addptA addptC.
+apply: S1_inj; rewrite ![in LHS]affine_conv/= !convptE.
+rewrite !scaleptDr !scaleptA// !(mulRC p) !(mulRC p.~) addptA addptC.
 rewrite (addptC (scalept (q * p) _)) !addptA -addptA -!scaleptA -?scaleptDr//.
 by rewrite !(addptC (scalept _.~ _)) !affine_conv.
 Qed.

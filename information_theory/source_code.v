@@ -22,7 +22,7 @@ Local Open Scope R_scope.
 Declare Scope source_code_scope.
 
 Section scode_definition.
-Variables (A : finType) (B : Type) (k n : nat).
+Variables (A : finType) (B : Type) (k : nat).
 
 Definition encT := 'rV[A]_k -> B.
 
@@ -47,17 +47,15 @@ Definition E_leng_cw := `E ((INR \o size) `o f).
 End scode_vl_definition.
 
 Section scode_fl_definition.
-
 Variables (A : finType) (k n : nat).
 
 Definition scode_fl := scode A 'rV[bool]_n k.
 
-Definition SrcRate (sc : scode_fl) := INR n / INR k.
+Definition SrcRate (sc : scode_fl) := n%:R / k%:R.
 
 End scode_fl_definition.
 
 Section code_error_rate.
-
 Variables (A : finType) (B : Type) (P : fdist A).
 Variables (k : nat) (sc : scode A B k).
 
