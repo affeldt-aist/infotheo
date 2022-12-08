@@ -955,3 +955,164 @@ Qed.
 End triangular_laws_left_convn.
 
 End lemmas_for_probability_monad_and_adjunction.
+
+Section probability_measure.
+
+Section trivIset.
+Import boolp classical_sets.
+From mathcomp Require Import measure probability.
+Local Open Scope classical_set_scope.
+Context [T : Type] [I : eqType].
+Variables (D : set I) (F : I -> set T)
+          (disjF : trivIset D F).
+Definition fibration_of_partition (x : T) : option I :=
+  match asboolP ((\bigcup_(i in D) F i) x) with
+  | ReflectT p => let (x0, _, _) := cid2 p in Some x0
+  | ReflectF _ => None
+  end.
+Lemma fibration_of_partitionE i x : D i -> F i x -> fibration_of_partition x = Some i.
+Proof.
+move=> Di Fix.
+rewrite /fibration_of_partition.
+case: asboolP; last by have : ((\bigcup_(i0 in D) F i0) x) by exists i => //.
+move=> ?; case: cid2 => j Dj Fjx.
+congr Some; apply: contrapT; move/eqP => ji.
+move: disjF => /trivIsetP /(_ j i Dj Di ji).
+apply/eqP/set0P.
+by exists x.
+Qed.
+(*
+Definition fibration_of_partition' : option I.
+Proof.
+case/asboolP : ((\bigcup_(i in D) F i) x).
+- case/cid2 => i _ _; exact (Some i).
+- move=> *; exact None.
+Defined.
+Eval hnf in fibration_of_partition'.
+(*
+     = match asboolP ((\bigcup_(i in D) F i) x) with
+       | ReflectT _ p => let (x0, _, _) := cid2 p in Some x0
+       | ReflectF _ _ => None
+       end
+     : option I
+*)
+*)
+Lemma in_fibration_of_partition (x : T) :
+  if fibration_of_partition x is Some i then x \in F i else true.
+Proof.
+rewrite /fibration_of_partition /=.
+case/asboolP: ((\bigcup_(i in D) F i) x) => //=.
+case/cid2 => *.
+by rewrite inE.
+Qed.
+End trivIset.
+
+Variable disp : measure_display.
+Variable T : measurableType disp.
+Fail Check T : choiceType.
+Fail Check [the choiceType of T] : choiceType.
+Check measurable_choiceType T : choiceType.
+Variable R : realType.
+Variable d : {fsfun T -> R with 0}.
+Variable Hd : all (fun x => 0 < d x) (finsupp d) &&
+                \sum_(a <- finsupp d) d a == 1.
+Lemma d0' : forall (x : T), x \in finsupp d -> 0 < d x.
+Proof. by move => x xfsd; case/andP: Hd => /allP /(_ x xfsd). Qed.
+Lemma d0 : forall (x : T), 0 <= d x.
+Proof.
+move=> x.  
+case/boolP: (x \in finsupp d); first by move/d0'/ltW.
+by move/fsfun_dflt ->; exact: lexx.
+Qed.
+Lemma d1 : \sum_(a <- finsupp d) d a = 1.
+Proof. by apply/eqP; case/andP: Hd. Qed.
+Definition P := fun (A : set T) => \esum_(k in A) (d k)%:E.
+Lemma P_fssum' A : P A = (\esum_(k in A `&` [set` finsupp d]) (d k)%:E).
+Proof.
+rewrite /P esum_mkcondr.
+apply eq_esum => i _.
+rewrite mem_setE.
+by case: finsuppP.
+Qed.
+Lemma P_fssum A : P A = (\sum_(i \in A `&` [set` finsupp d]) (d i)%:E)%E.
+Proof.
+rewrite P_fssum'.
+by rewrite esum_fset; [| exact: finite_setIr | by move=> *; exact: d0].
+Qed.
+Lemma P_fin {X} : P X \is a fin_num.
+Proof. by rewrite P_fssum sumEFin. Qed.
+Lemma P_set0 : P set0 = 0%E.
+Proof.
+by rewrite /P esum_set0.
+Qed.
+Lemma P_ge0 X : (0 <= P X)%E.
+Proof.
+apply esum_ge0=> x _.
+rewrite lee_fin.
+exact: d0.
+Qed.
+Lemma P_semi_sigma_additive : semi_sigma_additive P.
+Proof.
+move=> F mFi disjF mUF.
+move=> X /=.
+rewrite /nbhs /=.
+rewrite -[Y in ereal_nbhs Y]fineK ?P_fin //=.
+case => x /= xpos.
+rewrite /ball_ => xball.
+rewrite /nbhs /= /nbhs /=.
+rewrite /eventually /=.
+rewrite /filter_from /=.
+suff: exists N, forall k, (N <= k)%N -> P (\bigcup_n F n) = P (\bigcup_(i < k) F i).
+  case=> N HN.
+  exists N => //.
+  move=> j /= ij.
+  rewrite -[y in X y]fineK; last by apply/sum_fin_numP => *; exact: P_fin.
+  apply: xball => /=.
+  rewrite [X in X < x](_ : _ = 0) //.
+  apply/eqP.
+  rewrite normr_eq0 subr_eq0.
+  apply/eqP; congr fine.
+  rewrite (HN j) // /P.
+  rewrite esum_bigcupT //; last exact: d0.
+  rewrite esum_fset //; last by move=> *; apply esum_ge0 => *; exact: d0.
+  rewrite big_mkord.
+  by rewrite -fsbigop.fsbig_ord.
+rewrite P_fssum.
+set f := fun t =>
+           if fibration_of_partition [set: nat] F t is Some i then i else 0%N.
+exists (\max_(t <- finsupp d | `[<(\bigcup_i F i) t>]) f t).+1.
+move=> k Nk.
+rewrite P_fssum.
+suff : \bigcup_n F n `&` [set` finsupp d] =
+         \bigcup_(i < k) F i `&` [set` finsupp d] by move ->.
+rewrite (bigcupID `I_k) setIUl 2!setTI -[RHS]setU0.
+congr setU.
+rewrite setI_bigcupl bigcup0 // => i.
+rewrite /mkset /=.
+apply: contra_notP.
+case/eqP/set0P => t [] Fit tfd.
+apply:(leq_ltn_trans _ Nk).
+suff-> : i = f t.
+  apply leq_bigmax_seq => //.
+  by apply/asboolP; exists i .
+rewrite /f /=.
+by rewrite (fibration_of_partitionE disjF _ Fit).
+Qed.
+HB.instance Definition _ :=
+  isMeasure.Build disp R T P P_set0 P_ge0 P_semi_sigma_additive.
+
+Lemma asboolTE : `[< True >] = true.
+Proof.
+apply (asbool_equiv_eqP (Q:=True)) => //.
+by constructor.
+Qed.
+Lemma P_is_probability : P [set: _] = 1%E.
+Proof.
+rewrite P_fssum.
+rewrite fsbigop.fsbig_finite /=; last exact: finite_setIr.
+rewrite setTI set_fsetK.
+by rewrite sumEFin d1.
+Qed.
+HB.instance Definition _ :=
+  isProbability.Build disp T R P P_is_probability.
+End probability_measure.
