@@ -45,7 +45,7 @@ Definition decT := {ffun 'rV[B]_n -> option M}.
 
 Record code := mkCode { enc : encT ; dec : decT }.
 
-Definition CodeRate (c : code) := (log (INR #| M |) / INR n)%R.
+Definition CodeRate (c : code) := (log (#| M |%:R) / n%:R)%R.
 
 Definition preimC (phi : decT) m := ~: (phi @^-1: xpred1 (Some m)).
 
