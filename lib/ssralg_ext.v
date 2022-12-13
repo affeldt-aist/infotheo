@@ -10,7 +10,7 @@ Require Import ssr_ext f2.
 (*  v ``_ i       == the ith element of v                                     *)
 (*  supp v        == the set of indices of elements from v that are not 0     *)
 (*  v `[ i := x ] == v where the ith element has been replaced with x         *)
-(*  v # S         == the vector of size #|S| containing the elements of       *)
+(*  v \# S        == the vector of size #|S| containing the elements of       *)
 (*                    index i \in S                                           *)
 (*                                                                            *)
 (* Section prod_rV:                                                           *)
@@ -34,7 +34,7 @@ Local Open Scope ring_scope.
 
 Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
 Reserved Notation "v `[ i := x ]" (at level 20).
-Reserved Notation "t # V" (at level 55, V at next level).
+Reserved Notation "t \# V" (at level 55, V at next level).
 
 Section AboutRingType.
 Variable R : ringType.
@@ -102,12 +102,12 @@ Section sub_vec_sect.
 Variables (A : Type) (n : nat).
 
 Definition sub_vec (t : 'rV[A]_n) (S : {set 'I_n}) : 'rV[A]_#| S | :=
-  \row_(j < #|S|) (t ``_ (enum_val j)).
+  \row_(j < #|S|) t ``_ (enum_val j).
 (* NB: enum_val j is the jth item of enum S *)
 
 End sub_vec_sect.
 
-Notation "t # S" := (sub_vec t S) : vec_ext_scope.
+Notation "t \# S" := (sub_vec t S) : vec_ext_scope.
 
 Section prod_rV.
 Variables A B : Type.
