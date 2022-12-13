@@ -38,7 +38,7 @@ Implicit Types A : finType.
 Definition dproj d s t :=
   locked (\row_(j < n) if j \in s then t ``_ j else d ``_ j).
 
-Lemma sub_vec_dproj d t s' s : s \subset s' -> (dproj d s' t) # s = t # s.
+Lemma sub_vec_dproj d t s' s : s \subset s' -> (dproj d s' t) \# s = t \# s.
 Proof.
 move=> s's.
 rewrite /dproj; unlock; apply/rowP => i; rewrite !mxE; case: ifPn => //.
@@ -73,7 +73,7 @@ Definition dprojs d A (g : A -> {set 'I_n}) t :=
   locked [ffun a => dproj d (g a) t].
 
 Lemma sub_vec_dprojs d t A (g : A -> {set 'I_n}) s a :
-  s \subset g a -> ((dprojs d g t) a) # s = t # s.
+  s \subset g a -> ((dprojs d g t) a) \# s = t \# s.
 Proof. rewrite /dprojs; unlock => H0; by rewrite ffunE sub_vec_dproj. Qed.
 
 Lemma freeon_dprojs d t A (g : A -> {set 'I_n}) a : freeon (g a) d ((dprojs d g t) a).
@@ -295,9 +295,9 @@ Lemma rmul_rsum_commute0 d n0 (B : finType) (t : 'rV[B]_n)
   (F : 'I_m -> 'rV_n -> R)
   (HF : forall m1 m0 (t' : 'rV_n), m1 \in 'F(m0, n0) -> t' ``_ n0 = d ``_ n0 -> F m1 ((dprojs_V H d n0 t') m0) = F m1 t') :
   \prod_(m0 in 'F n0) (\sum_(t' = d [~'V(m0, n0) :\ n0])
-    W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * \prod_(m1 in 'F(m0, n0)) F m1 t') =
+    W _ (t \# 'V(m0, n0) :\ n0) (t' \# 'V(m0, n0) :\ n0) * \prod_(m1 in 'F(m0, n0)) F m1 t') =
   \sum_(t' = d [~ setT :\ n0]) (\prod_(m0 in 'F n0)
-    (W _ (t # 'V(m0, n0) :\ n0) (t' # 'V(m0, n0) :\ n0) * \prod_(m1 in 'F(m0, n0)) F m1 t')).
+    (W _ (t \# 'V(m0, n0) :\ n0) (t' \# 'V(m0, n0) :\ n0) * \prod_(m1 in 'F(m0, n0)) F m1 t')).
 Proof.
 rewrite (big_distr_big_dep d [pred x in 'F n0] (fun i => freeon ('V(i, n0) :\ n0) d)) [LHS]/=.
 rewrite (reindex_onto (dprojs_V H d n0) (comb_V H d n0)); last first.
@@ -344,7 +344,7 @@ Definition dprojs_V2 d m0 n0 t : {ffun 'I_n -> 'rV_n} := dprojs d (ssgraph m0 n0
 Definition comb_V2 d m0 n0 (f : {ffun 'I_n -> 'rV_n}) := comb d f (ssgraph m0 n0).
 
 Lemma sub_vec_dprojs_V2 d m0 n0 t n1 m1 : n1 \in 'V m0 :\ n0 -> m1 \in `F n1 :\ m0 ->
-  (dprojs_V2 d m0 n0 t) n1 # `V(m1, n1) :\ n1 = t # `V(m1, n1) :\ n1.
+  (dprojs_V2 d m0 n0 t) n1 \# `V(m1, n1) :\ n1 = t \# `V(m1, n1) :\ n1.
 Proof.
 move=> Hn1 Hm1; rewrite /dprojs_V2 sub_vec_dprojs //.
 apply/subsetP => n2 Hn2.
@@ -719,13 +719,13 @@ Lemma rprod_rsum_commute d (B : finType) (x : 'rV_n) (W: `Ch('F_2, B)) m0 n0 (m0
     (\sum_(t | pr n1 t)
       W (t ``_ n1) (x ``_ n1) *
          \prod_(m1 in `F n1 :\ m0)
-           (W ``(x # `V(m1, n1) :\ n1 | ((dprojs_V H d n1 t) m1) # `V(m1, n1) :\ n1) *
+           (W ``(x \# `V(m1, n1) :\ n1 | ((dprojs_V H d n1 t) m1) \# `V(m1, n1) :\ n1) *
              \prod_(m2 in `F(m1, n1)) INR (\delta ('V m2) ((dprojs_V H d n1 t) m1)))) =
   \sum_(t | (g t \in pfamily d ('V m0 :\ n0) pr) && (g' (g t) == t))
     \prod_(n1 in 'V m0 :\ n0)
        (W ((g t n1) ``_ n1) (x ``_ n1) *
          \prod_(m1 in `F n1 :\ m0)
-           (W ``(x # `V(m1, n1) :\ n1 | ((dprojs_V H d n1 (g t n1)) m1) # `V(m1, n1) :\ n1) *
+           (W ``(x \# `V(m1, n1) :\ n1 | ((dprojs_V H d n1 (g t n1)) m1) \# `V(m1, n1) :\ n1) *
              \prod_(m2 in `F(m1, n1)) INR (\delta ('V m2) ((dprojs_V H d n1 (g t n1)) m1)))))%R.
 Proof.
 move=> pr g g'.

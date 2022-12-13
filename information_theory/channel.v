@@ -134,7 +134,7 @@ Section DMC_sub_vec.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (tb : 'rV[B]_n).
 
 Lemma rprod_sub_vec (D : {set 'I_n}) (t : 'rV_n) :
-  \prod_(i < #|D|) W ((t # D) ``_ i) ((tb # D) ``_ i) =
+  \prod_(i < #|D|) W ((t \# D) ``_ i) ((tb \# D) ``_ i) =
   \prod_(i in D) W (t ``_ i) (tb ``_ i).
 Proof.
 have [->|/set0Pn[i iD]] := eqVneq D set0.
@@ -154,7 +154,7 @@ by rewrite /f /=; case: Bool.bool_dec => [a| //]; rewrite enum_rankK_in.
 Qed.
 
 Lemma DMC_sub_vecE (V : {set 'I_n}) (t : 'rV_n) :
-  W ``(tb # V | t # V) = \prod_(i in V) W (t ``_ i) (tb ``_ i).
+  W ``(tb \# V | t \# V) = \prod_(i in V) W (t ``_ i) (tb ``_ i).
 Proof. by rewrite DMCE -rprod_sub_vec. Qed.
 
 End DMC_sub_vec.

@@ -34,7 +34,7 @@ Local Open Scope ring_scope.
 
 Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
 Reserved Notation "v `[ i := x ]" (at level 20).
-Reserved Notation "t # V" (at level 55, V at next level).
+Reserved Notation "t \# V" (at level 55, V at next level).
 
 Section AboutRingType.
 Variable R : ringType.
@@ -107,7 +107,7 @@ Definition sub_vec (t : 'rV[A]_n) (S : {set 'I_n}) : 'rV[A]_#| S | :=
 
 End sub_vec_sect.
 
-Notation "t # S" := (sub_vec t S) : vec_ext_scope.
+Notation "t \# S" := (sub_vec t S) : vec_ext_scope.
 
 Section prod_rV.
 Variables A B : Type.
