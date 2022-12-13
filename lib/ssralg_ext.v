@@ -10,7 +10,7 @@ Require Import ssr_ext f2.
 (*  v ``_ i       == the ith element of v                                     *)
 (*  supp v        == the set of indices of elements from v that are not 0     *)
 (*  v `[ i := x ] == v where the ith element has been replaced with x         *)
-(*  v # S         == the vector of size #|S| containing the elements of       *)
+(*  v \# S        == the vector of size #|S| containing the elements of       *)
 (*                    index i \in S                                           *)
 (*                                                                            *)
 (* Section prod_rV:                                                           *)
@@ -102,7 +102,7 @@ Section sub_vec_sect.
 Variables (A : Type) (n : nat).
 
 Definition sub_vec (t : 'rV[A]_n) (S : {set 'I_n}) : 'rV[A]_#| S | :=
-  \row_(j < #|S|) (t ``_ (enum_val j)).
+  \row_(j < #|S|) t ``_ (enum_val j).
 (* NB: enum_val j is the jth item of enum S *)
 
 End sub_vec_sect.
