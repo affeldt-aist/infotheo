@@ -1626,7 +1626,7 @@ End lmodR_convex_space_prop.
 Section freeN_combination.
 Import ssrnum vector.
 Import Order.POrderTheory Num.Theory.
-Variable E : vectType R.
+Variable (R : fieldType) (E : vectType R).
 Local Open Scope ring_scope.
 Local Open Scope classical_set_scope.
 Import GRing.
@@ -1642,12 +1642,12 @@ have hk m : (m < n - i.+1 -> m < i.+1 + (n - i.+1) - i.+1)%nat.
   by move=> mni; rewrite -addnBAC// subnn add0n.
 pose k (x : 'I_(i.+1 + (n - i.+1))) :=
   match fintype.split x with
-  | inl (@Ordinal _ m _) => if m == i then 1%R else 0%R
+  | inl (@Ordinal _ m _) => if m == i then 1 else 0
   | inr (@Ordinal _ m i0) => - coord (drop_tuple i.+1 s) (Ordinal (hk m i0)) s`_i
   end.
 exists k; split; last first.
   exists (Ordinal ilt'); rewrite /k; case: splitP.
-    by case=> j ji/= <-; rewrite eqxx; exact/eqP/R1_neq_R0.
+    by case=> j ji/= <-; rewrite eqxx; exact/oner_neq0.
   by case=> j jni/= /eqP; rewrite lt_eqF// ltEnat/= addSn ltnS leq_addr.
 rewrite big_split_ord big_ord_recr/= big1 ?add0r; last first.
   case=> j ji _; rewrite /k; case: splitP.
