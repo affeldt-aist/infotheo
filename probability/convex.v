@@ -2544,7 +2544,7 @@ move=> gf; have [h gfh] : {h & forall a, g a = f (h a)}.
 by exists h; apply/funext => a; rewrite gfh.
 Qed.
 
-(* NB: PR has been merges into mathcomp-analysis *)
+(* NB: PR has been merged into mathcomp-analysis *)
 Lemma image2_subset {aT bT rT : Type} [f : aT -> bT -> rT] [A B: set aT] [C D : set bT] :
   (A `<=` B)%classic -> (C `<=` D)%classic ->
   ([set f x y | x in A & y in C] `<=` [set f x y | x in B & y in D])%classic.
@@ -2553,10 +2553,10 @@ move=> AB CD x [a aA [c cC xe]]; subst x; exists a; (try by apply AB).
 by exists c; (try by apply CD).
 Qed.
 
-Section linear_function_image.
+Section linear_function_image0.
 Local Open Scope classical_set_scope.
 Local Open Scope ring_scope.
-Variables T U : lmodType R.
+Variables (R : ringType) (T U : lmodType R).
 
 (* TODO: move to mathcomp *)
 Lemma preimage_add_ker (f : {linear T -> U}) (A: set U) :
@@ -2568,6 +2568,13 @@ rewrite eqEsubset; split.
 - move=> x /= fx; exists x=>//.
   by exists 0; [ apply GRing.linear0 | apply GRing.addr0].
 Qed.
+
+End linear_function_image0.
+
+Section linear_function_image.
+Local Open Scope classical_set_scope.
+Local Open Scope ring_scope.
+Variables (T U : lmodType R).
 
 (* TODO: find how to speak about multilinear maps. *)
 Lemma hull_add (A B : set T) :
