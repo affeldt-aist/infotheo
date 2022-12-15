@@ -127,7 +127,7 @@ Export FDist.Exports.
 Coercion FDist.f : fdist >-> nneg_finfun.
 Canonical fdist_subType A := Eval hnf in [subType for @FDist.f A].
 Definition fdist_eqMixin A := [eqMixin of fdist A by <:].
-Canonical dist_eqType A := Eval hnf in EqType _ (fdist_eqMixin A).
+Canonical fdist_eqType A := Eval hnf in EqType _ (fdist_eqMixin A).
 
 Global Hint Resolve FDist.ge0 : core.
 Global Hint Resolve FDist.le1 : core.
