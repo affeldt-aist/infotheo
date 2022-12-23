@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
-From mathcomp Require boolp.
+From mathcomp Require Import all_algebra vector reals normedtype classical_sets.
+From mathcomp Require Import boolp.
 From mathcomp Require Import Rstruct.
-Require Import Reals Lra Nsatz.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 
 (******************************************************************************)
@@ -81,8 +81,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope R_scope.
-Local Open Scope reals_ext_scope.
+(*Local Open Scope R_scope.
+Local Open Scope reals_ext_scope.*)
 
 (* NB: f @^-1: [set y] would require to have finType's *)
 Notation "f @^-1 y" := (preim f (pred1 y)) : fdist_scope.
@@ -99,78 +99,89 @@ Arguments bij_swap {A B}.
 Lemma swapK A B : (@swap A B) \o swap = @id (B * A).
 Proof. by rewrite boolp.funeqE => -[]. Qed.
 
+Unset Printing Implicit Defensive.
+
+Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
+(* on the model of infotheo *)
 Module FDist.
 Section fdist.
-Variable A : finType.
+Variables (R : numDomainType) (A : finType).
+Local Open Scope ring_scope.
 Record t := mk {
-  f :> A ->R+ ;
-  _ : \sum_(a in A) f a == 1 :> R }.
+  f :> A -> R ;
+  _ : [forall a, 0 <= f a] && (\sum_(a in A) f a == 1) }.
 Lemma ge0 (d : t) a : 0 <= d a.
-Proof. by case: d => /= f _; exact/nneg_finfun_ge0. Qed.
-Lemma f1 (d : t) : \sum_(a in A) d a = 1 :> R.
-Proof. by case: d => f /= /eqP. Qed.
+Proof. by case: d => ? /= /andP[/forallP ]. Qed.
+Lemma f1 (d : t) : \sum_(a in A) d a = 1.
+Proof. by case: d => ? /= /andP[? /eqP]. Qed.
 Lemma le1 (d : t) a : d a <= 1.
-Proof.
-rewrite -(f1 d) (_ : d a = \sum_(a' in A | a' == a) d a').
-  apply (@leR_sumRl_support _ _ _ xpredT) => // ?; exact/ge0.
-by rewrite big_pred1_eq.
-Qed.
-Definition make (f : {ffun A -> R}) (H0 : forall a, 0 <= f a)
-  (H1 : \sum_(a in A) f a = 1) := @mk (@mkNNFinfun _ f
-  (proj1 (@reflect_iff _ _ (forallP_leRP _)) H0)) (introT eqP H1).
+Admitted.
+
+Program Definition make (f : {ffun A -> R}) (H0 : forall a, 0 <= f a)
+  (H1 : \sum_(a in A) f a = 1) := @mk f _.
+Next Obligation.
+Admitted.
 End fdist.
 Module Exports.
 Notation fdist := t.
 End Exports.
 End FDist.
 Export FDist.Exports.
-Coercion FDist.f : fdist >-> nneg_finfun.
-Canonical fdist_subType A := Eval hnf in [subType for @FDist.f A].
-Definition fdist_eqMixin A := [eqMixin of fdist A by <:].
-Canonical fdist_eqType A := Eval hnf in EqType _ (fdist_eqMixin A).
+Coercion FDist.f : fdist >-> Funclass.
+Canonical fdist_subType R A := Eval hnf in [subType for @FDist.f R A].
+Definition fdist_eqMixin R A := [eqMixin of fdist R A by <:].
+Canonical fdist_eqType R A := Eval hnf in EqType _ (fdist_eqMixin R A).
+
+Definition fdist_of (R : numDomainType) (A : finType) := fun phT : phant (Finite.sort A) => fdist R A.
+Notation "{ 'fdist' T }" := (fdist_of _ (Phant T)).
 
 Global Hint Resolve FDist.ge0 : core.
 Global Hint Resolve FDist.le1 : core.
 
-Definition fdist_of (A : finType) := fun phT : phant (Finite.sort A) => fdist A.
+Lemma fdist_ge0_le1 (R: numDomainType) (A : finType) (d : fdist R A) a : (0 <= d a <= 1)%R.
+Proof. by apply/andP. Qed.
 
-Notation "{ 'fdist' T }" := (fdist_of (Phant T)) : fdist_scope.
-
-Lemma fdist_ge0_le1 (A : finType) (d : fdist A) a : 0 <= d a <= 1.
-Proof. by []. Qed.
-
-Definition probfdist (A : finType) (d : fdist A) a :=
-  Eval hnf in Prob.mk_ (fdist_ge0_le1 d a).
+(*Definition probfdist (R: numDomainType) (A : finType) (d : fdist R A) a :=
+  Eval hnf in Prob.mk_ (d a) (fdist_ge0_le1 d a).*)
 
 Section fdist_lemmas.
 
+Variable R : numDomainType.
 Variable A : finType.
-Implicit Types d : fdist A.
+Implicit Types d : fdist R A.
 
 Definition is_fdist (f : A -> R) : Prop :=
-  (forall a, 0 <= f a) /\ (\sum_(a in A) f a = 1).
+  (forall a, (0 <= f a)%R) /\ (\sum_(a in A) f a = 1)%R.
 
 Lemma fdist_is_fdist d : is_fdist d.
-Proof. by case: d; case => f /= /forallP_leRP H0 /eqP H1. Qed.
+(*Proof. by case: d; case => f /= /forallP_leP H0 /eqP H1. Qed.*)
+Admitted.
 
 Lemma fdist_card_neq0 d : (0 < #| A |)%nat.
 Proof.
+(*
 apply/negPn/negP => abs; apply R1_neq_R0.
 rewrite -(FDist.f1 d) (eq_bigl xpred0) ?big_pred0_eq // => a.
 apply/negP => aA.
 by move/card_gt0P : abs; apply; exists a.
 Qed.
+*)
+Admitted.
 
-Definition fdist_supp d := [set a | d a != 0].
+Definition fdist_supp d := [set a | d a != 0]%R.
 
 Lemma sum_fdist_supp (f : A -> R) d (P : pred A):
-  \sum_(a in A | P a) d a * f a = \sum_(a | P a && (a \in fdist_supp d)) d a * f a.
+  (\sum_(a in A | P a) d a * f a = \sum_(a | P a && (a \in fdist_supp d)) d a * f a)%R.
 Proof.
+(*
 rewrite (bigID (mem (fdist_supp d))) /= addRC big1 ?add0R//.
 by move=> i; rewrite inE negbK => /andP[_ /eqP] ->; rewrite mul0R.
 Qed.
+*)
+Admitted.
 
-Lemma fdist_supp_neq0 (d : fdist A) : fdist_supp d != set0.
+(*TODO*)
+Lemma fdist_supp_neq0 (d : fdist R A) : fdist_supp d != set0.
 Proof.
 apply/eqP => H; move: (FDist.f1 d).
 rewrite -[LHS]mulR1 big_distrl sum_fdist_supp H big1 //=.
@@ -1713,4 +1724,3 @@ Defined.
 *)
 
 End tuple_prod_cast.*)
-
