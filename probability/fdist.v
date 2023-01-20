@@ -674,17 +674,17 @@ End fdistD1_prop.
 (* TODO: move? *)
 (* about_distributions_of_ordinals.*)
 
-(*TODO: yoshihiro503
-Lemma fdistI0_False (d : {fdist 'I_O}) : False.
+Lemma fdistI0_False (R: numDomainType) (d : fdist_of R (Phant 'I_O))
+  : False.
 Proof. move: (fdist_card_neq0 d); by rewrite card_ord. Qed.
-*)
 
-(* TODO:================== ここまで 2023/01/13 作業分 yoshihiro503*)
+(*Section fdistI2.
+Local Open Scope ring_scope.
+Variable R : numDomainType.
+Variable p : Prob.prob.
 
-Section fdistI2.
-Variable p : prob.
-
-Definition fdistI2: {fdist 'I_2} := fdist_binary (card_ord 2) p (lift ord0 ord0).
+Definition fdistI2: {fdist 'I_2} :=
+  fdist_binary (card_ord 2) (Prob.to_R R p) (lift ord0 ord0).
 
 Lemma fdistI2E a : fdistI2 a = if a == ord0 then Prob.p p else p.~.
 Proof.
@@ -693,10 +693,11 @@ by rewrite eq_sym (negbTE (neq_lift _ _)).
 by case: ifPn => //; move: a => -[[//|[|]//]].
 Qed.
 
-End fdistI2.
+End fdistI2.*)
 
-Section fdistI2_prop.
-Variable p : prob.
+(*Section fdistI2_prop.
+Local Open Scope ring_scope.
+Variable R : numDomainType.
 
 Lemma fdistI21 : fdistI2 1%:pr = fdist1 ord0.
 Proof.
@@ -710,10 +711,16 @@ apply/fdist_ext => /= i; rewrite fdistI2E fdist1E; case: ifPn => [/eqP ->//|].
 by case: i => -[//|] [|//] i12 _ /=; rewrite onem0.
 Qed.
 
-End fdistI2_prop.
+End fdistI2_prop.*)
 
-Section fdist_add.
-Variables (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob).
+(*Section fdist_add.
+Local Open Scope ring_scope.
+Variable R : numDomainType.
+
+Variables (n m : nat)
+  (d1 : fdist_of R (Phant 'I_n))
+  (d2 : fdist_of R (Phant 'I_m))
+  (p : Prob.prob).
 
 Let f := [ffun i : 'I_(n + m) =>
   let si := fintype.split i in
@@ -742,10 +749,12 @@ Lemma fdist_addE i : fdist_add i =
   match fintype.split i with inl a => p * d1 a | inr a => p.~ * d2 a end.
 Proof. by rewrite /fdist_add; unlock; rewrite ffunE. Qed.
 
-End fdist_add.
+End fdist_add.*)
 
 Section fdist_del.
-Variables (n : nat) (P : {fdist 'I_n.+1}) (j : 'I_n.+1) (Pj_neq1 : P j != 1).
+Local Open Scope ring_scope.
+Variable R : numFieldType.
+Variables (n : nat) (P : fdist_of R (Phant 'I_n.+1)) (j : 'I_n.+1) (Pj_neq1 : P j != 1).
 
 Let D : {fdist 'I_n.+1} := fdistD1 Pj_neq1.
 
@@ -762,13 +771,13 @@ rewrite (bigID (fun i : 'I_n => (i < j)%nat)) /=; congr (_ + _).
   move=> jn; rewrite (@big_ord_narrow_cond _ _ _ j n xpredT); first by rewrite -ltnS.
   move=> jn'; apply eq_bigr => i _; rewrite ffunE; congr (D _).
   rewrite /h /= ltn_ord; exact/val_inj.
-rewrite (bigID (pred1 j)) /= [X in _ = X + _](_ : _ = 0) ?add0R; last first.
+rewrite (bigID (pred1 j)) /= [X in _ = X + _](_ : _ = 0) ?add0r; last first.
   rewrite (big_pred1 j).
   by rewrite /D fdistD1E eqxx.
   by move=> /= i; rewrite -leqNgt andbC andb_idr // => /eqP ->.
 rewrite [in RHS]big_mkcond big_ord_recl.
-set X := (X in _ = addR_monoid _ X).
-rewrite /= -leqNgt leqn0 eq_sym andbN add0R.
+set X := (X in _ = GRing.add_monoid R _ X).
+rewrite /= -leqNgt leqn0 eq_sym andbN add0r.
 rewrite big_mkcond; apply eq_bigr => i _.
 rewrite -2!leqNgt andbC eq_sym -ltn_neqAle ltnS.
 case: ifPn => // ji; by rewrite /h ffunE ltnNge ji.
@@ -784,7 +793,9 @@ Definition fdist_del_idx (i : 'I_n) := h i.
 End fdist_del.
 
 Section fdist_belast.
-Variables (n : nat) (P : {fdist 'I_n.+1}) (Pmax_neq1 : P ord_max != 1).
+Local Open Scope ring_scope.
+Variable R : numFieldType.
+Variables (n : nat) (P : fdist_of R (Phant 'I_n.+1)) (Pmax_neq1 : P ord_max != 1).
 
 Let D : {fdist 'I_n.+1} := fdistD1 Pmax_neq1.
 
@@ -796,21 +807,24 @@ Proof. by rewrite /fdist_belast; unlock; rewrite fdist_delE ltn_ord. Qed.
 End fdist_belast.
 
 Section fdist_convn.
-Variables (A : finType) (n : nat) (e : {fdist 'I_n}) (g : 'I_n -> fdist A).
+Local Open Scope ring_scope.
+Variable R : numDomainType.
+Variables (A : finType) (n : nat) (e : fdist_of R (Phant 'I_n))
+  (g : 'I_n -> fdist R A).
 
 Let f := [ffun a => \sum_(i < n) e i * g i a].
 
 Let f0 a : 0 <= f a.
-Proof. by rewrite ffunE; apply: sumR_ge0 => /= i _; apply mulR_ge0. Qed.
+Proof. by rewrite ffunE; apply: sumr_ge0 => /= i _; apply mulr_ge0. Qed.
 
 Let f1 : \sum_(a in A) f a = 1.
 Proof.
 under eq_bigr do rewrite ffunE.
 rewrite exchange_big /= -(FDist.f1 e) /=; apply eq_bigr => i _.
-by rewrite -big_distrr /= FDist.f1 mulR1.
+by rewrite -big_distrr /= FDist.f1 mulr1.
 Qed.
 
-Definition fdist_convn : fdist A := locked (FDist.make f0 f1).
+Definition fdist_convn : fdist R A := locked (FDist.make f0 f1).
 
 Lemma fdist_convnE a : fdist_convn a = \sum_(i < n) e i * g i a.
 Proof. by rewrite /fdist_convn; unlock; rewrite ffunE. Qed.
@@ -818,18 +832,20 @@ Proof. by rewrite /fdist_convn; unlock; rewrite ffunE. Qed.
 End fdist_convn.
 
 Section fdist_convn_prop.
+Local Open Scope ring_scope.
+Variable R : numDomainType.
 Variables (A : finType) (n : nat).
 
-Lemma fdist_convn1 (g : 'I_n -> fdist A) a : fdist_convn (fdist1 a) g = g a.
+Lemma fdist_convn1 (g : 'I_n -> fdist R A) a : fdist_convn (fdist1 a) g = g a.
 Proof.
-apply/fdist_ext => a0; rewrite fdist_convnE (bigD1 a) //= fdist1xx mul1R.
-by rewrite big1 ?addR0 // => i ia; rewrite fdist10// mul0R.
+apply/fdist_ext => a0; rewrite fdist_convnE (bigD1 a) //= fdist1xx mul1r.
+by rewrite big1 ?addr0 // => i ia; rewrite fdist10// mul0r.
 Qed.
 
-Lemma fdist_convn_cst (e : {fdist 'I_n}) (a : {fdist A}) :
+Lemma fdist_convn_cst (e : fdist_of R (Phant 'I_n)) (a : {fdist A}) :
   fdist_convn e (fun=> a) = a.
 Proof.
-by apply/fdist_ext => ?; rewrite fdist_convnE -big_distrl /= FDist.f1 mul1R.
+by apply/fdist_ext => ?; rewrite fdist_convnE -big_distrl /= FDist.f1 mul1r.
 Qed.
 
 End fdist_convn_prop.
@@ -859,7 +875,9 @@ by rewrite fdist_convE mulRDl !mulRA.
 Qed.
 
 Section fdist_perm.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n}) (s : 'S_n).
+Local Open Scope ring_scope.
+Variable R : numDomainType.
+Variables (A : finType) (n : nat) (P : fdist_of R (Phant 'rV[A]_n)) (s : 'S_n).
 
 Definition fdist_perm : {fdist 'rV[A]_n} := fdistmap (col_perm s^-1) P.
 
@@ -872,7 +890,9 @@ Qed.
 End fdist_perm.
 
 Section fdistI_perm.
-Variables (n : nat) (P : {fdist 'I_n}) (s : 'S_n).
+Local Open Scope ring_scope.
+Variable R : numDomainType.
+Variables (n : nat) (P : fdist_of R (Phant 'I_n)) (s : 'S_n).
 
 Let f := [ffun i : 'I_n => P (s i)].
 
@@ -899,6 +919,8 @@ Lemma fdistI_permE i : fdistI_perm i = P (s i).
 Proof. by rewrite /fdistI_perm; unlock; rewrite ffunE. Qed.
 
 End fdistI_perm.
+
+(* TODO:================== ここまで 2023/01/20 作業分 yoshihiro503*)
 
 Section fdistI_perm_prop.
 
