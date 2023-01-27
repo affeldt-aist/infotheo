@@ -430,10 +430,10 @@ Qed.
 End fdist_uniform_prop.
 
 (*TODO yoshihiro503: move these *)
-Definition dominates {R: numFieldType} {A : Type} (Q P : A -> R) :=
+Definition dominates {R: numDomainType} {A : Type} (Q P : A -> R) :=
   locked (forall a, Q a = 0 -> P a = 0)%R.
 Notation "P '`<<' Q" := (dominates Q P).
-Lemma dominatesP (R: numFieldType) A (Q P : A -> R) :
+Lemma dominatesP (R: numDomainType) A (Q P : A -> R) :
   P `<< Q <-> forall a, Q a = 0%R -> P a = 0%R.
 Proof. by rewrite /dominates; unlock. Qed.
 
@@ -459,7 +459,7 @@ case e : (a \in C); last exact/lexx.
 by rewrite invr_ge0 ler0n.
 Qed.
 
-Lemma f1 : \sum_(a in A) f a = 1.
+Let f1 : \sum_(a in A) f a = 1.
 Proof.
 rewrite /f.
 have HC' : #|C|%:R != 0 :> R; first by rewrite pnatr_eq0 -lt0n.
@@ -527,11 +527,11 @@ Proof. by rewrite /f ffunE; case: ifP. Qed.
 Let f1 (a : A) : \sum_(a' in A) f a a' = 1.
 Proof.
 rewrite Set2sumE /= /f !ffunE; case: ifPn => [/eqP <-|].
-  by rewrite eq_sym (negbTE (Set2.a_neq_b HA)) subRK.
-by rewrite eq_sym; move/Set2.neq_a_b/eqP => <-; rewrite eqxx subRKC.
+  by rewrite eq_sym (negbTE (Set2.a_neq_b HA)) subrK.
+by rewrite eq_sym; move/Set2.neq_a_b/eqP => <-; rewrite eqxx onemKC.
 Qed.
 
-Definition fdist_binary : A -> fdist A :=
+Definition fdist_binary : A -> fdist R A :=
   fun a => locked (FDist.make (f0 a) (f1 a)).
 
 Lemma fdist_binaryE a a' : fdist_binary a a' = if a' == a then 1 - p else p.
@@ -850,8 +850,10 @@ Qed.
 
 End fdist_convn_prop.
 
-Section fdist_conv.
-Variables (A : finType) (p : prob) (d1 d2 : fdist A).
+(*Section fdist_conv.
+Local Open Scope ring_scope.
+Variable R : numDomainType.
+Variables (A : finType) (p : prob) (d1 d2 : fdist R A).
 
 Definition fdist_conv : {fdist A} := locked
   (fdist_convn (fdistI2 p) (fun i => if i == ord0 then d1 else d2)).
@@ -872,7 +874,7 @@ Proof.
 apply/fdist_ext => a0 /=; rewrite !(fdistbindE,fdist_convE) /=.
 rewrite 2!big_distrr /= -big_split /=; apply/eq_bigr => a1 _.
 by rewrite fdist_convE mulRDl !mulRA.
-Qed.
+Qed.*)
 
 Section fdist_perm.
 Local Open Scope ring_scope.
@@ -923,16 +925,18 @@ End fdistI_perm.
 (* TODO:================== ここまで 2023/01/20 作業分 yoshihiro503*)
 
 Section fdistI_perm_prop.
+Local Open Scope ring_scope.
+Variable R : numDomainType.
 
-Lemma fdistI_perm1 (n : nat) (P : {fdist 'I_n}) : fdistI_perm P 1%g = P.
+Lemma fdistI_perm1 (n : nat) (P : {fdist 'I_n}) : @fdistI_perm R n P 1%g = P.
 Proof. by apply/fdist_ext => /= i; rewrite fdistI_permE perm1. Qed.
 
 Lemma fdistI_permM (n : nat) (P : {fdist 'I_n}) (s s' : 'S_n) :
-  fdistI_perm (fdistI_perm P s) s' = fdistI_perm P (s' * s).
+  @fdistI_perm R n (fdistI_perm P s) s' = fdistI_perm P (s' * s).
 Proof. by apply/fdist_ext => /= i; rewrite !fdistI_permE permM. Qed.
 
 Lemma fdistI_tperm (n : nat) (a b : 'I_n) :
-  fdistI_perm (fdist1 a) (tperm a b) = fdist1 b.
+  @fdistI_perm R n (fdist1 a) (tperm a b) = fdist1 b.
 Proof.
 apply/fdist_ext => /= x; rewrite fdistI_permE !fdist1E permE /=.
 case: ifPn => [/eqP ->|xa]; first by rewrite eq_sym.
@@ -940,9 +944,9 @@ case: ifPn; by [rewrite eqxx | move=> _; rewrite (negbTE xa)].
 Qed.
 
 Lemma fdistI_perm_fdist1 (n : nat) (a : 'I_n) (s : 'S_n) :
-  fdistI_perm (fdist1 a) s = fdist1 (s^-1 a)%g.
+  @fdistI_perm R n (fdist1 a) s = fdist1 (s^-1 a)%g.
 Proof.
-apply/fdist_ext => /= i; rewrite fdistI_permE !fdist1E; congr (INR (nat_of_bool _)).
+apply/fdist_ext => /= i; rewrite fdistI_permE !fdist1E. congr ((nat_of_bool _)%:R).
 by apply/eqP/eqP => [<-|->]; rewrite ?permK // ?permKV.
 Qed.
 
@@ -952,9 +956,12 @@ Reserved Notation "d `1" (at level 2, left associativity, format "d `1").
 Reserved Notation "d `2" (at level 2, left associativity, format "d `2").
 
 Section fdist_fst_snd.
-Variables (A B : finType) (P : {fdist A * B}).
+Local Open Scope ring_scope.
+Variable R : numDomainType.
 
-Definition fdist_fst : fdist A := fdistmap fst P.
+Variables (A B : finType) (P : fdist_of R (Phant (A * B))).
+
+Definition fdist_fst : fdist R A := fdistmap fst P.
 
 Lemma fdist_fstE a : fdist_fst a = \sum_(i in B) P (a, i).
 Proof.
@@ -962,12 +969,12 @@ by rewrite fdistmapE /= -(pair_big_fst _ _ (pred1 a)) //= ?big_pred1_eq.
 Qed.
 
 Lemma dom_by_fdist_fst a b : fdist_fst a = 0 -> P (a, b) = 0.
-Proof. rewrite fdist_fstE => /psumR_eq0P -> // ? _; exact: fdist_ge0. Qed.
+Proof. rewrite fdist_fstE => /psumr_eq0P -> // ? _; exact: fdist_ge0. Qed.
 
 Lemma dom_by_fdist_fstN a b : P (a, b) != 0 -> fdist_fst a != 0.
 Proof. by apply: contra => /eqP /dom_by_fdist_fst ->. Qed.
 
-Definition fdist_snd : fdist B := fdistmap snd P.
+Definition fdist_snd : fdist R B := fdistmap snd P.
 
 Lemma fdist_sndE b : fdist_snd b = \sum_(i in A) P (i, b).
 Proof.
@@ -976,7 +983,7 @@ by apply eq_bigr => a ?; rewrite big_pred1_eq.
 Qed.
 
 Lemma dom_by_fdist_snd a b : fdist_snd b = 0 -> P (a, b) = 0.
-Proof. by rewrite fdist_sndE => /psumR_eq0P -> // ? _; exact: fdist_ge0. Qed.
+Proof. by rewrite fdist_sndE => /psumr_eq0P -> // ? _; exact: fdist_ge0. Qed.
 
 Lemma dom_by_fdist_sndN a b : P (a, b) != 0 -> fdist_snd b != 0.
 Proof. by apply: contra => /eqP /dom_by_fdist_snd ->. Qed.
@@ -987,17 +994,19 @@ Notation "d `1" := (fdist_fst d) : fdist_scope.
 Notation "d `2" := (fdist_snd d) : fdist_scope.
 
 Section fdist_prod.
-Variables (A B : finType) (P : fdist A) (W : A -> fdist B).
+Local Open Scope ring_scope.
+Variable R : numDomainType.
+Variables (A B : finType) (P : fdist R A) (W : A -> fdist R B).
 
 Let f := [ffun ab => P ab.1 * W ab.1 ab.2].
 
-Let f0 ab : 0 <= f ab. Proof. by rewrite ffunE; apply/mulR_ge0. Qed.
+Let f0 ab : 0 <= f ab. Proof. by rewrite ffunE; apply/mulr_ge0. Qed.
 
 Let f1 : \sum_(ab in {: A * B}) f ab = 1.
 Proof.
 under eq_bigr do rewrite ffunE.
 rewrite -(pair_bigA _ (fun i j => P i * W i j)) /= -(FDist.f1 P).
-by apply eq_bigr => a _; rewrite -big_distrr FDist.f1 /= mulR1.
+by apply eq_bigr => a _; rewrite -big_distrr FDist.f1 /= mulr1.
 Qed.
 
 Definition fdist_prod := locked (FDist.make f0 f1).
@@ -1008,17 +1017,17 @@ Proof. by rewrite /fdist_prod; unlock; rewrite ffunE. Qed.
 Lemma fdist_prod1 : fdist_prod`1 = P.
 Proof.
 apply/fdist_ext=> a; rewrite fdist_fstE (eq_bigr _ (fun b _ => fdist_prodE (a,b))) /=.
-by rewrite -big_distrr FDist.f1 /= mulR1.
+by rewrite -big_distrr FDist.f1 /= mulr1.
 Qed.
 
 End fdist_prod.
 
 Notation "P `X W" := (fdist_prod P W) : fdist_scope.
 
-Section fdist_prod_prop.
-Variables (A B : finType) (W : A -> fdist B).
+(*Section fdist_prod_prop.
+Variables (A B : finType) (W : A -> fdist R B).
 
-Lemma fdist_prod1_conv p (a b : fdist A) :
+Lemma fdist_prod1_conv p (a b : fdist R A) :
   ((a <| p |> b) `X W)`1 = (a `X W)`1 <| p |> (b `X W)`1.
 Proof. by rewrite !fdist_prod1. Qed.
 
@@ -1030,24 +1039,29 @@ rewrite fdist_sndE fdist_convE !fdist_sndE 2!big_distrr /=.
 by rewrite -big_split; apply eq_bigr => a0 _; rewrite !fdist_prodE fdist_convE /=; field.
 Qed.
 
-End fdist_prod_prop.
+End fdist_prod_prop.*)
+
 Notation "P1 `x P2" := (P1 `X (fun _ => P2)) : fdist_scope.
 
 Section prod_dominates_joint.
-Local Open Scope reals_ext_scope.
-Variables (A B : finType) (P : {fdist A * B}).
+Local Open Scope ring_scope.
+Variable R : numDomainType.
+
+Variables (A B : finType) (P : fdist_of R (Phant (A * B))).
 
 Lemma Prod_dominates_Joint : P `<< P`1 `x P`2.
 Proof.
 apply/dominatesP => -[a b].
-rewrite fdist_prodE /= mulR_eq0 => -[P1a|P2b];
+rewrite fdist_prodE /= => /eqP. rewrite mulf_eq0 => /orP -[/eqP P1a| /eqP P2b];
   by [rewrite dom_by_fdist_fst | rewrite dom_by_fdist_snd].
 Qed.
 
 End prod_dominates_joint.
 
 Section fdistX.
-Variables (A B : finType) (P : {fdist A * B}).
+Local Open Scope ring_scope.
+Variable R : numDomainType.
+Variables (A B : finType) (P : fdist_of R (Phant (A * B))).
 
 Definition fdistX : {fdist B * A} := fdistmap swap P.
 
@@ -1065,13 +1079,16 @@ Proof. by rewrite /fdist_snd /fdistX fdistmap_comp. Qed.
 End fdistX.
 
 Section fdistX_prop.
-Variables (A B : finType) (P : fdist A) (Q : fdist B) (R S : {fdist A * B}).
+Local Open Scope ring_scope.
+Variable T : numDomainType.
+Variables (A B : finType) (P : fdist T A) (Q : fdist T B)
+  (R S : fdist_of T (Phant (A * B))).
 
 Lemma fdistXI : fdistX (fdistX R) = R.
 Proof. by rewrite /fdistX fdistmap_comp swapK fdistmap_id. Qed.
 
 Lemma fdistX_prod : fdistX (Q `x P) = P `x Q.
-Proof. by apply/fdist_ext => -[a b]; rewrite fdistXE !fdist_prodE mulRC. Qed.
+Proof. by apply/fdist_ext => -[a b]; rewrite fdistXE !fdist_prodE mulrC. Qed.
 
 Local Open Scope reals_ext_scope.
 
@@ -1082,36 +1099,40 @@ Qed.
 
 End fdistX_prop.
 
-Lemma fdistX_prod2 (A B : finType) (P : fdist A) (W : A -> fdist B) :
+Lemma fdistX_prod2 {R: numDomainType}
+  (A B : finType) (P : fdist R A) (W : A -> fdist R B) :
   (fdistX (P `X W))`2 = P.
 Proof. by rewrite fdistX2 fdist_prod1. Qed.
 
 Section fdist_rV.
+Local Open Scope ring_scope.
+Variable R : numDomainType.
 Local Open Scope vec_ext_scope.
-Variables (A : finType) (P : fdist A) (n : nat).
+Variables (A : finType) (P : fdist R A) (n : nat).
 
 Let f := [ffun t : 'rV[A]_n => \prod_(i < n) P t ``_ i].
 
 Let f0 t : 0 <= f t.
-Proof. by rewrite ffunE; apply prodR_ge0. Qed.
+Proof. by rewrite ffunE; apply prodr_ge0. Qed.
 
 Let f1 : \sum_(t in 'rV_n) f t = 1.
 Proof.
 pose P' := fun (a : 'I_n) b => P b.
 suff : \sum_(g : {ffun 'I_n -> A }) \prod_(i < n) P' i (g i) = 1.
-Local Open Scope ring_scope.
   rewrite (reindex_onto (fun j : 'rV[A]_n => finfun (fun x => j ``_ x))
                         (fun i => \row_(j < n) i j)) /=.
-Local Close Scope ring_scope.
   - move=> H; rewrite /f -H {H}.
     apply eq_big => t /=.
     + by apply/esym/eqP/rowP => i; rewrite mxE ffunE.
+(* TODO: yoshihiro503
     + move=> _; rewrite ffunE; apply eq_bigr => i _ /=; by rewrite ffunE.
   move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
 rewrite -bigA_distr_bigA /= /P'.
 rewrite [RHS](_ : _ = \prod_(i < n) 1); last by rewrite big1.
 by apply eq_bigr => i _; exact: FDist.f1.
 Qed.
+*)
+Admitted.
 
 Definition fdist_rV : {fdist 'rV[A]_n} := locked (FDist.make f0 f1).
 
@@ -1123,18 +1144,21 @@ End fdist_rV.
 Notation "P `^ n" := (fdist_rV P n) : fdist_scope.
 
 Section wolfowitz_counting.
+Local Open Scope ring_scope.
+Variable R : numDomainType.
 
-Variables (C : finType) (P : fdist C) (k : nat) (s : {set 'rV[C]_k}).
+Variables (C : finType) (P : fdist R C) (k : nat) (s : {set 'rV[C]_k}).
 
 Lemma wolfowitz a b A B : 0 < A -> 0 < B ->
   a <= \sum_(x in s) P `^ k x <= b ->
   (forall x : 'rV_k, x \in s -> A <= P `^ k x <= B) ->
-  a / B <= INR #| s | <= b / A.
+  a / B <=  (#| s |)%:R <= b / A.
 Proof.
-move=> A0 B0 [Ha Hb] H.
-have HB : \sum_(x in s) P `^ _ x <= INR #|s| * B.
-  have HB : \sum_(x in s | predT s ) P `^ _ x <= INR #|s| * B.
-    apply (@leR_trans (\sum_(x in s | predT s) [fun _ => B] x)).
+move=> A0 B0 /andP [Ha Hb] H.
+have HB : \sum_(x in s) P `^ _ x <= #|s|%:R * B.
+  have HB : \sum_(x in s | predT s ) P `^ _ x <= #|s|%:R * B.
+(*TODO: yoshihiro503
+    apply (@ler_trans (\sum_(x in s | predT s) [fun _ => B] x)).
       by apply leR_sumR_support => /= i iA _; apply H.
     rewrite -big_filter /= big_const_seq /= iter_addR /=.
     apply leR_wpmul2r; first lra.
@@ -1158,8 +1182,11 @@ split.
 - by rewrite leR_pdivr_mulr //; move/leR_trans : Ha; exact.
 - by rewrite leR_pdivl_mulr //; exact: (leR_trans HA).
 Qed.
+*)
 
 End wolfowitz_counting.
+
+(* TODO: yoshihiro503 1/27 === *)
 
 Section fdist_prod_of_rV.
 Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
