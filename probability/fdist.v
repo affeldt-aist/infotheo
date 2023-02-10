@@ -140,6 +140,7 @@ Global Hint Resolve FDist.le1 : core.
 Definition fdist_of (R : numDomainType) (A : finType) :=
   fun phT : phant (Finite.sort A) => fdist R A.
 Notation "{ 'fdist' T }" := (fdist_of _ (Phant T)) : fdist_scope.
+Notation "R '.-fdist' T" := (fdist_of R (Phant T)) (at level 2): fdist_scope.
 
 Lemma fdist_ge0_le1 (R : numDomainType) (A : finType) (d : fdist R A) a :
   (0 <= d a <= 1)%R.
@@ -726,7 +727,7 @@ End fdistD1_prop.
 (* TODO: move? *)
 (* about_distributions_of_ordinals.*)
 
-Lemma fdistI0_False (R: numDomainType) (d : fdist_of R (Phant 'I_O))
+Lemma fdistI0_False (R: numDomainType) (d : R.-fdist 'I_O)
   : False.
 Proof. move: (fdist_card_neq0 d); by rewrite card_ord. Qed.
 
@@ -770,8 +771,8 @@ Local Open Scope ring_scope.
 Variable R : numDomainType.
 
 Variables (n m : nat)
-  (d1 : fdist_of R (Phant 'I_n))
-  (d2 : fdist_of R (Phant 'I_m))
+  (d1 : R.-fdist 'I_n)
+  (d2 : R.-fdist 'I_m)
   (p : prob R).
 
 Let f := [ffun i : 'I_(n + m) =>
@@ -806,7 +807,7 @@ End fdist_add.
 Section fdist_del.
 Local Open Scope ring_scope.
 Variable R : numFieldType.
-Variables (n : nat) (P : fdist_of R (Phant 'I_n.+1)) (j : 'I_n.+1) (Pj_neq1 : P j != 1).
+Variables (n : nat) (P : R.-fdist 'I_n.+1) (j : 'I_n.+1) (Pj_neq1 : P j != 1).
 
 Let D : {fdist 'I_n.+1} := fdistD1 Pj_neq1.
 
@@ -861,7 +862,7 @@ End fdist_belast.
 Section fdist_convn.
 Local Open Scope ring_scope.
 Variable R : numDomainType.
-Variables (A : finType) (n : nat) (e : fdist_of R (Phant 'I_n))
+Variables (A : finType) (n : nat) (e : R.-fdist 'I_n)
   (g : 'I_n -> fdist R A).
 
 Let f := [ffun a => \sum_(i < n) e i * g i a].
@@ -894,7 +895,7 @@ apply/fdist_ext => a0; rewrite fdist_convnE (bigD1 a) //= fdist1xx mul1r.
 by rewrite big1 ?addr0 // => i ia; rewrite fdist10// mul0r.
 Qed.
 
-Lemma fdist_convn_cst (e : fdist_of R (Phant 'I_n)) (a : {fdist A}) :
+Lemma fdist_convn_cst (e : R.-fdist 'I_n) (a : {fdist A}) :
   fdist_convn e (fun=> a) = a.
 Proof.
 by apply/fdist_ext => ?; rewrite fdist_convnE -big_distrl /= FDist.f1 mul1r.
@@ -931,7 +932,7 @@ Qed.
 Section fdist_perm.
 Local Open Scope ring_scope.
 Variable R : numDomainType.
-Variables (A : finType) (n : nat) (P : fdist_of R (Phant 'rV[A]_n)) (s : 'S_n).
+Variables (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n) (s : 'S_n).
 
 Definition fdist_perm : {fdist 'rV[A]_n} := fdistmap (col_perm s^-1) P.
 
@@ -946,7 +947,7 @@ End fdist_perm.
 Section fdistI_perm.
 Local Open Scope ring_scope.
 Variable R : numDomainType.
-Variables (n : nat) (P : fdist_of R (Phant 'I_n)) (s : 'S_n).
+Variables (n : nat) (P : R.-fdist  'I_n) (s : 'S_n).
 
 Let f := [ffun i : 'I_n => P (s i)].
 
@@ -1009,7 +1010,7 @@ Section fdist_fst_snd.
 Local Open Scope ring_scope.
 Variable R : numDomainType.
 
-Variables (A B : finType) (P : fdist_of R (Phant (A * B))).
+Variables (A B : finType) (P : R.-fdist (A * B)).
 
 Definition fdist_fst : fdist R A := fdistmap fst P.
 
@@ -1101,7 +1102,7 @@ Section prod_dominates_joint.
 Local Open Scope ring_scope.
 Variable R : numDomainType.
 
-Variables (A B : finType) (P : fdist_of R (Phant (A * B))).
+Variables (A B : finType) (P : R.-fdist (A * B)).
 
 Lemma Prod_dominates_Joint : P `<< P`1 `x P`2.
 Proof.
@@ -1115,7 +1116,7 @@ End prod_dominates_joint.
 Section fdistX.
 Local Open Scope ring_scope.
 Variable R : numDomainType.
-Variables (A B : finType) (P : fdist_of R (Phant (A * B))).
+Variables (A B : finType) (P : R.-fdist (A * B)).
 
 Definition fdistX : {fdist B * A} := fdistmap swap P.
 
