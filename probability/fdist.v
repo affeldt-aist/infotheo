@@ -567,29 +567,6 @@ Qed.
 
 End fdist_uniform_supp_prop.
 
-(* ---- temporary ---- *)
-Section ponem.
-    Local Open Scope ring_scope.
-    Variable R : numDomainType.
-    Definition ponem (x: prob R) : prob R. Admitted.
-    Print ponem.
-    Lemma ponemE (x : prob R): (ponem x : R) = onem (x : R).
-    Admitted.
-    Lemma ponemK (x : prob R): ponem (ponem x) = x.
-    Admitted.
-(*    Lemma ponem_le1 x : 0 <= x -> ponem x <= 1.
-    Admitted.
-    Lemma onem_ge0 x : x <= 1 -> 0 <= onem x.
-    Admitted.*)
-    Lemma ponem0 : ponem prob0 = prob1.
-    Admitted.
-    Lemma ponem1 : ponem prob1 = prob0.
-    Admitted.
-    Lemma ponemKC (x : prob R) : (x : R) + (ponem x : R) = 1.
-    Admitted.
-End ponem.
-(* ---- temporary ---- *)
-
 Section fdist_binary.
 Local Open Scope ring_scope.
 Variable R : numDomainType.
@@ -597,7 +574,7 @@ Variable A : finType.
 Hypothesis HA : #|A| = 2%nat.
 Variable p : prob R.
 
-Let f (a : A) := [ffun a' => (if a' == a then ponem p else p) : R].
+Let f (a : A) := [ffun a' => (if a' == a then p.~ else p : R)].
 
 Let f0 (a a' : A) : 0 <= (f a a' : R).
 Proof. by rewrite /f ffunE; case: ifP. Qed.
@@ -605,25 +582,24 @@ Proof. by rewrite /f ffunE; case: ifP. Qed.
 Let f1 (a : A) : \sum_(a' in A) (f a a' : R) = 1.
 Proof.
 rewrite Set2sumE /= /f !ffunE; case: ifPn => [/eqP <-|].
-  by rewrite eq_sym (negbTE (Set2.a_neq_b HA)) addrC ponemKC.
-by rewrite eq_sym; move/Set2.neq_a_b/eqP => <-; rewrite eqxx ponemKC.
+  by rewrite eq_sym (negbTE (Set2.a_neq_b HA)) addrC onemKC.
+by rewrite eq_sym; move/Set2.neq_a_b/eqP => <-; rewrite eqxx onemKC.
 Qed.
 
 Definition fdist_binary : A -> fdist R A :=
   fun a => locked (FDist.make (f0 a) (f1 a)).
 
-Lemma fdist_binaryE a a' : fdist_binary a a' = ((if a' == a then ponem p else p) : R).
+Lemma fdist_binaryE a a' : fdist_binary a a' = (if a' == a then p.~ else p : R).
 Proof. by rewrite /fdist_binary; unlock; rewrite ffunE. Qed.
 
 Lemma sum_fdist_binary_swap a :
   \sum_(a' in A) fdist_binary a a' = \sum_(a' in A) fdist_binary a' a.
 Proof. by rewrite 2!Set2sumE /= !fdist_binaryE !(eq_sym a). Qed.
 
-Lemma fdist_binaryxx a : fdist_binary a a = ponem p.
+Lemma fdist_binaryxx a : fdist_binary a a = p.~.
 Proof. by rewrite fdist_binaryE eqxx. Qed.
 
 End fdist_binary.
-*)
 
 Section fdist_binary_prop.
 Local Open Scope ring_scope.
@@ -642,7 +618,7 @@ exists (Prob.mk rb).
 apply/fdist_ext => a /=.
 move: pf01 => /andP [/forallP pf0 /eqP pf1].
 rewrite fdist_binaryE; case: ifPn => [/eqP -> |Ha/=].
-  by rewrite ponemE /onem -pf1 /= Set2sumE /= addrK.
+  by rewrite /onem -pf1 /= Set2sumE /= addrK.
 by move/Set2.neq_a_b/eqP : Ha <-.
 Qed.
 
@@ -762,7 +738,7 @@ Variable p : prob R.
 Definition fdistI2: {fdist 'I_2} :=
   fdist_binary (card_ord 2) p (lift ord0 ord0).
 
-Lemma fdistI2E a : fdistI2 a = if a == ord0 then p else ponem p.
+Lemma fdistI2E a : fdistI2 a = if a == ord0 then p : R else p.~.
 Proof.
 rewrite /fdistI2 fdist_binaryE; case: ifPn => [/eqP ->|].
   by rewrite eq_sym (negbTE (neq_lift _ _)).
@@ -778,13 +754,13 @@ Variable R : numDomainType.
 Lemma fdistI21 : @fdistI2 R 1%:pr = fdist1 ord0.
 Proof.
 apply/fdist_ext => /= i; rewrite fdistI2E fdist1E; case: ifPn => //= _.
-by rewrite ponem1.
+by rewrite onem1.
 Qed.
 
 Lemma fdistI20 : @fdistI2 R 0%:pr = fdist1 (Ordinal (erefl (1 < 2)%nat)).
 Proof.
 apply/fdist_ext => /= i; rewrite fdistI2E fdist1E; case: ifPn => [/eqP ->//|].
-by case: i => -[//|] [|//] i12 _ /=; rewrite ponem0.
+by case: i => -[//|] [|//] i12 _ /=; rewrite onem0.
 Qed.
 
 End fdistI2_prop.
@@ -937,7 +913,7 @@ Definition fdist_conv : {fdist A} := locked
 Lemma fdist_convE a : fdist_conv a = (p : R) * d1 a + p.~ * d2 a.
 Proof.
 rewrite /fdist_conv; unlock => /=.
-  by rewrite fdist_convnE !big_ord_recl big_ord0 /= addr0 !fdistI2E !ponemE.
+  by rewrite fdist_convnE !big_ord_recl big_ord0 /= addr0 !fdistI2E.
 Qed.
 
 End fdist_conv.
@@ -1263,8 +1239,6 @@ Qed.
 Admitted.
 
 End wolfowitz_counting.
-
-(* TODO: yoshihiro503 1/27 === *)
 
 Section fdist_prod_of_rV.
 Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
