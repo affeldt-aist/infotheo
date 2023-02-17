@@ -147,7 +147,7 @@ Lemma fdist_ge0_le1 (R : numDomainType) (A : finType) (d : fdist R A) a :
 Proof. by apply/andP. Qed.
 
 (* ---- onem ---- *)
-Section onem.
+(*Section onem.
   Local Open Scope ring_scope.
   Variable R : numDomainType.
   Definition onem (x: R) := 1 - x.
@@ -167,9 +167,10 @@ Section onem.
   Proof.
   Admitted.
 End onem.
-Notation "p '.~'" := (onem p).
+Notation "p '.~'" := (onem p).*)
 (* ---- onem ---- *)
 
+(*
 (* ---- Prob ---- *)
 Module Prob.
 Record t (R : numDomainType) := mk {
@@ -211,6 +212,7 @@ Global Hint Resolve prob_le1 : core.
 Arguments prob0 {R}.
 Arguments prob1 {R}.
 (* ---- ---- *)
+*)
 
 Definition probfdist (R: numDomainType) (A : finType) (d : fdist R A) a :=
   Eval hnf in Prob.mk_ (fdist_ge0_le1 d a).
