@@ -419,7 +419,13 @@ Canonical prob_porderType (R : realType) := Eval hnf in POrderType ring_display 
 End Exports.
 End Prob.
 Export Prob.Exports.
+Definition Probp (p : prob [realType of R]) : R := Prob.p p.
+Coercion  Probp : prob >-> R.
 Coercion Prob.p : prob >-> Real.sort.
+
+Definition prob_of (R : realType) := 
+  fun phT : phant (Real.sort R) => prob R.
+Notation "{ 'prob' T }" := (prob_of (Phant T)) : reals_ext_scope.
 Lemma probpK R p H : Prob.p (@Prob.mk R p H) = p. Proof. by []. Qed.
 
 Section prob_lemmas.
@@ -523,43 +529,49 @@ Qed.
 
 Canonical probIZR (p : positive) := Eval hnf in Prob.mk (prob_IZR p).
 
-Definition divRnnm n m := INR n / INR (n + m).
+Definition divRnnm n m := (n%:R / (n + m)%:R) : R.
 Local Open Scope ring_scope.
-Lemma prob_divRnnm n m : (R0 <= divRnnm n m <= R1).
+Lemma prob_divRnnm n m : (0 <= divRnnm n m <= 1).
 Proof.
 rewrite /divRnnm.
 have [->|] := eqVneq n O; first rewrite mul0r //. exact: OO1.
-(*TODO 2023 02 / 17 ====*)
-have [/eqP ->|n0] := boolP (n == O); first by rewrite div0R; apply/leR2P/OO1.
-split; first by apply divR_ge0; [exact: leR0n | rewrite ltR0n addn_gt0 lt0n n0].
-by rewrite leR_pdivr_mulr ?mul1R ?leR_nat ?leq_addr // ltR0n addn_gt0 lt0n n0.
+have [/eqP ->|n0] := boolP (n == O); first by rewrite mul0r.
+move=> _. apply /andP. split; first by rewrite divr_ge0 //; exact: ler0n.
+rewrite ler_pdivr_mulr; first by rewrite mul1r ler_nat leq_addr.
+by rewrite ltr0n addn_gt0 lt0n n0.
 Qed.
 
 Canonical probdivRnnm (n m : nat) :=
-  Eval hnf in @Prob.mk (divRnnm n m) (prob_divRnnm n m).
+  Eval hnf in @Prob.mk _ (divRnnm n m) (prob_divRnnm n m).
 
-Lemma prob_invn (m : nat) : (R0 <b= / (1 + m)%:R <b= R1)%R.
+Lemma prob_invn (m : nat) : (0 <= ((1 + m)%:R^-1 : R) <= 1).
 Proof.
-apply/leR2P; rewrite -(mul1R (/ _)%R) (_ : 1%R = INR 1) // -/(Rdiv _ _); apply/leR2P; exact: prob_divRnnm.
+rewrite (_ : (1 + m)%:R^-1 = ((1%:R / (1 + m)%:R) : R)); last by rewrite mul1r.
+exact: prob_divRnnm.
 Qed.
 
 Canonical probinvn (n : nat) :=
-  Eval hnf in @Prob.mk (/ INR (1 + n)) (prob_invn n).
+  Eval hnf in @Prob.mk _ ((1 + n)%:R ^-1) (prob_invn n).
 
-Lemma prob_invp (p : prob) : (0 <b= 1 / (1 + p) <b= 1)%R.
+Lemma prob_invp (p : {prob R}) : 0 <= 1 / (1 + p)%R <= 1.
 Proof.
-apply/leR2P; split.
-- by apply divR_ge0 => //; exact: addR_gt0wl.
-- rewrite leR_pdivr_mulr ?mul1R; last exact: addR_gt0wl.
-  by rewrite addRC -leR_subl_addr subRR.
+have ler01R := @ler01 [realType of R].
+have le0p := prob_ge0 p.
+have lt01p : 0 < 1 + (p : R); first by apply: ltr_spaddl => //; exact: ltr01.
+have le01p : 0 <= 1 + (p : R); first by apply: addr_ge0.
+by rewrite divr_ge0 // /= ler_pdivr_mulr // mul1r ler_addl.
 Qed.
 
-Definition Prob_invp (p : prob) := Prob.mk (prob_invp p).
+Definition Prob_invp (p : {prob R}) := Prob.mk (prob_invp p).
 
-Lemma prob_mulR (p q : prob) : (0 <b= p * q <b= 1)%R.
+Lemma prob_mulR (p q : {prob R}) : (0 <= (p * q)%R <= 1).
 Proof.
-by apply/leR2P; split; [exact/mulR_ge0 |rewrite -(mulR1 1%R); apply leR_pmul].
+rewrite mulr_ge0 /= ?prob_ge0 //.
+rewrite (_ : 1 = 1 * 1); last by rewrite mulr1.
+by rewrite ler_pmul ?prob_ge0 ?prob_le1.
 Qed.
+
+(* ==== ここまで 2023 02/24 *)
 
 Canonical probmulR (p q : prob) :=
   Eval hnf in @Prob.mk (p * q) (prob_mulR p q).
