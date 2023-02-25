@@ -1531,7 +1531,7 @@ have ->: p.~ * q = (p.~ * q)%R by [].
 by rewrite pq_is_rs -/r -/s mulrC.
 Qed.
 
-HB.instance Definition _ (*lmodR_convType*) :=
+HB.instance Definition _ :=
   @isConvexSpace.Build E (Choice.class _) avg avg1 avgI avgC avgA.
 
 Lemma avgrE p (x y : E) : x <| p |> y = avg p x y. Proof. by []. Qed.
@@ -1796,7 +1796,7 @@ Import GRing.
 Let linear_is_affine: affine f.
 Proof. by move=>p x y; rewrite linearD 2!linearZZ. Qed.
 
-HB.instance Definition _ (*linear_affine*) := isAffine.Build _ _ _ linear_is_affine.
+HB.instance Definition _ := isAffine.Build _ _ _ linear_is_affine.
 
 End linear_affine.
 
@@ -1819,7 +1819,7 @@ Let avgA p q (d0 d1 d2 : R) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. by rewrite /avg convA. Qed.
 
-HB.instance Definition _ (*R_convMixin*) := @isConvexSpace.Build R
+HB.instance Definition _ := @isConvexSpace.Build R
   (Choice.class _) _ avg1 avgI avgC avgA.
 
 Lemma avgRE p (x y : R) : x <| p |> y = (p * x + p.~ * y)%R. Proof. by []. Qed.
@@ -1914,7 +1914,7 @@ move => *.
 apply FunctionalExtensionality.functional_extensionality_dep => a.
 exact/convA.
 Qed.
-HB.instance Definition _ (*depfunConvType*) := @isConvexSpace.Build _ (Choice.class _)
+HB.instance Definition _ := @isConvexSpace.Build _ (Choice.class _)
   _ avg1 avgI avgC avgA.
 End depfun_convex_space.
 
@@ -1933,7 +1933,7 @@ Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. move => *; congr (pair _ _); by apply convA. Qed.
 
-HB.instance Definition _ (*pairConvType*) :=
+HB.instance Definition _ :=
   @isConvexSpace.Build T (Choice.class _) avg avg1 avgI avgC avgA.
 
 End pair_convex_space.
