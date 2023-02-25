@@ -678,9 +678,9 @@ rewrite HM /fdcoor poly_rV_K //; last first.
   move: (ltn_modp ('X * rVpoly x') ('X^n - 1)).
   rewrite size_Xn_sub_1 // ltnS => ->.
   by rewrite monic_neq0 // monic_Xn_sub_1.
-rewrite !hornerE.
+rewrite !(hornerE,hornerXn(*TODO(rei): not necessary since mc1.16.0*)).
 move: (Hx i); rewrite /fdcoor => /eqP ->; rewrite mulr0 add0r.
-by rewrite hornerXn mxE exprAC a1 expr1n subrr mulr0.
+by rewrite mxE exprAC a1 expr1n subrr mulr0.
 Qed.
 
 End BCH_cyclic.

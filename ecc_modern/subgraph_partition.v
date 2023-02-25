@@ -145,7 +145,7 @@ move: {Hac}(Hac [:: a, b & p']).
 rewrite /ucycle /cycle {3}[b :: p']lock /= -lock Hun Hab rcons_path Hp' Hla.
 rewrite (_ : a \notin b :: p'); last first.
   apply: contra Ha; rewrite !inE => /orP[/eqP ->|]; first by rewrite eqxx.
-  move/Hmem; rewrite inE => ->; by rewrite orbT.
+  by move/Hmem; rewrite ?inE(*TODO(rei): not necessary since mc1.16.0*) => ->; rewrite orbT.
 by destruct p' as [|p'1 p'2] => [//|/= /(_ isT)].
 Qed.
 
@@ -639,7 +639,7 @@ apply/andP; split.
       apply uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
       by move: Hl2; rewrite -cat_rcons rcons_cat cat_path => /andP[].
       by move: Hun2; rewrite -cat_cons -(cat1s n1) catA cat_uniq cats1 => /and3P[].
-    rewrite inE mem_cat mem_seq1 => /orP[|].
+    rewrite ?inE(*TODO(rei): not necessary since mc1.16.0*) mem_cat mem_seq1 => /orP[|].
       rewrite mem_rev => yl2.
       case/splitPr : yl1 => l11 l12 in Hl1 Hun1 Hp.
       case/splitPr : yl2 => l21 l22 in Hl2 Hun2 Hp.
@@ -715,7 +715,7 @@ case/orP => [ | yl1].
     by move: Hun2; rewrite -cat_cons -(cat1s n1) catA cat_uniq cats1 => /and3P[].
   rewrite inE.
   apply/negP; by rewrite (simple_neg simple_g).
-rewrite inE /= in_cons inE.
+rewrite ?inE /= ?in_cons ?inE(*TODO(rei): not necessary since mc1.16.0*).
 case/orP.
   move/eqP => ?; subst y.
   case/splitPr : yl1 => l11 l12 in Hl1 Hun1 Hp.

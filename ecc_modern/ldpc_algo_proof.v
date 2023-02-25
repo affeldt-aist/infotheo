@@ -870,30 +870,28 @@ Proof.
 move: k t; refine (children_ind _).
 move=> k [id0 tag0  ch0 up0 down0] /= IH Hun.
 rewrite !(eq_sym id0).
-case: ifP => Hi1.
+case: ifPn => Hi1.
   rewrite -(eqP Hi1).
   rewrite size_flatten /shape.
   rewrite -map_comp.
-  rewrite (eq_map (f1:=size \o msg i1 i2 (Some i1))
-                  (f2:=pred1 i2 \o node_id)); last first.
+  rewrite (@eq_map _ _ (size \o msg i1 i2 (Some i1))
+                  (pred1 i2 \o node_id)); last first.
     move=> [id1 ? ? ? ?] /=.
-    rewrite eqxx.
-    rewrite (eq_sym id1).
-    by case: ifP.
-  rewrite !map_comp.
+    by rewrite eqxx (eq_sym id1); case: ifP.
+  rewrite 2!map_comp.
   rewrite -map_comp.
   rewrite count_sumn.
-  apply count_uniq_mem.
+  apply: count_uniq_mem.
   move /andP: Hun => [_ Hun].
   refine (subseq_uniq _ Hun).
-  by apply subseq_labels.
-case: ifP => Hi2.
+  exact: subseq_labels.
+case: ifPn => Hi2.
   move /andP: Hun => [_ Hun].
   rewrite -(eqP Hi2).
   rewrite size_flatten /shape.
   rewrite -map_comp.
-  rewrite (eq_map (f1:=size \o msg i1 i2 (Some i2))
-                  (f2:=pred1 i1 \o node_id)); last first.
+  rewrite (@eq_map _ _ (size \o msg i1 i2 (Some i2))
+                  (pred1 i1 \o node_id)); last first.
     move=> [id1 ? ? ? ?] /=.
     rewrite eqxx.
     rewrite (eq_sym id1).
@@ -903,9 +901,9 @@ case: ifP => Hi2.
   rewrite !map_comp.
   rewrite -map_comp.
   rewrite count_sumn.
-  apply count_uniq_mem.
+  apply: count_uniq_mem.
   refine (subseq_uniq _ Hun).
-  by apply subseq_labels.
+  exact: subseq_labels.
 rewrite (eq_map (msg_none_eq _ _)); first last.
     by rewrite Hi2.
   by rewrite Hi1.
