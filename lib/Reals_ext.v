@@ -571,17 +571,15 @@ rewrite (_ : 1 = 1 * 1); last by rewrite mulr1.
 by rewrite ler_pmul ?prob_ge0 ?prob_le1.
 Qed.
 
-(* ==== ここまで 2023 02/24 *)
-
-Canonical probmulR (p q : prob) :=
-  Eval hnf in @Prob.mk (p * q) (prob_mulR p q).
+Canonical probmulR (p q : {prob R}) :=
+  Eval hnf in @Prob.mk _ (p * q)%R (prob_mulR p q).
 
 Module OProb.
 Section def.
 Record t := mk {
-  p :> prob ;
-  Op1 : (0 <b p <b 1)%R }.
-Definition O1 (p : t) : 0 <b p <b 1 := Op1 p.
+  p :> {prob R};
+  Op1 : 0 < (p: R) < 1 }.
+Definition O1 (x : t) : 0 < (p x: R) < 1 := Op1 x.
 Arguments O1 : simpl never.
 End def.
 Module Exports.
@@ -593,31 +591,48 @@ Canonical oprob_eqType := Eval hnf in EqType _ oprob_eqMixin.
 End Exports.
 End OProb.
 Export OProb.Exports.
-Coercion OProb.p : oprob >-> prob.
+Coercion OProb.p : oprob >-> prob_of.
 
 Canonical oprobcplt (p : oprob) := Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)).
 
 Section oprob_lemmas.
 Implicit Types p q : oprob.
 
-Lemma oprob_gt0 p : 0 < p.
-Proof. by case: p => p /= /andP [] /ltRP. Qed.
+Lemma oprob_gt0 p : 0 < (p: {prob R}) :> R.
+Proof. by case: p => p /= /andP []. Qed.
 
-Lemma oprob_lt1 p : p < 1.
-Proof. by case: p => p /= /andP [] _ /ltRP. Qed.
+Lemma oprob_lt1 p : (p: {prob R}) < 1 :> R.
+Proof. by case: p => p /= /andP [] _ . Qed.
 
-Lemma oprob_ge0 p : 0 <= p. Proof. exact/ltRW/oprob_gt0. Qed.
+Lemma oprob_ge0 p : 0 <= (p: {prob R}) :> R. Proof. exact/ltW/oprob_gt0. Qed.
 
-Lemma oprob_le1 p : p <= 1. Proof. exact/ltRW/oprob_lt1. Qed.
+Lemma oprob_le1 p : (p: {prob R}) <= 1 :> R. Proof. exact/ltW/oprob_lt1. Qed.
 
-Lemma oprob_neq0 p : p != 0 :> R.
-Proof. by move:(oprob_gt0 p); rewrite ltR_neqAle=> -[] /nesym /eqP. Qed.
+Lemma oprob_neq0 p : (p: {prob R}) != 0 :> R.
+Proof. by move/gt_eqF :(oprob_gt0 p) => ->. Qed.
 
-Lemma oprob_neq1 p : p != 1 :> R.
-Proof. by move:(oprob_lt1 p); rewrite ltR_neqAle=> -[] /eqP. Qed.
+Lemma oprob_neq1 p : (p: {prob R}) != 1 :> R.
+Proof. by move/gt_eqF : (oprob_lt1 p); rewrite eq_sym => ->. Qed.
 
-Lemma oprobK p : p = (p.~).~%:opr.
+(* 失敗集
+   Lemma oprobK p : p = @OProb.mk (((p:{prob R}).~).~%:pr) (OProb.O1 _).
+   Proof. by apply/val_inj/val_inj=> /=; rewrite onemK. Qed.
+ *)
+Fail Lemma oprobK p : p = ((p:{prob R}).~).~%:opr.
+Fail Lemma oprobK p : p = @OProb.mk (((p:{prob R}).~).~%:pr) (OProb.O1 _).
+
+Let prob_onem : {prob R} -> {prob R} := fun (pr: {prob R}) => pr.~%:pr.
+Let oprob_onem : oprob -> oprob.
+  refine (fun p => @OProb.mk (prob_onem p) _).
+(*apply: OProb.O1. ←コロンをつけると失敗する ??? *)
+  apply OProb.O1. (* ←これはOK *)
+Defined.
+Print oprob_onem.        
+
+Lemma oprobK p : p = oprob_onem (oprob_onem p).
 Proof. by apply/val_inj/val_inj=> /=; rewrite onemK. Qed.
+
+(* ==== ↑ここまで 2023 03/03 *)
 
 Lemma prob_trichotomy' (p : prob) (P : prob -> Prop) :
   P 0%:pr -> P 1%:pr -> (forall o : oprob, P o) -> P p.
