@@ -882,9 +882,8 @@ case: ifPn => Hi1.
   rewrite -map_comp.
   rewrite count_sumn.
   apply: count_uniq_mem.
-  move /andP: Hun => [_ Hun].
-  refine (subseq_uniq _ Hun).
-  exact: subseq_labels.
+  move /andP: Hun => [_].
+  by apply: subseq_uniq; exact: subseq_labels.
 case: ifPn => Hi2.
   move /andP: Hun => [_ Hun].
   rewrite -(eqP Hi2).
@@ -902,11 +901,8 @@ case: ifPn => Hi2.
   rewrite -map_comp.
   rewrite count_sumn.
   apply: count_uniq_mem.
-  refine (subseq_uniq _ Hun).
-  exact: subseq_labels.
-rewrite (eq_map (msg_none_eq _ _)); first last.
-    by rewrite Hi2.
-  by rewrite Hi1.
+  by apply: subseq_uniq Hun; exact: subseq_labels.
+rewrite (eq_map (msg_none_eq _ _)); [|by rewrite Hi1|by rewrite Hi2].
 elim: ch0 => [//| a l IHc] /= in IH Hun *.
 rewrite size_cat.
 move: Hun; rewrite cat_uniq => /andP[Hni] /andP [Huna] /andP [Hal Hunl].
@@ -2000,14 +1996,13 @@ Qed.
 
 Theorem estimation_ok : estimation_spec vb.
 Proof.
-split.
+split=> [|n0].
   rewrite /build_tree.
   have Hun0 : uniq_path (tanner_rel H) (id_of_kind kv ord0) [::] by [].
-  have Hun := uniq_labels_build_tree_rec tanner_acyclic rW #|id'| Hun0.
-  rewrite -labels_sumprod_up -(@labels_sumprod_down kv _ None) in Hun.
-  refine (subseq_uniq _ Hun).
-  by apply subseq_estimation.
-move=> n0.
+  have := uniq_labels_build_tree_rec tanner_acyclic rW #|id'| Hun0.
+  rewrite -labels_sumprod_up -(@labels_sumprod_down kv _ None).
+  apply: subseq_uniq.
+  exact: subseq_estimation.
 have Hn0 := get_esti_ok n0.
 set estimations := estimation _ in Hn0 *.
 have := get_esti_subseq n0 estimations.
