@@ -674,14 +674,16 @@ Proof. by rewrite gt_eqF // oprobadd_gt0. Qed.
 
 End oprob_lemmas.
 
-Lemma oprob_divRnnm n m : (0 < n)%nat -> (0 < m)%nat -> (0 < divRnnm n m < 1)%R.
+Lemma oprob_divRnnm n m : (0 < n)%nat -> (0 < m)%nat -> (0 < divRnnm n m < 1).
 Proof.
-rewrite /divRnnm.
-split; first by apply divR_gt0; [rewrite ltR0n | rewrite ltR0n addn_gt0 H orTb].
-rewrite ltR_pdivr_mulr ?mul1R ?ltR_nat // ?ltR0n ?addn_gt0 ?H ?orTb //.
-by rewrite -[X in (X < _)%nat](addn0 n) ltn_add2l.
+rewrite /divRnnm. move=> _0n _0m. apply/ andP.
+have lt0addnm : 0 < (n + m)%:R; first by move=> R; rewrite ltr0n addn_gt0 _0n orTb.
+split; first by apply divr_gt0; [rewrite ltr0n |exact: lt0addnm ].
+rewrite ltr_pdivr_mulr; last exact: lt0addnm.
+by rewrite mul1r ltr_nat -addn1 leq_add2l.
 Qed.
 
+(* === 2023 3/17 ここまで === *)
 Lemma oprob_mulR (p q : oprob) : (0 <b p * q <b 1)%R.
 Proof.
 apply/ltR2P; split; first exact/mulR_gt0/oprob_gt0/oprob_gt0.
