@@ -634,11 +634,11 @@ Proof. by apply/val_inj/val_inj=> /=; rewrite onemK. Qed.
 
 (* ==== ↑ここまで 2023 03/03 *)
 
-Lemma prob_trichotomy' (p : prob) (P : prob -> Prop) :
+Lemma prob_trichotomy' (p : {prob R}) (P : {prob R} -> Prop) :
   P 0%:pr -> P 1%:pr -> (forall o : oprob, P o) -> P p.
 Proof.
 move=> p0 p1 po.
-have [-> //|[->//|/ltR2P p01]] := prob_trichotomy p.
+have [-> //|[->//|p01]] := prob_trichotomy p.
 exact: po (OProb.mk p01).
 Qed.
 
