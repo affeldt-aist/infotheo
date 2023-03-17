@@ -430,7 +430,7 @@ Local Open Scope ring_scope.
 Module Prob.
 Record t (R : realType) := mk {
   p :> R ;
-  Op1 : (0 <= p <= 1) }.
+  Op1 : 0 <= p <= 1 }.
 Definition O1 (R : realType) (x : t R) : (0 <= p x <= 1) := Op1 x.
 Arguments O1 : simpl never.
 Definition mk_ (R : realType) (q : R) (Oq1 : (0 <= q <= 1)) := mk Oq1.
@@ -438,8 +438,8 @@ Module Exports.
 Notation prob := t.
 Notation "q %:pr" := (@mk _ q (@O1 _ _)).
 Canonical prob_subType (R : realType) := Eval hnf in [subType for @p R].
-Definition prob_eqMixin (R : realType) := [eqMixin of (prob R) by <:].
-Canonical prob_eqType (R : realType) := Eval hnf in EqType _ (prob_eqMixin R).
+Definition prob_eqMixin (R : realType) := [eqMixin of prob R by <:].
+Canonical prob_eqType (R : realType) := Eval hnf in EqType (prob R) (prob_eqMixin R).
 Definition prob_choiceMixin (R : realType) := [choiceMixin of (prob R) by <:].
 Canonical prob_choiceType (R : realType) := Eval hnf in ChoiceType (prob R) (prob_choiceMixin R).
 
@@ -606,77 +606,71 @@ Canonical probmulR (p q : {prob R}) :=
 
 Module OProb.
 Section def.
-Record t := mk {
-  p :> {prob R};
+Record t (R : realType) := mk {
+  p :> prob R;
   Op1 : 0 < (p: R) < 1 }.
-Definition O1 (x : t) : 0 < (p x: R) < 1 := Op1 x.
+Definition O1 (R : realType) (x : t R) : 0 < (p x: R) < 1 := Op1 x.
 Arguments O1 : simpl never.
 End def.
 Module Exports.
 Notation oprob := t.
-Notation "q %:opr" := (@mk q%:pr (@O1 _)).
-Canonical oprob_subType := Eval hnf in [subType for p].
-Definition oprob_eqMixin := [eqMixin of oprob by <:].
-Canonical oprob_eqType := Eval hnf in EqType _ oprob_eqMixin.
+Notation "q %:opr" := (@mk _ q%:pr (@O1 _ _)).
+Canonical oprob_subType (R: realType) := Eval hnf in [subType for @p R].
+Definition oprob_eqMixin (R: realType):= [eqMixin of oprob R by <:].
+Canonical oprob_eqType (R:realType) := Eval hnf in EqType (oprob R) (oprob_eqMixin R).
+
+Definition oprob_choiceMixin (R : realType) := [choiceMixin of (oprob R) by <:].
+Canonical oprob_choiceType (R : realType) := Eval hnf in ChoiceType (oprob R) (oprob_choiceMixin R).
+
+Definition oprob_porderMixin (R : realType) := [porderMixin of (oprob R) by <:].
+Canonical oprob_porderType (R : realType) := Eval hnf in POrderType ring_display (oprob R) (oprob_porderMixin R).
+
 End Exports.
 End OProb.
 Export OProb.Exports.
-Coercion OProb.p : oprob >-> prob_of.
+Definition OProbp (p : oprob [realType of R]) : R := OProb.p p.
+Coercion OProbp : oprob >-> R.
+Coercion OProb.p : oprob >-> Prob.t.
 
-Canonical oprobcplt (p : oprob) := Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)).
+Canonical oprobcplt (R: realType)(p : oprob R) := Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)).
 
 Section oprob_lemmas.
-Implicit Types p q : oprob.
+Context (R : realType).
+Implicit Types p q : oprob R.
 
-Lemma oprob_gt0 p : 0 < (p: {prob R}) :> R.
+Lemma oprob_gt0 p : 0 < p :> R.
 Proof. by case: p => p /= /andP []. Qed.
 
-Lemma oprob_lt1 p : (p: {prob R}) < 1 :> R.
+Lemma oprob_lt1 p : p < 1 :> R.
 Proof. by case: p => p /= /andP [] _ . Qed.
 
-Lemma oprob_ge0 p : 0 <= (p: {prob R}) :> R. Proof. exact/ltW/oprob_gt0. Qed.
+Lemma oprob_ge0 p : 0 <= p :> R. Proof. exact/ltW/oprob_gt0. Qed.
 
-Lemma oprob_le1 p : (p: {prob R}) <= 1 :> R. Proof. exact/ltW/oprob_lt1. Qed.
+Lemma oprob_le1 p : p <= 1 :> R. Proof. exact/ltW/oprob_lt1. Qed.
 
-Lemma oprob_neq0 p : (p: {prob R}) != 0 :> R.
+Lemma oprob_neq0 p : p != 0 :> R.
 Proof. by move/gt_eqF :(oprob_gt0 p) => ->. Qed.
 
-Lemma oprob_neq1 p : (p: {prob R}) != 1 :> R.
+Lemma oprob_neq1 p : p != 1 :> R.
 Proof. by move/gt_eqF : (oprob_lt1 p); rewrite eq_sym => ->. Qed.
 
-(* 失敗集
-   Lemma oprobK p : p = @OProb.mk (((p:{prob R}).~).~%:pr) (OProb.O1 _).
-   Proof. by apply/val_inj/val_inj=> /=; rewrite onemK. Qed.
- *)
-Fail Lemma oprobK p : p = ((p:{prob R}).~).~%:opr.
-Fail Lemma oprobK p : p = @OProb.mk (((p:{prob R}).~).~%:pr) (OProb.O1 _).
-
-Let prob_onem : {prob R} -> {prob R} := fun (pr: {prob R}) => pr.~%:pr.
-Let oprob_onem : oprob -> oprob.
-  refine (fun p => @OProb.mk (prob_onem p) _).
-(*apply: OProb.O1. ←コロンをつけると失敗する ??? *)
-  apply OProb.O1. (* ←これはOK *)
-Defined.
-Print oprob_onem.        
-
-Lemma oprobK p : p = oprob_onem (oprob_onem p).
+Lemma oprobK p : p = (p.~).~%:opr.
 Proof. by apply/val_inj/val_inj=> /=; rewrite onemK. Qed.
 
-(* ==== ↑ここまで 2023 03/03 *)
-
-Lemma prob_trichotomy' (p : {prob R}) (P : {prob R} -> Prop) :
-  P 0%:pr -> P 1%:pr -> (forall o : oprob, P o) -> P p.
+Lemma prob_trichotomy' p (P : prob R -> Prop) :
+  P 0%:pr -> P 1%:pr -> (forall o : oprob R, P o) -> P p.
 Proof.
 move=> p0 p1 po.
 have [-> //|[->//|p01]] := prob_trichotomy p.
 exact: po (OProb.mk p01).
 Qed.
 
-Lemma oprobadd_gt0 p q : 0 < p + q.
-Proof. exact/addR_gt0/oprob_gt0/oprob_gt0. Qed.
+Lemma oprobadd_gt0 p q : 0 < (p : R) + (q : R).
+Proof. exact/addr_gt0/oprob_gt0/oprob_gt0. Qed.
 
-Lemma oprobadd_neq0 p q : p + q != 0%R.
-Proof. by move: (oprobadd_gt0 p q); rewrite ltR_neqAle => -[] /nesym /eqP. Qed.
+Lemma oprobadd_neq0 p q : (p : R) + (q : R) != 0.
+
+Proof. by rewrite gt_eqF // oprobadd_gt0. Qed.
 
 End oprob_lemmas.
 
