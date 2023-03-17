@@ -327,6 +327,7 @@ exact/boolp.Prop_irrelevance.
 Qed.
 
 Section onem.
+From mathcomp Require Import ring.
 Local Open Scope ring_scope.
 Variable R : realType.
 Implicit Types r s p q : R.
@@ -344,53 +345,82 @@ Lemma onem_le1 r : 0 <= r -> r.~ <= 1.
 Proof. move=> ?; by rewrite /onem ler_subl_addr -ler_subl_addl subrr. Qed.
 
 Lemma onem_le  r s : r <= s <-> s.~ <= r.~.
-Proof. by rewrite /onem; split=> ?; admit. Admitted.
+Proof.
+rewrite /onem; split=> sr.
+ by rewrite ler_sub.
+by move: sr; rewrite ler_subr_addl addrA ler_subl_addl ler_add2r.
+Qed.
 
 Lemma onem_lt  r s : r < s <-> s.~ < r.~.
-Proof. by rewrite /onem; split=> ?; admit. Admitted.
+Proof.
+rewrite /onem; split.
+Search (_ - _ < _ - _).
+ by move=> sr; rewrite ler_lt_sub.
+by rewrite ltr_subr_addl addrA ltr_subl_addl ltr_add2r.
+Qed.
 
-Lemma onemKC r : r + r.~ = 1. Proof. rewrite /onem; admit. Admitted.
+Lemma onemKC r : r + r.~ = 1.
+Proof. 
+by rewrite /onem addrC -addrA (addrC (-r) r) subrr addr0.
+Qed.
 
 Lemma onemK r : r.~.~ = r.
-(*Proof. by rewrite /onem subRBA addrC addrK. admitQed.*)
-Admitted.
+by rewrite /onem opprB addrA addrC addrA (addrC (-1) 1) subrr add0r.
+Qed.
 
 Lemma onemD p q : (p + q).~ = p.~ + q.~ - 1.
-(*Proof. rewrite /onem; field. Qed.*) Admitted.
+Proof.
+by rewrite /onem (addrAC _ (1 - q) (-1)) subrKA opprD addrA.
+Qed.
 
 Lemma onemM p q : (p * q).~ = p.~ + q.~ - p.~ * q.~.
-(*Proof. rewrite /onem; field. Qed. *) Admitted.
+Proof. rewrite /onem; ring. Qed.
 
 Lemma onem_div p q : q != 0 -> (p / q).~ = (q - p)  /q.
 Proof.
-(*by move=> Hq; rewrite /onem -(divRR q) // /Rdiv /Rminus -mulNR -mulRDl.*)
-(*Qed.*) Admitted.
+by rewrite /onem; move=> q0; rewrite mulrBl divrr // unitfE.
+Qed.
+
 
 Lemma onem_prob r : 0 <= r <= 1 -> 0 <= r.~ <= 1.
 Proof.
-(*by case/leR2P=> ? ?; apply/leR2P; split;
-   [rewrite leR_subr_addr add0R | rewrite leR_subl_addr -(addR0 1) leR_add2l].
-Qed.*) Admitted.
+by move=> /andP [_0r r1]; apply /andP; split; [rewrite onem_ge0 | rewrite onem_le1].
+Qed.
 
 Lemma onem_oprob r : 0 < r < 1 -> 0 < r.~ < 1.
 Proof.
-(*by case/ltR2P=> ? ?; apply/ltR2P; split;
-   [rewrite ltR_subr_addr add0R | rewrite ltR_subl_addr -(addR0 1) ltR_add2l].
-Qed. *) Admitted.
+rewrite /onem. move=> /andP [_0r r1]. apply /andP. split.
+  by rewrite subr_gt0.
+by rewrite -subr_gt0 opprB addrC -addrA addNr addr0.
+Qed.
 
-Lemma onem_eq0 r : r.~ = 0 <-> r = 1. (*Proof. rewrite /onem; lra. Qed.*) Admitted.
+Lemma onem_eq0 r : r.~ = 0 <-> r = 1.
+Proof.
+rewrite /onem. split.
+  by move=> /eqP; rewrite subr_eq0=> /eqP.
+by move=> ->; rewrite subrr.
+Qed.
 
-Lemma onem_eq1 r : r.~ = 1 <-> r = 0. (*Proof. rewrite /onem; lra. Qed.*) Admitted.
+Lemma onem_eq1 r : r.~ = 1 <-> r = 0.
+Proof.
+rewrite /onem. split.
+  by move=> /esym /eqP; rewrite addrC -subr_eq subrr eq_sym oppr_eq0; move /eqP.
+move=> ->. exact: subr0.
+Qed.
 
 Lemma onem_neq0 r : r.~ != 0 <-> r != 1.
 Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 
-Lemma onem_gt0 r : r < 1 -> 0 < r.~. (*Proof. rewrite /onem; lra. Qed.*) Admitted.
+Lemma onem_gt0 r : r < 1 -> 0 < r.~.
+Proof. by rewrite /onem subr_gt0. Qed.
 
-Lemma onem_lt1 r : 0 < r -> r.~ < 1. (*Proof. rewrite /onem; lra. Qed.*) Admitted.
+Lemma onem_lt1 r : 0 < r -> r.~ < 1.
+Proof.
+by rewrite /onem=> _0r; rewrite -subr_gt0 opprB addrC - addrA addNr addr0.
+Qed.
 
-Lemma subR_onem r s : r - s.~ = r + s - 1.
-(*Proof. by rewrite /onem -addR_opp oppRB addRA. Qed.*) Admitted.
+Lemma subr_onem r s : r - s.~ = r + s - 1.
+Proof. rewrite /onem. ring. Qed.
 
 End onem.
 
