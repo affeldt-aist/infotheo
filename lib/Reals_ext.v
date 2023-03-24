@@ -605,13 +605,11 @@ Canonical probmulR (p q : {prob R}) :=
   Eval hnf in @Prob.mk _ (p * q)%R (prob_mulR p q).
 
 Module OProb.
-Section def.
 Record t (R : realType) := mk {
   p :> prob R;
   Op1 : 0 < (p: R) < 1 }.
 Definition O1 (R : realType) (x : t R) : 0 < (p x: R) < 1 := Op1 x.
 Arguments O1 : simpl never.
-End def.
 Module Exports.
 Notation oprob := t.
 Notation "q %:opr" := (@mk _ q%:pr (@O1 _ _)).
@@ -633,6 +631,10 @@ Coercion OProbp : oprob >-> R.
 Coercion OProb.p : oprob >-> Prob.t.
 
 Canonical oprobcplt (R: realType)(p : oprob R) := Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)).
+
+Definition oprob_of (R : realType) := 
+  fun phT : phant (Real.sort R) => oprob R.
+Notation "{ 'oprob' T }" := (oprob_of (Phant T)) : reals_ext_scope.
 
 Section oprob_lemmas.
 Context (R : realType).
@@ -683,22 +685,22 @@ rewrite ltr_pdivr_mulr; last exact: lt0addnm.
 by rewrite mul1r ltr_nat -addn1 leq_add2l.
 Qed.
 
-(* === 2023 3/17 ここまで === *)
-Lemma oprob_mulR (p q : oprob) : (0 <b p * q <b 1)%R.
+Lemma oprob_mulR (p q : {oprob R}) : 0 < (p * q)%R < 1.
 Proof.
-apply/ltR2P; split; first exact/mulR_gt0/oprob_gt0/oprob_gt0.
-by rewrite -(mulR1 1%R); apply ltR_pmul;
+apply/andP. split; first exact/mulr_gt0/oprob_gt0/oprob_gt0.
+by apply: mulr_ilt1;
   [exact/oprob_ge0 | exact/oprob_ge0 | exact/oprob_lt1 | exact/oprob_lt1].
 Qed.
-
-Canonical oprobmulR (p q : oprob) :=
-  Eval hnf in @OProb.mk (p * q)%:pr (oprob_mulR p q).
+  
+Canonical oprobmulR (p q : {oprob R}) :=
+  Eval hnf in @OProb.mk _ ((p: R) * q)%:pr (oprob_mulR p q).
 
 Record Qplus := mkRrat { num : nat ; den : nat }.
 
 Definition Q2R (q : Qplus) := INR (num q) / INR (den q).+1.
 
-Coercion Q2R : Qplus >-> R.
+(*TODO: yoshihiro503
+Coercion Q2R : Qplus >-> R.*)
 
 (*Lemma Rdiv_le a : 0 <= a -> forall r, 1 <= r -> a / r <= a.
 Proof.
@@ -744,30 +746,37 @@ Notation "P '`<<' Q" := (dominates Q P) : reals_ext_scope.
 Notation "P '`<<b' Q" := (dominatesb Q P) : reals_ext_scope.
 
 Module Rpos.
-Record t := mk {
+Record t (R: realType) := mk {
   v : R ;
-  H : v >b 0 }.
-Definition K (r : t) := H r.
+  H : v > 0 }.
+Definition K (R : realType) (r : t R) := H r.
 Arguments K : simpl never.
 Module Exports.
 Notation Rpos := t.
-Notation "r %:pos" := (@mk r (@K _)) : reals_ext_scope.
-Coercion v : Rpos >-> R.
+Notation "r %:pos" := (@mk _ r (@K _)) : reals_ext_scope.
+Definition Rposv (x : Rpos [realType of R]) : R := Rpos.v x.
+Coercion Rposv : Rpos >-> R.
 End Exports.
 End Rpos.
 Export Rpos.Exports.
 
-Canonical Rpos_subType := [subType for Rpos.v].
-Definition Rpos_eqMixin := Eval hnf in [eqMixin of Rpos by <:].
-Canonical Rpos_eqType := Eval hnf in EqType Rpos Rpos_eqMixin.
-Definition Rpos_choiceMixin := Eval hnf in [choiceMixin of Rpos by <:].
-Canonical Rpos_choiceType := Eval hnf in ChoiceType Rpos Rpos_choiceMixin.
+Canonical Rpos_subType (R: realType) := [subType for @Rpos.v R].
+Definition Rpos_eqMixin (R: realType) := Eval hnf in [eqMixin of Rpos R by <:].
+Canonical Rpos_eqType (R: realType) := Eval hnf in EqType (Rpos R) (Rpos_eqMixin R).
+Definition Rpos_choiceMixin (R: realType) := Eval hnf in [choiceMixin of (Rpos R) by <:].
+Canonical Rpos_choiceType (R: realType) := Eval hnf in ChoiceType (Rpos R) (Rpos_choiceMixin R).
 
-Definition mkRpos x H := @Rpos.mk x (introT (ltRP _ _) H).
+(*Definition mkRpos R (x:R) H := @Rpos.mk _ x H.*)
 
-Canonical Rpos1 := @mkRpos 1 Rlt_0_1.
+Definition Rpos_of (R : realType) := 
+  fun phT : phant (Real.sort R) => Rpos R.
+Notation "{ 'Rpos' T }" := (Rpos_of (Phant T)) : reals_ext_scope.
 
-Lemma Rpos_gt0 (x : Rpos) : 0 < x. Proof. by case: x => p /= /ltRP. Qed.
+Canonical Rpos1 R := @Rpos.mk R 1 ltr01.
+
+(* === 2023 3/24 ここまで === *)
+
+Lemma Rpos_gt0 (x : {Rpos R}) : 0 < x. Proof. by case: x => p /= /ltRP. Qed.
 Global Hint Resolve Rpos_gt0 : core.
 
 Lemma Rpos_neq0 (x : Rpos) : val x != 0.
@@ -782,7 +791,7 @@ Canonical mulRpos x y := Rpos.mk (mulRpos_gt0 x y).
 Lemma divRpos_gt0 (x y : Rpos) : x / y >b 0. Proof. exact/ltRP/divR_gt0. Qed.
 Canonical divRpos x y := Rpos.mk (divRpos_gt0 x y).
 
-Canonical oprob_Rpos (p : oprob) := @mkRpos p (oprob_gt0 p).
+Canonical oprob_Rpos (p : {oprob R}) := @mkRpos _ p (oprob_gt0 p).
 
 Lemma oprob_divRposxxy (x y : Rpos) : (0 <b x / (x + y) <b 1)%R.
 Proof.
