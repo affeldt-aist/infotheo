@@ -189,13 +189,13 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       rewrite -mulRN.
       apply (@ltR_pmul2r (/ - X)); first exact/invR_gt0/oppR_gt0.
       rewrite -mulRA mulRV ?mulR1; last by rewrite oppR_eq0; apply/ltR_eqF.
-      rewrite -(invRK 2); last exact/eqP.
-      rewrite -mulRA ( _ : forall r, r * r = r ^ 2); last by move=> ?; rewrite /pow mulR1.
+      rewrite -(invRK 2) -mulRA.
+      rewrite ( _ : forall r, r * r = r ^ 2); last by move=> ?; rewrite /pow mulR1.
       rewrite expRV; last exact/eqP/not_eq_sym/eqP/ltR_eqF/oppR_gt0.
       rewrite -invRM; last 2 first.
         by rewrite invR_neq0' //; exact/gtR_eqF.
         by rewrite expR_eq0 oppR_eq0; exact/ltR_eqF.
-      rewrite -(invRK (exp X)); last exact/gtR_eqF/exp_pos.
+      rewrite -(invRK (exp X)).
       apply ltR_inv => //.
         exact/invR_gt0/exp_pos.
         by apply/mulR_gt0; [lra | apply expR_gt0; lra].
@@ -203,8 +203,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
       exact/exp_strict_lb/oppR_gt0.
     * apply (@leR_pmul2r (/ 2)); first exact/invR_gt0.
       rewrite mulRC mulRA mulVR ?mul1R //; last exact/gtR_eqF.
-      rewrite -(invRK eps); last exact/gtR_eqF.
-      rewrite -invRM //; last 2 first.
+      rewrite -(invRK eps) -invRM //; last 2 first.
         exact/gtR_eqF/invR_gt0.
         exact/eqP.
       apply leR_inv => //.

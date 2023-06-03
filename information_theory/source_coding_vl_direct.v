@@ -292,7 +292,7 @@ Proof.
 move: (fdist_supp_lg_add_1_neq_0 P) => ?.
 rewrite mulRC /Rdiv -?mulRA; apply: (Rmult_lt_compat_l _ _ _ eps_pos); rewrite ?mulRA (mulRC _ 2).
 apply: (Rmult_lt_reg_l 3); first exact: Rplus_lt_pos.
-rewrite Rinv_mult_distr // ?mulRA (mulRC 3 2) Rinv_r_simpl_l //.
+rewrite Rinv_mult // ?mulRA (mulRC 3 2) Rinv_r_simpl_l //.
 apply: (Rmult_lt_reg_l (INR n)); first exact/ltR0n.
 rewrite mulRC -mulRA (mulRC _ (INR n)) ?mulRA Rinv_r_simpl_l; last first.
   by apply/eqP; rewrite INR_eq0'.
@@ -377,7 +377,7 @@ apply: (Rle_lt_trans _  (INR n'.+1 * (`H P + epsilon') + 1 + 1 +
   rewrite mulRDr (addRC (epsilon' * log (INR #|X|)) _) addRC addRA -addRA
     (addRC _ epsilon') -{2}(mulR1 epsilon') -mulRDr -addRA
     (addRC (epsilon' * (2 / INR n)) _) addRA addRC  mulRC addRC /epsilon'
-    -{1}(mulR1 3) -{3}(mulR1 3) -mulRDr /Rdiv {1}(Rinv_mult_distr) // mulRA
+    -{1}(mulR1 3) -{3}(mulR1 3) -mulRDr /Rdiv {1}Rinv_mult // mulRA
     -mulRA -Rinv_l_sym // mulR1.
   apply: (Rle_lt_trans _ (epsilon / 4 + epsilon * / 3 + epsilon / 3)).
   * apply: Rplus_le_compat.

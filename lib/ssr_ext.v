@@ -904,11 +904,11 @@ apply eq_from_tnth; case.
 destruct n as [|n] => //.
 case=> [Hi | i Hi].
   rewrite (tnth_nth (thead a, thead b)) (tnth_nth (thead (zip_tuple a b))).
-  rewrite /= enum_ordS /= (tnth_nth (thead a, thead b)) /= nth_zip; last first.
+  rewrite /= enum_ordSl /= (tnth_nth (thead a, thead b)) /= nth_zip; last first.
     by rewrite (size_tuple a) (size_tuple b).
   by rewrite (tnth_nth (thead a)) /= (tnth_nth (thead b)).
 rewrite (tnth_nth (thead a, thead b)) (tnth_nth (thead (zip_tuple a b))) /=.
-rewrite enum_ordS /= nth_zip; last by rewrite 4!size_map size_enum_ord.
+rewrite enum_ordSl /= nth_zip; last by rewrite 4!size_map size_enum_ord.
 rewrite [in RHS](nth_map ord0); last by rewrite size_map size_enum_ord.
 rewrite [in RHS](tnth_nth (thead a, thead b)) [in RHS]/zip_tuple /=.
 rewrite [in RHS]nth_zip; last by rewrite (size_tuple a) (size_tuple b).

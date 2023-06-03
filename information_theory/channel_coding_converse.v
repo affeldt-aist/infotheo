@@ -149,10 +149,7 @@ rewrite expRM -mulRA; apply leR_pmul => //.
     rewrite -mulRA mulRC invRM; last 2 first.
     - by apply/eqP/invR_neq0/eqP; rewrite expR_eq0 mulR_neq0' ln2_neq0 andbT; exact/gtR_eqF.
     - by apply/eqP/invR_neq0/eqP; by rewrite INR_eq0'.
-    - rewrite invRK; last first.
-        by rewrite expR_eq0 mulR_neq0' ln2_neq0 andbT; exact/gtR_eqF.
-      rewrite invRK; last by rewrite INR_eq0'.
-      rewrite (_ : / (/ n%:R) ^ K = n%:R ^ K); last first.
+    - rewrite 2!invRK (_ : / (/ n%:R) ^ K = n%:R ^ K); last first.
         rewrite expRV ?INR_eq0' // invRK //; apply/expR_neq0; by rewrite INR_eq0'.
       rewrite -mulRA {1}/Rdiv (mulRA n%:R) -expRS mulRA -expRM.
       by rewrite -/(Rdiv _ _) mulRCA -mulRA (mulRC (ln 2)).

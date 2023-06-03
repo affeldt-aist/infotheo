@@ -96,8 +96,7 @@ rewrite /entropy /nHs /num_occ_dist /= -mulRN1 big_distrl big_distrr /=.
 apply eq_bigr => a _ /=; rewrite ffunE.
 case: ifPn => [/eqP -> | Hnum]; first by rewrite !mulRA !simplR.
 rewrite {1}/Rdiv (mulRC N(a | s)) 3![in LHS]mulRA mulRV ?INR_eq0' // ?mul1R.
-rewrite -mulRA mulRN1 -logV; last by apply divR_gt0; rewrite ltR0n lt0n.
-rewrite Rinv_Rdiv //; apply/eqP; by rewrite INR_eq0'.
+by rewrite -mulRA mulRN1 -logV ?Rinv_div//; apply divR_gt0; rewrite ltR0n lt0n.
 Qed.
 
 Definition mulnRdep (x : nat) (y : x != O -> R) : R.

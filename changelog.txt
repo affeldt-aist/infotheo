@@ -1,4 +1,11 @@
 -------------------
+from 0.5.1 to 0.5.2
+-------------------
+compatibility release
+- generalized:
+  + invRK
+-------------------
+-------------------
 from 0.5.0 to 0.5.1
 -------------------
 compatibility release

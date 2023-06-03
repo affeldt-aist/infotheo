@@ -3709,8 +3709,7 @@ apply Order.POrderTheory.le_trans.
 apply ler_expn2r.
     by rewrite rpred_div // nnegrE ler0n.
   by rewrite rpred_div // nnegrE ler0n.
-apply ler_pmul => //.
-    by apply ler0n.
+rewrite ler_pmul//.
   by rewrite invr_ge0 ler0n.
 by rewrite subnDA subnAC ler_nat leq_subr.
 Qed.

@@ -595,11 +595,11 @@ Proof. by move/eqP/invR_eq0/eqP. Qed.
 
 Definition invR1 : / 1 = 1 := Rinv_1.
 
-Definition invRK (r : R) : r != 0 -> / / r = r.
-Proof. by move/eqP; exact: Rinv_involutive. Qed.
+Definition invRK (r : R) : / / r = r.
+Proof. exact: Rinv_inv. Qed.
 
 Lemma invRM (r1 r2 : R) : r1 != 0 -> r2 != 0 -> / (r1 * r2) = / r1 * / r2.
-Proof. by move=> /eqP r10 /eqP r20; rewrite Rinv_mult_distr. Qed.
+Proof. by move=> /eqP r10 /eqP r20; rewrite Rinv_mult. Qed.
 
 Lemma leR_inv x y : 0 < y -> y <= x -> / x <= / y.
 Proof. by move=> x0 y0; apply/Rinv_le_contravar. Qed.
@@ -609,9 +609,7 @@ Proof. by move=> a b; rewrite !inE => _ /ltRP b0 ba; exact/Rinv_le_contravar. Qe
 
 Lemma invR_le x y : 0 < x -> 0 < y -> / y <= / x -> x <= y.
 Proof.
-move=> x0 y0 H.
-rewrite -(invRK x); last exact/gtR_eqF.
-rewrite -(invRK y); last exact/gtR_eqF.
+move=> x0 y0 H; rewrite -(invRK x) -(invRK y).
 by apply leR_inv => //; exact/invR_gt0.
 Qed.
 
@@ -727,7 +725,7 @@ Proof. by move=> x0; apply/idP/idP => /leRP/(invR_le1 _ x0)/leRP. Qed.
 Lemma invR_gt1 x : 0 < x -> (1 < / x) <-> (x < 1).
 Proof.
 move=> x0; split => x1; last by rewrite -invR1; apply ltR_inv.
-move/ltR_inv : x1; rewrite invRK ?invR1; last exact/gtR_eqF.
+move/ltR_inv : x1; rewrite invRK invR1.
 by apply => //; exact/invR_gt0.
 Qed.
 Lemma invR_gt1' x : 0 < x -> (1 <b / x) = (x <b 1).
