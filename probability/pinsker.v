@@ -74,13 +74,7 @@ rewrite !(derive_pt_minus,derive_pt_plus,derive_pt_comp,derive_pt_ln,derive_pt_c
 rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l) /= (_ : INR 2 = 2) //.
 rewrite /pinsker_fun' /div_fct [X in _ = X]mulRBr.
 f_equal; last by field.
-rewrite (_ : id q = q) //.
-rewrite Rinv_Rdiv; last 2 first.
-  move=> ?; lra.
-  move=> ?; lra.
-rewrite Rinv_Rdiv; last 2 first.
-  move=> ?; lra.
-  move=> ?; lra.
+rewrite (_ : id q = q)// 2!Rinv_div.
 have -> : p * (/ ln 2 * (q / p) * (p * (-1 / qÂ²))) = - (p / q) * / ln 2.
   rewrite !mulRA /Rsqr.
   field.
@@ -92,7 +86,7 @@ have -> : (1 - p) * (/ ln 2 * ((1 - q) / (1 - p)) * (- (-1 * (1 - p)) / (1 - q)Â
   split; [exact/eqP/ln2_neq0 | split => ?; lra].
 rewrite /inv_fct.
 field.
-split; [exact/eqP/ln2_neq0 | split => ?; lra].
+by split; [exact/eqP/ln2_neq0 | split => ?; lra].
 Qed.
 
 Definition pinsker_function_spec c q := - log (1 - q) - 4 * c * q ^ 2.
@@ -229,7 +223,7 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
     by apply/gtR_eqF/mulR_gt0; lra.
     exact/ln2_neq0.
   apply leR_wpmul2r => //.
-  rewrite -(invRK 4); last exact/eqP.
+  rewrite -(invRK 4).
   apply leR_inv => //.
     by apply/mulR_gt0 => //; lra.
   exact: x_x2_max.
@@ -270,7 +264,7 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
     by apply leR_wpmul2r => //; lra.
   rewrite invRM //; last exact/ln2_neq0.
   apply leR_wpmul2r => //.
-  rewrite -(invRK 4) //=; last exact/eqP.
+  rewrite -(invRK 4) //=.
   apply leR_inv => //.
     by apply/mulR_gt0; lra.
   exact: x_x2_max.

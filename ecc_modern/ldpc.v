@@ -521,8 +521,7 @@ transitivity (\sum_(t in 'rV['F_2]_n)
       exact/eqP/invR_neq0.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
       by rewrite -not_receivable_prop_uniform receivableP.
-    rewrite invRK //; last  exact/eqP.
-    rewrite -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.
+    rewrite invRK -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.
     set tmp1 := \sum_(_ | _) _.
     rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
     by rewrite -not_receivable_prop_uniform receivableP.

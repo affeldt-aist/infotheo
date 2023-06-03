@@ -86,8 +86,7 @@ rewrite /div [X in _ <= X](_ : _ =
   case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
   congr (_ * _).
   have Qa0 := dominatesEN P_dom_by_Q H0.
-  rewrite -logV; last by apply divR_gt0; rewrite -fdist_gt0.
-  rewrite Rinv_Rdiv //; exact/eqP.
+  by rewrite -logV ?Rinv_div//; apply divR_gt0; rewrite -fdist_gt0.
 rewrite leR_oppr oppR0.
 apply (@leR_trans ((\sum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
@@ -117,8 +116,7 @@ apply/esym; move: a (erefl true); apply leR_sumR_eq.
     case/boolP : (P a == 0) => [/eqP ->| H0]; first by rewrite !mul0R.
     congr (_ * _).
     have Qa0 := dominatesEN P_dom_by_Q H0.
-    rewrite -logV; last by apply divR_gt0; rewrite -fdist_gt0.
-    rewrite Rinv_Rdiv //; exact/eqP.
+    by rewrite -logV ?Rinv_div//; apply divR_gt0; rewrite -fdist_gt0.
   rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
   by rewrite -big_morph_oppR !FDist.f1 addR_opp subRR mul0R.
 Qed.

@@ -114,9 +114,7 @@ rewrite -[X in _ <= X]oppRK leR_oppr -ln_Rinv; last first.
 rewrite invRM; last 2 first.
   exact/gtR_eqF/(fspos _ C_a).
   by rewrite invR_neq0' // gtR_eqF //; exact/(gspos _ C_a).
-rewrite invRK; last exact/gtR_eqF/(gspos _ C_a).
-rewrite mulRC.
-apply: leR_trans.
+rewrite invRK mulRC; apply: leR_trans.
   by apply/ln_id_cmp/divR_gt0; [apply gspos | apply fspos].
 apply Req_le.
 by field; exact/eqP/gtR_eqF/(fspos _ C_a).
@@ -157,7 +155,7 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
     by apply sumR_ge0 => ? ?; exact: nneg_finfun_ge0.
   apply (@leR_trans (\sum_{C} f * log (\sum_{C} f / \sum_{D} g))).
     case/Rle_lt_or_eq_dec : pos_F => pos_F; last first.
-      rewrite -pos_F !mul0R; exact/leRR.
+      by rewrite -pos_F !mul0R; exact/leRR.
     have H2 : 0 <= \sum_(a | a \in D) g a.
       by apply: sumR_ge0 => ? _; exact: nneg_finfun_ge0.
     case/Rle_lt_or_eq_dec : H2 => H2; last first.
@@ -186,7 +184,7 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
   rewrite (_ : \sum_(_ | _ \in D') _ = 0); last first.
     transitivity (\sum_(a | a \in D') 0).
       apply eq_bigr => a.
-      rewrite /D' in_set => /andP[a_C /eqP ->]; by rewrite mul0R.
+      by rewrite /D' in_set => /andP[a_C /eqP ->]; rewrite mul0R.
     by rewrite big_const iter_addR mulR0.
   by rewrite add0R; exact/leRR.
 apply log_sum1 => // a.

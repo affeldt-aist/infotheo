@@ -355,8 +355,7 @@ rewrite [X in _ <= X](_ :_ = log ( alp / (1 - alp)) - (log alp) * `E X);
   rewrite [in LHS]mulRDl mulRC oppRD mulN1R oppRK; congr (_ + _).
   rewrite -[in RHS]addRA -[LHS]addR0; congr (_ + _).
   rewrite mulRDl mulRV; last exact/gtR_eqF/EX_gt0.
-  rewrite mulN1R !addR_opp subRB subRR add0R invRK ?Rplus_opp_l //.
-  exact/gtR_eqF/EX_gt0.
+  by rewrite mulN1R !addR_opp subRB subRR add0R invRK ?Rplus_opp_l.
 apply: (@leR_trans (log (alp * (1 - (alp ^ (\max_(a | a \in A) size (f a))))
                                / (1 - alp)) - log alp * `E X ) _); last first.
   rewrite leR_add2r.

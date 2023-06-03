@@ -63,7 +63,9 @@ by case: Hepsilon => ? ?; lra.
 Qed.
 
 Lemma lambda0 : 0 < lambda.
-Proof. rewrite /lambda; apply P_Rmin => //; [exact Hepsilon1 | exact Hr1]. Qed.
+Proof.
+by rewrite /lambda; apply Rmin_case => //; [exact Hepsilon1 | exact Hr1].
+Qed.
 
 Lemma Hdelta : 0 < delta.
 Proof.

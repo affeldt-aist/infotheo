@@ -459,8 +459,7 @@ Qed.
 
 Lemma card_typed_tuples : INR #| T_{ P } | <= exp2 (INR n * `H P).
 Proof.
-rewrite -(invRK (exp2 (INR n * `H P))%R); last exact/eqP.
-rewrite -exp2_Ropp -mulNR.
+rewrite -(invRK (exp2 (INR n * `H P))%R) -exp2_Ropp -mulNR.
 set aux := - INR n * `H P.
 rewrite -div1R leR_pdivl_mulr // {}/aux.
 case/boolP : [exists x, x \in T_{P}] => x_T_P.

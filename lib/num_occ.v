@@ -105,8 +105,7 @@ Lemma sum_num_occ_size (A : finType) s : (\sum_(a in A) N(a|s))%nat = size s.
 Proof.
 elim: s => [|a s IH] /=.
 + by apply big1_eq.
-+ rewrite big_split /= IH -big_mkcond /= (big_pred1 a) //.
-  by move=> i; rewrite eq_sym.
++ by rewrite big_split /= IH -big_mkcond /= (big_pred1 a).
 Qed.
 
 Lemma num_occ_flatten (A : finType) (a : A) ss :

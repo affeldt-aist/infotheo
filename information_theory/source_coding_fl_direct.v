@@ -198,10 +198,8 @@ rewrite inE /=; apply/negPn/negPn.
    apply Exp_le_increasing => //; apply leR_add2r.
     move/leR_max : Hdelta => [_ Hlambda].
     apply (@leR_pmul2r (2 / lambda)%R); first by apply/divR_gt0 => //; exact: lambda_gt0.
-    rewrite mul1R -mulRA -{2}(Rinv_Rdiv lambda 2); last 2 first.
-      by apply/eqP; rewrite gtR_eqF //; exact/lambda_gt0.
-      by move=> ?; lra.
-      by rewrite mulRV ?mulR1 //; exact/gtR_eqF/lambda2_gt0.
+    rewrite mul1R -mulRA -{2}(Rinv_div lambda 2).
+    by rewrite mulRV ?mulR1 //; exact/gtR_eqF/lambda2_gt0.
   apply: leR_trans; first exact/leR_add2l/TS_sup.
   apply (@leR_trans (exp2 (INR k* (`H P + lambda / 2)) +
                         exp2 (INR k * (`H P + lambda / 2)))%R).
