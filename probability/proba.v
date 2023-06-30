@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require boolp.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct reals.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import fdist.
@@ -222,8 +222,10 @@ Proof. by apply/setP => -[a b]; rewrite !inE. Qed.
 
 End TsetT.
 
+#[global] Hint Extern 0 (IZR Z0 <= _) => solve [apply/RleP; exact: FDist.ge0] : core.
+
 Section probability.
-Notation R := R_numDomainType.
+Notation R := Rstruct.real_realType.
 
 Variables (A : finType) (P : R.-fdist A).
 Implicit Types E : {set A}.
