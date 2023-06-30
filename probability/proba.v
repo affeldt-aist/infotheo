@@ -189,7 +189,8 @@ Notation "E `*T" := ([set x | x.1 \in E]) : proba_scope.
 Notation "T`* F" := ([set x | x.2 \in F]) : proba_scope.
 
 Section TsetT.
-Variables (A B : finType) (P : {fdist (A * B)}).
+
+Variables (A B : finType) (P : R_numDomainType.-fdist (A * B)).
 Implicit Types (E : {set A}) (F : {set B}).
 
 Lemma TsetT : T`* setT = setT :> {set A * B}.
@@ -222,7 +223,9 @@ Proof. by apply/setP => -[a b]; rewrite !inE. Qed.
 End TsetT.
 
 Section probability.
-Variables (A : finType) (P : fdist A).
+Notation R := R_numDomainType.
+
+Variables (A : finType) (P : R.-fdist A).
 Implicit Types E : {set A}.
 
 Definition Pr E := \sum_(a in E) P a.
