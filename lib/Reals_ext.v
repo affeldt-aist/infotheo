@@ -67,11 +67,12 @@ Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 
 Lemma Rlt_1_2 (R: numDomainType): (1:R) < 2. Proof. by rewrite ltr1n. Qed.
+
 Global Hint Resolve Rlt_1_2 : core.
 
 Section reals_ext.
 
-Variable R : numDomainType.
+Variable R : realFieldType.
 
 Lemma forallP_leRP (A : finType) (f : A -> R) : reflect (forall a, 0 <= f a) [forall a, 0 <= f a].
 Proof.
@@ -84,49 +85,49 @@ Proof. elim : n => // n  /= ->. by rewrite exprSz. Qed.
 Lemma iter_addr (x: R) (n : nat) : ssrnat.iter n (fun y => x + y) 0 = (n%:R) * x.
 Proof.
 elim : n ; first by rewrite mul0r.
-move=> n Hn; by rewrite iterS Hn -{1}(mul1R x) -mulRDl addRC -S_INR.
+move=> n Hn; by rewrite iterS Hn -{1}(mul1r x) -mulrDl addrC mathcomp_extra.natr1.
 Qed.
 
 (* TODO: see Rplus_lt_reg_pos_r in the standard library *)
 (*Lemma Rplus_le_lt_reg_pos_r r1 r2 r3 : 0 < r2 -> r1 + r2 <= r3 -> r1 < r3.
 Proof. move=> *. lra. Qed.*)
 
-Lemma INR_Zabs_nat x : (0 <= x)%Z -> (Z.abs_nat x)%:R = IZR x.
-Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed.
+(*Lemma INR_Zabs_nat x : (0 <= x)%Z -> (Z.abs_nat x)%:R = IZR x.
+Proof. move=> Hx. by rewrite INR_IZR_INZ Zabs2Nat.id_abs Z.abs_eq. Qed. *)
 
 Section about_the_pow_function.
-
-Lemma pow_even_ge0 (n : nat) x : ~~ odd n -> 0 <= x ^ n.
+Locate "^".
+Locate "^+".
+Lemma pow_even_ge0 (n : nat) (x : R) : ~~ odd n -> 0 <= x ^ n.
 Proof.
 move=> Hn; rewrite -(odd_double_half n) (negbTE Hn) {Hn} add0n.
-move Hm : (_./2) => m {Hm n}; elim: m => [|m ih]; first by rewrite pow_O.
-rewrite doubleS 2!expRS mulRA; apply/mulR_ge0 => //.
-rewrite -{2}(pow_1 x) -expRS; exact: pow2_ge_0.
+move Hm : (_./2) => m {Hm n}; elim: m => [|m ih]; first by rewrite expr0z ler01.
+rewrite doubleS -exprnP 2!exprS mulrA mulr_ge0 //.
+by rewrite -expr2 sqr_ge0.
 Qed.
 
-Lemma pow2_Rle_inv a b : 0 <= a -> 0 <= b -> a ^ 2 <= b ^ 2 -> a <= b.
+Lemma pow2_rle_inv (a b: R) : 0 <= a -> 0 <= b -> a ^ 2 <= b ^ 2 -> a <= b.
 Proof.
-move=> Ha Hb H.
-apply sqrt_le_1 in H; try exact: pow_even_ge0.
-by rewrite /= !mulR1 !sqrt_square in H.
+move=> Ha Hb. by rewrite -2!exprnP ler_sqr //.
 Qed.
 
-Lemma pow2_Rlt_inv a b : 0 <= a -> 0 <= b -> a ^ 2 < b ^ 2 -> a < b.
+Lemma pow2_rlt_inv (a b: R) : 0 <= a -> 0 <= b -> a ^ 2 < b ^ 2 -> a < b.
 Proof.
-move=> ? ? H.
-apply sqrt_lt_1 in H; try exact: pow_even_ge0.
-by rewrite /= !mulR1 !sqrt_square in H.
+move=> ? ?. by rewrite -2!exprnP ltr_sqr.
 Qed.
 
-Lemma x_x2_eq q : q * (1 - q) = / 4 - / 4 * (2 * q - 1) ^ 2.
-Proof. field. Qed.
+Lemma x_x2_eq (q: R) : q * (1 - q) = 1 / 4 - 1 / 4 * (2 * q - 1) ^ 2.
+Proof.
+(* field *)
+Admitted. (*TODO*)
 
-Lemma x_x2_max q : q * (1 - q) <= / 4.
+Lemma x_x2_max (q : R) : q * (1 - q) <= 1 / 4.
 Proof.
 rewrite x_x2_eq.
-have : forall a b, 0 <= b -> a - b <= a. move=>  *; lra.
+have : forall a b, 0 <= b -> a - b <= a. (*TODO: move=>  *; lra.
 apply; apply mulR_ge0; [lra | exact: pow_even_ge0].
-Qed.
+Qed.*)
+Admitted.
 
 (*Lemma pow0_inv : forall (n : nat) x, x ^ n = 0 -> x = 0.
 Proof.
