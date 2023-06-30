@@ -189,8 +189,9 @@ Notation "E `*T" := ([set x | x.1 \in E]) : proba_scope.
 Notation "T`* F" := ([set x | x.2 \in F]) : proba_scope.
 
 Section TsetT.
+Notation R := real_realType.
 
-Variables (A B : finType) (P : R_numDomainType.-fdist (A * B)).
+Variables (A B : finType) (P : R.-fdist (A * B)).
 Implicit Types (E : {set A}) (F : {set B}).
 
 Lemma TsetT : T`* setT = setT :> {set A * B}.
@@ -242,7 +243,10 @@ by rewrite ltR_neqAle; split => //; exact/nesym/eqP.
 Qed.
 
 Lemma Pr_1 E : Pr E <= 1.
-Proof. by rewrite -(FDist.f1 P); apply leR_sumRl => // a _; exact/leRR. Qed.
+Proof.
+rewrite (_ : 1 = GRing.one _)//.
+by rewrite -(FDist.f1 P); apply leR_sumRl => // a _; exact/leRR.
+Qed.
 
 Lemma Pr_lt1 E : Pr E < 1 <-> Pr E != 1.
 Proof.
@@ -268,6 +272,7 @@ Proof. by rewrite /Pr big_set1. Qed.
 Lemma Pr_cplt E : Pr E + Pr (~: E) = 1.
 Proof.
 rewrite /Pr -bigU /=; last by rewrite -subsets_disjoint.
+rewrite (_ : 1 = GRing.one _)//.
 by rewrite -(FDist.f1 P); apply eq_bigl => /= a; rewrite !inE /= orbN.
 Qed.
 
@@ -381,8 +386,9 @@ by move/psumR_eq0P : PE0; apply.
 Qed.
 
 Section Pr_extra.
+Notation R := Rstruct.real_realType.
 
-Variables (A B : finType) (P : {fdist A * B}).
+Variables (A B : finType) (P : R.-fdist (A * B)).
 Implicit Types (E : {set A}) (F : {set B}).
 
 Lemma Pr_XsetT E : Pr P (E `* [set: B]) = Pr (P`1) E.
@@ -424,7 +430,7 @@ Lemma Pr_domin_setXN (A B : finType) (P : {fdist A * B}) E F :
   Pr P (E `* F) != 0 -> Pr P`1 E != 0.
 Proof. by apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
 
-Lemma Pr_fdistmap (A B : finType) (f : A -> B) (d : fdist A) (E : {set A}) :
+Lemma Pr_fdistmap (A B : finType) (f : A -> B) (d : real_realType.-fdist A) (E : {set A}) :
   injective f ->
   Pr d E = Pr (fdistmap f d) (f @: E).
 Proof.
