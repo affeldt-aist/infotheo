@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import Rstruct reals.
 From mathcomp Require boolp.
 From mathcomp Require Import all_algebra.
-Require Import Lra.
+From mathcomp Require Import lra.
 Require Import ssrR.
 Import Order.TTheory Order.Syntax GRing.Theory Num.Theory.
 
@@ -55,7 +55,7 @@ Reserved Notation "{ 'Rpos' T }" (format "{ 'Rpos'  T }").
 Reserved Notation "{ 'prob' T }" (format "{ 'prob'  T }").
 Reserved Notation "{ 'oprob' T }" (format "{ 'oprob'  T }").
 
-Notation "+| r |" := (Rmax 0 r) : reals_ext_scope.
+Notation "+| r |" := (Num.max 0 r) : reals_ext_scope.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -117,17 +117,13 @@ move=> ? ?. by rewrite -2!exprnP ltr_sqr.
 Qed.
 
 Lemma x_x2_eq (q: R) : q * (1 - q) = 1 / 4 - 1 / 4 * (2 * q - 1) ^ 2.
-Proof.
-(* field *)
-Admitted. (*TODO*)
+Proof. by rewrite -exprnP; lra. Qed.
 
 Lemma x_x2_max (q : R) : q * (1 - q) <= 1 / 4.
 Proof.
-rewrite x_x2_eq.
-have : forall a b, 0 <= b -> a - b <= a. (*TODO: move=>  *; lra.
-apply; apply mulR_ge0; [lra | exact: pow_even_ge0].
-Qed.*)
-Admitted.
+rewrite x_x2_eq; rewrite ler_subl_addl ler_addr// mulr_ge0//; first by lra.
+exact: pow_even_ge0.
+Qed.
 
 (*Lemma pow0_inv : forall (n : nat) x, x ^ n = 0 -> x = 0.
 Proof.
