@@ -151,21 +151,33 @@ Section onem.
   Local Open Scope ring_scope.
   Variable R : numDomainType.
   Definition onem (x: R) := 1 - x.
+
   Lemma onemK (x : R): onem (onem x) = x.
-  Admitted.
+  Proof.
+    by rewrite /onem opprB addrA addrC addrA (addrC (-1) 1) subrr add0r.
+  Qed.
+
   Lemma onem_le1 x : 0 <= x -> onem x <= 1.
-  Admitted.
+  Proof. move=> ?; by rewrite /onem ler_subl_addr -ler_subl_addl subrr. Qed.
+
   Lemma onem_ge0 x : x <= 1 -> 0 <= onem x.
-  Admitted.
+  Proof. move=> ?; by rewrite /onem subr_ge0. Qed.
+
   Lemma onem0 : onem 0 = 1.
-  Admitted.
+  Proof. by rewrite /onem subr0. Qed.
+
   Lemma onem1 : onem 1 = 0.
-  Admitted.
-  Lemma onemKC x : x + (onem x) = 1.
-  Admitted.
+  Proof. by rewrite /onem subrr. Qed.
+
+  Lemma onemKC r : r + (onem r) = 1.
+  Proof. 
+    by rewrite /onem addrC -addrA (addrC (-r) r) subrr addr0.
+  Qed.
+
   Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
   Proof.
-  Admitted.
+    by move=> /andP [_0r r1]; apply /andP; split; [rewrite onem_ge0 | rewrite onem_le1].
+  Qed.
 End onem.
 Notation "p '.~'" := (onem p).
 (* ---- onem ---- *)
