@@ -915,11 +915,6 @@ rewrite -(add0r (1 - (1 + _))) addrA (addrKA 1 0) add0r.
 by rewrite (addrC (-(q:R))) 2!opprB !addrA (addrC (q:R) p).
 Qed.
 
-Lemma addr_gt0wl : forall [R : numDomainType] [x y : R],
-    0 < x -> 0 <= y -> 0 < x + y.
-Proof.
-Admitted.
-
 Lemma probR_ge0 (p: {prob R}) : 0 <= p :> R. Proof. exact: prob_ge0. Qed.
 Global Hint Resolve probR_ge0 : core.
 Lemma probR_le1 (p: {prob R}) : p <= 1 :> R. Proof. exact: prob_le1. Qed.
@@ -928,7 +923,7 @@ Global Hint Resolve probR_le1 : core.
 Lemma s_of_gt0 (p q: {prob R}) : p != 0%:pr -> 0 < [s_of p, q] :> R.
 Proof.
 move=> ?; rewrite s_of_pqE';
-  apply: addr_gt0wl; [exact/prob_gt0 | apply: mulr_ge0=>//].
+  apply: ltr_spaddl; [exact/prob_gt0 | apply: mulr_ge0=>//].
 exact: onem_ge0.
 Qed.
 
