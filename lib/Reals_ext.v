@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import Rstruct reals.
 From mathcomp Require boolp.
 From mathcomp Require Import all_algebra.
-Require Import Reals Lra.
+Require Import Lra.
 Require Import ssrR.
 Import Order.TTheory Order.Syntax GRing.Theory Num.Theory.
 
@@ -61,27 +61,29 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Arguments INR : simpl never.
+Import Order.TTheory GRing.Theory Num.Def Num.Theory.
 
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 
-Lemma Rlt_1_2 : 1 < 2. Proof. lra. Qed.
+Lemma Rlt_1_2 (R: numDomainType): (1:R) < 2. Proof. by rewrite ltr1n. Qed.
 Global Hint Resolve Rlt_1_2 : core.
 
 Section reals_ext.
 
-Lemma forallP_leRP (A : finType) (f : A -> R) : reflect (forall a, 0 <= f a) [forall a, 0 <b= f a].
+Variable R : numDomainType.
+
+Lemma forallP_leRP (A : finType) (f : A -> R) : reflect (forall a, 0 <= f a) [forall a, 0 <= f a].
 Proof.
-apply: (iffP idP) => [/forallP H a|H]; [exact/leRP/H|apply/forallP => a; exact/leRP].
+by apply: (iffP idP) => [/forallP H a|H]; [exact/H|apply/forallP => a].
 Qed.
 
-Lemma iter_mulR x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
-Proof. elim : n => // n Hn ; by rewrite iterS Hn. Qed.
+Lemma iter_mulr (x: R) (n : nat) : ssrnat.iter n (fun y => x * y) 1 = x ^ n.
+Proof. elim : n => // n  /= ->. by rewrite exprSz. Qed.
 
-Lemma iter_addR x (n : nat) : ssrnat.iter n (Rplus x) 0 = INR n * x.
+Lemma iter_addr (x: R) (n : nat) : ssrnat.iter n (fun y => x + y) 0 = (n%:R) * x.
 Proof.
-elim : n ; first by rewrite mul0R.
+elim : n ; first by rewrite mul0r.
 move=> n Hn; by rewrite iterS Hn -{1}(mul1R x) -mulRDl addRC -S_INR.
 Qed.
 
@@ -760,7 +762,7 @@ Definition K (R : realType) (r : t R) := H r.
 Arguments K : simpl never.
 Module Exports.
 Notation Rpos := t.
-Notation "r %:pos" := (@mk _ r (@K _)) : reals_ext_scope.
+Notation "r %:pos" := (@mk _ r (@K _ _)) : reals_ext_scope.
 Definition Rposv (x : Rpos [realType of R]) : R := Rpos.v x.
 Coercion Rposv : Rpos >-> R.
 End Exports.
@@ -879,7 +881,7 @@ End Rnng_theory.
 
 Global Hint Resolve Rnng_ge0 : core.
 
-Definition s_of_pq (p q : {prob R}) : {prob R} := locked (p.~ * q.~).~%:pr.
+Definition s_of_pq (R: realType) (p q : {prob R}) : {prob R} := locked (p.~ * q.~).~%:pr.
 
 Notation "[ 's_of' p , q ]" := (s_of_pq p q) : reals_ext_scope.
 
