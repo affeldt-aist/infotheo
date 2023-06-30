@@ -4,6 +4,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require Import boolp classical_sets Rstruct.
 From mathcomp Require Import ssrnum ereal.
+From mathcomp Require Import Rstruct reals.
 Require Import Reals.
 Require Import ssrR Reals_ext Lra Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist.
@@ -133,40 +134,43 @@ Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
-
 (* TODO: the following lemmas are currently not in use. Maybe remove? *)
 Section tmp.
-Lemma fdist_convn_Add
-      (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob)
-      (A : finType) (g : 'I_n -> fdist A) (h : 'I_m -> fdist A) :
+Import GRing.Theory.
+Local Open Scope ring_scope.
+
+Lemma fdist_convn_Add (R : realType)
+      (n m : nat) (d1 : {fdist 'I_n}) (d2 : {fdist 'I_m}) (p : prob R)
+      (A : finType) (g : 'I_n -> {fdist A}) (h : 'I_m -> {fdist A}) :
   fdist_convn (fdist_add d1 d2 p)
     [ffun i => match fintype.split i with inl a => g a | inr a => h a end] =
   (fdist_convn d1 g <| p |> fdist_convn d2 h)%fdist.
 Proof.
 apply/fdist_ext => a; rewrite !fdist_convE !fdist_convnE.
-rewrite 2!big_distrr /= big_split_ord /=; congr (_ + _)%R;
+rewrite 2!big_distrr /= big_split_ord /=; congr (_ + _);
    apply eq_bigr => i _; rewrite fdist_addE ffunE.
 case: splitP => /= j ij.
-rewrite mulRA; congr (_ * d1 _ * (g _) a)%R; exact/val_inj.
+rewrite mulrA; congr (_ * d1 _ * (g _) a); exact/val_inj.
 move: (ltn_ord i); by rewrite ij -ltn_subRL subnn ltn0.
 case: splitP => /= j ij.
 move: (ltn_ord j); by rewrite -ij -ltn_subRL subnn ltn0.
 move/eqP : ij; rewrite eqn_add2l => /eqP ij.
-rewrite mulRA; congr (_ * d2 _ * (h _) a)%R; exact/val_inj.
+rewrite mulrA; congr (_ * d2 _ * (h _) a); exact/val_inj.
 Qed.
 
 Lemma fdist_convn_del
-      (A : finType) (n : nat) (g : 'I_n.+1 -> fdist A) (P : {fdist 'I_n.+1})
-      (j : 'I_n.+1) (H : (0 <= P j <= 1)%R) (Pj1 : P j != 1%R) :
+        (R : realType)
+      (A : finType) (n : nat) (g : 'I_n.+1 -> {fdist A}) (P : {fdist 'I_n.+1})
+      (j : 'I_n.+1) (H : (0 <= P j <= 1)) (Pj1 : P j != 1) :
   let g' := fun i : 'I_n => g (fdist_del_idx j i) in
   fdist_convn P g =
-    (g j <| Prob.mk_ H |> fdist_convn (fdist_del Pj1) g')%fdist.
+    (g j <| @Prob.mk_ R _ H |> fdist_convn (fdist_del Pj1) g')%fdist.
 Proof.
 move=> g' /=; apply/fdist_ext => a.
-rewrite fdist_convE /= fdist_convnE (bigD1 j) //=; congr (_ + _)%R.
+rewrite fdist_convE /= fdist_convnE (bigD1 j) //=; congr (_ + _).
 rewrite fdist_convnE big_distrr /=.
 rewrite (bigID (fun i : 'I_n.+1 => (i < j)%nat)) //=.
-rewrite (bigID (fun i : 'I_n => (i < j)%nat)) //=; congr (_ + _)%R.
+rewrite (bigID (fun i : 'I_n => (i < j)%nat)) //=; congr (_ + _).
   rewrite (@big_ord_narrow_cond _ _ _ j n.+1); first by rewrite ltnW.
   move=> jn; rewrite (@big_ord_narrow_cond _ _ _ j n xpredT); first by rewrite -ltnS.
   move=> jn'.
@@ -175,8 +179,10 @@ rewrite (bigID (fun i : 'I_n => (i < j)%nat)) //=; congr (_ + _)%R.
   move=> /= i _.
   rewrite fdist_delE /= ltn_ord fdistD1E /= ifF /=; last first.
     by apply/negP => /eqP/(congr1 val) /=; apply/eqP; rewrite ltn_eqF.
-  rewrite mulRA mulRCA mulRV ?mulR1 ?onem_neq0 //.
-  congr (P _ * _)%R; first exact/val_inj.
+  rewrite mulrA mulrCA mulrV ?mulr1; last first.
+rewrite unitfE. rewrite onem_neq0.
+ ?onem_neq0 //.
+  congr (P _ * _); first exact/val_inj.
   by rewrite /g' /fdist_del_idx /= ltn_ord; congr (g _ a); exact/val_inj.
 rewrite (eq_bigl (fun i : 'I_n.+1 => (j < i)%nat)); last first.
   move=> i; by rewrite -leqNgt eq_sym -ltn_neqAle.
