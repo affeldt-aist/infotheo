@@ -233,8 +233,8 @@ Arguments prob0 {R}.
 Arguments prob1 {R}.*)
 (* ---- ---- *)
 
-Definition probfdist (R: numDomainType) (A : finType) (d : fdist R A) a :=
-  Eval hnf in Prob.mk_ (fdist_ge0_le1 d a).
+Definition probfdist (R: realType) (A : finType) (d : fdist R A) a :=
+  Eval hnf in Prob.mk_ (@fdist_ge0_le1 R A d a).
 
 Section fdist_lemmas.
 Local Open Scope ring_scope.
@@ -591,7 +591,7 @@ End fdist_uniform_supp_prop.
 
 Section fdist_binary.
 Local Open Scope ring_scope.
-Variable R : numDomainType.
+Variable R : realType.
 Variable A : finType.
 Hypothesis HA : #|A| = 2%nat.
 Variable p : prob R.
@@ -625,7 +625,7 @@ End fdist_binary.
 
 Section fdist_binary_prop.
 Local Open Scope ring_scope.
-Variable R : numDomainType.
+Variable R : realType.
 Variables (A : finType) (P Q : fdist R A).
 Hypothesis card_A : #|A| = 2%nat.
 
@@ -754,7 +754,7 @@ Proof. move: (fdist_card_neq0 d); by rewrite card_ord. Qed.
 
 Section fdistI2.
 Local Open Scope ring_scope.
-Variable R : numDomainType.
+Variable R : realType.
 Variable p : prob R.
 
 Definition fdistI2: {fdist 'I_2} :=
@@ -771,7 +771,7 @@ End fdistI2.
 
 Section fdistI2_prop.
 Local Open Scope ring_scope.
-Variable R : numDomainType.
+Variable R : realType.
 
 Lemma fdistI21 : @fdistI2 R 1%:pr = fdist1 ord0.
 Proof.
@@ -789,7 +789,7 @@ End fdistI2_prop.
 
 Section fdist_add.
 Local Open Scope ring_scope.
-Variable R : numDomainType.
+Variable R : realType.
 
 Variables (n m : nat)
   (d1 : R.-fdist 'I_n)
@@ -926,7 +926,7 @@ End fdist_convn_prop.
 
 Section fdist_conv.
 Local Open Scope ring_scope.
-Variable R : numDomainType.
+Variable R : realType.
 Variables (A : finType) (p : prob R) (d1 d2 : fdist R A).
 
 Definition fdist_conv : {fdist A} := locked
@@ -942,7 +942,7 @@ End fdist_conv.
 
 Notation "x <| p |> y" := (fdist_conv p x y) : fdist_scope.
 
-Lemma fdist_conv_bind_left_distr (R : numDomainType) (A B : finType) p a b (f : A -> fdist R B) :
+Lemma fdist_conv_bind_left_distr (R : realType) (A B : finType) p a b (f : A -> fdist R B) :
   (a <| p |> b) >>= f = (a >>= f) <| p |> (b >>= f).
 Proof.
 apply/fdist_ext => a0 /=; rewrite !(fdistbindE,fdist_convE) /=.
@@ -1098,7 +1098,7 @@ Notation "P `X W" := (fdist_prod P W) : fdist_scope.
 
 Section fdist_prod_prop.
 Local Open Scope ring_scope.
-Variable R : numDomainType.
+Variable R : realType.
 Variables (A B : finType) (W : A -> fdist R B).
 
 Lemma fdist_prod1_conv p (a b : fdist R A) :
@@ -1943,3 +1943,4 @@ Defined.
 *)
 
 End tuple_prod_cast.*)
+
