@@ -513,7 +513,7 @@ Qed.
 
 End prob_lemmas.
 
-Lemma prob_IZR (p : positive) : R0 <= / IZR (Zpos p) <= R1.
+Lemma prob_IZR (p : positive) : (0 <= / IZR (Zpos p) <= 1)%R.
 Proof.
 split; first exact/Rlt_le/Rinv_0_lt_compat/IZR_lt/Pos2Z.is_pos.
 rewrite -[X in (_ <= X)%R]Rinv_1; apply Rle_Rinv => //.
@@ -521,20 +521,35 @@ rewrite -[X in (_ <= X)%R]Rinv_1; apply Rle_Rinv => //.
 - exact/IZR_le/Pos2Z.pos_le_pos/Pos.le_1_l.
 Qed.
 
-Canonical probIZR (p : positive) := Eval hnf in Prob.mk (prob_IZR p).
+(* TODO *)
+Lemma prob_IZR' (p : positive) : (@Order.le _ _ 0%R (/ IZR (Zpos p)) && @Order.le _ _ (/ IZR (Zpos p)) 1)%R.
+Proof.
+have [/RleP ? /RleP ?] := prob_IZR p.
+exact/andP.
+Qed.
+
+Canonical probIZR (p : positive) := Eval hnf in Prob.mk (prob_IZR' p).
 
 Definition divRnnm n m := INR n / INR (n + m).
 
-Lemma prob_divRnnm n m : R0 <b= divRnnm n m <b= R1.
+Lemma prob_divRnnm n m : R0 <= divRnnm n m <= R1.
 Proof.
-apply/leR2P; rewrite /divRnnm.
-have [/eqP ->|n0] := boolP (n == O); first by rewrite div0R; apply/leR2P/OO1.
+rewrite /divRnnm.
+have [/eqP ->|n0] := boolP (n == O).
+  rewrite div0R.
+  by have /leR2P:= (@OO1 real_realType).
 split; first by apply divR_ge0; [exact: leR0n | rewrite ltR0n addn_gt0 lt0n n0].
 by rewrite leR_pdivr_mulr ?mul1R ?leR_nat ?leq_addr // ltR0n addn_gt0 lt0n n0.
 Qed.
 
+Lemma prob_divRnnm' n m : (@Order.le _ _ R0 (divRnnm n m) && @Order.le _ _ (divRnnm n m) R1)%R.
+Proof.
+have [/RleP ? /RleP ?] := prob_divRnnm n m.
+exact/andP.
+Qed.
+
 Canonical probdivRnnm (n m : nat) :=
-  Eval hnf in @Prob.mk (divRnnm n m) (prob_divRnnm n m).
+  Eval hnf in @Prob.mk _ (divRnnm n m) (prob_divRnnm' n m).
 
 Lemma prob_invn (m : nat) : (R0 <b= / (1 + m)%:R <b= R1)%R.
 Proof.
