@@ -751,6 +751,9 @@ Canonical Rpos_eqType := Eval hnf in EqType Rpos Rpos_eqMixin.
 Definition Rpos_choiceMixin := Eval hnf in [choiceMixin of Rpos by <:].
 Canonical Rpos_choiceType := Eval hnf in ChoiceType Rpos Rpos_choiceMixin.
 
+Definition rpos_coercion (p : Rpos) : Real.sort real_realType := Rpos.v p.
+Coercion rpos_coercion : Rpos >-> Real.sort.
+
 Definition mkRpos x H := @Rpos.mk x (introT (ltRP _ _) H).
 
 Canonical Rpos1 := @mkRpos 1 Rlt_0_1.
@@ -806,10 +809,11 @@ Proof.
 exact: Rpos_neq0.
 Qed.*) Abort.
 
+Lemma onem_divRxxy (r q : Rpos) : (rpos_coercion r / (rpos_coercion r + q)).~ = q / (q + r).
 (* TODO
-Lemma onem_divRxxy (r q : Rpos) : (r / (r + q)).~ = q / (q + r).
 Proof. by rewrite /onem subR_eq (addRC r) -mulRDl mulRV // ?gtR_eqF. Qed.
 *)
+Admitted.
 
 Module Rnng.
 Local Open Scope R_scope.
@@ -898,8 +902,8 @@ Proof. by apply/s_of_gt0/oprob_neq0. Qed.*)
 Lemma ge_s_of (p q : {prob R}) : p <= [s_of p, q].
 Proof. (*rewrite s_of_pqE' addRC -leR_subl_addr subRR; exact/mulR_ge0. Qed.*) Admitted.
 
+Lemma r_of_pq_prob (p q : {prob R}) : 0 <= p / [s_of p, q] <= 1.
 (* TODO
-Lemma r_of_pq_prob (p q : {prob R}) : 0 <b= p / [s_of p, q] <b= 1.
 Proof.
 case/boolP : (p == 0%:pr :> prob) => p0.
   rewrite (eqP p0) div0R; apply/andP; split; apply/leRP => //; exact/leRR.
@@ -909,11 +913,18 @@ apply/andP; split; apply/leRP.
 - apply divR_ge0 => //; exact/s_of_gt0.
 - rewrite leR_pdivr_mulr ?mul1R; [exact: ge_s_of | exact: s_of_gt0].
 Qed.
+*)
+Admitted.
 
-Definition r_of_pq (p q : prob) : prob := locked (Prob.mk (r_of_pq_prob p q)).
+Lemma r_of_pq_prob' (p q : {prob R}) : @Order.le _ _ 0 (p / [s_of p, q])
+                                       && @Order.le _ _ (p / [s_of p, q]) 1.
+Proof. (*TODO*) Admitted.
+
+Definition r_of_pq (p q : {prob R}) : {prob R} := locked (Prob.mk (r_of_pq_prob' p q)).
 
 Notation "[ 'r_of' p , q ]" := (r_of_pq p q) : reals_ext_scope.
 
+(*
 Lemma r_of_pqE (p q : prob) : [r_of p, q] = p / [s_of p, q] :> R.
 Proof. by rewrite /r_of_pq; unlock. Qed.
 
