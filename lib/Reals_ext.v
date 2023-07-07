@@ -1,11 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssrnum ssralg.
+From mathcomp Require Import all_algebra vector reals normedtype ssrnum.
+From mathcomp Require Import boolp.
 From mathcomp Require Import Rstruct.
-From mathcomp Require boolp.
-Require Import Reals Lra.
 Require Import ssrR realType_ext.
-
+Require Import Reals Lra.
 
 (******************************************************************************)
 (*              Additional lemmas and definitions about Coq reals             *)
@@ -410,6 +410,13 @@ Export Prob.Exports.
 Coercion Prob.p : prob >-> R. *)
 
 Definition prob := (prob real_realType).
+Definition prob_coercion : prob -> R := @Prob.p real_realType.
+Coercion prob_coercion : prob >-> R.
+
+#[global] Hint Extern 0 (Rle (IZR Z0) _) =>
+  solve [apply/RleP/prob_ge0] : core.
+#[global] Hint Extern 0 (Rle _ (IZR (Zpos xH))) =>
+  solve [apply/RleP/prob_le1] : core.
 
 (*Lemma probpK p H : Prob.p (@Prob.mk p H) = p. Proof. by []. Qed.
 
@@ -431,14 +438,11 @@ Global Hint Resolve prob_le1 : core.*)
 
 Section prob_lemmas.
 Implicit Types p q : prob.
-Local Open Scope R_scope.
-Lemma prob_gt0 p : p !=
-(@Prob.mk _ (0:R) (@Prob.O1 real_realType _)) <-> 0 < p.
 
- (0)%:pr <-> 0 < p.
+Lemma prob_gt0 p : p != 0%:pr <-> 0 < p.
 Proof.
 rewrite ltR_neqAle; split=> [H|[/eqP p0 _]].
-split => //; exact/nesym/eqP.
+by split => //; exact/nesym/eqP.
 by case: p p0 => p ?; apply: contra => /eqP[/= ->].
 Qed.
 
