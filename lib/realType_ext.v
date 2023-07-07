@@ -21,7 +21,7 @@ Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 (* ---- onem ---- *)
 Section onem.
   Local Open Scope ring_scope.
-  Variable R : numDomainType.
+  Variable R : realType.
   Definition onem (x: R) := 1 - x.
 
   Lemma onemK (x : R): onem (onem x) = x.
