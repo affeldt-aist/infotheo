@@ -4,8 +4,6 @@ From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require Import all_algebra vector reals normedtype.
 From mathcomp Require Import boolp.
 From mathcomp Require Import Rstruct.
-Require Import ssrR logb ssr_ext ssralg_ext bigop_ext Rbigop.
-Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
 Reserved Notation "p '.~'" (format "p .~", at level 5).
 Reserved Notation "x %:pr" (at level 0, format "x %:pr").
@@ -17,6 +15,9 @@ Reserved Notation "P '`<<' Q" (at level 51).
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
+
 (* ---- onem ---- *)
 Section onem.
   Local Open Scope ring_scope.
@@ -64,29 +65,31 @@ Notation "p '.~'" := (onem p).
 
 (* ---- Prob ---- *)
 Module Prob.
-Record t (R : numDomainType) := mk {
+Record t (R : realType) := mk {
   p :> R ;
   Op1 : (0 <= p <= 1)%R }.
-Definition O1 (R : numDomainType) (x : t R) : (0 <= p x <= 1)%R := Op1 x.
+Definition O1 (R : realType) (x : t R) : (0 <= p x <= 1)%R := Op1 x.
 Arguments O1 : simpl never.
-Definition mk_ (R : numDomainType) (q : R) (Oq1 : (0 <= q <= 1)%R) := mk Oq1.
+Definition mk_ (R : realType) (q : R) (Oq1 : (0 <= q <= 1)%R) := mk Oq1.
 Module Exports.
 Notation prob := t.
 Notation "q %:pr" := (@mk _ q (@O1 _ _)).
-Canonical prob_subType (R : numDomainType) := Eval hnf in [subType for @p R].
-Definition prob_eqMixin (R : numDomainType) := [eqMixin of (prob R) by <:].
-Canonical prob_eqType (R : numDomainType) := Eval hnf in EqType _ (prob_eqMixin R).
+Canonical prob_subType (R : realType) := Eval hnf in [subType for @p R].
+Definition prob_eqMixin (R : realType) := [eqMixin of (prob R) by <:].
+Canonical prob_eqType (R : realType) := Eval hnf in EqType _ (prob_eqMixin R).
 End Exports.
 End Prob.
 Export Prob.Exports.
-Coercion Prob.p : prob >-> Num.NumDomain.sort.
+Coercion Prob.p : prob >-> Real.sort.
 Lemma probpK R p H : Prob.p (@Prob.mk R p H) = p. Proof. by []. Qed.
 
 Section prob_lemmas.
-Variable R : numDomainType.
+Variable R : realType.
 
-Lemma OO1 : ((0 <= 0 :> R) && (0 <= 1 :> R))%R. Proof. by apply /andP; split. Qed.
-Lemma O11 : ((0 <= 1 :> R) && (1 <= 1 :> R))%R. Proof. by apply /andP; split. Qed.
+Lemma OO1 : ((0 <= 0 :> R) && (0 <= 1 :> R))%R.
+Proof. by apply /andP; split; [rewrite lexx | rewrite ler01]. Qed.
+Lemma O11 : ((0 <= 1 :> R) && (1 <= 1 :> R))%R.
+Proof. by apply /andP; split; [rewrite ler01| rewrite lexx]. Qed.
 
 Canonical prob0 := Eval hnf in Prob.mk OO1.
 Canonical prob1 := Eval hnf in Prob.mk O11.

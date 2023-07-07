@@ -180,8 +180,7 @@ rewrite (bigID (fun i : 'I_n => (i < j)%nat)) //=; congr (_ + _).
   rewrite fdist_delE /= ltn_ord fdistD1E /= ifF /=; last first.
     by apply/negP => /eqP/(congr1 val) /=; apply/eqP; rewrite ltn_eqF.
   rewrite mulrA mulrCA mulrV ?mulr1; last first.
-rewrite unitfE. rewrite onem_neq0.
- ?onem_neq0 //.
+rewrite unitfE. rewrite fdist.onem_neq0 ?onem_neq0 //.
   congr (P _ * _); first exact/val_inj.
   by rewrite /g' /fdist_del_idx /= ltn_ord; congr (g _ a); exact/val_inj.
 rewrite (eq_bigl (fun i : 'I_n.+1 => (j < i)%nat)); last first.
@@ -189,7 +188,7 @@ rewrite (eq_bigl (fun i : 'I_n.+1 => (j < i)%nat)); last first.
 rewrite (eq_bigl (fun i : 'I_n => (j <= i)%nat)); last first.
   move=> i; by rewrite -leqNgt.
 rewrite big_mkcond.
-rewrite big_ord_recl ltn0 /= add0R.
+rewrite big_ord_recl ltn0 /= add0r.
 rewrite [in RHS]big_mkcond.
 apply eq_bigr => i _.
 rewrite /bump add1n ltnS; case: ifPn => // ji.
@@ -197,7 +196,7 @@ rewrite fdist_delE fdistD1E ltnNge ji /= ifF; last first.
   apply/eqP => /(congr1 val) => /=.
   rewrite /bump add1n => ij.
   by move: ji; apply/negP; rewrite -ij ltnn.
-rewrite /Rdiv mulRAC [in RHS] mulRC -mulRA mulVR // ?mulR1 ?onem_neq0 //.
+  rewrite -mulrAC [in RHS]mulrC 3!mulrA divrr ?mul1r ?unitfE ?onem_neq0 //.
 by rewrite /g' /fdist_del_idx ltnNge ji.
 Qed.
 End tmp.
@@ -230,13 +229,14 @@ End fintype_extra.
 Module CodomDFDist.
 Section def.
 Local Open Scope classical_set_scope.
-Variables (A : Type) (n : nat) (g : 'I_n -> A) (e : {fdist 'I_n}) (y : set A).
-Definition f := [ffun i : 'I_n => if g i \in y then e i else 0%R].
-Lemma f0 i : (0 <= f i)%R.
+Local Open Scope ring_scope.
+Variables (R: realType) (A : Type) (n : nat) (g : 'I_n -> A) (e : fdist_of R (Phant 'I_n)) (y : set A).
+Definition f := [ffun i : 'I_n => if g i \in y then e i else 0].
+Lemma f0 i : (0 <= f i).
 Proof. rewrite /f ffunE; case: ifPn => _ //; exact/leRR. Qed.
 Lemma f1 (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, x (g i) -> e i = 0%R) :
-  (\sum_(i < n) f i = 1)%R.
+  (ge : forall i : 'I_n, x (g i) -> e i = 0) :
+  (\sum_(i < n) f i = 1).
 Proof.
 rewrite /f -(FDist.f1 e) /=.
 apply eq_bigr => i _; rewrite ffunE.
@@ -246,15 +246,15 @@ have : (x `|` y) (g i) by apply/gX; by exists i.
 by case.
 Qed.
 Definition d (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, x (g i) -> e i = 0%R) : {fdist 'I_n} :=
+  (ge : forall i : 'I_n, x (g i) -> e i = 0) : {fdist 'I_n} :=
   locked (FDist.make f0 (f1 gX ge)).
 Lemma dE (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, x (g i) -> e i = 0%R) i :
-  d gX ge i = if g i \in y then e i else 0%R.
+  (ge : forall i : 'I_n, x (g i) -> e i = 0) i :
+  d gX ge i = if g i \in y then e i else 0.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 Lemma f1' (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0%R) :
-  (\sum_(i < n) f i = 1)%R.
+  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0) :
+  (\sum_(i < n) f i = 1).
 Proof.
 rewrite /f -(FDist.f1 e) /=; apply eq_bigr => i _; rewrite ffunE.
 case: ifPn => // /negP; rewrite in_setE => giy.
@@ -263,22 +263,22 @@ have : (x `|` y) (g i) by apply/gX; by exists i.
 by case.
 Qed.
 Definition d' (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0%R) :=
+  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0) :=
   locked (FDist.make f0 (f1' gX ge)).
 Lemma dE' (x : set A) (gX : g @` setT `<=` x `|` y)
-  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0%R) i :
-  d' gX ge i = if g i \in y then e i else 0%R.
+  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0) i :
+  d' gX ge i = if g i \in y then e i else 0.
 Proof. by rewrite /d'; unlock; rewrite ffunE. Qed.
 End def.
 End CodomDFDist.
-
 Module isConvexSpace_.
+Import Reals_ext.
 HB.mixin Record isConvexSpace (T : Type) := {
   convexspacechoiceclass : Choice.class_of T ;
   conv : prob -> T -> T -> T ;
   conv1 : forall a b, conv 1%:pr a b = a ;
   convmm : forall p a, conv p a a = a ;
-  convC : forall p a b, conv p a b = conv p.~%:pr b a;
+  convC : forall p a b, conv p a b = conv (onem p)%:pr b a;
   convA : forall (p q : prob) (a b c : T),
       conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
 
@@ -303,6 +303,7 @@ Local Open Scope convex_scope.
 Section convex_space_lemmas.
 Variables A : convType.
 Implicit Types a b : A.
+Import Reals_ext.
 
 Lemma conv0 a b : a <| 0%:pr |> b = b.
 Proof.

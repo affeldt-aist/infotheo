@@ -1,10 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssrnum ssralg.
 From mathcomp Require Import Rstruct.
 From mathcomp Require boolp.
 Require Import Reals Lra.
-Require Import ssrR.
+Require Import ssrR realType_ext.
+
 
 (******************************************************************************)
 (*              Additional lemmas and definitions about Coq reals             *)
@@ -390,7 +391,7 @@ End onem.
 
 Notation "p '.~'" := (onem p) : reals_ext_scope.
 
-Module Prob.
+(*Module Prob.
 Record t := mk {
   p :> R ;
   Op1 : (0 <b= p <b= 1)%R }.
@@ -406,9 +407,11 @@ Canonical prob_eqType := Eval hnf in EqType _ prob_eqMixin.
 End Exports.
 End Prob.
 Export Prob.Exports.
-Coercion Prob.p : prob >-> R.
+Coercion Prob.p : prob >-> R. *)
 
-Lemma probpK p H : Prob.p (@Prob.mk p H) = p. Proof. by []. Qed.
+Definition prob := (prob real_realType).
+
+(*Lemma probpK p H : Prob.p (@Prob.mk p H) = p. Proof. by []. Qed.
 
 Lemma OO1 : R0 <b= R0 <b= R1. Proof. apply/leR2P; lra. Qed.
 
@@ -424,12 +427,15 @@ Global Hint Resolve prob_ge0 : core.
 
 Lemma prob_le1 (p : prob) : p <= 1.
 Proof. by case: p => p /= /leR2P[]. Qed.
-Global Hint Resolve prob_le1 : core.
+Global Hint Resolve prob_le1 : core.*)
 
 Section prob_lemmas.
 Implicit Types p q : prob.
+Local Open Scope R_scope.
+Lemma prob_gt0 p : p !=
+(@Prob.mk _ (0:R) (@Prob.O1 real_realType _)) <-> 0 < p.
 
-Lemma prob_gt0 p : p != 0%:pr <-> 0 < p.
+ (0)%:pr <-> 0 < p.
 Proof.
 rewrite ltR_neqAle; split=> [H|[/eqP p0 _]].
 split => //; exact/nesym/eqP.

@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
 From mathcomp Require Import all_algebra vector reals normedtype.
 From mathcomp Require Import boolp.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext Rbigop.
 
 (******************************************************************************)
 (*                         Finite distributions                               *)
@@ -147,7 +147,7 @@ Lemma fdist_ge0_le1 (R : numDomainType) (A : finType) (d : fdist R A) a :
 Proof. by apply/andP. Qed.
 
 (* ---- onem ---- *)
-Section onem.
+(*Section onem.
   Local Open Scope ring_scope.
   Variable R : numDomainType.
   Definition onem (x: R) := 1 - x.
@@ -178,6 +178,15 @@ Section onem.
   Proof.
     by move=> /andP [_0r r1]; apply /andP; split; [rewrite onem_ge0 | rewrite onem_le1].
   Qed.
+
+  Lemma onem_eq0 r : (onem r = 0) <-> (r = 1).
+  Proof.
+  rewrite /onem. split; first by move /subr0_eq.
+  by move=> ->; rewrite subrr.
+  Qed.
+
+  Lemma onem_neq0 r : (onem r != 0) <-> (r != 1).
+  Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 End onem.
 Notation "p '.~'" := (onem p).
 (* ---- onem ---- *)
@@ -221,7 +230,7 @@ End prob_lemmas.
 Global Hint Resolve prob_ge0 : core.
 Global Hint Resolve prob_le1 : core.
 Arguments prob0 {R}.
-Arguments prob1 {R}.
+Arguments prob1 {R}.*)
 (* ---- ---- *)
 
 Definition probfdist (R: numDomainType) (A : finType) (d : fdist R A) a :=
