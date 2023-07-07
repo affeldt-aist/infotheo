@@ -325,7 +325,7 @@ suff : Hf = Hg by move=> ->.
 exact/boolp.Prop_irrelevance.
 Qed.
 
-Section onem.
+(*Section onem.
 Implicit Types r s p q : R.
 
 Definition onem r := 1 - r.
@@ -390,6 +390,7 @@ Proof. by rewrite /onem -addR_opp oppRB addRA. Qed.
 End onem.
 
 Notation "p '.~'" := (onem p) : reals_ext_scope.
+*)
 
 (*Module Prob.
 Record t := mk {
@@ -467,16 +468,16 @@ have [/eqP ->|pneq1] := boolP (p == 1%:pr); first by left.
 by right; split; [apply prob_gt0 | apply prob_lt1].
 Qed.
 
-Lemma probK p : p = (p.~).~%:pr.
+Lemma probK p : p = ((prob_coercion p).~).~%:pr.
 Proof. by apply val_inj => /=; rewrite onemK. Qed.
 
-Lemma probKC (p : prob) : p + p.~ = 1 :> R.
-Proof. by rewrite onemKC. Qed.
+Lemma probKC (p : prob) : p + (prob_coercion p).~ = 1 :> R.
+Proof. exact: onemKC. Qed.
 
-Lemma probadd_eq0 p q : p + q = 0%:pr <-> p = 0%:pr /\ q = 0%:pr.
+Lemma probadd_eq0 p q : p + q = prob_coercion 0%:pr <-> p = 0%:pr /\ q = 0%:pr.
 Proof.
 split => [/paddR_eq0 | ].
-- by move=> /(_ _)[] // /val_inj-> /val_inj->.
+- move=> /(_ _)[] // /val_inj-> /val_inj->.
 - by case => -> ->; rewrite addR0.
 Qed.
 
