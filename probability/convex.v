@@ -552,12 +552,21 @@ Lemma scalept_sum (B : finType) (P : pred B) (F : B ->R^+) (x : A) :
   scalept (\sum_(i | P i) F i) x = \ssum_(b | P b) scalept (F b) x.
 Proof.
 apply: (@proj1 _ (0 <= \sum_(i | P i) F i))%R.
-apply: (big_ind2 (fun y q => scalept q x = y /\ 0 <= q))%R.
-+ rewrite scale0pt. admit. (*TODO*)
+
+apply: (big_ind2 (fun y q => scalept q x = y /\ (0 <= q)))%R.
++ by split; [rewrite scale0pt| apply: leRR].
 + move=> _ x2 _ y2 [<- ?] [<- ?].
   by rewrite scaleptDl //; split => //; exact: addR_ge0.
 + by move=> i _; split => //; exact/nneg_f_ge0.
-Admitted.
+Qed.
+
+Lemma fdist_Rge0 (F: finType)(d : real_realType.-fdist F) (a : F) : (0 <= d a)%R.
+Proof. exact/leRP/(FDist.ge0 d). Qed.
+Lemma fdist_Rle1 (F: finType)(d : real_realType.-fdist F) (a : F) : (d a <= 1)%R.
+Proof. exact/leRP/(FDist.le1 d). Qed.
+
+Hint Resolve fdist_Rge0 : core.
+Hint Resolve fdist_Rle1 : core.
 
 Section barycenter_fdist_convn.
 Variables (n : nat) (B : finType).
@@ -571,19 +580,20 @@ Lemma ssum_fdist_convn :
   \ssum_(j <- enum B) scalept (fdist_convn p q j) (h j).
 Proof.
 transitivity (\ssum_i \ssum_(i0 <- enum B) scalept (p i) (scalept (q i i0) (h i0))).
-  admit. (*TODO: by apply eq_bigr => i _; rewrite big_morph_scalept// scalept0.*)
+  by apply eq_bigr => i _; rewrite big_morph_scalept// scalept0.
 rewrite exchange_big /=; apply eq_bigr => j _; rewrite fdist_convnE.
-admit. (*TODO:have HF i : (0 <= p i * q i j)%R by exact/mulR_ge0.
+have HF i : (0 <= p i * q i j)%R by exact/mulR_ge0.
 rewrite (scalept_sum _ (mkNNFun HF)) /=; apply eq_bigr => i _.
 by rewrite scaleptA.
-Qed.*)
-Admitted.
+Qed.
 
 End barycenter_fdist_convn.
 
 End real_cone_theory.
 
 Section real_cone_instance.
+Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
+
 Variable A : convType.
 Local Open Scope R_scope.
 Local Open Scope convex_scope.
@@ -599,17 +609,18 @@ Let addpt (a b : scaled A) :=
 Let addptC' : commutative addpt.
 Proof.
 move=> [r x|] [q y|] //=; congr (_ *: _); first by apply: val_inj; rewrite /= addRC.
-(*TODO: by rewrite convC; congr (_ <| _ |> _); exact/val_inj/onem_divRxxy.
-Qed.*)
-Admitted.
+rewrite convC; congr (_ <| _ |> _); apply/val_inj => /=.
+rewrite RdivE; first by rewrite RplusE onem_divRxxy.
+rewrite gt_eqF // RplusE. exact/RltP/Rpos_gt0.
+Qed.
 
 Let addptA' : associative addpt.
 Proof.
 move=> [p x|] [q y|] [r z|] //=; congr (_ *: _); first by apply val_inj; rewrite /= addRA.
-(*TODO: rewrite convA; congr (_ <| _ |> _ ); first exact: s_of_Rpos_probA.
+rewrite convA; congr (_<| _ |> _); first exact: s_of_Rpos_probA.
 by congr (_ <| _ |> _); exact: r_of_Rpos_probA.
-Qed.*)
-Admitted. 
+Qed.
+
 Let addpt0 : right_id (@Zero A) addpt. Proof. by case. Qed.
 
 Let add0pt : left_id (@Zero A) addpt. Proof. by case. Qed.
@@ -683,8 +694,11 @@ Let convpt1 a b : convpt (1%:pr) a b = a.
 Proof. by rewrite /convpt onem1 scale1pt scale0pt addpt0. Qed.
 
 Let convptmm (p : {prob R}) a : convpt p a a = a.
-(*TODO: Proof. by rewrite /convpt -scaleptDl // onemKC scale1pt. Qed.*)
-Admitted.
+Proof.
+rewrite /convpt -scaleptDl //; last first.
+  exact/RleP/(prob_ge0 (probcplt p)). (*TODO*)
+by rewrite RplusE onemKC scale1pt //.
+Qed.
 
 Let convptC (p : {prob R}) a b : convpt p a b = convpt (p.~)%:pr b a.
 Proof. by rewrite [RHS]addptC onemK. Qed.
@@ -693,11 +707,21 @@ Let convptA (p q : {prob R}) a b c :
   convpt p a (convpt q b c) = convpt [s_of p, q] (convpt [r_of p, q] a b) c.
 Proof.
 rewrite /convpt.
-(*TODO: rewrite !scaleptDr !scaleptA // -[RHS]addptA; congr addpt.
+rewrite !scaleptDr !scaleptA //; last 4 first.
+  exact/RleP/(prob_ge0 (probcplt _)). (*TODO*)
+  exact/RleP/(prob_ge0 (probcplt _)). (*TODO*)
+  exact/RleP/(prob_ge0 (probcplt _)). (*TODO*)
+  exact/RleP/(prob_ge0 (probcplt _)). (*TODO*)
+rewrite -[RHS]addptA; congr addpt.
   by rewrite (p_is_rs p q) mulRC.
-by rewrite pq_is_rs mulRC s_of_pqE onemK.
-Qed.*)
-Admitted.
+rewrite pq_is_rs mulRC.
+f_equal.
+f_equal.
+rewrite -[LHS]onemK.
+f_equal.
+apply/esym.
+apply: s_of_pqE.
+Qed.
 
 HB.instance Definition __cone := @isConvexSpace.Build (scaled A)
   (Choice.class [the choiceType of scaled A]) convpt convpt1 convptmm convptC
@@ -783,28 +807,31 @@ Section convex_space_prop1.
 Variables T : convType.
 Implicit Types a b : T.
 
-Lemma convA0 (p q r s : prob) a b c :
+Lemma convA0 (p q r s : {prob R}) a b c :
   p = (r * s)%R :> R -> (s.~ = p.~ * q.~)%R ->
   a <| p |> (b <| q |> c) = (a <| r |> b) <| s |> c.
 Proof.
 move=> H1 H2.
+rewrite /prob_coercion in H1, H2.
 have [r0|r0] := eqVneq r 0%:pr.
   rewrite r0 conv0 (_ : p = 0%:pr) ?conv0; last first.
     by apply/val_inj; rewrite /= H1 r0 mul0R.
   congr (_ <| _ |> _); move: H2; rewrite H1 r0 mul0R onem0 mul1R.
-  by move/(congr1 onem); rewrite !onemK => ?; exact/val_inj.
+  by move/(congr1 (@onem real_realType)); rewrite !onemK => ?; exact/val_inj.
 have [s0|s0] := eqVneq s 0%:pr.
   have p0 : p = 0%:pr by apply/val_inj; rewrite /= H1 s0 mulR0.
   rewrite s0 conv0 p0 // ?conv0.
   rewrite (_ : q = 0%:pr) ?conv0 //.
-  move: H2; rewrite p0 onem0 mul1R => /(congr1 onem); rewrite !onemK => sq.
+  move: H2; rewrite p0 onem0 mul1R => /(congr1 (@onem real_realType)); rewrite !onemK => sq.
   by rewrite -s0; exact/val_inj.
 rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
-  by apply val_inj; rewrite /= s_of_pqE -H2 onemK.
+Set Printing Coercions.
+(*TODO:  by apply val_inj; rewrite /= s_of_pqE -H2 onemK.
 by rewrite (@r_of_pq_is_r  _ _ r s).
-Qed.
+Qed.*)
+Admitted.
 
-Lemma convA' (r s : prob) a b c :
+Lemma convA' (r s : {prob R}) a b c :
   a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = (a <| r |> b) <| s |> c.
 Proof.
 have [/eqP|H] := eqVneq [p_of r, s] 1%:pr.
@@ -812,6 +839,10 @@ have [/eqP|H] := eqVneq [p_of r, s] 1%:pr.
 have [->|s0] := eqVneq s 0%:pr; first by rewrite p_of_r0 q_of_r0 3!conv0.
 by rewrite convA s_of_pqK// r_of_pqK.
 Qed.
+
+Lemma onem_probR_gt0 (p: {prob R}) : (0 <= p.~)%R.
+Admitted.
+Hint Resolve onem_probR_gt0 : core.
 
 Lemma convACA (a b c d : T) p q :
   (a <|q|> b) <|p|> (c <|q|> d) = (a <|p|> c) <|q|> (b <|p|> d).
@@ -822,11 +853,11 @@ rewrite (addptC (scalept (q * p) _)) !addptA -addptA -!scaleptA -?scaleptDr//.
 by rewrite !(addptC (scalept _.~ _)) !affine_conv.
 Qed.
 
-Lemma convDr (x y z : T) (p q : prob) :
+Lemma convDr (x y z : T) (p q : {prob R}) :
   x <| p |> (y <| q |> z) = (x <| p |> y) <| q |> (x <| p |> z).
 Proof. by rewrite -{1}(convmm q x) convACA. Qed.
 
-Lemma convACA' (a b c d : T) (p q r : prob) :
+Lemma convACA' (a b c d : T) (p q r : {prob R}) :
 (*
   let p1 := (q * p)%:opr in
   let p2 := (q.~ * r)%:opr in
@@ -878,8 +909,9 @@ rewrite /=; case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb]Hd.
     rewrite addpt0 (@scalept_gt0 _ 1).
     by congr (_ *: _); apply val_inj; rewrite /= mulR1.
   move=> i Hi; have := FDist.f1 d.
-  rewrite (bigD1 ord0) ?inE // Hd /= addRC => /(f_equal (Rminus^~ R1)).
-  by rewrite addRK subRR => /psumR_eq0P -> //; rewrite scale0pt.
+  rewrite (bigD1 ord0) ?inE // Hd /= -RplusE addRC => /(f_equal (Rminus^~ R1)).
+  rewrite addRK subRR => /psumR_eq0P -> //; first by rewrite scale0pt.
+  by move=> a a0; exact: fdist_Rge0.
 set d' := fdist_del Hd.
 set g' := fun i => g (fdist_del_idx ord0 i).
 rewrite /index_enum -enumT (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
@@ -889,7 +921,9 @@ rewrite 2!affine_conv/=; congr addpt.
 rewrite IH -barycenter_map scalept_barycenter //.
 rewrite /barycenter 2!big_map [in RHS]big_map.
 apply eq_bigr => i _.
-rewrite scaleptA // fdist_delE fdistD1E /=.
+rewrite scaleptA // fdist_delE; last exact: fdist_Rge0. rewrite fdistD1E /=.
+(*TODO 2023.07.21 ==== *)
+
 rewrite /Rdiv (mulRC (d _)) mulRA mulRV ?mul1R //.
 by move: (Hd); apply contra => /eqP Hd'; rewrite -onem0 -Hd' onemK.
 Qed.
