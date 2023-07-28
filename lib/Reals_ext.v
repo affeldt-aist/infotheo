@@ -356,7 +356,7 @@ Proof. rewrite /onem; field. Qed.
 Lemma onemM p q : (p * q).~ = p.~ + q.~ - p.~ * q.~.
 Proof. rewrite /onem; field. Qed.
 *)
-Lemma onem_div p q : q != 0 -> (p / q).~ = (q - p)  /q.
+Lemma onem_div p q : q != 0 -> (p / q)%R.~ = (q - p)  /q.
 Proof.
 move=> Hq.
 rewrite /onem.
@@ -365,10 +365,6 @@ rewrite mulRDl.
 rewrite mulNR.
 rewrite -/(q / q).
 rewrite divRR//.
-rewrite addR_opp.
-rewrite -/(p / q).
-rewrite RminusE.
-by rewrite RdivE.
 Qed.
 (*
 Lemma onem_prob r : R0 <b= r <b= R1 -> R0 <b= r.~ <b= R1.

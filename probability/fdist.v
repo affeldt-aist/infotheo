@@ -631,7 +631,6 @@ Hypothesis card_A : #|A| = 2%nat.
 
 Lemma charac_bdist : {r : prob R | P = fdist_binary card_A r (Set2.a card_A)}.
 Proof.
-Check FDist.f1 P.
 destruct P as [pf pf01].
 have rb : 0 <= pf (Set2.b card_A) <= 1.
   move: (FDist.le1 (FDist.mk pf01) (Set2.b card_A)) => /= H1.

@@ -103,6 +103,12 @@ Proof. by case: p => p /= /andP []. Qed.
 End prob_lemmas.
 Global Hint Resolve prob_ge0 : core.
 Global Hint Resolve prob_le1 : core.
+
+#[export] Hint Extern 0 (is_true (Prob.p _ <= 1)%R) =>
+  exact/prob_le1 : core.
+#[export] Hint Extern 0 (is_true (0 <= Prob.p _)%R) =>
+  exact/prob_ge0 : core.
+
 Arguments prob0 {R}.
 Arguments prob1 {R}.
 (* ---- ---- *)
