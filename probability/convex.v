@@ -2025,29 +2025,31 @@ Proof.
 by apply/fdist_ext => a0; rewrite fdist_convE mulrBl mul1r addrCA addrN addr0.
 Qed.
 
-(*==== 2023.07.28 ====*)
+Open Scope ring_scope.
+
 Let convA p q a b c :
   (a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c)%fdist.
 Proof.
 apply/fdist_ext => a0 /=; rewrite 4!fdist_convE /=.
 set r := r_of_pq p q.  set s := s_of_pq p q.
-transitivity (p * a a0 + p.~ * q * b a0 + p.~ * q.~ * c a0)%R; first lra.
-transitivity (r * s * a a0 + r.~ * s * b a0 + s.~ * c a0)%R; last first.
-  by rewrite 2!(mulRC _ s) -2!mulRA -mulRDr.
-rewrite s_of_pqE onemK; congr (_ + _)%R.
-rewrite (_ : (p.~ * q.~).~ = [s_of p, q]); last by rewrite s_of_pqE.
-by rewrite -pq_is_rs -p_is_rs.
-Qed.
+transitivity (prob_coercion p * a a0 + p.~ * Prob.p q * b a0 + p.~ * q.~ * c a0). (*; first lra <-TODO*)
+  admit.
+transitivity (prob_coercion r * s * a a0 + r.~ * s * b a0 + s.~ * c a0); last first.
+  by rewrite 2!(mulrC _ (prob_coercion s)) -2!mulrA -mulrDr.
+rewrite -!RmultE.
+by congr (_ + _ + _);
+  [rewrite (p_is_rs p q) | rewrite -pq_is_rs | rewrite -[Prob.p s]/(prob_coercion s) s_of_pqE onemK].
+Admitted.
 
-HB.instance Definition _  := @isConvexSpace.Build (fdist A)
-  (Choice.class (choice_of_Type (fdist A)))
-  (@fdist_conv A) conv1 convmm convC convA.
+HB.instance Definition _  := @isConvexSpace.Build (real_realType.-fdist A)
+  (Choice.class (choice_of_Type (real_realType.-fdist A)))
+  (@fdist_conv _ A) conv1 convmm convC convA.
 End fdist_convex_space.
 
 Section scaled_convex_lemmas_depending_on_T_convType.
 Local Open Scope R_scope.
 
-Lemma scalept_conv (T : convType) (x y : R) (s : scaled T) (p : prob):
+Lemma scalept_conv (T : convType) (x y : R) (s : scaled T) (p : {prob R}):
   0 <= x -> 0 <= y ->
   scalept (x <|p|> y) s = scalept x s <|p|> scalept y s.
 Proof.
@@ -2056,7 +2058,7 @@ by rewrite convptE !scaleptA.
 Qed.
 
 Lemma big_scalept_conv_split (T : convType) (I : Type) (r : seq I) (P : pred I)
-  (F G : I -> scaled T) (p : prob) :
+  (F G : I -> scaled T) (p : {prob R}) :
     \ssum_(i <- r | P i) (F i <|p|> G i) =
     (\ssum_(i <- r | P i) F i) <|p|> \ssum_(i <- r | P i) G i.
 Proof.
@@ -2098,8 +2100,9 @@ End scaled_convex_lemmas_depending_on_T_convType.
 
 Module Convn_finType.
 Section def.
-Local Open Scope R_scope.
-Variables (A : convType) (T : finType) (d' : {fdist T}) (f : T -> A).
+Local Open Scope ring_scope.
+
+Variables (A : convType) (T : finType) (d' : real_realType.-fdist T) (f : T -> A).
 Let n := #| T |.
 
 Definition t0 : T.
@@ -2115,7 +2118,7 @@ Lemma d_enum0 : forall b, 0 <= d_enum b. Proof. by move=> ?; rewrite ffunE. Qed.
 
 Lemma d_enum1 : \sum_(b in 'I_n) d_enum b = 1.
 Proof.
-rewrite -(@FDist.f1 T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
+rewrite -(@FDist.f1 real_realType T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
 rewrite (@reindex _ _ _ _ _ enum_rank) //; last first.
   by exists enum_val => i; [rewrite enum_rankK | rewrite enum_valK].
 apply eq_bigr => i _; congr (d' _); by rewrite -[in RHS](enum_rankK i).
@@ -2133,7 +2136,7 @@ End Convn_finType.
 Export Convn_finType.Exports.
 
 Section S1_Convn_finType.
-Variables (A : convType) (T : finType) (d : {fdist T}) (f : T -> A).
+Variables (A : convType) (T : finType) (d : real_realType.-fdist T) (f : T -> A).
 
 Lemma S1_Convn_finType : S1 (<$>_d f) = \ssum_i scalept (d i) (S1 (f i)).
 Proof.
@@ -2148,7 +2151,7 @@ End S1_Convn_finType.
 
 Section S1_proj_Convn_finType.
 Variables (A B : convType) (prj : {affine A -> B}).
-Variables (T : finType) (d : {fdist T}) (f : T -> A).
+Variables (T : finType) (d : real_realType.-fdist T) (f : T -> A).
 
 Lemma S1_proj_Convn_finType :
   S1 (prj (<$>_d f)) = \ssum_i scalept (d i) (S1 (prj (f i))).
@@ -2252,9 +2255,9 @@ Section convtype.
 Local Open Scope convex_scope.
 Variable A : orderedConvType.
 Notation T := (T A).
-Implicit Types p q : prob.
+Implicit Types p q : {prob R}.
 
-Definition unbox (x : T) := match x with mkOpp x' => x' end.
+Definition unbox (x : T)  := match x with mkOpp x' => x' end.
 
 Definition avg p a b := mkOpp (unbox a <| p |> unbox b).
 
@@ -2267,6 +2270,7 @@ Proof. by case x=>x';rewrite/avg/unbox/=convmm. Qed.
 Lemma avgC p x y : avg p x y = avg p.~%:pr y x.
 Proof. by case x;case y=>y' x'; rewrite/avg/unbox/=convC. Qed.
 
+(* ??? 2023 08 04 ??? *)
 Lemma avgA p q d0 d1 d2 :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. by case d0;case d1;case d2=>d2' d1' d0';rewrite/avg/unbox/=convA. Qed.
