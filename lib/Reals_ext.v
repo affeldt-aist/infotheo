@@ -443,21 +443,19 @@ Lemma prob_le1 (p : prob) : p <= 1.
 Proof. by case: p => p /= /leR2P[]. Qed.
 Global Hint Resolve prob_le1 : core.*)
 
-Reserved Notation "{ 'prob' T }" (at level 0, format "{ 'prob'  T }").
-Definition prob_of (R : realType) := fun phT : phant (Num.NumDomain.sort (*Real.sort*)R) => @prob R.
+(*Reserved Notation "{ 'prob' T }" (at level 0, format "{ 'prob'  T }").
+Definition prob_of (R : realType) := fun phT : phant (Num.NumDomain.sort (*Real.sort*)R) => @prob R.*)
 Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).
 Definition prob_coercion (p : {prob R}) : R := Prob.p p.
-Notation Prob_R := ({prob R}).
-Coercion prob_coercion : Prob_R  >-> R.
-(*Coercion Prob.p : Prob_R >-> R.*)
+(*Coercion Prob.p : {prob R} >-> R.*)
 
 
-Lemma probR_ge0 (p : {prob R}) : 0 <= p. Proof. exact/RleP/prob_ge0. Qed.
-Lemma probR_le1 (p : {prob R}) : p <= 1. Proof. exact/RleP/prob_le1. Qed.
+Lemma probR_ge0 (p : {prob R}) : 0 <= Prob.p p. Proof. exact/RleP/prob_ge0. Qed.
+Lemma probR_le1 (p : {prob R}) : Prob.p p <= 1. Proof. exact/RleP/prob_le1. Qed.
 #[global] Hint Extern 0 (Rle (IZR Z0) _) => solve [exact/probR_ge0] : core.
 #[global] Hint Extern 0 (Rle _ (IZR (Zpos xH))) => solve [exact/probR_le1] : core.
 
-Section prob_lemmas.
+(*Section prob_lemmas.
 Implicit Types p q : {prob R}.
 
 Lemma prob_gt0 p : p != 0%:pr <-> 0 < p.
@@ -521,7 +519,7 @@ have /leR_eqVlt[q1|] := probR_le1 q; last first.
 by split; apply val_inj.
 Qed.
 
-End prob_lemmas.
+End prob_lemmas.*)
 
 Lemma prob_IZR (p : positive) : (0 <= / IZR (Zpos p) <= 1)%R.
 Proof.
@@ -575,7 +573,7 @@ Qed.
 Canonical probinvn (n : nat) :=
   Eval hnf in @Prob.mk _ (/ INR (1 + n)) (prob_invn' n).
 
-Lemma prob_invp (p : {prob R}) : (0 <= 1 / (1 + p) <= 1)%R.
+Lemma prob_invp (p : {prob R}) : (0 <= 1 / (1 + Prob.p p) <= 1)%R.
 Proof.
 split.
 - by apply divR_ge0 => //; exact: addR_gt0wl.
@@ -583,7 +581,7 @@ split.
   by rewrite addRC -leR_subl_addr subRR.
 Qed.
 
-Lemma prob_invp' (p : {prob R}) : (@Order.le _ _ 0 (1 / (1 + p)) && @Order.le _ _ (1 / (1 + p)) 1)%R.
+Lemma prob_invp' (p : {prob R}) : (@Order.le _ _ 0 (1 / (1 + Prob.p p)) && @Order.le _ _ (1 / (1 + Prob.p p)) 1)%R.
 Proof.
 have [/RleP ? /RleP ?] := prob_invp p.
 exact/andP.
@@ -591,26 +589,26 @@ Qed.
 
 Definition Prob_invp (p : {prob R}) := Prob.mk (prob_invp' p).
 
-Lemma prob_mulR (p q : {prob R}) : (0 <= p * q <= 1)%R.
+Lemma prob_mulR (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%R.
 Proof.
 by split; [exact/mulR_ge0 |rewrite -(mulR1 1%R); apply leR_pmul].
 Qed.
 
-Lemma prob_mulR' (p q : {prob R}) : (@Order.le _ _ 0 (p * q) && @Order.le _ _ (p * q) 1)%R.
+Lemma prob_mulR' (p q : {prob R}) : (@Order.le _ _ 0 (Prob.p p * Prob.p q) && @Order.le _ _ (Prob.p p * Prob.p q) 1)%R.
 Proof.
 have [/RleP ? /RleP ?] := prob_mulR p q.
 exact/andP.
 Qed.
 
 Canonical probmulR (p q : {prob R}) :=
-  Eval hnf in @Prob.mk _ (prob_coercion p * q) (prob_mulR' p q).
+  Eval hnf in @Prob.mk _ (prob_coercion p * Prob.p q) (prob_mulR' p q).
 
 (*Module OProb.
 Section def.
 Record t := mk {
-  p :> prob ;
-  Op1 : (0 <b p <b 1)%R }.
-Definition O1 (p : t) : 0 <b p <b 1 := Op1 p.
+  p :> {prob R};
+  Op1 : (0 <b Prob.p p <b 1)%R }.
+Definition O1 (p : t) : 0 <b Prob.p p <b 1 := Op1 p.
 Arguments O1 : simpl never.
 End def.
 Module Exports.
@@ -864,16 +862,18 @@ Definition s_of_pq (p q : {prob R}) : {prob R} := locked (p.~ * q.~).~%:pr.
 
 Notation "[ 's_of' p , q ]" := (s_of_pq p q) : reals_ext_scope.
 
-Lemma s_of_pqE (p q : {prob R}) : [s_of p, q] = (p.~ * q.~).~ :> R.
+Lemma s_of_pqE (p q : {prob R}) : Prob.p [s_of p, q] = (p.~ * q.~).~ :> R.
 Proof. by rewrite /s_of_pq; unlock. Qed.
 
-(* TODO 
-Lemma s_of_pq_oprob (p q : oprob) : 0 <b [s_of p, q] <b 1.
+Lemma s_of_pq_oprob (p q : {oprob R}) : 0 < Prob.p [s_of OProb.p p, OProb.p q] < 1.
 Proof.
-rewrite s_of_pqE (_ : (p.~ * q.~).~ = (p.~ * q.~).~%:opr) //=; exact: OProb.O1.
-Qed.
-Canonical oprob_of_s_of_pq (p q : oprob) := Eval hnf in OProb.mk (s_of_pq_oprob p q).
-*)
+(*rewrite s_of_pqE (_ : (p.~ * q.~).~ = (p.~ * q.~).~%:opr) //=; exact: OProb.O1.
+Qed. TODO*)
+Admitted.
+Lemma s_of_pq_oprob' (p q : {oprob R}) : (0 < Prob.p [s_of OProb.p p, OProb.p q] < 1)%O.
+Admitted. (*TODO*)
+Canonical oprob_of_s_of_pq (p q : {oprob R}) := Eval hnf in OProb.mk (s_of_pq_oprob' p q).
+
 
 Lemma s_of_p0 (p : {prob R}) : [s_of p, 0%:pr] = p.
 Proof. (*by apply/val_inj; rewrite /= s_of_pqE onem0 mulR1 onemK. Qed.*) Admitted.
@@ -887,10 +887,10 @@ Proof. (*by apply/val_inj; rewrite /= s_of_pqE onem1 mulR0 onem0. Qed.*) Admitte
 Lemma s_of_1q (q : {prob R}) : [s_of 1%:pr, q] = 1%:pr.
 Proof. (*by apply/val_inj; rewrite /= s_of_pqE onem1 mul0R onem0. Qed.*) Admitted.
 
-Lemma s_of_pqE' (p q : {prob R}) : [s_of p, q] = p + p.~ * q :> R.
+Lemma s_of_pqE' (p q : {prob R}) : Prob.p [s_of p, q] = Prob.p p + p.~ * Prob.p q :> R.
 Proof. (*rewrite s_of_pqE /= /onem; field. Qed.*) Admitted.
 
-Lemma s_of_gt0 p q : p != 0%:pr -> 0 < [s_of p, q].
+Lemma s_of_gt0 p q : p != 0%:pr -> 0 < Prob.p [s_of p, q].
 Proof.
 (*move=> ?; rewrite s_of_pqE';
   apply addR_gt0wl; [exact/prob_gt0 | exact: mulR_ge0].
@@ -899,10 +899,10 @@ Qed.*) Admitted.
 (*Lemma s_of_gt0_oprob (p : oprob) (q : prob) : 0 < [s_of p, q].
 Proof. by apply/s_of_gt0/oprob_neq0. Qed.*)
 
-Lemma ge_s_of (p q : {prob R}) : p <= [s_of p, q].
+Lemma ge_s_of (p q : {prob R}) : Prob.p p <= Prob.p [s_of p, q].
 Proof. (*rewrite s_of_pqE' addRC -leR_subl_addr subRR; exact/mulR_ge0. Qed.*) Admitted.
 
-Lemma r_of_pq_prob (p q : {prob R}) : 0 <= p / [s_of p, q] <= 1.
+Lemma r_of_pq_prob (p q : {prob R}) : 0 <= Prob.p p / Prob.p [s_of p, q] <= 1.
 (* TODO
 Proof.
 case/boolP : (p == 0%:pr :> prob) => p0.
@@ -916,35 +916,38 @@ Qed.
 *)
 Admitted.
 
-Lemma r_of_pq_prob' (p q : {prob R}) : @Order.le _ _ 0 (p / [s_of p, q])
-                                       && @Order.le _ _ (p / [s_of p, q]) 1.
+Lemma r_of_pq_prob' (p q : {prob R}) : @Order.le _ _ 0 (Prob.p p / Prob.p [s_of p, q])
+                                       && @Order.le _ _ (Prob.p p / Prob.p [s_of p, q]) 1.
 Proof. (*TODO*) Admitted.
 
 Definition r_of_pq (p q : {prob R}) : {prob R} := locked (Prob.mk (r_of_pq_prob' p q)).
 
 Notation "[ 'r_of' p , q ]" := (r_of_pq p q) : reals_ext_scope.
 
-Lemma r_of_pqE (p q : {prob R}) : [r_of p, q] = p / [s_of p, q] :> R.
+Lemma r_of_pqE (p q : {prob R}) : Prob.p [r_of p, q] = Prob.p p / Prob.p [s_of p, q] :> R.
 Proof. by rewrite /r_of_pq; unlock. Qed.
 
-(*Lemma r_of_pq_oprob (p q : oprob) : 0 <b [r_of p, q] <b 1.
-Proof.
+Lemma r_of_pq_oprob (p q : {oprob R}) : 0 < Prob.p [r_of OProb.p p, OProb.p q] < 1.
+(*TODO: Proof.
 rewrite r_of_pqE.
 apply/andP; split; apply/ltRP; first by apply divR_gt0.
 rewrite ltR_pdivr_mulr ?mul1R; last by apply/(oprob_gt0).
 rewrite ltR_neqAle; split; last by apply/ge_s_of.
 rewrite s_of_pqE'; apply/eqP/ltR_eqF/ltR_addl.
 by apply/oprob_gt0.
-Qed.
-Canonical oprob_of_r_of_pq (p q : oprob) := Eval hnf in OProb.mk (r_of_pq_oprob p q).
-*)
+Qed.*)
+Admitted.
+Lemma r_of_pq_oprob' (p q : {oprob R}) : (0 < Prob.p [r_of OProb.p p, OProb.p q] < 1)%O.
+Admitted. (*TODO*)
+Canonical oprob_of_r_of_pq (p q : {oprob R}) := Eval hnf in OProb.mk (r_of_pq_oprob' p q).
+
 
 Lemma r_of_p0 (p : {prob R}) : p != 0%:pr -> [r_of p, 0%:pr] = 1%:pr.
 (*Proof. by move=> p0; apply val_inj; rewrite /= r_of_pqE s_of_p0 divRR. Qed.*)
 Admitted.
 
-(*Lemma r_of_p0_oprob (p : oprob) : [r_of p, 0%:pr] = 1%:pr.
-Proof. by apply/r_of_p0/oprob_neq0. Qed.*)
+Lemma r_of_p0_oprob (p : {oprob R}) : [r_of OProb.p p, 0%:pr] = 1%:pr.
+Proof. by apply/r_of_p0/oprob_neq0. Qed.
 
 Lemma r_of_0q (q : {prob R}) : [r_of 0%:pr, q] = 0%:pr.
 (*Proof. by apply/val_inj; rewrite /= r_of_pqE div0R. Qed.*)
@@ -958,18 +961,18 @@ Lemma r_of_1q (q : {prob R}) : [r_of 1%:pr, q] = 1%:pr.
 (*Proof. by apply/val_inj; rewrite /= r_of_pqE s_of_1q divR1. Qed.*)
 Admitted.
 
-Lemma p_is_rs (p q : {prob R}) : p = [r_of p, q] * [s_of p, q] :> R.
+Lemma p_is_rs (p q : {prob R}) : Prob.p p = Prob.p [r_of p, q] * Prob.p [s_of p, q] :> R.
 Proof.
 case/boolP : (p == 0%:pr :> {prob R}) => p0; first by rewrite (eqP p0) r_of_0q mul0R.
 case/boolP : (q == 0%:pr :> {prob R}) => q0.
   by rewrite (eqP q0) s_of_p0 r_of_p0 // mul1R.
 rewrite r_of_pqE /Rdiv -mulRA mulVR ?mulR1 //.
-suff : [s_of p, q] != 0 :> R by [].
-by rewrite prob_gt0; apply s_of_gt0.
+suff : Prob.p [s_of p, q] != 0 :> R by [].
+by rewrite prob_gt0; apply/RltP/s_of_gt0.
 Qed.
 
 Lemma r_of_pq_is_r (p q r s : {prob R}) : r != 0%:pr -> s != 0%:pr ->
-  p = r * s :> R -> s.~ = p.~ * q.~ -> [r_of p, q] = r.
+  Prob.p p = Prob.p r * Prob.p s :> R -> s.~ = p.~ * q.~ -> [r_of p, q] = r.
 Proof.
 move=> r0 s0 H1 H2; apply val_inj => /=.
 (*rewrite r_of_pqE eqR_divr_mulr; last by rewrite s_of_pqE -H2 onemK.
@@ -982,7 +985,7 @@ Admitted.
   p = r * s :> R -> s.~ = p.~ * q.~ -> [r_of p, q] = r.
 Proof. apply/r_of_pq_is_r/oprob_neq0/oprob_neq0. Qed.*)
 
-Lemma p_of_rs_prob (r s : {prob R}) : (0 <= r * s <= 1)%O.
+Lemma p_of_rs_prob (r s : {prob R}) : (0 <= Prob.p r * Prob.p s <= 1)%O.
 Proof.
 move: r s => -[] r /andP [] /leRP r0 /leRP r1 -[] s /= /andP [] /leRP s0 /leRP s1.
 apply/andP; split; apply/leRP; [exact/mulR_ge0 | rewrite -(mulR1 1); exact: leR_pmul].
@@ -991,13 +994,12 @@ Qed.
 Definition p_of_rs (r s : {prob R}) : {prob R} := locked (Prob.mk (p_of_rs_prob r s)).
 
 Notation "[ 'p_of' r , s ]" := (p_of_rs r s) : reals_ext_scope.
-Set Printing Coercions.
-Lemma p_of_rsE (r s : {prob R}) : [p_of r, s] = r * s :> R.
+Lemma p_of_rsE (r s : {prob R}) : Prob.p [p_of r, s] = Prob.p r * Prob.p s :> R.
 Proof. by rewrite /p_of_rs; unlock. Qed.
 
 (*Lemma p_of_rs_oprob (r s : oprob) : 0 <b [p_of r, s] <b 1.
 Proof. by rewrite p_of_rsE; apply/OProb.O1. Qed.
-Canonical oprob_of_p_of_rs (r s : oprob) := Eval hnf in OProb.mk (p_of_rs_oprob r s).*)
+Canonical oprob_of_p_of_rs (r s : oprob) := Eval hnf OProb.mk (p_of_rs_oprob r s).*)
 
 Lemma p_of_r1 (r : {prob R}) : [p_of r, 1%:pr] = r.
 (*Proof. by apply val_inj; rewrite /= p_of_rsE mulR1. Qed.*)
@@ -1019,7 +1021,7 @@ Lemma p_of_rsC (r s : {prob R}) : [p_of r, s] = [p_of s, r].
 (*Proof. by apply/val_inj; rewrite /= !p_of_rsE mulRC. Qed.*)
 Admitted.
 
-Lemma p_of_neq1 (p q : {prob R}) : 0 < p < 1 -> [p_of q, p] != 1%:pr.
+Lemma p_of_neq1 (p q : {prob R}) : 0 < Prob.p p < 1 -> [p_of q, p] != 1%:pr.
 Proof.
 case=> p0 p1; apply/eqP => pq1; move: (p1).
 rewrite [X in _ < X -> _](_ : _ = Prob.p 1%:pr) //.
@@ -1056,7 +1058,7 @@ apply: (iffP idP);
   [by case/andP => /eqP -> /eqP -> | by case => -> ->; rewrite eqxx].
 Qed.
 
-Lemma q_of_rs_prob (r s : {prob R}) : (0 <= (r.~ * s) / [p_of r, s].~ <= 1)%O.
+Lemma q_of_rs_prob (r s : {prob R}) : (0 <= (r.~ * Prob.p s) / [p_of r, s].~ <= 1)%O.
 Proof.
 case/boolP : (r == 1%:pr :> {prob R}) => r1.
   rewrite (eqP r1) onem1 mul0R div0R; apply/andP; split; apply/leRP => //; exact/leRR.
@@ -1077,7 +1079,7 @@ Definition q_of_rs (r s : {prob R}) : {prob R} := locked (Prob.mk (q_of_rs_prob 
 
 Notation "[ 'q_of' r , s ]" := (q_of_rs r s) : reals_ext_scope.
 
-Lemma q_of_rsE (r s : {prob R}) : [q_of r, s] = (r.~ * s) / [p_of r, s].~ :> R.
+Lemma q_of_rsE (r s : {prob R}) : Prob.p [q_of r, s] = (r.~ * Prob.p s) / [p_of r, s].~ :> R.
 Proof. by rewrite /q_of_rs; unlock. Qed.
 
 (*Lemma q_of_rs_oprob (r s : oprob) : 0 <b [q_of r, s] <b 1.
@@ -1110,7 +1112,7 @@ Lemma q_of_1s (s : {prob R}) : [q_of 1%:pr, s] = 0%:pr.
 (*Proof. by apply/val_inj => /=; rewrite q_of_rsE onem1 mul0R div0R. Qed.*)
 Admitted.
 
-Lemma pq_is_rs (p q : {prob R}) : p.~ * q = [r_of p, q].~ * [s_of p, q].
+Lemma pq_is_rs (p q : {prob R}) : p.~ * Prob.p q = [r_of p, q].~ * Prob.p [s_of p, q].
 Proof.
 case/boolP : (p == 0%:pr :> {prob R}) => p0.
   by rewrite (eqP p0) onem0 mul1R r_of_0q onem0 mul1R s_of_0q.
