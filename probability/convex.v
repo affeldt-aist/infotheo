@@ -1589,13 +1589,13 @@ Let avgA p q (d0 d1 d2 : E) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof.
 rewrite /avg /onem.
-set s := prob_coercion [s_of p, q].
-set r := prob_coercion [r_of p, q].
+set s := Prob.p [s_of p, q].
+set r := Prob.p [r_of p, q].
 rewrite (scalerDr s) -addrA (scalerA s) (mulrC s); congr add.
   by rewrite /prob_coercion (p_is_rs p q) -/s.
 rewrite scalerDr (scalerA _ _ d2).
 rewrite -/p.~ -/q.~ -/r.~ -/s.~.
-rewrite {2}/s /prob_coercion (s_of_pqE p q) onemK; congr add.
+rewrite {2}/s (s_of_pqE p q) onemK; congr add.
 rewrite 2!scalerA; congr scale.
 have ->: p.~ * Prob.p q = (p.~ * Prob.p q)%coqR by [].
 by rewrite pq_is_rs -/r -/s mulrC.

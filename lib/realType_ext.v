@@ -25,22 +25,25 @@ Section onem.
   Definition onem (x: R) := 1 - x.
   Local Notation "p '.~'" := (onem p).
 
-  Lemma onemK (x : R): onem (onem x) = x.
-  Proof.
-    by rewrite /onem opprB addrA addrC addrA (addrC (-1) 1) subrr add0r.
-  Qed.
-
-  Lemma onem_le1 x : 0 <= x -> onem x <= 1.
-  Proof. move=> ?; by rewrite /onem ler_subl_addr -ler_subl_addl subrr. Qed.
-
-  Lemma onem_ge0 x : x <= 1 -> 0 <= onem x.
-  Proof. move=> ?; by rewrite /onem subr_ge0. Qed.
-
   Lemma onem0 : onem 0 = 1.
   Proof. by rewrite /onem subr0. Qed.
 
   Lemma onem1 : onem 1 = 0.
   Proof. by rewrite /onem subrr. Qed.
+
+  Lemma onem_ge0 x : x <= 1 -> 0 <= onem x.
+  Proof. move=> ?; by rewrite /onem subr_ge0. Qed.
+  Lemma onem_le1 x : 0 <= x -> onem x <= 1.
+  Proof. move=> ?; by rewrite /onem ler_subl_addr -ler_subl_addl subrr. Qed.
+
+  Lemma onem_le  r s : (r <= s) = (s.~ <= r.~).
+  Proof. Admitted.
+  Lemma onemK (x : R): onem (onem x) = x.
+  Proof.
+    by rewrite /onem opprB addrA addrC addrA (addrC (-1) 1) subrr add0r.
+  Qed.
+
+
 
   Lemma onemKC r : r + (onem r) = 1.
   Proof. 
@@ -64,6 +67,9 @@ Section onem.
   Lemma onem_gt0 r : r < 1 -> 0 < r.~. Proof. rewrite /onem; lra. Qed.
 
   Lemma onem_lt1 r : 0 < r -> r.~ < 1. Proof. rewrite /onem; lra. Qed.
+
+  Lemma subr_onem r s : r - s.~ = r + s - 1.
+  Proof. by rewrite /onem opprB addrA. Qed.
 
   Lemma onem_oprob r : 0 < r < 1 -> 0 < r.~ < 1.
   Proof.
