@@ -140,8 +140,8 @@ Global Hint Resolve FDist.le1 : core.
 
 Definition fdist_of (R : realType) (A : finType) :=
   fun phT : phant (Finite.sort A) => fdist R A.
-Notation "{ 'fdist' T }" := (fdist_of _ (Phant T)) : fdist_scope.
 Notation "R '.-fdist' T" := (fdist_of R (Phant T)) : fdist_scope.
+Notation "{ 'fdist' T }" := (fdist_of real_realType (Phant T)) : fdist_scope.
 
 Lemma fdist_ge0_le1 (R : numDomainType) (A : finType) (d : fdist R A) a :
   (0 <= d a <= 1)%R.
@@ -262,7 +262,7 @@ Section fdist1_prop.
 Local Open Scope ring_scope.
 Variable (R : realType) (A : finType).
 
-Lemma fdist1P (d : {fdist A}) a :
+Lemma fdist1P (d : R.-fdist A) a :
   reflect (forall i, i != a -> d i = 0) (d a == 1 :> R).
 Proof.
 apply: (iffP idP) => [/eqP H b ?|H].
@@ -274,7 +274,7 @@ apply: (iffP idP) => [/eqP H b ?|H].
 Qed.
 
 Lemma fdist1E1 (d' : fdist R A) a :
-  (d' a == 1 :> R) = (d' == fdist1 a :> {fdist A}).
+  (d' a == 1 :> R) = (d' == fdist1 a :> R.-fdist A).
 Proof.
 apply/idP/idP => [Pa1|/eqP ->]; last by rewrite fdist1E eqxx.
 apply/eqP/fdist_ext => a0; rewrite fdist1E.
@@ -283,7 +283,7 @@ by rewrite (eqP Ha); exact/eqP.
 by move/fdist1P : Pa1 => ->.
 Qed.
 
-Lemma fdist1I1 (d : {fdist 'I_1}) : d = fdist1 ord0 :> fdist R _.
+Lemma fdist1I1 (d : R.-fdist 'I_1) : d = fdist1 ord0 :> fdist R _.
 Proof.
 apply/fdist_ext => /= i; rewrite fdist1E (ord1 i) eqxx.
 by move: (FDist.f1 d); rewrite big_ord_recl big_ord0 addr0.
@@ -355,7 +355,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A B : finType) (g : A -> B) (p : fdist R A).
 
-Definition fdistmap : {fdist B} := p >>= (fun a => fdist1 (g a)).
+Definition fdistmap : R.-fdist B := p >>= (fun a => fdist1 (g a)).
 
 Lemma fdistmapE (b : B) : fdistmap b = \sum_(a in A | a \in g @^-1 b) p a.
 Proof.
@@ -384,7 +384,7 @@ End fdistmap_prop.
 
 Section fdist_uniform.
 Local Open Scope ring_scope.
-Variable R : numFieldType.
+Context {R : numFieldType}.
 Variables (A : finType) (n : nat).
 
 Hypothesis domain_not_empty : #|A| = n.+1.
@@ -413,7 +413,7 @@ Local Open Scope ring_scope.
 Variable R : numFieldType.
 
 Lemma fdist_uniform_neq0 (C : finType) (domain_non_empty : { m : nat | #| C | = m.+1 }) :
-  forall x, fdist_uniform R (projT2 domain_non_empty) x != 0.
+  forall x, @fdist_uniform R _ _ (projT2 domain_non_empty) x != 0.
 Proof.
 move=> c; rewrite fdist_uniformE invr_eq0 pnatr_eq0.
 by case domain_non_empty => x' ->.
@@ -430,7 +430,7 @@ Lemma dominatesP (R: realType) A (Q P : A -> R) :
 Proof. by rewrite /dominates; unlock. Qed.
 
 Lemma dom_by_uniform (R: realType) A (P : fdist R A) n (An1 : #|A| = n.+1) :
-  P `<< fdist_uniform R An1.
+  P `<< fdist_uniform An1.
 Proof.
 apply/dominatesP => a; rewrite fdist_uniformE => /esym abs; exfalso.
 by move: abs; rewrite An1; apply/eqP; rewrite lt_eqF // invr_gt0 ltr0n.
@@ -670,7 +670,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variable p : prob R.
 
-Definition fdistI2: {fdist 'I_2} :=
+Definition fdistI2: R.-fdist 'I_2 :=
   fdist_binary (card_ord 2) p (lift ord0 ord0).
 
 Lemma fdistI2E a : fdistI2 a = if a == ord0 then p : R else p.~.
@@ -730,7 +730,7 @@ rewrite -{1}(FDist.f1 d1) -(FDist.f1 d2) big_split_ord /=; congr (_ + _).
   + by rewrite eqn_add2l => /eqP ik; congr (_ * d2 _); exact/val_inj.
 Qed.
 
-Definition fdist_add : {fdist 'I_(n + m)} := locked (FDist.make f0 f1).
+Definition fdist_add : R.-fdist 'I_(n + m) := locked (FDist.make f0 f1).
 
 Lemma fdist_addE i : fdist_add i =
   match fintype.split i with inl a => (p : R) * d1 a | inr a => p.~ * d2 a end.
@@ -743,7 +743,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (n : nat) (P : R.-fdist 'I_n.+1) (j : 'I_n.+1) (Pj_neq1 : P j != 1).
 
-Let D : {fdist 'I_n.+1} := fdistD1 Pj_neq1.
+Let D : R.-fdist 'I_n.+1 := fdistD1 Pj_neq1.
 
 Let h (i : 'I_n) := if (i < j)%nat then widen_ord (leqnSn _) i else lift ord0 i.
 
@@ -770,7 +770,7 @@ rewrite -2!leqNgt andbC eq_sym -ltn_neqAle ltnS.
 case: ifPn => // ji; by rewrite /h ffunE ltnNge ji.
 Qed.
 
-Definition fdist_del : {fdist 'I_n} := locked (FDist.make f0 f1).
+Definition fdist_del : R.-fdist 'I_n := locked (FDist.make f0 f1).
 
 Lemma fdist_delE i : fdist_del i = D (h i).
 Proof. by rewrite /fdist_del; unlock; rewrite ffunE. Qed.
@@ -784,9 +784,9 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (n : nat) (P : fdist_of R (Phant 'I_n.+1)) (Pmax_neq1 : P ord_max != 1).
 
-Let D : {fdist 'I_n.+1} := fdistD1 Pmax_neq1.
+Let D : R.-fdist 'I_n.+1 := fdistD1 Pmax_neq1.
 
-Definition fdist_belast : {fdist 'I_n} := locked (fdist_del Pmax_neq1).
+Definition fdist_belast : R.-fdist 'I_n := locked (fdist_del Pmax_neq1).
 
 Lemma fdist_belastE i : fdist_belast i = D (widen_ord (leqnSn _) i).
 Proof. by rewrite /fdist_belast; unlock; rewrite fdist_delE ltn_ord. Qed.
@@ -829,7 +829,7 @@ apply/fdist_ext => a0; rewrite fdist_convnE (bigD1 a) //= fdist1xx mul1r.
 by rewrite big1 ?addr0 // => i ia; rewrite fdist10// mul0r.
 Qed.
 
-Lemma fdist_convn_cst (e : R.-fdist 'I_n) (a : {fdist A}) :
+Lemma fdist_convn_cst (e : R.-fdist 'I_n) (a : R.-fdist A) :
   fdist_convn e (fun=> a) = a.
 Proof.
 by apply/fdist_ext => ?; rewrite fdist_convnE -big_distrl /= FDist.f1 mul1r.
@@ -842,7 +842,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A : finType) (p : prob R) (d1 d2 : fdist R A).
 
-Definition fdist_conv : {fdist A} := locked
+Definition fdist_conv : R.-fdist A := locked
   (fdist_convn (fdistI2 p) (fun i => if i == ord0 then d1 else d2)).
 
 Lemma fdist_convE a : fdist_conv a = (p : R) * d1 a + p.~ * d2 a.
@@ -868,7 +868,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n) (s : 'S_n).
 
-Definition fdist_perm : {fdist 'rV[A]_n} := fdistmap (col_perm s^-1) P.
+Definition fdist_perm : R.-fdist 'rV[A]_n := fdistmap (col_perm s^-1) P.
 
 Lemma fdist_permE v : fdist_perm v = P (col_perm s v).
 Proof.
@@ -902,7 +902,7 @@ rewrite -(FDist.f1 P) /= big_map; apply congr_big => //.
 move=> i _; by rewrite /f ffunE permKV.
 Qed.
 
-Definition fdistI_perm : {fdist 'I_n} := locked (FDist.make f0 f1).
+Definition fdistI_perm : R.-fdist 'I_n := locked (FDist.make f0 f1).
 
 Lemma fdistI_permE i : fdistI_perm i = P (s i).
 Proof. by rewrite /fdistI_perm; unlock; rewrite ffunE. Qed.
@@ -913,10 +913,10 @@ Section fdistI_perm_prop.
 Local Open Scope ring_scope.
 Variable R : realType.
 
-Lemma fdistI_perm1 (n : nat) (P : {fdist 'I_n}) : @fdistI_perm R n P 1%g = P.
+Lemma fdistI_perm1 (n : nat) (P : R.-fdist 'I_n) : @fdistI_perm R n P 1%g = P.
 Proof. by apply/fdist_ext => /= i; rewrite fdistI_permE perm1. Qed.
 
-Lemma fdistI_permM (n : nat) (P : {fdist 'I_n}) (s s' : 'S_n) :
+Lemma fdistI_permM (n : nat) (P : R.-fdist 'I_n) (s s' : 'S_n) :
   @fdistI_perm R n (fdistI_perm P s) s' = fdistI_perm P (s' * s).
 Proof. by apply/fdist_ext => /= i; rewrite !fdistI_permE permM. Qed.
 
@@ -1052,7 +1052,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A B : finType) (P : R.-fdist (A * B)).
 
-Definition fdistX : {fdist B * A} := fdistmap swap P.
+Definition fdistX : R.-fdist (B * A) := fdistmap swap P.
 
 Lemma fdistXE a b : fdistX (b, a) = P (a, b).
 Proof.
@@ -1120,7 +1120,7 @@ rewrite [RHS](_ : _ = \prod_(i < n) 1); last by rewrite big1.
 by apply eq_bigr => i _; exact: FDist.f1.
 Qed.
 
-Definition fdist_rV : {fdist 'rV[A]_n} := locked (FDist.make f0 f1).
+Definition fdist_rV : R.-fdist 'rV[A]_n := locked (FDist.make f0 f1).
 
 Lemma fdist_rVE t : fdist_rV t = \prod_(i < n) P t ``_ i.
 Proof. by rewrite /fdist_rV; unlock; rewrite ffunE. Qed.
@@ -1181,7 +1181,7 @@ move=> a b -[H1 H2]; rewrite -(row_mx_rbehead a) -(row_mx_rbehead b).
 by rewrite {}H2; congr (@row_mx _ 1 1 n _ _); apply/rowP => i; rewrite !mxE.
 Qed.
 
-Definition fdist_prod_of_rV : {fdist A * 'rV[A]_n} := fdistmap f P.
+Definition fdist_prod_of_rV : R.-fdist (A * 'rV[A]_n) := fdistmap f P.
 
 Lemma fdist_prod_of_rVE a :
   fdist_prod_of_rV a = P (row_mx (\row_(i < 1) a.1) a.2).
@@ -1202,7 +1202,7 @@ Proof.
 by move=> a b -[H1 H2]; rewrite -(row_mx_rbelast a) -(row_mx_rbelast b) H1 H2.
 Qed.
 
-Definition fdist_belast_last_of_rV : {fdist 'rV[A]_n * A} := fdistmap g P.
+Definition fdist_belast_last_of_rV : R.-fdist ('rV[A]_n * A) := fdistmap g P.
 
 Lemma fdist_belast_last_of_rVE a : fdist_belast_last_of_rV a =
   P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2))).
@@ -1215,7 +1215,7 @@ Qed.
 
 End fdist_prod_of_rV.
 
-Lemma head_of_fdist_rV_belast_last (R: realType) (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+2}) :
+Lemma head_of_fdist_rV_belast_last (R: realType) (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+2) :
   head_of_fdist_rV ((fdist_belast_last_of_rV P)`1) = @head_of_fdist_rV R _ _ P.
 Proof.
 rewrite /head_of_fdist_rV /fdist_fst /fdist_prod_of_rV /fdist_belast_last_of_rV.
@@ -1239,7 +1239,7 @@ rewrite !mxE => ->; congr (_, _).
 by move: H => /(congr1 (@rsubmx A 1 1 n)); rewrite 2!row_mxKr.
 Qed.
 
-Definition fdist_rV_of_prod : {fdist 'rV[A]_n.+1} := fdistmap f P.
+Definition fdist_rV_of_prod : R.-fdist 'rV[A]_n.+1 := fdistmap f P.
 
 Lemma fdist_rV_of_prodE a : fdist_rV_of_prod a = P (a ``_ ord0, rbehead a).
 Proof.
@@ -1318,7 +1318,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+1) (i : 'I_n.+1).
 
-Definition fdist_col' : {fdist 'rV[A]_n} := fdistmap (col' i) P.
+Definition fdist_col' : R.-fdist 'rV[A]_n := fdistmap (col' i) P.
 
 Lemma fdist_col'E v : fdist_col' v = \sum_(x : 'rV[A]_n.+1 | col' i x == v) P x.
 Proof. by rewrite fdistmapE. Qed.
@@ -1343,7 +1343,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n) (i : 'I_n).
 
-Definition fdist_nth : {fdist A} := fdistmap (fun v : 'rV[A]_n => v ``_ i) P.
+Definition fdist_nth : R.-fdist A := fdistmap (fun v : 'rV[A]_n => v ``_ i) P.
 
 Lemma fdist_nthE a : fdist_nth a = \sum_(x : 'rV[A]_n | x ``_ i == a) P x.
 Proof. by rewrite fdistmapE. Qed.
@@ -1367,7 +1367,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variable (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n).
 
-Definition fdist_take (i : 'I_n.+1) : {fdist 'rV[A]_i} := fdistmap (row_take i) P.
+Definition fdist_take (i : 'I_n.+1) : R.-fdist 'rV[A]_i := fdistmap (row_take i) P.
 
 Lemma fdist_takeE i v : fdist_take i v = \sum_(w in 'rV[A]_(n - i))
   P (castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx v w)).
@@ -1482,7 +1482,7 @@ Let f (x : A * B * C) := (x.1.2, x.1.1, x.2).
 Let inj_f : injective f.
 Proof. by rewrite /f => -[[? ?] ?] [[? ?] ?] /= [-> -> ->]. Qed.
 
-Definition fdistC12 : {fdist B * A * C} := fdistmap f P.
+Definition fdistC12 : R.-fdist (B * A * C) := fdistmap f P.
 
 Lemma fdistC12E x : fdistC12 x = P (x.1.2, x.1.1, x.2).
 Proof.
@@ -1532,7 +1532,7 @@ apply/setP => -[[a c] b]; apply/imsetP/idP.
 - by rewrite !inE /= => /andP [] /andP [] aE cG bF; exists ((a, b), c); rewrite // !inE  /= aE cG bF.
 Qed.
 
-Definition fdistAC : {fdist A * C * B} := fdistX (fdistA (fdistC12 P)).
+Definition fdistAC : R.-fdist (A * C * B) := fdistX (fdistA (fdistC12 P)).
 
 Lemma fdistACE x : fdistAC x = P (x.1.1, x.2, x.1.2).
 Proof. by case: x => x1 x2; rewrite /fdistAC fdistXE fdistAE fdistC12E. Qed.
@@ -1565,7 +1565,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A B C : finType) (P : R.-fdist (A * B * C)).
 
-Definition fdistC13 : {fdist C * B * A} := fdistC12 (fdistX (fdistA P)).
+Definition fdistC13 : R.-fdist (C * B * A) := fdistC12 (fdistX (fdistA P)).
 
 Lemma fdistC13E x : fdistC13 x = P (x.2, x.1.2, x.1.1).
 Proof. by rewrite /fdistC13 fdistC12E fdistXE fdistAE. Qed.
@@ -1589,7 +1589,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A B C : finType) (P : R.-fdist (A * B * C)).
 
-Definition fdist_proj13 : {fdist A * C} := (fdistA (fdistC12 P))`2.
+Definition fdist_proj13 : R.-fdist (A * C) := (fdistA (fdistC12 P))`2.
 
 Lemma fdist_proj13E x : fdist_proj13 x = \sum_(b in B) P (x.1, b, x.2).
 Proof.
@@ -1615,7 +1615,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A B C : finType) (P : R.-fdist (A * B * C)).
 
-Definition fdist_proj23 : {fdist B * C} := (fdistA P)`2.
+Definition fdist_proj23 : R.-fdist (B * C) := (fdistA P)`2.
 
 Lemma fdist_proj23E x : fdist_proj23 x = \sum_(a in A) P (a, x.1, x.2).
 Proof.
@@ -1665,7 +1665,7 @@ rewrite /= (bigD1 a) //= eqxx.
 by rewrite big1 ?addr0 // => a' /negbTE; rewrite eq_sym => ->.
 Qed.
 
-Definition fdist_self : {fdist A * A} := locked (FDist.make f0 f1).
+Definition fdist_self : R.-fdist (A * A) := locked (FDist.make f0 f1).
 
 Lemma fdist_selfE a : fdist_self a = if a.1 == a.2 then P a.1 else 0.
 Proof. by rewrite /fdist_self; unlock; rewrite ffunE. Qed.
@@ -1715,7 +1715,7 @@ Section def.
 Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n) (s : {set 'I_n}).
-Definition d : {fdist 'rV[A]_#|s| } := fdistmap (fun x => sub_vec x s) P.
+Definition d : R.-fdist 'rV[A]_#|s| := fdistmap (fun x => sub_vec x s) P.
 End def.
 End Subvec.
 Section subvec_prop.
@@ -1742,7 +1742,7 @@ Variable R : realType.
 Local Open Scope vec_ext_scope.
 Variables (A B : finType) (n : nat) (P : R.-fdist ('rV[A]_n * B)) (i : 'I_n).
 
-Definition fdist_prod_nth : {fdist A * B} :=
+Definition fdist_prod_nth : R.-fdist (A * B) :=
   fdistmap (fun x : 'rV[A]_n * B => (x.1 ord0 i, x.2)) P.
 
 Lemma fdist_prod_nthE ab :
@@ -1756,7 +1756,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A B : finType) (n : nat) (P : R.-fdist ('rV[A]_n.+1 * B)) (i : 'I_n.+1).
 
-Definition fdist_prod_take : {fdist 'rV_i * A * B} :=
+Definition fdist_prod_take : R.-fdist ('rV_i * A * B) :=
   fdistmap (fun x : 'rV[A]_n.+1 * B => (row_take (widen_ord (leqnSn _) i) x.1, x.1 ord0 i, x.2)) P.
 
 End fdist_prod_take.
@@ -1766,7 +1766,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A B : finType).
 Variables (n : nat) (PY : R.-fdist ('rV[A]_n.+1 * B)).
-Let P : {fdist 'rV[A]_n.+1} := PY`1.
+Let P : R.-fdist 'rV[A]_n.+1 := PY`1.
 
 Lemma belast_last_take (j : 'I_n.+1) :
   fdist_belast_last_of_rV (fdist_take P (lift ord0 j)) = (fdist_prod_take PY j)`1.
@@ -1786,7 +1786,7 @@ Variable R : realType.
 Local Open Scope vec_ext_scope.
 Variables (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+1) (i : 'I_n.+1).
 
-Definition fdist_take_drop : {fdist A * 'rV[A]_i * 'rV[A]_(n - i)} :=
+Definition fdist_take_drop : R.-fdist (A * 'rV[A]_i * 'rV[A]_(n - i)) :=
   fdistmap (fun x : 'rV[A]_n.+1 =>
             (x ord0 ord0, row_take i (rbehead x), row_drop i (rbehead x))) P.
 

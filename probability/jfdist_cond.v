@@ -117,7 +117,7 @@ End conditional_probability.
 Notation "\Pr_ P [ E | F ]" := (jcPr P E F) : proba_scope.
 
 Section jPr_Pr.
-Variables (U : finType) (P : fdist U) (A B : finType).
+Variables (U : finType) (P : {fdist U}) (A B : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (E : {set A}) (F : {set B}).
 
 Lemma jPr_Pr : \Pr_(`p_[% X, Y]) [E | F] = `Pr[X \in E |Y \in F].
@@ -277,12 +277,14 @@ by apply/eqP/eqP => [[] -> | ->].
 Qed.
 
 Section jfdist_cond0.
-Variables (A B : finType) (PQ : {fdist A * B}) (a : A).
+Variables (A B : finType) (PQ : {fdist (A * B)}) (a : A).
 Hypothesis Ha : PQ`1 a != 0.
 
 Let f := [ffun b => \Pr_(fdistX PQ) [[set b] | [set a]]].
 
 Let f0 b : 0 <= f b. Proof. rewrite ffunE; exact: jcPr_ge0. Qed.
+
+Let f0' b : (0 <= f b)%O. Proof. by apply/RleP. Qed.
 
 Let f1 : \sum_(b in B) f b = 1.
 Proof.
@@ -290,7 +292,7 @@ under eq_bigr do rewrite ffunE.
 by rewrite /jcPr -big_distrl /= PrX_snd mulRV // Pr_set1 fdistX2.
 Qed.
 
-Definition jfdist_cond0 : {fdist B} := locked (FDist.make f0 f1).
+Definition jfdist_cond0 : {fdist B} := locked (@FDist.make _ _ _ f0' f1).
 
 Lemma jfdist_cond0E b : jfdist_cond0 b = \Pr_(fdistX PQ) [[set b] | [set a]].
 Proof. by rewrite /jfdist_cond0; unlock; rewrite ffunE. Qed.

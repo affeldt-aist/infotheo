@@ -138,6 +138,8 @@ Import Prenex Implicits.
 Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
 
+Local Notation "{ 'fdist' T }" := (fdist_of _ (Phant T)) : fdist_scope.
+
 #[export] Hint Extern 0 (0 <= _)%coqR =>
   solve [apply/RleP/(FDist.ge0 _)] : core.
 #[export] Hint Extern 0 (_ <= 1)%coqR =>
