@@ -1024,13 +1024,6 @@ have nx0 : \ssum_(i <- finsupp d `\ x)
     by apply: eq_fbigr => y /fsetD1P []; rewrite eq_sym=> /negbTE ->.
   by congr (_ _ _); rewrite fsdist_suppD1.
 case/boolP : (x \in finsupp d) => xfd.
-
-  rewrite (big_fsetD1 x) //=.
-  rewrite nx0.
-  rewrite eqxx.
-  rewrite -(convptE (d x)).
-(*↑TODO 2023 08 25 *)
-
   rewrite (big_fsetD1 x) //= nx0 eqxx -convptE -affine_conv/=.
   by rewrite avgRE mulR0 addR0 mulR1.
 by rewrite -(mem_fsetD1 xfd) nx0 fsfun_dflt // onem0 scale1pt.
