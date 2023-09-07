@@ -322,91 +322,87 @@ suff : Hf = Hg by move=> ->.
 exact/boolp.Prop_irrelevance.
 Qed.
 
+Section Rstruct_ext.
+
+Lemma RleP' (x y : R) : Rle x y <-> (x <= y)%O.
+Proof. by split; move/RleP. Qed.
+
+Lemma RltP' (x y : R) : Rlt x y <-> (x < y)%O.
+Proof. by split; move/RltP. Qed.
+
+End Rstruct_ext.
+
 Section onem.
 Implicit Types r s p q : R.
 
-Definition Ronem r := @onem real_realType r.
-(*Local Notation "p '.~'" := (Ronem p).*)
+Lemma onem0 : 0.~ = 1. Proof. by rewrite onem0. Qed.
 
-Lemma onem0 : 0.~ = 1. Proof. by rewrite /Ronem onem0. Qed.
-
-Lemma onem1 : 1.~ = 0. Proof. by rewrite /Ronem onem1. Qed.
+Lemma onem1 : 1.~ = 0. Proof. by rewrite onem1. Qed.
 
 Lemma onem_ge0 r : r <= 1 -> 0 <= r.~.
-Proof. rewrite /Ronem; move/RleP => r1; exact/RleP/onem_ge0. Qed.
+Proof. by rewrite 2!RleP'; exact: onem_ge0. Qed.
 
 Lemma onem_le1 r : 0 <= r -> r.~ <= 1.
-Proof. move/RleP=> ?; rewrite /Ronem. exact/RleP/onem_le1. Qed.
+Proof. by rewrite 2!RleP'; exact: onem_le1. Qed.
 
-Lemma onem_le  r s : r <= s <-> s.~ <= r.~.
-Proof.
-Admitted.
+Lemma onem_le r s : r <= s <-> s.~ <= r.~.
+Proof. by rewrite 2!RleP' onem_le. Qed.
 
-Lemma onem_lt  r s : r < s <-> s.~ < r.~.
-(*Proof. by rewrite /onem; split=> ?; lra. Qed.*)
-Admitted.
+Lemma onemE x : x.~ = 1 - x.  Proof. by []. Qed.
 
-Lemma onemKC r : r + r.~ = 1. (*TODO Proof. rewrite /onem; by field. Qed.*)
-Admitted.
+Lemma onem_lt  r s : r < s <-> s.~ < r.~. Proof. by rewrite !onemE; lra. Qed.
+
+Lemma onemKC r : r + r.~ = 1. Proof. by rewrite !onemE; lra. Qed.
 
 Lemma onemK r : r.~.~ = r.
-(*Proof. by rewrite /onem subRBA addRC addRK. Qed.*)
-Admitted.
+Proof. by rewrite !onemE subRBA addRC addRK. Qed.
 
 Lemma onemD p q : (p + q).~ = p.~ + q.~ - 1.
-(*Proof. rewrite /onem; field. Qed.*)
-Admitted.
+Proof. rewrite !onemE /GRing.add /=; lra. Qed.
 
 Lemma onemM p q : (p * q).~ = p.~ + q.~ - p.~ * q.~.
-(*Proof. rewrite /onem; field. Qed.*)
-Admitted.
+Proof. rewrite !onemE /GRing.mul /=; lra. Qed.
 
 Lemma onem_div p q : q != 0 -> (p / q)%coqR.~ = (q - p)  /q.
 Proof.
-Admitted.
-(*TODO
+Proof.
+rewrite !onemE.
 move=> Hq.
-rewrite /nonem.
 rewrite /Rdiv.
 rewrite mulRDl.
 rewrite mulNR.
 rewrite -/(q / q).
 rewrite divRR//.
-Qed.*)
+Qed.
 
 Lemma onem_prob r : R0 <b= r <b= R1 -> R0 <b= r.~ <b= R1.
 Proof.
-(*by case/leR2P=> ? ?; apply/leR2P; split;
-   [rewrite leR_subr_addr add0R | rewrite leR_subl_addr -(addR0 1) leR_add2l].
-Qed.*)
-Admitted.
+Proof.
+by case/leR2P=> ? ?; apply/leR2P; split;
+   [ rewrite onemE leR_subr_addr add0R
+   | rewrite onemE leR_subl_addr -(addR0 1) leR_add2l].
+Qed.
 
 Lemma onem_oprob r : R0 <b r <b R1 -> R0 <b r.~ <b R1.
-(*Proof.
+Proof.
 by case/ltR2P=> ? ?; apply/ltR2P; split;
-   [rewrite ltR_subr_addr add0R | rewrite ltR_subl_addr -(addR0 1) ltR_add2l].
-Qed.*)
-Admitted.
+   [ rewrite onemE ltR_subr_addr add0R
+   | rewrite onemE ltR_subl_addr -(addR0 1) ltR_add2l].
+Qed.
 
-Lemma onem_eq0 r : r.~ = 0 <-> r = 1. (*Proof. rewrite /onem; lra. Qed.*)
-Admitted.
+Lemma onem_eq0 r : r.~ = 0 <-> r = 1. Proof. rewrite onemE; lra. Qed.
 
-Lemma onem_eq1 r : r.~ = 1 <-> r = 0. (*Proof. rewrite /onem; lra. Qed.*)
-Admitted.
+Lemma onem_eq1 r : r.~ = 1 <-> r = 0. Proof. rewrite onemE; lra. Qed.
 
 Lemma onem_neq0 r : r.~ != 0 <-> r != 1.
-(*Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.*)
-Admitted.
+Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 
-Lemma onem_gt0 r : r < 1 -> 0 < r.~. (*Proof. rewrite /onem; lra. Qed.*)
-Admitted.
+Lemma onem_gt0 r : r < 1 -> 0 < r.~. Proof. rewrite onemE; lra. Qed.
 
-Lemma onem_lt1 r : 0 < r -> r.~ < 1. (*Proof. rewrite /onem; lra. Qed.*)
-Admitted.
+Lemma onem_lt1 r : 0 < r -> r.~ < 1. Proof. rewrite onemE; lra. Qed.
 
 Lemma subR_onem r s : r - s.~ = r + s - 1.
-(*Proof. by rewrite /onem -addR_opp oppRB addRA. Qed.*)
-Admitted.
+Proof. by rewrite onemE -addR_opp oppRB addRA. Qed.
 
 End onem.
 (*Definition Ronem (p: R) := (@onem real_realType p).*)
@@ -445,8 +441,34 @@ Global Hint Resolve prob_le1 : core.*)
 
 (*Reserved Notation "{ 'prob' T }" (at level 0, format "{ 'prob'  T }").
 Definition prob_of (R : realType) := fun phT : phant (Num.NumDomain.sort (*Real.sort*)R) => @prob R.*)
+
+Section ad_hoc_coercion_from_prob_to_R.
+(*Section test.
+Variable p : {prob R}.
+Check p.
+Fail Check p : R.
+Check Prob.p p.
+Check p : reals.Real.sort real_realType.
+Check erefl : reals.Real.sort real_realType = R.
+Fail Check p : R.
+Check p : reals.Real.sort real_realType.
+Check Prob.p.
+End test.*)
+Definition Prob_p : Prob.t (real_realType) -> R.
+exact: Prob.p.
+Defined.
+Lemma Prob_pE p : Prob_p p = @Prob.p real_realType p.
+Proof. by []. Qed.
+(*Section test2.
+Local Coercion Prob_p : prob >-> R.
+Variable p : {prob R}.
+Check p : R.
+End test2.*)
+End ad_hoc_coercion_from_prob_to_R.
+Coercion Prob_p : prob >-> R.
+
 Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).
-Definition probR_coercion (p : {prob R}) : R := Prob.p p.
+Definition probR_coercion (p : {prob R}) : R := Prob_p p.
 Local Coercion probR_coercion : prob_of >-> R.
 
 Lemma probR_ge0 (p : {prob R}) : 0 <= p. Proof. exact/RleP/prob_ge0. Qed.

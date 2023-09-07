@@ -645,20 +645,18 @@ Variables (A : choiceType) (p : {prob R}) (d1 d2 : {dist A}).
 
 Definition fsdist_conv : {dist A} := locked
   (fsdist_convn (fdistI2 p) (fun i => if i == ord0 then d1 else d2)).
-Local Open Scope reals_ext_scope.
 
-Lemma fsdist_convE a : (fsdist_conv a = Prob.p p * d1 a + p.~ * d2 a)%coqR.
+Lemma fsdist_convE a : (fsdist_conv a = p * d1 a + p.~ * d2 a)%coqR.
 Proof.
 rewrite /fsdist_conv; unlock => /=; rewrite fsdist_convnE fsfunE.
 case: ifPn => [?|H].
   rewrite !big_ord_recl big_ord0 /= addR0 !fdistI2E.
   by rewrite eqxx eq_sym (negbTE (neq_lift _ _)).
-have [p0|p0] := eqVneq (Prob.p p : R) 0%coqR.
+have [p0|p0] := eqVneq p 0%:pr.
   rewrite p0 mul0R add0R onem0 mul1R.
   apply/esym/eqP; rewrite -memNfinsupp.
   apply: contra H => H.
-  rewrite (_ : p = R0%:pr) //; last exact/val_inj.
-  rewrite fdistI20 (_ : Ordinal _ = @ord_max 1); last exact/val_inj.
+  rewrite p0 fdistI20 (_ : Ordinal _ = @ord_max 1); last exact/val_inj.
   (* TODO: generalize *)
   suff : fsdist_convn_supp (fdist1 ord_max)
     (fun i : 'I_2 => if i == ord0 then d1 else d2) = finsupp d2 by move=> ->.
@@ -673,7 +671,7 @@ have d1a0 : d1 a = 0.
   rewrite /fsdist_convn_supp; apply/bigfcupP; exists ord0; last by rewrite eqxx.
   by rewrite mem_index_enum /= fdistI2E eqxx; exact/ltRP/probR_gt0.
 rewrite d1a0 mulR0 add0R.
-have [p1|p1] := eqVneq (Prob.p p : R) 1%coqR; first by rewrite p1 onem1 mul0R.
+have [p1|p1] := eqVneq p 1%:pr; first by rewrite p1 onem1 mul0R.
 suff : d2 a = 0 by move=> ->; rewrite mulR0.
 apply/eqP; rewrite -memNfinsupp.
 apply: contra H => H.
@@ -698,12 +696,8 @@ Proof.
 move=> p0; apply/fsubsetP => a1.
 rewrite !mem_finsupp => aa1.
 rewrite fsdist_convE.
-apply: contra aa1 => /eqP.
-rewrite paddR_eq0; [move=> [+ _]|exact/mulR_ge0|exact/mulR_ge0].
-rewrite mulR_eq0 => -[p0'|/eqP //].
-exfalso.
-move/eqP : p0; apply.
-by apply/val_inj; rewrite /= p0'.
+apply/paddR_neq0; [exact/mulR_ge0|exact/mulR_ge0|left].
+by rewrite mulR_neq0' aa1 andbT.
 Qed.
 
 Let conv0 (mx my : {dist A}) : mx <| 0%:pr |> my = my.
@@ -729,18 +723,18 @@ by apply/fsdist_ext => a; rewrite 2!fsdist_convE /= onemK addRC.
 Qed.
 
 Definition fsdist_convA (p q r s : {prob R}) (mx my mz : {dist A}) :
-  Prob.p p = Prob.p r * Prob.p s :> R /\ s.~ = p.~ * q.~ ->
+  p = r * s :> R /\ s.~ = p.~ * q.~ ->
   mx <| p |> (my <| q |> mz) = (mx <| r |> my) <| s |> mz.
 Proof.
-move=> [Hp Hs]; apply/fsdist_ext => a.
-rewrite !fsdist_convE [in RHS]mulRDr (@mulRCA _ (Prob.p r)) (@mulRA (Prob.p r)) -Hp -addRA; congr (_ + _)%coqR.
+rewrite !Prob_pE; move=> [Hp Hs]; apply/fsdist_ext => a.
+rewrite !fsdist_convE [in RHS]mulRDr (@mulRCA _ r) (@mulRA r) -Hp -addRA; congr (_ + _)%coqR.
 rewrite mulRDr (@mulRA p.~ q.~) -Hs; congr (_ + _)%coqR.
 rewrite !mulRA; congr (_ * _)%coqR.
 rewrite -p_of_rsE in Hp.
 move/(congr1 (@onem _)) : Hs; rewrite onemK => Hs.
 rewrite -s_of_pqE in Hs.
 have [r0|r0] := eqVneq r R0%:pr.
-  rewrite r0 /= onem0 mulR1 Hs s_of_pqE.
+  rewrite r0 onem0 mulR1 !Prob_pE Hs s_of_pqE.
   by rewrite Hp p_of_rsE r0 /= mul0R onem0 2!mul1R onemK.
 have [s0|s0] := eqVneq s R0%:pr.
   rewrite Hp p_of_rsE s0 /= mulR0 onem0 mul0R mul1R.
@@ -758,7 +752,7 @@ Let convA (p q : {prob R}) (a b c : {dist A}) :
   a <| p |> (b <| q |> c) = (a <| r_of_pq p q |> b) <| s_of_pq p q |> c.
 Proof.
 rewrite (fsdist_convA (r := r_of_pq p q) (s := s_of_pq p q)) //.
-rewrite {2}s_of_pqE onemK; split => //.
+rewrite !Prob_pE {2}s_of_pqE onemK; split => //.
 have [s0|s0] := eqVneq (s_of_pq p q) R0%:pr.
 - rewrite s0 mulR0; apply/eqP; move/eqP: s0.
   by apply: contraTT => /(s_of_gt0 q); rewrite probR_gt0.
