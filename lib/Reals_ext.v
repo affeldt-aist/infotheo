@@ -40,10 +40,6 @@ Reserved Notation "T '->R+' " (at level 10, format "'[' T  ->R+ ']'").
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
 Reserved Notation "P '`<<' Q" (at level 51).
 Reserved Notation "P '`<<b' Q" (at level 51).
-Reserved Notation "p '.~'" (format "p .~", at level 5).
-Reserved Notation "'`Pr' p " (format "`Pr  p", at level 6).
-Reserved Notation "x %:pr" (at level 0, format "x %:pr").
-Reserved Notation "x %:opr" (at level 0, format "x %:opr").
 Reserved Notation "x %:pos" (at level 2, format "x %:pos").
 Reserved Notation "x %:nng" (at level 2, format "x %:nng").
 Reserved Notation "[ 's_of' p , q ]" (format "[ 's_of'  p ,  q ]").
@@ -1201,4 +1197,3 @@ rewrite mulRC -mulRBr (addRC _ p) addRA addRK mulR_neq0.
 split; exact/eqP/Rpos_neq0.
 Qed.*)
 Admitted.
-
