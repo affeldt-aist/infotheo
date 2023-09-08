@@ -443,32 +443,33 @@ Global Hint Resolve prob_le1 : core.*)
 Definition prob_of (R : realType) := fun phT : phant (Num.NumDomain.sort (*Real.sort*)R) => @prob R.*)
 
 Section ad_hoc_coercion_from_prob_to_R.
-(*Section test.
+(*
+Prob_p compensates a missing coercion from real_realType to R.
+without Prob_p, the p : {prob R} fails to type check as p : R as follows: 
+
 Variable p : {prob R}.
 Check p.
 Fail Check p : R.
 Check Prob.p p.
-Check p : reals.Real.sort real_realType.
-Check erefl : reals.Real.sort real_realType = R.
-Fail Check p : R.
-Check p : reals.Real.sort real_realType.
-Check Prob.p.
-End test.*)
+
+This problem may be solved by using HB in the definition of realType in mca,
+and then Prob_p should be removed.
+
+Prob_p in a goal blocks uses of some lemmas and must be removed manually by
+`rewrite Prob_pE`.
+The notation `%:pp` is for indicating where a user should do this.
+*)
 Definition Prob_p : Prob.t (real_realType) -> R.
 exact: Prob.p.
 Defined.
 Lemma Prob_pE p : Prob_p p = @Prob.p real_realType p.
 Proof. by []. Qed.
-(*Section test2.
-Local Coercion Prob_p : prob >-> R.
-Variable p : {prob R}.
-Check p : R.
-End test2.*)
 End ad_hoc_coercion_from_prob_to_R.
 Coercion Prob_p : prob >-> R.
+Notation "p %:pp" := (Prob_p p) (at level 1, format "p %:pp").
 
 Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).
-Definition probR_coercion (p : {prob R}) : R := Prob_p p.
+Definition probR_coercion (p : {prob R}) : R := Prob.p p.
 Local Coercion probR_coercion : prob_of >-> R.
 
 Lemma probR_ge0 (p : {prob R}) : 0 <= p. Proof. exact/RleP/prob_ge0. Qed.
