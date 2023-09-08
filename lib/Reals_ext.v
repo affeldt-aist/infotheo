@@ -445,7 +445,7 @@ Definition prob_of (R : realType) := fun phT : phant (Num.NumDomain.sort (*Real.
 Section ad_hoc_coercion_from_prob_to_R.
 (*
 Prob_p compensates a missing coercion from real_realType to R.
-without Prob_p, the p : {prob R} fails to type check as p : R as follows: 
+Without Prob_p, (p : {prob R}) fails to typecheck as (p : R) as follows:
 
 Variable p : {prob R}.
 Check p.
