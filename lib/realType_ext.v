@@ -38,16 +38,36 @@ Section onem.
 
   Lemma onem_le  r s : (r <= s) = (s.~ <= r.~).
   Proof. Admitted.
+
+  Lemma onemE x : x.~ = 1 - x.  Proof. by []. Qed.
+
+  Lemma onem_lt  r s : r < s <-> s.~ < r.~. Proof. by rewrite !onemE; lra. Qed.
+
+  Lemma onemKC r : r + r.~ = 1. Proof. by rewrite !onemE; lra. Qed.
+(*  Lemma onemKC r : r + (onem r) = 1.
+  Proof. 
+    by rewrite /onem addrC -addrA (addrC (-r) r) subrr addr0.
+  Qed.*)
+
   Lemma onemK (x : R): onem (onem x) = x.
   Proof.
     by rewrite /onem opprB addrA addrC addrA (addrC (-1) 1) subrr add0r.
   Qed.
 
+  Lemma onemD p q : (p + q).~ = p.~ + q.~ - 1.
+  Proof. rewrite !onemE; lra. Qed.
+  
+  Lemma onemM p q : (p * q).~ = p.~ + q.~ - p.~ * q.~.
+  Proof. rewrite !onemE/=; lra. Qed.
 
-
-  Lemma onemKC r : r + (onem r) = 1.
-  Proof. 
-    by rewrite /onem addrC -addrA (addrC (-r) r) subrr addr0.
+  Lemma onem_div p q : q != 0 -> (p / q).~ = (q - p)  /q.
+  Proof.
+    rewrite !onemE.
+    move=> Hq.
+    rewrite mulrDl.
+    rewrite mulNr.
+    rewrite -/(q / q).
+    by rewrite divrr// unitfE.
   Qed.
 
   Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
@@ -61,6 +81,8 @@ Section onem.
   by move=> ->; rewrite subrr.
   Qed.
 
+  Lemma onem_eq1 r : r.~ = 1 <-> r = 0. Proof. rewrite onemE; lra. Qed.
+
   Lemma onem_neq0 r : (onem r != 0) <-> (r != 1).
   Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 
@@ -68,13 +90,14 @@ Section onem.
 
   Lemma onem_lt1 r : 0 < r -> r.~ < 1. Proof. rewrite /onem; lra. Qed.
 
-  Lemma subr_onem r s : r - s.~ = r + s - 1.
-  Proof. by rewrite /onem opprB addrA. Qed.
-
   Lemma onem_oprob r : 0 < r < 1 -> 0 < r.~ < 1.
   Proof.
     by move=> /andP [? ?]; apply/andP; rewrite onem_gt0 // onem_lt1.
   Qed.
+
+  Lemma subr_onem r s : r - s.~ = r + s - 1.
+  Proof. by rewrite /onem opprB addrA. Qed.
+
 End onem.
 Notation "p '.~'" := (onem p).
 (* ---- onem ---- *)

@@ -1646,7 +1646,7 @@ Proof. by move=> x /=; rewrite scale1r. Qed.
 Lemma scaler_addpt : {morph scaler : x y / addpt x y >-> x + y}.
 Proof.
 move=> [p x|] [q y|] /=; rewrite ?(add0r,addr0) //.
-rewrite avgrE /divRposxxy /= onem_div /Rdiv; last by apply Rpos_neq0.
+rewrite avgrE /divRposxxy /= Reals_ext.onem_div /Rdiv; last by apply Rpos_neq0.
 rewrite -!(mulRC (/ _)%coqR) scalerDr !scalerA !mulrA.
 have ->: (p + q)%coqR * (/ (p + q))%coqR = 1 by apply mulRV; last by apply Rpos_neq0.
 by rewrite !mul1r (addRC p) addRK.
@@ -1914,7 +1914,7 @@ Proof. by move=> x /=; rewrite mul1R. Qed.
 Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> (x + y)%coqR}.
 Proof.
 move=> [p x|] [q y|] /=; rewrite ?(add0R,addR0) //.
-rewrite avgRE /avg /divRposxxy /= onem_div /Rdiv; last by apply Rpos_neq0.
+rewrite avgRE /avg /divRposxxy /= Reals_ext.onem_div /Rdiv; last by apply Rpos_neq0.
 rewrite -!(mulRC (/ _)%coqR) mulRDr !mulRA mulRV; last by apply Rpos_neq0.
 by rewrite !mul1R (addRC p) addRK.
 Qed.
