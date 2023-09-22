@@ -248,23 +248,41 @@ Qed.
 
 Definition fsdistbind : {dist B} := locked (FSDist.make f0 f1).
 
-Lemma fsdistbindE x :
+Lemma fsdistbindEcond x :
   fsdistbind x = if x \in D then \sum_(a <- finsupp p) p a * (g a) x else 0.
 Proof. by rewrite /fsdistbind; unlock; rewrite fsfunE. Qed.
+
+Lemma fsdistbindE x :
+  fsdistbind x = \sum_(a <- finsupp p) p a * (g a) x.
+Proof.
+rewrite fsdistbindEcond.
+case: ifPn => // aD.
+apply/eqP; move: aD; apply: contraLR.
+rewrite eq_sym negbK sumR_neq0; last first.
+  by move=> ?; exact: mulR_ge0.
+case => i [] suppi pg0.
+apply/bigfcupP; exists (g i).
+  by rewrite in_imfset.
+rewrite mem_finsupp.
+by apply/gtR_eqF/(pmulR_rgt0' pg0).
+Qed.
+
+Lemma fsdistbindEwiden S x :
+  finsupp p `<=` S -> fsdistbind x = \sum_(a <- S) p a * (g a) x.
+Proof.
+move=> suppS; rewrite fsdistbindE (big_fset_incl _ suppS) //.
+by move=> a2 Ha2; rewrite memNfinsupp => /eqP ->; rewrite mul0R.
+Qed.
 
 Lemma supp_fsdistbind : finsupp fsdistbind = D.
 Proof.
 apply/fsetP => b; rewrite mem_finsupp; apply/idP/idP => [|].
-  by rewrite fsdistbindE; case: ifPn => //; rewrite eqxx.
+  by rewrite fsdistbindEcond; case: ifPn => //; rewrite eqxx.
 case/bigfcupP => dB.
 rewrite andbT => /imfsetP[a] /= ap ->{dB} bga.
-rewrite fsdistbindE; case: ifPn => [/bigfcupP[dB] | ]; last first.
-  apply: contra => _.
-  apply/bigfcupP; exists (g a)=> //; rewrite andbT.
-  by apply/imfsetP; exists a => //=; rewrite imfset_id.
-rewrite andbT => /imfsetP[a0] /= a0p ->{dB} bga0.
+rewrite fsdistbindE.
 apply/eqP => H.
-have : (p a0) * (g a0) b <> 0.
+have : (p a) * (g a) b <> 0.
   by rewrite mulR_eq0 => -[]; apply/eqP; rewrite -mem_finsupp.
 apply.
 by move/psumR_seq_eq0P : H; apply => // b0 _; exact/mulR_ge0.
@@ -282,21 +300,13 @@ Lemma fsdist1bind (A B : choiceType) (a : A) (f : A -> {dist B}) :
   fsdist1 a >>= f = f a.
 Proof.
 apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => b.
-rewrite fsdistbindE; case: ifPn => [|H].
-  case/bigfcupP => /= d; rewrite andbT => /imfsetP[a0/=].
-  rewrite supp_fsdist1 inE => /eqP ->{a0} ->{d} bfa.
-  by rewrite big_seq_fsetE big_fset1/= fsdist1xx mul1R.
-have [->//|fab0] := eqVneq ((f a) b) 0%R.
-case/bigfcupP : H.
-exists (f a); last by rewrite mem_finsupp.
-rewrite andbT; apply/imfsetP; exists a => //=.
-by rewrite supp_fsdist1 inE.
+by rewrite fsdistbindE supp_fsdist1 big_seq_fset1 fsdist1E inE eqxx mul1R.
 Qed.
 
 Lemma fsdistbind1 (A : choiceType) (p : {dist A}) : p >>= (@fsdist1 A) = p.
 Proof.
 apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => b.
-rewrite fsdistbindE; case: ifPn => [|H].
+rewrite fsdistbindEcond; case: ifPn => [|H].
   case/bigfcupP => /= d; rewrite andbT.
   case/imfsetP => /= a ap ->{d}.
   rewrite supp_fsdist1 inE => /eqP ->{b}.
@@ -313,78 +323,17 @@ Lemma fsdistbindA (A B C : choiceType) (m : {dist A}) (f : A -> {dist B})
   (m >>= f) >>= g = m >>= (fun x => f x >>= g).
 Proof.
 apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => c.
-rewrite !fsdistbindE; case: ifPn => [|H]; last first.
-  rewrite ifF //; apply/negbTE; apply: contra H.
-  case/bigfcupP => /= dC; rewrite andbT.
-  move=> /imfsetP[x] /= mx ->{dC}.
-  rewrite supp_fsdistbind.
-  case/bigfcupP => dC; rewrite andbT => /imfsetP[b] /= bfx ->{dC} cgb.
-  apply/bigfcupP; exists (g b) => //; rewrite andbT.
-  apply/imfsetP; exists b => //=.
-  rewrite supp_fsdistbind.
-  by apply/bigfcupP; exists (f x) => //; rewrite andbT; apply/imfsetP; exists x.
-case/bigfcupP => /= dC.
-rewrite andbT => /imfsetP[b] /=.
-rewrite {1}supp_fsdistbind => /bigfcupP[dB].
-rewrite andbT => /imfsetP[a] /= => ma ->{dB} fab0 ->{dC} gbc0.
-rewrite ifT; last first.
-  apply/bigfcupP => /=; exists (f a >>= g); last first.
-    rewrite supp_fsdistbind; apply/bigfcupP; exists (g b) => //.
-    by rewrite andbT; apply/imfsetP; exists b => //=; rewrite imfset_id.
-  by rewrite andbT; apply/imfsetP => /=; exists a => //; rewrite inE.
-rewrite (eq_bigr (fun a => \sum_(a0 <- finsupp m) m a0 * (f a0) a * (g a) c)); last first.
-  move=> b0 _.
-  rewrite fsdistbindE; case: ifPn => [/bigfcupP[dB] | ].
-    by rewrite andbT => /imfsetP[a0] _ _ _; rewrite -big_distrl.
-  rewrite (mul0R (g b0 c)) => K.
-  rewrite big1_fset => // a0 ma00 _.
-  apply/eqP/negPn/negP => L.
-  move/negP : K; apply.
-  apply/bigfcupP; exists (f a0); last first.
-    by rewrite mem_finsupp; apply: contra L => /eqP ->; rewrite mulR0 mul0R.
-  by rewrite andbT; apply/imfsetP; exists a0 => //=; rewrite imfset_id.
-rewrite exchange_big; apply eq_bigr => a0 _ /=.
-rewrite fsdistbindE.
-have [->|ma00] := eqVneq (m a0) 0%R.
-  by rewrite mul0R big1_fset // => b2 _ _; rewrite 2!mul0R.
-case: ifPn => [/bigfcupP[dC] | Hc].
-  rewrite andbT => /imfsetP[b0] /= fa0b0 ->{dC} gb0c.
-  under eq_bigr do rewrite -mulRA.
-  rewrite -(big_distrr  (m a0)) /=; congr (_ * _).
-  rewrite (big_fsetID _ (mem (finsupp (f a0)))) /=.
-  rewrite [X in (_ + X)%R = _](_ : _ = 0) ?addR0; last first.
-    rewrite big1_fset => // b1 /imfsetP [b2 /=]; rewrite inE => /andP[/= _].
-    by rewrite !mem_finsupp negbK => /eqP K -> _; rewrite K mul0R.
-  apply big_fset_incl.
-    by apply/fsubsetP => b1; case/imfsetP => b2 /= /andP[_ ?] ->.
-  move=> b1 fa0b1.
-  have [-> _|gb1c] := eqVneq (g b1 c) 0%R; first by rewrite mulR0.
-  case/imfsetP; exists b1 => //=.
-  rewrite inE fa0b1 andbT mem_finsupp fsdistbindE ifT.
-    have /eqP K : (m a0 * (f a0 b1) <> R0 :> R).
-      rewrite mulR_eq0 => -[]; first exact/eqP.
-      by apply/eqP; rewrite -mem_finsupp.
-    apply/eqP => /psumR_seq_eq0P => L.
-    move/eqP : K; apply.
-    apply L => //.
-    - by move=> a1 _; exact: mulR_ge0.
-    - by rewrite mem_finsupp.
-  apply/bigfcupP; exists (f a0) => //; rewrite andbT.
-  by apply/imfsetP; exists a0 => //=; rewrite mem_finsupp.
-rewrite supp_fsdistbind.
-suff : \sum_(i <- finsupp (m >>= f)) (f a0) i * (g i) c = R0 :> R.
-  rewrite supp_fsdistbind => L.
-  under eq_bigr do rewrite -mulRA.
-  by rewrite -(big_distrr (m a0)) /= L !mulR0.
-apply/psumR_seq_eq0P.
-- exact: fset_uniq.
-- move=> b1 _; exact: mulR_ge0.
-- move=> a1 Ha1.
-  have [-> | ga1c] := eqVneq (g a1 c) 0%R; first by rewrite mulR0.
-  have [-> | fa0a1] := eqVneq (f a0 a1) 0%R; first by rewrite mul0R.
-  case/bigfcupP : Hc.
-  exists (g a1); last by rewrite mem_finsupp.
-  by rewrite andbT; apply/imfsetP; exists a1 => //=; rewrite mem_finsupp.
+rewrite !fsdistbindE.
+under eq_bigr do rewrite fsdistbindE big_distrl.
+under [in RHS]eq_bigr do
+  (rewrite fsdistbindE big_distrr /=; under eq_bigr do rewrite mulRA).
+rewrite exchange_big /= !big_seq; apply: eq_bigr => a a_m.
+rewrite supp_fsdistbind; apply/esym/big_fset_incl => [| b].
+  apply/fsubsetP => ? ?;  apply/bigfcupP => /=.
+  by exists (f a) => //; rewrite andbT in_imfset.
+case/bigfcupP => ?; rewrite andbT; case/imfsetP => ? /= ? -> ?.
+rewrite mem_finsupp negbK => /eqP ->.
+by rewrite mulR0 mul0R.
 Qed.
 
 Definition fsdistmap (A B : choiceType) (f : A -> B) (d : {dist A}) : {dist B} :=
@@ -403,15 +352,11 @@ Qed.
 Definition fsdistmapE (A B : choiceType) (f : A -> B) (d : {dist A}) b :
   fsdistmap f d b = \sum_(a <- finsupp d | f a == b) d a.
 Proof.
-rewrite {1}/fsdistmap [in LHS]fsdistbindE; case: ifPn => Hb.
-  rewrite (bigID (fun a => f a == b)) /=.
-  rewrite [X in (_ + X)%R = _](_ : _ = 0) ?addR0; last first.
-    by rewrite big1 // => a fab; rewrite fsdist10 ?mulR0// eq_sym.
-  by apply eq_bigr => a /eqP ->; rewrite fsdist1xx mulR1.
-rewrite big_seq_cond big1 // => a /andP[ad] fab.
-exfalso; move/negP : Hb; apply; apply/bigfcupP; exists (fsdist1 (f a)).
-  by rewrite andbT; apply/imfsetP => /=; exists a.
-by rewrite (eqP fab) supp_fsdist1 inE.
+rewrite {1}/fsdistmap [in LHS]fsdistbindE.
+rewrite (bigID (fun a => f a == b)) /=.
+rewrite [X in (_ + X)%R = _](_ : _ = 0) ?addR0; last first.
+  by rewrite big1 // => a fab; rewrite fsdist10 ?mulR0// eq_sym.
+by apply eq_bigr => a /eqP ->; rewrite fsdist1xx mulR1.
 Qed.
 
 Lemma supp_fsdistmap (A B : choiceType) (f : A -> B) d :
@@ -463,13 +408,7 @@ Definition fsdistjoin A (D : {dist (FSDist_choiceType A)}) : {dist A} :=
 
 Lemma fsdistjoinE A (D : {dist (FSDist_choiceType A)}) x :
   fsdistjoin D x = \sum_(d <- finsupp D) D d * d x.
-Proof.
-rewrite /fsdistjoin fsdistbindE; case: ifPn => // xD.
-rewrite big_seq (eq_bigr (fun=> 0)) ?big1 // => d dD.
-have [->|dx0] := eqVneq (d x) 0; first by rewrite mulR0.
-exfalso; move/negP : xD; apply.
-by apply/bigfcupP; exists d; [rewrite andbT inE| rewrite mem_finsupp].
-Qed.
+Proof. by rewrite /fsdistjoin fsdistbindE. Qed.
 
 Lemma fsdistjoin1 (A : choiceType) (D : {dist (FSDist_choiceType A)}) :
   fsdistjoin (fsdist1 D) = D.
@@ -753,24 +692,6 @@ move/eqP : p0; apply.
 by apply/val_inj; rewrite /= p0'.
 Qed.
 
-Lemma fsdistbindEwiden (B : choiceType) (a b : {dist A}) (f : A -> {dist B})
-    (p : prob) : p != 0%:pr ->
-  forall b0 : B, (a >>= f) b0 = \sum_(i <- finsupp (a <|p|> b)) (a i * (f i) b0).
-Proof.
-move=> p0 b0; rewrite fsdistbindE.
-case: ifPn => [/bigfcupP[dB] | Hb0].
-- rewrite andbT; case/imfsetP => a1 /= a1a ->{dB} b0fa1.
-  apply/big_fset_incl; first exact/finsupp_conv_subr.
-  by move=> a2 Ha2; rewrite memNfinsupp => /eqP ->; rewrite mul0R.
-- apply/esym/psumR_seq_eq0P => // a1 Ha1.
-  have [->|aa10] := eqVneq (a a1) 0; first by rewrite mul0R.
-  rewrite mulR_eq0; right.
-  apply/eqP; rewrite -memNfinsupp.
-  apply: contra Hb0 => Hb0.
-  apply/bigfcupP; exists (f a1) => //; rewrite andbT.
-  by apply/imfsetP; exists a1 => //=; rewrite mem_finsupp.
-Qed.
-
 Let conv0 (mx my : {dist A}) : mx <| 0%:pr |> my = my.
 Proof.
 by apply/fsdist_ext => a; rewrite fsdist_convE /= mul0R add0R onem0 mul1R.
@@ -848,28 +769,11 @@ have [->|p0] := eqVneq p 0%:pr.
   by rewrite conv0 mul0R add0R onem0 mul1R fsdistbindE.
 have [->|p1] := eqVneq p 1%:pr.
   by rewrite conv1 mul1R onem1 mul0R addR0 fsdistbindE.
-case: ifPn => [/bigfcupP[dB] | Hb0].
-  rewrite andbT => /imfsetP[a0 /=] /= Ha0 ->{dB} b0a0.
-  under eq_bigr.
-    by move=> a1 _; rewrite fsdist_convE (@mulRDl _ _ (f a1 b0)) -!mulRA; over.
-  rewrite big_split /= -2!big_distrr /=; congr (_ * _ + _ * _)%R.
-    exact/esym/fsdistbindEwiden.
-  rewrite (@fsdistbindEwiden _ b a _ (p.~)%:pr)// 1?convC//.
-  apply: contra p1 => /eqP/(congr1 val) /= /onem_eq0 p1.
-  exact/eqP/val_inj.
-apply/esym/paddR_eq0; [exact/mulR_ge0 | exact/mulR_ge0 |].
-suff: forall c, finsupp c `<=` finsupp (a <|p|> b) -> (c >>= f) b0 = 0.
-  by move=> h; rewrite !h ?mulR0//;
-    [exact: finsupp_conv_subl | exact: finsupp_conv_subr].
-move=> c hc.
-rewrite fsdistbindE; case: ifPn => // abs.
-exfalso.
-move/negP : Hb0; apply.
-case/bigfcupP : abs => dB.
-rewrite andbT => /imfsetP[a0 /=] a0c ->{dB} Hb0.
-apply/bigfcupP; exists (f a0) => //; rewrite andbT.
-apply/imfsetP; exists a0 => //=.
-by move: a0 a0c {Hb0}; exact/fsubsetP.
+under eq_bigr.
+  by move=> a1 _; rewrite fsdist_convE (@mulRDl _ _ (f a1 b0)) -!mulRA; over.
+rewrite big_split /= -2!big_distrr /= -!fsdistbindEwiden //.
+  by rewrite finsupp_conv_subl.
+by rewrite finsupp_conv_subr.
 Qed.
 
 End fsdist_conv_prop.
@@ -1064,16 +968,8 @@ set X := LHS.
 under eq_bigr do rewrite fdist_of_fsE.
 rewrite ssum_seq_finsuppE' supp_fsdistmap.
 under eq_bigr do rewrite fsdistbindE.
-have Hsupp : forall y,
-    y \in [fset f x | x in finsupp d] ->
-    y \in \bigcup_(d0 <- [fset fsdist1 (f a) | a in finsupp d]) finsupp d0.
-- move=> y.
-  case/imfsetP=> x /= xfd ->.
-  apply/bigfcupP; exists (fsdist1 (f x)); last by rewrite supp_fsdist1 inE.
-  by rewrite andbT; apply/imfsetP; exists x.
 rewrite big_seq; under eq_bigr=> y Hy.
-- rewrite (Hsupp y Hy).
-  rewrite big_scaleptl'; [| by rewrite scale0pt | by move=> j; apply mulR_ge0].
+- rewrite big_scaleptl'; [| by rewrite scale0pt | by move=> j; apply mulR_ge0].
   under eq_bigr=> i do rewrite fsdist1E inE.
   over.
 rewrite -big_seq exchange_big /=.
