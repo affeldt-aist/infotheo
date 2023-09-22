@@ -300,7 +300,7 @@ Lemma fsdist1bind (A B : choiceType) (a : A) (f : A -> {dist B}) :
   fsdist1 a >>= f = f a.
 Proof.
 apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => b.
-by rewrite fsdistbindE supp_fsdist1 big_seq_fset1 fsdist1E inE eqxx mul1R.
+by rewrite fsdistbindE supp_fsdist1 big_seq_fset1 fsdist1xx mul1R.
 Qed.
 
 Lemma fsdistbind1 (A : choiceType) (p : {dist A}) : p >>= (@fsdist1 A) = p.
