@@ -673,7 +673,7 @@ rewrite /split_tuple /= in_setX; apply/andP; split.
 - apply/imsetP; exists tb' => //.
   apply/val_inj => /=.
   rewrite eq_tcast /=.
-  by rewrite -tb's sum_num_occ_rec take_take // leq_addr.
+  by rewrite -tb's sum_num_occ_rec take_takel// leq_addr.
 - rewrite in_set.
   apply/eqP/val_inj => /=.
   by rewrite eq_tcast -Ha take0.
@@ -691,7 +691,7 @@ symmetry in Htb_2; move/tcast2tval in Htb_2; rewrite /= in Htb_2.
 rewrite /split_tuple /= in_setX.
 apply/andP; split.
 - apply/imsetP; exists tb => //; apply/val_inj => /=.
-  by rewrite eq_tcast /= -Htb_2 sum_num_occ_rec take_take // leq_addr.
+  by rewrite eq_tcast /= -Htb_2 sum_num_occ_rec take_takel // leq_addr.
 - rewrite in_set.
   set t := Tuple _.
   have Ht : tval t = take N(enum_val k | ta) (drop (sum_num_occ ta k) sb) by [].
@@ -704,7 +704,7 @@ apply/andP; split.
   rewrite -Htb_2 in Ht.
   apply/eqP.
   have Ht2 : tval t = drop (sum_num_occ ta k) (take (sum_num_occ ta k.+1) tb).
-    rewrite Ht {1}sum_num_occ_rec take_drop take_take; last by rewrite addnC.
+    rewrite Ht {1}sum_num_occ_rec take_drop take_takel; last by rewrite addnC.
     by rewrite addnC sum_num_occ_rec.
   congr (_ %:R / _%:R)%R.
   exact/esym/num_occ_num_co_occ.

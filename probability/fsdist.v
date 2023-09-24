@@ -252,19 +252,16 @@ Lemma fsdistbindEcond x :
   fsdistbind x = if x \in D then \sum_(a <- finsupp p) p a * (g a) x else 0.
 Proof. by rewrite /fsdistbind; unlock; rewrite fsfunE. Qed.
 
-Lemma fsdistbindE x :
-  fsdistbind x = \sum_(a <- finsupp p) p a * (g a) x.
+Lemma fsdistbindE x : fsdistbind x = \sum_(a <- finsupp p) p a * (g a) x.
 Proof.
 rewrite fsdistbindEcond.
 case: ifPn => // aD.
 apply/eqP; move: aD; apply: contraLR.
-rewrite eq_sym negbK sumR_neq0; last first.
-  by move=> ?; exact: mulR_ge0.
+rewrite eq_sym negbK sumR_neq0; last by move=> ?; exact: mulR_ge0.
 case => i [] suppi pg0.
 apply/bigfcupP; exists (g i).
-  by rewrite in_imfset.
-rewrite mem_finsupp.
-by apply/gtR_eqF/(pmulR_rgt0' pg0).
+- by rewrite in_imfset.
+- by rewrite mem_finsupp; apply/gtR_eqF/(pmulR_rgt0' pg0).
 Qed.
 
 Lemma fsdistbindEwiden S x :
@@ -303,7 +300,7 @@ apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => b.
 by rewrite fsdistbindE supp_fsdist1 big_seq_fset1 fsdist1xx mul1R.
 Qed.
 
-Lemma fsdistbind1 (A : choiceType) (p : {dist A}) : p >>= (@fsdist1 A) = p.
+Lemma fsdistbind1 (A : choiceType) (p : {dist A}) : p >>= @fsdist1 A = p.
 Proof.
 apply/val_inj/val_inj => /=; congr fmap_of_fsfun; apply/fsfunP => b.
 rewrite fsdistbindEcond; case: ifPn => [|H].
@@ -352,8 +349,7 @@ Qed.
 Definition fsdistmapE (A B : choiceType) (f : A -> B) (d : {dist A}) b :
   fsdistmap f d b = \sum_(a <- finsupp d | f a == b) d a.
 Proof.
-rewrite {1}/fsdistmap [in LHS]fsdistbindE.
-rewrite (bigID (fun a => f a == b)) /=.
+rewrite {1}/fsdistmap [in LHS]fsdistbindE (bigID (fun a => f a == b)) /=.
 rewrite [X in (_ + X)%R = _](_ : _ = 0) ?addR0; last first.
   by rewrite big1 // => a fab; rewrite fsdist10 ?mulR0// eq_sym.
 by apply eq_bigr => a /eqP ->; rewrite fsdist1xx mulR1.
