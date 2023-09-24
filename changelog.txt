@@ -1,4 +1,15 @@
 -------------------
+from 0.5.2 to master
+-------------------
+- renamed
+  + fsdistbindE -> fsdistbindEcond
+- added
+  + fsdistbindE (unconditional RHS)
+  + pmulR_lgt0', pmulR_rgt0'
+- changed
+  + fsdistbindEwiden (generalized)
+
+-------------------
 from 0.5.1 to 0.5.2
 -------------------
 compatibility release

@@ -539,6 +539,16 @@ Proof. by move=> Hm; rewrite -!(mulRC m) leR_pmul2l'. Qed.
 Lemma pmulR_lgt0 x y : 0 < x -> (0 < y * x) <-> (0 < y).
 Proof. by move=> x0; rewrite -{1}(mul0R x) ltR_pmul2r. Qed.
 
+Lemma pmulR_lgt0' [x y : R] :  0 < y * x -> 0 <= x -> 0 < y.
+Proof.
+case/boolP: (x == 0) => [/eqP -> |]; first by rewrite mulR0 => /ltRR.
+move=> /eqP /nesym ? /[swap] ? /pmulR_lgt0; apply.
+by rewrite ltR_neqAle; split.
+Qed.
+
+Lemma pmulR_rgt0' [x y : R] :  0 < x * y -> 0 <= x -> 0 < y.
+Proof. by rewrite mulRC; exact: pmulR_lgt0'. Qed.
+
 Arguments leR_pmul2l [_] [_] [_].
 Arguments leR_pmul2r [_] [_] [_].
 Arguments ltR_pmul2l [_] [_] [_].
