@@ -690,7 +690,6 @@ Proof. by apply/fsdist_ext=> ?; rewrite !fsdist_convE convA. Qed.
 HB.instance Definition _ :=
   @isConvexSpace.Build (FSDist.t _) (Choice.class _) (@fsdist_conv A)
   conv1 convmm convC convA.
-
 End fsdist_convType.
 
 Section fsdist_conv_prop.
@@ -790,6 +789,17 @@ Qed.
 
 End fsdist_convn_lemmas.
 
+(*HB.instance Definition _ a := isAffine.Build _ _ _ (af a).
+
+Definition fsdist_eval (x : A) := fun D : {dist A} => D x.
+
+Lemma fsdist_eval_affine (x : A) : affine (fsdist_eval x).
+Proof. by move=> a b p; rewrite /fsdist_eval fsdist_convE. Qed.
+
+HB.instance Definition _ (x : A) :=
+  isAffine.Build _ _ _ (fsdist_eval_affine x).*)
+
+(* TODO*)
 (*Section fsdist_ordered_convex_space.
 Variable A : choiceType.
 (*Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin {dist A}.
