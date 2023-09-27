@@ -699,15 +699,6 @@ Implicit Types (p : {prob real_realType}) (a b c : {dist A}).
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
 
-(* looks like to be only used in monae/proba_monad_model.v;
-   should either be removed (preferably also changing the ProbaMonad interface),
-   or have the name changed to fsdist_convA0 *)
-(* TODO: rm duplicated *)
-Definition fsdist_convA (p q r s : {prob real_realType}) (mx my mz : {dist A}) :
-  p = r * s :> R /\ (Prob.p s).~ = (Prob.p p).~ * (Prob.p q).~ ->
-  mx <| p |> (my <| q |> mz) = (mx <| r |> my) <| s |> mz.
-Proof. by case=> ? ? ; exact: convA0. Qed.
-
 Lemma finsupp_conv_subr a b p :
   p != 0%:pr -> finsupp a `<=` finsupp (a <|p|> b).
 Proof.
