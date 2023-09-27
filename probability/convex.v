@@ -568,7 +568,7 @@ HB.mixin Record isRealCone (A : Type) of isQuasiRealCone A := {
     @scalept [the quasiRealCone of A] (p + q)%coqR x = addpt (scalept p x) (scalept q x) }.
 
 #[short(type=realCone)]
-HB.structure Definition RealCone := { A of isQuasiRealCone A & isRealCone A}.
+HB.structure Definition RealCone := { A of isQuasiRealCone A & isRealCone A }.
 
 Section real_cone_theory.
 Variable A : realCone.

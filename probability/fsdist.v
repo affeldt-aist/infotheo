@@ -28,16 +28,11 @@ Require Import bigop_ext Rbigop fdist convex.
 (*         fsdistmap == map of the probability monad                          *)
 (* FSDist_choiceType == instance of choiceType with finitely-supported        *)
 (*                      distributions                                         *)
-(*      fsdist_convn == of type {fdist 'I_n} -> ('I_n -> {dist A}) -> {dist A}*)
-(*                      convex combination of n distributions                 *)
-(*       fsdist_conv == of type prob -> {dist A} -> {dist A} -> {dist A}      *)
-(*                      convex combination of two distributions, notation     *)
-(*                       . <| . |> . (fsdist_scope)                           *)
+(* [the convType of {dist A}] == instance of a convex space on {dist A}       *)
 (*                                                                            *)
 (* Free convex spaces in terms of finitely-supported distributions:           *)
-(*  {dist A} and @fsdist_conv A are used to form an instance of convType,     *)
-(*  this shows that finitely-supported distributions over a choiceType form a *)
-(*  convex space                                                              *)
+(*  the instance [the convType of {dist A}] constructs a freely generated     *)
+(*  convex space from any given choiceType A.                                 *)
 (*   fsdistmap f is shown to have the structure of an affine function         *)
 (*   fsdist_eval x d == evaluation operation of fsdists at some fixed element,*)
 (*                      shown have the structure of an affine function        *)
@@ -675,14 +670,19 @@ Implicit Types (p q : {prob real_realType}) (a b c : {dist A}).
 Local Open Scope reals_ext_scope.
 
 Local Notation "x <| p |> y" := (fsdist_conv p x y) : fsdist_scope.
+
 Let conv0 a b : a <| 0%:pr |> b = b.
 Proof. by apply/fsdist_ext => ?; rewrite fsdist_convE conv0. Qed.
+
 Let conv1 a b : a <| 1%:pr |> b = a.
 Proof. by apply/fsdist_ext => ?; rewrite fsdist_convE conv1. Qed.
+
 Let convmm p : idempotent (fun x y => x <| p |> y : {dist A}).
 Proof. by move=> d; apply/fsdist_ext => ?; rewrite fsdist_convE convmm. Qed.
+
 Let convC p a b : a <| p |> b = b <| (Prob.p p).~%:pr |> a.
 Proof. by apply/fsdist_ext => ?; rewrite 2!fsdist_convE convC. Qed.
+
 Let convA p q a b c :
   a <| p |> (b <| q |> c) = (a <| r_of_pq p q |> b) <| s_of_pq p q |> c.
 Proof. by apply/fsdist_ext=> ?; rewrite !fsdist_convE convA. Qed.
@@ -690,6 +690,7 @@ Proof. by apply/fsdist_ext=> ?; rewrite !fsdist_convE convA. Qed.
 HB.instance Definition _ :=
   @isConvexSpace.Build (FSDist.t _) (Choice.class _) (@fsdist_conv A)
   conv1 convmm convC convA.
+
 End fsdist_convType.
 
 Section fsdist_conv_prop.
@@ -763,13 +764,6 @@ Proof. by move=> ? ? ?; rewrite /fsdistmap fsdist_conv_bind_left_distr. Qed.
 HB.instance Definition _ (f : A -> B) :=
   isAffine.Build _ _ _ (fsdistmap_affine f).
 
-Let f a := fun x : {dist A} => finmap.fun_of_fsfun x a.
-
-Let af a : affine (f a).
-Proof. by move=> p x y; rewrite /f /= fsdist_convE. Qed.
-
-HB.instance Definition _ a := isAffine.Build _ _ _ (af a).
-
 Definition fsdist_eval (x : A) := fun D : {dist A} => D x.
 
 Lemma fsdist_eval_affine (x : A) : affine (fsdist_eval x).
@@ -780,7 +774,31 @@ HB.instance Definition _ (x : A) :=
 
 End FSDist_affine_instances.
 
-(* TODO*)
+Section fsdist_convn_lemmas.
+Local Open Scope fdist_scope.
+Variables (A : choiceType) (n : nat) (e : {fdist 'I_n}) (g : 'I_n -> {dist A}).
+
+Lemma fsdist_convnE x : (<|>_e g) x = \sum_(i < n) e i * g i x.
+Proof. by rewrite -/(fsdist_eval x _) Convn_comp /= /fsdist_eval avgnRE. Qed.
+
+(*TODO: unused, remove?*)
+Lemma supp_fsdist_convn :
+  finsupp (<|>_e g) = \big[fsetU/fset0]_(i < n | (0 < e i)%mcR) finsupp (g i).
+Proof.
+apply/fsetP => a; apply/idP/idP => [|]; rewrite mem_finsupp fsdist_convnE.
+  case/sumR_neq0 => /=; first by move=> ?; apply: mulR_ge0.
+  move=> j [] /= ? eg0.
+  apply/bigfcupP.
+  exists j; first by apply/andP; split=> //; exact/RltP/(pmulR_lgt0' eg0).
+  rewrite mem_finsupp gtR_eqF //.
+  exact/(pmulR_rgt0' eg0).
+case/bigfcupP=> j /andP [] ? /RltP ? /[!mem_finsupp] /prob_gt0 /= ?.
+apply/sumR_neq0; first by move=> ?; apply/mulR_ge0.
+by exists j; split=> //; apply/mulR_gt0 => //; exact/RltP.
+Qed.
+
+End fsdist_convn_lemmas.
+
 (*Section fsdist_ordered_convex_space.
 Variable A : choiceType.
 (*Definition fsdist_orderedConvMixin := @OrderedConvexSpace.Mixin {dist A}.
