@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 From mathcomp Require Import boolp Rstruct.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
+Require Import ssrR Reals_ext ssr_ext realType_ext ssralg_ext logb Rbigop.
 Require Import fdist proba convex.
 
 (******************************************************************************)
@@ -17,6 +17,9 @@ Import Prenex Implicits.
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
+Local Open Scope fdist_scope.
+
+Import GRing.Theory.
 
 Section jensen_inequality.
 
@@ -27,14 +30,14 @@ Variables A : finType.
 
 Local Hint Resolve leRR : core.
 
-Lemma jensen_dist (r : A -> R) (X : fdist A) :
+Lemma jensen_dist (r : A -> R) (X : {fdist A}) :
   (forall a, r a \in D) ->
   f (\sum_(a in A) X a * r a) <= \sum_(a in A) X a * f (r a).
 Proof.
 move=> HDr.
 apply (@proj1 _ (\sum_(a in fdist_supp X) X a * r a \in D)).
 rewrite [in X in _ <= X]sum_fdist_supp [in X in X <= _]sum_fdist_supp /=.
-apply: (@fdist_ind A (fun X =>
+apply: (@fdist_ind _ A (fun X =>
    f (\sum_(a in fdist_supp X) X a * r a) <=
    \sum_(a in fdist_supp X) X a * f (r a) /\ _)) => //.
 move=> n IH {}X b cardA Hb.
@@ -49,7 +52,7 @@ have HsumD1 q:
   rewrite (eq_bigr (fun a => /(X b).~ * (X a * q a))); last first.
     move=> i; rewrite inE fdistD1E.
     case: ifP => Hi; first by rewrite eqxx.
-    by rewrite /Rdiv mulRCA mulRA.
+    by rewrite mulRCA mulRA -divRE RdivE.
  by rewrite -big_distrr.
 have {HsumD1}HsumXD1 q:
   \sum_(a in fdist_supp X) X a * q a =
@@ -73,7 +76,7 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Lemma Jensen (P : fdist A) (X : {RV P -> R}) : (forall x, X x \in D) ->
+Lemma Jensen (P : {fdist A}) (X : {RV P -> R}) : (forall x, X x \in D) ->
   f (`E X) <= `E (f `o X).
 Proof.
 move=> H.
@@ -99,7 +102,7 @@ rewrite /convex_function_in => x y t Dx Dy.
 apply /R_convex_function_atN/concave_f => //; by case: t.
 Qed.
 
-Lemma jensen_dist_concave (r : A -> R) (X : fdist A) :
+Lemma jensen_dist_concave (r : A -> R) (X : {fdist A}) :
   (forall x, r x \in D) ->
   \sum_(a in A) X a * f (r a) <= f (\sum_(a in A) X a * r a).
 Proof.

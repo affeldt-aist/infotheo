@@ -36,8 +36,11 @@ Section onem.
   Lemma onem_le1 x : 0 <= x -> onem x <= 1.
   Proof. move=> ?; by rewrite /onem ler_subl_addr -ler_subl_addl subrr. Qed.
 
-  Lemma onem_le  r s : (r <= s) = (s.~ <= r.~).
-  Proof. Admitted.
+Lemma onem_le  r s : (r <= s) = (s.~ <= r.~).
+Proof.
+apply/idP/idP => [|?]; first exact: ler_sub.
+by rewrite -(opprK r) ler_oppl -(ler_add2l 1).
+Qed.
 
   Lemma onemE x : x.~ = 1 - x.  Proof. by []. Qed.
 
