@@ -107,7 +107,7 @@ Qed.
 End fin_img.
 
 Section proba. (* proba.v ? *)
-Variables (U : finType) (P : fdist U).
+Variables (U : finType) (P : {fdist U}).
 
 Definition fdist_choice' : U.
 move: (fdist_card_neq0 P).
@@ -323,9 +323,7 @@ End univ_types.
 
 Module BN.
 Section bn.
-Variable U : finType.
-Variable P : fdist U.
-Variable n : nat.
+Variables (U : finType) (P : {fdist U}) (n : nat).
 
 Section preim.
 Local Open Scope R_scope.
@@ -405,7 +403,7 @@ Definition cinde_preim (e f g : {set 'I_n}) :=
                    (preim_vars f vals)
                    (preim_vars g vals).
 
-Lemma cinde_eventsC A (Q : fdist A) (E F G : {set A}) :
+Lemma cinde_eventsC A (Q : fdist _ A) (E F G : {set A}) :
   cinde_events Q E F G -> cinde_events Q F E G.
 Proof. rewrite /cinde_events => Hef; by rewrite setIC mulRC. Qed.
 
@@ -887,9 +885,7 @@ End BN.
 
 Section Factorization.
 Import BN.
-Variable U : finType.
-Variable P : fdist U.
-Variable n : nat.
+Variables (U : finType) (P : {fdist U}) (n : nat).
 Variable types : 'I_n -> finType.
 Variable vars : forall i, {RV P -> types i}.
 Variable bn : t vars.

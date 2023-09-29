@@ -20,21 +20,21 @@ Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
 (* ---- onem ---- *)
 Section onem.
-  Local Open Scope ring_scope.
-  Variable R : realType.
-  Definition onem (x: R) := 1 - x.
-  Local Notation "p '.~'" := (onem p).
+Local Open Scope ring_scope.
+Variable R : realType.
 
-  Lemma onem0 : onem 0 = 1.
-  Proof. by rewrite /onem subr0. Qed.
+Definition onem (x: R) := 1 - x.
+Local Notation "p '.~'" := (onem p).
 
-  Lemma onem1 : onem 1 = 0.
-  Proof. by rewrite /onem subrr. Qed.
+Lemma onem0 : onem 0 = 1. Proof. by rewrite /onem subr0. Qed.
 
-  Lemma onem_ge0 x : x <= 1 -> 0 <= onem x.
-  Proof. move=> ?; by rewrite /onem subr_ge0. Qed.
-  Lemma onem_le1 x : 0 <= x -> onem x <= 1.
-  Proof. move=> ?; by rewrite /onem ler_subl_addr -ler_subl_addl subrr. Qed.
+Lemma onem1 : onem 1 = 0.   Proof. by rewrite /onem subrr. Qed.
+
+Lemma onem_ge0 x : x <= 1 -> 0 <= onem x.
+Proof. move=> ?; by rewrite /onem subr_ge0. Qed.
+
+Lemma onem_le1 x : 0 <= x -> onem x <= 1.
+Proof. move=> ?; by rewrite /onem ler_subl_addr -ler_subl_addl subrr. Qed.
 
 Lemma onem_le  r s : (r <= s) = (s.~ <= r.~).
 Proof.
@@ -42,11 +42,11 @@ apply/idP/idP => [|?]; first exact: ler_sub.
 by rewrite -(opprK r) ler_oppl -(ler_add2l 1).
 Qed.
 
-  Lemma onemE x : x.~ = 1 - x.  Proof. by []. Qed.
+Lemma onemE x : x.~ = 1 - x.  Proof. by []. Qed.
 
-  Lemma onem_lt  r s : r < s <-> s.~ < r.~. Proof. by rewrite !onemE; lra. Qed.
+Lemma onem_lt  r s : r < s <-> s.~ < r.~. Proof. by rewrite !onemE; lra. Qed.
 
-  Lemma onemKC r : r + r.~ = 1. Proof. by rewrite !onemE; lra. Qed.
+Lemma onemKC r : r + r.~ = 1. Proof. by rewrite !onemE; lra. Qed.
 (*  Lemma onemKC r : r + (onem r) = 1.
   Proof. 
     by rewrite /onem addrC -addrA (addrC (-r) r) subrr addr0.
@@ -153,15 +153,12 @@ Proof. by case: p => p /= /andP []. Qed.
 Lemma prob_le1 (p : prob R) : ((p : R) <= 1)%R.
 Proof. by case: p => p /= /andP []. Qed.
 
-
-
 Lemma prob_gt0 p : p != 0%:pr <-> 0 < Prob.p p.
 Proof.
-(*rewrite ltr_neqAle; split=> [H|[/eqP p0 _]].
-by split => //; exact/nesym/eqP.
-by case: p p0 => p ?; apply: contra => /eqP[/= ->].
-Qed.*)
-Admitted.
+rewrite lt_neqAle; split=> [H|/andP[+ pge0]].
+  by apply/andP; split; [rewrite eq_sym|exact: prob_ge0].
+by apply: contra => /eqP ->.
+Qed.
 
 Lemma prob_gt0' p : p != 0 :> R <-> 0 < Prob.p p.
 Proof. exact: prob_gt0. Qed.
