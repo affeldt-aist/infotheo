@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 From mathcomp Require Import matrix perm.
 From mathcomp Require boolp.
-Require Import ssr_ext ssralg_ext ssrR fdist.
+Require Import ssr_ext ssralg_ext fdist.
 
 (******************************************************************************)
 (*                  Work in progress about LDPC codes                         *)
@@ -101,16 +101,9 @@ Coercion Lambda_of_L :
 Definition nzdegdist_coerce := NormalizedDegreeDistribution.p.
 Coercion nzdegdist_coerce : NormalizedDegreeDistribution.L >-> poly_of.
 
-Require Import Reals Rbigop.
-
 Module TreeEnsemble.
 
-Section definition.
-
-Variable K : numFieldType.
-(* lambda, rho: distribution of the number of ports by node arities
-   (starts at arity 1) *)
-Variables lambda rho : NormalizedDegreeDistribution.L K.
+Section ensemble.
 
 Inductive kind := kv | kf.
 
@@ -459,9 +452,16 @@ Canonical fintree_finType n l := Eval hnf in FinType _ (fintree_finMixin n l).
 
 Local Open Scope fdist_scope.
 
-Definition ensemble n l := {fdist (@fintree n l)}.
+Definition ensemble {K : numDomainType} n l := @FDist.t K [finType of (@fintree n l)].
 
+End ensemble.
+
+Section tree_ensemble.
 (* maximum branching degree of the graph (root has no parent) *)
+Variable K : numFieldType.
+(* lambda, rho: distribution of the number of ports by node arities
+   (starts at arity 1) *)
+Variables lambda rho : NormalizedDegreeDistribution.L K.
 Variable tw : nat.
 Hypothesis Hlam : (size lambda <= tw)%nat.
 Hypothesis Hrho : (size rho <= tw)%nat.
@@ -698,25 +698,18 @@ apply eq_bigr=> tl _.
 by rewrite big_cons.
 Qed.
 
-Variable RofK : K -> R.
-Hypothesis RofKpos : forall x : K, (Num.Def.ler 0%:R x) -> (0 <= RofK x)%R.
-Hypothesis RofK0 : RofK 0 = 0%R.
-Hypothesis RofK1 : RofK 1 = 1%R.
-Hypothesis RofKadd : forall x y : K, RofK (x + y) = (RofK x + RofK y)%R.
-Hypothesis RofKmul : forall x y : K, RofK (x * y) = (RofK x * RofK y)%R.
+Lemma f0R l t : (0 <= [ffun x => (@fintree_dist l x)] t).
+Proof. rewrite ffunE; apply f0. Qed.
 
-Lemma f0R l t : (0 <= [ffun x => RofK (@fintree_dist l x)] t)%R.
-Proof. rewrite ffunE; apply RofKpos, f0. Qed.
-
-Lemma f1R l : (\sum_(t : @fintree tw l) [ffun x => RofK (@fintree_dist l x)] t = 1)%R.
+Lemma f1R l : (\sum_(t : @fintree tw l) [ffun x => (@fintree_dist l x)] t = 1).
 Proof.
 under eq_bigr do rewrite ffunE /=.
-by rewrite -(@big_morph _ _ RofK 0%R Rplus 0%:R (@GRing.add K)) // f1 RofK1.
+by rewrite f1.
 Qed.
 
-Definition tree_ensemble l : ensemble tw l := FDist.make (@f0R l) (@f1R l).
+Definition tree_ensemble l : ensemble tw l := @FDist.make K _ _ (@f0R l) (@f1R l).
 
-End definition.
+End tree_ensemble.
 
 End TreeEnsemble.
 
@@ -1060,7 +1053,11 @@ by rewrite -ler_pdivl_mulr // ?Hall // HG'.
 Qed.
 
 Lemma sum_expr_S m l : (\sum_(i < l.+1) m ^ i = 1 + m * \sum_(i < l) m ^ i)%nat.
-Proof. by rewrite big_ord_recl big_distrr. Qed.
+Proof.
+rewrite big_ord_recl/= expn0 big_distrr/=; congr (_ + _)%N.
+by apply: eq_bigr => i _ /=; rewrite -expnS.
+Qed.
+
 End sum_ops.
 
 Require Import subgraph_partition tanner.
