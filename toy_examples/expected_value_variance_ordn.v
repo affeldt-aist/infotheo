@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require Import Reals Lra.
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssrnum.
 From mathcomp Require Import Rstruct.
 Require Import Reals_ext ssrR Rbigop fdist proba.
 
@@ -14,6 +14,7 @@ Import Prenex Implicits.
 Local Open Scope reals_ext_scope.
 Local Open Scope tuple_ext_scope.
 Local Open Scope R_scope.
+Local Open Scope ring_scope.
 
 Definition ord1 {n} := lift ord0 (@ord0 n).
 Definition ord2 {n} := lift ord0 (@ord1 n).
@@ -35,18 +36,16 @@ Qed.
 
 Definition p' : [finType of 'I_3] ->R+ := mkNNFinfun p_nonneg.
 
-Lemma p_sum1 : \sum_(i in 'I_3) p' i == 1.
+Lemma p_sum01 : [forall a, 0 <= p' a] && (\sum_(a in 'I_3) p' a == 1).
 Proof.
-apply/eqP.
-rewrite 3!big_ord_recl big_ord0 /=.
-rewrite /p !ffunE /=.
-by field.
+apply/andP; split; first exact: p_nonneg.
+by apply/eqP; rewrite 3!big_ord_recl big_ord0 /= /p !ffunE /=; field.
 Qed.
 
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
-Definition P : {fdist 'I_3} := FDist.mk p_sum1.
+Definition P : {fdist 'I_3} := FDist.mk p_sum01.
 
 Definition X : {RV P -> R} := (fun i => INR i.+1).
 

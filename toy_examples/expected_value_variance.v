@@ -69,8 +69,7 @@ Ltac I3_eq := rewrite (_ : _ == _ = true); last by
 
 Lemma pmf01 : [forall a, 0 <= pmf a] && (\sum_(a in 'I_3) pmf a == 1).
 Proof.
-apply/andP; split.
-  exact: f_nonneg.
+apply/andP; split; first exact: f_nonneg.
 apply/eqP.
 do 3 rewrite big_ord_recl.
 rewrite big_ord0 addR0 /=.

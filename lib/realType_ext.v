@@ -189,11 +189,10 @@ Proof. exact: onemKC. Qed.
 
 Lemma probadd_eq0 p q : Prob.p p + Prob.p q = 0 <-> p = 0%:pr /\ q = 0%:pr.
 Proof.
-(*split => [/paddR_eq0 | ].
-- by move=> /(_ _)[] // p0 q0; split; exact/val_inj.
-- by case => -> ->; rewrite addR0.
-Qed.*)
-Admitted.
+split; last by move=> [-> ->] /=; rewrite addr0.
+move/eqP; rewrite paddr_eq0; [|exact: prob_ge0|exact: prob_ge0].
+by move=> /andP[/eqP ? /eqP ?]; split; exact/val_inj.
+Qed.
 
 Lemma probadd_neq0 p q : Prob.p p + Prob.p q != 0 <-> p != 0%:pr \/ q != 0%:pr.
 Proof.
