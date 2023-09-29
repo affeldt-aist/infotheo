@@ -48,58 +48,56 @@ Lemma onem_lt  r s : r < s <-> s.~ < r.~. Proof. by rewrite !onemE; lra. Qed.
 
 Lemma onemKC r : r + r.~ = 1. Proof. by rewrite !onemE; lra. Qed.
 (*  Lemma onemKC r : r + (onem r) = 1.
-  Proof. 
+  Proof.
     by rewrite /onem addrC -addrA (addrC (-r) r) subrr addr0.
   Qed.*)
 
-  Lemma onemK (x : R): onem (onem x) = x.
-  Proof.
-    by rewrite /onem opprB addrA addrC addrA (addrC (-1) 1) subrr add0r.
-  Qed.
+Lemma onemK (x : R): onem (onem x) = x.
+Proof. by rewrite /onem opprB addrA addrC addrA (addrC (-1) 1) subrr add0r. Qed.
 
-  Lemma onemD p q : (p + q).~ = p.~ + q.~ - 1.
-  Proof. rewrite !onemE; lra. Qed.
-  
-  Lemma onemM p q : (p * q).~ = p.~ + q.~ - p.~ * q.~.
-  Proof. rewrite !onemE/=; lra. Qed.
+Lemma onemD p q : (p + q).~ = p.~ + q.~ - 1.
+Proof. rewrite !onemE; lra. Qed.
 
-  Lemma onem_div p q : q != 0 -> (p / q).~ = (q - p)  /q.
-  Proof.
-    rewrite !onemE.
-    move=> Hq.
-    rewrite mulrDl.
-    rewrite mulNr.
-    rewrite -/(q / q).
-    by rewrite divrr// unitfE.
-  Qed.
+Lemma onemM p q : (p * q).~ = p.~ + q.~ - p.~ * q.~.
+Proof. rewrite !onemE/=; lra. Qed.
 
-  Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
-  Proof.
-    by move=> /andP [_0r r1]; apply /andP; split; [rewrite onem_ge0 | rewrite onem_le1].
-  Qed.
+Lemma onem_div p q : q != 0 -> (p / q).~ = (q - p)  /q.
+Proof.
+rewrite !onemE.
+move=> Hq.
+rewrite mulrDl.
+rewrite mulNr.
+rewrite -/(q / q).
+by rewrite divrr// unitfE.
+Qed.
 
-  Lemma onem_eq0 r : (onem r = 0) <-> (r = 1).
-  Proof.
-  rewrite /onem. split; first by move /subr0_eq.
-  by move=> ->; rewrite subrr.
-  Qed.
+Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
+Proof.
+  by move=> /andP [_0r r1]; apply /andP; split; [rewrite onem_ge0 | rewrite onem_le1].
+Qed.
 
-  Lemma onem_eq1 r : r.~ = 1 <-> r = 0. Proof. rewrite onemE; lra. Qed.
+Lemma onem_eq0 r : (onem r = 0) <-> (r = 1).
+Proof.
+rewrite /onem. split; first by move /subr0_eq.
+by move=> ->; rewrite subrr.
+Qed.
 
-  Lemma onem_neq0 r : (onem r != 0) <-> (r != 1).
-  Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
+Lemma onem_eq1 r : r.~ = 1 <-> r = 0. Proof. rewrite onemE; lra. Qed.
 
-  Lemma onem_gt0 r : r < 1 -> 0 < r.~. Proof. rewrite /onem; lra. Qed.
+Lemma onem_neq0 r : (onem r != 0) <-> (r != 1).
+Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 
-  Lemma onem_lt1 r : 0 < r -> r.~ < 1. Proof. rewrite /onem; lra. Qed.
+Lemma onem_gt0 r : r < 1 -> 0 < r.~. Proof. rewrite /onem; lra. Qed.
 
-  Lemma onem_oprob r : 0 < r < 1 -> 0 < r.~ < 1.
-  Proof.
-    by move=> /andP [? ?]; apply/andP; rewrite onem_gt0 // onem_lt1.
-  Qed.
+Lemma onem_lt1 r : 0 < r -> r.~ < 1. Proof. rewrite /onem; lra. Qed.
 
-  Lemma subr_onem r s : r - s.~ = r + s - 1.
-  Proof. by rewrite /onem opprB addrA. Qed.
+Lemma onem_oprob r : 0 < r < 1 -> 0 < r.~ < 1.
+Proof.
+by move=> /andP [? ?]; apply/andP; rewrite onem_gt0 // onem_lt1.
+Qed.
+
+Lemma subr_onem r s : r - s.~ = r + s - 1.
+Proof. by rewrite /onem opprB addrA. Qed.
 
 End onem.
 Notation "p '.~'" := (onem p).
@@ -135,8 +133,6 @@ Import GRing.Theory.
 Local Open Scope ring_scope.
 Variable R : realType.
 Implicit Types p q : {prob R}.
-
-
 
 Lemma OO1 : ((0 <= 0 :> R) && (0 <= 1 :> R))%R.
 Proof. by apply /andP; split; [rewrite lexx | rewrite ler01]. Qed.
@@ -205,18 +201,14 @@ Qed.
 Lemma probmul_eq1 p q : Prob.p p * Prob.p q = 1 <-> p = 1%:pr /\ q = 1%:pr.
 Proof.
 split => [/= pq1|[-> ->]]; last by rewrite mulr1.
-(*move: (oner_neq0 R); rewrite -{1}pq1 => /eqP; rewrite mulR_neq0' => /andP[].
-move: R1_neq_R0; rewrite -{1}pq1 => /eqP; rewrite mulR_neq0' => /andP[].
-rewrite 2!prob_gt0'=> p0 q0.
-have /leR_eqVlt[p1|] := probR_le1 p; last first.
-  by move/(ltR_pmul2r q0); rewrite mul1R => /(ltR_leR_trans);
-     move/(_ _ (probR_le1 q))/ltR_neqAle => [].
-have /leR_eqVlt[q1|] := probR_le1 q; last first.
-  by move/(ltR_pmul2r p0); rewrite mul1R mulRC => /(ltR_leR_trans);
-  move/(_ _ (probR_le1 p)) /ltR_neqAle => [].
-by split; apply val_inj.
-Qed.*)
-Admitted.
+move: (oner_neq0 R); rewrite -{1}pq1 mulf_eq0 negb_or => /andP[p0 q0].
+have := prob_le1 p; rewrite le_eqVlt => /orP[/eqP p1|p1].
+  by rewrite p1 mul1r in pq1; split; exact/val_inj.
+have := prob_le1 q; rewrite le_eqVlt => /orP[/eqP q1|q1].
+  by rewrite q1 mulr1 in pq1; split; exact/val_inj.
+have {}p0 : 0 < Prob.p p by rewrite lt_neqAle prob_ge0 eq_sym andbT.
+by move: p1; rewrite -[in X in X -> _]pq1 (ltr_pMr _ p0) ltNge (ltW q1).
+Qed.
 
 End prob_lemmas.
 
