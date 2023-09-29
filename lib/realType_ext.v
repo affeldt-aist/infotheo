@@ -196,10 +196,11 @@ Qed.
 
 Lemma probadd_neq0 p q : Prob.p p + Prob.p q != 0 <-> p != 0%:pr \/ q != 0%:pr.
 Proof.
-(*split => [/paddR_neq0| ]; first by move=> /(_ _ _); apply.
-by case; apply: contra => /eqP/probadd_eq0 [] /eqP ? /eqP.
-Qed.*)
-Admitted.
+apply/iff_not2; split=> [/negP/negPn/eqP/probadd_eq0[-> ->]|].
+  by apply/not_orP; split; apply/negP/negPn.
+move=> /not_orP[/negP/negPn/eqP -> /negP/negPn/eqP -> /=]; apply/negP/negPn.
+by rewrite addr0.
+Qed.
 
 Lemma probmul_eq1 p q : Prob.p p * Prob.p q = 1 <-> p = 1%:pr /\ q = 1%:pr.
 Proof.
@@ -305,4 +306,3 @@ Proof. by move: (oprobadd_gt0 p q); rewrite ltR_neqAle => -[] /nesym /eqP. Qed.
 Qed.*)
 
 End oprob_lemmas.
-
