@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Rbigop fdist proba.
@@ -13,6 +13,7 @@ Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
+Local Open Scope ring_scope.
 
 Definition f : {ffun 'I_3 -> R} := [ffun i =>
   [fun x => 0 with inord 0 |-> 1/2, inord 1 |-> 1/3, inord 2 |-> 1/6] i].
@@ -49,7 +50,7 @@ I3_neq.
 exact: I2_2.
 Qed.
 
-Lemma f_nonneg : [forall a : 'I_3, 0 <b= f a].
+Lemma f_nonneg : [forall a : 'I_3, 0 <= f a].
 Proof.
 apply/forallP_leRP.
 case/I3P.
@@ -66,8 +67,10 @@ Definition pmf : [finType of 'I_3] ->R+ := mkNNFinfun f_nonneg.
 Ltac I3_eq := rewrite (_ : _ == _ = true); last by
               apply/eqP/val_inj => /=; rewrite inordK.
 
-Lemma pmf1 : \sum_(i in 'I_3) pmf i == 1 :> R.
+Lemma pmf01 : [forall a, 0 <= pmf a] && (\sum_(a in 'I_3) pmf a == 1).
 Proof.
+apply/andP; split.
+  exact: f_nonneg.
 apply/eqP.
 do 3 rewrite big_ord_recl.
 rewrite big_ord0 addR0 /=.
@@ -84,7 +87,7 @@ Qed.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
-Definition d : {fdist 'I_3} := FDist.mk pmf1.
+Definition d : {fdist 'I_3} := FDist.mk pmf01.
 
 Definition X : {RV d -> R} := (fun i => INR i.+1).
 

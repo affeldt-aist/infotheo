@@ -178,9 +178,8 @@ Proof.
 have [/eqP ->|pneq0]:= boolP (p == 0%:pr); first by left.
 right.
 have [/eqP ->|pneq1] := boolP (p == 1%:pr); first by left.
-(*by right; split; [apply prob_gt0 | apply prob_lt1].
-Qed.*)
-Admitted.
+by right; apply/andP; split; [exact/prob_gt0|exact/prob_lt1].
+Qed.
 
 Lemma probK p : p = (onem p).~%:pr.
 Proof. by apply val_inj => /=; rewrite onemK. Qed.
