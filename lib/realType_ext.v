@@ -165,11 +165,10 @@ Proof. exact: prob_gt0. Qed.
 
 Lemma prob_lt1 p : p != 1%:pr <-> Prob.p p < 1.
 Proof.
-(*rewrite ltR_neqAle; split=> [H|[/eqP p1 _]].
-by split => //; exact/eqP.
-by case: p p1 => p ?; apply: contra => /eqP[/= ->].
-Qed.*)
-Admitted.
+rewrite lt_neqAle; split=> [H|/andP[+ pge0]].
+  by apply/andP; split => //; exact: prob_le1.
+by apply: contra => /eqP ->.
+Qed.
 
 Lemma prob_lt1' p : p != 1 :> R <-> Prob.p p < 1.
 Proof. exact: prob_lt1. Qed.
