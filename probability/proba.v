@@ -223,7 +223,11 @@ Proof. by apply/setP => -[a b]; rewrite !inE. Qed.
 
 End TsetT.
 
-#[global] Hint Extern 0 (IZR Z0 <= _) => solve [apply/RleP; exact: FDist.ge0] : core.
+(* TODO: consider moving this to fdist.v *)
+#[global] Hint Extern 0 (IZR Z0 <= _) =>
+  solve [apply/RleP; exact: FDist.ge0] : core.
+#[global] Hint Extern 0 (_ <= IZR (Zpos xH)) =>
+  solve [apply/RleP; exact: FDist.le1] : core.
 
 Section probability.
 Notation R := Rstruct.real_realType.
@@ -556,7 +560,7 @@ Proof. by rewrite pr_eqE. Qed.
 Lemma pr_eq_neq0 (X : {RV P -> A}) (a : A) :
   `Pr[ X = a ] != 0 <-> exists i, i \in X @^-1 a /\ 0 < P i.
 Proof.
-split; rewrite pr_eqE /Pr => PXa0. 
+split; rewrite pr_eqE /Pr => PXa0.
   have H : forall i : U, 0 <= P i by move=> ?; apply/RleP/FDist.ge0.
   have := proj1 (@sumR_neq0 U P (enum (finset (X @^-1 a))) H).
   by rewrite !big_enum /= => /(_ PXa0) [i]; rewrite mem_enum inE => ?; exists i.
