@@ -1054,17 +1054,14 @@ congr (Convn _ _).
   apply/fdist_ext => j.
   rewrite !(fdist_delE,fdistI_permE,fdistD1E).
   rewrite H !permE /=.
-
-(* kokomade 2023 09/29 ... *)
-
-  field.
-  split.
-    rewrite subR_eq0; by apply/nesym/eqP.
-  split.
-    apply/eqP; apply: contra K => /eqP.
-    rewrite subR_eq0 => <-.
-  by rewrite subRB subRR add0R.
-by rewrite subR_eq0; apply/nesym/eqP.
+  (* TODO: using field *)
+  rewrite -!mulrA. congr (_ * _).
+  have d0_1 : 1 - d ord0 != 0; first by rewrite subr_eq0 eq_sym.
+  rewrite -[I in I - _ / _](mulfV d0_1).
+  rewrite -mulrBl invf_div mulrA mulVf //.
+  have dl0_1 : 1 - d (lift ord0 ord0) != 0; first by rewrite subr_eq0 eq_sym.
+  rewrite -[I in I - _ / _](mulfV dl0_1) -mulrBl invf_div mulrA mulVf //.
+  by rewrite addrAC.
 by rewrite boolp.funeqE => j; rewrite /= permE H permE.
 Qed.
 
@@ -1079,10 +1076,10 @@ destruct n as [|n]; first exact: Convn_permI2.
 destruct n as [|n]; first exact: Convn_permI3.
 move: m IH nm d g.
 apply (@Sn.suff_generators _ (fun s => forall m : nat,
-  (forall n0, n0 < m ->
+  (forall n0, (n0 < m)%nat ->
    forall (d : {fdist 'I_n0}) (g : 'I_n0 -> A) (s0 : 'S_n0),
    <|>_d g = <|>_(fdistI_perm d s0) (g \o s0)) ->
-  n.+4 < m.+1 ->
+  (n.+4 < m.+1)%nat ->
   forall (d : {fdist 'I_n.+4}) (g : 'I_n.+4 -> A),
   <|>_d g = <|>_(fdistI_perm d s) (g \o s))).
 - move=> s1 s2 H1 H2 m IH nm d g.
@@ -1118,19 +1115,19 @@ End affine_function_prop0.
 Section convn_convnfdist.
 Variable A : finType.
 
-Lemma convn_convnfdist n (g : 'I_n -> fdist A) (d : {fdist 'I_n}) :
+Lemma convn_convnfdist n (g : 'I_n -> {fdist A}) (d : {fdist 'I_n}) :
   <|>_d g = fdist_convn d g.
 Proof.
 elim: n g d => /= [g d|n IH g d]; first by move: (fdistI0_False d).
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb] H.
   apply/fdist_ext => a.
-  rewrite fdist_convnE big_ord_recl H mul1R big1 ?addR0 //= => j _.
-  by move/eqP/fdist1P : H => -> //; rewrite ?mul0R.
+  rewrite fdist_convnE big_ord_recl H mul1r big1 ?addr0 //= => j _.
+  by move/eqP/fdist1P : H => -> //; rewrite ?mul0r.
 apply/fdist_ext => a.
 rewrite fdist_convE fdist_convnE /= big_ord_recl; congr (_ + _)%coqR.
 rewrite IH fdist_convnE big_distrr /=; apply eq_bigr => i _.
 rewrite fdist_delE fdistD1E eq_sym (negbTE (neq_lift _ _)).
-by rewrite /Rdiv mulRAC mulRC -mulRA mulVR ?mulR1 //; exact/onem_neq0.
+by rewrite mulrAC mulrC !mulrA mulrV ?mul1r //; exact/onem_neq0.
 Qed.
 
 End convn_convnfdist.
