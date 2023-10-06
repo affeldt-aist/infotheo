@@ -119,7 +119,7 @@ rewrite -(f1 d) (_ : d a = \sum_(a' in A | a' == a) d a').
 by rewrite big_pred1_eq.
 Qed.
 
-Definition make (f : {ffun A -> R}) (H0 : forall a, 0 <= f a)
+Definition make (f : {ffun A -> R}) (H0 : forall a, (0 <= f a)%R)
   (H1 : \sum_(a in A) f a = 1) : t.
 refine (@mk f _). apply/andP. split; [exact /forallP | exact/eqP].
 Defined.

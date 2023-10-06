@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect all_algebra fingroup finalg.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
@@ -54,12 +54,13 @@ Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
 Reserved Notation "`I( P , W )" (at level 50, format "`I( P ,  W )").
 
 Local Open Scope R_scope.
+Local Open Scope fdist_scope.
 
 Module Channel1.
 Section channel1.
 Variables A B : finType.
 
-Local Notation "'`Ch'" := (A -> fdist B) (only parsing).
+Local Notation "'`Ch'" := (A -> {fdist B}) (only parsing).
 
 Record chan_star := mkChan {
   c :> `Ch ;
@@ -97,7 +98,7 @@ Variables (A B : finType) (W : `Ch(A, B)) (n : nat).
 Definition f (x : 'rV[A]_n) :=
   [ffun y : 'rV[B]_n => (\prod_(i < n) W `(y ``_ i | x ``_ i))].
 
-Lemma f0 x y : 0 <= f x y. Proof. rewrite ffunE; exact: prodR_ge0. Qed.
+Lemma f0 x y : (0 <= f x y). Proof. rewrite ffunE; apply/RleP; exact: prodR_ge0. Qed.
 
 Lemma f1 x : (\sum_(y in 'rV_n) f x y = 1)%R.
 Proof.
@@ -160,21 +161,22 @@ Proof. by rewrite DMCE -rprod_sub_vec. Qed.
 End DMC_sub_vec.
 
 Section fdist_out.
-Variables (A B : finType) (P : fdist A) (W  : A -> fdist B).
+Variables (A B : finType) (P : {fdist A}) (W  : A -> {fdist B}).
+Local Open Scope ring_scope.
 
 Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
 
-Let f0 (b : B) : 0 <= f b.
-Proof. by rewrite ffunE; apply: sumR_ge0 => a _; exact: mulR_ge0. Qed.
+Let f0 (b : B) : (0 <= f b).
+Proof. by rewrite ffunE; apply/RleP; apply: sumR_ge0 => a _; exact: mulR_ge0. Qed.
 
 Let f1 : \sum_(b in B) f b = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
-rewrite exchange_big /= -(FDist.f1 P).
-by apply eq_bigr => a _; rewrite -big_distrl /= (FDist.f1 (W a)) mul1R.
+rewrite exchange_big /= -[RHS](FDist.f1 P).
+by apply eq_bigr => a _; rewrite -big_distrl /= (FDist.f1 (W a)) -RmultE mul1R.
 Qed.
 
-Definition fdist_out : fdist B := locked (FDist.make f0 f1).
+Definition fdist_out : {fdist B} := locked (FDist.make f0 f1).
 
 Lemma fdist_outE b : fdist_out b = \sum_(a in A) W a b * P a.
 Proof. by rewrite /fdist_out; unlock; rewrite ffunE. Qed.
@@ -189,7 +191,7 @@ Section fdist_out_prop.
 Variables A B : finType.
 
 Local Open Scope ring_scope.
-Lemma fdist_rV_out (W : `Ch(A, B)) (P : fdist A) n (b : 'rV_n):
+Lemma fdist_rV_out (W : `Ch(A, B)) (P : {fdist A}) n (b : 'rV_n):
   `O(P, W) `^ _ b =
   \sum_(j : 'rV[A]_n) (\prod_(i < n) W j ``_ i b ``_ i) * P `^ _ j.
 Proof.
@@ -208,16 +210,16 @@ apply: eq_big.
 Qed.
 Local Close Scope ring_scope.
 
-Lemma fdistX_prod_out (W : `Ch(A, B)) (P : fdist A) : (fdistX (P `X W))`1 = `O(P, W).
+Lemma fdistX_prod_out (W : `Ch(A, B)) (P : {fdist A}) : (fdistX (P `X W))`1 = `O(P, W).
 Proof.
 rewrite fdistX1; apply/fdist_ext => b; rewrite fdist_outE fdist_sndE.
-by under eq_bigr do rewrite fdist_prodE mulRC.
+by under eq_bigr do rewrite fdist_prodE -RmultE mulRC.
 Qed.
 
 End fdist_out_prop.
 
 Section Pr_fdist_prod.
-Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)) (n : nat).
+Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)) (n : nat).
 
 Lemma Pr_DMC_rV_prod (Q : 'rV_n * 'rV_n -> bool) :
   Pr (((P `^ n) `X (W ``^ n))) [set x | Q x] =
@@ -270,13 +272,13 @@ apply: eq_big => ta.
   by rewrite inE; apply/esym/eqP/rowP => a; rewrite mxE ffunE.
 move=> Hta.
 rewrite fdist_rVE /=; apply eq_bigr => l _.
-by rewrite fdist_prodE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulRC.
+by rewrite fdist_prodE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE -RmultE mulRC.
 Qed.
 Local Close Scope ring_scope.
 
 End Pr_fdist_prod.
 
-Lemma channel_jcPr (A B : finType) (W : `Ch(A, B)) (P : fdist A) a b :
+Lemma channel_jcPr (A B : finType) (W : `Ch(A, B)) (P : {fdist A}) a b :
   P a != 0 ->
   W a b = \Pr_(fdistX (P `X W))[ [set b] | [set a] ].
 Proof. by move=> Pa0; rewrite jcPr_fdistX_prod//; exact/eqP. Qed.
@@ -284,7 +286,7 @@ Proof. by move=> Pa0; rewrite jcPr_fdistX_prod//; exact/eqP. Qed.
 Notation "`H( P , W )" := (`H (P `X W)) : channel_scope.
 
 Section conditional_entropy_chan.
-Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : {fdist A}).
 
 Definition cond_entropy_chan := `H(P, W) - `H P.
 End conditional_entropy_chan.
@@ -292,7 +294,7 @@ End conditional_entropy_chan.
 Notation "`H( W | P )" := (cond_entropy_chan W P) : channel_scope.
 
 Section condentropychan_prop.
-Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : {fdist A}).
 
 Lemma cond_entropy_chanE : `H(W | P) = cond_entropy (fdistX (P `X W)).
 Proof.
@@ -306,7 +308,7 @@ Proof.
 rewrite cond_entropy_chanE cond_entropyE big_morph_oppR; apply: eq_bigr => a _.
 rewrite big_morph_oppR /entropy mulRN -mulNR big_distrr/=; apply: eq_bigr => b _.
 rewrite fdistXI fdist_prodE /= mulNR mulRA; congr (- _).
-have [->|Pa0] := eqVneq (P a) 0; first by rewrite !(mulR0,mul0R).
+have [->|Pa0] := eqVneq (P a) 0; first by rewrite -RmultE !(mulR0,mul0R).
 by rewrite -channel_jcPr.
 Qed.
 
@@ -325,7 +327,7 @@ End mutual_info_chan.
 Notation "`I( P , W )" := (mutual_info_chan P W) : channel_scope.
 
 Section mutual_info_chan_prop.
-Variables (A B : finType) (W : `Ch(A, B)) (P : fdist A).
+Variables (A B : finType) (W : `Ch(A, B)) (P : {fdist A}).
 
 Lemma mutual_info_chanE : `I(P, W) = mutual_info (fdistX (P `X W)).
 Proof.
@@ -339,4 +341,4 @@ From mathcomp Require Import classical_sets.
 Local Open Scope classical_set_scope.
 
 Definition capacity (A B : finType) (W : `Ch(A, B)) :=
-  reals.sup [set `I(P, W) | P in [set: fdist A]].
+  reals.sup [set `I(P, W) | P in [set: {fdist A}]].
