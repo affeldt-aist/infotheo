@@ -1,91 +1,101 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssralg all_algebra.
 Require Import Reals Lra.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts bigop_ext Rbigop.
 
 (******************************************************************************)
 (*                        The log-sum Inequality                              *)
 (******************************************************************************)
 
+Import GRing.Theory Num.Theory Order.TTheory.
+
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
+Local Open Scope ring_scope.
+Local Open Scope order_scope.
 
 Local Notation "'\sum_{' C '}' f" :=
   (\sum_(a | a \in C) f a) (at level 10, format "\sum_{ C }  f").
 
-Definition log_sum_stmt {A : finType} (C : {set A}) (f g : A ->R+) :=
+Definition log_sum_stmt {A : finType} (C : {set A}) (f g : {ffun A -> R}) :=
+  (forall x, f x >= 0) ->
+  (forall x, g x >= 0) ->
   f `<< g ->
   \sum_{C} f * log (\sum_{C} f / \sum_{C} g) <=
     \sum_(a | a \in C) f a * log (f a / g a).
 
-Lemma log_sum1 {A : finType} (C : {set A}) (f g : A ->R+) :
+Lemma log_sum1 {A : finType} (C : {set A}) (f g : {ffun A -> R}) :
   (forall a, a \in C -> 0 < f a) -> log_sum_stmt C f g.
 Proof.
-move=> fspos fg.
+move=> fspos f0 g0 fg.
 case/boolP : (C == set0) => [ /eqP -> | Hc].
-  rewrite !big_set0 mul0R; exact/leRR.
+  rewrite !big_set0 mul0r; exact/lexx.
 have gspos : forall a, a \in C -> 0 < g a.
-  move=> a a_C; case/Rle_lt_or_eq_dec : ((nneg_finfun_ge0 g) a) => //.
+  move=> a a_C. rewrite lt_neqAle g0 andbT. apply/eqP.
   move=> /esym/(dominatesE fg) abs.
-  by move: (fspos _ a_C); rewrite abs => /ltRR.
+  by move: (fspos _ a_C); rewrite abs ltxx.
 have Fnot0 : \sum_{ C } f != 0.
-  apply/eqP => /psumR_eq0P abs.
+  apply/eqP => /psumr_eq0P abs.
   case/set0Pn : Hc => a aC.
-  move: (fspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/fspos.
-  by move/ltRR.
+  move: (fspos _ aC); rewrite abs //.
+  by rewrite ltxx.
 have Gnot0 : \sum_{ C } g != 0.
-  apply/eqP => /psumR_eq0P abs.
+  apply/eqP => /psumr_eq0P abs.
   case/set0Pn : Hc => a aC.
-  move: (gspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/gspos.
-  by move/ltRR.
-wlog : Fnot0 g Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
+  move: (gspos _ aC); rewrite abs //.
+  by rewrite ltxx.
+wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   move=> Hwlog.
   set k := \sum_{ C } f / \sum_{ C } g.
   have Fspos : 0 < \sum_{ C } f.
-    suff Fpos : 0 <= \sum_{ C } f by apply/ltRP; rewrite lt0R Fnot0; exact/leRP.
-    by apply: sumR_ge0 => ? ?; exact/ltRW/fspos.
+    suff Fpos : 0 <= \sum_{ C } f by rewrite lt0r Fnot0.
+    by apply: sumr_ge0 => ? ?.
   have Gspos : 0 < \sum_{ C } g.
-    suff Gpocs : 0 <= \sum_{ C } g by apply/ltRP; rewrite lt0R Gnot0; exact/leRP.
-    by apply: sumR_ge0 => ? ?; exact/ltRW/gspos.
-  have kspos : 0 < k by apply divR_gt0.
-  have kg_pos : [forall a, 0 <b= [ffun x => k * g x] a].
-    apply/forallP => a.
-    by rewrite ffunE; apply/leRP/mulR_ge0; [exact: ltRW|exact: nneg_finfun_ge0].
-  have kabs_con : f `<< mkNNFinfun kg_pos.
-    by apply/dominates_scale => //; exact/gtR_eqF.
-  have kgspos : forall a, a \in C -> 0 < (mkNNFinfun kg_pos) a.
-    by move=> a a_C; rewrite ffunE; apply mulR_gt0 => //; exact: gspos.
-  have Hkg : \sum_{C} (mkNNFinfun kg_pos) = \sum_{C} f.
+    suff Gpocs : 0 <= \sum_{ C } g by rewrite lt0r Gnot0.
+    by apply: sumr_ge0 => ? ?.
+  have kspos : 0 < k by apply divr_gt0.
+  set kg := [ffun x => k * g x].
+  have kg_pos : forall a, 0 <= kg a.
+    by move=> a; rewrite /kg /= ffunE mulr_ge0 //; apply ltW.
+  have kabs_con : f `<< kg.
+    apply/dominates_scale => //; by rewrite gt_eqF.
+  have kgspos : forall a, a \in C -> 0 < kg a.
+    by move=> a a_C; rewrite ffunE; apply mulr_gt0 => //; exact: gspos. 
+  have Hkg : \sum_{C} kg = \sum_{C} f.
     transitivity (\sum_(a in C) k * g a).
       by apply eq_bigr => a aC; rewrite /= ffunE.
-    by rewrite -big_distrr /= /k /Rdiv -mulRA mulRC mulVR // mul1R.
-  have Htmp : \sum_{ C } (mkNNFinfun kg_pos) != 0.
+    by rewrite -big_distrr /= /k -mulrA mulrC mulVr // mul1r.
+  have Htmp : \sum_{ C } kg != 0.
     rewrite /=.
     evar (h : A -> R); rewrite (eq_bigr h); last first.
       by move=> a aC; rewrite ffunE /h; reflexivity.
     rewrite {}/h (_ : \sum_(i in C) _ = \sum_{C} f) // -Hkg.
     by apply eq_bigr => a aC /=; rewrite ffunE.
   symmetry in Hkg.
-  move: {Hwlog}(Hwlog Fnot0 (@mkNNFinfun _ _ kg_pos) Htmp kabs_con kgspos Hkg) => /= Hwlog.
-  rewrite Hkg {1}/Rdiv mulRV // /log Log_1 mulR0 in Hwlog.
+  move: {Hwlog}(Hwlog Fnot0 kg kg_pos Htmp kabs_con kgspos Hkg) => /= Hwlog.
+  rewrite Hkg {1}/Rdiv mulRV // /log Log_1 mulr0 in Hwlog.
   set rhs := \sum_(_ | _) _ in Hwlog.
   rewrite (_ : rhs = \sum_(a | a \in C) (f a * log (f a / g a) - f a * log k)) in Hwlog; last first.
     rewrite /rhs.
     apply eq_bigr => a a_C.
     rewrite /Rdiv /log LogM; last 2 first.
-      exact/fspos.
-      rewrite ffunE; apply/invR_gt0/mulR_gt0 => //; exact/gspos.
+        by apply/RltP/fspos.
+      by rewrite ffunE; apply/invR_gt0/RltP/mulr_gt0 => //; exact/gspos.
     rewrite LogV; last first.
-      rewrite ffunE; apply mulR_gt0 => //; exact: gspos.
-    rewrite ffunE LogM //; last exact: gspos.
-    rewrite LogM //; last 2 first.
-      exact/fspos.
-      by apply invR_gt0 => //; apply gspos.
-    by rewrite LogV; [field | apply gspos].
+      by rewrite ffunE; apply/RltP/mulr_gt0 => //; exact: gspos.
+    rewrite ffunE LogM; [| by apply/RltP/fspos | by apply/invR_gt0/RltP/gspos].
+    rewrite LogM; last 2 first.
+        by apply/RltP.
+      by apply/RltP/gspos.
+    rewrite LogV; last by apply/RltP/gspos.
+    by rewrite !RoppE !RplusE; lra.
   rewrite big_split /= -big_morph_oppR -big_distrl /= in Hwlog.
-  have : forall a b, 0 <= a + - b -> b <= a by move=> *; lra.
+  have : forall a b, 0 <= a + - b -> b <= a by move=> *; rewrite -subr_ge0.
+
+(*TODO ... 2023/10/06 *)
+
   exact.
 move=> Htmp; rewrite Htmp.
 rewrite /Rdiv mulRV; last by rewrite -Htmp.
