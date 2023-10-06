@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
+From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop fdist proba.
@@ -99,24 +99,30 @@ End receivable_uniform.
 Section fdist_posterior_probability.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Variable y : P.-receivable W.
+Local Open Scope ring_scope.
 Let den := \sum_(x in 'rV_n) P x * W ``(y | x).
 
 Let f := [ffun x => P x * W ``(y | x) / den].
 
 Definition fdist_post_prob_den_ge0 : 0 <= den.
-Proof. by apply sumR_ge0 => x _; exact: mulR_ge0. Qed.
+Proof. by apply/RleP/sumR_ge0 => x _; exact: mulR_ge0. Qed.
 
 Let f0 x : 0 <= f x.
 Proof.
-rewrite ffunE; apply divR_ge0; first exact: mulR_ge0.
+rewrite ffunE; apply/RleP; rewrite -RdivE//; last first.
+  by rewrite /den -receivable_propE receivableP.
+apply: divR_ge0; first exact: mulR_ge0.
 apply/ltRP; rewrite lt0R {1}/den -receivable_propE receivableP.
-exact/leRP/fdist_post_prob_den_ge0.
+exact/fdist_post_prob_den_ge0.
 Qed.
 
 Let f1 : \sum_(x in 'rV_n) f x = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
-by rewrite -big_distrl /= mulRC mulVR // -receivable_propE receivableP.
+rewrite -big_distrl /= -RmultE mulRC.
+rewrite -RinvE; last first.
+  by rewrite -receivable_propE receivableP.
+by rewrite mulVR // -receivable_propE receivableP.
 Qed.
 
 Definition fdist_post_prob : {fdist 'rV[A]_n} := locked (FDist.make f0 f1).
@@ -134,8 +140,12 @@ Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Lemma post_probE (x : 'rV[A]_n) (y : P.-receivable W) :
   P `^^ W (x | y) = \Pr_(P `X (W ``^ n))[ [set x] | [set receivable_rV y]].
 Proof.
-rewrite fdist_post_probE /jcPr setX1 2!Pr_set1 fdist_prodE /=; congr (_ / _).
-by rewrite fdist_sndE /=; apply eq_bigr => x' _; rewrite fdist_prodE /= mulRC.
+rewrite fdist_post_probE /jcPr setX1 2!Pr_set1 fdist_prodE /=.
+rewrite -RdivE; last first.
+  rewrite -receivable_propE.
+  by case: y.
+congr (_ / _).
+by rewrite fdist_sndE /=; apply eq_bigr => x' _; rewrite fdist_prodE /= -RmultE mulRC.
 Qed.
 
 End posterior_probabilityE.
@@ -145,6 +155,7 @@ Variables (A B : finType) (W : `Ch(A, B)) (n : nat).
 Variable (C : {set 'rV[A]_n}).
 Hypothesis HC : (0 < #| C |)%nat.
 Variable y : (`U HC).-receivable W.
+Local Open Scope ring_scope.
 
 Definition post_prob_uniform_cst := / \sum_(c in C) W ``(y | c).
 
@@ -153,22 +164,38 @@ Let K := post_prob_uniform_cst.
 Lemma post_prob_uniformF (x : 'rV[A]_n) : x \notin C ->
   (`U HC) `^^ W (x | y) = 0.
 Proof.
-by move=> xC; rewrite fdist_post_probE fdist_uniform_supp_notin // /Rdiv !mul0R.
+move=> xC; rewrite fdist_post_probE fdist_uniform_supp_notin //.
+by rewrite -!RmultE !mul0R.
 Qed.
 
 Lemma post_prob_uniformT (x : 'rV[A]_n) : x \in C -> (`U HC) `^^ W (x | y) = K * W ``(y | x).
 Proof.
 move=> Ht.
-rewrite fdist_post_probE fdist_uniform_supp_in // mulRC {1}/Rdiv -mulRA [in RHS]mulRC; congr (_ * _).
-rewrite /den fdist_uniform_supp_restrict.
 have C0 : INR #|C| != 0 by rewrite INR_eq0' -lt0n.
-rewrite div1R -invRM //.
-  rewrite /K; congr Rinv; rewrite big_distrr /=; apply eq_bigr => i iC.
-  by rewrite fdist_uniform_supp_in // div1R mulRA mulRV // mul1R.
+rewrite fdist_post_probE fdist_uniform_supp_in //.
+rewrite -RinvE; last first.
+  by rewrite -INRE.
+rewrite -!RmultE mulRC.
+rewrite -RinvE; last first.
+  rewrite -receivable_propE.
+  by case: y.
+rewrite mulRA.
+congr (_ * _).
+rewrite /den fdist_uniform_supp_restrict.
+rewrite -invRM//.
+3: by rewrite -INRE.
+  rewrite /K /post_prob_uniform_cst; congr Rinv.
+  rewrite !RmultE -INRE.
+  rewrite big_distrl /=.
+  apply eq_bigr => i iC.
+  rewrite fdist_uniform_supp_in //.
+  rewrite GRing.mulrAC INRE GRing.mulVr ?GRing.mul1r//.
+  by rewrite GRing.unitfE -INRE.
 rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
-  by move=> *; rewrite fdist_uniform_supp_in.
+  move=> *; rewrite fdist_uniform_supp_in//.
+  by rewrite GRing.div1r INRE.
 apply/eqP; rewrite -big_distrr /= mulR_eq0 => -[].
-  by rewrite div1R; exact/invR_neq0/eqP.
+  by rewrite -RdivE// div1R; apply/invR_neq0/eqP.
 by apply/eqP; rewrite -not_receivable_prop_uniform receivableP.
 Qed.
 
@@ -188,6 +215,7 @@ Local Open Scope vec_ext_scope.
 Section marginal_post_prob.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Variable y : P.-receivable W.
+Local Open Scope ring_scope.
 
 Let f' := fun x : 'rV_n => P `^^ W (x | y).
 
@@ -198,6 +226,9 @@ Proof.
 under eq_bigr do rewrite /f' fdist_post_probE /Rdiv.
 rewrite -big_distrl /= mulR_eq0 => -[/eqP|].
 - by apply/negP; rewrite -receivable_propE receivableP.
+- rewrite -RinvE//; last first.
+    rewrite -receivable_propE.
+    by case: y.
 - by apply/invR_neq0/eqP; rewrite -receivable_propE receivableP.
 Qed.
 
@@ -205,12 +236,12 @@ Let f (i : 'I_n) := [ffun a =>  marginal_post_prob_den * \sum_(t in 'rV_n | t ``
 
 Let f0 i a : 0 <= f i a.
 Proof.
-rewrite ffunE; apply mulR_ge0.
+rewrite ffunE; apply/RleP/mulR_ge0.
 - rewrite / marginal_post_prob_den.
   apply/invR_ge0/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
-    by apply sumR_ge0 => /= ? _; exact: FDist.ge0.
+    by apply sumR_ge0 => /= ? _//.
   exact/f'_neq0.
-- by apply sumR_ge0 => /= ? _; exact: FDist.ge0.
+- by apply sumR_ge0 => /= ? _ //.
 Qed.
 
 Let f1 i : \sum_(a in A) f i a = 1.
@@ -220,11 +251,12 @@ rewrite -big_distrr /= /marginal_post_prob_den.
 set tmp1 := \sum_( _ | _ ) _.
 set tmp2 := \sum_( _ | _ ) _.
 suff : tmp1 = tmp2.
-  move=> tp12; rewrite -tp12 mulVR //; exact/eqP/f'_neq0.
+  move=> tp12; rewrite -tp12.
+  by rewrite -RmultE mulVR //; exact/eqP/f'_neq0.
 by rewrite {}/tmp1 {}/tmp2 (partition_big (fun x : 'rV_n => x ``_ i) xpredT).
 Qed.
 
-Definition fdist_marginal_post_prob i : fdist A := FDist.make (f0 i) (f1 i).
+Definition fdist_marginal_post_prob i : {fdist A} := FDist.make (f0 i) (f1 i).
 
 End marginal_post_prob.
 Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" := (@fdist_marginal_post_prob _ _ W _ P y n0 a) : proba_scope.
