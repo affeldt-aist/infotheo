@@ -28,7 +28,7 @@ Module BSC.
 Section BSC_sect.
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
-Variable p : prob.
+Variable p : {prob R}.
 
 Definition c : `Ch(A, A) := fdist_binary card_A p.
 
@@ -40,10 +40,10 @@ Local Open Scope entropy_scope.
 Section bsc_capacity_proof.
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
-Variables (P : fdist A) (p : R).
+Variables (P : {fdist A}) (p : R).
 Hypothesis p_01' : (0 < p < 1)%R.
 
-Let p_01 : prob := Eval hnf in Prob.mk_ (ltR2W p_01').
+Let p_01 : {prob R} := Eval hnf in Prob.mk_ (ltR2W p_01').
 
 Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01) = - H2 p.
 Proof.
@@ -211,3 +211,4 @@ by rewrite big_const /= iter_mulR /= card_dH_vec.
 Qed.
 
 End dH_BSC.
+u
