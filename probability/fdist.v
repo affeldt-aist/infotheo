@@ -135,8 +135,8 @@ Canonical fdist_subType R A := Eval hnf in [subType for @FDist.f R A].
 Definition fdist_eqMixin R A := [eqMixin of fdist R A by <:].
 Canonical fdist_eqType R A := Eval hnf in EqType _ (fdist_eqMixin R A).
 
-Global Hint Resolve FDist.ge0 : core.
-Global Hint Resolve FDist.le1 : core.
+#[global] Hint Extern 0 (is_true (0 <=  _)%R) => solve [exact: FDist.ge0] : core.
+#[global] Hint Extern 0 (is_true (_ <= 1)%R) => solve [exact: FDist.le1] : core.
 
 Definition fdist_of (R : realType) (A : finType) :=
   fun phT : phant (Finite.sort A) => fdist R A.
