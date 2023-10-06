@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext Ranalysis_ext logb convex.
+Require Import ssrR realType_ext Reals_ext Ranalysis_ext logb convex.
 
 (******************************************************************************)
 (*                      Results about the Analysis of ln                      *)
@@ -536,7 +536,7 @@ rewrite /log /Log (_ : (fun x0 => ln x0 / ln 2) =
 apply/derivable_pt_scal/derivable_pt_ln/(leR_ltR_trans a0); by case: Hx.
 Qed.
 
-Lemma ln_concave_at_gt0 x y (t : prob) : x < y ->
+Lemma ln_concave_at_gt0 x y (t : {prob R}) : x < y ->
   0 < x -> 0 < y -> concave_function_at ln x y t.
 Proof.
 move=> xy x0 y0; apply RNconcave_function_at.
@@ -576,20 +576,20 @@ Qed.
 
 Local Open Scope reals_ext_scope.
 
-Lemma log_concave_at_gt0W x y (t : prob) : x < y ->
+Lemma log_concave_at_gt0W x y (t : {prob R}) : x < y ->
   0 < x -> 0 < y -> concave_function_at log x y t.
 Proof.
 move=> xy x0 y0; rewrite /log /Log.
 apply concave_function_atN; [exact: ln_concave_at_gt0 | exact/ltRW/invR_gt0/ln2_gt0].
 Qed.
 
-Lemma log_concave_at_gt0 x y (t : prob) : 0 < x -> 0 < y -> concave_function_at log x y t.
+Lemma log_concave_at_gt0 x y (t : {prob R}) : 0 < x -> 0 < y -> concave_function_at log x y t.
 Proof.
 move=> x0 y0.
 case/boolP : (x <b y) => [/ltRP xy|].
   exact: log_concave_at_gt0W.
 rewrite -leRNgt' => /leRP; rewrite leR_eqVlt => -[->|yx].
-exact: concave_function_atxx.
+  exact: concave_function_atxx.
 rewrite (probK t); apply: concavef_at_onem => //; exact: log_concave_at_gt0W.
 Qed.
 
