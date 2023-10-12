@@ -373,11 +373,17 @@ Qed.
 
 End pascal.
 
+Delimit Scope ring_scope with mcR.
+
 Section leR_ltR_rprod.
 
-Lemma prodR_gt0 (A : finType) F : (forall a, 0 < F a) ->
-  0 < \prod_(a : A) F a.
+Lemma prodR_gt0 (A : finType) F : (forall a, 0 < F a)%mcR ->
+  (0 < \prod_(a : A) F a)%mcR.
 Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulR_gt0. Qed.
+
+(*Lemma prodR_gt0 (A : finType) F : (forall a, 0 < F a) ->
+  0 < \prod_(a : A) F a.
+Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulR_gt0. Qed.*)
 
 Lemma prodR_ge0 (A : finType) F : (forall a, 0 <= F a) ->
   0 <= \prod_(a : A) F a.
@@ -494,10 +500,13 @@ End leR_ltR_rprod.
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-Lemma log_prodR_sumR_mlog {A : finType} k (f : A ->R+) : forall n (ta : 'rV[A]_n.+1),
+Lemma log_prodR_sumR_mlog {A : finType} k (f : A -> R) :
+  (forall a, 0 <= f a) ->
+  forall n (ta : 'rV[A]_n.+1),
   (forall i, 0 < f ta ``_ i) ->
   (- Log k (\prod_(i < n.+1) f ta ``_ i) = \sum_(i < n.+1) - Log k (f ta ``_ i))%R.
 Proof.
+move=> f0.
 elim => [i Hi | n IH].
   by rewrite big_ord_recl big_ord0 mulR1 big_ord_recl big_ord0 addR0.
 move=> ta Hi.

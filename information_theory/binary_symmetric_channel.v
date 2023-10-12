@@ -211,4 +211,3 @@ by rewrite big_const /= iter_mulR /= card_dH_vec.
 Qed.
 
 End dH_BSC.
-u

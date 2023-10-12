@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup ssrnum finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
@@ -20,15 +20,17 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope R_scope.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
 Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
 
+(* TODO: move *)
+Delimit Scope ring_scope with mcR.
+
 Section mlog_prop.
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 Local Open Scope R_scope.
 
 Definition aep_sigma2 := `E ((`-- (`log P)) `^2) - (`H P)^2.
@@ -58,7 +60,8 @@ rewrite (_ : \sum_(a in A) - _ = - (2 * `H P ^ 2))%R; last first.
   by rewrite -/(entropy P) -mulRA /= mulR1.
 set s := ((\sum_(a in A ) _)%R in LHS).
 rewrite (_ : \sum_(a in A) _ = s)%R; last by apply eq_bigr => a _; field.
-by field.
+rewrite RpowE GRing.expr2 -!RmultE mulR1.
+field.
 Qed.
 
 Lemma aep_sigma2_ge0 : 0 <= aep_sigma2.
@@ -66,12 +69,12 @@ Proof. rewrite -V_mlog /Var; apply Ex_ge0 => ?; exact: pow_even_ge0. Qed.
 
 End mlog_prop.
 
-Definition sum_mlog_prod A (P : fdist A) n : {RV (P `^ n) -> R} :=
+Definition sum_mlog_prod (A : finType) (P : {fdist A}) n : {RV (P `^ n) -> R} :=
   (fun t => \sum_(i < n) - log (P t ``_ i))%R.
 
 Arguments sum_mlog_prod {A} _ _.
 
-Lemma sum_mlog_prod_sum_map_mlog A (P : fdist A) n :
+Lemma sum_mlog_prod_sum_map_mlog (A : finType) (P : {fdist A}) n :
   sum_mlog_prod P n.+1 \=sum (\row_(i < n.+1) `-- (`log P)).
 Proof.
 elim : n => [|n IH].
@@ -93,7 +96,7 @@ elim : n => [|n IH].
 Qed.
 
 Section aep_k0_constant.
-
+Local Open Scope R_scope.
 Variables (A : finType) (P : {fdist A}).
 
 Definition aep_bound epsilon := (aep_sigma2 P / epsilon ^ 3)%R.
@@ -111,13 +114,14 @@ Qed.
 
 End aep_k0_constant.
 
-Section AEP.
 
+Section AEP.
+Local Open Scope R_scope.
 Variables (A : finType) (P : {fdist A}) (n : nat) (epsilon : R).
 Hypothesis Hepsilon : 0 < epsilon.
 
 Lemma aep : aep_bound P epsilon <= n.+1%:R ->
-  Pr (P `^ n.+1) [set t | (0 <b P `^ n.+1 t) &&
+  Pr (P `^ n.+1) [set t | (0 < P `^ n.+1 t)%mcR &&
     (`| (`-- (`log (P `^ n.+1)) `/ n.+1) t - `H P | >b= epsilon) ] <= epsilon.
 Proof.
 move=> Hbound.
@@ -137,9 +141,14 @@ have {H1 H2} := (wlln (H1 n) (H2 n) Hsum Hepsilon).
 move/(leR_trans _); apply.
 apply/Pr_incl/subsetP => ta; rewrite 2!inE => /andP[H1].
 rewrite /sum_mlog_prod [`-- (`log _)]lock /= -lock /= /scalel_RV /log_RV /neg_RV.
-rewrite fdist_rVE log_prodR_sumR_mlog //.
-apply: (prodR_gt0_inv (FDist.ge0 P)).
-by move: H1; rewrite fdist_rVE => /ltRP.
+rewrite fdist_rVE.
+rewrite log_prodR_sumR_mlog //.
+have : forall x, 0 <= P x.
+  move=> x.
+  apply/RleP.
+  exact: FDist.ge0.
+move/prodR_gt0_inv; apply.
+by move: H1; rewrite fdist_rVE => /RltP.
 Qed.
 
 End AEP.

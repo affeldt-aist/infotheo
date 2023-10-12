@@ -12,6 +12,7 @@ From mathcomp Require vector.
 
 Undelimit Scope R_scope.
 Delimit Scope R_scope with coqR.
+Delimit Scope ring_scope with mcR.
 
 (******************************************************************************)
 (*                              Convexity                                     *)
