@@ -637,9 +637,9 @@ have @p : {prob R}.
   abstract: Hp.
   apply/andP; split.
     by rewrite divr_ge0 // subr_ge0.
-    rewrite ler_pdivrMr ?mul1r ?subr_gt0 -?fdist_lt1; last exact/eqP.
-  rewrite ler_subr_addr -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
-  by rewrite addrC ler_add2l addrC -ler_subl_addr subrr.
+  rewrite ler_pdivrMr ?mul1r ?subr_gt0 -?fdist_lt1; last exact/eqP.
+  rewrite lerBrDr -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
+  by rewrite addrC lerD2l addrC -lerBlDr subrr.
 case/boolP : (p == R1%:pr :> {prob R}) => [/eqP |p1].
   move/(congr1 (@Prob.p _)); rewrite [in X in X -> _]/=.
   move/divr1_eq.
@@ -703,7 +703,7 @@ have @q : {prob R}.
     by apply/divr_ge0 => //; rewrite subr_ge0; apply ltW; rewrite -fdist_lt1.
   rewrite ler_pdivrMr ?mul1r; last by rewrite subr_gt0 -fdist_lt1.
   rewrite lerBrDr -(FDist.f1 (fdistI_perm d S3.p01)) !big_ord_recl big_ord0.
-  by rewrite addr0 !fdistI_permE addrCA addrA -[X in (X <= _)]addr0 ler_add2l.
+  by rewrite addr0 !fdistI_permE addrCA addrA -[X in (X <= _)]addr0 lerD2l.
 rewrite (@convn3E _ _ q) //; last by rewrite fdistI_permE.
 congr (_ <| _ |> _).
 - apply/val_inj => /=.
@@ -771,10 +771,10 @@ have @p : {prob R}.
   abstract: Hp.
   apply/andP. split;
     first by apply/divr_ge0/ltW => //; rewrite subr_gt0 -fdist_lt1; exact/eqP.
-  rewrite ler_pdivr_mulr; last by rewrite subr_gt0 -fdist_lt1; exact/eqP.
+  rewrite ler_pdivrMr; last by rewrite subr_gt0 -fdist_lt1; exact/eqP.
   rewrite mul1r.
   rewrite lerBrDr -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
-  by rewrite addrC ler_add2l addrC -ler_subl_addr subrr.
+  by rewrite addrC lerD2l addrC -lerBlDr subrr.
 rewrite (@convn3E _ _ p) //; last exact/eqP.
 rewrite convC.
 rewrite (convC _ _ (g (Ordinal (erefl (2 < 3)%nat)))).
