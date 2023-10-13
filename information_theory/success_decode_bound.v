@@ -183,7 +183,9 @@ Proof.
 rewrite /success_factor -mulRA (mulRC (/ #|M|%:R)) !mulRA.
 apply leR_wpmul2r; first exact/invR_ge0/ltR0n.
 rewrite /mutual_info_chan -addR_opp addRC addRA.
-rewrite (_ : - `H(P , V) + `H P = - `H( V | P )); last by rewrite /cond_entropy_chan; field.
+rewrite (_ : - `H(type.d P , V) + `H P = - `H( V | P )); last first.
+  rewrite /cond_entropy_chan.
+  by rewrite oppRD oppRK.
 rewrite mulRDr mulRN -mulNR /exp2 ExpD; apply leR_wpmul2l => //.
 rewrite -big_morph_natRD; apply (@leR_trans #| T_{`tO( V )} |%:R); last first.
   by rewrite -output_type_out_entropy //; exact: card_typed_tuples.
