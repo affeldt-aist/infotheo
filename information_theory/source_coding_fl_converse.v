@@ -24,10 +24,11 @@ Local Open Scope source_code_scope.
 Local Open Scope entropy_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
+Local Open Scope fdist_scope.
 
 Section source_coding_converse'.
 
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 Variables num den : nat.
 Let r := num%:R / den.+1%:R.
 Hypothesis Hr : 0 < r < `H P.
@@ -125,6 +126,7 @@ suff : 1 = a + b by move=> ->; field.
 rewrite /a {a}.
 have -> : b = \sum_(i in [set i | dec sc (enc sc i) == i]) P `^ k.+1 i.
   apply eq_big => // i /=; by rewrite inE.
+rewrite (_ : 1 = 1%mcR)//.
 rewrite -(FDist.f1 (P `^ k.+1)).
 rewrite (bigID [pred a | a \in [set i0 | dec sc (enc sc i0) == i0]]) /= addRC.
 by congr (_ + _); apply eq_bigl => t /=; rewrite !inE.
@@ -227,7 +229,7 @@ End source_coding_converse'.
 
 Section source_coding_converse.
 
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 
 Theorem source_coding_converse : forall epsilon, 0 < epsilon < 1 ->
   forall r : Qplus, 0 < r < `H P ->

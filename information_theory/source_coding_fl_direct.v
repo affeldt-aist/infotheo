@@ -21,9 +21,10 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope ring_scope.
+Local Open Scope fdist_scope.
 
 Section encoder_and_decoder.
-Variables (A : finType) (P : fdist A) (n k : nat).
+Variables (A : finType) (P : {fdist A}) (n k : nat).
 
 Variable S : {set 'rV[A]_k.+1}.
 
@@ -105,7 +106,7 @@ Local Open Scope entropy_scope.
 Local Open Scope reals_ext_scope.
 
 Section source_coding_direct'.
-Variables (A : finType) (P : fdist A) (num den : nat).
+Variables (A : finType) (P : {fdist A}) (num den : nat).
 Let r := (num%:R / den.+1%:R)%R.
 Hypothesis Hr : `H P < r.
 Variable epsilon : R.
@@ -214,7 +215,7 @@ Qed.
 End source_coding_direct'.
 
 Section source_coding_direct.
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 
 Theorem source_coding_direct epsilon : 0 < epsilon < 1 ->
   forall r : Qplus, `H P < r ->

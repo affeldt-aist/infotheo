@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect fingroup perm.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm.
 From mathcomp Require boolp.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
@@ -115,11 +115,29 @@ set pf := fun a b =>
   then / #|B|%:R
   else (f a b)%:R / ln%:R.
 refine (@Channel1.mkChan A B _ Anot0) => a.
-apply: (@FDist.mk _ (@nneg_fun_of_pre_jtype _ _ Bnot0 n f a)).
-under eq_bigr do rewrite ffunE /=.
+apply: (@FDist.make _ _ (@nneg_fun_of_pre_jtype _ _ Bnot0 n f a)).
+  move=> b.
+  rewrite /nneg_fun_of_pre_jtype/= ffunE.
+  case: ifPn => // ?.
+    by apply/RleP/invR_ge0/ltR0n.
+  apply/RleP/divR_ge0.
+    exact/leR0n.
+  rewrite ltR_neqAle; split.
+    apply/eqP.
+    by rewrite eq_sym INR_eq0'.
+  exact: leR0n.
+rewrite /=.
+under eq_bigr do rewrite ffunE.
 case/boolP : (\sum_(b1 in B) (f a b1) == O)%nat => Hcase.
 - by rewrite /Rle big_const iter_addR mulRV // INR_eq0' -lt0n.
-- rewrite big_morph_natRD /Rdiv -big_distrl /= mulRV //.
+- under eq_bigr.
+    move=> b bB.
+    rewrite RdivE//; last first.
+      by rewrite INR_eq0'.
+    over.
+  rewrite big_morph_natRD /Rdiv.
+  rewrite -big_distrl /=.
+  rewrite GRing.mulfV//.
   by rewrite -big_morph_natRD // INR_eq0'.
 Defined.
 
@@ -643,8 +661,9 @@ Local Open Scope nat_scope.
 Definition type_of_row (a : A) (Ha : N(a | ta) != 0) : P_ N(a | ta) ( B ).
 pose f := [ffun b => Ordinal (ctyp_element_ub Hrow_num_occ Hta a b)].
 pose d := [ffun b => ((f b)%:R / N(a | ta)%:R)%R].
-have d0 : forall b, (0 <= d b)%R.
+have d0 : forall b, (0 <= d b)%mcR.
   move=> b.
+  apply/RleP.
   rewrite /d /= ffunE.
   apply mulR_ge0; first exact/leR0n.
   apply/invR_ge0/ltR0n; by rewrite lt0n.
@@ -1085,6 +1104,8 @@ Qed.
 
 End cond_type_equiv_sect.
 
+Local Open Scope fdist_scope.
+
 Module OutType.
 
 Section OutType_sect.
@@ -1098,8 +1119,8 @@ Variable V : P_ n ( A , B ).
 
 Definition f := [ffun b => ((\sum_(a in A) (JType.f V) a b)%:R / n%:R)%R].
 
-Lemma f0 (b : B) : (0 <= f b)%R.
-Proof. rewrite ffunE; apply divR_ge0; [exact/leR0n | exact/ltR0n]. Qed.
+Lemma f0 (b : B) : (0 <= f b)%mcR.
+Proof. rewrite ffunE; apply/RleP/ divR_ge0; [exact/leR0n | exact/ltR0n]. Qed.
 
 Lemma f1 : (\sum_(b in B) f b = 1)%R.
 Proof.
@@ -1108,7 +1129,7 @@ rewrite -big_distrl /= -big_morph_natRD exchange_big /=.
 by move/eqP : (JType.sum_f V) => ->; rewrite mulRV // INR_eq0'.
 Qed.
 
-Definition d : fdist B := FDist.make f0 f1.
+Definition d : {fdist B} := FDist.make f0 f1.
 
 Definition P : P_ n ( B ).
 refine (@type.mkType _ _ (FDist.make f0 f1) [ffun b => Ordinal (jtype_entry_ub V b)] _).
@@ -1145,7 +1166,7 @@ Qed.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 
-Lemma output_type_out_fdist : forall b, (`tO( V )) b = `O( P , V ) b.
+Lemma output_type_out_fdist : forall b, type.d (`tO( V )) b = `O( P , V ) b.
 Proof.
 rewrite /fdist_of_ffun /= /OutType.d /OutType.f => b /=.
 rewrite ffunE big_morph_natRD /Rdiv (big_morph _ (morph_mulRDl _) (mul0R _)).
@@ -1160,13 +1181,13 @@ case: ifP => [/eqP |] Hcase.
   rewrite in_set in Hta.
   move/forallP/(_ a) : Hta.
   rewrite -sum_V div0R.
-  move/eqP => ->; rewrite mulR0.
+  move/eqP => ->; rewrite -RmultE mulR0.
   move/eqP in Hcase.
   rewrite sum_nat_eq0 in Hcase.
   move/forallP/(_ b) : Hcase.
   move/implyP/(_ Logic.eq_refl)/eqP => ->.
   by rewrite mul0R.
-- rewrite -mulRA sum_V; congr (_ * _).
+- rewrite -RmultE -mulRA sum_V; congr (_ * _).
   move: Hta; rewrite in_set => /forallP/(_ a)/eqP ->.
   by rewrite mulRA -{1}(mul1R (/ n%:R)) mulVR // INR_eq0' -sum_V Hcase.
 Qed.
