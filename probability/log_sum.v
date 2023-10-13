@@ -13,8 +13,6 @@ Import GRing.Theory Num.Theory Order.TTheory.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
-Local Open Scope ring_scope.
-Local Open Scope order_scope.
 
 Local Notation "'\sum_{' C '}' f" :=
   (\sum_(a | a \in C) f a) (at level 10, format "\sum_{ C }  f").
@@ -31,42 +29,43 @@ Lemma log_sum1 {A : finType} (C : {set A}) (f g : {ffun A -> R}) :
 Proof.
 move=> fspos f0 g0 fg.
 case/boolP : (C == set0) => [ /eqP -> | Hc].
-  rewrite !big_set0 mul0r; exact/lexx.
+  rewrite !big_set0 mul0R; exact/leRR.
 have gspos : forall a, a \in C -> 0 < g a.
-  move=> a a_C. rewrite lt_neqAle g0 andbT. apply/eqP.
-  move=> /esym/(dominatesE fg) abs.
-  by move: (fspos _ a_C); rewrite abs ltxx.
+  move=> a a_C. case (g0 a) => //.
+  move=>/(dominatesE fg) abs.
+  by move: (fspos _ a_C); rewrite abs => /ltRR.
 have Fnot0 : \sum_{ C } f != 0.
-  apply/eqP => /psumr_eq0P abs.
+  apply/eqP => /psumR_eq0P abs.
   case/set0Pn : Hc => a aC.
-  move: (fspos _ aC); rewrite abs //.
-  by rewrite ltxx.
+  move: (fspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/fspos.
+  by move/ltRR.
 have Gnot0 : \sum_{ C } g != 0.
-  apply/eqP => /psumr_eq0P abs.
+  apply/eqP => /psumR_eq0P abs.
   case/set0Pn : Hc => a aC.
-  move: (gspos _ aC); rewrite abs //.
-  by rewrite ltxx.
+  move: (gspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/gspos.
+  by move/ltRR.
 wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   move=> Hwlog.
-  set k := \sum_{ C } f / \sum_{ C } g.
+  set k := (\sum_{ C } f / \sum_{ C } g).
   have Fspos : 0 < \sum_{ C } f.
-    suff Fpos : 0 <= \sum_{ C } f by rewrite lt0r Fnot0.
-    by apply: sumr_ge0 => ? ?.
+    suff Fpos : 0 <= \sum_{ C } f by apply/ltRP; rewrite lt0R Fnot0; exact/leRP.
+    by apply: sumR_ge0 => ? ?; exact/ltRW/fspos.
   have Gspos : 0 < \sum_{ C } g.
-    suff Gpocs : 0 <= \sum_{ C } g by rewrite lt0r Gnot0.
-    by apply: sumr_ge0 => ? ?.
-  have kspos : 0 < k by apply divr_gt0.
+    suff Gpocs : 0 <= \sum_{ C } g by apply/ltRP; rewrite lt0R Gnot0; exact/leRP.
+    by apply: sumR_ge0 => ? ?; exact/ltRW/gspos.
+  have kspos : 0 < k by apply divR_gt0.
   set kg := [ffun x => k * g x].
   have kg_pos : forall a, 0 <= kg a.
-    by move=> a; rewrite /kg /= ffunE mulr_ge0 //; apply ltW.
+    by move=> a; rewrite /kg /= ffunE; apply mulR_ge0 => //; [exact: ltRW|exact: Rge_le].
+  have kg_pos' : forall a, kg a >= 0 by move=> a; apply: Rle_ge.
   have kabs_con : f `<< kg.
-    apply/dominates_scale => //; by rewrite gt_eqF.
+    apply/dominates_scale => //; exact/gtR_eqF.
   have kgspos : forall a, a \in C -> 0 < kg a.
-    by move=> a a_C; rewrite ffunE; apply mulr_gt0 => //; exact: gspos. 
+    by move=> a a_C; rewrite ffunE; apply mulR_gt0 => //; exact: gspos. 
   have Hkg : \sum_{C} kg = \sum_{C} f.
     transitivity (\sum_(a in C) k * g a).
       by apply eq_bigr => a aC; rewrite /= ffunE.
-    by rewrite -big_distrr /= /k -mulrA mulrC mulVr // mul1r.
+    by rewrite -big_distrr /= /k /Rdiv -mulRA mulRC mulVR // mul1R.
   have Htmp : \sum_{ C } kg != 0.
     rewrite /=.
     evar (h : A -> R); rewrite (eq_bigr h); last first.
@@ -74,29 +73,24 @@ wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
     rewrite {}/h (_ : \sum_(i in C) _ = \sum_{C} f) // -Hkg.
     by apply eq_bigr => a aC /=; rewrite ffunE.
   symmetry in Hkg.
-  move: {Hwlog}(Hwlog Fnot0 kg kg_pos Htmp kabs_con kgspos Hkg) => /= Hwlog.
-  rewrite Hkg {1}/Rdiv mulRV // /log Log_1 mulr0 in Hwlog.
+  move: {Hwlog}(Hwlog Fnot0 kg kg_pos' Htmp kabs_con kgspos Hkg) => /= Hwlog.
+  rewrite Hkg {1}/Rdiv mulRV // /log Log_1 mulR0 in Hwlog.
   set rhs := \sum_(_ | _) _ in Hwlog.
   rewrite (_ : rhs = \sum_(a | a \in C) (f a * log (f a / g a) - f a * log k)) in Hwlog; last first.
     rewrite /rhs.
     apply eq_bigr => a a_C.
     rewrite /Rdiv /log LogM; last 2 first.
-        by apply/RltP/fspos.
-      by rewrite ffunE; apply/invR_gt0/RltP/mulr_gt0 => //; exact/gspos.
+      exact/fspos.
+      rewrite ffunE; apply/invR_gt0/mulR_gt0 => //; exact/gspos.
     rewrite LogV; last first.
-      by rewrite ffunE; apply/RltP/mulr_gt0 => //; exact: gspos.
-    rewrite ffunE LogM; [| by apply/RltP/fspos | by apply/invR_gt0/RltP/gspos].
-    rewrite LogM; last 2 first.
-        by apply/RltP.
-      by apply/RltP/gspos.
-    rewrite LogV; last by apply/RltP/gspos.
-    by rewrite !RoppE !RplusE; lra.
+      rewrite ffunE; apply mulR_gt0 => //; exact: gspos.
+    rewrite ffunE LogM //; last exact: gspos.
+    rewrite LogM //; last 2 first.
+      exact/fspos.
+      by apply invR_gt0 => //; apply gspos.
+    by rewrite LogV; [field | apply gspos].
   rewrite big_split /= -big_morph_oppR -big_distrl /= in Hwlog.
-  have : forall a b, 0 <= a + - b -> b <= a by move=> *; rewrite -subr_ge0.
-
-(*TODO ... 2023/10/06 *)
-
-  exact.
+  by rewrite -subR_ge0.
 move=> Htmp; rewrite Htmp.
 rewrite /Rdiv mulRV; last by rewrite -Htmp.
 rewrite /log Log_1 mulR0.
@@ -130,10 +124,10 @@ apply Req_le.
 by field; exact/eqP/gtR_eqF/(fspos _ C_a).
 Qed.
 
-Lemma log_sum {A : finType} (C : {set A}) (f g : A ->R+) :
+Lemma log_sum {A : finType} (C : {set A}) (f g : {ffun A -> R}) :
   log_sum_stmt C f g.
 Proof.
-move=> fg.
+move=> f0 g0 fg.
 set D := [set a | (a \in C) && (f a != 0)].
 suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
        \sum_(a | a \in D) f a * log (f a / g a).
@@ -162,32 +156,32 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
     by rewrite big_const iter_addR mulR0 add0R.
   rewrite -H1 in H.
   have pos_F : 0 <= \sum_{C} f.
-    by apply sumR_ge0 => ? ?; exact: nneg_finfun_ge0.
+    by apply sumR_ge0 => ? ?; exact: Rge_le.
   apply (@leR_trans (\sum_{C} f * log (\sum_{C} f / \sum_{D} g))).
     case/Rle_lt_or_eq_dec : pos_F => pos_F; last first.
       by rewrite -pos_F !mul0R; exact/leRR.
     have H2 : 0 <= \sum_(a | a \in D) g a.
-      by apply: sumR_ge0 => ? _; exact: nneg_finfun_ge0.
+      by apply: sumR_ge0 => ? _; exact: Rge_le.
     case/Rle_lt_or_eq_dec : H2 => H2; last first.
       have : 0 = \sum_{D} f.
         transitivity (\sum_(a | a \in D) 0).
           by rewrite big_const iter_addR mulR0.
         apply eq_bigr => a a_C1.
         rewrite (dominatesE fg) // (proj1 (@psumR_eq0P _ (mem D) _ _)) // => ? ?.
-        exact/nneg_finfun_ge0.
+        exact/Rge_le.
       move=> abs; rewrite -abs in H1; rewrite H1 in pos_F.
       by move/ltRR : pos_F.
     have H3 : 0 < \sum_(a | a \in C) g a.
       rewrite setUC in DUD'.
       rewrite DUD' (big_union _ g DID') /=.
       apply addR_gt0wr => //.
-      by apply: sumR_ge0 => *; exact/nneg_finfun_ge0.
+      by apply: sumR_ge0 => *; exact/Rge_le.
     apply/(leR_wpmul2l (ltRW pos_F))/Log_increasing_le => //.
       apply divR_gt0 => //; by rewrite -HG.
     apply/(leR_wpmul2l (ltRW pos_F))/leR_inv => //.
     rewrite setUC in DUD'.
     rewrite DUD' (big_union _ g DID') /= -[X in X <= _]add0R; apply leR_add2r.
-    by apply: sumR_ge0 => ? ?; exact/nneg_finfun_ge0.
+    by apply: sumR_ge0 => ? ?; exact/Rge_le.
   apply: (leR_trans H).
   rewrite setUC in DUD'.
   rewrite DUD' (big_union _ (fun a => f a * log (f a / g a)) DID') /=.
@@ -200,6 +194,6 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
 apply log_sum1 => // a.
 rewrite /C1 in_set.
 case/andP => a_C fa_not_0.
-case/Rle_lt_or_eq_dec: (nneg_finfun_ge0 f a) => // abs.
+case(f0 a) => // abs.
 by rewrite abs eqxx in fa_not_0.
 Qed.
