@@ -48,7 +48,7 @@ Local Open Scope R_scope.
 Section joint_typ_seq_definition.
 
 Variables A B : finType.
-Variable P : fdist A.
+Variable P : {fdist A}.
 Variable W : `Ch(A, B).
 Variable n : nat.
 Variable epsilon : R.
@@ -84,7 +84,7 @@ Local Open Scope jtyp_seq_scope.
 
 Section jtyp_seq_upper.
 
-Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)).
+Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)).
 Variable n : nat.
 Variable epsilon : R.
 
@@ -101,7 +101,7 @@ Qed.
 End jtyp_seq_upper.
 
 Section jtyp_seq_transmitted.
-Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)).
+Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)).
 Variable epsilon : R.
 
 Local Open Scope zarith_ext_scope.
@@ -234,7 +234,7 @@ Qed.
 End jtyp_seq_transmitted.
 
 Section non_typicality.
-Variables (A B : finType) (P : fdist A) (W : `Ch(A, B)) (n : nat) (epsilon : R).
+Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)) (n : nat) (epsilon : R).
 
 Lemma non_typical_sequences : Pr ((P `^ n) `x ((`O(P , W)) `^ n))
   [set x | prod_rV x \in `JTS P W n epsilon] <= exp2 (- n%:R * (`I(P, W) - 3 * epsilon)).
