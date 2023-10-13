@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
@@ -18,7 +18,10 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope divergence_scope.
+Local Open Scope fdist_scope.
 Local Open Scope R_scope.
+
+Import Num.Theory.
 
 Local Notation "0" := (false).
 Local Notation "1" := (true).
@@ -29,13 +32,13 @@ Variable A : finType.
 Variable A_ : bool -> {set A}.
 Hypothesis dis : A_ 0 :&: A_ 1 = set0.
 Hypothesis cov : A_ 0 :|: A_ 1 = [set: A].
-Variable P : fdist A.
+Variable P : {fdist A}.
 
 Definition bipart_pmf := [ffun i => \sum_(a in A_ i) P a].
 
-Definition bipart : fdist [finType of bool].
-apply (@FDist.make _ bipart_pmf).
-- by move=> a; rewrite ffunE; apply: sumR_ge0.
+Definition bipart : {fdist [finType of bool]}.
+apply (@FDist.make _ _ bipart_pmf).
+- by move=> a; rewrite ffunE; apply: sumr_ge0.
 - rewrite big_bool /= /bipart_pmf /= !ffunE.
   transitivity (\sum_(a | (a \in A_ 0 :|: A_ 1)) P a).
     by rewrite [X in _ = X](@big_union _ _ _ _ (A_ 0) (A_ 1)) // -setI_eq0 setIC dis eqxx.
@@ -52,7 +55,7 @@ Variable A : finType.
 Variable A_ : bool -> {set A}.
 Hypothesis dis : A_ 0 :&: A_ 1 = set0.
 Hypothesis cov : A_ 0 :|: A_ 1 = setT.
-Variable P Q : fdist A.
+Variable P Q : {fdist A}.
 Hypothesis P_dom_by_Q : P `<< Q.
 
 Let P_A := bipart dis cov P.
@@ -68,7 +71,7 @@ have step2 :
   (\sum_(a in A_ 0) P a) * log ((\sum_(a in A_ 0) P a) / \sum_(a in A_ 0) Q a) +
   (\sum_(a in A_ 1) P a) * log ((\sum_(a in A_ 1) P a) / \sum_(a in A_ 1) Q a) <=
   \sum_(a in A_ 0) P a * log (P a / Q a) + \sum_(a in A_ 1) P a * log (P a / Q a).
-  apply leR_add; by apply log_sum.
+  apply: leR_add; by apply log_sum => //; move=> x; apply/RleP/FDist.ge0.
 apply: (leR_trans _ step2) => {step2}.
 rewrite [X in _ <= X](_ : _ =
   P_A 0 * log ((P_A 0) / (Q_A 0)) + P_A 1 * log ((P_A 1) / (Q_A 1))); last first.
@@ -105,14 +108,14 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_ff_ge0.
     rewrite H2 !mul0R !addR0.
     have H3 : Q_A 0 = 1%R.
-      rewrite -[X in X = _]addR0 -[X in _ + X = _]A1_Q_0 -(FDist.f1 Q).
+      rewrite -[X in X = _]addR0 -[X in _ + X = _]A1_Q_0 convex.R1E -(FDist.f1 Q).
       rewrite !ffunE -big_union //.
       apply eq_bigl => i; by rewrite cov in_set inE.
       by rewrite -setI_eq0 -dis setIC.
     rewrite H3 /Rdiv /log LogM //; last lra.
     by rewrite LogV; [apply Req_le; field | lra].
 - have H1 : P_A 1 = 1%R.
-    rewrite -[X in X = _]add0R -[X in X + _ = _]A0_P_0 -(FDist.f1 P).
+    rewrite -[X in X = _]add0R -[X in X + _ = _]A0_P_0 convex.R1E -(FDist.f1 P).
     rewrite !ffunE -big_union //.
     apply eq_bigl => i; by rewrite cov in_set inE.
     by rewrite -setI_eq0 -dis setIC.

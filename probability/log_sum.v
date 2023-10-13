@@ -18,8 +18,8 @@ Local Notation "'\sum_{' C '}' f" :=
   (\sum_(a | a \in C) f a) (at level 10, format "\sum_{ C }  f").
 
 Definition log_sum_stmt {A : finType} (C : {set A}) (f g : {ffun A -> R}) :=
-  (forall x, f x >= 0) ->
-  (forall x, g x >= 0) ->
+  (forall x, 0 <= f x) ->
+  (forall x, 0 <= g x) ->
   f `<< g ->
   \sum_{C} f * log (\sum_{C} f / \sum_{C} g) <=
     \sum_(a | a \in C) f a * log (f a / g a).
@@ -32,17 +32,17 @@ case/boolP : (C == set0) => [ /eqP -> | Hc].
   rewrite !big_set0 mul0R; exact/leRR.
 have gspos : forall a, a \in C -> 0 < g a.
   move=> a a_C. case (g0 a) => //.
-  move=>/(dominatesE fg) abs.
+  move=>/esym/(dominatesE fg) abs.
   by move: (fspos _ a_C); rewrite abs => /ltRR.
 have Fnot0 : \sum_{ C } f != 0.
   apply/eqP => /psumR_eq0P abs.
   case/set0Pn : Hc => a aC.
-  move: (fspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/fspos.
+  move: (fspos _ aC); rewrite abs //.
   by move/ltRR.
 have Gnot0 : \sum_{ C } g != 0.
   apply/eqP => /psumR_eq0P abs.
   case/set0Pn : Hc => a aC.
-  move: (gspos _ aC); rewrite abs //; last by move=> b bC; apply/ltRW/gspos.
+  move: (gspos _ aC); rewrite abs //.
   by move/ltRR.
 wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   move=> Hwlog.
@@ -56,8 +56,7 @@ wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   have kspos : 0 < k by apply divR_gt0.
   set kg := [ffun x => k * g x].
   have kg_pos : forall a, 0 <= kg a.
-    by move=> a; rewrite /kg /= ffunE; apply mulR_ge0 => //; [exact: ltRW|exact: Rge_le].
-  have kg_pos' : forall a, kg a >= 0 by move=> a; apply: Rle_ge.
+    by move=> a; rewrite /kg /= ffunE; apply mulR_ge0 => //; exact: ltRW.
   have kabs_con : f `<< kg.
     apply/dominates_scale => //; exact/gtR_eqF.
   have kgspos : forall a, a \in C -> 0 < kg a.
@@ -73,7 +72,7 @@ wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
     rewrite {}/h (_ : \sum_(i in C) _ = \sum_{C} f) // -Hkg.
     by apply eq_bigr => a aC /=; rewrite ffunE.
   symmetry in Hkg.
-  move: {Hwlog}(Hwlog Fnot0 kg kg_pos' Htmp kabs_con kgspos Hkg) => /= Hwlog.
+  move: {Hwlog}(Hwlog Fnot0 kg kg_pos Htmp kabs_con kgspos Hkg) => /= Hwlog.
   rewrite Hkg {1}/Rdiv mulRV // /log Log_1 mulR0 in Hwlog.
   set rhs := \sum_(_ | _) _ in Hwlog.
   rewrite (_ : rhs = \sum_(a | a \in C) (f a * log (f a / g a) - f a * log k)) in Hwlog; last first.
@@ -156,32 +155,31 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
     by rewrite big_const iter_addR mulR0 add0R.
   rewrite -H1 in H.
   have pos_F : 0 <= \sum_{C} f.
-    by apply sumR_ge0 => ? ?; exact: Rge_le.
+    by apply sumR_ge0 => ? ?.
   apply (@leR_trans (\sum_{C} f * log (\sum_{C} f / \sum_{D} g))).
     case/Rle_lt_or_eq_dec : pos_F => pos_F; last first.
-      by rewrite -pos_F !mul0R; exact/leRR.
+      by rewrite -pos_F !mul0R. 
     have H2 : 0 <= \sum_(a | a \in D) g a.
-      by apply: sumR_ge0 => ? _; exact: Rge_le.
+      by apply: sumR_ge0 => ? _. 
     case/Rle_lt_or_eq_dec : H2 => H2; last first.
       have : 0 = \sum_{D} f.
         transitivity (\sum_(a | a \in D) 0).
           by rewrite big_const iter_addR mulR0.
         apply eq_bigr => a a_C1.
-        rewrite (dominatesE fg) // (proj1 (@psumR_eq0P _ (mem D) _ _)) // => ? ?.
-        exact/Rge_le.
+        by rewrite (dominatesE fg) // (proj1 (@psumR_eq0P _ (mem D) _ _)) // => ? ?.
       move=> abs; rewrite -abs in H1; rewrite H1 in pos_F.
       by move/ltRR : pos_F.
     have H3 : 0 < \sum_(a | a \in C) g a.
       rewrite setUC in DUD'.
       rewrite DUD' (big_union _ g DID') /=.
       apply addR_gt0wr => //.
-      by apply: sumR_ge0 => *; exact/Rge_le.
+      by apply: sumR_ge0 => *. 
     apply/(leR_wpmul2l (ltRW pos_F))/Log_increasing_le => //.
       apply divR_gt0 => //; by rewrite -HG.
     apply/(leR_wpmul2l (ltRW pos_F))/leR_inv => //.
     rewrite setUC in DUD'.
     rewrite DUD' (big_union _ g DID') /= -[X in X <= _]add0R; apply leR_add2r.
-    by apply: sumR_ge0 => ? ?; exact/Rge_le.
+    by apply: sumR_ge0 => ? ?.
   apply: (leR_trans H).
   rewrite setUC in DUD'.
   rewrite DUD' (big_union _ (fun a => f a * log (f a / g a)) DID') /=.
