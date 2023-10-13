@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp ssrnum.
 From mathcomp Require Import matrix vector.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist proba.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext Rbigop f2 fdist proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
 
 (******************************************************************************)
@@ -32,7 +32,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Close Scope R_scope.
-Import GRing.Theory.
+Import GRing.Theory Num.Theory.
 Local Open Scope ring_scope.
 
 Definition repairT (B A : finType) n := {ffun 'rV[B]_n -> option 'rV[A]_n}.
@@ -46,7 +46,7 @@ Definition cancel_on n (F : finFieldType) (C : {vspace 'rV[F]_n}) {B} (e : B -> 
   forall c, c \in C -> e (s c) = c.
 
 Lemma vspace_not_empty (F : finFieldType) n (C : {vspace 'rV[F]_n}) :
-  0 < #| [set cw in C] |.
+  (0 < #| [set cw in C] |)%nat.
 Proof. apply/card_gt0P; exists 0; by rewrite inE mem0v. Qed.
 
 Section minimum_distance_decoding.
@@ -95,7 +95,7 @@ Variables (F : finFieldType) (n : nat) (C : {vspace 'rV[F]_n}).
 Variable (f : repairT F F n).
 
 Definition BD_decoding t :=
-  forall c e, c \in C -> wH e <= t -> f (c + e) = Some c.
+  forall c e, c \in C -> (wH e <= t)%nat -> f (c + e) = Some c.
 
 End bounded_distance_decoding.
 
@@ -128,7 +128,7 @@ Section maximum_likelihood_decoding_prop.
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable repair : decT B [finType of 'rV[A]_n] n.
-Let P := fdist_uniform_supp (vspace_not_empty C).
+Let P := fdist_uniform_supp real_realType (vspace_not_empty C).
 Hypothesis ML_dec : ML_decoding W C repair P.
 
 Local Open Scope channel_code_scope.
@@ -207,7 +207,7 @@ End maximum_likelihood_decoding_prop.
 
 Section MD_ML_decoding.
 
-Variable p : prob.
+Variable p : {prob R}.
 
 (* TODO: move to file on bsc? *)
 Lemma bsc_prob_prop n : p < 1 / 2 ->
@@ -215,7 +215,7 @@ Lemma bsc_prob_prop n : p < 1 / 2 ->
   ((1 - p) ^ (n - n2) * p ^ n2 <= (1 - p) ^ (n - n1) * p ^ n1)%R.
 Proof.
 move=> p05 d1 d2 d1d2.
-case/boolP : (p == 0%:pr) => [/eqP ->|p0].
+case/boolP : (p == 0%coqR%:pr) => [/eqP ->|p0].
   destruct d2 as [|d2].
     destruct d1 as [|d1]; [exact/leRR | by []].
   rewrite !subR0 /= !mul0R !mulR0.
@@ -224,14 +224,14 @@ case/boolP : (p == 0%:pr) => [/eqP ->|p0].
 apply (@leR_pmul2l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
   apply mulR_gt0; apply/invR_gt0/pow_lt => //.
   rewrite subR_gt0; lra.
-  by rewrite -prob_gt0.
+  by apply/RltP/prob_gt0.
 rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
   apply/expR_neq0; rewrite subR_eq0'; apply/gtR_eqF; lra.
 rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
-  by apply/expR_neq0/gtR_eqF; rewrite -prob_gt0.
-rewrite -expRV; last by apply/gtR_eqF; rewrite -prob_gt0.
+  by apply/expR_neq0/gtR_eqF/RltP/prob_gt0.
+rewrite -expRV; last by apply/gtR_eqF/RltP/prob_gt0.
 rewrite -expRV; last by rewrite subR_eq0'; apply/gtR_eqF; lra.
-rewrite mulRC expRV; last by apply/gtR_eqF; rewrite -prob_gt0.
+rewrite mulRC expRV; last by apply/gtR_eqF/RltP/prob_gt0.
 rewrite -/(Rdiv _ _) -expRB; last 2 first.
   by case/andP : d1d2.
   exact/eqP.
@@ -327,7 +327,7 @@ Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B [finType of 'rV[A]_n] n.
 Variable dec_img : oimg dec \subset C.
-Let P := fdist_uniform_supp (vspace_not_empty C).
+Let P := fdist_uniform_supp real_realType (vspace_not_empty C).
 
 Lemma MAP_implies_ML : MAP_decoding W C dec P -> ML_decoding W C dec P.
 Proof.
@@ -344,9 +344,15 @@ move=> H.
 evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H; last first.
   by move=> v vC; rewrite /h; reflexivity.
 rewrite -bigmaxR_distrl in H; last first.
+
+  rewrite -RinvE.
+
   apply/invR_ge0; rewrite ltR_neqAle; split.
     apply/eqP; by rewrite eq_sym -receivable_propE receivableP.
-  exact/fdist_post_prob_den_ge0.
+  exact/RleP/fdist_post_prob_den_ge0.
+
+(*TODO: *)
+
 rewrite {2 3}/P in H.
 set r := index_enum _ in H.
 move: H.
