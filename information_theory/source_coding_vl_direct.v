@@ -67,12 +67,12 @@ End R_lemma.
 Section Length.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
-Variable P : fdist X.
+Variable P : {fdist X}.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 
 Lemma fdist_support_LB : 1 <= INR #|X|.
-Proof. by rewrite (_ : 1 = INR 1)  //; exact/le_INR/leP/fdist_card_neq0. Qed.
+Proof. rewrite (_ : 1 = INR 1) //; apply/le_INR/leP/fdist_card_neq0; exact: P. Qed.
 
 Lemma fdist_supp_lg_add_1_neq_0 : 1 + log (INR #|X|) <> 0.
 Proof.
@@ -133,7 +133,7 @@ End Length.
 Section Enc_Dec.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
-Variable P : fdist X.
+Variable P : {fdist X}.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 
@@ -222,7 +222,7 @@ Section E_Leng_Cw_Lemma.
 Variables (X : finType).
 Variable (n' : nat).
 Let n := n'.+1.
-Variable P : fdist X.
+Variable P : {fdist X}.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 Hypothesis aepbound_UB : aep_bound P epsilon <= INR n.
@@ -263,11 +263,11 @@ rewrite (rsum_split _ (`TS P n'.+1 epsilon)).
 rewrite eq_sizef_Lnt eq_sizef_Lt -!(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
  P `^ n i = 1 - \sum_(i | i \in `TS P n epsilon) P `^ n i); last first.
-- by rewrite -(FDist.f1 P`^n) (rsum_split _ (`TS P n epsilon)) addRC addRK.
+- by rewrite (_ : 1 = 1%mcR)// -(FDist.f1 P`^n) (rsum_split _ (`TS P n epsilon)) addRC addRK.
 - apply leR_add.
   + rewrite -[X in _ <= X]mulR1; apply: leR_wpmul2l => //.
     * by apply: addR_ge0 => //; exact/ltRW/Lt_pos.
-    * by rewrite -(FDist.f1 (P `^ n)); apply: leR_sumRl => // *; exact/leRR.
+    * by rewrite (_ : 1 = 1%mcR)// -(FDist.f1 (P `^ n)); apply: leR_sumRl => // *; exact/leRR.
   + apply: leR_wpmul2r => //.
     * by apply addR_ge0 => //; exact (Lnt_nonneg _ P).
     * by rewrite leR_subl_addr addRC -leR_subl_addr; exact: Pr_TS_1.
@@ -278,7 +278,7 @@ End E_Leng_Cw_Lemma.
 Section v_scode.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
-Variable P : fdist X.
+Variable P : {fdist X}.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon .
 Definition epsilon':= epsilon / (3 + (3 * log (INR #|X|))).
@@ -367,7 +367,7 @@ apply: (Rle_lt_trans _  (INR n'.+1 * (`H P + epsilon') + 1 + 1 +
   + by apply: Rplus_le_compat; [apply: ltRW; apply: (proj2 (ceilP _)) | apply: Rle_refl].
   + apply: Rmult_le_compat_l; first by apply: Rlt_le; apply: eps'_pos.
     by apply: Rplus_le_compat; [apply: ltRW; apply: (proj2 (ceilP _)) | apply: Rle_refl].
-- rewrite cardsT card_tuple log_pow_INR; last exact: fdist_card_neq0.
+- rewrite cardsT card_tuple log_pow_INR; last by apply: fdist_card_neq0; exact: P.
   rewrite -addRA -addRA -addRA addRC addRA addRC addRA -(Rinv_r_simpl_l (INR n) (1 + 1)); last first.
     by apply/eqP; rewrite INR_eq0'.
   rewrite (mulRC 2 _) -{1}mulRA -mulRDr -mulRA -mulRDr (mulRC epsilon' _) -mulRA.
@@ -405,7 +405,7 @@ End v_scode.
 
 Section variable_length_source_coding.
 
-Variables (X : finType) (P : fdist X).
+Variables (X : finType) (P : {fdist X}).
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon .
 Local Notation "'n0'" := (n0 P epsilon).
