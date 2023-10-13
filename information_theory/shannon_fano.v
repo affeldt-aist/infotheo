@@ -61,7 +61,9 @@ Let sizes := [seq (size \o f) a| a in A].
 Lemma shannon_fano_is_kraft : is_shannon_fano P f -> kraft_condR T sizes.
 Proof.
 move=> H.
-rewrite /kraft_condR -(FDist.f1 P) /sizes size_map.
+rewrite /kraft_condR.
+rewrite (_ : 1 = 1%mcR)//.
+rewrite -(FDist.f1 P) /sizes size_map.
 rewrite (eq_bigr (fun i:'I_(size(enum A)) => #|'I_t|%:R ^- size (f (nth a (enum A) i)))); last first.
   move=> i _; by rewrite /= (nth_map a).
 rewrite -(big_mkord xpredT (fun i => #|T|%:R ^- size (f (nth a (enum A) i)))).
@@ -113,7 +115,10 @@ Lemma shannon_fano_average_entropy : is_shannon_fano P f ->
 Proof.
 move=> H; rewrite /average.
 apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
-  apply ltR_sumR; [exact: fdist_card_neq0|move=> i].
+  apply: ltR_sumR.
+    apply: fdist_card_neq0.
+    exact: P.
+  move=> i.
   apply ltR_pmul2l.
     apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
   rewrite H.
