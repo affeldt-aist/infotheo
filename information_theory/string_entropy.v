@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
@@ -42,9 +42,9 @@ Hypothesis total_gt0 : total != O.
 
 Let f_div_total := [ffun a : A => f a / total].
 
-Lemma f_div_total_pos c : 0 <= f_div_total c.
+Lemma f_div_total_pos c : (0 <= f_div_total c)%mcR.
 Proof.
-rewrite ffunE; apply mulR_ge0 => //.
+rewrite ffunE; apply/RleP/mulR_ge0 => //.
 apply /Rlt_le /invR_gt0 /ltR0n.
 by rewrite lt0n.
 Qed.
