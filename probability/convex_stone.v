@@ -637,7 +637,7 @@ have @p : {prob R}.
   abstract: Hp.
   apply/andP; split.
     by rewrite divr_ge0 // subr_ge0.
-  rewrite ler_pdivr_mulr ?mul1r ?subr_gt0 -?fdist_lt1; last exact/eqP.
+    rewrite ler_pdivrMr ?mul1r ?subr_gt0 -?fdist_lt1; last exact/eqP.
   rewrite ler_subr_addr -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
   by rewrite addrC ler_add2l addrC -ler_subl_addr subrr.
 case/boolP : (p == R1%:pr :> {prob R}) => [/eqP |p1].
