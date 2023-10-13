@@ -30,7 +30,7 @@ Local Open Scope num_occ_scope.
 Local Open Scope types_scope.
 
 Section conditional_dominance.
-Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : {fdist A}).
 
 Definition cdom_by := forall a, P a != 0 -> V a `<< W a.
 
@@ -39,12 +39,12 @@ Proof.
 split; [move/dominatesP => H | move=> H; apply/dominatesP].
 - move=> a p_not_0; apply/dominatesP => b; move: (H (a, b)).
   rewrite fdist_prodE /= => H0 H1.
-  move: H0; rewrite H1 mulR0 => /(_ erefl)/eqP.
+  move: H0; rewrite H1 -RmultE mulR0 => /(_ erefl)/eqP.
   by rewrite fdist_prodE mulR_eq0' /= (negbTE p_not_0) orFb => /eqP.
 - case=> a p_not_0 b; move: {H}(H a) => H.
   rewrite fdist_prodE /=.
-  have [->|H1] := eqVneq (P a) 0; first by rewrite mul0R.
-  move: {H}(H H1) => /dominatesP ->; first by rewrite mulR0.
+  have [->|H1] := eqVneq (P a) 0; first by rewrite -RmultE mul0R.
+  move: {H}(H H1) => /dominatesP ->; first by rewrite -RmultE mulR0.
   move/eqP : b; by rewrite fdist_prodE mulR_eq0' /= (negbTE H1) orFb => /eqP.
 Qed.
 
@@ -55,16 +55,16 @@ Notation "P '|-' V '<<b' W" := ([forall a, (P a != 0) ==> V a `<<b W a])
   : divergence_scope.
 
 Section joint_dom.
-Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : {fdist A}).
 
 (* TODO: rename *)
 Lemma joint_dominates : P |- V << W -> (P `X V) `<< (P `X W).
 Proof.
 move=> V_dom_by_W /=; apply/dominatesP => ab Hab.
-case/leR_eqVlt : (FDist.ge0 P ab.1) => [/esym|] Hab1.
-- by rewrite fdist_prodE Hab1 mul0R.
+case/RleP/leR_eqVlt : (FDist.ge0 P ab.1) => [/esym|] Hab1.
+- by rewrite fdist_prodE Hab1 -RmultE mul0R.
 - rewrite fdist_prodE in Hab.
-  rewrite fdist_prodE (dominatesE (V_dom_by_W _ _)) ?mulR0 //.
+  rewrite fdist_prodE (dominatesE (V_dom_by_W _ _)) -?RmultE ?mulR0 //.
   + exact/gtR_eqF.
   + move: Hab; rewrite mulR_eq0 => -[|//].
     by move: (gtR_eqF _ _ Hab1) => /eqP.
@@ -73,14 +73,14 @@ Qed.
 End joint_dom.
 
 Section conditional_divergence.
-Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : {fdist A}).
 Definition cdiv := \sum_(a : A) P a * D(V a || W a).
 End conditional_divergence.
 
 Notation "'D(' V '||' W '|' P ')'" := (cdiv V W P) : divergence_scope.
 
 Section conditional_divergence_prop.
-Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : {fdist A}).
 
 Hypothesis V_dom_by_W : P |- V << W.
 
@@ -92,13 +92,13 @@ rewrite (_ : D(V || W | P) = \sum_(a in A) (\sum_(b in B)
   by rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) mulRC.
 rewrite pair_bigA big_mkcond /=.
 apply eq_bigr => -[a b] /= _.
-rewrite fdist_prodE /= (mulRC (P a)) [in RHS]mulRAC.
+rewrite fdist_prodE /= -RmultE (mulRC (P a)) [in RHS]mulRAC.
 case/boolP : (P a == 0) => [/eqP -> | Pa0]; first by rewrite !mulR0.
 congr (_ * _).
 case/boolP : (V a b == 0) => [/eqP -> | Vab0]; first by rewrite !mul0R.
 congr (_ * _).
 have Wab0 : W a b != 0 := dominatesEN (V_dom_by_W Pa0) Vab0.
-rewrite fdist_prodE /= {2}/Rdiv (mulRC _ (W a b)) (invRM (W a b)) //.
+rewrite fdist_prodE /= {2}/Rdiv -RmultE (mulRC _ (W a b)) (invRM (W a b)) //.
 by rewrite -mulRA (mulRCA (P a)) mulRV // mulR1.
 Qed.
 
@@ -113,7 +113,7 @@ End conditional_divergence_prop.
 Section conditional_divergence_vs_conditional_relative_entropy.
 Local Open Scope divergence_scope.
 Local Open Scope reals_ext_scope.
-Variables (A B : finType) (P Q : A -> {fdist B}) (R : fdist A).
+Variables (A B : finType) (P Q : A -> {fdist B}) (R : {fdist A}).
 
 Lemma cond_relative_entropy_compat : R `X P `<< R `X Q ->
   cond_relative_entropy (R, P) (R, Q) = D(P || Q | R).
@@ -129,7 +129,7 @@ rewrite mulRA.
 rewrite {1}/jcPr.
 rewrite fdistX2 fdist_prod1 Pr_set1.
 have [H|H] := eqVneq (R a) 0.
-  by rewrite H 2!mul0R fdist_prodE H !mul0R.
+  by rewrite H mul0R fdist_prodE H -RmultE !mul0R/=.
 congr (_ * log _).
   by rewrite setX1 Pr_set1 fdistXE fdist_prodE /=; field; exact/eqP.
 rewrite /jcPr !setX1 !Pr_set1 !fdistXE !fdistX2.
@@ -137,6 +137,7 @@ have [H'|H'] := eqVneq ((R `X Q) (a, b)) 0.
   have : (R `X P) (a, b) = 0 by move/dominatesP : PQ => ->.
   rewrite fdist_prodE /= mulR_eq0 => -[| -> ].
     by move/eqP : H; tauto.
+  rewrite -RmultE.
   by rewrite !(mulR0,mul0R,div0R).
 by rewrite 2!fdist_prod1 /=; field; split; exact/eqP.
 Qed.
@@ -207,7 +208,7 @@ rewrite /div /= -mulRDr mulRA -big_split /=.
 rewrite (big_morph _ (morph_mulRDr _) (mulR0 _)).
 rewrite (big_morph _ morph_exp2_plus exp2_0).
 apply eq_bigr => b _.
-case/boolP : (P a == 0) => [/eqP|] Pa0.
+case/boolP : (type.d P a == 0) => [/eqP|] Pa0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   move: (HV); rewrite in_set => /cond_type_equiv/(_ _ Hx a).
   move: Hx; rewrite in_set => /forallP/(_ a)/eqP; rewrite {}Pa0 => HPa sumB.
@@ -221,7 +222,9 @@ case/boolP : (W a b == 0) => [/eqP |] Wab0.
     by rewrite nullV 2!mul0R oppR0 addR0 mulR0 exp2_0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   by rewrite jtype_0_jtypef.
-rewrite -{1}(@logK (W a b)); last by rewrite -fdist_gt0.
+rewrite -{1}(@logK (W a b)); last first.
+  apply/RltP.
+  by rewrite -fdist_gt0.
 case/boolP : (V a b == 0) => [/eqP|] Vab0.
   suff -> : N( a, b | [seq x ``_ i | i <- enum 'I_n], [seq y ``_ i | i <- enum 'I_n]) = O.
     by rewrite pow_O Vab0 !(mulR0,mul0R,addR0,add0R,oppR0,exp2_0).
@@ -229,9 +232,16 @@ case/boolP : (V a b == 0) => [/eqP|] Vab0.
   by rewrite jtype_0_jtypef.
 rewrite -exp2_pow; congr exp2.
 rewrite -mulRN -mulRDr mulRA addR_opp -logDiv; last 2 first.
-  by apply/divR_gt0; rewrite -fdist_gt0.
-  by rewrite -fdist_gt0.
-rewrite /Rdiv (mulRAC _ (/ _)) mulRV // mul1R logV -?fdist_gt0 //.
+  apply/divR_gt0.
+  apply/RltP.
+  by rewrite -fdist_gt0//.
+  apply/RltP.
+  by rewrite -fdist_gt0//.
+  apply/RltP.
+  by rewrite -fdist_gt0//.
+rewrite /Rdiv (mulRAC _ (/ _)) mulRV // mul1R logV -?fdist_gt0 //; last first.
+  apply/RltP.
+  by rewrite -fdist_gt0//.
 rewrite mulRN 3!mulNR oppRK; congr (_ * log _).
 move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
 move: (HV); rewrite in_set => /cond_type_equiv => /(_ _ Hx a) sumB.
@@ -254,14 +264,14 @@ Variable V : P_ n ( A , B ).
 Variable W : `Ch*(A, B).
 
 Definition exp_cdiv :=
-  if P |- V <<b W
+  if (type.d P) |- V <<b W
   then exp2 (- INR n * D(V || W | P))
   else 0.
 
 Lemma exp_cdiv_left (H : P |- V << W) : exp_cdiv = exp2 (-INR n * D(V || W | P)).
 Proof.
 rewrite /exp_cdiv.
-suff : P |- V <<b W by move=> ->.
+suff : (type.d P) |- V <<b W by move=> ->.
 apply/forallP => a; apply/implyP => Pa0.
 apply/forall_inP => b /eqP Wab; by rewrite (dominatesE (H _ Pa0)).
 Qed.

@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix perm.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix perm.
 Require Import Reals Lra Classical.
 From mathcomp Require Import Rstruct classical_sets.
 Require Import ssrZ ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
@@ -36,11 +36,11 @@ Local Open Scope vec_ext_scope.
 
 Module Wght.
 Section wght.
-Variables (A M : finType) (P : fdist A) (n : nat).
+Variables (A M : finType) (P : {fdist A}) (n : nat).
 
 Definition f := [ffun g : encT A M n => \prod_(m in M) P `^ n (g m)].
 
-Lemma f0 g : 0 <= f g. Proof. rewrite ffunE; exact: prodR_ge0. Qed.
+Lemma f0 g : (0 <= f g)%mcR. Proof. rewrite ffunE; apply/RleP; exact: prodR_ge0. Qed.
 
 Lemma f1 : \sum_(g in {ffun M -> 'rV[A]_n}) f g = 1.
 Proof.
@@ -66,7 +66,7 @@ Definition jtdec P W epsilon (f : encT A M n) : decT B M n :=
     (prod_rV (f m, tb) \in `JTS P W n epsilon) &&
     [forall m', (m' != m) ==> (prod_rV (f m', tb) \notin `JTS P W n epsilon)]]].
 
-Lemma jtdec_map epsilon (P : fdist A) (W : `Ch(A, B)) (f : encT A M n) tb m0 m1 :
+Lemma jtdec_map epsilon (P : {fdist A}) (W : `Ch(A, B)) (f : encT A M n) tb m0 m1 :
   (prod_rV (f m0, tb) \in `JTS P W n epsilon) &&
   [forall m', (m' != m0) ==> (prod_rV (f m', tb) \notin `JTS P W n epsilon)] ->
   (prod_rV (f m1, tb) \in `JTS P W n epsilon) &&
@@ -248,7 +248,7 @@ End sum_rV_ffun.
 
 Section random_coding_good_code_existence.
 
-Variables (B A : finType) (W : `Ch(A, B)) (P : fdist A).
+Variables (B A : finType) (W : `Ch(A, B)) (P : {fdist A}).
 
 Definition epsilon0_condition r epsilon epsilon0 :=
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.
@@ -284,7 +284,7 @@ congr P2; rewrite /tbehead tupleE /behead_tuple; exact: val_inj.
 Qed.
 
 (* TODO: move? *)
-Lemma rsum_rmul_tuple_pmf_tnth {C : finType} n k (Q : fdist C) :
+Lemma rsum_rmul_tuple_pmf_tnth {C : finType} n k (Q : {fdist C}) :
   \sum_(t : {:k.-tuple ('rV[C]_n)}) \prod_(m < k) (Q `^ n) t \_ m = 1.
 Proof.
 transitivity (\sum_(j : {ffun 'I_k -> 'rV[_]_n}) \prod_(m < k) Q `^ _ (j m)).
@@ -301,7 +301,7 @@ by rewrite FDist.f1 iter_mulR exp1R.
 Qed.
 
 (* TODO: move? *)
-Lemma rsum_rmul_tuple_pmf {C} n k (Q : fdist C) :
+Lemma rsum_rmul_tuple_pmf {C : finType} n k (Q : {fdist C}) :
   \sum_(t in {:k.-tuple ('rV[C]_n)}) \prod_(x <- t) (Q `^ n) x = 1.
 Proof.
 rewrite -[X in _ = X](rsum_rmul_tuple_pmf_tnth n k Q).
@@ -419,7 +419,8 @@ transitivity (\sum_(v in 'rV[A]_n)
   apply eq_bigr => // w _.
   rewrite DMCE 2!fdist_rVE -big_split /=.
   apply eq_bigr => /= i _.
-  by rewrite fdist_prodE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
+  rewrite fdist_prodE -fst_tnth_prod_rV -snd_tnth_prod_rV /= mulRC.
+  by rewrite RmultE GRing.mulrC.
 rewrite /Pr big_rV_prod pair_big_dep /=.
 by apply eq_bigl; case=> /= ? ?; rewrite !inE.
 Qed.
@@ -716,6 +717,7 @@ rewrite [X in X < _](_ : _ = (\sum_(f : encT A M n) Wght.d P f * (e(W, mkCode f 
   rewrite exchange_big /= big_const /= iter_addR div1R mulRA mulVR ?mul1R //.
   by rewrite INR_eq0' card_ord.
 set Cal_E := @cal_E M n epsilon0.
+apply/RltP.
 apply (@leR_ltR_trans
 (\sum_(f : encT A M n) Wght.d P f * Pr (W ``(| f ord0)) (~: Cal_E f ord0) +
   \sum_(i | i != ord0)
@@ -723,8 +725,8 @@ apply (@leR_ltR_trans
   rewrite exchange_big /= -big_split /=.
   apply leR_sumR => /= i _.
   rewrite -big_distrr /= -mulRDr.
-  apply leR_wpmul2l; first exact: FDist.ge0.
-  rewrite [X in X <= _](_ : _ = Pr (W ``(| i ord0))
+  apply leR_wpmul2l; first exact/RleP/FDist.ge0.
+  rewrite [X in (X <= _)%coqR](_ : _ = Pr (W ``(| i ord0))
     (~: Cal_E i ord0 :|: \bigcup_(i0 : M | i0 != ord0) Cal_E i i0)); last first.
     congr Pr; apply/setP => /= tb.
     move: (preimC_Cal_E epsilon0 i tb); by rewrite inE.
@@ -800,17 +802,17 @@ Theorem channel_coding (r : CodeRateType) : r < capacity W ->
     exists n M (c : code A B M n), CodeRate c = r /\ echa(W, c) < epsilon.
 Proof.
 move=> r_I epsilon Hepsilon.
-have [P HP] : exists P : fdist A, r < `I(P, W).
+have [P HP] : exists P : {fdist A}, r < `I(P, W).
   apply NNPP => abs.
-  have {}abs : forall P : fdist A, `I(P, W) <= r.
+  have {}abs : forall P : {fdist A}, `I(P, W) <= r.
     move/not_ex_all_not in abs.
     move=> P; exact/Rnot_lt_le/abs.
   have ? : capacity W <= r.
     apply/RleP.
-    have : has_sup [set `I(P, W) | P in [set: fdist A]].
+    have : has_sup [set `I(P, W) | P in [set: {fdist A}]].
       case: set_of_I_nonempty => [x [P H1]]; split; first by exists x, P.
       by exists (rate r) => _ [Q _ <-]; exact/Rstruct.RleP/abs.
-    move=> /(@Rsup_isLub 0 [set `I(P, W) | P in [set: fdist A]])[_].
+    move=> /(@Rsup_isLub 0 [set `I(P, W) | P in [set: {fdist A}]])[_].
     apply.
     by move=> x [P _ <-{x}]; exact/RleP/abs.
   lra.
@@ -864,8 +866,12 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
   split.
     by apply (@ltR_leR_trans (INR n1)); [tauto | exact/le_INR/leP].
   by apply leq_trans with n1 => //; tauto.
-case: (random_coding_good_code (ltRW Hepsilon) Hepsilon0 Hn) =>
+have He : (0 <= epsilon)%mcR.
+  apply/RleP.
+  by apply/ltRW.
+case: (random_coding_good_code He Hepsilon0 Hn) =>
   M [HM [M_k H]].
+move/RltP in H.
 case: (good_code_sufficient_condition HM H) => f Hf.
 exists n, M, (mkCode f (jtdec P W epsilon0 f)); split => //.
 rewrite /CodeRate M_k INR_Zabs_nat; last exact/Int_part_ge0.
