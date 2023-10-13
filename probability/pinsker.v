@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssralg.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext.
+Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext convex.
 Require Import Rbigop fdist divergence variation_dist partition_inequality.
 
 (******************************************************************************)
@@ -17,8 +17,10 @@ Require Import Rbigop fdist divergence variation_dist partition_inequality.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+Import GRing.Theory.
 
 Local Open Scope R_scope.
+Local Open Scope fdist_scope.
 
 Definition pinsker_fun p c := fun q =>
   p * log (div_fct (fun _ => p) id q) +
@@ -173,14 +175,14 @@ Qed.
 
 Section pinsker_function_analysis.
 
-Variables p q : prob.
+Variables p q : {prob R}.
 
 Lemma pinsker_fun_p c : pinsker_fun p c p = 0.
 Proof.
 rewrite /pinsker_fun /= /div_fct /comp subRR mul0R mulR0 subR0.
-have [->|p0] := eqVneq p 0%:pr.
+have [->|p0] := eqVneq p 0%coqR%:pr.
   by rewrite mul0R !subR0 add0R mul1R div1R invR1 /log Log_1.
-have [->|p1] := eqVneq p 1%:pr.
+have [->|p1] := eqVneq p 1%coqR%:pr.
   by rewrite divR1 /log Log_1 subRR mul0R mulR0 addR0.
 rewrite divRR; last by rewrite subR_eq0' eq_sym.
 by rewrite /log Log_1 divRR // /log Log_1; field.
@@ -277,7 +279,7 @@ Local Open Scope reals_ext_scope.
 
 Section pinsker_fun_pos.
 
-Variables p q : prob .
+Variables p q : {prob R}.
 
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
@@ -288,64 +290,64 @@ Lemma pinsker_fun_pos c : 0 <= c <= / (2 * ln 2) -> 0 <= pinsker_fun p c q.
 Proof.
 move=> Hc.
 set a := Set2.a card_A. set b := Set2.b card_A.
-have [p0|p0] := eqVneq p 0%:pr.
+have [p0|p0] := eqVneq p R0%:pr.
   subst p.
   rewrite /pinsker_fun /div_fct /comp.
   rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l,subR0).
-  have [q1|q1] := eqVneq q 1%:pr.
+  have [q1|q1] := eqVneq q R1%:pr.
     subst q.
     exfalso.
     move/dominatesP : P_dom_by_Q => /(_ a).
-    by rewrite !fdist_binaryE subRR eqxx subR0; lra.
+    by rewrite !fdist_binaryE !/onem subrr eqxx subr0 -R1E -R0E; lra.
   apply: leR_trans.
-    by apply: (@pinsker_function_spec_pos _ q Hc); rewrite -prob_lt1.
+    by apply: (@pinsker_function_spec_pos _ q Hc); split=> //; apply/RltP; rewrite -prob_lt1.
   rewrite /pinsker_function_spec.
   apply Req_le.
-  by rewrite mul1R div1R /log LogV; [field |rewrite subR_gt0 -prob_lt1].
-have [p1|p1] := eqVneq p 1%:pr.
+  by rewrite mul1R div1R /log LogV; [field |rewrite subR_gt0; apply /RltP; rewrite -prob_lt1].
+have [p1|p1] := eqVneq p 1%coqR%:pr.
   subst p.
   rewrite /pinsker_fun /div_fct /comp subRR mul0R addR0.
-  have [q0|q0] := eqVneq q 0%:pr.
+  have [q0|q0] := eqVneq q 0%coqR%:pr.
     subst q.
     exfalso.
     move/dominatesP : P_dom_by_Q => /(_ b).
-    rewrite !fdist_binaryE subRR eq_sym (negbTE (Set2.a_neq_b card_A)) => /=.
+    rewrite !fdist_binaryE /onem subrr eq_sym (negbTE (Set2.a_neq_b card_A)) -R0E => /=.
     lra.
   apply: leR_trans.
     have : 0 <= 1 - q < 1.
       split; first by rewrite subR_ge0.
-      by rewrite ltR_subl_addr -{1}(addR0 1) ltR_add2l -prob_gt0.
+      by rewrite ltR_subl_addr -{1}(addR0 1) ltR_add2l; apply/RltP/ prob_gt0.
     exact: pinsker_function_spec_pos Hc.
   rewrite /pinsker_function_spec.
   apply Req_le.
-  rewrite mul1R div1R /log LogV -?prob_gt0 //.
+  rewrite mul1R div1R /log LogV; [|by apply/RltP/prob_gt0].
   rewrite /id (_ : 1 - (1 - q) = q) //; by field.
-have [q0|q0] := eqVneq q 0%:pr.
+have [q0|q0] := eqVneq q 0%coqR%:pr.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
   exfalso.
   move/dominatesP : P_dom_by_Q => /(_ b).
   rewrite !fdist_binaryE eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) p0_.
   by move/eqP : p0; apply; apply/val_inj; rewrite /= p0_.
-have [q1|q1] := eqVneq q 1%:pr.
+have [q1|q1] := eqVneq q 1%coqR%:pr.
   subst q.
   exfalso.
   move/dominatesP : P_dom_by_Q => /(_ a).
-  rewrite !fdist_binaryE subRR eqxx subR_eq0 => /(_ erefl) p1_.
+  rewrite !fdist_binaryE /onem subrr eqxx subR_eq0 => /(_ erefl) p1_.
   by move/eqP : p1; apply; apply/val_inj; rewrite /= -p1_.
 rewrite -(pinsker_fun_p p c).
 case: (Rlt_le_dec q p) => qp.
   apply pinsker_fun_decreasing_on_0_to_p => //.
   - lra.
-  - by split; [rewrite -prob_gt0 | rewrite -prob_lt1].
-  - by split; [rewrite -prob_gt0 | exact/ltRW].
-  - by split; [rewrite -prob_gt0 | exact/leRR].
+  - by split; apply/RltP; [rewrite -prob_gt0 | rewrite -prob_lt1].
+  - by split; [apply/RltP/prob_gt0 | exact/ltRW].
+  - by split; [apply/RltP/prob_gt0 | exact/leRR].
   - exact/ltRW.
 apply pinsker_fun_increasing_on_p_to_1 => //.
 - lra.
-- by split; [rewrite -prob_gt0 |rewrite -prob_lt1].
-- by split; [exact/leRR |rewrite -prob_lt1].
-- by split => //; rewrite -prob_lt1.
+- by split; apply/RltP; [rewrite -prob_gt0 |rewrite -prob_lt1].
+- by split; [exact/leRR |apply/RltP/prob_lt1].
+- by split => //; apply/RltP; rewrite -prob_lt1.
 Qed.
 
 End pinsker_fun_pos.
@@ -355,7 +357,7 @@ Local Open Scope variation_distance_scope.
 
 Section Pinsker_2_bdist.
 
-Variables p q : prob.
+Variables p q : {prob R}.
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 
@@ -387,41 +389,44 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
   rewrite [X in _ = _ + _ - X]mulRA.
   rewrite [in X in _ = _ + _ - X](mulRC c).
   congr (_ - _).
-  case/boolP : (p == 0%:pr) => [/eqP |] p0.
+  case/boolP : (p == 0%coqR%:pr) => [/eqP |] p0.
     rewrite p0 !mul0R subR0 addR0 add0R !mul1R /log (*_Log_1*) /Rdiv.
-    have [q1|q1] := eqVneq q 1%:pr.
+    have [q1|q1] := eqVneq q 1%coqR%:pr.
       move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
       rewrite -/pi -/qi Hqi q1 subRR => /(_ erefl).
-      by rewrite Hpi p0 subR0 => ?; exfalso; lra.
+      by rewrite Hpi p0 subR0 -R0E => ?; exfalso; lra.
     rewrite /log LogM; last 2 first.
       lra.
-      by apply/invR_gt0; rewrite subR_gt0 -prob_lt1.
-      by rewrite LogV ?subR_gt0 -?prob_lt1 // Log_1.
-  have [q0|q0] := eqVneq q 0%:pr.
+      by apply/invR_gt0; rewrite subR_gt0; apply/RltP/prob_lt1.
+      rewrite LogV; last by apply/subR_gt0/RltP/prob_lt1.
+      by rewrite Log_1.
+  have [q0|q0] := eqVneq q 0%coqR%:pr.
     move/dominatesP : P_dom_by_Q => /(_ (Set2.b card_A)).
     rewrite -/pj -/qj Hqj q0 => /(_ erefl).
     rewrite Hpj => abs.
-    have : p == 0%:pr by apply/eqP/val_inj.
+    have : p == 0%coqR%:pr by apply/eqP/val_inj.
     by rewrite (negbTE p0).
   rewrite /div_fct /comp /= (_ : id q = q) //.
-  have [->|p1] := eqVneq p 1%:pr.
+  have [->|p1] := eqVneq p 1%coqR%:pr.
     rewrite subRR !mul0R /Rdiv /log LogM //; last first.
-      apply/invR_gt0; by rewrite -prob_gt0.
-      by rewrite Log_1 mul1R LogV // -?prob_gt0 // !(add0R,mul1R,addR0,sub0R).
+      apply/invR_gt0; by apply/RltP/prob_gt0.
+      rewrite Log_1 /= mul1R LogV //; last by apply/RltP/prob_gt0.
+      by rewrite !(add0R,mul1R,addR0,sub0R).
   rewrite /log LogM //; last 2 first.
-    by rewrite -prob_gt0.
-    by apply/invR_gt0; rewrite -prob_gt0.
-  rewrite LogV //; last by rewrite -prob_gt0.
-  have [q1|q1] := eqVneq q 1%:pr.
+    by apply/RltP/prob_gt0.
+    by apply/invR_gt0/RltP/prob_gt0.
+  rewrite LogV //; last by apply/RltP/prob_gt0.
+  have [q1|q1] := eqVneq q 1%coqR%:pr.
     move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
     rewrite -/pi -/qi Hqi q1 subRR => /(_ erefl).
     rewrite Hpi subR_eq0 => abs.
-    have : p == 1%:pr by apply/eqP/val_inj.
+    have : p == 1%coqR%:pr by apply/eqP/val_inj.
     by rewrite (negbTE p1).
   rewrite /Rdiv LogM ?subR_gt0 //; last 2 first.
-    by rewrite -prob_lt1.
-    by apply/invR_gt0; rewrite subR_gt0 -prob_lt1.
-  by rewrite LogV ?subR_gt0 // -?prob_lt1//; ring.
+    by apply/RltP/prob_lt1.
+    by apply/invR_gt0; rewrite subR_gt0; apply/RltP/prob_lt1.
+  rewrite LogV; last by rewrite subR_gt0; apply/RltP/prob_lt1.
+  ring.
 congr (_ - _ * _).
 by rewrite /var_dist Set2sumE // -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj addRC.
 Qed.
@@ -439,7 +444,7 @@ End Pinsker_2_bdist.
 
 Section Pinsker_2.
 
-Variables (A : finType) (P Q : fdist A).
+Variables (A : finType) (P Q : {fdist A}).
 Hypothesis card_A : #|A| = 2%nat.
 Hypothesis P_dom_by_Q : P `<< Q.
 
@@ -456,7 +461,7 @@ End Pinsker_2.
 
 Section Pinsker.
 
-Variables (A : finType) (P Q : fdist A).
+Variables (A : finType) (P Q : {fdist A}).
 Hypothesis P_dom_by_Q : P `<< Q.
 
 Local Notation "0" := (false).
