@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb Rbigop.
@@ -42,7 +42,7 @@ Local Open Scope entropy_scope.
 
 Section typical_sequence_definition.
 
-Variables (A : finType) (P : fdist A) (n : nat) (epsilon : R).
+Variables (A : finType) (P : {fdist A}) (n : nat) (epsilon : R).
 
 Definition typ_seq (t : 'rV[A]_n) :=
   exp2 (- n%:R * (`H P + epsilon)) <b= P `^ n t <b= exp2 (- n%:R * (`H P - epsilon)).
@@ -55,7 +55,7 @@ Notation "'`TS'" := (set_typ_seq) : typ_seq_scope.
 
 Local Open Scope typ_seq_scope.
 
-Lemma set_typ_seq_incl A (P : fdist A) n epsilon : 0 <= epsilon -> forall r, 1 <= r ->
+Lemma set_typ_seq_incl (A : finType) (P : {fdist A}) n epsilon : 0 <= epsilon -> forall r, 1 <= r ->
   `TS P n (epsilon / 3) \subset `TS P n epsilon.
 Proof.
 move=> e0 r r1.
@@ -74,13 +74,13 @@ Qed.
 
 Section typ_seq_prop.
 
-Variables (A : finType) (P : fdist A) (epsilon : R) (n : nat).
+Variables (A : finType) (P : {fdist A}) (epsilon : R) (n : nat).
 
 Lemma TS_sup : #| `TS P n epsilon |%:R <= exp2 (n%:R * (`H P + epsilon)).
 Proof.
 suff Htmp : #| `TS P n epsilon |%:R * exp2 (- n%:R * (`H P + epsilon)) <= 1.
   by rewrite -(mulR1 (exp2 _)) mulRC -leR_pdivr_mulr // /Rdiv -exp2_Ropp -mulNR.
-rewrite -(FDist.f1 (P `^ n)).
+rewrite (_ : 1 = 1%mcR)// -(FDist.f1 (P `^ n)).
 rewrite (_ : _ * _ = \sum_(x in `TS P n epsilon) (exp2 (- n%:R * (`H P + epsilon)))); last first.
   by rewrite big_const iter_addR.
 by apply/leR_sumRl => //= i; rewrite inE; case/andP => /leRP.
@@ -111,7 +111,7 @@ End typ_seq_prop.
 
 Section typ_seq_more_prop.
 
-Variables (A : finType) (P : fdist A) (epsilon : R) (n : nat).
+Variables (A : finType) (P : {fdist A}) (epsilon : R) (n : nat).
 
 Hypothesis He : 0 < epsilon.
 
@@ -136,7 +136,13 @@ have -> : Pr P `^ n.+1 (~: p) =
              (`| - (1 / n.+1%:R) * log (P `^ n.+1 x) - `H P | >b epsilon)].
     apply/setP => /= i; rewrite !inE negb_and orbC.
     apply/idP/idP => [/orP[/ltRP|]|].
-    - by rewrite -fdist_gt0 => /negP; rewrite negbK => ->.
+    - move/RltP => H.
+      have {}H : P `^ n.+1 i = 0.
+        apply/eqP.
+        apply/negPn.
+        apply: contra H.
+        by have [+ _] := fdist_gt0 (P `^ n.+1) i.
+      by rewrite H eqxx.
     - rewrite /typ_seq negb_and => /orP[|] LHS.
       + case/boolP : (P `^ n.+1 i == 0) => /= H1; first by [].
         have {}H1 : 0 < P `^ n.+1 i.
@@ -178,7 +184,8 @@ have -> : Pr P `^ n.+1 (~: p) =
 rewrite {1}/Pr (eq_bigr (fun=> 0)); last by move=> /= v; rewrite inE => /eqP.
 rewrite big_const iter_addR mulR0 add0R.
 apply/(leR_trans _ (aep He k0_k))/Pr_incl/subsetP => /= t.
-rewrite !inE /= => /andP[-> /= H3]; apply/ltRW'.
+rewrite !inE /= => /andP[/ltRP/RltP -> H3].
+apply/ltRW'.
 by rewrite /log_RV /= /scalel_RV /= mulRN -mulNR.
 Qed.
 
@@ -211,13 +218,20 @@ Lemma TS_inf : aep_bound P epsilon <= n.+1%:R ->
   (1 - epsilon) * exp2 (n.+1%:R * (`H P - epsilon)) <= #| `TS P n.+1 epsilon |%:R.
 Proof.
 move=> k0_k.
-have H1 : 1 - epsilon <= Pr (P `^ n.+1) (`TS P n.+1 epsilon) <= 1.
-  split; by [apply Pr_TS_1 | apply Pr_1].
+have H1 : (1 - epsilon <= Pr (P `^ n.+1) (`TS P n.+1 epsilon) <= 1)%mcR.
+  by apply/andP; split; apply/RleP; [exact: Pr_TS_1 | exact: Pr_1].
 have H2 : (forall x, x \in `TS P n.+1 epsilon ->
-  exp2 (- n.+1%:R * (`H P + epsilon)) <= P `^ n.+1 x <= exp2 (- n.+1%:R * (`H P - epsilon))).
-  by move=> x; rewrite inE /typ_seq => /andP[/leRP ? /leRP].
-move: (wolfowitz (exp2_gt0 _) (exp2_gt0 _) H1 H2).
-by rewrite mulNR exp2_Ropp {1}/Rdiv invRK ?gtR_eqF //; case.
+  exp2 (- n.+1%:R * (`H P + epsilon)) <= P `^ n.+1 x <= exp2 (- n.+1%:R * (`H P - epsilon)))%mcR.
+  by move=> x; rewrite inE /typ_seq => /andP[/leRP/RleP -> /leRP/RleP ->].
+have /RltP H3 := exp2_gt0 (- n.+1%:R * (`H P + epsilon)).
+have /RltP H5 := exp2_gt0 (- n.+1%:R * (`H P - epsilon)).
+have := wolfowitz H3 H5 H1 H2.
+rewrite mulNR exp2_Ropp.
+rewrite RinvE ?gtR_eqF//.
+rewrite GRing.invrK => /andP[] /leRP.
+rewrite -!RmultE -RminusE -INRE.
+by rewrite {1}(_ : 1%mcR = 1)//.
+(* TODO: clean *)
 Qed.
 
 End typ_seq_more_prop.

@@ -1138,7 +1138,7 @@ Variables (C : finType) (P : fdist R C) (k : nat) (s : {set 'rV[C]_k}).
 Lemma wolfowitz a b A B : 0 < A -> 0 < B ->
   a <= \sum_(x in s) P `^ k x <= b ->
   (forall x : 'rV_k, x \in s -> A <= P `^ k x <= B) ->
-  a / B <=  (#| s |)%:R <= b / A.
+  a / B <= (#| s |)%:R <= b / A.
 Proof.
 move=> A0 B0 /andP [Ha Hb] H.
 have eq_le_ : forall x y, (x = y) -> (x <= y)%O. by move=> ? ? ? ? ->.
