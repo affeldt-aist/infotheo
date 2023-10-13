@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
@@ -35,6 +35,7 @@ Import Prenex Implicits.
 Local Open Scope entropy_scope.
 Local Open Scope num_occ_scope.
 Local Open Scope R_scope.
+Local Open Scope fdist_scope.
 
 Module type.
 
@@ -44,7 +45,7 @@ Variable A : finType.
 Variable n : nat.
 
 Record type : predArgType := mkType {
-  d :> fdist A ;
+  d :> {fdist A} ;
   f : {ffun A -> 'I_n.+1} ;
   d_f : forall a, d a = INR (f a) / INR n }.
 
@@ -52,7 +53,8 @@ End type_def.
 
 End type.
 
-Coercion type_coercion := type.d.
+Definition type_coercion := type.d.
+Coercion type_coercion : type.type >-> fdist_of.
 
 Notation "'P_' n '(' A ')'" := (type.type A n) : types_scope.
 
@@ -61,18 +63,19 @@ Local Open Scope types_scope.
 Definition ffun_of_type A n (P : P_ n ( A )) := let: type.mkType _ f _ := P in f.
 
 Lemma type_fun_type A n (_ : n != O) (P : P_ n ( A )) a :
-  ((type.f P) a)%:R = n%:R * P a.
+  ((type.f P) a)%:R = n%:R * type.d P a.
 Proof.
 case: P => /= d f d_f; by rewrite d_f mulRCA mulRV ?INR_eq0' // mulR1.
 Qed.
 
-Lemma INR_type_fun A n (P : P_ n ( A )) a : ((type.f P) a)%:R / n%:R = P a.
+Lemma INR_type_fun A n (P : P_ n ( A )) a : ((type.f P) a)%:R / n%:R = type.d(*TODO: fix coercion *)P a.
 Proof. destruct P as [d f d_f] => /=. by rewrite d_f. Qed.
 
-Lemma no_0_type A (d : fdist A) (t : {ffun A -> 'I_1}) :
+Lemma no_0_type (A : finType) (d : {fdist A}) (t : {ffun A -> 'I_1}) :
   (forall a, d a = (t a)%:R / 0%:R) -> False.
 Proof.
 move=> H; apply R1_neq_R0.
+rewrite (_ : 1 = 1%mcR)//.
 rewrite -(FDist.f1 d).
 transitivity (\sum_(a | a \in A) INR (t a) / 0); first exact/eq_bigr.
 rewrite -big_distrl /= -big_morph_natRD.
@@ -83,8 +86,8 @@ Qed.
 
 Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
 set f := [ffun a => N(a | ta)%:R / n.+1%:R].
-assert (H1 : forall a, (0 <= f a)%R).
-  move=> a; rewrite ffunE; apply divR_ge0; by [apply leR0n | apply ltR0n].
+assert (H1 : forall a, (0%mcR <= f a)%mcR).
+  move=> a; rewrite ffunE; apply/RleP/divR_ge0; by [apply leR0n | apply ltR0n].
 have H2 : \sum_(a in A) f a = 1%R.
   under eq_bigr do rewrite ffunE /=.
   by rewrite -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
@@ -121,7 +124,7 @@ Definition type_eqMixin A n := EqMixin (@type_eqP A n).
 Canonical type_eqType A n := Eval hnf in EqType _ (@type_eqMixin A n).
 
 Lemma type_ffunP A n (P Q : P_ n.+1 ( A )) :
-  (forall c, P c = Q c) -> P = Q.
+  (forall c, type.d P c = type.d Q c) -> P = Q.
 Proof.
 move=> H.
 destruct P as [d1 f1 H1].
@@ -141,13 +144,18 @@ by rewrite ffunE; apply divR_ge0; [apply leR0n | apply ltR0n].
 Defined.
 
 Definition fdist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
-  (Hf : (\sum_(a in A) f a)%nat == n.+1) : fdist A.
+  (Hf : (\sum_(a in A) f a)%nat == n.+1) : {fdist A}.
 set pf := nneg_fun_of_ffun f.
-have H : \sum_(a in A) pf a == 1 :> R.
+have H : (\sum_(a in A) pf a)%mcR = 1 :> R.
   rewrite /pf; under eq_bigr do rewrite ffunE /=.
   rewrite /Rdiv -big_distrl /= -big_morph_natRD.
-  by move/eqP : Hf => ->; rewrite mulRV // INR_eq0'.
-exact:(FDist.mk H).
+  move/eqP : Hf => ->.
+  rewrite -RmultE.
+  by rewrite mulRV// INR_eq0'.
+apply: (FDist.make _ H).
+move=> a.
+apply/RleP.
+exact/nneg_finfun_ge0.
 Defined.
 
 Lemma fdist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})
@@ -163,7 +171,7 @@ refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1)%nat with
         end).
 Defined.
 
-Lemma ffun_of_fdist A n (d : fdist A) (t : {ffun A -> 'I_n.+2})
+Lemma ffun_of_fdist (A : finType) n (d : {fdist A}) (t : {ffun A -> 'I_n.+2})
   (H : forall a : A, d a = INR (t a) / INR n.+1) : (\sum_(a in A) t a)%nat == n.+1.
 Proof.
 suff : INR (\sum_(a in A) t a) == INR n.+1 * \sum_(a | a \in A) d a.
@@ -312,7 +320,7 @@ Variables (A : finType) (n : nat) (P : P_ n ( A )).
 Local Open Scope nat_scope.
 
 Definition typed_tuples :=
-  [set t : n.-tuple A | [forall a, P a == (INR N(a | t) / INR n)%R] ].
+  [set t : n.-tuple A | [forall a, type.d P a == (INR N(a | t) / INR n)%R] ].
 
 End typed_tuples.
 
@@ -389,12 +397,12 @@ Local Open Scope tuple_ext_scope.
 Local Open Scope vec_ext_scope.
 
 Lemma tuple_dist_type t : tuple_of_row t \in T_{P} ->
-  P `^ n t = \prod_(a : A) P a ^ (type.f P a).
+  (type.d P) `^ n t = \prod_(a : A) type.d P a ^ (type.f P a).
 Proof.
 move=> Hx.
 rewrite fdist_rVE.
-rewrite (_ : \prod_(i < n) P (t ``_ i) =
-  \prod_(a : A) (\prod_(i < n) (if a == t ``_ i then P t ``_ i else 1))); last first.
+rewrite (_ : \prod_(i < n) type.d P (t ``_ i) =
+  \prod_(a : A) (\prod_(i < n) (if a == t ``_ i then type.d P t ``_ i else 1))); last first.
   rewrite exchange_big; apply eq_big ; first by [].
   move=> i _.
   rewrite (bigID (fun y => y == t ``_ i)) /=.
@@ -420,16 +428,18 @@ Qed.
 Local Close Scope tuple_ext_scope.
 
 Lemma tuple_dist_type_entropy t : tuple_of_row t \in T_{P} ->
-  P `^ n t = exp2 (- INR n * `H P).
+  (type.d P) `^ n t = exp2 (- INR n * `H P).
 Proof.
 move/(@tuple_dist_type t) => ->.
-rewrite (_ : \prod_(a : A) P a ^ (type.f P) a =
-             \prod_(a : A) exp2 (P a * log (P a) * INR n)); last first.
+rewrite (_ : \prod_(a : A) type.d P a ^ (type.f P) a =
+             \prod_(a : A) exp2 (type.d P a * log (type.d P a) * INR n)); last first.
   apply eq_bigr => a _.
-  case/boolP : (0 == P a) => H; last first.
-    have {}H : 0 < P a.
-      have := FDist.ge0 P a.
+  case/boolP : (0 == type.d P a) => H; last first.
+    have {}H : 0 < type.d P a.
+      have := FDist.ge0 (type.d P) a.
+      move/RleP.
       case/Rle_lt_or_eq_dec => // abs.
+      rewrite (_ : 0%mcR = 0)// in abs.
       by rewrite abs eqxx in H.
     rewrite -{1}(logK H) -exp2_pow.
     congr exp2.
@@ -466,7 +476,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
 - case/existsP : x_T_P => ta Hta.
   rewrite -(row_of_tupleK ta) in Hta.
   rewrite -(tuple_dist_type_entropy Hta).
-  rewrite [X in X <= _](_ : _ = Pr P `^ n (@row_of_tuple A n @: T_{P})).
+  rewrite [X in X <= _](_ : _ = Pr (type.d P) `^ n (@row_of_tuple A n @: T_{P})).
     by apply Pr_1.
   symmetry.
   rewrite /Pr.
@@ -512,7 +522,7 @@ Definition enc_pre_img (P : P_ n ( A )) := [set m | tuple_of_row (enc c m) \in T
 
 Lemma enc_pre_img_injective (P Q : P_ n ( A )) :
   enc_pre_img P != set0 -> enc_pre_img P = enc_pre_img Q ->
-  forall a, P a = Q a.
+  forall a, type.d P a = type.d Q a.
 Proof.
 rewrite /enc_pre_img.
 case/set0Pn => m.
