@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext.
@@ -52,7 +52,11 @@ have H : forall h,
   \sum_(a | a \in [set: 'I_n]) h a.+1 = \sum_(a | a \in 'I_n) h a.+1.
   by move=> ?; under eq_bigl do rewrite in_setT.
 rewrite -!H -(H (fun i => f i * log (f i / g i))).
-move: (log_sum [set: 'I_n] (mkNNFinfun newRle0f_1) (mkNNFinfun newRle0g_1) f_dom_by_g1).
+have H1 : (forall x : 'I_n, 0 <= mkNNFinfun newRle0f_1 x).
+  by move=> x//=; rewrite ffunE.
+have H2 : (forall x : 'I_n, 0 <= mkNNFinfun newRle0g_1 x).
+  by move=> x//=; rewrite ffunE.
+have := (log_sum [set: 'I_n] (mkNNFinfun newRle0f_1) (mkNNFinfun newRle0g_1) H1 H2 f_dom_by_g1).
 rewrite /=.
 under eq_bigr do rewrite ffunE.
 under [in X in _ * log (_ / X) <= _ -> _]eq_bigr do rewrite ffunE.
@@ -181,7 +185,7 @@ End Bigop_Lemma.
 Local Open Scope vec_ext_scope.
 
 Section Entropy_lemma.
-Variables (A : finType) (P : fdist A) (n : nat).
+Variables (A : finType) (P : {fdist A}) (n : nat).
 
 Lemma entropy_TupleFDist : `H (P `^ n) = n%:R * `H P.
 Proof.
@@ -202,7 +206,7 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
   rewrite big_ord_recl (_ : _ ``_ ord0 = i); last first.
     by rewrite mxE; case: splitP => // j Hj; rewrite mxE.
   rewrite -mulRA.
-  case: (FDist.ge0 P i) => [pi_pos| <-]; last by rewrite !mul0R.
+  case/RleP : (FDist.ge0 P i) => [pi_pos| <-]; last by rewrite !mul0R.
   congr (P i * _).
   rewrite -mulRDr.
   rewrite (@eq_bigr _ _ _ _ _ _
@@ -217,10 +221,10 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
   have rmul_pos : 0 < \prod_(i1<n0) P i0 ``_ i1.
     move/eqP in rmul_non0.
     apply/ltRP; rewrite lt0R eq_sym rmul_non0; apply/leRP/prodR_ge0 => ?.
-    exact: FDist.ge0.
+    exact/RleP/FDist.ge0.
   by rewrite /log LogM // !mulRDr mulRA mulRA.
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
-  by rewrite -(FDist.f1 (P `^ n0)); apply eq_bigr => i _; rewrite fdist_rVE.
+  by rewrite (_ : 1 = 1%mcR)// -(FDist.f1 (P `^ n0)); apply eq_bigr => i _; rewrite fdist_rVE.
 rewrite -big_distrl /= mulR1 [in RHS]addRC; congr (_ + _).
 rewrite -big_distrl /= FDist.f1 mul1R; apply eq_bigr => i _.
 by rewrite fdist_rVE.
@@ -230,7 +234,7 @@ End Entropy_lemma.
 
 Section le_entroPN_logeEX.
 
-Variable (A : finType) (P : fdist A) (f : A -> seq bool).
+Variable (A : finType) (P : {fdist A}) (f : A -> seq bool).
 Let X : {RV P -> R} := INR \o size \o f.
 Definition Nmax := \max_(a in A) size (f a).
 Hypothesis f_uniq : uniquely_decodable f.
@@ -250,11 +254,11 @@ move/nesym/INR_not_0 : (@Xnon0 a) => H.
 by rewrite ltR0n ltn_neqAle /= leq0n andbT; apply/eqP/nesym.
 Qed.
 
-Let PN_ge0 : forall i : 'I_Nmax.+1, 0 <= [ffun x : 'I__ => `Pr[ X = x%:R]] i.
-Proof. by move => a; rewrite ffunE. Qed.
+Let PN_ge0 : (forall i : 'I_Nmax.+1, 0 <= [ffun x : 'I__ => `Pr[ X = x%:R]] i)%mcR.
+Proof. by move => a; rewrite ffunE; apply/RleP. Qed.
 
 Lemma PN_sum1 :
-  \sum_(i < Nmax.+1) [ffun x : 'I__ => `Pr[ X = x%:R] ] i = 1.
+  (\sum_(i < Nmax.+1) [ffun x : 'I__ => `Pr[ X = x%:R] ] i = 1)%mcR.
 Proof.
 rewrite -(FDist.f1 P).
 rewrite [in RHS](partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
@@ -262,9 +266,10 @@ apply: eq_bigr => i _; rewrite ffunE.
 rewrite /pr_eq; unlock.
 apply: eq_bigl => i0.
 rewrite /= inE.
-apply/eqP/eqP=>[/INR_eq H|<-]; last by rewrite inordfE.
-apply: ord_inj.
-by rewrite -H inordfE.
+apply/eqP/eqP=> [|<-]; last first.
+  by rewrite inordfE /X /= FDist.f1 INRE.
+rewrite FDist.f1 /X /= -INRE => /INR_eq H.
+by apply/val_inj => /=; rewrite -H inordfE.
 Qed.
 
 Definition PN := FDist.make PN_ge0 PN_sum1.
@@ -277,15 +282,17 @@ rewrite /pr_eq; unlock.
 rewrite /Pr ffunE mulRC big_distrl /=.
 under eq_bigr do rewrite mulRC.
 apply: congr_big=>[//| x| x]; last by move/eqP<-; rewrite inordfE.
-rewrite inE; apply/eqP/eqP; first by move<-; rewrite inordfE.
-by move/INR_eq => H; apply: ord_inj; rewrite -H inordfE.
+rewrite inE; apply/eqP/eqP=> [<-|].
+  by rewrite inordfE /X/= INRE.
+rewrite /X /= -INRE => /INR_eq H.
+by apply: ord_inj; rewrite -H inordfE.
 Qed.
 
 Lemma le_1_EX : 1 <= `E X.
 Proof.
-rewrite -(FDist.f1 P); apply: leR_sumR => i _.
+rewrite (_ : 1 = 1%mcR)// -(FDist.f1 P); apply: leR_sumR => i _.
 rewrite -{1}(mul1R (P i)).
-apply leR_wpmul2r; first exact: FDist.ge0.
+apply leR_wpmul2r; first exact/RleP/FDist.ge0.
 by move: (Xpos i); rewrite (_ : 1 = 1%:R) //= (_ : 0 = 0%:R) // ltR_nat leR_nat.
 Qed.
 
@@ -296,10 +303,10 @@ Proof.
 move => EX_1.
 have eq_0_P : forall a, X a <> 1 -> 0 = P a.
   move: EX_1.
-  rewrite -{1}(FDist.f1 P) => EX1 a Xnon1.
+  rewrite (_ : 1 = 1%mcR)// -{1}(FDist.f1 P) => EX1 a Xnon1.
   have /leR_sumR_eq H : forall i : A, i \in A -> P i <= (size (f i))%:R * P i.
     move=> i _; rewrite -{1}(mul1R ( P i)).
-    apply/leR_wpmul2r; first exact: FDist.ge0.
+    apply/leR_wpmul2r; first exact/RleP/FDist.ge0.
     by move: (Xpos i); rewrite (_ : 1 = 1%:R) //= (_ : 0 = 0%:R) // ltR_nat leR_nat.
   case: (Req_dec (P a) 0) => //.
   have : (size (f a))%:R * P a = P a by rewrite (H EX1 a).
@@ -309,8 +316,10 @@ rewrite /entropy Ropp_eq_0_compat //.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 //= => i _.
 rewrite /pr_eq; unlock.
 rewrite /Pr ffunE.
-case (Req_dec i%:R 1)=>[->| neq0].
+rewrite -INRE.
+case: (Req_dec i%:R 1)=>[->| neq0].
   rewrite [X in _ * log X = _](_ : _ = 1); first by rewrite /log Log_1 mulR0.
+  rewrite (_ : 1 = 1%mcR)//.
   rewrite -{2}(FDist.f1 P).
   rewrite [in RHS](bigID (fun a => a \in [set x | (size (f x))%:R == 1])) /=.
   rewrite [X in _ = _ + X](_ : _ = 0); first by rewrite addR0.
@@ -373,7 +382,8 @@ rewrite EX_ord -big_pow1; last exact/eqP/ltR_eqF.
 rewrite mulRC (big_morph _ (morph_mulRDl _) (mul0R _)).
 rewrite -(@leR_add2r (\sum_(i < Nmax.+1) i%:R * `Pr[ X = i%:R ] * log alp)).
 rewrite -addRA (_ : - _ + _ = 0) ?addR0; last first.
-  by rewrite addRC addR_opp subR_eq0; apply eq_bigr => i _; rewrite ffunE.
+  rewrite addRC addR_opp subR_eq0; apply eq_bigr => i _; rewrite ffunE.
+  by rewrite -INRE.
 rewrite (@eq_bigr _ _ _ 'I_Nmax.+1 _ _ _ (fun i => `Pr[ X = i%:R ] * log (alp ^ i)))=>[|i _]; last first.
   by rewrite log_pow // [in RHS]mulRC -mulRA (mulRC _ (log alp)) mulRA.
 rewrite /entropy addRC; move: oppRB; rewrite/Rminus; move<-.
@@ -381,12 +391,18 @@ rewrite -(oppRK (log _)) leR_oppl oppRK big_morph_oppR -big_split /=.
 rewrite [X in _ <= X](_ : _ = \sum_(i < Nmax.+1)
       `Pr[ X = i%:R] *
       (log (`Pr[ X = i%:R ]) - log (alp ^ i))); last first.
-  by apply: eq_bigr => i _; rewrite ffunE addR_opp -mulRBr.
+  by apply: eq_bigr => i _; rewrite ffunE addR_opp -INRE -mulRBr.
 rewrite -sub0R -(mul1R (0 - _)).
 have pmf1' : \sum_(i < Nmax) `Pr[X = i.+1%:R] = 1.
-  rewrite -PN_sum1 /=.
+  rewrite (_ : 1 = 1%mcR)// -PN_sum1 /=.
   under [in RHS]eq_bigr do rewrite ffunE.
-  rewrite big_ord_recl -subR_eq subRR; apply/esym.
+  rewrite big_ord_recl.
+  rewrite -RplusE.
+  rewrite -subR_eq.
+  rewrite [LHS](_ : _ = 0); last first.
+    apply/eqP; rewrite GRing.subr_eq0; apply/eqP/eq_bigr => i _ /=.
+    by rewrite INRE.
+  apply/esym.
   rewrite /pr_eq; unlock.
   rewrite /Pr big1 // => i.
   rewrite inE; move/eqP =>  Xi_0.
@@ -432,7 +448,7 @@ End le_entroPN_logeEX.
 
 Section v_scode_converse'_1tuple.
 
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 Variable f : A -> seq bool.
 Local Notation "'Nmax'" := (Nmax f).
 Let X : {RV P -> R} := (INR \o size \o f).
@@ -444,13 +460,13 @@ Definition Pf (i : seq bool) := if [ pick x | f x == i ] is Some x then P x else
 Lemma Rle0Pf i : 0 <= Pf i.
 Proof.
 rewrite /Pf.
-case: pickP => [x _ | _ ]; [exact: FDist.ge0|exact: leRR].
+case: pickP => [x _ | _ ]; [exact/RleP/FDist.ge0|exact: leRR].
 Qed.
 
 Lemma pmf1_Pf : \sum_(m < Nmax.+1) \sum_(a in {: m.-tuple bool}) Pf a = 1.
 Proof.
 move: (uniq_dec_inj f_uniq) => f_inj.
-rewrite -(FDist.f1 P).
+rewrite (_ : 1 = 1%mcR)// -(FDist.f1 P).
 rewrite (partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
 apply: eq_bigr => i _.
 rewrite (big_seq_tuple i f_inj (fdist_card_neq0 P)) /Pf=>[|x].
@@ -490,7 +506,7 @@ rewrite /Pr (eq_bigr (fun x => Pf (f x))) => [|a ain]; last first.
   case:pickP; first by move =>x /eqP/ f_inj ->.
   by move/(_ a); rewrite eqxx.
 rewrite (eq_bigl (fun x =>  size (f x) == m) _) => [|a]; last first.
-  rewrite inE /X /=.
+  rewrite inE /X /= -INRE.
   by apply/eqP/eqP => [/INR_eq | ->].
 rewrite (big_seq_tuple m f_inj (fdist_card_neq0 P)) /Pf => [//|i0].
 case: pickP => // ?; first by move/eqP <-; rewrite codom_f.
@@ -538,7 +554,11 @@ rewrite rsum_disjoints_set [Y in Y + _ = _]big1 ?add0R; last first.
   rewrite /pr_eq; unlock.
   rewrite /Pr ffunE /= => /eqP/psumR_eq0P => H.
   have {}H : forall j : A, j \in [set x | (size (f x))%:R == i%:R] -> P j = 0.
-    by apply: H => ? ?; exact: FDist.ge0.
+    move=> a Ha.
+    apply: H => //.
+    rewrite inE/=.
+    rewrite inE in Ha.
+    by rewrite (eqP Ha) INRE.
   rewrite big1 // => i0 _.
   rewrite {1}/Pf.
   case: pickP => [a /eqP fai0|]; last by rewrite mul0R.
@@ -559,9 +579,9 @@ rewrite [in X in _ = _ * (_ * / X)]/= [in X in _ = _ * (_ * / X)]ffunE.
 rewrite mulRV ?mulR1; last by rewrite /PN /= ffunE in Pr_non0.
 rewrite /log LogM; last 2 first.
   apply/ltRP; rewrite lt0R eq_sym Pfi0_non0; apply/leRP.
-  rewrite /Pf; case:pickP=>[? _ | ? ]; [exact: FDist.ge0 | exact/leRR].
-  by apply/invR_gt0; rewrite -fdist_gt0.
-rewrite LogV; last by rewrite -fdist_gt0.
+  rewrite /Pf; case:pickP=>[? _ | ? ]; [exact/RleP/FDist.ge0 | exact/leRR].
+  by apply/invR_gt0/RltP; rewrite -fdist_gt0.
+rewrite LogV; last by apply/RltP; rewrite -fdist_gt0.
 by rewrite /PN /= ffunE -addRA Rplus_opp_l addR0.
 Qed.
 
@@ -596,7 +616,13 @@ rewrite [Y in _ <= Y + _ ](_ :_ = 0).
   rewrite mulRC inE; move/eqP => H.
   apply/leR_wpmul2r; first by rewrite /PN /= ffunE.
   pose pmf_Pf' := mkNNFinfun (Rle0Pf' H).
-  have pmf1'_Pf' : \sum_(a in {: i.-tuple bool}) pmf_Pf' a == 1 :> R.
+  have pmf1'_Pf' : ([forall a, (0 <= pmf_Pf' a)%mcR] && ((\sum_(a in {: i.-tuple bool}) pmf_Pf' a)%mcR == 1%mcR)).
+    apply/andP; split.
+      apply/forallP => x.
+      rewrite /pmf_Pf'/= /Pf'; rewrite ffunE.
+      apply/RleP/divR_ge0 => //.
+        exact: Rle0Pf.
+      by apply/RltP/fdist_gt0/eqP.
     by apply/eqP; apply: (pmf1_Pf' H).
   pose distPf := FDist.mk pmf1'_Pf'.
   move: (entropy_max distPf).
@@ -619,7 +645,7 @@ Section v_scode_converse'_ntuple.
 
 Variables (A : finType) (n : nat).
 Variable f : encT A (seq bool) n.
-Variable P : fdist A.
+Variable P : {fdist A}.
 Hypothesis f_uniq : uniquely_decodable f.
 
 Lemma converse_case1 : @E_leng_cw _ _ P f < n%:R * log #|A|%:R ->
@@ -645,7 +671,7 @@ Section Extend_encoder.
 
 Variables (A : finType) (n m : nat).
 Variable f : encT A (seq bool) n.
-Variable P : fdist A.
+Variable P : {fdist A}.
 Hypothesis f_uniq : uniquely_decodable f.
 Hypothesis m_non0 : 0 <> m%:R.
 Let fm (x : 'rV['rV[A]_n]_m) := extension f (tuple_of_row x).
@@ -721,7 +747,7 @@ End Extend_encoder.
 
 Section v_scode_converse'.
 
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 Variable n : nat.
 Variable f : encT A (seq bool) n.
 Hypothesis f_uniq : uniquely_decodable f.
@@ -768,7 +794,8 @@ have le_1_alp : 1 <= alp.
     rewrite mulR1; apply: (@leR_trans 2); last exact: leR2e.
     by rewrite (_ : 1 = 1%:R) // (_ : 2 = 2%:R) // leR_nat.
   rewrite card_mx -natRexp mul1n log_pow //.
-  by rewrite (_ : 0 = INR 0) //; apply/lt_INR/ltP/fdist_card_neq0.
+  rewrite (_ : 0 = INR 0) //; apply/lt_INR/ltP/fdist_card_neq0.
+  exact: P.
 have alppos : 0 < alp by exact: (@ltR_leR_trans 1).
 have Ypos : 0 < Y by apply/mulR_gt0 => //; apply/mulR_gt0.
 apply: (Rmult_le_reg_r (INR (m eps) * INR n)).
@@ -856,7 +883,7 @@ rewrite mulRA (mulRC (exp 1)) -(mulRA (m eps)%:R).
 apply le_eps => //.
 move:case2.
 rewrite ELC_TupleFDist mulRC (mulRC (m eps)%:R) card_mx mul1n -natRexp log_pow; last first.
-  by rewrite (_ : 0 = INR 0) //; apply/lt_INR/ltP/fdist_card_neq0.
+  by rewrite (_ : 0 = INR 0) //; apply/lt_INR/ltP/fdist_card_neq0; exact: P.
 move/(ltR_pmul2r (mpos eps nnon0)) => /ltRW.
 by apply: leR_trans; exact/le_1_EX.
 Qed.
@@ -865,7 +892,7 @@ End v_scode_converse'.
 
 Section v_scode_converse.
 
-Variables (A : finType) (P : fdist A) (n : nat).
+Variables (A : finType) (P : {fdist A}) (n : nat).
 Variable f : encT A (seq bool) n.
 Hypothesis f_uniq : uniquely_decodable f.
 
