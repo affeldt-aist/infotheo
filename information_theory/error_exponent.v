@@ -36,9 +36,11 @@ Local Open Scope channel_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
 
+Import GRing.Theory.
+
 Section mutinfo_distance_bound.
 
-Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : {fdist A}).
 Hypothesis V_dom_by_W : P |- V << W.
 Hypothesis cdiv_ub : D(V || W | P) <= (exp(-2)) ^ 2 * / 2.
 
@@ -72,7 +74,7 @@ apply: (@leR_trans (d((P `X V), (P `X W)))).
     by apply Req_le; rewrite pair_bigA /=; apply eq_bigr => -[].
   apply: leR_sumR => a _.
   rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
-  rewrite 2!fdist_prodE /= !(mulRC (P a)) addR_opp.
+  rewrite 2!fdist_prodE /= !(mulrC (P a)) addR_opp.
   by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.
 - rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dominates.
@@ -120,7 +122,7 @@ Hypothesis set_of_I_has_ubound :
   classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
-  forall P : fdist A, forall V : `Ch(A, B),
+  forall P : {fdist A}, forall V : `Ch(A, B),
     P |- V << W ->
     Delta <= D(V || W | P) +  +| minRate - `I(P, V) |.
 Proof.
