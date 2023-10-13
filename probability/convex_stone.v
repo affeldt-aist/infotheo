@@ -804,7 +804,7 @@ case/boolP : (d ord0 == 0 :> R)%coqR => d00.
 have H : [p_of p.~%:pr, (probfdist d ord0).~%:pr] != 1%coqR%:pr.
   apply p_of_neq1 => /=; split.
     apply/RltP/onem_gt0; rewrite -fdist_lt1; exact/eqP.
-  by apply/RltP; rewrite ltr_subl_addr ltr_addl -fdist_gt0.
+  by apply/RltP; rewrite ltrBlDr ltrDl -fdist_gt0.
 rewrite -convA'; last by [].
 move=> [:Hq].
 have @q : {prob R}.
@@ -814,7 +814,7 @@ have @q : {prob R}.
   rewrite !fdistI_permE !permE /= (_ : Ordinal _ = ord_max); last exact/val_inj.
   apply/andP. split.
     apply/divr_ge0 => //; first by apply/ltW; rewrite subr_gt0 -fdist_lt1.
-  rewrite ler_pdivr_mulr ?mul1r; last by rewrite subr_gt0 -fdist_lt1 //.
+  rewrite ler_pdivrMr ?mul1r; last by rewrite subr_gt0 -fdist_lt1 //.
   rewrite ler_subr_addr -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
   by rewrite (_ : lift _ (lift _ _) = ord_max) ?ler_addr //; exact/val_inj.
 rewrite (@convn3E _ _ q) //; last first.
