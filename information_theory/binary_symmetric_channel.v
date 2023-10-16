@@ -6,6 +6,7 @@ From mathcomp Require Import Rstruct classical_sets.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import entropy binary_entropy_function channel hamming channel_code.
+Require Import pproba porting_coqR_mcR.
 
 (******************************************************************************)
 (*                Capacity of the binary symmetric channel                    *)
@@ -305,3 +306,95 @@ by rewrite big_const /= iter_mulR /= card_dH_vec.
 Qed.
 
 End dH_BSC.
+
+(* moved from decoder.v; TODO: rename *)
+Section bsc_prob_prop.
+Local Open Scope reals_ext_scope.
+Local Open Scope ring_scope.
+Local Open Scope order_scope.
+
+(* This lemma is more or less stating that
+   (log q <|n2 / n|> log r) <= (log q <|n1 / n|> log r) *)
+Lemma expr_conv_mono n n1 n2 q r :
+  0 < q :> R -> q <= r -> (n1 <= n2 <= n)%nat ->
+  r ^+ (n - n2) * q ^+ n2 <= r ^+ (n - n1) * q ^+ n1.
+Proof.
+move=> /[dup] /ltW q0 q1 qr /andP [] n12 n2n.
+have r1 := lt_le_trans q1 qr.
+have r0 := ltW r1.
+rewrite [leLHS](_ : _ = q ^+ n1 * q ^+ (n2 - n1)%nat * r ^+ (n - n2)%nat);
+  last by rewrite -exprD subnKC // mulrC.
+rewrite [leRHS](_ : _ = q ^+ n1 * r ^+ (n2 - n1)%nat * r ^+ (n - n2)%nat);
+  last by rewrite -mulrA -exprD addnBAC // subnKC // mulrC.
+apply: ler_pM => //; [by apply/mulr_ge0; apply/exprn_ge0 | by apply/exprn_ge0 | ].
+apply: ler_pM => //; [by apply/exprn_ge0 | by apply/exprn_ge0 |].
+rewrite -[leLHS]mul1r -ler_pdivlMr ?exprn_gt0 // -expr_div_n.
+apply: exprn_ege1.
+by rewrite ler_pdivlMr // mul1r.
+Qed.
+
+Lemma bsc_prob_prop p n : p%:pp < 1 / 2 ->
+  forall n1 n2 : nat, (n1 <= n2 <= n)%nat ->
+  ((1 - p) ^ (n - n2) * p ^ n2 <= (1 - p) ^ (n - n1) * p ^ n1)%R.
+Proof.
+rewrite Prob_pE.
+move=> p05 d1 d2 d1d2.
+case/boolP: (p == R0%:pr).
+  move/eqP->; rewrite !coqRE; apply/RleP.
+  rewrite probpK subr0 !expr1n !mul1r !expr0n.
+  move: d1d2; case: d2; first by rewrite leqn0 => /andP [] ->.
+  case: (d1 == 0%nat) => //=.
+  move=> ? ?; exact:ler01.
+move/prob_gt0 => p1.
+rewrite !coqRE.
+apply/RleP/expr_conv_mono => //.
+lra.
+Qed.
+End bsc_prob_prop.
+
+(* moved from ldpc.v *)
+Section post_proba_bsc_unif.
+Local Open Scope reals_ext_scope.
+Local Open Scope ring_scope.
+Local Open Scope order_scope.
+Local Open Scope proba_scope.
+Local Open Scope vec_ext_scope.
+
+Variable A : finType.
+Hypothesis card_A : #|A| = 2%nat.
+Variable p : R.
+Hypothesis p_01' : 0 < p < 1.
+
+Let p_01'_ : 0 <= p <= 1.
+by move: p_01' => /andP [/ltW -> /ltW ->].
+Qed.
+
+Let p_01 : {prob R} := Eval hnf in Prob.mk_ p_01'_.
+(*
+Let p_01 := Eval hnf in Prob.mk_ (ltR2W p_01').
+*)
+
+Let P := fdist_uniform (R:=R_numFieldType) card_A.
+Variable a' : A.
+Hypothesis Ha' : receivable_prop (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
+
+Lemma bsc_post (a : A) :
+  (P `^ 1) `^^ (BSC.c card_A p_01) (\row_(i < 1) a | mkReceivable Ha') =
+  (if a == a' then 1 - p else p)%R.
+Proof.
+rewrite fdist_post_probE /= !fdist_rVE DMCE big_ord_recl big_ord0.
+rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
+  by move=> i _; rewrite /P !fdist_rVE big_ord_recl big_ord0 !fdist_uniformE mulr1.
+rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
+  transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a')%R.
+    apply eq_bigr => i _.
+    by rewrite DMCE big_ord_recl big_ord0 mulR1 /BSC.c mxE.
+  apply/(@big_rV1_ord0 _ _ _ _ (fdist_binary card_A p_01 ^~ a')).
+  by rewrite -sum_fdist_binary_swap // FDist.f1.
+rewrite mxE mulr1 big_ord_recl big_ord0 /BSC.c fdist_binaryE /= eq_sym !mxE.
+rewrite !coqRE mulr1 onemE.
+rewrite mulrAC mulfV ?mul1r // fdist_uniformE card_A invr_neq0 //.
+by apply: lt0r_neq0; lra.
+Qed.
+
+End post_proba_bsc_unif.
