@@ -1,9 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp ssrnum.
-From mathcomp Require Import matrix vector order.
+From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import lra Rstruct reals.
-From mathcomp Require ssrnum.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist proba.
 Require Import realType_ext.
@@ -41,5 +39,5 @@ by move/negPf->; rewrite andbF.
 Qed.
 
 Definition coqRE :=
-      (R0E, R1E,
-        RinvE', RoppE, RdivE', RminusE, RplusE, RmultE, RpowE).
+  (R0E, R1E, INRE,
+    RinvE', RoppE, RdivE', RminusE, RplusE, RmultE, RpowE).

@@ -213,45 +213,6 @@ Section MD_ML_decoding.
 
 Variable p : {prob R}.
 
-(* TODO: move to file on bsc? *)
-Let bsc_prob_prop_gen n n1 n2 q r :
-  0 < q :> R -> q < r -> (n1 <= n2 <= n)%nat ->
-  (r ^ (n - n2) * q ^ n2 <= r ^ (n - n1) * q ^ n1)%R.
-Proof.
-rewrite !coqRE.
-move=> /[dup] /ltW q0 q1 qr /andP [] n12 n2n.
-have r1 := lt_trans q1 qr.
-have r0 := ltW r1.
-apply/RleP.
-rewrite [leLHS](_ : _ = q ^+ n1 * q ^+ (n2 - n1)%nat * r ^+ (n - n2)%nat);
-  last by rewrite -exprD subnKC // mulrC.
-rewrite [leRHS](_ : _ = q ^+ n1 * r ^+ (n2 - n1)%nat * r ^+ (n - n2)%nat);
-  last by rewrite -mulrA -exprD addnBAC // subnKC // mulrC.
-apply: ler_pM => //; [by apply/mulr_ge0; apply/exprn_ge0 | by apply/exprn_ge0 | ].
-apply: ler_pM => //; [by apply/exprn_ge0 | by apply/exprn_ge0 |].
-rewrite -[leLHS]mul1r -ler_pdivlMr ?exprn_gt0 // -expr_div_n.
-apply: exprn_ege1.
-rewrite ler_pdivlMr // mul1r.
-exact: ltW.
-Qed.
-
-Lemma bsc_prob_prop n : p%:pp < 1 / 2 ->
-  forall n1 n2 : nat, (n1 <= n2 <= n)%nat ->
-  ((1 - p) ^ (n - n2) * p ^ n2 <= (1 - p) ^ (n - n1) * p ^ n1)%R.
-Proof.
-rewrite Prob_pE.
-move=> p05 d1 d2 d1d2.
-case/boolP: (p == 0%:pr).
-  move/eqP->; rewrite !coqRE; apply/RleP.
-  rewrite probpK subr0 !expr1n !mul1r !expr0n.
-  move: d1d2; case: d2; first by rewrite leqn0 => /andP [] ->.
-  case: (d1 == 0%nat) => //=.
-  move=> ? ?; exact:ler01.
-move/prob_gt0 => p1.
-apply:bsc_prob_prop_gen => //.
-by rewrite !coqRE; lra.
-Qed.
-
 Let card_F2 : #| 'F_2 | = 2%nat. Proof. by rewrite card_Fp. Qed.
 Let W := BSC.c card_F2 p.
 
