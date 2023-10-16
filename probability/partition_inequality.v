@@ -108,14 +108,14 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_ff_ge0.
     rewrite H2 !mul0R !addR0.
     have H3 : Q_A 0 = 1%R.
-      rewrite -[X in X = _]addR0 -[X in _ + X = _]A1_Q_0 convex.R1E -(FDist.f1 Q).
+      rewrite -[X in X = _]addR0 -[X in _ + X = _]A1_Q_0 R1E -(FDist.f1 Q).
       rewrite !ffunE -big_union //.
       apply eq_bigl => i; by rewrite cov in_set inE.
       by rewrite -setI_eq0 -dis setIC.
     rewrite H3 /Rdiv /log LogM //; last lra.
     by rewrite LogV; [apply Req_le; field | lra].
 - have H1 : P_A 1 = 1%R.
-    rewrite -[X in X = _]add0R -[X in X + _ = _]A0_P_0 convex.R1E -(FDist.f1 P).
+    rewrite -[X in X = _]add0R -[X in X + _ = _]A0_P_0 R1E -(FDist.f1 P).
     rewrite !ffunE -big_union //.
     apply eq_bigl => i; by rewrite cov in_set inE.
     by rewrite -setI_eq0 -dis setIC.

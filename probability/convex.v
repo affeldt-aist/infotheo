@@ -154,17 +154,6 @@ Local Notation "{ 'fdist' T }" := (fdist_of _ (Phant T)) : fdist_scope.
 #[export] Hint Extern 0 (0 <= onem _)%coqR =>
   exact/RleP/onem_ge0 : core.
 
-  
-
-
-(* TODO: move Rstruct.v in mathcomp-analysis *)
-Lemma R1E : 1%coqR = GRing.one _.
-Proof. done. Qed.
-Lemma R0E : 0%coqR = GRing.zero _.
-Proof. done. Qed.
-
-
-
 (* TODO: the following lemmas are currently not in use. Maybe remove? *)
 Section tmp.
 Import GRing.Theory.

@@ -58,6 +58,12 @@ Arguments INR : simpl never.
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
+(* TODO: move Rstruct.v in mathcomp-analysis *)
+Lemma R1E : 1%coqR = GRing.one _.
+Proof. done. Qed.
+Lemma R0E : 0%coqR = GRing.zero _.
+Proof. done. Qed.
+
 Lemma Rlt_1_2 : 1 < 2. Proof. lra. Qed.
 Global Hint Resolve Rlt_1_2 : core.
 
