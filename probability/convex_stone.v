@@ -815,8 +815,8 @@ have @q : {prob R}.
   apply/andP. split.
     apply/divr_ge0 => //; first by apply/ltW; rewrite subr_gt0 -fdist_lt1.
   rewrite ler_pdivrMr ?mul1r; last by rewrite subr_gt0 -fdist_lt1 //.
-  rewrite ler_subr_addr -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
-  by rewrite (_ : lift _ (lift _ _) = ord_max) ?ler_addr //; exact/val_inj.
+  rewrite lerBrDr -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
+  by rewrite (_ : lift _ (lift _ _) = ord_max) ?lerDr //; exact/val_inj.
 rewrite (@convn3E _ _ q) //; last first.
   rewrite fdistI_permE permE /= (_ : Ordinal _ = ord_max) //; exact/val_inj.
 rewrite /= !permE /=.
@@ -1017,10 +1017,10 @@ have @q : {prob R}.
   abstract: Hq.
   apply/andP. split.
     by apply/divr_ge0/ltW => //; rewrite subr_gt0 -fdist_lt1.
-  rewrite ler_pdivr_mulr.
+  rewrite ler_pdivrMr.
     rewrite mul1r.
-    rewrite ler_subr_addr -(FDist.f1 d).
-    rewrite 2!big_ord_recl addrA ler_addl.
+    rewrite lerBrDr -(FDist.f1 d).
+    rewrite 2!big_ord_recl addrA lerDl.
     by apply: sumr_ge0 => i _.
   by rewrite subr_gt0 -fdist_lt1.
 rewrite (@convn3E _ _ q); last 2 first.
