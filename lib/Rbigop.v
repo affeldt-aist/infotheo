@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix ssrnum.
 From mathcomp Require Import Rstruct.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
@@ -116,6 +116,8 @@ Declare Scope min_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Import Num.Theory.
 
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
@@ -373,13 +375,7 @@ Qed.
 
 End pascal.
 
-Delimit Scope ring_scope with mcR.
-
 Section leR_ltR_rprod.
-
-Lemma prodR_gt0 (A : finType) F : (forall a, 0 < F a)%mcR ->
-  (0 < \prod_(a : A) F a)%mcR.
-Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulR_gt0. Qed.
 
 (*Lemma prodR_gt0 (A : finType) F : (forall a, 0 < F a) ->
   0 < \prod_(a : A) F a.
@@ -425,9 +421,9 @@ Qed.
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-Lemma prodR_gt0_inv (B : finType) F (HF: forall a, 0 <= F a) :
+Lemma prodR_gt0_inv (B : finType) F (HF: forall a, (0 <= F a)%coqR) :
   forall n (x : 'rV[B]_n.+1),
-  0 < \prod_(i < n.+1) F (x ``_ i) -> forall i, 0 < F (x ``_ i).
+    (0 < \prod_(i < n.+1) F (x ``_ i) -> forall i, 0 < F (x ``_ i))%coqR.
 Proof.
 elim => [x | n IH].
   rewrite big_ord_recr /= big_ord0 mul1R => Hi i.
@@ -441,7 +437,7 @@ move: (HF (x ``_ ord0)); rewrite leR_eqVlt => -[<-|H].
 rewrite mulRC (pmulR_lgt0 H) => H'.
 case; case => [i0|i Hi].
   rewrite (_ : Ordinal _ = ord0) //; exact/val_inj.
-have : 0 < \prod_(i0 < n.+1) F (t ``_ i0).
+have : (0 < \prod_(i0 < n.+1) F (t ``_ i0))%coqR.
   suff : (\prod_(i < n.+1) F (x ``_ (lift ord0 i)) =
          \prod_(i < n.+1) F (t ``_ i))%R by move=> <-.
   apply eq_bigr => ? _; by rewrite mxE.
@@ -464,7 +460,7 @@ have [/forallP Hf|] := boolP [forall i, f i != 0%R]; last first.
   rewrite (bigD1 i0) //= fi0 mul0R; apply prodR_ge0.
   by move=> i ; move: (fg i) => [Hi1 Hi2]; exact: (leR_trans Hi1 Hi2).
 have Hprodf : 0 < \prod_(i : A) f i.
-  apply prodR_gt0 => a.
+  apply/RltP. apply prodr_gt0 => a _. apply/RltP.
   move: (Hf a) (fg a) => {}Hf {fg}[Hf2 _].
   apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
 apply (@leR_pmul2r (1 * / \prod_(i : A) f i) _ _).
@@ -501,9 +497,9 @@ Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
 Lemma log_prodR_sumR_mlog {A : finType} k (f : A -> R) :
-  (forall a, 0 <= f a) ->
+  (forall a, 0 <= f a)%coqR ->
   forall n (ta : 'rV[A]_n.+1),
-  (forall i, 0 < f ta ``_ i) ->
+  (forall i, 0 < f ta ``_ i)%coqR ->
   (- Log k (\prod_(i < n.+1) f ta ``_ i) = \sum_(i < n.+1) - Log k (f ta ``_ i))%R.
 Proof.
 move=> f0.
@@ -512,9 +508,9 @@ elim => [i Hi | n IH].
 move=> ta Hi.
 rewrite big_ord_recl /= LogM; last 2 first.
   exact/Hi.
-  by apply prodR_gt0 => ?; exact/Hi.
+  by apply/RltP; apply prodr_gt0 => ? _; exact/RltP/Hi.
 set tl := \row_(i < n.+1) ta ``_ (lift ord0 i).
-have : forall i0 : 'I_n.+1, 0 < f tl ``_ i0.
+have : forall i0 : 'I_n.+1, (0 < f tl ``_ i0)%coqR.
   move=> i; rewrite mxE; exact/Hi.
 move/IH => {}IH.
 have -> : (\prod_(i < n.+1) f ta ``_ (lift ord0 i) = \prod_(i < n.+1) f tl ``_ i)%R.

@@ -20,6 +20,10 @@ Import Prenex Implicits.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
+Lemma prodR_gt0 (R : numDomainType) (A : finType) (F : A -> R) : (forall a, 0 < F a)%mcR ->
+  (0 < \prod_(a : A) F a)%mcR.
+Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulr_gt0. Qed.
+
 (* ---- onem ---- *)
 Section onem.
 Local Open Scope ring_scope.
