@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix perm.
 Require Import Reals Lra Classical.
 From mathcomp Require Import Rstruct classical_sets.
-Require Import ssrZ ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import ssrZ ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import fdist proba entropy aep typ_seq joint_typ_seq channel.
 Require Import channel_code.
 

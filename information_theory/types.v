@@ -5,7 +5,7 @@ From mathcomp Require Import matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist proba entropy num_occ channel_code channel typ_seq.
 
 (******************************************************************************)

@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext.
+Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
 Require Import Rbigop fdist proba entropy aep typ_seq natbin source_code.
 
 (******************************************************************************)

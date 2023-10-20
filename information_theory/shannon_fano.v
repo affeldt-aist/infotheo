@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrZ ssrR logb Reals_ext Rbigop ssr_ext fdist entropy kraft.
+Require Import ssrZ ssrR logb Reals_ext realType_ext Rbigop ssr_ext fdist entropy kraft.
 
 (******************************************************************************)
 (*                       Shannon-Fano codes                                   *)

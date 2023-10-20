@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext logb Rbigop.
 Require Import fdist entropy convex ln_facts jensen num_occ.
 
 (******************************************************************************)

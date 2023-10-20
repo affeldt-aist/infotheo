@@ -5,6 +5,8 @@ From mathcomp Require Import all_algebra vector reals normedtype.
 From mathcomp Require Import boolp.
 From mathcomp Require Import lra Rstruct.
 
+Delimit Scope ring_scope with mcR.
+
 Reserved Notation "p '.~'" (format "p .~", at level 5).
 Reserved Notation "x %:pr" (at level 0, format "x %:pr").
 Reserved Notation "x %:opr" (at level 0, format "x %:opr").

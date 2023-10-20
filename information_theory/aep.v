@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup ssrnum finalg matrix.
 From mathcomp Require boolp.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist proba.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext logb Rbigop fdist proba.
 Require Import entropy.
 
 (******************************************************************************)
@@ -25,9 +25,6 @@ Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
 Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
-
-(* TODO: move *)
-Delimit Scope ring_scope with mcR.
 
 Section mlog_prop.
 Variables (A : finType) (P : {fdist A}).
