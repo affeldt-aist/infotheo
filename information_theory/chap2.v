@@ -1,7 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg.
-From mathcomp Require Import matrix.
+From mathcomp Require Import all_ssreflect ssralg perm matrix.
 From mathcomp Require boolp.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
@@ -43,5 +42,3 @@ Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
-
-

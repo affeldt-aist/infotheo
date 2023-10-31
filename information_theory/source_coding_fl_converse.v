@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext realType_ext logb Rbigop fdist proba entropy aep typ_seq.
-Require Import source_code.
+Require Import ssrR Reals_ext realType_ext logb Rbigop fdist proba entropy aep.
+Require Import typ_seq source_code.
 
 (******************************************************************************)
 (*         Source coding theorem (fixed length, converse part)                *)

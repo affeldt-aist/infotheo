@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix perm.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix perm.
 Require Import Reals Lra Classical.
 From mathcomp Require Import Rstruct classical_sets.
 Require Import ssrZ ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.

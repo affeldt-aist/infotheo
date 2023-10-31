@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix ssrnum.
+From mathcomp Require Import all_ssreflect ssralg matrix ssrnum fingroup perm.
 From mathcomp Require boolp.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.

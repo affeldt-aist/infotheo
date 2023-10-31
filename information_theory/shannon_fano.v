@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrZ ssrR logb Reals_ext realType_ext Rbigop ssr_ext fdist entropy kraft.

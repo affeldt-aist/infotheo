@@ -1,7 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect path ssralg fingroup zmodp poly.
-From mathcomp Require Import ssrnum.
+From mathcomp Require Import all_ssreflect path ssralg ssrnum.
 Require FunctionalExtensionality.
 Require Import ssr_ext.
 
