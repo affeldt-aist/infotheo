@@ -425,7 +425,7 @@ Definition S1_inj : injective S1 := @Scaled_inj Rpos1.
 Definition raw_weight (pt : scaled) : R := if pt is r *: _ then r else 0.
 
 Lemma weight_ge0 pt : (0 <= raw_weight pt)%coqR.
-Proof. case: pt => /= [[x] /= /ltRP/ltRW //|]; by apply leRR. Qed.
+Proof. case: pt => /= [[x] /= /RltP/ltRW //|]; by apply leRR. Qed.
 
 Definition weight := mkNNFun weight_ge0.
 
@@ -463,11 +463,12 @@ Variable A : eqType.
 
 Lemma S1_neq0 a : S1 a != @Zero A. Proof. by []. Qed.
 
+(* TODO: rm? *)
 Lemma weight_gt0 a : a != @Zero A -> (0 < weight a)%coqR.
 Proof. by case: a => // p x _ /=. Qed.
 
-Lemma weight_gt0b a : a != @Zero A -> (weight a >b 0)%coqR.
-Proof. by move=> ?; exact/ltRP/weight_gt0. Qed.
+Lemma weight_gt0b a : a != @Zero A -> (weight a > 0)%mcR.
+Proof. by move=> ?; exact/RltP/weight_gt0. Qed.
 
 Definition weight_neq0 a (a0 : a != @Zero A) := Rpos.mk (weight_gt0b a0).
 

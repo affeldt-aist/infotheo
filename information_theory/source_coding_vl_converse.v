@@ -41,9 +41,9 @@ Lemma log_sum_inequality_ord_add1 :
 Proof.
 have Rle0f_1 : forall x : 'I_n, 0 <= f x.+1 by move=> ?; apply nneg_f_ge0.
 have Rle0g_1 : forall x : 'I_n, 0 <= g x.+1 by move=> ?; apply nneg_f_ge0.
-have newRle0f_1: [forall x : 'I_n, 0 <b= [ffun x : 'I_n => f x.+1] x].
+have newRle0f_1: [forall x : 'I_n, (0 <= [ffun x : 'I_n => f x.+1] x)%mcR].
   by apply/forallP_leRP => ?; rewrite ffunE.
-have newRle0g_1: [forall x : 'I_n, 0 <b= [ffun x : 'I_n => g x.+1] x].
+have newRle0g_1: [forall x : 'I_n, (0 <= [ffun x : 'I_n => g x.+1] x)%mcR].
   by apply/forallP_leRP => ?; rewrite ffunE.
 have f_dom_by_g1 : mkNNFinfun newRle0f_1 `<< mkNNFinfun newRle0g_1.
   apply/dominatesP => a; move/dominatesP : f_dom_by_g.
@@ -481,7 +481,7 @@ Qed.
 Definition Pf' (m : 'I_Nmax.+1) := [ffun a : m.-tuple bool =>  Pf a / (PN m)].
 
 Lemma Rle0Pf' (m : 'I_Nmax.+1) :
-  PN m <> 0 -> [forall a : m.-tuple bool, 0 <b= Pf' m a].
+  PN m <> 0 -> [forall a : m.-tuple bool, (0 <= Pf' m a)%mcR].
 Proof.
 move=> PNnon0; apply/forallP_leRP => a; rewrite /Pf'.
 apply: (Rmult_le_reg_r (PN m)).

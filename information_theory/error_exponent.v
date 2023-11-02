@@ -1,9 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts Rbigop fdist entropy.
+From mathcomp Require Import reals.
+Require Import realType_ext.
 Require Import channel_code channel divergence conditional_divergence.
 Require Import variation_dist pinsker.
 
@@ -121,6 +123,8 @@ Hypothesis minRate_cap : minRate > capacity W.
 Hypothesis set_of_I_has_ubound :
   classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
+Import Order.TTheory.
+
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
   forall P : {fdist A}, forall V : `Ch(A, B),
     P |- V << W ->
@@ -142,7 +146,7 @@ have /mu_cond : D_x no_cond 0 x /\ R_dist x 0 < mu.
   - rewrite /R_dist subR0 gtR0_norm // /x.
     apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
     by rewrite ltR_pdivr_mulr //; lra.
-rewrite /R_dist {2}/xlnx ltRR' subR0 ltR0_norm; last first.
+rewrite /R_dist {2}/xlnx ltxx subR0 ltR0_norm; last first.
   apply xlnx_neg; split => //; rewrite /x.
   exact: leR_ltR_trans (geR_minr _ _) ltRinve21.
 move=> Hx.
@@ -152,7 +156,7 @@ exists Delta; split.
   - by apply mulR_gt0; [exact/subR_gt0 | exact/invR_gt0].
   - by apply mulR_gt0; [exact: expR_gt0 | exact: invR_gt0].
 move=> P V v_dom_by_w.
-case/boolP : (Delta <b= D(V || W | P)) => [/leRP| /leRP/ltRNge] Hcase.
+case/boolP : (Delta <= D(V || W | P))%mcR => [/leRP| /leRP/ltRNge] Hcase.
   apply (@leR_trans (D(V || W | P))) => //.
   by rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.
 suff HminRate : (minRate - capacity W) / 2 <= minRate - (`I(P, V)).

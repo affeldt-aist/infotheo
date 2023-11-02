@@ -458,13 +458,15 @@ Qed.
 
 Local Open Scope typ_seq_scope.
 
+Import Order.POrderTheory.
+
 Lemma typed_tuples_are_typ_seq : (@row_of_tuple A n @: T_{ P }) \subset `TS P n 0.
 Proof.
 apply/subsetP => t Ht.
 rewrite /set_typ_seq inE /typ_seq tuple_dist_type_entropy; last first.
   case/imsetP : Ht => x Hx ->.
   by rewrite row_of_tupleK.
-by rewrite addR0 subR0 !leRR'.
+by rewrite addR0 subR0 lexx.
 Qed.
 
 Lemma card_typed_tuples : INR #| T_{ P } | <= exp2 (INR n * `H P).

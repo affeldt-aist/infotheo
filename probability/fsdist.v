@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import finmap.
 From mathcomp Require boolp.
 Require Import Reals.
@@ -98,17 +98,17 @@ Variable A : choiceType.
 
 Record t := mk {
   f :> {fsfun A -> R with 0} ;
-  _ : all (fun x => 0 <b f x) (finsupp f) &&
+  _ : all (fun x => (0 < f x)%mcR) (finsupp f) &&
       \sum_(a <- finsupp f) f a == 1}.
 
 Lemma ge0 (d : t) a : 0 <= d a.
 Proof.
 case: d => /= [f /andP[/allP f0 _]].
-have [/f0/ltRP/ltRW|/fsfun_dflt->] := boolP (a \in finsupp f); first exact.
+have [/f0/RltP/ltRW|/fsfun_dflt->] := boolP (a \in finsupp f); first exact.
 exact/leRR.
 Qed.
 
-Lemma ge0' (d : t) a : (0 <= d a)%O.
+Lemma ge0' (d : t) a : (0 <= d a)%mcR.
 Proof. by apply/RleP/ge0. Qed.
 
 Lemma gt0 (d : t) a : a \in finsupp d -> 0 < d a.
@@ -126,7 +126,7 @@ rewrite -(f1 d) (big_fsetD1 _ ad)/=; apply/leR_addl.
 by apply sumR_ge0 => ? _; exact: ge0.
 Qed.
 
-Lemma le1' (d : t) a : (d a <= 1)%O.
+Lemma le1' (d : t) a : (d a <= 1)%mcR.
 Proof. by apply/RleP/le1. Qed.
 
 Obligation Tactic := idtac.
@@ -135,7 +135,7 @@ Program Definition make (f : {fsfun A -> R with 0})
   (H0 : forall a, a \in finsupp f -> 0 < f a)
   (H1 : \sum_(a <- finsupp f) f a = 1) : t := @mk f _.
 Next Obligation.
-by move=> f H0 ->; rewrite eqxx andbT; apply/allP => a /H0/ltRP.
+by move=> f H0 ->; rewrite eqxx andbT; apply/allP => a /H0/RltP.
 Qed.
 
 End fsdist.
@@ -592,7 +592,7 @@ Local Open Scope fdist_scope.
 Variables (A : choiceType) (n : nat) (e : real_realType.-fdist 'I_n) (g : 'I_n -> {dist A}).
 
 Definition fsdist_convn_supp : {fset A} :=
-  \big[fsetU/fset0]_(i < n | 0 <b e i) finsupp (g i).
+  \big[fsetU/fset0]_(i < n | (0 < e i)%mcR) finsupp (g i).
 
 Local Notation D := fsdist_convn_supp.
 
@@ -605,7 +605,7 @@ apply/fsetP => a; apply/idP/idP => [|].
 rewrite mem_finsupp fsfunE => aD.
 rewrite aD.
 case/bigfcupP : aD => /= i.
-rewrite mem_index_enum /= => /ltRP ei0.
+rewrite mem_index_enum /= => /RltP ei0.
 rewrite mem_finsupp => gia0.
 apply: contra gia0 => /eqP H; apply/eqP.
 rewrite -(@eqR_mul2l (e i)) ?mulR0; last exact/eqP/gtR_eqF.
@@ -628,7 +628,7 @@ rewrite -big_distrr /=.
 have [-> | ei0] := eqVneq (e i) 0%coqR; first by rewrite mul0R.
 rewrite -(@big_fset_incl _ _ _ _ (finsupp (g i))).
 - by rewrite FSDist.f1 mulR1.
-- by rewrite supp /D bigfcup_sup //; exact/ltRP/fdist_Rgt0.
+- by rewrite supp /D bigfcup_sup //; exact/RltP/fdist_Rgt0.
 - by move=> a _; rewrite memNfinsupp => /eqP.
 Qed.
 
@@ -652,7 +652,7 @@ rewrite /fsdist_conv; unlock => /=; rewrite fsdist_convnE fsfunE.
 case: ifPn => [?|H].
   rewrite !big_ord_recl big_ord0 /= addR0 !fdistI2E.
   by rewrite eqxx eq_sym (negbTE (neq_lift _ _)).
-have [p0|p0] := eqVneq p 0%:pr.
+have [p0|p0] := eqVneq p R0%:pr.
   rewrite p0 mul0R add0R onem0 mul1R.
   apply/esym/eqP; rewrite -memNfinsupp.
   apply: contra H => H.
@@ -662,22 +662,22 @@ have [p0|p0] := eqVneq p 0%:pr.
     (fun i : 'I_2 => if i == ord0 then d1 else d2) = finsupp d2 by move=> ->.
   rewrite /fsdist_convn_supp; apply/fsetP => a0; apply/bigfcupP/idP.
     case => /= i; rewrite mem_index_enum /= fdist1E.
-    by case/orP : (ord2 i) => /eqP -> // /ltRP/ltRR.
+    by case/orP : (ord2 i) => /eqP -> // /RltP/ltRR.
   move=> a0d2.
-  by exists ord_max => //=; rewrite mem_index_enum /= fdist1xx; exact/ltRP.
+  by exists ord_max => //=; rewrite mem_index_enum /= fdist1xx; exact/RltP.
 have d1a0 : d1 a = 0.
   apply/eqP; rewrite -memNfinsupp.
   apply: contra H => H.
   rewrite /fsdist_convn_supp; apply/bigfcupP; exists ord0; last by rewrite eqxx.
-  by rewrite mem_index_enum /= fdistI2E eqxx; exact/ltRP/probR_gt0.
+  by rewrite mem_index_enum /= fdistI2E eqxx; exact/RltP/probR_gt0.
 rewrite d1a0 mulR0 add0R.
-have [p1|p1] := eqVneq p 1%:pr; first by rewrite p1 onem1 mul0R.
+have [p1|p1] := eqVneq p R1%:pr; first by rewrite p1 onem1 mul0R.
 suff : d2 a = 0 by move=> ->; rewrite mulR0.
 apply/eqP; rewrite -memNfinsupp.
 apply: contra H => H.
 rewrite /fsdist_convn_supp; apply/bigfcupP; exists (lift ord0 ord0).
 rewrite mem_index_enum /= fdistI2E eq_sym (negbTE (neq_lift _ _)).
-  exact/ltRP/onem_gt0/probR_lt1.
+  exact/RltP/onem_gt0/probR_lt1.
 by rewrite eq_sym (negbTE (neq_lift _ _)).
 Qed.
 
@@ -700,7 +700,7 @@ apply/paddR_neq0; [exact/mulR_ge0|exact/mulR_ge0|left].
 by rewrite mulR_neq0' aa1 andbT.
 Qed.
 
-Let conv0 (mx my : {dist A}) : mx <| 0%:pr |> my = my.
+Let conv0 (mx my : {dist A}) : mx <| R0%:pr |> my = my.
 (*Let conv0 (mx my : {dist A}) : mx <| R0%:pr |> my = my.*)
 
 Proof.
@@ -860,7 +860,7 @@ have [gia0|gia0] := eqVneq (g i a) 0.
   by rewrite /f gia0 scaleR_scalept/= ?mulR0.
 move/bigfcupP : adg => abs; exfalso; apply: abs.
 exists i; last by rewrite mem_finsupp.
-by rewrite mem_index_enum/=; apply/ltRP; rewrite -fdist_Rgt0.
+by rewrite mem_index_enum/=; apply/RltP; rewrite -fdist_Rgt0.
 Qed.
 
 End FSDist_convex_space.

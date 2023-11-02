@@ -119,7 +119,7 @@ Hypothesis Hepsilon : 0 < epsilon.
 
 Lemma aep : aep_bound P epsilon <= n.+1%:R ->
   Pr (P `^ n.+1) [set t | (0 < P `^ n.+1 t)%mcR &&
-    (`| (`-- (`log (P `^ n.+1)) `/ n.+1) t - `H P | >b= epsilon) ] <= epsilon.
+    (`| (`-- (`log (P `^ n.+1)) `/ n.+1) t - `H P | >= epsilon)%mcR ] <= epsilon.
 Proof.
 move=> Hbound.
 apply (@leR_trans (aep_sigma2 P / (n.+1%:R * epsilon ^ 2))); last first.

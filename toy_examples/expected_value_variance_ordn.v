@@ -3,7 +3,7 @@
 Require Import Reals Lra.
 From mathcomp Require Import all_ssreflect ssrnum.
 From mathcomp Require Import Rstruct.
-Require Import Reals_ext ssrR Rbigop fdist proba.
+Require Import Reals_ext ssrR realType_ext Rbigop fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, without inord *)
 
@@ -26,7 +26,7 @@ Lemma ord2E n : 2%nat = @ord2 n. Proof. done. Qed.
 Definition p : {ffun 'I_3 -> R} :=
   finfun [fun x => 0 with ord0 |-> 1/2, ord1 |-> 1/3, ord2 |-> 1/6].
 
-Lemma p_nonneg : [forall a : 'I_3, 0 <b= p a].
+Lemma p_nonneg : [forall a : 'I_3, (0 <= p a)%mcR].
 Proof.
 apply/forallP => a.
 rewrite /p ffunE /=.

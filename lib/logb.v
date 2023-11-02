@@ -1,9 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat.
+From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat ssralg ssrnum.
 From mathcomp Require Import Rstruct.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext.
+From mathcomp Require Import reals.
+Require Import realType_ext.
 
 (******************************************************************************)
 (*                          log_n x and n ^ x                                 *)
@@ -324,45 +326,45 @@ Proof. move=> Hx; by rewrite /exp2 -/(Exp 2 (log x)) /log -/(Log 2 _) LogK. Qed.
 Lemma exp2K x : log (exp2 x) = x.
 Proof. by rewrite /exp2 -/(Exp 2 x) /log -/(Log 2 _) ExpK. Qed.
 
-Lemma Rle_exp2_log1_L a b : 0 < b -> exp2 a <b= b = (a <b= log b).
+Lemma Rle_exp2_log1_L a b : 0 < b -> (exp2 a <= b)%mcR = (a <= log b)%mcR.
 Proof.
-move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
+move=> Hb; move H1 : (_ <= _ )%mcR => [|] /=.
 - move/leRP in H1.
   have {}H1 : a <= log b.
     rewrite (_ : a = log (exp2 a)); last by rewrite exp2K.
     exact: Log_increasing_le.
-  move/leRP in H1; by rewrite H1.
-- move H2 : (_ <b= _ ) => [|] //=.
+  by move/RleP : H1 => ->.
+- move H2 : (_ <= _ )%mcR => [|] //=.
   move/leRP in H2.
   rewrite -(@ExpK 2 a _) // in H2.
   apply Log_le_inv in H2 => //.
-  move/leRP in H2.
+  move/RleP in H2.
   by rewrite H2 in H1.
 Qed.
 
-Lemma Rle_exp2_log2_R b c : 0 < b -> b <b= exp2 c = (log b <b= c).
+Lemma Rle_exp2_log2_R b c : 0 < b -> (b <= exp2 c)%mcR = (log b <= c)%mcR.
 Proof.
-move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
+move=> Hb; move H1 : (_ <= _)%mcR => [|] /=.
 - move/leRP in H1.
   have {}H1 : log b <= c.
     rewrite (_ : c = log (exp2 c)); last by rewrite exp2K.
     apply Log_increasing_le => //; exact: exp2_pos.
   by move/leRP in H1.
-- move H2 : (_ <b= _ ) => [|] //=.
+- move H2 : (_ <= _ )%mcR => [|] //=.
   move/leRP in H2.
   rewrite -(exp2K c) in H2.
   apply Log_le_inv in H2 => //.
-  move/leRP in H2.
+  move/RleP in H2.
   by rewrite H2 in H1.
 Qed.
 
 Lemma Rle2_exp2_log a b c : 0 < b ->
-  exp2 a <b= b <b= exp2 c = (a <b= log b <b= c).
+  (exp2 a <= b <= exp2 c)%mcR = (a <= log b <= c)%mcR.
 Proof.
-move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
+move=> Hb; move H1 : (_ <= _ )%mcR => [|] /=.
 - rewrite Rle_exp2_log1_L // in H1.
   by rewrite H1 /= Rle_exp2_log2_R.
-- move H2 : (_ <b= _ ) => [|] //=.
+- move H2 : (_ <= _ )%mcR => [|] //=.
   rewrite -Rle_exp2_log1_L // in H2.
   by rewrite H2 in H1.
 Qed.

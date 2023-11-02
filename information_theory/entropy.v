@@ -94,7 +94,7 @@ Lemma xlnx_entropy (P : {fdist A}) : `H P = / ln 2 * - \sum_(a : A) xlnx (P a).
 Proof.
 rewrite /entropy mulRN; congr (- _); rewrite big_distrr/=.
 apply: eq_bigr => a _; rewrite /log /Rdiv mulRA mulRC; congr (_ * _).
-rewrite /xlnx; case : ifP => // /ltRP Hcase.
+rewrite /xlnx; case : ifP => // /RltP Hcase.
 have -> : P a = 0 by case (Rle_lt_or_eq_dec 0 (P a)).
 by rewrite mul0R.
 Qed.

@@ -851,7 +851,7 @@ Fixpoint sumproduct_loop (lmax : nat) (beta0 beta1 : 'M_(m, n)) : option ('rV['F
       let estimation x n0 alpha := (W x (y \_ n0) * \prod_(m1 in 'F n0) alpha m1 n0)%R in
       let gamma0 n0 := estimation Zp0 n0 alpha0 in
       let gamma1 n0 := estimation Zp1 n0 alpha1 in
-      let chat := \matrix_(i < 1, n0 < n) if gamma0 n0 >b= gamma1 n0 then 0 else 1 in
+      let chat := \matrix_(i < 1, n0 < n) if (gamma0 n0 >= gamma1 n0)%mcR then 0 else 1 in
       if H *m chat^T == 0 then
         Some chat
       else

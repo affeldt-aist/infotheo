@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext convex.
@@ -468,7 +468,7 @@ Local Notation "0" := (false).
 Local Notation "1" := (true).
 
 Lemma bipart_dominates :
-  let A_ := fun b => if b then [set a | P a <b Q a] else [set a | Q a <b= P a] in 
+  let A_ := fun b => if b then [set a | (P a < Q a)%mcR] else [set a | (Q a <= P a)%mcR] in
   forall (cov : A_ 0 :|: A_ 1 = [set: A]) (dis : A_ 0 :&: A_ 1 = set0),
   bipart dis cov P `<< bipart dis cov Q.
 Proof.
@@ -480,20 +480,22 @@ transitivity (\sum_(a | a \in A_ b) 0%R).
 by rewrite big_const iter_addR mulR0.
 Qed.
 
+Import Order.TTheory.
+
 Lemma Pinsker_inequality : / (2 * ln 2) * d(P , Q) ^ 2 <= D(P || Q).
 Proof.
-pose A0 := [set a | Q a <b= P a].
-pose A1 := [set a | P a <b Q a].
+pose A0 := [set a | (Q a <= P a)%mcR].
+pose A1 := [set a | (P a < Q a)%mcR].
 pose A_ := fun b => match b with 0 => A0 | 1 => A1 end.
 have cov : A_ 0 :|: A_ 1 = setT.
   rewrite /= /A0 /A1.
-  have -> : [set x | P x <b Q x] = ~: [set x | Q x <b= P x].
-    apply/setP => a; by rewrite in_set in_setC in_set ltRNge'.
+  have -> : [set x | (P x < Q x)%mcR] = ~: [set x | (Q x <= P x)%mcR].
+    by apply/setP => a; rewrite in_set in_setC in_set ltNge.
   by rewrite setUCr.
 have dis : A_ 0 :&: A_ 1 = set0.
   rewrite /A_ /A0 /A1.
-  have -> : [set x | P x <b Q x] = ~: [set x | Q x <b= P x].
-    apply/setP => a; by rewrite in_set in_setC in_set ltRNge'.
+  have -> : [set x | (P x < Q x)%mcR] = ~: [set x | (Q x <= P x)%mcR].
+    by apply/setP => a; rewrite in_set in_setC in_set ltNge.
   by rewrite setICr.
 pose P_A := bipart dis cov P.
 pose Q_A := bipart dis cov Q.
@@ -521,10 +523,10 @@ have -> : d( P , Q ) = d( P_A , Q_A ).
         by rewrite A1_card !big_set0 subRR normR0.
       + transitivity (\sum_(a | a \in A1) - (P a - Q a)).
           apply eq_bigr => a; rewrite /A1 in_set => Ha.
-          rewrite ltR0_norm // subR_lt0; exact/ltRP.
+          by rewrite ltR0_norm // subR_lt0; exact/RltP.
         rewrite -big_morph_oppR // big_split /= ltR0_norm; last first.
           rewrite subR_lt0; apply ltR_sumR_support => // a.
-          rewrite /A1 in_set; by move/ltRP.
+          by rewrite /A1 in_set => /RltP.
         by rewrite -big_morph_oppR.
   by rewrite big_bool /= /bipart_pmf !ffunE /=.
 exact/(Pinsker_2_inequality card_bool)/bipart_dominates.

@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
 Require Import fdist.
 
 (******************************************************************************)
@@ -1180,10 +1180,10 @@ Hypothesis X_ge0 : forall u, 0 <= X u.
 
 Lemma Ex_lb (r : R) : r * `Pr[ X >= r] <= `E X.
 Proof.
-rewrite /Ex (bigID [pred a' | X a' >b= r]) /= -[a in a <= _]addR0.
+rewrite /Ex (bigID [pred a' | (X a' >= r)%mcR]) /= -[a in a <= _]addR0.
 apply leR_add; last first.
   by apply sumR_ge0 => a _; apply mulR_ge0 => //; exact/X_ge0.
-apply (@leR_trans (\sum_(i | X i >b= r) r * P i)).
+apply (@leR_trans (\sum_(i | (X i >= r)%mcR) r * P i)).
   by rewrite big_distrr /=;  apply/Req_le/eq_bigl => a; rewrite inE.
 by apply leR_sumR => u Xur; apply/leR_wpmul2r => //; exact/leRP.
 Qed.
@@ -1274,7 +1274,7 @@ Lemma chebyshev_inequality epsilon : 0 < epsilon ->
 Proof.
 move=> He; rewrite leR_pdivl_mulr; last exact/expR_gt0.
 rewrite mulRC /Var.
-apply (@leR_trans (\sum_(a in U | `| X a - `E X | >b= epsilon)
+apply (@leR_trans (\sum_(a in U | (`| X a - `E X | >= epsilon)%mcR)
     (((X `-cst `E X) `^2) a  * P a))); last first.
   apply leR_sumRl_support with (Q := xpredT) => // a .
   by apply mulR_ge0 => //; exact: sq_RV_ge0.

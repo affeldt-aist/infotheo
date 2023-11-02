@@ -160,7 +160,7 @@ have hdom : h x.1 y.1 `<< h x.2 y.2.
     by rewrite mulR_eq0 => -[->|/eqP]; [rewrite mul0R | rewrite (negbTE x2a0)].
   case: ifPn => // _.
   by rewrite mulR_eq0 => -[->|/eqP]; [rewrite mul0R | rewrite (negbTE y2a0)].
-have h0 p1 p2 : [forall i, 0 <b= h p1 p2 i].
+have h0 p1 p2 : [forall i, (0 <= h p1 p2 i)%mcR].
   apply/forallP_leRP => ?; rewrite /h /= ffunE.
   case: ifPn => [_ | _]; first exact/mulR_ge0.
   case: ifPn => [_ | _]; last exact/leRR.
