@@ -8,7 +8,7 @@ Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist proba.
 Require Import realType_ext.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
-Require Import porting_coqR_mcR.
+Require Import Rstruct_ext.
 
 (******************************************************************************)
 (*                      The variety of decoders                               *)

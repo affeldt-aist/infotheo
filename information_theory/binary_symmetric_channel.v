@@ -5,7 +5,7 @@ From mathcomp Require Import Rstruct classical_sets.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import entropy binary_entropy_function channel hamming channel_code.
-Require Import pproba porting_coqR_mcR.
+Require Import pproba Rstruct_ext.
 
 (******************************************************************************)
 (*                Capacity of the binary symmetric channel                    *)

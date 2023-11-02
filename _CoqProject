@@ -24,7 +24,7 @@ lib/euclid.v
 lib/dft.v
 lib/vandermonde.v
 lib/classical_sets_ext.v
-lib/porting_coqR_mcR.v
+lib/Rstruct_ext.v
 probability/fdist.v
 probability/proba.v
 probability/fsdist.v
