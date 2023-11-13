@@ -503,7 +503,8 @@ apply (@leR_trans (INR #| `TS P n 0 |)).
   apply: leq_trans; last first.
     by apply subset_leq_card; exact: typed_tuples_are_typ_seq.
   by rewrite card_imset //; exact: row_of_tuple_inj.
-by apply: (leR_trans (TS_sup _ _ _)); rewrite addR0; exact/leRR.
+apply: (leR_trans (TS_sup _ _ _)); rewrite addR0.
+by apply/RleP; rewrite Order.POrderTheory.lexx.
 Qed.
 
 Lemma perm_tuple_in_Ttuples ta (s : 'S_n) :

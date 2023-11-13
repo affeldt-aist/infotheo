@@ -194,7 +194,7 @@ rewrite inE /=; apply/negPn/negPn.
   apply (@leR_trans (exp2 (k%:R * (lambda / 2) + k%:R * (`H P + lambda / 2)))); last first.
     rewrite -mulRDr addRC -addRA.
     rewrite (_ : forall a, a / 2 + a / 2 = a)%R; last by move=> ?; field.
-    exact/leRR.
+    by apply/RleP; rewrite Order.POrderTheory.lexx.
   apply (@leR_trans (exp2 (1 + INR k * (`H P + lambda / 2)))); last first.
    apply Exp_le_increasing => //; apply leR_add2r.
     move/leR_max : Hdelta => [_ Hlambda].
@@ -209,7 +209,8 @@ rewrite inE /=; apply/negPn/negPn.
     apply mulR_ge0; first exact: leR0n.
     apply addR_ge0; first exact: entropy_ge0.
     apply Rlt_le; exact: lambda2_gt0.
-  + by rewrite addRR -{1}(logK Rlt_0_2) -ExpD {1}/log Log_n //; exact/leRR.
+  + rewrite addRR -{1}(logK Rlt_0_2) -ExpD {1}/log Log_n //.
+    by apply/RleP; rewrite Order.POrderTheory.lexx.
 Qed.
 
 End source_coding_direct'.

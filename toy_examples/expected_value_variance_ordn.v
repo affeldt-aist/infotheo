@@ -30,7 +30,7 @@ Lemma p_nonneg : [forall a : 'I_3, (0 <= p a)%mcR].
 Proof.
 apply/forallP => a.
 rewrite /p ffunE /=.
-apply/leRP.
+apply/RleP.
 do! case: ifP => _; lra.
 Qed.
 

@@ -41,7 +41,7 @@ Lemma log_sum_inequality_ord_add1 :
 Proof.
 have Rle0f_1 : forall x : 'I_n, 0 <= f x.+1 by move=> ?; apply nneg_f_ge0.
 have Rle0g_1 : forall x : 'I_n, 0 <= g x.+1 by move=> ?; apply nneg_f_ge0.
-have newRle0f_1: [forall x : 'I_n, (0 <= [ffun x : 'I_n => f x.+1] x)%mcR].
+have newRle0f_1 : [forall x : 'I_n, (0 <= [ffun x : 'I_n => f x.+1] x)%mcR].
   by apply/forallP_leRP => ?; rewrite ffunE.
 have newRle0g_1: [forall x : 'I_n, (0 <= [ffun x : 'I_n => g x.+1] x)%mcR].
   by apply/forallP_leRP => ?; rewrite ffunE.
@@ -220,7 +220,7 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
     by rewrite !mul0R.
   have rmul_pos : 0 < \prod_(i1<n0) P i0 ``_ i1.
     move/eqP in rmul_non0.
-    apply/ltRP; rewrite lt0R eq_sym rmul_non0; apply/leRP/prodR_ge0 => ?.
+    apply/RltP; rewrite Num.Theory.lt0r eq_sym rmul_non0; apply/RleP/prodR_ge0 => ?.
     exact/RleP/FDist.ge0.
   by rewrite /log LogM // !mulRDr mulRA mulRA.
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
@@ -336,7 +336,7 @@ Lemma le_entroPN_logeEX' :
 Proof.
 move/Rle_lt_or_eq_dec:le_1_EX=>[lt_EX_1| eq_E_0]; last first.
   rewrite -eq_E_0 /Rminus Rplus_opp_r mul0R Ropp_0 addR0 mul1R /log Log_1.
-  by move/esym/entroPN_0 : eq_E_0 ->; exact: leRR.
+  by move/esym/entroPN_0 : eq_E_0 ->.
 have lt_0_EX_1 : 0 < `E X - 1 by rewrite subR_gt0.
 pose alp := (`E X - 1) / `E X .
 have gt_alp_1 : alp < 1.
@@ -460,7 +460,7 @@ Definition Pf (i : seq bool) := if [ pick x | f x == i ] is Some x then P x else
 Lemma Rle0Pf i : 0 <= Pf i.
 Proof.
 rewrite /Pf.
-case: pickP => [x _ | _ ]; [exact/RleP/FDist.ge0|exact: leRR].
+by case: pickP => [x _ | _ ]; [exact/RleP/FDist.ge0|].
 Qed.
 
 Lemma pmf1_Pf : \sum_(m < Nmax.+1) \sum_(a in {: m.-tuple bool}) Pf a = 1.
@@ -486,9 +486,9 @@ Proof.
 move=> PNnon0; apply/forallP_leRP => a; rewrite /Pf'.
 apply: (Rmult_le_reg_r (PN m)).
   move/eqP in PNnon0.
-  by apply/ltRP; rewrite lt0R PNnon0 ffunE; exact/leRP.
+  by apply/RltP; rewrite Num.Theory.lt0r PNnon0 ffunE; exact/RleP.
 rewrite mul0R ffunE /Rdiv -mulRA -Rinv_l_sym // mulR1 /Pf.
-by case: pickP => [? _ // | _ ]; exact: leRR.
+by case: pickP.
 Qed.
 
 Lemma pmf1_Pf' m : PN m <> 0 -> \sum_(a in {: m.-tuple bool}) Pf' m a = 1.
@@ -578,8 +578,8 @@ rewrite {2}/PN.
 rewrite [in X in _ = _ * (_ * / X)]/= [in X in _ = _ * (_ * / X)]ffunE.
 rewrite mulRV ?mulR1; last by rewrite /PN /= ffunE in Pr_non0.
 rewrite /log LogM; last 2 first.
-  apply/ltRP; rewrite lt0R eq_sym Pfi0_non0; apply/leRP.
-  rewrite /Pf; case:pickP=>[? _ | ? ]; [exact/RleP/FDist.ge0 | exact/leRR].
+  apply/RltP; rewrite Num.Theory.lt0r eq_sym Pfi0_non0; apply/RleP.
+  rewrite /Pf; case:pickP=>[? _ | ? ]; [exact/RleP/FDist.ge0 | by []].
   by apply/invR_gt0/RltP; rewrite -fdist_gt0.
 rewrite LogV; last by apply/RltP; rewrite -fdist_gt0.
 by rewrite /PN /= ffunE -addRA Rplus_opp_l addR0.
@@ -843,7 +843,8 @@ apply: (@leR_trans (m'' eps)%:R); last exact/le_INR/leP/leq_maxr.
 apply: (@leR_trans (m''' eps)%:R); last exact/le_INR/leP/leq_maxl.
 rewrite INR_Zabs_nat.
   apply: (@leR_trans ((4 * / (INR n * eps * ln 2)))); last exact: proj1 (ceilP _).
-  by rewrite (mulRC n%:R); exact/leRR.
+  rewrite (mulRC n%:R).
+  by apply/RleP; rewrite Order.POrderTheory.lexx.
 apply: le_IZR.
 apply: (@leR_trans ((4 * / (INR n * eps * ln 2)))); last exact: proj1 (ceilP _).
 apply: Rle_mult_inv_pos; first exact: ltRW (@mulR_gt0 2 2 _ _).

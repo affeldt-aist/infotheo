@@ -67,11 +67,11 @@ Local Notation "'`H'" := (entropy).
 Lemma entropy_ge0 : 0 <= `H.
 Proof.
 rewrite /entropy big_morph_oppR; apply sumR_ge0 => i _.
-have [->|Hi] := eqVneq (P i) 0; first by rewrite mul0R oppR0; exact/leRR.
+have [->|Hi] := eqVneq (P i) 0; first by rewrite mul0R oppR0.
   (* NB: this step in a standard textbook would be handled as a consequence of lim x->0 x log x = 0 *)
 rewrite mulRC -mulNR; apply mulR_ge0 => //; apply: oppR_ge0.
 rewrite -log1; apply: Log_increasing_le => //.
-by apply/ltRP; rewrite lt0R Hi; exact/leRP.
+by apply/RltP; rewrite Num.Theory.lt0r Hi/=.
 Qed.
 
 End entropy_definition.
@@ -260,7 +260,7 @@ Lemma cond_entropy1_ge0 a : 0 <= cond_entropy1 a.
 Proof.
 rewrite /cond_entropy1 big_morph_oppR; apply sumR_ge0 => b _; rewrite -mulRN.
 have [->|H0] := eqVneq (\Pr_QP[[set b]|[set a]]) 0.
-  by rewrite mul0R; exact/leRR.
+  by rewrite mul0R.
 apply mulR_ge0; [exact: jcPr_ge0|].
 rewrite -oppR0 -(Log_1 2) /log leR_oppr oppRK.
 by apply Log_increasing_le => //; [rewrite jcPr_gt0 | exact: jcPr_le1].
@@ -688,8 +688,7 @@ Lemma cdiv1_ge0 z : 0 <= cdiv1 z.
 Proof.
 have [z0|z0] := eqVneq (PQR`2 z) 0.
   apply sumR_ge0 => -[a b] _.
-  rewrite {1}/jcPr setX1 Pr_set1 (dom_by_fdist_snd _ z0) div0R mul0R.
-  exact: leRR.
+  by rewrite {1}/jcPr setX1 Pr_set1 (dom_by_fdist_snd _ z0) div0R mul0R.
 have Hc : (fdistX PQR)`1 z != 0 by rewrite fdistX1.
 have Hc1 : (fdistX (fdist_proj13 PQR))`1 z != 0.
   by rewrite fdistX1 fdist_proj13_snd.
@@ -1177,9 +1176,11 @@ Proof.
 rewrite chain_rule_rV; apply leR_sumR => /= i _.
 case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
-  by rewrite head_of_fdist_rV_fdist_nth; exact/leRR.
+  rewrite head_of_fdist_rV_fdist_nth.
+  by apply/RleP; rewrite Order.POrderTheory.lexx.
 apply: leR_trans; first exact: information_cant_hurt.
-by rewrite fdistX1 fdist_take_nth; exact/leRR.
+rewrite fdistX1 fdist_take_nth.
+by apply/RleP; rewrite Order.POrderTheory.lexx.
 Qed.
 
 End independence_bound_on_entropy.

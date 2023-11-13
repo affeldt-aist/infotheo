@@ -267,7 +267,8 @@ rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
 - apply leR_add.
   + rewrite -[X in _ <= X]mulR1; apply: leR_wpmul2l => //.
     * by apply: addR_ge0 => //; exact/ltRW/Lt_pos.
-    * by rewrite (_ : 1 = 1%mcR)// -(FDist.f1 (P `^ n)); apply: leR_sumRl => // *; exact/leRR.
+    * rewrite (_ : 1 = 1%mcR)// -(FDist.f1 (P `^ n)); apply: leR_sumRl => // *.
+      by apply/RleP; rewrite Order.POrderTheory.lexx.
   + apply: leR_wpmul2r => //.
     * by apply addR_ge0 => //; exact (Lnt_nonneg _ P).
     * by rewrite leR_subl_addr addRC -leR_subl_addr; exact: Pr_TS_1.

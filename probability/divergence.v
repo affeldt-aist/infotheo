@@ -35,7 +35,7 @@ Lemma div_diff_ub x y : 0 <= x -> (y = 0 -> x = 0) -> 0 <= y ->
                         x * (log (y / x)) <= (y - x) * log (exp 1).
 Proof.
 move=> x0 yx /leR_eqVlt[/esym|] y0.
-- move: (yx y0) => ->; rewrite y0 subRR 2!mul0R; exact/leRR.
+- by move: (yx y0) => ->; rewrite y0 subRR 2!mul0R.
 - case/leR_eqVlt : x0 => [/esym ->|x0].
   + rewrite mul0R subR0; apply mulR_ge0; [exact: ltRW | exact: log_exp1_Rle_0].
   + rewrite (_ : y - x = x * (y / x - 1)); last first.
@@ -95,7 +95,7 @@ apply (@leR_trans ((\sum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   apply leR_sumR => a _; apply div_diff_ub => //.
   by move/dominatesP : P_dom_by_Q; exact.
 rewrite -{1}(mul0R (log (exp 1))); apply (leR_wpmul2r log_exp1_Rle_0).
-by rewrite big_split /= -big_morph_oppR !FDist.f1 addR_opp subRR; exact/leRR.
+by rewrite big_split /= -big_morph_oppR !FDist.f1 addR_opp subRR.
 Qed.
 
 Lemma divPP : D(Q || Q) = 0.

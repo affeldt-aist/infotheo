@@ -71,10 +71,10 @@ rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
 apply leR_sumR => i _.
 rewrite H.
-have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr0; exact/leRP.
+have Pi0 : 0 < P i by apply/RltP; rewrite Num.Theory.lt0r Pr0/=.
 apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
-  rewrite div1R LogV //.
-  rewrite oppRK LogK //; first exact/leRR.
+  rewrite div1R LogV// oppRK LogK //.
+    by apply/RleP; rewrite Order.POrderTheory.lexx.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite pow_Exp; last by apply ltR0n; rewrite card_ord.
 rewrite Exp_Ropp.
@@ -82,7 +82,7 @@ apply/leR_inv/Exp_le_increasing => //.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite INR_Zabs_nat; last first.
   case/boolP : (P i == 1) => [/eqP ->|Pj1].
-    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_ge0/leRR.
+    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_ge0.
   apply/leR0ceil/ltRW/ltR0Log.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
   rewrite div1R invR_gt1 // ltR_neqAle; split => //; exact/eqP.
@@ -120,11 +120,11 @@ apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
     exact: P.
   move=> i.
   apply ltR_pmul2l.
-    apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
+    by apply/RltP; rewrite Num.Theory.lt0r Pr_pos /=.
   rewrite H.
   rewrite (_ : #|T|%:R = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
-  have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
+  have Pi0 : 0 < P i by apply/RltP; rewrite Num.Theory.lt0r Pr_pos /=.
   rewrite INR_Zabs_nat; last first.
     apply/leR0ceil.
     rewrite /x div1R /log LogV //.

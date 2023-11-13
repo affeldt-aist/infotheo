@@ -101,10 +101,14 @@ pose pf := fun a => [ffun b : B =>
 move=> a.
 refine (@mkNNFinfun _ (pf a) _); apply/forallP_leRP => b.
 rewrite /pf ffunE.
-case: ifP => [_ | Hcase].
+case: ifPn => [_ | Hcase].
 - exact/invR_ge0/ltR0n.
 - apply divR_ge0; first exact/leR0n.
-  by apply/ltRP; rewrite lt0R INR_eq0' Hcase /= leR0n'.
+  apply/RltP; rewrite Num.Theory.lt0r.
+  apply/andP; split.
+    by apply: contra Hcase; rewrite INR_eq0'.
+  apply/RleP.
+  exact/leR0n.
 Defined.
 
 Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat) (Bnot0 : (0 < #|B|)%nat)

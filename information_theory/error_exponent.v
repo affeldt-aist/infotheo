@@ -5,7 +5,7 @@ Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts Rbigop fdist entropy.
 From mathcomp Require Import reals.
-Require Import realType_ext.
+Require Import realType_ext Rstruct_ext.
 Require Import channel_code channel divergence conditional_divergence.
 Require Import variation_dist pinsker.
 
@@ -38,7 +38,7 @@ Local Open Scope channel_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
 
-Import GRing.Theory.
+Import Order.TTheory GRing.Theory Num.Theory.
 
 Section mutinfo_distance_bound.
 
@@ -52,8 +52,12 @@ split; first exact: sqrt_pos.
 apply pow2_Rle_inv; [ exact: sqrt_pos | exact/ltRW/exp_pos | ].
 rewrite [in X in X <= _]/= mulR1 sqrt_sqrt; last first.
   apply mulR_ge0; [lra | exact: cdiv_ge0].
-apply/leRP; rewrite -(leR_pmul2r' (/ 2)); last exact/ltRP/invR_gt0.
-by rewrite -mulRA mulRCA mulRV ?mulR1; [exact/leRP | exact/gtR_eqF].
+apply/RleP; rewrite -(@ler_pM2r _ (/ 2)); last first.
+  by rewrite RinvE' invr_gt0// (_ : 2%coqR = 2%:R)// INRE ltr0n.
+rewrite RmultE -mulrA mulrCA RinvE' (_ : 2%coqR = 2%:R)// INRE.
+rewrite mulfV ?mulr1 ?gt_eqF//.
+  by apply/RleP; rewrite -RdivE'.
+exact/RltP.
 Qed.
 
 Local Open Scope variation_distance_scope.
@@ -123,8 +127,6 @@ Hypothesis minRate_cap : minRate > capacity W.
 Hypothesis set_of_I_has_ubound :
   classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
-Import Order.TTheory.
-
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
   forall P : {fdist A}, forall V : `Ch(A, B),
     P |- V << W ->
@@ -156,7 +158,7 @@ exists Delta; split.
   - by apply mulR_gt0; [exact/subR_gt0 | exact/invR_gt0].
   - by apply mulR_gt0; [exact: expR_gt0 | exact: invR_gt0].
 move=> P V v_dom_by_w.
-case/boolP : (Delta <= D(V || W | P))%mcR => [/leRP| /leRP/ltRNge] Hcase.
+case/boolP : (Delta <= D(V || W | P))%mcR => [/RleP| /RleP/ltRNge] Hcase.
   apply (@leR_trans (D(V || W | P))) => //.
   by rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.
 suff HminRate : (minRate - capacity W) / 2 <= minRate - (`I(P, V)).

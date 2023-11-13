@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg all_algebra.
+From mathcomp Require Import all_ssreflect all_algebra.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct lra.
 Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts bigop_ext Rbigop.
@@ -29,7 +29,7 @@ Lemma log_sum1 {A : finType} (C : {set A}) (f g : {ffun A -> R}) :
 Proof.
 move=> fspos f0 g0 fg.
 case/boolP : (C == set0) => [ /eqP -> | Hc].
-  rewrite !big_set0 mul0R; exact/leRR.
+  by apply/RleP; rewrite !big_set0 mul0R lexx.
 have gspos : forall a, a \in C -> 0 < g a.
   move=> a a_C. case (g0 a) => //.
   move=>/esym/(dominatesE fg) abs.
@@ -48,19 +48,19 @@ wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   move=> Hwlog.
   set k := (\sum_{ C } f / \sum_{ C } g).
   have Fspos : 0 < \sum_{ C } f.
-    suff Fpos : 0 <= \sum_{ C } f by apply/ltRP; rewrite lt0R Fnot0; exact/leRP.
+    suff Fpos : 0 <= \sum_{ C } f by apply/RltP; rewrite lt0r Fnot0; exact/RleP.
     by apply: sumR_ge0 => ? ?; exact/ltRW/fspos.
   have Gspos : 0 < \sum_{ C } g.
-    suff Gpocs : 0 <= \sum_{ C } g by apply/ltRP; rewrite lt0R Gnot0; exact/leRP.
+    suff Gpocs : 0 <= \sum_{ C } g by apply/RltP; rewrite lt0r Gnot0; exact/RleP.
     by apply: sumR_ge0 => ? ?; exact/ltRW/gspos.
-  have kspos : 0 < k by apply divR_gt0.
+  have kspos : 0 < k by exact: divR_gt0.
   set kg := [ffun x => k * g x].
   have kg_pos : forall a, 0 <= kg a.
     by move=> a; rewrite /kg /= ffunE; apply mulR_ge0 => //; exact: ltRW.
   have kabs_con : f `<< kg.
     apply/dominates_scale => //; exact/gtR_eqF.
   have kgspos : forall a, a \in C -> 0 < kg a.
-    by move=> a a_C; rewrite ffunE; apply mulR_gt0 => //; exact: gspos. 
+    by move=> a a_C; rewrite ffunE; apply mulR_gt0 => //; exact: gspos.
   have Hkg : \sum_{C} kg = \sum_{C} f.
     transitivity (\sum_(a in C) k * g a).
       by apply eq_bigr => a aC; rewrite /= ffunE.
@@ -104,8 +104,9 @@ suff : 0 <= \sum_(a | a \in C) f a * ln (f a / g a).
   by apply mulR_ge0 => //; exact/invR_ge0.
 apply (@leR_trans (\sum_(a | a \in C) f a * (1 - g a / f a))).
   apply (@leR_trans (\sum_(a | a \in C) (f a - g a))).
-    rewrite big_split /= -big_morph_oppR Htmp addRN; exact/leRR.
-  apply Req_le, eq_bigr => a a_C.
+    rewrite big_split /= -big_morph_oppR Htmp addRN.
+    by apply/RleP; rewrite lexx.
+  apply/Req_le/eq_bigr => a a_C.
   rewrite mulRDr mulR1 mulRN.
   case: (Req_EM_T (g a) 0) => [->|ga_not_0].
     by rewrite div0R mulR0.
@@ -158,9 +159,9 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
     by apply sumR_ge0 => ? ?.
   apply (@leR_trans (\sum_{C} f * log (\sum_{C} f / \sum_{D} g))).
     case/Rle_lt_or_eq_dec : pos_F => pos_F; last first.
-      by rewrite -pos_F !mul0R. 
+      by rewrite -pos_F !mul0R.
     have H2 : 0 <= \sum_(a | a \in D) g a.
-      by apply: sumR_ge0 => ? _. 
+      by apply: sumR_ge0 => ? _.
     case/Rle_lt_or_eq_dec : H2 => H2; last first.
       have : 0 = \sum_{D} f.
         transitivity (\sum_(a | a \in D) 0).
@@ -172,8 +173,7 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
     have H3 : 0 < \sum_(a | a \in C) g a.
       rewrite setUC in DUD'.
       rewrite DUD' (big_union _ g DID') /=.
-      apply addR_gt0wr => //.
-      by apply: sumR_ge0 => *. 
+      by apply: addR_gt0wr => //; exact: sumR_ge0.
     apply/(leR_wpmul2l (ltRW pos_F))/Log_increasing_le => //.
       apply divR_gt0 => //; by rewrite -HG.
     apply/(leR_wpmul2l (ltRW pos_F))/leR_inv => //.
@@ -188,8 +188,8 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
       apply eq_bigr => a.
       by rewrite /D' in_set => /andP[a_C /eqP ->]; rewrite mul0R.
     by rewrite big_const iter_addR mulR0.
-  by rewrite add0R; exact/leRR.
-apply log_sum1 => // a.
+  by apply/RleP; rewrite add0R lexx.
+apply: log_sum1 => // a.
 rewrite /C1 in_set.
 case/andP => a_C fa_not_0.
 case(f0 a) => // abs.

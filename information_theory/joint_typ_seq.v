@@ -65,7 +65,7 @@ Local Notation "'`JTS'" := (set_jtyp_seq).
 Lemma typical_sequence1_JTS x : prod_rV x \in `JTS ->
   exp2 (- INR n * (`H P + epsilon)) <= P `^ n x.1 <= exp2 (- INR n * (`H P - epsilon)).
 Proof.
-rewrite inE => /and3P[/andP[/leRP JTS11 /leRP JTS12] _ _].
+rewrite inE => /and3P[/andP[/RleP JTS11 /RleP JTS12] _ _].
 by rewrite prod_rVK in JTS11, JTS12.
 Qed.
 
@@ -73,7 +73,7 @@ Lemma typical_sequence1_JTS' x : prod_rV x \in `JTS ->
   exp2 (- INR n * (`H (`O( P , W)) + epsilon)) <= (`O( P , W)) `^ n x.2 <=
   exp2 (- INR n * (`H (`O( P , W)) - epsilon)).
 Proof.
-rewrite inE => /and3P[_ /andP[/leRP JTS11 /leRP JTS12] _].
+rewrite inE => /and3P[_ /andP[/RleP JTS11 /RleP JTS12] _].
 by rewrite prod_rVK in JTS11, JTS12.
 Qed.
 
@@ -151,7 +151,8 @@ have : (JTS_1_bound <= n)%nat ->
           apply divR_gt0 => //; lra.
         exact/ltRW/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
-    by rewrite Pr_to_cplt setCK; exact/leRR.
+    rewrite Pr_to_cplt setCK.
+    by apply/RleP; rewrite Order.POrderTheory.lexx.
   have H1 m :
     Pr ((P `X W) `^ m) [set x | (rV_prod x).2 \notin `TS ( `O(P , W) ) m epsilon ] <=
     Pr ( (`O( P , W) ) `^ m) (~: `TS ( `O( P , W) ) m (epsilon / 3)).
@@ -180,7 +181,8 @@ have : (JTS_1_bound <= n)%nat ->
           apply/ltZW/up_pos/aep_bound_ge0; lra.
         exact/ltRW/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
-    by rewrite Pr_to_cplt setCK; exact/leRR.
+    rewrite Pr_to_cplt setCK.
+    by apply/RleP; rewrite Order.POrderTheory.lexx.
   have H1 m : Pr ((P `X W) `^ m) (~: `TS ((P `X W)) m epsilon) <=
     Pr (((P `X W) ) `^ m) (~: `TS ((P `X W)) m (epsilon / 3)).
     have : 1 <= 3 by lra.
@@ -204,7 +206,8 @@ have : (JTS_1_bound <= n)%nat ->
           apply/ltZW/up_pos/aep_bound_ge0; lra.
         exact/Rlt_le/(proj1 (archimed _ )).
     rewrite leR_subl_addr addRC -leR_subl_addr; apply: leR_trans.
-    by rewrite Pr_to_cplt setCK; exact/leRR.
+    rewrite Pr_to_cplt setCK.
+    by apply/RleP; rewrite Order.POrderTheory.lexx.
   move=> Hn.
   rewrite [in X in _ <= X](_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3)%R; last by field.
   move: Hn; rewrite 2!geq_max => /andP[Hn1 /andP[Hn2 Hn3]].

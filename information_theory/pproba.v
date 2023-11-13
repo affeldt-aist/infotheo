@@ -112,7 +112,7 @@ Proof.
 rewrite ffunE; apply/RleP; rewrite -RdivE//; last first.
   by rewrite /den -receivable_propE receivableP.
 apply: divR_ge0; first exact: mulR_ge0.
-apply/ltRP; rewrite lt0R {1}/den -receivable_propE receivableP.
+apply/RltP; rewrite Num.Theory.lt0r {1}/den -receivable_propE receivableP.
 exact/fdist_post_prob_den_ge0.
 Qed.
 
@@ -238,10 +238,10 @@ Let f0 i a : 0 <= f i a.
 Proof.
 rewrite ffunE; apply/RleP/mulR_ge0.
 - rewrite / marginal_post_prob_den.
-  apply/invR_ge0/ltRP; rewrite lt0R; apply/andP; split; [apply/eqP |apply/leRP]; last first.
-    by apply sumR_ge0 => /= ? _//.
+  apply/invR_ge0/RltP; rewrite Num.Theory.lt0r/=; apply/andP; split; [apply/eqP |apply/RleP]; last first.
+    exact: sumR_ge0.
   exact/f'_neq0.
-- by apply sumR_ge0 => /= ? _ //.
+- exact: sumR_ge0.
 Qed.
 
 Let f1 i : \sum_(a in A) f i a = 1.
@@ -259,7 +259,8 @@ Qed.
 Definition fdist_marginal_post_prob i : {fdist A} := FDist.make (f0 i) (f1 i).
 
 End marginal_post_prob.
-Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" := (@fdist_marginal_post_prob _ _ W _ P y n0 a) : proba_scope.
+Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" :=
+  (@fdist_marginal_post_prob _ _ W _ P y n0 a) : proba_scope.
 
 Section marginal_post_prob_prop.
 Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (C : {set 'rV[A]_n}).

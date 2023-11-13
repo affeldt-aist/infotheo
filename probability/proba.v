@@ -126,8 +126,6 @@ Import Prenex Implicits.
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
-
-Declare Scope proba_scope.
 Local Open Scope proba_scope.
 
 (** [bigA_distr] is a specialization of [bigA_distr_bigA] and at the same
@@ -249,7 +247,8 @@ Qed.
 Lemma Pr_1 E : Pr E <= 1.
 Proof.
 rewrite (_ : 1 = GRing.one _)//.
-by rewrite -(FDist.f1 P); apply leR_sumRl => // a _; exact/leRR.
+rewrite -(FDist.f1 P); apply leR_sumRl => // a _.
+by apply/RleP; rewrite Order.POrderTheory.lexx.
 Qed.
 
 Lemma Pr_lt1 E : Pr E < 1 <-> Pr E != 1.
@@ -288,7 +287,8 @@ Proof. by rewrite -(Pr_cplt E); field. Qed.
 
 Lemma Pr_incl E E' : E \subset E' -> Pr E <= Pr E'.
 Proof.
-by move=> H; apply leR_sumRl => a aE //; [exact/leRR | move/subsetP : H; exact].
+move=> H; apply leR_sumRl => a aE //; [ | by move/subsetP : H; exact].
+by apply/RleP; rewrite Order.POrderTheory.lexx.
 Qed.
 
 Lemma Pr_union E1 E2 : Pr (E1 :|: E2) <= Pr E1 + Pr E2.
@@ -307,7 +307,7 @@ Lemma Pr_bigcup (B : finType) (p : pred B) F :
   Pr (\bigcup_(i | p i) F i) <= \sum_(i | p i) Pr (F i).
 Proof.
 rewrite /Pr; elim: (index_enum _) => [| h t IH].
-  by rewrite big_nil; apply: sumR_ge0 => b _; rewrite big_nil; exact/leRR.
+  by rewrite big_nil; apply: sumR_ge0 => b _; rewrite big_nil.
 rewrite big_cons; case: ifP => H1.
   apply: leR_trans; first by eapply leR_add2l; exact: IH.
   rewrite [X in _ <= X](exchange_big_dep
@@ -320,7 +320,8 @@ rewrite big_cons; case: ifP => H1.
   rewrite (_ : 1 = 1%:R) //; apply/le_INR/ssrnat.leP/card_gt0P.
   by case/bigcupP : H1 => b Eb hFb; exists b; rewrite -topredE /= Eb.
 apply/(leR_trans IH)/leR_sumR => b Eb; rewrite big_cons.
-case: ifPn => hFb; last exact/leRR.
+case: ifPn => hFb; last first.
+  by apply/RleP; rewrite Order.POrderTheory.lexx.
 by rewrite -[X in X <= _]add0R; exact/leR_add2r.
 Qed.
 
@@ -1185,7 +1186,7 @@ apply leR_add; last first.
   by apply sumR_ge0 => a _; apply mulR_ge0 => //; exact/X_ge0.
 apply (@leR_trans (\sum_(i | (X i >= r)%mcR) r * P i)).
   by rewrite big_distrr /=;  apply/Req_le/eq_bigl => a; rewrite inE.
-by apply leR_sumR => u Xur; apply/leR_wpmul2r => //; exact/leRP.
+by apply leR_sumR => u Xur; apply/leR_wpmul2r => //; exact/RleP.
 Qed.
 
 Lemma markov (r : R) : 0 < r -> `Pr[ X >= r ] <= `E X / r.
@@ -1283,9 +1284,10 @@ rewrite  [_ ^2]lock /= -!lock.
 apply leR_sumRl => u; rewrite ?inE => Hu //=.
 - rewrite  -!/(_ ^ 2).
   apply leR_wpmul2r => //.
-  apply (@leR_trans ((X u - `E X) ^ 2)); last exact/leRR.
+  apply (@leR_trans ((X u - `E X) ^ 2)); last first.
+    by apply/RleP; rewrite Order.POrderTheory.lexx.
   rewrite -(sqR_norm (X u - `E X)).
-  by apply/pow_incr; split => //; [exact/ltRW | exact/leRP].
+  by apply/pow_incr; split => //; [exact/ltRW | exact/RleP].
 - by apply mulR_ge0 => //; exact: sq_RV_ge0.
 Qed.
 
@@ -1393,7 +1395,7 @@ Local Notation "`Pr_[ E | F ]" := (cPr E F).
 Lemma cPr_ge0 E F : 0 <= `Pr_[E | F].
 Proof.
 rewrite /cPr; have [/eqP PF0|PF0] := boolP (Pr d F == 0).
-  by rewrite setIC (Pr_domin_setI _ PF0) div0R; exact/leRR.
+  by rewrite setIC (Pr_domin_setI _ PF0) div0R.
 by apply divR_ge0 => //; rewrite Pr_gt0.
 Qed.
 Local Hint Resolve cPr_ge0 : core.
@@ -1412,7 +1414,8 @@ have [/eqP PF0|PF0] := boolP (Pr d F == 0).
   by rewrite setIC (Pr_domin_setI E PF0) div0R.
 apply leR_pdivr_mulr; first by rewrite Pr_gt0.
 rewrite mul1R /Pr; apply leR_sumRl => //.
-by move=> a _; exact/leRR.
+  move=> a _.
+  by apply/RleP; rewrite Order.POrderTheory.lexx.
 by move=> a; rewrite inE => /andP[].
 Qed.
 
@@ -2262,7 +2265,8 @@ have <- : `E (X `/ n.+1) = miu.
   rewrite E_scalel_RV (E_sum_n X_Xs).
   rewrite div1R mulRC eqR_divr_mulr ?INR_eq0' // (eq_bigr (fun=> miu)) //.
   by rewrite big_const /= iter_addR cardE /= size_enum_ord mulRC.
-by move/leR_trans: (chebyshev_inequality (X `/ n.+1) e0); apply; exact/leRR.
+move/leR_trans: (chebyshev_inequality (X `/ n.+1) e0); apply.
+by apply/RleP; rewrite Order.POrderTheory.lexx.
 Qed.
 
 End weak_law_of_large_numbers.

@@ -24,7 +24,7 @@ Proof.
 apply/forallP => a.
 rewrite /p ffunE.
 apply/all_tnthP: a => /=.
-rewrite !andb_idr => * //; apply/leRP; lra.
+rewrite !andb_idr => * //; apply/RleP; lra.
 Qed.
 
 Definition p' : [finType of 'I_3] ->R+ := mkNNFinfun p_nonneg.

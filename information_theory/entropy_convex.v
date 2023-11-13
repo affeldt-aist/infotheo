@@ -46,6 +46,8 @@ Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
 Local Open Scope entropy_scope.
 
+Import Order.POrderTheory.
+
 Section entropy_log_div.
 Variables (A : finType) (p : {fdist A}) (n : nat) (An1 : #|A| = n.+1).
 Let u := @fdist_uniform R_numFieldType _ _ An1.
@@ -163,7 +165,7 @@ have hdom : h x.1 y.1 `<< h x.2 y.2.
 have h0 p1 p2 : [forall i, (0 <= h p1 p2 i)%mcR].
   apply/forallP_leRP => ?; rewrite /h /= ffunE.
   case: ifPn => [_ | _]; first exact/mulR_ge0.
-  case: ifPn => [_ | _]; last exact/leRR.
+  case: ifPn => [_ |//].
   by apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
 have Htmp : forall x0 : 'I_2, 0 <= mkNNFinfun (h0 x.1 y.1) x0.
   move=> x0.
@@ -371,7 +373,7 @@ apply: R_concave_functionB.
   rewrite /convex_function_at 3!fdistX1.
   apply: leR_trans (concave_H (p `X W)`2 (q `X W)`2 t).
   under eq_bigr do rewrite fdist_prod2_conv.
-  exact/leRR.
+  by apply/RleP; rewrite lexx.
 suff : affine (fun x : choice_of_Type {fdist A} => cond_entropy (fdistX (x `X W))).
   by move=> /affine_functionP[].
 move=> t p q.

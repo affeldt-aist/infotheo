@@ -182,7 +182,7 @@ have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
     + rewrite -{2}(mul1R (P a)); apply leR_wpmul2r => //.
       by rewrite leR_subl_addr leR_addl; exact: ltRW.
     + rewrite -{2}(mul1R (P b)); apply ltR_pmul2r => //.
-      by apply/ltRP; rewrite lt0R; apply/andP; split; [exact/eqP|exact/leRP].
+      by apply/RltP; rewrite lt0r; apply/andP; split; [exact/eqP|by []].
   - rewrite -H1 mulR0 add0R add0r.
     have -> : P b = 1 by rewrite -P1 -H1 add0r.
     by rewrite mulR1.

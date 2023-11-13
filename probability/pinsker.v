@@ -3,8 +3,9 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext logb ln_facts bigop_ext convex.
-Require Import Rbigop fdist divergence variation_dist partition_inequality.
+Require Import ssrR Rstruct_ext Reals_ext realType_ext Ranalysis_ext ssr_ext.
+Require Import logb ln_facts bigop_ext convex Rbigop fdist divergence.
+Require Import variation_dist partition_inequality.
 
 (******************************************************************************)
 (*                       Pinsker's Inequality                                 *)
@@ -17,7 +18,8 @@ Require Import Rbigop fdist divergence variation_dist partition_inequality.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-Import GRing.Theory.
+
+Import Order.TTheory GRing.Theory Num.Theory.
 
 Local Open Scope R_scope.
 Local Open Scope fdist_scope.
@@ -157,8 +159,8 @@ have H2 : -2 <= - 8 * t * (1 - t).
   rewrite !mulNR -mulRA.
   rewrite leR_oppr oppRK [X in _ <= X](_ : 2 = 8 * / 4); last by field.
   apply leR_wpmul2l; [lra | exact: x_x2_max].
-apply (@leR_trans (2 - 2)); first lra.
-by apply leR_add; [exact/leRR | by rewrite -mulRA -mulNR mulRA].
+move: H2 => /RleP; rewrite -mulRA RmultE mulNr lerNl opprK.
+by move=> /RleP; rewrite -!RmultE mulRA subR_ge0.
 Qed.
 
 Lemma pinsker_function_spec_pos c q :
@@ -258,8 +260,10 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
   have /eqP Hlocal2 : t * (1 - t) <> 0 by apply/eqP/gtR_eqF/mulR_gt0; lra.
   apply (@leR_trans (4 / ln 2)).
     apply (@leR_trans (8 * / (2 * ln 2))).
-      apply/leRP.
-      rewrite leR_pmul2l'; [exact/leRP | by apply/ltRP; lra].
+      apply/RleP.
+      rewrite 2!RmultE ler_pM2l//; last first.
+        by apply/RltP; rewrite (_ : 0%mcR = 0)//; lra.
+      exact/RleP.
     rewrite invRM ?mulRA; last 2 first.
       exact/eqP.
       exact/ln2_neq0.
@@ -341,12 +345,13 @@ case: (Rlt_le_dec q p) => qp.
   - lra.
   - by split; apply/RltP; [rewrite -prob_gt0 | rewrite -prob_lt1].
   - by split; [apply/RltP/prob_gt0 | exact/ltRW].
-  - by split; [apply/RltP/prob_gt0 | exact/leRR].
+  - split; [by apply/RltP/prob_gt0 | ].
+    by apply/RleP; rewrite lexx.
   - exact/ltRW.
 apply pinsker_fun_increasing_on_p_to_1 => //.
 - lra.
 - by split; apply/RltP; [rewrite -prob_gt0 |rewrite -prob_lt1].
-- by split; [exact/leRR |apply/RltP/prob_lt1].
+- by split; [by apply/RleP; rewrite lexx |apply/RltP/prob_lt1].
 - by split => //; apply/RltP; rewrite -prob_lt1.
 Qed.
 
@@ -437,7 +442,7 @@ set lhs := _ * _.
 set rhs := D(_ || _).
 rewrite -subR_ge0 -pinsker_fun_p_eq.
 apply pinsker_fun_pos with A card_A => //.
-split; [exact/invR_ge0/mulR_gt0 | exact/leRR].
+by split; [exact/invR_ge0/mulR_gt0 | by apply/RleP; rewrite lexx].
 Qed.
 
 End Pinsker_2_bdist.
@@ -480,8 +485,6 @@ transitivity (\sum_(a | a \in A_ b) 0%R).
 by rewrite big_const iter_addR mulR0.
 Qed.
 
-Import Order.TTheory.
-
 Lemma Pinsker_inequality : / (2 * ln 2) * d(P , Q) ^ 2 <= D(P || Q).
 Proof.
 pose A0 := [set a | (Q a <= P a)%mcR].
@@ -511,10 +514,10 @@ have -> : d( P , Q ) = d( P_A , Q_A ).
     congr (_ + _).
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
       transitivity (\sum_(a | a \in A0) (P a - Q a)).
-        apply eq_bigr => a; rewrite /A0 in_set => /leRP Ha.
+        apply: eq_bigr => a; rewrite /A0 in_set => /RleP Ha.
         by rewrite geR0_norm ?subR_ge0.
       rewrite big_split /= geR0_norm; last first.
-        by rewrite subR_ge0; rewrite !ffunE; apply leR_sumR => ?; by rewrite inE => /leRP.
+        by rewrite subR_ge0; rewrite !ffunE; apply leR_sumR => ?; rewrite inE => /RleP.
       by rewrite -big_morph_oppR // 2!ffunE addR_opp.
     - rewrite /P_A /Q_A /bipart /= !ffunE /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
@@ -538,7 +541,8 @@ rewrite -(sqrt_Rsqr (d(P , Q))); last exact/pos_var_dist.
 apply sqrt_le_1_alt.
 apply (@leR_pmul2l (/ 2)); first by apply invR_gt0; lra.
 apply (@leR_trans (D(P || Q))); last first.
-  by rewrite mulRA mulVR // ?mul1R; [exact/leRR | exact/gtR_eqF].
+  rewrite mulRA mulVR // ?mul1R; [| exact/gtR_eqF].
+  by apply/RleP; rewrite lexx.
 apply: (leR_trans _ Pinsker_inequality).
 rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow mulR1.
 apply leR_wpmul2r; first exact: pow_even_ge0.

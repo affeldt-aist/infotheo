@@ -59,12 +59,6 @@ Arguments INR : simpl never.
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
-(* TODO: move Rstruct.v in mathcomp-analysis *)
-Lemma R1E : 1%coqR = GRing.one _.
-Proof. done. Qed.
-Lemma R0E : 0%coqR = GRing.zero _.
-Proof. done. Qed.
-
 Lemma Rlt_1_2 : 1 < 2. Proof. Lra.lra. Qed.
 Global Hint Resolve Rlt_1_2 : core.
 
@@ -73,7 +67,7 @@ Section reals_ext.
 (* TODO: rm *)
 Lemma forallP_leRP (A : finType) (f : A -> R) : reflect (forall a, 0 <= f a) [forall a, (0 <= f a)%mcR].
 Proof.
-apply: (iffP idP) => [/forallP H a|H]; [exact/leRP/H|apply/forallP => a; exact/leRP].
+apply: (iffP idP) => [/forallP H a|H]; [exact/RleP/H|apply/forallP => a; exact/RleP].
 Qed.
 
 Lemma iter_mulR x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
@@ -175,10 +169,11 @@ Qed.
 Lemma frac_part_INR m : frac_part (INR m) = 0.
 Proof.
 rewrite /frac_part /Int_part -(up_tech _ (Z_of_nat m)).
-rewrite minus_IZR plus_IZR /= -INR_IZR_INZ; by field.
-rewrite -INR_IZR_INZ; exact/leRR.
-rewrite {1}INR_IZR_INZ; apply IZR_lt.
-by apply Z.lt_add_pos_r.
+- by rewrite minus_IZR plus_IZR /= -INR_IZR_INZ; by field.
+- rewrite -INR_IZR_INZ.
+  by apply/RleP; rewrite Order.POrderTheory.lexx.
+- rewrite {1}INR_IZR_INZ; apply IZR_lt.
+  by apply Z.lt_add_pos_r.
 Qed.
 
 Lemma frac_Int_part x : frac_part x = 0 -> IZR (Int_part x) = x.
@@ -216,7 +211,7 @@ rewrite -(tech_up _ ((up a - 1) * (up b - 1) + 1)).
   rewrite ?plus_IZR ?minus_IZR ?mult_IZR ?minus_IZR // Ha Hb.
   rewrite (_ : forall a, a + 1 - 1 = a); last by move=> *; field.
   rewrite (_ : forall a, a + 1 - 1 = a); last by move=> *; field.
-  exact/leRR.
+  by apply/RleP; rewrite Order.POrderTheory.lexx.
 Qed.
 
 Lemma frac_part_pow a : frac_part a = 0 -> forall n : nat, frac_part (a ^ n) = 0.
@@ -245,10 +240,10 @@ Qed.
 Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.
 Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(leR_trans _ K). Qed.
 
-Lemma ltR_Rabsl a b : `| a | <b b = (- b <b a <b b).
+(* TODO: remove *)
+Lemma ltR_Rabsl (a b : R) : (`| a | < b)%mcR = (- b < a < b)%mcR.
 Proof.
-apply/idP/idP => [/ltRP/Rabs_def2[? ?]|/ltR2P[? ?]]; first exact/ltR2P.
-exact/ltRP/Rabs_def1.
+by rewrite Num.Theory.ltr_norml.
 Qed.
 
 Import Num.Theory Order.Theory.
@@ -312,7 +307,7 @@ End nneg_finfun.
 Notation "T '->R+' " := (nneg_finfun T) : reals_ext_scope.
 
 Lemma nneg_finfun_ge0 (T : finType) (f : T ->R+) : forall a, 0 <= f a.
-Proof. by case: f => f /= /forallP H a; apply/leRP/H. Qed.
+Proof. by case: f => f /= /forallP H a; apply/RleP/H. Qed.
 
 Record nneg_fun (T : Type) := mkNNFun {
   nneg_f :> T -> R ;
@@ -385,16 +380,16 @@ Qed.
 Lemma onem_prob r : (R0 <= r <= R1)%mcR -> (R0 <= r.~ <= R1)%mcR.
 Proof.
 Proof.
-by case/leR2P=> ? ?; apply/leR2P; split;
-   [ rewrite onemE leR_subr_addr add0R
-   | rewrite onemE leR_subl_addr -(addR0 1) leR_add2l].
+by case/andP => /RleP ? /RleP ?; apply/andP; split;
+   [ apply/RleP; rewrite onemE leR_subr_addr add0R
+   | apply/RleP; rewrite onemE leR_subl_addr -(addR0 1) leR_add2l].
 Qed.
 
-Lemma onem_oprob r : R0 <b r <b R1 -> R0 <b r.~ <b R1.
+Lemma onem_oprob r : (R0 < r < R1)%mcR -> (R0 < r.~ < R1)%mcR.
 Proof.
-by case/ltR2P=> ? ?; apply/ltR2P; split;
-   [ rewrite onemE ltR_subr_addr add0R
-   | rewrite onemE ltR_subl_addr -(addR0 1) ltR_add2l].
+by case/andP=> /RltP ? /RltP ?; apply/andP; split;
+   [ apply/RltP; rewrite onemE ltR_subr_addr add0R
+   | apply/RltP; rewrite onemE ltR_subl_addr -(addR0 1) ltR_add2l].
 Qed.
 
 Lemma onem_eq0 r : r.~ = 0 <-> r = 1. Proof. rewrite onemE; Lra.lra. Qed.
@@ -580,7 +575,7 @@ Proof.
 rewrite /divRnnm.
 have [/eqP ->|n0] := boolP (n == O).
   rewrite div0R.
-  by have /leR2P:= (@OO1 real_realType).
+  by have /andP[/RleP ? /RleP ?]:= (@OO1 real_realType).
 split; first by apply divR_ge0; [exact: leR0n | rewrite ltR0n addn_gt0 lt0n n0].
 by rewrite leR_pdivr_mulr ?mul1R ?leR_nat ?leq_addr // ltR0n addn_gt0 lt0n n0.
 Qed.
@@ -594,18 +589,14 @@ Qed.
 Canonical probdivRnnm (n m : nat) :=
   Eval hnf in @Prob.mk _ (divRnnm n m) (prob_divRnnm' n m).
 
-Lemma prob_invn (m : nat) : (R0 <= / (1 + m)%:R <= R1)%coqR.
+Lemma prob_invn (m : nat) : (R0 <= / (1 + m)%:R <= R1)%mcR.
 Proof.
-apply/leR2P; rewrite -(mul1R (/ _)%coqR) (_ : 1%coqR = INR 1) // -/(Rdiv _ _); apply/leR2P; exact: prob_divRnnm.
-Qed.
-
-Lemma prob_invn' (m : nat) : (R0 <= / (1 + m)%:R <= R1)%O.
-Proof.
-have [/RleP ? /RleP ?] := prob_invn m. exact/andP.
+rewrite -(mul1R (/ _)%coqR) (_ : 1%coqR = INR 1) // -/(Rdiv _ _).
+by have [/RleP -> /RleP ->] := prob_divRnnm 1 m.
 Qed.
 
 Canonical probinvn (n : nat) :=
-  Eval hnf in @Prob.mk _ (/ INR (1 + n)) (prob_invn' n).
+  Eval hnf in @Prob.mk _ (/ INR (1 + n)) (prob_invn n).
 
 Lemma prob_invp (p : {prob R}) : (0 <= 1 / (1 + p) <= 1)%coqR.
 Proof.
@@ -822,7 +813,12 @@ have [/RltP ? /RltP ?] := oprob_divRposxxy x y. exact/andP.
 Qed.
 
 Lemma prob_divRposxxy (x y : Rpos) : (0 <= x / (x + y) <= 1)%coqR.
-Proof. by apply/ltR2W/oprob_divRposxxy. Qed.
+Proof.
+have [] := oprob_divRposxxy x y.
+move/RltP/Order.POrderTheory.ltW/RleP => ?.
+move/RltP/Order.POrderTheory.ltW/RleP => ?.
+by [].
+Qed.
 
 Lemma prob_divRposxxy' (x y : Rpos) : (0 <= x / (x + y) <= 1)%O.
 Proof.
@@ -873,21 +869,21 @@ Canonical Rnng_choiceType := Eval hnf in ChoiceType Rnng Rnng_choiceMixin.
 Section Rnng_theory.
 Local Open Scope R_scope.
 
-Definition mkRnng x H := @Rnng.mk x (introT (leRP _ _) H).
+Definition mkRnng x H := @Rnng.mk x (introT (RleP _ _) H).
 
 Lemma Rnng_ge0 (x : Rnng) : 0 <= x.
-Proof. by case: x => p /= /leRP. Qed.
+Proof. by case: x => p /= /RleP. Qed.
 Local Hint Resolve Rnng_ge0 : core.
 
-Canonical Rnng0 := Eval hnf in @mkRnng 0 (leRR 0).
+Canonical Rnng0 := Eval hnf in @mkRnng 0 (Rle_refl 0).
 Canonical Rnng1 := Eval hnf in @mkRnng R1 Rle_0_1.
 
 Lemma addRnng_ge0 (x y : Rnng) : (0 <= (x : R) + y)%mcR.
-Proof. exact/leRP/addR_ge0. Qed.
+Proof. exact/RleP/addR_ge0. Qed.
 Canonical addRnneg x y := Rnng.mk (addRnng_ge0 x y).
 
 Lemma mulRnng_ge0 (x y : Rnng) : (0 <= (x : R) * y)%mcR.
-Proof. exact/leRP/mulR_ge0. Qed.
+Proof. exact/RleP/mulR_ge0. Qed.
 Canonical mulRnneg x y := Rnng.mk (mulRnng_ge0 x y).
 
 End Rnng_theory.
@@ -956,7 +952,7 @@ Proof.
 case/boolP : (p == 0%:pr :> {prob R}) => p0.
   by rewrite (eqP p0) div0R.
 case/boolP : (q == 0%:pr :> {prob R}) => q0.
-  rewrite (eqP q0) (s_of_p0 p) divRR //; apply/andP; split; apply/leRP=> //; exact/leRR.
+  by rewrite (eqP q0) (s_of_p0 p) divRR //; apply/andP.
 split.
 - by apply divR_ge0 => //; exact/s_of_gt0.
 - by rewrite leR_pdivr_mulr ?mul1R; [exact: ge_s_of | exact: s_of_gt0].
@@ -1036,8 +1032,8 @@ Proof. apply/r_of_pq_is_r/oprob_neq0/oprob_neq0. Qed.*)
 
 Lemma p_of_rs_prob (r s : {prob R}) : (0 <= Prob.p r * Prob.p s <= 1)%O.
 Proof.
-move: r s => -[] r /andP [] /leRP r0 /leRP r1 -[] s /= /andP [] /leRP s0 /leRP s1.
-apply/andP; split; apply/leRP; [exact/mulR_ge0 | rewrite -(mulR1 1); exact: leR_pmul].
+move: r s => -[] r /andP [] /RleP r0 /RleP r1 -[] s /= /andP [] /RleP s0 /RleP s1.
+apply/andP; split; apply/RleP; [exact/mulR_ge0 | rewrite -(mulR1 1); exact: leR_pmul].
 Qed.
 
 Definition p_of_rs (r s : {prob R}) : {prob R} := locked (Prob.mk (p_of_rs_prob r s)).
@@ -1112,11 +1108,10 @@ Proof.
 case/boolP : (r == 1%:pr :> {prob R}) => r1.
   by rewrite (eqP r1) onem1 mul0R div0R; split.
 case/boolP : (s == 1%:pr :> {prob R}) => s1.
-  rewrite (eqP s1) mulR1 p_of_r1 divRR ?onem_neq0 //; split=> //; exact/leRR.
+  by rewrite (eqP s1) mulR1 p_of_r1 divRR ?onem_neq0 //.
 split.
   apply/divR_ge0.
-    apply/mulR_ge0 => //.
-    exact: onem_ge0.
+    by apply/mulR_ge0 => //; exact: onem_ge0.
   by apply/onem_gt0; rewrite p_of_rsE -(mulR1 1); apply/ltR_pmul => //;
     apply/RltP; rewrite -prob_lt1.
 rewrite leR_pdivr_mulr ?mul1R.
@@ -1129,10 +1124,10 @@ Qed.
 Lemma q_of_rs_prob' (r s : {prob R}) : (0 <= (r.~ * Prob.p s) / [p_of r, s].~ <= 1)%O.
 Proof.
 case/boolP : (r == 1%:pr :> {prob R}) => r1.
-  rewrite (eqP r1) onem1 mul0R div0R; apply/andP; split; apply/leRP => //; exact/leRR.
+  by rewrite (eqP r1) onem1 mul0R div0R; apply/andP; split; apply/RleP => //.
 case/boolP : (s == 1%:pr :> {prob R}) => s1.
-  rewrite (eqP s1) mulR1 p_of_r1 divRR ?onem_neq0 //; apply/andP; split; apply/leRP => //; exact/leRR.
-apply/andP; split; apply/leRP.
+  by rewrite (eqP s1) mulR1 p_of_r1 divRR ?onem_neq0 //; apply/andP; split; apply/RleP.
+apply/andP; split; apply/RleP.
   apply/divR_ge0.
     by apply/mulR_ge0 => //; exact: onem_ge0.
   by apply/onem_gt0; rewrite p_of_rsE -(mulR1 1); apply/ltR_pmul => //;

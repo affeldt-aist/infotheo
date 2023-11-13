@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
+Require Import ssrR Rstruct_ext Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
 Require Import ln_facts num_occ types jtypes divergence conditional_divergence.
 Require Import entropy channel_code channel.
 
@@ -39,6 +39,8 @@ Local Open Scope reals_ext_scope.
 Local Open Scope types_scope.
 Local Open Scope divergence_scope.
 Local Open Scope set_scope.
+
+Import Order.POrderTheory Num.Theory.
 
 Section typed_success_decomp_sect.
 
@@ -116,9 +118,12 @@ Hypothesis Vctyp : V \in \nu^{B}(P).
 
 Lemma success_factor_bound_part1 : success_factor tc V <= 1.
 Proof.
-apply/leRP; rewrite -(leR_pmul2l' #|M|%:R) ?ltR0n' //; apply/leRP.
-rewrite /success_factor /Rdiv -(mulRC (/ #|M|%:R)) 2!mulRA.
-rewrite mulRV ?INR_eq0' -?lt0n // mul1R.
+apply/RleP; rewrite -(@ler_pM2l _ #|M|%:R)//; last by rewrite ltr0n.
+apply/RleP.
+rewrite /success_factor /Rdiv -(mulRC (/ #|M|%:R)%coqR) -!RmultE 2!mulRA.
+rewrite INRE mulRV; last first.
+  by rewrite -INRE INR_eq0' -?lt0n.
+rewrite mul1R -INRE.
 rewrite -iter_addR -big_const /=.
 rewrite (_ : \sum_(m | m \in M ) 1 = \sum_(m : M) 1); last exact/eq_bigl.
 rewrite big_distrr /=.
@@ -273,16 +278,16 @@ apply (@leR_trans ( \sum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
   exp2 (- n%:R *  +| log #|M|%:R * / n%:R - `I(P, V) |))).
   apply: leR_sumR => V Vnu.
   rewrite -mulRA; apply leR_wpmul2l.
-    by rewrite /exp_cdiv; case : ifP => _ //; exact/leRR.
+    by rewrite /exp_cdiv; case : ifP.
   by rewrite /success_factor mulRA; exact: success_factor_ub.
 apply (@leR_trans (\sum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
                     exp2 (- n%:R * +| log #|M|%:R * / n%:R - `I(P, Vmax)|))).
   apply leR_sumR => V HV.
-  by move/leRP: (@arg_rmax2 [finType of (P_ n (A, B))] V0
+  by move/RleP: (@arg_rmax2 [finType of (P_ n (A, B))] V0
     (fun V => exp_cdiv P V W * success_factor_bound M V P) V).
 rewrite big_const iter_addR /success_factor_bound; apply leR_wpmul2r.
 - apply mulR_ge0; last exact/exp2_ge0.
-  by rewrite /exp_cdiv; case: ifP => _ //; exact/leRR.
+  by rewrite /exp_cdiv; case: ifP.
 - by rewrite natRexp; exact/le_INR/leP/card_nu.
 Qed.
 
@@ -320,7 +325,7 @@ apply (@leR_trans (\sum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
              \sum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)); last first.
     by rewrite big_const iter_addR.
   apply leR_sumR => P _.
-  by move/leRP : (arg_rmax2 P0 (fun P1 : P_ n (A) => scha(W, P1.-typed_code c)) P).
+  by move/RleP : (arg_rmax2 P0 (fun P1 : P_ n (A) => scha(W, P1.-typed_code c)) P).
 rewrite schaE // -(sum_messages_types c).
 rewrite div1R (big_morph _ (morph_mulRDr _) (mulR0 _)).
 apply leR_sumR => P _.
@@ -329,11 +334,12 @@ rewrite schaE // div1R -mulRA mulRCA mulVR ?INR_eq0' -?lt0n // mulR1.
 apply/(@leR_trans (\sum_(m | m \in enc_pre_img c P)
                      \sum_(y | (dec (P.-typed_code c)) y == Some m)
                      (W ``(|(enc (P.-typed_code c)) m)) y)).
-  apply leR_sumR => m Hm.
-  apply Req_le, eq_big => tb // _.
+  apply: leR_sumR => m Hm.
+  apply/Req_le/eq_big => tb // _.
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
-- by apply leR_sumRl => //= i ?; [exact/leRR | exact: sumR_ge0].
+- apply leR_sumRl => //= i ?; [| exact: sumR_ge0].
+  by apply/RleP; rewrite lexx.
 Qed.
 
 End success_bound_sect.

@@ -1,10 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix ssrnum fingroup perm.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix fingroup perm.
 From mathcomp Require boolp.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
+Require Import ssrR Rstruct_ext Reals_ext realType_ext Ranalysis_ext ssr_ext.
+Require Import ssralg_ext logb Rbigop.
 Require Import fdist convex.
 
 (****************************************************************************)
@@ -17,8 +18,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-
 Import GRing.Theory Num.Theory Order.POrderTheory.
+
 Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
 Local Open Scope reals_ext_scope.
@@ -672,7 +673,7 @@ have H : [p_of [r_of probfdist d ord0, p].~%:pr, [s_of probfdist d ord0, p]] != 
   apply p_of_neq1.
   rewrite s_of_pqE /=.
   rewrite Reals_ext.onemM !onemK -subRBA -[X in (_ < _ - (_ - X) < _)%coqR]mul1R.
-  rewrite -mulRBl -addR_opp -mulNR oppRB /Rdiv mulRCA -RinvE // mulRV // mulR1.
+  rewrite -mulRBl -addR_opp -mulNR oppRB mulRCA -RinvE' mulRV // mulR1.
   split; first exact/RltP.
   rewrite ltR_neqAle; split.
     apply/eqP; apply: contra p1 => p1.
@@ -826,7 +827,7 @@ congr (g _ <| _ |> (_ <| _ |> _)).
   rewrite !fdistI_permE p_of_rsE /= permE /=.
   rewrite (_ : Ordinal _ = ord_max); last exact/val_inj.
   rewrite {1}/onem.
-  rewrite mulRBl mul1R /Rdiv -mulRA -RinvE // mulVR ?mulR1 //.
+  rewrite mulRBl mul1R -mulRA -RinvE' // mulVR ?mulR1 //.
   rewrite /onem -subRD subR_eq -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
   rewrite (_ : lift _ (lift _ _) = ord_max); last exact/val_inj.
   by rewrite [in RHS]addRC -addRA.

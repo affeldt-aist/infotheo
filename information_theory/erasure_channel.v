@@ -50,7 +50,7 @@ rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /= (proj2 (psumR_eq0P 
 - by rewrite -RplusE addR0 onemKC.
 - rewrite /f; case => [a'|]; last by case: p_01.
   rewrite ffunE.
-  case: ifPn => [_ |*]; last exact/leRR.
+  case: ifPn => [_ |//].
   case: p_01 => ? ? _; exact/RleP/onem_ge0/RleP.
 - case => //= a' aa'; rewrite ffunE; case: ifPn => // /eqP ?; subst a'.
   move: aa'; by rewrite eqxx.

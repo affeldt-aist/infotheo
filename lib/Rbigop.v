@@ -165,7 +165,7 @@ Proof. by apply eq_bigl => i; rewrite inE. Qed.
 Lemma sumR_ge0 (A : eqType) (d : seq A) (P : pred A) f
   (H : forall i, P i -> 0 <= f i) : 0 <= \sum_(i <- d | P i) f i.
 Proof.
-elim: d => [|h t IH]; first by rewrite big_nil; exact/leRR.
+elim: d => [|h t IH]; first by rewrite big_nil.
 rewrite big_cons; case: ifPn => // Ph; apply/addR_ge0 => //; exact: H.
 Qed.
 
@@ -253,7 +253,8 @@ Lemma leR_sumRl : (forall i, P i -> f i <= g i) ->
   \sum_(i | P i) f i <= \sum_(i | Q i) g i.
 Proof.
 move=> f_g Qg H; elim: (index_enum _) => [| h t IH].
-- by rewrite !big_nil; exact/leRR.
+- rewrite !big_nil.
+  by apply/RleP; rewrite Order.POrderTheory.lexx.
 - rewrite !big_cons /=; case: ifP => [Ph|Ph].
     by rewrite (H _ Ph); apply leR_add => //; exact: f_g.
   case: ifP => // Qh; apply: (leR_trans IH).
@@ -265,7 +266,8 @@ Lemma leR_sumRl_support (U : pred A) :
   \sum_(i in U | P i) f i <= \sum_(i in U | Q i) f i.
 Proof.
 move=> Hf P_Q; elim: (index_enum _) => [|h t IH].
-- by rewrite !big_nil; exact/leRR.
+- rewrite !big_nil.
+  by apply/RleP; rewrite Order.POrderTheory.lexx.
 - rewrite !big_cons; case: (h \in U) => //=; case: ifP => // Ph.
   + by case: ifP => [Qh|]; [rewrite leR_add2l | rewrite (P_Q _ Ph)].
   + by case: ifP => // Qh; rewrite -[X in X <= _]add0R; exact/leR_add.
@@ -304,7 +306,7 @@ End leR_ltR_sumR_finType.
 Lemma leR_sumR_Rabs (A : finType) f : `| \sum_a f a | <= \sum_(a : A) `| f a |.
 Proof.
 elim: (index_enum _) => [|h t IH].
-  rewrite 2!big_nil Rabs_R0; exact/leRR.
+  by rewrite 2!big_nil Rabs_R0.
 rewrite 2!big_cons.
 apply (@leR_trans (`| f h | + `| \sum_(j <- t) f j |));
   [exact/Rabs_triang |exact/leR_add2l].
@@ -406,7 +408,8 @@ Qed.
 Lemma prodR_ge1 (A : finType) f : (forall a, 1 <= f a) ->
   1 <= \prod_(a : A) f a.
 Proof.
-elim/big_ind : _ => // [|x y Hx Hy *]; first by move=> _; exact/leRR.
+elim/big_ind : _ => // [|x y Hx Hy *].
+  by move=> _; apply/RleP; rewrite Order.POrderTheory.lexx.
 by rewrite -{1}(mulR1 1); apply/leR_pmul => //; [exact: Hx | exact: Hy].
 Qed.
 
@@ -469,7 +472,7 @@ have [/forallP Hf|] := boolP [forall i, f i != 0%R]; last first.
 have Hprodf : 0 < \prod_(i : A) f i.
   apply/RltP. apply prodr_gt0 => a _. apply/RltP.
   move: (Hf a) (fg a) => {}Hf {fg}[Hf2 _].
-  apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
+  by apply/RltP; rewrite lt0r Hf/=; exact/RleP.
 apply (@leR_pmul2r (1 * / \prod_(i : A) f i) _ _).
   apply divR_gt0 => //; lra.
 rewrite mul1R mulRV; last exact/gtR_eqF.
@@ -495,7 +498,7 @@ move/negbTE in Hf; rewrite Hf; move/negbT in Hf.
 rewrite -(mulRV (f a)) //.
 apply leR_wpmul2r => //.
 rewrite -(mul1R (/ f a)).
-apply divR_ge0; [lra | apply/ltRP; rewrite lt0R Hf; exact/leRP].
+by apply divR_ge0; [lra |by apply/RltP; rewrite lt0r Hf; exact/RleP].
 Qed.
 
 End leR_ltR_rprod.
@@ -544,7 +547,7 @@ Qed.
 Lemma bigmaxR_ge0 : (forall r, r \in s -> 0 <= F r) -> 0 <= \rmax_(m <- s) (F m).
 Proof.
 case: s => [_ | hd tl Hr].
-- rewrite big_nil; exact/leRR.
+- by rewrite big_nil.
 - apply (@leR_trans (F hd)); last by rewrite big_cons; exact: leR_maxl.
   apply Hr; by rewrite in_cons eqxx.
 Qed.

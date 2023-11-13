@@ -28,7 +28,7 @@ Variable D : {convex_set R}.
 Hypothesis convex_f : convex_function_in D f.
 Variables A : finType.
 
-Local Hint Resolve leRR : core.
+Local Hint Resolve Rle_refl : core.
 
 Lemma jensen_dist (r : A -> R) (X : {fdist A}) :
   (forall a, r a \in D) ->

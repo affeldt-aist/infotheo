@@ -82,6 +82,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Declare Scope proba_scope.
+
 (* NB: f @^-1: [set y] would require to have finType's *)
 Notation "f @^-1 y" := (preim f (pred1 y)) : fdist_scope.
 Local Open Scope fdist_scope.
@@ -1147,7 +1149,7 @@ have HB : \sum_(x in s) P `^ _ x <= #|s|%:R * B.
     by apply: ler_sum => /= i iA; move: (H i iA) => /andP [].
   rewrite -big_filter /= big_const_seq /= iter_addr /=.
   rewrite addr0 -(mulr_natl B (count _ _)).
-  apply: ler_wpmul2r; first by rewrite ltW.
+  apply: ler_wpM2r; first by rewrite ltW.
   apply eq_le_.
   have [/= l el [ul ls] [pl sl]] := big_enumP _.
   by rewrite count_predT sl; congr (_%:R)%R.
@@ -1156,14 +1158,13 @@ have HA : (#|s|)%:R * A <= \sum_(x in s) P `^ _ x.
     by apply: ler_sum => i Hi /=; case/andP: (H i Hi).
   rewrite -big_filter /= big_const_seq /= iter_addr /=.
   rewrite addr0 -(mulr_natl A (count _ _)).
-  apply ler_wpmul2r; first by rewrite ltW.
+  apply: ler_wpM2r; first by rewrite ltW.
   apply eq_le_.
-
   have [/= l el [ul ls] [pl sl]] := big_enumP _.
   by rewrite count_predT sl; congr (_%:R)%R.
 apply/andP. split.
-- by rewrite ler_pdivr_mulr //; move/le_trans : Ha; exact.
-- by rewrite ler_pdivl_mulr //; exact: (le_trans HA).
+- by rewrite ler_pdivrMr //; move/le_trans : Ha; exact.
+- by rewrite ler_pdivlMr //; exact: (le_trans HA).
 Qed.
 
 End wolfowitz_counting.

@@ -105,7 +105,8 @@ Lemma ge0 (d : t) a : 0 <= d a.
 Proof.
 case: d => /= [f /andP[/allP f0 _]].
 have [/f0/RltP/ltRW|/fsfun_dflt->] := boolP (a \in finsupp f); first exact.
-exact/leRR.
+apply/RleP.
+by rewrite Order.POrderTheory.lexx.
 Qed.
 
 Lemma ge0' (d : t) a : (0 <= d a)%mcR.
@@ -113,7 +114,7 @@ Proof. by apply/RleP/ge0. Qed.
 
 Lemma gt0 (d : t) a : a \in finsupp d -> 0 < d a.
 Proof.
-by rewrite mem_finsupp => da; apply/ltRP; rewrite lt0R da; exact/leRP/ge0.
+by rewrite mem_finsupp => da; apply/RltP; rewrite Num.Theory.lt0r da; exact/RleP/ge0.
 Qed.
 
 Lemma f1 (d : t) : \sum_(a <- finsupp d) d a = 1.
@@ -537,7 +538,8 @@ Lemma f1 : \sum_(b in D) f b = 1.
 Proof.
 rewrite -(FSDist.f1 P) big_seq_fsetE /=; apply eq_bigr => a; by rewrite ffunE.
 Qed.
-Lemma f0' b : (0 <= f b)%O. Proof. (*TODO: *) Admitted.
+Lemma f0' b : (0 <= f b)%O. (* TODO: we shouldn't see %O *)
+Proof. exact/RleP/f0. Qed.
 
 Definition d : real_realType.-fdist D := locked (FDist.make f0' f1).
 End def.

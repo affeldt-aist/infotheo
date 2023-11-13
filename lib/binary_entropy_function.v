@@ -118,7 +118,8 @@ apply (@leR_trans (H2ln (1/2))); last first.
 rewrite -/(H2ln q).
 case: (Rlt_le_dec q (1/2)) => [H1|].
 - by apply increasing_on_0_to_half => //; lra.
-- case/Rle_lt_or_eq_dec => [H1|<-]; last exact: leRR.
+- case/Rle_lt_or_eq_dec => [H1|<-]; last first.
+    lra.
   by apply decreasing_on_half_to_1 => //; lra.
 Qed.
 
