@@ -226,7 +226,12 @@ Implicit Types (f g : A -> R) (P Q : pred A).
 
 Lemma leR_sumR r P f g : (forall i, P i -> f i <= g i) ->
   \sum_(i <- r | P i) f i <= \sum_(i <- r | P i) g i.
-Proof. (*move=> leE12. elim/big_ind2: _ => // m1 m2 n1 n2. lra. Qed.*) Admitted.
+Proof.
+move=> leE12.
+elim/big_ind2: _ => //.
+  exact: Rle_refl.
+by move=> m1 m2 n1 n2; lra.
+Qed.
 
 End leR_ltR_sumR.
 
@@ -237,9 +242,11 @@ Lemma leR_sumR_support (X : {set A}) :
   (forall i, i \in X -> P i -> f i <= g i) ->
   \sum_(i in X | P i) f i <= \sum_(i in X | P i) g i.
 Proof.
-(*move=> H; elim/big_rec2 : _ => // a x y /andP[aX Pa] yx.
+move=> H; elim/big_rec2 : _ => //.
+  exact: Rle_refl.
+move=> a x y /andP[aX Pa] yx.
 by apply leR_add => //; apply: H.
-Qed.*) Admitted.
+Qed.
 
 Lemma leR_sumRl : (forall i, P i -> f i <= g i) ->
   (forall i, Q i -> 0 <= g i) -> (forall i, P i -> Q i) ->
