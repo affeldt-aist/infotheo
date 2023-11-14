@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals. (* Lra Nsatz. *)
@@ -31,6 +31,8 @@ Local Open Scope proba_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Import Num.Theory.
 
 Section ssr_ext.
 Lemma tnth_uniq (T : eqType) n (t : n.-tuple T) (i j : 'I_n) :
@@ -731,8 +733,7 @@ have : Pr P (preim_vars (e :&: f :|: g)
     rewrite -HB set_vals_prod_vars ?ffunE //.
     move: Hk; cases_in k.
   rewrite -(@nth_fin_imgK U).
-  move/psumR_eq0P: Hnum; apply.
-    move => *; by apply sumR_ge0.
+  move/psumr_eq0P: Hnum; apply; first by move => *; exact/RleP.
   apply/eqP => /(f_equal (fun x => nth_fin_img x)).
   rewrite !nth_fin_imgK => /(prod_types_app i) /prod_vals_eqP Hi.
   elim: Hvi; rewrite -He //.

@@ -252,8 +252,8 @@ Proof. by rewrite /fdist1; unlock; rewrite ffunE. Qed.
 
 Lemma supp_fdist1 : fdist_supp fdist1 = [set a] :> {set A}.
 Proof.
-apply/setP => a0; rewrite !inE; case/boolP : (_ == _ :> A) => [/eqP ->|a0a].
-by rewrite fdist1E eqxx oner_eq0.
+apply/setP => a0; rewrite !inE.
+have [->|a0a] := eqVneq a0 a; first by rewrite fdist1E eqxx oner_eq0.
 by apply/negbTE; rewrite negbK fdist1E (negbTE a0a).
 Qed.
 
@@ -280,8 +280,7 @@ Lemma fdist1E1 (d' : fdist R A) a :
 Proof.
 apply/idP/idP => [Pa1|/eqP ->]; last by rewrite fdist1E eqxx.
 apply/eqP/fdist_ext => a0; rewrite fdist1E.
-case/boolP : (a0 == a :> A) => Ha.
-by rewrite (eqP Ha); exact/eqP.
+have [->|Ha] := eqVneq a0 a; first exact/eqP.
 by move/fdist1P : Pa1 => ->.
 Qed.
 
@@ -498,8 +497,9 @@ Qed.
 
 Lemma fdist_uniform_supp_neq0 z : ((`U HC) z != 0 :> R) = (z \in C).
 Proof.
-case/boolP : (z \in C) => [/fdist_uniform_supp_in ->|/fdist_uniform_supp_notin ->].
-  by apply: invr_neq0; rewrite pnatr_eq0 -lt0n.
+case/boolP : (z \in C) => [/fdist_uniform_supp_in ->|
+                           /fdist_uniform_supp_notin ->].
+  by rewrite invr_neq0// pnatr_eq0 -lt0n.
 by rewrite eqxx.
 Qed.
 

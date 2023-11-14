@@ -9,6 +9,8 @@ Require Import ZArith Lia.
 (* On the model of ssrR                                                       *)
 (******************************************************************************)
 
+(* TODO: we should maybe extend mczify's ssrZ... *)
+
 Reserved Notation "n %:Z" (at level 2, left associativity, format "n %:Z").
 
 Declare Scope zarith_ext_scope.

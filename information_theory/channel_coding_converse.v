@@ -129,7 +129,7 @@ apply (@leR_trans ((n.+1%:R / n%:R) ^ K * aux)); last first.
   - by apply/RleP; rewrite Order.POrderTheory.lexx.
 rewrite expRM -mulRA; apply leR_pmul => //.
 - exact/expR_ge0/ltRW/ltR0n.
--  by apply/RleP; rewrite Order.POrderTheory.lexx.
+- by apply/RleP; rewrite Order.POrderTheory.lexx.
 - apply invR_le => //.
   + apply mulR_gt0; last exact aux_gt0.
     rewrite expRV ?INR_eq0' //; exact/invR_gt0/expR_gt0.

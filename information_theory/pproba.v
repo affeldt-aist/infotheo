@@ -35,6 +35,8 @@ Local Open Scope proba_scope.
 Local Open Scope channel_scope.
 Local Open Scope R_scope.
 
+Import Num.Theory.
+
 Section receivable.
 Variables (A B : finType) (n : nat) (P : {fdist 'rV[A]_n}) (W : `Ch(A, B)).
 
@@ -57,9 +59,9 @@ Lemma receivable_propE (y : P.-receivable W) :
 Proof.
 apply/idP/idP => [|H].
 - case/existsP => /= x /andP[Px0].
-  apply: contra => /eqP/psumR_eq0P => /= H.
+  apply: contra => /eqP /psumr_eq0P => /= H.
   apply/eqP; rewrite -(@eqR_mul2l (P x)); last exact/eqP.
-  by rewrite mulR0 H // => /= x' _; exact: mulR_ge0.
+  by rewrite mulR0 H // => /= x' _; rewrite RmultE mulr_ge0//.
 - have /= : \sum_(x in setT) P x * W ``(y | x) != 0.
     apply: contra H => /eqP H; apply/eqP.
     rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
@@ -87,8 +89,8 @@ apply/idP/idP => [|/eqP].
   move: (H i).
   rewrite negb_and !negbK => /orP[|/eqP //].
   by rewrite -(negbK (_ == _)) fdist_uniform_supp_neq0 iC.
-- have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%R by [].
-  move/psumR_eq0P => H /H {}H.
+- have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%mcR by [].
+  move/psumr_eq0P => H /H {}H.
   rewrite /receivable_prop; apply/negP.
   case/existsP => z /andP[].
   by rewrite fdist_uniform_supp_neq0 => /H ->; rewrite eqxx.
@@ -112,7 +114,7 @@ Proof.
 rewrite ffunE; apply/RleP; rewrite -RdivE//; last first.
   by rewrite /den -receivable_propE receivableP.
 apply: divR_ge0; first exact: mulR_ge0.
-apply/RltP; rewrite Num.Theory.lt0r {1}/den -receivable_propE receivableP.
+apply/RltP; rewrite lt0r {1}/den -receivable_propE receivableP.
 exact/fdist_post_prob_den_ge0.
 Qed.
 
@@ -238,7 +240,7 @@ Let f0 i a : 0 <= f i a.
 Proof.
 rewrite ffunE; apply/RleP/mulR_ge0.
 - rewrite / marginal_post_prob_den.
-  apply/invR_ge0/RltP; rewrite Num.Theory.lt0r/=; apply/andP; split; [apply/eqP |apply/RleP]; last first.
+  apply/invR_ge0/RltP; rewrite lt0r/=; apply/andP; split; [apply/eqP |apply/RleP]; last first.
     exact: sumR_ge0.
   exact/f'_neq0.
 - exact: sumR_ge0.

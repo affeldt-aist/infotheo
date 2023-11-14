@@ -21,6 +21,8 @@ Local Open Scope channel_scope.
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
+Import Num.Theory.
+
 Module EC.
 
 Section EC_sect.
@@ -46,14 +48,18 @@ Qed.
 
 Lemma f1 (a : A) : \sum_(a' : {:option A}) f a a' = 1.
 Proof.
-rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /= (proj2 (psumR_eq0P _)).
-- by rewrite -RplusE addR0 onemKC.
-- rewrite /f; case => [a'|]; last by case: p_01.
+rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /=.
+rewrite [X in _ + (_ + X)](_ : _ = 0).
+  by rewrite GRing.addr0 onemKC.
+apply/eqP; rewrite psumr_eq0/=; last first.
+ - rewrite /f; case => [a'|]; last by case: p_01.
   rewrite ffunE.
-  case: ifPn => [_ |//].
-  case: p_01 => ? ? _; exact/RleP/onem_ge0/RleP.
-- case => //= a' aa'; rewrite ffunE; case: ifPn => // /eqP ?; subst a'.
-  move: aa'; by rewrite eqxx.
+  case: ifPn => [_ _|//].
+  by case: p_01 => ? ?; apply/onem_ge0/RleP.
+- apply/allP; case => //= a' aa'; rewrite ffunE; case: ifPn => // /eqP ?.
+    subst a'.
+    move: aa'; by rewrite eqxx.
+  by rewrite eqxx implybT.
 Qed.
 
 Definition c : `Ch(A, [finType of option A]) :=

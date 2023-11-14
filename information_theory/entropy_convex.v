@@ -5,9 +5,9 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals Ranalysis_ext Lra.
-Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import jfdist_cond entropy convex binary_entropy_function log_sum.
-Require Import divergence.
+Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
+Require Import Rbigop fdist jfdist_cond entropy convex binary_entropy_function.
+Require Import log_sum divergence.
 
 (******************************************************************************)
 (*                Section 2.7 of Elements of Information Theory               *)
@@ -46,7 +46,7 @@ Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
 Local Open Scope entropy_scope.
 
-Import Order.POrderTheory.
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Section entropy_log_div.
 Variables (A : finType) (p : {fdist A}) (n : nat) (An1 : #|A| = n.+1).
@@ -163,25 +163,18 @@ have hdom : h x.1 y.1 `<< h x.2 y.2.
   case: ifPn => // _.
   by rewrite mulR_eq0 => -[->|/eqP]; [rewrite mul0R | rewrite (negbTE y2a0)].
 have h0 p1 p2 : [forall i, (0 <= h p1 p2 i)%mcR].
-  apply/forallP_leRP => ?; rewrite /h /= ffunE.
+  apply/forallPP; first by move=> ?; exact/RleP.
+  move=> ?; rewrite /h /= ffunE.
   case: ifPn => [_ | _]; first exact/mulR_ge0.
   case: ifPn => [_ |//].
   by apply/mulR_ge0 => //; exact/onem_ge0/prob_le1.
-have Htmp : forall x0 : 'I_2, 0 <= mkNNFinfun (h0 x.1 y.1) x0.
-  move=> x0.
-  rewrite /= /h ffunE/=.
-  case: ifPn => _.
-  by apply: mulR_ge0 => //.
-  case: ifPn => // _.
-  by apply: mulR_ge0 => //.
-have Htmp2 : forall x0 : ordinal_finType 2, 0 <= mkNNFinfun (h0 x.2 y.2) x0.
-  move=> x0.
-  rewrite /= /h ffunE/=.
-  case: ifPn => _.
-  by apply: mulR_ge0 => //.
-  case: ifPn => // _.
-  by apply: mulR_ge0 => //.
-have := log_sum setT (mkNNFinfun (h0 x.1 y.1)) (mkNNFinfun (h0 x.2 y.2)) Htmp Htmp2 hdom.
+have h01 (x0 : 'I_2) : 0 <= mkNNFinfun (h0 x.1 y.1) x0.
+  rewrite /= /h ffunE/=; case: ifPn => _; first exact: mulR_ge0.
+  by case: ifPn => // _; exact: mulR_ge0.
+have h02 (x0 : 'I_2) : 0 <= mkNNFinfun (h0 x.2 y.2) x0.
+  rewrite /= /h ffunE/=; case: ifPn => _; first exact: mulR_ge0.
+  by case: ifPn => // _; exact: mulR_ge0.
+have := log_sum setT (mkNNFinfun (h0 x.1 y.1)) (mkNNFinfun (h0 x.2 y.2)) h01 h02 hdom.
 rewrite /= -!sumR_ord_setT !big_ord_recl !big_ord0 !addR0.
 rewrite /h /= !ffunE => /leR_trans; apply.
 rewrite !eqxx eq_sym (negbTE (neq_lift ord0 ord0)) -!mulRA; apply/Req_le.
@@ -454,14 +447,13 @@ have -> : mutual_info (P `X p2yx) = D(p2xy || q2xy).
 apply: convex_relative_entropy.
 - apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy fdist_prodE /= mulR_eq0 /p1 /p1xy => -[|].
-    rewrite fdist_prodE => ->.
-    by rewrite /= GRing.mul0r.
-  by rewrite fdist_sndE => /psumR_eq0P ->.
+    by rewrite fdist_prodE => ->; rewrite /= mul0r.
+  by rewrite fdist_sndE => /psumr_eq0P ->.
 - apply/dominatesP => -[a b].
   rewrite /q1xy /p1xy fdist_prodE /= mulR_eq0.
   rewrite /p1 /p1xy => -[|].
-    by rewrite fdist_prodE => ->; rewrite GRing.mul0r.
-  by rewrite fdist_sndE => /psumR_eq0P /= ->.
+    by rewrite fdist_prodE => ->; rewrite mul0r.
+  by rewrite fdist_sndE => /psumr_eq0P /= ->.
 Qed.
 
 End mutual_information_convex.

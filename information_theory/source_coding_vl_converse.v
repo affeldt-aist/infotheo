@@ -29,6 +29,8 @@ Local Open Scope entropy_scope.
 Local Open Scope divergence_scope.
 Local Open Scope R_scope.
 
+Import Order.POrderTheory Num.Theory.
+
 Section log_sum_ord.
 Variable n : nat.
 Variable f g : nat ->R^+.
@@ -42,9 +44,11 @@ Proof.
 have Rle0f_1 : forall x : 'I_n, 0 <= f x.+1 by move=> ?; apply nneg_f_ge0.
 have Rle0g_1 : forall x : 'I_n, 0 <= g x.+1 by move=> ?; apply nneg_f_ge0.
 have newRle0f_1 : [forall x : 'I_n, (0 <= [ffun x : 'I_n => f x.+1] x)%mcR].
-  by apply/forallP_leRP => ?; rewrite ffunE.
+  apply/forallPP; first by move=> x; apply/RleP.
+  by move=> ?/=; rewrite ffunE.
 have newRle0g_1: [forall x : 'I_n, (0 <= [ffun x : 'I_n => g x.+1] x)%mcR].
-  by apply/forallP_leRP => ?; rewrite ffunE.
+  apply/forallPP; first by move=> x; apply/RleP.
+  by move=> ?/=; rewrite ffunE.
 have f_dom_by_g1 : mkNNFinfun newRle0f_1 `<< mkNNFinfun newRle0g_1.
   apply/dominatesP => a; move/dominatesP : f_dom_by_g.
   by rewrite /= !ffunE; exact.
@@ -86,9 +90,12 @@ rewrite [X in _ <= X]
   have Rle0g_add1 : forall x : 'I_n, 0 <= g x.+1 by move=> ?; apply nneg_f_ge0.
   move=> H.
   have eq_g_0 : forall i : 'I_n, 0 = g i.+1.
-    by move/esym/psumR_eq0P : H => H i; rewrite H.
+    move/esym/psumr_eq0P : H => H i; rewrite H//.
+    by move=> /= j _; exact/RleP.
   have : 0 = \sum_(i < n) f i.+1.
-    apply/esym/psumR_eq0P => i _; [exact: nneg_f_ge0|].
+    apply/esym/eqP; rewrite psumr_eq0 /=; last first.
+      move=> i _. exact/RleP/nneg_f_ge0.
+    apply/allP => i _; apply/eqP.
     by move/dominatesP : f_dom_by_g; apply; rewrite -eq_g_0.
   by move => tmp; move: Hf; rewrite -tmp; move/Rlt_not_eq.
 apply: eq_bigr => i _.
@@ -220,7 +227,7 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
     by rewrite !mul0R.
   have rmul_pos : 0 < \prod_(i1<n0) P i0 ``_ i1.
     move/eqP in rmul_non0.
-    apply/RltP; rewrite Num.Theory.lt0r eq_sym rmul_non0; apply/RleP/prodR_ge0 => ?.
+    apply/RltP; rewrite lt0r eq_sym rmul_non0; apply/RleP/prodR_ge0 => ?.
     exact/RleP/FDist.ge0.
   by rewrite /log LogM // !mulRDr mulRA mulRA.
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
@@ -483,10 +490,11 @@ Definition Pf' (m : 'I_Nmax.+1) := [ffun a : m.-tuple bool =>  Pf a / (PN m)].
 Lemma Rle0Pf' (m : 'I_Nmax.+1) :
   PN m <> 0 -> [forall a : m.-tuple bool, (0 <= Pf' m a)%mcR].
 Proof.
-move=> PNnon0; apply/forallP_leRP => a; rewrite /Pf'.
+move=> PNnon0; apply/forallPP; first by move=> ?; exact/RleP.
+move=> a; rewrite /Pf'.
 apply: (Rmult_le_reg_r (PN m)).
   move/eqP in PNnon0.
-  by apply/RltP; rewrite Num.Theory.lt0r PNnon0 ffunE; exact/RleP.
+  by apply/RltP; rewrite lt0r PNnon0 ffunE; exact/RleP.
 rewrite mul0R ffunE /Rdiv -mulRA -Rinv_l_sym // mulR1 /Pf.
 by case: pickP.
 Qed.
@@ -552,7 +560,7 @@ rewrite (eq_bigl (fun m => m \in [set : 'I_Nmax.+1]) _) => [|?]; last first.
 rewrite rsum_disjoints_set [Y in Y + _ = _]big1 ?add0R; last first.
   move=> /= i; rewrite inE.
   rewrite /pr_eq; unlock.
-  rewrite /Pr ffunE /= => /eqP/psumR_eq0P => H.
+  rewrite /Pr ffunE /= => /eqP/psumr_eq0P => H.
   have {}H : forall j : A, j \in [set x | (size (f x))%:R == i%:R] -> P j = 0.
     move=> a Ha.
     apply: H => //.
@@ -578,7 +586,7 @@ rewrite {2}/PN.
 rewrite [in X in _ = _ * (_ * / X)]/= [in X in _ = _ * (_ * / X)]ffunE.
 rewrite mulRV ?mulR1; last by rewrite /PN /= ffunE in Pr_non0.
 rewrite /log LogM; last 2 first.
-  apply/RltP; rewrite Num.Theory.lt0r eq_sym Pfi0_non0; apply/RleP.
+  apply/RltP; rewrite lt0r eq_sym Pfi0_non0; apply/RleP.
   rewrite /Pf; case:pickP=>[? _ | ? ]; [exact/RleP/FDist.ge0 | by []].
   by apply/invR_gt0/RltP; rewrite -fdist_gt0.
 rewrite LogV; last by apply/RltP; rewrite -fdist_gt0.
@@ -843,8 +851,7 @@ apply: (@leR_trans (m'' eps)%:R); last exact/le_INR/leP/leq_maxr.
 apply: (@leR_trans (m''' eps)%:R); last exact/le_INR/leP/leq_maxl.
 rewrite INR_Zabs_nat.
   apply: (@leR_trans ((4 * / (INR n * eps * ln 2)))); last exact: proj1 (ceilP _).
-  rewrite (mulRC n%:R).
-  by apply/RleP; rewrite Order.POrderTheory.lexx.
+  by rewrite (mulRC n%:R); apply/RleP; rewrite lexx.
 apply: le_IZR.
 apply: (@leR_trans ((4 * / (INR n * eps * ln 2)))); last exact: proj1 (ceilP _).
 apply: Rle_mult_inv_pos; first exact: ltRW (@mulR_gt0 2 2 _ _).

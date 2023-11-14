@@ -39,6 +39,8 @@ Import Prenex Implicits.
 Local Open Scope R_scope.
 Local Open Scope channel_scope.
 
+Import Num.Theory.
+
 Module JType.
 Section def.
 Variables (A B : finType) (n : nat).
@@ -99,16 +101,14 @@ pose pf := fun a => [ffun b : B =>
     then / #|B|%:R
     else (f a b)%:R / ln%:R].
 move=> a.
-refine (@mkNNFinfun _ (pf a) _); apply/forallP_leRP => b.
-rewrite /pf ffunE.
+refine (@mkNNFinfun _ (pf a) _); apply/forallPP; first by move=> ?; exact/RleP.
+move=> b; rewrite /pf ffunE.
 case: ifPn => [_ | Hcase].
 - exact/invR_ge0/ltR0n.
 - apply divR_ge0; first exact/leR0n.
-  apply/RltP; rewrite Num.Theory.lt0r.
-  apply/andP; split.
+  apply/RltP; rewrite lt0r; apply/andP; split.
     by apply: contra Hcase; rewrite INR_eq0'.
-  apply/RleP.
-  exact/leR0n.
+  exact/RleP/leR0n.
 Defined.
 
 Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat) (Bnot0 : (0 < #|B|)%nat)
@@ -1238,13 +1238,11 @@ Qed.
 End card_perm_shell.
 
 Section shell_partition.
-
-Local Open Scope fun_scope.
-Local Open Scope nat_scope.
-
 Variables A B : finType.
 Variable n' : nat.
 Let n := n'.+1.
+Local Open Scope fun_scope.
+Local Open Scope nat_scope.
 
 (** The stochastic matrix with entries N(a, b | ta, tb): *)
 
@@ -1286,10 +1284,8 @@ Definition shell_partition : {set set_of_finType [finType of n.-tuple B]} :=
 
 Lemma cover_shell : cover shell_partition = [set: n.-tuple B].
 Proof.
-rewrite /cover /cond_type.
-apply/setP => tb.
-rewrite in_set.
-apply/bigcupP.
+rewrite /cover /cond_type; apply/setP => tb.
+rewrite in_set; apply/bigcupP.
 exists (num_co_occ_jtype ta tb).-shell ta.
 - apply/imsetP; exists (num_co_occ_jtype ta tb) => //.
   rewrite inE.
@@ -1308,7 +1304,8 @@ exists (num_co_occ_jtype ta tb).-shell ta.
   by rewrite /num_co_occ_jtype /= 2!ffunE.
 Qed.
 
-Lemma trivIset_shell' tb tb' V : tb \in V.-shell ta -> tb' \in V.-shell ta = relYn ta tb' tb.
+Lemma trivIset_shell' tb tb' V : tb \in V.-shell ta ->
+  tb' \in V.-shell ta = relYn ta tb' tb.
 Proof.
 rewrite 2!in_set => H.
 rewrite /relYn.
@@ -1324,10 +1321,11 @@ rewrite /disjoint.
 apply/pred0P => tb /=.
 apply/negP/negP.
 move: tb.
-apply/forallP; rewrite -negb_exists; apply/negP; case/existsP => tb /andP [H1 H2]; contradict HS12.
+apply/forallP; rewrite -negb_exists; apply/negP;
+  case/existsP => tb /andP [H1 H2]; contradict HS12.
 apply/negP/negPn/eqP/setP => ?.
 rewrite 2!(@trivIset_shell' tb) //.
-apply reflexive_relYn.
+exact: reflexive_relYn.
 Qed.
 
 End shell_partition.
@@ -1360,9 +1358,8 @@ Let sum_tuples_ctypes' f : \sum_ (tb : _ ) f tb =
 Proof.
 transitivity (\sum_ (tb in [set: n.-tuple B]) f tb).
   by apply eq_bigl => tb; rewrite in_set.
-rewrite -(cover_shell Anot0 Bnot0 Hta).
-rewrite -sum_tuples_ctypes'' // big_trivIset //.
-apply trivIset_shell.
+rewrite -(cover_shell Anot0 Bnot0 Hta) -sum_tuples_ctypes''// big_trivIset//.
+exact: trivIset_shell.
 Qed.
 
 Lemma sum_tuples_ctypes f F :
@@ -1370,8 +1367,9 @@ Lemma sum_tuples_ctypes f F :
   \sum_(V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta | F tb) f tb.
 Proof.
 rewrite big_mkcond /=.
-transitivity (\sum_(V | V \in \nu^{B}(P)) \sum_(tb in V.-shell ta) if F tb then f tb else 0).
-  by apply sum_tuples_ctypes'.
+transitivity (\sum_(V | V \in \nu^{B}(P)) \sum_(tb in V.-shell ta)
+    if F tb then f tb else 0).
+  exact: sum_tuples_ctypes'.
 apply eq_bigr => s _.
 rewrite [in LHS]big_mkcond /= [in RHS]big_mkcond /=.
 apply/esym/eq_bigr => tb _.

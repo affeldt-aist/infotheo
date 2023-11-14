@@ -3,7 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrZ ssrR logb Reals_ext realType_ext Rbigop ssr_ext fdist entropy kraft.
+Require Import ssrZ ssrR logb Reals_ext realType_ext Rbigop ssr_ext fdist.
+Require Import entropy kraft.
 
 (******************************************************************************)
 (*                       Shannon-Fano codes                                   *)
@@ -19,6 +20,8 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope R_scope.
+
+Import Order.POrderTheory Num.Theory.
 
 Definition kraft_condR (T : finType) (sizes : seq nat) :=
   let n := size sizes in
@@ -71,10 +74,9 @@ rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
 apply leR_sumR => i _.
 rewrite H.
-have Pi0 : 0 < P i by apply/RltP; rewrite Num.Theory.lt0r Pr0/=.
+have Pi0 : 0 < P i by apply/RltP; rewrite lt0r Pr0/=.
 apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
-  rewrite div1R LogV// oppRK LogK //.
-    by apply/RleP; rewrite Order.POrderTheory.lexx.
+  rewrite div1R LogV// oppRK LogK //; first by apply/RleP; rewrite lexx.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite pow_Exp; last by apply ltR0n; rewrite card_ord.
 rewrite Exp_Ropp.
@@ -119,12 +121,11 @@ apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
     apply: fdist_card_neq0.
     exact: P.
   move=> i.
-  apply ltR_pmul2l.
-    by apply/RltP; rewrite Num.Theory.lt0r Pr_pos /=.
+  apply ltR_pmul2l; first by apply/RltP; rewrite lt0r Pr_pos /=.
   rewrite H.
   rewrite (_ : #|T|%:R = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
-  have Pi0 : 0 < P i by apply/RltP; rewrite Num.Theory.lt0r Pr_pos /=.
+  have Pi0 : 0 < P i by apply/RltP; rewrite lt0r Pr_pos /=.
   rewrite INR_Zabs_nat; last first.
     apply/leR0ceil.
     rewrite /x div1R /log LogV //.

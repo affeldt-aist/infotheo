@@ -59,10 +59,12 @@ Local Open Scope R_scope.
 Local Open Scope fset_scope.
 Local Open Scope fdist_scope.
 
-Lemma fdist_Rgt0 (A: finType) (d : real_realType.-fdist A) a :
+Import Order.POrderTheory Num.Theory.
+
+Lemma fdist_Rgt0 (A : finType) (d : real_realType.-fdist A) a :
   (d a != 0) <-> (0 < d a)%coqR.
 Proof. by rewrite fdist_gt0; split=> /RltP. Qed.
-Lemma fdist_Rge0 (A: finType) (d : real_realType.-fdist A) a :
+Lemma fdist_Rge0 (A : finType) (d : real_realType.-fdist A) a :
   0 <= d a.
 Proof. by apply/RleP; rewrite FDist.ge0. Qed.
 
@@ -105,8 +107,7 @@ Lemma ge0 (d : t) a : 0 <= d a.
 Proof.
 case: d => /= [f /andP[/allP f0 _]].
 have [/f0/RltP/ltRW|/fsfun_dflt->] := boolP (a \in finsupp f); first exact.
-apply/RleP.
-by rewrite Order.POrderTheory.lexx.
+by apply/RleP; rewrite lexx.
 Qed.
 
 Lemma ge0' (d : t) a : (0 <= d a)%mcR.
@@ -114,7 +115,7 @@ Proof. by apply/RleP/ge0. Qed.
 
 Lemma gt0 (d : t) a : a \in finsupp d -> 0 < d a.
 Proof.
-by rewrite mem_finsupp => da; apply/RltP; rewrite Num.Theory.lt0r da; exact/RleP/ge0.
+by rewrite mem_finsupp => da; apply/RltP; rewrite lt0r da; exact/RleP/ge0.
 Qed.
 
 Lemma f1 (d : t) : \sum_(a <- finsupp d) d a = 1.
@@ -254,11 +255,12 @@ apply/idP/idP => [|gab0]; first by rewrite mem_filter mem_finsupp => /andP[].
 rewrite mem_filter 2!mem_finsupp gab0 /= /f fsfunE ifT; last first.
   apply/bigfcupP; exists (g a); rewrite ?mem_finsupp // andbT.
   by apply/imfsetP; exists a => //; rewrite mem_finsupp.
-apply: contra gab0 => /eqP/psumR_seq_eq0P.
-rewrite fset_uniq => /(_ isT) H.
+apply: contra gab0; rewrite psumr_eq0; last first.
+  by move=> a0 _; rewrite RmultE mulr_ge0//; exact/RleP.
+move=> /allP H.
 suff : p a * g a b = 0.
  by rewrite mulR_eq0 => -[/eqP|->//]; rewrite (negbTE pa0).
-apply/H; rewrite ?mem_finsupp // => a0 _; exact/mulR_ge0.
+by apply/eqP/H; rewrite mem_finsupp.
 Qed.
 
 Definition fsdistbind : {dist B} := locked (FSDist.make f0 f1).
@@ -294,10 +296,12 @@ case/bigfcupP => dB.
 rewrite andbT => /imfsetP[a] /= ap ->{dB} bga.
 rewrite fsdistbindE.
 apply/eqP => H.
-have : (p a) * (g a) b <> 0.
+have : p a * g a b <> 0.
   by rewrite mulR_eq0 => -[]; apply/eqP; rewrite -mem_finsupp.
 apply.
-by move/psumR_seq_eq0P : H; apply => // b0 _; exact/mulR_ge0.
+move/eqP : H; rewrite psumr_eq0; last first.
+  by move=> a0 _; rewrite RmultE mulr_ge0//; exact/RleP.
+by move=> /allP H; exact/eqP/H.
 Qed.
 
 End fsdistbind.
@@ -611,7 +615,8 @@ rewrite mem_index_enum /= => /RltP ei0.
 rewrite mem_finsupp => gia0.
 apply: contra gia0 => /eqP H; apply/eqP.
 rewrite -(@eqR_mul2l (e i)) ?mulR0; last exact/eqP/gtR_eqF.
-by move/psumR_eq0P : H; apply => //= j _; exact/mulR_ge0.
+move/psumr_eq0P : H; apply => //= j _.
+by rewrite RmultE mulr_ge0//; exact/RleP.
 Qed.
 
 Let f0 a : a \in finsupp f -> 0 < f a.

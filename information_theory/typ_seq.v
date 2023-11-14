@@ -153,7 +153,7 @@ have -> : Pr P `^ n.+1 (~: p) =
         by have [+ _] := fdist_gt0 (P `^ n.+1) i.
       by rewrite H eqxx.
     - rewrite /typ_seq negb_and => /orP[|] LHS.
-      + case/boolP : (P `^ n.+1 i == 0) => /= H1; first by [].
+      + have [//|H1] := eqVneq (P `^ n.+1 i) 0.
         have {}H1 : 0 < P `^ n.+1 i by apply/RltP; rewrite lt0r H1/=.
         apply/andP; split; first exact/RltP.
         move/RleP: LHS => /ltRNge/(@Log_increasing 2 _ _ Rlt_1_2 H1).
@@ -164,9 +164,7 @@ have -> : Pr P `^ n.+1 (~: p) =
         by move/RltP : LHS; move/(ltR_trans He)/ltRW/RleP.
       + move: LHS; rewrite leNgt negbK => LHS.
         apply/orP; right; apply/andP; split.
-          apply/(lt_trans _ LHS).
-          apply/RltP.
-          exact: exp2_gt0.
+          exact/(lt_trans _ LHS)/RltP/exp2_gt0.
         move/RltP in LHS.
         move/(@Log_increasing 2 _ _ Rlt_1_2 (exp2_gt0 _)) : LHS.
         rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivl_mulr; last exact/ltR0n.
@@ -196,12 +194,11 @@ have -> : Pr P `^ n.+1 (~: p) =
       rewrite oppRD oppRK div1r mulrC mulrN => H3.
       have /(_ _ _ _ H3) {}H3 : forall a b c, a <= - c + b -> - b <= - a - c.
         by move=> *; lra.
-      apply/RleP/RleP.
-      by rewrite leR_Rabsl; apply/andP; split;
+      by rewrite ler_norml; apply/andP; split;
         apply/RleP; rewrite -RminusE -RoppE;
         rewrite -RdivE ?gt_eqF// ?ltr0n// -INRE//.
   rewrite Pr_union_disj // disjoints_subset; apply/subsetP => /= i.
-  rewrite !inE /= => /eqP Hi; by rewrite negb_and Hi ltxx.
+  by rewrite !inE /= => /eqP Hi; rewrite negb_and Hi ltxx.
 rewrite {1}/Pr (eq_bigr (fun=> 0)); last by move=> /= v; rewrite inE => /eqP.
 rewrite big_const iter_addR mulR0 add0R.
 apply/(leR_trans _ (aep He k0_k))/Pr_incl/subsetP => /= t.
@@ -243,7 +240,8 @@ move=> k0_k.
 have H1 : (1 - epsilon <= Pr (P `^ n.+1) (`TS P n.+1 epsilon) <= 1)%mcR.
   by apply/andP; split; apply/RleP; [exact: Pr_TS_1 | exact: Pr_1].
 have H2 : (forall x, x \in `TS P n.+1 epsilon ->
-  exp2 (- n.+1%:R * (`H P + epsilon)) <= P `^ n.+1 x <= exp2 (- n.+1%:R * (`H P - epsilon)))%mcR.
+    exp2 (- n.+1%:R * (`H P + epsilon)) <=
+    P `^ n.+1 x <= exp2 (- n.+1%:R * (`H P - epsilon)))%mcR.
   by move=> x; rewrite inE /typ_seq => /andP[-> ->].
 have /RltP H3 := exp2_gt0 (- n.+1%:R * (`H P + epsilon)).
 have /RltP H5 := exp2_gt0 (- n.+1%:R * (`H P - epsilon)).

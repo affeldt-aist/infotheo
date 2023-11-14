@@ -4,8 +4,8 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
-Require Import fdist.
+Require Import ssrR Rstruct_ext Reals_ext realType_ext logb ssr_ext ssralg_ext.
+Require Import bigop_ext Rbigop fdist.
 
 (******************************************************************************)
 (*               Probabilities over finite distributions                      *)
@@ -128,6 +128,8 @@ Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
+Import Order.POrderTheory Num.Theory.
+
 (** [bigA_distr] is a specialization of [bigA_distr_bigA] and at the same
     time a generalized version of [GRing.exprDn] for iterated prod. *)
 Lemma bigA_distr (R : Type) (zero one : R) (times : Monoid.mul_law zero)
@@ -180,8 +182,6 @@ Qed.
 
 Lemma m1powD k : k <> 0%nat -> (-1)^(k-1) = - (-1)^k.
 Proof. by case: k => [//|k _]; rewrite subn1 /= mulN1R oppRK. Qed.
-
-Import Order.TTheory.
 
 Notation "E `*T" := ([set x | x.1 \in E]) : proba_scope.
 Notation "T`* F" := ([set x | x.2 \in F]) : proba_scope.
@@ -248,7 +248,7 @@ Lemma Pr_1 E : Pr E <= 1.
 Proof.
 rewrite (_ : 1 = GRing.one _)//.
 rewrite -(FDist.f1 P); apply leR_sumRl => // a _.
-by apply/RleP; rewrite Order.POrderTheory.lexx.
+by apply/RleP; rewrite lexx.
 Qed.
 
 Lemma Pr_lt1 E : Pr E < 1 <-> Pr E != 1.
@@ -263,7 +263,11 @@ Proof. by rewrite /Pr big_pred0 // => a; rewrite in_set0. Qed.
 
 Lemma Pr_set0P E : Pr E = 0 <-> (forall a, a \in E -> P a = 0).
 Proof.
-by rewrite /Pr (eq_bigl (fun x => x \in E)) //; exact: (@psumR_eq0P _ (mem E)).
+rewrite /Pr (eq_bigl (fun x => x \in E)) //; split => [|h].
+  move/eqP; rewrite psumr_eq0// => /allP + a aE.
+  by move/(_ a); rewrite mem_index_enum aE implyTb => /(_ isT)/eqP.
+apply/eqP; rewrite psumr_eq0 //; apply/allP => a _.
+by apply/implyP => /h/eqP.
 Qed.
 
 Lemma Pr_setT : Pr setT = 1.
@@ -288,7 +292,7 @@ Proof. by rewrite -(Pr_cplt E); field. Qed.
 Lemma Pr_incl E E' : E \subset E' -> Pr E <= Pr E'.
 Proof.
 move=> H; apply leR_sumRl => a aE //; [ | by move/subsetP : H; exact].
-by apply/RleP; rewrite Order.POrderTheory.lexx.
+by apply/RleP; rewrite lexx.
 Qed.
 
 Lemma Pr_union E1 E2 : Pr (E1 :|: E2) <= Pr E1 + Pr E2.
@@ -320,8 +324,7 @@ rewrite big_cons; case: ifP => H1.
   rewrite (_ : 1 = 1%:R) //; apply/le_INR/ssrnat.leP/card_gt0P.
   by case/bigcupP : H1 => b Eb hFb; exists b; rewrite -topredE /= Eb.
 apply/(leR_trans IH)/leR_sumR => b Eb; rewrite big_cons.
-case: ifPn => hFb; last first.
-  by apply/RleP; rewrite Order.POrderTheory.lexx.
+case: ifPn => hFb; last by apply/RleP; rewrite lexx.
 by rewrite -[X in X <= _]add0R; exact/leR_add2r.
 Qed.
 
@@ -386,8 +389,10 @@ Global Hint Resolve Pr_ge0 : core.
 Lemma Pr_domin_setI (A : finType) (d : {fdist A}) (E F : {set A}) :
   Pr d E = 0 -> Pr d (E :&: F) = 0.
 Proof.
-move=> PE0; apply/psumR_eq0P => // a; rewrite inE => /andP[aE aF].
-by move/psumR_eq0P : PE0; apply.
+move=> PE0; apply/eqP; rewrite psumr_eq0//; apply/allP => a _.
+apply/implyP; rewrite inE => /andP[aE aF].
+move/eqP : PE0; rewrite psumr_eq0// => /allP.
+by move=> /(_ a); rewrite mem_index_enum => /(_ isT); rewrite aE implyTb.
 Qed.
 
 Section Pr_extra.
@@ -1008,11 +1013,12 @@ transitivity (\sum_(i in I) Pr P (finset (X @^-1 r) :&: F i)).
   rewrite big_mkcond /=; apply eq_bigr => i _.
   case: ifPn => //; rewrite negbK => /eqP PFi0.
   rewrite /Pr big1 // => u; rewrite inE => /andP[uXr uFi].
-  by move/psumR_eq0P : PFi0 => ->.
+  move/eqP : PFi0; rewrite psumr_eq0// => /allP/(_ u).
+  by rewrite mem_index_enum uFi implyTb => /(_ isT)/eqP.
 rewrite -Boole_eq; last first.
   move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
   apply/negbTE; rewrite !negb_and.
-  case/boolP : (X u != r) => // /negPn Xur //=.
+  have [/= Xur|//] := eqVneq (X u) r.
   move: (dis ij); rewrite -setI_eq0 => /eqP/setP/(_ u).
   by rewrite !inE => /negbT; rewrite negb_and.
 rewrite pr_eqE; congr Pr.
@@ -1284,8 +1290,7 @@ rewrite  [_ ^2]lock /= -!lock.
 apply leR_sumRl => u; rewrite ?inE => Hu //=.
 - rewrite  -!/(_ ^ 2).
   apply leR_wpmul2r => //.
-  apply (@leR_trans ((X u - `E X) ^ 2)); last first.
-    by apply/RleP; rewrite Order.POrderTheory.lexx.
+  apply (@leR_trans ((X u - `E X) ^ 2)); last by apply/RleP; rewrite lexx.
   rewrite -(sqR_norm (X u - `E X)).
   by apply/pow_incr; split => //; [exact/ltRW | exact/RleP].
 - by apply mulR_ge0 => //; exact: sq_RV_ge0.
@@ -1366,8 +1371,8 @@ Lemma mutual_indeE :
     Pr d (\bigcap_(i in J) E i) = \prod_(i in J) Pr d (E i)).
 Proof.
 rewrite /mutual_inde; split => [H J JI|H k J JI].
-  have [/eqP->{J JI}|J0] := boolP (J == set0).
-  by rewrite !big_set0 Pr_setT.
+  have [->{J JI}|J0] := eqVneq J set0.
+    by rewrite !big_set0 Pr_setT.
   by rewrite (H #|J|.-1) ?prednK // card_gt0.
 by rewrite H //; apply/subsetP => i ij; rewrite inE.
 Qed.
@@ -1376,8 +1381,8 @@ Lemma mutual_indeE' : #|I| != O -> mutual_inde <-> kwide_inde #|I| d E.
 Proof.
 move=> I0.
 rewrite /mutual_inde; split => [H J JI|].
-  have [/eqP->{J JI}|J0] := boolP (J == set0).
-  by rewrite !big_set0 Pr_setT.
+  have [->{J JI}|J0] := eqVneq J set0.
+    by rewrite !big_set0 Pr_setT.
   by rewrite (H #|J|.-1) ?prednK // card_gt0.
 by move=> H k J Jk; rewrite H // max_card.
 Qed.
@@ -1394,7 +1399,7 @@ Local Notation "`Pr_[ E | F ]" := (cPr E F).
 
 Lemma cPr_ge0 E F : 0 <= `Pr_[E | F].
 Proof.
-rewrite /cPr; have [/eqP PF0|PF0] := boolP (Pr d F == 0).
+rewrite /cPr; have [PF0|PF0] := eqVneq (Pr d F) 0.
   by rewrite setIC (Pr_domin_setI _ PF0) div0R.
 by apply divR_ge0 => //; rewrite Pr_gt0.
 Qed.
@@ -1410,12 +1415,11 @@ Qed.
 Lemma cPr_max E F : `Pr_[E | F] <= 1.
 Proof.
 rewrite /cPr.
-have [/eqP PF0|PF0] := boolP (Pr d F == 0).
+have [PF0|PF0] := eqVneq (Pr d F) 0.
   by rewrite setIC (Pr_domin_setI E PF0) div0R.
 apply leR_pdivr_mulr; first by rewrite Pr_gt0.
 rewrite mul1R /Pr; apply leR_sumRl => //.
-  move=> a _.
-  by apply/RleP; rewrite Order.POrderTheory.lexx.
+  by move=> a _; apply/RleP; rewrite lexx.
 by move=> a; rewrite inE => /andP[].
 Qed.
 
@@ -1449,15 +1453,14 @@ Proof. by rewrite /cPr -divRDl -divRBl setIUl Pr_union_eq setIACA setIid. Qed.
 
 Lemma Bayes (E F : {set A}) : `Pr_[E | F] = `Pr_[F | E] * Pr d E / Pr d F.
 Proof.
-have [/eqP PE0|PE0] := boolP (Pr d E == 0).
+have [PE0|PE0] := eqVneq (Pr d E) 0.
   by rewrite /cPr [in RHS]setIC !(Pr_domin_setI F PE0) !(div0R,mul0R).
 by rewrite /cPr -mulRA mulVR // mulR1 setIC.
 Qed.
 
 Lemma product_rule (E F : {set A}) : Pr d (E :&: F) = `Pr_[E | F] * Pr d F.
 Proof.
-rewrite /cPr.
-have [/eqP PF0|PF0] := boolP (Pr d F == 0).
+rewrite /cPr; have [PF0|PF0] := eqVneq (Pr d F) 0.
   by rewrite setIC (Pr_domin_setI E PF0) div0R mul0R.
 by rewrite -mulRA mulVR ?mulR1.
 Qed.
@@ -1493,10 +1496,10 @@ Qed.
 Lemma Bayes_extended j : `Pr_[F j | E] =
   `Pr_[E | F j] * Pr d (F j) / \sum_(i in I) `Pr_[E | F i] * Pr d (F i).
 Proof.
-have [/eqP PE0|PE0] := boolP (Pr d E == 0).
+have [PE0|PE0] := eqVneq (Pr d E) 0.
   by rewrite {1 2}/cPr setIC (Pr_domin_setI (F j) PE0) !(div0R,mul0R).
 rewrite -total_prob_cond /cPr -!mulRA; congr (_ / _).
-have [/eqP Fj0|Fj0] := boolP (Pr d (F j) == 0).
+have [Fj0|Fj0] := eqVneq (Pr d (F j)) 0.
   by rewrite Fj0 !mulR0 (Pr_domin_setI E Fj0).
 by rewrite setIC mulVR ?mulR1.
 Qed.
@@ -1551,7 +1554,7 @@ rewrite (_ : _ :&: _ = \bigcup_(i in G) ([set i] :&: E)); last first.
 rewrite [in RHS]/Pr big_bigcup_partition // => i j ij.
 rewrite -setI_eq0; apply/eqP/setP => a; rewrite !inE.
 apply/negbTE; rewrite !negb_and.
-have [//|/negPn/eqP ->] := boolP (a != i).
+have [->/=|//] := eqVneq a i.
 by rewrite ij /= orbT.
 Qed.
 
@@ -1602,7 +1605,7 @@ Lemma cinde_events_alt (E F G : {set A}) : cinde_events E F G <->
 Proof.
 split=> [|[|FG0]]; rewrite /cinde_events.
 - rewrite product_rule_cond => H.
-  have [/eqP/cPr_eq0 EG0|EG0] := boolP (`Pr_d[F | G] == 0).
+  have [/cPr_eq0 EG0|EG0] := eqVneq (`Pr_d[F | G]) 0.
     by rewrite /cPr EG0; right.
   by left; move/eqR_mul2r : H ; apply; apply/eqP.
 - by rewrite product_rule_cond => ->.
@@ -2266,7 +2269,7 @@ have <- : `E (X `/ n.+1) = miu.
   rewrite div1R mulRC eqR_divr_mulr ?INR_eq0' // (eq_bigr (fun=> miu)) //.
   by rewrite big_const /= iter_addR cardE /= size_enum_ord mulRC.
 move/leR_trans: (chebyshev_inequality (X `/ n.+1) e0); apply.
-by apply/RleP; rewrite Order.POrderTheory.lexx.
+by apply/RleP; rewrite lexx.
 Qed.
 
 End weak_law_of_large_numbers.
@@ -2283,9 +2286,9 @@ End vector_of_RVs.
 
 Section prob_chain_rule.
 Notation R := real_realType.
-Variables (U : finType) (P : R.-fdist U).
-Variables (A : finType) .
+Variables (U : finType) (P : R.-fdist U) (A : finType).
 Local Open Scope vec_ext_scope.
+
 Lemma prob_chain_rule : forall (n : nat) (X : 'rV[{RV P -> A}]_n.+1) x,
   `Pr[ (RVn X) = x ] =
   \prod_(i < n.+1)

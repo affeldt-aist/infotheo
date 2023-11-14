@@ -34,10 +34,10 @@ Lemma derive_pinsker_fun (p : R) c : 0 < p < 1 ->
 Proof.
 move=> [H0p Hp1] q /= [Hq1 Hq2].
 rewrite /pinsker_fun.
-apply derivable_pt_minus.
+apply: derivable_pt_minus.
   apply derivable_pt_plus.
     apply derivable_pt_mult.
-      apply derivable_pt_const.
+      exact: derivable_pt_const.
     apply derivable_pt_comp.
       apply derivable_pt_mult.
         apply derivable_pt_const.
@@ -47,19 +47,17 @@ apply derivable_pt_minus.
     apply derivable_pt_Log.
     exact: divR_gt0.
   apply derivable_pt_mult.
-    apply derivable_pt_const.
+    exact: derivable_pt_const.
   apply derivable_pt_comp.
     apply derivable_pt_div.
       apply derivable_pt_const.
       apply derivable_pt_Rminus.
       move=> abs; lra.
   apply derivable_pt_Log.
-  apply divR_gt0 => //; lra.
+  by apply divR_gt0 => //; lra.
 apply derivable_pt_mult.
-  apply derivable_pt_const.
-apply derivable_pt_comp.
-  apply derivable_pt_Rminus.
-apply derivable_pt_pow.
+  exact: derivable_pt_const.
+by apply: derivable_pt_comp; [exact: derivable_pt_Rminus|exact: derivable_pt_pow].
 Defined.
 
 Definition pinsker_fun' p c := fun q =>
@@ -74,7 +72,9 @@ transitivity (derive_pt (pinsker_fun p c) q (@derive_pinsker_fun _ c Hp q Hq)).
 rewrite /pinsker_fun /derive_pinsker_fun.
 case: Hp => Hp1 Hp2.
 case: Hq => Hq1 Hq2.
-rewrite !(derive_pt_minus,derive_pt_plus,derive_pt_comp,derive_pt_ln,derive_pt_const,derive_pt_mult,derive_pt_inv,derive_pt_id,derive_pt_div,derive_pt_pow).
+rewrite !(derive_pt_minus,derive_pt_plus,derive_pt_comp,derive_pt_ln,
+  derive_pt_const,derive_pt_mult,derive_pt_inv,derive_pt_id,derive_pt_div,
+  derive_pt_pow).
 rewrite !(mul0R,mulR0,addR0,add0R,Rminus_0_l) /= (_ : INR 2 = 2) //.
 rewrite /pinsker_fun' /div_fct [X in _ = X]mulRBr.
 f_equal; last by field.
@@ -110,9 +110,7 @@ apply derivable_pt_minus.
   apply derivable_pt_Log.
   rewrite /= in Hq0.
   decompose [and] Hq0; clear Hq0; lra.
-apply derivable_pt_mult.
-  apply derivable_pt_const.
-apply derivable_pt_pow.
+by apply: derivable_pt_mult; [exact: derivable_pt_const|exact: derivable_pt_pow].
 Defined.
 
 Lemma derive_pt_pinsker_function_spec c q0 (Hq0 : 0 <= q0 < 1)
@@ -133,8 +131,10 @@ field.
 split; [exact/eqP/ln2_neq0|case: Hq0 => ? ? ?; lra].
 Defined.
 
-Lemma pinsker_fun_increasing_on_0_to_1 (c : R) (Hc : c <= / (2 * ln 2)) : forall x y,
-  0 <= x < 1 -> 0 <= y < 1 -> x <= y -> pinsker_function_spec c x <= pinsker_function_spec c y.
+Lemma pinsker_fun_increasing_on_0_to_1 (c : R) (Hc : c <= / (2 * ln 2)) :
+  forall x y,
+  0 <= x < 1 -> 0 <= y < 1 -> x <= y ->
+  pinsker_function_spec c x <= pinsker_function_spec c y.
 Proof.
 apply pderive_increasing_closed_open with (pderivable_pinsker_function_spec c).
 lra.
@@ -176,7 +176,6 @@ by case: Hc.
 Qed.
 
 Section pinsker_function_analysis.
-
 Variables p q : {prob R}.
 
 Lemma pinsker_fun_p c : pinsker_fun p c p = 0.
@@ -200,18 +199,19 @@ split => //.
 lra.
 Defined.
 
-Lemma pinsker_fun_decreasing_on_0_to_p (c : R) (Hc : c <= / (2 * ln 2)) (Hp' : 0 < p < 1) :
-  forall x y, 0 < x <= p -> 0 < y <= p -> x <= y -> pinsker_fun p c y <= pinsker_fun p c x.
+Lemma pinsker_fun_decreasing_on_0_to_p (c : R) (Hc : c <= / (2 * ln 2))
+  (p01 : 0 < p < 1) :
+  forall x y, 0 < x <= p -> 0 < y <= p -> x <= y ->
+  pinsker_fun p c y <= pinsker_fun p c x.
 Proof.
 move=> x y Hx Hy xy.
 rewrite -[X in _ <= X]oppRK leR_oppr.
 move: x y Hx Hy xy.
-apply pderive_increasing_open_closed with (pinsker_fun_pderivable1 c Hp').
-  by case: Hp'.
-move=> t [Ht1 Ht2].
+apply pderive_increasing_open_closed with (pinsker_fun_pderivable1 c p01).
+  by case: p01.
+move=> t [t0 tp].
 rewrite /pinsker_fun_pderivable1.
 rewrite derive_pt_opp.
-destruct Hp' as [Hp'1 Hp'2].
 rewrite derive_pt_pinsker_fun //; last lra.
 rewrite /pinsker_fun' /div_fct.
 have Hlocal : 0 <= / ln 2 by exact/invR_ge0.
@@ -243,14 +243,15 @@ case: Hp' => Hp'1 Hp'2.
 lra.
 Defined.
 
-Lemma pinsker_fun_increasing_on_p_to_1 (c : R) (Hc : c <= / (2 * ln 2)) (Hp' : 0 < p < 1) :
-  forall x y, p <= x < 1 -> p <= y < 1 -> x <= y -> pinsker_fun p c x <= pinsker_fun p c y.
+Lemma pinsker_fun_increasing_on_p_to_1 (c : R) (Hc : c <= / (2 * ln 2))
+  (p01 : 0 < p < 1) :
+  forall x y, p <= x < 1 -> p <= y < 1 -> x <= y ->
+  pinsker_fun p c x <= pinsker_fun p c y.
 Proof.
-apply pderive_increasing_closed_open with (pinsker_fun_pderivable2 c Hp').
-  by case: Hp'.
-move=> t [Ht1 Ht2].
+apply pderive_increasing_closed_open with (pinsker_fun_pderivable2 c p01).
+  by case: p01.
+move=> t [pt t1].
 rewrite /pinsker_fun_pderivable2.
-destruct Hp' as [Hp'1 Hp'2].
 rewrite derive_pt_pinsker_fun //; last lra.
 rewrite /pinsker_fun' /div_fct.
 have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
@@ -282,9 +283,7 @@ End pinsker_function_analysis.
 Local Open Scope reals_ext_scope.
 
 Section pinsker_fun_pos.
-
 Variables p q : {prob R}.
-
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Hypothesis P_dom_by_Q :
@@ -304,10 +303,12 @@ have [p0|p0] := eqVneq p R0%:pr.
     move/dominatesP : P_dom_by_Q => /(_ a).
     by rewrite !fdist_binaryE !/onem subrr eqxx subr0 -R1E -R0E; lra.
   apply: leR_trans.
-    by apply: (@pinsker_function_spec_pos _ q Hc); split=> //; apply/RltP; rewrite -prob_lt1.
+    apply: (@pinsker_function_spec_pos _ q Hc); split=> //.
+    by apply/RltP; rewrite -prob_lt1.
   rewrite /pinsker_function_spec.
   apply Req_le.
-  by rewrite mul1R div1R /log LogV; [field |rewrite subR_gt0; apply /RltP; rewrite -prob_lt1].
+  by rewrite mul1R div1R /log LogV; [field|
+    rewrite subR_gt0; apply /RltP; rewrite -prob_lt1].
 have [p1|p1] := eqVneq p 1%coqR%:pr.
   subst p.
   rewrite /pinsker_fun /div_fct /comp subRR mul0R addR0.
@@ -361,7 +362,6 @@ Local Open Scope divergence_scope.
 Local Open Scope variation_distance_scope.
 
 Section Pinsker_2_bdist.
-
 Variables p q : {prob R}.
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
@@ -448,7 +448,6 @@ Qed.
 End Pinsker_2_bdist.
 
 Section Pinsker_2.
-
 Variables (A : finType) (P Q : {fdist A}).
 Hypothesis card_A : #|A| = 2%nat.
 Hypothesis P_dom_by_Q : P `<< Q.
@@ -465,7 +464,6 @@ Qed.
 End Pinsker_2.
 
 Section Pinsker.
-
 Variables (A : finType) (P Q : {fdist A}).
 Hypothesis P_dom_by_Q : P `<< Q.
 
@@ -473,12 +471,13 @@ Local Notation "0" := (false).
 Local Notation "1" := (true).
 
 Lemma bipart_dominates :
-  let A_ := fun b => if b then [set a | (P a < Q a)%mcR] else [set a | (Q a <= P a)%mcR] in
+  let A_ := fun b => if b then [set a | (P a < Q a)%mcR]
+                          else [set a | (Q a <= P a)%mcR] in
   forall (cov : A_ 0 :|: A_ 1 = [set: A]) (dis : A_ 0 :&: A_ 1 = set0),
   bipart dis cov P `<< bipart dis cov Q.
 Proof.
 move=> A_ cov dis; apply/dominatesP => /= b.
-rewrite !ffunE => /psumR_eq0P H.
+rewrite !ffunE => /psumr_eq0P H.
 transitivity (\sum_(a | a \in A_ b) 0%R).
   apply eq_bigr => // a ?.
   by rewrite (dominatesE P_dom_by_Q) // H // => a' ?; exact/pos_ff_ge0.
@@ -502,7 +501,8 @@ have dis : A_ 0 :&: A_ 1 = set0.
   by rewrite setICr.
 pose P_A := bipart dis cov P.
 pose Q_A := bipart dis cov Q.
-have step1 : D(P_A || Q_A) <= D(P || Q) by apply partition_inequality; exact P_dom_by_Q.
+have step1 : D(P_A || Q_A) <= D(P || Q).
+  by apply partition_inequality; exact P_dom_by_Q.
 suff : / (2 * ln 2) * d(P , Q) ^2 <= D(P_A || Q_A).
   move=> ?; apply (@leR_trans (D(P_A || Q_A))) => //; exact/Rge_le.
 have -> : d( P , Q ) = d( P_A , Q_A ).
@@ -517,7 +517,8 @@ have -> : d( P , Q ) = d( P_A , Q_A ).
         apply: eq_bigr => a; rewrite /A0 in_set => /RleP Ha.
         by rewrite geR0_norm ?subR_ge0.
       rewrite big_split /= geR0_norm; last first.
-        by rewrite subR_ge0; rewrite !ffunE; apply leR_sumR => ?; rewrite inE => /RleP.
+        rewrite subR_ge0; rewrite !ffunE.
+        by apply leR_sumR => ?; rewrite inE => /RleP.
       by rewrite -big_morph_oppR // 2!ffunE addR_opp.
     - rewrite /P_A /Q_A /bipart /= !ffunE /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
@@ -544,7 +545,8 @@ apply (@leR_trans (D(P || Q))); last first.
   rewrite mulRA mulVR // ?mul1R; [| exact/gtR_eqF].
   by apply/RleP; rewrite lexx.
 apply: (leR_trans _ Pinsker_inequality).
-rewrite (_ : forall x, Rsqr x = x ^ 2); last by move=> ?; rewrite /Rsqr /pow mulR1.
+rewrite (_ : forall x, Rsqr x = x ^ 2); last first.
+  by move=> ?; rewrite /Rsqr /pow mulR1.
 apply leR_wpmul2r; first exact: pow_even_ge0.
 apply leR_inv => //; first exact/mulR_gt0.
 rewrite -[X in _ <= X]mulR1.

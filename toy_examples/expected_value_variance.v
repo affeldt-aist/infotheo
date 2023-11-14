@@ -52,7 +52,7 @@ Qed.
 
 Lemma f_nonneg : [forall a : 'I_3, 0 <= f a].
 Proof.
-apply/forallP_leRP.
+apply/forallPP; first by move=> x; exact/RleP.
 case/I3P.
 - rewrite /f ffunE /= eqxx; lra.
 - rewrite /f ffunE /= ifF; last by I3_neq.

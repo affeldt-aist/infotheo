@@ -58,6 +58,8 @@ Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
 
+Import Order.POrderTheory GRing.Theory Num.Theory.
+
 Section entropy_definition.
 Variables (A : finType) (P : {fdist A}).
 
@@ -71,7 +73,7 @@ have [->|Hi] := eqVneq (P i) 0; first by rewrite mul0R oppR0.
   (* NB: this step in a standard textbook would be handled as a consequence of lim x->0 x log x = 0 *)
 rewrite mulRC -mulNR; apply mulR_ge0 => //; apply: oppR_ge0.
 rewrite -log1; apply: Log_increasing_le => //.
-by apply/RltP; rewrite Num.Theory.lt0r Hi/=.
+by apply/RltP; rewrite lt0r Hi/=.
 Qed.
 
 End entropy_definition.
@@ -1177,10 +1179,10 @@ rewrite chain_rule_rV; apply leR_sumR => /= i _.
 case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
   rewrite head_of_fdist_rV_fdist_nth.
-  by apply/RleP; rewrite Order.POrderTheory.lexx.
+  by apply/RleP; rewrite lexx.
 apply: leR_trans; first exact: information_cant_hurt.
 rewrite fdistX1 fdist_take_nth.
-by apply/RleP; rewrite Order.POrderTheory.lexx.
+by apply/RleP; rewrite lexx.
 Qed.
 
 End independence_bound_on_entropy.
@@ -1463,7 +1465,7 @@ Variable P : {fdist 'rV[A]_n}.
 
 Lemma han : n.-1%:R * `H P <= \sum_(i < n) `H (fdist_col' P i).
 Proof.
-rewrite -subn1 GRing.Theory.natrB // -RmultE mulRBl mul1R.
+rewrite -subn1 natrB // -RmultE mulRBl mul1R.
 apply/RleP; rewrite leR_subl_addr {2}(chain_rule_rV P).
 rewrite -big_split /= -{1}(card_ord n) -sum1_card.
 rewrite -INRE big_morph_natRD big_distrl /=.

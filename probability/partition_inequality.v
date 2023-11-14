@@ -92,7 +92,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
         rewrite LogV //.
         apply Req_le; by field.
       - rewrite A1_P_0 !mul0R addR0; exact/Req_le.
-    * rewrite ffunE in A0_Q_0; move/psumR_eq0P in A0_Q_0.
+    * rewrite ffunE in A0_Q_0; move/psumr_eq0P in A0_Q_0.
       have {}A0_Q_0 : forall i : A, i \in A_ 0 -> P i = 0%R.
         move=> i ?; rewrite (dominatesE P_dom_by_Q) // A0_Q_0 // => a ?; exact/pos_ff_ge0.
       have Habs : P_A 0 = 0%R.
@@ -102,7 +102,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
         by rewrite big_const iter_addR mulR0.
       by move: A0_P_neq0; rewrite Habs; move/ltRR.
   + have H2 : P_A 1 = 0%R.
-      rewrite ffunE in A1_Q_0; move/psumR_eq0P in A1_Q_0.
+      rewrite ffunE in A1_Q_0; move/psumr_eq0P in A1_Q_0.
       rewrite /bipart /= ffunE /bipart_pmf (eq_bigr (fun=> 0%R)).
         by rewrite big_const iter_addR mulR0.
       move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_ff_ge0.
@@ -127,7 +127,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
       exact/invR_gt0.
     rewrite /log LogV //; apply Req_le; by field.
   + (* contradiction H1 / Bi_true_Q_0 *)
-    rewrite ffunE in A1_Q_0; move/psumR_eq0P in A1_Q_0.
+    rewrite ffunE in A1_Q_0; move/psumr_eq0P in A1_Q_0.
     have : P_A 1 = 0%R.
       rewrite !ffunE /bipart /= /bipart_pmf (eq_bigr (fun=> 0%R)).
       by rewrite big_const iter_addR mulR0.

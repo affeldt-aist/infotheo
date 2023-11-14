@@ -117,17 +117,10 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Import Num.Theory.
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
-
-Canonical addR_monoid := Monoid.Law addRA add0R addR0.
-Canonical addR_comoid := Monoid.ComLaw addRC.
-Canonical mulR_monoid := Monoid.Law mulRA mul1R mulR1.
-Canonical mulR_muloid := Monoid.MulLaw mul0R mulR0.
-Canonical mulR_comoid := Monoid.ComLaw mulRC.
-Canonical addR_addoid := Monoid.AddLaw mulRDl mulRDr.
 
 Lemma morph_oppR : {morph [eta Ropp] : x y / x + y}.
 Proof. by move=> x y /=; field. Qed.
@@ -162,12 +155,10 @@ Lemma sumR_ord_setT (n : nat) (f : 'I_n -> R) :
   \sum_(i < n) f i = \sum_(i in [set: 'I_n]) f i.
 Proof. by apply eq_bigl => i; rewrite inE. Qed.
 
+(* TODO: rm? *)
 Lemma sumR_ge0 (A : eqType) (d : seq A) (P : pred A) f
   (H : forall i, P i -> 0 <= f i) : 0 <= \sum_(i <- d | P i) f i.
-Proof.
-elim: d => [|h t IH]; first by rewrite big_nil.
-rewrite big_cons; case: ifPn => // Ph; apply/addR_ge0 => //; exact: H.
-Qed.
+Proof. by apply/RleP/sumr_ge0 => i Pi; exact/RleP/H. Qed.
 
 Lemma sumR_neq0 (U : eqType) (P : U -> R) (s : seq.seq U) :
   (forall i, 0 <= P i) ->
@@ -191,33 +182,6 @@ Proof.
 move=> f0; rewrite ltR_neqAle; split; last by apply sumR_ge0 => a _; apply/ltRW.
 apply/nesym/eqP/sumR_neq0; last by move/card_gt0P : HA => [a _]; exists a.
 by move=> a; apply/ltRW/f0.
-Qed.
-
-Lemma psumR_seq_eq0P (A : eqType) (l : seq A) f :
-  uniq l ->
-  (forall a, a \in l -> 0 <= f a) ->
-  \sum_(a <- l) f a = 0 <-> (forall a, a \in l -> f a = 0).
-Proof.
-move=> ul Hf; split=> [H a al|h]; last first.
-  by rewrite (eq_big_seq (fun=> 0)) ?big1.
-suff : f a = 0 /\ \sum_(i <- l|i != a) f i = 0 by case.
-apply: Rplus_eq_R0.
-- exact/Hf.
-- by rewrite big_seq_cond; apply: sumR_ge0 => ? /andP[? ?]; apply Hf.
-- by rewrite -bigD1_seq.
-Qed.
-
-Lemma psumR_eq0P (A : finType) (P : pred A) f :
-  (forall a, P a -> 0 <= f a) ->
-  \sum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
-Proof.
-move=> Hf; split=> [H a Ha|h]; last first.
-  by rewrite (eq_bigr (fun=> 0)) // big_const iter_addR mulR0.
-suff : f a = 0 /\ \sum_(i | P i && (i != a)) f i = 0 by case.
-apply: Rplus_eq_R0.
-- exact/Hf/Ha.
-- apply: sumR_ge0 => ? /andP[? ?]; by apply Hf.
-- rewrite -bigD1 /=; [exact H | exact Ha].
 Qed.
 
 Section leR_ltR_sumR.
@@ -254,7 +218,7 @@ Lemma leR_sumRl : (forall i, P i -> f i <= g i) ->
 Proof.
 move=> f_g Qg H; elim: (index_enum _) => [| h t IH].
 - rewrite !big_nil.
-  by apply/RleP; rewrite Order.POrderTheory.lexx.
+  by apply/RleP; rewrite lexx.
 - rewrite !big_cons /=; case: ifP => [Ph|Ph].
     by rewrite (H _ Ph); apply leR_add => //; exact: f_g.
   case: ifP => // Qh; apply: (leR_trans IH).
@@ -266,8 +230,7 @@ Lemma leR_sumRl_support (U : pred A) :
   \sum_(i in U | P i) f i <= \sum_(i in U | Q i) f i.
 Proof.
 move=> Hf P_Q; elim: (index_enum _) => [|h t IH].
-- rewrite !big_nil.
-  by apply/RleP; rewrite Order.POrderTheory.lexx.
+- by rewrite !big_nil; apply/RleP; rewrite lexx.
 - rewrite !big_cons; case: (h \in U) => //=; case: ifP => // Ph.
   + by case: ifP => [Qh|]; [rewrite leR_add2l | rewrite (P_Q _ Ph)].
   + by case: ifP => // Qh; rewrite -[X in X <= _]add0R; exact/leR_add.
@@ -359,9 +322,9 @@ Lemma leR_sumR_eq (A : finType) (f g : A -> R) (P : pred A) :
    \sum_(a | P a) g a = \sum_(a | P a) f a ->
    (forall a, P a -> g a = f a).
 Proof.
-move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply psumR_eq0P.
-- move=> i Hi; rewrite leR_subr_addr add0R; exact: H1.
-- by rewrite big_split /= -big_morph_oppR subR_eq0 H2.
+move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply: psumr_eq0P.
+  by move=> i Pi; rewrite RminusE subr_ge0; apply/RleP/H1.
+by rewrite big_split/= -big_morph_oppR; apply/eqP; rewrite subr_eq0 H2.
 Qed.
 
 Section pascal.
@@ -386,10 +349,6 @@ End pascal.
 
 Section leR_ltR_rprod.
 
-(*Lemma prodR_gt0 (A : finType) F : (forall a, 0 < F a) ->
-  0 < \prod_(a : A) F a.
-Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulR_gt0. Qed.*)
-
 Lemma prodR_ge0 (A : finType) F : (forall a, 0 <= F a) ->
   0 <= \prod_(a : A) F a.
 Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulR_ge0. Qed.
@@ -409,7 +368,7 @@ Lemma prodR_ge1 (A : finType) f : (forall a, 1 <= f a) ->
   1 <= \prod_(a : A) f a.
 Proof.
 elim/big_ind : _ => // [|x y Hx Hy *].
-  by move=> _; apply/RleP; rewrite Order.POrderTheory.lexx.
+  by move=> _; apply/RleP; rewrite lexx.
 by rewrite -{1}(mulR1 1); apply/leR_pmul => //; [exact: Hx | exact: Hy].
 Qed.
 

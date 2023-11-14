@@ -27,7 +27,7 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 
-Import Order.Theory.
+Import Order.Theory GRing.Theory Num.Theory.
 
 Section ln_id_sect.
 
@@ -289,7 +289,7 @@ case/boolP : (x == 0) => [/eqP ->|x0].
 - rewrite xlnx_0; apply xlnx_neg.
   exact: (conj (@leR_ltR_trans x _ _ _ _) (leR_ltR_trans y2 ltRinve1)).
 - rewrite -[X in _ < X]oppRK ltR_oppr.
-  have {}x0 : 0 < x by apply/RltP; rewrite Num.Theory.lt0r x0; exact/RleP.
+  have {}x0 : 0 < x by apply/RltP; rewrite lt0r x0; exact/RleP.
   have {x1 y1}y0 : 0 < y by exact: (@ltR_trans x).
   exact: (pderive_increasing (exp_pos _) xlnx_sdecreasing_0_Rinv_e_helper).
 Qed.
@@ -450,33 +450,27 @@ apply derive_sincreasing_interv.
   by apply ltR_add2l, Heps.
 Qed.
 
-Import GRing.Theory Num.Theory.
-
 Lemma xlnx_delta_bound eps : 0 < eps <= exp (-2) ->
   forall x, 0 <= x <= 1 - eps -> `| xlnx_delta eps x | <= - xlnx eps.
 Proof.
 move=> [Heps1 Heps2] x [Hx1 Hx2].
-apply/RleP; rewrite leR_Rabsl; apply/andP; split; apply/RleP.
-- rewrite RoppE opprK.
-  rewrite (_ : xlnx eps = xlnx_delta eps 0); last first.
+apply/RleP; rewrite ler_norml; apply/andP; split; apply/RleP.
+- rewrite RoppE opprK (_ : xlnx eps = xlnx_delta eps 0); last first.
     by rewrite /xlnx_delta add0R xlnx_0 subR0.
-  case/boolP : (0 == x) => [/eqP <-|/eqP xnot0].
-    by apply/RleP; rewrite lexx.
+  have [->|xnot0] := eqVneq x 0; first by apply/RleP; rewrite lexx.
   apply/ltRW/increasing_xlnx_delta => //.
   + exact: (conj Heps1 (leR_ltR_trans Heps2 ltRinve21)).
   + split; by [apply (@leR_trans x) |].
-  + by rewrite ltR_neqAle.
-- apply (@leR_trans (xlnx_delta eps (1 - eps))).
-    case/boolP : (x == 1 - eps) => [/eqP ->|/eqP xnot0].
-      by apply/RleP; rewrite lexx.
+  + by apply/RltP; rewrite lt0r xnot0/=; exact/RleP.
+- apply: (@leR_trans (xlnx_delta eps (1 - eps))).
+    have [->|xnot0] := eqVneq x (1 - eps); first by apply/RleP; rewrite lexx.
     apply/ltRW/increasing_xlnx_delta => //.
     + exact: (conj Heps1 (leR_ltR_trans Heps2 ltRinve21)).
     + split; [by apply (@leR_trans x) | ].
       by apply/RleP; rewrite lexx.
-    + by rewrite ltR_neqAle.
+    + by apply/RltP; rewrite lt_neqAle xnot0/=; exact/RleP.
   rewrite /xlnx_delta subRK xlnx_1 sub0R leR_oppr oppRK.
-  apply xlnx_ineq.
-  split => //; exact: ltRW.
+  by apply: xlnx_ineq; split => //; apply/RleP/ltW/RltP.
 Qed.
 
 Lemma Rabs_xlnx a (Ha : 0 <= a <= exp(-2)) x y :
@@ -508,7 +502,7 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
     move=> /eqP <-; rewrite xlnx_0.
     by apply/RleP; rewrite lexx.
   apply/ltRW/xlnx_neg; split.
-  - by apply/RltP; rewrite Num.Theory.lt0r eq_sym anot0; exact/RleP/(proj1 Ha).
+  - by apply/RltP; rewrite lt0r eq_sym anot0; exact/RleP/(proj1 Ha).
   - exact: (leR_ltR_trans (proj2 Ha) ltRinve21).
 - apply Rgt_lt in Hcase.
   have Haux : x = y + `| x - y | by rewrite gtR0_norm ?subR_gt0 // subRKC.
@@ -608,7 +602,8 @@ Qed.
 
 Lemma log_concave : concave_function_in Rpos_interval log.
 Proof.
-by move=> x y t; rewrite !classical_sets.in_setE(*TODO: import?*) => Hx Hy; apply log_concave_at_gt0.
+move=> x y t; rewrite !classical_sets.in_setE(*TODO: import?*) => Hx Hy.
+exact: log_concave_at_gt0.
 Qed.
 
 End log_concave.

@@ -139,8 +139,8 @@ Qed.
 
 Definition nneg_fun_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2}) : nneg_finfun A.
 set d := [ffun a : A => INR (f a) / INR n.+1].
-refine (@mkNNFinfun _ d _); apply/forallP_leRP => a.
-by rewrite ffunE; apply divR_ge0; [apply leR0n | apply ltR0n].
+refine (@mkNNFinfun _ d _); apply/forallPP; first by move=> ?; exact/RleP.
+by move=> a/=; rewrite ffunE; apply divR_ge0; [apply leR0n | apply ltR0n].
 Defined.
 
 Definition fdist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
@@ -595,7 +595,7 @@ Lemma sum_messages_types' f :
   \sum_ (S | S \in enc_pre_img_partition c) \sum_(m in S) f m.
 Proof.
 rewrite (bigID (fun P => [exists m, m \in enc_pre_img c P] )).
-rewrite (_ : forall a b, addR_comoid a b = a + b) //.
+rewrite (_ : forall a b, Radd_comoid a b = a + b) //.
 rewrite Rplus_comm big1 ; last first.
   move=> P ; rewrite andTb negb_exists => HP.
   apply big_pred0 => m /=.

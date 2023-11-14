@@ -1,12 +1,12 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm matrix.
 From mathcomp Require Import boolp classical_sets.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import fdist jfdist_cond fsdist convex.
+Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext ssralg_ext.
+Require Import Rbigop fdist jfdist_cond fsdist convex.
 
 (******************************************************************************)
 (*                  Equivalence of Convexity Definitions                      *)
@@ -31,7 +31,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Import GRing.Theory.
+Import GRing.Theory Num.Theory.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
@@ -83,8 +83,8 @@ rewrite eq_sym 2!inE.
 by case: eqP => // _; rewrite (mulr0,mulr1).
 Qed.
 
-Lemma dE j : fdistmap K e i != 0%R ->
-  d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%R.
+Lemma dE j : fdistmap K e i != 0%coqR ->
+  d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%coqR.
 Proof.
 rewrite -denE => NE.
 rewrite jfdist_condE // {NE} /jcPr /proba.Pr.
@@ -109,12 +109,12 @@ Lemma dK n m K (e : {fdist 'I_m}) j :
   e j = (\sum_(i < n) fdistmap K e i * d K e i j)%R.
 Proof.
 under eq_bigr => /= a _.
-  case/boolP: (fdistmap K e a == 0%R) => Ka0.
-    rewrite (eqP Ka0) mul0R.
+  have [Ka0|Ka0] := eqVneq (fdistmap K e a) 0%R.
+    rewrite Ka0 mul0R.
     have <- : (e j * (a == K j)%:R = 0)%R.
-      have [Kj|] := boolP (a == K j); last by rewrite mulR0.
-      move/eqP: Ka0; rewrite fdistE /=.
-      move/psumR_eq0P => -> //; by rewrite ?(mul0R,inE) // eq_sym.
+      have [/eqP Kj|] := eqVneq a (K j); last by rewrite mulR0.
+      move: Ka0; rewrite fdistE /=.
+      by move/psumr_eq0P => -> //; rewrite ?(mul0R,inE) // eq_sym.
   over.
   rewrite FDistPart.dE // fdistE /= mulRCA mulRV ?mulR1;
     last by rewrite fdistE in Ka0.
@@ -459,7 +459,7 @@ rewrite /= in f.
 rewrite [LHS](axpart h').
 rewrite [RHS](axpart (fun j => proj1_sig (f j))).
 have trivIK i j x : x \in fdist_supp (e i) -> x \in fdist_supp (e j) -> i = j.
-  case/boolP: (i == j) => [/eqP // | ij] xi xj.
+  have [|] := eqVneq i j => [// | ij] xi xj.
   move/setP/(_ x): (HP _ _ ij); by rewrite inE xi xj inE.
 have neqj j a k :
   a \in fdist_supp (e (h j)) -> k != (h j) -> (d k * e k a = 0)%R.
@@ -488,8 +488,9 @@ have Hmap i :
         move: (Ha (h' k)).
         by rewrite inE negbK /h/h' enum_rankK_in // => /eqP ->; rewrite mulR0.
       by rewrite inE negbK => /eqP -> ; rewrite mul0R.
-    rewrite (proj2 (psumR_eq0P _)) ?(if_same,Ha0,mulR0) // => k _.
-    exact: mulR_ge0.
+    case: ifPn => [/eqP|] _.
+      by rewrite Ha0 big1.
+    by rewrite Ha0.
   case: ifPn => [/eqP/esym ->{i}|ji].
     by rewrite (bigD1 (h j)) //= big1 ?addr0 // => *; rewrite -RmultE (neqj j).
   by rewrite (neqj j) //; apply: contra ji => /eqP/enum_val_inj ->.
@@ -497,7 +498,7 @@ congr (<&>_ _ _); first by apply fdist_ext => /= i; rewrite Hmap.
 apply funext => i /=.
 have HF : fdistmap h' d i != 0%R.
   rewrite fdistE /=.
-  apply/eqP => /psumR_eq0P => H.
+  apply/eqP => /psumr_eq0P H.
   have: h i \in fdist_supp d by apply enum_valP.
   by rewrite inE H ?eqxx // 2!inE /h /h' enum_valK_in.
 rewrite (@axidem (<&>_(e (h i)) g)); last first.
@@ -630,7 +631,8 @@ rewrite (big_pred1 p.1) /=; last first.
   move=> i; rewrite !inE -(enum_valK k) (can_eq enum_rankK).
   by rewrite (surjective_pairing (enum_val k)) xpair_eqE eqxx andbT.
 have [Hp|Hp] := eqVneq (\sum_(i < n) d i * e i p.2)%R 0%R.
-  by rewrite Hp mul0r -RmultE (proj1 (psumR_eq0P _) Hp) // => *; exact: mulR_ge0.
+  rewrite Hp mul0r -RmultE.
+  by move/psumr_eq0P : Hp => ->//= i _; rewrite RmultE mulr_ge0.
 rewrite [RHS]mulRC !fdistE jfdist_condE !fdistE /=; last first.
   by under eq_bigr do rewrite fdistXE fdist_prodE.
 rewrite /jcPr /proba.Pr (big_pred1 p); last first.

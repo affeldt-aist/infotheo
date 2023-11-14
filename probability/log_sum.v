@@ -35,15 +35,17 @@ have gspos : forall a, a \in C -> 0 < g a.
   move=>/esym/(dominatesE fg) abs.
   by move: (fspos _ a_C); rewrite abs => /ltRR.
 have Fnot0 : \sum_{ C } f != 0.
-  apply/eqP => /psumR_eq0P abs.
+  apply/eqP => /psumr_eq0P abs.
   case/set0Pn : Hc => a aC.
   move: (fspos _ aC); rewrite abs //.
-  by move/ltRR.
+    by move=> /RltP; rewrite ltxx.
+  by move=> i iC; exact/RleP.
 have Gnot0 : \sum_{ C } g != 0.
-  apply/eqP => /psumR_eq0P abs.
+  apply/eqP => /psumr_eq0P abs.
   case/set0Pn : Hc => a aC.
   move: (gspos _ aC); rewrite abs //.
-  by move/ltRR.
+    by move=> /RltP; rewrite ltxx.
+  by move=> i iC; exact/RleP.
 wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   move=> Hwlog.
   set k := (\sum_{ C } f / \sum_{ C } g).
@@ -166,8 +168,10 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
       have : 0 = \sum_{D} f.
         transitivity (\sum_(a | a \in D) 0).
           by rewrite big_const iter_addR mulR0.
-        apply eq_bigr => a a_C1.
-        by rewrite (dominatesE fg) // (proj1 (@psumR_eq0P _ (mem D) _ _)) // => ? ?.
+        apply: eq_bigr => a a_C1.
+        rewrite (dominatesE fg) //.
+        apply/(@psumr_eq0P _ _ (mem D) g) => // i _.
+        exact/RleP.
       move=> abs; rewrite -abs in H1; rewrite H1 in pos_F.
       by move/ltRR : pos_F.
     have H3 : 0 < \sum_(a | a \in C) g a.
