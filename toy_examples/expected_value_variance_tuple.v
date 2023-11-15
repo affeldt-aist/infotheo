@@ -27,9 +27,7 @@ apply/all_tnthP: a => /=.
 rewrite !andb_idr => * //; apply/RleP; lra.
 Qed.
 
-Definition p' : [finType of 'I_3] ->R+ := mkNNFinfun p_nonneg.
-
-Lemma p_sum01 : [forall a, 0 <= p' a] && (\sum_(a in 'I_3) p' a == 1).
+Lemma p_sum01 : [forall a, 0 <= p a] && (\sum_(a in 'I_3) p a == 1).
 Proof.
 apply/andP; split; first exact/p_nonneg.
 apply/eqP.

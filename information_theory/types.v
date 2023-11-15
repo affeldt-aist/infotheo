@@ -137,15 +137,9 @@ move: {H}(H a); rewrite H1 H2 eqR_mul2r //.
 apply/invR_neq0; by rewrite INR_eq0.
 Qed.
 
-Definition nneg_fun_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2}) : nneg_finfun A.
-set d := [ffun a : A => INR (f a) / INR n.+1].
-refine (@mkNNFinfun _ d _); apply/forallPP; first by move=> ?; exact/RleP.
-by move=> a/=; rewrite ffunE; apply divR_ge0; [apply leR0n | apply ltR0n].
-Defined.
-
 Definition fdist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : (\sum_(a in A) f a)%nat == n.+1) : {fdist A}.
-set pf := nneg_fun_of_ffun f.
+set pf := [ffun a : A => INR (f a) / INR n.+1].
 have H : (\sum_(a in A) pf a)%mcR = 1 :> R.
   rewrite /pf; under eq_bigr do rewrite ffunE /=.
   rewrite /Rdiv -big_distrl /= -big_morph_natRD.
@@ -155,7 +149,13 @@ have H : (\sum_(a in A) pf a)%mcR = 1 :> R.
 apply: (FDist.make _ H).
 move=> a.
 apply/RleP.
-exact/nneg_finfun_ge0.
+rewrite /pf/= ffunE; apply: divR_ge0 => //.
+  apply/RleP.
+  rewrite INRE.
+  by rewrite Num.Theory.ler0n.
+apply/RltP.
+rewrite INRE.
+by rewrite Num.Theory.ltr0n.
 Defined.
 
 Lemma fdist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})

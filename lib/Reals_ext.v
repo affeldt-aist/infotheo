@@ -14,7 +14,6 @@ From mathcomp Require Import lra.
 (* Section reals_ext.                                                         *)
 (*   various lemmas about up, Int_part, frac_part, Rabs define ceil and floor *)
 (*                                                                            *)
-(*  T ->R+ == finite functions that return non-negative reals.                *)
 (* T ->R^+ == functions that return non-negative reals.                       *)
 (*                                                                            *)
 (*     p.~ == 1 - p                                                           *)
@@ -37,7 +36,6 @@ Declare Scope reals_ext_scope.
 Delimit Scope R_scope with coqR.
 
 Reserved Notation "T '->R^+' " (at level 10, format "'[' T  ->R^+ ']'").
-Reserved Notation "T '->R+' " (at level 10, format "'[' T  ->R+ ']'").
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
 Reserved Notation "P '`<<' Q" (at level 51).
 Reserved Notation "P '`<<b' Q" (at level 51).
@@ -278,35 +276,11 @@ Definition nneg_finfun_eqMixin := [eqMixin of nneg_finfun by <:].
 Canonical nneg_finfun_eqType := Eval hnf in EqType _ nneg_finfun_eqMixin.
 End nneg_finfun.
 
-Notation "T '->R+' " := (nneg_finfun T) : reals_ext_scope.
-
-Lemma nneg_finfun_ge0 (T : finType) (f : T ->R+) : forall a, 0 <= f a.
-Proof. by case: f => f /= /forallP H a; apply/RleP/H. Qed.
-
 Record nneg_fun (T : Type) := mkNNFun {
   nneg_f :> T -> R ;
   nneg_f_ge0 : forall a, 0 <= nneg_f a }.
 
 Notation "T '->R^+' " := (nneg_fun T) : reals_ext_scope.
-
-Lemma nneg_fun_eq {C : Type} (f g : C ->R^+) : nneg_f f = nneg_f g -> f = g.
-Proof.
-destruct f as [f Hf].
-destruct g as [g Hg].
-move=> /= ?; subst.
-suff : Hf = Hg by move=> ->.
-exact/boolp.Prop_irrelevance.
-Qed.
-
-Section Rstruct_ext.
-
-Lemma RleP' (x y : R) : Rle x y <-> (x <= y)%O.
-Proof. by split; move/RleP. Qed.
-
-Lemma RltP' (x y : R) : Rlt x y <-> (x < y)%O.
-Proof. by split; move/RltP. Qed.
-
-End Rstruct_ext.
 
 Section onem.
 Implicit Types r s p q : R.
@@ -316,13 +290,17 @@ Lemma onem0 : 0.~ = 1. Proof. by rewrite onem0. Qed.
 Lemma onem1 : 1.~ = 0. Proof. by rewrite onem1. Qed.
 
 Lemma onem_ge0 r : r <= 1 -> 0 <= r.~.
-Proof. by rewrite 2!RleP'; exact: onem_ge0. Qed.
+Proof. by move=> /RleP r1; apply/RleP/onem_ge0. Qed.
 
 Lemma onem_le1 r : 0 <= r -> r.~ <= 1.
-Proof. by rewrite 2!RleP'; exact: onem_le1. Qed.
+Proof. by move=> /RleP r0; apply/RleP/onem_le1. Qed.
 
 Lemma onem_le r s : r <= s <-> s.~ <= r.~.
-Proof. by rewrite 2!RleP' onem_le. Qed.
+Proof.
+split.
+  by move=> /RleP rs; apply/RleP; rewrite -onem_le.
+by move=> /RleP rs; apply/RleP; rewrite onem_le.
+Qed.
 
 Lemma onemE x : x.~ = 1 - x.  Proof. by []. Qed.
 
@@ -339,17 +317,8 @@ Proof. rewrite !onemE /GRing.add /=; Lra.lra. Qed.
 Lemma onemM p q : (p * q).~ = p.~ + q.~ - p.~ * q.~.
 Proof. rewrite !onemE /GRing.mul /=; Lra.lra. Qed.
 
-Lemma onem_div p q : q != 0 -> (p / q)%coqR.~ = (q - p)  /q.
-Proof.
-Proof.
-rewrite !onemE.
-move=> Hq.
-rewrite /Rdiv.
-rewrite mulRDl.
-rewrite mulNR.
-rewrite -/(q / q).
-rewrite divRR//.
-Qed.
+Lemma onem_div p q : q != 0 -> (p / q)%coqR.~ = (q - p) / q.
+Proof. by move=> q0; rewrite !onemE /Rdiv mulRDl mulNR -!divRE divRR. Qed.
 
 Lemma onem_prob r : (R0 <= r <= R1)%mcR -> (R0 <= r.~ <= R1)%mcR.
 Proof.
@@ -1117,7 +1086,8 @@ Definition q_of_rs (r s : {prob R}) : {prob R} := locked (Prob.mk (q_of_rs_prob'
 
 Notation "[ 'q_of' r , s ]" := (q_of_rs r s) : reals_ext_scope.
 
-Lemma q_of_rsE (r s : {prob R}) : Prob.p [q_of r, s] = (r.~ * Prob.p s) / [p_of r, s].~ :> R.
+Lemma q_of_rsE (r s : {prob R}) :
+  Prob.p [q_of r, s] = (r.~ * Prob.p s) / [p_of r, s].~ :> R.
 Proof. by rewrite /q_of_rs; unlock. Qed.
 
 (*Lemma q_of_rs_oprob (r s : oprob) : 0 <b [q_of r, s] <b 1.
