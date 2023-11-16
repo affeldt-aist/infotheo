@@ -40,10 +40,9 @@ Proof.
 rewrite /f ffunE.
 case: b => [a'|]; last first.
   by case: p_01 => /RleP.
-case: ifP => _.
-case: p_01 => ? ?.
-  by apply/onem_ge0/RleP.
-done.
+case: ifP => _ //.
+case: p_01 => ? ?//.
+by apply/RleP/onem_ge0.
 Qed.
 
 Lemma f1 (a : A) : \sum_(a' : {:option A}) f a a' = 1.
@@ -55,7 +54,7 @@ apply/eqP; rewrite psumr_eq0/=; last first.
  - rewrite /f; case => [a'|]; last by case: p_01.
   rewrite ffunE.
   case: ifPn => [_ _|//].
-  by case: p_01 => ? ?; apply/onem_ge0/RleP.
+  by case: p_01 => ? ?; apply/RleP/onem_ge0.
 - apply/allP; case => //= a' aa'; rewrite ffunE; case: ifPn => // /eqP ?.
     subst a'.
     move: aa'; by rewrite eqxx.

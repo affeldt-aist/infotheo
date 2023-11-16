@@ -3,7 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import mathcomp_extra Rstruct.
 Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
 Require Import Rbigop fdist jfdist_cond entropy convex binary_entropy_function.
@@ -115,7 +115,7 @@ Proof. by rewrite /avg; case x => x0 H /=; exact/boolp.eq_exist/conv1. Qed.
 Let avgI p x : avg p x x = x.
 Proof. by rewrite /avg; case x => x0 H /=; exact/boolp.eq_exist/convmm. Qed.
 
-Let avgC p x y : avg p x y = avg p.~%:pr y x.
+Let avgC p x y : avg p x y = avg (Prob.p p).~%:pr y x.
 Proof. by rewrite /avg; exact/boolp.eq_exist/convC. Qed.
 
 Let avgA p q x y z :
@@ -151,12 +151,12 @@ have [y2a0|y2a0] := eqVneq (y.2 a) 0.
 have [x2a0|x2a0] := eqVneq (x.2 a) 0.
   rewrite x2a0 (_ : x.1 a = 0)// -?RplusE -?RmultE ?(mulR0,add0R,mul0R); last first.
     by move/dominatesP : Hx; exact.
-  have [->|t0] := eqVneq p.~ 0; first by rewrite !mul0R.
+  have [->|t0] := eqVneq (Prob.p p).~ 0; first by rewrite !mul0R.
   apply/Req_le; rewrite mulRA; congr (_ * _ * log _).
   simpl.
   by field; split; exact/eqP.
 set h : {fdist A} -> {fdist A} -> {ffun 'I_2 -> R} := fun p1 p2 => [ffun i =>
-  [eta (fun=> 0) with ord0 |-> p * p1 a, lift ord0 ord0 |-> p.~ * p2 a] i].
+  [eta (fun=> 0) with ord0 |-> p * p1 a, lift ord0 ord0 |-> (Prob.p p).~ * p2 a] i].
 have hdom : h x.1 y.1 `<< h x.2 y.2.
   apply/dominatesP => i; rewrite /h /= !ffunE; case: ifPn => _.
     by rewrite mulR_eq0 => -[->|/eqP]; [rewrite mul0R | rewrite (negbTE x2a0)].
@@ -181,7 +181,7 @@ rewrite !eqxx eq_sym (negbTE (neq_lift ord0 ord0)) -!mulRA; apply/Req_le.
 congr (_  + _ ).
   have [->|t0] := eqVneq p 0%coqR%:pr; first by rewrite !mul0R.
   by congr (_ * (_ * log _)); field; split; exact/eqP.
-have [->|t1] := eqVneq p.~ 0; first by rewrite !mul0R.
+have [->|t1] := eqVneq (Prob.p p).~ 0; first by rewrite !mul0R.
 by congr (_ * (_ * log _)); field; split; exact/eqP.
 Qed.
 
@@ -375,16 +375,16 @@ rewrite 2!big_distrr -big_split /=; apply eq_bigr => a _.
 rewrite !fdistX2 !fdist_fstE !mulRN -oppRD; congr (- _).
 rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
 rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
-rewrite !fdist_prodE /= fdist_convE /= !(mulRA t) !(mulRA t.~).
+rewrite !fdist_prodE /= fdist_convE /= !(mulRA t) !(mulRA (Prob.p t).~).
 rewrite -!(RmultE,RplusE).
 have [Hp|/eqP Hp] := eqVneq (t * p a) 0.
   rewrite Hp ?(add0R,mul0R).
-  have [->|/eqP Hq] := eqVneq (t.~ * q a) 0.
+  have [->|/eqP Hq] := eqVneq ((Prob.p t).~ * q a) 0.
     by rewrite ?(mul0R).
   rewrite jcPr_fdistX_prod /=; last first.
     by rewrite fdist_convE -RplusE -!RmultE Hp add0R.
   by rewrite jcPr_fdistX_prod //=; move: Hq; rewrite mulR_neq0 => -[].
-have [Hq|Hq] := eqVneq (t.~ * q a) 0.
+have [Hq|Hq] := eqVneq ((Prob.p t).~ * q a) 0.
   rewrite Hq !(mul0R,addR0).
   rewrite jcPr_fdistX_prod; last first.
     by rewrite fdist_convE -RplusE -!RmultE Hq addR0.

@@ -3,6 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import finmap.
+From mathcomp Require Import mathcomp_extra.
 From mathcomp Require boolp.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
@@ -653,7 +654,7 @@ Variables (A : choiceType) (p : {prob R}) (d1 d2 : {dist A}).
 Definition fsdist_conv : {dist A} := locked
   (fsdist_convn (fdistI2 p) (fun i => if i == ord0 then d1 else d2)).
 
-Lemma fsdist_convE a : (fsdist_conv a = p * d1 a + p.~ * d2 a)%coqR.
+Lemma fsdist_convE a : (fsdist_conv a = p * d1 a + (Prob.p p).~ * d2 a)%coqR.
 Proof.
 rewrite /fsdist_conv; unlock => /=; rewrite fsdist_convnE fsfunE.
 case: ifPn => [?|H].
@@ -724,18 +725,18 @@ Proof.
 by move=> d; apply/fsdist_ext => a; rewrite fsdist_convE -mulRDl onemKC mul1R.
 Qed.
 
-Let convC (p : {prob R}) (mx my : {dist A}) : mx <| p |> my = my <| p.~%:pr |> mx.
+Let convC (p : {prob R}) (mx my : {dist A}) : mx <| p |> my = my <| (Prob.p p).~%:pr |> mx.
 Proof.
 by apply/fsdist_ext => a; rewrite 2!fsdist_convE /= onemK addRC.
 Qed.
 
 Definition fsdist_convA (p q r s : {prob R}) (mx my mz : {dist A}) :
-  p = r * s :> R /\ s.~ = p.~ * q.~ ->
+  p = r * s :> R /\ (Prob.p s).~ = (Prob.p p).~ * (Prob.p q).~ ->
   mx <| p |> (my <| q |> mz) = (mx <| r |> my) <| s |> mz.
 Proof.
 rewrite !Prob_pE; move=> [Hp Hs]; apply/fsdist_ext => a.
 rewrite !fsdist_convE [in RHS]mulRDr (@mulRCA _ r) (@mulRA r) -Hp -addRA; congr (_ + _)%coqR.
-rewrite mulRDr (@mulRA p.~ q.~) -Hs; congr (_ + _)%coqR.
+rewrite mulRDr (@mulRA (Prob.p p).~ (Prob.p q).~) -Hs; congr (_ + _)%coqR.
 rewrite !mulRA; congr (_ * _)%coqR.
 rewrite -p_of_rsE in Hp.
 move/(congr1 (@onem _)) : Hs; rewrite onemK => Hs.
@@ -939,7 +940,7 @@ Proof.
 move=> p x y.
 have [->|pn0] := eqVneq p R0%:pr; first by rewrite !conv0.
 have [->|pn1] := eqVneq p R1%:pr; first by rewrite !conv1.
-have opn0 : p.~ != R0. by apply onem_neq0.
+have opn0 : (Prob.p p).~ != R0. by apply onem_neq0.
 apply: S1_inj; rewrite affine_conv/= !S1_Convn_finType ssum_seq_finsuppE.
 under [LHS]eq_bigr do rewrite fsdist_scalept_conv.
 rewrite big_seq_fsetE big_scalept_conv_split /=.

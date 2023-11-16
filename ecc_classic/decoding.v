@@ -263,8 +263,8 @@ rewrite (@bigmaxR_bigmin_vec_helper _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
 - by rewrite bigmaxRE; apply eq_bigl => /= i; rewrite inE.
 - by apply bsc_prob_prop.
 - move=> r; rewrite /g Prob_pE !coqRE.
-  apply/RleP/mulr_ge0; apply/exprn_ge0; last exact/prob_ge0.   
-  exact/onem_ge0/prob_le1.
+  apply/RleP/mulr_ge0; apply/exprn_ge0; last exact/prob_ge0.
+  exact/RleP/onem_ge0/RleP/prob_le1.
 - rewrite inE; move/subsetP: f_img; apply.
   rewrite inE; apply/existsP; by exists (receivable_rV y); apply/eqP.
 - by move=> ? _; rewrite /dH_y max_dH.

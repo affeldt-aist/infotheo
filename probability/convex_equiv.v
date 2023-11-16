@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm matrix.
-From mathcomp Require Import boolp classical_sets.
+From mathcomp Require Import mathcomp_extra boolp classical_sets.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext ssralg_ext.
@@ -233,7 +233,7 @@ Definition binconv p (a b : T) :=
   <&>_(fdistI2 p) (fun x => if x == ord0 then a else b).
 Notation "a <& p &> b" := (binconv p a b).
 
-Lemma binconvC p a b : a <& p &> b = b <& (p.~)%:pr &> a.
+Lemma binconvC p a b : a <& p &> b = b <& ((Prob.p p).~)%:pr &> a.
 Proof.
 rewrite /binconv.
 set g1 := fun x => _.
