@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals Lra.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import mathcomp_extra Rstruct.
 Require Import ssrR Rstruct_ext Reals_ext realType_ext Ranalysis_ext ssr_ext.
 Require Import logb ln_facts bigop_ext convex Rbigop fdist divergence.
 Require Import variation_dist partition_inequality.

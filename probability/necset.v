@@ -225,7 +225,7 @@ Proof.
 by case=> x ?; rewrite conv_pt_setE=> -[] y ? <-; exists x, y.
 Qed.
 
-Lemma convC_set p (X Y : set A) : X :<| p |>: Y = Y :<| p.~%:pr |>: X.
+Lemma convC_set p (X Y : set A) : X :<| p |>: Y = Y :<| (Prob.p p).~%:pr |>: X.
 Proof.
 by rewrite eqEsubset; split=> u; case=> x Xx;
   rewrite conv_pt_setE => -[] y Yy <-;
@@ -459,7 +459,7 @@ Lemma oplus_convC_set (X Y : set A) : oplus_conv_set X Y = oplus_conv_set Y X.
 Proof.
 suff H : forall X' Y', oplus_conv_set X' Y' `<=` oplus_conv_set Y' X'
   by rewrite eqEsubset; split => // /H.
-by move=> {X} {Y} X Y u [] p _; rewrite convC_set => H; exists p.~%:pr.
+by move=> {X} {Y} X Y u [] p _; rewrite convC_set => H; exists (Prob.p p).~%:pr.
 Qed.
 
 Lemma convmm_cset (p : {prob R}) (X : {convex_set A}) : X :<| p |>: X = X.
@@ -934,7 +934,7 @@ Proof. by apply necset_ext; rewrite convE conv1_set. Qed.
 Lemma convmm p X : conv p X X = X.
 Proof. by apply necset_ext; rewrite convE convmm_cset. Qed.
 
-Lemma convC p X Y : conv p X Y = conv p.~%:pr Y X.
+Lemma convC p X Y : conv p X Y = conv (Prob.p p).~%:pr Y X.
 Proof. by apply necset_ext; rewrite !convE convC_set. Qed.
 
 Lemma convA p q X Y Z :

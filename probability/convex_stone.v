@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix fingroup perm.
 From mathcomp Require boolp.
 Require Import Reals Lra.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import mathcomp_extra Rstruct.
 Require Import ssrR Rstruct_ext Reals_ext realType_ext Ranalysis_ext ssr_ext.
 Require Import ssralg_ext logb Rbigop.
 Require Import fdist convex.
@@ -360,7 +360,7 @@ by rewrite convC (_ : _%:pr = R1%:pr) ?conv1 //=; apply val_inj; exact: onem0.
 Qed.
 
 Lemma convA0 (p q r s : {prob R}) a b c :
-  Prob.p p = (Prob.p r * Prob.p s)%coqR :> R -> (s.~ = p.~ * q.~)%coqR ->
+  Prob.p p = (Prob.p r * Prob.p s)%coqR :> R -> ((Prob.p s).~ = (Prob.p p).~ * (Prob.p q).~)%coqR ->
   a <| p |> (b <| q |> c) = (a <| r |> b) <| s |> c.
 Proof.
 move=> H1 H2.
@@ -402,7 +402,7 @@ have r1 : (r != R1%:pr)%coqR by rewrite p_of_neq1 //;
 rewrite -(convA' x1 y1) //.
 rewrite (convC _ y1).
 set s := [q_of q, p].
-set t := (Prob.p s.~%:pr * Prob.p q)%:pr.
+set t := (Prob.p (Prob.p s).~%:pr * Prob.p q)%:pr.
 have t1 : (Prob.p t < 1)%coqR.
   apply/RltP. rewrite -prob_lt1; apply/eqP => t1; subst t.
   have {q1} : (Prob.p q < 1)%coqR by apply/RltP; rewrite -prob_lt1.
@@ -572,8 +572,8 @@ move: (FDist.ge0 d ord0); rewrite le0r => /orP -[/eqP /esym d00|d00].
     rewrite -(FDist.f1 d) 2!big_ord_recl big_ord0 addr0 -d00 add0r; f_equal; exact/val_inj.
   have H1 : d = fdist1 (Ordinal (erefl (1 < 2)%nat)).
     rewrite -fdistI20; apply/fdist_ext => /= i.
-    rewrite fdistI2E; case: ifPn => [/eqP ->//|/= i0]; rewrite onem0.
-    rewrite -(FDist.f1 d) 2!big_ord_recl big_ord0 addr0 -d00 add0r; congr (d _).
+    rewrite fdistI2E; case: ifPn => [/eqP ->//|/= i0].
+    rewrite onem0 (_ : 1%coqR = 1%mcR)// -(FDist.f1 d) 2!big_ord_recl big_ord0 addr0 -d00 add0r; congr (d _).
     by case: i i0 => -[//|] -[|//] //= i12 _; exact/val_inj.
   rewrite {1}H1 Convn_fdist1 {1}Hs.
   have H2 : fdistI_perm d (tperm ord0 (Ordinal (erefl (1 < 2)%nat))) = fdist1 ord0.
@@ -660,7 +660,7 @@ rewrite (@convn3E _ _ p) //; last exact/eqP.
 rewrite convA.
 rewrite (convC _ (g ord0)).
 have ? :  1 - d ord0 != 0 by rewrite subr_eq0; exact/eqP/nesym.
-have H : [p_of [r_of probfdist d ord0, p].~%:pr, [s_of probfdist d ord0, p]] != R1%:pr :> R.
+have H : [p_of (Prob.p [r_of probfdist d ord0, p]).~%:pr, [s_of probfdist d ord0, p]] != R1%:pr :> R.
   apply p_of_neq1.
   rewrite s_of_pqE /=.
   rewrite Reals_ext.onemM !onemK -subRBA -[X in (_ < _ - (_ - X) < _)%coqR]mul1R.
@@ -772,7 +772,7 @@ have [/eqP dmax1|dmax1] := eqVneq (d ord_max) 1%coqR.
   move/fdist1P in dmax1.
   by move: H1; rewrite dmax1 // dmax1 // addr0 ltxx.
 have [d00|d00] := eqVneq (d ord0) 0.
-  rewrite (_ : (probfdist _ _).~%:pr = R1%:pr) ?conv1; last first.
+  rewrite (_ : (Prob.p (probfdist d ord0)).~%:pr = R1%:pr) ?conv1; last first.
     by apply/val_inj; rewrite /= d00 onem0.
   rewrite (@convn3E _ _ 1%coqR%:pr); last 2 first.
     rewrite fdistI_permE /= !permE /=.
@@ -791,7 +791,7 @@ have [d00|d00] := eqVneq (d ord0) 0.
   rewrite (_ : Ordinal _ = ord_max) //; last exact/val_inj.
   rewrite d00 subr0 divr1 /onem -(FDist.f1 d) /= !big_ord_recl big_ord0 addr0.
   rewrite d00 add0r [X in X - _]addrC addrK; congr (d _); exact/val_inj.
-have H : [p_of p.~%:pr, (probfdist d ord0).~%:pr] != 1%coqR%:pr.
+have H : [p_of (Prob.p p).~%:pr, (Prob.p (probfdist d ord0)).~%:pr] != 1%coqR%:pr.
   apply p_of_neq1 => /=; split.
     apply/RltP/onem_gt0; rewrite -fdist_lt1; exact/eqP.
   by apply/RltP; rewrite ltrBlDr ltrDl -fdist_gt0.

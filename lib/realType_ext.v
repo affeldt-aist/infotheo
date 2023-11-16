@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import reals normedtype.
-From mathcomp Require Import boolp.
+From mathcomp Require Import mathcomp_extra boolp.
 From mathcomp Require Import lra Rstruct.
 
 Delimit Scope ring_scope with mcR.
@@ -29,18 +29,13 @@ Section onem.
 Local Open Scope ring_scope.
 Variable R : realType.
 
-Definition onem (x: R) := 1 - x.
-Local Notation "p '.~'" := (onem p).
+Local Notation "p '.~'" := (@onem R p).
 
-Lemma onem0 : onem 0 = 1. Proof. by rewrite /onem subr0. Qed.
+(*Lemma onem_ge0 (x : R) : x <= 1 -> 0 <= onem x.
+Proof. exact: onem_ge0. Qed.*)
 
-Lemma onem1 : onem 1 = 0.   Proof. by rewrite /onem subrr. Qed.
-
-Lemma onem_ge0 x : x <= 1 -> 0 <= onem x.
-Proof. move=> ?; by rewrite /onem subr_ge0. Qed.
-
-Lemma onem_le1 x : 0 <= x -> onem x <= 1.
-Proof. move=> ?; by rewrite /onem lerBlDr -lerBlDl subrr. Qed.
+Lemma onem_le1 (x : R) : 0 <= x -> onem x <= 1.
+Proof. exact: onem_le1. Qed.
 
 Lemma onem_le  r s : (r <= s) = (s.~ <= r.~).
 Proof.
@@ -77,12 +72,12 @@ rewrite -/(q / q).
 by rewrite divrr// unitfE.
 Qed.
 
-Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
+Lemma onem_prob (r : R) : 0 <= r <= 1 -> 0 <= onem r <= 1.
 Proof.
   by move=> /andP [_0r r1]; apply /andP; split; [rewrite onem_ge0 | rewrite onem_le1].
 Qed.
 
-Lemma onem_eq0 r : (onem r = 0) <-> (r = 1).
+Lemma onem_eq0 (r : R) : (onem r = 0) <-> (r = 1).
 Proof.
 rewrite /onem. split; first by move /subr0_eq.
 by move=> ->; rewrite subrr.
@@ -90,7 +85,7 @@ Qed.
 
 Lemma onem_eq1 r : r.~ = 1 <-> r = 0. Proof. rewrite onemE; lra. Qed.
 
-Lemma onem_neq0 r : (onem r != 0) <-> (r != 1).
+Lemma onem_neq0 (r : R) : (onem r != 0) <-> (r != 1).
 Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 
 Lemma onem_gt0 r : r < 1 -> 0 < r.~. Proof. rewrite /onem; lra. Qed.
@@ -183,10 +178,10 @@ have [/eqP ->|pneq1] := boolP (p == 1%:pr); first by left.
 by right; apply/andP; split; [exact/prob_gt0|exact/prob_lt1].
 Qed.
 
-Lemma probK p : p = (onem p).~%:pr.
+Lemma probK p : p = (onem (Prob.p p)).~%:pr.
 Proof. by apply val_inj => /=; rewrite onemK. Qed.
 
-Lemma probKC (p : {prob R}) : Prob.p p + p.~ = 1 :> R.
+Lemma probKC (p : {prob R}) : Prob.p p + (Prob.p p).~ = 1 :> R.
 Proof. exact: onemKC. Qed.
 
 Lemma probadd_eq0 p q : Prob.p p + Prob.p q = 0 <-> p = 0%:pr /\ q = 0%:pr.

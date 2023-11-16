@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
 From mathcomp Require Import all_algebra vector reals normedtype.
-From mathcomp Require Import boolp.
+From mathcomp Require Import mathcomp_extra boolp.
 From mathcomp Require Import Rstruct.
 Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext Rbigop.
 
@@ -512,7 +512,7 @@ Variable A : finType.
 Hypothesis HA : #|A| = 2%nat.
 Variable p : prob R.
 
-Let f (a : A) := [ffun a' => (if a' == a then p.~ else p : R)].
+Let f (a : A) := [ffun a' => (if a' == a then (Prob.p p).~ else p : R)].
 
 Let f0 (a a' : A) : 0 <= (f a a' : R).
 Proof. by rewrite /f ffunE; case: ifP. Qed.
@@ -527,14 +527,14 @@ Qed.
 Definition fdist_binary : A -> fdist R A :=
   fun a => locked (FDist.make (f0 a) (f1 a)).
 
-Lemma fdist_binaryE a a' : fdist_binary a a' = (if a' == a then p.~ else p : R).
+Lemma fdist_binaryE a a' : fdist_binary a a' = (if a' == a then (Prob.p p).~ else p : R).
 Proof. by rewrite /fdist_binary; unlock; rewrite ffunE. Qed.
 
 Lemma sum_fdist_binary_swap a :
   \sum_(a' in A) fdist_binary a a' = \sum_(a' in A) fdist_binary a' a.
 Proof. by rewrite 2!Set2sumE /= !fdist_binaryE !(eq_sym a). Qed.
 
-Lemma fdist_binaryxx a : fdist_binary a a = p.~.
+Lemma fdist_binaryxx a : fdist_binary a a = (Prob.p p).~.
 Proof. by rewrite fdist_binaryE eqxx. Qed.
 
 End fdist_binary.
@@ -675,7 +675,7 @@ Variable p : prob R.
 Definition fdistI2: R.-fdist 'I_2 :=
   fdist_binary (card_ord 2) p (lift ord0 ord0).
 
-Lemma fdistI2E a : fdistI2 a = if a == ord0 then p : R else p.~.
+Lemma fdistI2E a : fdistI2 a = if a == ord0 then p : R else (Prob.p p).~.
 Proof.
 rewrite /fdistI2 fdist_binaryE; case: ifPn => [/eqP ->|].
   by rewrite eq_sym (negbTE (neq_lift _ _)).
@@ -713,14 +713,14 @@ Variables (n m : nat)
 
 Let f := [ffun i : 'I_(n + m) =>
   let si := fintype.split i in
-  match si with inl a => ((p : R) * d1 a) | inr a => p.~ * d2 a end].
+  match si with inl a => ((p : R) * d1 a) | inr a => (Prob.p p).~ * d2 a end].
 
 Let f0 i : 0 <= f i.
 Proof. by rewrite /f ffunE; case: splitP => a _; exact: mulr_ge0. Qed.
-  
+
 Let f1 : \sum_(i < n + m) f i = 1.
 Proof.
-rewrite -(onemKC (p : R)) -{1}(mulr1 (p : R)) -(mulr1 p.~).
+rewrite -(onemKC (p : R)) -{1}(mulr1 (p : R)) -(mulr1 (Prob.p p).~).
 rewrite -{1}(FDist.f1 d1) -(FDist.f1 d2) big_split_ord /=; congr (_ + _).
 - rewrite big_distrr /f /=; apply eq_bigr => i _; rewrite ffunE.
   case: splitP => [j Hj|k /= Hi].
@@ -735,7 +735,7 @@ Qed.
 Definition fdist_add : R.-fdist 'I_(n + m) := locked (FDist.make f0 f1).
 
 Lemma fdist_addE i : fdist_add i =
-  match fintype.split i with inl a => (p : R) * d1 a | inr a => p.~ * d2 a end.
+  match fintype.split i with inl a => (p : R) * d1 a | inr a => (Prob.p p).~ * d2 a end.
 Proof. by rewrite /fdist_add; unlock; rewrite ffunE. Qed.
 
 End fdist_add.
@@ -847,7 +847,7 @@ Variables (A : finType) (p : prob R) (d1 d2 : fdist R A).
 Definition fdist_conv : R.-fdist A := locked
   (fdist_convn (fdistI2 p) (fun i => if i == ord0 then d1 else d2)).
 
-Lemma fdist_convE a : fdist_conv a = (p : R) * d1 a + p.~ * d2 a.
+Lemma fdist_convE a : fdist_conv a = (p : R) * d1 a + (Prob.p p).~ * d2 a.
 Proof.
 rewrite /fdist_conv; unlock => /=.
   by rewrite fdist_convnE !big_ord_recl big_ord0 /= addr0 !fdistI2E.
