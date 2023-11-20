@@ -1,9 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrZ ssrR logb Reals_ext Rbigop ssr_ext fdist entropy kraft.
+Require Import ssrZ ssrR logb Reals_ext realType_ext Rbigop ssr_ext fdist.
+Require Import entropy kraft.
 
 (******************************************************************************)
 (*                       Shannon-Fano codes                                   *)
@@ -19,6 +20,8 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope R_scope.
+
+Import Order.POrderTheory Num.Theory.
 
 Definition kraft_condR (T : finType) (sizes : seq nat) :=
   let n := size sizes in
@@ -61,7 +64,9 @@ Let sizes := [seq (size \o f) a| a in A].
 Lemma shannon_fano_is_kraft : is_shannon_fano P f -> kraft_condR T sizes.
 Proof.
 move=> H.
-rewrite /kraft_condR -(FDist.f1 P) /sizes size_map.
+rewrite /kraft_condR.
+rewrite (_ : 1 = 1%mcR)//.
+rewrite -(FDist.f1 P) /sizes size_map.
 rewrite (eq_bigr (fun i:'I_(size(enum A)) => #|'I_t|%:R ^- size (f (nth a (enum A) i)))); last first.
   move=> i _; by rewrite /= (nth_map a).
 rewrite -(big_mkord xpredT (fun i => #|T|%:R ^- size (f (nth a (enum A) i)))).
@@ -69,10 +74,9 @@ rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
 apply leR_sumR => i _.
 rewrite H.
-have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr0; exact/leRP.
+have Pi0 : 0 < P i by apply/RltP; rewrite lt0r Pr0/=.
 apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
-  rewrite div1R LogV //.
-  rewrite oppRK LogK //; first exact/leRR.
+  rewrite div1R LogV// oppRK LogK //; first by apply/RleP; rewrite lexx.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite pow_Exp; last by apply ltR0n; rewrite card_ord.
 rewrite Exp_Ropp.
@@ -80,7 +84,7 @@ apply/leR_inv/Exp_le_increasing => //.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
 rewrite INR_Zabs_nat; last first.
   case/boolP : (P i == 1) => [/eqP ->|Pj1].
-    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_ge0/leRR.
+    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_ge0.
   apply/leR0ceil/ltRW/ltR0Log.
   by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
   rewrite div1R invR_gt1 // ltR_neqAle; split => //; exact/eqP.
@@ -113,13 +117,15 @@ Lemma shannon_fano_average_entropy : is_shannon_fano P f ->
 Proof.
 move=> H; rewrite /average.
 apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
-  apply ltR_sumR; [exact: fdist_card_neq0|move=> i].
-  apply ltR_pmul2l.
-    apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
+  apply: ltR_sumR.
+    apply: fdist_card_neq0.
+    exact: P.
+  move=> i.
+  apply ltR_pmul2l; first by apply/RltP; rewrite lt0r Pr_pos /=.
   rewrite H.
   rewrite (_ : #|T|%:R = 2) // ?card_ord // -!/(log _).
   set x := log _; case: (ceilP x) => _ Hx.
-  have Pi0 : 0 < P i by apply/ltRP; rewrite lt0R Pr_pos /=; exact/leRP.
+  have Pi0 : 0 < P i by apply/RltP; rewrite lt0r Pr_pos /=.
   rewrite INR_Zabs_nat; last first.
     apply/leR0ceil.
     rewrite /x div1R /log LogV //.

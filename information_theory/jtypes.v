@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect fingroup perm.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm.
 From mathcomp Require boolp.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
 Require Import num_occ channel types.
 
 (******************************************************************************)
@@ -38,6 +38,8 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 Local Open Scope channel_scope.
+
+Import Num.Theory.
 
 Module JType.
 Section def.
@@ -99,12 +101,14 @@ pose pf := fun a => [ffun b : B =>
     then / #|B|%:R
     else (f a b)%:R / ln%:R].
 move=> a.
-refine (@mkNNFinfun _ (pf a) _); apply/forallP_leRP => b.
-rewrite /pf ffunE.
-case: ifP => [_ | Hcase].
+refine (@mkNNFinfun _ (pf a) _); apply/forallPP; first by move=> ?; exact/RleP.
+move=> b; rewrite /pf ffunE.
+case: ifPn => [_ | Hcase].
 - exact/invR_ge0/ltR0n.
 - apply divR_ge0; first exact/leR0n.
-  by apply/ltRP; rewrite lt0R INR_eq0' Hcase /= leR0n'.
+  apply/RltP; rewrite lt0r; apply/andP; split.
+    by apply: contra Hcase; rewrite INR_eq0'.
+  exact/RleP/leR0n.
 Defined.
 
 Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat) (Bnot0 : (0 < #|B|)%nat)
@@ -115,11 +119,29 @@ set pf := fun a b =>
   then / #|B|%:R
   else (f a b)%:R / ln%:R.
 refine (@Channel1.mkChan A B _ Anot0) => a.
-apply: (@FDist.mk _ (@nneg_fun_of_pre_jtype _ _ Bnot0 n f a)).
-under eq_bigr do rewrite ffunE /=.
+apply: (@FDist.make _ _ (@nneg_fun_of_pre_jtype _ _ Bnot0 n f a)).
+  move=> b.
+  rewrite /nneg_fun_of_pre_jtype/= ffunE.
+  case: ifPn => // ?.
+    by apply/RleP/invR_ge0/ltR0n.
+  apply/RleP/divR_ge0.
+    exact/leR0n.
+  rewrite ltR_neqAle; split.
+    apply/eqP.
+    by rewrite eq_sym INR_eq0'.
+  exact: leR0n.
+rewrite /=.
+under eq_bigr do rewrite ffunE.
 case/boolP : (\sum_(b1 in B) (f a b1) == O)%nat => Hcase.
 - by rewrite /Rle big_const iter_addR mulRV // INR_eq0' -lt0n.
-- rewrite big_morph_natRD /Rdiv -big_distrl /= mulRV //.
+- under eq_bigr.
+    move=> b bB.
+    rewrite RdivE//; last first.
+      by rewrite INR_eq0'.
+    over.
+  rewrite big_morph_natRD /Rdiv.
+  rewrite -big_distrl /=.
+  rewrite GRing.mulfV//.
   by rewrite -big_morph_natRD // INR_eq0'.
 Defined.
 
@@ -643,8 +665,9 @@ Local Open Scope nat_scope.
 Definition type_of_row (a : A) (Ha : N(a | ta) != 0) : P_ N(a | ta) ( B ).
 pose f := [ffun b => Ordinal (ctyp_element_ub Hrow_num_occ Hta a b)].
 pose d := [ffun b => ((f b)%:R / N(a | ta)%:R)%R].
-have d0 : forall b, (0 <= d b)%R.
+have d0 : forall b, (0 <= d b)%mcR.
   move=> b.
+  apply/RleP.
   rewrite /d /= ffunE.
   apply mulR_ge0; first exact/leR0n.
   apply/invR_ge0/ltR0n; by rewrite lt0n.
@@ -1085,6 +1108,8 @@ Qed.
 
 End cond_type_equiv_sect.
 
+Local Open Scope fdist_scope.
+
 Module OutType.
 
 Section OutType_sect.
@@ -1098,8 +1123,8 @@ Variable V : P_ n ( A , B ).
 
 Definition f := [ffun b => ((\sum_(a in A) (JType.f V) a b)%:R / n%:R)%R].
 
-Lemma f0 (b : B) : (0 <= f b)%R.
-Proof. rewrite ffunE; apply divR_ge0; [exact/leR0n | exact/ltR0n]. Qed.
+Lemma f0 (b : B) : (0 <= f b)%mcR.
+Proof. rewrite ffunE; apply/RleP/ divR_ge0; [exact/leR0n | exact/ltR0n]. Qed.
 
 Lemma f1 : (\sum_(b in B) f b = 1)%R.
 Proof.
@@ -1108,7 +1133,7 @@ rewrite -big_distrl /= -big_morph_natRD exchange_big /=.
 by move/eqP : (JType.sum_f V) => ->; rewrite mulRV // INR_eq0'.
 Qed.
 
-Definition d : fdist B := FDist.make f0 f1.
+Definition d : {fdist B} := FDist.make f0 f1.
 
 Definition P : P_ n ( B ).
 refine (@type.mkType _ _ (FDist.make f0 f1) [ffun b => Ordinal (jtype_entry_ub V b)] _).
@@ -1145,7 +1170,7 @@ Qed.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 
-Lemma output_type_out_fdist : forall b, (`tO( V )) b = `O( P , V ) b.
+Lemma output_type_out_fdist : forall b, type.d (`tO( V )) b = `O( P , V ) b.
 Proof.
 rewrite /fdist_of_ffun /= /OutType.d /OutType.f => b /=.
 rewrite ffunE big_morph_natRD /Rdiv (big_morph _ (morph_mulRDl _) (mul0R _)).
@@ -1160,13 +1185,13 @@ case: ifP => [/eqP |] Hcase.
   rewrite in_set in Hta.
   move/forallP/(_ a) : Hta.
   rewrite -sum_V div0R.
-  move/eqP => ->; rewrite mulR0.
+  move/eqP => ->; rewrite -RmultE mulR0.
   move/eqP in Hcase.
   rewrite sum_nat_eq0 in Hcase.
   move/forallP/(_ b) : Hcase.
   move/implyP/(_ Logic.eq_refl)/eqP => ->.
   by rewrite mul0R.
-- rewrite -mulRA sum_V; congr (_ * _).
+- rewrite -RmultE -mulRA sum_V; congr (_ * _).
   move: Hta; rewrite in_set => /forallP/(_ a)/eqP ->.
   by rewrite mulRA -{1}(mul1R (/ n%:R)) mulVR // INR_eq0' -sum_V Hcase.
 Qed.
@@ -1213,13 +1238,11 @@ Qed.
 End card_perm_shell.
 
 Section shell_partition.
-
-Local Open Scope fun_scope.
-Local Open Scope nat_scope.
-
 Variables A B : finType.
 Variable n' : nat.
 Let n := n'.+1.
+Local Open Scope fun_scope.
+Local Open Scope nat_scope.
 
 (** The stochastic matrix with entries N(a, b | ta, tb): *)
 
@@ -1261,10 +1284,8 @@ Definition shell_partition : {set set_of_finType [finType of n.-tuple B]} :=
 
 Lemma cover_shell : cover shell_partition = [set: n.-tuple B].
 Proof.
-rewrite /cover /cond_type.
-apply/setP => tb.
-rewrite in_set.
-apply/bigcupP.
+rewrite /cover /cond_type; apply/setP => tb.
+rewrite in_set; apply/bigcupP.
 exists (num_co_occ_jtype ta tb).-shell ta.
 - apply/imsetP; exists (num_co_occ_jtype ta tb) => //.
   rewrite inE.
@@ -1283,7 +1304,8 @@ exists (num_co_occ_jtype ta tb).-shell ta.
   by rewrite /num_co_occ_jtype /= 2!ffunE.
 Qed.
 
-Lemma trivIset_shell' tb tb' V : tb \in V.-shell ta -> tb' \in V.-shell ta = relYn ta tb' tb.
+Lemma trivIset_shell' tb tb' V : tb \in V.-shell ta ->
+  tb' \in V.-shell ta = relYn ta tb' tb.
 Proof.
 rewrite 2!in_set => H.
 rewrite /relYn.
@@ -1299,10 +1321,11 @@ rewrite /disjoint.
 apply/pred0P => tb /=.
 apply/negP/negP.
 move: tb.
-apply/forallP; rewrite -negb_exists; apply/negP; case/existsP => tb /andP [H1 H2]; contradict HS12.
+apply/forallP; rewrite -negb_exists; apply/negP;
+  case/existsP => tb /andP [H1 H2]; contradict HS12.
 apply/negP/negPn/eqP/setP => ?.
 rewrite 2!(@trivIset_shell' tb) //.
-apply reflexive_relYn.
+exact: reflexive_relYn.
 Qed.
 
 End shell_partition.
@@ -1335,9 +1358,8 @@ Let sum_tuples_ctypes' f : \sum_ (tb : _ ) f tb =
 Proof.
 transitivity (\sum_ (tb in [set: n.-tuple B]) f tb).
   by apply eq_bigl => tb; rewrite in_set.
-rewrite -(cover_shell Anot0 Bnot0 Hta).
-rewrite -sum_tuples_ctypes'' // big_trivIset //.
-apply trivIset_shell.
+rewrite -(cover_shell Anot0 Bnot0 Hta) -sum_tuples_ctypes''// big_trivIset//.
+exact: trivIset_shell.
 Qed.
 
 Lemma sum_tuples_ctypes f F :
@@ -1345,8 +1367,9 @@ Lemma sum_tuples_ctypes f F :
   \sum_(V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta | F tb) f tb.
 Proof.
 rewrite big_mkcond /=.
-transitivity (\sum_(V | V \in \nu^{B}(P)) \sum_(tb in V.-shell ta) if F tb then f tb else 0).
-  by apply sum_tuples_ctypes'.
+transitivity (\sum_(V | V \in \nu^{B}(P)) \sum_(tb in V.-shell ta)
+    if F tb then f tb else 0).
+  exact: sum_tuples_ctypes'.
 apply eq_bigr => s _.
 rewrite [in LHS]big_mkcond /= [in RHS]big_mkcond /=.
 apply/esym/eq_bigr => tb _.

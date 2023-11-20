@@ -1,9 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts Rbigop fdist entropy.
+From mathcomp Require Import reals.
+Require Import realType_ext Rstruct_ext.
 Require Import channel_code channel divergence conditional_divergence.
 Require Import variation_dist pinsker.
 
@@ -36,9 +38,11 @@ Local Open Scope channel_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
 
+Import Order.TTheory GRing.Theory Num.Theory.
+
 Section mutinfo_distance_bound.
 
-Variables (A B : finType) (V W : `Ch(A, B)) (P : fdist A).
+Variables (A B : finType) (V W : `Ch(A, B)) (P : {fdist A}).
 Hypothesis V_dom_by_W : P |- V << W.
 Hypothesis cdiv_ub : D(V || W | P) <= (exp(-2)) ^ 2 * / 2.
 
@@ -48,8 +52,12 @@ split; first exact: sqrt_pos.
 apply pow2_Rle_inv; [ exact: sqrt_pos | exact/ltRW/exp_pos | ].
 rewrite [in X in X <= _]/= mulR1 sqrt_sqrt; last first.
   apply mulR_ge0; [lra | exact: cdiv_ge0].
-apply/leRP; rewrite -(leR_pmul2r' (/ 2)); last exact/ltRP/invR_gt0.
-by rewrite -mulRA mulRCA mulRV ?mulR1; [exact/leRP | exact/gtR_eqF].
+apply/RleP; rewrite -(@ler_pM2r _ (/ 2)); last first.
+  by rewrite RinvE' invr_gt0// (_ : 2%coqR = 2%:R)// INRE ltr0n.
+rewrite RmultE -mulrA mulrCA RinvE' (_ : 2%coqR = 2%:R)// INRE.
+rewrite mulfV ?mulr1 ?gt_eqF//.
+  by apply/RleP; rewrite -RdivE'.
+exact/RltP.
 Qed.
 
 Local Open Scope variation_distance_scope.
@@ -72,7 +80,7 @@ apply: (@leR_trans (d((P `X V), (P `X W)))).
     by apply Req_le; rewrite pair_bigA /=; apply eq_bigr => -[].
   apply: leR_sumR => a _.
   rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
-  rewrite 2!fdist_prodE /= !(mulRC (P a)) addR_opp.
+  rewrite 2!fdist_prodE /= !(mulrC (P a)) addR_opp.
   by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.
 - rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dominates.
@@ -120,7 +128,7 @@ Hypothesis set_of_I_has_ubound :
   classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
 
 Lemma error_exponent_bound : exists Delta, 0 < Delta /\
-  forall P : fdist A, forall V : `Ch(A, B),
+  forall P : {fdist A}, forall V : `Ch(A, B),
     P |- V << W ->
     Delta <= D(V || W | P) +  +| minRate - `I(P, V) |.
 Proof.
@@ -140,7 +148,7 @@ have /mu_cond : D_x no_cond 0 x /\ R_dist x 0 < mu.
   - rewrite /R_dist subR0 gtR0_norm // /x.
     apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
     by rewrite ltR_pdivr_mulr //; lra.
-rewrite /R_dist {2}/xlnx ltRR' subR0 ltR0_norm; last first.
+rewrite /R_dist {2}/xlnx ltxx subR0 ltR0_norm; last first.
   apply xlnx_neg; split => //; rewrite /x.
   exact: leR_ltR_trans (geR_minr _ _) ltRinve21.
 move=> Hx.
@@ -150,7 +158,7 @@ exists Delta; split.
   - by apply mulR_gt0; [exact/subR_gt0 | exact/invR_gt0].
   - by apply mulR_gt0; [exact: expR_gt0 | exact: invR_gt0].
 move=> P V v_dom_by_w.
-case/boolP : (Delta <b= D(V || W | P)) => [/leRP| /leRP/ltRNge] Hcase.
+case/boolP : (Delta <= D(V || W | P))%mcR => [/RleP| /RleP/ltRNge] Hcase.
   apply (@leR_trans (D(V || W | P))) => //.
   by rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.
 suff HminRate : (minRate - capacity W) / 2 <= minRate - (`I(P, V)).

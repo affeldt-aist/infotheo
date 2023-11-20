@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext logb Rbigop fdist proba entropy aep typ_seq.
-Require Import source_code.
+Require Import ssrR Reals_ext realType_ext logb Rbigop fdist proba entropy aep.
+Require Import typ_seq source_code.
 
 (******************************************************************************)
 (*         Source coding theorem (fixed length, converse part)                *)
@@ -24,10 +24,13 @@ Local Open Scope source_code_scope.
 Local Open Scope entropy_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
+Local Open Scope fdist_scope.
+
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Section source_coding_converse'.
 
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 Variables num den : nat.
 Let r := num%:R / den.+1%:R.
 Hypothesis Hr : 0 < r < `H P.
@@ -104,13 +107,14 @@ apply (@leR_trans (exp2 n%:R)).
     by apply/le_INR/leP/subset_leqif_cards/imsetS/subsetP => x Hx; rewrite inE.
   apply (@leR_trans #| [set: 'rV[bool]_n] |%:R).
     exact/le_INR/leP/leq_imset_card.
-  by rewrite cardsT card_mx /= card_bool natRexp2 mul1n; exact/leRR.
+  rewrite cardsT card_mx /= card_bool natRexp2 mul1n.
+  by apply/RleP; rewrite lexx.
 apply Exp_le_increasing => //.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 apply (@leR_pmul2r (1 / r)) => //.
   by apply divR_gt0; [lra | tauto].
 rewrite -mulRA div1R mulRV ?mulR1; last first.
-  by case: Hr => /ltRP; rewrite lt0R => /andP[].
+  by case: Hr => /RltP; rewrite lt0r => /andP[].
 by case/leR_max : Hk.
 Qed.
 
@@ -125,6 +129,7 @@ suff : 1 = a + b by move=> ->; field.
 rewrite /a {a}.
 have -> : b = \sum_(i in [set i | dec sc (enc sc i) == i]) P `^ k.+1 i.
   apply eq_big => // i /=; by rewrite inE.
+rewrite (_ : 1 = 1%mcR)//.
 rewrite -(FDist.f1 (P `^ k.+1)).
 rewrite (bigID [pred a | a \in [set i0 | dec sc (enc sc i0) == i0]]) /= addRC.
 by congr (_ + _); apply eq_bigl => t /=; rewrite !inE.
@@ -147,7 +152,7 @@ Lemma step3 : 1 - (esrc(P , sc)) <=
   \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) P `^ k.+1 x.
 Proof.
 rewrite step2; apply/leR_add2r/leR_sumRl => //= i Hi.
-exact/leRR.
+  by apply/RleP; rewrite lexx.
 by move: Hi; rewrite in_setI => /andP[].
 Qed.
 
@@ -155,11 +160,12 @@ Lemma step4 : 1 - (esrc(P , sc)) <= delta +
   #| no_failure :&: `TS P k.+1 delta|%:R * exp2 (- k.+1%:R * (`H P - delta)).
 Proof.
 apply/(leR_trans step3)/leR_add.
-- move/leRP : Hk; rewrite 2!leR_max' -andbA => /andP[/leRP].
-  move/(Pr_TS_1 Hdelta) => Hdelta _.
+- move: Hk => /leR_max[] /leR_max[].
+  move/(Pr_TS_1 Hdelta) => Hdelta _ _.
   rewrite -[in X in _ <= X](oppRK delta) leR_oppr -(@leR_add2l 1) 2!addR_opp.
   move/leR_trans : Hdelta; apply.
-  rewrite Pr_to_cplt; exact/leRR.
+  rewrite Pr_to_cplt.
+  by apply/RleP; rewrite lexx.
 - apply (@leR_trans
     (\sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
       exp2 (- k.+1%:R * (`H P - delta)))).
@@ -168,12 +174,13 @@ apply/(leR_trans step3)/leR_add.
     move: (typ_seq_definition_equiv2 i_TS) => [H1 _].
     apply (@Log_le_inv 2) => //.
     + move: i_TS.
-      rewrite /`TS inE /typ_seq => /andP[/leRP i_TS _].
+      rewrite /`TS inE /typ_seq => /andP[/RleP i_TS _].
       exact: (ltR_leR_trans (exp2_gt0 _) i_TS).
     + rewrite /exp2 ExpK //.
       rewrite mulRC mulRN -mulNR -leR_pdivr_mulr; last exact/ltR0n.
       rewrite leR_oppr /Rdiv mulRC; by rewrite div1R mulNR in H1.
-  by rewrite big_const iter_addR; exact/leRR.
+  rewrite big_const iter_addR.
+  by apply/RleP; rewrite lexx.
 Qed.
 
 Lemma step5 : 1 - (esrc(P , sc)) <= delta + exp2 (- k.+1%:R * (e0 - delta)).
@@ -201,11 +208,11 @@ have H : exp2 (- k.+1%:R * (e0 - delta)) <= delta.
       have H1 : (`H P - r) / 2 < `H P - r.
         rewrite -[X in _ < X]mulR1.
         apply ltR_pmul2l; last lra.
-        apply/ltRP; rewrite ltR_subRL' addR0; apply/ltRP; by case: Hr.
+        by apply/RltP; rewrite RminusE subr_gt0; apply/RltP; case: Hr.
       apply Rmin_case_strong => H2 //; exact: (leR_ltR_trans H2 H1).
     + rewrite -mulRA div1R mulRV; last by rewrite subR_eq0'; exact/eqP/e0_delta.
       rewrite mulNR mulR1 leR_oppl.
-      by move/leRP : Hk; rewrite 2!leR_max' => /andP[/andP[_ /leRP]].
+      by move: Hk => /leR_max[] /leR_max[].
 suff : 1 - (esrc(P , sc)) <= delta + delta by move=> *; lra.
 exact/(leR_trans step5)/leR_add2l.
 Qed.
@@ -227,7 +234,7 @@ End source_coding_converse'.
 
 Section source_coding_converse.
 
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 
 Theorem source_coding_converse : forall epsilon, 0 < epsilon < 1 ->
   forall r : Qplus, 0 < r < `H P ->

@@ -40,6 +40,7 @@ information theory, and linear error-correcting codes.
   - [MathComp field](https://math-comp.github.io)
   - [MathComp analysis](https://github.com/math-comp/analysis)
   - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
+  - MathComp algebra tactics
 - Coq namespace: `infotheo`
 - Related publication(s):
   - [Formal Adventures in Convex and Conical Spaces](https://arxiv.org/abs/2004.12713) doi:[10.1007/978-3-030-53518-6_2](https://doi.org/10.1007/978-3-030-53518-6_2)

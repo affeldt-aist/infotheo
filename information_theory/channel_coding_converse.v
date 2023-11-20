@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext logb ln_facts Rbigop num_occ.
@@ -126,10 +126,10 @@ apply (@leR_trans ((n.+1%:R / n%:R) ^ K * aux)); last first.
     + apply (@leR_pmul2r n%:R) => //.
       rewrite -mulRA mulVR // ?mulR1 ?INR_eq0' ?gtn_eqF // (_ : 2 = 2%:R) //.
       rewrite -natRM; apply/le_INR/leP; by rewrite -{1}(mul1n n) ltn_pmul2r.
-  - exact/leRR.
+  - by apply/RleP; rewrite Order.POrderTheory.lexx.
 rewrite expRM -mulRA; apply leR_pmul => //.
 - exact/expR_ge0/ltRW/ltR0n.
-- exact/leRR.
+- by apply/RleP; rewrite Order.POrderTheory.lexx.
 - apply invR_le => //.
   + apply mulR_gt0; last exact aux_gt0.
     rewrite expRV ?INR_eq0' //; exact/invR_gt0/expR_gt0.

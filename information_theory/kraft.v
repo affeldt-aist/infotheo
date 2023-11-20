@@ -1,7 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect path ssralg fingroup zmodp poly.
-From mathcomp Require Import ssrnum.
+From mathcomp Require Import all_ssreflect path ssralg ssrnum.
 Require FunctionalExtensionality.
 Require Import ssr_ext.
 
@@ -574,7 +573,7 @@ Lemma prefix_implies_kraft_cond : prefix_code C ->
 Proof.
 move=> prefixC T_gt0; rewrite /kraft_cond size_map -/n.
 (*\color{comment}{\framebox{at this point, the goal is $\sum_{i < n} |T|^{-\ell_i} \leq 1$}} *)
-have /ler_pmul2l <- : ((0 : R) < #|T|%:R ^+ lmax)%R.
+have /ler_pM2l <- : ((0 : R) < #|T|%:R ^+ lmax)%R.
   by rewrite exprn_gt0 // ltr0n.
 rewrite mulr1 big_distrr /=. (*\color{comment}{\framebox{the goal is now $\sum_{i < n}\frac{|T|^{\ell_{\mathrm{max}}}}{#|T|^{\ell(i)}} \leq |T|^{\ell_{\mathrm{max}}}$}} *)
 rewrite (eq_bigr (fun i : 'I_n => #|suffixes C``_i|%:R)%R); last first.
@@ -619,7 +618,7 @@ Lemma w_ub (H : kraft_cond R T l) j : w j <= #|T|^(nth O l j) - 1.
 Proof.
 have H' : (\sum_(i < n) #|T|%:R^-(nth O l i) <= (1 : R))%R.
   move: H; by rewrite /kraft_cond (_ : size l = n).
-rewrite -(@ler_nat R) -(@ler_pmul2l _ (#|T|%:R ^- nth O l j))%R; last first.
+rewrite -(@ler_nat R) -(@ler_pM2l _ (#|T|%:R ^- nth O l j))%R; last first.
   by rewrite -exprVn exprn_gt0 // invr_gt0 ltr0n card_ord.
 case/boolP : (j == ord0) => [/eqP ->|i0].
   by rewrite wE0 mulr0 mulr_ge0 // -exprVn exprn_ge0 // invr_ge0 ler0n.
@@ -632,11 +631,11 @@ rewrite (eq_bigr (fun j : 'I__ => #|T|%:R ^-nth O l j))%R; last first.
     by rewrite (leq_trans (ltn_ord i)) // ltnW.
     by rewrite unitfE pnatr_eq0.
   by rewrite mulrA mulVr ?unitfE -?natrX ?pnatr_eq0 ?expn_eq0 // mul1r.
-rewrite ler_subr_addr natrX (le_trans _ H') //.
+rewrite lerBrDr natrX (le_trans _ H') //.
 rewrite [X in (X <= _)%R](_ : _ = \sum_(k < j.+1) #|T|%:R^-nth O l k)%R; last first.
   by rewrite big_ord_recr /= card_ord.
 rewrite (@big_ord_widen _ _ _ j.+1 n (fun i => #|T|%:R ^- nth O l i))%R //.
-rewrite [in X in (_ <= X)%R](bigID (fun k : 'I_n => k < j.+1)) /= ler_addl.
+rewrite [in X in (_ <= X)%R](bigID (fun k : 'I_n => k < j.+1)) /= lerDl.
 rewrite sumr_ge0 // => k _; by rewrite invr_ge0 exprn_ge0 // ler0n.
 Qed.
 
@@ -728,12 +727,12 @@ have H1 : (r >= (w j)%:R + (1 : R))%R. (*\color{comment}{\framebox{here we prove
       by rewrite (leq_trans (ltn_ord i)) // ltnW.
       by rewrite unitfE pnatr_eq0 card_ord.
     by rewrite -(big_mkord xpredT f)%R -big_cat_nat //= ltnW.
-  rewrite ler_add //.
+  rewrite lerD //.
   (*\color{comment}{\framebox{at this point, the subgoal is $1 \leq u$, for the step (\ref{eqn:kraft_converse2})-(\ref{eqn:kraft_converse3})}} *)
   rewrite /u -(@prednK k); last by rewrite (leq_ltn_trans _ jk).
   rewrite big_nat_recl; last by move/(leq_sub2r 1) : jk; rewrite !subn1.
   rewrite divrr ?unitfE -?natrX ?pnatr_eq0 ?expn_eq0 ?card_ord //.
-  rewrite ler_addl sumr_ge0 // => i _.
+  rewrite lerDl sumr_ge0 // => i _.
   by rewrite natrX divr_ge0 // exprn_ge0 // ?card_ord ?ler0n.
 have H2 : (r - 1 < (w j)%:R)%R. (* \color{comment}{\framebox{here we prove $r - 1 < w_j$}} *)
   have /(congr1 (fun x => x%:R : R)%R) : w k =
@@ -750,10 +749,10 @@ have H2 : (r - 1 < (w j)%:R)%R. (* \color{comment}{\framebox{here we prove $r - 
   have : ((w k %% #|T| ^ (l``_k - l``_j))%:R /
           #|T|%:R ^+ (l``_k - l``_j) < (1 : R))%R.
     (*\color{comment}{\framebox{here we prove $(w_k \bmod |T|^{\ell_k-\ell_j}) / |T|^{\ell_k - \ell_j} < 1$, leading to (\ref{eqn:kraft_converse6})}} *)
-    rewrite ltr_pdivr_mulr; [|by rewrite -natrX ltr0n expn_gt0 card_ord].
+    rewrite ltr_pdivrMr; [|by rewrite -natrX ltr0n expn_gt0 card_ord].
     by rewrite mul1r -natrX ltr_nat ltn_mod expn_gt0 card_ord.
-  by rewrite {}wkE ltr_sub_addl addrC ltr_add2r.
-by rewrite ltr_subl_addl addrC ltNge H1 in H2.
+  by rewrite {}wkE ltrBDl addrC ltrD2r.
+by rewrite ltrBlDl addrC ltNge H1 in H2.
 Qed.
 End kraft_cond_implies_prefix.
 

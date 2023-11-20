@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssralg all_algebra reals.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ln_facts logb Rbigop fdist.
+Require Import ssrR Reals_ext ln_facts logb Rbigop fdist proba.
 
 (******************************************************************************)
 (*    Divergence (or the Kullback-Leibler distance or relative entropy)       *)
@@ -26,6 +26,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
+Local Open Scope fdist_scope.
 
 (* TODO: rename, move? *)
 Section log_facts.
@@ -34,7 +35,7 @@ Lemma div_diff_ub x y : 0 <= x -> (y = 0 -> x = 0) -> 0 <= y ->
                         x * (log (y / x)) <= (y - x) * log (exp 1).
 Proof.
 move=> x0 yx /leR_eqVlt[/esym|] y0.
-- move: (yx y0) => ->; rewrite y0 subRR 2!mul0R; exact/leRR.
+- by move: (yx y0) => ->; rewrite y0 subRR 2!mul0R.
 - case/leR_eqVlt : x0 => [/esym ->|x0].
   + rewrite mul0R subR0; apply mulR_ge0; [exact: ltRW | exact: log_exp1_Rle_0].
   + rewrite (_ : y - x = x * (y / x - 1)); last first.
@@ -62,7 +63,7 @@ End log_facts.
 
 Section divergence_def.
 
-Variables (A : finType) (P Q : fdist A).
+Variables (A : finType) (P Q : {fdist A}).
 
 Definition div := \sum_(a in A) P a * log (P a / Q a).
 
@@ -72,10 +73,11 @@ Notation "'D(' P '||' Q ')' " := (div P Q) : divergence_scope.
 
 Local Open Scope divergence_scope.
 Local Open Scope reals_ext_scope.
+Local Open Scope fdist_scope.
 
 Section divergence_prop.
 
-Variables (A : finType) (P Q : fdist A).
+Variables (A : finType) (P Q : {fdist A}).
 Hypothesis P_dom_by_Q : P `<< Q.
 
 Lemma div_ge0 : 0 <= D(P || Q).
@@ -86,14 +88,14 @@ rewrite /div [X in _ <= X](_ : _ =
   case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
   congr (_ * _).
   have Qa0 := dominatesEN P_dom_by_Q H0.
-  by rewrite -logV ?Rinv_div//; apply divR_gt0; rewrite -fdist_gt0.
+  by rewrite -logV ?Rinv_div//; apply divR_gt0; apply /RltP; rewrite -fdist_gt0.
 rewrite leR_oppr oppR0.
 apply (@leR_trans ((\sum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
   apply leR_sumR => a _; apply div_diff_ub => //.
   by move/dominatesP : P_dom_by_Q; exact.
 rewrite -{1}(mul0R (log (exp 1))); apply (leR_wpmul2r log_exp1_Rle_0).
-by rewrite big_split /= -big_morph_oppR !FDist.f1 addR_opp subRR; exact/leRR.
+by rewrite big_split /= -big_morph_oppR !FDist.f1 addR_opp subRR.
 Qed.
 
 Lemma divPP : D(Q || Q) = 0.
@@ -116,7 +118,7 @@ apply/esym; move: a (erefl true); apply leR_sumR_eq.
     case/boolP : (P a == 0) => [/eqP ->| H0]; first by rewrite !mul0R.
     congr (_ * _).
     have Qa0 := dominatesEN P_dom_by_Q H0.
-    by rewrite -logV ?Rinv_div//; apply divR_gt0; rewrite -fdist_gt0.
+    by rewrite -logV ?Rinv_div//; apply divR_gt0; apply /RltP; rewrite -fdist_gt0.
   rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
   by rewrite -big_morph_oppR !FDist.f1 addR_opp subRR mul0R.
 Qed.

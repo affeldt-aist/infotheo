@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup perm finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals.
@@ -117,7 +117,7 @@ End conditional_probability.
 Notation "\Pr_ P [ E | F ]" := (jcPr P E F) : proba_scope.
 
 Section jPr_Pr.
-Variables (U : finType) (P : fdist U) (A B : finType).
+Variables (U : finType) (P : {fdist U}) (A B : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (E : {set A}) (F : {set B}).
 
 Lemma jPr_Pr : \Pr_(`p_[% X, Y]) [E | F] = `Pr[X \in E |Y \in F].
@@ -277,12 +277,14 @@ by apply/eqP/eqP => [[] -> | ->].
 Qed.
 
 Section jfdist_cond0.
-Variables (A B : finType) (PQ : {fdist A * B}) (a : A).
+Variables (A B : finType) (PQ : {fdist (A * B)}) (a : A).
 Hypothesis Ha : PQ`1 a != 0.
 
 Let f := [ffun b => \Pr_(fdistX PQ) [[set b] | [set a]]].
 
 Let f0 b : 0 <= f b. Proof. rewrite ffunE; exact: jcPr_ge0. Qed.
+
+Let f0' b : (0 <= f b)%O. Proof. by apply/RleP. Qed.
 
 Let f1 : \sum_(b in B) f b = 1.
 Proof.
@@ -290,7 +292,7 @@ under eq_bigr do rewrite ffunE.
 by rewrite /jcPr -big_distrl /= PrX_snd mulRV // Pr_set1 fdistX2.
 Qed.
 
-Definition jfdist_cond0 : {fdist B} := locked (FDist.make f0 f1).
+Definition jfdist_cond0 : {fdist B} := locked (@FDist.make _ _ _ f0' f1).
 
 Lemma jfdist_cond0E b : jfdist_cond0 b = \Pr_(fdistX PQ) [[set b] | [set a]].
 Proof. by rewrite /jfdist_cond0; unlock; rewrite ffunE. Qed.
@@ -327,13 +329,13 @@ Qed.
 End jfdist_cond.
 Notation "P `(| a ')'" := (jfdist_cond P a).
 
-Lemma cPr_1 (U : finType) (P : fdist U) (A B : finType)
+Lemma cPr_1 (U : finType) (P : {fdist U}) (A B : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) a : `Pr[X = a] != 0 ->
   \sum_(b <- fin_img Y) `Pr[ Y = b | X = a ] = 1.
 Proof.
 rewrite -pr_eq_set1 pr_inE' Pr_set1 -{1}(fst_RV2 _ Y) => Xa0.
 set Q := `p_[% X, Y] `(| a ).
-rewrite -(FDist.f1 Q) [in RHS](bigID (mem (fin_img Y))) /=.
+rewrite -[RHS](FDist.f1 Q) [in RHS](bigID (mem (fin_img Y))) /=.
 rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   move=> b bY.
   rewrite /Q jfdist_condE // /jcPr /Pr !(big_setX,big_set1) /= fdistXE fdistX2 fst_RV2.
@@ -353,11 +355,11 @@ Qed.
 Lemma jcPr_1 (A B : finType) (P : {fdist A * B}) a : P`1 a != 0 ->
   \sum_(b in B) \Pr_(fdistX P)[ [set b] | [set a] ] = 1.
 Proof.
-move=> Xa0; rewrite -(FDist.f1 (P `(| a ))); apply eq_bigr => b _.
+move=> Xa0; rewrite -[RHS](FDist.f1 (P `(| a ))); apply eq_bigr => b _.
 by rewrite jfdist_condE.
 Qed.
 
-Lemma jfdist_cond_prod (A B : finType) (P : fdist A) (W : A -> fdist B) (a : A) :
+Lemma jfdist_cond_prod (A B : finType) (P : {fdist A}) (W : A -> {fdist B}) (a : A) :
   (P `X W)`1 a != 0 -> W a = (P `X W) `(| a ).
 Proof.
 move=> a0; apply/fdist_ext => b.
@@ -366,7 +368,7 @@ rewrite fdist_prodE /= /Rdiv mulRAC mulRV ?mul1R //.
 by move: a0; rewrite fdist_prod1.
 Qed.
 
-Lemma jcPr_fdistX_prod (A B : finType) (P : fdist A) (W : A -> fdist B) a b :
+Lemma jcPr_fdistX_prod (A B : finType) (P : {fdist A}) (W : A -> {fdist B}) a b :
   P a <> 0 -> \Pr_(fdistX (P `X W))[ [set b] | [set a] ] = W a b.
 Proof.
 move=> Pxa.
@@ -379,14 +381,14 @@ Variables (A B : finType).
 
 Definition fdist_split (PQ : {fdist A * B}) := (PQ`1, fun x => PQ `(| x )).
 
-Lemma fdist_prodK : cancel fdist_split (uncurry (@fdist_prod A B)).
+Lemma fdist_prodK : cancel fdist_split (uncurry (@fdist_prod _ A B)).
 Proof.
 move=> PQ; apply/fdist_ext => ab; rewrite fdist_prodE.
 have [Ha|Ha] := eqVneq (PQ`1 ab.1) 0.
-  rewrite Ha mul0R; apply/esym/(dominatesE (Prod_dominates_Joint PQ)).
-  by rewrite fdist_prodE Ha mul0R.
-rewrite jfdist_condE // -fdistX2 mulRC.
-rewrite -(Pr_set1 _ ab.1) -jproduct_rule setX1 Pr_set1 fdistXE.
+  rewrite Ha GRing.mul0r; apply/esym/(dominatesE (Prod_dominates_Joint PQ)).
+  by rewrite fdist_prodE Ha GRing.mul0r.
+rewrite jfdist_condE // -fdistX2 GRing.mulrC.
+rewrite -(Pr_set1 _ ab.1) -RmultE -jproduct_rule setX1 Pr_set1 fdistXE.
 by case ab.
 Qed.
 

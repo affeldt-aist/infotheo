@@ -1,11 +1,14 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
-From mathcomp Require Import matrix vector.
-Require Import Reals Lra.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp ssrnum.
+From mathcomp Require Import matrix vector order.
+From mathcomp Require Import lra Rstruct reals.
+From mathcomp Require ssrnum.
+Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist proba.
+Require Import realType_ext.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
+Require Import Rstruct_ext.
 
 (******************************************************************************)
 (*                      The variety of decoders                               *)
@@ -32,7 +35,7 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Close Scope R_scope.
-Import GRing.Theory.
+Import GRing.Theory Num.Theory Order.Theory.
 Local Open Scope ring_scope.
 
 Definition repairT (B A : finType) n := {ffun 'rV[B]_n -> option 'rV[A]_n}.
@@ -46,7 +49,7 @@ Definition cancel_on n (F : finFieldType) (C : {vspace 'rV[F]_n}) {B} (e : B -> 
   forall c, c \in C -> e (s c) = c.
 
 Lemma vspace_not_empty (F : finFieldType) n (C : {vspace 'rV[F]_n}) :
-  0 < #| [set cw in C] |.
+  (0 < #| [set cw in C] |)%nat.
 Proof. apply/card_gt0P; exists 0; by rewrite inE mem0v. Qed.
 
 Section minimum_distance_decoding.
@@ -95,7 +98,7 @@ Variables (F : finFieldType) (n : nat) (C : {vspace 'rV[F]_n}).
 Variable (f : repairT F F n).
 
 Definition BD_decoding t :=
-  forall c e, c \in C -> wH e <= t -> f (c + e) = Some c.
+  forall c e, c \in C -> (wH e <= t)%nat -> f (c + e) = Some c.
 
 End bounded_distance_decoding.
 
@@ -105,6 +108,9 @@ Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope channel_scope.
 
+Local Open Scope reals_ext_scope.
+Local Open Scope order_scope.
+
 Section maximum_likelihood_decoding.
 
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
@@ -112,23 +118,21 @@ Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable f : decT B [finType of 'rV[A]_n] n.
 Variable P : {fdist 'rV[A]_n}.
 
-Local Open Scope R_scope.
+Local Open Scope reals_ext_scope.
 
 Definition ML_decoding :=
   forall y : P.-receivable W,
   exists x, f y = Some x /\
-    W ``(y | x) = \rmax_(x' in C) W ``(y | x').
+    W ``(y | x) = \big[Order.max/0]_(x' in C) W ``(y | x').
 
 End maximum_likelihood_decoding.
-
-Local Open Scope R_scope.
 
 Section maximum_likelihood_decoding_prop.
 
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable repair : decT B [finType of 'rV[A]_n] n.
-Let P := fdist_uniform_supp (vspace_not_empty C).
+Let P := fdist_uniform_supp real_realType (vspace_not_empty C).
 Hypothesis ML_dec : ML_decoding W C repair P.
 
 Local Open Scope channel_code_scope.
@@ -137,15 +141,13 @@ Lemma ML_err_rate x1 x2 y : repair y = Some x1 ->
   x2 \in C -> W ``(y | x2) <= W ``(y | x1).
 Proof.
 move=> Hx1 Hx2.
-case/boolP : (W ``(y | x2) == 0%R) => [/eqP -> //| Hcase].
+case/boolP : (W ``(y | x2) == 0) => [/eqP -> //| Hcase].
 have PWy : receivable_prop P W y.
   apply/existsP; exists x2.
   by rewrite Hcase andbT fdist_uniform_supp_neq0 inE.
 case: (ML_dec (mkReceivable PWy)) => x' [].
 rewrite /= Hx1 => -[<-] ->.
-rewrite -big_filter.
-apply (leR_bigmaxR (fun i => W ``(y | i))).
-by rewrite mem_filter /= mem_index_enum andbT.
+by apply: (le_bigmax_cond _ (fun i => W ``(y | i))).
 Qed.
 
 Variable M : finType.
@@ -154,28 +156,30 @@ Variable discard : discardT A n M.
 Variable enc : encT A M n.
 Hypothesis enc_img : enc @: M \subset C.
 Hypothesis discard_cancel : forall y x, repair y = Some x -> enc (discard x) = x.
+Let dec := [ffun x => omap discard (repair x)].
+
+Import ssrnum.Num.Theory.
 
 Lemma ML_smallest_err_rate phi :
-  let dec := [ffun x => omap discard (repair x)] in
   echa(W, mkCode enc dec) <= echa(W, mkCode enc phi).
 Proof.
-move=> dec.
-apply leR_wpmul2l; first by apply/mulR_ge0 => //; exact/invR_ge0/ltR0n.
-rewrite /ErrRateCond /= [in X in _ <= X](eq_bigr
+apply/RleP/leR_wpmul2l; first by apply/mulR_ge0 => //; exact/invR_ge0/ltR0n.
+rewrite /ErrRateCond /=; apply/RleP.
+rewrite [leRHS](eq_bigr
   (fun m => 1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m])); last first.
   move=> m _; rewrite Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
-rewrite [in X in X <= _](eq_bigr
+rewrite [leLHS](eq_bigr
   (fun m => 1 - Pr (W ``(|enc m)) [set tb | dec tb == Some m])); last first.
   move => m _.
   rewrite [in LHS]Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
-rewrite 2!big_split /= leR_add2l.
-rewrite -2!big_morph_oppR leR_oppr oppRK /Pr (exchange_big_dep xpredT) //=.
-rewrite [in X in (_ <= X)%R](exchange_big_dep xpredT) //=.
-apply leR_sumR => /= tb _.
+rewrite 2!big_split /=; apply: lerD => //.
+rewrite -2!big_morph_oppR lerNr opprK /Pr (exchange_big_dep xpredT) //=.
+rewrite [leRHS](exchange_big_dep xpredT) //=.
+apply ler_sum => /= tb _.
 rewrite (eq_bigl (fun m => phi tb == Some m)); last by move=> m; rewrite inE.
-rewrite [in X in _ <= X](eq_bigl (fun m => dec tb == Some m)); last by move=> m; rewrite inE.
+rewrite [leRHS](eq_bigl (fun m => dec tb == Some m)); last by move=> m; rewrite inE.
 (* show that phi_ML succeeds more often than phi *)
 have [dectb_None|dectb_Some] := boolP (dec tb == None).
   case/boolP : (receivable_prop P W tb) => [Hy|Htb].
@@ -187,14 +191,14 @@ have [dectb_None|dectb_Some] := boolP (dec tb == None).
     rewrite Htb andbT fdist_uniform_supp_neq0 inE.
     move/subsetP : enc_img; apply; apply/imsetP; by exists m.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite W_tb.
-  by rewrite big1 //; apply sumR_ge0.
+  by rewrite big1 //; apply sumr_ge0.
 case/boolP : (phi tb == None) => [/eqP ->|phi_tb].
-  by rewrite big_pred0 //; apply sumR_ge0.
+  by rewrite big_pred0 //; apply sumr_ge0.
 have [m1 Hm1] : exists m', dec tb = Some m' by destruct (dec tb) => //; exists s.
 have [m2 Hm2] : exists m', phi tb = Some m' by destruct (phi tb) => //; exists s.
 rewrite Hm1 {}Hm2.
 rewrite (eq_bigl [pred m | m == m2]); last by move=> ?; rewrite eq_sym.
-rewrite [in X in _ <= X](eq_bigl [pred m | m == m1]); last by move=> ?; rewrite eq_sym.
+rewrite [leRHS](eq_bigl [pred m | m == m1]); last by move=> ?; rewrite eq_sym.
 rewrite 2!big_pred1_eq; apply ML_err_rate.
   move: Hm1; rewrite /dec ffunE /omap /obind /oapp.
   move H : (repair tb) => h.
@@ -207,47 +211,7 @@ End maximum_likelihood_decoding_prop.
 
 Section MD_ML_decoding.
 
-Variable p : prob.
-
-(* TODO: move to file on bsc? *)
-Lemma bsc_prob_prop n : p < 1 / 2 ->
-  forall n1 n2 : nat, (n1 <= n2 <= n)%nat ->
-  ((1 - p) ^ (n - n2) * p ^ n2 <= (1 - p) ^ (n - n1) * p ^ n1)%R.
-Proof.
-move=> p05 d1 d2 d1d2.
-case/boolP : (p == 0%:pr) => [/eqP ->|p0].
-  destruct d2 as [|d2].
-    destruct d1 as [|d1]; [exact/leRR | by []].
-  rewrite !subR0 /= !mul0R !mulR0.
-  destruct d1 as [|d1] => /=; first by rewrite exp1R mul1R.
-  rewrite !mul0R !mulR0; exact/leRR.
-apply (@leR_pmul2l ((/ (1 - p) ^ (n - d2)) * (/ p ^ d1))%R).
-  apply mulR_gt0; apply/invR_gt0/pow_lt => //.
-  rewrite subR_gt0; lra.
-  by rewrite -prob_gt0.
-rewrite (mulRC ((1 - p) ^ (n - d2))) -!mulRA mulRC -!mulRA mulRV; last first.
-  apply/expR_neq0; rewrite subR_eq0'; apply/gtR_eqF; lra.
-rewrite mulR1 -(mulRC (p ^ d1)) [in X in _ <= X]mulRC !mulRA mulVR ?mul1R; last first.
-  by apply/expR_neq0/gtR_eqF; rewrite -prob_gt0.
-rewrite -expRV; last by apply/gtR_eqF; rewrite -prob_gt0.
-rewrite -expRV; last by rewrite subR_eq0'; apply/gtR_eqF; lra.
-rewrite mulRC expRV; last by apply/gtR_eqF; rewrite -prob_gt0.
-rewrite -/(Rdiv _ _) -expRB; last 2 first.
-  by case/andP : d1d2.
-  exact/eqP.
-rewrite expRV; last first.
-  rewrite subR_eq0'; apply/eqP => p1.
-  move: p05; rewrite ltRNge; apply.
-  lra.
-rewrite -/(Rdiv _ _) -expRB; last 2 first.
-  rewrite leq_sub2l //; by case/andP : d1d2.
-  rewrite subR_eq0 => ?.
-  move: p05; rewrite ltRNge; apply.
-  lra.
-suff -> : (n - d1 - (n - d2) = d2 - d1)%nat by apply pow_incr; split => //; lra.
-rewrite -subnDA addnC subnDA subKn //.
-by case/andP : d1d2.
-Qed.
+Variable p : {prob R}.
 
 Let card_F2 : #| 'F_2 | = 2%nat. Proof. by rewrite card_Fp. Qed.
 Let W := BSC.c card_F2 p.
@@ -261,7 +225,7 @@ Variable enc : encT [finType of 'F_2] M n.
 Hypothesis compatible : cancel_on C enc discard.
 Variable P : {fdist 'rV['F_2]_n}.
 
-Lemma MD_implies_ML : p < 1/2 -> MD_decoding [set cw in C] f ->
+Lemma MD_implies_ML : p < 1/2 :> R-> MD_decoding [set cw in C] f ->
   (forall y, f y != None) -> ML_decoding W C f P.
 Proof.
 move=> p05 MD f_total y.
@@ -278,7 +242,7 @@ case: oc Hoc => [c|] Hc; last first.
 exists c; split; first by reflexivity.
 (* replace  W ``^ n (y | f c) with a closed formula because it is a BSC *)
 pose dH_y c := dH y c.
-pose g : nat -> R := fun d : nat => (1 - p) ^ (n - d) * p ^ d.
+pose g : nat -> R := fun d : nat => ((1 - p) ^ (n - d) * p ^ d)%R.
 have -> : W ``(y | c) = g (dH_y c).
   move: (DMC_BSC_prop p enc (discard c) y).
   set cast_card := eq_ind_r _ _ _.
@@ -287,7 +251,7 @@ have -> : W ``(y | c) = g (dH_y c).
   rewrite -/W compatible //.
   move/subsetP : f_img; apply.
   by rewrite inE; apply/existsP; exists (receivable_rV y); apply/eqP.
-transitivity (\big[Rmax/R0]_(c in C) (g (dH_y c))); last first.
+transitivity (\big[Order.max/0]_(c in C) (g (dH_y c))); last first.
   apply eq_bigr => /= c' Hc'.
   move: (DMC_BSC_prop p enc (discard c') y).
   set cast_card := eq_ind_r _ _ _.
@@ -296,10 +260,11 @@ transitivity (\big[Rmax/R0]_(c in C) (g (dH_y c))); last first.
 (* the function maxed over is decreasing so we may look for its minimizer,
    which is given by minimum distance decoding *)
 rewrite (@bigmaxR_bigmin_vec_helper _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
-- apply eq_bigl => /= i; by rewrite inE.
+- by rewrite bigmaxRE; apply eq_bigl => /= i; rewrite inE.
 - by apply bsc_prob_prop.
-- move=> r; rewrite /g.
-  apply mulR_ge0; apply pow_le => //; lra.
+- move=> r; rewrite /g Prob_pE !coqRE.
+  apply/RleP/mulr_ge0; apply/exprn_ge0; last exact/prob_ge0.
+  exact/RleP/onem_ge0/RleP/prob_le1.
 - rewrite inE; move/subsetP: f_img; apply.
   rewrite inE; apply/existsP; by exists (receivable_rV y); apply/eqP.
 - by move=> ? _; rewrite /dH_y max_dH.
@@ -327,14 +292,14 @@ Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B [finType of 'rV[A]_n] n.
 Variable dec_img : oimg dec \subset C.
-Let P := fdist_uniform_supp (vspace_not_empty C).
+Let P := fdist_uniform_supp real_realType (vspace_not_empty C).
 
 Lemma MAP_implies_ML : MAP_decoding W C dec P -> ML_decoding W C dec P.
 Proof.
 move=> HMAP.
 rewrite /ML_decoding => /= tb.
-have Hunpos : 1%:R / INR #| [set cw in C] | > 0.
-  by rewrite div1R; exact/invR_gt0/ltR0n/vspace_not_empty.
+have Hunpos : (#| [set cw in C] |%:R)^-1 > 0 :> R.
+  by rewrite invr_gt0 ltr0n; exact/vspace_not_empty.
 move: (HMAP tb) => [m [tbm]].
 rewrite /fdist_post_prob. unlock. simpl.
 set tmp := \rmax_(_ <- _ | _) _.
@@ -344,9 +309,7 @@ move=> H.
 evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H; last first.
   by move=> v vC; rewrite /h; reflexivity.
 rewrite -bigmaxR_distrl in H; last first.
-  apply/invR_ge0; rewrite ltR_neqAle; split.
-    apply/eqP; by rewrite eq_sym -receivable_propE receivableP.
-  exact/fdist_post_prob_den_ge0.
+  by apply/RleP; rewrite invr_ge0; exact/fdist_post_prob_den_ge0.
 rewrite {2 3}/P in H.
 set r := index_enum _ in H.
 move: H.
@@ -355,16 +318,18 @@ under [in X in _ = X -> _]eq_bigr.
   rewrite fdist_uniform_supp_in; last by rewrite inE.
   over.
 move=> H.
-rewrite -bigmaxR_distrr in H; last exact/ltRW/Hunpos.
+rewrite -bigmaxR_distrr in H; last exact/RleP/ltW/Hunpos.
 exists m; split; first exact tbm.
 rewrite ffunE in H.
 set x := (X in _ * _ / X) in H.
-have x0 : / x <> 0 by apply/eqP/invR_neq0'; rewrite -receivable_propE receivableP.
+have x0 : x^-1 <> 0 by apply/eqP/invr_neq0; rewrite -receivable_propE receivableP.
 move/(eqR_mul2r x0) in H.
 rewrite /= fdist_uniform_supp_in ?inE // in H; last first.
   move/subsetP : dec_img; apply.
   by rewrite inE; apply/existsP; exists (receivable_rV tb); apply/eqP.
-by move/eqR_mul2l :  H => -> //; exact/eqP/gtR_eqF.
+move/lt0r_neq0/eqP: Hunpos.
+move/eqR_mul2l : H; move/[apply] ->.
+by rewrite bigmaxRE.
 Qed.
 
 End MAP_decoding_prop.

@@ -962,8 +962,7 @@ Qed.
 Lemma perm_on_Sn (s : 'S_n) : perm_on [set x | x \in enum 'I_n] s.
 Proof. apply/subsetP=> /= x _; by rewrite !in_set mem_enum. Qed.
 
-(* TODO: check if used *)
-Lemma perm_eq_enum (s : 'S_n) : perm_eq (enum 'I_n) (map (s^-1)%g (enum 'I_n)).
+(*Lemma perm_eq_enum (s : 'S_n) : perm_eq (enum 'I_n) (map (s^-1)%g (enum 'I_n)).
 Proof.
 apply uniq_perm.
 - by apply enum_uniq.
@@ -977,7 +976,7 @@ apply uniq_perm.
   + symmetry; apply/mapP; case=> x Hx Hxxi.
     move: (perm_closed x (perm_on_Sn (s^-1)%g)).
     by rewrite !in_set -Hxxi Hx Hi.
-Qed.
+Qed.*)
 
 End perm_enum.
 

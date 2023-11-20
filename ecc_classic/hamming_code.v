@@ -964,7 +964,7 @@ Section hamming_code_error_rate.
 
 Variable M : finType.
 Hypothesis M_not_0 : 0 < #|M|.
-Variable p : prob.
+Variable p : {prob R}.
 Let card_F2 : #| 'F_2 | = 2%N. by rewrite card_Fp. Qed.
 Let W := BSC.c card_F2 p.
 

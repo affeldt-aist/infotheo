@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb fdist proba.
@@ -40,7 +40,7 @@ Variables (A : finType) (k n : nat).
 
 Definition scode_vl := scode A (seq bool) k.
 
-Variables (P : fdist A) (f : {RV (P `^ n) -> seq bool}).
+Variables (P : {fdist A}) (f : {RV (P `^ n) -> seq bool}).
 
 Definition E_leng_cw := `E ((INR \o size) `o f).
 
@@ -56,7 +56,7 @@ Definition SrcRate (sc : scode_fl) := n%:R / k%:R.
 End scode_fl_definition.
 
 Section code_error_rate.
-Variables (A : finType) (B : Type) (P : fdist A).
+Variables (A : finType) (B : Type) (P : {fdist A}).
 Variables (k : nat) (sc : scode A B k).
 
 Definition SrcErrRate := Pr (P `^ k) [set ta | dec sc (enc sc ta) != ta].

@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 From mathcomp Require Import matrix perm.
 From mathcomp Require boolp.
-Require Import ssr_ext ssralg_ext ssrR fdist.
+Require Import ssr_ext ssralg_ext fdist.
 
 (******************************************************************************)
 (*                  Work in progress about LDPC codes                         *)
@@ -101,16 +101,9 @@ Coercion Lambda_of_L :
 Definition nzdegdist_coerce := NormalizedDegreeDistribution.p.
 Coercion nzdegdist_coerce : NormalizedDegreeDistribution.L >-> poly_of.
 
-Require Import Reals Rbigop.
-
 Module TreeEnsemble.
 
-Section definition.
-
-Variable K : numFieldType.
-(* lambda, rho: distribution of the number of ports by node arities
-   (starts at arity 1) *)
-Variables lambda rho : NormalizedDegreeDistribution.L K.
+Section ensemble.
 
 Inductive kind := kv | kf.
 
@@ -459,9 +452,16 @@ Canonical fintree_finType n l := Eval hnf in FinType _ (fintree_finMixin n l).
 
 Local Open Scope fdist_scope.
 
-Definition ensemble n l := {fdist (@fintree n l)}.
+Definition ensemble {K : numDomainType} n l := @FDist.t K [finType of (@fintree n l)].
 
+End ensemble.
+
+Section tree_ensemble.
 (* maximum branching degree of the graph (root has no parent) *)
+Variable K : numFieldType.
+(* lambda, rho: distribution of the number of ports by node arities
+   (starts at arity 1) *)
+Variables lambda rho : NormalizedDegreeDistribution.L K.
 Variable tw : nat.
 Hypothesis Hlam : (size lambda <= tw)%nat.
 Hypothesis Hrho : (size rho <= tw)%nat.
@@ -698,25 +698,18 @@ apply eq_bigr=> tl _.
 by rewrite big_cons.
 Qed.
 
-Variable RofK : K -> R.
-Hypothesis RofKpos : forall x : K, (Num.Def.ler 0%:R x) -> (0 <= RofK x)%R.
-Hypothesis RofK0 : RofK 0 = 0%R.
-Hypothesis RofK1 : RofK 1 = 1%R.
-Hypothesis RofKadd : forall x y : K, RofK (x + y) = (RofK x + RofK y)%R.
-Hypothesis RofKmul : forall x y : K, RofK (x * y) = (RofK x * RofK y)%R.
+Lemma f0R l t : (0 <= [ffun x => (@fintree_dist l x)] t).
+Proof. rewrite ffunE; apply f0. Qed.
 
-Lemma f0R l t : (0 <= [ffun x => RofK (@fintree_dist l x)] t)%R.
-Proof. rewrite ffunE; apply RofKpos, f0. Qed.
-
-Lemma f1R l : (\sum_(t : @fintree tw l) [ffun x => RofK (@fintree_dist l x)] t = 1)%R.
+Lemma f1R l : (\sum_(t : @fintree tw l) [ffun x => (@fintree_dist l x)] t = 1).
 Proof.
 under eq_bigr do rewrite ffunE /=.
-by rewrite -(@big_morph _ _ RofK 0%R Rplus 0%:R (@GRing.add K)) // f1 RofK1.
+by rewrite f1.
 Qed.
 
-Definition tree_ensemble l : ensemble tw l := FDist.make (@f0R l) (@f1R l).
+Definition tree_ensemble l : ensemble tw l := @FDist.make K _ _ (@f0R l) (@f1R l).
 
-End definition.
+End tree_ensemble.
 
 End TreeEnsemble.
 
@@ -1054,13 +1047,17 @@ Lemma le_sum_all (P : pred T) (r : K) F G :
   r <= (\sum_(i in P) F i) / \sum_(i in P) G i.
 Proof.
 move=> HG HG' Hall.
-rewrite ler_pdivl_mulr // big_distrr /=.
+rewrite ler_pdivlMr // big_distrr /=.
 apply ler_sum => i Hi.
-by rewrite -ler_pdivl_mulr // ?Hall // HG'.
+by rewrite -ler_pdivlMr // ?Hall // HG'.
 Qed.
 
 Lemma sum_expr_S m l : (\sum_(i < l.+1) m ^ i = 1 + m * \sum_(i < l) m ^ i)%nat.
-Proof. by rewrite big_ord_recl big_distrr. Qed.
+Proof.
+rewrite big_ord_recl/= expn0 big_distrr/=; congr (_ + _)%N.
+by apply: eq_bigr => i _ /=; rewrite -expnS.
+Qed.
+
 End sum_ops.
 
 Require Import subgraph_partition tanner.
@@ -2752,9 +2749,9 @@ have HGneq0 : forall i, i \in P -> r2 <= F i / G i -> G i != 0.
   rewrite pmulr_rgt0 // => /lt0r_neq0 HGi1.
   by rewrite -(invrK (G i)) invr_neq0.
 apply (@Order.POrderTheory.le_trans _ K ((\sum_(i in P | r2 <= F i / G i) G i / \sum_(i in P) G i) * (\sum_(i in P | r2 <= F i / G i) F i / \sum_(i in P | r2 <= F i / G i) G i))).
-  apply ler_pmul; try by assumption || apply ltW.
+  apply ler_pM; try by assumption || apply ltW.
     rewrite -big_distrl -(mulr1 r1) -(mulfV (lt0r_neq0 HGp)) mulrA /=.
-    apply ler_pmul => //.
+    apply ler_pM => //.
       by rewrite mulr_ge0 // ltW.
     by rewrite invr_ge0 ltW.
   rewrite -big_distrl /=.
@@ -2768,14 +2765,14 @@ apply (@Order.POrderTheory.le_trans _ K ((\sum_(i in P | r2 <= F i / G i) G i / 
     by apply mulr_gt0.
   rewrite -{1}(mulr1 r2) -(mulfV (lt0r_neq0 HGp')).
   rewrite mulrA big_distrr /=.
-  apply ler_pmul => //.
+  apply ler_pM => //.
       apply sumr_ge0 => i /andP [Hi Hir2].
       rewrite mulr_ge0 //; try by apply ltW.
       by apply HG.
     by rewrite ltW // invr_gt0.
   apply ler_sum => i /andP [Hi Hir2].
-  apply ler_pmul => //; try by apply ltW.
-  by apply HG.
+  apply ler_pM => //; try by apply ltW.
+  exact: HG.
 apply (@Order.POrderTheory.le_trans _ K (\sum_(i in P | r2 <= F i / G i) F i / \sum_(i in P) G i)).
   rewrite -!big_distrl /= mulrC -mulrA (mulrA _ _ (\sum_(i in P) G i)^-1).
   rewrite mulVf ?mul1r //.
@@ -2783,14 +2780,13 @@ apply (@Order.POrderTheory.le_trans _ K (\sum_(i in P | r2 <= F i / G i) F i / \
   apply: @Order.POrderTheory.lt_le_trans; try apply Hr1.
   by apply mulr_gt0.
 rewrite -big_distrl /=.
-apply ler_pmul => //.
+apply: ler_pM => //.
     apply sumr_ge0 => i /andP [Hi Hir2].
-    by apply HF.
+    exact: HF.
   by rewrite ltW // invr_gt0.
 rewrite [\sum_(i in P) F i](bigID (fun i => r2 <= F i / G i)) /=.
-apply ler_paddr => //.
-apply sumr_ge0 => i /andP [Hi Hir2].
-by apply HF.
+rewrite ler_wpDr// sumr_ge0// => i /andP[Hi Hir2].
+exact: HF.
 Qed.
 
 Lemma step_dist_it_const c r y :
@@ -3034,7 +3030,7 @@ apply (le_sum_all_cond Hr1 Hr2); try by move=> ? _; apply weighted_count_it_ge0.
 rewrite [X in _ <= X](bigID (fun i : port * {set port} => i.2 \notin conodes c))
   /=.
 (* remove non tree_like case *)
-apply ler_paddr; first by apply sumr_ge0 => i _; apply weighted_count_it_ge0.
+apply: ler_wpDr; first by apply: sumr_ge0 => i _; exact: weighted_count_it_ge0.
 (* simplify rhs formula *)
 set F := BIG_F.
 apply (@Order.POrderTheory.le_trans _ _
@@ -3044,7 +3040,7 @@ apply (@Order.POrderTheory.le_trans _ _
   do 2 (rewrite (sum_weighted_count_it r _ eqb) // ?eqk //; last
     by move=> ? ?; apply weighted_count_it).
   rewrite (eq_bigl (mem (dest_port c))); last by move=> ?; rewrite andbT.
-  rewrite -big_distrl -big_distrr /= mulrC -ler_pdivl_mull; last first.
+  rewrite -big_distrl -big_distrr /= mulrC -ler_pdivlMl; last first.
     move: (weight_is_dist Hhead (leq_trans Hmax Hlam')).
     rewrite /weighted_count big_map big_enum_in -big_distrl /=.
     by rewrite -big_distrr /= mul1r -mulrA => ->; by rewrite mulr1.
@@ -3055,7 +3051,7 @@ apply (@Order.POrderTheory.le_trans _ _
   rewrite -3!mulf_div (@mulfV _ r) ?gt_eqF // mulfV; last first.
     by rewrite invr_neq0 // pnatr_eq0 -lt0n.
   rewrite mul1r /bnext eqb /= => ->.
-  by rewrite ler_pmul // ?ler_nat ?leq_subr // ?invr_ge0 ltW // ltr0n.
+  by rewrite ler_pM // ?ler_nat ?leq_subr // ?invr_ge0 ltW // ltr0n.
 (* prove this is equal to the original rhs *)
 rewrite {}/F le_eqVlt.
 apply /orP /or_introl /eqP.
@@ -3098,23 +3094,22 @@ rewrite /weighted_count /step_dist_it eqb /= /(step_dist c r s i).
 rewrite (enum_step_border eqb Hi) -/r'.
 apply Order.POrderTheory.le_trans.
 rewrite /r2 /r1.
-apply ler_expn2r.
+apply: lerXn2r.
   by rewrite nnegrE ltW.
   by rewrite nnegrE divr_ge0 // ler0n.
-rewrite ler_pmul // ?invr_ge0 ?ler0n //.
+rewrite ler_pM // ?invr_ge0 ?ler0n //.
   rewrite ler_nat mulnS subnDA leq_sub2r // -subnDA leq_sub2l //.
   rewrite /known_coports step_coports_ok //.
   rewrite cardsU addnC leq_subLR addnCA leq_add2l.
   by rewrite (leq_trans (cards_conode_out Hd Hni)) // leq_addl.
-have Hfc: (#|free_coports (step c s i.1 i.2)| > 0)%nat.
-  rewrite (@leq_ltn_trans (k * maxdeg)%nat) //.
-  apply (leq_trans Hlam1).
+have Hfc : (#|free_coports (step c s i.1 i.2)| > 0)%nat.
+  rewrite (@leq_ltn_trans (k * maxdeg)%nat) // (leq_trans Hlam1)//.
   rewrite (cardsCs (~: _)) setCK.
   by rewrite leq_sub2l // cardsD /= leq_subr.
-rewrite lef_pinv // ?posrE ?ltr0n //.
+rewrite lef_pV2 // ?posrE ?ltr0n //.
 rewrite (cardsCs (~: _)) setCK (cardsCs (~: _)) setCK.
 rewrite ler_nat leq_sub2l // step_codom_ok //.
-by apply subset_leq_card, subsetUr.
+exact/subset_leq_card/subsetUr.
 Qed.
 
 End prob_tree_like_border.
@@ -3563,7 +3558,7 @@ rewrite 2!weighted_count_switch_step le_sum_all_cond //;
 (* split numerator for tree_like or not *)
 rewrite [X in _ <= X](bigID(fun i : _ .-tuple _ => tree_like (step_it c i))) /=.
 (* remove non tree_like case *)
-apply ler_paddr; first by apply sumr_ge0 => i _;apply weighted_count_switch_ge0.
+apply: ler_wpDr; first by apply: sumr_ge0 => i _; exact: weighted_count_switch_ge0.
 (* simplify rhs formula *)
 set F := BIG_F.
 apply (@Order.POrderTheory.le_trans _ _ (\sum_(i in dest_ports c #|border (nodes c)|
@@ -3603,8 +3598,7 @@ apply (@Order.POrderTheory.le_trans _ _ (\sum_(i in dest_ports c #|border (nodes
       by rewrite mulnS leq_add // leq_mul.
     rewrite (leq_ltn_trans _ Hlenmax) //.
     by rewrite sum_expr_S mulnDr addnA (addnC len) -addnA muln1 leq_addr.
-  rewrite big_mkcondr /=.
-  rewrite -ler_pdivl_mulr; last first.
+  rewrite big_mkcondr /= -ler_pdivlMr; last first.
     move: (weighted_count_it Hlam def_port r (leqnn _) Hb').
     by rewrite /weighted_count big_map big_enum_in => ->.
   move: (tree_like_empty_border Hlam def_port Hpc Htl Hr Hb') => /=.
@@ -3624,11 +3618,11 @@ apply (@Order.POrderTheory.le_trans _ _ (\sum_(i in dest_ports c #|border (nodes
   apply Order.POrderTheory.le_trans.
   apply (@Order.POrderTheory.le_trans _ K (r0 ^+ len)).
     rewrite /r1.
-    apply ler_expn2r.
+    apply: lerXn2r.
         by rewrite rpred_div // nnegrE ler0n.
       by rewrite rpred_div // nnegrE ler0n.
-    apply ler_pmul.
-          by apply ler0n.
+    apply: ler_pM.
+          exact: ler0n.
         by rewrite invr_ge0 ler0n.
       rewrite ler_nat.
       rewrite -subnDA leq_sub2l //.
@@ -3637,22 +3631,21 @@ apply (@Order.POrderTheory.le_trans _ _ (\sum_(i in dest_ports c #|border (nodes
       apply (@leq_trans len').
         by rewrite mulnC leq_mul.
       by rewrite leq_addr.
-    rewrite ler_pinv //.
+    rewrite ler_pV2 //.
         by rewrite ler_nat max_card.
       by rewrite inE unitf_gt0 // ltr0n /=; apply/card_gt0P; exists def_port.
     by rewrite inE unitf_gt0 // ltr0n.
   rewrite -(subnK Hb) exprD.
-  rewrite ger_pmull //.
-    apply exprn_ile1.
+  rewrite ger_pMl //.
+    apply: exprn_ile1.
       by rewrite mulr_ge0 ?ler0n // invr_ge0 ler0n.
-    rewrite ler_pdivr_mulr ?mul1r.
+    rewrite ler_pdivrMr ?mul1r.
       rewrite ler_nat (cardsCs (free_coports _)) setCK -subnDA.
-      apply leq_sub2l, (@leq_trans #|known_coports c|).
+      apply/leq_sub2l/(@leq_trans #|known_coports c|).
         by rewrite cardsD leq_subr.
       by rewrite leq_addr.
     by rewrite ltr0n.
-  apply exprn_gt0.
-  apply mulr_gt0.
+  apply/exprn_gt0/mulr_gt0.
     by rewrite ltr0n ltn_subRL addn0 mulnC.
   by rewrite invr_gt0 ltr0n.
 (* prove this is equal to the original rhs *)
@@ -3706,10 +3699,10 @@ have Hlenmaxrec: (len' * tree_max l.+1 < #|port|)%nat.
   by rewrite (leq_ltn_trans _ Hlenmax) // leq_addl.
 move/(_ Hlen' (border_nodes_step_it Hi) Hd' Hlenmaxrec) => /=.
 apply Order.POrderTheory.le_trans.
-apply ler_expn2r.
+apply: lerXn2r.
     by rewrite rpred_div // nnegrE ler0n.
   by rewrite rpred_div // nnegrE ler0n.
-rewrite ler_pmul//.
+rewrite ler_pM ?ler0n//.
   by rewrite invr_ge0 ler0n.
 by rewrite subnDA subnAC ler_nat leq_subr.
 Qed.

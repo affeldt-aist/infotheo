@@ -1,9 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import ssreflect ssrbool eqtype ssrfun ssrnat.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import Rstruct.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext.
+From mathcomp Require Import reals.
+Require Import realType_ext.
 
 (******************************************************************************)
 (*                          log_n x and n ^ x                                 *)
@@ -22,6 +24,8 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
+
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Section addtional_lemmas_about_ln_exp.
 
@@ -43,14 +47,16 @@ Qed.
 Lemma ln_increasing_le a b : 0 < a -> a <= b -> ln a <= ln b.
 Proof.
 move=> Ha.
-case/Rle_lt_or_eq_dec; last by move=> ->; exact/leRR.
+case/Rle_lt_or_eq_dec; last first.
+  by move=> ->; by apply/RleP; rewrite lexx.
 by move/(ln_increasing _ _ Ha)/ltRW.
 Qed.
 
 Lemma exp_le_inv x y : exp x <= exp y -> x <= y.
 Proof.
 case/Rle_lt_or_eq_dec; [move/exp_lt_inv => ?; exact/ltRW |
-  move/exp_inv => ->; exact/leRR].
+  move/exp_inv => ->].
+by apply/RleP; rewrite lexx.
 Qed.
 
 Lemma exp_pow n : forall k, exp (k%:R * n) = (exp n) ^ k.
@@ -105,8 +111,9 @@ elim => [r rpos | n IH r rpos].
     by apply IH, Hx.
   move/(_ Haux 0 r) => {Haux}.
   apply => //.
-  - split; [exact/leRR | exact: ltRW].
-  - split; [exact: ltRW | exact/leRR].
+  - by split; [by [] | exact: ltRW].
+  - split; [exact: ltRW | ].
+    by apply/RleP; rewrite lexx.
 Qed.
 
 Lemma exp_strict_lb (n : nat) x : 0 < x -> x ^ n * / (n`!)%:R < exp x.
@@ -117,11 +124,12 @@ Proof.
 move=> Hr.
 case/boolP : (r == 0) => [/eqP ->|]; last first.
 - move=> Hr2.
-  have {Hr Hr2}R_pos : 0 < r by apply/ltRP; rewrite lt0R Hr2 /=; exact/leRP.
+  have {Hr Hr2}R_pos : 0 < r.
+    by apply/RltP; rewrite lt0r Hr2/=; exact/RleP.
   exact/ltRW/exp_dev_gt0.
 - case: n.
-  + rewrite /exp_dev exp_0 mul1R invR1 subRR; exact/leRR.
-  - move=> n.
+  + by rewrite /exp_dev exp_0 mul1R invR1 subRR.
+  + move=> n.
     rewrite -(_ : 1 = exp_dev n.+1 0) //.
     rewrite /exp_dev exp_0 pow_i ?mul0R ?subR0 //; exact/ltP.
 Qed.
@@ -160,7 +168,12 @@ Proof. move=> *; rewrite LogM //; [by rewrite LogV | exact: invR_gt0]. Qed.
 Lemma Log_increasing_le n x y : 1 < n -> 0 < x -> x <= y -> Log n x <= Log n y.
 Proof.
 move=> n1 x0 xy.
-apply leR_wpmul2r; [exact/leRP/ltRW'/ltRP/invR_gt0/ln_pos|].
+apply leR_wpmul2r.
+  apply/RleP.
+  rewrite RinvE//; last first.
+    rewrite gtR_eqF//.
+    exact/ln_pos.
+  by rewrite invr_ge0; exact/ltW/RltP/ln_pos.
 exact: ln_increasing_le.
 Qed.
 
@@ -190,7 +203,8 @@ Lemma Log_le_inv n x y : 1 < n -> 0 < x -> 0 < y -> Log n x <= Log n y -> x <= y
 Proof.
 move=> n1 Hx Hy.
 case/Rle_lt_or_eq_dec; first by move/(Log_lt_inv n1 Hx Hy)/ltRW.
-move/(Log_inv n1 Hx Hy) => ->; exact/leRR.
+move/(Log_inv n1 Hx Hy) => ->.
+by apply/RleP; rewrite lexx.
 Qed.
 
 (* NB: log is 0 for input < 0 *)
@@ -231,7 +245,12 @@ Lemma logexp1E : log (exp 1) = / ln 2.
 Proof. by rewrite /log /Log ln_exp div1R. Qed.
 
 Lemma log_exp1_Rle_0 : 0 <= log (exp 1).
-Proof. rewrite logexp1E; exact/leRP/ltRW'/ltRP/invR_gt0. Qed.
+Proof.
+rewrite logexp1E.
+apply/RleP.
+rewrite RinvE ?ln2_neq0// invr_ge0.
+exact/ltW/RltP/ln2_gt0.
+Qed.
 
 Definition Exp (n : R) x := exp (x * ln n).
 
@@ -282,15 +301,15 @@ Proof. move=> ? ?; apply/exp_increasing/ltR_pmul2r => //; exact/ln_pos. Qed.
 Lemma Exp_le_inv n x y : 1 < n -> Exp n x <= Exp n y -> x <= y.
 Proof.
 rewrite /Exp => n1 /exp_le_inv H.
-apply/leRP; rewrite -(leR_pmul2l' (ln n)); last exact/ltRP/ln_pos.
-rewrite mulRC -(mulRC y); exact/leRP.
+apply/RleP; rewrite -(@ler_pM2l _ (ln n)); last exact/RltP/ln_pos.
+by rewrite mulrC -(mulrC y); exact/RleP.
 Qed.
 
 Lemma Exp_le_increasing n x y : 1 < n -> x <= y -> Exp n x <= Exp n y.
 Proof.
 move=> n1; rewrite /Exp; case/Rle_lt_or_eq_dec.
 move/Exp_increasing => x_y; exact/ltRW/x_y.
-move=> ->; exact/leRR.
+by move=> ->; apply/RleP; rewrite lexx.
 Qed.
 
 Lemma Exp_Ropp n x : Exp n (- x) = / Exp n x.
@@ -324,45 +343,45 @@ Proof. move=> Hx; by rewrite /exp2 -/(Exp 2 (log x)) /log -/(Log 2 _) LogK. Qed.
 Lemma exp2K x : log (exp2 x) = x.
 Proof. by rewrite /exp2 -/(Exp 2 x) /log -/(Log 2 _) ExpK. Qed.
 
-Lemma Rle_exp2_log1_L a b : 0 < b -> exp2 a <b= b = (a <b= log b).
+Lemma Rle_exp2_log1_L a b : 0 < b -> (exp2 a <= b)%mcR = (a <= log b)%mcR.
 Proof.
-move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
-- move/leRP in H1.
+move=> Hb; move H1 : (_ <= _ )%mcR => [|] /=.
+- move/RleP in H1.
   have {}H1 : a <= log b.
     rewrite (_ : a = log (exp2 a)); last by rewrite exp2K.
     exact: Log_increasing_le.
-  move/leRP in H1; by rewrite H1.
-- move H2 : (_ <b= _ ) => [|] //=.
-  move/leRP in H2.
+  by move/RleP : H1 => ->.
+- move H2 : (_ <= _ )%mcR => [|] //=.
+  move/RleP in H2.
   rewrite -(@ExpK 2 a _) // in H2.
   apply Log_le_inv in H2 => //.
-  move/leRP in H2.
+  move/RleP in H2.
   by rewrite H2 in H1.
 Qed.
 
-Lemma Rle_exp2_log2_R b c : 0 < b -> b <b= exp2 c = (log b <b= c).
+Lemma Rle_exp2_log2_R b c : 0 < b -> (b <= exp2 c)%mcR = (log b <= c)%mcR.
 Proof.
-move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
-- move/leRP in H1.
+move=> Hb; move H1 : (_ <= _)%mcR => [|] /=.
+- move/RleP in H1.
   have {}H1 : log b <= c.
     rewrite (_ : c = log (exp2 c)); last by rewrite exp2K.
     apply Log_increasing_le => //; exact: exp2_pos.
-  by move/leRP in H1.
-- move H2 : (_ <b= _ ) => [|] //=.
-  move/leRP in H2.
+  by move/RleP in H1.
+- move H2 : (_ <= _ )%mcR => [|] //=.
+  move/RleP in H2.
   rewrite -(exp2K c) in H2.
   apply Log_le_inv in H2 => //.
-  move/leRP in H2.
+  move/RleP in H2.
   by rewrite H2 in H1.
 Qed.
 
 Lemma Rle2_exp2_log a b c : 0 < b ->
-  exp2 a <b= b <b= exp2 c = (a <b= log b <b= c).
+  (exp2 a <= b <= exp2 c)%mcR = (a <= log b <= c)%mcR.
 Proof.
-move=> Hb; move H1 : (_ <b= _ ) => [|] /=.
+move=> Hb; move H1 : (_ <= _ )%mcR => [|] /=.
 - rewrite Rle_exp2_log1_L // in H1.
   by rewrite H1 /= Rle_exp2_log2_R.
-- move H2 : (_ <b= _ ) => [|] //=.
+- move H2 : (_ <= _ )%mcR => [|] //=.
   rewrite -Rle_exp2_log1_L // in H2.
   by rewrite H2 in H1.
 Qed.

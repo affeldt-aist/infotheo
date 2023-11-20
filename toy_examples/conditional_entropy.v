@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
+Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import proba jfdist_cond entropy.
 
 (******************************************************************************)
@@ -32,9 +32,10 @@ Definition f := [ffun x : 'I_4 * 'I_4 => [eta (fun=>0) with
 (two, zero) |-> (1/32), (two, one) |-> (1/32), (two, two) |-> (1/16), (two, three) |-> 0,
 (three, zero) |-> (1/32), (three, one) |-> (1/32), (three, two) |-> (1/16), (three, three) |-> 0] x].
 
-Lemma f0 : forall x, 0 <= f x.
+Lemma f0 : forall x, (0 <= f x)%mcR.
 Proof.
-move=> x; rewrite ffunE; move: x.
+move=> x; rewrite ffunE; apply/RleP; move: x.
+rewrite (_ : 0%mcR = 0)//.
 case => -[ [? [[|[|[|[|[]//]]]]]
   | [? [[|[|[|[|[]//]]]]]
   | [? [[|[|[|[|[]//]]]]]
@@ -63,6 +64,7 @@ rewrite !big_ord_recl !big_ord0 /jcPr /Pr !(big_setX,big_set1) !dE /f /=.
 rewrite !fdist_sndE /=.
 rewrite !big_ord_recl !big_ord0 !dE /f !ffunE /=.
 rewrite !(addR0,add0R,div0R,mul0R).
+rewrite -!RplusE !addR0.
 repeat (rewrite logDiv; try lra).
 rewrite !log1 !sub0R !log4 !log8 !log16 !log32.
 rewrite [X in log X](_ : _ = 1/4); last lra.

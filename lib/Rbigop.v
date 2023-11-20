@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require Import Rstruct.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
@@ -117,15 +117,10 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Import Order.POrderTheory GRing.Theory Num.Theory.
+
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
-
-Canonical addR_monoid := Monoid.Law addRA add0R addR0.
-Canonical addR_comoid := Monoid.ComLaw addRC.
-Canonical mulR_monoid := Monoid.Law mulRA mul1R mulR1.
-Canonical mulR_muloid := Monoid.MulLaw mul0R mulR0.
-Canonical mulR_comoid := Monoid.ComLaw mulRC.
-Canonical addR_addoid := Monoid.AddLaw mulRDl mulRDr.
 
 Lemma morph_oppR : {morph [eta Ropp] : x y / x + y}.
 Proof. by move=> x y /=; field. Qed.
@@ -160,12 +155,10 @@ Lemma sumR_ord_setT (n : nat) (f : 'I_n -> R) :
   \sum_(i < n) f i = \sum_(i in [set: 'I_n]) f i.
 Proof. by apply eq_bigl => i; rewrite inE. Qed.
 
+(* TODO: rm? *)
 Lemma sumR_ge0 (A : eqType) (d : seq A) (P : pred A) f
   (H : forall i, P i -> 0 <= f i) : 0 <= \sum_(i <- d | P i) f i.
-Proof.
-elim: d => [|h t IH]; first by rewrite big_nil; exact/leRR.
-rewrite big_cons; case: ifPn => // Ph; apply/addR_ge0 => //; exact: H.
-Qed.
+Proof. by apply/RleP/sumr_ge0 => i Pi; exact/RleP/H. Qed.
 
 Lemma sumR_neq0 (U : eqType) (P : U -> R) (s : seq.seq U) :
   (forall i, 0 <= P i) ->
@@ -191,40 +184,18 @@ apply/nesym/eqP/sumR_neq0; last by move/card_gt0P : HA => [a _]; exists a.
 by move=> a; apply/ltRW/f0.
 Qed.
 
-Lemma psumR_seq_eq0P (A : eqType) (l : seq A) f :
-  uniq l ->
-  (forall a, a \in l -> 0 <= f a) ->
-  \sum_(a <- l) f a = 0 <-> (forall a, a \in l -> f a = 0).
-Proof.
-move=> ul Hf; split=> [H a al|h]; last first.
-  by rewrite (eq_big_seq (fun=> 0)) ?big1.
-suff : f a = 0 /\ \sum_(i <- l|i != a) f i = 0 by case.
-apply: Rplus_eq_R0.
-- exact/Hf.
-- by rewrite big_seq_cond; apply: sumR_ge0 => ? /andP[? ?]; apply Hf.
-- by rewrite -bigD1_seq.
-Qed.
-
-Lemma psumR_eq0P (A : finType) (P : pred A) f :
-  (forall a, P a -> 0 <= f a) ->
-  \sum_(a | P a) f a = 0 <-> (forall a, P a -> f a = 0).
-Proof.
-move=> Hf; split=> [H a Ha|h]; last first.
-  by rewrite (eq_bigr (fun=> 0)) // big_const iter_addR mulR0.
-suff : f a = 0 /\ \sum_(i | P i && (i != a)) f i = 0 by case.
-apply: Rplus_eq_R0.
-- exact/Hf/Ha.
-- apply: sumR_ge0 => ? /andP[? ?]; by apply Hf.
-- rewrite -bigD1 /=; [exact H | exact Ha].
-Qed.
-
 Section leR_ltR_sumR.
 Variable A : Type.
 Implicit Types (f g : A -> R) (P Q : pred A).
 
 Lemma leR_sumR r P f g : (forall i, P i -> f i <= g i) ->
   \sum_(i <- r | P i) f i <= \sum_(i <- r | P i) g i.
-Proof. move=> leE12. elim/big_ind2: _ => // m1 m2 n1 n2. lra. Qed.
+Proof.
+move=> leE12.
+elim/big_ind2: _ => //.
+  exact: Rle_refl.
+by move=> m1 m2 n1 n2; lra.
+Qed.
 
 End leR_ltR_sumR.
 
@@ -235,7 +206,9 @@ Lemma leR_sumR_support (X : {set A}) :
   (forall i, i \in X -> P i -> f i <= g i) ->
   \sum_(i in X | P i) f i <= \sum_(i in X | P i) g i.
 Proof.
-move=> H; elim/big_rec2 : _ => // a x y /andP[aX Pa] yx.
+move=> H; elim/big_rec2 : _ => //.
+  exact: Rle_refl.
+move=> a x y /andP[aX Pa] yx.
 by apply leR_add => //; apply: H.
 Qed.
 
@@ -244,7 +217,8 @@ Lemma leR_sumRl : (forall i, P i -> f i <= g i) ->
   \sum_(i | P i) f i <= \sum_(i | Q i) g i.
 Proof.
 move=> f_g Qg H; elim: (index_enum _) => [| h t IH].
-- by rewrite !big_nil; exact/leRR.
+- rewrite !big_nil.
+  by apply/RleP; rewrite lexx.
 - rewrite !big_cons /=; case: ifP => [Ph|Ph].
     by rewrite (H _ Ph); apply leR_add => //; exact: f_g.
   case: ifP => // Qh; apply: (leR_trans IH).
@@ -256,7 +230,7 @@ Lemma leR_sumRl_support (U : pred A) :
   \sum_(i in U | P i) f i <= \sum_(i in U | Q i) f i.
 Proof.
 move=> Hf P_Q; elim: (index_enum _) => [|h t IH].
-- by rewrite !big_nil; exact/leRR.
+- by rewrite !big_nil; apply/RleP; rewrite lexx.
 - rewrite !big_cons; case: (h \in U) => //=; case: ifP => // Ph.
   + by case: ifP => [Qh|]; [rewrite leR_add2l | rewrite (P_Q _ Ph)].
   + by case: ifP => // Qh; rewrite -[X in X <= _]add0R; exact/leR_add.
@@ -295,7 +269,7 @@ End leR_ltR_sumR_finType.
 Lemma leR_sumR_Rabs (A : finType) f : `| \sum_a f a | <= \sum_(a : A) `| f a |.
 Proof.
 elim: (index_enum _) => [|h t IH].
-  rewrite 2!big_nil Rabs_R0; exact/leRR.
+  by rewrite 2!big_nil Rabs_R0.
 rewrite 2!big_cons.
 apply (@leR_trans (`| f h | + `| \sum_(j <- t) f j |));
   [exact/Rabs_triang |exact/leR_add2l].
@@ -348,9 +322,9 @@ Lemma leR_sumR_eq (A : finType) (f g : A -> R) (P : pred A) :
    \sum_(a | P a) g a = \sum_(a | P a) f a ->
    (forall a, P a -> g a = f a).
 Proof.
-move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply psumR_eq0P.
-- move=> i Hi; rewrite leR_subr_addr add0R; exact: H1.
-- by rewrite big_split /= -big_morph_oppR subR_eq0 H2.
+move=> H1 H2 i Hi; rewrite -subR_eq0; move: i Hi; apply: psumr_eq0P.
+  by move=> i Pi; rewrite RminusE subr_ge0; apply/RleP/H1.
+by rewrite big_split/= -big_morph_oppR; apply/eqP; rewrite subr_eq0 H2.
 Qed.
 
 Section pascal.
@@ -375,10 +349,6 @@ End pascal.
 
 Section leR_ltR_rprod.
 
-Lemma prodR_gt0 (A : finType) F : (forall a, 0 < F a) ->
-  0 < \prod_(a : A) F a.
-Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulR_gt0. Qed.
-
 Lemma prodR_ge0 (A : finType) F : (forall a, 0 <= F a) ->
   0 <= \prod_(a : A) F a.
 Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulR_ge0. Qed.
@@ -397,7 +367,8 @@ Qed.
 Lemma prodR_ge1 (A : finType) f : (forall a, 1 <= f a) ->
   1 <= \prod_(a : A) f a.
 Proof.
-elim/big_ind : _ => // [|x y Hx Hy *]; first by move=> _; exact/leRR.
+elim/big_ind : _ => // [|x y Hx Hy *].
+  by move=> _; apply/RleP; rewrite lexx.
 by rewrite -{1}(mulR1 1); apply/leR_pmul => //; [exact: Hx | exact: Hy].
 Qed.
 
@@ -419,9 +390,9 @@ Qed.
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-Lemma prodR_gt0_inv (B : finType) F (HF: forall a, 0 <= F a) :
+Lemma prodR_gt0_inv (B : finType) F (HF: forall a, (0 <= F a)%coqR) :
   forall n (x : 'rV[B]_n.+1),
-  0 < \prod_(i < n.+1) F (x ``_ i) -> forall i, 0 < F (x ``_ i).
+    (0 < \prod_(i < n.+1) F (x ``_ i) -> forall i, 0 < F (x ``_ i))%coqR.
 Proof.
 elim => [x | n IH].
   rewrite big_ord_recr /= big_ord0 mul1R => Hi i.
@@ -435,7 +406,7 @@ move: (HF (x ``_ ord0)); rewrite leR_eqVlt => -[<-|H].
 rewrite mulRC (pmulR_lgt0 H) => H'.
 case; case => [i0|i Hi].
   rewrite (_ : Ordinal _ = ord0) //; exact/val_inj.
-have : 0 < \prod_(i0 < n.+1) F (t ``_ i0).
+have : (0 < \prod_(i0 < n.+1) F (t ``_ i0))%coqR.
   suff : (\prod_(i < n.+1) F (x ``_ (lift ord0 i)) =
          \prod_(i < n.+1) F (t ``_ i))%R by move=> <-.
   apply eq_bigr => ? _; by rewrite mxE.
@@ -458,9 +429,9 @@ have [/forallP Hf|] := boolP [forall i, f i != 0%R]; last first.
   rewrite (bigD1 i0) //= fi0 mul0R; apply prodR_ge0.
   by move=> i ; move: (fg i) => [Hi1 Hi2]; exact: (leR_trans Hi1 Hi2).
 have Hprodf : 0 < \prod_(i : A) f i.
-  apply prodR_gt0 => a.
+  apply/RltP. apply prodr_gt0 => a _. apply/RltP.
   move: (Hf a) (fg a) => {}Hf {fg}[Hf2 _].
-  apply/ltRP; rewrite lt0R Hf /=; exact/leRP.
+  by apply/RltP; rewrite lt0r Hf/=; exact/RleP.
 apply (@leR_pmul2r (1 * / \prod_(i : A) f i) _ _).
   apply divR_gt0 => //; lra.
 rewrite mul1R mulRV; last exact/gtR_eqF.
@@ -486,7 +457,7 @@ move/negbTE in Hf; rewrite Hf; move/negbT in Hf.
 rewrite -(mulRV (f a)) //.
 apply leR_wpmul2r => //.
 rewrite -(mul1R (/ f a)).
-apply divR_ge0; [lra | apply/ltRP; rewrite lt0R Hf; exact/leRP].
+by apply divR_ge0; [lra |by apply/RltP; rewrite lt0r Hf; exact/RleP].
 Qed.
 
 End leR_ltR_rprod.
@@ -494,18 +465,21 @@ End leR_ltR_rprod.
 Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
-Lemma log_prodR_sumR_mlog {A : finType} k (f : A ->R+) : forall n (ta : 'rV[A]_n.+1),
-  (forall i, 0 < f ta ``_ i) ->
+Lemma log_prodR_sumR_mlog {A : finType} k (f : A -> R) :
+  (forall a, 0 <= f a)%coqR ->
+  forall n (ta : 'rV[A]_n.+1),
+  (forall i, 0 < f ta ``_ i)%coqR ->
   (- Log k (\prod_(i < n.+1) f ta ``_ i) = \sum_(i < n.+1) - Log k (f ta ``_ i))%R.
 Proof.
+move=> f0.
 elim => [i Hi | n IH].
   by rewrite big_ord_recl big_ord0 mulR1 big_ord_recl big_ord0 addR0.
 move=> ta Hi.
 rewrite big_ord_recl /= LogM; last 2 first.
   exact/Hi.
-  by apply prodR_gt0 => ?; exact/Hi.
+  by apply/RltP; apply prodr_gt0 => ? _; exact/RltP/Hi.
 set tl := \row_(i < n.+1) ta ``_ (lift ord0 i).
-have : forall i0 : 'I_n.+1, 0 < f tl ``_ i0.
+have : forall i0 : 'I_n.+1, (0 < f tl ``_ i0)%coqR.
   move=> i; rewrite mxE; exact/Hi.
 move/IH => {}IH.
 have -> : (\prod_(i < n.+1) f ta ``_ (lift ord0 i) = \prod_(i < n.+1) f tl ``_ i)%R.
@@ -532,7 +506,7 @@ Qed.
 Lemma bigmaxR_ge0 : (forall r, r \in s -> 0 <= F r) -> 0 <= \rmax_(m <- s) (F m).
 Proof.
 case: s => [_ | hd tl Hr].
-- rewrite big_nil; exact/leRR.
+- by rewrite big_nil.
 - apply (@leR_trans (F hd)); last by rewrite big_cons; exact: leR_maxl.
   apply Hr; by rewrite in_cons eqxx.
 Qed.

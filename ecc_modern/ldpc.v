@@ -1,13 +1,14 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
-From mathcomp Require Import matrix vector.
+From mathcomp Require Import matrix vector ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext num_occ bigop_ext Rbigop.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext num_occ bigop_ext Rbigop.
 Require Import fdist channel pproba f2 linearcode subgraph_partition tanner.
 Require Import tanner_partition hamming binary_symmetric_channel decoding.
 Require Import channel_code summary checksum summary_tanner.
+Require Import Rstruct_ext.
 
 (******************************************************************************)
 (*                   LDPC Codes and Sum-Product Decoding                      *)
@@ -32,6 +33,8 @@ Require Import channel_code summary checksum summary_tanner.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Import GRing.Theory Num.Theory.
 
 Local Open Scope num_occ_scope.
 Local Open Scope channel_scope.
@@ -81,36 +84,6 @@ Local Open Scope ring_scope.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
-
-(* TODO: move to the file on bsc? *)
-Section post_proba_bsc_unif.
-Variable A : finType.
-Hypothesis card_A : #|A| = 2%nat.
-Variable p : R.
-Hypothesis p_01' : 0 < p < 1.
-Let p_01 := Eval hnf in Prob.mk_ (ltR2W p_01').
-Let P := fdist_uniform card_A.
-Variable a' : A.
-Hypothesis Ha' : receivable_prop (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
-
-Lemma bsc_post (a : A) :
-  (P `^ 1) `^^ (BSC.c card_A p_01) (\row_(i < 1) a | mkReceivable Ha') =
-  (if a == a' then 1 - p else p)%R.
-Proof.
-rewrite fdist_post_probE /= !fdist_rVE DMCE big_ord_recl big_ord0.
-rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
-  by move=> i _; rewrite /P !fdist_rVE big_ord_recl big_ord0 !fdist_uniformE mulR1.
-rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
-  transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a')%R.
-    apply eq_bigr => i _.
-    by rewrite DMCE big_ord_recl big_ord0 mulR1 /BSC.c mxE.
-  apply/(@big_rV1_ord0 _ _ _ _ (fdist_binary card_A p_01 ^~ a')).
-  by rewrite -sum_fdist_binary_swap // FDist.f1.
-rewrite mxE mulR1 big_ord_recl big_ord0 /BSC.c fdist_binaryE /= eq_sym !mxE; field.
-by rewrite /P fdist_uniformE card_A (_ : 2%:R = 2)%R //; lra.
-Qed.
-
-End post_proba_bsc_unif.
 
 Section DMC_sub_vec_Fnext_Vgraph.
 Variables (B : finType) (W : `Ch('F_2, B)).
@@ -500,8 +473,8 @@ Lemma K949_lemma df n0 : K949 n0 df =
   marginal_post_prob_den y * post_prob_uniform_cst [set cw in C] y.
 Proof.
 rewrite /K949 /marginal_post_prob_den /post_prob_uniform_cst -invRM; last 2 first.
-  apply/eqP; rewrite FDist.f1 => ?; lra.
-  by rewrite -not_receivable_prop_uniform receivableP.
+- by rewrite FDist.f1; apply: lt0r_neq0.
+- by rewrite -not_receivable_prop_uniform receivableP.
 congr (/ _).
 transitivity (\sum_(t in 'rV['F_2]_n)
   if t \in kernel H then W ``(y | t) else 0); last first.
@@ -509,24 +482,25 @@ transitivity (\sum_(t in 'rV['F_2]_n)
   apply eq_bigr => /= t Ht.
   case: ifP => HtH.
     rewrite fdist_post_probE fdist_uniform_supp_in ?inE //.
-    have HH : #|[set cw in kernel H]|%:R <> 0.
-      apply/INR_eq0/eqP.
+    have HH : (#|[set cw in kernel H]|%:R)%mcR != 0.
+      (* the following three lines amount to INR_eq0 *)
+      have->: 0 = GRing.natmul 1 0 by [].
+      apply/eqP => /mulrIn /eqP.
+      rewrite -unitfE unitr1 => /(_ erefl); apply/negP.
       rewrite cards_eq0.
       by apply/set0Pn; exists t; rewrite inE.
-    rewrite -(mulRC (W ``(y | t))) -[X in X = _]mulR1.
-    rewrite -!mulRA.
+    rewrite -(mulrC (W ``(y | t))) -[X in X = _]mulr1.
+    rewrite !coqRE -!mulrA.
     congr (_ * _).
-    rewrite mul1R fdist_uniform_supp_restrict /= fdist_uniform_supp_distrr /=; last first.
-    rewrite invRM; last 2 first.
-      exact/eqP/invR_neq0.
+    rewrite fdist_uniform_supp_restrict /= fdist_uniform_supp_distrr /=; last first.
+    rewrite invrM; last 2 first.
+      exact/invr_neq0.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
-      by rewrite -not_receivable_prop_uniform receivableP.
-    rewrite invRK -mulRA mulRC mulVR ?mulR1 ?mulRV //; first by exact/eqP.
-    set tmp1 := \sum_(_ | _) _.
-    rewrite /tmp1 (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
-    by rewrite -not_receivable_prop_uniform receivableP.
+      by rewrite unitfE -not_receivable_prop_uniform receivableP.
+    rewrite invrK [X in _ = _ * X]mulrAC mulVr ?mul1r ?coqRE ?mulVr //.
+    by rewrite unitfE -not_receivable_prop_uniform receivableP.
   rewrite fdist_post_probE fdist_uniform_supp_notin; last by rewrite inE; exact/negbT.
-  by rewrite !(mul0R,div0R).
+  by rewrite !coqRE !mul0r.
 rewrite -big_mkcond /=.
 rewrite /alpha.
 transitivity (W Zp0 (y ``_ n0) *
@@ -877,7 +851,7 @@ Fixpoint sumproduct_loop (lmax : nat) (beta0 beta1 : 'M_(m, n)) : option ('rV['F
       let estimation x n0 alpha := (W x (y \_ n0) * \prod_(m1 in 'F n0) alpha m1 n0)%R in
       let gamma0 n0 := estimation Zp0 n0 alpha0 in
       let gamma1 n0 := estimation Zp1 n0 alpha1 in
-      let chat := \matrix_(i < 1, n0 < n) if gamma0 n0 >b= gamma1 n0 then 0 else 1 in
+      let chat := \matrix_(i < 1, n0 < n) if (gamma0 n0 >= gamma1 n0)%mcR then 0 else 1 in
       if H *m chat^T == 0 then
         Some chat
       else

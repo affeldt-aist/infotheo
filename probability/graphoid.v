@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
@@ -64,8 +64,7 @@ End prop.
 End QuadA23.
 
 Section cinde_rv_prop.
-
-Variables (U : finType) (P : fdist U) (A B C D : finType).
+Variables (U : finType) (P : {fdist U}) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
 
 Lemma cinde_drv_2C : P |= X _|_ [% Y, W] | Z -> P |= X _|_ [% W, Y] | Z.
@@ -84,7 +83,7 @@ End cinde_rv_prop.
 
 Section symmetry.
 
-Variable (U : finType) (P : fdist U).
+Variable (U : finType) (P : {fdist U}).
 Variables (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
 Lemma symmetry : P |= X _|_ Y | Z -> P |= Y _|_ X | Z.
@@ -100,7 +99,7 @@ End symmetry.
 
 Section decomposition.
 
-Variables (U : finType) (P : fdist U) (A B C D : finType).
+Variables (U : finType) (P : {fdist U}) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
 
 Lemma decomposition : P |= X _|_ [% Y, W] | Z -> P |= X _|_ Y | Z.
@@ -122,7 +121,7 @@ End decomposition.
 
 Section weak_union.
 
-Variables (U : finType) (P : fdist U) (A B C D : finType).
+Variables (U : finType) (P : {fdist U}) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
 
 Lemma weak_union : P |= X _|_ [% Y, W] | Z -> P |= X _|_ Y | [% Z, W].
@@ -146,7 +145,7 @@ End weak_union.
 
 Section contraction.
 
-Variables (U : finType) (P : fdist U) (A B C D : finType).
+Variables (U : finType) (P : {fdist U}) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
 
 Lemma contraction : P |= X _|_ W | [% Z, Y] -> P |= X _|_ Y | Z -> P |= X _|_ [% Y, W] | Z.
@@ -170,7 +169,7 @@ End contraction.
 (* Probabilistic Reasoning in Intelligent Systems: Networks of Plausible Inference, Pearl, p.88 *)
 Section derived_rules.
 
-Variables (U : finType) (P : fdist U) (A B C D : finType).
+Variables (U : finType) (P : {fdist U}) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
 
 Lemma chaining_rule : P |= X _|_ Z | Y /\ P |= [% X, Y] _|_ W | Z -> P |= X _|_ W | Y.
@@ -192,7 +191,7 @@ End derived_rules.
 
 Section intersection.
 
-Variables (U : finType) (P : fdist U) (A B C D : finType).
+Variables (U : finType) (P : {fdist U}) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
 
 Hypothesis P0 : forall b c d, `Pr[ [% Y, Z, W] = (b, c, d) ] != 0.

@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext Ranalysis_ext logb convex.
+Require Import ssrR realType_ext Reals_ext Ranalysis_ext logb convex.
 
 (******************************************************************************)
 (*                      Results about the Analysis of ln                      *)
@@ -27,7 +27,7 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 
-Import Order.Theory.
+Import Order.Theory GRing.Theory Num.Theory.
 
 Section ln_id_sect.
 
@@ -90,7 +90,8 @@ Proof.
 case: (ltgtP x 1) => [| |] x1 x0.
 - by apply/ltRW/ln_idlt0_xlt1; split=> //; apply/RltP.
 - by apply/ltRW/ln_idlt0_xgt1 => //; exact/RltP.
-- by rewrite x1 /ln_id ln_1 2!subRR; exact/leRR.
+- rewrite x1 /ln_id ln_1 2!subRR.
+  by apply/RleP; rewrite lexx.
 Qed.
 
 Lemma ln_id_cmp x : 0 < x -> ln x <= x - 1.
@@ -124,7 +125,7 @@ Section xlnx_sect.
 
 Section xlnx.
 
-Definition xlnx := fun x => if 0 <b x then x * ln x else 0.
+Definition xlnx := fun x => if (0 < x)%mcR then x * ln x else 0.
 
 Lemma xlnx_0 : xlnx 0 = 0.
 Proof. rewrite /xlnx mul0R; by case : ifP. Qed.
@@ -136,7 +137,7 @@ Lemma xlnx_neg x : 0 < x < 1 -> xlnx x < 0.
 Proof.
 case => lt0x ltx1.
 rewrite /xlnx.
-have -> : 0 <b x ; first by apply/ltRP.
+have -> : (0 < x)%mcR ; first exact/RltP.
 rewrite -(oppRK 0) ltR_oppr oppR0 -mulRN.
 apply mulR_gt0 => //.
 rewrite ltR_oppr oppR0.
@@ -158,14 +159,14 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
   exists (Rmin k r); split; first exact/Rlt_gt/Rmin_pos.
   - move=> x ; rewrite /D_x ; move => [[_ Hx1] Hx2].
     rewrite /xlnx.
-    have -> : 0 <b x.
-      apply/ltRP.
-      rewrite -(addR0 x) -{2}(subRR r) addRA addRAC.
+    have -> : (0 < x)%mcR.
+      apply/RltP.
+      rewrite -(addR0 x) -{1}(subRR r) addRA addRAC.
       apply (@leR_ltR_trans ((x + - r) + `| x + - r |)).
         rewrite addRC -leR_subl_addr sub0R -normRN; exact: Rle_abs.
       rewrite /R_dist in Hx2.
-      apply/ltR_add2l/(@ltR_leR_trans (Rmin k r)) => //; exact: geR_minr.
-    have -> : 0 <b r by apply/ltRP.
+      by apply/ltR_add2l/(@ltR_leR_trans (Rmin k r)) => //; exact: geR_minr.
+    have -> : (0 < r)%mcR by apply/RltP.
     apply Hk.
     split => //.
     exact/(ltR_leR_trans Hx2)/geR_minl.
@@ -173,8 +174,8 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
   exists (exp (- 2 * / eps)).
   split ; first exact: exp_pos.
   move=> x; rewrite /R_dist subR0; case=> Hx1 Hx2.
-  rewrite /xlnx ltRR'.
-  case: ifPn => Hcase; move/ltRP in Hcase.
+  rewrite /xlnx ltxx.
+  case: ifPn => /RltP Hcase.
   + rewrite (geR0_norm _ (ltRW Hcase)) in Hx2.
     rewrite subR0 -{1}(exp_ln _ Hcase).
     set X := ln x.
@@ -214,13 +215,13 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
 - exists (- r); split; first exact/oppR_gt0.
   move=> x [[_ Hx1] Hx2].
   rewrite /R_dist /xlnx.
-  have -> : 0 <b x = false.
-    apply/ltRP/leRNgt.
+  have -> : (0 < x)%mcR = false.
+    apply/RltP/leRNgt.
     rewrite -(addR0 x) -{1}(subRR r) addRA addRAC.
     apply (@leR_trans ((x + - r) - `| x + - r |)).
       apply/leR_add2l/ltRW; by rewrite ltR_oppr.
     exact/Rle_minus/Rle_abs.
-  have -> : 0 <b r = false by apply/negbTE; rewrite -leRNgt'; apply/leRP/ltRW.
+  have -> : (0 < r)%mcR = false by apply/negbTE; rewrite -leNgt; apply/RleP/ltRW.
   by rewrite subRR normR0.
 Qed.
 
@@ -242,7 +243,7 @@ by apply derivable_pt_ln.
 Defined.
 
 Lemma xlnx_total_xlnx x : 0 < x -> xlnx x = xlnx_total x.
-Proof. by rewrite /xlnx /f => /ltRP ->. Qed.
+Proof. by rewrite /xlnx /f => /RltP ->. Qed.
 
 Lemma derivable_pt_xlnx x (x_pos : 0 < x) : derivable_pt xlnx x.
 Proof. apply (@derivable_f_eq_g _ _ x 0 xlnx_total_xlnx x_pos (derivable_xlnx_total x_pos)). Defined.
@@ -288,7 +289,7 @@ case/boolP : (x == 0) => [/eqP ->|x0].
 - rewrite xlnx_0; apply xlnx_neg.
   exact: (conj (@leR_ltR_trans x _ _ _ _) (leR_ltR_trans y2 ltRinve1)).
 - rewrite -[X in _ < X]oppRK ltR_oppr.
-  have {}x0 : 0 < x by apply/ltRP; rewrite lt0R x0; exact/leRP.
+  have {}x0 : 0 < x by apply/RltP; rewrite lt0r x0; exact/RleP.
   have {x1 y1}y0 : 0 < y by exact: (@ltR_trans x).
   exact: (pderive_increasing (exp_pos _) xlnx_sdecreasing_0_Rinv_e_helper).
 Qed.
@@ -297,7 +298,8 @@ Lemma xlnx_decreasing_0_Rinv_e x y :
   0 <= x <= exp (-1) -> 0 <= y <= exp (-1) -> x <= y -> xlnx y <= xlnx x.
 Proof.
 move=> Hx Hy Hxy.
-case/boolP : (x == y) => [/eqP ->|/eqP H]; first exact/leRR.
+case/boolP : (x == y) => [/eqP ->|/eqP H].
+  by apply/RleP; rewrite lexx.
 by apply/ltRW/xlnx_sdecreasing_0_Rinv_e => //; rewrite ltR_neqAle.
 Qed.
 
@@ -384,9 +386,11 @@ Proof.
 move=> [Hx1 Hx2].
 apply Rge_le, Rminus_ge, Rle_ge.
 rewrite -diff_xlnx_0 -/(diff_xlnx x).
-case/boolP : (0 == x) => [/eqP ->|/eqP xnot0]; first exact/leRR.
+case/boolP : (0 == x) => [/eqP ->|/eqP xnot0].
+  by apply/RleP; rewrite lexx.
 apply/ltRW/diff_xlnx_sincreasing_0_Rinv_e2 => //.
-  split; [exact/leRR | exact/ltRW/exp_pos].
+  split; [ | exact/ltRW/exp_pos].
+  by apply/RleP; rewrite lexx.
 by rewrite ltR_neqAle.
 Qed.
 
@@ -450,23 +454,23 @@ Lemma xlnx_delta_bound eps : 0 < eps <= exp (-2) ->
   forall x, 0 <= x <= 1 - eps -> `| xlnx_delta eps x | <= - xlnx eps.
 Proof.
 move=> [Heps1 Heps2] x [Hx1 Hx2].
-apply/leRP; rewrite leR_Rabsl oppRK; apply/andP; split; apply/leRP.
-- rewrite (_ : xlnx eps = xlnx_delta eps 0); last first.
+apply/RleP; rewrite ler_norml; apply/andP; split; apply/RleP.
+- rewrite RoppE opprK (_ : xlnx eps = xlnx_delta eps 0); last first.
     by rewrite /xlnx_delta add0R xlnx_0 subR0.
-  case/boolP : (0 == x) => [/eqP <-|/eqP xnot0]; first exact/leRR.
+  have [->|xnot0] := eqVneq x 0; first by apply/RleP; rewrite lexx.
   apply/ltRW/increasing_xlnx_delta => //.
   + exact: (conj Heps1 (leR_ltR_trans Heps2 ltRinve21)).
-  + split; by [apply (@leR_trans x) | exact: leRR].
-  + by rewrite ltR_neqAle.
-- apply (@leR_trans (xlnx_delta eps (1 - eps))).
-    case/boolP : (x == 1 - eps) => [/eqP ->|/eqP xnot0]; first exact/leRR.
+  + split; by [apply (@leR_trans x) |].
+  + by apply/RltP; rewrite lt0r xnot0/=; exact/RleP.
+- apply: (@leR_trans (xlnx_delta eps (1 - eps))).
+    have [->|xnot0] := eqVneq x (1 - eps); first by apply/RleP; rewrite lexx.
     apply/ltRW/increasing_xlnx_delta => //.
     + exact: (conj Heps1 (leR_ltR_trans Heps2 ltRinve21)).
-    + split; by [apply (@leR_trans x) | exact: leRR].
-    + by rewrite ltR_neqAle.
+    + split; [by apply (@leR_trans x) | ].
+      by apply/RleP; rewrite lexx.
+    + by apply/RltP; rewrite lt_neqAle xnot0/=; exact/RleP.
   rewrite /xlnx_delta subRK xlnx_1 sub0R leR_oppr oppRK.
-  apply xlnx_ineq.
-  split => //; exact: ltRW.
+  by apply: xlnx_ineq; split => //; apply/RleP/ltW/RltP.
 Qed.
 
 Lemma Rabs_xlnx a (Ha : 0 <= a <= exp(-2)) x y :
@@ -495,9 +499,10 @@ case : (Rtotal_order x y) ; last case ; move => Hcase.
     apply/ltRW/exp_increasing; lra.
 - subst x ; rewrite subRR normR0 leR_oppr oppR0.
   case/orP : (orbN (0 == a)); last move=> anot0.
-    by move=> /eqP <-; rewrite xlnx_0; exact: leRR.
+    move=> /eqP <-; rewrite xlnx_0.
+    by apply/RleP; rewrite lexx.
   apply/ltRW/xlnx_neg; split.
-  - apply/ltRP; rewrite lt0R eq_sym anot0; exact/leRP/(proj1 Ha).
+  - by apply/RltP; rewrite lt0r eq_sym anot0; exact/RleP/(proj1 Ha).
   - exact: (leR_ltR_trans (proj2 Ha) ltRinve21).
 - apply Rgt_lt in Hcase.
   have Haux : x = y + `| x - y | by rewrite gtR0_norm ?subR_gt0 // subRKC.
@@ -536,7 +541,7 @@ rewrite /log /Log (_ : (fun x0 => ln x0 / ln 2) =
 apply/derivable_pt_scal/derivable_pt_ln/(leR_ltR_trans a0); by case: Hx.
 Qed.
 
-Lemma ln_concave_at_gt0 x y (t : prob) : x < y ->
+Lemma ln_concave_at_gt0 x y (t : {prob R}) : x < y ->
   0 < x -> 0 < y -> concave_function_at ln x y t.
 Proof.
 move=> xy x0 y0; apply RNconcave_function_at.
@@ -576,26 +581,29 @@ Qed.
 
 Local Open Scope reals_ext_scope.
 
-Lemma log_concave_at_gt0W x y (t : prob) : x < y ->
+Lemma log_concave_at_gt0W x y (t : {prob R}) : x < y ->
   0 < x -> 0 < y -> concave_function_at log x y t.
 Proof.
 move=> xy x0 y0; rewrite /log /Log.
 apply concave_function_atN; [exact: ln_concave_at_gt0 | exact/ltRW/invR_gt0/ln2_gt0].
 Qed.
 
-Lemma log_concave_at_gt0 x y (t : prob) : 0 < x -> 0 < y -> concave_function_at log x y t.
+Lemma log_concave_at_gt0 x y (t : {prob R}) : 0 < x -> 0 < y -> concave_function_at log x y t.
 Proof.
 move=> x0 y0.
-case/boolP : (x <b y) => [/ltRP xy|].
+case/boolP : (x < y)%mcR => [/RltP xy|].
   exact: log_concave_at_gt0W.
-rewrite -leRNgt' => /leRP; rewrite leR_eqVlt => -[->|yx].
-exact: concave_function_atxx.
-rewrite (probK t); apply: concavef_at_onem => //; exact: log_concave_at_gt0W.
+rewrite -leNgt le_eqVlt => /predU1P[->|yx].
+  exact: concave_function_atxx.
+rewrite (probK t); apply: concavef_at_onem => //.
+  exact/RltP.
+by apply: log_concave_at_gt0W => //; exact/RltP.
 Qed.
 
 Lemma log_concave : concave_function_in Rpos_interval log.
 Proof.
-by move=> x y t; rewrite !classical_sets.in_setE => Hx Hy; apply log_concave_at_gt0.
+move=> x y t; rewrite !classical_sets.in_setE(*TODO: import?*) => Hx Hy.
+exact: log_concave_at_gt0.
 Qed.
 
 End log_concave.

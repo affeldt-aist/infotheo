@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import fdist entropy convex ln_facts jensen num_occ.
+Require Import ssrR Reals_ext Rstruct_ext realType_ext ssr_ext ssralg_ext logb.
+Require Import Rbigop fdist entropy convex ln_facts jensen num_occ.
 
 (******************************************************************************)
 (*                         String entropy                                     *)
@@ -28,9 +28,11 @@ Local Open Scope num_occ_scope.
 Local Open Scope entropy_scope.
 Local Coercion INR : nat >-> R.
 
+Import Num.Theory.
+
 Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
 
-Local Hint Resolve leRR : core.
+Local Hint Resolve Rle_refl : core.
 Local Hint Resolve leR0n : core.
 
 Section seq_nat_fdist.
@@ -42,9 +44,9 @@ Hypothesis total_gt0 : total != O.
 
 Let f_div_total := [ffun a : A => f a / total].
 
-Lemma f_div_total_pos c : 0 <= f_div_total c.
+Lemma f_div_total_pos c : (0 <= f_div_total c)%mcR.
 Proof.
-rewrite ffunE; apply mulR_ge0 => //.
+rewrite ffunE; apply/RleP/mulR_ge0 => //.
 apply /Rlt_le /invR_gt0 /ltR0n.
 by rewrite lt0n.
 Qed.
@@ -190,7 +192,7 @@ apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
 have Htotal := esym (num_occ_flatten a ss').
 rewrite big_tnth in Htotal.
 have Hnum2 : N(a|flatten ss') != O.
-  rewrite -lt0n -ltR0n'; exact/ltRP.
+  rewrite -lt0n; exact/ltR0n.
 set d := seq_nat_fdist Htotal Hnum2.
 set r := fun i =>
   (size (tnth (in_tuple ss') i))
@@ -263,8 +265,8 @@ Definition hoH (k : nat) := / n%:R *
 
 Lemma hoH_decr (k : nat) : hoH k.+1 <= hoH k.
 Proof.
-rewrite /hoH; apply/leRP; rewrite leR_pmul2l'; last first.
-  by apply/ltRP/invR_gt0/ltRP; rewrite ltR0n' lt0n.
+rewrite /hoH; apply/RleP; rewrite ler_pM2l//; last first.
+  by rewrite INRE RinvE' invr_gt0// ltr0n lt0n.
 (* TODO *)
 Abort.
 

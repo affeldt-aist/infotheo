@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext Rbigop fdist proba.
@@ -13,8 +13,9 @@ Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
+Local Open Scope ring_scope.
 
-Definition f : {ffun 'I_3 -> R} := [ffun i =>
+Definition pmf : {ffun 'I_3 -> R} := [ffun i =>
   [fun x => 0 with inord 0 |-> 1/2, inord 1 |-> 1/3, inord 2 |-> 1/6] i].
 
 CoInductive I3_spec : 'I_3 -> bool -> bool -> bool -> Prop :=
@@ -49,9 +50,9 @@ I3_neq.
 exact: I2_2.
 Qed.
 
-Lemma f_nonneg : [forall a : 'I_3, 0 <b= f a].
+Lemma pmf_ge0 : [forall a : 'I_3, 0 <= pmf a].
 Proof.
-apply/forallP_leRP.
+apply/forallPP; first by move=> x; exact/RleP.
 case/I3P.
 - rewrite /f ffunE /= eqxx; lra.
 - rewrite /f ffunE /= ifF; last by I3_neq.
@@ -61,13 +62,12 @@ case/I3P.
   rewrite eqxx; lra.
 Qed.
 
-Definition pmf : [finType of 'I_3] ->R+ := mkNNFinfun f_nonneg.
-
 Ltac I3_eq := rewrite (_ : _ == _ = true); last by
               apply/eqP/val_inj => /=; rewrite inordK.
 
-Lemma pmf1 : \sum_(i in 'I_3) pmf i == 1 :> R.
+Lemma pmf01 : [forall a, 0 <= pmf a] && (\sum_(a in 'I_3) pmf a == 1).
 Proof.
+apply/andP; split; first exact: pmf_ge0.
 apply/eqP.
 do 3 rewrite big_ord_recl.
 rewrite big_ord0 addR0 /=.
@@ -84,7 +84,7 @@ Qed.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
-Definition d : {fdist 'I_3} := FDist.mk pmf1.
+Definition d : {fdist 'I_3} := FDist.mk pmf01.
 
 Definition X : {RV d -> R} := (fun i => INR i.+1).
 
@@ -115,7 +115,7 @@ do 3 rewrite big_ord_recl.
 rewrite big_ord0 addR0 /=.
 rewrite /sq_RV /comp_RV /=.
 rewrite !mul1R.
-rewrite {1}/f !ffunE /=.
+rewrite {1}/pmf !ffunE /=.
 rewrite ifT; last by I3_eq.
 rewrite (_ : INR _ = 2) // mulR1.
 rewrite /f /=.

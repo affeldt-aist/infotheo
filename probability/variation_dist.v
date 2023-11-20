@@ -20,12 +20,13 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
+Local Open Scope fdist_scope.
 
 Section variation_distance.
 
 Variable A : finType.
 
-Definition var_dist (P Q : fdist A) := \sum_(a : A) `| P a - Q a |.
+Definition var_dist (P Q : {fdist A}) := \sum_(a : A) `| P a - Q a |.
 
 Local Notation "'d(' P ',' Q ')' " := (var_dist P Q).
 
@@ -43,7 +44,7 @@ rewrite (bigD1 a) //= paddR_eq0 => [[] // | |  ]; first exact/normR_ge0.
 by apply: sumR_ge0 => ? _ ; exact/normR_ge0.
 Qed.
 
-Lemma leq_var_dist (p q : fdist A) x : `| p x - q x | <= d( p , q ).
+Lemma leq_var_dist (p q : {fdist A}) x : `| p x - q x | <= d( p , q ).
 Proof.
 rewrite /var_dist (bigD1 x) //= -{1}(addR0 `| p x - q x |).
 by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.

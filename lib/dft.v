@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg poly polydiv finalg zmodp.
+From mathcomp Require Import all_ssreflect ssralg poly polydiv zmodp.
 From mathcomp Require Import matrix mxalgebra mxpoly vector cyclic perm.
 Require Import ssr_ext ssralg_ext hamming.
 

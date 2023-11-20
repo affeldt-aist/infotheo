@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect ssralg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrZ ssrR Reals_ext ssr_ext ssralg_ext logb natbin Rbigop fdist.
@@ -21,9 +21,10 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope ring_scope.
+Local Open Scope fdist_scope.
 
 Section encoder_and_decoder.
-Variables (A : finType) (P : fdist A) (n k : nat).
+Variables (A : finType) (P : {fdist A}) (n k : nat).
 
 Variable S : {set 'rV[A]_k.+1}.
 
@@ -105,7 +106,7 @@ Local Open Scope entropy_scope.
 Local Open Scope reals_ext_scope.
 
 Section source_coding_direct'.
-Variables (A : finType) (P : fdist A) (num den : nat).
+Variables (A : finType) (P : {fdist A}) (num den : nat).
 Let r := (num%:R / den.+1%:R)%R.
 Hypothesis Hr : `H P < r.
 Variable epsilon : R.
@@ -193,7 +194,7 @@ rewrite inE /=; apply/negPn/negPn.
   apply (@leR_trans (exp2 (k%:R * (lambda / 2) + k%:R * (`H P + lambda / 2)))); last first.
     rewrite -mulRDr addRC -addRA.
     rewrite (_ : forall a, a / 2 + a / 2 = a)%R; last by move=> ?; field.
-    exact/leRR.
+    by apply/RleP; rewrite Order.POrderTheory.lexx.
   apply (@leR_trans (exp2 (1 + INR k * (`H P + lambda / 2)))); last first.
    apply Exp_le_increasing => //; apply leR_add2r.
     move/leR_max : Hdelta => [_ Hlambda].
@@ -208,13 +209,14 @@ rewrite inE /=; apply/negPn/negPn.
     apply mulR_ge0; first exact: leR0n.
     apply addR_ge0; first exact: entropy_ge0.
     apply Rlt_le; exact: lambda2_gt0.
-  + by rewrite addRR -{1}(logK Rlt_0_2) -ExpD {1}/log Log_n //; exact/leRR.
+  + rewrite addRR -{1}(logK Rlt_0_2) -ExpD {1}/log Log_n //.
+    by apply/RleP; rewrite Order.POrderTheory.lexx.
 Qed.
 
 End source_coding_direct'.
 
 Section source_coding_direct.
-Variables (A : finType) (P : fdist A).
+Variables (A : finType) (P : {fdist A}).
 
 Theorem source_coding_direct epsilon : 0 < epsilon < 1 ->
   forall r : Qplus, `H P < r ->

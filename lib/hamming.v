@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require Import Reals.
-From mathcomp Require Import all_ssreflect fingroup zmodp ssralg perm matrix.
-From mathcomp Require Import poly finalg mxalgebra mxpoly.
-From mathcomp Require Rstruct.
+From mathcomp Require Import all_ssreflect fingroup zmodp ssralg finalg perm matrix.
+From mathcomp Require Import poly mxalgebra mxpoly.
+From mathcomp Require Import Rstruct.
 Require Import ssr_ext ssralg_ext f2 num_occ natbin ssrR Reals_ext Rbigop.
 
 (******************************************************************************)
@@ -849,7 +849,7 @@ Lemma hamming_01 m p :
     (1 - p) ^ (m - wH u) * p ^ wH u =
   (1 - p) ^ m + m%:R * p * (1 - p) ^ (m - 1).
 Proof.
-rewrite (@bigID _ _ addR_comoid(*TODO: we shouldn't need to pass this argument*) _ _ [pred i | wH i == O]) /=.
+rewrite (bigID [pred i | wH i == O]) /=.
 rewrite (big_pred1 (GRing.zero _)) /=; last first.
   by move=> i /=; rewrite !inE -wH_eq0 andb_idl // => /eqP ->.
 rewrite wH0 pow_O subn0 mulR1; congr (_ + _).
@@ -874,7 +874,8 @@ transitivity (((1 - p) + p) ^ m); last by rewrite subRK exp1R.
 rewrite RPascal.
 transitivity (\sum_(b : 'rV['F_2]_m) (1 - p) ^ (m - wH b) * p ^ wH b).
   by apply eq_bigl => /= i; rewrite inE.
-rewrite (classify_big (fun s => Ordinal (max_wH' s)) (fun x => (1 - p) ^ (m - x) * p ^ x)) /=.
+rewrite (classify_big (fun s => Ordinal (max_wH' s))
+  (fun x => (1 - p) ^ (m - x) * p ^ x)) /=.
 apply eq_bigr => i _; congr (_%:R * _).
 by rewrite -wH_m_card; apply eq_card => /= x; rewrite !inE.
 Qed.
