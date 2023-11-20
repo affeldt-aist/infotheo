@@ -803,8 +803,8 @@ elim: h => [|h IH] k t Hh.
 destruct t; simpl in *.
 rewrite ltnS in Hh.
 apply HP => /= t' Ht'.
-apply IH.
-by rewrite (leq_trans _ Hh)// big_map (leq_bigmax_seq depth).
+apply: IH.
+by rewrite (leq_trans _ Hh)// big_map leq_bigmax_seq.
 Qed.
 
 Lemma msg_nil i1 i2 (i : option id') {k} t :
@@ -844,11 +844,11 @@ move /orP: Hch => [Hch | Hch]; apply/contraNF: Hch => _.
   by apply (negbFE Hi1l).
 move: Hi2l; rewrite mem_cat in_cons.
 case Hi2i: (i2 \in (i : seq id')) => //=.
-case Hi20: (i2 == id0) => //= Hi2l.
+have [//|/= Hi20 Hi2l] := eqVneq i2 id0.
 apply/flattenP.
 exists (labels l).
-  by apply (map_f labels).
-by apply (negbFE Hi2l).
+  exact: (map_f labels).
+exact: (negbFE Hi2l).
 Qed.
 
 Corollary msg_nonnil (i1 i2 : id') i {k} t :
