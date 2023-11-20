@@ -6,8 +6,8 @@ From mathcomp Require Import mathcomp_extra boolp classical_sets Rstruct.
 From mathcomp Require Import ssrnum ereal.
 From mathcomp Require Import lra Rstruct reals.
 Require Import Reals.
-Require Import ssrR Rstruct_ext Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb Rbigop.
-Require Import realType_ext fdist.
+Require Import ssrR Rstruct_ext Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb.
+Require Import Rbigop realType_ext fdist.
 From mathcomp Require vector.
 
 Undelimit Scope R_scope.
@@ -568,7 +568,7 @@ HB.mixin Record isRealCone (A : Type) of isQuasiRealCone A := {
     @scalept [the quasiRealCone of A] (p + q)%coqR x = addpt (scalept p x) (scalept q x) }.
 
 #[short(type=realCone)]
-HB.structure Definition RealCone := { A of isQuasiRealCone A & isRealCone A}.
+HB.structure Definition RealCone := { A of isQuasiRealCone A & isRealCone A }.
 
 Section real_cone_theory.
 Variable A : realCone.

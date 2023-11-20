@@ -6,8 +6,13 @@ from 0.5.2 to master
 - added
   + fsdistbindE (unconditional RHS)
   + pmulR_lgt0', pmulR_rgt0'
+  + supp_fsdist_convn
 - changed
   + fsdistbindEwiden (generalized)
+  + fsdist_convE, fsdist_convnE (RHS slightly changed)
+- removed
+  + fsdist_convn (use Convn)
+  + fsdist_convA (use convA0)
 
 -------------------
 from 0.5.1 to 0.5.2
