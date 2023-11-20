@@ -27,7 +27,7 @@ depends: [
   "coq-mathcomp-algebra" { (>= "1.16.0" & < "1.19~") | (= "dev")  }
   "coq-mathcomp-solvable" { (>= "1.16.0" & < "1.19~") | (= "dev")  }
   "coq-mathcomp-field" { (>= "1.16.0" & < "1.19~") | (= "dev")  }
-  "coq-mathcomp-analysis" { (>= "0.5.4") & (< "0.7~")}
+  "coq-mathcomp-analysis" { (>= "0.6.6") & (< "0.7~")}
   "coq-hierarchy-builder" { = "1.5.0" }
   "coq-mathcomp-algebra-tactics" { = "1.1.1" }
 ]

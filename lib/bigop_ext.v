@@ -12,14 +12,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Lemma leq_bigmax_seq (A : eqType) (F : A -> nat) x (l : seq A) :
-  x \in l -> F x <= \max_(i <- l) F i.
-Proof.
-elim: l => // y l ih; rewrite inE big_cons => /predU1P[->|xl].
-  by rewrite leq_maxl.
-by rewrite (leq_trans (ih xl))// leq_maxr.
-Qed.
-
 Section bigop_no_law.
 Variables (R : Type) (idx : R) (op : R -> R -> R).
 

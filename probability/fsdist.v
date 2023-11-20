@@ -3,10 +3,10 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import finmap.
-From mathcomp Require Import mathcomp_extra.
-From mathcomp Require boolp.
 Require Import Reals.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import mathcomp_extra.
+From mathcomp Require Import classical_sets boolp cardinality Rstruct reals.
+From mathcomp Require Import ereal topology esum measure probability.
 Require Import ssrR Rstruct_ext realType_ext Reals_ext ssr_ext ssralg_ext.
 Require Import bigop_ext Rbigop fdist convex.
 
@@ -1009,50 +1009,57 @@ End trivIset.
 
 Variable disp : measure_display.
 Variable T : measurableType disp.
-Fail Check T : choiceType.
-Fail Check [the choiceType of T] : choiceType.
-Check measurable_choiceType T : choiceType.
+Local Open Scope ring_scope.
+Import GRing.Theory.
 Variable R : realType.
 Variable d : {fsfun T -> R with 0}.
-Variable Hd : all (fun x => 0 < d x) (finsupp d) &&
+Hypothesis Hd : all (fun x => 0 < d x) (finsupp d) &&
                 \sum_(a <- finsupp d) d a == 1.
+
 Lemma d0' : forall (x : T), x \in finsupp d -> 0 < d x.
 Proof. by move => x xfsd; case/andP: Hd => /allP /(_ x xfsd). Qed.
-Lemma d0 : forall (x : T), 0 <= d x.
+
+Lemma d0 (x : T) : 0 <= d x.
 Proof.
-move=> x.  
 case/boolP: (x \in finsupp d); first by move/d0'/ltW.
 by move/fsfun_dflt ->; exact: lexx.
 Qed.
+
 Lemma d1 : \sum_(a <- finsupp d) d a = 1.
 Proof. by apply/eqP; case/andP: Hd. Qed.
-Definition P := fun (A : set T) => \esum_(k in A) (d k)%:E.
-Lemma P_fssum' A : P A = (\esum_(k in A `&` [set` finsupp d]) (d k)%:E).
+
+Definition P := fun (A : set T) => (\esum_(k in A) (d k)%:E)%E.
+
+Lemma P_fssum' A : P A = \esum_(k in A `&` [set` finsupp d]) (d k)%:E.
 Proof.
 rewrite /P esum_mkcondr.
 apply eq_esum => i _.
 rewrite mem_setE.
 by case: finsuppP.
 Qed.
+
 Lemma P_fssum A : P A = (\sum_(i \in A `&` [set` finsupp d]) (d i)%:E)%E.
 Proof.
 rewrite P_fssum'.
 by rewrite esum_fset; [| exact: finite_setIr | by move=> *; exact: d0].
 Qed.
+
 Lemma P_fin {X} : P X \is a fin_num.
 Proof. by rewrite P_fssum sumEFin. Qed.
+
 Lemma P_set0 : P set0 = 0%E.
-Proof.
-by rewrite /P esum_set0.
-Qed.
+Proof. by rewrite /P esum_set0. Qed.
+
 Lemma P_ge0 X : (0 <= P X)%E.
 Proof.
 apply esum_ge0=> x _.
 rewrite lee_fin.
 exact: d0.
 Qed.
+
 Lemma P_semi_sigma_additive : semi_sigma_additive P.
 Proof.
+(* TODO: clean *)
 move=> F mFi disjF mUF.
 move=> X /=.
 rewrite /nbhs /=.
@@ -1062,7 +1069,7 @@ rewrite /ball_ => xball.
 rewrite /nbhs /= /nbhs /=.
 rewrite /eventually /=.
 rewrite /filter_from /=.
-suff: exists N, forall k, (N <= k)%N -> P (\bigcup_n F n) = P (\bigcup_(i < k) F i).
+suff: exists N, forall k, (N <= k)%nat -> P (\bigcup_n F n) = P (\bigcup_(i < k) F i).
   case=> N HN.
   exists N => //.
   move=> j /= ij.
@@ -1080,11 +1087,10 @@ suff: exists N, forall k, (N <= k)%N -> P (\bigcup_n F n) = P (\bigcup_(i < k) F
 rewrite P_fssum.
 set f := fun t =>
            if fibration_of_partition [set: nat] F t is Some i then i else 0%N.
-exists (\max_(t <- finsupp d | `[<(\bigcup_i F i) t>]) f t).+1.
+exists (\max_(t <- finsupp d | `[< (\bigcup_i F i)%classic t >]) f t).+1.
 move=> k Nk.
 rewrite P_fssum.
-suff : \bigcup_n F n `&` [set` finsupp d] =
-         \bigcup_(i < k) F i `&` [set` finsupp d] by move ->.
+suff : (\bigcup_n F n `&` [set` finsupp d] = \bigcup_(i < k) F i `&` [set` finsupp d])%classic by move ->.
 rewrite (bigcupID `I_k) setIUl 2!setTI -[RHS]setU0.
 congr setU.
 rewrite setI_bigcupl bigcup0 // => i.
@@ -1093,19 +1099,20 @@ apply: contra_notP.
 case/eqP/set0P => t [] Fit tfd.
 apply:(leq_ltn_trans _ Nk).
 suff-> : i = f t.
-  apply leq_bigmax_seq => //.
+  apply bigop.leq_bigmax_seq => //.
   by apply/asboolP; exists i .
 rewrite /f /=.
 by rewrite (fibration_of_partitionE disjF _ Fit).
 Qed.
-HB.instance Definition _ :=
-  isMeasure.Build disp R T P P_set0 P_ge0 P_semi_sigma_additive.
+
+HB.instance Definition _ := isMeasure.Build disp T _ P P_set0 P_ge0 P_semi_sigma_additive.
 
 Lemma asboolTE : `[< True >] = true.
 Proof.
 apply (asbool_equiv_eqP (Q:=True)) => //.
 by constructor.
 Qed.
+
 Lemma P_is_probability : P [set: _] = 1%E.
 Proof.
 rewrite P_fssum.
@@ -1113,6 +1120,7 @@ rewrite fsbigop.fsbig_finite /=; last exact: finite_setIr.
 rewrite setTI set_fsetK.
 by rewrite sumEFin d1.
 Qed.
-HB.instance Definition _ :=
-  isProbability.Build disp T R P P_is_probability.
+
+HB.instance Definition _ := isProbability.Build disp T _ P P_is_probability.
+
 End probability_measure.
