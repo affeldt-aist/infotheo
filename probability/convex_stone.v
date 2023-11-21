@@ -377,7 +377,9 @@ have [s0|s0] := eqVneq s R0%:pr.
   move: H2; rewrite p0 onem0 mul1R => /(congr1 (@onem _)); rewrite !onemK => sq.
   by rewrite -s0; exact/val_inj.
 rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
-  by apply val_inj; rewrite /= s_of_pqE -H2 onemK.
+  apply val_inj; rewrite /= s_of_pqE.
+  move/(congr1 (@onem _)) : H2.
+  by rewrite onemK => ->.
 by rewrite (@r_of_pq_is_r  _ _ r s).
 Qed.
 
@@ -573,7 +575,7 @@ move: (FDist.ge0 d ord0); rewrite le0r => /orP -[/eqP /esym d00|d00].
   have H1 : d = fdist1 (Ordinal (erefl (1 < 2)%nat)).
     rewrite -fdistI20; apply/fdist_ext => /= i.
     rewrite fdistI2E; case: ifPn => [/eqP ->//|/= i0].
-    rewrite onem0 (_ : 1%coqR = 1%mcR)// -(FDist.f1 d) 2!big_ord_recl big_ord0 addr0 -d00 add0r; congr (d _).
+    rewrite onem0 -(FDist.f1 d) 2!big_ord_recl big_ord0 addr0 -d00 add0r; congr (d _).
     by case: i i0 => -[//|] -[|//] //= i12 _; exact/val_inj.
   rewrite {1}H1 Convn_fdist1 {1}Hs.
   have H2 : fdistI_perm d (tperm ord0 (Ordinal (erefl (1 < 2)%nat))) = fdist1 ord0.
@@ -683,7 +685,7 @@ have [/eqP ds01|ds01] := eqVneq (d (S3.p01 ord0)) 1.
   rewrite (_ : [p_of _, _] = R1%:pr); last first.
     apply/val_inj => /=.
     rewrite p_of_rsE /= r_of_pqE /= s_of_pqE /= (eqP d01').
-    by rewrite fdist10// div0R onem0 subr0 !mul1R divr1 onemK fdist1xx.
+    by rewrite fdist10// mul0r onem0 !mul1r subr0 mul1R fdist1xx onemK divr1.
   rewrite conv1 /S3.p01 permE /= (_ : Ordinal _ = lift ord0 ord0) //.
   exact/val_inj.
 move=> [:Hq].
@@ -703,7 +705,8 @@ congr (_ <| _ |> _).
   rewrite fdistI_permE permE /= p_of_rsE /= r_of_pqE /=.
   rewrite s_of_pqE /= /onem.
   rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
-  rewrite -R1E -!RminusE -!RdivE'//; field.
+  rewrite -R1E -!RminusE -!RdivE'// -!RmultE.
+  field.
   split; first by rewrite subR_eq0; exact/nesym.
   rewrite -addR_opp oppRB -addR_opp oppRB addRC addRA subRK.
   by apply/eqP; rewrite gtR_eqF // addRC; apply/RltP.
@@ -714,7 +717,8 @@ congr (_ <| _ |> _).
     rewrite /= /onem !permE /=.
     rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
     rewrite -[RHS]RdivE'.
-    rewrite -R1E -!RminusE -!RdivE //. field.
+    rewrite -R1E -!RminusE -!RdivE' // -RmultE.
+    field.
     split.
     rewrite subR_eq0.
     apply/nesym/eqP.

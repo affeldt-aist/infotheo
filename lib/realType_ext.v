@@ -32,10 +32,10 @@ Variable R : realType.
 Local Notation "p '.~'" := (@onem R p).
 
 (*Lemma onem_ge0 (x : R) : x <= 1 -> 0 <= onem x.
-Proof. exact: onem_ge0. Qed.*)
+Proof. exact: onem_ge0. Qed.
 
 Lemma onem_le1 (x : R) : 0 <= x -> onem x <= 1.
-Proof. exact: onem_le1. Qed.
+Proof. exact: onem_le1. Qed.*)
 
 Lemma onem_le  r s : (r <= s) = (s.~ <= r.~).
 Proof.
@@ -74,7 +74,7 @@ Qed.
 
 Lemma onem_prob (r : R) : 0 <= r <= 1 -> 0 <= onem r <= 1.
 Proof.
-  by move=> /andP [_0r r1]; apply /andP; split; [rewrite onem_ge0 | rewrite onem_le1].
+by move=> /andP [_0r r1]; apply /andP; split; [rewrite onem_ge0 | rewrite onem_le1].
 Qed.
 
 Lemma onem_eq0 (r : R) : (onem r = 0) <-> (r = 1).
@@ -299,3 +299,92 @@ Proof. by move: (oprobadd_gt0 p q); rewrite ltR_neqAle => -[] /nesym /eqP. Qed.
 Qed.*)
 
 End oprob_lemmas.
+
+Lemma prob_mulr {R : realType} (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%R.
+Proof.
+apply/andP; split.
+  by rewrite mulr_ge0.
+by rewrite mulr_ile1.
+Qed.
+
+Canonical probmulr {R : realType} (p q : {prob R}) :=
+  Eval hnf in @Prob.mk _ (prob_coercion p * Prob.p q) (prob_mulr p q).
+
+Definition s_of_pq {R : realType} (p q : {prob R}) : {prob R} :=
+  locked ((Prob.p p).~ * (Prob.p q).~).~%:pr.
+
+Declare Scope reals_ext_scope.
+Notation "[ 's_of' p , q ]" := (s_of_pq p q) : reals_ext_scope.
+
+Local Open Scope reals_ext_scope.
+
+Section s_of_pq_lemmas.
+Variable R : realType.
+
+Lemma s_of_pqE (p q : {prob R}) : Prob.p [s_of p, q] = ((Prob.p p).~ * (Prob.p q).~)%mcR.~ :> R.
+Proof. by rewrite /s_of_pq; unlock. Qed.
+
+Lemma s_of_gt0 (p q : {prob R}) : p != 0%:pr -> (0 < Prob.p [s_of p, q])%mcR.
+Proof.
+move=> p0; rewrite s_of_pqE.
+apply: onem_gt0.
+have [->/=|q0] := eqVneq q 0%:pr.
+  rewrite onem0 mulr1.
+  rewrite /onem.
+  rewrite -ltr_subr_addr opprK ltr_addl//.
+  rewrite lt0r.
+  by rewrite p0/=.
+rewrite mulr_ilte1 => //.
+  rewrite /onem.
+  rewrite -ltr_subr_addr opprK ltr_addl//.
+  rewrite lt0r.
+  by rewrite p0/=.
+rewrite /onem.
+rewrite -ltr_subr_addr opprK ltr_addl//.
+rewrite lt0r.
+by rewrite q0/=.
+Qed.
+
+Lemma s_of_p0 (p : {prob R}) : [s_of p, 0%:pr] = p.
+Proof. by apply/val_inj; rewrite /= s_of_pqE onem0 mulr1 onemK. Qed.
+
+Lemma ge_s_of (p q : {prob R}) : (Prob.p p <= Prob.p [s_of p, q])%mcR.
+Proof.
+rewrite s_of_pqE.
+rewrite onemE.
+rewrite addrC.
+rewrite -lerBlDr.
+rewrite -opprB.
+rewrite lerNl opprK.
+rewrite -/(Prob.p p).~.
+rewrite ler_piMr//.
+by apply: onem_le1.
+Qed.
+
+End s_of_pq_lemmas.
+
+Lemma r_of_pq_prob {R : realType} (p q : {prob R}) : (0 <= Prob.p p / Prob.p [s_of p, q] <= 1)%R.
+Proof.
+have [->|p0] := eqVneq p 0%:pr.
+  by rewrite mul0r lexx ler01.
+have [->|a0] := eqVneq q 0%:pr.
+  by rewrite s_of_p0 divff// lexx ler01.
+apply/andP; split.
+- by rewrite divr_ge0.
+rewrite ler_pdivrMr ?mul1r.
+  by apply: ge_s_of.
+by rewrite s_of_gt0//.
+Qed.
+
+Definition r_of_pq {R : realType} (p q : {prob R}) : {prob R} :=
+  locked (Prob.mk (r_of_pq_prob p q)).
+
+Notation "[ 'r_of' p , q ]" := (r_of_pq p q) : reals_ext_scope.
+
+Section r_of_pq_lemmas.
+Variable R : realType.
+
+Lemma r_of_pqE (p q : {prob R}) : Prob.p [r_of p, q] = (Prob.p p / Prob.p [s_of p, q])%R :> R.
+Proof. by rewrite /r_of_pq; unlock. Qed.
+
+End r_of_pq_lemmas.

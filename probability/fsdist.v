@@ -626,8 +626,8 @@ Proof.
 move => /[dup]; rewrite {1}supp => aD.
 rewrite /f ltR_neqAle mem_finsupp eq_sym => /eqP ?; split => //.
 rewrite /f fsfunE avgRE aD.
-apply/RleP; rewrite RplusE !RmultE addr_ge0// mulr_ge0//; apply/RleP => //.
-exact: onem_ge0.
+by apply/RleP; rewrite RplusE !RmultE addr_ge0// mulr_ge0//;
+  [exact/RleP|exact/onem_ge0|exact/RleP].
 Qed.
 
 Let f1 : \sum_(a <- finsupp f) f a = 1.

@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp ssrnum.
-From mathcomp Require Import matrix vector order.
-From mathcomp Require Import lra Rstruct reals.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm.
+From mathcomp Require Import zmodp matrix vector order.
+From mathcomp Require Import lra mathcomp_extra Rstruct reals.
 From mathcomp Require ssrnum.
 Require Import Reals.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist proba.
@@ -264,7 +264,7 @@ rewrite (@bigmaxR_bigmin_vec_helper _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
 - by apply bsc_prob_prop.
 - move=> r; rewrite /g Prob_pE !coqRE.
   apply/RleP/mulr_ge0; apply/exprn_ge0; last exact/prob_ge0.
-  exact/RleP/onem_ge0/RleP/prob_le1.
+  exact/onem_ge0/prob_le1.
 - rewrite inE; move/subsetP: f_img; apply.
   rewrite inE; apply/existsP; by exists (receivable_rV y); apply/eqP.
 - by move=> ? _; rewrite /dH_y max_dH.

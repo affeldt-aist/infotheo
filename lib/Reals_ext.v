@@ -57,7 +57,7 @@ Arguments INR : simpl never.
 Import Order.Theory GRing.Theory Num.Theory.
 
 #[export] Hint Extern 0 ((0 <= onem _)%coqR) =>
-  solve [exact/RleP/onem_ge0] : core.
+  solve [exact/RleP/onem_ge0/RleP] : core.
 
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
@@ -288,15 +288,11 @@ Notation "T '->R^+' " := (nneg_fun T) : reals_ext_scope.
 Section onem.
 Implicit Types r s p q : R.
 
-Lemma onem0 : 0.~ = 1. Proof. by rewrite onem0. Qed.
-
-Lemma onem1 : 1.~ = 0. Proof. by rewrite onem1. Qed.
-
-Lemma onem_ge0 r : r <= 1 -> 0 <= r.~.
+(*Lemma onem_ge0 r : r <= 1 -> 0 <= r.~.
 Proof. by move=> /RleP r1; apply/RleP/onem_ge0. Qed.
 
 Lemma onem_le1 r : 0 <= r -> r.~ <= 1.
-Proof. by move=> /RleP r0; apply/RleP/onem_le1. Qed.
+Proof. by move=> /RleP r0; apply/RleP/onem_le1. Qed.*)
 
 Lemma onem_le r s : r <= s <-> s.~ <= r.~.
 Proof.
@@ -838,8 +834,6 @@ End Rnng_theory.
 
 Global Hint Resolve Rnng_ge0 : core.
 
-Definition s_of_pq (p q : {prob R}) : {prob R} := locked ((Prob.p p).~ * (Prob.p q).~).~%:pr.
-
 Notation "[ 's_of' p , q ]" := (s_of_pq p q) : reals_ext_scope.
 
 Lemma s_of_pqE (p q : {prob R}) : Prob.p [s_of p, q] = ((Prob.p p).~ * (Prob.p q).~)%coqR.~ :> R.
@@ -858,7 +852,6 @@ Qed.
 Lemma s_of_pq_oprob' (p q : {oprob R}) : (0 < Prob.p [s_of p, q] < 1)%O.
 Proof. by have [/RltP -> /RltP ->] := s_of_pq_oprob p q. Qed.
 Canonical oprob_of_s_of_pq (p q : {oprob R}) := Eval hnf in OProb.mk (s_of_pq_oprob' p q).
-
 
 Lemma s_of_p0 (p : {prob R}) : [s_of p, 0%:pr] = p.
 Proof. by apply/val_inj; rewrite /= s_of_pqE onem0 mulR1 onemK. Qed.
@@ -883,7 +876,7 @@ Qed.
 Lemma s_of_gt0 p q : p != 0%:pr -> 0 < Prob.p [s_of p, q].
 Proof.
 move=> ?; rewrite s_of_pqE'; apply: addR_gt0wl => //; first exact/probR_gt0.
-by apply: mulR_ge0 => //; exact: onem_ge0.
+by apply: mulR_ge0 => //; exact/RleP/onem_ge0.
 Qed.
 
 Lemma s_of_gt0_oprob (p : {oprob R}) (q : {prob R}) : 0 < [s_of p, q].
@@ -892,7 +885,7 @@ Proof. by apply/s_of_gt0/oprob_neq0. Qed.
 Lemma ge_s_of (p q : {prob R}) : Prob.p p <= Prob.p [s_of p, q].
 Proof.
 rewrite s_of_pqE' addRC -leR_subl_addr subRR.
-by apply/mulR_ge0 => //; exact: onem_ge0.
+by apply/mulR_ge0 => //; exact/RleP/onem_ge0.
 Qed.
 
 Lemma r_of_pq_prob (p q : {prob R}) : 0 <= p / [s_of p, q] <= 1.
@@ -908,19 +901,28 @@ Lemma r_of_pq_prob' (p q : {prob R}) :
   (0%coqR <= (p / [s_of p, q])%coqR <= 1%coqR)%mcR.
 Proof. by have [/RleP -> /RleP ->] := r_of_pq_prob p q. Qed.
 
-Definition r_of_pq (p q : {prob R}) : {prob R} := locked (Prob.mk (r_of_pq_prob' p q)).
+(*Definition r_of_pq (p q : {prob R}) : {prob R} := locked (Prob.mk (r_of_pq_prob' p q)).*)
 
 Notation "[ 'r_of' p , q ]" := (r_of_pq p q) : reals_ext_scope.
 
 Lemma r_of_pqE (p q : {prob R}) : Prob.p [r_of p, q] = Prob.p p / Prob.p [s_of p, q] :> R.
-Proof. by rewrite /r_of_pq; unlock. Qed.
+Proof.
+rewrite /r_of_pq; unlock.
+rewrite /=.
+have [->|p0] := eqVneq p 0%:pr.
+  rewrite /= !mul0r.
+  by rewrite div0R.
+rewrite RdivE//.
+rewrite gt_eqF//.
+by apply/RltP/s_of_gt0.
+Qed.
 
 Lemma r_of_pq_oprob (p q : {oprob R}) : 0 < Prob.p [r_of OProb.p p, OProb.p q] < 1.
 Proof.
 rewrite r_of_pqE.
 split.
   apply divR_gt0 => //.
-    by apply: oprob_gt0.
+    exact: oprob_gt0.
   rewrite s_of_pqE//.
   have := (OProb.O1 (((oprob_to_real p).~ * (oprob_to_real q).~).~)%:opr).
   move/andP=> [] /RltP /=.
@@ -1057,7 +1059,7 @@ case/boolP : (s == 1%:pr :> {prob R}) => s1.
   by rewrite (eqP s1) mulR1 p_of_r1 divRR ?onem_neq0 //.
 split.
   apply/divR_ge0.
-    by apply/mulR_ge0 => //; exact: onem_ge0.
+    by apply/mulR_ge0 => //; exact/RleP/onem_ge0.
   by apply/onem_gt0; rewrite p_of_rsE -(mulR1 1); apply/ltR_pmul => //;
     apply/RltP; rewrite -prob_lt1.
 rewrite leR_pdivr_mulr ?mul1R.
@@ -1075,7 +1077,7 @@ case/boolP : (s == 1%:pr :> {prob R}) => s1.
   by rewrite (eqP s1) mulR1 p_of_r1 divRR ?onem_neq0 //; apply/andP; split; apply/RleP.
 apply/andP; split; apply/RleP.
   apply/divR_ge0.
-    by apply/mulR_ge0 => //; exact: onem_ge0.
+    by apply/mulR_ge0 => //; exact/RleP/onem_ge0.
   by apply/onem_gt0; rewrite p_of_rsE -(mulR1 1); apply/ltR_pmul => //;
     apply/RltP; rewrite -prob_lt1.
 rewrite leR_pdivr_mulr ?mul1R.
@@ -1188,5 +1190,5 @@ field.
 do 3 (split; first exact/eqP/Rpos_neq0).
 rewrite (addRC p (q + r)) addRK {4}[in q + r]addRC addRK.
 rewrite mulRC -mulRBr (addRC _ p) addRA addRK mulR_neq0.
-split; exact/eqP/Rpos_neq0.
+by split; exact/eqP/Rpos_neq0.
 Qed.

@@ -634,7 +634,9 @@ Let addptA' : associative addpt.
 Proof.
 move=> [p x|] [q y|] [r z|] //=; congr (_ *: _); first by apply val_inj; rewrite /= addRA.
 rewrite convA; congr (_<| _ |> _); first exact: s_of_Rpos_probA.
-by congr (_ <| _ |> _); exact: r_of_Rpos_probA.
+congr (_ <| _ |> _).
+rewrite /=.
+exact: r_of_Rpos_probA. (* TODO: clean *)
 Qed.
 
 Let addpt0 : right_id (@Zero A) addpt. Proof. by case. Qed.
@@ -838,7 +840,9 @@ have [s0|s0] := eqVneq s 0%:pr.
   move: H2; rewrite p0 onem0 mul1R => /(congr1 (@onem real_realType)); rewrite !onemK => sq.
   by rewrite -s0; exact/val_inj.
 rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
-  by apply val_inj; rewrite /= s_of_pqE -H2 onemK.
+  apply val_inj; rewrite /= s_of_pqE.
+  move/(congr1 (@onem real_realType)) : H2.
+  by rewrite onemK => ->.
 by rewrite (@r_of_pq_is_r  _ _ r s).
 Qed.
 
@@ -853,7 +857,7 @@ Qed.
 
 (* TODO: move *)
 Lemma onem_probR_ge0 (p: {prob R}) : (0 <= (Prob.p p).~)%coqR.
-Proof. exact/onem_ge0/RleP/prob_le1. Qed.
+Proof. exact/RleP/onem_ge0/prob_le1. Qed.
 Hint Resolve onem_probR_ge0 : core.
 
 Lemma convACA (a b c d : T) p q :
@@ -938,7 +942,7 @@ rewrite scaleptA // fdist_delE fdistD1E /=.
 rewrite (mulrC (fun_of_fin (FDist.f d) (lift ord0 i))).
 rewrite RmultE mulrA mulrV ?mul1r //.
 move: (Hd); apply contra; rewrite R0E R1E => /eqP Hd'.
-by rewrite (_ : 1%mcR = 1%coqR)// -onem0 -Hd' onemK.
+by rewrite -onem0 -Hd' onemK.
 Qed.
 
 End with_affine_projection.
