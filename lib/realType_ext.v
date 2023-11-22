@@ -194,8 +194,8 @@ rewrite lt_neqAle; split=> [H|/andP[+ pge0]].
 by apply: contra => /eqP ->.
 Qed.
 
-Lemma prob_gt0' p : p != 0 :> R <-> 0 < Prob.p p.
-Proof. exact: prob_gt0. Qed.
+(*Lemma prob_gt0' p : p != 0 :> R <-> 0 < Prob.p p.
+Proof. exact: prob_gt0. Qed.*)
 
 Lemma prob_lt1 p : p != 1%:pr <-> Prob.p p < 1.
 Proof.
@@ -204,8 +204,8 @@ rewrite lt_neqAle; split=> [H|/andP[+ pge0]].
 by apply: contra => /eqP ->.
 Qed.
 
-Lemma prob_lt1' p : p != 1 :> R <-> Prob.p p < 1.
-Proof. exact: prob_lt1. Qed.
+(*Lemma prob_lt1' p : p != 1 :> R <-> Prob.p p < 1.
+Proof. exact: prob_lt1. Qed.*)
 
 Lemma prob_trichotomy p : p = 0%:pr \/ p = 1%:pr \/ 0 < Prob.p p < 1.
 Proof.
