@@ -276,65 +276,56 @@ Notation "T '->R^+' " := (nneg_fun T) : reals_ext_scope.
 #[global] Hint Extern 0 (Rle (IZR Z0) _) => solve [exact/RleP/prob_ge0] : core.
 #[global] Hint Extern 0 (Rle _ (IZR (Zpos xH))) => solve [exact/RleP/prob_le1] : core.
 
-Lemma prob_IZR (p : positive) : (0 <= / IZR (Zpos p) <= 1)%coqR.
+Lemma prob_IZR_subproof (p : positive) : (0 <= / IZR (Zpos p) <= 1)%O.
 Proof.
-split; first exact/Rlt_le/Rinv_0_lt_compat/IZR_lt/Pos2Z.is_pos.
-rewrite -[X in (_ <= X)%coqR]Rinv_1; apply Rle_Rinv => //.
-- exact/IZR_lt/Pos2Z.is_pos.
-- exact/IZR_le/Pos2Z.pos_le_pos/Pos.le_1_l.
-Qed.
-
-Lemma prob_IZR' (p : positive) : (0 <= / IZR (Zpos p) <= 1)%O.
-Proof.
-have [/RleP ? /RleP ?] := prob_IZR p.
+have [/RleP ? /RleP ?] : (0 <= / IZR (Zpos p) <= 1)%coqR.
+  split; first exact/Rlt_le/Rinv_0_lt_compat/IZR_lt/Pos2Z.is_pos.
+  rewrite -[X in (_ <= X)%coqR]Rinv_1; apply Rle_Rinv => //.
+  - exact/IZR_lt/Pos2Z.is_pos.
+  - exact/IZR_le/Pos2Z.pos_le_pos/Pos.le_1_l.
 exact/andP.
 Qed.
 
-Canonical probIZR (p : positive) := Eval hnf in Prob.mk (prob_IZR' p).
+Canonical probIZR (p : positive) := Eval hnf in Prob.mk (prob_IZR_subproof p).
 
-Definition divRnnm n m := INR n / INR (n + m).
+Definition divRnnm n m := n%:R / (n + m)%:R.
 
-Lemma prob_divRnnm n m : R0 <= divRnnm n m <= R1.
+Lemma prob_divRnnm_subproof n m : (R0 <= divRnnm n m <= R1)%O.
 Proof.
-rewrite /divRnnm.
+apply/andP; split.
+  by rewrite /divRnnm RdivE' divr_ge0// INRE ler0n.
+rewrite /divRnnm RdivE' !INRE.
 have [/eqP ->|n0] := boolP (n == O).
-  rewrite div0R.
-  by have /andP[/RleP ? /RleP ?]:= (@OO1 real_realType).
-split; first by apply divR_ge0; [exact: leR0n | rewrite ltR0n addn_gt0 lt0n n0].
-by rewrite leR_pdivr_mulr ?mul1R ?leR_nat ?leq_addr // ltR0n addn_gt0 lt0n n0.
-Qed.
-
-Lemma prob_divRnnm' n m : (R0 <= divRnnm n m <= R1)%O.
-Proof.
-have [/RleP ? /RleP ?] := prob_divRnnm n m. exact/andP.
+  by rewrite mul0r ler01.
+rewrite ler_pdivrMr// ?ltr0n ?addn_gt0; last first.
+  by rewrite lt0n n0.
+by rewrite mul1r ler_nat leq_addr.
 Qed.
 
 Canonical probdivRnnm (n m : nat) :=
-  Eval hnf in @Prob.mk _ (divRnnm n m) (prob_divRnnm' n m).
+  Eval hnf in @Prob.mk _ (divRnnm n m) (prob_divRnnm_subproof n m).
 
 Lemma prob_invn (m : nat) : (R0 <= / (1 + m)%:R <= R1)%mcR.
 Proof.
 rewrite -(mul1R (/ _)%coqR) (_ : 1%coqR = INR 1) // -/(Rdiv _ _).
-by have [/RleP -> /RleP ->] := prob_divRnnm 1 m.
+exact: prob_divRnnm_subproof.
 Qed.
 
 Canonical probinvn (n : nat) :=
-  Eval hnf in @Prob.mk _ (/ INR (1 + n)) (prob_invn n).
+  Eval hnf in @Prob.mk _ (/ (1 + n)%:R) (prob_invn n).
 
-Lemma prob_invp (p : {prob R}) : (0 <= 1 / (1 + Prob.p p) <= 1)%coqR.
+Lemma prob_invp_subproof (p : {prob R}) : (0 <= 1 / (1 + Prob.p p) <= 1)%O.
 Proof.
-split.
-- by apply divR_ge0 => //; exact: addR_gt0wl.
-- rewrite leR_pdivr_mulr ?mul1R; last exact: addR_gt0wl.
-  by rewrite addRC -leR_subl_addr subRR.
+apply/andP; split.
+  by rewrite RdivE' mul1r invr_ge0 ?addr_ge0.
+rewrite RdivE' mul1r invf_le1//.
+  by rewrite ler_addl.
+rewrite (@lt_le_trans _ _ 1)//.
+  by rewrite ltr01.
+by rewrite ler_addl.
 Qed.
 
-Lemma prob_invp' (p : {prob R}) : (0 <= 1 / (1 + Prob.p p) <= 1)%O.
-Proof.
-have [/RleP ? /RleP ?] := prob_invp p. exact/andP.
-Qed.
-
-Definition Prob_invp (p : {prob R}) := Prob.mk (prob_invp' p).
+Definition Prob_invp (p : {prob R}) := Prob.mk (prob_invp_subproof p).
 
 Lemma prob_mulR (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%coqR.
 Proof.
