@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg all_algebra reals.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ln_facts logb Rbigop fdist proba.
+Require Import ssrR realType_ext Reals_ext ln_facts logb Rbigop fdist proba.
 
 (******************************************************************************)
 (*    Divergence (or the Kullback-Leibler distance or relative entropy)       *)

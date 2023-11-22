@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals.
 Require Import Reals Lra.
-Require Import ssrR Rstruct_ext Reals_ext realType_ext logb ssr_ext ssralg_ext.
+Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext.
 Require Import bigop_ext Rbigop fdist.
 
 (******************************************************************************)

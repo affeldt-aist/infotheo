@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix fingroup perm.
 From mathcomp Require boolp.
 Require Import Reals Lra.
 From mathcomp Require Import mathcomp_extra Rstruct.
-Require Import ssrR Rstruct_ext Reals_ext realType_ext Ranalysis_ext ssr_ext.
+Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext.
 Require Import ssralg_ext logb Rbigop.
 Require Import fdist convex.
 
@@ -380,7 +380,7 @@ rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
   apply val_inj; rewrite /= s_of_pqE.
   move/(congr1 (@onem _)) : H2.
   by rewrite onemK => ->.
-by rewrite (@r_of_pq_is_r  _ _ r s).
+exact: (@r_of_pq_is_r _ _ _ _ s).
 Qed.
 
 Lemma convA' (r s : {prob R}) a b c : [p_of r, s] != R1%:pr ->
@@ -399,8 +399,8 @@ have [->|q0] := eqVneq q R0%:pr; first by rewrite !conv0.
 have [->|p1] := eqVneq p R1%:pr; first by rewrite !conv1.
 have [->|q1] := eqVneq q R1%:pr; first by rewrite !conv1.
 set r := [p_of q, p].
-have r1 : (r != R1%:pr)%coqR by rewrite p_of_neq1 //;
-  by split; apply /RltP; [rewrite -prob_gt0 |rewrite -prob_lt1].
+have r1 : (r != R1%:pr)%coqR.
+  by rewrite p_of_neq1//; apply/andP; split; rewrite -?prob_gt0 -?prob_lt1.
 rewrite -(convA' x1 y1) //.
 rewrite (convC _ y1).
 set s := [q_of q, p].
@@ -413,7 +413,6 @@ have t1 : (Prob.p t < 1)%coqR.
   rewrite -ltR_pdivr_mulr; last by apply/RltP; rewrite -prob_gt0.
   rewrite divRR // /onem ltR_subr_addl ltRNge; apply.
   by rewrite -{1}[in (1%R <= _)%coqR](add0R 1%R) leR_add2r.
-
 rewrite -(convA' x2); last by rewrite prob_lt1 p_of_rsC /= p_of_rsE; apply/RltP.
 rewrite -(convA' x1) //; last by rewrite p_of_rsC.
 rewrite (convC _ y2 y1) /=.
@@ -422,19 +421,18 @@ congr (_ <| _ |> _).
   (* TODO: lemma? *)
   apply val_inj => /=.
   rewrite /s /onem /= !(p_of_rsE,q_of_rsE) /= !(p_of_rsE,q_of_rsE) /= /onem.
-  rewrite -!RminusE -R1E.
+  rewrite -!RminusE -R1E -!RmultE -!RinvE'.
   field.
-  rewrite subR_eq0 mulRC; apply/nesym/eqP; by rewrite -p_of_rsE.
+  rewrite subR_eq0 mulRC; apply/nesym/eqP.
+  by rewrite RmultE -p_of_rsE.
 congr (_ <| _ |> _).
 apply val_inj => /=.
 rewrite -[in RHS](onemK (Prob.p p)); congr onem.
 rewrite q_of_rsE {1}p_of_rsE /= q_of_rsE p_of_rsE /= /onem.
-rewrite -!RminusE.
-rewrite -!R1E.
+rewrite -!RminusE -!R1E -!RmultE -!RinvE'.
 field.
-
 split.
-  rewrite subR_eq0; apply/nesym/eqP; by rewrite -p_of_rsE.
+  rewrite subR_eq0; apply/nesym/eqP; by rewrite RmultE -p_of_rsE.
 rewrite mulRBl mul1R subRBA subRK mulRDr mulR1 mulRN addR_opp subRBA subRK.
 rewrite subR_eq0 => /esym; exact/eqP.
 Qed.
@@ -503,7 +501,7 @@ Open Scope ring_scope.
 
 Lemma convn3E (g : 'I_3 -> A) (d : {fdist 'I_3}) (p : {prob R}) :
   d ord0 != 1%R ->
-  (d (lift ord0 ord0) / (1 - d ord0)) = p ->
+  (d (lift ord0 ord0) / (1 - d ord0)) = Prob.p p ->
   <|>_d g = g ord0 <| probfdist d ord0 |> (g (Ordinal (erefl (1 < 3)%nat)) <| p |> g (Ordinal (erefl (2 < 3)%nat))).
 Proof.
 move=> i1 Hp.
@@ -662,18 +660,21 @@ rewrite (@convn3E _ _ p) //; last exact/eqP.
 rewrite convA.
 rewrite (convC _ (g ord0)).
 have ? :  1 - d ord0 != 0 by rewrite subr_eq0; exact/eqP/nesym.
-have H : [p_of (Prob.p [r_of probfdist d ord0, p]).~%:pr, [s_of probfdist d ord0, p]] != R1%:pr :> R.
+have H : Prob.p [p_of (Prob.p [r_of probfdist d ord0, p]).~%:pr, [s_of probfdist d ord0, p]] != Prob.p R1%:pr :> R.
   apply p_of_neq1.
   rewrite s_of_pqE /=.
-  rewrite Reals_ext.onemM !onemK -subRBA -[X in (_ < _ - (_ - X) < _)%coqR]mul1R.
-  rewrite -mulRBl -addR_opp -mulNR oppRB mulRCA -RinvE' mulRV // mulR1.
-  split; first exact/RltP.
-  rewrite ltR_neqAle; split.
-    apply/eqP; apply: contra p1 => p1.
+  rewrite onemM !onemK.
+  rewrite -addrA -opprB.
+  rewrite -!RmultE.
+  rewrite -[X in (_ < _ - (_ - X) < _)%mcR]mul1R.
+  rewrite -mulrBl -mulNr opprB mulrCA mulrV // mulr1.
+  apply/andP; split => //.
+  rewrite lt_neqAle; apply/andP; split.
+    apply: contra p1 => p1.
     apply/eqP/val_inj => /=.
-    move: p1; rewrite eq_sym addRC -subR_eq' => /eqP <-.
+    move: p1; rewrite eq_sym addrC -subR_eq' => /eqP <-.
     by rewrite RminusE divff.
-  by rewrite R1E -(FDist.f1 d) !big_ord_recl /= big_ord0 addr0 addrA leR_addl.
+  by rewrite -(FDist.f1 d) !big_ord_recl /= big_ord0 addr0 addrA lerDl.
 rewrite -convA'; last by [].
 have [/eqP ds01|ds01] := eqVneq (d (S3.p01 ord0)) 1.
   move: (ds01); rewrite /S3.p01 permE => d01'.
@@ -685,7 +686,7 @@ have [/eqP ds01|ds01] := eqVneq (d (S3.p01 ord0)) 1.
   rewrite (_ : [p_of _, _] = R1%:pr); last first.
     apply/val_inj => /=.
     rewrite p_of_rsE /= r_of_pqE /= s_of_pqE /= (eqP d01').
-    by rewrite fdist10// mul0r onem0 !mul1r subr0 mul1R fdist1xx onemK divr1.
+    by rewrite fdist10// mul0r onem0 !mul1r subr0 fdist1xx onemK divr1.
   rewrite conv1 /S3.p01 permE /= (_ : Ordinal _ = lift ord0 ord0) //.
   exact/val_inj.
 move=> [:Hq].
@@ -717,7 +718,7 @@ congr (_ <| _ |> _).
     rewrite /= /onem !permE /=.
     rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
     rewrite -[RHS]RdivE'.
-    rewrite -R1E -!RminusE -!RdivE' // -RmultE.
+    rewrite -R1E -!RminusE -!RdivE' // -!RmultE.
     field.
     split.
     rewrite subR_eq0.
@@ -796,9 +797,9 @@ have [d00|d00] := eqVneq (d ord0) 0.
   rewrite d00 subr0 divr1 /onem -(FDist.f1 d) /= !big_ord_recl big_ord0 addr0.
   rewrite d00 add0r [X in X - _]addrC addrK; congr (d _); exact/val_inj.
 have H : [p_of (Prob.p p).~%:pr, (Prob.p (probfdist d ord0)).~%:pr] != 1%coqR%:pr.
-  apply p_of_neq1 => /=; split.
-    apply/RltP/onem_gt0; rewrite -fdist_lt1; exact/eqP.
-  by apply/RltP; rewrite ltrBlDr ltrDl -fdist_gt0.
+  apply: p_of_neq1 => /=; apply/andP; split.
+    by apply/onem_gt0; rewrite -fdist_lt1; exact/eqP.
+  by rewrite ltrBlDr ltrDl -fdist_gt0.
 rewrite -convA'; last by [].
 move=> [:Hq].
 have @q : {prob R}.
@@ -820,10 +821,11 @@ congr (g _ <| _ |> (_ <| _ |> _)).
   rewrite !fdistI_permE p_of_rsE /= permE /=.
   rewrite (_ : Ordinal _ = ord_max); last exact/val_inj.
   rewrite {1}/onem.
-  rewrite mulRBl mul1R -mulRA -RinvE' // mulVR ?mulR1 //.
-  rewrite /onem -subRD subR_eq -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
+  rewrite mulrBl mul1r -mulrA mulVr ?mulr1//.
+  rewrite /onem -addrA -opprB opprK; apply/eqP; rewrite subr_eq; apply/eqP.
+  rewrite  -(FDist.f1 d) !big_ord_recl big_ord0 addr0.
   rewrite (_ : lift _ (lift _ _) = ord_max); last exact/val_inj.
-  by rewrite [in RHS]addRC -addRA.
+  by rewrite addrA addrC addrA addrAC addrA.
 apply val_inj => /=.
 rewrite !fdistI_permE !permE /= q_of_rsE /= p_of_rsE /=.
 rewrite (_ : Ordinal _ = ord_max); last exact/val_inj.

@@ -5,10 +5,9 @@ From mathcomp Require Import zmodp matrix vector order.
 From mathcomp Require Import lra mathcomp_extra Rstruct reals.
 From mathcomp Require ssrnum.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist proba.
-Require Import realType_ext.
+Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist.
+Require Import proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
-Require Import Rstruct_ext.
 
 (******************************************************************************)
 (*                      The variety of decoders                               *)
@@ -225,7 +224,7 @@ Variable enc : encT [finType of 'F_2] M n.
 Hypothesis compatible : cancel_on C enc discard.
 Variable P : {fdist 'rV['F_2]_n}.
 
-Lemma MD_implies_ML : p < 1/2 :> R-> MD_decoding [set cw in C] f ->
+Lemma MD_implies_ML : Prob.p p < 1/2 :> R-> MD_decoding [set cw in C] f ->
   (forall y, f y != None) -> ML_decoding W C f P.
 Proof.
 move=> p05 MD f_total y.
@@ -242,7 +241,7 @@ case: oc Hoc => [c|] Hc; last first.
 exists c; split; first by reflexivity.
 (* replace  W ``^ n (y | f c) with a closed formula because it is a BSC *)
 pose dH_y c := dH y c.
-pose g : nat -> R := fun d : nat => ((1 - p) ^ (n - d) * p ^ d)%R.
+pose g : nat -> R := fun d : nat => ((1 - Prob.p p) ^ (n - d) * (Prob.p p) ^ d)%R.
 have -> : W ``(y | c) = g (dH_y c).
   move: (DMC_BSC_prop p enc (discard c) y).
   set cast_card := eq_ind_r _ _ _.
@@ -262,7 +261,7 @@ transitivity (\big[Order.max/0]_(c in C) (g (dH_y c))); last first.
 rewrite (@bigmaxR_bigmin_vec_helper _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
 - by rewrite bigmaxRE; apply eq_bigl => /= i; rewrite inE.
 - by apply bsc_prob_prop.
-- move=> r; rewrite /g Prob_pE !coqRE.
+- move=> r; rewrite /g !coqRE.
   apply/RleP/mulr_ge0; apply/exprn_ge0; last exact/prob_ge0.
   exact/onem_ge0/prob_le1.
 - rewrite inE; move/subsetP: f_img; apply.

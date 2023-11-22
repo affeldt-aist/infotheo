@@ -6,7 +6,7 @@ From mathcomp Require Import mathcomp_extra boolp classical_sets Rstruct.
 From mathcomp Require Import ssrnum ereal.
 From mathcomp Require Import lra Rstruct reals.
 Require Import Reals.
-Require Import ssrR Rstruct_ext Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb.
+Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb.
 Require Import Rbigop realType_ext fdist.
 From mathcomp Require vector.
 
@@ -626,8 +626,7 @@ Let addptC' : commutative addpt.
 Proof.
 move=> [r x|] [q y|] //=; congr (_ *: _); first by apply: val_inj; rewrite /= addRC.
 rewrite convC; congr (_ <| _ |> _); apply/val_inj => /=.
-rewrite RdivE; first by rewrite RplusE onem_divRxxy.
-rewrite gt_eqF // RplusE. exact/RltP/Rpos_gt0.
+by rewrite RdivE' RplusE onem_divRxxy.
 Qed.
 
 Let addptA' : associative addpt.
@@ -728,13 +727,8 @@ rewrite /convpt.
 rewrite !scaleptDr !scaleptA //.
 rewrite -[RHS]addptA; congr addpt.
   by rewrite (p_is_rs p q) mulRC.
-rewrite pq_is_rs mulRC.
-f_equal.
-f_equal.
-rewrite -[LHS]onemK.
-f_equal.
-apply/esym.
-apply: s_of_pqE.
+rewrite RmultE pq_is_rs mulrC -RmultE.
+by rewrite s_of_pqE onemK RmultE.
 Qed.
 
 HB.instance Definition __cone := @isConvexSpace.Build (scaled A)
@@ -843,7 +837,7 @@ rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
   apply val_inj; rewrite /= s_of_pqE.
   move/(congr1 (@onem real_realType)) : H2.
   by rewrite onemK => ->.
-by rewrite (@r_of_pq_is_r  _ _ r s).
+exact: (@r_of_pq_is_r _ _ _ _ s).
 Qed.
 
 Lemma convA' (r s : {prob R}) a b c :
@@ -1594,7 +1588,7 @@ rewrite -/(Prob.p p).~ -/(Prob.p q).~ -/r.~ -/s.~.
 rewrite {2}/s (s_of_pqE p q) onemK; congr +%R.
 rewrite 2!scalerA; congr (_ *: _).
 have ->: (Prob.p p).~ * Prob.p q = ((Prob.p p).~ * Prob.p q)%coqR by [].
-by rewrite pq_is_rs -/r -/s mulrC.
+by rewrite RmultE pq_is_rs -/r -/s mulrC.
 Qed.
 
 HB.instance Definition _ :=
@@ -1639,10 +1633,10 @@ Proof. by move=> x /=; rewrite scale1r. Qed.
 Lemma scaler_addpt : {morph scaler : x y / addpt x y >-> x + y}.
 Proof.
 move=> [p x|] [q y|] /=; rewrite ?(add0r,addr0) //.
-rewrite avgrE /divRposxxy /= Reals_ext.onem_div /Rdiv; last by apply Rpos_neq0.
-rewrite -!(mulRC (/ _)%coqR) scalerDr !scalerA !mulrA.
+rewrite avgrE /divRposxxy /= RdivE' onem_div; last exact: Rpos_neq0.
+rewrite -!RmultE -!RinvE' -!(mulRC (/ _)%coqR) scalerDr !scalerA !mulrA.
 have ->: (p + q)%coqR * (/ (p + q))%coqR = 1 by apply mulRV; last by apply Rpos_neq0.
-by rewrite !mul1r (addRC p) addRK.
+by rewrite !mul1r (addRC p) addrK.
 Qed.
 
 (* TODO: the name conflicts with GRing.scaler0  *)
@@ -1904,9 +1898,9 @@ Proof. by move=> x /=; rewrite mul1R. Qed.
 Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> (x + y)%coqR}.
 Proof.
 move=> [p x|] [q y|] /=; rewrite ?(add0R,addR0) //.
-rewrite avgRE /avg /divRposxxy /= Reals_ext.onem_div /Rdiv; last by apply Rpos_neq0.
-rewrite -!(mulRC (/ _)%coqR) mulRDr !mulRA mulRV; last by apply Rpos_neq0.
-by rewrite !mul1R (addRC p) addRK.
+rewrite avgRE /avg /divRposxxy /= RdivE' onem_div /Rdiv; last exact: Rpos_neq0.
+rewrite -!RmultE -!RinvE' -!(mulRC (/ _)%coqR) mulRDr !mulRA mulRV; last exact: Rpos_neq0.
+by rewrite !mul1R (addRC p) addrK.
 Qed.
 
 Lemma scaleR0 : scaleR Zero = R0. by []. Qed.
@@ -2028,8 +2022,9 @@ transitivity (prob_coercion p * a a0 + (Prob.p p).~ * Prob.p q * b a0 + (Prob.p 
 transitivity (prob_coercion r * prob_coercion s * a a0 + (Prob.p r).~ * prob_coercion s * b a0 + (Prob.p s).~ * c a0); last first.
   by rewrite 2!(mulrC _ (prob_coercion s)) -2!mulrA -mulrDr.
 rewrite -!RmultE.
-by congr (_ + _ + _);
-  [rewrite /prob_coercion (p_is_rs p q) | rewrite -pq_is_rs | rewrite s_of_pqE onemK].
+congr (_ + _ + _);
+  [by rewrite /prob_coercion (p_is_rs p q) |  | by rewrite s_of_pqE onemK].
+by rewrite !RmultE pq_is_rs.
 Qed.
 
 HB.instance Definition _  := @isConvexSpace.Build (real_realType.-fdist A)
@@ -3022,11 +3017,12 @@ case: a=> [a | | ]; case: b=> [b | | ]; case: c=> [c | | ];
 rewrite muleDr // addeA.
 congr (_ + _)%E; last by rewrite s_of_pqE onemK EFinM muleA.
 rewrite muleDr //.
-congr (_ + _)%E; first by rewrite (p_is_rs (OProb.p p) (OProb.p q)) mulRC EFinM muleA.
+congr (_ + _)%E.
+  by rewrite (p_is_rs (OProb.p p) (OProb.p q)) mulrC EFinM muleA.
 rewrite muleA -!EFinM.
-rewrite /GRing.mul /= (pq_is_rs (OProb.p p) (OProb.p q)).
-rewrite mulRA.
-by rewrite (mulRC (Prob.p [r_of OProb.p p, OProb.p q]).~).
+rewrite (pq_is_rs (OProb.p p) (OProb.p q)).
+rewrite mulrA.
+by rewrite (mulrC (Prob.p [r_of OProb.p p, OProb.p q]).~).
 Qed.
 
 HB.instance Definition _ := @isConvexSpace.Build (\bar R) (Choice.class _) _

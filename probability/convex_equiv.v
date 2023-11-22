@@ -277,17 +277,13 @@ congr (<&>_ _ _); apply fdist_ext => j.
 rewrite !fdist_convnE !big_ord_recl !big_ord0 /=.
 rewrite !fdistI2E !fdistmapE !fdist1E !addr0 /=.
 case: j => -[|[|[]]] //= Hj.
-- rewrite [in RHS](big_pred1 ord0) //.
-  rewrite big1; last by case => -[].
-  by rewrite fdistI2E eqxx !(mulr0,addr0) mulr1 mulrC -RmultE -p_is_rs.
+- rewrite [in RHS](big_pred1 ord0)// big1; last by move=> [] [].
+  by rewrite fdistI2E eqxx !(mulr0,addr0) mulr1 mulrC -p_is_rs.
 - rewrite (big_pred1 ord0) // (big_pred1 (Ordinal (ltnSn 1))) //.
-  rewrite !fdistI2E !eqxx !(mulr0,addr0,add0r).
-
-  rewrite {2}/onem mulrDr mulr1 mulrN [in RHS]GRing
-.mulrC. rewrite -[in RHS]RmultE. rewrite -p_is_rs s_of_pqE'.
-
-  rewrite RplusE RmultE.
-  by rewrite (addrC (Prob.p p)) addrK.
+  rewrite !fdistI2E !eqxx !(mulr0,addr0,add0r)/=.
+  rewrite {2}/onem mulrDr mulr1 mulrN [in RHS]GRing.mulrC.
+  rewrite -p_is_rs s_of_pqE onemM !onemK /onem mulrBl mul1r.
+  by rewrite -!addrA (addrC (Prob.p p)) !addrA subrK.
 - rewrite (big_pred1 (Ordinal (ltnSn 1))) //.
   rewrite big1; last by case => -[|[]].
   by rewrite !fdistI2E 2!mulr0 2!add0r mulr1 s_of_pqE onemK.

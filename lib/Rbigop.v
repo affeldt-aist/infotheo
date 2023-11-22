@@ -492,6 +492,21 @@ Qed.
 Local Close Scope vec_ext_scope.
 Local Close Scope ring_scope.
 
+Lemma bigmaxRE (I : Type) (r : seq I) (P : pred I) (F : I -> R) :
+  \rmax_(i <- r | P i) F i = \big[Order.max/0]_(i <- r | P i) F i.
+Proof.
+rewrite /Rmax /Order.max/=.
+congr BigOp.bigop.
+apply: boolp.funext=> i /=.
+congr BigBody.
+apply: boolp.funext=> x /=.
+apply: boolp.funext=> y /=.
+rewrite lt_neqAle.
+case: (Rle_dec x y); move/RleP;
+  first by case/boolP: (x == y) => /= [/eqP -> | _ ->].
+by move/negPf->; rewrite andbF.
+Qed.
+
 Section bigmaxR.
 
 Variables (A : eqType) (F : A -> R) (s : seq A).

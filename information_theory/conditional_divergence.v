@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg finset matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop ln_facts.
+Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext logb Rbigop ln_facts.
 Require Import num_occ fdist entropy channel divergence types jtypes.
 Require Import proba jfdist_cond.
 

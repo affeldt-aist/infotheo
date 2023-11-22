@@ -1,10 +1,11 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra fingroup perm matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext Rbigop bigop_ext logb ln_facts.
-Require Import fdist jfdist_cond proba binary_entropy_function divergence.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext Rbigop bigop_ext.
+Require Import logb ln_facts fdist jfdist_cond proba binary_entropy_function.
+Require Import divergence.
 
 (******************************************************************************)
 (*                Chapter 2 of Elements of Information Theory                 *)
@@ -114,7 +115,7 @@ by rewrite -INRE; apply/ltR0n.
 Qed.
 
 Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : {prob R}) :
-  H2 p = entropy (fdist_binary card_A p (Set2.a card_A)).
+  H2 (Prob.p p) = entropy (fdist_binary card_A p (Set2.a card_A)).
 Proof.
 rewrite /H2 /entropy Set2sumE /= fdist_binaryxx !fdist_binaryE.
 by rewrite eq_sym (negbTE (Set2.a_neq_b _)) oppRD addRC.

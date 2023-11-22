@@ -423,9 +423,9 @@ Qed.
 End fdist_uniform_prop.
 
 (*TODO yoshihiro503: move these *)
-Definition dominates {R: realType} {A : Type} (Q P : A -> R) :=
+(*Definition dominates {R: realType} {A : Type} (Q P : A -> R) :=
   locked (forall a, Q a = 0 -> P a = 0)%R.
-Notation "P '`<<' Q" := (dominates Q P).
+Notation "P '`<<' Q" := (dominates Q P).*)
 Lemma dominatesP (R: realType) A (Q P : A -> R) :
   P `<< Q <-> forall a, Q a = 0%R -> P a = 0%R.
 Proof. by rewrite /dominates; unlock. Qed.
