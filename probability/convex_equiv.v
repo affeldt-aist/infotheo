@@ -4,7 +4,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm matrix.
 From mathcomp Require Import mathcomp_extra boolp classical_sets.
 Require Import Reals.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct reals.
 Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext ssralg_ext.
 Require Import Rbigop fdist jfdist_cond fsdist convex.
 
@@ -289,7 +289,7 @@ case: j => -[|[|[]]] //= Hj.
   by rewrite !fdistI2E 2!mulr0 2!add0r mulr1 s_of_pqE onemK.
 Qed.
 
-Lemma binconv1 a b : binconv R1%:pr a b = a.
+Lemma binconv1 a b : binconv 1%:pr a b = a.
 Proof.
 apply axidem => /= i; rewrite inE fdistI2E; case: ifP => //=.
 by rewrite /onem subrr eqxx.

@@ -276,14 +276,6 @@ Notation "T '->R^+' " := (nneg_fun T) : reals_ext_scope.
 #[global] Hint Extern 0 (Rle (IZR Z0) _) => solve [exact/RleP/prob_ge0] : core.
 #[global] Hint Extern 0 (Rle _ (IZR (Zpos xH))) => solve [exact/RleP/prob_le1] : core.
 
-Section prob_lemmas.
-Implicit Types p q : {prob R}.
-
-Canonical probR0 := Eval hnf in (@Prob.mk real_realType R0 (@OO1 _)).
-Canonical probR1 := Eval hnf in (@Prob.mk real_realType R1 (@O11 _)).
-
-End prob_lemmas.
-
 Lemma prob_IZR (p : positive) : (0 <= / IZR (Zpos p) <= 1)%coqR.
 Proof.
 split; first exact/Rlt_le/Rinv_0_lt_compat/IZR_lt/Pos2Z.is_pos.

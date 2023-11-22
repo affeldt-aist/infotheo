@@ -259,6 +259,7 @@ Global Hint Resolve prob_le1 : core.
 
 Arguments prob0 {R}.
 Arguments prob1 {R}.
+
 (* ---- ---- *)
 
 Module OProb.

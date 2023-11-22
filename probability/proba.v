@@ -311,7 +311,7 @@ Lemma Pr_bigcup (B : finType) (p : pred B) F :
   Pr (\bigcup_(i | p i) F i) <= \sum_(i | p i) Pr (F i).
 Proof.
 rewrite /Pr; elim: (index_enum _) => [| h t IH].
-  by rewrite big_nil; apply: sumR_ge0 => b _; rewrite big_nil.
+  by rewrite big_nil; apply: sumR_ge0 => b _; rewrite big_nil; exact: Rle_refl.
 rewrite big_cons; case: ifP => H1.
   apply: leR_trans; first by eapply leR_add2l; exact: IH.
   rewrite [X in _ <= X](exchange_big_dep

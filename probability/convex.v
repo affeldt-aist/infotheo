@@ -578,7 +578,7 @@ Lemma scalept_sum (B : finType) (P : pred B) (F : B ->R^+) (x : A) :
 Proof.
 apply: (@proj1 _ (0 <= \sum_(i | P i) F i))%coqR.
 apply: (big_ind2 (fun y q => scalept q x = y /\ (0 <= q)))%coqR.
-+ by split; [rewrite scale0pt| ].
++ by split; [rewrite scale0pt//|exact/Rle_refl].
 + move=> _ x2 _ y2 [<- ?] [<- ?].
   by rewrite scaleptDl //; split => //; exact: addR_ge0.
 + by move=> i _; split => //; exact/nneg_f_ge0.

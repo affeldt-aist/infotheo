@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum zmodp matrix lra.
-From mathcomp Require Import mathcomp_extra Rstruct classical_sets.
+From mathcomp Require Import mathcomp_extra classical_sets Rstruct reals.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
-Require Import entropy binary_entropy_function channel hamming channel_code.
+Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import fdist entropy binary_entropy_function channel hamming channel_code.
 Require Import pproba.
 
 (******************************************************************************)
@@ -331,7 +331,7 @@ Lemma bsc_prob_prop (p : {prob R}) n : Prob.p p < 1 / 2 ->
   ((1 - Prob.p p) ^ (n - n2) * (Prob.p p) ^ n2 <= (1 - Prob.p p) ^ (n - n1) * (Prob.p p) ^ n1)%R.
 Proof.
 move=> p05 d1 d2 d1d2.
-case/boolP: (p == R0%:pr).
+case/boolP: (p == 0%:pr).
   move/eqP->; rewrite !coqRE; apply/RleP.
   rewrite probpK subr0 !expr1n !mul1r !expr0n.
   move: d1d2; case: d2; first by rewrite leqn0 => /andP [] ->.

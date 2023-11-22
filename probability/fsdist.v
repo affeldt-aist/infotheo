@@ -860,8 +860,8 @@ Qed.
 Lemma Convn_of_fsdist_affine : affine Convn_of_fsdist.
 Proof.
 move=> p x y.
-have [->|pn0] := eqVneq p R0%:pr; first by rewrite !conv0.
-have [->|pn1] := eqVneq p R1%:pr; first by rewrite !conv1.
+have [->|pn0] := eqVneq p 0%:pr; first by rewrite !conv0.
+have [->|pn1] := eqVneq p 1%:pr; first by rewrite !conv1.
 have opn0 : (Prob.p p).~ != R0. by apply onem_neq0.
 apply: S1_inj; rewrite affine_conv/= !S1_Convn_finType ssum_seq_finsuppE.
 under [LHS]eq_bigr do rewrite fsdist_scalept_conv.
@@ -1106,7 +1106,8 @@ rewrite /f /=.
 by rewrite (fibration_of_partitionE disjF _ Fit).
 Qed.
 
-HB.instance Definition _ := isMeasure.Build disp T _ P P_set0 P_ge0 P_semi_sigma_additive.
+HB.instance Definition _ :=
+  isMeasure.Build disp T _ P P_set0 P_ge0 P_semi_sigma_additive.
 
 Lemma asboolTE : `[< True >] = true.
 Proof.

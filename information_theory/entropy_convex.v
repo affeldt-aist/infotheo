@@ -3,7 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
-From mathcomp Require Import mathcomp_extra Rstruct.
+From mathcomp Require Import mathcomp_extra Rstruct reals.
 Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
 Require Import Rbigop fdist jfdist_cond entropy convex binary_entropy_function.
@@ -109,7 +109,7 @@ Definition uncurry_dom_pair U (f : {fdist A} -> {fdist A} -> U) (x : dom_pair) :
 
 Let avg := avg_dom_pair.
 
-Let avg1 x y : avg 1%coqR%:pr x y = x.
+Let avg1 x y : avg 1%:pr x y = x.
 Proof. by rewrite /avg; case x => x0 H /=; exact/boolp.eq_exist/conv1. Qed.
 
 Let avgI p x : avg p x x = x.
@@ -143,7 +143,7 @@ have [y2a0|y2a0] := eqVneq (y.2 a) 0.
     rewrite (_ : x.1 a = 0).
       by rewrite -!RmultE -!RplusE ?(mul0R,mulR0,addR0).
     exact/((dominatesP _ _).1 Hx).
-  have [p0|p0] := eqVneq p 0%coqR%:pr.
+  have [p0|p0] := eqVneq p 0%:pr.
     by rewrite p0 -!RmultE -!RplusE ?(mul0R,mulR0,addR0).
   apply/Req_le; rewrite -!RmultE -!RplusE mulRA ?(mulR0,addR0); congr (_ * _ * log _).
   simpl.
@@ -179,7 +179,7 @@ rewrite /= -!sumR_ord_setT !big_ord_recl !big_ord0 !addR0.
 rewrite /h /= !ffunE => /leR_trans; apply.
 rewrite !eqxx eq_sym (negbTE (neq_lift ord0 ord0)) -!mulRA; apply/Req_le.
 congr (_  + _ ).
-  have [->|t0] := eqVneq p 0%coqR%:pr; first by rewrite !mul0R.
+  have [->|t0] := eqVneq p 0%:pr; first by rewrite !mul0R.
   by congr (_ * (_ * log _)); field; split; exact/eqP.
 have [->|t1] := eqVneq (Prob.p p).~ 0; first by rewrite !mul0R.
 by congr (_ * (_ * log _)); field; split; exact/eqP.

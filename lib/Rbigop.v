@@ -289,7 +289,7 @@ End leR_ltR_sumR_finType.
 Lemma leR_sumR_Rabs (A : finType) f : `| \sum_a f a | <= \sum_(a : A) `| f a |.
 Proof.
 elim: (index_enum _) => [|h t IH].
-  by rewrite 2!big_nil Rabs_R0.
+  by rewrite 2!big_nil Rabs_R0; exact: Rle_refl.
 rewrite 2!big_cons.
 apply (@leR_trans (`| f h | + `| \sum_(j <- t) f j |));
   [exact/Rabs_triang |exact/leR_add2l].
@@ -526,9 +526,9 @@ Qed.
 Lemma bigmaxR_ge0 : (forall r, r \in s -> 0 <= F r) -> 0 <= \rmax_(m <- s) (F m).
 Proof.
 case: s => [_ | hd tl Hr].
-- by rewrite big_nil.
+- by rewrite big_nil; exact/Rle_refl.
 - apply (@leR_trans (F hd)); last by rewrite big_cons; exact: leR_maxl.
-  apply Hr; by rewrite in_cons eqxx.
+  by apply: Hr; rewrite in_cons eqxx.
 Qed.
 
 End bigmaxR.
