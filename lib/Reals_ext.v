@@ -273,76 +273,6 @@ Record nneg_fun (T : Type) := mkNNFun {
 
 Notation "T '->R^+' " := (nneg_fun T) : reals_ext_scope.
 
-(*Module ProbR.
-Definition mk_ (q : R) (Oq1 : 0 <= q <= 1) : {prob R}.
-apply: (@Prob.mk _ q).
-case: Oq1 => q0 q1.
-apply/andP; split; exact/RleP.
-Qed. (* TODO: shoud be cleaner *)
-End ProbR.*)
-
-(*Definition prob := prob real_realType.*)
-(*Definition prob_coercion : @prob [realType of R] -> R := @Prob.p real_realType.
-Coercion prob_coercion : prob >-> R.
-
-#[global] Hint Extern 0 (Rle (IZR Z0) _) =>
-  solve [apply/RleP/prob_ge0] : core.
-#[global] Hint Extern 0 (Rle _ (IZR (Zpos xH))) =>
-  solve [apply/RleP/prob_le1] : core.*)
-
-(*Lemma probpK p H : Prob.p (@Prob.mk p H) = p. Proof. by []. Qed.
-
-Lemma OO1 : R0 <b= R0 <b= R1. Proof. apply/leR2P; lra. Qed.
-
-Lemma O11 : R0 <b= R1 <b= R1. Proof. apply/leR2P; lra. Qed.
-
-Canonical prob0 := Eval hnf in Prob.mk OO1.
-Canonical prob1 := Eval hnf in Prob.mk O11.
-Canonical probcplt (p : prob) := Eval hnf in Prob.mk (onem_prob (Prob.O1 p)).
-
-Lemma prob_ge0 (p : prob) : 0 <= p.
-Proof. by case: p => p /= /leR2P[]. Qed.
-Global Hint Resolve prob_ge0 : core.
-
-Lemma prob_le1 (p : prob) : p <= 1.
-Proof. by case: p => p /= /leR2P[]. Qed.
-Global Hint Resolve prob_le1 : core.*)
-
-(*Reserved Notation "{ 'prob' T }" (at level 0, format "{ 'prob'  T }").
-Definition prob_of (R : realType) := fun phT : phant (Num.NumDomain.sort (*Real.sort*)R) => @prob R.*)
-
-(*Section ad_hoc_coercion_from_prob_to_R.*)
-(*
-Prob_p compensates a missing coercion from real_realType to R.
-Without Prob_p, (p : {prob R}) fails to typecheck as (p : R) as follows:
-
-Variable p : {prob R}.
-Check p.
-Fail Check p : R.
-Check Prob.p p.
-
-This problem may be solved by using HB in the definition of realType in mca,
-and then Prob_p should be removed.
-
-Prob_p in a goal blocks uses of some lemmas and must be removed manually by
-`rewrite Prob_pE`.
-The notation `%:pp` is for indicating where a user should do this.
-*)
-(*Definition Prob_p : Prob.t (real_realType) -> R.
-exact: Prob.p.
-Defined.
-Lemma Prob_pE p : Prob_p p = @Prob.p real_realType p.
-Proof. by []. Qed.
-End ad_hoc_coercion_from_prob_to_R.
-Coercion Prob_p : prob >-> R.*)
-(*Notation "p %:pp" := (Prob_p p) (at level 1, format "p %:pp").*)
-
-(*Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).*)
-(*Definition probR_coercion (p : {prob R}) : R := Prob.p p.*)
-(*Local Coercion probR_coercion : prob_of >-> R.*)
-
-(*Lemma probR_ge0 (p : {prob R}) : 0 <= p. Proof. exact/RleP/prob_ge0. Qed.*)
-(*Lemma probR_le1 (p : {prob R}) :  p <= 1. Proof. exact/RleP/prob_le1. Qed.*)
 #[global] Hint Extern 0 (Rle (IZR Z0) _) => solve [exact/RleP/prob_ge0] : core.
 #[global] Hint Extern 0 (Rle _ (IZR (Zpos xH))) => solve [exact/RleP/prob_le1] : core.
 
@@ -485,7 +415,7 @@ have [/RleP ? /RleP ?] := prob_mulR p q. exact/andP.
 Qed.
 
 Canonical probmulR (p q : {prob R}) :=
-  Eval hnf in @Prob.mk _ (prob_coercion p * Prob.p q) (prob_mulR' p q).
+  Eval hnf in @Prob.mk _ (Prob.p p * Prob.p q) (prob_mulR' p q).
 
 (*Module OProb.
 Section def.

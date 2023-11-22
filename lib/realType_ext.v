@@ -143,7 +143,6 @@ Lemma probpK R p H : Prob.p (@Prob.mk R p H) = p. Proof. by []. Qed.
 Definition prob_of (R : realType) :=
   fun phT : phant (Num.NumDomain.sort (*Real.sort*)R) => @prob R.
 Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).
-Definition prob_coercion (R: realType) (p : {prob R}) : R := Prob.p p.
 
 Definition to_porder (R : realType) (p : {prob R}) : Order.POrder.sort _ :=
   (p : R).
@@ -328,7 +327,7 @@ by rewrite mulr_ile1.
 Qed.
 
 Canonical probmulr {R : realType} (p q : {prob R}) :=
-  Eval hnf in @Prob.mk _ (prob_coercion p * Prob.p q) (prob_mulr p q).
+  Eval hnf in @Prob.mk _ (Prob.p p * Prob.p q) (prob_mulr p q).
 
 Definition s_of_pq {R : realType} (p q : {prob R}) : {prob R} :=
   locked ((Prob.p p).~ * (Prob.p q).~).~%:pr.
