@@ -306,18 +306,15 @@ Qed.
 
 Definition Prob_invp (p : {prob R}) := Prob.mk (prob_invp_subproof p).
 
-Lemma prob_mulR (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%coqR.
+Lemma prob_mulR_subproof (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%O.
 Proof.
-by split; [exact/mulR_ge0 |rewrite -(mulR1 1%coqR); apply leR_pmul].
-Qed.
-
-Lemma prob_mulR' (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%O.
-Proof.
-have [/RleP ? /RleP ?] := prob_mulR p q. exact/andP.
+apply/andP; split.
+  by rewrite mulr_ge0.
+by rewrite mulr_ile1.
 Qed.
 
 Canonical probmulR (p q : {prob R}) :=
-  Eval hnf in @Prob.mk _ (Prob.p p * Prob.p q) (prob_mulR' p q).
+  Eval hnf in @Prob.mk _ (Prob.p p * Prob.p q) (prob_mulR_subproof p q).
 
 (*Module OProb.
 Section def.
@@ -387,18 +384,15 @@ rewrite ltR_pdivr_mulr ?mul1R ?ltR_nat // ?ltR0n ?addn_gt0 ?H ?orTb //.
 by rewrite -[X in (X < _)%nat](addn0 n) ltn_add2l.
 Qed.
 
-Lemma oprob_mulR (p q : {oprob R}) : (0 < Prob.p (OProb.p p) * Prob.p (OProb.p q) < 1)%coqR.
+Lemma oprob_mulR_subproof (p q : {oprob R}) : (0 < Prob.p (OProb.p p) * Prob.p (OProb.p q) < 1)%O.
 Proof.
-split; first exact/mulR_gt0/oprob_gt0/oprob_gt0.
-by rewrite -(mulR1 1%coqR); apply ltR_pmul;
-  [exact/oprob_ge0 | exact/oprob_ge0 | exact/oprob_lt1 | exact/oprob_lt1].
+apply/andP; split.
+  by rewrite mulr_gt0//; apply/RltP/oprob_gt0.
+by rewrite mulr_ilt1//; apply/RltP/oprob_lt1.
 Qed.
 
-Lemma oprob_mulR' (p q : {oprob R}) : (0 < Prob.p (OProb.p p) * Prob.p (OProb.p q) < 1)%O.
-Proof. by have [/RltP -> /RltP ->] := oprob_mulR p q. Qed.
-
 Canonical oprobmulR (p q : {oprob R}) :=
-  Eval hnf in @OProb.mk _ (Prob.p (OProb.p p) * q)%:pr (oprob_mulR' p q).
+  Eval hnf in @OProb.mk _ (Prob.p (OProb.p p) * q)%:pr (oprob_mulR_subproof p q).
 
 Record Qplus := mkRrat { num : nat ; den : nat }.
 
