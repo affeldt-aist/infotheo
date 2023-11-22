@@ -5,7 +5,7 @@ Require Import Reals.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import mathcomp_extra boolp classical_sets Rstruct reals.
 From mathcomp Require Import finmap.
-Require Import Reals_ext realType_ext classical_sets_ext Rbigop ssrR fdist fsdist.
+Require Import Reals_ext realType_ext classical_sets_ext ssrR fdist fsdist.
 Require Import convex.
 
 (******************************************************************************)

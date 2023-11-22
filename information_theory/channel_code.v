@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import Reals_ext ssrR logb Rbigop fdist proba channel.
+Require Import Reals_ext ssrR logb fdist proba channel.
 
 (******************************************************************************)
 (*                        Definition of a channel code                        *)

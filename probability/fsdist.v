@@ -8,7 +8,7 @@ From mathcomp Require Import mathcomp_extra.
 From mathcomp Require Import classical_sets boolp cardinality Rstruct reals.
 From mathcomp Require Import ereal topology esum measure probability.
 Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext.
-Require Import bigop_ext Rbigop fdist convex.
+Require Import bigop_ext fdist convex.
 
 (******************************************************************************)
 (*                    Finitely-supported distributions                        *)

@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrZ ssrR logb Reals_ext realType_ext Rbigop ssr_ext fdist.
+Require Import ssrZ ssrR logb Reals_ext realType_ext ssr_ext fdist.
 Require Import entropy kraft.
 
 (******************************************************************************)

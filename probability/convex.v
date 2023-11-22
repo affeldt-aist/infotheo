@@ -7,7 +7,7 @@ From mathcomp Require Import ssrnum ereal.
 From mathcomp Require Import lra Rstruct reals.
 Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb.
-Require Import Rbigop realType_ext fdist.
+Require Import realType_ext fdist.
 From mathcomp Require vector.
 
 Undelimit Scope R_scope.

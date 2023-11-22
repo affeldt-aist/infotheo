@@ -317,6 +317,9 @@ Proof. by rewrite /Exp mulNR exp_Ropp. Qed.
 
 Definition exp2 (x : R) := Exp 2 x.
 
+Lemma morph_exp2_plus : {morph [eta exp2] : x y / x + y >-> x * y}.
+Proof. move=> ? ? /=; by rewrite -ExpD. Qed.
+
 Lemma exp2_gt0 x : 0 < exp2 x. Proof. exact: Exp_gt0. Qed.
 Lemma exp2_ge0 x : 0 <= exp2 x. Proof. exact: Exp_ge0. Qed.
 Global Hint Resolve exp2_gt0 : core.
@@ -401,3 +404,17 @@ rewrite natRM -mulRA (mulRCA den%:R) mulRV // ?mulR1; last first.
   by rewrite INR_eq0' -lt0n.
 by rewrite exp2_pow logK; [exact/frac_part_pow/frac_part_INR | exact/ltR0n].
 Qed.
+
+Lemma log_prodR_sumR_mlog {A : finType} k (f : A -> R) s :
+  (forall a, 0 <= f a)%coqR ->
+  (forall i, 0 < f i)%coqR ->
+  (- Log k (\prod_(i <- s) f i) = \sum_(i <- s) - Log k (f i))%R.
+Proof.
+move=> f0 f0'.
+elim: s => [|h t ih].
+  by rewrite !big_nil Log_1 oppR0.
+rewrite big_cons LogM//; last first.
+  by apply/RltP/prodr_gt0 => a _; exact/RltP.
+by rewrite [RHS]big_cons oppRD; congr (_ + _)%coqR.
+Qed.
+

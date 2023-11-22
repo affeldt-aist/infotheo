@@ -5,7 +5,7 @@ From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext.
-Require Import bigop_ext Rbigop fdist.
+Require Import bigop_ext fdist.
 
 (******************************************************************************)
 (*               Probabilities over finite distributions                      *)

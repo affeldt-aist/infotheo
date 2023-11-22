@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
@@ -473,7 +473,7 @@ Section big_tuple_ffun.
 Import Monoid.Theory.
 Variable R : Type.
 Variable V : zmodType.
-Variable times : Monoid.mul_law (GRing.zero V)
+Variable times : Monoid.mul_law (GRing.zero V).
 Local Notation "*%M" := times (at level 0).
 Variable plus : Monoid.add_law (GRing.zero V) *%M.
 Local Notation "+%M" := plus (at level 0).
@@ -498,3 +498,18 @@ by apply enum_val_nth.
 Qed.
 
 End big_tuple_ffun.
+
+Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
+
+Lemma prod_gt0_inv (R : realFieldType) n (F : _ -> R)
+  (HF: forall a, (0 <= F a)%mcR) :
+  (0 < \prod_(i < n.+1) F i -> forall i, 0 < F i)%mcR.
+Proof.
+move=> h i.
+rewrite lt_neqAle HF andbT; apply/eqP => /esym F0.
+move: h; rewrite ltNge => /negP; apply.
+rewrite le_eqVlt; apply/orP; left.
+rewrite prodf_seq_eq0/=.
+apply/hasP; exists i; last exact/eqP.
+by rewrite mem_index_enum.
+Qed.

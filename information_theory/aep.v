@@ -1,11 +1,11 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext logb Rbigop fdist proba.
-Require Import entropy.
+Require Import ssrR Reals_ext realType_ext ssr_ext bigop_ext ssralg_ext logb.
+Require Import fdist proba entropy.
 
 (******************************************************************************)
 (*              Asymptotic Equipartition Property (AEP)                       *)
@@ -140,12 +140,10 @@ apply/Pr_incl/subsetP => ta; rewrite 2!inE => /andP[H1].
 rewrite /sum_mlog_prod [`-- (`log _)]lock /= -lock /= /scalel_RV /log_RV /neg_RV.
 rewrite fdist_rVE.
 rewrite log_prodR_sumR_mlog //.
-have : forall x, 0 <= P x.
-  move=> x.
-  apply/RleP.
-  exact: FDist.ge0.
-move/prodR_gt0_inv; apply.
-by move: H1; rewrite fdist_rVE => /RltP.
+move=> i; apply/RltP.
+move: i; apply/prod_gt0_inv.
+  by move=> x; exact: FDist.ge0.
+by move: H1; rewrite fdist_rVE.
 Qed.
 
 End AEP.

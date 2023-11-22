@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect all_algebra fingroup perm matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext Rbigop bigop_ext.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext bigop_ext.
 Require Import logb ln_facts fdist jfdist_cond proba binary_entropy_function.
 Require Import divergence.
 

@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext Ranalysis_ext logb Rbigop fdist ln_facts.
+Require Import ssrR Reals_ext Ranalysis_ext logb fdist ln_facts.
 
 (******************************************************************************)
 (*                        The Variation Distance                              *)

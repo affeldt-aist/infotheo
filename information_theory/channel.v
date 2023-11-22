@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect all_algebra.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
+Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba entropy jfdist_cond.
 
 (******************************************************************************)

@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import mathcomp_extra Rstruct reals.
 Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext.
-Require Import logb ln_facts bigop_ext convex Rbigop fdist divergence.
+Require Import logb ln_facts bigop_ext convex fdist divergence.
 Require Import variation_dist partition_inequality.
 
 (******************************************************************************)

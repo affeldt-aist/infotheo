@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 From mathcomp Require Import Rstruct.
-Require Import ssr_ext subgraph_partition tanner f2 Rbigop.
+Require Import ssr_ext subgraph_partition tanner f2.
 
 (******************************************************************************)
 (*               Cover/partition properties of Tanner graphs                  *)
@@ -530,7 +530,7 @@ Qed.
 Local Open Scope R_scope.
 
 Lemma rprod_Fgraph_part_fnode g n0:
-  \prod_(m0 < m) g m0 = \prod_(m0 in 'F n0) \prod_(m1 in 'F(m0, n0)) g m1.
+  \prod_(m0 < m) g m0 = \prod_(m0 in 'F n0) \prod_(m1 in 'F(m0, n0)) g m1 :> Rdefinitions.R.
 Proof.
 transitivity (\prod_(m0 in [set: 'I_m]) g m0).
   apply eq_bigl => /= ?; by rewrite in_set.

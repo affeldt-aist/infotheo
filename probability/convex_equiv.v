@@ -6,7 +6,7 @@ From mathcomp Require Import mathcomp_extra boolp classical_sets.
 Require Import Reals.
 From mathcomp Require Import Rstruct reals.
 Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext ssralg_ext.
-Require Import Rbigop fdist jfdist_cond fsdist convex.
+Require Import fdist jfdist_cond fsdist convex.
 
 (******************************************************************************)
 (*                  Equivalence of Convexity Definitions                      *)

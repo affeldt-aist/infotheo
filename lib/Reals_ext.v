@@ -55,12 +55,6 @@ Global Hint Resolve Rlt_1_2 : core.
 
 Section reals_ext.
 
-Lemma iter_mulR x (n : nat) : ssrnat.iter n (Rmult x) 1 = x ^ n.
-Proof. elim : n => // n Hn ; by rewrite iterS Hn. Qed.
-
-Lemma iter_addR x (n : nat) : ssrnat.iter n (Rplus x) 0 = n%:R * x.
-Proof. by rewrite iter_addr addr0 -mulr_natr mulrC RmultE INRE. Qed.
-
 (* TODO: see Rplus_lt_reg_pos_r in the standard library *)
 (*Lemma Rplus_le_lt_reg_pos_r r1 r2 r3 : 0 < r2 -> r1 + r2 <= r3 -> r1 < r3.
 Proof. move=> *. lra. Qed.*)
@@ -214,21 +208,6 @@ Qed.
 
 Lemma leR0ceil x : 0 <= x -> (0 <= ceil x)%Z.
 Proof. move=> ?; case: (ceilP x) => K _; exact/le_IZR/(leR_trans _ K). Qed.
-
-Lemma factE n0 : fact n0 = n0 `!.
-Proof. by elim: n0 => // n0 IH /=; rewrite IH factS mulSn -multE. Qed.
-
-Lemma combinaisonE n0 m0 : (m0 <= n0)%nat -> C n0 m0 = 'C(n0, m0)%:R.
-Proof.
-move=> ?.
-rewrite /C.
-apply (@eqR_mul2r (INR (fact m0) * INR (fact (n0 - m0)%coq_nat))).
-  move/eqP; rewrite mulR_eq0' !INR_eq0' => /orP[|] /eqP; exact/fact_neq_0.
-set tmp := INR (fact m0) * _.
-rewrite -mulRA mulVR ?mulR1; last first.
-  by rewrite /tmp mulR_neq0' !INR_eq0' !factE -!lt0n !fact_gt0.
-by rewrite /tmp -!natRM !factE !minusE bin_fact.
-Qed.
 
 Lemma normR_max a b c c' : 0 <= a <= c -> 0 <= b <= c' ->
   `| a - b | <= max(c, c').

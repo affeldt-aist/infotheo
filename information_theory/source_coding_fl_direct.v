@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrZ ssrR Reals_ext ssr_ext ssralg_ext logb natbin Rbigop fdist.
+Require Import ssrZ ssrR Reals_ext ssr_ext ssralg_ext logb natbin fdist.
 Require Import proba entropy aep typ_seq source_code.
 
 (******************************************************************************)

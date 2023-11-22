@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum zmodp matrix lra.
 From mathcomp Require Import mathcomp_extra classical_sets Rstruct reals.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
 Require Import fdist entropy binary_entropy_function channel hamming channel_code.
 Require Import pproba.
 

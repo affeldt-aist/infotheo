@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
-Require Import Rbigop fdist proba entropy divergence log_sum source_code.
+Require Import fdist proba entropy divergence log_sum source_code.
 
 (******************************************************************************)
 (*        Source coding theorem (variable length, converse part)              *)

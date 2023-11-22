@@ -6,7 +6,7 @@ From mathcomp Require boolp.
 From mathcomp Require Import mathcomp_extra Rstruct reals.
 Require Import Reals Ranalysis_ext Lra.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
-Require Import Rbigop fdist jfdist_cond entropy convex binary_entropy_function.
+Require Import fdist jfdist_cond entropy convex binary_entropy_function.
 Require Import log_sum divergence.
 
 (******************************************************************************)
