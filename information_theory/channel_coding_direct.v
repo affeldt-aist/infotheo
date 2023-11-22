@@ -96,7 +96,7 @@ set x := \sum_(f <- _) _ in H.
 have : \sum_(f : encT A M n) Wght.d P f * epsilon <= x.
   rewrite /x; apply leR_sumRl => //= f _.
   - by apply leR_wpmul2l => //; exact/Rnot_lt_le/abs.
-  - by apply mulR_ge0 => //; exact/echa_ge0.
+  - by apply mulR_ge0 => //; exact/RleP/echa_ge0.
 apply/Rlt_not_le/(@ltR_leR_trans epsilon) => //.
 rewrite -big_distrl /= (FDist.f1 (Wght.d P)) mul1R.
 by apply/RleP; rewrite Order.POrderTheory.lexx.

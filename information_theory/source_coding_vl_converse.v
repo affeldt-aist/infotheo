@@ -81,10 +81,10 @@ rewrite [X in _ <= X]
    (log ((\sum_(i < n)f i.+1) / (\sum_(i < n) g i.+1)))).
       exact: log_sum_inequality_ord_add1.
   have : 0 <= \sum_(i in 'I_n) f i.+1.
-    by apply sumR_ge0 => ? _; exact: nneg_f_ge0.
+    by apply/RleP/sumr_ge0 => ? _; exact/RleP/nneg_f_ge0.
   case=>[Hf | <-]; last by rewrite !mul0R.
   have : 0 <= \sum_(i in 'I_n) g i.+1.
-    by apply sumR_ge0 => ? _; exact: nneg_f_ge0.
+    by apply/RleP/sumr_ge0 => ? _; exact/RleP/nneg_f_ge0.
   case => [Hg |].
     by rewrite /log LogM // ?LogV //; last exact: invR_gt0.
   have Rle0g_add1 : forall x : 'I_n, 0 <= g x.+1 by move=> ?; apply nneg_f_ge0.
@@ -889,7 +889,7 @@ move/leR_trans; apply.
 rewrite leR_add2l.
 rewrite mulRA (mulRC (exp 1)) -(mulRA (m eps)%:R).
 apply le_eps => //.
-move:case2.
+move: case2.
 rewrite ELC_TupleFDist mulRC (mulRC (m eps)%:R) card_mx mul1n -natRexp log_pow; last first.
   by rewrite (_ : 0 = INR 0) //; apply/lt_INR/ltP/fdist_card_neq0; exact: P.
 move/(ltR_pmul2r (mpos eps nnon0)) => /ltRW.

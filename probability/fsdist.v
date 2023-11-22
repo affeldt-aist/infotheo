@@ -121,7 +121,7 @@ Lemma le1 (d : t) a : d a <= 1.
 Proof.
 have [ad|?] := boolP (a \in finsupp d); last by rewrite fsfun_dflt.
 rewrite -(f1 d) (big_fsetD1 _ ad)/=; apply/leR_addl.
-by apply sumR_ge0 => ? _; exact: ge0.
+by apply/RleP/sumr_ge0 => ? _; exact/RleP/ge0.
 Qed.
 
 Lemma le1' (d : t) a : (d a <= 1)%mcR.
@@ -225,7 +225,8 @@ Let f : {fsfun B -> R with 0} :=
 Let f0 b : b \in finsupp f -> 0 < f b.
 Proof.
 rewrite mem_finsupp fsfunE; case: ifPn => [_ /eqP/nesym ?|]; last by rewrite eqxx.
-by rewrite ltR_neqAle; split => //; apply sumR_ge0 => a _; exact/mulR_ge0.
+rewrite ltR_neqAle; split => //; apply/RleP/sumr_ge0 => a _.
+by rewrite mulr_ge0//; exact/RleP.
 Qed.
 
 Let f1 : \sum_(b <- finsupp f) f b = 1.

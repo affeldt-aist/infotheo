@@ -79,15 +79,15 @@ rewrite [X in _ <= X](_ : _ =
 rewrite /div big_bool.
 rewrite [P_A]lock [Q_A]lock /= -!lock.
 have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
-  by apply Rle_lt_or_eq_dec; rewrite ffunE; exact: sumR_ge0.
+  by apply Rle_lt_or_eq_dec; rewrite ffunE; exact/RleP/sumr_ge0.
 - have [A1_Q_neq0 | /esym A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
-    by apply Rle_lt_or_eq_dec; rewrite ffunE; exact: sumR_ge0.
+    by apply Rle_lt_or_eq_dec; rewrite ffunE; exact/RleP/sumr_ge0.
   + have [A0_Q__neq0 | /esym A0_Q_0] : {0 < Q_A 0} + {0%R = Q_A 0}.
-      by apply Rle_lt_or_eq_dec; rewrite ffunE; exact: sumR_ge0.
+      by apply Rle_lt_or_eq_dec; rewrite ffunE; exact/RleP/sumr_ge0.
     * rewrite /Rdiv /log LogM //; last exact/invR_gt0.
       rewrite LogV //.
       have [A1_P_neq0 | /esym A1_P_0] : {0 < P_A 1} + {0%R = P_A 1}.
-        by apply Rle_lt_or_eq_dec; rewrite ffunE; exact: sumR_ge0.
+        by apply Rle_lt_or_eq_dec; rewrite ffunE; exact/RleP/sumr_ge0.
       - rewrite /log LogM //; last exact/invR_gt0.
         rewrite LogV //.
         apply Req_le; by field.
@@ -120,7 +120,7 @@ have [A0_P_neq0 | /esym A0_P_0] : {0 < P_A 0} + {0%R = P_A 0}.
     apply eq_bigl => i; by rewrite cov in_set inE.
     by rewrite -setI_eq0 -dis setIC.
   have [A1_Q_neq0 | /esym A1_Q_0] : {0 < Q_A 1} + {0%R = Q_A 1}.
-    by apply Rle_lt_or_eq_dec; rewrite ffunE; exact: sumR_ge0.
+    by apply Rle_lt_or_eq_dec; rewrite ffunE; exact/RleP/sumr_ge0.
   + rewrite A0_P_0 !mul0R !add0R H1 !mul1R.
     rewrite /Rdiv /log LogM; last 2 first.
       lra.

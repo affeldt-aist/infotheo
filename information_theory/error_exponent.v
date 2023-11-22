@@ -79,7 +79,7 @@ apply: (@leR_trans (d((P `X V), (P `X W)))).
   apply: leR_sumR => a _.
   rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
   rewrite 2!fdist_prodE /= !(mulrC (P a)) addR_opp.
-  by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.
+  by apply/leR_add2l/RleP/sumr_ge0 => ? _; exact/RleP/normR_ge0.
 - rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
@@ -98,7 +98,7 @@ apply Rabs_xlnx => //.
 apply (@leR_trans (d(P `X V, P `X W))).
 - rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
   rewrite -[X in X <= _]addR0.
-  by apply/leR_add2l/sumR_ge0 => ? _; exact/normR_ge0.
+  by apply/leR_add2l/RleP/sumr_ge0 => ? _; exact/RleP/normR_ge0.
 - rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dominates.
 Qed.

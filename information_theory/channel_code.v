@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import Reals_ext ssrR logb Rbigop fdist proba channel.
@@ -35,6 +35,8 @@ Local Open Scope proba_scope.
 Local Open Scope channel_scope.
 Local Open Scope R_scope.
 
+Import Num.Theory.
+
 Section code_definition.
 Variables (A B M : finType) (n : nat).
 
@@ -61,15 +63,15 @@ Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
 
 Lemma echa_ge0 (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
-apply mulR_ge0.
+apply/RleP/mulR_ge0.
 - apply divR_ge0; [exact/Rle_0_1| exact/ltR0n].
-- by apply: sumR_ge0 => ? _; exact: sumR_ge0.
+- by apply/RleP/sumr_ge0 => ? _; exact: sumr_ge0.
 Qed.
 
 Lemma echa_le1 (HM : (0 < #| M |)%nat) W (c : code) : echa(W , c) <= 1.
 Proof.
 rewrite /CodeErrRate div1R.
-apply (@leR_pmul2l (INR #|M|)); first exact/ltR0n.
+apply/RleP/ (@leR_pmul2l (INR #|M|)); first exact/ltR0n.
 rewrite mulRA mulRV ?INR_eq0' -?lt0n // mul1R -iter_addR -big_const.
 by apply: leR_sumR => m _; exact: Pr_1.
 Qed.
@@ -81,7 +83,7 @@ Local Notation "scha( W , C )" := (scha W C).
 Hypothesis Mnot0 : (0 < #|M|)%nat.
 
 Lemma scha_pos (W : `Ch(A, B)) (c : code) : 0 <= scha(W, c).
-Proof. rewrite /scha; rewrite subR_ge0; exact/echa_le1. Qed.
+Proof. by rewrite /scha; rewrite subr_ge0; exact/echa_le1. Qed.
 
 Lemma schaE (W : `Ch(A, B)) (c : code) :
   scha(W, c) = (1 / #|M|%:R *

@@ -107,7 +107,7 @@ Let den := \sum_(x in 'rV_n) P x * W ``(y | x).
 Let f := [ffun x => P x * W ``(y | x) / den].
 
 Definition fdist_post_prob_den_ge0 : 0 <= den.
-Proof. by apply/RleP/sumR_ge0 => x _; exact: mulR_ge0. Qed.
+Proof. by apply/sumr_ge0 => x _; exact: mulr_ge0. Qed.
 
 Let f0 x : 0 <= f x.
 Proof.
@@ -241,9 +241,9 @@ Proof.
 rewrite ffunE; apply/RleP/mulR_ge0.
 - rewrite / marginal_post_prob_den.
   apply/invR_ge0/RltP; rewrite lt0r/=; apply/andP; split; [apply/eqP |apply/RleP]; last first.
-    exact: sumR_ge0.
+    exact/RleP/sumr_ge0.
   exact/f'_neq0.
-- exact: sumR_ge0.
+- exact/RleP/sumr_ge0.
 Qed.
 
 Let f1 i : \sum_(a in A) f i a = 1.

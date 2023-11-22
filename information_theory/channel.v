@@ -34,6 +34,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Import Num.Theory.
+
 Declare Scope channel_scope.
 Delimit Scope fdist_scope with channel.
 Local Open Scope channel_scope.
@@ -167,7 +169,7 @@ Local Open Scope ring_scope.
 Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
 
 Let f0 (b : B) : (0 <= f b).
-Proof. by rewrite ffunE; apply/RleP; apply: sumR_ge0 => a _; exact: mulR_ge0. Qed.
+Proof. by rewrite ffunE; apply/RleP; apply/RleP/sumr_ge0 => a _; rewrite mulr_ge0. Qed.
 
 Let f1 : \sum_(b in B) f b = 1.
 Proof.

@@ -180,11 +180,6 @@ Lemma sumR_ord_setT (n : nat) (f : 'I_n -> R) :
   \sum_(i < n) f i = \sum_(i in [set: 'I_n]) f i.
 Proof. by apply eq_bigl => i; rewrite inE. Qed.
 
-(* TODO: rm? *)
-Lemma sumR_ge0 (A : eqType) (d : seq A) (P : pred A) f
-  (H : forall i, P i -> 0 <= f i) : 0 <= \sum_(i <- d | P i) f i.
-Proof. by apply/RleP/sumr_ge0 => i Pi; exact/RleP/H. Qed.
-
 Lemma sumR_neq0 (U : eqType) (P : U -> R) (s : seq.seq U) :
   (forall i, 0 <= P i) ->
   \sum_(a0 <- s) P a0 != 0 <-> exists i : U, i \in s /\ 0 < P i.
@@ -199,7 +194,9 @@ Qed.
 Lemma sumR_gt0 (A : finType) (f : A -> R) (HA : (0 < #|A|)%nat) :
   (forall a, 0 < f a) -> 0 < \sum_(a in A) f a.
 Proof.
-move=> f0; rewrite ltR_neqAle; split; last by apply sumR_ge0 => a _; apply/ltRW.
+move=> f0; rewrite ltR_neqAle; split; last first.
+  apply/RleP; rewrite sumRE.
+  by apply/sumr_ge0 => a _; apply/RleP/ltRW.
 apply/nesym/eqP/sumR_neq0; last by move/card_gt0P : HA => [a _]; exists a.
 by move=> a; apply/ltRW/f0.
 Qed.

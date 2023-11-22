@@ -514,7 +514,7 @@ rewrite FDistPart.dE; last first.
   rewrite -big_distrr big_mkcond /=.
   rewrite (eq_bigr (e (h i))).
     rewrite FDist.f1 mulr1; apply paddR_neq0 => //.
-      by apply/sumR_ge0 => *; apply/sumR_ge0 => *; apply/mulR_ge0.
+      by apply/RleP/sumr_ge0 => *; apply/sumr_ge0 => *; rewrite mulr_ge0.
     by left; move: (enum_valP i); rewrite inE.
   move=> /= k _; rewrite 2!inE; case: ifP => //.
   case: (f k) => /= x /orP[/forallP/(_ i)|Hkx Hx].
