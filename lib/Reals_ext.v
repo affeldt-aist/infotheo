@@ -16,8 +16,6 @@ From mathcomp Require Import lra.
 (*                                                                            *)
 (*  T ->R^+ == functions that return non-negative reals.                      *)
 (*                                                                            *)
-(*    x%:pr == tries to infer that x : R is actually of type prob             *)
-(*                                                                            *)
 (*    Qplus == type of non-negative rationals                                 *)
 (*                                                                            *)
 (*     Rpos == type of positive reals                                         *)
@@ -339,9 +337,9 @@ End ad_hoc_coercion_from_prob_to_R.
 Coercion Prob_p : prob >-> R.*)
 (*Notation "p %:pp" := (Prob_p p) (at level 1, format "p %:pp").*)
 
-Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).
-Definition probR_coercion (p : {prob R}) : R := Prob.p p.
-Local Coercion probR_coercion : prob_of >-> R.
+(*Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).*)
+(*Definition probR_coercion (p : {prob R}) : R := Prob.p p.*)
+(*Local Coercion probR_coercion : prob_of >-> R.*)
 
 (*Lemma probR_ge0 (p : {prob R}) : 0 <= p. Proof. exact/RleP/prob_ge0. Qed.*)
 (*Lemma probR_le1 (p : {prob R}) :  p <= 1. Proof. exact/RleP/prob_le1. Qed.*)
@@ -354,27 +352,21 @@ Implicit Types p q : {prob R}.
 Canonical probR0 := Eval hnf in (@Prob.mk real_realType R0 (@OO1 _)).
 Canonical probR1 := Eval hnf in (@Prob.mk real_realType R1 (@O11 _)).
 
-Lemma probR_gt0 p : p != 0%:pr <-> 0 < p.
+Lemma probR_gt0 p : p != 0%:pr <-> 0 < Prob.p p.
 Proof.
 rewrite ltR_neqAle; split=> [H|[/eqP p0 _]].
 split => //; exact/nesym/eqP.
 by case: p p0 => p ?; apply: contra => /eqP[/= ->].
 Qed.
 
-Lemma probR_gt0' p : p != 0 :> R <-> 0 < p.
-Proof. exact: probR_gt0. Qed.
-
-Lemma probR_lt1 p : p != 1%:pr <-> p < 1.
+Lemma probR_lt1 p : p != 1%:pr <-> Prob.p p < 1.
 Proof.
 rewrite ltR_neqAle; split=> [H|[/eqP p1 _]].
 by split => //; exact/eqP.
 by case: p p1 => p ?; apply: contra => /eqP[/= ->].
 Qed.
 
-Lemma probR_lt1' p : p != 1 :> R <-> p < 1.
-Proof. exact: probR_lt1. Qed.
-
-Lemma probR_trichotomy p : p = 0%:pr \/ p = 1%:pr \/ 0 < p < 1.
+Lemma probR_trichotomy p : p = 0%:pr \/ p = 1%:pr \/ 0 < Prob.p p < 1.
 Proof.
 have [/eqP ->|pneq0]:= boolP (p == 0%:pr); first by left.
 right.
@@ -385,29 +377,29 @@ Qed.
 Lemma probRK p : p = ((Prob.p p).~).~%:pr.
 Proof. by apply val_inj => /=; rewrite onemK. Qed.
 
-Lemma probRKC (p : {prob R}) : p + (Prob.p p).~ = 1 :> R.
+Lemma probRKC (p : {prob R}) : Prob.p p + (Prob.p p).~ = 1 :> R.
 Proof. exact: onemKC. Qed.
 
-Lemma probadd_eq0 p q : p + q = 0 <-> p = 0%:pr /\ q = 0%:pr.
+Lemma probadd_eq0 p q : Prob.p p + Prob.p q = 0 <-> p = 0%:pr /\ q = 0%:pr.
 Proof.
 split => [/paddR_eq0 | ].
 - by move=> /(_ _)[] // p0 q0; split; exact/val_inj.
 - by case => -> ->; rewrite addR0.
 Qed.
 
-Lemma probadd_neq0 p q : p + q != 0 <-> p != 0%:pr \/ q != 0%:pr.
+Lemma probadd_neq0 p q : Prob.p p + Prob.p q != 0 <-> p != 0%:pr \/ q != 0%:pr.
 Proof.
 split => [/paddR_neq0| ]; first by move=> /(_ _ _); apply.
 by case; apply: contra => /eqP/probadd_eq0 [] /eqP ? /eqP.
 Qed.
 
-Lemma probmul_eq1 p q : p * q = 1 <-> p = 1%:pr /\ q = 1%:pr.
+Lemma probmul_eq1 p q : Prob.p p * Prob.p q = 1 <-> p = 1%:pr /\ q = 1%:pr.
 Proof.
 split => [/= pq1|[-> ->]]; last by rewrite mulR1.
 move: R1_neq_R0; rewrite -{1}pq1 => /eqP; rewrite mulR_neq0' => /andP[].
-rewrite 2!probR_gt0'=> p0 q0.
-have /leR_eqVlt[p1|] : (p <= 1) by apply/RleP/prob_le1.
-  have /leR_eqVlt[q1|] : (q <= 1) by apply/RleP/prob_le1; last first.
+rewrite 2!probR_gt0=> p0 q0.
+have /leR_eqVlt[p1|] : (Prob.p p <= 1) by apply/RleP/prob_le1.
+  have /leR_eqVlt[q1|] : (Prob.p q <= 1) by apply/RleP/prob_le1; last first.
     by split => //; exact/val_inj.
   move/(ltR_pmul2r p0); rewrite mul1R mulRC => /(ltR_leR_trans).
   move=> /(_ 1%coqR).
@@ -465,7 +457,7 @@ Qed.
 Canonical probinvn (n : nat) :=
   Eval hnf in @Prob.mk _ (/ INR (1 + n)) (prob_invn n).
 
-Lemma prob_invp (p : {prob R}) : (0 <= 1 / (1 + p) <= 1)%coqR.
+Lemma prob_invp (p : {prob R}) : (0 <= 1 / (1 + Prob.p p) <= 1)%coqR.
 Proof.
 split.
 - by apply divR_ge0 => //; exact: addR_gt0wl.
@@ -473,19 +465,19 @@ split.
   by rewrite addRC -leR_subl_addr subRR.
 Qed.
 
-Lemma prob_invp' (p : {prob R}) : (0 <= 1 / (1 + p) <= 1)%O.
+Lemma prob_invp' (p : {prob R}) : (0 <= 1 / (1 + Prob.p p) <= 1)%O.
 Proof.
 have [/RleP ? /RleP ?] := prob_invp p. exact/andP.
 Qed.
 
 Definition Prob_invp (p : {prob R}) := Prob.mk (prob_invp' p).
 
-Lemma prob_mulR (p q : {prob R}) : (0 <= p * q <= 1)%coqR.
+Lemma prob_mulR (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%coqR.
 Proof.
 by split; [exact/mulR_ge0 |rewrite -(mulR1 1%coqR); apply leR_pmul].
 Qed.
 
-Lemma prob_mulR' (p q : {prob R}) : (0 <= p * q <= 1)%O.
+Lemma prob_mulR' (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%O.
 Proof.
 have [/RleP ? /RleP ?] := prob_mulR p q. exact/andP.
 Qed.
@@ -518,20 +510,20 @@ Coercion OProb.p : oprob  >-> prob_of.
 Section oprob_lemmas.
 Implicit Types p q : {oprob R}.
 
-Lemma oprob_gt0 p : 0 < p.
+Lemma oprob_gt0 p : 0 < Prob.p (OProb.p p).
 Proof. by case: p => p /= /andP [] /RltP. Qed.
 
-Lemma oprob_lt1 p : p < 1.
+Lemma oprob_lt1 p : Prob.p (OProb.p p) < 1.
 Proof. by case: p => p /= /andP [] _ /RltP. Qed.
 
-Lemma oprob_ge0 p : 0 <= p. Proof. exact/ltRW/oprob_gt0. Qed.
+Lemma oprob_ge0 p : 0 <= Prob.p (OProb.p p). Proof. exact/ltRW/oprob_gt0. Qed.
 
-Lemma oprob_le1 p : p <= 1. Proof. exact/ltRW/oprob_lt1. Qed.
+Lemma oprob_le1 p : Prob.p (OProb.p p) <= 1. Proof. exact/ltRW/oprob_lt1. Qed.
 
-Lemma oprob_neq0 p : p != 0 :> R.
+Lemma oprob_neq0 p : Prob.p (OProb.p p) != 0 :> R.
 Proof. by move:(oprob_gt0 p); rewrite ltR_neqAle=> -[] /nesym /eqP. Qed.
 
-Lemma oprob_neq1 p : p != 1 :> R.
+Lemma oprob_neq1 p : Prob.p (OProb.p p) != 1 :> R.
 Proof. by move:(oprob_lt1 p); rewrite ltR_neqAle=> -[] /eqP. Qed.
 
 Lemma oprobK (p : {oprob R}) : p = ((Prob.p (OProb.p p)).~).~%:opr.
@@ -545,10 +537,10 @@ have [-> //|[->//| p01]] := prob_trichotomy p.
 exact (po (OProb.mk p01)).
 Qed.
 
-Lemma oprobadd_gt0 p q : 0 < p + q.
+Lemma oprobadd_gt0 p q : 0 < Prob.p (OProb.p p) + (Prob.p (OProb.p q)).
 Proof. exact/addR_gt0/oprob_gt0/oprob_gt0. Qed.
 
-Lemma oprobadd_neq0 p q : p + q != 0%coqR.
+Lemma oprobadd_neq0 p q : Prob.p (OProb.p p) + Prob.p (OProb.p q) != 0%coqR.
 Proof. by move: (oprobadd_gt0 p q); rewrite ltR_neqAle => -[] /nesym /eqP. Qed.
 
 End oprob_lemmas.
@@ -561,14 +553,14 @@ rewrite ltR_pdivr_mulr ?mul1R ?ltR_nat // ?ltR0n ?addn_gt0 ?H ?orTb //.
 by rewrite -[X in (X < _)%nat](addn0 n) ltn_add2l.
 Qed.
 
-Lemma oprob_mulR (p q : {oprob R}) : (0 < p * q < 1)%coqR.
+Lemma oprob_mulR (p q : {oprob R}) : (0 < Prob.p (OProb.p p) * Prob.p (OProb.p q) < 1)%coqR.
 Proof.
 split; first exact/mulR_gt0/oprob_gt0/oprob_gt0.
 by rewrite -(mulR1 1%coqR); apply ltR_pmul;
   [exact/oprob_ge0 | exact/oprob_ge0 | exact/oprob_lt1 | exact/oprob_lt1].
 Qed.
 
-Lemma oprob_mulR' (p q : {oprob R}) : (0 < p * q < 1)%O.
+Lemma oprob_mulR' (p q : {oprob R}) : (0 < Prob.p (OProb.p p) * Prob.p (OProb.p q) < 1)%O.
 Proof. by have [/RltP -> /RltP ->] := oprob_mulR p q. Qed.
 
 Canonical oprobmulR (p q : {oprob R}) :=
@@ -715,34 +707,32 @@ End Rnng_theory.
 
 Global Hint Resolve Rnng_ge0 : core.
 
-Lemma s_of_pq_oprob (p q : {oprob R}) : 0 < [s_of p, q] < 1.
+Lemma s_of_pq_oprob_subproof (p q : {oprob R}) : (0 < Prob.p [s_of p, q] < 1)%O.
 Proof.
-rewrite /probR_coercion /=.
-rewrite s_of_pqE.
-set x := _.~.
-have -> : x = ((p : R).~ * (q : R).~).~%:opr :> R by [].
-set y := (X in _ < oprob_to_real X < _).
-have := OProb.O1 y.
-by move/andP => -[/RltP ? /RltP].
+rewrite s_of_pqE; apply/andP; split.
+- rewrite onem_gt0//= mulr_ilt1 ?onem_ge0 ?onem_lt1//.
+  by have /andP[] := OProb.O1 p.
+  by have /andP[] := OProb.O1 q.
+- rewrite onem_lt1// mulr_gt0// onem_gt0//.
+  by have /andP[] := OProb.O1 p.
+  by have /andP[] := OProb.O1 q.
 Qed.
 
-Lemma s_of_pq_oprob' (p q : {oprob R}) : (0 < Prob.p [s_of p, q] < 1)%O.
-Proof. by have [/RltP -> /RltP ->] := s_of_pq_oprob p q. Qed.
-Canonical oprob_of_s_of_pq (p q : {oprob R}) := Eval hnf in OProb.mk (s_of_pq_oprob' p q).
+Canonical oprob_of_s_of_pq (p q : {oprob R}) :=
+  Eval hnf in OProb.mk (s_of_pq_oprob_subproof p q).
 
-Lemma s_of_gt0_oprob (p : {oprob R}) (q : {prob R}) : 0 < [s_of p, q].
+Lemma s_of_gt0_oprob (p : {oprob R}) (q : {prob R}) : 0 < Prob.p [s_of p, q].
 Proof. by apply/RltP; rewrite s_of_gt0//; exact/oprob_neq0. Qed.
 
-Lemma r_of_pq_oprob (p q : {oprob R}) : 0 < Prob.p [r_of OProb.p p, OProb.p q] < 1.
+Lemma r_of_pq_oprob_subproof (p q : {oprob R}) : (0 < Prob.p [r_of OProb.p p, OProb.p q] < 1)%O.
 Proof.
-rewrite r_of_pqE.
-split.
-  apply/RltP.
+rewrite r_of_pqE; apply/andP; split.
   rewrite divr_gt0////.
     exact/RltP/oprob_gt0.
   rewrite s_of_pqE//.
-  have := (OProb.O1 (((oprob_to_real p).~ * (oprob_to_real q).~).~)%:opr).
+  have := OProb.O1 (((oprob_to_real p).~ * (oprob_to_real q).~).~)%:opr.
   by move/andP=> [] /=.
+apply/RltP.
 rewrite -RdivE'.
 rewrite ltR_pdivr_mulr ?mul1R; last by apply/(oprob_gt0).
 rewrite ltR_neqAle; split; last exact/RleP/ge_s_of.
@@ -753,10 +743,8 @@ have := oprob_gt0 ((oprob_to_real p).~ * oprob_to_real q)%:opr.
 by rewrite /= onemE mulrBl mul1r -RminusE//.
 Qed.
 
-Lemma r_of_pq_oprob' (p q : {oprob R}) : (0 < Prob.p [r_of OProb.p p, OProb.p q] < 1)%O.
-Proof. by have [/RltP -> /RltP ->] := r_of_pq_oprob p q. Qed.
-
-Canonical oprob_of_r_of_pq (p q : {oprob R}) := Eval hnf in OProb.mk (r_of_pq_oprob' p q).
+Canonical oprob_of_r_of_pq (p q : {oprob R}) :=
+  Eval hnf in OProb.mk (r_of_pq_oprob_subproof p q).
 
 Lemma r_of_p0_oprob (p : {oprob R}) : [r_of OProb.p p, 0%:pr] = 1%:pr.
 Proof. by apply/r_of_p0/oprob_neq0. Qed.

@@ -19,6 +19,7 @@ Delimit Scope ring_scope with mcR.
 Reserved Notation "p '.~'" (format "p .~", at level 5).
 Reserved Notation "P '`<<' Q" (at level 51).
 Reserved Notation "P '`<<b' Q" (at level 51).
+Reserved Notation "{ 'prob' T }" (at level 0, format "{ 'prob'  T }").
 Reserved Notation "x %:pr" (at level 0, format "x %:pr").
 Reserved Notation "x %:opr" (at level 0, format "x %:opr").
 Reserved Notation "[ 's_of' p , q ]" (format "[ 's_of'  p ,  q ]").
@@ -139,7 +140,6 @@ Export Prob.Exports.
 Coercion Prob.p : prob >-> Real.sort.
 Lemma probpK R p H : Prob.p (@Prob.mk R p H) = p. Proof. by []. Qed.
 
-Reserved Notation "{ 'prob' T }" (at level 0, format "{ 'prob'  T }").
 Definition prob_of (R : realType) :=
   fun phT : phant (Num.NumDomain.sort (*Real.sort*)R) => @prob R.
 Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).
