@@ -8,7 +8,7 @@ From mathcomp Require Import mathcomp_extra.
 From mathcomp Require Import classical_sets boolp cardinality Rstruct reals.
 From mathcomp Require Import ereal topology esum measure probability.
 Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext.
-Require Import bigop_ext Rbigop fdist convex.
+Require Import bigop_ext fdist convex.
 
 (******************************************************************************)
 (*                    Finitely-supported distributions                        *)
@@ -121,7 +121,7 @@ Lemma le1 (d : t) a : d a <= 1.
 Proof.
 have [ad|?] := boolP (a \in finsupp d); last by rewrite fsfun_dflt.
 rewrite -(f1 d) (big_fsetD1 _ ad)/=; apply/leR_addl.
-by apply sumR_ge0 => ? _; exact: ge0.
+by apply/RleP/sumr_ge0 => ? _; exact/RleP/ge0.
 Qed.
 
 Lemma le1' (d : t) a : (d a <= 1)%mcR.
@@ -225,7 +225,8 @@ Let f : {fsfun B -> R with 0} :=
 Let f0 b : b \in finsupp f -> 0 < f b.
 Proof.
 rewrite mem_finsupp fsfunE; case: ifPn => [_ /eqP/nesym ?|]; last by rewrite eqxx.
-by rewrite ltR_neqAle; split => //; apply sumR_ge0 => a _; exact/mulR_ge0.
+rewrite ltR_neqAle; split => //; apply/RleP/sumr_ge0 => a _.
+by rewrite mulr_ge0//; exact/RleP.
 Qed.
 
 Let f1 : \sum_(b <- finsupp f) f b = 1.
@@ -860,8 +861,8 @@ Qed.
 Lemma Convn_of_fsdist_affine : affine Convn_of_fsdist.
 Proof.
 move=> p x y.
-have [->|pn0] := eqVneq p R0%:pr; first by rewrite !conv0.
-have [->|pn1] := eqVneq p R1%:pr; first by rewrite !conv1.
+have [->|pn0] := eqVneq p 0%:pr; first by rewrite !conv0.
+have [->|pn1] := eqVneq p 1%:pr; first by rewrite !conv1.
 have opn0 : (Prob.p p).~ != R0. by apply onem_neq0.
 apply: S1_inj; rewrite affine_conv/= !S1_Convn_finType ssum_seq_finsuppE.
 under [LHS]eq_bigr do rewrite fsdist_scalept_conv.
@@ -1106,7 +1107,8 @@ rewrite /f /=.
 by rewrite (fibration_of_partitionE disjF _ Fit).
 Qed.
 
-HB.instance Definition _ := isMeasure.Build disp T _ P P_set0 P_ge0 P_semi_sigma_additive.
+HB.instance Definition _ :=
+  isMeasure.Build disp T _ P P_set0 P_ge0 P_semi_sigma_additive.
 
 Lemma asboolTE : `[< True >] = true.
 Proof.

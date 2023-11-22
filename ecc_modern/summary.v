@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssr_ext ssralg_ext ssrR Rbigop f2.
+Require Import ssr_ext ssralg_ext ssrR f2.
 
 (******************************************************************************)
 (*                        The Summary Operator                                *)

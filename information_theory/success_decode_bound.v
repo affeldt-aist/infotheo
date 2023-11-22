@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext logb fdist entropy.
 Require Import ln_facts num_occ types jtypes divergence conditional_divergence.
 Require Import entropy channel_code channel.
 
@@ -318,7 +318,7 @@ Lemma success_bound :
 Proof.
 move=> Pmax.
 apply (@leR_trans (#| P_ n ( A ) |%:R * scha W (Pmax.-typed_code c))); last first.
-  apply leR_wpmul2r; first exact: scha_pos.
+  apply leR_wpmul2r; first exact/RleP/scha_pos.
   rewrite natRexp; exact/le_INR/leP/(type_counting A n).
 apply (@leR_trans (\sum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
   rewrite (_ : #| P_ n ( A ) |%:R * scha W (Pmax.-typed_code c) =
@@ -338,7 +338,7 @@ apply/(@leR_trans (\sum_(m | m \in enc_pre_img c P)
   apply/Req_le/eq_big => tb // _.
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
-- apply leR_sumRl => //= i ?; [| exact: sumR_ge0].
+- apply leR_sumRl => //= i ?; [| exact/RleP/sumr_ge0].
   by apply/RleP; rewrite lexx.
 Qed.
 

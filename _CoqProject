@@ -14,7 +14,6 @@ lib/ssr_ext.v
 lib/f2.v
 lib/ssralg_ext.v
 lib/bigop_ext.v
-lib/Rbigop.v
 lib/natbin.v
 lib/binary_entropy_function.v
 lib/num_occ.v

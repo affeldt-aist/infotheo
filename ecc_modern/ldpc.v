@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix vector ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext num_occ bigop_ext Rbigop.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext num_occ bigop_ext.
 Require Import fdist channel pproba f2 linearcode subgraph_partition tanner.
 Require Import tanner_partition hamming binary_symmetric_channel decoding.
 Require Import channel_code summary checksum summary_tanner.
@@ -456,7 +456,7 @@ transitivity (
   \sum_(x = d [~ setT :\ n0]) \prod_(m0 in 'F n0)
     (W ``(y \# 'V(m0, n0) :\ n0 | x \# 'V(m0, n0) :\ n0) *
       \prod_(m1 in 'F(m0, n0)) (\delta ('V m1) x)%:R)).
-  apply eq_bigr => /= t Ht.
+  apply: eq_bigr => /= t Ht.
   rewrite [in X in _ = X]big_split /=; congr (_ * _).
   by apply DMC_sub_vec_Fnext.
 rewrite (@rmul_rsum_commute0 _ _ _ (Tanner.connected tanner)  (Tanner.acyclic tanner) d n0 _ y (fun m x y => W ``(x | y))) //.

@@ -3,7 +3,7 @@
 Require Import Reals Lra.
 From mathcomp Require Import all_ssreflect ssrnum.
 From mathcomp Require Import Rstruct.
-Require Import Reals_ext ssrR realType_ext Rbigop fdist proba.
+Require Import Reals_ext ssrR realType_ext fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, using tuple *)
 

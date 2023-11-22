@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect all_algebra fingroup perm matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext Rbigop bigop_ext.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext bigop_ext.
 Require Import logb ln_facts fdist jfdist_cond proba binary_entropy_function.
 Require Import divergence.
 
@@ -69,7 +69,7 @@ Local Notation "'`H'" := (entropy).
 
 Lemma entropy_ge0 : 0 <= `H.
 Proof.
-rewrite /entropy big_morph_oppR; apply sumR_ge0 => i _.
+rewrite /entropy big_morph_oppR; apply/RleP/sumr_ge0 => i _; apply/RleP.
 have [->|Hi] := eqVneq (P i) 0; first by rewrite mul0R oppR0.
   (* NB: this step in a standard textbook would be handled as a consequence of lim x->0 x log x = 0 *)
 rewrite mulRC -mulNR; apply mulR_ge0 => //; apply: oppR_ge0.
@@ -261,17 +261,17 @@ Qed.
 
 Lemma cond_entropy1_ge0 a : 0 <= cond_entropy1 a.
 Proof.
-rewrite /cond_entropy1 big_morph_oppR; apply sumR_ge0 => b _; rewrite -mulRN.
+rewrite /cond_entropy1 big_morph_oppR; apply/RleP/sumr_ge0 => b _; rewrite -mulRN.
 have [->|H0] := eqVneq (\Pr_QP[[set b]|[set a]]) 0.
   by rewrite mul0R.
-apply mulR_ge0; [exact: jcPr_ge0|].
+apply/RleP/mulR_ge0; [exact: jcPr_ge0|].
 rewrite -oppR0 -(Log_1 2) /log leR_oppr oppRK.
 by apply Log_increasing_le => //; [rewrite jcPr_gt0 | exact: jcPr_le1].
 Qed.
 
 Lemma cond_entropy_ge0 : 0 <= cond_entropy.
 Proof.
-by apply sumR_ge0 => a _; apply mulR_ge0 => //; exact: cond_entropy1_ge0.
+by apply/RleP/sumr_ge0 => a _; apply/RleP/mulR_ge0 => //; exact: cond_entropy1_ge0.
 Qed.
 
 End conditional_entropy.
@@ -690,7 +690,7 @@ Qed.
 Lemma cdiv1_ge0 z : 0 <= cdiv1 z.
 Proof.
 have [z0|z0] := eqVneq (PQR`2 z) 0.
-  apply sumR_ge0 => -[a b] _.
+  apply/RleP/sumr_ge0 => -[a b] _; apply/RleP.
   by rewrite {1}/jcPr setX1 Pr_set1 (dom_by_fdist_snd _ z0) div0R mul0R.
 have Hc : (fdistX PQR)`1 z != 0 by rewrite fdistX1.
 have Hc1 : (fdistX (fdist_proj13 PQR))`1 z != 0.
@@ -797,7 +797,7 @@ Qed.
 (* 2.92 *)
 Lemma cond_mutual_info_ge0 : 0 <= cond_mutual_info PQR.
 Proof.
-rewrite cond_mutual_infoE2; apply sumR_ge0 => c _; apply mulR_ge0 => //.
+rewrite cond_mutual_infoE2; apply/RleP/sumr_ge0 => c _; apply/RleP/mulR_ge0 => //.
 exact: cdiv1_ge0.
 Qed.
 

@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg matrix.
 From mathcomp Require Import boolp Rstruct.
 Require Import Reals.
-Require Import ssrR Reals_ext ssr_ext realType_ext ssralg_ext logb Rbigop.
+Require Import ssrR Reals_ext ssr_ext realType_ext ssralg_ext logb.
 Require Import fdist proba convex.
 
 (******************************************************************************)

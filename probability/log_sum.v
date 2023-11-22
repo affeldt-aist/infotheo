@@ -4,7 +4,6 @@ From mathcomp Require Import all_ssreflect all_algebra.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct lra.
 Require Import ssrR realType_ext Reals_ext Ranalysis_ext logb ln_facts bigop_ext.
-Require Import Rbigop.
 
 (******************************************************************************)
 (*                        The log-sum Inequality                              *)
@@ -52,10 +51,10 @@ wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   set k := (\sum_{ C } f / \sum_{ C } g).
   have Fspos : 0 < \sum_{ C } f.
     suff Fpos : 0 <= \sum_{ C } f by apply/RltP; rewrite lt0r Fnot0; exact/RleP.
-    by apply: sumR_ge0 => ? ?; exact/ltRW/fspos.
+    by apply/RleP/sumr_ge0 => ? ?; exact/RleP/ltRW/fspos.
   have Gspos : 0 < \sum_{ C } g.
     suff Gpocs : 0 <= \sum_{ C } g by apply/RltP; rewrite lt0r Gnot0; exact/RleP.
-    by apply: sumR_ge0 => ? ?; exact/ltRW/gspos.
+    by apply/RleP/sumr_ge0 => ? ?; exact/RleP/ltRW/gspos.
   have kspos : 0 < k by exact: divR_gt0.
   set kg := [ffun x => k * g x].
   have kg_pos : forall a, 0 <= kg a.
@@ -158,13 +157,11 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
       by case/andP => _ /eqP.
     by rewrite big_const iter_addR mulR0 add0R.
   rewrite -H1 in H.
-  have pos_F : 0 <= \sum_{C} f.
-    by apply sumR_ge0 => ? ?.
+  have pos_F : 0 <= \sum_{C} f by apply/RleP/sumr_ge0 => ? ?; exact/RleP.
   apply (@leR_trans (\sum_{C} f * log (\sum_{C} f / \sum_{D} g))).
     case/Rle_lt_or_eq_dec : pos_F => pos_F; last first.
       by rewrite -pos_F !mul0R.
-    have H2 : 0 <= \sum_(a | a \in D) g a.
-      by apply: sumR_ge0 => ? _.
+    have H2 : 0 <= \sum_(a | a \in D) g a by apply/RleP/sumr_ge0 => ? _; exact/RleP.
     case/Rle_lt_or_eq_dec : H2 => H2; last first.
       have : 0 = \sum_{D} f.
         transitivity (\sum_(a | a \in D) 0).
@@ -178,13 +175,13 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
     have H3 : 0 < \sum_(a | a \in C) g a.
       rewrite setUC in DUD'.
       rewrite DUD' (big_union _ g DID') /=.
-      by apply: addR_gt0wr => //; exact: sumR_ge0.
+      by apply: addR_gt0wr => //; apply/RleP/sumr_ge0=> ? _; exact/RleP.
     apply/(leR_wpmul2l (ltRW pos_F))/Log_increasing_le => //.
-      apply divR_gt0 => //; by rewrite -HG.
+      by apply divR_gt0 => //; rewrite -HG.
     apply/(leR_wpmul2l (ltRW pos_F))/leR_inv => //.
     rewrite setUC in DUD'.
     rewrite DUD' (big_union _ g DID') /= -[X in X <= _]add0R; apply leR_add2r.
-    by apply: sumR_ge0 => ? ?.
+    by apply/RleP/sumr_ge0 => ? ?; exact/RleP.
   apply: (leR_trans H).
   rewrite setUC in DUD'.
   rewrite DUD' (big_union _ (fun a => f a * log (f a / g a)) DID') /=.
@@ -197,6 +194,6 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
 apply: log_sum1 => // a.
 rewrite /C1 in_set.
 case/andP => a_C fa_not_0.
-case(f0 a) => // abs.
+case (f0 a) => // abs.
 by rewrite abs eqxx in fa_not_0.
 Qed.

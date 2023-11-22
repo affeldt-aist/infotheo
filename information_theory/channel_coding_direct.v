@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix perm.
 Require Import Reals Lra Classical.
 From mathcomp Require Import Rstruct classical_sets.
-Require Import ssrZ ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import ssrZ ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
 Require Import fdist proba entropy aep typ_seq joint_typ_seq channel.
 Require Import channel_code.
 
@@ -96,7 +96,7 @@ set x := \sum_(f <- _) _ in H.
 have : \sum_(f : encT A M n) Wght.d P f * epsilon <= x.
   rewrite /x; apply leR_sumRl => //= f _.
   - by apply leR_wpmul2l => //; exact/Rnot_lt_le/abs.
-  - by apply mulR_ge0 => //; exact/echa_ge0.
+  - by apply mulR_ge0 => //; exact/RleP/echa_ge0.
 apply/Rlt_not_le/(@ltR_leR_trans epsilon) => //.
 rewrite -big_distrl /= (FDist.f1 (Wght.d P)) mul1R.
 by apply/RleP; rewrite Order.POrderTheory.lexx.
@@ -367,7 +367,7 @@ transitivity (\sum_(v : 'rV[A]_n)
       move=> ? _; by rewrite -[in RHS]Hf !ffunE mxE.
   rewrite (_ : ord0 = nth ord0 (enum M) 0); last by rewrite enum_ordSl.
   rewrite -(big_tuple_ffun _ (fun f => \prod_(m : M) P `^ n (f m))
-    (fun r => fun yn => r *
+    (fun r yn => r *
       (\sum_(y in ~: [set y0 | prod_rV (yn, y0) \in `JTS P W n epsilon0])
       W ``(y | yn))) (\row_(i < n) a) ord0)%R.
   transitivity (\sum_(j : _)

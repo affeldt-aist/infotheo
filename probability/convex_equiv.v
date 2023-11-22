@@ -4,9 +4,9 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm matrix.
 From mathcomp Require Import mathcomp_extra boolp classical_sets.
 Require Import Reals.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct reals.
 Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext ssralg_ext.
-Require Import Rbigop fdist jfdist_cond fsdist convex.
+Require Import fdist jfdist_cond fsdist convex.
 
 (******************************************************************************)
 (*                  Equivalence of Convexity Definitions                      *)
@@ -289,7 +289,7 @@ case: j => -[|[|[]]] //= Hj.
   by rewrite !fdistI2E 2!mulr0 2!add0r mulr1 s_of_pqE onemK.
 Qed.
 
-Lemma binconv1 a b : binconv R1%:pr a b = a.
+Lemma binconv1 a b : binconv 1%:pr a b = a.
 Proof.
 apply axidem => /= i; rewrite inE fdistI2E; case: ifP => //=.
 by rewrite /onem subrr eqxx.
@@ -514,7 +514,7 @@ rewrite FDistPart.dE; last first.
   rewrite -big_distrr big_mkcond /=.
   rewrite (eq_bigr (e (h i))).
     rewrite FDist.f1 mulr1; apply paddR_neq0 => //.
-      by apply/sumR_ge0 => *; apply/sumR_ge0 => *; apply/mulR_ge0.
+      by apply/RleP/sumr_ge0 => *; apply/sumr_ge0 => *; rewrite mulr_ge0.
     by left; move: (enum_valP i); rewrite inE.
   move=> /= k _; rewrite 2!inE; case: ifP => //.
   case: (f k) => /= x /orP[/forallP/(_ i)|Hkx Hx].

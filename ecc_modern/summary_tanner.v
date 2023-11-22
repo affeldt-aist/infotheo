@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
-Require Import ssr_ext ssralg_ext ssrR Reals_ext Rbigop f2 summary.
+Require Import ssr_ext ssralg_ext ssrR Reals_ext f2 summary.
 Require Import subgraph_partition tanner tanner_partition fdist channel.
 Require Import checksum.
 

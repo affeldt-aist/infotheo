@@ -5,7 +5,7 @@ From mathcomp Require Import zmodp matrix vector order.
 From mathcomp Require Import lra mathcomp_extra Rstruct reals.
 From mathcomp Require ssrnum.
 Require Import Reals.
-Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext Rbigop f2 fdist.
+Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext f2 fdist.
 Require Import proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
 

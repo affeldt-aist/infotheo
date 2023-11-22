@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix vector.
 Require Import Reals.
 Require Import ssralg_ext ssrR Reals_ext f2 fdist channel tanner linearcode.
-Require Import Rbigop pproba.
+Require Import pproba.
 
 (******************************************************************************)
 (*                         Checksum Operator                                  *)

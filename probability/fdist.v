@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
 From mathcomp Require Import all_algebra vector reals normedtype.
 From mathcomp Require Import mathcomp_extra boolp.
 From mathcomp Require Import Rstruct.
-Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext Rbigop.
+Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext.
 
 (******************************************************************************)
 (*                         Finite distributions                               *)

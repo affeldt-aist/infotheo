@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import reals normedtype.
 From mathcomp Require Import mathcomp_extra boolp.
-From mathcomp Require Import lra Rstruct.
+From mathcomp Require Import lra ring Rstruct.
 
 (******************************************************************************)
 (*            Additional lemmas and definitions about numeric types           *)
@@ -19,6 +19,7 @@ Delimit Scope ring_scope with mcR.
 Reserved Notation "p '.~'" (format "p .~", at level 5).
 Reserved Notation "P '`<<' Q" (at level 51).
 Reserved Notation "P '`<<b' Q" (at level 51).
+Reserved Notation "{ 'prob' T }" (at level 0, format "{ 'prob'  T }").
 Reserved Notation "x %:pr" (at level 0, format "x %:pr").
 Reserved Notation "x %:opr" (at level 0, format "x %:opr").
 Reserved Notation "[ 's_of' p , q ]" (format "[ 's_of'  p ,  q ]").
@@ -139,11 +140,9 @@ Export Prob.Exports.
 Coercion Prob.p : prob >-> Real.sort.
 Lemma probpK R p H : Prob.p (@Prob.mk R p H) = p. Proof. by []. Qed.
 
-Reserved Notation "{ 'prob' T }" (at level 0, format "{ 'prob'  T }").
 Definition prob_of (R : realType) :=
   fun phT : phant (Num.NumDomain.sort (*Real.sort*)R) => @prob R.
 Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).
-Definition prob_coercion (R: realType) (p : {prob R}) : R := Prob.p p.
 
 Definition to_porder (R : realType) (p : {prob R}) : Order.POrder.sort _ :=
   (p : R).
@@ -194,8 +193,8 @@ rewrite lt_neqAle; split=> [H|/andP[+ pge0]].
 by apply: contra => /eqP ->.
 Qed.
 
-Lemma prob_gt0' p : p != 0 :> R <-> 0 < Prob.p p.
-Proof. exact: prob_gt0. Qed.
+(*Lemma prob_gt0' p : p != 0 :> R <-> 0 < Prob.p p.
+Proof. exact: prob_gt0. Qed.*)
 
 Lemma prob_lt1 p : p != 1%:pr <-> Prob.p p < 1.
 Proof.
@@ -204,8 +203,8 @@ rewrite lt_neqAle; split=> [H|/andP[+ pge0]].
 by apply: contra => /eqP ->.
 Qed.
 
-Lemma prob_lt1' p : p != 1 :> R <-> Prob.p p < 1.
-Proof. exact: prob_lt1. Qed.
+(*Lemma prob_lt1' p : p != 1 :> R <-> Prob.p p < 1.
+Proof. exact: prob_lt1. Qed.*)
 
 Lemma prob_trichotomy p : p = 0%:pr \/ p = 1%:pr \/ 0 < Prob.p p < 1.
 Proof.
@@ -260,6 +259,7 @@ Global Hint Resolve prob_le1 : core.
 
 Arguments prob0 {R}.
 Arguments prob1 {R}.
+
 (* ---- ---- *)
 
 Module OProb.
@@ -328,7 +328,7 @@ by rewrite mulr_ile1.
 Qed.
 
 Canonical probmulr {R : realType} (p q : {prob R}) :=
-  Eval hnf in @Prob.mk _ (prob_coercion p * Prob.p q) (prob_mulr p q).
+  Eval hnf in @Prob.mk _ (Prob.p p * Prob.p q) (prob_mulr p q).
 
 Definition s_of_pq {R : realType} (p q : {prob R}) : {prob R} :=
   locked ((Prob.p p).~ * (Prob.p q).~).~%:pr.
@@ -571,4 +571,28 @@ rewrite r_of_pqE [in RHS]mulrBl mul1r -mulrA mulVf ?mulr1; last first.
   by rewrite prob_gt0; exact/s_of_gt0.
 rewrite s_of_pqE onemM !onemK /onem mulrBl mul1r [RHS]addrC !addrA.
 lra.
+Qed.
+
+Lemma s_of_pqK {R : realType} (r s : {prob R}) : [p_of r, s] != 1%:pr ->
+  [s_of [p_of r, s], [q_of r, s]] = s.
+Proof.
+move=> H.
+apply/val_inj; rewrite /= s_of_pqE p_of_rsE q_of_rsE p_of_rsE /=.
+rewrite /onem.
+field.
+rewrite subr_eq0; apply: contra H => /eqP rs1.
+by apply/eqP/val_inj; rewrite /= p_of_rsE.
+Qed.
+
+Lemma r_of_pqK {R : realType} (r s : {prob R}) : [p_of r, s] != 1%:pr -> s != 0%:pr ->
+  [r_of [p_of r, s], [q_of r, s]] = r.
+Proof.
+move=> H1 s0; apply/val_inj => /=.
+rewrite !(r_of_pqE,s_of_pqE,q_of_rsE,p_of_rsE) /onem.
+field.
+apply/andP; split; last first.
+  by rewrite mulrBl mul1r !opprB -!addrA addrC !addrA !subrK.
+rewrite subr_eq0.
+apply: contra H1 => /eqP H1.
+by apply/eqP/val_inj; rewrite /= p_of_rsE.
 Qed.

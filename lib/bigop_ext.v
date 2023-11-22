@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
 
@@ -452,43 +452,19 @@ Qed.
 
 End MyPartitions.
 
-Section bigcap_ext.
-Variable A : finType.
-
-Lemma bigcap_seq_const I (B : {set A}) (r : seq.seq I) :
-  (0 < size r)%nat -> \bigcap_(i <- r) B = B.
-Proof.
-elim: r => [//|a r IHr] _; rewrite big_cons.
-case: r IHr => [|b r] IHr; first by rewrite big_nil setIT.
-by rewrite IHr // setIid.
-Qed.
-
-Lemma bigcap_ord_const n' (B : {set A}) :
-  \bigcap_(i < n'.+1) B = B.
-Proof. by rewrite bigcap_seq_const // /index_enum -enumT size_enum_ord. Qed.
-
-Lemma bigcap_const (I : eqType) (B : {set A}) (r : seq.seq I) (p : pred I) :
-  (exists2 i : I, i \in r & p i) -> \bigcap_(i <- r | p i) B = B.
-Proof.
-case=> i H1 H2; rewrite -big_filter bigcap_seq_const //.
-rewrite size_filter- has_count.
-by apply/hasP; exists i.
-Qed.
-
-End bigcap_ext.
-
 Section big_tuple_ffun.
 Import Monoid.Theory.
 Variable R : Type.
-Variable times : Monoid.mul_law R0.
+Variable V : zmodType.
+Variable times : Monoid.mul_law (GRing.zero V).
 Local Notation "*%M" := times (at level 0).
-Variable plus : Monoid.add_law R0 *%M.
+Variable plus : Monoid.add_law (GRing.zero V) *%M.
 Local Notation "+%M" := plus (at level 0).
 
 Lemma big_tuple_ffun (I J : finType) (F : {ffun I -> J} -> R)
-  (G : _ -> _ -> _) (jdef : J) (idef : I) :
-  \big[+%M/R0]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
-    = \big[+%M/R0]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
+  (G : R -> J -> V) (jdef : J) (idef : I) :
+  \big[+%M/GRing.zero V]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
+    = \big[+%M/GRing.zero V]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
 Proof.
 rewrite (reindex_onto (fun y => fgraph y) (fun p => [ffun x => tnth p (enum_rank x)])); last first.
   move=> t _; by apply/eq_from_tnth => i; rewrite tnth_fgraph ffunE enum_valK.
@@ -506,10 +482,17 @@ Qed.
 
 End big_tuple_ffun.
 
-(* This is from master branch of math-comp bigop. *)
-Lemma big_ord1_eq (R: Type) (idx: R) (op: Monoid.law idx) (F : nat -> R) (i : nat) n :
-  \big[op/idx]_(j < n | j == i :> nat) F j = if i < n then F i else idx.
+Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
+
+Lemma prod_gt0_inv (R : realFieldType) n (F : _ -> R)
+  (HF: forall a, (0 <= F a)%mcR) :
+  (0 < \prod_(i < n.+1) F i -> forall i, 0 < F i)%mcR.
 Proof.
-case: ltnP => [i_lt|i_ge]; first by rewrite (big_pred1_eq _ (Ordinal _)).
-by rewrite big_pred0// => j; apply: contra_leqF i_ge => /eqP <-.
+move=> h i.
+rewrite lt_neqAle HF andbT; apply/eqP => /esym F0.
+move: h; rewrite ltNge => /negP; apply.
+rewrite le_eqVlt; apply/orP; left.
+rewrite prodf_seq_eq0/=.
+apply/hasP; exists i; last exact/eqP.
+by rewrite mem_index_enum.
 Qed.

@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
 From mathcomp Require Import Rstruct.
 Require Import realType_ext ssr_ext ssralg_ext f2 linearcode natbin ssrR hamming.
-Require Import bigop_ext Rbigop fdist proba channel channel_code decoding.
+Require Import bigop_ext fdist proba channel channel_code decoding.
 Require Import binary_symmetric_channel.
 
 (******************************************************************************)

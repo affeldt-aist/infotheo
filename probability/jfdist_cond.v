@@ -5,7 +5,7 @@ From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals.
 Require Import ssrR realType_ext Reals_ext logb ssr_ext ssralg_ext bigop_ext.
-Require Import Rbigop fdist proba.
+Require Import fdist proba.
 
 (******************************************************************************)
 (*        Conditional probabilities over joint finite distributions           *)

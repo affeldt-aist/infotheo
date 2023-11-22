@@ -7,7 +7,7 @@ From mathcomp Require Import ssrnum ereal.
 From mathcomp Require Import lra Rstruct reals.
 Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb.
-Require Import Rbigop realType_ext fdist.
+Require Import realType_ext fdist.
 From mathcomp Require vector.
 
 Undelimit Scope R_scope.
@@ -578,7 +578,7 @@ Lemma scalept_sum (B : finType) (P : pred B) (F : B ->R^+) (x : A) :
 Proof.
 apply: (@proj1 _ (0 <= \sum_(i | P i) F i))%coqR.
 apply: (big_ind2 (fun y q => scalept q x = y /\ (0 <= q)))%coqR.
-+ by split; [rewrite scale0pt| ].
++ by split; [rewrite scale0pt//|exact/Rle_refl].
 + move=> _ x2 _ y2 [<- ?] [<- ?].
   by rewrite scaleptDl //; split => //; exact: addR_ge0.
 + by move=> i _; split => //; exact/nneg_f_ge0.
@@ -821,7 +821,6 @@ Lemma convA0 (p q r s : {prob R}) a b c :
   a <| p |> (b <| q |> c) = (a <| r |> b) <| s |> c.
 Proof.
 move=> H1 H2.
-rewrite /prob_coercion in H1, H2.
 have [r0|r0] := eqVneq r 0%:pr.
   rewrite r0 conv0 (_ : p = 0%:pr) ?conv0; last first.
     by apply/val_inj; rewrite /= H1 r0 mul0R.
@@ -1560,7 +1559,7 @@ Variable E : lmodType R.
 Implicit Type p q : {prob R}.
 Local Open Scope ring_scope.
 
-Let avg p (a b : E) := (prob_coercion p) *: a + (Prob.p p).~ *: b.
+Let avg p (a b : E) := (Prob.p p) *: a + (Prob.p p).~ *: b.
 
 Let avg1 a b : avg 1%:pr a b = a.
 Proof. by rewrite /avg /= scale1r onem1 scale0r addr0. Qed.
@@ -1582,7 +1581,7 @@ rewrite /avg /onem.
 set s := Prob.p [s_of p, q].
 set r := Prob.p [r_of p, q].
 rewrite (scalerDr s) -addrA (scalerA s) (mulrC s); congr +%R.
-  by rewrite /prob_coercion (p_is_rs p q) -/s.
+  by rewrite (p_is_rs p q) -/s.
 rewrite scalerDr (scalerA _ _ d2).
 rewrite -/(Prob.p p).~ -/(Prob.p q).~ -/r.~ -/s.~.
 rewrite {2}/s (s_of_pqE p q) onemK; congr +%R.
@@ -2017,13 +2016,13 @@ Let convA p q a b c :
 Proof.
 apply/fdist_ext => a0 /=; rewrite 4!fdist_convE /=.
 set r := r_of_pq p q.  set s := s_of_pq p q.
-transitivity (prob_coercion p * a a0 + (Prob.p p).~ * Prob.p q * b a0 + (Prob.p p).~ * (Prob.p q).~ * c a0).
-  by rewrite /onem /prob_coercion /=; lra.
-transitivity (prob_coercion r * prob_coercion s * a a0 + (Prob.p r).~ * prob_coercion s * b a0 + (Prob.p s).~ * c a0); last first.
-  by rewrite 2!(mulrC _ (prob_coercion s)) -2!mulrA -mulrDr.
+transitivity (Prob.p p * a a0 + (Prob.p p).~ * Prob.p q * b a0 + (Prob.p p).~ * (Prob.p q).~ * c a0).
+  by rewrite /onem /=; lra.
+transitivity (Prob.p r * Prob.p s * a a0 + (Prob.p r).~ * Prob.p s * b a0 + (Prob.p s).~ * c a0); last first.
+  by rewrite 2!(mulrC _ (Prob.p s)) -2!mulrA -mulrDr.
 rewrite -!RmultE.
 congr (_ + _ + _);
-  [by rewrite /prob_coercion (p_is_rs p q) |  | by rewrite s_of_pqE onemK].
+  [by rewrite (p_is_rs p q) |  | by rewrite s_of_pqE onemK].
 by rewrite !RmultE pq_is_rs.
 Qed.
 

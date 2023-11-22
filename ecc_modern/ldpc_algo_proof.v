@@ -3,7 +3,7 @@
 Require Import Wf_nat Init.Wf Recdef Reals.
 From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext Rbigop f2.
+Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext f2.
 Require Import fdist channel pproba linearcode subgraph_partition tanner.
 Require Import tanner_partition summary ldpc checksum ldpc_algo.
 

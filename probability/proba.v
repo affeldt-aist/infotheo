@@ -5,7 +5,7 @@ From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext.
-Require Import bigop_ext Rbigop fdist.
+Require Import bigop_ext fdist.
 
 (******************************************************************************)
 (*               Probabilities over finite distributions                      *)
@@ -235,7 +235,7 @@ Implicit Types E : {set A}.
 
 Definition Pr E := \sum_(a in E) P a.
 
-Lemma Pr_ge0 E : 0 <= Pr E. Proof. exact: sumR_ge0. Qed.
+Lemma Pr_ge0 E : 0 <= Pr E. Proof. exact/RleP/sumr_ge0. Qed.
 Local Hint Resolve Pr_ge0 : core.
 
 Lemma Pr_gt0 E : 0 < Pr E <-> Pr E != 0.
@@ -311,7 +311,7 @@ Lemma Pr_bigcup (B : finType) (p : pred B) F :
   Pr (\bigcup_(i | p i) F i) <= \sum_(i | p i) Pr (F i).
 Proof.
 rewrite /Pr; elim: (index_enum _) => [| h t IH].
-  by rewrite big_nil; apply: sumR_ge0 => b _; rewrite big_nil.
+  by rewrite big_nil; apply/RleP/sumr_ge0 => b _; rewrite big_nil.
 rewrite big_cons; case: ifP => H1.
   apply: leR_trans; first by eapply leR_add2l; exact: IH.
   rewrite [X in _ <= X](exchange_big_dep
@@ -871,7 +871,7 @@ Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 Definition Ex := \sum_(u in U) X u * P u.
 
 Lemma Ex_ge0 : (forall u, 0 <= X u) -> 0 <= Ex.
-Proof. by move=> H; apply: sumR_ge0 => u _; apply mulR_ge0 => //; exact/H. Qed.
+Proof. move=> H; apply/RleP/sumr_ge0 => u _; rewrite mulr_ge0//; exact/RleP. Qed.
 
 End expected_value_def.
 Arguments Ex {U} _ _.
@@ -1113,7 +1113,7 @@ rewrite cardT size_enum_ord (big_pred1 set0) in Halg; last first.
 rewrite [in X in _ * X = _]big_pred0 in Halg; last by move=> i; rewrite inE.
 do [erewrite eq_bigl; (* to replace later with under *)
   last by move=> j; rewrite !inE /negb /= ] in Halg.
-rewrite mulR1 -Ind_bigcap bigcap_ord_const in Halg.
+rewrite mulR1 -Ind_bigcap big_const_ord iterSr iter_fix setIT ?setIid // in Halg.
 rewrite {}Halg big_morph_oppR big_nat [RHS]big_nat.
 apply: eq_bigr => i Hi; rewrite /SumIndCap /Efull.
 rewrite m1powD; last first.
@@ -1132,14 +1132,11 @@ have [Hlt|Hn1] := ltnP i n.+1; last first.
     rewrite (eqP Hj) cardsT /= card_ord.
     by apply/anti_leq/andP; split; first by case/andP: Hi =>//. }
   by rewrite mul1R Ind_bigcap. }
-rewrite -!Ind_bigcap bigcap_const; last first.
-{ exists (odflt ord0 (pick [pred x | x \notin j])); first exact: mem_index_enum.
-  case: pickP; first by move=> y Hy; rewrite !inE -in_setC in Hy.
-  move=> /pred0P K; exfalso.
-  rewrite /pred0b in K.
-  have Hcard := cardsC j.
-  rewrite cardsE (eqP K) (eqP Hj) cardT size_enum_ord addn0 in Hcard.
-  by rewrite Hcard ltnn in Hlt. }
+rewrite -!Ind_bigcap big_const.
+  rewrite cardsCs card_ord setCK (eqP Hj).
+  have [m ->] : exists m, (n.+1 - i)%nat = m.+1.
+    by exists (n.+1 - i).-1; rewrite prednK // subn_gt0.
+  rewrite iterSr iter_fix ?setIT ?setIid //.
 rewrite -Ind_cap -/Efull.
 suff : \bigcap_(j0 in j) S j0 \subset Efull by move/setIidPr->.
 rewrite /Efull.
@@ -1189,7 +1186,7 @@ Lemma Ex_lb (r : R) : r * `Pr[ X >= r] <= `E X.
 Proof.
 rewrite /Ex (bigID [pred a' | (X a' >= r)%mcR]) /= -[a in a <= _]addR0.
 apply leR_add; last first.
-  by apply sumR_ge0 => a _; apply mulR_ge0 => //; exact/X_ge0.
+  by apply/RleP/sumr_ge0 => a _; rewrite mulr_ge0//; exact/RleP/X_ge0.
 apply (@leR_trans (\sum_(i | (X i >= r)%mcR) r * P i)).
   by rewrite big_distrr /=;  apply/Req_le/eq_bigl => a; rewrite inE.
 by apply leR_sumR => u Xur; apply/leR_wpmul2r => //; exact/RleP.
