@@ -394,12 +394,6 @@ Qed.
 Canonical oprobmulR (p q : {oprob R}) :=
   Eval hnf in @OProb.mk _ (Prob.p (OProb.p p) * q)%:pr (oprob_mulR_subproof p q).
 
-Record Qplus := mkRrat { num : nat ; den : nat }.
-
-Definition Q2R (q : Qplus) := INR (num q) / INR (den q).+1.
-
-Coercion Q2R : Qplus >-> R.
-
 Lemma s_of_pq_oprob_subproof (p q : {oprob R}) : (0 < Prob.p [s_of p, q] < 1)%O.
 Proof.
 rewrite s_of_pqE; apply/andP; split.
@@ -442,33 +436,11 @@ Canonical oprob_of_r_of_pq (p q : {oprob R}) :=
 Lemma r_of_p0_oprob (p : {oprob R}) : [r_of OProb.p p, 0%:pr] = 1%:pr.
 Proof. by apply/r_of_p0/oprob_neq0. Qed.
 
-Lemma s_of_pqK (r s : {prob R}) : [p_of r, s] != 1%:pr ->
-  [s_of [p_of r, s], [q_of r, s]] = s.
-Proof.
-move=> H.
-apply/val_inj; rewrite /= s_of_pqE p_of_rsE q_of_rsE p_of_rsE /=.
-rewrite /onem.
-rewrite -!RminusE -RmultE.
-rewrite (_ : 1%mcR = 1)// -!RmultE.
-rewrite -RinvE'.
-field.
-rewrite subR_eq0; apply/eqP; apply: contra H => /eqP rs1.
-by apply/eqP/val_inj; rewrite /= p_of_rsE.
-Qed.
+Record Qplus := mkRrat { num : nat ; den : nat }.
 
-Lemma r_of_pqK (r s : {prob R}) : [p_of r, s] != 1%:pr -> s != 0%:pr ->
-  [r_of [p_of r, s], [q_of r, s]] = r.
-Proof.
-move=> H1 s0; apply/val_inj => /=.
-rewrite !(r_of_pqE,s_of_pqE,q_of_rsE,p_of_rsE) /onem.
-rewrite -!RminusE -R1E -!RmultE -!RinvE'.
-field.
-split; last first.
-  by rewrite 2!subRB subRR add0R mulRBl mul1R addRC subRK; exact/eqP.
-rewrite subR_eq0 => /esym.
-apply/eqP; apply: contra H1 => /eqP H1.
-by apply/eqP/val_inj; rewrite /= p_of_rsE.
-Qed.
+Definition Q2R (q : Qplus) := INR (num q) / INR (den q).+1.
+
+Coercion Q2R : Qplus >-> R.
 
 Module Rpos.
 Record t := mk {

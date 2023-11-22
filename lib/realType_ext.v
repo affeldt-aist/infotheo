@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import reals normedtype.
 From mathcomp Require Import mathcomp_extra boolp.
-From mathcomp Require Import lra Rstruct.
+From mathcomp Require Import lra ring Rstruct.
 
 (******************************************************************************)
 (*            Additional lemmas and definitions about numeric types           *)
@@ -571,4 +571,28 @@ rewrite r_of_pqE [in RHS]mulrBl mul1r -mulrA mulVf ?mulr1; last first.
   by rewrite prob_gt0; exact/s_of_gt0.
 rewrite s_of_pqE onemM !onemK /onem mulrBl mul1r [RHS]addrC !addrA.
 lra.
+Qed.
+
+Lemma s_of_pqK {R : realType} (r s : {prob R}) : [p_of r, s] != 1%:pr ->
+  [s_of [p_of r, s], [q_of r, s]] = s.
+Proof.
+move=> H.
+apply/val_inj; rewrite /= s_of_pqE p_of_rsE q_of_rsE p_of_rsE /=.
+rewrite /onem.
+field.
+rewrite subr_eq0; apply: contra H => /eqP rs1.
+by apply/eqP/val_inj; rewrite /= p_of_rsE.
+Qed.
+
+Lemma r_of_pqK {R : realType} (r s : {prob R}) : [p_of r, s] != 1%:pr -> s != 0%:pr ->
+  [r_of [p_of r, s], [q_of r, s]] = r.
+Proof.
+move=> H1 s0; apply/val_inj => /=.
+rewrite !(r_of_pqE,s_of_pqE,q_of_rsE,p_of_rsE) /onem.
+field.
+apply/andP; split; last first.
+  by rewrite mulrBl mul1r !opprB -!addrA addrC !addrA !subrK.
+rewrite subr_eq0.
+apply: contra H1 => /eqP H1.
+by apply/eqP/val_inj; rewrite /= p_of_rsE.
 Qed.
