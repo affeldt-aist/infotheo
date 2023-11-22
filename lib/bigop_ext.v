@@ -472,15 +472,16 @@ End bigcap_ext.
 Section big_tuple_ffun.
 Import Monoid.Theory.
 Variable R : Type.
-Variable times : Monoid.mul_law R0.
+Variable V : zmodType.
+Variable times : Monoid.mul_law (GRing.zero V)
 Local Notation "*%M" := times (at level 0).
-Variable plus : Monoid.add_law R0 *%M.
+Variable plus : Monoid.add_law (GRing.zero V) *%M.
 Local Notation "+%M" := plus (at level 0).
 
 Lemma big_tuple_ffun (I J : finType) (F : {ffun I -> J} -> R)
-  (G : _ -> _ -> _) (jdef : J) (idef : I) :
-  \big[+%M/R0]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
-    = \big[+%M/R0]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
+  (G : R -> J -> V) (jdef : J) (idef : I) :
+  \big[+%M/GRing.zero V]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
+    = \big[+%M/GRing.zero V]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
 Proof.
 rewrite (reindex_onto (fun y => fgraph y) (fun p => [ffun x => tnth p (enum_rank x)])); last first.
   move=> t _; by apply/eq_from_tnth => i; rewrite tnth_fgraph ffunE enum_valK.

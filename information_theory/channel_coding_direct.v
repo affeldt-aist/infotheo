@@ -367,7 +367,7 @@ transitivity (\sum_(v : 'rV[A]_n)
       move=> ? _; by rewrite -[in RHS]Hf !ffunE mxE.
   rewrite (_ : ord0 = nth ord0 (enum M) 0); last by rewrite enum_ordSl.
   rewrite -(big_tuple_ffun _ (fun f => \prod_(m : M) P `^ n (f m))
-    (fun r => fun yn => r *
+    (fun r yn => r *
       (\sum_(y in ~: [set y0 | prod_rV (yn, y0) \in `JTS P W n epsilon0])
       W ``(y | yn))) (\row_(i < n) a) ord0)%R.
   transitivity (\sum_(j : _)
