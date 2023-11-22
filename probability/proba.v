@@ -1132,14 +1132,11 @@ have [Hlt|Hn1] := ltnP i n.+1; last first.
     rewrite (eqP Hj) cardsT /= card_ord.
     by apply/anti_leq/andP; split; first by case/andP: Hi =>//. }
   by rewrite mul1R Ind_bigcap. }
-rewrite -!Ind_bigcap bigcap_const; last first.
-{ exists (odflt ord0 (pick [pred x | x \notin j])); first exact: mem_index_enum.
-  case: pickP; first by move=> y Hy; rewrite !inE -in_setC in Hy.
-  move=> /pred0P K; exfalso.
-  rewrite /pred0b in K.
-  have Hcard := cardsC j.
-  rewrite cardsE (eqP K) (eqP Hj) cardT size_enum_ord addn0 in Hcard.
-  by rewrite Hcard ltnn in Hlt. }
+rewrite -!Ind_bigcap big_const.
+  rewrite cardsCs card_ord setCK (eqP Hj).
+  have [m ->] : exists m, (n.+1 - i)%nat = m.+1.
+    by exists (n.+1 - i).-1; rewrite prednK // subn_gt0.
+  rewrite iterSr iter_fix ?setIT ?setIid //.
 rewrite -Ind_cap -/Efull.
 suff : \bigcap_(j0 in j) S j0 \subset Efull by move/setIidPr->.
 rewrite /Efull.

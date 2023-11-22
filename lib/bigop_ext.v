@@ -467,14 +467,6 @@ Lemma bigcap_ord_const n' (B : {set A}) :
   \bigcap_(i < n'.+1) B = B.
 Proof. by rewrite bigcap_seq_const // /index_enum -enumT size_enum_ord. Qed.
 
-Lemma bigcap_const (I : eqType) (B : {set A}) (r : seq.seq I) (p : pred I) :
-  (exists2 i : I, i \in r & p i) -> \bigcap_(i <- r | p i) B = B.
-Proof.
-case=> i H1 H2; rewrite -big_filter bigcap_seq_const //.
-rewrite size_filter- has_count.
-by apply/hasP; exists i.
-Qed.
-
 End bigcap_ext.
 
 Section big_tuple_ffun.
