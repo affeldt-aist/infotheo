@@ -119,6 +119,31 @@ Import Prenex Implicits.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
+Section temporary_lemmas.
+
+Local Open Scope ring_scope.
+
+Lemma bigmaxRE (I : Type) (r : seq I) (P : pred I) (F : I -> R) :
+  \rmax_(i <- r | P i) F i = \big[Order.max/0]_(i <- r | P i) F i.
+Proof.
+rewrite /Rmax /Order.max/=.
+congr BigOp.bigop.
+apply: boolp.funext=> i /=.
+congr BigBody.
+apply: boolp.funext=> x /=.
+apply: boolp.funext=> y /=.
+rewrite lt_neqAle.
+case: (Rle_dec x y); move/RleP;
+  first by case/boolP: (x == y) => /= [/eqP -> | _ ->].
+by move/negPf->; rewrite andbF.
+Qed.
+
+Lemma sumRE (I : Type) (r : seq I) (P : pred I) (F : I -> R) :
+  \sum_(i <- r | P i) F i = \big[+%R/0]_(i <- r | P i) F i.
+Proof. by []. Qed.
+
+End temporary_lemmas.
+
 Local Open Scope R_scope.
 Local Open Scope reals_ext_scope.
 
@@ -164,16 +189,11 @@ Lemma sumR_neq0 (U : eqType) (P : U -> R) (s : seq.seq U) :
   (forall i, 0 <= P i) ->
   \sum_(a0 <- s) P a0 != 0 <-> exists i : U, i \in s /\ 0 < P i.
 Proof.
-move=> P0; elim: s => [|]; first by rewrite big_nil eqxx; split => // -[] u [].
-move=> h t ih; rewrite big_cons; have [Ph0|Ph0] := boolP (P h == 0).
-  rewrite (eqP Ph0) add0R; split.
-    by move/ih => [u [ut Pu0]]; exists u; split => //; rewrite inE ut orbT.
-  move=> [u []]; rewrite inE => /orP[/eqP ->|ut Pu0]; last by apply/ih; exists u.
-  by rewrite (eqP Ph0) => /ltRR.
-split=> _.
-  exists h; rewrite inE eqxx /=; split => //.
-  by rewrite ltR_neqAle; split; [exact/nesym/eqP|exact: P0].
-by apply/paddR_neq0 => //; [apply sumR_ge0 => u _; exact: P0 | left].
+move=> /(_ _) /RleP P0.
+rewrite sumRE psumr_neq0 //.
+under eq_has do rewrite andTb.
+split; first by  move=> /hasP [x xs /RltP Px0]; exists x; split.
+by case=> x [] xs /RltP Px0; apply/hasP; exists x.
 Qed.
 
 Lemma sumR_gt0 (A : finType) (f : A -> R) (HA : (0 < #|A|)%nat) :
@@ -491,21 +511,6 @@ Qed.
 
 Local Close Scope vec_ext_scope.
 Local Close Scope ring_scope.
-
-Lemma bigmaxRE (I : Type) (r : seq I) (P : pred I) (F : I -> R) :
-  \rmax_(i <- r | P i) F i = \big[Order.max/0]_(i <- r | P i) F i.
-Proof.
-rewrite /Rmax /Order.max/=.
-congr BigOp.bigop.
-apply: boolp.funext=> i /=.
-congr BigBody.
-apply: boolp.funext=> x /=.
-apply: boolp.funext=> y /=.
-rewrite lt_neqAle.
-case: (Rle_dec x y); move/RleP;
-  first by case/boolP: (x == y) => /= [/eqP -> | _ ->].
-by move/negPf->; rewrite andbF.
-Qed.
 
 Section bigmaxR.
 
