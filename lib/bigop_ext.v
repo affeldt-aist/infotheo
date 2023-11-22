@@ -452,23 +452,6 @@ Qed.
 
 End MyPartitions.
 
-Section bigcap_ext.
-Variable A : finType.
-
-Lemma bigcap_seq_const I (B : {set A}) (r : seq.seq I) :
-  (0 < size r)%nat -> \bigcap_(i <- r) B = B.
-Proof.
-elim: r => [//|a r IHr] _; rewrite big_cons.
-case: r IHr => [|b r] IHr; first by rewrite big_nil setIT.
-by rewrite IHr // setIid.
-Qed.
-
-Lemma bigcap_ord_const n' (B : {set A}) :
-  \bigcap_(i < n'.+1) B = B.
-Proof. by rewrite bigcap_seq_const // /index_enum -enumT size_enum_ord. Qed.
-
-End bigcap_ext.
-
 Section big_tuple_ffun.
 Import Monoid.Theory.
 Variable R : Type.

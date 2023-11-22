@@ -1113,7 +1113,7 @@ rewrite cardT size_enum_ord (big_pred1 set0) in Halg; last first.
 rewrite [in X in _ * X = _]big_pred0 in Halg; last by move=> i; rewrite inE.
 do [erewrite eq_bigl; (* to replace later with under *)
   last by move=> j; rewrite !inE /negb /= ] in Halg.
-rewrite mulR1 -Ind_bigcap bigcap_ord_const in Halg.
+rewrite mulR1 -Ind_bigcap big_const_ord iterSr iter_fix setIT ?setIid // in Halg.
 rewrite {}Halg big_morph_oppR big_nat [RHS]big_nat.
 apply: eq_bigr => i Hi; rewrite /SumIndCap /Efull.
 rewrite m1powD; last first.
