@@ -3,7 +3,8 @@
 From mathcomp Require Import all_ssreflect all_algebra.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct lra.
-Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts bigop_ext Rbigop.
+Require Import ssrR realType_ext Reals_ext Ranalysis_ext logb ln_facts bigop_ext.
+Require Import Rbigop.
 
 (******************************************************************************)
 (*                        The log-sum Inequality                              *)

@@ -7,7 +7,7 @@ Require Import Reals.
 From mathcomp Require Import mathcomp_extra.
 From mathcomp Require Import classical_sets boolp cardinality Rstruct reals.
 From mathcomp Require Import ereal topology esum measure probability.
-Require Import ssrR Rstruct_ext realType_ext Reals_ext ssr_ext ssralg_ext.
+Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext.
 Require Import bigop_ext Rbigop fdist convex.
 
 (******************************************************************************)
@@ -403,7 +403,8 @@ Local Open Scope reals_ext_scope.
 Lemma fsdist_suppD1 (C : choiceType) (d : {dist C}) (x : C) :
   \sum_(i <- finsupp d `\ x) d i = (d x).~.
 Proof.
-rewrite -subR_eq0 subR_onem.
+rewrite -subR_eq0.
+rewrite RminusE subr_onem -RplusE -RoppE -R1E addR_opp -RplusE.
 case/boolP: (x \in finsupp d)=> xfd.
   by rewrite addRC -big_fsetD1 //= FSDist.f1 subRR.
 by rewrite fsfun_dflt // mem_fsetD1 // FSDist.f1 addR0 subRR.
@@ -626,8 +627,8 @@ Proof.
 move => /[dup]; rewrite {1}supp => aD.
 rewrite /f ltR_neqAle mem_finsupp eq_sym => /eqP ?; split => //.
 rewrite /f fsfunE avgRE aD.
-apply/RleP; rewrite RplusE !RmultE addr_ge0// mulr_ge0//; apply/RleP => //.
-exact: onem_ge0.
+by apply/RleP; rewrite RplusE !RmultE addr_ge0// mulr_ge0//;
+  [exact/RleP|exact/onem_ge0|exact/RleP].
 Qed.
 
 Let f1 : \sum_(a <- finsupp f) f a = 1.
@@ -643,7 +644,7 @@ rewrite /D; case: ifPn; [|case: ifPn].
     by move=> a _; rewrite mem_finsupp negbK => /eqP ->; rewrite mulR0.
   rewrite -(big_fset_incl _ (fsubsetUr (finsupp d1) (finsupp d2))); last first.
     by move=> a _; rewrite mem_finsupp negbK => /eqP ->; rewrite mulR0.
-  by rewrite -!big_distrr !FSDist.f1 /= !mulR1 onemKC.
+by rewrite -!big_distrr !FSDist.f1 /= !RmultE !GRing.mulr1 RplusE onemKC.
 Qed.
 
 Definition fsdist_conv : {dist A} := locked (FSDist.make f0 f1).

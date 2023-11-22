@@ -156,7 +156,7 @@ have [x2a0|x2a0] := eqVneq (x.2 a) 0.
   simpl.
   by field; split; exact/eqP.
 set h : {fdist A} -> {fdist A} -> {ffun 'I_2 -> R} := fun p1 p2 => [ffun i =>
-  [eta (fun=> 0) with ord0 |-> p * p1 a, lift ord0 ord0 |-> (Prob.p p).~ * p2 a] i].
+  [eta (fun=> 0) with ord0 |-> Prob.p p * p1 a, lift ord0 ord0 |-> (Prob.p p).~ * p2 a] i].
 have hdom : h x.1 y.1 `<< h x.2 y.2.
   apply/dominatesP => i; rewrite /h /= !ffunE; case: ifPn => _.
     by rewrite mulR_eq0 => -[->|/eqP]; [rewrite mul0R | rewrite (negbTE x2a0)].
@@ -208,7 +208,7 @@ Proof.
 apply RNconcave_function => p q t; rewrite /convex_function_at.
 rewrite !(entropy_log_div _ cardApredS) /= /leconv /= [in X in _ <= X]avgRE.
 rewrite oppRD oppRK 2!mulRN mulRDr mulRN mulRDr mulRN oppRD oppRK oppRD oppRK.
-rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ t).
+rewrite addRCA !addRA -2!mulRN -mulRDl (addRC _ (Prob.p t)).
 rewrite !RplusE onemKC mul1R -!RplusE -addRA leR_add2l.
 have := convex_relative_entropy t (dom_by_uniform p cardApredS)
                                   (dom_by_uniform q cardApredS).
@@ -375,9 +375,9 @@ rewrite 2!big_distrr -big_split /=; apply eq_bigr => a _.
 rewrite !fdistX2 !fdist_fstE !mulRN -oppRD; congr (- _).
 rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
 rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
-rewrite !fdist_prodE /= fdist_convE /= !(mulRA t) !(mulRA (Prob.p t).~).
+rewrite !fdist_prodE /= fdist_convE /= !(mulRA (Prob.p t)) !(mulRA (Prob.p t).~).
 rewrite -!(RmultE,RplusE).
-have [Hp|/eqP Hp] := eqVneq (t * p a) 0.
+have [Hp|/eqP Hp] := eqVneq (Prob.p t * p a) 0.
   rewrite Hp ?(add0R,mul0R).
   have [->|/eqP Hq] := eqVneq ((Prob.p t).~ * q a) 0.
     by rewrite ?(mul0R).

@@ -5,7 +5,7 @@ From mathcomp Require Import mathcomp_extra Rstruct classical_sets.
 Require Import Reals Lra.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext Rbigop fdist.
 Require Import entropy binary_entropy_function channel hamming channel_code.
-Require Import pproba Rstruct_ext.
+Require Import pproba.
 
 (******************************************************************************)
 (*                Capacity of the binary symmetric channel                    *)
@@ -76,15 +76,12 @@ rewrite /log LogM; last 2 first.
   move/eqP in H1.
   have [+ _] := fdist_gt0 P a.
   by move/(_ H1) => /RltP.
-  case/andP: p_01' => ? ?.
-  apply/Reals_ext.onem_gt0.
-  by apply/RltP.
+  by case/andP: p_01' => ? ?; exact/RltP/onem_gt0.
 rewrite /log LogM; last 2 first.
   move/eqP in H1.
   have [+ _] := fdist_gt0 P a.
   by move/(_ H1) => /RltP.
-  case/andP: p_01' => ? ?.
-  by apply/RltP.
+  by case/andP: p_01' => ? ?; exact/RltP.
 case: (Req_EM_T (P b) 0) => H2.
   rewrite H2 !(mul0R, mulR0, addR0, add0R).
   move: (FDist.f1 P); rewrite Set2sumE /= -/a -/b.
@@ -96,15 +93,12 @@ rewrite /log LogM; last 2 first.
   move/eqP in H2.
   have [+ _] := fdist_gt0 P b.
   by move/(_ H2) => /RltP.
-  case/andP: p_01' => ? ?.
-  by apply/RltP.
+  by case/andP: p_01' => ? ?; exact/RltP.
 rewrite /log LogM; last 2 first.
   move/eqP in H2.
   have [+ _] := fdist_gt0 P b.
   by move/(_ H2) => /RltP.
-  case/andP: p_01' => ? ?.
-  apply/Reals_ext.onem_gt0.
-  by apply/RltP.
+  by case/andP: p_01' => ? ?; exact/RltP/onem_gt0.
 rewrite /log.
 rewrite -!RmultE.
 rewrite /onem -RminusE (_ : 1%mcR = 1)//.
@@ -291,11 +285,11 @@ Variables (M : finType) (n : nat) (f : encT [finType of 'F_2] M n).
 Local Open Scope vec_ext_scope.
 
 Lemma DMC_BSC_prop m y : let d := dH y (f m) in
-  W ``(y | f m) = ((1 - p) ^ (n - d) * p ^ d)%R.
+  W ``(y | f m) = ((1 - Prob.p p) ^ (n - d) * Prob.p p ^ d)%R.
 Proof.
 move=> d; rewrite DMCE.
-transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - p)) *
-              (\prod_(i < n | (f m) ``_ i != y ``_ i) p))%R.
+transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - Prob.p p)) *
+              (\prod_(i < n | (f m) ``_ i != y ``_ i) Prob.p p))%R.
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=; congr (_ * _).
     by apply eq_bigr => // i /eqP ->; rewrite /BSC.c fdist_binaryxx.
   apply eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c fdist_binaryE eq_sym Hyi.
@@ -332,11 +326,10 @@ apply: exprn_ege1.
 by rewrite ler_pdivlMr // mul1r.
 Qed.
 
-Lemma bsc_prob_prop p n : p%:pp < 1 / 2 ->
+Lemma bsc_prob_prop (p : {prob R}) n : Prob.p p < 1 / 2 ->
   forall n1 n2 : nat, (n1 <= n2 <= n)%nat ->
-  ((1 - p) ^ (n - n2) * p ^ n2 <= (1 - p) ^ (n - n1) * p ^ n1)%R.
+  ((1 - Prob.p p) ^ (n - n2) * (Prob.p p) ^ n2 <= (1 - Prob.p p) ^ (n - n1) * (Prob.p p) ^ n1)%R.
 Proof.
-rewrite Prob_pE.
 move=> p05 d1 d2 d1d2.
 case/boolP: (p == R0%:pr).
   move/eqP->; rewrite !coqRE; apply/RleP.

@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import mathcomp_extra Rstruct.
-Require Import ssrR Rstruct_ext Reals_ext realType_ext Ranalysis_ext ssr_ext.
+Require Import ssrR Reals_ext realType_ext Ranalysis_ext ssr_ext.
 Require Import logb ln_facts bigop_ext convex Rbigop fdist divergence.
 Require Import variation_dist partition_inequality.
 
@@ -178,7 +178,7 @@ Qed.
 Section pinsker_function_analysis.
 Variables p q : {prob R}.
 
-Lemma pinsker_fun_p c : pinsker_fun p c p = 0.
+Lemma pinsker_fun_p c : pinsker_fun (Prob.p p) c (Prob.p p) = 0.
 Proof.
 rewrite /pinsker_fun /= /div_fct /comp subRR mul0R mulR0 subR0.
 have [->|p0] := eqVneq p 0%coqR%:pr.
@@ -189,20 +189,20 @@ rewrite divRR; last by rewrite subR_eq0' eq_sym.
 by rewrite /log Log_1 divRR // /log Log_1; field.
 Qed.
 
-Lemma pinsker_fun_pderivable1 c (Hp' : 0 < p < 1) :
-  pderivable (fun x => - pinsker_fun p c x) (fun q => 0 < q <= p).
+Lemma pinsker_fun_pderivable1 c (Hp' : 0 < Prob.p p < 1) :
+  pderivable (fun x => - pinsker_fun (Prob.p p) c x) (fun q => 0 < q <= Prob.p p).
 move=> x [Hx1 Hx2].
 apply derivable_pt_opp.
-apply: (@derive_pinsker_fun p c Hp').
+apply: (@derive_pinsker_fun _ c Hp').
 case: Hp' => Hp'1 Hp'2.
 split => //.
 lra.
 Defined.
 
 Lemma pinsker_fun_decreasing_on_0_to_p (c : R) (Hc : c <= / (2 * ln 2))
-  (p01 : 0 < p < 1) :
-  forall x y, 0 < x <= p -> 0 < y <= p -> x <= y ->
-  pinsker_fun p c y <= pinsker_fun p c x.
+  (p01 : 0 < Prob.p p < 1) :
+  forall x y, 0 < x <= Prob.p p -> 0 < y <= Prob.p p -> x <= y ->
+  pinsker_fun (Prob.p p) c y <= pinsker_fun (Prob.p p) c x.
 Proof.
 move=> x y Hx Hy xy.
 rewrite -[X in _ <= X]oppRK leR_oppr.
@@ -234,19 +234,19 @@ have X : 0 <= (/ (t * (1 - t) * ln 2) - 8 * c).
 by rewrite /inv_fct -mulNR; apply mulR_ge0 => //; lra.
 Qed.
 
-Lemma pinsker_fun_pderivable2 c (Hp' : 0 < p < 1) :
-  pderivable (fun x : R => pinsker_fun p c x) (fun q : R => p <= q < 1).
+Lemma pinsker_fun_pderivable2 c (Hp' : 0 < Prob.p p < 1) :
+  pderivable (fun x : R => pinsker_fun (Prob.p p) c x) (fun q : R => Prob.p p <= q < 1).
 move=> x [Hx1 Hx2].
-apply: (@derive_pinsker_fun p c Hp').
+apply: (@derive_pinsker_fun _ c Hp').
 split => //.
 case: Hp' => Hp'1 Hp'2.
 lra.
 Defined.
 
 Lemma pinsker_fun_increasing_on_p_to_1 (c : R) (Hc : c <= / (2 * ln 2))
-  (p01 : 0 < p < 1) :
-  forall x y, p <= x < 1 -> p <= y < 1 -> x <= y ->
-  pinsker_fun p c x <= pinsker_fun p c y.
+  (p01 : 0 < Prob.p p < 1) :
+  forall x y, Prob.p p <= x < 1 -> Prob.p p <= y < 1 -> x <= y ->
+  pinsker_fun (Prob.p p) c x <= pinsker_fun (Prob.p p) c y.
 Proof.
 apply pderive_increasing_closed_open with (pinsker_fun_pderivable2 c p01).
   by case: p01.
@@ -289,7 +289,7 @@ Hypothesis card_A : #|A| = 2%nat.
 Hypothesis P_dom_by_Q :
   fdist_binary card_A p (Set2.a card_A) `<< fdist_binary card_A q (Set2.a card_A).
 
-Lemma pinsker_fun_pos c : 0 <= c <= / (2 * ln 2) -> 0 <= pinsker_fun p c q.
+Lemma pinsker_fun_pos c : 0 <= c <= / (2 * ln 2) -> 0 <= pinsker_fun (Prob.p p) c (Prob.p q).
 Proof.
 move=> Hc.
 set a := Set2.a card_A. set b := Set2.b card_A.
@@ -303,10 +303,10 @@ have [p0|p0] := eqVneq p R0%:pr.
     move/dominatesP : P_dom_by_Q => /(_ a).
     by rewrite !fdist_binaryE !/onem subrr eqxx subr0 -R1E -R0E; lra.
   apply: leR_trans.
-    apply: (@pinsker_function_spec_pos _ q Hc); split=> //.
+    apply: (@pinsker_function_spec_pos _ (Prob.p q) Hc); split=> //.
     by apply/RltP; rewrite -prob_lt1.
   rewrite /pinsker_function_spec.
-  apply Req_le.
+  apply: Req_le.
   by rewrite mul1R div1R /log LogV; [field|
     rewrite subR_gt0; apply /RltP; rewrite -prob_lt1].
 have [p1|p1] := eqVneq p 1%coqR%:pr.
@@ -319,14 +319,14 @@ have [p1|p1] := eqVneq p 1%coqR%:pr.
     rewrite !fdist_binaryE /onem subrr eq_sym (negbTE (Set2.a_neq_b card_A)) -R0E => /=.
     lra.
   apply: leR_trans.
-    have : 0 <= 1 - q < 1.
+    have : 0 <= 1 - Prob.p q < 1.
       split; first by rewrite subR_ge0.
       by rewrite ltR_subl_addr -{1}(addR0 1) ltR_add2l; apply/RltP/ prob_gt0.
     exact: pinsker_function_spec_pos Hc.
   rewrite /pinsker_function_spec.
   apply Req_le.
   rewrite mul1R div1R /log LogV; [|by apply/RltP/prob_gt0].
-  rewrite /id (_ : 1 - (1 - q) = q) //; by field.
+  rewrite /id (_ : 1 - (1 - Prob.p q) = Prob.p q) //; by field.
 have [q0|q0] := eqVneq q 0%coqR%:pr.
   subst q.
   rewrite /pinsker_fun /div_fct /comp.
@@ -341,7 +341,7 @@ have [q1|q1] := eqVneq q 1%coqR%:pr.
   rewrite !fdist_binaryE /onem subrr eqxx subR_eq0 => /(_ erefl) p1_.
   by move/eqP : p1; apply; apply/val_inj; rewrite /= -p1_.
 rewrite -(pinsker_fun_p p c).
-case: (Rlt_le_dec q p) => qp.
+case: (Rlt_le_dec (Prob.p q) (Prob.p p)) => qp.
   apply pinsker_fun_decreasing_on_0_to_p => //.
   - lra.
   - by split; apply/RltP; [rewrite -prob_gt0 | rewrite -prob_lt1].
@@ -371,25 +371,25 @@ Let Q := fdist_binary card_A q (Set2.a card_A).
 
 Hypothesis P_dom_by_Q : P `<< Q.
 
-Lemma pinsker_fun_p_eq c : pinsker_fun p c q = D(P || Q) - c * d(P , Q) ^ 2.
+Lemma pinsker_fun_p_eq c : pinsker_fun (Prob.p p) c (Prob.p q) = D(P || Q) - c * d(P , Q) ^ 2.
 Proof.
 pose a := Set2.a card_A. pose b := Set2.b card_A.
 set pi := P a.
 set pj := P b.
 set qi := Q a.
 set qj := Q b.
-have Hpi : pi = 1 - p by rewrite /pi /P fdist_binaryxx.
-have Hqi : qi = 1 - q by rewrite /qi /= fdist_binaryxx.
-have Hpj : pj = p.
+have Hpi : pi = 1 - Prob.p p by rewrite /pi /P fdist_binaryxx.
+have Hqi : qi = 1 - Prob.p q by rewrite /qi /= fdist_binaryxx.
+have Hpj : pj = Prob.p p.
   by rewrite /pj /= fdist_binaryE eq_sym (negbTE (Set2.a_neq_b card_A)).
-have Hqj : qj = q.
+have Hqj : qj = Prob.p q.
   by rewrite /qj /= fdist_binaryE eq_sym (negbTE (Set2.a_neq_b card_A)).
-transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
+transitivity (D(P || Q) - c * (`| Prob.p p - Prob.p q | + `| (1 - Prob.p p) - (1 - Prob.p q) |) ^ 2).
   rewrite /pinsker_fun /div Set2sumE -/a -/b -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
   set tmp := (`| _ | + _) ^ 2.
-  have -> : tmp = 4 * (p - q) ^ 2.
-    rewrite /tmp (_ : 1 - p - (1 - q) = q - p); last by field.
-    rewrite sqrRD (distRC q p) -mulRA -{3}(pow_1 `| p - q |).
+  have -> : tmp = 4 * (Prob.p p - Prob.p q) ^ 2.
+    rewrite /tmp (_ : 1 - Prob.p p - (1 - Prob.p q) = Prob.p q - Prob.p p); last by field.
+    rewrite sqrRD (distRC (Prob.p q) (Prob.p p)) -mulRA -{3}(pow_1 `| Prob.p p - Prob.p q |).
     rewrite -expRS sqR_norm; ring.
   rewrite [X in _ = _ + _ - X]mulRA.
   rewrite [in X in _ = _ + _ - X](mulRC c).
@@ -411,7 +411,7 @@ transitivity (D(P || Q) - c * (`| p - q | + `| (1 - p) - (1 - q) |) ^ 2).
     rewrite Hpj => abs.
     have : p == 0%coqR%:pr by apply/eqP/val_inj.
     by rewrite (negbTE p0).
-  rewrite /div_fct /comp /= (_ : id q = q) //.
+  rewrite /div_fct /comp /= (_ : id (Prob.p q) = Prob.p q) //.
   have [->|p1] := eqVneq p 1%coqR%:pr.
     rewrite subRR !mul0R /Rdiv /log LogM //; last first.
       apply/invR_gt0; by apply/RltP/prob_gt0.

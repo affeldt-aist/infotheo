@@ -8,7 +8,6 @@ Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext num_occ bigop_ext 
 Require Import fdist channel pproba f2 linearcode subgraph_partition tanner.
 Require Import tanner_partition hamming binary_symmetric_channel decoding.
 Require Import channel_code summary checksum summary_tanner.
-Require Import Rstruct_ext.
 
 (******************************************************************************)
 (*                   LDPC Codes and Sum-Product Decoding                      *)

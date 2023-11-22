@@ -3,7 +3,7 @@
 From HB Require Import structures.
 Require Import Reals.
 From mathcomp Require Import all_ssreflect.
-From mathcomp Require Import boolp classical_sets Rstruct.
+From mathcomp Require Import mathcomp_extra boolp classical_sets Rstruct.
 From mathcomp Require Import finmap.
 Require Import Reals_ext realType_ext classical_sets_ext Rbigop ssrR fdist fsdist.
 Require Import convex.

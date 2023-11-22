@@ -2,12 +2,10 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals Lra.
-From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext Ranalysis_ext logb ln_facts Rbigop fdist entropy.
-From mathcomp Require Import reals.
-Require Import realType_ext Rstruct_ext.
-Require Import channel_code channel divergence conditional_divergence.
-Require Import variation_dist pinsker.
+From mathcomp Require Import Rstruct reals.
+Require Import ssrR realType_ext Reals_ext Ranalysis_ext logb ln_facts Rbigop.
+Require Import fdist entropy channel_code channel divergence.
+Require Import conditional_divergence variation_dist pinsker.
 
 (******************************************************************************)
 (*                         Error exponent bound                               *)

@@ -1,10 +1,10 @@
-(* infotheo: information theory and error-correcting codes in Coq              *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later             *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra matrix.
 Require Import Reals.
-From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext logb Rbigop fdist entropy.
-Require Import binary_entropy_function channel hamming channel_code.
+From mathcomp Require Import mathcomp_extra Rstruct.
+Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext logb Rbigop fdist.
+Require Import entropy binary_entropy_function channel hamming channel_code.
 
 (******************************************************************************)
 (*                     Definition of erasure channel                          *)
@@ -41,8 +41,8 @@ rewrite /f ffunE.
 case: b => [a'|]; last first.
   by case: p_01 => /RleP.
 case: ifP => _ //.
-case: p_01 => ? ?//.
-by apply/RleP/onem_ge0.
+case: p_01 => ? ? //.
+exact/onem_ge0/RleP.
 Qed.
 
 Lemma f1 (a : A) : \sum_(a' : {:option A}) f a a' = 1.
@@ -54,10 +54,10 @@ apply/eqP; rewrite psumr_eq0/=; last first.
  - rewrite /f; case => [a'|]; last by case: p_01.
   rewrite ffunE.
   case: ifPn => [_ _|//].
-  by case: p_01 => ? ?; apply/RleP/onem_ge0.
+  by case: p_01 => ? ?; apply/onem_ge0/RleP.
 - apply/allP; case => //= a' aa'; rewrite ffunE; case: ifPn => // /eqP ?.
     subst a'.
-    move: aa'; by rewrite eqxx.
+    by move: aa'; rewrite eqxx.
   by rewrite eqxx implybT.
 Qed.
 

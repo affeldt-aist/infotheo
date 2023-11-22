@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
-Require Import ssrR Rstruct_ext Reals_ext Ranalysis_ext ssr_ext logb ln_facts.
+Require Import ssrR realType_ext Reals_ext Ranalysis_ext ssr_ext logb ln_facts.
 Require Import bigop_ext Rbigop fdist divergence log_sum variation_dist.
 
 (******************************************************************************)

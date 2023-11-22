@@ -62,6 +62,7 @@ Delimit Scope ring_scope with mcR.
 
 Import Num.Theory.
 
+
 (* "^" = pow : R -> nat -> R *)
 Notation "x ^- n" := (/ (x ^ n)) : R_scope.
 
@@ -527,6 +528,28 @@ Lemma ltR_inv x y : 0 < x -> 0 < y -> y < x -> / x < / y.
 Proof. by move=> xo y0; apply/Rinv_lt_contravar/mulR_gt0. Qed.
 
 Lemma divRE x y : x / y = x * / y. Proof. by []. Qed.
+
+Delimit Scope R_scope with coqR.
+(* NB: this lemma depends on the internals of Rinv and Rinvx *)
+(* TODO: this really needs to be pushed to MathComp-Analysis *)
+Lemma RinvE' (x : R) : (/ x)%coqR = (x^-1)%mcR.
+Proof.
+have [-> | ] := eqVneq x 0%coqR; last exact: RinvE.
+rewrite /GRing.inv /GRing.mul /= /Rinvx eqxx /=.
+rewrite RinvImpl.Rinv_def.
+case: (Req_appart_dec 0 R0) => //.
+by move=> /[dup] -[] => /RltP; rewrite Order.POrderTheory.ltxx.
+Qed.
+
+Lemma RdivE' (x y : R) : (x / y)%coqR = (x / y)%mcR.
+Proof. by rewrite divRE RinvE'. Qed.
+
+Lemma R1E : 1%coqR = 1%mcR. Proof. by []. Qed.
+Lemma R0E : 0%coqR = 0%mcR. Proof. by []. Qed.
+
+Definition coqRE :=
+  (R0E, R1E, INRE,
+    RinvE', RoppE, RdivE', RminusE, RplusE, RmultE, RpowE).
 
 Definition divRR (x : R) : x != 0 -> x / x = 1.
 Proof. by move=> x0; rewrite /Rdiv Rinv_r //; exact/eqP. Qed.

@@ -3,8 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
 From mathcomp Require Import Rstruct.
-Require Import ssr_ext ssralg_ext f2 linearcode natbin ssrR hamming bigop_ext.
-Require Import Rbigop fdist proba channel channel_code decoding.
+Require Import realType_ext ssr_ext ssralg_ext f2 linearcode natbin ssrR hamming.
+Require Import bigop_ext Rbigop fdist proba channel channel_code decoding.
 Require Import binary_symmetric_channel.
 
 (******************************************************************************)
@@ -978,13 +978,13 @@ Local Open Scope R_scope.
 Lemma e_hamming m0 :
   e(W, hamming_channel_code) m0 =
   \sum_(e0 in [set e0 : 'rV['F_2]_n | (2 <= wH e0)%nat])
-    (1 - p) ^ (n - wH e0) * p ^ wH e0.
+    (1 - Prob.p p) ^ (n - wH e0) * (Prob.p p) ^ wH e0.
 Proof.
 rewrite /ErrRateCond /Pr /=.
 transitivity (
   \sum_(a | a \in preimC (dec hamming_channel_code) m0)
     let d := dH ((enc hamming_channel_code) m0) a in
-    (1 - p) ^ (n - d) * p ^ d).
+    (1 - Prob.p p) ^ (n - d) * (Prob.p p) ^ d).
   apply eq_bigr => t Ht.
   rewrite dH_sym.
   rewrite -(DMC_BSC_prop p (enc hamming_channel_code) m0 t).
@@ -995,7 +995,7 @@ transitivity (
                            m1 != m0 else
                            true])
       (let d := dH ((enc hamming_channel_code) m0) a in
-       (1 - p) ^ (n - d) * p ^ d)).
+       (1 - Prob.p p) ^ (n - d) * (Prob.p p) ^ d)).
   apply eq_bigl => t /=.
   rewrite !inE.
   case_eq (dec hamming_channel_code t) => [m1 Hm1|]; last first.
@@ -1007,7 +1007,7 @@ set f := fun y => (y0 + y).
 Local Open Scope R_scope.
 transitivity (
   \sum_(y | f y \in [set e1 | (1 < wH e1)%nat])
-    (1 - p) ^ (n - wH (f y)) * p ^ wH (f y)).
+    (1 - Prob.p p) ^ (n - wH (f y)) * (Prob.p p) ^ wH (f y)).
   apply eq_big.
     move=> y.
     simpl in y, f, m0.
@@ -1043,9 +1043,9 @@ apply/esym/reindex.
 exists f; move=> /= x _; by rewrite /f addrA F2_addmx add0r.
 Qed.
 
-Lemma hamming_error_rate : p < 1/2 ->
+Lemma hamming_error_rate : Prob.p p < 1/2 ->
   echa(W, hamming_channel_code) =
-    1 - ((1 - p) ^ n) - INR n * p * ((1 - p) ^ (n - 1)).
+    1 - ((1 - Prob.p p) ^ n) - n%:R * (Prob.p p) * ((1 - Prob.p p) ^ (n - 1)).
 Proof.
 move=> p05.
 rewrite /CodeErrRate.
@@ -1062,7 +1062,7 @@ have -> : 1 / den * den = 1.
 rewrite mul1R.
 have toleft A B C D : A + C + D = B -> A = B - C - D by move => <-; ring.
 apply toleft.
-rewrite -addRA -(hamming_01 n p) //.
+rewrite -addRA -(hamming_01 n (Prob.p p)) //.
 rewrite -big_union //.
   rewrite (_ : _ :|: _ = [set: 'rV_n]).
     by apply binomial_theorem.
