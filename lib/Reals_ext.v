@@ -282,66 +282,6 @@ Implicit Types p q : {prob R}.
 Canonical probR0 := Eval hnf in (@Prob.mk real_realType R0 (@OO1 _)).
 Canonical probR1 := Eval hnf in (@Prob.mk real_realType R1 (@O11 _)).
 
-(*Lemma probR_gt0 p : p != 0%:pr <-> 0 < Prob.p p.
-Proof.
-rewrite ltR_neqAle; split=> [H|[/eqP p0 _]].
-split => //; exact/nesym/eqP.
-by case: p p0 => p ?; apply: contra => /eqP[/= ->].
-Qed.*)
-
-(*Lemma probR_lt1 p : p != 1%:pr <-> Prob.p p < 1.
-Proof.
-rewrite ltR_neqAle; split=> [H|[/eqP p1 _]].
-by split => //; exact/eqP.
-by case: p p1 => p ?; apply: contra => /eqP[/= ->].
-Qed.*)
-
-(*Lemma probR_trichotomy p : p = 0%:pr \/ p = 1%:pr \/ 0 < Prob.p p < 1.
-Proof.
-have [/eqP ->|pneq0]:= boolP (p == 0%:pr); first by left.
-right.
-have [/eqP ->|pneq1] := boolP (p == 1%:pr); first by left.
-by right; split; [exact/RltP/prob_gt0|exact/RltP/prob_lt1].
-Qed.*)
-
-Lemma probRK p : p = ((Prob.p p).~).~%:pr.
-Proof. by apply val_inj => /=; rewrite onemK. Qed.
-
-Lemma probRKC (p : {prob R}) : Prob.p p + (Prob.p p).~ = 1 :> R.
-Proof. exact: onemKC. Qed.
-
-Lemma probadd_eq0 p q : Prob.p p + Prob.p q = 0 <-> p = 0%:pr /\ q = 0%:pr.
-Proof.
-split => [/paddR_eq0 | ].
-- by move=> /(_ _)[] // p0 q0; split; exact/val_inj.
-- by case => -> ->; rewrite addR0.
-Qed.
-
-Lemma probadd_neq0 p q : Prob.p p + Prob.p q != 0 <-> p != 0%:pr \/ q != 0%:pr.
-Proof.
-split => [/paddR_neq0| ]; first by move=> /(_ _ _); apply.
-by case; apply: contra => /eqP/probadd_eq0 [] /eqP ? /eqP.
-Qed.
-
-Lemma probmul_eq1 p q : Prob.p p * Prob.p q = 1 <-> p = 1%:pr /\ q = 1%:pr.
-Proof.
-split => [/= pq1|[-> ->]]; last by rewrite mulR1.
-move: R1_neq_R0; rewrite -{1}pq1 => /eqP; rewrite mulR_neq0' => /andP[].
-rewrite 2!prob_gt0=> p0 q0.
-have /leR_eqVlt[p1|] : (Prob.p p <= 1) by apply/RleP/prob_le1.
-  have /leR_eqVlt[q1|] : (Prob.p q <= 1) by apply/RleP/prob_le1; last first.
-    by split => //; exact/val_inj.
-  move/RltP in p0.
-  move/(ltR_pmul2r p0); rewrite mul1R mulRC => /(ltR_leR_trans).
-  move=> /(_ 1%coqR).
-  rewrite pq1 => /(_ (ltac:(by []))).
-  move/RltP.
-  by rewrite ltxx.
-move/RltP in q0.
-move/(ltR_pmul2r q0); rewrite mul1R => /(ltR_leR_trans).
-by move=> /(_ 1); rewrite pq1 => /(_ (ltac:(by []))) /RltP; rewrite ltxx.
-Qed.
-
 End prob_lemmas.
 
 Lemma prob_IZR (p : positive) : (0 <= / IZR (Zpos p) <= 1)%coqR.
