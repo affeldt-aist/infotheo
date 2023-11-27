@@ -4,7 +4,7 @@ Require Import Reals.
 From mathcomp Require Import all_ssreflect fingroup zmodp ssralg finalg perm matrix.
 From mathcomp Require Import poly mxalgebra mxpoly.
 From mathcomp Require Import Rstruct.
-Require Import ssr_ext ssralg_ext f2 num_occ natbin ssrR Reals_ext.
+Require Import ssr_ext ssralg_ext f2 num_occ natbin ssrR Reals_ext bigop_ext.
 
 (******************************************************************************)
 (*                    Hamming weight and Hamming distance                     *)
@@ -874,8 +874,9 @@ transitivity (((1 - p) + p) ^ m); last by rewrite subRK exp1R.
 rewrite RPascal.
 transitivity (\sum_(b : 'rV['F_2]_m) (1 - p) ^ (m - wH b) * p ^ wH b).
   by apply eq_bigl => /= i; rewrite inE.
-rewrite (classify_big _ _ (fun s => Ordinal (max_wH' s))
-  (fun x => (1 - p) ^ (m - x) * p ^ x)) /=.
-apply eq_bigr => i _; congr (_%:R * _).
-by rewrite -wH_m_card; apply eq_card => /= x; rewrite !inE.
+rewrite sumRE (classify_big (fun s => Ordinal (max_wH' s))
+                 (fun x => (1 - p) ^ (m - x) * p ^ x)) /=.
+apply: eq_bigr=> i _.
+rewrite -wH_m_card !coqRE; congr (_ %:R %mcR * _).
+by apply eq_card => /= x; rewrite !inE.
 Qed.
