@@ -1,8 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-Require Import Reals.
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext.
+Require Import (*ssrR Reals_ext*) logb ssr_ext ssralg_ext.
 
 (******************************************************************************)
 (*                     Additional lemmas about bigops                         *)
@@ -72,6 +71,54 @@ by apply/ffunP => /= -[? []].
 Qed.
 
 End bigop_add_law.
+
+Section bigop_algebraic_misc.
+(** [bigA_distr] is a specialization of [bigA_distr_bigA] and at the same
+    time a generalized version of [GRing.exprDn] for iterated prod. *)
+Lemma bigA_distr (R : Type) (zero one : R) (times : Monoid.mul_law zero)
+    (plus : Monoid.add_law zero times)
+    (I : finType)
+    (F1 F2 : I -> R) :
+  \big[times/one]_(i in I) plus (F1 i) (F2 i) =
+  \big[plus/zero]_(0 <= k < #|I|.+1)
+  \big[plus/zero]_(J in {set I} | #|J| == k)
+  \big[times/one]_(j in I) (if j \notin J then F1 j else F2 j).
+Proof.
+pose F12 i (j : bool) := if ~~ j then F1 i else F2 i.
+under eq_bigr=> i.
+  rewrite (_: plus (F1 i) (F2 i) = \big[plus/zero]_j F12 i j); last first.
+    rewrite (bigID (fun i => i == false)) big_pred1_eq (big_pred1 true) //.
+    by case.
+  over.
+rewrite bigA_distr_bigA big_mkord (partition_big
+  (fun i : {ffun I -> bool} => inord #|[set x | i x]|)
+  (fun j : [finType of 'I_#|I|.+1] => true)) //=.
+{ eapply eq_big =>// i _.
+  rewrite (reindex (fun s : {set I} => [ffun x => x \in s])); last first.
+  { apply: onW_bij.
+    exists (fun f : {ffun I -> bool} => [set x | f x]).
+    by move=> s; apply/setP => v; rewrite inE ffunE.
+    by move=> f; apply/ffunP => v; rewrite ffunE inE. }
+  eapply eq_big.
+  { move=> s; apply/eqP/eqP.
+      move<-; rewrite -[#|s|](@inordK #|I|) ?ltnS ?max_card //.
+      by congr inord; apply: eq_card => v; rewrite inE ffunE.
+    move=> Hi; rewrite -[RHS]inord_val -{}Hi.
+    by congr inord; apply: eq_card => v; rewrite inE ffunE. }
+  by move=> j Hj; apply: eq_bigr => k Hk; rewrite /F12 ffunE. }
+Qed.
+
+Lemma bigID2 (R : Type) (I : finType) (J : {set I}) (F1 F2 : I -> R)
+    (idx : R) (op : Monoid.com_law idx) :
+  \big[op/idx]_(j in I) (if j \notin J then F1 j else F2 j) =
+  op (\big[op/idx]_(j in ~: J) F1 j) (\big[op/idx]_(j in J) F2 j).
+Proof.
+rewrite (bigID (mem (setC J)) predT); apply: congr2.
+by apply: eq_big =>// i /andP [H1 H2]; rewrite inE in_setC in H2; rewrite H2.
+apply: eq_big => [i|i /andP [H1 H2]] /=; first by rewrite inE negbK.
+by rewrite ifF //; apply: negbTE; rewrite inE in_setC in H2.
+Qed.
+End bigop_algebraic_misc.
 
 (** Switching from a sum on the domain to a sum on the image of function *)
 Section partition_big_finType_eqType.
@@ -484,9 +531,11 @@ End big_tuple_ffun.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
+Section prod_gt0_inv.
+Local Open Scope ring_scope.
 Lemma prod_gt0_inv (R : realFieldType) n (F : _ -> R)
-  (HF: forall a, (0 <= F a)%mcR) :
-  (0 < \prod_(i < n.+1) F i -> forall i, 0 < F i)%mcR.
+  (HF: forall a, (0 <= F a)) :
+  (0 < \prod_(i < n.+1) F i -> forall i, 0 < F i).
 Proof.
 move=> h i.
 rewrite lt_neqAle HF andbT; apply/eqP => /esym F0.
@@ -496,3 +545,63 @@ rewrite prodf_seq_eq0/=.
 apply/hasP; exists i; last exact/eqP.
 by rewrite mem_index_enum.
 Qed.
+End prod_gt0_inv.
+
+Section classify_big.
+Local Open Scope ring_scope.
+Variable R : ringType.
+
+Lemma classify_big (A : finType) n (f : A -> 'I_n) (F : 'I_n -> R) :
+  \sum_a F (f a) =
+    \sum_(i < n) (#|f @^-1: [set i]|%:R * F i).
+Proof.
+transitivity (\sum_(i < n) \sum_(a | true && (f a == i)) F (f a)).
+  by apply partition_big.
+apply eq_bigr => i _ /=.
+transitivity (\sum_(a | f a == i) F i); first by apply eq_bigr => s /eqP ->.
+rewrite big_const iter_addr addr0 mulr_natl; congr GRing.natmul.
+apply eq_card => j /=; by rewrite !inE.
+Qed.
+End classify_big.
+
+Section num.
+Local Open Scope ring_scope.
+Variables (R : numDomainType) (I : Type) (r : seq I).
+
+(* generalizes leR_sumRl *)
+Lemma ler_suml [P Q : pred I] [F G : I -> R] :
+  (forall i : I, P i -> F i <= G i) ->
+  (forall i : I, Q i -> ~~ P i -> 0 <= G i) ->
+  (forall i : I, P i -> Q i) ->
+  \sum_(i <- r | P i) F i <= \sum_(i <- r | Q i) G i.
+Proof.
+move=> PFG QG0 PQ.
+move: PFG => /ler_sum /le_trans; apply.
+rewrite [leRHS](bigID P) /=.
+move: PQ => /(_ _) /andb_idl => /(eq_bigl _ G) ->.
+rewrite lerDl; apply: sumr_ge0=> i.
+by case/andP; exact: QG0.
+Qed.
+
+(* generalizes leR_sumR_predU
+   NB: here we use (predU P Q) instead of [predU P & Q] for the union.
+   The former is suitable for applicative predicates as in this lemma
+   while the latter infix notation should be used only for collective predicates.
+   ([predU P & Q] i gets simplified to i \in P || i \in Q
+    while (predU P Q) i to P i || Q i) *)
+Lemma ler_sum_predU [P Q : pred I] (F : I -> R) :
+  (forall i : I, P i -> Q i -> 0 <= F i) ->
+  \sum_(i <- r | (predU P Q) i) F i <=
+    \sum_(i <- r | P i) F i + \sum_(i <- r | Q i) F i.
+Proof.
+move=> F0.
+under eq_bigr => i _.
+  rewrite (_ : F i = if Q i then F i else F i); last by case: ifP.
+  over.
+rewrite big_if /=.
+under eq_bigl do rewrite orbC orbK.
+rewrite addrC; apply: lerD => //.
+apply: ler_suml=> // i; rewrite andb_orl andbN orbF; last by case/andP.
+by move=> /[dup] /F0 /[swap] -> /[!andTb] /[!negbK].
+Qed.
+End num.

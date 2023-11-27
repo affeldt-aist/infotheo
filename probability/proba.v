@@ -130,56 +130,6 @@ Local Open Scope proba_scope.
 
 Import Order.POrderTheory Num.Theory.
 
-(** [bigA_distr] is a specialization of [bigA_distr_bigA] and at the same
-    time a generalized version of [GRing.exprDn] for iterated prod. *)
-Lemma bigA_distr (R : Type) (zero one : R) (times : Monoid.mul_law zero)
-    (plus : Monoid.add_law zero times)
-    (I : finType)
-    (F1 F2 : I -> R) :
-  \big[times/one]_(i in I) plus (F1 i) (F2 i) =
-  \big[plus/zero]_(0 <= k < #|I|.+1)
-  \big[plus/zero]_(J in {set I} | #|J| == k)
-  \big[times/one]_(j in I) (if j \notin J then F1 j else F2 j).
-Proof.
-pose F12 i (j : bool) := if ~~ j then F1 i else F2 i.
-erewrite eq_bigr. (* to replace later with under *)
-  2: move=> i _; rewrite (_: plus (F1 i) (F2 i) = \big[plus/zero]_(j : bool) F12 i j) //.
-rewrite bigA_distr_bigA big_mkord (partition_big
-  (fun i : {ffun I -> bool} => inord #|[set x | i x]|)
-  (fun j : [finType of 'I_#|I|.+1] => true)) //=.
-{ eapply eq_big =>// i _.
-  rewrite (reindex (fun s : {set I} => [ffun x => x \in s])); last first.
-  { apply: onW_bij.
-    exists (fun f : {ffun I -> bool} => [set x | f x]).
-    by move=> s; apply/setP => v; rewrite inE ffunE.
-    by move=> f; apply/ffunP => v; rewrite ffunE inE. }
-  eapply eq_big.
-  { move=> s; apply/eqP/eqP.
-      move<-; rewrite -[#|s|](@inordK #|I|) ?ltnS ?max_card //.
-      by congr inord; apply: eq_card => v; rewrite inE ffunE.
-    move=> Hi; rewrite -[RHS]inord_val -{}Hi.
-    by congr inord; apply: eq_card => v; rewrite inE ffunE. }
-  by move=> j Hj; apply: eq_bigr => k Hk; rewrite /F12 ffunE. }
-rewrite (reindex (fun x : 'I_2 => (x : nat) == 1%N)%bool); last first.
-  { apply: onW_bij.
-    exists (fun b : bool => inord (nat_of_bool b)).
-    by move=> [x Hx]; rewrite -[RHS]inord_val; case: x Hx =>// x Hx; case: x Hx.
-    by case; rewrite inordK. }
-rewrite 2!big_ord_recl big_ord0 /F12 /=.
-by rewrite Monoid.mulm1.
-Qed.
-
-Lemma bigID2 (R : Type) (I : finType) (J : {set I}) (F1 F2 : I -> R)
-    (idx : R) (op : Monoid.com_law idx) :
-  \big[op/idx]_(j in I) (if j \notin J then F1 j else F2 j) =
-  op (\big[op/idx]_(j in ~: J) F1 j) (\big[op/idx]_(j in J) F2 j).
-Proof.
-rewrite (bigID (mem (setC J)) predT); apply: congr2.
-by apply: eq_big =>// i /andP [H1 H2]; rewrite inE in_setC in H2; rewrite H2.
-apply: eq_big => [i|i /andP [H1 H2]] /=; first by rewrite inE negbK.
-by rewrite ifF //; apply: negbTE; rewrite inE in_setC in H2.
-Qed.
-
 Lemma m1powD k : k <> 0%nat -> (-1)^(k-1) = - (-1)^k.
 Proof. by case: k => [//|k _]; rewrite subn1 /= mulN1R oppRK. Qed.
 
