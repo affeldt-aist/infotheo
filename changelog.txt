@@ -1,6 +1,12 @@
 -------------------
-from 0.5.2 to master
+from 0.5.2 to 0.6.0
 -------------------
+
+The main change is that now the type fdist is now parameterized by R :
+numDomainType.  This is the source of many changes to related lemmas
+and also of a reorganization of basic files (introduction of
+realType_ext.v, etc.).
+
 - renamed
   + fsdistbindE -> fsdistbindEcond
 - added
