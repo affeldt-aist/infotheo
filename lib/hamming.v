@@ -567,7 +567,7 @@ Variable n : nat.
 
 Local Open Scope tuple_ext_scope.
 Lemma card_dH (x y : n.-tuple 'F_2) :
-  (#| [pred i | y \_ i != x \_ i ] |)%N = dH (row_of_tuple x) (row_of_tuple y).
+  (#| [pred i | y \__ i != x \__ i ] |)%N = dH (row_of_tuple x) (row_of_tuple y).
 Proof.
 rewrite /dH wH_num_occ num_occ_alt /=.
 apply eq_card => /= i.
@@ -691,7 +691,7 @@ case/(_ erefl) => i [] [] H1 H2 H3.
 exists (Ordinal H1); split.
   transitivity (F2_of_bool true) => //.
   rewrite -H2 /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
-  rewrite (_ : _ _ _ i = (tuple_of_row x) \_ (Ordinal H1)); last first.
+  rewrite (_ : _ _ _ i = (tuple_of_row x) \__ (Ordinal H1)); last first.
     apply set_nth_default; by rewrite size_tuple.
   rewrite tnth_mktuple {1}(F2_0_1 (x ``_ (Ordinal H1))); by case: (x ``_ _ != 0%R).
 move=> j Hj.
@@ -701,7 +701,7 @@ rewrite -(H3 j) //; last first.
   by apply/Hj/val_inj.
 rewrite /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
 suff -> : x ``_ j = nth ord0 (tuple_of_row x) j by apply: F2_0_1.
-rewrite (_ : _ _ _ j = (tuple_of_row x) \_ j); last by rewrite tnth_mktuple.
+rewrite (_ : _ _ _ j = (tuple_of_row x) \__ j); last by rewrite tnth_mktuple.
 exact: tnth_nth.
 Qed.
 
@@ -759,13 +759,13 @@ exists (Ordinal H1), (Ordinal H3); split.
 split.
   transitivity (F2_of_bool true) => //.
   rewrite -H2 /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
-  rewrite (_ : _ _ _ i = (tuple_of_row x) \_ (Ordinal H1)); last first.
+  rewrite (_ : _ _ _ i = (tuple_of_row x) \__ (Ordinal H1)); last first.
     apply set_nth_default; by rewrite size_tuple.
   rewrite tnth_mktuple {1}(F2_0_1 (x ``_ (Ordinal H1))); by case: (x ``_ _ != 0%R).
 split.
   transitivity (F2_of_bool true) => //.
   rewrite -H4 /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
-  rewrite (_ : _ _ _ k = (tuple_of_row x) \_ (Ordinal H3)); last first.
+  rewrite (_ : _ _ _ k = (tuple_of_row x) \__ (Ordinal H3)); last first.
     apply set_nth_default; by rewrite size_tuple.
   rewrite tnth_mktuple {1}(F2_0_1 (x ``_ (Ordinal H3))); by case: (x ``_ _ != 0%R).
 move=> j ij kj.
@@ -777,7 +777,7 @@ rewrite -(H6 j) //; last first.
   by apply/ij/val_inj.
 rewrite /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
 suff -> : x ``_ j = nth ord0 (tuple_of_row x) j by apply: F2_0_1.
-rewrite (_ : _ _ _ j = (tuple_of_row x) \_ j); last by rewrite tnth_mktuple.
+rewrite (_ : _ _ _ j = (tuple_of_row x) \__ j); last by rewrite tnth_mktuple.
 exact: tnth_nth.
 Qed.
 

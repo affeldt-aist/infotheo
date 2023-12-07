@@ -553,7 +553,7 @@ rewrite size_drop size_take size_tuple -/(minn (sum_num_occ ta k.+1) n) minn_sum
 rewrite nth_drop nth_take => //.
 have Hsumk : sum_num_occ ta k + i < n by apply (leq_trans Hi (sum_num_occ_leq_n ta k.+1)).
 transitivity (enum_val k).
-  transitivity (ta\_(Ordinal Hsumk)).
+  transitivity (ta\__(Ordinal Hsumk)).
     by rewrite [in X in _ = X](tnth_nth (enum_val k)).
   apply sum_num_occ_enum_val => //=; by rewrite Hi andbT leq_addr.
 rewrite -ltn_subRL (sum_num_occ_sub ta k) in Hi.
@@ -574,7 +574,7 @@ rewrite drop_take_iota; last by rewrite sum_num_occ_inc_loc sum_num_occ_leq_n.
 apply eq_in_filter => /= i.
 rewrite mem_iota leq0n add0n /= => Hi.
 rewrite nth_zip /=; last by rewrite 2!size_tuple.
-transitivity (ta\_(Ordinal Hi) == a); by [rewrite -sum_num_occ_is_enum_val | rewrite (tnth_nth a)].
+transitivity (ta\__(Ordinal Hi) == a); by [rewrite -sum_num_occ_is_enum_val | rewrite (tnth_nth a)].
 Qed.
 
 Local Close Scope tuple_ext_scope.

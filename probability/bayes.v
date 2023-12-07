@@ -33,43 +33,6 @@ Import Prenex Implicits.
 
 Import Num.Theory.
 
-Section ssr_ext.
-Lemma tnth_uniq (T : eqType) n (t : n.-tuple T) (i j : 'I_n) :
-  uniq t -> (t \_ i == t \_ j) = (i == j).
-Proof.
-pose a := t \_ i; rewrite 2!(tnth_nth a) => *.
-by rewrite nth_uniq // size_tuple.
-Qed.
-
-Section boolP.
-Variables (p : bool) (R : Type) (T : is_true p -> R) (F : is_true (~~ p) -> R).
-Lemma boolPT  (H : is_true p) :
-  match boolP p with
-  | AltTrue HT => T HT
-  | AltFalse HF => F HF
-  end = T H.
-Proof.
-destruct boolP.
-- congr T.
-  case: p => // in H i *.
-  exfalso.
-  rewrite H in i.
-- by elim: (negP i).
-Qed.
-
-Lemma boolPF  (H : is_true (~~ p)) :
-  match boolP p with
-  | AltTrue HT => T HT
-  | AltFalse HF => F HF
-  end = F H.
-Proof.
-destruct boolP.
-- by elim: (negP H).
-- by congr F.
-Qed.
-End boolP.
-End ssr_ext.
-
 Section fin_img.
 Variables (T : finType) (S : eqType) (f : T -> S).
 
