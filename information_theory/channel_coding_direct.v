@@ -286,10 +286,10 @@ Qed.
 
 (* TODO: move? *)
 Lemma rsum_rmul_tuple_pmf_tnth {C : finType} n k (Q : {fdist C}) :
-  \sum_(t : {:k.-tuple ('rV[C]_n)}) \prod_(m < k) (Q `^ n) t \__ m = 1.
+  \sum_(t : {:k.-tuple ('rV[C]_n)}) \prod_(m < k) (Q `^ n) t !_ m = 1.
 Proof.
 transitivity (\sum_(j : {ffun 'I_k -> 'rV[_]_n}) \prod_(m < k) Q `^ _ (j m)).
-  rewrite (reindex_onto (fun p => [ffun x => p\__(enum_rank x)])
+  rewrite (reindex_onto (fun p => [ffun x => p!_(enum_rank x)])
                         (fun x => fgraph x)) //=; last first.
     by move=> f _; apply/ffunP => /= i; rewrite ffunE tnth_fgraph enum_rankK.
   rewrite (big_tcast (esym (card_ord k))) esymK.
@@ -350,7 +350,7 @@ transitivity (\sum_(v : 'rV[A]_n)
   (\sum_(y in ~: [set w | prod_rV (v, w) \in `JTS P W n epsilon0])
   (W ``(| v)) y) *
     \sum_(j in {: #|M|.-1.-tuple ('rV[A]_n)})
-      (\prod_(m : M) P `^ _ ((tcast M_prednK [tuple of v :: j]) \__ (enum_rank m)))).
+      (\prod_(m : M) P `^ _ ((tcast M_prednK [tuple of v :: j]) !_ (enum_rank m)))).
   rewrite (reindex_onto (fun y : {ffun _ -> 'rV__} => \row_(i < _) y (enum_val i))
       (fun p : 'rV_ _ => [ffun x => p ``_ (enum_rank x)])) //=; last first.
     move=> v _; by apply/rowP => i; rewrite mxE ffunE enum_valK.
@@ -371,7 +371,7 @@ transitivity (\sum_(v : 'rV[A]_n)
       (\sum_(y in ~: [set y0 | prod_rV (yn, y0) \in `JTS P W n epsilon0])
       W ``(y | yn))) (\row_(i < n) a) ord0)%R.
   transitivity (\sum_(j : _)
-    (\prod_(m : M) P `^ n ((tcast M_prednK j) \__ (enum_rank m))) *
+    (\prod_(m : M) P `^ n ((tcast M_prednK j) !_ (enum_rank m))) *
       (\sum_(y in ~: [set y0 | prod_rV (nth (\row_(i < n) a) j 0, y0) \in
           `JTS P W n epsilon0])
       W ``(y | nth (\row_(i < n) a) j 0))).
@@ -384,19 +384,19 @@ transitivity (\sum_(v : 'rV[A]_n)
       by rewrite tcastE /= cast_ord_id.
     apply eq_big => m; by rewrite !inE H.
   rewrite -(@big_tuple_cons_behead _ #|M|.-1
-   (fun j => ((\prod_(m : M) P `^ n ((tcast M_prednK j) \__ (enum_rank m))) *
+   (fun j => ((\prod_(m : M) P `^ n ((tcast M_prednK j) !_ (enum_rank m))) *
      (\sum_(y in ~: [set y0 | prod_rV (nth (\row_(i < n) a) j 0, y0) \in
          `JTS P W n epsilon0]) W ``(y | nth (\row_(i < n) a) j 0)))) xpredT xpredT).
   apply eq_bigr => ta _ /=; by rewrite -big_distrl /= mulRC.
 transitivity ((\sum_(ta in 'rV[A]_n) P `^ _ ta *
     (\sum_(y in ~: [set y0 | prod_rV (ta, y0) \in `JTS P W n epsilon0])
     (W ``(| ta ) ) y)) *
-    \sum_(j in {:k.-tuple ('rV[A]_n)}) \prod_(m < k) (P `^ _ (j \__ m)))%R.
+    \sum_(j in {:k.-tuple ('rV[A]_n)}) \prod_(m < k) (P `^ _ (j !_ m)))%R.
   rewrite big_distrl /=.
   apply eq_bigr => ta _.
   rewrite -mulRA mulRCA; congr Rmult.
   transitivity (\sum_(j in {: #|'I_k|.-tuple ('rV[A]_n) })
-    P `^ _ ta * \prod_(m < k) P `^ _ (j \__ (enum_rank m)))%R.
+    P `^ _ ta * \prod_(m < k) P `^ _ (j !_ (enum_rank m)))%R.
     have k_prednK : #|'I_k.+1|.-1 = #|'I_k| by rewrite !card_ord.
     rewrite (big_tcast (esym k_prednK)) esymK.
     apply eq_bigr => i0 Hi0.
@@ -486,7 +486,7 @@ transitivity (
   \sum_(j2 in {: (#|M| - i.+1).-tuple ('rV[A]_n)})
   \sum_(j0 in 'rV[A]_n)
   \sum_(ji in 'rV[A]_n)
-  Wght.d P [ffun x => (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])\__x] *
+  Wght.d P [ffun x => (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])!_x] *
   \sum_(y | y \in [set w | prod_rV (ji, w) \in `JTS P W n epsilon0])
   (W ``(| j0)) y)%R.
   transitivity (
@@ -494,14 +494,14 @@ transitivity (
     \sum_(j1 in {: i.-1.-tuple ('rV[A]_n)})
     \sum_(ji in 'rV[A]_n)
     \sum_(j2 in {: (#|M| - i.+1).-tuple ('rV[A]_n)})
-    Wght.d P [ffun x => (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])\__x] *
+    Wght.d P [ffun x => (tcast Hcast [tuple of j0 :: j1 ++ ji :: j2])!_x] *
     \sum_( y | y \in [set w | prod_rV (ji, w) \in `JTS P W n epsilon0])
     (W ``(| j0) ) y)%R.
-    rewrite (reindex_onto (fun p => [ffun x => p\__(enum_rank x)]) (fun y => fgraph y)) /=; last first.
+    rewrite (reindex_onto (fun p => [ffun x => p!_(enum_rank x)]) (fun y => fgraph y)) /=; last first.
       move=> f _; apply/ffunP => m; by rewrite ffunE tnth_fgraph enum_rankK.
     transitivity ( \sum_(j : _)
-      (Wght.d P [ffun x => j\__(enum_rank x)] *
-        Pr (W ``(| [ffun x => j\__(enum_rank x)] ord0)) (E_F_N [ffun x => j\__(enum_rank x)] i)))%R.
+      (Wght.d P [ffun x => j!_(enum_rank x)] *
+        Pr (W ``(| [ffun x => j!_(enum_rank x)] ord0)) (E_F_N [ffun x => j!_(enum_rank x)] i)))%R.
       apply eq_big => //= x; apply/eqP/eq_from_tnth => j.
       by rewrite tnth_fgraph ffunE enum_valK.
     rewrite (big_tcast (card_ord k.+1)).
@@ -524,14 +524,14 @@ transitivity (
       rewrite (reindex_onto enum_rank enum_val); last by move=> *; rewrite enum_valK.
       apply eq_big => /=; first by move=> x; rewrite enum_rankK eqxx inE.
       move=> i4 _; congr (P `^ _ _).
-      rewrite !ffunE; congr (_ \__ _).
+      rewrite !ffunE; congr (_ !_ _).
       apply/val_inj => /=.
       rewrite [LHS]eq_tcast /= !eq_tcast /= [RHS]eq_tcast eq_tcast /=; congr (_ :: _ ++ _ :: _).
       by rewrite eq_tcast.
     - apply eq_big.
       + move=> x /=.
         rewrite !inE ffunE.
-        rewrite (_ : (_ \__ _) = i2) //=.
+        rewrite (_ : (_ !_ _) = i2) //=.
         rewrite enum_rank_ord /= tcastE !cast_ord_comp (tnth_nth i0) /=.
         rewrite eq_tcast /=.
         rewrite -cat_cons nth_cat /= size_tuple prednK ?lt0n // ltnn subnn.
@@ -571,7 +571,7 @@ transitivity (
     by rewrite big_cat /= mulRC.
   rewrite [in RHS](big_nth j0) /= big_mkord.
   transitivity (\prod_(j < #|@predT M|)
-    P `^ _ ([ffun x => (tcast Hcast [tuple of j0 :: j1 ++ j3 :: j2])\__(enum_rank x)] (enum_val j)))%R.
+    P `^ _ ([ffun x => (tcast Hcast [tuple of j0 :: j1 ++ j3 :: j2])!_(enum_rank x)] (enum_val j)))%R.
     rewrite ffunE; apply eq_big => ? //= _.
     by rewrite !ffunE enum_valK.
   have j_M : (size (j1 ++ j3 :: j2)).+1 = #|M|.

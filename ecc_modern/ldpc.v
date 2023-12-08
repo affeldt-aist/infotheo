@@ -820,7 +820,7 @@ Local Open Scope ring_scope.
 Local Open Scope tuple_ext_scope.
 
 Definition sumproduct_init : 'M[R]_(m, n) * 'M[R]_(m, n) :=
-  let init (x : 'F_2) := \matrix_(m0 < m, n0 < n) W `(y \__ n0 | x) in
+  let init (x : 'F_2) := \matrix_(m0 < m, n0 < n) W `(y !_ n0 | x) in
   (init 0, init 1).
 
 Definition alpha_fun (m0 : 'I_m) (n0 : 'I_n) (beta : 'M[R]_(m, n) * 'M[R]_(m, n))
@@ -830,7 +830,7 @@ Definition alpha_fun (m0 : 'I_m) (n0 : 'I_n) (beta : 'M[R]_(m, n) * 'M[R]_(m, n)
     \prod_(n1 in 'V m0 :\ n0) if t ``_ n1 == Zp0 then beta.1 m0 n1 else beta.2 m0 n1)%R.
 
 Definition beta_fun (m0 : 'I_m) (n0 : 'I_n) (x : 'F_2) (alpha : 'M[R]_(m, n)) : R :=
-  (W `(y \__ n0 | x) * \prod_(m1 in 'F n0 :\ m0) alpha m1 n0)%R.
+  (W `(y !_ n0 | x) * \prod_(m1 in 'F n0 :\ m0) alpha m1 n0)%R.
 
 Fixpoint sumproduct_loop (lmax : nat) (beta0 beta1 : 'M_(m, n)) : option ('rV['F_2]_n) :=
   match lmax with
@@ -847,7 +847,7 @@ Fixpoint sumproduct_loop (lmax : nat) (beta0 beta1 : 'M_(m, n)) : option ('rV['F
         (K * beta_fun m0 n0 x alpha)%R in
       let beta0 := \matrix_(m0 < m, n0 < n) nbeta m0 n0 0 alpha0 in
       let beta1 := \matrix_(m0 < m, n0 < n) nbeta m0 n0 1 alpha1 in
-      let estimation x n0 alpha := (W x (y \__ n0) * \prod_(m1 in 'F n0) alpha m1 n0)%R in
+      let estimation x n0 alpha := (W x (y !_ n0) * \prod_(m1 in 'F n0) alpha m1 n0)%R in
       let gamma0 n0 := estimation Zp0 n0 alpha0 in
       let gamma1 n0 := estimation Zp1 n0 alpha1 in
       let chat := \matrix_(i < 1, n0 < n) if (gamma0 n0 >= gamma1 n0)%mcR then 0 else 1 in

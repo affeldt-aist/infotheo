@@ -154,9 +154,9 @@ Lemma summary_powersetE (s : {set 'I_n}) (d : 'rV['F_2]_n) (e : 'rV['F_2]_n -> R
 Proof.
 rewrite /summary_powerset.
 transitivity (\sum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
-  e (\row_(k0 < n) if k0 \in s then (fgraph f) \__ (cast_ord (esym (@card_ord n)) k0)
+  e (\row_(k0 < n) if k0 \in s then (fgraph f) !_ (cast_ord (esym (@card_ord n)) k0)
     else d ``_ k0))%R.
-  rewrite (reindex_onto (fun p => [ffun x => p \__ (cast_ord (esym (@card_ord n)) x)])
+  rewrite (reindex_onto (fun p => [ffun x => p !_ (cast_ord (esym (@card_ord n)) x)])
     (fun y => fgraph y)) /=; last first.
     move=> /= f Hf.
     apply/ffunP => /= k0.
@@ -188,7 +188,7 @@ transitivity (\sum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
   by rewrite /row_of_tuple mxE tcastE.
 transitivity (\sum_(f in {ffun 'I_n -> bool} | freeon s d (\row_i F2_of_bool (f i)))
       e (\row_k0 (if k0 \in s
-                  then F2_of_bool ((fgraph f) \__ (cast_ord (esym (card_ord n)) k0))
+                  then F2_of_bool ((fgraph f) !_ (cast_ord (esym (card_ord n)) k0))
                   else d ``_ k0)))%R.
   rewrite (reindex_onto (fun f : {ffun 'I_n -> bool} => [ffun x => F2_of_bool (f x)])
     (fun f : {ffun 'I_n -> 'F_2} => [ffun x => bool_of_F2 (f x)])); last first.

@@ -10,7 +10,7 @@ Import Coq.NArith.BinNatDef.
 Declare Scope tuple_ext_scope.
 Declare Scope vec_ext_scope.
 
-Notation "t '\__' i" := (tnth t i) (at level 9) : tuple_ext_scope.
+Notation "t '!_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
 Reserved Notation "A `* B"  (at level 46, left associativity).
 
 Set Implicit Arguments.
@@ -704,7 +704,7 @@ Proof.
 subst m n => /=.
 case => /= tv.
 apply eq_from_tnth => i.
-rewrite (tnth_nth (t\__i)) [in X in _ = X](tnth_nth (t\__i)).
+rewrite (tnth_nth (t!_i)) [in X in _ = X](tnth_nth (t!_i)).
 by rewrite -(@nth_take k) // -[in X in _ = X](@nth_take k) // tv.
 Qed.
 
@@ -733,16 +733,16 @@ Proof. move=> [ [|h []] H] //. by apply val_inj. Qed.
 Definition tbehead n (t : n.+1.-tuple A) : n.-tuple A := [tuple of behead t].
 
 Lemma sorted_of_tnth {C : eqType} (r : rel C) k (t : k.-tuple C) :
-  transitive r -> sorted r t -> forall a b : 'I_k, a < b -> r (t \__ a) (t \__ b).
+  transitive r -> sorted r t -> forall a b : 'I_k, a < b -> r (t !_ a) (t !_ b).
 Proof.
 move=> r_trans r_sorted a b ab.
-rewrite (tnth_nth t\__b) {2}(tnth_nth t\__b).
+rewrite (tnth_nth t!_b) {2}(tnth_nth t!_b).
 apply sorted_of_nth => //; by rewrite ab size_tuple /=.
 Qed.
 
 Lemma sorted_of_tnth_leq (X : finType) (n : nat) (r : rel X) (t : n.-tuple X)
   (r_trans : transitive r) (r_refl : reflexive r) (Hx : sorted r t) :
-  forall (l p : 'I_n), l <= p -> r t\__l t\__p.
+  forall (l p : 'I_n), l <= p -> r t!_l t!_p.
 Proof.
 move=> l p leqlp.
 case/boolP : (l == p) => Hcase.
@@ -756,9 +756,9 @@ by rewrite size_sort size_tuple.
 Defined.
 
 Lemma tnth_uniq (T : eqType) n (t : n.-tuple T) (i j : 'I_n) :
-  uniq t -> (t \__ i == t \__ j) = (i == j).
+  uniq t -> (t !_ i == t !_ j) = (i == j).
 Proof.
-pose a := t \__ i; rewrite 2!(tnth_nth a) => *.
+pose a := t !_ i; rewrite 2!(tnth_nth a) => *.
 by rewrite nth_uniq // size_tuple.
 Qed.
 
@@ -855,7 +855,7 @@ Local Open Scope tuple_ext_scope.
 
 Variables (A : eqType) (n : nat) (s : 'S_n).
 
-Definition perm_tuple (t : n.-tuple A) := [tuple (t \__ (s i)) | i < n].
+Definition perm_tuple (t : n.-tuple A) := [tuple (t !_ (s i)) | i < n].
 
 End perm_tuples.
 
