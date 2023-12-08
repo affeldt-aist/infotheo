@@ -704,7 +704,7 @@ Proof.
 subst m n => /=.
 case => /= tv.
 apply eq_from_tnth => i.
-rewrite (tnth_nth (t!_i)) [in X in _ = X](tnth_nth (t!_i)).
+rewrite (tnth_nth t!_i) [in X in _ = X](tnth_nth t!_i).
 by rewrite -(@nth_take k) // -[in X in _ = X](@nth_take k) // tv.
 Qed.
 
