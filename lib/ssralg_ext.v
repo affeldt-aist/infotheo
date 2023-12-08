@@ -141,7 +141,7 @@ Definition tuple_of_row n (v : 'rV[A]_n) := [tuple v ``_ i | i < n].
 
 Local Open Scope tuple_ext_scope.
 
-Definition row_of_tuple n (t : n.-tuple A) := \row_(i < n) (t \_ i).
+Definition row_of_tuple n (t : n.-tuple A) := \row_(i < n) (t !_ i).
 
 Lemma row_of_tupleK n (t : n.-tuple A) : tuple_of_row (row_of_tuple t) = t.
 Proof. apply eq_from_tnth => n0; by rewrite tnth_mktuple mxE. Qed.
@@ -153,7 +153,7 @@ Lemma tuple_of_row_inj n : injective (@tuple_of_row n).
 Proof.
 move=> i j ij.
 apply/rowP => m0.
-move/(congr1 (fun x => x \_ m0)) : ij.
+move/(congr1 (fun x => x !_ m0)) : ij.
 by rewrite 2!tnth_mktuple.
 Qed.
 
@@ -204,11 +204,11 @@ apply eq_from_tnth => n0.
 rewrite tnth_mktuple mxE.
 case: splitP => [n3 n0n3|n3 n0n1n3].
   rewrite /tnth nth_cat size_tuple (_ : (n0 < n1 = true)%nat); last by rewrite n0n3 ltn_ord.
-  transitivity ((tuple_of_row v1) \_ n3); first by rewrite tnth_mktuple.
+  transitivity ((tuple_of_row v1) !_ n3); first by rewrite tnth_mktuple.
   rewrite /tnth n0n3; apply set_nth_default; by rewrite size_tuple.
 rewrite /tnth nth_cat size_tuple (_ : (n0 < n1 = false)%nat); last first.
   rewrite n0n1n3; apply/negbTE; by rewrite -leqNgt leq_addr.
-  transitivity ((tuple_of_row B) \_ n3); first by rewrite tnth_mktuple.
+  transitivity ((tuple_of_row B) !_ n3); first by rewrite tnth_mktuple.
   rewrite /tnth (_ : (n0 - n1 = n3)%nat); last by rewrite n0n1n3 addnC addnK.
   apply set_nth_default; by rewrite size_tuple.
 Qed.
