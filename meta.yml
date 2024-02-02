@@ -42,7 +42,7 @@ nix: true
 
 supported_coq_versions:
   text: Coq 8.17
-  opam: '{ (>= "8.17" & < "8.19~") | (= "dev") }'
+  opam: '{ (>= "8.17" & < "8.20~") | (= "dev") }'
 
 tested_coq_opam_versions:
 - version: '1.17.0-coq-8.17'
@@ -56,6 +56,8 @@ tested_coq_opam_versions:
 - version: '1.18.0-coq-8.18'
   repo: 'mathcomp/mathcomp'
 - version: '1.19.0-coq-8.18'
+  repo: 'mathcomp/mathcomp'
+- version: '1.19.0-coq-8.19'
   repo: 'mathcomp/mathcomp'
 
 dependencies:
@@ -91,7 +93,7 @@ dependencies:
     [MathComp analysis](https://github.com/math-comp/analysis)
 - opam:
     name: coq-hierarchy-builder
-    version: '{ = "1.5.0" }'
+    version: '{ >= "1.5.0" }'
   description: |-
     [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
 - opam:

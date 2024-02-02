@@ -227,7 +227,7 @@ rewrite bigU //.
 have -> : h @^-1: (B :\: [set h x | x in I]) = set0.
   apply/setP/subset_eqP/andP; rewrite sub0set; split => //.
   apply/subsetP=> i; rewrite !inE; case/andP.
-  move/imsetP=> H _; elimtype False; apply H.
+  move/imsetP=> H _; rewrite boolp.falseE; apply: H.
   by exists i; rewrite ?inE.
 rewrite big_set0 Monoid.mulm1.
 have -> : \big[aop/idx]_(x in B :\: [set h x | x in I]) \big[aop/idx]_(i | h i == x) F i =

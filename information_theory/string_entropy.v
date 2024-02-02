@@ -115,7 +115,7 @@ Lemma mulnRdep_nz x y (Hx : x != O) : mulnRdep x y = x * y Hx.
 Proof.
 rewrite /mulnRdep /=.
 destruct boolP.
-  by elimtype False; rewrite i in Hx.
+  by exfalso; rewrite i in Hx.
 do 2!f_equal; apply eq_irrelevance.
 Qed.
 
