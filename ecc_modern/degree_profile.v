@@ -1829,7 +1829,7 @@ case: (lastP p) Hp Hl => /=.
   by rewrite eqxx /= sp_in_step_edom step_edges_sp_ep eqxx.
 move=> {}p x' Hp Hl.
 rewrite last_rcons in Hl.
-elimtype False; move: Hp.
+exfalso; move: Hp.
 rewrite (eqP Hl) rcons_path /graph_rel => /andP [_] /=.
 case: (last (x,b1) p) => [] [|] a b.
   by destruct b.

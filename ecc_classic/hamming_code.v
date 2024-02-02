@@ -988,8 +988,7 @@ transitivity (
   apply eq_bigr => t Ht.
   rewrite dH_sym.
   rewrite -(DMC_BSC_prop p (enc hamming_channel_code) m0 t).
-  set x := eq_ind_r _ _ _.
-  rewrite (_ : x = card_F2) //; by apply eq_irrelevance.
+  by rewrite [X in BSC.c X _](_ : _ = card_F2).
 transitivity (
 \sum_(a|a \in [set tb | if dec hamming_channel_code tb is Some m1 then
                            m1 != m0 else

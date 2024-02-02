@@ -199,7 +199,7 @@ Lemma axmap : ax_map T.
 Proof.
 move=> n m u d g.
 have -> : fdistmap u d = fdist_convn d (fun i : 'I_m => fdist1 (u i)).
-  by apply fdist_ext => i; rewrite /fdistmap fdistbindE.
+  by apply: fdist_ext => /= i; rewrite /fdistmap/= fdistbindE// fdist_convnE.
 rewrite -axbary.
 by congr (<&>_ _ _); apply funext => i /=; rewrite axproj.
 Qed.
@@ -554,7 +554,7 @@ Lemma axinjmap : ax_inj_map T.
 Proof.
 move=> n m u d g Hu.
 have -> : fdistmap u d = fdist_convn d (fun i : 'I_m => fdist1 (u i)).
-  by apply fdist_ext => i; rewrite /fdistmap fdistbindE.
+  by apply fdist_ext => i; rewrite /fdistmap fdistbindE// fdist_convnE.
 rewrite -axbarypart.
 - congr (<&>_ _ _); apply funext => j /=; symmetry; apply axidem => i.
   by rewrite supp_fdist1 inE => /eqP ->.
