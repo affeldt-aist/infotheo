@@ -906,7 +906,7 @@ Section temporary_lemmas.
 Local Open Scope ring_scope.
 
 Lemma sumRE (I : Type) (r : seq I) (P : pred I) (F : I -> R) :
-  \sum_(i <- r | P i) F i = \big[+%R/0]_(i <- r | P i) F i.
+  (\sum_(i <- r | P i) F i)%coqR = (\sum_(i <- r | P i) F i).
 Proof. by []. Qed.
 
 Lemma bigmaxRE (I : Type) (r : seq I) (P : pred I) (F : I -> R) :
