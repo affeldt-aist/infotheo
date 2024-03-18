@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
 From mathcomp Require Import all_algebra vector reals normedtype.
 From mathcomp Require Import mathcomp_extra boolp.
@@ -133,17 +134,15 @@ End Exports.
 End FDist.
 Export FDist.Exports.
 Coercion FDist.f : fdist >-> finfun_of.
-Canonical fdist_subType R A := Eval hnf in [subType for @FDist.f R A].
-Definition fdist_eqMixin R A := [eqMixin of fdist R A by <:].
-Canonical fdist_eqType R A := Eval hnf in EqType _ (fdist_eqMixin R A).
+
+HB.instance Definition _ R A := [isSub for @FDist.f R A].
+HB.instance Definition _ R A := [Equality of fdist R A by <:].
 
 #[global] Hint Extern 0 (is_true (0 <= _)%R) => solve [exact: FDist.ge0] : core.
 #[global] Hint Extern 0 (is_true (_ <= 1)%R) => solve [exact: FDist.le1] : core.
 
-Definition fdist_of (R : realType) (A : finType) :=
-  fun phT : phant (Finite.sort A) => fdist R A.
-Notation "R '.-fdist' T" := (fdist_of R (Phant T)) : fdist_scope.
-Notation "{ 'fdist' T }" := (fdist_of real_realType (Phant T)) : fdist_scope.
+Notation "R '.-fdist' T" := (fdist R T%type) : fdist_scope.
+Notation "{ 'fdist' T }" := (fdist Rdefinitions.R T%type) : fdist_scope.
 
 Lemma fdist_ge0_le1 (R : numDomainType) (A : finType) (d : fdist R A) a :
   (0 <= d a <= 1)%R.
@@ -764,8 +763,7 @@ rewrite (bigID (pred1 j)) /= [X in _ = X + _](_ : _ = 0) ?add0r; last first.
   rewrite (big_pred1 j).
   by rewrite /D fdistD1E eqxx.
   by move=> /= i; rewrite -leqNgt andbC andb_idr // => /eqP ->.
-rewrite [in RHS]big_mkcond big_ord_recl.
-set X := (X in _ = GRing.add_monoid R _ X).
+rewrite [in RHS]big_mkcond big_ord_recl /=.
 rewrite /= -leqNgt leqn0 eq_sym andbN add0r.
 rewrite big_mkcond; apply eq_bigr => i _.
 rewrite -2!leqNgt andbC eq_sym -ltn_neqAle ltnS.
@@ -784,7 +782,7 @@ End fdist_del.
 Section fdist_belast.
 Local Open Scope ring_scope.
 Variable R : realType.
-Variables (n : nat) (P : fdist_of R (Phant 'I_n.+1)) (Pmax_neq1 : P ord_max != 1).
+Variables (n : nat) (P : fdist R 'I_n.+1) (Pmax_neq1 : P ord_max != 1).
 
 Let D : R.-fdist 'I_n.+1 := fdistD1 Pmax_neq1.
 
@@ -1073,7 +1071,7 @@ Section fdistX_prop.
 Local Open Scope ring_scope.
 Variable T : realType.
 Variables (A B : finType) (P : fdist T A) (Q : fdist T B)
-  (R S : fdist_of T (Phant (A * B))).
+  (R S : T .-fdist (A * B)).
 
 Lemma fdistXI : fdistX (fdistX R) = R.
 Proof. by rewrite /fdistX fdistmap_comp swapK fdistmap_id. Qed.
@@ -1172,7 +1170,7 @@ End wolfowitz_counting.
 Section fdist_prod_of_rV.
 Local Open Scope ring_scope.
 Variable R : realType.
-Variables (A : finType) (n : nat) (P : fdist_of R (Phant 'rV[A]_n.+1)).
+Variables (A : finType) (n : nat) (P : R .-fdist 'rV[A]_n.+1).
 
 Let f (v : 'rV[A]_n.+1) : A * 'rV[A]_n := (v ord0 ord0, rbehead v).
 

@@ -126,7 +126,7 @@ transitivity ((- q k.+2 * v k.+1) * u k.+1 + v k * u k.+1 +
   rewrite mulrDl -3!addrA; congr (_ + (_ + _)).
   rewrite mulrDr opprD; congr (_ - _).
   by rewrite mulNr mulrN opprK.
-rewrite exprS -IH mulNr mul1r opprD opprK [in RHS]addrC; congr (_ - _).
+rewrite exprS -IH [in RHS]mulNr mul1r opprD opprK [in RHS]addrC; congr (_ - _).
 rewrite addrC addrA -[RHS]add0r; congr (_ + _).
 by rewrite mulrC -mulrA (mulrC (v k.+1)) mulrA 2!mulNr subrr.
 Qed.
