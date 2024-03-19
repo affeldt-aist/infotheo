@@ -136,7 +136,7 @@ Export FDist.Exports.
 Coercion FDist.f : fdist >-> finfun_of.
 
 HB.instance Definition _ R A := [isSub for @FDist.f R A].
-HB.instance Definition _ R A := [Equality of fdist R A by <:].
+HB.instance Definition _ R A := [Choice of fdist R A by <:].
 
 #[global] Hint Extern 0 (is_true (0 <= _)%R) => solve [exact: FDist.ge0] : core.
 #[global] Hint Extern 0 (is_true (_ <= 1)%R) => solve [exact: FDist.le1] : core.
