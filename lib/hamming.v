@@ -850,7 +850,7 @@ Lemma hamming_01 m p :
   (1 - p) ^ m + m%:R * p * (1 - p) ^ (m - 1).
 Proof.
 rewrite (bigID [pred i | wH i == O]) /=.
-rewrite (big_pred1 (GRing.zero _)) /=; last first.
+rewrite (big_pred1 (@GRing.zero _)) /=; last first.
   by move=> i /=; rewrite !inE -wH_eq0 andb_idl // => /eqP ->.
 rewrite wH0 pow_O subn0 mulR1; congr (_ + _).
 transitivity (\sum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^ (m - 1) * p ^ 1)).

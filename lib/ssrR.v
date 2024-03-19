@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals.
 From mathcomp Require Import lra.
@@ -913,7 +914,7 @@ Lemma bigmaxRE (I : Type) (r : seq I) (P : pred I) (F : I -> R) :
   \rmax_(i <- r | P i) F i = \big[Order.max/0]_(i <- r | P i) F i.
 Proof.
 rewrite /Rmax /Order.max/=.
-congr BigOp.bigop.
+congr bigop.body.
 apply: boolp.funext=> i /=.
 congr BigBody.
 apply: boolp.funext=> x /=.

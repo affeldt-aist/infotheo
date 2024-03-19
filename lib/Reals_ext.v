@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect.
 From mathcomp Require Import all_algebra vector reals normedtype.
 From mathcomp Require Import mathcomp_extra boolp.
@@ -241,9 +242,8 @@ Record nneg_finfun := mkNNFinfun {
   nneg_ff :> {ffun T -> R} ;
   _ : [forall a, (0 <= nneg_ff a)%mcR] }.
 
-Canonical nneg_finfun_subType := Eval hnf in [subType for nneg_ff].
-Definition nneg_finfun_eqMixin := [eqMixin of nneg_finfun by <:].
-Canonical nneg_finfun_eqType := Eval hnf in EqType _ nneg_finfun_eqMixin.
+HB.instance Definition _ := [isSub for nneg_ff].
+HB.instance Definition _ := [Equality of nneg_finfun by <:].
 End nneg_finfun.
 
 Record nneg_fun (T : Type) := mkNNFun {
@@ -264,6 +264,7 @@ have [/RleP ? /RleP ?] : (0 <= / IZR (Zpos p) <= 1)%coqR.
   - exact/IZR_le/Pos2Z.pos_le_pos/Pos.le_1_l.
 exact/andP.
 Qed.
+HB.about GRing.isSemiRing.Build.
 
 Canonical probIZR (p : positive) := Eval hnf in Prob.mk (prob_IZR_subproof p).
 
@@ -300,7 +301,6 @@ apply/andP; split.
 rewrite RdivE' mul1r invf_le1//.
   by rewrite ler_addl.
 rewrite (@lt_le_trans _ _ 1)//.
-  by rewrite ltr01.
 by rewrite ler_addl.
 Qed.
 
@@ -336,7 +336,7 @@ Export OProb.Exports.
 Coercion OProb.p : oprob >-> prob.
 
 Canonical oprobcplt (p : oprob) := Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)). *)
-Coercion OProb.p : oprob  >-> prob_of.
+Coercion OProb.p : oprob  >-> prob.
 
 Section oprob_lemmas.
 Implicit Types p q : {oprob R}.
@@ -392,7 +392,7 @@ by rewrite mulr_ilt1//; apply/RltP/oprob_lt1.
 Qed.
 
 Canonical oprobmulR (p q : {oprob R}) :=
-  Eval hnf in @OProb.mk _ (Prob.p (OProb.p p) * q)%:pr (oprob_mulR_subproof p q).
+  Eval hnf in @OProb.mk R (probmulR p q) (oprob_mulR_subproof p q).
 
 Lemma s_of_pq_oprob_subproof (p q : {oprob R}) : (0 < Prob.p [s_of p, q] < 1)%O.
 Proof.
@@ -417,7 +417,7 @@ rewrite r_of_pqE; apply/andP; split.
   rewrite divr_gt0////.
     exact/RltP/oprob_gt0.
   rewrite s_of_pqE//.
-  have := OProb.O1 (((oprob_to_real p).~ * (oprob_to_real q).~).~)%:opr.
+  have := OProb.O1 (oprobcplt (oprobmulR (oprobcplt p) (oprobcplt q))).
   by move/andP=> [] /=.
 apply/RltP.
 rewrite -RdivE'.
@@ -426,7 +426,7 @@ rewrite ltR_neqAle; split; last exact/RleP/ge_s_of.
 rewrite s_of_pqE; apply/eqP/ltR_eqF.
 rewrite onemM !onemK -!RplusE -RoppE -addRA.
 apply/ltR_addl.
-have := oprob_gt0 ((oprob_to_real p).~ * oprob_to_real q)%:opr.
+have := oprob_gt0 (oprobmulR (oprobcplt p) q).
 by rewrite /= onemE mulrBl mul1r -RminusE//.
 Qed.
 
@@ -456,13 +456,10 @@ End Exports.
 End Rpos.
 Export Rpos.Exports.
 
-Canonical Rpos_subType := [subType for Rpos.v].
-Definition Rpos_eqMixin := Eval hnf in [eqMixin of Rpos by <:].
-Canonical Rpos_eqType := Eval hnf in EqType Rpos Rpos_eqMixin.
-Definition Rpos_choiceMixin := Eval hnf in [choiceMixin of Rpos by <:].
-Canonical Rpos_choiceType := Eval hnf in ChoiceType Rpos Rpos_choiceMixin.
+HB.instance Definition _ := [isSub for Rpos.v].
+HB.instance Definition _ := [Choice of Rpos by <:].
 
-Definition rpos_coercion (p : Rpos) : Real.sort real_realType := Rpos.v p.
+Definition rpos_coercion (p : Rpos) : Real.sort R := Rpos.v p.
 Coercion rpos_coercion : Rpos >-> Real.sort.
 
 Definition mkRpos x H := @Rpos.mk x (introT (RltP _ _) H).
@@ -547,11 +544,8 @@ End Exports.
 End Rnng.
 Export Rnng.Exports.
 
-Canonical Rnng_subType := [subType for Rnng.v].
-Definition Rnng_eqMixin := Eval hnf in [eqMixin of Rnng by <:].
-Canonical Rnng_eqType := Eval hnf in EqType Rnng Rnng_eqMixin.
-Definition Rnng_choiceMixin := Eval hnf in [choiceMixin of Rnng by <:].
-Canonical Rnng_choiceType := Eval hnf in ChoiceType Rnng Rnng_choiceMixin.
+HB.instance Definition _ := [isSub for Rnng.v].
+HB.instance Definition _ := [Choice of Rnng by <:].
 
 Section Rnng_theory.
 Local Open Scope R_scope.

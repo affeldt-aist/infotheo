@@ -140,7 +140,7 @@ Local Open Scope fdist_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
-Local Notation "{ 'fdist' T }" := (fdist_of _ (Phant T)) : fdist_scope.
+Local Notation "{ 'fdist' T }" := (_ .-fdist T) : fdist_scope.
 
 #[export] Hint Extern 0 (0 <= _)%coqR =>
   solve [apply/RleP/(FDist.ge0 _)] : core.
@@ -218,7 +218,8 @@ rewrite fdist_delE fdistD1E ltnNge ji /= ifF; last first.
   apply/eqP => /(congr1 val) => /=.
   rewrite /bump add1n => ij.
   by move: ji; apply/negP; rewrite -ij ltnn.
-  rewrite -mulrAC [in RHS]mulrC 3!mulrA divrr ?mul1r ?unitfE ?onem_neq0 //.
+rewrite -[1 - P j]/(P j).~.
+rewrite [_ / _]mulrC !mulrA divrr ?unitfE ?onem_neq0 // mul1r.
 by rewrite /g' /fdist_del_idx ltnNge ji.
 Qed.
 End tmp.
@@ -227,9 +228,9 @@ End tmp.
 Section fintype_extra.
 
 Lemma index_enum_cast_ord n m (e : n = m) :
-  index_enum (ordinal_finType m) = [seq cast_ord e i | i <- index_enum (ordinal_finType n)].
+  index_enum 'I_m = [seq cast_ord e i | i <- index_enum 'I_n].
 Proof.
-subst m; rewrite -{1}(map_id (index_enum (ordinal_finType n))).
+subst m; rewrite -{1}(map_id (index_enum 'I_n)).
 apply eq_map=> [[x xlt]].
 by rewrite /cast_ord; congr Ordinal; exact: bool_irrelevance.
 Qed.
@@ -253,7 +254,7 @@ Section def.
 Local Open Scope classical_set_scope.
 Local Open Scope ring_scope.
 Variables (R: realType) (A : Type) (n : nat) (g : 'I_n -> A).
-Variables (e : fdist_of R (Phant 'I_n)) (y : set A).
+Variables (e : R .-fdist 'I_n) (y : set A).
 Definition f := [ffun i : 'I_n => if g i \in y then e i else 0].
 Lemma f0 i : (0 <= f i). Proof. by rewrite /f ffunE; case: ifPn. Qed.
 Lemma f1 (x : set A) (gX : g @` setT `<=` x `|` y)
@@ -293,10 +294,8 @@ Lemma dE' (x : set A) (gX : g @` setT `<=` x `|` y)
 Proof. by rewrite /d'; unlock; rewrite ffunE. Qed.
 End def.
 End CodomDFDist.
-Module isConvexSpace_.
 
-HB.mixin Record isConvexSpace (T : Type) := {
-  convexspacechoiceclass : Choice.class_of T ;
+HB.mixin Record isConvexSpace T of Choice T := {
   conv : {prob R} -> T -> T -> T ;
   conv1 : forall a b, conv 1%:pr a b = a ;
   convmm : forall p a, conv p a a = a ;
@@ -306,17 +305,6 @@ HB.mixin Record isConvexSpace (T : Type) := {
 
 #[short(type=convType)]
 HB.structure Definition ConvexSpace := {T of isConvexSpace T }.
-End isConvexSpace_.
-Export -(coercions) isConvexSpace_.
-
-Coercion ConvexSpace.isConvexSpace__isConvexSpace_mixin :
-  ConvexSpace.axioms_ >-> isConvexSpace.axioms_.
-
-Canonical conv_eqType (T : convType) :=
-  Eval hnf in EqType (ConvexSpace.sort T) convexspacechoiceclass.
-Canonical conv_choiceType (T : convType) :=
-  Eval hnf in ChoiceType (ConvexSpace.sort T) convexspacechoiceclass.
-Coercion conv_choiceType : convType >-> choiceType.
 
 Notation "a <| p |> b" := (conv p a b) : convex_scope.
 
@@ -450,14 +438,8 @@ Arguments point {A} pt.
 Arguments weight {A}.
 Notation "p *: a" := (Scaled p a) : scaled_scope.
 
-Definition scaled_eqMixin (A : eqType) := CanEqMixin (@sum_of_scaledK A).
-Canonical scaled_eqType (A : eqType) :=
-  Eval hnf in EqType (scaled A) (@scaled_eqMixin A).
-Definition scaled_choiceMixin (A : choiceType) :=
-  CanChoiceMixin (@sum_of_scaledK A).
-Canonical scaled_choiceType (A : choiceType) :=
-  Eval hnf in ChoiceType (scaled A) (@scaled_choiceMixin A).
-Canonical scaled_pointedType (A : choiceType) := PointedType _ (@Zero A).
+HB.instance Definition _ (A : eqType) := Equality.copy (scaled A) (can_type (@sum_of_scaledK A)).
+HB.instance Definition _ (A : choiceType) := Choice.copy (scaled A) (can_type (@sum_of_scaledK A)).
 
 Section scaled_eqType.
 Variable A : eqType.
@@ -490,8 +472,7 @@ Notation "[ 'point' 'of' x ]" := (@point _ _ (@weight_gt0 _ _ x))
 Notation "[ 'weight' 'of' x ]" := (weight_neq0 x)
   (at level 0, format "[ 'weight'  'of'  x ]").
 
-HB.mixin Record isQuasiRealCone A := {
-  quasirealconechoiceclass : Choice.class_of A ;
+HB.mixin Record isQuasiRealCone A of Choice A := {
   addpt : A -> A -> A ;
   zero : A ;
   addptC : commutative addpt ;
@@ -507,12 +488,6 @@ HB.mixin Record isQuasiRealCone A := {
 #[short(type=quasiRealCone)]
 HB.structure Definition QuasiRealCone := { A & isQuasiRealCone A}.
 
-Canonical quasirealcone_eqType (T : quasiRealCone) :=
-  Eval hnf in EqType (QuasiRealCone.sort T) quasirealconechoiceclass.
-Canonical quasirealcone_choiceType (T : quasiRealCone) :=
-  Eval hnf in ChoiceType (QuasiRealCone.sort T) quasirealconechoiceclass.
-Coercion quasirealcone_choiceType : quasiRealCone >-> choiceType.
-
 Section quasireal_cone_theory.
 Variable A : quasiRealCone.
 
@@ -524,8 +499,8 @@ Proof.
 by move=> p0; rewrite -[in LHS](scale0pt zero) scaleptA// mulR0 scale0pt.
 Qed.
 
-Canonical addpt_monoid := Monoid.Law (@addptA A) add0pt addpt0.
-Canonical addpt_comoid := Monoid.ComLaw (@addptC A).
+HB.instance Definition _ :=
+  Monoid.isComLaw.Build A (@zero A) (@addpt A) addptA addptC add0pt.
 
 Definition big_morph_scalept q :=
   @big_morph _ _ (@scalept A q) zero addpt zero _ (@scaleptDr A q).
@@ -563,9 +538,10 @@ Notation "\ssum_ ( i | P ) F" := (\big[addpt/@zero _]_(i | P) F).
 Notation "\ssum_ ( i < n | P ) F" := (\big[addpt/@zero _]_(i < n | P%B) F).
 Notation "\ssum_ ( i < n ) F" := (\big[addpt/@zero _]_(i < n) F).
 
-HB.mixin Record isRealCone (A : Type) of isQuasiRealCone A := {
-  scaleptDl : forall p q x, (0 <= p)%coqR -> (0 <= q)%coqR ->
-    @scalept [the quasiRealCone of A] (p + q)%coqR x = addpt (scalept p x) (scalept q x) }.
+HB.mixin Record isRealCone A of QuasiRealCone A := {
+  scaleptDl : forall (p q : R) (x : A), (0 <= p)%coqR -> (0 <= q)%coqR ->
+    scalept (p + q)%coqR x = addpt (scalept p x) (scalept q x)
+}.
 
 #[short(type=realCone)]
 HB.structure Definition RealCone := { A of isQuasiRealCone A & isRealCone A }.
@@ -586,8 +562,8 @@ Qed.
 
 Section barycenter_fdist_convn.
 Variables (n : nat) (B : finType).
-Variable p : real_realType.-fdist 'I_n.
-Variable q : 'I_n -> real_realType.-fdist B.
+Variable p : R.-fdist 'I_n.
+Variable q : 'I_n -> R.-fdist B.
 Variable h : B -> A.
 
 Lemma ssum_fdist_convn :
@@ -684,9 +660,8 @@ case: x => [r x|]; rewrite ?scalept0 // !scalept_gt0; first exact: mulR_gt0.
 by move=> Hpq; congr (_ *: _); apply val_inj => /=; rewrite mulRA.
 Qed.
 
-HB.instance Definition _ := @isQuasiRealCone.Build (scaled A)
-  (Choice.class (@scaled_choiceType A)) addpt Zero addptC' addptA' addpt0
-   scalept scale0pt scale1pt scaleptDr scaleptA.
+HB.instance Definition _ :=
+  isQuasiRealCone.Build (scaled A) addptC' addptA' addpt0 scale0pt scale1pt scaleptDr scaleptA.
 
 Let scaleptDl p q x : 0 <= p -> 0 <= q ->
   scalept (p + q) x = addpt (scalept p x) (scalept q x).
@@ -731,9 +706,8 @@ rewrite RmultE pq_is_rs mulrC -RmultE.
 by rewrite s_of_pqE onemK RmultE.
 Qed.
 
-HB.instance Definition __cone := @isConvexSpace.Build (scaled A)
-  (Choice.class [the choiceType of scaled A]) convpt convpt1 convptmm convptC
-  convptA.
+HB.instance Definition _ :=
+  isConvexSpace.Build (scaled A) convpt1 convptmm convptC convptA.
 
 Lemma convptE p (a b : scaled A) : a <| p |> b = convpt p a b.
 Proof. by []. Qed.
@@ -825,16 +799,16 @@ have [r0|r0] := eqVneq r 0%:pr.
   rewrite r0 conv0 (_ : p = 0%:pr) ?conv0; last first.
     by apply/val_inj; rewrite /= H1 r0 mul0R.
   congr (_ <| _ |> _); move: H2; rewrite H1 r0 mul0R onem0 mul1R.
-  by move/(congr1 (@onem real_realType)); rewrite !onemK => ?; exact/val_inj.
+  by move/(congr1 (@onem R)); rewrite !onemK => ?; exact/val_inj.
 have [s0|s0] := eqVneq s 0%:pr.
   have p0 : p = 0%:pr by apply/val_inj; rewrite /= H1 s0 mulR0.
   rewrite s0 conv0 p0 // ?conv0.
   rewrite (_ : q = 0%:pr) ?conv0 //.
-  move: H2; rewrite p0 onem0 mul1R => /(congr1 (@onem real_realType)); rewrite !onemK => sq.
+  move: H2; rewrite p0 onem0 mul1R => /(congr1 (@onem R)); rewrite !onemK => sq.
   by rewrite -s0; exact/val_inj.
 rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
   apply val_inj; rewrite /= s_of_pqE.
-  move/(congr1 (@onem real_realType)) : H2.
+  move/(congr1 (@onem R)) : H2.
   by rewrite onemK => ->.
 exact: (@r_of_pq_is_r _ _ _ _ s).
 Qed.
@@ -1258,6 +1232,13 @@ Qed.
 
 End is_convex_set.
 
+HB.mixin Record isConvexSet (A : convType) (X : set A) := { is_convex : is_convex_set X }.
+HB.structure Definition ConvexSet A := { X of isConvexSet A X }.
+Notation "{ 'convex_set' T }" := (ConvexSet.type T) : convex_scope.
+Canonical cset_predType A := Eval hnf in
+  PredType (fun t : {convex_set A} => (fun x => x \in ConvexSet.sort t)).
+
+(*
 Module CSet.
 Section cset.
 Variable A : convType.
@@ -1286,16 +1267,19 @@ Canonical cset_predType := Eval hnf in
 Canonical cset_eqType := Equality.Pack (@gen_eqMixin (convex_set A)).
 Canonical cset_choiceType := choice_of_Type (convex_set A).
 End cset_canonical.
+*)
+
+HB.instance Definition _ A := @gen_eqMixin {convex_set A}.
 
 Section CSet_interface.
 Variable (A : convType).
 Implicit Types X Y : {convex_set A}.
 Lemma convex_setP X : is_convex_set X.
-Proof. by case: X => X []. Qed.
+Proof. by case: X => X [[]] /=. Qed.
 Lemma cset_ext X Y : X = Y :> set _ -> X = Y.
 Proof.
-move: X Y => -[X HX] [Y HY] /= ?; subst Y.
-congr (CSet.Pack _); exact/Prop_irrelevance.
+move: X Y => -[X [[HX]]] [Y [[HY]]] /= ?; subst Y.
+do! [f_equal]; exact/Prop_irrelevance.
 Qed.
 End CSet_interface.
 
@@ -1308,32 +1292,30 @@ Implicit Types x y : scaled A.
 
 Lemma mem_convex_set a1 a2 p X : a1 \in X -> a2 \in X -> a1 <|p|> a2 \in X.
 Proof.
-case: X => X [convX]; move: (convX) => convX_save.
-move/asboolP : convX => convX Hx Hy.
-by rewrite in_setE; apply: convX; rewrite -in_setE.
+have /asboolP C := @is_convex A X.
+by rewrite !inE; apply: C.
 Qed.
 
-Definition cset0 : {convex_set A} := CSet.Pack (CSet.Mixin (is_convex_set0 A)).
+HB.instance Definition _ := isConvexSet.Build A set0 (is_convex_set0 A).
 
-Lemma cset0P X : (X == cset0) = (X == set0 :> set _).
+Lemma cset0P X : (X == set0) = (X == set0 :> set _).
 Proof.
 case: X => x [Hx] /=; apply/eqP/eqP => [-[] //| ?]; subst x; exact: cset_ext.
 Qed.
 
-Lemma cset0PN X : X != cset0 <-> X !=set0.
+Lemma cset0PN X : X != set0 <-> X !=set0.
 Proof.
 rewrite cset0P; case: X => //= x Hx; split; last first.
   case=> a xa; apply/eqP => x0; move: xa; by rewrite x0.
 by case/set0P => /= d dx; exists d.
 Qed.
 
-Definition cset1 a : {convex_set A} := CSet.Pack (CSet.Mixin (is_convex_set1 a)).
+HB.instance Definition _ a := isConvexSet.Build A [set a] (is_convex_set1 a).
 
-Lemma cset1_neq0 a : cset1 a != cset0.
+Lemma cset1_neq0 a : [set a] != set0 :> {convex_set A}.
 Proof. by apply/cset0PN; exists a. Qed.
 
-Definition convex_set_of_segment (x y : A) : convex_set A :=
-  CSet.Pack (CSet.Mixin (segment_is_convex x y)).
+HB.instance Definition _ x y := isConvexSet.Build _ (segment x y) (segment_is_convex x y).
 
 End CSet_prop.
 
@@ -1366,15 +1348,16 @@ by rewrite fdist_convn_add; congr (_ <| _ |> _); apply eq_Convn => i //=;
   rewrite ffunE (split_lshift,split_rshift).
 Qed.
 
-Canonical hull_is_convex_set (Z : set A) : convex_set A :=
-  CSet.Pack (CSet.Mixin (hull_is_convex Z)).
+HB.instance Definition _ (Z : set A) := isConvexSet.Build _ (hull Z) (hull_is_convex Z).
 
 Lemma segment_hull (x y : A) : segment x y = hull [set x; y].
 Proof.
 rewrite eqEsubset; split.
   by have := hull_is_convex [set x; y] => /is_convex_segmentP/(_ x y); apply;
     apply subset_hull; [left | right].
-pose h := convex_set_of_segment x y.
+(* BUG in HB: HB.pack only accepts types as subjects
+   pose h : {convex_set A} := HB.pack _ (isConvexSet.Build _ _ (segment_is_convex x y)).*)
+pose h : {convex_set A} := @ConvexSet.Pack _ _ (@ConvexSet.Class _ _ (isConvexSet.Build _ _ (segment_is_convex x y))).
 by have := @hull_sub_convex [set x; y] h; apply => z -[] ->;
   [exact: segmentL|exact: segmentR].
 Qed.
@@ -1389,7 +1372,9 @@ Implicit Types X Y Z : set A.
 Lemma is_convex_hullE X : is_convex_set X = (hull X == X).
 Proof.
 apply/idP/idP => [conv|/eqP <-]; last exact: hull_is_convex.
-exact/eqP/(hull_cset {| CSet.car := X; CSet.class := CSet.Mixin conv |}).
+(* BUG in HB *)
+pose X' : {convex_set A} := @ConvexSet.Pack _ _ (@ConvexSet.Class _ _ (isConvexSet.Build _ _ conv)).
+exact/eqP/(hull_cset X').
 Qed.
 
 Lemma hull_eqEsubset X Y :
@@ -1554,6 +1539,7 @@ Qed.
 
 End split_prod.
 
+Module LmoduleConvex.
 Section lmodR_convex_space.
 Variable E : lmodType R.
 Implicit Type p q : {prob R}.
@@ -1590,17 +1576,19 @@ have ->: (Prob.p p).~ * Prob.p q = ((Prob.p p).~ * Prob.p q)%coqR by [].
 by rewrite RmultE pq_is_rs -/r -/s mulrC.
 Qed.
 
-HB.instance Definition _ :=
-  @isConvexSpace.Build E (Choice.class _) avg avg1 avgI avgC avgA.
+
+#[non_forgetful_inheritance] HB.instance Definition _ :=
+  isConvexSpace.Build E avg1 avgI avgC avgA.
 
 Lemma avgrE p (x y : E) : x <| p |> y = avg p x y. Proof. by []. Qed.
-
 End lmodR_convex_space.
+End LmoduleConvex.
 
 Section lmodR_convex_space_prop.
 Variable E : lmodType R.
 Implicit Type p q : {prob R}.
 Local Open Scope ring_scope.
+Import LmoduleConvex.
 
 Lemma avgr_addD p (a b c d : E) :
   (a + b) <|p|> (c + d) = (a <|p|> c) + (b <|p|> d).
@@ -1619,7 +1607,7 @@ by move=> x ? ?; rewrite 2!avgrE scalerDr !scalerA; congr +%R; congr (_ *: _);
 Qed.
 
 Lemma avgr_scalerDl p :
-  left_distributive *:%R (fun x y : GRing.regular_lmodType R_ringType => x <|p|> y).
+  left_distributive *:%R (fun x y : (R^o : lmodType R) => x <|p|> y).
 Proof. by move=> x ? ?; rewrite avgrE scalerDl -2!scalerA. Qed.
 
 (* Introduce morphisms to prove avgnE *)
@@ -1730,17 +1718,18 @@ Import ssrnum vector.
 Variable E : vectType R.
 Local Open Scope ring_scope.
 Local Open Scope classical_set_scope.
+Import LmoduleConvex.
 
 (* TODO: move? *)
 Import Order.TotalTheory.
 
-Lemma caratheodory (A : set (Vector.lmodType E)) x : x \in hull A ->
-  exists (n : nat) (g : 'I_n -> Vector.lmodType E) (d : {fdist 'I_n}),
-    [/\ (n <= (dimv (@fullv R_fieldType E)).+1)%nat, range g `<=` A & x = <|>_d g].
+Lemma caratheodory (A : set (E : lmodType R)) x : x \in hull A ->
+  exists (n : nat) (g : 'I_n -> (E : lmodType R)) (d : {fdist 'I_n}),
+    [/\ (n <= (dimv (@fullv R E)).+1)%nat, range g `<=` A & x = <|>_d g].
 Proof.
 move=> /set_mem[n [g [d [gA ->]]]].
 elim: n => [|n IHn] in g d gA *; first by case: (fdistI0_False d).
-have [nsgt|nsgt] := leqP n (dimv (@fullv R_fieldType E)).
+have [nsgt|nsgt] := leqP n (dimv (@fullv R E)).
    by exists n.+1, g, d.
 have [mu [muR muE [i mui]]] : exists mu : 'I_n.+1 -> R,
   [/\ \sum_(i < n.+1) mu i = 0, \sum_(i < n.+1) (mu i) *: g i = 0 &
@@ -1786,17 +1775,17 @@ wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
      by move=>y [i _ <-]; apply gA; eexists.
    move=>/(_ gA' (fun i => mu (f' i))).
    have mu'R : \sum_(i0 < n.+1) mu (f' i0) = 0.
-     rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
-     by rewrite big_map -{4}muR; apply congr_big=>// [[j jlt]] _; congr mu; apply fcan'.
+     rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [| exact nil ].
+     by rewrite big_map -[in RHS]muR; apply congr_big=>// [[j jlt]] _; congr mu; apply fcan'.
    move=>/(_ mu'R).
    have mu'E: \sum_(i0 < n.+1) mu (f' i0) *: g (f' i0) = 0.
-      rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
-      rewrite big_map -{4}muE; apply congr_big=>// j _.
+      rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [| exact nil ].
+      rewrite big_map -[in RHS]muE; apply congr_big=>// j _.
       by congr (mu _ *: g _); exact/fcan'.
    move=>/(_ mu'E (f' im)).
    have muip' : 0 < mu (f' (f' im)) by rewrite fcan'.
    move=>/(_ muip').
-   have muim' (j : ordinal_finType n.+1) :
+   have muim' (j : 'I_n.+1) :
      0 < mu (f' j) ->
      fdistmap f' d (f' im) / mu (f' (f' im)) <= fdistmap f' d j / mu (f' j).
      move=> /muim.
@@ -1843,22 +1832,25 @@ Qed.
 
 End caratheodory.
 
+Module LinearAffine.
 Section linear_affine.
 Open Scope ring_scope.
 Variables (E F : lmodType R) (f : {linear E -> F}).
-
+Import LmoduleConvex.
 Let linear_is_affine: affine f.
 Proof. by move=>p x y; rewrite linearD 2!linearZZ. Qed.
 
-HB.instance Definition _ := isAffine.Build _ _ _ linear_is_affine.
+#[non_forgetful_inheritance] HB.instance Definition _ := isAffine.Build _ _ _ linear_is_affine.
 
 End linear_affine.
+End LinearAffine.
 
 (* TOTHINK: Should we keep this section, only define R_convType, or something else ? *)
+Module RConvex.
 Section R_convex_space.
 Implicit Types p q : {prob R}.
-
-Let avg p (a b : [the lmodType R of R^o]) := a <| p |> b.
+Import LmoduleConvex.
+Let avg p (a b : (R^o : lmodType R)) := a <| p |> b.
 
 Let avgE p a b : avg p a b = (Prob.p p * a + (Prob.p p).~ * b)%coqR.
 Proof. by []. Qed.
@@ -1873,8 +1865,7 @@ Let avgA p q (d0 d1 d2 : R) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. by rewrite /avg convA. Qed.
 
-HB.instance Definition _ := @isConvexSpace.Build R
-  (Choice.class _) _ avg1 avgI avgC avgA.
+#[non_forgetful_inheritance] HB.instance Definition _ := @isConvexSpace.Build R _ avg1 avgI avgC avgA.
 
 Lemma avgRE p (x y : R) : x <| p |> y = (Prob.p p * x + (Prob.p p).~ * y)%coqR. Proof. by []. Qed.
 
@@ -1922,6 +1913,7 @@ by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
 Qed.
 
 End R_convex_space.
+End RConvex.
 
 Section fun_convex_space.
 Variables (A : choiceType) (B : convType).
@@ -1937,13 +1929,12 @@ Proof. rewrite funeqE => a; exact/convC. Qed.
 Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. move=> *; rewrite funeqE => a; exact/convA. Qed.
-HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) _
-  avg1 avgI avgC avgA.
+HB.instance Definition _ := @isConvexSpace.Build T _ avg1 avgI avgC avgA.
 End fun_convex_space.
 
 Section depfun_convex_space.
 Variables (A : choiceType) (B : A -> convType).
-Let T := dep_arrow_choiceType B.
+Let T := forall x : A, B x.
 Implicit Types p q : {prob R}.
 Let avg p (x y : T) := fun a : A => (x a <| p |> y a).
 Let avg1 (x y : T) : avg 1%:pr x y = x.
@@ -1968,8 +1959,9 @@ move => *.
 apply FunctionalExtensionality.functional_extensionality_dep => a.
 exact/convA.
 Qed.
-HB.instance Definition _ := @isConvexSpace.Build _ (Choice.class _)
-  _ avg1 avgI avgC avgA.
+
+HB.instance Definition _ := isConvexSpace.Build (forall x : A, B x) avg1 avgI avgC avgA.
+
 End depfun_convex_space.
 
 Section pair_convex_space.
@@ -1988,13 +1980,13 @@ Let avgA p q (d0 d1 d2 : T) :
 Proof. move => *; congr (pair _ _); by apply convA. Qed.
 
 HB.instance Definition _ :=
-  @isConvexSpace.Build T (Choice.class _) avg avg1 avgI avgC avgA.
+  isConvexSpace.Build (A * B)%type avg1 avgI avgC avgA.
 
 End pair_convex_space.
 
 Section fdist_convex_space.
 Variable A : finType.
-Implicit Types a b c : real_realType.-fdist A.
+Implicit Types a b c : R.-fdist A.
 
 Let conv1 a b : (a <| 1%:pr |> b)%fdist = a.
 Proof.
@@ -2017,7 +2009,7 @@ Proof.
 apply/fdist_ext => a0 /=; rewrite 4!fdist_convE /=.
 set r := r_of_pq p q.  set s := s_of_pq p q.
 transitivity (Prob.p p * a a0 + (Prob.p p).~ * Prob.p q * b a0 + (Prob.p p).~ * (Prob.p q).~ * c a0).
-  by rewrite /onem /=; lra.
+  by rewrite mulrDr !mulrA !addrA.
 transitivity (Prob.p r * Prob.p s * a a0 + (Prob.p r).~ * Prob.p s * b a0 + (Prob.p s).~ * c a0); last first.
   by rewrite 2!(mulrC _ (Prob.p s)) -2!mulrA -mulrDr.
 rewrite -!RmultE.
@@ -2026,14 +2018,13 @@ congr (_ + _ + _);
 by rewrite !RmultE pq_is_rs.
 Qed.
 
-HB.instance Definition _  := @isConvexSpace.Build (real_realType.-fdist A)
-  (Choice.class (choice_of_Type (real_realType.-fdist A)))
-  (@fdist_conv _ A) conv1 convmm convC convA.
+HB.instance Definition _  := isConvexSpace.Build (R.-fdist A) conv1 convmm convC convA.
+
 End fdist_convex_space.
 
 Section scaled_convex_lemmas_depending_on_T_convType.
 Local Open Scope R_scope.
-
+Import RConvex.
 Lemma scalept_conv (T : convType) (x y : R) (s : scaled T) (p : {prob R}):
   0 <= x -> 0 <= y ->
   scalept (x <|p|> y) s = scalept x s <|p|> scalept y s.
@@ -2087,7 +2078,7 @@ Module Convn_finType.
 Section def.
 Local Open Scope ring_scope.
 
-Variables (A : convType) (T : finType) (d' : real_realType.-fdist T) (f : T -> A).
+Variables (A : convType) (T : finType) (d' : R.-fdist T) (f : T -> A).
 Let n := #| T |.
 
 Definition t0 : T.
@@ -2103,7 +2094,7 @@ Lemma d_enum0 : forall b, 0 <= d_enum b. Proof. by move=> ?; rewrite ffunE. Qed.
 
 Lemma d_enum1 : \sum_(b in 'I_n) d_enum b = 1.
 Proof.
-rewrite -(@FDist.f1 real_realType T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
+rewrite -(@FDist.f1 R T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
 rewrite (@reindex _ _ _ _ _ enum_rank) //; last first.
   by exists enum_val => i; [rewrite enum_rankK | rewrite enum_valK].
 apply eq_bigr => i _; congr (d' _); by rewrite -[in RHS](enum_rankK i).
@@ -2121,7 +2112,7 @@ End Convn_finType.
 Export Convn_finType.Exports.
 
 Section S1_Convn_finType.
-Variables (A : convType) (T : finType) (d : real_realType.-fdist T) (f : T -> A).
+Variables (A : convType) (T : finType) (d : R.-fdist T) (f : T -> A).
 
 Lemma S1_Convn_finType : S1 (<$>_d f) = \ssum_i scalept (d i) (S1 (f i)).
 Proof.
@@ -2136,7 +2127,7 @@ End S1_Convn_finType.
 
 Section S1_proj_Convn_finType.
 Variables (A B : convType) (prj : {affine A -> B}).
-Variables (T : finType) (d : real_realType.-fdist T) (f : T -> A).
+Variables (T : finType) (d : R.-fdist T) (f : T -> A).
 
 Lemma S1_proj_Convn_finType :
   S1 (prj (<$>_d f)) = \ssum_i scalept (d i) (S1 (prj (f i))).
@@ -2144,8 +2135,7 @@ Proof. by rewrite Convn_comp; exact: S1_Convn_finType. Qed.
 
 End S1_proj_Convn_finType.
 
-HB.mixin Record isOrdered (T : Type) := {
-  orderedchoiceclass : Choice.class_of T ;
+HB.mixin Record isOrdered T of Choice T := {
   leconv : T -> T -> Prop ;
   leconvR : forall a, leconv a a;
   leconv_trans : forall b a c, leconv a b -> leconv b c -> leconv a c ;
@@ -2154,17 +2144,14 @@ HB.mixin Record isOrdered (T : Type) := {
 #[short(type=orderedConvType)]
 HB.structure Definition OrderedConvexSpace := {T of isOrdered T & ConvexSpace T}.
 
-Canonical ordered_eqType (T : orderedConvType) := EqType T orderedchoiceclass.
-Canonical ordered_choiceType (T : orderedConvType) :=
-  ChoiceType T orderedchoiceclass.
-
 Arguments leconv_trans {s b a c}.
 
 Notation "x <= y" := (leconv x y) : ordered_convex_scope.
 Notation "x <= y <= z" := (leconv x y /\ leconv y z) : ordered_convex_scope.
 
+Import RConvex.
 HB.instance Definition _ :=
-  @isOrdered.Build R (Choice.class _) Rle Rle_refl leR_trans eqR_le.
+  isOrdered.Build R Rle_refl leR_trans eqR_le.
 
 Module FunLe.
 Section lefun.
@@ -2193,8 +2180,7 @@ Section fun_ordered_convex_space.
 Variables (T : convType) (U : orderedConvType).
 Import FunLe.
 
-HB.instance Definition _ := @isOrdered.Build (T -> U)
-  (Choice.class _) (@lefun T U) (@lefunR T U) (@lefun_trans T U) (@eqfun_le T U).
+HB.instance Definition _ := isOrdered.Build (T -> U) (@lefunR T U) (@lefun_trans T U) (@eqfun_le T U).
 
 End fun_ordered_convex_space.
 
@@ -2207,13 +2193,8 @@ CoInductive T := mkOpp : A -> T.
 Lemma A_of_TK : cancel (fun t => let: mkOpp a := t in a) mkOpp.
 Proof. by case. Qed.
 
-Definition A_of_T_eqMixin := CanEqMixin A_of_TK.
+HB.instance Definition _ := Choice.copy T (can_type A_of_TK).
 
-Canonical A_of_T_eqType := Eval hnf in EqType T A_of_T_eqMixin.
-
-Definition A_of_T_choiceMixin := CanChoiceMixin A_of_TK.
-
-Canonical A_of_T_choiceType := Eval hnf in ChoiceType T A_of_T_choiceMixin.
 End def.
 
 Section leopp.
@@ -2261,8 +2242,7 @@ Lemma avgA p q d0 d1 d2 :
 Proof. by case d0;case d1;case d2=>d2' d1' d0';rewrite/avg/unbox/=convA. Qed.
 
 #[export]
-HB.instance Definition _ := @isConvexSpace.Build T (Choice.class _) _
-  avg1 avgI avgC avgA.
+HB.instance Definition _ := isConvexSpace.Build T avg1 avgI avgC avgA.
 
 End convtype.
 End OppositeOrderedConvexSpace.
@@ -2272,8 +2252,7 @@ Section opposite_ordered_convex_space.
 Import OppositeOrderedConvexSpace.
 Variable A : orderedConvType.
 
-HB.instance Definition _ := @isOrdered.Build (T A)
-  (Choice.class _) (@leopp A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
+HB.instance Definition _ := isOrdered.Build (T A)(@leoppR A) (@leopp_trans A) (@eqopp_le A).
 
 End opposite_ordered_convex_space.
 
@@ -2403,9 +2382,10 @@ End definition.
 
 Section counterexample.
 Local Open Scope R_scope.
+Import RConvex.
 
 Example biconvex_is_not_convex_in_both :
-  exists f : R -> R -> R, biconvex_function f /\ ~ convex_in_both f.
+  exists f : R -> R -> R, @biconvex_function R R R f /\ ~ convex_in_both f.
 Proof.
 exists Rmult; split.
   by split => [a b0 b1 t | b a0 a1 t];
@@ -2636,30 +2616,33 @@ Section linear_function_image.
 Local Open Scope classical_set_scope.
 Local Open Scope ring_scope.
 Variables (T U : lmodType R).
-
+Import LmoduleConvex.
 (* TODO: find how to speak about multilinear maps. *)
 Lemma hull_add (A B : set T) :
   hull [set a + b | a in A & b in B] =
   [set a + b | a in hull A & b in hull B].
 Proof.
 rewrite eqEsubset; split.
-- have conv : is_convex_set [set a + b | a in hull A & b in hull B].
+set xx := [set a + b | a in hull A & b in hull B].
+- have conv : is_convex_set xx.
     apply/asboolP=>x y p [ax axA] [bx bxB] <- [ay ayA] [by' byB] <-.
     rewrite avgr_addD; exists (ax <|p|> ay).
        by move: (hull_is_convex A)=>/asboolP; apply.
     exists (bx <|p|> by')=>//.
     by move: (hull_is_convex B)=>/asboolP; apply.
-  apply (@hull_sub_convex _ _ (CSet.Pack (CSet.Mixin conv))), image2_subset;
-  exact (@subset_hull _ _).
-- move=>x [a [na [ga [da [gaA ->]]]]] [b [nb [gb [db [gbB ->]]]]] <-.
-  rewrite avgnr_add.
-  exists (na * nb)%nat,
-    (fun i => let (i, j) := split_prod i in ga i + gb j),
-    (fdistmap (unsplit_prod (n:=nb)) da `x db); split=>// y [i _ <-].
-  by case: split_prod=>ia ib; exists (ga ia); [by apply gaA; exists ia |];
-    exists (gb ib)=>//; apply gbB; exists ib.
+  pose xx' : {convex_set T} := @ConvexSet.Pack T xx (@ConvexSet.Class _ _ (isConvexSet.Build _ _ conv)).
+  apply: (@hull_sub_convex _ _ xx').
+  by apply/image2_subset; exact (@subset_hull _ _).
+move=>x [a [na [ga [da [gaA ->]]]]] [b [nb [gb [db [gbB ->]]]]] <-.
+rewrite avgnr_add.
+exists (na * nb)%nat,
+  (fun i => let (i, j) := split_prod i in ga i + gb j),
+  (fdistmap (unsplit_prod (n:=nb)) da `x db); split=>// y [i _ <-].
+by case: split_prod => ia ib; exists (ga ia); [by apply gaA; exists ia |];
+  exists (gb ib)=>//; apply gbB; exists ib.
 Qed.
 
+Import LinearAffine.
 Proposition preimage_preserves_convex_hull (f : {linear T -> U}) (Z : set U) :
   Z `<=` range f -> f @^-1` (hull Z) = hull (f @^-1` Z).
 Proof.
@@ -2686,7 +2669,7 @@ Qed.
 End R_affine_function_prop.
 
 Section convex_function_in_def.
-Variables (T : convType) (U : orderedConvType) (D : convex_set T) (f : T -> U).
+Variables (T : convType) (U : orderedConvType) (D : {convex_set T}) (f : T -> U).
 
 Definition convex_function_in :=
   forall a b p, a \in D -> b \in D -> convex_function_at f a b p.
@@ -2720,7 +2703,9 @@ TODO: see convex_type.v
 
 Section convex_set_R.
 
-Lemma Rpos_convex : is_convex_set (fun x => 0 < x)%coqR.
+Let pos := (fun x => 0 < x)%coqR.
+
+Lemma Rpos_convex : is_convex_set pos.
 Proof.
 apply/asboolP => x y t Hx Hy.
 have [->|Ht0] := eqVneq t 0%:pr; first by rewrite conv0.
@@ -2728,12 +2713,14 @@ apply addR_gt0wl; first by apply mulR_gt0 => //; exact/RltP/prob_gt0.
 apply mulR_ge0 => //; exact: ltRW.
 Qed.
 
-Definition Rpos_interval : {convex_set R} := CSet.Pack (CSet.Mixin Rpos_convex).
+#[local] HB.instance Definition _ := isConvexSet.Build R pos Rpos_convex.
 
-Lemma Rnonneg_convex : is_convex_set (fun x => 0 <= x)%coqR.
+Let nneg := (fun x => 0 <= x)%coqR.
+
+Lemma Rnonneg_convex : is_convex_set nneg.
 Proof. apply/asboolP=> x y t Hx Hy; apply addR_ge0; exact/mulR_ge0. Qed.
 
-Definition Rnonneg_interval := CSet.Pack (CSet.Mixin Rnonneg_convex).
+#[local] HB.instance Definition _ := isConvexSet.Build R nneg Rnonneg_convex.
 
 Lemma open_interval_convex a b (Hab : (a < b)%coqR) :
   is_convex_set (fun x => a < x < b)%coqR.
@@ -2752,10 +2739,12 @@ rewrite mulrDl.
   apply ltR_add; rewrite ltR_pmul2l //; [exact/RltP/prob_gt0 | exact/RltP/onem_gt0/prob_lt1].
 Qed.
 
-Lemma open_unit_interval_convex : is_convex_set (fun x => 0 < x < 1)%coqR.
+Let uniti := (fun x => 0 < x < 1)%coqR.
+
+Lemma open_unit_interval_convex : is_convex_set uniti.
 Proof. exact: open_interval_convex. Qed.
 
-Definition open_unit_interval := CSet.Pack (CSet.Mixin open_unit_interval_convex).
+#[local] HB.instance Definition _ := isConvexSet.Build R uniti open_unit_interval_convex.
 
 End convex_set_R.
 
@@ -3024,8 +3013,7 @@ rewrite mulrA.
 by rewrite (mulrC (Prob.p [r_of OProb.p p, OProb.p q]).~).
 Qed.
 
-HB.instance Definition _ := @isConvexSpace.Build (\bar R) (Choice.class _) _
-  conv_ereal_conv1 conv_ereal_convmm conv_ereal_convC conv_ereal_convA.
+HB.instance Definition _ := isConvexSpace.Build (\bar R) conv_ereal_conv1 conv_ereal_convmm conv_ereal_convC conv_ereal_convA.
 
 Lemma conv_erealE p (a b : \bar R) : a <| p |> b = conv_ereal p a b.
 Proof. by []. Qed.

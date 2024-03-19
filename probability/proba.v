@@ -137,7 +137,6 @@ Notation "E `*T" := ([set x | x.1 \in E]) : proba_scope.
 Notation "T`* F" := ([set x | x.2 \in F]) : proba_scope.
 
 Section TsetT.
-Notation R := real_realType.
 
 Variables (A B : finType) (P : R.-fdist (A * B)).
 Implicit Types (E : {set A}) (F : {set B}).
