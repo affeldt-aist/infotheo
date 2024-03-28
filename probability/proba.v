@@ -1272,7 +1272,7 @@ Notation R := real_realType.
 
 Variables (A I : finType) (k : nat) (d : R.-fdist A) (E : I -> {set A}).
 
-Definition kwide_inde := forall (J : {set I}), (#|J| <= k)%nat ->
+Definition kwise_inde := forall (J : {set I}), (#|J| <= k)%nat ->
   Pr d (\bigcap_(i in J) E i) = \prod_(i in J) Pr d (E i).
 
 End k_wise_independence.
@@ -1282,7 +1282,7 @@ Notation R := real_realType.
 
 Variables (A I : finType) (d : R.-fdist A) (E : I -> {set A}).
 
-Definition pairwise_inde := @kwide_inde A I 2%nat d E.
+Definition pairwise_inde := @kwise_inde A I 2%nat d E.
 
 Lemma pairwise_indeE :
   pairwise_inde <-> (forall i j, i != j -> inde_events d (E i) (E j)).
@@ -1311,7 +1311,7 @@ Notation R := real_realType.
 
 Variables (A I : finType) (d : R.-fdist A) (E : I -> {set A}).
 
-Definition mutual_inde := (forall k, @kwide_inde A I k.+1 d E).
+Definition mutual_inde := (forall k, @kwise_inde A I k.+1 d E).
 
 Lemma mutual_indeE :
   mutual_inde <-> (forall J : {set I}, J \subset I ->
@@ -1324,7 +1324,7 @@ rewrite /mutual_inde; split => [H J JI|H k J JI].
 by rewrite H //; apply/subsetP => i ij; rewrite inE.
 Qed.
 
-Lemma mutual_indeE' : #|I| != O -> mutual_inde <-> kwide_inde #|I| d E.
+Lemma mutual_indeE' : #|I| != O -> mutual_inde <-> kwise_inde #|I| d E.
 Proof.
 move=> I0.
 rewrite /mutual_inde; split => [H J JI|].
