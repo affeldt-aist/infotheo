@@ -2355,9 +2355,15 @@ Qed.
 
 Lemma lemma_3_2 : inde_rv [%X, Y] Z -> inde_rv Y Z.
 Proof.
+move/inde_rv_events'.
 move=> H y z.
-rewrite [LHS]pr_eqE'.
-rewrite -(snd_RV2 X [% Y, Z]).
-Abort.
+rewrite -[LHS]pr_eq_set1 pr_inE'.
+rewrite -(snd_RV2 X [% Y, Z]) Pr_fdist_snd.
+rewrite -pr_inE'.
+rewrite setTE -setX1.
+rewrite pr_in_pairA.
+rewrite H.
+by rewrite -setTE pr_inE' -Pr_fdist_snd snd_RV2 -pr_inE' !pr_eq_set1.
+Qed.
 
 End more_independent_rv_lemmas.
