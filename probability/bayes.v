@@ -115,7 +115,7 @@ Variable I : {set 'I_n}.
 
 Definition prod_types :=
   [eqType of
-   {dffun forall i : 'I_n, if i \in I then types i else unit_finType}].
+   {dffun forall i : 'I_n, if i \in I then types i else unit}].
 
 Lemma prod_types_app i (A B : prod_types) : A = B -> A i = B i.
 Proof. by move=> ->. Qed.
