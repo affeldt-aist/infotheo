@@ -264,7 +264,6 @@ have [/RleP ? /RleP ?] : (0 <= / IZR (Zpos p) <= 1)%coqR.
   - exact/IZR_le/Pos2Z.pos_le_pos/Pos.le_1_l.
 exact/andP.
 Qed.
-HB.about GRing.isSemiRing.Build.
 
 Canonical probIZR (p : positive) := Eval hnf in Prob.mk (prob_IZR_subproof p).
 

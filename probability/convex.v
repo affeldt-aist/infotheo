@@ -1865,7 +1865,9 @@ Let avgA p q (d0 d1 d2 : R) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. by rewrite /avg convA. Qed.
 
-#[non_forgetful_inheritance] HB.instance Definition _ := @isConvexSpace.Build R _ avg1 avgI avgC avgA.
+#[export]
+(* TODO(rei): attributed needed? *)
+(*#[non_forgetful_inheritance]*) HB.instance Definition _ := @isConvexSpace.Build R _ avg1 avgI avgC avgA.
 
 Lemma avgRE p (x y : R) : x <| p |> y = (Prob.p p * x + (Prob.p p).~ * y)%coqR. Proof. by []. Qed.
 
@@ -1914,6 +1916,7 @@ Qed.
 
 End R_convex_space.
 End RConvex.
+HB.export RConvex.
 
 Section fun_convex_space.
 Variables (A : choiceType) (B : convType).
@@ -2252,7 +2255,7 @@ Section opposite_ordered_convex_space.
 Import OppositeOrderedConvexSpace.
 Variable A : orderedConvType.
 
-HB.instance Definition _ := isOrdered.Build (T A)(@leoppR A) (@leopp_trans A) (@eqopp_le A).
+HB.instance Definition _ := isOrdered.Build (T A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
 
 End opposite_ordered_convex_space.
 
@@ -2713,14 +2716,16 @@ apply addR_gt0wl; first by apply mulR_gt0 => //; exact/RltP/prob_gt0.
 apply mulR_ge0 => //; exact: ltRW.
 Qed.
 
-#[local] HB.instance Definition _ := isConvexSet.Build R pos Rpos_convex.
+(*#[local]*)
+HB.instance Definition Rpos_interval := isConvexSet.Build R pos Rpos_convex.
 
 Let nneg := (fun x => 0 <= x)%coqR.
 
 Lemma Rnonneg_convex : is_convex_set nneg.
 Proof. apply/asboolP=> x y t Hx Hy; apply addR_ge0; exact/mulR_ge0. Qed.
 
-#[local] HB.instance Definition _ := isConvexSet.Build R nneg Rnonneg_convex.
+(*#[local]*)
+HB.instance Definition Rnonneg_interval := isConvexSet.Build R nneg Rnonneg_convex.
 
 Lemma open_interval_convex a b (Hab : (a < b)%coqR) :
   is_convex_set (fun x => a < x < b)%coqR.

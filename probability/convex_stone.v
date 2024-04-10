@@ -211,7 +211,7 @@ by move /(@perm_inj _ s)/lift_inj.
 Qed.
 
 Lemma swap_asaE n (s : 'S_n.+2) (K : s ord0 != ord0) :
-  s = (lift_perm ord0 ord0 (PermDef.perm (swap_asa_inj K)) * tperm (ord0) (s ord0))%g.
+  s = (lift_perm ord0 ord0 (perm (swap_asa_inj K)) * tperm (ord0) (s ord0))%g.
 Proof.
 apply/permP => i.
 rewrite [in RHS]permE /=.
@@ -707,6 +707,8 @@ congr (_ <| _ |> _).
   rewrite s_of_pqE /= /onem.
   rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
   rewrite -R1E -!RminusE -!RdivE'// -!RmultE.
+  set tmp1 := d _.
+  set tmp2 := d _.
   field.
   split; first by rewrite subR_eq0; exact/nesym.
   rewrite -addR_opp oppRB -addR_opp oppRB addRC addRA subRK.
@@ -719,6 +721,8 @@ congr (_ <| _ |> _).
     rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
     rewrite -[RHS]RdivE'.
     rewrite -R1E -!RminusE -!RdivE' // -!RmultE.
+    set tmp1 := d _.
+    set tmp2 := d _.
     field.
     split.
     rewrite subR_eq0.
@@ -879,7 +883,7 @@ Lemma Convn_perm_projection n (d : {fdist 'I_n.+2})
 Proof.
 transitivity (g ord0 <| probfdist d ord0 |> (<|>_(fdist_del dmax1) (fun x => g (fdist_del_idx ord0 x)))).
   by rewrite convnE.
-set s' : 'S_n.+1 := PermDef.perm (Sn.proj0_inj H).
+set s' : 'S_n.+1 := perm (Sn.proj0_inj H).
 transitivity (g ord0 <| probfdist d ord0 |> (<|>_(fdistI_perm (fdist_del dmax1) s') ((fun x => g (fdist_del_idx ord0 x)) \o s'))).
   by rewrite -IH.
 transitivity (g (s ord0) <| probfdist d ord0 |> (<|>_(fdistI_perm (fdist_del dmax1) s') ((fun x => g (fdist_del_idx ord0 x)) \o s'))).
@@ -1123,7 +1127,9 @@ apply/fdist_ext => a.
 rewrite fdist_convE fdist_convnE /= big_ord_recl; congr (_ + _)%coqR.
 rewrite IH fdist_convnE big_distrr /=; apply eq_bigr => i _.
 rewrite fdist_delE fdistD1E eq_sym (negbTE (neq_lift _ _)).
-by rewrite mulrAC mulrC !mulrA mulrV ?mul1r //; exact/onem_neq0.
+rewrite mulrAC mulrC -!mulrA; congr (_ * _)%mcR.
+rewrite /fdist_del_idx ltn0 /onem mulVr ?mulr1//.
+exact/onem_neq0.
 Qed.
 
 End convn_convnfdist.
