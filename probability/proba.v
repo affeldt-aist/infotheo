@@ -2265,9 +2265,31 @@ Variables (U : finType) (P : R.-fdist U).
 Variables (TA TB UA UB : eqType) (f : TA -> UA) (g : TB -> UB).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
-Lemma comp_RV2_ACA : RV2 (f `o X) (g `o Y) = (fun xy => (f xy.1, g xy.2)) `o RV2 X Y.
+Local Notation "f × g" :=
+  (fun xy => (f xy.1, g xy.2)) (at level 10).
+
+Lemma comp_RV2_ACA : RV2 (f `o X) (g `o Y) = f × g `o RV2 X Y.
 Proof. by []. Qed.
 End more_rv_lemmas.
+
+
+Section more_preimset.
+Variables (aT1 aT2 rT1 rT2 : finType).
+Variables (f : aT1 -> rT1)  (g : aT2 -> rT2).
+Variables (A : {set rT1}) (B : {set rT2}).
+
+Local Notation "f × g" :=
+  (fun xy => (f xy.1, g xy.2)) (at level 10).
+
+Lemma preimsetX :
+  f × g @^-1: (A `* B) = f @^-1: A `* g @^-1: B.
+Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
+
+Lemma in_preimset x (Y : {set rT1}) : (x \in f @^-1: Y) = (f x \in Y).
+Proof. by rewrite !inE. Qed.
+Lemma in_preimset1 x y : (x \in f @^-1: [set y]) = (f x == y).
+Proof. by rewrite !inE. Qed.
+End more_preimset.
 
 
 Section more_pr_lemmas.
@@ -2281,31 +2303,16 @@ Proof.
 rewrite !pr_inE' /Pr.
 rewrite partition_big_preimset /=.
 apply: eq_bigr=> i iE.
-under [RHS]eq_bigr=> j fji.
-  rewrite fdistmapE.
+under [RHS]eq_bigr=> j ?.
+  rewrite fdistmapE -ssrR.sumRE.
   under eq_bigl do rewrite /= inE /=.
-  rewrite -ssrR.sumRE.
   over.
-under eq_bigl => j do rewrite (_ : (f j == i) = (j \in f@^-1: [set i])) ?[LHS]inE ?[RHS]inE //.
+under eq_bigl do rewrite -in_preimset1.
 rewrite -partition_big_preimset /= fdistmapE -ssrR.sumRE.
 apply: eq_bigl=> j.
 by rewrite !inE.
 Qed.
 End more_pr_lemmas.
-
-
-Section more_preimset.
-Variables (aT1 aT2 rT1 rT2 : finType).
-Variables (f : aT1 -> rT1)  (g : aT2 -> rT2).
-Variables (A : {set rT1}) (B : {set rT2}).
-
-Local Notation "f ⊗ g" :=
-  (fun xy => (f xy.1, g xy.2)) (at level 10).
-
-Lemma preimsetX :
-  f ⊗ g @^-1: (A `* B) = f @^-1: A `* g @^-1: B.
-Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
-End more_preimset.
 
 
 Section more_fdist.
@@ -2350,7 +2357,7 @@ Variables (A : finType) (P : R.-fdist A) (TA TB TC : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
 Variables (UA UB : finType) (f : TA -> UA) (g : TB -> UB).
 
-Local Notation "f ⊗ g" :=
+Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
 
 (* Information-Theoretically Secure Number Protocol*)
@@ -2375,8 +2382,7 @@ Lemma lemma_3_2 : inde_rv [%X, Y] Z -> inde_rv Y Z.
 Proof.
 move=> H y z.
 rewrite [LHS]pr_eqE'.
-have: (`p_ [% X, [% Y, Z]])`2 (y, z) = `p_ [% Y, Z] (y, z)
-  by rewrite snd_RV2.
+rewrite -(snd_RV2 X [% Y, Z]).
 Abort.
 
 End more_independent_rv_lemmas.
