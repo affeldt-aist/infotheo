@@ -2256,3 +2256,127 @@ rewrite big_ord_recr /=.
 Abort.
 
 End prob_chain_rule.
+
+
+
+Section more_rv_lemmas.
+Notation R := real_realType.
+Variables (U : finType) (P : R.-fdist U).
+Variables (TA TB UA UB : eqType) (f : TA -> UA) (g : TB -> UB).
+Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
+
+Lemma comp_RV2_ACA : RV2 (f `o X) (g `o Y) = (fun xy => (f xy.1, g xy.2)) `o RV2 X Y.
+Proof. by []. Qed.
+End more_rv_lemmas.
+
+
+Section more_pr_lemmas.
+Notation R := real_realType.
+Variables (U : finType) (P : R.-fdist U).
+Variables (TA UA : finType) (f : TA -> UA) (X : {RV P -> TA}).
+
+Lemma pr_in_comp' E :
+  `Pr[ (f `o X) \in E ]  = `Pr[ X \in f @^-1: E ].
+Proof.
+rewrite !pr_inE' /Pr.
+rewrite partition_big_preimset /=.
+apply: eq_bigr=> i iE.
+under [RHS]eq_bigr=> j fji.
+  rewrite fdistmapE.
+  under eq_bigl do rewrite /= inE /=.
+  rewrite -ssrR.sumRE.
+  over.
+under eq_bigl => j do rewrite (_ : (f j == i) = (j \in f@^-1: [set i])) ?[LHS]inE ?[RHS]inE //.
+rewrite -partition_big_preimset /= fdistmapE -ssrR.sumRE.
+apply: eq_bigl=> j.
+by rewrite !inE.
+Qed.
+End more_pr_lemmas.
+
+
+Section more_preimset.
+Variables (aT1 aT2 rT1 rT2 : finType).
+Variables (f : aT1 -> rT1)  (g : aT2 -> rT2).
+Variables (A : {set rT1}) (B : {set rT2}).
+
+Local Notation "f ⊗ g" :=
+  (fun xy => (f xy.1, g xy.2)) (at level 10).
+
+Lemma preimsetX :
+  f ⊗ g @^-1: (A `* B) = f @^-1: A `* g @^-1: B.
+Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
+End more_preimset.
+
+
+Section more_fdist.
+Lemma fdistmapE' (R : realType) (A B : finType) (g : A -> B)
+  (p : fdist R A) (b : B):
+  fdistmap g p b = (\sum_(a in g @^-1: [set b]) p a)%mcR.
+Proof. by rewrite fdistmapE; apply: eq_bigl=> ?; rewrite !inE. Qed.
+End more_fdist.
+
+
+Section more_inde_rv.
+Notation R := real_realType.
+Variables (A : finType) (P : R.-fdist A) (TA TB : finType).
+Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
+
+Definition inde_rv_ev :=
+  forall E F,
+    `Pr[ [% X, Y] \in E `* F] = `Pr[ X \in E ] * `Pr[ Y \in F ].
+
+Lemma inde_rv_events' : inde_rv X Y <-> inde_rv_ev.
+Proof.
+split=> H; last by move=> *; rewrite -!pr_eq_set1 -H setX1.
+move=> E F; rewrite !pr_inE'.
+rewrite [LHS]/Pr; under eq_bigr=> *.
+  rewrite fdistmapE.
+  under eq_bigl do rewrite !inE /=.
+  over.
+rewrite [in RHS]/Pr big_distrl /=.
+under [RHS]eq_bigr=> i ?.
+  rewrite big_distrr /=.
+  under eq_bigr do rewrite -!pr_eqE' -H pr_eqE'.
+  over.
+rewrite -big_setX; apply: eq_bigr=> *.
+by rewrite fdistmapE.
+Qed.
+End more_inde_rv.
+
+
+Section more_independent_rv_lemmas.
+Notation R := real_realType.
+Variables (A : finType) (P : R.-fdist A) (TA TB TC : finType).
+Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
+Variables (UA UB : finType) (f : TA -> UA) (g : TB -> UB).
+
+Local Notation "f ⊗ g" :=
+  (fun xy => (f xy.1, g xy.2)) (at level 10).
+
+(* Information-Theoretically Secure Number Protocol*)
+(* Lemma 3.1 *)
+Lemma inde_rv_comp : inde_rv X Y -> inde_rv (f `o X) (g `o Y).
+Proof.
+move/inde_rv_events'.
+rewrite /inde_rv_ev.
+move=> H i j.
+rewrite -[LHS]pr_eq_set1.
+rewrite comp_RV2_ACA /=.
+rewrite pr_in_comp'.
+rewrite -setX1.
+rewrite preimsetX.
+rewrite !/(_ @^-1: _).
+rewrite H. (* second to third line in the pencil-paper proof *)
+rewrite -!pr_in_comp'.
+by rewrite !pr_eq_set1.
+Qed.
+
+Lemma lemma_3_2 : inde_rv [%X, Y] Z -> inde_rv Y Z.
+Proof.
+move=> H y z.
+rewrite [LHS]pr_eqE'.
+have: (`p_ [% X, [% Y, Z]])`2 (y, z) = `p_ [% Y, Z] (y, z)
+  by rewrite snd_RV2.
+Abort.
+
+End more_independent_rv_lemmas.
