@@ -295,8 +295,11 @@ Proof. by rewrite /d'; unlock; rewrite ffunE. Qed.
 End def.
 End CodomDFDist.
 
-HB.mixin Record isConvexSpace T of Choice T := {
+HB.mixin Record isConvexSpace0 T of Choice T := {
   conv : {prob R} -> T -> T -> T ;
+  convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T ;
+  ConvnI2E : forall (g : 'I_2 -> T) (d : {fdist 'I_2}),
+    convn _ d g = conv (probfdist d ord0) (g ord0) (g (lift ord0 ord0)) ;
   conv1 : forall a b, conv 1%:pr a b = a ;
   convmm : forall p a, conv p a a = a ;
   convC : forall p a b, conv p a b = conv (onem (Prob.p p))%:pr b a ;
@@ -304,17 +307,27 @@ HB.mixin Record isConvexSpace T of Choice T := {
       conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
 
 #[short(type=convType)]
-HB.structure Definition ConvexSpace := {T of isConvexSpace T }.
+HB.structure Definition ConvexSpace := {T of isConvexSpace0 T }.
 
 Notation "a <| p |> b" := (conv p a b) : convex_scope.
-
 Local Open Scope convex_scope.
+
+Fixpoint Convn (A : Type) (f : {prob R} -> A -> A -> A) n : {fdist 'I_n} -> ('I_n -> A) -> A :=
+  match n return forall (e : {fdist 'I_n}) (g : 'I_n -> A), A with
+  | O => fun e g => False_rect A (fdistI0_False e)
+  | m.+1 => fun e g =>
+    match Bool.bool_dec (e ord0 == 1%coqR) true with
+    | left _ => g ord0
+    | right H => let G := fun i => g (fdist_del_idx ord0 i) in
+      f (probfdist e ord0) (g ord0) (Convn f (fdist_del (Bool.eq_true_not_negb _ H)) G)
+    end
+  end.
+
 
 Section convex_space_lemmas.
 Variables A : convType.
 Implicit Types a b : A.
 Import Reals_ext.
-
 
 Lemma conv0 a b : a <| 0%:pr |> b = b.
 Proof.
@@ -338,20 +351,6 @@ Lemma segmentR x y : segment x y y. Proof. by exists 0%:pr; rewrite ?conv0. Qed.
 
 End segment.
 
-
-Fixpoint Convn (A : convType) n : {fdist 'I_n} -> ('I_n -> A) -> A :=
-  match n return forall (e : {fdist 'I_n}) (g : 'I_n -> A), A with
-  | O => fun e g => False_rect A (fdistI0_False e)
-  | m.+1 => fun e g =>
-    match Bool.bool_dec (e ord0 == 1%coqR) true with
-    | left _ => g ord0
-    | right H => let G := fun i => g (fdist_del_idx ord0 i) in
-      g ord0 <| probfdist e ord0 |> Convn (fdist_del (Bool.eq_true_not_negb _ H)) G
-    end
-  end.
-
-
-Notation "'<|>_' d f" := (Convn d f) : convex_scope.
 
 Definition affine (U V : convType) (f : U -> V) :=
   forall p, {morph f : a b / a <| p |> b >-> a <| p |> b}.
@@ -706,8 +705,75 @@ rewrite RmultE pq_is_rs mulrC -RmultE.
 by rewrite s_of_pqE onemK RmultE.
 Qed.
 
+Let convn := Convn convpt.
+
+Let Convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> scaled A) :
+  convn (fdist1 j) g = g j.
+Proof.
+elim: n j g => [[] [] //|n IH j g /=].
+rewrite /convn {1}/Convn.
+case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
+  rewrite fdist1E; case j0 : (_ == _) => /=.
+    by move=> _; rewrite (eqP j0).
+  by move/eqP; rewrite eq_sym R1E oner_eq0.
+rewrite (_ : probfdist _ _ = 0%:pr) ?conv0; last first.
+  apply val_inj => /=; move: b01; rewrite !fdist1E => j0.
+  by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
+have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
+have j0' : 0 < j by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
+move=> [:H]; have @j' : 'I_n.
+  by apply: (@Ordinal _ j.-1 _); abstract: H; rewrite prednK // -ltnS.
+rewrite (_ : fdist_del b01 = fdist1 j'); last first.
+  apply/fdist_ext => /= k.
+  rewrite fdist_delE fdistD1E /= !fdist1E /= (negbTE j0) subr0 divr1.
+  congr (GRing.natmul _ (nat_of_bool _)).
+  move R : (k == _) => [|].
+  - apply/eqP/val_inj; rewrite /= /bump leq0n add1n.
+    by move/eqP : R => -> /=; rewrite prednK // lt0n.
+  - apply: contraFF R => /eqP.
+    move/(congr1 val) => /=; rewrite /bump leq0n add1n => kj.
+    by apply/eqP/val_inj; rewrite /= -kj.
+rewrite /convpt/=.
+rewrite scale0pt.
+rewrite add0pt.
+rewrite onem0.
+rewrite scale1pt/=.
+rewrite -/(Convn _ _).
+rewrite -/convpt.
+rewrite -/convn.
+rewrite IH /fdist_del_idx ltn0; congr g.
+by apply val_inj; rewrite /= /bump leq0n add1n prednK // lt0n.
+Qed.
+
+Let ConvnIE n (g : 'I_n.+1 -> scaled A) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%coqR) :
+  convn d g = convpt (probfdist d ord0) (g ord0)
+            (convn (fdist_del i1) (fun x => g (fdist_del_idx ord0 x))).
+Proof.
+rewrite /convn /=; case: Bool.bool_dec => /= [|/Bool.eq_true_not_negb] H.
+exfalso; by rewrite (eqP H) eqxx in i1.
+by rewrite (eq_irrelevance H i1).
+Qed.
+
+Let ConvnI1E (g : 'I_1 -> scaled A) (e : {fdist 'I_1}) : convn e g = g ord0.
+Proof.
+rewrite /convn /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H.
+exfalso; move/eqP: H; apply.
+by apply/eqP; rewrite fdist1E1 (fdist1I1 e).
+Qed.
+
+Let ConvnI2E (g : 'I_2 -> scaled A) (d : {fdist 'I_2}) :
+  convn d g = convpt (probfdist d ord0) (g ord0) (g (lift ord0 ord0)).
+Proof.
+have [/eqP|i1] := eqVneq (d ord0) 1%coqR.
+  rewrite fdist1E1 => /eqP ->; rewrite Convn_fdist1.
+  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
+  by apply val_inj; rewrite /= fdist1xx.
+rewrite ConvnIE; congr (convpt _ _ _).
+by rewrite ConvnI1E /fdist_del_idx ltnn.
+Qed.
+
 HB.instance Definition _ :=
-  isConvexSpace.Build (scaled A) convpt1 convptmm convptC convptA.
+  @isConvexSpace0.Build (scaled A) convpt convn ConvnI2E convpt1 convptmm convptC convptA.
 
 Lemma convptE p (a b : scaled A) : a <| p |> b = convpt p a b.
 Proof. by []. Qed.
@@ -785,6 +851,8 @@ HB.instance Definition _ := isAffine.Build _ _ (@S1 A) affine_S1.
 End adjunction.
 
 End scaled_convex.
+
+Notation "'<|>_' d f" := (Convn (@conv _) d f) : convex_scope.
 
 Section convex_space_prop1.
 Variables T : convType.
@@ -1012,7 +1080,7 @@ exfalso; by rewrite (eqP H) eqxx in i1.
 by rewrite (eq_irrelevance H i1).
 Qed.
 
-Lemma ConvnI2E (g : 'I_2 -> T) (d : {fdist 'I_2}) :
+Lemma ConvnI2E' (g : 'I_2 -> T) (d : {fdist 'I_2}) :
   <|>_d g = g ord0 <| probfdist d ord0 |> g (lift ord0 ord0).
 Proof.
 have [/eqP|i1] := eqVneq (d ord0) 1%coqR.
@@ -1022,6 +1090,95 @@ have [/eqP|i1] := eqVneq (d ord0) 1%coqR.
 rewrite ConvnIE; congr (_ <| _ |> _).
 by rewrite ConvnI1E /fdist_del_idx ltnn.
 Qed.
+
+End convex_space_prop2.
+
+HB.factory Record isConvexSpace T of Choice T := {
+  conv : {prob R} -> T -> T -> T ;
+  conv1 : forall a b, conv 1%:pr a b = a ;
+  convmm : forall p a, conv p a a = a ;
+  convC : forall p a b, conv p a b = conv (onem (Prob.p p))%:pr b a ;
+  convA : forall (p q : {prob R}) (a b c : T),
+      conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
+
+HB.builders Context T of isConvexSpace T.
+
+Definition convn := Convn conv.
+
+Let conv0 a b : conv 0%:pr a b = b.
+Proof.
+by rewrite convC /= (_ : _ %:pr = 1%:pr) ?conv1 //; apply/val_inj/onem0.
+Qed.
+
+Let Convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> T) :
+  convn (fdist1 j) g = g j.
+Proof.
+elim: n j g => [[] [] //|n IH j g /=].
+rewrite /convn {1}/Convn.
+case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
+  rewrite fdist1E; case j0 : (_ == _) => /=.
+    by move=> _; rewrite (eqP j0).
+  by move/eqP; rewrite eq_sym R1E oner_eq0.
+rewrite (_ : probfdist _ _ = 0%:pr) ?conv0; last first.
+  apply val_inj => /=; move: b01; rewrite !fdist1E => j0.
+  by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
+have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
+have j0' : 0 < j by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
+move=> [:H]; have @j' : 'I_n.
+  by apply: (@Ordinal _ j.-1 _); abstract: H; rewrite prednK // -ltnS.
+rewrite (_ : fdist_del b01 = fdist1 j'); last first.
+  apply/fdist_ext => /= k.
+  rewrite fdist_delE fdistD1E /= !fdist1E /= (negbTE j0) subr0 divr1.
+  congr (GRing.natmul _ (nat_of_bool _)).
+  move R : (k == _) => [|].
+  - apply/eqP/val_inj; rewrite /= /bump leq0n add1n.
+    by move/eqP : R => -> /=; rewrite prednK // lt0n.
+  - apply: contraFF R => /eqP.
+    move/(congr1 val) => /=; rewrite /bump leq0n add1n => kj.
+    by apply/eqP/val_inj; rewrite /= -kj.
+rewrite -/Convn.
+rewrite -/convn.
+rewrite IH /fdist_del_idx ltn0; congr g.
+by apply val_inj; rewrite /= /bump leq0n add1n prednK // lt0n.
+Qed.
+
+Let ConvnIE n (g : 'I_n.+1 -> T) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%coqR) :
+  convn d g = conv (probfdist d ord0) (g ord0)
+            (convn (fdist_del i1) (fun x => g (fdist_del_idx ord0 x))).
+Proof.
+rewrite /convn /=; case: Bool.bool_dec => /= [|/Bool.eq_true_not_negb] H.
+exfalso; by rewrite (eqP H) eqxx in i1.
+by rewrite (eq_irrelevance H i1).
+Qed.
+
+Let ConvnI1E (g : 'I_1 -> T) (e : {fdist 'I_1}) : convn e g = g ord0.
+Proof.
+rewrite /convn /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H.
+exfalso; move/eqP: H; apply.
+by apply/eqP; rewrite fdist1E1 (fdist1I1 e).
+Qed.
+
+Let ConvnI2E : forall (g : 'I_2 -> T) (d : {fdist 'I_2}),
+  convn d g = conv (probfdist d ord0) (g ord0) (g (lift ord0 ord0)).
+Proof.
+move=> g d.
+have [/eqP|i1] := eqVneq (d ord0) 1%coqR.
+  rewrite fdist1E1 => /eqP ->.
+  rewrite Convn_fdist1.
+  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
+  by apply val_inj; rewrite /= fdist1xx.
+rewrite ConvnIE; congr conv.
+by rewrite ConvnI1E /fdist_del_idx ltnn.
+Qed.
+
+HB.instance Definition _ := @isConvexSpace0.Build T
+  conv convn ConvnI2E conv1 convmm convC convA.
+
+HB.end.
+
+Section convex_space_prop3.
+Variables T U : convType.
+Implicit Types a b : T.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 2 *)
 Lemma Convn_perm (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) (s : 'S_n) :
@@ -1101,7 +1258,7 @@ congr addpt; apply: congr_big => //= i _; rewrite scaleptA// fdist_addE.
   by have := ltn_ord j; by rewrite -nij -ltn_subRL subnn.
 Qed.
 
-End convex_space_prop2.
+End convex_space_prop3.
 
 Section hull_def.
 Local Open Scope classical_set_scope.
@@ -1162,6 +1319,84 @@ by eapply subset_trans; first exact: H0.
 Qed.
 
 End hull_prop.
+
+Module ErealConvex.
+Section ereal_convex.
+Local Open Scope ereal_scope.
+
+Let conv_ereal (p : {prob R}) x y := (Prob.p p : R)%:E * x + (Prob.p p).~%:E * y.
+
+Let conv_ereal_conv1 a b : conv_ereal 1%:pr a b = a.
+Proof. by rewrite /conv_ereal probpK onem1 /= mul1e mul0e adde0. Qed.
+
+Let conv_ereal_convmm p a : conv_ereal p a a = a.
+Proof.
+rewrite /conv_ereal; case/boolP : (a \is a fin_num) => [?|].
+  by rewrite -muleDl// -EFinD probKC mul1e.
+rewrite fin_numE negb_and !negbK => /predU1P[-> | /eqP->].
+- rewrite -ge0_muleDl.
+  + by rewrite -EFinD probKC mul1e.
+  + by rewrite lee_fin; apply/prob_ge0.
+  + by rewrite lee_fin; apply/prob_ge0.
+- rewrite -ge0_muleDl.
+  + by rewrite -EFinD probKC mul1e.
+  + by rewrite lee_fin; apply/prob_ge0.
+  + by rewrite lee_fin; apply/prob_ge0.
+Qed.
+
+Let conv_ereal_convC p a b : conv_ereal p a b = conv_ereal ((Prob.p p).~)%:pr b a.
+Proof. by rewrite [in RHS]/conv_ereal onemK addeC. Qed.
+
+Lemma oprob_sg1 (p : {oprob R}) : Num.sg (oprob_to_real p) = 1%mcR.
+Proof.
+have /andP[] := OProb.O1 p; move=> /[swap] _. rewrite -sgr_cp0.
+by move/eqP.
+Qed.
+
+Let conv_ereal_convA (p q: {prob R}) a b c :
+  conv_ereal p a (conv_ereal q b c) =
+  conv_ereal [s_of p, q] (conv_ereal [r_of p, q] a b) c.
+Proof.
+rewrite /conv_ereal.
+apply (prob_trichotomy' p);
+  [ by rewrite s_of_0q r_of_0q !mul0e !add0e !onem0 !mul1e
+  | by rewrite s_of_1q r_of_1q !mul1e !onem1 !mul0e !adde0
+  | rewrite {p}=> p].
+apply (prob_trichotomy' q);
+  [ by rewrite s_of_p0 Reals_ext.r_of_p0_oprob onem1 onem0 mul0e !mul1e add0e adde0
+  | by rewrite s_of_p1 r_of_p1 onem1 !mul1e mul0e !adde0
+  | rewrite {q}=> q].
+have sgp := oprob_sg1 p.
+have sgq := oprob_sg1 q.
+have sgonemp := oprob_sg1 (Prob.p (OProb.p p)).~%:opr.
+have sgonemq := oprob_sg1 (Prob.p (OProb.p q)).~%:opr.
+have sgrpq := oprob_sg1 [r_of OProb.p p, OProb.p q]%:opr.
+have sgspq := oprob_sg1 [s_of OProb.p p, OProb.p q]%:opr.
+have sgonemrpq := oprob_sg1 (Prob.p [r_of OProb.p p, OProb.p q]).~%:opr.
+have sgonemspq := oprob_sg1 (Prob.p [s_of OProb.p p, OProb.p q]).~%:opr.
+Ltac mulr_infty X := do ! (rewrite mulr_infty X mul1e).
+set sg := (sgp,sgq,sgonemp,sgonemq,sgrpq,sgspq,sgonemrpq,sgonemspq).
+case: a=> [a | | ]; case: b=> [b | | ]; case: c=> [c | | ];
+  try by mulr_infty sg.
+rewrite muleDr // addeA.
+congr (_ + _)%E; last by rewrite s_of_pqE onemK EFinM muleA.
+rewrite muleDr //.
+congr (_ + _)%E.
+  by rewrite (p_is_rs (OProb.p p) (OProb.p q)) mulrC EFinM muleA.
+rewrite muleA -!EFinM.
+rewrite (pq_is_rs (OProb.p p) (OProb.p q)).
+rewrite mulrA.
+by rewrite (mulrC (Prob.p [r_of OProb.p p, OProb.p q]).~).
+Qed.
+
+#[export] HB.instance Definition _ := @isConvexSpace.Build (\bar R) conv_ereal conv_ereal_conv1 conv_ereal_convmm conv_ereal_convC conv_ereal_convA.
+
+Lemma conv_erealE p (a b : \bar R) : a <| p |> b = conv_ereal p a b.
+Proof. by []. Qed.
+
+End ereal_convex.
+End ErealConvex.
+HB.export ErealConvex.
 
 (* Convex sets in a convex space *)
 
@@ -1576,7 +1811,6 @@ have ->: (Prob.p p).~ * Prob.p q = ((Prob.p p).~ * Prob.p q)%coqR by [].
 by rewrite RmultE pq_is_rs -/r -/s mulrC.
 Qed.
 
-
 #[non_forgetful_inheritance] HB.instance Definition _ :=
   isConvexSpace.Build E avg1 avgI avgC avgA.
 
@@ -1918,11 +2152,14 @@ End R_convex_space.
 End RConvex.
 HB.export RConvex.
 
+Module FunConvexSpace.
 Section fun_convex_space.
 Variables (A : choiceType) (B : convType).
-Let T := A -> B.
+Definition funT := A -> B.
+Local Notation T := funT.
+HB.instance Definition _ := Choice.on T.
 Implicit Types p q : {prob R}.
-Let avg p (x y : T) := fun a : A => (x a <| p |> y a).
+Definition avg p (x y : T) := fun a : A => (x a <| p |> y a).
 Let avg1 (x y : T) : avg 1%:pr x y = x.
 Proof. rewrite funeqE => a; exact/conv1. Qed.
 Let avgI p (x : T) : avg p x x = x.
@@ -1932,9 +2169,12 @@ Proof. rewrite funeqE => a; exact/convC. Qed.
 Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. move=> *; rewrite funeqE => a; exact/convA. Qed.
-HB.instance Definition _ := @isConvexSpace.Build T _ avg1 avgI avgC avgA.
+#[export] HB.instance Definition _ := @isConvexSpace.Build T avg avg1 avgI avgC avgA.
 End fun_convex_space.
+End FunConvexSpace.
+HB.export FunConvexSpace.
 
+Module DepfunConvexSpace.
 Section depfun_convex_space.
 Variables (A : choiceType) (B : A -> convType).
 Let T := forall x : A, B x.
@@ -1963,10 +2203,13 @@ apply FunctionalExtensionality.functional_extensionality_dep => a.
 exact/convA.
 Qed.
 
-HB.instance Definition _ := isConvexSpace.Build (forall x : A, B x) avg1 avgI avgC avgA.
+#[export] HB.instance Definition _ := isConvexSpace.Build (forall x : A, B x) avg1 avgI avgC avgA.
 
 End depfun_convex_space.
+End DepfunConvexSpace.
+HB.export DepfunConvexSpace.
 
+Module PairConvexSpace.
 Section pair_convex_space.
 Variables (A B : convType).
 Let T := (A * B)%type.
@@ -1982,10 +2225,12 @@ Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof. move => *; congr (pair _ _); by apply convA. Qed.
 
-HB.instance Definition _ :=
+#[export] HB.instance Definition _ :=
   isConvexSpace.Build (A * B)%type avg1 avgI avgC avgA.
 
 End pair_convex_space.
+End PairConvexSpace.
+HB.export PairConvexSpace.
 
 Section fdist_convex_space.
 Variable A : finType.
@@ -2138,6 +2383,11 @@ Proof. by rewrite Convn_comp; exact: S1_Convn_finType. Qed.
 
 End S1_proj_Convn_finType.
 
+Check convex_isConvexSpace__to__convex_isConvexSpace0.
+(*convex_isConvexSpace__to__convex_isConvexSpace0
+     : forall (A : choiceType) (B : convType),
+       isConvexSpace0.axioms_ (A -> B) (HB_unnamed_mixin_131 A B) (HB_unnamed_mixin_130 A B)*)
+
 HB.mixin Record isOrdered T of Choice T := {
   leconv : T -> T -> Prop ;
   leconvR : forall a, leconv a a;
@@ -2187,23 +2437,24 @@ HB.instance Definition _ := isOrdered.Build (T -> U) (@lefunR T U) (@lefun_trans
 
 End fun_ordered_convex_space.
 
+
 Module OppositeOrderedConvexSpace.
 Section def.
 Variable A : orderedConvType.
 
-CoInductive T := mkOpp : A -> T.
+CoInductive oppT := mkOpp : A -> oppT.
 
 Lemma A_of_TK : cancel (fun t => let: mkOpp a := t in a) mkOpp.
 Proof. by case. Qed.
 
-HB.instance Definition _ := Choice.copy T (can_type A_of_TK).
+HB.instance Definition _ := Choice.copy oppT (can_type A_of_TK).
 
 End def.
 
 Section leopp.
 Local Open Scope ordered_convex_scope.
 Variable A : orderedConvType.
-Notation T := (T A).
+Notation T := (oppT A).
 Definition leopp (x y : T) :=
   match (x, y) with (mkOpp x', mkOpp y') => y' <= x' end.
 
@@ -2224,7 +2475,7 @@ End leopp.
 Section convtype.
 Local Open Scope convex_scope.
 Variable A : orderedConvType.
-Notation T := (T A).
+Notation T := (oppT A).
 Implicit Types p q : {prob R}.
 
 Definition unbox (x : T)  := match x with mkOpp x' => x' end.
@@ -2255,7 +2506,7 @@ Section opposite_ordered_convex_space.
 Import OppositeOrderedConvexSpace.
 Variable A : orderedConvType.
 
-HB.instance Definition _ := isOrdered.Build (T A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
+HB.instance Definition _ := isOrdered.Build (oppT A) (@leoppR A) (@leopp_trans A) (@eqopp_le A).
 
 End opposite_ordered_convex_space.
 
@@ -2273,10 +2524,11 @@ Proof. by []. Qed.
 Lemma unboxK (a : A) : unbox (\opp{a}) = a.
 Proof. reflexivity. Qed.
 
-Lemma leoppP (a b : T A) : a <= b <-> unbox b <= unbox a.
+Lemma leoppP (a b : oppT A) : a <= b <-> unbox b <= unbox a.
 Proof. by case a;case b=>*;rewrite !unboxK. Qed.
 
 End opposite_ordered_convex_space_prop.
+
 
 Section convex_function_def.
 Local Open Scope ordered_convex_scope.
@@ -2949,78 +3201,3 @@ by apply/mulR_ge0; rewrite subR_ge0; exact/ltRW.
 Qed.
 
 End twice_derivable_convex.
-
-Section ereal_convex.
-Local Open Scope ereal_scope.
-
-Let conv_ereal (p : {prob R}) x y := (Prob.p p : R)%:E * x + (Prob.p p).~%:E * y.
-
-Let conv_ereal_conv1 a b : conv_ereal 1%:pr a b = a.
-Proof. by rewrite /conv_ereal probpK onem1 /= mul1e mul0e adde0. Qed.
-
-Let conv_ereal_convmm p a : conv_ereal p a a = a.
-Proof.
-rewrite /conv_ereal; case/boolP : (a \is a fin_num) => [?|].
-  by rewrite -muleDl// -EFinD probKC mul1e.
-rewrite fin_numE negb_and !negbK => /predU1P[-> | /eqP->].
-- rewrite -ge0_muleDl.
-  + by rewrite -EFinD probKC mul1e.
-  + by rewrite lee_fin; apply/prob_ge0.
-  + by rewrite lee_fin; apply/prob_ge0.
-- rewrite -ge0_muleDl.
-  + by rewrite -EFinD probKC mul1e.
-  + by rewrite lee_fin; apply/prob_ge0.
-  + by rewrite lee_fin; apply/prob_ge0.
-Qed.
-
-Let conv_ereal_convC p a b : conv_ereal p a b = conv_ereal ((Prob.p p).~)%:pr b a.
-Proof. by rewrite [in RHS]/conv_ereal onemK addeC. Qed.
-
-Lemma oprob_sg1 (p : {oprob R}) : Num.sg (oprob_to_real p) = 1%mcR.
-Proof.
-have /andP[] := OProb.O1 p; move=> /[swap] _. rewrite -sgr_cp0.
-by move/eqP.
-Qed.
-
-Let conv_ereal_convA (p q: {prob R}) a b c :
-  conv_ereal p a (conv_ereal q b c) =
-  conv_ereal [s_of p, q] (conv_ereal [r_of p, q] a b) c.
-Proof.
-rewrite /conv_ereal.
-apply (prob_trichotomy' p);
-  [ by rewrite s_of_0q r_of_0q !mul0e !add0e !onem0 !mul1e
-  | by rewrite s_of_1q r_of_1q !mul1e !onem1 !mul0e !adde0
-  | rewrite {p}=> p].
-apply (prob_trichotomy' q);
-  [ by rewrite s_of_p0 Reals_ext.r_of_p0_oprob onem1 onem0 mul0e !mul1e add0e adde0
-  | by rewrite s_of_p1 r_of_p1 onem1 !mul1e mul0e !adde0
-  | rewrite {q}=> q].
-have sgp := oprob_sg1 p.
-have sgq := oprob_sg1 q.
-have sgonemp := oprob_sg1 (Prob.p (OProb.p p)).~%:opr.
-have sgonemq := oprob_sg1 (Prob.p (OProb.p q)).~%:opr.
-have sgrpq := oprob_sg1 [r_of OProb.p p, OProb.p q]%:opr.
-have sgspq := oprob_sg1 [s_of OProb.p p, OProb.p q]%:opr.
-have sgonemrpq := oprob_sg1 (Prob.p [r_of OProb.p p, OProb.p q]).~%:opr.
-have sgonemspq := oprob_sg1 (Prob.p [s_of OProb.p p, OProb.p q]).~%:opr.
-Ltac mulr_infty X := do ! (rewrite mulr_infty X mul1e).
-set sg := (sgp,sgq,sgonemp,sgonemq,sgrpq,sgspq,sgonemrpq,sgonemspq).
-case: a=> [a | | ]; case: b=> [b | | ]; case: c=> [c | | ];
-  try by mulr_infty sg.
-rewrite muleDr // addeA.
-congr (_ + _)%E; last by rewrite s_of_pqE onemK EFinM muleA.
-rewrite muleDr //.
-congr (_ + _)%E.
-  by rewrite (p_is_rs (OProb.p p) (OProb.p q)) mulrC EFinM muleA.
-rewrite muleA -!EFinM.
-rewrite (pq_is_rs (OProb.p p) (OProb.p q)).
-rewrite mulrA.
-by rewrite (mulrC (Prob.p [r_of OProb.p p, OProb.p q]).~).
-Qed.
-
-HB.instance Definition _ := isConvexSpace.Build (\bar R) conv_ereal_conv1 conv_ereal_convmm conv_ereal_convC conv_ereal_convA.
-
-Lemma conv_erealE p (a b : \bar R) : a <| p |> b = conv_ereal p a b.
-Proof. by []. Qed.
-
-End ereal_convex.
