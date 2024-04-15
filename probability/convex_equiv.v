@@ -179,7 +179,7 @@ Module Type ConvSpace. Axiom T : convType. End ConvSpace.
 Module BinToNary(C : ConvSpace) <: NaryConvSpace.
 Import NaryConvexSpace.
 
-HB.instance Definition _ := @isNaryConv.Build C.T (@Convn C.T).
+HB.instance Definition _ := @isNaryConv.Build C.T (@Convn C.T conv).
 
 (* NB: is that ok? *)
 Definition T : naryConvType := C.T.
@@ -295,7 +295,7 @@ Lemma binconvmm p a : binconv p a a = a.
 Proof. by apply axidem => i; case: ifP. Qed.
 
 #[export]
-HB.instance Definition _ := @isConvexSpace.Build A.T binconv
+HB.instance Definition nary_to_bin := @isConvexSpace.Build A.T binconv
   binconv1 binconvmm binconvC binconvA.
 
 End NaryToBin.
@@ -306,21 +306,6 @@ Please report at http://coq.inria.fr/bugs/.
 
 (* Then prove BinToN and NToBin cancel each other:
    operations should coincide on both sides *)
-
-Module Equiv1(C : ConvSpace).
-Module A := BinToNary(C).
-Module B := NaryToBin(A).
-Import A B.
-
-Lemma equiv_conv p (a b : T) : a <| p |> b = a <& p &> b.
-Proof.
-apply: S1_inj.
-rewrite [LHS](@affine_conv (*NaryConv_sort__canonical__isConvexSpace__ConvexSpace*))/=.
-rewrite (_ : a <&p&> b = a <|p|> b)//.
-  by rewrite [RHS](@affine_conv (*NaryConv_sort__canonical__isConvexSpace__ConvexSpace*)_).
-Admitted.
-
-End Equiv1.
 
 Module Equiv2(A : NaryConvSpace).
 Module B := NaryToBin(A).
@@ -353,7 +338,54 @@ apply/eqP => /(congr1 (Rplus (d ord0))).
 rewrite addRCA addRN !addR0 => b'.
 by elim b; rewrite -b' eqxx.
 Qed.
+
+(*
+Lemma equiv_conv p x y : x <& p &> y = x <| p |> y.
+Proof.
+rewrite /binconv.
+set g := fun (o : 'I_2) => if o == ord0 then x else y.
+set d := fdistI2 p.
+change x with (g ord0).
+change y with (g (lift ord0 ord0)).
+have -> : p = probfdist d ord0 by apply: val_inj=> /=; rewrite fdistI2E eqxx.
+by rewrite -ConvnI2E -equiv_convn.
+Qed.
+*)
+
 End Equiv2.
+
+Lemma convnE (s : convType) (n : nat) (d : R.-fdist 'I_n) (g : 'I_n -> s) :
+  convex.convn n d g = <|>_d g.
+Proof. Abort.
+
+Module Equiv1(C : ConvSpace).
+Module A := BinToNary(C).
+Module B := NaryToBin(A).
+Module EA := Equiv2(A).
+Import A B.
+
+Let equiv_convn n (d : {fdist 'I_n}) (g : 'I_n -> A.T) : <&>_d g = <|>_d g.
+Proof. by []. Qed.
+
+Let T' := NaryConv_sort__canonical__convex_ConvexSpace.
+
+Lemma equiv_conv p (a b : C.T) : a <| p |> b = a <& p &> b.
+Proof.
+change (a <& p &> b) with (@conv T' p a b).
+pose g := fun (x : 'I_2) => if x == ord0 then a else b.
+change a with (g ord0).
+change b with (g (lift ord0 ord0)).
+pose d := fdistI2 p.
+have -> : p = probfdist d ord0 by apply: val_inj=> /=; rewrite fdistI2E eqxx.
+rewrite -!ConvnI2E.
+
+STOP
+
+rewrite -equiv_convn.
+by rewrite EA.equiv_convn.
+Qed.
+
+End Equiv1.
 
 Module Type MapConst.
 Parameter T : naryConvType.

@@ -307,7 +307,7 @@ HB.mixin Record isConvexSpace0 T of Choice T := {
       conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
 
 #[short(type=convType)]
-HB.structure Definition ConvexSpace := {T of isConvexSpace0 T }.
+HB.structure Definition ConvexSpace := {T of isConvexSpace0 T & }.
 
 Notation "a <| p |> b" := (conv p a b) : convex_scope.
 Local Open Scope convex_scope.
@@ -485,7 +485,7 @@ HB.mixin Record isQuasiRealCone A of Choice A := {
     scalept p (scalept q x) = scalept (p * q)%coqR x }.
 
 #[short(type=quasiRealCone)]
-HB.structure Definition QuasiRealCone := { A & isQuasiRealCone A}.
+HB.structure Definition QuasiRealCone := { A of isQuasiRealCone A & }.
 
 Section quasireal_cone_theory.
 Variable A : quasiRealCone.
@@ -543,7 +543,7 @@ HB.mixin Record isRealCone A of QuasiRealCone A := {
 }.
 
 #[short(type=realCone)]
-HB.structure Definition RealCone := { A of isQuasiRealCone A & isRealCone A }.
+HB.structure Definition RealCone := { A of isRealCone A & }.
 
 Section real_cone_theory.
 Variable A : realCone.
@@ -2958,9 +2958,9 @@ TODO: see convex_type.v
 
 Section convex_set_R.
 
-Let pos := (fun x => 0 < x)%coqR.
+Definition Rpos_interval : set R := (fun x => 0 < x)%coqR.
 
-Lemma Rpos_convex : is_convex_set pos.
+Lemma Rpos_convex : is_convex_set Rpos_interval.
 Proof.
 apply/asboolP => x y t Hx Hy.
 have [->|Ht0] := eqVneq t 0%:pr; first by rewrite conv0.
@@ -2969,15 +2969,15 @@ apply mulR_ge0 => //; exact: ltRW.
 Qed.
 
 (*#[local]*)
-HB.instance Definition Rpos_interval := isConvexSet.Build R pos Rpos_convex.
+HB.instance Definition _ := isConvexSet.Build R Rpos_interval Rpos_convex.
 
-Let nneg := (fun x => 0 <= x)%coqR.
+Definition Rnonneg_interval : set R := (fun x => 0 <= x)%coqR.
 
-Lemma Rnonneg_convex : is_convex_set nneg.
+Lemma Rnonneg_convex : is_convex_set Rnonneg_interval.
 Proof. apply/asboolP=> x y t Hx Hy; apply addR_ge0; exact/mulR_ge0. Qed.
 
 (*#[local]*)
-HB.instance Definition Rnonneg_interval := isConvexSet.Build R nneg Rnonneg_convex.
+HB.instance Definition _ := isConvexSet.Build R Rnonneg_interval Rnonneg_convex.
 
 Lemma open_interval_convex a b (Hab : (a < b)%coqR) :
   is_convex_set (fun x => a < x < b)%coqR.
@@ -2996,7 +2996,7 @@ rewrite mulrDl.
   apply ltR_add; rewrite ltR_pmul2l //; [exact/RltP/prob_gt0 | exact/RltP/onem_gt0/prob_lt1].
 Qed.
 
-Let uniti := (fun x => 0 < x < 1)%coqR.
+Let uniti : set R := (fun x => 0 < x < 1)%coqR.
 
 Lemma open_unit_interval_convex : is_convex_set uniti.
 Proof. exact: open_interval_convex. Qed.
