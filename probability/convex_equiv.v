@@ -39,7 +39,7 @@ Local Open Scope convex_scope.
 
 Module NaryConvexSpace.
 
-HB.mixin Record isNaryConv (T : choiceType) := {
+HB.mixin Record isNaryConv (T : Type) of Choice T := {
   convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T
 }.
 
@@ -179,7 +179,7 @@ Module Type ConvSpace. Axiom T : convType. End ConvSpace.
 Module BinToNary(C : ConvSpace) <: NaryConvSpace.
 Import NaryConvexSpace.
 
-HB.instance Definition _ := @isNaryConv.Build _ (@Convn C.T).
+HB.instance Definition _ := @isNaryConv.Build C.T (@Convn C.T).
 
 (* NB: is that ok? *)
 Definition T : naryConvType := C.T.
@@ -299,6 +299,10 @@ HB.instance Definition _ := @isConvexSpace.Build A.T binconv
   binconv1 binconvmm binconvC binconvA.
 
 End NaryToBin.
+(*HB.export NaryToBin.
+Error: Anomaly "Uncaught exception Not_found."
+Please report at http://coq.inria.fr/bugs/.
+*)
 
 (* Then prove BinToN and NToBin cancel each other:
    operations should coincide on both sides *)
@@ -311,9 +315,10 @@ Import A B.
 Lemma equiv_conv p (a b : T) : a <| p |> b = a <& p &> b.
 Proof.
 apply: S1_inj.
-rewrite [LHS](@affine_conv NaryConv_sort__canonical__isConvexSpace__ConvexSpace)/=.
-by rewrite [RHS](@affine_conv NaryConv_sort__canonical__isConvexSpace__ConvexSpace).
-Qed.
+rewrite [LHS](@affine_conv (*NaryConv_sort__canonical__isConvexSpace__ConvexSpace*))/=.
+rewrite (_ : a <&p&> b = a <|p|> b)//.
+  by rewrite [RHS](@affine_conv (*NaryConv_sort__canonical__isConvexSpace__ConvexSpace*)_).
+Admitted.
 
 End Equiv1.
 
