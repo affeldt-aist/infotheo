@@ -1332,9 +1332,14 @@ Qed.
 
 End is_convex_set.
 
+(* TODO:
+Record ConvexSet (A : convType) := { convset_set :> set A ; _ : is_convex_set convset_set }.
+HB.instance Definition _ A := [isSub of ConvexSet A for @convset_set A ].
+*)
 HB.mixin Record isConvexSet (A : convType) (X : set A) := { is_convex : is_convex_set X }.
 HB.structure Definition ConvexSet A := { X of isConvexSet A X }.
 Notation "{ 'convex_set' T }" := (ConvexSet.type T) : convex_scope.
+
 Canonical cset_predType A := Eval hnf in
   PredType (fun t : {convex_set A} => (fun x => x \in ConvexSet.sort t)).
 
