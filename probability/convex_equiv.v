@@ -314,12 +314,12 @@ change b with (g (lift ord0 ord0)).
 pose d := fdistI2 p.
 have -> : p = probfdist d ord0 by apply: val_inj=> /=; rewrite fdistI2E eqxx.
 rewrite -!ConvnI2E.
-
-STOP
-
+Abort.
+(*
 rewrite -equiv_convn.
 by rewrite EA.equiv_convn.
 Qed.
+*)
 
 End Equiv1.
 
