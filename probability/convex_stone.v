@@ -549,7 +549,7 @@ Qed.
 Lemma Convn_perm_1 n (d : {fdist 'I_n}) (g : 'I_n -> A) :
   <|>_d g = <|>_(fdistI_perm d 1%g) (g \o (1%g : 'S_n)).
 Proof.
-rewrite fdistI_perm1; congr (Convn d _).
+rewrite fdistI_perm1; congr (Convn _ d _).
 by rewrite boolp.funeqE => i /=; rewrite perm1.
 Qed.
 
@@ -999,7 +999,7 @@ pose G : 'I_3 -> A := [eta (fun=>g ord0) with
   ord0 |-> g ord0,
   lift ord0 ord0 |-> g (lift ord0 ord0),
   ord_max |-> <|>_(fdist_del H1) (fun i : 'I_n.+1 => g (lift ord0 (lift ord0 i)))].
-transitivity (Convn D G).
+transitivity (Convn conv D G).
   erewrite convn3E.
   rewrite convnE.
   congr (_ <| _ |> _).
