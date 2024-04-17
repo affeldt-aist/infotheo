@@ -230,8 +230,7 @@ Qed.
 Lemma binconvmm p a : binconv p a a = a.
 Proof. by apply axidem => i; case: ifP. Qed.
 
-#[export]
-HB.instance Definition nary_to_bin := @isConvexSpace.Build A.T binconv
+HB.instance Definition _ := @isConvexSpace.Build A.T binconv
   binconv1 binconvmm binconvC binconvA.
 
 End NaryToBin.
@@ -290,10 +289,6 @@ Qed.
 
 End Equiv2.
 
-Lemma convnE (s : convType) (n : nat) (d : R.-fdist 'I_n) (g : 'I_n -> s) :
-  convex.convn n d g = <|>_d g.
-Proof. Abort.
-
 Module Equiv1(C : ConvSpace).
 Module A := BinToNary(C).
 Module B := NaryToBin(A).
@@ -314,12 +309,9 @@ change b with (g (lift ord0 ord0)).
 pose d := fdistI2 p.
 have -> : p = probfdist d ord0 by apply: val_inj=> /=; rewrite fdistI2E eqxx.
 rewrite -!ConvnI2E.
-Abort.
-(*
-rewrite -equiv_convn.
+rewrite convnE -equiv_convn.
 by rewrite EA.equiv_convn.
 Qed.
-*)
 
 End Equiv1.
 

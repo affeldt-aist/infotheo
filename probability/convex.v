@@ -156,24 +156,6 @@ Local Notation "{ 'fdist' T }" := (_ .-fdist T) : fdist_scope.
 #[export] Hint Extern 0 (0 <= onem _)%coqR =>
   exact/RleP/onem_ge0 : core.
 
-
-HB.mixin Record isConvexSpace0 T of Choice T := {
-  conv : {prob R} -> T -> T -> T ;
-  convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T ;
-  ConvnI2E : forall (g : 'I_2 -> T) (d : {fdist 'I_2}),
-    convn _ d g = conv (probfdist d ord0) (g ord0) (g (lift ord0 ord0)) ;
-  conv1 : forall a b, conv 1%:pr a b = a ;
-  convmm : forall p a, conv p a a = a ;
-  convC : forall p a b, conv p a b = conv (onem (Prob.p p))%:pr b a ;
-  convA : forall (p q : {prob R}) (a b c : T),
-      conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
-
-#[short(type=convType)]
-HB.structure Definition ConvexSpace := {T of isConvexSpace0 T & }.
-
-Notation "a <| p |> b" := (conv p a b) : convex_scope.
-Local Open Scope convex_scope.
-
 Fixpoint Convn (A : Type) (f : {prob R} -> A -> A -> A) n : {fdist 'I_n} -> ('I_n -> A) -> A :=
   match n return forall (e : {fdist 'I_n}) (g : 'I_n -> A), A with
   | O => fun e g => False_rect A (fdistI0_False e)
@@ -185,6 +167,23 @@ Fixpoint Convn (A : Type) (f : {prob R} -> A -> A -> A) n : {fdist 'I_n} -> ('I_
     end
   end.
 
+HB.mixin Record isConvexSpace0 T of Choice T := {
+  conv : {prob R} -> T -> T -> T ;
+  convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T ;
+  convnE : forall n d g, convn n d g = Convn conv d g ;
+  conv1 : forall a b, conv 1%:pr a b = a ;
+  convmm : forall p a, conv p a a = a ;
+  convC : forall p a b, conv p a b = conv (onem (Prob.p p))%:pr b a ;
+  convA : forall (p q : {prob R}) (a b c : T),
+      conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
+
+
+#[short(type=convType)]
+HB.structure Definition ConvexSpace := {T of isConvexSpace0 T & }.
+Arguments convn {s n}.
+
+Notation "a <| p |> b" := (conv p a b) : convex_scope.
+Local Open Scope convex_scope.
 
 Section convex_space_lemmas.
 Variables A : convType.
@@ -195,7 +194,66 @@ Lemma conv0 a b : a <| 0%:pr |> b = b.
 Proof.
 by rewrite convC /= (_ : _ %:pr = 1%:pr) ?conv1 //; apply/val_inj/onem0.
 Qed.
+
+Let Convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> A) :
+  convn (fdist1 j) g = g j.
+Proof.
+elim: n j g => [[] [] //|n IH j g /=].
+rewrite convnE {1}/Convn.
+case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
+  rewrite fdist1E; case j0 : (_ == _) => /=.
+    by move=> _; rewrite (eqP j0).
+  by move/eqP; rewrite eq_sym R1E oner_eq0.
+rewrite (_ : probfdist _ _ = 0%:pr) ?conv0; last first.
+  apply val_inj => /=; move: b01; rewrite !fdist1E => j0.
+  by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
+have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
+have j0' : 0 < j by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
+move=> [:H]; have @j' : 'I_n.
+  by apply: (@Ordinal _ j.-1 _); abstract: H; rewrite prednK // -ltnS.
+rewrite (_ : fdist_del b01 = fdist1 j'); last first.
+  apply/fdist_ext => /= k.
+  rewrite fdist_delE fdistD1E /= !fdist1E /= (negbTE j0) subr0 divr1.
+  congr (GRing.natmul _ (nat_of_bool _)).
+  move R : (k == _) => [|].
+  - apply/eqP/val_inj; rewrite /= /bump leq0n add1n.
+    by move/eqP : R => -> /=; rewrite prednK // lt0n.
+  - apply: contraFF R => /eqP.
+    move/(congr1 val) => /=; rewrite /bump leq0n add1n => kj.
+    by apply/eqP/val_inj; rewrite /= -kj.
+rewrite -/(Convn _ _) -convnE IH /fdist_del_idx ltn0; congr g.
+by apply val_inj; rewrite /= /bump leq0n add1n prednK // lt0n.
+Qed.
+
+Let ConvnIE n (g : 'I_n.+1 -> A) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%coqR) :
+  convn d g = (g ord0) <| probfdist d ord0 |>
+                  (convn (fdist_del i1) (fun x => g (fdist_del_idx ord0 x))).
+Proof.
+rewrite !convnE /=; case: Bool.bool_dec => /= [|/Bool.eq_true_not_negb] H.
+exfalso; by rewrite (eqP H) eqxx in i1.
+by rewrite (eq_irrelevance H i1).
+Qed.
+
+Let ConvnI1E (g : 'I_1 -> A) (e : {fdist 'I_1}) : convn e g = g ord0.
+Proof.
+rewrite convnE /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H.
+exfalso; move/eqP: H; apply.
+by apply/eqP; rewrite fdist1E1 (fdist1I1 e).
+Qed.
+
+Let ConvnI2E (g : 'I_2 -> A) (d : {fdist 'I_2}) :
+  convn d g = (g ord0) <| probfdist d ord0 |> (g (lift ord0 ord0)).
+Proof.
+have [/eqP|i1] := eqVneq (d ord0) 1%coqR.
+  rewrite fdist1E1 => /eqP ->; rewrite Convn_fdist1.
+  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
+  by apply val_inj; rewrite /= fdist1xx.
+rewrite ConvnIE; congr (conv _ _ _).
+by rewrite ConvnI1E /fdist_del_idx ltnn.
+Qed.
+
 End convex_space_lemmas.
+
 
 Section segment.
 Variable A : convType.
@@ -569,73 +627,8 @@ Qed.
 
 Let convn := Convn convpt.
 
-Let Convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> scaled A) :
-  convn (fdist1 j) g = g j.
-Proof.
-elim: n j g => [[] [] //|n IH j g /=].
-rewrite /convn {1}/Convn.
-case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
-  rewrite fdist1E; case j0 : (_ == _) => /=.
-    by move=> _; rewrite (eqP j0).
-  by move/eqP; rewrite eq_sym R1E oner_eq0.
-rewrite (_ : probfdist _ _ = 0%:pr) ?conv0; last first.
-  apply val_inj => /=; move: b01; rewrite !fdist1E => j0.
-  by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
-have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
-have j0' : 0 < j by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
-move=> [:H]; have @j' : 'I_n.
-  by apply: (@Ordinal _ j.-1 _); abstract: H; rewrite prednK // -ltnS.
-rewrite (_ : fdist_del b01 = fdist1 j'); last first.
-  apply/fdist_ext => /= k.
-  rewrite fdist_delE fdistD1E /= !fdist1E /= (negbTE j0) subr0 divr1.
-  congr (GRing.natmul _ (nat_of_bool _)).
-  move R : (k == _) => [|].
-  - apply/eqP/val_inj; rewrite /= /bump leq0n add1n.
-    by move/eqP : R => -> /=; rewrite prednK // lt0n.
-  - apply: contraFF R => /eqP.
-    move/(congr1 val) => /=; rewrite /bump leq0n add1n => kj.
-    by apply/eqP/val_inj; rewrite /= -kj.
-rewrite /convpt/=.
-rewrite scale0pt.
-rewrite add0pt.
-rewrite onem0.
-rewrite scale1pt/=.
-rewrite -/(Convn _ _).
-rewrite -/convpt.
-rewrite -/convn.
-rewrite IH /fdist_del_idx ltn0; congr g.
-by apply val_inj; rewrite /= /bump leq0n add1n prednK // lt0n.
-Qed.
-
-Let ConvnIE n (g : 'I_n.+1 -> scaled A) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%coqR) :
-  convn d g = convpt (probfdist d ord0) (g ord0)
-            (convn (fdist_del i1) (fun x => g (fdist_del_idx ord0 x))).
-Proof.
-rewrite /convn /=; case: Bool.bool_dec => /= [|/Bool.eq_true_not_negb] H.
-exfalso; by rewrite (eqP H) eqxx in i1.
-by rewrite (eq_irrelevance H i1).
-Qed.
-
-Let ConvnI1E (g : 'I_1 -> scaled A) (e : {fdist 'I_1}) : convn e g = g ord0.
-Proof.
-rewrite /convn /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H.
-exfalso; move/eqP: H; apply.
-by apply/eqP; rewrite fdist1E1 (fdist1I1 e).
-Qed.
-
-Let ConvnI2E (g : 'I_2 -> scaled A) (d : {fdist 'I_2}) :
-  convn d g = convpt (probfdist d ord0) (g ord0) (g (lift ord0 ord0)).
-Proof.
-have [/eqP|i1] := eqVneq (d ord0) 1%coqR.
-  rewrite fdist1E1 => /eqP ->; rewrite Convn_fdist1.
-  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
-  by apply val_inj; rewrite /= fdist1xx.
-rewrite ConvnIE; congr (convpt _ _ _).
-by rewrite ConvnI1E /fdist_del_idx ltnn.
-Qed.
-
 HB.instance Definition _ :=
-  @isConvexSpace0.Build (scaled A) convpt convn ConvnI2E convpt1 convptmm convptC convptA.
+  @isConvexSpace0.Build (scaled A) convpt convn (fun _ _ _ => erefl) convpt1 convptmm convptC convptA.
 
 Lemma convptE p (a b : scaled A) : a <| p |> b = convpt p a b.
 Proof. by []. Qed.
@@ -953,6 +946,16 @@ rewrite ConvnIE; congr (_ <| _ |> _).
 by rewrite ConvnI1E /fdist_del_idx ltnn.
 Qed.
 
+Lemma ConvnI2E (g : 'I_2 -> T) (d : {fdist 'I_2}) :
+  convn d g = (g ord0) <| probfdist d ord0 |> (g (lift ord0 ord0)).
+Proof.
+have [/eqP|i1] := eqVneq (d ord0) 1%coqR.
+  rewrite fdist1E1 convnE => /eqP ->; rewrite Convn_fdist1.
+  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
+  by apply val_inj; rewrite /= fdist1xx.
+rewrite convnE ConvnIE; congr (conv _ _ _).
+by rewrite ConvnI1E /fdist_del_idx ltnn.
+Qed.
 End convex_space_prop2.
 
 HB.factory Record isConvexSpace T of Choice T := {
@@ -1034,7 +1037,7 @@ by rewrite ConvnI1E /fdist_del_idx ltnn.
 Qed.
 
 HB.instance Definition _ := @isConvexSpace0.Build T
-  conv convn ConvnI2E conv1 convmm convC convA.
+  conv convn (fun _ _ _ => erefl) conv1 convmm convC convA.
 
 HB.end.
 
