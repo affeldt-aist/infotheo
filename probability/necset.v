@@ -174,6 +174,9 @@ End neset_lemmas.
 Local Hint Resolve repr_in_neset : core.
 (*Arguments image_neset : simpl never.*)
 
+#[short(type=necset)]
+HB.structure Definition NECSet (A : convType) := {X of @isConvexSet A X & @isNESet A X}.
+
 Section conv_set_def.
 Local Open Scope classical_set_scope.
 Local Open Scope R_scope.
@@ -197,7 +200,6 @@ Lemma conv_pt_setE p x Y : x <| p |>: Y = (fun y => x <| p |> y) @` Y.
 Proof. by rewrite /conv_pt_set; unlock. Qed.
 
 Definition conv_set p (X Y : set L) := \bigcup_(x in X) (x <| p |>: Y).
-Local Notation "X :<| p |>: Y" := (conv_set p X Y).
 End conv_set_def.
 
 Notation "x <| p |>: Y" := (conv_pt_set p x Y) : convex_scope.
@@ -357,7 +359,7 @@ by move/asboolP: (convex_setP Y); apply.
 Qed.
 
 (*Canonical conv_pt_cset*)
-HB.instance Definition _ (p : {prob R}) (x : A) (Y : {convex_set A}) := 
+HB.instance Definition _ (p : {prob R}) (x : A) (Y : {convex_set A}) :=
   isConvexSet.Build _ _ (conv_pt_cset_is_convex p x Y).
 
 Lemma conv_cset_is_convex (p : {prob R}) (X Y : {convex_set A}) :
@@ -868,9 +870,6 @@ HB.instance Definition _ (*biglubDr_semiLattConvType*) := @isSemiLattConv.Build
 
 End semicompsemilattconvtype_lemmas.
 
-#[short(type=necset)]
-HB.structure Definition NECSet (A : convType) := {X of @isConvexSet A X & @isNESet A X}.
-
 Section necset_canonical.
 Variable (A : convType).
 Canonical necset_predType :=
@@ -910,20 +909,14 @@ HB.instance Definition _ {A : convType} p (X Y : necset A) :=
 HB.instance Definition _ {A : convType} p (X Y : necset A) :=
   ConvexSet.on (necset_convType_conv p X Y).*)
 
+HB.instance Definition _ {A : convType} (p : {prob R}) (X Y : necset A) :=
+  isNESet.Build _ _ (conv_set_neq0 p X Y).
+
 Module necset_convType.
 Section def.
 Variable A : convType.
 
-Definition necset_convType_conv p (X Y : necset A) :=
-  X :<|p|>: Y.
-
-HB.instance Definition _ p (X Y : necset A) :=
-  NESet.on (necset_convType_conv p X Y).
-
-HB.instance Definition _ p (X Y : necset A) :=
-  ConvexSet.on (necset_convType_conv p X Y).
-
-Definition conv p (X Y : necset A) : necset A := necset_convType_conv p X Y.
+Definition conv p (X Y : necset A) : necset A := X :<|p|>: Y.
 
 (*locked
   (NECSet.Pack (NECSet.Class (isConvexSet.Build _ _ (conv_cset_is_convex p X Y))
@@ -943,7 +936,7 @@ Proof. by apply necset_ext; rewrite !convE convC_set. Qed.
 
 Lemma convA p q X Y Z :
   conv p X (conv q Y Z) = conv [s_of p, q] (conv [r_of p, q] X Y) Z.
-Proof. by apply necset_ext; rewrite !convE convA_set. Qed.
+Proof. by apply: necset_ext; rewrite 2!convE convA_set. Qed.
 
 End def.
 
@@ -977,22 +970,19 @@ Local Open Scope classical_set_scope.
 Variable (A : convType).
 
 Definition pre_op (X : neset {necset A}) : {convex_set A} :=
-  ConvexSet.Pack (ConvexSet.Class
-    (isConvexSet.Build _ _ (hull_is_convex (\bigcup_(i in X) idfun i)%:ne))).
+  hull (\bigcup_(i in X) idfun i)%:ne.
 
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
 
 Definition biglub_necset (X : neset (necset A)) : necset A :=
-  NECSet.Pack (NECSet.Class
-    (CSet.Mixin (hull_is_convex (\bigcup_(i in X) idfun i)%:ne))
-    (NESet.Mixin (pre_op_neq0 X))).
+  hull (\bigcup_(i in X) idfun i)%:ne.
 
 Lemma biglub_necset1 x : biglub_necset [set x]%:ne = x.
-Proof. by apply necset_ext => /=; rewrite bigcup_set1 hull_cset. Qed.
+Proof. by apply: necset_ext => /=; rewrite bigcup_set1 hull_cset. Qed.
 
 Lemma biglub_necset_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
-  biglub_necset (bignesetU S F) = biglub_necset (biglub_necset @` (F @` S))%:ne.
+  biglub_necset (\bigcup_(i in S) F i) = biglub_necset (biglub_necset @` (F @` S))%:ne.
 Proof.
 apply necset_ext => /=.
 apply: hull_eqEsubset => a.
@@ -1013,7 +1003,7 @@ Qed.
 
 Let lub_ (x y : necset A) : necset A := biglub_necset [set x; y]%:ne.
 
-Let lub_E (x y : necset A) : lub_ x y = neset_hull_necset (x `|` y)%:ne.
+Let lub_E (x y : necset A) : lub_ x y = hull (x `|` y)%:ne.
 Proof. by apply necset_ext; rewrite /= bigcup_setU !bigcup_set1. Qed.
 
 Let lub_C : commutative lub_.
@@ -1032,7 +1022,7 @@ by move=> x; rewrite lub_E; apply necset_ext => /=; rewrite setUid hull_cset.
 Qed.
 
 #[export]
-HB.instance Definition _ := @isSemiLattice.Build (necset A) (Choice.class _)
+HB.instance Definition _ := @isSemiLattice.Build (necset A)
   lub_ lub_C lub_A lub_xx.
 
 Let lub_E' : forall x y, lub_ x y = biglub_necset [set x; y]%:ne.
@@ -1040,7 +1030,7 @@ Proof. by []. Qed.
 
 #[export]
 HB.instance Definition _ (*necset_semiCompSemiLattType*) :=
-  @isSemiCompSemiLatt.Build (necset A) (Choice.class _)
+  @isSemiCompSemiLatt.Build (necset A)
     biglub_necset biglub_necset1 biglub_necset_bigsetU lub_E'.
 
 End def.
@@ -1057,7 +1047,9 @@ Let biglubDr' (p : {prob R}) (X : L) (I : neset L) :
   necset_convType.conv p X (|_| I) = |_| ((necset_convType.conv p X) @` I)%:ne.
 Proof.
 apply necset_ext => /=.
-rewrite -hull_cset necset_convType.conv_conv_set /= hull_conv_set_strr.
+rewrite -[LHS]hull_cset/=.
+rewrite [X in hull X = _]necset_convType.conv_conv_set /=.
+rewrite hull_conv_set_strr.
 congr hull; rewrite eqEsubset; split=> u /=.
 - case=> x Xx [] y []Y IY Yy <-.
   exists (necset_convType.conv p X Y); first by exists Y.
@@ -1094,7 +1086,7 @@ Module necset_join.
 Section def.
 Local Open Scope classical_set_scope.
 Local Open Scope proba_scope.
-Definition F (T : Type) := {necset {dist (choice_of_Type T)}}.
+Definition F (T : Type) := {necset {dist {classic T}}}.
 Variable T : Type.
 
 Definition L := [the convType of F T].
@@ -1120,12 +1112,12 @@ Qed.
 Definition L' := necset L.
 
 Definition F1join0 : FFT -> L' := fun X => NECSet.Pack (NECSet.Class
-  (CSet.Mixin (F1join0'_convex X)) (NESet.Mixin (F1join0'_neq0 X))).
+  (isConvexSet.Build _ _ (F1join0'_convex X)) (isNESet.Build _ _ (F1join0'_neq0 X))).
 
 Definition join1' (X : L')
-    : convex_set [the convType of {dist (choice_of_Type T)}] :=
-  CSet.Pack (CSet.Mixin (hull_is_convex
-    (\bigcup_(i in X) if i \in X then (i : set _) else cset0 _))).
+    : {convex_set [the convType of {dist {classic T}}]} :=
+  ConvexSet.Pack (ConvexSet.Class (isConvexSet.Build _ _ (hull_is_convex
+    (\bigcup_(i in X) if i \in X then (i : set _) else set0)))).
 
 Lemma join1'_neq0 (X : L') : join1' X != set0 :> set _.
 Proof.
@@ -1138,8 +1130,8 @@ by rewrite sy.
 Qed.
 
 Definition join1 : L' -> L := fun X =>
-  NECSet.Pack (NECSet.Class (CSet.Mixin (hull_is_convex _))
-                            (NESet.Mixin (join1'_neq0 X))).
+  NECSet.Pack (NECSet.Class (isConvexSet.Build _ _ (hull_is_convex _))
+                            (isNESet.Build _ _ (join1'_neq0 X))).
 Definition join : FFT -> L := join1 \o F1join0.
 End def.
 Module Exports.
@@ -1156,14 +1148,14 @@ Local Notation M := (necset_join.F).
 
 Section ret.
 Variable a : Type.
-Definition necset_ret (x : a) : M a := necset1 (fsdist1 (x : choice_of_Type a)).
+Definition necset_ret (x : a) : M a := [set (fsdist1 (x : {classic a}))].
 End ret.
 
 Section fmap.
 Variables (a b : Type) (f : a -> b).
 
 Let necset_fmap' (ma : M a) :=
-  (fsdistmap (f : choice_of_Type a -> choice_of_Type b)) @` ma.
+  (fsdistmap (f : {classic_ a} -> {classic b})) @` ma.
 
 Lemma necset_fmap'_convex ma : is_convex_set (necset_fmap' ma).
 Proof.
@@ -1175,12 +1167,12 @@ Qed.
 Lemma necset_fmap'_neq0 ma : (necset_fmap' ma) != set0.
 Proof.
 case/set0P : (neset_neq0 ma) => x max; apply/set0P.
-by exists (fsdistmap (f : choice_of_Type a -> choice_of_Type b) x), x.
+by exists (fsdistmap (f : {classic a} -> {classic b}) x), x.
 Qed.
 
 Definition necset_fmap : M a -> M b := fun ma =>
-  NECSet.Pack (NECSet.Class (CSet.Mixin (necset_fmap'_convex ma))
-                            (NESet.Mixin (necset_fmap'_neq0 ma))).
+  NECSet.Pack (NECSet.Class (isConvexSet.Build _ _ (necset_fmap'_convex ma))
+                            (isNESet.Build _ _ (necset_fmap'_neq0 ma))).
 End fmap.
 
 Section bind.
@@ -1207,7 +1199,7 @@ rewrite lubE -[in LHS]biglub_hull; congr (|_| _); apply neset_ext => /=.
 rewrite eqEsubset; split=> i /=.
 - have /set0P x0 := set1_neq0 x.
   have /set0P y0 := set1_neq0 y.
-  move/(@hull_setU _ _ (necset1 x) (necset1 y) x0 y0).
+  move/(@hull_setU _ _ (set1 x) (set1 y) x0 y0).
   by move=> [a /asboolP ->] [b /asboolP ->] [p ->]; exists p.
 - by case=> p ? <-; exact/mem_hull_setU.
 Qed.

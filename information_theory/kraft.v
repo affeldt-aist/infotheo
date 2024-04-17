@@ -139,7 +139,7 @@ Program Definition ary_of_nat'
       else
         rcons (f (n %/ t) _) (inord (n %% t))
   end.
-Next Obligation. exact/ltP/ltn_Pdiv. Qed.
+Next Obligation. by move=> n ? ? <-; apply/ltP/ltn_Pdiv. Qed.
 
 Definition ary_of_nat := Fix Wf_nat.lt_wf (fun _ => seq 'I_t) ary_of_nat'.
 
@@ -493,6 +493,7 @@ End kraft_condition.
 Program Definition prepend (T : finType) (lmax : nat) (c : seq T) (t : (lmax - size c).-tuple T)
   : lmax.-tuple T := @Tuple _ _ (take lmax c ++ t) _.
 Next Obligation.
+move=> T lmax c t.
 rewrite size_cat size_take size_tuple.
 case: ifPn.
   move/ltnW; rewrite -subn_eq0 => /eqP ->; by rewrite addn0.

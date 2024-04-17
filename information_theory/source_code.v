@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext logb fdist proba.
@@ -40,7 +40,7 @@ Variables (A : finType) (k n : nat).
 
 Definition scode_vl := scode A (seq bool) k.
 
-Variables (P : {fdist A}) (f : {RV (P `^ n) -> seq bool}).
+Variables (P : R.-fdist A) (f : {RV (P `^ n) -> seq bool}).
 
 Definition E_leng_cw := `E ((INR \o size) `o f).
 

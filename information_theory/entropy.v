@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect all_algebra fingroup perm matrix.
+From mathcomp Require Import all_ssreflect all_algebra fingroup perm.
 Require Import Reals.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct reals.
 Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext bigop_ext.
 Require Import logb ln_facts fdist jfdist_cond proba binary_entropy_function.
 Require Import divergence.
@@ -386,8 +386,8 @@ move=> j; rewrite /put_back /put_front; case: (ifPn (j == i)) => [ji|].
 rewrite neq_ltn => /orP[|] ji.
   rewrite ji ifF; last first.
     apply/negbTE/eqP => /(congr1 val) => /=.
-    by rewrite inordK // ltnS (leq_trans ji) // -ltnS.
-  rewrite inordK; last by rewrite ltnS (leq_trans ji) // -ltnS.
+    by rewrite inordK // ltnS (leq_trans ji) // -ltnS/=.
+  rewrite inordK; last by rewrite ltnS (leq_trans ji) // -ltnS/=.
   by rewrite ji /=; apply val_inj => /=; rewrite inordK.
 rewrite ltnNge (ltnW ji) /= ifF; last first.
   by apply/negbTE; rewrite -lt0n (leq_trans _ ji).
@@ -418,7 +418,7 @@ transitivity (\sum_(x : A) P
     move: ji; rewrite neq_ltn => /orP[|] ji.
       apply val_inj => /=.
       rewrite inordK; last first.
-        by rewrite /unbump (ltnNge i j) (ltnW ji) subn0 (leq_trans ji) // -ltnS.
+        by rewrite /unbump (ltnNge i j) (ltnW ji) subn0 (leq_trans ji) // -ltnS/=.
       by rewrite unbumpK //= inE ltn_eqF.
     apply val_inj => /=.
     rewrite inordK; last first.
@@ -442,12 +442,12 @@ rewrite neq_ltn => /orP[|] ki.
   rewrite (_ : inord _ = rshift 1 (inord k)); last first.
     apply/val_inj => /=.
     rewrite add1n inordK /=.
-      by rewrite inordK // (leq_trans ki) // -ltnS.
-    by rewrite ltnS (leq_trans ki) // -ltnS.
+      by rewrite inordK // (leq_trans ki) // -ltnS/=.
+    by rewrite ltnS (leq_trans ki) // -ltnS/=.
   rewrite (@row_mxEr _ _ 1); congr (v ``_ _).
   apply val_inj => /=.
   rewrite /unbump ltnNge (ltnW ki) subn0 inordK //.
-  by rewrite (leq_trans ki) // -ltnS.
+  by rewrite (leq_trans ki) // -ltnS/=.
 rewrite ltnNge (ltnW ki) /=; move: ki.
 have [/eqP -> //|k0] := boolP (k == ord0).
 rewrite (_ : k = rshift 1 (inord k.-1)); last first.
@@ -691,7 +691,8 @@ Lemma cdiv1_ge0 z : 0 <= cdiv1 z.
 Proof.
 have [z0|z0] := eqVneq (PQR`2 z) 0.
   apply/RleP/sumr_ge0 => -[a b] _; apply/RleP.
-  by rewrite {1}/jcPr setX1 Pr_set1 (dom_by_fdist_snd _ z0) div0R mul0R.
+  rewrite {1}/jcPr setX1 [X in X / _ * _]Pr_set1/= (dom_by_fdist_snd (a, b) z0).
+  by rewrite div0R mul0R.
 have Hc : (fdistX PQR)`1 z != 0 by rewrite fdistX1.
 have Hc1 : (fdistX (fdist_proj13 PQR))`1 z != 0.
   by rewrite fdistX1 fdist_proj13_snd.
@@ -1088,15 +1089,14 @@ have -> : cond_entropy PY = \sum_(j < n.+1)
     rewrite 2!fdist_sndE; congr (_ * _).
       apply eq_bigr => a _.
       rewrite -H2.
-      congr (fdistX _ (a, castmx (_, _) _)).
-      exact: eq_irrelevance.
+      by rewrite (_ : esym H1 = H1).
     rewrite /cond_entropy1; congr (- _).
     apply eq_bigr => a _.
     rewrite /jcPr /Pr !big_setX /= !big_set1.
     rewrite !H2 //=.
     congr (_ / _ * log (_ / _)).
-    + rewrite 2!fdist_sndE; apply eq_bigr => a' _; by rewrite H2.
-    + rewrite 2!fdist_sndE; apply eq_bigr => a' _; by rewrite H2.
+    + by rewrite 2!fdist_sndE; apply eq_bigr => a' _; rewrite H2.
+    + by rewrite 2!fdist_sndE; apply eq_bigr => a' _; rewrite H2.
 rewrite -addR_opp big_morph_oppR -big_split /=; apply eq_bigr => j _ /=.
 case: ifPn => j0.
 - rewrite mutual_infoE addR_opp; congr (`H _ - _).
@@ -1234,7 +1234,7 @@ transitivity (Pr PRQ [set x] / Pr Q [set x.2]).
 transitivity (Pr PQ [set (x.1.1,x.2)] * \Pr_RQ[[set x.1.2]|[set x.2]] / Pr Q [set x.2]).
   congr (_ / _).
   case: x H0 => [[a c] b] H0 /=.
-  rewrite /PRQ Pr_set1 fdistACE /= mc; congr (_ * _).
+  rewrite /PRQ [LHS]Pr_set1 fdistACE /= mc; congr (_ * _).
   rewrite /jcPr {2}/QP fdistX2 -/P Pr_set1 mulRCA mulRV ?mulR1; last first.
     apply dom_by_fdist_fstN with b.
     apply dom_by_fdist_fstN with c.
