@@ -869,7 +869,7 @@ HB.instance Definition _ (*biglubDr_semiLattConvType*) := @isSemiLattConv.Build
 End semicompsemilattconvtype_lemmas.
 
 #[short(type=necset)]
-HB.structure Definition NECSet A := {X of @isConvexSet A X & @isNESet A X}.
+HB.structure Definition NECSet (A : convType) := {X of @isConvexSet A X & @isNESet A X}.
 
 Section necset_canonical.
 Variable (A : convType).
@@ -901,17 +901,33 @@ HB.instance Definition _ (T : convType) (x : T) :=
   isNESet.Build _ _ (set1_neq0 x).
 End necset_lemmas.
 
+(*Definition necset_convType_conv {A : convType} p (X Y : necset A) :=
+  X :<|p|>: Y.
+
+HB.instance Definition _ {A : convType} p (X Y : necset A) :=
+  NESet.on (necset_convType_conv p X Y).
+
+HB.instance Definition _ {A : convType} p (X Y : necset A) :=
+  ConvexSet.on (necset_convType_conv p X Y).*)
+
 Module necset_convType.
 Section def.
 Variable A : convType.
 
-STOP
+Definition necset_convType_conv p (X Y : necset A) :=
+  X :<|p|>: Y.
 
-Definition conv p (X Y : necset A) : necset A := [the necset A of (conv_set p X Y)]. : necset A.
+HB.instance Definition _ p (X Y : necset A) :=
+  NESet.on (necset_convType_conv p X Y).
 
-locked
+HB.instance Definition _ p (X Y : necset A) :=
+  ConvexSet.on (necset_convType_conv p X Y).
+
+Definition conv p (X Y : necset A) : necset A := necset_convType_conv p X Y.
+
+(*locked
   (NECSet.Pack (NECSet.Class (isConvexSet.Build _ _ (conv_cset_is_convex p X Y))
-                             (isNESet.Build _ _ (conv_set_neq0 p X Y)))).
+                             (isNESet.Build _ _ (conv_set_neq0 p X Y)))).*)
 
 Lemma convE p (X Y : necset A) : conv p X Y = conv_set p X Y :> set A.
 Proof. by rewrite /conv; unlock. Qed.
@@ -944,7 +960,7 @@ End lemmas.
 End necset_convType.
 
 HB.instance Definition necset_convType (A : convType) :=
-  @isConvexSpace.Build (necset A) (Choice.class _)
+  @isConvexSpace.Build (necset A)
                        (@necset_convType.conv A)
                        (@necset_convType.conv1 A)
                        (@necset_convType.convmm A)
@@ -961,7 +977,8 @@ Local Open Scope classical_set_scope.
 Variable (A : convType).
 
 Definition pre_op (X : neset {necset A}) : {convex_set A} :=
-  CSet.Pack (CSet.Mixin (hull_is_convex (\bigcup_(i in X) idfun i)%:ne)).
+  ConvexSet.Pack (ConvexSet.Class
+    (isConvexSet.Build _ _ (hull_is_convex (\bigcup_(i in X) idfun i)%:ne))).
 
 Lemma pre_op_neq0 X : pre_op X != set0 :> set _.
 Proof. by rewrite hull_eq0 neset_neq0. Qed.
