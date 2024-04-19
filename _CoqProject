@@ -40,6 +40,7 @@ probability/partition_inequality.v
 probability/pinsker.v
 probability/necset.v
 probability/bayes.v
+probability/smc.v
 information_theory/source_code.v
 information_theory/entropy.v
 information_theory/channel.v
