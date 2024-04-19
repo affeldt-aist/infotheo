@@ -1822,6 +1822,18 @@ End conditionnally_independent_discrete_random_variables.
 Notation "P |= X _|_  Y | Z" := (@cinde_rv _ P _ _ _ X Y Z) : proba_scope.
 Notation "X _|_  Y | Z" := (cinde_rv X Y Z) : proba_scope.
 
+Section conditionnally_independent_discrete_random_variables_extra.
+
+Notation R := real_realType.
+
+Variables (U: finType) (P : R.-fdist U) (A B C: finType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+
+Lemma cinde_rv_sym :  X _|_  Y | Z -> Y _|_  X | Z.
+Proof. move=>H a b c. by rewrite mulRC cpr_eq_pairC. Qed.
+
+End conditionnally_independent_discrete_random_variables_extra.
+
 Section independent_rv.
 Variables (A : finType) (P : R.-fdist A) (TA TB : eqType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
@@ -2324,46 +2336,3 @@ rewrite -big_setX; apply: eq_bigr=> *.
 by rewrite fdistmapE.
 Qed.
 End more_inde_rv.
-
-
-Section more_independent_rv_lemmas.
-Notation R := real_realType.
-Variables (A : finType) (P : R.-fdist A) (TA TB TC : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
-Variables (UA UB : finType) (f : TA -> UA) (g : TB -> UB).
-
-Local Notation "f × g" :=
-  (fun xy => (f xy.1, g xy.2)) (at level 10).
-
-(* Information-Theoretically Secure Number Protocol*)
-(* Lemma 3.1 *)
-Lemma inde_rv_comp : inde_rv X Y -> inde_rv (f `o X) (g `o Y).
-Proof.
-move/inde_rv_events'.
-rewrite /inde_rv_ev.
-move=> H i j.
-rewrite -[LHS]pr_eq_set1.
-rewrite comp_RV2_ACA /=.
-rewrite pr_in_comp'.
-rewrite -setX1.
-rewrite preimsetX.
-rewrite !/(_ @^-1: _).
-rewrite H. (* second to third line in the pencil-paper proof *)
-rewrite -!pr_in_comp'.
-by rewrite !pr_eq_set1.
-Qed.
-
-Lemma lemma_3_2 : inde_rv [%X, Y] Z -> inde_rv Y Z.
-Proof.
-move/inde_rv_events'.
-move=> H y z.
-rewrite -[LHS]pr_eq_set1 pr_inE'.
-rewrite -(snd_RV2 X [% Y, Z]) Pr_fdist_snd.
-rewrite -pr_inE'.
-rewrite setTE -setX1.
-rewrite pr_in_pairA.
-rewrite H.
-by rewrite -setTE pr_inE' -Pr_fdist_snd snd_RV2 -pr_inE' !pr_eq_set1.
-Qed.
-
-End more_independent_rv_lemmas.
