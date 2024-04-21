@@ -2253,7 +2253,7 @@ Proof. by rewrite Convn_comp; exact: S1_Convn_finType. Qed.
 
 End S1_proj_Convn_finType.
 
-Check convex_isConvexSpace__to__convex_isConvexSpace0.
+(*Check convex_isConvexSpace__to__convex_isConvexSpace0.*)
 (*convex_isConvexSpace__to__convex_isConvexSpace0
      : forall (A : choiceType) (B : convType),
        isConvexSpace0.axioms_ (A -> B) (HB_unnamed_mixin_131 A B) (HB_unnamed_mixin_130 A B)*)

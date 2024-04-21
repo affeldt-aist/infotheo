@@ -145,7 +145,7 @@ Definition enc_typ x :=
  in Tuple (size_bitseq_of_nat i (Z.abs_nat L_typ)).
 
 Lemma  card_le_Xn_Lnt :
-  (#|[finType of n.-tuple X] | <= #|[finType of (Z.abs_nat L_not_typ).-tuple bool]|)%nat.
+  (#|[the finType of n.-tuple X] | <= #|[the finType of (Z.abs_nat L_not_typ).-tuple bool]|)%nat.
 Proof.
 rewrite -!cardsT.
 apply/leP.

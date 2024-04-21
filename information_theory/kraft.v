@@ -129,6 +129,7 @@ Section ary_of_nat.
 Variable t' : nat.
 Let t := t'.+2.
 
+Local Obligation Tactic := idtac.
 Program Definition ary_of_nat'
   (n : nat) (f : forall n', (n' < n)%coq_nat -> seq 'I_t) : seq 'I_t :=
   match n with
@@ -387,7 +388,7 @@ Section example_of_code.
 Variable (n' : nat) (t' : nat).
 Let n := n'.+1.
 Let t := t'.+2.
-Let T := [finType of 'I_t].
+Let T := 'I_t.
 Variable l : seq nat.
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.
@@ -490,6 +491,7 @@ Definition kraft_cond (T : finType) (l : seq nat) :=
 
 End kraft_condition.
 
+Local Obligation Tactic := idtac.
 Program Definition prepend (T : finType) (lmax : nat) (c : seq T) (t : (lmax - size c).-tuple T)
   : lmax.-tuple T := @Tuple _ _ (take lmax c ++ t) _.
 Next Obligation.
@@ -604,7 +606,7 @@ Section kraft_code.
 Variable (n' : nat) (t' : nat).
 Let n := n'.+1.
 Let t := t'.+2.
-Let T := [finType of 'I_t].
+Let T := 'I_t.
 Variable l : seq nat.
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.
@@ -675,7 +677,7 @@ Section kraft_cond_implies_prefix.
 Variable (n' : nat) (t' : nat).
 Let n := n'.+1.
 Let t := t'.+2.
-Let T := [finType of 'I_t].
+Let T := 'I_t.
 Variable l : seq nat.
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.
