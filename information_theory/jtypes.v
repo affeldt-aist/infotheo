@@ -1,3 +1,4 @@
+From HB Require Import structures.
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm.
@@ -90,8 +91,7 @@ have ? : d1 = d2.
 subst d2; congr JType.mk; exact/boolp.Prop_irrelevance.
 Qed.
 
-Definition jtype_eqMixin A B n := EqMixin (@jtype_eqP A B n).
-Canonical jtype_eqType A B n := Eval hnf in EqType _ (@jtype_eqMixin A B n).
+HB.instance Definition _ A B n := @hasDecEq.Build _ _ (@jtype_eqP A B n).
 
 Definition nneg_fun_of_pre_jtype (A B : finType) (Bnot0 : (0 < #|B|)%nat) n
   (f : {ffun A -> {ffun B -> 'I_n.+1}}) : A -> nneg_finfun B.
@@ -182,10 +182,7 @@ destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
 congr Some; by apply/jtype_eqP => /=.
 Qed.
 
-Lemma jtype_choiceMixin A B n : choiceMixin (P_ n ( A , B )).
-Proof. apply (PcanChoiceMixin (@jtype_choice_pcancel A B n)). Qed.
-
-Canonical jtype_choiceType A B n := Eval hnf in ChoiceType _ (jtype_choiceMixin A B n).
+HB.instance Definition _ A B n := @PCanIsCountable _ _ _ _ (@jtype_choice_pcancel A B n).
 
 Definition jtype_pickle (A B : finType) n (P : P_ n (A , B)) : nat.
 destruct P as [d t H].
@@ -240,10 +237,7 @@ destruct Sumbool.sumbool_of_bool; last by rewrite Hf in e1.
 congr Some; by apply/jtype_eqP => /=.
 Qed.
 
-Definition jtype_countMixin A B n := CountMixin (@jtype_count_pcancel A B n).
-
-Canonical jtype_countType (A B : finType) n :=
-  Eval hnf in CountType (P_ n ( A , B )) (@jtype_countMixin A B n).
+HB.instance Definition _ A B n := @PCanIsCountable _ _ _ _ (@jtype_count_pcancel A B n).
 
 Definition jtype_enum_f (A B : finType) n
   (f : { f : {ffun A -> {ffun B -> 'I_n.+1}} | (\sum_(a in A) \sum_(b in B) f a b == n)%nat}) :
@@ -312,8 +306,7 @@ rewrite count_map.
 by apply eq_count.
 Qed.
 
-Definition jtype_finMixin A B n := Eval hnf in FinMixin (@jtype_enumP A B n).
-Canonical jtype_finType A B n := Eval hnf in FinType _ (@jtype_finMixin A B n).
+HB.instance Definition _ A B n := @isFinite.Build (P_ n (A , B)) _ (@jtype_enumP A B n).
 
 Section jtype_facts.
 Variables (A B : finType) (n : nat) (ta : n.-tuple A).
@@ -346,7 +339,7 @@ Qed.
 Lemma bound_card_jtype : #| P_ n (A , B) | <= expn n.+1 (#|A| * #|B|).
 Proof.
 rewrite -(card_ord n.+1) mulnC expnM -2!card_ffun cardE /enum_mem.
-apply (@leq_trans (size (map (@ffun_of_jtype A B n) (Finite.enum (jtype_finType A B n))))).
+apply (@leq_trans (size (map (@ffun_of_jtype A B n) (Finite.enum (P_ n (A, B)))))).
   by rewrite 2!size_map.
 rewrite cardE.
 apply: uniq_leq_size.
@@ -697,7 +690,7 @@ rewrite /split_tuple /= in_setX; apply/andP; split.
   apply/val_inj => /=.
   rewrite eq_tcast /=.
   by rewrite -tb's sum_num_occ_rec take_takel// leq_addr.
-- rewrite in_set.
+- rewrite inE.
   apply/eqP/val_inj => /=.
   by rewrite eq_tcast -Ha take0.
 Qed.
@@ -1279,7 +1272,7 @@ Variable ta : n.-tuple A.
 Variable P : P_ n ( A ).
 Hypothesis Hta : ta \in T_{P}.
 
-Definition shell_partition : {set set_of_finType [finType of n.-tuple B]} :=
+Definition shell_partition (*: {set set_of_finType [finType of n.-tuple B]}*) :=
   (fun V => V.-shell ta) @: \nu^{B}(P).
 
 Lemma cover_shell : cover shell_partition = [set: n.-tuple B].
