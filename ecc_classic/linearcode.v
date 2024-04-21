@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
 Require Import ssr_ext ssralg_ext poly_ext f2 hamming decoding channel_code.
@@ -117,18 +118,23 @@ Proof. by rewrite /syndrome trmx0 mulmx0 trmx0. Qed.
 Lemma additive_syndrome : additive syndrome.
 Proof. move=> x y; by rewrite syndromeD syndromeN. Qed.
 
-Definition lin_syndrome : {linear 'rV[F]_n -> 'rV[F]_m} :=
-  GRing.Linear.Pack _ (GRing.Linear.Class additive_syndrome syndromeZ).
+HB.instance Definition _ :=
+  GRing.isAdditive.Build _ _ _ additive_syndrome.
+HB.instance Definition _ :=
+  GRing.isScalable.Build _ _ _ _ _ syndromeZ.
 
-Definition hom_syndrome : 'Hom(matrix_vectType F 1 n, matrix_vectType F 1 m) :=
-  linfun lin_syndrome.
+(*Definition lin_syndrome : {linear 'rV[F]_n -> 'rV[F]_m} :=
+  GRing.Linear.Pack _ (GRing.Linear.Class additive_syndrome syndromeZ).*)
+
+Definition hom_syndrome : 'Hom('rV[F]_n, 'rV[F]_m) :=
+  linfun syndrome.
 
 Definition kernel : Lcode0.t F n := lker hom_syndrome.
 
 Lemma dim_hom_syndrome_ub : \dim (limg hom_syndrome) <= m.
 Proof.
 rewrite [in X in _ <= X](_ : m = \dim (fullv : {vspace 'rV[F]_m})); last first.
-  by rewrite dimvf /Vector.dim /= mul1n.
+  by rewrite dimvf/= /dim/= mul1n.
 by rewrite dimvS // subvf.
 Qed.
 
@@ -139,7 +145,7 @@ Lemma dim_kernel (Hm : \rank H = m) (mn : m <= n) : \dim kernel = (n - m)%N.
 Proof.
 move: (limg_ker_dim hom_syndrome fullv).
 rewrite (_ : (fullv :&: _)%VS = kernel); last by apply/capv_idPr/subvf.
-rewrite (_ : \dim fullv = n); last by rewrite dimvf /Vector.dim /= mul1n.
+rewrite (_ : \dim fullv = n); last by rewrite dimvf /dim /= mul1n.
 move=> H0; rewrite -{}[in RHS]H0.
 suff -> : \dim (limg hom_syndrome) = m by rewrite addnK.
 set K := castmx (erefl, Hm) (col_base H).
@@ -190,14 +196,14 @@ Section dual_code.
 Variables (F : finFieldType) (m n : nat) (H : 'M[F]_(m, n)).
 
 Definition dual_code : {vspace 'rV[F]_n} :=
-  (linfun (mulmxr_linear _ H) @: fullv)%VS.
+  (linfun (mulmxr H) @: fullv)%VS.
 
 Lemma dim_dual_code : (\dim (kernel H) + \dim dual_code = n)%N.
 Proof.
-move: (limg_ker_dim (linfun (lin_syndrome H)) fullv).
+move: (limg_ker_dim (linfun (syndrome H)) fullv).
 rewrite -/(kernel H).
 rewrite (_ : (fullv :&: _)%VS = kernel H); last by apply/capv_idPr/subvf.
-rewrite (_ : \dim fullv = n); last by rewrite dimvf /Vector.dim /= mul1n.
+rewrite (_ : \dim fullv = n); last by rewrite dimvf /dim /= mul1n.
 rewrite (_ : \dim (limg _) = \dim dual_code) // /dual_code.
 rewrite /dimv.
 Abort.
@@ -390,9 +396,14 @@ Proof. by apply/rowP => i; rewrite !mxE. Qed.
 Lemma additive_sbound_f' k (H : k.-1 <= n) : additive (sbound_f' H).
 Proof. by move=> x y; rewrite sbound_f'D sbound_f'N. Qed.
 
-Definition sbound_f_linear k (H : k.-1 <= n) :
+HB.instance Definition _ k (H : k.-1 <= n) :=
+  GRing.isAdditive.Build _ _ _ (additive_sbound_f' H).
+HB.instance Definition _ k (H : k.-1 <= n) :=
+  GRing.isScalable.Build _ _ _ _ _ (sbound_f'Z H).
+
+(*Definition sbound_f_linear k (H : k.-1 <= n) :
   {linear 'rV[F]_n -> 'rV[F]_k.-1} :=
-  GRing.Linear.Pack _ (GRing.Linear.Class (additive_sbound_f' H) (sbound_f'Z H)).
+  GRing.Linear.Pack _ (GRing.Linear.Class (additive_sbound_f' H) (sbound_f'Z H)).*)
 
 (* McEliece, theorem 9.8, p.255 *)
 Lemma singleton_bound : min_dist <= n - \dim C + 1.
@@ -400,18 +411,18 @@ Proof.
 set k := \dim C.
 have dimCn : k.-1 < n.
   have /dimvS := subvf C.
-  rewrite dimvf /Vector.dim /= mul1n.
+  rewrite dimvf /dim /= mul1n.
   by apply: leq_trans; rewrite prednK // not_trivial_dim.
-set f := linfun (sbound_f_linear (ltnW dimCn)).
+set f := linfun (sbound_f' (ltnW dimCn)).
 have H1 : \dim (f @: C) <= k.-1.
   suff : \dim (f @: C) <= \dim (fullv : {vspace 'rV[F]_k.-1}).
-    by rewrite dimvf /= /Vector.dim /= mul1n.
+    by rewrite dimvf /= /dim /= mul1n.
   by apply/dimvS/subvf.
 have H2 : (\dim (f @: C) + \dim (C :&: lker f) = \dim (fullv : {vspace 'rV[F]_k}))%N.
-  by rewrite dimvf /= /Vector.dim /= mul1n -[RHS](limg_ker_dim f C) addnC.
+  by rewrite dimvf /= /dim /= mul1n -[RHS](limg_ker_dim f C) addnC.
 have H3 : 1 <= \dim (C :&: lker f).
   rewrite lt0n; apply/eqP => abs; move: H2.
-  rewrite abs addn0 dimvf /Vector.dim /= mul1n -/k.
+  rewrite abs addn0 dimvf /dim /= mul1n -/k.
   apply/eqP.
   move: H1; rewrite leqNgt; apply: contra => /eqP ->.
   by rewrite prednK // not_trivial_dim.

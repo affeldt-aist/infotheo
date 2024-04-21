@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct reals.
 Require Import realType_ext ssr_ext ssralg_ext f2 linearcode natbin ssrR hamming.
 Require Import bigop_ext fdist proba channel channel_code decoding.
 Require Import binary_symmetric_channel.
@@ -78,13 +78,13 @@ rewrite /n /len !expnS -subn1 doubleB -muln2 -subSn; last first.
 by rewrite -muln2 mul1n subn2 /= mulnC.
 Qed.
 
-Lemma two_len : 2 < n.
+Lemma two_len : (2 < n)%N.
 Proof. by rewrite len_dim -subn1 ltn_subRL (@leq_exp2l 2 2). Qed.
 
-Lemma dim_len : m <= n.
+Lemma dim_len : (m <= n)%N.
 Proof. by rewrite len_dim -ltnS prednK ?expn_gt0 // ltn_expl. Qed.
 
-Lemma len_two_m (i : 'I_n) : i.+1 < 2 ^ m.
+Lemma len_two_m (i : 'I_n) : (i.+1 < 2 ^ m)%N.
 Proof.
 by rewrite (leq_ltn_trans (ltn_ord i)) // len_dim -ltnS prednK // expn_gt0.
 Qed.
@@ -216,9 +216,9 @@ Proof.
 move: (min_dist_is_min hamming_not_trivial) => Hforall.
 move: (min_dist_achieved hamming_not_trivial) => Hexists.
 move: (min_dist_neq0) => H3.
-suff : min_dist hamming_not_trivial <> 1%N /\
-       min_dist hamming_not_trivial <> 2%N /\
-       min_dist hamming_not_trivial <= 3%N.
+suff : (min_dist hamming_not_trivial <> 1 /\
+       min_dist hamming_not_trivial <> 2 /\
+       min_dist hamming_not_trivial <= 3)%N.
   move : H3.
   move/(_ _ _ _ hamming_not_trivial).
   destruct (min_dist hamming_not_trivial) as [|p]=> //.
@@ -253,7 +253,7 @@ Definition hamming_err y :=
   let i := nat_of_rV (syndrome (Hamming.PCM m) y) in
   if i is O then 0 else rV_of_nat n (2 ^ (n - i)).
 
-Lemma wH_hamming_err_ub y : wH (hamming_err y) <= 1.
+Lemma wH_hamming_err_ub y : (wH (hamming_err y) <= 1)%N.
 Proof.
 rewrite /hamming_err.
 move Hy : (nat_of_rV _) => [|p /=].
@@ -266,13 +266,13 @@ Definition alt_hamming_err (y : 'rV_n) : 'rV['F_2]_n :=
   let n0 := nat_of_rV s in
   if n0 is O then 0 else (\row_(j < n) if n0.-1 == j then 1 else 0).
 
-Lemma alt_hamming_err_ub y : wH (alt_hamming_err y) <= 1.
+Lemma alt_hamming_err_ub y : (wH (alt_hamming_err y) <= 1)%N.
 Proof.
 rewrite /alt_hamming_err.
 destruct (nat_of_rV _); first by rewrite wH0.
 clearbody n; clear.
 rewrite wH_sum.
-case/boolP : (n0 < n) => n0n.
+case/boolP : (n0 < n)%N => n0n.
   rewrite (bigD1 (Ordinal n0n)) //= mxE eqxx (eq_bigr (fun x => O)); last first.
     move=> i Hi; rewrite mxE ifF //.
     apply: contraNF Hi => /eqP Hi; by apply/eqP/val_inj.
@@ -291,7 +291,7 @@ case/boolP : (s == 0) => [/eqP ->|s0].
 have [k ks] : exists k : 'I_n, nat_of_rV s = k.+1.
   move: s0; rewrite -nat_of_rV_eq0 -lt0n => s0.
   move: (nat_of_rV_up s) => sup.
-  have sn1up : (nat_of_rV s).-1 < n.
+  have sn1up : ((nat_of_rV s).-1 < n)%N.
     by rewrite /n Hamming.len_dim -ltnS prednK // prednK // expn_gt0.
   exists (Ordinal sn1up); by rewrite /= prednK.
 rewrite ks /= /syndrome.
@@ -369,13 +369,13 @@ Variable m' : nat.
 Let m := m'.+2.
 Let n := Hamming.len m'.
 
-Lemma cols_PCM : [set c | wH c^T >= 1] = [set col i (Hamming.PCM m) | i : 'I_n].
+Lemma cols_PCM : [set c | (wH c^T >= 1)%N] = [set col i (Hamming.PCM m) | i : 'I_n].
 Proof.
 apply/setP => i.
 rewrite in_set.
-case Hi : (0 < wH i^T).
+case Hi : (0 < wH i^T)%N.
   apply/esym/imsetP.
-  have H0 : nat_of_rV i^T - 1 < n.
+  have H0 : (nat_of_rV i^T - 1 < n)%N.
     have iup := nat_of_rV_up i^T.
     rewrite /n Hamming.len_dim -subn1 ltn_sub2r //.
     by rewrite -{1}(expn0 2) ltn_exp2l // ltnW.
@@ -436,14 +436,14 @@ rewrite !mxE eqxx /=.
 by case Hji : (j == i) => // _; apply/esym/eqP.
 Qed.
 
-Definition non_unit_cols := [set c : 'cV['F_2]_m | wH c^T > 1].
+Definition non_unit_cols := [set c : 'cV['F_2]_m | wH c^T > 1]%N.
 
 Definition unit_cols := [set c : 'cV['F_2]_m | wH c^T == 1%nat].
 
 Lemma card_all_cols : #|non_unit_cols :|: unit_cols| = n.
 Proof.
 rewrite /non_unit_cols /unit_cols.
-transitivity #|[set c : 'cV['F_2]_m | wH c^T >= 1%nat]|.
+transitivity #|[set c : 'cV['F_2]_m | wH c^T >= 1]%N|.
   apply eq_card=> c; by rewrite !in_set orbC eq_sym -leq_eqVlt.
 by rewrite cols_PCM card_imset ?card_ord //; exact: col_PCM_inj.
 Qed.
@@ -521,7 +521,7 @@ Qed.
 Lemma idsA_ids1 (i : 'I_(n - m)) (j : 'I_m) : idsA `_ i <> sval (ids1 j).
 Proof.
 destruct (ids1 j) => /= Hij.
-have Hlti : i < size idsA by rewrite size_idsA.
+have Hlti : (i < size idsA)%N by rewrite size_idsA.
 move: (mem_nth 0 Hlti).
 rewrite Hij => Hi.
 move: (imset_f (fun i => col i (Hamming.PCM m)) Hi).
@@ -571,7 +571,7 @@ Lemma PCM_A_1 : PCM = castmx (erefl, subnK (Hamming.dim_len m')) (row_mx CSM 1).
 Proof.
 apply/matrixP => i j.
 rewrite mxE castmxE /=.
-case/boolP : (j < n - m) => Hcond.
+case/boolP : (j < n - m)%N => Hcond.
   have -> : cast_ord (esym (subnK (Hamming.dim_len m'))) j =
            lshift m (Ordinal Hcond) by apply val_inj.
   rewrite row_mxEl [in X in _  = X]mxE.
@@ -792,7 +792,7 @@ rewrite -mulmxA.
 have [Y1 [Y2 HY]] : exists (Y1 : 'cV_ _) Y2, (row_perm systematic y^T) =
   castmx (subnK (Hamming.dim_len m'), erefl 1%nat) (col_mx Y1 Y2).
   exists (\matrix_(j < 1, i < n - m) (y j (systematic (widen_ord (leq_subr m n) i))))^T.
-  have dim_len_new i (Hi : i < m) : n - m + i < n.
+  have dim_len_new i (Hi : (i < m)%N) : (n - m + i < n)%N.
     by rewrite -ltn_subRL subnBA ?Hamming.dim_len // addnC addnK.
   exists (\matrix_(j < 1, i < m) (y j (systematic (Ordinal (dim_len_new _ (ltn_ord i))))))^T.
   apply/colP => a /=.
@@ -910,7 +910,7 @@ move=> ->.
 Defined.
 
 Lemma encode_decode c y : c \in lcode ->
-  repair y != None -> dH c y <= 1 -> repair y = Some c.
+  repair y != None -> (dH c y <= 1)%N -> repair y = Some c.
 Proof.
 move=> Hc Hy cy.
 apply: (@mddP _ _ lcode _ decoder (hamming_not_trivial r')) => //.
@@ -919,7 +919,7 @@ by rewrite /mdd_err_cor hamming_min_dist.
 Qed.
 
 Lemma repair_failure2 e c : c \in lcode ->
-  ~~ (if repair e is Some y0 then y0 != c else true) -> wH (c + e) <= 1.
+  ~~ (if repair e is Some y0 then y0 != c else true) -> (wH (c + e) <= 1)%N.
 Proof.
 move=> Hc H.
 suff : dH e c = O \/ dH e c = 1%N by rewrite dHE F2_mx_opp addrC; case=> ->.
@@ -933,7 +933,7 @@ rewrite dH_wH leq_eqVlt ?ltnS ?leqn0 => /orP[|] /eqP ->; by auto.
 Qed.
 
 Lemma repair_failure1 e c : c \in lcode ->
-  (if repair e is Some x then x != c else true) -> 1 < wH (c + e).
+  (if repair e is Some x then x != c else true) -> (1 < wH (c + e))%N.
 Proof.
 move=> Hc.
 move xc : (repair e) => [x ex |]; last first.
@@ -947,7 +947,7 @@ rewrite leq_eqVlt ltnS leqn0 orbC => /orP[|/eqP cy1].
 Qed.
 
 Lemma repair_failure e c : c \in lcode ->
-  (if repair e is Some x then x != c else true) = (1 < wH (c + e)).
+  (if repair e is Some x then x != c else true) = (1 < wH (c + e))%N.
 Proof.
 move=> Hc.
 apply/idP/idP; first by move/repair_failure1; apply.
@@ -963,7 +963,7 @@ Require Import Reals Reals_ext.
 Section hamming_code_error_rate.
 
 Variable M : finType.
-Hypothesis M_not_0 : 0 < #|M|.
+Hypothesis M_not_0 : (0 < #|M|)%nat.
 Variable p : {prob R}.
 Let card_F2 : #| 'F_2 | = 2%N. by rewrite card_Fp. Qed.
 Let W := BSC.c card_F2 p.

@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix perm.
 Require Import Reals Lra Classical.
 From mathcomp Require Import Rstruct classical_sets.
@@ -445,7 +446,7 @@ elim: m n F => [m2 F /=|m IH n F].
   apply eq_bigr => // i _; congr F.
   exact/val_inj.
 - symmetry.
-  transitivity (\sum_(p in tuple_finType (m + n).+1 C) F p)%R; first by apply congr_big.
+  transitivity (\sum_(p in [the finType of (m + n).+1.-tuple C]) F p)%R; first by apply congr_big.
   rewrite -(@big_tuple_cons_behead _ _ _ xpredT xpredT).
   rewrite -(@big_tuple_cons_behead _ _ _ xpredT xpredT).
   apply eq_bigr => i _.
@@ -749,7 +750,7 @@ have -> : lhs = (#| M |.-1%:R * Pr ((P `^ n) `x ((`O(P , W)) `^ n)) [set x | pro
       case=> H1; by rewrite {1}H1.
     rewrite cardsE.
     apply eq_card => m_.
-    by rewrite -!topredE /= !finset.in_set andbC.
+    by rewrite -!topredE /= !finset.in_set andbC/= inE.
   by apply eq_big => //; exact: second_summand.
 rewrite card_ord /=.
 apply (@leR_ltR_trans (epsilon0 + k%:R *

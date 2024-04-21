@@ -2866,12 +2866,12 @@ rewrite mulrDl.
   apply ltR_add; rewrite ltR_pmul2l //; [exact/RltP/prob_gt0 | exact/RltP/onem_gt0/prob_lt1].
 Qed.
 
-Let uniti : set R := (fun x => 0 < x < 1)%coqR.
+Definition uniti : set R := (fun x => 0 < x < 1)%coqR.
 
 Lemma open_unit_interval_convex : is_convex_set uniti.
 Proof. exact: open_interval_convex. Qed.
 
-#[local] HB.instance Definition _ := isConvexSet.Build R uniti open_unit_interval_convex.
+HB.instance Definition _ := isConvexSet.Build R uniti open_unit_interval_convex.
 
 End convex_set_R.
 

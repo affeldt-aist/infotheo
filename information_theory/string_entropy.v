@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct classical_sets.
 Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext logb.
 Require Import fdist entropy convex ln_facts jensen num_occ.
 

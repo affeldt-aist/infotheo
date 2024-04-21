@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 From mathcomp Require Import matrix perm.
 From mathcomp Require boolp.
@@ -119,8 +120,7 @@ Proof.
 by move=> [] []; constructor.
 Qed.
 
-Canonical kind_eqMixin := EqMixin kind_eqP.
-Canonical kind_eqType := Eval hnf in EqType _ kind_eqMixin.
+HB.instance Definition _ := hasDecEq.Build _ kind_eqP.
 
 Definition negk k := if k is kv then kf else kv.
 Lemma negk_involution k : negk (negk k) = k.
@@ -189,11 +189,9 @@ elim: l k => [|l IH] k t.
 Qed.
 End EncodeDecode.
 
-Definition tree_eqMixin l k := CanEqMixin (@cancel_tree l k).
-Canonical tree_eqType l k := Eval hnf in EqType _ (@tree_eqMixin l k).
-Definition tree_choiceMixin l k := CanChoiceMixin (@cancel_tree l k).
-Canonical tree_choiceType l k :=
-  Eval hnf in ChoiceType _ (tree_choiceMixin l k).
+HB.instance Definition _ l k := Equality.copy (tree l k) (can_type (@cancel_tree l k)).
+
+HB.instance Definition _ l k := Choice.copy (tree l k) (can_type (@cancel_tree l k)).
 
 (* For finite types we need to limit the branching degree *)
 Fixpoint max_deg (l : nat) k (t : tree l k) : nat :=
@@ -267,17 +265,13 @@ congr mkFintree.
 by apply eq_irrelevance.
 Qed.
 
-Definition fintree_eqMixin n l := CanEqMixin (@cancel_fintree n l).
-Canonical fintree_eqType n l := Eval hnf in EqType _ (@fintree_eqMixin n l).
-Definition fintree_choiceMixin n l := CanChoiceMixin (@cancel_fintree n l).
-Canonical fintree_choiceType n l := Eval hnf in
-      ChoiceType _ (fintree_choiceMixin n l).
+HB.instance Definition _ n l := Equality.copy (fintree n l) (can_type (@cancel_fintree n l)).
 
-Definition tree_countMixin l k := CanCountMixin (@cancel_tree l k).
-Canonical tree_countType l k := Eval hnf in CountType _ (tree_countMixin l k).
-Definition fintree_countMixin n l := CanCountMixin (@cancel_fintree n l).
-Canonical fintree_countType n l := Eval hnf in
-      CountType _ (fintree_countMixin n l).
+HB.instance Definition _ n l := Choice.copy (fintree n l) (can_type (@cancel_fintree n l)).
+
+HB.instance Definition _ l k := Countable.copy (tree l k) (can_type (@cancel_tree l k)).
+
+HB.instance Definition _ n l := Countable.copy (fintree n l) (can_type (@cancel_fintree n l)).
 
 Section count_allpairs.
 
@@ -446,9 +440,7 @@ have /mapP [x Hx1 Hx2]  : ft t \in [seq ft i | i <- s].
 by rewrite (can_inj (@cancel_fintree n l) Hx2) Hx1.
 Qed.
 
-Definition fintree_finMixin n l := Eval hnf in FinMixin (@fintree_enumP n l).
-
-Canonical fintree_finType n l := Eval hnf in FinType _ (fintree_finMixin n l).
+HB.instance Definition _ n l := @isFinite.Build (fintree n l) _ (@fintree_enumP n l).
 
 Local Open Scope fdist_scope.
 
@@ -638,8 +630,7 @@ Qed.
 Lemma f1 l : \sum_(t : @fintree tw l) (@fintree_dist l t) = 1.
 Proof.
 rewrite /index_enum /=.
-have ->: Finite.enum (fintree_finType tw l)
-    = fintree_enum tw l.
+have ->: Finite.enum (fintree tw l) = fintree_enum tw l.
   by rewrite unlock /=.
 rewrite /fintree_enum.
 destruct (fintree_enum_dep _ _) => /=.
@@ -1117,9 +1108,7 @@ apply ReflectF => [] [].
 by move/Hp.
 Qed.
 
-Definition hemi_comp_graph_eqMixin := EqMixin hemi_comp_graph_eqP.
-Canonical hemi_comp_graph_eqType :=
-  Eval hnf in EqType _ hemi_comp_graph_eqMixin.
+HB.instance Definition _ := hasDecEq.Build _ hemi_comp_graph_eqP.
 
 Definition comp_graph_eqb (c1 c2 : comp_graph) :=
  [&& nodes c1 == nodes c2, conodes c1 == conodes c2 & edges c1 == edges c2].
@@ -1147,9 +1136,7 @@ apply ReflectF => [] [].
 by move/Hn.
 Qed.
 
-Definition comp_graph_eqMixin := EqMixin comp_graph_eqP.
-Canonical comp_graph_eqType :=
-  Eval hnf in EqType _ comp_graph_eqMixin.
+HB.instance Definition _ := hasDecEq.Build _ comp_graph_eqP.
 
 End pcomp_graph_def.
 
@@ -1195,7 +1182,7 @@ case: ifP => Hend.
     by rewrite (subsetP (border_p (conodes c)) _ Hx2) orbT.
   apply/orP; left.
   apply/bigcupP; exists end_node; last by [].
-  by rewrite in_set eqxx.
+  by rewrite inE eqxx.
 Qed.
 
 Definition step_conodes : hemi_comp_graph port :=

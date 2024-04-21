@@ -1,8 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm zmodp.
 From mathcomp Require Import matrix vector.
 Require Import Reals.
+From mathcomp Require Import Rstruct.
 Require Import ssralg_ext ssrR Reals_ext f2 fdist channel tanner linearcode.
 Require Import pproba.
 
@@ -171,7 +172,7 @@ Qed.
 Local Close Scope R_scope.
 
 Let C := kernel H.
-Hypothesis HC : 0 < #| [set cw in C] |.
+Hypothesis HC : (0 < #| [set cw in C] |)%nat.
 
 Local Open Scope proba_scope.
 Variable y : (`U HC).-receivable W.

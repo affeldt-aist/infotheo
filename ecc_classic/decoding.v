@@ -131,7 +131,7 @@ Section maximum_likelihood_decoding_prop.
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable repair : decT B [finType of 'rV[A]_n] n.
-Let P := fdist_uniform_supp real_realType (vspace_not_empty C).
+Let P := fdist_uniform_supp R (vspace_not_empty C).
 Hypothesis ML_dec : ML_decoding W C repair P.
 
 Local Open Scope channel_code_scope.
@@ -288,7 +288,7 @@ Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B [finType of 'rV[A]_n] n.
 Variable dec_img : oimg dec \subset C.
-Let P := fdist_uniform_supp real_realType (vspace_not_empty C).
+Let P := fdist_uniform_supp R (vspace_not_empty C).
 
 Lemma MAP_implies_ML : MAP_decoding W C dec P -> ML_decoding W C dec P.
 Proof.

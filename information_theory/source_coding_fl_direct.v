@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrZ ssrR Reals_ext ssr_ext ssralg_ext logb natbin fdist.
@@ -24,7 +24,7 @@ Local Open Scope ring_scope.
 Local Open Scope fdist_scope.
 
 Section encoder_and_decoder.
-Variables (A : finType) (P : {fdist A}) (n k : nat).
+Variables (A : finType) (P : R.-fdist A) (n k : nat).
 
 Variable S : {set 'rV[A]_k.+1}.
 
@@ -208,7 +208,7 @@ rewrite inE /=; apply/negPn/negPn.
     rewrite -exp2_0; apply Exp_le_increasing => //.
     apply mulR_ge0; first exact: leR0n.
     apply addR_ge0; first exact: entropy_ge0.
-    apply Rlt_le; exact: lambda2_gt0.
+    by apply Rlt_le; exact: lambda2_gt0.
   + rewrite addRR -{1}(logK Rlt_0_2) -ExpD {1}/log Log_n //.
     by apply/RleP; rewrite Order.POrderTheory.lexx.
 Qed.

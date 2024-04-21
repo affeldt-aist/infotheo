@@ -54,8 +54,7 @@ apply/RleP; rewrite -(@ler_pM2r _ (/ 2)); last first.
   by rewrite RinvE' invr_gt0// (_ : 2%coqR = 2%:R)// INRE ltr0n.
 rewrite RmultE -mulrA mulrCA RinvE' (_ : 2%coqR = 2%:R)// INRE.
 rewrite mulfV ?mulr1 ?gt_eqF//.
-  by apply/RleP; rewrite -RdivE'.
-exact/RltP.
+by apply/RleP; rewrite -RdivE'.
 Qed.
 
 Local Open Scope variation_distance_scope.
