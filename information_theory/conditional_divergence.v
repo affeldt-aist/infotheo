@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg finset matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum finset matrix.
 Require Import Reals.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct reals.
 Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext logb ln_facts.
 Require Import num_occ fdist entropy channel divergence types jtypes.
 Require Import proba jfdist_cond.
@@ -139,7 +139,12 @@ have [H'|H'] := eqVneq ((R `X Q) (a, b)) 0.
     by move/eqP : H; tauto.
   rewrite -RmultE.
   by rewrite !(mulR0,mul0R,div0R).
-by rewrite 2!fdist_prod1 /=; field; split; exact/eqP.
+rewrite 2!fdist_prod1 /=.
+set x := R _.
+set y := (R `X P _).
+set z := (R `X Q _).
+field.
+split; exact/eqP.
 Qed.
 
 End conditional_divergence_vs_conditional_relative_entropy.
