@@ -585,7 +585,7 @@ rewrite (eq_bigr (fun i : 'I_n => #|suffixes C``_i|%:R)%R); last first.
   by apply/leq_lmax/nthP; exists i.
   by rewrite unitfE pnatr_eq0 -lt0n.
 (*\color{comment}{\framebox{the goal is now $\sum_{i < n} | \{ x | \prefix{c_i}{x} \} | \leq |T|^{\ell_{\mathrm{max}}}$}} *)
-apply (@le_trans _ _ (#|\bigcup_(i < n) suffixes (C ``_ i)|%:R)%R).
+apply: (@le_trans _ _ (#|\bigcup_(i < n) suffixes (C ``_ i)|%:R)%R).
   rewrite -sum1_card.
   rewrite partition_disjoint_bigcup /=.
     rewrite natr_sum ler_sum // => i _.
