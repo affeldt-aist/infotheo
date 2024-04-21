@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum perm.
 From mathcomp Require Import matrix.
 From mathcomp Require boolp.
@@ -54,7 +55,7 @@ End type_def.
 End type.
 
 Definition type_coercion := type.d.
-Coercion type_coercion : type.type >-> fdist_of.
+Coercion type_coercion : type.type >-> FDist.t.
 
 Notation "'P_' n '(' A ')'" := (type.type A n) : types_scope.
 
@@ -120,8 +121,7 @@ suff ? : d1 = d2 by subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
 apply fdist_ext => /= a; by rewrite H1 H2.
 Qed.
 
-Definition type_eqMixin A n := EqMixin (@type_eqP A n).
-Canonical type_eqType A n := Eval hnf in EqType _ (@type_eqMixin A n).
+HB.instance Definition _ A n := hasDecEq.Build _ (@type_eqP A n).
 
 Lemma type_ffunP A n (P Q : P_ n.+1 ( A )) :
   (forall c, type.d P c = type.d Q c) -> P = Q.
@@ -197,10 +197,7 @@ suff ? : d1 = d by subst d; congr type.mkType; apply boolp.Prop_irrelevance.
 apply fdist_ext => /= a; by rewrite ffunE H.
 Qed.
 
-Lemma type_choiceMixin A n : choiceMixin (P_ n ( A )).
-Proof. apply (PcanChoiceMixin (@type_choice_pcancel A n)). Qed.
-
-Canonical type_choiceType A n := Eval hnf in ChoiceType _ (type_choiceMixin A n).
+HB.instance Definition _ A n := @PCanIsCountable _ _ _ _ (@type_choice_pcancel A n).
 
 Definition type_pickle A n (P : P_ n (A)) : nat.
 destruct P as [d f H].
@@ -237,9 +234,7 @@ suff ? : d1 = d by subst d; congr type.mkType; apply boolp.Prop_irrelevance.
 apply/fdist_ext => a; by rewrite ffunE H.
 Qed.
 
-Definition type_countMixin A n := CountMixin (@type_count_pcancel A n).
-Canonical type_countType A n :=
-  Eval hnf in CountType (P_ n ( A )) (@type_countMixin A n).
+HB.instance Definition _ A n := @PCanIsCountable _ _ _ _ (@type_count_pcancel A n).
 
 Definition type_enum_f (A : finType) n (f : { f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n} ) : option (P_ n ( A )).
 destruct n.
@@ -250,7 +245,7 @@ Defined.
 Definition type_enum A n := pmap (@type_enum_f A n)
   (enum [finType of {f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n}]).
 
-Lemma type_enumP A n : Finite.axiom (@type_enum A n).
+Lemma type_enumP A n : finite_axiom (@type_enum A n).
 Proof.
 destruct n.
   case=> d t H /=; by move: (no_0_type H).
@@ -263,8 +258,7 @@ rewrite /type_enum /= /type_enum_f /= count_map.
 by apply eq_count.
 Qed.
 
-Definition type_finMixin A n := Eval hnf in FinMixin (@type_enumP A n).
-Canonical type_finType A n := Eval hnf in FinType _ (@type_finMixin A n).
+HB.instance Definition _ A n := @isFinite.Build (P_ n (A)) _ (@type_enumP A n).
 
 Section type_facts.
 Variable A : finType.
@@ -274,12 +268,12 @@ Lemma type_counting n : #| P_ n ( A ) | <= expn (n.+1) #|A|.
 Proof.
 rewrite -(card_ord n.+1) -card_ffun /=.
 rewrite cardE /enum_mem.
-apply (@leq_trans (size (map (@ffun_of_type A n) (Finite.enum (type_finType A n))))).
+apply (@leq_trans (size (map (@ffun_of_type A n) (Finite.enum _)))).
   by rewrite 2!size_map.
 rewrite cardE.
 apply: uniq_leq_size.
   rewrite map_inj_uniq //.
-    move: (enum_uniq (type_finType A n)).
+    move: (enum_uniq (P_ n (A))).
     by rewrite enumT.
   case=> d f Hd [] d2 f2 Hd2 /= ?; subst f2.
   have ? : d = d2 by apply/fdist_ext => a; rewrite Hd Hd2.
@@ -595,15 +589,15 @@ Lemma sum_messages_types' f :
   \sum_ (S | S \in enc_pre_img_partition c) \sum_(m in S) f m.
 Proof.
 rewrite (bigID (fun P => [exists m, m \in enc_pre_img c P] )).
-rewrite (_ : forall a b, Radd_comoid a b = a + b) //.
+rewrite /=.
 rewrite Rplus_comm big1 ; last first.
-  move=> P ; rewrite andTb negb_exists => HP.
+  move=> P; rewrite negb_exists => HP.
   apply big_pred0 => m /=.
-  apply/negP/negPn; by move:HP => /forallP/(_ m) ->.
+  by apply/negP/negPn; move:HP => /forallP/(_ m) ->.
 rewrite /= add0R big_imset.
   apply eq_big => [P|P _] //=.
   rewrite in_set.
-  case: set0Pn => [/existsP //| ?]; exact/existsP.
+  by case: set0Pn => [/existsP //| ?]; exact/existsP.
 move=> P Q; rewrite 2!in_set => HP HQ HPQ /=.
 move: (enc_pre_img_injective HP HPQ) => {HP HQ} {}HPQ.
 case: P HPQ => /= Pd Pf HP HPQ.
@@ -613,7 +607,7 @@ apply/eqP.
 apply ffunP => a.
 apply/val_inj/INR_eq.
 move: {HPQ}(HPQ a); rewrite HP HQ eqR_mul2r //.
-apply/invR_neq0; by rewrite INR_eq0.
+by apply/invR_neq0; rewrite INR_eq0.
 Qed.
 
 Lemma sum_messages_types f :
