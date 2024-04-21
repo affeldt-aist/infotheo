@@ -489,7 +489,7 @@ End minimum_distance.
 
 Section not_trivial_binary_codes.
 
-Variable (n : nat) (C : Lcode0.t [finFieldType of 'F_2] n).
+Variable (n : nat) (C : Lcode0.t 'F_2 n).
 
 Hypothesis C_not_trivial : not_trivial C.
 
@@ -658,7 +658,7 @@ Section hamming_bound.
 
 Definition ball q n x r := [set y : 'rV['F_q]_n | dH x y <= r].
 
-Lemma min_dist_ball_disjoint n q (C : Lcode0.t [finFieldType of 'F_q] n)
+Lemma min_dist_ball_disjoint n q (C : Lcode0.t 'F_q n)
   (C_not_trivial : not_trivial C) t :
   min_dist C_not_trivial = t.*2.+1 ->
   forall x y, x \in C -> y \in C -> x != y -> ball x t :&: ball y t = set0.
@@ -671,7 +671,7 @@ move: (min_dist_prop C_not_trivial xC yC xy).
 rewrite Hmin => /(leq_ltn_trans xyt); by rewrite ltnn.
 Qed.
 
-Lemma ball_disjoint_min_dist_lb n q (C : Lcode0.t [finFieldType of 'F_q] n)
+Lemma ball_disjoint_min_dist_lb n q (C : Lcode0.t 'F_q n)
   (C_not_trivial : not_trivial C) t :
   (forall x y, x \in C -> y \in C -> x != y -> ball x t :&: ball y t = set0) ->
   forall x : 'rV_n, x \in C -> x != 0 -> t.*2 < wH x
@@ -741,7 +741,7 @@ apply eq_bigr => i _.
 rewrite card_sphere // (leq_trans _ rn) //; move: (ltn_ord i); by rewrite ltnS.
 Qed.
 
-Lemma hamming_bound q n (C : Lcode0.t [finFieldType of 'F_q] n)
+Lemma hamming_bound q n (C : Lcode0.t 'F_q n)
   (C_not_trivial : not_trivial C) t (tn : t <= n) : prime q ->
   min_dist C_not_trivial = t.*2.+1 -> #| C | * card_ball q n t <= q^n.
 Proof.
@@ -774,7 +774,7 @@ rewrite big_imset /=; last first.
 move=> <-; apply subset_leq_card; apply/subsetP => x; by rewrite inE.
 Qed.
 
-Definition perfect n q (C : Lcode0.t [finFieldType of 'F_q] n)
+Definition perfect n q (C : Lcode0.t 'F_q n)
   (C_not_trivial : not_trivial C) :=
   exists r, min_dist C_not_trivial = r.*2.+1 /\ (#| C | * card_ball q n r = q^n)%N.
 
@@ -859,7 +859,7 @@ Section lcode_prop.
 
 Variables (A B : finFieldType) (n : nat).
 
-Lemma dimlen (k : nat) (C : t A B n [finType of 'rV[A]_k]) : 1 < #|A| -> k <= n.
+Lemma dimlen (k : nat) (C : t A B n 'rV[A]_k) : 1 < #|A| -> k <= n.
 Proof.
 move=> F1.
 case : C =>  cws [] /= f.
@@ -1018,7 +1018,7 @@ Qed.
 Lemma H_G_T : 'H *m 'G ^T = 0.
 Proof. by rewrite -trmx0 -G_H_T trmx_mul trmxK. Qed.
 
-Definition encode : encT F [finType of 'rV[F]_k] n := [ffun x => x *m 'G].
+Definition encode : encT F 'rV[F]_k n := [ffun x => x *m 'G].
 
 Lemma encode_inj : injective encode.
 Proof.
@@ -1036,11 +1036,11 @@ Definition DIS : 'M[F]_(k, n) := castmx (erefl, subnKC dimlen) (row_mx 1%:M 0).
 
 Local Notation "'D" := DIS.
 
-Definition discard : discardT F n [finType of 'rV_k] := [ffun x => x *m 'D^T].
+Definition discard : discardT F n 'rV_k := [ffun x => x *m 'D^T].
 
 Definition t (repair : repairT F F n)
              (repair_img : oimg repair \subset kernel 'H)
-             (H : cancel_on (kernel 'H) encode discard) : Lcode.t F F n [finType of 'rV[F]_k].
+             (H : cancel_on (kernel 'H) encode discard) : Lcode.t F F n 'rV[F]_k.
 apply: (@Lcode.mk _ _ _ _ (kernel 'H)
          (Encoder.mk encode_inj _)
          (Decoder.mk repair_img discard)

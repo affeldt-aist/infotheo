@@ -44,7 +44,7 @@ HB.mixin Record isNaryConv (T : Type) of Choice T := {
 }.
 
 #[short(type=naryConvType)]
-HB.structure Definition NaryConv := {T & isNaryConv T}.
+HB.structure Definition NaryConv := {T of isNaryConv T &}.
 
 Notation "'<&>_' d f" := (convn _ d f) : convex_scope.
 
@@ -529,15 +529,15 @@ Qed.
 Lemma axbary : ax_bary T.
 Proof.
 move=> n m d e g.
-set f : 'I_n * 'I_m -> 'I_#|[finType of 'I_n * 'I_m]| := enum_rank.
-set f' : 'I_#|[finType of 'I_n * 'I_m]| -> 'I_n * 'I_m := enum_val.
+set f : 'I_n * 'I_m -> 'I_#|{: 'I_n * 'I_m}| := enum_rank.
+set f' : 'I_#|{: 'I_n * 'I_m}| -> 'I_n * 'I_m := enum_val.
 set h := fun k i => f (k, i).
 set h' := fun i => snd (f' i).
 rewrite (_ : (fun i => _) = (fun i => <&>_(fdistmap (h i) (e i)) (g \o h')));
   last first.
   apply funext => i.
   have {1}-> : g = (g \o h') \o h i.
-    apply funext => j; by rewrite /h' /h /= /f' /f enum_rankK.
+    by apply funext => j; rewrite /h' /h /= /f' /f enum_rankK.
   rewrite axinjmap //.
   by move=> x y; rewrite /h => /enum_rank_inj [].
 rewrite axbarypart; first last.

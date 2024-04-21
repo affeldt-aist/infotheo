@@ -92,7 +92,7 @@ under eq_bigr=> i.
   over.
 rewrite bigA_distr_bigA big_mkord (partition_big
   (fun i : {ffun I -> bool} => inord #|[set x | i x]|)
-  (fun j : [finType of 'I_#|I|.+1] => true)) //=.
+  (fun j : 'I_#|I|.+1 => true)) //=.
 { eapply eq_big =>// i _.
   rewrite (reindex (fun s : {set I} => [ffun x => x \in s])); last first.
   { apply: onW_bij.

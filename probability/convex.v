@@ -1970,16 +1970,16 @@ Let avgA p q (d0 d1 d2 : R) :
 Proof. by rewrite /avg convA. Qed.
 
 #[export]
-(* TODO(rei): attributed needed? *)
+(* TODO(rei): attribute needed? *)
 (*#[non_forgetful_inheritance]*) HB.instance Definition _ := @isConvexSpace.Build R _ avg1 avgI avgC avgA.
 
 Lemma avgRE p (x y : R) : x <| p |> y = (Prob.p p * x + (Prob.p p).~ * y)%coqR. Proof. by []. Qed.
 
 Lemma avgR_oppD p x y : (- x <| p |> - y = - (x <| p |> y))%coqR.
-Proof. exact: (@avgr_oppD [lmodType R of R^o]). Qed.
+Proof. exact: (@avgr_oppD R^o). Qed.
 
 Lemma avgR_mulDr p : right_distributive Rmult (fun x y => x <| p |> y).
-Proof. exact: (@avgr_scalerDr [lmodType R of R^o]). Qed.
+Proof. exact: (@avgr_scalerDr R^o). Qed.
 
 Lemma avgR_mulDl p : left_distributive Rmult (fun x y => x <| p |> y).
 Proof. exact: @avgr_scalerDl. Qed.

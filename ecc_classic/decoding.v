@@ -114,7 +114,7 @@ Section maximum_likelihood_decoding.
 
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
-Variable f : decT B [finType of 'rV[A]_n] n.
+Variable f : decT B ('rV[A]_n) n.
 Variable P : {fdist 'rV[A]_n}.
 
 Local Open Scope reals_ext_scope.
@@ -130,7 +130,7 @@ Section maximum_likelihood_decoding_prop.
 
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
-Variable repair : decT B [finType of 'rV[A]_n] n.
+Variable repair : decT B ('rV[A]_n) n.
 Let P := fdist_uniform_supp R (vspace_not_empty C).
 Hypothesis ML_dec : ML_decoding W C repair P.
 
@@ -216,11 +216,11 @@ Let card_F2 : #| 'F_2 | = 2%nat. Proof. by rewrite card_Fp. Qed.
 Let W := BSC.c card_F2 p.
 
 Variables (n : nat) (C : {vspace 'rV['F_2]_n}).
-Variable f : repairT [finType of 'F_2] [finType of 'F_2] n.
+Variable f : repairT 'F_2 'F_2 n.
 Variable f_img : oimg f \subset C.
 Variable M : finType.
-Variable discard : discardT [finType of 'F_2] n M.
-Variable enc : encT [finType of 'F_2] M n.
+Variable discard : discardT 'F_2 n M.
+Variable enc : encT 'F_2 M n.
 Hypothesis compatible : cancel_on C enc discard.
 Variable P : {fdist 'rV['F_2]_n}.
 
@@ -273,7 +273,7 @@ Section MAP_decoding.
 
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
-Variable dec : decT B [finType of 'rV[A]_n] n.
+Variable dec : decT B ('rV[A]_n) n.
 Variable P : {fdist 'rV[A]_n}.
 
 Definition MAP_decoding := forall y : P.-receivable W,
@@ -286,7 +286,7 @@ Section MAP_decoding_prop.
 
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
-Variable dec : decT B [finType of 'rV[A]_n] n.
+Variable dec : decT B ('rV[A]_n) n.
 Variable dec_img : oimg dec \subset C.
 Let P := fdist_uniform_supp R (vspace_not_empty C).
 
@@ -332,13 +332,13 @@ End MAP_decoding_prop.
 
 Section MPM_decoding.
 (* in the special case of a binary code... *)
-Variable W : `Ch('F_2, [finType of 'F_2]).
+Variable W : `Ch('F_2, 'F_2).
 Variable n : nat.
 Variable C : {vspace 'rV['F_2]_n}.
 Hypothesis C_not_empty : (0 < #|[set cw in C]|)%nat.
 Variable m : nat.
-Variable enc : encT [finFieldType of 'F_2] [finType of 'rV['F_2]_(n - m)] n.
-Variable dec : decT [finFieldType of 'F_2] [finType of 'rV['F_2]_(n - m)] n.
+Variable enc : encT 'F_2 'rV['F_2]_(n - m) n.
+Variable dec : decT 'F_2 'rV['F_2]_(n - m) n.
 
 Local Open Scope vec_ext_scope.
 

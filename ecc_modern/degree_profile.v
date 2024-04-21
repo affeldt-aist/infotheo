@@ -444,7 +444,7 @@ HB.instance Definition _ n l := @isFinite.Build (fintree n l) _ (@fintree_enumP 
 
 Local Open Scope fdist_scope.
 
-Definition ensemble {K : numDomainType} n l := @FDist.t K [finType of (@fintree n l)].
+Definition ensemble {K : numDomainType} n l := @FDist.t K (@fintree n l).
 
 End ensemble.
 

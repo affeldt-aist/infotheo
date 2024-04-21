@@ -1379,7 +1379,7 @@ Lemma fdist_takeE i v : fdist_take i v = \sum_(w in 'rV[A]_(n - i))
   P (castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx v w)).
 Proof.
 rewrite fdistmapE /=.
-rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n] [finType of 'rV[A]_(n - i)]
+rewrite (@reindex_onto _ _ _ 'rV[A]_n 'rV[A]_(n - i)
   (fun w => castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w))
   (@row_drop A n i)) /=; last first.
   move=> w wv; apply/rowP => j.

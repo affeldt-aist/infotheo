@@ -444,7 +444,7 @@ Qed.
 Lemma f1 : \sum_(a <- finsupp f) f a = 1.
 Proof.
 rewrite -(FSDist.f1 P) !big_seq_fsetE /=.
-have hP (a : [finType of finsupp P]) : a \in finsupp f.
+have hP (a : finsupp P) : a \in finsupp f.
   by rewrite mem_finsupp fsfunE ffunE inE -mem_finsupp fsvalP.
 pose h a := FSetSub (hP a).
 rewrite (reindex h) /=.
@@ -452,7 +452,7 @@ rewrite (reindex h) /=.
 by exists (@fsval _ _) => //= -[a] *; exact: val_inj.
 Qed.
 
-Definition d : {dist [finType of finsupp P]} := FSDist.make f0 f1.
+Definition d : {dist finsupp P} := FSDist.make f0 f1.
 
 End def.
 End FSDist_crop0.
@@ -532,7 +532,7 @@ End FSDist_of_fdist.
 Module fdist_of_FSDist.
 Section def.
 Variable (A : choiceType) (P : {dist A}).
-Definition D := [finType of finsupp P] : finType.
+Definition D := finsupp P : finType.
 Definition f := [ffun d : D => P (fsval d)].
 Lemma f0 b : 0 <= f b. Proof. by rewrite ffunE. Qed.
 Lemma f1 : \sum_(b in D) f b = 1.
@@ -556,7 +556,7 @@ Variable (A : choiceType) (d : {dist A}).
 Lemma fdist_of_fsE i : fdist_of_fs d i = d (fsval i).
 Proof. by rewrite /fdist_of_fs; unlock; rewrite ffunE. Qed.
 
-Lemma fdist_of_FSDistDE : fdist_of_FSDist.D d = [finType of finsupp d].
+Lemma fdist_of_FSDistDE : fdist_of_FSDist.D d = finsupp d.
 Proof. by []. Qed.
 
 End fdist_of_FSDist_lemmas.

@@ -107,7 +107,7 @@ Section univ_types.
 (* heterogeneous types *)
 Variable n : nat.
 Variable types : 'I_n -> eqType.
-Definition univ_types := [eqType of {dffun forall i, types i}].
+Definition univ_types : eqType := [eqType of {dffun forall i, types i}].
 
 Section prod_types.
 (* sets of indices *)

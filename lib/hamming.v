@@ -192,7 +192,7 @@ Qed.
 
 Section wH_num_occ_bitstring.
 
-Lemma wH_col_1 n (i : 'I_n) : @wH [fieldType of 'F_2] _ (col i 1%:M)^T = 1%N.
+Lemma wH_col_1 n (i : 'I_n) : @wH 'F_2 _ (col i 1%:M)^T = 1%N.
 Proof.
 rewrite wH_sum (bigD1 i) //= !mxE eqxx /= add1n (eq_bigr (fun=> O)).
 by rewrite big_const iter_addn mul0n.

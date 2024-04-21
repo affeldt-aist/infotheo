@@ -298,9 +298,9 @@ Proof.
 apply/andP; split.
   by rewrite RdivE' mul1r invr_ge0 ?addr_ge0.
 rewrite RdivE' mul1r invf_le1//.
-  by rewrite ler_addl.
+  by rewrite lerDl.
 rewrite (@lt_le_trans _ _ 1)//.
-by rewrite ler_addl.
+by rewrite lerDl.
 Qed.
 
 Definition Prob_invp (p : {prob R}) := Prob.mk (prob_invp_subproof p).

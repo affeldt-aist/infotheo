@@ -59,7 +59,7 @@ Let n := (2 ^ m.-1).-1.*2.+1.
 
 Definition PCM := \matrix_(i < m, j < n) (cV_of_nat m j.+1 i 0).
 
-Definition code : Lcode0.t [finFieldType of 'F_2] n := kernel PCM.
+Definition code : Lcode0.t 'F_2 n := kernel PCM.
 
 End hamming_code_definition.
 
@@ -602,7 +602,7 @@ Definition GEN' : 'M_(n - m, n) :=
   castmx (erefl, subnK (Hamming.dim_len m')) (row_mx 1%:M (- CSM)^T).
 
 Program Definition GEN'' : 'M_(n - m, n) :=
-  @Syslcode.GEN [finFieldType of 'F_2] _ _ _ (castmx (_, erefl (n - m)%nat) CSM).
+  @Syslcode.GEN 'F_2 _ _ _ (castmx (_, erefl (n - m)%nat) CSM).
 Next Obligation. exact: leq_subr. Qed.
 Next Obligation. by rewrite (subnBA _ (Hamming.dim_len m')) addnC addnK. Qed.
 
@@ -676,7 +676,7 @@ Definition mx_discard : 'M['F_2]_(n - m, n) :=
 (*   castmx _ (@Syslcode.DIS _ _ _ _).*)
 
 Definition mx_discard' : 'M_(n - m, n) :=
-  @Syslcode.DIS [finFieldType of 'F_2] _ _ (leq_subr _ _).
+  @Syslcode.DIS 'F_2 _ _ (leq_subr _ _).
 
 Lemma mx_discardE : mx_discard = mx_discard'.
 Proof.
@@ -842,7 +842,7 @@ apply/eqP => /=; rewrite ffunE /syndrome.
 by rewrite trmx_mul trmxK -mulmxA -(trmxK GEN) -trmx_mul PCM_GEN trmx0 mulmx0.
 Qed.
 
-Lemma enc_img_is_code : (enc channel_code) @: [finType of 'rV_(n - m)] \subset Hamming.code m.
+Lemma enc_img_is_code : (enc channel_code) @: 'rV_(n - m) \subset Hamming.code m.
 Proof.
 apply/subsetP => /= t /imsetP[/= x _] ->.
 by rewrite mem_kernel_syndrome0 (syndrome_enc x).
@@ -866,7 +866,7 @@ Variable r' : nat.
 Let r := r'.+2.
 Let n := Hamming.len r'.
 
-Definition lcode : Lcode.t [finFieldType of 'F_2] [finFieldType of 'F_2] n _ :=
+Definition lcode : Lcode.t 'F_2 'F_2 n _ :=
   @Lcode.mk _ _ _ _ _
     (Encoder.mk (@Hamming'.encode_inj r') (@Hamming'.enc_img_is_code r'))
     (Decoder.mk (@hamming_repair_img r') (@Hamming'.discard r')) (@Hamming'.enc_discard_is_id r').
