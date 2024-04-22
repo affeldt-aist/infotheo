@@ -56,7 +56,7 @@ End Lambda_definition.
 End DegreeDistribution.
 
 Definition degdistp := DegreeDistribution.p.
-Coercion degdistp : DegreeDistribution.Lambda >-> poly_of.
+Coercion degdistp : DegreeDistribution.Lambda >-> polynomial.
 
 Lemma sum_coef_pos (K : numFieldType) (p : DegreeDistribution.Lambda K) : p.[1] > 0.
 Proof.
@@ -100,7 +100,7 @@ Coercion Lambda_of_L :
   NormalizedDegreeDistribution.L >-> DegreeDistribution.Lambda.
 
 Definition nzdegdist_coerce := NormalizedDegreeDistribution.p.
-Coercion nzdegdist_coerce : NormalizedDegreeDistribution.L >-> poly_of.
+Coercion nzdegdist_coerce : NormalizedDegreeDistribution.L >-> polynomial.
 
 Module TreeEnsemble.
 
