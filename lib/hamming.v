@@ -192,7 +192,7 @@ Qed.
 
 Section wH_num_occ_bitstring.
 
-Lemma wH_col_1 n (i : 'I_n) : @wH [fieldType of 'F_2] _ (col i 1%:M)^T = 1%N.
+Lemma wH_col_1 n (i : 'I_n) : @wH 'F_2 _ (col i 1%:M)^T = 1%N.
 Proof.
 rewrite wH_sum (bigD1 i) //= !mxE eqxx /= add1n (eq_bigr (fun=> O)).
 by rewrite big_const iter_addn mul0n.
@@ -850,7 +850,7 @@ Lemma hamming_01 m p :
   (1 - p) ^ m + m%:R * p * (1 - p) ^ (m - 1).
 Proof.
 rewrite (bigID [pred i | wH i == O]) /=.
-rewrite (big_pred1 (GRing.zero _)) /=; last first.
+rewrite (big_pred1 (@GRing.zero _)) /=; last first.
   by move=> i /=; rewrite !inE -wH_eq0 andb_idl // => /eqP ->.
 rewrite wH0 pow_O subn0 mulR1; congr (_ + _).
 transitivity (\sum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^ (m - 1) * p ^ 1)).

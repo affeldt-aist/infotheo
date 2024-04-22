@@ -975,8 +975,7 @@ move/negbT : Hlhs; apply contra.
 case/andP.
 rewrite 2!inE.
 move=> n1n0.
-rewrite in_set1 (negbTE n1n0) orFb.
-rewrite inE.
+rewrite !inE (negbTE n1n0) orFb.
 case/andP => _ Hn1.
 apply/bigcupP => /=.
 case/connectP : Hn1 => /= p.
@@ -1013,7 +1012,7 @@ exists m1.
   by apply: contra Hun => /eqP ->.
 rewrite !inE (negbTE n1n2) /= -VnextE -FnextE.
 case/andP : H2 => -> H2 /=.
-apply/connectP; exists p' => //.
+apply/connectP; exists p'; last by [].
 apply: sub_path_except H3 => //.
 apply/negP => n2p'.
 move: Hun.

@@ -183,7 +183,7 @@ Section minimum_distance_decoding.
 
 Variable r : nat.
 (* we assume a repair function *)
-Variable f : repairT [finType of 'F_2] [finType of 'F_2] r.+1.
+Variable f : repairT 'F_2 'F_2 r.+1.
 Hypothesis Hf : oimg f \subset Rep.code r.
 Let RepLcode := Rep.Lcode_wo_repair Hf.
 
@@ -236,7 +236,7 @@ Definition majority_vote r (s : seq 'F_2) : option 'rV['F_2]_r :=
   else if (r./2 == cnt) && ~~ odd r then None
   else Some 0.
 
-Definition repair r : repairT [finFieldType of 'F_2] [finFieldType of 'F_2] r.+1 :=
+Definition repair r : repairT 'F_2 'F_2 r.+1 :=
   [ffun l => majority_vote r.+1 (tuple_of_row l)].
 
 Lemma repair_odd (r : nat) (Hr : odd r.+1) x : @repair r x != None.

@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
 Require Import ssr_ext ssralg_ext poly_ext f2 hamming decoding channel_code.
@@ -117,18 +118,23 @@ Proof. by rewrite /syndrome trmx0 mulmx0 trmx0. Qed.
 Lemma additive_syndrome : additive syndrome.
 Proof. move=> x y; by rewrite syndromeD syndromeN. Qed.
 
-Definition lin_syndrome : {linear 'rV[F]_n -> 'rV[F]_m} :=
-  GRing.Linear.Pack _ (GRing.Linear.Class additive_syndrome syndromeZ).
+HB.instance Definition _ :=
+  GRing.isAdditive.Build _ _ _ additive_syndrome.
+HB.instance Definition _ :=
+  GRing.isScalable.Build _ _ _ _ _ syndromeZ.
 
-Definition hom_syndrome : 'Hom(matrix_vectType F 1 n, matrix_vectType F 1 m) :=
-  linfun lin_syndrome.
+(*Definition lin_syndrome : {linear 'rV[F]_n -> 'rV[F]_m} :=
+  GRing.Linear.Pack _ (GRing.Linear.Class additive_syndrome syndromeZ).*)
+
+Definition hom_syndrome : 'Hom('rV[F]_n, 'rV[F]_m) :=
+  linfun syndrome.
 
 Definition kernel : Lcode0.t F n := lker hom_syndrome.
 
 Lemma dim_hom_syndrome_ub : \dim (limg hom_syndrome) <= m.
 Proof.
 rewrite [in X in _ <= X](_ : m = \dim (fullv : {vspace 'rV[F]_m})); last first.
-  by rewrite dimvf /Vector.dim /= mul1n.
+  by rewrite dimvf/= /dim/= mul1n.
 by rewrite dimvS // subvf.
 Qed.
 
@@ -139,7 +145,7 @@ Lemma dim_kernel (Hm : \rank H = m) (mn : m <= n) : \dim kernel = (n - m)%N.
 Proof.
 move: (limg_ker_dim hom_syndrome fullv).
 rewrite (_ : (fullv :&: _)%VS = kernel); last by apply/capv_idPr/subvf.
-rewrite (_ : \dim fullv = n); last by rewrite dimvf /Vector.dim /= mul1n.
+rewrite (_ : \dim fullv = n); last by rewrite dimvf /dim /= mul1n.
 move=> H0; rewrite -{}[in RHS]H0.
 suff -> : \dim (limg hom_syndrome) = m by rewrite addnK.
 set K := castmx (erefl, Hm) (col_base H).
@@ -190,14 +196,14 @@ Section dual_code.
 Variables (F : finFieldType) (m n : nat) (H : 'M[F]_(m, n)).
 
 Definition dual_code : {vspace 'rV[F]_n} :=
-  (linfun (mulmxr_linear _ H) @: fullv)%VS.
+  (linfun (mulmxr H) @: fullv)%VS.
 
 Lemma dim_dual_code : (\dim (kernel H) + \dim dual_code = n)%N.
 Proof.
-move: (limg_ker_dim (linfun (lin_syndrome H)) fullv).
+move: (limg_ker_dim (linfun (syndrome H)) fullv).
 rewrite -/(kernel H).
 rewrite (_ : (fullv :&: _)%VS = kernel H); last by apply/capv_idPr/subvf.
-rewrite (_ : \dim fullv = n); last by rewrite dimvf /Vector.dim /= mul1n.
+rewrite (_ : \dim fullv = n); last by rewrite dimvf /dim /= mul1n.
 rewrite (_ : \dim (limg _) = \dim dual_code) // /dual_code.
 rewrite /dimv.
 Abort.
@@ -390,9 +396,14 @@ Proof. by apply/rowP => i; rewrite !mxE. Qed.
 Lemma additive_sbound_f' k (H : k.-1 <= n) : additive (sbound_f' H).
 Proof. by move=> x y; rewrite sbound_f'D sbound_f'N. Qed.
 
-Definition sbound_f_linear k (H : k.-1 <= n) :
+HB.instance Definition _ k (H : k.-1 <= n) :=
+  GRing.isAdditive.Build _ _ _ (additive_sbound_f' H).
+HB.instance Definition _ k (H : k.-1 <= n) :=
+  GRing.isScalable.Build _ _ _ _ _ (sbound_f'Z H).
+
+(*Definition sbound_f_linear k (H : k.-1 <= n) :
   {linear 'rV[F]_n -> 'rV[F]_k.-1} :=
-  GRing.Linear.Pack _ (GRing.Linear.Class (additive_sbound_f' H) (sbound_f'Z H)).
+  GRing.Linear.Pack _ (GRing.Linear.Class (additive_sbound_f' H) (sbound_f'Z H)).*)
 
 (* McEliece, theorem 9.8, p.255 *)
 Lemma singleton_bound : min_dist <= n - \dim C + 1.
@@ -400,18 +411,18 @@ Proof.
 set k := \dim C.
 have dimCn : k.-1 < n.
   have /dimvS := subvf C.
-  rewrite dimvf /Vector.dim /= mul1n.
+  rewrite dimvf /dim /= mul1n.
   by apply: leq_trans; rewrite prednK // not_trivial_dim.
-set f := linfun (sbound_f_linear (ltnW dimCn)).
+set f := linfun (sbound_f' (ltnW dimCn)).
 have H1 : \dim (f @: C) <= k.-1.
   suff : \dim (f @: C) <= \dim (fullv : {vspace 'rV[F]_k.-1}).
-    by rewrite dimvf /= /Vector.dim /= mul1n.
+    by rewrite dimvf /= /dim /= mul1n.
   by apply/dimvS/subvf.
 have H2 : (\dim (f @: C) + \dim (C :&: lker f) = \dim (fullv : {vspace 'rV[F]_k}))%N.
-  by rewrite dimvf /= /Vector.dim /= mul1n -[RHS](limg_ker_dim f C) addnC.
+  by rewrite dimvf /= /dim /= mul1n -[RHS](limg_ker_dim f C) addnC.
 have H3 : 1 <= \dim (C :&: lker f).
   rewrite lt0n; apply/eqP => abs; move: H2.
-  rewrite abs addn0 dimvf /Vector.dim /= mul1n -/k.
+  rewrite abs addn0 dimvf /dim /= mul1n -/k.
   apply/eqP.
   move: H1; rewrite leqNgt; apply: contra => /eqP ->.
   by rewrite prednK // not_trivial_dim.
@@ -478,7 +489,7 @@ End minimum_distance.
 
 Section not_trivial_binary_codes.
 
-Variable (n : nat) (C : Lcode0.t [finFieldType of 'F_2] n).
+Variable (n : nat) (C : Lcode0.t 'F_2 n).
 
 Hypothesis C_not_trivial : not_trivial C.
 
@@ -647,7 +658,7 @@ Section hamming_bound.
 
 Definition ball q n x r := [set y : 'rV['F_q]_n | dH x y <= r].
 
-Lemma min_dist_ball_disjoint n q (C : Lcode0.t [finFieldType of 'F_q] n)
+Lemma min_dist_ball_disjoint n q (C : Lcode0.t 'F_q n)
   (C_not_trivial : not_trivial C) t :
   min_dist C_not_trivial = t.*2.+1 ->
   forall x y, x \in C -> y \in C -> x != y -> ball x t :&: ball y t = set0.
@@ -660,7 +671,7 @@ move: (min_dist_prop C_not_trivial xC yC xy).
 rewrite Hmin => /(leq_ltn_trans xyt); by rewrite ltnn.
 Qed.
 
-Lemma ball_disjoint_min_dist_lb n q (C : Lcode0.t [finFieldType of 'F_q] n)
+Lemma ball_disjoint_min_dist_lb n q (C : Lcode0.t 'F_q n)
   (C_not_trivial : not_trivial C) t :
   (forall x y, x \in C -> y \in C -> x != y -> ball x t :&: ball y t = set0) ->
   forall x : 'rV_n, x \in C -> x != 0 -> t.*2 < wH x
@@ -730,7 +741,7 @@ apply eq_bigr => i _.
 rewrite card_sphere // (leq_trans _ rn) //; move: (ltn_ord i); by rewrite ltnS.
 Qed.
 
-Lemma hamming_bound q n (C : Lcode0.t [finFieldType of 'F_q] n)
+Lemma hamming_bound q n (C : Lcode0.t 'F_q n)
   (C_not_trivial : not_trivial C) t (tn : t <= n) : prime q ->
   min_dist C_not_trivial = t.*2.+1 -> #| C | * card_ball q n t <= q^n.
 Proof.
@@ -763,7 +774,7 @@ rewrite big_imset /=; last first.
 move=> <-; apply subset_leq_card; apply/subsetP => x; by rewrite inE.
 Qed.
 
-Definition perfect n q (C : Lcode0.t [finFieldType of 'F_q] n)
+Definition perfect n q (C : Lcode0.t 'F_q n)
   (C_not_trivial : not_trivial C) :=
   exists r, min_dist C_not_trivial = r.*2.+1 /\ (#| C | * card_ball q n r = q^n)%N.
 
@@ -848,7 +859,7 @@ Section lcode_prop.
 
 Variables (A B : finFieldType) (n : nat).
 
-Lemma dimlen (k : nat) (C : t A B n [finType of 'rV[A]_k]) : 1 < #|A| -> k <= n.
+Lemma dimlen (k : nat) (C : t A B n 'rV[A]_k) : 1 < #|A| -> k <= n.
 Proof.
 move=> F1.
 case : C =>  cws [] /= f.
@@ -1007,7 +1018,7 @@ Qed.
 Lemma H_G_T : 'H *m 'G ^T = 0.
 Proof. by rewrite -trmx0 -G_H_T trmx_mul trmxK. Qed.
 
-Definition encode : encT F [finType of 'rV[F]_k] n := [ffun x => x *m 'G].
+Definition encode : encT F 'rV[F]_k n := [ffun x => x *m 'G].
 
 Lemma encode_inj : injective encode.
 Proof.
@@ -1025,11 +1036,11 @@ Definition DIS : 'M[F]_(k, n) := castmx (erefl, subnKC dimlen) (row_mx 1%:M 0).
 
 Local Notation "'D" := DIS.
 
-Definition discard : discardT F n [finType of 'rV_k] := [ffun x => x *m 'D^T].
+Definition discard : discardT F n 'rV_k := [ffun x => x *m 'D^T].
 
 Definition t (repair : repairT F F n)
              (repair_img : oimg repair \subset kernel 'H)
-             (H : cancel_on (kernel 'H) encode discard) : Lcode.t F F n [finType of 'rV[F]_k].
+             (H : cancel_on (kernel 'H) encode discard) : Lcode.t F F n 'rV[F]_k.
 apply: (@Lcode.mk _ _ _ _ (kernel 'H)
          (Encoder.mk encode_inj _)
          (Decoder.mk repair_img discard)

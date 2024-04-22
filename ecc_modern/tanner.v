@@ -121,9 +121,9 @@ Lemma Vgraph_set1 m1 n1 : n1 \notin 'V m1 -> 'V(m1, n1) = [set n1].
 Proof.
 move=> m1n1.
 apply/setP => n2.
-rewrite inE in_set1 /=.
+rewrite !inE.
 case/boolP: (n2 == n1) => //= n2n1.
-by rewrite 2!inE -VnextE (negbTE m1n1).
+by rewrite -VnextE (negbTE m1n1).
 Qed.
 
 (** Function nodes *)

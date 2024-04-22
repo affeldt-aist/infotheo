@@ -54,7 +54,7 @@ Section injection_into_extension_field.
 
 Variables (F0 : finFieldType) (F1 : fieldExtType F0).
 
-Definition ext_inj : {rmorphism F0 -> F1} := @GRing.in_alg_rmorphism F0 F1.
+Definition ext_inj : {rmorphism F0 -> F1} := @GRing.in_alg F1.
 
 Definition ext_inj_tmp : {rmorphism F0 -> (FinFieldExtType F1)} := ext_inj.
 

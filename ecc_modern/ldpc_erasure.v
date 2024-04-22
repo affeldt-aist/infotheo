@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 Require Program.Wf.
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
@@ -57,8 +58,7 @@ case: a b; [|by case|by case].
 by move=> a'; case => //= b' /eqP ->.
 Qed.
 
-Canonical letter_eqMixin := EqMixin eqlP.
-Canonical letter_eqType := Eval hnf in EqType letter letter_eqMixin.
+HB.instance Definition _ := hasDecEq.Build _ eqlP.
 
 CoInductive letter_spec : letter -> bool -> bool -> bool -> bool -> Prop :=
 | letter_spec0 : letter_spec (Bit 0) true false false false
@@ -91,17 +91,12 @@ Definition letter_unpickle (n : nat) :=
 Lemma letter_count : pcancel letter_pickle letter_unpickle.
 Proof. by case/letterP. Qed.
 
-Definition letter_choiceMixin := PcanChoiceMixin letter_count.
-Canonical letter_choiceType := Eval hnf in ChoiceType letter letter_choiceMixin.
-
-Definition letter_countMixin := PcanCountMixin letter_count.
-Canonical letter_countType := Eval hnf in CountType letter letter_countMixin.
+HB.instance Definition _ := @PCanIsCountable _ _ _ _ letter_count.
 
 Lemma letter_enumP : Finite.axiom [::Bit 0; Bit 1; Star; Blank].
 Proof. by case => //; case/F2P. Qed.
 
-Definition letter_finMixin := Eval hnf in FinMixin letter_enumP.
-Canonical letter_finType := Eval hnf in FinType letter letter_finMixin.
+HB.instance Definition _ := @isFinite.Build letter _ letter_enumP.
 
 Definition F2_of_letter (l : letter) : 'F_2 := if l is Bit a then a else 0.
 

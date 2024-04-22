@@ -1078,3 +1078,27 @@ destruct boolP.
   by move=> x y; have:= Bool.bool_dec x y => -[]; [left | right].
 Qed.
 End boolP.
+
+Section fintype_extra.
+
+Lemma index_enum_cast_ord n m (e : n = m) :
+  index_enum 'I_m = [seq cast_ord e i | i <- index_enum 'I_n].
+Proof.
+subst m; rewrite -{1}(map_id (index_enum 'I_n)).
+apply eq_map=> [[x xlt]].
+by rewrite /cast_ord; congr Ordinal; exact: bool_irrelevance.
+Qed.
+
+Lemma perm_map_bij [T : finType] [f : T -> T] (s : seq T) : bijective f ->
+  perm_eq (index_enum T) [seq f i | i <- index_enum T].
+Proof.
+rewrite /index_enum; case: index_enum_key => /= fbij.
+rewrite /perm_eq -enumT -forallb_tnth; apply /forallP=>i /=.
+case: fbij => g fg gf.
+rewrite enumT enumP count_map -size_filter (@eq_in_filter _ _
+    (pred1 (g (tnth (cat_tuple (enum_tuple T) (map_tuple [eta f] (enum_tuple T))) i)))).
+  by rewrite size_filter enumP.
+by move=> x _ /=; apply/eqP/eqP => [/(congr1 g) <-|->//].
+Qed.
+
+End fintype_extra.

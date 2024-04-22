@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
 Require Import ZArith Lia.
 
@@ -32,8 +33,7 @@ Local Open Scope zarith_ext_scope.
 Lemma eqZP : Equality.axiom Zeq_bool.
 Proof. by move=> x y; apply: (iffP idP) => H; apply/Zeq_is_eq_bool. Qed.
 
-Canonical Z_eqMixin := EqMixin eqZP.
-Canonical Z_eqType := Eval hnf in EqType Z Z_eqMixin.
+HB.instance Definition _ := hasDecEq.Build Z eqZP.
 
 Arguments eqZP {x y}.
 

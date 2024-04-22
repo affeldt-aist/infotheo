@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 Require Import Reals.
@@ -220,7 +220,7 @@ Lemma jproduct_rule E F : Pr P (E `* F) = \Pr_P[E | F] * Pr (P`2) F.
 Proof.
 have [/eqP PF0|PF0] := boolP (Pr (P`2) F == 0).
   rewrite jcPrE /cPr -{1}(setIT E) -{1}(setIT F) -setIX.
-  rewrite Pr_domin_setI; last by rewrite -Pr_fdistX Pr_domin_setX // fdistX1.
+  rewrite [LHS]Pr_domin_setI; last by rewrite -Pr_fdistX Pr_domin_setX // fdistX1.
   by rewrite setIC Pr_domin_setI ?(div0R,mul0R) // setTE Pr_setTX.
 rewrite -{1}(setIT E) -{1}(setIT F) -setIX product_rule.
 rewrite -EsetT setTT cPrET Pr_setT mulR1 jcPrE.
@@ -267,7 +267,9 @@ Arguments jcPr_fdistmap_l [A] [A'] [B] [f] [d] [E] [F] _.
 Lemma Pr_jcPr_unit (A : finType) (E : {set A}) (P : {fdist A}) :
   Pr P E = \Pr_(fdistmap (fun a => (a, tt)) P) [E | setT].
 Proof.
-rewrite /jcPr (Pr_set1 _ tt).
+rewrite /jcPr/= (_ : [set: unit] = [set tt]); last first.
+  by apply/setP => -[]; rewrite !inE eqxx.
+rewrite (Pr_set1 _ tt).
 rewrite (_ : _`2 = fdist1 tt) ?fdist1xx ?divR1; last first.
   rewrite /fdist_snd fdistmap_comp; apply/fdist_ext; case.
   by rewrite fdistmapE fdist1xx (eq_bigl xpredT) // FDist.f1.
@@ -393,3 +395,67 @@ by case ab.
 Qed.
 
 End fdist_split.
+
+
+Import GRing.Theory Num.Theory.
+
+Module FDistPart.
+Section fdistpart.
+Local Open Scope fdist_scope.
+Variables (n m : nat) (K : 'I_m -> 'I_n) (e : {fdist 'I_m}) (i : 'I_n).
+
+Definition d := (fdistX (e `X (fun j => fdist1 (K j)))) `(| i).
+Definition den := (fdistX (e `X (fun j => fdist1 (K j))))`1 i.
+
+Lemma denE : den = fdistmap K e i.
+Proof.
+rewrite /den !fdistE [RHS]big_mkcond /=.
+under eq_bigl do rewrite inE.
+apply/eq_bigr => a _.
+rewrite !fdistE /= (big_pred1 (a,i)) ?fdistE /=;
+    last by case=> x y; rewrite /swap /= !xpair_eqE andbC.
+rewrite eq_sym 2!inE.
+by case: eqP => // _; rewrite (mulr0,mulr1).
+Qed.
+
+Lemma dE j : fdistmap K e i != 0%coqR ->
+  d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%coqR.
+Proof.
+rewrite -denE => NE.
+rewrite jfdist_condE // {NE} /jcPr /proba.Pr.
+rewrite (big_pred1 (j,i)); last first.
+  by move=> k; rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
+rewrite (big_pred1 i); last by move=> k; rewrite !inE.
+rewrite !fdistE big_mkcond [in RHS]big_mkcond /=.
+rewrite -RmultE -INRE.
+congr (_ / _)%R.
+under eq_bigr => k do rewrite {2}(surjective_pairing k).
+rewrite -(pair_bigA _ (fun k l =>
+          if l == i
+          then e `X (fun j0 : 'I_m => fdist1 (K j0)) (k, l)
+          else R0))%R /=.
+apply eq_bigr => k _.
+rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
+by case: ifP; rewrite (mulr1,mulr0).
+Qed.
+End fdistpart.
+
+Lemma dK n m K (e : {fdist 'I_m}) j :
+  e j = (\sum_(i < n) fdistmap K e i * d K e i j)%R.
+Proof.
+under eq_bigr => /= a _.
+  have [Ka0|Ka0] := eqVneq (fdistmap K e a) 0%R.
+    rewrite Ka0 mul0R.
+    have <- : (e j * (a == K j)%:R = 0)%R.
+      have [/eqP Kj|] := eqVneq a (K j); last by rewrite mulR0.
+      move: Ka0; rewrite fdistE /=.
+      by move/psumr_eq0P => -> //; rewrite ?(mul0R,inE) // eq_sym.
+  over.
+  rewrite FDistPart.dE // fdistE /= mulRCA mulRV ?mulR1;
+    last by rewrite fdistE in Ka0.
+over.
+move=> /=.
+rewrite (bigD1 (K j)) //= eqxx mulR1.
+by rewrite big1 ?addR0 // => i /negbTE ->; rewrite mulR0.
+Qed.
+End FDistPart.

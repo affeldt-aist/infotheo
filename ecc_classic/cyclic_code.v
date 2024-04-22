@@ -122,10 +122,12 @@ Lemma rcs'_rcs (R : idomainType) n (x : 'rV[R]_n.+1) : rcs' x = rcs x.
 Proof.
 rewrite /rcs' /rcs; apply/rowP => i; rewrite !mxE.
 case: ifPn => [/eqP -> |i0].
-  congr (x _ _); apply val_inj => /=.
-  by rewrite PermDef.fun_of_permE ffunE /= inordK.
+  congr (x _ _).
+  rewrite /rcs_perm/= unlock/= ffunE eqxx.
+  apply/val_inj => /=.
+  by rewrite inordK.
 congr (x _ _); apply val_inj => /=.
-rewrite PermDef.fun_of_permE ffunE /= inordK.
+rewrite unlock ffunE /= inordK.
   by rewrite (negPf i0) inordK // (ltn_trans _ (ltn_ord i)) // prednK // lt0n.
 by rewrite (ltn_trans _ (ltn_ord i)) // prednK // lt0n.
 Qed.
@@ -138,7 +140,7 @@ rewrite coef_add_poly coefXM coefCM coef_add_poly coefXn 2!coef_opp_poly coefC.
 case: ifPn => [/eqP ->|i0]; last rewrite subr0.
   rewrite 2!add0r mulrN1 coef_rVpoly /=.
   case: insubP => //= j _ j0.
-  rewrite mxE PermDef.fun_of_permE ffunE /= -val_eqE j0 /= j0 eqxx; congr (- x _ _).
+  rewrite mxE unlock ffunE /= -val_eqE j0 /= j0 eqxx; congr (- x _ _).
   by apply val_inj => /=; rewrite inordK.
 case/boolP : (i == n.+1) => [/eqP ->|in0].
   rewrite mulr1 2!coef_rVpoly /=.
@@ -148,7 +150,7 @@ case/boolP : (i == n.+1) => [/eqP ->|in0].
 rewrite mulr0 2!coef_rVpoly; case: insubP => /= [j|].
   rewrite ltnS => in0' ji; case: insubP => /= [k _ ki|].
     apply/eqP; rewrite subr_eq0; apply/eqP.
-    rewrite mxE PermDef.fun_of_permE ffunE -val_eqE /= ki (negPf i0) -ji; congr (x _ _).
+    rewrite mxE unlock ffunE -val_eqE /= ki (negPf i0) -ji; congr (x _ _).
     apply/val_inj => /=; by rewrite inordK.
   rewrite ltnS -ltnNge => n0i; exfalso.
   rewrite -ltnS prednK // in in0'; last by rewrite lt0n.
@@ -234,20 +236,20 @@ rewrite (reindex_onto (@rcs_perm n) (perm_inv (@rcs_perm n))) /=; last first.
   move=> i1 _; by rewrite permKV.
 rewrite (eq_bigl xpredT); last by move=> i1; rewrite permK eqxx.
 apply eq_bigr => i1 _.
-rewrite coef_rVpoly PermDef.fun_of_permE ffunE.
+rewrite coef_rVpoly unlock ffunE.
 case: ifPn => [/eqP ->|].
   case: insubP => [j _ jn0|]; last by rewrite ltnS leqnn.
   rewrite /= in jn0.
   rewrite coef_rVpoly; case: insubP => // k _ k0.
   rewrite mxE rcs_poly_rcs ?rVpolyK; last by rewrite size_poly.
-  rewrite coef_rVpoly_ord mxE PermDef.fun_of_permE ffunE -val_eqE k0 /= expr0 mulr1.
+  rewrite coef_rVpoly_ord mxE unlock ffunE -val_eqE k0 /= expr0 mulr1.
   by rewrite exprAC an1 expr1n mulr1; congr (x _ _); apply val_inj => /=.
 case: insubP => /= [j|].
   rewrite ltnS => i1n0 ji1 i10; rewrite coef_rVpoly.
   case: insubP => /= [k|].
     rewrite ltnS => i1n0' ki1.
     rewrite mxE rcs_poly_rcs ?rVpolyK; last by rewrite size_poly.
-    rewrite coef_rVpoly_ord mxE PermDef.fun_of_permE ffunE -val_eqE [val k]/= ki1 val_eqE (negPf i10).
+    rewrite coef_rVpoly_ord mxE unlock ffunE -val_eqE [val k]/= ki1 val_eqE (negPf i10).
     rewrite inordK; last by rewrite ltnW // ltnS prednK // lt0n.
     rewrite prednK // ?lt0n //; congr (x _ _ * _).
     by apply/val_inj.

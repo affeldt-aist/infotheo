@@ -131,7 +131,8 @@ Proof. by rewrite /fdcoor linearZ /= hornerZ. Qed.
 Lemma fdcoorE y i : y ^`_ i = \sum_(j < n) (y ``_ j) * (u ``_ i) ^+ j.
 Proof.
 rewrite /fdcoor horner_poly; apply eq_bigr => j _; rewrite insubT //= => jn.
-rewrite (_ : Ordinal jn = j) //; by apply/val_inj.
+rewrite /Sub/= (_ : Ordinal jn = j) //.
+exact/val_inj.
 Qed.
 
 End frequency_domain_coordinates.

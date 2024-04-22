@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
@@ -67,7 +67,7 @@ End R_lemma.
 Section Length.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
-Variable P : {fdist X}.
+Variable P : R.-fdist X.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 
@@ -145,7 +145,7 @@ Definition enc_typ x :=
  in Tuple (size_bitseq_of_nat i (Z.abs_nat L_typ)).
 
 Lemma  card_le_Xn_Lnt :
-  (#|[finType of n.-tuple X] | <= #|[finType of (Z.abs_nat L_not_typ).-tuple bool]|)%nat.
+  (#|[the finType of n.-tuple X] | <= #|[the finType of (Z.abs_nat L_not_typ).-tuple bool]|)%nat.
 Proof.
 rewrite -!cardsT.
 apply/leP.

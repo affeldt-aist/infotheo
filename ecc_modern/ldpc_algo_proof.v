@@ -1,7 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 Require Import Wf_nat Init.Wf Recdef Reals.
-From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg.
+From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg ssrnum.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext f2.
 Require Import fdist channel pproba linearcode subgraph_partition tanner.
@@ -45,8 +46,7 @@ Proof.
 by move=> [] []; constructor.
 Qed.
 
-Canonical kind_eqMixin := EqMixin kind_eqP.
-Canonical kind_eqType := Eval hnf in EqType _ kind_eqMixin.
+HB.instance Definition _ := hasDecEq.Build _ kind_eqP.
 
 Definition tag_eq_bool k (t1 t2 : tag k) : bool :=
   match t1, t2 with
@@ -71,8 +71,7 @@ Section EqTag.
 
 Variable k : kind.
 
-Canonical tag_eqMixin := EqMixin (@tag_eqP k).
-Canonical tag_eqType := Eval hnf in EqType _ tag_eqMixin.
+HB.instance Definition _ := hasDecEq.Build _ (@tag_eqP k).
 
 End EqTag.
 
@@ -126,8 +125,7 @@ Section EqTnTree.
 
 Variable k : kind.
 
-Canonical tn_tree_eqMixin := EqMixin (@tn_tree_eqP k).
-Canonical tn_tree_eqType := Eval hnf in EqType _ tn_tree_eqMixin.
+HB.instance Definition _ := hasDecEq.Build _ (@tn_tree_eqP k).
 
 End EqTnTree.
 
@@ -299,7 +297,7 @@ move/(_ (eqxx true)) => Hcy.
 by rewrite (eqP Hcy) Hy in Hch.
 Qed.
 
-Lemma seq_full {A:finType} (s : seq A) a : #|A| - #|s| <= 0 -> a \in s.
+Lemma seq_full {A:finType} (s : seq A) a : (#|A| - #|s| <= 0)%N -> a \in s.
 Proof.
 move=> Hh.
 have Hs: finset (mem s) = [set: A].
@@ -313,7 +311,7 @@ Qed.
 Definition lastE := (last_cat, last_rcons, last_cons).
 
 Lemma card_uniq_seq_decr {T : finType} x (s : seq T) h :
-  #|T| - #|s| <= h.+1 -> uniq (x :: s) -> #|T| - #|x :: s| <= h.
+  (#|T| - #|s| <= h.+1)%N -> uniq (x :: s) -> (#|T| - #|x :: s| <= h)%N.
 Proof.
 move=> Hh Hun.
 move /card_uniqP: (Hun) => ->.
@@ -324,7 +322,7 @@ by move /andP/proj2/card_uniqP: Hun => <-.
 Qed.
 
 Lemma build_tree_rec_ok h k i s :
-  #|id'| - #|s| <= h ->
+  (#|id'| - #|s| <= h)%N ->
   uniq_path (tanner_rel H) (id_of_kind k i) s ->
   let l := labels (build_tree_rec H rW h s k i) in
   forall a b, a \in l -> b \in l ->
@@ -469,7 +467,7 @@ by move /norP/proj2: Hc.
 Qed.
 
 Lemma build_tree_rec_full h k i s :
-  #|id'| - #|s| <= h ->
+  (#|id'| - #|s| <= h)%N ->
   uniq_path (tanner_rel H) (id_of_kind k i) s ->
   mem (labels (build_tree_rec H rW h s k i)) =i
   connect (tanner_split s) (id_of_kind k i).
@@ -485,7 +483,7 @@ case Hai: (a == id_of_kind k i); simpl.
   apply /connectP.
   by exists [::].
 move/andP: Hc => [] /= Hc Hun.
-have Hh': #|id'| - #|id_of_kind k i :: s| <= h.
+have Hh': (#|id'| - #|id_of_kind k i :: s| <= h)%N.
   by apply card_uniq_seq_decr.
 have Hchild o: o \in select_children H s k i ->
   uniq_path (tanner_rel H) (id_of_kind (negk k) o) (id_of_kind k i :: s).
@@ -638,7 +636,7 @@ Fixpoint mypath (h : nat) : seq (seq id') :=
   end.
 
 Theorem test_acyclic : forall p, p \in [::] :: mypath (m+n) ->
-                                (size p > 2) ==> ~~ ucycleb myrel p.
+                                (size p > 2)%N ==> ~~ ucycleb myrel p.
 Proof. by apply /allP. Qed.
 
 Lemma myrel_ok : myrel =2 tanner_rel H.
@@ -656,7 +654,7 @@ elim: h a => [|h Hh] a.
   by rewrite ltn0.
 rewrite /= in_cons.
 case/boolP : (_ == _) => //= a_not_h.
-suff a_ltn_h : a < h.
+suff a_ltn_h : (a < h)%N.
   apply/mapP.
   exists (Ordinal a_ltn_h) => //.
   by apply val_inj.
@@ -670,7 +668,7 @@ destruct a; [left | right]; apply /map_f/my_ord_enum_ok.
 Qed.
 
 Lemma mypath_ok_rec h a p :
-  (size p) < h -> path myrel a p -> (a :: p \in mypath h).
+  (size p < h)%N -> path myrel a p -> (a :: p \in mypath h).
 Proof.
 elim: h a p => [//|h IHh] a p Hp Hun.
 suff : a :: p \in flatten [seq [seq i :: l |
@@ -692,7 +690,7 @@ Lemma mypath_ok a p :
   uniq (a :: p) -> path myrel a p -> (a :: p) \in mypath (m+n).
 Proof.
 move /card_uniqP => Hsz Hp.
-have Hc: #|a::p| <= #|id'| by apply max_card.
+have Hc : (#|a::p| <= #|id'|)%N by apply max_card.
 rewrite Hsz card_sum !card_ord in Hc.
 by apply mypath_ok_rec.
 Qed.
@@ -1835,11 +1833,14 @@ case Hid: (node_id t == inr n0).
     rewrite set1F -imset_set1 (kind_filter (k:=kv)).
     rewrite !beta_map -Monoid.mulmA; congr beta_op.
     rewrite big_filter (eq_bigr (fun j => msg_spec' (inl j) (inr i))) //.
-    rewrite Monoid.mulmC -big_filter.
+    set tmp := alpha_beta _ _.
+    rewrite /=.
+    rewrite Monoid.mulmC -big_filter/=.
+    rewrite /tmp.
     rewrite -msg_spec_alpha_beta; last first.
       rewrite sym_tanner_rel.
       by move/andP/proj1: Hun => /= /andP/proj1.
-    rewrite -(big_seq1 beta_op_monoid_law o (fun j => msg_spec' (inl j) (inr i))).
+    rewrite -(big_seq1 beta_op o (fun j => msg_spec' (inl j) (inr i))).
     rewrite -big_cat.
     apply/perm_big/uniq_perm.
      - rewrite /= filter_uniq.

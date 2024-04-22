@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
 Require Import ssr_ext f2.
@@ -474,7 +475,6 @@ Lemma full_rank_inj m n (A : 'M[F]_(m, n)) : m <= n -> \rank A = m ->
 Proof.
 move=> Hmn Hrank a b Hab.
 move: Hrank.
-rewrite /mxrank.
 destruct m => //= [_|].
   by rewrite (empty_rV a) (empty_rV b).
 destruct n => //=.
@@ -487,9 +487,7 @@ have {}Hab :
   b *m col_ebase A *m pid_mx (\rank A) *m row_ebase A *m (invmx (row_ebase A)).
   by rewrite Hab.
 rewrite -!mulmxA mulmxV in Hab; last by exact: row_ebase_unit.
-rewrite mulmx1 !mulmxA /mxrank /= in Hab.
-unlock in Hab.
-rewrite !Htmp in Hab.
+rewrite !Htmp mulmx1 !mulmxA /mxrank /= in Hab.
 move: {Heq}(@pid_mx_inj _ _ _ (a *m col_ebase A) (b *m col_ebase A) Hmn Hab) => Heq.
 have {}Hab : a *m col_ebase A *m (invmx (col_ebase A)) =
   b *m col_ebase A *m (invmx (col_ebase A)) by rewrite Heq.
@@ -614,9 +612,6 @@ case: ifPn => [/eqP -> /=|]; first by rewrite mul0r.
 rewrite -F2_eq1 => /eqP -> /=; by rewrite !mul1r.
 Qed.
 
-Definition rmorphism_GF2_of_F2 : rmorphism GF2_of_F2.
-Proof. split; [exact: additive_GF2_of_F2|exact: multiplicative_GF2_of_F2]. Qed.
-
 Lemma GF2_of_F2_eq0 x : (GF2_of_F2 x == 0) = (x == 0).
 Proof.
 apply/idP/idP => [|/eqP -> //].
@@ -628,15 +623,15 @@ End GF2m.
 
 Arguments GF2_of_F2 [_] _.
 
-Canonical GF2_of_F2_additive m := Additive (additive_GF2_of_F2 m).
-Canonical GF2_of_F2_rmorphism m := RMorphism (rmorphism_GF2_of_F2 m).
+HB.instance Definition _ m := GRing.isAdditive.Build _ _ (@GF2_of_F2 m) (additive_GF2_of_F2 m).
+HB.instance Definition _ m := GRing.isMultiplicative.Build _ _ _ (multiplicative_GF2_of_F2 m).
 
 Definition F2_to_GF2 (m : nat) n (y : 'rV['F_2]_n) := map_mx (@GF2_of_F2 m) y.
 
 Lemma supp_F2_to_GF2 n m (e : 'rV['F_2]_n) : supp (F2_to_GF2 m e) = supp e.
 Proof.
 apply/setP => i; rewrite !inE !mxE; apply/idP/idP; apply: contra.
-  move/eqP => ->; by rewrite rmorph0.
+  by move/eqP => ->; rewrite /= rmorph0.
 by rewrite GF2_of_F2_eq0.
 Qed.
 

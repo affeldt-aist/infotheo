@@ -137,7 +137,6 @@ Notation "E `*T" := ([set x | x.1 \in E]) : proba_scope.
 Notation "T`* F" := ([set x | x.2 \in F]) : proba_scope.
 
 Section TsetT.
-Notation R := real_realType.
 
 Variables (A B : finType) (P : R.-fdist (A * B)).
 Implicit Types (E : {set A}) (F : {set B}).
@@ -178,7 +177,6 @@ End TsetT.
   solve [apply/RleP; exact: FDist.le1] : core.
 
 Section probability.
-Notation R := Rstruct.real_realType.
 
 Variables (A : finType) (P : R.-fdist A).
 Implicit Types E : {set A}.
@@ -346,7 +344,6 @@ by move=> /(_ a); rewrite mem_index_enum => /(_ isT); rewrite aE implyTb.
 Qed.
 
 Section Pr_extra.
-Notation R := real_realType.
 
 Variables (A B : finType) (P : R.-fdist (A * B)).
 Implicit Types (E : {set A}) (F : {set B}).
@@ -390,7 +387,7 @@ Lemma Pr_domin_setXN (A B : finType) (P : {fdist A * B}) E F :
   Pr P (E `* F) != 0 -> Pr P`1 E != 0.
 Proof. by apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
 
-Lemma Pr_fdistmap (A B : finType) (f : A -> B) (d : real_realType.-fdist A) (E : {set A}) :
+Lemma Pr_fdistmap (A B : finType) (f : A -> B) (d : R.-fdist A) (E : {set A}) :
   injective f ->
   Pr d E = Pr (fdistmap f d) (f @: E).
 Proof.
@@ -486,7 +483,6 @@ Local Close Scope vec_ext_scope.
 
 Section random_variable.
 Variables (U : finType) (T : eqType).
-Notation R := real_realType.
 
 Definition RV (P : R.-fdist U) := U -> T.
 
@@ -501,7 +497,6 @@ End random_variable.
 Notation "{ 'RV' P -> T }" := (RV_of P (Phant _) (Phant T)) : proba_scope.
 
 Section random_variable_eqType.
-Notation R := real_realType.
 Variables (U : finType) (A : eqType) (P : R.-fdist U).
 
 Definition pr_eq (X : {RV P -> A}) (a : A) := locked (Pr P (finset (X @^-1 a))).
@@ -536,7 +531,6 @@ Notation "`Pr[ X = a ]" := (pr_eq X a) : proba_scope.
 Global Hint Resolve pr_eq_ge0 : core.
 
 Section random_variable_order.
-Notation R := real_realType.
 Variables (U : finType) (d : unit) (T : porderType d) (P : R.-fdist U).
 Variables (X : {RV P -> T}).
 
@@ -549,7 +543,6 @@ Notation "'`Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
 Notation "'`Pr[' X '<=' r ']'" := (pr_leq X r) : proba_scope.
 
 Section random_variable_finType.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U) (A : finType).
 
 Definition pr_eq_set (X : {RV P -> A}) (E : {set A}) :=
@@ -582,8 +575,6 @@ Notation "`Pr[ X '\in' E ]" := (pr_eq_set X E) : proba_scope.
 Notation "`p_ X" := (dist_of_RV X) : proba_scope.
 
 Section random_variables.
-Notation R := real_realType.
-
 Variables (U : finType) (P : R.-fdist U).
 
 Definition const_RV (T : eqType) cst : {RV P -> T} := fun=> cst.
@@ -618,7 +609,6 @@ Notation "'`--' P" := (neg_RV P) : proba_scope.
 Notation "'`log' P" := (log_RV P) : proba_scope.
 
 Section RV_lemmas.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U).
 Implicit Types X : {RV P -> R}.
 
@@ -637,7 +627,6 @@ Proof. by rewrite sq_RV_pow2; exact: pow2_ge_0. Qed.
 End RV_lemmas.
 
 Section pair_of_RVs.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U).
 Variables (A : eqType) (X : {RV P -> A}) (B : eqType) (Y : {RV P -> B}).
 Definition RV2 : {RV P -> A * B} := fun x => (X x, Y x).
@@ -646,7 +635,6 @@ End pair_of_RVs.
 Notation "'[%' x , y , .. , z ']'" := (RV2 .. (RV2 x y) .. z).
 
 Section RV2_prop.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U).
 Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
 
@@ -668,7 +656,6 @@ Proof. by []. Qed.
 End RV2_prop.
 
 Section RV3_prop.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U).
 Variables (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
@@ -689,10 +676,10 @@ Proof. by rewrite /fdistC12 /dist_of_RV /fdistA fdistmap_comp. Qed.
 
 End RV3_prop.
 
-Lemma pr_eq_unit (U : finType) (P : real_realType.-fdist U) : `Pr[ (unit_RV P) = tt ] = 1.
+Lemma pr_eq_unit (U : finType) (P : R.-fdist U) : `Pr[ (unit_RV P) = tt ] = 1.
 Proof. by rewrite pr_eqE'; apply/eqP/fdist1P; case. Qed.
 
-Lemma Pr_fdistmap_RV2 (U : finType) (P : real_realType.-fdist U) (A B : finType)
+Lemma Pr_fdistmap_RV2 (U : finType) (P : R.-fdist U) (A B : finType)
   (E : {set A}) (F : {set B}) (X : {RV P -> A}) (Z : {RV P -> B}) :
   Pr `p_[% X, Z] (E `* F) =
   Pr P ([set x | preim X (mem E) x] :&: [set x | preim Z (mem F) x]).
@@ -706,7 +693,6 @@ by rewrite fdistmapE.
 Qed.
 
 Section pr_pair.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U).
 Variables (A B C : finType) (TA TB TC : eqType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
@@ -777,7 +763,6 @@ by apply/imsetP/idP => [[a aE [] ->//]|XuE]; exists (X u).
 Qed.
 
 Section RV_domin.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U) (A B : finType) (TA TB : eqType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 Variables (TX : {RV P -> A}) (TY : {RV P -> B}).
@@ -798,11 +783,11 @@ End RV_domin.
 
 Local Open Scope vec_ext_scope.
 
-Definition cast_RV_fdist_rV1 (U : finType) (P : real_realType.-fdist U) (T : eqType) (X : {RV P -> T})
+Definition cast_RV_fdist_rV1 (U : finType) (P : R.-fdist U) (T : eqType) (X : {RV P -> T})
    : {RV (P `^ 1) -> T} :=
   fun x => X (x ``_ ord0).
 
-Definition cast_RV_fdist_rV10 (U : finType) (P : real_realType.-fdist U) (T : eqType)
+Definition cast_RV_fdist_rV10 (U : finType) (P : R.-fdist U) (T : eqType)
     (Xs : 'rV[{RV P -> T}]_1) : {RV (P `^ 1) -> T} :=
   cast_RV_fdist_rV1 (Xs ``_ ord0).
 
@@ -815,7 +800,6 @@ Definition cast_fun_rV10 U (T : eqType) (Xs : 'rV[U -> T]_1) : 'rV[U]_1 -> T :=
 Local Close Scope vec_ext_scope.
 
 Section expected_value_def.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 Definition Ex := \sum_(u in U) X u * P u.
@@ -830,7 +814,6 @@ Notation "'`E'" := (@Ex _ _) : proba_scope.
 
 (* Alternative definition of the expected value: *)
 Section Ex_alt.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 Definition Ex_alt := \sum_(r <- fin_img X) r * `Pr[ X = r ].
@@ -847,8 +830,6 @@ Qed.
 End Ex_alt.
 
 Section expected_value_prop.
-Notation R := real_realType.
-
 Variables (U : finType) (P : R.-fdist U) (X Y : {RV P -> R}).
 
 Lemma E_neg_RV : `E (`-- X) = - `E X.
@@ -920,7 +901,7 @@ Proof. move=> H; by rewrite /comp_RV /= H. Qed.
 
 End expected_value_prop.
 
-Lemma E_cast_RV_fdist_rV1 (A : finType) (P : real_realType.-fdist A) :
+Lemma E_cast_RV_fdist_rV1 (A : finType) (P : R.-fdist A) :
   forall (X : {RV P -> R}), `E (cast_RV_fdist_rV1 X) = `E X.
 Proof.
 move=> f; rewrite /cast_RV_fdist_rV1 /=; apply big_rV_1 => // m.
@@ -928,8 +909,6 @@ by rewrite -fdist_rV1.
 Qed.
 
 Section conditional_expectation_def.
-Notation R := real_realType.
-
 Variable (U : finType) (P : R.-fdist U) (X : {RV P -> R}) (F : {set U}).
 
 Definition cEx :=
@@ -939,8 +918,6 @@ End conditional_expectation_def.
 Notation "`E_[ X | F ]" := (cEx X F).
 
 Section conditional_expectation_prop.
-Notation R := real_realType.
-
 Variable (U I : finType) (P : R.-fdist U) (X : {RV P -> R}) (F : I -> {set U}).
 Hypothesis dis : forall i j, i != j -> [disjoint F i & F j].
 Hypothesis cov : cover [set F i | i in I] = [set: U].
@@ -1025,7 +1002,6 @@ End Ind.
     contributed by Erik Martin-Dorel: the corresponding theorem is named
     [Pr_bigcup_incl_excl] and is more general than lemma [Pr_bigcup]. *)
 Section probability_inclusion_exclusion.
-Notation R := real_realType.
 Variables (A : finType) (P : R.-fdist A).
 
 Let SumIndCap (n : nat) (S : 'I_n -> {set A}) (k : nat) (x : A) :=
@@ -1148,7 +1124,6 @@ Proof. by move=> r0; rewrite leR_pdivl_mulr // mulRC; exact/Ex_lb. Qed.
 End markov_inequality.
 
 Section thm61.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}) (phi : R -> R).
 
 Lemma Ex_comp_RV : `E (phi `o X) = \sum_(r <- fin_img X) phi r * `Pr[ X = r ].
@@ -1164,8 +1139,6 @@ Qed.
 End thm61.
 
 Section variance_def.
-Notation R := real_realType.
-
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 (* Variance of a random variable (\sigma^2(X) = V(X) = E (X^2) - (E X)^2): *)
@@ -1185,8 +1158,6 @@ Arguments Var {U} _ _.
 Notation "'`V'" := (@Var _ _) : proba_scope.
 
 Section variance_prop.
-Notation R := real_realType.
-
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 (* The variance is not linear V (k X) = k^2 V (X) \cite[Theorem 6.7]{probook}: *)
@@ -1219,8 +1190,6 @@ Qed.
  In any data sample, "nearly all" the values are "close to" the mean value:
  Pr[ |X - E X| \geq \epsilon] \leq V(X) / \epsilon^2 *)
 Section chebyshev.
-Notation R := real_realType.
-
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 Lemma chebyshev_inequality epsilon : 0 < epsilon ->
@@ -1246,8 +1215,6 @@ Qed.
 End chebyshev.
 
 Section independent_events.
-Notation R := real_realType.
-
 Variables (A : finType) (d : R.-fdist A).
 
 Definition inde_events (E F : {set A}) := Pr d (E :&: F) = Pr d E * Pr d F.
@@ -1268,8 +1235,6 @@ Qed.
 End independent_events.
 
 Section k_wise_independence.
-Notation R := real_realType.
-
 Variables (A I : finType) (k : nat) (d : R.-fdist A) (E : I -> {set A}).
 
 Definition kwise_inde := forall (J : {set I}), (#|J| <= k)%nat ->
@@ -1278,8 +1243,6 @@ Definition kwise_inde := forall (J : {set I}), (#|J| <= k)%nat ->
 End k_wise_independence.
 
 Section pairwise_independence.
-Notation R := real_realType.
-
 Variables (A I : finType) (d : R.-fdist A) (E : I -> {set A}).
 
 Definition pairwise_inde := @kwise_inde A I 2%nat d E.
@@ -1307,8 +1270,6 @@ Qed.
 End pairwise_independence.
 
 Section mutual_independence.
-Notation R := real_realType.
-
 Variables (A I : finType) (d : R.-fdist A) (E : I -> {set A}).
 
 Definition mutual_inde := (forall k, @kwise_inde A I k.+1 d E).
@@ -1337,7 +1298,6 @@ Qed.
 End mutual_independence.
 
 Section conditional_probablity.
-Notation R := real_realType.
 Variables (A : finType) (d : R.-fdist A).
 Implicit Types E F : {set A}.
 
@@ -1458,7 +1418,6 @@ Notation "`Pr_ P [ E | F ]" := (cPr P E F) : proba_scope.
 Global Hint Resolve cPr_ge0 : core.
 
 Section fdist_cond.
-Notation R := real_realType.
 Variables (A : finType) (P : R.-fdist A) (E : {set A}).
 Hypothesis E0 : Pr P E != 0.
 
@@ -1484,7 +1443,6 @@ Definition fdist_cond : {fdist A} := locked (FDist.make f0 f1).
 End fdist_cond.
 
 Section fdist_cond_prop.
-Notation R := real_realType.
 Variables (A : finType) (P : R.-fdist A) (E : {set A}).
 
 Hypothesis E0 : Pr P E != 0.
@@ -1541,7 +1499,6 @@ by apply/fdist_proj23_domin/H; rewrite inE /= bF cG.
 Qed.
 
 Section conditionally_independent_events.
-Notation R := real_realType.
 Variables (A : finType) (d : R.-fdist A).
 
 Definition cinde_events (E F G : {set A}) :=
@@ -1566,7 +1523,6 @@ Proof. by split; rewrite /cinde_events /inde_events !cPrET. Qed.
 End conditionally_independent_events.
 
 Section crandom_variable_eqType.
-Notation R := real_realType.
 Variables (U : finType) (A B : eqType) (P : R.-fdist U).
 
 Definition cpr_eq (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :=
@@ -1594,7 +1550,6 @@ by apply/setP => u; rewrite !inE xpair_eqE.
 Qed.
 
 Section crandom_variable_finType.
-Notation R := real_realType.
 Variables (U A B : finType) (P : R.-fdist U).
 Implicit Types X : {RV P -> A}.
 
@@ -1648,7 +1603,6 @@ by rewrite setTE Pr_fdistmap_RV2; congr Pr; apply/setP => u; rewrite !inE.
 Qed.
 
 Section cpr_pair.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U) (A B C D : finType) (TA TB TC TD : eqType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
 Variables (TX : {RV P -> TA}) (TY : {RV P -> TB}) (TZ : {RV P -> TC}) (TW : {RV P -> TD}).
@@ -1811,8 +1765,6 @@ by apply eq_bigr => b _; rewrite pr_in_pairAC.
 Qed.
 
 Section conditionnally_independent_discrete_random_variables.
-Notation R := real_realType.
-
 Variables (U : finType) (P : R.-fdist U) (A B C : eqType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
@@ -1835,8 +1787,6 @@ Notation "P |= X _|_  Y | Z" := (@cinde_rv _ P _ _ _ X Y Z) : proba_scope.
 Notation "X _|_  Y | Z" := (cinde_rv X Y Z) : proba_scope.
 
 Section independent_rv.
-Notation R := real_realType.
-
 Variables (A : finType) (P : R.-fdist A) (TA TB : eqType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
@@ -2013,7 +1963,6 @@ End sum_two_rand_var.
 Section expected_value_of_the_product.
 
 Section thm64.
-Notation R := real_realType.
 Variables (A B : finType) (P : R.-fdist (A * B)).
 Variables (X : {RV (P`1) -> R}) (Y : {RV (P`2) -> R}).
 
@@ -2060,8 +2009,6 @@ End thm64.
 End expected_value_of_the_product.
 
 Section sum_n_rand_var_def.
-Notation R := real_realType.
-
 Variables (A : finType) (P : R.-fdist A).
 
 Inductive sum_n : forall n, {RV (P `^ n) -> R} -> 'rV[{RV P -> R}]_n -> Prop :=
@@ -2075,8 +2022,6 @@ End sum_n_rand_var_def.
 Notation "X '\=sum' Xs" := (sum_n X Xs) : proba_scope.
 
 Section independent_rv_lemma.
-Notation R := real_realType.
-
 Variables (A B : finType) (P1 : R.-fdist A) (P2 : R.-fdist B) (TA TB : eqType).
 Variable (X : {RV P1 -> TA}) (Y : {RV P2 -> TB}).
 Let P := P1 `x P2.
@@ -2122,8 +2067,6 @@ Qed.
 Local Close Scope vec_ext_scope.
 
 Section sum_n_rand_var.
-Notation R := real_realType.
-
 Variable (A : finType) (P : R.-fdist A).
 
 Local Open Scope vec_ext_scope.
@@ -2190,8 +2133,6 @@ Qed.
 End sum_n_rand_var.
 
 Section weak_law_of_large_numbers.
-Notation R := real_realType.
-
 Local Open Scope vec_ext_scope.
 
 Variables (A : finType) (P : R.-fdist A) (n : nat).
@@ -2223,7 +2164,6 @@ End weak_law_of_large_numbers.
 
 (* wip*)
 Section vector_of_RVs.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U).
 Variables (A : finType) (n : nat) (X : 'rV[{RV P -> A}]_n).
 Local Open Scope ring_scope.
@@ -2232,7 +2172,6 @@ Definition RVn : {RV P -> 'rV[A]_n} := fun x => \row_(i < n) (X ``_ i) x.
 End vector_of_RVs.
 
 Section prob_chain_rule.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U) (A : finType).
 Local Open Scope vec_ext_scope.
 

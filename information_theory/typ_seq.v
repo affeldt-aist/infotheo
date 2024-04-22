@@ -220,7 +220,7 @@ rewrite Heq Pr_set0 in H.
 lra.
 Qed.
 
-Definition TS_0 (H : aep_bound P epsilon <= n.+1%:R) : [finType of 'rV[A]_n.+1].
+Definition TS_0 (H : aep_bound P epsilon <= n.+1%:R) : 'rV[A]_n.+1.
 apply (@enum_val _ (pred_of_set (`TS P n.+1 epsilon))).
 have -> : #| `TS P n.+1 epsilon| = #| `TS P n.+1 epsilon|.-1.+1.
   rewrite prednK //.

@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+From mathcomp Require Import all_ssreflect ssrnum ssralg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrZ ssrR Reals_ext ssr_ext logb ssralg_ext bigop_ext.
@@ -48,7 +48,7 @@ Local Open Scope R_scope.
 Section joint_typ_seq_definition.
 
 Variables A B : finType.
-Variable P : {fdist A}.
+Variable P : R.-fdist A.
 Variable W : `Ch(A, B).
 Variable n : nat.
 Variable epsilon : R.
