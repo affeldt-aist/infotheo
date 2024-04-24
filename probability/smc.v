@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg matrix.
 Require Import Reals.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct zmodp.
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond graphoid.
 
@@ -22,7 +22,7 @@ Local Open Scope fdist_scope.
 
 Section more_independent_rv_lemmas.
 Notation R := real_realType.
-Variables (A : finType) (P : R.-fdist A) (TA TB TC : finType).
+Variables (A : finType) (P : R.-fdist A) (TA TB TC TD : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
 Variables (UA UB : finType) (f : TA -> UA) (g : TB -> UB).
 
@@ -83,3 +83,37 @@ by apply cpr_prd_unit_RV.
 Qed.
 
 End more_independent_rv_lemmas.
+
+Section lemma_3_4.
+
+Notation R := real_realType.
+
+Variable T : finType.
+Variable P : R.-fdist T.
+Variable n : nat.
+Notation p := n.+1.
+Variables (X Y : {RV P -> 'I_p}).
+
+(* How to express "the distribution of random variable X is uniform distribution" as a prop. *)
+Variable pX_unif : `p_ X = fdist_uniform (card_ord p).
+Variable pY_unif : `p_ X = fdist_uniform (card_ord p).
+Variable XY_indep : inde_rv X Y.
+
+(* Add two random variables = add results from two functions. *)
+Definition XY : {RV P -> 'I_p} := fun x => Zp_add (X x) (Y x).
+
+Lemma pXY_unif : `p_ XY = fdist_uniform (card_ord p).
+Proof.
+apply: fdist_ext=> /= x.
+rewrite fdist_uniformE /=.
+rewrite fdistmapE /=.
+under eq_bigr=> i /=.
+  rewrite !inE /XY /=.
+(* need a lemma to transit from Line 1 to Line 2 of the chained equations *)
+  (* if we follow the paper lines, we need to have a k, and i - k in goal 2 ,
+     and split XY by marginal? But this is different from [% X, Y] in lemma_3_2 *)
+Abort.
+
+Lemma 
+
+End lemma_3_4.
