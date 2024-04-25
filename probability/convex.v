@@ -1944,10 +1944,11 @@ Import LmoduleConvex.
 Let linear_is_affine: affine f.
 Proof. by move=>p x y; rewrite linearD 2!linearZZ. Qed.
 
-#[non_forgetful_inheritance] HB.instance Definition _ := isAffine.Build _ _ _ linear_is_affine.
+#[export] HB.instance Definition _ := isAffine.Build _ _ _ linear_is_affine.
 
 End linear_affine.
 End LinearAffine.
+HB.export LinearAffine.
 
 (* TOTHINK: Should we keep this section, only define R_convType, or something else ? *)
 Module RConvex.
