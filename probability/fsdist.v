@@ -57,10 +57,10 @@ Local Open Scope fdist_scope.
 
 Import Order.POrderTheory Num.Theory.
 
-Lemma fdist_Rgt0 (A : finType) (d : real_realType.-fdist A) a :
+Lemma fdist_Rgt0 (A : finType) (d : R.-fdist A) a :
   (d a != 0) <-> (0 < d a)%coqR.
 Proof. by rewrite fdist_gt0; split=> /RltP. Qed.
-Lemma fdist_Rge0 (A : finType) (d : real_realType.-fdist A) a :
+Lemma fdist_Rge0 (A : finType) (d : R.-fdist A) a :
   0 <= d a.
 Proof. by apply/RleP; rewrite FDist.ge0. Qed.
 
@@ -95,7 +95,7 @@ Section fsdist.
 Variable A : choiceType.
 
 Record t := mk {
-  f :> {fsfun A -> real_realType with 0} ;
+  f :> {fsfun A -> R with 0} ;
   _ : all (fun x => (0 < f x)%mcR) (finsupp f) &&
       \sum_(a <- finsupp f) f a == 1}.
 
@@ -145,16 +145,15 @@ Global Hint Resolve FSDist.ge0 : core.
 
 Section FSDist_canonical.
 Variable A : choiceType.
-Canonical FSDist_subType := Eval hnf in [subType for @FSDist.f A].
-Definition FSDist_eqMixin := [eqMixin of fsdist A by <:].
-Canonical FSDist_eqType := Eval hnf in EqType _ FSDist_eqMixin.
-Definition FSDist_choiceMixin := [choiceMixin of fsdist A by <:].
-Canonical FSDist_choiceType := Eval hnf in ChoiceType _ FSDist_choiceMixin.
+HB.instance Definition _ := [isSub for @FSDist.f A].
+HB.instance Definition _ := [Equality of fsdist A by <:].
+HB.instance Definition _ := [Choice of fsdist A by <:].
 End FSDist_canonical.
 
-Definition FSDist_to_Type (A : choiceType) :=
+(*Definition FSDist_to_Type (A : choiceType) :=
   fun phT : phant (Choice.sort A) => fsdist A.
-Local Notation "{ 'dist' T }" := (FSDist_to_Type (Phant T)).
+Local Notation "{ 'dist' T }" := (FSDist_to_Type (Phant T)).*)
+Local Notation "{ 'dist' T }" := (fsdist T).
 
 Section fsdist_prop.
 Variable A : choiceType.
@@ -416,14 +415,14 @@ Definition FSDist_prob (C : choiceType) (d : {dist C}) (x : C) : {prob R} :=
   Eval hnf in Prob.mk_ (andb_true_intro (conj (FSDist.ge0' d x) (FSDist.le1' d x))).
 Canonical FSDist_prob.
 
-Definition fsdistjoin A (D : {dist (FSDist_choiceType A)}) : {dist A} :=
+Definition fsdistjoin A (D : {dist {dist A}}) : {dist A} :=
   D >>= ssrfun.id.
 
-Lemma fsdistjoinE A (D : {dist (FSDist_choiceType A)}) x :
+Lemma fsdistjoinE A (D : {dist {dist A}}) x :
   fsdistjoin D x = \sum_(d <- finsupp D) D d * d x.
 Proof. by rewrite /fsdistjoin fsdistbindE. Qed.
 
-Lemma fsdistjoin1 (A : choiceType) (D : {dist (FSDist_choiceType A)}) :
+Lemma fsdistjoin1 (A : choiceType) (D : {dist {dist A}}) :
   fsdistjoin (fsdist1 D) = D.
 Proof.
 apply/fsdist_ext => d.
@@ -445,7 +444,7 @@ Qed.
 Lemma f1 : \sum_(a <- finsupp f) f a = 1.
 Proof.
 rewrite -(FSDist.f1 P) !big_seq_fsetE /=.
-have hP (a : [finType of finsupp P]) : a \in finsupp f.
+have hP (a : finsupp P) : a \in finsupp f.
   by rewrite mem_finsupp fsfunE ffunE inE -mem_finsupp fsvalP.
 pose h a := FSetSub (hP a).
 rewrite (reindex h) /=.
@@ -453,7 +452,7 @@ rewrite (reindex h) /=.
 by exists (@fsval _ _) => //= -[a] *; exact: val_inj.
 Qed.
 
-Definition d : {dist [finType of finsupp P]} := FSDist.make f0 f1.
+Definition d : {dist finsupp P} := FSDist.make f0 f1.
 
 End def.
 End FSDist_crop0.
@@ -503,7 +502,7 @@ End FSDist_lift_supp.
 
 Module FSDist_of_fdist.
 Section def.
-Variable (A : finType) (P : real_realType.-fdist A).
+Variable (A : finType) (P : R.-fdist A).
 
 Let D := [fset a0 : A | P a0 != 0].
 Definition f : {fsfun A -> R with 0} := [fsfun a in D => P a | 0].
@@ -533,7 +532,7 @@ End FSDist_of_fdist.
 Module fdist_of_FSDist.
 Section def.
 Variable (A : choiceType) (P : {dist A}).
-Definition D := [finType of finsupp P] : finType.
+Definition D := finsupp P : finType.
 Definition f := [ffun d : D => P (fsval d)].
 Lemma f0 b : 0 <= f b. Proof. by rewrite ffunE. Qed.
 Lemma f1 : \sum_(b in D) f b = 1.
@@ -543,7 +542,7 @@ Qed.
 Lemma f0' b : (0 <= f b)%O. (* TODO: we shouldn't see %O *)
 Proof. exact/RleP/f0. Qed.
 
-Definition d : real_realType.-fdist D := locked (FDist.make f0' f1).
+Definition d : R.-fdist D := locked (FDist.make f0' f1).
 End def.
 Module Exports.
 Notation fdist_of_fs := d.
@@ -557,7 +556,7 @@ Variable (A : choiceType) (d : {dist A}).
 Lemma fdist_of_fsE i : fdist_of_fs d i = d (fsval i).
 Proof. by rewrite /fdist_of_fs; unlock; rewrite ffunE. Qed.
 
-Lemma fdist_of_FSDistDE : fdist_of_FSDist.D d = [finType of finsupp d].
+Lemma fdist_of_FSDistDE : fdist_of_FSDist.D d = finsupp d.
 Proof. by []. Qed.
 
 End fdist_of_FSDist_lemmas.
@@ -579,7 +578,7 @@ rewrite [X in (_ + X = _)%coqR](_ : _ = 0) ?addR0.
 by rewrite big1 // => a; rewrite mem_finsupp negbK ffunE => /eqP.
 Qed.
 
-Definition d : real_realType.-fdist A := locked (FDist.make f0' f1).
+Definition d : R.-fdist A := locked (FDist.make f0' f1).
 
 Lemma dE a : d a = P a.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
@@ -592,7 +591,7 @@ End fdist_of_finFSDist.
 Export fdist_of_finFSDist.Exports.
 
 Section fsdist_conv_def.
-Variables (A : choiceType) (p : {prob real_realType}) (d1 d2 : {dist A}).
+Variables (A : choiceType) (p : {prob R}) (d1 d2 : {dist A}).
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
 
@@ -628,8 +627,7 @@ Proof.
 move => /[dup]; rewrite {1}supp => aD.
 rewrite /f ltR_neqAle mem_finsupp eq_sym => /eqP ?; split => //.
 rewrite /f fsfunE avgRE aD.
-by apply/RleP; rewrite RplusE !RmultE addr_ge0// mulr_ge0//;
-  [exact/RleP|exact/onem_ge0|exact/RleP].
+by apply/RleP; rewrite RplusE !RmultE addr_ge0// mulr_ge0//.
 Qed.
 
 Let f1 : \sum_(a <- finsupp f) f a = 1.
@@ -668,7 +666,7 @@ End fsdist_conv_def.
 
 Section fsdist_convType.
 Variables (A : choiceType).
-Implicit Types (p q : {prob real_realType}) (a b c : {dist A}).
+Implicit Types (p q : {prob R}) (a b c : {dist A}).
 Local Open Scope reals_ext_scope.
 
 Local Notation "x <| p |> y" := (fsdist_conv p x y) : fsdist_scope.
@@ -690,14 +688,14 @@ Let convA p q a b c :
 Proof. by apply/fsdist_ext=> ?; rewrite !fsdist_convE convA. Qed.
 
 HB.instance Definition _ :=
-  @isConvexSpace.Build (FSDist.t _) (Choice.class _) (@fsdist_conv A)
+  @isConvexSpace.Build (FSDist.t _) (@fsdist_conv A)
   conv1 convmm convC convA.
 
 End fsdist_convType.
 
 Section fsdist_conv_prop.
 Variables (A : choiceType).
-Implicit Types (p : {prob real_realType}) (a b c : {dist A}).
+Implicit Types (p : {prob R}) (a b c : {dist A}).
 Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
 
@@ -734,15 +732,16 @@ Lemma supp_fsdist_conv p (p0 : p != 0%:pr) (p1 : p != 1%:pr) a b :
   finsupp (a <|p|> b) = finsupp a `|` finsupp b.
 Proof. by rewrite supp_fsdist_conv' (negPf p0) (negPf p1). Qed.
 
-Lemma fsdist_scalept_conv (C : convType) (x y : {dist C}) (p : {prob real_realType}) (i : C) :
+Lemma fsdist_scalept_conv (C : convType) (x y : {dist C}) (p : {prob R}) (i : C) :
   scalept ((x <|p|> y) i) (S1 i) = scalept (x i) (S1 i) <|p|> scalept (y i) (S1 i).
 Proof. by rewrite fsdist_convE scalept_conv. Qed.
 
 End fsdist_conv_prop.
 
-Definition FSDist_to_convType (A : choiceType) :=
+(*Definition FSDist_to_convType (A : choiceType) :=
   fun phT : phant (Choice.sort A) => conv_choiceType [the convType of FSDist.t A].
-Notation "{ 'dist' T }" := (FSDist_to_convType (Phant T)) : proba_scope.
+Notation "{ 'dist' T }" := (FSDist_to_convType (Phant T)) : proba_scope.*)
+Notation "{ 'dist' T }" := (FSDist.t T) : proba_scope.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.

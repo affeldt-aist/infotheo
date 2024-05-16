@@ -158,7 +158,7 @@ Section BCH_def.
 Variables (n : nat) (m : nat).
 
 Definition code (a : 'rV_n) t :=
-  Rcode.t (@GF2_of_F2_rmorphism m) (kernel (PCM a t)).
+  Rcode.t (@GF2_of_F2 m) (kernel (PCM a t)).
 
 End BCH_def.
 

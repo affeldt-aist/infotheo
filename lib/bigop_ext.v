@@ -92,7 +92,7 @@ under eq_bigr=> i.
   over.
 rewrite bigA_distr_bigA big_mkord (partition_big
   (fun i : {ffun I -> bool} => inord #|[set x | i x]|)
-  (fun j : [finType of 'I_#|I|.+1] => true)) //=.
+  (fun j : 'I_#|I|.+1 => true)) //=.
 { eapply eq_big =>// i _.
   rewrite (reindex (fun s : {set I} => [ffun x => x \in s])); last first.
   { apply: onW_bij.
@@ -503,15 +503,15 @@ Section big_tuple_ffun.
 Import Monoid.Theory.
 Variable R : Type.
 Variable V : zmodType.
-Variable times : Monoid.mul_law (GRing.zero V).
+Variable times : Monoid.mul_law (@GRing.zero V).
 Local Notation "*%M" := times (at level 0).
-Variable plus : Monoid.add_law (GRing.zero V) *%M.
+Variable plus : Monoid.add_law (@GRing.zero V) *%M.
 Local Notation "+%M" := plus (at level 0).
 
 Lemma big_tuple_ffun (I J : finType) (F : {ffun I -> J} -> R)
   (G : R -> J -> V) (jdef : J) (idef : I) :
-  \big[+%M/GRing.zero V]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
-    = \big[+%M/GRing.zero V]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
+  \big[+%M/@GRing.zero V]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
+    = \big[+%M/@GRing.zero V]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
 Proof.
 rewrite (reindex_onto (fun y => fgraph y) (fun p => [ffun x => tnth p (enum_rank x)])); last first.
   move=> t _; by apply/eq_from_tnth => i; rewrite tnth_fgraph ffunE enum_valK.

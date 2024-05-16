@@ -167,7 +167,7 @@ rewrite {}/tmp (exchange_big_dep xpredT) //=; apply eq_bigr => j _; rewrite !mxE
 have @i' :  'I_d.
   by apply (@Ordinal _ i); rewrite (leq_trans (ltn_ord i)).
 rewrite (bigD1 i') //= coefXn insubT //= => Hj.
-rewrite eqxx mulr1 (_ : Ordinal Hj = j); last by apply val_inj.
+rewrite eqxx mulr1 (_ : Sub _ _ = j); last by apply val_inj.
 rewrite mxE inordK; last by rewrite ltnS (leq_trans (ltn_ord i)).
 rewrite mulrC; apply/eqP.
 rewrite addrC -subr_eq subrr; apply/eqP/esym.
@@ -444,10 +444,10 @@ Proof.
 move=> an c0 Hc.
 have a_neq0 := primitive_uroot_neq0 an.
 rewrite -(wH_phase_shift a_neq0 _ d).
-apply: (@BCH_argument_lemma _ _ (@GRing.idfun_rmorphism F) _ RS_Hchar _ an
+apply: (@BCH_argument_lemma _ _ idfun _ RS_Hchar _ an
   (phase_shift a c d.+1) _ dn).
   by rewrite -wH_eq0 wH_phase_shift // wH_eq0.
-rewrite (_ : \row_i0 (GRing.idfun_rmorphism F) ((phase_shift a c d.+1) ``_ i0) =
+rewrite (_ : \row_i0 idfun ((phase_shift a c d.+1) ``_ i0) =
   phase_shift a c d.+1); last by apply/rowP => i; rewrite !mxE.
 apply (dft_shifting a_neq0 (prim_expr_order an) dn) => i /andP[ir1 ir2].
 have {Hc} : c \in RS.codebook a n' d by rewrite -(RS.lcode0_codebook a dn) inE.
@@ -467,7 +467,7 @@ move/poly_rV_0_inv; apply; by rewrite size_rs_gen.
 Qed.
 
 Lemma PCM_lin1_mx :
-  RS.PCM a n d = (lin1_mx (linfun (lin_syndrome (RS.PCM a n d))))^T.
+  RS.PCM a n d = (lin1_mx (linfun (syndrome (RS.PCM a n d))))^T.
 Proof.
 apply/matrixP => i j.
 rewrite !(mxE,lfunE) (bigD1 j) //= !mxE !eqxx mulr1 (eq_bigr (fun=> 0)).
@@ -892,7 +892,7 @@ by rewrite -RS.lcode0_codebook // ?inE.
 Qed.
 
 Definition RS_as_lcode (an1 : a ^+ n = 1) (Hchar : ([char F]^').-nat n) :
-  Lcode.t _ _ _ [finType of 'rV_(n - d.+1).+1] :=
+  Lcode.t _ _ _ 'rV_(n - d.+1).+1 :=
     @Lcode.mk _ _ _ _ _
       (Encoder.mk RS_enc_injective RS_enc_img)
       (Decoder.mk (RS_repair_img an1 Hchar) RS_discard)

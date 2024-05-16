@@ -72,7 +72,7 @@ Qed.
 
 Definition syndromep r y := \poly_(l < r) (syndrome_coord l y).
 
-Lemma syndomepE r y :
+Lemma syndromepE r y :
   syndromep r y = \sum_(i in supp y)
      (y ``_ i * b ``_ i)%:P * (\sum_(l < r) (a ``_ i ^+ l)%:P * 'X^l).
 Proof.
@@ -221,11 +221,14 @@ case/boolP : (r == O) => r0.
   rewrite -scalerAl mulrC mul_polyC; congr (_ *: (_ *: _)).
   apply eq_bigl => k; by rewrite in_setD1 andbC.
 rewrite /GRS_mod big_distrl /= /Omega /erreval -big_split /=.
-rewrite GRS.syndomepE big_distrr /=.
+rewrite GRS.syndromepE big_distrr /=.
 apply eq_bigr => i iy.
 rewrite -3!scalerAl -scalerA -scalerDr.
 rewrite polyCM -!mulrA mulrCA !mulrA mul_polyC -!scalerAl; congr (_ *: _).
-rewrite /Sigma /errloc (bigD1 i) //= mulrC -!mulrA mulrBl mul1r.
+rewrite /Sigma /errloc.
+rewrite (bigD1 i) //=.
+rewrite (mulrC (1 - a ``_ i *: 'X)).
+rewrite -!mulrA mulrBl mul1r.
 set x := (X in _ * X = _).
 rewrite (_ : x = (b ``_ i)%:P * (1 - (a ``_ i ^+ r)%:P * 'X^r)); last first.
   rewrite /x mulrCA -mulrBr big_distrr /= -sumrB.
@@ -241,7 +244,7 @@ rewrite (_ : x = (b ``_ i)%:P * (1 - (a ``_ i ^+ r)%:P * 'X^r)); last first.
     rewrite -!scalerAl mulrCA -exprS !scalerAl; congr (_ * _).
     by rewrite -mul_polyC -polyCM -exprS.
   by rewrite -mulrCA -scalerAl -exprS 2!mul_polyC scalerA -exprSr.
-rewrite mulrA mulrBr mulr1 mulrC -mul_polyC; congr (_ * _ + _).
+rewrite [in LHS]mulrA mulrBr mulr1 mulrC -mul_polyC; congr (_ * _ + _).
  apply/eq_bigl => j; by rewrite in_setD1 andbC.
 rewrite -mulNr !mulrA; congr (_ * _).
 by rewrite -mulNr -mulrA mulrC -!mulrA.

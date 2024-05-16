@@ -140,7 +140,7 @@ apply/le_INR/leP/subset_leq_card/setIidPl/setP => tb.
 by rewrite in_set in_set andbC andbA andbb.
 Qed.
 
-Let partition_pre_image : {set set_of_finType [finType of n.-tuple B]} :=
+Let partition_pre_image (*: {set set_of_finType [finType of n.-tuple B]}*) :=
   [set T_{ `tO( V ) } :&: (@tuple_of_row B n @: (dec tc @^-1: [set Some m])) |
    m in M & [exists y, y \in T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-1: [set Some m]))]].
 

@@ -39,18 +39,14 @@ Local Open Scope convex_scope.
 
 Module NaryConvexSpace.
 
-HB.mixin Record isNaryConv (T : Type) := {
-  narychoice : Choice.class_of T ;
+HB.mixin Record isNaryConv (T : Type) of Choice T := {
   convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T
 }.
 
 #[short(type=naryConvType)]
-HB.structure Definition NaryConv := {T & isNaryConv T}.
+HB.structure Definition NaryConv := {T of isNaryConv T &}.
 
 Notation "'<&>_' d f" := (convn _ d f) : convex_scope.
-
-Canonical naryconv_eqType (T : naryConvType) := EqType T narychoice.
-Canonical conv_choiceType (T : naryConvType) := ChoiceType T narychoice.
 
 End NaryConvexSpace.
 
@@ -60,70 +56,6 @@ Import NaryConvexSpace.
 (* In this module we use funext to avoid explicitly handling the congruence
    of convn (cf. eq_convn in convex_choice.v for the iterated version). *)
 
-(* These definitions about distributions should probably be elsewhere *)
-Definition fdistE :=
-  (fdistmapE,fdist1E,fdist_prodE,fdistXI,fdistXE,fdist_convnE,fdist_fstE).
-
-Module FDistPart.
-Section fdistpart.
-Local Open Scope fdist_scope.
-Variables (n m : nat) (K : 'I_m -> 'I_n) (e : {fdist 'I_m}) (i : 'I_n).
-
-Definition d := (fdistX (e `X (fun j => fdist1 (K j)))) `(| i).
-Definition den := (fdistX (e `X (fun j => fdist1 (K j))))`1 i.
-
-Lemma denE : den = fdistmap K e i.
-Proof.
-rewrite /den !fdistE [RHS]big_mkcond /=.
-under eq_bigl do rewrite inE.
-apply/eq_bigr => a _.
-rewrite !fdistE /= (big_pred1 (a,i)) ?fdistE /=;
-    last by case=> x y; rewrite /swap /= !xpair_eqE andbC.
-rewrite eq_sym 2!inE.
-by case: eqP => // _; rewrite (mulr0,mulr1).
-Qed.
-
-Lemma dE j : fdistmap K e i != 0%coqR ->
-  d j = (e j * (i == K j)%:R / \sum_(j | K j == i) e j)%coqR.
-Proof.
-rewrite -denE => NE.
-rewrite jfdist_condE // {NE} /jcPr /proba.Pr.
-rewrite (big_pred1 (j,i)); last first.
-  by move=> k; rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
-rewrite (big_pred1 i); last by move=> k; rewrite !inE.
-rewrite !fdistE big_mkcond [in RHS]big_mkcond /=.
-rewrite -RmultE -INRE.
-congr (_ / _)%R.
-under eq_bigr => k do rewrite {2}(surjective_pairing k).
-rewrite -(pair_bigA _ (fun k l =>
-          if l == i
-          then e `X (fun j0 : 'I_m => fdist1 (K j0)) (k, l)
-          else R0))%R /=.
-apply eq_bigr => k _.
-rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
-by case: ifP; rewrite (mulr1,mulr0).
-Qed.
-End fdistpart.
-
-Lemma dK n m K (e : {fdist 'I_m}) j :
-  e j = (\sum_(i < n) fdistmap K e i * d K e i j)%R.
-Proof.
-under eq_bigr => /= a _.
-  have [Ka0|Ka0] := eqVneq (fdistmap K e a) 0%R.
-    rewrite Ka0 mul0R.
-    have <- : (e j * (a == K j)%:R = 0)%R.
-      have [/eqP Kj|] := eqVneq a (K j); last by rewrite mulR0.
-      move: Ka0; rewrite fdistE /=.
-      by move/psumr_eq0P => -> //; rewrite ?(mul0R,inE) // eq_sym.
-  over.
-  rewrite FDistPart.dE // fdistE /= mulRCA mulRV ?mulR1;
-    last by rewrite fdistE in Ka0.
-over.
-move=> /=.
-rewrite (bigD1 (K j)) //= eqxx mulR1.
-by rewrite big1 ?addR0 // => i /negbTE ->; rewrite mulR0.
-Qed.
-End FDistPart.
 
 Section Axioms.
 Variable T : naryConvType.
@@ -183,10 +115,10 @@ Module Type ConvSpace. Axiom T : convType. End ConvSpace.
 Module BinToNary(C : ConvSpace) <: NaryConvSpace.
 Import NaryConvexSpace.
 
-HB.instance Definition _ := @isNaryConv.Build _ (Choice.class _) (@Convn C.T).
+HB.instance Definition _ := @isNaryConv.Build C.T (@Convn C.T conv).
 
 (* NB: is that ok? *)
-Definition T : naryConvType := Choice_sort__canonical__NaryConvexSpace_NaryConv.
+Definition T : naryConvType := C.T.
 Definition axbary := @Convn_fdist_convn C.T.
 Definition axproj := @Convn_fdist1 C.T.
 End BinToNary.
@@ -264,7 +196,7 @@ rewrite /binconv.
 set g := fun i : 'I_3 => if i <= 0 then a else if i <= 1 then b else c.
 rewrite [X in <&>_(fdistI2 q) X](_ : _ = g \o lift ord0); last first.
   by apply funext => i; case/orP: (ord2 i) => /eqP ->.
-rewrite [X in <&>_(_ [r_of p, q]) X](_ : _ = g \o (widen_ord (leqnSn 2))); last first.
+rewrite [X in <&>_(fdistI2 [r_of p, q]) X](_ : _ = g \o (widen_ord (leqnSn 2))); last first.
   by apply funext => i; case/orP: (ord2 i) => /eqP ->.
 rewrite 2!axmap.
 set d1 := fdistmap _ _.
@@ -298,28 +230,17 @@ Qed.
 Lemma binconvmm p a : binconv p a a = a.
 Proof. by apply axidem => i; case: ifP. Qed.
 
-#[export]
-HB.instance Definition _ := @isConvexSpace.Build A.T (Choice.class _) binconv
+HB.instance Definition _ := @isConvexSpace.Build A.T binconv
   binconv1 binconvmm binconvC binconvA.
 
 End NaryToBin.
+(*HB.export NaryToBin.
+Error: Anomaly "Uncaught exception Not_found."
+Please report at http://coq.inria.fr/bugs/.
+*)
 
 (* Then prove BinToN and NToBin cancel each other:
    operations should coincide on both sides *)
-
-Module Equiv1(C : ConvSpace).
-Module A := BinToNary(C).
-Module B := NaryToBin(A).
-Import A B.
-
-Lemma equiv_conv p (a b : T) : a <| p |> b = a <& p &> b.
-Proof.
-apply: S1_inj.
-rewrite [LHS](@affine_conv NaryConv_sort__canonical__isConvexSpace__ConvexSpace)/=.
-by rewrite [RHS](@affine_conv NaryConv_sort__canonical__isConvexSpace__ConvexSpace).
-Qed.
-
-End Equiv1.
 
 Module Equiv2(A : NaryConvSpace).
 Module B := NaryToBin(A).
@@ -352,7 +273,47 @@ apply/eqP => /(congr1 (Rplus (d ord0))).
 rewrite addRCA addRN !addR0 => b'.
 by elim b; rewrite -b' eqxx.
 Qed.
+
+(*
+Lemma equiv_conv p x y : x <& p &> y = x <| p |> y.
+Proof.
+rewrite /binconv.
+set g := fun (o : 'I_2) => if o == ord0 then x else y.
+set d := fdistI2 p.
+change x with (g ord0).
+change y with (g (lift ord0 ord0)).
+have -> : p = probfdist d ord0 by apply: val_inj=> /=; rewrite fdistI2E eqxx.
+by rewrite -ConvnI2E -equiv_convn.
+Qed.
+*)
+
 End Equiv2.
+
+Module Equiv1(C : ConvSpace).
+Module A := BinToNary(C).
+Module B := NaryToBin(A).
+Module EA := Equiv2(A).
+Import A B.
+
+Let equiv_convn n (d : {fdist 'I_n}) (g : 'I_n -> A.T) : <&>_d g = <|>_d g.
+Proof. by []. Qed.
+
+Let T' := NaryConv_sort__canonical__convex_ConvexSpace.
+
+Lemma equiv_conv p (a b : C.T) : a <| p |> b = a <& p &> b.
+Proof.
+change (a <& p &> b) with (@conv T' p a b).
+pose g := fun (x : 'I_2) => if x == ord0 then a else b.
+change a with (g ord0).
+change b with (g (lift ord0 ord0)).
+pose d := fdistI2 p.
+have -> : p = probfdist d ord0 by apply: val_inj=> /=; rewrite fdistI2E eqxx.
+rewrite -!ConvnI2E.
+rewrite convnE -equiv_convn.
+by rewrite EA.equiv_convn.
+Qed.
+
+End Equiv1.
 
 Module Type MapConst.
 Parameter T : naryConvType.
@@ -568,15 +529,15 @@ Qed.
 Lemma axbary : ax_bary T.
 Proof.
 move=> n m d e g.
-set f : 'I_n * 'I_m -> 'I_#|[finType of 'I_n * 'I_m]| := enum_rank.
-set f' : 'I_#|[finType of 'I_n * 'I_m]| -> 'I_n * 'I_m := enum_val.
+set f : 'I_n * 'I_m -> 'I_#|{: 'I_n * 'I_m}| := enum_rank.
+set f' : 'I_#|{: 'I_n * 'I_m}| -> 'I_n * 'I_m := enum_val.
 set h := fun k i => f (k, i).
 set h' := fun i => snd (f' i).
 rewrite (_ : (fun i => _) = (fun i => <&>_(fdistmap (h i) (e i)) (g \o h')));
   last first.
   apply funext => i.
   have {1}-> : g = (g \o h') \o h i.
-    apply funext => j; by rewrite /h' /h /= /f' /f enum_rankK.
+    by apply funext => j; rewrite /h' /h /= /f' /f enum_rankK.
   rewrite axinjmap //.
   by move=> x y; rewrite /h => /enum_rank_inj [].
 rewrite axbarypart; first last.

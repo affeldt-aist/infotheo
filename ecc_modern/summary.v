@@ -208,12 +208,13 @@ transitivity (\sum_(f in {ffun 'I_n -> bool} | freeon s d (\row_i F2_of_bool (f 
   by rewrite 2!tnth_fgraph ffunE.
 transitivity (\sum_(f in {set 'I_n} | freeon s d (\row_i F2_of_bool (i \in f)))
       e (\row_k0 (if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0)))%R.
-  rewrite (reindex_onto (fun f : {ffun 'I_n -> bool} => [set x | f x ])
-    (@finfun_of_set [finType of 'I_n])).
+  have @f' : {set 'I_n} -> {ffun 'I_n -> bool} := (fun x => [ffun i => i \in x]).
+  rewrite (reindex_onto (fun f : {ffun 'I_n -> bool} => [set x | f x ]) f').
     apply eq_big => /= f.
       rewrite -[LHS]andbT; congr (freeon s d _ && _).
-        apply/rowP => i; by rewrite !mxE inE.
-      apply/esym/eqP/ffunP => /= i; by rewrite SetDef.finsetE ffunE.
+        by apply/rowP => i; rewrite !mxE inE.
+      apply/esym/eqP/ffunP => /= i.
+      by rewrite /f' ffunE inE.
     move=> Hf.
     congr e.
     apply/rowP => b; rewrite !mxE.
@@ -221,8 +222,7 @@ transitivity (\sum_(f in {set 'I_n} | freeon s d (\row_i F2_of_bool (i \in f)))
     by rewrite inE tnth_fgraph -enum_rank_ord enum_rankK.
   move=> /= f Hf.
   apply/setP => /= k0.
-  rewrite inE.
-  by rewrite SetDef.pred_of_setE.
+  by rewrite inE /f' ffunE.
 transitivity (\sum_(f in {set 'I_n} | f \subset s) e (\row_(k0 < n) if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0))%R; last first.
   apply eq_bigl => /= s0.
   by rewrite powersetE.

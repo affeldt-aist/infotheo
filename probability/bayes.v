@@ -107,7 +107,7 @@ Section univ_types.
 (* heterogeneous types *)
 Variable n : nat.
 Variable types : 'I_n -> eqType.
-Definition univ_types := [eqType of {dffun forall i, types i}].
+Definition univ_types : eqType := [eqType of {dffun forall i, types i}].
 
 Section prod_types.
 (* sets of indices *)
@@ -115,7 +115,7 @@ Variable I : {set 'I_n}.
 
 Definition prod_types :=
   [eqType of
-   {dffun forall i : 'I_n, if i \in I then types i else unit_finType}].
+   {dffun forall i : 'I_n, if i \in I then types i else unit}].
 
 Lemma prod_types_app i (A B : prod_types) : A = B -> A i = B i.
 Proof. by move=> ->. Qed.

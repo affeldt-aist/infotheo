@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssrnum.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR realType_ext Reals_ext Ranalysis_ext ssr_ext logb ln_facts.
@@ -36,7 +36,7 @@ Variable P : {fdist A}.
 
 Definition bipart_pmf := [ffun i => \sum_(a in A_ i) P a].
 
-Definition bipart : {fdist [finType of bool]}.
+Definition bipart : {fdist bool}.
 apply (@FDist.make _ _ bipart_pmf).
 - by move=> a; rewrite ffunE; apply: sumr_ge0.
 - rewrite big_bool /= /bipart_pmf /= !ffunE.

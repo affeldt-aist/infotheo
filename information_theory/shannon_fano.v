@@ -57,7 +57,7 @@ Let a : A. by move/card_gt0P: (fdist_card_neq0 P) => /sigW [i]. Qed.
 
 Variable t' : nat.
 Let t := t'.+2.
-Let T := [finType of 'I_t].
+Let T := 'I_t.
 Variable (f : Encoding.t A T).
 
 Let sizes := [seq (size \o f) a| a in A].
@@ -107,7 +107,7 @@ Section shannon_fano_suboptimal.
 Variables (A : finType) (P : {fdist A}).
 Hypothesis Pr_pos : forall s, P s != 0.
 
-Let T := [finType of 'I_2].
+Let T := 'I_2.
 Variable f : Encoding.t A T.
 
 Local Open Scope entropy_scope.
@@ -150,7 +150,7 @@ Variables (A : finType) (P : {fdist A}).
 Variable (t' : nat).
 Let n := #|A|.-1.+1.
 Let t := t'.+2.
-Let T := [finType of 'I_t].
+Let T := 'I_t.
 Variable l : seq nat.
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.

@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import reals normedtype.
 From mathcomp Require Import mathcomp_extra boolp.
@@ -131,37 +132,31 @@ Definition mk_ (R : realType) (q : R) (Oq1 : (0 <= q <= 1)%R) := mk Oq1.
 Module Exports.
 Notation prob := t.
 Notation "q %:pr" := (@mk _ q (@O1 _ _)).
-Canonical prob_subType (R : realType) := Eval hnf in [subType for @p R].
-Definition prob_eqMixin (R : realType) := [eqMixin of (prob R) by <:].
-Canonical prob_eqType (R : realType) := Eval hnf in EqType _ (prob_eqMixin R).
+HB.instance Definition _ (R : realType) := [isSub for @p R].
+HB.instance Definition _ (R : realType) := [Choice of t R by <:].
 End Exports.
 End Prob.
 Export Prob.Exports.
 Coercion Prob.p : prob >-> Real.sort.
 Lemma probpK R p H : Prob.p (@Prob.mk R p H) = p. Proof. by []. Qed.
 
-Definition prob_of (R : realType) :=
-  fun phT : phant (Num.NumDomain.sort (*Real.sort*)R) => @prob R.
-Notation "{ 'prob' T }" := (@prob_of _ (Phant T)).
+Notation "{ 'prob' T }" := (@prob T).
 
-Definition to_porder (R : realType) (p : {prob R}) : Order.POrder.sort _ :=
-  (p : R).
-Coercion to_porder : prob_of >-> Order.POrder.sort.
-Arguments to_porder /.
+HB.instance Definition _ (R : realType) := [Order of {prob R} by <:].
 
 Definition to_numdomain (R : realType) (p : {prob R}) : Num.NumDomain.sort _ :=
   (p : R).
-Coercion to_numdomain : prob_of >-> Num.NumDomain.sort.
+Coercion to_numdomain : prob >-> Num.NumDomain.sort.
 Arguments to_numdomain /.
 
 Definition to_zmodule (R : realType) (p : {prob R}) : GRing.Zmodule.sort _ :=
   (p : R).
-Coercion to_zmodule : prob_of >-> GRing.Zmodule.sort.
+Coercion to_zmodule : prob >-> GRing.Zmodule.sort.
 Arguments to_zmodule /.
 
 Definition to_ring (R : realType) (p : {prob R}) : GRing.Ring.sort _ :=
   (p : R).
-Coercion to_ring : prob_of >-> GRing.Ring.sort.
+Coercion to_ring : prob >-> GRing.Ring.sort.
 Arguments to_ring /.
 
 Section prob_lemmas.
@@ -252,9 +247,9 @@ End prob_lemmas.
 Global Hint Resolve prob_ge0 : core.
 Global Hint Resolve prob_le1 : core.
 
-#[export] Hint Extern 0 (is_true (Prob.p _ <= 1)%R) =>
+#[export] Hint Extern 0 (is_true (@Order.le ring_display _ _ _)) =>
   exact/prob_le1 : core.
-#[export] Hint Extern 0 (is_true (0 <= Prob.p _)%R) =>
+#[export] Hint Extern 0 (is_true (@Order.le ring_display _ _ _)) =>
   exact/prob_ge0 : core.
 
 Arguments prob0 {R}.
@@ -275,9 +270,8 @@ End def.
 Module Exports.
 Notation oprob := t.
 Notation "q %:opr" := (@mk _ q%:pr (@O1 _ _)).
-Canonical oprob_subType (R: realType) := Eval hnf in [subType for @p R].
-Definition oprob_eqMixin (R: realType) := [eqMixin of (oprob R) by <:].
-Canonical oprob_eqType (R : realType) := Eval hnf in EqType _ (oprob_eqMixin R).
+HB.instance Definition _ (R : realType) := [isSub for @p R].
+HB.instance Definition _ (R : realType) := [Equality of t R by <:].
 End Exports.
 End OProb.
 Export OProb.Exports.
@@ -286,9 +280,7 @@ Canonical oprobcplt [R: realType] (p : oprob R) :=
   Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)).
 
 Reserved Notation "{ 'oprob' T }" (at level 0, format "{ 'oprob'  T }").
-Definition oprob_of (R : realType) :=
-  fun phT : phant (Num.NumDomain.sort R) => @oprob R.
-Notation "{ 'oprob' T }" := (@oprob_of _ (Phant T)).
+Notation "{ 'oprob' T }" := (@oprob T).
 Definition oprob_coercion (R: realType) (p : {oprob R}) : R := OProb.p p.
 Notation oprob_to_real o := (Prob.p (OProb.p o)).
 (*(R: realType) (o : {oprob R}) := Prob.p (OProb.p o).*)
@@ -362,7 +354,7 @@ Proof.
 move=> p0; rewrite s_of_pqE; apply: onem_gt0.
 have [->/=|q0] := eqVneq q 0%:pr.
   by rewrite onem0 mulr1 onem_lt1// lt0r p0/=.
-rewrite mulr_ilte1 => //.
+rewrite mulr_ilte1 => //=.
   by rewrite onem_lt1// lt0r p0/=.
 by rewrite onem_lt1// lt0r q0/=.
 Qed.
@@ -376,8 +368,7 @@ rewrite -lerBlDr.
 rewrite -opprB.
 rewrite lerNl opprK.
 rewrite -/(Prob.p p).~.
-rewrite ler_piMr//.
-by apply: onem_le1.
+by rewrite ler_piMr.
 Qed.
 
 End s_of_pq_lemmas.

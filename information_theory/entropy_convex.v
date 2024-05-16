@@ -50,7 +50,7 @@ Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Section entropy_log_div.
 Variables (A : finType) (p : {fdist A}) (n : nat) (An1 : #|A| = n.+1).
-Let u := @fdist_uniform R_numFieldType _ _ An1.
+Let u := @fdist_uniform R _ _ An1.
 
 Local Open Scope divergence_scope.
 
@@ -84,6 +84,10 @@ Variable A : finType.
 Implicit Types p q : {prob R}.
 
 Definition dom_pair := {d : {fdist A} * {fdist A} | d.1 `<< d.2}.
+
+(* TODO: wouldn't be needed if dominates were on bool *)
+HB.instance Definition _ := boolp.gen_eqMixin dom_pair.
+HB.instance Definition _ := boolp.gen_choiceMixin dom_pair.
 
 Lemma dom_conv p (x y u v : {fdist A}) :
   x `<< y -> u `<< v -> x <| p |> u `<< y <| p |> v.
@@ -123,7 +127,7 @@ Let avgA p q x y z :
 Proof. by rewrite /avg /=; exact/boolp.eq_exist/convA. Qed.
 
 HB.instance Definition _ := @isConvexSpace.Build dom_pair
-  (Choice.class (choice_of_Type dom_pair)) avg avg1 avgI avgC avgA.
+  avg avg1 avgI avgC avgA.
 
 End dominated_pair.
 
@@ -146,14 +150,16 @@ have [y2a0|y2a0] := eqVneq (y.2 a) 0.
   have [p0|p0] := eqVneq p 0%:pr.
     by rewrite p0 -!RmultE -!RplusE ?(mul0R,mulR0,addR0).
   apply/Req_le; rewrite -!RmultE -!RplusE mulRA ?(mulR0,addR0); congr (_ * _ * log _).
-  simpl.
+  set u := x.1 a.
+  set v := x.2 a.
   by field; split; exact/eqP.
 have [x2a0|x2a0] := eqVneq (x.2 a) 0.
   rewrite x2a0 (_ : x.1 a = 0)// -?RplusE -?RmultE ?(mulR0,add0R,mul0R); last first.
     by move/dominatesP : Hx; exact.
   have [->|t0] := eqVneq (Prob.p p).~ 0; first by rewrite !mul0R.
   apply/Req_le; rewrite mulRA; congr (_ * _ * log _).
-  simpl.
+  set u := y.1 a.
+  set v := y.2 a.
   by field; split; exact/eqP.
 set h : {fdist A} -> {fdist A} -> {ffun 'I_2 -> R} := fun p1 p2 => [ffun i =>
   [eta (fun=> 0) with ord0 |-> Prob.p p * p1 a, lift ord0 ord0 |-> (Prob.p p).~ * p2 a] i].
@@ -203,7 +209,7 @@ Hypothesis cardA_gt0 : (0 < #|A|)%nat.
 Let cardApredS : #|A| = #|A|.-1.+1.
 Proof. by rewrite prednK. Qed.
 
-Lemma entropy_concave : concave_function (fun P : choice_of_Type {fdist A} => `H P).
+Lemma entropy_concave : concave_function (fun P : {fdist A} => `H P).
 Proof.
 apply RNconcave_function => p q t; rewrite /convex_function_at.
 rewrite !(entropy_log_div _ cardApredS) /= /leconv /= [in X in _ <= X]avgRE.
@@ -219,7 +225,7 @@ End entropy_concave.
 
 Module entropy_concave_alternative_proof_binary_case.
 
-Lemma pderivable_H2 : pderivable H2 (CSet.car open_unit_interval).
+Lemma pderivable_H2 : pderivable H2 uniti.
 Proof.
 move=> x /= [Hx0 Hx1].
 apply derivable_pt_plus.
@@ -264,10 +270,10 @@ move=> ? ? ? x [? ?]; split;
 Qed.
 
 Lemma concavity_of_entropy_x_le_y x y (t : {prob R}) :
-  x \in open_unit_interval -> y \in open_unit_interval -> x < y ->
+  uniti x -> uniti y -> x < y ->
   concave_function_at H2 x y t.
 Proof.
-rewrite !classical_sets.in_setE => -[H0x Hx1] [H0y Hy1] Hxy.
+move=> -[H0x Hx1] [H0y Hy1] Hxy.
 apply RNconcave_function_at.
 set Df := fun z : R => log z - log (1 - z).
 have @f_derive : pderivable (fun x0 => - H2 x0) (fun z => x <= z <= y).
@@ -325,7 +331,7 @@ have DDf_nonneg : forall z, x <= z <= y -> 0 <= DDf z.
 exact: (@second_derivative_convexf_pt _ _ _ _ Df _ _ DDf).
 Qed.
 
-Lemma concavity_of_entropy : concave_function_in open_unit_interval H2.
+Lemma concavity_of_entropy : concave_function_in uniti H2.
 Proof.
 rewrite /concave_function_in => x y t Hx Hy.
 apply: RNconcave_function_at.
@@ -342,7 +348,7 @@ wlog : x y Hx Hy Hxy / x < y.
   apply: convex_function_sym => // t0.
   by apply H => //; left.
 move=> Hxy' t.
-exact/R_convex_function_atN /concavity_of_entropy_x_le_y.
+by apply/R_convex_function_atN /concavity_of_entropy_x_le_y => //; apply/classical_sets.set_mem.
 Qed.
 
 End entropy_concave_alternative_proof_binary_case.
@@ -353,10 +359,10 @@ Variables (A B : finType) (W : A -> {fdist B}).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 Lemma mutual_information_concave :
-  concave_function (fun P : choice_of_Type {fdist A} => mutual_info (P `X W)).
+  concave_function (fun P : {fdist A} => mutual_info (P `X W)).
 Proof.
 suff : concave_function
-  (fun P : choice_of_Type {fdist A} => let PQ := fdistX (P `X W) in `H PQ`1 - cond_entropy PQ).
+  (fun P : {fdist A} => let PQ := fdistX (P `X W) in `H PQ`1 - cond_entropy PQ).
   set f := fun _ => _. set g := fun _ => _.
   suff -> : f = g by [].
   by rewrite boolp.funeqE => d; rewrite {}/f {}/g /= -mutual_infoE -mutual_info_sym.
@@ -367,7 +373,7 @@ apply: R_concave_functionB.
   apply: leR_trans (concave_H (p `X W)`2 (q `X W)`2 t).
   under eq_bigr do rewrite fdist_prod2_conv.
   by apply/RleP; rewrite lexx.
-suff : affine (fun x : choice_of_Type {fdist A} => cond_entropy (fdistX (x `X W))).
+suff : affine (fun x : {fdist A} => cond_entropy (fdistX (x `X W))).
   by move=> /affine_functionP[].
 move=> t p q.
 rewrite /= avgRE /cond_entropy /cond_entropy1.

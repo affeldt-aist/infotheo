@@ -108,15 +108,9 @@ transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   set l2Pb := Log 2 (P b).
   set l21p := Log 2 (1 - p).
   set l2p := Log 2 p.
-  ring_simplify. (* TODO *)
-  congr (_ + _).
-  rewrite [RHS]addRC !addRA; congr (_ + _).
-  rewrite [RHS]addRC !addRA; congr (_ + _).
-  rewrite [RHS]addRC !addRA; congr (_ + _ + _).
-    rewrite !mulNR; congr (- _).
-    by rewrite [RHS]mulRC mulRA.
-    by rewrite [RHS]mulRC mulRA.
-  by rewrite mulRC.
+  set Pa := P a.
+  set Pb := P b.
+  ring.
 move: (FDist.f1 P).
 rewrite Set2sumE /= -/a -/b.
 rewrite -RplusE => ->.
@@ -335,8 +329,7 @@ case/boolP: (p == 0%:pr).
   move/eqP->; rewrite !coqRE; apply/RleP.
   rewrite probpK subr0 !expr1n !mul1r !expr0n.
   move: d1d2; case: d2; first by rewrite leqn0 => /andP [] ->.
-  case: (d1 == 0%nat) => //=.
-  move=> ? ?; exact:ler01.
+  by case: (d1 == 0%nat).
 move/prob_gt0 => p1.
 rewrite !coqRE.
 apply/RleP/expr_conv_mono => //.
@@ -366,7 +359,7 @@ Let p_01 : {prob R} := Eval hnf in Prob.mk_ p_01'_.
 Let p_01 := Eval hnf in Prob.mk_ (ltR2W p_01').
 *)
 
-Let P := fdist_uniform (R:=R_numFieldType) card_A.
+Let P := fdist_uniform (R:=R) card_A.
 Variable a' : A.
 Hypothesis Ha' : receivable_prop (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
 

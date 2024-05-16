@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
 From mathcomp Require Import all_algebra vector reals normedtype.
 From mathcomp Require Import mathcomp_extra boolp.
@@ -133,17 +134,15 @@ End Exports.
 End FDist.
 Export FDist.Exports.
 Coercion FDist.f : fdist >-> finfun_of.
-Canonical fdist_subType R A := Eval hnf in [subType for @FDist.f R A].
-Definition fdist_eqMixin R A := [eqMixin of fdist R A by <:].
-Canonical fdist_eqType R A := Eval hnf in EqType _ (fdist_eqMixin R A).
+
+HB.instance Definition _ R A := [isSub for @FDist.f R A].
+HB.instance Definition _ R A := [Choice of fdist R A by <:].
 
 #[global] Hint Extern 0 (is_true (0 <= _)%R) => solve [exact: FDist.ge0] : core.
 #[global] Hint Extern 0 (is_true (_ <= 1)%R) => solve [exact: FDist.le1] : core.
 
-Definition fdist_of (R : realType) (A : finType) :=
-  fun phT : phant (Finite.sort A) => fdist R A.
-Notation "R '.-fdist' T" := (fdist_of R (Phant T)) : fdist_scope.
-Notation "{ 'fdist' T }" := (fdist_of real_realType (Phant T)) : fdist_scope.
+Notation "R '.-fdist' T" := (fdist R T%type) : fdist_scope.
+Notation "{ 'fdist' T }" := (fdist Rdefinitions.R T%type) : fdist_scope.
 
 Lemma fdist_ge0_le1 (R : numDomainType) (A : finType) (d : fdist R A) a :
   (0 <= d a <= 1)%R.
@@ -764,8 +763,7 @@ rewrite (bigID (pred1 j)) /= [X in _ = X + _](_ : _ = 0) ?add0r; last first.
   rewrite (big_pred1 j).
   by rewrite /D fdistD1E eqxx.
   by move=> /= i; rewrite -leqNgt andbC andb_idr // => /eqP ->.
-rewrite [in RHS]big_mkcond big_ord_recl.
-set X := (X in _ = GRing.add_monoid R _ X).
+rewrite [in RHS]big_mkcond big_ord_recl /=.
 rewrite /= -leqNgt leqn0 eq_sym andbN add0r.
 rewrite big_mkcond; apply eq_bigr => i _.
 rewrite -2!leqNgt andbC eq_sym -ltn_neqAle ltnS.
@@ -784,7 +782,7 @@ End fdist_del.
 Section fdist_belast.
 Local Open Scope ring_scope.
 Variable R : realType.
-Variables (n : nat) (P : fdist_of R (Phant 'I_n.+1)) (Pmax_neq1 : P ord_max != 1).
+Variables (n : nat) (P : fdist R 'I_n.+1) (Pmax_neq1 : P ord_max != 1).
 
 Let D : R.-fdist 'I_n.+1 := fdistD1 Pmax_neq1.
 
@@ -1073,7 +1071,7 @@ Section fdistX_prop.
 Local Open Scope ring_scope.
 Variable T : realType.
 Variables (A B : finType) (P : fdist T A) (Q : fdist T B)
-  (R S : fdist_of T (Phant (A * B))).
+  (R S : T .-fdist (A * B)).
 
 Lemma fdistXI : fdistX (fdistX R) = R.
 Proof. by rewrite /fdistX fdistmap_comp swapK fdistmap_id. Qed.
@@ -1090,10 +1088,17 @@ Qed.
 
 End fdistX_prop.
 
+Section fdistX_prop_ext.
 Lemma fdistX_prod2 {R: realType}
   (A B : finType) (P : fdist R A) (W : A -> fdist R B) :
   (fdistX (P `X W))`2 = P.
 Proof. by rewrite fdistX2 fdist_prod1. Qed.
+End fdistX_prop_ext.
+
+Section fdist_prop_ext.
+Definition fdistE :=
+  (fdistmapE,fdist1E,fdist_prodE,fdistXI,fdistXE,fdist_convnE,fdist_fstE).
+End fdist_prop_ext.
 
 Section fdist_rV.
 Local Open Scope ring_scope.
@@ -1172,7 +1177,7 @@ End wolfowitz_counting.
 Section fdist_prod_of_rV.
 Local Open Scope ring_scope.
 Variable R : realType.
-Variables (A : finType) (n : nat) (P : fdist_of R (Phant 'rV[A]_n.+1)).
+Variables (A : finType) (n : nat) (P : R .-fdist 'rV[A]_n.+1).
 
 Let f (v : 'rV[A]_n.+1) : A * 'rV[A]_n := (v ord0 ord0, rbehead v).
 
@@ -1374,7 +1379,7 @@ Lemma fdist_takeE i v : fdist_take i v = \sum_(w in 'rV[A]_(n - i))
   P (castmx (erefl, subnKC (ltnS' (ltn_ord i))) (row_mx v w)).
 Proof.
 rewrite fdistmapE /=.
-rewrite (@reindex_onto _ _ _ [finType of 'rV[A]_n] [finType of 'rV[A]_(n - i)]
+rewrite (@reindex_onto _ _ _ 'rV[A]_n 'rV[A]_(n - i)
   (fun w => castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w))
   (@row_drop A n i)) /=; last first.
   move=> w wv; apply/rowP => j.
@@ -1857,3 +1862,119 @@ Defined.
 *)
 
 End tuple_prod_cast.*)
+
+(* TODO: the following lemmas are currently not in use. Maybe remove? *)
+Section moved_from_convex.
+Local Open Scope ring_scope.
+
+Lemma fdist_convn_Add (R : realType)
+      (n m : nat) (d1 : R.-fdist 'I_n) (d2 : R.-fdist 'I_m) (p : {prob R})
+      (A : finType) (g : 'I_n -> R.-fdist A) (h : 'I_m -> R.-fdist A) :
+  fdist_convn (fdist_add d1 d2 p)
+    [ffun i => match fintype.split i with inl a => g a | inr a => h a end] =
+  (fdist_convn d1 g <| p |> fdist_convn d2 h)%fdist.
+Proof.
+apply/fdist_ext => a; rewrite !fdist_convE !fdist_convnE.
+rewrite 2!big_distrr /= big_split_ord /=; congr (_ + _);
+   apply eq_bigr => i _; rewrite fdist_addE ffunE.
+case: splitP => /= j ij.
+rewrite mulrA; congr (_ * d1 _ * (g _) a); exact/val_inj.
+move: (ltn_ord i); by rewrite ij -ltn_subRL subnn ltn0.
+case: splitP => /= j ij.
+move: (ltn_ord j); by rewrite -ij -ltn_subRL subnn ltn0.
+move/eqP : ij; rewrite eqn_add2l => /eqP ij.
+rewrite mulrA; congr (_ * d2 _ * (h _) a); exact/val_inj.
+Qed.
+
+Import realType_ext.
+Lemma fdist_convn_del
+        (R : realType)
+      (A : finType) (n : nat) (g : 'I_n.+1 -> R.-fdist A) (P : R.-fdist 'I_n.+1)
+      (j : 'I_n.+1) (H : (0 <= P j <= 1)) (Pj1 : P j != 1) :
+  let g' := fun i : 'I_n => g (fdist_del_idx j i) in
+  fdist_convn P g =
+    (g j <| @Prob.mk_ R _ H |> fdist_convn (fdist_del Pj1) g')%fdist.
+Proof.
+move=> g' /=; apply/fdist_ext => a.
+rewrite fdist_convE /= fdist_convnE (bigD1 j) //=; congr (_ + _).
+rewrite fdist_convnE big_distrr /=.
+rewrite (bigID (fun i : 'I_n.+1 => (i < j)%nat)) //=.
+rewrite (bigID (fun i : 'I_n => (i < j)%nat)) //=; congr (_ + _).
+  rewrite (@big_ord_narrow_cond _ _ _ j n.+1); first by rewrite ltnW.
+  move=> jn; rewrite (@big_ord_narrow_cond _ _ _ j n xpredT); first by rewrite -ltnS.
+  move=> jn'.
+  apply/eq_big.
+  by move=> /= i; apply/negP => /eqP/(congr1 val) /=; apply/eqP; rewrite ltn_eqF.
+  move=> /= i _.
+  rewrite fdist_delE /= ltn_ord fdistD1E /= ifF /=; last first.
+    by apply/negP => /eqP/(congr1 val) /=; apply/eqP; rewrite ltn_eqF.
+  rewrite mulrA mulrCA mulrV ?mulr1; last first.
+rewrite unitfE. rewrite onem_neq0 ?onem_neq0 //.
+  congr (P _ * _); first exact/val_inj.
+  by rewrite /g' /fdist_del_idx /= ltn_ord; congr (g _ a); exact/val_inj.
+rewrite (eq_bigl (fun i : 'I_n.+1 => (j < i)%nat)); last first.
+  move=> i; by rewrite -leqNgt eq_sym -ltn_neqAle.
+rewrite (eq_bigl (fun i : 'I_n => (j <= i)%nat)); last first.
+  move=> i; by rewrite -leqNgt.
+rewrite big_mkcond.
+rewrite big_ord_recl ltn0 /= add0r.
+rewrite [in RHS]big_mkcond.
+apply eq_bigr => i _.
+rewrite /bump add1n ltnS; case: ifPn => // ji.
+rewrite fdist_delE fdistD1E ltnNge ji /= ifF; last first.
+  apply/eqP => /(congr1 val) => /=.
+  rewrite /bump add1n => ij.
+  by move: ji; apply/negP; rewrite -ij ltnn.
+rewrite -[1 - P j]/(P j).~.
+rewrite [_ / _]mulrC !mulrA divrr ?unitfE ?onem_neq0 // mul1r.
+by rewrite /g' /fdist_del_idx ltnNge ji.
+Qed.
+End moved_from_convex.
+
+
+Module CodomDFDist.
+Import classical_sets.
+Section def.
+Local Open Scope classical_set_scope.
+Local Open Scope ring_scope.
+Variables (R: realType) (A : Type) (n : nat) (g : 'I_n -> A).
+Variables (e : R .-fdist 'I_n) (y : set A).
+Definition f := [ffun i : 'I_n => if g i \in y then e i else 0].
+Lemma f0 i : (0 <= f i). Proof. by rewrite /f ffunE; case: ifPn. Qed.
+Lemma f1 (x : set A) (gX : g @` setT `<=` x `|` y)
+  (ge : forall i : 'I_n, x (g i) -> e i = 0) :
+  (\sum_(i < n) f i = 1).
+Proof.
+rewrite /f -(FDist.f1 e) /=.
+apply eq_bigr => i _; rewrite ffunE.
+case: ifPn => // /negP; rewrite in_setE => ygi.
+rewrite ge //.
+have : (x `|` y) (g i) by apply/gX; by exists i.
+by case.
+Qed.
+Definition d (x : set A) (gX : g @` setT `<=` x `|` y)
+  (ge : forall i : 'I_n, x (g i) -> e i = 0) : R.-fdist 'I_n :=
+  locked (FDist.make f0 (f1 gX ge)).
+Lemma dE (x : set A) (gX : g @` setT `<=` x `|` y)
+  (ge : forall i : 'I_n, x (g i) -> e i = 0) i :
+  d gX ge i = if g i \in y then e i else 0.
+Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+Lemma f1' (x : set A) (gX : g @` setT `<=` x `|` y)
+  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0) :
+  (\sum_(i < n) f i = 1).
+Proof.
+rewrite /f -(FDist.f1 e) /=; apply eq_bigr => i _; rewrite ffunE.
+case: ifPn => // /negP; rewrite in_setE => giy.
+rewrite ge //.
+have : (x `|` y) (g i) by apply/gX; by exists i.
+by case.
+Qed.
+Definition d' (x : set A) (gX : g @` setT `<=` x `|` y)
+  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0) :=
+  locked (FDist.make f0 (f1' gX ge)).
+Lemma dE' (x : set A) (gX : g @` setT `<=` x `|` y)
+  (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0) i :
+  d' gX ge i = if g i \in y then e i else 0.
+Proof. by rewrite /d'; unlock; rewrite ffunE. Qed.
+End def.
+End CodomDFDist.

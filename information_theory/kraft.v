@@ -129,6 +129,7 @@ Section ary_of_nat.
 Variable t' : nat.
 Let t := t'.+2.
 
+Local Obligation Tactic := idtac.
 Program Definition ary_of_nat'
   (n : nat) (f : forall n', (n' < n)%coq_nat -> seq 'I_t) : seq 'I_t :=
   match n with
@@ -139,7 +140,7 @@ Program Definition ary_of_nat'
       else
         rcons (f (n %/ t) _) (inord (n %% t))
   end.
-Next Obligation. exact/ltP/ltn_Pdiv. Qed.
+Next Obligation. by move=> n ? ? <-; apply/ltP/ltn_Pdiv. Qed.
 
 Definition ary_of_nat := Fix Wf_nat.lt_wf (fun _ => seq 'I_t) ary_of_nat'.
 
@@ -387,7 +388,7 @@ Section example_of_code.
 Variable (n' : nat) (t' : nat).
 Let n := n'.+1.
 Let t := t'.+2.
-Let T := [finType of 'I_t].
+Let T := 'I_t.
 Variable l : seq nat.
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.
@@ -490,9 +491,11 @@ Definition kraft_cond (T : finType) (l : seq nat) :=
 
 End kraft_condition.
 
+Local Obligation Tactic := idtac.
 Program Definition prepend (T : finType) (lmax : nat) (c : seq T) (t : (lmax - size c).-tuple T)
   : lmax.-tuple T := @Tuple _ _ (take lmax c ++ t) _.
 Next Obligation.
+move=> T lmax c t.
 rewrite size_cat size_take size_tuple.
 case: ifPn.
   move/ltnW; rewrite -subn_eq0 => /eqP ->; by rewrite addn0.
@@ -582,7 +585,7 @@ rewrite (eq_bigr (fun i : 'I_n => #|suffixes C``_i|%:R)%R); last first.
   by apply/leq_lmax/nthP; exists i.
   by rewrite unitfE pnatr_eq0 -lt0n.
 (*\color{comment}{\framebox{the goal is now $\sum_{i < n} | \{ x | \prefix{c_i}{x} \} | \leq |T|^{\ell_{\mathrm{max}}}$}} *)
-apply (@le_trans _ _ (#|\bigcup_(i < n) suffixes (C ``_ i)|%:R)%R).
+apply: (@le_trans _ _ (#|\bigcup_(i < n) suffixes (C ``_ i)|%:R)%R).
   rewrite -sum1_card.
   rewrite partition_disjoint_bigcup /=.
     rewrite natr_sum ler_sum // => i _.
@@ -603,7 +606,7 @@ Section kraft_code.
 Variable (n' : nat) (t' : nat).
 Let n := n'.+1.
 Let t := t'.+2.
-Let T := [finType of 'I_t].
+Let T := 'I_t.
 Variable l : seq nat.
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.
@@ -674,7 +677,7 @@ Section kraft_cond_implies_prefix.
 Variable (n' : nat) (t' : nat).
 Let n := n'.+1.
 Let t := t'.+2.
-Let T := [finType of 'I_t].
+Let T := 'I_t.
 Variable l : seq nat.
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.
