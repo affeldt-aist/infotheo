@@ -123,8 +123,7 @@ Proof.
 apply: fdist_ext=> /= i.
 rewrite fdist_uniformE /=.
 transitivity (`Pr[XY \in [set i]]).
-  rewrite pr_inE'.
-  admit.
+  by rewrite pr_inE' /Pr big_set1.
 rewrite (reasoning_by_cases _ X).
 transitivity (\sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set i-k]%mcR) ]).
   apply eq_bigr=> k _.
@@ -166,9 +165,13 @@ is because
 But here we need first pull the `Pr[ Y = (i - k0)%mcR ] from the function?
 
 *)
-  
 
-
-Abort.
+under eq_bigr=> k _.
+  rewrite [X in _ * X]pr_eqE' pY_unif fdist_uniformE /=.
+  rewrite -cpr_eq_unit_RV.
+  over.
+rewrite -big_distrl /=.
+by rewrite cPr_1 ?mul1R // pr_eq_unit oner_neq0.
+Qed.
 
 End lemma_3_4.
