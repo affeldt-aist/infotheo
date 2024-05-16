@@ -139,6 +139,36 @@ transitivity (\sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set i-k]%mcR)
   rewrite [RHS]eq_sym.
   by rewrite subr_eq addrC eq_sym.
 under eq_bigr do rewrite setX1 pr_eq_set1 -cpr_eqE_mul.
+under eq_bigr=> k _.
+  (* Similar to `have->:`, set the wanted form *)
+  rewrite (_ : _ * _ = `Pr[ X = k ] * `Pr[ Y = (i - k)%mcR ] ); last first.
+  rewrite cpr_eqE.  (* To remove the form of conditional probability *)
+  rewrite XY_indep. (* So we can split it from `Pr [% X, Y] to `Pr X and `Pr Y*)
+  rewrite !coqRE. (* Because / and * are in stdlib, not in mathcomp *)
+  rewrite -!mulrA.
+  (* case analysis on (`Pr[ Y = (i - k)%mcR ] == 0) *)
+  have [|?] := eqVneq `Pr[ Y = (i - k)%mcR ] 0.
+    by move->; rewrite !mulr0.
+  From mathcomp Require Import ring.
+  by field.
+  over.
+(* Then the goal looks relying on the fact of uniform distribution:
+
+\sum_(k <- fin_img X) (fun k0 : ordinal_eqType p => `Pr[ X = k0 ] * `Pr[ Y = (i - k0)%mcR ]) k =
+  (#|'I_p|%:R^-1)%mcR
+
+On the paper, the summation of all `Pr[ X = k ] * `Pr[ Y = (i - k) ] equals to (#|'I_p|%:R^-1)
+is because 
+
+    `Pr[ X = k ] = 1
+    `Pr[ Y = (i - k) ] = 1/p
+
+But here we need first pull the `Pr[ Y = (i - k0)%mcR ] from the function?
+
+*)
+  
+
+
 Abort.
 
 End lemma_3_4.
