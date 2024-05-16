@@ -1824,8 +1824,6 @@ Notation "X _|_  Y | Z" := (cinde_rv X Y Z) : proba_scope.
 
 Section conditionnally_independent_discrete_random_variables_extra.
 
-Notation R := real_realType.
-
 Variables (U: finType) (P : R.-fdist U) (A B C: finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
@@ -2247,7 +2245,6 @@ End prob_chain_rule.
 
 
 Section more_rv_lemmas.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U).
 Variables (TA TB UA UB : eqType) (f : TA -> UA) (g : TB -> UB).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
@@ -2280,7 +2277,6 @@ End more_preimset.
 
 
 Section more_pr_lemmas.
-Notation R := real_realType.
 Variables (U : finType) (P : R.-fdist U).
 Variables (TA UA : finType) (f : TA -> UA) (X : {RV P -> TA}).
 
@@ -2311,7 +2307,6 @@ End more_fdist.
 
 
 Section more_inde_rv.
-Notation R := real_realType.
 Variables (A : finType) (P : R.-fdist A) (TA TB : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 

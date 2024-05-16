@@ -1,8 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg matrix.
+
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
+From mathcomp Require Import reals Rstruct zmodp.
 Require Import Reals.
-From mathcomp Require Import Rstruct zmodp.
+
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond graphoid.
 Import GRing.Theory.
@@ -18,11 +20,13 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope R_scope.
+
+Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 
 Section more_independent_rv_lemmas.
-Notation R := real_realType.
+
 Variables (A : finType) (P : R.-fdist A) (TA TB TC TD : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
 Variables (UA UB : finType) (f : TA -> UA) (g : TB -> UB).
@@ -87,8 +91,6 @@ End more_independent_rv_lemmas.
 
 Section lemma_3_4.
 
-
-Notation R := real_realType.
 Lemma cpr_eqE_mul (U : finType) (P : {fdist U}) (TA TB : eqType)
   (X : {RV P -> TA}) (Y : {RV P -> TB}) a b :
   `Pr[ X = a | Y = b ] * `Pr[Y = b] = `Pr[ [% X, Y] = (a, b) ].
