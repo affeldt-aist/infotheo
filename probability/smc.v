@@ -159,10 +159,11 @@ under eq_bigr=> k _.
 On the paper, the summation of all `Pr[ X = k ] * `Pr[ Y = (i - k) ] equals to (#|'I_p|%:R^-1)
 is because 
 
-    `Pr[ X = k ] = 1
+    \sum_k `Pr[ X = k ] = 1
     `Pr[ Y = (i - k) ] = 1/p
 
 But here we need first pull the `Pr[ Y = (i - k0)%mcR ] from the function?
+(saikawa) use big_distrl or big_distrr
 
 *)
 
