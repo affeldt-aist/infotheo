@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-From mathcomp Require Import reals Rstruct zmodp.
+From mathcomp Require Import reals Rstruct zmodp ring.
 Require Import Reals.
 
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext fdist.
@@ -69,10 +69,15 @@ Qed.
  X _|_ Z | [% unit_RV P, Y] -> X _|_ Z | Y
 *)
 
+
 Lemma cpr_prd_unit_RV : X _|_ Z | [% unit_RV P, Y] -> X _|_ Z | Y.
 Proof.
-move=>+ a b c.
-move/(_ a b (tt,c)).
+move=>H a b c.
+have:=H a b (tt,c).
+Undo 2.
+move=> + a  /[swap] b c.
+Undo 1.
+move=> + a b c => /(_ a b (tt,c)).
 rewrite 3!cpr_eqE'.
 have->: finset (preim [% unit_RV P, Y] (pred1 (tt, c))) = finset (preim Y (pred1 c)).
   apply /setP => x.
@@ -91,11 +96,43 @@ End more_independent_rv_lemmas.
 
 Section lemma_3_4.
 
-Lemma cpr_eqE_mul (U : finType) (P : {fdist U}) (TA TB : eqType)
+Lemma inde_cpr_pr  (U : finType) (P : {fdist U}) (TA TB : eqType)
+  (X : {RV P -> TA}) (Y : {RV P -> TB}) a b :
+  P |= X _|_ Y -> `Pr[ X = a | Y = b ]  = `Pr[X = a].
+Proof.
+move => inde_X_Y.
+rewrite -[RHS]cpr_eq_unit_RV.
+rewrite !cpr_eqE.
+Abort.
+
+Lemma cpr_eqE_mul (U : finType) (P : {fdist U}) (TA TB : finType)
   (X : {RV P -> TA}) (Y : {RV P -> TB}) a b :
   `Pr[ X = a | Y = b ] * `Pr[Y = b] = `Pr[ [% X, Y] = (a, b) ].
 Proof.
+rewrite !coqRE.
 rewrite cpr_eqE.
+rewrite -!mulrA.
+have [|?] := eqVneq `Pr[ Y = b ] 0.
+  move=>Y0.
+  rewrite Y0.
+  rewrite !mulr0.
+  rewrite pr_eq_pairC.
+  by rewrite pr_eq_domin_RV2.
+(* Rmult_div_r: r1 <> 0 -> r1 * r2 / r1 = r2*)
+(* Rinv_div: forall x y : R, / (x / y) = y / x*)
+(* Rinv_mult: forall r1 r2 : R, / (r1 * r2) = / r1 * / r2*)
+have : (/ `Pr[ Y = b ] * `Pr[ Y = b ]) = 1%mcR.
+  Search "Rinv_".
+  Search "Rmul".
+  rewrite Rmult_assoc.
+  rewrite Rinv_mult.
+  rewrite mulrCA.
+  rewrite Rmult_div_r.
+rewrite mulrC mulrC.
+rewrite Rmult_div_r.
+Search "x / x ".
+  
+  admit.
 Admitted.
 
 Variable T : finType.
@@ -111,14 +148,6 @@ Variable XY_indep : inde_rv X Y.
 
 (* Add two random variables = add results from two functions. *)
 Definition XY : {RV P -> 'I_p} := fun x => (X x + Y x)%mcR.
-
-(* Map between random variables *)
-
-(* Goal: a similar lemma for `Pr [X+Y in E] = \sum ... [X \in K `* Y \in I - K]*)
-(* Need: get `i` from I so we can have i - k??*)
-Fail Lemma reasoning_by_cases_XY:
-  `Pr[ XY \in I ] = \sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set ik])].
-
 
 Lemma pXY_unif : `p_ XY = fdist_uniform (card_ord p).
 Proof.
@@ -150,7 +179,6 @@ under eq_bigr=> k _.
   (* case analysis on (`Pr[ Y = (i - k)%mcR ] == 0) *)
   have [|?] := eqVneq `Pr[ Y = (i - k)%mcR ] 0.
     by move->; rewrite !mulr0.
-  From mathcomp Require Import ring.
   by field.
   over.
 (* Then the goal looks relying on the fact of uniform distribution:
@@ -178,3 +206,7 @@ by rewrite cPr_1 ?mul1R // pr_eq_unit oner_neq0.
 Qed.
 
 End lemma_3_4.
+
+Section lemma_3_5.
+
+End lemma_3_5.
