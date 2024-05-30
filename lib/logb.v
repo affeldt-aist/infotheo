@@ -170,10 +170,7 @@ Proof.
 move=> n1 x0 xy.
 apply leR_wpmul2r.
   apply/RleP.
-  rewrite RinvE//; last first.
-    rewrite gtR_eqF//.
-    exact/ln_pos.
-  by rewrite invr_ge0; exact/ltW/RltP/ln_pos.
+  by rewrite RinvE invr_ge0; exact/ltW/RltP/ln_pos.
 exact: ln_increasing_le.
 Qed.
 

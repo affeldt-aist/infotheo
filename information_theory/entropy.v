@@ -107,8 +107,7 @@ Lemma entropy_uniform n (An1 : #|A| = n.+1) :
 Proof.
 rewrite /entropy.
 under eq_bigr do rewrite fdist_uniformE.
-rewrite big_const iter_addR mulRA RmultE -RinvE; last first.
-  by rewrite An1 -INRE INR_eq0'.
+rewrite big_const iter_addR mulRA RmultE -RinvE.
 rewrite INRE mulRV; last by rewrite An1 -INRE INR_eq0'.
 rewrite -RmultE mul1R logV ?oppRK//; rewrite An1.
 by rewrite -INRE; apply/ltR0n.
@@ -133,14 +132,12 @@ transitivity (\sum_(a|a \in A) P a * log (P a) +
   case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
   congr (_ * _); rewrite logDiv ?addR_opp //.
     by apply/RltP; rewrite -fdist_gt0.
-  rewrite fdist_uniformE.
-  rewrite -RinvE; last by rewrite An1 -INRE INR_eq0'.
+  rewrite fdist_uniformE -RinvE.
   apply/invR_gt0; rewrite An1 -INRE.
   exact/ltR0n.
 under [in X in _ + X]eq_bigr do rewrite fdist_uniformE.
 rewrite -[in X in _ + X = _]big_distrl /= FDist.f1 mul1R.
-rewrite addRC /entropy /log.
-  rewrite -RinvE; last by rewrite An1 -INRE INR_eq0'.
+rewrite addRC /entropy /log -RinvE.
 by rewrite LogV ?oppRK ?subR_opp // An1 ?INRE// -INRE; exact/ltR0n.
 Qed.
 

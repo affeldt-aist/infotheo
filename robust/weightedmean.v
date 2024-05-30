@@ -803,7 +803,8 @@ apply (@le_trans _ _ ((1 - eps) * `V (WP.-RV X) *
       rewrite mulrC !mulrA (_ : 4 * 4 = 16); last lra.
       by rewrite -[leLHS]mulrA -[leRHS]mulrA ler_pM // mulr_ge0.
   by rewrite -sqrtrV // -sqrtrM // sqr_sqrtr.
-by rewrite /bound_intermediate [leRHS]mulrC (mulrC (1-eps)) !coqRE (_ : 2%coqR = 2)// !mulrA.
+rewrite /bound_intermediate [leRHS]mulrC (mulrC (1 - eps)).
+by rewrite ?coqRE !mulrA.
 Qed.
 
 Lemma bound_evar_ineq_S :
@@ -839,7 +840,7 @@ apply (@le_trans _ _ ((1 - eps) *
   - apply: ler_pM=> //. apply: addr_ge0; first lra. rewrite mulr_ge0//. exact: sqr_ge0.
   - apply: lerD => //.
     apply: ler_pM=> //; first exact: sqr_ge0.
-      by move: low_eps; rewrite !coqRE (_ : 2%coqR = 2)//; lra.
+      by move: low_eps; rewrite 2?coqRE 2?(_ : 2%coqR = 2)//; lra.
     rewrite lerXn2r // ?nnegrE ?addr_ge0 //?invr_ge0 ?mulr_ge0 // ?sqrtr_ge0 //.
     rewrite lerD ?lerXn2r // ?nnegrE ?addr_ge0 //?invr_ge0 ?mulr_ge0 // ?sqrtr_ge0 //.
       rewrite ?lef_pV2 ?posrE ?mulr_gt0 // ?sqrtr_gt0 //; last by move: eps_max01; lra.
@@ -1051,14 +1052,14 @@ Variables (U : finType) (P : {fdist U}) (X : {RV P -> R}).
 
 Local Obligation Tactic := idtac.
 
-Lemma filter1D_arg_decreasing (C : nneg_finfun U) (var : R) :
-  0 <= var -> is01 C ->
+Lemma filter1D_arg_decreasing (C : nneg_finfun U) (v : R) :
+  0 <= v -> is01 C ->
   forall PC0 : Weighted.total P C != 0,
   let WP := wgt PC0 in
-  forall K : Rleb (`V (WP.-RV X)) (16 * var) <> true,
+  forall K : Rleb (`V (WP.-RV X)) (16 * v) <> true,
   (#|0.-support (update X PC0)| < #|0.-support C|)%coq_nat.
 Proof.
-rewrite/Weighted.total=> var_ge0 C01 PCneq0 /negP/RlebP/RleP.
+rewrite/Weighted.total=> v_ge0 C01 PCneq0 /negP/RlebP/RleP.
 rewrite -ltNge !coqRE=> evar16.
 apply/ssrnat.ltP/proper_card/properP; split.
   apply/subsetP => u; rewrite !supportE /update_ffun ffunE.
@@ -1082,24 +1083,24 @@ rewrite /update_ffun supportE ffunE negbK ifF.
 by rewrite (negbTE sq_dev_max_neq0)/=; exact/negbTE.
 Qed.
 
-Function filter1D_rec var (var_ge0 : 0 <= var)
+Function filter1D_rec v (v_ge0 : 0 <= v)
     (C : nneg_finfun U) (C01 : is01 C) (PC0 : Weighted.total P C != 0)
     {measure (fun C => #| 0.-support C |) C} :=
   let WP := wgt PC0 in
-  if `V (WP.-RV X) <=? 16 * var is left _ then
+  if `V (WP.-RV X) <=? 16 * v is left _ then
     Some (`E (WP.-RV X))
   else
     let C' := update X PC0 in
     if Weighted.total P C' !=? 0 is left PC0' then
-      filter1D_rec var_ge0 (is01_update X PC0 C01) PC0'
+      filter1D_rec v_ge0 (is01_update X PC0 C01) PC0'
     else
       None.
 Proof.
-rewrite/Weighted.total=> var var_ge0 C C01 PC0 evar16 h2 h3 _.
-exact: (filter1D_arg_decreasing var_ge0).
+rewrite/Weighted.total=> v v_ge0 C C01 PC0 evar16 h2 h3 _.
+exact: (filter1D_arg_decreasing v_ge0).
 Qed.
 
-Definition filter1D var (var_ge0 : 0 <= var) := filter1D_rec var_ge0 (@C1_is01 U) (PC1_neq0 P).
+Definition filter1D v (v_ge0 : 0 <= v) := filter1D_rec v_ge0 (@C1_is01 U) (PC1_neq0 P).
 
 End filter1D.
 
@@ -1111,18 +1112,19 @@ Local Open Scope ring_scope.
 Variables (U : finType) (P : {fdist U}) (X : {RV P -> R}) (S : {set U}).
 Local Notation cplt_S := (~: S).
 Local Notation eps := (Pr P cplt_S).
-Hypotheses (low_eps : eps <= eps_max).
+Hypothesis low_eps : eps <= eps_max.
 (* Let mu := `E_[X | S]. *)
-(* Let var := `V_[X | S]. *)
-Let var_ge0 := cvariance_ge0' X S.
+(* Let v := `V_[X | S].  *)
+Let v_ge0 := cvariance_ge0' X S.
 Let eps0 : 0 <= eps. Proof. exact/RleP/Pr_ge0. Qed.
 
 Functional Scheme filter1D_rec_ind := Induction for filter1D_rec Sort Prop.
 
 Lemma filter1D_correct :
-  if filter1D X var_ge0 is Some mu_hat
-  then `| `E_[X | S] - mu_hat | <= Num.sqrt (`V_[X | S] * (2 * eps) / (2 - eps)) +
-                          Num.sqrt (16 * `V_[X | S] * (2 * eps) / (1 - eps))
+  let v := `V_[X | S] in
+  if @filter1D U P X v v_ge0 is Some mu_hat
+  then `| `E_[X | S] - mu_hat | <= Num.sqrt (v * (2 * eps) / (2 - eps)) +
+                          Num.sqrt (16 * v * (2 * eps) / (1 - eps))
   else false.
 Proof.
 have sixteenE: 16%coqR = 16 by rewrite /16%coqR -INR_IPR /= coqRE.
@@ -1151,13 +1153,12 @@ apply filter1D_rec_ind => //=.
   rewrite /invariant.
   under eq_bigr do rewrite mulrDl mulNr PC0' subr0 mul1r.
   under [in leRHS]eq_bigr do rewrite mulrDl mulNr PC0' subr0 mul1r.
-  rewrite -/eps -/(Pr P S) pr_S.
-  have->: false <-> False :> Prop by [].
+  rewrite -/eps -/(Pr P S) pr_S boolp.falseE.
   apply/negP; rewrite -ltNge.
   by rewrite -mulrA gtr_pMr; move: low_eps; lra.
 Qed.
 
-Corollary filter1D_converges : filter1D X var_ge0 != None.
-Proof. by move: filter1D_correct; case: (filter1D X var_ge0). Qed.
+Corollary filter1D_converges : @filter1D U P X `V_[X | S] v_ge0 != None.
+Proof. by move: filter1D_correct => /=; case: (filter1D X v_ge0). Qed.
 
 End filter1D_correct.

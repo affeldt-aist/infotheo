@@ -28,6 +28,8 @@ authors:
   initial: false
 - name: Naruomi Obata, Titech (M2)
   initial: false
+- name: Alessandro Bruni, IT-University of Copenhagen
+  initial: false
 
 opam-file-maintainer: Reynald Affeldt <reynald.affeldt@aist.go.jp>
 
@@ -41,12 +43,10 @@ license:
 nix: true
 
 supported_coq_versions:
-  text: Coq 8.17--8.19
-  opam: '{ (>= "8.17" & < "8.20~") | (= "dev") }'
+  text: Coq 8.18--8.19
+  opam: '{ (>= "8.18" & < "8.20~") | (= "dev") }'
 
 tested_coq_opam_versions:
-- version: '2.2.0-coq-8.17'
-  repo: 'mathcomp/mathcomp'
 - version: '2.2.0-coq-8.18'
   repo: 'mathcomp/mathcomp'
 - version: '2.2.0-coq-8.19'
@@ -80,7 +80,7 @@ dependencies:
     [MathComp field](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-analysis
-    version: '{ (>= "1.0.0") }'
+    version: '{ (>= "1.2.0") }'
   description: |-
     [MathComp analysis](https://github.com/math-comp/analysis)
 - opam:
@@ -93,6 +93,11 @@ dependencies:
     version: '{ >= "1.2.0" }'
   description: |-
     MathComp algebra tactics
+- opam:
+    name: coq-interval
+    version: '{ >= "4.10.0"}'
+  description:
+    A Coq tactic for proving bounds
 
 namespace: infotheo
 
@@ -104,7 +109,7 @@ keywords:
 
 publications:
 - pub_url: https://dl.acm.org/doi/abs/10.1145/3479394.3479412
-  pub_title: Trimming Data Sets: a Verified Algorithm for Robust Mean Estimation
+  pub_title: "Trimming Data Sets: a Verified Algorithm for Robust Mean Estimation"
   pub_doi: 10.1145/3479394.3479412
 - pub_url: https://arxiv.org/abs/2004.12713
   pub_title: Formal Adventures in Convex and Conical Spaces

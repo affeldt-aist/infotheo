@@ -111,8 +111,7 @@ Proof. by apply/sumr_ge0 => x _; exact: mulr_ge0. Qed.
 
 Let f0 x : 0 <= f x.
 Proof.
-rewrite ffunE; apply/RleP; rewrite -RdivE//; last first.
-  by rewrite /den -receivable_propE receivableP.
+rewrite ffunE; apply/RleP; rewrite -RdivE.
 apply: divR_ge0; first exact: mulR_ge0.
 apply/RltP; rewrite lt0r {1}/den -receivable_propE receivableP.
 exact/fdist_post_prob_den_ge0.
@@ -121,9 +120,7 @@ Qed.
 Let f1 : \sum_(x in 'rV_n) f x = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
-rewrite -big_distrl /= -RmultE mulRC.
-rewrite -RinvE; last first.
-  by rewrite -receivable_propE receivableP.
+rewrite -big_distrl /= -RmultE mulRC -RinvE.
 by rewrite mulVR // -receivable_propE receivableP.
 Qed.
 
@@ -142,10 +139,7 @@ Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Lemma post_probE (x : 'rV[A]_n) (y : P.-receivable W) :
   P `^^ W (x | y) = \Pr_(P `X (W ``^ n))[ [set x] | [set receivable_rV y]].
 Proof.
-rewrite fdist_post_probE /jcPr setX1 2!Pr_set1 fdist_prodE /=.
-rewrite -RdivE; last first.
-  rewrite -receivable_propE.
-  by case: y.
+rewrite fdist_post_probE /jcPr setX1 2!Pr_set1 fdist_prodE /= -RdivE.
 congr (_ / _).
 by rewrite fdist_sndE /=; apply eq_bigr => x' _; rewrite fdist_prodE /= -RmultE mulRC.
 Qed.
@@ -174,14 +168,8 @@ Lemma post_prob_uniformT (x : 'rV[A]_n) : x \in C -> (`U HC) `^^ W (x | y) = K *
 Proof.
 move=> Ht.
 have C0 : INR #|C| != 0 by rewrite INR_eq0' -lt0n.
-rewrite fdist_post_probE fdist_uniform_supp_in //.
-rewrite -RinvE; last first.
-  by rewrite -INRE.
-rewrite -!RmultE mulRC.
-rewrite -RinvE; last first.
-  rewrite -receivable_propE.
-  by case: y.
-rewrite mulRA.
+rewrite fdist_post_probE fdist_uniform_supp_in // -RinvE.
+rewrite -!RmultE mulRC -RinvE mulRA.
 congr (_ * _).
 rewrite /den fdist_uniform_supp_restrict.
 rewrite -invRM//.
@@ -228,10 +216,7 @@ Proof.
 under eq_bigr do rewrite /f' fdist_post_probE /Rdiv.
 rewrite -big_distrl /= mulR_eq0 => -[/eqP|].
 - by apply/negP; rewrite -receivable_propE receivableP.
-- rewrite -RinvE//; last first.
-    rewrite -receivable_propE.
-    by case: y.
-- by apply/invR_neq0/eqP; rewrite -receivable_propE receivableP.
+- by rewrite -RinvE; apply/invR_neq0/eqP; rewrite -receivable_propE receivableP.
 Qed.
 
 Let f (i : 'I_n) := [ffun a =>  marginal_post_prob_den * \sum_(t in 'rV_n | t ``_ i == a) f' t].

@@ -159,8 +159,7 @@ have -> : Pr P `^ n.+1 (~: p) =
         move/RleP: LHS => /ltRNge/(@Log_increasing 2 _ _ Rlt_1_2 H1).
         rewrite /exp2 ExpK // mulRC mulRN -mulNR -ltR_pdivr_mulr; last exact/ltR0n.
         rewrite /Rdiv mulRC ltR_oppr => /RltP; rewrite -ltrBrDl => LHS.
-        rewrite div1r// mulNr -RinvE//; last by rewrite gt_eqF// ltr0n.
-        rewrite ger0_norm// -INRE//.
+        rewrite div1r// mulNr -RinvE ger0_norm// -INRE//.
         by move/RltP : LHS; move/(ltR_trans He)/ltRW/RleP.
       + move: LHS; rewrite leNgt negbK => LHS.
         apply/orP; right; apply/andP; split.

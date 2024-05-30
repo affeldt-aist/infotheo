@@ -521,7 +521,7 @@ Let addptC' : commutative addpt.
 Proof.
 move=> [r x|] [q y|] //=; congr (_ *: _); first by apply: val_inj; rewrite /= addRC.
 rewrite convC; congr (_ <| _ |> _); apply/val_inj => /=.
-by rewrite RdivE' RplusE onem_divRxxy.
+by rewrite RdivE RplusE onem_divRxxy.
 Qed.
 
 Let addptA' : associative addpt.
@@ -1724,8 +1724,8 @@ Proof. by move=> x /=; rewrite scale1r. Qed.
 Lemma scaler_addpt : {morph scaler : x y / addpt x y >-> x + y}.
 Proof.
 move=> [p x|] [q y|] /=; rewrite ?(add0r,addr0) //.
-rewrite avgrE /divRposxxy /= RdivE' onem_div; last exact: Rpos_neq0.
-rewrite -!RmultE -!RinvE' -!(mulRC (/ _)%coqR) scalerDr !scalerA !mulrA.
+rewrite avgrE /divRposxxy /= RdivE onem_div; last exact: Rpos_neq0.
+rewrite -!RmultE -!RinvE -!(mulRC (/ _)%coqR) scalerDr !scalerA !mulrA.
 have ->: (p + q)%coqR * (/ (p + q))%coqR = 1 by apply mulRV; last by apply Rpos_neq0.
 by rewrite !mul1r (addRC p) addrK.
 Qed.
@@ -1995,8 +1995,8 @@ Proof. by move=> x /=; rewrite mul1R. Qed.
 Lemma scaleR_addpt : {morph scaleR : x y / addpt x y >-> (x + y)%coqR}.
 Proof.
 move=> [p x|] [q y|] /=; rewrite ?(add0R,addR0) //.
-rewrite avgRE /avg /divRposxxy /= RdivE' onem_div /Rdiv; last exact: Rpos_neq0.
-rewrite -!RmultE -!RinvE' -!(mulRC (/ _)%coqR) mulRDr !mulRA mulRV; last exact: Rpos_neq0.
+rewrite avgRE /avg /divRposxxy /= RdivE onem_div /Rdiv; last exact: Rpos_neq0.
+rewrite -!RmultE -!RinvE -!(mulRC (/ _)%coqR) mulRDr !mulRA mulRV; last exact: Rpos_neq0.
 by rewrite !mul1R (addRC p) addrK.
 Qed.
 

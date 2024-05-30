@@ -421,7 +421,7 @@ congr (_ <| _ |> _).
   (* TODO: lemma? *)
   apply val_inj => /=.
   rewrite /s /onem /= !(p_of_rsE,q_of_rsE) /= !(p_of_rsE,q_of_rsE) /= /onem.
-  rewrite -!RminusE -R1E -!RmultE -!RinvE'.
+  rewrite -!RminusE -R1E -!RmultE -!RinvE.
   field.
   rewrite subR_eq0 mulRC; apply/nesym/eqP.
   by rewrite RmultE -p_of_rsE.
@@ -429,7 +429,7 @@ congr (_ <| _ |> _).
 apply val_inj => /=.
 rewrite -[in RHS](onemK (Prob.p p)); congr onem.
 rewrite q_of_rsE {1}p_of_rsE /= q_of_rsE p_of_rsE /= /onem.
-rewrite -!RminusE -!R1E -!RmultE -!RinvE'.
+rewrite -!RminusE -!R1E -!RmultE -!RinvE.
 field.
 split.
   rewrite subR_eq0; apply/nesym/eqP; by rewrite RmultE -p_of_rsE.
@@ -706,7 +706,7 @@ congr (_ <| _ |> _).
   rewrite fdistI_permE permE /= p_of_rsE /= r_of_pqE /=.
   rewrite s_of_pqE /= /onem.
   rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
-  rewrite -R1E -!RminusE -!RdivE'// -!RmultE.
+  rewrite -R1E -!RminusE -!RdivE// -!RmultE.
   set tmp1 := d _.
   set tmp2 := d _.
   field.
@@ -719,8 +719,8 @@ congr (_ <| _ |> _).
     rewrite q_of_rsE /= !fdistI_permE p_of_rsE /= r_of_pqE /= s_of_pqE.
     rewrite /= /onem !permE /=.
     rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
-    rewrite -[RHS]RdivE'.
-    rewrite -R1E -!RminusE -!RdivE' // -!RmultE.
+    rewrite -[RHS]RdivE.
+    rewrite -R1E -!RminusE -!RdivE // -!RmultE.
     set tmp1 := d _.
     set tmp2 := d _.
     field.
@@ -834,7 +834,7 @@ apply val_inj => /=.
 rewrite !fdistI_permE !permE /= q_of_rsE /= p_of_rsE /=.
 rewrite (_ : Ordinal _ = ord_max); last exact/val_inj.
 rewrite onemK.
-rewrite -!RdivE' //.
+rewrite -!RdivE //.
 rewrite -!RminusE.
 rewrite {1 2}/Rdiv.
 rewrite -2!mulRA.
