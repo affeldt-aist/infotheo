@@ -51,10 +51,10 @@ apply pow2_Rle_inv; [ exact: sqrt_pos | exact/ltRW/exp_pos | ].
 rewrite [in X in X <= _]/= mulR1 sqrt_sqrt; last first.
   apply mulR_ge0; [lra | exact: cdiv_ge0].
 apply/RleP; rewrite -(@ler_pM2r _ (/ 2)); last first.
-  by rewrite RinvE' invr_gt0// (_ : 2%coqR = 2%:R)// INRE ltr0n.
-rewrite RmultE -mulrA mulrCA RinvE' (_ : 2%coqR = 2%:R)// INRE.
+  by rewrite RinvE invr_gt0// (_ : 2%coqR = 2%:R)// INRE ltr0n.
+rewrite RmultE -mulrA mulrCA RinvE (_ : 2%coqR = 2%:R)// INRE.
 rewrite mulfV ?mulr1 ?gt_eqF//.
-by apply/RleP; rewrite -RdivE'.
+by apply/RleP; rewrite -RdivE.
 Qed.
 
 Local Open Scope variation_distance_scope.

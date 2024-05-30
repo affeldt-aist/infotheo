@@ -312,8 +312,8 @@ Definition divRnnm n m := n%:R / (n + m)%:R.
 Lemma prob_divRnnm_subproof n m : (R0 <= divRnnm n m <= R1)%O.
 Proof.
 apply/andP; split.
-  by rewrite /divRnnm RdivE' divr_ge0// INRE ler0n.
-rewrite /divRnnm RdivE' !INRE.
+  by rewrite /divRnnm RdivE divr_ge0// INRE ler0n.
+rewrite /divRnnm RdivE !INRE.
 have [/eqP ->|n0] := boolP (n == O).
   by rewrite mul0r ler01.
 rewrite ler_pdivrMr// ?ltr0n ?addn_gt0; last first.
@@ -336,8 +336,8 @@ Canonical probinvn (n : nat) :=
 Lemma prob_invp_subproof (p : {prob R}) : (0 <= 1 / (1 + Prob.p p) <= 1)%O.
 Proof.
 apply/andP; split.
-  by rewrite RdivE' mul1r invr_ge0 ?addr_ge0.
-rewrite RdivE' mul1r invf_le1//.
+  by rewrite RdivE mul1r invr_ge0 ?addr_ge0.
+rewrite RdivE mul1r invf_le1//.
   by rewrite lerDl.
 rewrite (@lt_le_trans _ _ 1)//.
 by rewrite lerDl.
@@ -459,7 +459,7 @@ rewrite r_of_pqE; apply/andP; split.
   have := OProb.O1 (oprobcplt (oprobmulR (oprobcplt p) (oprobcplt q))).
   by move/andP=> [] /=.
 apply/RltP.
-rewrite -RdivE'.
+rewrite -RdivE.
 rewrite ltR_pdivr_mulr ?mul1R; last by apply/(oprob_gt0).
 rewrite ltR_neqAle; split; last exact/RleP/ge_s_of.
 rewrite s_of_pqE; apply/eqP/ltR_eqF.
@@ -556,15 +556,15 @@ Canonical divRposxxy (x y : Rpos) :=
 Lemma divRposxxyC r q : divRposxxy q r = (Prob.p (divRposxxy r q)).~%:pr.
 Proof.
 apply val_inj => /=; rewrite [in RHS]addRC.
-rewrite [in RHS]RdivE' onem_div// ?addrK//.
-  by rewrite RplusE RdivE'.
+rewrite [in RHS]RdivE onem_div// ?addrK//.
+  by rewrite RplusE RdivE.
 exact: Rpos_neq0.
 Qed.
 
 Lemma onem_divRxxy (r q : Rpos) : (rpos_coercion r / (rpos_coercion r + q)).~ = q / (q + r).
 Proof.
 rewrite /onem; apply/eqP; rewrite subr_eq.
-rewrite !RplusE (addrC (r : R)) RdivE' -mulrDl divff//.
+rewrite !RplusE (addrC (r : R)) RdivE -mulrDl divff//.
 by rewrite gtR_eqF//; apply: addR_gt0.
 Qed.
 
@@ -626,7 +626,7 @@ Lemma r_of_Rpos_probA (p q r : Rpos) :
   (p / (p + q))%:pos%:pr.
 Proof.
 apply/val_inj; rewrite /= r_of_pqE s_of_pqE /onem /=.
-rewrite -!RminusE -R1E -!RmultE -!RinvE'.
+rewrite -!RminusE -R1E -!RmultE -!RinvE.
 field.
 do 3 (split; first exact/eqP/Rpos_neq0).
 rewrite (addRC p (q + r)) addRK {4}[in q + r]addRC addRK.

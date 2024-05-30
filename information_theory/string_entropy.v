@@ -266,7 +266,7 @@ Definition hoH (k : nat) := / n%:R *
 Lemma hoH_decr (k : nat) : hoH k.+1 <= hoH k.
 Proof.
 rewrite /hoH; apply/RleP; rewrite ler_pM2l//; last first.
-  by rewrite INRE RinvE' invr_gt0// ltr0n lt0n.
+  by rewrite INRE RinvE invr_gt0// ltr0n lt0n.
 (* TODO *)
 Abort.
 

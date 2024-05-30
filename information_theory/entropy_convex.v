@@ -64,9 +64,7 @@ have H a : p a * log (p a / u a) = RHS a.
     change (p a * log (p a / / #|A|%:R)) with (p a * log (p a * / / #|A|%:R)).
     have H0 : 0 < #|A|%:R by rewrite An1 ltR0n.
     have /eqP H1 : #|A|%:R <> 0 by apply/eqP/gtR_eqF.
-    rewrite -RinvE ?An1; last first.
-      by rewrite -INRE// INR_eq0'.
-    rewrite /Rdiv invRK// logM //; last first.
+    rewrite -RinvE An1 /Rdiv invRK// logM //; last first.
       by rewrite -INRE ltR0n.
     rewrite mulRDr -INRE.
     rewrite -An1.

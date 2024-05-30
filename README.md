@@ -30,8 +30,9 @@ information theory, and linear error-correcting codes.
   - Taku Asai, Nagoya U. (M2)
   - Takafumi Saikawa, Nagoya U.
   - Naruomi Obata, Titech (M2)
+  - Alessandro Bruni, IT-University of Copenhagen
 - License: [LGPL-2.1-or-later](LICENSE)
-- Compatible Coq versions: Coq 8.17--8.19
+- Compatible Coq versions: Coq 8.18--8.19
 - Additional dependencies:
   - [MathComp ssreflect](https://math-comp.github.io)
   - [MathComp fingroup](https://math-comp.github.io)
@@ -41,8 +42,10 @@ information theory, and linear error-correcting codes.
   - [MathComp analysis](https://github.com/math-comp/analysis)
   - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
   - MathComp algebra tactics
+  - A Coq tactic for proving bounds
 - Coq namespace: `infotheo`
 - Related publication(s):
+  - [Trimming Data Sets: a Verified Algorithm for Robust Mean Estimation](https://dl.acm.org/doi/abs/10.1145/3479394.3479412) doi:[10.1145/3479394.3479412](https://doi.org/10.1145/3479394.3479412)
   - [Formal Adventures in Convex and Conical Spaces](https://arxiv.org/abs/2004.12713) doi:[10.1007/978-3-030-53518-6_2](https://doi.org/10.1007/978-3-030-53518-6_2)
   - [A Library for Formalization of Linear Error-Correcting Codes](https://link.springer.com/article/10.1007/s10817-019-09538-8) doi:[10.1007/s10817-019-09538-8](https://doi.org/10.1007/s10817-019-09538-8)
   - [Reasoning with Conditional Probabilities and Joint Distributions in Coq](https://www.jstage.jst.go.jp/article/jssst/37/3/37_3_79/_article/-char/en) doi:[10.11309/jssst.37.3_79](https://doi.org/10.11309/jssst.37.3_79)

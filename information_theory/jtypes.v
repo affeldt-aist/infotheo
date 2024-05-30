@@ -134,11 +134,7 @@ rewrite /=.
 under eq_bigr do rewrite ffunE.
 case/boolP : (\sum_(b1 in B) (f a b1) == O)%nat => Hcase.
 - by rewrite /Rle big_const iter_addR mulRV // INR_eq0' -lt0n.
-- under eq_bigr.
-    move=> b bB.
-    rewrite RdivE//; last first.
-      by rewrite INR_eq0'.
-    over.
+- under eq_bigr=> b bB do rewrite RdivE.
   rewrite big_morph_natRD /Rdiv.
   rewrite -big_distrl /=.
   rewrite GRing.mulfV//.
