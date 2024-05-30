@@ -14,7 +14,7 @@ Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext.
 (*                                                                            *)
 (*         f @^-1 y == preimage of the point y via the function f where the   *)
 (*                     type of x is an eqType                                 *)
-(*        {fdist A} == the type of distributions over a finType A             *)
+(*      R.-fdist A} == the type of distributions over a finType A             *)
 (*     fdist_supp d := [set a | d a != 0]                                     *)
 (*           fdist1 == point-supported distribution                           *)
 (*        fdistbind == of type fdist A -> (A -> fdist B) -> fdist B           *)
@@ -29,17 +29,18 @@ Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext.
 (*        fdistI2 p == binary distributions over 'I_2                         *)
 (*      fdistD1 X P == distribution built from X where the entry b has been   *)
 (*                     removed (where P is a proof that X b != 1)             *)
-(*      fdist_convn == of type {fdist 'I_n} -> ('I_n->{fdist A}) -> {fdist A} *)
+(*      fdist_convn == of type                                                *)
+(*                     R.-fdist 'I_n -> ('I_n -> R.-fdist A) -> R.-fdist A    *)
 (*                     convex combination of n finite distributions           *)
 (*       fdist_conv == convex combination of two distributions                *)
 (*                     (convex analogue of vector addition)                   *)
 (*                     notation: P1 <| p |> P1 where p is a probability       *)
 (*       fdist_perm ==                                                        *)
-(*  fdistI_perm s d == s-permutation of the distribution d : {fdist 'I_n}     *)
+(*  fdistI_perm s d == s-permutation of the distribution d : R.-fdist 'I_n    *)
 (*        fdist_add == concatenation of two distributions according to a      *)
 (*                     given probability p                                    *)
 (*                     (convex analogue of the canonical presentation of      *)
-(*                     an element of the direct sum of two {fdist _}s)        *)
+(*                     an element of the direct sum of two R.-fdist _'s)      *)
 (*        fdist_del == restriction of the domain of a distribution            *)
 (*                     (convex analogue of the projection of a vector         *)
 (*                     to a subspace)                                         *)
@@ -49,7 +50,7 @@ Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext.
 (*           P `X W == pair of a distribution and a stochastic matrix         *)
 (*         P1 `x P2 == product distribution                                   *)
 (*                     (convex analogue of the simple tensor of two vectors)  *)
-(*         fdistX P == swap the two projections of P : {fdist A * B}          *)
+(*         fdistX P == swap the two projections of P : R.-fdist A * B         *)
 (*           P `^ n == product distribution over a row vector (fdist_rV)      *)
 (*        wolfowitz == Wolfowitz's counting principle                         *)
 (* head_of_fdist_rV == head marginal                                          *)
@@ -69,7 +70,7 @@ Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext.
 (******************************************************************************)
 
 Reserved Notation "{ 'fdist' T }" (at level 0, format "{ 'fdist'  T }").
-Reserved Notation "R '.-fdist' T" (at level 2, format "R '.-fdist' T").
+Reserved Notation "R '.-fdist' T" (at level 2, format "R '.-fdist'  T").
 Reserved Notation "'`U' C0 " (at level 10, C0 at next level).
 Reserved Notation "P `^ n" (at level 5).
 Reserved Notation "P `X W" (at level 6).
@@ -795,8 +796,7 @@ End fdist_belast.
 
 Section fdist_convn.
 Local Open Scope ring_scope.
-Variable R : realType.
-Variables (A : finType) (n : nat) (e : R.-fdist 'I_n)
+Variables (R : realType) (A : finType) (n : nat) (e : R.-fdist 'I_n)
   (g : 'I_n -> fdist R A).
 
 Let f := [ffun a => \sum_(i < n) e i * g i a].
@@ -897,9 +897,9 @@ transitivity (\sum_(i <- [tuple (s^-1)%g i | i < n]) f i).
   move=> i; rewrite size_enum_ord => ni /=.
   rewrite (nth_map ord0) ?size_enum_ord //= tnth_map /=.
   apply (@perm_inj _ s); by rewrite permKV /= tnth_ord_tuple.
-rewrite -(FDist.f1 P) /= big_map; apply congr_big => //.
+rewrite -(FDist.f1 P) /= big_map; apply: congr_big => //.
   by rewrite /index_enum -enumT.
-move=> i _; by rewrite /f ffunE permKV.
+by move=> i _; rewrite /f ffunE permKV.
 Qed.
 
 Definition fdistI_perm : R.-fdist 'I_n := locked (FDist.make f0 f1).
