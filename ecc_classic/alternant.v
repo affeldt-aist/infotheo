@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv.
 From mathcomp Require Import cyclic perm matrix mxpoly vector mxalgebra zmodp.
 From mathcomp Require Import finfield falgebra fieldext.
-Require Import ssr_ext ssralg_ext vandermonde linearcode.
+Require Import ssr_ext ssralg_ext linearcode.
 Require Import dft poly_decoding grs bch.
 
 (******************************************************************************)

@@ -283,7 +283,7 @@ apply (@leR_trans ( \sum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
 apply (@leR_trans (\sum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
                     exp2 (- n%:R * +| log #|M|%:R * / n%:R - `I(P, Vmax)|))).
   apply leR_sumR => V HV.
-  by move/RleP: (@arg_rmax2 [finType of (P_ n (A, B))] V0
+  by move/RleP: (@arg_rmax2 (P_ n (A, B)) V0
     (fun V => exp_cdiv P V W * success_factor_bound M V P) V).
 rewrite big_const iter_addR /success_factor_bound; apply leR_wpmul2r.
 - apply mulR_ge0; last exact/exp2_ge0.

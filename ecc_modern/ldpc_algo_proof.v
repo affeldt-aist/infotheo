@@ -137,8 +137,6 @@ Variables (m n : nat) (H : 'M['F_2]_(m, n.+1)).
 Hypothesis tanner_acyclic : acyclic' (tanner_rel H).
 Hypothesis tanner_connected : forall a b, connect (tanner_rel H) a b.
 
-Let id' := id m n. (* NB: 'I_m + 'I_n *)
-
 Import GRing.Theory.
 Local Open Scope ring_scope.
 
@@ -322,14 +320,14 @@ by move /andP/proj2/card_uniqP: Hun => <-.
 Qed.
 
 Lemma build_tree_rec_ok h k i s :
-  (#|id'| - #|s| <= h)%N ->
+  (#|sumbool_ord m n.+1| - #|s| <= h)%N ->
   uniq_path (tanner_rel H) (id_of_kind k i) s ->
   let l := labels (build_tree_rec H rW h s k i) in
   forall a b, a \in l -> b \in l ->
     tanner_rel H a b -> graph (build_tree_rec H rW h s k i) a b.
 Proof.
 elim: h k i s => [|h IHh] k i s Hh Hi.
-  have His: id_of_kind k i \in s by apply seq_full.
+  have His : id_of_kind k i \in s by exact: seq_full.
   by rewrite /uniq_path /= His andbF in Hi.
 move=> l.
 have Hab b: b \in l -> tanner_rel H (id_of_kind k i) b ->
@@ -374,10 +372,10 @@ case Hiab: (ia == ib).
   rewrite has_map /=.
   apply /hasP.
   exists ia.
-    rewrite select_children_spec; by apply /andP.
+    by rewrite select_children_spec; exact/andP.
   rewrite -(eqP Hiab) in Hsb.
-  apply IHh => //.
-    by apply card_uniq_seq_decr.
+  apply: IHh => //.
+    exact: card_uniq_seq_decr.
   by apply cons_uniq_path => //; rewrite sym_tanner_rel.
 set sa := id_of_kind (negk k) ia in Hia Hias.
 set sb := id_of_kind (negk k) ib in Hib Hibs.
@@ -396,10 +394,10 @@ rewrite !lastE Hal.
 case Hsasb: (sa == sb).
   move /eqP: Hsasb.
   rewrite /sa /sb=> eq.
-  destruct k; inversion eq; by rewrite H1 eqxx in Hiab.
+  by destruct k; inversion eq; rewrite H1 eqxx in Hiab.
 move=> Hcy.
-move /andP: Hp1 => [Hp1 Hun1].
-move /andP: Hp2 => [Hp2 Hun2].
+move: Hp1 => /andP[Hp1 Hun1].
+move: Hp2 => /andP[Hp2 Hun2].
 apply Hcy; clear Hcy Hsasb.
   rewrite -cat_cons -rev_rcons -{1}Hbl -lastI.
   rewrite mem_cat mem_rev negb_or.
@@ -424,7 +422,8 @@ rewrite -cat1s catA cat_path in Hp1.
 by case/andP: Hp1.
 Qed.
 
-Definition tanner_split (s : seq id') : rel id' :=
+Definition tanner_split (s : seq (sumbool_ord m n.+1)) :
+    rel (sumbool_ord m n.+1) :=
   fun a b => if (a \in s) || (b \in s) then false else tanner_rel H a b.
 
 Lemma tanner_split_tanner s : subrel (tanner_split s) (tanner_rel H).
@@ -442,8 +441,8 @@ case Hb: (b \in s); first by rewrite /= orbT orbT.
 by case: ifP.
 Qed.
 
-Lemma tanner_rel_split (s : seq id') (x : id') p :
-  ~~has (mem s) (x::p) -> path (tanner_rel H) x p -> path (tanner_split s) x p.
+Lemma tanner_rel_split (s : seq (sumbool_ord m n.+1)) (x : sumbool_ord m n.+1) p :
+  ~~ has (mem s) (x :: p) -> path (tanner_rel H) x p -> path (tanner_split s) x p.
 Proof.
 move: x s.
 elim: p => //= y p IHp x s Hs /andP[Hx Hp].
@@ -453,7 +452,8 @@ rewrite IHp //.
 by case/norP: Hs.
 Qed.
 
-Lemma tanner_split_uncons (s : seq id') (c x : id') p :
+Lemma tanner_split_uncons (s : seq (sumbool_ord m n.+1))
+    (c x : sumbool_ord m n.+1) p :
   c \notin (x :: p) -> path (tanner_split s) x p ->
   path (tanner_split (c :: s)) x p.
 Proof.
@@ -467,7 +467,7 @@ by move /norP/proj2: Hc.
 Qed.
 
 Lemma build_tree_rec_full h k i s :
-  (#|id'| - #|s| <= h)%N ->
+  (#|sumbool_ord m n.+1| - #|s| <= h)%N ->
   uniq_path (tanner_rel H) (id_of_kind k i) s ->
   mem (labels (build_tree_rec H rW h s k i)) =i
   connect (tanner_split s) (id_of_kind k i).
@@ -483,7 +483,7 @@ case Hai: (a == id_of_kind k i); simpl.
   apply /connectP.
   by exists [::].
 move/andP: Hc => [] /= Hc Hun.
-have Hh': (#|id'| - #|id_of_kind k i :: s| <= h)%N.
+have Hh': (#|sumbool_ord m n.+1| - #|id_of_kind k i :: s| <= h)%N.
   by apply card_uniq_seq_decr.
 have Hchild o: o \in select_children H s k i ->
   uniq_path (tanner_rel H) (id_of_kind (negk k) o) (id_of_kind k i :: s).
@@ -509,8 +509,8 @@ case Hcb: (connect _ _ a).
     apply (sub_path (@tanner_split_tanner _)) in Hp.
     destruct k, s0.
       by rewrite tanner_relE in Hp.
-      by exists o.
-      by exists o.
+      by eexists; reflexivity.
+      by eexists; reflexivity.
       by rewrite tanner_relE in Hp.
   subst s0.
   have Ho: o \in select_children H s k i.
@@ -558,7 +558,7 @@ by apply Hchild.
 Qed.
 
 Lemma build_tree_full k i a :
-  a \in labels (build_tree_rec H rW #|id'| [::] k i).
+  a \in labels (build_tree_rec H rW #|sumbool_ord m n.+1| [::] k i).
 Proof.
 rewrite build_tree_rec_full //.
   rewrite inE.
@@ -568,11 +568,10 @@ rewrite build_tree_rec_full //.
 by rewrite card_sum !card_ord card0 subn0.
 Qed.
 
-Theorem build_tree_ok : forall k i,
-    tanner_rel H =2 graph (build_tree H rW (k:=k) i).
+Theorem build_tree_ok k i :
+  tanner_rel H =2 graph (build_tree H rW (k:=k) i).
 Proof.
-rewrite /build_tree.
-move=> k i a b.
+rewrite /build_tree => a b.
 case Htan: (tanner_rel H a b).
   symmetry.
   apply build_tree_rec_ok with (s:=[::]).
@@ -591,7 +590,7 @@ End BuildTreeOk.
 Section BuildTreeTest.
 Let m := 2.
 Let n := 3.
-Let id' := id m n.-1.
+Let id' := sumbool_ord m n.
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
@@ -762,7 +761,7 @@ Let rW n0 := (W 0 (vb ``_ n0), W 1 (vb ``_ n0)).
 
 Close Scope ring_scope.
 
-Let id' := id m n'.
+Let id' := sumbool_ord m n.
 
 Let tn_tree' k := tn_tree id' k R2 R2.
 
@@ -1289,9 +1288,8 @@ Lemma kind_filter {A : eqType} k i (s : {set ord_of_kind m n' (negk k)})
 Proof.
 move=> a inj.
 rewrite /image_mem /enum_mem /id' /id /=.
-have ->: Finite.enum [finType of 'I_m + 'I_n]
-       = sum_enum [finType of 'I_m] [finType of 'I_n].
-  by rewrite unlock /=.
+have -> : Finite.enum ('I_m + 'I_n)%type = sum_enum 'I_m 'I_n.
+  by rewrite unlock.
 rewrite /sum_enum filter_cat map_cat !filter_map -!map_comp.
 transitivity
   [seq ([eta F] \o [eta inj]) i | i <- Finite.enum (ord_of_kind m n' (negk k))
@@ -1303,7 +1301,7 @@ transitivity
 congr (map _ _).
 apply eq_filter => x /=; rewrite !inE.
 case/boolP : (x \in s) => /= Hx; first by rewrite imset_f.
-case /boolP: (inj x \in _) => // /imsetP [y Hy] /id_of_kind_inj xy.
+case/boolP : (inj x \in _) => // /imsetP [y Hy] /id_of_kind_inj xy.
 by rewrite xy Hy in Hx.
 Qed.
 
@@ -1824,9 +1822,8 @@ case Hid: (node_id t == inr n0).
       congr beta.
       rewrite /image_mem /enum_mem.
       apply eq_in_map_seqs => //.
-      have ->: Finite.enum [finType of 'I_m] = ord_enum m.
-        by rewrite unlock.
-      apply eq_filter => x; by rewrite /= !inE /= -VnextE -FnextE.
+      have -> : Finite.enum 'I_m = ord_enum m by rewrite unlock.
+      by apply eq_filter => x; rewrite /= !inE /= -VnextE -FnextE.
     (* inner node *)
     destruct s; [ | ]; last first.
       by rewrite tanner_relE in Hun.
@@ -1840,7 +1837,7 @@ case Hid: (node_id t == inr n0).
     rewrite -msg_spec_alpha_beta; last first.
       rewrite sym_tanner_rel.
       by move/andP/proj1: Hun => /= /andP/proj1.
-    rewrite -(big_seq1 beta_op o (fun j => msg_spec' (inl j) (inr i))).
+    rewrite -(big_seq1 beta_op _ (fun j => msg_spec' (inl j) (inr i))).
     rewrite -big_cat.
     apply/perm_big/uniq_perm.
      - rewrite /= filter_uniq.
@@ -1849,8 +1846,8 @@ case Hid: (node_id t == inr n0).
      - by rewrite enum_uniq.
     move=> j /=.
     rewrite in_cons mem_filter /= mem_enum !inE /= -VnextE.
-    case Hjo: (j == o).
-      rewrite (eqP Hjo).
+    case Hjs: (j == s).
+      rewrite (eqP Hjs).
       by move/andP/proj1/andP/proj1 : Hun => /=; rewrite -VnextE -FnextE.
     case Hji: (i \in 'V j) => /=.
       by rewrite -enumT mem_enum FnextE Hji.
@@ -1977,12 +1974,12 @@ rewrite /= in IH.
   destruct tag0.
   eapply subseq_trans; [| apply subseq_cons].
   rewrite map_flatten -map_comp.
-  apply (subseq_flatten (f':=labels)) => x Hx.
-  by apply IH.
+  apply: (subseq_flatten (f':=labels)) => x Hx.
+  exact: IH.
 rewrite /= eqxx.
 rewrite map_flatten -map_comp.
-apply (subseq_flatten (f':=labels)) => x Hx.
-by apply IH.
+apply: (subseq_flatten (f':=labels)) => x Hx.
+exact: IH.
 Qed.
 
 Lemma get_esti_subseq n0 l :

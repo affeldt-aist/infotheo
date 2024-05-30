@@ -319,7 +319,7 @@ Qed.
 Local Open Scope ring_scope.
 
 Lemma first_summand k n epsilon0 :
-  let M := [finType of 'I_k.+1] in
+  let M := 'I_k.+1 in
   (\sum_(f : encT A M n) Wght.d P f *
     Pr (W ``(| f ord0)) (~: cal_E epsilon0 f ord0)) =
   Pr ((P `X W) `^ n) (~: `JTS P W n epsilon0).
@@ -469,7 +469,7 @@ rewrite H; apply eq_bigr => /= t _; by rewrite size_tuple eqxx.
 Qed.
 
 Lemma second_summand n k epsilon0 :
-  let M := [finType of 'I_k.+1] in
+  let M := 'I_k.+1 in
     forall i, i != ord0 ->
       (\sum_(f : encT A M n) Wght.d P f *
         Pr (W ``(| f ord0)) (cal_E epsilon0 f i))%R =
@@ -626,7 +626,7 @@ Qed.
 Local Close Scope tuple_ext_scope.
 
 Lemma preimC_Cal_E k n epsilon0 :
-  let M := [finType of 'I_k.+1] in
+  let M := 'I_k.+1 in
   let PHI' := jtdec P W epsilon0 in
   let Cal_E := @cal_E M n epsilon0 in
   forall f : encT A M n,
@@ -686,8 +686,8 @@ have [k Hk] : exists k, (log (INR k.+1) / INR n = r)%R.
   rewrite -(@eqR_mul2l (INR n)); last by rewrite INR_eq0; apply/eqP; rewrite -lt0n.
   rewrite mulRCA mulRV ?INR_eq0' -?lt0n // mulR1 -(exp2K (INR n * r)) Hn2 INR_Zabs_nat //.
   apply le_IZR; by rewrite -Hn2.
-set M := [finType of 'I_k.+1].
-exists [finType of 'I_k.+1].
+set M : finType := 'I_k.+1.
+exists M.
 split; first by rewrite /= card_ord.
 split.
   have -> : (INR n * r)%R = log (INR k.+1).
