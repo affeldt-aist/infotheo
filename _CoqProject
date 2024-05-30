@@ -89,6 +89,7 @@ ecc_modern/max_subset.v
 ecc_modern/stopping_set.v
 ecc_modern/degree_profile.v
 robust/robustmean.v
+robust/weightedmean.v
 toy_examples/expected_value_variance.v
 toy_examples/expected_value_variance_ordn.v
 toy_examples/expected_value_variance_tuple.v
