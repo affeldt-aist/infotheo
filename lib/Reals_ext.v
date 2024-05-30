@@ -246,6 +246,46 @@ HB.instance Definition _ := [isSub for nneg_ff].
 HB.instance Definition _ := [Equality of nneg_finfun by <:].
 End nneg_finfun.
 
+
+Section nneg_finfun. (* Reals_ext.v *)
+Local Open Scope R_scope.
+
+Lemma nneg_finfun_ge0 (I : finType) (f : nneg_finfun I) i : (0 <= f i)%mcR.
+Proof. by case: f => /= f /forallP /(_ i). Qed.
+
+Lemma nneg_finfun_le0 (I : finType) (F : nneg_finfun I) i :
+  (F i == 0) = (F i <= 0)%mcR.
+Proof.
+apply/idP/idP => [/eqP -> //|].
+case: F => F /= /forallP /(_ i).
+by rewrite eq_le coqRE => -> ->.
+Qed.
+
+Fail Check F : pos_fun _. (* Why no coercion pos_ffun >-> pos_fun? *)
+
+Lemma pos_ffun_bigmaxR0P (I : finType) (r : seq I) (P : pred I) (F : nneg_finfun I) :
+  reflect (forall i : I, i \in r -> P i -> F i = 0)
+          (\rmax_(i <- r | P i) F i == 0).
+Proof.
+apply: (iffP idP) => [/eqP H i ir Pi|H].
+- apply/eqP; rewrite nneg_finfun_le0 -coqRE -H.
+  rewrite -big_filter; apply/RleP; apply: leR_bigmaxR.
+  by rewrite mem_filter ir Pi.
+- rewrite -big_filter big_seq.
+  under eq_bigr=> i do rewrite mem_filter=> /andP [] /[swap] /(H i) /[apply] ->.
+  by rewrite -big_seq big_const_seq iter_fix // maxRR.
+Qed.
+
+Lemma nnegP (U : finType) (C : {ffun U -> R}) :
+  (forall u : U, 0 <= C u) -> [forall a, (0 <= C a)%mcR].
+Proof. by move=> h; apply/forallP => u; apply/RleP. Qed.
+
+Definition Cpos_fun (U : finType) (C : nneg_finfun U)
+    (h : forall u : U, 0 <= C u) : nneg_finfun U :=
+  mkNNFinfun (nnegP h).
+
+End nneg_finfun.
+
 Record nneg_fun (T : Type) := mkNNFun {
   nneg_f :> T -> R ;
   nneg_f_ge0 : forall a, 0 <= nneg_f a }.

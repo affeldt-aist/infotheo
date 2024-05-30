@@ -115,6 +115,12 @@ apply/setP => /= -[b a]; rewrite !inE /=; apply/idP/imsetP => [H|].
 - by case=> -[a0 b0]; rewrite inE /= => ? [-> ->].
 Qed.
 
+Lemma setT_bool : [set: bool] = [set true; false].
+Proof.
+apply/eqP; rewrite eqEsubset; apply/andP; split => //.
+by apply/subsetP => x; rewrite !inE; case: x.
+Qed.
+
 Section Flatten.
 Variables (A B : eqType) (f : A -> seq B).
 
