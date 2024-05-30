@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra.
 Require Import (*ssrR Reals_ext*) logb ssr_ext ssralg_ext.
 
 (******************************************************************************)
@@ -605,3 +605,19 @@ apply: ler_suml=> // i; rewrite andb_orl andbN orbF; last by case/andP.
 by move=> /[dup] /F0 /[swap] -> /[!andTb] /[!negbK].
 Qed.
 End num.
+
+Section real.
+Local Open Scope ring_scope.
+Variables (R : realDomainType) (I : Type) (r : seq I).
+
+Lemma fsumr_gt0 (U : eqType) (F : U -> R) (s : seq U) :
+  0 < \sum_(i <- s) F i -> exists2 i, i \in s & 0 < F i.
+Proof.
+elim: s => [|h t ih]; first by rewrite big_nil ltxx.
+rewrite big_cons.
+have H : forall x y : R, 0 < x + y -> 0 < x \/ 0 < y by move=> x y; lra.
+move/H => [Fh0|]; first by exists h => //; rewrite mem_head.
+by move/ih => [u ut Fu0]; exists u => //; rewrite inE ut orbT.
+Qed.
+
+End real.
