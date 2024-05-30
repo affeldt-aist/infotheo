@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg poly polydiv finalg zmodp.
 From mathcomp Require Import matrix mxalgebra mxpoly vector fieldext finfield.
 Require Import ssralg_ext hamming linearcode decoding cyclic_code poly_decoding.
-Require Import vandermonde dft euclid grs f2.
+Require Import dft euclid grs f2.
 
 (******************************************************************************)
 (*                        Binary BCH codes                                    *)
@@ -561,7 +561,7 @@ Definition BCH_err y : {poly 'F_2} :=
   let s := vstop.[0]^-1 *: vstop in
   \poly_(i < n) (if s.[a^- i] == 0 then 1 else 0).
 
-Definition BCH_repair : repairT [finType of 'F_2] [finType of 'F_2] n :=
+Definition BCH_repair : repairT 'F_2 'F_2 n :=
   [ffun y => if \BCHsynp_(rVexp a n, y, t) == 0 then
     Some y
   else

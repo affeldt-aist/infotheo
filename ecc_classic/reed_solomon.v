@@ -702,7 +702,7 @@ Variables (d : nat) (n' : nat).
 Let n := n'.+1.
 Hypothesis dn : RS.redundancy_ub d n.
 
-Definition encoder : encT F [finType of 'rV[F]_(n - d.+1).+1] n :=
+Definition encoder : encT F 'rV[F]_(n - d.+1).+1 n :=
   let g := \gen_(a, d) in
  [ffun m => let mxd := rVpoly m * 'X^d in poly_rV (mxd - mxd %% g)].
 
@@ -720,7 +720,7 @@ Definition RS_discard' (x : 'rV[F]_n) : 'rV[F]_(n - d.+1).+1 :=
 Definition RS_discard (x : 'rV[F]_n) : 'rV[F]_(n - d.+1).+1 :=
   poly_rV ((rVpoly x) %/ 'X^d).
 
-Definition decoder : decT F [finType of 'rV[F]_(n - d.+1).+1] n :=
+Definition decoder : decT F 'rV[F]_(n - d.+1).+1 n :=
   [ffun y => omap RS_discard (RS_repair a _ d y)].
 
 Definition RS_code := mkCode encoder decoder.
@@ -778,7 +778,7 @@ Hypothesis a_not_uroot_on : not_uroot_on a n.
 
 (* NB: corresponds to lemma 10.59? *)
 Lemma RS_enc_img :
-  (enc RS_code) @: [finType of 'rV[F]_(n - d.+1).+1] \subset RS.code a n d.
+  (enc RS_code) @: 'rV[F]_(n - d.+1).+1 \subset RS.code a n d.
 Proof.
 apply/subsetP => /= c /imsetP[/= m _] ->{c}.
 rewrite /encoder ffunE.

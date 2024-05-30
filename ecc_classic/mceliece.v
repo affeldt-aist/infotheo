@@ -35,9 +35,9 @@ Variable CSM : 'M['F_2]_(n - k, k).
 Local Notation "'H" := (Syslcode.PCM Hdimlen CSM).
 Local Notation "'G" := (Syslcode.GEN Hdimlen CSM).
 Let encode := Syslcode.encode Hdimlen CSM.
-Let discard := @Syslcode.discard [finFieldType of 'F_2] _ _ Hdimlen.
+Let discard := @Syslcode.discard 'F_2 _ _ Hdimlen.
 
-Variable repair : repairT [finType of 'F_2] [finType of 'F_2] n.
+Variable repair : repairT 'F_2 'F_2 n.
 Variable repair_img : oimg repair \subset kernel 'H.
 Variable encode_discard : cancel_on (kernel 'H) encode discard.
 

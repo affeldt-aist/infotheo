@@ -203,7 +203,7 @@ Extract Constant Rmult => "( *.)".
 Extract Constant Rplus => "(+.)".
 Extract Constant Rinv  => "fun x -> 1. /. x".
 Extract Constant Ropp  => "(~-.)".
-Extraction "extraction/sumprod.ml" sumprod estimation.
+(*Extraction "extraction/sumprod.ml" sumprod estimation.*)
 
 Section ToGraph.
 
@@ -220,20 +220,20 @@ Fixpoint labels {id} {k U D} (n : tn_tree id k U D) : seq id :=
 
 End ToGraph.
 
+Definition sumbool_ord m n : finType := ('I_m + 'I_n)%type.
+
 Section BuildTree.
 
 Variables m n' : nat.
 Let n := n'.+1.
 Variable H : 'M['F_2]_(m, n).
 
-Definition id := [finType of ('I_m + 'I_n)].
-
 Import GRing.Theory.
 Local Open Scope ring_scope.
 
 Variable rW : 'I_n -> R2.
 
-Definition kind_of_id (i : id) :=
+Definition kind_of_id (i : sumbool_ord m n) :=
   match i with
   | inl _ => kf
   | inr _ => kv
@@ -241,11 +241,11 @@ Definition kind_of_id (i : id) :=
 
 Definition ord_of_kind k : finType :=
   match k with
-  | kv => [finType of 'I_n]
-  | kf => [finType of 'I_m]
+  | kv => 'I_n
+  | kf => 'I_m
   end.
 
-Definition id_of_kind k : ord_of_kind k -> id :=
+Definition id_of_kind k : ord_of_kind k -> sumbool_ord m n :=
   match k with
   | kv => inr
   | kf => inl
@@ -257,13 +257,13 @@ Definition tag_of_kind k : ord_of_kind k -> tag k :=
   | kf => fun i => Func
   end.
 
-Definition tag_of_id (a : id) : tag (kind_of_id a) :=
+Definition tag_of_id (a : sumbool_ord m n) : tag (kind_of_id a) :=
   match a with
   | inl _ => Func
   | inr i => Var (rW i)
   end.
 
-Definition select_children (s : seq id) k :=
+Definition select_children (s : seq (sumbool_ord m n)) k :=
   match k return ord_of_kind k -> seq (ord_of_kind (negk k)) with
   | kv => fun i =>
      let s := id_of_kind i :: s in
@@ -273,8 +273,8 @@ Definition select_children (s : seq id) k :=
      [seq j <- ord_enum n | (H i j == 1) && (inr j \notin s)]
   end.
 
-Fixpoint build_tree_rec (h : nat) (s : seq id) k (i : ord_of_kind k)
-: tn_tree id k unit unit :=
+Fixpoint build_tree_rec (h : nat) (s : seq (sumbool_ord m n))
+  k (i : ord_of_kind k) : tn_tree (sumbool_ord m n) k unit unit :=
   let chrn :=
     match h with 0 => [::]
     | h'.+1 =>
@@ -284,9 +284,10 @@ Fixpoint build_tree_rec (h : nat) (s : seq id) k (i : ord_of_kind k)
   in
   Node (id_of_kind i) (tag_of_kind i) chrn tt tt.
 
-Definition build_tree := build_tree_rec #|id| [::].
+Definition build_tree := build_tree_rec #|sumbool_ord m n| [::].
 
-Fixpoint msg (i1 i2 : id) (i : option id) {k} (t : tn_tree id k R2 R2) :=
+Fixpoint msg (i1 i2 : sumbool_ord m n) (i : option (sumbool_ord m n)) {k}
+    (t : tn_tree (sumbool_ord m n) k R2 R2) :=
   if Some i1 == i then
     if i2 == node_id t then [:: down t] else [::]
   else if Some i2 == i then
@@ -305,8 +306,6 @@ Section Specification.
 Variables m n' : nat.
 Let n := n'.+1.
 Variable H : 'M['F_2]_(m, n).
-
-Let id' := id m n'.
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
@@ -328,14 +327,14 @@ Let p01 f n0 : R2 := (f (d `[n0 := 0]), f (d `[n0 := 1])).
 Let alpha' := ldpc.alpha H W y.
 Let beta' := ldpc.beta H W y.
 
-Definition msg_spec (i j : id') : R2 :=
+Definition msg_spec (i j : sumbool_ord m n) : R2 :=
   match i, j with
   | inl m0, inr n0 => p01 (alpha' m0 n0) n0
   | inr n0, inl m0 => p01 (beta' n0 m0) n0
   | _, _ => (R0,R0)
   end.
 
-Definition prec_node (s : seq id') :=
+Definition prec_node (s : seq (sumbool_ord m n)) :=
   match s with
   | [::] => None
   | [:: a & r] => Some a
@@ -343,7 +342,7 @@ Definition prec_node (s : seq id') :=
 
 Coercion choice.seq_of_opt : option >-> seq.
 
-Fixpoint build_computed_tree h s k i : tn_tree id' k R2 R2 :=
+Fixpoint build_computed_tree h s k i : tn_tree (sumbool_ord m n) k R2 R2 :=
   let chrn :=
       match h with
       | 0 => [::]
@@ -366,7 +365,7 @@ Fixpoint build_computed_tree h s k i : tn_tree id' k R2 R2 :=
        end.
 
 Definition computed_tree_spec :=
-  computed_tree = build_computed_tree #|id'| [::] (k:=kv) ord0.
+  computed_tree = build_computed_tree #|sumbool_ord m n| [::] (k:=kv) ord0.
 
 Definition sumprod_spec := forall a b,
   tanner_rel H a b ->
@@ -380,7 +379,7 @@ Definition estimation_spec := uniq (unzip1 estimations) /\
   forall n0, (inr n0, (esti_spec n0 0, esti_spec n0 1)) \in estimations.
 
 Definition get_esti (n0 : 'I_n) :=
-  pmap (fun (p : id' * R2) =>
+  pmap (fun (p : sumbool_ord m n * R2) =>
           let (i, e) := p in if i == inr n0 then Some e else None).
 
 Definition get_esti_spec := forall n0 : 'I_n,

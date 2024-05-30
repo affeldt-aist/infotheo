@@ -2,8 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv cyclic.
 From mathcomp Require Import perm matrix mxpoly vector mxalgebra zmodp.
-Require Import ssr_ext ssralg_ext vandermonde linearcode.
-Require Import dft poly_decoding.
+Require Import ssr_ext ssralg_ext linearcode dft poly_decoding.
 
 (******************************************************************************)
 (*                  Generalized Reed-Solomon Codes                            *)
@@ -120,7 +119,7 @@ Definition GRS_PCM_sq (a b : 'rV[F]_n) r :=
 
 Lemma GRS_PCM_sq_vander (a b : 'rV[F]_n) (rn : r <= n) :
   GRS_PCM_sq a b r =
-    vandermonde.Vandermonde r (\row_(i < r) a``_(inord i)) *m
+    Vandermonde r (\row_(i < r) a``_(inord i)) *m
       diag_mx (\row_(i < r) b``_(inord i)).
 Proof.
 apply/matrixP => i j.
@@ -150,7 +149,7 @@ apply mxrank_unit.
 rewrite unitmxE unitfE GRS_PCM_sq_vander // det_mulmx mulf_neq0 //; last first.
   by rewrite det_diag prodf_seq_neq0; apply/allP => /= i _; rewrite mxE b0.
 case: r rn => [|r' rn]; first by rewrite det_mx00 oner_neq0.
-rewrite vandermonde.det_Vandermonde prodf_seq_neq0; apply/allP => /= i _.
+rewrite det_Vandermonde prodf_seq_neq0; apply/allP => /= i _.
 rewrite prodf_seq_neq0; apply/allP => /= j _; apply/implyP.
 rewrite ltnNge => ij; rewrite !mxE subr_eq0; apply: contra ij => /eqP ij.
 move: (@a_inj (inord i) (inord j)); rewrite !ffunE ij => /(_ erefl).
