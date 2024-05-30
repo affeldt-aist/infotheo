@@ -7,7 +7,9 @@ Require Import Reals.
 
 Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond graphoid.
+
 Import GRing.Theory.
+Import Num.Theory.
 
 (******************************************************************************)
 (*                              SMC Useful Tools                              *)
@@ -125,12 +127,8 @@ Variable XY_indep : P |= X _|_ Y.
 (* We use this because add_RV is in coqR *)
 Definition add_RV' : {RV P -> 'I_p} := X \+ Y.
 
-(* Lemma 3.4 *)
-Lemma add_RV_unif : `p_ add_RV' = fdist_uniform (card_ord p).
-(* TODO: I cannot directly put X \+ Y in this lemma because the implicit P cannot be inferred. *)
+Lemma add_RV_mul i : `p_ add_RV' i = (\sum_(k <- fin_img X) `Pr[ X = k ] * `Pr[ Y = (i - k)%mcR ]).
 Proof.
-apply: fdist_ext=> /= i.
-rewrite fdist_uniformE /=.
 transitivity (`Pr[add_RV' \in [set i]]).
   by rewrite pr_inE' /Pr big_set1.
 rewrite (reasoning_by_cases _ X).
@@ -161,6 +159,20 @@ under eq_bigr=> k _.
   - by rewrite mulVr ?mulr1 //.
   over.
 under eq_bigr=> k _.
+  rewrite [X in _ * X]pr_eqE' /=.
+  rewrite -cpr_eq_unit_RV.
+  over.
+done.
+Qed.
+
+(* Lemma 3.4 *)
+Lemma add_RV_unif : `p_ add_RV' = fdist_uniform (card_ord p).
+(* TODO: I cannot directly put X \+ Y in this lemma because the implicit P cannot be inferred. *)
+Proof.
+apply: fdist_ext=> /= i.
+rewrite fdist_uniformE /=.
+rewrite add_RV_mul.
+under eq_bigr=> k _.
   rewrite [X in _ * X]pr_eqE' pY_unif fdist_uniformE /=.
   rewrite -cpr_eq_unit_RV.
   over.
@@ -168,7 +180,63 @@ rewrite -big_distrl /=.  (* Pull the const part `Pr[ Y = (i - k) ] from the \sum
 by rewrite cPr_1 ?mul1r // pr_eq_unit oner_neq0.
 Qed.
 
+
+
 End lemma_3_4.
+
+Section fdist_cond_prop_try.
+Variables (A B C D: finType) (P : R.-fdist A) (X: {RV P -> B}) (Y: {RV P -> C}) (Z: {RV P -> D}) (c : C) (d : D).
+                                                     
+Let E := finset (Y @^-1 c).
+
+Hypothesis E0 : Pr P E != 0.
+
+Let f : {ffun A -> R} := [ffun a : A => if a \in E then P a / Pr P E else 0 ].
+
+Let f0 a : 0 <= f a.
+Proof.
+rewrite ffunE.
+case: ifP.
+  rewrite divr_ge0 //.
+  by apply/RleP/Pr_ge0.
+done.
+Qed.
+
+Let f1 : \sum_(a in A) f a = 1.
+Proof.
+Admitted.
+
+
+Definition fdist_restricted : fdist R A := locked (FDist.make f0 f1).
+
+Variable (X': {RV (fdist_cond E0) -> B}).
+Variable (Z': {RV (fdist_cond E0) -> D}).
+
+Hypothesis EX' : X' = X.
+Hypothesis EZ' : Z' = Z.
+
+Lemma fdist_restrictedE a : fdist_restricted a = if a \in E then P a / Pr P E else 0.
+Proof. by rewrite /fdist_restricted; unlock => /=; rewrite /f ffunE. Qed.
+
+Lemma Pr_fdist_cond_RV a : `Pr[ X' = a ] = `Pr[ X = a | Y = c ].
+Proof. by rewrite pr_eqE Pr_fdist_cond cpr_eqE' EX'.
+Qed.
+
+Lemma Pr_fdist_cond_cond x z : `Pr[ X' = x | Z' = z ] = `Pr[ X = x | [% Z', Y] = (z, c) ].
+Proof.
+Abort.
+
+(*
+Lemma fdist_restricted_condE a : fdist_cond E0 a = Pr fdist_restricted [set a].
+Proof. by rewrite /fdist_cond; unlock; rewrite ffunE. Qed.
+Abort.
+
+Lemma Pr_fdist_cond G : Pr (fdist_cond E0) G = `Pr_P [ G | E ].
+Proof.
+Abort.
+
+*)
+End fdist_cond_prop_try.
 
 Section lemma_3_5.
   
@@ -182,14 +250,82 @@ Variables (X Y Z: {RV P -> 'I_p}).
 Variable pZ_unif : `p_ Z = fdist_uniform (card_ord p).
 Variable Z_XY_indep : inde_rv Z [%X, Y].
 
+(* TODO: in graphoid there is a decomposition lemma from Z_XY_indep to Z_X indep and Z_Y_indep. *)
+Variable Z_X_indep : inde_rv Z X.
+Variable Z_Y_indep : inde_rv Z Y.
+
+Let E := finset (Y @^-1 y).
+Hypothesis Y0 : Pr P E != 0.
+
+Let X': {RV (fdist_cond Y0) -> 'I_p} := X.
+Let Z': {RV (fdist_cond Y0) -> 'I_p} := Z.
+
 Let XZ : {RV P -> 'I_p} := X \+ Z.
+Let XZ': {RV (fdist_cond Y0) -> 'I_p} := X' \+ Z'.
+
 (* TODO: I cannot directly put X\+Z in lemma because it compains about:
 
    Cannot infer the implicit parameter P of pr_eq whose type is "R.-fdistT" in:.... *)
 
 Lemma lemma_3_5 : `Pr[ XZ = i | Y = y] = `Pr[ XZ = i].  (* The paper way to prove P |= X\+Z _|_ Y *)
 Proof.
+rewrite -(Pr_fdist_cond_RV (X':=XZ')) //.
+
+move: (@add_RV_mul _ _ _ X' Z').
+rewrite /XZ' /add_RV' pr_eqE'.
+move->.
+under eq_bigr => k _.
+  rewrite (Pr_fdist_cond_RV (X:=X)) //.
+  rewrite (Pr_fdist_cond_RV (X:=Z)) //.
+  rewrite [X in _ * X]cpr_eqE.
+  rewrite Z_Y_indep.
+  rewrite /Rdiv.
+  rewrite -mulRA.
+  rewrite mulRV; last by rewrite pr_eqE.
+  rewrite mulR1.
+  over.
+under eq_bigr=> k _.
+  rewrite [X in _ * X]pr_eqE' pZ_unif fdist_uniformE /=.
+  over.
+rewrite -big_distrl /=.  (* Pull the const part `Pr[ Y = (i - k) ] from the \sum_k *)
+rewrite /X'.
+rewrite cPr_1.
+rewrite ?mul1r //.
+move: (@add_RV_unif _ _ _ X Z) .
+rewrite /XZ /add_RV' pr_eqE'.
+move-> => //.
+by rewrite fdist_uniformE.
+rewrite /inde_rv.
+move => aa bb.
+rewrite mulRC.
+rewrite pr_eq_pairC.
+apply: Z_X_indep.
+by rewrite pr_eqE.
+rewrite /X' /Z'.
+rewrite /fdist_cond.
+
+
+Search RV2 "pair" "C".
+rewrite RV2_pairC.
+Search "inde_rv".
+rewrite inde_sym. 
+
+
+
+
+rewrite cPr_1 ?mul1r // pr_eq_unit oner_neq0.
+  
+
+
+
+rewrite [LHS](@add_RV_mul _ _ _ X' Z').
+
+(*move: (@add_RV_mul _ _ _ X' Z').*)  (* test the issue for why it cannot be applied *)
 transitivity (\sum_(k < p) `Pr[[% X, Z] = (k, inord (i - k)%mcR) | Y = y]).
+
+
+
+About add_RV_mul.
   rewrite -cpr_eq_set1.
   (*Although About cpr_eq_set1 only show Y \in y,
     the original version actually converts both X and Y*)
@@ -231,8 +367,19 @@ transitivity (\sum_(k < p) `Pr[[% X, Z] = (k, inord (i - k)%mcR) | Y = y]).
   apply/eqP.
   apply/val_inj => /=.
   rewrite inordK; last exact:ltn_pmod.
+  Search modn.
+  rewrite modnDmr.
+  rewrite modnB.
+  Search modn.
+  rewrite modnn.
+  Search modn leq.
+  
+  have ->: ((0 < X j %% p) = true)%nat.
+
   rewrite -(@modn_small (X j) p); last exact:ltn_ord.
   rewrite -(modnDm i) -(modnDm (i%%p)).
+
+  rewrite modnDl.
   rewrite addnA.
   
 
