@@ -213,6 +213,7 @@ Variable (X': {RV (fdist_cond E0) -> B}).
 Variable (Z': {RV (fdist_cond E0) -> D}).
 
 Hypothesis EX' : X' = X.
+Check X'.
 Hypothesis EZ' : Z' = Z.
 
 Lemma fdist_restrictedE a : fdist_restricted a = if a \in E then P a / Pr P E else 0.
@@ -294,27 +295,24 @@ rewrite ?mul1r //.
 move: (@add_RV_unif _ _ _ X Z) .
 rewrite /XZ /add_RV' pr_eqE'.
 move-> => //.
-by rewrite fdist_uniformE.
+- by rewrite fdist_uniformE.
+- rewrite /inde_rv.
+  move => aa bb.
+  rewrite mulRC.
+  rewrite pr_eq_pairC. (* Swap X _|_ Z to Z _|_ X  so we can apply Z_X_indep *)
+  by apply: Z_X_indep.
+- by rewrite pr_eqE.
+rewrite /X' /Z'.
+rewrite /fdist_cond -lock.
 rewrite /inde_rv.
-move => aa bb.
+move => cc dd.
 rewrite mulRC.
 rewrite pr_eq_pairC.
-apply: Z_X_indep.
-by rewrite pr_eqE.
-rewrite /X' /Z'.
-rewrite /fdist_cond.
-
-
-Search RV2 "pair" "C".
-rewrite RV2_pairC.
-Search "inde_rv".
-rewrite inde_sym. 
-
-
-
-
-rewrite cPr_1 ?mul1r // pr_eq_unit oner_neq0.
-  
+unfold inde_rv in Z_X_indep.
+have:=Z_X_indep dd cc.
+rewrite /=.
+Set Printing All.
+exact.
 
 
 
