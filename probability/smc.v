@@ -268,6 +268,29 @@ Let XZ': {RV (fdist_cond Y0) -> 'I_p} := X' \+ Z'.
 
    Cannot infer the implicit parameter P of pr_eq whose type is "R.-fdistT" in:.... *)
 
+(* TODO: make a more general lemma *)
+Lemma fdist_cond_indep : fdist_cond Y0 |= X _|_ Z.
+Proof.
+move:Z_XY_indep => /cinde_rv_unit /weak_union.
+rewrite /cinde_rv /=.
+move => H.
+move => /= cc dd.
+
+rewrite mulRC.
+rewrite pr_eq_pairC.
+have:= H dd cc (tt,y).
+rewrite !pr_eqE.
+rewrite !Pr_fdist_cond.
+rewrite !cpr_eqE'.
+rewrite !/cPr.
+have->: finset (preim [% unit_RV P, Y] (pred1 (tt, y))) = E.
+apply/setP => x.
+by rewrite !inE //.
+exact.
+Qed.
+
+
+
 Lemma lemma_3_5 : `Pr[ XZ = i | Y = y] = `Pr[ XZ = i].  (* The paper way to prove P |= X\+Z _|_ Y *)
 Proof.
 rewrite -(Pr_fdist_cond_RV (X':=XZ')) //.
@@ -313,6 +336,19 @@ have:=Z_X_indep dd cc.
 rewrite /=.
 Set Printing All.
 exact.
+About.
+
+
+(* ? Need a lemma about the relation between (fdist_cond Y0) and P ? *)
+(* --> So far what we have is Y0:
+
+    Let E := finset (Y @^-1 y).
+    Hypothesis Y0 : Pr P E != 0.
+
+  And we know nothing about P.
+*)
+(* ? What if infotheo allow indepdent random variables have different distributions ? *)
+(* --> We already knew (assumed) two random variables are indenpendant, so their distributions don't matter? *)
 
 
 
