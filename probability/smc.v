@@ -184,60 +184,34 @@ Qed.
 
 End lemma_3_4.
 
-Section fdist_cond_prop_try.
-Variables (A B C D: finType) (P : R.-fdist A) (X: {RV P -> B}) (Y: {RV P -> C}) (Z: {RV P -> D}) (c : C) (d : D).
+Section fdist_cond_prop.
+Variables T TX TY TZ : finType.
+Variables (P : R.-fdist T) (y : TY).
+Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
                                                      
-Let E := finset (Y @^-1 c).
-
+Let E := finset (Y @^-1 y).
 Hypothesis E0 : Pr P E != 0.
 
-Let f : {ffun A -> R} := [ffun a : A => if a \in E then P a / Pr P E else 0 ].
-
-Let f0 a : 0 <= f a.
-Proof.
-rewrite ffunE.
-case: ifP.
-  rewrite divr_ge0 //.
-  by apply/RleP/Pr_ge0.
-done.
-Qed.
-
-Let f1 : \sum_(a in A) f a = 1.
-Proof.
-Admitted.
-
-
-Definition fdist_restricted : fdist R A := locked (FDist.make f0 f1).
-
-Variable (X': {RV (fdist_cond E0) -> B}).
-Variable (Z': {RV (fdist_cond E0) -> D}).
-
+Variable (X': {RV (fdist_cond E0) -> TX}).
 Hypothesis EX' : X' = X.
-Check X'.
-Hypothesis EZ' : Z' = Z.
 
-Lemma fdist_restrictedE a : fdist_restricted a = if a \in E then P a / Pr P E else 0.
-Proof. by rewrite /fdist_restricted; unlock => /=; rewrite /f ffunE. Qed.
+Lemma Pr_fdist_cond_RV x : `Pr[ X' = x ] = `Pr[ X = x | Y = y ].
+Proof. by rewrite pr_eqE Pr_fdist_cond cpr_eqE' EX'. Qed.
 
-Lemma Pr_fdist_cond_RV a : `Pr[ X' = a ] = `Pr[ X = a | Y = c ].
-Proof. by rewrite pr_eqE Pr_fdist_cond cpr_eqE' EX'.
+Hypothesis Z_XY_indep : inde_rv Z [%X, Y].
+
+Lemma fdist_cond_indep : fdist_cond E0 |= X _|_ Z.
+Proof.
+move: Z_XY_indep => /cinde_rv_unit /weak_union.
+rewrite /cinde_rv /= => H.
+move => /= x z.
+rewrite mulRC pr_eq_pairC.
+have := H z x (tt,y).
+rewrite !pr_eqE !Pr_fdist_cond !cpr_eqE'.
+have -> // : finset (preim [% unit_RV P, Y] (pred1 (tt, y))) = E.
+by apply/setP => e; rewrite !inE.
 Qed.
-
-Lemma Pr_fdist_cond_cond x z : `Pr[ X' = x | Z' = z ] = `Pr[ X = x | [% Z', Y] = (z, c) ].
-Proof.
-Abort.
-
-(*
-Lemma fdist_restricted_condE a : fdist_cond E0 a = Pr fdist_restricted [set a].
-Proof. by rewrite /fdist_cond; unlock; rewrite ffunE. Qed.
-Abort.
-
-Lemma Pr_fdist_cond G : Pr (fdist_cond E0) G = `Pr_P [ G | E ].
-Proof.
-Abort.
-
-*)
-End fdist_cond_prop_try.
+End fdist_cond_prop.
 
 Section lemma_3_5.
   
@@ -251,9 +225,11 @@ Variables (X Y Z: {RV P -> 'I_p}).
 Variable pZ_unif : `p_ Z = fdist_uniform (card_ord p).
 Variable Z_XY_indep : inde_rv Z [%X, Y].
 
-(* TODO: in graphoid there is a decomposition lemma from Z_XY_indep to Z_X indep and Z_Y_indep. *)
-Variable Z_X_indep : inde_rv Z X.
-Variable Z_Y_indep : inde_rv Z Y.
+Let Z_X_indep : inde_rv Z X.
+Proof. exact/cinde_rv_unit/decomposition/cinde_rv_unit/Z_XY_indep. Qed.
+Let Z_Y_indep : inde_rv Z Y.
+Proof. exact/cinde_rv_unit/decomposition/cinde_drv_2C/cinde_rv_unit/Z_XY_indep.
+Qed.
 
 Let E := finset (Y @^-1 y).
 Hypothesis Y0 : Pr P E != 0.
@@ -267,28 +243,6 @@ Let XZ': {RV (fdist_cond Y0) -> 'I_p} := X' \+ Z'.
 (* TODO: I cannot directly put X\+Z in lemma because it compains about:
 
    Cannot infer the implicit parameter P of pr_eq whose type is "R.-fdistT" in:.... *)
-
-(* TODO: make a more general lemma *)
-Lemma fdist_cond_indep : fdist_cond Y0 |= X _|_ Z.
-Proof.
-move:Z_XY_indep => /cinde_rv_unit /weak_union.
-rewrite /cinde_rv /=.
-move => H.
-move => /= cc dd.
-
-rewrite mulRC.
-rewrite pr_eq_pairC.
-have:= H dd cc (tt,y).
-rewrite !pr_eqE.
-rewrite !Pr_fdist_cond.
-rewrite !cpr_eqE'.
-rewrite !/cPr.
-have->: finset (preim [% unit_RV P, Y] (pred1 (tt, y))) = E.
-apply/setP => x.
-by rewrite !inE //.
-exact.
-Qed.
-
 
 
 Lemma lemma_3_5 : `Pr[ XZ = i | Y = y] = `Pr[ XZ = i].  (* The paper way to prove P |= X\+Z _|_ Y *)
@@ -325,159 +279,7 @@ move-> => //.
   rewrite pr_eq_pairC. (* Swap X _|_ Z to Z _|_ X  so we can apply Z_X_indep *)
   by apply: Z_X_indep.
 - by rewrite pr_eqE.
-rewrite /X' /Z'.
-rewrite /fdist_cond -lock.
-rewrite /inde_rv.
-move => cc dd.
-rewrite mulRC.
-rewrite pr_eq_pairC.
-unfold inde_rv in Z_X_indep.
-have:=Z_X_indep dd cc.
-rewrite /=.
-Set Printing All.
-exact.
-About.
-
-
-(* ? Need a lemma about the relation between (fdist_cond Y0) and P ? *)
-(* --> So far what we have is Y0:
-
-    Let E := finset (Y @^-1 y).
-    Hypothesis Y0 : Pr P E != 0.
-
-  And we know nothing about P.
-*)
-(* ? What if infotheo allow indepdent random variables have different distributions ? *)
-(* --> We already knew (assumed) two random variables are indenpendant, so their distributions don't matter? *)
-
-
-
-rewrite [LHS](@add_RV_mul _ _ _ X' Z').
-
-(*move: (@add_RV_mul _ _ _ X' Z').*)  (* test the issue for why it cannot be applied *)
-transitivity (\sum_(k < p) `Pr[[% X, Z] = (k, inord (i - k)%mcR) | Y = y]).
-
-
-
-About add_RV_mul.
-  rewrite -cpr_eq_set1.
-  (*Although About cpr_eq_set1 only show Y \in y,
-    the original version actually converts both X and Y*)
-  rewrite (@creasoning_by_cases T P _ _ _ XZ X Y).
-  transitivity ((\sum_(b < p) `Pr[ [% XZ, X] \in ([set i] `* [set b]) | Y = y ])).
-  admit.
-  apply: eq_bigr => k _.
-  Search ([set _] `* [set _]).
-  rewrite setX1. (* From two sets' `* to one pair*)
-  rewrite cpr_inE cpr_eqE pr_eq_set1. (* Make two sides "similar"*)
-  congr (_ / _)%coqR; last first.
-  rewrite setX1.
-  rewrite pr_eq_set1.
-  rewrite !pr_eqE /Pr.
-  apply: eq_bigl => j.
-  rewrite !inE.
-  rewrite /RV2.
-  rewrite !xpair_eqE.
-  rewrite /XZ /=.
-  congr (_ && _).
-  apply/idP/idP.
-    move => /andP [ /eqP <- /eqP <- ].
-    rewrite eqxx /=.
-    apply/eqP /val_inj => /=.
-    Set Printing Coercions.
-    rewrite inordK.
-      Unset Printing Coercions.
-      Search modn.
-      rewrite modnDm.
-      have ->: (X j + Z j + (p - X j) = Z j + p)%nat.
-      rewrite (addnC _ (Z j)) -addnA subnKC //=.
-      apply/ltnW /ltn_ord.
-      by rewrite modnDr modn_small.
-    Search modn.
-    exact: ltn_pmod.
-  move => /andP [ /eqP <- /eqP -> ].
-  rewrite eqxx andbT. (* andbT remove the (&& true) part*)
-  Disable Notation "_ = _".
-  apply/eqP.
-  apply/val_inj => /=.
-  rewrite inordK; last exact:ltn_pmod.
-  Search modn.
-  rewrite modnDmr.
-  rewrite modnB.
-  Search modn.
-  rewrite modnn.
-  Search modn leq.
-  
-  have ->: ((0 < X j %% p) = true)%nat.
-
-  rewrite -(@modn_small (X j) p); last exact:ltn_ord.
-  rewrite -(modnDm i) -(modnDm (i%%p)).
-
-  rewrite modnDl.
-  rewrite addnA.
-  
-
-
-  rewrite -[in LHS](@modn_small i p); last exact:ltn_ord.
-
-  rewrite !modnDm.
-  Search modn.
-  rewrite addrA.
-  rewrite (modnDm i).
-  Search modn subn.
-
-
-  
-admit.
-transitivity (\sum_(k < p) `Pr[X = k | Y = y] * `Pr[Z = inord (i - k) | [%X, Y] = (k, y) ] ).
-admit.
-transitivity (\sum_(k < p) `Pr[X = k | Y = y] * `Pr[Z = inord (i - k) ] ).
-admit.
-transitivity (\sum_(k < p) `Pr[X = k | Y = y] * p%:R^-1).
-admit.
-transitivity (p%:R^-1 : R). (* cannot know which ring to convert to, so need the 2nd :R -- it is part of Coq language.*)
-admit.
-
-Search `Pr[ _ = _ | _ = _ ] `Pr[ _ \in _ | _ \in _ ].
-(* TODO: cannot find a lemma to convert the X in cpr to event *)
-rewrite -cpr_eq_set1.
-rewrite -pr_eq_set1.
-
-Undo 2.
-rewrite cpr_eqE.
-rewrite !coqRE.
-rewrite -pr_eq_set1.
-Search creasoning_by_cases.
-
-transitivity (\sum_(k <- fin_img ))
-
-rewrite -cpr_eq_set1.
-
-
-
-
-rewrite cpr_eqE.
-rewrite !coqRE.
-
-(*Memo: pattern search. *)
-(*
-
-    set rhs:= (w in w%%p).  (* To know the type (X j + Z j + (p - X j))*)
-    have: rhs = (Z j + p)%nat.
-*)
-(*
-
-
-  Search cpr_inE. (* Memo: the search target itself won't show but "related" things *)
-
-*)
-Search `Pr[_ = _] `Pr[_ \in _].
-Search ([set _] `* [set _]).
-
-Abort.
-
-
-
-
+exact: fdist_cond_indep.
+Qed.
 
 End lemma_3_5.
