@@ -186,22 +186,22 @@ Definition Pr E := \sum_(a in E) P a.
 Lemma Pr_ge0 E : 0 <= Pr E. Proof. exact/RleP/sumr_ge0. Qed.
 Local Hint Resolve Pr_ge0 : core.
 
-Lemma Pr_gt0 E : 0 < Pr E <-> Pr E != 0.
+Lemma Pr_gt0P E : 0 < Pr E <-> Pr E != 0.
 Proof.
 split => H; first by move/gtR_eqF : H.
 by rewrite ltR_neqAle; split => //; exact/nesym/eqP.
 Qed.
 
-Lemma Pr_1 E : Pr E <= 1.
+Lemma Pr_le1 E : Pr E <= 1.
 Proof.
 rewrite (_ : 1 = GRing.one _)//.
 rewrite -(FDist.f1 P); apply leR_sumRl => // a _.
 by apply/RleP; rewrite lexx.
 Qed.
 
-Lemma Pr_lt1 E : Pr E < 1 <-> Pr E != 1.
+Lemma Pr_lt1P E : Pr E < 1 <-> Pr E != 1.
 Proof.
-split => H; move: (Pr_1 E); rewrite leR_eqVlt.
+split => H; move: (Pr_le1 E); rewrite leR_eqVlt.
   by move=> [Pr1|]; [move: H; rewrite Pr1 => /ltRR|exact: ltR_eqF].
 by move=> [Pr1|//]; rewrite Pr1 eqxx in H.
 Qed.
@@ -234,16 +234,16 @@ Qed.
 Lemma Pr_to_cplt E : Pr E = 1 - Pr (~: E).
 Proof. by rewrite -(Pr_cplt E); field. Qed.
 
-Lemma Pr_of_cplt E : Pr (~: E) = 1 - Pr E.
+Lemma Pr_setC E : Pr (~: E) = 1 - Pr E.
 Proof. by rewrite -(Pr_cplt E); field. Qed.
 
-Lemma Pr_incl E E' : E \subset E' -> Pr E <= Pr E'.
+Lemma subset_Pr E E' : E \subset E' -> Pr E <= Pr E'.
 Proof.
 move=> H; apply leR_sumRl => a aE //; [ | by move/subsetP : H; exact].
 by apply/RleP; rewrite lexx.
 Qed.
 
-Lemma Pr_union E1 E2 : Pr (E1 :|: E2) <= Pr E1 + Pr E2.
+Lemma le_Pr_setU E1 E2 : Pr (E1 :|: E2) <= Pr E1 + Pr E2.
 Proof.
 rewrite /Pr.
 rewrite [X in X <= _](_ : _ = \sum_(i in A | [predU E1 & E2] i) P i); last first.
@@ -276,7 +276,7 @@ case: ifPn => hFb; last by apply/RleP; rewrite lexx.
 by rewrite -[X in X <= _]add0R; exact/leR_add2r.
 Qed.
 
-Lemma Pr_union_disj E1 E2 : [disjoint E1 & E2] -> Pr (E1 :|: E2) = Pr E1 + Pr E2.
+Lemma disjoint_Pr_setU E1 E2 : [disjoint E1 & E2] -> Pr (E1 :|: E2) = Pr E1 + Pr E2.
 Proof. by move=> ?; rewrite -bigU //=; apply eq_bigl => a; rewrite inE. Qed.
 
 Let Pr_big_union_disj n (F : 'I_n -> {set A}) :
@@ -284,23 +284,23 @@ Let Pr_big_union_disj n (F : 'I_n -> {set A}) :
   Pr (\bigcup_(i < n) F i) = \sum_(i < n) Pr (F i).
 Proof.
 elim: n F => [|n IH] F H; first by rewrite !big_ord0 Pr_set0.
-rewrite big_ord_recl /= Pr_union_disj; last first.
+rewrite big_ord_recl /= disjoint_Pr_setU; last first.
   rewrite -setI_eq0 big_distrr /=; apply/eqP/big1 => i _; apply/eqP.
   by rewrite setI_eq0; exact: H.
 by rewrite big_ord_recl IH // => i j ij; rewrite H.
 Qed.
 
-Lemma Pr_diff E1 E2 : Pr (E1 :\: E2) = Pr E1 - Pr (E1 :&: E2).
+Lemma Pr_setD E1 E2 : Pr (E1 :\: E2) = Pr E1 - Pr (E1 :&: E2).
 Proof. by rewrite /Pr [in RHS](big_setID E2) /= addRC addRK. Qed.
 
-Lemma Pr_union_eq E1 E2 : Pr (E1 :|: E2) = Pr E1 + Pr E2 - Pr (E1 :&: E2).
+Lemma Pr_setU E1 E2 : Pr (E1 :|: E2) = Pr E1 + Pr E2 - Pr (E1 :&: E2).
 Proof.
-rewrite addRC -addR_opp -addRA addR_opp -Pr_diff -Pr_union_disj -?setU_setUD //.
+rewrite addRC -addR_opp -addRA addR_opp -Pr_setD -disjoint_Pr_setU -?setU_setUD //.
 by rewrite -setI_eq0 setIDA setDIl setDv set0I.
 Qed.
 
-Lemma Pr_inter_eq E1 E2 : Pr (E1 :&: E2) = Pr E1 + Pr E2 - Pr (E1 :|: E2).
-Proof. by rewrite Pr_union_eq subRBA addRC addRK. Qed.
+Lemma Pr_setI E1 E2 : Pr (E1 :&: E2) = Pr E1 + Pr E2 - Pr (E1 :|: E2).
+Proof. by rewrite Pr_setU subRBA addRC addRK. Qed.
 
 Lemma Boole_eq (I : finType) (F : I -> {set A}) :
   (forall i j, i != j -> [disjoint F i & F j]) ->
@@ -333,6 +333,26 @@ Qed.
 End probability.
 Arguments total_prob {_} _ {_} _ _.
 Global Hint Resolve Pr_ge0 : core.
+#[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_setC`")]
+Notation Pr_of_cplt := Pr_setC(only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `le_Pr_setU`")]
+Notation Pr_union := le_Pr_setU (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `disjoint_Pr_setU`")]
+Notation Pr_union_disj := disjoint_Pr_setU (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_setD`")]
+Notation Pr_diff := Pr_setD (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_setU`")]
+Notation Pr_union_eq := Pr_setU (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_setI`")]
+Notation Pr_inter_eq := Pr_setI (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `subset_Pr`")]
+Notation Pr_incl := subset_Pr (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_le1`")]
+Notation Pr_1 := Pr_le1 (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_gt0P`")]
+Notation Pr_gt0 := Pr_gt0P (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_lt1P`")]
+Notation Pr_lt1 := Pr_lt1P (only parsing).
 
 Lemma Pr_domin_setI (A : finType) (d : {fdist A}) (E F : {set A}) :
   Pr d E = 0 -> Pr d (E :&: F) = 0.
@@ -1229,7 +1249,7 @@ rewrite /inde_events => EF; have : Pr d E = Pr d (E :&: F) + Pr d (E :&: ~:F).
       rewrite ?setICr // setIC setICr.
     by rewrite cover_imset big_bool /= setUC setUCr.
   by rewrite big_bool addRC.
-by rewrite addRC -subR_eq EF -{1}(mulR1 (Pr d E)) -mulRBr -Pr_of_cplt.
+by rewrite addRC -subR_eq EF -{1}(mulR1 (Pr d E)) -mulRBr -Pr_setC.
 Qed.
 
 End independent_events.
@@ -1312,14 +1332,14 @@ by apply divR_ge0 => //; rewrite Pr_gt0.
 Qed.
 Local Hint Resolve cPr_ge0 : core.
 
-Lemma cPr_eq0 E F : `Pr_[E | F] = 0 <-> Pr d (E :&: F) = 0.
+Lemma cPr_eq0P E F : `Pr_[E | F] = 0 <-> Pr d (E :&: F) = 0.
 Proof.
 split; rewrite /cPr; last by move=> ->; rewrite div0R.
 rewrite /cPr /Rdiv mulR_eq0 => -[//|/invR_eq0].
 by rewrite setIC; exact: Pr_domin_setI.
 Qed.
 
-Lemma cPr_max E F : `Pr_[E | F] <= 1.
+Lemma cPr_le1 E F : `Pr_[E | F] <= 1.
 Proof.
 rewrite /cPr.
 have [PF0|PF0] := eqVneq (Pr d F) 0.
@@ -1336,7 +1356,7 @@ Proof. by rewrite /cPr setIT Pr_setT divR1. Qed.
 Lemma cPrE0 (E : {set A}) : `Pr_[E | set0] = 0.
 Proof. by rewrite /cPr setI0 Pr_set0 div0R. Qed.
 
-Lemma cPr_gt0 E F : 0 < `Pr_[E | F] <-> `Pr_[E | F] != 0.
+Lemma cPr_gt0P E F : 0 < `Pr_[E | F] <-> `Pr_[E | F] != 0.
 Proof.
 split; rewrite /cPr; first by rewrite ltR_neqAle => -[/eqP H1 _]; rewrite eq_sym.
 by rewrite ltR_neqAle eq_sym => /eqP H; split => //; exact: cPr_ge0.
@@ -1345,7 +1365,7 @@ Qed.
 Lemma Pr_cPr_gt0 E F : 0 < Pr d (E :&: F) <-> 0 < `Pr_[E | F].
 Proof.
 rewrite Pr_gt0; split => H; last first.
-  by move/cPr_gt0 : H; apply: contra => /eqP; rewrite /cPr => ->; rewrite div0R.
+  by move/cPr_gt0P : H; apply: contra => /eqP; rewrite /cPr => ->; rewrite div0R.
 rewrite /cPr; apply/divR_gt0; rewrite Pr_gt0 //.
 by apply: contra H; rewrite setIC => /eqP F0; apply/eqP/Pr_domin_setI.
 Qed.
@@ -1356,7 +1376,7 @@ Proof. by rewrite /cPr -divRBl setIDAC Pr_diff setIAC. Qed.
 
 Lemma cPr_union_eq F1 F2 E :
   `Pr_[F1 :|: F2 | E] = `Pr_[F1 | E] + `Pr_[F2 | E] - `Pr_[F1 :&: F2 | E].
-Proof. by rewrite /cPr -divRDl -divRBl setIUl Pr_union_eq setIACA setIid. Qed.
+Proof. by rewrite /cPr -divRDl -divRBl setIUl Pr_setU setIACA setIid. Qed.
 
 Lemma Bayes (E F : {set A}) : `Pr_[E | F] = `Pr_[F | E] * Pr d E / Pr d F.
 Proof.
@@ -1380,7 +1400,7 @@ Lemma cPr_cplt E F : Pr d E != 0 -> `Pr_[ ~: F | E] = 1 - `Pr_[F | E].
 Proof.
 move=> PE0; rewrite /cPr -(divRR _ PE0) -divRBl; congr (_ / _).
 apply/esym; rewrite subR_eq addRC.
-rewrite -{1}(@setIT _ E) -(setUCr F) setIC setIUl Pr_union_disj //.
+rewrite -{1}(@setIT _ E) -(setUCr F) setIC setIUl disjoint_Pr_setU //.
 by rewrite -setI_eq0 setIACA setICr set0I.
 Qed.
 
@@ -1416,6 +1436,13 @@ End bayes_extended.
 End conditional_probablity.
 Notation "`Pr_ P [ E | F ]" := (cPr P E F) : proba_scope.
 Global Hint Resolve cPr_ge0 : core.
+
+#[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_eq0P`")]
+Notation cPr_eq0 := cPr_eq0P (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_le1`")]
+Notation cPr_max := cPr_le1 (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_gt0P`")]
+Notation cPr_gt0 := cPr_gt0P (only parsing).
 
 Section fdist_cond.
 Variables (A : finType) (P : R.-fdist A) (E : {set A}).
@@ -1509,7 +1536,7 @@ Lemma cinde_events_alt (E F G : {set A}) : cinde_events E F G <->
 Proof.
 split=> [|[|FG0]]; rewrite /cinde_events.
 - rewrite product_rule_cond => H.
-  have [/cPr_eq0 EG0|EG0] := eqVneq (`Pr_d[F | G]) 0.
+  have [/cPr_eq0P EG0|EG0] := eqVneq (`Pr_d[F | G]) 0.
     by rewrite /cPr EG0; right.
   by left; move/eqR_mul2r : H ; apply; apply/eqP.
 - by rewrite product_rule_cond => ->.
@@ -1525,16 +1552,21 @@ End conditionally_independent_events.
 Section crandom_variable_eqType.
 Variables (U : finType) (A B : eqType) (P : R.-fdist U).
 
-Definition cpr_eq (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :=
+Definition cPr_eq (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :=
   locked (`Pr_P[ finset (X @^-1 a) | finset (Y @^-1 b)]).
-Local Notation "`Pr[ X = a | Y = b ]" := (cpr_eq X a Y b).
+Local Notation "`Pr[ X = a | Y = b ]" := (cPr_eq X a Y b).
 
-Lemma cpr_eqE' (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :
+Lemma cPr_eqE' (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :
   `Pr[ X = a | Y = b ] = `Pr_P [ finset (X @^-1 a) | finset (Y @^-1 b) ].
-Proof. by rewrite /cpr_eq; unlock. Qed.
+Proof. by rewrite /cPr_eq; unlock. Qed.
 
 End crandom_variable_eqType.
-Notation "`Pr[ X = a | Y = b ]" := (cpr_eq X a Y b) : proba_scope.
+Notation "`Pr[ X = a | Y = b ]" := (cPr_eq X a Y b) : proba_scope.
+
+#[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_eq`")]
+Notation cpr_eq0 := cPr_eq (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_eqE`")]
+Notation cpr_eqE' := cPr_eqE' (only parsing).
 
 Lemma cpr_eq_unit_RV (U : finType) (A : eqType) (P : {fdist U})
     (X : {RV P -> A}) (a : A) :
