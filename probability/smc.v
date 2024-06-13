@@ -248,38 +248,22 @@ Let XZ': {RV (fdist_cond Y0) -> 'I_p} := X' \+ Z'.
 Lemma lemma_3_5 : `Pr[ XZ = i | Y = y] = `Pr[ XZ = i].  (* The paper way to prove P |= X\+Z _|_ Y *)
 Proof.
 rewrite -(Pr_fdist_cond_RV (X':=XZ')) //.
-
-move: (@add_RV_mul _ _ _ X' Z').
-rewrite /XZ' /add_RV' pr_eqE'.
-move->.
+rewrite pr_eqE' (@add_RV_mul _ _ _ X' Z'); last exact: fdist_cond_indep.
 under eq_bigr => k _.
   rewrite (Pr_fdist_cond_RV (X:=X)) //.
   rewrite (Pr_fdist_cond_RV (X:=Z)) //.
   rewrite [X in _ * X]cpr_eqE.
   rewrite Z_Y_indep.
-  rewrite /Rdiv.
-  rewrite -mulRA.
-  rewrite mulRV; last by rewrite pr_eqE.
-  rewrite mulR1.
-  over.
-under eq_bigr=> k _.
-  rewrite [X in _ * X]pr_eqE' pZ_unif fdist_uniformE /=.
+  rewrite -[(_/_)%coqR]mulRA mulRV; last by rewrite pr_eqE.
+  rewrite mulR1 [X in _ * X]pr_eqE' pZ_unif fdist_uniformE /=.
   over.
 rewrite -big_distrl /=.  (* Pull the const part `Pr[ Y = (i - k) ] from the \sum_k *)
-rewrite /X'.
-rewrite cPr_1.
-rewrite ?mul1r //.
-move: (@add_RV_unif _ _ _ X Z) .
-rewrite /XZ /add_RV' pr_eqE'.
-move-> => //.
+rewrite /X' cPr_1 ?mul1r //; last by rewrite pr_eqE.
+rewrite pr_eqE' (@add_RV_unif _ _ _ X Z) //.
 - by rewrite fdist_uniformE.
-- rewrite /inde_rv.
-  move => aa bb.
-  rewrite mulRC.
-  rewrite pr_eq_pairC. (* Swap X _|_ Z to Z _|_ X  so we can apply Z_X_indep *)
-  by apply: Z_X_indep.
-- by rewrite pr_eqE.
-exact: fdist_cond_indep.
+- rewrite /inde_rv /= => /= x z.
+  rewrite mulRC pr_eq_pairC. (* Swap X _|_ Z to Z _|_ X  so we can apply Z_X_indep *)
+  exact: Z_X_indep.
 Qed.
 
 End lemma_3_5.
