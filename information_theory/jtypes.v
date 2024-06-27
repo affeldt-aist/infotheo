@@ -252,13 +252,13 @@ by move=> a b; rewrite ffunE.
 Defined.
 
 Definition jtype_enum A B n := pmap (@jtype_enum_f A B n)
-  (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}} | (\sum_(a in A) \sum_(b in B) f a b == n)%nat}]).
+  (enum (Finite.clone _ { f : {ffun A -> {ffun B -> 'I_n.+1}} | (\sum_(a in A) \sum_(b in B) f a b == n)%nat})).
 
 Lemma jtype_enumP A B n : Finite.axiom (@jtype_enum A B n).
 Proof.
 case=> d f Hf H /=.
-have : Finite.axiom (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}}  |
-    (\sum_(a in A) \sum_(b in B) f a b == n)%nat }]).
+have : Finite.axiom (enum (Finite.clone _ { f : {ffun A -> {ffun B -> 'I_n.+1}}  |
+    (\sum_(a in A) \sum_(b in B) f a b == n)%nat })).
   rewrite enumT; by apply enumP.
 move/(_ (@exist _ _ f Hf)) => <-.
 rewrite /jtype_enum /=.
@@ -291,8 +291,8 @@ eq_ind_r
                                               else
                                                 (sval f a b)%:R /
                                                     (\sum_(b0 in B) (sval f a) b0)%:R)*) |}
-                     ) (enum [finType of { f : {ffun A -> {ffun B -> 'I_n.+1}} |
-                                           (\sum_(a in A) \sum_(b in B) f a b)%nat == n}]).
+                     ) (enum (Finite.clone _ { f : {ffun A -> {ffun B -> 'I_n.+1}} |
+                                           (\sum_(a in A) \sum_(b in B) f a b)%nat == n})).
   apply: eq_pmap => V.
   destruct Sumbool.sumbool_of_bool; last by rewrite Anot0 in e.
   destruct Sumbool.sumbool_of_bool; last by rewrite Bnot0 in e0.
@@ -357,13 +357,13 @@ move=> Anot0 Bnot0.
 move: (Anot0); case/card_gt0P => a _.
 move: (Bnot0); case/card_gt0P => b _.
 apply/card_gt0P.
-have [tmp Htmp] : [finType of {f : {ffun A -> {ffun B -> 'I_n.+1}} |
-                     \sum_(a1 in A) \sum_(b1 in B) f a1 b1 == n}].
+have [tmp Htmp] : {f : {ffun A -> {ffun B -> 'I_n.+1}} |
+                     \sum_(a1 in A) \sum_(b1 in B) f a1 b1 == n}.
   exists [ffun a1 => [ffun b1 => if (a1, b1) == (a, b) then
     Ordinal (ltnSn n) else Ordinal (ltn0Sn n)]].
   rewrite pair_big /=.
   rewrite (bigD1 (a, b)) //= big1 ; first by rewrite 2!ffunE eqxx addn0.
-  move=> p /negbTE Hp ; by rewrite 2!ffunE -surjective_pairing Hp.
+  by move=> p /negbTE Hp ; rewrite 2!ffunE -surjective_pairing Hp.
 have Htmp' : (forall a b,
         (chan_of_jtype Anot0 Bnot0 tmp) a b =
         (let ln := \sum_(b0 in B) (tmp a) b0 in

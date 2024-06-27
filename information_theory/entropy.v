@@ -490,8 +490,8 @@ rewrite fdistXE fdist_proj13E big_distrl /= -big_split; apply eq_bigr => b _ /=.
 rewrite !(fdistXE,fdistAE,fdistC12E) /= -mulRDr.
 have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0R.
 rewrite -logM; last 2 first.
-  by rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: fdist_proj13_dominN H0.
-  by rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1 fdistAE /= fdistC12E.
+  by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj13_dominN H0.
+  by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1 fdistAE /= fdistC12E.
 congr (_ * log _).
 by rewrite -setX1 product_ruleC !setX1 mulRC.
 Qed.
@@ -570,7 +570,7 @@ transitivity (- (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a)) +
   rewrite addRC -mulRN -mulRDr addR_opp.
   have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0R.
   congr (_ * _); rewrite logDiv //.
-  - by rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1.
+  - by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1.
   - by apply/RltP; rewrite -fdist_gt0; exact: dom_by_fdist_fstN H0.
 rewrite -subR_opp; congr (_ - _).
 - rewrite /entropy; congr (- _); apply/eq_bigr => a _.
@@ -759,12 +759,12 @@ rewrite fdistXE fdistAE /= -mulRN -mulRDr.
 have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0R.
 congr (_ * _).
 rewrite addRC addR_opp -logDiv; last 2 first.
-  by rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: fdistA_dominN H0.
-  by rewrite -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: fdist_proj13_dominN H0.
+  by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdistA_dominN H0.
+  by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj13_dominN H0.
 congr (log _).
 rewrite divRM; last 2 first.
-  by rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: fdist_proj13_dominN H0.
-  by rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0 setX1 Pr_set1; exact: fdist_proj23_dominN H0.
+  by rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj13_dominN H0.
+  by rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj23_dominN H0.
 rewrite {2}/Rdiv -mulRA mulRCA {1}/Rdiv [in LHS]mulRC; congr (_ * _).
 rewrite -[in X in _ = X * _]setX1 jproduct_rule_cond setX1 -mulRA mulRV ?mulR1 //.
 rewrite /jcPr divR_neq0' // ?setX1 !Pr_set1.

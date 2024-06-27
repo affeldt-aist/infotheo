@@ -689,9 +689,9 @@ Proof.
 pose m' := m.-1.
 have mpos : m = m'.+1.
   rewrite prednK // -ltR_nat ltR_neqAle; split => //; exact/leR0n.
-have: (@extension [finType of 'rV[A]_n] _ f) \o
+have: (@extension 'rV[A]_n _ f) \o
       (flatten \o map (fun x => @tval m _ (tuple_of_row x))) =1
-      @extension [finType of {: 'rV[ 'rV[A]_n ]_m} ] _ fm.
+      @extension {: 'rV[ 'rV[A]_n ]_m} _ fm.
    by elim => //= ta sta; rewrite /extension /= map_cat flatten_cat => <-.
 apply: eq_inj.
 apply: inj_comp => //.
