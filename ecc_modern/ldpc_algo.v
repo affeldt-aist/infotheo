@@ -203,7 +203,7 @@ Extract Constant Rmult => "( *.)".
 Extract Constant Rplus => "(+.)".
 Extract Constant Rinv  => "fun x -> 1. /. x".
 Extract Constant Ropp  => "(~-.)".
-(*Extraction "extraction/sumprod.ml" sumprod estimation.*)
+Extraction "extraction/sumprod.ml" sumprod estimation.
 
 Section ToGraph.
 

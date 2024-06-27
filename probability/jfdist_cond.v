@@ -20,7 +20,7 @@ Require Import fdist proba.
 (*      jfdist_cond PQ a == The conditional distribution derived from PQ      *)
 (*                          given a; same as fdist_cond0 when                 *)
 (*                          fdist_fst PQ a != 0.                              *)
-(*           PQ `(| a |) == notation jfdist_cond PQ a                         *)
+(*            PQ `(| a ) == notation jfdist_cond PQ a                         *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -59,10 +59,10 @@ Lemma jcPr_ge0 E F : 0 <= \Pr_[E | F].
 Proof. by rewrite jcPrE. Qed.
 
 Lemma jcPr_le1 E F : \Pr_[E | F] <= 1.
-Proof. by rewrite jcPrE; exact: cPr_max. Qed.
+Proof. by rewrite jcPrE; exact: cPr_le1. Qed.
 
 Lemma jcPr_gt0 E F : 0 < \Pr_[E | F] <-> \Pr_[E | F] != 0.
-Proof. by rewrite !jcPrE; apply cPr_gt0. Qed.
+Proof. by rewrite !jcPrE; apply cPr_gt0P. Qed.
 
 Lemma Pr_jcPr_gt0 E F : 0 < Pr P (E `* F) <-> 0 < \Pr_[E | F].
 Proof.
@@ -73,11 +73,13 @@ split.
   by apply/Pr_cPr_gt0; move: H; rewrite jcPrE -setTE -EsetT.
 Qed.
 
+(* TODO: rename *)
 Lemma jcPr_cplt E F : Pr (P`2) F != 0 -> \Pr_[ ~: E | F] = 1 - \Pr_[E | F].
 Proof.
 by move=> PF0; rewrite 2!jcPrE EsetT setCX cPr_cplt ?EsetT // setTE Pr_setTX.
 Qed.
 
+(* TODO: rename *)
 Lemma jcPr_diff E1 E2 F : \Pr_[E1 :\: E2 | F] = \Pr_[E1 | F] - \Pr_[E1 :&: E2 | F].
 Proof.
 rewrite jcPrE DsetT cPr_diff jcPrE; congr (_ - _).

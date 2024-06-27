@@ -1328,7 +1328,7 @@ Lemma cPr_ge0 E F : 0 <= `Pr_[E | F].
 Proof.
 rewrite /cPr; have [PF0|PF0] := eqVneq (Pr d F) 0.
   by rewrite setIC (Pr_domin_setI _ PF0) div0R.
-by apply divR_ge0 => //; rewrite Pr_gt0.
+by apply divR_ge0 => //; rewrite Pr_gt0P.
 Qed.
 Local Hint Resolve cPr_ge0 : core.
 
@@ -1344,7 +1344,7 @@ Proof.
 rewrite /cPr.
 have [PF0|PF0] := eqVneq (Pr d F) 0.
   by rewrite setIC (Pr_domin_setI E PF0) div0R.
-apply leR_pdivr_mulr; first by rewrite Pr_gt0.
+apply leR_pdivr_mulr; first by rewrite Pr_gt0P.
 rewrite mul1R /Pr; apply leR_sumRl => //.
   by move=> a _; apply/RleP; rewrite lexx.
 by move=> a; rewrite inE => /andP[].
@@ -1364,16 +1364,18 @@ Qed.
 
 Lemma Pr_cPr_gt0 E F : 0 < Pr d (E :&: F) <-> 0 < `Pr_[E | F].
 Proof.
-rewrite Pr_gt0; split => H; last first.
+rewrite Pr_gt0P; split => H; last first.
   by move/cPr_gt0P : H; apply: contra => /eqP; rewrite /cPr => ->; rewrite div0R.
-rewrite /cPr; apply/divR_gt0; rewrite Pr_gt0 //.
+rewrite /cPr; apply/divR_gt0; rewrite Pr_gt0P //.
 by apply: contra H; rewrite setIC => /eqP F0; apply/eqP/Pr_domin_setI.
 Qed.
 
+(* TODO: rename *)
 Lemma cPr_diff F1 F2 E :
   `Pr_[F1 :\: F2 | E] = `Pr_[F1 | E] - `Pr_[F1 :&: F2 | E].
-Proof. by rewrite /cPr -divRBl setIDAC Pr_diff setIAC. Qed.
+Proof. by rewrite /cPr -divRBl setIDAC Pr_setD setIAC. Qed.
 
+(* TODO: rename *)
 Lemma cPr_union_eq F1 F2 E :
   `Pr_[F1 :|: F2 | E] = `Pr_[F1 | E] + `Pr_[F2 | E] - `Pr_[F1 :&: F2 | E].
 Proof. by rewrite /cPr -divRDl -divRBl setIUl Pr_setU setIACA setIid. Qed.
@@ -1556,7 +1558,7 @@ Definition cPr_eq (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :=
   locked (`Pr_P[ finset (X @^-1 a) | finset (Y @^-1 b)]).
 Local Notation "`Pr[ X = a | Y = b ]" := (cPr_eq X a Y b).
 
-Lemma cPr_eqE' (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :
+Lemma cPr_eq_def (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :
   `Pr[ X = a | Y = b ] = `Pr_P [ finset (X @^-1 a) | finset (Y @^-1 b) ].
 Proof. by rewrite /cPr_eq; unlock. Qed.
 
@@ -1565,19 +1567,19 @@ Notation "`Pr[ X = a | Y = b ]" := (cPr_eq X a Y b) : proba_scope.
 
 #[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_eq`")]
 Notation cpr_eq0 := cPr_eq (only parsing).
-#[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_eqE`")]
-Notation cpr_eqE' := cPr_eqE' (only parsing).
+#[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_eq_def`")]
+Notation cpr_eqE' := cPr_eq_def (only parsing).
 
 Lemma cpr_eq_unit_RV (U : finType) (A : eqType) (P : {fdist U})
     (X : {RV P -> A}) (a : A) :
   `Pr[ X = a | (unit_RV P) = tt ] = `Pr[ X = a ].
-Proof. by rewrite cpr_eqE' cPrET pr_eqE. Qed.
+Proof. by rewrite cPr_eq_def cPrET pr_eqE. Qed.
 
 Lemma cpr_eqE (U : finType) (P : {fdist U}) (TA TB : eqType)
   (X : {RV P -> TA}) (Y : {RV P -> TB}) a b :
   `Pr[ X = a | Y = b ] = `Pr[ [% X, Y] = (a, b) ] / `Pr[Y = b].
 Proof.
-rewrite cpr_eqE' /cPr /dist_of_RV 2!pr_eqE; congr (Pr _ _ / _).
+rewrite cPr_eq_def /cPr /dist_of_RV 2!pr_eqE; congr (Pr _ _ / _).
 by apply/setP => u; rewrite !inE xpair_eqE.
 Qed.
 
@@ -1596,7 +1598,7 @@ Proof. by rewrite /cpr_eq_set; unlock. Qed.
 Lemma cpr_eq_set1 X x (Y : {RV P -> B}) y :
   `Pr[ X \in [set x] | Y \in [set y] ] = `Pr[ X = x | Y = y ].
 Proof.
-by rewrite cpr_eq_setE cpr_eqE'; congr cPr; apply/setP => u; rewrite !inE.
+by rewrite cpr_eq_setE cPr_eq_def; congr cPr; apply/setP => u; rewrite !inE.
 Qed.
 
 End crandom_variable_finType.
@@ -1659,7 +1661,7 @@ Lemma cpr_eq_pairA a b c d :
   `Pr[ [% TX, [% TY, TZ]] = (a, (b, c)) | TW = d ] =
   `Pr[ [% TX, TY, TZ] = (a, b, c) | TW = d].
 Proof.
-rewrite 2!cpr_eqE'; congr (Pr _ _ / _).
+rewrite 2!cPr_eq_def; congr (Pr _ _ / _).
 by apply/setP => u; rewrite !inE /= !xpair_eqE andbA.
 Qed.
 
@@ -1756,13 +1758,13 @@ Lemma cpr_eq_product_rule (U : finType) (P : {fdist U}) (A B C : eqType)
   `Pr[ [% X, Y] = (a, b) | Z = c ] =
   `Pr[ X = a | [% Y, Z] = (b, c) ] * `Pr[ Y = b | Z = c ].
 Proof.
-rewrite cpr_eqE'.
+rewrite cPr_eq_def.
 rewrite (_ : [set x | preim [% X, Y] (pred1 (a, b)) x] =
              finset (X @^-1 a) :&: finset (Y @^-1 b)); last first.
   by apply/setP => u; rewrite !inE xpair_eqE.
-rewrite product_rule_cond cpr_eqE'; congr (cPr _ _ _ * _).
+rewrite product_rule_cond cPr_eq_def; congr (cPr _ _ _ * _).
 - by apply/setP=> u; rewrite !inE xpair_eqE.
-- by rewrite cpr_eqE'.
+- by rewrite cPr_eq_def.
 Qed.
 
 Lemma reasoning_by_cases (U : finType) (P : {fdist U})
@@ -1807,9 +1809,9 @@ Lemma cinde_rv_events : cinde_rv <->
   (forall x y z, cinde_events P (finset (X @^-1 x)) (finset (Y @^-1 y)) (finset (Z @^-1 z))).
 Proof.
 split=> [H /= x y z|/= H x y z].
-- rewrite /cinde_events -2!cpr_eqE' -H cpr_eqE'; congr cPr.
+- rewrite /cinde_events -2!cPr_eq_def -H cPr_eq_def; congr cPr.
   by apply/setP => /= ab; rewrite !inE.
-- rewrite (cpr_eqE' _ x) (cpr_eqE' _ y) -H cpr_eqE'; congr cPr.
+- rewrite (cPr_eq_def _ x) (cPr_eq_def _ y) -H cPr_eq_def; congr cPr.
   by apply/setP => /= ab; rewrite !inE.
 Qed.
 

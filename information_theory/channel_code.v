@@ -73,7 +73,7 @@ Proof.
 rewrite /CodeErrRate div1R.
 apply/RleP/ (@leR_pmul2l (INR #|M|)); first exact/ltR0n.
 rewrite mulRA mulRV ?INR_eq0' -?lt0n // mul1R -iter_addR -big_const.
-by apply: leR_sumR => m _; exact: Pr_1.
+by apply: leR_sumR => m _; exact: Pr_le1.
 Qed.
 
 Definition scha (W : `Ch(A, B)) (c : code) := (1 - echa(W , c))%R.

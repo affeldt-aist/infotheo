@@ -734,7 +734,7 @@ apply (@leR_ltR_trans
     move: (preimC_Cal_E epsilon0 i tb); by rewrite inE.
   apply (@leR_trans (Pr (W ``(| i ord0)) (~: Cal_E i ord0) +
     Pr (W ``(| i ord0)) (\bigcup_(i0 | i0 != ord0) (Cal_E i i0)))%R).
-    exact: Pr_union.
+    exact: le_Pr_setU.
   exact/leR_add2l/Pr_bigcup.
 rewrite first_summand //.
 set lhs := (\sum_(_ < _ | _) _)%R.
@@ -756,7 +756,7 @@ rewrite card_ord /=.
 apply (@leR_ltR_trans (epsilon0 + k%:R *
    Pr P `^ n `x (`O(P , W)) `^ n [set x | prod_rV x \in `JTS P W n epsilon0])%R).
   apply leR_add2r.
-  rewrite Pr_of_cplt leR_subl_addr addRC -leR_subl_addr; apply/JTS_1 => //.
+  rewrite Pr_setC leR_subl_addr addRC -leR_subl_addr; apply/JTS_1 => //.
   by case: Hepsilon0.
   by case: Hn => _ [_ []].
 apply (@leR_ltR_trans (epsilon0 +

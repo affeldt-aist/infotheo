@@ -473,10 +473,11 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
   rewrite -(row_of_tupleK ta) in Hta.
   rewrite -(tuple_dist_type_entropy Hta).
   rewrite [X in X <= _](_ : _ = Pr (type.d P) `^ n (@row_of_tuple A n @: T_{P})).
-    by apply Pr_1.
+    exact: Pr_le1.
   symmetry.
   rewrite /Pr.
-  transitivity (\sum_(a| (a \in [finType of 'rV[A]_n]) && [pred x in (@row_of_tuple A n @: T_{P})] a)
+  transitivity (\sum_(a | (a \in [finType of 'rV[A]_n]) &&
+                          [pred x in (@row_of_tuple A n @: T_{P})] a)
       exp2 (- INR n * `H P)).
     apply eq_big => // ta'/= Hta'.
     rewrite -(@tuple_dist_type_entropy ta') //.

@@ -237,7 +237,7 @@ Lemma TS_inf : aep_bound P epsilon <= n.+1%:R ->
 Proof.
 move=> k0_k.
 have H1 : (1 - epsilon <= Pr (P `^ n.+1) (`TS P n.+1 epsilon) <= 1)%mcR.
-  by apply/andP; split; apply/RleP; [exact: Pr_TS_1 | exact: Pr_1].
+  by apply/andP; split; apply/RleP; [exact: Pr_TS_1 | exact: Pr_le1].
 have H2 : (forall x, x \in `TS P n.+1 epsilon ->
     exp2 (- n.+1%:R * (`H P + epsilon)) <=
     P `^ n.+1 x <= exp2 (- n.+1%:R * (`H P - epsilon)))%mcR.

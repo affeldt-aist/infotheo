@@ -421,10 +421,10 @@ split.
       case ac: (a == c).
         rewrite -(eqP ac); exact.
       move=> _ _ _.
-      rewrite (proj2 (cPr_eq0 _ _ _)); last first.
+      rewrite (proj2 (cPr_eq0P _ _ _)); last first.
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /andP [] /= /eqP ->; rewrite ac.
-      rewrite (proj2 (cPr_eq0 _ _ _)); last first.
+      rewrite (proj2 (cPr_eq0P _ _ _)); last first.
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /= /eqP ->; rewrite ac.
       by rewrite mul0R.
@@ -441,7 +441,7 @@ split.
       set x := (X in X = X * X).
       move/Rxx2 => [] Hx.
         rewrite -/x Hx.
-        rewrite (proj2 (cPr_eq0 _ _ _)) ?mul0R //.
+        rewrite (proj2 (cPr_eq0P _ _ _)) ?mul0R //.
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /andP [] /= /eqP ->; rewrite ab.
       rewrite /cPr.
@@ -459,17 +459,17 @@ split.
       move/eqP in Hden.
       rewrite /cPr /Rdiv -mulRA mulVR // mulR1 mul1R.
       move/(f_equal (Rminus den)).
-      rewrite subRR setIC -Pr_diff => /Pr_set0P/(_ u).
-      rewrite !inE (eqP Hi) Hk eq_sym ab; exact.
+      rewrite subRR setIC -Pr_setD => /Pr_set0P/(_ u).
+      by rewrite !inE (eqP Hi) Hk eq_sym ab; exact.
     case: (ord_eq_dec k j).
       move=> <- {j} ik b.
       case bc: (b == c).
         rewrite (eqP bc); exact.
       move=> _ _ _.
-      rewrite (proj2 (cPr_eq0 _ _ _)); last first.
+      rewrite (proj2 (cPr_eq0P _ _ _)); last first.
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /andP [] _ /= /eqP ->; rewrite bc.
-      rewrite mulRC (proj2 (cPr_eq0 _ _ _)) ?mul0R //.
+      rewrite mulRC (proj2 (cPr_eq0P _ _ _)) ?mul0R //.
       by apply/Pr_set0P => u; rewrite !inE => /andP [] /= /eqP ->; rewrite bc.
     move=> nkj nij b HG Hvals; apply: HG => //.
     by rewrite Hvals set_val_tl // set_val_tl // set_val_hd.
@@ -631,10 +631,10 @@ case /boolP: [forall i in (e :&: g), _].
 rewrite negb_forall => /existsP [i].
 rewrite inE negb_imply => /andP [] /andP [Hie Hig] /eqP Hvi.
 right; rewrite /cinde_events.
-rewrite (proj2 (cPr_eq0 _ _ _)); last first.
+rewrite (proj2 (cPr_eq0P _ _ _)); last first.
   apply/Pr_set0P => u; rewrite !inE => Hprod; elim: Hvi.
   case/andP: Hprod => /andP[] /eqP <- _ /eqP <-; exact: prod_vars_inter.
-rewrite (proj2 (cPr_eq0 _ _ _)) ?mul0R //.
+rewrite (proj2 (cPr_eq0P _ _ _)) ?mul0R //.
 apply/Pr_set0P => u; rewrite !inE => Hprod; elim: Hvi.
 case/andP: Hprod => /eqP <- /eqP <-; exact: prod_vars_inter.
 Qed.
@@ -664,7 +664,7 @@ rewrite (proj2 (Pr_set0P _ _)); last first.
 suff : `Pr_P[finset (prod_vars f @^-1 B) | finset (prod_vars g @^-1 C)] = 0.
   by rewrite /cPr => ->; rewrite mulR0 div0R.
 (* prove incompatibility between B and C *)
-apply/cPr_eq0/Pr_set0P => u.
+apply/cPr_eq0P/Pr_set0P => u.
 rewrite !inE => /andP [] /eqP HB /eqP HC.
 move: Hnum; rewrite /den.
 have -> : g = (e :&: f :|: g) :\: ((e :&: f) :\: g).
@@ -745,7 +745,7 @@ split.
   rewrite negb_imply /vals => /andP [Hif].
   case /boolP: (i \in g) => Hig.
     (* B and C are incompatible *)
-    move: (Hfg i); by rewrite inE Hif Hig /= (set_vals_hd vals0) // => ->.
+    by move: (Hfg i); rewrite inE Hif Hig /= (set_vals_hd vals0) // => ->.
   case /boolP: (i \in e) => Hie;
     last by rewrite set_vals_tl // set_vals_tl // eqxx.
   (* A and B are incompatible *)
@@ -756,7 +756,7 @@ split.
   rewrite {1}/cinde_events -!preim_vars_inter setUid /=.
   case/Rxx2.
     (* cPr = 0 *)
-    move/cPr_eq0/Pr_set0P => Hx.
+    move/cPr_eq0P/Pr_set0P => Hx.
     have HAC :
       Pr P (finset (prod_vars e @^-1 A) :&: finset (prod_vars g @^-1 C)) = 0.
       apply Pr_set0P => u Hu; apply Hx.
@@ -767,8 +767,8 @@ split.
         by rewrite set_vals_prod_vars.
       case/boolP: (j \in e) => // je.
       by rewrite set_vals_tl // set_vals_prod_vars.
-    rewrite /cinde_events (proj2 (cPr_eq0 _ _ _)).
-      by rewrite (proj2 (cPr_eq0 _ _ _)) // mul0R.
+    rewrite /cinde_events (proj2 (cPr_eq0P _ _ _)).
+      by rewrite (proj2 (cPr_eq0P _ _ _)) // mul0R.
     apply/Pr_set0P => u Hu.
     apply(proj1 (Pr_set0P _ _) HAC).
     move: Hu; by rewrite !inE => /andP[] /andP[] -> _ ->.

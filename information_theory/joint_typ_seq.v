@@ -130,7 +130,7 @@ have : (JTS_1_bound <= n)%nat ->
     have : 1 <= 3 by lra.
     move/(set_typ_seq_incl P m (ltRW He)) => Hincl.
     rewrite (Pr_DMC_fst P W (fun x => x \notin `TS P m epsilon)).
-    apply/Pr_incl/subsetP => i /=; rewrite !inE.
+    apply/subset_Pr/subsetP => i /=; rewrite !inE.
     apply contra.
     by move/subsetP : Hincl => /(_ i); rewrite !inE.
   have {H1}HnP : forall n, ('| up (aep_bound P (epsilon / 3)) | <= n)%nat ->
@@ -159,7 +159,7 @@ have : (JTS_1_bound <= n)%nat ->
     have : 1 <= 3 by lra.
     move/(set_typ_seq_incl (`O(P , W)) m (ltRW He)) => Hincl.
     rewrite Pr_DMC_out.
-    apply/Pr_incl/subsetP => i /=; rewrite !inE.
+    apply/subset_Pr/subsetP => i /=; rewrite !inE.
     apply contra.
     move/subsetP : Hincl => /(_ i).
     by rewrite !inE.
@@ -187,7 +187,7 @@ have : (JTS_1_bound <= n)%nat ->
     Pr (((P `X W) ) `^ m) (~: `TS ((P `X W)) m (epsilon / 3)).
     have : 1 <= 3 by lra.
     move/(set_typ_seq_incl ((P `X W)) m (ltRW He)) => Hincl.
-    apply/Pr_incl/subsetP => /= v; rewrite !inE.
+    apply/subset_Pr/subsetP => /= v; rewrite !inE.
     apply contra.
     by move/subsetP : Hincl => /(_ v); by rewrite !inE.
   have {H1}HnP_W m : ('| up (aep_bound ((P `X W)) (epsilon / 3)) | <= m)%nat ->
@@ -229,8 +229,8 @@ apply (@leR_trans (
  Pr ((P `X W) `^ n) [set x | (rV_prod x).1 \notin `TS P n epsilon] +
  Pr ((P `X W) `^ n) ([set x | ((rV_prod x).2 \notin `TS (`O( P , W)) n epsilon)] :|:
                       (~: `TS ((P `X W)) n epsilon)))).
-  exact: Pr_union.
-rewrite -addRA !Pr_DMC_rV_prod; apply/leR_add2l; apply: leR_trans (Pr_union _ _ _).
+  exact: le_Pr_setU.
+rewrite -addRA !Pr_DMC_rV_prod; apply/leR_add2l; apply: leR_trans (le_Pr_setU _ _ _).
 by apply/Req_le; congr Pr; apply/setP => t; rewrite !inE rV_prodK.
 Qed.
 
