@@ -1070,7 +1070,8 @@ rewrite /ball_ => xball.
 rewrite /nbhs /= /nbhs /=.
 rewrite /eventually /=.
 rewrite /filter_from /=.
-suff: exists N, forall k, (N <= k)%nat -> P (\bigcup_n F n) = P (\bigcup_(i < k) F i).
+suff: exists N, forall k, (N <= k)%nat ->
+    P (\bigcup_n F n) = P (\bigcup_(i < k) F i).
   case=> N HN.
   exists N => //.
   move=> j /= ij.

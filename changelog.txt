@@ -1,3 +1,7 @@
+
+
+- lemma `conv_pt_cset_is_convex` changed into a `Let`
+
 -------------------
 from 0.7.1 to 0.7.2
 -------------------

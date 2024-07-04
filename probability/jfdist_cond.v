@@ -73,22 +73,21 @@ split.
   by apply/Pr_cPr_gt0; move: H; rewrite jcPrE -setTE -EsetT.
 Qed.
 
-(* TODO: rename *)
-Lemma jcPr_cplt E F : Pr (P`2) F != 0 -> \Pr_[ ~: E | F] = 1 - \Pr_[E | F].
+Lemma jcPr_setC E F : Pr (P`2) F != 0 -> \Pr_[ ~: E | F] = 1 - \Pr_[E | F].
 Proof.
 by move=> PF0; rewrite 2!jcPrE EsetT setCX cPr_cplt ?EsetT // setTE Pr_setTX.
 Qed.
 
-(* TODO: rename *)
-Lemma jcPr_diff E1 E2 F : \Pr_[E1 :\: E2 | F] = \Pr_[E1 | F] - \Pr_[E1 :&: E2 | F].
+Lemma jcPr_setD E1 E2 F :
+  \Pr_[E1 :\: E2 | F] = \Pr_[E1 | F] - \Pr_[E1 :&: E2 | F].
 Proof.
-rewrite jcPrE DsetT cPr_diff jcPrE; congr (_ - _).
+rewrite jcPrE DsetT cPr_setD jcPrE; congr (_ - _).
 by rewrite 2!EsetT setIX setTI -EsetT jcPrE.
 Qed.
 
-Lemma jcPr_union_eq E1 E2 F :
+Lemma jcPr_setU E1 E2 F :
   \Pr_[E1 :|: E2 | F] = \Pr_[E1 | F] + \Pr_[E2 | F] - \Pr_[E1 :&: E2 | F].
-Proof. by rewrite jcPrE UsetT cPr_union_eq !jcPrE IsetT. Qed.
+Proof. by rewrite jcPrE UsetT cPr_setU !jcPrE IsetT. Qed.
 
 Section total_probability.
 Variables (I : finType) (E : {set A}) (F : I -> {set B}).
@@ -117,6 +116,13 @@ End total_probability.
 
 End conditional_probability.
 Notation "\Pr_ P [ E | F ]" := (jcPr P E F) : proba_scope.
+
+#[deprecated(since="infotheo 0.7.3", note="renamed to `jcPr_setD`")]
+Notation jcPr_diff := jcPr_setD (only parsing).
+#[deprecated(since="infotheo 0.7.3", note="renamed to `jcPr_setC`")]
+Notation jcPr_cplt := jcPr_setC (only parsing).
+#[deprecated(since="infotheo 0.7.3", note="renamed to `jcPr_setU`")]
+Notation jcPr_union_eq := jcPr_setU (only parsing).
 
 Section jPr_Pr.
 Variables (U : finType) (P : {fdist U}) (A B : finType).

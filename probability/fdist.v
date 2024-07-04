@@ -660,11 +660,7 @@ Proof. by move=> Xa0; rewrite fdistD1E Xa0 mul0r; case: ifP. Qed.
 
 End fdistD1_prop.
 
-(* TODO: move? *)
-(* about_distributions_of_ordinals.*)
-
-Lemma fdistI0_False (R: realType) (d : R.-fdist 'I_O)
-  : False.
+Lemma fdistI0_False (R : realType) (d : R.-fdist 'I_O) : False.
 Proof. move: (fdist_card_neq0 d); by rewrite card_ord. Qed.
 
 Section fdistI2.
