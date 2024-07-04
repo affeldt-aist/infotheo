@@ -348,8 +348,7 @@ HB.instance Definition _ (X Y : neset A) :=
 HB.instance Definition _ (X : neset A) (n : nat) :=
   isNESet.Build _ _ (iter_conv_set_neq0 X n).
 
-(* TODO: Let insteaad of Lemma *)
-Lemma conv_pt_cset_is_convex (p : {prob R}) (x : A) (Y : {convex_set A}) :
+Let conv_pt_cset_is_convex (p : {prob R}) (x : A) (Y : {convex_set A}) :
   is_convex_set (conv_pt_set p x Y).
 Proof.
 apply/asboolP=> u v q.

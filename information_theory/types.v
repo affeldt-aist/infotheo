@@ -69,7 +69,8 @@ Proof.
 case: P => /= d f d_f; by rewrite d_f mulRCA mulRV ?INR_eq0' // mulR1.
 Qed.
 
-Lemma INR_type_fun A n (P : P_ n ( A )) a : ((type.f P) a)%:R / n%:R = type.d(*TODO: fix coercion *)P a.
+Lemma INR_type_fun A n (P : P_ n ( A )) a :
+  ((type.f P) a)%:R / n%:R = type.d(*TODO: fix coercion *)P a.
 Proof. destruct P as [d f d_f] => /=. by rewrite d_f. Qed.
 
 Lemma no_0_type (A : finType) (d : {fdist A}) (t : {ffun A -> 'I_1}) :
@@ -476,7 +477,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
     exact: Pr_le1.
   symmetry.
   rewrite /Pr.
-  transitivity (\sum_(a | (a \in [finType of 'rV[A]_n]) &&
+  transitivity (\sum_(a | (a \in 'rV[A]_n) &&
                           [pred x in (@row_of_tuple A n @: T_{P})] a)
       exp2 (- INR n * `H P)).
     apply eq_big => // ta'/= Hta'.

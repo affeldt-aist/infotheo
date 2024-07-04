@@ -769,7 +769,7 @@ apply (@le_trans _ _ ((1 - eps) * (`V_[X | S] + (`E_[X | S] - `E (WP.-RV X))^+2)
 apply (@le_trans _ _ ((1 - eps) * (`V_[X | S] + (Num.sqrt (`V_[X | S] * 2 * eps / (2 - eps)) +
                                             Num.sqrt (`V (WP.-RV X) * 2 * eps / (1 - eps)))^+2))).
   apply ler_wpM2l.
-    by rewrite subr_ge0; exact/RleP/Pr_1.
+    by rewrite subr_ge0; exact/RleP/Pr_le1.
   rewrite lerD2l -ler_abs_sqr.
   rewrite [x in _ <= x]ger0_norm; first exact: (bound_mean_emean C eps_max).
   exact/addr_ge0/sqrtr_ge0/sqrtr_ge0.
@@ -877,7 +877,7 @@ Lemma bound_empirical_variance_cplt_S :
   2/denom * `V (WP.-RV X) <= \sum_(i in cplt_S) C i * P i * tau i.
 Proof.
 have ? := pr_S_gt0 eps_max01 low_eps.
-have /RleP pr1_cplt_S := Pr_1 P cplt_S.
+have /RleP pr1_cplt_S := Pr_le1 P cplt_S.
 
 have -> : \sum_(i in cplt_S) C i * P i * tau i =
   `V (WP.-RV X) * (\sum_(i in U) C i * P i) - (\sum_(i in S) C i * P i * tau i).

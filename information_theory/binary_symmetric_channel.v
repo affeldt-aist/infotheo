@@ -274,7 +274,7 @@ Section dH_BSC.
 Variable p : {prob R}.
 Let card_F2 : #| 'F_2 | = 2%nat. by rewrite card_Fp. Qed.
 Let W := BSC.c card_F2 p.
-Variables (M : finType) (n : nat) (f : encT [finType of 'F_2] M n).
+Variables (M : finType) (n : nat) (f : encT 'F_2 M n).
 
 Local Open Scope vec_ext_scope.
 

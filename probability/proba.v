@@ -1370,13 +1370,11 @@ rewrite /cPr; apply/divR_gt0; rewrite Pr_gt0P //.
 by apply: contra H; rewrite setIC => /eqP F0; apply/eqP/Pr_domin_setI.
 Qed.
 
-(* TODO: rename *)
-Lemma cPr_diff F1 F2 E :
+Lemma cPr_setD F1 F2 E :
   `Pr_[F1 :\: F2 | E] = `Pr_[F1 | E] - `Pr_[F1 :&: F2 | E].
 Proof. by rewrite /cPr -divRBl setIDAC Pr_setD setIAC. Qed.
 
-(* TODO: rename *)
-Lemma cPr_union_eq F1 F2 E :
+Lemma cPr_setU F1 F2 E :
   `Pr_[F1 :|: F2 | E] = `Pr_[F1 | E] + `Pr_[F2 | E] - `Pr_[F1 :&: F2 | E].
 Proof. by rewrite /cPr -divRDl -divRBl setIUl Pr_setU setIACA setIid. Qed.
 
@@ -1445,6 +1443,10 @@ Notation cPr_eq0 := cPr_eq0P (only parsing).
 Notation cPr_max := cPr_le1 (only parsing).
 #[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_gt0P`")]
 Notation cPr_gt0 := cPr_gt0P (only parsing).
+#[deprecated(since="infotheo 0.7.3", note="renamed to `cPr_setD`")]
+Notation cPr_diff := cPr_setD (only parsing).
+#[deprecated(since="infotheo 0.7.3", note="renamed to `cPr_setU`")]
+Notation cPr_union_eq := cPr_setU (only parsing).
 
 Section fdist_cond.
 Variables (A : finType) (P : R.-fdist A) (E : {set A}).

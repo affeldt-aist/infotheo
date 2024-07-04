@@ -61,7 +61,7 @@ apply/eqP; rewrite psumr_eq0/=; last first.
   by rewrite eqxx implybT.
 Qed.
 
-Definition c : `Ch(A, [finType of option A]) :=
+Definition c : `Ch(A, option A) :=
   fun a => FDist.make (f0 a) (f1 a).
 
 End EC_sect.

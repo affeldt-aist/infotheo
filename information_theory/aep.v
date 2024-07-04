@@ -136,7 +136,7 @@ have H2 k i : `V ((\row_(i < k.+1) `-- (`log P)) ``_ i) = aep_sigma2 P.
   by rewrite mxE V_mlog.
 have {H1 H2} := (wlln (H1 n) (H2 n) Hsum Hepsilon).
 move/(leR_trans _); apply.
-apply/Pr_incl/subsetP => ta; rewrite 2!inE => /andP[H1].
+apply/subset_Pr/subsetP => ta; rewrite 2!inE => /andP[H1].
 rewrite /sum_mlog_prod [`-- (`log _)]lock /= -lock /= /scalel_RV /log_RV /neg_RV.
 rewrite fdist_rVE.
 rewrite log_prodR_sumR_mlog //.

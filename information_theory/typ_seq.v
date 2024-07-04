@@ -196,11 +196,11 @@ have -> : Pr P `^ n.+1 (~: p) =
       by rewrite ler_norml; apply/andP; split;
         apply/RleP; rewrite -RminusE -RoppE;
         rewrite -RdivE ?gt_eqF// ?ltr0n// -INRE//.
-  rewrite Pr_union_disj // disjoints_subset; apply/subsetP => /= i.
+  rewrite disjoint_Pr_setU // disjoints_subset; apply/subsetP => /= i.
   by rewrite !inE /= => /eqP Hi; rewrite negb_and Hi ltxx.
 rewrite {1}/Pr (eq_bigr (fun=> 0)); last by move=> /= v; rewrite inE => /eqP.
 rewrite big_const iter_addR mulR0 add0R.
-apply/(leR_trans _ (aep He k0_k))/Pr_incl/subsetP => /= t.
+apply/(leR_trans _ (aep He k0_k))/subset_Pr/subsetP => /= t.
 rewrite !inE /= => /andP[-> H3].
 rewrite /log_RV /= /scalel_RV /= mulRN -mulNR.
 apply/ltW.
