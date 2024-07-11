@@ -365,7 +365,7 @@ Variable A : eqType.
 
 Lemma S1_neq0 a : S1 a != @Zero A. Proof. by []. Qed.
 
-(* TODO: rm? *)
+(* NB: should go away once we do not need coqR anymore *)
 Lemma weight_gt0 a : a != @Zero A -> (0 < weight a)%coqR.
 Proof. by case: a => // p x _ /=. Qed.
 
@@ -745,7 +745,7 @@ have [->|s0] := eqVneq s 0%:pr; first by rewrite p_of_r0 q_of_r0 3!conv0.
 by rewrite convA s_of_pqK// r_of_pqK.
 Qed.
 
-(* TODO: move *)
+(* NB: this is defined here and not in realType_ext.v because it uses the scope %coqR *)
 Lemma onem_probR_ge0 (p: {prob R}) : (0 <= (Prob.p p).~)%coqR.
 Proof. exact/RleP/onem_ge0/prob_le1. Qed.
 Hint Resolve onem_probR_ge0 : core.
@@ -1730,19 +1730,18 @@ have ->: (p + q)%coqR * (/ (p + q))%coqR = 1 by apply mulRV; last by apply Rpos_
 by rewrite !mul1r (addRC p) addrK.
 Qed.
 
-(* TODO: the name conflicts with GRing.scaler0  *)
-Lemma scaler0 : scaler Zero = 0. by []. Qed.
+Lemma scalerZero : scaler Zero = 0. by []. Qed.
 
 Lemma scaler_scalept r x : (0 <= r -> scaler (scalept r x) = r *: scaler x)%coqR.
 Proof.
 case: x => [q y|r0]; last first.
-  by rewrite scalept0// scaler0 !GRing.scaler0.
+  by rewrite scalept0// scalerZero !GRing.scaler0.
 case=> r0.
   by rewrite scalept_gt0 /= scalerA.
 by rewrite -r0 scale0pt scale0r.
 Qed.
 
-Definition big_scaler := big_morph scaler scaler_addpt scaler0.
+Definition big_scaler := big_morph scaler scaler_addpt scalerZero.
 
 Definition avgnr n (g : 'I_n -> E) (e : {fdist 'I_n}) := \sum_(i < n) e i *: g i.
 

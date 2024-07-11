@@ -1333,7 +1333,7 @@ have H2 : cond_entropy (fdistA (fdistAC Q)) = cond_entropy (fdist_prod_of_rV P).
   rewrite -(pair_bigA _ (fun a1 a2 => (fdistA Q)`2 (a1, a2) *
            cond_entropy1 (fdistA Q) (a1, a2))%R) /=.
   apply eq_bigr => v _.
-(* TODO: lemma yyy *)
+(* TODO: lemma *)
   rewrite (@reindex_onto _ _ _ 'rV[A]_n' 'rV[A]_(n' - i)
     (fun w => (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w)))
     (@row_drop A _ i)) /=; last first.

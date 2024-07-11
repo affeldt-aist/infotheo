@@ -87,8 +87,8 @@ exists '| up D |.
 rewrite -multE (natRM '| up D | d.+1).
 apply (@leR_trans (IZR `| up D |)); first exact: Rle_up.
 rewrite INR_IZR_INZ inj_Zabs_nat -{1}(mulR1 (IZR _)).
-apply leR_wpmul2l; first exact/IZR_le/Zabs_pos (* TODO: ssrZ? *).
-by rewrite -addn1 natRD /= (_ : 1%:R = 1%R) //; move: (leR0n d) => ?; lra.
+apply:leR_wpmul2l; first exact/IZR_le/normZ_ge0.
+by rewrite (_ : 1 = 1%:R)//; exact/le_INR/leP.
 Qed.
 
 Lemma source_direct_bound d D : { k | D <= (k.+1 * d.+1)%:R }.

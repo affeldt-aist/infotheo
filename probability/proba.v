@@ -1353,7 +1353,7 @@ Qed.
 Lemma cPrET E : `Pr_[E | setT] = Pr d E.
 Proof. by rewrite /cPr setIT Pr_setT divR1. Qed.
 
-Lemma cPrE0 (E : {set A}) : `Pr_[E | set0] = 0.
+Lemma cPrE0 E : `Pr_[E | set0] = 0.
 Proof. by rewrite /cPr setI0 Pr_set0 div0R. Qed.
 
 Lemma cPr_gt0P E F : 0 < `Pr_[E | F] <-> `Pr_[E | F] != 0.
@@ -1378,14 +1378,14 @@ Lemma cPr_setU F1 F2 E :
   `Pr_[F1 :|: F2 | E] = `Pr_[F1 | E] + `Pr_[F2 | E] - `Pr_[F1 :&: F2 | E].
 Proof. by rewrite /cPr -divRDl -divRBl setIUl Pr_setU setIACA setIid. Qed.
 
-Lemma Bayes (E F : {set A}) : `Pr_[E | F] = `Pr_[F | E] * Pr d E / Pr d F.
+Lemma Bayes E F : `Pr_[E | F] = `Pr_[F | E] * Pr d E / Pr d F.
 Proof.
 have [PE0|PE0] := eqVneq (Pr d E) 0.
   by rewrite /cPr [in RHS]setIC !(Pr_domin_setI F PE0) !(div0R,mul0R).
 by rewrite /cPr -mulRA mulVR // mulR1 setIC.
 Qed.
 
-Lemma product_rule (E F : {set A}) : Pr d (E :&: F) = `Pr_[E | F] * Pr d F.
+Lemma product_rule E F : Pr d (E :&: F) = `Pr_[E | F] * Pr d F.
 Proof.
 rewrite /cPr; have [PF0|PF0] := eqVneq (Pr d F) 0.
   by rewrite setIC (Pr_domin_setI E PF0) div0R mul0R.
@@ -1404,7 +1404,7 @@ rewrite -{1}(@setIT _ E) -(setUCr F) setIC setIUl disjoint_Pr_setU //.
 by rewrite -setI_eq0 setIACA setICr set0I.
 Qed.
 
-Lemma inde_events_cPr (E F : {set A}) : Pr d F != 0 -> inde_events d E F ->
+Lemma inde_events_cPr E F : Pr d F != 0 -> inde_events d E F ->
   `Pr_[E | F] = Pr d E.
 Proof. by move=> F0 EF; rewrite /cPr EF /Rdiv -mulRA mulRV ?mulR1. Qed.
 
