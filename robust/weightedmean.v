@@ -468,8 +468,8 @@ Qed.
 
 End pos_evar.
 
-Notation eps_max := (10 / 127)%mcR.
-Notation denom := (335 / 100)%mcR.
+Notation eps_max := (10 / 126)%mcR.
+Notation denom := ((3 / 10)^-1)%mcR.
 
 Section invariant.
 Local Open Scope ring_scope.
