@@ -2,9 +2,8 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
-From mathcomp Require Import Rstruct reals.
-Require Import Reals Lra.
-Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext.
+From mathcomp Require Import reals.
+Require Import realType_ext logb ssr_ext ssralg_ext.
 Require Import bigop_ext fdist.
 
 (******************************************************************************)
@@ -123,20 +122,22 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
-Import Order.POrderTheory Num.Theory.
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
-Lemma m1powD k : k <> 0%nat -> (-1)^(k-1) = - (-1)^k.
-Proof. by case: k => [//|k _]; rewrite subn1 /= mulN1R oppRK. Qed.
+(* TODO: mv *)
+Lemma m1powD {R : ringType} k : k <> 0%nat -> (-1) ^+ (k-1) = - (-1) ^+ k :> R.
+Proof. by case: k => [//|k _]; rewrite subn1 /= exprS mulN1r opprK. Qed.
 
 Notation "E `*T" := ([set x | x.1 \in E]) : proba_scope.
 Notation "T`* F" := ([set x | x.2 \in F]) : proba_scope.
 
 Section TsetT.
+Context {R : realType}.
 
 Variables (A B : finType) (P : R.-fdist (A * B)).
 Implicit Types (E : {set A}) (F : {set B}).
@@ -171,40 +172,32 @@ Proof. by apply/setP => -[a b]; rewrite !inE. Qed.
 End TsetT.
 
 (* TODO: consider moving this to fdist.v *)
-#[global] Hint Extern 0 (IZR Z0 <= _) =>
+(*#[global] Hint Extern 0 (IZR Z0 <= _) =>
   solve [apply/RleP; exact: FDist.ge0] : core.
 #[global] Hint Extern 0 (_ <= IZR (Zpos xH)) =>
-  solve [apply/RleP; exact: FDist.le1] : core.
+  solve [apply/RleP; exact: FDist.le1] : core.*)
 
 Section probability.
+Context {R : realType}.
 
 Variables (A : finType) (P : R.-fdist A).
 Implicit Types E : {set A}.
 
 Definition Pr E := \sum_(a in E) P a.
 
-Lemma Pr_ge0 E : 0 <= Pr E. Proof. exact/RleP/sumr_ge0. Qed.
+Lemma Pr_ge0 E : 0 <= Pr E. Proof. exact/sumr_ge0. Qed.
 Local Hint Resolve Pr_ge0 : core.
 
 Lemma Pr_gt0P E : 0 < Pr E <-> Pr E != 0.
 Proof.
-split => H; first by move/gtR_eqF : H.
-by rewrite ltR_neqAle; split => //; exact/nesym/eqP.
+by split => H; [rewrite gt_eqF|rewrite lt_neqAle eq_sym H/=].
 Qed.
 
 Lemma Pr_le1 E : Pr E <= 1.
-Proof.
-rewrite (_ : 1 = GRing.one _)//.
-rewrite -(FDist.f1 P); apply leR_sumRl => // a _.
-by apply/RleP; rewrite lexx.
-Qed.
+Proof. by rewrite -(FDist.f1 P) /Pr; exact/ler_suml. Qed.
 
 Lemma Pr_lt1P E : Pr E < 1 <-> Pr E != 1.
-Proof.
-split => H; move: (Pr_le1 E); rewrite leR_eqVlt.
-  by move=> [Pr1|]; [move: H; rewrite Pr1 => /ltRR|exact: ltR_eqF].
-by move=> [Pr1|//]; rewrite Pr1 eqxx in H.
-Qed.
+Proof. by rewrite lt_neqAle Pr_le1 andbT. Qed.
 
 Lemma Pr_set0 : Pr set0 = 0.
 Proof. by rewrite /Pr big_pred0 // => a; rewrite in_set0. Qed.
@@ -227,20 +220,18 @@ Proof. by rewrite /Pr big_set1. Qed.
 Lemma Pr_cplt E : Pr E + Pr (~: E) = 1.
 Proof.
 rewrite /Pr -bigU /=; last by rewrite -subsets_disjoint.
-rewrite (_ : 1 = GRing.one _)//.
 by rewrite -(FDist.f1 P); apply eq_bigl => /= a; rewrite !inE /= orbN.
 Qed.
 
 Lemma Pr_to_cplt E : Pr E = 1 - Pr (~: E).
-Proof. by rewrite -(Pr_cplt E); field. Qed.
+Proof. by rewrite -(Pr_cplt E) addrK. Qed.
 
 Lemma Pr_setC E : Pr (~: E) = 1 - Pr E.
-Proof. by rewrite -(Pr_cplt E); field. Qed.
+Proof. by rewrite -(Pr_cplt E) addrAC subrr add0r. Qed.
 
 Lemma subset_Pr E E' : E \subset E' -> Pr E <= Pr E'.
 Proof.
-move=> H; apply leR_sumRl => a aE //; [ | by move/subsetP : H; exact].
-by apply/RleP; rewrite lexx.
+by move=> H; apply ler_suml => a aE //; move/subsetP : H; exact.
 Qed.
 
 Lemma le_Pr_setU E1 E2 : Pr (E1 :|: E2) <= Pr E1 + Pr E2.
@@ -252,28 +243,28 @@ rewrite [X in _ <= X + _](_ : _ = \sum_(i in A | pred_of_set E1 i) P i); last fi
   by apply eq_bigl => x /=; rewrite unfold_in.
 rewrite [X in _ <= _ + X](_ : _ = \sum_(i in A | pred_of_set E2 i) P i); last first.
   by apply eq_bigl => x /=; rewrite unfold_in.
-exact/leR_sumR_predU.
+exact: ler_sum_predU.
 Qed.
 
 Lemma Pr_bigcup (B : finType) (p : pred B) F :
   Pr (\bigcup_(i | p i) F i) <= \sum_(i | p i) Pr (F i).
 Proof.
 rewrite /Pr; elim: (index_enum _) => [| h t IH].
-  by rewrite big_nil; apply/RleP/sumr_ge0 => b _; rewrite big_nil.
+  by rewrite big_nil; apply/sumr_ge0 => b _; rewrite big_nil.
 rewrite big_cons; case: ifP => H1.
-  apply: leR_trans; first by eapply leR_add2l; exact: IH.
+  apply: (@le_trans _ _ (P h + \sum_(i | p i) \sum_(a <- t | a \in F i) P a)).
+    by rewrite lerD2l.
   rewrite [X in _ <= X](exchange_big_dep
     (fun h => (h \in A) && [pred x in \bigcup_(i | p i) F i] h)) /=; last first.
     by move=> b a Ea jFi; apply/bigcupP; exists b.
-  rewrite big_cons /= H1 big_const iter_addR -exchange_big_dep /=; last first.
+  rewrite big_cons /= H1 big_const iter_addr -exchange_big_dep /=; last first.
     by move=> b a Ea iFj; apply/bigcupP; exists b.
-  apply/leR_add2r.
-  rewrite -{1}(mul1R (P h)); apply: (@leR_wpmul2r (P h)) => //.
-  rewrite (_ : 1 = 1%:R) //; apply/le_INR/ssrnat.leP/card_gt0P.
+  rewrite lerD2r// addr0 -mulr_natl -{1}(mul1r (P h)) ler_wpM2r//.
+  rewrite [leLHS](_ : 1 = 1%:R)// ler_nat; apply/card_gt0P.
   by case/bigcupP : H1 => b Eb hFb; exists b; rewrite -topredE /= Eb.
-apply/(leR_trans IH)/leR_sumR => b Eb; rewrite big_cons.
-case: ifPn => hFb; last by apply/RleP; rewrite lexx.
-by rewrite -[X in X <= _]add0R; exact/leR_add2r.
+apply/(le_trans IH)/ler_sum => b Eb; rewrite big_cons.
+case: ifPn => hFb; last by rewrite lexx.
+by rewrite -[X in X <= _]add0r lerD2r.
 Qed.
 
 Lemma disjoint_Pr_setU E1 E2 : [disjoint E1 & E2] -> Pr (E1 :|: E2) = Pr E1 + Pr E2.
@@ -291,11 +282,11 @@ by rewrite big_ord_recl IH // => i j ij; rewrite H.
 Qed.
 
 Lemma Pr_setD E1 E2 : Pr (E1 :\: E2) = Pr E1 - Pr (E1 :&: E2).
-Proof. by rewrite /Pr [in RHS](big_setID E2) /= addRC addRK. Qed.
+Proof. by rewrite /Pr [in RHS](big_setID E2) //= addrAC subrr add0r. Qed.
 
 Lemma Pr_setU E1 E2 : Pr (E1 :|: E2) = Pr E1 + Pr E2 - Pr (E1 :&: E2).
 Proof.
-rewrite addRC -addR_opp -addRA addR_opp -Pr_setD -disjoint_Pr_setU -?setU_setUD //.
+rewrite addrC. -addR_opp -addRA addR_opp -Pr_setD -disjoint_Pr_setU -?setU_setUD //.
 by rewrite -setI_eq0 setIDA setDIl setDv set0I.
 Qed.
 
