@@ -34,6 +34,13 @@ Import Prenex Implicits.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
+(* TODO: gen, call is divr_eq? *)
+Lemma eqr_divr_mulr {R : realType} (z x y : R) : z != 0%mcR -> (y / z = x)%mcR <-> (y = x * z)%mcR.
+Proof.
+move=> z0; split => [<-|->]; first by rewrite -mulrA mulVf // mulr1.
+by rewrite -mulrA mulfV // mulr1.
+Qed.
+
 Lemma prodR_gt0 (R : numDomainType) (A : finType) (F : A -> R) : (forall a, 0 < F a)%mcR ->
   (0 < \prod_(a : A) F a)%mcR.
 Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulr_gt0. Qed.
