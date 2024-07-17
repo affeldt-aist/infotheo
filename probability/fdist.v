@@ -14,7 +14,7 @@ Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext.
 (*                                                                            *)
 (*         f @^-1 y == preimage of the point y via the function f where the   *)
 (*                     type of x is an eqType                                 *)
-(*      R.-fdist A} == the type of distributions over a finType A             *)
+(*       R.-fdist A == the type of distributions over a finType A             *)
 (*     fdist_supp d := [set a | d a != 0]                                     *)
 (*           fdist1 == point-supported distribution                           *)
 (*        fdistbind == of type fdist A -> (A -> fdist B) -> fdist B           *)

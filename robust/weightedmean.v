@@ -114,16 +114,6 @@ rewrite -!coqRE -RsqrtE' => /RltP ? /RleP ?.
 exact/RleP/resilience.
 Qed.
 
-(* analog of ssrR.(pmulR_lgt0', pmulR_rgt0') *)
-Lemma wpmulr_lgt0 (R : numDomainType) (x y : R) : 0 <= x -> 0 < y * x -> 0 < y.
-Proof.
-rewrite le_eqVlt=> /orP [/eqP <- |].
-  by rewrite mulr0 ltxx.
-by move/pmulr_lgt0->.
-Qed.
-Lemma wpmulr_rgt0 (R : numDomainType) (x y : R) : 0 <= x -> 0 < x * y -> 0 < y.
-Proof. rewrite mulrC; exact: wpmulr_lgt0. Qed.
-
 (* eqType version of order.bigmax_le *)
 Lemma bigmax_le' disp (T : porderType disp) (I : eqType) (r : seq I) (f : I -> T)
     (x0 x : T) (PP : pred I) :
