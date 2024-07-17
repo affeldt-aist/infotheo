@@ -8,6 +8,7 @@ lib/ssrZ.v
 lib/ssrR.v
 lib/realType_ext.v
 lib/Reals_ext.v
+lib/realType_logb.v
 lib/logb.v
 lib/Ranalysis_ext.v
 lib/ssr_ext.v

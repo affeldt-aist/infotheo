@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra.
 From mathcomp Require boolp.
-From mathcomp Require Import reals Rstruct.
-Require Import realType_ext logb ssr_ext ssralg_ext.
+From mathcomp Require Import reals exp.
+Require Import realType_ext realType_logb ssr_ext ssralg_ext.
 Require Import bigop_ext fdist.
 
 (******************************************************************************)
@@ -628,24 +628,26 @@ Notation "'`--' P" := (neg_RV P) : proba_scope.
 Notation "'`log' P" := (log_RV P) : proba_scope.
 
 Section RV_lemmas.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Implicit Types X : {RV P -> R}.
 
 Lemma scalel_RVA k l X : scalel_RV (k * l) X = scalel_RV k (scalel_RV l X).
-Proof. by rewrite /scalel_RV boolp.funeqE => u; rewrite mulRA. Qed.
+Proof. by rewrite /scalel_RV boolp.funeqE => u; rewrite mulrA. Qed.
 
 Lemma scaler_RVA X k l : scaler_RV X (k * l) = scaler_RV (scaler_RV X k) l.
-Proof. by rewrite /scaler_RV boolp.funeqE => u; rewrite mulRA. Qed.
+Proof. by rewrite /scaler_RV boolp.funeqE => u; rewrite mulrA. Qed.
 
-Lemma sq_RV_pow2 X x : sq_RV X x = (X x) ^ 2.
+Lemma sq_RV_pow2 X x : sq_RV X x = (X x) ^+ 2.
 Proof. reflexivity. Qed.
 
 Lemma sq_RV_ge0 X x : 0 <= sq_RV X x.
-Proof. by rewrite sq_RV_pow2; exact: pow2_ge_0. Qed.
+Proof. by rewrite sq_RV_pow2 sqr_ge0. Qed.
 
 End RV_lemmas.
 
 Section pair_of_RVs.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Variables (A : eqType) (X : {RV P -> A}) (B : eqType) (Y : {RV P -> B}).
 Definition RV2 : {RV P -> A * B} := fun x => (X x, Y x).
@@ -654,6 +656,7 @@ End pair_of_RVs.
 Notation "'[%' x , y , .. , z ']'" := (RV2 .. (RV2 x y) .. z).
 
 Section RV2_prop.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Variables (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}).
 
@@ -675,6 +678,7 @@ Proof. by []. Qed.
 End RV2_prop.
 
 Section RV3_prop.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Variables (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
@@ -695,10 +699,10 @@ Proof. by rewrite /fdistC12 /dist_of_RV /fdistA fdistmap_comp. Qed.
 
 End RV3_prop.
 
-Lemma pr_eq_unit (U : finType) (P : R.-fdist U) : `Pr[ (unit_RV P) = tt ] = 1.
+Lemma pr_eq_unit {R : realType} (U : finType) (P : R.-fdist U) : `Pr[ (unit_RV P) = tt ] = 1.
 Proof. by rewrite pr_eqE'; apply/eqP/fdist1P; case. Qed.
 
-Lemma Pr_fdistmap_RV2 (U : finType) (P : R.-fdist U) (A B : finType)
+Lemma Pr_fdistmap_RV2 {R : realType} (U : finType) (P : R.-fdist U) (A B : finType)
   (E : {set A}) (F : {set B}) (X : {RV P -> A}) (Z : {RV P -> B}) :
   Pr `p_[% X, Z] (E `* F) =
   Pr P ([set x | preim X (mem E) x] :&: [set x | preim Z (mem F) x]).
@@ -712,6 +716,7 @@ by rewrite fdistmapE.
 Qed.
 
 Section pr_pair.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Variables (A B C : finType) (TA TB TC : eqType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
@@ -771,17 +776,18 @@ Qed.
 
 End pr_pair.
 
-Lemma pr_eq_pair_setT (U : finType) (P : {fdist U}) (A B : finType) (E : {set A})
+Lemma pr_eq_pair_setT {R : realType} (U : finType) (P : R.-fdist U) (A B : finType) (E : {set A})
     (X : {RV P -> A}) (Y : {RV P -> B}) :
   `Pr[ [% X, Y] \in E `*T ] = `Pr[ X \in E ].
 Proof.
 apply/esym.
-rewrite (@pr_in_comp _ _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
+rewrite (@pr_in_comp _ _ _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
 rewrite 2!pr_eq_setE; congr Pr; apply/setP => u; rewrite !inE /=.
 by apply/imsetP/idP => [[a aE [] ->//]|XuE]; exists (X u).
 Qed.
 
 Section RV_domin.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B : finType) (TA TB : eqType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 Variables (TX : {RV P -> A}) (TY : {RV P -> B}).
@@ -802,11 +808,11 @@ End RV_domin.
 
 Local Open Scope vec_ext_scope.
 
-Definition cast_RV_fdist_rV1 (U : finType) (P : R.-fdist U) (T : eqType) (X : {RV P -> T})
+Definition cast_RV_fdist_rV1 {R : realType} (U : finType) (P : R.-fdist U) (T : eqType) (X : {RV P -> T})
    : {RV (P `^ 1) -> T} :=
   fun x => X (x ``_ ord0).
 
-Definition cast_RV_fdist_rV10 (U : finType) (P : R.-fdist U) (T : eqType)
+Definition cast_RV_fdist_rV10 {R : realType} (U : finType) (P : R.-fdist U) (T : eqType)
     (Xs : 'rV[{RV P -> T}]_1) : {RV (P `^ 1) -> T} :=
   cast_RV_fdist_rV1 (Xs ``_ ord0).
 
@@ -819,20 +825,22 @@ Definition cast_fun_rV10 U (T : eqType) (Xs : 'rV[U -> T]_1) : 'rV[U]_1 -> T :=
 Local Close Scope vec_ext_scope.
 
 Section expected_value_def.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 Definition Ex := \sum_(u in U) X u * P u.
 
 Lemma Ex_ge0 : (forall u, 0 <= X u) -> 0 <= Ex.
-Proof. move=> H; apply/RleP/sumr_ge0 => u _; rewrite mulr_ge0//; exact/RleP. Qed.
+Proof. move=> H; apply/sumr_ge0 => u _; rewrite mulr_ge0//; exact/RleP. Qed.
 
 End expected_value_def.
-Arguments Ex {U} _ _.
+Arguments Ex {R U} _ _.
 
-Notation "'`E'" := (@Ex _ _) : proba_scope.
+Notation "'`E'" := (@Ex _ _ _) : proba_scope.
 
 (* Alternative definition of the expected value: *)
 Section Ex_alt.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 Definition Ex_alt := \sum_(r <- fin_img X) r * `Pr[ X = r ].
@@ -849,25 +857,26 @@ Qed.
 End Ex_alt.
 
 Section expected_value_prop.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X Y : {RV P -> R}).
 
 Lemma E_neg_RV : `E (`-- X) = - `E X.
 Proof.
-by rewrite /Ex/= big_morph_oppR/=; apply: eq_bigr => u _; rewrite mulNR.
+by rewrite /Ex/= big_morph_oppr/=; apply: eq_bigr => u _; rewrite mulNr.
 Qed.
 
 Lemma E_scalel_RV k : `E (k `cst* X) = k * `E X.
 Proof.
-by rewrite /scalel_RV {2}/Ex big_distrr /=; apply eq_bigr => a _; rewrite mulRA.
+by rewrite /scalel_RV {2}/Ex big_distrr /=; apply eq_bigr => a _; rewrite mulrA.
 Qed.
 
 Lemma E_scaler_RV k : `E (X `*cst k) = `E X * k.
 Proof.
-by rewrite big_distrl /=; apply: eq_bigr => i Hi; rewrite mulRAC.
+by rewrite big_distrl /=; apply: eq_bigr => i Hi; rewrite mulrAC.
 Qed.
 
 Lemma E_add_RV : `E (X `+ Y) = `E X + `E Y.
-Proof. rewrite -big_split; apply eq_bigr => a _ /=; by rewrite -mulRDl. Qed.
+Proof. rewrite -big_split; apply eq_bigr => a _ /=; by rewrite -mulrDl. Qed.
 
 Lemma E_sumR I r p (Z : I -> {RV P -> R}) :
   `E (sumR_RV r p Z) = \sum_(i <- r | p i) (`E (Z i)).
@@ -880,35 +889,35 @@ Qed.
 
 Lemma E_sub_RV : `E (X `- Y) = `E X - `E Y.
 Proof.
-rewrite {3}/Ex -addR_opp big_morph_oppR -big_split /=.
-apply eq_bigr => u _; by rewrite -mulNR -mulRDl.
+rewrite {3}/Ex big_morph_oppr -big_split /=.
+by apply eq_bigr => u _; by rewrite -mulNr -mulrDl.
 Qed.
 
 Lemma E_const_RV k : `E (const_RV P k) = k.
-Proof. by rewrite /Ex /const_RV /= -big_distrr /= FDist.f1 mulR1. Qed.
+Proof. by rewrite /Ex /const_RV /= -big_distrr /= FDist.f1 mulr1. Qed.
 
 Lemma E_trans_add_RV m : `E (X `+cst m) = `E X + m.
 Proof.
 rewrite /trans_add_RV /=.
 transitivity (\sum_(u in U) (X u * P u + m * P u)).
-  by apply eq_bigr => u _ /=; rewrite mulRDl.
-by rewrite big_split /= -big_distrr /= FDist.f1 mulR1.
+  by apply eq_bigr => u _ /=; rewrite mulrDl.
+by rewrite big_split /= -big_distrr /= FDist.f1 mulr1.
 Qed.
 
 Lemma E_trans_min_RV m : `E (X `-cst m) = `E X - m.
 Proof.
 rewrite /trans_min_RV /=.
 transitivity (\sum_(u in U) (X u * P u + - m * P u)).
-  by apply eq_bigr => u _ /=; rewrite mulRDl.
-by rewrite big_split /= -big_distrr /= FDist.f1 mulR1.
+  by apply eq_bigr => u _ /=; rewrite mulrDl.
+by rewrite big_split /= -big_distrr /= FDist.f1 mulr1.
 Qed.
 
 Lemma E_trans_RV_id_rem m :
-  `E ((X `-cst m) `^2) = `E ((X `^2 `- (2 * m `cst* X)) `+cst m ^ 2).
+  `E ((X `-cst m) `^2) = `E ((X `^2 `- (2 * m `cst* X)) `+cst m ^+ 2).
 Proof.
 apply eq_bigr => a _.
 rewrite /sub_RV /trans_add_RV /trans_min_RV /sq_RV /= /comp_RV /scalel_RV /=.
-by rewrite /ambient_dist ; field.
+by rewrite /ambient_dist; lra.
 Qed.
 
 Lemma E_comp_RV f k : (forall x y, f (x * y) = f x * f y) ->
@@ -920,7 +929,7 @@ Proof. move=> H; by rewrite /comp_RV /= H. Qed.
 
 End expected_value_prop.
 
-Lemma E_cast_RV_fdist_rV1 (A : finType) (P : R.-fdist A) :
+Lemma E_cast_RV_fdist_rV1 {R : realType} (A : finType) (P : R.-fdist A) :
   forall (X : {RV P -> R}), `E (cast_RV_fdist_rV1 X) = `E X.
 Proof.
 move=> f; rewrite /cast_RV_fdist_rV1 /=; apply big_rV_1 => // m.
@@ -928,6 +937,7 @@ by rewrite -fdist_rV1.
 Qed.
 
 Section conditional_expectation_def.
+Context {R : realType}.
 Variable (U : finType) (P : R.-fdist U) (X : {RV P -> R}) (F : {set U}).
 
 Definition cEx :=
@@ -937,6 +947,7 @@ End conditional_expectation_def.
 Notation "`E_[ X | F ]" := (cEx X F).
 
 Section conditional_expectation_prop.
+Context {R : realType}.
 Variable (U I : finType) (P : R.-fdist U) (X : {RV P -> R}) (F : I -> {set U}).
 Hypothesis dis : forall i j, i != j -> [disjoint F i & F j].
 Hypothesis cov : cover [set F i | i in I] = [set: U].
@@ -947,13 +958,13 @@ apply/esym; rewrite /cEx.
 evar (f : I -> R); rewrite (eq_bigr f); last first.
   move=> i _; rewrite big_distrl /f; reflexivity.
 rewrite {}/f /= (bigID (fun i => Pr P (F i) != 0)) /=.
-rewrite [in X in _ + X = _]big1 ?addR0; last first.
-  move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _; by rewrite mulR0.
+rewrite [in X in _ + X = _]big1 ?addr0; last first.
+  by move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _; rewrite mulr0.
 transitivity (\sum_(i in I | Pr P (F i) != 0)
   \sum_(j <- fin_img X) (j * Pr P (finset (X @^-1 j) :&: F i))).
-  apply eq_bigr => i Fi0; apply eq_bigr => r _.
-  by rewrite -!mulRA mulVR // mulR1.
-rewrite -Ex_altE /Ex_alt exchange_big /=; apply eq_bigr => r _.
+  apply: eq_bigr => i Fi0; apply eq_bigr => r _.
+  by rewrite -mulrA mulVf ?mulr1.
+rewrite -Ex_altE /Ex_alt exchange_big /=; apply: eq_bigr => r _.
 rewrite -big_distrr /=; congr (_ * _).
 transitivity (\sum_(i in I) Pr P (finset (X @^-1 r) :&: F i)).
   rewrite big_mkcond /=; apply eq_bigr => i _.
@@ -976,29 +987,30 @@ End conditional_expectation_prop.
 
 (** *** A theory of indicator functions from [A : finType] to [R] *)
 Section Ind.
+Context {R : realType}.
 Variable A : finType.
 
-Definition Ind (s : {set A}) (x : A) : R := if x \in s then R1 else R0.
+Definition Ind (s : {set A}) (x : A) : R := if x \in s then 1 else 0.
 
 Lemma Ind_set0 (x : A) : Ind set0 x = 0.
 Proof. by rewrite /Ind inE. Qed.
 
-Lemma Ind_inP (s : {set A}) (x : A) : reflect (Ind s x = R1) (x \in s).
+Lemma Ind_inP (s : {set A}) (x : A) : reflect (Ind s x = 1) (x \in s).
 Proof.
 apply: (iffP idP); rewrite /Ind; first by move->.
-by case: ifP =>//; auto with real.
+by case: ifPn => // _ /eqP; rewrite eq_sym oner_eq0.
 Qed.
 
-Lemma Ind_notinP (s : {set A}) (x : A) : reflect (Ind s x = R0) (x \notin s).
+Lemma Ind_notinP (s : {set A}) (x : A) : reflect (Ind s x = 0) (x \notin s).
 Proof.
 apply: (iffP idP); rewrite /Ind => Hmain.
   by rewrite ifF //; exact: negbTE.
-by apply: negbT; case: ifP Hmain =>// _ H10; exfalso; auto with real.
+by apply: negbT; case: ifP Hmain =>// _ /eqP; rewrite oner_eq0.
 Qed.
 
 Lemma Ind_cap (S1 S2 : {set A}) (x : A) :
   Ind (S1 :&: S2) x = Ind S1 x * Ind S2 x.
-Proof. by rewrite /Ind inE; case: in_mem; case: in_mem=>/=; ring. Qed.
+Proof. by rewrite /Ind inE; case: in_mem; case: in_mem=>/=; lra. Qed.
 
 Lemma Ind_bigcap I (e : I -> {set A}) (r : seq.seq I) (p : pred I) x :
   Ind (\bigcap_(j <- r | p j) e j) x = \prod_(j <- r | p j) (Ind (e j) x).
@@ -1008,11 +1020,11 @@ apply (big_ind2 (R1 := {set A}) (R2 := R)); last by [].
 - by move=> sa a sb b Ha Hb; rewrite -Ha -Hb; apply: Ind_cap.
 Qed.
 
-Lemma E_Ind (P : {fdist A}) s : `E (Ind s : {RV P -> R}) = Pr P s.
+Lemma E_Ind (P : R.-fdist A) s : `E (Ind s : {RV P -> R}) = Pr P s.
 Proof.
 rewrite /Ex /Ind /Pr (bigID (mem s)) /=.
-rewrite [X in _ + X = _]big1; last by move=> i /negbTE ->; rewrite mul0R.
-by rewrite addR0; apply: eq_bigr => i ->; rewrite mul1R.
+rewrite [X in _ + X = _]big1; last by move=> i /negbTE ->; rewrite mul0r.
+by rewrite addr0; apply: eq_bigr => i ->; rewrite mul1r.
 Qed.
 
 End Ind.
@@ -1021,54 +1033,56 @@ End Ind.
     contributed by Erik Martin-Dorel: the corresponding theorem is named
     [Pr_bigcup_incl_excl] and is more general than lemma [Pr_bigcup]. *)
 Section probability_inclusion_exclusion.
+Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A).
 
-Let SumIndCap (n : nat) (S : 'I_n -> {set A}) (k : nat) (x : A) :=
+Let SumIndCap (n : nat) (S : 'I_n -> {set A}) (k : nat) (x : A) : R :=
   \sum_(J in {set 'I_n} | #|J| == k) (Ind (\bigcap_(j in J) S j) x).
 
 Lemma Ind_bigcup_incl_excl (n : nat) (S : 'I_n -> {set A}) (x : A) :
   Ind (\bigcup_(i < n) S i) x =
-  (\sum_(1 <= k < n.+1) (-1) ^ (k - 1) * SumIndCap S k x).
+  (\sum_(1 <= k < n.+1) (-1) ^+ (k - 1) * SumIndCap S k x).
 Proof.
 case: n S => [|n] S; first by rewrite big_ord0 big_geq // Ind_set0.
 set Efull := \bigcup_(i < n.+1) S i.
-have Halg : \prod_(i < n.+1) (Ind Efull x - Ind (S i) x) = 0.
+have Halg : \prod_(i < n.+1) (Ind Efull x - Ind (S i) x) = 0 :> R.
   case Ex : (x \in Efull); last first.
   { have /Ind_notinP Ex0 := Ex.
     erewrite eq_bigr. (* to replace later with under *)
       2: by rewrite Ex0.
-    have Ex00 : forall i : 'I_n.+1, Ind (S i) x = 0.
+    have Ex00 : forall i : 'I_n.+1, Ind (S i) x = 0 :> R.
       move=> i; apply/Ind_notinP.
       by move/negbT: Ex; rewrite -!in_setC setC_bigcup; move/bigcapP; apply.
     erewrite eq_bigr. (* to replace later with under *)
       2: by move=> i _; rewrite Ex00.
-    rewrite subR0.
-    by apply/prodR_eq0; exists ord0. }
+    by rewrite subr0 big_ord_recl mul0r. }
   { rewrite /Efull in Ex.
     have /bigcupP [i Hi Hi0] := Ex.
-    apply/prodR_eq0; exists i =>//.
-    by rewrite /Efull (Ind_inP _ _ Ex) (Ind_inP _ _ Hi0) subRR. }
+    rewrite (bigD1 i)//= /Efull (Ind_inP _ _ Ex) (Ind_inP _ _ Hi0) subrr.
+    by rewrite mul0r. }
 rewrite bigA_distr in Halg.
 do [erewrite eq_bigr; last by move=> k _; (* to replace later with under *)
     erewrite eq_bigr; last by move=> J _; rewrite bigID2] in Halg.
 rewrite big_ltn //= in Halg.
-rewrite -> addR_eq0 in Halg.
+move/eqP in Halg.
+rewrite addr_eq0 in Halg.
 rewrite cardT size_enum_ord (big_pred1 set0) in Halg; last first.
   by move=> i; rewrite pred1E [RHS]eq_sym; apply: cards_eq0.
+move/eqP in Halg.
 rewrite [in X in _ * X = _]big_pred0 in Halg; last by move=> i; rewrite inE.
 do [erewrite eq_bigl; (* to replace later with under *)
   last by move=> j; rewrite !inE /negb /= ] in Halg.
-rewrite mulR1 -Ind_bigcap big_const_ord iterSr iter_fix setIT ?setIid // in Halg.
-rewrite {}Halg big_morph_oppR big_nat [RHS]big_nat.
+rewrite mulr1 -Ind_bigcap big_const_ord iterSr iter_fix setIT ?setIid // in Halg.
+rewrite {}Halg big_morph_oppr big_nat [RHS]big_nat.
 apply: eq_bigr => i Hi; rewrite /SumIndCap /Efull.
 rewrite m1powD; last first.
   by case/andP: Hi => Hi _ K0; rewrite K0 in Hi.
-rewrite mulNR.
-rewrite [in RHS](big_morph _ (morph_mulRDr _) (mulR0 _)).
-congr Ropp; apply: eq_bigr => j Hj.
-rewrite prodRN (eqP Hj).
-rewrite (_ : ?[a] * ((-1)^i * ?[b]) = (-1)^i * (?a * ?b)); last by ring.
-congr Rmult.
+rewrite mulNr.
+rewrite [in RHS](big_morph _ (morph_mulRDr _) (mulr0 _)).
+congr -%R; apply: eq_bigr => j Hj.
+rewrite prodrN (eqP Hj).
+rewrite (_ : ?[a] * ((-1)^+i * ?[b]) = (-1)^+i * (?a * ?b)); last by lra.
+congr *%R.
 have [Hlt|Hn1] := ltnP i n.+1; last first.
 { rewrite big1; last first.
   { move=> k Hk; rewrite inE in Hk.
@@ -1076,7 +1090,7 @@ have [Hlt|Hn1] := ltnP i n.+1; last first.
     apply/setP/subset_cardP =>//.
     rewrite (eqP Hj) cardsT /= card_ord.
     by apply/anti_leq/andP; split; first by case/andP: Hi =>//. }
-  by rewrite mul1R Ind_bigcap. }
+  by rewrite mul1r Ind_bigcap. }
 rewrite -!Ind_bigcap big_const.
   rewrite cardsCs card_ord setCK (eqP Hj).
   have [m ->] : exists m, (n.+1 - i)%nat = m.+1.
@@ -1107,7 +1121,7 @@ Qed.
 
 Theorem Pr_bigcup_incl_excl n (S : 'I_n -> {set A}) :
   Pr P (\bigcup_(i < n) S i) =
-  \sum_(1 <= k < n.+1) ((-1)^(k-1) * SumPrCap S k).
+  \sum_(1 <= k < n.+1) ((-1)^+(k-1) * SumPrCap S k).
 Proof.
 rewrite -E_Ind /=.
 rewrite /Ex.
@@ -1124,25 +1138,28 @@ Qed.
 End probability_inclusion_exclusion.
 
 Section markov_inequality.
-Variables (U : finType) (P : {fdist U}) (X : {RV P -> R}).
+Context {R : realType}.
+Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 Hypothesis X_ge0 : forall u, 0 <= X u.
 
 Lemma Ex_lb (r : R) : r * `Pr[ X >= r] <= `E X.
 Proof.
-rewrite /Ex (bigID [pred a' | (X a' >= r)%mcR]) /= -[a in a <= _]addR0.
-apply leR_add; last first.
-  by apply/RleP/sumr_ge0 => a _; rewrite mulr_ge0//; exact/RleP/X_ge0.
-apply (@leR_trans (\sum_(i | (X i >= r)%mcR) r * P i)).
-  by rewrite big_distrr /=;  apply/Req_le/eq_bigl => a; rewrite inE.
-by apply leR_sumR => u Xur; apply/leR_wpmul2r => //; exact/RleP.
+rewrite /Ex (bigID [pred a' | (X a' >= r)%mcR]) /= -[a in a <= _]addr0.
+rewrite lerD//; last first.
+  by apply/sumr_ge0 => a _; rewrite mulr_ge0//; exact/RleP/X_ge0.
+apply (@le_trans _ _ (\sum_(i | (X i >= r)%mcR) r * P i)).
+  rewrite big_distrr /= le_eqVlt; apply/orP; left; apply/eqP.
+  by apply/eq_bigl => a; rewrite inE.
+by apply: ler_sum => u Xur; exact/ler_wpM2r.
 Qed.
 
 Lemma markov (r : R) : 0 < r -> `Pr[ X >= r ] <= `E X / r.
-Proof. by move=> r0; rewrite leR_pdivl_mulr // mulRC; exact/Ex_lb. Qed.
+Proof. by move=> r0; rewrite ler_pdivlMr // mulrC; exact/Ex_lb. Qed.
 
 End markov_inequality.
 
 Section thm61.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}) (phi : R -> R).
 
 Lemma Ex_comp_RV : `E (phi `o X) = \sum_(r <- fin_img X) phi r * `Pr[ X = r ].
@@ -1158,6 +1175,7 @@ Qed.
 End thm61.
 
 Section variance_def.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 (* Variance of a random variable (\sigma^2(X) = V(X) = E (X^2) - (E X)^2): *)
@@ -1165,59 +1183,64 @@ Definition Var := let miu := `E X in `E ((X `-cst miu) `^2).
 
 (* Alternative form for computing the variance
    (V(X) = E(X^2) - E(X)^2 \cite[Theorem 6.6]{probook}): *)
-Lemma VarE : Var = `E (X `^2)  - (`E X) ^ 2.
+Lemma VarE : Var = `E (X `^2)  - (`E X) ^+ 2.
 Proof.
-rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV E_scalel_RV; field.
+by rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV E_scalel_RV; lra.
 Qed.
 
 End variance_def.
 
-Arguments Var {U} _ _.
+Arguments Var {R U} _ _.
 
-Notation "'`V'" := (@Var _ _) : proba_scope.
+Notation "'`V'" := (@Var _ _ _) : proba_scope.
 
 Section variance_prop.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 (* The variance is not linear V (k X) = k^2 V (X) \cite[Theorem 6.7]{probook}: *)
-Lemma Var_scale k : `V (k `cst* X) = k ^ 2 * `V X.
+Lemma Var_scale k : `V (k `cst* X) = k ^+ 2 * `V X.
 Proof.
 rewrite {1}/`V [in X in X = _]/= E_scalel_RV.
 pose Y : {RV P -> R} := k `cst* (X `+cst - `E X).
-rewrite (@E_comp_RV_ext _ P ((k `cst* X) `-cst k * `E X) Y) //; last first.
+rewrite (@E_comp_RV_ext _ _ P ((k `cst* X) `-cst k * `E X) Y) //; last first.
   rewrite boolp.funeqE => /= x.
-  by rewrite /Y /scalel_RV /= /trans_min_RV /trans_add_RV; field.
-by rewrite E_comp_RV ?E_scalel_RV // => *; field.
+  by rewrite /Y /scalel_RV /= /trans_min_RV /trans_add_RV; lra.
+by rewrite E_comp_RV ?E_scalel_RV // => *; lra.
 Qed.
 
 Lemma Var_trans m : `V (X `+cst m) = `V X.
 Proof.
 rewrite /Var E_trans_add_RV; congr (`E (_ `^2)).
-rewrite boolp.funeqE => /= u; rewrite /trans_add_RV /trans_min_RV /=; field.
+by rewrite boolp.funeqE => /= u; rewrite /trans_add_RV /trans_min_RV /=; lra.
 Qed.
 
 End variance_prop.
 
-Lemma Var_cast_RV_fdist_rV1 (A : finType) (P : {fdist A}) (X : {RV P -> R}) :
-  `V (@cast_RV_fdist_rV1 _ P _ X) = `V X.
+Lemma Var_cast_RV_fdist_rV1 {R : realType} (A : finType) (P : R.-fdist A) (X : {RV P -> R}) :
+  `V (@cast_RV_fdist_rV1 _ _ P _ X) = `V X.
 Proof.
 rewrite !VarE !E_cast_RV_fdist_rV1; congr (_ - _).
-apply: big_rV_1 => // v; by rewrite fdist_rV1.
+by apply: big_rV_1 => // v; rewrite fdist_rV1.
 Qed.
 
 (* (Probabilistic statement.)
  In any data sample, "nearly all" the values are "close to" the mean value:
  Pr[ |X - E X| \geq \epsilon] \leq V(X) / \epsilon^2 *)
 Section chebyshev.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
+Import Num.Def.
+
 Lemma chebyshev_inequality epsilon : 0 < epsilon ->
-  `Pr[ (Rabs `o (X `-cst `E X)) >= epsilon] <= `V X / epsilon ^ 2.
+  `Pr[ (normr `o (X `-cst `E X)) >= epsilon] <= `V X / epsilon ^+ 2.
 Proof.
-move=> He; rewrite leR_pdivl_mulr; last exact/expR_gt0.
-rewrite mulRC /Var.
-apply (@leR_trans (\sum_(a in U | (`| X a - `E X | >= epsilon)%mcR)
+move=> He; rewrite ler_pdivlMr ?exprn_gt0//.
+rewrite mulrC /Var.
+apply (@le_trans _ _ (\sum_(a in U | (`| X a - `E X | >= epsilon)%mcR)
     (((X `-cst `E X) `^2) a  * P a))); last first.
+xxx
   apply leR_sumRl_support with (Q := xpredT) => // a .
   by apply mulR_ge0 => //; exact: sq_RV_ge0.
 rewrite /Pr big_distrr.
