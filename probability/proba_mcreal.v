@@ -7,6 +7,17 @@ Require Import Reals Lra.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext.
 Require Import bigop_ext fdist proba.
 
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Local Open Scope ring_scope.
+Local Open Scope reals_ext_scope.
+Local Open Scope fdist_scope.
+Local Open Scope proba_scope.
+
+Import Order.POrderTheory Order.Theory Num.Theory GRing.Theory.
+
 (* from mca master *)
 Local Lemma Pos_to_natE p : Pos.to_nat p = nat_of_pos p.
 Proof.
