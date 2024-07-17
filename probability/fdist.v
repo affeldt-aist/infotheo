@@ -72,7 +72,7 @@ Require Import ssrR logb realType_ext ssr_ext ssralg_ext bigop_ext.
 Reserved Notation "{ 'fdist' T }" (at level 0, format "{ 'fdist'  T }").
 Reserved Notation "R '.-fdist' T" (at level 2, format "R '.-fdist'  T").
 Reserved Notation "'`U' C0 " (at level 10, C0 at next level).
-Reserved Notation "P `^ n" (at level 5).
+Reserved Notation "P `^ n" (at level 11).
 Reserved Notation "P `X W" (at level 6).
 Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
@@ -1139,13 +1139,13 @@ Variable R : realType.
 Variables (C : finType) (P : fdist R C) (k : nat) (s : {set 'rV[C]_k}).
 
 Lemma wolfowitz a b A B : 0 < A -> 0 < B ->
-  a <= \sum_(x in s) P `^ k x <= b ->
-  (forall x : 'rV_k, x \in s -> A <= P `^ k x <= B) ->
+  a <= \sum_(x in s) (P `^ k) x <= b ->
+  (forall x : 'rV_k, x \in s -> A <= (P `^ k) x <= B) ->
   a / B <= (#| s |)%:R <= b / A.
 Proof.
 move=> A0 B0 /andP [Ha Hb] H.
 have eq_le_ : forall x y, (x = y) -> (x <= y)%O. by move=> ? ? ? ? ->.
-have HB : \sum_(x in s) P `^ _ x <= #|s|%:R * B.
+have HB : \sum_(x in s) (P `^ _) x <= #|s|%:R * B.
   apply (@le_trans _ _ (\sum_(x in s) [fun _ => B] x)).
     by apply: ler_sum => /= i iA; move: (H i iA) => /andP [].
   rewrite -big_filter /= big_const_seq /= iter_addr /=.
@@ -1154,7 +1154,7 @@ have HB : \sum_(x in s) P `^ _ x <= #|s|%:R * B.
   apply eq_le_.
   have [/= l el [ul ls] [pl sl]] := big_enumP _.
   by rewrite count_predT sl; congr (_%:R)%R.
-have HA : (#|s|)%:R * A <= \sum_(x in s) P `^ _ x.
+have HA : (#|s|)%:R * A <= \sum_(x in s) (P `^ _) x.
   apply (@le_trans _ _ (\sum_(x in s) [fun _ => A] x)); last first.
     by apply: ler_sum => i Hi /=; case/andP: (H i Hi).
   rewrite -big_filter /= big_const_seq /= iter_addr /=.
@@ -1271,11 +1271,11 @@ move=> P; apply/fdist_ext => v.
 by rewrite fdist_rV_of_prodE fdist_prod_of_rVE row_mx_rbehead.
 Qed.
 
-Lemma fdist_rV0 (x : 'rV[A]_0) (P: fdist R A) : P `^ 0 x = 1.
+Lemma fdist_rV0 (x : 'rV[A]_0) (P: fdist R A) : (P `^ 0) x = 1.
 Proof. by rewrite fdist_rVE big_ord0. Qed.
 
 Lemma fdist_rVS n (x : 'rV[A]_n.+1) (P : fdist R A) :
-  P `^ n.+1 x = P (x ``_ ord0) * P `^ n (rbehead x).
+  (P `^ n.+1) x = P (x ``_ ord0) * (P `^ n) (rbehead x).
 Proof.
 rewrite 2!fdist_rVE big_ord_recl; congr (_ * _).
 by apply eq_bigr => i _; rewrite /rbehead mxE.
@@ -1285,10 +1285,10 @@ Lemma fdist_rV1 (a : 'rV[A]_1) (P : fdist R A) : (P `^ 1) a = P (a ``_ ord0).
 Proof. by rewrite fdist_rVS fdist_rV0 mulr1. Qed.
 
 Lemma fdist_prod_of_fdist_rV n (P : fdist R A) :
-  fdist_prod_of_rV (P `^ n.+1) = P `x P `^ n.
+  fdist_prod_of_rV (P `^ n.+1) = P `x (P `^ n).
 Proof.
 apply/fdist_ext => /= -[a b].
-rewrite fdist_prod_of_rVE /= fdist_rVS fdist_prodE; congr (P _ * P `^ n _) => /=.
+rewrite fdist_prod_of_rVE /= fdist_rVS fdist_prodE; congr (P _ * (P `^ n) _) => /=.
   by rewrite row_mx_row_ord0.
 by rewrite rbehead_row_mx.
 Qed.
@@ -1698,7 +1698,7 @@ Local Open Scope ring_scope.
 Lemma rsum_rmul_rV_pmf_tnth (R : realType) A n k (P : fdist R A) :
   \sum_(t : 'rV[ 'rV[A]_n]_k) \prod_(m < k) (P `^ n) t ``_ m = 1.
 Proof.
-transitivity (\sum_(j : {ffun 'I_k -> 'rV[A]_n}) \prod_(m : 'I_k) P `^ _ (j m)).
+transitivity (\sum_(j : {ffun 'I_k -> 'rV[A]_n}) \prod_(m : 'I_k) (P `^ _) (j m)).
   rewrite (reindex_onto (fun p : 'rV_k => [ffun i => p ``_ i])
     (fun x : {ffun 'I_k -> 'rV_n} => \row_(i < k) x i)) //=; last first.
     by move=> f _; apply/ffunP => /= k0; rewrite ffunE mxE.

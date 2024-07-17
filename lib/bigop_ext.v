@@ -11,6 +11,14 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Lemma morph_oppr {R : ringType} : {morph @GRing.opp R : x y / (x + y)%R : R}.
+Proof. by move=> x y /=; rewrite GRing.opprD. Qed.
+
+Lemma morph_mulRDr {R : ringType} a : {morph (GRing.mul a) : x y / (x + y)%R : R}.
+Proof. by move=> * /=; rewrite GRing.mulrDr. Qed.
+
+Definition big_morph_oppr {R : ringType} := big_morph _ morph_oppr (@GRing.oppr0 R).
+
 Section bigop_no_law.
 Variables (R : Type) (idx : R) (op : R -> R -> R).
 
