@@ -34,6 +34,21 @@ Import Prenex Implicits.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
+(* TODO: move to "mathcomp_extra.v" *)
+Section num_ext.
+Local Open Scope ring_scope.
+(* analogs of ssrR.(pmulR_lgt0', pmulR_rgt0') *)
+Lemma wpmulr_lgt0 (R : numDomainType) (x y : R) : 0 <= x -> 0 < y * x -> 0 < y.
+Proof.
+rewrite le_eqVlt=> /orP [/eqP <- |].
+  by rewrite mulr0 ltxx.
+by move/pmulr_lgt0->.
+Qed.
+
+Lemma wpmulr_rgt0 (R : numDomainType) (x y : R) : 0 <= x -> 0 < x * y -> 0 < y.
+Proof. by rewrite mulrC; exact: wpmulr_lgt0. Qed.
+End num_ext.
+
 (* TODO: gen, call is divr_eq? *)
 Lemma eqr_divr_mulr {R : realType} (z x y : R) : z != 0%mcR -> (y / z = x)%mcR <-> (y = x * z)%mcR.
 Proof.
