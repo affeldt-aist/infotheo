@@ -355,12 +355,6 @@ by apply/cinde_rv_unit.
 exact: X0.
 Qed.
 
-Proof.
-have:= inde_RV2_cinde (X:=X1) (Z:=X2) (Y:=XnZ).
-move => H.
-Fail rewrite cpr_eq_pairCr.
-Abort.
-
 End lemma_3_6.
 
 Section theorem_3_7.
