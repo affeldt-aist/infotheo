@@ -468,8 +468,33 @@ Qed.
 
 End pos_evar.
 
-Notation eps_max := (10 / 126)%mcR.
-Notation denom := ((3 / 10)^-1)%mcR.
+(*Notation eps_max := (10 / 126)%mcR.*)
+(*Notation denom := ((3 / 10)^-1)%mcR.*)
+
+(*Notation eps_max := (100 / 1253)%mcR.
+Notation denom := (3317 / 1000)%mcR.*)
+
+(*Notation eps_max := (100%:R / 1253%:R)%mcR.
+Notation denom := (3317%:R / 1000%:R)%mcR.
+
+Lemma eps_maxRE : eps_max = (100 / 1253)%coqR.
+Proof. by rewrite RdivE; congr (_ / _)%mcR; rewrite /= -INRE INR_IZR_INZ. Qed.
+
+Lemma denomRE : denom = (3317 / 1000)%coqR.
+Proof.
+by rewrite RdivE; congr (_ / _)%mcR; rewrite /= -INRE INR_IZR_INZ.
+Qed.*)
+
+Notation eps_max := (100%:R / 1252%:R)%mcR.
+Notation denom := (33178%:R / 10000%:R)%mcR.
+
+Lemma eps_maxRE : eps_max = (100 / 1252)%coqR.
+Proof. by rewrite RdivE; congr (_ / _)%mcR; rewrite /= -INRE INR_IZR_INZ. Qed.
+
+Lemma denomRE : denom = (33178 / 10000)%coqR.
+Proof.
+by rewrite RdivE; congr (_ / _)%mcR; rewrite /= -INRE -common.uint_N_nat INR_IPR.
+Qed.
 
 Section invariant.
 Local Open Scope ring_scope.
@@ -862,9 +887,42 @@ Let eps_max01 : (0 < eps_max < 1 :> R). Proof. lra. Qed.
 
 Hypothesis low_eps : eps <= eps_max.
 
-(* TODO: "interval" in the identifier? *)
+Lemma from_mcR_to_coqR_manually (e : R) :
+  16^-1 + 2 * e * ((4 * Num.sqrt (2 - e))^-1 + (Num.sqrt (1 - e))^-1) ^+ 2 =
+  (/ 16%:R + 2%:R * e * (/ (4%:R * sqrt (2%:R - e)) + / sqrt (1 - e)) ^ 2)%coqR.
+Proof.
+rewrite !coqRE !RsqrtE'.
+rewrite (_ : 16 = 16%coqR); last by rewrite !IZRposE// -!coqRE.
+rewrite (_ : 2 = 2%coqR); last by rewrite !IZRposE// -!coqRE.
+by rewrite (_ : 4 = 4%coqR)// !IZRposE// -!coqRE.
+Qed.
+
+Lemma from_mcR_to_coqR_manually2 (e : R) :
+  (1 - 3 / 2 * e -
+    (1 - e) *
+    (16^-1 + 2 * e * ((4 * Num.sqrt (2 - e))^-1 + (Num.sqrt (1 - e))^-1) ^+ 2))%mcR =
+  (1 - 3 / 2 * e -
+    (1 - e) *
+    (/16 + 2 * e * (/(4 * sqrt (2 - e)) + (/sqrt (1 - e))) ^ 2))%coqR.
+Proof.
+rewrite !coqRE !RsqrtE'.
+rewrite (_ : 16 = 16%coqR); last by rewrite !IZRposE// -!coqRE.
+rewrite (_ : 2 = 2%coqR); last by rewrite !IZRposE// -!coqRE.
+by rewrite (_ : 4 = 4%coqR)// !IZRposE// -!coqRE.
+Qed.
+
 Lemma bound_evar_ineq_by_interval : bound_evar_ineq eps_max.
-Proof. by rewrite /bound_evar_ineq/bound_intermediate; apply/RleP; rewrite -!coqRE -!RsqrtE'; interval. Qed.
+Proof.
+rewrite /bound_evar_ineq/bound_intermediate; apply/RleP.
+(* this works for small constants:
+  rewrite -!coqRE.
+  rewrite -!RsqrtE'.
+  interval.*)
+(* this works for large constants:*)
+rewrite from_mcR_to_coqR_manually eps_maxRE denomRE.
+rewrite -[in X in (_ <= X)%coqR]coqRE.
+interval.
+Qed.
 
 (**md ## lemma 1.4, page 5 (part 2) *)
 (**md ## eqn A.6--A.9, page 63 *)
@@ -905,7 +963,11 @@ have ->// :  2 / denom * `V (WP.-RV X) <=
   `V (WP.-RV X).
 rewrite ler_wpM2r // ?variance_ge0' // /bound_intermediate.
 apply/RleP. move: low_eps => /RleP. move: eps0 => /RleP.
-rewrite -!coqRE -!RsqrtE' => ? ?.
+(*rewrite -!coqRE -!RsqrtE' => ? ?.*)
+(* doesn't work yet :*)
+rewrite from_mcR_to_coqR_manually2 denomRE eps_maxRE.
+move=> ? ?.
+rewrite -![in X in (X <= _)%coqR]coqRE.
 interval with (i_prec 20, i_bisect eps).
 Qed.
 
