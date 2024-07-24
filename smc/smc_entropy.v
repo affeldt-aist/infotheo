@@ -133,11 +133,84 @@ have Ha :=(@mc_removal_pr _ _ _ _ P n X Z f1 f2 fm pZ_unif Z_X_indep y1 y2 ymz H
 rewrite -/Y1 -/Y2 -/YmZ in Ha.
 symmetry in Ha.
 move => Hb.
-Check (Hb Ha).
-
+(* Cannot Hb Ha but can rewrite *)
+rewrite Hb //.
+Fail Check (Hb Ha).
 Abort.
 
 End theorem_3_7.
+
+Section lemma_3_8.
+
+Variables (T TX TY TZ: finType).
+Variable P : R.-fdist T.
+Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ)
+(x : TX) (y : TY) (z : TZ).
+
+Let Z := f `o Y.
+
+(* H(f(Y)|X,Y) = H(f(Y)|Y) = 0 *)
+(* Meaning: f(Y) is completely determined by Y.
+   (Because `f` only has one input which is Y).
+
+   And because it is completely determined by Y,
+   `(X, Y)` won't increase the uncertanty.
+*)
+Lemma fun_cond_entropy_eq0 :
+  cond_entropy1_RV [%X, Y] Z (x, y) =
+  cond_entropy1_RV Y Z y. 
+Proof.
+case /boolP : ((`p_ [% X, Y, Z])`1 (x, y) == 0) => Hx.
+  rewrite /cond_entropy1_RV.
+  rewrite /entropy.
+  congr -%R.
+  apply:eq_bigr => a _.
+  rewrite !coqRE.
+  (*rewrite jfdist_condE. -- it brings `(fdistmap [% V1, V2, W] P)`1 (v1, v2) != 0%coqR` so we cannot use it*)
+  (* But if everytime we need to go through this -- something must be wrong. *)
+  rewrite /jfdist_cond.
+  have Hy: ((`p_ [% Y, Z])`1 y == 0).
+    rewrite fst_RV2.
+    apply/eqP.
+    move:(@Pr_domin_setX TY TZ (`p_ [%Y, Z]) [set y] [set z]).
+    rewrite !Pr_set1.
+    rewrite setX1.
+    rewrite !Pr_set1.
+    rewrite fst_RV2.
+    rewrite !coqRE.
+    (* Too many names when intro? *)
+    Fail move/[swap].
+    apply.
+    rewrite fst_RV2 in Hv1.
+    exact/eqP. 
+
+  destruct (boolP _).
+    exfalso.
+    by rewrite Hx in i. 
+  destruct (boolP _).
+    exfalso.
+
+
+
+rewrite cond_entropy1_RVE //.
+
+
+rewrite /jfdist_cond.
+
+
+(* H(X|Y,f(Y))=H(X|Y) *)
+Lemma fun_cond_removal :
+  cond_entropy1_RV [%Z, Y] X (z, y) =
+  cond_entropy1_RV Y X y. 
+Proof.
+Search cond_entropy.
+rewrite /cond_entropy1_RV.
+
+
+  
+
+
+End lemma_3_8.
   
 
 
