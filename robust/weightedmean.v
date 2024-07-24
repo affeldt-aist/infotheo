@@ -468,6 +468,89 @@ Qed.
 
 End pos_evar.
 
+
+Section resilience.
+Variables (U : finType) (P : {fdist U}).
+
+Local Open Scope ring_scope.
+
+From mathcomp Require Import hoelder lebesgue_integral.
+
+Lemma cauchy_scwarz (r s : U -> R) :
+  (\sum_i (r \* s) i)^+2 <= (\sum_i (r i)^+2) * (\sum_i (s i)^+2).
+Proof.
+(* apply hoelder *)
+Admitted.
+
+Let resilience_sub (delta : R) (X : {RV P -> R}) (w : nneg_finfun U)
+  (pw0 : Weighted.total P w != 0) :
+  let X' := (wgt pw0).-RV X in (`| `E X' - `E X | <= Num.sqrt (`V X / \sum_i w i * P i))%mcR.
+Proof.
+rewrite /=.
+rewrite -coqRE -E_trans_min_RV.
+rewrite (_:`E ((wgt pw0).-RV X `-cst `E X) = `E ((wgt pw0).-RV (X `-cst `E X))) //.
+rewrite emean_sum -sqrtr_sqr.
+rewrite ler_sqrt; last first. admit.
+rewrite expr2 !mulrA ler_pM//. admit. admit.
+rewrite mulrAC -expr2.
+under eq_bigr => i _.
+  rewrite (_ :  w i * P i * (X `-cst `E X) i = ((fun i => Num.sqrt (w i * P i) * (X `-cst `E X) i) \* (fun i => Num.sqrt (w i * P i))) i)//; last first.
+    rewrite [RHS]mulrAC -sqrtrM; last admit.
+    by rewrite -expr2 sqrtr_sqr ger0_norm; last admit.
+  over.
+apply: (@le_trans _ _ (_ / (\sum_(i in U) w i * P i))).
+  apply: ler_pM. admit. admit.
+  apply: cauchy_scwarz.
+  by [].
+under eq_bigr => i _.
+  rewrite expr2 mulrAC mulrA -expr2 sqr_sqrtr; last admit.
+  rewrite -mulrA -expr2.
+  over.
+under [X in _ * X * _]eq_bigr => i _.
+  rewrite sqr_sqrtr; last admit.
+  over.
+rewrite /= -mulrA mulfV; last admit.
+rewrite mulr1 /Var [leRHS]/Ex.
+admit.
+Admitted.
+
+Lemma resilience (delta : R) (X : {RV P -> R}) (w : nneg_finfun U)
+  (pw0 : Weighted.total P w != 0) (w1 : forall i, w i <= 1) :
+  let X' := (wgt pw0).-RV X in 0 < delta <= \sum_i w i * P i ->
+    (`| `E X' - `E X | <= Num.sqrt (`V X * 2 * (1 - delta) / delta))%mcR.
+Proof.
+move=> /= /andP[delta0].
+have /= := @resilience_sub delta X w pw0.
+set a := \sum_i w i * P i.
+move=> h delta_max.
+have [le12|ge12] := @ltrP R a (2^-1).
+  apply: (le_trans h).
+  rewrite ler_sqrt; last admit.
+  rewrite -!mulrA ler_pM//.
+    exact: variance_ge0'.
+    rewrite invr_ge0. admit.
+  have h1 : 0 <= a. admit.
+  have h2 : a^-1 < 2. admit.
+  apply: ltW.
+  apply: (lt_le_trans h2 _).
+  admit.
+pose w'fun := [ffun i => 1-w i].
+have w'nneg : [forall i, 0 <= w'fun i].
+  apply/forallP=> i. rewrite /w'fun ffunE. have := w1 i. lra.
+have w' := mkNNFinfun w'nneg.
+have pw1 : Weighted.total P w' != 1. admit.
+have pw'0 : Weighted.total P w' != 0. admit.
+have -> : `| `E ((wgt pw0).-RV X) - `E X | = (1-\sum_i w i * P i) / (\sum_i w i * P i) * `| `E ((wgt pw'0).-RV X )|.
+  admit.
+rewrite -/a.
+have /= := @resilience_sub delta X w' pw'0.
+admit.
+Admitted.
+
+End resilience.
+
+
+
 Notation eps_max := (10 / 127)%mcR.
 Notation denom := (335 / 100)%mcR.
 
