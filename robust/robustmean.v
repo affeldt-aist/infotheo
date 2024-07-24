@@ -1,7 +1,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals mathcomp_extra.
-From mathcomp Require Import lra.
+From mathcomp Require Import lra ring.
 From infotheo Require Import ssrR realType_ext logb ssr_ext ssralg_ext.
 From infotheo Require Import bigop_ext fdist proba.
 From HB Require Import structures.
@@ -893,13 +893,12 @@ apply: ler_pM.
 - exact: sqr_ge0.
 - by rewrite !mulr_ge0 ?invr_ge0 //; lra.
 - rewrite ler_sqr ?nnegrE; lra.
-- rewrite ler_pdivrMr; last lra.
-  rewrite [leRHS]mulrC -ler_pdivrMr ?invr_gt0; last lra.
-  rewrite (mulrC 2) -(@ler_pM2r _ (1 - eps)); last lra.
-  rewrite mulrDl mul1r -(mulrA _ _^-1) invrK.
-STOP
-  rewrite mulRDl mul1R -mulNR -(mulRA _ (/ _)) Rinv_l ?mulR1; last lra.
-  by rewrite -mulRA mulRDl oppRD oppRK mulRDl -(mulRA _ (/ _)) Rinv_l; [nra|lra].
+- rewrite -[leRHS]mulr1 ler_pdivlMl; last lra.
+  rewrite [leLHS](_ : _ = 8 * eps * eps / (1 - 5 * eps)); last first.
+    rewrite /delta; field; apply/andP; split; lra.
+  rewrite ler_pdivrMr; last lra.
+  rewrite mul1r (@le_trans _ _ eps) //; last lra.
+  by rewrite ler_piMl //; lra.
 Qed.
 
 End robustmean.
