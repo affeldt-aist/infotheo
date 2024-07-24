@@ -26,60 +26,8 @@ Local Open Scope chap2_scope.
 
 Module smc_entropy_proofs.
 
-Section theorem_3_7.
-
-Variables (T TX TY1 TY2: finType).
-Variable P : R.-fdist T.
-Variable n : nat.
-Notation p := n.+1.
-Variables (X: {RV P -> TX}) (Z : {RV P -> 'I_p}).
-Variables (f1 : TX -> TY1) (f2 : TX -> TY2) (fm : TX -> 'I_p). 
-Variable pZ_unif : `p_ Z = fdist_uniform (card_ord p).
-Variable Z_X_indep : inde_rv Z X.
-Variables (y1 : TY1) (y2 : TY2) (ymz : 'I_p).
-
-Let Y1 := f1 `o X.
-Let Y2 := f2 `o X.  (* y2...ym-1*)
-Let Ym := fm `o X.
-Let YmZ := Ym `+ Z.
-Let f x := (f1 x, f2 x, fm x).
-Let Y := f `o X.
-
-Check cond_entropy.
-Search RV2.
-
-
-(* H(Y|X = x) = cond_entropy R.-fdist(B * A) *)
-(* What we want: H(Y1|[%Y2,YmZ])*)
-(* cond_entropy : forall A B : finType, R.-fdist(B * A) -> R *)
-
-About cond_entropy.
-Search cond_entropy.
-About cond_entropy1_RV.
-
-Let d1 := (`p_ [%Y2, YmZ] `x `p_ Y1).
-Let d2 := (`p_ Y2 `x `p_ Y1).
-
-Hypothesis H0 : `Pr[ [%YmZ, Y2] = (ymz, y2) ] != 0.
-
-
-Theorem mc_removal_entropy :
-  cond_entropy1_RV [%Y2, YmZ] Y1 (y2, ymz) =
-  cond_entropy1_RV Y2 Y1 y2.
-Proof.
-rewrite /cond_entropy1_RV.
-rewrite /entropy.
-congr -%R.
-apply:eq_bigr => a _.
-have:=(@mc_removal_pr _ _ _ _ P n X Z f1 f2 fm pZ_unif Z_X_indep a y2 ymz H0).
-rewrite -/Y1 -/Y2 -/YmZ.
-rewrite cinde_alt.
-Abort.
-
-End theorem_3_7.
-  
-
 Section pr_entropy.
+  
 
 Variables (T TW TV1 TV2: finType) (P : R.-fdist T).
 Variable n : nat.
@@ -87,7 +35,7 @@ Notation p := n.+1.
 Variables (W: {RV P -> TW}) (V1: {RV P -> TV1}) (V2: {RV P -> 'I_p}).
 
 (* Cannot use fdist_uniform (#|TV2|) (TV2 could be empty if it is arbitrary finType. *)
-Variable pV2_unif : `p_ V2 = fdist_uniform (card_ord p).
+Hypothesis pV2_unif : `p_ V2 = fdist_uniform (card_ord p).
 Hypothesis V1V2indep : P|= V1 _|_ V2.
 
 Lemma cpr_cond_entropy1_RV v1 v2:
@@ -147,6 +95,50 @@ by rewrite !cpr_eq_set1.
 Qed.
 
 End pr_entropy.
+
+Section theorem_3_7.
+
+Variables (T TX TY1 TY2: finType).
+Variable P : R.-fdist T.
+Variable n : nat.
+Notation p := n.+1.
+Variables (X: {RV P -> TX}) (Z : {RV P -> 'I_p}).
+Variables (f1 : TX -> TY1) (f2 : TX -> TY2) (fm : TX -> 'I_p). 
+Hypothesis pZ_unif : `p_ Z = fdist_uniform (card_ord p).
+Hypothesis Z_X_indep : inde_rv Z X.
+
+Variables (y1 : TY1) (y2 : TY2) (ymz : 'I_p).
+
+Let Y1 := f1 `o X.
+Let Y2 := f2 `o X.  (* y2...ym-1*)
+Let Ym := fm `o X.
+Let YmZ := Ym `+ Z.
+Let f x := (f1 x, f2 x, fm x).
+Let Y := f `o X.
+
+Hypothesis Hneq0 : `Pr[ [%YmZ, Y2] = (ymz, y2) ] != 0.
+Hypothesis YmZ_unif : `p_ YmZ = fdist_uniform (card_ord p).
+Hypothesis Y2YmZindep : P|= Y2 _|_ YmZ.
+
+Let d1 := (`p_ [%Y2, YmZ] `x `p_ Y1).
+Let d2 := (`p_ Y2 `x `p_ Y1).
+
+Theorem mc_removal_entropy :
+  cond_entropy1_RV [%Y2, YmZ] Y1 (y2, ymz) =
+  cond_entropy1_RV Y2 Y1 y2.
+Proof.
+have :=(cpr_cond_entropy1_RV YmZ_unif Y2YmZindep).
+move/(_ TY1 Y1 y2 ymz).
+have Ha :=(@mc_removal_pr _ _ _ _ P n X Z f1 f2 fm pZ_unif Z_X_indep y1 y2 ymz Hneq0).
+rewrite -/Y1 -/Y2 -/YmZ in Ha.
+symmetry in Ha.
+move => Hb.
+Check (Hb Ha).
+
+Abort.
+
+End theorem_3_7.
+  
 
 
 End smc_entropy_proofs.
