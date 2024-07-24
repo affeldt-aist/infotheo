@@ -444,7 +444,7 @@ Lemma cEx_cVar (X : {RV P -> R}) (F G: {set U}) : 0 < Pr P F  ->
   `| `E_[ X | F ] - mu | <= Num.sqrt (var * Pr P G / Pr P F ).
 Proof.
 move=> PrPF_pos.
-move=> /[dup] /(Pr_incl P) /(lt_le_trans PrPF_pos)=> PrPG_pos.
+move=> /[dup] /(subset_Pr P) /(lt_le_trans PrPF_pos)=> PrPG_pos.
 move=> FsubG /=.
 set mu:= `E_[X | G].
 set var:= `V_[X | G].
@@ -491,7 +491,7 @@ Proof.
 move => PrFgt0 PrFlt1.
 rewrite !cEx_ExInd.
 rewrite -!mulrA [in LHS]mulVf ?lt0r_neq0 //.
-rewrite mulVf ?Pr_of_cplt ?subr_eq0 1?eq_sym ?neq_lt ?PrFlt1 // !mulr1.
+rewrite mulVf ?Pr_setC ?subr_eq0 1?eq_sym ?neq_lt ?PrFlt1 // !mulr1.
 rewrite /Ex -big_split /=.
 apply: eq_bigr=> i _.
 rewrite /Ind inE.
@@ -507,7 +507,7 @@ apply/eqP; rewrite -subr_eq0.
 rewrite opprD opprK !mulrDr addrAC.
 rewrite opprD !mulrN opprK addrA.
 rewrite !(mulrC (Pr _ _)) cEx_cptl //.
-rewrite Pr_of_cplt mulrDr mulr1 opprD mulrN opprK !addrA.
+rewrite Pr_setC mulrDr mulr1 opprD mulrN opprK !addrA.
 by rewrite subrr add0r subrr.
 Qed.
 
@@ -516,9 +516,9 @@ Lemma cEx_Inv' (X: {RV P -> R}) (F G : {set U}) :
   `| `E_[X | F] - `E_[X | G]| = (Pr P (G :\: F)) / (Pr P F) * `| `E_[X | (G :\: F)] - `E_[X | G]|.
 Proof.
 move=> PrPF_gt0 /[dup] /setIidPr GIFF FsubG /[dup] /(lt_trans PrPF_gt0)
-       /[dup] /Pr_gt0 /invr_neq0 PrPG_neq0 PrPG_gt0 PrPF_PrPG.
-have : 0 < Pr P (G :\: F) by rewrite Pr_diff subr_gt0 GIFF.
-move => /[dup] /Pr_gt0 PrPGF_neq0 PrPGF_gt0.
+       /[dup] /Pr_gt0P /invr_neq0 PrPG_neq0 PrPG_gt0 PrPF_PrPG.
+have : 0 < Pr P (G :\: F) by rewrite Pr_setD subr_gt0 GIFF.
+move => /[dup] /Pr_gt0P PrPGF_neq0 PrPGF_gt0.
 rewrite !cEx_sub ?subsetDl // mulrCA.
 rewrite Ind_setD // mulrAC divff// mul1r.
 congr (_ / _); apply/eqP.
@@ -534,8 +534,8 @@ Lemma cEx_Inv (X: {RV P -> R}) F :
   0 < Pr P F -> Pr P F < 1 ->
   `| `E_[X | F] - `E X| = (1 - Pr P F) / Pr P F * `| `E_[X | (~: F)] - `E X|.
 Proof.
-move=> *; rewrite Ex_cExT -Pr_of_cplt -setTD; apply cEx_Inv' => //.
-by rewrite lt_neqAle Pr_incl // andbT Pr_setT -Pr_lt1.
+move=> *; rewrite Ex_cExT -Pr_setC -setTD; apply cEx_Inv' => //.
+by rewrite lt_neqAle subset_Pr // andbT Pr_setT -Pr_lt1P.
 Qed.
 
 Lemma Ind_one F : Pr P F != 0 -> `E_[Ind F : {RV P -> R} | F] = 1.
@@ -608,7 +608,7 @@ Lemma cVarE (X : {RV (P) -> (R)}) F:
   `V_[X | F] = `E_[X `^2 | F] - `E_[X | F] ^+ 2.
 Proof.
 have: 0 <= Pr P F by apply Pr_ge0.
-rewrite le_eqVlt; case/orP => [ /eqP /esym HPr_eq0 | HPr_gt0].
+rewrite le_eqVlt; case/orP => [ /eqP /esym HPr_eq0 | HPr_gt0P].
   by rewrite /cVar !cEx_Pr_eq0 // expr0n /= subr0.
 rewrite /cVar cEx_trans_RV_id_rem.
 rewrite cEx_trans_add_RV //.
@@ -656,7 +656,7 @@ have[FIH0|FIHneq0]:= eqVneq (Pr P (F :&: H)) 0.
 move=> FGHF.
 rewrite !cExE -!mulrA !mulVf // !mulr1 -big_union /=; last first.
   have/setIidPl/(congr1 (Pr P)):= FsubGUH.
-  rewrite setIUr Pr_union_eq FGHF=> /eqP.
+  rewrite setIUr Pr_setU FGHF=> /eqP.
   rewrite -subr_eq0 addrAC subrr add0r oppr_eq0 => /eqP /psumr_eq0P P0.
   by rewrite big1 // => *; rewrite P0 // mulr0.
 by rewrite -setIUr; have/setIidPl->:= FsubGUH.
@@ -698,12 +698,12 @@ Proof.
 move => delta_gt0 delta_FG /[dup] /setIidPr HGnF_F FG.
 have [Pr_FG_eq|Pr_FG_neq] := eqVneq (Pr P F) (Pr P G).
   by rewrite (cEx_sub_eq F G) // subrr normr0 sqrtr_ge0.
-have FltG: Pr P F < Pr P G by rewrite lt_neqAle Pr_FG_neq Pr_incl.
+have FltG: Pr P F < Pr P G by rewrite lt_neqAle Pr_FG_neq subset_Pr.
 have [PrF0|PrF_neq0] := eqVneq (Pr P F) 0.
   by have:= lt_le_trans delta_gt0 delta_FG; rewrite PrF0 mul0r ltxx.
 have HPrFpos : 0 < Pr P F by rewrite lt_neqAle eq_sym Pr_ge0 andbT.
 have [PrG0|PrG_neq0] := eqVneq (Pr P G) 0.
-  by have:= Pr_incl P FG; rewrite PrG0 => /(lt_le_trans HPrFpos); rewrite ltxx.
+  by have:= subset_Pr P FG; rewrite PrG0 => /(lt_le_trans HPrFpos); rewrite ltxx.
 have HPrGpos : 0 < Pr P G by rewrite lt_neqAle eq_sym Pr_ge0 andbT.
 have delta_lt1 : delta < 1.
   apply/(le_lt_trans delta_FG).
@@ -722,7 +722,7 @@ have delta_neq0: delta != 0 by lra.
 have delta_pos: 0 < delta by lra.
 have FG_pos: 0 < Pr P F / Pr P G by exact: (lt_le_trans delta_gt0 delta_FG).
 rewrite cEx_Inv' //.
-have PrGDF_pos: 0 < Pr P (G :\: F) by rewrite Pr_diff HGnF_F subr_gt0.
+have PrGDF_pos: 0 < Pr P (G :\: F) by rewrite Pr_setD HGnF_F subr_gt0.
 apply: le_trans.
   apply: ler_wpM2l; first by rewrite ltW // divr_gt0.
   apply cEx_cVar => //; last exact: subsetDl.
@@ -730,11 +730,11 @@ apply: (@le_trans _ _ (Num.sqrt (`V_[ X | G] * (delta^-1 - 1) / delta))).
   rewrite -[X in X * Num.sqrt _]gtr0_norm ?divr_gt0 // -sqrtr_sqr.
   rewrite -sqrtrM ?sqr_ge0 // ler_wsqrtr //.
   rewrite mulrC -!mulrA ler_wpM2l ?cvariance_ge0 //.
-  rewrite mulrC exprMn !mulrA mulVf // -?Pr_gt0 // mul1r.
-  rewrite Pr_diff HGnF_F mulrDl mulNr mulfV //.
+  rewrite mulrC exprMn !mulrA mulVf // -?Pr_gt0P // mul1r.
+  rewrite Pr_setD HGnF_F mulrDl mulNr mulfV //.
   rewrite mulrAC -mulrA -invf_div.
   apply: ler_pM.
-  - by rewrite subr_ge0 -invr1 lef_pV2 ?posrE // ler_pdivrMr // mul1r Pr_incl.
+  - by rewrite subr_ge0 -invr1 lef_pV2 ?posrE // ler_pdivrMr // mul1r subset_Pr.
   - by rewrite invr_ge0 ltW.
   - by rewrite lerD // lef_pV2.
   - by rewrite lef_pV2.
@@ -777,20 +777,20 @@ move=> bad mu_hat mu sigma Hmin_outliers Hmax_outliers Hbad_ratio Hdrop_ratio
 have H : Pr P good = 1 - eps by rewrite -Hbad_ratio -Pr_to_cplt.
 (* On the other hand, we remove at most 4ε good points *)
 have max_good_drop : Pr P (good :&: drop) <= 4 * eps.
-  by rewrite -Hdrop_ratio; exact/Pr_incl/subsetIr.
+  by rewrite -Hdrop_ratio; exact/subset_Pr/subsetIr.
 pose eps' := Pr P (bad :\: drop) / Pr P (~: drop).
 have Hcompl : Pr P (good :\: drop) / Pr P (~: drop) = 1 - eps'.
   rewrite -(setCK good) -/bad setDE setIC -setDE.
-  rewrite Pr_diff setIC -setDE mulrDl mulNr mulfV //.
-  by rewrite -Pr_gt0 Pr_of_cplt; lra.
+  rewrite Pr_setD setIC -setDE mulrDl mulNr mulfV //.
+  by rewrite -Pr_gt0P Pr_setC; lra.
 have eps'_ge0 : 0 <= eps' by rewrite mulr_ge0 // ?invr_ge0 Pr_ge0.
 have eps'_le1 : eps' <= 1.
-  rewrite ler_pdivrMr; last by rewrite Pr_of_cplt; lra.
-  by rewrite mul1r Pr_incl // subsetDr.
+  rewrite ler_pdivrMr; last by rewrite Pr_setC; lra.
+  by rewrite mul1r subset_Pr // subsetDr.
 (* Remaining good points: 1 - (4 * eps) / (1 - eps) *)
 pose delta := 1 - (4 * eps) / (1 - eps).
 have min_good_remain : delta <= Pr P (good :\: drop) / Pr P good.
-  rewrite /delta Pr_diff H.
+  rewrite /delta Pr_setD H.
   apply: (@le_trans _ _ ((1 - eps - 4 * eps) / (1 - eps))).
     rewrite ler_pdivlMr; last lra.
     by rewrite mulrDl -mulNr -(mulrA _ _^-1) mulVf //; lra.
@@ -832,7 +832,7 @@ have Exbad_bound : 0 < Pr P (bad :\: drop) ->
   move: ibaddrop; rewrite inE => /andP[idrop ibad].
   by rewrite leNgt -(rwP negP) => /(Hquantile_drop_bad _ ibad); exact/negP.
 have max_bad_remain : Pr P (bad :\: drop) <= eps / Pr P (~: drop).
-  rewrite Pr_of_cplt Hdrop_ratio Pr_diff Hbad_ratio.
+  rewrite Pr_setC Hdrop_ratio Pr_setD Hbad_ratio.
   apply: (@le_trans _ _ eps); first by rewrite lerBlDr lerDl Pr_ge0.
   by rewrite ler_pdivlMr; [nra|lra].
 have Ex_not_drop : `E_[ X | ~: drop ] =
@@ -840,7 +840,7 @@ have Ex_not_drop : `E_[ X | ~: drop ] =
      `E_[ X | bad :\: drop ] * Pr P (bad :\: drop))
     / Pr P (~: drop).
   rewrite !setDE (setIC good) (setIC bad) /bad -setDE cExID.
-  rewrite -mulrA mulfV ?mulr1 // Pr_of_cplt.
+  rewrite -mulrA mulfV ?mulr1 // Pr_setC.
   lra.
 rewrite -(mulr1 mu).
 rewrite (_ : 1 = eps' + Pr P (good :\: drop) / Pr P (~: drop)); last first.
@@ -863,12 +863,12 @@ apply: (@le_trans _ _ (Num.sqrt (`V_[ X | good] / eps) * eps' +
     by rewrite !(mulr0,add0r,subr0,mulr1).
   have [->|/eqP eps'1] := eqVneq eps' 1.
     rewrite !(subrr, mulr0, addr0, mulr1); apply: Exbad_bound.
-    apply Pr_gt0; apply: contra_notN eps'0 => /eqP.
+    apply Pr_gt0P; apply: contra_notN eps'0 => /eqP.
     by rewrite /eps' => ->; rewrite mul0r.
   have [bd0|bd0] := eqVneq (Pr P (bad :\: drop)) 0.
     by exfalso; apply/eps'0; rewrite /eps' bd0 mul0r.
   apply: lerD; (rewrite ler_pM2r; last lra).
-  - exact/Exbad_bound/Pr_gt0.
+  - exact/Exbad_bound/Pr_gt0P.
   - exact: Exgood_bound.
 rewrite /sigma !sqrtrM //; last 4 first.
   - exact: cvariance_ge0.
