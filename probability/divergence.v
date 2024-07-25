@@ -92,8 +92,10 @@ rewrite /div [X in _ <= X](_ : _ =
 rewrite leR_oppr oppR0.
 apply (@leR_trans ((\sum_(a | a \in A) (Q a - P a)) * log (exp 1))).
   rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
-  apply leR_sumR => a _; apply div_diff_ub => //.
-  by move/dominatesP : P_dom_by_Q; exact.
+  apply leR_sumR => a _; apply: div_diff_ub => //.
+  - exact/RleP/FDist.ge0.
+  - by move/dominatesP : P_dom_by_Q; exact.
+  - exact/RleP/FDist.ge0.
 rewrite -{1}(mul0R (log (exp 1))); apply (leR_wpmul2r log_exp1_Rle_0).
 by rewrite big_split /= -big_morph_oppR !FDist.f1 addR_opp subRR.
 Qed.
@@ -109,18 +111,24 @@ Lemma div0P : D(P || Q) = 0 <-> P = Q.
 Proof.
 split => [HPQ | ->]; last by rewrite divPP.
 apply/fdist_ext => a.
-apply log_id_diff => //; first by move/dominatesP : P_dom_by_Q; exact.
-apply/esym; move: a (erefl true); apply leR_sumR_eq.
-- move=> a' _; apply div_diff_ub => //; move/dominatesP : P_dom_by_Q; exact.
-- transitivity 0; last first.
-    rewrite -{1}oppR0 -{1}HPQ big_morph_oppR.
-    apply eq_bigr => a _; rewrite -mulRN.
-    case/boolP : (P a == 0) => [/eqP ->| H0]; first by rewrite !mul0R.
-    congr (_ * _).
-    have Qa0 := dominatesEN P_dom_by_Q H0.
-    by rewrite -logV ?Rinv_div//; apply divR_gt0; apply /RltP; rewrite -fdist_gt0.
-  rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
-  by rewrite -big_morph_oppR !FDist.f1 addR_opp subRR mul0R.
+apply log_id_diff.
+- exact/RleP/FDist.ge0.
+- by move/dominatesP : P_dom_by_Q; exact.
+- exact/RleP/FDist.ge0.
+- apply/esym; move: a (erefl true); apply leR_sumR_eq.
+  + move=> a' _; apply div_diff_ub => //.
+    * exact/RleP/FDist.ge0.
+    * by move/dominatesP : P_dom_by_Q; exact.
+    * exact/RleP/FDist.ge0.
+  + transitivity 0; last first.
+      rewrite -{1}oppR0 -{1}HPQ big_morph_oppR.
+      apply eq_bigr => a _; rewrite -mulRN.
+      case/boolP : (P a == 0) => [/eqP ->| H0]; first by rewrite !mul0R.
+      congr (_ * _).
+      have Qa0 := dominatesEN P_dom_by_Q H0.
+      by rewrite -logV ?Rinv_div//; apply divR_gt0; apply /RltP; rewrite -fdist_gt0.
+    rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
+    by rewrite -big_morph_oppR !FDist.f1 addR_opp subRR mul0R.
 Qed.
 
 End divergence_prop.
