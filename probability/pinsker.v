@@ -538,7 +538,8 @@ Qed.
 
 Lemma Pinsker_inequality_weak : d(P , Q) <= sqrt (2 * D(P || Q)).
 Proof.
-rewrite -(sqrt_Rsqr (d(P , Q))); last exact/pos_var_dist.
+rewrite -(sqrt_Rsqr (d(P , Q))); last first.
+  exact/RleP/pos_var_dist.
 apply sqrt_le_1_alt.
 apply (@leR_pmul2l (/ 2)); first by apply invR_gt0; lra.
 apply (@leR_trans (D(P || Q))); last first.
