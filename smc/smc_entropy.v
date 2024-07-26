@@ -120,14 +120,18 @@ Hypothesis Hneq0 : `Pr[ [%YmZ, Y2] = (ymz, y2) ] != 0.
 Hypothesis YmZ_unif : `p_ YmZ = fdist_uniform (card_ord p).
 Hypothesis Y2YmZindep : P|= Y2 _|_ YmZ.
 
-Let d1 := (`p_ [%Y2, YmZ] `x `p_ Y1).
-Let d2 := (`p_ Y2 `x `p_ Y1).
-
 Theorem mc_removal_entropy :
   cond_entropy1_RV [%Y2, YmZ] Y1 (y2, ymz) =
   cond_entropy1_RV Y2 Y1 y2.
 Proof.
-have :=(cpr_cond_entropy1_RV YmZ_unif Y2YmZindep).
+simpl in *.
+apply /esym /cpr_cond_entropy1_RV => //.
+move => w.
+
+have : cond_entropy1_RV [% Y2, YmZ] Y1 (y2, ymz) = cond_entropy1_RV Y2 Y1 y2.
+
+
+have /= :=(cpr_cond_entropy1_RV YmZ_unif Y2YmZindep).
 move/(_ TY1 Y1 y2 ymz).
 have Ha :=(@mc_removal_pr _ _ _ _ P n X Z f1 f2 fm pZ_unif Z_X_indep y1 y2 ymz Hneq0).
 rewrite -/Y1 -/Y2 -/YmZ in Ha.
@@ -157,15 +161,23 @@ Let Z := f `o Y.
    `(X, Y)` won't increase the uncertanty.
 *)
 Lemma fun_cond_entropy_eq0 :
-  cond_entropy1_RV [%X, Y] Z (x, y) =
-  cond_entropy1_RV Y Z y. 
+  cond_entropy1_RV Y Z y = 0.
 Proof.
+rewrite cond_entropy1_RVE.
+rewrite /cond_entropy1.
+rewrite big1 -1?oppr0 // => i _.
+have [<-|] := eqVneq (f y) i.
+set Pp := (X in (X * log X)%coqR).
+have : Pp = 1.
+rewrite /Pp.
+
 case /boolP : ((`p_ [% X, Y, Z])`1 (x, y) == 0) => Hx.
   rewrite /cond_entropy1_RV.
   rewrite /entropy.
   congr -%R.
   apply:eq_bigr => a _.
   rewrite !coqRE.
+  rewrite jfdist_condE.
   (*rewrite jfdist_condE. -- it brings `(fdistmap [% V1, V2, W] P)`1 (v1, v2) != 0%coqR` so we cannot use it*)
   (* But if everytime we need to go through this -- something must be wrong. *)
   rewrite /jfdist_cond.
@@ -179,6 +191,11 @@ case /boolP : ((`p_ [% X, Y, Z])`1 (x, y) == 0) => Hx.
     rewrite fst_RV2.
     rewrite !coqRE.
     (* Too many names when intro? *)
+
+    (A /\ B) -> C
+    case.
+    A -> (B -> C)
+
     Fail move/[swap].
     apply.
     rewrite fst_RV2 in Hv1.

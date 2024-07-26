@@ -98,7 +98,7 @@ Proof.
 rewrite cpr_eqE.
 rewrite !coqRE.
 rewrite -!mulrA.
-have [|?] := eqVneq `Pr[ Y = b ] 0.
+have [->|?] := eqVneq `Pr[ Y = b ] 0.
   move=>Y0.
   rewrite Y0.
   rewrite !mulr0.
