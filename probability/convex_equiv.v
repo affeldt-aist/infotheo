@@ -292,10 +292,10 @@ Module B := NaryToBin(A).
 Module EA := Equiv2(A).
 Import A B.
 
-Let equiv_convn n (d : {fdist 'I_n}) (g : 'I_n -> A.T) : <&>_d g = <|>_d g.
+Definition equiv_convn n (d : {fdist 'I_n}) (g : 'I_n -> A.T) : <&>_d g = <|>_d g.
 Proof. by []. Qed.
 
-Let T' := NaryConv_sort__canonical__convex_ConvexSpace.
+Definition T' := NaryConv_sort__canonical__convex_ConvexSpace.
 
 Lemma equiv_conv p (a b : C.T) : a <| p |> b = a <& p &> b.
 Proof.
