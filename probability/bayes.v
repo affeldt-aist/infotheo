@@ -368,9 +368,9 @@ Definition cinde_preim (e f g : {set 'I_n}) :=
                    (preim_vars f vals)
                    (preim_vars g vals).
 
-Lemma cinde_eventsC A (Q : fdist _ A) (E F G : {set A}) :
+Lemma cinde_eventsC A (Q : R.-fdist A) (E F G : {set A}) :
   cinde_events Q E F G -> cinde_events Q F E G.
-Proof. rewrite /cinde_events => Hef; by rewrite setIC mulRC. Qed.
+Proof. by rewrite /cinde_events => Hef; rewrite setIC GRing.mulrC. Qed.
 
 Lemma cinde_preimC (e f g : {set 'I_n}) :
   cinde_preim e f g  -> cinde_preim f e g.
@@ -428,7 +428,7 @@ split.
       rewrite (proj2 (cPr_eq0P _ _ _)); last first.
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /= /eqP ->; rewrite ac.
-      by rewrite mul0R.
+      by rewrite GRing.mul0r.
     move=> nik c vi HG Hvals; apply: HG => //.
     by rewrite Hvals set_val_tl // set_val_hd.
   move=> vk.
@@ -442,25 +442,25 @@ split.
       set x := (X in X = X * X).
       move/Rxx2 => [] Hx.
         rewrite -/x Hx.
-        rewrite (proj2 (cPr_eq0P _ _ _)) ?mul0R //.
+        rewrite (proj2 (cPr_eq0P _ _ _)) ?GRing.mul0r //.
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /andP [] /= /eqP ->; rewrite ab.
       rewrite /cPr.
-      set den := (X in _ / X).
+      set den := (X in (_ / X)%mcR).
       case/boolP: (den == 0) => /eqP Hden.
-        by rewrite setIC Pr_domin_setI // setIC Pr_domin_setI // !div0R mul0R.
-      set num := (X in _ * (X / _)).
+        by rewrite setIC Pr_domin_setI // setIC Pr_domin_setI // !GRing.mul0r.
+      set num := (X in (_ * (X / _))%mcR).
       case/boolP: (num == 0) => /eqP Hnum.
-        by rewrite -setIA setIC Pr_domin_setI // Hnum !div0R mulR0.
+        by rewrite -setIA setIC Pr_domin_setI // Hnum !GRing.mul0r GRing.mulr0.
       elim Hnum.
       apply/Pr_set0P => u.
       rewrite !inE => /andP [] /= Hi Hk.
       move: Hx; subst x.
       move/(f_equal (Rmult ^~ den)).
       move/eqP in Hden.
-      rewrite /cPr /Rdiv -mulRA mulVR // mulR1 mul1R.
+      rewrite /cPr RmultE -GRing.mulrA GRing.mulVr// GRing.mulr1 RmultE GRing.mul1r.
       move/(f_equal (Rminus den)).
-      rewrite subRR setIC -Pr_setD => /Pr_set0P/(_ u).
+      rewrite subRR setIC RminusE -Pr_setD => /Pr_set0P/(_ u).
       by rewrite !inE (eqP Hi) Hk eq_sym ab; exact.
     case: (ord_eq_dec k j).
       move=> <- {j} ik b.
@@ -470,7 +470,7 @@ split.
       rewrite (proj2 (cPr_eq0P _ _ _)); last first.
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /andP [] _ /= /eqP ->; rewrite bc.
-      rewrite mulRC (proj2 (cPr_eq0P _ _ _)) ?mul0R //.
+      rewrite GRing.mulrC (proj2 (cPr_eq0P _ _ _)) ?GRing.mul0r //.
       by apply/Pr_set0P => u; rewrite !inE => /andP [] /= /eqP ->; rewrite bc.
     move=> nkj nij b HG Hvals; apply: HG => //.
     by rewrite Hvals set_val_tl // set_val_tl // set_val_hd.
@@ -584,7 +584,9 @@ under eq_bigr => A _ /=.
     over.
   apply/setP => i; move/subsetP/(_ i): ee'; by cases_in i.
 rewrite -2!big_distrl /=.
-congr (_ / _ * _).
+rewrite [in RHS]/cPr.
+rewrite RmultE.
+congr (_ * _ * _)%mcR.
 rewrite -preim_vars_inter.
 have -> : e' :|: g = (e :|: g) :\: (e :\: e').
   apply/setP => i.
@@ -635,7 +637,7 @@ right; rewrite /cinde_events.
 rewrite (proj2 (cPr_eq0P _ _ _)); last first.
   apply/Pr_set0P => u; rewrite !inE => Hprod; elim: Hvi.
   case/andP: Hprod => /andP[] /eqP <- _ /eqP <-; exact: prod_vars_inter.
-rewrite (proj2 (cPr_eq0P _ _ _)) ?mul0R //.
+rewrite (proj2 (cPr_eq0P _ _ _)) ?GRing.mul0r //.
 apply/Pr_set0P => u; rewrite !inE => Hprod; elim: Hvi.
 case/andP: Hprod => /eqP <- /eqP <-; exact: prod_vars_inter.
 Qed.
@@ -652,18 +654,18 @@ Lemma cinde_events_cPr1 (i : 'I_n) :
 Proof.
 move=> vals He Hie Hif Hig Hvi.
 rewrite /cinde_events /cPr.
-set den := (X in _ / X).
+set den := (X in (_ / X)%mcR).
 case/boolP: (den == 0) => [/eqP|] Hden.
-  by rewrite setIC Pr_domin_setI // ?div0R => /esym/R1_neq_R0.
+  by rewrite setIC Pr_domin_setI // ?GRing.mul0r => /esym/R1_neq_R0.
 set num := Pr _ _ => Hnum.
 have {}Hnum : num = den.
-  by rewrite -[RHS]mul1R -Hnum /Rdiv -mulRA mulVR // mulR1.
+  by rewrite -[RHS]GRing.mul1r -!coqRE -Hnum coqRE -GRing.mulrA GRing.mulVf ?GRing.mulr1.
 rewrite -Hnum in Hden.
 rewrite (proj2 (Pr_set0P _ _)); last first.
   move=> u; rewrite !inE => /andP[] /andP[] /eqP HA /eqP HB.
   by rewrite -HA -HB !set_vals_prod_vars in Hvi.
 suff : `Pr_P[finset (prod_vars f @^-1 B) | finset (prod_vars g @^-1 C)] = 0.
-  by rewrite /cPr => ->; rewrite mulR0 div0R.
+  by rewrite /cPr => ->; rewrite GRing.mulr0 GRing.mul0r.
 (* prove incompatibility between B and C *)
 apply/cPr_eq0P/Pr_set0P => u.
 rewrite !inE => /andP [] /eqP HB /eqP HC.
@@ -696,7 +698,7 @@ have : Pr P (preim_vars (e :&: f :|: g)
     rewrite -HB set_vals_prod_vars ?ffunE //.
     move: Hk; cases_in k.
   rewrite -(@nth_fin_imgK U).
-  move/psumr_eq0P: Hnum; apply; first by move => *; exact/RleP.
+  move/psumr_eq0P: Hnum; apply; first by move=> /= *; exact: Pr_ge0.
   apply/eqP => /(f_equal (fun x => nth_fin_img x)).
   rewrite !nth_fin_imgK => /(prod_types_app i) /prod_vals_eqP Hi.
   elim: Hvi; rewrite -He //.
@@ -761,7 +763,7 @@ split.
     move/cPr_eq0P/Pr_set0P => Hx.
     have HAC :
       Pr P (finset (prod_vars e @^-1 A) :&: finset (prod_vars g @^-1 C)) = 0.
-      apply Pr_set0P => u Hu; apply Hx.
+      apply/Pr_set0P => u Hu; apply Hx.
       rewrite -preim_vars_inter; apply/preim_varsP => j.
       move: Hu; rewrite !inE.
       rewrite /vals => /andP[] /eqP <- /eqP <-.
@@ -770,7 +772,7 @@ split.
       case/boolP: (j \in e) => // je.
       by rewrite set_vals_tl // set_vals_prod_vars.
     rewrite /cinde_events (proj2 (cPr_eq0P _ _ _)).
-      by rewrite (proj2 (cPr_eq0P _ _ _)) // mul0R.
+      by rewrite (proj2 (cPr_eq0P _ _ _)) // GRing.mul0r.
     apply/Pr_set0P => u Hu.
     apply(proj1 (Pr_set0P _ _) HAC).
     move: Hu; by rewrite !inE => /andP[] /andP[] -> _ ->.
