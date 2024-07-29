@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require Import Reals Lra.
-From mathcomp Require Import all_ssreflect ssrnum.
+From mathcomp Require Import all_ssreflect ssralg ssrnum lra.
 From mathcomp Require Import Rstruct.
 Require Import Reals_ext ssrR realType_ext fdist proba.
 
@@ -31,13 +31,13 @@ Proof.
 apply/forallP => a.
 rewrite /pmf ffunE /=.
 apply/RleP.
-do! case: ifP => _; lra.
+by do! case: ifP => _; apply/RleP; lra.
 Qed.
 
 Lemma pmf01 : [forall a, 0 <= pmf a] && (\sum_(a in 'I_3) pmf a == 1).
 Proof.
 apply/andP; split; first exact: pmf_ge0.
-by apply/eqP; rewrite 3!big_ord_recl big_ord0 /= /pmf !ffunE /=; field.
+by apply/eqP; rewrite 3!big_ord_recl big_ord0 /= /pmf !ffunE /=; lra.
 Qed.
 
 Local Open Scope fdist_scope.
@@ -52,8 +52,8 @@ Proof.
 rewrite /Ex.
 rewrite 3!big_ord_recl big_ord0 /=.
 rewrite /pmf /X !ffunE /= /bump /=.
-rewrite !S_INR (_ : 0%:R = 0) //.
-by field.
+rewrite !S_INR !coqRE.
+by lra.
 Qed.
 
 Lemma variance : `V X = 5/9.
@@ -61,6 +61,6 @@ Proof.
 rewrite VarE expected /Ex /X /sq_RV /comp_RV /=.
 rewrite 3!big_ord_recl big_ord0 /=.
 rewrite !ffunE /bump /=.
-rewrite !S_INR (_ : 0%:R = 0) //.
-by field.
+rewrite !S_INR !coqRE.
+lra.
 Qed.
