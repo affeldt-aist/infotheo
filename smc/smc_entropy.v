@@ -152,6 +152,11 @@ Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ)
 (x : TX) (y : TY) (z : TZ).
 
 Let Z := f `o Y.
+Hypothesis pr_eq_ZY_Y : `Pr[ [% Z, Y] = (f y, y) ] = `Pr[ Y = y ].
+Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
+(* TODO tried to define it as `Pr[ Y = y ] > 0 and then use `Rlt_not_eq` in the proof,
+   but this hypothesis would be wrapped by `is_true` that `Rlt_not_eq` cannot be applied directly. 
+*)
 
 (* H(f(Y)|X,Y) = H(f(Y)|Y) = 0 *)
 (* Meaning: f(Y) is completely determined by Y.
@@ -167,52 +172,28 @@ rewrite cond_entropy1_RVE.
 rewrite /cond_entropy1.
 rewrite big1 -1?oppr0 // => i _.
 have [<-|] := eqVneq (f y) i.
-set Pp := (X in (X * log X)%coqR).
-have : Pp = 1.
-rewrite /Pp.
+set pZY := (X in (X * log X)%coqR).
+have HpZY: pZY = 1.
+  rewrite /pZY.
+  rewrite jPr_Pr.
+  rewrite cpr_eq_set1.
+  rewrite cpr_eqE.
+  rewrite coqRE.
+  rewrite pr_eq_ZY_Y //=.
+  by rewrite divff //=.
+rewrite HpZY.
+rewrite log1.
+by rewrite mulR0 //.
+move => Hfy_neq_i.
+rewrite jPr_Pr.
+rewrite cpr_eq_set1.
+rewrite /Z.
+(* TODO: need a way to express:
 
-case /boolP : ((`p_ [% X, Y, Z])`1 (x, y) == 0) => Hx.
-  rewrite /cond_entropy1_RV.
-  rewrite /entropy.
-  congr -%R.
-  apply:eq_bigr => a _.
-  rewrite !coqRE.
-  rewrite jfdist_condE.
-  (*rewrite jfdist_condE. -- it brings `(fdistmap [% V1, V2, W] P)`1 (v1, v2) != 0%coqR` so we cannot use it*)
-  (* But if everytime we need to go through this -- something must be wrong. *)
-  rewrite /jfdist_cond.
-  have Hy: ((`p_ [% Y, Z])`1 y == 0).
-    rewrite fst_RV2.
-    apply/eqP.
-    move:(@Pr_domin_setX TY TZ (`p_ [%Y, Z]) [set y] [set z]).
-    rewrite !Pr_set1.
-    rewrite setX1.
-    rewrite !Pr_set1.
-    rewrite fst_RV2.
-    rewrite !coqRE.
-    (* Too many names when intro? *)
-
-    (A /\ B) -> C
-    case.
-    A -> (B -> C)
-
-    Fail move/[swap].
-    apply.
-    rewrite fst_RV2 in Hv1.
-    exact/eqP. 
-
-  destruct (boolP _).
-    exfalso.
-    by rewrite Hx in i. 
-  destruct (boolP _).
-    exfalso.
-
-
-
-rewrite cond_entropy1_RVE //.
-
-
-rewrite /jfdist_cond.
+Because Hfy_neq_i : f y != i,
+(`Pr[ (f `o Y) = i | Y = y ] = 0
+*)
+Abort.
 
 
 (* H(X|Y,f(Y))=H(X|Y) *)
