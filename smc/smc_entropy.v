@@ -188,11 +188,12 @@ move => Hfy_neq_i.
 rewrite jPr_Pr.
 rewrite cpr_eq_set1.
 rewrite /Z.
+(* Try to state that because `f y != i`,  `Pr[ (f `o Y) = i | Y = y ] = 0 *)
 have Hfy_eq0: `Pr[ (f `o Y) = i | Y = y ] = 0.
   rewrite cpr_eqE.
   Search comp_RV.
   rewrite coqRE.
-  (* Not yet because we still have the joint probability not two `Pr(s)*)
+  (* Not yet because we still have the joint probability, not yet two `Pr(s)*)
   rewrite -[X in X / _](@pr_eq_comp T P TY TZ Y f y).
 
 
