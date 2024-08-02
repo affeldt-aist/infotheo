@@ -148,11 +148,25 @@ Section lemma_3_8.
 
 Variables (T TX TY TZ: finType).
 Variable P : R.-fdist T.
-Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ)
-(x : TX) (y : TY) (z : TZ).
-
+Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
 Let Z := f `o Y.
-Hypothesis pr_eq_ZY_Y : `Pr[ [% Z, Y] = (f y, y) ] = `Pr[ Y = y ].
+
+Section lemma_3_8_proof.
+Variables (y : TY) (z : TZ).
+
+
+
+Lemma pr_eq_ZY_Y :
+  `Pr[ [% Z, Y] = (f y, y) ] = `Pr[ Y = y ].
+Proof.
+rewrite !pr_eqE.
+congr (Pr P _).
+apply/setP => t.
+rewrite !inE.
+rewrite xpair_eqE.
+apply andb_idl => /eqP <- //.
+Qed.
+
 Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
 (* TODO tried to define it as `Pr[ Y = y ] > 0 and then use `Rlt_not_eq` in the proof,
    but this hypothesis would be wrapped by `is_true` that `Rlt_not_eq` cannot be applied directly. 
@@ -165,48 +179,141 @@ Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
    And because it is completely determined by Y,
    `(X, Y)` won't increase the uncertanty.
 *)
+(*
+  Search (`Pr[ _ = _ ])(`p_ _ _).
+*)
 Lemma fun_cond_entropy_eq0 :
   cond_entropy1_RV Y Z y = 0.
 Proof.
-rewrite cond_entropy1_RVE.
+Print cond_entropy1.
+(* If `Pr[Y = y] = 0, it makes the  \Pr_QP[[set b] | [set a]] zero because the condition will be never true; need to do this before the cond_entropy1RVE *)
+(*
+have [H|] := eqVneq (`Pr[ Y = y]) 0.
+  rewrite /cond_entropy1_RV.
+  rewrite /entropy.
+  under eq_bigr => a _ .
+    rewrite (_ : jfdist_cond _ _ _ = 0).
+      rewrite mul0R.
+      over.
+    rewrite /jfdist_cond.
+*)
+rewrite cond_entropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
 rewrite /cond_entropy1.
 rewrite big1 -1?oppr0 // => i _.
 have [<-|] := eqVneq (f y) i.
-set pZY := (X in (X * log X)%coqR).
-have HpZY: pZY = 1.
-  rewrite /pZY.
-  rewrite jPr_Pr.
-  rewrite cpr_eq_set1.
-  rewrite cpr_eqE.
-  rewrite coqRE.
-  rewrite pr_eq_ZY_Y //=.
-  by rewrite divff //=.
-rewrite HpZY.
-rewrite log1.
-by rewrite mulR0 //.
+  set pZY := (X in (X * log X)%coqR).
+  have HpZY: pZY = 1.
+    rewrite /pZY.
+    rewrite jPr_Pr.
+    rewrite cpr_eq_set1.
+    rewrite cpr_eqE.
+    rewrite coqRE.
+    rewrite pr_eq_ZY_Y //=.
+    by rewrite divff //=.
+  rewrite HpZY.
+  rewrite log1.
+  by rewrite mulR0.
 move => Hfy_neq_i.
 rewrite jPr_Pr.
 rewrite cpr_eq_set1.
 rewrite /Z.
 (* Try to state that because `f y != i`,  `Pr[ (f `o Y) = i | Y = y ] = 0 *)
-have Hfy_eq0: `Pr[ (f `o Y) = i | Y = y ] = 0.
+have ->: `Pr[ (f `o Y) = i | Y = y ] = 0.
   rewrite cpr_eqE.
-  Search comp_RV.
-  rewrite coqRE.
-  (* Not yet because we still have the joint probability, not yet two `Pr(s)*)
-  rewrite -[X in X / _](@pr_eq_comp T P TY TZ Y f y).
+  rewrite pr_eqE.
+  rewrite (_: finset _ = set0).
+    by rewrite Pr_set0 div0R. 
+  apply/setP => t.
+  rewrite !inE.
+  rewrite xpair_eqE.
+  rewrite /comp_RV.
+  apply/negbTE /negP => /andP [] /[swap] /eqP ->.
+  by apply/negP.
+by rewrite mul0R.
+Qed.
 
+End lemma_3_8_proof.
 
+Let pXYZ := `p_ [%X, Y, Z].
+Let pX := `p_ X.
+Let pYZ := `p_ [%Y, Z].
+Let pY := pYZ`1.
+Let pYZ_X :=  `p_ [%[%Y, Z], X].
+Let pX_YZ := fdistX pYZ_X.
+Let pZ_XY := `p_ [%Z, [%X, Y]].
+Let pZY := fdistX pYZ.
+Let pXY := `p_ [%X, Y].
+Let pXY_Z := `p_ [%[%X, Y], Z].
+
+Local Open Scope ring_scope.
+About R.
+Variable (P': R.-fdist (TX * TY * TZ)).
+
+Lemma eq_joint_entropy_YZX_XYZ:
+  joint_entropy `p_ [% Y, Z, X] = joint_entropy `p_ [% X, Y, Z].
+Proof.
+rewrite !joint_entropyE.
+rewrite !/neg_RV.
+rewrite /Ex.
+Search dist_of_RV.
+Admitted.
+
+Lemma eq_joint_entropy_YZ_X_X_YZ:
+ joint_entropy pYZ_X = joint_entropy pX_YZ.
+Proof.
+rewrite joint_entropyC.
+by rewrite /pX_YZ.
+Qed.
+
+Lemma eq_joint_entropy_YZ_X_XY_Z:
+ joint_entropy pYZ_X = joint_entropy pXY_Z.
+Proof.
+rewrite joint_entropyC.
+rewrite /joint_entropy.
+rewrite fdistX_RV2.
+rewrite /pXY_Z /pXY_Z.
+rewrite /entropy.
+congr -%R.
 Abort.
 
+Lemma fun_cond_removal :
+  cond_entropy pX_YZ = cond_entropy pXY.
+Proof.
+transitivity (joint_entropy pYZ_X - entropy pYZ). (* joint PQ = H P + cond QP*)
+  apply/eqP.
+  rewrite eq_sym.
+  rewrite subr_eq.
+  rewrite addrC.
+  apply/eqP.
+  have -> // : pX_YZ = fdistX pYZ_X.
+    by rewrite /pYZ_X /pX_YZ.
+  have -> // : pYZ = pYZ_X`1.
+    by rewrite fst_RV2 /pYZ.
+  rewrite -coqRE.
+  by rewrite -chain_rule.
+transitivity (joint_entropy pXY_Z - entropy pYZ). (* H(Y,f(Y),X) -> H(X,Y,f(Y))*)
+  
+transitivity (joint_entropy pXY + cond_entropy pZ_XY - entropy pY - entropy pZY).
+Abort.
+
+(*
+Variables (y : TY) (z : TZ).
 
 (* H(X|Y,f(Y))=H(X|Y) *)
-Lemma fun_cond_removal :
+Lemma fun_cond_removal' :
   cond_entropy1_RV [%Z, Y] X (z, y) =
   cond_entropy1_RV Y X y. 
 Proof.
-Search cond_entropy.
 rewrite /cond_entropy1_RV.
+congr entropy.
+rewrite /jfdist_cond.
+rewrite fst_RV2.
+rewrite jfdist_condE.
+Search jfdist_cond.
+
+*)
+
+(* eqn29 *)
 
 
   
