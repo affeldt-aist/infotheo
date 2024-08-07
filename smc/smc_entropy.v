@@ -23,8 +23,32 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope chap2_scope.
+Local Open Scope entropy_scope.
 
 Module smc_entropy_proofs.
+  
+Section joint_entropyA.
+
+Variables (A B C: finType) (P : {fdist A * B * C}).
+
+About fdistA.
+
+Lemma joint_entropyA : `H P = `H (fdistA P).
+Proof.
+congr (- _) => /=.
+rewrite (eq_bigr (fun a => P (a.1.1, a.1.2, a.2) * log (P (a.1.1, a.1.2, a.2)))); last by case => -[].
+rewrite -(pair_bigA _ (fun a1 a2 => P (a1.1, a1.2, a2) * log (P (a1.1, a1.2, a2)))) /=.
+rewrite -(pair_bigA _ (fun a1 a2 => \sum_j P (a1, a2, j) * log (P (a1, a2, j)))) /=.
+rewrite [RHS](eq_bigr (fun a => fdistA P (a.1, (a.2.1, a.2.2)) * log (fdistA P (a.1, (a.2.1, a.2.2))))); last by case => i [].
+rewrite -(pair_bigA _ (fun a1 a2 => fdistA P (a1, (a2.1, a2.2)) * log (fdistA P (a1, (a2.1, a2.2))))) /=.
+apply: eq_bigr => i _.
+rewrite -(pair_bigA _ (fun a1 a2 => fdistA P (i, (a1, a2)) * log (fdistA P (i, (a1, a2))))) /=.
+apply: eq_bigr => j _.
+apply: eq_bigr => k _.
+rewrite fdistAE //.
+Qed.
+
+End joint_entropyA.
 
 Section pr_entropy.
   
@@ -182,10 +206,9 @@ Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
 (*
   Search (`Pr[ _ = _ ])(`p_ _ _).
 *)
-Lemma fun_cond_entropy_eq0 :
+Lemma fun_cond_entropy_eq0_RV :
   cond_entropy1_RV Y Z y = 0.
 Proof.
-Print cond_entropy1.
 (* If `Pr[Y = y] = 0, it makes the  \Pr_QP[[set b] | [set a]] zero because the condition will be never true; need to do this before the cond_entropy1RVE *)
 (*
 have [H|] := eqVneq (`Pr[ Y = y]) 0.
@@ -232,6 +255,33 @@ have ->: `Pr[ (f `o Y) = i | Y = y ] = 0.
 by rewrite mul0R.
 Qed.
 
+Lemma fun_cond_entropy_ZY_eq0:
+  `H( Z | Y) = 0.
+Proof.
+(* How to reuse RV version (more abstract than dist)? -- usually we have
+   a dist lemma then we unfold RVs to dist so we can use the lemma,
+   but now we have a RV lemma we want to use it for dists.
+*)
+
+rewrite /cond_entropy.
+rewrite big1 // => i _.
+rewrite snd_RV2.
+rewrite /cond_entropy1.
+rewrite !coqRE. (* But still there is a %coqR cannot be removed*)
+have:(\sum_(b in TZ)
+      \Pr_`p_ [% Z, Y][[set f y] | [set i]] *
+      log \Pr_`p_ [% Z, Y][[set f y] | [set i]])=0.
+  rewrite big1 // => _ _.
+  set pZY := (X in (X * log X)).
+  have HpZY: pZY = 1.
+    rewrite /pZY.
+    rewrite jPr_Pr.
+    rewrite cpr_eq_set1.
+    rewrite cpr_eqE.
+Abort.
+  
+Search cond_entropy1.
+
 End lemma_3_8_proof.
 
 Let pXYZ := `p_ [%X, Y, Z].
@@ -248,22 +298,6 @@ Let pXY_Z := `p_ [%[%X, Y], Z].
 Local Open Scope ring_scope.
 About R.
 Variable (P': R.-fdist (TX * TY * TZ)).
-
-Lemma eq_joint_entropy_YZX_XYZ:
-  joint_entropy `p_ [% Y, Z, X] = joint_entropy `p_ [% X, Y, Z].
-Proof.
-rewrite !joint_entropyE.
-rewrite !/neg_RV.
-rewrite /Ex.
-Search dist_of_RV.
-Admitted.
-
-Lemma eq_joint_entropy_YZ_X_X_YZ:
- joint_entropy pYZ_X = joint_entropy pX_YZ.
-Proof.
-rewrite joint_entropyC.
-by rewrite /pX_YZ.
-Qed.
 
 Lemma eq_joint_entropy_YZ_X_XY_Z:
  joint_entropy pYZ_X = joint_entropy pXY_Z.
@@ -292,8 +326,17 @@ transitivity (joint_entropy pYZ_X - entropy pYZ). (* joint PQ = H P + cond QP*)
   rewrite -coqRE.
   by rewrite -chain_rule.
 transitivity (joint_entropy pXY_Z - entropy pYZ). (* H(Y,f(Y),X) -> H(X,Y,f(Y))*)
-  
+  rewrite joint_entropyC.
+  rewrite /joint_entropy.
+  rewrite joint_entropyA.
+  by rewrite fdistX_RV2 fdistA_RV3 .
 transitivity (joint_entropy pXY + cond_entropy pZ_XY - entropy pY - entropy pZY).
+  rewrite !chain_rule !coqRE.
+  rewrite !fst_RV2.
+  have -> // : cond_entropy (fdistX pXY) = 0.
+    rewrite fdistX_RV2.
+    Fail rewrite fun_cond_entropy_eq0_RV.
+  
 Abort.
 
 (*
