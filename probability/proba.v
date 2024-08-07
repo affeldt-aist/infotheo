@@ -514,7 +514,7 @@ Local Notation "{ 'RV' P -> V }" := (RV_of P (Phant _) (Phant V)).
 Definition ambient_dist (P : {fdist U}) (X : {RV P -> T}) : {fdist U} := P.
 
 End random_variable.
-Notation "{ 'RV' P -> T }" := (RV_of P (Phant _) (Phant T)) : proba_scope.
+Notation "{ 'RV' P -> T }" := (@RV _ T%type P ) : proba_scope.
 
 Section random_variable_eqType.
 Variables (U : finType) (A : eqType) (P : R.-fdist U).

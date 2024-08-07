@@ -168,7 +168,7 @@ Abort.
 
 End theorem_3_7.
 
-Section lemma_3_8.
+Section lemma_3_8_prep.
 
 Variables (T TX TY TZ: finType).
 Variable P : R.-fdist T.
@@ -177,8 +177,6 @@ Let Z := f `o Y.
 
 Section lemma_3_8_proof.
 Variables (y : TY) (z : TZ).
-
-
 
 Lemma pr_eq_ZY_Y :
   `Pr[ [% Z, Y] = (f y, y) ] = `Pr[ Y = y ].
@@ -255,34 +253,28 @@ have ->: `Pr[ (f `o Y) = i | Y = y ] = 0.
 by rewrite mul0R.
 Qed.
 
+End lemma_3_8_proof.
+
 Lemma fun_cond_entropy_ZY_eq0:
   `H( Z | Y) = 0.
 Proof.
-(* How to reuse RV version (more abstract than dist)? -- usually we have
-   a dist lemma then we unfold RVs to dist so we can use the lemma,
-   but now we have a RV lemma we want to use it for dists.
-*)
-
 rewrite /cond_entropy.
 rewrite big1 // => i _.
 rewrite snd_RV2.
-rewrite /cond_entropy1.
-rewrite !coqRE. (* But still there is a %coqR cannot be removed*)
-have:(\sum_(b in TZ)
-      \Pr_`p_ [% Z, Y][[set f y] | [set i]] *
-      log \Pr_`p_ [% Z, Y][[set f y] | [set i]])=0.
-  rewrite big1 // => _ _.
-  set pZY := (X in (X * log X)).
-  have HpZY: pZY = 1.
-    rewrite /pZY.
-    rewrite jPr_Pr.
-    rewrite cpr_eq_set1.
-    rewrite cpr_eqE.
-Abort.
-  
-Search cond_entropy1.
+have [->|Hi] := eqVneq (`p_ Y i) 0.
+  by rewrite mul0R.
+rewrite -cond_entropy1_RVE ?fst_RV2 //.
+by rewrite fun_cond_entropy_eq0_RV ?mulR0 // pr_eqE'.
+Qed.
 
-End lemma_3_8_proof.
+End lemma_3_8_prep.
+
+Section fun_cond_entropy_proof.
+
+Variables (T TX TY TZ: finType).
+Variable P : R.-fdist T.
+Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
+Let Z := f `o Y.
 
 Let pXYZ := `p_ [%X, Y, Z].
 Let pX := `p_ X.
@@ -330,14 +322,37 @@ transitivity (joint_entropy pXY_Z - entropy pYZ). (* H(Y,f(Y),X) -> H(X,Y,f(Y))*
   rewrite /joint_entropy.
   rewrite joint_entropyA.
   by rewrite fdistX_RV2 fdistA_RV3 .
-transitivity (joint_entropy pXY + cond_entropy pZ_XY - entropy pY - entropy pZY).
-  rewrite !chain_rule !coqRE.
-  rewrite !fst_RV2.
-  have -> // : cond_entropy (fdistX pXY) = 0.
-    rewrite fdistX_RV2.
-    Fail rewrite fun_cond_entropy_eq0_RV.
-  
-Abort.
+transitivity (joint_entropy pXY + cond_entropy pZ_XY - entropy pY - cond_entropy pZY).
+  rewrite [in LHS]chain_rule.
+  rewrite !coqRE.
+  rewrite fdistX_RV2.
+  rewrite fst_RV2.
+  rewrite -![in RHS]addrA.
+  rewrite [RHS]addrCA.
+  rewrite [RHS]addrC.
+  rewrite [LHS]addrAC.
+  congr (_ + _ + _).
+  rewrite -opprD.
+  congr (-_).
+  exact:chain_rule.
+transitivity (joint_entropy pXY - entropy pY).
+  rewrite [LHS]addrAC.
+  have -> // : cond_entropy pZY = 0.
+    rewrite /pZY fdistX_RV2.
+    exact:fun_cond_entropy_ZY_eq0.
+  have -> // : cond_entropy pZ_XY = 0.
+    rewrite /pZ_XY /Z.
+    have -> // : f `o Y = (f \o snd) `o [%X, Y].
+      by apply/boolp.funext => x //=.
+    exact:fun_cond_entropy_ZY_eq0.
+  by rewrite addrK.
+rewrite joint_entropyC fdistX_RV2.
+rewrite -/(joint_entropy `p_ [%Y, X]).
+rewrite chain_rule coqRE.
+rewrite fst_RV2 fdistX_RV2. 
+rewrite addrAC.
+by rewrite /pY fst_RV2 subrr add0r.
+Qed.
 
 (*
 Variables (y : TY) (z : TZ).
@@ -356,13 +371,22 @@ Search jfdist_cond.
 
 *)
 
-(* eqn29 *)
+End fun_cond_entropy_proof.
+
+Section pi2.
+
+Variables (T : finType) (TX TY : finComRingType).
+Variable P : R.-fdist T.
+Variable n : nat.
+Variables (x1 x2 s1 r1 x2' t y1 : {RV P -> 'rV[TX]_n}).
+
+Lemma pi2:
+  `H(x2|[%x1, s1, r1, x2', t, y1]) =  `H(x2|[%x1, s1, r1, x2', t]).
+Proof.
+simpl in * |- *.
 
 
-  
 
-
-End lemma_3_8.
   
 
 
