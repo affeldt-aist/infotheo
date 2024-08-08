@@ -290,7 +290,7 @@ Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 (* NB: infotheo/proba.v has following two lemmas with very similar names
 Lemma Pr_XsetT E : Pr P (E `* [set: B]) = Pr (P`1) E.
 Lemma Pr_setTX F : Pr P ([set: A] `* F) = Pr (P`2) F. *)
-Lemma Pr_setXT A : Pr P A = Pr d (A `* [set: bool]).
+Lemma Pr_setXT A : Pr P A = Pr d (A `* [set: bool]). (* TODO: reverse order *)
 Proof.
 rewrite /Pr big_setX/=; apply: eq_bigr => u uS.
 rewrite setT_bool big_setU1//= ?inE// big_set1.
@@ -468,7 +468,37 @@ Qed.
 
 End pos_evar.
 
+Section resilience.
+Variables (U : finType) (P : {fdist U}).
 
+Local Open Scope ring_scope.
+
+Lemma resilience (delta : R) (X : {RV P -> R}) (w : nneg_finfun U)
+  (pw0 : Weighted.total P w != 0) (w1 : forall i, w i <= 1) :
+  let X' := (wgt pw0).-RV X in 0 < delta <= \sum_i w i * P i ->
+    (`| `E X' - `E X | <= Num.sqrt (`V X * 2 * (1 - delta) / delta))%mcR.
+Proof.
+move=>/= /andP[delta0 delta_max].
+have w01: is01 w by rewrite /is01 => i; rewrite nneg_finfun_ge0 w1.
+have -> : `E ((wgt pw0).-RV X) = `E_[Split.fst_RV w01 X | [set: U] `* [set true]].
+  by rewrite Ex_cExT emean_cond_split.
+rewrite Ex_cExT (Split.cEx w01).
+apply: (le_trans (@cresilience' _ _ delta _ _ _ _ _ _)) => //.
+- rewrite -Split.Pr_setXT Pr_setT coqRE divr1.
+  have -> : forall S, Pr (Split.d P w01) (S `* [set true]) = \sum_(i in S) w i * P i. (* TODO: make lemma *)
+    by move => S; rewrite /Pr big_setX/=; apply: eq_bigr => i _; rewrite big_set1 Split.dE.
+  by rewrite big_set.
+- by rewrite setTX.
+- rewrite ler_sqrt; last first.
+    rewrite !mulr_ge0// ?variance_ge0'//.
+      rewrite subr_ge0 (le_trans delta_max)//.
+      apply: le_trans; last by apply/RleP; apply: (Pr_le1 P setT).
+      by rewrite /Pr [leRHS]big_mkcond ler_sum// => i _; rewrite in_setT ler_piMl.
+    by rewrite invr_ge0 ltW.
+- by rewrite Split.cVar -Var_cVarT.
+Qed.
+
+(*
 Section resilience.
 Variables (U : finType) (P : {fdist U}).
 
@@ -563,12 +593,12 @@ have h3 : Weighted.total P w' = 1 - Weighted.total P w.
     have <- := @Pr_setT' U P.
     rewrite /Pr -!coqRE.
     apply eq_big => // x.
-    rewrite in_setT.
-    admit.
+    by rewrite in_setT.
   by [].
 have pw1 : Weighted.total P w' != 1 by rewrite h3; lra.
 have pw'0 : Weighted.total P w' != 0.
   rewrite h3.
+  rewrite subr_eq0 eq_sym.
   admit.
 have -> : `| `E ((wgt pw0).-RV X) - `E X | = (1-\sum_i w i * P i) / (\sum_i w i * P i) * `| `E ((wgt pw'0).-RV X )|.
   admit.
@@ -576,9 +606,9 @@ rewrite -/a.
 have /= := @resilience_sub delta X w' w'1 pw'0.
 admit.
 Admitted.
+*)
 
 End resilience.
-
 
 
 Notation eps_max := (10 / 127)%mcR.
