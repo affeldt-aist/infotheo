@@ -24,27 +24,47 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope chap2_scope.
 Local Open Scope entropy_scope.
+Local Open Scope vec_ext_scope.
+
+Reserved Notation "u *d w" (at level 40).
+Reserved Notation "u \*d w" (at level 40).
 
 Module smc_entropy_proofs.
+
+  
+Section extra_pr.
+
+Variables (T TX TY: finType).
+Variable P : R.-fdist T.
+
+Lemma fst_RV2_neq0 (X : {RV P -> TX}) (Y : {RV P -> TY}) x y:
+  `Pr[[%X, Y] = (x, y)] != 0 -> `Pr[ X = x] != 0.
+Proof.
+apply: contra => /eqP /pr_eq_domin_RV2 H.
+by apply/eqP.
+Qed.
+
+
+End extra_pr.
   
 Section entropy_with_indeRV.
 
 Variables (T TX TY TZ: finType).
 Variable P : R.-fdist T.
 
-Lemma inde_rv_alt (X : {RV P -> TX}) (Y : {RV P -> TY}) x y:
-  inde_rv X Y <-> `p_ [%X, Y] (x, y) = `p_ X x * `p_ Y y.
+Lemma inde_rv_alt (X : {RV P -> TX}) (Y : {RV P -> TY}):
+  inde_rv X Y <-> forall x y,`p_ [%X, Y] (x, y) = `p_ X x * `p_ Y y.
 Proof.
-split => H.
-rewrite /dist_of_RV.
-Search fdistmap.
-rewrite !fdistmapE'.
-Admitted.
+rewrite /inde_rv.
+split => H x y.
+by rewrite -!pr_eqE'.
+by rewrite !pr_eqE'.
+Qed.
+About boolp.eq_forall.
 
 Lemma joint_entropy_indeRV (X : {RV P -> TX}) (Y : {RV P -> TY}):
-  inde_rv X Y <-> joint_entropy `p_[%X, Y] = `H (`p_X) + `H (`p_Y).
+  inde_rv X Y -> joint_entropy `p_[%X, Y] = `H (`p_X) + `H (`p_Y).
 Proof.
-split => H.
 rewrite /joint_entropy.
 rewrite /entropy.
 rewrite !coqRE.
@@ -71,35 +91,24 @@ transitivity (
     by rewrite add0R.
   rewrite mulRC.
   rewrite logM //. (* from log (x*y) to log x + log y *)
-  by rewrite [LHS]mulRDr.
-  admit. (* (0 < `p_ Y y)%coqR *)
-  admit. (* (0 < `p_ X x)%coqR *)
+  - by rewrite [LHS]mulRDr.
+  - rewrite -pr_eqE'.
+    rewrite pr_eqE Pr_gt0P -pr_eqE.
+    move: H0.
+    rewrite -pr_eqE' pr_eq_pairC coqRE.
+    exact: fst_RV2_neq0.
+  - rewrite -pr_eqE'.
+    rewrite pr_eqE Pr_gt0P -pr_eqE.
+    move: H0.
+    rewrite -pr_eqE' coqRE.
+    exact: fst_RV2_neq0.
 (* From \sum_a \sum_b `p_ [%X, Y](a, b) to \sum_a `p_ X a*)
-rewrite -[LHS]oppRB.
-rewrite -[RHS]oppRB.
-congr (- _).
-Admitted.
-
-Lemma entropy_with_indeRV:
-  inde_rv X [%Y, Z] -> `H(X|[%Y, Z]) = `H(X|Z).
-Proof.
-move=> H.
-transitivity (joint_entropy `p_[%[%Y, Z], X] - entropy `p_[%Y, Z]).
-  apply/eqP.
-  rewrite eq_sym.
-  rewrite subr_eq.
-  apply/eqP.
-  rewrite addrC.
-  have -> // : `p_[%X, [%Y, Z]] = fdistX `p_[%[%Y, Z], X].
-    by rewrite fdistX_RV2.
-  have -> // : `p_[%Y, Z] = (`p_[%[%Y, Z], X])`1. 
-    by rewrite fst_RV2.
-  exact: chain_rule.
-rewrite joint_entropyC.
-rewrite fdistX_RV2.
-move:H.
-rewrite (joint_entropy_indeRV (X:=X) (Y:=[%Y, Z])).
-Abort.
+under eq_bigr do rewrite -big_distrl -fdist_fstE fst_RV2 /=.
+congr (- _ - _).
+rewrite exchange_big /=.
+apply: eq_bigr => i _.
+by rewrite -big_distrl -fdist_sndE snd_RV2 /=.
+Qed.
 
 End entropy_with_indeRV.
 
@@ -413,31 +422,39 @@ End fun_cond_entropy_proof.
 
 Section pi2.
 
-Variables (T TY: finType) (TX: finComRingType).
+Variables (T: finType) (TX: finComRingType).
 Variable P : R.-fdist T.
 Variable n : nat.
-Variables (x1 x2 x1' x2' s1 s2 : {RV P -> 'rV[TX]_n}).
-Variables (y2 r1 r2 : {RV P -> TY}).
-Variable f : ((matrix TX 1 n) * (matrix TX 1 n) * TY * TY)%type -> TY.
+Variables (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
+Variables (y2 r1 r2 : {RV P -> TX}).
 
-Let t := [%x1', x2', r2, y2].
-Let y1 := f `o t.
+Definition dotproduct (a b:'rV[TX]_n) := (a *m b^T)``_ord0.
+Definition dotproduct_rv (A B:{RV P -> 'rV[TX]_n}) := fun p => dotproduct (A p) (B p).
+
+Local Notation "u *d w" := (dotproduct u w).
+Local Notation "u \*d w" := (dotproduct_rv u w).
+
+Let x1' : {RV P -> 'rV[TX]_n} := x1 \+ s1.
+Let x2' : {RV P -> 'rV[TX]_n} := x2 \+ s2.
+Let t : ({RV P -> TX}) := x1'\*d x2 \+ r2 \- y2.
+Let y1 : ({RV P -> TX}) := t \- x2' \*d s1 \+ r1.
+Let f : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
+  let '(x1, s1, r1, x2', t) := z in t - (x2' *d s1) + r1.
 
 Hypothesis x1_indep1 : P|= x1 _|_ [%[%s1, r1, x2', t], y1].
 
-
-Lemma pi2_alice_view:
-  `H(x2|[%x1, [%s1, r1, x2', t], y1]) = `H(x2|[%x1, [%s1, r1, x2', t]]).
+Lemma eq2:
+  `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
 Proof.
-transitivity (`H(x2|[%[%s1, r1, x2', t], y1])).
-  rewrite (condentropy_indep x1_indep1).
+have -> : y1 = f `o [%x1, s1, r1, x2', t].
+by apply boolp.funext.
+exact: fun_cond_removal.
+Qed.
 
-rewrite /y1 /t.
-rewrite fun_cond_removal.
+Lemma eq3:
+  `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
+ 
 
-
-
-  
 
 
 End smc_entropy_proofs.
