@@ -441,7 +441,8 @@ Let y1 : ({RV P -> TX}) := t \- x2' \*d s1 \+ r1.
 Let f : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
   let '(x1, s1, r1, x2', t) := z in t - (x2' *d s1) + r1.
 
-Hypothesis x1_indep1 : P|= x1 _|_ [%[%s1, r1, x2', t], y1].
+Hypothesis x1_indep1 : P|= x1 _|_ [%s1, r1, x2', t, y1].
+Hypothesis x1_indep2 : P|= x1 _|_ [%x2, s1, s2, r1, y2].  (* from the paper. *)
 
 Lemma eq2:
   `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
@@ -451,10 +452,52 @@ by apply boolp.funext.
 exact: fun_cond_removal.
 Qed.
 
+Lemma eq_fin:
+  `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
+Proof.
+transitivity (joint_entropy `p_ [%x1, s1, r1, x2] - entropy `p_ [%x1, s1, r1]).
+  apply/eqP.
+  rewrite eq_sym subr_eq addrC.
+  apply/eqP.
+  have -> : `p_[%x2, [%x1, s1, r1]] = fdistX `p_[%x1, s1, r1, x2].
+    by rewrite fdistX_RV2.
+  by rewrite chain_rule fst_RV2.
+rewrite joint_entropy_indeRV.
+  by rewrite addrAC subrr add0r.
+move:x1_indep2.
+move/cinde_rv_unit.  
+
+move/decomposition.
+move/cinde_rv_unit.
+move => /[dup] x1_indep3_x2_s1_s2_r1.
+move/cinde_rv_unit.
+
+move/decomposition.
+move/cinde_rv_unit.
+move => /[dup] x1_indep4_x2_s1_s2.
+move/cinde_rv_unit.
+
+move/decomposition.
+move/cinde_rv_unit.
+move => /[dup] x1_indep_x2_s1.
+move/cinde_rv_unit.
+
+move/decomposition.
+move/cinde_rv_unit.
+move => x1_indep_x2.
+
+Abort.
+
+
+
+
+entropy `p_ x1 + entropy `p_ s1 + entropy `p_ r1 = entropy `p_ x2.
+
 Lemma eq3:
   `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
  
 
 
+(* Using graphoid for combinations of independ random variables. *)
 
 End smc_entropy_proofs.
