@@ -436,21 +436,65 @@ Local Notation "u \*d w" := (dotproduct_rv u w).
 
 Let x1' : {RV P -> 'rV[TX]_n} := x1 \+ s1.
 Let x2' : {RV P -> 'rV[TX]_n} := x2 \+ s2.
+
 Let t : ({RV P -> TX}) := x1'\*d x2 \+ r2 \- y2.
 Let y1 : ({RV P -> TX}) := t \- x2' \*d s1 \+ r1.
+
+
+Section eq2_proof.
+
 Let f : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
   let '(x1, s1, r1, x2', t) := z in t - (x2' *d s1) + r1.
 
-Hypothesis x1_indep1 : P|= x1 _|_ [%s1, r1, x2', t, y1].
-Hypothesis x1_indep2 : P|= x1 _|_ [%x2, s1, s2, r1, y2].  (* from the paper. *)
+Lemma y1_fcomp :
+  y1 = f `o [%x1, s1, r1, x2', t].
+Proof. by apply boolp.funext. Qed.
 
 Lemma eq2:
   `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
+Proof. rewrite y1_fcomp. exact: fun_cond_removal. Qed.
+
+End eq2_proof.
+
+Section eq3_proof.
+
+About mc_removal_pr.
+
+Notation p := n.+1.
+Variable (y2' :  {RV P -> 'I_p}).
+Check x1'\*d x2 \+ r2 \- y2'.
+
+(* Here we ask y2 to be `I_p because mc_revmoal_pr requires that
+   But it should keep as TX for `t`.
+*)
+Variable pZ_unif : `p_ y2 = fdist_uniform (card_ord p).
+
+(* f1 `o X in mc_removal_pr must be x2 in eq3 *)
+Let fx2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> 'rV[TX]_n := fun z =>
+  let '(x1, x2, s1, s2, r1, r2) := z in x2.
+
+(* f2 `o X in mc_removal_pr must be (x1, s1, r1, x2 + s2) in eq3 *)
+Let fx1s1r1x2' : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) := fun z =>
+  let '(x1, x2, s1, s2, r1, r2) := z in (x1, s1, r1, x2 + s2).
+
+(* (fm `o X)+Z in mc_removal_pr must be t+(-y2) in eq3 *)
+Let ft : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
+  let '(x1, x2, s1, s2, r1, r2) := z in (x1 + s1) *d x2 + r2.
+
+Lemma eq3:
+  `H(x2|[%[%x1, s1, r1, x2'], t]) = `H(x2|[%x1, s1, r1, x2']).
 Proof.
-have -> : y1 = f `o [%x1, s1, r1, x2', t].
-by apply boolp.funext.
-exact: fun_cond_removal.
-Qed.
+Fail have Ha :=(@mc_removal_pr _ _ _ _ P n [%x1, x2, s1, s2, r1, r2] y2 fx2 fx1s1r1x2' ft pZ_unif Z_X_indep y1 y2  Hneq0).
+Abort.
+
+About cpr_cond_entropy1_RV.
+
+End eq3_proof.
+
+Section eq_fin_proof.
+
+Hypothesis x1_indep1 : P|= x1 _|_ [%s1, r1, x2', t, y1].
+Hypothesis x1_indep2 : P|= x1 _|_ [%x2, s1, s2, r1, y2].  (* from the paper. *)
 
 Lemma eq_fin:
   `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
@@ -488,15 +532,7 @@ move => x1_indep_x2.
 
 Abort.
 
-
-
-
-entropy `p_ x1 + entropy `p_ s1 + entropy `p_ r1 = entropy `p_ x2.
-
-Lemma eq3:
-  `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
- 
-
+End eq_fin_proof.
 
 (* Using graphoid for combinations of independ random variables. *)
 
