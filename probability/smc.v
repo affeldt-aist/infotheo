@@ -362,7 +362,7 @@ Section theorem_3_7.
 Variables (T TX TY1 TY2: finType).
 Variable P : R.-fdist T.
 Variable n : nat.
-Notation p := n.+1.
+Notation p := n.+2.
 Variables (X: {RV P -> TX}) (Z : {RV P -> 'I_p}).
 Variables (f1 : TX -> TY1) (f2 : TX -> TY2) (fm : TX -> 'I_p). 
 Variable pZ_unif : `p_ Z = fdist_uniform (card_ord p).

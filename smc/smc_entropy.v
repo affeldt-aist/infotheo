@@ -1,8 +1,8 @@
-From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix.
+From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy smc.
+Require Import proba jfdist_cond entropy smc graphoid.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -139,7 +139,7 @@ Section pr_entropy.
 
 Variables (T TW TV1 TV2: finType) (P : R.-fdist T).
 Variable n : nat.
-Notation p := n.+1.
+Notation p := n.+2.
 Variables (W: {RV P -> TW}) (V1: {RV P -> TV1}) (V2: {RV P -> 'I_p}).
 
 (* Cannot use fdist_uniform (#|TV2|) (TV2 could be empty if it is arbitrary finType. *)
@@ -203,54 +203,6 @@ by rewrite !cpr_eq_set1.
 Qed.
 
 End pr_entropy.
-
-Section theorem_3_7.
-
-Variables (T TX TY1 TY2: finType).
-Variable P : R.-fdist T.
-Variable n : nat.
-Notation p := n.+1.
-Variables (X: {RV P -> TX}) (Z : {RV P -> 'I_p}).
-Variables (f1 : TX -> TY1) (f2 : TX -> TY2) (fm : TX -> 'I_p). 
-Hypothesis pZ_unif : `p_ Z = fdist_uniform (card_ord p).
-Hypothesis Z_X_indep : inde_rv Z X.
-
-Variables (y1 : TY1) (y2 : TY2) (ymz : 'I_p).
-
-Let Y1 := f1 `o X.
-Let Y2 := f2 `o X.  (* y2...ym-1*)
-Let Ym := fm `o X.
-Let YmZ := Ym `+ Z.
-Let f x := (f1 x, f2 x, fm x).
-Let Y := f `o X.
-
-Hypothesis Hneq0 : `Pr[ [%YmZ, Y2] = (ymz, y2) ] != 0.
-Hypothesis YmZ_unif : `p_ YmZ = fdist_uniform (card_ord p).
-Hypothesis Y2YmZindep : P|= Y2 _|_ YmZ.
-
-Theorem mc_removal_entropy :
-  cond_entropy1_RV [%Y2, YmZ] Y1 (y2, ymz) =
-  cond_entropy1_RV Y2 Y1 y2.
-Proof.
-simpl in *.
-apply /esym /cpr_cond_entropy1_RV => //.
-move => w.
-
-have : cond_entropy1_RV [% Y2, YmZ] Y1 (y2, ymz) = cond_entropy1_RV Y2 Y1 y2.
-
-
-have /= :=(cpr_cond_entropy1_RV YmZ_unif Y2YmZindep).
-move/(_ TY1 Y1 y2 ymz).
-have Ha :=(@mc_removal_pr _ _ _ _ P n X Z f1 f2 fm pZ_unif Z_X_indep y1 y2 ymz Hneq0).
-rewrite -/Y1 -/Y2 -/YmZ in Ha.
-symmetry in Ha.
-move => Hb.
-(* Cannot Hb Ha but can rewrite *)
-rewrite Hb //.
-Fail Check (Hb Ha).
-Abort.
-
-End theorem_3_7.
 
 Section lemma_3_8_prep.
 
@@ -422,9 +374,13 @@ End fun_cond_entropy_proof.
 
 Section pi2.
 
-Variables (T: finType) (TX: finComRingType).
+Variable m : nat.
+Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
+
+Variables (T: finType).
 Variable P : R.-fdist T.
 Variable n : nat.
+
 Variables (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
 Variables (y2 r1 r2 : {RV P -> TX}).
 
@@ -457,37 +413,54 @@ Proof. rewrite y1_fcomp. exact: fun_cond_removal. Qed.
 End eq2_proof.
 
 Section eq3_proof.
+  
+Notation p := m.+2.
 
 About mc_removal_pr.
 
-Notation p := n.+1.
-Variable (y2' :  {RV P -> 'I_p}).
-Check x1'\*d x2 \+ r2 \- y2'.
-
-(* Here we ask y2 to be `I_p because mc_revmoal_pr requires that
-   But it should keep as TX for `t`.
-*)
-Variable pZ_unif : `p_ y2 = fdist_uniform (card_ord p).
+(* All random variables will be used here. *)
+Let O := [%x1, x2, s1, s2, r1, r2].
 
 (* f1 `o X in mc_removal_pr must be x2 in eq3 *)
-Let fx2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> 'rV[TX]_n := fun z =>
+Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> 'rV[TX]_n := fun z =>
   let '(x1, x2, s1, s2, r1, r2) := z in x2.
 
 (* f2 `o X in mc_removal_pr must be (x1, s1, r1, x2 + s2) in eq3 *)
-Let fx1s1r1x2' : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) := fun z =>
+Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) := fun z =>
   let '(x1, x2, s1, s2, r1, r2) := z in (x1, s1, r1, x2 + s2).
 
 (* (fm `o X)+Z in mc_removal_pr must be t+(-y2) in eq3 *)
-Let ft : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
+Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
   let '(x1, x2, s1, s2, r1, r2) := z in (x1 + s1) *d x2 + r2.
+
+(* in mc_removal_pr they are named as Y1 Y2 Ym but we already have Y so renaming them. *)
+Let Z := y2.
+Let W1 := f1 `o O.  (* x2; It is okay in Alice's view has it because only used in condition. *)
+Let W2 := f2 `o O.  (* [%x1, s1, r1, x2']; cannot have x2, s2, r2 here otherwise Alice knows the secret*)
+Let Wm := fm `o O.
+Let WmZ := Wm `+ Z. (* t; It should be (neg_RV y2) but neg_RV requires the domain is R, not TX*)
+
+Variable Z_O_indep : inde_rv Z O.
+Variable (w1 : 'rV[TX]_n) (w2 : 'rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) (wmz : 'I_p) .
+Variable pZ_unif : `p_ Z = fdist_uniform (card_ord p).
+
+Variable W2_WmZ_indep : P |= W2 _|_ WmZ.
+Variable pWmZ_unif : `p_ WmZ = fdist_uniform (card_ord p).
+            
+Hypothesis Hneq0 : `Pr[ [%WmZ, W2] = (wmz, w2) ] != 0.
 
 Lemma eq3:
   `H(x2|[%[%x1, s1, r1, x2'], t]) = `H(x2|[%x1, s1, r1, x2']).
 Proof.
-Fail have Ha :=(@mc_removal_pr _ _ _ _ P n [%x1, x2, s1, s2, r1, r2] y2 fx2 fx1s1r1x2' ft pZ_unif Z_X_indep y1 y2  Hneq0).
-Abort.
+have Ha :=(@mc_removal_pr _ _ _ _ P m O Z f1 f2 fm pZ_unif Z_O_indep w1 w2 wmz Hneq0).
+(* Things used in mc_removal_pr are not directly x1...xn but y1...ym, so even if O has x2, s2 and r2,
+   Alice only see outputs of functions. So secrets are kept safe.
 
+   That is: x2 in the condition is w1, [%x1...x2'] is w2 and t is wmz. 
+   `H(w1 | [%w2, wmz]) = `H(w1 | w2).
+*)
 About cpr_cond_entropy1_RV.
+have Hb := (@cpr_cond_entropy1_RV _ _ _ P m W1 W2 WmZ pWmZ_unif W2_WmZ_indep w2 wmz).
 
 End eq3_proof.
 
@@ -495,6 +468,21 @@ Section eq_fin_proof.
 
 Hypothesis x1_indep1 : P|= x1 _|_ [%s1, r1, x2', t, y1].
 Hypothesis x1_indep2 : P|= x1 _|_ [%x2, s1, s2, r1, y2].  (* from the paper. *)
+
+About pairwise.
+
+Hypothesis Hinde : {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> inde_rv i j}%nat.
+Check @Hinde 0 1.
+
+Hypothesis Hinde_r : P|= r1 _|_ y2.
+
+Hypothesis Hinde_all : forall i j, P|= nth x1 [:: x1; x2; s1; s2] i _|_ nth r1 [:: r1; y2] j.
+
+
+Lemma inde_cinde (X Y Z: {RV P-> TX}):
+  inde_rv X Y -> inde_rv [%X, Y] Z -> cinde_rv X Y Z.
+Proof.
+Admitted.
 
 Lemma eq_fin:
   `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
@@ -508,8 +496,15 @@ transitivity (joint_entropy `p_ [%x1, s1, r1, x2] - entropy `p_ [%x1, s1, r1]).
   by rewrite chain_rule fst_RV2.
 rewrite joint_entropy_indeRV.
   by rewrite addrAC subrr add0r.
+  
+
+
 move:x1_indep2.
 move/cinde_rv_unit.  
+(*
+move/contraction.
+move => a b c.
+*)
 
 move/decomposition.
 move/cinde_rv_unit.
@@ -533,6 +528,8 @@ move => x1_indep_x2.
 Abort.
 
 End eq_fin_proof.
+
+End pi2.
 
 (* Using graphoid for combinations of independ random variables. *)
 
