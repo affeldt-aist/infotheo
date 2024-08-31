@@ -380,6 +380,7 @@ Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
 Variables (T: finType).
 Variable P : R.-fdist T.
 Variable n : nat.
+Notation p := m.+2.
 
 Variables (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
 Variables (y2 r1 r2 : {RV P -> TX}).
@@ -395,7 +396,6 @@ Let x2' : {RV P -> 'rV[TX]_n} := x2 \+ s2.
 
 Let t : ({RV P -> TX}) := x1'\*d x2 \+ r2 \- y2.
 Let y1 : ({RV P -> TX}) := t \- x2' \*d s1 \+ r1.
-
 
 Section eq2_proof.
 
@@ -413,10 +413,6 @@ Proof. rewrite y1_fcomp. exact: fun_cond_removal. Qed.
 End eq2_proof.
 
 Section eq3_proof.
-  
-Notation p := m.+2.
-
-About mc_removal_pr.
 
 (* All random variables will be used here. *)
 Let O := [%x1, x2, s1, s2, r1, r2].
@@ -444,23 +440,27 @@ Variable Z_O_indep : inde_rv Z O.
 Variable (w1 : 'rV[TX]_n) (w2 : 'rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) (wmz : 'I_p) .
 Variable pZ_unif : `p_ Z = fdist_uniform (card_ord p).
 
+(* TODO: these two from cpr_cond_entropy1_RV are really held by the assumption in the paper? *)
 Variable W2_WmZ_indep : P |= W2 _|_ WmZ.
 Variable pWmZ_unif : `p_ WmZ = fdist_uniform (card_ord p).
             
 Hypothesis Hneq0 : `Pr[ [%WmZ, W2] = (wmz, w2) ] != 0.
 
-Lemma eq3:
+Lemma eq3_dist:
   `H(x2|[%[%x1, s1, r1, x2'], t]) = `H(x2|[%x1, s1, r1, x2']).
 Proof.
-have Ha :=(@mc_removal_pr _ _ _ _ P m O Z f1 f2 fm pZ_unif Z_O_indep w1 w2 wmz Hneq0).
-(* Things used in mc_removal_pr are not directly x1...xn but y1...ym, so even if O has x2, s2 and r2,
-   Alice only see outputs of functions. So secrets are kept safe.
+Abort. (* Aborted because this needs mapping from dist back to RV, but folding back by rewrite fails.*)
 
-   That is: x2 in the condition is w1, [%x1...x2'] is w2 and t is wmz. 
-   `H(w1 | [%w2, wmz]) = `H(w1 | w2).
-*)
-About cpr_cond_entropy1_RV.
-have Hb := (@cpr_cond_entropy1_RV _ _ _ P m W1 W2 WmZ pWmZ_unif W2_WmZ_indep w2 wmz).
+Lemma eq3:
+  cond_entropy1_RV [%W2, WmZ] W1 (w2, wmz) = cond_entropy1_RV W2 W1 w2.
+Proof.
+have Ha := (@cpr_cond_entropy1_RV _ _ _ P m W1 W2 WmZ pWmZ_unif W2_WmZ_indep w2 wmz).
+symmetry in Ha.
+apply Ha => w.
+have Hb :=(@mc_removal_pr _ _ _ _ P m O Z f1 f2 fm pZ_unif Z_O_indep w w2 wmz Hneq0).
+symmetry in Hb.
+apply Hb.
+Qed.
 
 End eq3_proof.
 
