@@ -550,6 +550,7 @@ Variable (w2 : 'rV[TX]_n * 'rV[TX]_n * TX) (wmz : 'rV[TX]_n) .
 *) 
 Hypothesis card_Z : #|'rV[TX]_n| = m.+2.
 Hypothesis pZ_unif : `p_ Z = fdist_uniform card_Z. (* Assumption in the paper. *)
+Hypothesis Hneq0 : `Pr[ [%WmZ, W2] = (wmz, w2) ] != 0.
 
 Let Z_Wm_indep:
   P |= Z _|_ Wm.
@@ -570,11 +571,29 @@ have H := add_RV_unif Wm Z card_Z pZ_unif H_ZWM.
 by exact H.
 Qed.
 
+Let W2_WmZ_indep :
+  P |= W2 _|_ WmZ.
+Proof.
+rewrite cinde_rv_unit.
+apply:cinde_rv_sym.
+rewrite -cinde_rv_unit.
+rewrite /inde_rv.
+rewrite /WmZ.
+move => x y.
+have H := (@lemma_3_5' _ _ 'rV[TX]_n P m.+1 Wm Z W2 card_Z pZ_unif Z_WmW2_indep x y).
+apply H.
+Qed.
+
 Lemma eqn4:
   cond_entropy1_RV [%W2, WmZ] W1 (w2, wmz) = cond_entropy1_RV W2 W1 w2.
 Proof.
-have Ha := (@cpr_cond_entropy1_RV _ _ _ P m W1 W2 WmZ pWmZ_unif W2_WmZ_indep w2 wmz).
-
+have Ha := (@cpr_cond_entropy1_RV _ _ _ 'rV[TX]_n P m.+1 W1 W2 WmZ card_Z pWmZ_unif W2_WmZ_indep w2 wmz).
+symmetry in Ha.
+apply Ha => w.
+have Hb :=(@mc_removal_pr _ _ _ _ 'rV[TX]_n P m.+1 O Z f1 f2 fm Z_O_indep card_Z pZ_unif w w2 wmz Hneq0).
+symmetry in Hb.
+apply Hb.
+Qed.
   
 End eqn4_proof.
 
