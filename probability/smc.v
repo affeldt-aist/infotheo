@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
+From mathcomp Require Import all_ssreflect ssralg finalg ssrnum matrix.
 From mathcomp Require Import reals Rstruct zmodp ring lra.
 Require Import Reals.
 
@@ -154,19 +154,19 @@ End XYZ.
 
 Section lemma_3_4.
 
-Variable T : finType.
+Variables (T : finType) (A: finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
-Notation p := n.+1.
-Variables (X Y : {RV P -> 'I_p}).
+Variables (X Y : {RV P -> A}).
 
 (* How to express "the distribution of random variable Y is uniform distribution" as a prop. *)
-Variable pY_unif : `p_ Y = fdist_uniform (card_ord p).
+Hypothesis card_A : #|A| = n.+1.
+Variable pY_unif : `p_ Y = fdist_uniform card_A.
 Variable XY_indep : P |= X _|_ Y.
 
 (* Add two random variables = add results from two functions. *)
 (* We use this because add_RV is in coqR *)
-Definition add_RV : {RV P -> 'I_p} := X \+ Y.
+Definition add_RV : {RV P -> A} := X \+ Y.
 
 Lemma add_RV_mul i : `p_ add_RV i = (\sum_(k <- fin_img X) `Pr[ X = k ] * `Pr[ Y = (i - k)%mcR ]).
 Proof.
@@ -207,8 +207,7 @@ done.
 Qed.
 
 (* Lemma 3.4 *)
-Lemma add_RV_unif : `p_ add_RV = fdist_uniform (card_ord p).
-(* TODO: I cannot directly put X \+ Y in this lemma because the implicit P cannot be inferred. *)
+Lemma add_RV_unif : `p_ add_RV = fdist_uniform card_A . 
 Proof.
 apply: fdist_ext=> /= i.
 rewrite fdist_uniformE /=.
@@ -221,8 +220,9 @@ rewrite -big_distrl /=.  (* Pull the const part `Pr[ Y = (i - k) ] from the \sum
 by rewrite cPr_1 ?mul1r // pr_eq_unit oner_neq0.
 Qed.
 
-
 End lemma_3_4.
+
+Global Arguments add_RV_unif [T A P n].
 
 Notation "X `+ Y" := (add_RV X Y) : proba_scope.
 
@@ -257,15 +257,16 @@ End fdist_cond_prop.
 
 Section lemma_3_5.
   
-Variable (T TY : finType).
+Variable (T TY: finType) (TZ: finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
-Notation p := n.+1.
 
-Variables (X Z: {RV P -> 'I_p}) (Y : {RV P -> TY} ).
-Let XZ : {RV P -> 'I_p} := X \+ Z.
+Variables (X Z: {RV P -> TZ}) (Y : {RV P -> TY} ).
+Let XZ : {RV P -> TZ} := X `+ Z.
 
-Variable pZ_unif : `p_ Z = fdist_uniform (card_ord p).
+Hypothesis card_TZ : #|TZ| = n.+1.
+Hypothesis pZ_unif : `p_ Z = fdist_uniform card_TZ.
+
 Variable Z_XY_indep : inde_rv Z [%X, Y].
 
 Let Z_X_indep : inde_rv Z X.
@@ -276,15 +277,13 @@ Qed.
 
 
 Section iy.
-Variables (i : 'I_p) (y : TY).
+Variables (i : TZ) (y : TY).
 Let E := finset (Y @^-1 y).
 Hypothesis Y0 : Pr P E != 0.
 
-Let X': {RV (fdist_cond Y0) -> 'I_p} := X.
-Let Z': {RV (fdist_cond Y0) -> 'I_p} := Z.
-
-
-Let XZ': {RV (fdist_cond Y0) -> 'I_p} := X' \+ Z'.
+Let X': {RV (fdist_cond Y0) -> TZ} := X.
+Let Z': {RV (fdist_cond Y0) -> TZ} := Z.
+Let XZ': {RV (fdist_cond Y0) -> TZ} := X' `+ Z'.
 
 
 Lemma lemma_3_5 : `Pr[ XZ = i | Y = y] = `Pr[ XZ = i].  (* The paper way to prove P |= X\+Z _|_ Y *)
@@ -301,7 +300,7 @@ under eq_bigr => k _.
   over.
 rewrite -big_distrl /=.  (* Pull the const part `Pr[ Y = (i - k) ] from the \sum_k *)
 rewrite /X' cPr_1 ?mul1r //; last by rewrite pr_eqE.
-rewrite pr_eqE' (@add_RV_unif _ _ _ X Z) //.
+rewrite pr_eqE' (add_RV_unif X Z (card_TZ)) //.
 - by rewrite fdist_uniformE.
 - rewrite /inde_rv /= => /= x z.
   rewrite mulRC pr_eq_pairC. (* Swap X _|_ Z to Z _|_ X  so we can apply Z_X_indep *)
@@ -322,15 +321,15 @@ End lemma_3_5.
 
 Section lemma_3_6.
 
-Variables (T TY TX : finType).
+Variables (T TY TX : finType)(TZ : finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
-Notation p := n.+1.
-Variables (i : 'I_p) (x1 : TX) (y : TY).
+Variables (i : TZ) (x1 : TX) (y : TY).
 (* X2 means X2 to Xn-1 *)
-Variables (X2 : {RV P -> TY}) (X1 : {RV P -> TX}) (Xn Z : {RV P -> 'I_p}).
+Variables (X2 : {RV P -> TY}) (X1 : {RV P -> TX}) (Xn Z : {RV P -> TZ}).
 
-Variable pZ_unif : `p_ Z = fdist_uniform (card_ord p).
+Hypothesis card_TZ : #|TZ| = n.+1.
+Variable pZ_unif : `p_ Z = fdist_uniform card_TZ.
 Variable Z_Xs_indep : inde_rv Z [%X1, X2, Xn].
 Variable Z_X1X2_indep : inde_rv Z [%X1, X2].
 Let XnZ := Xn `+ Z.
@@ -347,7 +346,7 @@ rewrite (inde_RV2_sym X1 X2 XnZ) in H.
 apply: H.
 rewrite inde_RV2_sym. 
 rewrite inde_rv_sym.
-have:= (@lemma_3_5' _ _ P n Xn Z [% X1, X2] pZ_unif).
+have:= (@lemma_3_5' _ _ TZ P n Xn Z [% X1, X2] card_TZ pZ_unif).
 apply.
 apply/cinde_rv_unit.
 apply: cinde_drv_2C.
@@ -359,13 +358,12 @@ End lemma_3_6.
 
 Section theorem_3_7.
 
-Variables (T TX TY1 TY2: finType).
+Variables (T TX TY1 TY2: finType)(TZ: finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
-Notation p := n.+2.
-Variables (X: {RV P -> TX}) (Z : {RV P -> 'I_p}).
-Variables (f1 : TX -> TY1) (f2 : TX -> TY2) (fm : TX -> 'I_p). 
-Variable pZ_unif : `p_ Z = fdist_uniform (card_ord p).
+Variables (X: {RV P -> TX}) (Z : {RV P -> TZ}).
+Variables (f1 : TX -> TY1) (f2 : TX -> TY2) (fm : TX -> TZ). 
+
 Variable Z_X_indep : inde_rv Z X.
 
 Let Y1 := f1 `o X.
@@ -375,11 +373,15 @@ Let YmZ := Ym `+ Z.
 Let f x := (f1 x, f2 x, fm x).
 Let Y := f `o X.
 
+Hypothesis card_TZ : #|TZ| = n.+1.
+Variable pZ_unif : `p_ Z = fdist_uniform card_TZ.
+
 (* Theorem 3.7:  masked_condition_removal *)
 Theorem mc_removal_pr y1 y2 ymz: `Pr[ [% Ym `+ Z, Y2] = (ymz, y2) ] != 0 ->
   `Pr[Y1 = y1|[%Y2, YmZ] = (y2, ymz)] = `Pr[Y1 = y1 | Y2 = y2].
 Proof.
-apply: lemma_3_6.
+have H:= (@lemma_3_6 _ _ _ TZ _ n ymz y1 y2 Y2 Y1 Ym Z card_TZ).
+apply H.
 apply: pZ_unif.
 rewrite (_:[%_ , _] = Y) //.
 rewrite (_:Z = idfun `o Z) //. (* id vs. idfun*)
@@ -390,4 +392,3 @@ Qed.
 
 
 End theorem_3_7.
-
