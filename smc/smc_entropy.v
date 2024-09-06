@@ -63,6 +63,17 @@ Qed.
 
 End extra_pr.
 
+Section cond_entropy_RV_dist.
+
+Lemma eq_cond_entropy1_to_eq_cond_entropy (A1 A2 B1 B2: finType) (QP: {fdist A2 * A1}) (TS: {fdist B2 * B1}) a b:
+  cond_entropy QP = cond_entropy TS -> cond_entropy1 QP a = cond_entropy1 TS b.
+Proof.
+rewrite /cond_entropy.
+move => H.
+Admitted.
+
+End cond_entropy_RV_dist.
+
 Section entropy_with_indeRV.
 
 Variables (T TX TY TZ: finType).
@@ -434,6 +445,16 @@ Let r2  : {RV P -> TX} := s1 \*d s2 \+ r1.
 Let t : ({RV P -> TX}) := x1'\*d x2 \+ r2 \- y2.
 Let y1 : ({RV P -> TX}) := t \- x2' \*d s1 \+ r1.
 
+(* Because we need values of random variables when expressing Pr(A = a). *)
+Variable (_x1 _x2 _x1' _x2' _s1 _s2: 'rV[TX]_n)(_t _r1 _r2 _y1 _y2: TX).
+
+Let AliceView := [%x1, s1, r1, x2', t, y1].
+
+Let eqn1 := cond_entropy1_RV AliceView x2 (_x1, _s1, _r1, _x2', _t, _y1).
+
+Let BobView := [%x2, s2, x1', r2, y2].
+
+Let eqn5 := cond_entropy1_RV BobView x2 (_x2, _s2, _x1', _r2, _y2).
 
 Section eqn2_proof.
 
@@ -444,9 +465,23 @@ Lemma y1_fcomp :
   y1 = f `o [%x1, s1, r1, x2', t].
 Proof. by apply boolp.funext. Qed.
 
-Lemma eqn2:
+Lemma eqn2_dist:
   `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
 Proof. rewrite y1_fcomp. exact: fun_cond_removal. Qed.
+
+Hypothesis Qneq0: (`p_ [% x1, s1, r1, x2', t, x2])`1 (_x1, _s1, _r1, _x2', _t) != 0.
+Hypothesis Tneq0: (`p_ [% AliceView, x2])`1 (_x1, _s1, _r1, _x2', _t, _y1) != 0.
+
+Lemma eqn2:
+  cond_entropy1_RV AliceView x2 (_x1, _s1, _r1, _x2', _t, _y1) =
+  cond_entropy1_RV [%x1, s1, r1, x2', t] x2 (_x1, _s1, _r1, _x2', _t).
+Proof.
+rewrite !cond_entropy1_RVE.
+apply eq_cond_entropy1_to_eq_cond_entropy.
+apply eqn2_dist.
+by exact: Qneq0.
+by exact: Tneq0.
+Qed.
 
 End eqn2_proof.
 
@@ -633,11 +668,11 @@ Qed.
   
 End eqn4_proof.
 
-Section eqn_p1_fin_proof.
+Section pi2_alice_view_is_leakage_free.
 
 Hypothesis x2_indep : P |= [% x1, s1, r1] _|_ x2.
 
-Lemma eqn_5:
+Lemma eqn_4_1:
   `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
 Proof.
 transitivity (joint_entropy `p_ [%x1, s1, r1, x2] - entropy `p_ [%x1, s1, r1]).
@@ -652,20 +687,25 @@ rewrite joint_entropy_indeRV.
 by exact: x2_indep.
 Qed.
 
-End eqn_p1_fin_proof.
+Lemma pi2_alice_view_is_leakage_free_proof:
+  eqn5 = entropy `p_ x2.
+Proof.
+rewrite /eqn5 /BobView.
+
+End pi2_alice_view_is_leakage_free.
 
 Section eqn6_proof.
 
-Let O := [%x1, x2, s1, s2, r1, r2, y2].
+Let O := [%x1, x2, s1, s2, r2, y2].
 
-Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX * TX) -> 'rV[TX]_n := fun z =>
-  let '(x1, x2, s1, s2, r1, r2, y2) := z in x1.
+Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> 'rV[TX]_n := fun z =>
+  let '(x1, x2, s1, s2, r1, y2) := z in x1.
 
-Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX * TX) -> ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) := fun z =>
-  let '(x1, x2, s1, s2, r1, r2, y2) := z in (x2, s2, x1 + s1, r2).
+Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) := fun z =>
+  let '(x1, x2, s1, s2, r2, y2) := z in (x2, s2, x1 + s1, r2).
 
-Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX * TX) -> TX := fun z =>
-  let '(x1, x2, s1, s2, r1, r2, y2) := z in y2.
+Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
+  let '(x1, x2, s1, s2, r2, y2) := z in y2.
 
 Let W1 := f1 `o O.  (* x1; It is okay in Bob's view has it because only used in condition. *)
 Let W2 := f2 `o O.  (* [%x2, s2, x1', r2]; cannot have x1, s1 here otherwise Bob knows the secret*)
@@ -677,9 +717,9 @@ Variable (w2 : 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) (wm : TX).
 Hypothesis W2_Wm_indep: P|= W2 _|_ Wm.
 Hypothesis W1W2_Wm_indep : P|= [%W1, W2] _|_ Wm.
 
-Hypothesis card_Z: #|TX| = m.+2.
+Hypothesis card_Wm: #|TX| = m.+2.
 (* In the paper, y2 (Wm) is uniform distributed*)
-Hypothesis pWm_unif: `p_ Wm = fdist_uniform card_Z.
+Hypothesis pWm_unif: `p_ Wm = fdist_uniform card_Wm.
 
 Let W1WmW2_cinde : W1 _|_ Wm | W2.
 Proof. apply: inde_RV2_cinde. by exact: W1W2_Wm_indep.
@@ -687,10 +727,10 @@ Qed.
 
 Hypothesis W2Wm_neq0 : `Pr[ [% Wm, W2] = (wm, w2) ] != 0.
 
-Lemma eqn_6:
+Lemma eqn6:
   cond_entropy1_RV [%W2, Wm] W1 (w2, wm) = cond_entropy1_RV W2 W1 w2.
 Proof.
-have H := (@cpr_cond_entropy1_RV _ _ _ TX P m.+1 W1 W2 Wm card_Z pWm_unif W2_Wm_indep w2 wm).
+have H := (@cpr_cond_entropy1_RV _ _ _ TX P m.+1 W1 W2 Wm card_Wm pWm_unif W2_Wm_indep w2 wm).
 symmetry in H.
 apply H.
 move => w.
@@ -701,6 +741,154 @@ apply H2.
 Qed.
 
 End eqn6_proof.
+
+Section eqn7_proof.
+
+Let O := [%x1, x2, s1, s2, r2].
+
+Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
+  let '(x1, x2, s1, s2, r2) := z in x1.
+
+Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) := fun z =>
+  let '(x1, x2, s1, s2, r2) := z in (x2, s2, x1 + s1).
+
+Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> TX := fun z =>
+  let '(x1, x2, s1, s2, r2) := z in r2.
+
+Let W1 := f1 `o O.  (* x1; It is okay in Bob's view has it because only used in condition. *)
+Let W2 := f2 `o O.  (* [%x2, s2, x1']; cannot have x1, s1 here otherwise Bob knows the secret*)
+Let Wm := fm `o O.  (* r2 *)
+
+Variable (w2 : 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) (wm : TX).
+
+(* Because r2 is generated by Bob; not related to x2, s2, x1, s1 at all*)
+Hypothesis W2_Wm_indep: P|= W2 _|_ Wm.
+Hypothesis W1W2_Wm_indep : P|= [%W1, W2] _|_ Wm.
+
+Hypothesis card_Wm: #|TX| = m.+2.
+(* In the paper, r2 (Wm) is uniform distributed*)
+Hypothesis pWm_unif: `p_ Wm = fdist_uniform card_Wm.
+
+Let W1WmW2_cinde : W1 _|_ Wm | W2.
+Proof. apply: inde_RV2_cinde. by exact: W1W2_Wm_indep.
+Qed.
+
+Hypothesis W2Wm_neq0 : `Pr[ [% Wm, W2] = (wm, w2) ] != 0.
+  
+Lemma eqn7:
+  cond_entropy1_RV [%W2, Wm] W1 (w2, wm) = cond_entropy1_RV W2 W1 w2.
+Proof.
+have H := (@cpr_cond_entropy1_RV _ _ _ TX P m.+1 W1 W2 Wm card_Wm pWm_unif W2_Wm_indep w2 wm).
+symmetry in H.
+apply H.
+move => w.
+have H2:=(@cinde_alt _ _ _ _ _ W1 Wm W2 w wm w2 W1WmW2_cinde W2Wm_neq0).
+symmetry in H2.
+rewrite cpr_RV2_sym. 
+apply H2.
+Qed.
+
+(* Although in the paper eqn_7 needs Theorem 3.7 to prove,
+   it actually only needs cinde_alt. Because r2 is not Wm+Z but just Wm.
+*)
+End eqn7_proof.
+
+Section eqn8_proof.
+
+Let O := [%x1, x2, s1, s2].
+
+(* f1 `o X in mc_removal_pr must be x1 in eqn8 *)
+Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> 'rV[TX]_n := fun z =>
+  let '(x1, x2, s1, s2) := z in x2.
+
+(* f2 `o X in mc_removal_pr must be (x2, s2) in eqn8 *)
+Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> ('rV[TX]_n * 'rV[TX]_n) := fun z =>
+  let '(x1, x2, s1, s2) := z in (x2, s2).
+
+(* (fm `o X)+Z in mc_removal_pr must be x1'=x1+s1 in eqn8 *)
+Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> 'rV[TX]_n := fun z =>
+  let '(x1, x2, s1, s2) := z in x1 + s1.
+
+Let Z := s1.
+Let W1 := f1 `o O.   (* x1 *)
+Let W2 := f2 `o O.   (* [%x2, s2]*)
+Let Wm := fm `o O.   (* x1'-s1*)
+Let WmZ := Wm `+ s1. (* x1'*)
+
+Variable Z_O_indep : inde_rv Z O. 
+Variable Z_WmW2_indep : inde_rv Z [%Wm, W2].
+
+Variable (w2 : 'rV[TX]_n * 'rV[TX]_n) (wmz : 'rV[TX]_n) .
+
+Hypothesis card_Z : #|'rV[TX]_n| = m.+2.
+Hypothesis pZ_unif : `p_ Z = fdist_uniform card_Z.
+Hypothesis Hneq0 : `Pr[ [%WmZ, W2] = (wmz, w2) ] != 0.
+
+Let Z_Wm_indep:
+  P |= Z _|_ Wm.
+Proof.
+rewrite /Wm.
+rewrite (_:Z = idfun `o Z) //.
+apply: inde_rv_comp.
+by exact: Z_O_indep.
+Qed.
+
+Let pWmZ_unif:
+  (@dist_of_RV T P 'rV[TX]_n WmZ) = fdist_uniform card_Z.
+Proof.
+rewrite /WmZ.
+have H_ZWM := Z_Wm_indep.
+rewrite inde_rv_sym in H_ZWM.
+have H := add_RV_unif Wm Z card_Z pZ_unif H_ZWM.
+by exact H.
+Qed.
+
+Let W2_WmZ_indep :
+  P |= W2 _|_ WmZ.
+Proof.
+rewrite cinde_rv_unit.
+apply:cinde_rv_sym.
+rewrite -cinde_rv_unit.
+rewrite /inde_rv.
+rewrite /WmZ.
+move => x y.
+have H := (@lemma_3_5' _ _ 'rV[TX]_n P m.+1 Wm Z W2 card_Z pZ_unif Z_WmW2_indep x y).
+apply H.
+Qed.
+
+Lemma eqn8:
+  cond_entropy1_RV [%W2, WmZ] W1 (w2, wmz) = cond_entropy1_RV W2 W1 w2.
+Proof.
+have Ha := (@cpr_cond_entropy1_RV _ _ _ 'rV[TX]_n P m.+1 W1 W2 WmZ card_Z pWmZ_unif W2_WmZ_indep w2 wmz).
+symmetry in Ha.
+apply Ha => w.
+have Hb :=(@mc_removal_pr _ _ _ _ 'rV[TX]_n P m.+1 O Z f1 f2 fm Z_O_indep card_Z pZ_unif w w2 wmz Hneq0).
+symmetry in Hb.
+apply Hb.
+Qed.
+  
+End eqn8_proof.
+
+Section eqn_bob_fin_proof.
+
+Hypothesis x1_indep : P |= [% x2, s2] _|_ x1.
+  
+Lemma eqn_8_1:
+  `H(x1|[%x2, s2]) = entropy `p_ x1.
+Proof.
+transitivity (joint_entropy `p_ [%x2, s2, x1] - entropy `p_ [%x2, s2]).
+  apply/eqP.
+  rewrite eq_sym subr_eq addrC.
+  apply/eqP.
+  have -> : `p_ [%x1, [%x2, s2]] = fdistX `p_ [%[%x2, s2], x1].
+    by rewrite fdistX_RV2.
+  by rewrite chain_rule fst_RV2.
+rewrite joint_entropy_indeRV.
+  by rewrite addrAC subrr add0r.
+by exact: x1_indep.
+Qed.
+
+End eqn_bob_fin_proof.
 
 (* Using graphoid for combinations of independ random variables. *)
 Section mutual_indep.
