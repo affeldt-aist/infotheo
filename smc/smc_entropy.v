@@ -65,7 +65,44 @@ End extra_pr.
 
 Section cond_entropy_RV_dist.
 
-Lemma eq_cond_entropy1_to_eq_cond_entropy (A1 A2 B1 B2: finType) (QP: {fdist A2 * A1}) (TS: {fdist B2 * B1}) a b:
+(*
+
+Variables (A B : finType) (QP : {fdist B * A}).
+
+(* H(Y|X = x), see eqn 2.10 *)
+Definition cond_entropy1 a := - \sum_(b in B)
+  \Pr_QP [ [set b] | [set a] ] * log (\Pr_QP [ [set b] | [set a] ]).
+
+Let P := QP`2.
+
+(*eqn 2.11 *)
+Definition cond_entropy := \sum_(a in A) P a * cond_entropy1 a.
+
+Lemma cond_entropyE : cond_entropy = - \sum_(a in A) \sum_(b in B)
+  PQ (a, b) * log (\Pr_QP [ [set b] | [set a]]).
+Proof.
+
+Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Definition cond_entropy1_RV a := `H (`p_[% X, Y] `(| a )).
+
+Lemma cond_entropy1_RVE a : (`p_[% X, Y])`1 a != 0 ->
+  cond_entropy1_RV a = cond_entropy1 `p_[% Y, X] a.
+Proof.
+move=> a0.
+rewrite /cond_entropy1_RV /cond_entropy1 /entropy; congr (- _).
+by apply: eq_bigr => b _; rewrite jfdist_condE// fdistX_RV2.
+Qed.
+
+*)
+  
+Variables (A1 A2 B1 B2 T1 T2 S1 S2: finType) (P: {fdist T2 * T1}) (Q: {fdist S2 * S1})(RA1: {RV P -> A1})(RA2: {RV P -> A2})(RB1: {RV P -> B1})(RB2: {RV P -> B2}).
+Lemma eq_cond_entropy1_RV_cond_entropy a b:
+  cond_entropy Q = cond_entropy P -> cond_entropy1_RV RA2 RA1 a = cond_entropy1_RV RB2 RB1 b.
+Proof.
+Abort.
+  
+Lemma eq_cond_entropy_to_cond_entropy1 (A1 A2 B1 B2: finType) (QP: {fdist A2 * A1}) (TS: {fdist B2 * B1}) a b:
   cond_entropy QP = cond_entropy TS -> cond_entropy1 QP a = cond_entropy1 TS b.
 Proof.
 rewrite /cond_entropy.
@@ -477,7 +514,7 @@ Lemma eqn2:
   cond_entropy1_RV [%x1, s1, r1, x2', t] x2 (_x1, _s1, _r1, _x2', _t).
 Proof.
 rewrite !cond_entropy1_RVE.
-apply eq_cond_entropy1_to_eq_cond_entropy.
+apply eq_cond_entropy_to_cond_entropy1.
 apply eqn2_dist.
 by exact: Qneq0.
 by exact: Tneq0.
