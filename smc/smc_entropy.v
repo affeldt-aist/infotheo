@@ -96,12 +96,6 @@ Qed.
 
 *)
   
-Variables (A1 A2 B1 B2 T1 T2 S1 S2: finType) (P: {fdist T2 * T1}) (Q: {fdist S2 * S1})(RA1: {RV P -> A1})(RA2: {RV P -> A2})(RB1: {RV P -> B1})(RB2: {RV P -> B2}).
-Lemma eq_cond_entropy1_RV_cond_entropy a b:
-  cond_entropy Q = cond_entropy P -> cond_entropy1_RV RA2 RA1 a = cond_entropy1_RV RB2 RB1 b.
-Proof.
-Abort.
-  
 Lemma eq_cond_entropy_to_cond_entropy1 (A1 A2 B1 B2: finType) (QP: {fdist A2 * A1}) (TS: {fdist B2 * B1}) a b:
   cond_entropy QP = cond_entropy TS -> cond_entropy1 QP a = cond_entropy1 TS b.
 Proof.
