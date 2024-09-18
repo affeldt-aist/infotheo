@@ -260,20 +260,46 @@ rewrite !jPr_Pr.
 by rewrite !cpr_eq_set1.
 Qed.
 
-Lemma cpr_cond_entropy:
-  (forall w v1 v2,
-  `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ]) ->
-  `H(W | V1) = `H(W | [%V1, V2]).
+Hypothesis H : forall w v1 v2,
+    `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ].
+
+Lemma snd_extra_indep v1 v2 :
+  (`p_ [% W, [% V1, V2]])`2 (v1, v2) = (`p_ [% W, V1])`2 v1 * `p_V2 v2.
 Proof.
-move => H.
+rewrite !fdist_sndE big_distrl /=.
+apply eq_bigr => w _.
+move: (H w v1 v2).
+rewrite !cpr_eqE V1V2indep !pr_eqE'.
+have [Hv1|Hv1] := eqVneq (`p_V1 v1) 0.
+- move=> _.
+  rewrite -!pr_eqE' in Hv1 *.
+  rewrite [in RHS]pr_eq_pairC [in LHS]pr_eq_pairC -pr_eq_pairA.
+  rewrite !(pr_eq_domin_RV2 _ _ Hv1).
+  by rewrite -!coqRE mul0R.
+- rewrite mulRC.
+  rewrite /Rdiv Rinv_mult mulRA.
+  move/(f_equal (fun x => x * `p_V1 v1))%coqR.
+  rewrite -mulRA.
+  rewrite -[in RHS]mulRA.
+  move/eqP in Hv1.
+  rewrite Rinv_l // !mulR1 !coqRE.
+  have [Hv2|Hv2] := eqVneq (`p_V2 v2) 0.
+  - move=> _.
+    rewrite -!pr_eqE' in Hv2 *.
+    rewrite Hv2 mulr0.
+    rewrite pr_eq_pairC -pr_eq_pairA.
+    rewrite pr_eq_pairC -pr_eq_pairA.
+    exact: (pr_eq_domin_RV2 _ _ Hv2).
+  - move/(f_equal (fun x => x * `p_V2 v2))%coqR.
+    move/eqP in Hv2.
+    rewrite -coqRE /Rdiv -mulRA Rinv_l // mulR1.
+    by rewrite !coqRE => ->.
+Qed.
+
+Lemma cpr_cond_entropy: `H(W | V1) = `H(W | [%V1, V2]).
+Proof.
 symmetry.
 rewrite /cond_entropy /=.
-(*
-under eq_bigr => v1v2 do rewrite {2 3}(surjective_pairing v1v2) /=.
-under eq_bigl do rewrite inE.
-rewrite -(pair_bigA _ (fun i j => (`p_ [% W, [% V1, V2]])`2 (i, j) * cond_entropy1 `p_ [% W, [% V1, V2]] (i, j))) /=.
-*)
-
 rewrite (bigID (fun a => (`p_ [%W, [%V1, V2]])`2 a == 0)) /=.
 rewrite big1;last first.
   move=>i /eqP ->.
@@ -284,14 +310,47 @@ under eq_bigr => v1v2 Hv1v2.
   rewrite {1 2}(surjective_pairing v1v2) /=.
   rewrite -cpr_cond_entropy1_RV; last by move => w.
   over.
-under eq_bigl => v1v2 do rewrite {1}(surjective_pairing v1v2) /=.
-  Abort.
-
-Lemma cond_entropy1_eq0 a:
-  (`p_[%W , V1])`1 a = 0 -> cond_entropy1 `p_[%V1, W] 
-
-
-
+under eq_bigl => v1v2 do
+  rewrite {1}(surjective_pairing v1v2) -[_ != 0]andTb /=.
+rewrite -(pair_big_dep (fun => true)
+  (fun v1 v2 => (`p_ [% W, [% V1, V2]])`2 (v1, v2) != 0)
+  (fun v1 v2 => (`p_ [% W, [% V1, V2]])`2 (v1, v2) * cond_entropy1_RV V1 W v1))
+  /=.
+under eq_bigr => v1 _.
+  under eq_bigr => v2 Hv1.
+    have [Hv2|Hv2] := eqVneq (`p_V2 v2) 0.
+    - move/eqP in Hv1; elim: Hv1.
+      rewrite fdist_sndE big1 // => w _.
+      rewrite -!pr_eqE' in Hv2 *.
+      rewrite pr_eq_pairC -pr_eq_pairA pr_eq_pairC -pr_eq_pairA.
+      exact: (pr_eq_domin_RV2 _ _ Hv2).
+    - rewrite snd_extra_indep.
+      rewrite mulrAC.
+    over.
+  rewrite -big_distrr /=.
+  over.
+rewrite /=.
+apply: eq_bigr => v1 _.
+have [H2|H2] := eqVneq ((`p_ [% W, V1])`2 v1) 0.
+- by rewrite H2 !(mul0R,mul0r).
+- rewrite (bigID (fun v2 => `p_V2 v2 == 0)) /=.
+  rewrite big1; last by move=> v2 /andP [] _ /eqP.
+  rewrite add0R.
+  under eq_bigl => v2.
+  rewrite (andb_id2r (c:=true)) /=; last first.
+    move => Hv2. rewrite snd_extra_indep.
+    by rewrite mulf_eq0 negb_or H2 Hv2.
+  over.
+rewrite /= big_mkcond /=.
+rewrite (eq_bigr (`p_V2)); last first.
+  move=> v2 _.
+  case: ifPn => Hv2 //.
+  rewrite negbK in Hv2.
+  by rewrite (eqP Hv2).
+rewrite FDist.f1 mulR1.
+rewrite cond_entropy1_RVE !coqRE //.
+by rewrite -fdistX2 fdistX_RV2.
+Qed.
 End pr_entropy.
 
 Section lemma_3_8_prep.
@@ -659,16 +718,7 @@ under eq_bigr => a _.
   under eq_bigr => i _.
     rewrite -pr_eqE'.
   About pr_eqE'.
-
-  rewrite -cond_entropy1_RVE.
-
-  rewrite eqn3.
-  over.
-rewrite -pair_big.
 Abort. (* Aborted because this needs mapping from dist back to RV, but folding back by rewrite fails.*)
-
-  have[|]:= eqVneq ((`p_ [% x1, s1, r1, x2', t, x2])`1 (a.1, a.2)) 0. 
-
 
 End eqn3_proof.
 
