@@ -260,6 +260,38 @@ rewrite !jPr_Pr.
 by rewrite !cpr_eq_set1.
 Qed.
 
+Lemma cpr_cond_entropy:
+  (forall w v1 v2,
+  `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ]) ->
+  `H(W | V1) = `H(W | [%V1, V2]).
+Proof.
+move => H.
+symmetry.
+rewrite /cond_entropy /=.
+(*
+under eq_bigr => v1v2 do rewrite {2 3}(surjective_pairing v1v2) /=.
+under eq_bigl do rewrite inE.
+rewrite -(pair_bigA _ (fun i j => (`p_ [% W, [% V1, V2]])`2 (i, j) * cond_entropy1 `p_ [% W, [% V1, V2]] (i, j))) /=.
+*)
+
+rewrite (bigID (fun a => (`p_ [%W, [%V1, V2]])`2 a == 0)) /=.
+rewrite big1;last first.
+  move=>i /eqP ->.
+  by rewrite mul0R.
+rewrite add0R.
+under eq_bigr => v1v2 Hv1v2.
+  rewrite -cond_entropy1_RVE;last by rewrite -fdistX2 fdistX_RV2.
+  rewrite {1 2}(surjective_pairing v1v2) /=.
+  rewrite -cpr_cond_entropy1_RV; last by move => w.
+  over.
+under eq_bigl => v1v2 do rewrite {1}(surjective_pairing v1v2) /=.
+  Abort.
+
+Lemma cond_entropy1_eq0 a:
+  (`p_[%W , V1])`1 a = 0 -> cond_entropy1 `p_[%V1, W] 
+
+
+
 End pr_entropy.
 
 Section lemma_3_8_prep.
@@ -556,7 +588,6 @@ Variable Z_O_indep : inde_rv Z O.
 Variable Z_WmW2_indep : inde_rv Z [%Wm, W2]. (* TODO: the same combination problem; generate them instead of listing them like this. *)
 Variable pZ_unif : `p_ Z = fdist_uniform card_TX. (* Assumption in the paper. *)
 
-Variable (w1 : 'rV[TX]_n) (w2 : 'rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) (wmz : 'I_p) .
 
 Let Z_W2_indep:
   P |= Z _|_ W2.
@@ -599,6 +630,10 @@ have H := add_RV_unif Wm Z card_TX pZ_unif H_ZWM.
 by exact H.
 Qed.
 
+Section eqn3_entropy1.
+
+Variable (w1 : 'rV[TX]_n) (w2 : 'rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) (wmz : 'I_p) .
+
 Hypothesis Hneq0 : `Pr[ [%WmZ, W2] = (wmz, w2) ] != 0.
 
 Lemma eqn3:
@@ -612,10 +647,28 @@ symmetry in Hb.
 apply Hb.
 Qed.
 
+End eqn3_entropy1.
+
 Lemma eqn3_dist:
   `H(x2|[%[%x1, s1, r1, x2'], t]) = `H(x2|[%x1, s1, r1, x2']).
 Proof.
+rewrite /cond_entropy /=.
+under eq_bigr => a _.
+  rewrite (surjective_pairing a) /=.
+  rewrite fdist_sndE /=.
+  under eq_bigr => i _.
+    rewrite -pr_eqE'.
+  About pr_eqE'.
+
+  rewrite -cond_entropy1_RVE.
+
+  rewrite eqn3.
+  over.
+rewrite -pair_big.
 Abort. (* Aborted because this needs mapping from dist back to RV, but folding back by rewrite fails.*)
+
+  have[|]:= eqVneq ((`p_ [% x1, s1, r1, x2', t, x2])`1 (a.1, a.2)) 0. 
+
 
 End eqn3_proof.
 
