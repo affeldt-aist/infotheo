@@ -719,9 +719,12 @@ by exact: x2_indep.
 Qed.
 
 Lemma pi2_alice_view_is_leakage_free_proof:
-  eqn5 = entropy `p_ x2.
+  eqn1 = entropy `p_ x2.
 Proof.
-rewrite /eqn5 /BobView.
+rewrite /eqn1.
+rewrite eqn2.
+Fail rewrite eqn3.
+Abort.
 
 End pi2_alice_view_is_leakage_free.
 
