@@ -291,13 +291,12 @@ set f : TV1 -> TV2 -> R := fun v1 v2 =>
 transitivity (\sum_a f a.1 a.2).
   apply eq_bigr => a _.
   rewrite /f {1 2}(surjective_pairing a) /=.
-  have [Hv1|Hv1] := eqVneq ((`p_ [% W, V1])`2 a.1 * `p_V2 a.2) 0.
-    by rewrite Hv1 snd_extra_indep Hv1 !coqRE !mul0r.
-  rewrite snd_extra_indep -cond_entropy1_RVE; last first.
-    by apply: contra Hv1; rewrite mulf_eq0 -fdistX1 fdistX_RV2 => ->.
-  rewrite (cpr_cond_entropy1_RV (v2:=a.2)) //.
-  rewrite cond_entropy1_RVE ?coqRE //.
-  by rewrite -fdistX2 fdistX_RV2 snd_extra_indep.
+  have [Ha|Ha] := eqVneq ((`p_ [% W, V1])`2 a.1 * `p_V2 a.2) 0.
+    by rewrite Ha snd_extra_indep Ha !coqRE !mul0r.
+  rewrite snd_extra_indep -[in LHS]cond_entropy1_RVE; last first.
+    by rewrite -fdistX2 fdistX_RV2 snd_extra_indep.
+  rewrite -cpr_cond_entropy1_RV // cond_entropy1_RVE ?coqRE //.
+  by apply: contra Ha; rewrite mulf_eq0 -fdistX1 fdistX_RV2 => ->.
 rewrite -pair_bigA /=.
 apply: eq_bigr => v1 _.
 by rewrite /f -big_distrl -big_distrr /= FDist.f1 mulr1 coqRE.
