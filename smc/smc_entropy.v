@@ -281,9 +281,8 @@ rewrite -[in RHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hv1.
 by rewrite mulrA -[X in X * _]mulrA mulVf // !mulr1.
 Qed.
 
-Lemma cpr_cond_entropy: `H(W | V1) = `H(W | [%V1, V2]).
+Lemma cpr_cond_entropy : `H(W | [%V1, V2]) = `H(W | V1).
 Proof.
-symmetry.
 rewrite /cond_entropy /=.
 under eq_bigl do rewrite inE /=.
 set f : TV1 -> TV2 -> R := fun v1 v2 =>
