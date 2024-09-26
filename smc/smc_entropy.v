@@ -288,9 +288,9 @@ under eq_bigl do rewrite inE /=.
 set f : TV1 -> TV2 -> R := fun v1 v2 =>
   (`p_[% W, V1])`2 v1 * `p_V2 v2 * cond_entropy1 `p_ [% W, V1] v1.
 transitivity (\sum_a f a.1 a.2).
-  apply eq_bigr => a _.
-  rewrite /f {1 2}(surjective_pairing a) /=.
-  have [Ha|Ha] := eqVneq ((`p_ [% W, V1])`2 a.1 * `p_V2 a.2) 0.
+  apply eq_bigr => -[i j] _.
+  rewrite /f /=.
+  have [Ha|Ha] := eqVneq ((`p_ [% W, V1])`2 i * `p_V2 j) 0.
     by rewrite Ha snd_extra_indep Ha !coqRE !mul0r.
   rewrite snd_extra_indep -[in LHS]cond_entropy1_RVE; last first.
     by rewrite -fdistX2 fdistX_RV2 snd_extra_indep.
