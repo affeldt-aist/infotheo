@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup perm.
 Require Import Reals.
 From mathcomp Require Import Rstruct reals.
 Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext bigop_ext.
-Require Import logb ln_facts fdist jfdist_cond proba binary_entropy_function.
+Require Import realType_logb (*ln_facts*) fdist jfdist_cond proba binary_entropy_function.
 Require Import divergence.
 
 (******************************************************************************)
@@ -61,10 +61,14 @@ Local Open Scope vec_ext_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
+(* TODO: kludge *)
+Hint Extern 0 ((0 <= _)%coqR) => solve [exact/RleP/FDist.ge0] : core.
+Hint Extern 0 ((_ <= 1)%coqR) => solve [exact/RleP/FDist.le1] : core.
+
 Section entropy_definition.
 Variables (A : finType) (P : {fdist A}).
 
-Definition entropy := - \sum_(a in A) P a * log (P a).
+Definition entropy := - \sum_(a in A) P a * realType_logb.log (P a).
 Local Notation "'`H'" := (entropy).
 
 Lemma entropy_ge0 : 0 <= `H.
@@ -73,8 +77,8 @@ rewrite /entropy big_morph_oppR; apply/RleP/sumr_ge0 => i _; apply/RleP.
 have [->|Hi] := eqVneq (P i) 0; first by rewrite mul0R oppR0.
   (* NB: this step in a standard textbook would be handled as a consequence of lim x->0 x log x = 0 *)
 rewrite mulRC -mulNR; apply mulR_ge0 => //; apply: oppR_ge0.
-rewrite -log1; apply: Log_increasing_le => //.
-by apply/RltP; rewrite lt0r Hi/=.
+rewrite coqRE -(@log1 R); apply/RleP; rewrite ler_log// ?posrE//.
+by rewrite lt0r Hi/=.
 Qed.
 
 End entropy_definition.
@@ -93,13 +97,14 @@ rewrite /entropy /log_RV /= big_morph_oppR.
 by apply eq_bigr => a _; rewrite mulRC -mulNR.
 Qed.
 
-Lemma xlnx_entropy (P : {fdist A}) : `H P = / ln 2 * - \sum_(a : A) xlnx (P a).
+Lemma xlnx_entropy (P : {fdist A}) : `H P = / exp.ln 2 * - \sum_(a : A) xlnx (P a).
 Proof.
 rewrite /entropy mulRN; congr (- _); rewrite big_distrr/=.
-apply: eq_bigr => a _; rewrite /log /Rdiv mulRA mulRC; congr (_ * _).
-rewrite /xlnx; case : ifP => // /RltP Hcase.
-have -> : P a = 0 by case (Rle_lt_or_eq_dec 0 (P a)).
-by rewrite mul0R.
+apply: eq_bigr => a _; rewrite /xlnx /log /Log/=.
+have := FDist.ge0 P a.
+rewrite le_eqVlt => /predU1P[<-|Pa0].
+  by rewrite mul0r if_same mulR0 mul0R.
+by rewrite Pa0 mulRA mulRC !coqRE.
 Qed.
 
 Lemma entropy_uniform n (An1 : #|A| = n.+1) :
@@ -109,8 +114,7 @@ rewrite /entropy.
 under eq_bigr do rewrite fdist_uniformE.
 rewrite big_const iter_addR mulRA RmultE -RinvE.
 rewrite INRE mulRV; last by rewrite An1 -INRE INR_eq0'.
-rewrite -RmultE mul1R logV ?oppRK//; rewrite An1.
-by rewrite -INRE; apply/ltR0n.
+by rewrite -RmultE mul1R !coqRE logV ?An1 ?ltr0n// opprK.
 Qed.
 
 Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : {prob R}) :
