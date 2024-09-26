@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg all_algebra reals.
-Require Import Reals.
-From mathcomp Require Import Rstruct.
-Require Import ssrR realType_ext Reals_ext ln_facts logb fdist proba.
+From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp Require Import Rstruct reals sequences exp.
+Require Import realType_ext realType_logb (*ln_facts logb*) fdist proba.
 
 (******************************************************************************)
 (*    Divergence (or the Kullback-Leibler distance or relative entropy)       *)
@@ -25,38 +24,52 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
 Local Open Scope fdist_scope.
+
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
 (* TODO: rename, move? *)
 Section log_facts.
+Context {R : realType}.
 
 Lemma div_diff_ub x y : 0 <= x -> (y = 0 -> x = 0) -> 0 <= y ->
-                        x * (log (y / x)) <= (y - x) * log (exp 1).
+                        x * (log (y / x)) <= (y - x) * log (expR 1) :> R.
 Proof.
-move=> x0 yx /leR_eqVlt[/esym|] y0.
-- by move: (yx y0) => ->; rewrite y0 subRR 2!mul0R.
-- case/leR_eqVlt : x0 => [/esym ->|x0].
-  + rewrite mul0R subR0; apply mulR_ge0; [exact: ltRW | exact: log_exp1_Rle_0].
+move=> x0 yx; rewrite le_eqVlt => /predU1P[/esym|] y0.
+- by rewrite y0 yx// subrr 2!mul0r.
+- move: x0; rewrite le_eqVlt => /predU1P[/esym ->|x0].
+  + rewrite mul0r subr0 mulr_ge0//; [exact: ltW | ].
+    by rewrite log_exp1_Rle_0.
   + rewrite (_ : y - x = x * (y / x - 1)); last first.
-      by rewrite mulRDr mulRCA mulRV ?mulR1 ?mulRN1 //; exact/gtR_eqF.
-    rewrite -mulRA; apply (leR_wpmul2l (ltRW x0)).
-    by apply/log_id_cmp/mulR_gt0 => //; exact/invR_gt0.
+      by rewrite mulrDr mulrCA mulfV ?gt_eqF// mulr1 mulrN1.
+    rewrite -mulrA; apply (ler_wpM2l (ltW x0)).
+    by rewrite log_id_cmp// divr_gt0.
+Qed.
+
+Lemma log_id_eq x : 0 < x -> log x = (x - 1) * log (expR 1) -> x = 1 :> R.
+Proof.
+move=> Hx'; rewrite logexp1E.
+move=> /(congr1 (fun x => x * ln 2)).
+rewrite -!mulrA mulVf// ?gt_eqF ?ln2_gt0//.
+by rewrite !mulr1; exact: ln_id_eq.
 Qed.
 
 Lemma log_id_diff x y : 0 <= x -> (y = 0 -> x = 0) -> 0 <= y ->
-  x * (log (y / x)) = (y - x) * log (exp 1) -> x = y.
+  x * (log (y / x)) = (y - x) * log (expR 1) -> x = y :> R.
 Proof.
-move=> Hx Hxy /leR_eqVlt[/esym|] y0 Hxy2; first by rewrite y0 Hxy.
-case/leR_eqVlt : Hx => [/esym|] x0.
-- move/esym : Hxy2; rewrite x0 mul0R subR0 mulR_eq0 => -[] //.
-  by rewrite logexp1E => /invR_eq0/eqP; rewrite (negbTE ln2_neq0).
-- apply/esym; rewrite -(@eqR_mul2l (/ x)) //; last exact/nesym/eqP/ltR_eqF/invR_gt0.
-  rewrite mulVR //; last exact/gtR_eqF.
-  apply log_id_eq; first by apply mulR_gt0 => //; exact: invR_gt0.
-  rewrite -(@eqR_mul2l x); last exact/eqP/gtR_eqF.
-  rewrite {1}(mulRC _ y) Hxy2 mulRA mulRBr; congr (_ * _).
-  field; exact/eqP/gtR_eqF.
+move=> Hx Hxy; rewrite le_eqVlt => /predU1P[/esym|] y0 Hxy2; first by rewrite y0 Hxy.
+move: Hx; rewrite le_eqVlt => /predU1P[/esym|] x0.
+- move/esym : Hxy2; rewrite x0 mul0r subr0 => /eqP.
+  rewrite mulf_eq0 => /predU1P[//|/eqP].
+  rewrite logexp1E => /eqP.
+  by rewrite gt_eqF// invr_gt0// ln2_gt0.
+- apply/esym/divr1_eq.
+  apply: log_id_eq; first by rewrite divr_gt0.
+  move: Hxy2.
+  move/(congr1 (fun z => x^-1 * z)).
+  rewrite mulrA mulVf ?gt_eqF// mul1r => ->.
+  by rewrite mulrA mulrBr mulVf ?gt_eqF// (mulrC _ y).
 Qed.
 
 End log_facts.
@@ -69,6 +82,18 @@ Definition div := \sum_(a in A) P a * log (P a / Q a).
 
 End divergence_def.
 
+(* TODO: rename, move *)
+Lemma leR_sumR_eq {R : realType} (A : finType) (f g : A -> R) (P : pred A) :
+   (forall a, P a -> f a <= g a) ->
+   \sum_(a | P a) g a = \sum_(a | P a) f a ->
+   (forall a, P a -> g a = f a).
+Proof.
+move=> H1 H2 i Hi; apply/eqP; rewrite -subr_eq0; apply/eqP.
+move: i Hi; apply: psumr_eq0P.
+  by move=> i Pi; rewrite Num.Theory.subr_ge0 H1.
+by rewrite big_split/= sumrN; apply/eqP; rewrite subr_eq0 H2.
+Qed.
+
 Notation "'D(' P '||' Q ')' " := (div P Q) : divergence_scope.
 
 Local Open Scope divergence_scope.
@@ -76,7 +101,7 @@ Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
 
 Section divergence_prop.
-
+Context {R : realType}.
 Variables (A : finType) (P Q : {fdist A}).
 Hypothesis P_dom_by_Q : P `<< Q.
 
@@ -84,51 +109,44 @@ Lemma div_ge0 : 0 <= D(P || Q).
 Proof.
 rewrite /div [X in _ <= X](_ : _ =
     - \sum_(a | a \in A) P a * (log (Q a / P a))); last first.
-  rewrite big_morph_oppR; apply eq_bigr => a _; rewrite -mulRN.
-  case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
+  rewrite -sumrN; apply: eq_bigr => a _; rewrite -mulrN.
+  case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0r.
   congr (_ * _).
   have Qa0 := dominatesEN P_dom_by_Q H0.
-  by rewrite -logV ?Rinv_div//; apply divR_gt0; apply /RltP; rewrite -fdist_gt0.
-rewrite leR_oppr oppR0.
-apply (@leR_trans ((\sum_(a | a \in A) (Q a - P a)) * log (exp 1))).
-  rewrite (big_morph _ (morph_mulRDl _) (mul0R _)).
-  apply leR_sumR => a _; apply: div_diff_ub => //.
-  - exact/RleP/FDist.ge0.
+  by rewrite -logV ?invf_div// divr_gt0//; apply/fdist_gt0.
+rewrite ler_oppr oppr0.
+apply (@le_trans _ _ ((\sum_(a | a \in A) (Q a - P a)) * log (expR 1))).
+  rewrite big_distrl/=.
+  apply: ler_sum => a _; apply: div_diff_ub => //.
   - by move/dominatesP : P_dom_by_Q; exact.
-  - exact/RleP/FDist.ge0.
-rewrite -{1}(mul0R (log (exp 1))); apply (leR_wpmul2r log_exp1_Rle_0).
-by rewrite big_split /= -big_morph_oppR !FDist.f1 addR_opp subRR.
+rewrite -[leRHS](mul0r (log (expR 1))) ler_wpM2r// ?log_exp1_Rle_0//.
+by rewrite big_split /= sumrN !FDist.f1 subrr.
 Qed.
 
 Lemma divPP : D(Q || Q) = 0.
 Proof.
 rewrite /div; apply big1 => a _.
-case/boolP : (Q a == 0) => [/eqP ->|H0]; first by rewrite mul0R.
-by rewrite divRR // /log /Log ln_1 div0R mulR0.
+case/boolP : (Q a == 0) => [/eqP ->|H0]; first by rewrite mul0r.
+by rewrite divff // log1 mulr0.
 Qed.
 
 Lemma div0P : D(P || Q) = 0 <-> P = Q.
 Proof.
 split => [HPQ | ->]; last by rewrite divPP.
 apply/fdist_ext => a.
-apply log_id_diff.
-- exact/RleP/FDist.ge0.
+apply log_id_diff => //.
 - by move/dominatesP : P_dom_by_Q; exact.
-- exact/RleP/FDist.ge0.
 - apply/esym; move: a (erefl true); apply leR_sumR_eq.
   + move=> a' _; apply div_diff_ub => //.
-    * exact/RleP/FDist.ge0.
     * by move/dominatesP : P_dom_by_Q; exact.
-    * exact/RleP/FDist.ge0.
-  + transitivity 0; last first.
-      rewrite -{1}oppR0 -{1}HPQ big_morph_oppR.
-      apply eq_bigr => a _; rewrite -mulRN.
-      case/boolP : (P a == 0) => [/eqP ->| H0]; first by rewrite !mul0R.
+  + apply: (@trans_eq _ _ 0%R); last first.
+      rewrite -{1}oppr0 -{1}HPQ -sumrN.
+      apply eq_bigr => a _; rewrite -mulrN.
+      case/boolP : (P a == 0) => [/eqP ->| H0]; first by rewrite !mul0r.
       congr (_ * _).
       have Qa0 := dominatesEN P_dom_by_Q H0.
-      by rewrite -logV ?Rinv_div//; apply divR_gt0; apply /RltP; rewrite -fdist_gt0.
-    rewrite -(big_morph _ (morph_mulRDl _) (mul0R _)) big_split /=.
-    by rewrite -big_morph_oppR !FDist.f1 addR_opp subRR mul0R.
+      by rewrite -logV ?invf_div// divr_gt0// -fdist_gt0.
+    by rewrite -big_distrl/= big_split/= sumrN !FDist.f1 subrr mul0r.
 Qed.
 
 End divergence_prop.

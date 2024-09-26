@@ -1,8 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect ssralg ssrnum.
+From mathcomp Require Import reals.
 Require Import Reals Lra.
-Require Import ssrR Reals_ext Ranalysis_ext logb.
+Require Import ssrR Reals_ext Ranalysis_ext realType_logb.
 
 (******************************************************************************)
 (*                    The natural entropy function                            *)
@@ -23,7 +24,7 @@ Import Prenex Implicits.
 
 Local Open Scope R_scope.
 
-Definition H2ln := fun p => - p * ln p - (1 - p) * ln (1 - p).
+Definition H2ln {R : realType} : R -> R := fun p : R => (- p * exp.ln p - (1 - p) * exp.ln (1 - p))%mcR.
 
 Lemma derivable_pt_ln_Rminus x : x < 1 -> derivable_pt ln (1 - x).
 Proof.
@@ -33,6 +34,7 @@ apply derivable_pt_lim_ln, subR_gt0.
 assumption.
 Defined.
 
+(*
 Lemma pderivable_H2ln : pderivable H2ln (fun x => 0 < x <= 1/2).
 Proof.
 move=> x /= [Hx0 Hx1].
@@ -122,10 +124,11 @@ case: (Rlt_le_dec q (1/2)) => [H1|].
     lra.
   by apply decreasing_on_half_to_1 => //; lra.
 Qed.
+*)
 
-Definition H2 p := - (p * log p) + - ((1 - p) * log (1 - p)).
+Definition H2 {R : realType} (p : R) : R := (- (p * log p) + - ((1 - p) * log (1 - p)))%mcR.
 
-Lemma bin_ent_0eq0 : H2 0 = 0.
+(*Lemma bin_ent_0eq0 : H2 0 = 0.
 Proof.
 rewrite /H2 /log.
 by rewrite !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1, add0R, addR0, subR0).
@@ -154,3 +157,4 @@ case: x_0 => [?|<-]; last by rewrite bin_ent_0eq0.
 case: x_1 => [?|->]; last by rewrite bin_ent_1eq0.
 exact: H2_max.
 Qed.
+*)

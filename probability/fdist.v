@@ -139,8 +139,8 @@ Coercion FDist.f : fdist >-> finfun_of.
 HB.instance Definition _ R A := [isSub for @FDist.f R A].
 HB.instance Definition _ R A := [Choice of fdist R A by <:].
 
-#[global] Hint Extern 0 (is_true (0 <= _)%R) => solve [exact: FDist.ge0] : core.
-#[global] Hint Extern 0 (is_true (_ <= 1)%R) => solve [exact: FDist.le1] : core.
+#[global] Hint Extern 0 (is_true (0 <= _)%mcR) => solve [exact: FDist.ge0] : core.
+#[global] Hint Extern 0 (is_true (_ <= 1)%mcR) => solve [exact: FDist.le1] : core.
 
 Notation "R '.-fdist' T" := (fdist R T%type) : fdist_scope.
 Notation "{ 'fdist' T }" := (fdist Rdefinitions.R T%type) : fdist_scope.
