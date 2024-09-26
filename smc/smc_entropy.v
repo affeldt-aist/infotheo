@@ -260,22 +260,33 @@ rewrite !jPr_Pr.
 by rewrite !cpr_eq_set1.
 Qed.
 
-Hypothesis H : forall w v1 v2,
-    `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ].
+Hypothesis Hv1v2 : forall w v1 v2, `Pr[[%V1, V2] = (v1, v2)] != 0 ->
+  `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ].
+
+Let H : forall w v1 v2, `Pr[V2 = v2] != 0 ->
+  `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ].
+Proof.
+move => w v1 v2 Hv2.
+have [Hv1|Hv1] := eqVneq `Pr[V1 = v1] 0.
+  rewrite !cpr_eqE V1V2indep.
+  by rewrite Hv1 mul0R !Rdiv_0_r.
+apply: Hv1v2.
+by rewrite V1V2indep mulf_eq0 negb_or Hv1.
+Qed.
 
 Lemma snd_extra_indep v1 v2 :
   (`p_ [% W, [% V1, V2]])`2 (v1, v2) = (`p_ [% W, V1])`2 v1 * `p_V2 v2.
 Proof.
 rewrite !fdist_sndE big_distrl /=.
 apply eq_bigr => w _.
-have := H w v1 v2.
+have [Hv2|Hv2] := eqVneq `Pr[V2 = v2] 0.
+  rewrite -!pr_eqE' Hv2 mulr0 pr_eq_pairC pr_eq_domin_RV2 //.
+  by rewrite pr_eq_pairC pr_eq_domin_RV2.
+have := H w v1 Hv2.
 rewrite !cpr_eqE V1V2indep -!pr_eqE' !coqRE.
 have [Hv1 _|Hv1] := eqVneq `Pr[V1 = v1] 0.
   rewrite [in RHS]pr_eq_pairC [in LHS]pr_eq_pairC -pr_eq_pairA.
   by rewrite !(pr_eq_domin_RV2 _ _ Hv1) mul0r.
-have [Hv2 _|Hv2] := eqVneq `Pr[V2 = v2] 0.
-  rewrite Hv2 mulr0 pr_eq_pairC pr_eq_domin_RV2 //.
-  by rewrite pr_eq_pairC pr_eq_domin_RV2.
 move/(f_equal (fun x => x * (`Pr[V1 = v1] * `Pr[V2 = v2]))).
 rewrite -[in RHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hv1.
 by rewrite mulrA -[X in X * _]mulrA mulVf // !mulr1.
@@ -294,6 +305,10 @@ transitivity (\sum_a f a.1 a.2).
     by rewrite Ha snd_extra_indep Ha !coqRE !mul0r.
   rewrite snd_extra_indep -[in LHS]cond_entropy1_RVE; last first.
     by rewrite -fdistX2 fdistX_RV2 snd_extra_indep.
+  have [Hv2|Hv2] := eqVneq `Pr[V2 = a.2] 0.
+    rewrite -pr_eqE' in Ha.
+    by rewrite Hv2 mulr0 eqxx in Ha.
+  have H' := fun w => H w a.1 Hv2.
   rewrite -cpr_cond_entropy1_RV // cond_entropy1_RVE ?coqRE //.
   by apply: contra Ha; rewrite mulf_eq0 -fdistX1 fdistX_RV2 => ->.
 rewrite -pair_bigA /=.
@@ -638,36 +653,15 @@ have H := add_RV_unif Wm Z card_TX pZ_unif H_ZWM.
 by exact H.
 Qed.
 
-Section eqn3_entropy1.
-
-Variable (w1 : 'rV[TX]_n) (w2 : 'rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) (wmz : 'I_p) .
-
-Hypothesis Hneq0 : `Pr[ [%WmZ, W2] = (wmz, w2) ] != 0.
-
 Lemma eqn3:
-  cond_entropy1_RV [%W2, WmZ] W1 (w2, wmz) = cond_entropy1_RV W2 W1 w2.
+  `H(W1|[%W2, WmZ]) = `H(W1|W2).
 Proof.
-have Ha := (@cpr_cond_entropy1_RV _ _ _ TX P m W1 W2 WmZ card_TX pWmZ_unif W2_WmZ_indep w2 wmz).
-symmetry in Ha.
-apply Ha => w.
-have Hb :=(@mc_removal_pr _ _ _ _ TX P m O Z f1 f2 fm Z_O_indep card_TX pZ_unif w w2 wmz Hneq0).
-symmetry in Hb.
-apply Hb.
+have Ha := @cpr_cond_entropy _ _ _ TX P m W1 W2 WmZ card_TX pWmZ_unif W2_WmZ_indep _.
+apply Ha => w w2 wmz Hneq0.
+simpl in *.
+rewrite pr_eq_pairC in Hneq0.
+by have := @mc_removal_pr _ _ _ _ TX P m O Z f1 f2 fm Z_O_indep card_TX pZ_unif w w2 wmz Hneq0.
 Qed.
-
-End eqn3_entropy1.
-
-Lemma eqn3_dist:
-  `H(x2|[%[%x1, s1, r1, x2'], t]) = `H(x2|[%x1, s1, r1, x2']).
-Proof.
-rewrite /cond_entropy /=.
-under eq_bigr => a _.
-  rewrite (surjective_pairing a) /=.
-  rewrite fdist_sndE /=.
-  under eq_bigr => i _.
-    rewrite -pr_eqE'.
-  About pr_eqE'.
-Abort. (* Aborted because this needs mapping from dist back to RV, but folding back by rewrite fails.*)
 
 End eqn3_proof.
 
