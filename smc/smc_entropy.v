@@ -547,11 +547,11 @@ Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun 
   let '(x1, x2, s1, s2, r1, r2) := z in (x1 + s1) *d x2 + r2.
 
 (* in mc_removal_pr they are named as Y1 Y2 Ym but we already have Y so renaming them. *)
-Let Z := y2.
+Let Z := neg_RV y2.
 Let W1 := f1 `o O.  (* x2; It is okay in Alice's view has it because only used in condition. *)
 Let W2 := f2 `o O.  (* [%x1, s1, r1, x2']; cannot have x2, s2, r2 here otherwise Alice knows the secret*)
 Let Wm := fm `o O.  (* t-(neg_RV y2); t before it addes y2 in WmZ*)
-Let WmZ := Wm `+ y2. (* t *)
+Let WmZ := Wm `+ neg_RV y2. (* t *)
 
 Let eq_W1_RV:
   f1 `o O = x2.
@@ -637,7 +637,7 @@ apply H.
 Qed.
 
 Let pWmZ_unif:
-  `p_ (Wm `+ y2) = fdist_uniform card_TX.
+  `p_ (Wm `+ neg_RV y2) = fdist_uniform card_TX.
 Proof.
 have H_ZWM := Z_Wm_indep.
 rewrite inde_rv_sym in H_ZWM.
@@ -646,8 +646,9 @@ by exact H.
 Qed.
 
 Lemma eqn3_proof:
-  `H(f1 `o O|[%f2 `o O, fm `o O `+ y2]) = `H(f1 `o O|f2 `o O).
+  `H(x2|[%x1, s1, r1, x2', t]) = `H(x2|[%x1, s1, r1, x2']).
 Proof.
+rewrite -eq_W1_RV -eq_W2_RV -eq_WmZ_RV eq_Wm_RV.
 have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep.
 apply Ha => w w2 wmz Hneq0.
 rewrite pr_eq_pairC in Hneq0.
@@ -777,9 +778,6 @@ Hypothesis y2_O_eqn4_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1].
 Hypothesis card_TX : #|TX| = m.+1.
 Hypothesis py2_unif : `p_ y2 = fdist_uniform card_TX.
 
-Check eqn3_proof y2_O_eqn3_indep py2_unif.
-
-
 Lemma eqn_4_1:
   `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
 Proof.
@@ -794,8 +792,6 @@ rewrite joint_entropy_indeRV.
   by rewrite addrAC subrr add0r.
 by exact: x2_indep.
 Qed.
-
-About eqn3_proof.
 
 Lemma pi2_alice_view_is_leakage_free_proof:
   `H( x2 | AliceView) = `H `p_ x2.
