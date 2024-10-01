@@ -30,6 +30,13 @@ Reserved Notation "u *d w" (at level 40).
 Reserved Notation "u \*d w" (at level 40).
 
 Module smc_entropy_proofs.
+  
+Section extra_ring.
+
+Variable V : zmodType.
+Implicit Types x y : V.
+  
+End extra_ring.
 
   
 Section extra_pr.
@@ -544,7 +551,7 @@ Let Z := y2.
 Let W1 := f1 `o O.  (* x2; It is okay in Alice's view has it because only used in condition. *)
 Let W2 := f2 `o O.  (* [%x1, s1, r1, x2']; cannot have x2, s2, r2 here otherwise Alice knows the secret*)
 Let Wm := fm `o O.  (* t-(neg_RV y2); t before it addes y2 in WmZ*)
-Let WmZ := Wm `+ (neg_RV y2). (* t *)
+Let WmZ := Wm `+ y2. (* t *)
 
 Let eq_W1_RV:
   f1 `o O = x2.
@@ -559,11 +566,13 @@ Let eq_Wm_RV:
 Proof. by apply boolp.funext => a . Qed.
 
 Let eq_WmZ_RV:
-  fm `o O = t \+ (neg_RV y2).
+  fm `o O `+ (neg_RV y2) = t.
 Proof.
-apply boolp.funext => a.
-rewrite /t /neg_RV.
-Abort.
+rewrite /t /add_RV /neg_RV eq_Wm_RV /x1' /=.
+apply boolp.funext => a /=.
+rewrite sub0r.
+reflexivity.
+Qed.
 
 Hypothesis card_TX : #|TX| = m.+1.
 
@@ -660,15 +669,35 @@ Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fu
 Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX) := fun z =>
   let '(x1, x2, s1, s2, r1) := z in (x1, s1, r1).
 
-(* (fm `o X)+Z in mc_removal_pr must be x2+s2 in eq4 *)
+(* (fm `o X)+Z in mc_removal_pr must be x2'+s2 in eq4 *)
 Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
-  let '(x1, x2, s1, s2, r1) := z in x2.
+  let '(x1, x2, s1, s2, r1) := z in x2 + s2 - s2.
 
 Let Z := s2.
 Let W1 := f1 `o O.   (* x2 *)
 Let W2 := f2 `o O.   (* [%x1, s1, r1]*)
 Let Wm := fm `o O.   (* x2'-s2*)
 Let WmZ := Wm `+ s2. (* x2'*)
+
+Let eq_W1_RV:
+  f1 `o O = x2.
+Proof. by apply boolp.funext. Qed.
+
+Let eq_W2_RV:
+  f2 `o O = [%x1, s1, r1].
+Proof. by apply boolp.funext. Qed.
+
+Let eq_Wm_RV:
+  fm `o O = (x2' \- s2).
+Proof. reflexivity. Qed.
+
+Let eq_WmZ_RV:
+  fm `o O `+ s2 = x2'.
+Proof.
+rewrite /add_RV eq_Wm_RV /x2'.
+apply boolp.funext => a /=.
+by rewrite addrK.
+Qed.
 
 Variable Z_O_indep : inde_rv Z O. 
 
