@@ -2246,27 +2246,33 @@ End prob_chain_rule.
 
 Section more_rv_lemmas.
 Variables (U : finType) (P : R.-fdist U).
-Variables (TA TB UA UB : eqType) (f : TA -> UA) (g : TB -> UB).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
+Variables (TA TB TC UA UB UC : eqType) (f : TA -> UA) (g : TB -> UB) (h: TC -> UC).
+Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
 
 Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
 
 Lemma comp_RV2_ACA : RV2 (f `o X) (g `o Y) = f × g `o RV2 X Y.
 Proof. by []. Qed.
+
+Lemma comp_RV3_ACA : [%h `o Z, [% (f `o X), (g `o Y)]] = h × (f × g) `o [%Z, [%X, Y]].
+Proof. by []. Qed.
 End more_rv_lemmas.
 
-
 Section more_preimset.
-Variables (aT1 aT2 rT1 rT2 : finType).
-Variables (f : aT1 -> rT1)  (g : aT2 -> rT2).
-Variables (A : {set rT1}) (B : {set rT2}).
+Variables (aT1 aT2 aT3 rT1 rT2 rT3: finType).
+Variables (f : aT1 -> rT1)  (g : aT2 -> rT2) (h : aT3 -> rT3).
+Variables (A : {set rT1}) (B : {set rT2}) (C : {set rT3}).
 
 Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
 
 Lemma preimsetX :
   f × g @^-1: (A `* B) = f @^-1: A `* g @^-1: B.
+Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
+
+Lemma preimsetX2 :
+  h × (f × g) @^-1: (C `* (A `* B)) = h @^-1: C `* (f @^-1: A `* g @^-1: B).
 Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
 
 Lemma in_preimset x (Y : {set rT1}) : (x \in f @^-1: Y) = (f x \in Y).

@@ -31,14 +31,14 @@ Section more_independent_rv_lemmas.
 
 Variables (A : finType) (P : R.-fdist A) (TA TB TC TD : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
-Variables (UA UB : finType) (f : TA -> UA) (g : TB -> UB).
+Variables (UA UB UC: finType) (f : TA -> UA) (g : TB -> UB) (h : TC -> UC).
 
 Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
 
 (* Information-Theoretically Secure Number Protocol*)
 (* Lemma 3.1 *)
-Lemma inde_rv_comp : inde_rv X Y -> inde_rv (f `o X) (g `o Y).
+Lemma inde_rv_comp : P|= X _|_ Y -> P|= (f `o X) _|_ (g `o Y).
 Proof.
 move/inde_rv_events'.
 rewrite /inde_rv_ev.
@@ -53,6 +53,23 @@ rewrite H. (* second to third line in the pencil-paper proof *)
 rewrite -!pr_in_comp'.
 by rewrite !pr_eq_set1.
 Qed.
+
+Lemma inde_RV2_comp : P|= Z _|_ [% X, Y] -> P|= (h `o Z) _|_ [% (f `o X), (g `o Y)].
+Proof.
+move/inde_rv_events'.
+rewrite /inde_rv_ev.
+move=> H i [j1 j2].
+rewrite -[LHS]pr_eq_set1.
+rewrite comp_RV3_ACA /=.
+rewrite pr_in_comp'.
+rewrite -!setX1.
+rewrite preimsetX2.
+rewrite !/(_ @^-1: _).
+rewrite H.
+rewrite -!pr_in_comp'.
+rewrite !pr_eq_set1.
+congr (_ * _).
+Admitted.
 
 (* Lemma 3.2 *)
 Lemma RV2_inde_rv_snd : P |= [% X, Y] _|_ Z -> P |= Y _|_ Z.
@@ -167,6 +184,8 @@ Variable XY_indep : P |= X _|_ Y.
 (* Add two random variables = add results from two functions. *)
 (* We use this because add_RV is in coqR *)
 Definition add_RV : {RV P -> A} := X \+ Y.
+Definition sub_RV : {RV P -> A} := X \- Y.
+Definition neg_RV : {RV P -> A} := \0 \- X.
 
 Lemma add_RV_mul i : `p_ add_RV i = (\sum_(k <- fin_img X) `Pr[ X = k ] * `Pr[ Y = (i - k)%mcR ]).
 Proof.
