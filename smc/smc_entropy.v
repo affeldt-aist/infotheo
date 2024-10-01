@@ -662,15 +662,15 @@ Section eqn4_proof.
 (* Almost the same in eqn3 except r2 is not used here. *)
 Let O := [%x1, x2, s1, s2, r1].
 
-(* f1 `o X in mc_removal_pr must be x2 in eq3 *)
+(* f1 `o X in mc_removal_pr must be x2 in eqn4 *)
 Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
   let '(x1, x2, s1, s2, r1) := z in x2.
 
-(* f2 `o X in mc_removal_pr must be (x1, s1, r1) in eq3 *)
+(* f2 `o X in mc_removal_pr must be (x1, s1, r1) in eqn4 *)
 Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX) := fun z =>
   let '(x1, x2, s1, s2, r1) := z in (x1, s1, r1).
 
-(* (fm `o X)+Z in mc_removal_pr must be x2'+s2 in eq4 *)
+(* (fm `o X)+Z in mc_removal_pr must be x2'+s2 in eqn4 *)
 Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
   let '(x1, x2, s1, s2, r1) := z in x2 + s2 - s2.
 
@@ -757,8 +757,9 @@ apply H.
 Qed.
 
 Lemma eqn4_proof:
-  `H(W1|[%W2, WmZ]) = `H(W1|W2).
+  `H(x2|[%x1, s1, r1, x2']) = `H(x2|[%x1, s1, r1]).
 Proof.
+rewrite -eq_W1_RV -eq_W2_RV -eq_WmZ_RV eq_Wm_RV.
 have Ha := @cpr_cond_entropy _ _ _ 'rV[TX]_n P m.+1 W1 W2 WmZ card_Z pWmZ_unif W2_WmZ_indep _.
 apply Ha => w w2 wmz Hneq0.
 simpl in *.
@@ -773,9 +774,10 @@ Section pi2_alice_view_is_leakage_free.
   
 (* Hypothese from the paper. *)
 Hypothesis x2_indep : P |= [% x1, s1, r1] _|_ x2.
-Hypothesis y2_O_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1, r2].
-Hypothesis y2_O_eqn4_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1].
+Hypothesis y2_O_eqn3_indep : P |= neg_RV y2 _|_ [%x1, x2, s1, s2, r1, r2].
+Hypothesis s2_O_eqn4_indep : P |= s2 _|_ [%x1, x2, s1, s2, r1].
 Hypothesis card_TX : #|TX| = m.+1.
+Hypothesis neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
 Hypothesis py2_unif : `p_ y2 = fdist_uniform card_TX.
 
 Lemma eqn_4_1:
@@ -799,8 +801,9 @@ Proof.
 transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
   by rewrite eqn2_proof.
 transitivity (`H( x2 | [% x1, s1, r1, x2'])).
-  have Heqn3 := eqn3_proof y2_O_eqn3_indep py2_unif.
-  Fail rewrite eqn3_proof y2_eqn3_indep.
+  by rewrite (eqn3_proof y2_O_eqn3_indep neg_py2_unif).
+transitivity (`H( x2 | [% x1, s1, r1])).
+  by rewrite (eqn4_proof s2_O_eqn4_indep py2_unif).
 (* Note: if I put all eqn3, eqn4 related hypothese here, this lemma will be very big...
    But putting things here is a straightforward way to show the no leakage property.
 *)
