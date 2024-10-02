@@ -228,7 +228,7 @@ Qed.
 Hypothesis Hv1v2 : forall w v1 v2, `Pr[[%V1, V2] = (v1, v2)] != 0 ->
   `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ].
 
-Let H : forall w v1 v2, `Pr[V2 = v2] != 0 ->
+Lemma Pr_neq0_cond_removal : forall w v1 v2, `Pr[V2 = v2] != 0 ->
   `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ].
 Proof.
 move => w v1 v2 Hv2.
@@ -247,7 +247,7 @@ apply eq_bigr => w _.
 have [Hv2|Hv2] := eqVneq `Pr[V2 = v2] 0.
   rewrite -!pr_eqE' Hv2 mulr0 pr_eq_pairC pr_eq_domin_RV2 //.
   by rewrite pr_eq_pairC pr_eq_domin_RV2.
-have := H w v1 Hv2.
+have := Pr_neq0_cond_removal w v1 Hv2.
 rewrite !cpr_eqE V1V2indep -!pr_eqE' !coqRE.
 have [Hv1 _|Hv1] := eqVneq `Pr[V1 = v1] 0.
   rewrite [in RHS]pr_eq_pairC [in LHS]pr_eq_pairC -pr_eq_pairA.
@@ -273,7 +273,7 @@ transitivity (\sum_a f a.1 a.2).
   have [Hv2|Hv2] := eqVneq `Pr[V2 = a.2] 0.
     rewrite -pr_eqE' in Ha.
     by rewrite Hv2 mulr0 eqxx in Ha.
-  have H' := fun w => H w a.1 Hv2.
+  have H' := fun w => Pr_neq0_cond_removal w a.1 Hv2.
   rewrite -cpr_cond_entropy1_RV // cond_entropy1_RVE ?coqRE //.
   by apply: contra Ha; rewrite mulf_eq0 -fdistX1 fdistX_RV2 => ->.
 rewrite -pair_bigA /=.
@@ -283,7 +283,7 @@ Qed.
 End pr_entropy.
 
 Section lemma_3_8_prep.
-
+  
 Variables (T TX TY TZ: finType).
 Variable P : R.-fdist T.
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
@@ -571,7 +571,7 @@ Proof.
 rewrite /t /add_RV /neg_RV eq_Wm_RV /x1' /=.
 apply boolp.funext => a /=.
 rewrite sub0r.
-reflexivity.
+by [].
 Qed.
 
 Hypothesis card_TX : #|TX| = m.+1.
@@ -658,27 +658,27 @@ Qed.
 End eqn3_proof.
 
 Section eqn4_proof.
-  
+
 (* Almost the same in eqn3 except r2 is not used here. *)
-Let O := [%x1, x2, s1, s2, r1].
+Let O := [%x1, x2, s1, r1].
 
 (* f1 `o X in mc_removal_pr must be x2 in eqn4 *)
-Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
-  let '(x1, x2, s1, s2, r1) := z in x2.
+Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
+  let '(x1, x2, s1, r1) := z in x2.
 
 (* f2 `o X in mc_removal_pr must be (x1, s1, r1) in eqn4 *)
-Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX) := fun z =>
-  let '(x1, x2, s1, s2, r1) := z in (x1, s1, r1).
+Let f2 : ('rV[TX]_n * 'rV[TX]_n  * 'rV[TX]_n * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX) := fun z =>
+  let '(x1, x2, s1, r1) := z in (x1, s1, r1).
 
-(* (fm `o X)+Z in mc_removal_pr must be x2'+s2 in eqn4 *)
-Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
-  let '(x1, x2, s1, s2, r1) := z in x2 + s2 - s2.
+(* (fm `o X)+Z in mc_removal_pr must be x2'-s2 in eqn4 *)
+Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
+  let '(x1, x2, s1, r1) := z in x2.
 
 Let Z := s2.
 Let W1 := f1 `o O.   (* x2 *)
-Let W2 := f2 `o O.   (* [%x1, s1, r1]*)
-Let Wm := fm `o O.   (* x2'-s2*)
-Let WmZ := Wm `+ s2. (* x2'*)
+Let W2 := f2 `o O.   (* [%x1, s1, r1] *)
+Let Wm := fm `o O.   (* x2 *)
+Let WmZ := Wm `+ s2. (* x2' = x2 + s2 *)
 
 Let eq_W1_RV:
   f1 `o O = x2.
@@ -689,15 +689,15 @@ Let eq_W2_RV:
 Proof. by apply boolp.funext. Qed.
 
 Let eq_Wm_RV:
-  fm `o O = (x2' \- s2).
-Proof. reflexivity. Qed.
-
+  fm `o O = x2.
+Proof. by []. Qed.
+  
 Let eq_WmZ_RV:
   fm `o O `+ s2 = x2'.
 Proof.
 rewrite /add_RV eq_Wm_RV /x2'.
 apply boolp.funext => a /=.
-by rewrite addrK.
+by [].
 Qed.
 
 Variable Z_O_indep : inde_rv Z O. 
@@ -775,10 +775,12 @@ Section pi2_alice_view_is_leakage_free.
 (* Hypothese from the paper. *)
 Hypothesis x2_indep : P |= [% x1, s1, r1] _|_ x2.
 Hypothesis y2_O_eqn3_indep : P |= neg_RV y2 _|_ [%x1, x2, s1, s2, r1, r2].
-Hypothesis s2_O_eqn4_indep : P |= s2 _|_ [%x1, x2, s1, s2, r1].
+Hypothesis s2_O_eqn4_indep : P |= s2 _|_ [%x1, x2, s1, r1].
 Hypothesis card_TX : #|TX| = m.+1.
+Hypothesis card_'rVTX_n : #|'rV[TX]_n| = m.+2.
 Hypothesis neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
 Hypothesis py2_unif : `p_ y2 = fdist_uniform card_TX.
+Hypothesis ps2_unif : `p_ s2 = fdist_uniform card_.
 
 Lemma eqn_4_1:
   `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
@@ -803,10 +805,7 @@ transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
 transitivity (`H( x2 | [% x1, s1, r1, x2'])).
   by rewrite (eqn3_proof y2_O_eqn3_indep neg_py2_unif).
 transitivity (`H( x2 | [% x1, s1, r1])).
-  by rewrite (eqn4_proof s2_O_eqn4_indep py2_unif).
-(* Note: if I put all eqn3, eqn4 related hypothese here, this lemma will be very big...
-   But putting things here is a straightforward way to show the no leakage property.
-*)
+  by rewrite (eqn4_proof s2_O_eqn4_indep ps2_unif).
 Abort.
 
 End pi2_alice_view_is_leakage_free.
