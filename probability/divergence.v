@@ -75,8 +75,8 @@ Qed.
 End log_facts.
 
 Section divergence_def.
-
-Variables (A : finType) (P Q : {fdist A}).
+Context {R : realType}.
+Variables (A : finType) (P Q : R.-fdist A).
 
 Definition div := \sum_(a in A) P a * log (P a / Q a).
 
@@ -114,7 +114,7 @@ rewrite /div [X in _ <= X](_ : _ =
   congr (_ * _).
   have Qa0 := dominatesEN P_dom_by_Q H0.
   by rewrite -logV ?invf_div// divr_gt0//; apply/fdist_gt0.
-rewrite ler_oppr oppr0.
+rewrite lerNr oppr0.
 apply (@le_trans _ _ ((\sum_(a | a \in A) (Q a - P a)) * log (expR 1))).
   rewrite big_distrl/=.
   apply: ler_sum => a _; apply: div_diff_ub => //.
