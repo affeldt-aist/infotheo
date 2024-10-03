@@ -25,10 +25,11 @@ Section ln_ext.
 Context {R : realType}.
 Implicit Type x : R.
 
-Lemma ln2_gt0 : 0 < ln 2 :> R.
-Proof. by rewrite ln_gt0// ltr1n. Qed.
+Lemma ln2_gt0 : 0 < ln 2 :> R. Proof. by rewrite ln_gt0// ltr1n. Qed.
 
 Lemma ln2_neq0 : ln 2 != 0 :> R. Proof. by rewrite gt_eqF// ln2_gt0. Qed.
+
+Lemma ln2_ge0 : 0 <= ln 2 :> R. Proof. by rewrite ltW// ln2_gt0. Qed.
 
 Lemma ln_id_cmp x : 0 < x -> ln x <= x - 1.
 Proof.
@@ -95,6 +96,9 @@ Proof. by move=> x y x0 y0; rewrite /log ler_Log. Qed.
 
 Lemma logV x : 0 < x -> log x^-1 = - log x :> R.
 Proof. by move=> x0; rewrite /log LogV. Qed.
+
+Lemma logM x y : 0 < x -> 0 < y -> log (x * y) = log x + log y.
+Proof. move=> x0 y0; exact: (@LogM _ 2 _ _ x0 y0). Qed.
 
 Lemma logDiv x y : 0 < x -> 0 < y -> log (x / y) = log x - log y.
 Proof. by move=> x0 y0; exact: (@LogDiv _ _ _ _ x0 y0). Qed.
