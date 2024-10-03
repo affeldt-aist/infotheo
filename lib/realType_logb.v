@@ -31,14 +31,44 @@ Lemma ln2_neq0 : ln 2 != 0 :> R. Proof. by rewrite gt_eqF// ln2_gt0. Qed.
 
 Lemma ln2_ge0 : 0 <= ln 2 :> R. Proof. by rewrite ltW// ln2_gt0. Qed.
 
+Lemma le_ln1Dx x : -1 < x -> ln (1 + x) <= x.
+Proof.
+(*this will be in MathComp-Analysis 1.5.0*)
+Admitted.
+
+Lemma expR_gt1Dx x : x != 0 -> 1 + x < expR x.
+Proof.
+(*this will be in MathComp-Analysis 1.5.0*)
+Admitted.
+
+(* TODO: add to MCA? *)
+Lemma lt_ln1Dx x : 0 < x -> ln (1 + x) < x.
+Proof.
+move=> x1.
+rewrite -ltr_expR lnK ?expR_gt1Dx//.
+  by rewrite gt_eqF//.
+by rewrite posrE addrC -ltrBlDr sub0r (le_lt_trans _ x1)// lerN10.
+Qed.
+
 Lemma ln_id_cmp x : 0 < x -> ln x <= x - 1.
 Proof.
-move=> x0.
-Admitted.
+move=> x0; rewrite -{1}(GRing.subrK 1 x) addrC le_ln1Dx//.
+by rewrite -ltrBlDr opprK addrC subrr.
+Qed.
 
 Lemma ln_id_eq x : 0 < x -> ln x = x - 1 -> x = 1 :> R.
 Proof.
-Admitted.
+move=> x0 x1lnx.
+have [x1|x1|//] := Order.TotalTheory.ltgtP x 1.
+- exfalso.
+  move: x1lnx; apply/eqP; rewrite lt_eqF//.
+  rewrite -ltr_expR lnK//.
+  rewrite -{1}(GRing.subrK 1 x) addrC.
+  by rewrite expR_gt1Dx// subr_eq0 lt_eqF//.
+- exfalso.
+  move: x1lnx; apply/eqP; rewrite lt_eqF//.
+  by rewrite -{1}(GRing.subrK 1 x) addrC lt_ln1Dx// subr_gt0.
+Qed.
 
 End ln_ext.
 
@@ -119,6 +149,5 @@ Proof.
 move=> x0; rewrite logexp1E ler_wpM2r// ?invr_ge0//= ?(ltW (@ln2_gt0 _))//.
 exact/ln_id_cmp.
 Qed.
-
 
 End log.
