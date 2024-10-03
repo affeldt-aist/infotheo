@@ -806,7 +806,8 @@ transitivity (`H( x2 | [% x1, s1, r1, x2'])).
   by rewrite (eqn3_proof y2_O_eqn3_indep neg_py2_unif).
 transitivity (`H( x2 | [% x1, s1, r1])).
   by rewrite (eqn4_proof s2_O_eqn4_indep ps2_unif).
-Abort.
+by rewrite eqn_4_1.
+Qed.
 
 End pi2_alice_view_is_leakage_free.
 
