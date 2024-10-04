@@ -609,3 +609,71 @@ rewrite subr_eq0.
 apply: contra H1 => /eqP H1.
 by apply/eqP/val_inj; rewrite /= p_of_rsE.
 Qed.
+
+Section leR_ltR_sumR_finType.
+Context {R : realType}.
+Variables (A : finType) (f g : A -> R) (P Q : pred A).
+Local Open Scope ring_scope.
+
+Lemma leR_sumR_support (X : {set A}) :
+  (forall i, i \in X -> P i -> f i <= g i) ->
+  \sum_(i in X | P i) f i <= \sum_(i in X | P i) g i.
+Proof.
+move=> H; elim/big_rec2 : _ => //.
+move=> a x y /andP[aX Pa] yx.
+by apply lerD => //; apply: H.
+Qed.
+
+Lemma leR_sumRl : (forall i, P i -> f i <= g i) ->
+  (forall i, Q i -> 0 <= g i) -> (forall i, P i -> Q i) ->
+  \sum_(i | P i) f i <= \sum_(i | Q i) g i.
+Proof.
+move=> f_g Qg H; elim: (index_enum _) => [| h t IH].
+- rewrite !big_nil.
+  by rewrite lexx.
+- rewrite !big_cons /=; case: ifP => [Ph|Ph].
+    by rewrite (H _ Ph); apply lerD => //; exact: f_g.
+  case: ifP => // Qh; apply: (le_trans IH).
+  by rewrite -{1}[X in X <= _](add0r _) lerD2r Qg.
+Qed.
+
+Lemma leR_sumRl_support (U : pred A) :
+  (forall a, 0 <= f a) -> (forall i, P i -> Q i) ->
+  \sum_(i in U | P i) f i <= \sum_(i in U | Q i) f i.
+Proof.
+move=> Hf P_Q; elim: (index_enum _) => [|h t IH].
+- by rewrite !big_nil lexx.
+- rewrite !big_cons; case: (h \in U) => //=; case: ifP => // Ph.
+  + by case: ifP => [Qh|]; [rewrite lerD2l | rewrite (P_Q _ Ph)].
+  + by case: ifP => // Qh; rewrite -[X in X <= _]add0r; exact/lerD.
+Qed.
+
+Lemma ltR_sumR_support (X : {set A}) : (0 < #|X|)%nat ->
+  (forall i, i \in X -> f i < g i) ->
+  \sum_(i in X) f i < \sum_(i in X) g i.
+Proof.
+move Hn : #|X| => n; elim: n X Hn => // n IH X Hn _ H.
+move: (ltn0Sn n); rewrite -Hn card_gt0; case/set0Pn => a0 Ha0.
+rewrite (@big_setD1 _ _ _ _ a0 _ f) //= (@big_setD1 _ _ _ _ a0 _ g) //=.
+case: n => [|n] in IH Hn.
+  rewrite (_ : X :\ a0 = set0); first by rewrite !big_set0 2!addr0; exact: H.
+  move: Hn.
+  by rewrite (cardsD1 a0) Ha0 /= add1n => -[] /eqP; rewrite cards_eq0 => /eqP.
+apply ltrD; first exact/H.
+apply IH => //.
+- by move: Hn; rewrite (cardsD1 a0) Ha0 /= add1n => -[].
+- by move=> a; rewrite in_setD inE => /andP[_ ?]; exact: H.
+Qed.
+
+Lemma ltR_sumR : (O < #|A|)%nat -> (forall i, f i < g i) ->
+  \sum_(i in A) f i < \sum_(i in A) g i.
+Proof.
+move=> A0 H0.
+have : forall i : A, i \in [set: A] -> f i < g i by move=> a _; exact/H0.
+move/ltR_sumR_support; rewrite cardsT => /(_ A0).
+rewrite big_mkcond /= [in X in _ < X]big_mkcond /=.
+rewrite (eq_bigr f) //; last by move=> *; rewrite inE.
+by rewrite [in X in _ < X](eq_bigr g) // => *; rewrite inE.
+Qed.
+
+End leR_ltR_sumR_finType.

@@ -2,8 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum zmodp matrix lra.
 From mathcomp Require Import mathcomp_extra classical_sets Rstruct reals.
-Require Import Reals Lra.
-Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
+Require Import realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
 Require Import fdist entropy binary_entropy_function channel hamming channel_code.
 Require Import pproba.
 
@@ -22,13 +21,13 @@ Import Prenex Implicits.
 
 Local Open Scope fdist_scope.
 Local Open Scope channel_scope.
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
 
 Module BSC.
 Section BSC_sect.
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
-Variable p : {prob R}.
+Variable p : {prob Rdefinitions.R}.
 
 Definition c : `Ch(A, A) := fdist_binary card_A p.
 
@@ -42,66 +41,64 @@ Import Order.TTheory GRing.Theory Num.Def Num.Theory.
 Section bsc_capacity_proof.
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
-Variables (P : {fdist A}) (p : R).
+Variables (P : {fdist A}) (p : Rdefinitions.R).
 Hypothesis p_01' : (0 < p < 1)%mcR.
 
 Let p_01'_ : (0 <= p <= 1)%mcR.
 by move: p_01' => /andP[/ltW -> /ltW ->].
 Qed.
 
-Let p_01 : {prob R} := Eval hnf in Prob.mk_ p_01'_.
+Let p_01 : {prob Rdefinitions.R} := Eval hnf in Prob.mk_ p_01'_.
 
 Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01) = - H2 p.
 Proof.
 rewrite {2}/entropy /=.
 rewrite (eq_bigr (fun a => ((P `X (BSC.c card_A p_01))) (a.1, a.2) *
-  log (((P `X (BSC.c card_A p_01))) (a.1, a.2)))); last by case.
+  log (((P `X (BSC.c card_A p_01))) (a.1, a.2)))); last first.
+  case=> //=.
 rewrite -(pair_big xpredT xpredT (fun a b => (P `X (BSC.c card_A p_01))
   (a, b) * log ((P `X (BSC.c card_A p_01)) (a, b)))) /=.
 rewrite {1}/entropy .
 set a := \sum_(_ in _) _. set b := \sum_(_ <- _) _.
-apply trans_eq with (- (a + (-1) * b)); first by field.
+apply trans_eq with (- (a + (-1) * b)); first by rewrite mulN1r opprB opprK addrC.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
 rewrite !Set2sumE /= !fdist_prodE /BSC.c !fdist_binaryxx !fdist_binaryE/=.
 rewrite eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2 (* TODO *).
 set a := Set2.a _. set b := Set2.b _.
 case: (Req_EM_T (P a) 0) => H1.
-  rewrite H1 !(mul0R, mulR0, addR0, add0R).
+  rewrite H1 !(mul0r, mulr0, addr0, add0r).
   move: (FDist.f1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H1 add0r => ->.
-  rewrite /log Log_1 -!RmultE !(mul0R, mulR0, addR0, add0R, mul1R, mulR1).
-  rewrite /onem -RminusE (_ : 1%mcR = 1)//.
-  field.
-rewrite /log LogM; last 2 first.
+  rewrite log1 !(mul0r, mulr0, addr0, add0r, mul1r, mulr1).
+  by rewrite /onem mulN1r opprK opprB opprK addrC.
+rewrite logM; last 2 first.
   move/eqP in H1.
   have [+ _] := fdist_gt0 P a.
-  by move/(_ H1) => /RltP.
-  by case/andP: p_01' => ? ?; exact/RltP/onem_gt0.
-rewrite /log LogM; last 2 first.
+  by move/(_ H1).
+  by case/andP: p_01' => ? ?; exact/onem_gt0.
+rewrite logM; last 2 first.
   move/eqP in H1.
   have [+ _] := fdist_gt0 P a.
-  by move/(_ H1) => /RltP.
-  by case/andP: p_01' => ? ?; exact/RltP.
+  by move/(_ H1).
+  by case/andP: p_01'.
 case: (Req_EM_T (P b) 0) => H2.
-  rewrite H2 !(mul0R, mulR0, addR0, add0R).
+  rewrite H2 !(mul0r, mulr0, addr0, add0r).
   move: (FDist.f1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H2 addr0 => ->.
-  rewrite /log Log_1 -!RmultE !(mul0R, mulR0, addR0, add0R, mul1R, mulR1).
-  rewrite /onem -RminusE (_ : 1%mcR = 1)//.
-  field.
-rewrite /log LogM; last 2 first.
+  rewrite log1 !(mul0r, mulr0, addr0, add0r, mul1r, mulr1).
+  rewrite /onem/=.
+  by rewrite mulN1r opprK opprB opprK addrC.
+rewrite logM; last 2 first.
   move/eqP in H2.
   have [+ _] := fdist_gt0 P b.
-  by move/(_ H2) => /RltP.
-  by case/andP: p_01' => ? ?; exact/RltP.
-rewrite /log LogM; last 2 first.
+  by move/(_ H2).
+  by case/andP: p_01' => ? ?.
+rewrite logM; last 2 first.
   move/eqP in H2.
   have [+ _] := fdist_gt0 P b.
-  by move/(_ H2) => /RltP.
-  by case/andP: p_01' => ? ?; exact/RltP/onem_gt0.
-rewrite /log.
-rewrite -!RmultE.
-rewrite /onem -RminusE (_ : 1%mcR = 1)//.
+  by move/(_ H2).
+  by case/andP: p_01' => ? ?; exact/onem_gt0.
+rewrite /onem.
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   rewrite /log.
   set l2Pa := Log 2 (P a).
@@ -110,19 +107,19 @@ transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
   set l2p := Log 2 p.
   set Pa := P a.
   set Pb := P b.
-  ring.
+  lra.
 move: (FDist.f1 P).
 rewrite Set2sumE /= -/a -/b.
 rewrite -RplusE => ->.
-rewrite !mulR1.
-rewrite /log; field.
+rewrite !mulr1.
+by rewrite opprB opprK addrC.
 Qed.
 
 Lemma IPW : `I(P, BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
 Proof.
-rewrite /mutual_info_chan addRC.
+rewrite /mutual_info_chan addrC.
 set a := `H(_ `o _).
-transitivity (a + (`H P - `H(P , BSC.c card_A p_01))); first by field.
+transitivity (a + (`H P - `H(P , BSC.c card_A p_01))); first by lra.
 by rewrite HP_HPW.
 Qed.
 
@@ -133,51 +130,54 @@ set a := Set2.a _. set b := Set2.b _.
 rewrite /BSC.c !fdist_binaryxx !fdist_binaryE /= !(eq_sym _ a).
 rewrite (negbTE (Set2.a_neq_b card_A)).
 move: (FDist.f1 P); rewrite Set2sumE /= -/a -/b => P1.
-rewrite -!(RmultE,RplusE).
 have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
-  rewrite -RplusE (_ : 1%mcR = 1)// in P1.
   rewrite -{2}P1.
-  ring_simplify.
-  congr (_ + _).
-  by rewrite subRK.
-case/andP: p_01' => /RltP Hp1 /RltP Hp2.
-rewrite (_ : 0%mcR = 0%coqR)// in Hp1.
-rewrite (_ : 1%mcR = 1%coqR)// in Hp2, P1.
+  set Pa := P a.
+  set Pb := P b.
+  lra.
+case/andP: p_01' => Hp1 Hp2.
 have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
-  move: (FDist.ge0 P a) => /RleP H1.
+  move: (FDist.ge0 P a) => H1.
   move: (FDist.le1 P b) => H4.
   move: (FDist.le1 P a) => H3.
-  split.
-    case/Rle_lt_or_eq_dec : H1 => H1; rewrite (_ : 0%mcR = 0)// in H1.
-    - apply addR_gt0wl.
-        apply: mulR_gt0 => //.
-        by rewrite subR_gt0.
-      apply: mulR_ge0 => //.
-      exact: ltRW.
-    - by rewrite -H1 mulR0 add0R (_ : P b = 1) ?mulR1 // -P1 -H1 add0r.
+  apply/andP; split.
+    move: H1; rewrite le_eqVlt => /predU1P[H1|H1]; last first.
+    - apply: ltr_pwDl.
+        apply: mulr_gt0 => //.
+        by rewrite subr_gt0.
+      apply: mulr_ge0 => //.
+      exact: ltW.
+    - by rewrite -H1 mulr0 add0r (_ : P b = 1) ?mulr1 // -P1 -H1 add0r.
   rewrite -{2}P1.
   case: (Req_EM_T (P a) 0) => Hi.
-    rewrite Hi mulR0 !add0R.
+    rewrite Hi mulr0 !add0r.
+    rewrite gtr_pMl//.
     rewrite Hi add0r in P1.
-    by rewrite P1 mulR1 add0r.
+    by rewrite P1.
   case: (Req_EM_T (P b) 0) => Hj.
     rewrite Hj addr0 in P1.
-    rewrite Hj mulR0 !addR0 P1 mulR1.
-    rewrite addr0.
-    by rewrite ltR_subl_addr ltR_addl.
-  case/Rle_lt_or_eq_dec : H1 => H1.
-  - apply leR_lt_add.
-    + rewrite -{2}(mul1R (P a)); apply leR_wpmul2r => //.
-      by rewrite leR_subl_addr leR_addl; exact: ltRW.
-    + rewrite -{2}(mul1R (P b)); apply ltR_pmul2r => //.
-      by apply/RltP; rewrite lt0r; apply/andP; split; [exact/eqP|by []].
-  - rewrite -H1 mulR0 add0R add0r.
+    rewrite Hj mulr0 !addr0 P1 mulr1.
+    by rewrite ltrBlDr ltrDl.
+  move: H1; rewrite le_eqVlt => /predU1P[|] H1; last first.
+  - apply ler_ltD.
+    + rewrite -{2}(mul1r (P a)); apply ler_wpM2r => //.
+      by rewrite lerBlDr ler_addl; exact: ltW.
+    + rewrite -{2}(mul1r (P b)) ltr_pM2r //.
+      by rewrite lt0r; apply/andP; split; [exact/eqP|by []].
+  - rewrite -H1 mulr0 add0r add0r.
     have -> : P b = 1 by rewrite -P1 -H1 add0r.
-    by rewrite mulR1.
-rewrite (_ : forall a b, - (a + b) = - a - b); last by move=> *; field.
-rewrite -mulNR.
+    by rewrite mulr1.
+rewrite (_ : forall a b, - (a + b) = - a - b); last by move=> *; lra.
+rewrite -mulNr.
 set q := (1 - p) * P a + p * P b.
-apply: (@leR_trans (H2 q)); last exact: H2_max.
+have H01' : 0 <= (1 - p) * P a + p * P b <= 1.
+  by case/andP : H01 => /ltW -> /ltW ->.
+apply: (@le_trans _ _ (H2 q)); last first.
+  rewrite (entropy_H2 card_A (@Prob.mk _ q H01'))//.
+  rewrite (le_trans (entropy_max _))// card_A.
+  
+
+exact: H2_max.
 by rewrite /H2 !mulNR; apply Req_le; field.
 Qed.
 

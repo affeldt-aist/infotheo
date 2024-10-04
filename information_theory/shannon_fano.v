@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum.
-Require Import Reals.
-From mathcomp Require Import Rstruct.
-Require Import ssrZ ssrR logb Reals_ext realType_ext ssr_ext fdist.
+From mathcomp Require Import all_ssreflect all_algebra archimedean.
+From mathcomp Require Import Rstruct reals.
+Require Import ssrZ ssr_ext realType_logb realType_ext fdist bigop_ext.
 Require Import entropy kraft.
 
 (******************************************************************************)
@@ -19,13 +18,13 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
 
-Import Order.POrderTheory Num.Theory.
+Import Order.POrderTheory Num.Theory GRing.Theory.
 
 Definition kraft_condR (T : finType) (sizes : seq nat) :=
   let n := size sizes in
-  (\sum_(i < n) #|T|%:R^-(nth O sizes i) <= (1 : R))%R.
+  (\sum_(i < n) #|T|%:R^-(nth O sizes i) <= (1 : Rdefinitions.R))%R.
 
 Local Open Scope fdist_scope.
 
@@ -44,7 +43,7 @@ Variables (A T : finType) (P : {fdist A}).
 Local Open Scope zarith_ext_scope.
 
 Definition is_shannon_fano (f : Encoding.t A T) :=
-  forall s, size (f s) = '| ceil (Log #|T|%:R (1 / P s)%R) |.
+  forall s, size (f s) = `| Num.ceil (Log #|T|%:R (P s)^-1%R) |%N.
 
 End shannon_fano_def.
 
@@ -65,30 +64,22 @@ Lemma shannon_fano_is_kraft : is_shannon_fano P f -> kraft_condR T sizes.
 Proof.
 move=> H.
 rewrite /kraft_condR.
-rewrite (_ : 1 = 1%mcR)//.
 rewrite -(FDist.f1 P) /sizes size_map.
 rewrite (eq_bigr (fun i:'I_(size(enum A)) => #|'I_t|%:R ^- size (f (nth a (enum A) i)))); last first.
-  move=> i _; by rewrite /= (nth_map a).
+  by move=> i _; rewrite /= (nth_map a)// FDist.f1.
 rewrite -(big_mkord xpredT (fun i => #|T|%:R ^- size (f (nth a (enum A) i)))).
 rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
-apply leR_sumR => i _.
+apply ler_sum => i _.
 rewrite H.
-have Pi0 : 0 < P i by apply/RltP; rewrite lt0r Pr0/=.
-apply (@leR_trans (Exp #|T|%:R (- Log #|T|%:R (1 / P i)))); last first.
-  rewrite div1R LogV// oppRK LogK //; first by apply/RleP; rewrite lexx.
-  by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
-rewrite pow_Exp; last by apply ltR0n; rewrite card_ord.
-rewrite Exp_Ropp.
-apply/leR_inv/Exp_le_increasing => //.
-  by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
-rewrite INR_Zabs_nat; last first.
-  case/boolP : (P i == 1) => [/eqP ->|Pj1].
-    by rewrite divR1 Log_1 /ceil fp_R0 eqxx /=; apply/Int_part_ge0.
-  apply/leR0ceil/ltRW/ltR0Log.
-  by rewrite (_ : 1 = 1%:R) // ltR_nat card_ord.
-  rewrite div1R invR_gt1 // ltR_neqAle; split => //; exact/eqP.
-by set x := Log _ _; case: (ceilP x).
+have Pi0 : 0 < P i by rewrite lt0r Pr0/=.
+apply (@le_trans _ _ (Exp #|T|%:R (- Log #|T|%:R (P i)^-1))); last first.
+  by rewrite LogV// opprK LogK // card_ord natn.
+rewrite pow_Exp; last by rewrite card_ord.
+rewrite Exp_oppr lef_pV2// ?posrE ?Exp_gt0//.
+rewrite !card_ord natn Exp_le_increasing//.
+rewrite (le_trans (mathcomp_extra.ceil_ge _))//.
+by rewrite natr_absz// ler_int ler_norm.
 Qed.
 
 End shannon_fano_is_kraft.
@@ -116,28 +107,29 @@ Lemma shannon_fano_average_entropy : is_shannon_fano P f ->
   average P f < `H P  + 1.
 Proof.
 move=> H; rewrite /average.
-apply (@ltR_leR_trans (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
+apply (@lt_le_trans _ _ (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
   apply: ltR_sumR.
     apply: fdist_card_neq0.
     exact: P.
   move=> i.
-  apply ltR_pmul2l; first by apply/RltP; rewrite lt0r Pr_pos /=.
+  rewrite ltr_pM2l//; last by apply/fdist_gt0.
   rewrite H.
   rewrite (_ : #|T|%:R = 2) // ?card_ord // -!/(log _).
-  set x := log _; case: (ceilP x) => _ Hx.
-  have Pi0 : 0 < P i by apply/RltP; rewrite lt0r Pr_pos /=.
-  rewrite INR_Zabs_nat; last first.
-    apply/leR0ceil.
-    rewrite /x div1R /log LogV //.
-    apply oppR_ge0.
-    by rewrite -(Log_1 2); apply Log_increasing_le.
-  case: (ceilP x) => _.
-  by rewrite -LogV // -/(log _) -(div1R _) /x.
-under eq_bigr do rewrite mulRDr mulR1 mulRN.
-rewrite big_split /= FDist.f1 leR_add2r.
-apply Req_le.
-rewrite /entropy big_morph_oppR; apply eq_bigr => i _.
-by rewrite card_ord (_ : 2%:R = 2).
+  set x := log _.
+  rewrite -ltrBlDr.
+  rewrite (le_lt_trans _ (gt_pred_ceil _))// ?num_real//.
+  rewrite natr_absz.
+  rewrite intrD lerB// ler_int.
+  rewrite /x logV -?fdist_gt0//.
+  rewrite -[leRHS]gez0_abs//.
+  rewrite -mathcomp_extra.ceil_ge0//.
+  rewrite (@lt_le_trans _ _ 0)// ?ltrN10// lerNr oppr0.
+  by rewrite -log1 ler_log// ?posrE// -fdist_gt0.
+under eq_bigr do rewrite mulrDr mulr1 mulrN.
+rewrite big_split /= FDist.f1 lerD2r.
+rewrite le_eqVlt; apply/orP; left; apply/eqP.
+rewrite /entropy big_morph_oppr; apply eq_bigr => i _.
+by rewrite card_ord /log//.
 Qed.
 
 End shannon_fano_suboptimal.
