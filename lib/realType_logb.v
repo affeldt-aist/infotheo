@@ -112,6 +112,42 @@ Proof. by move=> x0 y0; rewrite LogM ?invr_gt0// LogV. Qed.
 
 End Log.
 
+Section Exp.
+Context {R : realType}.
+
+Definition Exp (n : nat) (x : R) := expR (x * ln n%:R).
+
+Lemma pow_Exp (x : nat) n : (0 < x)%N -> x%:R ^+ n = Exp x n%:R.
+Proof. by move=> x0; rewrite /Exp expRM_natl lnK// posrE ltr0n. Qed.
+
+Lemma LogK n x : (1 < n)%N -> 0 < x -> Exp n (Log n x) = x.
+Proof.
+move=> n1 x0.
+rewrite /Log /Exp prednK// 1?ltnW// -mulrA mulVf// ?mulr1 ?lnK//.
+by rewrite gt_eqF// -ln1 ltr_ln// ?posrE// ?ltr1n// ltr0n ltnW.
+Qed.
+
+Lemma Exp_oppr n x : Exp n (- x) = (Exp n x)^-1.
+Proof. by rewrite /Exp mulNr expRN. Qed.
+
+Lemma Exp_gt0 n x : 0 < Exp n x. Proof. by rewrite /Exp expR_gt0. Qed.
+
+Lemma Exp_ge0 n x : 0 <= Exp n x. Proof. exact/ltW/Exp_gt0. Qed.
+
+Lemma Exp_increasing n x y : (1 < n)%N -> x < y -> Exp n x < Exp n y.
+Proof. by move=> ? ?; rewrite ltr_expR// ltr_pM2r// ln_gt0// ltr1n. Qed.
+
+Lemma Exp_le_increasing n x y : (1 < n)%N -> x <= y -> Exp n x <= Exp n y.
+Proof.
+move=> n1; rewrite /Exp le_eqVlt => /predU1P[->//|].
+by move/Exp_increasing => x_y; exact/ltW/x_y.
+Qed.
+
+End Exp.
+
+Hint Extern 0 (0 < Exp _ _) => solve [exact/Exp_gt0] : core.
+
+Hint Extern 0 (0 <= Exp _ _) => solve [exact/Exp_ge0] : core.
 
 Section log.
 Context {R : realType}.
@@ -120,6 +156,8 @@ Implicit Types x y : R.
 Definition log {R : realType} (x : R) := Log 2 x.
 
 Lemma log1 : log 1 = 0 :> R. Proof. by rewrite /log Log1. Qed.
+
+Lemma log2 : log 2 = 1 :> R. Proof. by rewrite /log /Log prednK// divff// gt_eqF// ln2_gt0. Qed.
 
 Lemma ler_log : {in Num.pos &, {mono log : x y / x <= y :> R}}.
 Proof. by move=> x y x0 y0; rewrite /log ler_Log. Qed.
@@ -151,3 +189,16 @@ exact/ln_id_cmp.
 Qed.
 
 End log.
+
+Lemma log_prodr_sumr_mlog {R : realType} {A : finType} (f : A -> R) s :
+  (forall a, 0 <= f a) ->
+  (forall i, 0 < f i) ->
+  (- log (\prod_(i <- s) f i) = \sum_(i <- s) - log (f i))%R.
+Proof.
+move=> f0 f0'.
+elim: s => [|h t ih].
+  by rewrite !big_nil log1 oppr0.
+rewrite big_cons logM//; last first.
+  by apply/prodr_gt0 => a _.
+by rewrite [RHS]big_cons opprD ih.
+Qed.

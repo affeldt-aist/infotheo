@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum.
-From mathcomp Require Import reals.
-Require Import Reals Lra.
-Require Import ssrR Reals_ext Ranalysis_ext realType_logb.
+From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp Require Import Rstruct reals exp lra.
+Require Import ssr_ext realType_ext realType_logb.
 
 (******************************************************************************)
 (*                    The natural entropy function                            *)
@@ -22,11 +21,13 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
+
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Definition H2ln {R : realType} : R -> R := fun p : R => (- p * exp.ln p - (1 - p) * exp.ln (1 - p))%mcR.
 
-Lemma derivable_pt_ln_Rminus x : x < 1 -> derivable_pt ln (1 - x).
+(*Lemma derivable_pt_ln_Rminus x : x < 1 -> derivable_pt ln (1 - x).
 Proof.
 move=> Hx.
 exists (/ (1 - x)).
@@ -34,7 +35,6 @@ apply derivable_pt_lim_ln, subR_gt0.
 assumption.
 Defined.
 
-(*
 Lemma pderivable_H2ln : pderivable H2ln (fun x => 0 < x <= 1/2).
 Proof.
 move=> x /= [Hx0 Hx1].
@@ -140,17 +140,22 @@ rewrite /H2 /log.
 by rewrite !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
                        add0R, addR0, subR0, subRR).
 Qed.
+*)
 
-Lemma H2_max : forall p, 0 < p < 1 -> H2 p <= 1.
+(*
+Lemma H2_max : forall p : Rdefinitions.R, 0 < p < 1 -> H2 p <= 1.
 Proof.
-move=> p [Hp0 Hp1].
+move=> p /andP[Hp0 Hp1].
 rewrite /H2.
-apply (@leR_pmul2l (ln 2)) => //.
-rewrite mulR1 mulRDr /log -!mulNR !(mulRC (ln 2)) -!mulRA.
-rewrite (mulVR _ ln2_neq0) !mulR1 (mulNR (1 - p)); exact/H2ln_max.
-Qed.
+rewrite -(@ler_pM2l _ (ln 2))// ?ln2_gt0//.
+rewrite mulr1 mulrDr /log -!mulNr !(mulrC (ln 2)) -!mulrA.
+rewrite (@mulVf _ _ ln2_neq0) !mulr1 (mulNr (1 - p)).
 
-Lemma H2_max' (x : R): 0 <= x <= 1 -> H2 x <= 1.
+; exact/H2ln_max.
+Qed.
+*)
+
+(*Lemma H2_max' (x : R): 0 <= x <= 1 -> H2 x <= 1.
 Proof.
 move=> [x_0 x_1].
 case: x_0 => [?|<-]; last by rewrite bin_ent_0eq0.
