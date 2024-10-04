@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra fingroup perm.
-Require Import Reals.
-From mathcomp Require Import Rstruct reals.
-Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext bigop_ext.
+From mathcomp Require Import Rstruct reals exp.
+Require Import realType_ext ssr_ext ssralg_ext bigop_ext.
 Require Import realType_logb (*ln_facts*) fdist jfdist_cond proba binary_entropy_function.
 Require Import divergence.
 
@@ -54,16 +53,16 @@ Declare Scope entropy_scope.
 Declare Scope chap2_scope.
 Delimit Scope chap2_scope with chap2.
 
-Local Open Scope R_scope.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
+Local Open Scope ring_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
 (* TODO: kludge *)
-Hint Extern 0 ((0 <= _)%coqR) => solve [exact/RleP/FDist.ge0] : core.
-Hint Extern 0 ((_ <= 1)%coqR) => solve [exact/RleP/FDist.le1] : core.
+(*Hint Extern 0 ((0 <= _)%coqR) => solve [exact/RleP/FDist.ge0] : core.
+Hint Extern 0 ((_ <= 1)%coqR) => solve [exact/RleP/FDist.le1] : core.*)
 
 Section entropy_definition.
 Variables (A : finType) (P : {fdist A}).
@@ -73,11 +72,11 @@ Local Notation "'`H'" := (entropy).
 
 Lemma entropy_ge0 : 0 <= `H.
 Proof.
-rewrite /entropy big_morph_oppR; apply/RleP/sumr_ge0 => i _; apply/RleP.
-have [->|Hi] := eqVneq (P i) 0; first by rewrite mul0R oppR0.
+rewrite /entropy big_morph_oppr; apply/sumr_ge0 => i _.
+have [->|Hi] := eqVneq (P i) 0; first by rewrite mul0r oppr0.
   (* NB: this step in a standard textbook would be handled as a consequence of lim x->0 x log x = 0 *)
-rewrite mulRC -mulNR; apply mulR_ge0 => //; apply: oppR_ge0.
-rewrite coqRE -(@log1 R); apply/RleP; rewrite ler_log// ?posrE//.
+rewrite mulrC -mulNr mulr_ge0// lerNr oppr0.
+rewrite -log1 ler_log// ?posrE//.
 by rewrite lt0r Hi/=.
 Qed.
 
@@ -93,35 +92,34 @@ Context (A : finType).
 
 Lemma entropy_Ex (P : {fdist A}) : `H P = `E (`-- (`log P)).
 Proof.
-rewrite /entropy /log_RV /= big_morph_oppR.
-by apply eq_bigr => a _; rewrite mulRC -mulNR.
+rewrite /entropy /log_RV /= big_morph_oppr.
+by apply eq_bigr => a _; rewrite mulrC -mulNr.
 Qed.
 
-Lemma xlnx_entropy (P : {fdist A}) : `H P = / exp.ln 2 * - \sum_(a : A) xlnx (P a).
+Lemma xlnx_entropy (P : {fdist A}) : `H P = (ln 2)^-1 * - \sum_(a : A) xlnx (P a).
 Proof.
-rewrite /entropy mulRN; congr (- _); rewrite big_distrr/=.
+rewrite /entropy mulrN; congr (- _); rewrite big_distrr/=.
 apply: eq_bigr => a _; rewrite /xlnx /log /Log/=.
-have := FDist.ge0 P a.
-rewrite le_eqVlt => /predU1P[<-|Pa0].
-  by rewrite mul0r if_same mulR0 mul0R.
-by rewrite Pa0 mulRA mulRC !coqRE.
+have := FDist.ge0 P a; rewrite le_eqVlt => /predU1P[<-|Pa0].
+  by rewrite !mul0r if_same mulr0.
+by rewrite Pa0 mulrA mulrC.
 Qed.
 
 Lemma entropy_uniform n (An1 : #|A| = n.+1) :
-  `H (fdist_uniform An1) = log (INR #|A|).
+  `H (fdist_uniform An1) = log #|A|%:R.
 Proof.
 rewrite /entropy.
 under eq_bigr do rewrite fdist_uniformE.
-rewrite big_const iter_addR mulRA RmultE -RinvE.
-rewrite INRE mulRV; last by rewrite An1 -INRE INR_eq0'.
-by rewrite -RmultE mul1R !coqRE logV ?An1 ?ltr0n// opprK.
+rewrite big_const iter_addr addr0 logV; last by rewrite An1.
+rewrite -mulNrn mulrN opprK -mulrnAr -(mulr_natr (log _) #|A|) mulrCA.
+by rewrite mulVf ?mulr1// An1 pnatr_eq0.
 Qed.
 
-Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : {prob R}) :
+Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : prob Rdefinitions.R) :
   H2 (Prob.p p) = entropy (fdist_binary card_A p (Set2.a card_A)).
 Proof.
 rewrite /H2 /entropy Set2sumE /= fdist_binaryxx !fdist_binaryE.
-by rewrite eq_sym (negbTE (Set2.a_neq_b _)) oppRD addRC.
+by rewrite eq_sym (negbTE (Set2.a_neq_b _)) opprD addrC.
 Qed.
 
 Lemma entropy_max (P : {fdist A}) : `H P <= log #|A|%:R.
@@ -129,20 +127,18 @@ Proof.
 have [n An1] : exists n, #|A| = n.+1.
   by exists #|A|.-1; rewrite prednK //; exact: (fdist_card_neq0 P).
 have /div_ge0 H := dom_by_uniform P An1.
-rewrite -subr_ge0; apply/(leR_trans H)/Req_le.
+rewrite -subr_ge0; apply/(le_trans H).
+rewrite le_eqVlt; apply/orP; left; apply/eqP.
 transitivity (\sum_(a|a \in A) P a * log (P a) +
               \sum_(a|a \in A) P a * - log (fdist_uniform An1 a)).
-  rewrite -big_split /=; apply eq_bigr => a _; rewrite -mulRDr.
-  case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0R.
-  congr (_ * _); rewrite logDiv ?addR_opp //.
-    by apply/RltP; rewrite -fdist_gt0.
-  rewrite fdist_uniformE -RinvE.
-  apply/invR_gt0; rewrite An1 -INRE.
-  exact/ltR0n.
+  rewrite -big_split /=; apply eq_bigr => a _; rewrite -mulrDr.
+  case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0r.
+  congr (_ * _); rewrite logDiv//.
+    by rewrite -fdist_gt0.
+  by rewrite fdist_uniformE invr_gt0// An1 ltr0n.
 under [in X in _ + X]eq_bigr do rewrite fdist_uniformE.
-rewrite -[in X in _ + X = _]big_distrl /= FDist.f1 mul1R.
-rewrite addRC /entropy /log -RinvE.
-by rewrite LogV ?oppRK ?subR_opp // An1 ?INRE// -INRE; exact/ltR0n.
+rewrite -[in X in _ + X = _]big_distrl /= FDist.f1 mul1r.
+by rewrite addrC /entropy logV ?opprK// An1 ltr0n.
 Qed.
 
 Lemma entropy_fdist_rV_of_prod n (P : {fdist A * 'rV[A]_n}) :
@@ -230,8 +226,8 @@ rewrite (eq_bigr (fun a => fdist_self P (a.1, a.2) *
 rewrite -(pair_bigA _ (fun a1 a2 => fdist_self P (a1, a2) *
                                     log (fdist_self P (a1, a2)))) /=.
 apply/eq_bigr => a _.
-rewrite (bigD1 a) //= !fdist_selfE /= eqxx big1 ?addR0 //.
-by move=> a' /negbTE; rewrite fdist_selfE /= eq_sym => ->; rewrite mul0R.
+rewrite (bigD1 a) //= !fdist_selfE /= eqxx big1 ?addr0 //.
+by move=> a' /negbTE; rewrite fdist_selfE /= eq_sym => ->; rewrite mul0r.
 Qed.
 
 End joint_entropy_prop.
@@ -254,25 +250,24 @@ Let PQ := fdistX QP.
 Lemma cond_entropyE : cond_entropy = - \sum_(a in A) \sum_(b in B)
   PQ (a, b) * log (\Pr_QP [ [set b] | [set a]]).
 Proof.
-rewrite /cond_entropy big_morph_oppR /=; apply eq_bigr => a _.
-rewrite /cond_entropy1 mulRN big_distrr /=; congr (- _); apply eq_bigr => b _.
-rewrite mulRA; congr (_ * _).
-by rewrite mulRC -(Pr_set1 P a) -jproduct_rule setX1 fdistXE Pr_set1.
+rewrite /cond_entropy big_morph_oppr /=; apply eq_bigr => a _.
+rewrite /cond_entropy1 mulrN big_distrr /=; congr (- _); apply eq_bigr => b _.
+rewrite mulrA; congr (_ * _).
+by rewrite mulrC -(Pr_set1 P a) -jproduct_rule setX1 fdistXE Pr_set1.
 Qed.
 
 Lemma cond_entropy1_ge0 a : 0 <= cond_entropy1 a.
 Proof.
-rewrite /cond_entropy1 big_morph_oppR; apply/RleP/sumr_ge0 => b _; rewrite -mulRN.
+rewrite /cond_entropy1 big_morph_oppr; apply/sumr_ge0 => b _; rewrite -mulrN.
 have [->|H0] := eqVneq (\Pr_QP[[set b]|[set a]]) 0.
-  by rewrite mul0R.
-apply/RleP/mulR_ge0; [exact: jcPr_ge0|].
-rewrite -oppR0 -(Log_1 2) /log leR_oppr oppRK.
-by apply Log_increasing_le => //; [rewrite jcPr_gt0 | exact: jcPr_le1].
+  by rewrite mul0r.
+apply/mulr_ge0; [exact: jcPr_ge0|].
+by rewrite -oppr0 -log1 lerNr opprK ler_log ?posrE// ?jcPr_gt0// jcPr_le1.
 Qed.
 
 Lemma cond_entropy_ge0 : 0 <= cond_entropy.
 Proof.
-by apply/RleP/sumr_ge0 => a _; apply/RleP/mulR_ge0 => //; exact: cond_entropy1_ge0.
+by apply/sumr_ge0 => a _; apply/mulr_ge0 => //; exact: cond_entropy1_ge0.
 Qed.
 
 End conditional_entropy.
@@ -330,22 +325,22 @@ transitivity (- (\sum_(a in A) \sum_(b in B)
     PQ (a, b) * log (P a * \Pr_QP [ [set b] | [set a] ]))). (* 2.16 *)
   congr (- _); rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
   congr (_ * log _); have [H0|H0] := eqVneq (P a) 0.
-  - by rewrite (dom_by_fdist_fst _ H0) H0 mul0R.
-  - rewrite -(Pr_set1 P a) /P -(fdistX2 PQ) mulRC -jproduct_rule setX1.
+  - by rewrite (dom_by_fdist_fst _ H0) H0 mul0r.
+  - rewrite -(Pr_set1 P a) /P -(fdistX2 PQ) mulrC -jproduct_rule setX1.
     by rewrite Pr_set1 fdistXE.
 transitivity (
   - (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a))
   - (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (\Pr_QP [ [set b] | [set a] ]))). (* 2.17 *)
-  rewrite -oppRB; congr (- _); rewrite -addR_opp oppRK -big_split /=.
+  rewrite -opprB; congr (- _); rewrite opprK -big_split /=.
   apply eq_bigr => a _; rewrite -big_split /=; apply eq_bigr => b _.
-  have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0R addR0.
-  rewrite -mulRDr; congr (_ * _); rewrite mulRC logM //.
-    by rewrite -Pr_jcPr_gt0 setX1 Pr_set1 fdistXE; apply/RltP; rewrite -fdist_gt0.
-  by apply/RltP; rewrite -fdist_gt0; exact: dom_by_fdist_fstN H0.
-rewrite [in X in _ + X = _]big_morph_oppR; congr (_ + _).
+  have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0r addr0.
+  rewrite -mulrDr; congr (_ * _); rewrite mulrC logM //.
+    by rewrite -Pr_jcPr_gt0 setX1 Pr_set1 fdistXE; rewrite -fdist_gt0.
+  by rewrite -fdist_gt0; exact: dom_by_fdist_fstN H0.
+rewrite [in X in _ + X = _]big_morph_oppr; congr (_ + _).
 - rewrite /entropy; congr (- _); apply eq_bigr => a _.
   by rewrite -big_distrl /= -fdist_fstE.
-- rewrite cond_entropyE big_morph_oppR.
+- rewrite cond_entropyE big_morph_oppr.
   by apply eq_bigr => a _; congr (- _); apply eq_bigr => b _; rewrite !fdistXE.
 Qed.
 
@@ -479,7 +474,7 @@ Let QPR : {fdist B * (A * C)} := fdistA (fdistC12 PQR).
 Lemma chain_rule_corollary :
   cond_entropy PQR = cond_entropy PR + cond_entropy QPR.
 Proof.
-rewrite !cond_entropyE -oppRD; congr (- _).
+rewrite !cond_entropyE -opprD; congr (- _).
 rewrite [in X in _ = _ + X](eq_bigr (fun j => \sum_(i in B) (fdistX QPR) ((j.1, j.2), i) *
                                                             log \Pr_QPR[[set i] | [set (j.1, j.2)]])); last by case.
 rewrite -[in RHS](pair_bigA _ (fun j1 j2 => \sum_(i in B) (fdistX QPR ((j1, j2), i) *
@@ -491,19 +486,18 @@ rewrite -[in LHS](pair_bigA _ (fun j1 j2 => (fdistX PQR) (c, (j1, j2)) *
                                             log \Pr_PQR[[set (j1, j2)] | [set c]])) /=.
 rewrite -big_split; apply eq_bigr => a _ /=.
 rewrite fdistXE fdist_proj13E big_distrl /= -big_split; apply eq_bigr => b _ /=.
-rewrite !(fdistXE,fdistAE,fdistC12E) /= -mulRDr.
-have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0R.
+rewrite !(fdistXE,fdistAE,fdistC12E) /= -mulrDr.
+have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0r.
 rewrite -logM; last 2 first.
   by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj13_dominN H0.
   by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1 fdistAE /= fdistC12E.
 congr (_ * log _).
-by rewrite -setX1 product_ruleC !setX1 mulRC.
+by rewrite -setX1 product_ruleC !setX1 mulrC.
 Qed.
 
 End entropy_chain_rule_corollary.
 
 Section conditional_entropy_prop2. (* NB: here because use chain rule *)
-
 Variables (A B : finType) (PQ : {fdist A * B}).
 Let P := PQ`1.
 Let Q := PQ`2.
@@ -511,21 +505,21 @@ Let QP := fdistX PQ.
 
 Lemma entropyB : `H P - cond_entropy PQ = `H Q - cond_entropy QP.
 Proof.
-rewrite subR_eq addRAC -subR_eq subR_opp -chain_rule joint_entropyC.
+apply/eqP; rewrite subr_eq addrAC -subr_eq opprK; apply/eqP.
+rewrite -chain_rule joint_entropyC.
 by rewrite -/(joint_entropy (fdistX PQ)) chain_rule fdistX1 -/Q fdistXI.
 Qed.
 
 End conditional_entropy_prop2.
 
 Section conditional_entropy_prop3. (* NB: here because use chain rule *)
-
 Variables (A : finType) (P : {fdist A}).
 
 Lemma cond_entropy_self : cond_entropy (fdist_self P) = 0.
 Proof.
 move: (@chain_rule _ _ (fdist_self P)).
-rewrite !fdist_self1 fdistX_self addRC -subR_eq => <-.
-by rewrite joint_entropy_self subRR.
+rewrite !fdist_self1 fdistX_self addrC => /eqP; rewrite -subr_eq => /eqP <-.
+by rewrite joint_entropy_self subrr.
 Qed.
 
 End conditional_entropy_prop3.
@@ -552,7 +546,7 @@ Lemma mutual_infoE0 : mutual_info PQ =
   \sum_(a in A) \sum_(b in B) PQ (a, b) * log (PQ (a, b) / (P a * Q b)).
 Proof.
 rewrite /mutual_info /div pair_big /=; apply eq_bigr; case => a b _ /=.
-have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0R.
+have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0r.
 by rewrite fdist_prodE.
 Qed.
 
@@ -564,27 +558,26 @@ transitivity (\sum_(a in A) \sum_(b in B)
     PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ] / P a)).
   apply eq_bigr => a _; apply eq_bigr => b _.
   rewrite /jcPr setX1 2!Pr_set1 /= -/Q.
-  have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0R.
-  by congr (_ * log _); rewrite divRM 1?mulRAC //; [
-    exact: dom_by_fdist_fstN H0 | exact: dom_by_fdist_sndN H0].
+  have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0r.
+  by congr (_ * log _); rewrite invfM mulrAC mulrA.
 transitivity (- (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a)) +
   \sum_(a in A) \sum_(b in B) PQ (a, b) * log (\Pr_PQ [ [set a] | [set b] ])). (* 2.37 *)
-  rewrite big_morph_oppR -big_split; apply/eq_bigr => a _ /=.
-  rewrite big_morph_oppR -big_split; apply/eq_bigr => b _ /=.
-  rewrite addRC -mulRN -mulRDr addR_opp.
-  have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0R.
+  rewrite big_morph_oppr -big_split; apply/eq_bigr => a _ /=.
+  rewrite big_morph_oppr -big_split; apply/eq_bigr => b _ /=.
+  rewrite addrC -mulrN -mulrDr.
+  have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0r.
   congr (_ * _); rewrite logDiv //.
   - by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1.
-  - by apply/RltP; rewrite -fdist_gt0; exact: dom_by_fdist_fstN H0.
-rewrite -subR_opp; congr (_ - _).
+  - by rewrite -fdist_gt0; exact: dom_by_fdist_fstN H0.
+congr (_ + _).
 - rewrite /entropy; congr (- _); apply/eq_bigr => a _.
   by rewrite -big_distrl /= -fdist_fstE.
 - rewrite /cond_entropy exchange_big.
-  rewrite big_morph_oppR; apply eq_bigr=> b _ /=.
-  rewrite mulRN; congr (- _).
+  rewrite big_morph_oppr; apply eq_bigr=> b _ /=.
+  rewrite mulrN opprK.
   rewrite big_distrr /=; apply eq_bigr=> a _ /=.
-  rewrite mulRA; congr (_ * _); rewrite -/Q.
-  by rewrite -[in LHS]Pr_set1 -setX1 jproduct_rule Pr_set1 -/Q mulRC.
+  rewrite [in RHS]mulrCA mulrA; congr (_ * _); rewrite -/Q.
+  by rewrite -[in LHS]Pr_set1 -setX1 jproduct_rule Pr_set1 -/Q mulrC.
 Qed.
 
 Lemma mutual_infoE2 : mutual_info PQ = `H Q - cond_entropy QP. (* 2.40 *)
@@ -593,8 +586,8 @@ Proof. by rewrite mutual_infoE entropyB. Qed.
 Lemma mutual_infoE3 : mutual_info PQ = `H P + `H Q - `H PQ. (* 2.41 *)
 Proof.
 rewrite mutual_infoE; have := chain_rule QP.
-rewrite addRC -subR_eq -(fdistXI PQ) -/QP => <-.
-by rewrite -addR_opp oppRB fdistX1 -/Q addRA joint_entropyC.
+rewrite addrC => /eqP; rewrite -subr_eq -(fdistXI PQ) -/QP => /eqP <-.
+by rewrite opprB fdistX1 -/Q addrA joint_entropyC.
 Qed.
 
 (* nonnegativity of mutual information 2.90 *)
@@ -629,7 +622,7 @@ Proof. by rewrite !mutual_infoE entropyB fdistX1. Qed.
 (* eqn 2.47 *)
 Lemma mutual_info_self (A : finType) (P : {fdist A}) :
   mutual_info (fdist_self P) = `H P.
-Proof. by rewrite mutual_infoE cond_entropy_self subR0 fdist_self1. Qed.
+Proof. by rewrite mutual_infoE cond_entropy_self subr0 fdist_self1. Qed.
 
 End mutualinfo_prop.
 
@@ -654,7 +647,7 @@ Lemma chain_rule_rV (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) :
             cond_entropy (fdistX (fdist_belast_last_of_rV (fdist_take P (lift ord0 i)))).
 Proof.
 elim: n P => [P|n IH P].
-  by rewrite big_ord_recl /= big_ord0 addR0 -entropy_head_of1.
+  by rewrite big_ord_recl /= big_ord0 addr0 -entropy_head_of1.
 rewrite entropy_rV chain_rule {}IH [in RHS]big_ord_recr /=.
 rewrite fdist_take_all; congr (_ + _); apply eq_bigr => i _.
 case: ifP => i0; first by rewrite head_of_fdist_rV_belast_last.
@@ -684,16 +677,16 @@ Lemma cdiv1_is_div (c : C) (Hc  : (fdistX PQR)`1 c != 0)
 Proof.
 rewrite /cdiv1 /div; apply eq_bigr => -[a b] /= _; rewrite jfdist_condE //.
 rewrite fdistXI.
-have [->|H0] := eqVneq (\Pr_PQR[[set (a, b)]|[set c]]) 0; first by rewrite !mul0R.
+have [->|H0] := eqVneq (\Pr_PQR[[set (a, b)]|[set c]]) 0; first by rewrite !mul0r.
 by rewrite fdist_prodE /= jfdist_condE // jfdist_condE // !fdistXI.
 Qed.
 
 Lemma cdiv1_ge0 z : 0 <= cdiv1 z.
 Proof.
 have [z0|z0] := eqVneq (PQR`2 z) 0.
-  apply/RleP/sumr_ge0 => -[a b] _; apply/RleP.
+  apply/sumr_ge0 => -[a b] _.
   rewrite {1}/jcPr setX1 [X in X / _ * _]Pr_set1/= (dom_by_fdist_snd (a, b) z0).
-  by rewrite div0R mul0R.
+  by rewrite !mul0r.
 have Hc : (fdistX PQR)`1 z != 0 by rewrite fdistX1.
 have Hc1 : (fdistX (fdist_proj13 PQR))`1 z != 0.
   by rewrite fdistX1 fdist_proj13_snd.
@@ -702,16 +695,16 @@ have Hc2 : (fdistX (fdist_proj23 PQR))`1 z != 0.
 rewrite cdiv1_is_div //; apply div_ge0.
 (* TODO: lemma *)
 apply/dominatesP => -[a b].
-rewrite fdist_prodE !jfdist_condE //= mulR_eq0 => -[|].
-- rewrite /jcPr !setX1 !Pr_set1 !mulR_eq0 => -[|].
-    rewrite !fdistXI.
-    by move/fdist_proj13_domin => ->; left.
-  rewrite !fdistXI.
-  by rewrite fdist_proj13_snd /Rdiv => ->; right.
-- rewrite /jcPr !setX1 !Pr_set1 !mulR_eq0 => -[|].
-    rewrite !fdistXI.
-    by move/fdist_proj23_domin => ->; left.
-  by rewrite !fdistXI fdist_proj23_snd => ->; right.
+rewrite fdist_prodE !jfdist_condE //= => /eqP; rewrite mulf_eq0 => /orP[|].
+- rewrite /jcPr !setX1 !Pr_set1 !mulf_eq0 => /orP[|].
+    rewrite !fdistXI => /eqP.
+    by move/fdist_proj13_domin => ->; rewrite mul0r.
+  rewrite !fdistXI => /eqP.
+  by rewrite fdist_proj13_snd => ->; rewrite mulr0.
+- rewrite /jcPr !setX1 !Pr_set1 mulf_eq0 => /orP[|].
+    rewrite !fdistXI => /eqP.
+    by move/fdist_proj23_domin => ->; rewrite mul0r.
+  by rewrite !fdistXI fdist_proj23_snd => /eqP ->; rewrite mulr0.
 Qed.
 
 End divergence_conditional_distributions.
@@ -733,12 +726,12 @@ Lemma cond_mutual_infoE : cond_mutual_info PQR = \sum_(x in {: A * B * C}) PQR x
        (\Pr_(fdist_proj13 PQR)[[set x.1.1] | [set x.2]] *
         \Pr_(fdist_proj23 PQR)[[set x.1.2] | [set x.2]])).
 Proof.
-rewrite /cond_mutual_info 2!cond_entropyE /= subR_opp big_morph_oppR.
+rewrite /cond_mutual_info 2!cond_entropyE /= big_morph_oppr.
 rewrite (eq_bigr (fun a => \sum_(b in A) (fdistX (fdistA PQR)) (a.1, a.2, b) *
                                           log \Pr_(fdistA PQR)[[set b] | [set (a.1, a.2)]])); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => \sum_(b in A) (fdistX (fdistA PQR)) ((a1, a2), b) *
                                                    log \Pr_(fdistA PQR)[[set b] | [set (a1, a2)]])).
-rewrite exchange_big -big_split /=.
+rewrite /= exchange_big /= opprK -big_split /=.
 rewrite (eq_bigr (fun x => PQR (x.1, x.2) * log
 (\Pr_PQR[[set x.1] | [set x.2]] /
         (\Pr_(fdist_proj13 PQR)[[set x.1.1] | [set x.2]] *
@@ -748,7 +741,7 @@ rewrite -(pair_bigA _ (fun x1 x2 => PQR (x1, x2) * log
         (\Pr_(fdist_proj13 PQR)[[set x1.1] | [set x2]] *
          \Pr_(fdist_proj23 PQR)[[set x1.2] | [set x2]])))).
 rewrite /= exchange_big; apply eq_bigr => c _.
-rewrite big_morph_oppR /= exchange_big -big_split /=.
+rewrite big_morph_oppr /= exchange_big -big_split /=.
 rewrite (eq_bigr (fun i => PQR ((i.1, i.2), c) * log
        (\Pr_PQR[[set (i.1, i.2)] | [set c]] /
         (\Pr_(fdist_proj13 PQR)[[set i.1] | [set c]] *
@@ -757,23 +750,20 @@ rewrite -(pair_bigA _ (fun i1 i2 => PQR (i1, i2, c) * log
   (\Pr_PQR[[set (i1, i2)] | [set c]] /
   (\Pr_(fdist_proj13 PQR)[[set i1] | [set c]] * \Pr_(fdist_proj23 PQR)[[set i2] | [set c]])))).
 apply eq_bigr => a _ /=.
-rewrite fdistXE fdist_proj13E big_distrl /= big_morph_oppR -big_split.
+rewrite fdistXE fdist_proj13E big_distrl /= big_morph_oppr -big_split.
 apply eq_bigr => b _ /=.
-rewrite fdistXE fdistAE /= -mulRN -mulRDr.
-have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0R.
+rewrite fdistXE fdistAE /= -mulrN -mulrDr.
+have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0r.
 congr (_ * _).
-rewrite addRC addR_opp -logDiv; last 2 first.
+rewrite addrC -logDiv; last 2 first.
   by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdistA_dominN H0.
   by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj13_dominN H0.
 congr (log _).
-rewrite divRM; last 2 first.
-  by rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj13_dominN H0.
-  by rewrite -jcPr_gt0 -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj23_dominN H0.
-rewrite {2}/Rdiv -mulRA mulRCA {1}/Rdiv [in LHS]mulRC; congr (_ * _).
-rewrite -[in X in _ = X * _]setX1 jproduct_rule_cond setX1 -mulRA mulRV ?mulR1 //.
-rewrite /jcPr divR_neq0' // ?setX1 !Pr_set1.
+rewrite [in RHS]invfM mulrCA [RHS]mulrC; congr (_ / _).
+rewrite -[in X in _ = X * _]setX1 jproduct_rule_cond setX1 -mulrA mulfV ?mulr1 //.
+rewrite /jcPr mulf_neq0// ?setX1 !Pr_set1.
   exact: fdist_proj23_dominN H0.
-by rewrite fdist_proj23_snd; exact: dom_by_fdist_sndN H0.
+by rewrite fdist_proj23_snd invr_eq0; exact: dom_by_fdist_sndN H0.
 Qed.
 
 Let R := PQR`2.
@@ -790,8 +780,8 @@ rewrite -(pair_bigA _ (fun x1 x2 => PQR (x1, x2) * log
     (\Pr_(fdist_proj13 PQR)[[set x1.1] | [set x2]] *
      \Pr_(fdist_proj23 PQR)[[set x1.2] | [set x2]])))).
 rewrite exchange_big; apply eq_bigr => c _ /=.
-rewrite big_distrr /=; apply eq_bigr => -[a b] _ /=; rewrite mulRA; congr (_ * _).
-rewrite mulRC.
+rewrite big_distrr /=; apply eq_bigr => -[a b] _ /=; rewrite mulrA; congr (_ * _).
+rewrite mulrC.
 move: (jproduct_rule PQR [set (a, b)] [set c]); rewrite -/R Pr_set1 => <-.
 by rewrite setX1 Pr_set1.
 Qed.
@@ -799,7 +789,7 @@ Qed.
 (* 2.92 *)
 Lemma cond_mutual_info_ge0 : 0 <= cond_mutual_info PQR.
 Proof.
-rewrite cond_mutual_infoE2; apply/RleP/sumr_ge0 => c _; apply/RleP/mulR_ge0 => //.
+rewrite cond_mutual_infoE2; apply/sumr_ge0 => c _; apply/mulr_ge0 => //.
 exact: cdiv1_ge0.
 Qed.
 
@@ -812,8 +802,8 @@ Proof.
 rewrite mutual_infoE.
 have := chain_rule (PQR`1); rewrite /joint_entropy => ->.
 rewrite (chain_rule_corollary PQR).
-rewrite -addR_opp oppRD addRCA 2!addRA -(addRA (- _ + _)) addR_opp; congr (_ + _).
-  rewrite mutual_infoE addRC; congr (_ - _).
+rewrite opprD addrCA 2!addrA -(addrA (- _ + _)); congr (_ + _).
+  rewrite mutual_infoE addrC; congr (_ - _).
   by rewrite fdist_proj13_fst fdistA1.
 rewrite /cond_mutual_info; congr (cond_entropy _ - _).
   by rewrite /fdist_proj13 -/(fdistC13 _) fdistA_C13_snd.
@@ -863,36 +853,36 @@ rewrite {2}/div /cond_relative_entropy -big_split /= {1}/div /=.
 rewrite (eq_bigr (fun a => Pj (a.1, a.2) * (log (Pj (a.1, a.2) / (Qj (a.1, a.2)))))); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => Pj (a1, a2) * (log (Pj (a1, a2) / (Qj (a1, a2)))))) /=.
 rewrite exchange_big; apply eq_bigr => a _ /=.
-rewrite [in X in _ = X * _ + _](_ : P1 a = Pj`2 a); last first.
-  by rewrite /P fdistX2 fdist_prod1.
+rewrite [in X in _ = X * _ + _](_ : P1 a = Pj`2 a); last by rewrite /P fdistX2 fdist_prod1.
 rewrite fdist_sndE big_distrl /= big_distrr /= -big_split /=; apply eq_bigr => b _.
-rewrite mulRA (_ : P1 a * _ = Pj (b, a)); last first.
-  rewrite /jcPr Pr_set1 -/P1 mulRCA setX1 Pr_set1 {1}/Pj fdistX2 fdist_prod1.
+rewrite [X in _ = _ + X]mulrA [X in _ = _ + X * _](_ : P.1 a * _ = Pj (b, a)); last first.
+  rewrite /jcPr Pr_set1 -/P1 mulrCA setX1 Pr_set1 {1}/Pj fdistX2 fdist_prod1.
   have [P2a0|P2a0] := eqVneq (P1 a) 0.
     have Pba0 : Pj (b, a) = 0.
-      by rewrite /P fdistXE fdist_prodE P2a0 -RmultE mul0R.
-    by rewrite Pba0 mul0R.
-  by rewrite mulRV // ?mulR1.
-rewrite -mulRDr.
-have [->|H0] := eqVneq (Pj (b, a)) 0; first by rewrite !mul0R.
+      by rewrite /P fdistXE fdist_prodE P2a0 mul0r.
+    by rewrite Pba0 mul0r.
+  by rewrite mulfV // ?mulr1.
+rewrite -mulrDr.
+have [->|H0] := eqVneq (Pj (b, a)) 0; first by rewrite !mul0r.
 congr (_ * _).
 have P1a0 : P1 a != 0.
   apply: contra H0 => /eqP.
-  by rewrite /P fdistXE fdist_prodE => ->; rewrite -RmultE mul0R.
+  by rewrite /P fdistXE fdist_prodE => ->; rewrite mul0r.
 have Qba0 := dominatesEN PQ H0.
 have Q2a0 : Q1 a != 0.
-  apply: contra Qba0; rewrite /Q fdistXE fdist_prodE => /eqP ->; by rewrite -RmultE mul0R.
+  apply: contra Qba0; rewrite /Q fdistXE fdist_prodE => /eqP ->; by rewrite mul0r.
 rewrite -logM; last 2 first.
-  by apply/divR_gt0; apply/RltP; rewrite -fdist_gt0.
-  by apply/divR_gt0; by rewrite -Pr_jcPr_gt0 setX1 Pr_set1; apply/RltP; rewrite -fdist_gt0.
+  by apply/divr_gt0; rewrite -fdist_gt0.
+  by apply/divr_gt0; by rewrite -Pr_jcPr_gt0 setX1 Pr_set1; rewrite -fdist_gt0.
 congr (log _).
 rewrite /jcPr !setX1 !Pr_set1.
 rewrite !fdistXE !fdistX2 !fdist_prod1 !fdist_prodE /=.
-rewrite -/P1 -/Q1; field.
-split; first exact/eqP.
-split; first exact/eqP.
-apply/eqP.
-by apply: contra Qba0; rewrite /Qj fdistXE fdist_prodE /= => /eqP ->.
+rewrite -/P1 -/Q1.
+rewrite -(mulrA (Q1 a)) (mulrCA (Q1 a)) divff// mulr1.
+rewrite -[in X in _ = _ * X](mulrA (P1 a)) (mulrCA (P1 a)) divff// mulr1.
+rewrite -!mulrA; congr *%R.
+rewrite mulrCA; congr *%R.
+by rewrite invfM.
 Qed.
 
 End prop.
@@ -926,7 +916,7 @@ have -> : cond_entropy PY = \sum_(j < n.+1)
   else
     cond_entropy (fA j).
   have := chain_rule (fdistX PY).
-  rewrite fdistXI addRC -subR_eq fdistX1 -/Y => <-.
+  rewrite fdistXI addrC => /eqP; rewrite -subr_eq fdistX1 -/Y => /eqP <-.
   rewrite /joint_entropy.
   (* do-not-delete-me *)
   set YP : {fdist 'rV[A]_n.+2} := fdist_rV_of_prod (fdistX PY).
@@ -935,7 +925,7 @@ have -> : cond_entropy PY = \sum_(j < n.+1)
   rewrite [in LHS]big_ord_recl /=.
   rewrite (_ : `H (head_of_fdist_rV YP) = `H Y); last first.
     by rewrite /YP /head_of_fdist_rV (fdist_prod_of_rVK (fdistX PY)) fdistX1.
-  rewrite addRC addRK.
+  rewrite addrAC subrr add0r.
   apply eq_bigr => j _.
   case: ifPn => j0.
   - have {}j0 : j = ord0 by move: j0 => /eqP j0; exact/val_inj.
@@ -1098,9 +1088,9 @@ have -> : cond_entropy PY = \sum_(j < n.+1)
     congr (_ / _ * log (_ / _)).
     + by rewrite 2!fdist_sndE; apply eq_bigr => a' _; rewrite H2.
     + by rewrite 2!fdist_sndE; apply eq_bigr => a' _; rewrite H2.
-rewrite -addR_opp big_morph_oppR -big_split /=; apply eq_bigr => j _ /=.
+rewrite big_morph_oppr -big_split /=; apply eq_bigr => j _ /=.
 case: ifPn => j0.
-- rewrite mutual_infoE addR_opp; congr (`H _ - _).
+- rewrite mutual_infoE; congr (`H _ - _).
   rewrite /head_of_fdist_rV /fdist_fst /fdist_rV_of_prod.
   by rewrite /fdist_prod_nth !fdistmap_comp.
 - rewrite /cond_mutual_info /fA -/P; congr (_ - _).
@@ -1131,10 +1121,10 @@ Let QP := fdistX PQ.
 
 (* 2.95 *)
 Lemma information_cant_hurt : cond_entropy PQ <= `H P.
-Proof. by rewrite -subR_ge0 -mutual_infoE; exact: mutual_info_ge0. Qed.
+Proof. by rewrite -subr_ge0 -mutual_infoE; exact: mutual_info_ge0. Qed.
 
 Lemma condentropy_indep : PQ = P `x Q -> cond_entropy PQ = `H P.
-Proof. by move/mutual_info0P; rewrite mutual_infoE subR_eq0 => <-. Qed.
+Proof. by move/mutual_info0P; rewrite mutual_infoE => /eqP; rewrite subr_eq0 => /eqP <-. Qed.
 End prop.
 
 Section prop2.
@@ -1146,7 +1136,7 @@ Lemma mi_bound : PQR`1 = P `x Q (* P and Q independent *) ->
   mutual_info (fdist_proj13 PQR) +
   mutual_info (fdist_proj23 PQR) <= mutual_info PQR.
 Proof.
-move=> PQ; rewrite chain_rule_mutual_info leR_add2l /cond_mutual_info.
+move=> PQ; rewrite chain_rule_mutual_info lerD2l /cond_mutual_info.
 rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
   rewrite condentropy_indep; last first.
     rewrite fdist_proj13_fst fdistA1 fdistX1 fdistA21 -/Q.
@@ -1158,10 +1148,10 @@ rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
   by rewrite /fdist_proj13 fdistA21 fdistC12_fst fdistX1 fdistX2 fdistA21 -/Q.
 rewrite mutual_infoE.
 rewrite fdist_proj23_fst -/Q.
-rewrite -oppRB leR_oppl oppRB -!addR_opp leR_add2r.
+rewrite -[leLHS]opprB lerNl opprB ler_add2r.
 (* conditioning cannot increase entropy *)
 (* Q|R,P <= Q|R, lemma *)
-rewrite -subR_ge0.
+rewrite -subr_ge0.
 move: (cond_mutual_info_ge0 (fdistC12 PQR)); rewrite /cond_mutual_info.
 rewrite /fdist_proj13 fdistC12I -/(fdist_proj23 _).
 by rewrite cond_entropy_fdistA /fdistAC fdistC12I.
@@ -1177,20 +1167,19 @@ Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
 (* thm 2.6.6 TODO: with equality in case of independence *)
 Lemma independence_bound_on_entropy : `H P <= \sum_(i < n.+1) `H (fdist_nth P i).
 Proof.
-rewrite chain_rule_rV; apply leR_sumR => /= i _.
+rewrite chain_rule_rV; apply ler_sum => /= i _.
 case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
   rewrite head_of_fdist_rV_fdist_nth.
-  by apply/RleP; rewrite lexx.
-apply: leR_trans; first exact: information_cant_hurt.
+  by rewrite lexx.
+apply: le_trans; first exact: information_cant_hurt.
 rewrite fdistX1 fdist_take_nth.
-by apply/RleP; rewrite lexx.
+by rewrite lexx.
 Qed.
 
 End independence_bound_on_entropy.
 
 Section markov_chain.
-
 Variables (A B C : finType) (PQR : {fdist A * B * C}).
 Let P := PQR`1`1.
 Let Q := PQR`1`2.
@@ -1208,24 +1197,25 @@ Let PRQ := fdistAC PQR.
 Lemma markov_cond_mutual_info : markov_chain -> cond_mutual_info (PRQ : {fdist A * C * B}) = 0.
 Proof.
 rewrite /markov_chain => mc.
-rewrite cond_mutual_infoE (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 //= => x _.
-case/boolP : (PRQ x == 0) => [/eqP ->|H0]; first by rewrite mul0R.
-rewrite (_ : _ / _ = 1); first by rewrite /log Log_1 mulR0.
-rewrite eqR_divr_mulr ?mul1R; last first.
-  rewrite mulR_neq0'; apply/andP; split.
+rewrite cond_mutual_infoE (eq_bigr (fun=> 0)) ?big1// => x _.
+case/boolP : (PRQ x == 0) => [/eqP ->|H0]; first by rewrite mul0r.
+rewrite (_ : _ / _ = 1); first by rewrite log1 mulr0.
+rewrite eqr_divr_mulr ?mul1r; last first.
+  rewrite mulf_neq0//.
     (* TODO: lemma? *)
-    rewrite /jcPr divR_neq0' //.
+    rewrite /jcPr mulf_neq0 (* TODO: lemma divf_neq0 *) //.
       rewrite setX1 Pr_set1.
       case: x => [[x11 x12] x2] in H0 *.
       exact: fdist_proj13_dominN H0.
-    rewrite Pr_set1 fdist_proj13_snd.
+    rewrite invr_eq0 Pr_set1 fdist_proj13_snd.
     case: x => [x1 x2] in H0 *.
     exact: dom_by_fdist_sndN H0.
   (* TODO: lemma? *)
-  rewrite /jcPr divR_neq0' //.
+  rewrite /jcPr mulf_neq0 //.
     rewrite setX1 Pr_set1.
     case: x => [[x11 x12] x2] in H0 *.
     exact: fdist_proj23_dominN H0.
+  rewrite invr_eq0.
   rewrite Pr_set1 fdist_proj23_snd.
   case: x => [x1 x2] in H0 *.
   exact: dom_by_fdist_sndN H0.
@@ -1236,13 +1226,13 @@ transitivity (Pr PQ [set (x.1.1,x.2)] * \Pr_RQ[[set x.1.2]|[set x.2]] / Pr Q [se
   congr (_ / _).
   case: x H0 => [[a c] b] H0 /=.
   rewrite /PRQ [LHS]Pr_set1 fdistACE /= mc; congr (_ * _).
-  rewrite /jcPr {2}/QP fdistX2 -/P Pr_set1 mulRCA mulRV ?mulR1; last first.
+  rewrite /jcPr {2}/QP fdistX2 -/P Pr_set1 mulrCA mulfV ?mulr1; last first.
     apply dom_by_fdist_fstN with b.
     apply dom_by_fdist_fstN with c.
     by rewrite fdistACE in H0.
   by rewrite /QP Pr_fdistX setX1.
-rewrite {1}/Rdiv -mulRA mulRCA mulRC; congr (_ * _).
-  rewrite /jcPr fdist_proj13_snd -/Q {2}/PRQ fdistAC2 -/Q -/(Rdiv _ _); congr (_ / _).
+rewrite -mulrA mulrCA mulrC; congr (_ * _).
+  rewrite /jcPr fdist_proj13_snd -/Q {2}/PRQ fdistAC2 -/Q; congr (_ / _).
   by rewrite /PRQ /PQ setX1 fdist_proj13_AC.
 rewrite /jcPr fdist_proj23_snd; congr (_ / _).
 - by rewrite /RQ /PRQ /fdist_proj23 fdistA_AC_snd.
@@ -1256,23 +1246,22 @@ Lemma data_processing_inequality : markov_chain ->
 Proof.
 move=> H.
 have H1 : mutual_info (fdistA PQR) = mutual_info PR + cond_mutual_info PQR.
-  rewrite /cond_mutual_info !mutual_infoE addRA; congr (_ - _).
-  by rewrite -/PR subRK /PR fdist_proj13_fst.
+  rewrite /cond_mutual_info !mutual_infoE addrA; congr (_ - _).
+  by rewrite -/PR subrK /PR fdist_proj13_fst.
 have H2 : mutual_info (fdistA PQR) = mutual_info PQ + cond_mutual_info PRQ.
   transitivity (mutual_info (fdistA PRQ)).
     by rewrite !mutual_infoE fdistA_AC_fst cond_entropy_fdistA.
-  rewrite /cond_mutual_info !mutual_infoE addRA; congr (_ - _).
-  by rewrite fdistA1 {1}/PRQ fdist_proj13_AC -/PQ subRK /PQ fdistAC_fst_fst.
+  rewrite /cond_mutual_info !mutual_infoE addrA; congr (_ - _).
+  by rewrite fdistA1 {1}/PRQ fdist_proj13_AC -/PQ subrK /PQ fdistAC_fst_fst.
 have H3 : cond_mutual_info PRQ = 0 by rewrite markov_cond_mutual_info.
 have H4 : 0 <= cond_mutual_info PQR by exact: cond_mutual_info_ge0.
-move: H2; rewrite {}H3 addR0 => <-.
-by rewrite {}H1 addRC -leR_subl_addr subRR.
+move: H2; rewrite {}H3 addr0 => <-.
+by rewrite {}H1 addrC -lerBlDr subrr.
 Qed.
 
 End markov_chain.
 
 Section markov_chain_prop.
-
 Variables (A B C : finType) (PQR : {fdist A * B * C}).
 
 Lemma markov_chain_order : markov_chain PQR -> markov_chain (fdistC13 PQR).
@@ -1284,25 +1273,27 @@ rewrite fdistC13_fst_fst.
 rewrite (jBayes _ [set a] [set b]).
 rewrite fdistXI.
 rewrite fdistX1 fdistX2.
-rewrite (mulRC (_ a)) -mulRA.
-rewrite [in RHS]mulRCA -[in RHS]mulRA.
+rewrite (mulrC (_ a)) -[LHS]mulrA.
+rewrite [in RHS]mulrCA -[in RHS]mulrA.
 congr (_ * _).
   by rewrite fdistA_C13_snd.
 rewrite (jBayes _ [set c] [set b]).
 rewrite fdistXI.
-rewrite [in LHS]mulRCA -[in LHS]mulRA.
-rewrite [in RHS](mulRC (_ c)) -[in RHS](mulRA _ (_ c)).
-rewrite [in RHS]mulRCA.
+rewrite [in LHS]mulrCA -[in LHS]mulrA.
+rewrite [in RHS](mulrCA (_ c)).
+rewrite -[in RHS]mulrA [in RHS]mulrCA.
 congr (_ * _).
   congr (\Pr_ _ [_ | _]).
   by rewrite fdistC13_fst fdistXI.
 rewrite !Pr_set1.
-rewrite [in RHS]mulRCA.
+rewrite [in LHS]mulrCA.
+rewrite [in RHS]mulrCA.
 congr (_ * _).
-  by rewrite fdistX1 fdistA22.
-congr (_ * / _).
   congr (_ a).
   by rewrite fdistA22 fdistC13_snd.
+congr (_ / _).
+  by rewrite fdistX1 fdistA22.
+congr (_ a).
 by rewrite fdistX2 fdistA21 fdistA_C13_snd fdistX1.
 Qed.
 
@@ -1317,8 +1308,7 @@ Lemma information_cant_hurt_cond (A : finType) (n' : nat) (n := n'.+1 : nat)
   cond_entropy (fdist_prod_of_rV P) <=
   cond_entropy (fdist_prod_of_rV (fdist_take P (lift ord0 i))).
 Proof.
-apply/RleP.
-rewrite -subR_ge0.
+rewrite -subr_ge0.
 set Q : {fdist A * 'rV[A]_i * 'rV[A]_(n' - i)} := fdist_take_drop P i.
 have H1 : fdist_proj13 (fdistAC Q) = fdist_prod_of_rV (fdist_take P (lift ord0 i)).
   rewrite /fdist_proj13 /fdistAC /fdist_prod_of_rV /fdist_take /fdist_snd /fdistA.
@@ -1467,19 +1457,19 @@ Variable P : {fdist 'rV[A]_n}.
 
 Lemma han : n.-1%:R * `H P <= \sum_(i < n) `H (fdist_col' P i).
 Proof.
-rewrite -subn1 natrB // -RmultE mulRBl mul1R.
-apply/RleP; rewrite leR_subl_addr {2}(chain_rule_rV P).
+rewrite -subn1 natrB // mulrBl mul1r.
+rewrite ler_subl_addr {2}(chain_rule_rV P).
 rewrite -big_split /= -{1}(card_ord n) -sum1_card.
-rewrite -INRE big_morph_natRD big_distrl /=.
-apply leR_sumR => i _; rewrite mul1R.
+rewrite natr_sum big_distrl /=.
+apply ler_sum => i _; rewrite mul1r.
 case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
   rewrite -tail_of_fdist_rV_fdist_col' /tail_of_fdist_rV /head_of_fdist_rV.
   rewrite -{1}(fdist_rV_of_prodK P) entropy_fdist_rV_of_prod.
   move: (chain_rule (fdist_prod_of_rV P)); rewrite /joint_entropy => ->.
-  by rewrite [in X in (_ <= X)%R]addRC leR_add2l -fdistX1; exact: information_cant_hurt.
-rewrite (chain_rule_multivar _ i0) leR_add2l.
-by apply/RleP; exact/han_helper.
+  by rewrite [in X in (_ <= X)%R]addrC lerD2l -fdistX1; exact: information_cant_hurt.
+rewrite (chain_rule_multivar _ i0) ler_add2l.
+exact/han_helper.
 Qed.
 
 End Han_inequality.
