@@ -38,7 +38,7 @@ Local Notation "f × g" :=
 
 (* Information-Theoretically Secure Number Protocol*)
 (* Lemma 3.1 *)
-Lemma inde_rv_comp : P|= X _|_ Y -> P|= (f `o X) _|_ (g `o Y).
+Lemma inde_rv_comp (UB' TB' : finType) (g' : TB' -> UB')(Y' : {RV P -> TB'}): P|= X _|_ Y' -> P|= (f `o X) _|_ (g' `o Y').
 Proof.
 move/inde_rv_events'.
 rewrite /inde_rv_ev.
@@ -48,28 +48,17 @@ rewrite comp_RV2_ACA /=.
 rewrite pr_in_comp'.
 rewrite -setX1.
 rewrite preimsetX.
-rewrite !/(_ @^-1: _).
 rewrite H. (* second to third line in the pencil-paper proof *)
 rewrite -!pr_in_comp'.
 by rewrite !pr_eq_set1.
 Qed.
 
-Lemma inde_RV2_comp : P|= Z _|_ [% X, Y] -> P|= (h `o Z) _|_ [% (f `o X), (g `o Y)].
+Lemma inde_RV2_comp : P|= X _|_ [% Y, Z] -> P|= (f `o X) _|_ [% (g `o Y), (h `o Z)].
 Proof.
-move/inde_rv_events'.
-rewrite /inde_rv_ev.
-move=> H i [j1 j2].
-rewrite -[LHS]pr_eq_set1.
-rewrite comp_RV3_ACA /=.
-rewrite pr_in_comp'.
-rewrite -!setX1.
-rewrite preimsetX2.
-rewrite !/(_ @^-1: _).
-rewrite H.
-rewrite -!pr_in_comp'.
-rewrite !pr_eq_set1.
-congr (_ * _).
-Admitted.
+pose gh := (fun '(y, z) => (g y, h z)).    
+have ->: [% g `o Y, h `o Z] = gh `o [%Y, Z] by [].
+apply inde_rv_comp.
+Qed.
 
 (* Lemma 3.2 *)
 Lemma RV2_inde_rv_snd : P |= [% X, Y] _|_ Z -> P |= Y _|_ Z.

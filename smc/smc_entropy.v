@@ -226,10 +226,10 @@ by rewrite !cpr_eq_set1.
 Qed.
 
 Hypothesis Hv1v2 : forall w v1 v2, `Pr[[%V1, V2] = (v1, v2)] != 0 ->
-  `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ].
+  `Pr[ W = w | [%V1, V2] = (v1, v2) ] = `Pr[ W = w | V1 = v1 ].
 
 Lemma Pr_neq0_cond_removal : forall w v1 v2, `Pr[V2 = v2] != 0 ->
-  `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ].
+  `Pr[ W = w | [%V1, V2] = (v1, v2) ] = `Pr[ W = w | V1 = v1 ].
 Proof.
 move => w v1 v2 Hv2.
 have [Hv1|Hv1] := eqVneq `Pr[V1 = v1] 0.
@@ -253,12 +253,29 @@ have [Hv1 _|Hv1] := eqVneq `Pr[V1 = v1] 0.
   rewrite [in RHS]pr_eq_pairC [in LHS]pr_eq_pairC -pr_eq_pairA.
   by rewrite !(pr_eq_domin_RV2 _ _ Hv1) mul0r.
 move/(f_equal (fun x => x * (`Pr[V1 = v1] * `Pr[V2 = v2]))).
-rewrite -[in RHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hv1.
-by rewrite mulrA -[X in X * _]mulrA mulVf // !mulr1.
+rewrite -[in LHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hv1.
+rewrite mulrA -(mulrA _ _^-1). (* Coq identify the A / B is ^-1.*)
+by rewrite mulVf // !mulr1.
 Qed.
 
-Lemma cpr_cond_entropy : `H(W | [%V1, V2]) = `H(W | V1).
+End pr_entropy.
+
+Section cpr_cond_entropy_proof.
+
+Variables (T TW TV1 : finType)(TV2 : finZmodType)(P : R.-fdist T).
+Variables (W : {RV (P) -> (TW)})(V1 : {RV (P) -> (TV1)})(V2 : {RV (P) -> (TV2)}).
+
+Lemma cpr_cond_entropy (n: nat)(card_TV2 : #|TV2| = n.+1):
+  `p_ V2 = fdist_uniform card_TV2 ->
+  P |= V1 _|_ V2 ->
+  (forall (w : TW) (v1 : TV1) (v2 : TV2),
+   `Pr[ [% V1, V2] = (v1, v2) ] != 0 ->
+       `Pr[ W = w | [% V1, V2] = (v1, v2) ] =
+       `Pr[ W = w | V1 = v1 ]
+  ) ->
+  `H( W | [% V1, V2]) = `H( W | V1).
 Proof.
+move => Hunif Hinde Hremoval.
 rewrite /cond_entropy /=.
 under eq_bigl do rewrite inE /=.
 set f : TV1 -> TV2 -> R := fun v1 v2 =>
@@ -267,22 +284,27 @@ transitivity (\sum_a f a.1 a.2).
   apply eq_bigr => a _.
   rewrite /f {1 2}(surjective_pairing a) /=.
   have [Ha|Ha] := eqVneq ((`p_ [% W, V1])`2 a.1 * `p_V2 a.2) 0.
-    by rewrite Ha snd_extra_indep Ha !coqRE !mul0r.
-  rewrite snd_extra_indep -[in LHS]cond_entropy1_RVE; last first.
+    by rewrite Ha snd_extra_indep // Ha !coqRE !mul0r.
+  rewrite snd_extra_indep // -[in LHS]cond_entropy1_RVE; last first.
     by rewrite -fdistX2 fdistX_RV2 snd_extra_indep.
   have [Hv2|Hv2] := eqVneq `Pr[V2 = a.2] 0.
     rewrite -pr_eqE' in Ha.
     by rewrite Hv2 mulr0 eqxx in Ha.
-  have H' := fun w => Pr_neq0_cond_removal w a.1 Hv2.
-  rewrite -cpr_cond_entropy1_RV // cond_entropy1_RVE ?coqRE //.
+  have H' := fun w => Pr_neq0_cond_removal Hinde Hremoval w a.1 Hv2.
+  rewrite -(cpr_cond_entropy1_RV Hunif Hinde) //.
+  rewrite cond_entropy1_RVE ?coqRE //.
   by apply: contra Ha; rewrite mulf_eq0 -fdistX1 fdistX_RV2 => ->.
 rewrite -pair_bigA /=.
 apply: eq_bigr => v1 _.
 by rewrite /f -big_distrl -big_distrr /= FDist.f1 mulr1 coqRE.
 Qed.
-End pr_entropy.
+
+
+End cpr_cond_entropy_proof.
 
 Section lemma_3_8_prep.
+  
+About cpr_cond_entropy.
   
 Variables (T TX TY TZ: finType).
 Variable P : R.-fdist T.
@@ -580,20 +602,13 @@ Hypothesis card_TX : #|TX| = m.+1.
 Variable Z_O_indep : inde_rv Z O. 
 Variable pZ_unif : `p_ Z = fdist_uniform card_TX. (* Assumption in the paper. *)
 
-Lemma ZO_indep_comp_eqn3:
-  P |= Z _|_ O -> P |= Z _|_ [%fm `o O, f2 `o O].
-Proof.
-Admitted.
-
 Let Z_OO_indep:
   P |= Z _|_ [% O, O].
 Proof.
-move => H oo.
-rewrite /inde_rv.
-Search RV2.
-rewrite !pr_eqE'.
-rewrite coqRE.
-Abort.
+have ->: [%O, O] = (fun o => (o, o)) `o O by [].
+have ->: Z = idfun `o Z by [].
+exact: inde_rv_comp.
+Qed.
 
 Let Z_WmW2_indep:
   P |= Z _|_ [%Wm, W2].
@@ -601,9 +616,7 @@ Proof.
 rewrite /Wm /W2.
 rewrite (_:Z = idfun `o Z) //.
 apply: inde_RV2_comp.
-Undo 2.
-apply: ZO_indep_comp_eqn3.
-by exact Z_O_indep.
+exact: Z_OO_indep.
 Qed.
 
 Let Z_W2_indep:
@@ -702,10 +715,13 @@ Qed.
 
 Variable Z_O_indep : inde_rv Z O. 
 
-Lemma ZO_indep_comp_eqn4:
-  P |= Z _|_ O -> P |= Z _|_ [%fm `o O, f2 `o O].
+Let Z_OO_indep:
+  P |= Z _|_ [% O, O].
 Proof.
-Admitted.
+have ->: [%O, O] = (fun o => (o, o)) `o O by [].
+have ->: Z = idfun `o Z by [].
+exact: inde_rv_comp.
+Qed.
 
 Let Z_WmW2_indep:
   P |= Z _|_ [%Wm, W2].
@@ -713,9 +729,7 @@ Proof.
 rewrite /Wm /W2.
 rewrite (_:Z = idfun `o Z) //.
 apply: inde_RV2_comp.
-Undo 2.
-apply: ZO_indep_comp_eqn4.
-by exact Z_O_indep.
+exact: Z_OO_indep.
 Qed.
 
 (* Means we at least have (0,0...0) and (1,1,..1) of 'rV[TX]_n,
@@ -760,11 +774,11 @@ Lemma eqn4_proof:
   `H(x2|[%x1, s1, r1, x2']) = `H(x2|[%x1, s1, r1]).
 Proof.
 rewrite -eq_W1_RV -eq_W2_RV -eq_WmZ_RV eq_Wm_RV.
-have Ha := @cpr_cond_entropy _ _ _ 'rV[TX]_n P m.+1 W1 W2 WmZ card_Z pWmZ_unif W2_WmZ_indep _.
+have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep _.
 apply Ha => w w2 wmz Hneq0.
 simpl in *.
 rewrite pr_eq_pairC in Hneq0.
-by have :=(@mc_removal_pr _ _ _ _ 'rV[TX]_n P m.+1 O Z f1 f2 fm Z_O_indep card_Z pZ_unif w w2 wmz Hneq0).
+by have := mc_removal_pr f1 Z_O_indep pZ_unif w Hneq0.
 Qed.
   
 End eqn4_proof.
@@ -780,7 +794,7 @@ Hypothesis card_TX : #|TX| = m.+1.
 Hypothesis card_'rVTX_n : #|'rV[TX]_n| = m.+2.
 Hypothesis neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
 Hypothesis py2_unif : `p_ y2 = fdist_uniform card_TX.
-Hypothesis ps2_unif : `p_ s2 = fdist_uniform card_.
+Hypothesis ps2_unif : `p_ s2 = fdist_uniform card_'rVTX_n.
 
 Lemma eqn_4_1:
   `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
