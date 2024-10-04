@@ -414,3 +414,4 @@ rewrite big_cons LogM//; last first.
   by apply/RltP/prodr_gt0 => a _; exact/RltP.
 by rewrite [RHS]big_cons oppRD; congr (_ + _)%coqR.
 Qed.
+

@@ -115,37 +115,45 @@ End Log.
 Section Exp.
 Context {R : realType}.
 
-Definition Exp (n : nat) (x : R) := expR (x * ln n%:R).
+(* TODO: rm *)
+Definition Exp (n : R) (x : R) := n `^ x.
 
-Lemma pow_Exp (x : nat) n : (0 < x)%N -> x%:R ^+ n = Exp x n%:R.
-Proof. by move=> x0; rewrite /Exp expRM_natl lnK// posrE ltr0n. Qed.
+Lemma pow_Exp (x : R) n : (0 <= x) -> x ^+ n = Exp x n%:R.
+Proof. by move=> x0; rewrite /Exp powR_mulrn. Qed.
 
-Lemma LogK n x : (1 < n)%N -> 0 < x -> Exp n (Log n x) = x.
+Lemma LogK n x : (1 < n)%N -> 0 < x -> Exp n%:R (Log n x) = x.
 Proof.
 move=> n1 x0.
-rewrite /Log /Exp prednK// 1?ltnW// -mulrA mulVf// ?mulr1 ?lnK//.
-by rewrite gt_eqF// -ln1 ltr_ln// ?posrE// ?ltr1n// ltr0n ltnW.
+rewrite /Exp /Log prednK// 1?ltnW//.
+rewrite powRrM {1}/powR ifF; last first.
+  by apply/negbTE; rewrite powR_eq0 negb_and pnatr_eq0 gt_eqF// ltEnat/= ltnW.
+rewrite ln_powR mulrCA mulVf//.
+  by rewrite mulr1 lnK ?posrE.
+by rewrite gt_eqF// -ln1 ltr_ln ?posrE// ?ltr1n// ltr0n ltnW.
 Qed.
 
 Lemma Exp_oppr n x : Exp n (- x) = (Exp n x)^-1.
-Proof. by rewrite /Exp mulNr expRN. Qed.
+Proof. by rewrite /Exp -powRN. Qed.
 
-Lemma Exp_gt0 n x : 0 < Exp n x. Proof. by rewrite /Exp expR_gt0. Qed.
+Lemma Exp_gt0 n x : 0 < n -> 0 < Exp n x. Proof. by move=> ?; rewrite /Exp powR_gt0. Qed.
 
-Lemma Exp_ge0 n x : 0 <= Exp n x. Proof. exact/ltW/Exp_gt0. Qed.
+Lemma Exp_ge0 n x : 0 <= Exp n x. Proof. by rewrite /Exp powR_ge0. Qed.
 
-Lemma Exp_increasing n x y : (1 < n)%N -> x < y -> Exp n x < Exp n y.
-Proof. by move=> ? ?; rewrite ltr_expR// ltr_pM2r// ln_gt0// ltr1n. Qed.
-
-Lemma Exp_le_increasing n x y : (1 < n)%N -> x <= y -> Exp n x <= Exp n y.
+Lemma Exp_increasing n x y : 1 < n -> x < y -> Exp n x < Exp n y.
 Proof.
-move=> n1; rewrite /Exp le_eqVlt => /predU1P[->//|].
-by move/Exp_increasing => x_y; exact/ltW/x_y.
+move=> n1 xy; rewrite /Exp /powR ifF; last first.
+  by apply/negbTE; rewrite gt_eqF// (lt_trans _ n1).
+rewrite ifF//; last first.
+  by apply/negbTE; rewrite gt_eqF// (lt_trans _ n1).
+by rewrite ltr_expR// ltr_pM2r// ln_gt0// ltr1n.
+Qed.
+
+Lemma Exp_le_increasing n x y : 1 < n -> x <= y -> Exp n x <= Exp n y.
+Proof.
+by move=> n1 xy; rewrite /Exp ler_powR// ltW.
 Qed.
 
 End Exp.
-
-Hint Extern 0 (0 < Exp _ _) => solve [exact/Exp_gt0] : core.
 
 Hint Extern 0 (0 <= Exp _ _) => solve [exact/Exp_ge0] : core.
 
@@ -186,6 +194,18 @@ Lemma log_id_cmp x : 0 < x -> log x <= (x - 1) * log (expR 1).
 Proof.
 move=> x0; rewrite logexp1E ler_wpM2r// ?invr_ge0//= ?(ltW (@ln2_gt0 _))//.
 exact/ln_id_cmp.
+Qed.
+
+Lemma log_powR (a x : R) : log (a `^ x) = x * log a.
+Proof.
+by rewrite /log /Log ln_powR// mulrA.
+Qed.
+
+Lemma log_increasing (a b : R) : 0 < a -> a < b -> log a < log b.
+Proof.
+move=> Ha a_b.
+rewrite /log /Log prednK// ltr_pmul2r ?invr_gt0 ?ln2_gt0//.
+by rewrite ltr_ln ?posrE// (lt_trans _ a_b).
 Qed.
 
 End log.
