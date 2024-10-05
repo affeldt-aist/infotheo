@@ -262,40 +262,40 @@ End pr_entropy.
 
 Section cpr_cond_entropy_proof.
 
-Variables (T TW TV1 : finType)(TV2 : finZmodType)(P : R.-fdist T).
-Variables (W : {RV (P) -> (TW)})(V1 : {RV (P) -> (TV1)})(V2 : {RV (P) -> (TV2)}).
+Variables (T TY1 TY2 : finType)(TY3 : finZmodType)(P : R.-fdist T).
+Variables (Y1 : {RV (P) -> (TY1)})(Y2 : {RV (P) -> (TY2)})(Y3 : {RV (P) -> (TY3)}).
 
-Lemma cpr_cond_entropy (n: nat)(card_TV2 : #|TV2| = n.+1):
-  `p_ V2 = fdist_uniform card_TV2 ->
-  P |= V1 _|_ V2 ->
-  (forall (w : TW) (v1 : TV1) (v2 : TV2),
-   `Pr[ [% V1, V2] = (v1, v2) ] != 0 ->
-       `Pr[ W = w | [% V1, V2] = (v1, v2) ] =
-       `Pr[ W = w | V1 = v1 ]
+Lemma cpr_cond_entropy (n: nat)(card_TY3 : #|TY3| = n.+1):
+  `p_ Y3 = fdist_uniform card_TY3 ->
+  P |= Y2 _|_ Y3 ->
+  (forall (y1 : TY1) (y2 : TY2) (y3 : TY3),
+   `Pr[ [% Y2, Y3] = (y2, y3) ] != 0 ->
+       `Pr[ Y1 = y1 | [% Y2, Y3] = (y2, y3) ] =
+       `Pr[ Y1 = y1 | Y2 = y2 ]
   ) ->
-  `H( W | [% V1, V2]) = `H( W | V1).
+  `H( Y1 | [% Y2, Y3]) = `H( Y1 | Y2).
 Proof.
 move => Hunif Hinde Hremoval.
 rewrite /cond_entropy /=.
 under eq_bigl do rewrite inE /=.
-set f : TV1 -> TV2 -> R := fun v1 v2 =>
-  (`p_[% W, V1])`2 v1 * `p_V2 v2 * cond_entropy1 `p_ [% W, V1] v1.
+set f : TY2 -> TY3 -> R := fun y2 y3 =>
+  (`p_[% Y1, Y2])`2 y2 * `p_Y3 y3 * cond_entropy1 `p_ [% Y1, Y2] y2.
 transitivity (\sum_a f a.1 a.2).
   apply eq_bigr => a _.
   rewrite /f {1 2}(surjective_pairing a) /=.
-  have [Ha|Ha] := eqVneq ((`p_ [% W, V1])`2 a.1 * `p_V2 a.2) 0.
+  have [Ha|Ha] := eqVneq ((`p_ [% Y1, Y2])`2 a.1 * `p_Y3 a.2) 0.
     by rewrite Ha snd_extra_indep // Ha !coqRE !mul0r.
   rewrite snd_extra_indep // -[in LHS]cond_entropy1_RVE; last first.
     by rewrite -fdistX2 fdistX_RV2 snd_extra_indep.
-  have [Hv2|Hv2] := eqVneq `Pr[V2 = a.2] 0.
+  have [Hy3|Hy3] := eqVneq `Pr[Y3 = a.2] 0.
     rewrite -pr_eqE' in Ha.
-    by rewrite Hv2 mulr0 eqxx in Ha.
-  have H' := fun w => Pr_neq0_cond_removal Hinde Hremoval w a.1 Hv2.
+    by rewrite Hy3 mulr0 eqxx in Ha.
+  have H' := fun w => Pr_neq0_cond_removal Hinde Hremoval w a.1 Hy3.
   rewrite -(cpr_cond_entropy1_RV Hunif Hinde) //.
   rewrite cond_entropy1_RVE ?coqRE //.
   by apply: contra Ha; rewrite mulf_eq0 -fdistX1 fdistX_RV2 => ->.
 rewrite -pair_bigA /=.
-apply: eq_bigr => v1 _.
+apply: eq_bigr => y2 _.
 by rewrite /f -big_distrl -big_distrr /= FDist.f1 mulr1 coqRE.
 Qed.
 
@@ -303,8 +303,6 @@ Qed.
 End cpr_cond_entropy_proof.
 
 Section lemma_3_8_prep.
-  
-About cpr_cond_entropy.
   
 Variables (T TX TY TZ: finType).
 Variable P : R.-fdist T.

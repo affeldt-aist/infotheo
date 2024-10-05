@@ -385,10 +385,12 @@ Hypothesis card_TZ : #|TZ| = n.+1.
 Variable pZ_unif : `p_ Z = fdist_uniform card_TZ.
 
 (* Theorem 3.7:  masked_condition_removal *)
-Theorem mc_removal_pr y1 y2 ymz: `Pr[ [% Ym `+ Z, Y2] = (ymz, y2) ] != 0 ->
+Theorem mc_removal_pr y1 y2 ymz:
+  `Pr[ [% Y2, Ym `+ Z] = (y2, ymz) ] != 0 ->
   `Pr[Y1 = y1|[%Y2, YmZ] = (y2, ymz)] = `Pr[Y1 = y1 | Y2 = y2].
 Proof.
 have H:= (@lemma_3_6 _ _ _ TZ _ n ymz y1 y2 Y2 Y1 Ym Z card_TZ).
+rewrite pr_eq_pairC in H.
 apply H.
 apply: pZ_unif.
 rewrite (_:[%_ , _] = Y) //.
