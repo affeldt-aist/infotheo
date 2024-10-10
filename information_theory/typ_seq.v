@@ -157,14 +157,9 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
         have {}H1 : 0 < (P `^ n.+1)%fdist i by rewrite lt0r H1/=.
         rewrite /= H1/=.
         move: LHS; rewrite -ltNge => /log_increasing => /(_ H1).
-        rewrite log_powR mulNr log2 mulr1.
- mulN1r. mulrC. mulrN -mulNr -ltr_pdivr_mulr.
- 
-
-; last exact/ltR0n.
-        rewrite /Rdiv mulRC ltR_oppr => /RltP; rewrite -ltrBrDl => LHS.
-        rewrite div1r// mulNr -RinvE ger0_norm// -INRE//.
-        by move/RltP : LHS; move/(ltR_trans He)/ltRW/RleP.
+        rewrite log_powR mulNr log2 mulr1 -mulrN -ltr_pdivrMl// opprD.
+        rewrite ltrBrDl -ltrBrDr addrC => /lt_le_trans; apply.
+        by rewrite mulNr ler_norm.
       + move: LHS; rewrite leNgt negbK => LHS.
         apply/orP; right; apply/andP; split.
           exact/(lt_trans _ LHS)/RltP/exp2_gt0.
