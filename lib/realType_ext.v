@@ -63,7 +63,7 @@ Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulr_gt0. Qed.
 (* PR to mathcomp_extra.v? *)
 Section onem.
 Local Open Scope ring_scope.
-Variable R : realType.
+Variable R : realFieldType.
 Implicit Types r s : R.
 
 Lemma onem_le r s : (r <= s) = (`1-s <= `1-r).
@@ -105,14 +105,38 @@ Proof. by rewrite /onem opprB addrA. Qed.
 End onem.
 Notation "p '.~'" := (onem p).
 
+
+Section about_the_pow_function.
+Local Open Scope ring_scope.
+Context {R : realFieldType}.
+
+Lemma x_x2_eq (q : R) : q * (1 - q) = 4^-1 - 4^-1 * (2 * q - 1) ^+ 2.
+Proof. by field. Qed.
+
+Lemma x_x2_max (q : R) : q * (1 - q) <= 4^-1.
+Proof.
+rewrite x_x2_eq.
+have : forall a b : R, 0 <= b -> a - b <= a. move=>  *; lra.
+apply; apply mulr_ge0; [lra | exact: exprn_even_ge0].
+Qed.
+
+End about_the_pow_function.
+
+
+Section dominance_defs.
+
 Definition dominates {R : realType} {A : Type} (Q P : A -> R) :=
   locked (forall a, Q a = 0 -> P a = 0)%R.
 
-Notation "P '`<<' Q" := (dominates Q P).
+Local Notation "P '`<<' Q" := (dominates Q P).
 
 Lemma dominatesP {R : realType} A (Q P : A -> R) :
   P `<< Q <-> forall a, Q a = 0%R -> P a = 0%R.
 Proof. by rewrite /dominates; unlock. Qed.
+
+End dominance_defs.
+
+Notation "P '`<<' Q" := (dominates Q P).
 
 Section dominance.
 Context {R : realType}.
