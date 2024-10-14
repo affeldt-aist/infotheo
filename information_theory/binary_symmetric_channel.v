@@ -116,69 +116,12 @@ by rewrite opprB opprK addrC.
 Qed.
 
 Lemma IPW : `I(P, BSC.c card_A p_01) = `H(P `o BSC.c card_A p_01) - H2 p.
-Proof.
-rewrite /mutual_info_chan addrC.
-set a := `H(_ `o _).
-transitivity (a + (`H P - `H(P , BSC.c card_A p_01))); first by lra.
-by rewrite HP_HPW.
-Qed.
+Proof. by rewrite /mutual_info_chan addrAC HP_HPW addrC. Qed.
 
 Lemma H_out_max : `H(P `o BSC.c card_A p_01) <= 1.
 Proof.
-rewrite {1}/entropy /= Set2sumE /= !fdist_outE 2!Set2sumE /=.
-set a := Set2.a _. set b := Set2.b _.
-rewrite /BSC.c !fdist_binaryxx !fdist_binaryE /= !(eq_sym _ a).
-rewrite (negbTE (Set2.a_neq_b card_A)).
-move: (FDist.f1 P); rewrite Set2sumE /= -/a -/b => P1.
-have -> : p * P a + (1 - p) * P b = 1 - ((1 - p) * P a + p * P b).
-  rewrite -{2}P1.
-  set Pa := P a.
-  set Pb := P b.
-  lra.
-case/andP: p_01' => Hp1 Hp2.
-have H01 : 0 < ((1 - p) * P a + p * P b) < 1.
-  move: (FDist.ge0 P a) => H1.
-  move: (FDist.le1 P b) => H4.
-  move: (FDist.le1 P a) => H3.
-  apply/andP; split.
-    move: H1; rewrite le_eqVlt => /predU1P[H1|H1]; last first.
-    - apply: ltr_pwDl.
-        apply: mulr_gt0 => //.
-        by rewrite subr_gt0.
-      apply: mulr_ge0 => //.
-      exact: ltW.
-    - by rewrite -H1 mulr0 add0r (_ : P b = 1) ?mulr1 // -P1 -H1 add0r.
-  rewrite -{2}P1.
-  case: (Req_EM_T (P a) 0) => Hi.
-    rewrite Hi mulr0 !add0r.
-    rewrite gtr_pMl//.
-    rewrite Hi add0r in P1.
-    by rewrite P1.
-  case: (Req_EM_T (P b) 0) => Hj.
-    rewrite Hj addr0 in P1.
-    rewrite Hj mulr0 !addr0 P1 mulr1.
-    by rewrite ltrBlDr ltrDl.
-  move: H1; rewrite le_eqVlt => /predU1P[|] H1; last first.
-  - apply ler_ltD.
-    + rewrite -{2}(mul1r (P a)); apply ler_wpM2r => //.
-      by rewrite lerBlDr ler_addl; exact: ltW.
-    + rewrite -{2}(mul1r (P b)) ltr_pM2r //.
-      by rewrite lt0r; apply/andP; split; [exact/eqP|by []].
-  - rewrite -H1 mulr0 add0r add0r.
-    have -> : P b = 1 by rewrite -P1 -H1 add0r.
-    by rewrite mulr1.
-rewrite (_ : forall a b, - (a + b) = - a - b); last by move=> *; lra.
-rewrite -mulNr.
-set q := (1 - p) * P a + p * P b.
-have H01' : 0 <= (1 - p) * P a + p * P b <= 1.
-  by case/andP : H01 => /ltW -> /ltW ->.
-apply: (@le_trans _ _ (H2 q)); last first.
-  rewrite (entropy_H2 card_A (@Prob.mk _ q H01'))//.
-  rewrite (le_trans (entropy_max _))// card_A.
-  
-
-exact: H2_max.
-by rewrite /H2 !mulNR; apply Req_le; field.
+have-> : 1 = log#|A|%:R :> Rdefinitions.R by rewrite card_A log2.
+exact:entropy_max.
 Qed.
 
 Lemma bsc_out_H_half' : 0 < 1%:R / 2%:R < 1.
