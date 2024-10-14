@@ -17,8 +17,12 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Lemma addb_tri_ine a b c : a (+) b <= (a (+) c) + (c (+) b).
+Section ssrbool_ext.
+
+Lemma addb_tri_ine (a b c : bool) : a (+) b <= (a (+) c) + (c (+) b).
 Proof. move: a b c; by case; case; case. Qed.
+
+End ssrbool_ext.
 
 Section ssrnat_ext.
 
@@ -102,25 +106,6 @@ Proof. by rewrite -(nat_of_binK (BinNat.Npos k)). Qed.
 
 End ssrnat_ext.
 
-Definition swap {A B : Type} (ab : A * B) := (ab.2, ab.1).
-
-Lemma injective_swap (A B : finType) (E : {set A * B}) : {in E &, injective swap}.
-Proof. by case=> a b [a0 b0] /= _ _ [-> ->]. Qed.
-
-Lemma set_swap (A B : finType) (P : B -> A -> bool) :
-  [set h : {: B * A} | P h.1 h.2 ] = swap @: [set h | P h.2 h.1].
-Proof.
-apply/setP => /= -[b a]; rewrite !inE /=; apply/idP/imsetP => [H|].
-- by exists (a, b) => //=; rewrite inE.
-- by case=> -[a0 b0]; rewrite inE /= => ? [-> ->].
-Qed.
-
-Lemma setT_bool : [set: bool] = [set true; false].
-Proof.
-apply/eqP; rewrite eqEsubset; apply/andP; split => //.
-by apply/subsetP => x; rewrite !inE; case: x.
-Qed.
-
 Section Flatten.
 Variables (A B : eqType) (f : A -> seq B).
 
@@ -176,10 +161,6 @@ by apply IH => x Hx; apply Hl; rewrite in_cons Hx orbT.
 Qed.
 
 End Flatten.
-
-Lemma eq_in_map_seqs {A B : eqType} (f1 f2 : A -> B) l1 l2 :
-  l1 = l2 -> {in l1, f1 =1 f2} -> map f1 l1 = map f2 l2.
-Proof. by move=> <-; apply eq_in_map. Qed.
 
 Section seq_ext.
 
@@ -297,6 +278,10 @@ Qed.
 End Pad.
 
 Section seq_eqType_ext.
+
+Lemma eq_in_map_seqs {A B : eqType} (f1 f2 : A -> B) l1 l2 :
+  l1 = l2 -> {in l1, f1 =1 f2} -> map f1 l1 = map f2 l2.
+Proof. by move=> <-; apply eq_in_map. Qed.
 
 Variables A B : eqType.
 
@@ -454,6 +439,8 @@ Qed.
 
 End seq_eqType_ext.
 
+Section seq_bool.
+
 Lemma addb_nseq b : forall r v, size v = r ->
   [seq x.1 (+) x.2 | x <- zip (nseq r b) v] = map (pred1 (negb b)) v.
 Proof.
@@ -482,37 +469,37 @@ elim => [[] // [] //| n IH [|ha ta] // [|hb tb] //= f [Ha] [Hb]].
 by rewrite /addb_seq /= -IH.
 Qed.
 
-Lemma ord1 (i : 'I_1) : i = ord0. Proof. case: i => [[]] // ?; exact/eqP. Qed.
+End seq_bool.
 
-Lemma ord2 (i : 'I_2) : (i == ord0) || (i == Ordinal (erefl (1 < 2))).
-Proof. by case: i => -[|[|]]. Qed.
-
-Lemma ord3 (i : 'I_3) :
-  [|| i == ord0, i == Ordinal (erefl (1 < 3)) | i == Ordinal (erefl (2 < 3))].
-Proof. by case: i => -[|[|[|]]]. Qed.
-
-Lemma enum_inord (m : nat) : enum 'I_m.+1 = [seq inord i | i <- iota 0 m.+1].
-Proof.
-rewrite -val_enum_ord -map_comp.
-transitivity ([seq i | i <- enum 'I_m.+1]); first by rewrite map_id.
-apply eq_map => i /=; by rewrite inord_val.
-Qed.
-
-Lemma split_lshift n m (i : 'I_n) : fintype.split (lshift m i) = inl i.
-Proof. by rewrite -/(unsplit (inl i)) unsplitK. Qed.
-
-Lemma split_rshift n m (i : 'I_m) : fintype.split (rshift n i) = inr i.
-Proof. by rewrite -/(unsplit (inr i)) unsplitK. Qed.
+Section finfun_ext.
 
 Lemma inj_card (A B : finType) (f : {ffun A -> B}) :
   injective f -> #| A | <= #| B |.
 Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
 
-Lemma size_index_enum (T : finType) : size (index_enum T) = #|T|.
-Proof. by rewrite cardT enumT. Qed.
+End finfun_ext.
 
 Section finset_ext.
 Implicit Types A B : finType.
+
+Definition swap {A B : Type} (ab : A * B) := (ab.2, ab.1).
+
+Lemma injective_swap (A B : finType) (E : {set A * B}) : {in E &, injective swap}.
+Proof. by case=> a b [a0 b0] /= _ _ [-> ->]. Qed.
+
+Lemma set_swap (A B : finType) (P : B -> A -> bool) :
+  [set h : {: B * A} | P h.1 h.2 ] = swap @: [set h | P h.2 h.1].
+Proof.
+apply/setP => /= -[b a]; rewrite !inE /=; apply/idP/imsetP => [H|].
+- by exists (a, b) => //=; rewrite inE.
+- by case=> -[a0 b0]; rewrite inE /= => ? [-> ->].
+Qed.
+
+Lemma setT_bool : [set: bool] = [set true; false].
+Proof.
+apply/eqP; rewrite eqEsubset; apply/andP; split => //.
+by apply/subsetP => x; rewrite !inE; case: x.
+Qed.
 
 Lemma setDUKl A (E F : {set A}) : (E :|: F) :\: E = F :\: E.
 Proof. by rewrite setDUl setDv set0U. Qed.
@@ -993,6 +980,8 @@ Qed.*)
 
 End perm_enum.
 
+Section fingraph_ext.
+
 Lemma connect_sym1 (D : finType) (r : rel D) : symmetric r ->
   forall x y, connect r x y -> connect r y x.
 Proof.
@@ -1027,6 +1016,8 @@ Lemma connect_sym (D : finType) (r : rel D) : symmetric r -> connect_sym r.
 Proof.
 move=> ?; rewrite /connect_sym => ? ?; apply/idP/idP => /connect_sym1; exact.
 Qed.
+
+End fingraph_ext.
 
 Section uniq_path.
 
@@ -1086,6 +1077,31 @@ Qed.
 End boolP.
 
 Section fintype_extra.
+
+Lemma ord1 (i : 'I_1) : i = ord0. Proof. case: i => [[]] // ?; exact/eqP. Qed.
+
+Lemma ord2 (i : 'I_2) : (i == ord0) || (i == Ordinal (erefl (1 < 2))).
+Proof. by case: i => -[|[|]]. Qed.
+
+Lemma ord3 (i : 'I_3) :
+  [|| i == ord0, i == Ordinal (erefl (1 < 3)) | i == Ordinal (erefl (2 < 3))].
+Proof. by case: i => -[|[|[|]]]. Qed.
+
+Lemma enum_inord (m : nat) : enum 'I_m.+1 = [seq inord i | i <- iota 0 m.+1].
+Proof.
+rewrite -val_enum_ord -map_comp.
+transitivity ([seq i | i <- enum 'I_m.+1]); first by rewrite map_id.
+apply eq_map => i /=; by rewrite inord_val.
+Qed.
+
+Lemma split_lshift n m (i : 'I_n) : fintype.split (lshift m i) = inl i.
+Proof. by rewrite -/(unsplit (inl i)) unsplitK. Qed.
+
+Lemma split_rshift n m (i : 'I_m) : fintype.split (rshift n i) = inr i.
+Proof. by rewrite -/(unsplit (inr i)) unsplitK. Qed.
+
+Lemma size_index_enum (T : finType) : size (index_enum T) = #|T|.
+Proof. by rewrite cardT enumT. Qed.
 
 Lemma index_enum_cast_ord n m (e : n = m) :
   index_enum 'I_m = [seq cast_ord e i | i <- index_enum 'I_n].

@@ -687,3 +687,13 @@ by apply/matrixP => i j; rewrite !mxE ltnNge -ltnS ltn_ord /= mulr1.
 Qed.
 
 End Det_mlinear.
+
+Section regular_algebra.
+
+Lemma mulr_regl [R : ringType] (a : R) (x : R^o) : a * x = a *: x.
+Proof. by []. Qed.
+
+Lemma mulr_regr [R : comRingType] (a : R) (x : R^o) : x * a = a *: x.
+Proof. by rewrite mulrC. Qed.
+
+End regular_algebra.
