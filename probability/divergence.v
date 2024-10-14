@@ -102,7 +102,7 @@ Local Open Scope fdist_scope.
 
 Section divergence_prop.
 Context {R : realType}.
-Variables (A : finType) (P Q : {fdist A}).
+Variables (A : finType) (P Q : R.-fdist A).
 Hypothesis P_dom_by_Q : P `<< Q.
 
 Lemma div_ge0 : 0 <= D(P || Q).
