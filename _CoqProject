@@ -11,6 +11,7 @@ lib/Reals_ext.v
 lib/realType_logb.v
 lib/logb.v
 lib/Ranalysis_ext.v
+lib/derive_ext.v
 lib/ssr_ext.v
 lib/f2.v
 lib/ssralg_ext.v
