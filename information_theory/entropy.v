@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra fingroup perm.
-From mathcomp Require Import Rstruct reals exp.
+From mathcomp Require Import reals exp.
 Require Import realType_ext ssr_ext ssralg_ext bigop_ext.
 Require Import realType_logb (*ln_facts*) fdist jfdist_cond proba binary_entropy_function.
 Require Import divergence.
@@ -65,9 +65,9 @@ Import Order.POrderTheory GRing.Theory Num.Theory.
 Hint Extern 0 ((_ <= 1)%coqR) => solve [exact/RleP/FDist.le1] : core.*)
 
 Section entropy_definition.
-Variables (A : finType) (P : {fdist A}).
+Variables (R : realType) (A : finType) (P : R.-fdist A).
 
-Definition entropy := - \sum_(a in A) P a * realType_logb.log (P a).
+Definition entropy := - \sum_(a in A) P a * log (P a).
 Local Notation "'`H'" := (entropy).
 
 Lemma entropy_ge0 : 0 <= `H.
@@ -88,15 +88,15 @@ Local Open Scope entropy_scope.
 Section entropy_theory.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
-Context (A : finType).
+Context (R : realType) (A : finType).
 
-Lemma entropy_Ex (P : {fdist A}) : `H P = `E (`-- (`log P)).
+Lemma entropy_Ex (P : R.-fdist A) : `H P = `E (`-- (`log P)).
 Proof.
 rewrite /entropy /log_RV /= big_morph_oppr.
 by apply eq_bigr => a _; rewrite mulrC -mulNr.
 Qed.
 
-Lemma xlnx_entropy (P : {fdist A}) : `H P = (ln 2)^-1 * - \sum_(a : A) xlnx (P a).
+Lemma xlnx_entropy (P : R.-fdist A) : `H P = (ln 2)^-1 * - \sum_(a : A) xlnx (P a).
 Proof.
 rewrite /entropy mulrN; congr (- _); rewrite big_distrr/=.
 apply: eq_bigr => a _; rewrite /xlnx /log /Log/=.
@@ -106,7 +106,7 @@ by rewrite Pa0 mulrA mulrC.
 Qed.
 
 Lemma entropy_uniform n (An1 : #|A| = n.+1) :
-  `H (fdist_uniform An1) = log #|A|%:R.
+  `H (fdist_uniform An1) = log #|A|%:R :> R.
 Proof.
 rewrite /entropy.
 under eq_bigr do rewrite fdist_uniformE.
@@ -115,14 +115,14 @@ rewrite -mulNrn mulrN opprK -mulrnAr -(mulr_natr (log _) #|A|) mulrCA.
 by rewrite mulVf ?mulr1// An1 pnatr_eq0.
 Qed.
 
-Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : prob Rdefinitions.R) :
+Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : prob R) :
   H2 (Prob.p p) = entropy (fdist_binary card_A p (Set2.a card_A)).
 Proof.
 rewrite /H2 /entropy Set2sumE /= fdist_binaryxx !fdist_binaryE.
 by rewrite eq_sym (negbTE (Set2.a_neq_b _)) opprD addrC.
 Qed.
 
-Lemma entropy_max (P : {fdist A}) : `H P <= log #|A|%:R.
+Lemma entropy_max (P : R.-fdist A) : `H P <= log #|A|%:R.
 Proof.
 have [n An1] : exists n, #|A| = n.+1.
   by exists #|A|.-1; rewrite prednK //; exact: (fdist_card_neq0 P).
@@ -141,7 +141,7 @@ rewrite -[in X in _ + X = _]big_distrl /= FDist.f1 mul1r.
 by rewrite addrC /entropy logV ?opprK// An1 ltr0n.
 Qed.
 
-Lemma entropy_fdist_rV_of_prod n (P : {fdist A * 'rV[A]_n}) :
+Lemma entropy_fdist_rV_of_prod n (P : R.-fdist (A * 'rV[A]_n)) :
   `H (fdist_rV_of_prod P) = `H P.
 Proof.
 rewrite /entropy /=; congr (- _).
@@ -150,7 +150,7 @@ apply eq_bigr => -[a b] _ /=.
 by rewrite fdist_rV_of_prodE /= row_mx_row_ord0 rbehead_row_mx.
 Qed.
 
-Lemma entropy_fdist_prod_of_rV n (P : {fdist 'rV[A]_n.+1}) :
+Lemma entropy_fdist_prod_of_rV n (P : R.-fdist 'rV[A]_n.+1) :
   `H (fdist_prod_of_rV P) = `H P.
 Proof.
 rewrite /entropy /=; congr (- _).
@@ -158,7 +158,7 @@ rewrite -(big_rV_cons_behead _ xpredT xpredT) /= pair_bigA /=.
 apply eq_bigr => -[a b] _ /=; by rewrite fdist_prod_of_rVE /=.
 Qed.
 
-Lemma entropy_fdist_perm n (P : {fdist 'rV[A]_n}) (s : 'S_n) :
+Lemma entropy_fdist_perm n (P : R.-fdist 'rV[A]_n) (s : 'S_n) :
   `H (fdist_perm P s) = `H P.
 Proof.
 rewrite /entropy; congr (- _) => /=; apply/esym.
@@ -170,7 +170,7 @@ Qed.
 End entropy_theory.
 
 Section joint_entropy.
-Variables (A B : finType) (P : {fdist A * B}).
+Variables (R : realType) (A B : finType) (P : R.-fdist (A * B)).
 
 (* eqn 2.8 *)
 Definition joint_entropy := `H P.
@@ -189,7 +189,7 @@ Qed.
 
 End joint_entropy.
 
-Lemma entropy_rV (A : finType) n (P : {fdist 'rV[A]_n.+1}) :
+Lemma entropy_rV (R : realType) (A : finType) n (P : R.-fdist 'rV[A]_n.+1) :
   `H P = joint_entropy (fdist_belast_last_of_rV P).
 Proof.
 rewrite /joint_entropy /entropy; congr (- _) => /=.
@@ -199,7 +199,8 @@ by rewrite fdist_belast_last_of_rVE.
 Qed.
 
 Section joint_entropy_RV_def.
-Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+Variable R : realType.
+Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
 Definition joint_entropy_RV := joint_entropy `p_[% X, Y].
 End joint_entropy_RV_def.
 Notation "'`H(' X ',' Y ')'" := (joint_entropy_RV X Y) : chap2_scope.
@@ -207,7 +208,8 @@ Notation "'`H(' X ',' Y ')'" := (joint_entropy_RV X Y) : chap2_scope.
 Local Open Scope chap2_scope.
 
 Section joint_entropy_RV_prop.
-Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+Variable R : realType.
+Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
 
 (* 2.9 *)
 Lemma eqn29 : `H(X, Y) = - `E (`log `p_[% X, Y]).
@@ -216,7 +218,7 @@ Proof. by rewrite /joint_entropy_RV joint_entropyE E_neg_RV. Qed.
 End joint_entropy_RV_prop.
 
 Section joint_entropy_prop.
-Variable (A : finType) (P : {fdist A}).
+Variable (R : realType) (A : finType) (P : R.-fdist A).
 
 Lemma joint_entropy_self : joint_entropy (fdist_self P) = `H P.
 Proof.
@@ -233,7 +235,7 @@ Qed.
 End joint_entropy_prop.
 
 Section conditional_entropy.
-Variables (A B : finType) (QP : {fdist B * A}).
+Variables (R : realType) (A B : finType) (QP : R.-fdist (B * A)).
 
 (* H(Y|X = x), see eqn 2.10 *)
 Definition cond_entropy1 a := - \sum_(b in B)
@@ -273,7 +275,8 @@ Qed.
 End conditional_entropy.
 
 Section cond_entropy1_RV_prop.
-Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+Variable R : realType.
+Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
 
 Definition cond_entropy1_RV a := `H (`p_[% X, Y] `(| a )).
 
@@ -290,7 +293,7 @@ Notation "'`H(' Y '|' X ')'" := (cond_entropy `p_[% Y, X]) : chap2_scope.
 
 Section conditional_entropy_prop.
 
-Variables (A B C : finType) (PQR : {fdist A * B * C}).
+Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 
 Lemma cond_entropy1_fdistAC b c : cond_entropy1 (fdistA PQR) (b, c) =
                                   cond_entropy1 (fdistA (fdistAC PQR)) (c, b).
@@ -314,7 +317,7 @@ Qed.
 End conditional_entropy_prop.
 
 Section chain_rule.
-Variables (A B : finType) (PQ : {fdist A * B}).
+Variables (R : realType) (A B : finType) (PQ : R.-fdist (A * B)).
 Let P := PQ`1.
 Let QP := fdistX PQ.
 
@@ -348,7 +351,8 @@ End chain_rule.
 
 Section chain_rule_RV.
 Local Open Scope chap2_scope.
-Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+Variable R : realType.
+Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
 
 Lemma chain_rule_RV : `H(X, Y) = `H `p_X + `H(Y | X).
 Proof.
@@ -397,7 +401,7 @@ Arguments put_front_inj {n} _.
 Definition put_front_perm (n : nat) i : 'S_n.+1 := perm (put_front_inj i).
 
 (* TODO: clean *)
-Lemma fdist_col'_put_front n (A : finType) (P : {fdist 'rV[A]_n.+1}) (i : 'I_n.+1) :
+Lemma fdist_col'_put_front n (R : realType) (A : finType) (P : R.-fdist 'rV[A]_n.+1) (i : 'I_n.+1) :
   i != ord0 ->
   fdist_col' P i = (fdist_prod_of_rV (fdist_perm P (put_front_perm i)))`2.
 Proof.
@@ -453,7 +457,7 @@ rewrite inordK ?prednK ?lt0n // -1?ltnS // ltnS add1n prednK ?lt0n // => ik.
 by congr (v _ _); apply val_inj => /=; rewrite /unbump ik subn1.
 Qed.
 
-Lemma chain_rule_multivar (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1})
+Lemma chain_rule_multivar (R : realType) (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+1)
   (i : 'I_n.+1) : i != ord0 ->
   (`H P = `H (fdist_col' P i) +
     cond_entropy (fdist_prod_of_rV (fdist_perm P (put_front_perm i))))%R.
@@ -466,9 +470,9 @@ Qed.
 End chain_rule_generalization.
 
 Section entropy_chain_rule_corollary.
-Variables (A B C : finType) (PQR : {fdist A * B * C}).
-Let PR : {fdist A * C} := fdist_proj13 PQR.
-Let QPR : {fdist B * (A * C)} := fdistA (fdistC12 PQR).
+Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
+Let PR : R.-fdist (A * C) := fdist_proj13 PQR.
+Let QPR : R.-fdist (B * (A * C)) := fdistA (fdistC12 PQR).
 
 (* eqn 2.21, H(X,Y|Z) = H(X|Z) + H(Y|X,Z) *)
 Lemma chain_rule_corollary :
@@ -498,7 +502,7 @@ Qed.
 End entropy_chain_rule_corollary.
 
 Section conditional_entropy_prop2. (* NB: here because use chain rule *)
-Variables (A B : finType) (PQ : {fdist A * B}).
+Variables (R : realType) (A B : finType) (PQ : R.-fdist (A * B)).
 Let P := PQ`1.
 Let Q := PQ`2.
 Let QP := fdistX PQ.
@@ -513,11 +517,11 @@ Qed.
 End conditional_entropy_prop2.
 
 Section conditional_entropy_prop3. (* NB: here because use chain rule *)
-Variables (A : finType) (P : {fdist A}).
+Variables (R : realType) (A : finType) (P : R.-fdist A).
 
 Lemma cond_entropy_self : cond_entropy (fdist_self P) = 0.
 Proof.
-move: (@chain_rule _ _ (fdist_self P)).
+move: (@chain_rule _ _ _ (fdist_self P)).
 rewrite !fdist_self1 fdistX_self addrC => /eqP; rewrite -subr_eq => /eqP <-.
 by rewrite joint_entropy_self subrr.
 Qed.
@@ -526,7 +530,7 @@ End conditional_entropy_prop3.
 
 Section mutual_information.
 Local Open Scope divergence_scope.
-Variables (A B : finType) (PQ : {fdist A * B}).
+Variables (R : realType) (A B : finType) (PQ : R.-fdist (A * B)).
 Let P := PQ`1.
 Let Q := PQ`2.
 Let QP := fdistX PQ.
@@ -536,7 +540,7 @@ Definition mutual_info := D(PQ || P `x Q).
 End mutual_information.
 
 Section mutual_information_prop.
-Variables (A B : finType) (PQ : {fdist A * B}).
+Variables (R : realType) (A B : finType) (PQ : R.-fdist (A * B)).
 Let P := PQ`1.
 Let Q := PQ`2.
 Let QP := fdistX PQ.
@@ -603,7 +607,8 @@ Qed.
 End mutual_information_prop.
 
 Section mutualinfo_RV_def.
-Variables (U A B : finType) (P : {fdist U}) (X : {RV P -> A}) (Y : {RV P -> B}).
+Variable R : realType.
+Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
 Definition mutual_info_RV := mutual_info `p_[% X, Y].
 End mutualinfo_RV_def.
 Notation "'`I(' X ';' Y ')'" := (mutual_info_RV X Y) : chap2_scope.
@@ -615,12 +620,12 @@ Section mutualinfo_prop.
 Local Open Scope divergence_scope.
 
 (* eqn 2.46 *)
-Lemma mutual_info_sym (A B : finType) (PQ : {fdist A * B}) :
+Lemma mutual_info_sym (R : realType) (A B : finType) (PQ : R.-fdist (A * B)) :
   mutual_info PQ = mutual_info (fdistX PQ).
 Proof. by rewrite !mutual_infoE entropyB fdistX1. Qed.
 
 (* eqn 2.47 *)
-Lemma mutual_info_self (A : finType) (P : {fdist A}) :
+Lemma mutual_info_self (R : realType) (A : finType) (P : R.-fdist A) :
   mutual_info (fdist_self P) = `H P.
 Proof. by rewrite mutual_infoE cond_entropy_self subr0 fdist_self1. Qed.
 
@@ -629,7 +634,7 @@ End mutualinfo_prop.
 Section chain_rule_for_entropy.
 Local Open Scope vec_ext_scope.
 
-Lemma entropy_head_of1 (A : finType) (P : {fdist 'M[A]_1}) :
+Lemma entropy_head_of1 (R : realType) (A : finType) (P : R.-fdist 'M[A]_1) :
   `H P = `H (head_of_fdist_rV P).
 Proof.
 rewrite /entropy; congr (- _); apply: big_rV_1 => // a.
@@ -639,7 +644,7 @@ congr (P _ * log (P _)); apply/rowP => i.
 by rewrite (ord1 i) !mxE; case: splitP => // i0; rewrite (ord1 i0) mxE.
 Qed.
 
-Lemma chain_rule_rV (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}) :
+Lemma chain_rule_rV (R : realType) (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+1) :
   `H P = \sum_(i < n.+1)
           if i == O :> nat then
             `H (head_of_fdist_rV P)
@@ -661,7 +666,7 @@ Qed.
 End chain_rule_for_entropy.
 
 Section divergence_conditional_distributions.
-Variables (A B C : finType) (PQR : {fdist A * B * C}).
+Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 
 Definition cdiv1 z := \sum_(x in {: A * B})
   \Pr_PQR[[set x] | [set z]] * log (\Pr_PQR[[set x] | [set z]] /
@@ -711,7 +716,7 @@ End divergence_conditional_distributions.
 
 Section conditional_mutual_information.
 Section def.
-Variables (A B C : finType) (PQR : {fdist A * B * C}).
+Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 
 (* I(X;Y|Z) = H(X|Z) - H(X|Y,Z) 2.60 *)
 Definition cond_mutual_info :=
@@ -719,7 +724,7 @@ Definition cond_mutual_info :=
 End def.
 
 Section prop.
-Variables (A B C : finType) (PQR : {fdist A * B * C}).
+Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 
 Lemma cond_mutual_infoE : cond_mutual_info PQR = \sum_(x in {: A * B * C}) PQR x *
   log (\Pr_PQR[[set x.1] | [set x.2]] /
@@ -766,9 +771,9 @@ rewrite /jcPr mulf_neq0// ?setX1 !Pr_set1.
 by rewrite fdist_proj23_snd invr_eq0; exact: dom_by_fdist_sndN H0.
 Qed.
 
-Let R := PQR`2.
+Let PQR2 := (PQR`2).
 
-Lemma cond_mutual_infoE2 : cond_mutual_info PQR = \sum_(z in C) R z * cdiv1 PQR z.
+Lemma cond_mutual_infoE2 : cond_mutual_info PQR = \sum_(z in C) PQR2 z * cdiv1 PQR z.
 Proof.
 rewrite cond_mutual_infoE.
 rewrite (eq_bigr (fun x => PQR (x.1, x.2) * log
@@ -793,8 +798,8 @@ rewrite cond_mutual_infoE2; apply/sumr_ge0 => c _; apply/mulr_ge0 => //.
 exact: cdiv1_ge0.
 Qed.
 
-Let P : {fdist A} := (fdistA PQR)`1.
-Let Q : {fdist B} := (PQR`1)`2.
+Let P : R.-fdist A := (fdistA PQR)`1.
+Let Q : R.-fdist B := (PQR`1)`2.
 
 Lemma chain_rule_mutual_info : mutual_info PQR = mutual_info (fdist_proj13 PQR) +
                                                  cond_mutual_info (fdistX (fdistA PQR)).
@@ -825,10 +830,11 @@ End conditional_mutual_information.
 
 Section conditional_relative_entropy.
 Section def.
-Variables (A B : finType) (P Q : ({fdist A} * (A -> {fdist B}))).
-Let Pj : {fdist B * A} := fdistX (P.1 `X P.2).
-Let Qj : {fdist B * A} := fdistX (Q.1 `X Q.2).
-Let P1 : {fdist A} := P.1.
+Variable R : realType.
+Variables (A B : finType) (P Q : (R.-fdist A * (A -> R.-fdist B))).
+Let Pj : R.-fdist (B * A) := fdistX (P.1 `X P.2).
+Let Qj : R.-fdist (B * A) := fdistX (Q.1 `X Q.2).
+Let P1 : R.-fdist A := P.1.
 
 (* eqn 2.65 *)
 Definition cond_relative_entropy := \sum_(x in A) P1 x * \sum_(y in B)
@@ -839,11 +845,11 @@ End def.
 Section prop.
 Local Open Scope divergence_scope.
 Local Open Scope reals_ext_scope.
-Variables (A B : finType) (P Q : ({fdist A} * (A -> {fdist B}))).
-Let Pj : {fdist B * A} := fdistX (P.1 `X P.2).
-Let Qj : {fdist B * A} := fdistX (Q.1 `X Q.2).
-Let P1 : {fdist A} := P.1.
-Let Q1 : {fdist A} := Q.1.
+Variables (R : realType) (A B : finType) (P Q : (R.-fdist A * (A -> R.-fdist B))).
+Let Pj : R.-fdist (B * A) := fdistX (P.1 `X P.2).
+Let Qj : R.-fdist (B * A) := fdistX (Q.1 `X Q.2).
+Let P1 : R.-fdist A := P.1.
+Let Q1 : R.-fdist A := Q.1.
 
 Lemma chain_rule_relative_entropy :
   Pj `<< Qj -> D(Pj || Qj) = D(P1 || Q1) + cond_relative_entropy P Q.
@@ -890,15 +896,15 @@ End prop.
 End conditional_relative_entropy.
 
 Section chain_rule_for_information.
-Variables (A : finType).
+Variables (R : realType) (A : finType).
 Let B := A. (* need in the do-not-delete-me step *)
-Variables (n : nat) (PY : {fdist 'rV[A]_n.+1 * B}).
-Let P : {fdist 'rV[A]_n.+1} := PY`1.
-Let Y : {fdist B} := PY`2.
+Variables (n : nat) (PY : R.-fdist ('rV[A]_n.+1 * B)).
+Let P : R.-fdist 'rV[A]_n.+1 := PY`1.
+Let Y : R.-fdist B := PY`2.
 
-Let f (i : 'I_n.+1) : {fdist A * 'rV[A]_i * B} := fdistC12 (fdist_prod_take PY i).
-Let fAC (i : 'I_n.+1) : {fdist A * B * 'rV[A]_i} := fdistAC (f i).
-Let fA (i : 'I_n.+1) : {fdist A * ('rV[A]_i * B)} := fdistA (f i).
+Let f (i : 'I_n.+1) : R.-fdist (A * 'rV[A]_i * B) := fdistC12 (fdist_prod_take PY i).
+Let fAC (i : 'I_n.+1) : R.-fdist (A * B * 'rV[A]_i) := fdistAC (f i).
+Let fA (i : 'I_n.+1) : R.-fdist (A * ('rV[A]_i * B)) := fdistA (f i).
 
 Local Open Scope vec_ext_scope.
 
@@ -919,7 +925,7 @@ have -> : cond_entropy PY = \sum_(j < n.+1)
   rewrite fdistXI addrC => /eqP; rewrite -subr_eq fdistX1 -/Y => /eqP <-.
   rewrite /joint_entropy.
   (* do-not-delete-me *)
-  set YP : {fdist 'rV[A]_n.+2} := fdist_rV_of_prod (fdistX PY).
+  set YP : R.-fdist 'rV[A]_n.+2 := fdist_rV_of_prod (fdistX PY).
   transitivity (`H YP - `H Y); first by rewrite /YP entropy_fdist_rV_of_prod.
   rewrite (chain_rule_rV YP).
   rewrite [in LHS]big_ord_recl /=.
@@ -1114,7 +1120,7 @@ End chain_rule_for_information.
 
 Section conditioning_reduces_entropy.
 Section prop.
-Variables (A B : finType) (PQ : {fdist A * B}).
+Variables (R : realType) (A B : finType) (PQ : R.-fdist (A * B)).
 Let P := PQ`1.
 Let Q := PQ`2.
 Let QP := fdistX PQ.
@@ -1128,10 +1134,9 @@ Proof. by move/mutual_info0P; rewrite mutual_infoE => /eqP; rewrite subr_eq0 => 
 End prop.
 
 Section prop2.
-Variables (A B C : finType) (PQR : {fdist A * B * C}).
-Let P : {fdist A} := (fdistA PQR)`1.
-Let Q : {fdist B} := (PQR`1)`2.
-Let R := PQR`2.
+Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
+Let P : R.-fdist A := (fdistA PQR)`1.
+Let Q : R.-fdist B := (PQR`1)`2.
 Lemma mi_bound : PQR`1 = P `x Q (* P and Q independent *) ->
   mutual_info (fdist_proj13 PQR) +
   mutual_info (fdist_proj23 PQR) <= mutual_info PQR.
@@ -1162,7 +1167,7 @@ End conditioning_reduces_entropy.
 (* TODO: example 2.6.1 *)
 
 Section independence_bound_on_entropy.
-Variables (A : finType) (n : nat) (P : {fdist 'rV[A]_n.+1}).
+Variables (R : realType) (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+1).
 
 (* thm 2.6.6 TODO: with equality in case of independence *)
 Lemma independence_bound_on_entropy : `H P <= \sum_(i < n.+1) `H (fdist_nth P i).
@@ -1180,7 +1185,7 @@ Qed.
 End independence_bound_on_entropy.
 
 Section markov_chain.
-Variables (A B C : finType) (PQR : {fdist A * B * C}).
+Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 Let P := PQR`1`1.
 Let Q := PQR`1`2.
 Let PQ := PQR`1.
@@ -1194,7 +1199,7 @@ Definition markov_chain := forall (x : A) (y : B) (z : C),
 Let PRQ := fdistAC PQR.
 
 (* X and Z are conditionally independent given Y TODO: iff *)
-Lemma markov_cond_mutual_info : markov_chain -> cond_mutual_info (PRQ : {fdist A * C * B}) = 0.
+Lemma markov_cond_mutual_info : markov_chain -> cond_mutual_info (PRQ : R.-fdist (A * C * B)) = 0.
 Proof.
 rewrite /markov_chain => mc.
 rewrite cond_mutual_infoE (eq_bigr (fun=> 0)) ?big1// => x _.
@@ -1262,7 +1267,7 @@ Qed.
 End markov_chain.
 
 Section markov_chain_prop.
-Variables (A B C : finType) (PQR : {fdist A * B * C}).
+Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 
 Lemma markov_chain_order : markov_chain PQR -> markov_chain (fdistC13 PQR).
 Proof.
@@ -1303,13 +1308,13 @@ Section Han_inequality.
 
 Local Open Scope ring_scope.
 
-Lemma information_cant_hurt_cond (A : finType) (n' : nat) (n := n'.+1 : nat)
-  (P : {fdist 'rV[A]_n}) (i : 'I_n) (i0 : i != O :> nat) :
+Lemma information_cant_hurt_cond (R : realType) (A : finType) (n' : nat) (n := n'.+1 : nat)
+  (P : R.-fdist 'rV[A]_n) (i : 'I_n) (i0 : i != O :> nat) :
   cond_entropy (fdist_prod_of_rV P) <=
   cond_entropy (fdist_prod_of_rV (fdist_take P (lift ord0 i))).
 Proof.
 rewrite -subr_ge0.
-set Q : {fdist A * 'rV[A]_i * 'rV[A]_(n' - i)} := fdist_take_drop P i.
+set Q : R.-fdist (A * 'rV[A]_i * 'rV[A]_(n' - i)) := fdist_take_drop P i.
 have H1 : fdist_proj13 (fdistAC Q) = fdist_prod_of_rV (fdist_take P (lift ord0 i)).
   rewrite /fdist_proj13 /fdistAC /fdist_prod_of_rV /fdist_take /fdist_snd /fdistA.
   rewrite /fdistC12 /fdistX /fdist_take_drop !fdistmap_comp; congr (fdistmap _ P).
@@ -1356,8 +1361,8 @@ rewrite (_ : _ - _ = cond_mutual_info (fdistAC Q))%R; last by rewrite /cond_mutu
 exact/cond_mutual_info_ge0.
 Qed.
 
-Lemma han_helper (A : finType) (n' : nat) (n := n'.+1 : nat)
-  (P : {fdist 'rV[A]_n}) (i : 'I_n) (i0 : i != O :> nat) :
+Lemma han_helper (R : realType) (A : finType) (n' : nat) (n := n'.+1 : nat)
+  (P : R.-fdist 'rV[A]_n) (i : 'I_n) (i0 : i != O :> nat) :
   cond_entropy (fdist_prod_of_rV (fdist_perm P (put_front_perm i))) <=
   cond_entropy (fdistX (fdist_belast_last_of_rV (fdist_take P (lift ord0 i)))).
 Proof.
@@ -1451,9 +1456,9 @@ rewrite (_ : fdist_perm (fdist_take _ _) _ =
 exact/information_cant_hurt_cond.
 Qed.
 
-Variables (A : finType) (n' : nat).
+Variables (R : realType) (A : finType) (n' : nat).
 Let n := n'.+1.
-Variable P : {fdist 'rV[A]_n}.
+Variable P : R.-fdist 'rV[A]_n.
 
 Lemma han : n.-1%:R * `H P <= \sum_(i < n) `H (fdist_col' P i).
 Proof.
