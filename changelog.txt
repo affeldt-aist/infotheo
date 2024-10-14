@@ -29,7 +29,12 @@ from 0.7.2 to 0.7.3
 - in ssralg_ext.v
   + lemmas mulr_regl, mulr_regr
 - in realType_ext.v
-  + lemmas x_x2_eq, x_x2_max
+  + lemmas x_x2_eq, x_x2_max, x_x2_pos, x_x2_nneg, expR1_gt2
+- new file derive_ext.v
+  + lemmas differentiable_{ln, Log}
+  + lemmas is_derive{D, B, N, M, V, Z, X, _sum}_eq
+  + lemmas is_derive1_{lnf, lnf_eq, Logf, Logf_eq, LogfM, LogfM_eq, LogfV, LogfV_eq}
+  + lemmas derivable1_mono, derivable1_homo
 
 - lemma `conv_pt_cset_is_convex` changed into a `Let`
 
