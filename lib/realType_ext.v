@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-From mathcomp Require Import reals normedtype.
+From mathcomp Require Import reals normedtype sequences.
 From mathcomp Require Import mathcomp_extra boolp.
 From mathcomp Require Import lra ring Rstruct.
 
@@ -108,16 +108,53 @@ Notation "p '.~'" := (onem p).
 
 Section about_the_pow_function.
 Local Open Scope ring_scope.
-Context {R : realFieldType}.
 
-Lemma x_x2_eq (q : R) : q * (1 - q) = 4^-1 - 4^-1 * (2 * q - 1) ^+ 2.
+Lemma x_x2_eq {R : realFieldType} (q : R) : q * (1 - q) = 4^-1 - 4^-1 * (2 * q - 1) ^+ 2.
 Proof. by field. Qed.
 
-Lemma x_x2_max (q : R) : q * (1 - q) <= 4^-1.
+Lemma x_x2_max {R : realFieldType} (q : R) : q * (1 - q) <= 4^-1.
 Proof.
 rewrite x_x2_eq.
 have : forall a b : R, 0 <= b -> a - b <= a. move=>  *; lra.
 apply; apply mulr_ge0; [lra | exact: exprn_even_ge0].
+Qed.
+
+Lemma x_x2_pos {R : realFieldType} (q : R) : 0 < q < 1 -> 0 < q * (1 - q).
+Proof.
+move=> q01.
+rewrite [ltRHS](_ : _ = - (q - 2^-1)^+2 + (2^-2)); last by field.
+rewrite addrC subr_gt0 -exprVn -[ltLHS]real_normK ?num_real//.
+rewrite ltr_pXn2r// ?nnegrE; [| exact: normr_ge0 | lra].
+have/orP[H|H]:= le_total (q - 2^-1) 0.
+  rewrite (ler0_norm H); lra.
+rewrite (ger0_norm H); lra.
+Qed.
+
+Lemma x_x2_nneg {R : realFieldType} (q : R) : 0 <= q <= 1 -> 0 <= q * (1 - q).
+Proof.
+case/andP=> q0 q1.
+have[->|qneq0]:= eqVneq q 0; first lra.
+have[->|qneq1]:= eqVneq q 1; first lra.
+have: 0 < q < 1 by lra.
+by move/x_x2_pos/ltW.
+Qed.
+
+(* TODO: prove expR1_lt3 too; PR to mca *)
+Lemma expR1_gt2 {R : realType} : 2 < expR 1 :> R.
+Proof.
+rewrite /expR /exp_coeff.
+apply: (@lt_le_trans _ _ (series (fun n0 : nat => 1 ^+ n0 / n0`!%:R) 3)).
+  rewrite /series /=.
+  under eq_bigr do rewrite expr1n.
+  rewrite big_mkord.
+  rewrite big_ord_recl /= divr1 ltrD2l.
+  rewrite big_ord_recl /= divr1 -[ltLHS]addr0 ltrD2l.
+  rewrite big_ord_recl big_ord0 addr0 !factS fact0 /bump /= addn0 !muln1.
+  by rewrite mulr_gt0// invr_gt0.
+apply: limr_ge; first exact: is_cvg_series_exp_coeff_pos.
+exists 3=>// n /= n3.
+rewrite -subr_ge0 sub_series_geq// sumr_ge0// => i _.
+by rewrite mulr_ge0// ?invr_ge0// exprn_ge0.
 Qed.
 
 End about_the_pow_function.
