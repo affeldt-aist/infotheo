@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-Require Import Reals.
-From mathcomp Require Import Rstruct.
-Require Import Reals_ext ssrR logb fdist proba channel.
+From mathcomp Require Import Rstruct reals exp.
+Require Import realType_ext realType_logb bigop_ext fdist proba channel.
 
 (******************************************************************************)
 (*                        Definition of a channel code                        *)
@@ -33,9 +32,9 @@ Import Prenex Implicits.
 
 Local Open Scope proba_scope.
 Local Open Scope channel_scope.
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
 
-Import Num.Theory.
+Import GRing.Theory Num.Theory.
 
 Section code_definition.
 Variables (A B M : finType) (n : nat).
@@ -47,7 +46,7 @@ Definition decT := {ffun 'rV[B]_n -> option M}.
 
 Record code := mkCode { enc : encT ; dec : decT }.
 
-Definition CodeRate (c : code) := (log (#| M |%:R) / n%:R)%R.
+Definition CodeRate (c : code) : Rdefinitions.R := log (#| M |%:R) / n%:R.
 
 Definition preimC (phi : decT) m := ~: (phi @^-1: xpred1 (Some m)).
 
@@ -57,23 +56,22 @@ Definition ErrRateCond (W : `Ch(A, B)) c m :=
 Local Notation "e( W , c )" := (ErrRateCond W c) (at level 50).
 
 Definition CodeErrRate (W : `Ch(A, B)) c :=
-  (1 / #| M |%:R * \sum_(m in M) e(W, c) m)%R.
+  (#| M |%:R^-1 * \sum_(m in M) e(W, c) m)%R.
 
 Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
 
 Lemma echa_ge0 (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
-apply/RleP/mulR_ge0.
-- apply divR_ge0; [exact/Rle_0_1| exact/ltR0n].
-- by apply/RleP/sumr_ge0 => ? _; exact: sumr_ge0.
+apply/mulr_ge0.
+- by rewrite invr_ge0.
+- by apply/sumr_ge0 => ? _; exact: sumr_ge0.
 Qed.
 
 Lemma echa_le1 (HM : (0 < #| M |)%nat) W (c : code) : echa(W , c) <= 1.
 Proof.
-rewrite /CodeErrRate div1R.
-apply/RleP/ (@leR_pmul2l (INR #|M|)); first exact/ltR0n.
-rewrite mulRA mulRV ?INR_eq0' -?lt0n // mul1R -iter_addR -big_const.
-by apply: leR_sumR => m _; exact: Pr_le1.
+rewrite /CodeErrRate ler_pdivrMl ?ltr0n// mulr1.
+rewrite -sum1_card natr_sum.
+by apply: ler_sum => m _; exact: Pr_le1.
 Qed.
 
 Definition scha (W : `Ch(A, B)) (c : code) := (1 - echa(W , c))%R.
@@ -92,11 +90,13 @@ Proof.
 set rhs := (\sum_(m | _ ) _)%R.
 have {rhs}-> : rhs = (\sum_(m in M) (1 - e(W, c) m))%R.
   apply eq_bigr => i Hi; rewrite -Pr_to_cplt.
-  apply eq_bigl => t /=; by rewrite inE.
+  by apply eq_bigl => t /=; rewrite inE.
 set rhs := (\sum_(m | _ ) _)%R.
 have {rhs}-> : rhs = (#|M|%:R - \sum_(m in M) e(W, c) m)%R.
-  by rewrite /rhs {rhs} big_split /= big_const iter_addR mulR1 -big_morph_oppR.
-by rewrite mulRDr -mulRA mulVR ?mulR1 ?INR_eq0' -?lt0n // mulRN.
+  rewrite /rhs {rhs} big_split /= big_morph_oppr; congr +%R.
+  by rewrite -sum1_card natr_sum.
+rewrite mulrDr -mulrA mulVf ?mulr1 ?pnatr_eq0 ?gtn_eqF// mul1r.
+by rewrite mulrN//.
 Qed.
 
 End code_definition.
@@ -106,5 +106,5 @@ Notation "echa( W , c )" := (CodeErrRate W c) : channel_code_scope.
 Notation "scha( W , C )" := (scha W C) : channel_code_scope.
 
 Record CodeRateType := mkCodeRateType {
-  rate :> R ;
-  _ : exists n d, (0 < n)%nat /\ (0 < d)%nat /\ rate = log (INR n) / INR d }.
+  rate :> Rdefinitions.R ;
+  _ : exists n d, (0 < n)%nat /\ (0 < d)%nat /\ rate = log n%:R / d%:R }.

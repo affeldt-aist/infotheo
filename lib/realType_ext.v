@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-From mathcomp Require Import reals normedtype.
+From mathcomp Require Import reals normedtype sequences.
 From mathcomp Require Import mathcomp_extra boolp.
 From mathcomp Require Import lra ring Rstruct.
 
@@ -34,6 +34,28 @@ Import Prenex Implicits.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
+(* TODO: move to "mathcomp_extra.v" *)
+Section num_ext.
+Local Open Scope ring_scope.
+(* analogs of ssrR.(pmulR_lgt0', pmulR_rgt0') *)
+Lemma wpmulr_lgt0 (R : numDomainType) (x y : R) : 0 <= x -> 0 < y * x -> 0 < y.
+Proof.
+rewrite le_eqVlt=> /orP [/eqP <- |].
+  by rewrite mulr0 ltxx.
+by move/pmulr_lgt0->.
+Qed.
+
+Lemma wpmulr_rgt0 (R : numDomainType) (x y : R) : 0 <= x -> 0 < x * y -> 0 < y.
+Proof. by rewrite mulrC; exact: wpmulr_lgt0. Qed.
+End num_ext.
+
+(* TODO: gen, call is divr_eq? *)
+Lemma eqr_divr_mulr {R : realType} (z x y : R) : z != 0%mcR -> (y / z = x)%mcR <-> (y = x * z)%mcR.
+Proof.
+move=> z0; split => [<-|->]; first by rewrite -mulrA mulVf // mulr1.
+by rewrite -mulrA mulfV // mulr1.
+Qed.
+
 Lemma prodR_gt0 (R : numDomainType) (A : finType) (F : A -> R) : (forall a, 0 < F a)%mcR ->
   (0 < \prod_(a : A) F a)%mcR.
 Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulr_gt0. Qed.
@@ -41,7 +63,7 @@ Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulr_gt0. Qed.
 (* PR to mathcomp_extra.v? *)
 Section onem.
 Local Open Scope ring_scope.
-Variable R : realType.
+Variable R : realFieldType.
 Implicit Types r s : R.
 
 Lemma onem_le r s : (r <= s) = (`1-s <= `1-r).
@@ -83,14 +105,75 @@ Proof. by rewrite /onem opprB addrA. Qed.
 End onem.
 Notation "p '.~'" := (onem p).
 
+
+Section about_the_pow_function.
+Local Open Scope ring_scope.
+
+Lemma x_x2_eq {R : realFieldType} (q : R) : q * (1 - q) = 4^-1 - 4^-1 * (2 * q - 1) ^+ 2.
+Proof. by field. Qed.
+
+Lemma x_x2_max {R : realFieldType} (q : R) : q * (1 - q) <= 4^-1.
+Proof.
+rewrite x_x2_eq.
+have : forall a b : R, 0 <= b -> a - b <= a. move=>  *; lra.
+apply; apply mulr_ge0; [lra | exact: exprn_even_ge0].
+Qed.
+
+Lemma x_x2_pos {R : realFieldType} (q : R) : 0 < q < 1 -> 0 < q * (1 - q).
+Proof.
+move=> q01.
+rewrite [ltRHS](_ : _ = - (q - 2^-1)^+2 + (2^-2)); last by field.
+rewrite addrC subr_gt0 -exprVn -[ltLHS]real_normK ?num_real//.
+rewrite ltr_pXn2r// ?nnegrE; [| exact: normr_ge0 | lra].
+have/orP[H|H]:= le_total (q - 2^-1) 0.
+  rewrite (ler0_norm H); lra.
+rewrite (ger0_norm H); lra.
+Qed.
+
+Lemma x_x2_nneg {R : realFieldType} (q : R) : 0 <= q <= 1 -> 0 <= q * (1 - q).
+Proof.
+case/andP=> q0 q1.
+have[->|qneq0]:= eqVneq q 0; first lra.
+have[->|qneq1]:= eqVneq q 1; first lra.
+have: 0 < q < 1 by lra.
+by move/x_x2_pos/ltW.
+Qed.
+
+(* TODO: prove expR1_lt3 too; PR to mca *)
+Lemma expR1_gt2 {R : realType} : 2 < expR 1 :> R.
+Proof.
+rewrite /expR /exp_coeff.
+apply: (@lt_le_trans _ _ (series (fun n0 : nat => 1 ^+ n0 / n0`!%:R) 3)).
+  rewrite /series /=.
+  under eq_bigr do rewrite expr1n.
+  rewrite big_mkord.
+  rewrite big_ord_recl /= divr1 ltrD2l.
+  rewrite big_ord_recl /= divr1 -[ltLHS]addr0 ltrD2l.
+  rewrite big_ord_recl big_ord0 addr0 !factS fact0 /bump /= addn0 !muln1.
+  by rewrite mulr_gt0// invr_gt0.
+apply: limr_ge; first exact: is_cvg_series_exp_coeff_pos.
+exists 3=>// n /= n3.
+rewrite -subr_ge0 sub_series_geq// sumr_ge0// => i _.
+by rewrite mulr_ge0// ?invr_ge0// exprn_ge0.
+Qed.
+
+End about_the_pow_function.
+
+
+Section dominance_defs.
+
 Definition dominates {R : realType} {A : Type} (Q P : A -> R) :=
   locked (forall a, Q a = 0 -> P a = 0)%R.
 
-Notation "P '`<<' Q" := (dominates Q P).
+Local Notation "P '`<<' Q" := (dominates Q P).
 
 Lemma dominatesP {R : realType} A (Q P : A -> R) :
   P `<< Q <-> forall a, Q a = 0%R -> P a = 0%R.
 Proof. by rewrite /dominates; unlock. Qed.
+
+End dominance_defs.
+
+Notation "P '`<<' Q" := (dominates Q P).
 
 Section dominance.
 Context {R : realType}.
@@ -587,3 +670,71 @@ rewrite subr_eq0.
 apply: contra H1 => /eqP H1.
 by apply/eqP/val_inj; rewrite /= p_of_rsE.
 Qed.
+
+Section leR_ltR_sumR_finType.
+Context {R : realType}.
+Variables (A : finType) (f g : A -> R) (P Q : pred A).
+Local Open Scope ring_scope.
+
+Lemma leR_sumR_support (X : {set A}) :
+  (forall i, i \in X -> P i -> f i <= g i) ->
+  \sum_(i in X | P i) f i <= \sum_(i in X | P i) g i.
+Proof.
+move=> H; elim/big_rec2 : _ => //.
+move=> a x y /andP[aX Pa] yx.
+by apply lerD => //; apply: H.
+Qed.
+
+Lemma leR_sumRl : (forall i, P i -> f i <= g i) ->
+  (forall i, Q i -> 0 <= g i) -> (forall i, P i -> Q i) ->
+  \sum_(i | P i) f i <= \sum_(i | Q i) g i.
+Proof.
+move=> f_g Qg H; elim: (index_enum _) => [| h t IH].
+- rewrite !big_nil.
+  by rewrite lexx.
+- rewrite !big_cons /=; case: ifP => [Ph|Ph].
+    by rewrite (H _ Ph); apply lerD => //; exact: f_g.
+  case: ifP => // Qh; apply: (le_trans IH).
+  by rewrite -{1}[X in X <= _](add0r _) lerD2r Qg.
+Qed.
+
+Lemma leR_sumRl_support (U : pred A) :
+  (forall a, 0 <= f a) -> (forall i, P i -> Q i) ->
+  \sum_(i in U | P i) f i <= \sum_(i in U | Q i) f i.
+Proof.
+move=> Hf P_Q; elim: (index_enum _) => [|h t IH].
+- by rewrite !big_nil lexx.
+- rewrite !big_cons; case: (h \in U) => //=; case: ifP => // Ph.
+  + by case: ifP => [Qh|]; [rewrite lerD2l | rewrite (P_Q _ Ph)].
+  + by case: ifP => // Qh; rewrite -[X in X <= _]add0r; exact/lerD.
+Qed.
+
+Lemma ltR_sumR_support (X : {set A}) : (0 < #|X|)%nat ->
+  (forall i, i \in X -> f i < g i) ->
+  \sum_(i in X) f i < \sum_(i in X) g i.
+Proof.
+move Hn : #|X| => n; elim: n X Hn => // n IH X Hn _ H.
+move: (ltn0Sn n); rewrite -Hn card_gt0; case/set0Pn => a0 Ha0.
+rewrite (@big_setD1 _ _ _ _ a0 _ f) //= (@big_setD1 _ _ _ _ a0 _ g) //=.
+case: n => [|n] in IH Hn.
+  rewrite (_ : X :\ a0 = set0); first by rewrite !big_set0 2!addr0; exact: H.
+  move: Hn.
+  by rewrite (cardsD1 a0) Ha0 /= add1n => -[] /eqP; rewrite cards_eq0 => /eqP.
+apply ltrD; first exact/H.
+apply IH => //.
+- by move: Hn; rewrite (cardsD1 a0) Ha0 /= add1n => -[].
+- by move=> a; rewrite in_setD inE => /andP[_ ?]; exact: H.
+Qed.
+
+Lemma ltR_sumR : (O < #|A|)%nat -> (forall i, f i < g i) ->
+  \sum_(i in A) f i < \sum_(i in A) g i.
+Proof.
+move=> A0 H0.
+have : forall i : A, i \in [set: A] -> f i < g i by move=> a _; exact/H0.
+move/ltR_sumR_support; rewrite cardsT => /(_ A0).
+rewrite big_mkcond /= [in X in _ < X]big_mkcond /=.
+rewrite (eq_bigr f) //; last by move=> *; rewrite inE.
+by rewrite [in X in _ < X](eq_bigr g) // => *; rewrite inE.
+Qed.
+
+End leR_ltR_sumR_finType.

@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra zmodp matrix.
-Require Import Reals.
-From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext fdist proba.
+From mathcomp Require Import Rstruct reals.
+Require Import ssrR realType_ext ssr_ext ssralg_ext bigop_ext fdist proba.
 Require Import channel jfdist_cond.
 
 (******************************************************************************)
@@ -33,9 +32,9 @@ Import Prenex Implicits.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Local Open Scope channel_scope.
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
 
-Import Num.Theory.
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Section receivable.
 Variables (A B : finType) (n : nat) (P : {fdist 'rV[A]_n}) (W : `Ch(A, B)).
@@ -60,16 +59,16 @@ Proof.
 apply/idP/idP => [|H].
 - case/existsP => /= x /andP[Px0].
   apply: contra => /eqP /psumr_eq0P => /= H.
-  apply/eqP; rewrite -(@eqR_mul2l (P x)); last exact/eqP.
-  by rewrite mulR0 H // => /= x' _; rewrite RmultE mulr_ge0//.
+  rewrite -(@mulrI_eq0 _ (P x)); last by rewrite /GRing.lreg; apply: mulfI.
+  by rewrite H// => /= x' _; rewrite mulr_ge0//.
 - have /= : \sum_(x in setT) P x * W ``(y | x) != 0.
     apply: contra H => /eqP H; apply/eqP.
-    rewrite -[RHS]H; apply/eq_bigl => /= x; by rewrite !inE.
+    by rewrite -[RHS]H; apply/eq_bigl => /= x; rewrite !inE.
   apply: contraNT.
   rewrite /receivable_prop negb_exists => /forallP /= {}H.
   apply/eqP/big1 => x _.
   by move: (H x); rewrite negb_and 2!negbK => /orP[|] /eqP ->;
-     rewrite ?(mul0R,mulR0).
+     rewrite ?(mul0r,mulr0).
 Qed.
 
 End receivable_prop.
@@ -111,9 +110,9 @@ Proof. by apply/sumr_ge0 => x _; exact: mulr_ge0. Qed.
 
 Let f0 x : 0 <= f x.
 Proof.
-rewrite ffunE; apply/RleP; rewrite -RdivE.
-apply: divR_ge0; first exact: mulR_ge0.
-apply/RltP; rewrite lt0r {1}/den -receivable_propE receivableP.
+rewrite ffunE.
+apply: mulr_ge0; first exact: mulr_ge0.
+rewrite invr_ge0// ltW// lt0r {1}/den -receivable_propE receivableP.
 exact/fdist_post_prob_den_ge0.
 Qed.
 
@@ -139,7 +138,7 @@ Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (P : {fdist 'rV[A]_n}).
 Lemma post_probE (x : 'rV[A]_n) (y : P.-receivable W) :
   P `^^ W (x | y) = \Pr_(P `X (W ``^ n))[ [set x] | [set receivable_rV y]].
 Proof.
-rewrite fdist_post_probE /jcPr setX1 2!Pr_set1 fdist_prodE /= -RdivE.
+rewrite fdist_post_probE /jcPr setX1 2!Pr_set1 fdist_prodE /=.
 congr (_ / _).
 by rewrite fdist_sndE /=; apply eq_bigr => x' _; rewrite fdist_prodE /= -RmultE mulRC.
 Qed.
@@ -153,7 +152,7 @@ Hypothesis HC : (0 < #| C |)%nat.
 Variable y : (`U HC).-receivable W.
 Local Open Scope ring_scope.
 
-Definition post_prob_uniform_cst := / \sum_(c in C) W ``(y | c).
+Definition post_prob_uniform_cst := (\sum_(c in C) W ``(y | c))^-1.
 
 Let K := post_prob_uniform_cst.
 
@@ -167,34 +166,28 @@ Qed.
 Lemma post_prob_uniformT (x : 'rV[A]_n) : x \in C -> (`U HC) `^^ W (x | y) = K * W ``(y | x).
 Proof.
 move=> Ht.
-have C0 : INR #|C| != 0 by rewrite INR_eq0' -lt0n.
-rewrite fdist_post_probE fdist_uniform_supp_in // -RinvE.
-rewrite -!RmultE mulRC -RinvE mulRA.
+have C0 : #|C|%:R != 0 :> Rdefinitions.R by rewrite pnatr_eq0 -lt0n.
+rewrite fdist_post_probE fdist_uniform_supp_in //.
+rewrite mulrC mulrA.
 congr (_ * _).
-rewrite /den fdist_uniform_supp_restrict.
-rewrite -invRM//.
-3: by rewrite -INRE.
-  rewrite /K /post_prob_uniform_cst; congr Rinv.
-  rewrite !RmultE -INRE.
-  rewrite big_distrl /=.
-  apply eq_bigr => i iC.
-  rewrite fdist_uniform_supp_in //.
-  rewrite GRing.mulrAC INRE GRing.mulVr ?GRing.mul1r//.
-  by rewrite GRing.unitfE -INRE.
-rewrite (eq_bigr (fun t => 1 / INR #|C| * W ``(y | t))); last first.
+rewrite fdist_uniform_supp_restrict.
+rewrite -invfM//.
+rewrite (eq_bigr (fun t => 1 / #|C|%:R * W ``(y | t))); last first.
   move=> *; rewrite fdist_uniform_supp_in//.
-  by rewrite GRing.div1r INRE.
-apply/eqP; rewrite -big_distrr /= mulR_eq0 => -[].
-  by rewrite -RdivE// div1R; apply/invR_neq0/eqP.
-by apply/eqP; rewrite -not_receivable_prop_uniform receivableP.
+  by rewrite mul1r.
+rewrite /K /post_prob_uniform_cst; congr (_^-1)%R.
+rewrite big_distrl /=.
+apply eq_bigr => i iC.
+rewrite mul1r.
+by rewrite mulrAC mulVf// mul1r.
 Qed.
 
 Lemma post_prob_uniform_kernel (x : 'rV[A]_n) :
   (`U HC) `^^ W (x | y) = (K * (x \in C)%:R * W ``(y | x))%R.
 Proof.
 case/boolP : (x \in C) => xC.
-- by rewrite post_prob_uniformT // ?inE // mulR1.
-- by rewrite post_prob_uniformF ?inE // mulR0 mul0R.
+- by rewrite post_prob_uniformT // ?inE // mulr1.
+- by rewrite post_prob_uniformF ?inE // mulr0 mul0r.
 Qed.
 
 End posterior_probability_prop.
@@ -209,11 +202,11 @@ Local Open Scope ring_scope.
 
 Let f' := fun x : 'rV_n => P `^^ W (x | y).
 
-Definition marginal_post_prob_den : R := / \sum_(t in 'rV_n) f' t.
+Definition marginal_post_prob_den : Rdefinitions.R := (\sum_(t in 'rV_n) f' t)^-1.
 
 Let f'_neq0 : \sum_(t in 'rV_n) f' t <> 0.
 Proof.
-under eq_bigr do rewrite /f' fdist_post_probE /Rdiv.
+under eq_bigr do rewrite /f' fdist_post_probE.
 rewrite -big_distrl /= mulR_eq0 => -[/eqP|].
 - by apply/negP; rewrite -receivable_propE receivableP.
 - by rewrite -RinvE; apply/invR_neq0/eqP; rewrite -receivable_propE receivableP.
@@ -223,12 +216,10 @@ Let f (i : 'I_n) := [ffun a =>  marginal_post_prob_den * \sum_(t in 'rV_n | t ``
 
 Let f0 i a : 0 <= f i a.
 Proof.
-rewrite ffunE; apply/RleP/mulR_ge0.
-- rewrite / marginal_post_prob_den.
-  apply/invR_ge0/RltP; rewrite lt0r/=; apply/andP; split; [apply/eqP |apply/RleP]; last first.
-    exact/RleP/sumr_ge0.
-  exact/f'_neq0.
-- exact/RleP/sumr_ge0.
+rewrite ffunE; apply/mulr_ge0.
+- rewrite /marginal_post_prob_den.
+  by rewrite invr_ge0//; apply/sumr_ge0.
+- by apply/sumr_ge0 => //.
 Qed.
 
 Let f1 i : \sum_(a in A) f i a = 1.
@@ -239,7 +230,7 @@ set tmp1 := \sum_( _ | _ ) _.
 set tmp2 := \sum_( _ | _ ) _.
 suff : tmp1 = tmp2.
   move=> tp12; rewrite -tp12.
-  by rewrite -RmultE mulVR //; exact/eqP/f'_neq0.
+  by rewrite mulVf//; exact/eqP/f'_neq0.
 by rewrite {}/tmp1 {}/tmp2 (partition_big (fun x : 'rV_n => x ``_ i) xpredT).
 Qed.
 

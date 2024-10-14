@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssrnum.
+From mathcomp Require Import all_ssreflect ssralg ssrnum lra.
 Require Import Reals Lra.
 From mathcomp Require Import Rstruct.
 Require Import ssrR Reals_ext fdist proba.
@@ -14,6 +14,8 @@ Import Prenex Implicits.
 Local Open Scope reals_ext_scope.
 Local Open Scope R_scope.
 Local Open Scope ring_scope.
+
+Import GRing.Theory.
 
 Definition pmf : {ffun 'I_3 -> R} := [ffun i =>
   [fun x => 0 with inord 0 |-> 1/2, inord 1 |-> 1/3, inord 2 |-> 1/6] i].
@@ -54,12 +56,12 @@ Lemma pmf_ge0 : [forall a : 'I_3, 0 <= pmf a].
 Proof.
 apply/forallPP; first by move=> x; exact/RleP.
 case/I3P.
-- rewrite /f ffunE /= eqxx; lra.
+- rewrite /f ffunE /= eqxx; apply/RleP; lra.
 - rewrite /f ffunE /= ifF; last by I3_neq.
-  rewrite eqxx; lra.
+  rewrite eqxx; apply/RleP; lra.
 - rewrite /f ffunE /= ifF; last by I3_neq.
   rewrite ifF; last by I3_neq.
-  rewrite eqxx; lra.
+  rewrite eqxx; apply/RleP; lra.
 Qed.
 
 Ltac I3_eq := rewrite (_ : _ == _ = true); last by
@@ -70,7 +72,7 @@ Proof.
 apply/andP; split; first exact: pmf_ge0.
 apply/eqP.
 do 3 rewrite big_ord_recl.
-rewrite big_ord0 addR0 /=.
+rewrite big_ord0 addr0 /=.
 rewrite /f !ffunE /= ifT; last by I3_eq.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
@@ -78,7 +80,7 @@ rewrite ifF; last by I3_neq.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
 (* 1 / 2 + (1 / 3 + 1 / 6) = 1 *)
-by field.
+lra.
 Qed.
 
 Local Open Scope fdist_scope.
@@ -92,18 +94,18 @@ Lemma expected : `E X = 5/3.
 Proof.
 rewrite /Ex.
 do 3 rewrite big_ord_recl.
-rewrite big_ord0 addR0.
-rewrite /X mul1R.
+rewrite big_ord0 addr0.
+rewrite /X mul1r.
 rewrite /f !ffunE /= ifT; last by I3_eq.
 rewrite (_ : INR _ = 2) //.
 rewrite /= ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
 rewrite (_ : INR _ = 3); last first.
-  rewrite S_INR (_ : INR _ = 2) //; by field.
+  rewrite S_INR (_ : INR _ = 2) // !coqRE; lra.
 rewrite /f /= ifF; last by I3_neq.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
-field.
+lra.
 Qed.
 
 Lemma variance : `V X = 5/9.
@@ -112,19 +114,19 @@ rewrite VarE.
 rewrite expected.
 rewrite /Ex /X.
 do 3 rewrite big_ord_recl.
-rewrite big_ord0 addR0 /=.
+rewrite big_ord0 addr0 /=.
 rewrite /sq_RV /comp_RV /=.
-rewrite !mul1R.
+rewrite expr1n mul1r.
 rewrite {1}/pmf !ffunE /=.
 rewrite ifT; last by I3_eq.
-rewrite (_ : INR _ = 2) // mulR1.
+rewrite (_ : (_.+1%:R)%coqR = 2) //.
 rewrite /f /=.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
 rewrite (_ : INR _ = 3); last first.
-  rewrite S_INR (_ : INR _ = 2) //; by field.
+  by rewrite S_INR (_ : INR _ = 2) // !coqRE; lra.
 rewrite ifF; last by I3_neq.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
-field.
+lra.
 Qed.

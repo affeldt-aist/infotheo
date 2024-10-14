@@ -1085,7 +1085,7 @@ Module necset_join.
 Section def.
 Local Open Scope classical_set_scope.
 Local Open Scope proba_scope.
-Definition F (T : Type) := {necset {dist {classic T}}}.
+Definition F (T : Type) := {necset (R.-dist {classic T})}.
 Variable T : Type.
 
 Definition L := [the convType of F T].
@@ -1105,7 +1105,7 @@ Lemma F1join0'_neq0 X : (F1join0' X) != set0.
 Proof.
 apply/set0P.
 case/set0P: (neset_neq0 X) => x Xx.
-by exists (Convn_of_fsdist (x : {dist (F T)})), x.
+by exists (Convn_of_fsdist (x : R.-dist (F T))), x.
 Qed.
 
 Definition L' := necset L.
@@ -1114,7 +1114,7 @@ Definition F1join0 : FFT -> L' := fun X => NECSet.Pack (NECSet.Class
   (isConvexSet.Build _ _ (F1join0'_convex X)) (isNESet.Build _ _ (F1join0'_neq0 X))).
 
 Definition join1' (X : L')
-    : {convex_set [the convType of {dist {classic T}}]} :=
+    : {convex_set [the convType of R.-dist {classic T}]} :=
   ConvexSet.Pack (ConvexSet.Class (isConvexSet.Build _ _ (hull_is_convex
     (\bigcup_(i in X) if i \in X then (i : set _) else set0)))).
 
