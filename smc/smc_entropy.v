@@ -41,6 +41,36 @@ End extra_ring.
   
 Section extra_pr.
 
+Variables (T TX: finType).
+Variable P : R.-fdist T.
+Variable n : nat.
+
+
+(* TODO: prove and generalize this? *)
+Lemma cpr_condself_eq1 (X : {RV P -> ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX)}) x:
+  `Pr[X = x | X = x] = 1.
+Proof.
+Admitted.
+
+
+(* TODO: generalize this? *)
+Lemma pr_eq_RV2 (X : {RV P -> ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX)}) x:
+  `Pr[ [%X, X] = (x, x) ] = `Pr[ X = x ].
+Proof.
+rewrite -cpr_eqE_mul.
+have [Heq0|Hneq0] := eqVneq (`Pr[X = x]) 0.
+  by rewrite Heq0 mulr0 //.
+apply: divr1_eq.
+rewrite mulrC mulrCA.
+rewrite mulVf; last exact Hneq0.
+rewrite cpr_condself_eq1 //=.
+rewrite mulr1 //=.
+Qed.
+
+End extra_pr.
+
+Section extra_pr2.
+  
 Variables (T TX TY TZ: finType).
 Variable P : R.-fdist T.
 
@@ -68,7 +98,7 @@ rewrite !xpair_eqE.
 by rewrite [X in X && _]Bool.andb_comm.
 Qed.
 
-End extra_pr.
+End extra_pr2.
 
 Section entropy_with_indeRV.
 
@@ -160,59 +190,59 @@ End joint_entropyA.
 Section pr_entropy.
   
 
-Variables (T TW TV1: finType) (TV2: finZmodType) (P : R.-fdist T).
+Variables (T TY1 TY2: finType) (TY3: finZmodType) (P : R.-fdist T).
 Variable n : nat.
 Notation p := n.+2.
-Variables (W: {RV P -> TW}) (V1: {RV P -> TV1}) (V2: {RV P -> TV2}).
+Variables (Y1: {RV P -> TY1}) (Y2: {RV P -> TY2}) (Y3: {RV P -> TY3}).
 
-Hypothesis card_A : #|TV2| = n.+1.
-Hypothesis pV2_unif : `p_ V2 = fdist_uniform card_A.
-Hypothesis V1V2indep : P|= V1 _|_ V2.
+Hypothesis card_Y3 : #|TY3| = n.+1.
+Hypothesis pY3_unif : `p_ Y3 = fdist_uniform card_Y3.
+Hypothesis Y2Y3indep : P|= Y2 _|_ Y3.
 
-Lemma cpr_cond_entropy1_RV v1 v2:
-  (forall w ,
-  `Pr[ W = w | V1 = v1 ] = `Pr[ W = w | [%V1, V2] = (v1, v2) ]) ->
-  cond_entropy1_RV V1 W v1 = cond_entropy1_RV [% V1, V2] W (v1, v2). 
+Lemma cpr_cond_entropy1_RV y2 y3:
+  (forall y1 ,
+  `Pr[ Y1 = y1 | Y2 = y2 ] = `Pr[ Y1 = y1 | [%Y2, Y3] = (y2, y3) ]) ->
+  cond_entropy1_RV Y2 Y1 y2 = cond_entropy1_RV [% Y2, Y3] Y1 (y2, y3).
 Proof.
 move => H.
-case /boolP : ((`p_ [% V1, W])`1 v1 == 0)  => Hv1.
+case /boolP : ((`p_ [% Y2, Y1])`1 y2 == 0)  => Hy2.
   rewrite /cond_entropy1_RV.
   rewrite /entropy.
   congr -%R.
   apply:eq_bigr => a _.
-  (*rewrite jfdist_condE. -- it brings `(fdistmap [% V1, V2, W] P)`1 (v1, v2) != 0%coqR` so we cannot use it*)
+  (*rewrite jfdist_condE. -- it brings `(fdistmap [% Y2, Y3, Y3] P)`1 (v1, v2) != 0%coqR` so we cannot use it*)
   rewrite /jfdist_cond.
-  have Hv2: ((`p_ [% V1, V2, W])`1 (v1, v2) == 0).
+  have Hy3: ((`p_ [% Y2, Y3, Y1])`1 (y2, y3) == 0).
     rewrite fst_RV2.
     apply/eqP.
-    move:(@Pr_domin_setX TV1 TV2 (`p_ [%V1, V2]) [set v1] [set v2]).
+    move:(@Pr_domin_setX TY2 TY3 (`p_ [%Y2, Y3]) [set y2] [set y3]).
     rewrite !Pr_set1.
     rewrite setX1.
     rewrite !Pr_set1.
     rewrite fst_RV2.
     apply.
-    rewrite fst_RV2 in Hv1.
+    rewrite fst_RV2 in Hy2.
     exact/eqP. 
   destruct (boolP _).
     exfalso.
-    by rewrite Hv1 in i. 
+    by rewrite Hy2 in i.
   destruct (boolP _).
     exfalso.
-    by rewrite Hv2 in i0. 
+    by rewrite Hy3 in i0. 
   by rewrite !fdist_uniformE.
 
 rewrite cond_entropy1_RVE //.
 rewrite cond_entropy1_RVE; last first.
   rewrite fst_RV2.
-  rewrite fst_RV2 in Hv1.
+  rewrite fst_RV2 in Hy2.
   rewrite -pr_eqE'.
-  rewrite V1V2indep.
+  rewrite Y2Y3indep.
   rewrite !pr_eqE'.
   rewrite mulR_neq0'.
-  rewrite Hv1 /=.
-  rewrite pV2_unif.
+  rewrite Hy2 /=.
+  rewrite pY3_unif.
   rewrite fdist_uniformE /=.
-  rewrite card_A.
+  rewrite card_Y3.
   rewrite invr_eq0.
   by rewrite pnatr_eq0.
 
@@ -220,40 +250,40 @@ rewrite /cond_entropy1.
 rewrite /entropy.
 congr -%R.
 apply:eq_bigr => a _.
-have -> // : \Pr_`p_ [% W, V1][[set a] | [set v1]] = \Pr_`p_ [% W, [%V1, V2]][[set a] | [set (v1, v2)]].
+have -> // : \Pr_`p_ [% Y1, Y2][[set a] | [set y2]] = \Pr_`p_ [% Y1, [%Y2, Y3]][[set a] | [set (y2, y3)]].
 rewrite !jPr_Pr.
 by rewrite !cpr_eq_set1.
 Qed.
 
-Hypothesis Hv1v2 : forall w v1 v2, `Pr[[%V1, V2] = (v1, v2)] != 0 ->
-  `Pr[ W = w | [%V1, V2] = (v1, v2) ] = `Pr[ W = w | V1 = v1 ].
+Hypothesis Hy2y3 : forall y1 y2 y3, `Pr[[%Y2, Y3] = (y2, y3)] != 0 ->
+  `Pr[ Y1 = y1 | [%Y2, Y3] = (y2, y3) ] = `Pr[ Y1 = y1 | Y2 = y2 ].
 
-Lemma Pr_neq0_cond_removal : forall w v1 v2, `Pr[V2 = v2] != 0 ->
-  `Pr[ W = w | [%V1, V2] = (v1, v2) ] = `Pr[ W = w | V1 = v1 ].
+Lemma Pr_neq0_cond_removal : forall y1 y2 y3, `Pr[Y3 = y3] != 0 ->
+  `Pr[ Y1 = y1 | [%Y2, Y3] = (y2, y3) ] = `Pr[ Y1 = y1 | Y2 = y2 ].
 Proof.
-move => w v1 v2 Hv2.
-have [Hv1|Hv1] := eqVneq `Pr[V1 = v1] 0.
-  rewrite !cpr_eqE V1V2indep.
-  by rewrite Hv1 mul0R !Rdiv_0_r.
-apply: Hv1v2.
-by rewrite V1V2indep mulf_eq0 negb_or Hv1.
+move => y1 y2 y3 Hy3neq0.
+have [Hy2|Hy2] := eqVneq `Pr[Y2 = y2] 0.
+  rewrite !cpr_eqE Y2Y3indep.
+  by rewrite Hy2 mul0R !Rdiv_0_r.
+apply: Hy2y3.
+by rewrite Y2Y3indep mulf_eq0 negb_or Hy2.
 Qed.
 
-Lemma snd_extra_indep v1 v2 :
-  (`p_ [% W, [% V1, V2]])`2 (v1, v2) = (`p_ [% W, V1])`2 v1 * `p_V2 v2.
+Lemma snd_extra_indep y2 y3 :
+  (`p_ [% Y1, [% Y2, Y3]])`2 (y2, y3) = (`p_ [% Y1, Y2])`2 y2 * `p_Y3 y3.
 Proof.
 rewrite !fdist_sndE big_distrl /=.
-apply eq_bigr => w _.
-have [Hv2|Hv2] := eqVneq `Pr[V2 = v2] 0.
-  rewrite -!pr_eqE' Hv2 mulr0 pr_eq_pairC pr_eq_domin_RV2 //.
+apply eq_bigr => y1 _.
+have [Hy3|Hy3] := eqVneq `Pr[Y3 = y3] 0.
+  rewrite -!pr_eqE' Hy3 mulr0 pr_eq_pairC pr_eq_domin_RV2 //.
   by rewrite pr_eq_pairC pr_eq_domin_RV2.
-have := Pr_neq0_cond_removal w v1 Hv2.
-rewrite !cpr_eqE V1V2indep -!pr_eqE' !coqRE.
-have [Hv1 _|Hv1] := eqVneq `Pr[V1 = v1] 0.
+have := Pr_neq0_cond_removal y1 y2 Hy3.
+rewrite !cpr_eqE Y2Y3indep -!pr_eqE' !coqRE.
+have [Hy2 _|Hy2] := eqVneq `Pr[Y2 = y2] 0.
   rewrite [in RHS]pr_eq_pairC [in LHS]pr_eq_pairC -pr_eq_pairA.
-  by rewrite !(pr_eq_domin_RV2 _ _ Hv1) mul0r.
-move/(f_equal (fun x => x * (`Pr[V1 = v1] * `Pr[V2 = v2]))).
-rewrite -[in LHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hv1.
+  by rewrite !(pr_eq_domin_RV2 _ _ Hy2) mul0r.
+move/(f_equal (fun x => x * (`Pr[Y2 = y2] * `Pr[Y3 = y3]))).
+rewrite -[in LHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hy2.
 rewrite mulrA -(mulrA _ _^-1). (* Coq identify the A / B is ^-1.*)
 by rewrite mulVf // !mulr1.
 Qed.
@@ -840,29 +870,57 @@ Let W1 := f1 `o O.  (* x1; It is okay in Bob's view has it because only used in 
 Let W2 := f2 `o O.  (* [%x2, s2, x1', r2]; cannot have x1, s1 here otherwise Bob knows the secret*)
 Let Wm := fm `o O.  (* y2 *)
 
-(* Because y2 is generated by Bob; not related to x2, s2, x1, s1, r2 at all*)
+Let eq_W1_RV:
+  f1 `o O = x1.
+Proof. by apply boolp.funext. Qed.
+
+Let eq_W2_RV:
+  f2 `o O = [%x2, s2, x1', r2].
+Proof. by apply boolp.funext. Qed.
+
+Let eq_Wm_RV:
+  fm `o O = y2.
+Proof. by apply boolp.funext. Qed.
+
+(* Because y2 (Wm) is generated by Bob; not related to x2, s2, x1, s1, r2 at all*)
 Hypothesis W2_Wm_indep: P|= W2 _|_ Wm.
-Hypothesis W1W2_Wm_indep : P|= [%W1, W2] _|_ Wm.
+
+(* TODO: tried to prove but found it cannot be derived from other facts.*)
+Let W1W2_Wm_indep :
+  P|= [%W1, W2] _|_ Wm.
+Proof.
+rewrite /W1 /W2 /Wm.
+rewrite inde_rv_sym.
+apply: inde_RV2_comp.
+rewrite /inde_rv /=.
+move => x [z1 z2].
+rewrite coqRE.
+Abort.
+
+(* Because y2 (Wm) is generated by Bob; not related to x2, s2, x1, s1, r2 at all*)
+Hypothesis W1W2_Wm_indep: P|= [%W1, W2] _|_ Wm.
 
 Hypothesis card_Wm: #|TX| = m.+2.
 (* In the paper, y2 (Wm) is uniform distributed*)
 Hypothesis pWm_unif: `p_ Wm = fdist_uniform card_Wm.
 
 Let W1WmW2_cinde : W1 _|_ Wm | W2.
-Proof. apply: inde_RV2_cinde. by exact: W1W2_Wm_indep.
+Proof.
+apply: inde_RV2_cinde. by exact: W1W2_Wm_indep.
 Qed.
 
-Lemma eqn6:
-  `H(W1|[%W2, Wm]) = `H(W1|W2).
+Lemma eqn6_proof:
+  `H(x1|[%[%x2, s2, x1', r2], y2]) = `H(x1|[%x2, s2, x1', r2]).
 Proof.
-have H := @cpr_cond_entropy _ _ _ TX P m.+1 W1 W2 Wm card_Wm pWm_unif W2_Wm_indep _.
-apply H => w w2 wm Hneq0.
+rewrite -eq_W1_RV -eq_W2_RV -eq_Wm_RV.
+have Ha := cpr_cond_entropy pWm_unif W2_Wm_indep _.
+apply Ha => w w2 wm Hneq0.
 simpl in *.
 rewrite pr_eq_pairC in Hneq0.
-have H2:=(@cinde_alt _ _ _ _ _ W1 Wm W2 w wm w2 W1WmW2_cinde Hneq0).
-symmetry in H2.
-rewrite cpr_RV2_sym. 
-apply H2.
+have Hb:=(@cinde_alt _ _ _ _ _ W1 Wm W2 w wm w2 W1WmW2_cinde Hneq0).
+rewrite -/W1.
+rewrite cpr_RV2_sym.
+exact: Hb.
 Qed.
 
 End eqn6_proof.
