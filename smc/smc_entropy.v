@@ -45,27 +45,15 @@ Variables (T TX: finType).
 Variable P : R.-fdist T.
 Variable n : nat.
 
-
-(* TODO: prove and generalize this? *)
-Lemma cpr_condself_eq1 (X : {RV P -> ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX)}) x:
-  `Pr[X = x | X = x] = 1.
+Lemma pr_eq_diag U (X : {RV P -> U}) (x : U) :
+  `Pr[ [% X, X] = (x, x) ] = `Pr[ X = x ].
 Proof.
-Admitted.
-
-
-(* TODO: generalize this? *)
-Lemma pr_eq_RV2 (X : {RV P -> ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX)}) x:
-  `Pr[ [%X, X] = (x, x) ] = `Pr[ X = x ].
-Proof.
-rewrite -cpr_eqE_mul.
-have [Heq0|Hneq0] := eqVneq (`Pr[X = x]) 0.
-  by rewrite Heq0 mulr0 //.
-apply: divr1_eq.
-rewrite mulrC mulrCA.
-rewrite mulVf; last exact Hneq0.
-rewrite cpr_condself_eq1 //=.
-rewrite mulr1 //=.
+by rewrite !pr_eqE /Pr; apply: eq_bigl=> a; rewrite !inE xpair_eqE andbb.
 Qed.
+
+Lemma cpr_eq_id U (X : {RV P -> U}) (x : U) :
+  `Pr[ X = x ] != 0 -> `Pr[ X = x | X = x ] = 1.
+Proof. by move=> ?; rewrite cpr_eqE pr_eq_diag divRR. Qed.
 
 End extra_pr.
 
