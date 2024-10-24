@@ -407,7 +407,7 @@ by move=> *; exact/sq_dev_ge0.
 Qed.
 
 Lemma sq_dev_max_ge0 : 0 <= sq_dev_max.
-Proof. by rewrite /sq_dev_max; apply/topology.bigmax_geP; left. Qed.
+Proof. by rewrite /sq_dev_max; apply/boolp.bigmax_geP; left. Qed.
 
 Lemma sq_dev_max_ge u : C u != 0 -> sq_dev u <= sq_dev_max.
 Proof. by move=> Cu0; rewrite /sq_dev_max; apply/le_bigmax_cond. Qed.

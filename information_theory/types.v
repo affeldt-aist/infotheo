@@ -90,10 +90,10 @@ Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
 set f := [ffun a => N(a | ta)%:R / n.+1%:R].
 assert (H1 : forall a, (0%mcR <= f a)%mcR).
   move=> a; rewrite ffunE; apply/RleP/divR_ge0; by [apply leR0n | apply ltR0n].
-have H2 : \sum_(a in A) f a = 1%R.
+assert (H2 : \sum_(a in A) f a = 1%R).
   under eq_bigr do rewrite ffunE /=.
   by rewrite -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
-have H : forall a, (N(a | ta) < n.+2)%nat.
+assert (H : forall a, (N(a | ta) < n.+2)%nat).
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
 refine (@type.mkType _ n.+1 (FDist.make H1 H2)
   [ffun a => @Ordinal n.+2 (N(a | ta)) (H a)] _).
@@ -141,22 +141,22 @@ Qed.
 Definition fdist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : (\sum_(a in A) f a)%nat == n.+1) : {fdist A}.
 set pf := [ffun a : A => INR (f a) / INR n.+1].
-have H : (\sum_(a in A) pf a)%mcR = 1 :> R.
+assert (pf_ge0 : forall a, (0 <= pf a)%mcR).
+  move=> a; apply/RleP.
+  rewrite /pf/= ffunE; apply: divR_ge0 => //.
+    apply/RleP.
+    rewrite INRE.
+    by rewrite Num.Theory.ler0n.
+  apply/RltP.
+  rewrite INRE.
+  by rewrite Num.Theory.ltr0n.
+assert (H : (\sum_(a in A) pf a)%mcR = 1 :> R).
   rewrite /pf; under eq_bigr do rewrite ffunE /=.
   rewrite /Rdiv -big_distrl /= -big_morph_natRD.
   move/eqP : Hf => ->.
   rewrite -RmultE.
   by rewrite mulRV// INR_eq0'.
-apply: (FDist.make _ H).
-move=> a.
-apply/RleP.
-rewrite /pf/= ffunE; apply: divR_ge0 => //.
-  apply/RleP.
-  rewrite INRE.
-  by rewrite Num.Theory.ler0n.
-apply/RltP.
-rewrite INRE.
-by rewrite Num.Theory.ltr0n.
+exact: (FDist.make pf_ge0 H).
 Defined.
 
 Lemma fdist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})

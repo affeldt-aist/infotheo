@@ -654,13 +654,13 @@ Local Open Scope nat_scope.
 Definition type_of_row (a : A) (Ha : N(a | ta) != 0) : P_ N(a | ta) ( B ).
 pose f := [ffun b => Ordinal (ctyp_element_ub Hrow_num_occ Hta a b)].
 pose d := [ffun b => ((f b)%:R / N(a | ta)%:R)%R].
-have d0 : forall b, (0 <= d b)%mcR.
+assert (d0 : forall b, (0 <= d b)%mcR).
   move=> b.
   apply/RleP.
   rewrite /d /= ffunE.
   apply mulR_ge0; first exact/leR0n.
   apply/invR_ge0/ltR0n; by rewrite lt0n.
-have d1 : (\sum_(b : B) d b)%R = 1%R.
+assert (d1 : (\sum_(b : B) d b)%R = 1%R).
   under eq_bigr do rewrite ffunE /=.
   rewrite -big_distrl /= -big_morph_natRD.
   set lhs := \sum_i _.
@@ -1240,17 +1240,17 @@ Hypothesis Bnot0 : (0 < #|B|)%nat.
 
 Definition num_co_occ_jtype (ta : n.-tuple A) (tb : n.-tuple B) : P_ n (A , B).
 set f := [ffun a => [ffun b => Ordinal (num_co_occ_ub a b ta tb)]].
-have Hf : \sum_(a in A) \sum_(b in B) f a b == n.
+assert (Hf : \sum_(a in A) \sum_(b in B) f a b == n).
   rewrite /f.
   apply/eqP.
   transitivity (\sum_a \sum_b N(a, b|ta, tb)); last by rewrite num_co_occ_sum.
   apply eq_big => a //= _.
   apply eq_big => b //= _.
   by rewrite 2!ffunE.
-have Htmp' : (forall a b,
+assert (Htmp' : (forall a b,
         (chan_of_jtype Anot0 Bnot0 f) a b =
         (let ln := (\sum_(b0 in B) (f a) b0)%nat in
-         if ln == O then / #|B|%:R else (((f a) b)%:R / ln%:R))%R).
+         if ln == O then / #|B|%:R else (((f a) b)%:R / ln%:R))%R)).
   by move=> a b; rewrite ffunE.
 exact (@JType.mk _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf Htmp').
 Defined.
