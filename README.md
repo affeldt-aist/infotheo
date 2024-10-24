@@ -32,7 +32,7 @@ information theory, and linear error-correcting codes.
   - Naruomi Obata, Titech (M2)
   - Alessandro Bruni, IT-University of Copenhagen
 - License: [LGPL-2.1-or-later](LICENSE)
-- Compatible Coq versions: Coq 8.18--8.19
+- Compatible Coq versions: Coq 8.18--8.20
 - Additional dependencies:
   - [MathComp ssreflect](https://math-comp.github.io)
   - [MathComp fingroup](https://math-comp.github.io)
