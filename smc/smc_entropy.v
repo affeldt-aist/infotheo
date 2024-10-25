@@ -1100,15 +1100,11 @@ transitivity (`H( x1 | [% x2, s2, x1', r2])).
 transitivity (`H(x1|[%x2, s2, x1'])).
   by rewrite (eqn7_proof O_r2_eqn7_indep x1O_r2_eqn7_indep pr2_uniform).
 transitivity (`H(x1|[%x2, s2])).
-  by rewrite (eqn8_proof s1_O_eqn8_indep ps1_uniform  x2s2_x1'_indep).
+  by rewrite (eqn8_proof s1_O_eqn8_indep ps1_uniform x2s2_x1'_indep).
 by rewrite eqn_8_1.
 Qed.
   
 End eqn_bob_fin_proof.
-
-Section pi2_is_information_leakage_free.
-
-End pi2_is_information_leakage_free.
 
 (* Using graphoid for combinations of independ random variables. *)
 Section mutual_indep.
@@ -1120,9 +1116,21 @@ About pairwise.
 
 Hypothesis Hinde : {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> inde_rv i j}%nat.
 Check @Hinde 0 1.
+Check @Hinde 0 2.
+Check @Hinde 1 2.
+
+Lemma x1_x2_inde:
+    P|= x1 _|_ x2.
+Proof.
+have H := (@Hinde 0 1).
+apply H.
+rewrite //.
+Qed.
 
 Hypothesis Hinde_r : P|= r1 _|_ y2.
 Hypothesis Hinde_all : forall i j, P|= nth x1 [:: x1; x2; s1; s2] i _|_ nth r1 [:: r1; y2] j.
+About Hinde_all.
+Check Hinde_all 0 1.
   
 Lemma inde_cinde (X Y Z: {RV P-> TX}):
   inde_rv X Y -> inde_rv [%X, Y] Z -> cinde_rv X Y Z.
