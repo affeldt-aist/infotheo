@@ -58,24 +58,30 @@ Lemma conditional_entropyE : cond_entropy d = 11/8.
 Proof.
 rewrite /cond_entropy /=.
 rewrite !big_ord_recl big_ord0 !fdist_sndE /=.
-rewrite !big_ord_recl !big_ord0 !dE /f /=.
+rewrite !big_ord_recl big_ord0.
+repeat (rewrite dE /f /= ffunE /=) .
+rewrite -!coqRE; field_simplify.
 rewrite /cond_entropy1 /=.
-rewrite !big_ord_recl !big_ord0 /jcPr /Pr !(big_setX,big_set1) !dE /f /=.
+rewrite !big_ord_recl big_ord0.
+rewrite /jcPr /Pr.
+repeat (rewrite big_setX /= !big_set1 dE /f /= ffunE /=).
+rewrite !divRE; ring_simplify.
 rewrite !fdist_sndE /=.
-rewrite !big_ord_recl !big_ord0 !dE /f !ffunE /=.
-rewrite !(addR0,add0R,div0R,mul0R).
-rewrite -!RplusE !addR0.
-repeat (rewrite logDiv; try lra).
-rewrite !log1 !sub0R !log4 !log8 !log16 !log32.
-rewrite [X in log X](_ : _ = 1/4); last lra.
-rewrite !div1R logV; last lra.
-rewrite !log4.
-rewrite [X in log X](_ : _ = 1/4); last lra.
-rewrite !div1R logV; last lra.
-rewrite !log4.
-rewrite [X in log X](_ : _ = 1/4); last lra.
-rewrite !div1R logV; last lra.
-rewrite !log4.
+rewrite !big_ord_recl !big_ord0.
+repeat (rewrite dE /f /= ffunE /=).
+rewrite -!coqRE.
+field_simplify.
+rewrite !addR0.
+rewrite (_ : 1/32 + 1/32 = 1/16); last lra.
+rewrite (addRCA (1/16)).
+rewrite (addRA (1/16)).
+rewrite (_ : 1/16 + 1/16 = 1/8); last lra.
+rewrite (_ : 1/8 + 1/8 = 1/4); last lra.
+rewrite !divRE invRM; [|apply/eqP;lra|apply/eqP;lra].
+repeat (rewrite logM; [|lra|lra]).
+rewrite invRK.
+repeat (rewrite logV; last lra).
+rewrite log1 log4 log8 log16 log32.
 field.
 Qed.
 
