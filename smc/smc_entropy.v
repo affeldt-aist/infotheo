@@ -824,8 +824,8 @@ Section pi2_alice_view_is_leakage_free.
   
 (* Hypothese from the paper. *)
 Hypothesis x2_indep : P |= [% x1, s1, r1] _|_ x2.
-Hypothesis y2_O_eqn3_indep : P |= neg_RV y2 _|_ [%x1, x2, s1, s2, r1, r2].
-Hypothesis s2_O_eqn4_indep : P |= s2 _|_ [%x1, x2, s1, r1].
+Hypothesis negy2_x1x2s1s2r1r2_eqn3_indep : P |= neg_RV y2 _|_ [%x1, x2, s1, s2, r1, r2].
+Hypothesis s2_x1x2s1r1_eqn4_indep : P |= s2 _|_ [%x1, x2, s1, r1].
 Hypothesis card_TX : #|TX| = m.+1.
 Hypothesis card_'rVTX_n : #|'rV[TX]_n| = m.+2.
 Hypothesis neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
@@ -853,9 +853,9 @@ Proof.
 transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
   by rewrite eqn2_proof.
 transitivity (`H( x2 | [% x1, s1, r1, x2'])).
-  by rewrite (eqn3_proof y2_O_eqn3_indep neg_py2_unif).
+  by rewrite (eqn3_proof negy2_x1x2s1s2r1r2_eqn3_indep neg_py2_unif).
 transitivity (`H( x2 | [% x1, s1, r1])).
-  by rewrite (eqn4_proof s2_O_eqn4_indep ps2_unif).
+  by rewrite (eqn4_proof s2_x1x2s1r1_eqn4_indep ps2_unif).
 by rewrite eqn_4_1.
 Qed.
 
@@ -1061,15 +1061,14 @@ End eqn8_proof.
 Section eqn_bob_fin_proof.
 
 (* Hypothese from the paper. *)
-Hypothesis x1_indep : P |= [% x2, s2] _|_ x1.
 Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
 Hypothesis x1_y2_indep : P |= x1 _|_ y2.
-Hypothesis O_y2_eqn6_indep : P |= [%x2, s2, x1', r2] _|_ y2.
-Hypothesis x1O_y2_eqn6_indep : P |= [%x1, [%x2, s2, x1', r2]] _|_ y2.
-Hypothesis O_r2_eqn7_indep : P |= [%x2, s2, x1'] _|_ r2.
-Hypothesis x1O_r2_eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
-Hypothesis s1_O_eqn8_indep : P |= s1 _|_ [%x1, x2, s1, s2].
 Hypothesis x2s2_x1'_indep : P |= [% x2, s2] _|_ x1'.
+Hypothesis x2s2x1'r2_y2_eqn6_indep : P |= [%x2, s2, x1', r2] _|_ y2.
+Hypothesis x1x2s2x1'r2_y2_eqn6_indep : P |= [%x1, [%x2, s2, x1', r2]] _|_ y2.
+Hypothesis x2_s2_x1'_r2_eqn7_indep : P |= [%x2, s2, x1'] _|_ r2.
+Hypothesis x1x2_s2_x1'_r2_eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
+Hypothesis s1_x1x2s1s2_eqn8_indep : P |= s1 _|_ [%x1, x2, s1, s2].
 
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis card_rVTX : #|'rV[TX]_n| = m.+2.
@@ -1096,11 +1095,11 @@ Lemma pi2_bob_view_is_leakage_free_proof:
   `H( x1 | BobView) = `H `p_ x1.
 Proof.
 transitivity (`H( x1 | [% x2, s2, x1', r2])).
-  by rewrite (eqn6_proof O_y2_eqn6_indep x1O_y2_eqn6_indep py2_uniform).
+  by rewrite (eqn6_proof x2s2x1'r2_y2_eqn6_indep x1x2s2x1'r2_y2_eqn6_indep py2_uniform).
 transitivity (`H(x1|[%x2, s2, x1'])).
-  by rewrite (eqn7_proof O_r2_eqn7_indep x1O_r2_eqn7_indep pr2_uniform).
+  by rewrite (eqn7_proof x2_s2_x1'_r2_eqn7_indep x1x2_s2_x1'_r2_eqn7_indep pr2_uniform).
 transitivity (`H(x1|[%x2, s2])).
-  by rewrite (eqn8_proof s1_O_eqn8_indep ps1_uniform x2s2_x1'_indep).
+  by rewrite (eqn8_proof s1_x1x2s1s2_eqn8_indep ps1_uniform x2s2_x1'_indep).
 by rewrite eqn_8_1.
 Qed.
   
@@ -1109,34 +1108,25 @@ End eqn_bob_fin_proof.
 (* Using graphoid for combinations of independ random variables. *)
 Section mutual_indep.
 
-Hypothesis x1_indep1 : P|= x1 _|_ [%s1, r1, x2', t, y1].
-Hypothesis x1_indep2 : P|= x1 _|_ [%x2, s1, s2, r1, y2].  (* from the paper. *)
-
-About pairwise.
-
 Hypothesis Hinde : {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> inde_rv i j}%nat.
-Check @Hinde 0 1.
-Check @Hinde 0 2.
-Check @Hinde 1 2.
 
 Lemma x1_x2_inde:
     P|= x1 _|_ x2.
 Proof.
-have H := (@Hinde 0 1).
+have H := @Hinde 0 1.
 apply H.
 rewrite //.
 Qed.
 
-Hypothesis Hinde_r : P|= r1 _|_ y2.
 Hypothesis Hinde_all : forall i j, P|= nth x1 [:: x1; x2; s1; s2] i _|_ nth r1 [:: r1; y2] j.
-About Hinde_all.
-Check Hinde_all 0 1.
-  
-Lemma inde_cinde (X Y Z: {RV P-> TX}):
-  inde_rv X Y -> inde_rv [%X, Y] Z -> cinde_rv X Y Z.
-Proof.
-Admitted.
 
+Lemma x1_r1_inde:
+    P|= x1 _|_ r1.
+Proof.
+have H := @Hinde_all 0 0.
+apply H.
+Qed.
+  
 End mutual_indep.
 
 End pi2.
