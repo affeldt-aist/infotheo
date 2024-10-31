@@ -538,14 +538,48 @@ Variable P : R.-fdist T.
 Variable n : nat.
 Notation p := m.+2.
 
-Variables (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
-Variables (y2 r1: {RV P -> TX}).
-
 Definition dotproduct (a b:'rV[TX]_n) := (a *m b^T)``_ord0.
 Definition dotproduct_rv (A B:{RV P -> 'rV[TX]_n}) := fun p => dotproduct (A p) (B p).
 
 Local Notation "u *d w" := (dotproduct u w).
 Local Notation "u \*d w" := (dotproduct_rv u w).
+
+Section scalar_product_def.
+
+Definition SMC := 'rV[TX]_n -> 'rV[TX]_n -> (TX * TX).
+Definition is_scalar_product (sp: SMC) :=
+  forall (xa xb: 'rV[TX]_n),
+  (sp xa xb).1 + (sp xa xb).2 = xa *d xb.
+
+Definition scalar_product (sa sb: 'rV[TX]_n)(ra rb yb: TX)(xa xb: 'rV[TX]_n): (TX * TX) :=
+  (xb *d (xa + sa) + rb - yb - (sa *d (xb + sb)) + ra, yb).
+
+Definition commodity_rb (sa sb: 'rV[TX]_n)(ra: TX): TX :=
+  sa *d sb - ra.
+
+Lemma dot_productC (aa bb : 'rV[TX]_n) : aa *d bb = bb *d aa.
+Admitted.
+
+Lemma dot_productDr (aa bb cc : 'rV[TX]_n) :
+  aa *d (bb + cc) = aa *d bb + aa *d cc.
+Proof.
+Admitted.
+
+Lemma scalar_product_correct (sa sb: 'rV[TX]_n)(ra yb: TX) :
+  is_scalar_product (scalar_product sa sb ra (commodity_rb sa sb ra) yb).
+Proof.
+move=>/=xa xb/=.
+rewrite /commodity_rb /scalar_product.
+rewrite !dot_productDr.
+Abort.
+(* TODO: I feel we need to repeat all proofs again...? *)
+
+End scalar_product_def.
+
+
+Variables (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
+Variables (y2 r1: {RV P -> TX}).
+
 
 Let x1' : {RV P -> 'rV[TX]_n} := x1 \+ s1.
 Let x2' : {RV P -> 'rV[TX]_n} := x2 \+ s2.
