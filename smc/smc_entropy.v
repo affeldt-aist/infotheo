@@ -1,6 +1,6 @@
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-Require Import Reals Lra.
-From mathcomp Require Import Rstruct.
+Require Import Reals.
+From mathcomp Require Import Rstruct ring.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy smc graphoid.
 
@@ -532,6 +532,7 @@ Section pi2.
 
 Variable m : nat.
 Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
+(*Variable TX:comRingType.*)
 
 Variables (T: finType).
 Variable P : R.-fdist T.
@@ -558,12 +559,21 @@ Definition commodity_rb (sa sb: 'rV[TX]_n)(ra: TX): TX :=
   sa *d sb - ra.
 
 Lemma dot_productC (aa bb : 'rV[TX]_n) : aa *d bb = bb *d aa.
-Admitted.
+Proof.
+rewrite /dotproduct.
+rewrite !mxE.
+apply: eq_bigr=> *.
+by rewrite !mxE mulrC.
+Qed.
 
 Lemma dot_productDr (aa bb cc : 'rV[TX]_n) :
   aa *d (bb + cc) = aa *d bb + aa *d cc.
 Proof.
-Admitted.
+rewrite /dotproduct !mxE.
+rewrite -big_split /=.
+apply: eq_bigr=> *.
+by rewrite !mxE mulrDr.
+Qed.
 
 Lemma scalar_product_correct (sa sb: 'rV[TX]_n)(ra yb: TX) :
   is_scalar_product (scalar_product sa sb ra (commodity_rb sa sb ra) yb).
@@ -571,8 +581,13 @@ Proof.
 move=>/=xa xb/=.
 rewrite /commodity_rb /scalar_product.
 rewrite !dot_productDr.
-Abort.
-(* TODO: I feel we need to repeat all proofs again...? *)
+rewrite addrA.
+rewrite dot_productC.
+rewrite (dot_productC sa xb).
+ring.
+(*rewrite (@GRing.add R).[AC(2*2)(1*4*(3*2))].*)
+Qed.
+
 
 End scalar_product_def.
 
@@ -1151,6 +1166,15 @@ have H := @Hinde 0 1.
 apply H.
 rewrite //.
 Qed.
+
+Let H := [%x1, [%x2, s2, x1', r2]].
+Check H.
+
+Let H2 := [%x2, s2, x1'].
+Check H2.
+
+Definition rvgen : (i j: nat)->
+
 
 Hypothesis Hinde_all : forall i j, P|= nth x1 [:: x1; x2; s1; s2] i _|_ nth r1 [:: r1; y2] j.
 
