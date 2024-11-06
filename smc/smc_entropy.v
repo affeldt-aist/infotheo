@@ -1,3 +1,4 @@
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct ring.
@@ -546,17 +547,102 @@ Local Notation "u *d w" := (dotproduct u w).
 Local Notation "u \*d w" := (dotproduct_rv u w).
 
 Section scalar_product_def.
+  
+Record party_view :=
+  PartyView {
+    x  : 'rV[TX]_n;
+    x' : 'rV[TX]_n;
+    s  : 'rV[TX]_n;
+    r  : TX;
+    t  : TX;
+    y  : TX;
+  }.
 
-Definition SMC := 'rV[TX]_n -> 'rV[TX]_n -> (TX * TX).
+
+Definition is_alice_view (a: party_view) :=
+  y a = t a - (s a *d x' a) + r a.
+
+Definition is_bob_view (b: party_view) :=
+  t b = (x b *d x' b) + r b - y b.
+
+Definition party_view_eq (p1 p2: party_view) :=
+  (x p1 == x p2) && (x' p1 == x' p2) &&
+  (s p1 == s p2) && (r p1 == r p2) &&
+  (t p1 == t p2) && (y p1 == y p2).
+
+Lemma party_view_eqP : Equality.axiom party_view_eq.
+Proof.
+move => a1 a2.
+apply: (iffP idP); last first.
+  move ->.
+  rewrite /party_view_eq.
+  by rewrite !eqxx.
+case: a1 => x1 x'1 s1 r1 t1 y1.
+case: a2 => x2 x'2 s2 r2 t2 y2.
+rewrite /party_view_eq /=.
+move=> /andP [] /andP [] /andP [] /andP [] /andP [].
+by move=> /eqP -> /eqP -> /eqP -> /eqP -> /eqP -> /eqP ->.
+Qed.
+
+HB.instance Definition _ := hasDecEq.Build _ party_view_eqP.
+Check party_view : eqType.
+
+Definition SMC := 'rV[TX]_n -> 'rV[TX]_n -> (TX * TX * (party_view * party_view)).
+
 Definition is_scalar_product (sp: SMC) :=
   forall (xa xb: 'rV[TX]_n),
-  (sp xa xb).1 + (sp xa xb).2 = xa *d xb.
+  (sp xa xb).1.1 + (sp xa xb).1.2 = xa *d xb.
 
-Definition scalar_product (sa sb: 'rV[TX]_n)(ra rb yb: TX)(xa xb: 'rV[TX]_n): (TX * TX) :=
-  (xb *d (xa + sa) + rb - yb - (sa *d (xb + sb)) + ra, yb).
+(* [%x1, x2, s1, s2, r1, r2] *)
+Definition filter_eqn3 (views: party_view * party_view) :=
+  let '(a, b) := views in
+  (x a, x b, s a, s b, r a, r b).
 
-Definition commodity_rb (sa sb: 'rV[TX]_n)(ra: TX): TX :=
-  sa *d sb - ra.
+(* [%x1, x2, s1, r1] *)
+Definition filter_eqn4 (views: party_view * party_view) :=
+  let '(a, b) := views in
+  (x a, x b, s a, r a).
+
+(* [%x1, s1, r1] *)
+Definition filter_eqn4_1 (views: party_view * party_view) :=
+  let '(a, b) := views in
+  (x a, s a, r a).
+
+(* [%x1, x2, s1, s2, r2, y2] *)
+Definition filter_eqn6 (views: party_view * party_view) :=
+  let '(a, b) := views in
+  (x a, x b, s a, s b, r b, y b).
+
+(* [%x1, x2, s1, s2, r2] *)
+Definition filter_eqn7 (views: party_view * party_view) :=
+  let '(a, b) := views in
+  (x a, x b, s a, s b, r b).
+
+(* [%x1, x2, s1, s2] *)
+Definition filter_eqn8 (views: party_view * party_view) :=
+  let '(a, b) := views in
+  (x a, x b, s a, s b).
+
+(*[%x2, s2] *)
+Definition filter_eqn8_1 (views: party_view * party_view) :=
+  let '(a, b) := views in
+  (x b, s b).
+
+Definition step_eqn2_ya : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
+  let '(xa, sa, ra, xb', t) := z in t - (xb' *d sa) + ra.
+
+Definition step_eqn3_t_with_yb : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
+  let '(xa, xb, sa, sb, ra, rb) := z in (xa + sa) *d xb + rb.
+
+Definition scalar_product (sa sb: 'rV[TX]_n)(ra yb: TX)(xa xb: 'rV[TX]_n): (TX * TX * (party_view * party_view)) :=
+  let xa' := xa + sa in
+  let xb' := xb + sb in
+  let rb := sa *d sb - ra in
+  (* let t := xb *d xa' + rb - yb in *)
+  let t_with_yb := step_eqn3_t_with_yb (xa, xb, sa, sb, ra, rb) in
+  let t := t_with_yb - yb in  (* cannot express `add_RV rv_t (neg_RV yb) in function *)
+  let ya := step_eqn2_ya (xa, sa, ra, xb', t) in
+  (ya, yb, (PartyView xa xb' sa ra t ya, PartyView xb xa' sb rb t yb)).
 
 Lemma dot_productC (aa bb : 'rV[TX]_n) : aa *d bb = bb *d aa.
 Proof.
@@ -575,25 +661,55 @@ apply: eq_bigr=> *.
 by rewrite !mxE mulrDr.
 Qed.
 
+(*   xb *d (xa + sa) + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra + yb = xa *d xb *)
 Lemma scalar_product_correct (sa sb: 'rV[TX]_n)(ra yb: TX) :
-  is_scalar_product (scalar_product sa sb ra (commodity_rb sa sb ra) yb).
+  is_scalar_product (scalar_product sa sb ra yb).
 Proof.
 move=>/=xa xb/=.
-rewrite /commodity_rb /scalar_product.
+rewrite (dot_productC (xa+sa) xb).
 rewrite !dot_productDr.
-rewrite addrA.
 rewrite dot_productC.
-rewrite (dot_productC sa xb).
+rewrite (dot_productC xb sa).
+rewrite (dot_productC (xb+sb) sa).
+rewrite dot_productDr.
 ring.
 (*rewrite (@GRing.add R).[AC(2*2)(1*4*(3*2))].*)
 Qed.
-
 
 End scalar_product_def.
 
 
 Variables (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
 Variables (y2 r1: {RV P -> TX}).
+
+(* So a single value from SMC can be in RV "monad". *)
+Variable rv_alice : {RV P -> party_view}.
+
+Definition scalar_product_uncurry (o: 'rV[TX]_n * 'rV[TX]_n * TX * TX * 'rV[TX]_n * 'rV[TX]_n) : (TX * TX * (party_view * party_view)) :=
+  let '(sa, sb, ra, yb, xa, xb) := o in
+  (scalar_product sa sb ra yb xa xb).
+
+(* TODO: during each scalar product, use a sequence of party view paris to record history, not just the current party views *)
+Check scalar_product_uncurry.
+
+(* (Ab)use `comp_RV` as the `unit` in a monad, or `fmap` in a functor *)
+(* So we can have an interface for random variables and deterministic computations *)
+Definition scalar_product_RV :=
+  comp_RV scalar_product_uncurry [%s1, s2, r1, y2, x1, x2] (TB:=(TX * TX * (party_view * party_view))%type).
+
+About scalar_product_RV.
+(* It gives RV (ya, yb) P: a random variable version of scalar_product;
+   it can be concated with other "monadic" operations in a SMC DSL monadic program.
+
+   For example: the result of scalar-product then to zn-to-z2...then to a integer division.
+
+   do
+     scalar-product;
+     zn-to-z2 -> { expand to k-times scalar-product };
+     ...
+     division -> { expand to p-times scalar-product };
+     unwrap  --> get the result if we have co-monad.
+*)
 
 
 Let x1' : {RV P -> 'rV[TX]_n} := x1 \+ s1.
@@ -616,11 +732,8 @@ Let eqn5 := `H(x1|BobView).
 
 Section eqn2_proof.
 
-Let f : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
-  let '(x1, s1, r1, x2', t) := z in t - (x2' *d s1) + r1.
-
 Lemma y1_fcomp :
-  y1 = f `o [%x1, s1, r1, x2', t].
+  y1 = step_eqn2_ya `o [%x1, s1, r1, x2', t].
 Proof. by apply boolp.funext. Qed.
 
 Lemma eqn2_proof:
@@ -631,12 +744,8 @@ End eqn2_proof.
 
 Section eqn3_proof.
 
-(* All variables t will be used. *)
-(* Because in mc_removal_pr, only one joint random varaible can be fed to the lemma,
-   for all composed f1, f2, fm which are also fed to the lemma.
-   We need a common set of all used random variables.
-
-   And note that r2 is not independent from others; it is calculated from s1, s2 and r1.
+(* Selected variables from scalar-product only for eqn3.
+   Each equation has a such "focus" from all variables in the scalar-product.
 *)
 Let O := [%x1, x2, s1, s2, r1, r2].
 
@@ -648,16 +757,11 @@ Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> 'rV[TX]_n 
 Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) := fun z =>
   let '(x1, x2, s1, s2, r1, r2) := z in (x1, s1, r1, x2 + s2).
 
-(* t is x1' \*d x2 \+ r2 \- y2 *)
-(* (fm `o X)+Z in mc_removal_pr must be t+(-y2) in eq3 *)
-Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
-  let '(x1, x2, s1, s2, r1, r2) := z in (x1 + s1) *d x2 + r2.
-
 (* in mc_removal_pr they are named as Y1 Y2 Ym but we already have Y so renaming them. *)
 Let Z := neg_RV y2.
 Let W1 := f1 `o O.  (* x2; It is okay in Alice's view has it because only used in condition. *)
 Let W2 := f2 `o O.  (* [%x1, s1, r1, x2']; cannot have x2, s2, r2 here otherwise Alice knows the secret*)
-Let Wm := fm `o O.  (* t-(neg_RV y2); t before it addes y2 in WmZ*)
+Let Wm := step_eqn3_t_with_yb `o O.  (* t-(neg_RV y2); t before it addes (neg_RV y2) in WmZ*)
 Let WmZ := Wm `+ neg_RV y2. (* t *)
 
 Let eq_W1_RV:
@@ -669,11 +773,11 @@ Let eq_W2_RV:
 Proof. by apply boolp.funext. Qed.
 
 Let eq_Wm_RV:
-  fm `o O = (x1 \+ s1) \*d x2 \+ r2.
+  step_eqn3_t_with_yb `o O = (x1 \+ s1) \*d x2 \+ r2.
 Proof. by apply boolp.funext => a . Qed.
 
 Let eq_WmZ_RV:
-  fm `o O `+ (neg_RV y2) = t.
+  step_eqn3_t_with_yb `o O `+ (neg_RV y2) = t.
 Proof.
 rewrite /t /add_RV /neg_RV eq_Wm_RV /x1' /=.
 apply boolp.funext => a /=.
@@ -754,6 +858,15 @@ by have := mc_removal_pr f1 Z_O_indep pZ_unif w Hneq0.
 Qed.
 
 End eqn3_proof.
+
+About eqn3_proof.
+
+Definition try_to_combine_eqn3_proof (o: TX * TX * (party_view * party_view)):=
+  let '(_, _, party_views) := o in
+  (*eqn3_proof*) filter_eqn3 party_views.
+
+Definition try_proof_leakage_free :=
+  comp_RV try_to_combine_eqn3_proof scalar_product_RV.
 
 Section eqn4_proof.
 
@@ -1172,8 +1285,6 @@ Check H.
 
 Let H2 := [%x2, s2, x1'].
 Check H2.
-
-Definition rvgen : (i j: nat)->
 
 
 Hypothesis Hinde_all : forall i j, P|= nth x1 [:: x1; x2; s1; s2] i _|_ nth r1 [:: r1; y2] j.
