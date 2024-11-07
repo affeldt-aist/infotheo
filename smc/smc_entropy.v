@@ -661,40 +661,35 @@ Definition scalar_product_uncurry (o: 'rV[TX]_n * 'rV[TX]_n * TX * TX * 'rV[TX]_
   let '(sa, sb, ra, yb, xa, xb) := o in
   (scalar_product sa sb ra yb xa xb).
 
-(* TODO: during each scalar product, use a sequence of party view paris to record history, not just the current party views *)
-Check scalar_product_uncurry.
+(* Use comp_RV to embed scalar-product, an ordinary function, in RV context.
+   And then we extract computation result and intermediate variables from this RV-version
+   scalar-product, so that we can verify this RV-version scalar-product is also
+   correct in term of algorithm correctness.
 
-(* (Ab)use `comp_RV` as the `unit` in a monad, or `fmap` in a functor *)
-(* So we can have an interface for random variables and deterministic computations *)
+   What we verify are those extracted random variables from RV-version scalar-product
+   still satisify relations that non-RV variables of the ordinary scalar-product.
+
+   With this correctness verification, and the following equations to prove the views to have
+   during the computation are information-leakage-free, we prove that SMC scalar-product
+   are indeed correct and information-leakage-free.
+
+   In the future, if we have a more monadic embedding function (like `unit`),
+   we can express the DSL program in a monadic way. Because every step of such a program
+   are using scalar-product as the building block. So each step can be decomposed to
+   a fixed number of scalar-product statements.
+*)
 Definition scalar_product_RV :=
   comp_RV scalar_product_uncurry [%s1, s2, r1, y2, x1, x2] (TB:=(TX * TX * (party_view * party_view))%type).
-
-(* It gives RV (ya, yb) P: a random variable version of scalar_product;
-   it can be concated with other "monadic" operations in a SMC DSL monadic program.
-
-   For example: the result of scalar-product then to zn-to-z2...then to a integer division.
-
-   do
-     scalar-product;
-     zn-to-z2 -> { expand to k-times scalar-product };
-     ...
-     division -> { expand to p-times scalar-product };
-     unwrap  --> get the result if we have co-monad.
-*)
 
 
 Let alice_view := (fst \o snd) `o scalar_product_RV.
 Let bob_view := (snd \o snd) `o scalar_product_RV.
-
 Let y1 := (fst \o fst) `o scalar_product_RV.
-
 Let x1' := x' `o bob_view.
 Let x2' := x' `o alice_view.
 Let t := t `o alice_view.
 Let r2 := r `o bob_view.
 
-(*   let rb := sa *d sb - ra in
-*)
 Let r2_correct :
   r2 = s1 \*d s2 \- r1.
 Proof. exact: boolp.funext. Qed.
