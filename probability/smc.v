@@ -139,10 +139,8 @@ Section XY.
 Variables (A : finType) (P : R.-fdist A) (TA TB: finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
-(* TODO: do this in graphoid *)
-Lemma inde_rv_sym:  P|= X _|_ Y = P|= Y _|_ X.
-Proof.
-Admitted.
+Lemma inde_rv_sym:  P|= X _|_ Y <-> P|= Y _|_ X.
+Proof. by split => /cinde_rv_unit/cinde_rv_sym/cinde_rv_unit. Qed.
 
 End XY.
 
@@ -151,10 +149,8 @@ Section XYZ.
 Variables (A : finType) (P : R.-fdist A) (TA TB TC: finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
 
-Lemma inde_RV2_sym : P|=[%X, Y] _|_ Z = P|=[%Y, X] _|_ Z.
-Proof.
-Fail apply/cinde_rv_unit.
-Admitted.
+Lemma inde_RV2_sym : P|=[%X, Y] _|_ Z <-> P|=[%Y, X] _|_ Z.
+Proof. by split => /cinde_rv_unit/cinde_rv_sym/cinde_drv_2C/cinde_rv_sym/cinde_rv_unit. Qed.
 
 End XYZ.
 
