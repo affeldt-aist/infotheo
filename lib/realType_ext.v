@@ -11,7 +11,7 @@ From mathcomp Require Import lra ring Rstruct.
 (*                                                                            *)
 (*  P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0        *)
 (*                                                                            *)
-(*    p rob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1        *)
+(*     prob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1        *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -86,7 +86,7 @@ Lemma onem_div r s : s != 0 -> `1-(r / s) = (s - r) / s.
 Proof. by rewrite !onemE => q0; rewrite mulrDl mulNr divff. Qed.
 
 Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
- by move=> /andP[r0 r1]; apply /andP; split; [rewrite onem_ge0|rewrite onem_le1]. Qed.
+Proof. by move=> /andP[r0 r1]; apply /andP; split; [rewrite onem_ge0|rewrite onem_le1]. Qed.
 
 Lemma onem_eq0 r : (`1-r = 0) <-> (r = 1).
 Proof. by rewrite /onem; split => [/subr0_eq//|->]; rewrite subrr. Qed.

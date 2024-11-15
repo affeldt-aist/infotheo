@@ -28,9 +28,10 @@ Local Open Scope vec_ext_scope.
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Section mlog_prop.
-Variables (A : finType) (P : {fdist A}).
+Context {R : realType}.
+Variables (A : finType) (P : R.-fdist A).
 
-Definition aep_sigma2 : Rdefinitions.R := `E ((`-- (`log P)) `^2) - (`H P)^+2.
+Definition aep_sigma2 : R := `E ((`-- (`log P)) `^2) - (`H P)^+2.
 
 Lemma aep_sigma2E : aep_sigma2 = \sum_(a in A) P a * (log (P a))^+2 - (`H P)^+2.
 Proof.
@@ -65,19 +66,20 @@ Lemma aep_sigma2_ge0 : 0 <= aep_sigma2.
 Proof. by rewrite -V_mlog /Var; apply: Ex_ge0 => ?; exact: sq_RV_ge0. Qed.
 End mlog_prop.
 
-Definition sum_mlog_prod (A : finType) (P : {fdist A}) n : {RV ((P `^ n)%fdist)-> Rdefinitions.R} :=
+Definition sum_mlog_prod {R : realType} (A : finType) (P : R.-fdist A) n :
+    {RV ((P `^ n)%fdist)-> R} :=
   (fun t => \sum_(i < n) - log (P (t ``_ i)))%R.
 
-Arguments sum_mlog_prod {A} _ _.
+Arguments sum_mlog_prod {R} {A} _ _.
 
-Lemma sum_mlog_prod_sum_map_mlog (A : finType) (P : {fdist A}) n :
+Lemma sum_mlog_prod_sum_map_mlog {R : realType} (A : finType) (P : R.-fdist A) n :
   sum_mlog_prod P n.+1 \=sum (\row_(i < n.+1) `-- (`log P)).
 Proof.
 elim : n => [|n IH].
 - move: (@sum_n_1 _ A P (\row_i `-- (`log P))).
   set mlogP := cast_fun_rV10 _.
   move => HmlogP.
-  set mlogprodP := @sum_mlog_prod _ _ 1.
+  set mlogprodP := @sum_mlog_prod _ _ _ 1.
   suff -> : mlogprodP = mlogP by [].
   rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_fun_rV10 /= mxE /=.
   by rewrite boolp.funeqE => ta; rewrite big_ord_recl big_ord0 addr0.
@@ -92,10 +94,10 @@ elim : n => [|n IH].
 Qed.
 
 Section aep_k0_constant.
-Local Open Scope R_scope.
-Variables (A : finType) (P : {fdist A}).
+Context {R : realType}.
+Variables (A : finType) (P : R.-fdist A).
 
-Definition aep_bound epsilon : Rdefinitions.R := (aep_sigma2 P / epsilon ^+ 3)%R.
+Definition aep_bound epsilon : R := (aep_sigma2 P / epsilon ^+ 3)%R.
 
 Lemma aep_bound_ge0 e (_ : 0 < e) : 0 <= aep_bound e.
 Proof. by apply divr_ge0; [exact: aep_sigma2_ge0 | apply/exprn_ge0/ltW]. Qed.
@@ -112,8 +114,8 @@ Qed.
 End aep_k0_constant.
 
 Section AEP.
-Local Open Scope R_scope.
-Variables (A : finType) (P : {fdist A}) (n : nat) (epsilon : Rdefinitions.R).
+Context {R : realType}.
+Variables (A : finType) (P : R.-fdist A) (n : nat) (epsilon : R).
 Hypothesis Hepsilon : 0 < epsilon.
 
 Lemma aep : aep_bound P epsilon <= n.+1%:R ->
@@ -123,7 +125,7 @@ Proof.
 move=> Hbound.
 apply (@le_trans _ _ (aep_sigma2 P / (n.+1%:R * epsilon ^+ 2))); last first.
   rewrite /aep_bound in Hbound.
-  apply (@ler_wpmul2r _ (epsilon / n.+1%:R)) in Hbound; last first.
+  apply (@ler_wpM2r _ (epsilon / n.+1%:R)) in Hbound; last first.
     by rewrite divr_ge0// ltW.
   rewrite [in X in _ <= X]mulrCA mulfV ?pnatr_eq0// ?mulr1 in Hbound.
   apply/(le_trans _ Hbound).
