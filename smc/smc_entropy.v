@@ -529,23 +529,94 @@ Qed.
 End cinde_rv_comp_removal.
 
 
-Section pi2.
+Section dotproduct.
 
-Variable m : nat.
-Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
-(*Variable TX:comRingType.*)
-
-Variables (T: finType).
-Variable P : R.-fdist T.
+Variable TX : ringType.
 Variable n : nat.
-Notation p := m.+2.
+Variable T : finType.
 
 Definition dotproduct (a b:'rV[TX]_n) := (a *m b^T)``_ord0.
-Definition dotproduct_rv (A B:{RV P -> 'rV[TX]_n}) := fun p => dotproduct (A p) (B p).
 
-Local Notation "u *d w" := (dotproduct u w).
-Local Notation "u \*d w" := (dotproduct_rv u w).
+Definition dotproduct_rv (A B: T -> 'rV[TX]_n) := fun p => dotproduct (A p) (B p).
 
+
+End dotproduct.
+
+Notation "u *d w" := (dotproduct u w).
+Notation "u \*d w" := (dotproduct_rv u w).
+
+Section scalar_product_random_inputs_def.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
+
+Record scalar_product_random_inputs :=
+  ScalarProductRandomInputs {
+    x1 : {RV P -> 'rV[TX]_n};
+    x2 : {RV P -> 'rV[TX]_n};
+    s1 : {RV P -> 'rV[TX]_n};
+    s2 : {RV P -> 'rV[TX]_n};
+    r1 : {RV P -> TX};
+    y2 : {RV P -> TX};
+
+    (* Hypothese from the information-leakage-free paper. *)
+    x2_indep : P |= [% x1, s1, r1] _|_ x2;
+    y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1];
+    s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2];
+    card_TX : #|TX| = m.+1;
+    card_'rVTX_n : #|'rV[TX]_n| = m.+2;
+    neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX;
+    py2_unif : `p_ y2 = fdist_uniform card_TX;
+    ps2_unif : `p_ s2 = fdist_uniform card_'rVTX_n;
+  }.
+
+End scalar_product_random_inputs_def.
+
+
+Module Type SMC_TYPES.
+
+Axiom m : nat.
+Axiom T : finType.
+Axiom P : R.-fdist T.
+Axiom n : nat.
+
+End SMC_TYPES.
+
+Module Type SMC_PROTOCOL.
+  
+Include SMC_TYPES.
+
+Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
+
+Axiom x1 : {RV P -> 'rV[TX]_n}.
+Axiom x2 : {RV P -> 'rV[TX]_n}.
+Axiom x1': {RV P -> 'rV[TX]_n}.
+Axiom x2': {RV P -> 'rV[TX]_n}.
+Axiom s1 : {RV P -> 'rV[TX]_n}.
+Axiom s2 : {RV P -> 'rV[TX]_n}.
+Axiom r1 : {RV P -> TX}.
+Axiom r2 : {RV P -> TX}.
+Axiom t  : {RV P -> TX}.
+Axiom y1 : {RV P -> TX}.
+Axiom y2 : {RV P -> TX}.
+Axiom r2_correct :
+  r2 = s1 \*d s2 \- r1.
+Axiom x1'_correct :
+  x1' = x1 \+ s1.
+Axiom x2'_correct :
+  x2' = x2 \+ s2.
+Axiom t_correct :
+  t = x1' \*d x2 \+ r2 \- y2.
+Axiom y1_correct:
+  y1 = t \- x2' \*d s1 \+ r1.
+
+End SMC_PROTOCOL.
+
+Section pi2.
+  
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+  
 Section scalar_product_def.
   
 Record party_view :=
@@ -596,16 +667,15 @@ Definition is_scalar_product (sp: SMC) :=
 Definition step_eqn2_ya : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
   let '(xa, sa, ra, xb', t) := z in t - (xb' *d sa) + ra.
 
-Definition step_eqn3_t_with_yb : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
+Definition step_eqn3_t_with_offset : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
   let '(xa, xb, sa, sb, ra, rb) := z in (xa + sa) *d xb + rb.
 
 Definition scalar_product (sa sb: 'rV[TX]_n)(ra yb: TX)(xa xb: 'rV[TX]_n): (TX * TX * (party_view * party_view)) :=
   let xa' := xa + sa in
   let xb' := xb + sb in
   let rb := sa *d sb - ra in
-  (* let t := xb *d xa' + rb - yb in *)
-  let t_with_yb := step_eqn3_t_with_yb (xa, xb, sa, sb, ra, rb) in
-  let t := t_with_yb - yb in  (* cannot express `add_RV rv_t (neg_RV yb) in function *)
+  let t_with_offset := step_eqn3_t_with_offset (xa, xb, sa, sb, ra, rb) in
+  let t :=  t_with_offset - yb in
   let ya := step_eqn2_ya (xa, sa, ra, xb', t) in
   (ya, yb, (PartyView xa xb' sa ra t ya, PartyView xb xa' sb rb t yb)).
 
@@ -638,24 +708,12 @@ rewrite (dot_productC xb sa).
 rewrite (dot_productC (xb+sb) sa).
 rewrite dot_productDr.
 ring.
-(*rewrite (@GRing.add R).[AC(2*2)(1*4*(3*2))].*)
 Qed.
+(*rewrite (@GRing.add R).[AC(2*2)(1*4*(3*2))].*)
 
 End scalar_product_def.
 
-
-Variables (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
-Variables (y2 r1: {RV P -> TX}).
-
-(* Hypothese from the paper. *)
-Hypothesis x2_indep : P |= [% x1, s1, r1] _|_ x2.
-Hypothesis y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1].
-Hypothesis s2_x1x2s1r1_eqn4_indep : P |= s2 _|_ [%x1, x2, s1, r1].
-Hypothesis card_TX : #|TX| = m.+1.
-Hypothesis card_'rVTX_n : #|'rV[TX]_n| = m.+2.
-Hypothesis neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
-Hypothesis py2_unif : `p_ y2 = fdist_uniform card_TX.
-Hypothesis ps2_unif : `p_ s2 = fdist_uniform card_'rVTX_n.
+Variable O : scalar_product_random_inputs m n P.
 
 Definition scalar_product_uncurry (o: 'rV[TX]_n * 'rV[TX]_n * TX * TX * 'rV[TX]_n * 'rV[TX]_n) : (TX * TX * (party_view * party_view)) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
@@ -679,36 +737,63 @@ Definition scalar_product_uncurry (o: 'rV[TX]_n * 'rV[TX]_n * TX * TX * 'rV[TX]_
    a fixed number of scalar-product statements.
 *)
 Definition scalar_product_RV :=
-  comp_RV scalar_product_uncurry [%s1, s2, r1, y2, x1, x2] (TB:=(TX * TX * (party_view * party_view))%type).
+  comp_RV scalar_product_uncurry [%s1 O, s2 O, r1 O, y2 O, x1 O, x2 O] (TB:=(TX * TX * (party_view * party_view))%type).
 
-
-Let alice_view := (fst \o snd) `o scalar_product_RV.
-Let bob_view := (snd \o snd) `o scalar_product_RV.
-Let y1 := (fst \o fst) `o scalar_product_RV.
-Let x1' := x' `o bob_view.
-Let x2' := x' `o alice_view.
-Let t := t `o alice_view.
-Let r2 := r `o bob_view.
+Definition alice_view := (fst \o snd) `o scalar_product_RV.
+Definition bob_view := (snd \o snd) `o scalar_product_RV.
+Definition y1 := (fst \o fst) `o scalar_product_RV.
+Definition x1' := x' `o bob_view. (* (snd \o snd) *)
+Definition x2' := x' `o alice_view. (*  (fst \o snd) *)
+Definition t_ := t `o alice_view. (*  (fst \o snd) *)
+Definition r2 := r `o bob_view. (* (snd \o snd) *)
 
 Let r2_correct :
-  r2 = s1 \*d s2 \- r1.
+  r2 = s1 O \*d s2 O \- r1 O.
 Proof. exact: boolp.funext. Qed.
 
 Let x1'_correct :
-  x1' = x1 \+ s1.
+  x1' = x1 O \+ s1 O.
 Proof. exact: boolp.funext. Qed.
 
 Let x2'_correct :
-  x2' = x2 \+ s2.
+  x2' = x2 O \+ s2 O.
 Proof. exact: boolp.funext. Qed.
 
 Let t_correct :
-  t = x1' \*d x2 \+ r2 \- y2.
+  t_ = x1' \*d x2 O \+ r2 \- y2 O.
 Proof. exact: boolp.funext. Qed.
 
 Let y1_correct:
-  y1 = t \- x2' \*d s1 \+ r1.
+  y1 = t_ \- x2' \*d s1 O \+ r1 O.
 Proof. exact: boolp.funext. Qed.
+
+End pi2.
+
+About y1.
+
+
+Module SMCProtocol(Types : SMC_TYPES) : SMC_PROTOCOL.
+Export Types.
+Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
+
+Axiom o  : scalar_product_random_inputs m n P.
+Axiom x1': {RV P -> 'rV[TX]_n}.
+Axiom x2': {RV P -> 'rV[TX]_n}.
+Axiom r2 : {RV P -> TX}.
+Axiom t  : {RV P -> TX}.
+
+Axiom r2_correct :
+  r2 = (s1 o) \*d (s2 o) \- (r1 o).
+Axiom x1'_correct :
+  x1' = x1 o \+ s1 o.
+Axiom x2'_correct :
+  x2' = x2 o \+ s2 o.
+Axiom t_correct :
+  t = x1' \*d x2 o \+ r2 \- y2 o.
+Axiom y1_correct:
+  y1 o = t_ o \- x2' \*d (s1 o) \+ (r1 o).
+End SMCProtocol.
+
   
 (* Because we need values of random variables when expressing Pr(A = a). *)
 Variable (_x1 _x2 _x1' _x2' _s1 _s2: 'rV[TX]_n)(_t _r1 _r2 _y1 _y2: TX).
@@ -753,7 +838,7 @@ Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> ('rV[TX]_n
 Let Z := neg_RV y2.
 Let W1 := f1 `o O.  (* x2; It is okay in Alice's view has it because only used in condition. *)
 Let W2 := f2 `o O.  (* [%x1, s1, r1, x2']; cannot have x2, s2, r2 here otherwise Alice knows the secret*)
-Let Wm := step_eqn3_t_with_yb `o O.  (* t-(neg_RV y2); t before it addes (neg_RV y2) in WmZ*)
+Let Wm := step_eqn3_t_with_offset `o O.  (* t-(neg_RV y2); t before it addes (neg_RV y2) in WmZ*)
 Let WmZ := Wm `+ neg_RV y2. (* t *)
 
 Let eq_W1_RV:
@@ -765,11 +850,11 @@ Let eq_W2_RV:
 Proof. by apply boolp.funext. Qed.
 
 Let eq_Wm_RV:
-  step_eqn3_t_with_yb `o O = (x1 \+ s1) \*d x2 \+ r2.
+  step_eqn3_t_with_offset `o O = (x1 \+ s1) \*d x2 \+ r2.
 Proof. by apply boolp.funext => a . Qed.
 
 Let eq_WmZ_RV:
-  step_eqn3_t_with_yb `o O `+ (neg_RV y2) = t.
+  step_eqn3_t_with_offset `o O `+ (neg_RV y2) = t.
 Proof.
 rewrite /t /add_RV /neg_RV eq_Wm_RV /x1' /=.
 apply boolp.funext => a /=.
@@ -856,46 +941,19 @@ About eqn3_proof.
 
 Section eqn4_proof.
 
+Let eqn4 := `H(x2|[%x1, s1, r1, x2']) = `H(x2|[%x1, s1, r1]).
+
 (* Almost the same in eqn3 except r2 is not used here. *)
-Let O := [%x1, x2, s1, r1].
-
-(* f1 `o X in mc_removal_pr must be x2 in eqn4 *)
-Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
-  let '(x1, x2, s1, r1) := z in x2.
-
-(* f2 `o X in mc_removal_pr must be (x1, s1, r1) in eqn4 *)
-Let f2 : ('rV[TX]_n * 'rV[TX]_n  * 'rV[TX]_n * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX) := fun z =>
-  let '(x1, x2, s1, r1) := z in (x1, s1, r1).
-
-(* (fm `o X)+Z in mc_removal_pr must be x2'-s2 in eqn4 *)
-Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
-  let '(x1, x2, s1, r1) := z in x2.
+Let O := [%x1, s1, r1, x2].
 
 Let Z := s2.
-Let W1 := f1 `o O.   (* x2 *)
-Let W2 := f2 `o O.   (* [%x1, s1, r1] *)
-Let Wm := fm `o O.   (* x2 *)
+
+(*Notation fst4 := (fst \o fst \o fst).*)
+
+Let W1 := snd `o O.   (* x2 *)
+Let W2 := fst `o O.   (* [%x1, s1, r1] *)
+Let Wm := snd `o O.   (* x2 *)
 Let WmZ := Wm `+ s2. (* x2' = x2 + s2 *)
-
-Let eq_W1_RV:
-  f1 `o O = x2.
-Proof. by apply boolp.funext. Qed.
-
-Let eq_W2_RV:
-  f2 `o O = [%x1, s1, r1].
-Proof. by apply boolp.funext. Qed.
-
-Let eq_Wm_RV:
-  fm `o O = x2.
-Proof. by []. Qed.
-  
-Let eq_WmZ_RV:
-  fm `o O `+ s2 = x2'.
-Proof.
-rewrite /add_RV eq_Wm_RV /x2'.
-apply boolp.funext => a /=.
-by [].
-Qed.
 
 Variable Z_O_indep : inde_rv Z O. 
 
@@ -954,22 +1012,21 @@ have H := (@lemma_3_5' _ _ 'rV[TX]_n P m.+1 Wm Z W2 card_Z pZ_unif Z_WmW2_indep 
 apply H.
 Qed.
 
-Lemma eqn4_proof:
-  `H(x2|[%x1, s1, r1, x2']) = `H(x2|[%x1, s1, r1]).
+Lemma eqn4_correct: eqn4.
 Proof.
-rewrite -eq_W1_RV -eq_W2_RV -eq_WmZ_RV eq_Wm_RV.
+rewrite /eqn4.
 have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep _.
 apply Ha => w w2 wmz Hneq0.
 simpl in *.
 rewrite pr_eq_pairC in Hneq0.
-by have := mc_removal_pr f1 Z_O_indep pZ_unif w Hneq0.
+by have := mc_removal_pr snd Z_O_indep pZ_unif w Hneq0.
 Qed.
   
 End eqn4_proof.
 
 Section pi2_alice_view_is_leakage_free.
   
-Lemma eqn_4_1:
+Lemma eqn_4_1_correct:
   `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
 Proof.
 transitivity (joint_entropy `p_ [%x1, s1, r1, x2] - `H `p_ [%x1, s1, r1]).
@@ -1000,8 +1057,8 @@ transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
 transitivity (`H( x2 | [% x1, s1, r1, x2'])).
   by rewrite (eqn3_proof negy2_x1x2s1s2r1r2_eqn3_indep neg_py2_unif).
 transitivity (`H( x2 | [% x1, s1, r1])).
-  by rewrite (eqn4_proof s2_x1x2s1r1_eqn4_indep ps2_unif).
-by rewrite eqn_4_1.
+  by rewrite (eqn4_correct s2_x1s1r1x2_eqn4_indep ps2_unif).
+by rewrite eqn_4_1_correct.
 Qed.
 
 End pi2_alice_view_is_leakage_free.
