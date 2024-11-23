@@ -107,6 +107,17 @@ rewrite !xpair_eqE.
 by rewrite [X in X && _]Bool.andb_comm.
 Qed.
 
+Lemma fdist_uniformD (A : finType) (U : finZmodType) (Q : R.-fdist A)
+  (X Y : {RV Q -> U}) (n : nat) (cU : #|U| = n.+1) :
+  `p_X = fdist_uniform cU -> `p_Y = fdist_uniform cU ->
+  `p_ (X `+ Y) = fdist_uniform cU.
+Proof.
+move=> pX pY.
+apply: fdist_ext=> x.
+rewrite fdist_uniformE /=.
+rewrite /dist_of_RV.
+Admitted.
+
 End extra_pr2.
 
 Section entropy_with_indeRV.
