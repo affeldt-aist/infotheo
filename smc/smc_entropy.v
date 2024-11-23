@@ -563,54 +563,16 @@ Record scalar_product_random_inputs :=
     x2_indep : P |= [% x1, s1, r1] _|_ x2;
     y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1];
     s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2];
-    card_TX : #|TX| = m.+1;
+    card_TX : #|TX| = m.+2;
     card_'rVTX_n : #|'rV[TX]_n| = m.+2;
     neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX;
-    py2_unif : `p_ y2 = fdist_uniform card_TX;
+
+    ps1_unif : `p_ s1 = fdist_uniform card_'rVTX_n ;
     ps2_unif : `p_ s2 = fdist_uniform card_'rVTX_n;
+    py2_unif : `p_ y2 = fdist_uniform card_TX;
   }.
 
 End scalar_product_random_inputs_def.
-
-
-Module Type SMC_TYPES.
-
-Axiom m : nat.
-Axiom T : finType.
-Axiom P : R.-fdist T.
-Axiom n : nat.
-
-End SMC_TYPES.
-
-Module Type SMC_PROTOCOL.
-  
-Include SMC_TYPES.
-
-Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
-
-Axiom x1 : {RV P -> 'rV[TX]_n}.
-Axiom x2 : {RV P -> 'rV[TX]_n}.
-Axiom x1': {RV P -> 'rV[TX]_n}.
-Axiom x2': {RV P -> 'rV[TX]_n}.
-Axiom s1 : {RV P -> 'rV[TX]_n}.
-Axiom s2 : {RV P -> 'rV[TX]_n}.
-Axiom r1 : {RV P -> TX}.
-Axiom r2 : {RV P -> TX}.
-Axiom t  : {RV P -> TX}.
-Axiom y1 : {RV P -> TX}.
-Axiom y2 : {RV P -> TX}.
-Axiom r2_correct :
-  r2 = s1 \*d s2 \- r1.
-Axiom x1'_correct :
-  x1' = x1 \+ s1.
-Axiom x2'_correct :
-  x2' = x2 \+ s2.
-Axiom t_correct :
-  t = x1' \*d x2 \+ r2 \- y2.
-Axiom y1_correct:
-  y1 = t \- x2' \*d s1 \+ r1.
-
-End SMC_PROTOCOL.
 
 Section pi2.
   
@@ -625,21 +587,21 @@ Record party_view :=
     x' : 'rV[TX]_n;
     s  : 'rV[TX]_n;
     r  : TX;
-    t  : TX;
+    t_  : TX;
     y  : TX;
   }.
 
 
 Definition is_alice_view (a: party_view) :=
-  y a = t a - (s a *d x' a) + r a.
+  y a = t_ a - (s a *d x' a) + r a.
 
 Definition is_bob_view (b: party_view) :=
-  t b = (x b *d x' b) + r b - y b.
+  t_ b = (x b *d x' b) + r b - y b.
 
 Definition party_view_eq (p1 p2: party_view) :=
   (x p1 == x p2) && (x' p1 == x' p2) &&
   (s p1 == s p2) && (r p1 == r p2) &&
-  (t p1 == t p2) && (y p1 == y p2).
+  (t_ p1 == t_ p2) && (y p1 == y p2).
 
 Lemma party_view_eqP : Equality.axiom party_view_eq.
 Proof.
@@ -671,11 +633,11 @@ Definition step_eqn3_t_with_offset : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX
   let '(xa, xb, sa, sb, ra, rb) := z in (xa + sa) *d xb + rb.
 
 Definition scalar_product (sa sb: 'rV[TX]_n)(ra yb: TX)(xa xb: 'rV[TX]_n): (TX * TX * (party_view * party_view)) :=
-  let xa' := xa + sa in
-  let xb' := xb + sb in
-  let rb := sa *d sb - ra in
+  let xa' := xa + sa in (* Alice -> Bob *)
+  let xb' := xb + sb in (* Bob -> Alice *)
+  let rb := sa *d sb - ra in (* Commodity -> Bob *)
   let t_with_offset := step_eqn3_t_with_offset (xa, xb, sa, sb, ra, rb) in
-  let t :=  t_with_offset - yb in
+  let t :=  t_with_offset - yb in (* Bob -> Alice *)
   let ya := step_eqn2_ya (xa, sa, ra, xb', t) in
   (ya, yb, (PartyView xa xb' sa ra t ya, PartyView xb xa' sb rb t yb)).
 
@@ -713,7 +675,22 @@ Qed.
 
 End scalar_product_def.
 
-Variable O : scalar_product_random_inputs m n P.
+Variable RVInputs : scalar_product_random_inputs m n P.
+
+Let x1 := x1 RVInputs.
+Let x2 := x2 RVInputs.
+Let s1 := s1 RVInputs.
+Let s2 := s2 RVInputs.
+Let r1 := r1 RVInputs.
+Let y2 := y2 RVInputs.
+Let x2_indep := x2_indep RVInputs. 
+Let y2_x1x2s1s2r1_eqn3_indep := y2_x1x2s1s2r1_eqn3_indep RVInputs.
+Let s2_x1s1r1x2_eqn4_indep := s2_x1s1r1x2_eqn4_indep RVInputs.
+Let card_TX := card_TX RVInputs.
+Let card_'rVTX_n := card_'rVTX_n RVInputs.
+Let neg_py2_unif := neg_py2_unif RVInputs.
+Let py2_unif := py2_unif RVInputs.
+Let ps2_unif := ps2_unif RVInputs.
 
 Definition scalar_product_uncurry (o: 'rV[TX]_n * 'rV[TX]_n * TX * TX * 'rV[TX]_n * 'rV[TX]_n) : (TX * TX * (party_view * party_view)) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
@@ -737,64 +714,42 @@ Definition scalar_product_uncurry (o: 'rV[TX]_n * 'rV[TX]_n * TX * TX * 'rV[TX]_
    a fixed number of scalar-product statements.
 *)
 Definition scalar_product_RV :=
-  comp_RV scalar_product_uncurry [%s1 O, s2 O, r1 O, y2 O, x1 O, x2 O] (TB:=(TX * TX * (party_view * party_view))%type).
+  comp_RV scalar_product_uncurry [%s1, s2, r1, y2, x1, x2] (TB:=(TX * TX * (party_view * party_view))%type).
 
 Definition alice_view := (fst \o snd) `o scalar_product_RV.
 Definition bob_view := (snd \o snd) `o scalar_product_RV.
 Definition y1 := (fst \o fst) `o scalar_product_RV.
 Definition x1' := x' `o bob_view. (* (snd \o snd) *)
 Definition x2' := x' `o alice_view. (*  (fst \o snd) *)
-Definition t_ := t `o alice_view. (*  (fst \o snd) *)
+Definition t := t_ `o alice_view. (*  (fst \o snd) *)
 Definition r2 := r `o bob_view. (* (snd \o snd) *)
 
 Let r2_correct :
-  r2 = s1 O \*d s2 O \- r1 O.
+  r2 = s1 \*d s2 \- r1.
 Proof. exact: boolp.funext. Qed.
 
 Let x1'_correct :
-  x1' = x1 O \+ s1 O.
+  x1' = x1 \+ s1.
 Proof. exact: boolp.funext. Qed.
 
 Let x2'_correct :
-  x2' = x2 O \+ s2 O.
+  x2' = x2 \+ s2.
 Proof. exact: boolp.funext. Qed.
 
 Let t_correct :
-  t_ = x1' \*d x2 O \+ r2 \- y2 O.
+  t = x1' \*d x2 \+ r2 \- y2.
 Proof. exact: boolp.funext. Qed.
 
 Let y1_correct:
-  y1 = t_ \- x2' \*d s1 O \+ r1 O.
+  y1 = t \- x2' \*d s1 \+ r1.
 Proof. exact: boolp.funext. Qed.
 
-End pi2.
+Let pr2_unif : `p_ r2 = fdist_uniform card_TX.
+Proof.
+rewrite r2_correct.
+Abort.
 
-About y1.
 
-
-Module SMCProtocol(Types : SMC_TYPES) : SMC_PROTOCOL.
-Export Types.
-Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
-
-Axiom o  : scalar_product_random_inputs m n P.
-Axiom x1': {RV P -> 'rV[TX]_n}.
-Axiom x2': {RV P -> 'rV[TX]_n}.
-Axiom r2 : {RV P -> TX}.
-Axiom t  : {RV P -> TX}.
-
-Axiom r2_correct :
-  r2 = (s1 o) \*d (s2 o) \- (r1 o).
-Axiom x1'_correct :
-  x1' = x1 o \+ s1 o.
-Axiom x2'_correct :
-  x2' = x2 o \+ s2 o.
-Axiom t_correct :
-  t = x1' \*d x2 o \+ r2 \- y2 o.
-Axiom y1_correct:
-  y1 o = t_ o \- x2' \*d (s1 o) \+ (r1 o).
-End SMCProtocol.
-
-  
 (* Because we need values of random variables when expressing Pr(A = a). *)
 Variable (_x1 _x2 _x1' _x2' _s1 _s2: 'rV[TX]_n)(_t _r1 _r2 _y1 _y2: TX).
 
@@ -1276,7 +1231,7 @@ Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis card_rVTX : #|'rV[TX]_n| = m.+2.
 Hypothesis py2_uniform : `p_ y2 = fdist_uniform card_TX.
 Hypothesis pr2_uniform : `p_ r2 = fdist_uniform card_TX.
-Hypothesis ps1_uniform : `p_ s1 = fdist_uniform card_rVTX.
+Hypothesis ps1_uniform : `p_ s1 = fdist_uniform card_'rVTX_n .
   
 Lemma eqn_8_1:
   `H(x1|[%x2, s2]) = entropy `p_ x1.
@@ -1304,8 +1259,10 @@ transitivity (`H(x1|[%x2, s2])).
   by rewrite (eqn8_proof s1_x1x2s1s2_eqn8_indep ps1_uniform x2s2_x1'_indep).
 by rewrite eqn_8_1.
 Qed.
-  
+
 End eqn_bob_fin_proof.
+
+End pi2.
 
 (* Using graphoid for combinations of independ random variables. *)
 Section mutual_indep.
