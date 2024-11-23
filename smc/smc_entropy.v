@@ -570,6 +570,7 @@ Record scalar_product_random_inputs :=
     ps1_unif : `p_ s1 = fdist_uniform card_'rVTX_n ;
     ps2_unif : `p_ s2 = fdist_uniform card_'rVTX_n;
     py2_unif : `p_ y2 = fdist_uniform card_TX;
+    pr1_unif : `p_ r1 = fdist_uniform card_TX;
   }.
 
 End scalar_product_random_inputs_def.
@@ -691,6 +692,7 @@ Let card_'rVTX_n := card_'rVTX_n RVInputs.
 Let neg_py2_unif := neg_py2_unif RVInputs.
 Let py2_unif := py2_unif RVInputs.
 Let ps2_unif := ps2_unif RVInputs.
+Let pr1_unif := pr1_unif RVInputs.
 
 Definition scalar_product_uncurry (o: 'rV[TX]_n * 'rV[TX]_n * TX * TX * 'rV[TX]_n * 'rV[TX]_n) : (TX * TX * (party_view * party_view)) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
