@@ -40,6 +40,7 @@ information theory, and linear error-correcting codes.
   - [MathComp solvable](https://math-comp.github.io)
   - [MathComp field](https://math-comp.github.io)
   - [MathComp analysis](https://github.com/math-comp/analysis)
+  - [MathComp analysis reals standard library](https://github.com/math-comp/analysis)
   - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
   - MathComp algebra tactics
   - A Coq tactic for proving bounds
