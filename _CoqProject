@@ -95,4 +95,7 @@ toy_examples/expected_value_variance_ordn.v
 toy_examples/expected_value_variance_tuple.v
 toy_examples/conditional_entropy.v
 
+# temporary files for migration to mca real
+probability/proba_mcreal.v
+
 -R . infotheo
