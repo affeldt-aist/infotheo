@@ -25,19 +25,44 @@ Reserved Notation "u *d w" (at level 40).
 Reserved Notation "u \*d w" (at level 40).
 
 Section interp.
-Variable data : eqType.
+Variable data : Type.
 Inductive proc : Type :=
   | Send : nat -> data -> proc -> proc
   | Recv : nat -> (data -> proc) -> proc
   | Ret : data -> proc
   | Fail : proc.
 
-Fixpoint interp h (ps : seq proc) : seq proc :=
+Inductive log : Type :=
+  | Log : nat -> data -> log
+  | NoLog : log.
+
+Definition step (A : Type) (ps : seq (proc * seq log)) (yes no : proc -> A) (i : nat) :=
+  let (p, logs) := nth (Fail, [::]) ps i in
+    if p is Send dst w next then
+      if fst (nth (Fail, [::]) ps dst) is Recv frm _ then
+        if frm == i then (yes next, Log frm w :: logs) else (no p, logs)
+      else (no p, logs)
+    else (no
+     (if p is Recv frm f then
+        if fst (nth (Fail, [::]) ps frm) is Send dst v _ then
+          if dst == i then f v else p
+        else p
+      else  p), logs).
+
+About step.
+
+
+(* The main job of each proc is defined and fixed in the if...else
+   step's functions yes and no are free, and more like a decoration.
+   So those decorations should not decide when to put log and when do not put log.
+   This logic should be decided by each proc in the if...else.
+*)
+Fixpoint interp h (ps : seq (proc * seq log)) : seq (proc * seq log) :=
   if h is h.+1 then
     let step A (yes : proc -> A) (no : proc -> A) i :=
-      let p := nth Fail ps i in
+      let (p, logs) := nth Fail ps i in
       if p is Send dst _ next then
-        if nth Fail ps dst is Recv frm _ then
+        if fst (nth Fail ps dst) is Recv frm _ then
           if frm == i then yes next else no p
         else no p
       else no
@@ -97,10 +122,8 @@ Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 Definition scalar_product h :=
   interp h [:: palice xa; pbob xb; pcoserv sa sb ra yb].
 
-Goal scalar_product 8 = [:: Fail _; Fail _; Fail _].
-rewrite /scalar_product.
-rewrite (lock (4 : nat)) /=.
-rewrite -lock /=.
+Goal scalar_product 8 = [:: (Fail _, [::NoLog data]); (Fail _, [::NoLog data]); (Fail _, [::NoLog data])].
+cbv -[GRing.add GRing.opp GRing.Ring.sort]. (* -[things we dont want to unfold]*)
 Abort.
 
 Lemma scalar_product_ok :
