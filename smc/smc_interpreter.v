@@ -132,10 +132,18 @@ Abort.
 Lemma scalar_product_ok :
   scalar_product 8 =
   ([:: Ret (one ((xa \+ sa) \*d xb \+ (sa \*d sb \- ra) \- yb \- (xb \+ sb) \*d sa \+ ra));
-      Ret (one yb); Ret None]
-  , [:: Log alice (Some (inl ((xa \+ sa) \*d xb \+ (sa \*d sb \- ra) \- yb))); Log alice (Some (inr (xb \+ sb)));
-       Log bob (Some (inr (xa \+ sa))); Log bob (Some (inr (xa \+ sa)));
-       Log bob (Some (inl (sa \*d sb \- ra))); Log bob (Some (inr (xa \+ sa))); Log bob (Some (inl yb));
-       Log bob (Some (inr (xa \+ sa))); Log bob (Some (inr sb)); Log alice (Some (inl ra))]).
+       Ret (one yb);
+       Ret None]
+  , [::
+       Log alice (Some (inl ((xa \+ sa) \*d xb \+ (sa \*d sb \- ra) \- yb)));
+       Log alice (Some (inr (xb \+ sb)));
+       Log bob (Some (inr (xa \+ sa)));
+       Log bob (Some (inr (xa \+ sa)));
+       Log bob (Some (inl (sa \*d sb \- ra)));
+       Log bob (Some (inr (xa \+ sa)));
+       Log bob (Some (inl yb));
+       Log bob (Some (inr (xa \+ sa)));
+       Log bob (Some (inr sb));
+       Log alice (Some (inl ra))]).
 Proof. reflexivity. Qed.
 End scalar_product.
