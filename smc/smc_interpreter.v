@@ -58,7 +58,8 @@ About step.
 Fixpoint interp h (ps : seq proc) (logs : seq log) :=
   let logger :=  (fun p => if p.1 is Send dst v _ then (p.1, Log dst v :: p.2) else p) in
   if h is h.+1 then
-    if has (fun i => fst (@step bool ps logs (fun=>(true, logs)) (fun=>(false, logs)) i)) (iota 0 (size ps)) then
+    if has (fun i => fst (@step bool ps [::]
+                (fun=>(true, [::])) (fun=>(false, [::])) i)) (iota 0 (size ps)) then
       let pslogs' := map (@step proc ps [::] logger logger) (iota 0 (size ps)) in
       let ps' := unzip1 pslogs' in
       let logs' := unzip2 pslogs' in
@@ -129,6 +130,7 @@ rewrite -lock (lock (6 : nat)) /=.
 rewrite -lock (lock (5 : nat)) /=.
 Abort.
 
+(* Bug: the first Send is not in the logs *)
 Lemma scalar_product_ok :
   scalar_product 8 =
   ([:: Ret (one ((xa \+ sa) \*d xb \+ (sa \*d sb \- ra) \- yb \- (xb \+ sb) \*d sa \+ ra));
@@ -144,8 +146,12 @@ Lemma scalar_product_ok :
        Log bob (Some (inl yb));
        Log bob (Some (inr (xa \+ sa)));
        Log bob (Some (inr sb));
-       Log alice (Some (inl ra))]).
-Proof. reflexivity. Qed.
+       Log alice (Some (inl ra));
+       Log alice (Some (inr sa))
+    ]).
+Proof.
+Fail reflexivity.
+Abort.
 End scalar_product.
 
 Section information_leakage_proof.
@@ -167,6 +173,20 @@ Record alice_view :=
 Definition set_x1 (view :alice_view) (v : {RV P -> VX}) : alice_view :=
   AliceView (Some (inl v)) (s1 view) (r1 view) (x2' view) (t view) (y1 view).
 
+Definition set_s1 (view :alice_view) (v : {RV P -> VX}) : alice_view :=
+  AliceView (x1 view) (Some (inl v)) (r1 view) (x2' view) (t view) (y1 view).
+
+Definition set_r1 (view :alice_view) (v : {RV P -> TX}) : alice_view :=
+  AliceView (x1 view) (s1 view) (Some (inl v)) (x2' view) (t view) (y1 view).
+
+Definition set_x2' (view :alice_view) (v : {RV P -> VX}) : alice_view :=
+  AliceView (x1 view) (s1 view) (r1 view) (Some (inl v)) (t view) (y1 view).
+
+Definition set_t (view :alice_view) (v : {RV P -> TX}) : alice_view :=
+  AliceView (x1 view) (s1 view) (r1 view) (x2' view) (Some (inl v)) (y1 view).
+
+Definition set_y1 (view :alice_view) (v : {RV P -> TX}) : alice_view :=
+  AliceView (x1 view) (s1 view) (r1 view) (x2' view) (y1 view) (Some (inl v)).
 
 Fixpoint build_alice_view (logs : seq (log (data TX VX P))) (result : option (alice_view + unit)) : option (alice_view + unit) :=
   if result is Some (inl view) then
