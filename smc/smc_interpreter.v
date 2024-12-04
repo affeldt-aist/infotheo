@@ -147,3 +147,34 @@ Lemma scalar_product_ok :
        Log alice (Some (inl ra))]).
 Proof. reflexivity. Qed.
 End scalar_product.
+
+Section information_leakage_proof.
+
+Variable TX VX : ringType.
+Variable T : finType.
+Variable P : R.-fdist T.
+
+Record alice_view :=
+  AliceView {
+    x1  : option ({RV P -> VX} + unit);
+    s1  : option ({RV P -> VX} + unit);
+    r1  : option ({RV P -> TX} + unit);
+    x2' : option ({RV P -> VX} + unit);
+    t   : option ({RV P -> TX} + unit);
+    y1  : option ({RV P -> TX} + unit);
+  }.
+
+Definition set_x1 (view :alice_view) (v : {RV P -> VX}) : alice_view :=
+  AliceView (Some (inl v)) (s1 view) (r1 view) (x2' view) (t view) (y1 view).
+
+
+Fixpoint build_alice_view (logs : seq (log (data TX VX P))) (result : option (alice_view + unit)) : option (alice_view + unit) :=
+  if result is Some (inl view) then
+    (* Each log line can only provide one field -- we need a temporary building view here.
+    *)
+    Some (inl view)
+  else
+    Some (inr tt).
+  
+
+End information_leakage_proof.
