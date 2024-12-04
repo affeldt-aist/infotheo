@@ -2,7 +2,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct ring.
-Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.
+Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
 Require Import fdist proba jfdist_cond entropy smc graphoid.
 
 Import GRing.Theory.
@@ -20,6 +20,8 @@ Import Prenex Implicits.
 
 Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
+Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
 
 Reserved Notation "u *d w" (at level 40).
 Reserved Notation "u \*d w" (at level 40).
@@ -68,15 +70,19 @@ End interp.
 
 Section scalar_product.
 Variable TX VX : ringType.
+Variable T : finType.
+Variable P : R.-fdist T.
 Variable dotproduct : VX -> VX -> TX.
+Variable dotproduct_rv : {RV P -> VX} -> {RV P -> VX} -> {RV P -> TX}.
 Notation "u *d w" := (dotproduct u w).
+Notation "u \*d w" := (dotproduct_rv u w).
 
 Definition alice : nat := 0.
 Definition bob : nat := 1.
 Definition coserv : nat := 2.
 (*Note: notation will make cbv fail.*)
 
-Definition data := option (TX + VX).
+Definition data := option ({RV P -> TX} + {RV P -> VX}).
 Definition one x : data := Some (inl x).
 Definition vec x : data := Some (inr x).
 Definition Recv_one frm f : proc data :=
@@ -84,29 +90,29 @@ Definition Recv_one frm f : proc data :=
 Definition Recv_vec frm f : proc data :=
   Recv frm (fun x => if x is Some (inr v) then f v else Ret None).
 
-Definition palice (xa : VX) : proc data :=
+Definition palice (xa : {RV P -> VX}) : proc data :=
   Recv_vec coserv (fun sa =>
   Recv_one coserv (fun ra =>
-  Send bob (vec (xa + sa)) (
+  Send bob (vec (xa \+ sa)) (
   Recv_vec bob (fun xb' =>
   Recv_one bob (fun t =>
-  Ret (one (t - (xb' *d sa) + ra))))))).
-Definition pbob (xb : VX) : proc data :=
+  Ret (one (t \- (xb' \*d sa) \+ ra))))))).
+Definition pbob (xb : {RV P -> VX}) : proc data :=
   Recv_vec coserv (fun sb =>
   Recv_one coserv (fun yb =>
   Recv_one coserv (fun rb =>
   Recv_vec alice (fun xa' =>
-  let t := xa' *d xb + rb - yb in
-    Send alice (vec (xb + sb))
+  let t := xa' \*d xb \+ rb \- yb in
+    Send alice (vec (xb \+ sb))
     (Send alice (one t) (Ret (one yb))))))).
-Definition pcoserv (sa sb: VX) (ra yb: TX) : proc data :=
+Definition pcoserv (sa sb: {RV P -> VX}) (ra yb: {RV P -> TX}) : proc data :=
   Send alice (vec sa) (
   Send alice (one ra) (
   Send bob (vec sb) (
   Send bob (one yb) (
-  Send bob (one (sa *d sb - ra)) (Ret None))))).
+  Send bob (one (sa \*d sb \- ra)) (Ret None))))).
 
-Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
+Variables (sa sb: {RV P -> VX}) (ra yb: {RV P -> TX}) (xa xb: {RV P -> VX}).
 Definition scalar_product h :=
   interp h [:: palice xa; pbob xb; pcoserv sa sb ra yb] [::].
 
@@ -125,11 +131,11 @@ Abort.
 
 Lemma scalar_product_ok :
   scalar_product 8 =
-  ([:: Ret (one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra));
+  ([:: Ret (one ((xa \+ sa) \*d xb \+ (sa \*d sb \- ra) \- yb \- (xb \+ sb) \*d sa \+ ra));
       Ret (one yb); Ret None]
-  , [:: Log alice (Some (inl ((xa + sa) *d xb + (sa *d sb - ra) - yb))); Log alice (Some (inr (xb + sb)));
-       Log bob (Some (inr (xa + sa))); Log bob (Some (inr (xa + sa)));
-       Log bob (Some (inl (sa *d sb - ra))); Log bob (Some (inr (xa + sa))); Log bob (Some (inl yb));
-       Log bob (Some (inr (xa + sa))); Log bob (Some (inr sb)); Log alice (Some (inl ra))]).
+  , [:: Log alice (Some (inl ((xa \+ sa) \*d xb \+ (sa \*d sb \- ra) \- yb))); Log alice (Some (inr (xb \+ sb)));
+       Log bob (Some (inr (xa \+ sa))); Log bob (Some (inr (xa \+ sa)));
+       Log bob (Some (inl (sa \*d sb \- ra))); Log bob (Some (inr (xa \+ sa))); Log bob (Some (inl yb));
+       Log bob (Some (inr (xa \+ sa))); Log bob (Some (inr sb)); Log alice (Some (inl ra))]).
 Proof. reflexivity. Qed.
 End scalar_product.
