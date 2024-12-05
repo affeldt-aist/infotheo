@@ -38,29 +38,29 @@ Inductive proc : Type :=
 Inductive log : Type :=
   | Log : nat -> data -> log.
 
-Definition step (A : Type) (ps : seq proc) (logs : seq log) (yes no : proc * seq log -> A * seq log) (i : nat) : A * seq log:=
+Definition step (A : Type) (ps : seq proc) (logs : seq log) (yes no : proc -> A) (logger : proc -> seq log -> seq log) (i : nat) : A * seq log:=
   let p := nth Fail ps i in
     if p is Recv frm f then
         if nth Fail ps frm is Send dst v _ then
-          if dst == i then (no ((f v), logs)) else (no (p, logs))
-        else (no (p, logs))
+          if dst == i then (no (f v), logger p logs) else (no p, logger p logs)
+        else (no p, logger p logs)
     else if p is Send dst w next then
       if nth Fail ps dst is Recv frm _ then
-        if frm == i then (yes (next, logs)) else (no (p, logs))
-      else (no (p, logs))
+        if frm == i then (yes next, logger p logs) else (no p, logger p logs)
+      else (no p, logger p logs)
     else
-      (no (p, logs)).
+      (no p, logger p logs).
 About step.
 
 (* Extract log in Send because only in send we have both dst and v: data;
    in Recv we only have f, no data.
 *)
 Fixpoint interp h (ps : seq proc) (logs : seq log) :=
-  let logger :=  (fun p => if p.1 is Send dst v _ then (p.1, Log dst v :: p.2) else p) in
+  let logger :=  (fun p logs => if p is Send dst v _ then Log dst v :: logs else logs) in
   if h is h.+1 then
-    if has (fun i => fst (@step bool ps [::]
-                (fun=>(true, [::])) (fun=>(false, [::])) i)) (iota 0 (size ps)) then
-      let pslogs' := map (@step proc ps [::] logger logger) (iota 0 (size ps)) in
+    if has (fun i => fst (@step bool ps [::] (fun=>true) (fun=>false) logger i))
+        (iota 0 (size ps)) then
+      let pslogs' := map (@step proc ps [::] idfun idfun logger) (iota 0 (size ps)) in
       let ps' := unzip1 pslogs' in
       let logs' := unzip2 pslogs' in
         interp h ps' ((foldr (fun pclogs acc => pclogs ++ acc) logs) logs')
@@ -149,9 +149,7 @@ Lemma scalar_product_ok :
        Log alice (Some (inl ra));
        Log alice (Some (inr sa))
     ]).
-Proof.
-Fail reflexivity.
-Abort.
+Proof. reflexivity. Qed.
 
 Definition pdebug1 (sa sb: {RV P -> VX}) : proc data :=
   Send alice (vec sa) (
@@ -168,7 +166,7 @@ Goal debug 4 = ([:: (Fail _); (Fail _)], [::]).
 rewrite /debug.
 rewrite (lock (4 : nat)) /=.
 rewrite -lock (lock (3 : nat)) /=.
-rewrite -lock (lock (2 : nat)) /=.
+Abort.
 
 
 End scalar_product.
