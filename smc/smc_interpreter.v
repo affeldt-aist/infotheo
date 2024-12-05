@@ -74,9 +74,9 @@ Variable TX VX : ringType.
 Variable T : finType.
 Variable P : R.-fdist T.
 Variable dotproduct : VX -> VX -> TX.
-Variable dotproduct_rv : {RV P -> VX} -> {RV P -> VX} -> {RV P -> TX}.
 Notation "u *d w" := (dotproduct u w).
-Notation "u \*d w" := (dotproduct_rv u w).
+
+Print add_RV.
 
 Definition alice : nat := 0.
 Definition bob : nat := 1.

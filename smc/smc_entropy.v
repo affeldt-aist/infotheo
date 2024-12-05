@@ -556,6 +556,104 @@ End dotproduct.
 Notation "u *d w" := (dotproduct u w).
 Notation "u \*d w" := (dotproduct_rv u w).
 
+Section inde_ex.
+
+Variables (A: finType)(m n: nat)(P : R.-fdist A).
+Let TX := [the finComRingType of 'I_m.+2].
+Variable (s1 s2 r1: {RV P -> TX}).
+Variable (op: TX -> TX -> TX).
+
+Let rv_op (rv1 rv2:{RV P -> TX}) : {RV P -> TX} :=
+  fun p => op (rv1 p)(rv2 p).
+
+Hypothesis s1_s2_indep : P|= s1 _|_ s2.
+Hypothesis s1s2_r1_indep : P|= [%s1, s2] _|_ r1.
+(*TODO: prove these from s1s2_r1_indep by decomposition *)
+Hypothesis s1_r1_indep : P|= s1 _|_ r1.
+Hypothesis s2_r1_indep : P|= s2 _|_ r1.
+
+Lemma pr_eqM : forall x, `Pr[ (rv_op s1 s2) = x ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
+Proof.
+move => x.
+Search pr_eq_set.
+rewrite -pr_eq_set1.
+rewrite (reasoning_by_cases _ s1).
+apply eq_bigr => a _.
+rewrite (reasoning_by_cases _ s2).
+rewrite [RHS]big_mkcond /=.
+apply eq_bigr => b _.
+case: ifPn.
+  move/eqP => <-.
+  rewrite -coqRE.
+  rewrite -s1_s2_indep.
+  rewrite setX1 setX1.
+  rewrite pr_eq_set1.
+  pose f (p:TX * TX) := (op p.1 p.2, p.1, p.2). 
+  have f_inj : injective f.
+     by move => [x1 x2] [? ?] [] _ -> -> /=.
+  by rewrite (pr_eq_comp _ _ f_inj ).
+move => Hneq.
+rewrite setX1 setX1.
+rewrite pr_eq_set1.
+rewrite pr_eqE.
+apply/Pr_set0P.
+move => a'.
+rewrite !inE /=.
+move/eqP => [].
+move => Heq1 Heq2 Heq3.
+by rewrite -Heq3 -Heq2 -Heq1 eqxx in Hneq.
+Qed.
+
+Lemma pr_eqM2 : forall x y, `Pr[ [%(rv_op s1 s2), r1] = (x, y) ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r1 = y ]).
+Proof.
+move => x y.
+rewrite -pr_eq_set1.
+rewrite (reasoning_by_cases _ s1).
+apply eq_bigr => a _.
+rewrite (reasoning_by_cases _ s2).
+rewrite [RHS]big_mkcond /=.
+apply eq_bigr => b _.
+case: ifPn.
+  move/eqP => <-.
+  rewrite -coqRE.
+  rewrite -coqRE.
+  rewrite -s1_s2_indep -s1s2_r1_indep.
+  rewrite setX1 setX1.
+  rewrite pr_eq_set1.
+  pose f (p:TX * TX * TX) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2). 
+  have f_inj : injective f.
+     by move => [[x1 x2] ?] [[? ?] ?] [] _ -> -> -> /=.
+  by rewrite (pr_eq_comp _ _ f_inj ).
+move => Hneq.
+rewrite setX1 setX1.
+rewrite pr_eq_set1.
+rewrite pr_eqE.
+apply/Pr_set0P.
+move => a'.
+rewrite !inE /=.
+move/eqP => [].
+move => Heq1 _ Heq2 Heq3.
+by rewrite -Heq3 -Heq2 -Heq1 eqxx in Hneq.
+Qed.
+
+Lemma s1_rvop_s2_r1_indep : P|= (rv_op s1 s2) _|_ r1.
+Proof.
+rewrite /dotproduct_rv.
+rewrite /inde_rv.
+move => x y.
+rewrite pr_eqM pr_eqM2.
+rewrite big_distrl /=.
+apply eq_bigr => a _.
+rewrite big_distrl /=.
+apply eq_bigr => b _.
+by rewrite coqRE.
+Qed.
+
+(* TODO: addition lemma; actually we didn't use anything about mul above (any binop works) *)
+(* reasoning_by_cases depends on another lemma that is not general before (2024/12/05) -- these proof are not trivial actually. *)
+
+End inde_ex.
+
 Section scalar_product_random_inputs_def.
 
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
@@ -758,6 +856,7 @@ Proof. exact: boolp.funext. Qed.
 Let y1_correct:
   y1 = t \- x2' \*d s1 \+ r1.
 Proof. exact: boolp.funext. Qed.
+
 
 Let pr2_unif : `p_ r2 = fdist_uniform card_TX.
 Proof.
