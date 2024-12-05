@@ -151,24 +151,6 @@ Lemma scalar_product_ok :
     ]).
 Proof. reflexivity. Qed.
 
-Definition pdebug1 (sa sb: {RV P -> VX}) : proc data :=
-  Send alice (vec sa) (
-  Send alice (vec sb) (Ret None) ).
-
-Definition pdebug2 : proc data :=
-  Recv_vec alice (fun sa =>
-  Recv_vec alice (fun sb => Ret (vec (sa \+ sb)))).
-
-Definition debug h :=
-  interp h [:: pdebug1 sa sb; pdebug2] [::].
-
-Goal debug 4 = ([:: (Fail _); (Fail _)], [::]).
-rewrite /debug.
-rewrite (lock (4 : nat)) /=.
-rewrite -lock (lock (3 : nat)) /=.
-Abort.
-
-
 End scalar_product.
 
 Section information_leakage_proof.
