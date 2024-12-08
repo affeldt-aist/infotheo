@@ -81,7 +81,9 @@ About interp.
 End interp.
 
 Section scalar_product.
-Variable TX VX : ringType.
+Variable m : nat.
+Variable TX : finComRingType.
+Variable VX : ringType.
 Variable T : finType.
 Variable P : R.-fdist T.
 Variable dotproduct : VX -> VX -> TX.
@@ -181,11 +183,23 @@ End scalar_product.
 
 Section information_leakage_proof.
 
-Variable TX VX : ringType.
+Variable n m : nat.
+Variable T : finType.
+Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
+Let VX := 'rV[TX]_n.
+
+Definition dotproduct (a b:VX) : TX := (a *m b^T)``_ord0.
+
+Check scalar_product dotproduct.
+
+Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
+
+
+Section alice_leakage_free_proof.
 
 Record alice_view :=
   AliceView {
-    x1  : VX + unit;
+    x1  : option (VX + unit);
     s1  : option (VX + unit);
     r1  : option (TX + unit);
     x2' : option (VX + unit);
@@ -212,16 +226,19 @@ Definition set_y1 (view :alice_view) (v : TX) : alice_view :=
 
 Definition build_alice_view (returns : seq (proc (data TX VX))) (logs : seq (log (data TX VX))) (acc : option (alice_view + unit)) : option (alice_view + unit) :=
   let y1  := if (nth (Fail (data TX VX)) returns alice) is Ret ya then inl ya else inr tt in
-  let s1  := if nth (NoLog (data TX VX)) logs 0 is Log 7 alice (Some sa) then inl sa else inr tt in
-  let r1  := if nth (NoLog (data TX VX)) logs 1 is Log 6 alice (Some ra) then inl ra else inr tt in
-  let x2' := if nth (NoLog (data TX VX)) logs 5 is Log 2 alice (Some xb') then inl xb' else inr tt in
-  let t   := if nth (NoLog (data TX VX)) logs 6 is Log 1 alice (Some t) then inl t else inr tt in
+  let x1  := if nth (NoLog (data TX VX)) logs 2  is Log 9 alice (Some xa) then inl xa else inr tt in
+  let s1  := if nth (NoLog (data TX VX)) logs 5  is Log 6 alice (Some sa) then inl sa else inr tt in
+  let r1  := if nth (NoLog (data TX VX)) logs 6  is Log 5 alice (Some ra) then inl ra else inr tt in
+  let x2' := if nth (NoLog (data TX VX)) logs 10 is Log 1 alice (Some xb') then inl xb' else inr tt in
+  let t   := if nth (NoLog (data TX VX)) logs 11 is Log 0 alice (Some t) then inl t else inr tt in
   if acc is Some (inl view) then
     Some (inl view)
   else
     Some (inr tt).
 
-Lemma build_alice_view : (scalar_product 8).1 (scalar_product 8).2 (AliceView tt None None None None None) = (AliceView tt None None None None None).
+Lemma build_alice_view : (scalar_product dotproduct 10).1 (scalar_product 8).2 (AliceView None None None None None None) = (AliceView None None None None None None).
+  
+End alice_leakage_free_proof.
 
   
 
