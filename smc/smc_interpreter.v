@@ -215,17 +215,12 @@ Definition dotproduct (a b:VX) : TX := (a *m b^T)``_ord0.
 
 Variables (S1 S2 X1 X2: {RV P -> VX}) (R1 Y2: {RV P -> TX}).
 
-Lemma test:
-  S1 == S2.
-
-Check S1 :> eqType.
-
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) : seq (log (data VX)) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
   (scalar_product dotproduct sa sb ra yb xa xb 11).2.
 
 Definition scalar_product_RV :=
-  @comp_RV T P (RV (VX * VX * TX * TX * VX * VX) P)%type (seq (log (data VX))) scalar_product_uncurry [%S1, S2, R1, Y2, X1, X2].
+  comp_RV scalar_product_uncurry [%S1, S2, R1, Y2, X1, X2] (TA:=(VX * VX * TX * TX * VX * VX)%type) (TB:=seq (log (data VX))).
 
 Section alice_leakage_free_proof.
 
