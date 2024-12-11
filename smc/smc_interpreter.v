@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct ring.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
-Require Import fdist proba jfdist_cond entropy smc graphoid.
+Require Import proba jfdist_cond entropy smc graphoid.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -27,7 +27,7 @@ Reserved Notation "u *d w" (at level 40).
 Reserved Notation "u \*d w" (at level 40).
 
 Section interp.
-Variable data : Type.
+Variable data : eqType.
 Variable m : Type.
 
 Inductive proc : Type :=
@@ -42,6 +42,25 @@ Inductive proc : Type :=
 Inductive log : Type :=
   | Log : nat -> nat -> data -> log
   | NoLog.
+
+Definition log_eq (l1 l2: log) :=
+  if l1 is Log round1 party1 d1 then
+    if l2 is Log round2 party2 d2 then
+        (round1 == round2) && (party1 == party2) && (d1 == d2)
+    else
+      false
+  else
+    if l2 is NoLog then true else false.
+
+Lemma log_eqP : Equality.axiom log_eq.
+Proof.
+move => l1 l2.
+apply: (iffP idP); last first.
+  move->.
+  rewrite /log_eq.
+Admitted.
+
+HB.instance Definition _ := hasDecEq.Build _ log_eqP.
 
 Definition step (A : Type) (ps : seq proc) (logs : seq log) (yes no : proc -> A)
   (logger : nat -> data -> seq log -> seq log)
@@ -59,6 +78,8 @@ Definition step (A : Type) (ps : seq proc) (logs : seq log) (yes no : proc -> A)
       (yes next, logger i d logs)
     else if p is Wait next then
       (yes next, logs)
+    else if p is Ret v then
+      (yes p, logger i v logs)
     else
       (no p, logs).
 About step.
@@ -83,7 +104,7 @@ End interp.
 Section scalar_product.
 Variable m : nat.
 Variable TX : finComRingType.
-Variable VX : ringType.
+Variable VX : lmodType TX. (* vector is not ringType (mul)*)
 Variable T : finType.
 Variable P : R.-fdist T.
 Variable dotproduct : VX -> VX -> TX.
@@ -141,42 +162,43 @@ Definition scalar_product h :=
 
 About scalar_product.
 
-Goal scalar_product 10 = ([:: (Fail _); (Fail _); (Fail _)], [::]).
+Goal scalar_product 11 = ([:: (Fail _); (Fail _); (Fail _)], [::]).
 cbv -[GRing.add GRing.opp GRing.Ring.sort].
 Fail rewrite [X in Log _ X _]/alice.
 (*fold coserv bob alice.*)
 Undo 2.
 rewrite /scalar_product.
-rewrite (lock (10 : nat)) /=.
+rewrite (lock (11 : nat)) /=.
+rewrite -lock (lock (10 : nat)) /=.
 rewrite -lock (lock (9 : nat)) /=.
-rewrite -lock (lock (8 : nat)) /=.
-rewrite -lock (lock (7 : nat)) /=.
-rewrite -lock (lock (6 : nat)) /=.
-rewrite -lock (lock (5 : nat)) /=.
-rewrite -lock (lock (4 : nat)) /=.
-rewrite -lock (lock (3 : nat)) /=.
-rewrite -lock (lock (2 : nat)) /=.
-rewrite -lock (lock (1 : nat)) /=.
 Abort.
 
 (* Bug: the first Send is not in the logs *)
 Lemma scalar_product_ok :
-  scalar_product 10 =
+  scalar_product 11 =
   ([:: Ret (one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra));
        Ret (one yb);
        Ret None],
-   [:: Log 0 0 (Some (inl ((xa + sa) *d xb + (sa *d sb - ra) - yb)));
-       Log 1 0 (Some (inr (xb + sb)));
-       Log 2 1 (Some (inr (xa + sa)));
-       Log 3 1 (Some (inl (sa *d sb - ra)));
-       Log 4 1 (Some (inr sb));
-       Log 5 0 (Some (inl ra));
-       Log 6 0 (Some (inr sa));
-       Log 7 2 (Some (inl ra)); 
-       Log 8 2 (Some (inr sb));
-       Log 9 0 (Some (inr xa));
-       Log 9 1 (Some (inr xb)); 
-       Log 9 2 (Some (inr sa))]).
+   [:: Log 0 0 (Some (inl ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra)));
+       Log 0 1 (Some (inl yb));
+       Log 0 2 None;
+       Log 1 0 (Some (inl ((xa + sa) *d xb + (sa *d sb - ra) - yb))); 
+       Log 1 2 None;
+       Log 2 0 (Some (inr (xb + sb)));
+       Log 2 2 None;
+       Log 3 1 (Some (inr (xa + sa)));
+       Log 3 2 None;
+       Log 4 1 (Some (inl (sa *d sb - ra)));
+       Log 5 1 (Some (inr sb));
+       Log 6 0 (Some (inl ra));
+       Log 7 0 (Some (inr sa));
+       Log 8 2 (Some (inl ra));
+       Log 9 2 (Some (inr sb));
+       Log 10 0 (Some (inr xa));
+       Log 10 1 (Some (inr xb));
+       Log 10 2 (Some (inr sa))
+    ]
+  ).
 Proof. reflexivity. Qed.
 
 End scalar_product.
@@ -185,56 +207,70 @@ Section information_leakage_proof.
 
 Variable n m : nat.
 Variable T : finType.
-Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
+Variable P : R.-fdist T.
+Let TX := [the finComRingType of 'I_m.+2]. 
 Let VX := 'rV[TX]_n.
 
 Definition dotproduct (a b:VX) : TX := (a *m b^T)``_ord0.
 
-Check scalar_product dotproduct.
+Variables (S1 S2 X1 X2: {RV P -> VX}) (R1 Y2: {RV P -> TX}).
 
-Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
+Lemma test:
+  S1 == S2.
 
+Check S1 :> eqType.
+
+Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) : seq (log (data VX)) :=
+  let '(sa, sb, ra, yb, xa, xb) := o in
+  (scalar_product dotproduct sa sb ra yb xa xb 11).2.
+
+Definition scalar_product_RV :=
+  @comp_RV T P (RV (VX * VX * TX * TX * VX * VX) P)%type (seq (log (data VX))) scalar_product_uncurry [%S1, S2, R1, Y2, X1, X2].
 
 Section alice_leakage_free_proof.
 
 Record alice_view :=
   AliceView {
-    x1  : option (VX + unit);
-    s1  : option (VX + unit);
-    r1  : option (TX + unit);
-    x2' : option (VX + unit);
-    t   : option (TX + unit);
-    y1  : option (TX + unit);
+    x1  : option VX;
+    s1  : option VX;
+    r1  : option TX;
+    x2' : option VX;
+    t   : option TX;
+    y1  : option TX;
   }.
+
+(* Note: the timing we use comp_RV = the timing we done the measurment
+   Measurement: needs to provide RV inputs.
+*)
 
 About alice.
 
-Definition set_s1 (view :alice_view) (v : VX) : alice_view :=
-  AliceView (x1 view) (Some (inl v)) (r1 view) (x2' view) (t view) (y1 view).
+Definition set_s1 (view :alice_view) (v : option VX) : alice_view :=
+  AliceView (x1 view) v (r1 view) (x2' view) (t view) (y1 view).
 
-Definition set_r1 (view :alice_view) (v : TX) : alice_view :=
-  AliceView (x1 view) (s1 view) (Some (inl v)) (x2' view) (t view) (y1 view).
+Definition set_r1 (view :alice_view) (v : option TX) : alice_view :=
+  AliceView (x1 view) (s1 view) v (x2' view) (t view) (y1 view).
 
-Definition set_x2' (view :alice_view) (v : VX) : alice_view :=
-  AliceView (x1 view) (s1 view) (r1 view) (Some (inl v)) (t view) (y1 view).
+Definition set_x2' (view :alice_view) (v : option VX) : alice_view :=
+  AliceView (x1 view) (s1 view) (r1 view) v (t view) (y1 view).
 
-Definition set_t (view :alice_view) (v : TX) : alice_view :=
-  AliceView (x1 view) (s1 view) (r1 view) (x2' view) (Some (inl v)) (y1 view).
+Definition set_t (view :alice_view) (v : option TX) : alice_view :=
+  AliceView (x1 view) (s1 view) (r1 view) (x2' view) v (y1 view).
 
-Definition set_y1 (view :alice_view) (v : TX) : alice_view :=
-  AliceView (x1 view) (s1 view) (r1 view) (x2' view) (y1 view) (Some (inl v)).
+Definition set_y1 (view :alice_view) (v : option TX) : alice_view :=
+  AliceView (x1 view) (s1 view) (r1 view) (x2' view) (y1 view) v.
 
-Definition build_alice_view (returns : seq (proc (data TX VX))) (logs : seq (log (data TX VX))) (acc : option (alice_view + unit)) : option (alice_view + unit) :=
-  let y1  := if (nth (Fail (data TX VX)) returns alice) is Ret ya then inl ya else inr tt in
-  let x1  := if nth (NoLog (data TX VX)) logs 2  is Log 9 alice (Some xa) then inl xa else inr tt in
-  let s1  := if nth (NoLog (data TX VX)) logs 5  is Log 6 alice (Some sa) then inl sa else inr tt in
-  let r1  := if nth (NoLog (data TX VX)) logs 6  is Log 5 alice (Some ra) then inl ra else inr tt in
-  let x2' := if nth (NoLog (data TX VX)) logs 10 is Log 1 alice (Some xb') then inl xb' else inr tt in
-  let t   := if nth (NoLog (data TX VX)) logs 11 is Log 0 alice (Some t) then inl t else inr tt in
-  if acc is Some (inl view) then
-    Some (inl view)
+Definition build_alice_view (logs : seq (log (data VX))) (acc : option (alice_view)) : option (alice_view) :=
+  let y1  := if nth (NoLog (data VX)) logs 0   is Log 0 alice (Some (inr ya)) then Some ya else None in
+  let x1  := if nth (NoLog (data VX)) logs 15  is Log 10 alice (Some (inr xa)) then Some xa else None in
+  let s1  := if nth (NoLog (data VX)) logs 17  is Log 7 alice (Some (inr sa)) then Some sa else None in
+  let r1  := if nth (NoLog (data VX)) logs 13  is Log 6 alice (Some (inl ra)) then Some ra else None in
+  let x2' := if nth (NoLog (data VX)) logs 5   is Log 2 alice (Some (inr xb')) then Some xb' else None in
+  let t   := if nth (NoLog (data VX)) logs 3   is Log 1 alice (Some (inl t)) then Some t else None in
+  if acc is Some view then
+    Some (set_s1 (set_r1 (set_x2' (set_t (set_y1 view y1) t) x2') r1) s1)
   else
-    Some (inr tt).
+    None.
 
 Lemma build_alice_view : (scalar_product dotproduct 10).1 (scalar_product 8).2 (AliceView None None None None None None) = (AliceView None None None None None None).
   
