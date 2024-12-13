@@ -239,7 +239,7 @@ Let E := finset (Y @^-1 y).
 Hypothesis E0 : Pr P E != 0.
 
 Variable (X': {RV (fdist_cond E0) -> TX}).
-Hypothesis EX' : X' = X.
+Hypothesis EX' : X' = X :> (T -> TX).
 
 Lemma Pr_fdist_cond_RV x : `Pr[ X' = x ] = `Pr[ X = x | Y = y ].
 Proof. by rewrite pr_eqE Pr_fdist_cond cpr_eqE' EX'. Qed.

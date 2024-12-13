@@ -28,7 +28,6 @@ Reserved Notation "u \*d w" (at level 40).
 
 Section interp.
 Variable data : eqType.
-Variable m : Type.
 
 Inductive proc : Type :=
   (*| Init : nat -> (m -> data) -> (data -> proc) -> proc*)
@@ -39,66 +38,40 @@ Inductive proc : Type :=
   | Ret : data -> proc
   | Fail : proc.
 
-Inductive log : Type :=
-  | Log : nat -> nat -> data -> log
-  | NoLog.
-
-Definition log_eq (l1 l2: log) :=
-  if l1 is Log round1 party1 d1 then
-    if l2 is Log round2 party2 d2 then
-        (round1 == round2) && (party1 == party2) && (d1 == d2)
-    else
-      false
-  else
-    if l2 is NoLog then true else false.
-
-Lemma log_eqP : Equality.axiom log_eq.
-Proof.
-move => l1 l2.
-apply: (iffP idP); last first.
-  move->.
-  rewrite /log_eq.
-Admitted.
-
-HB.instance Definition _ := hasDecEq.Build _ log_eqP.
-
-Definition step (A : Type) (ps : seq proc) (logs : seq log) (yes no : proc -> A)
-  (logger : nat -> data -> seq log -> seq log)
-  (i : nat) : A * seq log:=
+Definition step (A : Type) (ps : seq proc) (trace : seq data) (yes no : proc -> A)
+  (i : nat) : A * seq data :=
   let p := nth Fail ps i in
     if p is Recv frm f then
         if nth Fail ps frm is Send dst v _ then
-          if dst == i then (no (f v), logger i v logs) else (no p, logs)
-        else (no p, logs)
+          if dst == i then (no (f v), v::trace) else (no p, trace)
+        else if nth Fail ps frm is Init _ _ _ then
+          (yes p, trace)
+        else (no p, trace)
     else if p is Send dst w next then
       if nth Fail ps dst is Recv frm _ then
-        if frm == i then (yes next, logs) else (no p, logs)
-      else (no p, logs)
+        if frm == i then (yes next, trace) else (no p, trace)
+      else if nth Fail ps dst is Init _ _ _ then
+        (yes p, trace)
+      else (no p, trace)
     else if p is Init i d next then
-      (yes next, logger i d logs)
-    else if p is Wait next then
-      (yes next, logs)
-    else if p is Ret v then
-      (yes p, logger i v logs)
+      (yes next, d::trace)
     else
-      (no p, logs).
-About step.
+      (no p, trace).
 
 (* Extract log in Send because only in send we have both dst and v: data;
    in Recv we only have f, no data.
 *)
-Fixpoint interp h (ps : seq proc) (logs : seq log) :=
-  let logger := (fun round => (fun pid d logs => Log round pid d :: logs)) in
+Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
+  let trace_ret := map (fun pt => if pt.1 is Ret v then v::pt.2 else pt.2) (zip ps traces) in
   if h is h.+1 then
-    if has (fun i => fst (@step bool ps [::] (fun=>true) (fun=>false) (logger h) i))
+    if has (fun i => (@step bool ps [::] (fun=>true) (fun=>false) i).1)
         (iota 0 (size ps)) then
-      let pslogs' := map (@step proc ps [::] idfun idfun (logger h)) (iota 0 (size ps)) in
-      let ps' := unzip1 pslogs' in
-      let logs' := unzip2 pslogs' in
-        interp h ps' ((foldr (fun pclogs acc => pclogs ++ acc) logs) logs')
-    else (ps, logs)
-  else (ps, logs).
-About interp.
+      let ps_trs' := map (fun i => @step proc ps (nth [::] traces i) idfun idfun i) (iota 0 (size ps)) in
+      let ps' := unzip1 ps_trs' in
+      let trs' := unzip2 ps_trs' in
+        interp h ps' trs'
+    else (ps, trace_ret)
+  else (ps, traces).
 End interp.
 
 Section scalar_product.
@@ -126,31 +99,24 @@ Definition Recv_vec frm f : proc data :=
 
 Definition palice (xa : VX) : proc data :=
   Init alice (vec xa) (
-  Wait (
-  Wait (
-
   Recv_vec coserv (fun sa =>
   Recv_one coserv (fun ra =>
   Send bob (vec (xa + sa)) (
   Recv_vec bob (fun xb' =>
   Recv_one bob (fun t =>
-  Ret (one (t - (xb' *d sa) + ra)))))))))).
+  Ret (one (t - (xb' *d sa) + ra)))))))).
 Definition pbob (xb : VX) (yb : TX) : proc data :=
   Init bob (vec xb) (
-  Wait (
-  Wait (
-
   Recv_vec coserv (fun sb =>
   Recv_one coserv (fun rb =>
   Recv_vec alice (fun xa' =>
   let t := xa' *d xb + rb - yb in
     Send alice (vec (xb + sb))
-    (Send alice (one t) (Ret (one yb))))))))).
+    (Send alice (one t) (Ret (one yb))))))).
 Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
   Init coserv (vec sa) (
   Init coserv (vec sb) (
   Init coserv (one ra) (
-
   Send alice (vec sa) (
   Send alice (one ra) (
   Send bob (vec sb) (
@@ -158,45 +124,48 @@ Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 Definition scalar_product h :=
-  interp h [:: palice xa; pbob xb yb; pcoserv sa sb ra] [::].
+  interp h [:: palice xa; pbob xb yb; pcoserv sa sb ra] [::[::];[::];[::]].
 
 About scalar_product.
 
 Goal scalar_product 11 = ([:: (Fail _); (Fail _); (Fail _)], [::]).
 cbv -[GRing.add GRing.opp GRing.Ring.sort].
-Fail rewrite [X in Log _ X _]/alice.
-(*fold coserv bob alice.*)
-Undo 2.
+Undo 1.
 rewrite /scalar_product.
 rewrite (lock (11 : nat)) /=.
 rewrite -lock (lock (10 : nat)) /=.
 rewrite -lock (lock (9 : nat)) /=.
+rewrite -lock (lock (8 : nat)) /=.
+rewrite -lock (lock (7 : nat)) /=.
+rewrite -lock (lock (6 : nat)) /=.
+rewrite -lock (lock (5 : nat)) /=.
+rewrite -lock (lock (4 : nat)) /=.
+rewrite -lock (lock (3 : nat)) /=.
+rewrite -lock (lock (2 : nat)) /=.
+rewrite -lock (lock (1 : nat)) /=.
+rewrite -lock (lock (0 : nat)) /=.
 Abort.
 
-(* Bug: the first Send is not in the logs *)
 Lemma scalar_product_ok :
   scalar_product 11 =
   ([:: Ret (one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra));
        Ret (one yb);
        Ret None],
-   [:: Log 0 0 (Some (inl ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra)));
-       Log 0 1 (Some (inl yb));
-       Log 0 2 None;
-       Log 1 0 (Some (inl ((xa + sa) *d xb + (sa *d sb - ra) - yb))); 
-       Log 1 2 None;
-       Log 2 0 (Some (inr (xb + sb)));
-       Log 2 2 None;
-       Log 3 1 (Some (inr (xa + sa)));
-       Log 3 2 None;
-       Log 4 1 (Some (inl (sa *d sb - ra)));
-       Log 5 1 (Some (inr sb));
-       Log 6 0 (Some (inl ra));
-       Log 7 0 (Some (inr sa));
-       Log 8 2 (Some (inl ra));
-       Log 9 2 (Some (inr sb));
-       Log 10 0 (Some (inr xa));
-       Log 10 1 (Some (inr xb));
-       Log 10 2 (Some (inr sa))
+   [:: [:: one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra);
+           one ((xa + sa) *d xb + (sa *d sb - ra) - yb);
+           vec (xb + sb); 
+           one ra;
+           vec sa; 
+           vec xa];
+       [:: one yb;
+           vec (xa + sa);
+           one (sa *d sb - ra);
+           vec sb;
+           vec xb];
+       [:: None;
+           one ra;
+           vec sb;
+           vec sa]
     ]
   ).
 Proof. reflexivity. Qed.
@@ -208,19 +177,30 @@ Section information_leakage_proof.
 Variable n m : nat.
 Variable T : finType.
 Variable P : R.-fdist T.
-Let TX := [the finComRingType of 'I_m.+2]. 
+Let TX := [the finComRingType of 'I_m.+2].
 Let VX := 'rV[TX]_n.
+
+Check VX : lmodType TX.
+Check data.
 
 Definition dotproduct (a b:VX) : TX := (a *m b^T)``_ord0.
 
 Variables (S1 S2 X1 X2: {RV P -> VX}) (R1 Y2: {RV P -> TX}).
 
-Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) : seq (log (data VX)) :=
+Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
   (scalar_product dotproduct sa sb ra yb xa xb 11).2.
 
-Definition scalar_product_RV :=
-  comp_RV scalar_product_uncurry [%S1, S2, R1, Y2, X1, X2] (TA:=(VX * VX * TX * TX * VX * VX)%type) (TB:=seq (log (data VX))).
+Check scalar_product_uncurry.
+
+Check @comp_RV T P (VX * VX * TX * TX * VX * VX)%type (seq (log (data VX))) scalar_product_uncurry [%S1, S2, R1, Y2, X1, X2].
+Check @comp_RV _ _ _ _ _ _.
+Check scalar_product_uncurry.
+
+Definition scalar_product_RV : {RV P -> seq (log (data VX))}.
+
+ :=
+  @comp_RV T P (VX * VX * TX * TX * VX * VX)%type (seq (log (data VX))) scalar_product_uncurry [%S1, S2, R1, Y2, X1, X2].
 
 Section alice_leakage_free_proof.
 
