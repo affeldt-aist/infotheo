@@ -126,10 +126,8 @@ Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 Definition scalar_product h :=
   interp h [:: palice xa; pbob xb yb; pcoserv sa sb ra] [::[::];[::];[::]].
 
-About scalar_product.
-
 Goal scalar_product 11 = ([:: (Fail _); (Fail _); (Fail _)], [::]).
-cbv -[GRing.add GRing.opp GRing.Ring.sort].
+cbv -[GRing.add GRing.opp GRing.Ring.sort (*Equality.eqtype_hasDecEq_mixin*) ].
 Undo 1.
 rewrite /scalar_product.
 rewrite (lock (11 : nat)) /=.
@@ -170,6 +168,26 @@ Lemma scalar_product_ok :
   ).
 Proof. reflexivity. Qed.
 
+Let ff := [::
+       [:: one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra);
+           one ((xa + sa) *d xb + (sa *d sb - ra) - yb);
+           vec (xb + sb); 
+           one ra;
+           vec sa; 
+           vec xa];
+       [:: one yb;
+           vec (xa + sa);
+           one (sa *d sb - ra);
+           vec sb;
+           vec xb];
+       [:: None;
+           one ra;
+           vec sb;
+           vec sa]
+    ].
+
+Eval compute in (nth None (nth [::] ff 0) 5).
+
 End scalar_product.
 
 Section information_leakage_proof.
@@ -179,11 +197,14 @@ Variable T : finType.
 Variable P : R.-fdist T.
 Let TX := [the finComRingType of 'I_m.+2].
 Let VX := 'rV[TX]_n.
-
-Check VX : lmodType TX.
-Check data.
+Hypothesis card_TX : #|TX| = m.+2.
+Hypothesis card_VX : #|VX| = m.+2.
 
 Definition dotproduct (a b:VX) : TX := (a *m b^T)``_ord0.
+Definition dotproduct_rv (A B: T -> 'rV[TX]_n) := fun p => dotproduct (A p) (B p).
+
+Notation "u *d w" := (dotproduct u w).
+Notation "u \*d w" := (dotproduct_rv u w).
 
 Variables (S1 S2 X1 X2: {RV P -> VX}) (R1 Y2: {RV P -> TX}).
 
@@ -193,61 +214,59 @@ Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
 
 Check scalar_product_uncurry.
 
-Check @comp_RV T P (VX * VX * TX * TX * VX * VX)%type (seq (log (data VX))) scalar_product_uncurry [%S1, S2, R1, Y2, X1, X2].
-Check @comp_RV _ _ _ _ _ _.
-Check scalar_product_uncurry.
+Definition scalar_product_RV : {RV P -> seq (seq (data VX))} :=
+  scalar_product_uncurry `o [%S1, S2, R1, Y2, X1, X2].
 
-Definition scalar_product_RV : {RV P -> seq (log (data VX))}.
+Record scalar_product_random_inputs :=
+  ScalarProductRandomInputs {
+    x1 : {RV P -> VX};
+    x2 : {RV P -> VX};
+    s1 : {RV P -> VX};
+    s2 : {RV P -> VX};
+    r1 : {RV P -> TX};
+    y2 : {RV P -> TX};
 
- :=
-  @comp_RV T P (VX * VX * TX * TX * VX * VX)%type (seq (log (data VX))) scalar_product_uncurry [%S1, S2, R1, Y2, X1, X2].
+    (* Hypothese from the information-leakage-free paper. *)
+    x2_indep : P |= [% x1, s1, r1] _|_ x2;
+    y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1];
+    s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2];
+
+    neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX;
+
+    ps1_unif : `p_ s1 = fdist_uniform card_VX ;
+    ps2_unif : `p_ s2 = fdist_uniform card_VX;
+    py2_unif : `p_ y2 = fdist_uniform card_TX;
+    pr1_unif : `p_ r1 = fdist_uniform card_TX;
+  }.
+
+Record scalar_product_relations :=
+  ScalarProductRelations {
+    inputs : scalar_product_random_inputs;
+    traces : seq (seq (data VX));
+
+    x1' : {RV P -> VX};
+    x2' : {RV P -> VX};
+    t   : {RV P -> TX};
+    y1  : {RV P -> TX};
+    r2  : {RV P -> TX};
+
+    pr2_unif : `p_ r2 = fdist_uniform card_TX;
+    
+    r2_eqE   : r2 = s1 inputs \*d s2 inputs \- r1 inputs;
+    x1'_eqE  : x1' = x1 inputs \+ s1 inputs; 
+    x2'_eqE  : x2' = x2 inputs \+ s2 inputs; 
+    y1_eqE   : y1 = t \- (s1 inputs \*d x1') \+ r1 inputs;
+    t_eqE    : t = (x2 inputs \*d x2') \+ r2 \- y2 inputs;
+
+    x1'_eq_tr : x1' = nth None (nth [::] traces 0) 5;
+  }.
+
 
 Section alice_leakage_free_proof.
 
-Record alice_view :=
-  AliceView {
-    x1  : option VX;
-    s1  : option VX;
-    r1  : option TX;
-    x2' : option VX;
-    t   : option TX;
-    y1  : option TX;
-  }.
+Variable Rels : scalar_product_relations.
 
-(* Note: the timing we use comp_RV = the timing we done the measurment
-   Measurement: needs to provide RV inputs.
-*)
 
-About alice.
-
-Definition set_s1 (view :alice_view) (v : option VX) : alice_view :=
-  AliceView (x1 view) v (r1 view) (x2' view) (t view) (y1 view).
-
-Definition set_r1 (view :alice_view) (v : option TX) : alice_view :=
-  AliceView (x1 view) (s1 view) v (x2' view) (t view) (y1 view).
-
-Definition set_x2' (view :alice_view) (v : option VX) : alice_view :=
-  AliceView (x1 view) (s1 view) (r1 view) v (t view) (y1 view).
-
-Definition set_t (view :alice_view) (v : option TX) : alice_view :=
-  AliceView (x1 view) (s1 view) (r1 view) (x2' view) v (y1 view).
-
-Definition set_y1 (view :alice_view) (v : option TX) : alice_view :=
-  AliceView (x1 view) (s1 view) (r1 view) (x2' view) (y1 view) v.
-
-Definition build_alice_view (logs : seq (log (data VX))) (acc : option (alice_view)) : option (alice_view) :=
-  let y1  := if nth (NoLog (data VX)) logs 0   is Log 0 alice (Some (inr ya)) then Some ya else None in
-  let x1  := if nth (NoLog (data VX)) logs 15  is Log 10 alice (Some (inr xa)) then Some xa else None in
-  let s1  := if nth (NoLog (data VX)) logs 17  is Log 7 alice (Some (inr sa)) then Some sa else None in
-  let r1  := if nth (NoLog (data VX)) logs 13  is Log 6 alice (Some (inl ra)) then Some ra else None in
-  let x2' := if nth (NoLog (data VX)) logs 5   is Log 2 alice (Some (inr xb')) then Some xb' else None in
-  let t   := if nth (NoLog (data VX)) logs 3   is Log 1 alice (Some (inl t)) then Some t else None in
-  if acc is Some view then
-    Some (set_s1 (set_r1 (set_x2' (set_t (set_y1 view y1) t) x2') r1) s1)
-  else
-    None.
-
-Lemma build_alice_view : (scalar_product dotproduct 10).1 (scalar_product 8).2 (AliceView None None None None None None) = (AliceView None None None None None None).
   
 End alice_leakage_free_proof.
 
