@@ -186,6 +186,7 @@ End scalar_product.
 
 Section information_leakage_proof.
   
+Section information_leakage_def.
 
 Variable n m : nat.
 Variable T : finType.
@@ -207,9 +208,6 @@ Notation "u \*d w" := (dotproduct_rv u w).
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
   (scalar_product dotproduct sa sb ra yb xa xb 11).2.
-
-Definition scalar_product_RV : {RV P -> seq (seq (data VX))} :=
-  scalar_product_uncurry `o [%S1, S2, R1, Y2, X1, X2].
 
 Record scalar_product_random_inputs :=
   ScalarProductRandomInputs {
@@ -256,31 +254,51 @@ Record scalar_product_relations :=
     t_eqE    : t vars = (x2 inputs \*d x2' vars) \+ r2 vars \- y2 inputs;
   }.
 
-Let get_one (d : data VX) : TX :=
+
+Definition scalar_product_RV (inputs : scalar_product_random_inputs) :
+  {RV P -> seq (seq (data VX))} :=
+    scalar_product_uncurry `o
+   [%s1 inputs, s2 inputs, r1 inputs, y2 inputs, x1 inputs, x2 inputs].
+
+Definition get_one (d : data VX) : TX :=
   if d is Some (inl v) then v else none_TX.
 
-Let get_vec (d : data VX) : VX :=
+Definition get_vec (d : data VX) : VX :=
   if d is Some (inr v) then v else none_VX.
 
-Let get_vec_RV (party slot: nat) : {RV P -> VX} :=
-    (fun traces => get_vec (nth (vec none_VX) (nth [::] traces party) slot)) \o scalar_product_RV.
+Definition get_vec_RV (party slot: nat) (inputs : scalar_product_random_inputs) : {RV P -> VX} :=
+    (fun traces => get_vec (nth (vec none_VX) (nth [::] traces party) slot)) \o (scalar_product_RV inputs).
 
-Let get_one_RV (party slot: nat) : {RV P -> TX} :=
-    (fun traces => get_one (nth (one VX none_TX) (nth [::] traces party) slot)) \o scalar_product_RV.
+Definition get_one_RV (party slot: nat) (inputs : scalar_product_random_inputs) : {RV P -> TX} :=
+    (fun traces => get_one (nth (one VX none_TX) (nth [::] traces party) slot)) \o (scalar_product_RV inputs).
 
-Let IntermediateVars :=
-  ScalarProductIntermediateVars
-    (get_vec_RV bob 1)
-    (get_vec_RV alice 2)
-    (get_one_RV alice 1)
-    (get_one_RV alice 0)
-    (get_one_RV bob 2).
+End information_leakage_def.
+
+About get_one_RV.
 
 
 Section alice_leakage_free_proof.
 
-Variable Rels : scalar_product_relations.
+Variable n m : nat.
+Variable T : finType.
+Variable P : R.-fdist T.
+Let TX := [the finComRingType of 'I_m.+2].
+Let VX := 'rV[TX]_n.
+Variable none_TX : TX.
+Variable none_VX : VX.
+Variables (S1 S2 X1 X2: {RV P -> VX}) (R1 Y2: {RV P -> TX}).
+Hypothesis card_TX : #|TX| = m.+2.
+Hypothesis card_VX : #|VX| = m.+2.
 
+Variable inputs : scalar_product_random_inputs P card_TX card_VX.
+
+Let intermediate_vars :=
+  ScalarProductIntermediateVars
+    (get_vec_RV none_VX bob 1 inputs)
+    (get_vec_RV none_VX alice 2 inputs)
+    (get_one_RV none_TX alice 1 inputs)
+    (get_one_RV none_TX alice 0 inputs)
+    (get_one_RV none_TX bob 2 inputs).
 
   
 End alice_leakage_free_proof.
