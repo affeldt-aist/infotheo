@@ -36,6 +36,7 @@ Inductive proc : Type :=
   | Send : nat -> data -> proc -> proc
   | Recv : nat -> (data -> proc) -> proc
   | Ret : data -> proc
+  | RetNone : proc
   | Fail : proc.
 
 Definition step (A : Type) (ps : seq proc) (trace : seq data) (yes no : proc -> A)
@@ -91,6 +92,7 @@ Definition coserv : nat := 2.
 Definition data := option (TX + VX).
 Definition one x : data := Some (inl x).
 Definition vec x : data := Some (inr x).
+Definition none : data := None.
 
 Definition Recv_one frm f : proc data :=
   Recv frm (fun x => if x is Some (inl v) then f v else Ret None).
@@ -120,13 +122,13 @@ Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
   Send alice (vec sa) (
   Send alice (one ra) (
   Send bob (vec sb) (
-  Send bob (one (sa *d sb - ra)) (Ret None))))))).
+  Send bob (one (sa *d sb - ra)) (RetNone _))))))).
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 Definition scalar_product h :=
-  interp h [:: palice xa; pbob xb yb; pcoserv sa sb ra] [::[::];[::];[::]].
+  (interp h [:: palice xa; pbob xb yb; pcoserv sa sb ra] [::[::];[::];[::]]).
 
-Goal scalar_product 11 = ([:: (Fail _); (Fail _); (Fail _)], [::]).
+Goal (scalar_product 11).2 = ([::]).
 cbv -[GRing.add GRing.opp GRing.Ring.sort (*Equality.eqtype_hasDecEq_mixin*) ].
 Undo 1.
 rewrite /scalar_product.
@@ -145,10 +147,7 @@ rewrite -lock (lock (0 : nat)) /=.
 Abort.
 
 Lemma scalar_product_ok :
-  scalar_product 11 =
-  ([:: Ret (one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra));
-       Ret (one yb);
-       Ret None],
+  (scalar_product 11).2 =
    [:: [:: one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra);
            one ((xa + sa) *d xb + (sa *d sb - ra) - yb);
            vec (xb + sb); 
@@ -160,15 +159,13 @@ Lemma scalar_product_ok :
            one (sa *d sb - ra);
            vec sb;
            vec xb];
-       [:: None;
-           one ra;
+       [:: one ra;
            vec sb;
            vec sa]
-    ]
-  ).
+   ].
 Proof. reflexivity. Qed.
 
-Let ff := [::
+Let test := [::
        [:: one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra);
            one ((xa + sa) *d xb + (sa *d sb - ra) - yb);
            vec (xb + sb); 
@@ -180,23 +177,24 @@ Let ff := [::
            one (sa *d sb - ra);
            vec sb;
            vec xb];
-       [:: None;
-           one ra;
+       [:: one ra;
            vec sb;
            vec sa]
     ].
 
-Eval compute in (nth None (nth [::] ff 0) 5).
-
 End scalar_product.
 
 Section information_leakage_proof.
+  
 
 Variable n m : nat.
 Variable T : finType.
 Variable P : R.-fdist T.
 Let TX := [the finComRingType of 'I_m.+2].
 Let VX := 'rV[TX]_n.
+Variable none_TX : TX.
+Variable none_VX : VX.
+Variables (S1 S2 X1 X2: {RV P -> VX}) (R1 Y2: {RV P -> TX}).
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis card_VX : #|VX| = m.+2.
 
@@ -206,13 +204,9 @@ Definition dotproduct_rv (A B: T -> 'rV[TX]_n) := fun p => dotproduct (A p) (B p
 Notation "u *d w" := (dotproduct u w).
 Notation "u \*d w" := (dotproduct_rv u w).
 
-Variables (S1 S2 X1 X2: {RV P -> VX}) (R1 Y2: {RV P -> TX}).
-
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
   (scalar_product dotproduct sa sb ra yb xa xb 11).2.
-
-Check scalar_product_uncurry.
 
 Definition scalar_product_RV : {RV P -> seq (seq (data VX))} :=
   scalar_product_uncurry `o [%S1, S2, R1, Y2, X1, X2].
@@ -239,27 +233,48 @@ Record scalar_product_random_inputs :=
     pr1_unif : `p_ r1 = fdist_uniform card_TX;
   }.
 
-Record scalar_product_relations :=
-  ScalarProductRelations {
-    inputs : scalar_product_random_inputs;
-    traces : seq (seq (data VX));
-
+Record scalar_product_intermediate_vars :=
+  ScalarProductIntermediateVars {
     x1' : {RV P -> VX};
     x2' : {RV P -> VX};
     t   : {RV P -> TX};
     y1  : {RV P -> TX};
     r2  : {RV P -> TX};
-
-    pr2_unif : `p_ r2 = fdist_uniform card_TX;
-    
-    r2_eqE   : r2 = s1 inputs \*d s2 inputs \- r1 inputs;
-    x1'_eqE  : x1' = x1 inputs \+ s1 inputs; 
-    x2'_eqE  : x2' = x2 inputs \+ s2 inputs; 
-    y1_eqE   : y1 = t \- (s1 inputs \*d x1') \+ r1 inputs;
-    t_eqE    : t = (x2 inputs \*d x2') \+ r2 \- y2 inputs;
-
-    x1'_eq_tr : x1' = nth None (nth [::] traces 0) 5;
   }.
+
+Record scalar_product_relations :=
+  ScalarProductRelations {
+    inputs : scalar_product_random_inputs;
+    vars   : scalar_product_intermediate_vars;
+
+    pr2_unif : `p_ (r2 vars) = fdist_uniform card_TX;
+    
+    r2_eqE   : r2 vars = s1 inputs \*d s2 inputs \- r1 inputs;
+    x1'_eqE  : x1' vars = x1 inputs \+ s1 inputs; 
+    x2'_eqE  : x2' vars = x2 inputs \+ s2 inputs; 
+    y1_eqE   : y1 vars = t vars \- (s1 inputs \*d x1' vars) \+ r1 inputs;
+    t_eqE    : t vars = (x2 inputs \*d x2' vars) \+ r2 vars \- y2 inputs;
+  }.
+
+Let get_one (d : data VX) : TX :=
+  if d is Some (inl v) then v else none_TX.
+
+Let get_vec (d : data VX) : VX :=
+  if d is Some (inr v) then v else none_VX.
+
+Let get_vec_RV (party slot: nat) : {RV P -> VX} :=
+    (fun traces => get_vec (nth (vec none_VX) (nth [::] traces party) slot)) \o scalar_product_RV.
+
+Let get_one_RV (party slot: nat) : {RV P -> TX} :=
+    (fun traces => get_one (nth (one VX none_TX) (nth [::] traces party) slot)) \o scalar_product_RV.
+
+Let IntermediateVars :=
+  ScalarProductIntermediateVars
+    (get_vec_RV bob 1)
+    (get_vec_RV alice 2)
+    (get_one_RV alice 1)
+    (get_one_RV alice 0)
+    (get_one_RV bob 2).
 
 
 Section alice_leakage_free_proof.
