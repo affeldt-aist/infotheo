@@ -19,9 +19,12 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope ring_scope.
-Local Open Scope vec_ext_scope.
+Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
+Local Open Scope chap2_scope.
+Local Open Scope entropy_scope.
+Local Open Scope vec_ext_scope.
 
 Reserved Notation "u *d w" (at level 40).
 Reserved Notation "u \*d w" (at level 40).
@@ -195,7 +198,6 @@ Let TX := [the finComRingType of 'I_m.+2].
 Let VX := 'rV[TX]_n.
 Variable none_TX : TX.
 Variable none_VX : VX.
-Variables (S1 S2 X1 X2: {RV P -> VX}) (R1 Y2: {RV P -> TX}).
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis card_VX : #|VX| = m.+2.
 
@@ -252,6 +254,12 @@ Record scalar_product_relations :=
     x2'_eqE  : x2' vars = x2 inputs \+ s2 inputs; 
     y1_eqE   : y1 vars = t vars \- (s1 inputs \*d x1' vars) \+ r1 inputs;
     t_eqE    : t vars = (x2 inputs \*d x2' vars) \+ r2 vars \- y2 inputs;
+    
+    eqn2P :   `H(x2 inputs|[%[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars], y1 vars]) =
+              `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars]);
+    eqn3P :   `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars]) =
+              `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars]);
+    eqn4_1P : `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs]) = entropy `p_ (x2 inputs);
   }.
 
 
@@ -274,8 +282,6 @@ Definition get_one_RV (party slot: nat) (inputs : scalar_product_random_inputs) 
 
 End information_leakage_def.
 
-About get_one_RV.
-
 
 Section alice_leakage_free_proof.
 
@@ -286,19 +292,20 @@ Let TX := [the finComRingType of 'I_m.+2].
 Let VX := 'rV[TX]_n.
 Variable none_TX : TX.
 Variable none_VX : VX.
-Variables (S1 S2 X1 X2: {RV P -> VX}) (R1 Y2: {RV P -> TX}).
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis card_VX : #|VX| = m.+2.
 
 Variable inputs : scalar_product_random_inputs P card_TX card_VX.
 
-Let intermediate_vars :=
+Let vars :=
   ScalarProductIntermediateVars
     (get_vec_RV none_VX bob 1 inputs)
     (get_vec_RV none_VX alice 2 inputs)
     (get_one_RV none_TX alice 1 inputs)
     (get_one_RV none_TX alice 0 inputs)
     (get_one_RV none_TX bob 2 inputs).
+
+Let rels := ScalarProductRelations inputs vars.
 
   
 End alice_leakage_free_proof.
