@@ -550,6 +550,7 @@ Definition dotproduct (a b:'rV[TX]_n) := (a *m b^T)``_ord0.
 
 Definition dotproduct_rv (A B: T -> 'rV[TX]_n) := fun p => dotproduct (A p) (B p).
 
+Check dotproduct_rv.
 
 End dotproduct.
 
@@ -636,7 +637,7 @@ move => Heq1 _ Heq2 Heq3.
 by rewrite -Heq3 -Heq2 -Heq1 eqxx in Hneq.
 Qed.
 
-Lemma s1_rvop_s2_r1_indep : P|= (rv_op s1 s2) _|_ r1.
+Lemma s1Ms2_r1_indep : P|= (rv_op s1 s2) _|_ r1.
 Proof.
 rewrite /dotproduct_rv.
 rewrite /inde_rv.
@@ -857,10 +858,58 @@ Let y1_correct:
   y1 = t \- x2' \*d s1 \+ r1.
 Proof. exact: boolp.funext. Qed.
 
+Lemma sub_RV_eq (A : finType) (U : finZmodType) (X Y : {RV P -> U}): X \- Y = X \+ neg_RV Y.
+Proof.
+apply: boolp.funext=> i.
+rewrite /neg_RV .
+rewrite /=. (* from null_fun to 0 *)
+by rewrite sub0r.
+Qed.
+
+Lemma neg_RV_dist_eq (A : finType)(X : {RV P -> TX}):
+  `p_ X = fdist_uniform card_TX ->
+  `p_ X = `p_ (neg_RV X).
+Proof.
+rewrite /dist_of_RV=> Hunif.
+apply/val_inj/ffunP => x /=. (* these two steps eq to apply: fdist_ext.*)
+rewrite [RHS](_: _ = fdistmap X P (-x)).
+  by rewrite !Hunif !fdist_uniformE.
+rewrite /fdistmap !fdistbindE.
+apply: eq_bigr=> a ?.
+by rewrite /neg_RV !fdist1E /= sub0r eqr_oppLR.
+Qed.
+
+Lemma neg_RV_inde_eq (X Y : {RV P -> TX}):
+  P |= X _|_ Y ->
+  P |= X _|_ neg_RV Y.
+Proof.
+move => H.
+have ->: X = idfun `o X by [].
+have ->: neg_RV Y = (fun y: TX => 0 - y ) `o Y.
+  exact: boolp.funext => ? //=.
+apply: inde_rv_comp.
+exact: H.
+Qed.
+
+Check dotproduct_rv (T:=T) s1 s2.
 
 Let pr2_unif : `p_ r2 = fdist_uniform card_TX.
 Proof.
 rewrite r2_correct.
+have ->: s1 \*d s2 \- r1 = s1 \*d s2 \+ (neg_RV r1).
+  by apply: boolp.funext=> ?; rewrite /neg_RV /= sub0r.
+have Hnegr1unif: `p_ (neg_RV r1) = fdist_uniform card_TX.
+  have Hnegr1 := neg_RV_dist_eq TX pr1_unif.
+  symmetry in Hnegr1.
+  rewrite Hnegr1.
+  by rewrite pr1_unif.
+have Hs1s2_r1_indep: P|= s1 \*d s2 _|_ neg_RV r1.
+  have H : s1Ms2_r1_indep (dotproduct_rv (T:=T)).
+  rewrite /inde_rv => x y.
+  Check dotproduct_rv s1 s2.
+
+have H : add_RV_unif s1s2 (neg_RV r1) card_TX Hnegr1unif neg_RV_inde_eq.
+
 Admitted.
 
 (* Because we need values of random variables when expressing Pr(A = a). *)
