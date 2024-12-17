@@ -548,9 +548,8 @@ Variable T : finType.
 
 Definition dotproduct (a b:'rV[TX]_n) := (a *m b^T)``_ord0.
 
-Definition dotproduct_rv (A B: T -> 'rV[TX]_n) := fun p => dotproduct (A p) (B p).
-
-Check dotproduct_rv.
+Definition dotproduct_rv (P: R.-fdist T) (A B: {RV P -> 'rV[TX]_n}) : {RV P -> TX} :=
+  fun p => dotproduct (A p) (B p).
 
 End dotproduct.
 
@@ -560,11 +559,12 @@ Notation "u \*d w" := (dotproduct_rv u w).
 Section inde_ex.
 
 Variables (A: finType)(m n: nat)(P : R.-fdist A).
-Let TX := [the finComRingType of 'I_m.+2].
-Variable (s1 s2 r1: {RV P -> TX}).
-Variable (op: TX -> TX -> TX).
+(*Let TX := [the finComRingType of 'I_m.+2].*)
+Variables (TX1 TX2 TX3 : finType).
+Variables (s1 : {RV P -> TX1}) (s2 : {RV P -> TX2}) (r1: {RV P -> TX3}).
+Variable (op: TX1 -> TX2 -> TX3).
 
-Let rv_op (rv1 rv2:{RV P -> TX}) : {RV P -> TX} :=
+Let rv_op (rv1:{RV P -> TX1})(rv2:{RV P -> TX2}) : {RV P -> TX3}  :=
   fun p => op (rv1 p)(rv2 p).
 
 Hypothesis s1_s2_indep : P|= s1 _|_ s2.
@@ -573,11 +573,9 @@ Hypothesis s1s2_r1_indep : P|= [%s1, s2] _|_ r1.
 Hypothesis s1_r1_indep : P|= s1 _|_ r1.
 Hypothesis s2_r1_indep : P|= s2 _|_ r1.
 
-Lemma pr_eqM : forall x, `Pr[ (rv_op s1 s2) = x ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
+Lemma pr_eqM x : `Pr[ (rv_op s1 s2) = x ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
 Proof.
-move => x.
-Search pr_eq_set.
-rewrite -pr_eq_set1.
+rewrite -[LHS]pr_eq_set1.
 rewrite (reasoning_by_cases _ s1).
 apply eq_bigr => a _.
 rewrite (reasoning_by_cases _ s2).
@@ -589,7 +587,7 @@ case: ifPn.
   rewrite -s1_s2_indep.
   rewrite setX1 setX1.
   rewrite pr_eq_set1.
-  pose f (p:TX * TX) := (op p.1 p.2, p.1, p.2). 
+  pose f (p:TX1 * TX2) := (op p.1 p.2, p.1, p.2). 
   have f_inj : injective f.
      by move => [x1 x2] [? ?] [] _ -> -> /=.
   by rewrite (pr_eq_comp _ _ f_inj ).
@@ -605,10 +603,9 @@ move => Heq1 Heq2 Heq3.
 by rewrite -Heq3 -Heq2 -Heq1 eqxx in Hneq.
 Qed.
 
-Lemma pr_eqM2 : forall x y, `Pr[ [%(rv_op s1 s2), r1] = (x, y) ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r1 = y ]).
+Lemma pr_eqM2 x y : `Pr[ [%(rv_op s1 s2), r1] = (x, y) ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r1 = y ]).
 Proof.
-move => x y.
-rewrite -pr_eq_set1.
+rewrite -[LHS]pr_eq_set1.
 rewrite (reasoning_by_cases _ s1).
 apply eq_bigr => a _.
 rewrite (reasoning_by_cases _ s2).
@@ -621,7 +618,7 @@ case: ifPn.
   rewrite -s1_s2_indep -s1s2_r1_indep.
   rewrite setX1 setX1.
   rewrite pr_eq_set1.
-  pose f (p:TX * TX * TX) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2). 
+  pose f (p:TX1 * TX2 * TX3) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2). 
   have f_inj : injective f.
      by move => [[x1 x2] ?] [[? ?] ?] [] _ -> -> -> /=.
   by rewrite (pr_eq_comp _ _ f_inj ).
@@ -639,7 +636,6 @@ Qed.
 
 Lemma s1Ms2_r1_indep : P|= (rv_op s1 s2) _|_ r1.
 Proof.
-rewrite /dotproduct_rv.
 rewrite /inde_rv.
 move => x y.
 rewrite pr_eqM pr_eqM2.
@@ -654,6 +650,9 @@ Qed.
 (* reasoning_by_cases depends on another lemma that is not general before (2024/12/05) -- these proof are not trivial actually. *)
 
 End inde_ex.
+
+Arguments s1Ms2_r1_indep [_ _ _ _ _] s1 s2 r1.
+Arguments dotproduct {TX n}. 
 
 Section scalar_product_random_inputs_def.
 
@@ -673,6 +672,11 @@ Record scalar_product_random_inputs :=
     x2_indep : P |= [% x1, s1, r1] _|_ x2;
     y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1];
     s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2];
+    s1_s2_indep : P|= s1 _|_ s2;
+    s1s2_r1_indep : P|= [%s1, s2] _|_ r1;
+    (*TODO: prove these from s1s2_r1_indep by decomposition *)
+    s1_r1_indep : P|= s1 _|_ r1;
+    s2_r1_indep : P|= s2 _|_ r1;
 
     card_TX : #|TX| = m.+2;
     card_'rVTX_n : #|'rV[TX]_n| = m.+2;
@@ -789,13 +793,15 @@ End scalar_product_def.
 
 Variable RVInputs : scalar_product_random_inputs m n P.
 
-Let x1 := x1 RVInputs.
-Let x2 := x2 RVInputs.
-Let s1 := s1 RVInputs.
-Let s2 := s2 RVInputs.
-Let r1 := r1 RVInputs.
-Let y2 := y2 RVInputs.
+Local Notation x1 := (x1 RVInputs).
+Local Notation x2 := (x2 RVInputs).
+Local Notation s1 := (s1 RVInputs).
+Local Notation s2 := (s2 RVInputs).
+Local Notation r1 := (r1 RVInputs).
+Local Notation y2 := (y2 RVInputs).
 Let x2_indep := x2_indep RVInputs. 
+Let s1_s2_indep := s1_s2_indep RVInputs.
+Let s1s2_r1_indep := s1s2_r1_indep RVInputs.
 Let y2_x1x2s1s2r1_eqn3_indep := y2_x1x2s1s2r1_eqn3_indep RVInputs.
 Let s2_x1s1r1x2_eqn4_indep := s2_x1s1r1x2_eqn4_indep RVInputs.
 Let card_TX := card_TX RVInputs.
@@ -858,7 +864,7 @@ Let y1_correct:
   y1 = t \- x2' \*d s1 \+ r1.
 Proof. exact: boolp.funext. Qed.
 
-Lemma sub_RV_eq (A : finType) (U : finZmodType) (X Y : {RV P -> U}): X \- Y = X \+ neg_RV Y.
+Lemma sub_RV_eq (U : finZmodType) (X Y : {RV P -> U}): X \- Y = X \+ neg_RV Y.
 Proof.
 apply: boolp.funext=> i.
 rewrite /neg_RV .
@@ -866,7 +872,7 @@ rewrite /=. (* from null_fun to 0 *)
 by rewrite sub0r.
 Qed.
 
-Lemma neg_RV_dist_eq (A : finType)(X : {RV P -> TX}):
+Lemma neg_RV_dist_eq (X : {RV P -> TX}):
   `p_ X = fdist_uniform card_TX ->
   `p_ X = `p_ (neg_RV X).
 Proof.
@@ -879,19 +885,17 @@ apply: eq_bigr=> a ?.
 by rewrite /neg_RV !fdist1E /= sub0r eqr_oppLR.
 Qed.
 
-Lemma neg_RV_inde_eq (X Y : {RV P -> TX}):
+Lemma neg_RV_inde_eq (U : finType)(V : finZmodType)(X : {RV P -> U})(Y : {RV P -> V}):
   P |= X _|_ Y ->
   P |= X _|_ neg_RV Y.
 Proof.
 move => H.
 have ->: X = idfun `o X by [].
-have ->: neg_RV Y = (fun y: TX => 0 - y ) `o Y.
+have ->: neg_RV Y = (fun y: V => 0 - y ) `o Y.
   exact: boolp.funext => ? //=.
 apply: inde_rv_comp.
 exact: H.
 Qed.
-
-Check dotproduct_rv (T:=T) s1 s2.
 
 Let pr2_unif : `p_ r2 = fdist_uniform card_TX.
 Proof.
@@ -899,18 +903,14 @@ rewrite r2_correct.
 have ->: s1 \*d s2 \- r1 = s1 \*d s2 \+ (neg_RV r1).
   by apply: boolp.funext=> ?; rewrite /neg_RV /= sub0r.
 have Hnegr1unif: `p_ (neg_RV r1) = fdist_uniform card_TX.
-  have Hnegr1 := neg_RV_dist_eq TX pr1_unif.
-  symmetry in Hnegr1.
-  rewrite Hnegr1.
+  have Ha := neg_RV_dist_eq pr1_unif.
+  symmetry in Ha.
+  rewrite Ha.
   by rewrite pr1_unif.
-have Hs1s2_r1_indep: P|= s1 \*d s2 _|_ neg_RV r1.
-  have H : s1Ms2_r1_indep (dotproduct_rv (T:=T)).
-  rewrite /inde_rv => x y.
-  Check dotproduct_rv s1 s2.
-
-have H : add_RV_unif s1s2 (neg_RV r1) card_TX Hnegr1unif neg_RV_inde_eq.
-
-Admitted.
+apply: add_RV_unif; first by rewrite -neg_RV_dist_eq.
+apply: s1Ms2_r1_indep; first by [].
+exact: neg_RV_inde_eq.
+Qed.
 
 (* Because we need values of random variables when expressing Pr(A = a). *)
 Variable (_x1 _x2 _x1' _x2' _s1 _s2: 'rV[TX]_n)(_t _r1 _r2 _y1 _y2: TX).
