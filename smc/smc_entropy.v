@@ -559,19 +559,15 @@ Notation "u \*d w" := (dotproduct_rv u w).
 Section inde_ex.
 
 Variables (A: finType)(m n: nat)(P : R.-fdist A).
-(*Let TX := [the finComRingType of 'I_m.+2].*)
 Variables (TX1 TX2 TX3 : finType).
-Variables (s1 : {RV P -> TX1}) (s2 : {RV P -> TX2}) (r1: {RV P -> TX3}).
+Variables (s1 : {RV P -> TX1}) (s2 : {RV P -> TX2}) (r: {RV P -> TX3}).
 Variable (op: TX1 -> TX2 -> TX3).
 
 Let rv_op (rv1:{RV P -> TX1})(rv2:{RV P -> TX2}) : {RV P -> TX3}  :=
   fun p => op (rv1 p)(rv2 p).
 
 Hypothesis s1_s2_indep : P|= s1 _|_ s2.
-Hypothesis s1s2_r1_indep : P|= [%s1, s2] _|_ r1.
-(*TODO: prove these from s1s2_r1_indep by decomposition *)
-Hypothesis s1_r1_indep : P|= s1 _|_ r1.
-Hypothesis s2_r1_indep : P|= s2 _|_ r1.
+Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
 
 Lemma pr_eqM x : `Pr[ (rv_op s1 s2) = x ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
 Proof.
@@ -603,7 +599,7 @@ move => Heq1 Heq2 Heq3.
 by rewrite -Heq3 -Heq2 -Heq1 eqxx in Hneq.
 Qed.
 
-Lemma pr_eqM2 x y : `Pr[ [%(rv_op s1 s2), r1] = (x, y) ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r1 = y ]).
+Lemma pr_eqM2 x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
 Proof.
 rewrite -[LHS]pr_eq_set1.
 rewrite (reasoning_by_cases _ s1).
@@ -615,7 +611,7 @@ case: ifPn.
   move/eqP => <-.
   rewrite -coqRE.
   rewrite -coqRE.
-  rewrite -s1_s2_indep -s1s2_r1_indep.
+  rewrite -s1_s2_indep -s1s2_r_indep.
   rewrite setX1 setX1.
   rewrite pr_eq_set1.
   pose f (p:TX1 * TX2 * TX3) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2). 
@@ -634,7 +630,7 @@ move => Heq1 _ Heq2 Heq3.
 by rewrite -Heq3 -Heq2 -Heq1 eqxx in Hneq.
 Qed.
 
-Lemma s1Ms2_r1_indep : P|= (rv_op s1 s2) _|_ r1.
+Lemma s1Ms2_r_indep : P|= (rv_op s1 s2) _|_ r.
 Proof.
 rewrite /inde_rv.
 move => x y.
@@ -651,7 +647,7 @@ Qed.
 
 End inde_ex.
 
-Arguments s1Ms2_r1_indep [_ _ _ _ _] s1 s2 r1.
+Arguments s1Ms2_r_indep [_ _ _ _ _] s1 s2 r.
 Arguments dotproduct {TX n}. 
 
 Section neg_RV_lemmas.
@@ -695,6 +691,33 @@ exact: H.
 Qed.
 
 End neg_RV_lemmas.
+
+Section unif_lemmas.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Variables (s1 s2: {RV P -> 'rV[TX]_n})(r: {RV P -> TX}).
+Hypothesis card_TX : #|TX| = m.+2. 
+Hypothesis pr_unif: `p_ r = fdist_uniform card_TX.
+Hypothesis s1_s2_indep : P|= s1 _|_ s2.
+Hypothesis s1s2_r1_indep : P|= [%s1, s2] _|_ r.
+
+Lemma ps1_dot_s2_r_unif:
+  @dist_of_RV T P TX (s1 \*d s2 \- r) = fdist_uniform card_TX.
+Proof.
+have ->: s1 \*d s2 \- r = s1 \*d s2 \+ (neg_RV r).
+  by apply: boolp.funext=> ?; rewrite /neg_RV /= sub0r.
+have Hnegr1unif: `p_ (neg_RV r) = fdist_uniform card_TX.
+  have Ha := neg_RV_dist_eq pr_unif.
+  symmetry in Ha.
+  rewrite Ha.
+  by rewrite pr_unif.
+apply: add_RV_unif; first by rewrite -neg_RV_dist_eq.
+apply: s1Ms2_r_indep; first by [].
+exact: neg_RV_inde_eq.
+Qed.
+
+End unif_lemmans.
 
 Section scalar_product_random_inputs_def.
 
@@ -858,23 +881,6 @@ Definition scalar_product_uncurry (o: 'rV[TX]_n * 'rV[TX]_n * TX * TX * 'rV[TX]_
   let '(sa, sb, ra, yb, xa, xb) := o in
   (scalar_product sa sb ra yb xa xb).
 
-(* Use comp_RV to embed scalar-product, an ordinary function, in RV context.
-   And then we extract computation result and intermediate variables from this RV-version
-   scalar-product, so that we can verify this RV-version scalar-product is also
-   correct in term of algorithm correctness.
-
-   What we verify are those extracted random variables from RV-version scalar-product
-   still satisify relations that non-RV variables of the ordinary scalar-product.
-
-   With this correctness verification, and the following equations to prove the views to have
-   during the computation are information-leakage-free, we prove that SMC scalar-product
-   are indeed correct and information-leakage-free.
-
-   In the future, if we have a more monadic embedding function (like `unit`),
-   we can express the DSL program in a monadic way. Because every step of such a program
-   are using scalar-product as the building block. So each step can be decomposed to
-   a fixed number of scalar-product statements.
-*)
 Definition scalar_product_RV :=
   comp_RV scalar_product_uncurry [%s1, s2, r1, y2, x1, x2] (TB:=(TX * TX * (party_view * party_view))%type).
 
@@ -906,20 +912,6 @@ Let y1_correct:
   y1 = t \- x2' \*d s1 \+ r1.
 Proof. exact: boolp.funext. Qed.
 
-Let pr2_unif : `p_ r2 = fdist_uniform card_TX.
-Proof.
-rewrite r2_correct.
-have ->: s1 \*d s2 \- r1 = s1 \*d s2 \+ (neg_RV r1).
-  by apply: boolp.funext=> ?; rewrite /neg_RV /= sub0r.
-have Hnegr1unif: `p_ (neg_RV r1) = fdist_uniform card_TX.
-  have Ha := neg_RV_dist_eq pr1_unif.
-  symmetry in Ha.
-  rewrite Ha.
-  by rewrite pr1_unif.
-apply: add_RV_unif; first by rewrite -neg_RV_dist_eq.
-apply: s1Ms2_r1_indep; first by [].
-exact: neg_RV_inde_eq.
-Qed.
 
 (* Because we need values of random variables when expressing Pr(A = a). *)
 Variable (_x1 _x2 _x1' _x2' _s1 _s2: 'rV[TX]_n)(_t _r1 _r2 _y1 _y2: TX).
@@ -1055,7 +1047,6 @@ Proof.
 rewrite -eq_W1_RV -eq_W2_RV -eq_WmZ_RV eq_Wm_RV.
 have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep.
 apply Ha => w w2 wmz Hneq0.
-rewrite pr_eq_pairC in Hneq0.
 by have := mc_removal_pr f1 Z_O_indep pZ_unif w Hneq0.
 Qed.
 
@@ -1144,7 +1135,6 @@ rewrite /eqn4.
 have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep _.
 apply Ha => w w2 wmz Hneq0.
 simpl in *.
-rewrite pr_eq_pairC in Hneq0.
 by have := mc_removal_pr snd Z_O_indep pZ_unif w Hneq0.
 Qed.
   
@@ -1379,7 +1369,6 @@ rewrite -eq_W1_RV -eq_W2_RV -eq_WmZ_RV.
 rewrite -/W1 -/W2 -/WmZ.
 have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep _.
 apply: Ha => w w2 wm Hneq0.
-rewrite pr_eq_pairC in Hneq0.
 rewrite -/W1.
 by have := (mc_removal_pr f1 Z_O_indep pZ_unif w Hneq0).
 Qed.
@@ -1387,7 +1376,7 @@ Qed.
 End eqn8_proof.
 
 Section eqn_bob_fin_proof.
-
+  
 (* Hypothese from the paper. *)
 Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
 Hypothesis x1_y2_indep : P |= x1 _|_ y2.
@@ -1399,7 +1388,7 @@ Hypothesis x1x2_s2_x1'_r2_eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
 Hypothesis s1_x1x2s1s2_eqn8_indep : P |= s1 _|_ [%x1, x2, s1, s2].
 
 Hypothesis py2_uniform : `p_ y2 = fdist_uniform card_TX.
-Hypothesis pr2_uniform : `p_ r2 = fdist_uniform card_TX.
+Hypothesis pr1_uniform : `p_ r1 = fdist_uniform card_TX.
 Hypothesis ps1_uniform : `p_ s1 = fdist_uniform card_'rVTX_n .
   
 Lemma eqn_8_1:
@@ -1416,6 +1405,8 @@ rewrite joint_entropy_indeRV.
   by rewrite addrAC subrr add0r.
 by exact: x2s2_x1_indep.
 Qed.
+
+Let pr2_unif := @ps1_dot_s2_r_unif T m n P s1 s2 r1 card_TX pr1_uniform s1_s2_indep s1s2_r1_indep.
 
 Lemma pi2_bob_view_is_leakage_free_proof:
   `H( x1 | BobView) = `H `p_ x1.
@@ -1435,7 +1426,11 @@ End pi2.
 
 (* Using graphoid for combinations of independ random variables. *)
 Section mutual_indep.
-
+  
+Variables (A: finType)(m n: nat)(P : R.-fdist A).
+Variables (TX : finType).
+Variables (x1 x2 s1 s2 r1 y2: {RV P -> TX}).
+  
 Hypothesis Hinde : {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> inde_rv i j}%nat.
 
 Lemma x1_x2_inde:
@@ -1445,13 +1440,6 @@ have H := @Hinde 0 1.
 apply H.
 rewrite //.
 Qed.
-
-Let H := [%x1, [%x2, s2, x1', r2]].
-Check H.
-
-Let H2 := [%x2, s2, x1'].
-Check H2.
-
 
 Hypothesis Hinde_all : forall i j, P|= nth x1 [:: x1; x2; s1; s2] i _|_ nth r1 [:: r1; y2] j.
 
@@ -1464,6 +1452,5 @@ Qed.
   
 End mutual_indep.
 
-End pi2.
-
 End smc_entropy_proofs.
+

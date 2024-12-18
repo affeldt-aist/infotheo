@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct ring.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy smc graphoid.
+Require Import proba jfdist_cond entropy smc graphoid smc_entropy.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -305,7 +305,12 @@ Let vars :=
     (get_one_RV none_TX alice 0 inputs)
     (get_one_RV none_TX bob 2 inputs).
 
-Let rels := ScalarProductRelations inputs vars.
+
+
+Let rels :=
+  ScalarProductRelations
+    (smc_entropy.smc_entropy_proofs.pr2_unif).
+     inputs vars.
 
   
 End alice_leakage_free_proof.
