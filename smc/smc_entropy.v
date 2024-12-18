@@ -57,21 +57,6 @@ by rewrite !pr_eqE /Pr; apply: eq_bigl=> a; rewrite !inE xpair_eqE andbb.
 *)
 Qed.
 
-Lemma dist_of_neg_RVE (X : {RV P -> TX'}) x:
-  `p_ (@neg_RV T TX' P X) (-x) = `p_ X x.
-Proof.
-Abort.
-
-Lemma Pr_eq_neg_RV (X : {RV P -> TX'}) x:
-  `Pr[(neg_RV X) = -x] = `Pr[X = x].
-Proof.
-Abort.
-
-Lemma inde_neg_RV (X: {RV P -> TX'})(Y: {RV P -> TY}) x y:
-  `p_ [% neg_RV X, Y] (x, y) = `p_ (neg_RV X) x * `p_ Y y.
-Proof.
-Abort.
-
 Lemma cpr_eq_id U (X : {RV P -> U}) (x : U) :
   `Pr[ X = x ] != 0 -> `Pr[ X = x | X = x ] = 1.
 Proof. by move=> ?; rewrite cpr_eqE pr_eq_diag divRR. Qed.
@@ -106,17 +91,6 @@ rewrite !inE.
 rewrite !xpair_eqE.
 by rewrite [X in X && _]Bool.andb_comm.
 Qed.
-
-Lemma fdist_uniformD (A : finType) (U : finZmodType) (Q : R.-fdist A)
-  (X Y : {RV Q -> U}) (n : nat) (cU : #|U| = n.+1) :
-  `p_X = fdist_uniform cU -> `p_Y = fdist_uniform cU ->
-  `p_ (X `+ Y) = fdist_uniform cU.
-Proof.
-move=> pX pY.
-apply: fdist_ext=> x.
-rewrite fdist_uniformE /=.
-rewrite /dist_of_RV.
-Admitted.
 
 End extra_pr2.
 
@@ -539,23 +513,6 @@ Qed.
                                      
 End cinde_rv_comp_removal.
 
-
-Section dotproduct.
-
-Variable TX : ringType.
-Variable n : nat.
-Variable T : finType.
-
-Definition dotproduct (a b:'rV[TX]_n) := (a *m b^T)``_ord0.
-
-Definition dotproduct_rv (P: R.-fdist T) (A B: {RV P -> 'rV[TX]_n}) : {RV P -> TX} :=
-  fun p => dotproduct (A p) (B p).
-
-End dotproduct.
-
-Notation "u *d w" := (dotproduct u w).
-Notation "u \*d w" := (dotproduct_rv u w).
-
 Section inde_ex.
 
 Variables (A: finType)(m n: nat)(P : R.-fdist A).
@@ -648,7 +605,7 @@ Qed.
 End inde_ex.
 
 Arguments s1Ms2_r_indep [_ _ _ _ _] s1 s2 r.
-Arguments dotproduct {TX n}. 
+
 
 Section neg_RV_lemmas.
 
@@ -692,6 +649,24 @@ Qed.
 
 End neg_RV_lemmas.
 
+Section dotproduct.
+
+Variable TX : ringType.
+Variable n : nat.
+Variable T : finType.
+
+Definition dotproduct (a b:'rV[TX]_n) := (a *m b^T)``_ord0.
+
+Definition dotproduct_rv (P: R.-fdist T) (A B: {RV P -> 'rV[TX]_n}) : {RV P -> TX} :=
+  fun p => dotproduct (A p) (B p).
+
+End dotproduct.
+
+Notation "u *d w" := (dotproduct u w).
+Notation "u \*d w" := (dotproduct_rv u w).
+
+Arguments dotproduct {TX n}. 
+
 Section unif_lemmas.
 
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
@@ -717,7 +692,7 @@ apply: s1Ms2_r_indep; first by [].
 exact: neg_RV_inde_eq.
 Qed.
 
-End unif_lemmans.
+End unif_lemmas.
 
 Section scalar_product_random_inputs_def.
 
@@ -732,6 +707,7 @@ Record scalar_product_random_inputs :=
     s2 : {RV P -> 'rV[TX]_n};
     r1 : {RV P -> TX};
     y2 : {RV P -> TX};
+     (*
 
     (* Hypothese from the information-leakage-free paper. *)
     x2_indep : P |= [% x1, s1, r1] _|_ x2;
@@ -743,69 +719,30 @@ Record scalar_product_random_inputs :=
     s1_r1_indep : P|= s1 _|_ r1;
     s2_r1_indep : P|= s2 _|_ r1;
 
-    card_TX : #|TX| = m.+2;
-    card_'rVTX_n : #|'rV[TX]_n| = m.+2;
-    neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX;
 
     ps1_unif : `p_ s1 = fdist_uniform card_'rVTX_n ;
     ps2_unif : `p_ s2 = fdist_uniform card_'rVTX_n;
     py2_unif : `p_ y2 = fdist_uniform card_TX;
     pr1_unif : `p_ r1 = fdist_uniform card_TX;
+
+*)
   }.
 
 End scalar_product_random_inputs_def.
 
 Section pi2.
   
-Variables (T: finType)(m n: nat)(P : R.-fdist T).
-Let TX := [the finComRingType of 'I_m.+2].
   
 Section scalar_product_def.
-  
-Record party_view :=
-  PartyView {
-    x  : 'rV[TX]_n;
-    x' : 'rV[TX]_n;
-    s  : 'rV[TX]_n;
-    r  : TX;
-    t_  : TX;
-    y  : TX;
-  }.
 
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
 
-Definition is_alice_view (a: party_view) :=
-  y a = t_ a - (s a *d x' a) + r a.
-
-Definition is_bob_view (b: party_view) :=
-  t_ b = (x b *d x' b) + r b - y b.
-
-Definition party_view_eq (p1 p2: party_view) :=
-  (x p1 == x p2) && (x' p1 == x' p2) &&
-  (s p1 == s p2) && (r p1 == r p2) &&
-  (t_ p1 == t_ p2) && (y p1 == y p2).
-
-Lemma party_view_eqP : Equality.axiom party_view_eq.
-Proof.
-move => a1 a2.
-apply: (iffP idP); last first.
-  move ->.
-  rewrite /party_view_eq.
-  by rewrite !eqxx.
-case: a1 => x1 x'1 s1 r1 t1 y1.
-case: a2 => x2 x'2 s2 r2 t2 y2.
-rewrite /party_view_eq /=.
-move=> /andP [] /andP [] /andP [] /andP [] /andP [].
-by move=> /eqP -> /eqP -> /eqP -> /eqP -> /eqP -> /eqP ->.
-Qed.
-
-HB.instance Definition _ := hasDecEq.Build _ party_view_eqP.
-Check party_view : eqType.
-
-Definition SMC := 'rV[TX]_n -> 'rV[TX]_n -> (TX * TX * (party_view * party_view)).
+Definition SMC := 'rV[TX]_n -> 'rV[TX]_n -> (TX * TX).
 
 Definition is_scalar_product (sp: SMC) :=
   forall (xa xb: 'rV[TX]_n),
-  (sp xa xb).1.1 + (sp xa xb).1.2 = xa *d xb.
+  (sp xa xb).1 + (sp xa xb).2 = xa *d xb.
 
 Definition step_eqn2_ya : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
   let '(xa, sa, ra, xb', t) := z in t - (xb' *d sa) + ra.
@@ -813,14 +750,14 @@ Definition step_eqn2_ya : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX :=
 Definition step_eqn3_t_with_offset : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
   let '(xa, xb, sa, sb, ra, rb) := z in (xa + sa) *d xb + rb.
 
-Definition scalar_product (sa sb: 'rV[TX]_n)(ra yb: TX)(xa xb: 'rV[TX]_n): (TX * TX * (party_view * party_view)) :=
+Definition scalar_product (sa sb: 'rV[TX]_n)(ra yb: TX)(xa xb: 'rV[TX]_n): (TX * TX) :=
   let xa' := xa + sa in (* Alice -> Bob *)
   let xb' := xb + sb in (* Bob -> Alice *)
   let rb := sa *d sb - ra in (* Commodity -> Bob *)
   let t_with_offset := step_eqn3_t_with_offset (xa, xb, sa, sb, ra, rb) in
   let t :=  t_with_offset - yb in (* Bob -> Alice *)
   let ya := step_eqn2_ya (xa, sa, ra, xb', t) in
-  (ya, yb, (PartyView xa xb' sa ra t ya, PartyView xb xa' sb rb t yb)).
+  (ya, yb).
 
 Lemma dot_productC (aa bb : 'rV[TX]_n) : aa *d bb = bb *d aa.
 Proof.
@@ -856,6 +793,7 @@ Qed.
 
 End scalar_product_def.
 
+(*
 Variable RVInputs : scalar_product_random_inputs m n P.
 
 Local Notation x1 := (x1 RVInputs).
@@ -876,45 +814,15 @@ Let py2_unif := py2_unif RVInputs.
 Let ps1_unif := ps1_unif RVInputs.
 Let ps2_unif := ps2_unif RVInputs.
 Let pr1_unif := pr1_unif RVInputs.
-
-Definition scalar_product_uncurry (o: 'rV[TX]_n * 'rV[TX]_n * TX * TX * 'rV[TX]_n * 'rV[TX]_n) : (TX * TX * (party_view * party_view)) :=
-  let '(sa, sb, ra, yb, xa, xb) := o in
-  (scalar_product sa sb ra yb xa xb).
-
-Definition scalar_product_RV :=
-  comp_RV scalar_product_uncurry [%s1, s2, r1, y2, x1, x2] (TB:=(TX * TX * (party_view * party_view))%type).
-
-Definition alice_view := (fst \o snd) `o scalar_product_RV.
-Definition bob_view := (snd \o snd) `o scalar_product_RV.
-Definition y1 := (fst \o fst) `o scalar_product_RV.
-Definition x1' := x' `o bob_view. (* (snd \o snd) *)
-Definition x2' := x' `o alice_view. (*  (fst \o snd) *)
-Definition t := t_ `o alice_view. (*  (fst \o snd) *)
-Definition r2 := r `o bob_view. (* (snd \o snd) *)
-
-Let r2_correct :
-  r2 = s1 \*d s2 \- r1.
-Proof. exact: boolp.funext. Qed.
-
-Let x1'_correct :
-  x1' = x1 \+ s1.
-Proof. exact: boolp.funext. Qed.
-
-Let x2'_correct :
-  x2' = x2 \+ s2.
-Proof. exact: boolp.funext. Qed.
-
-Let t_correct :
-  t = x1' \*d x2 \+ r2 \- y2.
-Proof. exact: boolp.funext. Qed.
-
-Let y1_correct:
-  y1 = t \- x2' \*d s1 \+ r1.
-Proof. exact: boolp.funext. Qed.
+Let r2  := s1 \*d s2 \- r1.
+Let x1' := x1 \+ s1.
+Let x2' := x2 \+ s2.
+Let t := x1' \*d x2 \+ r2 \- y2.
+Let y1 := t \- x2' \*d s1 \+ r1.
 
 
-(* Because we need values of random variables when expressing Pr(A = a). *)
 Variable (_x1 _x2 _x1' _x2' _s1 _s2: 'rV[TX]_n)(_t _r1 _r2 _y1 _y2: TX).
+
 
 Let AliceView := [%x1, s1, r1, x2', t, y1].
 
@@ -924,20 +832,44 @@ Let BobView := [%x2, s2, x1', r2, y2].
 
 Let eqn5 := `H(x1|BobView).
 
+
+*)
+
 Section eqn2_proof.
 
-Lemma y1_fcomp :
-  y1 = step_eqn2_ya `o [%x1, s1, r1, x2', t].
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Variables (r1 r2 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Let x1' := x1 \+ s1.
+Let x2' := x2 \+ s2.
+Let t := x1' \*d x2 \+ r2 \- y2.
+Let y1 := t \- x2' \*d s1 \+ r1.
+Hypothesis card_TX : #|TX| = m.+2.
+
+Let f: ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
+  let '(xa, sa, ra, xb', t) := z in t - (xb' *d sa) + ra.
+
+Let y1_fcomp :
+  y1 = f `o [%x1, s1, r1, x2', t].
 Proof. by apply boolp.funext. Qed.
 
 Lemma eqn2_proof:
   `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
 Proof. rewrite y1_fcomp. exact: fun_cond_removal. Qed.
 
-
 End eqn2_proof.
 
 Section eqn3_proof.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX: #|TX| = m.+2.
+
+Variables (r1 r2 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Let x1' := x1 \+ s1.
+Let x2' := x2 \+ s2.
+Let t := x1' \*d x2 \+ r2 \- y2.
+Let y1 := t \- x2' \*d s1 \+ r1.
 
 (* Selected variables from scalar-product only for eqn3.
    Each equation has a such "focus" from all variables in the scalar-product.
@@ -952,11 +884,14 @@ Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> 'rV[TX]_n 
 Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) := fun z =>
   let '(x1, x2, s1, s2, r1, r2) := z in (x1, s1, r1, x2 + s2).
 
+Definition fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
+  let '(xa, xb, sa, sb, ra, rb) := z in (xa + sa) *d xb + rb.
+
 (* in mc_removal_pr they are named as Y1 Y2 Ym but we already have Y so renaming them. *)
 Let Z := neg_RV y2.
 Let W1 := f1 `o O.  (* x2; It is okay in Alice's view has it because only used in condition. *)
 Let W2 := f2 `o O.  (* [%x1, s1, r1, x2']; cannot have x2, s2, r2 here otherwise Alice knows the secret*)
-Let Wm := step_eqn3_t_with_offset `o O.  (* t-(neg_RV y2); t before it addes (neg_RV y2) in WmZ*)
+Let Wm := fm `o O.  (* t-(neg_RV y2); t before it addes (neg_RV y2) in WmZ*)
 Let WmZ := Wm `+ neg_RV y2. (* t *)
 
 Let eq_W1_RV:
@@ -968,11 +903,11 @@ Let eq_W2_RV:
 Proof. by apply boolp.funext. Qed.
 
 Let eq_Wm_RV:
-  step_eqn3_t_with_offset `o O = (x1 \+ s1) \*d x2 \+ r2.
+  fm `o O = (x1 \+ s1) \*d x2 \+ r2.
 Proof. by apply boolp.funext => a . Qed.
 
 Let eq_WmZ_RV:
-  step_eqn3_t_with_offset `o O `+ (neg_RV y2) = t.
+  fm `o O `+ (neg_RV y2) = t.
 Proof.
 rewrite /t /add_RV /neg_RV eq_Wm_RV /x1' /=.
 apply boolp.funext => a /=.
@@ -981,8 +916,8 @@ by [].
 Qed.
 
 (* Because y2 is generated by Bob -- not related to any other variables. *)
-Variable Z_O_indep : inde_rv Z O. 
-Variable pZ_unif : `p_ Z = fdist_uniform card_TX. (* Assumption in the paper. *)
+Hypothesis Z_O_indep : inde_rv Z O. 
+Hypothesis pZ_unif : `p_ Z = fdist_uniform card_TX. (* Assumption in the paper. *)
 
 Let Z_OO_indep:
   P |= Z _|_ [% O, O].
@@ -1049,8 +984,6 @@ have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep.
 apply Ha => w w2 wmz Hneq0.
 by have := mc_removal_pr f1 Z_O_indep pZ_unif w Hneq0.
 Qed.
-
-About eqn3_proof.
 
 End eqn3_proof.
 
@@ -1406,7 +1339,7 @@ rewrite joint_entropy_indeRV.
 by exact: x2s2_x1_indep.
 Qed.
 
-Let pr2_unif := @ps1_dot_s2_r_unif T m n P s1 s2 r1 card_TX pr1_uniform s1_s2_indep s1s2_r1_indep.
+Let pr2_unif := ps1_dot_s2_r_unif pr1_uniform s1_s2_indep s1s2_r1_indep.
 
 Lemma pi2_bob_view_is_leakage_free_proof:
   `H( x1 | BobView) = `H `p_ x1.
