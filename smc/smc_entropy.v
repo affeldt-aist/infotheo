@@ -654,6 +654,48 @@ End inde_ex.
 Arguments s1Ms2_r1_indep [_ _ _ _ _] s1 s2 r1.
 Arguments dotproduct {TX n}. 
 
+Section neg_RV_lemmas.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX : #|TX| = m.+2. 
+
+Lemma sub_RV_eq (U : finZmodType) (X Y : {RV P -> U}):
+  X \- Y = X \+ neg_RV Y.
+Proof.
+apply: boolp.funext=> i.
+rewrite /neg_RV .
+rewrite /=. (* from null_fun to 0 *)
+by rewrite sub0r.
+Qed.
+
+Lemma neg_RV_dist_eq (X : {RV P -> TX}):
+  `p_ X = fdist_uniform card_TX ->
+  `p_ X = `p_ (neg_RV X).
+Proof.
+rewrite /dist_of_RV=> Hunif.
+apply/val_inj/ffunP => x /=. (* these two steps eq to apply: fdist_ext.*)
+rewrite [RHS](_: _ = fdistmap X P (-x)).
+  by rewrite !Hunif !fdist_uniformE.
+rewrite /fdistmap !fdistbindE.
+apply: eq_bigr=> a ?.
+by rewrite /neg_RV !fdist1E /= sub0r eqr_oppLR.
+Qed.
+
+Lemma neg_RV_inde_eq (U : finType)(V : finZmodType)(X : {RV P -> U})(Y : {RV P -> V}):
+  P |= X _|_ Y ->
+  P |= X _|_ neg_RV Y.
+Proof.
+move => H.
+have ->: X = idfun `o X by [].
+have ->: neg_RV Y = (fun y: V => 0 - y ) `o Y.
+  exact: boolp.funext => ? //=.
+apply: inde_rv_comp.
+exact: H.
+Qed.
+
+End neg_RV_lemmas.
+
 Section scalar_product_random_inputs_def.
 
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
@@ -863,39 +905,6 @@ Proof. exact: boolp.funext. Qed.
 Let y1_correct:
   y1 = t \- x2' \*d s1 \+ r1.
 Proof. exact: boolp.funext. Qed.
-
-Lemma sub_RV_eq (U : finZmodType) (X Y : {RV P -> U}): X \- Y = X \+ neg_RV Y.
-Proof.
-apply: boolp.funext=> i.
-rewrite /neg_RV .
-rewrite /=. (* from null_fun to 0 *)
-by rewrite sub0r.
-Qed.
-
-Lemma neg_RV_dist_eq (X : {RV P -> TX}):
-  `p_ X = fdist_uniform card_TX ->
-  `p_ X = `p_ (neg_RV X).
-Proof.
-rewrite /dist_of_RV=> Hunif.
-apply/val_inj/ffunP => x /=. (* these two steps eq to apply: fdist_ext.*)
-rewrite [RHS](_: _ = fdistmap X P (-x)).
-  by rewrite !Hunif !fdist_uniformE.
-rewrite /fdistmap !fdistbindE.
-apply: eq_bigr=> a ?.
-by rewrite /neg_RV !fdist1E /= sub0r eqr_oppLR.
-Qed.
-
-Lemma neg_RV_inde_eq (U : finType)(V : finZmodType)(X : {RV P -> U})(Y : {RV P -> V}):
-  P |= X _|_ Y ->
-  P |= X _|_ neg_RV Y.
-Proof.
-move => H.
-have ->: X = idfun `o X by [].
-have ->: neg_RV Y = (fun y: V => 0 - y ) `o Y.
-  exact: boolp.funext => ? //=.
-apply: inde_rv_comp.
-exact: H.
-Qed.
 
 Let pr2_unif : `p_ r2 = fdist_uniform card_TX.
 Proof.
