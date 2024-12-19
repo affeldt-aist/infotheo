@@ -3,7 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
 From mathcomp Require Import mathcomp_extra boolp classical_sets Rstruct.
-From mathcomp Require Import ssrnum ereal.
+From mathcomp Require Import ssrnum archimedean ereal.
 From mathcomp Require Import lra Rstruct reals.
 Require Import Reals.
 Require Import ssrR Reals_ext Ranalysis_ext ssr_ext ssralg_ext logb.
