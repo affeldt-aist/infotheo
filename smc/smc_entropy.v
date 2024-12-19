@@ -1334,7 +1334,7 @@ Hypothesis ps1_unif : `p_ s1 = fdist_uniform card_rVTX.
 Let pr2_unif := ps1_dot_s2_r_unif pr1_unif s1_s2_indep s1s2_r1_indep.
 Let BobView := [%x2, s2, x1', r2, y2].
 
-Lemma pi2_bob_view_is_leakage_free_proof:
+Lemma pi2_bob_is_leakage_free_proof:
   `H( x1 | BobView) = `H `p_ x1.
 Proof.
 transitivity (`H( x1 | [% x2, s2, x1', r2])).
@@ -1347,7 +1347,6 @@ by rewrite eqn_8_1 //.
 Qed.
 
 End pi2_bob_view_is_leakage_free_proof.
-About pi2_bob_view_is_leakage_free_proof.
 
 End pi2.
 
