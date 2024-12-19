@@ -221,6 +221,8 @@ Record scalar_product_random_inputs :=
     y2 : {RV P -> TX};
 
     (* Hypothese from the information-leakage-free paper. *)
+    s1_s2_indep : P |= s1 _|_ s2;
+    s1s2_r1_indep : P |= [% s1, s2] _|_ r1;
     x2_indep : P |= [% x1, s1, r1] _|_ x2;
     y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1];
     s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2];
@@ -233,35 +235,31 @@ Record scalar_product_random_inputs :=
     pr1_unif : `p_ r1 = fdist_uniform card_TX;
   }.
 
-Record scalar_product_intermediate_vars :=
+Record scalar_product_intermediate_vars (inputs: scalar_product_random_inputs)  :=
   ScalarProductIntermediateVars {
     x1' : {RV P -> VX};
     x2' : {RV P -> VX};
     t   : {RV P -> TX};
     y1  : {RV P -> TX};
     r2  : {RV P -> TX};
+
+    x1'_eqE  : x1' = x1 inputs \+ s1 inputs; 
+    x2'_eqE  : x2' = x2 inputs \+ s2 inputs; 
+    t_eqE    : t = x1' \*d x2 inputs \+ r2 \- y2 inputs;
+    y1_eqE   : y1 = t \- x2' \*d s1 inputs \+ r1 inputs;
+    r2_eqE   : r2 = s1 inputs \*d s2 inputs \- r1 inputs;
+
+    pr2_unif : `p_ r2 = fdist_uniform card_TX;
   }.
 
-Record scalar_product_relations :=
+Record scalar_product_relations (inputs: scalar_product_random_inputs)(vars: scalar_product_intermediate_vars inputs) :=
   ScalarProductRelations {
-    inputs : scalar_product_random_inputs;
-    vars   : scalar_product_intermediate_vars;
-
-    pr2_unif : `p_ (r2 vars) = fdist_uniform card_TX;
-    
-    r2_eqE   : r2 vars = s1 inputs \*d s2 inputs \- r1 inputs;
-    x1'_eqE  : x1' vars = x1 inputs \+ s1 inputs; 
-    x2'_eqE  : x2' vars = x2 inputs \+ s2 inputs; 
-    y1_eqE   : y1 vars = t vars \- (s1 inputs \*d x1' vars) \+ r1 inputs;
-    t_eqE    : t vars = (x2 inputs \*d x2' vars) \+ r2 vars \- y2 inputs;
-    
-    eqn2P :   `H(x2 inputs|[%[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars], y1 vars]) =
+    eqn2P :   `H(x2 inputs|[%[%x1 inputs, s1 inputs, r1 inputs, x2' vars , t vars], y1 vars]) =
               `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars]);
     eqn3P :   `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars]) =
               `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars]);
     eqn4_1P : `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs]) = entropy `p_ (x2 inputs);
   }.
-
 
 Definition scalar_product_RV (inputs : scalar_product_random_inputs) :
   {RV P -> seq (seq (data VX))} :=
@@ -282,8 +280,10 @@ Definition get_one_RV (party slot: nat) (inputs : scalar_product_random_inputs) 
 
 End information_leakage_def.
 
+Section party_leakage_free_proof.
 
-Section alice_leakage_free_proof.
+Notation "u *d w" := (dotproduct u w).
+Notation "u \*d w" := (dotproduct_rv u w).
 
 Variable n m : nat.
 Variable T : finType.
@@ -297,24 +297,42 @@ Hypothesis card_VX : #|VX| = m.+2.
 
 Variable inputs : scalar_product_random_inputs P card_TX card_VX.
 
+Notation x1' := (get_vec_RV none_VX bob 1 inputs).
+Notation x2' := (get_vec_RV none_VX alice 2 inputs).
+Notation t := (get_one_RV none_TX alice 1 inputs).
+Notation y1 := (get_one_RV none_TX alice 0 inputs).
+Notation r2 := (get_one_RV none_TX bob 2 inputs).
+
+Let r2_eqE :
+  r2 = s1 inputs \*d s2 inputs \- r1 inputs.
+Proof. by apply boolp.funext. Qed.
+
+Let x1'_eqE :
+  x1' = x1 inputs \+ s1 inputs. 
+Proof. by apply boolp.funext. Qed.
+
+Let x2'_eqE :
+  x2' = x2 inputs \+ s2 inputs.
+Proof. by apply boolp.funext. Qed.
+
+Let t_eqE :
+  t = x1' \*d x2 inputs \+ r2 \- y2 inputs.
+Proof. by apply boolp.funext. Qed.
+
+Let y1_eqE :
+  y1 = t \- x2' \*d s1 inputs \+ r1 inputs.
+Proof. by apply boolp.funext. Qed.
+
+Let pr2_unif :
+  `p_ r2 = fdist_uniform card_TX.
+Proof.
+exact: smc_entropy.smc_entropy_proofs.ps1_dot_s2_r_unif
+    (pr1_unif inputs) (s1_s2_indep inputs) (s1s2_r1_indep inputs).
+Qed.
+
 Let vars :=
-  ScalarProductIntermediateVars
-    (get_vec_RV none_VX bob 1 inputs)
-    (get_vec_RV none_VX alice 2 inputs)
-    (get_one_RV none_TX alice 1 inputs)
-    (get_one_RV none_TX alice 0 inputs)
-    (get_one_RV none_TX bob 2 inputs).
+  ScalarProductIntermediateVars x1'_eqE x2'_eqE t_eqE y1_eqE r2_eqE pr2_unif.
 
-
-
-Let rels :=
-  ScalarProductRelations
-    (smc_entropy.smc_entropy_proofs.pr2_unif).
-     inputs vars.
-
-  
-End alice_leakage_free_proof.
-
-  
+End party_leakage_free_proof.
 
 End information_leakage_proof.
