@@ -47,35 +47,35 @@ supported_coq_versions:
   opam: '{ (>= "8.19" & < "8.21~") | (= "dev") }'
 
 tested_coq_opam_versions:
-- version: '2.2.0-coq-8.19'
+- version: '2.3.0-coq-8.19'
   repo: 'mathcomp/mathcomp'
-- version: '2.2.0-coq-8.20'
+- version: '2.3.0-coq-8.20'
   repo: 'mathcomp/mathcomp'
 
 dependencies:
 - opam:
     name: coq-mathcomp-ssreflect
-    version: '{ (>= "2.2.0") }'
+    version: '{ (>= "2.3.0") }'
   description: |-
     [MathComp ssreflect](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-fingroup
-    version: '{ (>= "2.2.0") }'
+    version: '{ (>= "2.3.0") }'
   description: |-
     [MathComp fingroup](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-algebra
-    version: '{ (>= "2.2.0") }'
+    version: '{ (>= "2.3.0") }'
   description: |-
     [MathComp algebra](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-solvable
-    version: '{ (>= "2.2.0") }'
+    version: '{ (>= "2.3.0") }'
   description: |-
     [MathComp solvable](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-field
-    version: '{ (>= "2.2.0") }'
+    version: '{ (>= "2.3.0") }'
   description: |-
     [MathComp field](https://math-comp.github.io)
 - opam:
