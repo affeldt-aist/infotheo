@@ -168,23 +168,6 @@ Lemma scalar_product_ok :
    ].
 Proof. reflexivity. Qed.
 
-Let test := [::
-       [:: one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra);
-           one ((xa + sa) *d xb + (sa *d sb - ra) - yb);
-           vec (xb + sb); 
-           one ra;
-           vec sa; 
-           vec xa];
-       [:: one yb;
-           vec (xa + sa);
-           one (sa *d sb - ra);
-           vec sb;
-           vec xb];
-       [:: one ra;
-           vec sb;
-           vec sa]
-    ].
-
 End scalar_product.
 
 Section information_leakage_proof.
@@ -201,15 +184,17 @@ Variable none_VX : VX.
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis card_VX : #|VX| = m.+2.
 
+(*
 Definition dotproduct (a b:VX) : TX := (a *m b^T)``_ord0.
 Definition dotproduct_rv (A B: T -> 'rV[TX]_n) := fun p => dotproduct (A p) (B p).
+*)
 
-Notation "u *d w" := (dotproduct u w).
-Notation "u \*d w" := (dotproduct_rv u w).
+Notation "u *d w" := (smc_entropy_proofs.dotproduct u w).
+Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
 
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
-  (scalar_product dotproduct sa sb ra yb xa xb 11).2.
+  (scalar_product smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2.
 
 Record scalar_product_random_inputs :=
   ScalarProductRandomInputs {
@@ -220,12 +205,13 @@ Record scalar_product_random_inputs :=
     r1 : {RV P -> TX};
     y2 : {RV P -> TX};
 
-    (* Hypothese from the information-leakage-free paper. *)
+    x1s1r1_x2_indep : P |= [%x1, s1, r1] _|_ x2;
     s1_s2_indep : P |= s1 _|_ s2;
     s1s2_r1_indep : P |= [% s1, s2] _|_ r1;
     x2_indep : P |= [% x1, s1, r1] _|_ x2;
-    y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1];
-    s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2];
+    y2_x1x2s1s2r1_indep : P |= y2 _|_ [% x1, x2, s1, s2, r1];
+    s1_x1x2s1s2_indep : P |= s1 _|_ [% x1, x2, s1, s2];
+    s2_x1s1r1x2_indep : P |= s2 _|_ [% x1, s1, r1, x2];
 
     neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX;
 
@@ -248,17 +234,14 @@ Record scalar_product_intermediate_vars (inputs: scalar_product_random_inputs)  
     t_eqE    : t = x1' \*d x2 inputs \+ r2 \- y2 inputs;
     y1_eqE   : y1 = t \- x2' \*d s1 inputs \+ r1 inputs;
     r2_eqE   : r2 = s1 inputs \*d s2 inputs \- r1 inputs;
-
+      
     pr2_unif : `p_ r2 = fdist_uniform card_TX;
   }.
 
-Record scalar_product_relations (inputs: scalar_product_random_inputs)(vars: scalar_product_intermediate_vars inputs) :=
-  ScalarProductRelations {
-    eqn2P :   `H(x2 inputs|[%[%x1 inputs, s1 inputs, r1 inputs, x2' vars , t vars], y1 vars]) =
-              `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars]);
-    eqn3P :   `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars]) =
-              `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars]);
-    eqn4_1P : `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs]) = entropy `p_ (x2 inputs);
+Record scalar_product_information_leakage_free (inputs: scalar_product_random_inputs)(vars: scalar_product_intermediate_vars inputs) :=
+  ScalarProductInformationLeakageFree {
+    alice_is_leakage_free : `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars, y1 vars]) = `H `p_ (x2 inputs);
+    bob_is_leakage_free : `H(x1 inputs|[%x2 inputs, s2 inputs, x1' vars, r2 vars, y2 inputs]) = `H `p_ (x1 inputs);
   }.
 
 Definition scalar_product_RV (inputs : scalar_product_random_inputs) :
@@ -282,8 +265,8 @@ End information_leakage_def.
 
 Section party_leakage_free_proof.
 
-Notation "u *d w" := (dotproduct u w).
-Notation "u \*d w" := (dotproduct_rv u w).
+Notation "u *d w" := (smc_entropy_proofs.dotproduct u w).
+Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
 
 Variable n m : nat.
 Variable T : finType.
@@ -332,6 +315,36 @@ Qed.
 
 Let vars :=
   ScalarProductIntermediateVars x1'_eqE x2'_eqE t_eqE y1_eqE r2_eqE pr2_unif.
+
+Let pnegy2_unif :
+  `p_ (neg_RV (y2 inputs)) = fdist_uniform card_TX.
+Proof. rewrite -(smc_entropy.smc_entropy_proofs.neg_RV_dist_eq (py2_unif inputs)).
+exact: (py2_unif inputs).
+Qed.
+
+(*
+bob proof needs:
+
+  P |= [% x2, s2] _|_ (x1 \+ s1) ->
+  P |= [% x2, s2, x1 \+ s1, smc_entropy_proofs.dotproduct_rv s1 s2 \- r1] _|_ y2 ->
+  P |= [% x1, [% x2, s2, x1 \+ s1, smc_entropy_proofs.dotproduct_rv s1 s2 \- r1]] _|_ y2 ->
+  P |= [% x2, s2, x1 \+ s1] _|_ (smc_entropy_proofs.dotproduct_rv s1 s2 \- r1) ->
+  P |= [% x1, [% x2, s2, x1 \+ s1]] _|_ (smc_entropy_proofs.dotproduct_rv s1 s2 \- r1) ->
+  P |= s1 _|_ [% x1, x2, s1, s2] ->
+  P |= [% x2, s2] _|_ x1 ->
+  P |= [% s1, s2] _|_ r1 ->
+  P |= s1 _|_ s2 ->
+  `p_ r1 = fdist_uniform card_TX ->
+  `p_ y2 = fdist_uniform card_TX ->
+  `p_ s1 = fdist_uniform card_rVTX ->
+*)
+
+Let leakage_free_proof :=
+  ScalarProductInformationLeakageFree (inputs:=inputs)(vars:=vars)
+    (smc_entropy.smc_entropy_proofs.pi2_alice_is_leakage_free_proof
+      (y2_x1x2s1s2r1_indep inputs)
+      (s2_x1s1r1x2_indep inputs)
+      (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs)).
 
 End party_leakage_free_proof.
 

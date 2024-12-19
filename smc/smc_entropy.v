@@ -1347,6 +1347,7 @@ by rewrite eqn_8_1 //.
 Qed.
 
 End pi2_bob_view_is_leakage_free_proof.
+About pi2_bob_view_is_leakage_free_proof.
 
 End pi2.
 
