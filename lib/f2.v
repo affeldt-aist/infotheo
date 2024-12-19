@@ -52,7 +52,9 @@ Lemma expr2_char2 x : x ^+ 2 = x.
 Proof. by case/F2P : x; rewrite ?expr0n ?expr1n. Qed.
 
 Lemma F2_of_bool_addr x y : x + (y == 0) = ((x + y) == 0).
-Proof. case/F2P : x y; case/F2P => //=; by rewrite ?addr0 ?addrr_char2. Qed.
+Proof.
+by case/F2P : x y; case/F2P => //=; by rewrite ?(addr0,add0r,addrr_char2).
+Qed.
 
 Lemma F2_of_bool_0_inv b : F2_of_bool b = 0 -> b = false.
 Proof. by case: b. Qed.
@@ -73,7 +75,9 @@ Lemma bool_of_F2_add_xor x y :
 Proof. move: x y; by case/F2P; case/F2P. Qed.
 
 Lemma morph_F2_of_bool : {morph F2_of_bool : x y / x (+) y >-> (x + y) : 'F_2}.
-Proof. rewrite /F2_of_bool; case; case => //=; by rewrite addrr_char2. Qed.
+Proof.
+by rewrite /F2_of_bool; case; case => //=; rewrite ?(addr0,add0r,addrr_char2).
+Qed.
 
 Lemma morph_bool_of_F2 : {morph bool_of_F2 : x y / (x + y) : 'F_2 >-> x (+) y}.
 Proof. move=> x y /=; by rewrite bool_of_F2_add_xor. Qed.

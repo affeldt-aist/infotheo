@@ -108,14 +108,14 @@ Section univ_types.
 Variable n : nat.
 Variable types : 'I_n -> eqType.
 Definition univ_types : eqType :=
-  [eqType of {dffun forall i, types i}].
+  [the eqType of {dffun forall i, types i}].
 
 Section prod_types.
 (* sets of indices *)
 Variable I : {set 'I_n}.
 
 Definition prod_types :=
-  [eqType of
+  [the eqType of
    {dffun forall i : 'I_n, if i \in I then types i else unit}].
 
 Lemma prod_types_app i (A B : prod_types) : A = B -> A i = B i.
@@ -746,7 +746,8 @@ split.
   rewrite negb_imply /vals => /andP [Hif].
   case /boolP: (i \in g) => Hig.
     (* B and C are incompatible *)
-    by move: (Hfg i); rewrite inE Hif Hig /= (set_vals_hd vals0) // => ->.
+    move: (Hfg i); rewrite inE Hif Hig /= => /eqP <-.
+    by rewrite (set_vals_hd vals0) // eqxx.
   case /boolP: (i \in e) => Hie;
     last by rewrite set_vals_tl // set_vals_tl // eqxx.
   (* A and B are incompatible *)

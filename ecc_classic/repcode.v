@@ -57,7 +57,7 @@ rewrite (_ : tuple_of_row _ =
     [tuple of map (fun x => F2_of_bool (x != a%R)) (tuple_of_row v)]); last first.
   apply eq_from_tnth => i.
   rewrite tnth_mktuple tnth_map tnth_mktuple !mxE.
-  by case/F2P : a; case: F2P => //; rewrite subrr.
+  by case/F2P : a; case: F2P => //; rewrite ?subrr ?subr0 ?sub0r ?oppr_char2.
 rewrite {1}/num_occ count_map /preim.
 apply eq_count => /= x.
 rewrite !inE.

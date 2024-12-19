@@ -33,7 +33,8 @@ Import Prenex Implicits.
 Import GRing.Theory.
 Local Open Scope ring_scope.
 
-Notation "x '``_' i" := (x ord0 i) (at level 9) : vec_ext_scope.
+Notation "u '``_' i" := (u ord0 i) (at level 3,
+  i at level 2, left associativity, format "u '``_' i") : vec_ext_scope.
 Reserved Notation "v `[ i := x ]" (at level 20).
 Reserved Notation "t \# V" (at level 55, V at next level).
 

@@ -551,7 +551,7 @@ Notation "`Pr[ X = a ]" := (pr_eq X a) : proba_scope.
 Global Hint Resolve pr_eq_ge0 : core.
 
 Section random_variable_order.
-Variables (U : finType) (d : unit) (T : porderType d) (P : R.-fdist U).
+Context (U : finType) d (T : porderType d) (P : R.-fdist U).
 Variables (X : {RV P -> T}).
 
 Definition pr_geq (X : {RV P -> T}) r := Pr P [set x | (X x >= r)%O ].

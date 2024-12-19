@@ -244,7 +244,7 @@ refine (Some (@type.mkType _ _ (fdist_of_ffun (proj2_sig f)) (sval f) (fdist_of_
 Defined.
 
 Definition type_enum A n := pmap (@type_enum_f A n)
-  (enum [finType of {f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n}]).
+  (enum [the finType of {f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n}]).
 
 Lemma type_enumP A n : finite_axiom (@type_enum A n).
 Proof.
@@ -252,7 +252,7 @@ destruct n.
   case=> d t H /=; by move: (no_0_type H).
 case=> d t H /=.
 move: (ffun_of_fdist H) => H'.
-have : Finite.axiom (enum [finType of { f : {ffun A -> 'I_n.+2} | (\sum_(a in A) f a)%nat == n.+1}]).
+have : Finite.axiom (enum [the finType of { f : {ffun A -> 'I_n.+2} | (\sum_(a in A) f a)%nat == n.+1}]).
   rewrite enumT; by apply enumP.
 move/(_ (@exist {ffun A -> 'I_n.+2} (fun f => \sum_(a in A) f a == n.+1)%nat t H')) => <-.
 rewrite /type_enum /= /type_enum_f /= count_map.
@@ -286,7 +286,7 @@ Lemma type_card_neq0 n : 0 < #|A| -> 0 < #|P_ n.+1(A)|.
 Proof.
 case/card_gt0P => a _.
 apply/card_gt0P.
-have [f Hf] : [finType of {f : {ffun A -> 'I_n.+2} | \sum_(a in A) f a == n.+1}].
+have [f Hf] : [the finType of {f : {ffun A -> 'I_n.+2} | \sum_(a in A) f a == n.+1}].
   exists [ffun a1 => if pred1 a a1 then Ordinal (ltnSn n.+1) else Ordinal (ltn0Sn n.+1)].
   rewrite (bigD1 a) //= big1; first by rewrite ffunE eqxx addn0.
   move=> p /negbTE Hp; by rewrite ffunE Hp.

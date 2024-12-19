@@ -125,7 +125,7 @@ Lemma wpmulr_rgt0 (R : numDomainType) (x y : R) : 0 <= x -> 0 < x * y -> 0 < y.
 Proof. rewrite mulrC; exact: wpmulr_lgt0. Qed.
 
 (* eqType version of order.bigmax_le *)
-Lemma bigmax_le' (disp : unit) (T : porderType disp) (I : eqType) (r : seq I) (f : I -> T)
+Lemma bigmax_le' disp (T : porderType disp) (I : eqType) (r : seq I) (f : I -> T)
     (x0 x : T) (PP : pred I) :
   (x0 <= x)%O ->
   (forall i : I, i \in r -> PP i -> (f i <= x)%O) ->
@@ -135,7 +135,7 @@ move=> x0x cond; rewrite big_seq_cond bigmax_le // => ? /andP [? ?]; exact: cond
 Qed.
 
 (* seq version of order.bigmax_leP *)
-Lemma bigmax_leP_seq (disp : unit) (T : orderType disp) (I : eqType) (r : seq I) (F : I -> T)
+Lemma bigmax_leP_seq disp (T : orderType disp) (I : eqType) (r : seq I) (F : I -> T)
     (x m : T) (PP : pred I) :
 reflect ((x <= m)%O /\ (forall i : I, i \in r -> PP i -> (F i <= m)%O))
   (\big[Order.max/x]_(i <- r | PP i) F i <= m)%O.

@@ -829,7 +829,7 @@ apply: (@leR_trans (x + ln alp)).
   apply: (@ltR_trans (exp x - 1)); last exact: proj1 (floorP _).
   rewrite subR_gt0 -exp_0; exact: exp_increasing.
 apply: (@leR_trans (2 * x - (eps * INR n * ln 2))).
-  rewrite double /Rminus -addRA leR_add2l addR_opp leR_subr_addr (mulRC eps).
+  rewrite -Rplus_diag /Rminus -addRA leR_add2l addR_opp leR_subr_addr (mulRC eps).
   apply: (@leR_trans (IZR (ceil (ln alp + n%:R * eps * ln 2)))); first exact: proj1 (ceilP _).
   rewrite -INR_Zabs_nat; first exact/le_INR/leP/leq_maxl.
   apply: le_IZR.
