@@ -675,7 +675,7 @@ Variables (s1 s2: {RV P -> 'rV[TX]_n})(r: {RV P -> TX}).
 Hypothesis card_TX : #|TX| = m.+2. 
 Hypothesis pr_unif: `p_ r = fdist_uniform card_TX.
 Hypothesis s1_s2_indep : P|= s1 _|_ s2.
-Hypothesis s1s2_r1_indep : P|= [%s1, s2] _|_ r.
+Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
 
 Lemma ps1_dot_s2_r_unif:
   @dist_of_RV T P TX (s1 \*d s2 \- r) = fdist_uniform card_TX.
@@ -693,42 +693,6 @@ exact: neg_RV_inde_eq.
 Qed.
 
 End unif_lemmas.
-
-Section scalar_product_random_inputs_def.
-
-Variables (T: finType)(m n: nat)(P : R.-fdist T).
-Let TX := [the finComRingType of 'I_m.+2]. (* not .+1: at least need 0 and 1 *)
-
-Record scalar_product_random_inputs :=
-  ScalarProductRandomInputs {
-    x1 : {RV P -> 'rV[TX]_n};
-    x2 : {RV P -> 'rV[TX]_n};
-    s1 : {RV P -> 'rV[TX]_n};
-    s2 : {RV P -> 'rV[TX]_n};
-    r1 : {RV P -> TX};
-    y2 : {RV P -> TX};
-     (*
-
-    (* Hypothese from the information-leakage-free paper. *)
-    x2_indep : P |= [% x1, s1, r1] _|_ x2;
-    y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1];
-    s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2];
-    s1_s2_indep : P|= s1 _|_ s2;
-    s1s2_r1_indep : P|= [%s1, s2] _|_ r1;
-    (*TODO: prove these from s1s2_r1_indep by decomposition *)
-    s1_r1_indep : P|= s1 _|_ r1;
-    s2_r1_indep : P|= s2 _|_ r1;
-
-
-    ps1_unif : `p_ s1 = fdist_uniform card_'rVTX_n ;
-    ps2_unif : `p_ s2 = fdist_uniform card_'rVTX_n;
-    py2_unif : `p_ y2 = fdist_uniform card_TX;
-    pr1_unif : `p_ r1 = fdist_uniform card_TX;
-
-*)
-  }.
-
-End scalar_product_random_inputs_def.
 
 Section pi2.
   
@@ -792,48 +756,6 @@ Qed.
 (*rewrite (@GRing.add R).[AC(2*2)(1*4*(3*2))].*)
 
 End scalar_product_def.
-
-(*
-Variable RVInputs : scalar_product_random_inputs m n P.
-
-Local Notation x1 := (x1 RVInputs).
-Local Notation x2 := (x2 RVInputs).
-Local Notation s1 := (s1 RVInputs).
-Local Notation s2 := (s2 RVInputs).
-Local Notation r1 := (r1 RVInputs).
-Local Notation y2 := (y2 RVInputs).
-Let x2_indep := x2_indep RVInputs. 
-Let s1_s2_indep := s1_s2_indep RVInputs.
-Let s1s2_r1_indep := s1s2_r1_indep RVInputs.
-Let y2_x1x2s1s2r1_eqn3_indep := y2_x1x2s1s2r1_eqn3_indep RVInputs.
-Let s2_x1s1r1x2_eqn4_indep := s2_x1s1r1x2_eqn4_indep RVInputs.
-Let card_TX := card_TX RVInputs.
-Let card_'rVTX_n := card_'rVTX_n RVInputs.
-Let neg_py2_unif := neg_py2_unif RVInputs.
-Let py2_unif := py2_unif RVInputs.
-Let ps1_unif := ps1_unif RVInputs.
-Let ps2_unif := ps2_unif RVInputs.
-Let pr1_unif := pr1_unif RVInputs.
-Let r2  := s1 \*d s2 \- r1.
-Let x1' := x1 \+ s1.
-Let x2' := x2 \+ s2.
-Let t := x1' \*d x2 \+ r2 \- y2.
-Let y1 := t \- x2' \*d s1 \+ r1.
-
-
-Variable (_x1 _x2 _x1' _x2' _s1 _s2: 'rV[TX]_n)(_t _r1 _r2 _y1 _y2: TX).
-
-
-Let AliceView := [%x1, s1, r1, x2', t, y1].
-
-Let eqn1 := `H(x2|AliceView).
-
-Let BobView := [%x2, s2, x1', r2, y2].
-
-Let eqn5 := `H(x1|BobView).
-
-
-*)
 
 Section eqn2_proof.
 
@@ -987,18 +909,21 @@ Qed.
 
 End eqn3_proof.
 
-About eqn3_proof.
-
 Section eqn4_proof.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX: #|TX| = m.+2.
+Hypothesis card_rVTX : #|'rV[TX]_n| = m.+2.
+
+Variables (r1: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Let x2' := x2 \+ s2.
 
 Let eqn4 := `H(x2|[%x1, s1, r1, x2']) = `H(x2|[%x1, s1, r1]).
 
-(* Almost the same in eqn3 except r2 is not used here. *)
 Let O := [%x1, s1, r1, x2].
-
 Let Z := s2.
-
-(*Notation fst4 := (fst \o fst \o fst).*)
+Hypothesis pZ_unif : `p_ Z = fdist_uniform card_rVTX. (* Assumption in the paper. *)
 
 Let W1 := snd `o O.   (* x2 *)
 Let W2 := fst `o O.   (* [%x1, s1, r1] *)
@@ -1024,11 +949,7 @@ apply: inde_RV2_comp.
 exact: Z_OO_indep.
 Qed.
 
-(* Means we at least have (0,0...0) and (1,1,..1) of 'rV[TX]_n,
-   so 'rV[TX]_n is a ring.
-*) 
-Hypothesis card_Z : #|'rV[TX]_n| = m.+2.
-Hypothesis pZ_unif : `p_ Z = fdist_uniform card_Z. (* Assumption in the paper. *)
+
 
 Let Z_Wm_indep:
   P |= Z _|_ Wm.
@@ -1040,12 +961,12 @@ by exact: Z_O_indep.
 Qed.
 
 Let pWmZ_unif:
-  (@dist_of_RV T P 'rV[TX]_n WmZ) = fdist_uniform card_Z.
+  (@dist_of_RV T P 'rV[TX]_n WmZ) = fdist_uniform card_rVTX.
 Proof.
 rewrite /WmZ.
 have H_ZWM := Z_Wm_indep.
 rewrite inde_rv_sym in H_ZWM.
-have H := add_RV_unif Wm Z card_Z pZ_unif H_ZWM.
+have H := add_RV_unif Wm Z card_rVTX pZ_unif H_ZWM.
 by exact H.
 Qed.
 
@@ -1058,7 +979,7 @@ rewrite -cinde_rv_unit.
 rewrite /inde_rv.
 rewrite /WmZ.
 move => x y.
-have H := (@lemma_3_5' _ _ 'rV[TX]_n P m.+1 Wm Z W2 card_Z pZ_unif Z_WmW2_indep x y).
+have H := (@lemma_3_5' _ _ 'rV[TX]_n P m.+1 Wm Z W2 card_rVTX pZ_unif Z_WmW2_indep x y).
 apply H.
 Qed.
 
@@ -1073,8 +994,14 @@ Qed.
   
 End eqn4_proof.
 
-Section pi2_alice_view_is_leakage_free.
-  
+Section eqn4_1_proof.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX: #|TX| = m.+2.
+Variables (r1: {RV P -> TX})(x1 x2 s1: {RV P -> 'rV[TX]_n}).
+Hypothesis x2_indep : P |= [% x1, s1, r1] _|_ x2.
+
 Lemma eqn_4_1_correct:
   `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
 Proof.
@@ -1090,15 +1017,37 @@ rewrite joint_entropy_indeRV.
 by exact: x2_indep.
 Qed.
 
+End eqn4_1_proof.
+
+Section pi2_alice_is_leakage_free_proof.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX: #|TX| = m.+2.
+Hypothesis card_rVTX : #|'rV[TX]_n| = m.+2.
+
+Variables (r1 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Let x1' := x1 \+ s1.
+Let x2' := x2 \+ s2.
+Let r2  := s1 \*d s2 \- r1.
+Let t := x1' \*d x2 \+ r2 \- y2.
+Let y1 := t \- x2' \*d s1 \+ r1.
+Let AliceView := [%x1, s1, r1, x2', t, y1].
+
+Hypothesis y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1].
+Hypothesis s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2].
+Hypothesis x1s2r1_x2_indep: P |= [% x1, s1, r1] _|_ x2.
+Hypothesis neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
+Hypothesis ps2_unif : `p_ s2 = fdist_uniform card_rVTX.
+  
 Let negy2_x1x2s1s2r1r2_eqn3_indep :
   P |= neg_RV y2 _|_ [%x1, x2, s1, s2, r1, r2].
 Proof.
 pose f (a: ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) ) := let '(x1, x2, s1, s2, r1) := a in (a, s1 *d s2 - r1).
-rewrite r2_correct.
 by move/(inde_rv_comp (fun (a : TX) => 0 - a) f):y2_x1x2s1s2r1_eqn3_indep.
 Qed.
 
-Lemma pi2_alice_view_is_leakage_free_proof:
+Lemma pi2_alice_is_leakage_free_proof:
   `H( x2 | AliceView) = `H `p_ x2.
 Proof.
 transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
@@ -1106,13 +1055,21 @@ transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
 transitivity (`H( x2 | [% x1, s1, r1, x2'])).
   by rewrite (eqn3_proof negy2_x1x2s1s2r1r2_eqn3_indep neg_py2_unif).
 transitivity (`H( x2 | [% x1, s1, r1])).
-  by rewrite (eqn4_correct s2_x1s1r1x2_eqn4_indep ps2_unif).
-by rewrite eqn_4_1_correct.
+  by rewrite (eqn4_correct ps2_unif s2_x1s1r1x2_eqn4_indep).
+rewrite eqn_4_1_correct //.
 Qed.
 
-End pi2_alice_view_is_leakage_free.
+End pi2_alice_is_leakage_free_proof.
 
 Section eqn6_proof.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX: #|TX| = m.+2.
+
+Variables (r1 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Let x1' := x1 \+ s1.
+Let r2  := s1 \*d s2 \- r1.
 
 Let O := [%x1, x2, s1, s2, r2, y2].
 
@@ -1150,9 +1107,8 @@ Hypothesis W1_Wm_indep: P|= W1 _|_ Wm.
 Hypothesis W1W2_Wm_indep: P|= [%W1, W2] _|_ Wm.
 (* TODO: deduce other indeps from this one. *)
 
-Hypothesis card_Wm: #|TX| = m.+2.
 (* In the paper, y2 (Wm) is uniform distributed*)
-Hypothesis pWm_unif: `p_ Wm = fdist_uniform card_Wm.
+Hypothesis pWm_unif: `p_ Wm = fdist_uniform card_TX.
 
 Let W1WmW2_cinde : W1 _|_ Wm | W2.
 Proof.
@@ -1176,6 +1132,14 @@ Qed.
 End eqn6_proof.
 
 Section eqn7_proof.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX: #|TX| = m.+2.
+
+Variables (r1: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Let x1' := x1 \+ s1.
+Let r2  := s1 \*d s2 \- r1.
 
 Let O := [%x1, x2, s1, s2, r2].
 
@@ -1208,9 +1172,8 @@ Proof. by apply boolp.funext. Qed.
 Hypothesis W2_Wm_indep: P|= W2 _|_ Wm.
 Hypothesis W1W2_Wm_indep : P|= [%W1, W2] _|_ Wm.
 
-Hypothesis card_Wm: #|TX| = m.+2.
 (* In the paper, r2 (Wm) is uniform distributed*)
-Hypothesis pWm_unif: `p_ Wm = fdist_uniform card_Wm.
+Hypothesis pWm_unif: `p_ Wm = fdist_uniform card_TX.
 
 Let W1WmW2_cinde : W1 _|_ Wm | W2.
 Proof. apply: inde_RV2_cinde. by exact: W1W2_Wm_indep.
@@ -1237,6 +1200,14 @@ End eqn7_proof.
 
 Section eqn8_proof.
 
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX: #|TX| = m.+2.
+Hypothesis card_rVTX: #|'rV[TX]_n| = m.+2.
+
+Variables (x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Let x1' := x1 \+ s1.
+
 Let O := [%x1, x2, s1, s2].
 
 (* f1 `o X in mc_removal_pr must be x1 in eqn8 *)
@@ -1252,6 +1223,8 @@ Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> 'rV[TX]_n := fun z =
   let '(x1, x2, s1, s2) := z in x1.
 
 Let Z := s1.
+Hypothesis pZ_unif : `p_ Z = fdist_uniform card_rVTX.
+
 Let W1 := f1 `o O.   (* x1 *)
 Let W2 := f2 `o O.   (* [%x2, s2] *)
 Let Wm := fm `o O.   (* x1 *)
@@ -1274,9 +1247,6 @@ Let eq_WmZ_RV:
 Proof. by rewrite /add_RV /neg_RV eq_Wm_RV /x1' //=. Qed.
 
 Hypothesis Z_O_indep : inde_rv Z O. 
-
-Hypothesis card_rVTX: #|'rV[TX]_n| = m.+2.
-Hypothesis pZ_unif : `p_ Z = fdist_uniform card_rVTX.
 
 (* Because s1 and x1 are generated by different participants *)
 Hypothesis Z_WmZ_indep: P |= Z _|_ WmZ.
@@ -1308,22 +1278,17 @@ Qed.
   
 End eqn8_proof.
 
-Section eqn_bob_fin_proof.
-  
-(* Hypothese from the paper. *)
-Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
-Hypothesis x1_y2_indep : P |= x1 _|_ y2.
-Hypothesis x2s2_x1'_indep : P |= [% x2, s2] _|_ x1'.
-Hypothesis x2s2x1'r2_y2_eqn6_indep : P |= [%x2, s2, x1', r2] _|_ y2.
-Hypothesis x1x2s2x1'r2_y2_eqn6_indep : P |= [%x1, [%x2, s2, x1', r2]] _|_ y2.
-Hypothesis x2_s2_x1'_r2_eqn7_indep : P |= [%x2, s2, x1'] _|_ r2.
-Hypothesis x1x2_s2_x1'_r2_eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
-Hypothesis s1_x1x2s1s2_eqn8_indep : P |= s1 _|_ [%x1, x2, s1, s2].
+Section eqn8_1_proof.
 
-Hypothesis py2_uniform : `p_ y2 = fdist_uniform card_TX.
-Hypothesis pr1_uniform : `p_ r1 = fdist_uniform card_TX.
-Hypothesis ps1_uniform : `p_ s1 = fdist_uniform card_'rVTX_n .
-  
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX: #|TX| = m.+2.
+Hypothesis card_rVTX: #|'rV[TX]_n| = m.+2.
+
+Variables (x1 x2 s2: {RV P -> 'rV[TX]_n}).
+
+Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
+
 Lemma eqn_8_1:
   `H(x1|[%x2, s2]) = entropy `p_ x1.
 Proof.
@@ -1339,7 +1304,35 @@ rewrite joint_entropy_indeRV.
 by exact: x2s2_x1_indep.
 Qed.
 
-Let pr2_unif := ps1_dot_s2_r_unif pr1_uniform s1_s2_indep s1s2_r1_indep.
+End eqn8_1_proof.
+
+Section pi2_bob_view_is_leakage_free_proof.
+
+Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_m.+2].
+Hypothesis card_TX: #|TX| = m.+2.
+Hypothesis card_rVTX: #|'rV[TX]_n| = m.+2.
+Variables (r1 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Let x1' := x1 \+ s1.
+Let r2  := s1 \*d s2 \- r1.
+  
+(* Hypothese from the paper. *)
+Hypothesis x2s2_x1'_indep : P |= [% x2, s2] _|_ x1'.
+Hypothesis x2s2x1'r2_y2_eqn6_indep : P |= [%x2, s2, x1', r2] _|_ y2.
+Hypothesis x1x2s2x1'r2_y2_eqn6_indep : P |= [%x1, [%x2, s2, x1', r2]] _|_ y2.
+Hypothesis x2_s2_x1'_r2_eqn7_indep : P |= [%x2, s2, x1'] _|_ r2.
+Hypothesis x1x2_s2_x1'_r2_eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
+Hypothesis s1_x1x2s1s2_eqn8_indep : P |= s1 _|_ [%x1, x2, s1, s2].
+Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
+
+Hypothesis s1s2_r1_indep : P|= [%s1, s2] _|_ r1.
+Hypothesis s1_s2_indep : P|= s1 _|_ s2.
+Hypothesis pr1_unif : `p_ r1 = fdist_uniform card_TX.
+Hypothesis py2_unif : `p_ y2 = fdist_uniform card_TX.
+Hypothesis ps1_unif : `p_ s1 = fdist_uniform card_rVTX.
+  
+Let pr2_unif := ps1_dot_s2_r_unif pr1_unif s1_s2_indep s1s2_r1_indep.
+Let BobView := [%x2, s2, x1', r2, y2].
 
 Lemma pi2_bob_view_is_leakage_free_proof:
   `H( x1 | BobView) = `H `p_ x1.
@@ -1349,11 +1342,11 @@ transitivity (`H( x1 | [% x2, s2, x1', r2])).
 transitivity (`H(x1|[%x2, s2, x1'])).
   by rewrite (eqn7_proof x2_s2_x1'_r2_eqn7_indep x1x2_s2_x1'_r2_eqn7_indep pr2_unif).
 transitivity (`H(x1|[%x2, s2])).
-  by rewrite (eqn8_proof s1_x1x2s1s2_eqn8_indep ps1_unif x2s2_x1'_indep).
-by rewrite eqn_8_1.
+  by rewrite (eqn8_proof ps1_unif s1_x1x2s1s2_eqn8_indep).
+by rewrite eqn_8_1 //.
 Qed.
 
-End eqn_bob_fin_proof.
+End pi2_bob_view_is_leakage_free_proof.
 
 End pi2.
 
