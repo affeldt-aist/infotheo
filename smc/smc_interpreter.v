@@ -320,10 +320,6 @@ exact: smc_entropy.smc_entropy_proofs.ps1_dot_s2_r_unif
     (pr1_unif inputs) (s1_s2_indep inputs) (s1s2_r1_indep inputs).
 Qed.
 
-Let add_RV_eqE (TU: finZmodType)(X Y: {RV P -> TU}):
-  X `+ Y = X \+ Y.
-Proof. by rewrite /add_RV //. Qed.
-
 Let x2s2_x1'_indep :
   P |= [% x2 inputs, s2 inputs ] _|_ x1'.
 Proof.
@@ -331,9 +327,11 @@ rewrite inde_rv_sym x1'_eqE.
 have px1s1_unif: `p_ (x1 inputs \+ s1 inputs) = fdist_uniform card_VX.
   move => t.
   have Ha := add_RV_unif (x1 inputs) (s1 inputs) card_VX (ps1_unif inputs) (x1_s1_indep inputs).
-  rewrite add_RV_eqE in Ha.
-  Fail rewrite Ha.
+  rewrite /add_RV // in Ha.
   Unset Printing Notations.
+  Fail rewrite Ha.
+  Set Printing All.
+  Fail rewrite Ha.
   Fail exact: Ha.
   admit.
 rewrite lemma_3_5'.
