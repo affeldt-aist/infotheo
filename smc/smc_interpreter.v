@@ -306,6 +306,22 @@ Let data := option (sum TX VX).
 Let one x : data := Some (inl x).
 Let vec x : data := Some (inr x).
 
+Lemma cond_entropyC (A B C : finType)
+  (X: {RV P -> A}) (Y: {RV P -> B}) (Z: {RV P -> C}) :
+  `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
+Proof.
+rewrite /cond_entropy /=.
+rewrite (reindex (fun p : C * B => (p.2, p.1))) /=; last first.
+  by exists (fun p : B * C => (p.2, p.1)) => -[b c].
+apply: eq_bigr => -[c b] _ /=.
+rewrite !snd_RV2 -!pr_eqE' pr_eq_pairC.
+congr (_ * _).
+rewrite /cond_entropy1; congr (- _).
+rewrite /jcPr !snd_RV2.
+apply: eq_bigr => a _.
+by rewrite !setX1 !Pr_set1 -!pr_eqE' !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
+Qed.
+
 Lemma alice_traces_ok :
   `H(x2 | alice_traces) = `H(x2 | [%x1, s1, r1, x2', t, y1]).
 Proof.
@@ -322,7 +338,8 @@ pose f xs :=
   let '(x1, s1, r1, x2', t, y1) := xs in
   Some (one y1, one t, vec x2', one r1, vec s1, vec x1).
 have -> : alice_traces = f `o [% x1, s1, r1, x2', t, y1] by [].
-Admitted.
+by rewrite cond_entropyC smc_entropy_proofs.fun_cond_removal.
+Qed.
 End information_leakage_def.
 
 Section information_leakage_free_proof.
