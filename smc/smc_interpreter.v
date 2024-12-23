@@ -1,7 +1,6 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 Require Import Reals.
-From mathcomp Require Import Rstruct ring.
+From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix Rstruct ring.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy smc graphoid smc_entropy.
 
@@ -62,9 +61,6 @@ Definition step (A : Type) (ps : seq proc) (trace : seq data) (yes no : proc -> 
     else
       (no p, trace).
 
-(* Extract log in Send because only in send we have both dst and v: data;
-   in Recv we only have f, no data.
-*)
 Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
   let trace_ret := map (fun pt => if pt.1 is Ret v then v::pt.2 else pt.2) (zip ps traces) in
   if h is h.+1 then
@@ -95,7 +91,6 @@ Definition coserv : nat := 2.
 Definition data := option (TX + VX).
 Definition one x : data := Some (inl x).
 Definition vec x : data := Some (inr x).
-Definition none : data := None.
 
 Definition Recv_one frm f : proc data :=
   Recv frm (fun x => if x is Some (inl v) then f v else Ret None).
@@ -168,9 +163,33 @@ Lemma scalar_product_ok :
    ].
 Proof. reflexivity. Qed.
 
+Definition traces (s: seq (seq data)) :=
+if s is [:: a; b; c] then
+  Some (if a is [:: a1; a2; a3; a4; a5; a6] then Some (a1, a2, a3, a4, a5, a6) else None,
+        if b is [:: b1; b2; b3; b4; b5] then Some (b1, b2, b3, b4, b5) else None)
+else
+  None.
+
+Lemma traces_ok :
+  traces (scalar_product 11).2 = Some (Some (
+     one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra),
+     one ((xa + sa) *d xb + (sa *d sb - ra) - yb),
+     vec (xb + sb),
+     one ra,
+     vec sa, 
+     vec xa
+  ), Some (
+     one yb,
+     vec (xa + sa),
+     one (sa *d sb - ra),
+     vec sb,
+     vec xb
+  )).
+Proof. reflexivity. Qed.
+
 End scalar_product.
 
-Section information_leakage_proof.
+Section pi2.
   
 Section information_leakage_def.
 
@@ -179,15 +198,17 @@ Variable T : finType.
 Variable P : R.-fdist T.
 Let TX := [the finComRingType of 'I_m.+2].
 Let VX := 'rV[TX]_n.
-Variable none_TX : TX.
-Variable none_VX : VX.
-Hypothesis card_TX : #|TX| = m.+2.
-Hypothesis card_VX : #|VX| = m.+2.
 
-(*
-Definition dotproduct (a b:VX) : TX := (a *m b^T)``_ord0.
-Definition dotproduct_rv (A B: T -> 'rV[TX]_n) := fun p => dotproduct (A p) (B p).
-*)
+Lemma card_TX : #|TX| = m.+2.
+Proof. by rewrite card_ord. Qed.
+
+Let q := (m.+2 ^ n)%nat.-1. 
+Lemma card_VX : #|VX| = q.+1.
+Proof.
+rewrite /q prednK.
+  by rewrite /VX card_mx card_TX mul1n.
+by rewrite expn_gt0.
+Qed.
 
 Notation "u *d w" := (smc_entropy_proofs.dotproduct u w).
 Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
@@ -195,6 +216,7 @@ Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
   (scalar_product smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2.
+
 
 Record scalar_product_random_inputs :=
   ScalarProductRandomInputs {
@@ -245,32 +267,19 @@ Record scalar_product_intermediate_vars (inputs: scalar_product_random_inputs)  
     pr2_unif : `p_ r2 = fdist_uniform card_TX;
   }.
 
-Record scalar_product_information_leakage_free (inputs: scalar_product_random_inputs)(vars: scalar_product_intermediate_vars inputs) :=
-  ScalarProductInformationLeakageFree {
-    alice_is_leakage_free : `H(x2 inputs|[%x1 inputs, s1 inputs, r1 inputs, x2' vars, t vars, y1 vars]) = `H `p_ (x2 inputs);
-    bob_is_leakage_free : `H(x1 inputs|[%x2 inputs, s2 inputs, x1' vars, r2 vars, y2 inputs]) = `H `p_ (x1 inputs);
-  }.
-
 Definition scalar_product_RV (inputs : scalar_product_random_inputs) :
   {RV P -> seq (seq (data VX))} :=
     scalar_product_uncurry `o
    [%s1 inputs, s2 inputs, r1 inputs, y2 inputs, x1 inputs, x2 inputs].
 
-Definition get_one (d : data VX) : TX :=
-  if d is Some (inl v) then v else none_TX.
-
-Definition get_vec (d : data VX) : VX :=
-  if d is Some (inr v) then v else none_VX.
-
-Definition get_vec_RV (party slot: nat) (inputs : scalar_product_random_inputs) : {RV P -> VX} :=
-    (fun traces => get_vec (nth (vec none_VX) (nth [::] traces party) slot)) \o (scalar_product_RV inputs).
-
-Definition get_one_RV (party slot: nat) (inputs : scalar_product_random_inputs) : {RV P -> TX} :=
-    (fun traces => get_one (nth (one VX none_TX) (nth [::] traces party) slot)) \o (scalar_product_RV inputs).
+Definition scalar_product_is_leakgae_free (inputs: scalar_product_random_inputs) :=
+  let alice_traces := Option.bind fst `o (@traces _ _ `o scalar_product_RV inputs) in
+  let bob_traces := Option.bind snd `o (@traces _ _ `o scalar_product_RV inputs) in
+  `H(x2 inputs | alice_traces) = `H `p_ (x2 inputs) /\ `H(x1 inputs | bob_traces) = `H `p_ (x1 inputs).
 
 End information_leakage_def.
 
-Section party_leakage_free_proof.
+Section information_leakage_free_proof.
 
 Notation "u *d w" := (smc_entropy_proofs.dotproduct u w).
 Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
@@ -280,12 +289,15 @@ Variable T : finType.
 Variable P : R.-fdist T.
 Let TX := [the finComRingType of 'I_m.+2].
 Let VX := 'rV[TX]_n.
-Variable none_TX : TX.
-Variable none_VX : VX.
-Hypothesis card_TX : #|TX| = m.+2.
-Hypothesis card_VX : #|VX| = m.+2.
 
-Variable inputs : scalar_product_random_inputs P card_TX card_VX.
+Variable inputs : scalar_product_random_inputs n m P.
+
+Lemma scalar_product_is_leakgae_freeP:
+  scalar_product_is_leakgae_free inputs.
+Proof.
+rewrite /scalar_product_is_leakgae_free.
+Abort.
+(*
 
 Notation x1' := (get_vec_RV none_VX bob 1 inputs).
 Notation x2' := (get_vec_RV none_VX alice 2 inputs).
@@ -320,21 +332,24 @@ exact: smc_entropy.smc_entropy_proofs.ps1_dot_s2_r_unif
     (pr1_unif inputs) (s1_s2_indep inputs) (s1s2_r1_indep inputs).
 Qed.
 
+Fail Check [% x2 inputs, s2 inputs ] : {RV P -> VX}.
+(* For RV2 pairs: if lemma asks {RV P -> VX } but we have {TV P -> (VX * VX) },
+   we need to duplicate the lemma and proof to support them?
+*)
+
 Let x2s2_x1'_indep :
   P |= [% x2 inputs, s2 inputs ] _|_ x1'.
 Proof.
 rewrite inde_rv_sym x1'_eqE.
-have px1s1_unif: `p_ (x1 inputs \+ s1 inputs) = fdist_uniform card_VX.
+have px1_s1_unif: `p_ (x1 inputs \+ s1 inputs) = fdist_uniform card_VX.
   move => t.
-  have Ha := add_RV_unif (x1 inputs) (s1 inputs) card_VX (ps1_unif inputs) (x1_s1_indep inputs).
-  rewrite /add_RV // in Ha.
-  Unset Printing Notations.
-  Fail rewrite Ha.
-  Set Printing All.
-  Fail rewrite Ha.
-  Fail exact: Ha.
-  admit.
-rewrite lemma_3_5'.
+  have Ha := @add_RV_unif T VX P m.+1 (x1 inputs) (s1 inputs) card_VX (ps1_unif inputs) (x1_s1_indep inputs).
+    rewrite /add_RV // in Ha.
+    Fail rewrite Ha.
+    (*Set Printing All. Problem: card_A in lemma_3_4 is #|A| = n.+1; card_VX here is #|VX| = m.+2; *)
+    Fail exact: Ha.
+    admit.
+have H := @lemma_3_5' T (VX * VX)%type VX P m.+1 (x1 inputs) (s1 inputs) [%x2 inputs, s2 inputs] card_VX px1_s1_unif.
 Abort.
 
 About smc_entropy.smc_entropy_proofs.pi2_bob_is_leakage_free_proof.
@@ -354,7 +369,8 @@ Let leakage_free_proof :=
       (y2_x1x2s1s2r1_indep inputs)
       (s2_x1s1r1x2_indep inputs)
       (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs)).
+*)
 
-End party_leakage_free_proof.
+End information_leakage_free_proof.
 
-End information_leakage_proof.
+End pi2.
