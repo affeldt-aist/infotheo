@@ -331,8 +331,7 @@ transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
                    Some (inl r1), Some (inr s1), Some (inr x1))
     then (x1, s1, r1, x2', t, y1)
     else (0, 0, 0, 0, 0, 0).
-  have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces.
-    by apply boolp.funext.
+  have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces by [].
   by rewrite smc_entropy_proofs.fun_cond_removal.
 pose f xs :=
   let '(x1, s1, r1, x2', t, y1) := xs in
