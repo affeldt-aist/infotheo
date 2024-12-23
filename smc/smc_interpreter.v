@@ -32,47 +32,50 @@ Section interp.
 Variable data : eqType.
 
 Inductive proc : Type :=
-  (*| Init : nat -> (m -> data) -> (data -> proc) -> proc*)
   | Init : nat -> data -> proc -> proc
-  | Wait : proc -> proc
   | Send : nat -> data -> proc -> proc
   | Recv : nat -> (data -> proc) -> proc
   | Ret : data -> proc
-  | RetNone : proc
-  | Fail : proc.
+  | Finish : proc.
 
-Definition step (A : Type) (ps : seq proc) (trace : seq data) (yes no : proc -> A)
-  (i : nat) : A * seq data :=
-  let p := nth Fail ps i in
-    if p is Recv frm f then
-        if nth Fail ps frm is Send dst v _ then
-          if dst == i then (no (f v), v::trace) else (no p, trace)
-        else if nth Fail ps frm is Init _ _ _ then
-          (yes p, trace)
-        else (no p, trace)
-    else if p is Send dst w next then
-      if nth Fail ps dst is Recv frm _ then
-        if frm == i then (yes next, trace) else (no p, trace)
-      else if nth Fail ps dst is Init _ _ _ then
-        (yes p, trace)
-      else (no p, trace)
-    else if p is Init i d next then
-      (yes next, d::trace)
-    else
-      (no p, trace).
+Definition step (A : Type) (ps : seq proc) (trace : seq data)
+  (yes no : proc * seq data -> A) (i : nat) : A :=
+  let p := nth Finish ps i in
+  match p with
+  | Recv frm f =>
+      if nth Finish ps frm is Send dst v _ then
+        if dst == i then no (f v, v::trace) else no (p, trace)
+      else if nth Finish ps frm is Init _ _ _ then
+        yes (p, trace)
+      else no (p, trace)
+  | Send dst w next =>
+      if nth Finish ps dst is Recv frm _ then
+        if frm == i then yes (next, trace) else no (p, trace)
+      else if nth Finish ps dst is Init _ _ _ then
+        yes (p, trace)
+      else no (p, trace)
+  | Init i d next =>
+      yes (next, d::trace)
+  | Ret d =>
+      yes (Finish, d :: trace)
+  | Finish =>
+      no (p, trace)
+  end.
 
 Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
-  let trace_ret := map (fun pt => if pt.1 is Ret v then v::pt.2 else pt.2) (zip ps traces) in
   if h is h.+1 then
-    if has (fun i => (@step bool ps [::] (fun=>true) (fun=>false) i).1)
+    if has (fun i => step ps [::] (fun=>true) (fun=>false) i)
         (iota 0 (size ps)) then
-      let ps_trs' := map (fun i => @step proc ps (nth [::] traces i) idfun idfun i) (iota 0 (size ps)) in
+      let ps_trs' := [seq step ps (nth [::] traces i) idfun idfun i
+                     | i <- iota 0 (size ps)] in
       let ps' := unzip1 ps_trs' in
       let trs' := unzip2 ps_trs' in
         interp h ps' trs'
-    else (ps, trace_ret)
+    else (ps, traces)
   else (ps, traces).
 End interp.
+
+Arguments Finish {data}.
 
 Section scalar_product.
 Variable m : nat.
@@ -120,7 +123,7 @@ Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
   Send alice (vec sa) (
   Send alice (one ra) (
   Send bob (vec sb) (
-  Send bob (one (sa *d sb - ra)) (RetNone _))))))).
+  Send bob (one (sa *d sb - ra)) Finish)))))).
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 Definition scalar_product h :=
@@ -144,17 +147,23 @@ rewrite -lock (lock (1 : nat)) /=.
 rewrite -lock (lock (0 : nat)) /=.
 Abort.
 
+Let xa' := xa + sa.
+Let xb' := xb + sb.
+Let rb := sa *d sb - ra.
+Let t := xa' *d xb + rb - yb.
+Let ya := t - xb' *d sa + ra.
+
 Lemma scalar_product_ok :
   (scalar_product 11).2 =
-   [:: [:: one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra);
-           one ((xa + sa) *d xb + (sa *d sb - ra) - yb);
-           vec (xb + sb); 
+   [:: [:: one ya;
+           one t;
+           vec xb';
            one ra;
            vec sa; 
            vec xa];
        [:: one yb;
-           vec (xa + sa);
-           one (sa *d sb - ra);
+           vec xa';
+           one rb;
            vec sb;
            vec xb];
        [:: one ra;
@@ -165,23 +174,24 @@ Proof. reflexivity. Qed.
 
 Definition traces (s: seq (seq data)) :=
 if s is [:: a; b; c] then
-  Some (if a is [:: a1; a2; a3; a4; a5; a6] then Some (a1, a2, a3, a4, a5, a6) else None,
-        if b is [:: b1; b2; b3; b4; b5] then Some (b1, b2, b3, b4, b5) else None)
-else
-  None.
+  Some (if a is [:: a1; a2; a3; a4; a5; a6] then Some (a1, a2, a3, a4, a5, a6)
+        else None,
+        if b is [:: b1; b2; b3; b4; b5] then Some (b1, b2, b3, b4, b5)
+        else None)
+else None.
 
 Lemma traces_ok :
   traces (scalar_product 11).2 = Some (Some (
-     one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra),
-     one ((xa + sa) *d xb + (sa *d sb - ra) - yb),
-     vec (xb + sb),
+     one ya,
+     one t,
+     vec xb',
      one ra,
      vec sa, 
      vec xa
   ), Some (
      one yb,
-     vec (xa + sa),
-     one (sa *d sb - ra),
+     vec xa',
+     one rb,
      vec sb,
      vec xb
   )).
@@ -272,11 +282,47 @@ Definition scalar_product_RV (inputs : scalar_product_random_inputs) :
     scalar_product_uncurry `o
    [%s1 inputs, s2 inputs, r1 inputs, y2 inputs, x1 inputs, x2 inputs].
 
-Definition scalar_product_is_leakgae_free (inputs: scalar_product_random_inputs) :=
-  let alice_traces := Option.bind fst `o (@traces _ _ `o scalar_product_RV inputs) in
-  let bob_traces := Option.bind snd `o (@traces _ _ `o scalar_product_RV inputs) in
-  `H(x2 inputs | alice_traces) = `H `p_ (x2 inputs) /\ `H(x1 inputs | bob_traces) = `H `p_ (x1 inputs).
+Variable inputs: scalar_product_random_inputs.
+Let alice_traces :=
+      Option.bind fst `o (@traces _ _ `o scalar_product_RV inputs).
+Let bob_traces :=
+      Option.bind snd `o (@traces _ _ `o scalar_product_RV inputs).
+Definition scalar_product_is_leakgae_free :=
+  `H(x2 inputs | alice_traces) = `H `p_ (x2 inputs) /\
+  `H(x1 inputs | bob_traces) = `H `p_ (x1 inputs).
 
+Let x1 := x1 inputs.
+Let s1 := s1 inputs.
+Let r1 := r1 inputs.
+Let x2 := x2 inputs.
+Let s2 := s2 inputs.
+Let y2 := y2 inputs.
+Let x1' : {RV P -> VX} := x1 \+ s1.
+Let x2' : {RV P -> VX} := x2 \+ s2.
+Let r2 : {RV P -> TX} := (s1 \*d s2) \- r1.
+Let t : {RV P -> TX} := x1' \*d x2 \+ r2 \- y2.
+Let y1 : {RV P -> TX} := t \- (x2' \*d s1) \+ r1.
+Let data := option (sum TX VX).
+Let one x : data := Some (inl x).
+Let vec x : data := Some (inr x).
+
+Lemma alice_traces_ok :
+  `H(x2 | alice_traces) = `H(x2 | [%x1, s1, r1, x2', t, y1]).
+Proof.
+transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
+  pose f (xs : option (data * data * data * data * data * data)) :=
+    if xs is Some (Some (inl y1), Some (inl t), Some (inr x2'),
+                   Some (inl r1), Some (inr s1), Some (inr x1))
+    then (x1, s1, r1, x2', t, y1)
+    else (0, 0, 0, 0, 0, 0).
+  have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces.
+    by apply boolp.funext.
+  by rewrite smc_entropy_proofs.fun_cond_removal.
+pose f xs :=
+  let '(x1, s1, r1, x2', t, y1) := xs in
+  Some (one y1, one t, vec x2', one r1, vec s1, vec x1).
+have -> : alice_traces = f `o [% x1, s1, r1, x2', t, y1] by [].
+Admitted.
 End information_leakage_def.
 
 Section information_leakage_free_proof.
