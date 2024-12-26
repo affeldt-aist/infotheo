@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra.
+From mathcomp Require Import all_ssreflect all_algebra fingroup lra.
 From mathcomp Require boolp.
 From mathcomp Require Import reals exp.
 Require Import realType_ext realType_logb ssr_ext ssralg_ext.
@@ -596,35 +596,77 @@ Section random_variables.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 
+Definition unit_RV : {RV P -> unit} := fun=> tt.
 Definition const_RV (T : eqType) cst : {RV P -> T} := fun=> cst.
 Definition comp_RV (TA TB : eqType) (f : TA -> TB) (X : {RV P -> TA}) : {RV P -> TB} :=
   fun x => f (X x).
-Local Notation "f `o X" := (comp_RV f X).
-Definition scalel_RV k (X : {RV P -> R}) : {RV P -> R} := fun x => k * X x.
-Definition scaler_RV (X : {RV P -> R}) k : {RV P -> R} := fun x => X x * k.
-Definition add_RV (X Y : {RV P -> R}) : {RV P -> R} := fun x => X x + Y x.
-Definition sumR_RV I (r : seq.seq I) (p : pred I) (X : I -> {RV P -> R}) : {RV P -> R} :=
-  fun x => \sum_(i <- r | p i) X i x.
-Definition sub_RV (X Y : {RV P -> R}) : {RV P -> R} := fun x => X x - Y x.
-Definition trans_add_RV (X : {RV P -> R}) m : {RV P -> R} := fun x => X x + m.
-Definition trans_min_RV (X : {RV P -> R}) m : {RV P -> R} := fun x => X x - m.
-Definition sq_RV (X : {RV P -> R}) : {RV P -> R} := (fun x => x ^+ 2) `o X.
-Definition neg_RV (X : {RV P -> R}) : {RV P -> R} := fun x => - X x.
-Definition log_RV : {RV P -> R} := fun x => log (P x).
-Definition unit_RV : {RV P -> unit} := fun=> tt.
 
 End random_variables.
 
-Notation "k `cst* X" := (scalel_RV k X) : proba_scope.
-Notation "X `*cst k" := (scaler_RV X k) : proba_scope.
-Notation "f `o X" := (comp_RV f X) : proba_scope.
-Notation "X '`/' n" := (scalel_RV (1 / n%:R) X) : proba_scope.
+Notation "f `o X" := (comp_RV f X).
+
+Section zmod_random_variables.
+Context {R : realType}.
+Local Open Scope ring_scope.
+
+Variables (U : finType)(P : R.-fdist U)(V : zmodType).
+
+Definition add_RV (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x + Y x.
+Definition sub_RV (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x - Y x.
+
+(* TODO: neg to opp *)
+Definition neg_RV (X : {RV P -> V}) : {RV P -> V} := fun x => - X x.
+Definition trans_add_RV (X : {RV P -> V}) m : {RV P -> V} := fun x => X x + m.
+(* TODO: min to sub; no longer necessary *)
+Definition trans_min_RV (X : {RV P -> V}) m : {RV P -> V} := fun x => X x - m.
+Definition sumR_RV I (r : seq.seq I) (p : pred I) (X : I -> {RV P -> V}) : {RV P -> V} :=
+  fun x => \sum_(i <- r | p i) X i x.
+
+Local Notation "X `+ Y" := (add_RV X Y) : proba_scope.
+Local Notation "X `- Y" := (sub_RV X Y) : proba_scope.
+
+Lemma sub_RV_neg  (X Y : {RV P -> V}):
+  X `- Y = X `+ neg_RV Y.
+Proof. by []. Qed.
+
+End zmod_random_variables.
+
 Notation "X `+ Y" := (add_RV X Y) : proba_scope.
 Notation "X `- Y" := (sub_RV X Y) : proba_scope.
 Notation "X '`+cst' m" := (trans_add_RV X m) : proba_scope.
 Notation "X '`-cst' m" := (trans_min_RV X m) : proba_scope.
-Notation "X '`^2' " := (sq_RV X) : proba_scope.
 Notation "'`--' P" := (neg_RV P) : proba_scope.
+
+Section zmod_random_variables_lemmas.
+
+End zmod_random_variables_lemmas.
+
+Section ring_random_variables.
+Context {R : realType}.
+Local Open Scope ring_scope.
+
+Variables (U : finType)(P : R.-fdist U)(V : ringType).
+
+Definition scalel_RV k (X : {RV P -> V}) : {RV P -> V} := fun x => k * X x.
+Definition scaler_RV (X : {RV P -> V}) k : {RV P -> V} := fun x => X x * k.
+Definition sq_RV (X : {RV P -> V}) : {RV P -> V} := (fun x => x ^+ 2) `o X.
+
+End ring_random_variables.
+
+Notation "k `cst* X" := (scalel_RV k X) : proba_scope.
+Notation "X `*cst k" := (scaler_RV X k) : proba_scope.
+Notation "X '`/' n" := (scalel_RV (1 / n%:R) X) : proba_scope.
+Notation "X '`^2' " := (sq_RV X) : proba_scope.
+
+Section real_random_variables.
+Context {R : realType}.
+
+Variables (U : finType)(P : R.-fdist U).
+
+Definition log_RV : {RV P -> R} := fun x => log (P x).
+
+End real_random_variables.
+
 Notation "'`log' P" := (log_RV P) : proba_scope.
 
 Section RV_lemmas.
@@ -1339,6 +1381,50 @@ by move=> H k J Jk; rewrite H // max_card.
 Qed.
 
 End mutual_independence.
+
+Section uniform_lemmas.
+Local Open Scope proba_scope.
+Context {R : realType}.
+Variables (T: finType)(n: nat)(P : R.-fdist T).
+Let TX := [the finComRingType of 'I_n.+2].
+
+Let card_TX : #|TX| = n.+2. 
+Proof. by rewrite card_ord. Qed.
+
+Lemma trans_RV_unif (X : {RV P -> TX})(x : TX):
+  `p_ X = fdist_uniform card_TX ->
+  `p_ (X `+cst x) = fdist_uniform card_TX . 
+Proof.
+move => H.
+apply: fdist_ext => i.
+rewrite /dist_of_RV.
+rewrite fdist_uniformE.
+rewrite fdistmapE.
+under eq_bigl => b.
+  rewrite (_: preim _ _ = preim X (pred1 (i+x))); last first.
+  admit.
+  over.
+rewrite -fdistmapE.
+rewrite [fdistmap X P]H.
+by rewrite fdist_uniformE.
+Abort.
+
+Lemma neg_RV_unif (X : {RV P -> TX}):
+  `p_ X = fdist_uniform card_TX ->
+  `p_ (neg_RV X) = fdist_uniform card_TX.
+Proof.
+rewrite /dist_of_RV=> Hunif.
+rewrite -Hunif.
+apply esym.
+apply/val_inj/ffunP => x /=.
+rewrite [RHS](_: _ = fdistmap X P (-x)).
+  by rewrite !Hunif !fdist_uniformE.
+rewrite /fdistmap !fdistbindE.
+apply: eq_bigr=> a ?.
+by rewrite /neg_RV !fdist1E /= eqr_oppLR.
+Qed.
+
+End uniform_lemmas.
 
 Section conditional_probablity.
 Context {R : realType}.
