@@ -1385,73 +1385,29 @@ End mutual_independence.
 Section uniform_lemmas.
 Local Open Scope proba_scope.
 Context {R : realType}.
-Variables (T: finType)(n: nat)(P : R.-fdist T)(A : finZmodType).
+Variables (T: finType) (n: nat) (P : R.-fdist T) (A : finZmodType).
+Variable X : {RV P -> A}.
 
 Hypothesis card_A : #|A| = n.+2.
+Hypothesis Xunif : `p_X = fdist_uniform card_A.
 
-Lemma preim_comp D E F (f : D -> E) (g : E -> F) (x : simpl_pred F) :
-  preim (g \o f) x =i preim f (preim g x).
-Proof. by move=> d; rewrite !inE. Qed.
-
-Lemma preim_inj (D E : eqType) (f : D -> E) g x :
-  cancel f g -> cancel g f -> preim f (pred1 x) =i pred1 (g x).
+Lemma bij_RV_unif (f g : A -> A) :
+  cancel f g -> cancel g f -> `p_(f `o X) = fdist_uniform card_A.
 Proof.
-move=> fg gf d.
-rewrite !inE.
-case/boolP: (f d == x) => fd; apply/esym.
-  by rewrite -(eqP fd) fg eqxx.
-apply: contraNF fd => /eqP ->.
-by rewrite gf.  
-Qed.
-
-Lemma bij_RV_unif (f g : A -> A)(Y : {RV P -> A})(pY_unif : `p_ Y = fdist_uniform card_A):
- cancel f g -> cancel g f -> `p_(f `o Y) = fdist_uniform card_A.
-Proof.
-move=> fg gf.
-apply: fdist_ext => a.
-rewrite fdistmapE.
-under eq_bigl => b.
-  rewrite preim_comp [_ \in preim _ _]simpl_predE.
-  rewrite topredE (preim_inj _ fg gf).
-  over.
-by rewrite -[LHS]fdistmapE [fdistmap _ _]pY_unif !fdist_uniformE.
-Qed.
-
-(* TODO: use bij_RV_unif to prove the following 2 lemmas. *)
-
-Lemma trans_RV_unif (X : {RV P -> A})(x : A):
-  `p_ X = fdist_uniform card_A ->
-  `p_ (X `+cst x) = fdist_uniform card_A . 
-Proof.
-move => pX_unif.
-apply: fdist_ext => i.
-rewrite /dist_of_RV.
-rewrite fdist_uniformE.
-rewrite fdistmapE.
-under eq_bigl => b.
-  rewrite (_: preim _ _ = preim X (pred1 (i+x))); last first.
-  admit.
-  over.
-rewrite -fdistmapE.
-rewrite [fdistmap X P]pX_unif.
-by rewrite fdist_uniformE.
-Abort.
-
-Lemma neg_RV_unif (X : {RV P -> A}):
-  `p_ X = fdist_uniform card_A ->
-  `p_ (neg_RV X) = fdist_uniform card_A.
-Proof.
-rewrite /dist_of_RV=> Hunif.
-rewrite -Hunif.
-apply esym.
+move => fg gf.
 apply/val_inj/ffunP => x /=.
-rewrite [RHS](_: _ = fdistmap X P (-x)).
-  by rewrite !Hunif !fdist_uniformE.
-rewrite /fdistmap !fdistbindE.
-apply: eq_bigr=> a ?.
-by rewrite /neg_RV !fdist1E /= eqr_oppLR.
+have -> : `p_(f `o X) x = `p_X (g x).
+  rewrite !fdistbindE.
+  apply: eq_bigr=> a _.
+  by rewrite !fdist1E -(can_eq gf) fg.
+by rewrite Xunif !fdist_uniformE.
 Qed.
 
+Lemma trans_RV_unif (m : A) : `p_(X `+cst m) = fdist_uniform card_A.
+Proof. exact: (bij_RV_unif (addrK m) (subrK m)). Qed.
+
+Lemma neg_RV_unif : `p_(`-- X) = fdist_uniform card_A.
+Proof. exact: (bij_RV_unif opprK opprK). Qed.
 End uniform_lemmas.
 
 Section conditional_probablity.
