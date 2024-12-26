@@ -184,7 +184,7 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
   by rewrite !inE /= => /eqP Hi; rewrite negb_and Hi ltxx.
 rewrite {1}/Pr big1 ?add0r; last by move=> /= v; rewrite inE => /eqP.
 apply/(le_trans _ (aep He k0_k))/subset_Pr/subsetP => /= t.
-rewrite !inE /= => /andP[-> H3].
+rewrite mul1r !inE /= => /andP[-> H3].
 by rewrite /log_RV /= /scalel_RV /= mulrN -mulNr ltW.
 Qed.
 
