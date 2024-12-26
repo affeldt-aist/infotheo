@@ -1391,16 +1391,20 @@ Variable X : {RV P -> A}.
 Hypothesis card_A : #|A| = n.+2.
 Hypothesis Xunif : `p_X = fdist_uniform card_A.
 
+Lemma bij_comp_RV (f g : A -> A) :
+  cancel f g -> cancel g f -> `p_(f `o X) =1 `p_X \o g.
+Proof.
+move=> fg gf x /=; rewrite !fdistbindE.
+apply: eq_bigr=> a _.
+by rewrite !fdist1E -(can_eq gf) fg.
+Qed.
+
 Lemma bij_RV_unif (f g : A -> A) :
   cancel f g -> cancel g f -> `p_(f `o X) = fdist_uniform card_A.
 Proof.
 move => fg gf.
 apply/val_inj/ffunP => x /=.
-have -> : `p_(f `o X) x = `p_X (g x).
-  rewrite !fdistbindE.
-  apply: eq_bigr=> a _.
-  by rewrite !fdist1E -(can_eq gf) fg.
-by rewrite Xunif !fdist_uniformE.
+by rewrite (bij_comp_RV fg gf) Xunif /= !fdist_uniformE.
 Qed.
 
 Lemma trans_RV_unif (m : A) : `p_(X `+cst m) = fdist_uniform card_A.
