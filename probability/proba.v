@@ -1385,17 +1385,45 @@ End mutual_independence.
 Section uniform_lemmas.
 Local Open Scope proba_scope.
 Context {R : realType}.
-Variables (T: finType)(n: nat)(P : R.-fdist T).
-Let TX := [the finComRingType of 'I_n.+2].
+Variables (T: finType)(n: nat)(P : R.-fdist T)(A : finZmodType).
 
-Let card_TX : #|TX| = n.+2. 
-Proof. by rewrite card_ord. Qed.
+Hypothesis card_A : #|A| = n.+2.
 
-Lemma trans_RV_unif (X : {RV P -> TX})(x : TX):
-  `p_ X = fdist_uniform card_TX ->
-  `p_ (X `+cst x) = fdist_uniform card_TX . 
+Lemma preim_comp D E F (f : D -> E) (g : E -> F) (x : simpl_pred F) :
+  preim (g \o f) x =i preim f (preim g x).
+Proof. by move=> d; rewrite !inE. Qed.
+
+Lemma preim_inj (D E : eqType) (f : D -> E) g x :
+  cancel f g -> cancel g f -> preim f (pred1 x) =i pred1 (g x).
 Proof.
-move => H.
+move=> fg gf d.
+rewrite !inE.
+case/boolP: (f d == x) => fd; apply/esym.
+  by rewrite -(eqP fd) fg eqxx.
+apply: contraNF fd => /eqP ->.
+by rewrite gf.  
+Qed.
+
+Lemma bij_RV_unif (f g : A -> A)(Y : {RV P -> A})(pY_unif : `p_ Y = fdist_uniform card_A):
+ cancel f g -> cancel g f -> `p_(f `o Y) = fdist_uniform card_A.
+Proof.
+move=> fg gf.
+apply: fdist_ext => a.
+rewrite fdistmapE.
+under eq_bigl => b.
+  rewrite preim_comp [_ \in preim _ _]simpl_predE.
+  rewrite topredE (preim_inj _ fg gf).
+  over.
+by rewrite -[LHS]fdistmapE [fdistmap _ _]pY_unif !fdist_uniformE.
+Qed.
+
+(* TODO: use bij_RV_unif to prove the following 2 lemmas. *)
+
+Lemma trans_RV_unif (X : {RV P -> A})(x : A):
+  `p_ X = fdist_uniform card_A ->
+  `p_ (X `+cst x) = fdist_uniform card_A . 
+Proof.
+move => pX_unif.
 apply: fdist_ext => i.
 rewrite /dist_of_RV.
 rewrite fdist_uniformE.
@@ -1405,13 +1433,13 @@ under eq_bigl => b.
   admit.
   over.
 rewrite -fdistmapE.
-rewrite [fdistmap X P]H.
+rewrite [fdistmap X P]pX_unif.
 by rewrite fdist_uniformE.
 Abort.
 
-Lemma neg_RV_unif (X : {RV P -> TX}):
-  `p_ X = fdist_uniform card_TX ->
-  `p_ (neg_RV X) = fdist_uniform card_TX.
+Lemma neg_RV_unif (X : {RV P -> A}):
+  `p_ X = fdist_uniform card_A ->
+  `p_ (neg_RV X) = fdist_uniform card_A.
 Proof.
 rewrite /dist_of_RV=> Hunif.
 rewrite -Hunif.
