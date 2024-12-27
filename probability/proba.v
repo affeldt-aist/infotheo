@@ -1382,13 +1382,13 @@ Qed.
 
 End mutual_independence.
 
-Section uniform_lemmas.
+Section uniform_finZmod_RV_lemmas.
 Local Open Scope proba_scope.
 Context {R : realType}.
 Variables (T: finType) (n: nat) (P : R.-fdist T) (A : finZmodType).
 Variable X : {RV P -> A}.
 
-Hypothesis card_A : #|A| = n.+2.
+Hypothesis card_A : #|A| = n.+1.
 Hypothesis Xunif : `p_X = fdist_uniform card_A.
 
 Lemma bij_comp_RV (f g : A -> A) :
@@ -1412,7 +1412,7 @@ Proof. exact: (bij_RV_unif (addrK m) (subrK m)). Qed.
 
 Lemma neg_RV_unif : `p_(`-- X) = fdist_uniform card_A.
 Proof. exact: (bij_RV_unif opprK opprK). Qed.
-End uniform_lemmas.
+End uniform_finZmod_RV_lemmas.
 
 Section conditional_probablity.
 Context {R : realType}.
