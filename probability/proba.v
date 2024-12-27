@@ -1382,10 +1382,10 @@ Qed.
 
 End mutual_independence.
 
-Section uniform_finZmod_RV_lemmas.
+Section uniform_finType_RV_lemmas.
 Local Open Scope proba_scope.
 Context {R : realType}.
-Variables (T: finType) (n: nat) (P : R.-fdist T) (A : finZmodType).
+Variables (T: finType) (n: nat) (P : R.-fdist T) (A : finType).
 Variable X : {RV P -> A}.
 
 Hypothesis card_A : #|A| = n.+1.
@@ -1407,11 +1407,25 @@ apply/val_inj/ffunP => x /=.
 by rewrite (bij_comp_RV fg gf) Xunif /= !fdist_uniformE.
 Qed.
 
+End uniform_finType_RV_lemmas.
+
+Section uniform_finZmod_RV_lemmas.
+Local Open Scope proba_scope.
+Context {R : realType}.
+Variables (T: finType) (P : R.-fdist T) (A : finZmodType).
+Variable X : {RV P -> A}.
+
+Let n := #|A|.-1.
+Let card_A : #|A| = n.+1.
+Proof. by apply/esym/prednK/card_gt0P; exists 0. Qed.
+
+Hypothesis Xunif : `p_X = fdist_uniform card_A.
+
 Lemma trans_RV_unif (m : A) : `p_(X `+cst m) = fdist_uniform card_A.
-Proof. exact: (bij_RV_unif (addrK m) (subrK m)). Qed.
+Proof. exact: (bij_RV_unif Xunif (addrK m) (subrK m)). Qed.
 
 Lemma neg_RV_unif : `p_(`-- X) = fdist_uniform card_A.
-Proof. exact: (bij_RV_unif opprK opprK). Qed.
+Proof. exact: (bij_RV_unif Xunif opprK opprK). Qed.
 End uniform_finZmod_RV_lemmas.
 
 Section conditional_probablity.
