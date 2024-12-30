@@ -179,7 +179,8 @@ if s is [:: a; b; c] then
         else None)
 else None.
 
-Definition smc_scalar_product_traces := Some (Some (
+Lemma smc_scalar_product_traces_ok :
+  traces (smc_scalar_product 11).2 = Some (Some (
      one ya,
      one t,
      vec xb',
@@ -193,9 +194,6 @@ Definition smc_scalar_product_traces := Some (Some (
      vec sb,
      vec xb
   )).
-
-Lemma smc_scalar_product_traces_ok :
-  traces (smc_scalar_product 11).2 = smc_scalar_product_traces.
 Proof. reflexivity. Qed.
 
 Definition smc_scalar_product_party_tracesT :=
