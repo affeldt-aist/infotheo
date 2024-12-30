@@ -245,9 +245,8 @@ rewrite (smc_entropy_proofs.dot_productC xb sa).
 rewrite (smc_entropy_proofs.dot_productC (xb+sb) sa).
 rewrite smc_entropy_proofs.dot_productDr.
 (* Weird: without making it as a lemma, the ring tactic fails. *)
-have ->: xa *d xb + sa *d xb + (sa *d sb - ra) - yb - (sa *d xb + sa *d sb) + ra + yb = xa *d xb.
+have // ->: xa *d xb + sa *d xb + (sa *d sb - ra) - yb - (sa *d xb + sa *d sb) + ra + yb = xa *d xb.
   by ring.
-by [].
 Qed.
 
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
