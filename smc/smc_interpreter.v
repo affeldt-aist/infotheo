@@ -81,15 +81,12 @@ Section scalar_product.
 Variable m : nat.
 Variable TX : finComRingType.
 Variable VX : lmodType TX. (* vector is not ringType (mul)*)
-Variable T : finType.
-Variable P : R.-fdist T.
 Variable dotproduct : VX -> VX -> TX.
 Notation "u *d w" := (dotproduct u w).
 
 Definition alice : nat := 0.
 Definition bob : nat := 1.
 Definition coserv : nat := 2.
-(*Note: notation will make cbv fail.*)
 
 Definition data := option (TX + VX).
 Definition one x : data := Some (inl x).
@@ -100,22 +97,6 @@ Definition Recv_one frm f : proc data :=
 Definition Recv_vec frm f : proc data :=
   Recv frm (fun x => if x is Some (inr v) then f v else Ret None).
 
-Definition palice (xa : VX) : proc data :=
-  Init alice (vec xa) (
-  Recv_vec coserv (fun sa =>
-  Recv_one coserv (fun ra =>
-  Send bob (vec (xa + sa)) (
-  Recv_vec bob (fun xb' =>
-  Recv_one bob (fun t =>
-  Ret (one (t - (xb' *d sa) + ra)))))))).
-Definition pbob (xb : VX) (yb : TX) : proc data :=
-  Init bob (vec xb) (
-  Recv_vec coserv (fun sb =>
-  Recv_one coserv (fun rb =>
-  Recv_vec alice (fun xa' =>
-  let t := xa' *d xb + rb - yb in
-    Send alice (vec (xb + sb))
-    (Send alice (one t) (Ret (one yb))))))).
 Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
   Init coserv (vec sa) (
   Init coserv (vec sb) (
@@ -125,14 +106,32 @@ Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
   Send bob (vec sb) (
   Send bob (one (sa *d sb - ra)) Finish)))))).
 
+Definition palice (xa : VX) : proc data :=
+  Init alice (vec xa) (
+  Recv_vec coserv (fun sa =>
+  Recv_one coserv (fun ra =>
+  Send bob (vec (xa + sa)) (
+  Recv_vec bob (fun xb' =>
+  Recv_one bob (fun t =>
+  Ret (one (t - (xb' *d sa) + ra)))))))).
+
+Definition pbob (xb : VX) (yb : TX) : proc data :=
+  Init bob (vec xb) (
+  Recv_vec coserv (fun sb =>
+  Recv_one coserv (fun rb =>
+  Recv_vec alice (fun xa' =>
+  let t := xa' *d xb + rb - yb in
+    Send alice (vec (xb + sb))
+    (Send alice (one t) (Init bob (one yb) (Ret (one yb)))))))).
+
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
-Definition scalar_product h :=
+Definition smc_scalar_product h :=
   (interp h [:: palice xa; pbob xb yb; pcoserv sa sb ra] [::[::];[::];[::]]).
 
-Goal (scalar_product 11).2 = ([::]).
+Goal (smc_scalar_product 11).2 = ([::]).
 cbv -[GRing.add GRing.opp GRing.Ring.sort (*Equality.eqtype_hasDecEq_mixin*) ].
 Undo 1.
-rewrite /scalar_product.
+rewrite /smc_scalar_product.
 rewrite (lock (11 : nat)) /=.
 rewrite -lock (lock (10 : nat)) /=.
 rewrite -lock (lock (9 : nat)) /=.
@@ -153,8 +152,8 @@ Let rb := sa *d sb - ra.
 Let t := xa' *d xb + rb - yb.
 Let ya := t - xb' *d sa + ra.
 
-Lemma scalar_product_ok :
-  (scalar_product 11).2 =
+Lemma smc_scalar_product_ok :
+  (smc_scalar_product 11).2 =
    [:: [:: one ya;
            one t;
            vec xb';
@@ -180,8 +179,7 @@ if s is [:: a; b; c] then
         else None)
 else None.
 
-Lemma traces_ok :
-  traces (scalar_product 11).2 = Some (Some (
+Definition smc_scalar_product_traces := Some (Some (
      one ya,
      one t,
      vec xb',
@@ -195,7 +193,20 @@ Lemma traces_ok :
      vec sb,
      vec xb
   )).
+
+Lemma smc_scalar_product_traces_ok :
+  traces (smc_scalar_product 11).2 = smc_scalar_product_traces.
 Proof. reflexivity. Qed.
+
+Definition smc_scalar_product_party_tracesT :=
+  option (option (data * data * data * data * data * data) * option (data * data * data * data * data))%type.
+
+Definition is_scalar_product (trs: smc_scalar_product_party_tracesT) :=
+  let '(ya, xa) := if Option.bind fst trs is Some (Some (inl ya), _, _, _, _, Some (inr xa))
+                   then (ya, xa) else (0, 0) in
+  let '(yb, xb) := if Option.bind snd trs is Some (Some (inl yb), _, _, _, Some (inr xb))
+                   then (yb, xb) else (0, 0) in
+  xa *d xb = ya + yb.
 
 End scalar_product.
 
@@ -225,8 +236,7 @@ Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
 
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
-  (scalar_product smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2.
-
+  (smc_scalar_product smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2.
 
 Record scalar_product_random_inputs :=
   ScalarProductRandomInputs {
