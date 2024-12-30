@@ -232,6 +232,24 @@ Qed.
 Notation "u *d w" := (smc_entropy_proofs.dotproduct u w).
 Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
 
+Lemma smc_scalar_productP sa sb ra yb xa xb :
+  is_scalar_product smc_entropy_proofs.dotproduct (
+      traces (@smc_scalar_product TX VX smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2).
+Proof.
+rewrite smc_scalar_product_traces_ok /is_scalar_product /=.
+symmetry.
+rewrite (smc_entropy_proofs.dot_productC (xa+sa) xb).
+rewrite !smc_entropy_proofs.dot_productDr.
+rewrite smc_entropy_proofs.dot_productC.
+rewrite (smc_entropy_proofs.dot_productC xb sa).
+rewrite (smc_entropy_proofs.dot_productC (xb+sb) sa).
+rewrite smc_entropy_proofs.dot_productDr.
+(* Weird: without making it as a lemma, the ring tactic fails. *)
+have ->: xa *d xb + sa *d xb + (sa *d sb - ra) - yb - (sa *d xb + sa *d sb) + ra + yb = xa *d xb.
+  by ring.
+by [].
+Qed.
+
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
   let '(sa, sb, ra, yb, xa, xb) := o in
   (smc_scalar_product smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2.
