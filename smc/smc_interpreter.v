@@ -75,6 +75,8 @@ Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
   else (ps, traces).
 End interp.
 
+About interp.
+
 Arguments Finish {data}.
 
 Section scalar_product.
@@ -117,12 +119,13 @@ Definition palice (xa : VX) : proc data :=
 
 Definition pbob (xb : VX) (yb : TX) : proc data :=
   Init bob (vec xb) (
+  Init bob (one yb) (
   Recv_vec coserv (fun sb =>
   Recv_one coserv (fun rb =>
   Recv_vec alice (fun xa' =>
   let t := xa' *d xb + rb - yb in
     Send alice (vec (xb + sb))
-    (Send alice (one t) (Init bob (one yb) (Ret (one yb)))))))).
+    (Send alice (one t) (Ret (one yb)))))))).
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 Definition smc_scalar_product h :=
@@ -164,6 +167,7 @@ Lemma smc_scalar_product_ok :
            vec xa';
            one rb;
            vec sb;
+           one yb;
            vec xb];
        [:: one ra;
            vec sb;
@@ -175,7 +179,7 @@ Definition traces (s: seq (seq data)) :=
 if s is [:: a; b; c] then
   Some (if a is [:: a1; a2; a3; a4; a5; a6] then Some (a1, a2, a3, a4, a5, a6)
         else None,
-        if b is [:: b1; b2; b3; b4; b5] then Some (b1, b2, b3, b4, b5)
+        if b is [:: b1; b2; b3; b4; b5; b6] then Some (b1, b2, b3, b4, b5, b6)
         else None)
 else None.
 
@@ -192,17 +196,18 @@ Lemma smc_scalar_product_traces_ok :
      vec xa',
      one rb,
      vec sb,
+     one yb,
      vec xb
   )).
 Proof. reflexivity. Qed.
 
 Definition smc_scalar_product_party_tracesT :=
-  option (option (data * data * data * data * data * data) * option (data * data * data * data * data))%type.
+  option (option (data * data * data * data * data * data) * option (data * data * data * data * data * data))%type.
 
 Definition is_scalar_product (trs: smc_scalar_product_party_tracesT) :=
   let '(ya, xa) := if Option.bind fst trs is Some (Some (inl ya), _, _, _, _, Some (inr xa))
                    then (ya, xa) else (0, 0) in
-  let '(yb, xb) := if Option.bind snd trs is Some (Some (inl yb), _, _, _, Some (inr xb))
+  let '(yb, xb) := if Option.bind snd trs is Some (Some (inl yb), _, _, _, _, Some (inr xb))
                    then (yb, xb) else (0, 0) in
   xa *d xb = ya + yb.
 
@@ -232,7 +237,7 @@ Qed.
 Notation "u *d w" := (smc_entropy_proofs.dotproduct u w).
 Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
 
-Lemma smc_scalar_productP sa sb ra yb xa xb :
+Lemma smc_scalar_product_proof sa sb ra yb xa xb :
   is_scalar_product smc_entropy_proofs.dotproduct (
       traces (@smc_scalar_product TX VX smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2).
 Proof.
@@ -302,16 +307,20 @@ Record scalar_product_intermediate_vars (inputs: scalar_product_random_inputs)  
     pr2_unif : `p_ r2 = fdist_uniform card_TX;
   }.
 
+Variable inputs: scalar_product_random_inputs.
+
 Definition scalar_product_RV (inputs : scalar_product_random_inputs) :
   {RV P -> seq (seq (data VX))} :=
     scalar_product_uncurry `o
    [%s1 inputs, s2 inputs, r1 inputs, y2 inputs, x1 inputs, x2 inputs].
 
-Variable inputs: scalar_product_random_inputs.
 Let alice_traces :=
       Option.bind fst `o (@traces _ _ `o scalar_product_RV inputs).
 Let bob_traces :=
       Option.bind snd `o (@traces _ _ `o scalar_product_RV inputs).
+
+Check alice_traces.
+
 Definition scalar_product_is_leakgae_free :=
   `H(x2 inputs | alice_traces) = `H `p_ (x2 inputs) /\
   `H(x1 inputs | bob_traces) = `H `p_ (x1 inputs).
@@ -364,6 +373,42 @@ pose f xs :=
 have -> : alice_traces = f `o [% x1, s1, r1, x2', t, y1] by [].
 by rewrite cond_entropyC smc_entropy_proofs.fun_cond_removal.
 Qed.
+
+Lemma bob_traces_ok :
+  `H(x1 | bob_traces) = `H(x1 | [%x2, s2, x1', r2, y2]).
+Proof.
+transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
+  pose f (xs : option (data * data * data * data * data * data)) :=
+    if xs is Some (Some (inl y2), Some (inr x1'), Some (inl r2),
+                   Some (inr s2), Some (inl _), Some (inr x2))
+    then (x2, s2, x1', r2, y2)
+    else (0, 0, 0, 0, 0).
+  have -> : [%x2, s2, x1', r2, y2] = f `o bob_traces by [].
+  by rewrite smc_entropy_proofs.fun_cond_removal.
+pose f xs :=
+  let '(x2, s2, x1', r2, y2) := xs in
+  Some (one y2, vec x1', one r2, vec s2, one y2, vec x2).
+have -> : bob_traces = f `o [%x2, s2, x1', r2, y2] by [].
+by rewrite cond_entropyC smc_entropy_proofs.fun_cond_removal.
+Qed.
+
+Let pnegy2_unif :
+  `p_ (neg_RV y2) = fdist_uniform card_TX.
+Proof. rewrite -(smc_entropy.smc_entropy_proofs.neg_RV_dist_eq (py2_unif inputs)).
+exact: (py2_unif inputs). Qed.
+
+Lemma scalar_product_is_leakgae_freeP :
+  scalar_product_is_leakgae_free.
+Proof.
+rewrite /scalar_product_is_leakgae_free.
+rewrite alice_traces_ok bob_traces_ok.
+Abort.
+
+Fail Let proof := (smc_entropy.smc_entropy_proofs.pi2_alice_is_leakage_free_proof
+      (y2_x1x2s1s2r1_indep inputs)
+      (s2_x1s1r1x2_indep inputs)
+      (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs)).
+
 End information_leakage_def.
 
 Section information_leakage_free_proof.
