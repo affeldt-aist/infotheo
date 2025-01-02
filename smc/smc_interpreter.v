@@ -367,10 +367,10 @@ transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
     else (0, 0, 0, 0, 0, 0).
   have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces by [].
   by rewrite smc_entropy_proofs.fun_cond_removal.
-pose f xs :=
+pose g xs :=
   let '(x1, s1, r1, x2', t, y1) := xs in
   Some (one y1, one t, vec x2', one r1, vec s1, vec x1).
-have -> : alice_traces = f `o [% x1, s1, r1, x2', t, y1] by [].
+have -> : alice_traces = g `o [% x1, s1, r1, x2', t, y1] by [].
 by rewrite cond_entropyC smc_entropy_proofs.fun_cond_removal.
 Qed.
 
@@ -385,10 +385,10 @@ transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
     else (0, 0, 0, 0, 0).
   have -> : [%x2, s2, x1', r2, y2] = f `o bob_traces by [].
   by rewrite smc_entropy_proofs.fun_cond_removal.
-pose f xs :=
+pose g xs :=
   let '(x2, s2, x1', r2, y2) := xs in
   Some (one y2, vec x1', one r2, vec s2, one y2, vec x2).
-have -> : bob_traces = f `o [%x2, s2, x1', r2, y2] by [].
+have -> : bob_traces = g `o [%x2, s2, x1', r2, y2] by [].
 by rewrite cond_entropyC smc_entropy_proofs.fun_cond_removal.
 Qed.
 
