@@ -914,7 +914,12 @@ Section eqn4_proof.
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Hypothesis card_TX: #|TX| = m.+2.
-Hypothesis card_rVTX : #|'rV[TX]_n| = m.+2.
+Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n)%nat.-1.+1.
+(* Coq cannot unify `(m.+2^n)%nat.-1.+1` in the definition of fdist_uniform and `(m.+2^n)%nat`,
+   so we cannot assume `(m.+2^n)%nat` here.
+
+   Check fdist_uniform (n:=(m.+2^n)%nat.-1) card_rVTX.
+*)
 
 Variables (r1: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
 Let x2' := x2 \+ s2.
@@ -979,7 +984,7 @@ rewrite -cinde_rv_unit.
 rewrite /inde_rv.
 rewrite /WmZ.
 move => x y.
-have H := (@lemma_3_5' _ _ 'rV[TX]_n P m.+1 Wm Z W2 card_rVTX pZ_unif Z_WmW2_indep x y).
+have H := (@lemma_3_5' _ _ 'rV[TX]_n P (m.+2 ^ n)%nat.-1 Wm Z W2 card_rVTX pZ_unif Z_WmW2_indep x y).
 apply H.
 Qed.
 
@@ -1023,8 +1028,8 @@ Section pi2_alice_is_leakage_free_proof.
 
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
-Hypothesis card_TX: #|TX| = m.+2.
-Hypothesis card_rVTX : #|'rV[TX]_n| = m.+2.
+Hypothesis card_TX : #|TX| = m.+2.
+Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n)%nat.-1.+1.
 
 Variables (r1 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
 Let x1' := x1 \+ s1.
@@ -1203,7 +1208,7 @@ Section eqn8_proof.
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Hypothesis card_TX: #|TX| = m.+2.
-Hypothesis card_rVTX: #|'rV[TX]_n| = m.+2.
+Hypothesis card_rVTX: #|'rV[TX]_n| = (m.+2 ^ n)%nat.-1.+1.
 
 Variables (x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
 Let x1' := x1 \+ s1.
@@ -1311,7 +1316,7 @@ Section pi2_bob_view_is_leakage_free_proof.
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Hypothesis card_TX: #|TX| = m.+2.
-Hypothesis card_rVTX: #|'rV[TX]_n| = m.+2.
+Hypothesis card_rVTX: #|'rV[TX]_n| = (m.+2 ^ n)%nat.-1.+1.
 Variables (r1 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
 Let x1' := x1 \+ s1.
 Let r2  := s1 \*d s2 \- r1.
