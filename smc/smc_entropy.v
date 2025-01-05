@@ -988,7 +988,7 @@ have H := (@lemma_3_5' _ _ 'rV[TX]_n P (m.+2 ^ n)%nat.-1 Wm Z W2 card_rVTX pZ_un
 apply H.
 Qed.
 
-Lemma eqn4_correct: eqn4.
+Lemma eqn4_proof: eqn4.
 Proof.
 rewrite /eqn4.
 have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep _.
@@ -1007,7 +1007,7 @@ Hypothesis card_TX: #|TX| = m.+2.
 Variables (r1: {RV P -> TX})(x1 x2 s1: {RV P -> 'rV[TX]_n}).
 Hypothesis x2_indep : P |= [% x1, s1, r1] _|_ x2.
 
-Lemma eqn_4_1_correct:
+Lemma eqn_4_1_proof:
   `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
 Proof.
 transitivity (joint_entropy `p_ [%x1, s1, r1, x2] - `H `p_ [%x1, s1, r1]).
@@ -1060,8 +1060,8 @@ transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
 transitivity (`H( x2 | [% x1, s1, r1, x2'])).
   by rewrite (eqn3_proof negy2_x1x2s1s2r1r2_eqn3_indep neg_py2_unif).
 transitivity (`H( x2 | [% x1, s1, r1])).
-  by rewrite (eqn4_correct ps2_unif s2_x1s1r1x2_eqn4_indep).
-rewrite eqn_4_1_correct //.
+  by rewrite (eqn4_proof ps2_unif s2_x1s1r1x2_eqn4_indep).
+rewrite eqn_4_1_proof //.
 Qed.
 
 End pi2_alice_is_leakage_free_proof.
@@ -1294,7 +1294,7 @@ Variables (x1 x2 s2: {RV P -> 'rV[TX]_n}).
 
 Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
 
-Lemma eqn_8_1:
+Lemma eqn_8_1_proof:
   `H(x1|[%x2, s2]) = entropy `p_ x1.
 Proof.
 transitivity (joint_entropy `p_ [%x2, s2, x1] - entropy `p_ [%x2, s2]).
@@ -1348,7 +1348,7 @@ transitivity (`H(x1|[%x2, s2, x1'])).
   by rewrite (eqn7_proof x2_s2_x1'_r2_eqn7_indep x1x2_s2_x1'_r2_eqn7_indep pr2_unif).
 transitivity (`H(x1|[%x2, s2])).
   by rewrite (eqn8_proof ps1_unif s1_x1x2s1s2_eqn8_indep).
-by rewrite eqn_8_1 //.
+by rewrite eqn_8_1_proof //.
 Qed.
 
 End pi2_bob_view_is_leakage_free_proof.
