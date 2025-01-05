@@ -1,6 +1,6 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 Require Import Reals.
+From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy smc graphoid.
@@ -1053,7 +1053,7 @@ by move/(inde_rv_comp (fun (a : TX) => 0 - a) f):y2_x1x2s1s2r1_eqn3_indep.
 Qed.
 
 Lemma pi2_alice_is_leakage_free_proof:
-  `H( x2 | AliceView) = `H `p_ x2.
+  `H( x2 | AliceView) = `H `p_x2.
 Proof.
 transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
   by rewrite eqn2_proof.
