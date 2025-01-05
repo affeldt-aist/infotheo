@@ -236,7 +236,7 @@ Qed.
 Notation "u *d w" := (smc_entropy_proofs.dotproduct u w).
 Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
 
-Lemma smc_scalar_product_proof sa sb ra yb xa xb :
+Lemma smc_scalar_product_is_correct sa sb ra yb xa xb :
   is_scalar_product smc_entropy_proofs.dotproduct (
       traces (@smc_scalar_product TX VX smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2).
 Proof.
