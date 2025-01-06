@@ -162,7 +162,7 @@ Variable n : nat.
 Variables (X Y : {RV P -> A}).
 
 (* How to express "the distribution of random variable Y is uniform distribution" as a prop. *)
-Hypothesis card_A : #|A| = n.+1.
+Hypothesis card_A : #|A:finType| = n.+1.
 Variable pY_unif : `p_ Y = fdist_uniform card_A.
 Variable XY_indep : P |= X _|_ Y.
 
