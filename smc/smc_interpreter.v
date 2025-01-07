@@ -201,8 +201,16 @@ Lemma smc_scalar_product_traces_ok :
   )).
 Proof. reflexivity. Qed.
 
+Definition smc_scalar_product_alice_tracesT :=
+  option (data * data * data * data * data * data).
+
+Definition smc_scalar_product_bob_tracesT :=
+  option (data * data * data * data * data * data).
+
+(* the above two types are the same; merely a coincidence? *)
+
 Definition smc_scalar_product_party_tracesT :=
-  option (option (data * data * data * data * data * data) * option (data * data * data * data * data * data))%type.
+  option (smc_scalar_product_alice_tracesT * smc_scalar_product_bob_tracesT).
 
 Definition is_scalar_product (trs: smc_scalar_product_party_tracesT) :=
   let '(ya, xa) := if Option.bind fst trs is Some (inl ya, _, _, _, _, inr xa)
@@ -315,9 +323,10 @@ Definition scalar_product_RV (inputs : scalar_product_random_inputs) :
     scalar_product_uncurry `o
    [%s1 inputs, s2 inputs, r1 inputs, y2 inputs, x1 inputs, x2 inputs].
 
-Let alice_traces :=
+Let alice_traces : RV (smc_scalar_product_alice_tracesT VX) P :=
       Option.bind fst `o (@traces _ _ `o scalar_product_RV inputs).
-Let bob_traces :=
+
+Let bob_traces : RV (smc_scalar_product_bob_tracesT VX) P :=
       Option.bind snd `o (@traces _ _ `o scalar_product_RV inputs).
 
 Definition scalar_product_is_leakgae_free :=
@@ -399,17 +408,13 @@ exact: (py2_unif inputs). Qed.
 Let x2s2_x1'_indepP :
   P |= [% x2, s2] _|_ x1'.
 Proof.
-have px1_s1_unif: `p_ (x1 \+ s1) = fdist_uniform card_VX.
-  move => d.
-  have H:= add_RV_unif x1 s1 card_VX (ps1_unif inputs) (x1_s1_indep inputs).
-  rewrite /add_RV // in H.
-  Fail apply H.
-  admit.
+have px1_s1_unif: `p_ (x1 \+ s1 : {RV P -> _}) = fdist_uniform card_VX.
+  rewrite -(add_RV_unif x1 s1) ?ps1_unif //.
+  exact: x1_s1_indep.
 have H:= @lemma_3_5' T (VX * VX)%type VX P q x1 s1 [%x2, s2] card_VX (ps1_unif inputs) (s1_x1x2s2_indep inputs).
-
 rewrite inde_rv_sym in H.
-apply H.
-Admitted.
+exact: H.
+Qed.
 
 Let proof_alice := (smc_entropy.smc_entropy_proofs.pi2_alice_is_leakage_free_proof
       (y2_x1x2s1s2r1_indep inputs)
