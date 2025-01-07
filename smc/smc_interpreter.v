@@ -31,34 +31,33 @@ Reserved Notation "u \*d w" (at level 40).
 Section interp.
 Variable data : Type.
 Inductive proc : Type :=
-  | Init : nat -> data -> proc -> proc
+  | Init : data -> proc -> proc
   | Send : nat -> data -> proc -> proc
   | Recv : nat -> (data -> proc) -> proc
   | Ret : data -> proc
-  | Finish : proc.
+  | Finish : proc
+  | Fail : proc.
 
 Definition step (A : Type) (ps : seq proc) (trace : seq data)
   (yes no : proc * seq data -> A) (i : nat) : A :=
-  let p := nth Finish ps i in
+  let ps := nth Fail ps in
+  let p := ps i in
+  let nop := no (p, trace) in
   match p with
   | Recv frm f =>
-      if nth Finish ps frm is Send dst v _ then
-        if dst == i then no (f v, v::trace) else no (p, trace)
-      else if nth Finish ps frm is Init _ _ _ then
-        yes (p, trace)
-      else no (p, trace)
+      if ps frm is Send dst v _ then
+        if dst == i then yes (f v, v::trace) else nop
+      else nop
   | Send dst w next =>
-      if nth Finish ps dst is Recv frm _ then
-        if frm == i then yes (next, trace) else no (p, trace)
-      else if nth Finish ps dst is Init _ _ _ then
-        yes (p, trace)
-      else no (p, trace)
-  | Init i d next =>
+      if ps dst is Recv frm _ then
+        if frm == i then yes (next, trace) else nop
+      else nop
+  | Init d next =>
       yes (next, d::trace)
   | Ret d =>
       yes (Finish, d :: trace)
-  | Finish =>
-      no (p, trace)
+  | Finish | Fail =>
+      nop
   end.
 
 Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
@@ -77,6 +76,7 @@ End interp.
 About interp.
 
 Arguments Finish {data}.
+Arguments Fail {data}.
 
 Section scalar_product.
 Variable m : nat.
@@ -94,21 +94,21 @@ Definition one x : data := inl x.
 Definition vec x : data := inr x.
 
 Definition Recv_one frm f : proc data :=
-  Recv frm (fun x => if x is inl v then f v else Finish).
+  Recv frm (fun x => if x is inl v then f v else Fail).
 Definition Recv_vec frm f : proc data :=
-  Recv frm (fun x => if x is inr v then f v else Finish).
+  Recv frm (fun x => if x is inr v then f v else Fail).
 
 Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
-  Init coserv (vec sa) (
-  Init coserv (vec sb) (
-  Init coserv (one ra) (
+  Init (vec sa) (
+  Init (vec sb) (
+  Init (one ra) (
   Send alice (vec sa) (
   Send alice (one ra) (
   Send bob (vec sb) (
   Send bob (one (sa *d sb - ra)) Finish)))))).
 
 Definition palice (xa : VX) : proc data :=
-  Init alice (vec xa) (
+  Init (vec xa) (
   Recv_vec coserv (fun sa =>
   Recv_one coserv (fun ra =>
   Send bob (vec (xa + sa)) (
@@ -117,8 +117,8 @@ Definition palice (xa : VX) : proc data :=
   Ret (one (t - (xb' *d sa) + ra)))))))).
 
 Definition pbob (xb : VX) (yb : TX) : proc data :=
-  Init bob (vec xb) (
-  Init bob (one yb) (
+  Init (vec xb) (
+  Init (one yb) (
   Recv_vec coserv (fun sb =>
   Recv_one coserv (fun rb =>
   Recv_vec alice (fun xa' =>
@@ -155,7 +155,8 @@ Let t := xa' *d xb + rb - yb.
 Let ya := t - xb' *d sa + ra.
 
 Lemma smc_scalar_product_ok :
-  (smc_scalar_product 11).2 =
+  smc_scalar_product 11 =
+  ([:: Finish; Finish; Finish],
    [:: [:: one ya;
            one t;
            vec xb';
@@ -171,7 +172,7 @@ Lemma smc_scalar_product_ok :
        [:: one ra;
            vec sb;
            vec sa]
-   ].
+   ]).
 Proof. reflexivity. Qed.
 
 Definition traces (s: seq (seq data)) :=
