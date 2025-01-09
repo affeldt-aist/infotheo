@@ -83,11 +83,11 @@ Undo 2.
 move=> + a  /[swap] b c.
 Undo 1.
 move=> + a b c => /(_ a b (tt,c)).
-rewrite 3!cpr_eqE'.
+rewrite 3!cPr_eq_def.
 have->: finset (preim [% unit_RV P, Z] (pred1 (tt, c))) = finset (preim Z (pred1 c)).
   apply /setP => x.
   by rewrite !inE.
-by rewrite -!cpr_eqE'.
+by rewrite -!cPr_eq_def.
 Qed.
 
 (* Lemma 3.3 *)
@@ -242,7 +242,7 @@ Variable (X': {RV (fdist_cond E0) -> TX}).
 Hypothesis EX' : X' = X :> (T -> TX).
 
 Lemma Pr_fdist_cond_RV x : `Pr[ X' = x ] = `Pr[ X = x | Y = y ].
-Proof. by rewrite pr_eqE Pr_fdist_cond cpr_eqE' EX'. Qed.
+Proof. by rewrite pr_eqE Pr_fdist_cond cPr_eq_def EX'. Qed.
 
 Hypothesis Z_XY_indep : inde_rv Z [%X, Y].
 
@@ -253,7 +253,7 @@ rewrite /cinde_rv /= => H.
 move => /= x z.
 rewrite mulRC pr_eq_pairC.
 have := H z x (tt,y).
-rewrite !pr_eqE !Pr_fdist_cond !cpr_eqE'.
+rewrite !pr_eqE !Pr_fdist_cond !cPr_eq_def.
 have -> // : finset (preim [% unit_RV P, Y] (pred1 (tt, y))) = E.
 by apply/setP => e; rewrite !inE.
 Qed.

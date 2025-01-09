@@ -3,7 +3,7 @@ Require Import Reals.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy smc graphoid.
+Require Import proba jfdist_cond entropy graphoid smc_proba.
 
 Import GRing.Theory.
 Import Num.Theory.

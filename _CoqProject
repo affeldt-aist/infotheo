@@ -39,7 +39,6 @@ probability/partition_inequality.v
 probability/pinsker.v
 probability/necset.v
 probability/bayes.v
-probability/smc.v
 information_theory/source_code.v
 information_theory/entropy.v
 information_theory/channel.v
@@ -95,6 +94,9 @@ toy_examples/expected_value_variance.v
 toy_examples/expected_value_variance_ordn.v
 toy_examples/expected_value_variance_tuple.v
 toy_examples/conditional_entropy.v
+smc/smc_proba.v
 smc/smc_entropy.v
+smc/smc_interpreter.v
+smc/smc_tactics.v
 
 -R . infotheo
