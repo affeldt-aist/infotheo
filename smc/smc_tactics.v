@@ -1,8 +1,64 @@
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Option.
+From Ltac2 Require Import Message.
+From HB Require Import structures.
+Require Import Reals.
+From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
+From mathcomp Require Import Rstruct ring.
+Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
+Require Import proba jfdist_cond entropy graphoid smc_proba.
 
-Section rv_indep.
+Import GRing.Theory.
+Import Num.Theory.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Open Scope ring_scope.
+Local Open Scope reals_ext_scope.
+Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
+Local Open Scope chap2_scope.
+Local Open Scope entropy_scope.
+Local Open Scope vec_ext_scope.
 
 Ltac2 bar () := let x := '(3+4) in constr:($x + 5).
+
+Ltac2 show_type () :=
+  (* this is desugared into something more primitive from Pattern *)
+  match! goal with
+  | [ |- forall _ : ?e, _ ] =>
+    (*Memo: note how it pattern match the goal and use the symbol inside.*)
+    Message.print (Message.of_constr e)
+  end.
+
+Goal forall (n:nat), n = n.
+Proof.
+  show_type ().
+Abort.
+
+
+(* Maybe: Goal is  `[% vecRV_a, vecRV_b, oneRV_a, oneRV_b...] _|_ rv`
+   Define a tactic to automatically generate sub-goals: vec_RV_a _|_ rv , vecRV_b _|_ rv...
+   Meanwhile, we need a lemma to show that mutual independence implies pairwise independence.
+
+   Not sure if we really need Ltac, though. If we can generate arbitrary sub-goals in other ways?
+*)
+
+Variables (A: finType)(m n: nat)(P : R.-fdist A).
+Variables (TX VX: finType).
+Variables (x1 x2 s1 s2: {RV P -> TX})(y1 r1: {RV P -> VX}).
+
+Inductive boole := fact | lie.
+
+Ltac2 rec print_list x := match x with
+| a :: t => print (of_constr a); print_list t
+| [] => ()
+end.
+Ltac2 Notation "ex2" x(list1(constr, ",")) := print_list x.
+Goal true.
+Proof.
+ex2 [%x1, r1, s2].
+ex2 x1, r1, s2.
 
 End rv_indep.

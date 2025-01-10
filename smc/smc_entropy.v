@@ -1355,11 +1355,19 @@ End pi2_bob_view_is_leakage_free_proof.
 
 End pi2.
 
-(* Using graphoid for combinations of independ random variables. *)
+(* TODO: Using graphoid for combinations of independ random variables. *)
 Section mutual_indep.
-  
+
+(* Pairwise independence: Any collection of mutually independent random variables is pairwise independent"
+
+(But pairwise independence does not imply mutual independence.
+
+How to express "a collection of any types of mutual independent random variables"?
+RV2 is a collection. But it is not a sequence so cannot be used to generate arbitrary pairs of RVs.
+Should RV2 supports to be traversed as a sequence??
+*)
 Variables (A: finType)(m n: nat)(P : R.-fdist A).
-Variables (TX : finType).
+Variables (TX VX: finType).
 Variables (x1 x2 s1 s2 r1 y2: {RV P -> TX}).
   
 Hypothesis Hinde : {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> inde_rv i j}%nat.
