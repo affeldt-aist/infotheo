@@ -45,6 +45,8 @@ Abort.
    Not sure if we really need Ltac, though. If we can generate arbitrary sub-goals in other ways?
 *)
 
+Section boole.
+
 Variables (A: finType)(m n: nat)(P : R.-fdist A).
 Variables (TX VX: finType).
 Variables (x1 x2 s1 s2: {RV P -> TX})(y1 r1: {RV P -> VX}).
@@ -60,5 +62,32 @@ Goal true.
 Proof.
 ex2 [%x1, r1, s2].
 ex2 x1, r1, s2.
+Abort.
+End boole.
 
-End rv_indep.
+
+Ltac RVs_to_tuple vs :=
+  let rec iter vs :=
+    match vs with
+    | ?rv2 ?x ?t ?y =>
+        let ires := iter x in
+        constr: ((ires, y))
+    | ?z => z
+    end in
+  iter vs.
+
+Ltac apply_inde_rv_comp_left f :=
+  match goal with
+  | [ |- ?P |= ?RVs1 _|_ ?RV1 -> ?P |= ?RVs2 _|_ ?RV2 ] =>
+      let H := fresh "H" in
+      let H2 := fresh "H" in
+      let H3 := fresh "H" in
+      move => H ;
+      (have-> : y2 = idfun `o y2 by []);
+      (have H2 : RVs2 = f `o RVs1 by apply: boolp.funext => ? //=);
+      rewrite H2;
+      have H3 := inde_rv_comp f idfun H;
+      exact: H3
+  | _ =>
+      fail
+  end.

@@ -472,30 +472,18 @@ Let x2s2x1s1r2_y2_indep :
    P |= [% x2, s2, x1, s1, r1] _|_ y2 ->
    P |= [% x2, s2, x1, s1, r2] _|_ y2.
 Proof.
-move => H.
-have ->: y2 = idfun `o y2 by [].
 pose f := fun (vs : (VX * VX * VX * VX * TX)) =>
   let '(xb, sb, xa, sa, ra) := vs in (xb, sb, xa, sa, sa *d sb - ra).
-have H2 : [% x2, s2, x1, s1, r2] = f `o [% x2, s2, x1, s1, r1].
-   by apply: boolp.funext => ? //=.
-rewrite H2.
-have H3 := inde_rv_comp f idfun H.
-exact H3.
+by apply_inde_rv_comp_left f.
 Qed.
 
 Let x2s2x1'r2_y2_indep :
   P |= [% x2, s2, x1, s1, r2] _|_ y2 ->
   P |= [% x2, s2, x1', r2] _|_ y2.
 Proof.
-move => H.
-have ->: y2 = idfun `o y2 by [].
 pose f := fun (vs : (VX * VX * VX * VX * TX)) =>
   let '(a, b, xa, sa, e) := vs in (a, b, xa + sa, e).
-have H2 : [% x2, s2, x1', r2] = f `o [% x2, s2, x1, s1, r2].
-  by apply: boolp.funext => ? //=.
-rewrite H2.
-have H3 := inde_rv_comp f idfun H.
-exact: H3.
+by apply_inde_rv_comp_left f.
 Qed.
 
 Let x2s2x1'r2_y2_indepP :=
