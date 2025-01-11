@@ -954,8 +954,6 @@ apply: inde_RV2_comp.
 exact: Z_OO_indep.
 Qed.
 
-
-
 Let Z_Wm_indep:
   P |= Z _|_ Wm.
 Proof.
@@ -1327,6 +1325,7 @@ Hypothesis x2s2x1'r2_y2_eqn6_indep : P |= [%x2, s2, x1', r2] _|_ y2.
 Hypothesis x1x2s2x1'r2_y2_eqn6_indep : P |= [%x1, [%x2, s2, x1', r2]] _|_ y2.
 Hypothesis x2_s2_x1'_r2_eqn7_indep : P |= [%x2, s2, x1'] _|_ r2.
 Hypothesis x1x2_s2_x1'_r2_eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
+(* TODO: Reduce: longer one can imply others *)
 Hypothesis s1_x1x2s1s2_eqn8_indep : P |= s1 _|_ [%x1, x2, s1, s2].
 Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
 

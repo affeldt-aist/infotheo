@@ -28,6 +28,47 @@ Local Open Scope vec_ext_scope.
 Reserved Notation "u *d w" (at level 40).
 Reserved Notation "u \*d w" (at level 40).
 
+Section party.
+
+Inductive party := Alice | Bob | Coserv.
+
+Definition party_eqb_subproof (p1 p2: party) : { p1 = p2 } + { p1 <> p2 }.
+Proof. decide equality. Defined.
+
+Definition party_eqb (p1 p2: party) : bool :=
+  if party_eqb_subproof p1 p2 then true else false. 
+
+Print Module Equality.
+
+Lemma party_eqP : Equality.axiom party_eqb.
+Proof.
+move=> p1 p2.
+rewrite /party_eqb.
+by case: party_eqb_subproof => /= H;constructor.
+Qed.
+
+HB.instance Definition _ := hasDecEq.Build party party_eqP.
+
+Definition party_to_nat (a : party) : nat :=
+  match a with Alice => 0 | Bob => 1 | Coserv => 2 end.
+
+Definition nat_to_party (a : nat) : party :=
+  match a with 0 => Alice | 1 => Bob | _ => Coserv end.
+
+Lemma party_natK : cancel party_to_nat nat_to_party.
+Proof. by case. Qed.
+
+HB.instance Definition _ : isCountable party := CanIsCountable party_natK.
+
+Definition party_enum := [:: Alice; Bob; Coserv].
+
+Lemma party_enumP : Finite.axiom party_enum.
+Proof. by case. Qed.
+
+HB.instance Definition _ := isFinite.Build party party_enumP.
+
+End party.
+
 Section interp.
 Variable data : Type.
 Inductive proc : Type :=
@@ -274,7 +315,13 @@ Record scalar_product_random_inputs :=
     s2 : {RV P -> VX};
     r1 : {RV P -> TX};
     y2 : {RV P -> TX};
+    
+    (* TODO: prove others via these basic hypotheses
+    x1_indep : P |= x1 _|_ [%x2, s1, s2, r1, y2];
+    x2_indep : P |= x2 _|_ [%x1, s1, s2, r1, y2];
+    *)
 
+    x2s2x1s1r1_y2_indep : P |= [% x2, s2, x1, s1, r1] _|_ y2;
     x1s1r1_x2_indep : P |= [%x1, s1, r1] _|_ x2;
     s1_s2_indep : P |= s1 _|_ s2;
     s1s2_r1_indep : P |= [% s1, s2] _|_ r1;
@@ -416,20 +463,46 @@ rewrite inde_rv_sym in H.
 exact: H.
 Qed.
 
-(* Looks troublesome to prove but it is a simple fact that y2 is generated along by Bob,
-   so it is unrelated to any other random variables. Could be better if we have a way
-   to express "varaibles have been Init in the interpreter, mean they are indepdent to any others".
-   Maybe this is another way to use the interpretation method we adopted here.
+(* Memo: use this to contain related expressions *)
+Inductive AliceVar := X1.
+Inductive BobVar := X2 | Y2.
+Inductive CoservVar := S1 | S2 | R1. (* Once one RV is generated, RGN changes so they are mutual indep *)
 
-   For example, if by RNG it can be projected as :
+Let x2s2x1s1r2_y2_indep :
+   P |= [% x2, s2, x1, s1, r1] _|_ y2 ->
+   P |= [% x2, s2, x1, s1, r2] _|_ y2.
+Proof.
+move => H.
+have ->: y2 = idfun `o y2 by [].
+pose f := fun (vs : (VX * VX * VX * VX * TX)) =>
+  let '(xb, sb, xa, sa, ra) := vs in (xb, sb, xa, sa, sa *d sb - ra).
+have H2 : [% x2, s2, x1, s1, r2] = f `o [% x2, s2, x1, s1, r1].
+   by apply: boolp.funext => ? //=.
+rewrite H2.
+have H3 := inde_rv_comp f idfun H.
+exact H3.
+Qed.
 
-   P|= [% rng_a, rng_c, rng_a + rng_c, rngc] _|_ rng_b.
-
-   Then if we have a lemma to show that if no same rng_i in the LHS of _|_ and RHS,
-   the indep holds?
-*)
-Hypothesis x2s2x1'r2_y2_indep :
+Let x2s2x1'r2_y2_indep :
+  P |= [% x2, s2, x1, s1, r2] _|_ y2 ->
   P |= [% x2, s2, x1', r2] _|_ y2.
+Proof.
+move => H.
+have ->: y2 = idfun `o y2 by [].
+pose f := fun (vs : (VX * VX * VX * VX * TX)) =>
+  let '(a, b, xa, sa, e) := vs in (a, b, xa + sa, e).
+have H2 : [% x2, s2, x1', r2] = f `o [% x2, s2, x1, s1, r2].
+  by apply: boolp.funext => ? //=.
+rewrite H2.
+have H3 := inde_rv_comp f idfun H.
+exact: H3.
+Qed.
+
+Let x2s2x1'r2_y2_indepP :=
+  x2s2x1'r2_y2_indep (x2s2x1s1r2_y2_indep (x2s2x1s1r1_y2_indep inputs)).
+
+Check x2s2x1'r2_y2_indep (x2s2x1s1r2_y2_indep (x2s2x1s1r1_y2_indep inputs)).
+
 
 Hypothesis x1x2s2x1'r2_y_indep :
   P |= [% x1, [% x2, s2, x1 \+ s1, s1 \*d s2 \- r1]] _|_ y2.
@@ -444,7 +517,6 @@ P |= [% x2, s2, x1 \+ s1] _|_ (s1 \*d s2 \- r1) .
 P |= [% x1, [% x2, s2, x1 \+ s1]] _|_ (s1 \*d s2 \- r1).
 *)
 
-
 Let proof_alice := (smc_entropy.smc_entropy_proofs.pi2_alice_is_leakage_free_proof
       (y2_x1x2s1s2r1_indep inputs)
       (s2_x1s1r1x2_indep inputs)
@@ -452,12 +524,9 @@ Let proof_alice := (smc_entropy.smc_entropy_proofs.pi2_alice_is_leakage_free_pro
 
 About smc_entropy.smc_entropy_proofs.pi2_bob_is_leakage_free_proof.
 
-(*
-
 Let proof_bob := smc_entropy.smc_entropy_proofs.pi2_bob_is_leakage_free_proof
-      x2s2_x1'_indepP x2s2x1'r2_y2_indep  x1x2s2x1'r2_y_indep.
+      x2s2_x1'_indepP. x2s2x1'r2_y2_indep  x1x2s2x1'r2_y_indep.
       (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs)).
-*)
 
 
 End information_leakage_def.

@@ -36,6 +36,7 @@ Variables (UA UB UC: finType) (f : TA -> UA) (g : TB -> UB) (h : TC -> UC).
 Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
 
+
 (* Information-Theoretically Secure Number Protocol*)
 (* Lemma 3.1 *)
 Lemma inde_rv_comp (UB' TB' : finType) (g' : TB' -> UB')(Y' : {RV P -> TB'}): P|= X _|_ Y' -> P|= (f `o X) _|_ (g' `o Y').
