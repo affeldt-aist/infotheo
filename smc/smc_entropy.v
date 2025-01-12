@@ -1171,7 +1171,6 @@ Let eq_Wm_RV:
   fm `o O = r2.
 Proof. by apply boolp.funext. Qed.
 
-(* Because r2 is generated for Bob; not related to x2, s2, x1, s1 at all*)
 Hypothesis W2_Wm_indep: P|= W2 _|_ Wm.
 Hypothesis W1W2_Wm_indep : P|= [%W1, W2] _|_ Wm.
 

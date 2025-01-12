@@ -76,17 +76,17 @@ Ltac RVs_to_tuple vs :=
     end in
   iter vs.
 
-Ltac apply_inde_rv_comp_left f :=
+Ltac apply_inde_rv_comp_left f g :=
   match goal with
   | [ |- ?P |= ?RVs1 _|_ ?RV1 -> ?P |= ?RVs2 _|_ ?RV2 ] =>
       let H := fresh "H" in
       let H2 := fresh "H" in
       let H3 := fresh "H" in
       move => H ;
-      (have-> : y2 = idfun `o y2 by []);
+      (have-> : RV2 = g `o RV1 by apply: boolp.funext => ? //=);
       (have H2 : RVs2 = f `o RVs1 by apply: boolp.funext => ? //=);
       rewrite H2;
-      have H3 := inde_rv_comp f idfun H;
+      have H3 := inde_rv_comp f g H;
       exact: H3
   | _ =>
       fail
