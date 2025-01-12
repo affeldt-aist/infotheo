@@ -69,7 +69,7 @@ End boole.
 Ltac RVs_to_tuple vs :=
   let rec iter vs :=
     match vs with
-    | RV2 ?x ?t ?y =>
+    | RV2 ?x ?y =>
         let ires := iter x in
         constr: ((ires, y))
     | ?z => z
