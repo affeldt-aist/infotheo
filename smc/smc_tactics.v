@@ -69,25 +69,35 @@ End boole.
 Ltac RVs_to_tuple vs :=
   let rec iter vs :=
     match vs with
-    | ?rv2 ?x ?t ?y =>
+    | RV2 ?x ?t ?y =>
         let ires := iter x in
         constr: ((ires, y))
     | ?z => z
     end in
   iter vs.
 
-Ltac apply_inde_rv_comp_left f g :=
+Ltac apply_inde_rv_comp f g :=
   match goal with
-  | [ |- ?P |= ?RVs1 _|_ ?RV1 -> ?P |= ?RVs2 _|_ ?RV2 ] =>
+  | [ |- _ |= ?v1l _|_ ?v1r -> _ |= ?v2l _|_ ?v2r ] =>
       let H := fresh "H" in
-      let H2 := fresh "H" in
-      let H3 := fresh "H" in
-      move => H ;
-      (have-> : RV2 = g `o RV1 by apply: boolp.funext => ? //=);
-      (have H2 : RVs2 = f `o RVs1 by apply: boolp.funext => ? //=);
-      rewrite H2;
-      have H3 := inde_rv_comp f g H;
-      exact: H3
+      move => H;
+      (have-> : v2l = f `o v1l by apply: boolp.funext => ? //=);
+      (have-> : v2r = g `o v1r by apply: boolp.funext => ? //=);
+      exact: (inde_rv_comp f g H)
   | _ =>
       fail
   end.
+
+(*
+Section test.
+Variables (A: finType)(m n: nat)(P : R.-fdist A).
+Variables (TX VX: finType).
+Variables (x1 x2 s1 s2: {RV P -> TX})(y1 r1: {RV P -> VX}).
+
+Ltac test vs :=
+  let result := RVs_to_tuple vs in
+  idtac result.
+
+Eval cbv in ltac: (test [% x1, x2]).
+End test.
+*)

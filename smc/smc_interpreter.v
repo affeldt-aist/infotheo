@@ -424,7 +424,7 @@ Proof.
 pose f := fun (vs : (VX * VX * VX * VX * TX)) =>
   let '(xb, sb, xa, sa, ra) := vs in (xb, sb, xa, sa, sa *d sb - ra).
 pose g := fun (ws : TX) => ws.    (* because idfun causes error. *)
-by apply_inde_rv_comp_left f g.
+by apply_inde_rv_comp f g.
 Qed.
 
 Let x2s2x1'r2_y2_indep :
@@ -434,7 +434,7 @@ Proof.
 pose f := fun (vs : (VX * VX * VX * VX * TX)) =>
   let '(xb, sb, xa, sa, rb) := vs in (xb, sb, xa + sa, rb).
 pose g := fun (ws : TX) => ws.
-by apply_inde_rv_comp_left f g.
+by apply_inde_rv_comp f g.
 Qed.
 
 Let x2s2x1'r2_y2_indepP :=
@@ -447,7 +447,7 @@ Proof.
 pose f := fun (vs : (VX * VX * VX * VX * TX)) =>
   let '(xb, sb, xa, sa, rb) := vs in (xa, xb, sb, xa + sa, rb).
 pose g := fun (ws : TX) => ws.
-by apply_inde_rv_comp_left f g.
+by apply_inde_rv_comp f g.
 Qed.
 
 Let x1x2s2x1'r2_y2_indepP :=
@@ -466,7 +466,7 @@ pose f := fun (vs : (VX * VX * VX * VX)) =>
   let '(xb, sb, xa, sa) := vs in (xb, sb, xa + sa).
 pose g := fun (ws : (VX * VX * TX)) =>
   let '(sa, sb, ra) := ws in (sa *d sb - ra).
-by apply_inde_rv_comp_left f g.
+by apply_inde_rv_comp f g.
 Qed.
 
 (*
