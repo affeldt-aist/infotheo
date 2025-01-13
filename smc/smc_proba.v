@@ -37,6 +37,25 @@ Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
 
 
+Lemma RV2_indeC :
+  P |= [% X, X] _|_ [% Y, Z] ->
+  P |= [% X, Y] _|_ [% X, Z].
+Proof.
+rewrite /inde_rv => H [x1 y] [x2 z].
+rewrite pr_eq_pairA.
+transitivity (`Pr[ [% X, X, Y, Z] = (x1, x2, y, z) ]).
+  admit.
+(* TODO: spliting events and changing order of RVs are kinda difficult *)
+Admitted.
+
+Lemma RV2_inde_reduce :
+  P |= X _|_ Y ->
+  P |= [% X, X] _|_ Y.
+Proof.
+(* TODO: [% X, X] = (x1, x2) but x1 could be different from x2 for all x1, x2? *)
+Admitted.
+
+
 (* Information-Theoretically Secure Number Protocol*)
 (* Lemma 3.1 *)
 Lemma inde_rv_comp (UB' TB' : finType) (g' : TB' -> UB')(Y' : {RV P -> TB'}): P|= X _|_ Y' -> P|= (f `o X) _|_ (g' `o Y').

@@ -454,8 +454,10 @@ Let x1x2s2x1'r2_y2_indepP :=
   x1x2s2x1'r2_y2_indep (x2s2x1s1r2_y2_indep (x2s2x1s1r1_y2_indep inputs)).
 
 Let x2s2x1s1_r2_indep :
+  P |= [% s1, s2] _|_ [% x1, x2, r1] ->
   P |= [% x2, s2, x1, s1] _|_ [%s1, s2, r1].
 Proof.
+About RV2_indeC.
 Abort.
 
 Let x2s2x1'_r2_indep :
