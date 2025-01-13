@@ -457,7 +457,7 @@ Let x2s2x1s1_r2_indep :
   P |= [% s1, s2] _|_ [% x1, x2, r1] ->
   P |= [% x2, s2, x1, s1] _|_ [%s1, s2, r1].
 Proof.
-About RV2_indeC.
+Check RV2_indeC .
 Abort.
 
 Let x2s2x1'_r2_indep :
@@ -484,84 +484,9 @@ Let proof_alice := (smc_entropy.smc_entropy_proofs.pi2_alice_is_leakage_free_pro
 
 Let proof_bob := smc_entropy.smc_entropy_proofs.pi2_bob_is_leakage_free_proof
       (card_TX:=card_TX)(card_rVTX:=card_VX)(r1:=r1)(y2:=y2)
-      x2s2_x1'_indepP x1x2s2x1'r2_y2_indepP. x2s2x1'r2_y2_indep  x1x2s2x1'r2_y_indep.
-      (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs)).
+      x2s2_x1'_indepP.
 
 
 End information_leakage_def.
-
-(*
-
-Notation x1' := (get_vec_RV none_VX bob 1 inputs).
-Notation x2' := (get_vec_RV none_VX alice 2 inputs).
-Notation t := (get_one_RV none_TX alice 1 inputs).
-Notation y1 := (get_one_RV none_TX alice 0 inputs).
-Notation r2 := (get_one_RV none_TX bob 2 inputs).
-
-Let r2_eqE :
-  r2 = s1 inputs \*d s2 inputs \- r1 inputs.
-Proof. by apply boolp.funext. Qed.
-
-Let x1'_eqE :
-  x1' = x1 inputs \+ s1 inputs. 
-Proof. by apply boolp.funext. Qed.
-
-Let x2'_eqE :
-  x2' = x2 inputs \+ s2 inputs.
-Proof. by apply boolp.funext. Qed.
-
-Let t_eqE :
-  t = x1' \*d x2 inputs \+ r2 \- y2 inputs.
-Proof. by apply boolp.funext. Qed.
-
-Let y1_eqE :
-  y1 = t \- x2' \*d s1 inputs \+ r1 inputs.
-Proof. by apply boolp.funext. Qed.
-
-Let pr2_unif :
-  `p_ r2 = fdist_uniform card_TX.
-Proof.
-exact: smc_entropy.smc_entropy_proofs.ps1_dot_s2_r_unif
-    (pr1_unif inputs) (s1_s2_indep inputs) (s1s2_r1_indep inputs).
-Qed.
-
-Fail Check [% x2 inputs, s2 inputs ] : {RV P -> VX}.
-(* For RV2 pairs: if lemma asks {RV P -> VX } but we have {TV P -> (VX * VX) },
-   we need to duplicate the lemma and proof to support them?
-*)
-
-Let x2s2_x1'_indep :
-  P |= [% x2 inputs, s2 inputs ] _|_ x1'.
-Proof.
-rewrite inde_rv_sym x1'_eqE.
-have px1_s1_unif: `p_ (x1 inputs \+ s1 inputs) = fdist_uniform card_VX.
-  move => t.
-  have Ha := @add_RV_unif T VX P m.+1 (x1 inputs) (s1 inputs) card_VX (ps1_unif inputs) (x1_s1_indep inputs).
-    rewrite /add_RV // in Ha.
-    Fail rewrite Ha.
-    (*Set Printing All. Problem: card_A in lemma_3_4 is #|A| = n.+1; card_VX here is #|VX| = m.+2; *)
-    Fail exact: Ha.
-    admit.
-have H := @lemma_3_5' T (VX * VX)%type VX P m.+1 (x1 inputs) (s1 inputs) [%x2 inputs, s2 inputs] card_VX px1_s1_unif.
-Abort.
-
-About smc_entropy.smc_entropy_proofs.pi2_bob_is_leakage_free_proof.
-
-Let vars :=
-  ScalarProductIntermediateVars x1'_eqE x2'_eqE t_eqE y1_eqE r2_eqE pr2_unif.
-
-Let pnegy2_unif :
-  `p_ (neg_RV (y2 inputs)) = fdist_uniform card_TX.
-Proof. rewrite -(smc_entropy.smc_entropy_proofs.neg_RV_dist_eq (py2_unif inputs)).
-exact: (py2_unif inputs).
-Qed.
-
-Let leakage_free_proof :=
-  ScalarProductInformationLeakageFree (inputs:=inputs)(vars:=vars)
-    (smc_entropy.smc_entropy_proofs.pi2_alice_is_leakage_free_proof
-      (y2_x1x2s1s2r1_indep inputs)
-      (s2_x1s1r1x2_indep inputs)
-      (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs)).
-*)
 
 End pi2.

@@ -52,6 +52,9 @@ Lemma RV2_inde_reduce :
   P |= X _|_ Y ->
   P |= [% X, X] _|_ Y.
 Proof.
+move => H.
+rewrite /inde_rv => [[x1 x2] y].
+rewrite coqRE !pr_eqE'.
 (* TODO: [% X, X] = (x1, x2) but x1 could be different from x2 for all x1, x2? *)
 Admitted.
 
