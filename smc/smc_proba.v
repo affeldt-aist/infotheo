@@ -38,26 +38,17 @@ Local Notation "f × g" :=
 
 
 Lemma RV2_indeC :
-  P |= [% X, X] _|_ [% Y, Z] ->
+  P |= [% X, X] _|_ [% Z, Y] ->
   P |= [% X, Y] _|_ [% X, Z].
 Proof.
 rewrite /inde_rv => H [x1 y] [x2 z].
-rewrite pr_eq_pairA.
-transitivity (`Pr[ [% X, X, Y, Z] = (x1, x2, y, z) ]).
-  admit.
-(* TODO: spliting events and changing order of RVs are kinda difficult *)
-Admitted.
-
-Lemma RV2_inde_reduce :
-  P |= X _|_ Y ->
-  P |= [% X, X] _|_ Y.
-Proof.
-move => H.
-rewrite /inde_rv => [[x1 x2] y].
-rewrite coqRE !pr_eqE'.
-(* TODO: [% X, X] = (x1, x2) but x1 could be different from x2 for all x1, x2? *)
-Admitted.
-
+rewrite coqRE.
+rewrite [LHS]pr_eq_pairAC.
+rewrite -[LHS]pr_eq_pairA.
+have H1 := H (x1, x2) (z, y).
+rewrite coqRE in H1.
+rewrite -[LHS]pr_eq_pairA in H1.
+Abort.
 
 (* Information-Theoretically Secure Number Protocol*)
 (* Lemma 3.1 *)

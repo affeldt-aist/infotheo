@@ -454,14 +454,18 @@ Let x1x2s2x1'r2_y2_indepP :=
   x1x2s2x1'r2_y2_indep (x2s2x1s1r2_y2_indep (x2s2x1s1r1_y2_indep inputs)).
 
 Let x2s2x1s1_r2_indep :
-  P |= [% s1, s2] _|_ [% x1, x2, r1] ->
   P |= [% x2, s2, x1, s1] _|_ [%s1, s2, r1].
 Proof.
-Check RV2_indeC .
+rewrite inde_rv_events'.
+rewrite /inde_rv_ev => E F.
+rewrite (reasoning_by_cases [%s1, s2, r1] [% x2, s2, x1, s1]).
+under eq_bigr do rewrite pr_in_pairC.
+rewrite (reasoning_by_cases [% x2, s2, x1, s1] [%s1, s2, r1]).
+rewrite pr_eq_setE /Pr.
 Abort.
 
 Let x2s2x1'_r2_indep :
-  P |= [% x2, s2, x1, s1] _|_ [%s1, s2, r1] ->
+  P |= [% x2, s2, x1, s1] _|_ [%s1, s2, r1] -> (* r2 = s1 *d s2 - r1 *)
   P |= [% x2, s2, x1'] _|_ r2.
 Proof.
 pose f := fun (vs : (VX * VX * VX * VX)) =>
@@ -470,6 +474,12 @@ pose g := fun (ws : (VX * VX * TX)) =>
   let '(sa, sb, ra) := ws in (sa *d sb - ra).
 by apply_inde_rv_comp f g.
 Qed.
+
+Let  x2s2x1'_r2_indep_2 :
+  P |= [% x2, s2, x1'] _|_ r2.  (* r2 is uniformly distributed (proved) *)
+Proof.
+rewrite /x1' /r2.
+
 
 (*
 P |= [% x2, s2, x1 \+ s1] _|_ (s1 \*d s2 \- r1) .
