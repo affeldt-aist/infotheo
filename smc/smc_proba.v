@@ -11,11 +11,15 @@ Require Import proba jfdist_cond graphoid.
 Import GRing.Theory.
 Import Num.Theory.
 
-(******************************************************************************)
-(*                              SMC Useful Tools                              *)
-(*     From: Information-theoretically Secure Number-product Protocol         *)
-(*                                                                            *)
-(******************************************************************************)
+(************************************************************************************)
+(*                              SMC "Useful Tools" probability lemmas               *)
+(*                                                                                  *)
+(*     From: Information-theoretically Secure Number-product Protocol,              *)
+(*           Sec. III.B  "Useful Tools"                                             *)
+(*     SHEN, Chih-Hao, et al. In: 2007 International Conference on Machine          *)
+(*     Learning and Cybernetics. IEEE, 2007. p. 3006-3011.                          *)
+(*                                                                                  *)
+(************************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

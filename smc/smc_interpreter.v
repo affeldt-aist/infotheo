@@ -453,9 +453,11 @@ Qed.
 Let x1x2s2x1'r2_y2_indepP :=
   x1x2s2x1'r2_y2_indep (x2s2x1s1r2_y2_indep (x2s2x1s1r1_y2_indep inputs)).
 
+
 Let x2s2x1s1_r2_indep :
   P |= [% x2, s2, x1, s1] _|_ [%s1, s2, r1].
 Proof.
+
 rewrite inde_rv_events'.
 rewrite /inde_rv_ev => E F.
 rewrite (reasoning_by_cases [%s1, s2, r1] [% x2, s2, x1, s1]).
