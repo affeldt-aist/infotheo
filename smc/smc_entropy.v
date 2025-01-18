@@ -135,7 +135,6 @@ split => H x y.
 by rewrite -!pr_eqE'.
 by rewrite !pr_eqE'.
 Qed.
-About boolp.eq_forall.
 
 Lemma joint_entropy_indeRV (X : {RV P -> TX}) (Y : {RV P -> TY}):
   inde_rv X Y -> joint_entropy `p_[%X, Y] = `H (`p_X) + `H (`p_Y).

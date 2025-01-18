@@ -6,6 +6,7 @@ Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy smc_tact
 
 Import GRing.Theory.
 Import Num.Theory.
+Module scp := smc_entropy.smc_entropy_proofs.
 
 (******************************************************************************)
 (*                                                                            *)
@@ -223,7 +224,7 @@ End scalar_product.
 
 Section pi2.
   
-Section information_leakage_def.
+Section information_leakage_proof.
 
 Variable n m : nat.
 Variable T : finType.
@@ -291,6 +292,8 @@ Record scalar_product_random_inputs :=
     x2s2_x1s1_indep : P |= [%x2, s2] _|_ [%x1, s1];
     x1_s1_indep : P |= x1 _|_ s1;
     s1_x1x2s2_indep : P |= s1 _|_ [%x1, [%x2, s2]];
+    s1x2x1x2_r1_indep : P |= [% s1, s2, x1, x2] _|_ r1;
+    x2s2_x1_indep : P |= [%x2, s2] _|_ x1;
 
     neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX;
 
@@ -298,23 +301,6 @@ Record scalar_product_random_inputs :=
     ps2_unif : `p_ s2 = fdist_uniform card_VX;
     py2_unif : `p_ y2 = fdist_uniform card_TX;
     pr1_unif : `p_ r1 = fdist_uniform card_TX;
-  }.
-
-Record scalar_product_intermediate_vars (inputs: scalar_product_random_inputs)  :=
-  ScalarProductIntermediateVars {
-    x1' : {RV P -> VX};
-    x2' : {RV P -> VX};
-    t   : {RV P -> TX};
-    y1  : {RV P -> TX};
-    r2  : {RV P -> TX};
-
-    x1'_eqE  : x1' = x1 inputs \+ s1 inputs; 
-    x2'_eqE  : x2' = x2 inputs \+ s2 inputs; 
-    t_eqE    : t = x1' \*d x2 inputs \+ r2 \- y2 inputs;
-    y1_eqE   : y1 = t \- x2' \*d s1 inputs \+ r1 inputs;
-    r2_eqE   : r2 = s1 inputs \*d s2 inputs \- r1 inputs;
-
-    pr2_unif : `p_ r2 = fdist_uniform card_TX;
   }.
 
 Variable inputs: scalar_product_random_inputs.
@@ -442,10 +428,11 @@ Let x2s2x1'r2_y2_indepP :=
 
 Let x1x2s2x1'r2_y2_indep :
   P |= [% x2, s2, x1, s1, r2] _|_ y2 ->
-  P |= [% x1, x2, s2, x1', r2] _|_ y2.
+  P |= [% x1, [%x2, s2, x1', r2]] _|_ y2.
 Proof.
+rewrite /x1'.
 pose f := fun (vs : (VX * VX * VX * VX * TX)) =>
-  let '(xb, sb, xa, sa, rb) := vs in (xa, xb, sb, xa + sa, rb).
+  let '(xb, sb, xa, sa, rb) := vs in (xa, (xb, sb, xa + sa, rb)).
 pose g := fun (ws : TX) => ws.
 by apply_inde_rv_comp f g.
 Qed.
@@ -453,52 +440,56 @@ Qed.
 Let x1x2s2x1'r2_y2_indepP :=
   x1x2s2x1'r2_y2_indep (x2s2x1s1r2_y2_indep (x2s2x1s1r1_y2_indep inputs)).
 
-
-Let x2s2x1s1_r2_indep :
-  P |= [% x2, s2, x1, s1] _|_ [%s1, s2, r1].
+Let x1x2s2x1'_r2_indep :
+  P |= [% x1, [% x2, s2, x1']] _|_ r2.
 Proof.
-
-rewrite inde_rv_events'.
-rewrite /inde_rv_ev => E F.
-rewrite (reasoning_by_cases [%s1, s2, r1] [% x2, s2, x1, s1]).
-under eq_bigr do rewrite pr_in_pairC.
-rewrite (reasoning_by_cases [% x2, s2, x1, s1] [%s1, s2, r1]).
-rewrite pr_eq_setE /Pr.
-Abort.
-
-Let x2s2x1'_r2_indep :
-  P |= [% x2, s2, x1, s1] _|_ [%s1, s2, r1] -> (* r2 = s1 *d s2 - r1 *)
-  P |= [% x2, s2, x1'] _|_ r2.
-Proof.
-pose f := fun (vs : (VX * VX * VX * VX)) =>
-  let '(xb, sb, xa, sa) := vs in (xb, sb, xa + sa).
-pose g := fun (ws : (VX * VX * TX)) =>
-  let '(sa, sb, ra) := ws in (sa *d sb - ra).
+rewrite inde_rv_sym /r2 scp.sub_RV_eq.
+apply: (lemma_3_5' (card_TZ:=card_TX)).
+  by rewrite -(scp.neg_RV_dist_eq (card_TX:=card_TX)) pr1_unif.
+rewrite inde_rv_sym.
+apply: scp.neg_RV_inde_eq.
+pose f := fun (vs: (VX * VX * VX * VX)) =>
+  let '(sa, sb, xa, xb) := vs in (sa *d sb, (xa, (xb, sb, xa + sa))).
+pose g := fun (ws : TX) => ws.
+have := s1x2x1x2_r1_indep inputs.
 by apply_inde_rv_comp f g.
 Qed.
 
-Let  x2s2x1'_r2_indep_2 :
-  P |= [% x2, s2, x1'] _|_ r2.  (* r2 is uniformly distributed (proved) *)
+Let x2s2x1'_r2_indep :
+  P |= [% x2, s2, x1'] _|_ r2.
 Proof.
-rewrite /x1' /r2.
+have := x1x2s2x1'_r2_indep.
+pose f := fun (vs: (VX * (VX * VX * VX))) =>
+  let '(xa, (xb, sb, xa')) := vs in (xb, sb, xa').
+pose g := fun (ws : TX) => ws.
+by apply_inde_rv_comp f g.
+Qed.
 
+(* Use all hypotheses of the secre inputs and random variables,
+   and all technical lemmas about intermediate results,
+   to prove information leakage free equations in Sec.[III.C]{Shen2007}
 
-(*
-P |= [% x2, s2, x1 \+ s1] _|_ (s1 \*d s2 \- r1) .
-P |= [% x1, [% x2, s2, x1 \+ s1]] _|_ (s1 \*d s2 \- r1).
-*)
+   H(x2 | VIEW_1^{\pi_2}) = H(x2) ... Alice obtain no new knowledge about `x2` from the protocol 
+   H(x1 | VIEW_2^{\pi_2}) = H(x1) ... Bob obtain no new knowledge about `x1` from the protocol 
+
+  *)
 
 Let proof_alice := (smc_entropy.smc_entropy_proofs.pi2_alice_is_leakage_free_proof
       (y2_x1x2s1s2r1_indep inputs)
       (s2_x1s1r1x2_indep inputs)
       (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs)).
 
+Check proof_alice.
+
 
 Let proof_bob := smc_entropy.smc_entropy_proofs.pi2_bob_is_leakage_free_proof
       (card_TX:=card_TX)(card_rVTX:=card_VX)(r1:=r1)(y2:=y2)
-      x2s2_x1'_indepP.
+      x2s2_x1'_indepP x2s2x1'r2_y2_indepP x1x2s2x1'r2_y2_indepP x2s2x1'_r2_indep x1x2s2x1'_r2_indep
+      (s1_x1x2s1s2_indep inputs) (x2s2_x1_indep inputs) (s1s2_r1_indep inputs) (s1_s2_indep inputs)
+      (pr1_unif inputs) (py2_unif inputs) (ps1_unif inputs).
 
+Check proof_bob.
 
-End information_leakage_def.
+End information_leakage_proof.
 
 End pi2.
