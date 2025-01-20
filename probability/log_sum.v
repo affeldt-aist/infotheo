@@ -113,7 +113,7 @@ apply (@le_trans _ _ (\sum_(a | a \in C) f a * (1 - g a / f a))).
     by rewrite mul0r mulr0.
   by rewrite mulrCA divff ?mulr1// gt_eqF//; exact/(fspos _ a_C).
 apply: ler_sum => a C_a.
-apply ler_wpmul2l; first exact/ltW/fspos.
+apply ler_wpM2l; first exact/ltW/fspos.
 rewrite -[X in _ <= X]opprK lerNr -lnV; last first.
   by rewrite posrE divr_gt0//; [apply fspos | apply gspos].
 rewrite invfM.
