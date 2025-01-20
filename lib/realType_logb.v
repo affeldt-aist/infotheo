@@ -213,7 +213,7 @@ Qed.
 Lemma log_increasing (a b : R) : 0 < a -> a < b -> log a < log b.
 Proof.
 move=> Ha a_b.
-rewrite /log /Log prednK// ltr_pmul2r ?invr_gt0 ?ln2_gt0//.
+rewrite /log /Log prednK// ltr_pM2r ?invr_gt0 ?ln2_gt0//.
 by rewrite ltr_ln ?posrE// (lt_trans _ a_b).
 Qed.
 

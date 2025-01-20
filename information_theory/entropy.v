@@ -1153,7 +1153,7 @@ rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
   by rewrite /fdist_proj13 fdistA21 fdistC12_fst fdistX1 fdistX2 fdistA21 -/Q.
 rewrite mutual_infoE.
 rewrite fdist_proj23_fst -/Q.
-rewrite -[leLHS]opprB lerNl opprB ler_add2r.
+rewrite -[leLHS]opprB lerNl opprB lerD2r.
 (* conditioning cannot increase entropy *)
 (* Q|R,P <= Q|R, lemma *)
 rewrite -subr_ge0.
@@ -1463,7 +1463,7 @@ Variable P : R.-fdist 'rV[A]_n.
 Lemma han : n.-1%:R * `H P <= \sum_(i < n) `H (fdist_col' P i).
 Proof.
 rewrite -subn1 natrB // mulrBl mul1r.
-rewrite ler_subl_addr {2}(chain_rule_rV P).
+rewrite lerBlDr {2}(chain_rule_rV P).
 rewrite -big_split /= -{1}(card_ord n) -sum1_card.
 rewrite natr_sum big_distrl /=.
 apply ler_sum => i _; rewrite mul1r.
@@ -1473,7 +1473,7 @@ case: ifPn => [/eqP|] i0.
   rewrite -{1}(fdist_rV_of_prodK P) entropy_fdist_rV_of_prod.
   move: (chain_rule (fdist_prod_of_rV P)); rewrite /joint_entropy => ->.
   by rewrite [in X in (_ <= X)%R]addrC lerD2l -fdistX1; exact: information_cant_hurt.
-rewrite (chain_rule_multivar _ i0) ler_add2l.
+rewrite (chain_rule_multivar _ i0) lerD2l.
 exact/han_helper.
 Qed.
 
