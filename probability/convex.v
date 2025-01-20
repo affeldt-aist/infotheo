@@ -3125,26 +3125,34 @@ Local Open Scope ring_scope.
 Local Open Scope classical_set_scope.
 
 Variables (f : R^o -> R^o) (a b : R^o).
+Let I := fun x0 : R => (a <= x0 <= b)%R.
 
-Let Df := 'D_1 f.
-Let DDf := 'D_1 Df.
+Hypothesis HDf : forall x, I x -> derivable f x 1.
+
+Let Df : R^o -> R^o := 'D_1 f.
+Let DDf : R^o -> R^o := 'D_1 Df.
+
+Hypothesis HDDf : forall x, I x -> derivable Df x 1.
 
 Hypothesis DDf_ge0 : forall x, a < x < b -> 0 <= DDf x.
-Hypothesis cvg_left : (f @ b^'-) --> f b.
-Hypothesis cvg_right : (f @ a^'+) --> f a.
 
-Let L x := f a + factor a b x * (f b - f a).
+Definition L (x : R) := (f a + (x - a) / (b - a) * (f b - f a))%R.
 
-Let LE x : a < b -> L x = factor b a x * f a + factor a b x * f b.
+Hypothesis ab : (a < b)%R.
+
+Lemma LE x : L x = ((b - x) / (b - a) * f a + (x - a) / (b - a) * f b)%R.
 Proof.
-move=> ab; rewrite /L -(@onem_factor _ a) ?lt_eqF// /onem mulrBl mul1r.
-by rewrite -addrA -mulrN -mulrDr (addrC (f b)).
+rewrite /L mulrBr [in LHS]addrA addrAC; congr (_ + _)%R.
+rewrite -{1}(mul1r (f a)) -mulrBl; congr (_ * _)%R.
+rewrite -(@mulfV _ (b - a)%R); last first.
+  by rewrite subr_eq0 gt_eqF//.
+by rewrite -mulrBl opprB addrA subrK.
 Qed.
 
-Let convexf_ptP : a < b -> (forall x, a <= x <= b -> 0 <= L x - f x) ->
+Let convexf_ptP : (forall x, a <= x <= b -> 0 <= L x - f x) ->
   forall t, f (a <| t |> b) <= f a <| t |> f b.
 Proof.
-move=> ab H t; rewrite /convex_function_at.
+move=> H t; rewrite /convex_function_at.
 set x := (Prob.p t * a + (Prob.p t).~ * b)%R.
 have : (a <= x <= b)%R.
   rewrite /x; apply/andP; split.
@@ -3158,109 +3166,132 @@ have : (a <= x <= b)%R.
     by rewrite lerD2r; apply: ler_wpM2l => //; exact/ltW.
 move/H; rewrite subr_ge0 => /le_trans; apply.
 rewrite LE //.
-(*have -> : ((b - x) / (b - a) = Prob.p t)%R.
-  rewrite /x -addR_opp oppRD addRCA mulRBl mul1R oppRB (addRCA b).
-  rewrite addR_opp subRR addR0 -mulRN addRC -mulRDr addR_opp.
-  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0'; exact/gtR_eqF.
-have -> : ((x - a) / (b - a) = (Prob.p t).~)%coqR.
-  rewrite /x -addR_opp addRAC -{1}(oppRK a) mulRN -mulNR -{2}(mul1R (- a)%coqR).
-  rewrite -mulRDl (addRC _ R1) addR_opp -mulRDr addRC addR_opp.
-  rewrite /Rdiv -mulRA mulRV ?mulR1 // subR_eq0'; exact/gtR_eqF.
-by apply/RleP; rewrite lexx.*)
-Admitted.
+have -> : ((b - x) / (b - a) = Prob.p t)%R.
+  rewrite /x opprD addrCA mulrBl mul1r opprB (addrCA b).
+  rewrite subrr addr0 -mulrN addrC -mulrDr.
+  by rewrite -mulrA mulfV ?mulr1 // subr_eq0 gt_eqF//.
+have -> : ((x - a) / (b - a) = (Prob.p t).~)%R.
+  rewrite /x addrAC -{1}(opprK a) mulrN -mulNr -{2}(mul1r (- a)%R).
+  rewrite -mulrDl (addrC _ 1%R) -mulrDr addrC.
+  rewrite -mulrA (addrC _ b) mulfV ?mulr1 ?subr_eq0 ?gt_eqF//.
+  by rewrite addrC.
+by rewrite lexx.
+Qed.
+
+From mathcomp Require Import interval.
 
 Lemma second_derivative_convexf_pt : forall t : {prob R}, convex_function_at f a b t.
 Proof.
-(*have note1 : forall x, R1 = ((x - a) / (b - a) + (b - x) / (b - a))%coqR.
-  move=> x; rewrite -mulRDl addRC addRA subRK addR_opp mulRV // subR_eq0'.
-  exact/gtR_eqF.
-have step1 : forall x, f x = ((x - a) / (b - a) * f x + (b - x) / (b - a) * f x)%coqR.
-  by move=> x; rewrite -mulRDl -note1 mul1R.
+have note1 : forall x, 1%R = ((x - a) / (b - a) + (b - x) / (b - a))%R.
+  by move=> x; rewrite -mulrDl addrC addrA subrK mulfV // subr_eq0 gt_eqF.
+have step1 : forall x, f x = ((x - a) / (b - a) * f x + (b - x) / (b - a) * f x)%R.
+  by move=> x; rewrite -mulrDl -note1 mul1r.
 apply convexf_ptP => // x axb.
 rewrite /L.
-case: axb.
-  rewrite leR_eqVlt => -[-> _|].
-  by rewrite /L subRR div0R mul0R addR0 subRR.
+case/andP: axb.
+  rewrite le_eqVlt => /predU1P[-> _|].
+  by rewrite /L subrr mul0r mul0r addr0 subrr.
 move=> ax.
-rewrite leR_eqVlt => -[->|xb].
-  rewrite /L /Rdiv mulRV ?mul1R; last by rewrite subR_eq0'; exact/gtR_eqF.
-  by rewrite addRC subRK subRR.
+rewrite le_eqVlt => -/predU1P[->|xb].
+  rewrite /L mulfV ?mul1r; last by rewrite subr_eq0 gt_eqF.
+  by rewrite addrCA subrr addr0 subrr.
 have {step1}step2 : (L x - f x =
   (x - a) * (b - x) / (b - a) * ((f b - f x) / (b - x)) -
-  (b - x) * (x - a) / (b - a) * ((f x - f a) / (x - a)))%coqR.
+  (b - x) * (x - a) / (b - a) * ((f x - f a) / (x - a)))%R.
   rewrite {1}step1 {step1}.
-  rewrite -addR_opp oppRD addRA addRC addRA.
+  rewrite opprD addrA addrC addrA.
   rewrite LE //.
-  rewrite {1}/Rdiv -(mulRN _ (f x)) -/(Rdiv _ _).
-  rewrite addRA -mulRDr (addRC _ (f a)) (addR_opp (f a)).
-  rewrite -mulRN -addRA -mulRDr (addR_opp (f b)).
-  rewrite addRC.
-  rewrite -(oppRK (f a - f x)) mulRN addR_opp oppRB.
-  congr (_ + _)%coqR.
-  - rewrite {1}/Rdiv -!mulRA; congr (_ * _)%coqR; rewrite mulRCA; congr (_ * _)%coqR.
-    rewrite mulRCA mulRV ?mulR1 // subR_eq0'; exact/gtR_eqF.
-  - rewrite -!mulNR -!mulRA; congr (_ * _)%coqR; rewrite mulRCA; congr (_ * _)%coqR.
-    rewrite mulRCA mulRV ?mulR1 // subR_eq0'; exact/gtR_eqF.
-have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%coqR.
-  have H : pderivable f (fun x0 => x <= x0 <= b)%coqR.
-    move=> z [z1 z2]; apply HDf; split => //.
-    apply (@leR_trans x) => //; exact: ltRW.
-  case: (@MVT_cor1_pderivable x b f H xb) => c2 [Ic2 [H1 H2]].
-  exists c2; split => //.
-  rewrite H1 /Rdiv -mulRA mulRV ?mulR1; last first.
-    by rewrite subR_eq0'; exact/gtR_eqF.
-  rewrite DfE; last by move=> ?; exact: proof_derive_irrelevance.
-  split.
-    apply (@leR_trans x); [exact/ltRW | by case: Ic2 H1].
-  by case: H2 => _ /ltRW.
-have [c1 [Ic1 Hc1]] : exists c1, (a < c1 < x /\ (f x - f a) / (x - a) = Df c1)%coqR.
-  have H : pderivable f (fun x0 => a <= x0 <= x)%coqR.
-    move=> z [z1 z2]; apply HDf; split => //.
-    apply (@leR_trans x) => //; exact: ltRW.
-  case: (@MVT_cor1_pderivable a x f H ax) => c1 [Ic1 [H1 H2]].
+  rewrite -(mulrN _ (f x)).
+  rewrite addrA -mulrDr (addrC _ (f a)).
+  rewrite -mulrN -addrA -mulrDr.
+  rewrite addrC.
+  rewrite -(opprK (f a - f x)) mulrN opprB.
+  congr (_ + _)%R.
+  - rewrite -!mulrA; congr (_ * _)%R; rewrite mulrCA; congr (_ * _)%R.
+    by rewrite mulrCA mulfV ?mulr1 // subr_eq0 gt_eqF.
+  - rewrite -!mulNr -!mulrA; congr (_ * _)%R; rewrite mulrCA; congr (_ * _)%R.
+    by rewrite mulrCA mulfV ?mulr1 // subr_eq0 gt_eqF.
+have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%R.
+  have H : forall x0, (x <= x0 <= b)%R -> derivable f x0 1.
+    move=> z /andP[z1 z2]; apply: HDf; apply/andP; split => //.
+    by apply (@le_trans _ _ x) => //; exact: ltW.
+  have {}H : forall x0 : R^o, x0 \in `]x, b[%R -> is_derive x0 1 f (Df x0).
+    move=> x0; rewrite in_itv/= => /andP[xx0 x0b].
+    apply: DeriveDef => //.
+    apply: HDf => //.
+    by rewrite /I (ltW x0b) andbT ltW// (lt_trans ax).
+  have cf : {within `[x, b], continuous f}.
+    apply: derivable_within_continuous => y.
+    rewrite in_itv/= => /andP[ay yb].
+    by apply: HDf; rewrite /I yb andbT (le_trans _ ay)// ltW.
+  have [c2 [Ic2 H1]] := MVT xb H cf.
+  exists c2; split.
+    rewrite in_itv/= in Ic2.
+    case/andP: Ic2 => ac2 ->.
+    by rewrite andbT (le_lt_trans _ ac2).
+  rewrite H1 -mulrA mulfV ?mulr1//.
+  by rewrite subr_eq0 gt_eqF.
+have [c1 [Ic1 Hc1]] : exists c1, (a < c1 < x /\ (f x - f a) / (x - a) = Df c1)%R.
+  have H : forall x0, (a <= x0 <= x)%R -> derivable f x0 1.
+    move=> z /andP[z1 z2]; apply HDf; apply/andP; split => //.
+    by apply (@le_trans _ _ x) => //; exact: ltW.
+  have {}H : forall x0 : R^o, x0 \in `]a, x[%R -> is_derive x0 1 f (Df x0).
+    move=> x0; rewrite in_itv/= => /andP[xx0 x0b].
+    apply: DeriveDef => //.
+    apply: HDf => //.
+    by rewrite /I (ltW xx0)/= (le_trans (ltW x0b))// ltW.
+  have cf : {within `[a, x], continuous f}.
+    apply: derivable_within_continuous => y.
+    rewrite in_itv/= => /andP[ay yb].
+    by apply: HDf; rewrite /I ay/= (le_trans yb)// ltW.
+  have [c1 [Ic1 H1]] := MVT ax H cf.
   exists c1; split => //.
-  rewrite H1 /Rdiv -mulRA mulRV ?mulR1; last first.
-    by rewrite subR_eq0'; exact/gtR_eqF.
-  rewrite DfE; last by move=> ?; exact: proof_derive_irrelevance.
-  split.
-  - by case: H2 => /ltRW.
-  - apply (@leR_trans x).
-    by case: H2 => _ /ltRW.
-    apply (@leR_trans c2); apply/ltRW; by case: Ic2.
-have c1c2 : (c1 < c2)%coqR by apply (@ltR_trans x); [case: Ic1 | case: Ic2].
+  rewrite H1 -mulrA mulfV ?mulr1//.
+  by rewrite subr_eq0 gt_eqF.
+have c1c2 : (c1 < c2)%R by apply (@lt_trans _ _ x); [case/andP: Ic1 | case/andP: Ic2].
 have {step2 Hc1 Hc2}step3 : (L x - f x =
-  (b - x) * (x - a) * (c2 - c1) / (b - a) * ((Df c2 - Df c1) / (c2 - c1)))%coqR.
-  rewrite {}step2 Hc2 Hc1 (mulRC (x - a)%coqR) -mulRBr {1}/Rdiv -!mulRA.
-  congr (_ * (_ * _))%coqR; rewrite mulRCA; congr (_ * _)%coqR.
-  rewrite mulRCA mulRV ?mulR1 // subR_eq0'; by move/gtR_eqF : c1c2.
-have [d [Id H]] : exists d, (c1 < d < c2 /\ (Df c2 - Df c1) / (c2 - c1) = DDf d)%coqR.
-  have H : pderivable Df (fun x0 => c1 <= x0 <= c2)%coqR.
-    move=> z [z1 z2]; apply HDDf; split => //.
-    - apply (@leR_trans c1) => //; by case: Ic1 => /ltRW.
-    - apply (@leR_trans c2) => //; by case: Ic2 => _ /ltRW.
-  case: (@MVT_cor1_pderivable c1 c2 Df H c1c2) => d [Id [H1 H2]].
-  exists d; split => //.
-  rewrite H1 /Rdiv -mulRA mulRV ?mulR1; last first.
-    by rewrite subR_eq0'; exact/gtR_eqF.
-  rewrite DDfE; last by move=> ?; exact: proof_derive_irrelevance.
-  split.
-  - apply (@leR_trans c1); last by case: Id H1.
-    by apply/ltRW; case: Ic1.
-  - apply (@leR_trans c2); last by case: Ic2 => _ /ltRW.
-    by case: H2 => _ /ltRW.
+  (b - x) * (x - a) * (c2 - c1) / (b - a) * ((Df c2 - Df c1) / (c2 - c1)))%R.
+  rewrite {}step2 Hc2 Hc1 (mulrC (x - a)%R) -mulrBr -!mulrA.
+  congr (_ * (_ * _))%R; rewrite mulrCA; congr (_ * _)%R.
+  by rewrite mulrCA mulfV ?mulr1 // subr_eq0 gt_eqF.
+have [d [Id H]] : exists d, (c1 < d < c2 /\ (Df c2 - Df c1) / (c2 - c1) = DDf d)%R.
+  have H : forall x0, (c1 <= x0 <= c2)%R -> derivable Df x0 1.
+    move=> z /andP[z1 z2]; apply: HDDf; apply/andP; split => //.
+    - by apply (@le_trans _ _ c1) => //; by case/andP: Ic1 => /ltW.
+    - by apply (@le_trans _ _ c2) => //; by case/andP: Ic2 => _ /ltW.
+  case/andP : Ic1 => ac1 c1x.
+  case/andP : Ic2 => xc2 c2bx.
+  have {}H : forall x0 : R^o, x0 \in `]c1, c2[%R -> is_derive x0 1 Df (DDf x0).
+    move=> x0; rewrite in_itv/= => /andP[c1x0 x0c2].
+    apply: DeriveDef => //.
+    apply: HDDf => //.
+    rewrite /I.
+    rewrite (le_trans (ltW ac1) (ltW _))//=.
+    by rewrite (le_trans (ltW x0c2) (ltW _))//=.
+  have cf : {within `[c1, c2], continuous Df}.
+    apply: derivable_within_continuous => y.
+    rewrite in_itv/= => /andP[c1y yc2].
+    apply: HDDf; rewrite /I.
+    rewrite (le_trans (ltW ac1) _)//=.
+    by rewrite (le_trans yc2)//= ltW.
+  have [d dc1c2 H1] := MVT (lt_trans c1x xc2) H cf.
+  exists d => //; split => //.
+  rewrite H1 -mulrA divff// ?mulr1//.
+  by rewrite subr_eq0 gt_eqF.
 rewrite {}step3 {}H.
-apply/mulR_ge0; last first.
-  apply: DDf_ge0; split.
-    apply (@leR_trans c1).
-      apply/ltRW; by case: Ic1.
-     by case: Id => /ltRW.
-  apply (@leR_trans c2).
-    by case: Id => _ /ltRW.
-  apply/ltRW; by case: Ic2.
-apply/mulR_ge0; last by apply/invR_ge0; rewrite subR_gt0.
-apply/mulR_ge0; last first.
-  by rewrite subR_ge0; case: Id => Id1 Id2; apply (@leR_trans d); exact/ltRW.
-by apply/mulR_ge0; rewrite subR_ge0; exact/ltRW.
-Qed.*) Admitted.
+apply/mulr_ge0; last first.
+  apply: DDf_ge0; apply/andP; split.
+    apply: (@lt_trans _ _ c1).
+      by case/andP: Ic1.
+    by case/andP: Id.
+  apply (@lt_trans _ _ c2).
+    by case/andP: Id.
+  by case/andP: Ic2.
+apply/mulr_ge0; last first.
+  by rewrite invr_ge0// subr_ge0 ltW.
+apply/mulr_ge0; last first.
+  by rewrite subr_ge0; case/andP: Id => Id1 Id2; apply (@le_trans _ _ d); exact/ltW.
+by apply/mulr_ge0; rewrite subr_ge0; exact/ltW.
+Qed.
 
 End twice_derivable_convex.
