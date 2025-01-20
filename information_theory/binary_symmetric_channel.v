@@ -124,6 +124,7 @@ have-> : 1 = log#|A|%:R :> Rdefinitions.R by rewrite card_A log2.
 exact:entropy_max.
 Qed.
 
+(*
 Lemma bsc_out_H_half' : 0 < 1%:R / 2%:R < 1.
 Proof.
 rewrite /= (_ : 1%:R = 1) // (_ : 2%:R = 2) //.
@@ -132,29 +133,37 @@ apply: divR_gt0 => //.
 apply/ltR_pdivr_mulr => //.
 by rewrite mul1R.
 Qed.
+*)
 
 Lemma H_out_binary_uniform : `H(fdist_uniform card_A `o BSC.c card_A p_01) = 1.
 Proof.
-rewrite {1}/entropy !Set2sumE /= !fdist_outE !Set2sumE /=.
-rewrite /BSC.c !fdist_binaryxx !fdist_binaryE (eq_sym _ (Set2.a _)) !fdist_uniformE.
-rewrite (negbTE (Set2.a_neq_b card_A)).
-rewrite -!mulrDl.
-rewrite /onem subrK.
-rewrite !mul1r.
-rewrite addrC subrK.
-have ? : 2%mcR != 0%mcR :> R.
-  rewrite (_ : 2%mcR = 2)//.
-  rewrite (_ : 0%mcR = 0)//.
-  by apply/eqP.
-rewrite -RdivE// ?card_A//.
-rewrite div1R -RinvE//.
-rewrite -!mulRDl /log LogV//.
-rewrite Log_n //=.
-rewrite (_ : 2%mcR = 2)//.
-field.
+rewrite /entropy Set2sumE 2!fdist_outE 2!Set2sumE /=.
+rewrite /BSC.c !fdist_binaryE.
+rewrite 2!eqxx (eq_sym (Set2.b card_A)) (negbTE (Set2.a_neq_b card_A)).
+rewrite 2!fdist_uniformE -!(mulrDl _ _ _^-1) (addrC _.~) onemKC div1r.
+rewrite card_A logV // log2.
+by rewrite mulrC -splitr opprK.
 Qed.
 
 End bsc_capacity_proof.
+
+Section convex_ext.
+Require Import entropy_convex.
+Local Open Scope convex_scope.
+
+Lemma mutual_info_chan_uniform (B : finType) (W : A -> {fdist B}) :
+  `I(P, W) <= `I(fdist_uniform card_A, W).
+Proof.
+rewrite !mutual_info_chanE -!mutual_info_sym.
+have [Q [q ->]] : exists (Q : {fdist A}) (q : {prob R}),
+    P = (fdist_uniform card_A) <|q|> Q.
+  admit.
+have B0: (0 < #|B|)%nat.
+  admit.
+set P' := (_ <|q|> _).
+have:= mutual_information_concave W B0 P' W => /=.
+rewrite /convex.concave_function /=.
+End convex_ext.
 
 Section bsc_capacity_theorem.
 Variable A : finType.
