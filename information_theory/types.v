@@ -6,7 +6,7 @@ From mathcomp Require Import matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
 (*Require Import Reals.*)
-Require Import (*ssrR Reals_ext*) realType_ext ssr_ext ssralg_ext logb.
+Require Import (*ssrR Reals_ext*) realType_ext ssr_ext ssralg_ext realType_logb.
 Require Import fdist proba entropy num_occ channel_code channel typ_seq.
 
 (******************************************************************************)
@@ -381,6 +381,30 @@ Qed.
 
 End typed_tuples_facts.
 
+(* TODO: move *)
+Lemma Exp2_pow (r : Rdefinitions.R) n k :
+  Exp r (k%:R * n) = (Exp r n) ^+ k.
+Proof.
+rewrite /Exp.
+rewrite -exp.powR_mulrn ?exp.powR_ge0//.
+rewrite mulrC.
+by rewrite exp.powRrM.
+Qed.
+
+(* TODO: move *)
+Lemma morph_exp2_plus : {morph Exp (2%:R:Rdefinitions.R) : x y / x + y >-> x * y}.
+Proof.
+move=> ? ? /=.
+rewrite /Exp.
+by rewrite exp.powRD// pnatr_eq0// implybT.
+Qed.
+
+(* TODO: move *)
+Lemma exp2_Ropp x : Exp (2%:R:Rdefinitions.R) (- x) = (Exp (2%:R:Rdefinitions.R) x)^-1.
+Proof.
+by rewrite /Exp exp.powRN.
+Qed.
+
 Section typed_tuples_facts_continued.
 Variables (A : finType) (n : nat).
 Hypothesis Hn : n != O.
@@ -427,42 +451,36 @@ Qed.
 Local Close Scope tuple_ext_scope.
 
 Lemma tuple_dist_type_entropy t : tuple_of_row t \in T_{P} ->
-  ((type.d P) `^ n) t = exp2 (- n%:R * `H P).
+  ((type.d P) `^ n) t = Exp (2%:R:Rdefinitions.R) (- n%:R * `H P).
 Proof.
 move/(@tuple_dist_type t) => ->.
 rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
-             \prod_(a : A) exp2 (type.d P a * log (type.d P a) * n%:R)); last first.
+             \prod_(a : A) Exp (2%:R:Rdefinitions.R) (type.d P a * log (type.d P a) * n%:R)); last first.
   apply eq_bigr => a _.
   case/boolP : (0 == type.d P a) => H; last first.
     have {}H : 0 < type.d P a.
       have := FDist.ge0 (type.d P) a.
       by rewrite Order.POrderTheory.le_eqVlt (negbTE H)/=.
-    move/RltP in H.
-    rewrite -{1}(logK H).
-    rewrite -RpowE.
-    rewrite -exp2_pow.
-    congr exp2.
+    rewrite -{1}(@LogK _ 2%N _ _ H)//.
+    rewrite -Exp2_pow.
+    congr Exp.
     rewrite -mulrA [X in _ = X]mulrC -mulrA mulrC.
     congr (_ * _).
-    rewrite -type_fun_type//.
-    by rewrite INRE.
+    by rewrite -type_fun_type//.
   - move/eqP : (H) => <-.
-    rewrite -(_ : O = type.f P a); first by rewrite !mul0r exp2_0.
+    rewrite -(_ : O = type.f P a).
+      by rewrite !mul0r expr0 /Exp exp.powRr0.
     apply/eqP.
     rewrite -(eqr_nat Rdefinitions.R).
     move/eqP : H => /(congr1 (fun x => n%:R * x)).
     by rewrite mulr0 type_fun_type// => /eqP.
-rewrite -(big_morph _ morph_exp2_plus exp2_0).
-congr exp2.
+rewrite -(big_morph (id2 := Rdefinitions.R0) _ morph_exp2_plus); last first.
+  by rewrite /Exp exp.powRr0.
+congr Exp.
 rewrite /entropy mulrN mulNr opprK.
 rewrite big_distrr/=.
 apply: eq_bigr => a _.
-rewrite mulrC; congr *%R.
-congr *%R.
-
-
-rewrite  -(big_morph _ (mulrDl _) (mul0r _)).
-by rewrite /entropy Rmult_opp_opp mulRC.
+by rewrite mulrC; congr *%R.
 Qed.
 
 Local Open Scope typ_seq_scope.
@@ -475,46 +493,47 @@ apply/subsetP => t Ht.
 rewrite /set_typ_seq inE /typ_seq tuple_dist_type_entropy; last first.
   case/imsetP : Ht => x Hx ->.
   by rewrite row_of_tupleK.
-by rewrite addR0 subR0 lexx.
+by rewrite addr0 subr0 lexx.
 Qed.
 
-Lemma card_typed_tuples : INR #| T_{ P } | <= exp2 (INR n * `H P).
+Lemma card_typed_tuples : #| T_{ P } |%:R <= Exp (2%:R:Rdefinitions.R) (n%:R * `H P).
 Proof.
-rewrite -(invRK (exp2 (INR n * `H P))%R) -exp2_Ropp -mulNR.
-set aux := - INR n * `H P.
-rewrite -div1R leR_pdivl_mulr // {}/aux.
+rewrite -(@invrK _ (Exp (2%:R:Rdefinitions.R) (n%:R * `H P))%R) -exp2_Ropp -mulNr.
+set aux := - n%:R * `H P.
+rewrite -div1r ler_pdivlMr // {}/aux ?Exp_gt0//.
 case/boolP : [exists x, x \in T_{P}] => x_T_P.
 - case/existsP : x_T_P => ta Hta.
   rewrite -(row_of_tupleK ta) in Hta.
   rewrite -(tuple_dist_type_entropy Hta).
-  rewrite [X in X <= _](_ : _ = Pr (type.d P) `^ n (@row_of_tuple A n @: T_{P})).
+  rewrite [X in X <= _](_ : _ = Pr ((type.d P) `^ n) (@row_of_tuple A n @: T_{P})).
     exact: Pr_le1.
   symmetry.
   rewrite /Pr.
   transitivity (\sum_(a | (a \in 'rV[A]_n) &&
                           [pred x in (@row_of_tuple A n @: T_{P})] a)
-      exp2 (- INR n * `H P)).
+      Exp (2%:R : Rdefinitions.R) (- n%:R * `H P)).
     apply eq_big => // ta'/= Hta'.
     rewrite -(@tuple_dist_type_entropy ta') //.
     case/imsetP : Hta' => x Hx ->. by rewrite row_of_tupleK.
-  rewrite big_const iter_addR tuple_dist_type_entropy //.
+  rewrite big_const iter_addr addr0 tuple_dist_type_entropy //.
+  rewrite [in RHS]mulrC.
+  rewrite mulr_natr.
   do 2 f_equal.
   by rewrite card_imset //; exact: row_of_tuple_inj.
-- rewrite (_ : (INR #| T_{P} | = 0)%R); first by rewrite mul0R; exact/Rle_0_1.
-  rewrite (_ : 0%R = INR 0) //; congr INR; apply/eqP.
+- rewrite (_ : (#| T_{P} |%:R = 0)%R); first by rewrite mul0r.
+  rewrite (_ : 0%R = 0%:R) //; congr (_%:R); apply/eqP.
   rewrite cards_eq0; apply/negPn.
   by move: x_T_P; apply contra => /set0Pn/existsP.
 Qed.
 
-Lemma card_typed_tuples_alt : INR #| T_{P} | <= exp2 (INR n * `H P).
+Lemma card_typed_tuples_alt : #| T_{P} |%:R <= Exp (2%R:Rdefinitions.R) (n%:R * `H P).
 Proof.
-apply (@leR_trans (INR #| `TS P n 0 |)).
-  apply/le_INR/leP.
+apply (@le_trans _ _ (#| `TS P n 0 |%:R)).
+  rewrite ler_nat.
   apply: leq_trans; last first.
     by apply subset_leq_card; exact: typed_tuples_are_typ_seq.
   by rewrite card_imset //; exact: row_of_tuple_inj.
-apply: (leR_trans (TS_sup _ _ _)); rewrite addR0.
-by apply/RleP; rewrite Order.POrderTheory.lexx.
+by apply: (le_trans (TS_sup _ _ _)); rewrite addr0.
 Qed.
 
 Lemma perm_tuple_in_Ttuples ta (s : 'S_n) :
@@ -602,15 +621,15 @@ Variable c : code A B M n.
 
 Lemma sum_messages_types' f :
   \sum_(P : P_ n ( A )) (\sum_(m |m \in enc_pre_img c P) f m) =
-  \sum_ (S | S \in enc_pre_img_partition c) \sum_(m in S) f m.
+  \sum_ (S | S \in enc_pre_img_partition c) \sum_(m in S) f m :> Rdefinitions.R.
 Proof.
 rewrite (bigID (fun P => [exists m, m \in enc_pre_img c P] )).
 rewrite /=.
-rewrite Rplus_comm big1 ; last first.
+rewrite addrC big1 ; last first.
   move=> P; rewrite negb_exists => HP.
   apply big_pred0 => m /=.
   by apply/negP/negPn; move:HP => /forallP/(_ m) ->.
-rewrite /= add0R big_imset.
+rewrite /= add0r big_imset.
   apply eq_big => [P|P _] //=.
   rewrite in_set.
   by case: set0Pn => [/existsP //| ?]; exact/existsP.
@@ -621,13 +640,15 @@ case: Q HPQ => /= Qd Qf HQ HPQ.
 apply/type_eqP => /=.
 apply/eqP.
 apply ffunP => a.
-apply/val_inj/INR_eq.
-move: {HPQ}(HPQ a); rewrite HP HQ eqR_mul2r //.
-by apply/invR_neq0; rewrite INR_eq0.
+apply/val_inj.
+move: {HPQ}(HPQ a); rewrite HP HQ.
+move=> /(congr1 (fun x => x * n%:R)).
+rewrite -!mulrA mulVf ?pnatr_eq0// !mulr1 => /eqP.
+by rewrite eqr_nat => /eqP.
 Qed.
 
 Lemma sum_messages_types f :
-  \sum_(P : P_ n ( A )) (\sum_(m |m \in enc_pre_img c P) f m) = \sum_ (m : M) (f m).
+  \sum_(P : P_ n ( A )) (\sum_(m |m \in enc_pre_img c P) f m) = \sum_ (m : M) (f m) :> Rdefinitions.R.
 Proof.
 transitivity (\sum_ (m in [set: M]) (f m)); last by apply eq_bigl => b; rewrite in_set.
 rewrite -(cover_enc_pre_img c) /enc_pre_img_partition sum_messages_types'.
