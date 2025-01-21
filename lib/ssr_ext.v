@@ -1124,3 +1124,11 @@ by move=> x _ /=; apply/eqP/eqP => [/(congr1 g) <-|->//].
 Qed.
 
 End fintype_extra.
+
+Section order_extra.
+(* eq_le would be a better name but it is already occupied:
+   eq_le : (x == y) = (x <= y <= x)%O *)
+Lemma eqWle {disp : order.Order.disp_t} {T : porderType disp} (x y : T) :
+  x = y -> (x <= y)%O.
+Proof. by move->; exact: Order.POrderTheory.lexx. Qed.
+End order_extra.
