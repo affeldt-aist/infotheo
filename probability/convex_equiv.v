@@ -107,19 +107,19 @@ Parameter axbary : ax_bary T.
 Parameter axproj : ax_proj T.
 End NaryConvSpace.
 
-Module Type ConvSpace. Axiom T : convType. End ConvSpace.
+Module Type ConvSpace. Axiom T : convType Rdefinitions.R. End ConvSpace.
 
 (* First prove mutual definability using ax_barycenter / ax_proj *)
 
 Module BinToNary(C : ConvSpace) <: NaryConvSpace.
 Import NaryConvexSpace.
 
-HB.instance Definition _ := @isNaryConv.Build C.T (@Convn C.T conv).
+HB.instance Definition _ := @isNaryConv.Build C.T (@Convn Rdefinitions.R C.T conv).
 
 (* NB: is that ok? *)
 Definition T : naryConvType := C.T.
-Definition axbary := @Convn_fdist_convn C.T.
-Definition axproj := @Convn_fdist1 C.T.
+Definition axbary := @Convn_fdist_convn Rdefinitions.R C.T.
+Definition axproj := @Convn_fdist1 Rdefinitions.R C.T.
 End BinToNary.
 
 Module NaryToBin(A : NaryConvSpace).
@@ -229,7 +229,7 @@ Qed.
 Lemma binconvmm p a : binconv p a a = a.
 Proof. by apply axidem => i; case: ifP. Qed.
 
-HB.instance Definition _ := @isConvexSpace.Build A.T binconv
+HB.instance Definition _ := @isConvexSpace.Build Rdefinitions.R A.T binconv
   binconv1 binconvmm binconvC binconvA.
 
 End NaryToBin.
@@ -300,7 +300,7 @@ Definition T' := NaryConv_sort__canonical__convex_ConvexSpace.
 
 Lemma equiv_conv p (a b : C.T) : a <| p |> b = a <& p &> b.
 Proof.
-change (a <& p &> b) with (@conv T' p a b).
+change (a <& p &> b) with (@conv Rdefinitions.R T' p a b).
 pose g := fun (x : 'I_2) => if x == ord0 then a else b.
 change a with (g ord0).
 change b with (g (lift ord0 ord0)).
