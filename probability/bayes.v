@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
+Require Import PeanoNat.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix reals.
 From mathcomp Require boolp.
-From mathcomp Require Import Rstruct.
-Require Import Reals. (* Lra Nsatz. *)
-Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext fdist proba.
+Require Import realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
+Require Import fdist proba.
 
 (******************************************************************************)
 (* wip                                                                        *)
@@ -26,12 +26,14 @@ Require Import ssrR Reals_ext logb ssr_ext ssralg_ext bigop_ext fdist proba.
 Local Open Scope tuple_ext_scope.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
+Local Open Scope ring_scope.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Import Num.Theory.
+Import GRing.Theory.
 
 Section fin_img.
 Variables (T : finType) (S : eqType) (f : T -> S).
@@ -71,7 +73,7 @@ Qed.
 End fin_img.
 
 Section proba. (* proba.v ? *)
-Variables (U : finType) (P : {fdist U}).
+Variables (R : realType) (U : finType) (P : R.-fdist U).
 
 Definition fdist_choice' : U.
 move: (fdist_card_neq0 P).
@@ -288,10 +290,9 @@ End univ_types.
 
 Module BN.
 Section bn.
-Variables (U : finType) (P : {fdist U}) (n : nat).
+Variables (R : realType) (U : finType) (P : R.-fdist U) (n : nat).
 
 Section preim.
-Local Open Scope R_scope.
 Variable types : 'I_n -> eqType.
 Variable vars : forall i, {RV P -> types i}.
 
@@ -396,12 +397,12 @@ Qed.
 
 (* Simple version, using singletons *)
 
-Lemma Rxx2 x : x = x * x -> x = 0 \/ x = 1.
+Lemma Rxx2 (x : R) : x = x * x -> x = 0 \/ x = 1.
 Proof.
 case/boolP: (x == 0) => Hx.
   rewrite (eqP Hx); by left.
-move/(f_equal (Rdiv ^~ x)).
-rewrite divRR // /Rdiv -mulRA mulRV // mulR1 => <-; by right.
+move/(f_equal (GRing.mul ^~ x^-1)).
+by rewrite mulrV ?unitfE // -mulrA mulrV ?unitfE // mulr1 => <-; right.
 Qed.
 
 Lemma cinde_preim_ok1 (i j k : 'I_n) :
@@ -456,11 +457,11 @@ split.
       apply/Pr_set0P => u.
       rewrite !inE => /andP [] /= Hi Hk.
       move: Hx; subst x.
-      move/(f_equal (Rmult ^~ den)).
+      move/(f_equal (GRing.mul ^~ den)).
       move/eqP in Hden.
-      rewrite /cPr RmultE -GRing.mulrA GRing.mulVr// GRing.mulr1 RmultE GRing.mul1r.
-      move/(f_equal (Rminus den)).
-      rewrite subRR setIC RminusE -Pr_setD => /Pr_set0P/(_ u).
+      rewrite /cPr -mulrA mulVr ?unitfE // mulr1 mul1r.
+      move/(f_equal (fun x => den - x)).
+      rewrite subrr setIC -Pr_setD => /Pr_set0P/(_ u).
       by rewrite !inE (eqP Hi) Hk eq_sym ab; exact.
     case: (ord_eq_dec k j).
       move=> <- {j} ik b.
@@ -577,7 +578,7 @@ transitivity (\sum_(A : Tfin_img (prod_vars (e :\: e')))
     move/subsetP/(_ i): ee'.
     by cases_in i.
   rewrite Pr_preim_vars_sub; last by apply/subsetP=> i; cases_in i.
-  rewrite /Rdiv big_distrl; apply eq_bigr => A _ /=.
+  rewrite big_distrl; apply eq_bigr => A _ /=.
   by rewrite -!preim_vars_inter (@preim_vars_set_vals_tl g).
 under eq_bigr => A _ /=.
   rewrite Hef (@preim_vars_set_vals_tl g) // (@preim_vars_set_vals_tl f).
@@ -585,8 +586,7 @@ under eq_bigr => A _ /=.
   apply/setP => i; move/subsetP/(_ i): ee'; by cases_in i.
 rewrite -2!big_distrl /=.
 rewrite [in RHS]/cPr.
-rewrite RmultE.
-congr (_ * _ * _)%mcR.
+congr (_ * _ * _).
 rewrite -preim_vars_inter.
 have -> : e' :|: g = (e :|: g) :\: (e :\: e').
   apply/setP => i.
@@ -656,10 +656,10 @@ move=> vals He Hie Hif Hig Hvi.
 rewrite /cinde_events /cPr.
 set den := (X in (_ / X)%mcR).
 case/boolP: (den == 0) => [/eqP|] Hden.
-  by rewrite setIC Pr_domin_setI // ?GRing.mul0r => /esym/R1_neq_R0.
+  by rewrite setIC Pr_domin_setI // ?mul0r => /esym/eqP; rewrite oner_eq0.
 set num := Pr _ _ => Hnum.
 have {}Hnum : num = den.
-  by rewrite -[RHS]GRing.mul1r -!coqRE -Hnum coqRE -GRing.mulrA GRing.mulVf ?GRing.mulr1.
+  by rewrite -[RHS]mul1r -Hnum -mulrA mulVf ?mulr1.
 rewrite -Hnum in Hden.
 rewrite (proj2 (Pr_set0P _ _)); last first.
   move=> u; rewrite !inE => /andP[] /andP[] /eqP HA /eqP HB.
@@ -690,7 +690,8 @@ set a := map_fin_img (prod_vars ((e :&: f) :\: g)) v.
 rewrite (bigD1 a) //= nth_fin_imgK -Hv.
 rewrite /num (@preim_vars_vals _ (prod_vals (e :&: f :|: g) vals) _ vals);
   last by move=> j; rewrite set_vals_prod_vals_id.
-rewrite -preim_vars_inter addRC => /subR_eq; rewrite subRR => /esym Hnum.
+rewrite -preim_vars_inter addrC => /eqP.
+rewrite -subr_eq subrr => /eqP/esym Hnum.
 have : Pr P (preim_vars (e :&: f :|: g)
       (set_vals (prod_vals (e :&: f :\: g) (set_vals B vals)) vals)) = 0.
   rewrite (_ : prod_vals _ _ = prod_vars (e :&: f :\: g) u); last first.
@@ -852,7 +853,7 @@ End BN.
 
 Section Factorization.
 Import BN.
-Variables (U : finType) (P : {fdist U}) (n : nat).
+Variables (R : realType) (U : finType) (P : R.-fdist U) (n : nat).
 Variable types : 'I_n -> finType.
 Variable vars : forall i, {RV P -> types i}.
 Variable bn : t vars.
