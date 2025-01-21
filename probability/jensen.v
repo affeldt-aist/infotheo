@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-From mathcomp Require Import mathcomp_extra boolp reals Rstruct.
-Require Import ssrR realType_ext ssr_ext realType_ext ssralg_ext logb.
+From mathcomp Require Import mathcomp_extra boolp reals.
+Require Import realType_ext ssr_ext realType_ext ssralg_ext logb.
 Require Import fdist proba convex.
 
 (******************************************************************************)
@@ -14,7 +14,6 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope ring_scope.
-Local Open Scope reals_ext_scope.
 Local Open Scope convex_scope.
 Local Open Scope fdist_scope.
 
@@ -22,17 +21,16 @@ Import Order.Theory GRing.Theory Num.Theory.
 
 Section jensen_inequality.
 
-Local Notation R := Rdefinitions.R.
-(*Context {R : realType}.*)
+Context {R : realType}.
 
-Variable f : R -> R.
-Variable D : {convex_set R}.
+Variable f : R^o -> R^o.
+Variable D : {convex_set R^o}.
 Hypothesis convex_f : convex_function_in D f.
 Variables A : finType.
 
 (*Local Hint Resolve Rle_refl : core.*)
 
-Lemma jensen_dist (r : A -> R) (X : {fdist A}) :
+Lemma jensen_dist (r : A -> R) (X : R.-fdist A) :
   (forall a, r a \in D) ->
   f (\sum_(a in A) X a * r a) <= \sum_(a in A) X a * f (r a).
 Proof.
@@ -73,13 +71,13 @@ split; last first.
   move/(_ (r b) (\sum_(a in fdist_supp d) d a * r a) (probfdist X b)).
   by rewrite classical_sets.in_setE; apply; rewrite -classical_sets.in_setE.
 have:= (convex_f (probfdist X b) (HDr b) HDd).
-move/RleP/le_trans; apply.
+move/le_trans; apply.
 by rewrite lerD2l; apply ler_wpM2l => //; rewrite onem_ge0.
 Qed.
 
 Local Open Scope proba_scope.
 
-Lemma Jensen (P : {fdist A}) (X : {RV P -> R}) : (forall x, X x \in D) ->
+Lemma Jensen (P : R.-fdist A) (X : {RV P -> R}) : (forall x, X x \in D) ->
   f (`E X) <= `E (f `o X).
 Proof.
 move=> H.
@@ -91,12 +89,10 @@ Qed.
 End jensen_inequality.
 
 Section jensen_concave.
+Context {R : realType}.
 
-Local Notation R := Rdefinitions.R.
-(*Context {R : realType}.*)
-
-Variable f : R -> R.
-Variable D : {convex_set R}.
+Variable f : R^o -> R^o.
+Variable D : {convex_set R^o}.
 Hypothesis concave_f : concave_function_in D f.
 Variable A : finType.
 
@@ -108,7 +104,7 @@ rewrite /convex_function_in => x y t Dx Dy.
 apply /R_convex_function_atN/concave_f => //; by case: t.
 Qed.
 
-Lemma jensen_dist_concave (r : A -> R) (X : {fdist A}) :
+Lemma jensen_dist_concave (r : A -> R) (X : R.-fdist A) :
   (forall x, r x \in D) ->
   \sum_(a in A) X a * f (r a) <= f (\sum_(a in A) X a * r a).
 Proof.
