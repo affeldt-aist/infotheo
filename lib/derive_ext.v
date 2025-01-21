@@ -170,6 +170,109 @@ Proof. by move=> ? ? ? <-; exact: is_derive1_LogfV. Qed.
 
 End is_derive.
 
+Section near_eq.
+
+Lemma open_norm_subball (R : numFieldType) (M : normedModType R)
+  (A : set M) (x : M) :
+  open A -> A x ->
+  \forall e \near ((0 : R)^')%classic, (ball x `|e| `<=` A)%classic.
+Proof.
+move/(@conj (open A) _)/[apply]/open_nbhs_nbhs/nbhsr0P.
+rewrite -!nbhs_nearE=> H.
+under [X in nbhs _ X]funext=> e.
+  rewrite /subset.
+  under eq_forall=> y do rewrite -ball_normE /=.
+  over.
+case: H=> e /= e0 He.
+exists e=> //= e' /=.
+rewrite distrC subr0=> e'e e'0 y xye'.
+apply: (He `|e'|).
+- by rewrite /= distrC subr0 normr_id.
+- by rewrite normr_gt0.
+- exact: ltW.
+Qed.
+
+Local Notation DQ f v a h := (h^-1 *: (f (h *: v + a) - f a)).
+
+Let near_eq_difference_quotient (R : numFieldType) (V W : normedModType R)
+  (f g : V -> W) (a v : V) :
+  v != 0 -> (\near a, f a = g a) ->
+  \forall h \near nbhs (0^')%classic, DQ f v a h = DQ g v a h.
+Proof.
+move=> vn0 fg.
+have fg0: \forall h \near (0^')%classic, f (h *: v + a) = g (h *: v + a).
+  have:= fg.
+  rewrite -!nbhs_nearE nbhsE => -[] U [] oU Ua Ufg.
+  have:= open_norm_subball oU Ua; case=> e /= e0 eU.
+  exists (e * `|2 *: v|^-1)=> /=.
+    rewrite mulr_gt0// invr_gt0 normrZ mulr_gt0// ?(normr_gt0 v)//.
+    by rewrite normr_nat ltr0Sn.
+  move=> h /= /[1!distrC] /[!subr0] he2v h0.
+  apply/(Ufg (h *: v + a))/(eU (h * `| 2 *: v|)).
+  - rewrite /= distrC subr0 normrM normr_id -ltr_pdivlMr//.
+    rewrite normrZ mulr_gt0// ?(normr_gt0 v)//.
+    by rewrite normr_nat ltr0Sn.
+  - rewrite mulf_neq0// normrZ.
+    rewrite mulf_neq0// normr_eq0//.
+    by rewrite pnatr_eq0.
+  - rewrite -ball_normE /=.
+    rewrite opprD addrCA subrr addr0 normrN !normrZ !normr_id.
+    rewrite mulrCA ltr_pMl// ?mulr_gt0// ?normr_gt0//.
+    by rewrite [ltLHS](_ : 1 = 1%:R)// normr_nat ltr_nat.
+have:= fg0 => /filterS; apply=> h ->.
+move: fg.
+by rewrite -nbhs_nearE nbhsE=> -[] U [] oU Ua /(_ a Ua) ->.
+Qed.
+
+Lemma near_eq_derive (R : numFieldType) (V W : normedModType R)
+  (f g : V -> W) (a v : V) :
+  v != 0 -> (\near a, f a = g a) -> 'D_v f a = 'D_v g a.
+Proof.
+move=> vn0 fg.
+rewrite /derive.
+suff-> : (DQ f v a h @[h --> 0^'])%classic = (DQ g v a h @[h --> 0^'])%classic
+  by [].
+have Dfg := near_eq_difference_quotient vn0 fg.
+rewrite eqEsubset; split; apply: near_eq_cvg=> //.
+by move/filterS: Dfg; apply=> ?; exact: fsym.
+Qed.
+
+Lemma near_eq_derivable (R : numFieldType) (V W : normedModType R)
+  (f g : V -> W) (a v : V) :
+  v != 0 -> (\near a, f a = g a) -> derivable f a v = derivable g a v.
+Proof.
+move=> vn0 nfg.
+rewrite /derivable.
+suff-> : (DQ f v a h @[h --> 0^'])%classic = (DQ g v a h @[h --> 0^'])%classic
+  by [].
+have Dfg := near_eq_difference_quotient vn0 nfg.
+rewrite eqEsubset; split; apply: near_eq_cvg=> //.
+by move/filterS: Dfg; apply=> ?; exact: fsym.
+Qed.
+
+Lemma near_eq_is_derive (R : numFieldType) (V W : normedModType R)
+  (f g : V -> W) (a v : V) (df : W) :
+  v != 0 -> (\near a, f a = g a) ->
+  is_derive a v f df = is_derive a v g df.
+Proof.
+move=> vn0; move: f g.
+suff fg f g (nfg : \near a, f a = g a) :
+  is_derive a v f df -> is_derive a v g df.
+  move=> f g nfg; apply: propext; split; apply: fg => //.
+  suff->: (\near a, g a = f a) = (\near a, f a = g a) by [].
+  by apply: eq_near=> ?; split; exact: esym.
+move/[dup]/@ex_derive=> H.
+move/@derive_val<-.
+rewrite (near_eq_derive vn0 nfg).
+apply/derivableP.
+by rewrite -(near_eq_derivable vn0 nfg).
+Qed.
+
+End near_eq.
+Arguments near_eq_derive [R V W] f g [a].
+Arguments near_eq_derivable [R V W] f g [a].
+Arguments near_eq_is_derive [R V W] f g [a].
+
 Section derivable_monotone.
 
 (* generalizing Ranalysis_ext.pderive_increasing_ax_{open_closed,closed_open} *)
