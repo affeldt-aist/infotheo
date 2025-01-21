@@ -98,7 +98,6 @@ Delimit Scope R_scope with coqR.*)
 (* Lemma second_derivative_convexf_pt == twice derivable is convex            *)
 (******************************************************************************)
 
-Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
 Reserved Notation "{ 'convex_set' T }" (format "{ 'convex_set'  T }").
 Reserved Notation "'<|>_' d f" (at level 36, f at level 36, d at level 0,
   format "<|>_ d  f").

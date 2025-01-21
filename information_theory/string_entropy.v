@@ -1,9 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-From mathcomp Require Import classical_sets.
-Require Import realType_ext ssr_ext ssralg_ext logb.
-Require Import fdist entropy convex ln_facts jensen num_occ.
+From mathcomp Require Import classical_sets reals exp itv.
+From mathcomp Require convex.
+Require Import realType_ext ssr_ext ssralg_ext realType_logb.
+Require Import fdist entropy convex jensen num_occ.
 
 (******************************************************************************)
 (*                         String entropy                                     *)
@@ -22,56 +23,90 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope R_scope.
 Local Open Scope num_occ_scope.
 Local Open Scope entropy_scope.
-Local Coercion INR : nat >-> R.
+Local Open Scope ring_scope.
 
-Import Num.Theory.
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
-Definition simplR := (add0R, addR0, subR0, mul0R, mulR0, mul1R, mulR1).
+(* coercions to R : realType do not seem to work *)
+Local Notation "x /:R y" := (x%:R / y%:R) (at level 40, left associativity).
 
-Local Hint Resolve Rle_refl : core.
-Local Hint Resolve leR0n : core.
+(* TODO: move to convex ? *)
+Section log_concave.
+Import (canonicals) analysis.convex.
+Variable R : realType.
+
+Definition i01_of_prob : {prob R} -> {i01 R}.
+case => p H. exists p.
+abstract (by case/andP: H => H0 H1; apply/andP; split).
+Defined.
+Definition prob_of_i01 : {i01 R} -> {prob R}.
+case => p H. exists p.
+abstract (by case/andP: H => H0 H1; apply/andP; split).
+Defined.
+
+Lemma i01_of_probK : cancel i01_of_prob prob_of_i01.
+Proof. case => p H. by apply/val_inj. Qed.
+Lemma prob_of_i01K : cancel prob_of_i01 i01_of_prob.
+Proof. case => p H. by apply/val_inj. Qed.
+
+Lemma mc_convE (a b : R^o) (p : {prob R}) :
+  conv p a b = mathcomp.analysis.convex.conv (i01_of_prob p) b a :> R^o.
+Proof.
+rewrite [LHS]addrC.
+congr (_ .~  *: _ + _ *: _); by case: p.
+Qed.
+
+Lemma log_concave : concave_function_in Rpos_interval (log : R^o -> R^o).
+Proof.
+move=> /= x y p Hx Hy.
+rewrite /concave_function_at /convex_function_at.
+rewrite !inE in Hx Hy.
+have Hln := concave_ln (i01_of_prob p) Hy Hx.
+rewrite -!mc_convE in Hln.
+rewrite conv_leoppD leoppP /= /log /Log /=.
+rewrite [in X in X <= _]avgRE !mulrA -mulrDl -avgRE.
+by rewrite ler_wpM2r // invr_ge0 ln2_ge0.
+Qed.
+End log_concave.
 
 Section seq_nat_fdist.
-
-Variables (A : finType) (f : A -> nat).
+Variables (R : realType) (A : finType) (f : A -> nat).
+(*
+Let N2R x : R := x%:R.
+#[reversible=yes] Local Coercion N2R' := N2R.
+*)
 Variable total : nat.
 Hypothesis sum_f_total : (\sum_(a in A) f a)%nat = total.
 Hypothesis total_gt0 : total != O.
 
-Let f_div_total := [ffun a : A => f a / total].
+Let f_div_total := [ffun a : A => f a /:R total : R].
 
 Lemma f_div_total_pos c : (0 <= f_div_total c)%mcR.
-Proof.
-rewrite ffunE; apply/RleP/mulR_ge0 => //.
-apply /Rlt_le /invR_gt0 /ltR0n.
-by rewrite lt0n.
-Qed.
+Proof. by rewrite ffunE mulr_ge0 // invr_ge0 ler0n. Qed.
 
-Lemma f_div_total_1 : \sum_(a in A) [ffun a : A => f a / total] a = 1.
+Lemma f_div_total_1 : \sum_(a in A) f_div_total a = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
-rewrite /f_div_total -big_distrl -big_morph_natRD.
-by rewrite sum_f_total /= mulRV // INR_eq0'.
+rewrite /f_div_total -big_distrl /=.
+rewrite -(big_morph _ (id2:=0%N) (natrD _)) //.
+by rewrite sum_f_total divrr // unitfE pnatr_eq0.
 Qed.
 
 Definition seq_nat_fdist := FDist.make f_div_total_pos f_div_total_1.
-
 End seq_nat_fdist.
 
 Section string.
-
-Variable A : finType.
+Variables (R : realType) (A : finType).
 
 Section entropy.
 Variable S : seq A.
 Hypothesis S_nonempty : size S != O.
 
-Definition pchar c := N(c|S) / size S.
+Definition pchar c : R := N(c|S) /:R size S.
 
-Definition num_occ_dist := seq_nat_fdist (sum_num_occ_size S) S_nonempty.
+Definition num_occ_dist := seq_nat_fdist R (sum_num_occ_size S) S_nonempty.
 
 Definition Hs0 := `H num_occ_dist.
 End entropy.
@@ -85,42 +120,44 @@ Definition Hs (s : seq A) :=
   N(a|s) / size s * log (size s / N(a|s)).
 *)
 
-Definition nHs (s : seq A) :=
+Definition nHs (s : seq A) : R :=
  \sum_(a in A)
   if N(a|s) == 0%nat then 0 else
-  N(a|s) * log (size s / N(a|s)).
+  N(a|s)%:R * log (size s /:R N(a|s)).
 
 Lemma szHs_is_nHs s (H : size s != O) :
-  size s * `H (@num_occ_dist s H) = nHs s.
+  (size s)%:R * `H (@num_occ_dist s H) = nHs s :> R.
 Proof.
-rewrite /entropy /nHs /num_occ_dist /= -mulRN1 big_distrl big_distrr /=.
+rewrite /entropy /nHs /num_occ_dist /=.
+rewrite (big_morph _ (id1:=0) (@opprD _)) ?oppr0 // big_distrr /=.
 apply eq_bigr => a _ /=; rewrite ffunE.
-case: ifPn => [/eqP -> | Hnum]; first by rewrite !mulRA !simplR.
-rewrite {1}/Rdiv (mulRC N(a | s)) 3![in LHS]mulRA mulRV ?INR_eq0' // ?mul1R.
-by rewrite -mulRA mulRN1 -logV ?Rinv_div//; apply divR_gt0; rewrite ltR0n lt0n.
+case: ifPn => [/eqP -> | Hnum]; first by rewrite !mul0r oppr0 mulr0.
+rewrite (mulrC N(a | s)%:R) mulrN 3![in LHS]mulrA mulrV ?unitfE ?pnatr_eq0 //.
+rewrite mul1r -mulrA -mulrN -logV 1?mulrC ?invf_div //.
+by apply divr_gt0; rewrite ltr0n lt0n.
 Qed.
 
-Definition mulnRdep (x : nat) (y : x != O -> R) : R.
+Definition mulnrdep (x : nat) (y : x != O -> R) : R.
 case/boolP: (x == O) => Hx.
 + exact 0.
-+ exact (x * y Hx).
++ exact (x%:R * y Hx).
 Defined.
-Arguments mulnRdep x y : clear implicits.
+Arguments mulnrdep x y : clear implicits.
 
-Lemma mulnRdep_0 y : mulnRdep 0 y = 0.
-Proof. rewrite /mulnRdep /=. by destruct boolP. Qed.
+Lemma mulnrdep_0 y : mulnrdep 0 y = 0.
+Proof. rewrite /mulnrdep /=. by destruct boolP. Qed.
 
-Lemma mulnRdep_nz x y (Hx : x != O) : mulnRdep x y = x * y Hx.
+Lemma mulnrdep_nz x y (Hx : x != O) : mulnrdep x y = x%:R * y Hx.
 Proof.
-rewrite /mulnRdep /=.
+rewrite /mulnrdep /=.
 destruct boolP.
   by exfalso; rewrite i in Hx.
 do 2!f_equal; apply eq_irrelevance.
 Qed.
 
-Lemma szHs_is_nHs_full s : mulnRdep (size s) (fun H => Hs0 H) = nHs s.
+Lemma szHs_is_nHs_full s : mulnrdep (size s) (fun H => Hs0 H) = nHs s.
 Proof.
-rewrite /mulnRdep; destruct boolP; last by apply szHs_is_nHs.
+rewrite /mulnrdep; destruct boolP; last by apply szHs_is_nHs.
 rewrite /nHs (eq_bigr (fun a => 0)); first by rewrite big1.
 move=> a _; suff -> : N(a|s) == O by [].
 by rewrite /num_occ -leqn0 -(eqP i) count_size.
@@ -138,16 +175,16 @@ Proof.
 rewrite (eq_bigr _ (fun i _ => szHs_is_nHs i)).*)
 rewrite exchange_big /nHs /=.
 (* (2) Move to per-character inequalities *)
-apply leR_sumR => a _.
+apply ler_sum => a _.
 (* Remove strings containing no occurrences *)
 rewrite (bigID (fun s => N(a|s) == O)) /=.
 rewrite big1; last by move=> i ->.
-rewrite num_occ_flatten add0R.
+rewrite num_occ_flatten add0r.
 rewrite [in X in _ <= X](bigID (fun s => N(a|s) == O)).
 rewrite [in X in _ <= X]big1 //= ?add0n;
   last by move=> i /eqP.
 rewrite (eq_bigr
-       (fun i => N(a|i) * log (size i / N(a|i))));
+       (fun i => N(a|i)%:R * log (size i /:R N(a|i))));
   last by move=> i /negbTE ->.
 rewrite -big_filter -[in X in _ <= X]big_filter.
 (* ss' contains only strings with ocurrences *)
@@ -156,15 +193,15 @@ case/boolP: (ss' == [::]) => Hss'.
   by rewrite (eqP Hss') !big_nil eqxx.
 have Hnum s : s \in ss' -> (N(a|s) > 0)%nat.
   by rewrite /ss' mem_filter lt0n => /andP [->].
-have Hnum': 0 < N(a|flatten ss').
-  apply /ltR0n; destruct ss' => //=.
+have Hnum': (0:R) < N(a|flatten ss')%:R.
+  rewrite ltr0n; destruct ss' => //=.
   rewrite /num_occ count_cat ltn_addr //.
   by rewrite Hnum // in_cons eqxx.
-have Hsz: 0 < size (flatten ss').
-  apply (ltR_leR_trans Hnum').
-  by apply /le_INR /leP /count_size.
-apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
-    log (size (flatten ss') /
+have Hsz: (0:R) < (size (flatten ss'))%:R.
+  apply (lt_le_trans Hnum').
+  by rewrite ler_nat; apply /count_size.
+apply (@le_trans _ _ ((\sum_(i <- ss') N(a|i))%:R *
+    log (size (flatten ss') /:R
       (\sum_(i <- ss') N(a|i))%nat)));
   last first.
   (* Not mentioned in the book: one has to compensate for the discarding
@@ -172,17 +209,14 @@ apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
      Works thanks to monotonicity of log. *)
   (* (3) Compensate for removed strings *)
   case: ifP => Hsum.
-    by rewrite (eqP Hsum) mul0R.
-  apply leR_wpmul2l => //.
+    by rewrite (eqP Hsum) mul0r.
+  apply ler_wpM2l => //.
   apply Log_increasing_le => //.
-    apply/mulR_gt0 => //.
-    apply/invR_gt0/ltR0n.
-    by rewrite lt0n Hsum.
-  apply leR_wpmul2r.
-    apply /Rlt_le /invR_gt0 /ltR0n.
-    by rewrite lt0n Hsum.
-  apply /le_INR /leP.
-  rewrite !size_flatten !sumn_big_addn.
+    apply/mulr_gt0 => //.
+    by rewrite invr_gt0 ltr0n lt0n Hsum.
+  apply ler_wpM2r.
+    by rewrite invr_ge0 ler0n.
+  rewrite ler_nat !size_flatten !sumn_big_addn.
   rewrite !big_map big_filter.
   rewrite [in X in (_ <= X)%nat]
     (bigID (fun s => N(a|s) == O)) /=.
@@ -191,45 +225,47 @@ apply (@leR_trans ((\sum_(i <- ss') N(a|i))%:R *
 have Htotal := esym (num_occ_flatten a ss').
 rewrite big_tnth in Htotal.
 have Hnum2 : N(a|flatten ss') != O.
-  rewrite -lt0n; exact/ltR0n.
-set d := seq_nat_fdist Htotal Hnum2.
+  by rewrite -lt0n -(ltr0n R).
+set d := seq_nat_fdist R Htotal Hnum2.
 set r := fun i =>
-  (size (tnth (in_tuple ss') i))
-  / N(a|tnth (in_tuple ss') i).
+  size (tnth (in_tuple ss') i)
+  /:R N(a|tnth (in_tuple ss') i) : R.
+(* Need convex for Rpos_interval *)
 have Hr: forall i, r i \in Rpos_interval.
   rewrite /r /= => i.
-  rewrite classical_sets.in_setE; apply Rlt_mult_inv_pos; apply /ltR0n.
+  rewrite classical_sets.in_setE; apply/divr_gt0; rewrite ltr0n.
     apply (@leq_trans N(a|tnth (in_tuple ss') i)).
       by rewrite Hnum // mem_tnth.
     by apply count_size.
   by apply /Hnum /mem_tnth.
 (* (5) Apply Jensen *)
-move: (jensen_dist_concave log_concave d Hr).
+move: (jensen_dist_concave (@log_concave R) d Hr).
 rewrite /d /r /=.
 under eq_bigr do rewrite ffunE /=.
 under [X in _ <= log X -> _]eq_bigr do rewrite ffunE /=.
 rewrite -(big_tnth _ _ _ xpredT
-  (fun s => (N(a|s) / N(a|flatten ss')) *
-           log ((size s) / N(a|s)))).
+  (fun s => N(a|s) /:R N(a|flatten ss') *
+           log (size s /:R N(a|s)))).
 rewrite -(big_tnth _ _ _ xpredT
-  (fun s => (N(a|s) / N(a|flatten ss')) *
-           (size s / N(a|s)))).
+  (fun s => (N(a|s) /:R N(a|flatten ss')) *
+           (size s /:R N(a|s)))).
 (* (6) Transform the statement to match the goal *)
-move/(@leR_wpmul2r N(a|flatten ss') _ _ (leR0n _)).
+move/(@ler_wpM2r R N(a|flatten ss')%:R (ler0n _ _)).
 rewrite !big_distrl /=.
 rewrite (eq_bigr
-  (fun i => N(a|i) * log (size i / N(a|i))));
+  (fun i => N(a|i)%:R * log (size i /:R N(a|i))));
   last first.
-  by move=> i _; rewrite mulRAC -!mulRA (mulRA (/ _)) mulVR ?mul1R // gtR_eqF.
-move/leR_trans; apply. (* LHS matches *)
-rewrite mulRC -num_occ_flatten big_filter.
+  move=> i _; rewrite mulrAC -!mulrA (mulrA _^-1) mulVr ?mul1r //.
+  by rewrite unitfE pnatr_eq0 -lt0n -(ltr0n R).
+move/le_trans; apply. (* LHS matches *)
+rewrite mulrC -num_occ_flatten big_filter.
 rewrite (eq_bigr
-  (fun i => size i / N(a|flatten ss')));
+  (fun i => size i /:R N(a|flatten ss')));
   last first.
-  move=> i Hi; rewrite mulRCA {1}/Rdiv mulRAC.
-  by rewrite mulRV ?mul1R // INR_eq0'.
-rewrite -big_filter -/ss' -big_distrl.
-rewrite -big_morph_natRD /=.
+  move=> i Hi; rewrite mulrCA mulrAC.
+  by rewrite mulrV ?mul1r // unitfE pnatr_eq0.
+rewrite -big_filter -/ss' -big_distrl /=.
+rewrite -(big_morph (fun x => x%:R) (id2:=0) (natrD _)) //=.
 by rewrite size_flatten sumn_big_addn big_map.
 Qed.
 
@@ -240,7 +276,7 @@ End string.
 (* tentative definition *)
 Section higher_order_empirical_entropy.
 
-Variables (A : finType) (l : seq A).
+Variables (R : realType) (A : finType) (l : seq A).
 Hypothesis A0 : (O < #|A|)%nat.
 Let n := size l.
 Let def : A. Proof. move/card_gt0P : A0 => /sigW[def _]; exact def. Defined.
@@ -255,17 +291,17 @@ Fixpoint takes {k : nat} (w : k.-tuple A) (s : seq A) {struct s} : seq A :=
     [::].
 
 (* sample ref: https://www.dcc.uchile.cl/~gnavarro/ps/jea08.2.pdf *)
-Definition hoH (k : nat) := / n%:R *
+Definition hoH (k : nat) := n%:R^-1 *
   \sum_(w in {: k.-tuple A}) #|takes w l|%:R *
     match Bool.bool_dec (size w != O) true with
-      | left H => `H (num_occ_dist H)
+      | left H => `H (num_occ_dist R H)
       | _ => 0
     end.
 
 Lemma hoH_decr (k : nat) : hoH k.+1 <= hoH k.
 Proof.
-rewrite /hoH; apply/RleP; rewrite ler_pM2l//; last first.
-  by rewrite INRE RinvE invr_gt0// ltr0n lt0n.
+rewrite /hoH; rewrite ler_pM2l//; last first.
+  by rewrite invr_gt0 ltr0n lt0n.
 (* TODO *)
 Abort.
 
