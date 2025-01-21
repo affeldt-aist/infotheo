@@ -78,7 +78,7 @@ Section divergence_def.
 Context {R : realType}.
 Variables (A : finType) (P Q : R.-fdist A).
 
-Definition div := \sum_(a in A) P a * log (P a / Q a).
+Definition div : R^o := \sum_(a in A) P a * log (P a / Q a).
 
 End divergence_def.
 

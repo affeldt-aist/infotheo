@@ -67,7 +67,7 @@ Hint Extern 0 ((_ <= 1)%coqR) => solve [exact/RleP/FDist.le1] : core.*)
 Section entropy_definition.
 Variables (R : realType) (A : finType) (P : R.-fdist A).
 
-Definition entropy := - \sum_(a in A) P a * log (P a).
+Definition entropy : R^o := - \sum_(a in A) P a * log (P a).
 Local Notation "'`H'" := (entropy).
 
 Lemma entropy_ge0 : 0 <= `H.
