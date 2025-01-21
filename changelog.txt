@@ -1,3 +1,14 @@
+--------------------
+from 0.7.7 to master
+--------------------
+
+* added:
+- in ssr_ext.v
+  + lemma eqW
+- in derive_ext.v
+  + lemmas open_norm_subball,
+           near_eq_derive, near_eq_derivable, near_eq_is_derive
+
 -------------------
 from 0.7.6 to 0.7.7
 -------------------
