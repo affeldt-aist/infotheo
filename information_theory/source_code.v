@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-Require Import Reals.
-From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext logb fdist proba.
+From mathcomp Require Import Rstruct reals.
+Require Import realType_logb fdist proba.
 
 (******************************************************************************)
 (*                        Definition of a source code                         *)
@@ -16,8 +15,6 @@ Require Import ssrR Reals_ext logb fdist proba.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
-
-Local Open Scope R_scope.
 
 Declare Scope source_code_scope.
 
@@ -36,27 +33,30 @@ Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Section scode_vl_definition.
+Let R := Rdefinitions.R.
 Variables (A : finType) (k n : nat).
 
 Definition scode_vl := scode A (seq bool) k.
 
 Variables (P : R.-fdist A) (f : {RV (P `^ n) -> seq bool}).
 
-Definition E_leng_cw := `E ((INR \o size) `o f).
+Definition E_leng_cw := `E (((fun x => x%:R)%R \o size) `o f).
 
 End scode_vl_definition.
 
 Section scode_fl_definition.
+Let R := Rdefinitions.R.
 Variables (A : finType) (k n : nat).
 
 Definition scode_fl := scode A 'rV[bool]_n k.
 
-Definition SrcRate (sc : scode_fl) := n%:R / k%:R.
+Definition SrcRate (sc : scode_fl) : R := (n%:R / k%:R)%R.
 
 End scode_fl_definition.
 
 Section code_error_rate.
-Variables (A : finType) (B : Type) (P : {fdist A}).
+Let R := Rdefinitions.R.
+Variables (A : finType) (B : Type) (P : R.-fdist A).
 Variables (k : nat) (sc : scode A B k).
 
 Definition SrcErrRate := Pr (P `^ k) [set ta | dec sc (enc sc ta) != ta].
