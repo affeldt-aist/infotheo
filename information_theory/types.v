@@ -5,8 +5,8 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum perm.
 From mathcomp Require Import matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct.
-Require Import Reals.
-Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext logb.
+(*Require Import Reals.*)
+Require Import (*ssrR Reals_ext*) realType_ext ssr_ext ssralg_ext logb.
 Require Import fdist proba entropy num_occ channel_code channel typ_seq.
 
 (******************************************************************************)
@@ -33,9 +33,12 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Import GRing.Theory Num.Theory.
+
 Local Open Scope entropy_scope.
 Local Open Scope num_occ_scope.
-Local Open Scope R_scope.
+(*Local Open Scope R_scope.*)
+Local Open Scope ring_scope.
 Local Open Scope fdist_scope.
 
 Module type.
@@ -48,7 +51,7 @@ Variable n : nat.
 Record type : predArgType := mkType {
   d :> {fdist A} ;
   f : {ffun A -> 'I_n.+1} ;
-  d_f : forall a, d a = INR (f a) / INR n }.
+  d_f : forall a, d a = (f a)%:R / n%:R }.
 
 End type_def.
 
@@ -66,7 +69,8 @@ Definition ffun_of_type A n (P : P_ n ( A )) := let: type.mkType _ f _ := P in f
 Lemma type_fun_type A n (_ : n != O) (P : P_ n ( A )) a :
   ((type.f P) a)%:R = n%:R * type.d P a.
 Proof.
-case: P => /= d f d_f; by rewrite d_f mulRCA mulRV ?INR_eq0' // mulR1.
+case: P => /= d f d_f.
+by rewrite d_f mulrCA mulfV ?mulr1// pnatr_eq0.
 Qed.
 
 Lemma INR_type_fun A n (P : P_ n ( A )) a :
@@ -76,23 +80,24 @@ Proof. destruct P as [d f d_f] => /=. by rewrite d_f. Qed.
 Lemma no_0_type (A : finType) (d : {fdist A}) (t : {ffun A -> 'I_1}) :
   (forall a, d a = (t a)%:R / 0%:R) -> False.
 Proof.
-move=> H; apply R1_neq_R0.
-rewrite (_ : 1 = 1%mcR)//.
+move=> H.
+have /eqP := @oner_neq0 Rdefinitions.R; apply.
 rewrite -(FDist.f1 d).
-transitivity (\sum_(a | a \in A) INR (t a) / 0); first exact/eq_bigr.
-rewrite -big_distrl /= -big_morph_natRD.
-rewrite (_ : (\sum_(a in A) _)%nat = O) ?mul0R //.
+transitivity (\sum_(a | a \in A) (t a)%:R / 0 : Rdefinitions.R); first exact/eq_bigr.
+rewrite -big_distrl /= -(big_morph (id2 := 0%R) _ (@natrD Rdefinitions.R))//.
+rewrite (_ : (\sum_(a in A) _)%nat = O) ?mul0r //.
 transitivity (\sum_(a in A) 0)%nat; first by apply eq_bigr => a _; rewrite (ord1 (t a)).
 by rewrite big_const iter_addn.
 Qed.
 
 Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
-set f := [ffun a => N(a | ta)%:R / n.+1%:R].
+pose f := [ffun a => N(a | ta)%:R / n.+1%:R : Rdefinitions.R].
 assert (H1 : forall a, (0%mcR <= f a)%mcR).
-  move=> a; rewrite ffunE; apply/RleP/divR_ge0; by [apply leR0n | apply ltR0n].
+  move=> a; rewrite ffunE; apply/divr_ge0; by [apply ler0n | apply ltr0n].
 assert (H2 : \sum_(a in A) f a = 1%R).
   under eq_bigr do rewrite ffunE /=.
-  by rewrite -big_distrl /= -big_morph_natRD sum_num_occ_alt mulRV // INR_eq0'.
+  rewrite -big_distrl /= -(big_morph (id2 := 0%R) _ (@natrD Rdefinitions.R))//.
+  by rewrite sum_num_occ_alt mulfV // pnatr_eq0.
 assert (H : forall a, (N(a | ta) < n.+2)%nat).
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
 refine (@type.mkType _ n.+1 (FDist.make H1 H2)
@@ -133,35 +138,30 @@ destruct Q as [d2 f2 H2].
 rewrite /= in H.
 apply/type_eqP => /=.
 apply/eqP/ffunP => a.
-apply/val_inj/INR_eq.
-move: {H}(H a); rewrite H1 H2 eqR_mul2r //.
-apply/invR_neq0; by rewrite INR_eq0.
+apply/val_inj/eqP.
+rewrite -(eqr_nat Rdefinitions.R).
+move: {H}(H a); rewrite H1 H2.
+move=> /(congr1 (fun x => x * n.+1%:R)).
+by rewrite -!mulrA mulVf ?mulr1 ?pnatr_eq0// => ->.
 Qed.
 
 Definition fdist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : (\sum_(a in A) f a)%nat == n.+1) : {fdist A}.
-set pf := [ffun a : A => INR (f a) / INR n.+1].
+set pf := [ffun a : A => (f a)%:R / n.+1%:R :> Rdefinitions.R].
 assert (pf_ge0 : forall a, (0 <= pf a)%mcR).
-  move=> a; apply/RleP.
-  rewrite /pf/= ffunE; apply: divR_ge0 => //.
-    apply/RleP.
-    rewrite INRE.
-    by rewrite Num.Theory.ler0n.
-  apply/RltP.
-  rewrite INRE.
-  by rewrite Num.Theory.ltr0n.
-assert (H : (\sum_(a in A) pf a)%mcR = 1 :> R).
+  move=> a.
+  by rewrite /pf/= ffunE divr_ge0//.
+assert (H : (\sum_(a in A) pf a)%mcR = 1 :> Rdefinitions.R).
   rewrite /pf; under eq_bigr do rewrite ffunE /=.
-  rewrite /Rdiv -big_distrl /= -big_morph_natRD.
+  rewrite -big_distrl /= -(big_morph (id2 := 0%R) _ (@natrD Rdefinitions.R))//.
   move/eqP : Hf => ->.
-  rewrite -RmultE.
-  by rewrite mulRV// INR_eq0'.
+  by rewrite mulfV// pnatr_eq0.
 exact: (FDist.make pf_ge0 H).
 Defined.
 
 Lemma fdist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : (\sum_(a in A) f a)%nat == n.+1) :
-forall a : A, (fdist_of_ffun Hf) a = INR (f a) / INR n.+1.
+forall a : A, (fdist_of_ffun Hf) a = (f a)%:R / n.+1%:R.
 Proof. by move=> a; rewrite ffunE. Qed.
 
 Definition type_choice_f (A : finType) n (f : {ffun A -> 'I_n.+1}) : option (P_ n ( A )).
@@ -173,13 +173,14 @@ refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1)%nat with
 Defined.
 
 Lemma ffun_of_fdist (A : finType) n (d : {fdist A}) (t : {ffun A -> 'I_n.+2})
-  (H : forall a : A, d a = INR (t a) / INR n.+1) : (\sum_(a in A) t a)%nat == n.+1.
+  (H : forall a : A, d a = (t a)%:R / n.+1%:R) : (\sum_(a in A) t a)%nat == n.+1.
 Proof.
-suff : INR (\sum_(a in A) t a) == INR n.+1 * \sum_(a | a \in A) d a.
-  by move/eqP; rewrite (FDist.f1 d) mulR1 => /INR_eq/eqP.
+suff : (\sum_(a in A) t a)%:R == n.+1%:R * \sum_(a | a \in A) d a.
+  by move/eqP; rewrite (FDist.f1 d) mulr1 => /eqP; rewrite eqr_nat.
 apply/eqP.
-transitivity (INR n.+1 * (\sum_(a|a \in A) INR (t a) / INR n.+1)).
-  by rewrite -big_distrl -big_morph_natRD mulRCA mulRV ?mulR1 // INR_eq0'.
+transitivity (n.+1%:R * (\sum_(a|a \in A) (t a)%:R / n.+1%:R) :> Rdefinitions.R).
+  rewrite -big_distrl -(big_morph (id2 := 0%R) _ (@natrD Rdefinitions.R))//.
+  by rewrite mulrCA mulfV ?mulr1 // pnatr_eq0.
 congr (_ * _); exact/eq_bigr.
 Qed.
 
@@ -315,7 +316,7 @@ Variables (A : finType) (n : nat) (P : P_ n ( A )).
 Local Open Scope nat_scope.
 
 Definition typed_tuples :=
-  [set t : n.-tuple A | [forall a, type.d P a == (INR N(a | t) / INR n)%R] ].
+  [set t : n.-tuple A | [forall a, type.d P a == (N(a | t)%:R / n%:R)%R] ].
 
 End typed_tuples.
 
@@ -332,9 +333,10 @@ move: Hta.
 rewrite in_set.
 move/forallP/(_ a)/eqP.
 destruct P as [d f H] => /= Htmp.
-apply/INR_eq/esym; move: Htmp.
-rewrite H eqR_mul2r //.
-by apply/invR_neq0; rewrite INR_eq0.
+apply/eqP; rewrite -(@eqr_nat Rdefinitions.R).
+move: Htmp => /(congr1 (fun x => x * n%:R)).
+rewrite -mulrA mulVf ?pnatr_eq0// mulr1 => <-.
+by rewrite H -mulrA mulVf ?mulr1// pnatr_eq0.
 Qed.
 
 Lemma typed_tuples_not_empty' : exists x : seq A,
@@ -392,7 +394,7 @@ Local Open Scope tuple_ext_scope.
 Local Open Scope vec_ext_scope.
 
 Lemma tuple_dist_type t : tuple_of_row t \in T_{P} ->
-  (type.d P) `^ n t = \prod_(a : A) type.d P a ^ (type.f P a).
+  ((type.d P) `^ n) t = \prod_(a : A) type.d P a ^+ (type.f P a).
 Proof.
 move=> Hx.
 rewrite fdist_rVE.
@@ -401,20 +403,22 @@ rewrite (_ : \prod_(i < n) type.d P (t ``_ i) =
   rewrite exchange_big; apply eq_big ; first by [].
   move=> i _.
   rewrite (bigID (fun y => y == t ``_ i)) /=.
-  rewrite -/(INR n.+1) big_pred1_eq eqxx big1 ?mulR1 //.
+  rewrite big_pred1_eq eqxx big1 ?mulr1 //.
   by move=> i0 /negbTE ->.
 apply eq_bigr => a _.
-rewrite -big_mkcond /= -/(INR n.+1).
-transitivity (\prod_(i < n | t ``_ i == a) (INR (type.f P a) / INR n)).
+rewrite -big_mkcond /=.
+transitivity (\prod_(i < n | t ``_ i == a) ((type.f P a)%:R / n%:R) : Rdefinitions.R)%R.
   apply eq_big => // i.
   move/eqP => ->.
   by rewrite INR_type_fun.
-rewrite big_const iter_mulR INR_type_fun.
-congr (_ ^ _).
+rewrite prodr_const/=.
+rewrite INR_type_fun.
+congr (_ ^+ _).
 rewrite /typed_tuples inE in Hx.
 move/forallP/(_ a)/eqP : Hx.
-rewrite -INR_type_fun eqR_mul2r; last by apply/invR_neq0; rewrite INR_eq0; exact/eqP.
-move/INR_eq => ->.
+rewrite -INR_type_fun.
+move=> /(congr1 (fun x => x * n%:R)).
+rewrite -!mulrA mulVf ?pnatr_eq0 ?mulr1// => /eqP; rewrite eqr_nat => /eqP ->.
 rewrite num_occ_alt cardsE /=.
 apply eq_card => /= n0.
 by rewrite /in_mem /= tnth_mktuple.
@@ -423,31 +427,41 @@ Qed.
 Local Close Scope tuple_ext_scope.
 
 Lemma tuple_dist_type_entropy t : tuple_of_row t \in T_{P} ->
-  (type.d P) `^ n t = exp2 (- INR n * `H P).
+  ((type.d P) `^ n) t = exp2 (- n%:R * `H P).
 Proof.
 move/(@tuple_dist_type t) => ->.
-rewrite (_ : \prod_(a : A) type.d P a ^ (type.f P) a =
-             \prod_(a : A) exp2 (type.d P a * log (type.d P a) * INR n)); last first.
+rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
+             \prod_(a : A) exp2 (type.d P a * log (type.d P a) * n%:R)); last first.
   apply eq_bigr => a _.
   case/boolP : (0 == type.d P a) => H; last first.
     have {}H : 0 < type.d P a.
       have := FDist.ge0 (type.d P) a.
-      move/RleP.
-      case/Rle_lt_or_eq_dec => // abs.
-      rewrite (_ : 0%mcR = 0)// in abs.
-      by rewrite abs eqxx in H.
-    rewrite -{1}(logK H) -exp2_pow.
+      by rewrite Order.POrderTheory.le_eqVlt (negbTE H)/=.
+    move/RltP in H.
+    rewrite -{1}(logK H).
+    rewrite -RpowE.
+    rewrite -exp2_pow.
     congr exp2.
-    rewrite -mulRA [X in _ = X]mulRC -mulRA mulRC.
+    rewrite -mulrA [X in _ = X]mulrC -mulrA mulrC.
     congr (_ * _).
-    by rewrite type_fun_type.
+    rewrite -type_fun_type//.
+    by rewrite INRE.
   - move/eqP : (H) => <-.
-    rewrite -(_ : O = type.f P a); first by rewrite !mul0R exp2_0 /pow.
-    apply INR_eq.
-    rewrite {1}/INR.
-    rewrite -(@eqR_mul2r ( / INR n)); last by apply/invR_neq0; rewrite INR_eq0; exact/eqP.
-    by rewrite type_fun_type // -(eqP H) mulR0.
-rewrite -(big_morph _ morph_exp2_plus exp2_0) -(big_morph _ (morph_mulRDl _) (mul0R _)).
+    rewrite -(_ : O = type.f P a); first by rewrite !mul0r exp2_0.
+    apply/eqP.
+    rewrite -(eqr_nat Rdefinitions.R).
+    move/eqP : H => /(congr1 (fun x => n%:R * x)).
+    by rewrite mulr0 type_fun_type// => /eqP.
+rewrite -(big_morph _ morph_exp2_plus exp2_0).
+congr exp2.
+rewrite /entropy mulrN mulNr opprK.
+rewrite big_distrr/=.
+apply: eq_bigr => a _.
+rewrite mulrC; congr *%R.
+congr *%R.
+
+
+rewrite  -(big_morph _ (mulrDl _) (mul0r _)).
 by rewrite /entropy Rmult_opp_opp mulRC.
 Qed.
 
