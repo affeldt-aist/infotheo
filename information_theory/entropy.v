@@ -244,7 +244,7 @@ Definition cond_entropy1 a := - \sum_(b in B)
 Let P := QP`2.
 
 (*eqn 2.11 *)
-Definition cond_entropy := \sum_(a in A) P a * cond_entropy1 a.
+Definition cond_entropy : R^o := \sum_(a in A) P a * cond_entropy1 a.
 
 Let PQ := fdistX QP.
 
