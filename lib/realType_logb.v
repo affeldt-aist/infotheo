@@ -185,6 +185,36 @@ Proof. by move=> x0; rewrite /log LogV. Qed.
 Lemma logM x y : 0 < x -> 0 < y -> log (x * y) = log x + log y.
 Proof. move=> x0 y0; exact: (@LogM _ 2 _ _ x0 y0). Qed.
 
+Lemma logX2 n : log (2 ^+ n) = n%:R :> R.
+Proof.
+elim: n; rewrite ?expr0 ?log1// => n ih.
+by rewrite exprS logM ?exprn_gt0// ih log2 nat1r.
+Qed.
+
+Lemma log4 : log 4 = 2 :> R.
+Proof.
+rewrite (_ : 4 = 2 ^+ 2); last by rewrite -natrX.
+by rewrite logX2.
+Qed.
+
+Lemma log8 : log 8 = 3 :> R.
+Proof.
+rewrite (_ : 8 = 2 ^+ 3); last by rewrite -natrX.
+by rewrite logX2.
+Qed.
+
+Lemma log16 : log 16 = 4 :> R.
+Proof.
+rewrite (_ : 16 = 2 ^+ 4); last by rewrite -natrX.
+by rewrite logX2.
+Qed.
+
+Lemma log32 : log 32 = 5 :> R.
+Proof.
+rewrite (_ : 32 = 2 ^+ 5); last by rewrite -natrX.
+by rewrite logX2.
+Qed.
+
 Lemma logDiv x y : 0 < x -> 0 < y -> log (x / y) = log x - log y.
 Proof. by move=> x0 y0; exact: (@LogDiv _ _ _ _ x0 y0). Qed.
 
