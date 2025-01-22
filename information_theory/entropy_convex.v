@@ -348,14 +348,7 @@ move=> x /(svalP (sig_derive1_DnH2 x))/@ex_derive.
 by move/derivable1_diffP/diff_derivable.
 Qed.
 
-Definition probR_itv (p : {prob R}) :
-  itv.Itv.def R `[(ssrint.Posz 0), (ssrint.Posz 1)].
-Proof.
-apply (@itv.Itv.Def _ _ (p.~)).
-rewrite /itv.Itv.itv_cond.
-by rewrite in_itv /=; apply/andP; split.
-Defined.
-
+(* move to analysis *)
 Lemma continuous_id (T : topologicalType) : continuous (@idfun T).
 Proof. exact/continuousP. Qed.
 
@@ -375,10 +368,16 @@ Qed.
 
 From mathcomp Require Import -(notations) convex.
 
+(* TODO: introduce two notations and make two conventions more symmetric *)
+Definition prob_itv (p : {prob R}) :
+  itv.Itv.def R `[(ssrint.Posz 0), (ssrint.Posz 1)].
+Proof.
+apply (@itv.Itv.Def _ _ (p.~)).
+rewrite /itv.Itv.itv_cond.
+by rewrite in_itv /=; apply/andP; split.
+Defined.
 Lemma conv_conv (x y : R^o) (p : {prob R}) :
-  x <| p |> y = mathcomp.analysis.convex.conv (probR_itv p)
-                  (x : @convex.convex_realDomainType R)
-                  (y : @convex.convex_realDomainType R).
+  x <| p |> y = mathcomp.analysis.convex.conv (prob_itv p) x y.
 Proof.
 by rewrite avgRE /= /conv /isConvexSpace.conv /= /conv /= -!mulr_regl onemK.
 Qed.
