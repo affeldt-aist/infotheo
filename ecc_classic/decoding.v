@@ -2,10 +2,10 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm.
 From mathcomp Require Import zmodp matrix vector order.
-From mathcomp Require Import lra mathcomp_extra Rstruct reals.
+From mathcomp Require Import lra ring mathcomp_extra Rstruct reals.
 From mathcomp Require ssrnum.
-Require Import Reals.
-Require Import ssrR realType_ext Reals_ext ssr_ext ssralg_ext f2 fdist.
+(*Require Import Reals.*)
+Require Import (*ssrR*) realType_ext (*Reals_ext*) ssr_ext ssralg_ext f2 fdist bigop_ext.
 Require Import proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
 
@@ -33,7 +33,6 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Close Scope R_scope.
 Import GRing.Theory Num.Theory Order.Theory.
 Local Open Scope ring_scope.
 
@@ -50,6 +49,109 @@ Definition cancel_on n (F : finFieldType) (C : {vspace 'rV[F]_n}) {B} (e : B -> 
 Lemma vspace_not_empty (F : finFieldType) n (C : {vspace 'rV[F]_n}) :
   (0 < #| [set cw in C] |)%nat.
 Proof. apply/card_gt0P; exists 0; by rewrite inE mem0v. Qed.
+
+(* TODO: move elsewhere *)
+Reserved Notation "\min^ b '_(' a 'in' A ) F" (at level 41,
+  F at level 41, a, A at level 50,
+   format "'[' \min^ b '_(' a  'in'  A ) '/  '  F ']'").
+
+Notation "\min^ b '_(' a 'in' A ) F" :=
+  ((fun a => F) (arg_min b (fun x => x \in A) (fun a => F))) : min_scope.
+
+Notation "\rmax_ ( i 'in' A ) F" := (\big[Order.max/GRing.zero]_(i in A) F)
+  (at level 41, F at level 41, i, A at level 50,
+           format "'[' \rmax_ ( i  'in'  A ) '/  '  F ']'").
+
+Notation "\rmax_ ( i <- r ) F" :=  (\big[Order.max/GRing.zero]_(i <- r) F)
+  (at level 41, F at level 41, i, r at level 50,
+           format "'[' \rmax_ ( i  <-  r ) '/  '  F ']'").
+
+Local Open Scope min_scope.
+
+Lemma bigmaxR_seq_eq {R : realType} (A : finType) (f : A -> R) (s : seq A) a :
+  a \in s ->
+  (forall a0, 0 <= f a0) ->
+  (forall a0, a0 \in s -> f a0 <= f a) ->
+  f a = \big[Order.max/GRing.zero]_(a0 <- s) f a0.
+Proof.
+elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
+- move/eqP => -> Hhpos Hh.
+  rewrite big_cons.
+  apply/esym/max_idPl.
+  rewrite big_seq.
+  apply/bigmax_le => // i itl.
+  by rewrite Hh// inE itl orbT.
+- move=> atl Hhpos Hh.
+  rewrite big_cons.
+  transitivity (\rmax_(j <- tl) f j).
+    apply: IH => // i itl.
+    by rewrite Hh// inE itl orbT.
+  apply/esym/max_idPr.
+  rewrite -(IH a)//.
+    apply: Hh.
+    by rewrite mem_head.
+   move=> c0 Hc0.
+   apply Hh.
+   by rewrite in_cons Hc0 orbC.
+Qed.
+
+Lemma bigmaxR_eq {R : realType} (A : finType) (C : {set A}) a (f : A -> R):
+  a \in C ->
+  (forall a0, 0 <= f a0) ->
+  (forall c, c \in C -> f c <= f a) ->
+  f a = \rmax_(c in C) f c.
+Proof.
+move=> aC f0 Hf.
+rewrite -big_filter.
+apply bigmaxR_seq_eq => //.
+- by rewrite mem_filter aC /= mem_index_enum.
+- by move=> a0; rewrite mem_filter mem_index_enum andbT => /Hf.
+Qed.
+
+Lemma leq_bigmin (A : finType) (C : {set A}) (cnot0 : {c0 | c0 \in C})
+  a (Ha : a \in C) (h : A -> nat) :
+  (\min^ (sval cnot0) _(c in C) h c <= h a)%nat.
+Proof. by case: arg_minnP; [case: cnot0|move=> a0 a0C; exact]. Qed.
+
+Lemma bigmaxR_bigmin_vec_helper {R : realType} (A : finType) n (g : nat -> R) :
+  (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
+  (forall r, 0 <= g r) ->
+  forall (C : {set 'rV[A]_n}) c (_ : c \in C) (d : 'rV[A]_n -> nat)
+  (_ : forall c, c \in C -> (d c <= n)%nat)
+  (cnot0 : {c0 | c0 \in C}),
+  d c = \min^ (sval cnot0) _(c in C) d c ->
+  g (d c) = \rmax_(c in C) g (d c).
+Proof.
+move=> Hdecr Hr C c cC d Hd cnot0 H.
+apply (@bigmaxR_eq _ _ C c (fun a => g (d a))) => //.
+move=> /= c0 c0C.
+apply/Hdecr/andP; split; [|exact: Hd].
+rewrite H.
+exact: leq_bigmin.
+Qed.
+
+Lemma bigmaxR_distrr {R : realType} I a (a0 : 0 <= a) r (P : pred I) F :
+  (a * \big[Order.max/GRing.zero]_(i <- r | P i) F i) =
+  \big[Order.max/GRing.zero]_(i <- r | P i) (a * F i) :> R.
+Proof.
+elim: r => [| h t IH].
+  by rewrite 2!big_nil mulr0.
+rewrite 2!big_cons.
+case: ifP => Qh //.
+ rewrite -IH.
+by rewrite maxr_pMr//.
+Qed.
+
+Lemma bigmaxR_distrl {R : realType} I a (a0 : 0 <= a) r (P : pred I) F :
+  (\big[Order.max/GRing.zero]_(i <- r | P i) F i) * a =
+  \big[Order.max/GRing.zero]_(i <- r | P i) (F i * a) :> R.
+Proof.
+by rewrite mulrC bigmaxR_distrr //; apply congr_big => // ?; rewrite mulrC.
+Qed.
+
+Local Close Scope min_scope.
+
+(* /TODO: move elsewhere *)
 
 Section minimum_distance_decoding.
 
@@ -127,6 +229,7 @@ Definition ML_decoding :=
 End maximum_likelihood_decoding.
 
 Section maximum_likelihood_decoding_prop.
+Let R := Rdefinitions.R.
 
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
@@ -162,8 +265,9 @@ Import ssrnum.Num.Theory.
 Lemma ML_smallest_err_rate phi :
   echa(W, mkCode enc dec) <= echa(W, mkCode enc phi).
 Proof.
-apply/RleP/leR_wpmul2l; first by apply/mulR_ge0 => //; exact/invR_ge0/ltR0n.
-rewrite /ErrRateCond /=; apply/RleP.
+rewrite ler_wpM2l//=.
+  by rewrite invr_ge0.
+rewrite /ErrRateCond /=.
 rewrite [leRHS](eq_bigr
   (fun m => 1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m])); last first.
   move=> m _; rewrite Pr_to_cplt; congr (_ - Pr _ _).
@@ -174,7 +278,7 @@ rewrite [leLHS](eq_bigr
   rewrite [in LHS]Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
 rewrite 2!big_split /=; apply: lerD => //.
-rewrite -2!big_morph_oppR lerNr opprK /Pr (exchange_big_dep xpredT) //=.
+rewrite -2!big_morph_oppr lerNr opprK /Pr (exchange_big_dep xpredT) //=.
 rewrite [leRHS](exchange_big_dep xpredT) //=.
 apply ler_sum => /= tb _.
 rewrite (eq_bigl (fun m => phi tb == Some m)); last by move=> m; rewrite inE.
@@ -209,6 +313,7 @@ Qed.
 End maximum_likelihood_decoding_prop.
 
 Section MD_ML_decoding.
+Let R := Rdefinitions.R.
 
 Variable p : {prob R}.
 
@@ -241,7 +346,7 @@ case: oc Hoc => [c|] Hc; last first.
 exists c; split; first by reflexivity.
 (* replace  W ``^ n (y | f c) with a closed formula because it is a BSC *)
 pose dH_y c := dH y c.
-pose g : nat -> R := fun d : nat => ((1 - Prob.p p) ^ (n - d) * (Prob.p p) ^ d)%R.
+pose g : nat -> R := fun d : nat => ((1 - Prob.p p) ^+ (n - d) * (Prob.p p) ^+ d)%R.
 have -> : W ``(y | c) = g (dH_y c).
   move: (DMC_BSC_prop p enc (discard c) y).
   rewrite [X in BSC.c X _](_ : _ = card_F2) //.
@@ -255,12 +360,11 @@ transitivity (\big[Order.max/0]_(c in C) (g (dH_y c))); last first.
   by rewrite -/W compatible.
 (* the function maxed over is decreasing so we may look for its minimizer,
    which is given by minimum distance decoding *)
-rewrite (@bigmaxR_bigmin_vec_helper _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
-- by rewrite bigmaxRE; apply eq_bigl => /= i; rewrite inE.
+rewrite (@bigmaxR_bigmin_vec_helper _ _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
+- apply: eq_bigl => i.
+  by rewrite inE.
 - by apply bsc_prob_prop.
-- move=> r; rewrite /g !coqRE.
-  apply/RleP/mulr_ge0; apply/exprn_ge0; last exact/prob_ge0.
-  exact/onem_ge0/prob_le1.
+- by move=> r; rewrite /g mulr_ge0 ?exprn_ge0 ?subr_ge0 ?inE//.
 - rewrite inE; move/subsetP: f_img; apply.
   rewrite inE; apply/existsP; by exists (receivable_rV y); apply/eqP.
 - by move=> ? _; rewrite /dH_y max_dH.
@@ -283,7 +387,7 @@ Definition MAP_decoding := forall y : P.-receivable W,
 End MAP_decoding.
 
 Section MAP_decoding_prop.
-
+Let R := Rdefinitions.R.
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B ('rV[A]_n) n.
@@ -298,34 +402,40 @@ have Hunpos : (#| [set cw in C] |%:R)^-1 > 0 :> R.
   by rewrite invr_gt0 ltr0n; exact/vspace_not_empty.
 move: (HMAP tb) => [m [tbm]].
 rewrite /fdist_post_prob. unlock. simpl.
-set tmp := \rmax_(_ <- _ | _) _.
-rewrite /tmp.
 under [in X in _ = X -> _]eq_bigr do rewrite ffunE.
 move=> H.
 evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H; last first.
   by move=> v vC; rewrite /h; reflexivity.
 rewrite -bigmaxR_distrl in H; last first.
-  by apply/RleP; rewrite invr_ge0; exact/fdist_post_prob_den_ge0.
+  by rewrite invr_ge0; exact/fdist_post_prob_den_ge0.
 rewrite {2 3}/P in H.
 set r := index_enum _ in H.
 move: H.
-under [in X in _ = X -> _]eq_bigr.
+under [in X in _ = X / _ -> _]eq_bigr.
   move=> i iC.
   rewrite fdist_uniform_supp_in; last by rewrite inE.
   over.
 move=> H.
-rewrite -bigmaxR_distrr in H; last exact/RleP/ltW/Hunpos.
+rewrite -bigmaxR_distrr in H; last first.
+  apply/ltW.
+  exact: Hunpos.
 exists m; split; first exact tbm.
 rewrite ffunE in H.
 set x := (X in _ * _ / X) in H.
 have x0 : x^-1 <> 0 by apply/eqP/invr_neq0; rewrite -receivable_propE receivableP.
-move/(eqR_mul2r x0) in H.
+move: H => /(congr1 (fun z => z * x)).
+rewrite -!mulrA mulVf ?mul1r//; last first.
+ move/eqP : x0.
+ by rewrite invr_eq0.
+move=> H.
 rewrite /= fdist_uniform_supp_in ?inE // in H; last first.
   move/subsetP : dec_img; apply.
   by rewrite inE; apply/existsP; exists (receivable_rV tb); apply/eqP.
-move/lt0r_neq0/eqP: Hunpos.
-move/eqR_mul2l : H; move/[apply] ->.
-by rewrite bigmaxRE.
+move/lt0r_neq0/eqP: Hunpos => Hunpos.
+move: H => /(congr1 (fun z => #|[set cw in C]|%:R * z)).
+rewrite !mulrA divff ?(mul1r,mulr1)//; last first.
+  move/eqP : Hunpos.
+  by rewrite invr_eq0.
 Qed.
 
 End MAP_decoding_prop.
