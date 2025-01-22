@@ -147,11 +147,15 @@ Qed.
 
 End bsc_capacity_proof.
 
+(*
 Section convex_ext.
 Require Import entropy_convex.
 Local Open Scope convex_scope.
 
-Lemma mutual_info_chan_uniform (B : finType) (W : A -> {fdist B}) :
+Variables (A B : finType).
+Hypothesis card_A : #|A| = 2%nat.
+
+Lemma mutual_info_chan_uniform (W : A -> {fdist B}) :
   `I(P, W) <= `I(fdist_uniform card_A, W).
 Proof.
 rewrite !mutual_info_chanE -!mutual_info_sym.
@@ -164,8 +168,10 @@ set P' := (_ <|q|> _).
 have:= mutual_information_concave W B0 P' W => /=.
 rewrite /convex.concave_function /=.
 End convex_ext.
+*)
 
 Section bsc_capacity_theorem.
+Let R := Rdefinitions.R.
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
 Variable p : R.
@@ -190,30 +196,29 @@ have has_sup_E : has_sup E.
   rewrite (_ : tmp = p_01)//; last first.
     by apply/val_inj => //.
   move=> ->.
-  apply/RleP/leR_subl_addr/(leR_trans (H_out_max card_A P p_01')).
-  rewrite addRC -leR_subl_addr subRR.
-  by rewrite (entropy_H2 card_A (Prob.mk_ (p_01'_))); exact/entropy_ge0.
-apply eqR_le; split.
-  apply/RleP.
+  rewrite lerBlDr (le_trans (H_out_max card_A P p_01'))//.
+  rewrite -lerBlDl subrr (_ : p = Prob.p p')// (entropy_H2 card_A).
+  exact/entropy_ge0.
+apply/eqP; rewrite eq_le; apply/andP; split.
   have [_ /(_ (1 - H2 p))] := Rsup_isLub (0 : R) has_sup_E.
-  apply => x [d _ dx]; apply/RleP.
+  apply => x [d _ dx].
   suff : `H(d `o BSC.c card_A p_01) <= 1.
-  have := IPW card_A d p_01'.
-  set tmp := (X in `I(_, BSC.c _ X)).
-  rewrite (_ : tmp = p_01)//; last first.
-    by apply/val_inj => //.
-  set tmp' := (X in _ = `H(d `o (BSC.c card_A X)) - _ -> _).
-  rewrite (_ : tmp' = p_01)//; last first.
-    by apply/val_inj => //.
-  rewrite dx => -> ?.
-  by rewrite leR_subl_addr subRK.
+    have := IPW card_A d p_01'.
+    set tmp := (X in `I(_, BSC.c _ X)).
+    rewrite (_ : tmp = p_01)//; last first.
+      by apply/val_inj => //.
+    set tmp' := (X in _ = `H(d `o (BSC.c card_A X)) - _ -> _).
+    rewrite (_ : tmp' = p_01)//; last first.
+      by apply/val_inj => //.
+    rewrite dx => -> ?.
+    by rewrite lerBlDr subrK.
   have := H_out_max card_A d p_01'.
   set tmp' := (X in `H(d `o (BSC.c card_A X)) <= _ -> _).
   rewrite (_ : tmp' = p_01)//.
   by apply/val_inj.
 move: (@IPW _ card_A (fdist_uniform card_A) _ p_01').
 rewrite H_out_binary_uniform => <-.
-apply/RleP/Rsup_ub => //=.
+apply/Rsup_ub => //=.
 exists (fdist_uniform card_A) => //.
 do 2 f_equal.
 exact: val_inj.
@@ -223,6 +228,7 @@ End bsc_capacity_theorem.
 
 Section dH_BSC.
 
+Let R := Rdefinitions.R.
 Variable p : {prob R}.
 Let card_F2 : #| 'F_2 | = 2%nat. by rewrite card_Fp. Qed.
 Let W := BSC.c card_F2 p.
@@ -231,7 +237,7 @@ Variables (M : finType) (n : nat) (f : encT 'F_2 M n).
 Local Open Scope vec_ext_scope.
 
 Lemma DMC_BSC_prop m y : let d := dH y (f m) in
-  W ``(y | f m) = ((1 - Prob.p p) ^ (n - d) * Prob.p p ^ d)%R.
+  W ``(y | f m) = (1 - Prob.p p) ^+ (n - d) * Prob.p p ^+ d.
 Proof.
 move=> d; rewrite DMCE.
 transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - Prob.p p)) *
@@ -240,8 +246,8 @@ transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - Prob.p p)) *
     by apply eq_bigr => // i /eqP ->; rewrite /BSC.c fdist_binaryxx.
   apply eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c fdist_binaryE eq_sym Hyi.
 congr (_ * _).
-  by rewrite big_const /= iter_mulR /= card_dHC.
-by rewrite big_const /= iter_mulR /= card_dH_vec.
+  by rewrite big_const /= iter_mulr /= card_dHC mulr1.
+by rewrite big_const /= iter_mulr /= card_dH_vec mulr1.
 Qed.
 
 End dH_BSC.
@@ -251,6 +257,8 @@ Section bsc_prob_prop.
 Local Open Scope reals_ext_scope.
 Local Open Scope ring_scope.
 Local Open Scope order_scope.
+
+Let R := Rdefinitions.R.
 
 (* This lemma is more or less stating that
    (log q <|n2 / n|> log r) <= (log q <|n1 / n|> log r) *)
@@ -274,17 +282,17 @@ Qed.
 
 Lemma bsc_prob_prop (p : {prob R}) n : Prob.p p < 1 / 2 ->
   forall n1 n2 : nat, (n1 <= n2 <= n)%nat ->
-  ((1 - Prob.p p) ^ (n - n2) * (Prob.p p) ^ n2 <= (1 - Prob.p p) ^ (n - n1) * (Prob.p p) ^ n1)%R.
+  ((1 - Prob.p p) ^+ (n - n2) * (Prob.p p) ^+ n2 <=
+   (1 - Prob.p p) ^+ (n - n1) * (Prob.p p) ^+ n1)%R.
 Proof.
 move=> p05 d1 d2 d1d2.
 case/boolP: (p == 0%:pr).
-  move/eqP->; rewrite !coqRE; apply/RleP.
+  move/eqP->.
   rewrite probpK subr0 !expr1n !mul1r !expr0n.
   move: d1d2; case: d2; first by rewrite leqn0 => /andP [] ->.
   by case: (d1 == 0%nat).
 move/prob_gt0 => p1.
-rewrite !coqRE.
-apply/RleP/expr_conv_mono => //.
+apply/expr_conv_mono => //.
 lra.
 Qed.
 End bsc_prob_prop.
@@ -296,6 +304,8 @@ Local Open Scope ring_scope.
 Local Open Scope order_scope.
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
+
+Let R := Rdefinitions.R.
 
 Variable A : finType.
 Hypothesis card_A : #|A| = 2%nat.
@@ -325,11 +335,11 @@ rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x)
 rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
   transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a')%R.
     apply eq_bigr => i _.
-    by rewrite DMCE big_ord_recl big_ord0 mulR1 /BSC.c mxE.
+    by rewrite DMCE big_ord_recl big_ord0 mulr1 /BSC.c mxE.
   apply/(@big_rV1_ord0 _ _ _ _ (fdist_binary card_A p_01 ^~ a')).
   by rewrite -sum_fdist_binary_swap // FDist.f1.
 rewrite mxE mulr1 big_ord_recl big_ord0 /BSC.c fdist_binaryE /= eq_sym !mxE.
-rewrite !coqRE mulr1 onemE.
+rewrite mulr1 onemE.
 rewrite mulrAC mulfV ?mul1r // fdist_uniformE card_A invr_neq0 //.
 by apply: lt0r_neq0; lra.
 Qed.
