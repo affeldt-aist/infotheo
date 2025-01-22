@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum lra.
-Require Import Reals Lra.
-From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext fdist proba.
+From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
+(*Require Import Reals Lra.*)
+From mathcomp Require Import Rstruct reals.
+Require Import (*ssrR Reals_ext*) fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2 *)
 
@@ -12,10 +12,12 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
 Local Open Scope ring_scope.
 
 Import GRing.Theory.
+
+Local Definition R := Rdefinitions.R.
 
 Definition pmf : {ffun 'I_3 -> R} := [ffun i =>
   [fun x => 0 with inord 0 |-> 1/2, inord 1 |-> 1/3, inord 2 |-> 1/6] i].
@@ -88,7 +90,7 @@ Local Open Scope proba_scope.
 
 Definition d : {fdist 'I_3} := FDist.mk pmf01.
 
-Definition X : {RV d -> R} := (fun i => INR i.+1).
+Definition X : {RV d -> R} := (fun i => i.+1%:R).
 
 Lemma expected : `E X = 5/3.
 Proof.
@@ -97,11 +99,10 @@ do 3 rewrite big_ord_recl.
 rewrite big_ord0 addr0.
 rewrite /X mul1r.
 rewrite /f !ffunE /= ifT; last by I3_eq.
-rewrite (_ : INR _ = 2) //.
+rewrite (_ : (bump 0 0).+1%:R = 2) //.
 rewrite /= ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
-rewrite (_ : INR _ = 3); last first.
-  rewrite S_INR (_ : INR _ = 2) // !coqRE; lra.
+rewrite (_ : (bump 0 (bump 0 0)).+1%:R = 3)//.
 rewrite /f /= ifF; last by I3_neq.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
@@ -119,12 +120,11 @@ rewrite /sq_RV /comp_RV /=.
 rewrite expr1n mul1r.
 rewrite {1}/pmf !ffunE /=.
 rewrite ifT; last by I3_eq.
-rewrite (_ : (_.+1%:R)%coqR = 2) //.
+rewrite (_ : (bump 0 0).+1%:R = 2) //.
 rewrite /f /=.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
-rewrite (_ : INR _ = 3); last first.
-  by rewrite S_INR (_ : INR _ = 2) // !coqRE; lra.
+rewrite (_ : (bump 0 (bump 0 0)).+1%:R = 3)//.
 rewrite ifF; last by I3_neq.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
