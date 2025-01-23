@@ -12,6 +12,7 @@ Declare Scope vec_ext_scope.
 
 Notation "t '!_' i" := (tnth t i) (at level 9) : tuple_ext_scope.
 Reserved Notation "A `* B"  (at level 46, left associativity).
+Reserved Notation "A :+: B" (at level 52, left associativity).
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -504,6 +505,21 @@ Qed.
 Lemma setDUKl A (E F : {set A}) : (E :|: F) :\: E = F :\: E.
 Proof. by rewrite setDUl setDv set0U. Qed.
 
+Lemma setDIlW (T : finType) (A B C : {set T}) :
+  A :&: B :\: C = A :&: B :\: C :&: B.
+Proof.
+apply/setP=> x; rewrite !inE.
+by case: (x \in A); case: (x \in B); case: (x \in C).
+Qed.
+
+Lemma setIDACW (T : finType) (A B C : {set T}) :
+  (A :\: B) :&: C = A :&: C :\: B :&: C.
+Proof. by rewrite setIDAC setDIlW. Qed.
+
+Lemma setDAC (T : finType) (A B C : {set T}) :
+  A :\: B :\: C = A :\: C :\: B.
+Proof. by rewrite setDDl setUC -setDDl. Qed.
+
 Lemma setU_setUD A (E F : {set A}) : E :|: F = F :|: E :\: F.
 Proof.
 apply/setP => a; rewrite !inE; apply/orP/orP => -[->|H] ; [
@@ -649,8 +665,45 @@ Lemma big_set2 (R : Type) (idx : R) (op : Monoid.com_law idx) (I : finType)
   a != b -> \big[op/idx]_(i in [set a; b]) F i = op (F a) (F b).
 Proof. by move=> ab; rewrite big_setU1 ?inE // big_set1. Qed.
 
+Definition setY (T : finType) (A B : {set T}) := (A :\: B :|: B :\: A).
+Notation "A :+: B" := (setY A B).
+
+Section setY_lemmas.
+Variable (T : finType).
+Local Notation "+%S" := (@setY T).
+Local Notation "-%S" := idfun.
+Local Notation "0" := (@set0 T).
+
+Lemma setYA : associative +%S.
+Proof.
+move=> x y z; apply/setP=> i; rewrite !inE.
+by case: (i \in x); case: (i \in y); case: (i \in z).
+Qed.
+Lemma setYC : commutative +%S.
+Proof. by move=> *; rewrite /setY setUC. Qed.
+Lemma set0Y : left_id 0 +%S.
+Proof. by move=> ?; rewrite /setY set0D setD0 set0U. Qed.
+Lemma setNY : left_inverse 0 -%S +%S.
+Proof. by move=> *; rewrite /setY /= setDv setU0. Qed.
+Lemma setIYl : left_distributive (@setI T) +%S.
+Proof. by move=> *; rewrite [in LHS]/setY setIUl !setIDACW. Qed.
+
+Lemma setIUY (A B : {set T}) :
+  (A :+: B) :|: (A :&: B) = A :|: B.
+Proof. by apply/setP=> x; rewrite !inE; case: (x \in A); case: (x \in B). Qed.
+
+Lemma setIYI_disj (A B : {set T}) :
+  [disjoint (A :+: B) & (A :&: B)].
+Proof.
+rewrite -setI_eq0; apply/eqP/setP=> x; rewrite !inE.
+by case: (x \in A); case: (x \in B).
+Qed.
+
+End setY_lemmas.
+
 End finset_ext.
 Notation "A `* B" := (setX A B) : set_scope.
+Notation "A :+: B" := (setY A B).
 
 Module Set2.
 Section set2.
