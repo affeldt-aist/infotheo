@@ -674,3 +674,30 @@ Qed.
 End classical.
 
 End order.
+
+Section big_union.
+
+Definition big_union_disj := big_union.
+
+(* TODO: this is more generic and should be called big_union *)
+Lemma big_union_nondisj (R : Type) (idx : R) (M : Monoid.com_law idx)
+  (A : finType) (X1 X2 : {set A}) (f : A -> R) :
+  \big[M/idx]_(a in (X1 :&: X2)) f a = idx ->
+  \big[M/idx]_(a in (X1 :|: X2)) f a =
+    M (\big[M/idx]_(a in X1) f a) (\big[M/idx]_(a in X2) f a).
+Proof.
+move=> I0.
+rewrite -setIUY big_union_disj 1?disjoint_sym ?setIYI_disj //.
+rewrite I0 Monoid.opm1 big_union_disj; last first.
+  by rewrite -setI_eq0 setIDA setIC Order.SetSubsetOrder.setIDv // set0D.
+  (* Order.SetSubsetOrder.setIDv is B :&: (A :\: B) = set0 *)
+set lhs := LHS.
+rewrite -(setID X1 X2) big_union_disj; last first.
+  by rewrite -setI_eq0 setIC -setIA Order.SetSubsetOrder.setIDv // setI0.
+rewrite I0 Monoid.op1m.
+rewrite -[in X in M _ X](setID X2 X1) big_union_disj; last first.
+  by rewrite -setI_eq0 setIC -setIA Order.SetSubsetOrder.setIDv // setI0.
+by rewrite setIC I0 Monoid.op1m.
+Qed.
+
+End big_union.

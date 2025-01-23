@@ -1,4 +1,4 @@
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
+From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals mathcomp_extra.
 From mathcomp Require Import lra ring.
@@ -27,84 +27,6 @@ Import Order.POrderTheory Order.Theory Num.Theory GRing.Theory.
 (* | ...         | == | ...                                                   *)
 (*                                                                            *)
 (******************************************************************************)
-
-Reserved Notation "A :^: B" (at level 52, left associativity).
-
-Lemma setDIlW (T : finType) (A B C : {set T}) :
-  A :&: B :\: C = A :&: B :\: C :&: B.
-Proof.
-apply/setP=> x; rewrite !inE.
-by case: (x \in A); case: (x \in B); case: (x \in C).
-Qed.
-
-Lemma setIDACW (T : finType) (A B C : {set T}) :
-  (A :\: B) :&: C = A :&: C :\: B :&: C.
-Proof. by rewrite setIDAC setDIlW. Qed.
-
-Lemma setDAC (T : finType) (A B C : {set T}) :
-  A :\: B :\: C = A :\: C :\: B.
-Proof. by rewrite setDDl setUC -setDDl. Qed.
-
-(* symmetric difference *)
-Definition adds (T : finType) (A B : {set T}) := (A :\: B :|: B :\: A).
-Notation "A :^: B" := (adds A B).
-
-Section adds_lemmas.
-Variable (T : finType).
-Implicit Types (A B C : {set T}).
-Local Notation "+%S" := (@adds T).
-Local Notation "-%S" := idfun.
-Local Notation "0" := (@set0 T).
-
-Lemma addsA : associative +%S.
-Proof.
-move=> x y z; apply/setP=> i; rewrite !inE.
-by case: (i \in x); case: (i \in y); case: (i \in z).
-Qed.
-Lemma addsC : commutative +%S.
-Proof. by move=> *; rewrite /adds setUC. Qed.
-Lemma add0s : left_id 0 +%S.
-Proof. by move=> ?; rewrite /adds set0D setD0 set0U. Qed.
-Lemma addNs : left_inverse 0 -%S +%S.
-Proof. by move=> *; rewrite /adds /= setDv setU0. Qed.
-Lemma setI_addl : left_distributive (@setI T) +%S.
-Proof. by move=> *; rewrite [in LHS]/adds setIUl !setIDACW. Qed.
-End adds_lemmas.
-
-From mathcomp Require Import all_algebra.
-Search subsetv.
-
-Lemma setIUAdd (T : finType) (A B : {set T}) :
-  (A :^: B) :|: (A :&: B) = A :|: B.
-Proof. by apply/setP=> x; rewrite !inE; case: (x \in A); case: (x \in B). Qed.
-
-Lemma setIIAdd_disj (T : finType) (A B : {set T}) :
-  [disjoint (A :^: B) & (A :&: B)].
-Proof.
-rewrite -setI_eq0; apply/eqP/setP=> x; rewrite !inE.
-by case: (x \in A); case: (x \in B).
-Qed.
-
-Definition big_union_disj := big_union.
-
-Lemma big_union (R : Type) (idx : R) (M : Monoid.com_law idx)
-  (A : finType) (X1 X2 : {set A}) (f : A -> R) :
-  \big[M/idx]_(a in (X1 :&: X2)) f a = idx ->
-  \big[M/idx]_(a in (X1 :|: X2)) f a =
-    M (\big[M/idx]_(a in X1) f a) (\big[M/idx]_(a in X2) f a).
-Proof.
-move=> I0.
-rewrite -setIUAdd big_union_disj 1?disjoint_sym ?setIIAdd_disj //.
-rewrite I0 Monoid.opm1 big_union_disj; last first.
-  by rewrite -setI_eq0 setIDA setIC Order.SetSubsetOrder.setIDv // set0D.
-set lhs := LHS.
-rewrite -(setID X1 X2) big_union_disj; last first.
-  by rewrite -setI_eq0 setIC -setIA Order.SetSubsetOrder.setIDv // setI0.
-rewrite I0 Monoid.op1m.
-rewrite -[in X in M _ X](setID X2 X1) big_union_disj; last first.
-  by rewrite -setI_eq0 setIC -setIA Order.SetSubsetOrder.setIDv // setI0.
-by rewrite setIC I0 Monoid.op1m.
-Qed.
 
 (* TODO: define RV_ringType mimicking fct_ringType *)
 Section mul_RV.
@@ -654,7 +576,7 @@ have[FIH0|FIHneq0]:= eqVneq (Pr P (F :&: H)) 0.
   rewrite FIH0 mulr0 !addr0=> FIGF.
   by congr (_ * _)=> //; apply: cEx_sub_eq=> //; exact: subsetIl.
 move=> FGHF.
-rewrite !cExE -!mulrA !mulVf // !mulr1 -big_union /=; last first.
+rewrite !cExE -!mulrA !mulVf // !mulr1 -big_union_nondisj /=; last first.
   have/setIidPl/(congr1 (Pr P)):= FsubGUH.
   rewrite setIUr Pr_setU FGHF=> /eqP.
   rewrite -subr_eq0 addrAC subrr add0r oppr_eq0 => /eqP /psumr_eq0P P0.
@@ -677,7 +599,7 @@ Lemma cExID (X : {RV P -> R}) (F G : {set U}) :
     `E_[ X | F ] * Pr P F.
 Proof.
 rewrite setDE cEx_union ?setUCr //.
-rewrite -big_union /=; last by rewrite setICA -setIA setICr !setI0 big_set0.
+rewrite -big_union_nondisj /=; last by rewrite setICA -setIA setICr !setI0 big_set0.
 by rewrite -setIUr setUCr setIT.
 Qed.
 
