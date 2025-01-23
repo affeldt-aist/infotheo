@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm zmodp.
-From mathcomp Require Import matrix mxalgebra vector.
+From mathcomp Require Import matrix mxalgebra vector ring.
 From mathcomp Require Import Rstruct reals.
-Require Import realType_ext ssr_ext ssralg_ext f2 linearcode natbin ssrR hamming.
+Require Import realType_ext ssr_ext ssralg_ext f2 linearcode natbin hamming.
 Require Import bigop_ext fdist proba channel channel_code decoding.
 Require Import binary_symmetric_channel.
 
@@ -961,7 +961,7 @@ Local Open Scope channel_code_scope. (* to get e(W,c), echa(W,c) notations *)
 Require Import Reals Reals_ext.
 
 Section hamming_code_error_rate.
-
+Let R := Rdefinitions.R.
 Variable M : finType.
 Hypothesis M_not_0 : (0 < #|M|)%nat.
 Variable p : {prob R}.
@@ -973,18 +973,16 @@ Let m := m'.+2.
 Let n := Hamming.len m'.
 Let hamming_channel_code : code _ _ _ n := Hamming'.channel_code m'.
 
-Local Open Scope R_scope.
-
 Lemma e_hamming m0 :
   e(W, hamming_channel_code) m0 =
   \sum_(e0 in [set e0 : 'rV['F_2]_n | (2 <= wH e0)%nat])
-    (1 - Prob.p p) ^ (n - wH e0) * (Prob.p p) ^ wH e0.
+    (1 - Prob.p p) ^+ (n - wH e0) * (Prob.p p) ^+ wH e0 :> R.
 Proof.
 rewrite /ErrRateCond /Pr /=.
 transitivity (
   \sum_(a | a \in preimC (dec hamming_channel_code) m0)
     let d := dH ((enc hamming_channel_code) m0) a in
-    (1 - Prob.p p) ^ (n - d) * (Prob.p p) ^ d).
+    (1 - Prob.p p) ^+ (n - d) * (Prob.p p) ^+ d).
   apply eq_bigr => t Ht.
   rewrite dH_sym.
   rewrite -(DMC_BSC_prop p (enc hamming_channel_code) m0 t).
@@ -994,19 +992,17 @@ transitivity (
                            m1 != m0 else
                            true])
       (let d := dH ((enc hamming_channel_code) m0) a in
-       (1 - Prob.p p) ^ (n - d) * (Prob.p p) ^ d)).
+       (1 - Prob.p p) ^+ (n - d) * (Prob.p p) ^+ d)).
   apply eq_bigl => t /=.
   rewrite !inE.
   case_eq (dec hamming_channel_code t) => [m1 Hm1|]; last first.
     by move=> ->.
   by case: ((dec hamming_channel_code) t).
 set y0 := (enc hamming_channel_code) m0.
-Local Close Scope R_scope.
-set f := fun y => (y0 + y).
-Local Open Scope R_scope.
+set f : 'rV__ -> 'rV__ := fun y => (y0 + y).
 transitivity (
   \sum_(y | f y \in [set e1 | (1 < wH e1)%nat])
-    (1 - Prob.p p) ^ (n - wH (f y)) * (Prob.p p) ^ wH (f y)).
+    (1 - Prob.p p) ^+ (n - wH (f y)) * (Prob.p p) ^+ wH (f y)).
   apply eq_big.
     move=> y.
     simpl in y, f, m0.
@@ -1044,7 +1040,7 @@ Qed.
 
 Lemma hamming_error_rate : Prob.p p < 1/2 ->
   echa(W, hamming_channel_code) =
-    1 - ((1 - Prob.p p) ^ n) - n%:R * (Prob.p p) * ((1 - Prob.p p) ^ (n - 1)).
+    1 - ((1 - Prob.p p) ^+ n) - n%:R * (Prob.p p) * ((1 - Prob.p p) ^+ (n - 1)).
 Proof.
 move=> p05.
 rewrite /CodeErrRate.
@@ -1053,19 +1049,27 @@ eapply eq_trans.
   apply eq_bigr => i _; exact: e_hamming.
 eapply eq_trans.
   apply f_equal.
-  by rewrite big_const /= iter_addR.
-rewrite mulRA /=.
-set den := INR _.
-have -> : 1 / den * den = 1.
-  by rewrite div1R mulVR // ?INR_eq0' card_mx /= mul1n expn_eq0 negb_and card_F2.
-rewrite mul1R.
-have toleft A B C D : A + C + D = B -> A = B - C - D by move => <-; ring.
+  by rewrite big_const /= iter_addr addr0.
+rewrite /=.
+rewrite -[in X in _ * X = _]mulr_natl.
+rewrite mulrA /=.
+set den := _%:R.
+rewrite mulVf; last first.
+  rewrite /den card_mx/= mul1n.
+  rewrite Num.Theory.pnatr_eq0.
+  rewrite expn_eq0.
+  by rewrite negb_and card_F2.
+rewrite mul1r.
+have toleft (A B C D : R) : A + C + D = B -> A = B - C - D.
+ move => <-.
+ by rewrite addrAC addrK addrK.
 apply toleft.
-rewrite -addRA -(hamming_01 n (Prob.p p)) //.
-rewrite -big_union //.
+rewrite -addrA.
+rewrite -(hamming_01 n (Prob.p p)).
+rewrite -big_union //=.
   rewrite (_ : _ :|: _ = [set: 'rV_n]).
-    by apply binomial_theorem.
-  apply/setP => /= x; by rewrite !inE leqNgt orNb.
+    by rewrite binomial_theorem//.
+  by apply/setP => /= x; by rewrite !inE leqNgt orNb.
 rewrite -setI_eq0.
 apply/eqP/setP => /= x; by rewrite !inE leqNgt andNb.
 Qed.
