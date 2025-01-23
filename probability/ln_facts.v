@@ -1,11 +1,12 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg ssrnum lra.
+From mathcomp Require Import all_ssreflect ssralg ssrnum interval lra.
 From mathcomp Require boolp.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import classical_sets Rstruct reals.
 (*Require Import Reals Lra.*)
 Require Import (*ssrR*) realType_ext (*Reals_ext Ranalysis_ext*) realType_logb convex.
+Require Import derive_ext.
 
 (******************************************************************************)
 (*                      Results about the Analysis of ln                      *)
@@ -150,10 +151,10 @@ rewrite ltrNr oppr0.
 by rewrite exp.ln_lt0// lt0x.
 Qed.
 
-(* TODO
-Lemma continue_xlnx : continuity xlnx.
+Lemma continue_xlnx (x :R^o) : continuous_at x (@xlnx : R^o -> R^o).
 Proof.
-rewrite /continuity => r.
+rewrite /xlnx.
+(*rewrite /continuity => r.
 rewrite /continuity_pt /continue_in /limit1_in /limit_in => eps eps_pos /=.
 case (total_order_T 0 r) ; first case ; move=> Hcase.
 - have : continuity_pt (fun x => x * ln x) r.
@@ -231,6 +232,7 @@ case (total_order_T 0 r) ; first case ; move=> Hcase.
   by rewrite subRR normR0.
 Qed.
 *)
+Admitted.
 
 (* TODO: not used *)
 (*Lemma uniformly_continue_xlnx : uniform_continuity xlnx (fun x => 0 <= x <= 1).
@@ -239,22 +241,42 @@ apply Heine ; first by apply compact_P3.
 move=> x _ ; by apply continue_xlnx.
 Qed.*)
 
-(*Let xlnx_total := fun y => y * ln y.
+Let xlnx_total := fun y : R^o => y * exp.ln y : R^o.
 
-Lemma derivable_xlnx_total x : 0 < x -> derivable_pt xlnx_total x.
+Lemma derivable_xlnx_total x : 0 < x -> derivable xlnx_total x 1.
 Proof.
 move=> x_pos.
-apply derivable_pt_mult.
-  by apply derivable_id.
-by apply derivable_pt_ln.
-Defined.
+apply: derivableM => //.
+apply: ex_derive. (* TODO: lemma *)
+by apply: exp.is_derive1_ln.
+Qed.
 
 Lemma xlnx_total_xlnx x : 0 < x -> xlnx x = xlnx_total x.
-Proof. by rewrite /xlnx /f => /RltP ->. Qed.
+Proof. by move=> x0; rewrite /xlnx x0. Qed.
 
-Lemma derivable_pt_xlnx x (x_pos : 0 < x) : derivable_pt xlnx x.
-Proof. apply (@derivable_f_eq_g _ _ x 0 xlnx_total_xlnx x_pos (derivable_xlnx_total x_pos)). Defined.
+Lemma derivable_xlnx x (x_pos : 0 < x) : derivable (xlnx : R^o -> R^o) x 1.
+Proof.
+rewrite (near_eq_derivable _ xlnx_total)//.
+exact: derivable_xlnx_total.
+by rewrite oner_eq0.
+near=> z.
+rewrite /xlnx ifT//.
+near: z.
+(* TODO: lemma *)
+exists (x / 2) => //=.
+  by rewrite divr_gt0//.
+move=> A/=.
+have [//|A0] := ltP 0 A.
+rewrite ltNge => /negP; rewrite boolp.falseE; apply.
+rewrite ger0_norm ?subr_ge0; last first.
+  by rewrite (le_trans A0)// ltW.
+rewrite lerBrDr.
+rewrite (@le_trans _ _ (x/2))//.
+rewrite gerDl//.
+by rewrite ler_piMr// ltW.
+Unshelve. all: by end_near. Qed.
 
+(*
 Lemma derive_xlnx_aux1 x (x_pos : 0 < x) :
   derive_pt xlnx x (derivable_pt_xlnx x_pos) =
   derive_pt xlnx_total x (derivable_xlnx_total x_pos).
@@ -304,6 +326,15 @@ case/boolP : (x == 0) => [/eqP ->|x0].
     by rewrite lt_neqAle eq_sym x0 x1.
   have {x1 y1}y0 : 0 < y.
     by rewrite (le_lt_trans x1).
+  apply: (@derivable1_mono _ (BRight 0) (BRight (sequences.expR (-1))) (fun x => - xlnx x)) => //.
+  + by rewrite in_itv//= (x0).
+  + by rewrite in_itv//= (y0).
+  + move=> /= z.
+    rewrite in_itv/= => /andP[z0 z1].
+    apply: derivableN.
+    by apply: derivable_xlnx => //.
+  + move=> /= t.
+    rewrite in_itv/= => /andP[tx ty].
 (*  
   exact: (pderive_increasing (exp_pos _) xlnx_sdecreasing_0_Rinv_e_helper).
 Qed.
@@ -459,9 +490,6 @@ rewrite derive_pt_const derive_pt_xlnx; last first.
 rewrite derive_pt_xlnx ; by [field | apply Hx].
 Qed.
 *)
-
-Require Import derive_ext.
-From mathcomp Require Import interval.
 
 Lemma increasing_xlnx_delta eps (Heps : 0< eps < 1) :
   forall x y : R, 0 <= x <= 1 - eps -> 0 <= y <= 1 - eps -> x < y ->
