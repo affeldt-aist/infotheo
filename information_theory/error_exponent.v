@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
 (*Require Import Reals Lra.*)
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import Rstruct reals classical_sets topology normedtype.
 Require Import realType_ext realType_logb bigop_ext ln_facts.
 Require Import fdist entropy channel_code channel divergence.
 Require Import conditional_divergence variation_dist pinsker.
@@ -75,8 +75,8 @@ apply: ler_sum => b _.
 rewrite mul1r.
 rewrite addrC.
 apply: Rabs_xlnx => //.
-admit.
-admit.
+  by apply/andP; split.
+  by apply/andP; split.
 rewrite 2!fdist_outE big_morph_oppr -big_split /=.
 apply: le_trans; first exact: ler_norm_sum.
 apply: (@le_trans _ _ (d((P `X V), (P `X W)))).
@@ -89,7 +89,7 @@ apply: (@le_trans _ _ (d((P `X V), (P `X W)))).
   by rewrite lerD2l sumr_ge0//.
 - rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dominates.
-Admitted.
+Qed.
 
 Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
   (exp.ln 2)^-1 * #|A|%:R * #|B|%:R * - xlnx (Num.sqrt (2 * D(V || W | P))).
@@ -112,30 +112,37 @@ under [in leRHS]eq_bigr do rewrite mul1r.
 rewrite pair_bigA/=.
 apply: ler_sum; case => a b _; rewrite addrC /=.
 apply Rabs_xlnx => //.
-xxx
+  by apply/andP; split.
+  by apply/andP; split.
 apply: (@le_trans _ _ (d(P `X V, P `X W))).
-- rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
-  rewrite -[X in X <= _]addR0.
-  by apply/leR_add2l/RleP/sumr_ge0 => ? _; exact/RleP/normR_ge0.
+- by rewrite /var_dist (bigD1 (a, b)) //= distrC ler_wpDr// sumr_ge0.
 - rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dominates.
 Qed.
 
 Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
-  / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) * - xlnx (sqrt (2 * D(V || W | P))).
+  (exp.ln 2)^-1 * (#|B|%:R + #|A|%:R * #|B|%:R) * - xlnx (Num.sqrt (2 * D(V || W | P))).
 Proof.
 rewrite /mutual_info_chan.
 rewrite (_ : _ - _ = `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last by field.
-apply: leR_trans; first exact: Rabs_triang.
-rewrite -mulRA mulRDl mulRDr.
-apply leR_add.
-- by rewrite mulRA; apply out_entropy_dist_ub.
-- by rewrite distRC 2!mulRA; apply joint_entropy_dist_ub.
+apply: le_trans.
+  exact: ler_normD.
+rewrite -mulrA mulrDl mulrDr lerD//.
+- by rewrite mulrA; apply out_entropy_dist_ub.
+- by rewrite distrC 2!mulrA; apply joint_entropy_dist_ub.
 Qed.
 
 End mutinfo_distance_bound.
 
+(* TODO: move *)
+Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
+Notation "+| r |" := (Num.Def.maxr 0 r) : reals_ext_scope.
+
+Import numFieldTopology.Exports.
+Import numFieldNormedType.Exports.
+
 Section error_exponent_lower_bound.
+Let R := Rdefinitions.R.
 Variables A B : finType.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 Variables (W : `Ch(A, B)) (minRate : R).
@@ -148,16 +155,22 @@ Lemma error_exponent_bound : exists Delta, 0 < Delta /\
     P |- V << W ->
     Delta <= D(V || W | P) +  +| minRate - `I(P, V) |.
 Proof.
-set gamma := / (#|B|%:R + #|A|%:R * #|B|%:R) * (ln 2 * ((minRate - capacity W) / 2)).
-have : min(exp (-2), gamma) > 0.
-  apply Rmin_Rgt_r; split; apply Rlt_gt; first exact: exp_pos.
-  apply mulR_gt0.
-  - by apply/invR_gt0/addR_gt0wl; [exact/ltR0n | apply/mulR_ge0; exact/leR0n].
-  - by apply mulR_gt0 => //; apply mulR_gt0; [rewrite subR_gt0|exact:invR_gt0].
-move/(continue_xlnx 0) => [] /= mu [mu_gt0 mu_cond].
-set x := min(mu / 2, exp (-2)).
+set gamma := (#|B|%:R + #|A|%:R * #|B|%:R)^-1 * (exp.ln 2 * ((minRate - capacity W) / 2)).
+rewrite /=.
+have := @continue_xlnx 0 => /cvgrPdist_lt.
+have : Num.min (sequences.expR (-2)) gamma > 0.
+  rewrite lt_min; apply/andP; split.
+    by rewrite exp.expR_gt0.
+  apply mulr_gt0.
+  - by rewrite invr_gt0// ltr_wpDr ?ltr0n// mulr_ge0.
+  - by rewrite mulr_gt0// ?ln2_gt0// divr_gt0// subr_gt0.
+move=> /[swap] /[apply] -[]/= mu mu_gt0 mu_cond.
+set x : R := Num.min (mu / 2) (sequences.expR (-2)).
 have x_gt0 : 0 < x.
-  by apply: Rmin_pos; [apply: mulR_gt0 => //; exact: invR_gt0|exact: exp_pos].
+  by rewrite lt_min exp.expR_gt0 andbT divr_gt0.
+
+(*
+
 have /mu_cond : D_x no_cond 0 x /\ R_dist x 0 < mu.
   split.
   - by split => //; exact/eqP/ltR_eqF.
@@ -168,63 +181,83 @@ rewrite /R_dist {2}/xlnx ltxx subR0 ltR0_norm; last first.
   apply xlnx_neg; split => //; rewrite /x.
   exact: leR_ltR_trans (geR_minr _ _) ltRinve21.
 move=> Hx.
-set Delta := min((minRate - capacity W) / 2, x ^ 2 / 2).
+*)
+
+set Delta := Num.min ((minRate - capacity W) / 2) (x ^+ 2 / 2).
 exists Delta; split.
-  apply Rmin_case.
-  - by apply mulR_gt0; [exact/subR_gt0 | exact/invR_gt0].
-  - by apply mulR_gt0; [exact: expR_gt0 | exact: invR_gt0].
+  rewrite lt_min; apply/andP; split.
+  - by rewrite divr_gt0// subr_gt0//.
+  - by rewrite divr_gt0// exprn_gt0//.
 move=> P V v_dom_by_w.
-case/boolP : (Delta <= D(V || W | P))%mcR => [/RleP| /RleP/ltRNge] Hcase.
-  apply (@leR_trans (D(V || W | P))) => //.
-  by rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.
+have [Hcase|Hcase] := leP Delta (D(V || W | P)).
+(*case/boolP : (Delta <= D(V || W | P))%mcR => [/RleP| /RleP/ltRNge] Hcase.*)
+  apply: (@le_trans _ _ (D(V || W | P))) => //.
+  by rewrite ler_wpDr// le_max lexx.
+(*  by rewrite -{1}(addR0 (D(V || W | P))); exact/leR_add2l/leR_maxl.*)
 suff HminRate : (minRate - capacity W) / 2 <= minRate - (`I(P, V)).
   clear -Hcase v_dom_by_w HminRate.
-  apply (@leR_trans +| minRate - `I(P, V) |); last first.
-    by rewrite -[X in X <= _]add0R; exact/leR_add2r/cdiv_ge0.
-  apply: leR_trans; last exact: leR_maxr.
-  by apply: (leR_trans _ HminRate); exact: geR_minl.
-have : `I(P, V) <= capacity W + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
-                               (- xlnx (sqrt (2 * D(V || W | P)))).
-  apply (@leR_trans (`I(P, W) + / ln 2 * (#|B|%:R + #|A|%:R * #|B|%:R) *
-                               - xlnx (sqrt (2 * D(V || W | P))))); last first.
-    apply/leR_add2r/Rstruct.RleP/Rstruct.Rsup_ub; last by exists P.
+  apply (@le_trans _ _ +| minRate - `I(P, V) |); last first.
+    by rewrite ler_wpDl// cdiv_ge0.
+  rewrite le_max; apply/orP; right.
+  apply: (le_trans _ HminRate) => //.
+  by rewrite ge_min lexx.
+(*  apply: le_trans; last exact: leR_maxr.
+  by apply: (leR_trans _ HminRate); exact: geR_minl.*)
+have : `I(P, V) <= capacity W + (exp.ln 2)^-1 * (#|B|%:R + #|A|%:R * #|B|%:R) *
+                               (- xlnx (Num.sqrt (2 * D(V || W | P)))).
+  apply (@le_trans _ _ (`I(P, W) + (exp.ln 2)^-1 * (#|B|%:R + #|A|%:R * #|B|%:R) *
+                               - xlnx (Num.sqrt (2 * D(V || W | P))))); last first.
+    rewrite lerD2r//.
+    apply/Rstruct.Rsup_ub; last exists P => //.
     split; first by exists (`I(P, W)), P.
     case: set_of_I_has_ubound => y Hy.
     by exists y => _ [Q _ <-]; apply Hy; exists Q.
-  rewrite addRC -leR_subl_addr.
-  apply (@leR_trans `| `I(P, V) + - `I(P, W) |); first exact: Rle_abs.
-  suff : D(V || W | P) <= exp (-2) ^ 2 * / 2 by apply mut_info_dist_ub.
+  rewrite addrC -lerBlDr.
+  apply (@le_trans _ _ `| `I(P, V) + - `I(P, W) |).
+    by rewrite ler_norm.
+  suff : D(V || W | P) <= sequences.expR (-2) ^+ 2 / 2 by apply mut_info_dist_ub.
   clear -Hcase x_gt0.
-  apply/ltRW/(ltR_leR_trans Hcase).
-  apply (@leR_trans (x ^ 2 * / 2)); first exact: geR_minr.
-  apply leR_wpmul2r; first exact/invR_ge0.
-  by apply pow_incr; split; [exact: ltRW | exact: geR_minr].
-rewrite -[X in _ <= X]oppRK => /leR_oppr/(@leR_add2l minRate).
-move/(leR_trans _); apply.
-suff x_gamma : - xlnx (sqrt (2 * (D(V || W | P)))) <= gamma.
-  rewrite oppRD addRA addRC -leR_subl_addr.
-  rewrite [X in X <= _](_ : _ = - ((minRate + - capacity W) / 2)); last by field.
-  rewrite leR_oppr oppRK -mulRA mulRC.
-  rewrite leR_pdivr_mulr // mulRC -leR_pdivl_mulr; last first.
-    by apply addR_gt0wl; [exact/ltR0n|rewrite -natRM; exact/leR0n].
-  by rewrite [in X in _ <= X]mulRC /Rdiv (mulRC _ (/ (_ + _))).
-suff x_D : xlnx x <= xlnx (sqrt (2 * (D(V || W | P)))).
-  clear -Hx x_D.
+  apply/ltW/(lt_le_trans Hcase).
+  apply (@le_trans _ _ (x ^+ 2 / 2)).
+    by rewrite ge_min lexx orbT.
+  rewrite ler_wpM2r ?invr_ge0//.
+  rewrite lerXn2r// ?nnegrE ?exp.expR_ge0//.
+  - exact: ltW.
+  - by rewrite ge_min lexx orbT.
+rewrite -[X in _ <= X]opprK.
+rewrite -lerNr.
+rewrite -(lerD2l minRate).
+apply: le_trans.
+suff x_gamma : - xlnx (Num.sqrt (2 * (D(V || W | P)))) <= gamma.
+  rewrite opprD addrA [in leRHS]addrC -lerBlDr.
+  rewrite [X in X <= _](_ : _ = - ((minRate + - capacity W) / 2)); last first.
+    lra.
+  rewrite lerNr opprK -mulrA mulrC.
+  rewrite ler_pdivrMr ?ln2_gt0// mulrC -ler_pdivlMr; last first.
+    by rewrite ltr_wpDr ?ltr0n// mulr_ge0.
+  rewrite (le_trans x_gamma)//.
+  rewrite /gamma.
+  rewrite mulrC.
+  by rewrite (mulrC (exp.ln 2)).
+suff x_D : xlnx x <= xlnx (Num.sqrt (2 * (D(V || W | P)))).
+  (*clear -Hx x_D.
   rewrite leR_oppl; apply (@leR_trans (xlnx x)) => //.
   rewrite leR_oppl; apply/ltRW/(ltR_leR_trans Hx).
-  by rewrite /gamma; exact: geR_minr.
-apply/ltRW/Rgt_lt.
-have ? : sqrt (2 * D(V || W | P)) < x.
-  apply pow2_Rlt_inv; [exact: sqrt_pos | exact: ltRW | ].
+  by rewrite /gamma; exact: geR_minr.*) admit.
+apply/ltW.
+have ? : Num.sqrt (2 * D(V || W | P)) < x.
+(*  apply pow2_Rlt_inv; [exact: sqrt_pos | exact: ltRW | ].
   rewrite [in X in X < _]/= mulR1 sqrt_sqrt; last first.
     by apply mulR_ge0; [exact/ltRW | exact/cdiv_ge0].
-  by rewrite mulRC -ltR_pdivl_mulr //; exact/(ltR_leR_trans Hcase)/geR_minr.
-have ? : x <= exp (- 1).
-  apply (@leR_trans (exp (-2))); first exact: geR_minr.
-  by apply/ltRW/exp_increasing; lra.
+  by rewrite mulRC -ltR_pdivl_mulr //; exact/(ltR_leR_trans Hcase)/geR_minr.*) admit.
+have xN1 : x <= sequences.expR (- 1).
+  apply: (@le_trans _ _ (sequences.expR (-2))).
+    by rewrite ge_min lexx orbT.
+  by rewrite exp.ler_expR lerN2 ler1n.
 apply xlnx_sdecreasing_0_Rinv_e => //.
-- by split; [exact/sqrt_pos|exact: (@leR_trans x _ _ (ltRW _))].
-- by split => //; exact: ltRW.
-Qed.
+- rewrite sqrtr_ge0/=.
+  by rewrite (le_trans _ xN1)// ltW.
+- by rewrite (ltW x_gt0) xN1.
+Admitted.
 
 End error_exponent_lower_bound.
