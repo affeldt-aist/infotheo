@@ -1537,3 +1537,17 @@ transitivity (\rmax_(c in f @: M) g (d c)); last by rewrite bigmaxR_imset.
 apply bigmaxR_bigmin_vec_helper with cnot0 => //.
 by apply/imsetP; exists m.
 Qed.
+
+(* TODO: PR to Rstruct as RsqrtE *)
+Lemma RsqrtE' (x : Rdefinitions.R) : sqrt x = Num.sqrt x.
+Proof.
+set Rx := Rcase_abs x.
+have RxE: Rx = Rcase_abs x by [].
+rewrite /sqrt.
+rewrite -RxE.
+move: RxE.
+case: Rcase_abs=> x0 RxE.
+  by rewrite RxE; have/RltP/ltW/ler0_sqrtr-> := x0.
+rewrite /Rx -/(sqrt _) RsqrtE //.
+by have/Rge_le/RleP:= x0.
+Qed.

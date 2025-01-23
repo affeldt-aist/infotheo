@@ -2,8 +2,8 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals mathcomp_extra.
 From mathcomp Require Import lra.
-Require Import Reals.
-From infotheo Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext.
+Require Reals.
+From infotheo Require Import ssrR realType_ext logb ssr_ext ssralg_ext.
 From infotheo Require Import bigop_ext fdist proba.
 
 Set Implicit Arguments.
@@ -56,116 +56,9 @@ Require Import robustmean.
 
 Section is01.
 Local Open Scope ring_scope.
+Variable R : realType.
 Definition is01 (U : finType) (C : {ffun U -> R}) := forall i, 0 <= C i <= 1.
 End is01.
-
-Section misc20240303.
-Local Open Scope ring_scope.
-
-(* to ssrR *)
-Lemma RsqrtE' (x : RbaseSymbolsImpl.R) : sqrt x = Num.sqrt x.
-Proof.
-set Rx := Rcase_abs x.
-have RxE: Rx = Rcase_abs x by [].
-rewrite /sqrt.
-rewrite -RxE.
-move: RxE.
-case: Rcase_abs=> x0 RxE.
-  by rewrite RxE; have/RltP/ltW/ler0_sqrtr-> := x0.
-rewrite /Rx -/(sqrt _) RsqrtE //.
-by have/Rge_le/RleP:= x0.
-Qed.
-
-(* to ssrnum? *)
-Lemma sqrBC (R : realDomainType) (x y : R) : (x - y) ^+ 2 = (y - x) ^+ 2.
-Proof.
-have:= num_real (x - y) => /real_normK <-.
-by rewrite distrC real_normK // num_real.
-Qed.
-
-(* to ssrnum? *)
-Lemma ler_abs_sqr (T : realDomainType) (x y : T) : (`|x| <= `|y|) = (x ^+ 2 <= y ^+ 2).
-Proof. by rewrite -[LHS]ler_sqr ?nnegrE// ?real_normK// num_real. Qed.
-
-(* TODO: use ring_scope in robustmean.v *)
-Lemma cresilience'
-  (V : finType) (PP : {fdist V}) (delta : R) (XX : {RV (PP) -> (R)}) (F G : {set V}) :
-  0 < delta -> delta <= Pr PP F / Pr PP G -> F \subset G ->
-  `| `E_[XX | F] - `E_[XX | G] | <= Num.sqrt (`V_[ XX | G] * 2 * (1 - delta) / delta).
-Proof.
-rewrite -!coqRE -RsqrtE' => /RltP ? /RleP ? ?.
-exact/RleP/cresilience.
-Qed.
-
-Lemma variance_ge0' (U : finType) (P : {fdist U}) (X : {RV (P) -> (R)}) :
-  0 <= `V X.
-Proof. exact/RleP/variance_ge0. Qed.
-
-Lemma cvariance_ge0' (U : finType) (P : {fdist U}) (X : {RV (P) -> (R)}) (F : {set U}) :
-  0 <= `V_[ X | F].
-Proof. exact/RleP/cvariance_ge0. Qed.
-
-Lemma resilience'
-  (U : finType) (P : {fdist U}) (delta : R) (X : {RV (P) -> (R)}) (F : {set U}) :
-  0 < delta -> delta <= Pr P F ->
-  `| `E_[X | F] - `E X | <= Num.sqrt (`V X * 2 * (1 - delta) / delta).
-Proof.
-rewrite -!coqRE -RsqrtE' => /RltP ? /RleP ?.
-exact/RleP/resilience.
-Qed.
-
-(* eqType version of order.bigmax_le *)
-Lemma bigmax_le' disp (T : porderType disp) (I : eqType) (r : seq I) (f : I -> T)
-    (x0 x : T) (PP : pred I) :
-  (x0 <= x)%O ->
-  (forall i : I, i \in r -> PP i -> (f i <= x)%O) ->
-  (\big[Order.max/x0]_(i <- r | PP i) f i <= x)%O.
-Proof.
-move=> x0x cond; rewrite big_seq_cond bigmax_le // => ? /andP [? ?]; exact: cond.
-Qed.
-
-(* seq version of order.bigmax_leP *)
-Lemma bigmax_leP_seq disp (T : orderType disp) (I : eqType) (r : seq I) (F : I -> T)
-    (x m : T) (PP : pred I) :
-reflect ((x <= m)%O /\ (forall i : I, i \in r -> PP i -> (F i <= m)%O))
-  (\big[Order.max/x]_(i <- r | PP i) F i <= m)%O.
-Proof.
-apply:(iffP idP); last by case; exact:bigmax_le'.
-move=> bm; split; first by exact/(le_trans _ bm)/bigmax_ge_id.
-by move=> *; exact/(le_trans _ bm)/le_bigmax_seq.
-Qed.
-
-Section topology_ext.
-Import boolp.
-(* variant of robustmean.bigmaxR_ge0_cond, should be moved to topology.v *)
-Lemma bigmax_gt0_seq (A : eqType) (F : A -> R) (s : seq A) (PP : pred A) :
-reflect (exists i : A, [/\ i \in s, PP i & 0 < F i]) (0 < \big[Num.max/0]_(m <- s | PP m) F m).
-Proof.
-rewrite ltNge.
-apply:(iffP idP).
-  move=> /bigmax_leP_seq /not_andP []; first by rewrite lexx.
-  move=> /existsNP [] x /not_implyP [] xs /not_implyP [] PPx /negP; rewrite -ltNge=> Fx0.
-  by exists x; repeat (split=> //).
-case=> x [] ? ? ?; apply/bigmax_leP_seq/not_andP; right.
-apply/existsNP; exists x; do 2 (apply/not_implyP; split=> //).
-by apply/negP; rewrite -ltNge.
-Qed.
-End topology_ext.
-
-End misc20240303.
-
-Section proba_ext.
-Local Open Scope ring_scope.
-Variables (A : finType) (P : {fdist A}).
-Lemma Pr_setT' : Pr P [set: A] = 1.
-Proof. by rewrite /Pr (eq_bigl xpredT) ?FDist.f1 // => ?; rewrite in_setT. Qed.
-End proba_ext.
-
-Section finset_ext.
-Variables (R : Type) (idx : R) (op : Monoid.com_law idx) (I : finType) (a b : I) (F : I -> R).
-Lemma big_set2 : a != b -> \big[op/idx]_(i in [set a; b]) F i = op (F a) (F b).
-Proof. by move=> ab; rewrite big_setU1 ?inE // big_set1. Qed.
-End finset_ext.
 
 Module Weighted.
 Section def.

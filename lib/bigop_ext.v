@@ -629,3 +629,48 @@ by move/ih => [u ut Fu0]; exists u => //; rewrite inE ut orbT.
 Qed.
 
 End real.
+
+Section order.
+Import classical.mathcomp_extra Order.Theory.
+Local Open Scope ring_scope.
+Local Open Scope order_scope.
+
+Lemma bigmax_le_seq disp (T : porderType disp) (I : eqType) (r : seq I) (f : I -> T)
+    (x0 x : T) (PP : pred I) :
+  (x0 <= x)%O ->
+  (forall i : I, i \in r -> PP i -> (f i <= x)%O) ->
+  (\big[Order.max/x0]_(i <- r | PP i) f i <= x)%O.
+Proof.
+move=> x0x cond; rewrite big_seq_cond bigmax_le // => ? /andP [? ?]; exact: cond.
+Qed.
+
+(* seq version of order.bigmax_leP *)
+Lemma bigmax_leP_seq disp (T : orderType disp) (I : eqType) (r : seq I) (F : I -> T)
+    (x m : T) (PP : pred I) :
+reflect ((x <= m)%O /\ (forall i : I, i \in r -> PP i -> (F i <= m)%O))
+  (\big[Order.max/x]_(i <- r | PP i) F i <= m)%O.
+Proof.
+apply:(iffP idP); last by case; exact:bigmax_le_seq.
+move=> bm; split; first by exact/(le_trans _ bm)/bigmax_ge_id.
+by move=> *; exact/(le_trans _ bm)/le_bigmax_seq.
+Qed.
+
+Section classical.
+Import boolp.
+Lemma bigmax_gt0P_seq (T : realDomainType) (A : eqType) (F : A -> T)
+  (s : seq A) (PP : pred A) :
+reflect (exists i : A, [/\ i \in s, PP i & (0 < F i)%O]) (0 < \big[Num.max/0]_(m <- s | PP m) F m).
+Proof.
+rewrite ltNge.
+apply:(iffP idP).
+  move=> /bigmax_leP_seq /not_andP []; first by rewrite lexx.
+  move=> /existsNP [] x /not_implyP [] xs /not_implyP [] PPx /negP.
+  rewrite -ltNge=> Fx0.
+  by exists x; repeat (split=> //).
+case=> x [] ? ? ?; apply/bigmax_leP_seq/not_andP; right.
+apply/existsNP; exists x; do 2 (apply/not_implyP; split=> //).
+by apply/negP; rewrite -ltNge.
+Qed.
+End classical.
+
+End order.
