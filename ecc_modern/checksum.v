@@ -2,9 +2,8 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm zmodp.
 From mathcomp Require Import matrix vector.
-Require Import Reals.
-From mathcomp Require Import Rstruct.
-Require Import ssralg_ext ssrR Reals_ext f2 fdist channel tanner linearcode.
+From mathcomp Require Import Rstruct reals.
+Require Import ssralg_ext f2 fdist channel tanner linearcode.
 Require Import pproba.
 
 (******************************************************************************)
@@ -65,19 +64,19 @@ End checksubsum_parity.
 Local Open Scope channel_scope.
 
 Section post_proba_checksubsum.
-
+Let R := Rdefinitions.R.
 Variables (B : finType) (W : `Ch('F_2, B)).
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 Local Notation "''V'" := (Vnext H).
 
 Lemma kernel_checksubsum1 (x : 'rV['F_2]_n) : x \in kernel H ->
-  (1 = (\prod_m0 \delta ('V m0) x)%:R)%R.
+  (1 = (\prod_m0 \delta ('V m0) x)%:R :> R)%R.
 Proof.
 move=> x_in_C.
-rewrite {1}(_ : (1 = (\prod_(m0 < m) 1)%:R)%R); [congr INR |
+rewrite {1}(_ : (1 = (\prod_(m0 < m) 1)%:R)%R); [congr _%:R |
   by rewrite big_const iter_muln_1 exp1n].
 apply eq_bigr => m0 _.
-rewrite /C mem_kernel_syndrome0 /syndrome in x_in_C.
+rewrite mem_kernel_syndrome0 /syndrome in x_in_C.
 move/eqP in x_in_C.
 have {}x_in_C : forall m0, \sum_i (H m0 i) * (x ``_ i) = 0.
   move=> m1.
@@ -108,10 +107,10 @@ by rewrite /checksubsum (x_in_C m0) eqxx.
 Qed.
 
 Lemma kernel_checksubsum0 (x : 'rV['F_2]_n) : x \notin kernel H ->
-  ((\prod_m0 checksubsum ('V m0) x)%:R = 0)%R.
+  ((\prod_m0 checksubsum ('V m0) x)%:R = 0 :> R)%R.
 Proof.
 move=> x_notin_C.
-rewrite /C mem_kernel_syndrome0 /syndrome in x_notin_C.
+rewrite mem_kernel_syndrome0 /syndrome in x_notin_C.
 have {}x_notin_C : [exists m0, \sum_i (H m0 i) * (x ``_ i) != 0].
   rewrite -negb_forall; apply: contra x_notin_C => /forallP x_notin_C.
   apply/eqP/rowP => a; rewrite !mxE /= -[RHS](eqP (x_notin_C a)).
@@ -147,29 +146,27 @@ Proof.
 apply/idP/idP; last first.
   apply: contraTT => /kernel_checksubsum0.
   rewrite -(@big_morph _ _ nat_of_bool true muln true andb) //.
-    rewrite -eqb0 /= (_ : 0 = 0%:R)%R //; by move/INR_eq/eqP.
-  move=> ? ? /=; by rewrite mulnb.
+    rewrite -eqb0 /= (_ : 0 = 0%:R)%R // => /eqP.
+    by rewrite Num.Theory.eqr_nat.
+  by move=> ? ? /=; rewrite mulnb.
 move/kernel_checksubsum1.
 rewrite -(@big_morph _ _ nat_of_bool true muln true andb) //; last first.
   move=> ? ? /=; by rewrite mulnb.
-rewrite (_ : 1 = true%:R)%R // => /INR_eq/esym.
+rewrite (_ : 1 = true%:R)%R // => /eqP.
+rewrite Num.Theory.eqr_nat.
 by case: (\big[andb/true]_(_ < _) _).
 Qed.
 
-Local Open Scope R_scope.
-
 Lemma checksubsum_in_kernel (x : 'rV['F_2]_n) :
-  (\prod_(i < m) (\delta ('V i) x)%:R = (x \in kernel H)%:R)%R.
+  (\prod_(i < m) (\delta ('V i) x)%:R = (x \in kernel H)%:R :> R)%R.
 Proof.
 rewrite kernel_checksubsum.
-transitivity ((\prod_m1 (\delta ('V m1) x))%:R)%R.
-  by rewrite -big_morph_natRM.
+transitivity ((\prod_m1 (\delta ('V m1) x))%:R :> R)%R.
+  by rewrite -natr_prod.
 congr (_%:R).
 erewrite (@big_morph _ _ nat_of_bool true) => //.
 move=> ? ? /=; by rewrite mulnb.
 Qed.
-
-Local Close Scope R_scope.
 
 Let C := kernel H.
 Hypothesis HC : (0 < #| [set cw in C] |)%nat.
@@ -183,7 +180,7 @@ Lemma post_prob_uniform_checksubsum (x : 'rV['F_2]_n) :
      (\prod_m0 (\delta ('V m0) x))%:R * W ``(y | x))%R.
 Proof.
 rewrite post_prob_uniform_kernel; congr (_ * _ * _)%R.
-by rewrite big_morph_natRM checksubsum_in_kernel inE mem_kernel_syndrome0.
+by rewrite natr_prod checksubsum_in_kernel inE mem_kernel_syndrome0.
 Qed.
 
 End post_proba_checksubsum.
