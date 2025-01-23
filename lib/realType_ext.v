@@ -56,6 +56,7 @@ move=> z0; split => [<-|->]; first by rewrite -mulrA mulVf // mulr1.
 by rewrite -mulrA mulfV // mulr1.
 Qed.
 
+(* TODO: rename as prodr_gt0 *)
 Lemma prodR_gt0 (R : numDomainType) (A : finType) (F : A -> R) : (forall a, 0 < F a)%mcR ->
   (0 < \prod_(a : A) F a)%mcR.
 Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulr_gt0. Qed.
