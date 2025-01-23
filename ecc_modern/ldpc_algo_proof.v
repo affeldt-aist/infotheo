@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-Require Import Wf_nat Init.Wf Recdef Reals.
+Require Import Wf_nat Init.Wf Recdef.
 From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg ssrnum.
-From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext ssr_ext ssralg_ext bigop_ext f2.
+From mathcomp Require Import Rstruct reals ring lra.
+Require Import ssr_ext ssralg_ext bigop_ext f2.
 Require Import fdist channel pproba linearcode subgraph_partition tanner.
 Require Import tanner_partition summary ldpc checksum ldpc_algo.
 
@@ -29,6 +29,8 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Open Scope seq_scope.
+Local Open Scope ring_scope.
+Import GRing.Theory.
 
 Section TnTreeEq.
 
@@ -90,7 +92,7 @@ Lemma tn_tree_eqP k : Equality.axiom (@tn_tree_eq_bool k).
 Proof.
 move=> x.
 pose d := depth x.
-have Hd: depth x <= d by [].
+have Hd: (depth x <= d)%N by [].
 clearbody d.
 elim: d k x Hd => [|d IHd] k x Hd y.
   by destruct x; rewrite ltn0 in Hd.
@@ -136,9 +138,6 @@ Section BuildTreeOk.
 Variables (m n : nat) (H : 'M['F_2]_(m, n.+1)).
 Hypothesis tanner_acyclic : acyclic' (tanner_rel H).
 Hypothesis tanner_connected : forall a b, connect (tanner_rel H) a b.
-
-Import GRing.Theory.
-Local Open Scope ring_scope.
 
 Variable rW : 'I_n.+1 -> R2.
 
@@ -588,17 +587,16 @@ Qed.
 End BuildTreeOk.
 
 Section BuildTreeTest.
-Let m := 2.
-Let n := 3.
+Let R := Rdefinitions.R.
+Let m := 2%N.
+Let n := 3%N.
 Let id' := sumbool_ord m n.
 
-Import GRing.Theory.
-Local Open Scope ring_scope.
 Let F (i : 'I_m) (j : 'I_n) :=
   (j == widen_ord (leqnSn 2) i) || (j == lift 0 i).
 Let H := \matrix_(i<2,j<3) (F i j : 'F_2).
 
-Let rW (i : 'I_n) := (R0,R1).
+Let rW (i : 'I_n) : R*R := (0,1)%R.
 
 (* How can we make this to compute? *)
 (* Eval compute in @build_tree 3 2 H f0 0. *)
@@ -755,11 +753,7 @@ Variable vb : (`U C_not_empty).-receivable W.
 Local Notation "''V'" := (Vnext H).
 Local Notation "''F'" := (Fnext H).
 
-Local Open Scope ring_scope.
-
 Let rW n0 := (W 0 (vb ``_ n0), W 1 (vb ``_ n0)).
-
-Close Scope ring_scope.
 
 Let id' := sumbool_ord m n.
 
@@ -792,7 +786,7 @@ Lemma children_ind {i U V : eqType}
 Proof.
 move=> HP k t.
 set h := depth t.
-have : depth t <= h by [].
+have : (depth t <= h)%N by [].
 clearbody h.
 move: k t.
 elim: h => [|h IH] k t Hh.
@@ -849,7 +843,7 @@ exact: (negbFE Hi2l).
 Qed.
 
 Corollary msg_nonnil (i1 i2 : id') i {k} t :
-  size (@msg _ _ i1 i2 i k t) > 0 ->
+  (size (@msg _ _ i1 i2 i k t) > 0)%N ->
   i1 \in i ++ labels t /\ i2 \in i ++ labels t.
 Proof.
 move=> Hsz.
@@ -911,7 +905,7 @@ have {}IHc: size (flatten [seq msg i1 i2 None i | i <- l]) =
 case Ha: (graph a i1 i2).
   have Hsz:= f_equal nat_of_bool Ha.
   rewrite -(IH _ _ Huna) in Hsz; last by rewrite in_cons eqxx.
-  have Hsz': size (msg i1 i2 None a) > 0 by rewrite Hsz.
+  have Hsz': (size (msg i1 i2 None a) > 0)%N by rewrite Hsz.
   have {Hsz'}[/= Hi1' Hi2']:= msg_nonnil Hsz'.
   suff ->: size (flatten [seq msg i1 i2 None i | i <- l]) = 0 by rewrite addn0.
   rewrite size_flatten sumnE big_seq/= big1// => i.
@@ -927,8 +921,6 @@ Qed.
 Let beta' := ldpc.beta H W vb.
 Let alpha' := ldpc.alpha H W vb.
 
-Local Open Scope ring_scope.
-
 Lemma beta_def n0 m0 (d : 'rV_n) :
   let d0 := d `[ n0 := 0 ] in
   let d1 := d `[ n0 := 1 ] in
@@ -943,13 +935,11 @@ have [e He [ue Pe perme]] := big_enumP _.
 rewrite {3 5}/row_set !mxE !eqxx /=.
 move: (W 0 (vb ``_ n0)) (W 1 (vb ``_ n0)).
 elim: e {He ue Pe perme} => [|a l IH] p0 p1.
-  by rewrite /= !big_nil !mulR1.
-by rewrite /= !big_cons /= IH // !mulRA.
+  by rewrite /= !big_nil !mulr1.
+by rewrite /= !big_cons /= IH // !mulrA.
 Qed.
 
-Local Open Scope R_scope.
-
-Lemma rmul_foldr_rsum {I A} {X : finType} (a : R) (g : I -> X -> A -> A)
+Lemma rmul_foldr_rsum (R := Rdefinitions.R) {I A} {X : finType} (a : R) (g : I -> X -> A -> A)
   (F0 : A -> R) l d :
   a *
   foldr (fun n1 (F : A -> R) t => \sum_(x in X) F (g n1 x t))
@@ -998,16 +988,16 @@ case/boolP : (i == n1) => [/eqP -> | //].
 by rewrite (negbTE n1_l).
 Qed.
 
-Lemma alpha_def_sub m0 n1 n0 (x y : 'F_2) (l : seq 'I_n) d :
+Lemma alpha_def_sub (R := Rdefinitions.R) m0 n1 n0 (x y : 'F_2) (l : seq 'I_n) d :
   n1 \notin l -> uniq l -> n0 != n1 -> n0 \notin l -> n1 \in 'V m0 :\ n0 ->
   {subset l <= 'V m0 :\ n0} ->
   beta' n1 m0 (d`[n1 := x]) *
   foldr (fun n2 (F : 'rV_n -> R) t => \sum_(x in 'F_2) F (t`[n2 := x]))
-    (fun t => INR (t ``_ n0 != \delta [set x in l] t) *
+    (fun t => (t ``_ n0 != \delta [set x in l] t)%:R *
               (\prod_(n3 in [set x in l]) beta' n3 m0 t))
     l (d`[n0 := x + y])%R =
   foldr (fun n2 (F : 'rV_n -> R) t => \sum_(x in 'F_2) F (t`[n2 := x]))
-    (fun t => INR (t ``_ n0 != \delta [set x in n1 :: l] t) *
+    (fun t => (t ``_ n0 != \delta [set x in n1 :: l] t)%:R *
               (\prod_(n3 in [set x in n1 :: l]) beta' n3 m0 t))
     l ((d`[n0 := y])`[n1 := x]).
 Proof.
@@ -1027,9 +1017,9 @@ elim: l' => [|hd tl IH] /= in d n1_l' n0_l' *.
   rewrite [X in _ = _ * X](bigD1 n1) /=; last by rewrite !inE eqxx.
   rewrite (@beta_inva _ _ _ _ W _ _ m0 _ ((d`[n0 := y])`[n1 := x])) //; last first.
     by rewrite !mxE eqxx.
-  rewrite mulRA mulRA [X in _ = X * _]mulRC.
+  rewrite mulrA mulrA [X in _ = X * _]mulrC.
   congr (_ * _).
-    congr (_ * INR _).
+    congr (_ * _%:R).
     rewrite row_setC; last by rewrite eq_sym.
     by rewrite !mxE eqxx (@checksubsum_add n1).
   apply congr_big => // i.
@@ -1073,11 +1063,11 @@ move=> Hn0.
 rewrite /alpha' !recursive_computation /alpha //; first last.
   by apply tanner.
   by apply tanner.
-rewrite (eq_bigr (fun t : 'rV_n => INR ((t ``_ n0) != \delta ('V m0 :\ n0) t) *
+rewrite (eq_bigr (fun t : 'rV_n => ((t ``_ n0) != \delta ('V m0 :\ n0) t)%:R *
   (\prod_(n1 in 'V m0 :\ n0) beta' n1 m0 t))); last first.
   by move=> i _; rewrite (checksubsum_D1 _ Hn0) eq_sym.
 rewrite [in X in _ = (_, X)](eq_bigr (fun t : 'rV_n =>
-  INR ((t ``_ n0) != \delta ('V m0 :\ n0) t) *
+  ((t ``_ n0) != \delta ('V m0 :\ n0) t)%:R *
   (\prod_(n1 in 'V m0 :\ n0) beta' n1 m0 t))); last first.
   move=> i _; by rewrite (checksubsum_D1 _ Hn0) eq_sym.
 rewrite !summary_powersetE !summary_foldE /summary_fold /=.
@@ -1089,7 +1079,7 @@ have Hl : {subset enum f <= f} by move=> ?; rewrite mem_enum.
 elim: (enum (mem _)) (enum_uniq (mem f)) => [|a l IH] /= Hun in Hn0 Hl *.
   rewrite /checksubsum.
   rewrite !big_pred0 /=; try by move=> i /=; rewrite !inE in_nil.
-  by rewrite !mxE !eqxx /= !mulR1.
+  by rewrite !mxE !eqxx /= !mulr1.
 case/andP: Hun => a_l Hun.
 rewrite in_cons in Hn0.
 case/norP: Hn0 => Hn0a Hn0.
@@ -1105,7 +1095,7 @@ congr pair.
     rewrite -[in X in _ * foldr _ _ _ X = _](GRing.add0r 0)%R.
     by apply alpha_def_sub.
   rewrite -[in X in _ * foldr _ _ _ X = _](GRing.addr0 1%R).
-  by rewrite alpha_def_sub // addR0.
+  by rewrite alpha_def_sub //= addr0.
 rewrite (bigD1 (0%R : 'F_2)) //=.
 rewrite (bigD1 (1%R : 'F_2)) //=.
 rewrite big_pred0; last by case/F2P.
@@ -1113,7 +1103,7 @@ congr (_ + _).
   rewrite -[in X in _ * foldr _ _ _ X = _](GRing.add0r 1%R).
   by apply alpha_def_sub.
 rewrite -[in X in _ * foldr _ _ _ X = _](GRing.addrr_char2 (@char_Fp 2 erefl) 1%R).
-by rewrite alpha_def_sub // addR0.
+by rewrite alpha_def_sub // addr0.
 Qed.
 
 Lemma graph_sumprod_up k (t : tn_tree id' k unit unit) :
@@ -1272,11 +1262,11 @@ by destruct (push_init dn).
 Qed.
 
 Lemma alpha_map {A} F (l : seq A) :
-  alpha (map F l) = \big[alpha_op/(R1,R0)]_(i <- l) F i.
+  alpha (map F l) = \big[alpha_op/(1,0)]_(i <- l) F i.
 Proof. by rewrite /alpha foldrE big_map. Qed.
 
 Lemma beta_map {A} F w (l : seq A) :
-  beta w (map F l) = beta_op w (\big[beta_op/(R1,R1)]_(i <- l) F i).
+  beta w (map F l) = beta_op w (\big[beta_op/(1,1)]_(i <- l) F i).
 Proof. by rewrite /beta foldlE /= big_cons big_map. Qed.
 
 Lemma kind_filter {A : eqType} k i (s : {set ord_of_kind m n' (negk k)})
@@ -1454,7 +1444,7 @@ Proof. by destruct s. Qed.
 Lemma push_init_spec s i :
   push_init (down_msg s i) =
   ((omap (msg_spec' ^~ i) (prec_node s) : seq R2),
-   oapp (msg_spec' ^~ i) (R1,R1) (prec_node s)).
+   oapp (msg_spec' ^~ i) (1,1) (prec_node s)).
 Proof. by destruct s. Qed.
 
 Local Notation build_computed_tree := (build_computed_tree vb d).
@@ -1925,7 +1915,7 @@ rewrite -tree_ok // labels_sumprod_down labels_sumprod_up in Hn0l.
 by exists (inr n0).
 Qed.
 
-Lemma big_beta_mul (A : finType) (F1 F2 : A -> R) (l : pred A) :
+Lemma big_beta_mul (R := Rdefinitions.R) (A : finType) (F1 F2 : A -> R) (l : pred A) :
   \big[beta_op/(1,1)]_(i <- enum l) (F1 i, F2 i) =
   (\prod_(i in l) F1 i , \prod_(i in l) F2 i).
 Proof.
@@ -1955,12 +1945,11 @@ rewrite !estimation_correctness; last 2 first.
 rewrite -!(K949_lemma vb tanner d n0).
 rewrite /K949 /normalize.
 rewrite beta_map big_beta_mul /=.
-rewrite /Rdiv.
 congr pair.
-  rewrite mulRC /alpha' !mxE.
-  by rewrite eqxx mulRA.
-rewrite mulRC /alpha' !mxE.
-by rewrite eqxx mulRA.
+  rewrite mulrC /alpha' !mxE.
+  by rewrite eqxx mulrA.
+rewrite mulrC /alpha' !mxE.
+by rewrite eqxx mulrA.
 Qed.
 
 Lemma subseq_estimation k (t : tn_tree' k) :
