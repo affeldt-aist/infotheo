@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq               *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg zmodp matrix.
-Require Import Reals.
-From mathcomp Require Import Rstruct.
-Require Import ssr_ext ssralg_ext ssrR Reals_ext f2 summary.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg zmodp.
+From mathcomp Require Import matrix lra ring.
+From mathcomp Require Import Rstruct reals.
+Require Import ssr_ext ssralg_ext f2 summary.
 Require Import subgraph_partition tanner tanner_partition fdist channel.
 Require Import checksum.
 
@@ -288,9 +288,8 @@ by move/freeon_notin => ->.
 Qed.
 
 Local Open Scope summary_scope.
-Local Open Scope R_scope.
 
-Lemma rmul_rsum_commute0 d n0 (B : finType) (t : 'rV[B]_n)
+Lemma rmul_rsum_commute0 (R := Rdefinitions.R) d n0 (B : finType) (t : 'rV[B]_n)
   (W : forall m, 'rV_m -> 'rV_m -> R) (* channel *)
   (F : 'I_m -> 'rV_n -> R)
   (HF : forall m1 m0 (t' : 'rV_n), m1 \in 'F(m0, n0) -> t' ``_ n0 = d ``_ n0 -> F m1 ((dprojs_V H d n0 t') m0) = F m1 t') :
@@ -720,13 +719,13 @@ Lemma rprod_rsum_commute d (B : finType) (x : 'rV_n) (W: `Ch('F_2, B)) m0 n0 (m0
       W (t ``_ n1) (x ``_ n1) *
          \prod_(m1 in `F n1 :\ m0)
            (W ``(x \# `V(m1, n1) :\ n1 | ((dprojs_V H d n1 t) m1) \# `V(m1, n1) :\ n1) *
-             \prod_(m2 in `F(m1, n1)) INR (\delta ('V m2) ((dprojs_V H d n1 t) m1)))) =
+             \prod_(m2 in `F(m1, n1)) (\delta ('V m2) ((dprojs_V H d n1 t) m1))%:R)) =
   \sum_(t | (g t \in pfamily d ('V m0 :\ n0) pr) && (g' (g t) == t))
     \prod_(n1 in 'V m0 :\ n0)
        (W ((g t n1) ``_ n1) (x ``_ n1) *
          \prod_(m1 in `F n1 :\ m0)
            (W ``(x \# `V(m1, n1) :\ n1 | ((dprojs_V H d n1 (g t n1)) m1) \# `V(m1, n1) :\ n1) *
-             \prod_(m2 in `F(m1, n1)) INR (\delta ('V m2) ((dprojs_V H d n1 (g t n1)) m1)))))%R.
+             \prod_(m2 in `F(m1, n1)) (\delta ('V m2) ((dprojs_V H d n1 (g t n1)) m1))%:R)))%R.
 Proof.
 move=> pr g g'.
 rewrite (big_distr_big_dep d) /=.
