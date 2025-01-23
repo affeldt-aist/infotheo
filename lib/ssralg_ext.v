@@ -3,6 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
+From mathcomp Require ssrnum.
 Require Import ssr_ext f2.
 
 (******************************************************************************)
@@ -697,3 +698,16 @@ Lemma mulr_regr [R : comRingType] (a : R) (x : R^o) : x * a = a *: x.
 Proof. by rewrite mulrC. Qed.
 
 End regular_algebra.
+
+Section ssrnum_ext.
+Import ssrnum Num.Theory.
+
+Lemma sqrBC (R : realDomainType) (x y : R) : (x - y) ^+ 2 = (y - x) ^+ 2.
+Proof.
+have:= num_real (x - y) => /real_normK <-.
+by rewrite distrC real_normK // num_real.
+Qed.
+
+Lemma ler_abs_sqr (T : realDomainType) (x y : T) : (`|x| <= `|y|) = (x ^+ 2 <= y ^+ 2).
+Proof. by rewrite -[LHS]ler_sqr ?nnegrE// ?real_normK// num_real. Qed.
+End ssrnum_ext.

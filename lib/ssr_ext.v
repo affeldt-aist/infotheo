@@ -644,6 +644,11 @@ move=> xB; case/(B_covered x)/imsetP: (xB) => y yI xhy.
 by apply/imsetP; exists y => //; rewrite inE -xhy.
 Qed.
 
+Lemma big_set2 (R : Type) (idx : R) (op : Monoid.com_law idx) (I : finType)
+  (a b : I) (F : I -> R) :
+  a != b -> \big[op/idx]_(i in [set a; b]) F i = op (F a) (F b).
+Proof. by move=> ab; rewrite big_setU1 ?inE // big_set1. Qed.
+
 End finset_ext.
 Notation "A `* B" := (setX A B) : set_scope.
 
