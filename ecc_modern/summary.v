@@ -1,8 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
-Require Import Reals.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext ssrR f2.
 
 (******************************************************************************)
@@ -98,19 +97,16 @@ move: (X b) => /implyP; apply.
 by rewrite in_set1.
 Qed.
 
-Local Open Scope R_scope.
-
 (** sum over vectors t whose V projection is free and its complemented fixed by d *)
 Notation "\sum_ ( x '=' d [~ s ] ) F" :=
   (\sum_( x | freeon s d x ) F) : summary_scope.
 Notation "\sum_ ( x '=' d [~ s ] '|' P ) F" :=
   (\sum_( x | freeon s d x && P x) F) : summary_scope.
 
-Local Close Scope R_scope.
 Local Open Scope summary_scope.
 
 Section rsum_freeon.
-
+Let R := Rdefinitions.R.
 Variable n : nat.
 
 Lemma rsum_freeon0 (d : 'rV['F_2]_n) (F : 'rV_n -> R) :
@@ -131,13 +127,13 @@ rewrite big_imset /=; last by exact: inj_row_set.
 rewrite (bigID (pred1 Zp0)) /= (big_pred1 Zp0) //.
 rewrite (bigID (pred1 Zp1)) /= (big_pred1 Zp1); last by case/F2P.
 rewrite big_pred0; last by case/F2P.
-by rewrite addR0.
+by rewrite GRing.addr0.
 Qed.
 
 End rsum_freeon.
 
 Section alternative_definitions_of_summary.
-
+Let R := Rdefinitions.R.
 Variables n : nat.
 
 Local Open Scope R_scope.
