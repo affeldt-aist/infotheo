@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum.
-Require Import Reals Lra.
+From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
+(*Require Import Reals Lra.*)
 From mathcomp Require Import Rstruct reals.
-Require Import ssrR realType_ext Reals_ext Ranalysis_ext logb ln_facts.
+Require Import realType_ext realType_logb bigop_ext ln_facts.
 Require Import fdist entropy channel_code channel divergence.
 Require Import conditional_divergence variation_dist pinsker.
 
@@ -34,67 +34,86 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope channel_scope.
 Local Open Scope reals_ext_scope.
-Local Open Scope R_scope.
+Local Open Scope ring_scope.
 
 Import Order.TTheory GRing.Theory Num.Theory.
 
 Section mutinfo_distance_bound.
-
+Let R := Rdefinitions.R.
 Variables (A B : finType) (V W : `Ch(A, B)) (P : {fdist A}).
 Hypothesis V_dom_by_W : P |- V << W.
-Hypothesis cdiv_ub : D(V || W | P) <= (exp(-2)) ^ 2 * / 2.
+Hypothesis cdiv_ub : D(V || W | P) <= (sequences.expR (-2) ^+ 2) / 2.
 
-Let cdiv_bounds : 0 <= sqrt (2 * D(V || W | P)) <= exp (-2).
+Let cdiv_bounds : 0 <= Num.sqrt (2 * D(V || W | P)) <= sequences.expR (-2).
 Proof.
-split; first exact: sqrt_pos.
-apply pow2_Rle_inv; [ exact: sqrt_pos | exact/ltRW/exp_pos | ].
-rewrite [in X in X <= _]/= mulR1 sqrt_sqrt; last first.
-  apply mulR_ge0; [lra | exact: cdiv_ge0].
-apply/RleP; rewrite -(@ler_pM2r _ (/ 2)); last first.
-  by rewrite RinvE invr_gt0// (_ : 2%coqR = 2%:R)// INRE ltr0n.
-rewrite RmultE -mulrA mulrCA RinvE (_ : 2%coqR = 2%:R)// INRE.
-rewrite mulfV ?mulr1 ?gt_eqF//.
-by apply/RleP; rewrite -RdivE.
+apply/andP; split.
+  by rewrite sqrtr_ge0.
+rewrite -(@ler_pXn2r _ 2) ?nnegrE ?exp.expR_ge0 ?sqrtr_ge0//.
+rewrite -(@ler_pM2r _ (2^-1)); last first.
+  by rewrite invr_gt0.
+rewrite sqr_sqrtr; last first.
+  by rewrite mulr_ge0// cdiv_ge0.
+by rewrite mulrAC divff ?mul1r// pnatr_eq0.
 Qed.
 
 Local Open Scope variation_distance_scope.
 
 Lemma out_entropy_dist_ub : `| `H(P `o V) - `H(P `o W) | <=
-  / ln 2 * #|B|%:R * - xlnx (sqrt (2 * D(V || W | P))).
+  (exp.ln 2)^-1 * #|B|%:R * - xlnx (Num.sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
-rewrite -addR_opp -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
-rewrite -mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
-rewrite oppRK big_morph_oppR -big_split /=.
-apply: leR_trans; first exact: leR_sumR_Rabs.
-rewrite -iter_addR -big_const; apply leR_sumR => b _; rewrite addRC.
+rewrite -mulrN -mulrDr normrM gtr0_norm; last first.
+  by rewrite invr_gt0// exp.ln_gt0// ltr1n.
+rewrite -mulrA ler_pM2l; last first.
+  by rewrite invr_gt0// exp.ln_gt0// ltr1n.
+rewrite opprK big_morph_oppr -big_split /=.
+apply: le_trans; first exact: ler_norm_sum.
+rewrite -sum1_card.
+rewrite natr_sum.
+rewrite [leRHS]big_distrl/=.
+apply: ler_sum => b _.
+rewrite mul1r.
+rewrite addrC.
 apply: Rabs_xlnx => //.
-rewrite 2!fdist_outE -addR_opp big_morph_oppR -big_split /=.
-apply: leR_trans; first exact: leR_sumR_Rabs.
-apply: (@leR_trans (d((P `X V), (P `X W)))).
+admit.
+admit.
+rewrite 2!fdist_outE big_morph_oppr -big_split /=.
+apply: le_trans; first exact: ler_norm_sum.
+apply: (@le_trans _ _ (d((P `X V), (P `X W)))).
 - rewrite /var_dist /=.
-  apply (@leR_trans (\sum_a \sum_b `| ((P `X V)) (a, b) - ((P `X W)) (a, b) | )); last first.
-    by apply Req_le; rewrite pair_bigA /=; apply eq_bigr => -[].
-  apply: leR_sumR => a _.
-  rewrite (bigD1 b) //= distRC -[X in X <= _]addR0.
-  rewrite 2!fdist_prodE /= !(mulrC (P a)) addR_opp.
-  by apply/leR_add2l/RleP/sumr_ge0 => ? _; exact/RleP/normR_ge0.
+  apply (@le_trans _ _ (\sum_a \sum_b `| ((P `X V)) (a, b) - ((P `X W)) (a, b) | )); last first.
+    by apply: ssr_ext.eqW; rewrite pair_bigA /=; apply eq_bigr => -[].
+  apply: ler_sum => a _.
+  rewrite (bigD1 b) //= distrC -[X in X <= _]addr0.
+  rewrite 2!fdist_prodE /= !(mulrC (P a)).
+  by rewrite lerD2l sumr_ge0//.
 - rewrite cdiv_is_div_joint_dist => //.
   exact/Pinsker_inequality_weak/joint_dominates.
-Qed.
+Admitted.
 
 Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
-  / ln 2 * #|A|%:R * #|B|%:R * - xlnx (sqrt (2 * D(V || W | P))).
+  (exp.ln 2)^-1 * #|A|%:R * #|B|%:R * - xlnx (Num.sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
-rewrite -addR_opp -mulRN -mulRDr normRM gtR0_norm; last exact/invR_gt0/ln2_gt0.
-rewrite -2!mulRA; apply leR_pmul2l; first exact/invR_gt0/ln2_gt0.
-rewrite oppRK big_morph_oppR -big_split /=.
-apply: leR_trans; first exact: leR_sumR_Rabs.
-rewrite -2!iter_addR -2!big_const pair_bigA /=.
-apply: leR_sumR; case => a b _; rewrite addRC /=.
+rewrite -mulrN -mulrDr normrM gtr0_norm; last first.
+  by rewrite invr_gt0// exp.ln_gt0 ?ltr1n.
+rewrite -2!mulrA ler_pM2l//; last first.
+  by rewrite invr_gt0// exp.ln_gt0// ltr1n.
+rewrite opprK big_morph_oppr -big_split /=.
+apply: le_trans; first exact: ler_norm_sum.
+rewrite -(sum1_card B).
+rewrite natr_sum.
+rewrite [in leRHS]big_distrl/=.
+under [in leRHS]eq_bigr do rewrite mul1r.
+rewrite -(sum1_card A).
+rewrite natr_sum.
+rewrite [in leRHS]big_distrl/=.
+under [in leRHS]eq_bigr do rewrite mul1r.
+rewrite pair_bigA/=.
+apply: ler_sum; case => a b _; rewrite addrC /=.
 apply Rabs_xlnx => //.
-apply (@leR_trans (d(P `X V, P `X W))).
+xxx
+apply: (@le_trans _ _ (d(P `X V, P `X W))).
 - rewrite /var_dist /R_dist (bigD1 (a, b)) //= distRC.
   rewrite -[X in X <= _]addR0.
   by apply/leR_add2l/RleP/sumr_ge0 => ? _; exact/RleP/normR_ge0.
