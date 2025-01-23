@@ -136,11 +136,9 @@ Section alternative_definitions_of_summary.
 Let R := Rdefinitions.R.
 Variables n : nat.
 
-Local Open Scope R_scope.
 Definition summary_powerset (X : {set 'I_n}) (d : 'rV['F_2]_n) (e : 'rV_n -> R) :=
   let bvect s := \row_(i < n) if i \in X then F2_of_bool (i \in s) else d ``_ i in
   \sum_(s in powerset X) e (bvect s).
-Local Close Scope R_scope.
 
 Local Open Scope tuple_ext_scope.
 
@@ -254,12 +252,8 @@ Qed.
 
 Local Close Scope tuple_ext_scope.
 
-Local Open Scope R_scope.
-
-Definition summary_fold (X : {set 'I_n}) d e :=
+Definition summary_fold (X : {set 'I_n}) d e : R :=
   foldr (fun i F t => \sum_(b in 'F_2) F (t `[ i := b ])) e (enum X) d.
-
-Local Close Scope R_scope.
 
 Lemma set_mem {T : finType} (s : {set T}) : s = finset (ssrbool.mem (enum s)).
 Proof. apply/setP=> i. by rewrite !inE mem_enum. Qed.

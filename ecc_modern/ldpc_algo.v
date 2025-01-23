@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-Require Import Init.Wf Recdef Reals.
+Require Import Init.Wf Recdef.
 From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg ssrnum.
-From mathcomp Require Import Rstruct.
-Require Import ssrR Reals_ext f2 subgraph_partition tanner.
+From mathcomp Require Import Rstruct reals ring lra.
+Require Import f2 subgraph_partition tanner.
 Require Import fdist channel pproba linearcode ssralg_ext.
 Require Import tanner_partition summary ldpc checksum.
 
@@ -34,8 +34,10 @@ Import Prenex Implicits.
 Local Open Scope seq_scope.
 Local Open Scope vec_ext_scope.
 
+
 Section Tree.
 Variable id : Type.
+Let R := Rdefinitions.R.
 Definition R2 := (R * R)%type.
 
 Inductive kind : Set := kf | kv.
@@ -64,9 +66,7 @@ Arguments node_id {id k U D} t.
 Arguments up {id k U D} t.
 
 Section Algo.
-
-Open Scope R_scope.
-
+Local Open Scope ring_scope.
 Variable id : Type.
 Let tn_tree' := tn_tree id.
 
@@ -86,7 +86,7 @@ Proof. by move=> -[a0 a1] [b0 b1] [c0 c1] /=; f_equal; ring. Qed.
 Lemma alphaC : commutative alpha_op.
 Proof. by move=> -[a0 a1] [b0 b1]/=; f_equal; ring. Qed.
 
-Lemma alpha0x : left_id (R1, R0) alpha_op.
+Lemma alpha0x : left_id (1, 0)%R alpha_op.
 Proof. by move=> -[a0 a1] /=; f_equal; ring. Qed.
 
 HB.instance Definition _ := @Monoid.isComLaw.Build _ _ _ alphaA alphaC alpha0x.
@@ -114,7 +114,7 @@ Proof. by move=> -[a0 a1] [b0 b1] [c0 c1] /=; f_equal; ring. Qed.
 Lemma betaC : commutative beta_op.
 Proof. by move=> -[a0 a1] [b0 b1]/=; f_equal; ring. Qed.
 
-Lemma beta0x : left_id (R1, R1) beta_op.
+Lemma beta0x : left_id (1, 1)%R beta_op.
 Proof. by move=> -[a0 a1] /=; f_equal; ring. Qed.
 
 HB.instance Definition _ := @Monoid.isComLaw.Build _ _ _ betaA betaC beta0x.
@@ -150,9 +150,11 @@ Fixpoint seqs_but1 (a b : seq R2) :=
 Definition apply_seq {A B : Type} (l1 : seq (A -> B)) (l2 : seq A) : seq B :=
   map (fun (p : (A -> B) * A) => (fst p) (snd p)) (zip l1 l2).
 
+Let R := Rdefinitions.R.
+
 (** Get input from above *)
 Definition push_init down :=
-  if down is Some p then ([::p], p) else ([::], (1,1)).
+  if down is Some p then ([::p], p) else ([::], ((1:R),(1:R))).
 
 (** Propagate from root to leaves *)
 Fixpoint sumprod_down {k} (n : tn_tree' k R2 unit) (from_above : option R2)
@@ -189,20 +191,20 @@ Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive seq => "list" [ "[]" "(::)" ].
 Extract Inductive prod => "(*)"  [ "(,)" ].
 Extract Inductive option => "option" ["Some" "None"].
-Extract Inlined Constant R => "float".
-Extract Inlined Constant R0 => "0.".
-Extract Inlined Constant R1 => "1.".
-Extract Constant RbaseSymbolsImpl.R => "float".
-Extract Constant RbaseSymbolsImpl.R0 => "0.".
-Extract Constant RbaseSymbolsImpl.R1 => "1.".
+Extract Inlined Constant Rdefinitions.R => "float".
+Extract Inlined Constant Rdefinitions.R0 => "0.".
+Extract Inlined Constant Rdefinitions.R1 => "1.".
+Extract Constant Rdefinitions.RbaseSymbolsImpl.R => "float".
+Extract Constant Rdefinitions.RbaseSymbolsImpl.R0 => "0.".
+Extract Constant Rdefinitions.RbaseSymbolsImpl.R1 => "1.".
 Extract Inductive ConstructiveCauchyReals.CReal => "float" ["assert false"].
 Extract Constant ClassicalDedekindReals.DReal => "float".
 Extract Constant ClassicalDedekindReals.DRealRepr => "(fun x -> x)".
 Extract Constant ClassicalDedekindReals.DRealAbstr => "(fun x -> x)".
-Extract Constant Rmult => "( *.)".
-Extract Constant Rplus => "(+.)".
-Extract Constant Rinv  => "fun x -> 1. /. x".
-Extract Constant Ropp  => "(~-.)".
+Extract Constant Rdefinitions.Rmult => "( *.)".
+Extract Constant Rdefinitions.Rplus => "(+.)".
+Extract Constant Rdefinitions.Rinv  => "fun x -> 1. /. x".
+Extract Constant Rdefinitions.Ropp  => "(~-.)".
 Extraction "extraction/sumprod.ml" sumprod estimation.
 
 Section ToGraph.
@@ -331,7 +333,7 @@ Definition msg_spec (i j : sumbool_ord m n) : R2 :=
   match i, j with
   | inl m0, inr n0 => p01 (alpha' m0 n0) n0
   | inr n0, inl m0 => p01 (beta' n0 m0) n0
-  | _, _ => (R0,R0)
+  | _, _ => (0,0)
   end.
 
 Definition prec_node (s : seq (sumbool_ord m n)) :=
@@ -358,7 +360,7 @@ Fixpoint build_computed_tree h s k i : tn_tree (sumbool_ord m n) k R2 R2 :=
            [seq msg_spec x a
            | x in finset (tanner_rel H a) :\: finset (mem_seq (prec_node s))])
        match s with
-       | [::] => (R1,R1)
+       | [::] => (1,1)
        | b :: _ =>
          alpha_beta (tag_of_id rW b)
            [seq msg_spec x b | x in finset (tanner_rel H b) :\ a]
