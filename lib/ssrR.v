@@ -642,9 +642,23 @@ Delimit Scope R_scope with coqR.
 Lemma R1E : 1%coqR = 1%mcR. Proof. by []. Qed.
 Lemma R0E : 0%coqR = 0%mcR. Proof. by []. Qed.
 
+(* TODO: PR to Rstruct as RsqrtE *)
+Lemma RsqrtE' (x : Rdefinitions.R) : sqrt x = Num.sqrt x.
+Proof.
+set Rx := Rcase_abs x.
+have RxE: Rx = Rcase_abs x by [].
+rewrite /sqrt.
+rewrite -RxE.
+move: RxE.
+case: Rcase_abs=> x0 RxE.
+  by rewrite RxE; have/RltP/ltW/ler0_sqrtr-> := x0.
+rewrite /Rx -/(sqrt _) RsqrtE //.
+by have/Rge_le/RleP:= x0.
+Qed.
+
 Definition coqRE :=
-  (R0E, R1E, INRE,
-    RinvE, RoppE, RdivE, RminusE, RplusE, RmultE, RpowE).
+  (R0E, R1E, INRE, IZRposE,
+    RinvE, RoppE, RdivE, RminusE, RplusE, RmultE, RpowE, RsqrtE').
 
 Definition divRR (x : R) : x != 0 -> x / x = 1.
 Proof. by move=> x0; rewrite /Rdiv Rinv_r //; exact/eqP. Qed.
@@ -1536,18 +1550,4 @@ move=> n1n2 Hg m d H Hd.
 transitivity (\rmax_(c in f @: M) g (d c)); last by rewrite bigmaxR_imset.
 apply bigmaxR_bigmin_vec_helper with cnot0 => //.
 by apply/imsetP; exists m.
-Qed.
-
-(* TODO: PR to Rstruct as RsqrtE *)
-Lemma RsqrtE' (x : Rdefinitions.R) : sqrt x = Num.sqrt x.
-Proof.
-set Rx := Rcase_abs x.
-have RxE: Rx = Rcase_abs x by [].
-rewrite /sqrt.
-rewrite -RxE.
-move: RxE.
-case: Rcase_abs=> x0 RxE.
-  by rewrite RxE; have/RltP/ltW/ler0_sqrtr-> := x0.
-rewrite /Rx -/(sqrt _) RsqrtE //.
-by have/Rge_le/RleP:= x0.
 Qed.
