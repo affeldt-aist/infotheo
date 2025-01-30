@@ -264,3 +264,37 @@ rewrite big_cons logM//; last first.
   by apply/prodr_gt0 => a _.
 by rewrite [RHS]big_cons opprD ih.
 Qed.
+
+From mathcomp Require Import topology normedtype.
+
+Lemma exp_strict_lb {R : realType} (n : nat) (x : R) : 0 < x -> x ^+ n / (n`!)%:R < sequences.expR x.
+Proof.
+move=> x0.
+case: n => [|n].
+  by rewrite expr0 fact0 mul1r invr1 pexpR_gt1.
+rewrite exp.expRE.
+rewrite (lt_le_trans _ (nondecreasing_cvgn_le _ _ n.+2))//=.
+- rewrite /pseries/= /series/=.
+  rewrite big_mkord big_ord_recr/=.
+  rewrite [in ltRHS]mulrC ltrDr lt_neqAle; apply/andP; split.
+    rewrite eq_sym psumr_neq0//=.
+      apply/hasP; exists ord0.
+        by rewrite mem_index_enum.
+      by rewrite fact0 expr0 invr1 mulr1.
+    move=> i _.
+    by rewrite mulr_ge0 ?exprn_ge0 ?invr_ge0// ltW.
+  rewrite sumr_ge0// => i _.
+  by rewrite mulr_ge0 ?invr_ge0// exprn_ge0// ltW.
+- move=> a b ab.
+  rewrite /pseries/=.
+  rewrite /series/=.
+  rewrite -(subnKC ab).
+  rewrite /index_iota !subn0.
+  rewrite iotaD big_cat//=.
+  rewrite ler_wpDr// sumr_ge0// => i _.
+  by rewrite mulr_ge0 ?invr_ge0// exprn_ge0// ltW.
+- have := is_cvg_series_exp_coeff_pos x0.
+  rewrite /exp_coeff /pseries.
+  rewrite /series/=.
+  by under boolp.eq_fun do under eq_bigr do rewrite mulrC.
+Qed.

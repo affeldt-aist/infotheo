@@ -1350,13 +1350,15 @@ Qed.
 End shell_partition.
 
 Section sum_tuples_ctypes.
+Context {R : ringType}.
 Variables (A B : finType) (n' : nat).
 Let n := n'.+1.
 Variable ta : n.-tuple A.
 Variable P : P_ n ( A ).
 Hypothesis Hta : ta \in T_{P}.
+Local Open Scope ring_scope.
 
-Let sum_tuples_ctypes'' f :
+Let sum_tuples_ctypes'' (f : _ -> R) :
   \sum_ (S | S \in shell_partition B ta P) \sum_(tb in S) f tb =
   \sum_ (V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta) f tb.
 Proof.
@@ -1372,7 +1374,7 @@ Qed.
 Hypothesis Anot0 : (0 < #|A|)%nat.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
-Let sum_tuples_ctypes' f : \sum_ (tb : _ ) f tb =
+Let sum_tuples_ctypes' f : \sum_ (tb : _ ) (f : _ -> R) tb =
   \sum_ (V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta) f tb.
 Proof.
 transitivity (\sum_ (tb in [set: n.-tuple B]) f tb).
@@ -1383,7 +1385,7 @@ Qed.
 
 Lemma sum_tuples_ctypes f F :
   \sum_(tb | F tb) f tb =
-  \sum_(V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta | F tb) f tb.
+  \sum_(V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta | F tb) f tb :> R.
 Proof.
 rewrite big_mkcond /=.
 transitivity (\sum_(V | V \in \nu^{B}(P)) \sum_(tb in V.-shell ta)

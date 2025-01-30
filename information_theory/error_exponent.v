@@ -168,21 +168,9 @@ move=> /[swap] /[apply] -[]/= mu mu_gt0 mu_cond.
 set x : R := Num.min (mu / 2) (sequences.expR (-2)).
 have x_gt0 : 0 < x.
   by rewrite lt_min exp.expR_gt0 andbT divr_gt0.
-
-(*
-
-have /mu_cond : D_x no_cond 0 x /\ R_dist x 0 < mu.
-  split.
-  - by split => //; exact/eqP/ltR_eqF.
-  - rewrite /R_dist subR0 gtR0_norm // /x.
-    apply (@leR_ltR_trans (mu * / 2)); first exact/geR_minl.
-    by rewrite ltR_pdivr_mulr //; lra.
-rewrite /R_dist {2}/xlnx ltxx subR0 ltR0_norm; last first.
-  apply xlnx_neg; split => //; rewrite /x.
-  exact: leR_ltR_trans (geR_minr _ _) ltRinve21.
-move=> Hx.
-*)
-
+have xmu : x < mu.
+  rewrite gt_min ltr_pdivrMr//.
+  by rewrite ltr_pMr// ltr1n.
 set Delta := Num.min ((minRate - capacity W) / 2) (x ^+ 2 / 2).
 exists Delta; split.
   rewrite lt_min; apply/andP; split.
@@ -240,16 +228,28 @@ suff x_gamma : - xlnx (Num.sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite mulrC.
   by rewrite (mulrC (exp.ln 2)).
 suff x_D : xlnx x <= xlnx (Num.sqrt (2 * (D(V || W | P)))).
-  (*clear -Hx x_D.
-  rewrite leR_oppl; apply (@leR_trans (xlnx x)) => //.
-  rewrite leR_oppl; apply/ltRW/(ltR_leR_trans Hx).
-  by rewrite /gamma; exact: geR_minr.*) admit.
+  rewrite lerNl; apply (@le_trans _ _ (xlnx x)) => //.
+  rewrite lerNl; apply/ltW.
+  apply: (@lt_le_trans _ _ (Num.min (sequences.expR (-2)) gamma)).
+    have /= := mu_cond x.
+    rewrite sub0r normrN gtr0_norm// => /(_ xmu).
+    rewrite xlnx_0 sub0r normrN.
+    rewrite ltr0_norm//.
+    rewrite /xlnx x_gt0.
+    rewrite pmulr_rlt0//.
+    rewrite (@le_lt_trans _ _ (exp.ln (sequences.expR (-2))))//.
+      rewrite exp.ler_ln ?posrE// ?exp.expR_gt0//.
+      by rewrite ge_min lexx orbT.
+    by rewrite exp.expRK ltrNl oppr0.
+  by rewrite ge_min lexx orbT.
 apply/ltW.
 have ? : Num.sqrt (2 * D(V || W | P)) < x.
-(*  apply pow2_Rlt_inv; [exact: sqrt_pos | exact: ltRW | ].
-  rewrite [in X in X < _]/= mulR1 sqrt_sqrt; last first.
-    by apply mulR_ge0; [exact/ltRW | exact/cdiv_ge0].
-  by rewrite mulRC -ltR_pdivl_mulr //; exact/(ltR_leR_trans Hcase)/geR_minr.*) admit.
+  rewrite -(@ltr_pXn2r _ 2) ?nnegrE ?sqrtr_ge0//; last exact/ltW.
+  rewrite sqr_sqrtr//; last first.
+    by rewrite mulr_ge0// cdiv_ge0.
+  rewrite mulrC -ltr_pdivlMr //.
+  apply: (lt_le_trans Hcase).
+  by rewrite ge_min lexx orbT.
 have xN1 : x <= sequences.expR (- 1).
   apply: (@le_trans _ _ (sequences.expR (-2))).
     by rewrite ge_min lexx orbT.
@@ -258,6 +258,6 @@ apply xlnx_sdecreasing_0_Rinv_e => //.
 - rewrite sqrtr_ge0/=.
   by rewrite (le_trans _ xN1)// ltW.
 - by rewrite (ltW x_gt0) xN1.
-Admitted.
+Qed.
 
 End error_exponent_lower_bound.
