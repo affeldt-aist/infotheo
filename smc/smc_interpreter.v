@@ -74,10 +74,84 @@ Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
   else (ps, traces).
 End interp.
 
-About interp.
-
 Arguments Finish {data}.
 Arguments Fail {data}.
+
+Section traces.
+Variable data : eqType.
+
+Lemma size_traces h (procs : seq (proc data)) :
+  forall s,
+    s \in (interp h procs (nseq (size procs) [::])).2 -> (size s <= h)%N.
+Proof.
+clear.
+pose k := h.
+rewrite -{2}/k.
+set traces := nseq _ _ => /=.
+have Htr : {in traces, forall s, size s <= k - h}%N.
+  move=> s. by rewrite mem_nseq => /andP[] _ /eqP ->.
+have : (h <= k)%N by [].
+elim: h k procs traces Htr => [| h IH] k procs traces Htr hk //=.
+  move=> s /Htr. by rewrite subn0.
+move=> s.
+case: ifP => H; last by move/Htr/leq_trans; apply; rewrite leq_subr.
+move/IH; apply; last by apply/ltnW.
+move=> /= {}s.
+rewrite /unzip2 -map_comp.
+case/mapP => i.
+rewrite mem_iota add0n /step => /andP[] _ Hi /=.
+have Hsz : (size (nth [::] traces i) < k - h)%N.
+  case/boolP: (i < size traces)%N => Hi'.
+    apply/(leq_ltn_trans (Htr _ _)).
+      by rewrite mem_nth.
+    by rewrite subnS prednK // leq_subRL // ?addn1 // ltnW.
+  rewrite nth_default. by rewrite leq_subRL ?addn1 // ltnW.
+  by rewrite leqNgt.
+case: nth => /=[d p|n d p|n p|d||] -> //=; try exact/ltnW.
+- case: nth => /=[{}d {}p|n1 {}d {}p| n1 _|{}d||] /=; try exact/ltnW.
+  case: ifP => _ /=; exact/ltnW.
+- case: nth => /=[{}d p1|n1 {}d p1| n1 p1|{}d||] /=; try exact/ltnW.
+  case: ifP => _ //=; exact/ltnW.
+Qed.
+
+Lemma size_interp h (procs : seq (proc data)) (traces : seq (seq data)) :
+  size procs = size traces ->
+  size (interp h procs traces).1 = size procs /\
+  size (interp h procs traces).2 = size procs.
+Proof.
+elim: h procs traces => // h IH procs traces Hsz /=.
+case: ifP => _ //.
+rewrite /unzip1 /unzip2 -!map_comp.
+set map1 := map _ _.
+set map2 := map _ _.
+case: (IH map1 map2).
+  by rewrite !size_map.
+move=> -> ->.
+by rewrite !size_map size_iota.
+Qed.
+
+Lemma size_traces_nth h (procs : seq (proc data)) (i : 'I_(size procs)) :
+  (size (nth [::] (interp h procs (nseq (size procs) [::])).2 i) <= h)%N.
+Proof.
+by apply/size_traces/mem_nth; rewrite (size_interp _ _).2 // size_nseq.
+Qed.
+
+Definition interp_traces h (procs : seq (proc data)) :=
+  [tuple Bseq (size_traces_nth h i) | i < size procs].
+
+Lemma interp_traces_ok h procs :
+ map val (interp_traces h procs) = (interp h procs (nseq (size procs) [::])).2.
+Proof.
+apply (eq_from_nth (x0:=[::])).
+  rewrite size_map /= size_map size_enum_ord.
+  by rewrite (size_interp _ _).2 ?size_nseq.
+move=> i Hi.
+rewrite size_map in Hi.
+rewrite (nth_map [bseq]) // /interp_traces.
+rewrite size_tuple in Hi.
+by rewrite (_ : i = Ordinal Hi) // nth_mktuple.
+Qed.
+End traces.
 
 Section scalar_product.
 Variable m : nat.
@@ -176,48 +250,29 @@ Lemma smc_scalar_product_ok :
    ]).
 Proof. reflexivity. Qed.
 
-Definition traces (s: seq (seq data)) :=
-if s is [:: a; b; c] then
-  Some (if a is [:: a1; a2; a3; a4; a5; a6] then Some (a1, a2, a3, a4, a5, a6)
-        else None,
-        if b is [:: b1; b2; b3; b4; b5; b6] then Some (b1, b2, b3, b4, b5, b6)
-        else None)
-else None.
+Definition smc_scalar_product_traces :=
+  interp_traces 11 [:: palice xa; pbob xb yb; pcoserv sa sb ra].
 
 Lemma smc_scalar_product_traces_ok :
-  traces (smc_scalar_product 11).2 = Some (Some (
-     one ya,
-     one t,
-     vec xb',
-     one ra,
-     vec sa, 
-     vec xa
-  ), Some (
-     one yb,
-     vec xa',
-     one rb,
-     vec sb,
-     one yb,
-     vec xb
-  )).
-Proof. reflexivity. Qed.
+  smc_scalar_product_traces =
+    [tuple
+     [bseq one ya; one t; vec xb'; one ra; vec sa; vec xa];
+     [bseq one yb; vec xa'; one rb; vec sb; one yb; vec xb];
+     [bseq one ra; vec sb; vec sa]].
+Proof. by apply/val_inj/(inj_map val_inj); rewrite interp_traces_ok. Qed.
 
-Definition smc_scalar_product_alice_tracesT :=
-  option (data * data * data * data * data * data).
-
-Definition smc_scalar_product_bob_tracesT :=
-  option (data * data * data * data * data * data).
-
-(* the above two types are the same; merely a coincidence? *)
+Definition smc_scalar_product_tracesT := 11.-bseq data.
 
 Definition smc_scalar_product_party_tracesT :=
-  option (smc_scalar_product_alice_tracesT * smc_scalar_product_bob_tracesT).
+  3.-tuple smc_scalar_product_tracesT.
 
 Definition is_scalar_product (trs: smc_scalar_product_party_tracesT) :=
-  let '(ya, xa) := if Option.bind fst trs is Some (inl ya, _, _, _, _, inr xa)
-                   then (ya, xa) else (0, 0) in
-  let '(yb, xb) := if Option.bind snd trs is Some (inl yb, _, _, _, _, inr xb)
-                   then (yb, xb) else (0, 0) in
+  let '(ya, xa) :=
+    if tnth trs 0 is Bseq [:: inl ya; _; _; _; _; inr xa] _ then (ya, xa)
+    else (0,0) in
+  let '(yb, xb) :=
+    if tnth trs 1 is Bseq [:: inl yb; _; _; _; _; inr xb] _ then (yb, xb)
+    else (0,0) in
   xa *d xb = ya + yb.
 
 End scalar_product.
@@ -248,7 +303,7 @@ Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
 
 Lemma smc_scalar_product_is_correct sa sb ra yb xa xb :
   is_scalar_product smc_entropy_proofs.dotproduct (
-      traces (@smc_scalar_product TX VX smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2).
+      @smc_scalar_product_traces TX VX smc_entropy_proofs.dotproduct sa sb ra yb xa xb).
 Proof.
 rewrite smc_scalar_product_traces_ok /is_scalar_product /=.
 symmetry.
@@ -263,9 +318,10 @@ have // ->: xa *d xb + sa *d xb + (sa *d sb - ra) - yb - (sa *d xb + sa *d sb) +
   by ring.
 Qed.
 
-Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX) :=
+Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX)
+  : smc_scalar_product_party_tracesT VX :=
   let '(sa, sb, ra, yb, xa, xb) := o in
-  (smc_scalar_product smc_entropy_proofs.dotproduct sa sb ra yb xa xb 11).2.
+  (smc_scalar_product_traces smc_entropy_proofs.dotproduct sa sb ra yb xa xb).
 
 Record scalar_product_random_inputs :=
   ScalarProductRandomInputs {
@@ -306,15 +362,15 @@ Record scalar_product_random_inputs :=
 Variable inputs: scalar_product_random_inputs.
 
 Definition scalar_product_RV (inputs : scalar_product_random_inputs) :
-  {RV P -> seq (seq (data VX))} :=
+  {RV P -> smc_scalar_product_party_tracesT VX} :=
     scalar_product_uncurry `o
    [%s1 inputs, s2 inputs, r1 inputs, y2 inputs, x1 inputs, x2 inputs].
 
-Let alice_traces : RV (smc_scalar_product_alice_tracesT VX) P :=
-      Option.bind fst `o (@traces _ _ `o scalar_product_RV inputs).
+Let alice_traces : RV (smc_scalar_product_tracesT VX) P :=
+      (fun t => tnth t 0) `o scalar_product_RV inputs.
 
-Let bob_traces : RV (smc_scalar_product_bob_tracesT VX) P :=
-      Option.bind snd `o (@traces _ _ `o scalar_product_RV inputs).
+Let bob_traces : RV (smc_scalar_product_tracesT VX) P :=
+      (fun t => tnth t 1) `o scalar_product_RV inputs.
 
 Definition scalar_product_is_leakgae_free :=
   `H(x2 inputs | alice_traces) = `H `p_ (x2 inputs) /\
@@ -355,17 +411,23 @@ Lemma alice_traces_ok :
   `H(x2 | alice_traces) = `H(x2 | [%x1, s1, r1, x2', t, y1]).
 Proof.
 transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
-  pose f (xs : option (data * data * data * data * data * data)) :=
-    if xs is Some (inl y1, inl t, inr x2',
-                   inl r1, inr s1, inr x1)
+  pose f (xs : smc_scalar_product_tracesT VX) :=
+    if xs is Bseq [:: inl y1; inl t; inr x2';
+                      inl r1; inr s1; inr x1] _
     then (x1, s1, r1, x2', t, y1)
     else (0, 0, 0, 0, 0, 0).
-  have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces by [].
+  have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces.
+    apply: boolp.funext => x /=.
+    rewrite /alice_traces /comp_RV /scalar_product_RV /scalar_product_uncurry.
+    by rewrite /comp_RV /= smc_scalar_product_traces_ok.
   by rewrite smc_entropy_proofs.fun_cond_removal.
-pose g xs :=
+pose g xs : 11.-bseq _ :=
   let '(x1, s1, r1, x2', t, y1) := xs in
-  Some (one y1, one t, vec x2', one r1, vec s1, vec x1).
-have -> : alice_traces = g `o [% x1, s1, r1, x2', t, y1] by [].
+  [bseq one y1; one t; vec x2'; one r1; vec s1; vec x1].
+have -> : alice_traces = g `o [% x1, s1, r1, x2', t, y1].
+  apply: boolp.funext => x /=.
+  rewrite /alice_traces /comp_RV /scalar_product_RV /scalar_product_uncurry.
+  by rewrite /comp_RV /= smc_scalar_product_traces_ok.
 by rewrite cond_entropyC smc_entropy_proofs.fun_cond_removal.
 Qed.
 
@@ -373,17 +435,23 @@ Lemma bob_traces_ok :
   `H(x1 | bob_traces) = `H(x1 | [%x2, s2, x1', r2, y2]).
 Proof.
 transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
-  pose f (xs : option (data * data * data * data * data * data)) :=
-    if xs is Some (inl y2, inr x1', inl r2,
-                   inr s2, inl _, inr x2)
+  pose f (xs : 11.-bseq data) :=
+    if xs is Bseq [:: inl y2; inr x1'; inl r2;
+                      inr s2; inl _; inr x2] _
     then (x2, s2, x1', r2, y2)
     else (0, 0, 0, 0, 0).
-  have -> : [%x2, s2, x1', r2, y2] = f `o bob_traces by [].
+  have -> : [%x2, s2, x1', r2, y2] = f `o bob_traces.
+    apply: boolp.funext => x /=.
+    rewrite /bob_traces /comp_RV /scalar_product_RV /scalar_product_uncurry.
+    by rewrite /comp_RV /= smc_scalar_product_traces_ok.
   by rewrite smc_entropy_proofs.fun_cond_removal.
-pose g xs :=
+pose g xs : 11.-bseq data :=
   let '(x2, s2, x1', r2, y2) := xs in
-  Some (one y2, vec x1', one r2, vec s2, one y2, vec x2).
-have -> : bob_traces = g `o [%x2, s2, x1', r2, y2] by [].
+  [:: one y2; vec x1'; one r2; vec s2; one y2; vec x2].
+have -> : bob_traces = g `o [%x2, s2, x1', r2, y2].
+  apply: boolp.funext => x /=.
+  rewrite /bob_traces /comp_RV /scalar_product_RV /scalar_product_uncurry.
+  by rewrite /comp_RV /= smc_scalar_product_traces_ok.
 by rewrite cond_entropyC smc_entropy_proofs.fun_cond_removal.
 Qed.
 
