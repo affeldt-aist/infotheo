@@ -64,11 +64,9 @@ apply ler_wpM2l.
   by rewrite exprn_ge0//.
 set Vmax := [arg max_(V > _) _]%O.
 rewrite /success_factor_bound /exp_cdiv.
-case : ifP => Hcase; last first.
-  by rewrite mul0r Exp_ge0.
-rewrite -exp.powRD; last first.
-  by rewrite pnatr_eq0 implybT.
-rewrite exp.ler_powR ?ler1n//.
+case : ifP => Hcase; last by rewrite mul0r powR_ge0.
+rewrite -powRD; last by rewrite pnatr_eq0 implybT.
+rewrite ler_powR ?ler1n//.
 rewrite -mulrDr 2!mulNr.
 rewrite lerNr opprK; apply/ler_wpM2l; first exact/ler0n.
 have {}Hcase : Pmax |- Vmax << W.
@@ -105,7 +103,7 @@ Theorem channel_coding_converse : exists n0,
 Proof.
 case: (channel_coding_converse_gen minRate_cap set_of_I_has_ubound) => Delta [Delta_pos HDelta].
 pose K := (#|A| + #|A| * #|B|)%nat.
-pose n0 := 2 ^+ K * K.+1`!%:R / ((Delta * exp.ln 2) ^+ K.+1) / epsilon.
+pose n0 := 2 ^+ K * K.+1`!%:R / ((Delta * ln 2) ^+ K.+1) / epsilon.
 exists n0 => n M c HM n0_n HminRate.
 have Rlt0n : 0 < n%:R :> R.
   apply: (lt_trans _ n0_n).
@@ -114,7 +112,7 @@ have Rlt0n : 0 < n%:R :> R.
   rewrite -mulrA mulr_gt0 ?exprn_gt0//.
   rewrite divr_gt0// ?ltr0n ?fact_gt0//.
   rewrite exprn_gt0//.
-  by rewrite mulr_gt0// exp.ln_gt0// ltr1n.
+  by rewrite mulr_gt0// ln_gt0// ltr1n.
 destruct n as [|n'].
   by rewrite ltxx in Rlt0n.
 set n := n'.+1.
@@ -134,7 +132,7 @@ rewrite -2!mulrA.
 set aux := _%:R * (_ * _).
 have aux_gt0 : 0 < aux.
   rewrite mulr_gt0 ?ltr0n ?fact_gt0// divr_gt0//.
-  by rewrite invr_gt0// exprn_gt0// mulr_gt0// exp.ln_gt0 ?ltr1n.
+  by rewrite invr_gt0// exprn_gt0// mulr_gt0// ln_gt0 ?ltr1n.
 apply (@le_trans _ _ ((n.+1%:R / n%:R) ^+ K * aux)); last first.
   rewrite ler_pM2r//.
   rewrite lerXn2r ?nnegrE ?divr_ge0//.
@@ -142,11 +140,11 @@ apply (@le_trans _ _ ((n.+1%:R / n%:R) ^+ K * aux)); last first.
   by rewrite -[in leRHS]mulrC mulr_natr mulr2n -natr1 lerD2l ler1n.
 rewrite expr_div_n -mulrA ler_wpM2l//.
 - by rewrite exprn_ge0.
-- rewrite -lef_pV2 ?posrE ?Exp_gt0//; last first.
+- rewrite -lef_pV2 ?posrE ?powR_gt0//; last first.
     by rewrite mulr_gt0// invr_gt0 exprn_gt0.
   rewrite -powRN mulNr opprK.
-  have nDeltaln2 : 0 < n%:R * Delta * exp.ln 2.
-    by rewrite mulr_gt0// ?exp.ln_gt0 ?ltr1n// mulr_gt0//.
+  have nDeltaln2 : 0 < n%:R * Delta * ln 2.
+    by rewrite mulr_gt0// ?ln_gt0 ?ltr1n// mulr_gt0//.
   rewrite /exp.powR(* TODO *) pnatr_eq0/=.
   apply/ltW.
   apply: (le_lt_trans _ (exp_strict_lb K.+1 nDeltaln2)) => {nDeltaln2}.

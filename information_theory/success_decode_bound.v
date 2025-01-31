@@ -306,9 +306,7 @@ rewrite (typed_success W Mnot0 tc).
 apply (@le_trans _ _ ( \sum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
     2 `^ (- n%:R *  +| log #|M|%:R * n%:R^-1 - `I(P, V) |))).
   apply: ler_sum => V Vnu.
-  rewrite -mulrA; apply ler_wpM2l.
-    rewrite /exp_cdiv; case : ifP => // ?.
-    by rewrite Exp_ge0.
+  rewrite -mulrA ler_wpM2l ?exp_cdiv_ge0//.
   by rewrite /success_factor mulrA; exact: success_factor_ub.
 apply (@le_trans _ _ (\sum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
                     2 `^ (- n%:R * +| log #|M|%:R * n%:R^-1 - `I(P, Vmax)|))).
@@ -316,11 +314,9 @@ apply (@le_trans _ _ (\sum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
   by move: (@arg_rmax2 _ (P_ n (A, B)) V0
     (fun V => exp_cdiv P V W * success_factor_bound M V P) V).
 rewrite big_const iter_addr /success_factor_bound addr0.
-rewrite -mulr_natr mulrC; apply ler_wpM2r.
-- apply mulr_ge0; last exact/Exp_ge0.
-  rewrite /exp_cdiv; case: ifP => // ?.
-  exact: Exp_ge0.
-by rewrite -natrX ler_nat card_nu.
+rewrite -mulr_natr mulrC ler_wpM2r//.
+- by rewrite mulr_ge0 ?powR_ge0 ?exp_cdiv_ge0.
+- by rewrite -natrX ler_nat card_nu.
 Qed.
 
 End typed_success_bound_sect.

@@ -28,8 +28,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope ring_scope.
 Local Open Scope fdist_scope.
+Local Open Scope ring_scope.
 Local Open Scope jtyp_seq_scope.
 Local Open Scope channel_code_scope.
 Local Open Scope channel_scope.
@@ -49,9 +49,9 @@ Lemma f0 g : 0 <= f g. Proof. by rewrite ffunE prodr_ge0. Qed.
 Lemma f1 : \sum_(g in {ffun M -> 'rV[A]_n}) f g = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
-rewrite -(bigA_distr_bigA (fun _ v => (P `^ n) v)) /=.
+rewrite -(bigA_distr_bigA (fun _ => (P `^ n)%fdist)) /=.
 rewrite [RHS](_ : _ = \prod_(m0 : M | xpredT m0) 1); last by rewrite big1.
-by apply eq_bigr => _ _; rewrite (FDist.f1 (P `^ n)).
+by apply eq_bigr => _ _; rewrite (FDist.f1 (P `^ n)%fdist).
 Qed.
 
 Definition d : {fdist encT A M n} := locked (FDist.make f0 f1).
@@ -253,7 +253,7 @@ Definition epsilon0_condition r epsilon epsilon0 :=
 Definition frac_part (x : R) := x - (Num.floor x)%:~R.
 Definition n_condition r epsilon0 n :=
   (O < n)%nat /\ - log epsilon0 / epsilon0 < n%:R /\
-  frac_part (2 `^ (r *+ n))%R = 0 /\ (JTS_1_bound P W epsilon0 <= n)%nat.
+  frac_part (2 `^ (r *+ n)) = 0 /\ (JTS_1_bound P W epsilon0 <= n)%nat.
 
 Definition cal_E M n epsilon (f : encT A M n) m :=
   [set vb | prod_rV (f m, vb) \in `JTS P W n epsilon].
@@ -294,7 +294,7 @@ transitivity (\sum_(j : {ffun 'I_k -> 'rV[_]_n}) \prod_(m < k) (Q `^ _)%fdist (j
   - move=> i /=; apply/esym/eqP/eq_from_tnth => j.
     by rewrite tnth_fgraph ffunE enum_valK.
   - by move=> i _; apply eq_bigr => j _; rewrite ffunE /= tcastE -enum_rank_ord.
-rewrite -(bigA_distr_bigA (fun m xn => (Q `^ _) xn)) /= big_const.
+rewrite -(bigA_distr_bigA (fun _ => (Q `^ _)%fdist)) /= big_const.
 by rewrite FDist.f1 iter_mulr mulr1 expr1n.
 Qed.
 
@@ -686,14 +686,12 @@ have [k Hk] : exists k, log k.+1%:R / n%:R = r :> R.
   rewrite prednK; last first.
     rewrite absz_gt0; apply/eqP => Habs.
     rewrite /frac_part Habs subr0 in Hn2.
-    suff : false => //.
-    have := @Exp_gt0 R 2 (rate r *+ n).
-    by rewrite Hn2 ltxx; apply.
+    by move/eqP : Hn2; apply/negP; rewrite gt_eqF// powR_gt0.
   rewrite eqr_divr_mulr; last by rewrite (eqr_nat R n 0) -lt0n.
   rewrite -[in LHS]mulrz_nat natz gez0_abs.
     move/subr0_eq: Hn2 => <-.
     by rewrite /log ExpK // mulr_natr.
-  by rewrite floor_ge0 Exp_ge0.
+  by rewrite floor_ge0 powR_ge0.
 set M : finType := 'I_k.+1.
 exists M.
 split; first by rewrite /= card_ord.
@@ -779,7 +777,7 @@ rewrite (_ : _ + _ = - n%:R * (`I(P, W) - log #| M |%:R / n%:R - 3 * epsilon0));
   by case: Hn; rewrite -(ltr_nat R) => /lt0r_neq0.
 rewrite (_ : _ / _ = rate r); last by rewrite -Hk card_ord.
 apply (@lt_trans _ _ (2 `^ (- n%:R * epsilon0))).
-  apply Exp_increasing; first by rewrite (ltr_nat R 1 2).
+  rewrite gt1_ltr_powRr ?ltr1n//.
   rewrite -mulr_natr -mulNr.
   rewrite -2!mulrA ltr_nM2l ?oppr_lt0 //.
   rewrite ltr_pM2l; last by case: Hn; rewrite (ltr_nat R 0 n).
@@ -807,7 +805,7 @@ Lemma exists_frac_part (P : nat -> Prop) : (exists n, P n) ->
   forall num den, (0 < num)%nat -> (0 < den)%nat ->
   (forall n m, (n <= m)%nat -> P n -> P m) ->
   exists n, P n /\
-    frac_part (2 `^ (n%:R * (log num%:R / den%:R)))%R = 0.
+    frac_part (2 `^ (n%:R * (log num%:R / den%:R))) = 0.
 Proof.
 case=> n Pn num den Hden HP.
 exists (n * den)%nat.
@@ -816,7 +814,7 @@ split.
   by rewrite -{1}(muln1 n) leq_mul2l HP orbC.
 rewrite natrM -mulrA (mulrCA den%:R) mulrV // ?mulr1; last first.
   by rewrite unitfE lt0r_neq0 // (ltr_nat R 0).
-rewrite /frac_part mulrC exp.powRrM -/(2 `^ _)%R.
+rewrite /frac_part mulrC powRrM.
 rewrite (LogK (n:=2)) // ?ltr0n // powR_mulrn ?ler0n // -natrX.
 by rewrite floorK ?subrr // intr_nat.
 Qed.
@@ -891,7 +889,7 @@ case: (random_coding_good_code He Hepsilon0 Hn) =>
 case: (good_code_sufficient_condition H) => f Hf.
 exists n, M, (mkCode f (jtdec P W epsilon0 f)); split => //.
 rewrite /CodeRate M_k -mulrz_nat natz gez0_abs; last first.
-  by rewrite floor_ge0 Exp_ge0.
+  by rewrite floor_ge0 powR_ge0.
 case: Hn => Hn [_] [].
 rewrite /frac_part => /subr0_eq <- _.
 rewrite /log ExpK // -(mulr_natr (rate r)) mulrK //.
