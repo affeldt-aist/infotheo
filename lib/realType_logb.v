@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum.
+From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint.
 From mathcomp Require Import reals exp sequences.
 Require Import realType_ext.
 
@@ -145,8 +145,8 @@ Qed.
 Lemma gt1_ler_powRr (n : R) x y : 1 < n -> x <= y -> n `^ x <= n `^ y.
 Proof. by move=> n1 xy; rewrite ler_powR// ltW. Qed.
 
-(* TODO: rename, move *)
-Lemma morph_exp2_plus : {morph (fun x => 2 `^ x)%R : x y / x + y >-> x * y}.
+(* TODO: move *)
+Lemma powR2D : {morph (fun x => 2 `^ x) : x y / x + y >-> x * y}.
 Proof. by move=> ? ? /=; rewrite powRD// pnatr_eq0// implybT. Qed.
 
 End Exp.
@@ -160,9 +160,11 @@ Implicit Types x y : R.
 
 Definition log x := Log 2 x.
 
-Lemma log1 : log 1 = 0 :> R. Proof. by rewrite /log Log1. Qed.
+Lemma log1 : log 1 = 0 :> R.
+Proof. by rewrite /log Log1. Qed.
 
-Lemma log2 : log 2 = 1 :> R. Proof. by rewrite /log /Log prednK// divff// gt_eqF// ln2_gt0. Qed.
+Lemma log2 : log 2 = 1 :> R.
+Proof. by rewrite /log /Log divff// gt_eqF// ln2_gt0. Qed.
 
 Lemma ler_log : {in Num.pos &, {mono log : x y / x <= y :> R}}.
 Proof. by move=> x y x0 y0; rewrite /log ler_Log. Qed.
@@ -215,9 +217,7 @@ Proof. by rewrite /log /Log/= expRK div1r. Qed.
 
 Lemma log_exp1_Rle_0 : 0 <= log (expR 1) :> R.
 Proof.
-rewrite logexp1E.
-rewrite invr_ge0// ltW//.
-by rewrite ln2_gt0//.
+by rewrite logexp1E invr_ge0// ltW// ln2_gt0.
 Qed.
 
 Lemma log_id_cmp x : 0 < x -> log x <= (x - 1) * log (expR 1).
@@ -253,6 +253,14 @@ elim: s => [|h t ih].
   by rewrite !big_nil log1 oppr0.
 rewrite big_cons logM//; last exact/prodr_gt0.
 by rewrite [RHS]big_cons opprD ih.
+Qed.
+
+Lemma log_exprz {R : realType} (n : nat) (r : R) :
+  0 < r -> log (r ^ n) = n%:R * log r.
+Proof.
+elim: n => [|n' IH lt_0_r]; first by rewrite log1 mul0r.
+rewrite exprSz logM ?exprn_gt0// IH//.
+by rewrite -nat1r mulrDl mul1r.
 Qed.
 
 From mathcomp Require Import topology normedtype.
