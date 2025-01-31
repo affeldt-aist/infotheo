@@ -3,11 +3,18 @@ from 0.7.7 to master
 --------------------
 
 * added:
-- in ssr_ext.v
-  + lemma eqW
+- in bigop_ext.v
+  + lemmas morphs_oppr, morph_mulRDr, bigmax_le_seq, bigmax_leP_seq,
+           bigmax_gt0P_seq, big_union_nondisj
 - in derive_ext.v
   + lemmas open_norm_subball,
            near_eq_derive, near_eq_derivable, near_eq_is_derive
+- in realType_ext.v
+  + lemmas wpmulr_lgt0, wpmulr_rgt0
+- in ssr_ext.v
+  + lemma eqW
+  + setY* (symmetric difference for finite sets), notation: "A :*: B"
+  
 
 -------------------
 from 0.7.6 to 0.7.7
