@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-(*Require Import Reals.*)
-From mathcomp Require Import Rstruct reals.
-Require Import (*ssrR Reals_ext*) ssr_ext ssralg_ext realType_logb fdist entropy.
+From mathcomp Require Import Rstruct reals exp.
+Require Import ssr_ext ssralg_ext realType_ext realType_logb fdist entropy.
 Require Import ln_facts num_occ types jtypes divergence conditional_divergence.
 Require Import entropy channel_code channel.
 
@@ -43,7 +42,6 @@ Local Open Scope set_scope.
 Import Order.POrderTheory Num.Theory GRing.Theory.
 
 Section typed_success_decomp_sect.
-
 Variables A B M : finType.
 Variable W : `Ch*(A, B).
 Hypothesis Mnot0 : (0 < #|M|)%nat.
@@ -53,7 +51,7 @@ Let n := n'.+1.
 Variable P : P_ n ( A ).
 
 Definition success_factor (tc : typed_code B M P) (V : P_ n (A , B)) :=
-  Exp 2 (- n%:R * `H(V | P)) / #|M|%:R *
+  2 `^ (- n%:R * `H(V | P)) / #|M|%:R *
   \sum_ (m : M) #| (V.-shell (tuple_of_row (enc tc m ))) :&:
                     (@tuple_of_row B n @: ((dec tc) @^-1: [set Some m])) |%:R.
 
@@ -61,7 +59,7 @@ Let Anot0 : (0 < #|A|)%nat. Proof. by case: W. Qed.
 
 Let Bnot0 : (0 < #|B|)%nat.
 Proof.
-case/card_gt0P : Anot0 => a _; exact (fdist_card_neq0 (W a)).
+by case/card_gt0P : Anot0 => a _; exact (fdist_card_neq0 (W a)).
 Qed.
 
 Lemma typed_success (tc : typed_code B M P) : scha(W, tc) =
@@ -72,7 +70,7 @@ symmetry.
 transitivity (#|M|%:R^-1 * \sum_(m : M) \sum_(V | V \in \nu^{B}(P))
     exp_cdiv P V W * #| V.-shell (tuple_of_row (enc tc m)) :&:
                         (@tuple_of_row B n @: (dec tc @^-1: [set Some m])) |%:R *
-    Exp 2 (- n%:R * `H(V | P))).
+    2 `^ (- n%:R * `H(V | P))).
   rewrite exchange_big /= big_distrr /=.
   apply eq_bigr => V _.
   rewrite /success_factor !mulrA -(mulrC (#|M|%:R)^-1) -!mulrA; f_equal.
@@ -109,10 +107,6 @@ Qed.
 
 End typed_success_decomp_sect.
 
-(* TODO: move *)
-Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
-Notation "+| r |" := (Num.Def.maxr 0 r) : reals_ext_scope.
-
 Section typed_success_factor_bound_sect.
 Variables A B M : finType.
 Hypothesis Mnot0 : (0 < #|M|)%nat.
@@ -121,8 +115,10 @@ Let n := n'.+1.
 Variable V : P_ n ( A , B ).
 Variable P : P_ n ( A ).
 
+Local Open Scope reals_ext_scope.
+
 Definition success_factor_bound :=
-  Exp 2 (- n%:R * +| log #|M|%:R / n%:R - `I(P, V) |).
+  2 `^ (- n%:R * +| log #|M|%:R / n%:R - `I(P, V) |).
 
 Variable tc : typed_code B M P.
 Hypothesis Vctyp : V \in \nu^{B}(P).
@@ -143,7 +139,6 @@ rewrite (_ : \sum_(m | m \in M ) 1 = \sum_(m : M) 1); last exact/eq_bigl.
 rewrite big_distrr /=.
 apply: ler_sum => m _.
 rewrite mulNr.
-rewrite /Exp.
 rewrite exp.powRN.
 rewrite mulrC ler_pdivrMr // ?mul1r ?exp.powR_gt0//.
 apply/(@le_trans _ _ #| V.-shell (tuple_of_row (enc tc m)) |%:R); last first.
@@ -200,7 +195,7 @@ case/boolP : (tb \in cover partition_pre_image) => Hcase.
 Qed.
 
 Lemma success_factor_bound_part2 :
-  success_factor tc V <= Exp 2 (n%:R * `I(P, V)) / #|M|%:R.
+  success_factor tc V <= 2 `^ (n%:R * `I(P, V)) / #|M|%:R.
 Proof.
 rewrite /success_factor -mulrA (mulrC (#|M|%:R)^-1) !mulrA.
 apply ler_wpM2r.
@@ -210,9 +205,7 @@ rewrite (_ : - `H(type.d P , V) + `H P = - `H( V | P )); last first.
   rewrite /cond_entropy_chan.
   by rewrite opprB addrC.
 rewrite [in leRHS]mulrDr mulrN -mulNr.
-rewrite [in leRHS]/Exp.
-rewrite exp.powRD; last first.
-  by rewrite pnatr_eq0 implybT.
+rewrite powRD; last by rewrite pnatr_eq0 implybT.
 apply ler_wpM2l => //.
   by rewrite exp.powR_ge0.
 rewrite -natr_sum; apply: (@le_trans _ _ #| T_{`tO( V )} |%:R); last first.
@@ -249,36 +242,25 @@ apply: (@leq_trans (\sum_m #| T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-
   by rewrite in_set => /andP [H _].
 Qed.
 
-(* TODO: move *)
-Lemma logK (R : realType) (x : R) : 0 < x -> (exp.powR 2 (log x)) = x :> R.
-Proof.
-move=> x0.
-rewrite /log /Log.
-rewrite /exp.powR pnatr_eq0/=.
-rewrite mulrAC -mulrA divff ?mulr1// ?gt_eqF// ?exp.ln_gt0 ?ltr1n//.
-by rewrite exp.lnK//.
-Qed.
-
-Lemma success_factor_ub :
-  success_factor tc V <= success_factor_bound.
+Lemma success_factor_ub : success_factor tc V <= success_factor_bound.
 Proof.
 rewrite /success_factor_bound.
 have [H|H] := Order.TotalTheory.leP 0 (log #|M|%:R / n%:R - (`I(P, V))).
-- apply (@le_trans _ _ (Exp 2 (n%:R * `I(P, V)) / #|M|%:R)); last first.
+- apply (@le_trans _ _ (2 `^ (n%:R * `I(P, V)) / #|M|%:R)); last first.
   + apply/eqW/esym.
     rewrite mulrDr mulrC.
     rewrite mulrNN -mulrA mulrN mulVf ?pnatr_eq0//.
-    rewrite mulrN mulr1 /Exp exp.powRD//; last first.
-      by rewrite pnatr_eq0 implybT.
+    rewrite mulrN mulr1 powRD//; last by rewrite pnatr_eq0 implybT.
     rewrite mulrC; f_equal.
     rewrite exp.powRN.
     by rewrite logK// ltr0n.
   + exact/success_factor_bound_part2.
-- rewrite mulr0 exp2_0; by apply success_factor_bound_part1.
+- by rewrite mulr0 powRr0; exact: success_factor_bound_part1.
 Qed.
 
 End typed_success_factor_bound_sect.
 
+(* TODO: move *)
 Section rExtrema.
 Variables (R : realType) (I : finType) (i0 : I) (F : I -> R).
 
@@ -289,7 +271,6 @@ exact.
 Qed.
 
 End rExtrema.
-
 
 Section typed_success_bound_sect.
 Let R := Rdefinitions.R.
@@ -323,14 +304,14 @@ Lemma typed_success_bound :
 Proof.
 rewrite (typed_success W Mnot0 tc).
 apply (@le_trans _ _ ( \sum_(V|V \in \nu^{B}(P)) exp_cdiv P V W *
-  Exp 2 (- n%:R *  +| log #|M|%:R * n%:R^-1 - `I(P, V) |))).
+    2 `^ (- n%:R *  +| log #|M|%:R * n%:R^-1 - `I(P, V) |))).
   apply: ler_sum => V Vnu.
   rewrite -mulrA; apply ler_wpM2l.
     rewrite /exp_cdiv; case : ifP => // ?.
     by rewrite Exp_ge0.
   by rewrite /success_factor mulrA; exact: success_factor_ub.
 apply (@le_trans _ _ (\sum_(V | V \in \nu^{B}(P)) exp_cdiv P Vmax W *
-                    Exp 2 (- n%:R * +| log #|M|%:R * n%:R^-1 - `I(P, Vmax)|))).
+                    2 `^ (- n%:R * +| log #|M|%:R * n%:R^-1 - `I(P, Vmax)|))).
   apply ler_sum => V HV.
   by move: (@arg_rmax2 _ (P_ n (A, B)) V0
     (fun V => exp_cdiv P V W * success_factor_bound M V P) V).
@@ -345,7 +326,6 @@ Qed.
 End typed_success_bound_sect.
 
 Section success_bound_sect.
-
 Variables A B M : finType.
 Variable W : `Ch*(A, B).
 Hypothesis Mnot0 : (0 < #|M|)%nat.
@@ -381,7 +361,7 @@ apply (@le_trans _ _ (\sum_(P : P_ n ( A )) scha W (P.-typed_code c))); last fir
 rewrite schaE // -(sum_messages_types c).
 rewrite mul1r.
 rewrite big_distrr/=.
-apply ler_sum => P _.
+apply: ler_sum => P _.
 rewrite mulrC ler_pdivrMr ?ltr0n//.
 rewrite schaE // mul1r -mulrA mulrCA mulVf ?pnatr_eq0 ?gt_eqF//.
 apply/(@le_trans _ _ (\sum_(m | m \in enc_pre_img c P)
@@ -391,11 +371,8 @@ apply/(@le_trans _ _ (\sum_(m | m \in enc_pre_img c P)
   apply/eqW/eq_big => tb // _.
   rewrite inE in Hm.
   by rewrite /tcode /= ffunE Hm.
-- rewrite mulr1.
-  rewrite big_mkcond.
-  apply: ler_sum => //= i ?.
-  case: ifPn => // ?.
-  by apply: sumr_ge0 => //.
+- rewrite mulr1 big_mkcond; apply: ler_sum => //= i _.
+  by case: ifPn => // _; exact: sumr_ge0.
 Qed.
 
 End success_bound_sect.

@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra archimedean.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import Rstruct reals exp.
 Require Import ssrZ ssr_ext realType_logb realType_ext fdist bigop_ext.
 Require Import entropy kraft.
 
@@ -73,7 +73,7 @@ rewrite enumT.
 apply ler_sum => i _.
 rewrite H.
 have Pi0 : 0 < P i by rewrite lt0r Pr0/=.
-apply (@le_trans _ _ (Exp #|T|%:R (- Log #|T|%:R (P i)^-1))); last first.
+apply (@le_trans _ _ (#|T|%:R `^ (- Log #|T|%:R (P i)^-1))%R); last first.
   by rewrite LogV// opprK natn LogK// card_ord.
 rewrite pow_Exp; last by rewrite card_ord.
 rewrite Exp_oppr card_ord lef_pV2// ?posrE ?Exp_gt0//.
@@ -155,14 +155,14 @@ move=> x y.
 rewrite !ffunE => /eqP xy.
 rewrite -(enum_rankK x) -(enum_rankK y); congr enum_val.
 apply/ord_inj/eqP.
-rewrite -(@nth_uniq _ [::] C (enum_rank x) (enum_rank y)) //; last first.
-  rewrite /C /ACode /= /acode map_inj_uniq //.
-  exact/enum_uniq.
+rewrite -(@nth_uniq _ [::] C (enum_rank x) (enum_rank y)) //.
+- rewrite /C /ACode /= /acode size_map size_enum_ord prednK //.
+  exact: (fdist_card_neq0 P).
+- rewrite /C /ACode /= /acode size_map size_enum_ord prednK //.
+  exact: (fdist_card_neq0 P).
+- rewrite /C /ACode /= /acode map_inj_uniq //.
+    exact/enum_uniq.
   exact/injective_sigma.
-rewrite /C /ACode /= /acode size_map size_enum_ord prednK //.
-exact: (fdist_card_neq0 P).
-rewrite /C /ACode /= /acode size_map size_enum_ord prednK //.
-exact: (fdist_card_neq0 P).
 Qed.
 
 Let f := Encoding.mk f_inj.

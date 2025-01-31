@@ -1,11 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
-(*Require Import Reals Lra.*)
 From mathcomp Require Import Rstruct reals classical_sets topology normedtype.
-Require Import realType_ext realType_logb bigop_ext ln_facts.
-Require Import fdist entropy channel_code channel divergence.
-Require Import conditional_divergence variation_dist pinsker.
+Require Import bigop_ext realType_ext realType_logb ln_facts fdist entropy.
+Require Import channel_code channel divergence conditional_divergence.
+Require Import variation_dist pinsker.
 
 (******************************************************************************)
 (*                         Error exponent bound                               *)
@@ -49,10 +48,8 @@ Proof.
 apply/andP; split.
   by rewrite sqrtr_ge0.
 rewrite -(@ler_pXn2r _ 2) ?nnegrE ?exp.expR_ge0 ?sqrtr_ge0//.
-rewrite -(@ler_pM2r _ (2^-1)); last first.
-  by rewrite invr_gt0.
-rewrite sqr_sqrtr; last first.
-  by rewrite mulr_ge0// cdiv_ge0.
+rewrite -(@ler_pM2r _ (2^-1)) ?invr_gt0//.
+rewrite sqr_sqrtr; last by rewrite mulr_ge0// cdiv_ge0.
 by rewrite mulrAC divff ?mul1r// pnatr_eq0.
 Qed.
 
@@ -88,7 +85,7 @@ apply: (@le_trans _ _ (d((P `X V), (P `X W)))).
   rewrite 2!fdist_prodE /= !(mulrC (P a)).
   by rewrite lerD2l sumr_ge0//.
 - rewrite cdiv_is_div_joint_dist => //.
-  exact/Pinsker_inequality_weak/joint_dominates.
+  exact/Pinsker_inequality_weak/dominates_prodl.
 Qed.
 
 Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
@@ -117,26 +114,23 @@ apply Rabs_xlnx => //.
 apply: (@le_trans _ _ (d(P `X V, P `X W))).
 - by rewrite /var_dist (bigD1 (a, b)) //= distrC ler_wpDr// sumr_ge0.
 - rewrite cdiv_is_div_joint_dist => //.
-  exact/Pinsker_inequality_weak/joint_dominates.
+  exact/Pinsker_inequality_weak/dominates_prodl.
 Qed.
 
 Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
-  (exp.ln 2)^-1 * (#|B|%:R + #|A|%:R * #|B|%:R) * - xlnx (Num.sqrt (2 * D(V || W | P))).
+  (exp.ln 2)^-1 * (#|B|%:R + #|A|%:R * #|B|%:R) *
+  - xlnx (Num.sqrt (2 * D(V || W | P))).
 Proof.
 rewrite /mutual_info_chan.
-rewrite (_ : _ - _ = `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last by field.
-apply: le_trans.
-  exact: ler_normD.
+rewrite (_ : _ - _ =
+  `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last by field.
+apply: le_trans; first exact: ler_normD.
 rewrite -mulrA mulrDl mulrDr lerD//.
 - by rewrite mulrA; apply out_entropy_dist_ub.
 - by rewrite distrC 2!mulrA; apply joint_entropy_dist_ub.
 Qed.
 
 End mutinfo_distance_bound.
-
-(* TODO: move *)
-Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
-Notation "+| r |" := (Num.Def.maxr 0 r) : reals_ext_scope.
 
 Import numFieldTopology.Exports.
 Import numFieldNormedType.Exports.

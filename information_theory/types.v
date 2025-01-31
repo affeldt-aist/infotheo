@@ -1,12 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg ssrnum perm.
-From mathcomp Require Import matrix.
+From mathcomp Require Import all_ssreflect ssralg ssrnum perm matrix.
 From mathcomp Require boolp.
-From mathcomp Require Import Rstruct.
-(*Require Import Reals.*)
-Require Import (*ssrR Reals_ext*) realType_ext ssr_ext ssralg_ext realType_logb.
+From mathcomp Require Import Rstruct exp.
+Require Import realType_ext ssr_ext ssralg_ext realType_logb.
 Require Import fdist proba entropy num_occ channel_code channel typ_seq.
 
 (******************************************************************************)
@@ -383,27 +381,16 @@ End typed_tuples_facts.
 
 (* TODO: move *)
 Lemma Exp2_pow (r : Rdefinitions.R) n k :
-  Exp r (k%:R * n) = (Exp r n) ^+ k.
-Proof.
-rewrite /Exp.
-rewrite -exp.powR_mulrn ?exp.powR_ge0//.
-rewrite mulrC.
-by rewrite exp.powRrM.
-Qed.
+  (r `^ (k%:R * n) = (r `^ n) ^+ k)%R.
+Proof. by rewrite -powR_mulrn ?powR_ge0// mulrC powRrM. Qed.
 
 (* TODO: move *)
-Lemma morph_exp2_plus : {morph Exp (2%:R:Rdefinitions.R) : x y / x + y >-> x * y}.
-Proof.
-move=> ? ? /=.
-rewrite /Exp.
-by rewrite exp.powRD// pnatr_eq0// implybT.
-Qed.
+Lemma morph_exp2_plus : {morph (fun x => (2%:R:Rdefinitions.R) `^ x)%R : x y / x + y >-> x * y}.
+Proof. by move=> ? ? /=; rewrite powRD// pnatr_eq0// implybT. Qed.
 
-(* TODO: move *)
-Lemma exp2_Ropp x : Exp (2%:R:Rdefinitions.R) (- x) = (Exp (2%:R:Rdefinitions.R) x)^-1.
-Proof.
-by rewrite /Exp exp.powRN.
-Qed.
+(* TODO: rm *)
+Lemma exp2_Ropp x : ((2%:R:Rdefinitions.R) `^ (- x) = ((2%:R:Rdefinitions.R) `^ x)^-1)%R.
+Proof. by rewrite powRN. Qed.
 
 Section typed_tuples_facts_continued.
 Variables (A : finType) (n : nat).
@@ -451,11 +438,11 @@ Qed.
 Local Close Scope tuple_ext_scope.
 
 Lemma tuple_dist_type_entropy t : tuple_of_row t \in T_{P} ->
-  ((type.d P) `^ n) t = Exp (2%:R:Rdefinitions.R) (- n%:R * `H P).
+  ((type.d P) `^ n) t = ((2%:R:Rdefinitions.R) `^ (- n%:R * `H P))%R.
 Proof.
 move/(@tuple_dist_type t) => ->.
 rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
-             \prod_(a : A) Exp (2%:R:Rdefinitions.R) (type.d P a * log (type.d P a) * n%:R)); last first.
+             \prod_(a : A) (2%:R:Rdefinitions.R) `^ (type.d P a * log (type.d P a) * n%:R)); last first.
   apply eq_bigr => a _.
   case/boolP : (0 == type.d P a) => H; last first.
     have {}H : 0 < type.d P a.
@@ -463,20 +450,20 @@ rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
       by rewrite Order.POrderTheory.le_eqVlt (negbTE H)/=.
     rewrite -{1}(@LogK _ 2%N _ _ H)//.
     rewrite -Exp2_pow.
-    congr Exp.
+    congr (_ `^ _)%R.
     rewrite -mulrA [X in _ = X]mulrC -mulrA mulrC.
     congr (_ * _).
-    by rewrite -type_fun_type//.
+    by rewrite -type_fun_type.
   - move/eqP : (H) => <-.
     rewrite -(_ : O = type.f P a).
-      by rewrite !mul0r expr0 /Exp exp.powRr0.
+      by rewrite !mul0r expr0 exp.powRr0.
     apply/eqP.
     rewrite -(eqr_nat Rdefinitions.R).
     move/eqP : H => /(congr1 (fun x => n%:R * x)).
     by rewrite mulr0 type_fun_type// => /eqP.
 rewrite -(big_morph (id2 := Rdefinitions.R0) _ morph_exp2_plus); last first.
-  by rewrite /Exp exp.powRr0.
-congr Exp.
+  by rewrite powRr0.
+congr (_ `^ _)%R.
 rewrite /entropy mulrN mulNr opprK.
 rewrite big_distrr/=.
 apply: eq_bigr => a _.
@@ -496,9 +483,9 @@ rewrite /set_typ_seq inE /typ_seq tuple_dist_type_entropy; last first.
 by rewrite addr0 subr0 lexx.
 Qed.
 
-Lemma card_typed_tuples : #| T_{ P } |%:R <= Exp (2%:R:Rdefinitions.R) (n%:R * `H P).
+Lemma card_typed_tuples : (#| T_{ P } |%:R <= (2%:R:Rdefinitions.R) `^ (n%:R * `H P))%R.
 Proof.
-rewrite -(@invrK _ (Exp (2%:R:Rdefinitions.R) (n%:R * `H P))%R) -exp2_Ropp -mulNr.
+rewrite -(@invrK _ ((2%:R:Rdefinitions.R) `^ (n%:R * `H P))%R) -exp2_Ropp -mulNr.
 set aux := - n%:R * `H P.
 rewrite -div1r ler_pdivlMr // {}/aux ?Exp_gt0//.
 case/boolP : [exists x, x \in T_{P}] => x_T_P.
@@ -511,7 +498,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
   rewrite /Pr.
   transitivity (\sum_(a | (a \in 'rV[A]_n) &&
                           [pred x in (@row_of_tuple A n @: T_{P})] a)
-      Exp (2%:R : Rdefinitions.R) (- n%:R * `H P)).
+      (2%:R : Rdefinitions.R) `^ (- n%:R * `H P)).
     apply eq_big => // ta'/= Hta'.
     rewrite -(@tuple_dist_type_entropy ta') //.
     case/imsetP : Hta' => x Hx ->. by rewrite row_of_tupleK.
@@ -526,7 +513,8 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
   by move: x_T_P; apply contra => /set0Pn/existsP.
 Qed.
 
-Lemma card_typed_tuples_alt : #| T_{P} |%:R <= Exp (2%R:Rdefinitions.R) (n%:R * `H P).
+Lemma card_typed_tuples_alt :
+  (#| T_{P} |%:R <= (2%R:Rdefinitions.R) `^ (n%:R * `H P))%R.
 Proof.
 apply (@le_trans _ _ (#| `TS P n 0 |%:R)).
   rewrite ler_nat.

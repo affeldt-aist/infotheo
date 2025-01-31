@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import Rstruct reals.
-Require Import realType_ext realType_logb ssr_ext ssralg_ext bigop_ext fdist.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_logb fdist.
 Require Import proba entropy jfdist_cond.
 
 (******************************************************************************)
