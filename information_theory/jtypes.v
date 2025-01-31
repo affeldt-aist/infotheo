@@ -39,7 +39,7 @@ Import Prenex Implicits.
 Local Open Scope channel_scope.
 Local Open Scope ring_scope.
 
-Import Num.Theory.
+Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Module JType.
 Section def.
@@ -112,9 +112,6 @@ case: ifPn => [_ | Hcase].
 - by rewrite divr_ge0.
 Qed.
 
-(* TODO: move *)
-Import GRing.Theory Order.POrderTheory.
-
 Definition chan_of_jtype (A B : finType) (Anot0 : (0 < #|A|)%nat)
     (Bnot0 : (0 < #|B|)%nat)
   n (f : {ffun A -> {ffun B -> 'I_n.+1}}) : `Ch*(A, B).
@@ -128,9 +125,8 @@ apply: (@FDist.make _ _ (@nneg_fun_of_pre_jtype _ _ n f a)).
   move=> b.
   by apply: nneg_fun_of_pre_jtype_ge0.
 under eq_bigr do rewrite ffunE.
-case/boolP : (\sum_(b1 in B) (f a b1) == O)%nat => Hcase.
-- rewrite (eqP Hcase) /=.
-  rewrite big_const iter_addr addr0.
+have [->|Hcase] := eqVneq (\sum_(b1 in B) (f a b1))%nat 0%nat.
+- rewrite big_const iter_addr addr0.
   by rewrite -[LHS]mulr_natl divff// gt_eqF// ltr0n.
 - under eq_bigr=> b bB.
     rewrite /=.
@@ -138,12 +134,7 @@ case/boolP : (\sum_(b1 in B) (f a b1) == O)%nat => Hcase.
       by rewrite (negbTE Hcase).
     move=> _.
     over.
-  rewrite /=.
-  rewrite -big_distrl//=.
-  rewrite natr_sum divff//.
-  rewrite -natr_sum.
-  rewrite (_ : 0%mcR = 0%:R)%R//.
-  by rewrite eqr_nat.
+  by rewrite /= -big_distrl//= -natr_sum divff// (_ : 0 = 0%:R)// eqr_nat.
 Defined.
 
 Definition jtype_choice_f (A B : finType) n (f : {ffun A -> {ffun B -> 'I_n.+1}}) : option (P_ n ( A , B )).
@@ -163,7 +154,8 @@ end).
 move=> a b; by rewrite ffunE.
 Defined.
 
-Lemma jtype_choice_pcancel (A B : finType) n : pcancel (@JType.f A B n) (@jtype_choice_f A B n).
+Lemma jtype_choice_pcancel (A B : finType) n :
+  pcancel (@JType.f A B n) (@jtype_choice_f A B n).
 Proof.
 case=> d f Hf H /=.
 rewrite /jtype_choice_f /=.
@@ -765,26 +757,26 @@ elim.
   rewrite (bigD1 (Ordinal HSk)) //=.
   rewrite (eq_bigl (fun i : 'I_#|A| => i < k) _); last first.
     move=> i /=.
-    case/boolP : (i < k) => Hcase.
+    have [ik|ki] := ltnP i k.
     - have -> : i != Ordinal HSk by rewrite neq_ltn; apply/orP; apply or_introl.
       by rewrite andbC /= ltnW.
     - rewrite andbC -ltn_neqAle.
-      by move/negbTE : Hcase => ->.
+      by apply/negbTE; rewrite -leqNgt.
   rewrite /card_type_of_row; case: Bool.bool_dec => [e|/Bool.eq_true_not_negb e].
-    rewrite mul1n.
-    eapply leq_trans; [exact: (card_take_shell0 e) | by []].
-  apply (leq_trans (card_take_shell e)).
-  rewrite mulnC leq_pmul2l //.
+    by rewrite mul1n (leq_trans (card_take_shell0 e)).
+  rewrite (leq_trans (card_take_shell e))// mulnC leq_pmul2l //.
   apply/card_gt0P.
   set Q := type_of_row e.
   case: (typed_tuples_not_empty_alt e Q) => tb Htb.
   by exists tb.
 Qed.
 
-Lemma card_shelled_tuples_leq_prod_card : #| V.-shell ta | <= \prod_ ( i < #|A|) card_type_of_row i.
+Lemma card_shelled_tuples_leq_prod_card :
+  #| V.-shell ta | <= \prod_ ( i < #|A|) card_type_of_row i.
 Proof.
-rewrite -full_take_shell [X in _ <= X](_ : _ = \prod_(i < #|A| | i < #|A|) card_type_of_row i); last first.
-  apply eq_bigl => ?; symmetry; by apply ltn_ord.
+rewrite -full_take_shell.
+rewrite [leqRHS](_ : _ = \prod_(i < #|A| | i < #|A|) card_type_of_row i); last first.
+  by apply eq_bigl => ?; exact/esym/ltn_ord.
 exact (split_nocc_rec (leqnn #|A|)).
 Qed.
 
@@ -804,34 +796,31 @@ Hypothesis ta_sorted : sorted (@le_rank _) ta.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
 Lemma card_shell_leq_exp_entropy :
-  #| V.-shell ta |%:R <= (2%:R:Rdefinitions.R) `^ (n%:R * `H(V | P)).
+  #| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)).
 Proof.
 rewrite cond_entropy_chanE2.
-apply (@le_trans _ _ (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
+apply (@le_trans _ _ (\prod_(i < #|A|) card_type_of_row Hta Vctyp i)%:R).
 - rewrite ler_nat.
-  by apply/card_shelled_tuples_leq_prod_card.
+  exact/card_shelled_tuples_leq_prod_card.
 - rewrite (mulrC n%:R) powRrM' natr_prod.
-  rewrite (@big_morph _ _ (fun r : Rdefinitions.R => (((2%:R:Rdefinitions.R) `^ r) ^+ n)) 1%R GRing.mul _ GRing.add _); last 2 first.
-    move=> a b /=.
-    rewrite powRD ?pnatr_eq0 ?implybT//.
-    by rewrite exprMn_comm// /GRing.comm mulrC.
+  rewrite (@big_morph _ _ (fun r => (2%:R `^ r) ^+ n) 1%R *%R _ +%R _); last 2 first.
+    by move=> a b /=;rewrite powR2D exprMn_comm// /GRing.comm mulrC.
     by rewrite powRr0 expr1n.
-  rewrite (reindex_onto (fun x => enum_rank x) (fun y => enum_val y)) => [|i _]; last by rewrite enum_valK.
+  rewrite (reindex_onto enum_rank enum_val) => [|i _]; last by rewrite enum_valK.
   rewrite (_ : \prod_(j | enum_val (enum_rank j) == j) _ =
                \prod_(j : A) (card_type_of_row Hta Vctyp (enum_rank j))%:R); last first.
-      apply eq_bigl => a; rewrite enum_rankK; by apply/eqP.
-  apply ler_prod => a aA.
-  apply/andP; split => //.
+    by apply eq_bigl => a; rewrite enum_rankK; exact/eqP.
+  apply ler_prod => a aA; apply/andP; split => //.
   rewrite -powRrM'.
   rewrite /card_type_of_row; case: Bool.bool_dec => [e|/Bool.eq_true_not_negb e].
     rewrite -[X in X <= _](powRr0 2).
     by rewrite gt1_ler_powRr ?ltr1n// !mulr_ge0//; exact: entropy_ge0.
   set pta0 := type_of_row Hta Vctyp _.
-  rewrite (_ : _ `^ _ = (2%:R:Rdefinitions.R) `^ (N(a | ta)%:R * `H pta0)).
+  rewrite (_ : _ `^ _ = 2 `^ (N(a | ta)%:R * `H pta0)).
     by rewrite -[in X in _ <= _ _ (X * _)](enum_rankK a); apply card_typed_tuples.
   congr (_ `^ _).
   rewrite mulrC mulrA.
-  f_equal.
+  congr *%R.
   + by rewrite -type_fun_type // (type_numocc Hta).
   + rewrite /entropy.
     congr (- _)%R.
@@ -846,11 +835,8 @@ End card_shell_ub.
 Lemma map_pred1_nseq {A : eqType} : forall (l : seq A) n a, a \notin l ->
   map (pred1 a) (flatten [seq nseq (n x) x | x <- l]) = nseq (\sum_(i <- l) (n i)) false.
 Proof.
-elim.
-  move=> n0 a Ha /=;  by rewrite big_nil.
-move=> h t IH n0 a.
-rewrite in_cons negb_or.
-case/andP => H1 H2 /=.
+elim=> [n0 a Ha /=|h t IH n0 a]; first by rewrite big_nil.
+rewrite in_cons negb_or => /andP[H1 H2] /=.
 rewrite map_cat IH // (_ : map _ _ = nseq (n0 h) false); last first.
   by rewrite map_nseq /= -(negbTE H1) eqtype.eq_sym.
 by rewrite big_cons nseq_add.
@@ -868,8 +854,7 @@ rewrite IH.
     apply eq_in_filter => a /nseqP[-> _].
     apply/negP/negP/H; by rewrite in_cons eqxx.
   by rewrite filter_pred0.
-move=> x0 Hx0.
-apply H; by rewrite in_cons Hx0 orbC.
+by move=> x0 Hx0; rewrite H// in_cons Hx0 orbC.
 Qed.
 
 (* TODO: move? *)
@@ -896,7 +881,6 @@ by rewrite filter_pred0.
 Qed.
 
 Section shell_not_empty_sorted.
-
 Variables A B : finType.
 Variable n : nat.
 Variable ta : n.-tuple A.
@@ -997,16 +981,15 @@ have -> : x2 = JType.f V a b.
   rewrite /x2 -size_filter (_ : filter _ _ = nseq (JType.f V a b) b); last first.
     by rewrite filter_flatten map_filter_pred1_nseq // ?enum_uniq // ?mem_enum.
   by rewrite size_nseq.
-by apply/minn_idPl.
+exact/minn_idPl.
 Qed.
 
 Lemma shell_not_empty_sorted : exists tb, tb \in V.-shell ta.
-Proof. case: (shell_not_empty') => tb [Htb H]; by exists (Tuple Htb). Qed.
+Proof. by case: (shell_not_empty') => tb [Htb H]; exists (Tuple Htb). Qed.
 
 End shell_not_empty_sorted.
 
 Section shell_not_empty.
-
 Variables A B : finType.
 Variable n : nat.
 Variable ta : n.-tuple A.
@@ -1034,9 +1017,7 @@ Qed.
 End shell_not_empty.
 
 Section cond_type_def.
-
-Variable A : finType.
-Variable n : nat.
+Variables (A : finType) (n : nat).
 Variable P : P_ n ( A ).
 Variable B : finType.
 
@@ -1050,19 +1031,14 @@ Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" :=
 Notation "'\nu^{' B '}' '(' P ')'" := (@cond_type _ _ P B) : types_scope.
 
 Section cond_type_prop.
-
-Variable A : finType.
-Variable n : nat.
+Variables (A : finType) (n : nat).
 Variable P : P_ n ( A ).
 Variable B : finType.
 
 Local Open Scope nat_scope.
 
-Lemma card_nu : #|\nu^{B}( P )| <= expn n.+1 (#|A| * #|B|).
-Proof.
-apply: (leq_trans _ (bound_card_jtype A B n)).
-apply subset_leq_card; by apply/subsetP.
-Qed.
+Lemma card_nu : #|\nu^{B}( P )| <= n.+1 ^ (#|A| * #|B|).
+Proof. exact/(leq_trans _ (bound_card_jtype A B n))/subset_leq_card/subsetP. Qed.
 
 Lemma shell_injective (V V' : P_ n (A , B)) (Vctyp : V \in \nu^{B}(P))
   ta (Hta : ta \in T_{P}) : V.-shell ta = V'.-shell ta ->
@@ -1084,14 +1060,13 @@ Qed.
 End cond_type_prop.
 
 Section cond_type_equiv_sect.
-
-Variable A : finType.
-Variable n : nat.
+Variables (A : finType) (n : nat).
 Variable P : P_ n ( A ).
 Variable B : finType.
 Variable V : P_ n ( A , B ).
 
-Lemma cond_type_equiv : row_num_occ P V <-> [forall ta, (ta \in T_{P}) ==> (V.-shell ta != set0)].
+Lemma cond_type_equiv :
+  row_num_occ P V <-> [forall ta, (ta \in T_{P}) ==> (V.-shell ta != set0)].
 Proof.
 split=> H.
 - apply/forallP => ta.
@@ -1115,9 +1090,6 @@ Local Open Scope fdist_scope.
 Module OutType.
 
 Section OutType_sect.
-
-Local Open Scope nat_scope.
-
 Variables A B : finType.
 Variable n' : nat.
 Let n := n'.+1.
@@ -1125,10 +1097,10 @@ Variable V : P_ n ( A , B ).
 
 Definition f := [ffun b => (\sum_(a in A) (JType.f V) a b)%:R / n%:R : Rdefinitions.R].
 
-Lemma f0 (b : B) : (0 <= f b)%R.
+Lemma f0 (b : B) : 0 <= f b.
 Proof. rewrite ffunE; apply/divr_ge0; [exact/ler0n | exact: ler0n]. Qed.
 
-Lemma f1 : (\sum_(b in B) f b = 1)%R.
+Lemma f1 : \sum_(b in B) f b = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
 rewrite -big_distrl /=.
@@ -1212,7 +1184,6 @@ Qed.
 End output_type_facts.
 
 Section card_perm_shell.
-
 Variables A B : finType.
 Variable n' : nat.
 Let n := n'.+1.
@@ -1223,8 +1194,7 @@ Hypothesis Hta : ta \in T_{P}.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
-Lemma card_shelled_tuples :
-  (#| V.-shell ta |%:R <= (2%:R:Rdefinitions.R) `^ (n%:R * `H(V | P)))%R.
+Lemma card_shelled_tuples : (#| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)))%R.
 Proof.
 case: (tuple_exist_perm_sort (@le_rank A) ta) => /= s Hta'.
 have H : sort (@le_rank _) ta =
@@ -1266,12 +1236,12 @@ assert (Hf : \sum_(a in A) \sum_(b in B) f a b == n).
   apply eq_big => a //= _.
   apply eq_big => b //= _.
   by rewrite 2!ffunE.
-assert (Htmp' : (forall a b,
+assert (H : forall a b,
         (chan_of_jtype Anot0 Bnot0 f) a b =
         (let ln := (\sum_(b0 in B) (f a) b0)%nat in
-         if ln == O then #|B|%:R^-1 else (((f a) b)%:R / ln%:R)))).
+         if ln == O then #|B|%:R^-1 else (((f a) b)%:R / ln%:R))).
   by move=> a b; rewrite ffunE.
-exact (@JType.mk _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf Htmp').
+exact (@JType.mk _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf H).
 Defined.
 
 Definition relYn (ta : n.-tuple A) (tb tb' : n.-tuple B) :=
@@ -1280,7 +1250,7 @@ Definition relYn (ta : n.-tuple A) (tb tb' : n.-tuple B) :=
 Lemma reflexive_relYn ta : reflexive (relYn ta).
 Proof.
 rewrite /reflexive /relYn => tb.
-apply/forallP => a; apply/forallP => b; by rewrite eqxx.
+by apply/forallP => a; apply/forallP => b; rewrite eqxx.
 Qed.
 
 Variable ta : n.-tuple A.
@@ -1351,8 +1321,8 @@ Hypothesis Hta : ta \in T_{P}.
 Local Open Scope ring_scope.
 
 Let sum_tuples_ctypes'' (f : _ -> R) :
-  \sum_ (S | S \in shell_partition B ta P) \sum_(tb in S) f tb =
-  \sum_ (V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta) f tb.
+  \sum_(S | S \in shell_partition B ta P) \sum_(tb in S) f tb =
+  \sum_(V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta) f tb.
 Proof.
 rewrite big_imset // => V V' HV HV' /=.
 move/(shell_injective _) => /(_ P HV Hta) V_V' {HV HV'}.

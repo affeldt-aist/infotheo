@@ -89,17 +89,15 @@ Lemma cdiv_is_div_joint_dist : D(V || W | P) = D((P `X V) || (P `X W)).
 Proof.
 rewrite (_ : D(V || W | P) = \sum_(a in A) (\sum_(b in B)
     V a b * (log (V a b / W a b)) * P a)); last first.
-  apply eq_bigr => a _.
-  rewrite big_distrr//=.
-  apply: eq_bigr => b _.
-  by rewrite mulrC.
+  apply eq_bigr => a _; rewrite big_distrr//=.
+  by apply: eq_bigr => b _; rewrite mulrC.
 rewrite pair_bigA big_mkcond /=.
 apply eq_bigr => -[a b] /= _.
 rewrite fdist_prodE /= (mulrC (P a)) [in RHS]mulrAC.
-case/boolP : (P a == 0) => [/eqP -> | Pa0]; first by rewrite !mulr0.
-congr (_ * _).
-case/boolP : (V a b == 0) => [/eqP -> | Vab0]; first by rewrite !mul0r.
-congr (_ * _).
+have [->|Pa0] := eqVneq (P a) 0; first by rewrite !mulr0.
+congr *%R.
+have [->|Vab0] := eqVneq (V a b) 0; first by rewrite !mul0r.
+congr *%R.
 have Wab0 : W a b != 0 := dominatesEN (V_dom_by_W Pa0) Vab0.
 rewrite fdist_prodE /=.
 by rewrite -(mulrA _ (P a)) invfM (mulrA (P a)) divff// mul1r.
@@ -208,14 +206,14 @@ Proof.
 rewrite dmc_cdiv_cond_entropy_aux cond_entropy_chanE2.
 rewrite /cdiv /entropy -big_split /=.
 rewrite big_distrr/=.
-rewrite (big_morph _ morph_exp2_plus (powRr0 _)). (* TODO: lemma *)
+rewrite (big_morph _ powR2D (powRr0 _)). (* TODO: lemma *)
 apply eq_bigr => a _.
 rewrite big_morph_oppr.
 rewrite /div /= -mulrDr mulrA -big_split /=.
 rewrite big_distrr/=.
-rewrite (big_morph _ morph_exp2_plus (powRr0 _)). (* TODO: lemma *)
+rewrite (big_morph _ powR2D (powRr0 _)). (* TODO: lemma *)
 apply eq_bigr => b _.
-case/boolP : (type.d P a == 0) => [/eqP|] Pa0.
+have [Pa0|Pa0] := eqVneq (type.d P a) 0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   move: (HV); rewrite in_set => /cond_type_equiv/(_ _ Hx a).
   move: Hx; rewrite in_set => /forallP/(_ a)/eqP; rewrite {}Pa0 => HPa sumB.
@@ -225,7 +223,7 @@ case/boolP : (type.d P a == 0) => [/eqP|] Pa0.
   move=> /eqP; rewrite (_ : 0 = 0%:R)// eqr_nat.
   rewrite sum_nat_eq0 => /forall_inP/(_ b erefl)/eqP => H; apply/eqP.
   by rewrite H expr0 !(mulr0,mul0r) powRr0.
-case/boolP : (W a b == 0) => [/eqP |] Wab0.
+have [Wab0|Wab0] := eqVneq (W a b) 0.
   move: (dominatesE (W0_V0 Pa0) Wab0) => nullV.
   suff -> : N(a, b| tuple_of_row x, tuple_of_row y) = O.
     by rewrite nullV 2!mul0r oppr0 addr0 mulr0 powRr0.
@@ -233,7 +231,7 @@ case/boolP : (W a b == 0) => [/eqP |] Wab0.
   by rewrite jtype_0_jtypef.
 rewrite -{1}(@LogK _ 2 (W a b))//; last first.
   by rewrite -fdist_gt0.
-case/boolP : (V a b == 0) => [/eqP|] Vab0.
+have [Vab0|Vab0] := eqVneq (V a b) 0.
   suff -> : N( a, b | [seq x ``_ i | i <- enum 'I_n], [seq y ``_ i | i <- enum 'I_n]) = O.
     by rewrite expr0 Vab0 !(mulr0,mul0r,addr0,add0r,oppr0,powRr0).
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.

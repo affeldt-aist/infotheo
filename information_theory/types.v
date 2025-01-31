@@ -308,8 +308,6 @@ End type_facts.
 Section typed_tuples.
 Variables (A : finType) (n : nat) (P : P_ n ( A )).
 
-Local Open Scope nat_scope.
-
 Definition typed_tuples :=
   [set t : n.-tuple A | [forall a, type.d P a == (N(a | t)%:R / n%:R)%R] ].
 
@@ -402,10 +400,8 @@ rewrite (_ : \prod_(i < n) type.d P (t ``_ i) =
   by move=> i0 /negbTE ->.
 apply eq_bigr => a _.
 rewrite -big_mkcond /=.
-transitivity (\prod_(i < n | t ``_ i == a) ((type.f P a)%:R / n%:R) : Rdefinitions.R)%R.
-  apply eq_big => // i.
-  move/eqP => ->.
-  by rewrite INR_type_fun.
+transitivity (\prod_(i < n | t ``_ i == a) ((type.f P a)%:R / n%:R) : Rdefinitions.R).
+  by apply eq_big => // i /eqP ->; rewrite INR_type_fun.
 rewrite prodr_const/=.
 rewrite INR_type_fun.
 congr (_ ^+ _).
@@ -445,7 +441,7 @@ rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
     rewrite -(eqr_nat Rdefinitions.R).
     move/eqP : H => /(congr1 (fun x => n%:R * x)).
     by rewrite mulr0 type_fun_type// => /eqP.
-rewrite -(big_morph (id2 := Rdefinitions.R0) _ morph_exp2_plus); last first.
+rewrite -(big_morph (id2 := Rdefinitions.R0) _ powR2D); last first.
   by rewrite powRr0.
 congr (_ `^ _)%R.
 rewrite /entropy mulrN mulNr opprK.
@@ -655,7 +651,7 @@ Definition tcode_untyped_code := mkCode
   [ffun m => if tuple_of_row (enc c m) \in T_{P} then enc c m else def] (dec c).
 
 Lemma tcode_typed_prop (m : M) :
-  tuple_of_row ((enc tcode_untyped_code) m) \in T_{P}.
+  tuple_of_row (enc tcode_untyped_code m) \in T_{P}.
 Proof.
 rewrite /= ffunE; case: ifP => [//| _]; rewrite /def row_of_tupleK.
 exact Hdef.

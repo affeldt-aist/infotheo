@@ -183,13 +183,6 @@ apply: eq_bigr => i _.
 by rewrite exprSz.
 Qed.
 
-Lemma log_pow r : 0 < r -> log (r ^ n) = n%:R * log r :> R.
-Proof.
-elim:n=> [|n' IH lt_0_r]; first by rewrite log1 mul0r.
-rewrite exprSz logM ?exprn_gt0// IH//.
-by rewrite -nat1r mulrDl mul1r.
-Qed.
-
 End Bigop_Lemma.
 
 Local Open Scope vec_ext_scope.
@@ -405,7 +398,7 @@ rewrite -addrA addrC (_ : - _ + _ = 0) ?addr0; last first.
   apply/eqP; rewrite addrC subr_eq0; apply/eqP.
   by apply eq_bigr => i _; rewrite ffunE.
 rewrite (@eq_bigr _ _ _ 'I_Nmax.+1 _ _ _ (fun i => `Pr[ X = i%:R ] * log (alp ^ i)))=>[|i _]; last first.
-  by rewrite log_pow // [in RHS]mulrC -mulrA (mulrC _ (log alp)) mulrA.
+  by rewrite log_exprz // [in RHS]mulrC -mulrA (mulrC _ (log alp)) mulrA.
 rewrite /entropy/=.
 rewrite -[leLHS]opprB.
 rewrite -(opprK (log _)) lerNl opprK big_morph_oppr -big_split /=.
@@ -674,10 +667,7 @@ rewrite [Y in _ <= Y + _ ](_ :_ = 0).
   pose distPf := FDist.mk pmf1'_Pf'.
   move: (entropy_max distPf).
   rewrite card_tuple /= card_bool.
-  rewrite natrX.
-  rewrite exprnP.
-  rewrite log_pow//.
-  by rewrite log2 mulr1.
+  by rewrite natrX exprnP log_exprz// log2 mulr1.
 rewrite big1 //= => i.
 by rewrite inE /PN /= => /eqP ->; rewrite mulr0.
 Qed.
@@ -710,7 +700,7 @@ by rewrite -mulrA ler_wpM2l ?expR_ge0// ltW.
 Qed.
 
 Lemma converse_case2 : n%:R * log #|A|%:R <= @E_leng_cw _ _ P f ->
- `H (P `^ n)%fdist <= @E_leng_cw _ _ P f.
+  `H (P `^ n)%fdist <= @E_leng_cw _ _ P f.
 Proof.
 move=> H; rewrite entropy_TupleFDist; apply: (le_trans _ H).
 by rewrite ler_wpM2l//; exact/entropy_max.
@@ -817,8 +807,7 @@ rewrite /m => nnon0.
 rewrite ltr0n.
 rewrite absz_gt0.
 rewrite mathcomp_extra.floor_neq0; apply/orP; right.
-rewrite -exp.expR0.
-by rewrite exp.ler_expR//.
+by rewrite -expR0 ler_expR.
 Qed.
 
 Lemma le_eps eps : (0:R) <> n%:R -> (1:R) <= n%:R * log #|A|%:R -> (0:R) < eps ->
@@ -848,11 +837,8 @@ have le_1_alp : 1 <= alp.
     by rewrite ler1n.
   rewrite mul1r//.
   rewrite card_mx mul1n.
-  rewrite natrX.
-  rewrite exprnP.
-  rewrite log_pow// ltr0n.
-  apply/fdist_card_neq0.
-  exact: P.
+  rewrite natrX exprnP log_exprz// ltr0n.
+  exact/(fdist_card_neq0 P).
 have alppos : 0 < alp by exact: (@lt_le_trans _ _ 1).
 have Ypos : 0 < Y.
   by rewrite mulr_gt0// ?mulr_gt0// ln2_gt0.
@@ -978,12 +964,9 @@ rewrite (mulrA (log _)).
 apply: le_eps => //.
 move: case2.
 rewrite ELC_TupleFDist mulrC (mulrC (m eps)%:R) card_mx mul1n.
-rewrite natrX log_pow; last first.
-  rewrite ltr0n//.
-  apply: fdist_card_neq0.
-  exact: P.
-rewrite ltr_pM2r//; last first.
-  exact: mpos.
+rewrite natrX log_exprz; last first.
+  by rewrite ltr0n// (fdist_card_neq0 P).
+rewrite ltr_pM2r//; last exact: mpos.
 move=> /ltW.
 apply: le_trans.
 exact/le_1_EX.

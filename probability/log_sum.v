@@ -19,9 +19,9 @@ Import Order.POrderTheory GRing.Theory Num.Theory.
 Local Notation "'\sum_{' C '}' f" :=
   (\sum_(a | a \in C) f a) (at level 10, format "\sum_{ C }  f").
 
-Definition log_sum_stmt {R : realType} {A : finType} (C : {set A}) (f g : {ffun A -> R}) :=
-  (forall x, 0 <= f x) ->
-  (forall x, 0 <= g x) ->
+Definition log_sum_stmt {R : realType} {A : finType} (C : {set A})
+    (f g : {ffun A -> R}) :=
+  (forall x, 0 <= f x) -> (forall x, 0 <= g x) ->
   f `<< g ->
   \sum_{C} f * log (\sum_{C} f / \sum_{C} g) <=
     \sum_(a | a \in C) f a * log (f a / g a).
@@ -193,8 +193,6 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
     by rewrite big1.
   by rewrite add0r lexx.
 apply: log_sum1 => // a.
-rewrite in_set.
-case/andP => a_C fa_not_0.
-case :(f0 a) => // abs.
-by rewrite lt_neqAle eq_sym fa_not_0.
+rewrite in_set => /andP[a_C fa_not_0].
+by rewrite lt_neqAle eq_sym fa_not_0 f0.
 Qed.
