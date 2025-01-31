@@ -205,13 +205,11 @@ Lemma dmc_cdiv_cond_entropy :
 Proof.
 rewrite dmc_cdiv_cond_entropy_aux cond_entropy_chanE2.
 rewrite /cdiv /entropy -big_split /=.
-rewrite big_distrr/=.
-rewrite (big_morph _ powR2D (powRr0 _)). (* TODO: lemma *)
+rewrite big_distrr/= powR2sum.
 apply eq_bigr => a _.
 rewrite big_morph_oppr.
 rewrite /div /= -mulrDr mulrA -big_split /=.
-rewrite big_distrr/=.
-rewrite (big_morph _ powR2D (powRr0 _)). (* TODO: lemma *)
+rewrite big_distrr/= powR2sum.
 apply eq_bigr => b _.
 have [Pa0|Pa0] := eqVneq (type.d P a) 0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.

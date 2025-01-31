@@ -149,6 +149,12 @@ Proof. by move=> n1 xy; rewrite ler_powR// ltW. Qed.
 Lemma powR2D : {morph (fun x => 2 `^ x) : x y / x + y >-> x * y}.
 Proof. by move=> ? ? /=; rewrite powRD// pnatr_eq0// implybT. Qed.
 
+Lemma powR2sum (I : Type) (r : seq I) (P0 : pred I) (F : I -> R) :
+  2 `^ (\sum_(i <- r | P0 i) F i) = \prod_(i <- r | P0 i) 2 `^ F i.
+Proof.
+by rewrite (big_morph [eta powR 2] powR2D (powRr0 2)).
+Qed.
+
 End Exp.
 
 Hint Extern 0 (0 <= _ `^ _) => solve [exact/powR_ge0] : core.

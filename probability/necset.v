@@ -5,8 +5,7 @@ Require Import Reals.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import mathcomp_extra boolp classical_sets Rstruct reals.
 From mathcomp Require Import finmap.
-Require Import (*Reals_ext*) realType_ext classical_sets_ext (*ssrR*) fdist fsdist.
-Require Import convex.
+Require Import realType_ext classical_sets_ext fdist fsdist convex.
 
 (******************************************************************************)
 (*       Semi-complete semilattice structures and non-empty convex sets       *)
@@ -454,12 +453,12 @@ Lemma Convn_iter_conv_set (n : nat) :
     g @` setT `<=` X -> iter_conv_set X n (<|>_d g).
 Proof.
 elim: n => [g d|n IHn g d X]; first by have := fdistI0_False d.
-have [/eqP ->|Xneq0 gX] := boolP (X == set0).
+have [->|Xneq0 gX] := eqVneq X set0.
   by move=> /(_ (g ord0)) H; exfalso; apply/H/imageP.
 set X' := NESet.Pack (NESet.Class (isNESet.Build _ _ Xneq0)).
 have gXi : forall i : 'I_n.+1, X (g i).
   by move=> i; move/subset_image : gX; apply.
-have [/eqP d01|d0n1] := boolP (d ord0 == 1%R).
+have [d01|d0n1] := eqVneq (d ord0) 1%R.
 - suff : X (<|>_d g) by move/(@iter_conv_set_superset X' n.+1 (<|>_d g)).
   by rewrite (Convn_proj g d01); exact/gX/imageP.
 - rewrite ConvnIE //; exists (probfdist d ord0) => //; exists (g ord0) => //.
@@ -512,7 +511,7 @@ Qed.
 Lemma hull_conv_set_strr (p : {prob R}) (X Y : set A) :
   hull (X :<| p |>: hull Y) = hull (X :<| p |>: Y).
 Proof.
-apply hull_eqEsubset=> u.
+apply: hull_eqEsubset => u.
 - case=> x Xx; rewrite conv_pt_setE=> -[] y [] n [] g [] d [] gY yg <-.
   exists n, (fun i => x <|p|> g i), d; rewrite -ConvnDr yg; split=> //.
   by move=> v [] i _ <-; exists x=> //; apply/conv_in_conv_pt_set/gY/imageP.
@@ -522,10 +521,9 @@ Qed.
 
 End conv_set_lemmas.
 
-Local Open Scope classical_set_scope.
-Lemma affine_image_conv_set {R : realType} (A B : convType R) (f : {affine A -> B}) p
-    (X Y : set A) :
-  f @` (X :<| p |>: Y) =  f @` X :<| p |>: f @` Y.
+Lemma affine_image_conv_set {R : realType} (A B : convType R)
+    (f : {affine A -> B}) p (X Y : set A) :
+  (f @` (X :<| p |>: Y) = f @` X :<| p |>: f @` Y)%classic.
 Proof.
 rewrite eqEsubset; split=> [u [v]|u].
 - move=> /conv_in_conv_set' [] x [] y [] Xx [] Yy ->; rewrite affine_conv=> <-.
@@ -533,7 +531,6 @@ rewrite eqEsubset; split=> [u [v]|u].
 - case/conv_in_conv_set'=> x [] y [] [] x0 Xx0 <- [] [] y0 Yy0 <- ->.
   by rewrite -affine_conv; apply/imageP/conv_in_conv_set.
 Qed.
-Local Close Scope classical_set_scope.
 
 (* (saikawa) I am aware that ssreflect/order.v has definitions of porder and
    lattice. For now, I write down the following definition of semilattice
@@ -543,7 +540,7 @@ HB.mixin Record isSemiLattice (T : Type) of Choice T := {
   lub : T -> T -> T ;
   lubC : commutative lub;
   lubA : associative lub;
-  lubxx : idempotent lub }.
+  lubxx : idempotent_op lub }.
 
 #[short(type=semiLattType)]
 HB.structure Definition SemiLattice := { T of isSemiLattice T & }.
@@ -645,7 +642,7 @@ Proof. by move=> x y; rewrite /lub_binary -!lubE lubC. Qed.
 Let lub_binaryA : associative lub_binary.
 Proof. by move=> x y z; rewrite /lub_binary -!lubE lubA. Qed.
 
-Let lub_binaryxx : idempotent lub_binary.
+Let lub_binaryxx : idempotent_op lub_binary.
 Proof. by move=> x; rewrite /lub_binary -lubE lubxx. Qed.
 
 End semicompsemilatt_lemmas.
@@ -659,8 +656,7 @@ HB.mixin Record isBiglubMorph (U V : semiCompSemiLattType) (f : U -> V) := {
 HB.structure Definition BiglubMorph (U V : semiCompSemiLattType) :=
   {f of isBiglubMorph U V f}.
 
-Notation "{ 'Biglub_morph' T '->' R }" :=
-  (BiglubMorph.type T R) : convex_scope.
+Notation "{ 'Biglub_morph' T '->' R }" := (BiglubMorph.type T R) : convex_scope.
 
 Section biglub_morph.
 Variables (L M : semiCompSemiLattType).
@@ -1023,7 +1019,7 @@ Proof.
 by move=> x y z; rewrite !lub_E; apply necset_ext => /=; exact: hullUA.
 Qed.
 
-Let lub_xx : idempotent lub_.
+Let lub_xx : idempotent_op lub_.
 Proof.
 by move=> x; rewrite lub_E; apply necset_ext => /=; rewrite setUid hull_cset.
 Qed.

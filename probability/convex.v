@@ -2,16 +2,11 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
-From mathcomp Require Import mathcomp_extra boolp classical_sets (*Rstruct*).
+From mathcomp Require Import mathcomp_extra boolp classical_sets.
 From mathcomp Require Import ssrnum archimedean ereal signed.
 From mathcomp Require Import lra (*Rstruct*) reals.
-(*Require Import Reals.*)
-Require Import (*ssrR Reals_ext Ranalysis_ext*) ssr_ext ssralg_ext logb.
-Require Import realType_ext fdist.
+Require Import ssr_ext ssralg_ext realType_logb realType_ext fdist.
 From mathcomp Require vector.
-
-(*Undelimit Scope R_scope.
-Delimit Scope R_scope with coqR.*)
 
 (******************************************************************************)
 (*                              Convexity                                     *)
@@ -3223,7 +3218,7 @@ have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%R
     apply: derivable_within_continuous => y.
     rewrite in_itv/= => /andP[ay yb].
     by apply: HDf; rewrite /I yb andbT (le_trans _ ay)// ltW.
-  have [c2 [Ic2 H1]] := MVT xb H cf.
+  have [c2 Ic2 H1] := MVT xb H cf.
   exists c2; split.
     rewrite in_itv/= in Ic2.
     case/andP: Ic2 => ac2 ->.
@@ -3243,7 +3238,7 @@ have [c1 [Ic1 Hc1]] : exists c1, (a < c1 < x /\ (f x - f a) / (x - a) = Df c1)%R
     apply: derivable_within_continuous => y.
     rewrite in_itv/= => /andP[ay yb].
     by apply: HDf; rewrite /I ay/= (le_trans yb)// ltW.
-  have [c1 [Ic1 H1]] := MVT ax H cf.
+  have [c1 Ic1 H1] := MVT ax H cf.
   exists c1; split => //.
   rewrite H1 -mulrA mulfV ?mulr1//.
   by rewrite subr_eq0 gt_eqF.
