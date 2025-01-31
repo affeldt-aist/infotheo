@@ -407,7 +407,19 @@ apply: eq_bigr => a _.
 by rewrite !setX1 !Pr_set1 -!pr_eqE' !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
 Qed.
 
+Let alice_traces_from_view xs : 11.-bseq _ :=
+  let '(x1, s1, r1, x2', t, y1) := xs in
+  [bseq one y1; one t; vec x2'; one r1; vec s1; vec x1].
+
 Lemma alice_traces_ok :
+  alice_traces = alice_traces_from_view `o [%x1, s1, r1, x2', t, y1].
+Proof.
+apply: boolp.funext => x /=.
+rewrite /alice_traces /scalar_product_RV /scalar_product_uncurry.
+by rewrite /comp_RV /= smc_scalar_product_traces_ok.
+Qed.
+
+Lemma alice_traces_entropy :
   `H(x2 | alice_traces) = `H(x2 | [%x1, s1, r1, x2', t, y1]).
 Proof.
 transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
@@ -416,22 +428,26 @@ transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
                       inl r1; inr s1; inr x1] _
     then (x1, s1, r1, x2', t, y1)
     else (0, 0, 0, 0, 0, 0).
+  have fK : cancel alice_traces_from_view f by move=> [] [] [] [] [].
   have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces.
-    apply: boolp.funext => x /=.
-    rewrite /alice_traces /comp_RV /scalar_product_RV /scalar_product_uncurry.
-    by rewrite /comp_RV /= smc_scalar_product_traces_ok.
+    by apply: boolp.funext => x /=; rewrite alice_traces_ok /comp_RV fK.
   by rewrite smc_entropy_proofs.fun_cond_removal.
-pose g xs : 11.-bseq _ :=
-  let '(x1, s1, r1, x2', t, y1) := xs in
-  [bseq one y1; one t; vec x2'; one r1; vec s1; vec x1].
-have -> : alice_traces = g `o [% x1, s1, r1, x2', t, y1].
-  apply: boolp.funext => x /=.
-  rewrite /alice_traces /comp_RV /scalar_product_RV /scalar_product_uncurry.
-  by rewrite /comp_RV /= smc_scalar_product_traces_ok.
-by rewrite cond_entropyC smc_entropy_proofs.fun_cond_removal.
+by rewrite alice_traces_ok cond_entropyC smc_entropy_proofs.fun_cond_removal.
 Qed.
 
+Let bob_traces_from_view xs : 11.-bseq _ :=
+  let '(x2, s2, x1', r2, y2) := xs in
+  [:: one y2; vec x1'; one r2; vec s2; one y2; vec x2].
+
 Lemma bob_traces_ok :
+  bob_traces = bob_traces_from_view `o [%x2, s2, x1', r2, y2].
+Proof.
+apply: boolp.funext => x /=.
+rewrite /bob_traces /scalar_product_RV /scalar_product_uncurry.
+by rewrite /comp_RV /= smc_scalar_product_traces_ok.
+Qed.
+
+Lemma bob_traces_entropy :
   `H(x1 | bob_traces) = `H(x1 | [%x2, s2, x1', r2, y2]).
 Proof.
 transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
@@ -440,19 +456,11 @@ transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
                       inr s2; inl _; inr x2] _
     then (x2, s2, x1', r2, y2)
     else (0, 0, 0, 0, 0).
+  have fK : cancel bob_traces_from_view f by move=> [] [] [] [] [].
   have -> : [%x2, s2, x1', r2, y2] = f `o bob_traces.
-    apply: boolp.funext => x /=.
-    rewrite /bob_traces /comp_RV /scalar_product_RV /scalar_product_uncurry.
-    by rewrite /comp_RV /= smc_scalar_product_traces_ok.
+    by apply: boolp.funext => x; rewrite bob_traces_ok /comp_RV fK.
   by rewrite smc_entropy_proofs.fun_cond_removal.
-pose g xs : 11.-bseq data :=
-  let '(x2, s2, x1', r2, y2) := xs in
-  [:: one y2; vec x1'; one r2; vec s2; one y2; vec x2].
-have -> : bob_traces = g `o [%x2, s2, x1', r2, y2].
-  apply: boolp.funext => x /=.
-  rewrite /bob_traces /comp_RV /scalar_product_RV /scalar_product_uncurry.
-  by rewrite /comp_RV /= smc_scalar_product_traces_ok.
-by rewrite cond_entropyC smc_entropy_proofs.fun_cond_removal.
+by rewrite bob_traces_ok cond_entropyC smc_entropy_proofs.fun_cond_removal.
 Qed.
 
 Let pnegy2_unif :
