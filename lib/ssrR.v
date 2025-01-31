@@ -642,7 +642,7 @@ Delimit Scope R_scope with coqR.
 Lemma R1E : 1%coqR = 1%mcR. Proof. by []. Qed.
 Lemma R0E : 0%coqR = 0%mcR. Proof. by []. Qed.
 
-(* TODO: PR to Rstruct as RsqrtE *)
+(* NB: PR https://github.com/math-comp/analysis/pull/1461 in progress in MCA *)
 Lemma RsqrtE' (x : Rdefinitions.R) : sqrt x = Num.sqrt x.
 Proof.
 set Rx := Rcase_abs x.
