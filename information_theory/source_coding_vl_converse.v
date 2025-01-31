@@ -31,6 +31,7 @@ Local Open Scope ring_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory Num.Def Order.TotalTheory.
 
+(* TODO: move to log_sum? *)
 Section log_sum_ord.
 Let R := Rdefinitions.R.
 Variable n : nat.
@@ -40,36 +41,31 @@ Hypothesis f_dom_by_g : f `<< g.
 
 Lemma log_sum_inequality_ord_add1 :
   (\sum_(i < n) f i.+1) *
-  (log ((\sum_(i < n) f i.+1) / (\sum_(i < n) g i.+1))) <=
-  \sum_(i < n) f i.+1 * (log (f i.+1 / g i.+1)).
+  log ((\sum_(i < n) f i.+1) / (\sum_(i < n) g i.+1)) <=
+  \sum_(i < n) f i.+1 * log (f i.+1 / g i.+1).
 Proof.
-have Rle0f_1 : forall x : 'I_n, 0 <= f x.+1 by move=> ?; apply f0.
-have Rle0g_1 : forall x : 'I_n, 0 <= g x.+1 by move=> ?; apply g0.
-have newRle0f_1 : [forall x : 'I_n, (0 <= [ffun x : 'I_n => f x.+1] x)%mcR].
-  apply/forallP => //=.
-  by move=> ?/=; rewrite ffunE.
-have newRle0g_1: [forall x : 'I_n, (0 <= [ffun x : 'I_n => g x.+1] x)%mcR].
-  apply/forallP => //=.
-  by move=> ?/=; rewrite ffunE.
+have Rle0f_1 (x : 'I_n) : 0 <= f x.+1 by exact: f0.
+have Rle0g_1 (x : 'I_n) : 0 <= g x.+1 by exact: g0.
+have newRle0f_1 : [forall x : 'I_n, 0 <= [ffun x : 'I_n => f x.+1] x].
+  by apply/forallP => //= ?/=; rewrite ffunE.
+have newRle0g_1 : [forall x : 'I_n, 0 <= [ffun x : 'I_n => g x.+1] x].
+  by apply/forallP => //= ?/=; rewrite ffunE.
 have f_dom_by_g1 : [ffun x0 : 'I_n => f x0.+1] `<< [ffun x0 : 'I_n => g x0.+1].
   apply/dominatesP => a; move/dominatesP : f_dom_by_g.
   by rewrite /= !ffunE; exact.
-have H : forall h,
+have H h :
   \sum_(a | a \in [set: 'I_n]) h a.+1 = \sum_(a | a \in 'I_n) h a.+1 :> R.
-  by move=> ?; under eq_bigl do rewrite in_setT.
+  by under eq_bigl do rewrite in_setT.
 rewrite -!H -(H (fun i => f i * log (f i / g i))).
-(*have H1 : (forall x : 'I_n, 0 <= mkNNFinfun newRle0f_1 x).
-  by move=> x//=; rewrite ffunE.
-have H2 : (forall x : 'I_n, 0 <= mkNNFinfun newRle0g_1 x).
-  by move=> x//=; rewrite ffunE.*)
 move/forallP in newRle0f_1.
 move/forallP in newRle0g_1.
-have := @log_sum R _ [set: 'I_n] [ffun x0 : 'I_n => f x0.+1] [ffun x0 : 'I_n => g x0.+1] newRle0f_1 newRle0g_1 f_dom_by_g1.
+have := @log_sum R _ [set: 'I_n] [ffun x0 : 'I_n => f x0.+1]
+  [ffun x0 : 'I_n => g x0.+1] newRle0f_1 newRle0g_1 f_dom_by_g1.
 under eq_bigr do rewrite ffunE.
 under [in X in _ * log (_ / X) <= _ -> _]eq_bigr do rewrite ffunE.
 under [in X in _ <= X  -> _]eq_bigr do rewrite ffunE.
 move/le_trans; apply.
-rewrite le_eqVlt; apply/orP; left.
+apply/eqW.
 by under eq_bigr do rewrite ffunE.
 Qed.
 
@@ -87,11 +83,9 @@ rewrite [X in _ <= X]
     by apply/sumr_ge0 => ? _.
   rewrite le_eqVlt => /predU1P[<-|Hf].
     by rewrite !mul0r.
-  have : 0 <= \sum_(i in 'I_n) g i.+1.
-    by apply/sumr_ge0 => ? _.
+  have : 0 <= \sum_(i in 'I_n) g i.+1 by exact/sumr_ge0.
   rewrite le_eqVlt => /predU1P[H|Hg]; last first.
-    rewrite logM// ?invr_gt0//; congr (_ * _).
-    by rewrite logV//.
+    by rewrite logM// ?invr_gt0//; congr *%R; rewrite logV.
   have eq_g_0 : forall i : 'I_n, 0 = g i.+1.
     by move/esym/psumr_eq0P : H => H i; rewrite H//.
   have : 0 = \sum_(i < n) f i.+1.
@@ -115,7 +109,7 @@ Variables (T : finType) (f : T -> nat).
 
 Definition inordf t := inord (f t) : 'I_(\max_t f t).+1.
 
-Lemma inordfE :  (fun t : T => nat_of_ord (inordf t)) =1 f .
+Lemma inordfE : (fun t : T => nat_of_ord (inordf t)) =1 f.
 Proof.
 move=>t.
 apply: inordK; by apply: leq_bigmax.
@@ -135,9 +129,9 @@ Let big_seq_tuple' (F : seq bool -> R) : (0 < #|A|)%nat ->
   \sum_(i : n.-tuple bool | tval i \in codom f) F i.
 Proof.
 move Hpick : [pick x | x \in [set: A] ] => p Anon0.
-move: Hpick; case: (pickP _)=>[defaultA _ _ | abs]; last first.
-  suff : False by [].
-  move:Anon0.
+move: Hpick; case: (pickP _) => [defaultA _ _ | abs]; last first.
+  exfalso.
+  move: Anon0.
   rewrite -cardsT card_gt0; case/set0Pn => ?.
   by rewrite abs.
  pose dummy := [tuple of nseq n false].
@@ -148,8 +142,7 @@ move: Hpick; case: (pickP _)=>[defaultA _ _ | abs]; last first.
    by move => a0 /eqP /f_inj ->.
  - rewrite (reindex_onto h h'); last first.
    + move => a sizefa. rewrite /h' /h insubdK //.
-   + apply: esym.
-     apply: eq_big => i; last by move/codomP => [a fa]; rewrite /h fa H.
+   + apply/esym/eq_big => i; last by move/codomP => [a fa]; rewrite /h fa H.
      apply/idP/andP.
      * move/codomP => [a fa]. rewrite /h fa H.
        split; first by rewrite -fa size_tuple eqxx.
@@ -160,27 +153,13 @@ Qed.
 
 Lemma big_seq_tuple (F : seq bool -> R) : (0 < #|A|)%nat ->
   (forall i, F i = if i \in codom f then F i else 0)->
-  \sum_(i in {: n.-tuple bool}) F i = \sum_(a| size (f a) == n) F (f a).
+  \sum_(i in {: n.-tuple bool}) F i = \sum_(a | size (f a) == n) F (f a).
 Proof.
 move=> Anon0 Fi0.
 rewrite big_seq_tuple' //.
 rewrite (eq_bigr (fun a => if (tval a \in codom f) then F a else 0)) => [|i _].
   by rewrite -big_mkcondr.
 by rewrite {1}Fi0.
-Qed.
-
-Lemma big_pow1 x : x <> 1 ->
-  \sum_(i < n) x ^ i.+1 = x * (1 - (x ^ n)) / (1 - x) :> R.
-Proof.
-move=> neq_x_1.
-rewrite -opprB.
-rewrite subrX1.
-rewrite -opprB mulNr opprK.
-rewrite mulrCA mulrC !mulrA mulVf; last first.
-  by rewrite subr_eq0 eq_sym; exact/eqP.
-rewrite mul1r big_distrr//=.
-apply: eq_bigr => i _.
-by rewrite exprSz.
 Qed.
 
 End Bigop_Lemma.
@@ -190,6 +169,7 @@ Local Open Scope vec_ext_scope.
 Section Entropy_lemma.
 Variables (A : finType) (P : {fdist A}) (n : nat).
 
+(* TODO: move to entropy.v *)
 Lemma entropy_TupleFDist : `H (P `^ n)%fdist = n%:R * `H P.
 Proof.
 elim:n=>[|n0 IH].
@@ -227,7 +207,7 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
   rewrite -[RHS](FDist.f1 (P `^ n0)%fdist).
   by apply eq_bigr => i _; rewrite fdist_rVE.
-rewrite -big_distrl /= mulr1 [in RHS]addrC; congr (_ + _).
+rewrite -big_distrl /= mulr1 [in RHS]addrC; congr +%R.
 rewrite -big_distrl /= FDist.f1 mul1r; apply eq_bigr => i _.
 by rewrite fdist_rVE.
 Qed.
@@ -251,6 +231,7 @@ move: (@f_uniq [::] ([:: x])).
 by rewrite /extension /= fx_nil cat0s => /(_ erefl).
 Qed.
 
+(* TODO: rename *)
 Lemma Xpos a : 0 < X a.
 Proof.
 by rewrite lt_neqAle eq_sym ler0n andbT; apply/eqP/nesym/Xnon0.
@@ -389,8 +370,7 @@ apply: (@le_trans _ _ (log (alp * (1 - (alp ^ (\max_(a | a \in A) size (f a))))
     exact: ltW.
   rewrite -lerBrDl subrr lerNl oppr0.
   by rewrite -exprnP exprn_ge0// ltW.
-rewrite EX_ord -big_pow1; last first.
-  by apply/eqP; rewrite lt_eqF.
+rewrite EX_ord -sum_exprz; last by rewrite lt_eqF.
 rewrite mulrC.
 rewrite big_distrl//=.
 rewrite -(@lerD2r _ (\sum_(i < Nmax.+1) i%:R * `Pr[ X = i%:R ] * log alp)).

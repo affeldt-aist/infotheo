@@ -112,7 +112,7 @@ have j2t : (j.-1)./2 < t.*2.
   destruct j => //.
   by rewrite /= (ltn_trans i1) // ltnS muln2 -[in X in _ <= X]addnn leq_addl.
 move/(_ j2t)/(congr1 (fun x => x ^+ 2)).
-rewrite expr0n /= sum_char2 ?char_GFqm // => H'.
+rewrite expr0n /= sum_sqr ?char_GFqm // => H'.
 rewrite -[RHS]H'; apply eq_bigr => k _.
 rewrite exprMn_comm; last by rewrite /GRing.comm mulrC.
 congr (_ * _); last first.
@@ -158,8 +158,7 @@ Definition code (a : 'rV_n) t := Rcode.t (@GF2_of_F2 m) (kernel (PCM a t)).
 End BCH_def.
 
 Section BCH_syndromep.
-
-Variables (n' : nat).
+Variable n' : nat.
 Let n := n'.+1.
 Variable (m : nat).
 Let F : fieldType := GF2 m.
@@ -395,7 +394,7 @@ have Hf : \sum_(i < (wH x).-1.+1)
   case: ifPn => [_|]; first by rewrite!mxE mulrC.
   rewrite negb_and negbK.
   case/orP => [/eqP ->|abs']; first by rewrite rmorph0 scale0r mxE.
-  case/boolP : (x ``_ (f j) == 0) => [/eqP ->|abs''].
+  have [->|abs''] := eqVneq (x ``_ (f j)) 0.
     by rewrite rmorph0 scale0r mxE.
   exfalso.
   move/eqP: abs'; apply.
@@ -641,10 +640,8 @@ Qed.
 End decoding_using_euclid.
 
 Section BCH_cyclic.
-
-Variables (n' : nat) (m : nat).
+Variables (n' m : nat).
 Let n := n'.+1.
-(*Hypothesis nm : (n %| (2 ^ m.-1))%N.*)
 Let F := GF2 m.
 Variable a : F.
 Variable t : nat.
@@ -669,7 +666,7 @@ rewrite HM /fdcoor poly_rV_K //; last first.
   move: (ltn_modp ('X * rVpoly x') ('X^n - 1)).
   rewrite size_XnsubC // ltnS => ->.
   by rewrite monic_neq0 // monicXnsubC.
-rewrite !(hornerE,hornerXn(*TODO(rei): not necessary since mc1.16.0*)).
+rewrite !(hornerE,hornerXn).
 move: (Hx i); rewrite /fdcoor => /eqP ->; rewrite mulr0 add0r.
 by rewrite mxE exprAC a1 expr1n subrr mulr0.
 Qed.

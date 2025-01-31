@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
-From mathcomp Require ssrnum.
 Require Import ssr_ext f2.
 
 (******************************************************************************)
@@ -101,7 +100,6 @@ Lemma row_setK n A (i : 'I_n) (a : A) d : d `[i := a] ``_ i = a.
 Proof. by rewrite /row_set mxE eqxx. Qed.
 
 Section sub_vec_sect.
-
 Variables (A : Type) (n : nat).
 
 Definition sub_vec (t : 'rV[A]_n) (S : {set 'I_n}) : 'rV[A]_#| S | :=
@@ -286,8 +284,9 @@ End row_mx_ext.
 Section row_mxA'.
 Variables (A : finType) (n : nat) (i : 'I_n.+1).
 
-Lemma row_mxA' (w1 : 'rV_(n - i)) (a : A) (w : 'rV_i) (H1 : (n.+1 - i)%nat = (n - i)%nat.+1)
-  (H2 : _) (H3 : (i + 1%nat + (n - i))%nat = n.+1) :
+Lemma row_mxA' (w1 : 'rV_(n - i)) (a : A) (w : 'rV_i)
+    (H1 : (n.+1 - i)%nat = (n - i)%nat.+1) (H2 : _)
+    (H3 : (i + 1%nat + (n - i))%nat = n.+1) :
   castmx (erefl 1%nat, H3) (row_mx (row_mx w (\row__ a)) w1) =
   castmx (erefl 1%nat, H2) (row_mx w (castmx (erefl 1%nat, esym H1) (row_mx (\row_(_ < 1) a) w1))).
 Proof.
@@ -341,7 +340,7 @@ End row_mxA'.
 
 Lemma col_matrix (R : ringType) m n (A : 'I_m -> 'cV[R]_(n.+1)) (i : 'I_m) :
   col i (\matrix_(a < n.+1, b < m) (A b) a ord0) = A i.
-Proof. apply/colP => a; by rewrite !mxE. Qed.
+Proof. by apply/colP => a; rewrite !mxE. Qed.
 
 Lemma ltnS' n m : (n < m.+1)%nat -> (n <= m)%nat.
 Proof. by rewrite ltnS. Qed.
@@ -397,7 +396,7 @@ rewrite big_pred1_eq {1}/perm_mx !mxE eqxx mul1r (eq_bigr (fun _ => 0)).
   by rewrite !mxE eq_sym H /= mul0r.
 Qed.
 
-Lemma pid_mx_inj r n (a b : 'rV[R]_r) : r <= n ->
+Lemma pid_mx_inj r n (a b : 'rV[R]_r) : (r <= n)%N ->
   a *m (@pid_mx _ r n r) = b *m (@pid_mx _ r n r) -> a = b.
 Proof.
 move=> Hrn /matrixP Heq.
@@ -419,10 +418,11 @@ Qed.
 End AboutPermPid.
 
 (* NB: similar to mulmx_sum_row in matrix.v *)
-Lemma mulmx_sum_col : forall {R : comRingType} m n (u : 'cV[R]_n) (A : 'M_(m, n)),
+(* NB: used in hamming_code.v *)
+Lemma mulmx_sum_col {R : comRingType} m n (u : 'cV[R]_n) (A : 'M_(m, n)) :
   A *m u = \sum_i u i 0 *: col i A.
 Proof.
-move=> R m n u A; apply/colP=> j; rewrite mxE summxE; apply: eq_bigr => i _.
+apply/colP => j; rewrite mxE summxE; apply: eq_bigr => i _.
 by rewrite !mxE mulrC.
 Qed.
 
@@ -432,19 +432,7 @@ move=> x y; rewrite /col_perm => /matrixP xy; apply/matrixP => i j.
 by move: (xy i (s^-1%g j)); rewrite !mxE permKV.
 Qed.
 
-Lemma trmx_cV_0 {k} (x : 'cV['F_2]_k) : (x ^T == 0) = (x == 0).
-Proof.
-case Hlhs : (_ ^T == _).
-  symmetry.
-  move/eqP in Hlhs.
-  by rewrite -(trmxK x) Hlhs trmx0 eqxx.
-symmetry; apply/eqP.
-move=> abs; subst x.
-by rewrite trmx0 eqxx in Hlhs.
-Qed.
-
 Section AboutRank.
-
 Variable F : fieldType.
 
 Lemma rank_I n : \rank (1%:M : 'M[F]_n) = n.
@@ -472,7 +460,7 @@ Qed.
 Lemma empty_rV (A : ringType) (a : 'rV[A]_O) : a = 0.
 Proof. apply/rowP; by case. Qed.
 
-Lemma full_rank_inj m n (A : 'M[F]_(m, n)) : m <= n -> \rank A = m ->
+Lemma full_rank_inj m n (A : 'M[F]_(m, n)) : (m <= n)%N -> \rank A = m ->
   forall (a b : 'rV[F]_m),  a *m A = b *m A -> a = b.
 Proof.
 move=> Hmn Hrank a b Hab.
@@ -523,7 +511,7 @@ End non_trivial_vspace.
 Section about_row_vectors_on_prime_fields.
 
 Lemma card_rV_wo_zeros p n : prime p ->
-  (\sum_(x : 'rV['F_p]_n | [forall j, x ord0 j != 0%R]) 1)%N = p.-1 ^ n.
+  (\sum_(x : 'rV['F_p]_n | [forall j, x ord0 j != 0%R]) 1)%N = (p.-1 ^ n)%N.
 Proof.
 move=> primep.
 destruct p as [|p'] => //; destruct p' as [|p'] => //.
@@ -562,8 +550,8 @@ Qed.
 
 End about_row_vectors_on_prime_fields.
 
-Lemma sum_char2 (F : fieldType) (_ : 2%N \in [char F]) k (f : 'I_k -> F) :
-  (\sum_(i < k) (f i)) ^+ 2 = \sum_(i < k) (f i) ^+ 2.
+Lemma sum_sqr (F : fieldType) (_ : 2%N \in [char F]) k (f : 'I_k -> F) :
+  (\sum_(i < k) f i) ^+ 2 = \sum_(i < k) (f i) ^+ 2.
 Proof.
 elim/big_ind2 : _ => [|x1 x2 y1 y2 <- <-|//] /=; first by rewrite expr0n.
 by rewrite sqrrD mulr2n addrr_char2 // addr0.
@@ -582,7 +570,7 @@ Definition GF : finFieldType := sval (@PrimePowerField q m primeq isT).
 Lemma char_GFqm : q \in [char GF].
 Proof. exact (proj1 (proj2_sig (@PrimePowerField q m primeq isT))). Qed.
 
-Lemma card_GFqm : #| GF | = q ^ m.
+Lemma card_GFqm : #| GF | = (q ^ m)%N.
 Proof. rewrite /GF; by case: (@PrimePowerField q m primeq isT). Qed.
 
 End GFqm.
@@ -637,24 +625,22 @@ apply/setP => i; rewrite !inE !mxE; apply/idP/idP; apply: contra.
 by rewrite GF2_of_F2_eq0.
 Qed.
 
-
 Section Det_mlinear.
-
-Variable (R: comRingType).
+Context {R : comRingType}.
 
 Let det_mlinear_rec n (f : 'I_n.+1 -> 'I_n.+1 -> R) (g : 'I_n.+1 -> R) k :
-  k <= n.+1 ->
+  (k <= n.+1)%N ->
   \det (\matrix_(j, i) (f i j * g j)) =
   (\prod_(l < k) g (inord l)) *
-    \det (\matrix_(j, i) (f i j * if j >= k then g j else 1)).
+    \det (\matrix_(j, i) (f i j * if (j >= k)%N then g j else 1)).
 Proof.
 elim: k => [_|k IH]; first by rewrite big_ord0 mul1r.
 rewrite ltnS => kn.
 rewrite IH; last by rewrite ltnW.
 rewrite big_ord_recr /= -mulrA; congr (_ * _).
 rewrite (@determinant_multilinear _ _ _
-           (\matrix_(j, i) (f i j * (if k < j then g j else 1)))
-           (\matrix_(j, i) (f i j * (if k <= j then g j else 1)))
+           (\matrix_(j, i) (f i j * (if (k < j)%N then g j else 1)))
+           (\matrix_(j, i) (f i j * (if (k <= j)%N then g j else 1)))
            (inord k) (g (inord k)) 0); last 3 first.
 - rewrite scale0r addr0.
   apply/rowP => j.
@@ -711,3 +697,21 @@ Qed.
 Lemma ler_abs_sqr (T : realDomainType) (x y : T) : (`|x| <= `|y|) = (x ^+ 2 <= y ^+ 2).
 Proof. by rewrite -[LHS]ler_sqr ?nnegrE// ?real_normK// num_real. Qed.
 End ssrnum_ext.
+
+Section ssrint_ext.
+Import ssrnum Num.Theory ssrint.
+
+Lemma sum_exprz {R : numFieldType} (n : nat) x : x != 1 ->
+  \sum_(i < n) x ^ i.+1 = x * (1 - (x ^ n)) / (1 - x) :> R.
+Proof.
+move=> neq_x_1.
+rewrite -opprB.
+rewrite subrX1.
+rewrite -opprB mulNr opprK.
+rewrite mulrCA mulrC !mulrA mulVf; last first.
+  by rewrite subr_eq0 eq_sym.
+rewrite mul1r big_distrr//=.
+by apply: eq_bigr => i _; rewrite exprSz.
+Qed.
+
+End ssrint_ext.

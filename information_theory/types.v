@@ -441,8 +441,7 @@ rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
     rewrite -(eqr_nat Rdefinitions.R).
     move/eqP : H => /(congr1 (fun x => n%:R * x)).
     by rewrite mulr0 type_fun_type// => /eqP.
-rewrite -(big_morph (id2 := Rdefinitions.R0) _ powR2D); last first.
-  by rewrite powRr0.
+rewrite -powR2sum.
 congr (_ `^ _)%R.
 rewrite /entropy mulrN mulNr opprK.
 rewrite big_distrr/=.
