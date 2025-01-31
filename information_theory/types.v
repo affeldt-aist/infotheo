@@ -35,16 +35,13 @@ Import GRing.Theory Num.Theory.
 
 Local Open Scope entropy_scope.
 Local Open Scope num_occ_scope.
-(*Local Open Scope R_scope.*)
 Local Open Scope ring_scope.
 Local Open Scope fdist_scope.
 
 Module type.
 
 Section type_def.
-
-Variable A : finType.
-Variable n : nat.
+Variables (A : finType) (n : nat).
 
 Record type : predArgType := mkType {
   d :> {fdist A} ;
@@ -379,19 +376,6 @@ Qed.
 
 End typed_tuples_facts.
 
-(* TODO: move *)
-Lemma Exp2_pow (r : Rdefinitions.R) n k :
-  (r `^ (k%:R * n) = (r `^ n) ^+ k)%R.
-Proof. by rewrite -powR_mulrn ?powR_ge0// mulrC powRrM. Qed.
-
-(* TODO: move *)
-Lemma morph_exp2_plus : {morph (fun x => (2%:R:Rdefinitions.R) `^ x)%R : x y / x + y >-> x * y}.
-Proof. by move=> ? ? /=; rewrite powRD// pnatr_eq0// implybT. Qed.
-
-(* TODO: rm *)
-Lemma exp2_Ropp x : ((2%:R:Rdefinitions.R) `^ (- x) = ((2%:R:Rdefinitions.R) `^ x)^-1)%R.
-Proof. by rewrite powRN. Qed.
-
 Section typed_tuples_facts_continued.
 Variables (A : finType) (n : nat).
 Hypothesis Hn : n != O.
@@ -485,7 +469,7 @@ Qed.
 
 Lemma card_typed_tuples : (#| T_{ P } |%:R <= (2%:R:Rdefinitions.R) `^ (n%:R * `H P))%R.
 Proof.
-rewrite -(@invrK _ ((2%:R:Rdefinitions.R) `^ (n%:R * `H P))%R) -exp2_Ropp -mulNr.
+rewrite -(@invrK _ ((2%:R:Rdefinitions.R) `^ (n%:R * `H P))%R) -powRN -mulNr.
 set aux := - n%:R * `H P.
 rewrite -div1r ler_pdivlMr // {}/aux ?Exp_gt0//.
 case/boolP : [exists x, x \in T_{P}] => x_T_P.
@@ -636,12 +620,13 @@ by rewrite eqr_nat => /eqP.
 Qed.
 
 Lemma sum_messages_types f :
-  \sum_(P : P_ n ( A )) (\sum_(m |m \in enc_pre_img c P) f m) = \sum_ (m : M) (f m) :> Rdefinitions.R.
+  \sum_(P : P_ n ( A )) (\sum_(m |m \in enc_pre_img c P) f m)
+  = \sum_ (m : M) (f m) :> Rdefinitions.R.
 Proof.
-transitivity (\sum_ (m in [set: M]) (f m)); last by apply eq_bigl => b; rewrite in_set.
+transitivity (\sum_ (m in [set: M]) (f m)); last first.
+  by apply: eq_bigl => b; rewrite in_set.
 rewrite -(cover_enc_pre_img c) /enc_pre_img_partition sum_messages_types'.
-symmetry.
-by apply big_trivIset, trivIset_enc_pre_img.
+exact/esym/big_trivIset/trivIset_enc_pre_img.
 Qed.
 
 End sum_messages_types.
@@ -668,9 +653,11 @@ Definition Hdef := proj2_sig (typed_tuples_not_empty P).
 Definition tcode_untyped_code := mkCode
   [ffun m => if tuple_of_row (enc c m) \in T_{P} then enc c m else def] (dec c).
 
-Lemma tcode_typed_prop (m : M) : tuple_of_row ((enc tcode_untyped_code) m) \in T_{P}.
+Lemma tcode_typed_prop (m : M) :
+  tuple_of_row ((enc tcode_untyped_code) m) \in T_{P}.
 Proof.
-rewrite /= ffunE; case: ifP => [//| _]; rewrite /def row_of_tupleK; exact Hdef.
+rewrite /= ffunE; case: ifP => [//| _]; rewrite /def row_of_tupleK.
+exact Hdef.
 Qed.
 
 Definition tcode : typed_code B M P := mkTypedCode tcode_typed_prop.

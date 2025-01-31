@@ -118,6 +118,10 @@ Implicit Type x : R.
 Lemma pow_Exp (x : R) n : (0 <= x) -> x ^+ n = x `^ n%:R.
 Proof. by move=> x0; rewrite powR_mulrn. Qed.
 
+(* TODO: rename *)
+Lemma Exp2_pow x n k : x `^ (k%:R * n) = (x `^ n) ^+ k.
+Proof. by rewrite -powR_mulrn ?powR_ge0// mulrC powRrM. Qed.
+
 Lemma LogK n x : (1 < n)%N -> 0 < x -> n%:R `^ (Log n x) = x.
 Proof.
 move=> n1 x0.
@@ -128,10 +132,6 @@ rewrite ln_powR mulrCA mulVf//.
   by rewrite mulr1 lnK ?posrE.
 by rewrite gt_eqF// -ln1 ltr_ln ?posrE// ?ltr1n// ltr0n ltnW.
 Qed.
-
-(* TODO: rm *)
-Lemma Exp_oppr n x : n `^ (- x) = (n `^ x)^-1.
-Proof. by rewrite -powRN. Qed.
 
 (* TODO: rm *)
 Lemma Exp_gt0 n x : 0 < n -> 0 < n `^ x.
@@ -153,6 +153,10 @@ Qed.
 (* TODO: rename *)
 Lemma Exp_le_increasing n x y : 1 < n -> x <= y -> n `^ x <= n `^ y.
 Proof. by move=> n1 xy; rewrite ler_powR// ltW. Qed.
+
+(* TODO: move *)
+Lemma morph_exp2_plus : {morph (fun x => 2 `^ x)%R : x y / x + y >-> x * y}.
+Proof. by move=> ? ? /=; rewrite powRD// pnatr_eq0// implybT. Qed.
 
 End Exp.
 
