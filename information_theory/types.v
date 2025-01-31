@@ -35,8 +35,8 @@ Import GRing.Theory Num.Theory.
 
 Local Open Scope entropy_scope.
 Local Open Scope num_occ_scope.
-Local Open Scope ring_scope.
 Local Open Scope fdist_scope.
+Local Open Scope ring_scope.
 
 Module type.
 
@@ -79,7 +79,7 @@ move=> H.
 have /eqP := @oner_neq0 Rdefinitions.R; apply.
 rewrite -(FDist.f1 d).
 transitivity (\sum_(a | a \in A) (t a)%:R / 0 : Rdefinitions.R); first exact/eq_bigr.
-rewrite -big_distrl /= -(big_morph (id2 := 0%R) _ (@natrD Rdefinitions.R))//.
+rewrite -big_distrl /= -natr_sum.
 rewrite (_ : (\sum_(a in A) _)%nat = O) ?mul0r //.
 transitivity (\sum_(a in A) 0)%nat; first by apply eq_bigr => a _; rewrite (ord1 (t a)).
 by rewrite big_const iter_addn.
@@ -89,9 +89,9 @@ Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
 pose f := [ffun a => N(a | ta)%:R / n.+1%:R : Rdefinitions.R].
 assert (H1 : forall a, (0%mcR <= f a)%mcR).
   move=> a; rewrite ffunE; apply/divr_ge0; by [apply ler0n | apply ltr0n].
-assert (H2 : \sum_(a in A) f a = 1%R).
+assert (H2 : \sum_(a in A) f a = 1).
   under eq_bigr do rewrite ffunE /=.
-  rewrite -big_distrl /= -(big_morph (id2 := 0%R) _ (@natrD Rdefinitions.R))//.
+  rewrite -big_distrl /= -natr_sum.
   by rewrite sum_num_occ_alt mulfV // pnatr_eq0.
 assert (H : forall a, (N(a | ta) < n.+2)%nat).
   move=> a; rewrite ltnS; by apply num_occ_leq_n.
@@ -148,7 +148,7 @@ assert (pf_ge0 : forall a, (0 <= pf a)%mcR).
   by rewrite /pf/= ffunE divr_ge0//.
 assert (H : (\sum_(a in A) pf a)%mcR = 1 :> Rdefinitions.R).
   rewrite /pf; under eq_bigr do rewrite ffunE /=.
-  rewrite -big_distrl /= -(big_morph (id2 := 0%R) _ (@natrD Rdefinitions.R))//.
+  rewrite -big_distrl /= -natr_sum.
   move/eqP : Hf => ->.
   by rewrite mulfV// pnatr_eq0.
 exact: (FDist.make pf_ge0 H).
@@ -174,9 +174,9 @@ suff : (\sum_(a in A) t a)%:R == n.+1%:R * \sum_(a | a \in A) d a.
   by move/eqP; rewrite (FDist.f1 d) mulr1 => /eqP; rewrite eqr_nat.
 apply/eqP.
 transitivity (n.+1%:R * (\sum_(a|a \in A) (t a)%:R / n.+1%:R) :> Rdefinitions.R).
-  rewrite -big_distrl -(big_morph (id2 := 0%R) _ (@natrD Rdefinitions.R))//.
+  rewrite -big_distrl -natr_sum.
   by rewrite mulrCA mulfV ?mulr1 // pnatr_eq0.
-congr (_ * _); exact/eq_bigr.
+by congr (_ * _); exact/eq_bigr.
 Qed.
 
 Lemma type_choice_pcancel A n : pcancel (@type.f A n) (@type_choice_f A n).
@@ -433,7 +433,7 @@ rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
       have := FDist.ge0 (type.d P) a.
       by rewrite Order.POrderTheory.le_eqVlt (negbTE H)/=.
     rewrite -{1}(@LogK _ 2%N _ _ H)//.
-    rewrite -Exp2_pow.
+    rewrite -powRrM' mulrC.
     congr (_ `^ _)%R.
     rewrite -mulrA [X in _ = X]mulrC -mulrA mulrC.
     congr (_ * _).
@@ -458,16 +458,17 @@ Local Open Scope typ_seq_scope.
 
 Import Order.POrderTheory.
 
-Lemma typed_tuples_are_typ_seq : (@row_of_tuple A n @: T_{ P }) \subset `TS P n 0.
+Lemma typed_tuples_are_typ_seq :
+  (@row_of_tuple A n @: T_{ P }) \subset `TS P n 0.
 Proof.
 apply/subsetP => t Ht.
 rewrite /set_typ_seq inE /typ_seq tuple_dist_type_entropy; last first.
-  case/imsetP : Ht => x Hx ->.
-  by rewrite row_of_tupleK.
+  by case/imsetP : Ht => x Hx ->; rewrite row_of_tupleK.
 by rewrite addr0 subr0 lexx.
 Qed.
 
-Lemma card_typed_tuples : (#| T_{ P } |%:R <= (2%:R:Rdefinitions.R) `^ (n%:R * `H P))%R.
+Lemma card_typed_tuples :
+  #| T_{ P } |%:R <= ((2%:R:Rdefinitions.R) `^ (n%:R * `H P))%R.
 Proof.
 rewrite -(@invrK _ ((2%:R:Rdefinitions.R) `^ (n%:R * `H P))%R) -powRN -mulNr.
 set aux := - n%:R * `H P.

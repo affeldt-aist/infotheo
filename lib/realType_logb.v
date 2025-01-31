@@ -117,8 +117,8 @@ Context {R : realType}.
 Implicit Type x : R.
 
 (* TODO: rename *)
-Lemma Exp2_pow x n k : x `^ (k%:R * n) = (x `^ n) ^+ k.
-Proof. by rewrite -powR_mulrn ?powR_ge0// mulrC powRrM. Qed.
+Lemma powRrM' x (n : R) k : x `^ (n * k%:R) = (x `^ n) ^+ k.
+Proof. by rewrite powRrM powR_mulrn// powR_ge0. Qed.
 
 Lemma LogK n x : (1 < n)%N -> 0 < x -> n%:R `^ (Log n x) = x.
 Proof.
@@ -145,7 +145,7 @@ Qed.
 Lemma gt1_ler_powRr (n : R) x y : 1 < n -> x <= y -> n `^ x <= n `^ y.
 Proof. by move=> n1 xy; rewrite ler_powR// ltW. Qed.
 
-(* TODO: move *)
+(* TODO: rename, move *)
 Lemma morph_exp2_plus : {morph (fun x => 2 `^ x)%R : x y / x + y >-> x * y}.
 Proof. by move=> ? ? /=; rewrite powRD// pnatr_eq0// implybT. Qed.
 
@@ -231,7 +231,7 @@ Proof.
 by rewrite /log /Log ln_powR// mulrA.
 Qed.
 
-Lemma log_increasing (a b : R) : 0 < a -> a < b -> log a < log b.
+Lemma ltr_log (a b : R) : 0 < a -> a < b -> log a < log b.
 Proof.
 move=> Ha a_b.
 rewrite /log /Log prednK// ltr_pM2r ?invr_gt0 ?ln2_gt0//.
@@ -246,7 +246,7 @@ End log.
 Lemma log_prodr_sumr_mlog {R : realType} {A : finType} (f : A -> R) s :
   (forall a, 0 <= f a) ->
   (forall i, 0 < f i) ->
-  (- log (\prod_(i <- s) f i) = \sum_(i <- s) - log (f i))%R.
+  - log (\prod_(i <- s) f i) = \sum_(i <- s) - log (f i).
 Proof.
 move=> f0 f0'.
 elim: s => [|h t ih].

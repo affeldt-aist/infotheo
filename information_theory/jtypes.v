@@ -810,13 +810,11 @@ rewrite cond_entropy_chanE2.
 apply (@le_trans _ _ (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
 - rewrite ler_nat.
   by apply/card_shelled_tuples_leq_prod_card.
-- rewrite Exp2_pow.
-  rewrite natr_prod.
+- rewrite (mulrC n%:R) powRrM' natr_prod.
   rewrite (@big_morph _ _ (fun r : Rdefinitions.R => (((2%:R:Rdefinitions.R) `^ r) ^+ n)) 1%R GRing.mul _ GRing.add _); last 2 first.
-    move=> a b /=; rewrite -!Exp2_pow mulrDr.
-    rewrite powRD//.
-    rewrite (_ : 0%R = 0%:R)//.
-    by rewrite eqr_nat implybT.
+    move=> a b /=.
+    rewrite powRD ?pnatr_eq0 ?implybT//.
+    by rewrite exprMn_comm// /GRing.comm mulrC.
     by rewrite powRr0 expr1n.
   rewrite (reindex_onto (fun x => enum_rank x) (fun y => enum_val y)) => [|i _]; last by rewrite enum_valK.
   rewrite (_ : \prod_(j | enum_val (enum_rank j) == j) _ =
@@ -824,7 +822,7 @@ apply (@le_trans _ _ (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
       apply eq_bigl => a; rewrite enum_rankK; by apply/eqP.
   apply ler_prod => a aA.
   apply/andP; split => //.
-  rewrite -Exp2_pow mulrA.
+  rewrite -powRrM'.
   rewrite /card_type_of_row; case: Bool.bool_dec => [e|/Bool.eq_true_not_negb e].
     rewrite -[X in X <= _](powRr0 2).
     by rewrite gt1_ler_powRr ?ltr1n// !mulr_ge0//; exact: entropy_ge0.
@@ -832,6 +830,7 @@ apply (@le_trans _ _ (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R).
   rewrite (_ : _ `^ _ = (2%:R:Rdefinitions.R) `^ (N(a | ta)%:R * `H pta0)).
     by rewrite -[in X in _ <= _ _ (X * _)](enum_rankK a); apply card_typed_tuples.
   congr (_ `^ _).
+  rewrite mulrC mulrA.
   f_equal.
   + by rewrite -type_fun_type // (type_numocc Hta).
   + rewrite /entropy.
