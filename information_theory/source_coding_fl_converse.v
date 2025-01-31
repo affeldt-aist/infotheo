@@ -1,10 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-From mathcomp Require Import lra ring.
-(*Require Import Reals Lra.*)
-From mathcomp Require Import Rstruct reals.
-Require Import (*ssrR Reals_ext*) realType_ext realType_logb fdist proba entropy aep.
+From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra ring.
+From mathcomp Require Import Rstruct reals exp.
+Require Import realType_ext realType_logb fdist proba entropy aep.
 Require Import typ_seq source_code.
 
 (******************************************************************************)
@@ -118,9 +116,9 @@ Qed.
 
 Definition no_failure := [set x : 'rV[A]_k.+1 | dec sc (enc sc x) == x].
 
-Lemma no_failure_sup : #| no_failure |%:R <= Exp (2:R) (k.+1%:R * (`H P - e0)).
+Lemma no_failure_sup : #| no_failure |%:R <= ((2:R) `^ (k.+1%:R * (`H P - e0)))%R.
 Proof.
-apply (@le_trans _ _ (Exp 2%R n%:R)).
+apply (@le_trans _ _ (2%R `^ n%:R)%R).
   rewrite /no_failure.
   have Hsubset : [set x | dec sc (enc sc x) == x] \subset dec sc @: (enc sc @: [set: 'rV[A]_k.+1]).
     apply/subsetP => x; rewrite inE => /eqP Hx.
@@ -132,7 +130,7 @@ apply (@le_trans _ _ (Exp 2%R n%:R)).
   apply (@le_trans _ _ #| [set: 'rV[bool]_n] |%:R).
     by rewrite ler_nat; exact/leq_imset_card.
   rewrite cardsT card_mx /= card_bool mul1n.
-  by rewrite /Exp exp.powR_mulrn// natrX.
+  by rewrite powR_mulrn// natrX.
 apply Exp_le_increasing => //; rewrite ?ltr1n//.
 rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
 rewrite -(@ler_pM2r _ (r^-1)) => //; last first.
@@ -146,15 +144,15 @@ Qed.
 
 Local Open Scope fdist_scope.
 
-Lemma step1 : (1 - esrc(P , sc)) = \sum_(x in no_failure) (P `^ k.+1) x.
+Lemma step1 : (1 - esrc(P , sc)) = \sum_(x in no_failure) (P `^ k.+1)%fdist x.
 Proof.
 rewrite /SrcErrRate /no_failure /Pr.
 set a := \sum_(_ | _) _.
 set b := \sum_(_ | _) _.
 suff : 1 = a + b by move=> ->; field.
 rewrite /a {a}.
-have -> : b = \sum_(i in [set i | dec sc (enc sc i) == i]) (P `^ k.+1) i.
-  apply eq_big => // i /=; by rewrite inE.
+have -> : b = \sum_(i in [set i | dec sc (enc sc i) == i]) (P `^ k.+1)%fdist i.
+  by apply eq_big => // i /=; rewrite inE.
 rewrite -(FDist.f1 (P `^ k.+1)).
 rewrite (bigID [pred a | a \in [set i0 | dec sc (enc sc i0) == i0]]) /= addrC.
 by congr (_ + _); apply eq_bigl => t /=; rewrite !inE.
@@ -163,18 +161,18 @@ Qed.
 Local Open Scope typ_seq_scope.
 
 Lemma step2 : 1 - (esrc(P , sc)) =
-  \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: ~: `TS P k.+1 delta) (P `^ k.+1) x +
-  \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) (P `^ k.+1) x.
+  \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: ~: `TS P k.+1 delta) (P `^ k.+1)%fdist x +
+  \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) (P `^ k.+1)%fdist x.
 Proof.
 rewrite step1 (bigID [pred x | x \in `TS P k.+1 delta]) /= addrC.
 f_equal.
-- apply eq_bigl => x; by rewrite in_setI in_setC.
-- apply eq_bigl => x; by rewrite in_setI.
+- by apply eq_bigl => x; rewrite in_setI in_setC.
+- by apply eq_bigl => x; rewrite in_setI.
 Qed.
 
 Lemma step3 : 1 - (esrc(P , sc)) <=
-  \sum_(x in 'rV[A]_k.+1 | x \in ~: `TS P k.+1 delta) (P `^ k.+1) x +
-  \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) (P `^ k.+1) x.
+  \sum_(x in 'rV[A]_k.+1 | x \in ~: `TS P k.+1 delta) (P `^ k.+1)%fdist x +
+  \sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta) (P `^ k.+1)%fdist x.
 Proof.
 rewrite step2 lerD2r//.
 apply: bigop_ext.ler_suml => //= i.
@@ -182,7 +180,7 @@ by rewrite in_setI => /andP[].
 Qed.
 
 Lemma step4 : 1 - (esrc(P , sc)) <= delta +
-  #| no_failure :&: `TS P k.+1 delta|%:R * Exp 2 (- k.+1%:R * (`H P - delta)).
+  #| no_failure :&: `TS P k.+1 delta|%:R * 2 `^ (- k.+1%:R * (`H P - delta)).
 Proof.
 apply/(le_trans step3); rewrite lerD//.
 - move: Hk.
@@ -193,7 +191,7 @@ apply/(le_trans step3); rewrite lerD//.
   by rewrite Pr_to_cplt lexx.
 - apply (@le_trans _ _
     (\sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
-      Exp 2 (- k.+1%:R * (`H P - delta)))); last first.
+      2 `^ (- k.+1%:R * (`H P - delta)))); last first.
     by rewrite big_const iter_addr mulr_natl addr0.
   apply ler_sum => /= i.
   rewrite in_setI => /andP[i_B i_TS].
@@ -207,18 +205,18 @@ apply/(le_trans step3); rewrite lerD//.
   rewrite -ler_log; last 2 first.
     by rewrite posrE.
     by rewrite posrE Exp_gt0.
-  by rewrite /Exp log_powR log2 mulr1//.
+  by rewrite log_powR log2 mulr1.
 Qed.
 
-Lemma step5 : 1 - (esrc(P , sc)) <= delta + Exp 2 (- k.+1%:R * (e0 - delta)).
+Lemma step5 : 1 - (esrc(P , sc)) <= delta + 2 `^ (- k.+1%:R * (e0 - delta)).
 Proof.
-apply (@le_trans _ _ (delta + #| no_failure |%:R * Exp 2 (- k.+1%:R * (`H P - delta)))).
+apply (@le_trans _ _ (delta + #| no_failure |%:R * 2 `^ (- k.+1%:R * (`H P - delta)))).
 - apply/(le_trans step4); rewrite lerD2l ler_wpM2r// ?Exp_ge0// ler_nat.
   exact/subset_leqif_cards/subsetIl.
 - rewrite lerD2l.
-  apply (@le_trans _ _ (Exp 2 (k.+1%:R * (`H P - e0)) * Exp 2 (- k.+1%:R * (`H P - delta))));
+  apply (@le_trans _ _ (2 `^ (k.+1%:R * (`H P - e0)) * 2 `^ (- k.+1%:R * (`H P - delta))));
     last first.
-    rewrite /Exp -exp.powRD; last by rewrite pnatr_eq0 implybT.
+    rewrite -powRD; last by rewrite pnatr_eq0 implybT.
     rewrite Exp_le_increasing ?ltr1n//.
     lra.
   by rewrite ler_wpM2r ?Exp_ge0//; exact no_failure_sup.
@@ -226,13 +224,13 @@ Qed.
 
 Lemma step6 : 1 - 2 * delta <= esrc(P , sc).
 Proof.
-have H : Exp 2 (- k.+1%:R * (e0 - delta)) <= delta; last first.
+have H : (2 `^ (- k.+1%:R * (e0 - delta)) <= delta)%R; last first.
   suff : 1 - (esrc(P , sc)) <= delta + delta by move=> *; lra.
   by apply/(le_trans step5); rewrite lerD2l.
 rewrite -ler_log; last 2 first.
   by rewrite posrE Exp_gt0.
   by rewrite posrE Hdelta.
-rewrite /Exp log_powR log2 mulr1.
+rewrite log_powR log2 mulr1.
 rewrite -(@ler_pM2r _ ((e0 - delta)^-1)) ?invr_gt0 ?subr_gt0//; last first.
   rewrite /e0 /delta /r.
   have H1 : (`H P - r) / 2 < `H P - r.
@@ -267,7 +265,6 @@ Qed.
 End source_coding_converse'.
 
 Section source_coding_converse.
-
 Variables (A : finType) (P : {fdist A}).
 
 Theorem source_coding_converse : forall epsilon, 0 < epsilon < 1 ->

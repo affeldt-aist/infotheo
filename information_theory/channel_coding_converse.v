@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-(*Require Import Reals.*)
-From mathcomp Require Import Rstruct reals.
-Require Import (*ssrR Reals_ext*) ssr_ext ssralg_ext realType_logb ln_facts num_occ.
+From mathcomp Require Import Rstruct reals exp.
+Require Import ssr_ext ssralg_ext realType_logb ln_facts num_occ.
 Require Import fdist entropy types jtypes divergence conditional_divergence.
 Require Import error_exponent channel_code channel success_decode_bound.
 
@@ -49,7 +48,7 @@ Proof. case/card_gt0P : Anot0 => a _; exact: (fdist_card_neq0 (W a)). Qed.
 Lemma channel_coding_converse_gen : exists Delta, 0 < Delta /\ forall n',
   let n := n'.+1 in forall (M : finType) (c : code A B M n), (0 < #|M|)%nat ->
     minRate <= CodeRate c ->
-      scha(W, c) <= n.+1%:R ^+ (#|A| + #|A| * #|B|) * Exp 2 (- n%:R * Delta).
+      scha(W, c) <= n.+1%:R ^+ (#|A| + #|A| * #|B|) * 2 `^ (- n%:R * Delta).
 Proof.
 move: error_exponent_bound => /(_ _ _ Bnot0 W _ HminRate set_of_I_has_ubound).
 case => Delta [Delta_pos HDelta].
@@ -119,7 +118,7 @@ have Rlt0n : 0 < n%:R :> R.
 destruct n as [|n'].
   by rewrite ltxx in Rlt0n.
 set n := n'.+1.
-apply: (@le_lt_trans _ _ (n.+1%:R ^+ K * Exp 2 (- n%:R * Delta))).
+apply: (@le_lt_trans _ _ (n.+1%:R ^+ K * 2 `^ (- n%:R * Delta))).
   exact: HDelta.
 move: (n0_n).
 rewrite -[in X in X -> _](@ltr_pM2l _ n%:R^-1) ?invr_gt0 ?ltr0n//.
@@ -145,11 +144,10 @@ rewrite expr_div_n -mulrA ler_wpM2l//.
 - by rewrite exprn_ge0.
 - rewrite -lef_pV2 ?posrE ?Exp_gt0//; last first.
     by rewrite mulr_gt0// invr_gt0 exprn_gt0.
-  rewrite /Exp.
-  rewrite -exp.powRN mulNr opprK.
+  rewrite -powRN mulNr opprK.
   have nDeltaln2 : 0 < n%:R * Delta * exp.ln 2.
     by rewrite mulr_gt0// ?exp.ln_gt0 ?ltr1n// mulr_gt0//.
-  rewrite /exp.powR pnatr_eq0/=.
+  rewrite /exp.powR(* TODO *) pnatr_eq0/=.
   apply/ltW.
   apply: (le_lt_trans _ (exp_strict_lb (K.+1) nDeltaln2)) => {nDeltaln2}.
   apply/eqW.

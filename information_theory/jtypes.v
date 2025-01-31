@@ -3,9 +3,8 @@ From HB Require Import structures.
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm.
 From mathcomp Require boolp.
-(*Require Import Reals.*)
-From mathcomp Require Import Rstruct.
-Require Import (*ssrR Reals_ext*) realType_ext ssr_ext ssralg_ext realType_logb fdist entropy.
+From mathcomp Require Import Rstruct reals exp.
+Require Import realType_ext ssr_ext ssralg_ext realType_logb fdist entropy.
 Require Import num_occ channel types.
 
 (******************************************************************************)
@@ -794,9 +793,6 @@ End take_shell_row_num_occ.
 
 Local Open Scope entropy_scope.
 
-Lemma exp2_0 : Exp (2%:R:Rdefinitions.R) 0 = 1%R.
-Proof. by rewrite /Exp exp.powRr0. Qed.
-
 Section card_shell_ub.
 Variables (A B : finType) (n' : nat).
 Let n := n'.+1.
@@ -809,7 +805,7 @@ Hypothesis ta_sorted : sorted (@le_rank _) ta.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
 Lemma card_shell_leq_exp_entropy :
-  (#| V.-shell ta |%:R <= Exp (2%:R:Rdefinitions.R) (n%:R * `H(V | P)))%R.
+  (#| V.-shell ta |%:R <= (2%:R:Rdefinitions.R) `^ (n%:R * `H(V | P)))%R.
 Proof.
 rewrite cond_entropy_chanE2.
 apply (@le_trans _ _ (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R)%R.
@@ -817,14 +813,13 @@ apply (@le_trans _ _ (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R)%R.
   by apply/card_shelled_tuples_leq_prod_card.
 - rewrite Exp2_pow.
   rewrite natr_prod.
-  rewrite (@big_morph _ _ (fun r : Rdefinitions.R => ((Exp (2%:R:Rdefinitions.R) r) ^+ n)%R) 1%R GRing.mul _ GRing.add _); last 2 first.
+  rewrite (@big_morph _ _ (fun r : Rdefinitions.R => (((2%:R:Rdefinitions.R) `^ r) ^+ n)%R) 1%R GRing.mul _ GRing.add _); last 2 first.
     move=> a b /=; rewrite -!Exp2_pow mulrDr.
-    rewrite {1}/Exp.
-    rewrite exp.powRD//.
+    rewrite powRD//.
     rewrite (_ : 0%R = 0%:R)%R//.
     rewrite eqr_nat.
     by rewrite implybT.
-    by rewrite /Exp exp.powRr0 expr1n.
+    by rewrite powRr0 expr1n.
   rewrite (reindex_onto (fun x => enum_rank x) (fun y => enum_val y)) => [|i _]; last by rewrite enum_valK.
   rewrite (_ : \prod_(j | enum_val (enum_rank j) == j) _ =
                \prod_(j : A) (card_type_of_row Hta Vctyp (enum_rank j))%:R)%R; last first.
@@ -833,13 +828,13 @@ apply (@le_trans _ _ (\prod_ ( i < #|A|) card_type_of_row Hta Vctyp i)%:R)%R.
   apply/andP; split => //.
   rewrite -Exp2_pow mulrA.
   rewrite /card_type_of_row; case: Bool.bool_dec => [e|/Bool.eq_true_not_negb e].
-    rewrite -[X in (X <= _)%R]exp2_0.
+    rewrite -[X in (X <= _)%R](powRr0 2).
     rewrite Exp_le_increasing ?ltr1n// !mulr_ge0//.
     exact: entropy_ge0.
   set pta0 := type_of_row Hta Vctyp _.
-  rewrite (_ : Exp _ _ = Exp (2%:R:Rdefinitions.R) (N(a | ta)%:R * `H pta0)%R).
+  rewrite (_ : (_ `^ _ = (2%:R:Rdefinitions.R) `^ (N(a | ta)%:R * `H pta0))%R).
     by rewrite -[in X in (_ <= _ _ (X * _))%R](enum_rankK a); apply card_typed_tuples.
-  congr (Exp _ _).
+  congr (_ `^ _)%R.
   f_equal.
   + by rewrite -type_fun_type // (type_numocc Hta).
   + rewrite /entropy.
@@ -1232,7 +1227,7 @@ Hypothesis Hta : ta \in T_{P}.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
-Lemma card_shelled_tuples : (#| V.-shell ta |%:R <= Exp (2%:R:Rdefinitions.R) (n%:R * `H(V | P)))%R.
+Lemma card_shelled_tuples : (#| V.-shell ta |%:R <= (2%:R:Rdefinitions.R) `^ (n%:R * `H(V | P)))%R.
 Proof.
 case: (tuple_exist_perm_sort (@le_rank A) ta) => /= s Hta'.
 have H : sort (@le_rank _) ta =

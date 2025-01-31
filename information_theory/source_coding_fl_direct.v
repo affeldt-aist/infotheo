@@ -2,9 +2,8 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
 From mathcomp Require Import archimedean lra ring.
-(*Require Import Reals Lra.*)
-From mathcomp Require Import Rstruct reals.
-Require Import (*ssrZ ssrR Reals_ext*) ssr_ext ssralg_ext realType_logb natbin fdist.
+From mathcomp Require Import Rstruct reals exp.
+Require Import ssr_ext ssralg_ext realType_logb natbin fdist.
 Require Import proba entropy aep typ_seq source_code.
 
 (******************************************************************************)
@@ -172,14 +171,14 @@ exists (mkScode F PHI); split.
   field.
   by rewrite !nat1r/= !gt_eqF//=.
 set lhs := esrc(_, _).
-suff -> : lhs = (1 - Pr (P `^ k) (`TS P k (lambda / 2)))%R.
+suff -> : lhs = (1 - Pr (P `^ k)%fdist (`TS P k (lambda / 2)))%R.
   rewrite lerBlDr addrC -lerBlDr.
   apply (@le_trans _ _ (1 - lambda / 2)%R).
     by rewrite lerD2l lerNr opprK; exact: lambda2_epsilon.
   exact: (Pr_TS_1 lambda2_gt0).
 rewrite /lhs {lhs} /SrcErrRate /Pr /=.
 set lhs := \sum_(_ | _ ) _.
-suff -> : lhs = \sum_(x in 'rV[A]_k | x \notin S) (P `^ k) x.
+suff -> : lhs = \sum_(x in 'rV[A]_k | x \notin S) (P `^ k)%fdist x.
   have : forall a b : R, (a + b = 1 -> b = 1 - a)%R by move=> ? ? <-; field.
   apply.
   rewrite -[X in _ = X](Pr_cplt (P `^ k) (`TS P k (lambda / 2))).
@@ -190,20 +189,20 @@ rewrite inE /=; apply/negPn/negPn.
 - suff H : def \in S by move/eqP/phi_f; tauto.
   exact: (TS_0_is_typ_seq lambda2_gt0 lambda2_lt1 Hk).
 - suff S_2n : (#| S | < expn 2 n)%nat by move/(f_phi def S_2n)/eqP.
-  suff card_S_bound : #| S |%:R < Exp 2 (k%:R * r).
+  suff card_S_bound : (#| S |%:R < 2 `^ (k%:R * r))%R.
     rewrite -(ltr_nat R) -natrXE natrX pow_Exp ?ler0n//.
     suff : n%:R = (k%:R * r)%R by move=> ->.
     rewrite /n /k /r.
     by rewrite !natrM mulrCA -mulrA divff ?mulr1 ?pnatr_eq0// mulrC.
-  suff card_S_bound : 1 + #| S |%:R <= Exp 2 (k%:R * r) by lra.
-  suff card_S_bound : 1 + #| S |%:R <= Exp 2 (k%:R * (`H P + lambda)).
+  suff card_S_bound : 1 + #| S |%:R <= (2 `^ (k%:R * r))%R by lra.
+  suff card_S_bound : 1 + #| S |%:R <= (2 `^ (k%:R * (`H P + lambda)))%R.
     apply: le_trans; first exact: card_S_bound.
     by rewrite Exp_le_increasing// ?ltr1n// ler_wpM2l// Hlambdar.
-  apply (@le_trans _ _ (Exp 2 (k%:R * (lambda / 2) + k%:R * (`H P + lambda / 2)))); last first.
+  apply (@le_trans _ _ (2 `^ (k%:R * (lambda / 2) + k%:R * (`H P + lambda / 2)))%R); last first.
     rewrite -mulrDr addrC -addrA.
     rewrite (_ : forall a, a / 2 + a / 2 = a)%R; last by move=> ?; field.
     by rewrite lexx.
-  apply (@le_trans _ _ (Exp 2 (1 + k%:R * (`H P + lambda / 2)))); last first.
+  apply (@le_trans _ _ (2 `^ (1 + k%:R * (`H P + lambda / 2)))%R); last first.
     rewrite Exp_le_increasing ?ltr1n// lerD2r//.
     move: Hdelta; rewrite ge_max => /andP[_ Hlambda].
     rewrite -(@ler_pM2r _ (2 / lambda)%R); last first.
@@ -211,23 +210,21 @@ rewrite inE /=; apply/negPn/negPn.
     rewrite mul1r -mulrA.
     rewrite -[in leRHS]invf_div// mulVf ?mulr1//.
     by rewrite gt_eqF// -invf_div// invr_gt0// lambda2_gt0.
-  apply:(@le_trans _ _ (1 + exp.powR 2 (k%:R * (`H P + (lambda / 2))))).
+  apply:(@le_trans _ _ (1 + powR 2 (k%:R * (`H P + (lambda / 2))))).
     rewrite lerD2l//.
     exact: TS_sup.
     rewrite /S.
-  apply (@le_trans _ _ (Exp 2 (k%:R * (`H P + lambda / 2)) +
-                        Exp 2 (k%:R * (`H P + lambda / 2)))%R).
+  apply (@le_trans _ _ (2 `^ (k%:R * (`H P + lambda / 2)) +
+                        2 `^ (k%:R * (`H P + lambda / 2)))%R).
   + rewrite lerD2r.
-    rewrite [leLHS](_ : 1 = Exp 2 0); last first.
-      by rewrite /Exp exp.powRr0.
+    rewrite [leLHS](_ : 1 = 2 `^ 0)%R; last by rewrite powRr0.
     rewrite Exp_le_increasing ?ltr1n//.
     apply mulr_ge0; first exact: ler0n.
     apply addr_ge0; first exact: entropy_ge0.
     by rewrite ltW//; exact: lambda2_gt0.
   + rewrite -mulr2n.
     rewrite -mulr_natl.
-    rewrite [in leRHS]/Exp.
-    rewrite exp.powRD.
+    rewrite powRD.
     rewrite ler_pM2r ?Exp_gt0//.
     rewrite exp.le1r_powR ?ler1n//.
     by rewrite pnatr_eq0 implybT.

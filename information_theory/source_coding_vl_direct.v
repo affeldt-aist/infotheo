@@ -1,10 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix archimedean.
-(*Require Import Reals Lra.*)
-From mathcomp Require Import lra ring.
-From mathcomp Require Import Rstruct reals.
-Require Import (*ssrR Reals_ext*) realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
+From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
+From mathcomp Require Import archimedean lra ring.
+From mathcomp Require Import Rstruct reals exp.
+Require Import realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
 Require Import fdist proba entropy aep typ_seq natbin source_code.
 
 (******************************************************************************)
@@ -116,15 +115,14 @@ Qed.
 Lemma card_le_Xn_Lnt' : #| [set: n.-tuple X]|%:R <= #| [set: `|L_not_typ|%N.-tuple bool]|%:R :> R.
 Proof.
 rewrite /L_not_typ cardsT card_tuple.
-rewrite {1}(_ : (expn #|X| n)%:R = Exp 2 (log ((expn #|X| n)%:R))).
+rewrite {1}(_ : (expn #|X| n)%:R = 2 `^ (log ((expn #|X| n)%:R))).
 - rewrite cardsT card_tuple card_bool.
   rewrite [in leRHS]natrX.
-  rewrite -exp.powR_mulrn//.
-  rewrite /Exp.
-  rewrite exp.ler_powR ?ler1n//.
+  rewrite -powR_mulrn//.
+  rewrite ler_powR ?ler1n//.
   rewrite (le_trans (le_ceil _))//.
   rewrite natr_absz ler_int.
-  by rewrite (le_trans (ler_norm _))//.
+  by rewrite (le_trans (ler_norm _)).
 - rewrite LogK// natrX exprn_gt0//.
   by rewrite (lt_le_trans _ fdist_support_LB).
 Qed.
@@ -235,8 +233,8 @@ Local Notation "'L_typ'" := (L_typ n' P epsilon).
 Local Notation "'L_not_typ'" := (L_not_typ X n').
 
 Lemma eq_sizef_Lt :
-  \sum_(x| x \in `TS P n epsilon) (P `^ n) (x) * ((size (f P epsilon x))%:R) =
-  \sum_(x| x \in `TS P n epsilon) (P `^ n) (x) * (L_typ%:~R + 1).
+  \sum_(x| x \in `TS P n epsilon) (P `^ n)%fdist (x) * (size (f P epsilon x))%:R =
+  \sum_(x| x \in `TS P n epsilon) (P `^ n)%fdist (x) * (L_typ%:~R + 1).
 Proof.
 apply: eq_bigr=> i H.
 congr (_ * _).
@@ -249,8 +247,8 @@ by rewrite Lt_pos.
 Qed.
 
 Lemma eq_sizef_Lnt:
-  \sum_(x| x \in ~:(`TS P n epsilon)) (P `^ n) (x) * ((size (f P epsilon x))%:R)
-  = \sum_(x| x \in ~:(`TS P n epsilon)) (P `^ n) (x) * (L_not_typ%:~R + 1) .
+  \sum_(x| x \in ~:(`TS P n epsilon)) (P `^ n)%fdist x * (size (f P epsilon x))%:R
+  = \sum_(x| x \in ~:(`TS P n epsilon)) (P `^ n)%fdist x * (L_not_typ%:~R + 1) .
 Proof.
 apply: eq_bigr => ? H.
 congr *%R.
@@ -272,13 +270,13 @@ rewrite (rsum_split _ (`TS P n'.+1 epsilon)).
 rewrite eq_sizef_Lnt eq_sizef_Lt.
 rewrite -!big_distrl/= mulrC.
 rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
- (P `^ n) i = 1 - \sum_(i | i \in `TS P n epsilon) (P `^ n) i); last first.
-- rewrite -(FDist.f1 (P`^n)) (rsum_split _ (`TS P n epsilon)).
+ (P `^ n)%fdist i = 1 - \sum_(i | i \in `TS P n epsilon) (P `^ n)%fdist i); last first.
+- rewrite -(FDist.f1 (P `^ n)%fdist) (rsum_split _ (`TS P n epsilon)).
   by rewrite addrAC subrr add0r.
 - apply: lerD => //.
   + rewrite -[X in _ <= X]mulr1; apply: ler_wpM2l => //.
     * by apply: addr_ge0 => //; exact/ltW/Lt_pos.
-    * by rewrite -(FDist.f1 (P `^ n)); apply: leR_sumRl => // *.
+    * by rewrite -(FDist.f1 (P `^ n)%fdist); apply: leR_sumRl => // *.
   + apply: ler_wpM2r => //.
     * by apply addr_ge0 => //; exact (Lnt_nonneg _ P).
     * by rewrite lerBlDr addrC -lerBlDr; exact: Pr_TS_1.
@@ -332,7 +330,7 @@ rewrite invfM -mulrA invrK -natrM/= mulrC.
 rewrite (le_trans (le_ceil _))//.
 rewrite (le_trans (ler_norm _))//.
 rewrite -intr_norm.
-by rewrite natr_absz//.
+by rewrite natr_absz.
 Qed.
 
 Lemma eps'_pos : 0 < epsilon'.
@@ -341,7 +339,7 @@ rewrite /epsilon'.
 rewrite divr_gt0//.
 rewrite ltr_wpDr// mulr_ge0// -log1 ler_log ?posrE//.
   exact: fdist_support_LB.
-by rewrite (lt_le_trans _ (fdist_support_LB P))//.
+by rewrite (lt_le_trans _ (fdist_support_LB P)).
 Qed.
 
 Lemma le_aepbound_n : aep_bound P epsilon' <= n%:R.
@@ -430,11 +428,10 @@ Qed.
 End v_scode.
 
 Section variable_length_source_coding.
-
 Variables (X : finType) (P : {fdist X}).
 Let R := Rdefinitions.R.
 Variable epsilon : R.
-Hypothesis eps_pos : 0 < epsilon .
+Hypothesis eps_pos : 0 < epsilon.
 Local Notation "'n0'" := (n0 P epsilon).
 
 Theorem v_scode_direct : exists n : nat,

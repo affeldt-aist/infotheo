@@ -31,16 +31,6 @@ Lemma ln2_neq0 : ln 2 != 0 :> R. Proof. by rewrite gt_eqF// ln2_gt0. Qed.
 
 Lemma ln2_ge0 : 0 <= ln 2 :> R. Proof. by rewrite ltW// ln2_gt0. Qed.
 
-Lemma le_ln1Dx x : -1 < x -> ln (1 + x) <= x.
-Proof.
-(*this will be in MathComp-Analysis 1.5.0*)
-Admitted.
-
-Lemma expR_gt1Dx x : x != 0 -> 1 + x < expR x.
-Proof.
-(*this will be in MathComp-Analysis 1.5.0*)
-Admitted.
-
 (* TODO: add to MCA? *)
 Lemma lt_ln1Dx x : 0 < x -> ln (1 + x) < x.
 Proof.
@@ -85,7 +75,6 @@ Proof. by rewrite /xlnx ltr01 mul1r ln1. Qed.
 
 End xlnx.
 
-
 Section Log.
 Context {R : realType}.
 
@@ -123,17 +112,16 @@ End Log.
 
 Section Exp.
 Context {R : realType}.
+Implicit Type x : R.
 
-(* TODO: rm *)
-Definition Exp (n : R) (x : R) := n `^ x.
+(* TODO: rename *)
+Lemma pow_Exp (x : R) n : (0 <= x) -> x ^+ n = x `^ n%:R.
+Proof. by move=> x0; rewrite powR_mulrn. Qed.
 
-Lemma pow_Exp (x : R) n : (0 <= x) -> x ^+ n = Exp x n%:R.
-Proof. by move=> x0; rewrite /Exp powR_mulrn. Qed.
-
-Lemma LogK n x : (1 < n)%N -> 0 < x -> Exp n%:R (Log n x) = x.
+Lemma LogK n x : (1 < n)%N -> 0 < x -> n%:R `^ (Log n x) = x.
 Proof.
 move=> n1 x0.
-rewrite /Exp /Log prednK// 1?ltnW//.
+rewrite /Log prednK// 1?ltnW//.
 rewrite powRrM {1}/powR ifF; last first.
   by apply/negbTE; rewrite powR_eq0 negb_and pnatr_eq0 gt_eqF// ltEnat/= ltnW.
 rewrite ln_powR mulrCA mulVf//.
@@ -141,30 +129,34 @@ rewrite ln_powR mulrCA mulVf//.
 by rewrite gt_eqF// -ln1 ltr_ln ?posrE// ?ltr1n// ltr0n ltnW.
 Qed.
 
-Lemma Exp_oppr n x : Exp n (- x) = (Exp n x)^-1.
-Proof. by rewrite /Exp -powRN. Qed.
+(* TODO: rm *)
+Lemma Exp_oppr n x : n `^ (- x) = (n `^ x)^-1.
+Proof. by rewrite -powRN. Qed.
 
-Lemma Exp_gt0 n x : 0 < n -> 0 < Exp n x. Proof. by move=> ?; rewrite /Exp powR_gt0. Qed.
+(* TODO: rm *)
+Lemma Exp_gt0 n x : 0 < n -> 0 < n `^ x.
+Proof. by move=> ?; rewrite powR_gt0. Qed.
 
-Lemma Exp_ge0 n x : 0 <= Exp n x. Proof. by rewrite /Exp powR_ge0. Qed.
+(* TODO: rm *)
+Lemma Exp_ge0 n x : 0 <= n `^ x. Proof. by rewrite powR_ge0. Qed.
 
-Lemma Exp_increasing n x y : 1 < n -> x < y -> Exp n x < Exp n y.
+(* TODO: rename *)
+Lemma Exp_increasing n x y : 1 < n -> x < y -> n `^ x < n `^ y.
 Proof.
-move=> n1 xy; rewrite /Exp /powR ifF; last first.
+move=> n1 xy; rewrite /powR ifF; last first.
   by apply/negbTE; rewrite gt_eqF// (lt_trans _ n1).
 rewrite ifF//; last first.
   by apply/negbTE; rewrite gt_eqF// (lt_trans _ n1).
 by rewrite ltr_expR// ltr_pM2r// ln_gt0// ltr1n.
 Qed.
 
-Lemma Exp_le_increasing n x y : 1 < n -> x <= y -> Exp n x <= Exp n y.
-Proof.
-by move=> n1 xy; rewrite /Exp ler_powR// ltW.
-Qed.
+(* TODO: rename *)
+Lemma Exp_le_increasing n x y : 1 < n -> x <= y -> n `^ x <= n `^ y.
+Proof. by move=> n1 xy; rewrite ler_powR// ltW. Qed.
 
 End Exp.
 
-Hint Extern 0 (0 <= Exp _ _) => solve [exact/Exp_ge0] : core.
+Hint Extern 0 (0 <= _ `^ _) => solve [exact/Exp_ge0] : core.
 
 Section log.
 Context {R : realType}.
@@ -178,6 +170,9 @@ Lemma log2 : log 2 = 1 :> R. Proof. by rewrite /log /Log prednK// divff// gt_eqF
 
 Lemma ler_log : {in Num.pos &, {mono log : x y / x <= y :> R}}.
 Proof. by move=> x y x0 y0; rewrite /log ler_Log. Qed.
+
+Lemma logK x : 0 < x -> 2 `^ (log x) = x.
+Proof. by move=> x0; rewrite /log LogK. Qed.
 
 Lemma logV x : 0 < x -> log x^-1 = - log x :> R.
 Proof. by move=> x0; rewrite /log LogV. Qed.
@@ -267,7 +262,8 @@ Qed.
 
 From mathcomp Require Import topology normedtype.
 
-Lemma exp_strict_lb {R : realType} (n : nat) (x : R) : 0 < x -> x ^+ n / (n`!)%:R < sequences.expR x.
+Lemma exp_strict_lb {R : realType} (n : nat) (x : R) :
+  0 < x -> x ^+ n / n`!%:R < expR x.
 Proof.
 move=> x0.
 case: n => [|n].

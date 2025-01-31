@@ -16,7 +16,9 @@ From mathcomp Require Import lra ring Rstruct.
 (******************************************************************************)
 
 Delimit Scope ring_scope with mcR.
+Declare Scope reals_ext_scope.
 
+Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
 Reserved Notation "p '.~'" (format "p .~", at level 5).
 Reserved Notation "P '`<<' Q" (at level 51).
 Reserved Notation "P '`<<b' Q" (at level 51).
@@ -33,6 +35,8 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
+
+Notation "+| r |" := (Num.Def.maxr 0%R r) : reals_ext_scope.
 
 (* TODO: move to "mathcomp_extra.v" *)
 Section num_ext.
