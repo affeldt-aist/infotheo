@@ -189,7 +189,7 @@ have : (JTS_1_bound <= n)%nat ->
     rewrite lerBlDr addrC -lerBlDr; apply: le_trans.
     by rewrite Pr_to_cplt setCK.
   move=> Hn.
-  rewrite [in X in _ <= X](_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3)%R; last by field.
+  rewrite [in X in _ <= X](_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3); last by field.
   move: Hn; rewrite 2!geq_max => /andP[Hn1 /andP[Hn2 Hn3]].
   rewrite !Pr_DMC_rV_prod.
   apply lerD; first by apply lerD; [exact: HnP | exact: HnPW].
@@ -231,7 +231,7 @@ apply (@le_trans _ _ (\sum_(i | i \in `JTS P W n epsilon)
   - rewrite fdist_prodE ler_pM //.
       by case/andP: (typical_sequence1_JTS iJTS).
     by case/andP: (typical_sequence1_JTS' iJTS).
-  - by rewrite mulr_ge0 // Exp_ge0.
+  - by rewrite mulr_ge0 ?powR_ge0.
   - by rewrite prod_rVK eqxx andbC.
 rewrite (_ : \sum_(_ | _) _ =
   #| `JTS P W n epsilon|%:R *
@@ -239,7 +239,7 @@ rewrite (_ : \sum_(_ | _) _ =
   last by rewrite big_const iter_addr addr0 -mulr_natl mulrA.
 apply (@le_trans _ _ (2 `^ (n%:R * (`H( P , W ) + epsilon)) *
   2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W ) - epsilon)))).
-  by rewrite !ler_wpM2r ?Exp_ge0 // JTS_sup.
+  by rewrite !ler_wpM2r ?powR_ge0 // JTS_sup.
 apply/eqW.
 rewrite -!powRD; try by rewrite (@eqr_nat R 2 0) implybT.
 rewrite /mutual_info_chan !mulrDr !mulrNN; congr exp.powR.

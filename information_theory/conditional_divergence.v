@@ -20,8 +20,8 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Local Open Scope reals_ext_scope.
-Local Open Scope ring_scope.
 Local Open Scope fdist_scope.
+Local Open Scope ring_scope.
 Local Open Scope entropy_scope.
 Local Open Scope channel_scope.
 Local Open Scope divergence_scope.
@@ -33,7 +33,7 @@ Import Order.TTheory GRing.Theory Num.Theory.
 Section conditional_dominance.
 Variables (A B : finType) (V W : `Ch(A, B)) (P : {fdist A}).
 
-Definition cdom_by := forall a, P a != 0%R -> V a `<< W a.
+Definition cdom_by := forall a, P a != 0 -> V a `<< W a.
 
 Lemma dom_by_cdom_by : (P `X V) `<< (P `X W) <-> cdom_by.
 Proof.
@@ -178,8 +178,7 @@ transitivity (\prod_(a : A) \prod_(b : B) \prod_(i < n)
 apply eq_bigr => a _; apply eq_bigr => b _.
 rewrite num_co_occ_alt -sum1_card.
 rewrite (@big_morph _ _ (fun x => W a b ^+ x) 1 *%R O addn) //; last first.
-  move=> * /=.
-  by rewrite exprD.
+  by move=> * /=; rewrite exprD.
 rewrite [in RHS]big_mkcond.
 apply eq_bigr => i _.
 case: ifP.
@@ -204,7 +203,7 @@ Hypothesis Hn : n != O.
    the conditional divergence and the condition entropy *)
 
 Lemma dmc_cdiv_cond_entropy :
-  (W ``(y | x) = 2 `^ (- n%:R * (D(V || W | P) + `H(V | P))))%R.
+  W ``(y | x) = 2 `^ (- n%:R * (D(V || W | P) + `H(V | P))).
 Proof.
 rewrite dmc_cdiv_cond_entropy_aux cond_entropy_chanE2.
 rewrite /cdiv /entropy -big_split /=.
@@ -239,17 +238,13 @@ case/boolP : (V a b == 0) => [/eqP|] Vab0.
     by rewrite expr0 Vab0 !(mulr0,mul0r,addr0,add0r,oppr0,powRr0).
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   by rewrite jtype_0_jtypef.
-rewrite -exp.powR_mulrn ?Exp_ge0//.
-rewrite -exp.powRrM//.
-congr (exp.powR _ _).
-(*rewrite -exp2_pow; congr exp2.*)
+rewrite -powR_mulrn ?powR_ge0// -powRrM//.
+congr (_ `^ _).
 rewrite -mulrN -mulrDr mulrA.
 rewrite logM; last 2 first.
   by rewrite -fdist_gt0.
-  rewrite invr_gt0.
-  by rewrite -fdist_gt0.
-rewrite logV; last first.
-  by rewrite -fdist_gt0.
+  by rewrite invr_gt0 -fdist_gt0.
+rewrite logV; last by rewrite -fdist_gt0.
 rewrite addrAC subrr add0r.
 rewrite mulrN 3!mulNr opprK.
 rewrite mulrC.
@@ -277,16 +272,19 @@ Variable W : `Ch*(A, B).
 
 Definition exp_cdiv :=
   if (type.d P) |- V <<b W
-  then (2 `^ (- n%:R * D(V || W | P)))%R
+  then 2 `^ (- n%:R * D(V || W | P))
   else 0.
 
-Lemma exp_cdiv_left (H : P |- V << W) : (exp_cdiv = 2 `^ (- n%:R * D(V || W | P)))%R.
+Lemma exp_cdiv_left (H : P |- V << W) : exp_cdiv = 2 `^ (- n%:R * D(V || W | P)).
 Proof.
 rewrite /exp_cdiv.
 suff : (type.d P) |- V <<b W by move=> ->.
 apply/forallP => a; apply/implyP => Pa0.
-apply/forall_inP => b /eqP Wab; by rewrite (dominatesE (H _ Pa0)).
+by apply/forall_inP => b /eqP Wab; rewrite (dominatesE (H _ Pa0)).
 Qed.
+
+Lemma exp_cdiv_ge0 : 0 <= exp_cdiv.
+Proof. by rewrite /exp_cdiv; case: ifPn => // _; rewrite powR_ge0. Qed.
 
 End cdiv_specialized.
 
@@ -308,8 +306,7 @@ Lemma dmc_exp_cdiv_cond_entropy :
 Proof.
 rewrite /exp_cdiv.
 case : ifP => Hcase.
-- rewrite -exp.powRD; last first.
-   by rewrite pnatr_eq0 implybT.
+- rewrite -powRD; last by rewrite pnatr_eq0 implybT.
   rewrite -mulrDr.
   apply dmc_cdiv_cond_entropy => //.
   (* TODO: lemma? *)

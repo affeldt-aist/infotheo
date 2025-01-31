@@ -471,7 +471,7 @@ Lemma card_typed_tuples : (#| T_{ P } |%:R <= (2%:R:Rdefinitions.R) `^ (n%:R * `
 Proof.
 rewrite -(@invrK _ ((2%:R:Rdefinitions.R) `^ (n%:R * `H P))%R) -powRN -mulNr.
 set aux := - n%:R * `H P.
-rewrite -div1r ler_pdivlMr // {}/aux ?Exp_gt0//.
+rewrite -div1r ler_pdivlMr // {}/aux ?powR_gt0//.
 case/boolP : [exists x, x \in T_{P}] => x_T_P.
 - case/existsP : x_T_P => ta Hta.
   rewrite -(row_of_tupleK ta) in Hta.

@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra archimedean.
-From mathcomp Require Import Rstruct reals exp.
-Require Import ssrZ ssr_ext realType_logb realType_ext fdist bigop_ext.
+From mathcomp Require Import Rstruct mathcomp_extra reals exp.
+Require Import ssr_ext bigop_ext realType_logb realType_ext fdist.
 Require Import entropy kraft.
 
 (******************************************************************************)
@@ -40,8 +40,6 @@ Section shannon_fano_def.
 
 Variables (A T : finType) (P : {fdist A}).
 
-Local Open Scope zarith_ext_scope.
-
 Definition is_shannon_fano (f : Encoding.t A T) :=
   forall s, size (f s) = `| Num.ceil (Log #|T|%:R (P s)^-1%R) |%N.
 
@@ -75,17 +73,16 @@ rewrite H.
 have Pi0 : 0 < P i by rewrite lt0r Pr0/=.
 apply (@le_trans _ _ (#|T|%:R `^ (- Log #|T|%:R (P i)^-1))%R); last first.
   by rewrite LogV// opprK natn LogK// card_ord.
-rewrite pow_Exp; last by rewrite card_ord.
-rewrite powRN card_ord lef_pV2// ?posrE ?Exp_gt0//.
-rewrite Exp_le_increasing// ?ltr1n//.
-rewrite (le_trans (mathcomp_extra.ceil_ge _))//.
+rewrite -powR_mulrn; last by rewrite card_ord.
+rewrite powRN card_ord lef_pV2// ?posrE ?powR_gt0//.
+rewrite gt1_ler_powRr ?ltr1n//.
+rewrite (le_trans (ceil_ge _))//.
 by rewrite natr_absz// ler_int ler_norm.
 Qed.
 
 End shannon_fano_is_kraft.
 
 Section average_length.
-
 Variables (A T : finType) (P : {fdist A}).
 Variable f : {ffun A -> seq T}. (* encoding function *)
 
@@ -127,19 +124,18 @@ apply (@lt_le_trans _ _ (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
   by rewrite -log1 ler_log// ?posrE// -fdist_gt0.
 under eq_bigr do rewrite mulrDr mulr1 mulrN.
 rewrite big_split /= FDist.f1 lerD2r.
-rewrite le_eqVlt; apply/orP; left; apply/eqP.
+apply/eqW.
 rewrite /entropy big_morph_oppr; apply eq_bigr => i _.
-by rewrite card_ord /log//.
+by rewrite card_ord.
 Qed.
 
 End shannon_fano_suboptimal.
 
 (* wip *)
 Section kraft_code_is_shannon_fano.
-
 Variables (A : finType) (P : {fdist A}).
 
-Variable (t' : nat).
+Variable t' : nat.
 Let n := #|A|.-1.+1.
 Let t := t'.+2.
 Let T := 'I_t.

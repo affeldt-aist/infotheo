@@ -1,10 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix archimedean.
-(*Require Import Reals.*)
-From mathcomp Require Import lra ring.
-From mathcomp Require Import Rstruct reals sequences.
-Require Import (*ssrR Reals_ext*) realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
+From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
+From mathcomp Require Import archimedean lra ring.
+From mathcomp Require Import Rstruct reals sequences exp.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_logb.
 Require Import fdist proba entropy divergence log_sum source_code.
 
 (******************************************************************************)
@@ -198,7 +197,7 @@ Local Open Scope vec_ext_scope.
 Section Entropy_lemma.
 Variables (A : finType) (P : {fdist A}) (n : nat).
 
-Lemma entropy_TupleFDist : `H (P `^ n) = n%:R * `H P.
+Lemma entropy_TupleFDist : `H (P `^ n)%fdist = n%:R * `H P.
 Proof.
 elim:n=>[|n0 IH].
   rewrite mul0r /entropy /= big1 ?oppr0 // => i _.
@@ -233,7 +232,7 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
     by rewrite lt0r eq_sym rmul_non0; apply/prodr_ge0 => ?.
   by rewrite logM//.
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
-  rewrite -[RHS](FDist.f1 (P `^ n0)).
+  rewrite -[RHS](FDist.f1 (P `^ n0)%fdist).
   by apply eq_bigr => i _; rewrite fdist_rVE.
 rewrite -big_distrl /= mulr1 [in RHS]addrC; congr (_ + _).
 rewrite -big_distrl /= FDist.f1 mul1r; apply eq_bigr => i _.
@@ -252,7 +251,7 @@ Hypothesis f_uniq : uniquely_decodable f.
 
 Let Xnon0 x : 0 <> X x.
 Proof.
-rewrite /X /=; have [/eqP|/eqP//] := eqVneq (0:R)%R (size (f x))%:R.
+rewrite /X /=; have [/eqP|/eqP//] := eqVneq (0:R) (size (f x))%:R.
 rewrite (_ : 0 = 0%:R)// eqr_nat => /eqP.
 move/esym/size0nil => fx_nil.
 move: (@f_uniq [::] ([:: x])).
@@ -687,7 +686,7 @@ Lemma apply_le_HN_logE_loge : `H P <= `E X  + log ((expR 1) * `E X).
 Proof.
 apply: (le_trans apply_max_HPN).
 rewrite lerD2l mulrC.
-rewrite (logM (EX_gt0 P f_uniq))// ?exp.expR_gt0//.
+rewrite (logM (EX_gt0 P f_uniq)) ?expR_gt0//.
 exact: le_entroPN_logeEX f_uniq.
 Qed.
 
@@ -701,17 +700,17 @@ Variable P : {fdist A}.
 Hypothesis f_uniq : uniquely_decodable f.
 
 Lemma converse_case1 : @E_leng_cw _ _ P f < n%:R * log #|A|%:R ->
-`H (P `^ n) <= @E_leng_cw _ _ P f + log ((expR 1) * n%:R * log #|A|%:R).
+`H (P `^ n)%fdist <= @E_leng_cw _ _ P f + log ((expR 1) * n%:R * log #|A|%:R).
 Proof.
-move=>H.
-apply: (le_trans (apply_le_HN_logE_loge (P `^ n) f_uniq)).
+move=> H.
+apply: (le_trans (apply_le_HN_logE_loge (P `^ n)%fdist f_uniq)).
 rewrite lerD2l//; apply: Log_increasing_le => //.
-  by apply/mulr_gt0; [exact/exp.expR_gt0 | exact/EX_gt0].
-rewrite -mulrA ler_wpM2l//; [exact/exp.expR_ge0|exact/ltW].
+  by rewrite mulr_gt0 ?expR_gt0// EX_gt0.
+by rewrite -mulrA ler_wpM2l ?expR_ge0// ltW.
 Qed.
 
 Lemma converse_case2 : n%:R * log #|A|%:R <= @E_leng_cw _ _ P f ->
- `H (P `^ n) <= @E_leng_cw _ _ P f.
+ `H (P `^ n)%fdist <= @E_leng_cw _ _ P f.
 Proof.
 move=> H; rewrite entropy_TupleFDist; apply: (le_trans _ H).
 by rewrite ler_wpM2l//; exact/entropy_max.
@@ -750,7 +749,7 @@ elim => /= [| ta1 sta1 IHsta1]; case => [| ta2 sta2] //=.
   exact/tuple_of_row_inj/eqP.
 Qed.
 
-Lemma ELC_TupleFDist : @E_leng_cw _ _ (P `^ n) fm = m%:R * @E_leng_cw _ _ P f.
+Lemma ELC_TupleFDist : @E_leng_cw _ _ (P `^ n)%fdist fm = m%:R * @E_leng_cw _ _ P f.
 Proof.
 rewrite /E_leng_cw /=  /fm.
 pose X := (fun x => x%:R : R) \o size \o f.
@@ -792,7 +791,7 @@ have X_Xm1_Xm2 : Xm2 \= X @+ Xm1.
     by apply eq_from_tnth => i; rewrite {i}(ord1 i) /= tnth_mktuple mxE.
   by rewrite /= cats0.
 rewrite (E_sum_2 X_Xm1_Xm2).
-rewrite -natr1 mulrDl -IH addrC; congr (_ + _)%R.
+rewrite -natr1 mulrDl -IH addrC; congr +%R.
   by rewrite /Xm1 -/fm1 /Ex tail_of_fdist_rV_fdist_rV.
 by rewrite -/X mul1r /Ex head_of_fdist_rV_fdist_rV.
 Qed.
@@ -801,7 +800,6 @@ End Extend_encoder.
 
 Section v_scode_converse'.
 Let R := Rdefinitions.R.
-
 Variables (A : finType) (P : {fdist A}).
 Variable n : nat.
 Variable f : encT A (seq bool) n.
@@ -867,30 +865,7 @@ apply: (@le_trans _ _ ((x ^ 2 / 2 - 1) * eps * n%:R)); last first.
   rewrite mulrC ler_wpM2r//.
   apply: (@le_trans _ _ (expR x - 1)).
     rewrite lerBlDr subrK (_ : 2 = (2 `!)%:R)//.
-From mathcomp Require Import topology normedtype exp.
-(* TODO: make a lemma out of this *)
-    rewrite exp.expRE.
-    rewrite (le_trans _ (nondecreasing_cvgn_le _ _ 3))//=.
-    - rewrite /pseries/= /series/=.
-      rewrite big_mkord big_ord_recr/=.
-      rewrite factE/= !muln1.
-      rewrite (mulrC 2^-1).
-      rewrite lerDr sumr_ge0// => i _.
-      by rewrite mulr_ge0 ?invr_ge0// exprn_ge0//.
-    - move=> a b ab.
-      rewrite /pseries/=.
-      rewrite /series/=.
-      rewrite -(subnKC ab).
-      rewrite /index_iota !subn0.
-      rewrite iotaD big_cat//=.
-      rewrite ler_wpDr// sumr_ge0// => i _.
-      by rewrite mulr_ge0 ?invr_ge0// exprn_ge0//.
-    - have := is_cvg_series_exp_coeff_pos xpos.
-      rewrite /exp_coeff /pseries.
-      rewrite /series/=.
-      under boolp.eq_fun do under eq_bigr do rewrite mulrC.
-      exact.
-(*; exact/(exp_lb 2)/pos_INR.*)
+    exact/ltW/exp_strict_lb.
   rewrite /m /x.
   rewrite lerBlDr.
   rewrite (le_trans (ltW (mathcomp_extra.lt_succ_floor _)))//.
@@ -898,8 +873,7 @@ From mathcomp Require Import topology normedtype exp.
   rewrite mathcomp_extra.intrD1 ler_int.
   rewrite lerD2r.
   by rewrite ler_norm.
-rewrite logM//; last first.
-  by apply: mpos.
+rewrite logM//; last exact: mpos.
 rewrite -(ler_pM2r ln2_gt0).
 rewrite mulrDl -(mulrA (ln alp)) (mulVf ln2_neq0).
 rewrite mulr1 -(mulrA _ (ln 2)^-1 _) (mulVf ln2_neq0).
@@ -1018,7 +992,6 @@ Qed.
 End v_scode_converse'.
 
 Section v_scode_converse.
-
 Variables (A : finType) (P : {fdist A}) (n : nat).
 Variable f : encT A (seq bool) n.
 Hypothesis f_uniq : uniquely_decodable f.

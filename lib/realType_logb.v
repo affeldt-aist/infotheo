@@ -35,14 +35,15 @@ Lemma ln2_ge0 : 0 <= ln 2 :> R. Proof. by rewrite ltW// ln2_gt0. Qed.
 Lemma lt_ln1Dx x : 0 < x -> ln (1 + x) < x.
 Proof.
 move=> x1.
-rewrite -ltr_expR lnK ?expR_gt1Dx//.
-  by rewrite gt_eqF//.
+rewrite -ltr_expR lnK.
+  by rewrite expR_gt1Dx// gt_eqF.
 by rewrite posrE addrC -ltrBlDr sub0r (le_lt_trans _ x1)// lerN10.
 Qed.
 
 Lemma ln_id_cmp x : 0 < x -> ln x <= x - 1.
 Proof.
-move=> x0; rewrite -{1}(GRing.subrK 1 x) addrC le_ln1Dx//.
+move=> x0.
+rewrite -{1}(subrK 1 x) addrC le_ln1Dx//.
 by rewrite -ltrBlDr opprK addrC subrr.
 Qed.
 
@@ -77,6 +78,7 @@ End xlnx.
 
 Section Log.
 Context {R : realType}.
+Implicit Type x : R.
 
 Definition Log (n : nat) x : R := ln x / ln n.-1.+1%:R.
 
@@ -115,10 +117,6 @@ Context {R : realType}.
 Implicit Type x : R.
 
 (* TODO: rename *)
-Lemma pow_Exp (x : R) n : (0 <= x) -> x ^+ n = x `^ n%:R.
-Proof. by move=> x0; rewrite powR_mulrn. Qed.
-
-(* TODO: rename *)
 Lemma Exp2_pow x n k : x `^ (k%:R * n) = (x `^ n) ^+ k.
 Proof. by rewrite -powR_mulrn ?powR_ge0// mulrC powRrM. Qed.
 
@@ -133,15 +131,8 @@ rewrite ln_powR mulrCA mulVf//.
 by rewrite gt_eqF// -ln1 ltr_ln ?posrE// ?ltr1n// ltr0n ltnW.
 Qed.
 
-(* TODO: rm *)
-Lemma Exp_gt0 n x : 0 < n -> 0 < n `^ x.
-Proof. by move=> ?; rewrite powR_gt0. Qed.
-
-(* TODO: rm *)
-Lemma Exp_ge0 n x : 0 <= n `^ x. Proof. by rewrite powR_ge0. Qed.
-
-(* TODO: rename *)
-Lemma Exp_increasing n x y : 1 < n -> x < y -> n `^ x < n `^ y.
+(* TODO: move to MCA? *)
+Lemma gt1_ltr_powRr (n : R) x y : 1 < n -> x < y -> n `^ x < n `^ y.
 Proof.
 move=> n1 xy; rewrite /powR ifF; last first.
   by apply/negbTE; rewrite gt_eqF// (lt_trans _ n1).
@@ -150,8 +141,8 @@ rewrite ifF//; last first.
 by rewrite ltr_expR// ltr_pM2r// ln_gt0// ltr1n.
 Qed.
 
-(* TODO: rename *)
-Lemma Exp_le_increasing n x y : 1 < n -> x <= y -> n `^ x <= n `^ y.
+(* TODO: move to MCA? *)
+Lemma gt1_ler_powRr (n : R) x y : 1 < n -> x <= y -> n `^ x <= n `^ y.
 Proof. by move=> n1 xy; rewrite ler_powR// ltW. Qed.
 
 (* TODO: move *)
@@ -160,13 +151,14 @@ Proof. by move=> ? ? /=; rewrite powRD// pnatr_eq0// implybT. Qed.
 
 End Exp.
 
-Hint Extern 0 (0 <= _ `^ _) => solve [exact/Exp_ge0] : core.
+Hint Extern 0 (0 <= _ `^ _) => solve [exact/powR_ge0] : core.
+Hint Extern 0 (0 < _ `^ _) => solve [exact/powR_gt0] : core.
 
 Section log.
 Context {R : realType}.
 Implicit Types x y : R.
 
-Definition log {R : realType} (x : R) := Log 2 x.
+Definition log x := Log 2 x.
 
 Lemma log1 : log 1 = 0 :> R. Proof. by rewrite /log Log1. Qed.
 
@@ -234,7 +226,7 @@ move=> x0; rewrite logexp1E ler_wpM2r// ?invr_ge0//= ?(ltW (@ln2_gt0 _))//.
 exact/ln_id_cmp.
 Qed.
 
-Lemma log_powR (a x : R) : log (a `^ x) = x * log a.
+Lemma log_powR (a : R) x : log (a `^ x) = x * log a.
 Proof.
 by rewrite /log /Log ln_powR// mulrA.
 Qed.
@@ -259,8 +251,7 @@ Proof.
 move=> f0 f0'.
 elim: s => [|h t ih].
   by rewrite !big_nil log1 oppr0.
-rewrite big_cons logM//; last first.
-  by apply/prodr_gt0 => a _.
+rewrite big_cons logM//; last exact/prodr_gt0.
 by rewrite [RHS]big_cons opprD ih.
 Qed.
 
@@ -272,7 +263,7 @@ Proof.
 move=> x0.
 case: n => [|n].
   by rewrite expr0 fact0 mul1r invr1 pexpR_gt1.
-rewrite exp.expRE.
+rewrite expRE.
 rewrite (lt_le_trans _ (nondecreasing_cvgn_le _ _ n.+2))//=.
 - rewrite /pseries/= /series/=.
   rewrite big_mkord big_ord_recr/=.
@@ -286,15 +277,11 @@ rewrite (lt_le_trans _ (nondecreasing_cvgn_le _ _ n.+2))//=.
   rewrite sumr_ge0// => i _.
   by rewrite mulr_ge0 ?invr_ge0// exprn_ge0// ltW.
 - move=> a b ab.
-  rewrite /pseries/=.
-  rewrite /series/=.
-  rewrite -(subnKC ab).
-  rewrite /index_iota !subn0.
-  rewrite iotaD big_cat//=.
+  rewrite /pseries/= /series/=.
+  rewrite -(subnKC ab) /index_iota !subn0 iotaD big_cat//=.
   rewrite ler_wpDr// sumr_ge0// => i _.
   by rewrite mulr_ge0 ?invr_ge0// exprn_ge0// ltW.
 - have := is_cvg_series_exp_coeff_pos x0.
-  rewrite /exp_coeff /pseries.
-  rewrite /series/=.
+  rewrite /exp_coeff /pseries /series/=.
   by under boolp.eq_fun do under eq_bigr do rewrite mulrC.
 Qed.

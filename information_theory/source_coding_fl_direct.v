@@ -20,8 +20,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope ring_scope.
 Local Open Scope fdist_scope.
+Local Open Scope ring_scope.
 
 Section encoder_and_decoder.
 Let R := Rdefinitions.R.
@@ -111,12 +111,12 @@ Local Open Scope reals_ext_scope.
 Section source_coding_direct'.
 Let R := Rdefinitions.R.
 Variables (A : finType) (P : R.-fdist A) (num den : nat).
-Let r : R := (num%:R / den.+1%:R)%R.
+Let r : R := num%:R / den.+1%:R.
 Hypothesis Hr : `H P < r.
 Variable epsilon : R.
 Hypothesis epsilon01 : 0 < epsilon < 1.
 
-Definition lambda := minr (r - `H P)%R epsilon.
+Definition lambda := minr (r - `H P) epsilon.
 
 Lemma lambda_gt0 : 0 < lambda.
 Proof.
@@ -153,7 +153,6 @@ have [?|?] := leP (r - `H P) epsilon.
 - lra.
 Qed.
 
-Local Open Scope fdist_scope.
 Local Open Scope typ_seq_scope.
 
 Theorem source_coding' : exists sc : scode_fl A k n,
@@ -171,41 +170,41 @@ exists (mkScode F PHI); split.
   field.
   by rewrite !nat1r/= !gt_eqF//=.
 set lhs := esrc(_, _).
-suff -> : lhs = (1 - Pr (P `^ k)%fdist (`TS P k (lambda / 2)))%R.
+suff -> : lhs = 1 - Pr (P `^ k)%fdist (`TS P k (lambda / 2)).
   rewrite lerBlDr addrC -lerBlDr.
-  apply (@le_trans _ _ (1 - lambda / 2)%R).
+  apply (@le_trans _ _ (1 - lambda / 2)).
     by rewrite lerD2l lerNr opprK; exact: lambda2_epsilon.
   exact: (Pr_TS_1 lambda2_gt0).
 rewrite /lhs {lhs} /SrcErrRate /Pr /=.
 set lhs := \sum_(_ | _ ) _.
 suff -> : lhs = \sum_(x in 'rV[A]_k | x \notin S) (P `^ k)%fdist x.
-  have : forall a b : R, (a + b = 1 -> b = 1 - a)%R by move=> ? ? <-; field.
+  have : forall a b : R, a + b = 1 -> b = 1 - a by move=> ? ? <-; field.
   apply.
-  rewrite -[X in _ = X](Pr_cplt (P `^ k) (`TS P k (lambda / 2))).
-  congr (_ + _)%R.
+  rewrite -[X in _ = X](Pr_cplt (P `^ k)%fdist (`TS P k (lambda / 2))).
+  congr +%R.
   by apply: eq_bigl => ta /=; rewrite !inE.
 rewrite {}/lhs; apply eq_bigl => //= i.
 rewrite inE /=; apply/negPn/negPn.
 - suff H : def \in S by move/eqP/phi_f; tauto.
   exact: (TS_0_is_typ_seq lambda2_gt0 lambda2_lt1 Hk).
 - suff S_2n : (#| S | < expn 2 n)%nat by move/(f_phi def S_2n)/eqP.
-  suff card_S_bound : (#| S |%:R < 2 `^ (k%:R * r))%R.
-    rewrite -(ltr_nat R) -natrXE natrX pow_Exp ?ler0n//.
-    suff : n%:R = (k%:R * r)%R by move=> ->.
+  suff card_S_bound : #| S |%:R < 2 `^ (k%:R * r).
+    rewrite -(ltr_nat R) -natrXE natrX -powR_mulrn ?ler0n//.
+    suff : n%:R = k%:R * r by move=> ->.
     rewrite /n /k /r.
     by rewrite !natrM mulrCA -mulrA divff ?mulr1 ?pnatr_eq0// mulrC.
-  suff card_S_bound : 1 + #| S |%:R <= (2 `^ (k%:R * r))%R by lra.
-  suff card_S_bound : 1 + #| S |%:R <= (2 `^ (k%:R * (`H P + lambda)))%R.
+  suff card_S_bound : 1 + #| S |%:R <= 2 `^ (k%:R * r) by lra.
+  suff card_S_bound : 1 + #| S |%:R <= 2 `^ (k%:R * (`H P + lambda)).
     apply: le_trans; first exact: card_S_bound.
-    by rewrite Exp_le_increasing// ?ltr1n// ler_wpM2l// Hlambdar.
-  apply (@le_trans _ _ (2 `^ (k%:R * (lambda / 2) + k%:R * (`H P + lambda / 2)))%R); last first.
+    by rewrite gt1_ler_powRr ?ltr1n// ler_wpM2l// Hlambdar.
+  apply (@le_trans _ _ (2 `^ (k%:R * (lambda / 2) + k%:R * (`H P + lambda / 2)))); last first.
     rewrite -mulrDr addrC -addrA.
-    rewrite (_ : forall a, a / 2 + a / 2 = a)%R; last by move=> ?; field.
+    rewrite (_ : forall a, a / 2 + a / 2 = a); last by move=> ?; field.
     by rewrite lexx.
-  apply (@le_trans _ _ (2 `^ (1 + k%:R * (`H P + lambda / 2)))%R); last first.
-    rewrite Exp_le_increasing ?ltr1n// lerD2r//.
+  apply (@le_trans _ _ (2 `^ (1 + k%:R * (`H P + lambda / 2)))); last first.
+    rewrite gt1_ler_powRr ?ltr1n// lerD2r//.
     move: Hdelta; rewrite ge_max => /andP[_ Hlambda].
-    rewrite -(@ler_pM2r _ (2 / lambda)%R); last first.
+    rewrite -(@ler_pM2r _ (2 / lambda)); last first.
       by rewrite divr_gt0//; exact: lambda_gt0.
     rewrite mul1r -mulrA.
     rewrite -[in leRHS]invf_div// mulVf ?mulr1//.
@@ -215,19 +214,12 @@ rewrite inE /=; apply/negPn/negPn.
     exact: TS_sup.
     rewrite /S.
   apply (@le_trans _ _ (2 `^ (k%:R * (`H P + lambda / 2)) +
-                        2 `^ (k%:R * (`H P + lambda / 2)))%R).
-  + rewrite lerD2r.
-    rewrite [leLHS](_ : 1 = 2 `^ 0)%R; last by rewrite powRr0.
-    rewrite Exp_le_increasing ?ltr1n//.
-    apply mulr_ge0; first exact: ler0n.
-    apply addr_ge0; first exact: entropy_ge0.
-    by rewrite ltW//; exact: lambda2_gt0.
-  + rewrite -mulr2n.
-    rewrite -mulr_natl.
-    rewrite powRD.
-    rewrite ler_pM2r ?Exp_gt0//.
-    rewrite exp.le1r_powR ?ler1n//.
-    by rewrite pnatr_eq0 implybT.
+                        2 `^ (k%:R * (`H P + lambda / 2)))).
+  + rewrite lerD2r -[leLHS](powRr0 2).
+    rewrite ler_powR ?ler1n// mulr_ge0// addr_ge0//; first exact: entropy_ge0.
+    by rewrite divr_ge0// ltW// lambda_gt0.
+  + rewrite -mulr2n -mulr_natl powRD; last by rewrite pnatr_eq0 implybT.
+    by rewrite ler_pM2r ?powR_gt0// powRr1.
 Qed.
 
 End source_coding_direct'.
@@ -237,7 +229,8 @@ Variables (A : finType) (P : {fdist A}).
 
 Theorem source_coding_direct epsilon : 0 < epsilon < 1 ->
   forall nu de : nat, `H P < nu%:R / de.+1%:R ->
-    exists k n (sc : scode_fl A k n), SrcRate sc = nu%:R/de.+1%:R /\ esrc(P , sc) <= epsilon.
+    exists k n (sc : scode_fl A k n), SrcRate sc = nu%:R/de.+1%:R /\
+                                      esrc(P , sc) <= epsilon.
 Proof.
 move=> Heps nu de HP_r.
 exists (k P nu de epsilon), (n P nu de epsilon).
