@@ -372,7 +372,7 @@ Let alice_traces : RV (smc_scalar_product_tracesT VX) P :=
 Let bob_traces : RV (smc_scalar_product_tracesT VX) P :=
       (fun t => tnth t 1) `o scalar_product_RV inputs.
 
-Definition scalar_product_is_leakgae_free :=
+Definition scalar_product_is_leakage_free :=
   `H(x2 inputs | alice_traces) = `H `p_ (x2 inputs) /\
   `H(x1 inputs | bob_traces) = `H `p_ (x1 inputs).
 
@@ -565,6 +565,16 @@ Let proof_bob := smc_entropy.smc_entropy_proofs.pi2_bob_is_leakage_free_proof
       (pr1_unif inputs) (py2_unif inputs) (ps1_unif inputs).
 
 Check proof_bob.
+
+Theorem scalar_product_is_leakage_freeP :
+  scalar_product_is_leakage_free.
+Proof.
+split.
+rewrite alice_traces_entropy.
+exact: proof_alice.
+rewrite bob_traces_entropy.
+exact: proof_bob.
+Qed.
 
 End information_leakage_proof.
 
