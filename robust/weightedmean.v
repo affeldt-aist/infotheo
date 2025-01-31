@@ -63,7 +63,7 @@ End is01.
 Section misc20240303.
 Local Open Scope ring_scope.
 
-(* to ssrR *)
+(* NB: PR https://github.com/math-comp/analysis/pull/1461 in progress in MCA *)
 Lemma RsqrtE' (x : Rdefinitions.R) : R_sqrt.sqrt x = Num.sqrt x.
 Proof.
 set Rx := Rbasic_fun.Rcase_abs x.
