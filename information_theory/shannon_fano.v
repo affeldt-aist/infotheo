@@ -76,7 +76,7 @@ have Pi0 : 0 < P i by rewrite lt0r Pr0/=.
 apply (@le_trans _ _ (#|T|%:R `^ (- Log #|T|%:R (P i)^-1))%R); last first.
   by rewrite LogV// opprK natn LogK// card_ord.
 rewrite pow_Exp; last by rewrite card_ord.
-rewrite Exp_oppr card_ord lef_pV2// ?posrE ?Exp_gt0//.
+rewrite powRN card_ord lef_pV2// ?posrE ?Exp_gt0//.
 rewrite Exp_le_increasing// ?ltr1n//.
 rewrite (le_trans (mathcomp_extra.ceil_ge _))//.
 by rewrite natr_absz// ler_int ler_norm.

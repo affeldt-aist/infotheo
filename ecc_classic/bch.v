@@ -43,9 +43,7 @@ Unset Printing Implicit Defensive.
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
-
 Local Open Scope vec_ext_scope.
-
 Local Open Scope dft_scope.
 
 Module BCH.
@@ -140,15 +138,14 @@ apply/idP/idP.
   apply BCH_PCM_altP1 => i.
   move/eqP/rowP : H => /(_ i).
   rewrite !mxE => H; rewrite -[RHS]H.
-  apply eq_bigr => /= k _; by rewrite !mxE /= mulrC.
+  by apply eq_bigr => /= k _; rewrite !mxE /= mulrC.
 - rewrite /BCH.PCM_alt /BCH.PCM /syndrome => H.
   apply/eqP/rowP => i.
   have @j : 'I_t.*2.
     refine (@Ordinal _ i.*2 _); by rewrite -!muln2 ltn_pmul2r.
   move/eqP : H => /matrixP/(_ ord0 j).
   rewrite !mxE => {2}<-.
-  apply eq_bigr => k _.
-  by rewrite !mxE.
+  by apply eq_bigr => k _; rewrite !mxE.
 Qed.
 
 End BCH_PCM_alt.
@@ -206,7 +203,7 @@ Lemma BCH_syndromep_is_GRS_syndromep y :
   GRS.syndromep (rVexp a n) (rVexp a n) t.*2 (F2_to_GF2 m y).
 Proof.
 apply/polyP => i.
-rewrite !coef_poly; case: ifPn => // it; by rewrite fdcoor_syndrome_coord.
+by rewrite !coef_poly; case: ifPn => // it; rewrite fdcoor_syndrome_coord.
 Qed.
 
 End BCH_is_GRS.
@@ -252,7 +249,7 @@ apply/idP/idP.
   rewrite -(@ltn_pmul2r 2) // !muln2 -(ltn_add2r 1) !addn1.
   move/leq_trans; apply.
   move: tn.
-  rewrite -divn2 leq_divRL // muln2 => /leq_ltn_trans; exact.
+  by rewrite -divn2 leq_divRL // muln2 => /leq_ltn_trans; exact.
 Qed.
 
 End BCH_PCM_checksum.
@@ -328,7 +325,7 @@ transitivity (\det (\matrix_(i, j) (h i j * g j))).
   apply/matrixP => i j.
   by rewrite !mxE /h /g /BCH.PCM_alt !mxE -!exprD /= -exprM mul1n addn1.
 rewrite det_mlinear; congr (_ * _).
-congr (\det _); apply/matrixP => i j; by rewrite !mxE /h -exprM.
+by congr (\det _); apply/matrixP => i j; rewrite !mxE /h -exprM.
 Qed.
 
 Hypothesis a_neq0 : distinct_non_zero a.
@@ -419,7 +416,7 @@ have {}Hf : \sum_(i < r'.+1) GF2_of_F2 x ``_ (f i) *:
   move/colP : Hf => /(_ (widen_ord (ltnW Hr') j)).
   rewrite !mxE summxE => Hf.
   rewrite -[RHS]Hf.
-  apply eq_bigr => /= i _; by rewrite !mxE.
+  by apply eq_bigr => /= i _; rewrite !mxE.
 have /negP := det_B_neq0 Hr' Hinj.
 rewrite -det_tr; apply.
 apply/det0P; exists (\row_i GF2_of_F2 x ``_ (f i)).
@@ -437,13 +434,12 @@ apply/det0P; exists (\row_i GF2_of_F2 x ``_ (f i)).
 apply/rowP => i; rewrite !mxE.
 move/colP : Hf => /(_ i).
 rewrite !mxE => Hf; rewrite -[RHS]Hf.
-rewrite summxE; apply eq_bigr=> k _; by rewrite !mxE.
+by rewrite summxE; apply eq_bigr=> k _; rewrite !mxE.
 Qed.
 
 End BCH_minimum_distance_lb.
 
 Section BCH_erreval.
-
 Variables (F : fieldType) (n : nat) (a : 'rV[F]_n).
 
 Definition BCH_erreval := erreval (const_mx 1) a.
@@ -676,7 +672,7 @@ have [M HM] : exists M, `[ 'X * rVpoly x' ]_ n = 'X * rVpoly x' + M * ('X^n - 1)
 rewrite HM /fdcoor poly_rV_K //; last first.
   rewrite -HM.
   move: (ltn_modp ('X * rVpoly x') ('X^n - 1)).
-  rewrite size_Xn_sub_1 // ltnS => ->.
+  rewrite size_XnsubC // ltnS => ->.
   by rewrite monic_neq0 // monic_Xn_sub_1.
 rewrite !(hornerE,hornerXn(*TODO(rei): not necessary since mc1.16.0*)).
 move: (Hx i); rewrite /fdcoor => /eqP ->; rewrite mulr0 add0r.

@@ -36,9 +36,9 @@ Section channel_coding_converse_intermediate_lemma.
 Let R := Rdefinitions.R.
 Variables (A B : finType) (W : `Ch*(A, B)).
 Variable minRate : R.
-Hypothesis HminRate : (minRate > capacity W)%R.
+Hypothesis HminRate : minRate > capacity W.
 Hypothesis set_of_I_has_ubound :
-  classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
+  classical_sets.has_ubound (fun y => exists P, `I(P, W) = y)(*TODO*).
 
 Let Anot0 : (0 < #|A|)%nat. Proof. by case: W. Qed.
 
@@ -149,7 +149,7 @@ rewrite expr_div_n -mulrA ler_wpM2l//.
     by rewrite mulr_gt0// ?exp.ln_gt0 ?ltr1n// mulr_gt0//.
   rewrite /exp.powR(* TODO *) pnatr_eq0/=.
   apply/ltW.
-  apply: (le_lt_trans _ (exp_strict_lb (K.+1) nDeltaln2)) => {nDeltaln2}.
+  apply: (le_lt_trans _ (exp_strict_lb K.+1 nDeltaln2)) => {nDeltaln2}.
   apply/eqW.
   rewrite invfM invrK.
   rewrite /aux.
@@ -159,9 +159,7 @@ rewrite expr_div_n -mulrA ler_wpM2l//.
   rewrite invrK.
   rewrite mulrCA.
   rewrite invrK -exprSr.
-  rewrite -exprMn_comm//; last first.
-    rewrite /GRing.comm.
-    by rewrite [in RHS]mulrC.
+  rewrite -exprMn_comm//; last by rewrite /GRing.comm [in RHS]mulrC.
   by rewrite mulrC mulrA.
 Qed.
 
