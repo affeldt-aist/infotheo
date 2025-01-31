@@ -46,7 +46,8 @@ Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (n : nat) (epsilon : R).
 
 Definition typ_seq (t : 'rV[A]_n) :=
-  2 `^ (- n%:R * (`H P + epsilon)) <= (P `^ n)%fdist t <= 2 `^ (- n%:R * (`H P - epsilon)).
+  2 `^ (- n%:R * (`H P + epsilon)) <= (P `^ n)%fdist t <=
+  2 `^ (- n%:R * (`H P - epsilon)).
 
 Definition set_typ_seq := [set ta | typ_seq ta].
 
@@ -89,7 +90,8 @@ by apply: leR_sumRl => //= i; rewrite inE; case/andP.
 Qed.
 
 Lemma typ_seq_definition_equiv x : x \in `TS P n epsilon ->
-  2 `^ (- n%:R * (`H P + epsilon)) <= (P `^ n)%fdist x <= 2 `^ (- n%:R * (`H P - epsilon)).
+  2 `^ (- n%:R * (`H P + epsilon)) <= (P `^ n)%fdist x <=
+  2 `^ (- n%:R * (`H P - epsilon)).
 Proof. by rewrite inE /typ_seq => /andP[? ?]; apply/andP; split. Qed.
 
 Lemma typ_seq_definition_equiv2 x : x \in `TS P n.+1 epsilon ->
@@ -154,7 +156,7 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
       + have [//|H1] := eqVneq ((P `^ n.+1)%fdist i) 0.
         have {}H1 : 0 < (P `^ n.+1)%fdist i by rewrite lt0r H1/=.
         rewrite /= H1/=.
-        move: LHS; rewrite -ltNge => /log_increasing => /(_ H1).
+        move: LHS; rewrite -ltNge => /ltr_log => /(_ H1).
         rewrite log_powR mulNr log2 mulr1 -mulrN -ltr_pdivrMl// opprD.
         rewrite ltrBrDl -ltrBrDr addrC => /lt_le_trans; apply.
         by rewrite mulNr ler_norm.
@@ -162,7 +164,7 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
         apply/orP; right; apply/andP; split.
           exact/(lt_trans _ LHS)/powR_gt0.
         have : 0 < 2 `^ (1 *- n.+1 * (`H P - epsilon)) by exact/powR_gt0.
-        move/log_increasing : LHS => /[apply].
+        move/ltr_log : LHS => /[apply].
         rewrite log_powR log2 mulr1 -ltr_ndivrMl; last first.
           by rewrite oppr_lt0 ltr0n.
         rewrite -ltrN2 opprB ltrBlDr => /lt_le_trans; apply.
@@ -181,8 +183,7 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
       by rewrite invrN addrC -{1}(opprK (`H P)) lerBlDr.
   rewrite disjoint_Pr_setU // disjoints_subset; apply/subsetP => /= i.
   by rewrite !inE /= => /eqP Hi; rewrite negb_and Hi ltxx.
-rewrite {1}/Pr (eq_bigr (fun=> 0)); last by move=> /= v; rewrite inE => /eqP.
-rewrite big1// add0r.
+rewrite {1}/Pr big1 ?add0r; last by move=> /= v; rewrite inE => /eqP.
 apply/(le_trans _ (aep He k0_k))/subset_Pr/subsetP => /= t.
 rewrite !inE /= => /andP[-> H3].
 by rewrite /log_RV /= /scalel_RV /= mulrN -mulNr div1r ltW.

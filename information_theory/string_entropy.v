@@ -83,14 +83,13 @@ Hypothesis total_gt0 : total != O.
 
 Let f_div_total := [ffun a : A => f a /:R total : R].
 
-Lemma f_div_total_pos c : (0 <= f_div_total c)%mcR.
+Lemma f_div_total_pos c : 0 <= f_div_total c.
 Proof. by rewrite ffunE mulr_ge0 // invr_ge0 ler0n. Qed.
 
 Lemma f_div_total_1 : \sum_(a in A) f_div_total a = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
-rewrite /f_div_total -big_distrl /=.
-rewrite -(big_morph _ (id2:=0%N) (natrD _)) //.
+rewrite /f_div_total -big_distrl /= -natr_sum.
 by rewrite sum_f_total divrr // unitfE pnatr_eq0.
 Qed.
 
@@ -264,8 +263,7 @@ rewrite (eq_bigr
   last first.
   move=> i Hi; rewrite mulrCA mulrAC.
   by rewrite mulrV ?mul1r // unitfE pnatr_eq0.
-rewrite -big_filter -/ss' -big_distrl /=.
-rewrite -(big_morph (fun x => x%:R) (id2:=0) (natrD _)) //=.
+rewrite -big_filter -/ss' -big_distrl /= -natr_sum.
 by rewrite size_flatten sumn_big_addn big_map.
 Qed.
 

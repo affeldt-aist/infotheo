@@ -142,7 +142,7 @@ apply/idP/idP.
 - rewrite /BCH.PCM_alt /BCH.PCM /syndrome => H.
   apply/eqP/rowP => i.
   have @j : 'I_t.*2.
-    refine (@Ordinal _ i.*2 _); by rewrite -!muln2 ltn_pmul2r.
+    by refine (@Ordinal _ i.*2 _); rewrite -!muln2 ltn_pmul2r.
   move/eqP : H => /matrixP/(_ ord0 j).
   rewrite !mxE => {2}<-.
   by apply eq_bigr => k _; rewrite !mxE.
@@ -151,11 +151,9 @@ Qed.
 End BCH_PCM_alt.
 
 Section BCH_def.
-
 Variables (n : nat) (m : nat).
 
-Definition code (a : 'rV_n) t :=
-  Rcode.t (@GF2_of_F2 m) (kernel (PCM a t)).
+Definition code (a : 'rV_n) t := Rcode.t (@GF2_of_F2 m) (kernel (PCM a t)).
 
 End BCH_def.
 
@@ -178,8 +176,7 @@ Notation "'\BCHsynp_(' a , e , t )" := (BCH.syndromep a e t) : bch_scope.
 Local Open Scope bch_scope.
 
 Section BCH_is_GRS.
-
-Variable (m : nat).
+Variable m : nat.
 Let F := GF2 m.
 Variable (n' : nat).
 Let n := n'.+1.
@@ -449,7 +446,6 @@ End BCH_erreval.
 Notation "'\BCHomega_(' a , e )" := (BCH_erreval a e) : bch_scope.
 
 Section BCH_key_equation_old.
-
 Variables (F : fieldType) (n' : nat).
 Let n := n'.+1.
 Variable a : F.
@@ -467,7 +463,7 @@ under eq_bigr.
   rewrite (_ : \sigma_(rVexp a n, y) =
     \sigma_(rVexp a n, y, i) * (1 - ((rVexp a n) ``_ i) *: 'X)); last first.
     rewrite /errloc (bigD1 i) //= mulrC; congr (_ * _).
-    apply eq_bigl => ij; by rewrite in_setD1 andbC.
+    by apply eq_bigl => ij; rewrite in_setD1 andbC.
   over.
 transitivity (\sum_(i in supp y) y ``_ i *:
      (\sigma_(rVexp a n, y, i) * (1 - a ^+ (i * n) *: 'X^n))).
@@ -492,7 +488,6 @@ Qed.
 End BCH_key_equation_old.
 
 Section decoding_using_euclid.
-
 Variables (n' : nat) (m : nat).
 Let n := n'.+1.
 Let F := GF2 m.
@@ -673,7 +668,7 @@ rewrite HM /fdcoor poly_rV_K //; last first.
   rewrite -HM.
   move: (ltn_modp ('X * rVpoly x') ('X^n - 1)).
   rewrite size_XnsubC // ltnS => ->.
-  by rewrite monic_neq0 // monic_Xn_sub_1.
+  by rewrite monic_neq0 // monicXnsubC.
 rewrite !(hornerE,hornerXn(*TODO(rei): not necessary since mc1.16.0*)).
 move: (Hx i); rewrite /fdcoor => /eqP ->; rewrite mulr0 add0r.
 by rewrite mxE exprAC a1 expr1n subrr mulr0.
