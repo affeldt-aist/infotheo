@@ -93,7 +93,7 @@ Proof. by move=> g01; apply: total_le1=> i _; have /andP [] := g01 i. Qed.
 Let f0 a : 0 <= f a.
 Proof.
 rewrite ffunE /f divr_ge0//; last exact/ltW/total_gt0.
-by rewrite mulr_ge0 //; case: g => ? /= /forallP; exact.
+by rewrite mulr_ge0.
 Qed.
 
 Let f1 : \sum_(a in A) f a = 1.
@@ -110,7 +110,7 @@ Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 Lemma support_nonempty : {i | g i != 0}.
 Proof.
 move: total_neq0; rewrite psumr_neq0; last first.
-  by move=> *; apply: mulr_ge0 => //; exact: nneg_finfun_ge0.
+  by move=> *; apply: mulr_ge0.
 case/hasP/sig2W=> /= x ?.
 move/RltP/ssrR.pmulR_lgt0'.
 have := fdist_ge0_le1 d0 x.
@@ -330,7 +330,7 @@ move/[swap] => i.
 rewrite psumr_eq0.
   by move/allP/(_ i)/[!mem_index_enum]/(_ erefl)/implyP/[!inE]/(_ erefl)/eqP->.
 move=> x _; apply/mulr_ge0.
-  by rewrite mulr_ge0//.
+  by rewrite mulr_ge0.
 by rewrite sqr_ge0.
 Qed.
 
@@ -352,7 +352,7 @@ move: evar_gt0; rewrite lt_neqAle eq_sym => /andP [] /[swap] _.
 case/evar0P/boolp.existsNP=> x /eqP ?; exists x.
 rewrite lt_neqAle eq_sym; apply/andP; split=> //.
 apply: mulr_ge0; last exact/sq_dev_ge0.
-apply: mulr_ge0=> //; exact/nneg_finfun_ge0.
+exact: mulr_ge0=> //.
 Qed.
 
 End pos_evar.
@@ -495,7 +495,7 @@ apply (@le_trans _ _ (1 - (1 - eps) / 2 / Pr P S *
   rewrite lerD2l lerNl opprK ler_pM2l; last first.
     rewrite pr_S mulrC mulrA mulVf //; lra.
   apply ler_sum => i icplt_S.
-  by rewrite mulrBr mulr1 lerBlDr lerDl; apply: mulr_ge0 => //.
+  by rewrite mulrBr mulr1 lerBlDr lerDl; exact: mulr_ge0.
 rewrite -pr_S -mulrA mulrCA !mulrA mulVf ?pr_S // mul1r.
 rewrite ler_pdivlMr; last by move: low_eps eps_max01; lra.
 rewrite -pr_S mulrDl mul1r {2}pr_S mulNr.
@@ -729,7 +729,10 @@ apply (@le_trans _ _ ((1 - eps) *
     apply:addr_ge0; first lra.
     rewrite mulr_ge0 //.
     exact: sqr_ge0.
-  - apply: ler_pM=> //. apply: addr_ge0; first lra. rewrite mulr_ge0//. exact: sqr_ge0.
+  - apply: ler_pM=> //.
+    apply: addr_ge0; first lra.
+    rewrite mulr_ge0//.
+    exact: sqr_ge0.
   - apply: lerD => //.
     apply: ler_pM=> //; first exact: sqr_ge0.
       by move: low_eps; lra.
