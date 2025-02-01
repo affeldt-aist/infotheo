@@ -130,7 +130,7 @@ Lemma Pr_TS_1 : aep_bound P epsilon <= n.+1%:R ->
 Proof.
 move=> k0_k.
 have -> : Pr (P `^ n.+1)%fdist (`TS P n.+1 epsilon) =
-  Pr (P `^ n.+1)%fdist [set i | (i \in `TS P n.+1 epsilon) && (0 < (P `^ n.+1)%fdist i)%mcR].
+  Pr (P `^ n.+1)%fdist [set i | (i \in `TS P n.+1 epsilon) && (0 < (P `^ n.+1)%fdist i)].
   congr Pr; apply/setP => /= t; rewrite !inE.
   apply/idP/andP => [H|]; [split => // | by case].
   by case/andP : H => H _; apply/(lt_le_trans _ H); rewrite powR_gt0.
@@ -138,12 +138,12 @@ set p := [set _ | _].
 rewrite Pr_to_cplt lerD2l lerNl opprK.
 have -> : Pr (P `^ n.+1)%fdist (~: p) =
   Pr (P `^ n.+1)%fdist [set x | (P `^ n.+1)%fdist x == 0] +
-  Pr (P `^ n.+1)%fdist [set x | (0 < (P `^ n.+1)%fdist x)%mcR &&
-                (`| - n.+1%:R^-1 * log ((P `^ n.+1)%fdist x) - `H P | > epsilon)%mcR].
+  Pr (P `^ n.+1)%fdist [set x | (0 < (P `^ n.+1)%fdist x) &&
+                (`| - n.+1%:R^-1 * log ((P `^ n.+1)%fdist x) - `H P | > epsilon)].
   have -> : ~: p =
     [set x | (P `^ n.+1)%fdist x == 0 ] :|:
-    [set x | (0 < (P `^ n.+1)%fdist x)%mcR &&
-             (`| - n.+1%:R^-1 * log ((P `^ n.+1)%fdist x) - `H P | > epsilon)%mcR].
+    [set x | (0 < (P `^ n.+1)%fdist x) &&
+             (`| - n.+1%:R^-1 * log ((P `^ n.+1)%fdist x) - `H P | > epsilon)].
     apply/setP => /= i; rewrite !inE negb_and orbC.
     apply/idP/idP => [/orP[H|]|].
     - have {}H : (P `^ n.+1)%fdist i = 0.
@@ -195,7 +195,7 @@ Lemma set_typ_seq_not0 : aep_bound P epsilon <= n.+1%:R ->
   #| `TS P n.+1 epsilon | != O.
 Proof.
 move/Pr_TS_1 => H.
-case/boolP : (#| `TS P n.+1 epsilon | == O) => [|Heq]; last by apply/eqP.
+have [/eqP|//] := eqVneq (#| `TS P n.+1 epsilon |) O.
 rewrite cards_eq0 => /eqP Heq.
 rewrite Heq Pr_set0 in H.
 exfalso.

@@ -650,11 +650,11 @@ elim: h a => [|h Hh] a.
   move: (ltn_ord a).
   by rewrite ltn0.
 rewrite /= in_cons.
-case/boolP : (_ == _) => //= a_not_h.
+have [//=|a_not_h] := eqVneq a (Ordinal (ltnSn h)).
 suff a_ltn_h : (a < h)%N.
   apply/mapP.
   exists (Ordinal a_ltn_h) => //.
-  by apply val_inj.
+  exact/val_inj.
 by rewrite ltn_neqAle a_not_h /= -ltnS.
 Qed.
 
@@ -978,13 +978,12 @@ rewrite GRing.addrC /checksubsum F2_of_bool_addr.
 congr (F2_of_bool ((_ + _)%R == _)).
 apply congr_big => // i.
   rewrite !inE.
-  case/boolP : (i == n0) => [ /eqP -> | ] /=.
-  by apply/negbTE.
+  have [->|] := eqVneq i n0; first exact/negbTE.
   by rewrite andbT.
 rewrite !inE !mxE.
-case/boolP : (i == n0) => [/eqP -> | ].
+have [->|] := eqVneq i n0.
   by rewrite (negbTE n0_l).
-case/boolP : (i == n1) => [/eqP -> | //].
+have [->|//] := eqVneq i n1.
 by rewrite (negbTE n1_l).
 Qed.
 
@@ -1025,17 +1024,16 @@ elim: l' => [|hd tl IH] /= in d n1_l' n0_l' *.
   apply congr_big => // i.
     rewrite !inE.
     move: n1_l.
-    case/boolP : (i == n1) => [/eqP -> |] /=.
-    by move/negbTE.
+    have [-> /negbTE//|] := eqVneq i n1.
     by rewrite andbT.
   rewrite inE => i_l.
   apply beta_inva.
     by move: (Hsub _ i_l); rewrite in_setD1; case/andP.
   rewrite !mxE.
   move: i_l.
-  case/boolP : (i == n0) => [/eqP -> |].
-  by rewrite (negbTE n0_l).
-  case/boolP : (i == n1) => [/eqP -> |//].
+  have [->|] := eqVneq i n0.
+    by rewrite (negbTE n0_l).
+  have [->|//] := eqVneq i n1.
   by rewrite (negbTE n1_l).
 apply eq_bigr => i _.
 rewrite row_setC; last first.
@@ -1211,7 +1209,7 @@ congr (f c _ :: _).
   apply/esym/all_filterP/allP => i.
   rewrite map_cat cat_uniq /= in Hun.
   case/and4P : Hun => _ /norP [] Hinl _ Hcl _.
-  case/boolP : (node_id i == node_id c) => //= /eqP Hic.
+  have [Hic|//] := eqVneq (node_id i) (node_id c).
   rewrite mem_cat => /orP [] /(map_f node_id).
   - by rewrite Hic (negbTE Hinl).
   - by rewrite Hic (negbTE Hcl).

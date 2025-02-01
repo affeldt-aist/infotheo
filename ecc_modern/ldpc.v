@@ -262,8 +262,7 @@ transitivity (\sum_(x = d [~'V(m0, n0) :\ n0])
   case/boolP : (k \in 'V(m0, n0) :\ n0) => K.
     by rewrite !dproj_in.
   do 2 rewrite dproj_out //.
-  case/boolP : (k == n0) => kn0.
-    by rewrite (eqP kn0).
+  have [->//|kn0] := eqVneq k n0.
   rewrite in_setD1 kn0 /= in K.
   exfalso.
   move/negP : K; apply.
@@ -334,7 +333,7 @@ transitivity (\sum_(x = d [~'V(m1, n0) :\ n0])
   case/boolP : (k \in 'V( m1, n0) :\ n0) => K.
     by do 2 rewrite dproj_in //.
   do 2 rewrite dproj_out //.
-  case/boolP : (k == n0) => [/eqP -> // |kn0].
+  have [->//|kn0] := eqVneq k n0.
   rewrite in_setD1 kn0 /= in K.
   exfalso.
   move/negP : K; apply.
@@ -799,9 +798,8 @@ rewrite Hm1 (_ : [set n1; n2] :\ n1 = [set n2]); last by rewrite setU1K // in_se
 rewrite rsum_freeon1 2!big_set1.
 do 2 rewrite checksubsum_set2 //.
 rewrite [in X in X%:R]/row_set !mxE (negbTE n1n2) eqxx.
-case/boolP : (d ``_ n1 == Zp0).
-  move/eqP => dn1.
-  by rewrite dn1 mul1r /= mul0r addr0.
+have [->|] := eqVneq (d ``_ n1) Zp0.
+  by rewrite mul1r /= mul0r addr0.
 rewrite mul0r add0r -F2_eq1 => /eqP ->.
 by rewrite eqxx mul1r.
 Qed.

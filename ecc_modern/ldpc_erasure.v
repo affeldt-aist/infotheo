@@ -285,11 +285,11 @@ Lemma Prod_map_not_Star m n (A : 'M_(m, n)) n0 (s : {set 'I_m}) :
   exists b m1, m1 \in s /\ A m1 n0 = Bit b.
 Proof.
 rewrite Prod_StarE negb_forall => /existsP[b Hb].
-case/boolP : (N(Bit (F2_of_bool (b : bool)) | [seq A m1 n0 | m1 in s]) == O) => [H0|].
+have [H0|] := eqVneq (N(Bit (F2_of_bool (b : bool)) | [seq A m1 n0 | m1 in s])) O.
   have : 0 < N(Bit (F2_of_bool (~~ b)) | [seq A m1 n0 | m1 in s]).
-    by rewrite lt0n; apply: contra Hb => /eqP ->.
+    by rewrite lt0n; apply: contra Hb => /eqP ->; exact/eqP.
   rewrite lt0n -notin_num_occ_0 negbK => /mapP[i Hi].
-  exists (F2_of_bool (~~ b)), i; by rewrite mem_enum in Hi.
+  by exists (F2_of_bool (~~ b)), i; rewrite mem_enum in Hi.
 rewrite -notin_num_occ_0 negbK => /mapP[i Hi] H1.
 exists (F2_of_bool b), i; by rewrite mem_enum in Hi.
 Qed.
@@ -382,7 +382,7 @@ move=> Hle.
 suff : (num_stars A <= num_stars B) && ((num_stars A == num_stars B) ==>
        \big[andb/true]_(i < m) (row i A == row i B)).
   case/andP => A_le_B.
-  case/boolP : (_ == _) => [A_eq_B|A_not_B _] /=.
+  have [A_eq_B|A_not_B _] := eqVneq (num_stars A) (num_stars B).
     rewrite big_all => Hall.
     apply/orP; left.
     apply/eqP/row_matrixP => i.

@@ -78,7 +78,7 @@ Let N2R x : R := x%:R.
 #[reversible=yes] Local Coercion N2R' := N2R.
 *)
 Variable total : nat.
-Hypothesis sum_f_total : (\sum_(a in A) f a)%nat = total.
+Hypothesis sum_f_total : (\sum_(a in A) f a)%N = total.
 Hypothesis total_gt0 : total != O.
 
 Let f_div_total := [ffun a : A => f a /:R total : R].
@@ -121,7 +121,7 @@ Definition Hs (s : seq A) :=
 
 Definition nHs (s : seq A) : R :=
  \sum_(a in A)
-  if N(a|s) == 0%nat then 0 else
+  if N(a|s) == 0%N then 0 else
   N(a|s)%:R * log (size s /:R N(a|s)).
 
 Lemma szHs_is_nHs s (H : size s != O) :
@@ -144,14 +144,14 @@ Defined.
 Arguments mulnrdep x y : clear implicits.
 
 Lemma mulnrdep_0 y : mulnrdep 0 y = 0.
-Proof. rewrite /mulnrdep /=. by destruct boolP. Qed.
+Proof. by rewrite /mulnrdep /=; destruct boolP. Qed.
 
 Lemma mulnrdep_nz x y (Hx : x != O) : mulnrdep x y = x%:R * y Hx.
 Proof.
 rewrite /mulnrdep /=.
 destruct boolP.
   by exfalso; rewrite i in Hx.
-do 2!f_equal; apply eq_irrelevance.
+by do 2!f_equal; apply eq_irrelevance.
 Qed.
 
 Lemma szHs_is_nHs_full s : mulnrdep (size s) (fun H => Hs0 H) = nHs s.
@@ -188,11 +188,11 @@ rewrite (eq_bigr
 rewrite -big_filter -[in X in _ <= X]big_filter.
 (* ss' contains only strings with ocurrences *)
 set ss' := [seq s <- ss | N(a|s) != O].
-case/boolP: (ss' == [::]) => Hss'.
-  by rewrite (eqP Hss') !big_nil eqxx.
-have Hnum s : s \in ss' -> (N(a|s) > 0)%nat.
+have [->|Hss'] := eqVneq ss' [::].
+  by rewrite !big_nil eqxx.
+have Hnum s : s \in ss' -> (N(a|s) > 0)%N.
   by rewrite /ss' mem_filter lt0n => /andP [->].
-have Hnum': (0:R) < N(a|flatten ss')%:R.
+have Hnum' : (0:R) < N(a|flatten ss')%:R.
   rewrite ltr0n; destruct ss' => //=.
   rewrite /num_occ count_cat ltn_addr //.
   by rewrite Hnum // in_cons eqxx.
@@ -201,7 +201,7 @@ have Hsz: (0:R) < (size (flatten ss'))%:R.
   by rewrite ler_nat; apply /count_size.
 apply (@le_trans _ _ ((\sum_(i <- ss') N(a|i))%:R *
     log (size (flatten ss') /:R
-      (\sum_(i <- ss') N(a|i))%nat)));
+      (\sum_(i <- ss') N(a | i))%N)));
   last first.
   (* Not mentioned in the book: one has to compensate for the discarding
      of strings containing no occurences.
@@ -217,8 +217,7 @@ apply (@le_trans _ _ ((\sum_(i <- ss') N(a|i))%:R *
     by rewrite invr_ge0 ler0n.
   rewrite ler_nat !size_flatten !sumn_big_addn.
   rewrite !big_map big_filter.
-  rewrite [in X in (_ <= X)%nat]
-    (bigID (fun s => N(a|s) == O)) /=.
+  rewrite [leqRHS](bigID (fun s => N(a|s) == O)) /=.
   by apply leq_addl.
 (* (4) Prepare to use jensen_dist_concave *)
 have Htotal := esym (num_occ_flatten a ss').
@@ -275,7 +274,7 @@ End string.
 Section higher_order_empirical_entropy.
 
 Variables (R : realType) (A : finType) (l : seq A).
-Hypothesis A0 : (O < #|A|)%nat.
+Hypothesis A0 : (O < #|A|)%N.
 Let n := size l.
 Let def : A. Proof. move/card_gt0P : A0 => /sigW[def _]; exact def. Defined.
 Hypothesis l0 : n != O.

@@ -142,7 +142,7 @@ case: ifPn => [/eqP ->|i0]; last rewrite subr0.
   case: insubP => //= j _ j0.
   rewrite mxE unlock ffunE /= -val_eqE j0 /= j0 eqxx; congr (- x _ _).
   by apply val_inj => /=; rewrite inordK.
-case/boolP : (i == n.+1) => [/eqP ->|in0].
+have [->|in0] := eqVneq i n.+1.
   rewrite mulr1 2!coef_rVpoly /=.
   case: insubP => /= [j _ j0|]; last by rewrite ltnS leqnn.
   case: insubP => /= [?|_]; first by rewrite ltnn.
@@ -416,16 +416,16 @@ Lemma scale_cgen (g' : 'rV[F]_n) (HC : not_trivial C) :
 Proof.
 move=> Hg'.
 set g := canonical_cgen HC.
-case/boolP : (g == g') => [/eqP ->|gg'].
-  exists 1; by rewrite scale1r oner_neq0 eqxx.
+have [->|gg'] := eqVneq g g'.
+  by exists 1; rewrite scale1r oner_neq0 eqxx.
 have size_g := canonical_cgen_lowest_size HC.
 rewrite -/g in size_g.
 pose k := lead_coef (rVpoly g') / lead_coef (rVpoly g).
 pose g'' : {poly F} := rVpoly g' - k *: rVpoly g.
 have size_g' : size (rVpoly g') = size (rVpoly g) by rewrite size_g; apply size_lowest.
-case/boolP : (k == 0) => k0.
+have [k0|k0] := eqVneq k 0.
   exfalso.
-  move: k0.
+  move/eqP: k0.
   rewrite /k mulf_eq0 invr_eq0 2!lead_coef_eq0.
   case/orP; rewrite rVpoly0; apply/negP.
   by case/and3P : Hg'.
@@ -434,10 +434,11 @@ have size_g'' : size g'' < size (rVpoly g).
   rewrite /g'' -size_g'; apply size_sub => //.
   apply/eqP; rewrite rVpoly0; by case/and3P : Hg'.
   rewrite lreg_size ?size_g' //; by apply/GRing.lregP.
-  rewrite lead_coefZ /k -mulrA mulVr ?mulr1 // unitfE lead_coef_eq0 rVpoly0; by case/and3P : (canonical_cgenP HC).
+  rewrite lead_coefZ /k -mulrA mulVr ?mulr1 // unitfE lead_coef_eq0 rVpoly0.
+  by case/and3P : (canonical_cgenP HC).
 have g''C : poly_rV g'' \in C.
   rewrite /g'' linearD /= linearN /= linearZ /= (proj2 (Lcode0.aclosed C)) // ?rVpolyK; first by case/and3P : Hg'.
-  rewrite Lcode0.oclosed // Lcode0.sclosed //; by case/and3P : (canonical_cgenP HC).
+  by rewrite Lcode0.oclosed // Lcode0.sclosed //; case/and3P : (canonical_cgenP HC).
 have g''0 : g'' = 0.
   apply/eqP/negPn/negP => abs.
   case/and3P: (canonical_cgenP HC) => _ _ /forallP/(_ (poly_rV g'')).
@@ -467,8 +468,7 @@ Lemma divide_codeword (p : {poly F}) : poly_rV (`[ p ]_n) \in C ->
   forall g, g \in 'cgen[C] -> rVpoly g %| p.
 Proof.
 move=> pC g Hg.
-case/boolP : (p == 0) => [/eqP -> | p0].
-  by rewrite dvdp0.
+have [->|p0] := eqVneq p 0; first by rewrite dvdp0.
 move/eqP: (divp_eq p (rVpoly g)); rewrite addrC -subr_eq => /eqP.
 move/(congr1 (fun x => `[ x ]_n))/esym.
 have size_rem : size (p %% rVpoly g) < size (rVpoly g).
@@ -585,7 +585,7 @@ case/dvdpP => /= i ig.
 split.
   by rewrite inE linear0 dvdp0.
 move=> k a b; rewrite !inE => ga gb.
-case/boolP : (k == 0) => [/eqP ->|k0]; first by rewrite scale0r add0r.
+have [->|k0] := eqVneq k 0; first by rewrite scale0r add0r.
 by rewrite linearD linearZ /= dvdp_addr // dvdpZr.
 Qed.
 

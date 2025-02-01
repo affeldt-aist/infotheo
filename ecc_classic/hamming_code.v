@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm zmodp.
-From mathcomp Require Import matrix mxalgebra vector ring.
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm.
+From mathcomp Require Import zmodp matrix mxalgebra vector ring.
 From mathcomp Require Import Rstruct reals.
 Require Import realType_ext ssr_ext ssralg_ext f2 linearcode natbin hamming.
 Require Import bigop_ext fdist proba channel channel_code decoding.
@@ -47,7 +47,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Import GRing.Theory.
+Import GRing.Theory Order.POrderTheory.
 Local Open Scope ring_scope.
 
 Module Hamming.
@@ -120,8 +120,8 @@ Proof.
 move=> /wH_2[i [j [Hij [Hi [Hj Hk]]]]].
 rewrite /syndrome mulmx_sum_col (bigID (pred1 i)) /= big_pred1_eq /=.
 rewrite (bigID (pred1 j)) /= (eq_bigl (pred1 j)) /=; last first.
-  move=> a /=; case/boolP : (a == j) => aj; last by rewrite andbC.
-  rewrite andbC /= (eqP aj) eq_sym; by apply/eqP.
+  move=> a /=; have [aj|aj] := eqVneq a j; last by rewrite andbC.
+  rewrite andbC /= aj eq_sym; by apply/eqP.
 rewrite big_pred1_eq /= (eq_bigr (fun=> 0)) /=; last first.
   move=> a /andP[X1 X2].
   rewrite mxE Hk ?scale0r //; (apply/eqP; by rewrite eq_sym).
@@ -272,13 +272,14 @@ rewrite /alt_hamming_err.
 destruct (nat_of_rV _); first by rewrite wH0.
 clearbody n; clear.
 rewrite wH_sum.
-case/boolP : (n0 < n)%N => n0n.
-  rewrite (bigD1 (Ordinal n0n)) //= mxE eqxx (eq_bigr (fun x => O)); last first.
+have [n0n|n0n] := ltnP n0 n.
+  rewrite (bigD1 (Ordinal n0n))//= mxE eqxx (eq_bigr (fun x => O)); last first.
     move=> i Hi; rewrite mxE ifF //.
     apply: contraNF Hi => /eqP Hi; by apply/eqP/val_inj.
   by rewrite big_const iter_addn mul0n.
 rewrite (eq_bigr (fun x => O)); first by rewrite big_const iter_addn.
-move=> i _; rewrite mxE ifF //=; by apply: contraNF n0n => /eqP ->.
+move=> i _; rewrite mxE ifF //=.
+by apply/negbTE; rewrite gtn_eqF// (leq_trans (ltn_ord i)).
 Qed.
 
 Lemma syndrome_hamming_err y :
@@ -286,7 +287,7 @@ Lemma syndrome_hamming_err y :
 Proof.
 rewrite /hamming_err.
 move Hs : (syndrome (Hamming.PCM m) y) => s.
-case/boolP : (s == 0) => [/eqP ->|s0].
+have [->|s0] := eqVneq s 0.
   by rewrite nat_of_rV_0 syndrome0.
 have [k ks] : exists k : 'I_n, nat_of_rV s = k.+1.
   move: s0; rewrite -nat_of_rV_eq0 -lt0n => s0.
@@ -571,7 +572,7 @@ Lemma PCM_A_1 : PCM = castmx (erefl, subnK (Hamming.dim_len m')) (row_mx CSM 1).
 Proof.
 apply/matrixP => i j.
 rewrite mxE castmxE /=.
-case/boolP : (j < n - m)%N => Hcond.
+have [Hcond|Hcond] := ltnP j (n - m)%N.
   have -> : cast_ord (esym (subnK (Hamming.dim_len m'))) j =
            lshift m (Ordinal Hcond) by apply val_inj.
   rewrite row_mxEl [in X in _  = X]mxE.
@@ -582,13 +583,13 @@ case/boolP : (j < n - m)%N => Hcond.
 rewrite [in X in _ = X]mxE.
 move: (splitP (cast_ord (esym (subnK (Hamming.dim_len m'))) j)) => [k Hk|k Hk].
   have jk : j = k :> nat by [].
-  by rewrite jk (ltn_ord k) in Hcond.
+  by rewrite leqNgt jk (ltn_ord k) in Hcond.
 rewrite permE /perm_ids.
 move Hj : (ord_split j) => l.
 move: (splitP l) => [p Hp|p Hlp].
   exfalso.
   move/negP : Hcond; apply.
-  suff -> : nat_of_ord j = nat_of_ord p by apply ltn_ord.
+  suff -> : nat_of_ord j = nat_of_ord p by apply/negP; rewrite -ltnNge ltn_ord.
   by rewrite -Hp -Hj.
 destruct ids1 as [x e] => /=.
 move/matrixP/(_ i 0) : e.

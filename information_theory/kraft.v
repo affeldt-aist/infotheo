@@ -17,10 +17,6 @@ Require Import ssr_ext.
 (*   University Press, 2002                                                   *)
 (******************************************************************************)
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
 (* OUTLINE:
   1. Section prefix.
   2. Section ary_of_nat.
@@ -34,20 +30,23 @@ Unset Printing Implicit Defensive.
   10. wip
 *)
 
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
 Lemma empty_finType_nil (T : finType) : (#|T| = 0) -> forall c : seq T, c = [::].
 Proof. move/card0_eq => T0; by case=> // h; move: (T0 h); rewrite !inE. Qed.
 
 Lemma sorted_leq_last s : sorted leq s -> forall i, i \in s -> i <= last 0 s.
 Proof.
 move=> H /= i; case/(nthP O) => {}i Hi <-; rewrite -nth_last.
-case/boolP : (i == (size s).-1) => [/eqP <- //|si].
+have [<-//|si] := eqVneq i (size s).-1.
 apply (sorted_ltn_nth leq_trans) => //.
-by rewrite inE prednK // (leq_trans _ Hi).
+  by rewrite inE prednK // (leq_trans _ Hi).
 by rewrite ltn_neqAle si /= -ltnS prednK // (leq_trans _ Hi).
 Qed.
 
 Section prefix.
-
 Variable T : eqType.
 Implicit Types a b : seq T.
 
@@ -85,8 +84,8 @@ Proof.
 case/prefixP => t /eqP <-{s} /prefixP[t'].
 wlog : t t' a b / size a <= size b.
   move=> H.
-  case/boolP : (size a <= size b) => [? K|]; first exact: (H t t').
-  rewrite leqNgt negbK => /ltnW /(H t' t) {}H /eqP/esym/eqP; tauto.
+  have [? K|] := leqP (size a) (size b); first exact: (H t t').
+  by move=> /ltnW /(H t' t) {}H /eqP/esym/eqP; tauto.
 move=> ab H; left; apply/prefixP; exists (take (size b - size a) t).
 move/eqP : H => /(congr1 (take (size b))).
 by rewrite take_cat ltnn subnn take0 cats0 take_cat ltnNge ab /= => <-.
@@ -326,7 +325,7 @@ Lemma empty_finType_code_set (C : code_set) : (#|T| = 0) ->
   C = [::] :> seq _ \/ C = [:: [::]] :> seq _.
 Proof.
 move=> T0.
-case/boolP : (C == [::] :> seq _); first by move/eqP; left.
+have [|] := eqVneq (C : seq _) [::]; first by left.
 rewrite -size_eq0 => C0; right.
 have : size C <= 1.
   rewrite leqNgt.
@@ -368,8 +367,8 @@ split.
   move=> H c c' cC c'C cc' _.
   by apply H.
 move=> H c c' cC c'C cc'.
-  case/boolP : (size c <= size c') => [K|]; first exact: H.
-  apply: contra => /eqP K.
+  have [K|] := leqP (size c) (size c'); first exact: H.
+  rewrite ltnNge; apply: contra => /eqP K.
   by rewrite -(cat_take_drop (size c) c') {1}K size_cat leq_addr.
 Qed.
 
@@ -413,18 +412,18 @@ Qed.
 
 Lemma injective_w : injective w.
 Proof.
-move=> i j; case/boolP : (w i == 0); rewrite w_eq0 => i0.
+move=> i j; have [/eqP|] := eqVneq (w i) 0; rewrite w_eq0 => i0.
   rewrite (eqP i0) wE0.
-  case/boolP : (w j == 0); rewrite w_eq0 => j0; first by rewrite (eqP j0).
+  have [/eqP|] := eqVneq (w j) 0; rewrite w_eq0 => j0; first by rewrite (eqP j0).
   by move/esym/eqP; rewrite w_eq0 (negbTE j0).
-case/boolP : (w j == 0) => [|]; rewrite w_eq0 => j0.
+have [/eqP|] := eqVneq (w j) 0; rewrite w_eq0 => j0.
   by rewrite (eqP j0) wE0 => /eqP; rewrite w_eq0 (negbTE i0).
-case/boolP : (i == j) => [/eqP //|ij].
+have [//|ij] := eqVneq i j.
 wlog : i j i0 j0 ij / i < j.
   move=> Hwlog H.
   move: ij; rewrite neq_ltn => /orP[|] ij.
-  - apply Hwlog => //; by move/negbT : (ltn_eqF ij).
-  - apply/esym; apply Hwlog => //; by move/negbT : (ltn_eqF ij).
+  - by apply Hwlog => //; move/negbT : (ltn_eqF ij).
+  - by apply/esym; apply Hwlog => //; move/negbT : (ltn_eqF ij).
 move=> {}ij /esym.
 rewrite /w (bigID (fun i1 : 'I__ => i1 < i)) /=.
 set a := (X in X + _ = _ -> _). set b := (X in _ = X -> _).
@@ -623,7 +622,7 @@ have H' : (\sum_(i < n) #|T|%:R^-(nth O l i) <= (1 : R))%R.
   move: H; by rewrite /kraft_cond (_ : size l = n).
 rewrite -(@ler_nat R) -(@ler_pM2l _ (#|T|%:R ^- nth O l j))%R; last first.
   by rewrite -exprVn exprn_gt0 // invr_gt0 ltr0n card_ord.
-case/boolP : (j == ord0) => [/eqP ->|i0].
+have [->|i0] := eqVneq j ord0.
   by rewrite wE0 mulr0 mulr_ge0 // -exprVn exprn_ge0 // invr_ge0 ler0n.
 rewrite !natrB ?expn_gt0 ?card_ord // -!natrX.
 rewrite mulrBr mulVr ?unitfE ?mulr1 ?pnatr_eq0 ?expn_eq0 //.
@@ -720,9 +719,9 @@ have H1 : (r >= (w j)%:R + (1 : R))%R. (*\color{comment}{\framebox{here we prove
   (*\framebox{\color{comment}{let $u = \sum_{j \leq i < k} |T|^{\ell_j}|T|^{-\ell_i}$}} *)
   have -> : (r' = (w j)%:R + u :> R)%R. (* \color{comment}{\framebox{$r' = w_j + u$, Eqn (\ref{eqn:kraft_converse2})}} *)
     pose f := (fun i : nat => #|T|%:R^+l``_j * #|T|%:R^-l``_i : R)%R.
-    case/boolP : (j == ord0) => j0.
-      rewrite /u (eqP j0) wE0 add0r big_mkord /r'.
-      apply/eq_bigr => i _; by rewrite (eqP j0).
+    have [j0|j0] := eqVneq j ord0.
+      rewrite /u j0 wE0 add0r big_mkord /r'.
+      by apply/eq_bigr => i _; rewrite j0.
     rewrite /r' /u -(big_mkord xpredT f)%R natr_sum.
     rewrite (eq_bigr (fun i : 'I__ => f i)); last first.
       move=> i _; rewrite natrX exprB //.
@@ -768,7 +767,8 @@ Record code_set_cw M := CodeSetCw {
   codesetcw :> {set M.-bseq T}
 }.
 
-Definition code_set_cw_of_code_set (c : code_set T) : code_set_cw (foldr maxn O (map size c)).
+Definition code_set_cw_of_code_set (c : code_set T) :
+  code_set_cw (foldr maxn O (map size c)).
 Proof.
 set M := foldr maxn O (map size c).
 pose l : seq (M.-bseq T) := map (@insub_bseq M T) (codeset c).

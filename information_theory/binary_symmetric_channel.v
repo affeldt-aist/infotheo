@@ -3,8 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum zmodp matrix lra.
 From mathcomp Require Import mathcomp_extra classical_sets Rstruct reals.
 Require Import realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
-Require Import fdist entropy binary_entropy_function channel hamming channel_code.
-Require Import pproba.
+Require Import fdist entropy binary_entropy_function channel hamming.
+Require Import channel_code pproba.
 
 (******************************************************************************)
 (*                Capacity of the binary symmetric channel                    *)
@@ -26,7 +26,7 @@ Local Open Scope ring_scope.
 Module BSC.
 Section BSC_sect.
 Variable A : finType.
-Hypothesis card_A : #|A| = 2%nat.
+Hypothesis card_A : #|A| = 2%N.
 Variable p : {prob Rdefinitions.R}.
 
 Definition c : `Ch(A, A) := fdist_binary card_A p.
@@ -40,11 +40,11 @@ Import Order.TTheory GRing.Theory Num.Def Num.Theory.
 
 Section bsc_capacity_proof.
 Variable A : finType.
-Hypothesis card_A : #|A| = 2%nat.
+Hypothesis card_A : #|A| = 2%N.
 Variables (P : {fdist A}) (p : Rdefinitions.R).
-Hypothesis p_01' : (0 < p < 1)%mcR.
+Hypothesis p_01' : 0 < p < 1.
 
-Let p_01'_ : (0 <= p <= 1)%mcR.
+Let p_01'_ : 0 <= p <= 1.
 by move: p_01' => /andP[/ltW -> /ltW ->].
 Qed.
 
@@ -65,23 +65,19 @@ rewrite /b {b} big_distrr /= /a {a} -big_split /=.
 rewrite !Set2sumE /= !fdist_prodE /BSC.c !fdist_binaryxx !fdist_binaryE/=.
 rewrite eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2 (* TODO *).
 set a := Set2.a _. set b := Set2.b _.
-case: (Req_EM_T (P a) 0) => H1.
+have [H1|H1] := eqVneq (P a) 0.
   rewrite H1 !(mul0r, mulr0, addr0, add0r).
   move: (FDist.f1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H1 add0r => ->.
   rewrite log1 !(mul0r, mulr0, addr0, add0r, mul1r, mulr1).
   by rewrite /onem mulN1r opprK opprB opprK addrC.
 rewrite logM; last 2 first.
-  move/eqP in H1.
-  have [+ _] := fdist_gt0 P a.
-  by move/(_ H1).
+  by rewrite lt_neqAle eq_sym H1/=.
   by case/andP: p_01' => ? ?; exact/onem_gt0.
 rewrite logM; last 2 first.
-  move/eqP in H1.
-  have [+ _] := fdist_gt0 P a.
-  by move/(_ H1).
+  by rewrite lt_neqAle eq_sym H1/=.
   by case/andP: p_01'.
-case: (Req_EM_T (P b) 0) => H2.
+have [H2|H2] := eqVneq (P b) 0.
   rewrite H2 !(mul0r, mulr0, addr0, add0r).
   move: (FDist.f1 P); rewrite Set2sumE /= -/a -/b.
   rewrite H2 addr0 => ->.
@@ -89,14 +85,10 @@ case: (Req_EM_T (P b) 0) => H2.
   rewrite /onem/=.
   by rewrite mulN1r opprK opprB opprK addrC.
 rewrite logM; last 2 first.
-  move/eqP in H2.
-  have [+ _] := fdist_gt0 P b.
-  by move/(_ H2).
+  by rewrite lt_neqAle eq_sym H2/=.
   by case/andP: p_01' => ? ?.
 rewrite logM; last 2 first.
-  move/eqP in H2.
-  have [+ _] := fdist_gt0 P b.
-  by move/(_ H2).
+  by rewrite lt_neqAle eq_sym H2/=.
   by case/andP: p_01' => ? ?; exact/onem_gt0.
 rewrite /onem.
 transitivity (p * (P a + P b) * log p + (1 - p) * (P a + P b) * log (1 - p) ).
@@ -173,10 +165,10 @@ End convex_ext.
 Section bsc_capacity_theorem.
 Let R := Rdefinitions.R.
 Variable A : finType.
-Hypothesis card_A : #|A| = 2%nat.
+Hypothesis card_A : #|A| = 2%N.
 Variable p : R.
-Hypothesis p_01' : (0 < p < 1)%mcR.
-Let p_01'_ : (0 <= p <= 1)%mcR.
+Hypothesis p_01' : 0 < p < 1.
+Let p_01'_ : 0 <= p <= 1.
 by move: p_01' => /andP[/ltW -> /ltW ->].
 Qed.
 Let p_01 : {prob R} := Eval hnf in Prob.mk_ p_01'_.
@@ -230,7 +222,7 @@ Section dH_BSC.
 
 Let R := Rdefinitions.R.
 Variable p : {prob R}.
-Let card_F2 : #| 'F_2 | = 2%nat. by rewrite card_Fp. Qed.
+Let card_F2 : #| 'F_2 | = 2%N. by rewrite card_Fp. Qed.
 Let W := BSC.c card_F2 p.
 Variables (M : finType) (n : nat) (f : encT 'F_2 M n).
 
@@ -241,7 +233,7 @@ Lemma DMC_BSC_prop m y : let d := dH y (f m) in
 Proof.
 move=> d; rewrite DMCE.
 transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - Prob.p p)) *
-              (\prod_(i < n | (f m) ``_ i != y ``_ i) Prob.p p))%R.
+              (\prod_(i < n | (f m) ``_ i != y ``_ i) Prob.p p)).
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=; congr (_ * _).
     by apply eq_bigr => // i /eqP ->; rewrite /BSC.c fdist_binaryxx.
   apply eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c fdist_binaryE eq_sym Hyi.
@@ -263,15 +255,15 @@ Let R := Rdefinitions.R.
 (* This lemma is more or less stating that
    (log q <|n2 / n|> log r) <= (log q <|n1 / n|> log r) *)
 Lemma expr_conv_mono n n1 n2 q r :
-  0 < q :> R -> q <= r -> (n1 <= n2 <= n)%nat ->
+  0 < q :> R -> q <= r -> (n1 <= n2 <= n)%N ->
   r ^+ (n - n2) * q ^+ n2 <= r ^+ (n - n1) * q ^+ n1.
 Proof.
 move=> /[dup] /ltW q0 q1 qr /andP [] n12 n2n.
 have r1 := lt_le_trans q1 qr.
 have r0 := ltW r1.
-rewrite [leLHS](_ : _ = q ^+ n1 * q ^+ (n2 - n1)%nat * r ^+ (n - n2)%nat);
+rewrite [leLHS](_ : _ = q ^+ n1 * q ^+ (n2 - n1)%N * r ^+ (n - n2)%N);
   last by rewrite -exprD subnKC // mulrC.
-rewrite [leRHS](_ : _ = q ^+ n1 * r ^+ (n2 - n1)%nat * r ^+ (n - n2)%nat);
+rewrite [leRHS](_ : _ = q ^+ n1 * r ^+ (n2 - n1)%N * r ^+ (n - n2)%N);
   last by rewrite -mulrA -exprD addnBAC // subnKC // mulrC.
 apply: ler_pM => //; [by apply/mulr_ge0; apply/exprn_ge0 | by apply/exprn_ge0 | ].
 apply: ler_pM => //; [by apply/exprn_ge0 | by apply/exprn_ge0 |].
@@ -281,20 +273,20 @@ by rewrite ler_pdivlMr // mul1r.
 Qed.
 
 Lemma bsc_prob_prop (p : {prob R}) n : Prob.p p < 1 / 2 ->
-  forall n1 n2 : nat, (n1 <= n2 <= n)%nat ->
-  ((1 - Prob.p p) ^+ (n - n2) * (Prob.p p) ^+ n2 <=
-   (1 - Prob.p p) ^+ (n - n1) * (Prob.p p) ^+ n1)%R.
+  forall n1 n2 : nat, (n1 <= n2 <= n)%N ->
+  (1 - Prob.p p) ^+ (n - n2) * (Prob.p p) ^+ n2 <=
+  (1 - Prob.p p) ^+ (n - n1) * (Prob.p p) ^+ n1.
 Proof.
 move=> p05 d1 d2 d1d2.
-case/boolP: (p == 0%:pr).
-  move/eqP->.
+have [->|] := eqVneq p 0%:pr.
   rewrite probpK subr0 !expr1n !mul1r !expr0n.
   move: d1d2; case: d2; first by rewrite leqn0 => /andP [] ->.
-  by case: (d1 == 0%nat).
+  by case: (d1 == 0%N).
 move/prob_gt0 => p1.
 apply/expr_conv_mono => //.
 lra.
 Qed.
+
 End bsc_prob_prop.
 
 (* moved from ldpc.v *)
@@ -308,7 +300,7 @@ Local Open Scope vec_ext_scope.
 Let R := Rdefinitions.R.
 
 Variable A : finType.
-Hypothesis card_A : #|A| = 2%nat.
+Hypothesis card_A : #|A| = 2%N.
 Variable p : R.
 Hypothesis p_01' : 0 < p < 1.
 
@@ -327,13 +319,13 @@ Hypothesis Ha' : receivable_prop (P `^ 1) (BSC.c card_A p_01) (\row_(i < 1) a').
 
 Lemma bsc_post (a : A) :
   (P `^ 1) `^^ (BSC.c card_A p_01) (\row_(i < 1) a | mkReceivable Ha') =
-  (if a == a' then 1 - p else p)%R.
+  if a == a' then 1 - p else p.
 Proof.
 rewrite fdist_post_probE /= !fdist_rVE DMCE big_ord_recl big_ord0.
-rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))%R); last first.
+rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))); last first.
   by move=> i _; rewrite /P !fdist_rVE big_ord_recl big_ord0 !fdist_uniformE mulr1.
-rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1)%R; last first.
-  transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a')%R.
+rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1); last first.
+  transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a').
     apply eq_bigr => i _.
     by rewrite DMCE big_ord_recl big_ord0 mulr1 /BSC.c mxE.
   apply/(@big_rV1_ord0 _ _ _ _ (fdist_binary card_A p_01 ^~ a')).

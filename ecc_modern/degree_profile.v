@@ -41,7 +41,6 @@ End SumCoef.
 Module DegreeDistribution.
 
 Section Lambda_definition.
-
 Variable K : numDomainType.
 
 (* type for Lambda and Rho *)
@@ -65,10 +64,9 @@ have p0pos : 0 <= sum_coef p by apply sumr_ge0.
 rewrite -sum_coef_horner lt0r /= p0pos andbT.
 apply: contra psize => /eqP sum0.
 rewrite size_poly_eq0 -lead_coef_eq0 /lead_coef.
-case/boolP : ((size p).-1 < size p)%nat => [H|].
+have [H|H] := ltnP (size p).-1 (size p).
   apply/eqP; apply: (@psumr_eq0P K _ xpredT _ _ sum0 (Ordinal H) erefl) => ? _.
   by apply p0.
-rewrite -leqNgt => ?.
 by rewrite nth_default.
 Qed.
 
@@ -469,7 +467,7 @@ move=> p0.
 rewrite size_poly_eq0 => /eqP Hip.
 have : (integ p)`_(size p).-1 == 0 by rewrite Hip coef0.
 rewrite /integ coef_poly.
-case/boolP : (size p > 0)%nat => [Hp|].
+have [Hp|] := ltnP 0 (size p).
   rewrite prednK // leqnn.
   case/boolP : (p`_(size p).-1 > 0) => [Hp'|].
     move: Hp.
@@ -477,7 +475,7 @@ case/boolP : (size p > 0)%nat => [Hp|].
     by rewrite H2 ltxx in H1.
   rewrite lt_def p0 andbT negbK lead_coef_eq0 => /eqP ->.
   by rewrite size_poly0.
-by rewrite lt0n negbK.
+by rewrite leqn0.
 Qed.
 
 Definition integ_deg (p : DegreeDistribution.Lambda K) :
@@ -3398,18 +3396,18 @@ apply (@leq_trans (len + size (enum (border (nodes c))) * maxdeg)).
   apply leq_add => //.
   rewrite /step_dist_it -Heqb /= in Hr.
   set cr' := step_dist _ _ _ _ _ in Hr.
-  case/boolP: (cr'.2 == 0) => Hr'.
+  have [Hr'|Hr'] := eqVneq cr'.2 0.
     rewrite -(enum_step_border (esym Heqb) Hi) in Hr.
     move: (step_dist_it_const lam cr'.1 cr'.2 t').
     rewrite {1}/step_dist_it -surjective_pairing => Hc.
     move: Hr.
-    rewrite Hc (eqP Hr').
+    rewrite Hc Hr'.
     destruct step_dist_it => /=.
     by rewrite mul0r eqxx.
   rewrite /= in Hr'.
-  case/boolP: (dest_dist lam c i.2 == 0) => Hdi.
-    by rewrite (eqP Hdi) mulr0 mul0r eqxx in Hr'.
-  by apply (cards_conode_out Hlam Hdi).
+  have [Hdi|Hdi] := eqVneq (dest_dist lam c i.2) 0.
+    by rewrite Hdi mulr0 mul0r eqxx in Hr'.
+  exact: (cards_conode_out Hlam Hdi).
 by rewrite leq_add2l leq_mul2r Hp orbT.
 Qed.
 
@@ -3466,21 +3464,19 @@ transitivity (\sum_(t in dest_ports c #|border (nodes c)|)
   apply eq_bigr => /= t Ht.
   rewrite tuple_to_partial_enumK.
   rewrite (surjective_pairing (step_dist_it _ _ _ _)) step_dist_it_1.
-  case/boolP: ((step_dist_it lam c r t).2 == 0) => Hr.
-    rewrite (eqP Hr).
+  have [->|Hr] := eqVneq (step_dist_it lam c r t).2 0.
     rewrite /weighted_count big_map /= big1 //.
     move=> i _; rewrite switch_step_dist_it_const.
     by destruct switch_step_dist_it; rewrite mul0r.
   rewrite (IHl (len * maxdeg.+1)%nat) //.
         rewrite /switch /=.
-        by apply (ports_conodes_step_it Ht Hr Hlam).
+        exact: (ports_conodes_step_it Ht Hr Hlam).
       rewrite /switch /=.
       rewrite /known_coports.
       rewrite /ports part_nodes_step_it.
       rewrite mulnS.
-      by apply (leq_trans Hp), leq_addr.
-    rewrite /switch /=.
-    by apply border_nodes_step_it.
+      by rewrite (leq_trans Hp)// leq_addr.
+    exact: border_nodes_step_it.
   rewrite (leq_ltn_trans _ Hl) //.
   rewrite /tree_max [in X in (_ <= X)%nat]sum_expr_S mulnDr mulnA.
   by apply leq_addl.
@@ -3559,8 +3555,7 @@ apply (@Order.POrderTheory.le_trans _ _ (\sum_(i in dest_ports c #|border (nodes
     move=> P; apply eq_bigr => i /andP [Hi _]; rewrite /F.
     rewrite tuple_to_partial_enumK.
     rewrite (surjective_pairing (step_dist_it _ _ _ _)) /=.
-    case/boolP: ((step_dist_it lam c r i).2 == 0) => Hi2.
-      rewrite (eqP Hi2).
+    have [->|Hi2] := eqVneq (step_dist_it lam c r i).2 0.
       rewrite /weighted_count big_map /= big1 //.
       move=> ? _; rewrite switch_step_dist_it_const.
       by destruct switch_step_dist_it; rewrite mul0r.
@@ -3819,8 +3814,7 @@ Proof.
 move=> Hep Hen.
 rewrite (big_pred1 en) //= => en'.
 rewrite pred1E.
-case/boolP: (en == en') => Henn'.
-  by rewrite -(eqP Henn') Hep Hen.
+have [<-|Henn'] := eqVneq en en'; first by rewrite Hep Hen.
 case Hen': (en' \in h) => //=.
 apply/negP => Hep'.
 move/trivIsetP/(_ en en' Hen Hen' Henn'): (part_p h).

@@ -26,8 +26,7 @@ Module GRS.
 
 Section GRS_def.
 
-Variables (n (*q*) : nat).
-(*Hypothesis nq : n <= q.*)
+Variables (n : nat).
 Variable (F : finFieldType).
 Variable a : 'rV[F]_n.
 Hypothesis a_inj : injective [ffun i => a``_i]. (* pairwise distinct *)
@@ -211,14 +210,14 @@ Definition GRS_mod r : {poly F} :=
 Lemma GRS_key_equation r :
   Sigma * GRS.syndromep a b r y = Omega + GRS_mod r * 'X^r.
 Proof.
-case/boolP : (r == O) => r0.
-  rewrite (eqP r0) mulr1.
+have [r0|r0] := eqVneq r 0.
+  rewrite r0 mulr1.
   rewrite /GRS.syndromep poly_def big_ord0 mulr0.
   apply/eqP; rewrite eq_sym addr_eq0; apply/eqP.
   rewrite /GRS_mod /Omega /erreval -sumrN; apply eq_bigr => j jy.
   rewrite expr0 mulr1 mulrN opprK [in RHS]mulrC mulrC -!scalerA.
   rewrite -scalerAl mulrC mul_polyC; congr (_ *: (_ *: _)).
-  apply eq_bigl => k; by rewrite in_setD1 andbC.
+  by apply eq_bigl => k; rewrite in_setD1 andbC.
 rewrite /GRS_mod big_distrl /= /Omega /erreval -big_split /=.
 rewrite GRS.syndromepE big_distrr /=.
 apply eq_bigr => i iy.

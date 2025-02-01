@@ -132,7 +132,7 @@ rewrite le_eqVlt; apply/orP; left; apply/eqP.
 transitivity (\sum_(a|a \in A) P a * log (P a) +
               \sum_(a|a \in A) P a * - log (fdist_uniform An1 a)).
   rewrite -big_split /=; apply eq_bigr => a _; rewrite -mulrDr.
-  case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0r.
+  have [->|Pa0] := eqVneq (P a) 0; first by rewrite !mul0r.
   congr (_ * _); rewrite logDiv//.
     by rewrite -fdist_gt0.
   by rewrite fdist_uniformE invr_gt0// An1 ltr0n.
@@ -401,7 +401,8 @@ Arguments put_front_inj {n} _.
 Definition put_front_perm (n : nat) i : 'S_n.+1 := perm (put_front_inj i).
 
 (* TODO: clean *)
-Lemma fdist_col'_put_front n (R : realType) (A : finType) (P : R.-fdist 'rV[A]_n.+1) (i : 'I_n.+1) :
+Lemma fdist_col'_put_front n (R : realType) (A : finType)
+    (P : R.-fdist 'rV[A]_n.+1) (i : 'I_n.+1) :
   i != ord0 ->
   fdist_col' P i = (fdist_prod_of_rV (fdist_perm P (put_front_perm i)))`2.
 Proof.
@@ -449,7 +450,7 @@ rewrite neq_ltn => /orP[|] ki.
   rewrite /unbump ltnNge (ltnW ki) subn0 inordK //.
   by rewrite (leq_trans ki) // -ltnS/=.
 rewrite ltnNge (ltnW ki) /=; move: ki.
-have [/eqP -> //|k0] := boolP (k == ord0).
+have [->//|k0] := eqVneq k ord0.
 rewrite (_ : k = rshift 1 (inord k.-1)); last first.
   by apply val_inj => /=; rewrite add1n inordK ?prednK // ?lt0n // -ltnS.
 rewrite (@row_mxEr _ 1 1) /=.
@@ -1043,7 +1044,7 @@ have -> : cond_entropy PY = \sum_(j < n.+1)
         move/andP => /= [/eqP <- /eqP ->].
         apply/eqP/rowP => k.
         rewrite !mxE !castmxE /= esymK !cast_ord_id.
-        case/boolP : (k == O :> nat) => [/eqP | ] k0.
+        have [k0|k0] := eqVneq (nat_of_ord k) 0%N.
           rewrite (_ : cast_ord _ _ = ord0); last exact: val_inj.
           rewrite (_ : k = ord0); last exact: val_inj.
           by rewrite 2!row_mx_row_ord0.
@@ -1130,7 +1131,10 @@ Lemma information_cant_hurt : cond_entropy PQ <= `H P.
 Proof. by rewrite -subr_ge0 -mutual_infoE; exact: mutual_info_ge0. Qed.
 
 Lemma condentropy_indep : PQ = P `x Q -> cond_entropy PQ = `H P.
-Proof. by move/mutual_info0P; rewrite mutual_infoE => /eqP; rewrite subr_eq0 => /eqP <-. Qed.
+Proof.
+by move/mutual_info0P; rewrite mutual_infoE => /eqP; rewrite subr_eq0 => /eqP <-.
+Qed.
+
 End prop.
 
 Section prop2.
@@ -1199,11 +1203,12 @@ Definition markov_chain := forall (x : A) (y : B) (z : C),
 Let PRQ := fdistAC PQR.
 
 (* X and Z are conditionally independent given Y TODO: iff *)
-Lemma markov_cond_mutual_info : markov_chain -> cond_mutual_info (PRQ : R.-fdist (A * C * B)) = 0.
+Lemma markov_cond_mutual_info :
+  markov_chain -> cond_mutual_info (PRQ : R.-fdist (A * C * B)) = 0.
 Proof.
 rewrite /markov_chain => mc.
 rewrite cond_mutual_infoE (eq_bigr (fun=> 0)) ?big1// => x _.
-case/boolP : (PRQ x == 0) => [/eqP ->|H0]; first by rewrite mul0r.
+have [->|H0] := eqVneq (PRQ x) 0; first by rewrite mul0r.
 rewrite (_ : _ / _ = 1); first by rewrite log1 mulr0.
 rewrite eqr_divr_mulr ?mul1r; last first.
   rewrite mulf_neq0//.
@@ -1372,11 +1377,11 @@ rewrite (_ : fdistX _ = fdist_prod_of_rV (fdist_perm
   rewrite fdistXE fdist_belast_last_of_rVE fdist_prod_of_rVE /= fdist_permE.
   rewrite !(fdist_takeE _ (lift ord0 i)); apply eq_bigr => /= w _; congr (P _); apply/rowP => k.
   rewrite !castmxE /= cast_ord_id.
-  case/boolP : (k < i.+1)%nat => ki.
+  have [ki|ki] := ltnP k i.+1.
     have @k1 : 'I_i.+1 := Ordinal ki.
     rewrite (_ : cast_ord _ k = lshift (n - bump 0 i) k1); last exact/val_inj.
     rewrite 2!row_mxEl castmxE /= cast_ord_id [in RHS]mxE.
-    case/boolP : (k < i)%nat => [ki'|].
+    have [ki'|] := ltnP k i.
       rewrite (_ : cast_ord _ _ = lshift 1%nat (Ordinal ki')) /=; last exact/val_inj.
       rewrite row_mxEl /put_front_perm permE /put_front ifF; last first.
         apply/negbTE/eqP => /(congr1 val) /=.
@@ -1384,15 +1389,13 @@ rewrite (_ : fdistX _ = fdist_prod_of_rV (fdist_perm
       rewrite inordK //= ki' (_ : inord k.+1 = rshift 1%nat (Ordinal ki')); last first.
         by apply/val_inj => /=; rewrite inordK.
       by rewrite (@row_mxEr _ 1%nat 1%nat).
-    rewrite permE /put_front.
-    rewrite -leqNgt leq_eqVlt => /orP[|] ik.
+    rewrite permE /put_front leq_eqVlt => /orP[|] ik.
       rewrite ifT; last first.
         apply/eqP/val_inj => /=; rewrite inordK //; exact/esym/eqP.
       rewrite row_mx_row_ord0 (_ : cast_ord _ _ = rshift i ord0); last first.
         by apply val_inj => /=; rewrite addn0; apply/esym/eqP.
       by rewrite row_mxEr mxE.
-    move: (leq_ltn_trans ik ki); by rewrite ltnn.
-  rewrite -ltnNge ltnS in ki.
+    by move: (leq_ltn_trans ik ki); rewrite ltnn.
   move=> [:Hk1].
   have @k1 : 'I_(n - bump 0 i).
     apply: (@Ordinal _ (k - i.+1)).
@@ -1406,18 +1409,18 @@ rewrite (_ : fdist_perm (fdist_take _ _) _ =
   rewrite fdist_permE 2!(fdist_takeE _ (lift ord0 i)); apply eq_bigr => /= v _.
   rewrite fdist_permE; congr (P _); apply/rowP => /= k.
   rewrite /col_perm mxE !castmxE /= !cast_ord_id /=.
-  case/boolP : (k < bump 0 i)%nat => ki.
+  have [ki|ki] := ltnP k (bump 0 i).
     rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) (Ordinal ki)); last exact/val_inj.
     rewrite row_mxEl mxE /put_front_perm !permE /= /put_front /=.
-    case/boolP : (k == i) => ik.
+    have [ik|ik] := eqVneq k i.
       rewrite ifT; last first.
-        apply/eqP/val_inj => /=; rewrite inordK //; exact/eqP.
+        by apply/eqP/val_inj => //=; rewrite ik inordK.
       rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) ord0); last exact/val_inj.
       by rewrite row_mxEl.
     rewrite ifF; last first.
       apply/negbTE/eqP => /(congr1 val) /=.
-      apply/eqP; by rewrite inordK.
-    case/boolP : (k < i)%nat => {}ik.
+      by apply/eqP;rewrite inordK.
+    have [{}ik|{}ik] := ltnP k i.
       rewrite inordK // ik.
       move=> [:Hk1].
       have @k1 : 'I_(bump 0 i).
@@ -1429,13 +1432,12 @@ rewrite (_ : fdist_perm (fdist_take _ _) _ =
         by rewrite (leq_trans ik) // -ltnS.
       rewrite row_mxEl; congr (w _ _).
       by apply val_inj => /=; rewrite inordK.
-    rewrite -ltnNge in ik.
     rewrite ifF; last first.
       apply/negbTE.
       by rewrite -leqNgt -ltnS inordK.
     rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) (Ordinal ki)); last exact/val_inj.
     by rewrite row_mxEl.
-  rewrite -ltnNge /bump leq0n add1n ltnS in ki.
+  rewrite /bump leq0n add1n in ki.
   move=> [:Hk1].
   have @k1 : 'I_(n - bump 0 i).
     apply: (@Ordinal _ (k - i.+1)).

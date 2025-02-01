@@ -2,11 +2,9 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum interval lra.
-From mathcomp Require boolp.
-From mathcomp Require Import classical_sets Rstruct reals.
-(*Require Import Reals Lra.*)
-Require Import (*ssrR*) realType_ext (*Reals_ext Ranalysis_ext*) realType_logb convex.
-Require Import derive_ext.
+From mathcomp Require Import boolp classical_sets Rstruct reals.
+From mathcomp Require Import topology normedtype derive sequences exp.
+Require Import realType_ext realType_logb convex derive_ext.
 
 (******************************************************************************)
 (*                      Results about the Analysis of ln                      *)
@@ -29,499 +27,35 @@ Import Prenex Implicits.
 
 Import Order.Theory GRing.Theory Num.Theory.
 
-(*Section ln_id_sect.
-
-Definition ln_id x := ln x - (x - 1).
-
-Lemma pderivable_ln_id_xle1 : pderivable ln_id (fun x => 0 < x <= 1).
-Proof.
-rewrite /pderivable => x Hx.
-rewrite /ln_id.
-apply derivable_pt_plus.
-- apply derivable_pt_ln, Hx.
-- apply derivable_pt_opp, derivable_pt_minus;
-    [apply derivable_pt_id | apply derivable_pt_cst].
-Defined.
-
-Definition ln_id' x (H : 0 < x <= 1) := derive_pt ln_id x (pderivable_ln_id_xle1 H).
-
-Lemma derive_pt_ln_id_xle1 : forall x (Hx : 0 < x <= 1), (/ x) - 1 = ln_id' Hx.
-Proof.
-move=> y Hy.
-rewrite /ln_id' /pderivable_ln_id_xle1 /ln_id.
-rewrite derive_pt_plus derive_pt_opp derive_pt_ln derive_pt_minus derive_pt_id derive_pt_cst.
-rewrite subR0.
-reflexivity.
-Defined.
-
-Lemma derive_pt_ln_id_xle1_ge0 x (Hx : 0 < x <= 1) : 0 < if x==1 then 1 else ln_id' Hx.
-Proof.
-case/boolP : (x == 1) => Hcase ; first lra.
-rewrite -derive_pt_ln_id_xle1; apply/subR_gt0.
-rewrite -invR1; apply ltR_inv => //; first by case: Hx.
-case (Rle_lt_or_eq_dec x 1) ; [apply Hx | by [] | ].
-move/eqP in Hcase ; move => Habs.
-rewrite Habs in Hcase ; by contradict Hcase.
-Defined.
-
-Lemma ln_idlt0_xlt1 : forall x, 0 < x < 1 -> ln_id x < 0.
-Proof.
-rewrite {2}(_ : 0 = ln_id 1); last by rewrite /ln_id ln_1 2!subRR.
-move=> x Hx.
-have lt01 : 0 < 1 by lra.
-apply (pderive_increasing lt01 derive_pt_ln_id_xle1_ge0).
-- by split; [apply Hx | apply ltRW, Hx].
-- lra.
-- by apply Hx.
-Qed.
-
-Lemma ln_idlt0_xgt1 x : 0 < x -> 1 < x -> ln_id x < 0.
-Proof.
-move=> x0 x1.
-rewrite /ln_id; apply/subR_lt0/exp_lt_inv.
-rewrite (exp_ln _ x0) -{1}(addR0 x) -(subRR 1) addRCA.
-have ? : x - 1 <> 0 by exact/eqP/gtR_eqF/subR_gt0. (* for Coq 8.14 *)
-have ? : 0 < x - 1 by exact/subR_gt0. (* for Coq 8.13 *)
-exact/exp_ineq1.
-Qed.
-
-Lemma ln_idgt0 x : 0 < x -> ln_id x <= 0.
-Proof.
-case: (ltgtP x 1) => [| |] x1 x0.
-- by apply/ltRW/ln_idlt0_xlt1; split=> //; apply/RltP.
-- by apply/ltRW/ln_idlt0_xgt1 => //; exact/RltP.
-- rewrite x1 /ln_id ln_1 2!subRR.
-  by apply/RleP; rewrite lexx.
-Qed.
-
-Lemma ln_id_cmp x : 0 < x -> ln x <= x - 1.
-Proof. by move=> Hx; apply Rminus_le; apply ln_idgt0; exact Hx. Qed.
-
-Lemma log_id_cmp x : 0 < x -> log x <= (x - 1) * log (exp 1).
-Proof.
-by move=> x0; rewrite logexp1E; apply leR_wpmul2r;
-  [exact/invR_ge0 | exact/ln_id_cmp].
-Qed.
-
-Lemma ln_id_eq x : 0 < x -> ln x = x - 1 -> x = 1.
-Proof.
-move=> Hx' Hx.
-case (total_order_T x 1) => [ [] // Hx2 | Hx2]; contradict Hx.
-- apply/eqP/ltR_eqF; rewrite -subR_lt0.
-  apply ln_idlt0_xlt1; split; [exact Hx' | exact Hx2].
-- by apply/eqP/ltR_eqF; rewrite -subR_lt0; exact: ln_idlt0_xgt1.
-Qed.
-
-Lemma log_id_eq x : 0 < x -> log x = (x - 1) * log (exp 1) -> x = 1.
-Proof.
-move=> Hx'; rewrite logexp1E.
-rewrite eqR_mul2r; last exact/nesym/eqP/ltR_eqF/invR_gt0.
-apply ln_id_eq; by [apply Hx' | apply Hx].
-Qed.
-
-End ln_id_sect.*)
-
-From mathcomp Require Import topology normedtype derive.
 Import numFieldTopology.Exports.
 Import numFieldNormedType.Exports.
+
 Local Open Scope ring_scope.
-Import Order.TTheory GRing.Theory Num.Theory.
 
-Section xlnx_sect.
+(* TODO: move *)
+Lemma derivable_ln {R : realType} x : 0 < x -> derivable (@ln R) x 1.
+Proof. by move=> x0; apply: ex_derive; exact: exp.is_derive1_ln. Qed.
 
-Section xlnx.
-Let R := Rdefinitions.R.
-
-Definition xlnx := fun x : R => if (0 < x)%mcR then x * exp.ln x else 0.
-
-Lemma xlnx_0 : xlnx 0 = 0.
-Proof. rewrite /xlnx mul0r; by case : ifP. Qed.
-
-Lemma xlnx_1 : xlnx 1 = 0.
-Proof. rewrite /xlnx exp.ln1 mulr0 ; by case : ifP. Qed.
-
-Lemma xlnx_neg x : 0 < x < 1 -> xlnx x < 0.
-Proof.
-case/andP => lt0x ltx1.
-rewrite /xlnx.
-rewrite lt0x.
-rewrite -(opprK 0) ltrNr oppr0 -mulrN.
-apply mulr_gt0 => //.
-rewrite ltrNr oppr0.
-by rewrite exp.ln_lt0// lt0x.
-Qed.
-
-(* TODO: rename *)
-Lemma continue_xlnx (r : R^o) : continuous_at r (@xlnx : R^o -> R^o).
-Proof.
-apply/cvgrPdist_le => /= eps eps_pos.
-have [Hcase|Hcase|Hcase] := ltgtP 0 r.
-- have : continuous_at r (fun x => x * exp.ln x).
-    apply: cvgM => //.
-    exact: exp.continuous_ln.
-  move=> /cvgrPdist_le/(_ _ eps_pos)[k/= k_pos Hk].
-  exists (Num.min k r).
-    by rewrite lt_min Hcase k_pos.
-  move=> x/=; rewrite lt_min => /andP[rxk rxr].
-  rewrite /xlnx.
-  rewrite Hcase.
-  have -> : (0 < x)%mcR.
-    rewrite -(addr0 x) -[in ltRHS](subrr r) addrA addrAC.
-    apply (@le_lt_trans _ _ ((x + - r) + `| x + - r |)).
-      by rewrite addrC -lerBlDr sub0r -normrN ler_norm.
-    by rewrite ltrD2l distrC.
-  by apply Hk => /=.
-- exists (- r).
-    by rewrite ltrNr oppr0.
-  move=> x/= rxr.
-  rewrite /xlnx.
-  have -> : (0 < x)%mcR = false.
-    apply/negbTE.
-    rewrite -leNgt.
-    rewrite -(addr0 x) -{1}(subrr r) addrA addrAC.
-    apply (@le_trans _ _ ((x + - r) - `| x + - r |)).
-      by rewrite lerD2l lerNr distrC ltW.
-    by rewrite subr_le0 ler_norm.
-  have -> : (0 < r)%mcR = false.
-    by apply/negbTE; rewrite -leNgt; apply/ltW.
-  by rewrite subrr normr0 ltW.
-- subst r.
-  exists (sequences.expR (- 2 / eps)).
-    by rewrite exp.expR_gt0.
-  move=> x/=; rewrite sub0r normrN => Hx2.
-  rewrite /xlnx ltxx sub0r normrN.
-  case: ifPn => Hcase; last first.
-    by rewrite normr0 ltW.
-  rewrite (ger0_norm (ltW Hcase)) in Hx2.
-  rewrite -{1}(exp.lnK Hcase).
-  set X := exp.ln x.
-  have X_neg : X < 0.
-    apply (@lt_trans _ _ (-2 / eps)).
-      rewrite -exp.ltr_expR.
-      by rewrite exp.lnK//.
-    by rewrite mulNr ltrNl oppr0 divr_gt0//.
-  apply/ltW.
-  apply: (@lt_le_trans _ _ (2 / (- X))).
-  * rewrite ltr0_norm; last first.
-      by rewrite pmulr_rlt0// exp.expR_gt0.
-    rewrite -mulrN.
-    rewrite -(@ltr_pM2r _ ((- X)^-1)); last first.
-      by rewrite invr_gt0 ltrNr oppr0.
-    rewrite -mulrA divff ?mulr1; last first.
-      by rewrite oppr_eq0 lt_eqF.
-    rewrite -(invrK 2) -mulrA.
-    rewrite invrN mulNr (mulrN (X^-1)) opprK -invfM -expr2 invrK.
-    rewrite (_ : 2 = 2`!%:R)//.
-    have := @exp_strict_lb _ 2 (- X).
-    rewrite ltrNr oppr0 => /(_ X_neg).
-    rewrite exp.expRN.
-    rewrite -[X in X < _ -> _]invrK.
-    rewrite ltf_pV2 ?posrE ?exp.expR_gt0 ?invr_gt0 ?mulr_gt0//=; last 3 first.
-      by rewrite ltrNr oppr0.
-      by rewrite ltrNr oppr0.
-      by rewrite invr_gt0.
-    by rewrite sqrrN invf_div.
-  * move: Hx2.
-    rewrite -exp.ltr_ln ?posrE ?exp.expR_gt0//.
-    rewrite -/X.
-    rewrite exp.expRK.
-    rewrite mulNr ltrNr.
-    rewrite ltr_pdivrMr//.
-    by rewrite -ltr_pdivrMl 1?ltrNr ?oppr0// mulrC => /ltW.
-Qed.
-
-(* TODO: not used *)
-(*Lemma uniformly_continue_xlnx : uniform_continuity xlnx (fun x => 0 <= x <= 1).
-Proof.
-apply Heine ; first by apply compact_P3.
-move=> x _ ; by apply continue_xlnx.
-Qed.*)
-
-Let xlnx_total := fun y : R^o => y * exp.ln y : R^o.
-
-Lemma derivable_xlnx_total x : 0 < x -> derivable xlnx_total x 1.
-Proof.
-move=> x_pos.
-apply: derivableM => //.
-apply: ex_derive. (* TODO: lemma *)
-by apply: exp.is_derive1_ln.
-Qed.
-
-Lemma xlnx_total_xlnx x : 0 < x -> xlnx x = xlnx_total x.
-Proof. by move=> x0; rewrite /xlnx x0. Qed.
-
-Lemma gt0_near_nbhs (x : R^o) : 0 < x ->
+(* TODO: move *)
+Lemma gt0_near_nbhs {R : realType} (x : R) : 0 < x ->
   \forall x0 \near nbhs x, 0 < x0.
 Proof.
 move=> x0.
-  exists (x / 2) => //=.
-    by rewrite divr_gt0//.
-  move=> A/=.
-  have [//|A0] := ltP 0 A.
-  rewrite ltNge => /negP; rewrite boolp.falseE; apply.
-  rewrite ger0_norm ?subr_ge0; last first.
-    by rewrite (le_trans A0)// ltW.
-  rewrite lerBrDr.
-  rewrite (@le_trans _ _ (x/2))//.
-  rewrite gerDl//.
-  by rewrite ler_piMr// ltW.
+exists (x / 2) => //=.
+  by rewrite divr_gt0//.
+move=> A/=.
+have [//|A0] := ltP 0 A.
+rewrite ltNge => /negP; rewrite boolp.falseE; apply.
+rewrite ger0_norm ?subr_ge0; last first.
+  by rewrite (le_trans A0)// ltW.
+rewrite lerBrDr.
+rewrite (@le_trans _ _ (x/2))//.
+rewrite gerDl//.
+by rewrite ler_piMr// ltW.
 Unshelve. all: by end_near. Qed.
 
-Lemma derivable_xlnx x (x_pos : 0 < x) : derivable (xlnx : R^o -> R^o) x 1.
-Proof.
-rewrite (near_eq_derivable _ xlnx_total)//.
-- exact: derivable_xlnx_total.
-- by rewrite oner_eq0.
-- near=> z.
-  rewrite /xlnx ifT//.
-  near: z.
-  exact: gt0_near_nbhs.
-Unshelve. all: by end_near. Qed.
-
-(*
-Lemma derive_xlnx_aux1 x (x_pos : 0 < x) :
-  derive_pt xlnx x (derivable_pt_xlnx x_pos) =
-  derive_pt xlnx_total x (derivable_xlnx_total x_pos).
-Proof. by rewrite -derive_pt_f_eq_g. Qed.*)
-
-Lemma derive_xlnx_aux2 x : 0 < x ->
-  'D_1 (xlnx : R^o -> R^o) x = exp.ln x + 1.
-Proof.
-move=> x_pos.
-rewrite /xlnx.
-transitivity ('D_1 (fun x0 : R^o => x0 * exp.ln x0) x).
-  apply: near_eq_derive.
-    by rewrite oner_eq0.
-  near=> z.
-  rewrite ifT//.
-  near: z.
-  exact: gt0_near_nbhs.
-rewrite deriveM//=; last first.
-  apply: ex_derive.
-  (* TODO: lemma *)
-  exact: exp.is_derive1_ln.
-rewrite derive_val addrC; congr +%R.
-  by rewrite /GRing.scale/= mulr1.
-rewrite (@derive_val _ _ _ _ _ _ _ (exp.is_derive1_ln x_pos)).
-by rewrite -(@mulfV _ x)// gt_eqF.
-Unshelve. all: by end_near. Qed.
-
-Lemma derive_pt_xlnx x : derivable (xlnx : R^o -> R^o) x 1 ->
-  0 < x -> 'D_1 (xlnx : R^o -> R^o) x = exp.ln x + 1.
-Proof.
-move=> x1 x_pos.
-rewrite /xlnx.
-rewrite -derive_xlnx_aux2//.
-Qed.
-
-(*
-Lemma pderivable_Ropp_xlnx : pderivable (fun y => - xlnx y) (fun x => 0 < x <= exp (- 1)).
-Proof.
-move=> x /= Hx.
-apply derivable_pt_opp.
-apply derivable_pt_xlnx.
-apply Hx.
-Defined.
-
-Lemma xlnx_sdecreasing_0_Rinv_e_helper : forall (t : R) (Ht : 0 < t <= exp (-1)),
-  0 < (if t == exp (-1) then 1 else derive_pt (fun x => - xlnx x) t (pderivable_Ropp_xlnx Ht)).
-Proof.
-move=> t [t0 te]; case: ifPn => [//|] /eqP Hcase.
-rewrite derive_pt_opp derive_pt_xlnx //.
-rewrite ltR_oppr oppR0 addRC -ltR_subRL sub0R.
-apply exp_lt_inv; by rewrite exp_ln // ltR_neqAle.
-Qed.
-*)
-
-Lemma xlnx_sdecreasing_0_Rinv_e x y :
-  0 <= x <= sequences.expR (-1) ->
-  0 <= y <= sequences.expR (-1) -> x < y -> xlnx y < xlnx x.
-Proof.
-move=> /andP[x1 x2] /andP[y1 y2] xy.
-case/boolP : (x == 0) => [/eqP ->|x0].
-- rewrite xlnx_0; apply xlnx_neg.
-  rewrite (le_lt_trans x1 xy)/=.
-  rewrite (le_lt_trans y2)//.
-  by rewrite exp.expR_lt1// ltrN10.
-- rewrite -[X in _ < X]opprK ltrNr.
-  have {}x0 : 0 < x.
-    by rewrite lt_neqAle eq_sym x0 x1.
-  have {x1 y1}y0 : 0 < y.
-    by rewrite (le_lt_trans x1).
-  apply: (@derivable1_mono _ (BRight 0) (BRight (sequences.expR (-1))) (fun x => - xlnx x)) => //.
-  + by rewrite in_itv//= (x0).
-  + by rewrite in_itv//= (y0).
-  + move=> /= z.
-    rewrite in_itv/= => /andP[z0 z1].
-    apply: derivableN.
-    by apply: derivable_xlnx => //.
-  + move=> /= t.
-    rewrite in_itv/= => /andP[tx ty].
-    rewrite [ltRHS](_ : _ = 'D_1 (fun x : Rdefinitions.R^o => - (x * exp.ln x)) t); last first.
-      apply: near_eq_derive.
-        by rewrite oner_eq0.
-      near=> z.
-      rewrite /xlnx.
-      case: ifPn => z0 //.
-      rewrite oppr0.
-      by rewrite exp.ln0 ?mulr0// ?oppr0// leNgt.
-    rewrite deriveN; last first.
-      apply: derivableM => //.
-      apply: ex_derive.
-      apply: exp.is_derive1_ln.
-      by rewrite (lt_trans _ tx).
-    rewrite ltrNr oppr0.
-    rewrite deriveM//; last first.
-      apply: ex_derive.
-      apply: exp.is_derive1_ln.
-      by rewrite (lt_trans _ tx).
-    have := exp.is_derive1_ln (lt_trans x0 tx).
-    move/(@derive_val R R^o R^o) => ->.
-    rewrite derive_id [X in X + _]mulfV ?gt_eqF//; last by rewrite (lt_trans x0).
-    rewrite (@lt_le_trans _ _ (1 + exp.ln y))//.
-      rewrite ltrD2l.
-      rewrite /GRing.scale/= mulr1.
-      by rewrite exp.ltr_ln ?posrE ?(lt_trans x0)// ltW.
-    rewrite (@le_trans _ _ (1 + exp.ln (sequences.expR (-1))))//.
-      by rewrite lerD2l exp.ler_ln ?posrE// exp.expR_gt0.
-      by rewrite exp.expRK subrr.
-Unshelve. all: by end_near. Qed.
-
-Lemma xlnx_decreasing_0_Rinv_e x y :
-  0 <= x <= sequences.expR (-1) ->
-  0 <= y <= sequences.expR (-1) -> x <= y -> xlnx y <= xlnx x.
-Proof.
-move=> Hx Hy Hxy.
-case/boolP : (x == y) => [/eqP ->|/eqP H].
-  by rewrite lexx.
-(*case/andP : Hx => + x1.
-rewrite le_eqVlt => /predU1P[?|].
-  subst x.
-  rewrite xlnx_0.
-  rewrite /xlnx.
-  rewrite ifT; last first.
-    by rewrite lt_neqAle Hxy andbT; exact/eqP.
-  rewrite mulr_ge0_le0//.
-  rewrite exp.ln_le0//.
-  case/andP: Hy => _ /le_trans; apply.
-  rewrite -[leRHS]exp.expR0.
-  by rewrite exp.ler_expR lerNl oppr0.
-move=> x0.*)
-apply/ltW/xlnx_sdecreasing_0_Rinv_e => //.
-rewrite lt_neqAle Hxy andbT.
-exact/eqP.
-Qed.
-
-End xlnx.
-
-Section diff_xlnx.
-Let R := Rdefinitions.R.
-
-Definition diff_xlnx := fun x : R^o => xlnx (1 - x) - xlnx x : R^o.
-
-Lemma derivable_pt_diff_xlnx x : 0 < x < 1 -> derivable diff_xlnx x 1.
-Proof.
-move=> /andP[x0 x1].
-apply: derivableB.
-  apply/derivable1_diffP.
-  have := (@differentiable_comp _ _ _ _ (fun t : R^o => 1 - t)%R
-    (xlnx: R^o -> R^o)).
-  apply => //.
-  apply/derivable1_diffP.
-  apply: derivable_xlnx.
-  by rewrite subr_gt0.
-exact: derivable_xlnx.
-Qed.
-
-(*
-Lemma derivable_pt_diff_xlnx x (Hx : 0 < x < 1) : derivable_pt diff_xlnx x.
-Proof.
-rewrite /diff_xlnx.
-apply derivable_pt_plus ; last by apply derivable_pt_opp, derivable_pt_xlnx, Hx.
-apply (derivable_pt_comp (fun x => 1 + - x) xlnx).
-  apply derivable_pt_plus ; first by apply derivable_pt_const.
-  apply derivable_pt_Ropp.
-apply derivable_pt_xlnx.
-rewrite subR_gt0; by case: Hx.
-Defined.*)
-
-
-Lemma derive_pt_diff_xlnx x (Hx : 0 < x < 1) :
-  derivable diff_xlnx x 1 ->
-  'D_1 diff_xlnx x = -(2 + exp.ln (x * (1-x))).
-Proof.
-move=> x1.
-rewrite deriveB/=; last 2 first.
-  (* TODO: copy past *)
-  apply/derivable1_diffP.
-  have := (@differentiable_comp _ _ _ _ (fun t : R^o => 1 - t)%R
-    (xlnx: R^o -> R^o)).
-  apply => //.
-  apply/derivable1_diffP.
-  apply: derivable_xlnx.
-  rewrite subr_gt0.
-  by case/andP : Hx.
-  apply: derivable_xlnx.
-  by case/andP: Hx.
-rewrite -derive1E derive1_comp; last 2 first.
-  apply: derivableB.
-    exact: derivable_cst.
-  exact: derivable_id.
-  apply: derivable_xlnx.
-  rewrite subr_gt0.
-  by case/andP : Hx.
-rewrite derive_pt_xlnx; last 2 first.
-  apply: derivable_xlnx.
-  by case/andP : Hx.
-  by case/andP : Hx.
-rewrite [X in X * _]derive1E.
-rewrite derive_pt_xlnx; last 2 first.
-  apply: derivable_xlnx.
-  rewrite subr_gt0.
-  by case/andP : Hx.
-  rewrite subr_gt0.
-  by case/andP : Hx.
-rewrite derive1E.
-rewrite deriveB; last 2 first.
-  exact: derivable_cst.
-  exact: derivable_id.
-rewrite derive_cst derive_id sub0r mulrN1 -opprB; congr (- _).
-rewrite opprK addrACA addrC; congr +%R.
-rewrite exp.lnM// posrE.
-by case/andP: Hx.
-rewrite subr_gt0.
-by case/andP: Hx.
-Qed.
-
-Lemma diff_xlnx_0 : diff_xlnx 0 = 0.
-Proof. by rewrite /diff_xlnx subr0 xlnx_0 xlnx_1 subrr. Qed.
-
-(*
-Lemma diff_xlnx_1 : diff_xlnx 1 = 0.
-Proof. by rewrite /diff_xlnx subRR xlnx_0 xlnx_1 subRR. Qed.
-*)
-
-Lemma derive_diff_xlnx_neg_aux x (Hx : 0 < x < 1) : x < sequences.expR (-2) -> 0 <'D_1 diff_xlnx x.
-Proof.
-move=> xltexp2; move: Hx => /andP[Hx1 Hx2].
-rewrite derive_pt_diff_xlnx; last 2 first.
-  by rewrite Hx1.
-  apply: derivable_pt_diff_xlnx.
-  by rewrite Hx1.
-rewrite ltrNr oppr0.
-rewrite -[X in X + _]opprK addrC.
-rewrite subr_lt0.
-rewrite -exp.ltr_expR.
-rewrite exp.lnK; last first.
-  by rewrite posrE mulr_gt0// subr_gt0.
-apply: (@lt_trans _ _ (sequences.expR (-2) * (1 - x))).
-  by rewrite ltr_pM2r ?subr_gt0//.
-rewrite -[ltRHS]mulr1.
-rewrite ltr_pM2l ?exp.expR_gt0//.
-by rewrite ltrBlDl addrC -ltrBlDl subrr.
-Qed.
-
-Lemma MVT_cor1_pderivable_open_continuity (f : R^o -> R^o) (a b : R^o) :
+(* TODO: clean *)
+Lemma MVT_cor1_pderivable_open_continuity {R : realType} (f : R -> R) (a b : R) :
   (forall x, a < x < b -> derivable f x 1) -> continuous_at a f ->
   continuous_at b f ->
   a < b ->
@@ -559,10 +93,13 @@ exists c; split.
 by rewrite fab.
 Qed.
 
-Lemma derive_sincreasing_interv a b (f : R^o -> R^o) (pr: forall x, a < x < b -> derivable f x 1) (prc : forall x, a <= x <= b -> continuous_at x f) :
-    a < b ->
-    ((forall t:R, a < t < b -> derivable f t 1 -> 0 < 'D_1 f t) ->
-      forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x < f y).
+(* TODO: clean *)
+Lemma derive_sincreasing_interv {R : realType} a b (f : R -> R)
+  (pr : forall x, a < x < b -> derivable f x 1)
+  (prc : forall x, a <= x <= b -> continuous_at x f) :
+  a < b ->
+  ((forall t:R, a < t < b -> derivable f t 1 -> 0 < 'D_1 f t) ->
+    forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x < f y).
 Proof.
 intros H H0 x y H1 H2 H3.
 rewrite -subr_gt0.
@@ -597,10 +134,311 @@ rewrite H7.
 apply mulr_gt0; first by apply H0'.
 by rewrite subr_gt0.
 Qed.
-Lemma diff_xlnx_sincreasing_0_Rinv_e2 : forall x y : R, 0 <= x <= sequences.expR (-2) -> 0 <= y <= sequences.expR (-2) -> x < y -> diff_xlnx x < diff_xlnx y.
+
+Section xlnx_sect.
+
+Section xlnx.
+Context {R : realType}.
+
+Definition xlnx_total (y : R) := y * ln y.
+
+Lemma derivable_xlnx_total x : 0 < x -> derivable xlnx_total x 1.
+Proof. by move=> x0; apply: derivableM => //; exact: derivable_ln. Qed.
+
+Lemma xlnx_total_neg (x : R) : 0 < x < 1 -> xlnx_total x < 0.
 Proof.
-move=> x y /andP[x0 x2] /andP[y0 y2] xy.
-apply (@derive_sincreasing_interv 0 (sequences.expR (-2))) => //.
+case/andP => lt0x ltx1.
+rewrite -(opprK 0) ltrNr oppr0 -mulrN.
+apply mulr_gt0 => //.
+by rewrite ltrNr oppr0 ln_lt0// lt0x.
+Qed.
+
+Lemma xlnx_total_xlnx x : 0 < x -> xlnx x = xlnx_total x.
+Proof. by move=> x0; rewrite /xlnx x0. Qed.
+
+Lemma continuous_at_xlnx_total (r : R) : 0 < r -> continuous_at r xlnx_total.
+Proof. by move=> r0; apply: cvgM => //; exact: continuous_ln. Qed.
+
+Definition xlnx (x : R) := if 0 < x then xlnx_total x else 0.
+
+Lemma xlnx_0 : xlnx 0 = 0.
+Proof. by rewrite /xlnx ltxx. Qed.
+
+Lemma xlnx_1 : xlnx 1 = 0.
+Proof. by rewrite /xlnx ltr01 /xlnx_total ln1 mulr0. Qed.
+
+Lemma xlnx_neg x : 0 < x < 1 -> xlnx x < 0.
+Proof. by move=> /andP[x0 x1]; rewrite /xlnx x0 xlnx_total_neg ?x0. Qed.
+
+Lemma continuous_at_xlnx (r : R) : continuous_at r xlnx.
+Proof.
+apply/cvgrPdist_le => /= eps eps_pos.
+have [r_gt0|r_lt0|<-{r}] := ltgtP 0 r.
+- have := continuous_at_xlnx_total r_gt0.
+  move=> /cvgrPdist_le/(_ _ eps_pos)[k/= k_pos Hk].
+  exists (Num.min k r).
+    by rewrite lt_min r_gt0 k_pos.
+  move=> x/=; rewrite lt_min => /andP[rxk rxr].
+  rewrite /xlnx r_gt0.
+  have -> : 0 < x.
+    rewrite -(addr0 x) -[in ltRHS](subrr r) addrA addrAC.
+    apply (@le_lt_trans _ _ ((x + - r) + `| x + - r |)).
+      by rewrite addrC -lerBlDr sub0r -normrN ler_norm.
+    by rewrite ltrD2l distrC.
+  exact: Hk.
+- exists (- r).
+    by rewrite ltrNr oppr0.
+  move=> x/= rxr.
+  rewrite /xlnx.
+  have -> : 0 < x = false.
+    apply/negbTE.
+    rewrite -leNgt.
+    rewrite -(addr0 x) -{1}(subrr r) addrA addrAC.
+    apply (@le_trans _ _ ((x + - r) - `| x + - r |)).
+      by rewrite lerD2l lerNr distrC ltW.
+    by rewrite subr_le0 ler_norm.
+  have -> : (0 < r) = false.
+    by apply/negbTE; rewrite -leNgt; apply/ltW.
+  by rewrite subrr normr0 ltW.
+- exists (expR (- 2 / eps)); first by rewrite expR_gt0.
+  move=> x/=; rewrite sub0r normrN => Hx2.
+  rewrite /xlnx ltxx sub0r normrN.
+  case: ifPn => Hcase; last by rewrite normr0 ltW.
+  rewrite (ger0_norm (ltW Hcase)) in Hx2.
+  rewrite -{1}(lnK Hcase).
+  set X := ln x.
+  have X_neg : X < 0.
+    apply (@lt_trans _ _ (-2 / eps)).
+      by rewrite -ltr_expR lnK.
+    by rewrite mulNr ltrNl oppr0 divr_gt0//.
+  apply/ltW.
+  apply: (@lt_le_trans _ _ (2 / (- X))).
+  + rewrite ltr0_norm; last first.
+      by rewrite /xlnx_total pmulr_rlt0 ?expR_gt0 ?lnK.
+    rewrite -mulrN.
+    rewrite -(@ltr_pM2r _ ((- X)^-1)); last first.
+      by rewrite invr_gt0 ltrNr oppr0.
+    rewrite lnK// -mulrA divff ?mulr1; last first.
+      by rewrite oppr_eq0 lt_eqF.
+    rewrite -(invrK 2) -mulrA.
+    rewrite invrN mulNr (mulrN (X^-1)) opprK -invfM -expr2 invrK.
+    rewrite (_ : 2 = 2`!%:R)//.
+    have := @exp_strict_lb _ 2 (- X).
+    rewrite ltrNr oppr0 => /(_ X_neg).
+    rewrite expRN.
+    rewrite -[X in X < _ -> _]invrK.
+    rewrite ltf_pV2 ?posrE ?expR_gt0 ?invr_gt0 ?mulr_gt0//=; last 3 first.
+      by rewrite ltrNr oppr0.
+      by rewrite ltrNr oppr0.
+      by rewrite invr_gt0.
+    by rewrite lnK// sqrrN invf_div.
+  + move: Hx2.
+    rewrite -ltr_ln ?posrE ?expR_gt0//.
+    rewrite -/X.
+    rewrite expRK.
+    rewrite mulNr ltrNr.
+    rewrite ltr_pdivrMr//.
+    by rewrite -ltr_pdivrMl 1?ltrNr ?oppr0// mulrC => /ltW.
+Qed.
+
+Lemma derivable_xlnx x : 0 < x -> derivable xlnx x 1.
+Proof.
+move=> x0; rewrite (near_eq_derivable _ xlnx_total)//.
+- exact: derivable_xlnx_total.
+- by rewrite oner_eq0.
+- near=> z.
+  rewrite /xlnx ifT//.
+  near: z.
+  exact: gt0_near_nbhs.
+Unshelve. all: by end_near. Qed.
+
+Lemma derive_xlnxE x : 0 < x -> 'D_1 xlnx x = ln x + 1.
+Proof.
+move=> x_pos.
+rewrite /xlnx.
+transitivity ('D_1 (fun x0 : R^o => x0 * exp.ln x0) x).
+  apply: near_eq_derive.
+    by rewrite oner_eq0.
+  near=> z.
+  rewrite ifT//.
+  near: z.
+  exact: gt0_near_nbhs.
+rewrite deriveM//=; last exact: derivable_ln.
+rewrite derive_val addrC; congr +%R.
+  by rewrite /GRing.scale/= mulr1.
+rewrite (@derive_val _ _ _ _ _ _ _ (exp.is_derive1_ln x_pos)).
+by rewrite -(@mulfV _ x)// gt_eqF.
+Unshelve. all: by end_near. Qed.
+
+(*
+Lemma pderivable_Ropp_xlnx : pderivable (fun y => - xlnx y) (fun x => 0 < x <= exp (- 1)).
+Proof.
+move=> x /= Hx.
+apply derivable_pt_opp.
+apply derivable_pt_xlnx.
+apply Hx.
+Defined.
+
+Lemma xlnx_sdecreasing_0_Rinv_e_helper : forall (t : R) (Ht : 0 < t <= exp (-1)),
+  0 < (if t == exp (-1) then 1 else derive_pt (fun x => - xlnx x) t (pderivable_Ropp_xlnx Ht)).
+Proof.
+move=> t [t0 te]; case: ifPn => [//|] /eqP Hcase.
+rewrite derive_pt_opp derive_pt_xlnx //.
+rewrite ltR_oppr oppR0 addRC -ltR_subRL sub0R.
+apply exp_lt_inv; by rewrite exp_ln // ltR_neqAle.
+Qed.
+*)
+
+Lemma xlnx_sdecreasing_0_Rinv_e x y :
+  0 <= x <= expR (-1) ->
+  0 <= y <= expR (-1) -> x < y -> xlnx y < xlnx x.
+Proof.
+move=> /andP[x1 x2] /andP[y1 y2] xy.
+case/boolP : (x == 0) => [/eqP ->|x0].
+- rewrite xlnx_0; apply xlnx_neg.
+  rewrite (le_lt_trans x1 xy)/=.
+  rewrite (le_lt_trans y2)//.
+  by rewrite exp.expR_lt1// ltrN10.
+- rewrite -[X in _ < X]opprK ltrNr.
+  have {}x0 : 0 < x.
+    by rewrite lt_neqAle eq_sym x0 x1.
+  have {x1 y1}y0 : 0 < y.
+    by rewrite (le_lt_trans x1).
+  apply: (@derivable1_mono _ (BRight 0) (BRight (expR (-1))) (fun x => - xlnx x)) => //.
+  + by rewrite in_itv//= (x0).
+  + by rewrite in_itv//= (y0).
+  + move=> /= z.
+    rewrite in_itv/= => /andP[z0 z1].
+    apply: derivableN.
+    by apply: derivable_xlnx => //.
+  + move=> /= t.
+    rewrite in_itv/= => /andP[tx ty].
+    rewrite [ltRHS](_ : _ = 'D_1 (fun x : R => - (x * exp.ln x)) t); last first.
+      apply: near_eq_derive.
+        by rewrite oner_eq0.
+      near=> z.
+      rewrite /xlnx.
+      case: ifPn => z0 //.
+      rewrite oppr0.
+      by rewrite exp.ln0 ?mulr0// ?oppr0// leNgt.
+    rewrite deriveN; last first.
+      apply: derivableM => //.
+      apply: ex_derive.
+      apply: exp.is_derive1_ln.
+      by rewrite (lt_trans _ tx).
+    rewrite ltrNr oppr0.
+    rewrite deriveM//; last first.
+      apply: ex_derive.
+      apply: exp.is_derive1_ln.
+      by rewrite (lt_trans _ tx).
+    have := exp.is_derive1_ln (lt_trans x0 tx).
+    move/(@derive_val R R^o R^o) => ->.
+    rewrite derive_id [X in X + _]mulfV ?gt_eqF//; last by rewrite (lt_trans x0).
+    rewrite (@lt_le_trans _ _ (1 + exp.ln y))//.
+      rewrite ltrD2l.
+      rewrite /GRing.scale/= mulr1.
+      by rewrite exp.ltr_ln ?posrE ?(lt_trans x0)// ltW.
+    rewrite (@le_trans _ _ (1 + exp.ln (expR (-1))))//.
+      by rewrite lerD2l exp.ler_ln ?posrE// exp.expR_gt0.
+      by rewrite exp.expRK subrr.
+Unshelve. all: by end_near. Qed.
+
+Lemma xlnx_decreasing_0_Rinv_e x y :
+  0 <= x <= expR (-1) -> 0 <= y <= expR (-1) -> x <= y -> xlnx y <= xlnx x.
+Proof.
+move=> Hx Hy Hxy.
+case/boolP : (x == y) => [/eqP ->|/eqP H].
+  by rewrite lexx.
+apply/ltW/xlnx_sdecreasing_0_Rinv_e => //.
+rewrite lt_neqAle Hxy andbT.
+exact/eqP.
+Qed.
+
+End xlnx.
+
+Section diff_xlnx.
+Context {R : realType}.
+
+Definition diff_xlnx (x : R) := xlnx (1 - x) - xlnx x.
+
+Lemma derivable_pt_diff_xlnx x : 0 < x < 1 -> derivable diff_xlnx x 1.
+Proof.
+move=> /andP[x0 x1].
+apply: derivableB.
+  apply/derivable1_diffP.
+  have := (@differentiable_comp _ _ _ _ (fun t : R^o => 1 - t)%R
+    (xlnx: R^o -> R^o)).
+  apply => //.
+  apply/derivable1_diffP.
+  apply: derivable_xlnx.
+  by rewrite subr_gt0.
+exact: derivable_xlnx.
+Qed.
+
+Lemma derive_pt_diff_xlnx x : 0 < x < 1 ->
+  derivable diff_xlnx x 1 ->
+  'D_1 diff_xlnx x = -(2 + exp.ln (x * (1-x))).
+Proof.
+move=> /andP[] x0 x1 H.
+rewrite deriveB/=; last 2 first.
+  (* TODO: copy past *)
+  apply/derivable1_diffP.
+  have := (@differentiable_comp _ _ _ _ (fun t : R^o => 1 - t)%R xlnx).
+  apply => //.
+  apply/derivable1_diffP.
+  apply: derivable_xlnx.
+  by rewrite subr_gt0.
+  exact: derivable_xlnx.
+rewrite -derive1E derive1_comp; last 2 first.
+  apply: derivableB.
+    exact: derivable_cst.
+  exact: derivable_id.
+  apply: derivable_xlnx.
+  by rewrite subr_gt0.
+rewrite derive_xlnxE//.
+rewrite [X in X * _]derive1E.
+rewrite derive_xlnxE; last by rewrite subr_gt0.
+rewrite derive1E deriveB; last 2 first.
+  exact: derivable_cst.
+  exact: derivable_id.
+rewrite derive_cst derive_id sub0r mulrN1 -opprB; congr (- _).
+rewrite opprK addrACA addrC; congr +%R.
+by rewrite lnM// posrE subr_gt0.
+Qed.
+
+Lemma diff_xlnx_0 : diff_xlnx 0 = 0.
+Proof. by rewrite /diff_xlnx subr0 xlnx_0 xlnx_1 subrr. Qed.
+
+(*
+Lemma diff_xlnx_1 : diff_xlnx 1 = 0.
+Proof. by rewrite /diff_xlnx subRR xlnx_0 xlnx_1 subRR. Qed.
+*)
+
+Lemma derive_diff_xlnx_gt0 x : 0 < x < 1 -> x < expR (-2) -> 0 < 'D_1 diff_xlnx x.
+Proof.
+move=> /andP[x0 x1] xltexp2.
+rewrite derive_pt_diff_xlnx; last 2 first.
+  by rewrite x0.
+  apply: derivable_pt_diff_xlnx.
+  by rewrite x0.
+rewrite ltrNr oppr0.
+rewrite -[X in X + _]opprK addrC.
+rewrite subr_lt0.
+rewrite -ltr_expR lnK; last first.
+  by rewrite posrE mulr_gt0// subr_gt0.
+apply: (@lt_trans _ _ (expR (-2) * (1 - x))).
+  by rewrite ltr_pM2r ?subr_gt0.
+rewrite -[ltRHS]mulr1.
+rewrite ltr_pM2l ?expR_gt0//.
+by rewrite ltrBlDl addrC -ltrBlDl subrr.
+Qed.
+
+Lemma diff_xlnx_sincreasing_0_Rinv_e2 (x y : R) :
+  0 <= x <= expR (-2) -> 0 <= y <= expR (-2) ->
+  x < y -> diff_xlnx x < diff_xlnx y.
+Proof.
+move=> /andP[x0 x2] /andP[y0 y2] xy.
+apply (@derive_sincreasing_interv R 0 (expR (-2))) => //.
 - move=> x' /= /andP[Hx1 Hx2].
   apply derivable_pt_diff_xlnx.
   apply/andP; split => //.
@@ -608,22 +446,21 @@ apply (@derive_sincreasing_interv 0 (sequences.expR (-2))) => //.
 - move=> x' /= /andP[Hx1 Hx2].
   rewrite /diff_xlnx.
   apply: cvgB => //.
-    apply: cvg_comp; last first.
-      by apply: continue_xlnx.
+    apply: cvg_comp; last exact: continuous_at_xlnx.
     apply: cvgB => //.
     exact: cvg_cst.
-  by apply: continue_xlnx.
+  by apply: continuous_at_xlnx.
 - by rewrite exp.expR_gt0.
 - move=> x' /= /andP[Hx1 Hx2] K.
-  rewrite derive_diff_xlnx_neg_aux//.
+  rewrite derive_diff_xlnx_gt0//.
   rewrite Hx1/=.
   rewrite (lt_le_trans Hx2)//.
   by rewrite -[leRHS]exp.expR0 exp.ler_expR lerNl oppr0.
-by rewrite x0.
-by rewrite y0.
+- by rewrite x0.
+- by rewrite y0.
 Qed.
 
-Lemma xlnx_ineq x : 0 <= x <= sequences.expR (-2) -> xlnx x <= xlnx (1-x).
+Lemma xlnx_ineq (x : R) : 0 <= x <= expR (-2) -> xlnx x <= xlnx (1-x).
 Proof.
 move=> /andP[Hx1 Hx2].
 rewrite -subr_ge0.
@@ -640,9 +477,9 @@ Qed.
 End diff_xlnx.
 
 Section Rabs_xlnx.
-Let R := Rdefinitions.R.
+Context {R : realType}.
 
-Definition xlnx_delta a := fun x : R^o => xlnx (x + a) - xlnx x : R^o.
+Definition xlnx_delta a (x : R) := xlnx (x + a) - xlnx x.
 
 Lemma derivable_xlnx_delta (eps : R) (Heps : 0 < eps < 1) x (Hx : 0 < x < 1 - eps) :
   derivable (xlnx_delta eps) x 1.
@@ -659,7 +496,7 @@ by case/andP : Hx.
 Qed.
 
 Lemma derive_pt_xlnx_delta eps (Heps : 0 < eps < 1) x (Hx : 0 < x < 1 - eps) :
-  'D_1 (xlnx_delta eps) x = exp.ln (x + eps) - exp.ln x.
+  'D_1 (xlnx_delta eps) x = ln (x + eps) - ln x.
 Proof.
 rewrite deriveB//=; last 2 first.
   apply/derivable1_diffP/differentiable_comp => //.
@@ -670,9 +507,7 @@ rewrite deriveB//=; last 2 first.
   by case/andP: Heps.
   apply: derivable_xlnx.
   by case/andP : Hx.
-rewrite derive_pt_xlnx; last 2 first.
-  apply: derivable_xlnx.
-  by case/andP: Hx.
+rewrite derive_xlnxE; last first.
   by case/andP: Hx.
 rewrite -derive1E.
 rewrite derive1_comp//; last first.
@@ -680,11 +515,7 @@ rewrite derive1_comp//; last first.
   rewrite addr_gt0//.
   by case/andP: Hx.
   by case/andP: Heps.
-rewrite derive1E derive_pt_xlnx; last 2 first.
-  apply: derivable_xlnx.
-  rewrite addr_gt0//.
-  by case/andP: Hx.
-  by case/andP: Heps.
+rewrite derive1E derive_xlnxE; last first.
   rewrite addr_gt0//.
   by case/andP: Hx.
   by case/andP: Heps.
@@ -699,33 +530,33 @@ Lemma increasing_xlnx_delta eps (Heps : 0< eps < 1) :
                   xlnx_delta eps x < xlnx_delta eps y.
 Proof.
 move=> x y /andP[x0 x1] /andP[y0 y1] xy.
-apply (@derive_sincreasing_interv 0 (1 - eps)) => //=.
+apply (@derive_sincreasing_interv R 0 (1 - eps)) => //=.
 - move=> z /andP[z0 z1].
   apply: derivable_xlnx_delta => //.
   by rewrite z0.
 - move=> z /andP[z0 z1].
   apply: cvgB.
     apply: cvg_comp; last first.
-      exact: continue_xlnx.
+      exact: continuous_at_xlnx.
     apply: cvgD.
       exact: cvg_id.
     exact: cvg_cst.
-  exact: continue_xlnx.
+  exact: continuous_at_xlnx.
 - rewrite subr_gt0.
   by case/andP : Heps.
 - move=> t /andP[t0 t1] H.
   rewrite derive_pt_xlnx_delta//.
-    rewrite subr_gt0 exp.ltr_ln ?posrE//.
+    rewrite subr_gt0 ltr_ln ?posrE//.
     rewrite ltrDl.
     by case/andP: Heps.
     rewrite addr_gt0//.
     by case/andP: Heps.
     by rewrite t0/=.
-by rewrite x0.
-by rewrite y0.
+- by rewrite x0.
+- by rewrite y0.
 Qed.
 
-Lemma xlnx_delta_bound eps : 0 < eps <= sequences.expR (-2) ->
+Lemma xlnx_delta_bound eps : 0 < eps <= expR (-2) ->
   forall x, 0 <= x <= 1 - eps -> `| xlnx_delta eps x | <= - xlnx eps.
 Proof.
 move=> /andP[Heps1 Heps2] x /andP[Hx1 Hx2].
@@ -756,13 +587,12 @@ rewrite ler_norml; apply/andP; split.
   by rewrite (ltW Heps1)/=.
 Qed.
 
-Lemma Rabs_xlnx a (Ha : 0 <= a <= sequences.expR (-2)) x y :
+Lemma Rabs_xlnx (a : R) (Ha : 0 <= a <= expR (-2)) x y :
   0 <= x <= 1 -> 0 <= y <= 1 -> `| x - y | <= a ->
   `| xlnx x - xlnx y | <= - xlnx a.
 Proof.
 move=> /andP[Hx1 Hx2] /andP[Hy1 Hy2] H.
 have [Hcase|Hcase|Hcase] := ltgtP x y.
-(*case : (Rtotal_order x y) ; last case ; move => Hcase.*)
 - have Haux : y = x + `| x - y |.
     by rewrite distrC gtr0_norm ?subr_gt0 // addrC subrK.
   rewrite Haux -normrN opprD opprK addrC.
@@ -777,7 +607,7 @@ have [Hcase|Hcase|Hcase] := ltgtP x y.
   apply xlnx_decreasing_0_Rinv_e => //.
   - apply/andP; split; first exact: normr_ge0.
     apply (@le_trans _ _ a) => //.
-    apply (@le_trans _ _ (sequences.expR (- 2))).
+    apply (@le_trans _ _ (expR (- 2))).
       by case/andP: Ha.
     by rewrite exp.ler_expR// lerN2 ler1n.
   - apply/andP; split.
@@ -872,8 +702,6 @@ apply: (@second_derivative_convexf_pt _ _ _ HDf Df _ HDDf DDf) => //.
   exact/expR_ge0/ltRW/invR_gt0/(@ltR_leR_trans x).
 Qed.
 *)
-
-Local Open Scope reals_ext_scope.
 
 (*
 Lemma log_concave_at_gt0W x y (t : {prob R}) : x < y ->

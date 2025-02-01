@@ -267,7 +267,7 @@ move=> xC x0.
 rewrite /lowest_size.
 case: exists_non0_codeword_lowest_deg => g /= /and3P[H1 H2 /forallP].
 move/(_ x); rewrite xC x0 /= andbT.
-case/boolP : (x == g) => [/eqP -> //| xg].
+have [->//|xg] := eqVneq x g.
 by rewrite implyTb.
 Qed.
 
@@ -277,7 +277,7 @@ Proof.
 case/and3P => gC g0 Hg.
 rewrite /lowest_size.
 case: exists_non0_codeword_lowest_deg => g' /= /and3P[g'C g'0 Hg'].
-case/boolP: (g == g') => [/eqP -> // | gg'].
+have [->//|gg'] := eqVneq g g'.
 apply/eqP; rewrite eqn_leq.
 move: Hg => /forallP/(_ g').
 rewrite g'C /= g'0 andbT eq_sym gg' implyTb => ->.
@@ -512,11 +512,10 @@ have gk : size (rVpoly g) <= size (rVpoly k).
   - rewrite /k; move: abs; apply contra; by rewrite subr_eq0.
 suff kg : size (rVpoly k) < size (rVpoly g).
   by move: (leq_ltn_trans gk kg); rewrite ltnn.
-rewrite /k linearB /=; case/boolP: (1 < size (rVpoly g)) => size_1g.
+rewrite /k linearB /=; have [size_1g|size_1g] := ltnP 1 (size (rVpoly g)).
 - apply: size_sub => //=; last by apply lead_coef_F2.
-  apply/eqP; apply: contra g0; by rewrite rVpoly0.
-- rewrite -leqNgt in size_1g.
-  (* this means that g is constant *)
+  by apply/eqP; apply: contra g0; rewrite rVpoly0.
+- (* this means that g is constant *)
   have sz_g1 : size (rVpoly g) = 1%N.
     have : size (rVpoly g) != O by rewrite size_poly_eq0 rVpoly0.
     by case: (size _) size_1g => //; case.
@@ -720,11 +719,11 @@ transitivity (\sum_(i < r.+1) #| [set y | dH x y == i] |)%N.
     apply: trivIimset.
     - move=> i j _ _ ji; rewrite -setI_eq0; apply/eqP/setP => /= y.
       rewrite !inE.
-      case/boolP : (dH x y == i) => //= /eqP ->.
-      apply/negbTE; by rewrite eq_sym.
+      have [->/=|//] := eqVneq (dH x y) i.
+      by apply/negbTE; rewrite eq_sym.
     - apply/negP; case/imsetP => /= i _ => /esym.
       apply/eqP/sphere_not_empty.
-      rewrite (leq_trans _ rn) //; move: (ltn_ord i); by rewrite ltnS.
+      by rewrite (leq_trans _ rn) //; move: (ltn_ord i); rewrite ltnS.
   have partD : partition (f @: enum 'I_r.+1) D.
     apply/and3P; split.
     - rewrite cover_imset //; apply/eqP/eq_bigl => i; by rewrite mem_enum.
@@ -767,11 +766,11 @@ have /card_partition : partition P (\bigcup_(c in C) ball c t).
   move/setP/(_ x); by rewrite !inE dHE subrr wH0 leq0n.
 rewrite big_imset /=; last first.
   move=> c1 c2 c1C c2C.
-  case/boolP : (c1 == c2) => [/eqP //|c1c2 abs].
+  have [//|c1c2 abs] := eqVneq c1 c2.
   move: (H _ _ c1C c2C c1c2).
   rewrite abs setIid => /setP/(_ c2).
   by rewrite !inE dHE subrr wH0 leq0n.
-move=> <-; apply subset_leq_card; apply/subsetP => x; by rewrite inE.
+by move=> <-; apply subset_leq_card; apply/subsetP => x; rewrite inE.
 Qed.
 
 Definition perfect n q (C : Lcode0.t 'F_q n)
