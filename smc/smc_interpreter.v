@@ -72,6 +72,8 @@ Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
         interp h ps' trs'
     else (ps, traces)
   else (ps, traces).
+
+Definition run_interp h procs := interp h procs (nseq (size procs) [::]).
 End interp.
 
 Arguments Finish {data}.
@@ -79,18 +81,18 @@ Arguments Fail {data}.
 
 Section traces.
 Variable data : eqType.
+Local Open Scope nat_scope.
 
 Lemma size_traces h (procs : seq (proc data)) :
-  forall s,
-    s \in (interp h procs (nseq (size procs) [::])).2 -> (size s <= h)%N.
+  forall s, s \in (run_interp h procs).2 -> size s <= h.
 Proof.
 clear.
 pose k := h.
-rewrite -{2}/k.
+rewrite -{2}/k /run_interp.
 set traces := nseq _ _ => /=.
-have Htr : {in traces, forall s, size s <= k - h}%N.
+have Htr : {in traces, forall s, size s <= k - h}.
   move=> s. by rewrite mem_nseq => /andP[] _ /eqP ->.
-have : (h <= k)%N by [].
+have : h <= k by [].
 elim: h k procs traces Htr => [| h IH] k procs traces Htr hk //=.
   move=> s /Htr. by rewrite subn0.
 move=> s.
@@ -100,8 +102,8 @@ move=> /= {}s.
 rewrite /unzip2 -map_comp.
 case/mapP => i.
 rewrite mem_iota add0n /step => /andP[] _ Hi /=.
-have Hsz : (size (nth [::] traces i) < k - h)%N.
-  case/boolP: (i < size traces)%N => Hi'.
+have Hsz : size (nth [::] traces i) < k - h.
+  case/boolP: (i < size traces) => Hi'.
     apply/(leq_ltn_trans (Htr _ _)).
       by rewrite mem_nth.
     by rewrite subnS prednK // leq_subRL // ?addn1 // ltnW.
@@ -131,16 +133,16 @@ by rewrite !size_map size_iota.
 Qed.
 
 Lemma size_traces_nth h (procs : seq (proc data)) (i : 'I_(size procs)) :
-  (size (nth [::] (interp h procs (nseq (size procs) [::])).2 i) <= h)%N.
+  (size (nth [::] (run_interp h procs).2 i) <= h)%N.
 Proof.
 by apply/size_traces/mem_nth; rewrite (size_interp _ _).2 // size_nseq.
 Qed.
 
-Definition interp_traces h (procs : seq (proc data)) :=
+Definition interp_traces h procs : (size procs).-tuple (h.-bseq data) :=
   [tuple Bseq (size_traces_nth h i) | i < size procs].
 
 Lemma interp_traces_ok h procs :
- map val (interp_traces h procs) = (interp h procs (nseq (size procs) [::])).2.
+ map val (interp_traces h procs) = (run_interp h procs).2.
 Proof.
 apply (eq_from_nth (x0:=[::])).
   rewrite size_map /= size_map size_enum_ord.
@@ -298,21 +300,21 @@ rewrite prednK.
 by rewrite expn_gt0.
 Qed.
 
-Notation "u *d w" := (smc_entropy_proofs.dotproduct u w).
-Notation "u \*d w" := (smc_entropy_proofs.dotproduct_rv u w).
+Notation "u *d w" := (scp.dotproduct u w).
+Notation "u \*d w" := (scp.dotproduct_rv u w).
 
 Lemma smc_scalar_product_is_correct sa sb ra yb xa xb :
-  is_scalar_product smc_entropy_proofs.dotproduct (
-      @smc_scalar_product_traces TX VX smc_entropy_proofs.dotproduct sa sb ra yb xa xb).
+  is_scalar_product scp.dotproduct (
+      @smc_scalar_product_traces TX VX scp.dotproduct sa sb ra yb xa xb).
 Proof.
 rewrite smc_scalar_product_traces_ok /is_scalar_product /=.
 symmetry.
-rewrite (smc_entropy_proofs.dot_productC (xa+sa) xb).
-rewrite !smc_entropy_proofs.dot_productDr.
-rewrite smc_entropy_proofs.dot_productC.
-rewrite (smc_entropy_proofs.dot_productC xb sa).
-rewrite (smc_entropy_proofs.dot_productC (xb+sb) sa).
-rewrite smc_entropy_proofs.dot_productDr.
+rewrite (scp.dot_productC (xa+sa) xb).
+rewrite !scp.dot_productDr.
+rewrite scp.dot_productC.
+rewrite (scp.dot_productC xb sa).
+rewrite (scp.dot_productC (xb+sb) sa).
+rewrite scp.dot_productDr.
 (* Weird: without making it as a lemma, the ring tactic fails. *)
 have // ->: xa *d xb + sa *d xb + (sa *d sb - ra) - yb - (sa *d xb + sa *d sb) + ra + yb = xa *d xb.
   by ring.
@@ -321,7 +323,7 @@ Qed.
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX)
   : smc_scalar_product_party_tracesT VX :=
   let '(sa, sb, ra, yb, xa, xb) := o in
-  (smc_scalar_product_traces smc_entropy_proofs.dotproduct sa sb ra yb xa xb).
+  (smc_scalar_product_traces scp.dotproduct sa sb ra yb xa xb).
 
 Record scalar_product_random_inputs :=
   ScalarProductRandomInputs {
@@ -415,8 +417,8 @@ Lemma alice_traces_ok :
   alice_traces = alice_traces_from_view `o [%x1, s1, r1, x2', t, y1].
 Proof.
 apply: boolp.funext => x /=.
-rewrite /alice_traces /scalar_product_RV /scalar_product_uncurry.
-by rewrite /comp_RV /= smc_scalar_product_traces_ok.
+rewrite /alice_traces /scalar_product_RV /comp_RV /=.
+by rewrite smc_scalar_product_traces_ok.
 Qed.
 
 Lemma alice_traces_entropy :
@@ -431,8 +433,8 @@ transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
   have fK : cancel alice_traces_from_view f by move=> [] [] [] [] [].
   have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces.
     by apply: boolp.funext => x /=; rewrite alice_traces_ok /comp_RV fK.
-  by rewrite smc_entropy_proofs.fun_cond_removal.
-by rewrite alice_traces_ok cond_entropyC smc_entropy_proofs.fun_cond_removal.
+  by rewrite scp.fun_cond_removal.
+by rewrite alice_traces_ok cond_entropyC scp.fun_cond_removal.
 Qed.
 
 Let bob_traces_from_view xs : 11.-bseq _ :=
@@ -443,8 +445,8 @@ Lemma bob_traces_ok :
   bob_traces = bob_traces_from_view `o [%x2, s2, x1', r2, y2].
 Proof.
 apply: boolp.funext => x /=.
-rewrite /bob_traces /scalar_product_RV /scalar_product_uncurry.
-by rewrite /comp_RV /= smc_scalar_product_traces_ok.
+rewrite /bob_traces /scalar_product_RV /comp_RV /=.
+by rewrite smc_scalar_product_traces_ok.
 Qed.
 
 Lemma bob_traces_entropy :
@@ -459,13 +461,13 @@ transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
   have fK : cancel bob_traces_from_view f by move=> [] [] [] [] [].
   have -> : [%x2, s2, x1', r2, y2] = f `o bob_traces.
     by apply: boolp.funext => x; rewrite bob_traces_ok /comp_RV fK.
-  by rewrite smc_entropy_proofs.fun_cond_removal.
-by rewrite bob_traces_ok cond_entropyC smc_entropy_proofs.fun_cond_removal.
+  by rewrite scp.fun_cond_removal.
+by rewrite bob_traces_ok cond_entropyC scp.fun_cond_removal.
 Qed.
 
 Let pnegy2_unif :
   `p_ (neg_RV y2) = fdist_uniform card_TX.
-Proof. rewrite -(smc_entropy.smc_entropy_proofs.neg_RV_dist_eq (py2_unif inputs)).
+Proof. rewrite -(scp.neg_RV_dist_eq (py2_unif inputs)).
 exact: (py2_unif inputs). Qed.
 
 Let x2s2_x1'_indepP :
@@ -541,7 +543,7 @@ pose g := fun (ws : TX) => ws.
 by apply_inde_rv_comp f g.
 Qed.
 
-(* Use all hypotheses of the secre inputs and random variables,
+(* Use all hypotheses of the secret inputs and random variables,
    and all technical lemmas about intermediate results,
    to prove information leakage free equations in Sec.[III.C]{Shen2007}
 
@@ -550,18 +552,19 @@ Qed.
 
   *)
 
-Let proof_alice := (smc_entropy.smc_entropy_proofs.pi2_alice_is_leakage_free_proof
+Let proof_alice := scp.pi2_alice_is_leakage_free_proof
       (y2_x1x2s1s2r1_indep inputs)
       (s2_x1s1r1x2_indep inputs)
-      (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs)).
+      (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs).
 
 Check proof_alice.
 
-
-Let proof_bob := smc_entropy.smc_entropy_proofs.pi2_bob_is_leakage_free_proof
+Let proof_bob := scp.pi2_bob_is_leakage_free_proof
       (card_TX:=card_TX)(card_rVTX:=card_VX)(r1:=r1)(y2:=y2)
-      x2s2_x1'_indepP x2s2x1'r2_y2_indepP x1x2s2x1'r2_y2_indepP x2s2x1'_r2_indep x1x2s2x1'_r2_indep
-      (s1_x1x2s1s2_indep inputs) (x2s2_x1_indep inputs) (s1s2_r1_indep inputs) (s1_s2_indep inputs)
+      x2s2_x1'_indepP x2s2x1'r2_y2_indepP x1x2s2x1'r2_y2_indepP
+      x2s2x1'_r2_indep x1x2s2x1'_r2_indep
+      (s1_x1x2s1s2_indep inputs) (x2s2_x1_indep inputs) (s1s2_r1_indep inputs)
+      (s1_s2_indep inputs)
       (pr1_unif inputs) (py2_unif inputs) (ps1_unif inputs).
 
 Check proof_bob.
@@ -570,8 +573,8 @@ Theorem scalar_product_is_leakage_freeP :
   scalar_product_is_leakage_free.
 Proof.
 split.
-rewrite alice_traces_entropy.
-exact: proof_alice.
+  rewrite alice_traces_entropy.
+  exact: proof_alice.
 rewrite bob_traces_entropy.
 exact: proof_bob.
 Qed.
