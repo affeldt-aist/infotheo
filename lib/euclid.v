@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg poly polydiv matrix.
 
 (******************************************************************************)
@@ -26,7 +26,6 @@ Unset Printing Implicit Defensive.
 
 Import GRing.Theory.
 Local Open Scope ring_scope.
-
 
 Lemma pair_ind (P : nat -> Type) :
   P O -> P 1%nat ->
@@ -262,7 +261,7 @@ rewrite /stop'; case: ex_maxnP => i Hi ij.
 rewrite leqNgt; apply/negP => abs.
 suff /ij : euclid_cont i.+1 by rewrite ltnn.
 apply/forallP => /= x.
-case/boolP : (x == ord_max) => [/eqP->//|Hx].
+have [->//|Hx] := eqVneq x ord_max.
 have {}Hx : x < i.+1 by rewrite ltn_neqAle Hx /= -ltnS.
 by move/forallP : Hi => /(_ (Ordinal Hx)).
 Qed.
@@ -351,8 +350,7 @@ elim: i => [? /= | i ih istop].
   by rewrite /Euclid.v0 /Euclid.v1 size_poly0 size_poly1.
 rewrite {2}/Euclid.v Euclid.uvE.
 do 2 rewrite -/(Euclid.v _ _ _).
-case/boolP : (v i.+1 == 0) => vi1_eq0.
-  by rewrite (eqP vi1_eq0) size_poly0.
+have [->|vi1_eq0] := eqVneq (v i.+1) 0; first by rewrite size_poly0.
 destruct i.
   rewrite /= /Euclid.v0 /Euclid.v1 size_poly1 addr0 mulr1 size_opp.
   have r10 : r1 != 0.

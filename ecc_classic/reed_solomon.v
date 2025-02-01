@@ -45,6 +45,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Import GRing.Theory.
+
 Local Open Scope ring_scope.
 Local Open Scope dft_scope.
 
@@ -114,7 +115,7 @@ Qed.
 Lemma deg_lb c : c \in codebook -> (c == 0) || (d.+1 <= size (rVpoly c)).
 Proof.
 move=> H.
-case/boolP : (c == 0) => //=.
+have [//=|] := eqVneq c 0.
 rewrite -rVpoly0 => c0.
 move: (uniq_roots_exp); rewrite uniq_rootsE.
 move/(max_poly_roots c0 (all_root_codeword H)).
@@ -136,7 +137,7 @@ Qed.
 Lemma addr_closed : addr_closed codebook.
 Proof.
 split; [exact: O_in_codebook | move=> x y].
-have [xy|xy] := boolP (x + y == 0); first by rewrite /= (eqP xy) O_in_codebook.
+have [/= ->|xy] := eqVneq (x + y) 0; first by rewrite O_in_codebook.
 rewrite inE => /forallP H1; rewrite inE => /forallP H2.
 rewrite inE; apply/forallP => i; apply/implyP => i0.
 rewrite fdcoorD.
@@ -414,7 +415,7 @@ Lemma RS_message_size (p : 'rV_n) x : rVpoly p = x * \gen_(a, d) ->
   (size x).-1 <= n - d.+1.
 Proof.
 move=> Hx.
-case/boolP : (x == 0) => [/eqP ->|x0]; first by rewrite size_poly0.
+have [->|x0] := eqVneq x 0; first by rewrite size_poly0.
 have : size (rVpoly p) <= n by rewrite size_poly.
 rewrite Hx size_mul // ?gen_neq0 // => H.
 rewrite -(leq_add2r d.+1) (subnK dn) (leq_trans _ H) //.
@@ -515,15 +516,16 @@ split => [c_in_RS| [m [H0 H1]] ]; last first.
   rewrite -(rVpolyK c) H1 fdcoor_codeword //.
     rewrite Hn0 /= (leq_trans (ltn_ord n0)) //.
     by rewrite -H1 size_poly.
-case/boolP : (c == 0) => [/eqP ->|Hc].
-  exists 0; by rewrite size_poly0 -subn1 sub0n leq0n mul0r linear0.
+have [->|Hc] := eqVneq c 0.
+  by exists 0; rewrite size_poly0 -subn1 sub0n leq0n mul0r linear0.
 have Hc' : 0 < size (rVpoly c) by rewrite size_poly_gt0 rVpoly0.
-have H1 : forall i, 1 <= i < d.+1 -> (rVpoly c).[a ^+ i] = 0.
-  move=> i /andP[i0 id].
-  move: c_in_RS; rewrite inE => /forallP/(_ (Ordinal id)); rewrite i0 implyTb /fdcoor // => /eqP.
+have H1 i : 1 <= i < d.+1 -> (rVpoly c).[a ^+ i] = 0.
+  move=> /andP[i0 id].
+  move: c_in_RS; rewrite inE => /forallP/(_ (Ordinal id)).
+  rewrite i0 implyTb /fdcoor // => /eqP.
   by rewrite mxE /= inordK // (leq_trans id).
-have H2 : forall n0, 1 <= n0 < d.+1 -> 'X - (a ^+ n0)%:P %| rVpoly c.
-  move=> n0 /H1 /eqP /factor_theorem [x ->].
+have H2 n0 : 1 <= n0 < d.+1 -> 'X - (a ^+ n0)%:P %| rVpoly c.
+  move=> /H1 /eqP /factor_theorem [x ->].
   by rewrite dvdp_mull.
 pose rs := [seq (a ^+ i) | i <- iota 1 d].
 have K1 : all (root (rVpoly c)) rs by apply RS.all_root_codeword.
@@ -564,7 +566,6 @@ Qed.
 End RS_generator_prop.
 
 Section RS_decoding_using_euclid0.
-
 Variables (F : finFieldType) (a : F) (n' : nat).
 Let n := n'.+1.
 Variable d : nat.
@@ -619,7 +620,6 @@ Qed.
 End RS_decoding_using_euclid0.
 
 Section RS_decoding_using_euclid.
-
 Variables q m' : nat.
 Hypothesis primeq : prime q.
 Let F := GF m' primeq.
@@ -696,7 +696,6 @@ End RS_decoding_using_euclid.
 Module RS_encoder.
 
 Section RS_encoder_sect.
-
 Variable (F : finFieldType) (a : F).
 Variables (d : nat) (n' : nat).
 Let n := n'.+1.
@@ -768,9 +767,9 @@ rewrite -(@rreg_div0 _ _ _ 'X^d).
   apply/andP; split; rewrite (leq_trans (size_add _ _)) // geq_max size_opp H /=.
     by rewrite (leq_trans _ dn) // ltnW.
     by rewrite (leq_trans _ dn) // ltnW.
-- rewrite lead_coefXn; exact: GRing.rreg1.
+- by rewrite lead_coefXn; exact: GRing.rreg1.
 - rewrite size_polyXn ltnS (leq_trans (size_add _ _)) //.
-  rewrite geq_max size_opp /=; apply/andP; split; by rewrite -ltnS.
+  by rewrite geq_max size_opp /=; apply/andP; split; rewrite -ltnS.
 Qed.
 
 Hypothesis a_neq0 : a != 0.

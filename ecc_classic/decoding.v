@@ -3,10 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm.
 From mathcomp Require Import zmodp matrix vector order.
 From mathcomp Require Import lra ring mathcomp_extra Rstruct reals.
-From mathcomp Require ssrnum.
-(*Require Import Reals.*)
-Require Import (*ssrR*) realType_ext (*Reals_ext*) ssr_ext ssralg_ext f2 fdist bigop_ext.
-Require Import proba.
+Require Import realType_ext ssr_ext ssralg_ext f2 bigop_ext fdist proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
 
 (******************************************************************************)
@@ -243,7 +240,7 @@ Lemma ML_err_rate x1 x2 y : repair y = Some x1 ->
   x2 \in C -> W ``(y | x2) <= W ``(y | x1).
 Proof.
 move=> Hx1 Hx2.
-case/boolP : (W ``(y | x2) == 0) => [/eqP -> //| Hcase].
+have [->//|Hcase] := eqVneq (W ``(y | x2)) 0.
 have PWy : receivable_prop P W y.
   apply/existsP; exists x2.
   by rewrite Hcase andbT fdist_uniform_supp_neq0 inE.
@@ -284,7 +281,7 @@ apply ler_sum => /= tb _.
 rewrite (eq_bigl (fun m => phi tb == Some m)); last by move=> m; rewrite inE.
 rewrite [leRHS](eq_bigl (fun m => dec tb == Some m)); last by move=> m; rewrite inE.
 (* show that phi_ML succeeds more often than phi *)
-have [dectb_None|dectb_Some] := boolP (dec tb == None).
+have [dectb_None|dectb_Some] := eqVneq (dec tb) None.
   case/boolP : (receivable_prop P W tb) => [Hy|Htb].
     case: (ML_dec (mkReceivable Hy)) => [m' [tb_m']].
     by move: dectb_None; rewrite {1}/dec {1}ffunE tb_m'.
@@ -295,7 +292,7 @@ have [dectb_None|dectb_Some] := boolP (dec tb == None).
     move/subsetP : enc_img; apply; apply/imsetP; by exists m.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite W_tb.
   by rewrite big1 //; apply sumr_ge0.
-case/boolP : (phi tb == None) => [/eqP ->|phi_tb].
+have [->|phi_tb] := eqVneq (phi tb) None.
   by rewrite big_pred0 //; apply sumr_ge0.
 have [m1 Hm1] : exists m', dec tb = Some m' by destruct (dec tb) => //; exists s.
 have [m2 Hm2] : exists m', phi tb = Some m' by destruct (phi tb) => //; exists s.
@@ -374,7 +371,6 @@ Qed.
 End MD_ML_decoding.
 
 Section MAP_decoding.
-
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable dec : decT B ('rV[A]_n) n.
@@ -416,9 +412,7 @@ under [in X in _ = X / _ -> _]eq_bigr.
   rewrite fdist_uniform_supp_in; last by rewrite inE.
   over.
 move=> H.
-rewrite -bigmaxR_distrr in H; last first.
-  apply/ltW.
-  exact: Hunpos.
+rewrite -bigmaxR_distrr in H; last exact/ltW/Hunpos.
 exists m; split; first exact tbm.
 rewrite ffunE in H.
 set x := (X in _ * _ / X) in H.

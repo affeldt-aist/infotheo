@@ -717,7 +717,9 @@ Qed.
 
 Lemma starFnext_iter_mxSumProd (Hc : syndrome H c = 0) l :
   starFnext H y (iSP_BEC0 H y l) = erasures (Esti H y (iSP_BEC0 H y l)).
-Proof. case: l => [|l]; [exact starFnext_mxStar | exact: starFnext_iter_mxSumProdS]. Qed.
+Proof.
+case: l => [|l]; [exact starFnext_mxStar | exact: starFnext_iter_mxSumProdS].
+Qed.
 
 End starFnext_prop.
 
@@ -848,7 +850,7 @@ have [H1 H2] : (forall m1, m1 \in `F n1 :\ m0 -> iSP_BEC0 H y l m1 n1 = Star) /\
 rewrite inE H2 eqxx /=.
 apply/forallP => m2.
 apply/implyP => Hm2.
-case/boolP : (m2 == m0) => [/eqP ?|m2m0].
+have [?|m2m0] := eqVneq m2 m0.
   subst m2.
   suff : (iSP_BEC0 H y l) m0 n1 = Star.
     by rewrite -{1}Hstable /= => ->.

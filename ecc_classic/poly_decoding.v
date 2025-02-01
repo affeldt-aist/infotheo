@@ -147,7 +147,7 @@ apply (@leq_trans (#|E|.*2.+1 - #|E|)); last first.
 rewrite leq_sub // ltnS.
 apply (@leq_trans (\sum_(i in E) 2)); last by rewrite big_const iter_addn_0 mul2n.
 apply leq_sum => /= i iE.
-case/boolP : (a ``_ i == 0) => [/eqP ->|ai0].
+have [->|ai0] := eqVneq (a ``_ i) 0.
   by rewrite scale0r subr0 size_poly1.
 by rewrite size_one_minus_X.
 Qed.
@@ -393,7 +393,7 @@ Qed.
 Lemma size_syndromep y : size (syndromep u y t) <= t.
 Proof.
 rewrite /syndromep poly_def (leq_trans (size_sum _ _ _)) //; apply/bigmax_leqP => i _.
-case/boolP : (fdcoor u y (inord i.+1) == 0) => [/eqP -> | ?].
+have [->|?] := eqVneq (fdcoor u y (inord i.+1)) 0.
 - by rewrite scale0r size_poly0.
 - by rewrite size_scale // size_polyXn.
 Qed.
@@ -447,7 +447,7 @@ Hypothesis tn : t < n.
 Lemma dft_syndromep (v : 'rV[F]_n) :
   rVpoly (dft (rVexp a n) t (twisted a v)) = syndromep (rVexp a n) v t.
 Proof.
-case/boolP : (a == 0) => [/eqP -> | a0].
+have [->|a0] := eqVneq a 0.
   apply/polyP => i.
   rewrite !coef_poly.
   case: ifPn => // it.

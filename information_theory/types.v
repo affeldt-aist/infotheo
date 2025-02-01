@@ -424,7 +424,7 @@ move/(@tuple_dist_type t) => ->.
 rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
              \prod_(a : A) (2%:R:Rdefinitions.R) `^ (type.d P a * log (type.d P a) * n%:R)); last first.
   apply eq_bigr => a _.
-  case/boolP : (0 == type.d P a) => H; last first.
+  have [H|H] := eqVneq 0 (type.d P a); last first.
     have {}H : 0 < type.d P a.
       have := FDist.ge0 (type.d P) a.
       by rewrite Order.POrderTheory.le_eqVlt (negbTE H)/=.
@@ -434,12 +434,12 @@ rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
     rewrite -mulrA [X in _ = X]mulrC -mulrA mulrC.
     congr (_ * _).
     by rewrite -type_fun_type.
-  - move/eqP : (H) => <-.
+  - move : (H) => <-.
     rewrite -(_ : O = type.f P a).
       by rewrite !mul0r expr0 exp.powRr0.
     apply/eqP.
     rewrite -(eqr_nat Rdefinitions.R).
-    move/eqP : H => /(congr1 (fun x => n%:R * x)).
+    move : H => /(congr1 (fun x => n%:R * x)).
     by rewrite mulr0 type_fun_type// => /eqP.
 rewrite -powR2sum.
 congr (_ `^ _)%R.
