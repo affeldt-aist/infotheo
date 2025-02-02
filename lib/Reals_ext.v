@@ -374,8 +374,8 @@ End OProb.
 Export OProb.Exports.
 Coercion OProb.p : oprob >-> prob.
 
-Canonical oprobcplt (p : oprob) := Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)). *)
-Coercion OProb.p : oprob  >-> prob.
+Canonical oprobcplt (p : oprob) := Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)).
+Coercion OProb.p : oprob  >-> prob. *)
 
 Section oprob_lemmas.
 Implicit Types p q : {oprob R}.

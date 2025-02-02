@@ -1336,19 +1336,19 @@ apply (prob_trichotomy' q);
   [ by rewrite s_of_p0 r_of_p0_oprob onem1 onem0 mul0e !mul1e add0e adde0
   | by rewrite s_of_p1 r_of_p1 onem1 !mul1e mul0e !adde0
   | rewrite {q}=> q].
+Ltac mulr_infty X := do ! (rewrite mulr_infty X mul1e).
 have sgp := oprob_sg1 p.
 have sgq := oprob_sg1 q.
-have sgonemp := oprob_sg1 (Prob.p (OProb.p p)).~%:opr.
-have sgonemq := oprob_sg1 (Prob.p (OProb.p q)).~%:opr.
-(* TODO: saikawa-san?
+have sgonemp := oprob_sg1 (oprob_to_real p).~%:opr.
+have sgonemq := oprob_sg1 (oprob_to_real q).~%:opr.
 have sgrpq := oprob_sg1 [r_of OProb.p p, OProb.p q]%:opr.
 have sgspq := oprob_sg1 [s_of OProb.p p, OProb.p q]%:opr.
 have sgonemrpq := oprob_sg1 (Prob.p [r_of OProb.p p, OProb.p q]).~%:opr.
 have sgonemspq := oprob_sg1 (Prob.p [s_of OProb.p p, OProb.p q]).~%:opr.
-Ltac mulr_infty X := do ! (rewrite mulr_infty X mul1e).
 set sg := (sgp,sgq,sgonemp,sgonemq,sgrpq,sgspq,sgonemrpq,sgonemspq).
 case: a=> [a | | ]; case: b=> [b | | ]; case: c=> [c | | ];
   try by mulr_infty sg.
+clear sgp sgq sgonemp sgonemq sgrpq sgspq sgonemrpq sgonemspq sg.
 rewrite muleDr // addeA.
 congr (_ + _)%E; last by rewrite s_of_pqE onemK EFinM muleA.
 rewrite muleDr //.
@@ -1357,8 +1357,8 @@ congr (_ + _)%E.
 rewrite muleA -!EFinM.
 rewrite (pq_is_rs (OProb.p p) (OProb.p q)).
 rewrite mulrA.
-by rewrite (mulrC (Prob.p [r_of OProb.p p, OProb.p q]).~).*)
-Admitted.
+by rewrite [X in (X * b)%:E]mulrC.
+Qed.
 
 #[export] HB.instance Definition _ := @isConvexSpace.Build _ (\bar R) conv_ereal conv_ereal_conv1 conv_ereal_convmm conv_ereal_convC conv_ereal_convA.
 

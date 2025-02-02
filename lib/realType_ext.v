@@ -297,6 +297,7 @@ have [/eqP ->|pneq1] := boolP (p == 1%:pr); first by left.
 by right; apply/andP; split; [exact/prob_gt0|exact/prob_lt1].
 Qed.
 
+(* TODO: rename to prob_onemK and prob_onemKC? *)
 Lemma probK p : p = ((Prob.p p).~).~%:pr.
 Proof. by apply val_inj => /=; rewrite onemK. Qed.
 
@@ -363,15 +364,14 @@ HB.instance Definition _ (R : realType) := [Equality of t R by <:].
 End Exports.
 End OProb.
 Export OProb.Exports.
-(*Coercion OProb.p : oprob >-> prob.*)
+Coercion OProb.p : oprob >-> prob.
 Canonical oprobcplt [R: realType] (p : oprob R) :=
   Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)).
 
 Reserved Notation "{ 'oprob' T }" (at level 0, format "{ 'oprob'  T }").
 Notation "{ 'oprob' T }" := (@oprob T).
-Definition oprob_coercion (R: realType) (p : {oprob R}) : R := OProb.p p.
+(*Definition oprob_coercion (R: realType) (p : {oprob R}) : R := OProb.p p.*)
 Notation oprob_to_real o := (Prob.p (OProb.p o)).
-(*(R: realType) (o : {oprob R}) := Prob.p (OProb.p o).*)
 
 Section oprob_lemmas.
 Import GRing.Theory.
@@ -390,12 +390,27 @@ Import Order.POrderTheory Order.TotalTheory.
 Lemma oprob_neq0 p : oprob_to_real p != 0 :> R.
 Proof. by move:(oprob_gt0 p); rewrite lt_neqAle=> /andP -[] /eqP/nesym/eqP. Qed.
 
+Lemma oprob_neq1 p : oprob_to_real p != 1 :> R.
+Proof. by move:(oprob_lt1 p); rewrite lt_neqAle=> /andP -[]. Qed.
+
+Lemma oprob_onemK (p : {oprob R}) : p = ((oprob_to_real p).~).~%:opr.
+Proof. by apply/val_inj/val_inj=> /=; rewrite onemK. Qed.
+
+(* TODO: rename? *)
 Lemma prob_trichotomy' (p : {prob R}) (P : {prob R} -> Prop) :
   P prob0 -> P prob1 -> (forall o : {oprob R}, P (OProb.p o)) -> P p.
 Proof.
 move=> p0 p1 po.
 have [-> //|[->//|p01]] := prob_trichotomy p.
 apply (po (@OProb.mk _ _ p01)).
+Qed.
+
+Lemma oprobadd_gt0 p q : 0 < oprob_to_real p + oprob_to_real q.
+Proof. exact/addr_gt0/oprob_gt0/oprob_gt0. Qed.
+
+Lemma oprobadd_neq0 p q : oprob_to_real p + oprob_to_real q != 0.
+Proof.
+by move: (oprobadd_gt0 p q); rewrite lt_neqAle => /andP -[] /eqP/nesym/eqP.
 Qed.
 
 End oprob_lemmas.
@@ -743,3 +758,56 @@ by rewrite [in X in _ < X](eq_bigr g) // => *; rewrite inE.
 Qed.
 
 End leR_ltR_sumR_finType.
+
+Section oprob_lemmas2.
+Import GRing.Theory.
+Local Open Scope ring_scope.
+Variable R : realType.
+Implicit Types p q : {oprob R}.
+
+Lemma oprob_mulr_subproof p q :
+  (0 < Prob.p (OProb.p p) * Prob.p (OProb.p q) < 1)%O.
+Proof.
+apply/andP; split.
+  by rewrite mulr_gt0//; apply/oprob_gt0.
+by rewrite mulr_ilt1//; apply/oprob_lt1.
+Qed.
+
+Canonical oprobmulr p q :=
+  Eval hnf in @OProb.mk R (probmulr p q) (oprob_mulr_subproof p q).
+
+Lemma s_of_pq_oprob_subproof p q : (0 < Prob.p [s_of p, q] < 1)%O.
+Proof.
+rewrite s_of_pqE; apply/andP; split.
+- rewrite onem_gt0//= mulr_ilt1 ?onem_ge0 ?onem_lt1//.
+  by have /andP[] := OProb.O1 p.
+  by have /andP[] := OProb.O1 q.
+- rewrite onem_lt1// mulr_gt0// onem_gt0//.
+  by have /andP[] := OProb.O1 p.
+  by have /andP[] := OProb.O1 q.
+Qed.
+
+Canonical oprob_of_s_of_pq p q :=
+  Eval hnf in OProb.mk (s_of_pq_oprob_subproof p q).
+
+Lemma r_of_pq_oprob_subproof p q : (0 < Prob.p [r_of OProb.p p, OProb.p q] < 1)%O.
+Proof.
+rewrite r_of_pqE; apply/andP; split.
+  by rewrite divr_gt0// oprob_gt0.
+rewrite ltr_pdivrMr ?mul1r ?oprob_gt0//.
+rewrite lt_neqAle; apply/andP; split; last exact/ge_s_of.
+rewrite s_of_pqE lt_eqF//.
+rewrite onemM !onemK -addrA ltrDl.
+by rewrite -[X in 0 < X - _]mul1r -mulrBl -onemE oprob_gt0.
+Qed.
+
+Canonical oprob_of_r_of_pq p q :=
+  Eval hnf in OProb.mk (r_of_pq_oprob_subproof p q).
+
+Lemma s_of_gt0_oprob  p q : 0 < Prob.p [s_of p, q].
+Proof. by rewrite s_of_gt0// oprob_neq0. Qed.
+
+Lemma r_of_p0_oprob p : [r_of OProb.p p, 0%:pr] = 1%:pr.
+Proof. by apply/r_of_p0/oprob_neq0. Qed.
+
+End oprob_lemmas2.
