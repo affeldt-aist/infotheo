@@ -12,6 +12,7 @@ From mathcomp Require Import lra ring Rstruct.
 (*  P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0        *)
 (*                                                                            *)
 (*     prob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1        *)
+(*    oprob == type of "open unit interval", i.e., reals p s.t. 0 < p < 1     *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -346,6 +347,7 @@ Arguments prob1 {R}.
 
 (* ---- ---- *)
 
+(* TODO: rename oprob to i01oo (and prob to i01cc) *)
 Module OProb.
 Section def.
 Import GRing.Theory.
@@ -370,7 +372,6 @@ Canonical oprobcplt [R: realType] (p : oprob R) :=
 
 Reserved Notation "{ 'oprob' T }" (at level 0, format "{ 'oprob'  T }").
 Notation "{ 'oprob' T }" := (@oprob T).
-(*Definition oprob_coercion (R: realType) (p : {oprob R}) : R := OProb.p p.*)
 Notation oprob_to_real o := (Prob.p (OProb.p o)).
 
 Section oprob_lemmas.
