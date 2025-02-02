@@ -355,28 +355,6 @@ Qed.
 Canonical probmulR (p q : {prob R}) :=
   Eval hnf in @Prob.mk _ (Prob.p p * Prob.p q) (prob_mulR_subproof p q).
 
-(*Module OProb.
-Section def.
-Record t := mk {
-  p :> {prob R};
-  Op1 : (0 <b Prob.p p <b 1)%coqR }.
-Definition O1 (p : t) : 0 <b Prob.p p <b 1 := Op1 p.
-Arguments O1 : simpl never.
-End def.
-Module Exports.
-Notation oprob := t.
-Notation "q %:opr" := (@mk q%:pr (@O1 _)).
-Canonical oprob_subType := Eval hnf in [subType for p].
-Definition oprob_eqMixin := [eqMixin of oprob by <:].
-Canonical oprob_eqType := Eval hnf in EqType _ oprob_eqMixin.
-End Exports.
-End OProb.
-Export OProb.Exports.
-Coercion OProb.p : oprob >-> prob.
-
-Canonical oprobcplt (p : oprob) := Eval hnf in OProb.mk (onem_oprob (OProb.O1 p)).
-Coercion OProb.p : oprob  >-> prob. *)
-
 Section oprob_lemmas.
 Implicit Types p q : {oprob R}.
 
