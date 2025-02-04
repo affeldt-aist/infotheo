@@ -5,6 +5,7 @@
 -arg -w -arg -notation-incompatible-format
 
 lib/coqRE.v
+lib/ssrZ.v
 lib/realType_ext.v
 lib/realType_ln.v
 lib/derive_ext.v
