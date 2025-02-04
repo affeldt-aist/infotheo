@@ -2,6 +2,9 @@
 from 0.7.7 to master
 --------------------
 
+* changed:
+  almost no stdlib R anymore
+
 * added:
 - in bigop_ext.v
   + lemmas morphs_oppr, morph_mulRDr, bigmax_le_seq, bigmax_leP_seq,

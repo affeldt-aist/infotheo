@@ -105,6 +105,7 @@ Proof. by move=> *; rewrite /Log -mulrDl lnM. Qed.
 Lemma LogDiv n x y : 0 < x -> 0 < y -> Log n (x / y) = Log n x - Log n y.
 Proof. by move=> x0 y0; rewrite LogM ?invr_gt0// LogV. Qed.
 
+(* TODO: deprecate; use ler_Log *)
 Lemma Log_increasing_le n x y : (1 < n)%N -> 0 < x -> x <= y -> Log n x <= Log n y.
 Proof.
 move=> n1 x0 xy.
@@ -248,6 +249,7 @@ rewrite /log /Log prednK// ltr_pM2r ?invr_gt0 ?ln2_gt0//.
 by rewrite ltr_ln ?posrE// (lt_trans _ a_b).
 Qed.
 
+(* TODO: deprecate; use ler_log *)
 Lemma log_increasing_le x y : 0 < x -> x <= y -> log x <= log y.
 Proof. by move=> x0 xy; exact: (@Log_increasing_le R 2 _ _ isT x0 xy). Qed.
 
