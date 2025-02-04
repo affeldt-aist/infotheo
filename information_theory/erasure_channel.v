@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect all_algebra matrix.
 Require Import Reals.
 From mathcomp Require Import mathcomp_extra Rstruct.
-Require Import ssrR Reals_ext realType_ext ssr_ext ssralg_ext logb fdist.
+Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 Require Import entropy binary_entropy_function channel hamming channel_code.
 
 (******************************************************************************)

@@ -4,8 +4,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm matrix.
 From mathcomp Require Import mathcomp_extra boolp classical_sets.
 From mathcomp Require Import Rstruct reals.
-Require Import ssrR realType_ext Ranalysis_ext ssr_ext ssralg_ext.
-Require Import fdist jfdist_cond fsdist convex.
+Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 
 (******************************************************************************)
 (*                  Equivalence of Convexity Definitions                      *)

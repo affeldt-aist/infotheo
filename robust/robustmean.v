@@ -1,9 +1,9 @@
 From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp Require boolp.
-From mathcomp Require Import Rstruct reals mathcomp_extra.
 From mathcomp Require Import lra ring.
-From infotheo Require Import ssrR realType_ext logb ssr_ext ssralg_ext.
-From infotheo Require Import bigop_ext fdist proba.
+From mathcomp Require boolp.
+From mathcomp Require Import mathcomp_extra Rstruct reals.
+From infotheo Require Import ssr_ext ssralg_ext bigop_ext.
+From infotheo Require Import realType_ext fdist proba.
 From HB Require Import structures.
 
 Set Implicit Arguments.

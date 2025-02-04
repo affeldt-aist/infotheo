@@ -4,13 +4,8 @@
 -arg -w -arg -ambiguous-paths
 -arg -w -arg -notation-incompatible-format
 
-lib/ssrZ.v
-lib/ssrR.v
 lib/realType_ext.v
-lib/Reals_ext.v
 lib/realType_ln.v
-lib/logb.v
-lib/Ranalysis_ext.v
 lib/derive_ext.v
 lib/ssr_ext.v
 lib/f2.v

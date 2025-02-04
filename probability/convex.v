@@ -183,7 +183,6 @@ Section convex_space_lemmas.
 Context {R : realType}.
 Variables A : convType R.
 Implicit Types a b : A.
-Import Reals_ext.
 
 Lemma conv0 a b : a <| 0%:pr |> b = b.
 Proof.

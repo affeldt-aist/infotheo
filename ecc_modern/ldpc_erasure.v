@@ -4,7 +4,7 @@ From HB Require Import structures.
 Require Program.Wf.
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
-Require Import ssr_ext ssralg_ext num_occ f2 ssrR hamming tanner linearcode.
+Require Import ssr_ext ssralg_ext num_occ f2 hamming tanner linearcode.
 
 (******************************************************************************)
 (*                   Sum-Product Decoder over the BEC                         *)
