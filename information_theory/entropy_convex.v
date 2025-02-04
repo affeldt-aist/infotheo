@@ -7,11 +7,9 @@ From mathcomp Require boolp.
 From mathcomp Require Import mathcomp_extra Rstruct reals set_interval.
 From mathcomp Require Import functions topology normedtype realfun derive exp.
 From mathcomp Require convex.
-Require Reals Ranalysis_ext Lra Reals_ext.
-Require Import ssrR ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
-Require Import derive_ext.
-Require Import fdist jfdist_cond entropy convex binary_entropy_function.
-Require Import log_sum divergence.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
+Require Import derive_ext fdist jfdist_cond entropy convex.
+Require Import binary_entropy_function log_sum divergence.
 
 (******************************************************************************)
 (*                Section 2.7 of Elements of Information Theory               *)

@@ -3,8 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm.
 From mathcomp Require Import zmodp matrix mxalgebra vector ring.
 From mathcomp Require Import Rstruct reals.
-Require Import realType_ext ssr_ext ssralg_ext f2 linearcode natbin hamming.
-Require Import bigop_ext fdist proba channel channel_code decoding.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext f2 linearcode natbin.
+Require Import hamming fdist proba channel channel_code decoding.
 Require Import binary_symmetric_channel.
 
 (******************************************************************************)
@@ -958,8 +958,6 @@ Qed.
 End hamming_code_error_distance.
 
 Local Open Scope channel_code_scope. (* to get e(W,c), echa(W,c) notations *)
-
-Require Import Reals Reals_ext.
 
 Section hamming_code_error_rate.
 Let R := Rdefinitions.R.

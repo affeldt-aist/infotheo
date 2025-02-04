@@ -266,7 +266,7 @@ rewrite fsdistbindEcond.
 case: ifPn => // aD.
 apply/eqP; move: aD; apply: contraLR.
 rewrite eq_sym negbK psumr_neq0; last by move=> *; exact: mulr_ge0.
-case/hasP => i [] suppi /= pg0.
+case/hasP => i suppi /= pg0.
 apply/bigfcupP; exists (g i).
 - by rewrite in_imfset.
 - by rewrite mem_finsupp gt_eqF // (wpmulr_rgt0 _ pg0).
@@ -675,7 +675,7 @@ Proof. by apply/fsdist_ext => ?; rewrite fsdist_convE conv0. Qed.
 Let conv1 a b : a <| 1%:pr |> b = a.
 Proof. by apply/fsdist_ext => ?; rewrite fsdist_convE conv1. Qed.
 
-Let convmm p : idempotent (fun x y => x <| p |> y : R.-dist A).
+Let convmm p : idempotent_op (fun x y => x <| p |> y : R.-dist A).
 Proof. by move=> d; apply/fsdist_ext => ?; rewrite fsdist_convE convmm. Qed.
 
 Let convC p a b : a <| p |> b = b <| (Prob.p p).~%:pr |> a.

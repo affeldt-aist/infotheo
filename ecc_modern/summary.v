@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
 From mathcomp Require Import Rstruct reals.
-Require Import ssr_ext ssralg_ext ssrR f2.
+Require Import ssr_ext ssralg_ext f2.
 
 (******************************************************************************)
 (*                        The Summary Operator                                *)
@@ -74,7 +74,7 @@ Qed.
 Lemma freeon_row_set n0 (d : 'rV[A]_n) x : freeon [set n0] d (d `[ n0 := x ]).
 Proof.
 apply/forallP => /= i; rewrite !inE !mxE.
-case/boolP : (i == n0) => //; by rewrite implyTb.
+by have [//|] := eqVneq i n0; rewrite implyTb.
 Qed.
 
 End free_on.
@@ -289,13 +289,14 @@ apply eq_big=> j; last first.
   move=> Hi.
   congr e.
   apply/rowP => k; rewrite !mxE !inE /=.
-  case/boolP : (k == n1) => Hkn1 /=.
-    rewrite (eqP Hkn1) (negbTE Hn1).
+  have [Hkn1|Hkn1] := eqVneq k n1.
+    rewrite Hkn1 (negbTE Hn1).
     case: ifP Hi => [? Hi|? /=].
       by rewrite in_setU1 eqxx.
     by move=> -/andP[/andP[_ /eqP -> _ //]].
-  case: ifP => //; case: ifP => //.
-  by rewrite in_setU1 (negbTE Hkn1) orFb.
+  case: ifP => //; case: ifPn => //=.
+    by rewrite /= in_setU1 (negbTE Hkn1) orFb => _ ->.
+  by move=> _ ->.
 case: ifP => [Hi|Hi].
 - rewrite /powerset !inE eqxx andbT /=.
   case/boolP : (j \subset [set i in s]) => Hj.
@@ -323,15 +324,17 @@ case: ifP => [Hi|Hi].
     rewrite eqxx andbT.
     have -> : j :\ n1 = j.
       apply/setP => k; rewrite !inE.
-      case/boolP : (k == n1) => //= /eqP ->; by rewrite (negbTE Hn1j).
+      have [->/=|//] := eqVneq k n1.
+      exact/esym/negbTE.
     rewrite eqxx andbT.
     apply/subsetP=> k Hk.
     move/subsetP/(_ _ Hk): Hj.
-    rewrite !inE => ->; by rewrite orbT.
+    by rewrite !inE => ->; rewrite orbT.
   case/boolP : (n1 \in j) => Hn1j; first by rewrite /= andbF.
   have -> : j :\ n1 = j.
     apply/setP => k; rewrite !inE.
-    case/boolP : (k == n1) => //= /eqP ->; by rewrite (negbTE Hn1j).
+    have [/= ->|//] := eqVneq k n1.
+    exact/esym/negbTE.
   rewrite !eqxx !andbT.
   apply/subsetP => Hjs.
   move/subsetP: Hj; apply => k Hk.

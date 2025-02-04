@@ -3,10 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix fingroup perm.
 From mathcomp Require Import lra ring.
 From mathcomp Require boolp.
-(*Require Import Reals Lra.*)
 From mathcomp Require Import mathcomp_extra Rstruct reals.
-Require Import (*ssrR Reals_ext*) realType_ext (*Ranalysis_ext*) ssr_ext.
-Require Import ssralg_ext logb fdist convex.
+Require Import ssr_ext ssralg_ext realType_ext fdist convex.
 
 (****************************************************************************)
 (* Direct formalization of the Lemma 2 from M. H. Stone. Postulates for the *)

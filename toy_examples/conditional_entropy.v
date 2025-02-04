@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix.
 From mathcomp Require Import ring lra.
 From mathcomp Require Import Rstruct reals.
-Require Import ssrR ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 Require Import proba jfdist_cond entropy.
 
 (******************************************************************************)
