@@ -11,15 +11,6 @@ Delimit Scope ring_scope with mcR.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
-(* "^" = pow : R -> nat -> R *)
-Notation "x ^- n" := (/ (x ^ n)) : R_scope.
-
-Notation "`| x |" := (Rabs x) : R_scope.
-
-Notation "n %:R" := (INR n) : R_scope.
-
-Lemma divRE x y : x / y = x * / y. Proof. by []. Qed.
-
 Delimit Scope R_scope with coqR.
 
 Lemma R1E : 1%coqR = 1%mcR. Proof. by []. Qed.

@@ -2,8 +2,9 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require Import lra ring.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals mathcomp_extra.
-From infotheo Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
-From infotheo Require Import fdist proba.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
+Require Import fdist proba.
+Require coqRE.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -110,10 +111,10 @@ Proof.
 move: total_neq0; rewrite psumr_neq0; last first.
   by move=> *; apply: mulr_ge0.
 case/hasP/sig2W=> /= x ?.
-move/RltP/ssrR.pmulR_lgt0'.
+move/(@wpmulr_lgt0 R).
 have := fdist_ge0_le1 d0 x.
-case/andP=> /[swap] _ /RleP /[swap] /[apply].
-by move/ssrR.ltR_eqF; rewrite eq_sym => ?; exists x.
+case/andP=> /[swap] _ /[swap] /[apply].
+by move/lt_eqF; rewrite eq_sym => H; exists x; rewrite H.
 Qed.
 
 End def.
@@ -759,7 +760,7 @@ Hypothesis low_eps : eps <= eps_max.
 Lemma bound_evar_ineq_by_interval : bound_evar_ineq eps_max.
 Proof.
 rewrite /bound_evar_ineq/bound_intermediate.
-apply/RleP; rewrite -!ssrR.coqRE; interval.
+apply/RleP; rewrite -!coqRE.coqRE; interval.
 Qed.
 
 (**md ## lemma 1.4, page 5 (part 2) *)
@@ -801,7 +802,7 @@ have ->// :  2 / denom * `V (WP.-RV X) <=
   `V (WP.-RV X).
 rewrite ler_wpM2r // ?variance_ge0 // /bound_intermediate.
 apply/RleP; move: low_eps => /RleP. move: eps0 => /RleP.
-rewrite -!ssrR.coqRE => ? ?.
+rewrite -!coqRE.coqRE => ? ?.
 interval with (i_bisect eps).
 Qed.
 
@@ -914,7 +915,7 @@ Local Notation eps := (Pr P cplt_S).
 
 Definition ffun1 : {ffun A -> R} := [ffun=> 1].
 Lemma ffun1_subproof : forall a, 0 <= ffun1 a.
-Proof. by move=> u; rewrite ffunE; apply/RleP. Qed.
+Proof. by move=> u; rewrite ffunE. Qed.
 (*Definition Cpos_ffun1 := @mkNNFinfun A ffun1 ffun1_subproof.*)
 
 Lemma PC1_neq0 : Weighted.total P ffun1 != 0.
