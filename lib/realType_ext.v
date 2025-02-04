@@ -249,7 +249,6 @@ Coercion to_ring : prob >-> GRing.Ring.sort.
 Arguments to_ring /.
 
 Section prob_lemmas.
-Import GRing.Theory.
 Local Open Scope ring_scope.
 Variable R : realType.
 Implicit Types p q : {prob R}.
@@ -350,7 +349,6 @@ Arguments prob1 {R}.
 (* TODO: rename oprob to i01oo (and prob to i01cc) *)
 Module OProb.
 Section def.
-Import GRing.Theory.
 Local Open Scope ring_scope.
 Record t (R: realType):= mk {
   p :> {prob R};
@@ -375,7 +373,6 @@ Notation "{ 'oprob' T }" := (@oprob T).
 Notation oprob_to_real o := (Prob.p (OProb.p o)).
 
 Section oprob_lemmas.
-Import GRing.Theory.
 Local Open Scope ring_scope.
 Variable R : realType.
 Implicit Types p q : {oprob R}.
@@ -416,15 +413,61 @@ Qed.
 
 End oprob_lemmas.
 
-Lemma prob_mulr {R : realType} (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%R.
+Section prob_lemmas2.
+Local Open Scope ring_scope.
+Variable R : realType.
+Implicit Types p q : {prob R}.
+
+Definition divrnnm n m := (n%:R / (n + m)%:R) : R.
+
+Lemma prob_divrnnm_subproof n m : (0 <= divrnnm n m <= 1)%O.
+Proof.
+apply/andP; split.
+  by rewrite /divrnnm divr_ge0.
+rewrite /divrnnm.
+have [->|n0] := eqVneq n 0.
+  by rewrite mul0r ler01.
+rewrite ler_pdivrMr// ?ltr0n ?addn_gt0; last first.
+  by rewrite lt0n n0.
+by rewrite mul1r ler_nat leq_addr.
+Qed.
+
+Canonical probdivrnnm (n m : nat) :=
+  Eval hnf in @Prob.mk _ (divrnnm n m) (prob_divrnnm_subproof n m).
+
+Lemma prob_invn_subproof (m : nat) : (0 <= (((1 + m)%:R)^-1 : R) <= 1)%O.
+Proof.
+rewrite -[X in _ <= X <= _]mul1r.
+exact: (prob_divrnnm_subproof 1 m).
+Qed.
+
+Canonical probinvn (n : nat) :=
+  Eval hnf in @Prob.mk _ (((1 + n)%:R)^-1 : R) (prob_invn_subproof n).
+
+Lemma prob_invprob_subproof (p : {prob R}) : (0 <= 1 / (1 + Prob.p p) <= 1)%O.
+Proof.
+apply/andP; split.
+  by rewrite mul1r invr_ge0 ?addr_ge0.
+rewrite mul1r invf_le1//.
+  by rewrite lerDl.
+rewrite (@lt_le_trans _ _ 1)//.
+by rewrite lerDl.
+Qed.
+
+(* canonicalizing this definition breaks s_of_pq *)
+Definition prob_invprob (p : {prob R}) := Prob.mk (prob_invprob_subproof p).
+
+Lemma prob_mulr_subproof (p q : {prob R}) : (0 <= Prob.p p * Prob.p q <= 1)%R.
 Proof.
 apply/andP; split.
   by rewrite mulr_ge0.
 by rewrite mulr_ile1.
 Qed.
 
-Canonical probmulr {R : realType} (p q : {prob R}) :=
-  Eval hnf in @Prob.mk _ (Prob.p p * Prob.p q) (prob_mulr p q).
+Canonical probmulr (p q : {prob R}) :=
+  Eval hnf in @Prob.mk _ (Prob.p p * Prob.p q) (prob_mulr_subproof p q).
+
+End prob_lemmas2.
 
 Definition s_of_pq {R : realType} (p q : {prob R}) : {prob R} :=
   locked ((Prob.p p).~ * (Prob.p q).~).~%:pr.
@@ -761,7 +804,6 @@ Qed.
 End leR_ltR_sumR_finType.
 
 Section oprob_lemmas2.
-Import GRing.Theory.
 Local Open Scope ring_scope.
 Variable R : realType.
 Implicit Types p q : {oprob R}.
