@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
 From mathcomp Require Import archimedean lra ring.
 From mathcomp Require Import Rstruct reals exp.
-Require Import ssr_ext ssralg_ext realType_logb natbin fdist.
+Require Import ssr_ext ssralg_ext realType_ln natbin fdist.
 Require Import proba entropy aep typ_seq source_code.
 
 (******************************************************************************)

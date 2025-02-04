@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum zmodp matrix lra.
 From mathcomp Require Import mathcomp_extra classical_sets Rstruct reals.
-Require Import realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist entropy binary_entropy_function channel hamming.
 Require Import channel_code pproba.
 

@@ -4,7 +4,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum perm matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct exp.
-Require Import realType_ext ssr_ext ssralg_ext realType_logb.
+Require Import ssr_ext ssralg_ext realType_ext realType_ln.
 Require Import fdist proba entropy num_occ channel_code channel typ_seq.
 
 (******************************************************************************)

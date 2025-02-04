@@ -3,8 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra.
 From mathcomp Require boolp.
 From mathcomp Require Import reals exp.
-Require Import realType_ext realType_logb ssr_ext ssralg_ext.
-Require Import bigop_ext fdist.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
 (******************************************************************************)
 (*               Probabilities over finite distributions                      *)

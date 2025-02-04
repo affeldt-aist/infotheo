@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra zmodp matrix.
 From mathcomp Require Import Rstruct reals.
-Require Import ssrR realType_ext ssr_ext ssralg_ext bigop_ext fdist proba.
+Require Import ssr_ext ssralg_ext realType_ext bigop_ext fdist proba.
 Require Import channel jfdist_cond.
 
 (******************************************************************************)
@@ -84,7 +84,7 @@ Lemma not_receivable_prop_uniform :
 Proof.
 apply/idP/idP => [|/eqP].
 - rewrite negb_exists => /forallP H.
-  rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addR ?mulR0 // => i iC.
+  rewrite big1// => i iC.
   move: (H i).
   rewrite negb_and !negbK => /orP[|/eqP //].
   by rewrite -(negbK (_ == _)) fdist_uniform_supp_neq0 iC.
@@ -119,8 +119,7 @@ Qed.
 Let f1 : \sum_(x in 'rV_n) f x = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
-rewrite -big_distrl /= -RmultE mulRC -RinvE.
-by rewrite mulVR // -receivable_propE receivableP.
+by rewrite -big_distrl /= mulrC mulVf// -receivable_propE receivableP.
 Qed.
 
 Definition fdist_post_prob : {fdist 'rV[A]_n} := locked (FDist.make f0 f1).
@@ -140,7 +139,7 @@ Lemma post_probE (x : 'rV[A]_n) (y : P.-receivable W) :
 Proof.
 rewrite fdist_post_probE /jcPr setX1 2!Pr_set1 fdist_prodE /=.
 congr (_ / _).
-by rewrite fdist_sndE /=; apply eq_bigr => x' _; rewrite fdist_prodE /= -RmultE mulRC.
+by rewrite fdist_sndE /=; apply eq_bigr => x' _; rewrite fdist_prodE /= mulrC.
 Qed.
 
 End posterior_probabilityE.
@@ -160,7 +159,7 @@ Lemma post_prob_uniformF (x : 'rV[A]_n) : x \notin C ->
   (`U HC) `^^ W (x | y) = 0.
 Proof.
 move=> xC; rewrite fdist_post_probE fdist_uniform_supp_notin //.
-by rewrite -!RmultE !mul0R.
+by rewrite !mul0r.
 Qed.
 
 Lemma post_prob_uniformT (x : 'rV[A]_n) : x \in C -> (`U HC) `^^ W (x | y) = K * W ``(y | x).
@@ -207,9 +206,9 @@ Definition marginal_post_prob_den : Rdefinitions.R := (\sum_(t in 'rV_n) f' t)^-
 Let f'_neq0 : \sum_(t in 'rV_n) f' t <> 0.
 Proof.
 under eq_bigr do rewrite /f' fdist_post_probE.
-rewrite -big_distrl /= mulR_eq0 => -[/eqP|].
-- by apply/negP; rewrite -receivable_propE receivableP.
-- by rewrite -RinvE; apply/invR_neq0/eqP; rewrite -receivable_propE receivableP.
+apply/eqP; rewrite -big_distrl /= mulf_eq0 negb_or; apply/andP; split.
+- by rewrite -receivable_propE receivableP.
+- by rewrite invr_eq0 -receivable_propE receivableP.
 Qed.
 
 Let f (i : 'I_n) := [ffun a =>  marginal_post_prob_den * \sum_(t in 'rV_n | t ``_ i == a) f' t].
@@ -253,3 +252,4 @@ End marginal_post_prob_prop.
 
 Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" :=
   (@fdist_marginal_post_prob _ _ W _ P y n0 a) : proba_scope.
+

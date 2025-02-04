@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import reals.
-Require Import realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba.
 
 (******************************************************************************)

@@ -3,7 +3,7 @@
 Require Import PeanoNat.
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix reals.
 From mathcomp Require boolp.
-Require Import realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 Require Import fdist proba.
 
 (******************************************************************************)

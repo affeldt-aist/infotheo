@@ -1,16 +1,14 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
+From mathcomp Require Import lra ring.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals mathcomp_extra.
-From mathcomp Require Import lra ring.
-(*Require Import Reals.*)
-From infotheo Require Import (*ssrR Reals_ext*) realType_ext realType_logb ssr_ext ssralg_ext.
-From infotheo Require Import bigop_ext fdist proba.
+From infotheo Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
+From infotheo Require Import fdist proba.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-(*Local Open Scope R_scope.*)
 Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.

@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
 From mathcomp Require Import Rstruct reals classical_sets topology normedtype.
 From mathcomp Require Import sequences exp.
-Require Import ssr_ext bigop_ext realType_ext realType_logb ln_facts fdist.
+Require Import ssr_ext bigop_ext realType_ext realType_ln fdist.
 Require Import entropy channel_code channel divergence conditional_divergence.
 Require Import variation_dist pinsker.
 

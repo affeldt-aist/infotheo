@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra ring.
 From mathcomp Require Import Rstruct reals exp.
-Require Import realType_ext realType_logb fdist proba entropy aep.
+Require Import realType_ext realType_ln fdist proba entropy aep.
 Require Import typ_seq source_code.
 
 (******************************************************************************)

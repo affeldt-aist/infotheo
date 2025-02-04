@@ -8,7 +8,7 @@ lib/ssrZ.v
 lib/ssrR.v
 lib/realType_ext.v
 lib/Reals_ext.v
-lib/realType_logb.v
+lib/realType_ln.v
 lib/logb.v
 lib/Ranalysis_ext.v
 lib/derive_ext.v
@@ -33,7 +33,6 @@ probability/convex_stone.v
 probability/jfdist_cond.v
 probability/graphoid.v
 probability/jensen.v
-probability/ln_facts.v
 probability/divergence.v
 probability/variation_dist.v
 probability/log_sum.v

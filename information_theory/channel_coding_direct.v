@@ -2,9 +2,10 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix perm.
-From mathcomp Require Import Rstruct classical_sets reals boolp lra ring.
-From mathcomp Require Import archimedean mathcomp_extra exp.
-Require Import realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
+From mathcomp Require Import archimedean lra ring.
+From mathcomp Require Import mathcomp_extra boolp classical_sets reals Rstruct.
+From mathcomp Require Import exp.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy aep typ_seq joint_typ_seq channel.
 Require Import channel_code.
 
