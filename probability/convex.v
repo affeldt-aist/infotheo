@@ -4,8 +4,8 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
 From mathcomp Require Import mathcomp_extra boolp classical_sets.
 From mathcomp Require Import ssrnum archimedean ereal signed.
-From mathcomp Require Import lra (*Rstruct*) reals.
-Require Import ssr_ext ssralg_ext realType_logb realType_ext fdist.
+From mathcomp Require Import lra reals.
+Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 From mathcomp Require vector.
 
 (******************************************************************************)

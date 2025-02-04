@@ -6,7 +6,7 @@ From mathcomp Require Import mathcomp_extra boolp classical_sets functions.
 From mathcomp Require Import set_interval.
 From mathcomp Require Import reals Rstruct topology normedtype.
 From mathcomp Require Import realfun derive exp.
-Require Import realType_ext realType_logb ssralg_ext.
+Require Import realType_ext ssralg_ext.
 
 (******************************************************************************)
 (*        Additional lemmas about differentiation and derivatives             *)
@@ -26,24 +26,6 @@ Import numFieldTopology.Exports.
 Import numFieldNormedType.Exports.
 
 Local Open Scope ring_scope.
-
-Section differentiable.
-
-Lemma differentiable_ln {R : realType} (x : R) : 0 < x -> differentiable (@ln R) x.
-Proof. move=>?; exact/derivable1_diffP/ex_derive/is_derive1_ln. Qed.
-
-Lemma differentiable_Log {R : realType} (n : nat) (x : R) :
-  0 < x -> (1 < n)%nat -> differentiable (@Log R n) x.
-Proof.
-move=> *.
-apply: differentiableM.
-  exact: differentiable_ln.
-apply: differentiableV=> //.
-rewrite prednK; last exact: (@ltn_trans 1).
-by rewrite neq_lt ln_gt0 ?orbT// ltr1n.
-Qed.
-
-End differentiable.
 
 Section is_derive.
 
@@ -112,61 +94,6 @@ Lemma is_derive1_lnf_eq [R : realType] [f : R -> R] [x Df D : R] :
   is_derive x 1 (ln (R := R) \o f) D.
 Proof. by move=> ? ? <-; exact: is_derive1_lnf. Qed.
 
-Lemma is_derive1_Logf [R : realType] [f : R -> R] [n : nat] [x Df : R] :
-  is_derive x 1 f Df -> 0 < f x -> (1 < n)%nat ->
-  is_derive x 1 (Log n (R := R) \o f) ((ln n%:R)^-1 * Df / f x).
-Proof.
-move=> hf fx0 n1.
-rewrite (mulrC _ Df) -mulrA mulrC.
-apply: is_derive1_comp.
-rewrite mulrC; apply: is_deriveM_eq.
-  exact: is_derive1_ln.
-by rewrite scaler0 add0r prednK ?mulr_regr // (@ltn_trans 1).
-Qed.
-
-Lemma is_derive1_Logf_eq [R : realType] [f : R -> R] [n : nat] [x Df D : R] :
-  is_derive x 1 f Df -> 0 < f x -> (1 < n)%nat ->
-  (ln n%:R)^-1 * Df / f x = D ->
-  is_derive x 1 (Log n (R := R) \o f) D.
-Proof. by move=> ? ? ? <-; exact: is_derive1_Logf. Qed.
-
-Lemma is_derive1_LogfM [R : realType] [f g : R -> R] [n : nat] [x Df Dg : R] :
-  is_derive x 1 f Df -> is_derive x 1 g Dg ->
-  0 < f x -> 0 < g x -> (1 < n)%nat ->
-  is_derive x 1 (Log n (R := R) \o (f * g)) ((ln n%:R)^-1 * (Df / f x + Dg / g x)).
-Proof.
-move=> hf hg fx0 gx0 n1.
-apply: is_derive1_Logf_eq=> //.
-  exact: mulr_gt0.
-rewrite -!mulr_regr /(f * g) invfM /= -mulrA; congr (_ * _).
-rewrite addrC (mulrC _^-1) mulrDl; congr (_ + _); rewrite -!mulrA;  congr (_ * _).
-  by rewrite mulrA mulfV ?gt_eqF // div1r.
-by rewrite mulrCA mulfV ?gt_eqF // mulr1.
-Qed.
-
-Lemma is_derive1_LogfM_eq [R : realType] [f g : R -> R] [n : nat] [x Df Dg D : R] :
-  is_derive x 1 f Df -> is_derive x 1 g Dg ->
-  0 < f x -> 0 < g x -> (1 < n)%nat ->
-  (ln n%:R)^-1 * (Df / f x + Dg / g x) = D ->
-  is_derive x 1 (Log n (R := R) \o (f * g)) D.
-Proof. by move=> ? ? ? ? ? <-; exact: is_derive1_LogfM. Qed.
-
-Lemma is_derive1_LogfV [R : realType] [f : R -> R] [n : nat] [x Df : R] :
-  is_derive x 1 f Df -> 0 < f x -> (1 < n)%nat ->
-  is_derive x 1 (Log n (R := R) \o (inv_fun f)) (- (ln n%:R)^-1 * (Df / f x)).
-Proof.  
-move=> hf fx0 n1.
-apply: is_derive1_Logf_eq=> //;
-  [by apply/is_deriveV; rewrite gt_eqF | by rewrite invr_gt0 |].
-rewrite invrK -mulr_regl !(mulNr,mulrN) -mulrA; congr (- (_ * _)).
-by rewrite expr2 invfM mulrC !mulrA mulfV ?gt_eqF // div1r mulrC.
-Qed.
-
-Lemma is_derive1_LogfV_eq [R : realType] [f : R -> R] [n : nat] [x Df D : R] :
-  is_derive x 1 f Df -> 0 < f x -> (1 < n)%nat ->
-  - (ln n%:R)^-1 * (Df / f x) = D ->
-  is_derive x 1 (Log n (R := R) \o (inv_fun f)) D.
-Proof. by move=> ? ? ? <-; exact: is_derive1_LogfV. Qed.
 
 End is_derive.
 

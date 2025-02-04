@@ -2,9 +2,8 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra fingroup perm.
 From mathcomp Require Import reals exp.
-Require Import realType_ext ssr_ext ssralg_ext bigop_ext.
-Require Import realType_logb (*ln_facts*) fdist jfdist_cond proba binary_entropy_function.
-Require Import divergence.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
+Require Import fdist jfdist_cond proba binary_entropy_function divergence.
 
 (******************************************************************************)
 (*                Chapter 2 of Elements of Information Theory                 *)
@@ -60,10 +59,6 @@ Local Open Scope ring_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
-(* TODO: kludge *)
-(*Hint Extern 0 ((0 <= _)%coqR) => solve [exact/RleP/FDist.ge0] : core.
-Hint Extern 0 ((_ <= 1)%coqR) => solve [exact/RleP/FDist.le1] : core.*)
-
 Section entropy_definition.
 Variables (R : realType) (A : finType) (P : R.-fdist A).
 
@@ -74,7 +69,8 @@ Lemma entropy_ge0 : 0 <= `H.
 Proof.
 rewrite /entropy big_morph_oppr; apply/sumr_ge0 => i _.
 have [->|Hi] := eqVneq (P i) 0; first by rewrite mul0r oppr0.
-  (* NB: this step in a standard textbook would be handled as a consequence of lim x->0 x log x = 0 *)
+(* NB: this step in a standard textbook would be handled as a consequence of
+   lim x->0 x log x = 0 *)
 rewrite mulrC -mulNr mulr_ge0// lerNr oppr0.
 rewrite -log1 ler_log// ?posrE//.
 by rewrite lt0r Hi/=.
@@ -96,12 +92,13 @@ rewrite /entropy /log_RV /= big_morph_oppr.
 by apply eq_bigr => a _; rewrite mulrC -mulNr.
 Qed.
 
-Lemma xlnx_entropy (P : R.-fdist A) : `H P = (ln 2)^-1 * - \sum_(a : A) xlnx (P a).
+Lemma xlnx_entropy (P : R.-fdist A) :
+  `H P = (ln 2)^-1 * - \sum_(a : A) xlnx (P a).
 Proof.
 rewrite /entropy mulrN; congr (- _); rewrite big_distrr/=.
 apply: eq_bigr => a _; rewrite /xlnx /log /Log/=.
 have := FDist.ge0 P a; rewrite le_eqVlt => /predU1P[<-|Pa0].
-  by rewrite !mul0r if_same mulr0.
+  by rewrite !mul0r ltxx mulr0.
 by rewrite Pa0 mulrA mulrC.
 Qed.
 
@@ -302,7 +299,8 @@ rewrite /cond_entropy1; congr (- _).
 by apply eq_bigr => a _; rewrite -!setX1 jcPr_fdistA_AC.
 Qed.
 
-Lemma cond_entropy_fdistA : cond_entropy (fdistA PQR) = cond_entropy (fdistA (fdistAC PQR)).
+Lemma cond_entropy_fdistA :
+  cond_entropy (fdistA PQR) = cond_entropy (fdistA (fdistAC PQR)).
 Proof.
 rewrite /cond_entropy /=.
 rewrite (eq_bigr (fun a => (fdistA PQR)`2 (a.1, a.2) *

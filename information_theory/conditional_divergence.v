@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix ring lra.
 From mathcomp Require Import Rstruct reals exp.
-Require Import ssr_ext bigop_ext ssralg_ext realType_ext realType_logb.
+Require Import ssr_ext bigop_ext ssralg_ext realType_ext realType_ln.
 Require Import num_occ fdist proba entropy channel divergence types jtypes.
 Require Import jfdist_cond.
 

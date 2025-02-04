@@ -2,8 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra archimedean.
 From mathcomp Require Import Rstruct mathcomp_extra reals exp.
-Require Import ssr_ext bigop_ext realType_logb realType_ext fdist.
-Require Import entropy kraft.
+Require Import ssr_ext bigop_ext realType_ext realType_ln fdist entropy kraft.
 
 (******************************************************************************)
 (*                       Shannon-Fano codes                                   *)

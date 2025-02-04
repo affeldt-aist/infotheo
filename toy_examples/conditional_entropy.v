@@ -2,9 +2,8 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix.
 From mathcomp Require Import ring lra.
-(*Require Import Reals Lra.*)
 From mathcomp Require Import Rstruct reals.
-Require Import ssrR (*Reals_ext*) realType_ext realType_logb ssr_ext ssralg_ext bigop_ext fdist.
+Require Import ssrR ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 Require Import proba jfdist_cond entropy.
 
 (******************************************************************************)

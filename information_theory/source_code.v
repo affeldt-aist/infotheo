@@ -1,8 +1,8 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require Import Rstruct reals.
-Require Import realType_logb fdist proba.
+Require Import realType_ln fdist proba.
 
 (******************************************************************************)
 (*                        Definition of a source code                         *)

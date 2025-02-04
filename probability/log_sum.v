@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import Rstruct reals lra exp.
-Require Import ssrR realType_ext realType_logb bigop_ext.
+Require Import ssrR realType_ext realType_ln bigop_ext.
 
 (******************************************************************************)
 (*                        The log-sum Inequality                              *)

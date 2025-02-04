@@ -8,7 +8,7 @@ From mathcomp Require Import mathcomp_extra Rstruct reals set_interval.
 From mathcomp Require Import functions topology normedtype realfun derive exp.
 From mathcomp Require convex.
 Require Reals Ranalysis_ext Lra Reals_ext.
-Require Import ssrR realType_ext realType_logb ssr_ext ssralg_ext bigop_ext.
+Require Import ssrR ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import derive_ext.
 Require Import fdist jfdist_cond entropy convex binary_entropy_function.
 Require Import log_sum divergence.

@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require Import Rstruct reals exp.
-Require Import realType_ext realType_logb bigop_ext fdist proba channel.
+Require Import bigop_ext realType_ext realType_ln fdist proba channel.
 
 (******************************************************************************)
 (*                        Definition of a channel code                        *)

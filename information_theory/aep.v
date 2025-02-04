@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import reals exp Rstruct.
-Require Import realType_ext ssr_ext bigop_ext ssralg_ext realType_logb.
+Require Import realType_ext ssr_ext bigop_ext ssralg_ext realType_ln.
 Require Import fdist proba entropy.
 
 (******************************************************************************)

@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import Rstruct reals exp lra.
-Require Import ssr_ext realType_ext realType_logb.
+Require Import ssr_ext realType_ext realType_ln.
 
 (******************************************************************************)
 (*                    The natural entropy function                            *)
