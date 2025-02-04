@@ -54,85 +54,45 @@ rewrite gerDl//.
 by rewrite ler_piMr// ltW.
 Unshelve. all: by end_near. Qed.
 
-(* TODO: clean *)
-Lemma MVT_cor1_pderivable_open_continuity {R : realType} (f : R -> R) (a b : R) :
-  (forall x, a < x < b -> derivable f x 1) -> continuous_at a f ->
-  continuous_at b f ->
-  a < b ->
-  exists c, a < c < b /\
-    f b - f a = 'D_1 f c * (b - a) /\ a < c < b.
+(* TODO: PR to analysis *)
+Lemma ltr0_derive1_decr (R : realType) (f : R -> R) (a b : R) :
+  (forall x, x \in `]a, b[%R -> derivable f x 1) ->
+  (forall x, x \in `]a, b[%R -> f^`() x < 0) ->
+  {within `[a, b], continuous f}%classic ->
+  forall x y, a <= x -> x < y -> y <= b -> f y < f x.
 Proof.
-move=> H prca prcb ab.
-have H1 : (forall x : R^o, x \in `]a, b[ -> is_derive x 1 f ('D_1 f x)).
-  move=> x.
-  rewrite in_itv/= => /andP[ax xb].
-  apply/derivableP.
-  apply: H.
-  by rewrite ax xb.
-have H2 : {within `[a, b], continuous f}%classic.
-  apply/continuous_within_itvP => //.
-  split.
-    have : {in `]a, b[, forall x, derivable f x 1}.
-      move=> w wab.
-      apply: H.
-      done.
-    move/derivable_within_continuous.
-    rewrite continuous_open_subspace//.
-      move=> K z zab.
-      apply: K => //.
-      by rewrite inE.
-    by apply: interval_open => //=.
-    (* TODO: pkoi je peux pas utiliser itv_open?*)
-  red in prca.
-  exact: cvg_at_right_filter.
-  red in prca.
-  exact: cvg_at_left_filter.
-have [c ca fab] := @MVT R f ('D_1 f) _ _ ab H1 H2.
-exists c; split.
- by move: ca; rewrite in_itv/=.
-by rewrite fab.
+move=> fdrvbl dflt0 ctsf x y leax ltxy leyb; rewrite -subr_gt0.
+case: ltgtP ltxy => // xlty _.
+have itvW : {subset `[x, y]%R <= `[a, b]%R}.
+  by apply/subitvP; rewrite /<=%O /= /<=%O /= leyb leax.
+have itvWlt : {subset `]x, y[%R <= `]a, b[%R}.
+  by apply subitvP; rewrite /<=%O /= /<=%O /= leyb leax.
+have fdrv z : z \in `]x, y[%R -> is_derive z 1 f (f^`()z).
+  rewrite in_itv/= => /andP[xz zy]; apply: DeriveDef; last by rewrite derive1E.
+  by apply: fdrvbl; rewrite in_itv/= (le_lt_trans _ xz)// (lt_le_trans zy).
+have [] := @MVT _ f (f^`()) x y xlty fdrv.
+  apply: (@continuous_subspaceW _ _ _ `[a, b]); first exact: itvW.
+  by rewrite continuous_subspace_in.
+move=> t /itvWlt dft dftxy; rewrite -oppr_lt0 opprB dftxy.
+by rewrite pmulr_llt0 ?subr_gt0// dflt0.
 Qed.
 
-(* TODO: clean *)
-Lemma derive_sincreasing_interv {R : realType} a b (f : R -> R)
-  (pr : forall x, a < x < b -> derivable f x 1)
-  (prc : forall x, a <= x <= b -> continuous_at x f) :
-  a < b ->
-  ((forall t:R, a < t < b -> derivable f t 1 -> 0 < 'D_1 f t) ->
-    forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x < f y).
+(* TODO: PR to analysis *)
+Lemma gtr0_derive1_incr (R : realType) (f : R -> R) (a b : R) :
+  (forall x, x \in `]a, b[%R -> derivable f x 1) ->
+  (forall x, x \in `]a, b[%R -> 0 < f^`() x) ->
+  {within `[a, b], continuous f}%classic ->
+  forall x y, a <= x -> x < y -> y <= b -> f x < f y.
 Proof.
-intros H H0 x y H1 H2 H3.
-rewrite -subr_gt0.
-have prd' : forall z, x < z < y -> derivable f z 1.
-  move=> z /= /andP[Hz1 Hz2] ; apply pr.
-  apply/andP; split.
-  - apply: (@le_lt_trans _ _ x) => //.
-    by case/andP : H1.
-  - apply: (@lt_le_trans _ _ y) => //.
-    by case/andP : H2.
-have H0' : forall t, x < t < y -> 0 < 'D_1 f t.
-  move=> z /= /andP[Hz0 Hz1].
-  apply H0.
-  apply/andP; split.
-  - apply: (@le_lt_trans _ _ x) => //.
-    by case/andP : H1.
-  - apply: (@lt_le_trans _ _ y) => //.
-    by case/andP : H2.
-  apply: pr.
-  case/andP : H1 => + _.
-  move=> /le_lt_trans => /(_ _ Hz0) ->/=.
-  rewrite (lt_le_trans Hz1)//.
-  by case/andP : H2.
-have prcx : continuous_at (x : R^o) f.
-  by apply: prc.
-have prcy : continuous_at (y : R^o) f.
-  by apply: prc.
-have aux : a < b.
-  done.
-case: (MVT_cor1_pderivable_open_continuity prd' prcx prcy H3); intros x0 [x1 [H7 H8]].
-rewrite H7.
-apply mulr_gt0; first by apply H0'.
-by rewrite subr_gt0.
+move=> fdrvbl dfgt0 ctsf x y leax ltxy leyb.
+rewrite -ltrN2; apply: (@ltr0_derive1_decr _ (\- f) a b).
+- by move=> z zab; apply: derivableN; exact: fdrvbl.
+- move=> z zab; rewrite derive1E deriveN; last exact: fdrvbl.
+  by rewrite ltrNl oppr0 -derive1E dfgt0.
+- by move=> z; apply: continuousN; exact: ctsf.
+- exact: leax.
+- exact: ltxy.
+- exact: leyb.
 Qed.
 
 Section xlnx_sect.
@@ -433,31 +393,30 @@ rewrite ltr_pM2l ?expR_gt0//.
 by rewrite ltrBlDl addrC -ltrBlDl subrr.
 Qed.
 
+Lemma continuous_at_diff_xlnx (r : R) : continuous_at r diff_xlnx.
+Proof.
+move=> z.
+apply: cvgB => //.
+  apply: cvg_comp; last exact: continuous_at_xlnx.
+  apply: cvgB => //.
+  exact: cvg_cst.
+by apply: continuous_at_xlnx.
+Qed.
+
 Lemma diff_xlnx_sincreasing_0_Rinv_e2 (x y : R) :
   0 <= x <= expR (-2) -> 0 <= y <= expR (-2) ->
   x < y -> diff_xlnx x < diff_xlnx y.
 Proof.
 move=> /andP[x0 x2] /andP[y0 y2] xy.
-apply (@derive_sincreasing_interv R 0 (expR (-2))) => //.
-- move=> x' /= /andP[Hx1 Hx2].
-  apply derivable_pt_diff_xlnx.
-  apply/andP; split => //.
-  by rewrite (lt_le_trans Hx2)// -[leRHS]exp.expR0 exp.ler_expR lerNl oppr0.
-- move=> x' /= /andP[Hx1 Hx2].
-  rewrite /diff_xlnx.
-  apply: cvgB => //.
-    apply: cvg_comp; last exact: continuous_at_xlnx.
-    apply: cvgB => //.
-    exact: cvg_cst.
-  by apply: continuous_at_xlnx.
-- by rewrite exp.expR_gt0.
-- move=> x' /= /andP[Hx1 Hx2] K.
-  rewrite derive_diff_xlnx_gt0//.
-  rewrite Hx1/=.
-  rewrite (lt_le_trans Hx2)//.
-  by rewrite -[leRHS]exp.expR0 exp.ler_expR lerNl oppr0.
-- by rewrite x0.
-- by rewrite y0.
+apply: (@gtr0_derive1_incr _ _ 0 (expR (- 2))) => //.
+- move=> z; rewrite in_itv/= => /andP[z0 z2].
+  apply: derivable_pt_diff_xlnx.
+  by rewrite z0/= (lt_le_trans z2)// -[leRHS]expR0 ler_expR lerNl oppr0.
+- move=> z; rewrite in_itv/= => /andP[z0 z2].
+  rewrite derive1E derive_diff_xlnx_gt0// z0/=.
+  by rewrite (lt_le_trans z2)// -[leRHS]expR0 ler_expR lerNl oppr0.
+- apply: continuous_subspaceT => z.
+  exact: continuous_at_diff_xlnx.
 Qed.
 
 Lemma xlnx_ineq (x : R) : 0 <= x <= expR (-2) -> xlnx x <= xlnx (1-x).
@@ -525,35 +484,35 @@ rewrite derive_id derive_cst addr0 mulr1.
 by rewrite opprD addrACA subrr addr0.
 Qed.
 
+Lemma continuous_at_xlnx_delta (r : R) eps : continuous_at r (xlnx_delta eps).
+Proof.
+move=> z.
+apply: cvgB.
+  apply: cvg_comp; last first.
+    exact: continuous_at_xlnx.
+  apply: cvgD.
+    exact: cvg_id.
+  exact: cvg_cst.
+exact: continuous_at_xlnx.
+Qed.
+
 Lemma increasing_xlnx_delta eps (Heps : 0< eps < 1) :
   forall x y : R, 0 <= x <= 1 - eps -> 0 <= y <= 1 - eps -> x < y ->
                   xlnx_delta eps x < xlnx_delta eps y.
 Proof.
 move=> x y /andP[x0 x1] /andP[y0 y1] xy.
-apply (@derive_sincreasing_interv R 0 (1 - eps)) => //=.
-- move=> z /andP[z0 z1].
+apply: (@gtr0_derive1_incr _ _ 0 (1 - eps)) => //.
+- move=> z; rewrite in_itv/= => /andP[z0 z1].
   apply: derivable_xlnx_delta => //.
   by rewrite z0.
-- move=> z /andP[z0 z1].
-  apply: cvgB.
-    apply: cvg_comp; last first.
-      exact: continuous_at_xlnx.
-    apply: cvgD.
-      exact: cvg_id.
-    exact: cvg_cst.
-  exact: continuous_at_xlnx.
-- rewrite subr_gt0.
-  by case/andP : Heps.
-- move=> t /andP[t0 t1] H.
-  rewrite derive_pt_xlnx_delta//.
+- move=> z; rewrite in_itv/= => /andP[z0 z1].
+  rewrite derive1E derive_pt_xlnx_delta//.
     rewrite subr_gt0 ltr_ln ?posrE//.
-    rewrite ltrDl.
-    by case/andP: Heps.
-    rewrite addr_gt0//.
-    by case/andP: Heps.
-    by rewrite t0/=.
-- by rewrite x0.
-- by rewrite y0.
+      by rewrite ltrDl; case/andP : Heps.
+    by rewrite addr_gt0//; case/andP : Heps.
+  by rewrite z0.
+- apply: continuous_subspaceT => z.
+  exact: continuous_at_xlnx_delta.
 Qed.
 
 Lemma xlnx_delta_bound eps : 0 < eps <= expR (-2) ->
