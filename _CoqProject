@@ -91,5 +91,9 @@ toy_examples/expected_value_variance.v
 toy_examples/expected_value_variance_ordn.v
 toy_examples/expected_value_variance_tuple.v
 toy_examples/conditional_entropy.v
+smc/smc_proba.v
+smc/smc_entropy.v
+smc/smc_interpreter.v
+smc/smc_tactics.v
 
 -R . infotheo
