@@ -865,7 +865,7 @@ move=> p x y.
 have [->|pn0] := eqVneq p 0%:pr; first by rewrite !conv0.
 have [->|pn1] := eqVneq p 1%:pr; first by rewrite !conv1.
 have opn0 : (Prob.p p).~ != 0. by apply onem_neq0.
-apply: (@S1_inj R); rewrite affine_conv/= !S1_Convn_finType ssum_seq_finsuppE.
+apply: (S1_inj R); rewrite affine_conv/= !S1_Convn_finType ssum_seq_finsuppE.
 under [LHS]eq_bigr do rewrite fsdist_scalept_conv.
 rewrite big_seq_fsetE big_scalept_conv_split /=.
 rewrite 2!ssum_seq_finsuppE' 2!ssum_seq_finsuppE.
@@ -895,7 +895,7 @@ Qed.
 
 Lemma Convn_of_fsdist1 (C : convType R) (x : C) : Convn_of_fsdist (fsdist1 x) = x.
 Proof.
-apply: (@S1_inj R _ _ x).
+apply: (S1_inj R).
 rewrite S1_Convn_finType /=.
 rewrite (eq_bigr (fun=> S1 x)); last first.
   move=> i _; rewrite fdist_of_fsE fsdist1E -(@supp_fsdist1 R).
@@ -908,7 +908,7 @@ Lemma Convn_of_fsdistmap (C D : convType R) (f : {affine C -> D})
     (d : R.-dist C) :
   f (Convn_of_fsdist d) = Convn_of_fsdist (fsdistmap f d).
 Proof.
-apply (@S1_inj R) => /=.
+apply (S1_inj R) => /=.
 rewrite S1_proj_Convn_finType // S1_Convn_finType.
 set X := LHS.
 under eq_bigr do rewrite fdist_of_fsE.
@@ -942,7 +942,7 @@ Local Notation S1 := (@S1 R).
 Lemma triangular_laws_left0 (d : R.-dist C) :
   Convn_of_fsdist (fsdistmap (@fsdist1 _ C) d) = d.
 Proof.
-apply: fsdist_ext => x; apply (@S1_inj R).
+apply: fsdist_ext => x; apply (S1_inj R).
 rewrite (S1_proj_Convn_finType [the {affine _ -> _} of fsdist_eval x]).
 under eq_bigr do rewrite fdist_of_fsE.
 rewrite (ssum_seq_finsuppE'' (fun i : R.-dist C => i x : R^o)).

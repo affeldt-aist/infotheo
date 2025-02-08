@@ -358,6 +358,7 @@ Qed.
 End scaled.
 Arguments Zero {R A}.
 Arguments point {R A} pt.
+Arguments S1_inj : clear implicits.
 Arguments raw_weight {R A}.
 Notation "p *: a" := (Scaled p a) : scaled_scope.
 
@@ -844,7 +845,7 @@ Hint Resolve onem_probR_ge0 : core.
 Lemma convACA (a b c d : T) p q :
   (a <|q|> b) <|p|> (c <|q|> d) = (a <|p|> c) <|q|> (b <|p|> d).
 Proof.
-apply: (@S1_inj R).
+apply: (S1_inj R).
 rewrite [LHS]affine_conv/= ![in LHS]affine_conv/= !convptE.
 rewrite !scaleptDr !scaleptA// !(mulrC (Prob.p p)) !(mulrC (Prob.p p).~) addptA addptC.
 rewrite (addptC (scalept (Prob.p q * Prob.p p) _)) !addptA -addptA -!scaleptA -?scaleptDr//.
@@ -939,7 +940,7 @@ Lemma fdist_convn_add n m p (g : 'I_(n + m) -> T) (d : {fdist 'I_n})
   <|>_(fdist_add d e p) g =
   <|>_d (g \o @lshift n m) <| p |> <|>_e (g \o @rshift n m).
 Proof.
-apply: (@S1_inj R).
+apply: (S1_inj R).
 rewrite [RHS]affine_conv/=.
 rewrite !S1_Convn convptE big_split_ord/=.
 do 2 rewrite [in RHS]big_morph_scalept ?scalept0//.
@@ -957,12 +958,12 @@ Implicit Types a b : T.
 
 Lemma Convn_comp (f : {affine T -> U}) n (g : 'I_n -> T) (d : {fdist 'I_n}) :
   f (<|>_d g) = <|>_d (f \o g).
-Proof. by apply (@S1_inj R); rewrite S1_Convn S1_Convn_proj. Qed.
+Proof. by apply (S1_inj R); rewrite S1_Convn S1_Convn_proj. Qed.
 
 Lemma eq_Convn n (g1 g2 : 'I_n -> T) (d1 d2 : {fdist 'I_n}) :
   g1 =1 g2 -> d1 =1 d2 -> <|>_d1 g1 = <|>_d2 g2.
 Proof.
-move=> Hg Hd; apply (@S1_inj R); rewrite !S1_Convn.
+move=> Hg Hd; apply (S1_inj R); rewrite !S1_Convn.
 by apply congr_big => // i _; rewrite Hg Hd.
 Qed.
 
@@ -981,7 +982,7 @@ Qed.
 Lemma Convn_proj n (g : 'I_n -> T) (d : {fdist 'I_n}) i :
   d i = 1%R -> <|>_d g = g i.
 Proof.
-move=> Hd; apply: (@S1_inj R).
+move=> Hd; apply: (S1_inj R).
 rewrite [LHS]S1_Convn (bigD1 i)//=.
 rewrite big1; first by rewrite addpt0 Hd scale1pt.
 move=> j Hj.
@@ -1146,7 +1147,7 @@ Implicit Types a b : T.
 Lemma Convn_perm (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) (s : 'S_n) :
   <|>_d g = <|>_(fdistI_perm d s) (g \o s).
 Proof.
-apply (@S1_inj R); rewrite !S1_Convn (ssum_perm _ s).
+apply (S1_inj R); rewrite !S1_Convn (ssum_perm _ s).
 by apply eq_bigr => i _; rewrite fdistI_permE.
 Qed.
 
@@ -1155,7 +1156,7 @@ Theorem Convn_fdist_convn (n m : nat) (d : {fdist 'I_n})
         (e : 'I_n -> {fdist 'I_m}) (x : 'I_m -> T) :
   <|>_d (fun i => <|>_(e i) x) = <|>_(fdist_convn d e) x.
 Proof.
-apply (@S1_inj R); rewrite !S1_Convn -[in RHS]big_enum -ssum_fdist_convn.
+apply (S1_inj R); rewrite !S1_Convn -[in RHS]big_enum -ssum_fdist_convn.
 by apply eq_bigr => i _; rewrite big_enum S1_Convn.
 Qed.
 
@@ -1170,7 +1171,7 @@ Qed.
 Lemma Convn_idem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
   (forall i : 'I_n, (d i != 0)%R -> g i = a) -> <|>_d g = a.
 Proof.
-move=> Hg; apply: (@S1_inj R).
+move=> Hg; apply: (S1_inj R).
 rewrite S1_Convn (eq_bigr (fun i => scalept (d i) (S1 a))).
   by rewrite -S1_Convn Convn_cst.
 move=> /= i _.
@@ -1180,7 +1181,7 @@ Qed.
 Lemma Convn_weak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
   <|>_d (g \o u) = <|>_(fdistmap u d) g.
 Proof.
-apply (@S1_inj R).
+apply (S1_inj R).
 rewrite !S1_Convn (partition_big u (fun _=> true)) //=.
 apply eq_bigr => i _.
 rewrite fdistmapE /=.
@@ -1210,7 +1211,7 @@ Lemma ConvnDlr n m (p : {prob R}) (f : 'I_n -> T) (d : {fdist 'I_n})
   <|>_(fdist_add d e p)
       (fun i => match fintype.split i with inl i => f i | inr i => g i end).
 Proof.
-apply: (@S1_inj R); rewrite affine_conv/= 3!S1_Convn convptE.
+apply: (S1_inj R); rewrite affine_conv/= 3!S1_Convn convptE.
 do 2 rewrite big_morph_scalept ?scalept0//.
 rewrite big_split_ord/=.
 congr addpt; apply: congr_big => //= i _; rewrite scaleptA// fdist_addE.

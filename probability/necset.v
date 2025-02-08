@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-Require Import Reals.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-From mathcomp Require Import mathcomp_extra boolp classical_sets Rstruct reals.
+From mathcomp Require Import mathcomp_extra boolp classical_sets reals.
 From mathcomp Require Import finmap.
 Require Import realType_ext classical_sets_ext fdist fsdist convex.
 
@@ -1088,6 +1087,7 @@ Notation "{ 'necset' T }" :=
 
 Module necset_join.
 Section def.
+Variable R : realType.
 Local Open Scope classical_set_scope.
 Local Open Scope proba_scope.
 Definition F (T : Type) := {necset (R.-dist {classic T})}.
@@ -1147,18 +1147,18 @@ Export necset_join.Exports.
 Section necset_bind.
 Local Open Scope classical_set_scope.
 Local Open Scope proba_scope.
-Local Open Scope R_scope.
 Local Notation M := (necset_join.F).
 
 Section ret.
+Variable R : realType.
 Variable a : Type.
-Definition necset_ret (x : a) : M a := [set (fsdist1 (x : {classic a}))].
+Definition necset_ret (x : a) : M R a := [set (fsdist1 (x : {classic a}))].
 End ret.
 
 Section fmap.
-Variables (a b : Type) (f : a -> b).
+Variables (R : realType) (a b : Type) (f : a -> b).
 
-Let necset_fmap' (ma : M a) :=
+Let necset_fmap' (ma : M R a) :=
   (fsdistmap (f : {classic_ a} -> {classic b})) @` ma.
 
 Lemma necset_fmap'_convex ma : is_convex_set (necset_fmap' ma).
@@ -1174,19 +1174,20 @@ case/set0P : (neset_neq0 ma) => x max; apply/set0P.
 by exists (fsdistmap (f : {classic a} -> {classic b}) x), x.
 Qed.
 
-Definition necset_fmap : M a -> M b := fun ma =>
+Definition necset_fmap : M R a -> M R b := fun ma =>
   NECSet.Pack (NECSet.Class (isConvexSet.Build R _ _ (necset_fmap'_convex ma))
                             (isNESet.Build _ _ (necset_fmap'_neq0 ma))).
 End fmap.
 
 Section bind.
-Variables a b : Type.
-Definition necset_bind (ma : M a) (f : a -> M b) : M b :=
+Variables (R : realType) (a b : Type).
+Definition necset_bind (ma : M R a) (f : a -> M R b) : M R b :=
   necset_join (necset_fmap f ma).
 End bind.
 End necset_bind.
 
 Section technical_corollaries.
+Variable R : realType.
 Variable L : semiCompSemiLattConvType R.
 
 Corollary Varacca_Winskel_Lemma_5_6 (Y Z : neset L) :
