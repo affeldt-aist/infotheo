@@ -12,30 +12,28 @@ Require Import derive_ext fdist jfdist_cond entropy convex.
 Require Import binary_entropy_function log_sum divergence.
 
 (******************************************************************************)
-(*                Section 2.7 of Elements of Information Theory               *)
+(* # Elements of Information Theory (cont'd)                                  *)
 (*                                                                            *)
-(* Formalization of the section 2.7 of:                                       *)
-(* Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, Wiley,     *)
-(* 2005                                                                       *)
-(*                                                                            *)
-(* dom_pair A == type of dominated pairs, i.e., a pair of distributions       *)
-(*               (d, e) s.t. d << e                                           *)
-(*                                                                            *)
+(* This file contains a formalization of the section 2.7 of:                  *)
+(* - Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, Wiley,   *)
+(*   2005                                                                     *)
 (* Lemmas:                                                                    *)
-(*              convex_div == divergence restricted to dominated pairs is a   *)
-(*                            convex function; it's actually not a            *)
-(*                            restriction since div is meaningful only on     *)
-(*                            dominated pairs                                 *)
-(* convex_relative_entropy == convexity of relative entropy                   *)
-(*                            (thm 2.7.2)                                     *)
-(*         entropy_concave == entropy is concave (thm 2.7.3)                  *)
-(* mutual_information_concave == the mutual information is concave w.r.t.     *)
-(*                            its first argument (thm 2.7.4)                  *)
-(* mutual_information_convex == the mutual information is convex w.r.t        *)
-(*                            its second argument (thm 2.7.4)                 *)
+(* - divergence restricted to dominated pairs is a convex function; it's      *)
+(*   actually not a restriction since div is meaningful only on dominated     *)
+(*   pairs (`convex_div`)                                                     *)
+(* - convexity of relative entropy (thm 2.7.2) (`convex_relative_entropy`)    *)
+(* - entropy is concave (thm 2.7.3) (`entropy_concave`)                       *)
+(* - the mutual information is concave w.r.t. its first argument (thm 2.7.4)  *)
+(*   (`mutual_information_concave`)                                           *)
+(* - the mutual information is convex w.r.t. its second argument (thm 2.7.4)  *)
+(*   (`mutual_information_convex`)                                            *)
 (*                                                                            *)
-(* ref: Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, 2nd   *)
-(* edition, Wiley, 2005                                                       *)
+(* ```                                                                        *)
+(*           dom_pair A == type of dominated pairs, i.e., a pair of           *)
+(*                         distributions (d, e) s.t. d << e                   *)
+(*         avg_dom_pair == TODO                                               *)
+(*     uncurry_dom_pair == TODO                                               *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -240,11 +238,6 @@ Qed.
 
 End entropy_concave.
 
-(*
-Lemma unitiE (R : realType) (x : R) : uniti x = (0 < x < 1).
-Proof. by []. Qed.
-*)
-
 Module entropy_concave_alternative_proof_binary_case.
 Import classical_sets.
 
@@ -252,117 +245,6 @@ Section realType.
 
 Variable R : realType.
 Local Notation H2 := (@H2 R^o : R^o -> R^o).
-
-Definition sig_derive1_H2 (x : R) :
-  {D : R | x \in `]0, 1[%classic -> is_derive x 1 H2 D}.
-Proof.
-evar (D0 : (R : Type)); evar (D1 : (R : Type)); exists D0.
-rewrite inE /= => /andP [] x0 x1.
-suff->: D0 = D1.
-  rewrite /H2.
-  apply: is_deriveD.
-    apply: is_deriveN.
-    apply: is_deriveM.
-      exact: is_derive_id.
-    exact: is_derive1_Logf.
-  apply: is_deriveN.
-  apply: is_deriveM.
-  apply: is_derive1_comp.
-  apply: is_derive1_Logf=> //.
-  by rewrite subr_gt0 //.
-have ? : x != 0 by exact: lt0r_neq0.
-have ? : 1 - x != 0 by rewrite lt0r_neq0// subr_gt0.
-rewrite /D1.
-rewrite -!mulr_regl !(add0r, mul1r, mulr1, mulrN, mulNr, opprD, opprK).
-rewrite mulrCA divff// mulrCA divff//.
-rewrite !mulr1 addrCA !addrA subrr add0r addrC.
-by instantiate (D0 := log (1 - x) - log x).
-Defined.
-
-Definition sig_derive1_nH2 (x : R) :
-  {D : R | x \in `]0, 1[%classic -> is_derive x 1 (- H2) D}.
-Proof.
-evar (D0 : (R : Type)); evar (D1 : (R : Type)); exists D0.
-move/(svalP (sig_derive1_H2 x))=> is_derive1_H2.
-suff->: D0 = D1.
-  exact: is_deriveN.
-rewrite /D1 /= opprB.
-by instantiate (D0 := log x - log (1 - x)).
-Defined.
-
-Lemma derivable_nH2 v : {in `]0, 1[%classic, forall x : R, derivable (- H2) x v}.
-Proof.
-move=> x /(svalP (sig_derive1_nH2 x))/@ex_derive.
-by move/derivable1_diffP/diff_derivable.
-Qed.
-
-Local Notation DnH2 := (fun x : R => log x - log (1 - x)).
-
-Lemma DnH2E : {in `]0, 1[%classic, forall x : R, 'D_1 (- H2) x = DnH2 x}.
-Proof. by move=> x /(svalP (sig_derive1_nH2 x))/@derive_val. Qed.
-
-Lemma near_DnH2E :
-  {in `]0, 1[%classic, forall x : R, \near x, 'D_1 (- H2) x = DnH2 x}.
-Proof.
-apply: open_in_nearW; first exact: (@itv_open _ (R : realFieldType)).
-exact: DnH2E.
-Qed.
-
-Definition sig_derive1_DnH2 (x : R) :
-  {D : R | x \in `]0, 1[%classic -> is_derive x 1 ('D_1 (- H2)) D}.
-Proof.
-evar (D0 : (R : Type)); evar (D1 : (R : Type)); exists D0.
-move/[dup]=> x01.
-rewrite inE /= => /andP [] x0 x1.
-rewrite (near_eq_is_derive _ DnH2) ?oner_neq0//; last exact: near_DnH2E.
-suff->: D0 = D1.
-  apply: is_deriveB.
-    exact: is_derive1_Logf.
-  apply: is_derive1_Logf=> //.
-  by rewrite subr_gt0.
-have ? : x != 0 by exact: lt0r_neq0.
-have ? : 1 - x != 0 by rewrite lt0r_neq0// subr_gt0.
-rewrite /D1.
-rewrite !(add0r, mul1r, mulr1, mulrN, mulNr) opprK -mulrDr.
-by instantiate (D0 := (ln 2)^-1 * (x^-1 + (1 - x)^-1)).
-Defined.
-
-Local Notation DDnH2 := (fun x : R => (ln 2)^-1 * (x^-1 + (1 - x)^-1)).
-
-Lemma DDnH2E : {in `]0, 1[%classic, forall x : R, 'D_1 ('D_1 (- H2)) x = DDnH2 x}.
-Proof. by move=> x /(svalP (sig_derive1_DnH2 x))/@derive_val. Qed.
-
-Lemma DDnH2_nonneg : {in `]0, 1[%classic, forall x : R, 0 <= DDnH2 x}.
-Proof.
-move=> x; rewrite inE /= => /andP [] x0 x1.
-rewrite mulr_ge0//.
-  by rewrite invr_ge0 ln2_ge0.
-by rewrite addr_ge0// invr_ge0 ltW // subr_gt0.
-Qed.
-
-Lemma derivable_DnH2 v : {in `]0, 1[%classic, forall x : R, derivable ('D_1 (- H2)) x v}.
-Proof.
-move=> x /(svalP (sig_derive1_DnH2 x))/@ex_derive.
-by move/derivable1_diffP/diff_derivable.
-Qed.
-
-(* move to analysis *)
-Lemma continuous_id (T : topologicalType) : continuous (@idfun T).
-Proof. exact/continuousP. Qed.
-
-Lemma continuous_log (x : R) : 0 < x -> {for x, continuous log}.
-Proof. by move=> x0 y; exact/differentiable_continuous/differentiable_Log. Qed.
-
-Lemma continuous_onem : continuous (@onem R).
-Proof.
-move=> ?; by apply: continuousB; [exact: cst_continuous | exact: continuous_id].
-Qed.
-
-Lemma continuous_H2 : {in `]0, 1[%classic, forall x : R, {for x, continuous H2}}.
-Proof.
-move=> x /(svalP (sig_derive1_H2 x)) /@ex_derive.
-by move/derivable1_diffP/differentiable_continuous.
-Qed.
 
 From mathcomp Require Import -(notations) convex.
 
@@ -374,6 +256,7 @@ apply (@itv.Itv.Def _ _ (p.~)).
 rewrite /itv.Itv.itv_cond.
 by rewrite in_itv /=; apply/andP; split.
 Defined.
+
 Lemma conv_conv (x y : R^o) (p : {prob R}) :
   x <| p |> y = mathcomp.analysis.convex.conv (prob_itv p) x y.
 Proof.

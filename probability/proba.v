@@ -13,20 +13,20 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 (* distributions).                                                            *)
 (*                                                                            *)
 (* Selected lemmas:                                                           *)
-(* - expected value of a sum of RVs (E_sum_2), a.k.a., the ``First            *)
+(* - expected value of a sum of RVs (`E_sum_2`), a.k.a., the ``First          *)
 (*   Fundamental Mystery of Probability''                                     *)
-(* - variance of a sum (V_sum_2)                                              *)
-(* - variance of the average for independent RVs (Var_average)                *)
-(* - union bound/Boole's inequality (Pr_bigcup)                               *)
-(* - Boole's equality (Boole_eq)                                              *)
-(* - laws of total probability (total_prob, total_prob_cond)                  *)
-(* - Bayes' theorems (Bayes/Bayes_extended)                                   *)
+(* - variance of a sum (`V_sum_2`)                                            *)
+(* - variance of the average for independent RVs (`Var_average`)              *)
+(* - union bound/Boole's inequality (`Pr_bigcup`)                             *)
+(* - Boole's equality (`Boole_eq`)                                            *)
+(* - laws of total probability (`total_prob`, `total_prob_cond`)              *)
+(* - Bayes' theorems (`Bayes`, `Bayes_extended`)                              *)
 (* - an algebraic proof (by Erik Martin-Dorel) of the formula of              *)
-(*   inclusion-exclusion (Pr_bigcup_incl_excl)                                *)
-(* - reasoning by cases (reasoning_by_cases, creasoning_by_cases)             *)
-(* - Markov' inequality (markov)                                              *)
-(* - Chebyshev's inequality (chebyshev_inequality)                            *)
-(* - weak law of large numbers (wlln)                                         *)
+(*   inclusion-exclusion (`Pr_bigcup_incl_excl`)                              *)
+(* - reasoning by cases (`reasoning_by_cases`, `creasoning_by_cases`)         *)
+(* - Markov' inequality (`markov`)                                            *)
+(* - Chebyshev's inequality (`chebyshev_inequality`)                          *)
+(* - weak law of large numbers (`wlln`)                                       *)
 (*                                                                            *)
 (* ```                                                                        *)
 (*                E `*T == the set of pairs (x, y) with x in E                *)
@@ -1084,7 +1084,7 @@ apply: eq_bigr => i Hi; rewrite /SumIndCap /Efull.
 rewrite m1powD; last first.
   by case/andP: Hi => Hi _ K0; rewrite K0 in Hi.
 rewrite mulNr.
-rewrite [in RHS](big_morph _ (morph_mulRDr _) (mulr0 _)).
+rewrite big_distrr/=.
 congr -%R; apply: eq_bigr => j Hj.
 rewrite prodrN (eqP Hj).
 rewrite (_ : ?[a] * ((-1)^+i * ?[b]) = (-1)^+i * (?a * ?b)); last by lra.

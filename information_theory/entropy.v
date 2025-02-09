@@ -5,37 +5,31 @@ From mathcomp Require Import reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist jfdist_cond proba binary_entropy_function divergence.
 
-(******************************************************************************)
-(*                Chapter 2 of Elements of Information Theory                 *)
+(**md**************************************************************************)
+(* # Elements of Information Theory                                           *)
 (*                                                                            *)
-(* Formalization of the chapter 2 of:                                         *)
-(* Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, Wiley,     *)
-(* 2005                                                                       *)
-(* See also entropy_convex.v                                                  *)
+(* This file contains a Formalization of the chapter 2 of:                    *)
+(* - Thomas M. Cover, Joy A. Thomas, Elements of Information Theory, Wiley,   *)
+(*   2005                                                                     *)
+(* It is completed by `entropy_convex.v`.                                     *)
 (*                                                                            *)
+(* ```                                                                        *)
 (*                        `H P == the entropy of the (finite) probability     *)
 (*                                distribution P                              *)
-(*                 entropy_ge0 == the entropy is non-negative                 *)
-(*                 entropy_max == the entropy is bounded by log |A| where A   *)
-(*                                is the support of the distribution          *)
-(*                  entropy_Ex == the entropy is the expectation of the       *)
-(*                                negative logarithm                          *)
-(*                xlnx_entropy == the entropy is the natural entropy scaled   *)
-(*                                by ln(2)                                    *)
-(*             entropy_uniform == the entropy of a uniform distribution is    *)
-(*                                just log                                    *)
-(*                  entropy_H2 == the binary entropy H2 is the entropy over   *)
-(*                                {x, y}                                      *)
-(*               joint_entropy == entropy of a joint distribution             *)
-(*                cond_entropy == conditional entropy of a joint distribution *)
-(*                  chain_rule == (thm 2.1.1)                                 *)
-(*                 mutual_info == mutual information (`I(X ; Y))              *)
-(*               chain_rule_rV == chain rule for entropy (thm 2.5.1)          *)
-(*      chain_rule_information == chain rule for information (thm 2.5.2)      *)
-(* chain_rule_relative_entropy == chain rule for relative entropy (thm 2.5.3) *)
-(*  data_processing_inequality == (thm 2.8.1)                                 *)
-(*                         han == Han's inequality                            *)
-(*                                                                            *)
+(*             joint_entropy P := `H P with P : R.-fdist (A * B)              *)
+(*                                entropy of a joint distribution             *)
+(*                    `H(X, Y) := joint_entropy `p_[% X, Y]                   *)
+(*          cond_entropy1 QP a == H(Y | X = a)                                *)
+(*                                with QP : R.-fdist (B * A) and a : A        *)
+(*                                conditional entropy of a joint distribution *)
+(*             cond_entropy QP == H(Y | X)                                    *)
+(*      cond_entropy1_RV X Y a := `H (`p_[% X, Y] `(| a )).                   *)
+(*              mutual_info PQ := D(PQ || P `x Q)                             *)
+(*                   `I(X ; Y) == mutual information between RVs              *)
+(*        cond_mutual_info PQR == conditional mutual information              *)
+(*       cond_relative_entropy == TODO                                        *)
+(*                markov_chain == TODO                                        *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -65,6 +59,7 @@ Variables (R : realType) (A : finType) (P : R.-fdist A).
 Definition entropy : R^o := - \sum_(a in A) P a * log (P a).
 Local Notation "'`H'" := (entropy).
 
+(** the entropy is non-negative: *)
 Lemma entropy_ge0 : 0 <= `H.
 Proof.
 rewrite /entropy big_morph_oppr; apply/sumr_ge0 => i _.
@@ -86,12 +81,14 @@ Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 Context (R : realType) (A : finType).
 
+(** the entropy is the expectation of the negative logarithm: *)
 Lemma entropy_Ex (P : R.-fdist A) : `H P = `E (`-- (`log P)).
 Proof.
 rewrite /entropy /log_RV /= big_morph_oppr.
 by apply eq_bigr => a _; rewrite mulrC -mulNr.
 Qed.
 
+(** the entropy is the natural entropy scaled by ln(2): *)
 Lemma xlnx_entropy (P : R.-fdist A) :
   `H P = (ln 2)^-1 * - \sum_(a : A) xlnx (P a).
 Proof.
@@ -102,6 +99,7 @@ have := FDist.ge0 P a; rewrite le_eqVlt => /predU1P[<-|Pa0].
 by rewrite Pa0 mulrA mulrC.
 Qed.
 
+(** the entropy of a uniform distribution is just log: *)
 Lemma entropy_uniform n (An1 : #|A| = n.+1) :
   `H (fdist_uniform An1) = log #|A|%:R :> R.
 Proof.
@@ -112,6 +110,7 @@ rewrite -mulNrn mulrN opprK -mulrnAr -(mulr_natr (log _) #|A|) mulrCA.
 by rewrite mulVf ?mulr1// An1 pnatr_eq0.
 Qed.
 
+(** the binary entropy H2 is the entropy over {x, y}: *)
 Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : prob R) :
   H2 (Prob.p p) = entropy (fdist_binary card_A p (Set2.a card_A)).
 Proof.
@@ -119,6 +118,8 @@ rewrite /H2 /entropy Set2sumE /= fdist_binaryxx !fdist_binaryE.
 by rewrite eq_sym (negbTE (Set2.a_neq_b _)) opprD addrC.
 Qed.
 
+(** the entropy is bounded by log |A| where A is the support of the
+    distribution: *)
 Lemma entropy_max (P : R.-fdist A) : `H P <= log #|A|%:R.
 Proof.
 have [n An1] : exists n, #|A| = n.+1.
@@ -319,6 +320,7 @@ Variables (R : realType) (A B : finType) (PQ : R.-fdist (A * B)).
 Let P := PQ`1.
 Let QP := fdistX PQ.
 
+(** thm 2.1.1 *)
 Lemma chain_rule : joint_entropy PQ = `H P + cond_entropy QP. (* 2.14 *)
 Proof.
 rewrite /joint_entropy {1}/entropy.
@@ -352,6 +354,7 @@ Local Open Scope chap2_scope.
 Variable R : realType.
 Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
 
+(** chain rule for entropy (thm 2.5.1): *)
 Lemma chain_rule_RV : `H(X, Y) = `H `p_X + `H(Y | X).
 Proof.
 rewrite /joint_entropy_RV.
@@ -366,12 +369,13 @@ Section chain_rule_generalization.
 
 Local Open Scope ring_scope.
 
-(* TODO: move *)
+(* TODO: doc, mv? *)
 Definition put_front (n : nat) (i : 'I_n.+1) : 'I_n.+1 -> 'I_n.+1 := fun j =>
   if j == i then ord0 else
     if (j < i)%nat then inord (j.+1) else
       j.
 
+(* TODO: doc, mv? *)
 Definition put_back (n : nat) (i : 'I_n.+1) : 'I_n.+1 -> 'I_n.+1 := fun j =>
   if j == ord0 then i else
     if (j <= i)%nat then inord (j.-1) else
@@ -396,6 +400,7 @@ Lemma put_front_inj (n : nat) (i : 'I_n.+1) : injective (put_front i).
 Proof. exact: (can_inj (put_backK i)). Qed.
 Arguments put_front_inj {n} _.
 
+(* TODO: doc, mv? *)
 Definition put_front_perm (n : nat) i : 'S_n.+1 := perm (put_front_inj i).
 
 (* TODO: clean *)
@@ -667,6 +672,7 @@ End chain_rule_for_entropy.
 Section divergence_conditional_distributions.
 Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 
+(* TODO: document *)
 Definition cdiv1 z := \sum_(x in {: A * B})
   \Pr_PQR[[set x] | [set z]] * log (\Pr_PQR[[set x] | [set z]] /
     (\Pr_(fdist_proj13 PQR)[[set x.1] | [set z]] * \Pr_(fdist_proj23 PQR)[[set x.2] | [set z]])).
@@ -850,6 +856,7 @@ Let Qj : R.-fdist (B * A) := fdistX (Q.1 `X Q.2).
 Let P1 : R.-fdist A := P.1.
 Let Q1 : R.-fdist A := Q.1.
 
+(** chain rule for relative entropy (thm 2.5.3): *)
 Lemma chain_rule_relative_entropy :
   Pj `<< Qj -> D(Pj || Qj) = D(P1 || Q1) + cond_relative_entropy P Q.
 Proof.
@@ -907,6 +914,7 @@ Let fA (i : 'I_n.+1) : R.-fdist (A * ('rV[A]_i * B)) := fdistA (f i).
 
 Local Open Scope vec_ext_scope.
 
+(** chain rule for information (thm 2.5.2): *)
 Lemma chain_rule_information :
   (* 2.62 *) mutual_info PY = \sum_(i < n.+1)
     if i == O :> nat then
@@ -1249,6 +1257,7 @@ Qed.
 
 Let PR := fdist_proj13 PQR.
 
+(** thm 2.8.1: *)
 Lemma data_processing_inequality : markov_chain ->
   mutual_info PR <= mutual_info PQ.
 Proof.
@@ -1460,6 +1469,7 @@ Variables (R : realType) (A : finType) (n' : nat).
 Let n := n'.+1.
 Variable P : R.-fdist 'rV[A]_n.
 
+(** Han's inequality: *)
 Lemma han : n.-1%:R * `H P <= \sum_(i < n) `H (fdist_col' P i).
 Proof.
 rewrite -subn1 natrB // mulrBl mul1r.

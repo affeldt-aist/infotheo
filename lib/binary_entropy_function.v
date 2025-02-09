@@ -1,20 +1,19 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp Require Import Rstruct reals exp lra.
-Require Import ssr_ext realType_ext realType_ln.
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import all_ssreflect all_algebra lra.
+From mathcomp Require Import mathcomp_extra classical_sets Rstruct reals.
+From mathcomp Require Import topology normedtype derive exp realfun.
+Require Import ssr_ext ssralg_ext realType_ext realType_ln derive_ext.
 
-(******************************************************************************)
-(*                    The natural entropy function                            *)
+(**md**************************************************************************)
+(* # The natural entropy function                                             *)
 (*                                                                            *)
-(* Definitions:                                                               *)
+(* ```                                                                        *)
 (*   H2ln p == the binary entropy function except that we replace the         *)
 (*             logarithm in base 2 by its natural version                     *)
-(*   H2 p == the binary entropy function                                      *)
+(*     H2 p == the binary entropy function                                    *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   H2ln_max == H2ln is upper bounded by ln 2                                *)
-(*   H2_max   == the binary entropy function is bounded by 1                  *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -24,142 +23,126 @@ Import Prenex Implicits.
 Local Open Scope ring_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
+Import numFieldNormedType.Exports.
 
-Definition H2ln {R : realType} : R -> R := fun p : R => (- p * exp.ln p - (1 - p) * exp.ln (1 - p))%mcR.
+Definition H2ln {R : realType} : R -> R :=
+  fun p : R => (- p * exp.ln p - (1 - p) * exp.ln (1 - p))%R.
 
-(*Lemma derivable_pt_ln_Rminus x : x < 1 -> derivable_pt ln (1 - x).
+Definition H2 {R : realType} (p : R) : R :=
+  (- (p * log p) + - ((1 - p) * log (1 - p)))%R.
+
+Section differentiation_continuity.
+Context {R : realType}.
+
+Definition sig_derive1_H2 (x : R) :
+  {D : R | x \in `]0, 1[%classic -> is_derive x 1 H2 D}.
 Proof.
-move=> Hx.
-exists (/ (1 - x)).
-apply derivable_pt_lim_ln, subR_gt0.
-assumption.
+evar (D0 : (R : Type)); evar (D1 : (R : Type)); exists D0.
+rewrite inE /= => /andP [] x0 x1.
+suff->: D0 = D1.
+  rewrite /H2.
+  apply: is_deriveD.
+    apply: is_deriveN.
+    apply: is_deriveM.
+      exact: is_derive_id.
+    exact: is_derive1_Logf.
+  apply: is_deriveN.
+  apply: is_deriveM.
+  apply: is_derive1_comp.
+  apply: is_derive1_Logf=> //.
+  by rewrite subr_gt0 //.
+have ? : x != 0 by exact: lt0r_neq0.
+have ? : 1 - x != 0 by rewrite lt0r_neq0// subr_gt0.
+rewrite /D1.
+rewrite -!mulr_regl !(add0r, mul1r, mulr1, mulrN, mulNr, opprD, opprK).
+rewrite mulrCA divff// mulrCA divff//.
+rewrite !mulr1 addrCA !addrA subrr add0r addrC.
+by instantiate (D0 := log (1 - x) - log x).
 Defined.
 
-Lemma pderivable_H2ln : pderivable H2ln (fun x => 0 < x <= 1/2).
+Definition sig_derive1_nH2 (x : R) :
+  {D : R | x \in `]0, 1[%classic -> is_derive x 1 (\- H2) D}.
 Proof.
-move=> x /= [Hx0 Hx1].
-apply derivable_pt_minus.
-apply derivable_pt_mult.
-apply derivable_pt_Ropp.
-apply derivable_pt_ln.
-assumption.
-apply derivable_pt_mult.
-apply derivable_pt_Rminus.
-apply derivable_pt_comp.
-apply derivable_pt_Rminus.
-apply derivable_pt_ln_Rminus.
-lra.
+evar (D0 : (R : Type)); evar (D1 : (R : Type)); exists D0.
+move/(svalP (sig_derive1_H2 x))=> is_derive1_H2.
+suff->: D0 = D1.
+  exact: is_deriveN.
+rewrite /D1 /= opprB.
+by instantiate (D0 := log x - log (1 - x)).
 Defined.
 
-(* NB: on peut pas utiliser derivable_pt_Ropp2? *)
-Lemma pderivable_Ropp_H2ln : pderivable (fun x => - H2ln x) (fun x => 1/2 <= x < 1).
+Lemma derivable_nH2 v : {in `]0, 1[%classic, forall x : R, derivable (\- H2) x v}.
 Proof.
-rewrite /H2ln /pderivable => x [Hx0 Hx1].
-apply derivable_pt_comp.
-apply derivable_pt_minus.
-apply derivable_pt_mult.
-apply derivable_pt_Ropp.
-apply derivable_pt_ln.
-lra.
-apply derivable_pt_mult.
-apply derivable_pt_Rminus.
-apply derivable_pt_comp.
-apply derivable_pt_Rminus.
-apply derivable_pt_ln_Rminus.
-assumption.
-apply derivable_pt_Ropp.
+move=> x /(svalP (sig_derive1_nH2 x))/@ex_derive.
+by move/derivable1_diffP/diff_derivable.
+Qed.
+
+Local Notation DnH2 := (fun x : R => log x - log (1 - x)).
+
+Lemma DnH2E : {in `]0, 1[%classic, forall x : R, 'D_1 (\- H2) x = DnH2 x}.
+Proof. by move=> x /(svalP (sig_derive1_nH2 x))/@derive_val. Qed.
+
+Lemma near_DnH2E :
+  {in `]0, 1[%classic, forall x : R, \near x, 'D_1 (\- H2) x = DnH2 x}.
+Proof.
+apply: open_in_nearW; first exact: (@itv_open _ (R : realFieldType)).
+exact: DnH2E.
+Qed.
+
+Definition sig_derive1_DnH2 (x : R) :
+  {D : R | x \in `]0, 1[%classic -> is_derive x 1 ('D_1 (\- H2)) D}.
+Proof.
+evar (D0 : (R : Type)); evar (D1 : (R : Type)); exists D0.
+move/[dup]=> x01.
+rewrite inE /= => /andP [] x0 x1.
+rewrite (near_eq_is_derive _ DnH2) ?oner_neq0//; last exact: near_DnH2E.
+suff->: D0 = D1.
+  apply: is_deriveB.
+    exact: is_derive1_Logf.
+  apply: is_derive1_Logf=> //.
+  by rewrite subr_gt0.
+have ? : x != 0 by exact: lt0r_neq0.
+have ? : 1 - x != 0 by rewrite lt0r_neq0// subr_gt0.
+rewrite /D1.
+rewrite !(add0r, mul1r, mulr1, mulrN, mulNr) opprK -mulrDr.
+by instantiate (D0 := (ln 2)^-1 * (x^-1 + (1 - x)^-1)).
 Defined.
 
-Lemma increasing_on_0_to_half : forall x y,
-  0 < x <= 1/2 -> 0 < y <= 1/2 -> x <= y -> H2ln x <= H2ln y.
+Local Notation DDnH2 := (fun x : R => (ln 2)^-1 * (x^-1 + (1 - x)^-1)).
+
+Lemma DDnH2E : {in `]0, 1[%classic, forall x : R, 'D_1 ('D_1 (\- H2)) x = DDnH2 x}.
+Proof. by move=> x /(svalP (sig_derive1_DnH2 x))/@derive_val. Qed.
+
+Lemma DDnH2_nonneg : {in `]0, 1[%classic, forall x : R, 0 <= DDnH2 x}.
 Proof.
-apply pderive_increasing_open_closed with (pr := pderivable_H2ln); first lra.
-move=> t [Ht1 Ht2].
-rewrite /H2ln /pderivable_H2ln derive_pt_minus 2!derive_pt_mult /=.
-destruct (Rlt_le_dec 0 t) => /=; last by exfalso; lra.
-rewrite derive_pt_comp /= mulRA.
-apply (@leR_trans (- ln t + ln (1 - t))); last first.
-  apply Req_le; field.
-  by split=> ?; lra.
-rewrite -ln_Rinv // -ln_mult; last 2 first.
-  exact/invR_gt0.
-  lra.
-rewrite -ln_1.
-apply ln_increasing_le; first lra.
-apply (@leR_pmul2l t) => //.
-by rewrite mulRA mulRV ?gtR_eqF // mulR1 mul1R; lra.
+move=> x; rewrite inE /= => /andP [] x0 x1.
+rewrite mulr_ge0//.
+  by rewrite invr_ge0 ln2_ge0.
+by rewrite addr_ge0// invr_ge0 ltW // subr_gt0.
 Qed.
 
-Lemma decreasing_on_half_to_1 (x y : R) :
-  1/2 <= x < 1 -> 1/2 <= y < 1 -> x <= y -> H2ln y <= H2ln x.
+Lemma derivable_DnH2 v : {in `]0, 1[%classic, forall x : R, derivable ('D_1 (\- H2)) x v}.
 Proof.
-move=> Hx Hy xy.
-rewrite -[X in _ <= X]oppRK leR_oppr.
-move: x y Hx Hy xy.
-apply pderive_increasing_closed_open with (pr := pderivable_Ropp_H2ln); first lra.
-move=> t [Ht1 Ht2].
-rewrite /H2ln /pderivable_Ropp_H2ln derive_pt_comp derive_pt_minus 2!derive_pt_mult /=.
-destruct (Rlt_le_dec 0 t) => /=; last first.
-  by exfalso; lra.
-rewrite derive_pt_comp /= mulRA.
-apply (@leR_trans (ln t - ln (1 - t))); last first.
-  apply Req_le; field.
-  by split => ?; lra.
-suff : ln ( 1 - t) <= ln t by move=> ?; lra.
-by apply ln_increasing_le; lra.
+move=> x /(svalP (sig_derive1_DnH2 x))/@ex_derive.
+by move/derivable1_diffP/diff_derivable.
 Qed.
 
-Lemma H2ln_max (q : R) : 0 < q < 1 -> - q * ln q - (1 - q) * ln (1 - q) <= ln 2.
-Proof.
-move=> [Hq0 Hq1].
-apply (@leR_trans (H2ln (1/2))); last first.
-  apply Req_le.
-  rewrite /H2ln (_ : 1 - 1/2 = 1/2); last by field.
-  rewrite -mulRBl (_ : - _ - _ = - 1); last by field.
-  rewrite div1R ln_Rinv; [by field | lra].
-rewrite -/(H2ln q).
-case: (Rlt_le_dec q (1/2)) => [H1|].
-- by apply increasing_on_0_to_half => //; lra.
-- case/Rle_lt_or_eq_dec => [H1|<-]; last first.
-    lra.
-  by apply decreasing_on_half_to_1 => //; lra.
-Qed.
-*)
+(* TODO: move to analysis *)
+Lemma continuous_id (T : topologicalType) : continuous (@idfun T).
+Proof. exact/continuousP. Qed.
 
-Definition H2 {R : realType} (p : R) : R := (- (p * log p) + - ((1 - p) * log (1 - p)))%mcR.
+Lemma continuous_log (x : R) : 0 < x -> {for x, continuous log}.
+Proof. by move=> x0 y; exact/differentiable_continuous/differentiable_Log. Qed.
 
-(*Lemma bin_ent_0eq0 : H2 0 = 0.
+Lemma continuous_onem : continuous (@onem R).
 Proof.
-rewrite /H2 /log.
-by rewrite !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1, add0R, addR0, subR0).
+move=> ?; by apply: continuousB; [exact: cst_continuous | exact: continuous_id].
 Qed.
 
-Lemma bin_ent_1eq0 : H2 1 = 0.
+Lemma continuous_H2 : {in `]0, 1[%classic, forall x : R, {for x, continuous H2}}.
 Proof.
-rewrite /H2 /log.
-by rewrite !(Log_1, mulR0, mul0R, oppR0, mul1R, mulR1,
-                       add0R, addR0, subR0, subRR).
+move=> x /(svalP (sig_derive1_H2 x)) /@ex_derive.
+by move/derivable1_diffP/differentiable_continuous.
 Qed.
-*)
 
-(*
-Lemma H2_max : forall p : Rdefinitions.R, 0 < p < 1 -> H2 p <= 1.
-Proof.
-move=> p /andP[Hp0 Hp1].
-rewrite /H2.
-rewrite -(@ler_pM2l _ (ln 2))// ?ln2_gt0//.
-rewrite mulr1 mulrDr /log -!mulNr !(mulrC (ln 2)) -!mulrA.
-rewrite (@mulVf _ _ ln2_neq0) !mulr1 (mulNr (1 - p)).
-
-; exact/H2ln_max.
-Qed.
-*)
-
-(*Lemma H2_max' (x : R): 0 <= x <= 1 -> H2 x <= 1.
-Proof.
-move=> [x_0 x_1].
-case: x_0 => [?|<-]; last by rewrite bin_ent_0eq0.
-case: x_1 => [?|->]; last by rewrite bin_ent_1eq0.
-exact: H2_max.
-Qed.
-*)
+End differentiation_continuity.

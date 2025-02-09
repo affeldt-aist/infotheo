@@ -47,24 +47,9 @@ Lemma vspace_not_empty (F : finFieldType) n (C : {vspace 'rV[F]_n}) :
   (0 < #| [set cw in C] |)%nat.
 Proof. apply/card_gt0P; exists 0; by rewrite inE mem0v. Qed.
 
-(* TODO: move elsewhere *)
-Reserved Notation "\min^ b '_(' a 'in' A ) F" (at level 41,
-  F at level 41, a, A at level 50,
-   format "'[' \min^ b '_(' a  'in'  A ) '/  '  F ']'").
-
-Notation "\min^ b '_(' a 'in' A ) F" :=
-  ((fun a => F) (arg_min b (fun x => x \in A) (fun a => F))) : min_scope.
-
-Notation "\rmax_ ( i 'in' A ) F" := (\big[Order.max/GRing.zero]_(i in A) F)
-  (at level 41, F at level 41, i, A at level 50,
-           format "'[' \rmax_ ( i  'in'  A ) '/  '  F ']'").
-
-Notation "\rmax_ ( i <- r ) F" :=  (\big[Order.max/GRing.zero]_(i <- r) F)
-  (at level 41, F at level 41, i, r at level 50,
-           format "'[' \rmax_ ( i  <-  r ) '/  '  F ']'").
-
 Local Open Scope min_scope.
 
+(* TODO: mv *)
 Lemma bigmaxR_seq_eq {R : realType} (A : finType) (f : A -> R) (s : seq A) a :
   a \in s ->
   (forall a0, 0 <= f a0) ->
@@ -92,6 +77,7 @@ elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
    by rewrite in_cons Hc0 orbC.
 Qed.
 
+(* TODO: mv *)
 Lemma bigmaxR_eq {R : realType} (A : finType) (C : {set A}) a (f : A -> R):
   a \in C ->
   (forall a0, 0 <= f a0) ->
@@ -105,11 +91,13 @@ apply bigmaxR_seq_eq => //.
 - by move=> a0; rewrite mem_filter mem_index_enum andbT => /Hf.
 Qed.
 
+(* TODO: mv *)
 Lemma leq_bigmin (A : finType) (C : {set A}) (cnot0 : {c0 | c0 \in C})
   a (Ha : a \in C) (h : A -> nat) :
   (\min^ (sval cnot0) _(c in C) h c <= h a)%nat.
 Proof. by case: arg_minnP; [case: cnot0|move=> a0 a0C; exact]. Qed.
 
+(* TODO: mv *)
 Lemma bigmaxR_bigmin_vec_helper {R : realType} (A : finType) n (g : nat -> R) :
   (forall n1 n2, (n1 <= n2 <= n)%nat -> (g n2 <= g n1)%R) ->
   (forall r, 0 <= g r) ->
@@ -127,6 +115,7 @@ rewrite H.
 exact: leq_bigmin.
 Qed.
 
+(* TODO: mv *)
 Lemma bigmaxR_distrr {R : realType} I a (a0 : 0 <= a) r (P : pred I) F :
   (a * \big[Order.max/GRing.zero]_(i <- r | P i) F i) =
   \big[Order.max/GRing.zero]_(i <- r | P i) (a * F i) :> R.
@@ -139,6 +128,7 @@ case: ifP => Qh //.
 by rewrite maxr_pMr//.
 Qed.
 
+(* TODO: mv *)
 Lemma bigmaxR_distrl {R : realType} I a (a0 : 0 <= a) r (P : pred I) F :
   (\big[Order.max/GRing.zero]_(i <- r | P i) F i) * a =
   \big[Order.max/GRing.zero]_(i <- r | P i) (F i * a) :> R.
@@ -147,8 +137,6 @@ by rewrite mulrC bigmaxR_distrr //; apply congr_big => // ?; rewrite mulrC.
 Qed.
 
 Local Close Scope min_scope.
-
-(* /TODO: move elsewhere *)
 
 Section minimum_distance_decoding.
 
