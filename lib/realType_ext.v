@@ -6,14 +6,18 @@ From mathcomp Require Import reals normedtype sequences exp.
 From mathcomp Require Import mathcomp_extra boolp.
 From mathcomp Require Import lra ring Rstruct.
 
-(******************************************************************************)
-(*            Additional lemmas and definitions about numeric types           *)
+(**md**************************************************************************)
+(* # Additional definitions and lemmas about numeric types                    *)
 (*                                                                            *)
+(* TODO: doc incomplete                                                       *)
+(*                                                                            *)
+(* ```                                                                        *)
 (*    +| r | := maxr 0 r                                                      *)
-(*  P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0        *)
-(*                                                                            *)
-(*     prob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1        *)
-(*    oprob == type of "open unit interval", i.e., reals p s.t. 0 < p < 1     *)
+(*   P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0       *)
+(*   P `<<b Q == boolean version of P `<< Q                                   *)
+(*      prob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1       *)
+(*     oprob == type of "open unit interval", i.e., reals p s.t. 0 < p < 1    *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -327,8 +331,6 @@ Global Hint Resolve prob_le1 : core.
 
 Arguments prob0 {R}.
 Arguments prob1 {R}.
-
-(* ---- ---- *)
 
 (* TODO: rename oprob to i01oo (and prob to i01cc) *)
 Module OProb.
