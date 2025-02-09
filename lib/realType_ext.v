@@ -2,13 +2,14 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-From mathcomp Require Import reals normedtype sequences.
+From mathcomp Require Import reals normedtype sequences exp.
 From mathcomp Require Import mathcomp_extra boolp.
 From mathcomp Require Import lra ring Rstruct.
 
 (******************************************************************************)
 (*            Additional lemmas and definitions about numeric types           *)
 (*                                                                            *)
+(*    +| r | := maxr 0 r                                                      *)
 (*  P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0        *)
 (*                                                                            *)
 (*     prob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1        *)
@@ -111,7 +112,6 @@ Proof. by rewrite /onem opprB addrA. Qed.
 End onem.
 Notation "p '.~'" := (onem p).
 
-
 Section about_the_pow_function.
 Local Open Scope ring_scope.
 
@@ -130,7 +130,7 @@ Proof.
 move=> q01.
 rewrite [ltRHS](_ : _ = - (q - 2^-1)^+2 + (2^-2)); last by field.
 rewrite addrC subr_gt0 -exprVn -[ltLHS]real_normK ?num_real//.
-rewrite ltr_pXn2r// ?nnegrE; [| exact: normr_ge0 | lra].
+rewrite ltr_pXn2r// ?nnegrE; [| lra].
 have/orP[H|H]:= le_total (q - 2^-1) 0.
   rewrite (ler0_norm H); lra.
 rewrite (ger0_norm H); lra.
@@ -147,24 +147,9 @@ Qed.
 
 (* TODO: prove expR1_lt3 too; PR to mca *)
 Lemma expR1_gt2 {R : realType} : 2 < expR 1 :> R.
-Proof.
-rewrite /expR /exp_coeff.
-apply: (@lt_le_trans _ _ (series (fun n0 : nat => 1 ^+ n0 / n0`!%:R) 3)).
-  rewrite /series /=.
-  under eq_bigr do rewrite expr1n.
-  rewrite big_mkord.
-  rewrite big_ord_recl /= divr1 ltrD2l.
-  rewrite big_ord_recl /= divr1 -[ltLHS]addr0 ltrD2l.
-  rewrite big_ord_recl big_ord0 addr0 !factS fact0 /bump /= addn0 !muln1.
-  by rewrite mulr_gt0// invr_gt0.
-apply: limr_ge; first exact: is_cvg_series_exp_coeff_pos.
-exists 3=>// n /= n3.
-rewrite -subr_ge0 sub_series_geq// sumr_ge0// => i _.
-by rewrite mulr_ge0// ?invr_ge0// exprn_ge0.
-Qed.
+Proof. by rewrite (lt_le_trans (@expR_gt1Dx _ 1 _))// oner_eq0. Qed.
 
 End about_the_pow_function.
-
 
 Section dominance_defs.
 
@@ -210,7 +195,6 @@ End dominance.
 Notation "P '`<<' Q" := (dominates Q P) : reals_ext_scope.
 Notation "P '`<<b' Q" := (dominatesb Q P) : reals_ext_scope.
 
-(* ---- Prob ---- *)
 Module Prob.
 Record t (R : realType) := mk {
   p :> R ;

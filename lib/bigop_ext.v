@@ -656,6 +656,23 @@ move=> bm; split; first by exact/(le_trans _ bm)/bigmax_ge_id.
 by move=> *; exact/(le_trans _ bm)/le_bigmax_seq.
 Qed.
 
+Declare Scope min_scope.
+
+Reserved Notation "\min^ b '_(' a 'in' A ) F" (at level 41,
+  F at level 41, a, A at level 50,
+   format "'[' \min^ b '_(' a  'in'  A ) '/  '  F ']'").
+
+Notation "\min^ b '_(' a 'in' A ) F" :=
+  ((fun a => F) (arg_min b (fun x => x \in A) (fun a => F))) : min_scope.
+
+Notation "\rmax_ ( i 'in' A ) F" := (\big[Order.max/GRing.zero]_(i in A) F)
+  (at level 41, F at level 41, i, A at level 50,
+           format "'[' \rmax_ ( i  'in'  A ) '/  '  F ']'").
+
+Notation "\rmax_ ( i <- r ) F" :=  (\big[Order.max/GRing.zero]_(i <- r) F)
+  (at level 41, F at level 41, i, r at level 50,
+           format "'[' \rmax_ ( i  <-  r ) '/  '  F ']'").
+
 Section classical.
 Import boolp.
 Lemma bigmax_gt0P_seq (T : realDomainType) (A : eqType) (F : A -> T)

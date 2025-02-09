@@ -5,67 +5,78 @@ From mathcomp Require boolp.
 From mathcomp Require Import reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
-(******************************************************************************)
-(*               Probabilities over finite distributions                      *)
+(**md**************************************************************************)
+(* # Probabilities over finite distributions                                  *)
 (*                                                                            *)
 (* This file provides a formalization of finite probabilities using           *)
 (* distributions over a finite type (see fsdist.v for finitely-supported      *)
-(* distributions) that ends with a proof of the weak law of large numbers.    *)
+(* distributions).                                                            *)
 (*                                                                            *)
-(*  E `* F           == the set of pairs (x, y) with x in E and y in F        *)
-(*  E `*T            == the set of pairs (x, y) with x in E                   *)
-(*  T`* F            == the set of pairs (x, y) with y in F                   *)
-(*  Pr d E           == probability of event E over the distribution d        *)
-(*  {RV P -> T}      == the type of random variables over an ambient          *)
-(*                      distribution P where T can be an eqType               *)
-(*  [% X, Y, ..., Z] == successive pairings of RVs                            *)
-(*  `Pr[ X = a ]     == the probability that the random variable X is a       *)
-(*  `p_X             == the {fdist A} distribution corresponding to `Pr[X = ?]*)
-(*  `Pr[ X >= r ]     == the probability that the random variable X is        *)
-(*                      greater or equal to r                                 *)
-(*  `Pr[ X <= r ]     == the probability that the random variable X is less   *)
-(*                      or equal to r                                         *)
-(*  `Pr[ X \in E ]   == the probability that the random variable X is in E    *)
-(*                      (expect finTypes)                                     *)
-(*  `cst*, `*cst, `o, `/, `+, `-, `+cst, `-cst, `^2, `log, `--  ==            *)
-(*                      construction of various random variables              *)
-(*  `E X             == expected value of the random variable X               *)
-(*  `E_[ X | F ]     == conditional expectation of X given an event F         *)
-(*           Ind s a == indicator function (s : {set A}, a : A)               *)
-(*  `Pr_P [ A | B ]  == conditional probability for events                    *)
-(*  `Pr[ X = a | Y = b ] == conditional probability for random variables      *)
-(*  `Pr[ X \in E | Y \in F ] ==                                               *)
-(*  P |= X _|_ Y | Z, X _|_  Y | Z == the random variable X is conditionally  *)
-(*                      independent of the random variable Y given Z in a     *)
-(*                      distribution P                                        *)
-(*  P |= X _|_ Y     == unconditional independence                            *)
-(*  Z \= X @+ Y      == Z is the sum of two random variables                  *)
-(*  X \=sum Xs       == X is the sum of the n>=1 independent and identically  *)
-(*                      distributed random variables Xs                       *)
-(*  `V X             == the variance of the random variable X                 *)
+(* Selected lemmas:                                                           *)
+(* - expected value of a sum of RVs (E_sum_2), a.k.a., the ``First            *)
+(*   Fundamental Mystery of Probability''                                     *)
+(* - variance of a sum (V_sum_2)                                              *)
+(* - variance of the average for independent RVs (Var_average)                *)
+(* - union bound/Boole's inequality (Pr_bigcup)                               *)
+(* - Boole's equality (Boole_eq)                                              *)
+(* - laws of total probability (total_prob, total_prob_cond)                  *)
+(* - Bayes' theorems (Bayes/Bayes_extended)                                   *)
+(* - an algebraic proof (by Erik Martin-Dorel) of the formula of              *)
+(*   inclusion-exclusion (Pr_bigcup_incl_excl)                                *)
+(* - reasoning by cases (reasoning_by_cases, creasoning_by_cases)             *)
+(* - Markov' inequality (markov)                                              *)
+(* - Chebyshev's inequality (chebyshev_inequality)                            *)
+(* - weak law of large numbers (wlln)                                         *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*  E_sum_2              == the expected value of a sum is the sum of         *)
-(*                          expected values, whether or not the summands      *)
-(*                          are mutually independent (the ``First             *)
-(*                          Fundamental Mystery of Probability'')             *)
-(*  V_sum_2              == the variance of the sum is the sum of variances   *)
-(*                          for any two independent random variables          *)
-(*  Var_average          == The variance of the average for independent       *)
-(*                          random variables                                  *)
-(*  Pr_bigcup            == union bound/Boole's inequality                    *)
-(*  Boole_eq             == Boole's equality                                  *)
-(*  total_prob, total_prob_cond == laws of total probability                  *)
-(*  Bayes/Bayes_extended == Bayes' theorems                                   *)
-(*  Pr_bigcup_incl_excl  == an algebraic proof (by Erik Martin-Dorel) of the  *)
-(*                          formula of inclusion-exclusion                    *)
-(*  reasoning_by_cases, creasoning_by_cases == Reasoning by cases             *)
-(*  markov               == Markov inequality                                 *)
-(*  chebyshev_inequality == Chebyshev's inequality                            *)
-(*       fdist_cond P E0 == distribution P conditioned by E; E0 : Pr P E != 0 *)
-(*  inde_events          == independent events                                *)
-(*  cinde_events         == conditionally independent events                  *)
-(*  wlln                 == weak law of large numbers                         *)
+(* ```                                                                        *)
+(*                E `*T == the set of pairs (x, y) with x in E                *)
+(*                T`* F == the set of pairs (x, y) with y in F                *)
+(*               Pr d E == probability of event E over the distribution d     *)
+(*          {RV P -> T} == the type of random variables over an ambient       *)
+(*                         distribution P where T is an eqType                *)
+(*       ambient_dist X == the P in X : {RV P -> T}                           *)
+(*         `Pr[ X = a ] == the probability that the random variable X is a    *)
+(*                         with a : A : eqType                                *)
+(*        `Pr[ X >= r ] == the probability that the random variable X is      *)
+(*                         greater or equal to r                              *)
+(*        `Pr[ X <= r ] == the probability that the random variable X is less *)
+(*                         or equal to r                                      *)
+(*       `Pr[ X \in E ] == the probability that the random variable X is in E *)
+(*                         (expect finTypes)                                  *)
+(*                 `p_X := fdistmap X P with X : {RV P -> A}                  *)
+(*           const_RV k == constant RV                                        *)
+(*               f `o X == composition of a function and a RV                 *)
+(* k `cst* X, X `*cst k == scaling of a RV                                    *)
+(* X `+cst m, X `-cst m == translation of a RV                                *)
+(*               X `/ n := n%:R^-1 `cst* X                                    *)
+(*   `+,`-,`^2,`--,`log == operations on RVs                                  *)
+(*     [% X, Y, ..., Z] == successive pairings of RVs                         *)
+(* ```                                                                        *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*                 `E X == expected value of the random variable X            *)
+(*             Ex_alt X == expected value of an RV (sum in fin_img X)         *)
+(*         `E_[ X | F ] == conditional expectation of X given an event F      *)
+(*              Ind s a == indicator function (s : {set A}, a : A)            *)
+(*                 `V X == the variance of the random variable X              *)
+(*      inde_events E F == E and F are independent events                     *)
+(*         kwise_inde E == k-wise independence of the family of events E      *)
+(*      pairwise_inde E == pairwise independence of the family of events E    *)
+(*        mutual_inde E == mutual independence of the family of events E      *)
+(*      `Pr_P [ A | B ] == conditional probability for events                 *)
+(*        fdist_cond E0 == distribution P conditioned by E with               *)
+(*                         E : Pr P E != 0                                    *)
+(*   cinde_events E F G == E and F are conditionally independent events       *)
+(*                         given an event G                                   *)
+(* `Pr[ X = a | Y = b ] == conditional probability for random variables       *)
+(* `Pr[ X \in E | Y \in F ] == conditional probability for random variables   *)
+(*  P |= X _|_ Y | Z, X _|_  Y | Z == the RVs X and Y  are conditionally      *)
+(*                         independent given a RV Z (in a distribution P)     *)
+(*         P |= X _|_ Y == unconditional independence                         *)
+(*          Z \= X @+ Y == Z is the sum of two random variables               *)
+(*           X \=sum Xs == X is the sum of the n>=1 independent and           *)
+(*                         identically distributed random variables Xs        *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Reserved Notation "E `*T" (at level 40).
@@ -169,12 +180,6 @@ Lemma IsetT E1 E2 : (E1 :&: E2) `*T = (E1 `*T) :&: (E2 `*T) :> {set A * B}.
 Proof. by apply/setP => -[a b]; rewrite !inE. Qed.
 
 End TsetT.
-
-(* TODO: consider moving this to fdist.v *)
-(*#[global] Hint Extern 0 (IZR Z0 <= _) =>
-  solve [apply/RleP; exact: FDist.ge0] : core.
-#[global] Hint Extern 0 (_ <= IZR (Zpos xH)) =>
-  solve [apply/RleP; exact: FDist.le1] : core.*)
 
 Section probability.
 Context {R : realType}.
@@ -614,10 +619,10 @@ Definition unit_RV : {RV P -> unit} := fun=> tt.
 
 End random_variables.
 
+Notation "f `o X" := (comp_RV f X) : proba_scope.
 Notation "k `cst* X" := (scalel_RV k X) : proba_scope.
 Notation "X `*cst k" := (scaler_RV X k) : proba_scope.
-Notation "f `o X" := (comp_RV f X) : proba_scope.
-Notation "X '`/' n" := (scalel_RV (1 / n%:R) X) : proba_scope.
+Notation "X '`/' n" := (scalel_RV (n%:R^-1) X) : proba_scope.
 Notation "X `+ Y" := (add_RV X Y) : proba_scope.
 Notation "X `- Y" := (sub_RV X Y) : proba_scope.
 Notation "X '`+cst' m" := (trans_add_RV X m) : proba_scope.
@@ -807,17 +812,21 @@ End RV_domin.
 
 Local Open Scope vec_ext_scope.
 
-Definition cast_RV_fdist_rV1 {R : realType} (U : finType) (P : R.-fdist U) (T : eqType) (X : {RV P -> T})
-   : {RV (P `^ 1) -> T} :=
+(* TODO: really necessary? *)
+Definition cast_RV_fdist_rV1 {R : realType} (U : finType) (P : R.-fdist U) (T : eqType)
+    (X : {RV P -> T}) : {RV (P `^ 1) -> T} :=
   fun x => X (x ``_ ord0).
 
+(* TODO: really necessary? *)
 Definition cast_RV_fdist_rV10 {R : realType} (U : finType) (P : R.-fdist U) (T : eqType)
     (Xs : 'rV[{RV P -> T}]_1) : {RV (P `^ 1) -> T} :=
   cast_RV_fdist_rV1 (Xs ``_ ord0).
 
+(* TODO: really necessary? *)
 Definition cast_fun_rV1 U (T : eqType) (X : U -> T) : 'rV[U]_1 -> T :=
   fun x => X (x ``_ ord0).
 
+(* TODO: really necessary? *)
 Definition cast_fun_rV10 U (T : eqType) (Xs : 'rV[U -> T]_1) : 'rV[U]_1 -> T :=
   cast_fun_rV1 (Xs ``_ ord0).
 
@@ -881,8 +890,8 @@ Lemma E_sumR I r p (Z : I -> {RV P -> R}) :
   `E (sumR_RV r p Z) = \sum_(i <- r | p i) (`E (Z i)).
 Proof.
 rewrite /Ex.
-erewrite eq_bigr. (* to replace later with under *)
-  2: by move=> a Ha; rewrite big_distrl.
+under eq_bigr do rewrite big_distrl.
+rewrite /=.
 by rewrite exchange_big /=; apply: eq_bigr => i Hi.
 Qed.
 
@@ -984,7 +993,7 @@ Qed.
 
 End conditional_expectation_prop.
 
-(** *** A theory of indicator functions from [A : finType] to [R] *)
+(** A theory of indicator functions from [A : finType] to [R] *)
 Section Ind.
 Context {R : realType}.
 Variable A : finType.
@@ -1047,20 +1056,18 @@ set Efull := \bigcup_(i < n.+1) S i.
 have Halg : \prod_(i < n.+1) (Ind Efull x - Ind (S i) x) = 0 :> R.
   case Ex : (x \in Efull); last first.
   { have /Ind_notinP Ex0 := Ex.
-    erewrite eq_bigr. (* to replace later with under *)
-      2: by rewrite Ex0.
+    under eq_bigr do rewrite Ex0.
     have Ex00 : forall i : 'I_n.+1, Ind (S i) x = 0 :> R.
       move=> i; apply/Ind_notinP.
       by move/negbT: Ex; rewrite -!in_setC setC_bigcup; move/bigcapP; apply.
-    erewrite eq_bigr. (* to replace later with under *)
-      2: by move=> i _; rewrite Ex00.
+    under eq_bigr do rewrite Ex00.
     by rewrite subr0 big_ord_recl mul0r. }
   { rewrite /Efull in Ex.
     have /bigcupP [i Hi Hi0] := Ex.
     rewrite (bigD1 i)//= /Efull (Ind_inP _ _ Ex) (Ind_inP _ _ Hi0) subrr.
     by rewrite mul0r. }
-rewrite bigA_distr in Halg.
-do [erewrite eq_bigr; last by move=> k _; (* to replace later with under *)
+rewrite bigA_distr/= in Halg.
+do [erewrite eq_bigr; last by move=> k _; (* TODO: replace with under *)
     erewrite eq_bigr; last by move=> J _; rewrite bigID2] in Halg.
 rewrite big_ltn //= in Halg.
 move/eqP in Halg.
@@ -1069,7 +1076,7 @@ rewrite cardT size_enum_ord (big_pred1 set0) in Halg; last first.
   by move=> i; rewrite pred1E [RHS]eq_sym; apply: cards_eq0.
 move/eqP in Halg.
 rewrite [in X in _ * X = _]big_pred0 in Halg; last by move=> i; rewrite inE.
-do [erewrite eq_bigl; (* to replace later with under *)
+do [erewrite eq_bigl; (* TODO: replace with under *)
   last by move=> j; rewrite !inE /negb /= ] in Halg.
 rewrite mulr1 -Ind_bigcap big_const_ord iterSr iter_fix setIT ?setIid // in Halg.
 rewrite {}Halg big_morph_oppr big_nat [RHS]big_nat.
@@ -1124,11 +1131,9 @@ Theorem Pr_bigcup_incl_excl n (S : 'I_n -> {set A}) :
 Proof.
 rewrite -E_Ind /=.
 rewrite /Ex.
-erewrite eq_bigr. (* to replace later with under *)
-  2: by move=> ? _; rewrite /= Ind_bigcup_incl_excl.
-simpl.
-erewrite eq_bigr. (* to replace later with under *)
-  2: by move=> a Ha; rewrite big_distrl.
+under eq_bigr do rewrite Ind_bigcup_incl_excl.
+under eq_bigr do rewrite big_distrl.
+rewrite /=.
 rewrite exchange_big /=.
 apply: eq_bigr => i _.
 by rewrite -E_SumIndCap -E_scalel_RV.
@@ -1177,11 +1182,8 @@ Section variance_def.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
-(* Variance of a random variable (\sigma^2(X) = V(X) = E (X^2) - (E X)^2): *)
 Definition Var := let miu := `E X in `E ((X `-cst miu) `^2).
 
-(* Alternative form for computing the variance
-   (V(X) = E(X^2) - E(X)^2 \cite[Theorem 6.6]{probook}): *)
 Lemma VarE : Var = `E (X `^2)  - (`E X) ^+ 2.
 Proof.
 by rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV E_scalel_RV; lra.
@@ -1197,7 +1199,7 @@ Section variance_prop.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
-(* The variance is not linear V (k X) = k^2 V (X) \cite[Theorem 6.7]{probook}: *)
+(** The variance is not linear: *)
 Lemma Var_scale k : `V (k `cst* X) = k ^+ 2 * `V X.
 Proof.
 rewrite {1}/`V [in X in X = _]/= E_scalel_RV.
@@ -1216,22 +1218,21 @@ Qed.
 
 End variance_prop.
 
-Lemma Var_cast_RV_fdist_rV1 {R : realType} (A : finType) (P : R.-fdist A) (X : {RV P -> R}) :
+Lemma Var_cast_RV_fdist_rV1 {R : realType} (A : finType) (P : R.-fdist A)
+    (X : {RV P -> R}) :
   `V (@cast_RV_fdist_rV1 _ _ P _ X) = `V X.
 Proof.
 rewrite !VarE !E_cast_RV_fdist_rV1; congr (_ - _).
 by apply: big_rV_1 => // v; rewrite fdist_rV1.
 Qed.
 
-(* (Probabilistic statement.)
- In any data sample, "nearly all" the values are "close to" the mean value:
- Pr[ |X - E X| \geq \epsilon] \leq V(X) / \epsilon^2 *)
 Section chebyshev.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 
 Import Num.Def.
 
+(** In any data sample, "nearly all" the values are "close to" the mean value: *)
 Lemma chebyshev_inequality epsilon : 0 < epsilon ->
   `Pr[ (normr `o (X `-cst `E X)) >= epsilon] <= `V X / epsilon ^+ 2.
 Proof.
@@ -1523,7 +1524,8 @@ Qed.
 
 End fdist_cond_prop.
 
-Lemma Pr_fdistX {R : realType} (A B : finType) (P : R.-fdist (A * B)) (E : {set A}) (F : {set B}) :
+Lemma Pr_fdistX {R : realType} (A B : finType) (P : R.-fdist (A * B))
+    (E : {set A}) (F : {set B}) :
   Pr (fdistX P) (F `* E) = Pr P (E `* F).
 Proof.
 rewrite /Pr !big_setX exchange_big /=; apply eq_bigr => b _.
@@ -1548,7 +1550,8 @@ Lemma Pr_fdistAC {R : realType} (A B C : finType) (P : R.-fdist (A * B * C)) E F
   Pr (fdistAC P) (E `* G `* F) = Pr P (E `* F `* G).
 Proof. by rewrite /fdistAC Pr_fdistX Pr_fdistA Pr_fdistC12. Qed.
 
-Lemma Pr_fdist_proj23_domin {R : realType} (A B C : finType) (P : R.-fdist (A * B * C)) E F G :
+Lemma Pr_fdist_proj23_domin {R : realType} (A B C : finType)
+    (P : R.-fdist (A * B * C)) E F G :
   Pr (fdist_proj23 P) (F `* G) = 0 -> Pr P (E `* F `* G) = 0.
 Proof.
 move/Pr_set0P => H; apply/Pr_set0P => -[[? ?] ?].
@@ -1881,7 +1884,8 @@ End independent_rv.
 
 Notation "P |= X _|_ Y" := (@inde_rv _ _ P _ _ X Y) : proba_scope.
 
-Lemma cinde_alt {R : realType} (U : finType) (P : R.-fdist U) (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
+Lemma cinde_alt {R : realType} (U : finType) (P : R.-fdist U) (A B C : finType)
+    (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
   P |= X _|_ Y | Z ->
   `Pr[ [% Y, Z] = (b, c)] != 0 ->
   `Pr[ X = a | [% Y, Z] = (b, c)] = `Pr[X = a | Z = c].
@@ -1989,7 +1993,6 @@ apply eq_bigl => /= v.
 by rewrite /X1' /X2' !inE /RV2 xpair_eqE.
 Qed.
 
-(* Expected Value of the Square (requires mutual independence): *)
 Lemma E_id_rem : X \= X1 @+ X2 -> P |= X1' _|_ X2' ->
   `E (X `^2) = `E (X1 `^2) + 2 * `E X1 * `E X2 + `E (X2 `^2).
 Proof.
@@ -2205,7 +2208,7 @@ Lemma Var_average n (X : {RV (P `^ n) -> R}) Xs (sum_Xs : X \=sum Xs) :
 Proof.
 move=> s Hs; destruct n; first by inversion sum_Xs.
 rewrite (Var_scale X) // (V_sum_n sum_Xs Hs) //.
-rewrite div1r mulrCA (mulrA _ _ s) -expr2.
+rewrite mulrCA (mulrA _ _ s) -expr2.
 by rewrite exprVn mulrA mulVf ?mul1r// sqrf_eq0 pnatr_eq0.
 Qed.
 
@@ -2234,11 +2237,11 @@ move=> e0.
 rewrite invfM//.
 rewrite mulrA.
 have <- : `V (X `/ n.+1) = sigma2 / n.+1%:R.
-  rewrite -(Var_average X_Xs V_Xs) Var_scale // mul1r.
+  rewrite -(Var_average X_Xs V_Xs) Var_scale //.
   by rewrite [RHS]mulrC (mulrA _ n.+1%:R) mulVf ?pnatr_eq0// mul1r.
 have <- : `E (X `/ n.+1) = miu.
   rewrite E_scalel_RV (E_sum_n X_Xs).
-  rewrite mul1r mulrC eqr_divr_mulr ?pnatr_eq0// (eq_bigr (fun=> miu)) //.
+  rewrite mulrC eqr_divr_mulr ?pnatr_eq0// (eq_bigr (fun=> miu)) //.
   by rewrite big_const /= iter_addr cardE /= size_enum_ord addr0 mulr_natr.
 move/le_trans: (chebyshev_inequality (X `/ n.+1) e0); apply.
 by rewrite lexx.
@@ -2246,7 +2249,7 @@ Qed.
 
 End weak_law_of_large_numbers.
 
-(* wip*)
+(** wip: *)
 Section vector_of_RVs.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
