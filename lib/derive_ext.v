@@ -8,12 +8,8 @@ From mathcomp Require Import reals Rstruct topology normedtype.
 From mathcomp Require Import realfun derive exp.
 Require Import realType_ext ssralg_ext.
 
-(******************************************************************************)
-(*        Additional lemmas about differentiation and derivatives             *)
-(*                                                                            *)
-(* Variants of lemmas (mean value theorem, etc.) from mathcomp-analysis       *)
-(*                                                                            *)
-(* TODO: document lemmas                                                      *)
+(**md**************************************************************************)
+(* # Additional lemmas about differentiation and derivatives                  *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -99,6 +95,7 @@ End is_derive.
 
 Section near_eq.
 
+(* TODO: check open_subball in MathComp-Analysis 1.9.0 *)
 Lemma open_norm_subball (R : numFieldType) (M : normedModType R)
   (A : set M) (x : M) :
   open A -> A x ->
@@ -202,7 +199,7 @@ Arguments near_eq_is_derive [R V W] f g [a].
 
 Section derivable_monotone.
 
-(* generalizing Ranalysis_ext.pderive_increasing_ax_{open_closed,closed_open} *)
+(* TODO: might be subsumed by lemmas in derive.v (MathComp-Analysis 1.9.0) *)
 Lemma derivable1_mono [R : realType] (a b : itv_bound R) (f : R -> R) (x y : R) :
   x \in Interval a b -> y \in Interval a b ->
   {in Interval a b, forall x, derivable f x 1} ->
@@ -226,6 +223,7 @@ have[z xzy ->]:= MVT xy HMVT0 HMVT1.
 by rewrite mulr_gt0// ?df_pos// subr_gt0.
 Qed.
 
+(* TODO: might be subsumed by lemmas in derive.v (MathComp-Analysis 1.9.0) *)
 Lemma derivable1_homo [R : realType] (a b : itv_bound R) (f : R -> R) (x y : R) :
   x \in Interval a b -> y \in Interval a b ->
   {in Interval a b, forall x, derivable f x 1} ->
