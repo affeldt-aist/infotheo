@@ -1,13 +1,14 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import Rstruct reals classical_sets.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 Require Import proba entropy jfdist_cond.
 
-(******************************************************************************)
-(*                 Definition of channels and of the capacity                 *)
+(**md**************************************************************************)
+(* # Definition of channels and of the capacity                               *)
 (*                                                                            *)
+(* ```                                                                        *)
 (*  `Ch(A, B) == discrete channel of input alphabet A and output alphabet B;  *)
 (*               it is a collection of probability mass functions, one for    *)
 (*               each a in A (i.e., a probability transition matrix           *)
@@ -26,6 +27,7 @@ Require Import proba entropy jfdist_cond.
 (*               distribution and a channel                                   *)
 (*   `I(P, W) == the input/output mutual information for the channel          *)
 (*   capacity == capacity of a channel                                        *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -36,8 +38,11 @@ Import Prenex Implicits.
 Import GRing.Theory Num.Theory.
 
 Declare Scope channel_scope.
-Delimit Scope fdist_scope with channel.
+Delimit Scope channel_scope with channel.
+
 Local Open Scope channel_scope.
+Local Open Scope fdist_scope.
+Local Open Scope ring_scope.
 
 Reserved Notation "'`Ch(' A ',' B ')'" (at level 10, A, B at next level).
 Reserved Notation "'`Ch*(' A ',' B ')'" (at level 10, A, B at next level).
@@ -53,9 +58,6 @@ Reserved Notation "`H( P , W )" (at level 10, P, W at next level,
   format "`H( P ,  W )").
 Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
 Reserved Notation "`I( P , W )" (at level 50, format "`I( P ,  W )").
-
-Local Open Scope fdist_scope.
-Local Open Scope ring_scope.
 
 Module Channel1.
 Section channel1.
@@ -80,7 +82,6 @@ End Channel1.
 Definition chan_star_coercion := Channel1.c.
 Coercion chan_star_coercion : Channel1.chan_star >-> Funclass.
 
-Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Notation "'`Ch(' A ',' B ')'" := (A -> {fdist B}) (only parsing) : channel_scope.
@@ -139,7 +140,7 @@ Lemma rprod_sub_vec (D : {set 'I_n}) (t : 'rV_n) :
   \prod_(i < #|D|) W ((t \# D) ``_ i) ((tb \# D) ``_ i) =
   \prod_(i in D) W (t ``_ i) (tb ``_ i).
 Proof.
-have [->|/set0Pn[i iD]] := eqVneq D set0.
+have [->|/set0Pn[i iD]] := eqVneq D finset.set0.
   by rewrite big_set0 big_hasC //; apply/hasPn => /=; rewrite cards0; case.
 pose f : 'I_n -> 'I_#|D| :=
   fun i => match Bool.bool_dec (i \in D) true with
@@ -163,12 +164,13 @@ End DMC_sub_vec.
 
 Section fdist_out.
 Variables (A B : finType) (P : {fdist A}) (W  : A -> {fdist B}).
-Local Open Scope ring_scope.
 
 Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
 
-Let f0 (b : B) : (0 <= f b).
-Proof. by rewrite ffunE; apply/RleP; apply/RleP/sumr_ge0 => a _; rewrite mulr_ge0. Qed.
+Let f0 (b : B) : 0 <= f b.
+Proof.
+by rewrite ffunE; apply/RleP; apply/RleP/sumr_ge0 => a _; rewrite mulr_ge0.
+Qed.
 
 Let f1 : \sum_(b in B) f b = 1.
 Proof.
@@ -250,7 +252,6 @@ transitivity (\sum_(i | Q i) (P `^ _) i).
 by rewrite /Pr; apply eq_bigl => t; rewrite !inE.
 Qed.
 
-Local Open Scope ring_scope.
 Lemma Pr_DMC_out m (S : {set 'rV_m}) :
   Pr ((P `X W) `^ m) [set x | (rV_prod x).2 \notin S] =
   Pr (`O(P , W) `^ m) (~: S).
@@ -274,7 +275,6 @@ move=> Hta.
 rewrite fdist_rVE /=; apply eq_bigr => l _.
 by rewrite fdist_prodE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulrC.
 Qed.
-Local Close Scope ring_scope.
 
 End Pr_fdist_prod.
 
@@ -288,7 +288,7 @@ Notation "`H( P , W )" := (`H (P `X W)) : channel_scope.
 Section conditional_entropy_chan.
 Variables (A B : finType) (W : `Ch(A, B)) (P : {fdist A}).
 
-Definition cond_entropy_chan := `H(P, W) - `H P.
+Definition cond_entropy_chan := (`H(P, W) - `H P)%channel.
 End conditional_entropy_chan.
 
 Notation "`H( W | P )" := (cond_entropy_chan W P) : channel_scope.
@@ -296,14 +296,14 @@ Notation "`H( W | P )" := (cond_entropy_chan W P) : channel_scope.
 Section condentropychan_prop.
 Variables (A B : finType) (W : `Ch(A, B)) (P : {fdist A}).
 
-Lemma cond_entropy_chanE : `H(W | P) = cond_entropy (fdistX (P `X W)).
+Lemma cond_entropy_chanE : (`H(W | P) = cond_entropy (fdistX (P `X W)))%channel.
 Proof.
 rewrite /cond_entropy_chan.
 have := chain_rule (P `X W); rewrite /joint_entropy => ->.
 by rewrite fdist_prod1 addrAC subrr add0r.
 Qed.
 
-Lemma cond_entropy_chanE2 : `H(W | P) = \sum_(a in A) P a * `H (W a).
+Lemma cond_entropy_chanE2 : (`H(W | P) = \sum_(a in A) P a * `H (W a))%channel.
 Proof.
 rewrite cond_entropy_chanE cond_entropyE big_morph_oppr; apply: eq_bigr => a _.
 rewrite big_morph_oppr /entropy mulrN -mulNr big_distrr/=; apply: eq_bigr => b _.
@@ -320,7 +320,8 @@ Variables A B : finType.
 
 Definition mutual_info_dist (P : {fdist A * B}) := `H P`1 + `H P`2 - `H P.
 
-Definition mutual_info_chan P (W : `Ch(A, B)) := `H P + `H(P `o W) - `H(P , W).
+Definition mutual_info_chan P (W : `Ch(A, B)) :=
+  `H P + `H(P `o W) - `H(P , W)%channel.
 
 End mutual_info_chan.
 
@@ -337,8 +338,5 @@ Qed.
 
 End mutual_info_chan_prop.
 
-From mathcomp Require Import classical_sets.
-Local Open Scope classical_set_scope.
-
 Definition capacity (A B : finType) (W : `Ch(A, B)) :=
-  reals.sup [set `I(P, W) | P in [set: {fdist A}]].
+  sup [set `I(P, W) | P in [set: {fdist A}]].

@@ -5,14 +5,16 @@ From mathcomp Require Import Rstruct reals exp.
 Require Import realType_ext realType_ln fdist proba entropy aep.
 Require Import typ_seq source_code.
 
-(******************************************************************************)
-(*         Source coding theorem (fixed length, converse part)                *)
+(**md**************************************************************************)
+(* # Source coding theorem (fixed length, converse part)                      *)
 (*                                                                            *)
-(* Main lemma: source_coding_converse                                         *)
+(* The main lemma is `source_coding_converse`.                                *)
 (*                                                                            *)
-(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
-(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
-(* 53(1):63--103, 2014                                                        *)
+(* Documented in:                                                             *)
+(* - Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues. Formalization   *)
+(*   of Shannon's theorems. Journal of Automated Reasoning, 53(1):63--103,    *)
+(*   2014                                                                     *)
+(*                                                                            *)
 (******************************************************************************)
 
 Set Implicit Arguments.

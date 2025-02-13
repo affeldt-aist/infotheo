@@ -6,17 +6,18 @@ From mathcomp Require Import Rstruct reals exp.
 Require Import  ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy aep typ_seq natbin source_code.
 
-(******************************************************************************)
-(*        Source coding theorem (variable length, direct part)                *)
+(**md**************************************************************************)
+(* # Source coding theorem (variable length, direct part)                     *)
 (*                                                                            *)
-(* For details, see Ryosuke Obi, Manabu Hagiwara, and Reynald Affeldt.        *)
-(* Formalization of variable-length source coding theorem: Direct part.       *)
-(* International Symposium on Information Theory and Its Applications (ISITA  *)
-(* 2014), Melbourne, Australia, October 26--29, 2014, pages 201--205. IEICE.  *)
-(* IEEE Xplore, Oct 2014                                                      *)
+(* Formalization documented in:                                               *)
+(* - Ryosuke Obi, Manabu Hagiwara, and Reynald Affeldt. Formalization of      *)
+(*   variable-length source coding theorem: Direct part. International        *)
+(*   Symposium on Information Theory and Its Applications (ISITA 2014),       *)
+(*   Melbourne, Australia, October 26--29, 2014, pages 201--205. IEICE. IEEE  *)
+(*   Xplore, Oct 2014                                                         *)
 (*                                                                            *)
-(* original source file by R. Obi, quickly patched to compile with infotheo   *)
-(* [2019-08-19] and simplified afterwards                                     *)
+(* Original source file by R. Obi, quickly patched to compile with InfoTheo   *)
+(* [2019-08-19] and simplified afterwards.                                    *)
 (******************************************************************************)
 
 Set Implicit Arguments.

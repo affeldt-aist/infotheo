@@ -51,7 +51,7 @@ Let n := n'.+1.
 Variable P : P_ n ( A ).
 
 Definition success_factor (tc : typed_code B M P) (V : P_ n (A , B)) :=
-  2 `^ (- n%:R * `H(V | P)) / #|M|%:R *
+  2 `^ (- n%:R * `H(V | P)%channel) / #|M|%:R *
   \sum_ (m : M) #| (V.-shell (tuple_of_row (enc tc m ))) :&:
                     (@tuple_of_row B n @: ((dec tc) @^-1: [set Some m])) |%:R.
 
@@ -70,7 +70,7 @@ symmetry.
 transitivity (#|M|%:R^-1 * \sum_(m : M) \sum_(V | V \in \nu^{B}(P))
     exp_cdiv P V W * #| V.-shell (tuple_of_row (enc tc m)) :&:
                         (@tuple_of_row B n @: (dec tc @^-1: [set Some m])) |%:R *
-    2 `^ (- n%:R * `H(V | P))).
+    2 `^ (- n%:R * `H(V | P)%channel)).
   rewrite exchange_big /= big_distrr /=.
   apply eq_bigr => V _.
   rewrite /success_factor !mulrA -(mulrC (#|M|%:R)^-1) -!mulrA; f_equal.
@@ -201,7 +201,7 @@ rewrite /success_factor -mulrA (mulrC (#|M|%:R)^-1) !mulrA.
 apply ler_wpM2r.
   by rewrite invr_ge0//.
 rewrite /mutual_info_chan addrC addrA.
-rewrite (_ : - `H(type.d P , V) + `H P = - `H( V | P )); last first.
+rewrite (_ : - `H(type.d P , V) + `H P = - `H( V | P ))%channel; last first.
   rewrite /cond_entropy_chan.
   by rewrite opprB addrC.
 rewrite [in leRHS]mulrDr mulrN -mulNr.

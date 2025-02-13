@@ -796,7 +796,7 @@ Hypothesis ta_sorted : sorted (@le_rank _) ta.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
 Lemma card_shell_leq_exp_entropy :
-  #| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)).
+  #| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)%channel).
 Proof.
 rewrite cond_entropy_chanE2.
 apply (@le_trans _ _ (\prod_(i < #|A|) card_type_of_row Hta Vctyp i)%:R).
@@ -1194,7 +1194,7 @@ Hypothesis Hta : ta \in T_{P}.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
-Lemma card_shelled_tuples : (#| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)))%R.
+Lemma card_shelled_tuples : (#| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)%channel))%R.
 Proof.
 case: (tuple_exist_perm_sort (@le_rank A) ta) => /= s Hta'.
 have H : sort (@le_rank _) ta =
@@ -1207,7 +1207,7 @@ apply card_shell_leq_exp_entropy => //.
   apply/forallP => a /=.
   rewrite H num_occ_perm.
   move: a; apply/forallP.
-  move: Hta; by rewrite in_set.
+  by move: Hta; rewrite in_set.
 - apply cond_type_equiv.
   move: (Vctyp); by rewrite in_set.
 - exact/sort_sorted/le_rank_total.

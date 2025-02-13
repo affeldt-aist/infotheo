@@ -77,7 +77,6 @@ Qed.
 End HammingBitstring.
 
 Section hamming_weight_distance.
-
 Variables (F : ringType) (n : nat).
 Implicit Types u v : 'rV[F]_n.
 
@@ -250,7 +249,6 @@ by rewrite big_ord_narrow ?subnKC // sum1_card card_ord.
 Qed.
 
 Section hamming_triangular_inequality.
-
 Variables (F : ringType).
 
 Lemma tri_ine (a b c : F) : ((a != b) <= (c != b) + (a != c))%nat.
@@ -299,7 +297,6 @@ Qed.
 End hamming_triangular_inequality.
 
 Section wH_supp.
-
 Variables (n : nat) (F : ringType).
 Implicit Types x : 'rV[F]_n.
 
@@ -324,7 +321,6 @@ by rewrite -cardE card_wH_supp yD.
 Qed.
 
 Section wH_permutation.
-
 Variable n : nat.
 
 Lemma wH_perm_mx (s : 'S_n) (z : 'rV['F_2]_n) : wH (z *m perm_mx s) = wH z.
@@ -566,7 +562,6 @@ Qed.
 End wH_binomial.
 
 Section card_dH.
-
 Variable n : nat.
 
 Local Open Scope tuple_ext_scope.
@@ -645,7 +640,6 @@ Local Close Scope ring_scope.
 
 (* TODO: clean *)
 Section AboutwH123.
-
 Local Open Scope tuple_ext_scope.
 
 Local Notation "l `b_ i" := (@nth _ false l i) (at level 3, i at level 2).

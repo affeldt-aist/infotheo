@@ -86,14 +86,14 @@ Variable n : nat.
 Variable epsilon : R.
 
 Lemma JTS_sup :
-  #| `JTS P W n epsilon|%:R <= 2 `^ (n%:R * (`H(P , W) + epsilon)).
+  #| `JTS P W n epsilon|%:R <= 2 `^ (n%:R * (`H(P , W) + epsilon)%channel).
 Proof.
 have : #|`JTS P W n epsilon|%:R <= #|`TS ((P `X W)) n epsilon|%:R :> R.
   suff : `JTS P W n epsilon \subset `TS ((P `X W)) n epsilon.
     by rewrite ler_nat => /subset_leq_card.
   apply/subsetP => tab.
   by rewrite /set_jtyp_seq inE /jtyp_seq inE => /and3P[].
-move/le_trans; apply; exact: TS_sup.
+by move/le_trans; apply; exact: TS_sup.
 Qed.
 
 End jtyp_seq_upper.
@@ -237,7 +237,7 @@ rewrite (_ : \sum_(_ | _) _ =
   #| `JTS P W n epsilon|%:R *
   2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W) - epsilon)));
   last by rewrite big_const iter_addr addr0 -mulr_natl mulrA.
-apply (@le_trans _ _ (2 `^ (n%:R * (`H( P , W ) + epsilon)) *
+apply (@le_trans _ _ (2 `^ (n%:R * (`H( P , W )%channel + epsilon)) *
   2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W ) - epsilon)))).
   by rewrite !ler_wpM2r ?powR_ge0 // JTS_sup.
 apply/eqW.

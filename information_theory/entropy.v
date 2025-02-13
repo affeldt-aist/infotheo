@@ -43,8 +43,7 @@ Reserved Notation "`H( Y | X )" (at level 10, Y, X at next level).
 Reserved Notation "`I( X ; Y )" (at level 50, format "`I( X ;  Y )").
 
 Declare Scope entropy_scope.
-Declare Scope chap2_scope.
-Delimit Scope chap2_scope with chap2.
+Delimit Scope entropy_scope with entropy.
 
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
@@ -201,9 +200,7 @@ Variable R : realType.
 Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
 Definition joint_entropy_RV := joint_entropy `p_[% X, Y].
 End joint_entropy_RV_def.
-Notation "'`H(' X ',' Y ')'" := (joint_entropy_RV X Y) : chap2_scope.
-
-Local Open Scope chap2_scope.
+Notation "'`H(' X ',' Y ')'" := (joint_entropy_RV X Y) : entropy_scope.
 
 Section joint_entropy_RV_prop.
 Variable R : realType.
@@ -287,7 +284,7 @@ by apply: eq_bigr => b _; rewrite jfdist_condE// fdistX_RV2.
 Qed.
 
 End cond_entropy1_RV_prop.
-Notation "'`H(' Y '|' X ')'" := (cond_entropy `p_[% Y, X]) : chap2_scope.
+Notation "'`H(' Y '|' X ')'" := (cond_entropy `p_[% Y, X]) : entropy_scope.
 
 Section conditional_entropy_prop.
 
@@ -350,7 +347,6 @@ Qed.
 End chain_rule.
 
 Section chain_rule_RV.
-Local Open Scope chap2_scope.
 Variable R : realType.
 Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
 
@@ -615,12 +611,11 @@ Variable R : realType.
 Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
 Definition mutual_info_RV := mutual_info `p_[% X, Y].
 End mutualinfo_RV_def.
-Notation "'`I(' X ';' Y ')'" := (mutual_info_RV X Y) : chap2_scope.
+Notation "'`I(' X ';' Y ')'" := (mutual_info_RV X Y) : entropy_scope.
 
 (* TODO: example 2.3.1 *)
 
 Section mutualinfo_prop.
-
 Local Open Scope divergence_scope.
 
 (* eqn 2.46 *)
