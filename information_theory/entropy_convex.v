@@ -11,7 +11,7 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import derive_ext fdist jfdist_cond entropy convex.
 Require Import binary_entropy_function log_sum divergence.
 
-(******************************************************************************)
+(**md**************************************************************************)
 (* # Elements of Information Theory (cont'd)                                  *)
 (*                                                                            *)
 (* This file contains a formalization of the section 2.7 of:                  *)
@@ -52,6 +52,7 @@ Import numFieldNormedType.Exports.
 
 Local Notation "{ 'fdist' T }" := (_ .-fdist T) : fdist_scope.
 
+(* TODO: rm *)
 Section analysis_ext.
 Import boolp classical_sets.
 

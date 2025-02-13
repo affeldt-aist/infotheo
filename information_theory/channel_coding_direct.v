@@ -9,20 +9,24 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy aep typ_seq joint_typ_seq channel.
 Require Import channel_code.
 
-(******************************************************************************)
-(*                 Channel coding theorem (direct part)                       *)
+(**md**************************************************************************)
+(* # Channel coding theorem (direct part)                                     *)
 (*                                                                            *)
-(* Definitions:                                                               *)
-(*   jtdec == joint typicality decoding                                       *)
+(* The channel coding theorem (direct part) is `channel_coding`.              *)
+(*                                                                            *)
+(* Documented in:                                                             *)
+(* - Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues. Formalization   *)
+(*   of Shannon's theorems. Journal of Automated Reasoning, 53(1):63--103,    *)
+(*   2014                                                                     *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*                  jtdec == joint typicality decoding                        *)
+(*                   o_PI == TODO                                             *)
+(*     epsilon0_condition == TODO                                             *)
 (*   cal_E M n epsilong f == the set of output vb such that (f m, vb) is      *)
 (*                           jointly typical                                  *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Theorem:                                                                   *)
-(*   channel_coding == channel coding theorem (direct part)                   *)
-(*                                                                            *)
-(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
-(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
-(* 53(1):63--103, 2014                                                        *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -39,6 +43,7 @@ Local Open Scope vec_ext_scope.
 Import Order.Theory GRing.Theory Num.Theory.
 #[local] Definition R := Rdefinitions.R.
 
+(* TODO: doc *)
 Module Wght.
 Section wght.
 Variables (A M : finType) (P : {fdist A}) (n : nat).
@@ -250,7 +255,7 @@ Variables (B A : finType) (W : `Ch(A, B)) (P : {fdist A}).
 Definition epsilon0_condition r epsilon epsilon0 :=
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.
 
-(* TODO move *)
+(* TODO: move, doc *)
 Definition frac_part (x : R) := x - (Num.floor x)%:~R.
 Definition n_condition r epsilon0 n :=
   (O < n)%nat /\ - log epsilon0 / epsilon0 < n%:R /\

@@ -6,13 +6,15 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist entropy binary_entropy_function channel hamming.
 Require Import channel_code pproba.
 
-(******************************************************************************)
-(*                Capacity of the binary symmetric channel                    *)
+(**md**************************************************************************)
+(* # Capacity of the binary symmetric channel                                 *)
 (*                                                                            *)
-(* BSC.c == Definition of the binary symmetric channel (BSC)                  *)
+(* This file shows that the capacity of a BSC is 1 - H p                      *)
+(* (lemma `BSC_capacity`).                                                    *)
 (*                                                                            *)
-(* Lemma:                                                                     *)
-(*   BSC_capacity == the capacity of a BSC is 1 - H p                         *)
+(* ```                                                                        *)
+(*   BSC.c == Definition of the binary symmetric channel (BSC)                *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -50,7 +52,7 @@ Qed.
 
 Let p_01 : {prob Rdefinitions.R} := Eval hnf in Prob.mk_ p_01'_.
 
-Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01) = - H2 p.
+Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01)%channel = - H2 p.
 Proof.
 rewrite {2}/entropy /=.
 rewrite (eq_bigr (fun a => ((P `X (BSC.c card_A p_01))) (a.1, a.2) *
@@ -247,7 +249,6 @@ End dH_BSC.
 (* moved from decoder.v; TODO: rename *)
 Section bsc_prob_prop.
 Local Open Scope reals_ext_scope.
-Local Open Scope ring_scope.
 Local Open Scope order_scope.
 
 Let R := Rdefinitions.R.
@@ -289,10 +290,9 @@ Qed.
 
 End bsc_prob_prop.
 
-(* moved from ldpc.v *)
+(* NB: moved from ldpc.v *)
 Section post_proba_bsc_unif.
 Local Open Scope reals_ext_scope.
-Local Open Scope ring_scope.
 Local Open Scope order_scope.
 Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
@@ -309,9 +309,6 @@ by move: p_01' => /andP [/ltW -> /ltW ->].
 Qed.
 
 Let p_01 : {prob R} := Eval hnf in Prob.mk_ p_01'_.
-(*
-Let p_01 := Eval hnf in Prob.mk_ (ltR2W p_01').
-*)
 
 Let P := fdist_uniform (R:=R) card_A.
 Variable a' : A.

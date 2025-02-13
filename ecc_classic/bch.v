@@ -5,32 +5,15 @@ From mathcomp Require Import matrix mxalgebra mxpoly vector fieldext finfield.
 Require Import ssralg_ext hamming linearcode decoding cyclic_code poly_decoding.
 Require Import dft euclid grs f2.
 
-(******************************************************************************)
-(*                        Binary BCH codes                                    *)
+(**md**************************************************************************)
+(* # Binary BCH codes                                                         *)
 (*                                                                            *)
 (* The main result of this file is the proof that binary BCH codes implement  *)
-(* bounded-distance decoding (Lemma BCH_repair_is_correct).                   *)
+(* bounded-distance decoding (lemma `BCH_repair_is_correct`).                 *)
 (*                                                                            *)
 (* Main reference: Robert McEliece, The Theory of Information and Coding,     *)
 (* Cambridge University Press, 2002                                           *)
 (******************************************************************************)
-
-(** OUTLINE
-- Module BCH.
-  - Section BCH_PCM_def.
-  - Section BCH_PCM_alt : equivalence between PCM matrices
-  - Section BCH_def.
-  - Section BCH_syndromep.
-- Section BCH_is_GRS.
-- Section BCH_PCM_checksum.
-  - Equivalence between the PCM and the system of checksum equations
-- Section BCH_syndrome_syndromep.
-  - Equivalence between the PCM and the syndrome polynomial
-- Section BCH_minimum_distance_lb.
-- Section BCH_erreval.
-- Section decoding_using_euclid.
-- Section BCH_cyclic.
-*)
 
 Reserved Notation "'\BCHsynp_(' a , e , t )" (at level 3).
 Reserved Notation "'\BCHomega_(' a , e )" (at level 3).
@@ -47,9 +30,7 @@ Local Open Scope vec_ext_scope.
 Local Open Scope dft_scope.
 
 Module BCH.
-
 Section BCH_PCM_def.
-
 Variables (F : finFieldType) (n : nat) (a : 'rV[F]_n) (t : nat).
 
 Definition PCM : 'M_(t, n) := \matrix_(i < t, j < n) (a ``_ j) ^+ i.*2.+1.
@@ -67,7 +48,6 @@ Qed.
 End BCH_PCM_def.
 
 Section BCH_PCM_alt.
-
 Variables (n : nat) (m' : nat).
 Let m := m'.+1.
 Let F := GF2 m.
@@ -205,7 +185,6 @@ Qed.
 End BCH_is_GRS.
 
 Section BCH_PCM_checksum.
-
 Variables (n' : nat) (m : nat).
 Let n := n'.+1.
 Let F := GF2 m.
@@ -251,7 +230,6 @@ Qed.
 End BCH_PCM_checksum.
 
 Section BCH_syndrome_syndromep.
-
 Variables (n' : nat) (m : nat).
 Let n := n'.+1.
 Let F := GF2 m.
@@ -303,7 +281,6 @@ Qed.
 End BCH_syndrome_syndromep.
 
 Section BCH_minimum_distance_lb.
-
 Variables (m : nat) (n : nat).
 Let F := GF2 m.
 Variable a : 'rV[F]_n.

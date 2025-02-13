@@ -4,34 +4,25 @@ From mathcomp Require Import all_ssreflect ssralg poly polydiv zmodp.
 From mathcomp Require Import matrix mxalgebra mxpoly vector cyclic perm.
 Require Import ssr_ext ssralg_ext hamming.
 
-(******************************************************************************)
-(*                  Discrete Fourier transform and BCH argument               *)
+(**md**************************************************************************)
+(* # Discrete Fourier transform and BCH argument                              *)
 (*                                                                            *)
-(* Definitions:                                                               *)
-(*  not_uroot_on a n       == not a kth root of unity of a for k \in (0,n)    *)
-(*  fdcoor u y i           == the frequency-domain coordinates                *)
+(* ```                                                                        *)
+(*        not_uroot_on a n == not a kth root of unity of a for k \in (0,n)    *)
+(*            fdcoor u y i == the frequency-domain coordinates                *)
 (*                            notation: y ^`_(u, i)                           *)
-(*  idft_coef              == inverse of the discrete Fourier transform       *)
-(*                            (see [McEliece 2002], eqn 9.12)  dd             *)
+(*               idft_coef == inverse of the discrete Fourier transform       *)
+(*                            (see [McEliece 2002], eqn 9.12)                 *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
+(* Main lemmas:                                                               *)
+(* ```                                                                        *)
 (*  primitive_is_principal == a is a principal nth root of unity              *)
-(*  BCH_argument_lemma     == a.k.a. BCH_bound (see [Classification by        *)
-(*                             Isometry], p.238)                              *)
+(*      BCH_argument_lemma == a.k.a. BCH_bound (see [Classification by        *)
+(*                            Isometry], p.238)                               *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
-
-(* OUTLINE
-- Section not_nth_root_of_unity.
-- Section rVexp.
-- Section frequency_domain_coordinates.
-- Section discrete_Fourier_transform.
-- Section primitive_nth_root_of_unity.
-- Section inverse_dft.
-- Section tdcoor_of_fdcoor.
-- Section shifts.
-- Section BCH_argument.
-*)
 
 Reserved Notation "v ^`_( f , i )" (at level 9).
 
@@ -47,7 +38,6 @@ Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
 
 Section not_nth_root_of_unity.
-
 Variables (F : fieldType) (a : F) (n : nat).
 
 Definition not_uroot_on := forall k, 0 < k < n -> a ^+ k != 1 (*~~ k.-unity_root a*).
@@ -83,7 +73,6 @@ Qed.
 End not_nth_root_of_unity.
 
 Section rVexp.
-
 Variables (F : fieldType) (a : F) (n : nat).
 
 Definition rVexp := \row_(i < n) a ^+ i.
@@ -101,7 +90,6 @@ Qed.
 End rVexp.
 
 Section frequency_domain_coordinates.
-
 Variables (F : fieldType) (n : nat).
 
 Implicit Types x y u : 'rV[F]_n.
@@ -141,7 +129,6 @@ Notation "v ^`_( f , i )" := (fdcoor f v i) : dft_scope.
 Local Open Scope dft_scope.
 
 Section discrete_Fourier_transform.
-
 Variables (F : fieldType) (n' : nat).
 Let n := n'.+1.
 Variable (a : 'rV[F]_n).
@@ -170,7 +157,6 @@ Qed.
 End discrete_Fourier_transform.
 
 Section primitive_nth_root_of_unity.
-
 Variables (F : fieldType) (a : F) (n : nat).
 
 Lemma prim_root_not_uroot_on : n.-primitive_root a -> not_uroot_on a n.
@@ -234,7 +220,6 @@ Qed.
 End primitive_nth_root_of_unity.
 
 Section inverse_dft.
-
 Variables (F : fieldType) (n' : nat) (a : F).
 Let n := n'.+1.
 
@@ -322,7 +307,6 @@ Qed.
 End inverse_dft.
 
 Section tdcoor_of_fdcoor.
-
 Variables (F : fieldType) (a : F) (n' : nat).
 Let n := n'.+1.
 Hypothesis Hchar : ([char F]^').-nat n.
@@ -344,7 +328,6 @@ Qed.
 End tdcoor_of_fdcoor.
 
 Section shifts.
-
 Variables (F : fieldType) (a : F) (n' : nat).
 Let n := n'.+1.
 
@@ -410,7 +393,6 @@ Qed.
 End shifts.
 
 Section BCH_argument.
-
 Variables (F0 F : fieldType).
 Variable gmorph : {rmorphism F0 -> F}.
 Variable (n' : nat).

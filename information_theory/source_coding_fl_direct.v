@@ -6,10 +6,10 @@ From mathcomp Require Import Rstruct reals exp.
 Require Import ssr_ext ssralg_ext realType_ln natbin fdist.
 Require Import proba entropy aep typ_seq source_code.
 
-(******************************************************************************)
-(*         Source coding theorem (fixed length, direct part)                  *)
+(**md**************************************************************************)
+(* # Source coding theorem (fixed length, direct part)                        *)
 (*                                                                            *)
-(* Main theorem: source_coding_direct                                         *)
+(* The main theorem is `source_coding_direct`.                                *)
 (*                                                                            *)
 (* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
 (* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
@@ -19,6 +19,8 @@ Require Import proba entropy aep typ_seq source_code.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
+
+Import Order.POrderTheory GRing.Theory Num.Theory Num.Def Order.TotalTheory.
 
 Local Open Scope fdist_scope.
 Local Open Scope ring_scope.
@@ -76,11 +78,6 @@ case: eq1 Heq1 => [|i0 Heq1].
 Qed.
 
 End encoder_and_decoder.
-
-(*Local Open Scope R_scope.
-Local Open Scope zarith_ext_scope.*)
-
-Import Order.POrderTheory GRing.Theory Num.Theory Num.Def Order.TotalTheory.
 
 Section source_direct_bound.
 Let R := Rdefinitions.R.

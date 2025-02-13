@@ -1,19 +1,13 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 From mathcomp Require Import Rstruct.
 Require Import ssr_ext subgraph_partition tanner f2.
 
+(**md**************************************************************************)
+(* # Cover/partition properties of Tanner graphs                              *)
 (******************************************************************************)
-(*               Cover/partition properties of Tanner graphs                  *)
-(******************************************************************************)
-
-(* OUTLINE:
-- Section tanner_rel_no_hypo.
-- Section acyclic_tanner_rel.
-- Section tanner_partition.
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -22,8 +16,9 @@ Import Prenex Implicits.
 Import GRing.
 Local Open Scope ring_scope.
 
-Lemma trivIsetS_f (A B : finType) (f : A -> B) (AA : {set {set A}}) (BB : {set {set B}}) :
-  (forall a, a \in AA -> exists b, b \in BB /\ a = [set a' | f a' \in b]) ->
+Lemma trivIsetS_f (A B : finType) (f : A -> B) (AA : {set {set A}})
+    (BB : {set {set B}}) :
+    (forall a, a \in AA -> exists b, b \in BB /\ a = [set a' | f a' \in b]) ->
   trivIset BB -> trivIset AA.
 Proof.
 move=> /= Hsub.
@@ -44,7 +39,6 @@ case/orP; move/negbTE => -> //; by rewrite andbF.
 Qed.
 
 Section tanner_rel_no_hypo.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "''V'" := (Vnext H).
@@ -93,7 +87,6 @@ Qed.
 End tanner_rel_no_hypo.
 
 Section acyclic_tanner_rel.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "''V'" := (Vnext H).
@@ -167,7 +160,6 @@ Qed.
 End acyclic_tanner_rel.
 
 Section tanner_partition.
-
 Variables (m n : nat).
 Variable H : 'M['F_2]_(m, n).
 

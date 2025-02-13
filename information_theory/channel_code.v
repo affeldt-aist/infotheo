@@ -4,10 +4,11 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require Import Rstruct reals exp.
 Require Import bigop_ext realType_ext realType_ln fdist proba channel.
 
-(******************************************************************************)
-(*                        Definition of a channel code                        *)
+(**md**************************************************************************)
+(* # Definition of a channel code                                             *)
 (*                                                                            *)
 (* A code is a set of codewords with an encoding and a decoding function:     *)
+(* ```                                                                        *)
 (*         encT == type of the encoding function                              *)
 (*         decT == type of the decoding function                              *)
 (*      e(W, c) == probability of error given that the codeword m was sent    *)
@@ -15,9 +16,12 @@ Require Import bigop_ext realType_ext realType_ln fdist proba channel.
 (*   scha(W, C) == decoding success rate                                      *)
 (* CodeRateType == definition of the set of (code) rates (unit: bits per      *)
 (*                 transmission)                                              *)
+(* ```                                                                        *)
 (*                                                                            *)
 (* Lemma:                                                                     *)
+(* ```                                                                        *)
 (*        schaE == expression of the success rate of decoding                 *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Reserved Notation "e( W , c )" (at level 50).

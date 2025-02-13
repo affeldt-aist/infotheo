@@ -7,19 +7,21 @@ From mathcomp Require Import Rstruct reals exp.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist entropy.
 Require Import num_occ channel types.
 
-(******************************************************************************)
-(*                            Joint Types                                     *)
+(**md**************************************************************************)
+(* # Joint Types                                                              *)
 (*                                                                            *)
-(* Definitions:                                                               *)
-(*   jtype == type of joint type, notation: P_n(A, B)                         *)
-(*   shell = shell, notation: V.-shell t                                      *)
+(* Main lemmas:                                                               *)
+(* - upper-bound of the number of conditional types (`bound_card_jtype`)      *)
+(* - joint types are not empty (`jtype_not_empty`)                            *)
+(* - relation between the number of symbol occurrences and the number of      *)
+(*   pairs of symbols occurrences (`occ_co_occ`)                              *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*       jtype == type of joint type, notation: P_n(A, B)                     *)
+(*       shell == shell, notation: V.-shell t                                 *)
 (*   cond_type == conditional type, notation: \nu{V}(P)                       *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   bound_card_jtype == upper-bound of the number of conditional types       *)
-(*    jtype_not_empty == joint types are not empty                            *)
-(*         occ_co_occ == Relation between the number of symbol occurrences    *)
-(*                       and the number of pairs of symbols occurrences       *)
 (******************************************************************************)
 
 Reserved Notation "'P_' n '(' A ',' B ')'" (at level 9,
@@ -796,7 +798,7 @@ Hypothesis ta_sorted : sorted (@le_rank _) ta.
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
 Lemma card_shell_leq_exp_entropy :
-  #| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)).
+  #| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)%channel).
 Proof.
 rewrite cond_entropy_chanE2.
 apply (@le_trans _ _ (\prod_(i < #|A|) card_type_of_row Hta Vctyp i)%:R).
@@ -1194,7 +1196,7 @@ Hypothesis Hta : ta \in T_{P}.
 Hypothesis Vctyp : V \in \nu^{B}(P).
 Hypothesis Bnot0 : (0 < #|B|)%nat.
 
-Lemma card_shelled_tuples : (#| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)))%R.
+Lemma card_shelled_tuples : (#| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)%channel))%R.
 Proof.
 case: (tuple_exist_perm_sort (@le_rank A) ta) => /= s Hta'.
 have H : sort (@le_rank _) ta =
@@ -1207,7 +1209,7 @@ apply card_shell_leq_exp_entropy => //.
   apply/forallP => a /=.
   rewrite H num_occ_perm.
   move: a; apply/forallP.
-  move: Hta; by rewrite in_set.
+  by move: Hta; rewrite in_set.
 - apply cond_type_equiv.
   move: (Vctyp); by rewrite in_set.
 - exact/sort_sorted/le_rank_total.

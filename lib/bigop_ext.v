@@ -4,8 +4,8 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext.
 
-(******************************************************************************)
-(*                     Additional lemmas about bigops                         *)
+(**md**************************************************************************)
+(* # Additional lemmas about bigops                                           *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -467,7 +467,6 @@ Qed.
 End bigcup_ext.
 
 Section MyPartitions.
-
 Variables (R : Type) (idx : R) (op : Monoid.com_law idx).
 
 Variables T I : finType.
@@ -543,6 +542,7 @@ Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
 Section prod_gt0_inv.
 Local Open Scope ring_scope.
+
 Lemma prod_gt0_inv (R : realFieldType) n (F : _ -> R)
   (HF: forall a, (0 <= F a)) :
   (0 < \prod_(i < n.+1) F i -> forall i, 0 < F i).
@@ -555,6 +555,7 @@ rewrite prodf_seq_eq0/=.
 apply/hasP; exists i; last exact/eqP.
 by rewrite mem_index_enum.
 Qed.
+
 End prod_gt0_inv.
 
 Section classify_big.
@@ -676,6 +677,7 @@ Qed.
 
 Section classical.
 Import boolp.
+
 Lemma bigmax_gt0P_seq (T : realDomainType) (A : eqType) (F : A -> T)
   (s : seq A) (PP : pred A) :
 reflect (exists i : A, [/\ i \in s, PP i & (0 < F i)%O]) (0 < \big[Num.max/0]_(m <- s | PP m) F m).
@@ -690,6 +692,7 @@ case=> x [] ? ? ?; apply/bigmax_leP_seq/not_andP; right.
 apply/existsNP; exists x; do 2 (apply/not_implyP; split=> //).
 by apply/negP; rewrite -ltNge.
 Qed.
+
 End classical.
 
 End order.

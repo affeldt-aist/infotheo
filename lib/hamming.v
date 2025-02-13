@@ -1,25 +1,29 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require Import Reals.
-From mathcomp Require Import all_ssreflect fingroup zmodp ssralg ssrnum finalg perm matrix.
-From mathcomp Require Import poly mxalgebra mxpoly.
+From mathcomp Require Import all_ssreflect fingroup zmodp ssralg ssrnum finalg.
+From mathcomp Require Import perm matrix poly mxalgebra mxpoly.
 From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext f2 num_occ natbin bigop_ext.
 
-(******************************************************************************)
-(*                    Hamming weight and Hamming distance                     *)
+(**md**************************************************************************)
+(* # Hamming weight and Hamming distance                                      *)
 (*                                                                            *)
-(* Definitions:                                                               *)
-(*  wH v   == Hamming weight of v : 'rV[F]_n where F is a ringType            *)
-(*  dH u v == wH (u - v)                                                      *)
+(* This file provides lemmas about Hamming weight and distance, e.g.:         *)
+(* - triangular inequality (`dH_tri_ine`)                                     *)
+(* - weight of $0...011$ (`wH_3`)                                             *)
+(* - weight of $0..0111$ (`wH_7`)                                             *)
+(* - the number of points (`'rV['F_q]_n`) at distance `k` from `x` is         *)
+(*   `'C(n, k) * q.-1 ^ k` (`card_sphere q n k x`)                            *)
+(* - binomial theorem (`binomial_theorem`)                                    *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   dH_tri_ine          == triangular inequality                             *)
-(*   wH_3                == wH (rV_of_nat n 3) = 2                            *)
-(*   wH_7                == wH (rV_of_nat n 7) = 3                            *)
-(*   card_sphere q n k x == the number of points ('rV['F_q]_n) at distance k  *)
-(*                          from x is 'C(n, k) * q.-1 ^ k                     *)
-(*   binomial_theorem                                                         *)
+(* ```                                                                        *)
+(*    HammingBitstring.wH a == Hamming weight of a : bitseq                   *)
+(*  HammingBitstring.dH a b := wH (a (+) b)                                   *)
+(*                     wH v == Hamming weight of v : 'rV[F]_n (F : ringType)  *)
+(*                   dH u v := wH (u - v)                                     *)
+(*                wH_supp x := [set i | x ``_ i != 0]                         *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -73,7 +77,6 @@ Qed.
 End HammingBitstring.
 
 Section hamming_weight_distance.
-
 Variables (F : ringType) (n : nat).
 Implicit Types u v : 'rV[F]_n.
 
@@ -246,7 +249,6 @@ by rewrite big_ord_narrow ?subnKC // sum1_card card_ord.
 Qed.
 
 Section hamming_triangular_inequality.
-
 Variables (F : ringType).
 
 Lemma tri_ine (a b c : F) : ((a != b) <= (c != b) + (a != c))%nat.
@@ -295,7 +297,6 @@ Qed.
 End hamming_triangular_inequality.
 
 Section wH_supp.
-
 Variables (n : nat) (F : ringType).
 Implicit Types x : 'rV[F]_n.
 
@@ -320,7 +321,6 @@ by rewrite -cardE card_wH_supp yD.
 Qed.
 
 Section wH_permutation.
-
 Variable n : nat.
 
 Lemma wH_perm_mx (s : 'S_n) (z : 'rV['F_2]_n) : wH (z *m perm_mx s) = wH z.
@@ -562,7 +562,6 @@ Qed.
 End wH_binomial.
 
 Section card_dH.
-
 Variable n : nat.
 
 Local Open Scope tuple_ext_scope.
@@ -641,7 +640,6 @@ Local Close Scope ring_scope.
 
 (* TODO: clean *)
 Section AboutwH123.
-
 Local Open Scope tuple_ext_scope.
 
 Local Notation "l `b_ i" := (@nth _ false l i) (at level 3, i at level 2).

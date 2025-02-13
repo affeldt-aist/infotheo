@@ -2,23 +2,21 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg poly polydiv matrix.
 
-(******************************************************************************)
-(*                     Euclidean algorithm for decoding                       *)
+(**md**************************************************************************)
+(* # Euclidean algorithm for decoding                                         *)
 (*                                                                            *)
 (* This file contains a formalization of the Euclidean algorithm for          *)
 (* decoding. It follows the presentation in:                                  *)
-(*   Robert McEliece, The Theory of Information and Coding, Cambridge         *)
+(* - Robert McEliece, The Theory of Information and Coding, Cambridge         *)
 (*   University Press, 2002.                                                  *)
 (* It used to formalize decoders for Reed-Solomon and BCH codes (see the      *)
 (* ecc_classic directory.                                                     *)
 (*                                                                            *)
+(* The formalization is explained Sect. 5.2 of:                               *)
+(* - R. Affeldt, J. Garrigue, T. Saikawa, A Library for Formalization of      *)
+(* Linear Error-correcting Codes, Journal of Automated Reasoning 67(3):28     *)
+(*                                                                            *)
 (******************************************************************************)
-
-(* OUTLINE:
-- Module Euclid.
-- Section euclid_stop.
-- Section euclid_lemma.
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

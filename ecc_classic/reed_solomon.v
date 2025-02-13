@@ -5,11 +5,11 @@ From mathcomp Require Import perm matrix mxpoly vector mxalgebra zmodp.
 Require Import ssr_ext ssralg_ext poly_ext channel_code decoding linearcode.
 Require Import hamming dft poly_decoding euclid grs cyclic_code.
 
-(******************************************************************************)
-(*                        Reed-Solomon codes                                  *)
+(**md**************************************************************************)
+(* # Reed-Solomon codes                                                       *)
 (*                                                                            *)
 (* The main result of this file is the proof that Reed-Solomon codes          *)
-(* implement bounded-distance decoding (Lemma RS_repair_is_correct).          *)
+(* implement bounded-distance decoding (lemma `RS_repair_is_correct`).        *)
 (*                                                                            *)
 (* Main references:                                                           *)
 (* - Robert McEliece, The Theory of Information and Coding,  Cambridge        *)
@@ -17,24 +17,6 @@ Require Import hamming dft poly_decoding euclid grs cyclic_code.
 (* - Manabu Hagiwara, Coding Theory: Mathematics for Digital Communication,   *)
 (*   Nippon Hyoron Sha, 2012 (in Japanese)                                    *)
 (******************************************************************************)
-
-(** OUTLINE
-- Section reed_solomon_min_dist_errors.
-- Module RS.
-  + Section reed_solomon_def.
-  + Section reed_solomon_prop.
-- Section RS_generator_def.
-- Section RS_is_GRS.
-- Section reed_solomon_key_equation.
-- Section RS_decoding_procedure.
-- Section RS_generator_prop0.
-- Section RS_generator_prop1.
-- Section RS_generator_prop.
-- Section RS_decoding_using_euclid0.
-- Section RS_decoding_using_euclid.
-- Module RS_encoder.
-- Section RS_cyclic.
-*)
 
 Reserved Notation "'\RSsynp_(' a , y , t )" (at level 3).
 Reserved Notation "'\RSomega_(' a , e )" (at level 3).
@@ -57,7 +39,6 @@ Local Notation "'\RSomega_(' a , e )" := (erreval a a e).
 Local Open Scope vec_ext_scope.
 
 Section reed_solomon_min_dist_errors.
-
 Variables (t d n : nat).
 
 Definition redundancy_ub := d < n. (* definition of RS *)
@@ -66,7 +47,6 @@ Definition errors_ub := t <= d./2. (* necessary condition to decode t errors *)
 End reed_solomon_min_dist_errors.
 
 Section reed_solomon_def.
-
 Variables (F : finFieldType) (a : F) (n d : nat).
 
 Definition PCM : 'M[F]_(d, n) := \matrix_(i, j) (a ^+ i.+1) ^+ j.
@@ -76,7 +56,6 @@ Definition code : {vspace _} := kernel PCM.
 End reed_solomon_def.
 
 Section reed_solomon_prop.
-
 Variables (F : finFieldType) (a : F) (n' : nat).
 Let n := n'.+1.
 Variable d : nat.
@@ -234,7 +213,6 @@ Notation "'\RSomega_(' a , e )" := (erreval a a e).
 Local Open Scope vec_ext_scope.
 
 Section RS_generator_def.
-
 Variables (F : finFieldType) (a : F) (d : nat).
 
 Definition rs_gen := \prod_(1 <= i < d.+1) ('X - (a ^+ i)%:P).
@@ -246,7 +224,6 @@ Notation "'\gen_(' a , d )" := (rs_gen a d).
 (** Reed-Solomon codes are an instance of GRS codes. Take a and b to
 be \alpha^j to get conventional RS codes. *)
 Section RS_is_GRS.
-
 Variables (F : finFieldType) (n' : nat).
 Let n := n'.+1.
 Variables (a : F) (d : nat).
@@ -283,7 +260,6 @@ Qed.
 End RS_is_GRS.
 
 Section reed_solomon_key_equation.
-
 Variables (F : finFieldType) (a : F) (n' : nat).
 Let n := n'.+1.
 Variable t : nat.
@@ -317,7 +293,6 @@ Qed.
 End reed_solomon_key_equation.
 
 Section RS_decoding_procedure.
-
 Variables (F : finFieldType) (a : F) (n' : nat).
 Let n := n'.+1.
 Variable d : nat.
@@ -352,7 +327,6 @@ Lemma leqnmul2 k : k <= k.*2.
 Proof. by rewrite -addnn leq_addr. Qed.
 
 Section RS_generator_prop0.
-
 Variables (F : finFieldType) (a : F) (n' : nat) (d : nat).
 Let n := n'.+1.
 
@@ -426,7 +400,6 @@ Qed.
 End RS_generator_prop0.
 
 Section RS_generator_prop1.
-
 Variables q m' : nat.
 Hypothesis primeq : prime q.
 Let F := GF m' primeq.
@@ -499,7 +472,6 @@ Qed.
 End RS_generator_prop1.
 
 Section RS_generator_prop.
-
 Variable (F : finFieldType) (a : F).
 Variables (d : nat) (n' : nat).
 Let n := n'.+1.
@@ -902,7 +874,6 @@ End RS_encoder_sect.
 End RS_encoder.
 
 Section RS_cyclic.
-
 Variable (F : finFieldType) (a : F).
 Variables (d : nat) (n' : nat).
 Let n := n'.+1.

@@ -1,23 +1,18 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import bigop_ext ssralg_ext f2 subgraph_partition.
 
-(******************************************************************************)
-(*                           Tanner Graphs                                    *)
+(**md**************************************************************************)
+(* # Tanner Graphs                                                            *)
 (*                                                                            *)
+(* ```                                                                        *)
 (* 'F(m0, n0) == function nodes of the subgraph rooted at edge m0-n0          *)
 (* ‘V(m0, n0) == the variable nodes of the subgraph rooted at edge m0-n0      *)
 (*               (to which we add n0)                                         *)
+(* ```                                                                        *)
 (******************************************************************************)
-
-(* OUTLINE:
-- Module Tanner.
-- Section tanner_relation.
-- Section next_graph.
-- Section subscript_set.
-*)
 
 Reserved Notation "''V(' x ',' y ')'" (format "''V(' x ','  y ')'").
 Reserved Notation "''F(' x ',' y ')'" (format "''F(' x ','  y ')'").
@@ -45,9 +40,7 @@ End Tanner.
 Coercion tanneredges := Tanner.edges.
 
 Section tanner_relation.
-
 Local Open Scope ring_scope.
-
 Variable (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Definition tanner_rel' : rel ('I_ m + 'I_n) :=
@@ -78,9 +71,7 @@ Proof. exact/(@colorable_is_simple _ tanner_rel 2)/colorable_tanner_rel. Qed.
 End tanner_relation.
 
 Section next_graph.
-
 Local Open Scope ring_scope.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 (** Variable nodes *)
@@ -225,7 +216,6 @@ Qed.
 End next_graph.
 
 Section subscript_set.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 Local Notation "''V'" := (Vnext H).
 

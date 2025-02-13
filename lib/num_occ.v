@@ -1,27 +1,17 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect fingroup perm zmodp ssralg.
 Require Import ssr_ext f2.
 
-(******************************************************************************)
-(*                  Number of occurrences in a tuple                          *)
+(**md**************************************************************************)
+(* # Number of occurrences in a tuple                                         *)
 (*                                                                            *)
-(*   N(a | t)           == number of occurrences of a in t                    *)
+(* ```                                                                        *)
+(*             N(a | t) == number of occurrences of a in t                    *)
 (*   N((a,b) | (ta,tb)) == number of occurrences of (a,b) in zip ta tb        *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
-
-(* OUTLINE:
-  1. Section num_occ_def (Number of symbol occurrences)
-  2. Section num_occ_prop.
-  3. Section num_occ_tuple.
-  4. Section num_occ_tuple_prop.
-  5. Section num_co_occ_def. (Number of pair of symbols occurrences)
-  6. Section num_co_occ_prop.
-  7. Section num_co_occ_tuple.
-  8. Section num_co_occ_tuple_prop.
-  9. Section cansort.
-*)
 
 Reserved Notation "'N(' a '|' t ')'" (format "N( a  |  t )").
 Reserved Notation "'N(' a ',' b '|' ta ',' tb ')'".
@@ -36,7 +26,6 @@ Local Open Scope tuple_ext_scope.
 Local Open Scope nat_scope.
 
 Section num_occ_def.
-
 Variables (A : eqType) (a : A) (t : seq A).
 
 Definition num_occ := count_mem a t.
@@ -47,7 +36,6 @@ Notation "'N(' a '|' t ')'" := (num_occ a t) : num_occ_scope.
 Local Open Scope num_occ_scope.
 
 Section num_occ_prop.
-
 Variables (A : eqType) (a : A).
 
 Lemma num_occ0 : N(a | [::]) = 0. Proof. by []. Qed.
@@ -146,7 +134,6 @@ Qed.
 End num_occ_tuple.
 
 Section num_occ_tuple_prop.
-
 Variable (A : finType) (n : nat) (t : n.-tuple A).
 
 Lemma sum_num_occ_alt : \sum_(a in A) N(a | t) = n.
@@ -193,7 +180,6 @@ Local Close Scope group_scope.
 End num_occ_tuple_prop.
 
 Section num_co_occ_def.
-
 Variables (A B : eqType) (a : A) (b : B) (ta : seq A) (tb : seq B).
 
 Local Open Scope nat_scope.
@@ -205,7 +191,6 @@ End num_co_occ_def.
 Notation "'N(' a ',' b '|' ta ',' tb ')'" := (num_co_occ a b ta tb) : num_occ_scope.
 
 Section num_co_occ_prop.
-
 Variables (A B : eqType) (a : A) (b : B) (ta : seq A) (tb : seq B).
 
 Lemma num_co_occ1 (a' : A) : N(a, b | [:: a'], [:: b]) = N(a | [:: a']).
@@ -224,7 +209,6 @@ Qed.
 End num_co_occ_prop.
 
 Section num_co_occ_tuple.
-
 Variables (A B : finType) (n : nat) (a : A) (b : B) (ta : n.-tuple A) (tb : n.-tuple B).
 
 Definition set_co_occ := [set i | (ta !_ i == a) && (tb !_ i == b)].
@@ -246,7 +230,6 @@ Qed.
 End num_co_occ_tuple.
 
 Section num_co_occ_tuple_prop.
-
 Variables (A B : finType) (n : nat) (ta : n.-tuple A) (tb : n.-tuple B).
 
 Lemma num_co_occ_sum : \sum_(a : A) \sum_ (b : B) N( a , b | ta , tb) = n.
@@ -352,7 +335,6 @@ move=> b' _; by rewrite /num_co_occ num_occ_thead.
 Qed.
 
 Section cansort.
-
 Variable A : finType.
 Variable n : nat.
 Variable ta : n.-tuple A.
@@ -418,7 +400,6 @@ Lemma min_sum_num_occ (k : nat) : minn (sum_num_occ k) (sum_num_occ k.+1) = sum_
 Proof. apply/minn_idPl; by apply sum_num_occ_inc. Qed.
 
 Section order_surgery.
-
 Hypothesis ta_cansorted : sorted (@le_rank A) ta.
 
 (* TODO: move? *)

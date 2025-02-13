@@ -6,23 +6,28 @@ Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist entropy.
 Require Import num_occ types jtypes divergence conditional_divergence.
 Require Import entropy channel_code channel.
 
-(******************************************************************************)
-(*         Lemmas for the converse of the channel coding theorem              *)
+(**md**************************************************************************)
+(* # Lemmas for the converse of the channel coding theorem                    *)
 (*                                                                            *)
-(* Definitions:                                                               *)
-(*   success_factor       == bound of the success rate of decoding for typed  *)
+(* Documented in:                                                             *)
+(* - Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues. Formalization   *)
+(*   of Shannon's theorems. Journal of Automated Reasoning,  53(1):63--103,   *)
+(*   2014                                                                     *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*         success_factor == bound of the success rate of decoding for typed  *)
 (*                           codes using conditional divergence               *)
 (*   success_factor_bound == bound of the success rate of decoding for typed  *)
 (*                           codes                                            *)
+(* ```                                                                        *)
 (*                                                                            *)
 (* Lemmmas:                                                                   *)
+(* ```                                                                        *)
 (*   typed_success_bound  == bound of the success rate of decoding for typed  *)
 (*                           codes using mutual information                   *)
 (*          success_bound == bound of the success rate of decoding            *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
-(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
-(* 53(1):63--103, 2014                                                        *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -51,7 +56,7 @@ Let n := n'.+1.
 Variable P : P_ n ( A ).
 
 Definition success_factor (tc : typed_code B M P) (V : P_ n (A , B)) :=
-  2 `^ (- n%:R * `H(V | P)) / #|M|%:R *
+  2 `^ (- n%:R * `H(V | P)%channel) / #|M|%:R *
   \sum_ (m : M) #| (V.-shell (tuple_of_row (enc tc m ))) :&:
                     (@tuple_of_row B n @: ((dec tc) @^-1: [set Some m])) |%:R.
 
@@ -70,7 +75,7 @@ symmetry.
 transitivity (#|M|%:R^-1 * \sum_(m : M) \sum_(V | V \in \nu^{B}(P))
     exp_cdiv P V W * #| V.-shell (tuple_of_row (enc tc m)) :&:
                         (@tuple_of_row B n @: (dec tc @^-1: [set Some m])) |%:R *
-    2 `^ (- n%:R * `H(V | P))).
+    2 `^ (- n%:R * `H(V | P)%channel)).
   rewrite exchange_big /= big_distrr /=.
   apply eq_bigr => V _.
   rewrite /success_factor !mulrA -(mulrC (#|M|%:R)^-1) -!mulrA; f_equal.
@@ -201,7 +206,7 @@ rewrite /success_factor -mulrA (mulrC (#|M|%:R)^-1) !mulrA.
 apply ler_wpM2r.
   by rewrite invr_ge0//.
 rewrite /mutual_info_chan addrC addrA.
-rewrite (_ : - `H(type.d P , V) + `H P = - `H( V | P )); last first.
+rewrite (_ : - `H(type.d P , V) + `H P = - `H( V | P ))%channel; last first.
   rewrite /cond_entropy_chan.
   by rewrite opprB addrC.
 rewrite [in leRHS]mulrDr mulrN -mulNr.

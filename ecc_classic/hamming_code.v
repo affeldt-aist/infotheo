@@ -7,41 +7,30 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext f2 linearcode natbin.
 Require Import hamming fdist proba channel channel_code decoding.
 Require Import binary_symmetric_channel.
 
-(******************************************************************************)
-(*                            Hamming Codes                                   *)
+(**md**************************************************************************)
+(* # Hamming Codes                                                            *)
 (*                                                                            *)
-(* Definitions:                                                               *)
-(* Hamming.PCM == definition of Hamming codes parameterized by the height r   *)
-(*   of the parity check matrix. See [F.J. MacWilliams and N.J.A. Sloane, The *)
-(*   Theory of Error-Correcting Codes, 1977] (p.25). r > 1 because with       *)
-(*   r = 1, the parity check matrix would be the identity matrix of           *)
-(*   dimension 1 x 1, therefore the only codeword is 0, and the minimum       *)
-(*   distance is undefined.                                                   *)
-(* hamming_repair    == repair (decoding w.o. discarding) function for        *)
+(* Main lemmas:                                                               *)
+(* - the minimum distance of Hamming codes is 3 (`hamming_min_dist`)          *)
+(* - the function hamming_repair implements minimum distance decoding         *)
+(*   (`hamming_MD_decoding`)                                                  *)
+(* - closed formula for the error rate of Hamming codes (`hamming_error_rat`) *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*       Hamming.PCM == definition of Hamming codes parameterized by the      *)
+(*                      height r of the parity check matrix. See              *)
+(*                      [F.J. MacWilliams and N.J.A. Sloane, The Theory of    *)
+(*                      Error-Correcting Codes, 1977] (p.25). r > 1 because   *)
+(*                      with r = 1, the parity check matrix would be the      *)
+(*                      identity matrix of dimension 1 x 1, therefore the     *)
+(*                      only codeword is 0, and the minimum distance is       *)
+(*                      undefined.                                            *)
+(*    hamming_repair == repair (decoding w.o. discarding) function for        *)
 (*                      Hamming codes                                         *)
 (* Module SysHamming == Hamming codes in systematic form                      *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   hamming_min_dist    == the minimum distance of Hamming codes is 3        *)
-(*   hamming_MD_decoding == the function hamming_repair implements            *)
-(*                          minimum distance decoding                         *)
-(*   hamming_error_rat e == closed formula for the error rate of Hamming      *)
-(*                          codes                                             *)
 (******************************************************************************)
-
-(* OUTLINE:
-- Module Hamming.
-  - Section hamming_code_definition.
-  - Section helper_lemmas.
-- Section hamming_code_minimun_distance
-- section hamming_code_minimum_distance_decoding
-- Module SysHamming.
-  - Section hamming_code_systematic.
-- Module Hamming'.
-  - Section hamming_discard_from_hamming_code_systematic
-- Section hamming_code_error_distance
-- Section hamming_code_error_rate
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -51,9 +40,7 @@ Import GRing.Theory Order.POrderTheory.
 Local Open Scope ring_scope.
 
 Module Hamming.
-
 Section hamming_code_definition.
-
 Variables (m : nat).
 Let n := (2 ^ m.-1).-1.*2.+1.
 
@@ -64,7 +51,6 @@ Definition code : Lcode0.t 'F_2 n := kernel PCM.
 End hamming_code_definition.
 
 Section helper_lemmas.
-
 Variable m' : nat.
 Let m := m'.+2.
 
@@ -93,12 +79,10 @@ End helper_lemmas.
 
 End Hamming.
 
-Section hamming_code_minimun_distance.
-
 (** We show that there is no codeword of Hamming weight 1 and 2 but
    since there is one codeword of weight 3, we can conclude that the
    minimum distance of Hamming codes is 3. *)
-
+Section hamming_code_minimun_distance.
 Variable m' : nat.
 Let m := m'.+2.
 Let n := Hamming.len m'.
@@ -244,7 +228,6 @@ Qed.
 End hamming_code_minimun_distance.
 
 Section hamming_code_minimum_distance_decoding.
-
 Variable m' : nat.
 Let m := m'.+2.
 Let n := Hamming.len m'.
@@ -363,9 +346,7 @@ Qed.
 End hamming_code_minimum_distance_decoding.
 
 Module SysHamming.
-
 Section hamming_code_systematic.
-
 Variable m' : nat.
 Let m := m'.+2.
 Let n := Hamming.len m'.
@@ -698,9 +679,7 @@ End SysHamming.
 
 (** we derive an encoding and a discard functions from the systematic ones *)
 Module Hamming'.
-
 Section from_hamming_code_systematic.
-
 Variable m' : nat.
 Let m := m'.+2.
 Let n := Hamming.len m'.
@@ -862,7 +841,6 @@ End from_hamming_code_systematic.
 End Hamming'.
 
 Section hamming_code_error_distance.
-
 Variable r' : nat.
 Let r := r'.+2.
 Let n := Hamming.len r'.

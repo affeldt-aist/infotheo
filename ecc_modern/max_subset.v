@@ -2,14 +2,9 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect.
 
+(**md**************************************************************************)
+(* # Maximum Subset Satisfying some Property                                  *)
 (******************************************************************************)
-(*                   Maximum Subset Satisfying some Property                  *)
-(******************************************************************************)
-
-(* OUTLINE:
-- Module maxsubset.
-- Section max_subset_satisfying_P.
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -121,7 +116,6 @@ End maxsubset.
 End Maxsubset.
 
 Section max_subset_satisfying_P.
-
 Variable A : finType.
 Variable P : pred {set A}.
 

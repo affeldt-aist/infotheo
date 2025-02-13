@@ -4,8 +4,8 @@ From mathcomp Require Import all_ssreflect all_algebra lra.
 From mathcomp Require Import Rstruct reals exp.
 Require Import bigop_ext realType_ext realType_ln.
 
-(******************************************************************************)
-(*                        The log-sum Inequality                              *)
+(**md**************************************************************************)
+(* # The log-sum Inequality                                                   *)
 (******************************************************************************)
 
 Set Implicit Arguments.

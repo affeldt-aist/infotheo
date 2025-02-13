@@ -6,17 +6,9 @@ From mathcomp Require Import finfield falgebra fieldext.
 Require Import ssr_ext ssralg_ext linearcode.
 Require Import dft poly_decoding grs bch.
 
+(**md**************************************************************************)
+(* Work in progress about alternant and Goppa codes                           *)
 (******************************************************************************)
-(*            Work in progress about alternant and Goppa codes                *)
-(******************************************************************************)
-
-(* OUTLINE:
-- Section location_polynomial.
-- Section grs_polynomial.
-- Section injection_into_extension_field.
-- Section alternant_code.
-- Section narrow_sense_BCH_are_Goppa. (wip)
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -28,7 +20,6 @@ Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
 
 Section location_polynomial.
-
 Variables (n : nat) (F : finFieldType) (a : 'rV[F]_n).
 
 (** the values of the location polynomial at points a``_i,
@@ -40,7 +31,6 @@ End location_polynomial.
 
 (* NB: the notation GRS_k(kappa, g) in the classification book *)
 Section grs_polynomial.
-
 Variables (n : nat) (F : finFieldType) (a : 'rV[F]_n).
 Variable g : {poly F}.
 Let b := \row_(i < n) (((location_polynomial_points a) ``_ i)^-1 * g.[a ``_ i]).
@@ -51,7 +41,6 @@ Definition GRS_PCM_polynomial := @GRS.PCM _ F a b r.
 End grs_polynomial.
 
 Section injection_into_extension_field.
-
 Variables (F0 : finFieldType) (F1 : fieldExtType F0).
 
 Definition ext_inj : {rmorphism F0 -> F1} :=
@@ -66,7 +55,6 @@ Definition ext_inj_rV : 'rV[F0]_n -> 'rV[F1]_n := @map_mx _ _ ext_inj 1 n.
 End injection_into_extension_field.
 
 Section alternant_code.
-
 (** declare F_q *)
 Variable p u' : nat.
 Let u := u'.+1.
@@ -99,7 +87,6 @@ Definition goppa_code_condition := size g = (n - k).+1.
 End alternant_code.
 
 Section narrow_sense_BCH_are_Goppa.
-
 (** declare F_q *)
 Variable p u' : nat.
 Let u := u'.+1.

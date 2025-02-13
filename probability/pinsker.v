@@ -8,11 +8,14 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import derive_ext.
 Require Import fdist divergence variation_dist partition_inequality.
 
-(******************************************************************************)
-(*                       Pinsker's Inequality                                 *)
+(**md**************************************************************************)
+(* # Pinsker's Inequality                                                     *)
 (*                                                                            *)
-(* pinkser_fun        == function used in the proof of Pinsker's inequality   *)
-(* Pinsker_inequality == main lemma                                           *)
+(* The main lemma is `Pinsker_inequality`.                                    *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*    pinkser_fun == function used in the proof of Pinsker's inequality       *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 

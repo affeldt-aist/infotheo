@@ -5,8 +5,8 @@ From mathcomp Require Import mathcomp_extra boolp reals.
 Require Import ssr_ext ssralg_ext realType_ext.
 Require Import fdist proba convex.
 
-(******************************************************************************)
-(*                           Jensen's inequality                              *)
+(**md**************************************************************************)
+(* # Jensen's inequality                                                      *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -27,8 +27,6 @@ Variable f : R^o -> R^o.
 Variable D : {convex_set R^o}.
 Hypothesis convex_f : convex_function_in D f.
 Variables A : finType.
-
-(*Local Hint Resolve Rle_refl : core.*)
 
 Lemma jensen_dist (r : A -> R) (X : R.-fdist A) :
   (forall a, r a \in D) ->

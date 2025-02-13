@@ -3,12 +3,14 @@
 From mathcomp Require Import all_ssreflect fingroup perm ssralg zmodp.
 From mathcomp Require Import matrix mxalgebra poly polydiv mxpoly.
 
-(******************************************************************************)
-(*                        Small lemmas about 'F_2                             *)
+(**md**************************************************************************)
+(* # Lemmas about $\mathbb{F}_2$                                              *)
 (*                                                                            *)
+(* ```                                                                        *)
 (*   F2_of_bool b == coercion from bool to 'F_2                               *)
 (*   bool_of_F2 x == boolean corresponding to x : 'F_2                        *)
 (*        negF2 x == boolean negation over 'F_2                               *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Set Implicit Arguments.

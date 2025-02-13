@@ -6,20 +6,23 @@ From mathcomp Require Import lra ring mathcomp_extra Rstruct reals.
 Require Import realType_ext ssr_ext ssralg_ext f2 bigop_ext fdist proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
 
-(******************************************************************************)
-(*                      The variety of decoders                               *)
+(**md**************************************************************************)
+(* # The variety of decoders                                                  *)
 (*                                                                            *)
-(* MD_decoding  == minimum distance decoding (a.k.a. nearest neighbor         *)
+(* ```                                                                        *)
+(*  MD_decoding == minimum distance decoding (a.k.a. nearest neighbor         *)
 (*                 decoding)                                                  *)
-(* BD_decoding  == bounded-distance decoding                                  *)
+(*  BD_decoding == bounded-distance decoding                                  *)
 (*                 Notation: t .-BDD f                                        *)
-(* ML_decoding  == maximum likelihood decoding                                *)
+(*  ML_decoding == maximum likelihood decoding                                *)
 (* MAP_decoding == maximum aposteriori decoding                               *)
 (* MPM_decoding == maximum posterior marginal decoding                        *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   MD_implies_ML  == MD decoding implies ML decoding of a BSC with p < 1/2  *)
-(*   MAP_implies_ML == MAP decoding implies ML decoding                       *)
+(* Main lemmas:                                                               *)
+(* - MD decoding implies ML decoding of a BSC with p < 1/2 (`MD_implies_ML`)  *)
+(* - MAP decoding implies ML decoding (`MAP_implies_ML`)                      *)
+(*                                                                            *)
 (******************************************************************************)
 
 Reserved Notation "t .-BDD f" (at level 2, format "t  .-BDD  f").
@@ -139,7 +142,6 @@ Qed.
 Local Close Scope min_scope.
 
 Section minimum_distance_decoding.
-
 Variables (F : finFieldType) (n : nat) (C : {set 'rV[F]_n}).
 Variable f : repairT F F n.
 
@@ -179,7 +181,6 @@ Qed.
 End minimum_distance_decoding.
 
 Section bounded_distance_decoding.
-
 Variables (F : finFieldType) (n : nat) (C : {vspace 'rV[F]_n}).
 Variable (f : repairT F F n).
 
@@ -198,7 +199,6 @@ Local Open Scope reals_ext_scope.
 Local Open Scope order_scope.
 
 Section maximum_likelihood_decoding.
-
 Variables (A : finFieldType) (B : finType) (W : `Ch(A, B)).
 Variables (n : nat) (C : {vspace 'rV[A]_n}).
 Variable f : decT B ('rV[A]_n) n.
@@ -299,7 +299,6 @@ End maximum_likelihood_decoding_prop.
 
 Section MD_ML_decoding.
 Let R := Rdefinitions.R.
-
 Variable p : {prob R}.
 
 Let card_F2 : #| 'F_2 | = 2%nat. Proof. by rewrite card_Fp. Qed.

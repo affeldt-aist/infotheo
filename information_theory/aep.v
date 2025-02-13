@@ -6,12 +6,16 @@ From mathcomp Require Import reals exp Rstruct.
 Require Import realType_ext ssr_ext bigop_ext ssralg_ext realType_ln.
 Require Import fdist proba entropy.
 
-(******************************************************************************)
-(*              Asymptotic Equipartition Property (AEP)                       *)
+(**md**************************************************************************)
+(* # Asymptotic Equipartition Property (AEP)                                  *)
 (*                                                                            *)
-(*         Lemma V_mlog == Var(-log P) = E((-log P)^2) - H(P)                 *)
-(* Definition aep_bound == constant used in the statement of AEP              *)
-(*            Lemma aep == AEP                                                *)
+(* The AEP lemma is `aep`.                                                    *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*      aep_sigma2 := `E ((`-- (`log P)) `^2) - (`H P)^+2                     *)
+(*   sum_mlog_prod == TODO                                                    *)
+(*       aep_bound == constant used in the statement of AEP                   *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 

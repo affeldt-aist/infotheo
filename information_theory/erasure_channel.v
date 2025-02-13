@@ -6,10 +6,12 @@ From mathcomp Require Import mathcomp_extra Rstruct.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 Require Import entropy binary_entropy_function channel hamming channel_code.
 
-(******************************************************************************)
-(*                     Definition of erasure channel                          *)
+(**md**************************************************************************)
+(* # Definition of erasure channel                                            *)
 (*                                                                            *)
-(* EC.v == definition of n-ary Erasure Channel (EC)                           *)
+(* ```                                                                        *)
+(*    EC.c == definition of n-ary Erasure Channel (EC)                        *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 

@@ -1,29 +1,34 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint fingroup finalg perm zmodp.
-From mathcomp Require Import matrix mxalgebra vector.
+From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint fingroup.
+From mathcomp Require Import finalg perm zmodp matrix mxalgebra vector.
 Require Import ssr_ext f2.
 
-(******************************************************************************)
-(*     Additional lemmas about row vectors and other types from ssralg.v      *)
+(**md**************************************************************************)
+(* # Additional lemmas about row vectors and other types from ssralg.v        *)
 (*                                                                            *)
-(*  v ``_ i       == the ith element of v                                     *)
-(*  supp v        == the set of indices of elements from v that are not 0     *)
-(*  v `[ i := x ] == v where the ith element has been replaced with x         *)
-(*  v \# S        == the vector of size #|S| containing the elements of       *)
-(*                    index i \in S                                           *)
-(*                                                                            *)
-(* Section prod_rV:                                                           *)
+(* Overview:                                                                  *)
+(* - Section prod_rV:                                                         *)
 (*   Technical lemmas to switch between products of vectors (A^n x B^n) and   *)
 (*   vectors of products (A x B)^n                                            *)
-(* Section AboutRowTuple:                                                     *)
+(* - Section AboutRowTuple:                                                   *)
 (*   Conversions between row vectors and tuples                               *)
-(* Several seq-like definitions for row vectors:                              *)
+(* - Several seq-like definitions for row vectors:                            *)
 (*   rbehead, rbelast, rlast, row_take, row_drop                              *)
-(* Some lemmas about matrices (and their rank)                                *)
+(* - Some lemmas about matrices (and their rank)                              *)
 (*                                                                            *)
+(* ```                                                                        *)
+(*        v ``_ i == the ith element of v                                     *)
+(*         supp v == the set of indices of elements from v that are not 0     *)
+(*  v `[ i := x ] == v where the ith element has been replaced with x         *)
+(*         v \# S == the vector of size #|S| containing the elements of       *)
+(*                   index i \in S                                            *)
+(* ```                                                                        *)
+(*                                                                            *)
+(* ```                                                                        *)
 (*   GF2_of_F2    == morphism between F_2 and GF(2^m)                         *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Set Implicit Arguments.

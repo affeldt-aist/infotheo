@@ -4,31 +4,29 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum.
 Require FunctionalExtensionality.
 Require Import ssr_ext.
 
-(******************************************************************************)
-(*                       Kraft's inequality                                   *)
+(**md**************************************************************************)
+(* # Kraft's inequality                                                       *)
 (*                                                                            *)
-(* For details, see: Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. *)
-(* Examples of formal proofs about data compression. International Symposium  *)
-(* on Information Theory and Its Applications (ISITA 2018), Singapore,        *)
-(* October 28--31, 2018, pages 633--637. IEEE, Oct 2018                       *)
+(* Documented in:                                                             *)
+(* - Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. Examples of     *)
+(*   formal proofs about data compression. International Symposium on         *)
+(*   Information Theory and Its Applications (ISITA 2018), Singapore,         *)
+(*   October 28--31, 2018, pages 633--637. IEEE, Oct 2018                     *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*               prefix == TODO                                               *)
+(*           ary_of_nat == TODO                                               *)
+(*           nat_of_ary == TODO                                               *)
+(*          prefix_code == TODO                                               *)
+(*   prefix_code_strong == TODO                                               *)
+(*           kraft_cond == TODO                                               *)
+(*             suffixes == TODO                                               *)
+(* ```                                                                        *)
 (*                                                                            *)
 (* Main reference:                                                            *)
 (* - Robert McEliece, The Theory of Information and Coding,  Cambridge        *)
 (*   University Press, 2002                                                   *)
 (******************************************************************************)
-
-(* OUTLINE:
-  1. Section prefix.
-  2. Section ary_of_nat.
-  3. Section code.
-  4. Section prefix_code.
-  5. Section example_of_code.
-  6. Section kraft_condition.
-  7. Section prefix_implies_kraft_cond.
-  8. Section kraft_code.
-  9. Section kraft_cond_implies_prefix.
-  10. wip
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -123,8 +121,8 @@ Qed.
 
 End prefix.
 
+(* TODO: mv? *)
 Section ary_of_nat.
-
 Variable t' : nat.
 Let t := t'.+2.
 
@@ -302,7 +300,6 @@ Qed.
 End ary_of_nat.
 
 Section code.
-
 Variable T : finType.
 
 Record code_set := CodeSet {
@@ -351,7 +348,6 @@ Proof. by case/(empty_finType_code_set C) => ->. Qed.
 End code.
 
 Section prefix_code.
-
 Variable T : finType.
 
 Definition prefix_code (C : code_set T) :=
@@ -383,7 +379,6 @@ Qed.
 End prefix_code.
 
 Section example_of_code.
-
 Variable (n' : nat) (t' : nat).
 Let n := n'.+1.
 Let t := t'.+2.
@@ -395,6 +390,7 @@ Hypothesis Hl : forall i : 'I_n, nth O l i != 0.
 Let lmax := last O l.
 
 (* see mceliece sect. 11.2, theorem 11.2 *)
+(* TODO: rename *)
 Definition w (j : 'I_n) :=
   \sum_(i < j) #|T| ^ (nth 0 l j - nth 0 l i).
 
@@ -479,9 +475,7 @@ Definition ACode := CodeSet uniq_acode.
 End example_of_code.
 
 Section kraft_condition.
-
 Local Notation "s ``_ i" := (nth O s i) (at level 4).
-
 Variable R : rcfType.
 
 Definition kraft_cond (T : finType) (l : seq nat) :=
@@ -491,7 +485,8 @@ Definition kraft_cond (T : finType) (l : seq nat) :=
 End kraft_condition.
 
 Local Obligation Tactic := idtac.
-Program Definition prepend (T : finType) (lmax : nat) (c : seq T) (t : (lmax - size c).-tuple T)
+Program Definition prepend (T : finType) (lmax : nat) (c : seq T)
+    (t : (lmax - size c).-tuple T)
   : lmax.-tuple T := @Tuple _ _ (take lmax c ++ t) _.
 Next Obligation.
 move=> T lmax c t.
@@ -501,7 +496,8 @@ case: ifPn.
 rewrite -leqNgt => ?; by rewrite subnKC.
 Qed.
 
-Lemma injective_prepend (T : finType) (lmax : nat) (c : seq T) : injective (@prepend T lmax c).
+Lemma injective_prepend (T : finType) (lmax : nat) (c : seq T) :
+  injective (@prepend T lmax c).
 Proof.
 move=> /= a b [] /eqP.
 rewrite eqseq_cat // => /andP[_ /eqP ab]; by apply val_inj.
@@ -510,7 +506,6 @@ Qed.
 Import Order.TTheory GRing.Theory Num.Def Num.Theory.
 
 Section prefix_implies_kraft_cond.
-
 Variables (T : finType) (C : code_set T).
 Let n := size C.
 Let l := sort_sizes C.
@@ -601,7 +596,6 @@ Qed.
 End prefix_implies_kraft_cond.
 
 Section kraft_code.
-
 Variable (n' : nat) (t' : nat).
 Let n := n'.+1.
 Let t := t'.+2.
@@ -672,7 +666,6 @@ Qed.
 End kraft_code.
 
 Section kraft_cond_implies_prefix.
-
 Variable (n' : nat) (t' : nat).
 Let n := n'.+1.
 Let t := t'.+2.
@@ -760,7 +753,6 @@ End kraft_cond_implies_prefix.
 
 (* wip *)
 Section code_cw.
-
 Variable T : finType.
 
 Record code_set_cw M := CodeSetCw {

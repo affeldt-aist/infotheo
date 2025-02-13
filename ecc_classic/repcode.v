@@ -4,25 +4,18 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
 Require Import hamming num_occ ssralg_ext f2 linearcode decoding channel_code.
 
-(******************************************************************************)
-(*                       Repetition Codes                                     *)
+(**md**************************************************************************)
+(* # Repetition Codes                                                         *)
 (*                                                                            *)
-(* Rep.code r == definition of the r-repetition code                          *)
+(* Main lemmas:                                                               *)
+(* - The minimum distance is r.+1 (`min_dist_repcode`)                        *)
+(* - Decoding by majority vote implements MD-decoding (`repcode_MD_decoding`) *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   min_dist_repcode    == The minimum distance is r.+1                      *)
-(*   repcode_MD_decoding == Decoding by majority vote implements MD-decoding  *)
+(* ```                                                                        *)
+(*   Rep.code r == definition of the r-repetition code                        *)
+(* ```                                                                        *)
+(*                                                                            *)
 (******************************************************************************)
-
-(* OUTLINE:
-- Module Rep
-    definition of repetition codes using systematic form
-    no repair function yet
-- Section minimum_distance_decoding
-    minimum distance
-    number of errors that can be decoded using MD-decoding
-- Section majority_vote_decoding
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -180,7 +173,6 @@ by exists 0; apply/imsetP; exists (const_mx 0) => //; rewrite /= Rep.encodeE.
 Qed.
 
 Section minimum_distance_decoding.
-
 Variable r : nat.
 (* we assume a repair function *)
 Variable f : repairT 'F_2 'F_2 r.+1.
@@ -301,7 +293,6 @@ End majority_vote_decoding.
 
 (* TODO: remove? *)
 Section repetition_code.
-
 Variable r : nat.
 Let LC := Rep.Lcode_wo_repair (@reprepair_img r).
 

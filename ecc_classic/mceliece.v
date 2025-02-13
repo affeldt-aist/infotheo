@@ -4,8 +4,8 @@ From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
 Require Import ssralg_ext hamming linearcode decoding channel_code.
 
-(******************************************************************************)
-(*                       McEliece Cryptographic Scheme                        *)
+(**md**************************************************************************)
+(* # McEliece Cryptographic Scheme                                            *)
 (*                                                                            *)
 (* The McEliece cryptographic scheme can be defined for any linear code but   *)
 (* is only known to be secure for Goppa codes [Engelbert 2007]. Our purpose   *)
@@ -27,7 +27,6 @@ Module McEliece.
     Alice chooses a binary (n,k)-linear code C that can correct t errors
     (and for which an efficient decoding algorithm is known) *)
 Section mceliece.
-
 Variable k n' : nat.
 Let n := n'.+1.
 Variable Hdimlen : k <= n.

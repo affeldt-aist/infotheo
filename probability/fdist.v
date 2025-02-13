@@ -7,36 +7,34 @@ From mathcomp Require Import mathcomp_extra boolp.
 From mathcomp Require Import Rstruct.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 
-(******************************************************************************)
-(*                         Finite distributions                               *)
+(**md**************************************************************************)
+(* # Finite distributions                                                     *)
 (*                                                                            *)
-(* This file provides a formalization of finite probability distributions.    *)
+(* This file provides a formalization of finite probability distributions and *)
+(* lemmas about them (e.g., Wolfowitz's counting principle).                  *)
 (*                                                                            *)
+(* ```                                                                        *)
 (*         f @^-1 y == preimage of the point y via the function f where the   *)
 (*                     type of x is an eqType                                 *)
-(*       R.-fdist A == the type of distributions over a finType A             *)
+(*       R.-fdist T == the type of distributions over a finType T             *)
+(*                     w.r.t. R : realType                                    *)
+(*        {fdist T} := Rdefinitions.R.-fdist R                                *)
+(*        probfdist == TODO                                                   *)
+(*       is_fdist f == the function f is a distribution (predicate in Prop)   *)
 (*     fdist_supp d := [set a | d a != 0]                                     *)
 (*           fdist1 == point-supported distribution                           *)
 (*        fdistbind == of type fdist A -> (A -> fdist B) -> fdist B           *)
-(*                     bind of the "probability monad", notation >>=, scope   *)
-(*                     fdist_scope (delimiter: fdist)                         *)
+(*                     bind of the "probability monad"                        *)
+(*                     notation >>=, scope fdist_scope/delimiter fdist        *)
 (*         fdistmap == map of the "probability monad"                         *)
 (*    fdist_uniform == uniform distribution other a finite type               *)
-(*            `U C0 == the uniform distribution with support C, where C0 is a *)
-(*                     proof that the set C is not empty                      *)
+(*            `U C0 == the uniform distribution with support C,               *)
+(*                     where C0 is a proof that the set C is not empty        *)
 (* fdist_binary H p == where H is a proof of #|A| = 2%N and p is a            *)
 (*                     probability: binary distribution over A with bias p    *)
 (*        fdistI2 p == binary distributions over 'I_2                         *)
 (*      fdistD1 X P == distribution built from X where the entry b has been   *)
 (*                     removed (where P is a proof that X b != 1)             *)
-(*      fdist_convn == of type                                                *)
-(*                     R.-fdist 'I_n -> ('I_n -> R.-fdist A) -> R.-fdist A    *)
-(*                     convex combination of n finite distributions           *)
-(*       fdist_conv == convex combination of two distributions                *)
-(*                     (convex analogue of vector addition)                   *)
-(*                     notation: P1 <| p |> P1 where p is a probability       *)
-(*       fdist_perm ==                                                        *)
-(*  fdistI_perm s d == s-permutation of the distribution d : R.-fdist 'I_n    *)
 (*        fdist_add == concatenation of two distributions according to a      *)
 (*                     given probability p                                    *)
 (*                     (convex analogue of the canonical presentation of      *)
@@ -44,28 +42,48 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 (*        fdist_del == restriction of the domain of a distribution            *)
 (*                     (convex analogue of the projection of a vector         *)
 (*                     to a subspace)                                         *)
+(*     fdist_belast == TODO                                                   *)
+(*      fdist_convn == of type                                                *)
+(*                     R.-fdist 'I_n -> ('I_n -> R.-fdist A) -> R.-fdist A    *)
+(*                     convex combination of n finite distributions           *)
+(*       fdist_conv == convex combination of two distributions                *)
+(*                     (convex analogue of vector addition)                   *)
+(*                     notation: P1 <| p |> P1 where p is a probability       *)
+(*       fdist_perm == TODO                                                   *)
+(*  fdistI_perm s d == s-permutation of the distribution d : R.-fdist 'I_n    *)
+(* ```                                                                        *)
+(*                                                                            *)
 (* About bivariate (joint) distributions:                                     *)
-(*              P`1 == marginal left                                          *)
-(*              P`2 == marginal right                                         *)
-(*           P `X W == pair of a distribution and a stochastic matrix         *)
-(*         P1 `x P2 == product distribution                                   *)
-(*                     (convex analogue of the simple tensor of two vectors)  *)
-(*         fdistX P == swap the two projections of P : R.-fdist A * B         *)
-(*           P `^ n == product distribution over a row vector (fdist_rV)      *)
-(*        wolfowitz == Wolfowitz's counting principle                         *)
-(* head_of_fdist_rV == head marginal                                          *)
-(* tail_of_fdist_rV == tail marginal                                          *)
-(*       fdist_col' == marginal distribution                                  *)
-(*        fdist_nth ==                                                        *)
-(*       fdist_take ==                                                        *)
-(*           fdistA ==                                                        *)
-(*         fdistC12 ==                                                        *)
-(*          fdistAC ==                                                        *)
-(*         fdistC13 ==                                                        *)
-(*     fdist_proj13 ==                                                        *)
-(*     fdist_proj23 ==                                                        *)
-(*       fdist_self ==                                                        *)
-(*   fdist_prod_nth ==                                                        *)
+(* ```                                                                        *)
+(*                P`1 == marginal left (fdist_scope/fdist)                    *)
+(*                P`2 == marginal right (fdist_scope/fdist)                   *)
+(*             P `X W == pair of a distribution and a stochastic matrix       *)
+(*           P1 `x P2 == product distribution                                 *)
+(*                       (convex analogue of the simple tensor of 2 vectors)  *)
+(*           fdistX P == swap the two projections of P : R.-fdist A * B       *)
+(*             P `^ n == product distribution over a row vector               *)
+(*                       identifier: fdist_rV                                 *)
+(*   fdist_prod_of_rV == TODO                                                 *)
+(*   head_of_fdist_rV == head marginal                                        *)
+(*   tail_of_fdist_rV == tail marginal                                        *)
+(*         fdist_col' == marginal distribution                                *)
+(*   fdist_belast_last_of_rV == TODO                                          *)
+(*   fdist_rV_of_prod == TODO                                                 *)
+(*         fdist_col' == TODO                                                 *)
+(*          fdist_nth == TODO                                                 *)
+(*         fdist_take == TODO                                                 *)
+(*             fdistA == TODO                                                 *)
+(*           fdistC12 == TODO                                                 *)
+(*            fdistAC == TODO                                                 *)
+(*           fdistC13 == TODO                                                 *)
+(*       fdist_proj13 == TODO                                                 *)
+(*       fdist_proj23 == TODO                                                 *)
+(*         fdist_self == TODO                                                 *)
+(*     fdist_prod_nth == TODO                                                 *)
+(*    fdist_prod_take == TODO                                                 *)
+(*    fdist_take_drop == TODO                                                 *)
+(*        CodomDFDist == TODO                                                 *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -77,6 +95,7 @@ Reserved Notation "P `X W" (at level 6).
 Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
 Reserved Notation "f @^-1 y" (at level 10).
+
 Declare Scope fdist_scope.
 Delimit Scope fdist_scope with fdist.
 
@@ -104,7 +123,7 @@ Proof. by rewrite boolp.funeqE => -[]. Qed.
 Unset Printing Implicit Defensive.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
-(* on the model of infotheo *)
+
 Module FDist.
 Section fdist.
 Variables (R : numDomainType) (A : finType).
@@ -422,10 +441,6 @@ Qed.
 
 End fdist_uniform_prop.
 
-(*TODO yoshihiro503: move these *)
-(*Definition dominates {R: realType} {A : Type} (Q P : A -> R) :=
-  locked (forall a, Q a = 0 -> P a = 0)%R.
-Notation "P '`<<' Q" := (dominates Q P).*)
 Lemma dominatesP (R: realType) A (Q P : A -> R) :
   P `<< Q <-> forall a, Q a = 0%R -> P a = 0%R.
 Proof. by rewrite /dominates; unlock. Qed.
@@ -464,7 +479,6 @@ Qed.
 Definition fdist_uniform_supp : fdist R A := locked (FDist.make f0 f1).
 
 End fdist_uniform_supp.
-
 Notation "'`U' C0 " := (fdist_uniform_supp _ C0).
 
 Section fdist_uniform_supp_prop.
@@ -568,8 +582,10 @@ Variables (A : finType) (d : fdist R A).
 
 Hypothesis Hd : #|fdist_supp d| = 2%nat.
 
+(* TODO: doc *)
 Definition fdist_binary_supp0 := enum_val (cast_ord (esym Hd) ord0).
 
+(* TODO: doc *)
 Definition fdist_binary_supp1 := enum_val (cast_ord (esym Hd) (lift ord0 ord0)).
 
 Lemma enum_fdist_binary_supp :
@@ -668,7 +684,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variable p : prob R.
 
-Definition fdistI2: R.-fdist 'I_2 :=
+Definition fdistI2 : R.-fdist 'I_2 :=
   fdist_binary (card_ord 2) p (lift ord0 ord0).
 
 Lemma fdistI2E a : fdistI2 a = if a == ord0 then p : R else (Prob.p p).~.
@@ -970,7 +986,6 @@ Lemma dom_by_fdist_sndN a b : P (a, b) != 0 -> fdist_snd b != 0.
 Proof. by apply: contra => /eqP /dom_by_fdist_snd ->. Qed.
 
 End fdist_fst_snd.
-
 Notation "d `1" := (fdist_fst d) : fdist_scope.
 Notation "d `2" := (fdist_snd d) : fdist_scope.
 
@@ -1419,6 +1434,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A B C : finType) (P : R.-fdist (A * B * C)).
 
+(* TODO: doc *)
 Definition prodA (x : A * B * C) := (x.1.1, (x.1.2, x.2)).
 
 Lemma imsetA E F G : [set prodA x | x in (E `* F) `* G] = E `* (F `* G).
@@ -1521,6 +1537,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variables (A B C : finType) (P : R.-fdist (A * B * C)).
 
+(* TODO: doc *)
 Definition prodAC := fun x : A * B * C => (x.1.1, x.2, x.1.2).
 
 Lemma inj_prodAC : injective prodAC.
@@ -1926,7 +1943,6 @@ rewrite [_ / _]mulrC !mulrA divrr ?unitfE ?onem_neq0 // mul1r.
 by rewrite /g' /fdist_del_idx ltnNge ji.
 Qed.
 End moved_from_convex.
-
 
 Module CodomDFDist.
 Import classical_sets.

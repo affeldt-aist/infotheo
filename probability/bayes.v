@@ -6,21 +6,21 @@ From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 Require Import fdist proba.
 
-(******************************************************************************)
-(* wip                                                                        *)
-(* goal: BN_factorization
-   main definitions:
-   * RV_equiv
-   * univ_types / prod_types
-   * preim_vars
-   * cinde_preim
-   * bayesian network (Koller & Friedmann p 57)
-   main theorems:
-   * cinde_preim_ok
-   * prod_vars1
-   * cinde_preim_equiv
-   * BN_factorization
- *)
+(**md**************************************************************************)
+(* WIP towards the proof of BN_factorization.                                 *)
+(*                                                                            *)
+(* Main definitions:                                                          *)
+(* - RV_equiv                                                                 *)
+(* - univ_types / prod_types                                                  *)
+(* - preim_vars                                                               *)
+(* - cinde_preim                                                              *)
+(* - bayesian network (Koller & Friedmann p 57)                               *)
+(*                                                                            *)
+(* Main theorems:                                                             *)
+(* - cinde_preim_ok                                                           *)
+(* - prod_vars1                                                               *)
+(* - cinde_preim_equiv                                                        *)
+(*                                                                            *)
 (******************************************************************************)
 
 Local Open Scope tuple_ext_scope.

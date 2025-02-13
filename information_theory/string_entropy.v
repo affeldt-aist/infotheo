@@ -6,16 +6,17 @@ From mathcomp Require convex.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln.
 Require Import fdist entropy convex jensen num_occ.
 
-(******************************************************************************)
-(*                         String entropy                                     *)
+(**md**************************************************************************)
+(* # String entropy                                                           *)
 (*                                                                            *)
-(* For details, see: Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. *)
-(* Examples of formal proofs about data compression. International Symposium  *)
-(* on Information Theory and Its Applications (ISITA 2018), Singapore,        *)
-(* October 28--31, 2018, pages 633--637. IEEE, Oct 2018                       *)
+(* Documented in:                                                             *)
+(* - Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. Examples of     *)
+(*   formal proofs about data compression. International Symposium on         *)
+(*   Information Theory and Its Applications (ISITA 2018), Singapore,         *)
+(*   October 28--31, 2018, pages 633--637. IEEE, Oct 2018                     *)
 (*                                                                            *)
 (* Main reference:                                                            *)
-(*   Gonzalo Navarro. Compact Data Structures: A Practical Approach.          *)
+(* - Gonzalo Navarro. Compact Data Structures: A Practical Approach.          *)
 (*   Cambridge University Press, 2016.                                        *)
 (******************************************************************************)
 

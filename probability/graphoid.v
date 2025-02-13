@@ -5,12 +5,12 @@ From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext bigop_ext  realType_ext fdist.
 Require Import proba jfdist_cond.
 
-(******************************************************************************)
-(*                              Graphoid axioms                               *)
+(**md**************************************************************************)
+(* # Graphoid axioms                                                          *)
 (*                                                                            *)
-(* The main purpose of this file is to provide a formalization of the         *)
-(* graphoid axioms (symmetry, decomposition, weak_union, contraction, and     *)
-(* intersection) and derived rules.                                           *)
+(* This file provides a formalization of the graphoid axioms (symmetry,       *)
+(* decomposition, weak_union, contraction, and intersection) and derived      *)
+(* rules.                                                                     *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -23,7 +23,7 @@ Local Open Scope fdist_scope.
 
 Import GRing.Theory.
 
-(* TODO: rename *)
+(* TODO: rename, mv *)
 Module Proj124.
 Section proj124.
 Context {R : realType}.
@@ -44,7 +44,7 @@ Definition Proj14d {R : realType} (A B C D : finType) (d : R.-fdist (A * B * D *
   R.-fdist (A * C) :=
   fdist_proj13 (Proj124.d d).
 
-(* TODO: rename *)
+(* TODO: rename, mv *)
 Module QuadA23.
 Section def.
 Context {R : realType}.

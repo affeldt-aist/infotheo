@@ -4,24 +4,19 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
 From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext f2.
 
-(******************************************************************************)
-(*                        The Summary Operator                                *)
+(**md**************************************************************************)
+(* # The Summary Operator                                                     *)
 (*                                                                            *)
 (* This file provides a formalization of the summary operator used in         *)
 (* pencil-and-paper proofs in modern coding theory.                           *)
 (*                                                                            *)
-(* Definitions:                                                               *)
+(* ```                                                                        *)
 (*   \sum_( x = d [~ s]) F == summation over the vectors x equal to d on all  *)
 (*                            components except the freely enumerated         *)
 (*                            indices in s                                    *)
-(*   summary_fold r d e    == alternative expression of \sum_( x = d [~ r]) e *)
+(*      summary_fold r d e == alternative expression of \sum_( x = d [~ r]) e *)
+(* ```                                                                        *)
 (******************************************************************************)
-
-(* OUTLINE:
-- Section free_on.
-- Section rsum_freeon.
-- Section alternative_definitions_of_summary.
-*)
 
 Reserved Notation "\sum_ ( x '=' d [~ s ] ) F" (at level 41,
   F at level 41, x, s, d at level 50,
@@ -40,7 +35,6 @@ Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
 Section free_on.
-
 Variables (A : eqType) (n : nat).
 
 Definition freeon (s : {set 'I_n}) (t d : 'rV[A]_n) : bool :=

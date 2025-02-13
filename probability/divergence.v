@@ -4,15 +4,20 @@ From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import Rstruct reals sequences exp.
 Require Import realType_ext realType_ln fdist proba.
 
-(******************************************************************************)
-(*    Divergence (or the Kullback-Leibler distance or relative entropy)       *)
+(**md**************************************************************************)
+(* # Divergence (or the Kullback-Leibler distance or relative entropy)        *)
 (*                                                                            *)
+(* ```                                                                        *)
 (* D(P || Q) == divergence between the (finite) probability distributions P   *)
 (*              and Q                                                         *)
+(* ```                                                                        *)
+(*                                                                            *)
 (* Lemmas:                                                                    *)
+(* ```                                                                        *)
 (*   div_ge0 == divergence is non-negative                                    *)
-(*   divPP   == D(P || P) = 0                                                 *)
-(*   div0P   == D(P || Q) = 0 <-> P = Q                                       *)
+(*     divPP == D(P || P) = 0                                                 *)
+(*     div0P == D(P || Q) = 0 <-> P = Q                                       *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level,

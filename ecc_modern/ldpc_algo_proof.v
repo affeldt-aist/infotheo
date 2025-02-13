@@ -8,21 +8,13 @@ Require Import ssr_ext ssralg_ext bigop_ext f2.
 Require Import fdist channel pproba linearcode subgraph_partition tanner.
 Require Import tanner_partition summary ldpc checksum ldpc_algo.
 
-(******************************************************************************)
-(*                   Verification of a Sum-Product decoder                    *)
+(**md**************************************************************************)
+(* # Verification of a Sum-Product decoder                                    *)
 (*                                                                            *)
 (* Formal verification of the implementation of sum-product decoding from     *)
-(* the file ldpc_algo.v.                                                      *)
+(* the file `ldpc_algo.v`.                                                    *)
 (*                                                                            *)
 (******************************************************************************)
-
-(* OUTLINE:
-- Section Extras.
-- Section TnTreeEq.
-- Section BuildTreeOk.
-- Section BuildTreeTest.
-- Section AlgoProof.
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -33,7 +25,6 @@ Local Open Scope ring_scope.
 Import GRing.Theory.
 
 Section TnTreeEq.
-
 Variables i U V : eqType.
 
 Definition kind_eq_bool (k1 k2 : kind) : bool :=
@@ -70,7 +61,6 @@ by injection Hv; move=> ->; rewrite eqxx.
 Qed.
 
 Section EqTag.
-
 Variable k : kind.
 
 HB.instance Definition _ := hasDecEq.Build _ (@tag_eqP k).
@@ -124,7 +114,6 @@ by rewrite (leq_ltn_trans _ Hd) // leq_maxr.
 Qed.
 
 Section EqTnTree.
-
 Variable k : kind.
 
 HB.instance Definition _ := hasDecEq.Build _ (@tn_tree_eqP k).
@@ -134,7 +123,6 @@ End EqTnTree.
 End TnTreeEq.
 
 Section BuildTreeOk.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n.+1)).
 Hypothesis tanner_acyclic : acyclic' (tanner_rel H).
 Hypothesis tanner_connected : forall a b, connect (tanner_rel H) a b.
@@ -734,7 +722,6 @@ Qed.
 End BuildTreeTest.
 
 Section AlgoProof.
-
 Variables m n' : nat.
 Let n := n'.+1.
 Variable H : 'M['F_2]_(m, n).

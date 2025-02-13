@@ -5,18 +5,22 @@ From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext realType_ext bigop_ext fdist proba.
 Require Import channel jfdist_cond.
 
-(******************************************************************************)
-(*                         Posterior Probability                              *)
+(**md**************************************************************************)
+(* # Posterior Probability                                                    *)
 (*                                                                            *)
+(* ```                                                                        *)
 (*          P.-receivable W == vectors that are receivable from input P and   *)
 (*                             channel W                                      *)
 (*          P `^^ W (x | y) == posterior probability in terms of a            *)
 (*                             distribution of inputs P and of a channel W    *)
 (* P ''_ n0 `^^ W ( a | y ) == marginal posterior probability                 *)
+(* ```                                                                        *)
 (*                                                                            *)
 (* Lemmas:                                                                    *)
+(* ```                                                                        *)
 (*   post_probE == relation between P `^^ W (x | y) and the conditional       *)
 (*                 probability w.r.t. the joint distribution P `X W ``^ n     *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Reserved Notation "P '`^^' W '(' x '|' y ')'" (at level 10,
@@ -252,4 +256,3 @@ End marginal_post_prob_prop.
 
 Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" :=
   (@fdist_marginal_post_prob _ _ W _ P y n0 a) : proba_scope.
-

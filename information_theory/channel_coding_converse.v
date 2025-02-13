@@ -6,14 +6,15 @@ Require Import ssr_ext ssralg_ext realType_ln num_occ.
 Require Import fdist entropy types jtypes divergence conditional_divergence.
 Require Import error_exponent channel_code channel success_decode_bound.
 
-(******************************************************************************)
-(*                 Channel coding theorem (converse part)                     *)
+(**md**************************************************************************)
+(* # Channel coding theorem (converse part)                                   *)
 (*                                                                            *)
-(* main theorem: channel_coding_converse                                      *)
+(* The main theorem is `channel_coding_converse`.                             *)
 (*                                                                            *)
-(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
-(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
-(* 53(1):63--103, 2014                                                        *)
+(* Documented in:                                                             *)
+(* - Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues. Formalization   *)
+(*   of Shannon's theorems. Journal of Automated Reasoning, 53(1):63--103,    *)
+(*   2014                                                                     *)
 (******************************************************************************)
 
 Set Implicit Arguments.
