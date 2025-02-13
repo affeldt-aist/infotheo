@@ -6,13 +6,15 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist entropy binary_entropy_function channel hamming.
 Require Import channel_code pproba.
 
-(******************************************************************************)
-(*                Capacity of the binary symmetric channel                    *)
+(**md**************************************************************************)
+(* # Capacity of the binary symmetric channel                                 *)
 (*                                                                            *)
-(* BSC.c == Definition of the binary symmetric channel (BSC)                  *)
+(* This file shows that the capacity of a BSC is 1 - H p                      *)
+(* (lemma `BSC_capacity`).                                                    *)
 (*                                                                            *)
-(* Lemma:                                                                     *)
-(*   BSC_capacity == the capacity of a BSC is 1 - H p                         *)
+(* ```                                                                        *)
+(*   BSC.c == Definition of the binary symmetric channel (BSC)                *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Set Implicit Arguments.

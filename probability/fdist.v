@@ -95,6 +95,7 @@ Reserved Notation "P `X W" (at level 6).
 Reserved Notation "P1 `x P2" (at level 6).
 Reserved Notation "x <| p |> y" (format "x  <| p |>  y", at level 49).
 Reserved Notation "f @^-1 y" (at level 10).
+
 Declare Scope fdist_scope.
 Delimit Scope fdist_scope with fdist.
 

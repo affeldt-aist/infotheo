@@ -5,8 +5,8 @@ From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext bigop_ext realType_ext realType_ln.
 Require Import fdist divergence log_sum variation_dist.
 
-(******************************************************************************)
-(*                      Partition inequality                                  *)
+(**md**************************************************************************)
+(* # Partition inequality                                                     *)
 (*                                                                            *)
 (* Special case for distributions other sets with 2 elements, to be used in   *)
 (* the proof of Pinsker's inequality.                                         *)

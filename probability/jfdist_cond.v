@@ -6,9 +6,10 @@ From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba.
 
-(******************************************************************************)
-(*        Conditional probabilities over joint finite distributions           *)
+(**md**************************************************************************)
+(* # Conditional probabilities over joint finite distributions                *)
 (*                                                                            *)
+(* ```                                                                        *)
 (*       \Pr_P [ A | B ] == conditional probability of A given B where P is a *)
 (*                          joint distribution                                *)
 (*  jfdist_cond0 PQ a a0 == The conditional distribution derived from PQ      *)
@@ -20,6 +21,7 @@ Require Import fdist proba.
 (*                          given a; same as fdist_cond0 when                 *)
 (*                          fdist_fst PQ a != 0.                              *)
 (*            PQ `(| a ) == notation jfdist_cond PQ a                         *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 

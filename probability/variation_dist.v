@@ -1,13 +1,15 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
 From mathcomp Require Import reals.
 Require Import fdist.
 
-(******************************************************************************)
-(*                        The Variation Distance                              *)
+(**md**************************************************************************)
+(* # The Variation Distance                                                   *)
 (*                                                                            *)
-(* 'd(P, Q) == The variation distance of two distributions P and Q            *)
+(* ```                                                                        *)
+(*   'd(P, Q) == The variation distance of two distributions P and Q          *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Reserved Notation "'d(' P ',' Q ')'".

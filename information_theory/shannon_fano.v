@@ -4,13 +4,19 @@ From mathcomp Require Import all_ssreflect all_algebra archimedean.
 From mathcomp Require Import Rstruct mathcomp_extra reals exp.
 Require Import ssr_ext bigop_ext realType_ext realType_ln fdist entropy kraft.
 
-(******************************************************************************)
-(*                       Shannon-Fano codes                                   *)
+(**md**************************************************************************)
+(* # Shannon-Fano codes                                                       *)
 (*                                                                            *)
-(* For details, see: Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. *)
-(* Examples of formal proofs about data compression. International Symposium  *)
-(* on Information Theory and Its Applications (ISITA 2018), Singapore,        *)
-(* October 28--31, 2018, pages 633--637. IEEE, Oct 2018                       *)
+(* Documented in:                                                             *)
+(* - Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. Examples of     *)
+(*   formal proofs about data compression. International Symposium  on        *)
+(*   Information Theory and Its Applications (ISITA 2018), Singapore,         *)
+(*    October 28--31, 2018, pages 633--637. IEEE, Oct 2018                    *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*   is_shannon_fano == TODO                                                  *)
+(*           average == TODO                                                  *)
+(* ```                                                                        *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -20,10 +26,6 @@ Unset Printing Implicit Defensive.
 Local Open Scope ring_scope.
 
 Import Order.POrderTheory Num.Theory GRing.Theory.
-
-Definition kraft_condR (T : finType) (sizes : seq nat) :=
-  let n := size sizes in
-  (\sum_(i < n) #|T|%:R^-(nth O sizes i) <= (1 : Rdefinitions.R))%R.
 
 Local Open Scope fdist_scope.
 
@@ -36,7 +38,6 @@ Coercion encoding_coercion (A T : finType) (c : Encoding.t A T) : {ffun A -> seq
  let: @Encoding.mk _ _ f _ := c in f.
 
 Section shannon_fano_def.
-
 Variables (A T : finType) (P : {fdist A}).
 
 Definition is_shannon_fano (f : Encoding.t A T) :=
@@ -45,7 +46,6 @@ Definition is_shannon_fano (f : Encoding.t A T) :=
 End shannon_fano_def.
 
 Section shannon_fano_is_kraft.
-
 Variables (A : finType) (P : {fdist A}).
 Hypothesis Pr0 : forall s, P s != 0.
 
@@ -57,12 +57,13 @@ Let T := 'I_t.
 Variable (f : Encoding.t A T).
 
 Let sizes := [seq (size \o f) a| a in A].
-Lemma shannon_fano_is_kraft : is_shannon_fano P f -> kraft_condR T sizes.
+Lemma shannon_fano_is_kraft : is_shannon_fano P f -> kraft_cond Rdefinitions.R T sizes.
 Proof.
 move=> H.
-rewrite /kraft_condR.
+rewrite /kraft_cond.
 rewrite -(FDist.f1 P) /sizes size_map.
-rewrite (eq_bigr (fun i:'I_(size(enum A)) => #|'I_t|%:R ^- size (f (nth a (enum A) i)))); last first.
+rewrite (eq_bigr (fun i : 'I_(size(enum A)) =>
+    #|'I_t|%:R ^- size (f (nth a (enum A) i)))); last first.
   by move=> i _; rewrite /= (nth_map a)// FDist.f1.
 rewrite -(big_mkord xpredT (fun i => #|T|%:R ^- size (f (nth a (enum A) i)))).
 rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
@@ -90,7 +91,6 @@ Definition average := \sum_(x in A) P x * (size (f x))%:R.
 End average_length.
 
 Section shannon_fano_suboptimal.
-
 Variables (A : finType) (P : {fdist A}).
 Hypothesis Pr_pos : forall s, P s != 0.
 

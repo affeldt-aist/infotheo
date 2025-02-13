@@ -6,8 +6,8 @@ Require Import ssr_ext bigop_ext ssralg_ext realType_ext realType_ln.
 Require Import num_occ fdist proba entropy channel divergence types jtypes.
 Require Import jfdist_cond.
 
-(******************************************************************************)
-(*                        Conditional divergence                              *)
+(**md**************************************************************************)
+(* # Conditional divergence                                                   *)
 (******************************************************************************)
 
 Reserved Notation "P '|-' V '<<' W" (at level 5, V, W at next level).

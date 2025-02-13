@@ -7,19 +7,21 @@ From mathcomp Require Import Rstruct reals exp.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist entropy.
 Require Import num_occ channel types.
 
-(******************************************************************************)
-(*                            Joint Types                                     *)
+(**md**************************************************************************)
+(* # Joint Types                                                              *)
 (*                                                                            *)
-(* Definitions:                                                               *)
-(*   jtype == type of joint type, notation: P_n(A, B)                         *)
-(*   shell = shell, notation: V.-shell t                                      *)
+(* Main lemmas:                                                               *)
+(* - upper-bound of the number of conditional types (`bound_card_jtype`)      *)
+(* - joint types are not empty (`jtype_not_empty`)                            *)
+(* - relation between the number of symbol occurrences and the number of      *)
+(*   pairs of symbols occurrences (`occ_co_occ`)                              *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*       jtype == type of joint type, notation: P_n(A, B)                     *)
+(*       shell == shell, notation: V.-shell t                                 *)
 (*   cond_type == conditional type, notation: \nu{V}(P)                       *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   bound_card_jtype == upper-bound of the number of conditional types       *)
-(*    jtype_not_empty == joint types are not empty                            *)
-(*         occ_co_occ == Relation between the number of symbol occurrences    *)
-(*                       and the number of pairs of symbols occurrences       *)
 (******************************************************************************)
 
 Reserved Notation "'P_' n '(' A ',' B ')'" (at level 9,
