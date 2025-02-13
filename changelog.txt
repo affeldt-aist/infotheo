@@ -1,9 +1,10 @@
---------------------
-from 0.7.7 to master
---------------------
+-------------------
+from 0.7.7 to 0.9.0
+-------------------
 
 * changed:
-  almost no stdlib R anymore
+- almost no stdlib anymore
+  (just using Coq's reals for interval in robustmean)
 
 * added:
 - in bigop_ext.v
@@ -17,7 +18,9 @@ from 0.7.7 to master
 - in ssr_ext.v
   + lemma eqW
   + setY* (symmetric difference for finite sets), notation: "A :*: B"
-  
+
+* removed:
+- chap2 scopes, chap2.v
 
 -------------------
 from 0.7.6 to 0.7.7
