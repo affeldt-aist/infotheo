@@ -8,7 +8,7 @@ Import GRing.Theory.
 Import Num.Theory.
 
 (************************************************************************************)
-(*                              SMC Proofs in entroy                                *)
+(*                              SMC Proofs in entropy                               *)
 (*                                                                                  *)
 (*     From: Information-theoretically Secure Number-product Protocol               *)
 (*     SHEN, Chih-Hao, et al. In: 2007 International Conference on Machine          *)
@@ -50,7 +50,6 @@ Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
-Local Open Scope chap2_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 

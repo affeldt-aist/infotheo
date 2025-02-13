@@ -21,7 +21,6 @@ Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
-Local Open Scope chap2_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 
@@ -94,7 +93,7 @@ set traces := nseq _ _ => /=.
 have Htr : {in traces, forall s, size s <= k - h}.
   move=> s. by rewrite mem_nseq => /andP[] _ /eqP ->.
 have : h <= k by [].
-elim: h k procs traces Htr => [| h IH] k procs traces Htr hk //=.
+elim: h k procs traces Htr => [| h IH] k procs traces Htr hk /=.
   move=> s /Htr. by rewrite subn0.
 move=> s.
 case: ifP => H; last by move/Htr/leq_trans; apply; rewrite leq_subr.
