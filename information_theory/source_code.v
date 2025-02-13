@@ -4,12 +4,15 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require Import Rstruct reals.
 Require Import realType_ln fdist proba.
 
-(******************************************************************************)
-(*                        Definition of a source code                         *)
+(**md**************************************************************************)
+(* # Definition of a source code                                              *)
 (*                                                                            *)
-(* encT, decT     == types for the source encoder and source decoder          *)
-(* scode_fl       == definition of a fixed-length source code                 *)
+(* ```                                                                        *)
+(*     encT, decT == types for the source encoder and source decoder          *)
+(*       scode_fl == definition of a fixed-length source code                 *)
 (* esrc( P , sc ) == error rate of the source code sc                         *)
+(* ```                                                                        *)
+(*                                                                            *)
 (******************************************************************************)
 
 Set Implicit Arguments.

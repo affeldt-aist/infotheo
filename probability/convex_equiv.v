@@ -6,9 +6,14 @@ From mathcomp Require Import mathcomp_extra boolp classical_sets.
 From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 
-(******************************************************************************)
-(*                  Equivalence of Convexity Definitions                      *)
+(**md**************************************************************************)
+(* # Equivalence of Convexity Definitions                                     *)
 (*                                                                            *)
+(* Documented in:                                                             *)
+(* - R. Affeldt, J. Garrigue, T. Saikawa. Formal adventures in convex and     *)
+(*   conical spaces. CICM 2020                                                *)
+(*                                                                            *)
+(* ```                                                                        *)
 (*   naryConvType == type that provides a nary operator intended to represent *)
 (*                   nary convex combinations as found in standard convex     *)
 (*                   spaces such as [Bonchi 2017]; different axiomatics are   *)
@@ -16,9 +21,8 @@ Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 (*                   the module NaryConvexSpaceEquiv                          *)
 (*        <&>_d f == notation for the operator of naryConvType                *)
 (*    a <& p &> b == binary instance of the <&>_ operator                     *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Reference: R. Affeldt, J. Garrigue, T. Saikawa. Formal adventures in       *)
-(* convex and conical spaces. CICM 2020                                       *)
 (******************************************************************************)
 
 Reserved Notation "'<&>_' d f" (at level 36, f at level 36, d at level 0,
@@ -53,7 +57,6 @@ Import NaryConvexSpace.
 
 (* In this module we use funext to avoid explicitly handling the congruence
    of convn (cf. eq_convn in convex_choice.v for the iterated version). *)
-
 
 Section Axioms.
 Variable T : naryConvType.

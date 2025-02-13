@@ -6,30 +6,35 @@ From mathcomp Require Import mathcomp_extra Rstruct reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy aep typ_seq channel.
 
-(******************************************************************************)
-(*                        Jointly typical sequences                           *)
+(**md**************************************************************************)
+(* # Jointly typical sequences                                                *)
 (*                                                                            *)
-(* Definitions:                                                               *)
-(*   JTS P W n epsilon == epsilon-jointly typical sequences of size n for an  *)
-(*                        input distribution P and  a channel W               *)
-(*                        JTS(n,e) is a subset of TS_{P,W}(n,e) such that     *)
-(*                        (x,y) \in JTS(n,e) <->                              *)
-(*                        x \in TS_P(n,e) /\ y \in TS_{PW}(n,e)               *)
+(* Documented in:                                                             *)
+(* - Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues. Formalization   *)
+(*   of Shannon's theorems. Journal of Automated Reasoning,  53(1):63--103,   *)
+(*   2014                                                                     *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*      JTS P W n epsilon == epsilon-jointly typical sequences of size n for  *)
+(*                           an input distribution P and  a channel W         *)
+(*                           JTS(n,e) is a subset of TS_{P,W}(n,e) such that  *)
+(*                           (x,y) \in JTS(n,e) <->                           *)
+(*                           x \in TS_P(n,e) /\ y \in TS_{PW}(n,e)            *)
+(* ```                                                                        *)
 (*                                                                            *)
 (* Lemmas:                                                                    *)
-(*  JTS_sup               == Upper-bound for the set of jointly typical       *)
+(* ```                                                                        *)
+(*                JTS_sup == Upper-bound for the set of jointly typical       *)
 (*                           sequences                                        *)
-(*  JTS_1                 == when they are very long, the jointly typical     *)
+(*                  JTS_1 == when they are very long, the jointly typical     *)
 (*                           sequences coincide with the typical sequences of *)
 (*                           the joint distribution                           *)
 (*  non_typical_sequences == the probability of the same event (joint         *)
 (*                           typicality) taken over the product distribution  *)
 (*                           of the inputs and the out-puts considered        *)
-(*                           independently tends to 0 asngets large           *)
+(*                           independently tends to 0 as n gets large         *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* For details, see Reynald Affeldt, Manabu Hagiwara, and Jonas Sénizergues.  *)
-(* Formalization of Shannon's theorems. Journal of Automated Reasoning,       *)
-(* 53(1):63--103, 2014                                                        *)
 (******************************************************************************)
 
 Declare Scope jtyp_seq_scope.
@@ -49,7 +54,6 @@ Local Open Scope ring_scope.
 Import Order.Theory GRing.Theory Num.Theory.
 
 Section joint_typ_seq_definition.
-
 Variables A B : finType.
 Variable P : {fdist A}.
 Variable W : `Ch(A, B).
@@ -80,7 +84,6 @@ Notation "'`JTS'" := (set_jtyp_seq) : jtyp_seq_scope.
 Local Open Scope jtyp_seq_scope.
 
 Section jtyp_seq_upper.
-
 Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)).
 Variable n : nat.
 Variable epsilon : R.
