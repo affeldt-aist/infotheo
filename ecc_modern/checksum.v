@@ -1,19 +1,14 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm zmodp.
-From mathcomp Require Import matrix vector.
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm.
+From mathcomp Require Import zmodp matrix vector.
 From mathcomp Require Import Rstruct reals.
 Require Import ssralg_ext f2 fdist channel tanner linearcode.
 Require Import pproba.
 
+(**md**************************************************************************)
+(* # Checksum Operator                                                        *)
 (******************************************************************************)
-(*                         Checksum Operator                                  *)
-(******************************************************************************)
-
-(* OUTLINE:
-- Section checksubsum_parity.
-- Section post_proba_checksubsum.
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

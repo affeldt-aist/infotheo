@@ -4,21 +4,24 @@ From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv cyclic.
 From mathcomp Require Import perm matrix mxpoly.
 Require Import ssr_ext ssralg_ext cyclic_code dft.
 
-(******************************************************************************)
-(*        Error-locator, error-evaluator, and syndrome polynomials            *)
+(**md**************************************************************************)
+(* # Error-locator, error-evaluator, and syndrome polynomials                 *)
 (*                                                                            *)
-(* Definitions:                                                               *)
-(*   \sigma_(a , e )  == error locator polynomial for the vector e            *)
+(* Main lemmas:                                                               *)
+(* - the error locator and evaluator polynomials are coprime (lemma           *)
+(*   `coprime_errloc_erreval`)                                                *)
+(* - characterization of an error vector in terms of the error and the        *)
+(*   evaluator polynomials (`erreval_vecE`)                                   *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*    \sigma_(a , e ) == error locator polynomial for the vector e            *)
 (*   \sigma_(a, e, i) == the ith punctured locator polynomial for             *)
-(*   t.-rV[R]_ n      == error vector with support of cardinal <= t           *)
+(*        t.-rV[R]_ n == error vector with support of cardinal <= t           *)
 (*   \omega_(f, a, e) == error evaluator polynomial                           *)
-(*   syndromep        == syndrome polynomial                                  *)
+(*          syndromep == syndrome polynomial                                  *)
+(*            twisted == TODO                                                 *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   coprime_errloc_erreval == the error locator and evaluator polynomials    *)
-(*                             are coprime                                    *)
-(*   erreval_vecE == characterization of an error vector in terms of the      *)
-(*                   error and the evaluator polynomials                      *)
 (******************************************************************************)
 
 Reserved Notation "'\sigma_(' a , e )" (at level 3).
@@ -63,7 +66,6 @@ Qed.
 
 (* NB: not used *)
 Section error_locator_polynomial_alt.
-
 Variables (F : fieldType) (n : nat) (a : {ffun 'I_n -> F}).
 
 Definition errloc_alt (E : {set 'I_n}) : {poly F} :=
@@ -74,7 +76,6 @@ End error_locator_polynomial_alt.
 Local Open Scope vec_ext_scope.
 
 Section distinct_non_zero.
-
 Variables (F : fieldType) (n : nat).
 
 Definition distinct_non_zero (a : 'rV[F]_n) :=
@@ -90,7 +91,6 @@ Qed.
 End distinct_non_zero.
 
 Section error_locator_polynomial.
-
 Variables (F : fieldType) (n : nat).
 
 Definition errloc (a : 'rV[F]_n) (E : {set 'I_n}) : {poly F} :=
@@ -215,7 +215,6 @@ apply: contra => /eqP t0; case: e => /= e; by rewrite t0 leqn0 -cards_eq0.
 Qed.
 
 Section error_evaluator_polynomial_def.
-
 Variables (F : fieldType) (n : nat).
 
 Definition erreval (b a : 'rV[F]_n) e :=
@@ -226,7 +225,6 @@ End error_evaluator_polynomial_def.
 Notation "'\omega_(' f , a , e )" := (erreval f a e).
 
 Section error_evaluator_polynomial_prop.
-
 Variables (F : fieldType) (n : nat) (a : 'rV[F]_n).
 Variables (t : nat) (e : t.-'rV[F]_n).
 Variables (f : 'rV[F]_n).
@@ -302,7 +300,6 @@ Proof. by rewrite /erreval supp0 big_set0. Qed.
 End error_evaluator_polynomial_prop.
 
 Section characterization_of_error_vector.
-
 Variables (F : fieldType) (n : nat) (e : 'rV[F]_n).
 Variable a : 'rV[F]_n.
 Hypothesis Ha : distinct_non_zero a.
@@ -367,7 +364,6 @@ End characterization_of_error_vector.
 Local Open Scope dft_scope.
 
 Section syndrome_polynomial.
-
 Variables (F : fieldType) (n' : nat).
 Let n := n'.+1.
 Implicit Types u : 'rV[F]_n.
@@ -419,7 +415,6 @@ Proof. by rewrite -[in LHS](subrr 0) syndromepB subrr. Qed.
 End syndrome_polynomial.
 
 Section twisted_error_pattern.
-
 Variables (F : fieldType) (a : F) (n : nat).
 
 (* twisted error pattern; see [McEliece 2002] p. 243 (def 9.36), p. 259 *)
@@ -435,7 +430,6 @@ Qed.
 End twisted_error_pattern.
 
 Section syndromep_prop.
-
 Variables (F : fieldType) (n' : nat).
 Let n := n'.+1.
 Variable a : F.

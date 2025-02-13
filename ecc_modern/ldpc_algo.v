@@ -8,24 +8,17 @@ Require Import f2 subgraph_partition tanner.
 Require Import fdist channel pproba linearcode ssralg_ext.
 Require Import tanner_partition summary ldpc checksum.
 
-(******************************************************************************)
-(*                         A Sum-Product Decoder                              *)
+(**md**************************************************************************)
+(* # A Sum-Product Decoder                                                    *)
 (*                                                                            *)
 (* This file provides an implementation of sum-product decoding that is       *)
 (* verified in the file ldpc_algo_proof.v.                                    *)
 (*                                                                            *)
-(* Definition:                                                                *)
+(* ```                                                                        *)
 (*   sumprod == an implementation of sum-product decoding                     *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
-
-(* OUTLINE:
-- Section Tree.
-- Section Algo.
-- Section ToGraph.
-- Section BuildTree.
-- Section Specification.
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -33,7 +26,6 @@ Import Prenex Implicits.
 
 Local Open Scope seq_scope.
 Local Open Scope vec_ext_scope.
-
 
 Section Tree.
 Variable id : Type.

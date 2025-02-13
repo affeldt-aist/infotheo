@@ -4,8 +4,8 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext.
 
-(******************************************************************************)
-(*                     Additional lemmas about bigops                         *)
+(**md**************************************************************************)
+(* # Additional lemmas about bigops                                           *)
 (******************************************************************************)
 
 Set Implicit Arguments.

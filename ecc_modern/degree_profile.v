@@ -6,15 +6,15 @@ From mathcomp Require Import matrix perm.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext fdist.
 
-(******************************************************************************)
-(*                  Work in progress about LDPC codes                         *)
+(**md**************************************************************************)
+(* Work in progress about LDPC codes                                          *)
 (*                                                                            *)
-(* For details, see                                                           *)
-(* Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. Formalization of  *)
-(* Reed-Solomon codes and progress report on formalization of LDPC codes.     *)
-(* I nternational Symposium on Information Theory and Its Applications (ISITA *)
-(* 2016), Monterey, California, USA, October 30--November 2, 2016, pages      *)
-(* 537--541. IEICE. IEEE Xplore, Oct 2016.                                    *)
+(* Documented in:                                                             *)
+(* - Reynald Affeldt, Jacques Garrigue, and Takafumi Saikawa. Formalization   *)
+(*   of Reed-Solomon codes and progress report on formalization of LDPC       *)
+(*   codes. International Symposium on Information Theory and its             *)
+(*   Applications (ISITA  2016), Monterey, California, USA, October           *)
+(*   30--November 2, 2016, pages 537--541. IEICE. IEEE Xplore, Oct 2016.      *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -73,7 +73,6 @@ Qed.
 Module NormalizedDegreeDistribution.
 
 Section L_definition.
-
 Variable K : numFieldType.
 
 (* type for L and R, lambda and rho *)
@@ -272,7 +271,6 @@ HB.instance Definition _ l k := Countable.copy (tree l k) (can_type (@cancel_tre
 HB.instance Definition _ n l := Countable.copy (fintree n l) (can_type (@cancel_fintree n l)).
 
 Section count_allpairs.
-
 Variables (A B C : Type) (f : A -> B -> C) (en : seq A) (em : seq B).
 Variables (a : pred A) (b : pred B) (c : pred C).
 Hypothesis abc : forall x y, (a x && b y) == c (f x y).

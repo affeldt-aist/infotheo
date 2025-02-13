@@ -1,42 +1,33 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
-From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly polydiv vector.
+From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly polydiv.
+From mathcomp Require Import vector.
 Require Import ssralg_ext poly_ext f2 hamming linearcode dft.
 
-(******************************************************************************)
-(*                               Cyclic codes                                 *)
+(**md**************************************************************************)
+(* # Cyclic codes                                                             *)
 (*                                                                            *)
 (* Messages and codewords can be represented either as (row-)vectors or as    *)
 (* polynomials. Cyclic codes are stable by right cyclic shift. We define it   *)
 (* in several equivalent ways:                                                *)
-(* - rcs_poly is defined using (pseudo-)division for polynomials              *)
-(* - rcs is a definition for row-vectors using a permutation                  *)
-(* - rcs' is a direct definition for row-vectors                              *)
+(* - `rcs_poly` is defined using (pseudo-)division for polynomials            *)
+(* - `rcs` is a definition for row-vectors using a permutation                *)
+(* - `rcs'` is a direct definition for row-vectors                            *)
 (*                                                                            *)
-(* Definition:                                                                *)
-(*  rcsP == stability by right-cyclic-shift                                   *)
+(* ```                                                                        *)
+(*        rcsP == stability by right-cyclic-shift                             *)
 (*  'pgen[ C ] == the set of polynomial generators                            *)
 (*  'cgen[ C ] == the set of cyclic generators                                *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*  rcs_rcs_poly   == Equivalence right-cyclic shift vectors <-> polynomials  *)
-(*                    (see [McEliece 2002], Theorem 8.1)                      *)
-(*  shift_codeword == see [McEliece 2002],  Theorem 8.2, Lemma 2(a)(b),       *)
-(*                    Theorem 8.3(a)(b)                                       *)
+(* Main lemmas:                                                               *)
+(* - Equivalence right-cyclic shift vectors <-> polynomials                   *)
+(*   (see [McEliece 2002], Theorem 8.1) (`rcs_rcs_poly`)                      *)
+(* - [McEliece 2002], Theorem 8.2, Lemma 2(a)(b), Theorem 8.3(a)(b)           *)
+(*   (`shift_codeword`)                                                       *)
 (*                                                                            *)
 (******************************************************************************)
-
-(* OUTLINE:
-- Section right_cyclic_shift
-- Section fdcoor_cyclic
-- Section polynomial_code_generator.
-- Module Pcode : definition of polynomial codes
-- Module Ccode : definition of cyclic codes
-- Section cyclic_code_generator.
-- Section cyclic_code_properties.
-- Section polynomial_cyclic_equivalence_condition.
-*)
 
 Reserved Notation "'`[' P ']_' n" (at level 4).
 Reserved Notation "''pgen[' C ]" (at level 8, format "''pgen[' C ]").
@@ -217,7 +208,6 @@ End right_cyclic_shift.
 Notation "'`[' P ']_' n" := (P %% ('X^n - 1)) : cyclic_code_scope.
 
 Section fdcoor_cyclic.
-
 Variables (F : fieldType) (n' : nat).
 Let n := n'.+1.
 Variable (a : F).
@@ -279,7 +269,6 @@ Qed.
 End fdcoor_cyclic.
 
 Section polynomial_code_generator.
-
 Variable (F : finFieldType) (n : nat) (C : {set 'rV[F]_n}).
 
 Definition is_pgen := [pred g | [forall x, (x \in C) == (g %| rVpoly x)]].
@@ -291,7 +280,6 @@ Local Open Scope cyclic_code_scope.
 
 Module Pcode.
 Section polynomial_code.
-
 Variables (F : finFieldType) (n : nat).
 
 Record t := mk {
@@ -309,7 +297,6 @@ Coercion pcode_coercion (F : finFieldType) (n : nat) (c : Pcode.t F n) : {vspace
 Module Ccode.
 
 Section cyclic_code_definition.
-
 Variables (F : finFieldType) (n : nat).
 
 Record t := mk {
@@ -324,7 +311,6 @@ Coercion ccode_coercion (F : finFieldType) (n : nat) (c : Ccode.t F n) : {vspace
  let: Ccode.mk v _ := c in v.
 
 Section cyclic_code_generator.
-
 Variable (F : finFieldType) (n : nat) (C : Ccode.t F n).
 Hypothesis C_not_trivial : not_trivial C.
 
@@ -358,7 +344,6 @@ End cyclic_code_generator.
 Notation "''cgen[' C ]" := (is_cgen C) : cyclic_code_scope.
 
 Section cyclic_code_properties.
-
 Variable n' : nat.
 Let n := n'.+1.
 Variables (F : finFieldType) (C : Ccode.t F n).
@@ -603,7 +588,6 @@ Qed.
 End cyclic_code_properties.
 
 Section polynomial_cyclic_equivalence_condition.
-
 Variables (F : finFieldType) (n' : nat).
 Let n := n'.+1.
 Variable C : Pcode.t F n.

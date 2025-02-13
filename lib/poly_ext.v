@@ -4,8 +4,8 @@ From mathcomp Require Import all_ssreflect fingroup perm ssralg zmodp.
 From mathcomp Require Import matrix mxalgebra poly polydiv mxpoly.
 Require Import ssralg_ext.
 
-(******************************************************************************)
-(*                  Additional lemmas about polynomials                       *)
+(**md**************************************************************************)
+(* # Additional lemmas about polynomials                                      *)
 (******************************************************************************)
 
 Set Implicit Arguments.

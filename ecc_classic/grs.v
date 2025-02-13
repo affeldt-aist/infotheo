@@ -4,15 +4,9 @@ From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv cyclic.
 From mathcomp Require Import perm matrix mxpoly vector mxalgebra zmodp.
 Require Import ssr_ext ssralg_ext linearcode dft poly_decoding.
 
+(**md**************************************************************************)
+(* # Generalized Reed-Solomon Codes                                           *)
 (******************************************************************************)
-(*                  Generalized Reed-Solomon Codes                            *)
-(******************************************************************************)
-
-(* OUTLINE
-- Module GRS.
-- Section GRS_rank.
-- Section reduced_key_equation.
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -25,7 +19,6 @@ Local Open Scope vec_ext_scope.
 Module GRS.
 
 Section GRS_def.
-
 Variables (n : nat).
 Variable (F : finFieldType).
 Variable a : 'rV[F]_n.
@@ -108,7 +101,6 @@ End GRS_def.
 End GRS.
 
 Section GRS_rank.
-
 Variables (F : finFieldType) (n' : nat).
 Let n := n'.+1.
 Variable (r : nat).
@@ -195,7 +187,6 @@ Qed.
 End GRS_rank.
 
 Section reduced_key_equation.
-
 Variables (F : finFieldType) (n : nat) (y : 'rV[F]_n).
 Let E := supp y.
 Variables b a : 'rV[F]_n.

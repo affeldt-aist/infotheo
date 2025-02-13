@@ -5,21 +5,23 @@ From mathcomp Require Import fintype tuple.
 Require Import BinPos BinNat PArith.
 Require Import ssr_ext.
 
-(******************************************************************************)
-(*                 Equivalence bitstrings <-> natural numbers                 *)
+(**md**************************************************************************)
+(* # Equivalence bitstrings <-> natural numbers                               *)
 (*                                                                            *)
-(* bitseq_of_pos       == conversion positive -> bitseq                       *)
-(* bitseq_of_N         == conversion N -> bitseq                              *)
-(* rem_lea_false       == remove leading false's                              *)
-(* N_of_bitseq         == conversion bitseq -> N                              *)
-(* tuple2N             == conversion tuple -> N                               *)
-(* bitseq_of_nat i n   == conversion i < 2 ^ n to bitseq (of length n)        *)
-(* rV_of_nat           == encoding of naturals as vectors, e.g.,              *)
+(* ```                                                                        *)
+(*       bitseq_of_pos == conversion positive -> bitseq                       *)
+(*         bitseq_of_N == conversion N -> bitseq                              *)
+(*       rem_lea_false == remove leading false's                              *)
+(*         N_of_bitseq == conversion bitseq -> N                              *)
+(*             tuple2N == conversion tuple -> N                               *)
+(*   bitseq_of_nat i n == conversion i < 2 ^ n to bitseq (of length n)        *)
+(*           rV_of_nat == encoding of naturals as vectors, e.g.,              *)
 (*                        rV_of_nat 3 1 = [ 0 0 1 ]                           *)
 (*                        rV_of_nat 3 2 = [ 0 1 0 ]                           *)
 (*                        rV_of_nat 3 3 = [ 0 1 1 ]                           *)
-(* nat_of_rV           == conversion 'rV['F_2]_n -> nat                       *)
+(*           nat_of_rV == conversion 'rV['F_2]_n -> nat                       *)
 (* cV_of_nat/nat_of_cV == the same using column vectors                       *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -489,7 +491,6 @@ Require Import ssralg_ext f2.
 Import GRing.Theory.
 
 Section rV_and_nat_def.
-
 Variable n : nat.
 
 Definition rV_of_nat (i : nat) : 'rV['F_2]_n :=
@@ -501,7 +502,6 @@ Definition nat_of_rV (y : 'rV['F_2]_n) : nat :=
 End rV_and_nat_def.
 
 Section rV_and_nat_prop.
-
 Variable n : nat.
 
 Local Open Scope ring_scope.
@@ -627,7 +627,6 @@ Qed.
 End rV_and_nat_prop.
 
 Section cV_and_nat.
-
 Local Open Scope ring_scope.
 
 Definition cV_of_nat (n i : nat) : 'cV['F_2]_n := (rV_of_nat n i)^T.

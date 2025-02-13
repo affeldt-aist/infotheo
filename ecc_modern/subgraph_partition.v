@@ -1,32 +1,18 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import ssr_ext.
 
+(**md**************************************************************************)
+(* # Cover/partition properties of bipartite-acyclic graphs                   *)
 (******************************************************************************)
-(*          Cover/partition properties of bipartite-acyclic graphs            *)
-(******************************************************************************)
-
-(* OUTLINE:
-- Section colorable.
-- Section bipartite.
-- Section simple.
-- Section acyclic.
-- Section graph_class.
-- Section subgraph.
-- Section first_partition.
-- Section second_partition.
-- Section path_ext.
-- Section third_partition.
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Section colorable.
-
 Variable (V : eqType) (g : rel V).
 
 Definition colorable n (coloring : V -> 'I_n) :=
@@ -47,7 +33,6 @@ Qed.
 End colorable.
 
 Section bipartite.
-
 Variable (V : eqType) (g : rel V) (kind : V -> 'I_2).
 
 Lemma bipartite_path_kind_next : colorable g kind ->
@@ -92,7 +77,6 @@ Qed.
 End bipartite.
 
 Section simple.
-
 Variable (V : eqType) (g : rel V).
 
 Definition simple := forall v, ~~ g v v.
@@ -106,7 +90,6 @@ Proof. by move=> H v; apply H. Qed.
 End simple.
 
 Section acyclic.
-
 Variable (V : eqType) (g : rel V).
 
 Definition acyclic := forall p, 2 < size p -> ~ path.ucycle g p.
@@ -163,7 +146,6 @@ End colorable.
 End Colorable.
 
 Section graph_class.
-
 Variable (V : finType).
 
 Record simple_graph := {
@@ -176,7 +158,6 @@ Proof. by case => kind; move/colorable_is_simple/Build_simple_graph. Defined.
 End graph_class.
 
 Section except.
-
 Variables (V : eqType) (g : rel V).
 
 Definition except n : rel V := locked [rel x y | [&& g x y, x != n & y != n]].
@@ -238,7 +219,6 @@ Qed.
 End except.
 
 Section subgraph.
-
 Variables (V : finType) (g : rel V).
 
 Lemma connect_except n w v : connect (except g n) w v -> connect g w v.
@@ -282,7 +262,6 @@ End subgraph.
     consider the partition formed by the subgraphs (m->n) (assuming
     acyclicity) *)
 Section first_partition.
-
 Variables (V : finType) (g : rel V).
 
 Definition subgraph_succ (n : V) : {set {set V}} :=
@@ -354,7 +333,6 @@ End first_partition.
     consider the partition formed by the subgraph (m->n') for each
     successor n' of m (n' <> n) *)
 Section second_partition.
-
 Variables (V : finType) (g : rel V).
 Hypothesis symmetric_g : symmetric g.
 Hypothesis acyclic_g : acyclic g.
@@ -430,7 +408,6 @@ Qed.
 End second_partition.
 
 Section path_ext.
-
 Variable (V : finType).
 
 Lemma uniq_extend_1 m n m' (l : seq V) (mn : m != n) (nm' : n != m') (nl : n \notin l)
@@ -814,7 +791,6 @@ End path_ext.
     m (n <> n'), the union of n' and all the subgraph (m'->n')
     for the m' successors of n' (n' <> n). *)
 Section third_partition.
-
 Variables (V : finType) (g : rel V).
 Hypothesis symmetric_g : symmetric g.
 Hypothesis acyclic_g : acyclic g.

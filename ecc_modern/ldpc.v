@@ -8,25 +8,16 @@ Require Import fdist channel pproba f2 linearcode subgraph_partition tanner.
 Require Import tanner_partition hamming binary_symmetric_channel decoding.
 Require Import channel_code summary checksum summary_tanner.
 
-(******************************************************************************)
-(*                   LDPC Codes and Sum-Product Decoding                      *)
+(**md**************************************************************************)
+(* # LDPC Codes and Sum-Product Decoding                                      *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   estimation_correctness == Correctness of the estimation of the           *)
-(*                             sum-product algorithm, i.e., proof that it     *)
-(*                             computes the marginal aposteriori probability  *)
-(*   recursive_computation  == Proof that alpha message can be computed       *)
-(*                             recursively                                    *)
+(* Main emmas:                                                                *)
+(* - Correctness of the estimation of the sum-product algorithm, i.e., proof  *)
+(*   that it computes the marginal aposteriori probability                    *)
+(*   (`estimation_correctness`)                                               *)
+(* - Proof that alpha message can be computed recursively                     *)
+(*   (`recursive_computation`)                                                *)
 (******************************************************************************)
-
-(* OUTLINE:
-- Section regular_ldpc.
-- Section post_proba_bsc_unif.
-- Section sub_vec_channel.
-- Section alpha_beta.
-- Section sum_prod_correctness.
-- Section ldpc_approx_algo.
-*)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

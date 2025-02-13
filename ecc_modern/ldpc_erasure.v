@@ -6,24 +6,12 @@ From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import ssr_ext ssralg_ext num_occ f2 hamming tanner linearcode.
 
-(******************************************************************************)
-(*                   Sum-Product Decoder over the BEC                         *)
+(**md**************************************************************************)
+(* # Sum-Product Decoder over the BEC                                         *)
 (*                                                                            *)
 (* This file provides an implementation of the Sum-Product algorithm over the *)
-(* binary erasure channel as a recursive function (SP_BEC0_rec).              *)
+(* binary erasure channel as a recursive function (`SP_BEC0_rec`).            *)
 (******************************************************************************)
-
-(* OUTLINE
-- Section letter.
-- Section Sum_Prod_def.
-- Section Sum_prop.
-- Section Prod_prop.
-- Section starletter_prop
-- Section SumProd_algo_mxStar.
-- Section mat_approx.
-- Section mxSumProd_def : contains the definitions of rowVnextD1, etc.
-- Section SumProdBEC_algo.
-*)
 
 Declare Scope letter_scope.
 Declare Scope bec_scope.
@@ -414,7 +402,6 @@ Qed.
 End starletter_prop.
 
 Section SumProd_algo_mxStar.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "''F'" := (Fnext H).
@@ -438,7 +425,6 @@ Qed.
 End SumProd_algo_mxStar.
 
 Section mat_approx.
-
 Variable (m n : nat).
 
 Definition blank_to_star a := if a == Blank then Star else a.
@@ -491,9 +477,7 @@ End mat_approx.
 Notation "y <=* A" := (approx y A) (at level 20) : letter_scope.
 
 Section mxSumProd_def.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
-
 Local Notation "''V'" := (Vnext H).
 Local Notation "''F'" := (Fnext H).
 
@@ -512,7 +496,6 @@ apply eq_bigr => n1 Hn1; by rewrite H0.
 Qed.
 
 Section rowVnext_codeword.
-
 Variables (c : 'rV['F_2]_n) (Hc : syndrome H c = 0).
 
 Lemma sum_rowVnextD1_nostars m0 n0 (r : 'rV[letter]_n) :
@@ -728,7 +711,6 @@ move/'forall_forallP : Haa'; by apply.
 Qed.
 
 Section mxSumProd_codeword.
-
 Variables (c : 'rV['F_2]_n) (Hc : syndrome H c = 0).
 Variables (y : 'rV[letter]_n) (c_le_y : map_mx Bit c <=m y).
 
@@ -790,7 +772,6 @@ Definition approx_BEC_input m n (H : 'M['F_2]_(m, n)) (y : 'rV[letter]_n) (M : '
   exists2 c, c BEC( H ) y & c <=* M.
 
 Section SumProdBEC_algo.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "''F'" := (Fnext H).

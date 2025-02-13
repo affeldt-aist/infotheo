@@ -3,8 +3,8 @@
 From mathcomp Require Import all_ssreflect fingroup perm.
 Import Coq.NArith.BinNatDef.
 
-(******************************************************************************)
-(* Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, perm  *)
+(**md**************************************************************************)
+(* # Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, etc.*)
 (******************************************************************************)
 
 Declare Scope tuple_ext_scope.
@@ -164,7 +164,6 @@ Qed.
 End Flatten.
 
 Section seq_ext.
-
 Variables A B : Type.
 Implicit Types l : seq A.
 
@@ -244,7 +243,6 @@ Qed.
 End seq_ext.
 
 Section Pad.
-
 Variables (A : Type) (a : A).
 Implicit Types s t : seq A.
 

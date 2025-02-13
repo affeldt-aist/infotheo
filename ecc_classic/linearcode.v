@@ -5,10 +5,18 @@ From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
 Require Import ssr_ext ssralg_ext poly_ext f2 hamming decoding channel_code.
 
-(******************************************************************************)
-(*           Definition of Linear Error-correcting Codes (ECCs)               *)
+(**md**************************************************************************)
+(* # Definition of Linear Error-correcting Codes (ECCs)                       *)
 (*                                                                            *)
-(* Definitions:                                                               *)
+(* Main lemmas:                                                               *)
+(* - dimension of the kernel (`dim_kernel`)                                   *)
+(* - Any code that contains more than the zero polynomial has a nonzero       *)
+(*   polynomial of lowest degree (`exists_non0_codeword_lowest_deg`)          *)
+(* - minimum distance decoding is bounded distance decoding (`MD_BDD`)        *)
+(* - singleton bound (`singleton_bound`)                                      *)
+(* - Hamming bound (`hamming_bound`)                                          *)
+(*                                                                            *)
+(* ```                                                                        *)
 (*         Lcode0.t == type of linear ECCs as a vector space of row-vectors   *)
 (*          kernel  == definition of a linear ECC as the kernel of a          *)
 (*                     parity-check matrices (PCMs)                           *)
@@ -20,44 +28,20 @@ Require Import ssr_ext ssralg_ext poly_ext f2 hamming decoding channel_code.
 (*          perfect == perfect codes                                          *)
 (*        Encoder.t == type of an encoder                                     *)
 (*        Decoder.t == type of a decoder                                      *)
+(* ```                                                                        *)
 (*                                                                            *)
 (* Linear Codes in Systematic Form:                                           *)
+(* ```                                                                        *)
 (*     Syslcode.CSM == check symbols matrix                                   *)
 (*     Syslcode.PCM == PCM of a linear ECC in systematic form, defined using  *)
 (*                     the check symbols matrix                               *)
 (*     Syslcode.GEN == generating matrix                                      *)
 (*  Syslcode.encode == encoding function                                      *)
 (* Syslcode.discard == function to discard check symbols                      *)
-(*                                                                            *)
 (*          Rcode.t == definition of "restricted code" (see BCH.v)            *)
+(* ```                                                                        *)
 (*                                                                            *)
-(* Lemmas:                                                                    *)
-(*   dim_kernel      == dimension of the kernel                               *)
-(*   exists_non0_codeword_lowest_deg == Any code that contains more than the  *)
-(*                   zero polynomial has a nonzero polynomial of lowest       *)
-(*                   degree.                                                  *)
-(*            MD_BDD == minimum distance decoding is bounded distance         *)
-(*                      decoding                                              *)
-(*   singleton_bound == singleton bound                                       *)
-(*   hamming_bound   == Hamming bound                                         *)
 (******************************************************************************)
-
-(*
-OUTLINE:
-- Module Lcode0: definition of linear codes as vector spaces
-- Section syndrome_and_kernel
-- Section not_trivial_code_properties
-- Section minimum_distance
-- Section not_trivial_binary_codes
-- Section min_dist_decoding_prop
-- Section hamming_bound
-- Section bounded_distance_decoding
-- Module Encoder
-- Module Decoder
-- Module Lcode: linear codes equipped with an encoding and decoding functions
-- Module Syslcode: linear codes in systematic form
-- Section syslcode_properties
-*)
 
 Import GRing.Theory.
 

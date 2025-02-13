@@ -5,8 +5,8 @@ From mathcomp Require Import matrix.
 Require Import f2 ssr_ext ssralg_ext max_subset.
 Require Import num_occ hamming ldpc_erasure tanner linearcode.
 
-(******************************************************************************)
-(*     Combinatorial Result about the Performance of Iterative Decoding       *)
+(**md**************************************************************************)
+(* # Combinatorial Result about the Performance of Iterative Decoding         *)
 (*                                                                            *)
 (* Formalization of Lemma 1.1 from Di, C., Proietti, D., Telatar, I.E.,       *)
 (* Richardson, T.J., Urbanke, R.L.: Finite-length analysis of low-density     *)
@@ -25,21 +25,6 @@ Require Import num_occ hamming ldpc_erasure tanner linearcode.
 (* Tokyo Institute of Technology, Master’s thesis (2015). (in Japanese).      *)
 (******************************************************************************)
 
-(* OUTLINE
-- Section PCM_instance.
-- Section stopping_set.
-- Section test_stopset.
-- Section largest_subset_verifying_stopset.
-- Section stopset_cols_starblank.
-- Section subset_erasures.
-- Section erase.
-- Section erasures_SP_BEC.
-- Section starFnext_def.
-- Section starFnext_prop.
-- Section starFnext_syndrome_prop.
-- Section combinatorial_characterization_of_iterative_decoder_performance.
-*)
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -51,7 +36,6 @@ Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
 
 Section PCM_instance.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "''F'" := (Fnext H).
@@ -103,9 +87,7 @@ Proof. case: BEC_y => c cy; exists c => //; exact: PCM_instance_approx. Qed.*)
 End PCM_instance.
 
 Section stopping_set.
-
 Local Open Scope ring_scope.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "'`V'" := (Vnext H).
@@ -243,7 +225,6 @@ Qed.
 End test_stopset.
 
 Section largest_subset_verifying_stopset.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 Variable E : {set 'I_n}.
 
@@ -260,7 +241,6 @@ Qed.
 End largest_subset_verifying_stopset.
 
 Section stopset_cols_starblank.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "''F'" := (Fnext H).
@@ -293,7 +273,6 @@ Qed.
 End stopset_cols_starblank.
 
 Section subset_erasures.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "''V'" := (Vnext H).
@@ -407,7 +386,6 @@ End subset_erasures.
 Local Open Scope letter_scope.
 
 Section erase.
-
 Variables n : nat.
 
 Definition erase (y : 'rV['F_2]_n) (E : {set 'I_n}) :=
@@ -521,7 +499,6 @@ Qed.
 End erase.
 
 Section erasures_SP_BEC.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 Variable c : 'rV['F_2]_n.
 Hypothesis Hc : syndrome H c = 0.
@@ -619,7 +596,6 @@ Qed.
 End erasures_SP_BEC.
 
 Section starFnext_def.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "'`F'" := (Fnext H).
@@ -630,7 +606,6 @@ Definition starFnext (y : 'rV[letter]_n) M : {set 'I_n} :=
 End starFnext_def.
 
 Section starFnext_prop.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "'`V'" := (Vnext H).
@@ -724,7 +699,6 @@ Qed.
 End starFnext_prop.
 
 Section starFnext_syndrome_prop.
-
 Variables (m n : nat) (H : 'M['F_2]_(m, n)).
 
 Local Notation "'`V'" := (Vnext H).
