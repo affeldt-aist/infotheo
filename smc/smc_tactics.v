@@ -17,7 +17,6 @@ Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
-Local Open Scope chap2_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 
