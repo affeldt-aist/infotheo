@@ -39,37 +39,35 @@ Inductive proc : Type :=
   | Finish : proc
   | Fail : proc.
 
-Definition step (A : Type) (ps : seq proc) (trace : seq data)
-  (yes no : proc * seq data -> A) (i : nat) : A :=
+Definition step (ps : seq proc) (trace : seq data) (i : nat) :=
   let ps := nth Fail ps in
   let p := ps i in
-  let nop := no (p, trace) in
+  let nop := (p, trace, false) in
   match p with
   | Recv frm f =>
       if ps frm is Send dst v _ then
-        if dst == i then yes (f v, v::trace) else nop
+        if dst == i then (f v, v::trace, true) else nop
       else nop
   | Send dst w next =>
       if ps dst is Recv frm _ then
-        if frm == i then yes (next, trace) else nop
+        if frm == i then (next, trace, true) else nop
       else nop
   | Init d next =>
-      yes (next, d::trace)
+      (next, d::trace, true)
   | Ret d =>
-      yes (Finish, d :: trace)
+      (Finish, d :: trace, true)
   | Finish | Fail =>
       nop
   end.
 
 Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
   if h is h.+1 then
-    if has (fun i => step ps [::] (fun=>true) (fun=>false) i)
-        (iota 0 (size ps)) then
-      let ps_trs' := [seq step ps (nth [::] traces i) idfun idfun i
-                     | i <- iota 0 (size ps)] in
-      let ps' := unzip1 ps_trs' in
-      let trs' := unzip2 ps_trs' in
-        interp h ps' trs'
+    let ps_trs' := [seq step ps (nth [::] traces i) i
+                   | i <- iota 0 (size ps)] in
+    if has snd ps_trs' then
+      let ps' := unzip1 (unzip1 ps_trs') in
+      let trs' := unzip2 (unzip1 ps_trs') in
+      interp h ps' trs'
     else (ps, traces)
   else (ps, traces).
 
@@ -99,7 +97,7 @@ move=> s.
 case: ifP => H; last by move/Htr/leq_trans; apply; rewrite leq_subr.
 move/IH; apply; last by apply/ltnW.
 move=> /= {}s.
-rewrite /unzip2 -map_comp.
+rewrite /unzip2 -2!map_comp.
 case/mapP => i.
 rewrite mem_iota add0n /step => /andP[] _ Hi /=.
 have Hsz : size (nth [::] traces i) < k - h.
