@@ -1,6 +1,9 @@
 (* #load "sumprod.cmo" *)
 open Sumprod;;
 
+let sumprod = sumprod_ext
+let estimation = estimation_ext
+
 let rabst = RbaseSymbolsImpl.coq_Rabst
 let rrepr = RbaseSymbolsImpl.coq_Rrepr
 

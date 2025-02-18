@@ -26,8 +26,7 @@ rewrite -RxE.
 move: RxE.
 case: Rcase_abs=> x0 RxE.
   by rewrite RxE; have/RltP/ltW/ler0_sqrtr-> := x0.
-rewrite /Rx -/(sqrt _) RsqrtE //.
-by have/Rge_le/RleP:= x0.
+by rewrite /Rx -/(sqrt _) RsqrtE.
 Qed.
 
 Definition coqRE :=
