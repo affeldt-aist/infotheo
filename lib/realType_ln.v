@@ -329,7 +329,7 @@ Unshelve. all: by end_near. Qed.
 (* TODO: PR to analysis *)
 Lemma ltr0_derive1_decr (R : realType) (f : R -> R) (a b : R) :
   (forall x, x \in `]a, b[%R -> derivable f x 1) ->
-  (forall x, x \in `]a, b[%R -> f^`() x < 0) ->
+  (forall x, x \in `]a, b[%R -> (f^`())%classic x < 0) ->
   {within `[a, b], continuous f}%classic ->
   forall x y, a <= x -> x < y -> y <= b -> f y < f x.
 Proof.
@@ -339,10 +339,10 @@ have itvW : {subset `[x, y]%R <= `[a, b]%R}.
   by apply/subitvP; rewrite /<=%O /= /<=%O /= leyb leax.
 have itvWlt : {subset `]x, y[%R <= `]a, b[%R}.
   by apply subitvP; rewrite /<=%O /= /<=%O /= leyb leax.
-have fdrv z : z \in `]x, y[%R -> is_derive z 1 f (f^`()z).
+have fdrv z : z \in `]x, y[%R -> is_derive z 1 f (f^`() z)%classic.
   rewrite in_itv/= => /andP[xz zy]; apply: DeriveDef; last by rewrite derive1E.
   by apply: fdrvbl; rewrite in_itv/= (le_lt_trans _ xz)// (lt_le_trans zy).
-have [] := @MVT _ f (f^`()) x y xlty fdrv.
+have [] := @MVT _ f (f^`())%classic x y xlty fdrv.
   apply: (@continuous_subspaceW _ _ _ `[a, b]); first exact: itvW.
   by rewrite continuous_subspace_in.
 move=> t /itvWlt dft dftxy; rewrite -oppr_lt0 opprB dftxy.
@@ -352,7 +352,7 @@ Qed.
 (* TODO: PR to analysis *)
 Lemma gtr0_derive1_incr (R : realType) (f : R -> R) (a b : R) :
   (forall x, x \in `]a, b[%R -> derivable f x 1) ->
-  (forall x, x \in `]a, b[%R -> 0 < f^`() x) ->
+  (forall x, x \in `]a, b[%R -> 0 < (f^`())%classic x) ->
   {within `[a, b], continuous f}%classic ->
   forall x y, a <= x -> x < y -> y <= b -> f x < f y.
 Proof.

@@ -197,7 +197,11 @@ Extract Constant Rdefinitions.Rmult => "( *.)".
 Extract Constant Rdefinitions.Rplus => "(+.)".
 Extract Constant Rdefinitions.Rinv  => "fun x -> 1. /. x".
 Extract Constant Rdefinitions.Ropp  => "(~-.)".
-Extraction "extraction/sumprod.ml" sumprod estimation.
+
+Definition sumprod_ext := Eval compute in sumprod.
+Definition estimation_ext := Eval compute in estimation.
+
+Extraction "extraction/sumprod.ml" sumprod_ext estimation_ext.
 
 Section ToGraph.
 
