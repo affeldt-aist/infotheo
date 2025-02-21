@@ -4,7 +4,8 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix interval.
 From mathcomp Require Import ring.
 From mathcomp Require boolp.
-From mathcomp Require Import mathcomp_extra Rstruct reals set_interval.
+From mathcomp Require Import mathcomp_extra Rstruct reals interval_inference.
+From mathcomp Require Import set_interval.
 From mathcomp Require Import functions topology normedtype realfun derive exp.
 From mathcomp Require convex.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
@@ -251,10 +252,10 @@ From mathcomp Require Import -(notations) convex.
 
 (* TODO: introduce two notations and make two conventions more symmetric *)
 Definition prob_itv (p : {prob R}) :
-  itv.Itv.def R `[(ssrint.Posz 0), (ssrint.Posz 1)].
+  Itv.def (@Itv.num_sem R) (Itv.Real `[(ssrint.Posz 0), (ssrint.Posz 1)]).
 Proof.
-apply (@itv.Itv.Def _ _ (p.~)).
-rewrite /itv.Itv.itv_cond.
+exists p.~ => /=; apply/andP; split.
+  by rewrite num_real.
 by rewrite in_itv /=; apply/andP; split.
 Defined.
 

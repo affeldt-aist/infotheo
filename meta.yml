@@ -80,12 +80,12 @@ dependencies:
     [MathComp field](https://math-comp.github.io)
 - opam:
     name: coq-mathcomp-analysis
-    version: '{ (>= "1.7.0") }'
+    version: '{ (>= "1.9.0") }'
   description: |-
     [MathComp analysis](https://github.com/math-comp/analysis)
 - opam:
     name: coq-mathcomp-reals-stdlib
-    version: '{ (>= "1.7.0") }'
+    version: '{ (>= "1.9.0") }'
   description: |-
     [MathComp analysis reals standard library](https://github.com/math-comp/analysis)
 - opam:

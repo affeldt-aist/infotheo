@@ -16,19 +16,6 @@ Delimit Scope R_scope with coqR.
 Lemma R1E : 1%coqR = 1%mcR. Proof. by []. Qed.
 Lemma R0E : 0%coqR = 0%mcR. Proof. by []. Qed.
 
-(* NB: PR https://github.com/math-comp/analysis/pull/1461 in progress in MCA *)
-Lemma RsqrtE' (x : Rdefinitions.R) : sqrt x = Num.sqrt x.
-Proof.
-set Rx := Rcase_abs x.
-have RxE: Rx = Rcase_abs x by [].
-rewrite /sqrt.
-rewrite -RxE.
-move: RxE.
-case: Rcase_abs=> x0 RxE.
-  by rewrite RxE; have/RltP/ltW/ler0_sqrtr-> := x0.
-by rewrite /Rx -/(sqrt _) RsqrtE.
-Qed.
-
 Definition coqRE :=
   (R0E, R1E, INRE, IZRposE,
-    RinvE, RoppE, RdivE, RminusE, RplusE, RmultE, RpowE, RsqrtE').
+    RinvE, RoppE, RdivE, RminusE, RplusE, RmultE, RpowE, RsqrtE).
