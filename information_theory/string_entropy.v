@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-From mathcomp Require Import classical_sets reals exp itv.
+From mathcomp Require Import classical_sets reals exp interval_inference.
 From mathcomp Require convex.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln.
 Require Import fdist entropy convex jensen num_occ.
@@ -39,18 +39,21 @@ Import (canonicals) analysis.convex.
 Variable R : realType.
 
 Definition i01_of_prob : {prob R} -> {i01 R}.
-case => p H. exists p.
-abstract (by case/andP: H => H0 H1; apply/andP; split).
+case => p H; exists p => /=.
+by apply/andP; split => //; exact: num_real.
 Defined.
 Definition prob_of_i01 : {i01 R} -> {prob R}.
-case => p H. exists p.
-abstract (by case/andP: H => H0 H1; apply/andP; split).
+by case => p /andP[_ H]; exists p => //.
 Defined.
 
 Lemma i01_of_probK : cancel i01_of_prob prob_of_i01.
-Proof. case => p H. by apply/val_inj. Qed.
+Proof.
+by case => p H /=; case: (elimTF _ _) => /= _ ?; exact/val_inj.
+Qed.
 Lemma prob_of_i01K : cancel prob_of_i01 i01_of_prob.
-Proof. case => p H. by apply/val_inj. Qed.
+Proof.
+by case=> p H/=; case: (elimTF _ _) => _ ?; apply/val_inj.
+Qed.
 
 Lemma mc_convE (a b : R^o) (p : {prob R}) :
   conv p a b = mathcomp.analysis.convex.conv (i01_of_prob p) b a :> R^o.
