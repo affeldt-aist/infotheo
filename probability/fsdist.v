@@ -6,7 +6,7 @@ From mathcomp Require Import finmap.
 From mathcomp Require Import mathcomp_extra.
 From mathcomp Require Import classical_sets boolp cardinality reals Rstruct.
 From mathcomp Require ereal topology esum measure probability.
-Require Import realType_ext (*Reals_ext*) ssr_ext ssralg_ext.
+Require Import realType_ext ssr_ext ssralg_ext.
 Require Import bigop_ext fdist convex.
 
 (******************************************************************************)
@@ -880,7 +880,6 @@ End Convn_of_FSDist.
 Section lemmas_for_probability_monad_and_adjunction.
 Context {R : realType}.
 Local Open Scope fset_scope.
-Local Open Scope R_scope.
 
 Lemma Convn_of_fsdistjoin (A : choiceType) (D : R.-dist (R.-dist A)) :
   Convn_of_fsdist D = fsdistjoin D.

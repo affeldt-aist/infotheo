@@ -585,7 +585,6 @@ Context {R : realType}.
 Import Order.TotalTheory.
 
 Variable A : convType R.
-Local Open Scope R_scope.
 Local Open Scope convex_scope.
 Local Open Scope scaled_scope.
 
@@ -735,7 +734,6 @@ End convpt_convex_space.
 Section scaled_convex.
 Context {R : realType}.
 Variable A : convType R.
-Local Open Scope R_scope.
 Local Open Scope convex_scope.
 Local Open Scope scaled_scope.
 
@@ -2279,7 +2277,6 @@ HB.instance Definition _  := isConvexSpace.Build R (R.-fdist A) conv1 convmm con
 End fdist_convex_space.
 
 Section scaled_convex_lemmas_depending_on_T_convType.
-Local Open Scope R_scope.
 Import RConvex.
 Context {R : realType}.
 Lemma scalept_conv (T : convType R) (x y : R^o) (s : scaled T) (p : {prob R}):
@@ -2679,7 +2676,6 @@ Canonical probinvn {R : realType} (n : nat) :=
   Eval hnf in @Prob.mk _ ((1 + n)%:R^-1) (@prob_invn R n).
 
 Section counterexample.
-Local Open Scope R_scope.
 Import RConvex.
 
 Context {R : realType}.

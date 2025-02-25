@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
-(*Require Import Reals Lra.*)
 From mathcomp Require Import Rstruct reals.
-Require Import (*ssrR Reals_ext*) fdist proba.
+Require Import fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2 *)
 

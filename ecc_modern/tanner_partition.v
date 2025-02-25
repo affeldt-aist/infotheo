@@ -519,8 +519,6 @@ have : exists cy, (2 < size cy)%nat /\ ucycleb (tanner_rel H) cy.
 case=> cy [] H1; exact: Hacyclic.
 Qed.
 
-Local Open Scope R_scope.
-
 Lemma rprod_Fgraph_part_fnode g n0:
   \prod_(m0 < m) g m0 = \prod_(m0 in 'F n0) \prod_(m1 in 'F(m0, n0)) g m1 :> Rdefinitions.R.
 Proof.

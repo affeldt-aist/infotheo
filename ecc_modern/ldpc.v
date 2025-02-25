@@ -211,16 +211,12 @@ Variable B : finType.
 Variable W : `Ch('F_2, B).
 Variable y : 'rV[B]_n.
 
-Local Open Scope R_scope.
-
 Definition alpha m0 n0 d := \sum_(x = d [~'V(m0, n0) :\ n0])
   W ``(y \# 'V(m0, n0) :\ n0 | x \# 'V(m0, n0) :\ n0) *
     \prod_(m1 in 'F(m0, n0)) (\delta ('V m1) x)%:R.
 
 Definition beta n0 m0 (d : 'rV_n) :=
   W (d ``_ n0) (y ``_ n0) * \prod_(m1 in 'F n0 :\ m0) alpha m1 n0 d.
-
-Local Close Scope R_scope.
 
 Definition dproj_V m0 n0 (d t : 'rV['F_2]_n) := dproj d ('V(m0, n0) :\ n0) t.
 
@@ -407,8 +403,6 @@ Local Notation "''F(' x ',' y ')'" := (Fgraph H x y).
 Variable tanner : Tanner.acyclic_graph (tanner_rel H).
 
 Local Notation "'alpha'" := (alpha H W y).
-
-Local Open Scope R_scope.
 
 Lemma estimation_correctness (d : 'rV_n) n0 :
   let b := d ``_ n0 in let P := `U C_not_empty in
