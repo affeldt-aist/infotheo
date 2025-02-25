@@ -6,12 +6,10 @@ Require Import Reals.
 From mathcomp Require Import lra.
 From mathcomp Require Import Rstruct.
 
-Local Open Scope R_scope.
-Delimit Scope ring_scope with mcR.
-
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
 Delimit Scope R_scope with coqR.
+Delimit Scope ring_scope with mcR.
 
 Lemma R1E : 1%coqR = 1%mcR. Proof. by []. Qed.
 Lemma R0E : 0%coqR = 0%mcR. Proof. by []. Qed.

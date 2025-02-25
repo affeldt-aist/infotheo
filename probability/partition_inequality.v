@@ -18,7 +18,6 @@ Import Prenex Implicits.
 
 Local Open Scope divergence_scope.
 Local Open Scope fdist_scope.
-Local Open Scope R_scope.
 
 Local Open Scope ring_scope.
 Local Open Scope fdist_scope.

@@ -858,8 +858,6 @@ Variable types : 'I_n -> finType.
 Variable vars : forall i, {RV P -> types i}.
 Variable bn : t vars.
 
-Local Open Scope R_scope.
-
 (* Theorem 3.1, page 62 *)
 Theorem BN_factorization vals :
   Pr P (preim_vars vars setT vals) =
