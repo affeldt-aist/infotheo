@@ -1,7 +1,6 @@
 From HB Require Import structures.
-Require Import Reals.
-From mathcomp Require Import all_ssreflect all_algebra fingroup Rstruct ring boolp classical_sets.
-Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext fdist.
+From mathcomp Require Import all_ssreflect all_algebra fingroup Rstruct ring boolp classical_sets finmap.
+Require Import realType_ln realType_ext ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy smc_tactics.
 
 Import GRing.Theory.
@@ -23,6 +22,8 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
+
+Local Definition R := Rdefinitions.R.
 
 Section party.
 
@@ -139,7 +140,7 @@ Variable VX : lmodType TX.
 HB.instance Definition _ := gen_eqMixin {RV P -> VX}.
 HB.instance Definition _ := gen_choiceMixin {RV P -> VX}.
 
-From mathcomp Require Import finmap.
+
 
 Variables (x1 : {RV P -> VX})(x2 : {RV P -> VX}).
 
@@ -155,7 +156,7 @@ Arguments inde_between_parties f [a b].
 
 Local Open Scope fset_scope.
 
-Definition px1 : seq bool := [::true].
+Definition px1 : seq bool := [::true; false].
 Definition px2 : seq bool := [::false; true].
 Definition partymap_a : partymap := [fset (x1, px1); (x2, px2)].
 
