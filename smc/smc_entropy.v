@@ -1075,7 +1075,7 @@ transitivity (`H( x2 | [% x1, s1, r1, x2'])).
   by rewrite (eqn3_proof negy2_x1x2s1s2r1r2_eqn3_indep neg_py2_unif).
 transitivity (`H( x2 | [% x1, s1, r1])).
   by rewrite (eqn4_proof ps2_unif s2_x1s1r1x2_eqn4_indep).
-rewrite eqn_4_1_proof //.
+by rewrite eqn_4_1_proof.
 Qed.
 
 End pi2_alice_is_leakage_free_proof.
@@ -1362,7 +1362,7 @@ transitivity (`H(x1|[%x2, s2, x1'])).
   by rewrite (eqn7_proof x2_s2_x1'_r2_eqn7_indep x1x2_s2_x1'_r2_eqn7_indep pr2_unif).
 transitivity (`H(x1|[%x2, s2])).
   by rewrite (eqn8_proof ps1_unif s1_x1x2s1s2_eqn8_indep).
-by rewrite eqn_8_1_proof //.
+by rewrite eqn_8_1_proof.
 Qed.
 
 End pi2_bob_view_is_leakage_free_proof.
