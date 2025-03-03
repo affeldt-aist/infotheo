@@ -248,6 +248,18 @@ case /boolP: (`Pr[ Y = y0 ] == 0) => Hy.
 by rewrite H.
 Qed.
 
+Lemma cinde_rv_cprP : P |= X _|_ Y | Z <-> forall x y z, `Pr[[%Y, Z] = (y, z) ] != 0 -> `Pr[ X = x | [%Y, Z] = (y, z)] = `Pr[ X = x | Z = z].
+Proof.
+split.
+  move => H x y z YZne0.
+  apply: cinde_alt.
+  exact: H.
+  exact: YZne0.
+move => H x y z.
+move: (H x y z) => H2.
+apply: inde_RV2_cinde.
+rewrite /inde_rv => [[_a _b] _c].
+Abort.
 
 End more_independent_rv_lemmas.
 
@@ -440,7 +452,7 @@ Qed.
 End lemma_3_5.
 
 Section lemma_3_6.
-
+ 
 Variables (T TY TX : finType)(TZ : finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.

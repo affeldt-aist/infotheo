@@ -391,22 +391,6 @@ Let data := (sum TX VX).
 Let one x : data := inl x.
 Let vec x : data := inr x.
 
-Lemma cond_entropyC (A B C : finType)
-  (X: {RV P -> A}) (Y: {RV P -> B}) (Z: {RV P -> C}) :
-  `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
-Proof.
-rewrite /cond_entropy /=.
-rewrite (reindex (fun p : C * B => (p.2, p.1))) /=; last first.
-  by exists (fun p : B * C => (p.2, p.1)) => -[b c].
-apply: eq_bigr => -[c b] _ /=.
-rewrite !snd_RV2 -!pr_eqE' pr_eq_pairC.
-congr (_ * _).
-rewrite /cond_entropy1; congr (- _).
-rewrite /jcPr !snd_RV2.
-apply: eq_bigr => a _.
-by rewrite !setX1 !Pr_set1 -!pr_eqE' !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
-Qed.
-
 Let alice_traces_from_view xs : 11.-bseq _ :=
   let '(x1, s1, r1, x2', t, y1) := xs in
   [bseq one y1; one t; vec x2'; one r1; vec s1; vec x1].
@@ -432,7 +416,7 @@ transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
   have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces.
     by apply: boolp.funext => x /=; rewrite alice_traces_ok /comp_RV fK.
   by rewrite scp.fun_cond_removal.
-by rewrite alice_traces_ok cond_entropyC scp.fun_cond_removal.
+by rewrite alice_traces_ok scp.cond_entropyC scp.fun_cond_removal.
 Qed.
 
 Let bob_traces_from_view xs : 11.-bseq _ :=
@@ -460,7 +444,7 @@ transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
   have -> : [%x2, s2, x1', r2, y2] = f `o bob_traces.
     by apply: boolp.funext => x; rewrite bob_traces_ok /comp_RV fK.
   by rewrite scp.fun_cond_removal.
-by rewrite bob_traces_ok cond_entropyC scp.fun_cond_removal.
+by rewrite bob_traces_ok scp.cond_entropyC scp.fun_cond_removal.
 Qed.
 
 Let pnegy2_unif :

@@ -613,6 +613,26 @@ Definition mutual_info_RV := mutual_info `p_[% X, Y].
 End mutualinfo_RV_def.
 Notation "'`I(' X ';' Y ')'" := (mutual_info_RV X Y) : entropy_scope.
 
+Section mutual_info0_indep.
+
+Variable R : realType.
+Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Lemma mutual_info0_indep:
+  mutual_info_RV X Y = 0 -> P |= X _|_ Y.
+Proof.
+move/mutual_info0P.
+rewrite fst_RV2 snd_RV2 => H x y.
+by rewrite !pr_eqE' H fdist_prodE.
+Qed.
+
+Lemma mutual_info_RVE:
+  `I(X;Y) = `H `p_X - `H(X | Y).
+Proof. by rewrite /mutual_info_RV mutual_infoE fst_RV2. Qed.
+
+End mutual_info0_indep.
+
+
 (* TODO: example 2.3.1 *)
 
 Section mutualinfo_prop.

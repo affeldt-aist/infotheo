@@ -121,6 +121,29 @@ Qed.
 
 End extra_pr2.
 
+Section extra_entropy.
+  
+Variable T : finType.
+Variable P : R.-fdist T.
+
+Lemma cond_entropyC (A B C : finType)
+  (X: {RV P -> A}) (Y: {RV P -> B}) (Z: {RV P -> C}) :
+  `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
+Proof.
+rewrite /cond_entropy /=.
+rewrite (reindex (fun p : C * B => (p.2, p.1))) /=; last first.
+  by exists (fun p : B * C => (p.2, p.1)) => -[b c].
+apply: eq_bigr => -[c b] _ /=.
+rewrite !snd_RV2 -!pr_eqE' pr_eq_pairC.
+congr (_ * _).
+rewrite /cond_entropy1; congr (- _).
+rewrite /jcPr !snd_RV2.
+apply: eq_bigr => a _.
+by rewrite !setX1 !Pr_set1 -!pr_eqE' !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
+Qed.
+
+End extra_entropy.
+
 Section entropy_with_indeRV.
 
 Variables (T TX TY TZ: finType).
@@ -207,7 +230,7 @@ End joint_entropyA.
 Section pr_entropy.
   
 
-Variables (T TY1 TY2: finType) (TY3: finZmodType) (P : R.-fdist T).
+Variables (T TY1 TY2 TY3: finType)(P : R.-fdist T).
 Variable n : nat.
 Notation p := n.+2.
 Variables (Y1: {RV P -> TY1}) (Y2: {RV P -> TY2}) (Y3: {RV P -> TY3}).
@@ -309,7 +332,7 @@ End pr_entropy.
 
 Section cpr_cond_entropy_proof.
 
-Variables (T TY1 TY2 : finType)(TY3 : finZmodType)(P : R.-fdist T).
+Variables (T TY1 TY2 TY3: finType)(P : R.-fdist T).
 Variables (Y1 : {RV (P) -> (TY1)})(Y2 : {RV (P) -> (TY2)})(Y3 : {RV (P) -> (TY3)}).
 
 Lemma cpr_cond_entropy (n: nat)(card_TY3 : #|TY3| = n.+1):
@@ -604,6 +627,11 @@ move => Heq1 _ Heq2 Heq3.
 by rewrite -Heq3 -Heq2 -Heq1 eqxx in Hneq.
 Qed.
 
+(* Different from lemma 3.5: latter doesn't require s1 _|_ s2 yet
+   "brings" independence to s1+s2
+
+   (X, Y) _|_ R -> X + R _|_ Y.
+*)
 Lemma s1Ms2_r_indep : P|= (rv_op s1 s2) _|_ r.
 Proof.
 rewrite /inde_rv.
@@ -621,7 +649,6 @@ Qed.
 End inde_ex.
 
 Arguments s1Ms2_r_indep [_ _ _ _ _] s1 s2 r.
-
 
 Section neg_RV_lemmas.
 
