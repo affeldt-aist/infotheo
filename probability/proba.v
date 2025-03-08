@@ -629,7 +629,7 @@ Definition sumR_RV I (r : seq.seq I) (p : pred I) (X : I -> {RV P -> V}) : {RV P
 Local Notation "X `+ Y" := (add_RV X Y) : proba_scope.
 Local Notation "X `- Y" := (sub_RV X Y) : proba_scope.
 
-Lemma sub_RV_neg  (X Y : {RV P -> V}):
+Lemma sub_RV_neg  (X Y : {RV P -> V}) :
   X `- Y = X `+ neg_RV Y.
 Proof. by []. Qed.
 
