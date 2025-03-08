@@ -1384,7 +1384,7 @@ End mutual_independence.
 Section uniform_finType_RV_lemmas.
 Local Open Scope proba_scope.
 Context {R : realType}.
-Variables (T: finType) (n: nat) (P : R.-fdist T) (A : finType).
+Variables (T : finType) (n : nat) (P : R.-fdist T) (A : finType).
 Variable X : {RV P -> A}.
 
 Hypothesis card_A : #|A| = n.+1.
