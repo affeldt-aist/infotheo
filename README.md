@@ -5,16 +5,9 @@ Follow the instructions on https://github.com/coq-community/templates to regener
 # A Coq formalization of information theory and linear error correcting codes
 
 [![Docker CI][docker-action-shield]][docker-action-link]
-[![Nix CI][nix-action-shield]][nix-action-link]
 
-[docker-action-shield]: https://github.com/affeldt-aist/infotheo/workflows/Docker%20CI/badge.svg?branch=master
-[docker-action-link]: https://github.com/affeldt-aist/infotheo/actions?query=workflow:"Docker%20CI"
-
-[nix-action-shield]: https://github.com/affeldt-aist/infotheo/workflows/Nix%20CI/badge.svg?branch=master
-[nix-action-link]: https://github.com/affeldt-aist/infotheo/actions?query=workflow:"Nix%20CI"
-
-
-
+[docker-action-shield]: https://github.com/affeldt-aist/infotheo/actions/workflows/docker-action.yml/badge.svg?branch=master
+[docker-action-link]: https://github.com/affeldt-aist/infotheo/actions?query=branch%3Amaster+event%3Apush
 
 Infotheo is a Coq library for reasoning about discrete probabilities,
 information theory, and linear error-correcting codes.
