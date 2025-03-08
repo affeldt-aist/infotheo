@@ -645,9 +645,8 @@ Section zmod_random_variables_lemmas.
 End zmod_random_variables_lemmas.
 
 Section ring_random_variables.
-Context {R : realType}.
 Local Open Scope ring_scope.
-
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (V : ringType).
 
 Definition scalel_RV k (X : {RV P -> V}) : {RV P -> V} := fun x => k * X x.
