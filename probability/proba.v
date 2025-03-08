@@ -1424,6 +1424,7 @@ Proof. exact: (bij_RV_unif Xunif (addrK m) (subrK m)). Qed.
 
 Lemma neg_RV_unif : `p_(`-- X) = fdist_uniform card_A.
 Proof. exact: (bij_RV_unif Xunif opprK opprK). Qed.
+
 End uniform_finZmod_RV_lemmas.
 
 Section conditional_probablity.
