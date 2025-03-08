@@ -611,9 +611,8 @@ Notation "f `o X" := (comp_RV f X).
 
 Section zmod_random_variables.
 Context {R : realType}.
-Local Open Scope ring_scope.
-
 Variables (U : finType) (P : R.-fdist U) (V : zmodType).
+Local Open Scope ring_scope.
 
 Definition add_RV (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x + Y x.
 Definition sub_RV (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x - Y x.
