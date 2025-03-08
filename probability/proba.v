@@ -664,8 +664,7 @@ Notation "X '`^2' " := (sq_RV X) : proba_scope.
 
 Section real_random_variables.
 Context {R : realType}.
-
-Variables (U : finType)(P : R.-fdist U).
+Variables (U : finType) (P : R.-fdist U).
 
 Definition log_RV : {RV P -> R} := fun x => log (P x).
 
