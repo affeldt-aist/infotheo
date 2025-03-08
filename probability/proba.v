@@ -1410,7 +1410,7 @@ End uniform_finType_RV_lemmas.
 Section uniform_finZmod_RV_lemmas.
 Local Open Scope proba_scope.
 Context {R : realType}.
-Variables (T: finType) (P : R.-fdist T) (A : finZmodType).
+Variables (T : finType) (P : R.-fdist T) (A : finZmodType).
 Variable X : {RV P -> A}.
 
 Let n := #|A|.-1.
