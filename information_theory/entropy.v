@@ -208,7 +208,7 @@ Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B})
 
 (* 2.9 *)
 Lemma eqn29 : `H(X, Y) = - `E (`log `p_[% X, Y]).
-Proof. by rewrite /joint_entropy_RV joint_entropyE E_neg_RV. Qed.
+Proof. by rewrite /joint_entropy_RV joint_entropyE E_opp_RV. Qed.
 
 End joint_entropy_RV_prop.
 

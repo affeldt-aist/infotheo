@@ -46,9 +46,9 @@ Lemma mul_RVCA : left_commutative mul_RV.
 Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrCA. Qed.
 Lemma mul_RVACA : interchange mul_RV mul_RV.
 Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrACA. Qed.
-Lemma mul_RVDr : right_distributive mul_RV (@add_RV _ U P).
+Lemma mul_RVDr : right_distributive mul_RV (@add_RV _ U P R).
 Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrDr. Qed.
-Lemma mul_RVDl : left_distributive mul_RV (@add_RV _ U P).
+Lemma mul_RVDl : left_distributive mul_RV (@add_RV _ U P R).
 Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrDl. Qed.
 Lemma mul_RVBr (f g h : {RV (P) -> (R)}) : f `* (g `- h) = f `* g `- f `* h.
 Proof. by apply: boolp.funext=> u /=; rewrite mulrBr. Qed.
@@ -62,15 +62,15 @@ Section add_RV.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Arguments add_RV /.
-Lemma add_RVA : associative (@add_RV _ U P).
+Lemma add_RVA : associative (@add_RV _ U P R).
 Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrA. Qed.
-Lemma add_RVC : commutative (@add_RV _ U P).
+Lemma add_RVC : commutative (@add_RV _ U P R).
 Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrC. Qed.
-Lemma add_RVAC : right_commutative (@add_RV _ U P).
+Lemma add_RVAC : right_commutative (@add_RV _ U P R).
 Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrAC. Qed.
-Lemma add_RVCA : left_commutative (@add_RV _ U P).
+Lemma add_RVCA : left_commutative (@add_RV _ U P R).
 Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrCA. Qed.
-Lemma add_RVACA : interchange (@add_RV _ U P) (@add_RV _ U P).
+Lemma add_RVACA : interchange (@add_RV _ U P R) (@add_RV _ U P R).
 Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrACA. Qed.
 End add_RV.
 
@@ -104,7 +104,7 @@ Variables (U : finType) (P : R.-fdist U).
 (* Lemma sub_RV_subr (X Y : {RV P -> R}) : X `- Y = (X - Y)%mcR. *)
 (* Proof. reflexivity. Qed. *)
 
-(* Lemma trans_min_RV_subr (X : {RV P -> R}) (y : R) : *)
+(* Lemma trans_sub_RV_subr (X : {RV P -> R}) (y : R) : *)
 (*   X `-cst y = (X - cst y)%ring. *)
 (* Proof. reflexivity. Qed. *)
 Definition fdist_supp_choice : U.
@@ -122,7 +122,7 @@ Defined.
 (* Proof. by rewrite /sq_RV/comp_RV; apply boolp.funext => u /=; rewrite mulR1. Qed. *)
 
 (* Definition RV_ringE := *)
-(*   (add_RV_addr, sub_RV_subr, trans_min_RV_subr, mul_RV_mulr, sq_RV_sqrr). *)
+(*   (add_RV_addr, sub_RV_subr, trans_sub_RV_subr, mul_RV_mulr, sq_RV_sqrr). *)
 End RV_ring.
 
 Section sets_functions.
@@ -306,12 +306,12 @@ Proof. by rewrite [LHS]I_square sq_RVE. Qed.
 Lemma I_mult_one F : (Ind (A:=U) F : {RV P -> R}) `* 1 = Ind (A:=U) F.
 (F: {RV P -> R}): (Ind (A:=U) F: {RV P -> R}) `* 1 = (Ind (A:=U) F : {RV P -> R}). *)
 
-Lemma cEx_trans_min_RV (X : {RV P -> R}) m F : Pr P F != 0 ->
+Lemma cEx_trans_sub_RV (X : {RV P -> R}) m F : Pr P F != 0 ->
   `E_[ (X `-cst m) | F] = `E_[ X | F ] - m.
 Proof.
 move=> PF0.
 rewrite !cExE.
-under eq_bigr do rewrite /trans_min_RV mulrDl.
+under eq_bigr do rewrite /trans_sub_RV mulrDl.
 rewrite big_split/= mulrDl; congr (_ + _).
 by rewrite -big_distrr /= -mulrA divff // mulr1.
 Qed.
@@ -324,7 +324,7 @@ Lemma cEx_sub (X : {RV P -> R}) (F G: {set U}) :
 Proof.
 move=> PrPF_gt0 FsubG.
 rewrite -[X in _ / X]ger0_norm ?ltW // -normf_div.
-by rewrite -cEx_ExInd cEx_trans_min_RV // lt0r_neq0 // PrPF_gt0.
+by rewrite -cEx_ExInd cEx_trans_sub_RV // lt0r_neq0 // PrPF_gt0.
 Qed.
 
 Lemma Ex_cExT (X : {RV P -> R}) : `E X = `E_[X | [set: U]].
@@ -518,7 +518,7 @@ Lemma cEx_trans_RV_id_rem (X: {RV P -> R}) m F:
   `E_[(X `-cst m) `^2 | F] = `E_[((X `^2 `- ((2 * m)%mcR `cst* X)) `+cst m ^+ 2) | F].
 Proof.
 rewrite !cEx_ExInd; congr (_ * _); apply: eq_bigr => a _.
-rewrite /sub_RV /trans_add_RV /trans_min_RV /sq_RV /= /comp_RV /scalel_RV /=.
+rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scalel_RV /=.
 lra.
 Qed.
 
