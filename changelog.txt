@@ -1,3 +1,19 @@
+
+* changed:
+- renamed
+  + neg_RV -> opp_RV
+	+ trans_min_RV -> trans_sub_RV
+	+ seq.seq -> seq
+- in probability/proba.v
+  + split operations into sections according to their types of values:
+    random_variables, zmod_random_variables, ring_random_variables,
+    and real_random_variables
+  + notation "X '`/' n" is changed from (1 / n%:R) to (n%:R^-1)
+
+* added
+- in probability/proba.v
+  + lemma bij_RV_unif, bij_comp_RV, neg_RV_unif, trans_RV_unif
+
 -------------------
 from 0.7.7 to 0.9.0
 -------------------
