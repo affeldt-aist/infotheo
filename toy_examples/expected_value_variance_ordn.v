@@ -28,7 +28,7 @@ Local Definition R := Rdefinitions.R.
 Definition pmf : {ffun 'I_3 -> R} :=
   finfun [fun x => 0 with ord0 |-> 1/2, ord1 |-> 1/3, ord2 |-> 1/6].
 
-Lemma pmf_ge0 : [forall a : 'I_3, (0 <= pmf a)%mcR].
+Lemma pmf_ge0 : [forall a : 'I_3, 0 <= pmf a].
 Proof.
 apply/forallP => a.
 rewrite /pmf ffunE /=.

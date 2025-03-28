@@ -109,10 +109,6 @@ Declare Scope proba_scope.
 Notation "f @^-1 y" := (preim f (pred1 y)) : fdist_scope.
 Local Open Scope fdist_scope.
 
-(* TODO: move *)
-Definition ex2C (T : Type) (P Q : T -> Prop) : @ex2 T P Q <-> @ex2 T Q P.
-Proof. by split; case=> x H0 H1; exists x. Qed.
-
 Lemma bij_swap A B : bijective (@swap A B).
 Proof. apply Bijective with swap; by case. Qed.
 Arguments bij_swap {A B}.
@@ -158,8 +154,8 @@ Coercion FDist.f : fdist >-> finfun_of.
 HB.instance Definition _ R A := [isSub for @FDist.f R A].
 HB.instance Definition _ R A := [Choice of fdist R A by <:].
 
-#[global] Hint Extern 0 (is_true (0 <= _)%mcR) => solve [exact: FDist.ge0] : core.
-#[global] Hint Extern 0 (is_true (_ <= 1)%mcR) => solve [exact: FDist.le1] : core.
+#[global] Hint Extern 0 (is_true (0 <= _)%R) => solve [exact: FDist.ge0] : core.
+#[global] Hint Extern 0 (is_true (_ <= 1)%R) => solve [exact: FDist.le1] : core.
 
 Notation "R '.-fdist' T" := (fdist R T%type) : fdist_scope.
 Notation "{ 'fdist' T }" := (fdist Rdefinitions.R T%type) : fdist_scope.
@@ -168,7 +164,7 @@ Lemma fdist_ge0_le1 (R : numDomainType) (A : finType) (d : fdist R A) a :
   (0 <= d a <= 1)%R.
 Proof. by apply/andP. Qed.
 
-Definition probfdist (R: realType) (A : finType) (d : fdist R A) a :=
+Definition probfdist (R : realType) (A : finType) (d : fdist R A) a :=
   Eval hnf in Prob.mk_ (@fdist_ge0_le1 R A d a).
 
 Section fdist_lemmas.
@@ -534,8 +530,8 @@ Proof. by rewrite /f ffunE; case: ifP. Qed.
 Let f1 (a : A) : \sum_(a' in A) (f a a' : R) = 1.
 Proof.
 rewrite Set2sumE /= /f !ffunE; case: ifPn => [/eqP <-|].
-  by rewrite eq_sym (negbTE (Set2.a_neq_b HA)) addrC onemKC.
-by rewrite eq_sym; move/Set2.neq_a_b/eqP => <-; rewrite eqxx onemKC.
+  by rewrite eq_sym (negbTE (Set2.a_neq_b HA)) addrC add_onemK.
+by rewrite eq_sym; move/Set2.neq_a_b/eqP => <-; rewrite eqxx add_onemK.
 Qed.
 
 Definition fdist_binary : A -> fdist R A :=
@@ -732,7 +728,7 @@ Proof. by rewrite /f ffunE; case: splitP => a _; exact: mulr_ge0. Qed.
 
 Let f1 : \sum_(i < n + m) f i = 1.
 Proof.
-rewrite -(onemKC (p : R)) -{1}(mulr1 (p : R)) -(mulr1 (Prob.p p).~).
+rewrite -(add_onemK (p : R)) -{1}(mulr1 (p : R)) -(mulr1 (Prob.p p).~).
 rewrite -{1}(FDist.f1 d1) -(FDist.f1 d2) big_split_ord /=; congr (_ + _).
 - rewrite big_distrr /f /=; apply eq_bigr => i _; rewrite ffunE.
   case: splitP => [j Hj|k /= Hi].
@@ -1964,13 +1960,16 @@ rewrite ge //.
 have : (x `|` y) (g i) by apply/gX; by exists i.
 by case.
 Qed.
+
 Definition d (x : set A) (gX : g @` setT `<=` x `|` y)
   (ge : forall i : 'I_n, x (g i) -> e i = 0) : R.-fdist 'I_n :=
   locked (FDist.make f0 (f1 gX ge)).
+
 Lemma dE (x : set A) (gX : g @` setT `<=` x `|` y)
   (ge : forall i : 'I_n, x (g i) -> e i = 0) i :
   d gX ge i = if g i \in y then e i else 0.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
+
 Lemma f1' (x : set A) (gX : g @` setT `<=` x `|` y)
   (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0) :
   (\sum_(i < n) f i = 1).
@@ -1981,12 +1980,15 @@ rewrite ge //.
 have : (x `|` y) (g i) by apply/gX; by exists i.
 by case.
 Qed.
+
 Definition d' (x : set A) (gX : g @` setT `<=` x `|` y)
   (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0) :=
   locked (FDist.make f0 (f1' gX ge)).
+
 Lemma dE' (x : set A) (gX : g @` setT `<=` x `|` y)
   (ge : forall i : 'I_n, (x (g i)) /\ (~ y (g i)) -> e i = 0) i :
   d' gX ge i = if g i \in y then e i else 0.
 Proof. by rewrite /d'; unlock; rewrite ffunE. Qed.
+
 End def.
 End CodomDFDist.

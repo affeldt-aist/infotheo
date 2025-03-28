@@ -34,9 +34,9 @@ Definition f := [ffun x : 'I_4 * 'I_4 => [eta (fun=>(0:R)) with
 (two, zero) |-> (1/32), (two, one) |-> (1/32), (two, two) |-> (1/16), (two, three) |-> 0,
 (three, zero) |-> (1/32), (three, one) |-> (1/32), (three, two) |-> (1/16), (three, three) |-> 0] x].
 
-Lemma f0 : forall x, (0 <= f x)%mcR.
+Lemma f0 x : 0 <= f x.
 Proof.
-move=> x; rewrite ffunE; move: x.
+rewrite ffunE; move: x.
 case => -[ [? [[|[|[|[|[]//]]]]]
   | [? [[|[|[|[|[]//]]]]]
   | [? [[|[|[|[|[]//]]]]]

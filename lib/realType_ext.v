@@ -21,7 +21,6 @@ From mathcomp Require Import lra ring Rstruct.
 (*                                                                            *)
 (******************************************************************************)
 
-Delimit Scope ring_scope with mcR.
 Declare Scope reals_ext_scope.
 
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
@@ -42,6 +41,15 @@ Import Prenex Implicits.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
+Definition ex2C (T : Type) (P Q : T -> Prop) : @ex2 T P Q <-> @ex2 T Q P.
+Proof. by split; case=> x H0 H1; exists x. Qed.
+
+Lemma asboolTE : `[< True >] = true.
+Proof.
+apply (asbool_equiv_eqP (Q:=True)) => //.
+by constructor.
+Qed.
+
 Notation "+| r |" := (Num.Def.maxr 0%R r) : reals_ext_scope.
 
 (* TODO: move to "mathcomp_extra.v" *)
@@ -59,16 +67,16 @@ Lemma wpmulr_rgt0 (R : numDomainType) (x y : R) : 0 <= x -> 0 < x * y -> 0 < y.
 Proof. by rewrite mulrC; exact: wpmulr_lgt0. Qed.
 End num_ext.
 
-(* TODO: gen, call is divr_eq? *)
-Lemma eqr_divr_mulr {R : realType} (z x y : R) : z != 0%mcR -> (y / z = x)%mcR <-> (y = x * z)%mcR.
+Lemma eqr_divrMr {R : realType} (z x y : R) : z != 0%R ->
+  (y / z = x)%R <-> (y = x * z)%R.
 Proof.
 move=> z0; split => [<-|->]; first by rewrite -mulrA mulVf // mulr1.
 by rewrite -mulrA mulfV // mulr1.
 Qed.
 
-(* TODO: rename as prodr_gt0 *)
-Lemma prodR_gt0 (R : numDomainType) (A : finType) (F : A -> R) : (forall a, 0 < F a)%mcR ->
-  (0 < \prod_(a : A) F a)%mcR.
+Lemma prodr_gt0 (R : numDomainType) (A : finType) (F : A -> R) :
+  (forall a, 0 < F a)%R ->
+  (0 < \prod_(a : A) F a)%R.
 Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulr_gt0. Qed.
 
 (* PR to mathcomp_extra.v? *)
@@ -91,13 +99,13 @@ Qed.
 
 Lemma onemE r : `1-r = 1 - r.  Proof. by []. Qed.
 
-Lemma onemKC r : r + `1-r = 1. Proof. by rewrite !onemE; lra. Qed.
-
 Lemma onem_div r s : s != 0 -> `1-(r / s) = (s - r) / s.
 Proof. by rewrite !onemE => q0; rewrite mulrDl mulNr divff. Qed.
 
 Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
-Proof. by move=> /andP[r0 r1]; apply /andP; split; [rewrite onem_ge0|rewrite onem_le1]. Qed.
+Proof.
+by move=> /andP[r0 r1]; apply /andP; split; [rewrite onem_ge0|rewrite onem_le1].
+Qed.
 
 Lemma onem_eq0 r : (`1-r = 0) <-> (r = 1).
 Proof. by rewrite /onem; split => [/subr0_eq//|->]; rewrite subrr. Qed.
@@ -119,7 +127,8 @@ Notation "p '.~'" := (onem p).
 Section about_the_pow_function.
 Local Open Scope ring_scope.
 
-Lemma x_x2_eq {R : realFieldType} (q : R) : q * (1 - q) = 4^-1 - 4^-1 * (2 * q - 1) ^+ 2.
+Lemma x_x2_eq {R : realFieldType} (q : R) :
+  q * (1 - q) = 4^-1 - 4^-1 * (2 * q - 1) ^+ 2.
 Proof. by field. Qed.
 
 Lemma x_x2_max {R : realFieldType} (q : R) : q * (1 - q) <= 4^-1.
@@ -149,11 +158,11 @@ have: 0 < q < 1 by lra.
 by move/x_x2_pos/ltW.
 Qed.
 
-(* TODO: prove expR1_lt3 too; PR to mca *)
-Lemma expR1_gt2 {R : realType} : 2 < expR 1 :> R.
-Proof. by rewrite (lt_le_trans (@expR_gt1Dx _ 1 _))// oner_eq0. Qed.
-
 End about_the_pow_function.
+
+(* TODO: prove expR1_lt3 too; PR to mca *)
+Lemma expR1_gt2 {R : realType} : (2 < expR 1 :> R)%R.
+Proof. by rewrite (lt_le_trans (@expR_gt1Dx _ 1 _))// oner_eq0. Qed.
 
 Section dominance_defs.
 
@@ -192,7 +201,8 @@ move=> PQ k k0; apply/dominatesP => a /eqP.
 by rewrite ffunE mulf_eq0 (negbTE k0)/= => /eqP/(dominatesE PQ).
 Qed.
 
-Definition dominatesb {A : finType} (Q P : A -> R) := [forall b, (Q b == 0%R) ==> (P b == 0%R)].
+Definition dominatesb {A : finType} (Q P : A -> R) :=
+  [forall b, (Q b == 0%R) ==> (P b == 0%R)].
 
 End dominance.
 
@@ -290,7 +300,7 @@ Lemma probK p : p = ((Prob.p p).~).~%:pr.
 Proof. by apply val_inj => /=; rewrite onemK. Qed.
 
 Lemma probKC (p : {prob R}) : Prob.p p + (Prob.p p).~ = 1 :> R.
-Proof. exact: onemKC. Qed.
+Proof. exact: add_onemK. Qed.
 
 Lemma probadd_eq0 p q : Prob.p p + Prob.p q = 0 <-> p = 0%:pr /\ q = 0%:pr.
 Proof.
@@ -467,7 +477,7 @@ Section s_of_pq_lemmas.
 Variable R : realType.
 Implicit Types p q : {prob R}.
 
-Lemma s_of_pqE p q : Prob.p [s_of p, q] = ((Prob.p p).~ * (Prob.p q).~)%mcR.~ :> R.
+Lemma s_of_pqE p q : Prob.p [s_of p, q] = ((Prob.p p).~ * (Prob.p q).~)%R.~ :> R.
 Proof. by rewrite /s_of_pq; unlock. Qed.
 
 Lemma s_of_0q q : [s_of 0%:pr, q] = q.
@@ -482,7 +492,7 @@ Proof. by apply/val_inj; rewrite /= s_of_pqE onem0 mulr1 onemK. Qed.
 Lemma s_of_p1 p : [s_of p, 1%:pr] = 1%:pr.
 Proof. by apply/val_inj; rewrite /= s_of_pqE onem1 mulr0 onem0. Qed.
 
-Lemma s_of_gt0 p q : p != 0%:pr -> (0 < Prob.p [s_of p, q])%mcR.
+Lemma s_of_gt0 p q : p != 0%:pr -> (0 < Prob.p [s_of p, q])%R.
 Proof.
 move=> p0; rewrite s_of_pqE; apply: onem_gt0.
 have [->/=|q0] := eqVneq q 0%:pr.
@@ -492,7 +502,7 @@ rewrite mulr_ilte1 => //=.
 by rewrite onem_lt1// lt0r q0/=.
 Qed.
 
-Lemma ge_s_of p q : (Prob.p p <= Prob.p [s_of p, q])%mcR.
+Lemma ge_s_of p q : (Prob.p p <= Prob.p [s_of p, q])%R.
 Proof.
 rewrite s_of_pqE.
 rewrite onemE.
@@ -572,7 +582,7 @@ Section p_of_rs_lemmas.
 Variable R : realType.
 Implicit Types r s : {prob R}.
 
-Lemma p_of_rsE r s : Prob.p [p_of r, s] = (Prob.p r * Prob.p s)%mcR :> R.
+Lemma p_of_rsE r s : Prob.p [p_of r, s] = (Prob.p r * Prob.p s)%R :> R.
 Proof. by rewrite /p_of_rs; unlock. Qed.
 
 Lemma p_of_r1 r : [p_of r, 1%:pr] = r.
@@ -590,10 +600,10 @@ Proof. by apply/val_inj; rewrite /= p_of_rsE mul0r. Qed.
 Lemma p_of_rsC r s : [p_of r, s] = [p_of s, r].
 Proof. by apply/val_inj; rewrite /= !p_of_rsE mulrC. Qed.
 
-Lemma p_of_neq1 r s : (0 < Prob.p s < 1)%mcR -> [p_of r, s] != 1%:pr.
+Lemma p_of_neq1 r s : (0 < Prob.p s < 1)%R -> [p_of r, s] != 1%:pr.
 Proof.
 case/andP=> p0 p1; apply/eqP => pq1; move: (p1).
-rewrite [X in (_ < X)%mcR -> _](_ : _ = Prob.p 1%:pr) //.
+rewrite [X in (_ < X)%R -> _](_ : _ = Prob.p 1%:pr) //.
 rewrite -pq1 p_of_rsE -ltr_pdivrMr // divff ?gt_eqF//.
 by rewrite ltNge prob_le1.
 Qed.
@@ -612,7 +622,7 @@ have [/eqP->|] := boolP (r == 0%:pr :> {prob R}).
 move/prob_gt0.
 rewrite lt_neqAle => /andP[r0 _].
 apply/eqP.
-move/(congr1 (fun x => ((Prob.p r)^-1)%mcR * x))%R.
+move/(congr1 (fun x => ((Prob.p r)^-1)%R * x))%R.
 rewrite mulrA mulVr ?unitfE//; last by rewrite eq_sym.
 rewrite mul1r mulr1.
 rewrite eq_sym in r0.
@@ -647,11 +657,12 @@ rewrite ler_pdivrMr// ?mul1r; last first.
   rewrite onem_gt0// -prob_lt1.
   apply/p_of_rs1P/not_andP; left.
   exact/eqP.
-by rewrite p_of_rsE {2}/onem lerBrDr -mulrDl addrC onemKC mul1r.
+by rewrite p_of_rsE {2}/onem lerBrDr -mulrDl addrC add_onemK mul1r.
 Qed.
 
 Lemma r_of_pq_is_r {R : realType} (p q r s : {prob R}) : r != 0%:pr -> s != 0%:pr ->
-  (Prob.p p = Prob.p r * Prob.p s :> R -> (Prob.p s).~ = (Prob.p p).~ * (Prob.p q).~ -> [r_of p, q] = r)%mcR.
+  (Prob.p p = Prob.p r * Prob.p s :> R ->
+   (Prob.p s).~ = (Prob.p p).~ * (Prob.p q).~ -> [r_of p, q] = r)%R.
 Proof.
 move=> r0 s0 H1 H2; apply val_inj => /=.
 by rewrite r_of_pqE s_of_pqE -H2 onemK H1 -mulrA divff ?mulr1//.

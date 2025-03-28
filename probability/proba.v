@@ -1182,10 +1182,10 @@ Hypothesis X_ge0 : forall u, 0 <= X u.
 
 Lemma Ex_lb (r : R) : r * `Pr[ X >= r] <= `E X.
 Proof.
-rewrite /Ex (bigID [pred a' | (X a' >= r)%mcR]) /= -[a in a <= _]addr0.
+rewrite /Ex (bigID [pred a' | X a' >= r]) /= -[a in a <= _]addr0.
 rewrite lerD//; last first.
   by apply/sumr_ge0 => a _; rewrite mulr_ge0//; exact/RleP/X_ge0.
-apply (@le_trans _ _ (\sum_(i | (X i >= r)%mcR) r * P i)).
+apply (@le_trans _ _ (\sum_(i | X i >= r) r * P i)).
   rewrite big_distrr /= le_eqVlt; apply/orP; left; apply/eqP.
   by apply/eq_bigl => a; rewrite inE.
 by apply: ler_sum => u Xur; exact/ler_wpM2r.
@@ -1272,7 +1272,7 @@ Lemma chebyshev_inequality epsilon : 0 < epsilon ->
 Proof.
 move=> He; rewrite ler_pdivlMr ?exprn_gt0//.
 rewrite mulrC /Var.
-apply (@le_trans _ _ (\sum_(a in U | (`| X a - `E X | >= epsilon)%mcR)
+apply (@le_trans _ _ (\sum_(a in U | `| X a - `E X | >= epsilon)
     (((X `-cst `E X) `^2) a  * P a))); last first.
   rewrite /Ex big_mkcondr/=; apply: ler_sum => a _; case: ifPn => // _.
   by apply mulr_ge0 => //; exact: sq_RV_ge0.
@@ -1568,7 +1568,7 @@ Let f1 : \sum_(a in A) f a = 1.
 Proof.
 rewrite /f.
 under eq_bigr do rewrite ffunE.
-rewrite /cPr -big_distrl /= eqr_divr_mulr // mul1r.
+rewrite /cPr -big_distrl /= eqr_divrMr // mul1r.
 rewrite (@total_prob _ _ P _ E (fun i => [set i])); last 2 first.
   move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => // a.
   by rewrite !inE; apply/negbTE; apply: contra ij => /andP[/eqP ->].
@@ -2322,7 +2322,7 @@ have <- : `V (X `/ n.+1) = sigma2 / n.+1%:R.
   by rewrite [RHS]mulrC (mulrA _ n.+1%:R) mulVf ?pnatr_eq0// !mul1r.
 have <- : `E (X `/ n.+1) = miu.
   rewrite E_scalel_RV (E_sum_n X_Xs).
-  rewrite mulrC eqr_divr_mulr ?pnatr_eq0// (eq_bigr (fun=> miu)) //.
+  rewrite mulrC eqr_divrMr ?pnatr_eq0// (eq_bigr (fun=> miu)) //.
   by rewrite big_const /= iter_addr cardE /= size_enum_ord addr0 mulr_natr.
 move/le_trans: (chebyshev_inequality (X `/ n.+1) e0); apply.
 by rewrite lexx.

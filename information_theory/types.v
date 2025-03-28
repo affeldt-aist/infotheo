@@ -94,7 +94,7 @@ Qed.
 
 Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
 pose f := [ffun a => N(a | ta)%:R / n.+1%:R : Rdefinitions.R].
-assert (H1 : forall a, (0%mcR <= f a)%mcR).
+assert (H1 : forall a, 0%R <= f a).
   move=> a; rewrite ffunE; apply/divr_ge0; by [apply ler0n | apply ltr0n].
 assert (H2 : \sum_(a in A) f a = 1).
   under eq_bigr do rewrite ffunE /=.
@@ -150,10 +150,10 @@ Qed.
 Definition fdist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
   (Hf : (\sum_(a in A) f a)%nat == n.+1) : {fdist A}.
 set pf := [ffun a : A => (f a)%:R / n.+1%:R :> Rdefinitions.R].
-assert (pf_ge0 : forall a, (0 <= pf a)%mcR).
+assert (pf_ge0 : forall a, 0 <= pf a).
   move=> a.
   by rewrite /pf/= ffunE divr_ge0//.
-assert (H : (\sum_(a in A) pf a)%mcR = 1 :> Rdefinitions.R).
+assert (H : \sum_(a in A) pf a = 1 :> Rdefinitions.R).
   rewrite /pf; under eq_bigr do rewrite ffunE /=.
   rewrite -big_distrl /= -natr_sum.
   move/eqP : Hf => ->.

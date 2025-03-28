@@ -1108,7 +1108,7 @@ apply/fdist_ext => a.
 rewrite fdist_convE fdist_convnE /= big_ord_recl; congr (_ + _)%R.
 rewrite IH fdist_convnE big_distrr /=; apply eq_bigr => i _.
 rewrite fdist_delE fdistD1E eq_sym (negbTE (neq_lift _ _)).
-rewrite mulrAC mulrC -!mulrA; congr (_ * _)%mcR.
+rewrite mulrAC mulrC -!mulrA; congr *%R.
 rewrite /fdist_del_idx ltn0 /onem mulVr ?mulr1//.
 exact/onem_neq0.
 Qed.

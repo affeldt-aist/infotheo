@@ -1211,7 +1211,7 @@ rewrite /markov_chain => mc.
 rewrite cond_mutual_infoE (eq_bigr (fun=> 0)) ?big1// => x _.
 have [->|H0] := eqVneq (PRQ x) 0; first by rewrite mul0r.
 rewrite (_ : _ / _ = 1); first by rewrite log1 mulr0.
-rewrite eqr_divr_mulr ?mul1r; last first.
+rewrite eqr_divrMr ?mul1r; last first.
   rewrite mulf_neq0//.
     (* TODO: lemma? *)
     rewrite /jcPr mulf_neq0 (* TODO: lemma divf_neq0 *) //.

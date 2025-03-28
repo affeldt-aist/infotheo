@@ -447,10 +447,10 @@ split.
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /andP [] /= /eqP ->; rewrite ab.
       rewrite /cPr.
-      set den := (X in (_ / X)%mcR).
+      set den := (X in _ / X).
       case/boolP: (den == 0) => /eqP Hden.
         by rewrite setIC Pr_domin_setI // setIC Pr_domin_setI // !GRing.mul0r.
-      set num := (X in (_ * (X / _))%mcR).
+      set num := (X in _ * (X / _)).
       case/boolP: (num == 0) => /eqP Hnum.
         by rewrite -setIA setIC Pr_domin_setI // Hnum !GRing.mul0r GRing.mulr0.
       elim Hnum.
@@ -654,7 +654,7 @@ Lemma cinde_events_cPr1 (i : 'I_n) :
 Proof.
 move=> vals He Hie Hif Hig Hvi.
 rewrite /cinde_events /cPr.
-set den := (X in (_ / X)%mcR).
+set den := (X in _ / X).
 case/boolP: (den == 0) => [/eqP|] Hden.
   by rewrite setIC Pr_domin_setI // ?mul0r => /esym/eqP; rewrite oner_eq0.
 set num := Pr _ _ => Hnum.

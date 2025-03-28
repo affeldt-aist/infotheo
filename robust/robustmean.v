@@ -346,7 +346,7 @@ Proof. by rewrite /cVar -!Ex_cExT. Qed.
 
 Lemma cvariance_ge0 (X : {RV P -> R}) F : 0 <= `V_[X | F].
 Proof.
-have [H|] := boolP (0 < Pr P F)%mcR; last first.
+have [H|] := boolP (0 < Pr P F)%R; last first.
   rewrite -leNgt.
   have:= Pr_ge0 P F => /[conj] /andP /le_anti H.
   rewrite /cVar /cEx; apply big_ind; [by []|exact: addr_ge0|move=> i _].
@@ -384,7 +384,7 @@ apply: (@le_trans _ _ y).
   rewrite sq_RVE -![in leLHS]mul_RVA (mul_RVC (Ind F)) -![in leLHS]mul_RVA.
   by rewrite -I_double !mul_RVA -I_square -sq_RVE le_refl.
 rewrite /y /var /cVar -/mu cEx_ExInd.
-rewrite -!mulrA !sqrtrM ?invr_ge0 ?(ltW PrPG_pos) //. 
+rewrite -!mulrA !sqrtrM ?invr_ge0 ?(ltW PrPG_pos) //.
 rewrite -[in leLHS](sqr_sqrtr (ltW PrPF_pos)) invfM !mulrA.
 rewrite -!sqrtrV ?(@ltW _ _ 0) // ler_pM2r ?sqrtr_gt0 ?invr_gt0//.
 rewrite E_Ind -![in leLHS]mulrA -[in leLHS]sqrtrM ?(@ltW _ _ 0) //.
@@ -510,14 +510,14 @@ Lemma cEx_scalel_RV (X : {RV (P) -> (R)}) (k : R) F:
   `E_[(k `cst* X) | F] = k * `E_[X | F].
 Proof. by rewrite mulrC -cEx_scaler_RV const_RC. Qed.
 
-Lemma cEx_trans_add_RV (X: {RV P -> R}) m F: 
+Lemma cEx_trans_add_RV (X: {RV P -> R}) m F :
   0 < Pr P F -> `E_[X `+cst m | F] = `E_[X | F] + m.
 Proof. by move=> ?; rewrite cEx_add_RV cEx_const_RV. Qed.
 
 Lemma cEx_trans_RV_id_rem (X: {RV P -> R}) m F:
-  `E_[(X `-cst m) `^2 | F] = `E_[((X `^2 `- ((2 * m)%mcR `cst* X)) `+cst m ^+ 2) | F].
+  `E_[(X `-cst m) `^2 | F] = `E_[((X `^2 `- ((2 * m) `cst* X)) `+cst m ^+ 2) | F].
 Proof.
-rewrite !cEx_ExInd; congr (_ * _); apply: eq_bigr => a _.
+rewrite !cEx_ExInd; congr *%R; apply: eq_bigr => a _.
 rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scalel_RV /=.
 lra.
 Qed.

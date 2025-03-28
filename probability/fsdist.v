@@ -640,7 +640,7 @@ rewrite /D; case: ifPn; [|case: ifPn].
     by move=> a _; rewrite mem_finsupp negbK => /eqP ->; rewrite mulr0.
   rewrite -(big_fset_incl _ (fsubsetUr (finsupp d1) (finsupp d2))); last first.
     by move=> a _; rewrite mem_finsupp negbK => /eqP ->; rewrite mulr0.
-by rewrite -!big_distrr !FSDist.f1 /= !mulr1 onemKC.
+by rewrite -!big_distrr !FSDist.f1 /= !mulr1 add_onemK.
 Qed.
 
 Definition fsdist_conv : R.-dist A := locked (FSDist.make f0 f1).
@@ -1118,12 +1118,6 @@ Qed.
 
 HB.instance Definition _ :=
   isMeasure.Build disp T _ P P_set0 P_ge0 P_semi_sigma_additive.
-
-Lemma asboolTE : `[< True >] = true.
-Proof.
-apply (asbool_equiv_eqP (Q:=True)) => //.
-by constructor.
-Qed.
 
 Lemma P_is_probability : P [set: _] = 1%E.
 Proof.

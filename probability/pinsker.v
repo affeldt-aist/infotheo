@@ -451,8 +451,8 @@ Local Notation "0" := (false).
 Local Notation "1" := (true).
 
 Lemma bipart_dominates :
-  let A_ := fun b => if b then [set a | (P a < Q a)%mcR]
-                          else [set a | (Q a <= P a)%mcR] in
+  let A_ := fun b => if b then [set a | P a < Q a]
+                          else [set a | Q a <= P a] in
   forall (cov : A_ 0 :|: A_ 1 = [set: A]) (dis : A_ 0 :&: A_ 1 = finset.set0),
   bipart dis cov P `<< bipart dis cov Q.
 Proof.
@@ -463,17 +463,17 @@ Qed.
 
 Lemma Pinsker_inequality : (2 * ln 2)^-1 * d(P , Q) ^+ 2 <= D(P || Q).
 Proof.
-pose A0 := [set a | (Q a <= P a)%mcR].
-pose A1 := [set a | (P a < Q a)%mcR].
+pose A0 := [set a | Q a <= P a].
+pose A1 := [set a | P a < Q a].
 pose A_ := fun b => match b with 0 => A0 | 1 => A1 end.
 have cov : A_ 0 :|: A_ 1 = finset.setT.
   rewrite /= /A0 /A1.
-  have -> : [set x | (P x < Q x)%mcR] = ~: [set x | (Q x <= P x)%mcR].
+  have -> : [set x | P x < Q x] = ~: [set x | Q x <= P x].
     by apply/setP => a; rewrite finset.in_set finset.in_setC finset.in_set ltNge.
   by rewrite finset.setUCr.
 have dis : A_ 0 :&: A_ 1 = finset.set0.
   rewrite /A_ /A0 /A1.
-  have -> : [set x | (P x < Q x)%mcR] = ~: [set x | (Q x <= P x)%mcR].
+  have -> : [set x | P x < Q x] = ~: [set x | Q x <= P x].
     by apply/setP => a; rewrite finset.in_set finset.in_setC finset.in_set ltNge.
   by rewrite finset.setICr.
 pose P_A := bipart dis cov P.

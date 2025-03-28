@@ -142,14 +142,14 @@ Definition g := fun x => if x.2 then h x.1 else 1 - h x.1.
 
 Definition f := [ffun x => g x * P x.1].
 
-Lemma g_ge0 x : (0 <= g x)%mcR.
+Lemma g_ge0 x : 0 <= g x.
 Proof.
 rewrite /g; case: ifPn => _.
   exact/h0.
 by have /andP [_ ?] := h01 x.1; rewrite subr_ge0.
 Qed.
 
-Let f0 a : (0 <= f a)%mcR.
+Let f0 a : 0 <= f a.
 Proof. by rewrite ffunE /f mulr_ge0 //; exact: g_ge0. Qed.
 
 Let f1 : \sum_a f a = 1.
@@ -356,8 +356,8 @@ Qed.
 
 End pos_evar.
 
-Notation eps_max := (10 / 126)%mcR.
-Notation denom := ((3 / 10)^-1)%mcR.
+Notation eps_max := (10 / 126)%R.
+Notation denom := (3 / 10)^-1%R.
 
 Section invariant.
 Local Open Scope ring_scope.
@@ -389,8 +389,8 @@ Hypothesis C0 : forall u, 0 <= C u.
 Local Notation cplt_S := (~: S).
 Local Notation eps := (Pr P cplt_S).
 
-Hypotheses (eps_max01 : 0 < eps_max < 1) (C01 : is01 C) (PC0 : Weighted.total P C != 0)
-  (low_eps : eps <= eps_max).
+Hypotheses (eps_max01 : 0 < eps_max < 1) (C01 : is01 C)
+  (PC0 : Weighted.total P C != 0) (low_eps : eps <= eps_max).
 
 Lemma pr_S : Pr P S = 1 - eps. Proof. by rewrite Pr_to_cplt. Qed.
 
@@ -411,7 +411,8 @@ Let hweightedtotalgt0 := weighted_total_gt0.
 
 (**md ## eqn 1.1, page 5 *)
 Lemma weight_contrib :
-  (\sum_(i in S) C i * P i * tau i) / Pr P S <= `V_[X | S] + (`E_[X | S] - `E (WP.-RV X))^+2.
+  (\sum_(i in S) C i * P i * tau i) / Pr P S <=
+  `V_[X | S] + (`E_[X | S] - `E (WP.-RV X))^+2.
 Proof.
 apply (@le_trans _ _ (`E_[tau | S])); last first.
   rewrite le_eqVlt/tau/sq_dev; apply/orP; left; exact/eqP/cVarDist.
@@ -585,9 +586,8 @@ Definition update_ffun : {ffun U -> R} :=
   [ffun i => if (tau_max == 0) || (C i == 0) then 0 else
             C i * (1 - tau i / tau_max)].
 
-Lemma update_pos_ffun : (forall a, 0 <= update_ffun a)%mcR.
+Lemma update_pos_ffun a : 0 <= update_ffun a.
 Proof.
-move=> i.
 rewrite /update_ffun ffunE.
 case: ifPn => //.
 case/norP=> tau_max_neq0 Ci_neq0.
@@ -979,7 +979,7 @@ have sq_dev_max_neq0 : sq_dev_max X PCneq0 C0 != 0.
 exists [arg max_(i > u | C i != 0) sq_dev X PCneq0 C0 i]%O.
   by rewrite supportE.
 rewrite /update_ffun supportE ffunE negbK ifF.
-  rewrite mulf_eq0 subr_eq0 -invr1 -(mul1r (1^-1))%mcR.
+  rewrite mulf_eq0 subr_eq0 -invr1 -(mul1r (1^-1)).
   rewrite eqr_div ?oner_eq0// ?mulr1 ?mul1r// /sq_dev_max.
   rewrite (@bigmax_eq_arg _ _ _ _ u) ?eq_refl ?orbT ?gt_eqF//.
   by move=> i _; exact/sq_dev_ge0.

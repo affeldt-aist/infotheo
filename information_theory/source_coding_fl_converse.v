@@ -86,11 +86,9 @@ Proof.
 by rewrite /lambda lt_min; apply/andP; split; [exact Hepsilon1 | exact Hr1].
 Qed.
 
-Lemma Hdelta : (0 < delta)%mcR.
+Lemma Hdelta : 0 < delta.
 Proof.
-rewrite /delta.
-rewrite lt_min.
-apply/andP; split.
+rewrite /delta lt_min; apply/andP; split.
 case/andP: Hr => ? ?; apply divr_gt0; lra.
 apply divr_gt0; [exact lambda0 | lra].
 Qed.

@@ -51,14 +51,14 @@ Lemma reg_ldpc_prop {R : realType} m n : forall (C : reg_ldpc m n),
   m%:R / n%:R = (reglambda C)%:R / (regrho C)%:R :> R.
 Proof.
 case => /= H lam rho [] Hlam Hrho Hm0 Hrho0.
-have : (\sum_(m0 : 'I_m) wH (row m0 H) = rho * m)%nat.
-  transitivity (\sum_(m0 < m) rho)%nat.
+have : (\sum_(m0 : 'I_m) wH (row m0 H) = rho * m)%N.
+  transitivity (\sum_(m0 < m) rho)%N.
     apply eq_bigr => i _; by apply Hrho.
   by rewrite big_const iter_addn addn0 card_ord.
 rewrite sum_wH_row => Htmp.
-have {}Htmp : (lam * n = rho * m)%nat.
+have {}Htmp : (lam * n = rho * m)%N.
   rewrite -Htmp.
-  transitivity (\sum_(n0 < n) lam)%nat.
+  transitivity (\sum_(n0 < n) lam)%N.
     by rewrite big_const iter_addn addn0 card_ord.
   apply eq_bigr => i _; exact/esym/Hlam.
 apply: (@mulfI _ n%:R).
@@ -468,7 +468,7 @@ transitivity (\sum_(t in 'rV['F_2]_n)
   apply eq_bigr => /= t Ht.
   case: ifP => HtH.
     rewrite fdist_post_probE fdist_uniform_supp_in ?inE //.
-    have HH : (#|[set cw in kernel H]|%:R)%mcR != 0 :> R.
+    have HH : #|[set cw in kernel H]|%:R != 0 :> R.
       (* the following three lines amount to INR_eq0 *)
       have->: 0 = GRing.natmul 1 0 by [].
       apply/eqP => /mulrIn /eqP.
@@ -836,7 +836,7 @@ Fixpoint sumproduct_loop (lmax : nat) (beta0 beta1 : 'M_(m, n)) : option ('rV['F
       let estimation x n0 alpha := (W x (y !_ n0) * \prod_(m1 in 'F n0) alpha m1 n0)%R in
       let gamma0 n0 := estimation Zp0 n0 alpha0 in
       let gamma1 n0 := estimation Zp1 n0 alpha1 in
-      let chat := \matrix_(i < 1, n0 < n) if (gamma0 n0 >= gamma1 n0)%mcR then 0 else 1 in
+      let chat := \matrix_(i < 1, n0 < n) if gamma0 n0 >= gamma1 n0 then 0 else 1 in
       if H *m chat^T == 0 then
         Some chat
       else

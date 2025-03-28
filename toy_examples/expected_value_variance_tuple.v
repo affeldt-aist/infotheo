@@ -19,7 +19,7 @@ Local Definition R := Rdefinitions.R.
 Definition ps := [tuple (1/2:R); 1/3; 1/6].
 Definition p : {ffun 'I_3 -> R} := [ffun i => tnth ps i].
 
-Lemma p_nonneg : [forall a : 'I_3, (0 <= p a)%mcR].
+Lemma p_nonneg : [forall a : 'I_3, 0 <= p a].
 Proof.
 apply/forallP => a.
 rewrite /p ffunE.

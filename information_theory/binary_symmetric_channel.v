@@ -134,7 +134,7 @@ Proof.
 rewrite /entropy Set2sumE 2!fdist_outE 2!Set2sumE /=.
 rewrite /BSC.c !fdist_binaryE.
 rewrite 2!eqxx (eq_sym (Set2.b card_A)) (negbTE (Set2.a_neq_b card_A)).
-rewrite 2!fdist_uniformE -!(mulrDl _ _ _^-1) (addrC _.~) onemKC div1r.
+rewrite 2!fdist_uniformE -!(mulrDl _ _ _^-1) (addrC _.~) add_onemK div1r.
 rewrite card_A logV // log2.
 by rewrite mulrC -splitr opprK.
 Qed.

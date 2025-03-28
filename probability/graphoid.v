@@ -225,7 +225,7 @@ have <- : \sum_(d <- fin_img W)
   suff H : forall d, `Pr[ [% X, Y] = (a, b) | Z = c] / `Pr[ Y = b | Z = c ] =
                 `Pr[ [% X, W] = (a, d) | Z = c] / `Pr[ W = d | Z = c ].
     apply eq_bigr => d _.
-    rewrite -eqr_divr_mulr; last first.
+    rewrite -eqr_divrMr; last first.
       rewrite cpr_eqE mulf_neq0 //.
       - by move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 W d) ->.
       - move: (P0 b c d); apply: contra.

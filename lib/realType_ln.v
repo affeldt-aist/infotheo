@@ -367,7 +367,6 @@ rewrite -ltrN2; apply: (@ltr0_derive1_decr _ (\- f) a b).
 - exact: leyb.
 Qed.
 
-
 Section differentiable.
 
 Lemma differentiable_ln {R : realType} (x : R) : 0 < x -> differentiable (@ln R) x.

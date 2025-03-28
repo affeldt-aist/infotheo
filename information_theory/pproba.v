@@ -92,7 +92,7 @@ apply/idP/idP => [|/eqP].
   move: (H i).
   rewrite negb_and !negbK => /orP[|/eqP //].
   by rewrite -(negbK (_ == _)) fdist_uniform_supp_neq0 iC.
-- have : forall i : 'rV_n, i \in C -> (0 <= W ``(y | i))%mcR by [].
+- have : forall i : 'rV_n, i \in C -> 0 <= W ``(y | i) by [].
   move/psumr_eq0P => H /H {}H.
   rewrite /receivable_prop; apply/negP.
   case/existsP => z /andP[].

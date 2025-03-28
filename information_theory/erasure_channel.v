@@ -18,7 +18,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Import Num.Theory.
+Import GRing.Theory Num.Theory.
 
 Local Open Scope channel_scope.
 Local Open Scope reals_ext_scope.
@@ -50,7 +50,7 @@ Lemma f1 (a : A) : \sum_(a' : {:option A}) f a a' = 1.
 Proof.
 rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /=.
 rewrite [X in _ + (_ + X)](_ : _ = 0).
-  by rewrite GRing.addr0 onemKC.
+  by rewrite addr0 add_onemK.
 apply/eqP; rewrite psumr_eq0/=; last first.
   rewrite /f; move => [a'|//].
   rewrite ffunE.
@@ -87,6 +87,5 @@ by rewrite (eqP ax) eqxx.
 Qed.
 
 End EC_prob.
-
 
 End EC.
