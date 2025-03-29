@@ -62,6 +62,7 @@ rewrite [LHS]addrC.
 congr (_ .~  *: _ + _ *: _); by case: p.
 Qed.
 
+(* TODO: already in MathComp-Analysis?*)
 Lemma log_concave : concave_function_in Rpos_interval (log : R^o -> R^o).
 Proof.
 move=> /= x y p Hx Hy.

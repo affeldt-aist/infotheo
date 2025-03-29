@@ -300,9 +300,6 @@ Proof. by move=> Cu0; rewrite /sq_dev_max; apply/le_bigmax_cond. Qed.
 
 End sq_dev.
 
-(* TODO: moveme *)
-Lemma compfid A B (f : A -> B) : f \o idfun = f. Proof. by []. Qed.
-
 Section evar.
 Local Open Scope ring_scope.
 Let R := Rdefinitions.R.
