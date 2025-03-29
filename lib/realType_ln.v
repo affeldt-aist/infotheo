@@ -3,8 +3,8 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint archimedean.
 From mathcomp Require Import interval.
 From mathcomp Require Import mathcomp_extra boolp classical_sets functions.
-From mathcomp Require Import reals signed topology normedtype derive.
-From mathcomp Require Import sequences exp realfun.
+From mathcomp Require Import reals interval_inference topology normedtype.
+From mathcomp Require Import derive sequences exp realfun.
 Require Import ssralg_ext realType_ext derive_ext.
 
 (**md**************************************************************************)
@@ -253,10 +253,6 @@ move=> Ha a_b.
 rewrite /log /Log prednK// ltr_pM2r ?invr_gt0 ?ln2_gt0//.
 by rewrite ltr_ln ?posrE// (lt_trans _ a_b).
 Qed.
-
-(* TODO: deprecate; use ler_log *)
-Lemma log_increasing_le x y : 0 < x -> x <= y -> log x <= log y.
-Proof. by move=> x0 xy; exact: (@Log_increasing_le R 2 _ _ isT x0 xy). Qed.
 
 End log.
 

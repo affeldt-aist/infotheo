@@ -172,12 +172,13 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
     - rewrite -negb_and; apply: contraTN.
       rewrite negb_or /typ_seq => /andP[H1 /andP[H2 H3]].
       rewrite gt_eqF//= negb_and H1 /= -leNgt.
-      have : 0 < 2 `^ (1 *- n.+1 * (`H P + epsilon)) by exact/powR_gt0.
-      move/log_increasing_le : H2 => /[apply] /=.
+      have : log (2 `^ (1 *- n.+1 * (`H P + epsilon))) <= log ((P `^ n.+1)%fdist i).
+        by rewrite ler_log// posrE powR_gt0.
       rewrite log_powR log2 mulr1 -ler_ndivrMl; last by rewrite oppr_lt0 ltr0n.
-      rewrite -lerBlDl invrN => H2.
+      rewrite -lerBlDl invrN => {}H2.
       rewrite ler_norml H2 andbT.
-      move/log_increasing_le : H3 => /(_ H1).
+      have : log ((P `^ n.+1)%fdist i) <= log (2 `^ (1 *- n.+1 * (`H P - epsilon))).
+        by rewrite ler_log// posrE powR_gt0.
       rewrite log_powR log2 mulr1 -ler_ndivlMl; last by rewrite oppr_lt0 ltr0n.
       by rewrite invrN addrC -{1}(opprK (`H P)) lerBlDr.
   rewrite disjoint_Pr_setU // disjoints_subset; apply/subsetP => /= i.
@@ -221,10 +222,10 @@ Proof.
 move=> k0_k.
 have H1 : 1 - epsilon <= Pr (P `^ n.+1)%fdist (`TS P n.+1 epsilon) <= 1.
   by rewrite Pr_TS_1//= Pr_le1.
-have H2 : forall x, x \in `TS P n.+1 epsilon ->
+have H2 x : x \in `TS P n.+1 epsilon ->
     2 `^ (- n.+1%:R * (`H P + epsilon)) <=
     (P `^ n.+1)%fdist x <= 2 `^ (- n.+1%:R * (`H P - epsilon)).
-  by move=> x; rewrite inE /typ_seq => /andP[-> ->].
+  by rewrite inE /typ_seq => /andP[-> ->].
 have O2 : 0 < 2 :> R by lra.
 have H3 := powR_gt0 (- n.+1%:R * (`H P + epsilon)) O2.
 have H5 := powR_gt0 (- n.+1%:R * (`H P - epsilon)) O2.
