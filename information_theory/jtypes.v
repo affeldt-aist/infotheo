@@ -326,7 +326,7 @@ case: ifPn => [| H'].
   rewrite sum_nat_eq0.
   move/forallP/(_ b)/implyP/(_ Logic.eq_refl)/eqP => H _; exact: val_inj.
 move=> /eqP.
-rewrite mulf_eq0 => -/orP[|abs].
+rewrite mulf_eq0 => /orP[|abs].
   rewrite (_ : 0%R = 0%:R)%R// eqr_nat => /eqP ?.
   exact/val_inj.
 exfalso.
@@ -495,8 +495,8 @@ apply pair.
 - apply: (@Tuple _ _ (take (sum_num_occ ta k) a)).
   rewrite size_take.
   move/eqP : b => ->.
-  move: (sum_num_occ_inc_loc ta k); rewrite leq_eqVlt; case/orP.
-  move/eqP => <-; by rewrite ltnn.
+  move: (sum_num_occ_inc_loc ta k); rewrite leq_eqVlt; case/predU1P.
+  move => <-; by rewrite ltnn.
   by move=> ->.
 - apply: (@Tuple _ _ (take N(enum_val k | ta) (drop (sum_num_occ ta k) a))).
   rewrite size_take size_drop.
@@ -841,7 +841,7 @@ elim=> [n0 a Ha /=|h t IH n0 a]; first by rewrite big_nil.
 rewrite in_cons negb_or => /andP[H1 H2] /=.
 rewrite map_cat IH // (_ : map _ _ = nseq (n0 h) false); last first.
   by rewrite map_nseq /= -(negbTE H1) eqtype.eq_sym.
-by rewrite big_cons nseq_add.
+by rewrite big_cons nseqD.
 Qed.
 
 (* TODO: move? *)
@@ -866,8 +866,8 @@ Proof.
 elim=> // h t IH n0 /=.
 case/andP=> H1 H2.
 rewrite in_cons.
-case/orP.
-  move/eqP => ?; subst a.
+case/predU1P.
+  move => ?; subst a.
   rewrite {IH} map_filter_nseq_nil //; last first.
     move=> x0 x0_t /=.
     apply/eqP => ?; subst x0.

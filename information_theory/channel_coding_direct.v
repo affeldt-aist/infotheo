@@ -255,11 +255,9 @@ Variables (B A : finType) (W : `Ch(A, B)) (P : {fdist A}).
 Definition epsilon0_condition r epsilon epsilon0 :=
   0 < epsilon0 /\ epsilon0 < epsilon / 2 /\ epsilon0 < (`I(P, W) - r) / 4.
 
-(* TODO: move, doc *)
-Definition frac_part (x : R) := x - (Num.floor x)%:~R.
 Definition n_condition r epsilon0 n :=
   (O < n)%N /\ - log epsilon0 / epsilon0 < n%:R /\
-  frac_part (2 `^ (r *+ n)) = 0 /\ (JTS_1_bound P W epsilon0 <= n)%N.
+  frac_part (2 `^ (r *+ n)) = 0 :> R /\ (JTS_1_bound P W epsilon0 <= n)%N.
 
 Definition cal_E M n epsilon (f : encT A M n) m :=
   [set vb | prod_rV (f m, vb) \in `JTS P W n epsilon].
@@ -670,13 +668,6 @@ apply/idP/idP.
     by case/andP : Hm2 => _ /forallP /(_ m); rewrite !inE m_tb m20 Hm implyTb.
 Qed.
 
-(* TODO: move *)
-Lemma ExpK (R' : realType) n x : (1 < n)%N -> Log n (n%:R `^ x) = x :> R'.
-Proof.
-move=> n1; rewrite /Log prednK// 1?ltnW// ln_powR mulrK //.
-by apply/unitf_gt0/ln_gt0; rewrite ltr1n.
-Qed.
-
 Lemma random_coding_good_code epsilon : 0 <= epsilon ->
   forall (r : CodeRateType),
     forall epsilon0, epsilon0_condition r epsilon epsilon0 ->
@@ -696,7 +687,7 @@ have [k Hk] : exists k, log k.+1%:R / n%:R = r :> R.
   rewrite eqr_divrMr; last by rewrite (eqr_nat R n 0) -lt0n.
   rewrite -[in LHS]mulrz_nat natz gez0_abs.
     move/subr0_eq: Hn2 => <-.
-    by rewrite /log ExpK // mulr_natr.
+    by rewrite /log powRK // mulr_natr.
   by rewrite floor_ge0 powR_ge0.
 set M : finType := 'I_k.+1.
 exists M.
@@ -806,24 +797,6 @@ Qed.
 
 End random_coding_good_code_existence.
 
-Lemma exists_frac_part (P : nat -> Prop) : (exists n, P n) ->
-  forall num den, (0 < num)%N -> (0 < den)%N ->
-  (forall n m, (n <= m)%N -> P n -> P m) ->
-  exists n, P n /\
-    frac_part (2 `^ (n%:R * (log num%:R / den%:R))) = 0.
-Proof.
-case=> n Pn num den Hden HP.
-exists (n * den)%N.
-split.
-  apply H with n => //.
-  by rewrite -{1}(muln1 n) leq_mul2l HP orbC.
-rewrite natrM -mulrA (mulrCA den%:R) mulrV // ?mulr1; last first.
-  by rewrite unitfE lt0r_neq0 // (ltr_nat R 0).
-rewrite /frac_part mulrC powRrM.
-rewrite (LogK (n:=2)) // ?ltr0n // powR_mulrn ?ler0n // -natrX.
-by rewrite floorK ?subrr // intr_nat.
-Qed.
-
 Section channel_coding_theorem.
 Variables (A B : finType) (W : `Ch(A, B)).
 Hypothesis set_of_I_nonempty :
@@ -877,7 +850,7 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
       by rewrite ler_nat /supermax 2!leq_max leqnn orbT.
     by rewrite [X in (_ <= X)%nat]maxnA leq_maxr.
   rewrite /n_condition.
-  lapply (exists_frac_part Hn Hnum Hden); last move=> n1 n2 n1_n2 Pn1.
+  lapply (exists_frac_part (R := R) Hn Hnum Hden); last move=> n1 n2 n1_n2 Pn1.
     case=> n [[Hn1 [Hn3 Hn4]] Hn2].
     exists n => /=.
     rewrite /n_condition.
@@ -897,7 +870,7 @@ rewrite /CodeRate M_k -mulrz_nat natz gez0_abs; last first.
   by rewrite floor_ge0 powR_ge0.
 case: Hn => Hn [_] [].
 rewrite /frac_part => /subr0_eq <- _.
-rewrite /log ExpK // -(mulr_natr (rate r)) mulrK //.
+rewrite /log powRK // -(mulr_natr (rate r)) mulrK //.
 by apply/unitf_gt0; rewrite ltr0n.
 Qed.
 

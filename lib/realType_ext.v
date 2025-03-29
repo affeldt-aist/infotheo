@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg ssrnum.
+From mathcomp Require Import all_ssreflect ssralg archimedean ssrnum ssrint.
 From mathcomp Require Import reals normedtype sequences exp.
 From mathcomp Require Import mathcomp_extra boolp.
 From mathcomp Require Import lra ring Rstruct.
@@ -12,11 +12,12 @@ From mathcomp Require Import lra ring Rstruct.
 (* TODO: doc incomplete                                                       *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*    +| r | := maxr 0 r                                                      *)
-(*   P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0       *)
-(*   P `<<b Q == boolean version of P `<< Q                                   *)
-(*      prob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1       *)
-(*     oprob == type of "open unit interval", i.e., reals p s.t. 0 < p < 1    *)
+(*     +| r | := maxr 0 r                                                     *)
+(*    P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0      *)
+(*    P `<<b Q == boolean version of P `<< Q                                  *)
+(* frac_part x := x - (Num.floor x)%:~R                                       *)
+(*       prob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1      *)
+(*      oprob == type of "open unit interval", i.e., reals p s.t. 0 < p < 1   *)
 (* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
@@ -787,7 +788,7 @@ apply IH => //.
 - by move=> a; rewrite in_setD inE => /andP[_ ?]; exact: H.
 Qed.
 
-Lemma ltR_sumR : (O < #|A|)%nat -> (forall i, f i < g i) ->
+Lemma ltR_sumR : (O < #|A|)%N -> (forall i, f i < g i) ->
   \sum_(i in A) f i < \sum_(i in A) g i.
 Proof.
 move=> A0 H0.
@@ -799,6 +800,9 @@ by rewrite [in X in _ < X](eq_bigr g) // => *; rewrite inE.
 Qed.
 
 End leR_ltR_sumR_finType.
+
+Definition frac_part {R : archiNumDomainType} (x : R) :=
+ (x - (Num.floor x)%:~R)%R.
 
 Section oprob_lemmas2.
 Local Open Scope ring_scope.

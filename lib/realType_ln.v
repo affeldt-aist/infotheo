@@ -1,6 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint interval.
+From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint archimedean.
+From mathcomp Require Import interval.
 From mathcomp Require Import mathcomp_extra boolp classical_sets functions.
 From mathcomp Require Import reals signed topology normedtype derive.
 From mathcomp Require Import sequences exp realfun.
@@ -158,6 +159,12 @@ Proof.
 by rewrite (big_morph [eta powR 2] powR2D (powRr0 2)).
 Qed.
 
+Lemma powRK n x : (1 < n)%N -> Log n (n%:R `^ x) = x :> R.
+Proof.
+move=> n1; rewrite /Log prednK// 1?ltnW// ln_powR mulrK //.
+by apply/unitf_gt0/ln_gt0; rewrite ltr1n.
+Qed.
+
 End Exp.
 
 Hint Extern 0 (0 <= _ `^ _) => solve [exact/powR_ge0] : core.
@@ -252,6 +259,24 @@ Lemma log_increasing_le x y : 0 < x -> x <= y -> log x <= log y.
 Proof. by move=> x0 xy; exact: (@Log_increasing_le R 2 _ _ isT x0 xy). Qed.
 
 End log.
+
+Lemma exists_frac_part {R : realType} (P : nat -> Prop) : (exists n, P n) ->
+  forall num den, (0 < num)%N -> (0 < den)%N ->
+  (forall n m, (n <= m)%N -> P n -> P m) ->
+  exists n, P n /\
+    frac_part (2 `^ (n%:R * (log num%:R / den%:R))) = 0 :> R.
+Proof.
+case=> n Pn num den Hden HP.
+exists (n * den)%N.
+split.
+  apply H with n => //.
+  by rewrite -{1}(muln1 n) leq_mul2l HP orbC.
+rewrite natrM -mulrA (mulrCA den%:R) mulrV // ?mulr1; last first.
+  by rewrite unitfE lt0r_neq0 // (ltr_nat R 0).
+rewrite /frac_part mulrC powRrM.
+rewrite (LogK (n:=2)) // ?ltr0n // powR_mulrn ?ler0n // -natrX.
+by rewrite floorK ?subrr // intr_nat.
+Qed.
 
 Lemma log_prodr_sumr_mlog {R : realType} {A : finType} (f : A -> R) s :
   (forall a, 0 <= f a) ->

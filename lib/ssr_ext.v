@@ -18,6 +18,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Lemma compfid A B (f : A -> B) : f \o idfun = f. Proof. by []. Qed.
+
 Section ssrbool_ext.
 
 Lemma addb_tri_ine (a b c : bool) : a (+) b <= (a (+) c) + (c (+) b).
@@ -213,9 +215,6 @@ elim=> // h t IH [|a1 a2] [|b1 b2] //=.
 - destruct h => /=; by rewrite IH.
 Qed.
 
-Lemma nseq_add n (a : A) m : nseq (n + m) a = nseq n a ++ nseq m a.
-Proof. rewrite cat_nseq; elim: n => // n ih; by rewrite addSn /= ih. Qed.
-
 Variable a : A.
 
 Lemma map_nth_iota_id l : map (nth a l) (iota 0 (size l)) = l.
@@ -235,7 +234,7 @@ Lemma nseq_cat l l' n : l ++ l' = nseq n a -> l' = nseq (n - size l) a.
 Proof.
 move=> ll'na; move/(congr1 (drop (size l))) : (ll'na).
 rewrite drop_cat ltnn subnn drop0 => ->.
-move: (nseq_add (size l) a (n - size l)).
+have := nseqD (size l) (n - size l) a.
 rewrite subnKC; last by rewrite -(size_nseq n a) -ll'na size_cat leq_addr.
 by move=> ->; rewrite drop_cat size_nseq ltnn subnn drop0.
 Qed.
@@ -288,13 +287,6 @@ Lemma take_index (a : A) s : a \notin take (index a s) s.
 Proof.
 elim: s => // h t IH /=; case: ifPn => //.
 by rewrite inE negb_or eq_sym IH andbT.
-Qed.
-
-Lemma uniq_take i (s : seq A) :  i < size s -> uniq s -> uniq (take i s).
-Proof.
-elim: i s => [l _ _ |i IH [| h t] //=]; first by rewrite take0.
-rewrite ltnS => nt /andP[ht ut].
-rewrite (IH _ nt ut) andbT; apply: contra ht; exact: mem_take.
 Qed.
 
 Lemma sorted_of_nth (r : rel A) s (r_trans : transitive r) (r_sorted : sorted r s) :
