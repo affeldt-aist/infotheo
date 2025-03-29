@@ -53,26 +53,6 @@ Import numFieldNormedType.Exports.
 
 Local Notation "{ 'fdist' T }" := (_ .-fdist T) : fdist_scope.
 
-(* TODO: rm *)
-Section analysis_ext.
-Import boolp classical_sets.
-
-(*
-Lemma near_eq_cvg_to (U : nbhsType) (T : Type) (F : set_system T)
-  (f g : T -> U) (x : U) :
-  Filter F ->
-  (\near F, f F = g F) ->
-  (fmap f F --> x)%classic = (fmap g F --> x)%classic.
-Proof.
-move=> FF nfg.
-suff-> : (f x @[x --> F] = g x @[x --> F])%classic. by [].
-rewrite eqEsubset; split; apply: near_eq_cvg=> //.
-by move/filterS: nfg; apply=> ?; exact: fsym.
-Qed.
-Arguments near_eq_cvg_to [U T F].
-*)
-End analysis_ext.
-
 Section entropy_log_div.
 Variable R : realType.
 Variables (A : finType) (p : R.-fdist A) (n : nat) (An1 : #|A| = n.+1).
