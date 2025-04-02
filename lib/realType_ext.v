@@ -853,6 +853,18 @@ Qed.
 
 End leR_ltR_sumR_finType.
 
+(* TODO: rename *)
+Lemma leR_sumR_eq {R : realType} (A : finType) (f g : A -> R) (P : pred A) :
+   (forall a, P a -> f a <= g a)%R ->
+   (\sum_(a | P a) g a = \sum_(a | P a) f a)%R ->
+   (forall a, P a -> g a = f a).
+Proof.
+move=> H1 H2 i Hi; apply/eqP; rewrite -subr_eq0; apply/eqP.
+move: i Hi; apply: psumr_eq0P.
+  by move=> i Pi; rewrite Num.Theory.subr_ge0 H1.
+by rewrite big_split/= sumrN; apply/eqP; rewrite subr_eq0 H2.
+Qed.
+
 Definition frac_part {R : archiNumDomainType} (x : R) :=
  (x - (Num.floor x)%:~R)%R.
 

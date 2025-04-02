@@ -66,7 +66,7 @@ Lemma jcPr_le1 E F : \Pr_[E | F] <= 1.
 Proof. by rewrite jcPrE; exact: cPr_le1. Qed.
 
 Lemma jcPr_gt0 E F : 0 < \Pr_[E | F] <-> \Pr_[E | F] != 0.
-Proof. by rewrite !jcPrE; apply cPr_gt0P. Qed.
+Proof. by rewrite !jcPrE lt0cPr. Qed.
 
 Lemma Pr_jcPr_gt0 E F : 0 < Pr P (E `* F) <-> 0 < \Pr_[E | F].
 Proof.

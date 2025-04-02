@@ -192,15 +192,13 @@ Definition Pr E := \sum_(a in E) P a.
 Lemma Pr_ge0 E : 0 <= Pr E. Proof. exact/sumr_ge0. Qed.
 Local Hint Resolve Pr_ge0 : core.
 
-Lemma Pr_gt0P E : 0 < Pr E <-> Pr E != 0.
-Proof.
-by split => H; [rewrite gt_eqF|rewrite lt_neqAle eq_sym H/=].
-Qed.
+Lemma lt0Pr E : (0 < Pr E) = (Pr E != 0).
+Proof. by rewrite lt_neqAle Pr_ge0 andbT eq_sym. Qed.
 
 Lemma Pr_le1 E : Pr E <= 1.
 Proof. by rewrite -(FDist.f1 P) /Pr; exact/ler_suml. Qed.
 
-Lemma Pr_lt1P E : Pr E < 1 <-> Pr E != 1.
+Lemma ltPr1 E : (Pr E < 1) = (Pr E != 1).
 Proof. by rewrite lt_neqAle Pr_le1 andbT. Qed.
 
 Lemma Pr_set0 : Pr set0 = 0.
@@ -344,10 +342,10 @@ Notation Pr_inter_eq := Pr_setI (only parsing).
 Notation Pr_incl := subset_Pr (only parsing).
 #[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_le1`")]
 Notation Pr_1 := Pr_le1 (only parsing).
-#[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_gt0P`")]
-Notation Pr_gt0 := Pr_gt0P (only parsing).
-#[deprecated(since="infotheo 0.7.2", note="renamed to `Pr_lt1P`")]
-Notation Pr_lt1 := Pr_lt1P (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `lt0Pr`")]
+Notation Pr_gt0P := lt0Pr (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `ltPr1`")]
+Notation Pr_lt1P := ltPr1 (only parsing).
 
 Lemma Pr_domin_setI {R : realType} (A : finType) (d : R.-fdist A) (E F : {set A}) :
   Pr d E = 0 -> Pr d (E :&: F) = 0.
@@ -1433,7 +1431,7 @@ Lemma cPr_ge0 E F : 0 <= `Pr_[E | F].
 Proof.
 rewrite /cPr; have [PF0|PF0] := eqVneq (Pr d F) 0.
   by rewrite setIC (Pr_domin_setI _ PF0) mul0r.
-by apply divr_ge0 => //; rewrite Pr_gt0P.
+by rewrite divr_ge0.
 Qed.
 Local Hint Resolve cPr_ge0 : core.
 
@@ -1451,7 +1449,7 @@ Proof.
 rewrite /cPr.
 have [PF0|PF0] := eqVneq (Pr d F) 0.
   by rewrite setIC (Pr_domin_setI E PF0) mul0r.
-rewrite ler_pdivrMr//; last by rewrite Pr_gt0P.
+rewrite ler_pdivrMr ?lt0Pr//.
 rewrite mul1r /Pr big_mkcond/= [leRHS]big_mkcond/=.
 apply: ler_sum => // a _; rewrite inE.
 have [aF|aF] := boolP (a \in F).
@@ -1466,14 +1464,15 @@ Proof. by rewrite /cPr setIT Pr_setT divr1. Qed.
 Lemma cPrE0 E : `Pr_[E | set0] = 0.
 Proof. by rewrite /cPr setI0 Pr_set0 mul0r. Qed.
 
-Lemma cPr_gt0P E F : 0 < `Pr_[E | F] <-> `Pr_[E | F] != 0.
+Lemma lt0cPr E F : (0 < `Pr_[E | F]) = (`Pr_[E | F] != 0).
 Proof. by rewrite lt_neqAle cPr_ge0 andbT eq_sym. Qed.
 
 Lemma Pr_cPr_gt0 E F : 0 < Pr d (E :&: F) <-> 0 < `Pr_[E | F].
 Proof.
-rewrite Pr_gt0P; split => H; last first.
-  by move/cPr_gt0P : H; apply: contra => /eqP; rewrite /cPr => ->; rewrite mul0r.
-rewrite /cPr; apply/divr_gt0; rewrite Pr_gt0P //.
+rewrite lt0Pr; split => H; last first.
+  move: H; rewrite lt0cPr; apply: contra => /eqP.
+  by rewrite /cPr => ->; rewrite mul0r.
+rewrite divr_gt0 ?lt0Pr//.
 by apply: contra H; rewrite setIC => /eqP F0; apply/eqP/Pr_domin_setI.
 Qed.
 
@@ -1548,8 +1547,8 @@ Global Hint Resolve cPr_ge0 : core.
 Notation cPr_eq0 := cPr_eq0P (only parsing).
 #[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_le1`")]
 Notation cPr_max := cPr_le1 (only parsing).
-#[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_gt0P`")]
-Notation cPr_gt0 := cPr_gt0P (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `lt0cPr`")]
+Notation cPr_gt0P := lt0cPr (only parsing).
 #[deprecated(since="infotheo 0.7.3", note="renamed to `cPr_setD`")]
 Notation cPr_diff := cPr_setD (only parsing).
 #[deprecated(since="infotheo 0.7.3", note="renamed to `cPr_setU`")]
