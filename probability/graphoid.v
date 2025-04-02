@@ -11,6 +11,11 @@ Require Import proba jfdist_cond.
 (* This file provides a formalization of the graphoid axioms (symmetry,       *)
 (* decomposition, weak_union, contraction, and intersection) and derived      *)
 (* rules.                                                                     *)
+(*                                                                            *)
+(* Reference:                                                                 *)
+(* - R. Affeldt, J. Garrigue, T. Saikawa. Reasoning with Conditional          *)
+(*   Probabilities and Joint Distributions in Coq. Computer Software 37(3)    *)
+(*                                                                            *)
 (******************************************************************************)
 
 Set Implicit Arguments.
@@ -23,8 +28,7 @@ Local Open Scope fdist_scope.
 
 Import GRing.Theory.
 
-(* TODO: rename, mv *)
-Module Proj124.
+(*Module Proj124.
 Section proj124.
 Context {R : realType}.
 Variables (A B D C : finType) (P : R.-fdist (A * B * D * C)).
@@ -42,10 +46,9 @@ End Proj124.
 
 Definition Proj14d {R : realType} (A B C D : finType) (d : R.-fdist (A * B * D * C)) :
   R.-fdist (A * C) :=
-  fdist_proj13 (Proj124.d d).
+  fdist_proj13 (Proj124.d d).*)
 
-(* TODO: rename, mv *)
-Module QuadA23.
+(*Module QuadA23.
 Section def.
 Context {R : realType}.
 Variables (A B C D : finType) (P : R.-fdist (A * B * D * C)).
@@ -66,7 +69,7 @@ Variables (A B C D : finType) (P : R.-fdist (A * B * D * C)).
 Lemma snd : (QuadA23.d P)`2 = P`2.
 Proof. by rewrite /fdist_snd /d fdistmap_comp. Qed.
 End prop.
-End QuadA23.
+End QuadA23.*)
 
 Section cinde_rv_prop.
 Context {R : realType}.

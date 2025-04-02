@@ -3,7 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
 From mathcomp Require Import mathcomp_extra boolp classical_sets.
-From mathcomp Require Import ssrnum archimedean ereal signed.
+From mathcomp Require Import ssrnum archimedean ereal interval_inference.
 From mathcomp Require Import ring lra reals.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 From mathcomp Require vector.
@@ -532,52 +532,6 @@ End barycenter_fdist_convn.
 
 End real_cone_theory.
 
-(* TODO: move *)
-Lemma oprob_divrposxxy {R : realType} (x y : {posnum R}%R) :
-  (0 < x%:num / (x%:num + y%:num) < 1)%R.
-Proof.
-rewrite divr_gt0//=.
-by rewrite ltr_pdivrMr// mul1r ltrDl.
-Qed.
-
-Lemma prob_divrposxxy {R : realType} (x y : {posnum R}%R) :
-  (0 <= x%:num / (x%:num + y%:num) <= 1)%R.
-Proof.
-have /andP[] := oprob_divrposxxy x y.
-by move/ltW => -> /ltW ->.
-Qed.
-
-Canonical divrposxxy {R : realType} (x y : {posnum R}%R) :=
-  Eval hnf in Prob.mk (prob_divrposxxy x y).
-
-Lemma s_of_rpos_probA {R : realType} (p q r : {posnum R}%R) :
-  [s_of divrposxxy p ((q%:num + r%:num)%E%:pos)%R, divrposxxy q r] =
-  divrposxxy (p%:num + q%:num)%:pos%R r.
-Proof.
-apply val_inj; rewrite /= s_of_pqE.
-rewrite onemM !onemK/=.
-field.
-by apply/andP; split => //.
-Qed.
-
-Lemma r_of_rpos_probA {R : realType} (p q r : {posnum R}%R) :
-  [r_of divrposxxy p (q%:num + r%:num)%:pos%R, divrposxxy q r] =
-  divrposxxy p q%R.
-Proof.
-apply/val_inj; rewrite /= r_of_pqE s_of_pqE /onem /=.
-field.
-apply/and4P; split => //.
-rewrite (addrC p%:num (q%:num + r%:num)%:pos%:num)%R addrK {4}[in (q%:num + r%:num)%R]addrC addrK.
-by rewrite mulrC -mulrBr (addrC _ p%:num%R) addrA addrK mulf_neq0//.
-Qed.
-
-Lemma onem_divrxxy {R : realType} (r q : {posnum R}%R) :
-  (r%:num / (r%:num + q%:num)).~ = (q%:num / (q%:num + r%:num))%R.
-Proof.
-rewrite /onem; apply/eqP; rewrite subr_eq.
-by rewrite (addrC (r%:num%R : R)) -mulrDl divff.
-Qed.
-
 Section real_cone_instance.
 Context {R : realType}.
 
@@ -602,7 +556,8 @@ Qed.
 
 Let addptA' : associative addpt.
 Proof.
-move=> [p x|] [q y|] [r z|] //=; congr (_ *: _); first by apply val_inj; rewrite /= addrA.
+move=> [p x|] [q y|] [r z|] //=; congr (_ *: _).
+  by apply val_inj; rewrite /= addrA.
 rewrite convA; congr (_<| _ |> _).
   by rewrite s_of_rpos_probA.
 congr (_ <| _ |> _).
@@ -1287,11 +1242,6 @@ by eapply subset_trans; first exact: H0.
 Qed.
 
 End hull_prop.
-
-(* TODO: move *)
-Lemma r_of_p0_oprob {R : realType} (p : {oprob R}) :
-  [r_of OProb.p p, 0%:pr] = 1%:pr.
-Proof. by apply/r_of_p0/oprob_neq0. Qed.
 
 Module ErealConvex.
 Section ereal_convex.
@@ -2285,7 +2235,7 @@ Qed.
 
 Lemma scalept_addRnng (T : convType R) (x : scaled T) :
   {morph (fun (r : {nonneg R}%R) => scalept r%:num x) : r s / (r%:num + s%:num)%:nng%R >-> addpt r s}.
-Proof. by move=> -[] r /= Hr [] s /= Hs; exact: scaleptDl. Qed.
+Proof. by move=> r s/=; rewrite scaleptDl. Qed.
 
 Definition big_scaleptl (T : convType R) (x : scaled T) :=
   @big_morph
@@ -2649,18 +2599,6 @@ by split; case => [H0 H1]; split => *; try apply H0; try apply H1.
 Qed.
  *)
 End definition.
-
-(* TODO: move *)
-Lemma prob_invn {R : realType} (m : nat) :
-  (0 <= ((1 + m)%:R^-1 : R) <= 1)%R.
-Proof.
-apply/andP; split.
-  by rewrite invr_ge0.
-by rewrite invf_le1// natrD lerDl.
-Qed.
-
-Canonical probinvn {R : realType} (n : nat) :=
-  Eval hnf in @Prob.mk _ ((1 + n)%:R^-1) (@prob_invn R n).
 
 Section counterexample.
 Import RConvex.

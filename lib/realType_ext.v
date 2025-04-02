@@ -3,7 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg archimedean ssrnum ssrint.
 From mathcomp Require Import reals normedtype sequences exp.
-From mathcomp Require Import mathcomp_extra boolp.
+From mathcomp Require Import mathcomp_extra boolp interval_inference.
 From mathcomp Require Import lra ring Rstruct.
 
 (**md**************************************************************************)
@@ -290,9 +290,9 @@ Proof. exact: prob_lt1. Qed.*)
 
 Lemma prob_trichotomy p : p = 0%:pr \/ p = 1%:pr \/ 0 < Prob.p p < 1.
 Proof.
-have [/eqP ->|pneq0]:= boolP (p == 0%:pr); first by left.
+have [->|pneq0]:= eqVneq p 0%:pr; first by left.
 right.
-have [/eqP ->|pneq1] := boolP (p == 1%:pr); first by left.
+have [->|pneq1] := eqVneq p 1%:pr; first by left.
 by right; apply/andP; split; [exact/prob_gt0|exact/prob_lt1].
 Qed.
 
@@ -342,6 +342,17 @@ Global Hint Resolve prob_le1 : core.
 
 Arguments prob0 {R}.
 Arguments prob1 {R}.
+
+Lemma prob_invn {R : realType} (m : nat) :
+  (0 <= ((1 + m)%:R^-1 : R) <= 1)%R.
+Proof.
+apply/andP; split.
+  by rewrite invr_ge0.
+by rewrite invf_le1// natrD lerDl.
+Qed.
+
+Canonical probinvn {R : realType} (n : nat) :=
+  Eval hnf in @Prob.mk _ ((1 + n)%:R^-1) (@prob_invn R n).
 
 (* TODO: rename oprob to i01oo (and prob to i01cc) *)
 Module OProb.
@@ -431,15 +442,6 @@ Qed.
 
 Canonical probdivrnnm (n m : nat) :=
   Eval hnf in @Prob.mk _ (divrnnm n m) (prob_divrnnm_subproof n m).
-
-Lemma prob_invn_subproof (m : nat) : (0 <= (((1 + m)%:R)^-1 : R) <= 1)%O.
-Proof.
-rewrite -[X in _ <= X <= _]mul1r.
-exact: (prob_divrnnm_subproof 1 m).
-Qed.
-
-Canonical probinvn (n : nat) :=
-  Eval hnf in @Prob.mk _ (((1 + n)%:R)^-1 : R) (prob_invn_subproof n).
 
 Lemma prob_invprob_subproof (p : {prob R}) : (0 <= 1 / (1 + Prob.p p) <= 1)%O.
 Proof.
@@ -560,9 +562,9 @@ End r_of_pq_lemmas.
 Lemma p_is_rs {R : realType} (p q : {prob R}) :
   Prob.p p = ((Prob.p [r_of p, q]) * Prob.p [s_of p, q])%R :> R.
 Proof.
-case/boolP : (p == 0%:pr :> {prob R}) => p0; first by rewrite (eqP p0) r_of_0q mul0r.
-case/boolP : (q == 0%:pr :> {prob R}) => q0.
-  by rewrite (eqP q0) s_of_p0 r_of_p0 // mul1r.
+have [->/=|p0] := eqVneq p 0%:pr; first by rewrite r_of_0q mul0r.
+have [->/=|q0] := eqVneq q 0%:pr.
+  by rewrite s_of_p0 r_of_p0 // mul1r.
 rewrite r_of_pqE -mulrA mulVf ?mulr1 //.
 suff : Prob.p [s_of p, q] != 0%R :> R by [].
 by rewrite prob_gt0 s_of_gt0.
@@ -618,7 +620,7 @@ rewrite /= p_of_rsE => /eqP.
 apply contraLR => /nandP.
 wlog : r s / r != 1%:pr by move=> H [|] ?; [|rewrite mulrC]; rewrite H //; left.
 move=> r1 _.
-have [/eqP->|] := boolP (r == 0%:pr :> {prob R}).
+have [->|] := eqVneq r 0%:pr.
   by rewrite mul0r eq_sym oner_eq0.
 move/prob_gt0.
 rewrite lt_neqAle => /andP[r0 _].
@@ -647,18 +649,18 @@ End p_of_rs_lemmas.
 Lemma q_of_rs_prob {R : realType} (r s : {prob R}) :
   (0 <= ((Prob.p r).~ * (Prob.p s)) / (Prob.p [p_of r, s]).~ <= 1)%R.
 Proof.
-case/boolP : (r == 1%:pr :> {prob R}) => r1.
-  by rewrite (eqP r1) onem1 !mul0r lexx ler01.
-case/boolP : (s == 1%:pr :> {prob R}) => s1.
-  rewrite (eqP s1) mulr1 p_of_r1 divff ?onem_neq0//.
+have [->|r1] := eqVneq r 1%:pr.
+  by rewrite onem1 !mul0r lexx ler01.
+have [->|s1] := eqVneq s 1%:pr.
+  rewrite mulr1 p_of_r1 divff ?onem_neq0//.
   by rewrite ler01// lexx.
 apply/andP; split.
   by rewrite divr_ge0// mulr_ge0.
-rewrite ler_pdivrMr// ?mul1r; last first.
-  rewrite onem_gt0// -prob_lt1.
-  apply/p_of_rs1P/not_andP; left.
-  exact/eqP.
-by rewrite p_of_rsE {2}/onem lerBrDr -mulrDl addrC add_onemK mul1r.
+rewrite ler_pdivrMr// ?mul1r.
+  by rewrite p_of_rsE {2}/onem lerBrDr -mulrDl addrC add_onemK mul1r.
+rewrite onem_gt0// -prob_lt1.
+apply/p_of_rs1P/not_andP; left.
+exact/eqP.
 Qed.
 
 Lemma r_of_pq_is_r {R : realType} (p q r s : {prob R}) : r != 0%:pr -> s != 0%:pr ->
@@ -701,8 +703,8 @@ End q_of_rs_lemmas.
 Lemma pq_is_rs {R : realType} (p q : {prob R}) :
   ((Prob.p p).~ * Prob.p q = (Prob.p [r_of p, q]).~ * Prob.p [s_of p, q])%R.
 Proof.
-case/boolP : (p == 0%:pr :> {prob R}) => p0.
-  by rewrite (eqP p0) onem0 mul1r r_of_0q onem0 mul1r s_of_0q.
+have [->|p0] := eqVneq p 0%:pr.
+  by rewrite onem0 mul1r r_of_0q onem0 mul1r s_of_0q.
 rewrite r_of_pqE [in RHS]mulrBl mul1r -mulrA mulVf ?mulr1; last first.
   by rewrite prob_gt0; exact/s_of_gt0.
 rewrite s_of_pqE onemM !onemK /onem mulrBl mul1r [RHS]addrC !addrA.
@@ -720,7 +722,8 @@ rewrite subr_eq0; apply: contra H => /eqP rs1.
 by apply/eqP/val_inj; rewrite /= p_of_rsE.
 Qed.
 
-Lemma r_of_pqK {R : realType} (r s : {prob R}) : [p_of r, s] != 1%:pr -> s != 0%:pr ->
+Lemma r_of_pqK {R : realType} (r s : {prob R}) :
+  [p_of r, s] != 1%:pr -> s != 0%:pr ->
   [r_of [p_of r, s], [q_of r, s]] = r.
 Proof.
 move=> H1 s0; apply/val_inj => /=.
@@ -731,6 +734,55 @@ apply/andP; split; last first.
 rewrite subr_eq0.
 apply: contra H1 => /eqP H1.
 by apply/eqP/val_inj; rewrite /= p_of_rsE.
+Qed.
+
+Lemma oprob_divrposxxy {R : realType} (x y : {posnum R}%R) :
+  (0 < x%:num / (x%:num + y%:num) < 1)%R.
+Proof.
+rewrite divr_gt0//=.
+by rewrite ltr_pdivrMr// mul1r ltrDl.
+Qed.
+
+Lemma prob_divrposxxy {R : realType} (x y : {posnum R}%R) :
+  (0 <= x%:num / (x%:num + y%:num) <= 1)%R.
+Proof.
+have /andP[] := oprob_divrposxxy x y.
+by move/ltW => -> /ltW ->.
+Qed.
+
+Canonical divrposxxy {R : realType} (x y : {posnum R}%R) :=
+  Eval hnf in Prob.mk (prob_divrposxxy x y).
+
+Lemma s_of_rpos_probA {R : realType} (p q r : {posnum R}%R) :
+  [s_of divrposxxy p ((q%:num + r%:num)%:pos)%R, divrposxxy q r] =
+  divrposxxy (p%:num + q%:num)%:pos%R r.
+Proof.
+apply val_inj; rewrite /= s_of_pqE.
+rewrite onemM !onemK/=.
+field.
+by apply/andP; split => //.
+Qed.
+
+Lemma r_of_rpos_probA {R : realType} (p q r : {posnum R}%R) :
+  [r_of divrposxxy p (q%:num + r%:num)%:pos%R, divrposxxy q r] =
+  divrposxxy p q%R.
+Proof.
+apply/val_inj; rewrite /= r_of_pqE s_of_pqE /onem /=.
+field.
+apply/and4P; split => //.
+rewrite (addrC p%:num (q%:num + r%:num)%:pos%:num)%R addrK {4}[in (q%:num + r%:num)%R]addrC addrK.
+by rewrite mulrC -mulrBr (addrC _ p%:num%R) addrA addrK mulf_neq0//.
+Qed.
+
+Lemma r_of_p0_oprob {R : realType} (p : {oprob R}) :
+  [r_of OProb.p p, 0%:pr] = 1%:pr.
+Proof. exact/r_of_p0/oprob_neq0. Qed.
+
+Lemma onem_divrxxy {R : realType} (r q : {posnum R}%R) :
+  (r%:num / (r%:num + q%:num)).~ = (q%:num / (q%:num + r%:num))%R.
+Proof.
+rewrite /onem; apply/eqP; rewrite subr_eq.
+by rewrite (addrC (r%:num%R : R)) -mulrDl divff.
 Qed.
 
 Section leR_ltR_sumR_finType.
@@ -771,7 +823,7 @@ move=> Hf P_Q; elim: (index_enum _) => [|h t IH].
   + by case: ifP => // Qh; rewrite -[X in X <= _]add0r; exact/lerD.
 Qed.
 
-Lemma ltR_sumR_support (X : {set A}) : (0 < #|X|)%nat ->
+Lemma ltR_sumR_support (X : {set A}) : (0 < #|X|)%N ->
   (forall i, i \in X -> f i < g i) ->
   \sum_(i in X) f i < \sum_(i in X) g i.
 Proof.
@@ -850,8 +902,5 @@ Canonical oprob_of_r_of_pq p q :=
 
 Lemma s_of_gt0_oprob  p q : 0 < Prob.p [s_of p, q].
 Proof. by rewrite s_of_gt0// oprob_neq0. Qed.
-
-Lemma r_of_p0_oprob p : [r_of OProb.p p, 0%:pr] = 1%:pr.
-Proof. by apply/r_of_p0/oprob_neq0. Qed.
 
 End oprob_lemmas2.
