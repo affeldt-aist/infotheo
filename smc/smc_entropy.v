@@ -140,8 +140,11 @@ Lemma joint_entropy_indeRV (X : {RV P -> TX}) (Y : {RV P -> TY}):
 Proof.
 rewrite inde_rv_sym=> iYX.
 rewrite -/(`H(_, _)) chain_rule_RV; congr +%R.
-rewrite dist_inde_rv_prod// condentropy_indep fdist_prod1//.
-by rewrite -[in RHS]dist_inde_rv_prod// snd_RV2.
+rewrite /cond_entropy_RV.
+rewrite dist_inde_rv_prod//.
+rewrite condentropy_indep.
+  by rewrite fdist_prod1.
+by rewrite fdist_prod1 -[in RHS]dist_inde_rv_prod// snd_RV2.
 Qed.
 
 End entropy_with_indeRV.
@@ -203,31 +206,12 @@ case /boolP : ((`p_ [% Y2, Y1])`1 y2 == 0)  => Hy2.
     rewrite fst_RV2.
     apply.
     rewrite fst_RV2 in Hy2.
-    exact/eqP. 
-  destruct (boolP _).
-    exfalso.
-    by rewrite Hy2 in i.
-  destruct (boolP _).
-    exfalso.
-    by rewrite Hy3 in i0. 
-  by rewrite !fdist_uniformE.
-
-rewrite cond_entropy1_RVE //.
-rewrite cond_entropy1_RVE; last first.
-  rewrite fst_RV2.
-  rewrite fst_RV2 in Hy2.
-  rewrite -pr_eqE'.
-  rewrite Y2Y3indep.
-  rewrite !pr_eqE'.
-  rewrite mulf_neq0 //.
-  rewrite pY3_unif.
-  rewrite fdist_uniformE /=.
-  rewrite card_Y3.
-  rewrite invr_eq0.
-  by rewrite pnatr_eq0.
-
+    exact/eqP.
+  rewrite !jPr_Pr.
+  rewrite !cpr_eq_set1.
+  by rewrite -H.
+rewrite /cond_entropy1_RV.
 rewrite /cond_entropy1.
-rewrite /entropy.
 congr -%R.
 apply:eq_bigr => a _.
 have -> // : \Pr_`p_ [% Y1, Y2][[set a] | [set y2]] = \Pr_`p_ [% Y1, [%Y2, Y3]][[set a] | [set (y2, y3)]].
@@ -287,6 +271,7 @@ Lemma cpr_cond_entropy (n: nat)(card_TY3 : #|TY3| = n.+1):
   `H( Y1 | [% Y2, Y3]) = `H( Y1 | Y2).
 Proof.
 move => Hunif Hinde Hremoval.
+rewrite /cond_entropy_RV /=.
 rewrite /cond_entropy /=.
 under eq_bigl do rewrite inE /=.
 set f : TY2 -> TY3 -> R := fun y2 y3 =>
@@ -296,15 +281,14 @@ transitivity (\sum_a f a.1 a.2).
   rewrite /f {1 2}(surjective_pairing a) /=.
   have [Ha|Ha] := eqVneq ((`p_ [% Y1, Y2])`2 a.1 * `p_Y3 a.2) 0.
     by rewrite Ha snd_extra_indep // Ha !mul0r.
-  rewrite snd_extra_indep // -[in LHS]cond_entropy1_RVE; last first.
-    by rewrite -fdistX2 fdistX_RV2 snd_extra_indep.
+  rewrite snd_extra_indep //.
+  congr (_ * _ * _).
   have [Hy3|Hy3] := eqVneq `Pr[Y3 = a.2] 0.
     rewrite -pr_eqE' in Ha.
     by rewrite Hy3 mulr0 eqxx in Ha.
-  have H' := fun w => Pr_neq0_cond_removal Hinde Hremoval w a.1 Hy3.
-  rewrite -(cpr_cond_entropy1_RV Hunif Hinde) //.
-  rewrite cond_entropy1_RVE ?coqRE //.
-  by apply: contra Ha; rewrite mulf_eq0 -fdistX1 fdistX_RV2 => ->.
+  suff : `H[ Y1 | Y2 = a.1 ] = `H[ Y1 | [% Y2, Y3] = (a.1, a.2) ] by [].
+  apply: cpr_cond_entropy1_RV => y1.
+  by rewrite Pr_neq0_cond_removal.
 rewrite -pair_bigA /=.
 apply: eq_bigr => y2 _.
 by rewrite /f -big_distrl -big_distrr /= FDist.f1 mulr1.
@@ -364,6 +348,8 @@ have [H|] := eqVneq (`Pr[ Y = y]) 0.
     rewrite /jfdist_cond.
 *)
 rewrite cond_entropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
+rewrite -cond_entropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
+rewrite /cond_entropy1_RV.
 rewrite /cond_entropy1.
 rewrite big1 1?oppr0 // => i _.
 have [<-|] := eqVneq (f y) i.
@@ -402,13 +388,18 @@ End lemma_3_8_proof.
 Lemma fun_cond_entropy_ZY_eq0:
   `H( Z | Y) = 0.
 Proof.
+rewrite /cond_entropy_RV.
 rewrite /cond_entropy.
 rewrite big1 // => i _.
 rewrite snd_RV2.
 have [->|Hi] := eqVneq (`p_ Y i) 0.
   by rewrite mul0r.
-rewrite -cond_entropy1_RVE ?fst_RV2 //.
-by rewrite fun_cond_entropy_eq0_RV ?mulr0 // pr_eqE'.
+have : `H[ Z | Y = i ] = `H `p_ [% Y, Z]`(|i).
+  apply: cond_entropy1_RVE.
+  by rewrite fst_RV2.
+rewrite /cond_entropy1_RV => ->.
+rewrite -cond_entropy1_RVE ?fst_RV2//.
+by rewrite fun_cond_entropy_eq0_RV ?mulr0// pr_eqE'.
 Qed.
 
 End lemma_3_8_prep.
@@ -432,6 +423,7 @@ transitivity (joint_entropy `p_[%Y, Z, X] - entropy `p_[%Y, Z]). (* joint PQ = H
   rewrite subr_eq.
   rewrite addrC.
   apply/eqP.
+  rewrite /cond_entropy_RV.
   have -> // : `p_[%X, [%Y, Z]] = fdistX `p_[%[%Y, Z], X].
     by rewrite fdistX_RV2.
   have -> // : `p_[%Y, Z] = (`p_ [%[%Y, Z], X])`1.
@@ -992,6 +984,7 @@ transitivity (joint_entropy `p_ [%x1, s1, r1, x2] - `H `p_ [%x1, s1, r1]).
   apply/eqP.
   rewrite eq_sym subr_eq addrC.
   apply/eqP.
+  rewrite /cond_entropy_RV.
   have -> : `p_[%x2, [%x1, s1, r1]] = fdistX `p_[%x1, s1, r1, x2].
     by rewrite fdistX_RV2.
   by rewrite chain_rule fst_RV2.
@@ -1278,6 +1271,7 @@ transitivity (joint_entropy `p_ [%x2, s2, x1] - entropy `p_ [%x2, s2]).
   apply/eqP.
   rewrite eq_sym subr_eq addrC.
   apply/eqP.
+  rewrite /cond_entropy_RV.
   have -> : `p_ [%x1, [%x2, s2]] = fdistX `p_ [%[%x2, s2], x1].
     by rewrite fdistX_RV2.
   by rewrite chain_rule fst_RV2.

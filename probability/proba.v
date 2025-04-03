@@ -1310,7 +1310,7 @@ Section k_wise_independence.
 Context {R : realType}.
 Variables (A I : finType) (k : nat) (d : R.-fdist A) (E : I -> {set A}).
 
-Definition kwise_inde := forall (J : {set I}), (#|J| <= k)%nat ->
+Definition kwise_inde := forall J : {set I}, (#|J| <= k)%N ->
   Pr d (\bigcap_(i in J) E i) = \prod_(i in J) Pr d (E i).
 
 End k_wise_independence.
@@ -1322,15 +1322,14 @@ Variables (A I : finType) (d : R.-fdist A) (E : I -> {set A}).
 Definition pairwise_inde := @kwise_inde R A I 2%nat d E.
 
 Lemma pairwise_indeE :
-  pairwise_inde <-> (forall i j, i != j -> inde_events d (E i) (E j)).
+  pairwise_inde <-> forall i j, i != j -> inde_events d (E i) (E j).
 Proof.
 split => [pi i j ij|].
-  red in pi.
-  red in pi.
-  have /pi : (#|[set i; j]| <= 2)%nat by rewrite cards2 ij.
+  rewrite /pairwise_inde in pi.
+  have /pi : (#|[set i; j]| <= 2)%N by rewrite cards2 ij.
   rewrite bigcap_setU !big_set1 => H.
-  rewrite /inde_events H (big_setD1 i) ?inE ?eqxx ?orTb //= setU1K ?inE//.
-  by rewrite big_set1.
+  rewrite /inde_events.
+  by rewrite H (big_setD1 i) ?inE ?eqxx ?orTb//= setU1K ?inE// big_set1.
 move=> H s.
 move sn : (#| s |) => n.
 case: n sn => [|[|[|//]]].
@@ -1347,7 +1346,7 @@ Section mutual_independence.
 Context {R : realType}.
 Variables (A I : finType) (d : R.-fdist A) (E : I -> {set A}).
 
-Definition mutual_inde := (forall k, @kwise_inde R A I k.+1 d E).
+Definition mutual_inde := forall k, @kwise_inde R A I k.+1 d E.
 
 Lemma mutual_indeE :
   mutual_inde <-> (forall J : {set I}, J \subset I ->
@@ -1943,7 +1942,7 @@ Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB : eqType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
-Definition inde_rv := forall (x : TA) (y : TB),
+Definition inde_rv := forall x y,
   `Pr[ [% X, Y] = (x, y)] = `Pr[ X = x ] * `Pr[ Y = y ].
 
 Lemma cinde_rv_unit : inde_rv <-> cinde_rv X Y (unit_RV P).
