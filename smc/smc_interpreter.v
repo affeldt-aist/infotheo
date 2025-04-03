@@ -395,13 +395,13 @@ Lemma cond_entropyC (A B C : finType)
   (X: {RV P -> A}) (Y: {RV P -> B}) (Z: {RV P -> C}) :
   `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
 Proof.
-rewrite /cond_entropy /=.
+rewrite /centropy_RV /centropy/=.
 rewrite (reindex (fun p : C * B => (p.2, p.1))) /=; last first.
   by exists (fun p : B * C => (p.2, p.1)) => -[b c].
 apply: eq_bigr => -[c b] _ /=.
 rewrite !snd_RV2 -!pr_eqE' pr_eq_pairC.
 congr (_ * _).
-rewrite /cond_entropy1; congr (- _).
+rewrite /centropy1; congr (- _).
 rewrite /jcPr !snd_RV2.
 apply: eq_bigr => a _.
 by rewrite !setX1 !Pr_set1 -!pr_eqE' !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
