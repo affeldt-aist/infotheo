@@ -229,22 +229,28 @@ Qed.
 
 End joint_entropy_prop.
 
-Section conditional_entropy.
-Variables (R : realType) (A B : finType) (QP : R.-fdist (B * A)).
+(* definitions using probability distributions, see below for RVs *)
+Section conditional_entropy_def.
+Context {R : realType} {A B : finType}.
+Variable QP : R.-fdist (B * A).
 
 (* H(Y|X = x), see eqn 2.10 *)
 Definition cond_entropy1 a := - \sum_(b in B)
   \Pr_QP [ [set b] | [set a] ] * log (\Pr_QP [ [set b] | [set a] ]).
 
-Let P := QP`2.
-
 (*eqn 2.11 *)
-Definition cond_entropy : R^o := \sum_(a in A) P a * cond_entropy1 a.
+Definition cond_entropy : R^o := \sum_(a in A) (QP`2) a * cond_entropy1 a.
 
+End conditional_entropy_def.
+
+Section conditional_entropy_lemmas.
+Variables (R : realType) (A B : finType) (QP : R.-fdist (B * A)).
+
+Let P := QP`2.
 Let PQ := fdistX QP.
 
 (* cover&thomas 2.12 *)
-Lemma cond_entropyE : cond_entropy = - \sum_(a in A) \sum_(b in B)
+Lemma cond_entropyE : cond_entropy QP = - \sum_(a in A) \sum_(b in B)
   PQ (a, b) * log (\Pr_QP [ [set b] | [set a]]).
 Proof.
 rewrite /cond_entropy big_morph_oppr /=; apply eq_bigr => a _.
@@ -253,7 +259,7 @@ rewrite mulrA; congr (_ * _).
 by rewrite mulrC -(Pr_set1 P a) -jproduct_rule setX1 fdistXE Pr_set1.
 Qed.
 
-Lemma cond_entropy1_ge0 a : 0 <= cond_entropy1 a.
+Lemma cond_entropy1_ge0 a : 0 <= cond_entropy1 QP a.
 Proof.
 rewrite /cond_entropy1 big_morph_oppr; apply/sumr_ge0 => b _; rewrite -mulrN.
 have [->|H0] := eqVneq (\Pr_QP[[set b]|[set a]]) 0.
@@ -262,21 +268,56 @@ apply/mulr_ge0; [exact: jcPr_ge0|].
 by rewrite -oppr0 -log1 lerNr opprK ler_log ?posrE// ?jcPr_gt0// jcPr_le1.
 Qed.
 
-Lemma cond_entropy_ge0 : 0 <= cond_entropy.
+Lemma cond_entropy_ge0 : 0 <= cond_entropy QP.
 Proof.
 by apply/sumr_ge0 => a _; apply/mulr_ge0 => //; exact: cond_entropy1_ge0.
 Qed.
 
-End conditional_entropy.
+End conditional_entropy_lemmas.
+
+(* TODO: move to the top of the file *)
+Reserved Notation "`H[ Y | X = a ]" (at level 6, Y, X, a at next level,
+  format "`H[  Y  |  X  =  a  ]").
+
+(* definitions using RVs *)
+Section cond_entropy1_RV_def.
+Context {R : realType} {U A B : finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Definition cond_entropy1_RV a := cond_entropy1 `p_[% Y, X] a.
+
+Definition cond_entropy_RV := cond_entropy `p_[% Y, X].
+
+End cond_entropy1_RV_def.
+Notation "`H[ Y | X = a ]" := (cond_entropy1_RV X Y a).
+Notation "`H( Y | X )" := (cond_entropy_RV X Y).
+
+Section conditional_entropy_RV_lemmas.
+Context {R : realType} {U A B : finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+
+(* cover&thomas 2.12 *)
+Lemma cond_entropy_RVE : `H(Y | X) = - \sum_(a in A) \sum_(b in B)
+  `p_[% X, Y] (a, b) * log (\Pr_`p_[% Y, X] [ [set b] | [set a]]).
+Proof.
+rewrite /cond_entropy_RV cond_entropyE; congr (- _); apply: eq_bigr => a _.
+by apply: eq_bigr => b _; rewrite fdistX_RV2.
+Qed.
+
+Lemma cond_entropy1_RV_ge0 a : 0 <= `H[Y | X = a].
+Proof. by rewrite /cond_entropy1_RV cond_entropy1_ge0. Qed.
+
+Lemma cond_entropy_RV_ge0 : 0 <= `H(Y | X).
+Proof. by rewrite /cond_entropy_RV cond_entropy_ge0. Qed.
+
+End conditional_entropy_RV_lemmas.
 
 Section cond_entropy1_RV_prop.
-Variable R : realType.
-Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
-
-Definition cond_entropy1_RV a := `H (`p_[% X, Y] `(| a )).
+Context {R : realType} {U A B : finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
 Lemma cond_entropy1_RVE a : (`p_[% X, Y])`1 a != 0 ->
-  cond_entropy1_RV a = cond_entropy1 `p_[% Y, X] a.
+  `H[Y | X = a] = `H (`p_[% X, Y] `(| a )).
 Proof.
 move=> a0.
 rewrite /cond_entropy1_RV /cond_entropy1 /entropy; congr (- _).
@@ -284,10 +325,8 @@ by apply: eq_bigr => b _; rewrite jfdist_condE// fdistX_RV2.
 Qed.
 
 End cond_entropy1_RV_prop.
-Notation "'`H(' Y '|' X ')'" := (cond_entropy `p_[% Y, X]) : entropy_scope.
 
 Section conditional_entropy_prop.
-
 Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 
 Lemma cond_entropy1_fdistAC b c : cond_entropy1 (fdistA PQR) (b, c) =
@@ -311,6 +350,32 @@ by rewrite cond_entropy1_fdistAC.
 Qed.
 
 End conditional_entropy_prop.
+
+Section conditional_entropy_RV_prop.
+Context {R : realType} {U A B C : finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+
+Let tmp : fdistA (fdistAC `p_ [% X, Y, Z]) = `p_ [% X, [% Z, Y]].
+Proof.
+rewrite /fdistAC.
+rewrite fdistC12_RV3.
+rewrite fdistA_RV3.
+rewrite fdistX_RV2.
+by rewrite fdistA_RV3.
+Qed.
+
+Lemma cond_entropy1_RV_fdistAC b c :
+  `H[X | [% Y, Z] = (b, c)] = `H[X | [% Z, Y] = (c, b)].
+Proof.
+by rewrite /cond_entropy1_RV -fdistA_RV3 cond_entropy1_fdistAC tmp.
+Qed.
+
+Lemma cond_entropy_RV_fdistA : `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
+Proof.
+by rewrite /cond_entropy_RV -fdistA_RV3 cond_entropy_fdistA tmp.
+Qed.
+
+End conditional_entropy_RV_prop.
 
 Section chain_rule.
 Variables (R : realType) (A B : finType) (PQ : R.-fdist (A * B)).
@@ -493,8 +558,8 @@ rewrite fdistXE fdist_proj13E big_distrl /= -big_split; apply eq_bigr => b _ /=.
 rewrite !(fdistXE,fdistAE,fdistC12E) /= -mulrDr.
 have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0r.
 rewrite -logM; last 2 first.
-  by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj13_dominN H0.
-  by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1 fdistAE /= fdistC12E.
+  by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1; exact: fdist_proj13_dominN H0.
+  by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1 fdistAE /= fdistC12E.
 congr (_ * log _).
 by rewrite -setX1 product_ruleC !setX1 mulrC.
 Qed.
@@ -571,7 +636,7 @@ transitivity (- (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a)) +
   rewrite addrC -mulrN -mulrDr.
   have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0r.
   congr (_ * _); rewrite logDiv //.
-  - by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1.
+  - by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1.
   - by rewrite -fdist_gt0; exact: dom_by_fdist_fstN H0.
 congr (_ + _).
 - rewrite /entropy; congr (- _); apply/eq_bigr => a _.
@@ -609,7 +674,9 @@ End mutual_information_prop.
 Section mutualinfo_RV_def.
 Variable R : realType.
 Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
+
 Definition mutual_info_RV := mutual_info `p_[% X, Y].
+
 End mutualinfo_RV_def.
 Notation "'`I(' X ';' Y ')'" := (mutual_info_RV X Y) : entropy_scope.
 
