@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring reals.
+From mathcomp Require Import contra Rstruct ring reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba.
 
@@ -60,14 +60,6 @@ Local Definition R := Rdefinitions.R.
 
 Module smc_entropy_proofs.
   
-Section extra_ring.
-
-Variable V : zmodType.
-Implicit Types x y : V.
-  
-End extra_ring.
-
-  
 Section extra_pr.
 
 Variables (T TX TY: finType)(TX': finZmodType).
@@ -91,93 +83,65 @@ Proof. by move=> ?; rewrite cpr_eqE pr_eq_diag divrr. Qed.
 
 End extra_pr.
 
+Section RV_domin.
+Context {R : realType}.
+Variables (U : finType) (P : R.-fdist U) (TA TB : eqType).
+Variables (TX : {RV P -> TA}) (TY : {RV P -> TB}).
+
+Lemma pr_eq_domin_RV2 a b : `Pr[ TX = a ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
+Proof.
+rewrite !pr_eqE /Pr => /psumr_eq0P => a0.
+rewrite big1// => i.
+rewrite inE/= xpair_eqE => /andP [] ? ?.
+apply: a0 => //.
+by rewrite inE.
+Qed.
+
+End RV_domin.
+
 Section extra_pr2.
   
-Variables (T TX TY TZ: finType).
+Variables (T : finType) (TX TY TZ : eqType).
 Variable P : R.-fdist T.
 
 Lemma fst_RV2_neq0 (X : {RV P -> TX}) (Y : {RV P -> TY}) x y:
   `Pr[[%X, Y] = (x, y)] != 0 -> `Pr[ X = x] != 0.
-Proof.
-apply: contra => /eqP /pr_eq_domin_RV2 H.
-by apply/eqP.
-Qed.
+Proof. by contra; exact: pr_eq_domin_RV2. Qed.
 
 Lemma cpr_RV2_sym (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}) x y z:
   `Pr[ X = x | [% Y, Z] = (y, z) ] = `Pr[ X = x | [% Z, Y] = (z, y) ].
-Proof.
-rewrite !cpr_eqE.
-rewrite [X in (_ / X)]pr_eq_pairC.
-congr (_/_).
-rewrite pr_eq_pairC.
-rewrite [RHS]pr_eq_pairC.
-rewrite !pr_eqE.
-congr (Pr P _).
-apply/setP => t.
-rewrite !inE.
-rewrite !xpair_eqE.
-by rewrite [X in X && _]Bool.andb_comm.
-Qed.
+Proof. exact: cpr_eq_pairCr. Qed.
 
 End extra_pr2.
 
+Section inde_rv.
+Lemma dist_inde_rv_prod
+  (T TX TY : finType) (P : R.-fdist T)
+  (X : {RV P -> TX}) (Y : {RV P -> TY}) :
+  inde_rv X Y -> `p_ [% X, Y] = `p_ X `x `p_ Y.
+Proof.
+move=> iXY.
+apply: fdist_ext => -[x y] /=.
+by rewrite fdist_prodE/= -!pr_eqE' iXY.
+Qed.
+End inde_rv.
+
 Section entropy_with_indeRV.
 
-Variables (T TX TY TZ: finType).
+Variables (T TX TY TZ : finType).
 Variable P : R.-fdist T.
 
 Lemma inde_rv_alt (X : {RV P -> TX}) (Y : {RV P -> TY}):
   inde_rv X Y <-> forall x y,`p_ [%X, Y] (x, y) = `p_ X x * `p_ Y y.
-Proof.
-rewrite /inde_rv.
-split => H x y.
-by rewrite -!pr_eqE'.
-by rewrite !pr_eqE'.
-Qed.
+Proof. by split=> + x y => /(_ x y); rewrite !pr_eqE'. Qed.
 
 Lemma joint_entropy_indeRV (X : {RV P -> TX}) (Y : {RV P -> TY}):
   inde_rv X Y -> joint_entropy `p_[%X, Y] = `H (`p_X) + `H (`p_Y).
 Proof.
-rewrite /joint_entropy.
-rewrite /entropy.
-transitivity (- (\sum_(a in TX) \sum_(b in TY) `p_ [% X, Y] (a, b) * log (`p_ X a * `p_ Y b))).
-  congr (- _).
-  rewrite pair_big /=.
-  apply eq_bigr => -[a b] _ /=.
-  congr (_ * log _).
-  by apply inde_rv_alt. (* cannot `apply: ` but can `apply `*)
-transitivity (
-  - (\sum_(a in TX) \sum_(b in TY) `p_ [%X, Y] (a, b) * log (`p_ X a))
-  - (\sum_(a in TX) \sum_(b in TY) `p_ [%X, Y] (a, b) * log (`p_ Y b))).
-  rewrite -[RHS]opprB.
-  congr (- _).
-  rewrite opprK.
-  rewrite -big_split /=. (* merge two \sum_a...\sum_a in RHS so we can apply eq_bigr*)
-  apply eq_bigr => a _.
-  rewrite -big_split /=.
-  apply eq_bigr => b _.
-  have [->|H0] := eqVneq (`p_ [%X, Y](a, b)) 0.
-    rewrite !mul0r.
-    by rewrite add0r.
-  rewrite [in log _]mulrC.
-  rewrite logM //. (* from log (x*y) to log x + log y *)
-  - by rewrite mulrDr.
-  - rewrite -pr_eqE'.
-    rewrite pr_eqE Pr_gt0P -pr_eqE.
-    move: H0.
-    rewrite -pr_eqE' pr_eq_pairC.
-    exact: fst_RV2_neq0.
-  - rewrite -pr_eqE'.
-    rewrite pr_eqE Pr_gt0P -pr_eqE.
-    move: H0.
-    rewrite -pr_eqE'.
-    exact: fst_RV2_neq0.
-(* From \sum_a \sum_b `p_ [%X, Y](a, b) to \sum_a `p_ X a*)
-under eq_bigr do rewrite -big_distrl -fdist_fstE fst_RV2 /=.
-congr (- _ - _).
-rewrite exchange_big /=.
-apply: eq_bigr => i _.
-by rewrite -big_distrl -fdist_sndE snd_RV2 /=.
+rewrite inde_rv_sym=> iYX.
+rewrite -/(`H(_, _)) chain_rule_RV; congr +%R.
+rewrite dist_inde_rv_prod// condentropy_indep fdist_prod1//.
+by rewrite -[in RHS]dist_inde_rv_prod// snd_RV2.
 Qed.
 
 End entropy_with_indeRV.
