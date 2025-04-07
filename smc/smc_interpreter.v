@@ -391,6 +391,7 @@ Let data := (sum TX VX).
 Let one x : data := inl x.
 Let vec x : data := inr x.
 
+(* TODO: move elsewhere *)
 Lemma cond_entropyC (A B C : finType)
   (X: {RV P -> A}) (Y: {RV P -> B}) (Z: {RV P -> C}) :
   `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
