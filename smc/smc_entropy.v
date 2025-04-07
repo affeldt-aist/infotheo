@@ -141,14 +141,46 @@ Lemma joint_entropy_indeRV (X : {RV P -> TX}) (Y : {RV P -> TY}):
 Proof.
 rewrite inde_rv_sym=> iYX.
 rewrite -/(`H(_, _)) chain_rule_RV; congr +%R.
-rewrite /cond_entropy_RV.
-rewrite dist_inde_rv_prod//.
-rewrite condentropy_indep.
+rewrite /cond_entropy_RV dist_inde_rv_prod// condentropy_indep.
   by rewrite fdist_prod1.
 by rewrite fdist_prod1 -[in RHS]dist_inde_rv_prod// snd_RV2.
 Qed.
 
 End entropy_with_indeRV.
+
+Lemma imsetPn :
+  forall {aT rT : finType} {f : aT -> rT} {D : mem_pred aT} {y : rT},
+    reflect (forall x : aT, in_mem x D -> y != f x) (y \notin imset f D).
+Proof.
+move=> *; apply: (iffP idP).
+  move/imsetP=> H x xD; apply/eqP=> yfx; apply: H.
+  by exists x.
+move=> H; apply/imsetP=> -[] x xD yfx.
+by have:= H x xD; rewrite yfx eqxx.
+Qed.
+
+
+Section entropy_fdistmap.
+Lemma entropy_fdistmap
+  (R : realType) (A B : finType) (f : A -> B) (P : R.-fdist A) :
+  injective f -> `H P = `H (fdistmap f P).
+Proof.
+move=> f_inj; congr -%R; set lhs := LHS.
+rewrite (bigID (mem [set f a | a in A]))/=.
+rewrite big_imset/=; last by move=> *; exact: f_inj.
+under eq_bigr=> a _.
+  rewrite fdistmapE;
+  under eq_bigl do rewrite !inE/=;
+  rewrite big_pred1_inj//.
+  over.
+rewrite -[LHS]addr0; congr +%R.
+rewrite big1// => b.
+move/imsetPn=> bfx.
+rewrite fdistmapE/= big_pred0 ?mul0r// => a.
+rewrite inE/= eq_sym.
+exact/negP/negP/bfx.
+Qed.
+End entropy_fdistmap.
 
 
 Section joint_entropyA.
