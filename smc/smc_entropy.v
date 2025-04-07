@@ -83,6 +83,7 @@ Proof. by move=> ?; rewrite cpr_eqE pr_eq_diag divrr. Qed.
 
 End extra_pr.
 
+(* generalization of proba.pr_eq_domin_RV2 *)
 Section RV_domin.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (TA TB : eqType).
@@ -99,6 +100,7 @@ Qed.
 
 End RV_domin.
 
+(* NOT USED, and easy to solve by contra
 Section extra_pr2.
   
 Variables (T : finType) (TX TY TZ : eqType).
@@ -108,11 +110,8 @@ Lemma fst_RV2_neq0 (X : {RV P -> TX}) (Y : {RV P -> TY}) x y:
   `Pr[[%X, Y] = (x, y)] != 0 -> `Pr[ X = x] != 0.
 Proof. by contra; exact: pr_eq_domin_RV2. Qed.
 
-Lemma cpr_RV2_sym (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}) x y z:
-  `Pr[ X = x | [% Y, Z] = (y, z) ] = `Pr[ X = x | [% Z, Y] = (z, y) ].
-Proof. exact: cpr_eq_pairCr. Qed.
-
 End extra_pr2.
+*)
 
 Section inde_rv.
 Lemma dist_inde_rv_prod
@@ -131,9 +130,11 @@ Section entropy_with_indeRV.
 Variables (T TX TY TZ : finType).
 Variable P : R.-fdist T.
 
+(* NOT USED
 Lemma inde_rv_alt (X : {RV P -> TX}) (Y : {RV P -> TY}):
   inde_rv X Y <-> forall x y,`p_ [%X, Y] (x, y) = `p_ X x * `p_ Y y.
 Proof. by split=> + x y => /(_ x y); rewrite !pr_eqE'. Qed.
+*)
 
 Lemma joint_entropy_indeRV (X : {RV P -> TX}) (Y : {RV P -> TY}):
   inde_rv X Y -> joint_entropy `p_[%X, Y] = `H (`p_X) + `H (`p_Y).
@@ -149,7 +150,7 @@ Qed.
 
 End entropy_with_indeRV.
 
-  
+
 Section joint_entropyA.
 
 Variables (A B C: finType) (P : {fdist A * B * C}).
@@ -694,6 +695,7 @@ rewrite dot_productC.
 rewrite (dot_productC xb sa).
 rewrite (dot_productC (xb+sb) sa).
 rewrite dot_productDr.
+
 ring.
 Qed.
 (*rewrite (@GRing.add R).[AC(2*2)(1*4*(3*2))].*)
@@ -1072,7 +1074,7 @@ simpl in *.
 rewrite pr_eq_pairC in Hneq0.
 have Hb:=(@cinde_alt _ _ _ _ _ _ W1 Wm W2 w wm w2 W1WmW2_cinde Hneq0).
 rewrite -/W1.
-rewrite cpr_RV2_sym.
+rewrite cpr_eq_pairCr.
 exact: Hb.
 Qed.
 
@@ -1135,7 +1137,7 @@ simpl in *.
 rewrite pr_eq_pairC in Hneq0.
 have Hb:=(@cinde_alt _ _ _ _ _ _ W1 Wm W2 w wm w2 W1WmW2_cinde Hneq0).
 rewrite -/W1.
-rewrite cpr_RV2_sym. 
+rewrite cpr_eq_pairCr.
 apply Hb.
 Qed.
 
