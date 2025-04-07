@@ -165,9 +165,9 @@ Qed.
 Section entropy_fdistmap.
 Lemma entropy_fdistmap
   (R : realType) (A B : finType) (f : A -> B) (P : R.-fdist A) :
-  injective f -> `H P = `H (fdistmap f P).
+  injective f -> `H (fdistmap f P) = `H P.
 Proof.
-move=> f_inj; congr -%R; set lhs := LHS.
+move=> f_inj; congr -%R; set rhs := RHS.
 rewrite (bigID (mem [set f a | a in A]))/=.
 rewrite big_imset/=; last by move=> *; exact: f_inj.
 under eq_bigr=> a _.
@@ -175,7 +175,7 @@ under eq_bigr=> a _.
   under eq_bigl do rewrite !inE/=;
   rewrite big_pred1_inj//.
   over.
-rewrite -[LHS]addr0; congr +%R.
+rewrite -[RHS]addr0; congr +%R.
 rewrite big1// => b.
 move/imsetPn=> bfx.
 rewrite fdistmapE/= big_pred0 ?mul0r// => a.
@@ -189,13 +189,13 @@ Section joint_entropyA.
 
 Variables (A B C: finType) (P : {fdist A * B * C}).
 
-Lemma joint_entropyA : `H P = `H (fdistA P).
+Lemma joint_entropyA : `H (fdistA P) = `H P.
 Proof. exact/entropy_fdistmap/inj_prodA. Qed.
 
 End joint_entropyA.
 
+
 Section pr_entropy.
-  
 
 Variables (T TY1 TY2: finType) (TY3: finZmodType) (P : R.-fdist T).
 Variable n : nat.
@@ -426,7 +426,7 @@ transitivity (joint_entropy `p_[%Y, Z, X] - entropy `p_[%Y, Z]). (* joint PQ = H
 transitivity (joint_entropy `p_[%[%X, Y], Z] - entropy `p_[%Y, Z]). (* H(Y,f(Y),X) -> H(X,Y,f(Y))*)
   rewrite joint_entropyC.
   rewrite /joint_entropy.
-  rewrite joint_entropyA.
+  rewrite -joint_entropyA. (* joint_entropy before joint_entropyA; fishy *)
   by rewrite fdistX_RV2 fdistA_RV3 .
 transitivity (joint_entropy `p_[%X,Y] + centropy `p_[%Z, [%X, Y]] - entropy `p_Y - centropy `p_[%Z, Y]).
   rewrite [in LHS]chain_rule.
