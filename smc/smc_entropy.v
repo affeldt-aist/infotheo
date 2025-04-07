@@ -150,6 +150,40 @@ Qed.
 
 End entropy_with_indeRV.
 
+Lemma imsetPn :
+  forall {aT rT : finType} {f : aT -> rT} {D : mem_pred aT} {y : rT},
+    reflect (forall x : aT, in_mem x D -> y != f x) (y \notin imset f D).
+Proof.
+move=> *; apply: (iffP idP).
+  move/imsetP=> H x xD; apply/eqP=> yfx; apply: H.
+  by exists x.
+move=> H; apply/imsetP=> -[] x xD yfx.
+by have:= H x xD; rewrite yfx eqxx.
+Qed.
+
+
+Section entropy_fdistmap.
+Lemma entropy_fdistmap
+  (R : realType) (A B : finType) (f : A -> B) (P : R.-fdist A) :
+  injective f -> `H P = `H (fdistmap f P).
+Proof.
+move=> f_inj; congr -%R; set lhs := LHS.
+rewrite (bigID (mem [set f a | a in A]))/=.
+rewrite big_imset/=; last by move=> *; exact: f_inj.
+under eq_bigr=> a _.
+  rewrite fdistmapE;
+  under eq_bigl do rewrite !inE/=;
+  rewrite big_pred1_inj//.
+  over.
+rewrite -[LHS]addr0; congr +%R.
+rewrite big1// => b.
+move/imsetPn=> bfx.
+rewrite fdistmapE/= big_pred0 ?mul0r// => a.
+rewrite inE/= eq_sym.
+exact/negP/negP/bfx.
+Qed.
+End entropy_fdistmap.
+
 
 Section joint_entropyA.
 
@@ -406,7 +440,7 @@ transitivity (joint_entropy `p_[%[%X, Y], Z] - entropy `p_[%Y, Z]). (* H(Y,f(Y),
   rewrite /joint_entropy.
   rewrite joint_entropyA.
   by rewrite fdistX_RV2 fdistA_RV3 .
-transitivity (joint_entropy `p_[%X,Y] + cond_entropy `p_[%Z, [%X, Y]] - entropy `p_Y - cond_entropy `p_[%Z, Y]).
+transitivity (joint_entropy `p_[%X,Y] + centropy `p_[%Z, [%X, Y]] - entropy `p_Y - centropy `p_[%Z, Y]).
   rewrite [in LHS]chain_rule.
   rewrite fdistX_RV2.
   rewrite fst_RV2.
@@ -424,9 +458,9 @@ transitivity (joint_entropy `p_[%X,Y] + cond_entropy `p_[%Z, [%X, Y]] - entropy 
   exact:chain_rule.
 transitivity (joint_entropy `p_[%X, Y] - entropy `p_Y).
   rewrite [LHS]addrAC.
-  have -> // : cond_entropy `p_[%Z, Y] = 0.
+  have -> // : centropy `p_[%Z, Y] = 0.
     exact:fun_cond_entropy_ZY_eq0.
-  have -> // : cond_entropy `p_[%Z, [%X, Y]] = 0.
+  have -> // : centropy `p_[%Z, [%X, Y]] = 0.
     rewrite /Z.
     have -> // : f `o Y = (f \o snd) `o [%X, Y].
       by apply/boolp.funext => x //=.
@@ -435,7 +469,7 @@ transitivity (joint_entropy `p_[%X, Y] - entropy `p_Y).
 rewrite joint_entropyC fdistX_RV2.
 rewrite -/(joint_entropy `p_ [%Y, X]).
 rewrite chain_rule.
-rewrite fst_RV2 fdistX_RV2. 
+rewrite fst_RV2 fdistX_RV2.
 rewrite addrAC.
 by rewrite subrr add0r.
 Qed.
@@ -458,7 +492,7 @@ have H:=cinde_alt x (b:=y) (c:=z) XYZ_cinde YZneq0.
 symmetry in H.
 apply H.
 Qed.
-                                     
+
 End cinde_rv_comp_removal.
 
 Section inde_ex.
