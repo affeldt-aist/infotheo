@@ -103,7 +103,7 @@ End more_pr_lemmas.
 Section more_fdist.
 Lemma fdistmapE' (R : realType) (A B : finType) (g : A -> B)
   (p : fdist R A) (b : B):
-  fdistmap g p b = (\sum_(a in g @^-1: [set b]) p a)%mcR.
+  fdistmap g p b = (\sum_(a in g @^-1: [set b]) p a).
 Proof. by rewrite fdistmapE; apply: eq_bigl=> ?; rewrite !inE. Qed.
 End more_fdist.
 
@@ -248,6 +248,18 @@ case /boolP: (`Pr[ Y = y0 ] == 0) => Hy.
 by rewrite H.
 Qed.
 
+Lemma cinde_rv_cprP : P |= X _|_ Y | Z <-> forall x y z, `Pr[[%Y, Z] = (y, z) ] != 0 -> `Pr[ X = x | [%Y, Z] = (y, z)] = `Pr[ X = x | Z = z].
+Proof.
+split.
+  move => H x y z YZne0.
+  apply: cinde_alt.
+  exact: H.
+  exact: YZne0.
+move => H x y z.
+move: (H x y z) => H2.
+apply: inde_RV2_cinde.
+rewrite /inde_rv => [[_a _b] _c].
+Abort.
 
 End more_independent_rv_lemmas.
 
@@ -294,7 +306,7 @@ Proof.
 transitivity (`Pr[add_RV \in [set i]]).
   by rewrite pr_inE' /Pr big_set1.
 rewrite (reasoning_by_cases _ X).
-transitivity (\sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set i-k]%mcR) ]).
+transitivity (\sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set i-k]) ]).
   apply eq_bigr=> k _.
   rewrite !pr_eq_setE.
   rewrite /Pr.
@@ -310,12 +322,12 @@ transitivity (\sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set i-k]%mcR)
 under eq_bigr do rewrite setX1 pr_eq_set1 -cpr_eqE_mul.
 under eq_bigr=> k _.
   (* Similar to `have->:`, set the wanted form *)
-  rewrite (_ : _ * _ = `Pr[ X = k ] * `Pr[ Y = (i - k)%mcR ] ); last first.
+  rewrite (_ : _ * _ = `Pr[ X = k ] * `Pr[ Y = (i - k) ] ); last first.
   rewrite cpr_eqE.  (* To remove the form of conditional probability *)
   rewrite XY_indep. (* So we can split it from `Pr [% X, Y] to `Pr X and `Pr Y*)
   rewrite -!mulrA.
-  (* case analysis on (`Pr[ Y = (i - k)%mcR ] == 0) *)
-  have [|H] := eqVneq `Pr[ Y = (i - k)%mcR ] 0.
+  (* case analysis on (`Pr[ Y = (i - k) ] == 0) *)
+  have [|H] := eqVneq `Pr[ Y = (i - k) ] 0.
   - by move->; rewrite !mulr0.
   - by rewrite mulVr ?mulr1 //.
   over.
@@ -440,7 +452,7 @@ Qed.
 End lemma_3_5.
 
 Section lemma_3_6.
-
+ 
 Variables (T TY TX : finType)(TZ : finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
