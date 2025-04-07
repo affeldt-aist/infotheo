@@ -246,10 +246,8 @@ rewrite !cpr_eqE Y2Y3indep -!pr_eqE'.
 have [Hy2 _|Hy2] := eqVneq `Pr[Y2 = y2] 0.
   rewrite [in RHS]pr_eq_pairC [in LHS]pr_eq_pairC -pr_eq_pairA.
   by rewrite !(pr_eq_domin_RV2 _ _ Hy2) mul0r.
-move/(f_equal (fun x => x * (`Pr[Y2 = y2] * `Pr[Y3 = y3]))).
-rewrite -[in LHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hy2.
-rewrite mulrA -(mulrA _ _^-1). (* Coq identify the A / B is ^-1.*)
-by rewrite mulVf // !mulr1.
+move=> H; apply: (@divIf _ `Pr[Y2=y2])=> //.
+by rewrite mulrAC -H; field; apply/andP; split.
 Qed.
 
 End pr_entropy.
