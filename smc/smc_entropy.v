@@ -953,8 +953,7 @@ Hypothesis card_TX: #|TX| = m.+2.
 Variables (r1: {RV P -> TX})(x1 x2 s1: {RV P -> 'rV[TX]_n}).
 Hypothesis x2_indep : P |= [% x1, s1, r1] _|_ x2.
 
-Lemma eqn_4_1_proof:
-  `H(x2|[%x1, s1, r1]) = entropy `p_ x2.
+Lemma eqn_4_1_proof : `H(x2|[%x1, s1, r1]) = `H `p_ x2.
 Proof.
 transitivity (joint_entropy `p_ [%x1, s1, r1, x2] - `H `p_ [%x1, s1, r1]).
   apply/eqP.
@@ -1240,10 +1239,9 @@ Variables (x1 x2 s2: {RV P -> 'rV[TX]_n}).
 
 Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
 
-Lemma eqn_8_1_proof:
-  `H(x1|[%x2, s2]) = entropy `p_ x1.
+Lemma eqn_8_1_proof : `H(x1|[%x2, s2]) = `H `p_ x1.
 Proof.
-transitivity (joint_entropy `p_ [%x2, s2, x1] - entropy `p_ [%x2, s2]).
+transitivity (joint_entropy `p_ [%x2, s2, x1] - `H `p_ [%x2, s2]).
   apply/eqP.
   rewrite eq_sym subr_eq addrC.
   apply/eqP.
@@ -1253,7 +1251,7 @@ transitivity (joint_entropy `p_ [%x2, s2, x1] - entropy `p_ [%x2, s2]).
   by rewrite chain_rule fst_RV2.
 rewrite joint_entropy_indeRV.
   by rewrite addrAC subrr add0r.
-by exact: x2s2_x1_indep.
+exact: x2s2_x1_indep.
 Qed.
 
 End eqn8_1_proof.
