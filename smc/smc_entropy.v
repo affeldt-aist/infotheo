@@ -190,19 +190,7 @@ Section joint_entropyA.
 Variables (A B C: finType) (P : {fdist A * B * C}).
 
 Lemma joint_entropyA : `H P = `H (fdistA P).
-Proof.
-congr (- _) => /=.
-rewrite (eq_bigr (fun a => P (a.1.1, a.1.2, a.2) * log (P (a.1.1, a.1.2, a.2)))); last by case => -[].
-rewrite -(pair_bigA _ (fun a1 a2 => P (a1.1, a1.2, a2) * log (P (a1.1, a1.2, a2)))) /=.
-rewrite -(pair_bigA _ (fun a1 a2 => \sum_j P (a1, a2, j) * log (P (a1, a2, j)))) /=.
-rewrite [RHS](eq_bigr (fun a => fdistA P (a.1, (a.2.1, a.2.2)) * log (fdistA P (a.1, (a.2.1, a.2.2))))); last by case => i [].
-rewrite -(pair_bigA _ (fun a1 a2 => fdistA P (a1, (a2.1, a2.2)) * log (fdistA P (a1, (a2.1, a2.2))))) /=.
-apply: eq_bigr => i _.
-rewrite -(pair_bigA _ (fun a1 a2 => fdistA P (i, (a1, a2)) * log (fdistA P (i, (a1, a2))))) /=.
-apply: eq_bigr => j _.
-apply: eq_bigr => k _.
-rewrite fdistAE //.
-Qed.
+Proof. exact/entropy_fdistmap/inj_prodA. Qed.
 
 End joint_entropyA.
 
