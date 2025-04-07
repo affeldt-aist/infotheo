@@ -186,37 +186,13 @@ Hypothesis Y2Y3indep : P|= Y2 _|_ Y3.
 Lemma cpr_cond_entropy1_RV y2 y3:
   (forall y1 ,
   `Pr[ Y1 = y1 | Y2 = y2 ] = `Pr[ Y1 = y1 | [%Y2, Y3] = (y2, y3) ]) ->
-  centropy1_RV Y2 Y1 y2 = centropy1_RV [% Y2, Y3] Y1 (y2, y3).
+  `H[ Y1 | Y2 = y2 ] = `H[ Y1 | [% Y2, Y3] = (y2, y3) ].
 Proof.
-move => H.
-case /boolP : ((`p_ [% Y2, Y1])`1 y2 == 0)  => Hy2.
-  rewrite /centropy1_RV.
-  rewrite /entropy.
-  congr -%R.
-  apply:eq_bigr => a _.
-  (*rewrite jfdist_condE. -- it brings `(fdistmap [% Y2, Y3, Y3] P)`1 (v1, v2) != 0%coqR` so we cannot use it*)
-  rewrite /jfdist_cond.
-  have Hy3: ((`p_ [% Y2, Y3, Y1])`1 (y2, y3) == 0).
-    rewrite fst_RV2.
-    apply/eqP.
-    move:(@Pr_domin_setX _ TY2 TY3 (`p_ [%Y2, Y3]) [set y2] [set y3]).
-    rewrite !Pr_set1.
-    rewrite setX1.
-    rewrite !Pr_set1.
-    rewrite fst_RV2.
-    apply.
-    rewrite fst_RV2 in Hy2.
-    exact/eqP.
-  rewrite !jPr_Pr.
-  rewrite !cpr_eq_set1.
-  by rewrite -H.
-rewrite /centropy1_RV.
-rewrite /centropy1.
+move=> H.
+rewrite /centropy1_RV /centropy1.
 congr -%R.
-apply:eq_bigr => a _.
-have -> // : \Pr_`p_ [% Y1, Y2][[set a] | [set y2]] = \Pr_`p_ [% Y1, [%Y2, Y3]][[set a] | [set (y2, y3)]].
-rewrite !jPr_Pr.
-by rewrite !cpr_eq_set1.
+apply: eq_bigr => a _.
+by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_in1 H.
 Qed.
 
 Hypothesis Hy2y3 : forall y1 y2 y3, `Pr[[%Y2, Y3] = (y2, y3)] != 0 ->
@@ -274,7 +250,7 @@ move => Hunif Hinde Hremoval.
 rewrite /centropy_RV /= /centropy /=.
 under eq_bigl do rewrite inE /=.
 set f : TY2 -> TY3 -> R := fun y2 y3 =>
-  (`p_[% Y1, Y2])`2 y2 * `p_Y3 y3 * cond_entropy1 `p_ [% Y1, Y2] y2.
+  (`p_[% Y1, Y2])`2 y2 * `p_Y3 y3 * centropy1 `p_ [% Y1, Y2] y2.
 transitivity (\sum_a f a.1 a.2).
   apply eq_bigr => a _.
   rewrite /f {1 2}(surjective_pairing a) /=.
@@ -332,7 +308,7 @@ Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
 (*
   Search (`Pr[ _ = _ ])(`p_ _ _).
 *)
-Lemma fun_cond_entropy_eq0_RV : `H[ Z | Y = y ] = 0.
+Lemma fun_cond_entropy_eq0_RV : `H[Z | Y = y] = 0.
 Proof.
 (* If `Pr[Y = y] = 0, it makes the  \Pr_QP[[set b] | [set a]] zero because the condition will be never true; need to do this before the cond_entropy1RVE *)
 (*
@@ -354,7 +330,7 @@ have [<-|] := eqVneq (f y) i.
   have HpZY: pZY = 1.
     rewrite /pZY.
     rewrite jPr_Pr.
-    rewrite cpr_eq_set1.
+    rewrite cpr_in1.
     rewrite cpr_eqE.
     rewrite pr_eq_ZY_Y //=.
     by rewrite divff //=.
@@ -363,7 +339,7 @@ have [<-|] := eqVneq (f y) i.
   by rewrite mulr0.
 move => Hfy_neq_i.
 rewrite jPr_Pr.
-rewrite cpr_eq_set1.
+rewrite cpr_in1.
 rewrite /Z.
 (* Try to state that because `f y != i`,  `Pr[ (f `o Y) = i | Y = y ] = 0 *)
 have ->: `Pr[ (f `o Y) = i | Y = y ] = 0.
@@ -391,8 +367,7 @@ rewrite snd_RV2.
 have [->|Hi] := eqVneq (`p_ Y i) 0.
   by rewrite mul0r.
 have : `H[ Z | Y = i ] = `H `p_ [% Y, Z]`(|i).
-  apply: cond_entropy1_RVE.
-  by rewrite fst_RV2.
+  by apply: cond_entropy1_RVE; rewrite fst_RV2.
 rewrite /centropy1_RV => ->.
 rewrite -cond_entropy1_RVE ?fst_RV2//.
 by rewrite fun_cond_entropy_eq0_RV ?mulr0// pr_eqE'.
@@ -500,7 +475,7 @@ Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
 
 Lemma pr_eqM x : `Pr[ (rv_op s1 s2) = x ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
 Proof.
-rewrite -[LHS]pr_eq_set1.
+rewrite -[LHS]pr_in1.
 rewrite (reasoning_by_cases _ s1).
 apply eq_bigr => a _.
 rewrite (reasoning_by_cases _ s2).
@@ -510,14 +485,14 @@ case: ifPn.
   move/eqP => <-.
   rewrite -s1_s2_indep.
   rewrite setX1 setX1.
-  rewrite pr_eq_set1.
+  rewrite pr_in1.
   pose f (p:TX1 * TX2) := (op p.1 p.2, p.1, p.2). 
   have f_inj : injective f.
      by move => [x1 x2] [? ?] [] _ -> -> /=.
   by rewrite (pr_eq_comp _ _ f_inj ).
 move => Hneq.
 rewrite setX1 setX1.
-rewrite pr_eq_set1.
+rewrite pr_in1.
 rewrite pr_eqE.
 apply/Pr_set0P.
 move => a'.
@@ -529,7 +504,7 @@ Qed.
 
 Lemma pr_eqM2 x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
 Proof.
-rewrite -[LHS]pr_eq_set1.
+rewrite -[LHS]pr_in1.
 rewrite (reasoning_by_cases _ s1).
 apply eq_bigr => a _.
 rewrite (reasoning_by_cases _ s2).
@@ -539,14 +514,14 @@ case: ifPn.
   move/eqP => <-.
   rewrite -s1_s2_indep -s1s2_r_indep.
   rewrite setX1 setX1.
-  rewrite pr_eq_set1.
+  rewrite pr_in1.
   pose f (p:TX1 * TX2 * TX3) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2). 
   have f_inj : injective f.
      by move => [[x1 x2] ?] [[? ?] ?] [] _ -> -> -> /=.
   by rewrite (pr_eq_comp _ _ f_inj ).
 move => Hneq.
 rewrite setX1 setX1.
-rewrite pr_eq_set1.
+rewrite pr_in1.
 rewrite pr_eqE.
 apply/Pr_set0P.
 move => a'.
