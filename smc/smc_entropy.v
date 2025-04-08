@@ -102,7 +102,7 @@ End RV_domin.
 
 (* NOT USED, and easy to solve by contra
 Section extra_pr2.
-  
+
 Variables (T : finType) (TX TY TZ : eqType).
 Variable P : R.-fdist T.
 
@@ -184,16 +184,31 @@ exact/negP/negP/bfx.
 Qed.
 End entropy_fdistmap.
 
-
 Section joint_entropyA.
-
-Variables (A B C: finType) (P : {fdist A * B * C}).
+Context {R : realType} (A B C : finType) (P : R.-fdist (A * B * C)).
 
 Lemma joint_entropyA : `H (fdistA P) = `H P.
 Proof. exact/entropy_fdistmap/inj_prodA. Qed.
 
 End joint_entropyA.
 
+(* TODO: move to entropy.v *)
+Section joint_entropy_RVCA.
+Context {R : realType} {U A B C : finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+
+Lemma joint_entropy_RVC : `H(X, Y) = `H(Y, X).
+Proof.
+rewrite /joint_entropy_RV [LHS]joint_entropyC; congr -%R.
+by apply: eq_bigr => -[a b] _; rewrite fdistX_RV2.
+Qed.
+
+Lemma joint_entropy_RVA : `H(X, [% Y, Z]) = `H([%X, Y], Z).
+Proof.
+by rewrite /joint_entropy_RV [in LHS]/joint_entropy -fdistA_RV3 joint_entropyA.
+Qed.
+
+End joint_entropy_RVCA.
 
 Section pr_entropy.
 
@@ -301,7 +316,7 @@ Qed.
 End cpr_cond_entropy_proof.
 
 Section lemma_3_8_prep.
-  
+
 Variables (T TX TY TZ: finType).
 Variable P : R.-fdist T.
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
@@ -310,15 +325,14 @@ Let Z := f `o Y.
 Section lemma_3_8_proof.
 Variables (y : TY) (z : TZ).
 
-Lemma pr_eq_ZY_Y :
-  `Pr[ [% Z, Y] = (f y, y) ] = `Pr[ Y = y ].
+Lemma pr_eq_ZY_Y : `Pr[ [% Z, Y] = (f y, y) ] = `Pr[ Y = y ].
 Proof.
-rewrite !pr_eqE.
-congr (Pr P _).
+rewrite 2!pr_eqE.
+congr (Pr _ _).
 apply/setP => t.
 rewrite !inE.
 rewrite xpair_eqE.
-apply andb_idl => /eqP <- //.
+by rewrite andb_idl// => /eqP <-.
 Qed.
 
 Lemma pr_eqf1 : `Pr[ Y = y ] != 0 -> `Pr[ Z = (f y) | Y = y ] = 1.
@@ -406,60 +420,28 @@ Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
 Let Z := f `o Y.
 
 Local Open Scope ring_scope.
-Variable (P': R.-fdist (TX * TY * TZ)).
+Variable P' : R.-fdist (TX * TY * TZ).
 
-Lemma fun_cond_removal :
-  `H(X|[% Y, Z]) = `H(X| Y ).
+Lemma fun_cond_removal : `H(X | [% Y, Z]) = `H(X | Y).
 Proof.
-transitivity (joint_entropy `p_[%Y, Z, X] - entropy `p_[%Y, Z]). (* joint PQ = H P + cond QP*)
-  apply/eqP.
-  rewrite eq_sym.
-  rewrite subr_eq.
-  rewrite addrC.
-  apply/eqP.
-  rewrite /centropy_RV.
-  have -> // : `p_[%X, [%Y, Z]] = fdistX `p_[%[%Y, Z], X].
-    by rewrite fdistX_RV2.
-  have -> // : `p_[%Y, Z] = (`p_ [%[%Y, Z], X])`1.
-    by rewrite fst_RV2.
-  by rewrite -chain_rule.
-transitivity (joint_entropy `p_[%[%X, Y], Z] - entropy `p_[%Y, Z]). (* H(Y,f(Y),X) -> H(X,Y,f(Y))*)
-  rewrite joint_entropyC.
-  rewrite /joint_entropy.
-  rewrite -joint_entropyA. (* joint_entropy before joint_entropyA; fishy *)
-  by rewrite fdistX_RV2 fdistA_RV3 .
-transitivity (joint_entropy `p_[%X,Y] + centropy `p_[%Z, [%X, Y]] - entropy `p_Y - centropy `p_[%Z, Y]).
-  rewrite [in LHS]chain_rule.
-  rewrite fdistX_RV2.
-  rewrite fst_RV2.
-  rewrite -![in RHS]addrA.
-  rewrite [RHS]addrCA.
-  rewrite [RHS]addrC.
-  rewrite [LHS]addrAC.
-  congr (_ + _ + _).
-  rewrite -opprD.
-  congr (-_).
-  have -> // : `p_[%Z, Y] = fdistX `p_[%Y, Z].
-    by rewrite fdistX_RV2.
-  have -> // : `p_Y = (`p_[%Y, Z])`1.
-    by rewrite fst_RV2.
-  exact:chain_rule.
-transitivity (joint_entropy `p_[%X, Y] - entropy `p_Y).
-  rewrite [LHS]addrAC.
-  have -> // : centropy `p_[%Z, Y] = 0.
-    exact:fun_cond_entropy_ZY_eq0.
-  have -> // : centropy `p_[%Z, [%X, Y]] = 0.
-    rewrite /Z.
-    have -> // : f `o Y = (f \o snd) `o [%X, Y].
-      by apply/boolp.funext => x //=.
-    exact:fun_cond_entropy_ZY_eq0.
-  by rewrite addrK.
-rewrite joint_entropyC fdistX_RV2.
-rewrite -/(joint_entropy `p_ [%Y, X]).
-rewrite chain_rule.
-rewrite fst_RV2 fdistX_RV2.
-rewrite addrAC.
-by rewrite subrr add0r.
+transitivity (`H([% Y, Z], X) - `H(Y, Z)). (* joint PQ = H P + cond QP*)
+  rewrite chain_rule_RV.
+  by rewrite addrAC subrr add0r.
+transitivity (`H([% X, Y], Z) - `H(Y, Z)). (* H(Y,f(Y),X) -> H(X,Y,f(Y))*)
+  rewrite joint_entropy_RVC.
+  by rewrite joint_entropy_RVA.
+transitivity (`H(X, Y) + `H( Z | [% X, Y]) - `H `p_Y - `H( Z | Y)).
+  rewrite [in LHS]chain_rule_RV.
+  rewrite -[in RHS]addrA -opprD.
+  by rewrite -[in RHS](chain_rule_RV Y Z).
+transitivity (`H(X, Y) - `H `p_Y).
+  rewrite (fun_cond_entropy_ZY_eq0 Y f) subr0.
+  suff : `H( Z | [% X, Y]) = 0 by move=> ->; rewrite addr0.
+  have -> : Z = (f \o snd) `o [%X, Y] by exact/boolp.funext.
+  exact: fun_cond_entropy_ZY_eq0.
+rewrite joint_entropy_RVC.
+rewrite chain_rule_RV.
+by rewrite addrAC subrr add0r.
 Qed.
 
 End fun_cond_entropy_proof.
