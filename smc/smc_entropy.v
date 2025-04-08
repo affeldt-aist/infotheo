@@ -244,8 +244,15 @@ rewrite !cpr_eqE Y2Y3indep -!pr_eqE'.
 have [Hy2 _|Hy2] := eqVneq `Pr[Y2 = y2] 0.
   rewrite [in RHS]pr_eq_pairC [in LHS]pr_eq_pairC -pr_eq_pairA.
   by rewrite !(pr_eq_domin_RV2 _ _ Hy2) mul0r.
+move/(f_equal (fun x => x * (`Pr[Y2 = y2] * `Pr[Y3 = y3]))).
+rewrite -[in LHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hy2.
+rewrite mulrA -(mulrA _ _^-1). (* Coq identify the A / B is ^-1.*)
+by rewrite mulVf // !mulr1.
+(*
+the above 4 lines can be replaced by the following two,
+temporarily removed because for some reason it fails on my machine
 move=> H; apply: (@divIf _ `Pr[Y2=y2])=> //.
-by rewrite mulrAC -H; field; apply/andP; split.
+by rewrite mulrAC -H; field; apply/andP; split.*)
 Qed.
 
 End pr_entropy.
@@ -313,6 +320,9 @@ rewrite xpair_eqE.
 apply andb_idl => /eqP <- //.
 Qed.
 
+Lemma pr_eqf1 : `Pr[ Y = y ] != 0 -> `Pr[ Z = (f y) | Y = y ] = 1.
+Proof. by move=> Yy0; rewrite cpr_eqE pr_eq_ZY_Y divff. Qed.
+
 Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
 (* TODO tried to define it as `Pr[ Y = y ] > 0 and then use `Rlt_not_eq` in the proof,
    but this hypothesis would be wrapped by `is_true` that `Rlt_not_eq` cannot be applied directly. 
@@ -341,40 +351,19 @@ have [H|] := eqVneq (`Pr[ Y = y]) 0.
       over.
     rewrite /jfdist_cond.
 *)
-rewrite cond_entropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
-rewrite -cond_entropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
 rewrite /cond_entropy1_RV.
 rewrite /cond_entropy1.
-rewrite big1 1?oppr0 // => i _.
-have [<-|] := eqVneq (f y) i.
-  set pZY := (X in (X * log X)).
-  have HpZY: pZY = 1.
-    rewrite /pZY.
-    rewrite jPr_Pr.
-    rewrite cpr_eq_set1.
-    rewrite cpr_eqE.
-    rewrite pr_eq_ZY_Y //=.
-    by rewrite divff //=.
-  rewrite HpZY.
-  rewrite log1.
-  by rewrite mulr0.
-move => Hfy_neq_i.
+rewrite big1 1?oppr0// => z' _.
 rewrite jPr_Pr.
 rewrite cpr_eq_set1.
-rewrite /Z.
+have [<-|fyi] := eqVneq (f y) z'.
+  by rewrite pr_eqf1// log1 mulr0.
 (* Try to state that because `f y != i`,  `Pr[ (f `o Y) = i | Y = y ] = 0 *)
-have ->: `Pr[ (f `o Y) = i | Y = y ] = 0.
-  rewrite cpr_eqE.
-  rewrite pr_eqE.
-  rewrite (_: finset _ = set0).
-    by rewrite Pr_set0 mul0r. 
-  apply/setP => t.
-  rewrite !inE.
-  rewrite xpair_eqE.
-  rewrite /comp_RV.
-  apply/negbTE /negP => /andP [] /[swap] /eqP ->.
-  by apply/negP.
-by rewrite mul0r.
+apply/eqP.
+rewrite [X in X * _]cpr_eqE.
+rewrite [X in X / _ * _]pr_eq0 ?mul0r//.
+apply: contra fyi.
+by rewrite fin_img_imset/= => /imsetP[t _ [/= -> ->]].
 Qed.
 
 End lemma_3_8_proof.
