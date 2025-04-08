@@ -246,8 +246,15 @@ rewrite !cpr_eqE Y2Y3indep -!pr_eqE'.
 have [Hy2 _|Hy2] := eqVneq `Pr[Y2 = y2] 0.
   rewrite [in RHS]pr_eq_pairC [in LHS]pr_eq_pairC -pr_eq_pairA.
   by rewrite !(pr_eq_domin_RV2 _ _ Hy2) mul0r.
+move/(f_equal (fun x => x * (`Pr[Y2 = y2] * `Pr[Y3 = y3]))).
+rewrite -[in LHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hy2.
+rewrite mulrA -(mulrA _ _^-1). (* Coq identify the A / B is ^-1.*)
+by rewrite mulVf // !mulr1.
+(*
+the above 4 lines can be replaced by the following two,
+temporarily removed because for some reason it fails on my machine
 move=> H; apply: (@divIf _ `Pr[Y2=y2])=> //.
-by rewrite mulrAC -H; field; apply/andP; split.
+by rewrite mulrAC -H; field; apply/andP; split.*)
 Qed.
 
 End pr_entropy.
@@ -314,6 +321,9 @@ rewrite xpair_eqE.
 apply andb_idl => /eqP <- //.
 Qed.
 
+Lemma pr_eqf1 : `Pr[ Y = y ] != 0 -> `Pr[ Z = (f y) | Y = y ] = 1.
+Proof. by move=> Yy0; rewrite cpr_eqE pr_eq_ZY_Y divff. Qed.
+
 Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
 (* TODO tried to define it as `Pr[ Y = y ] > 0 and then use `Rlt_not_eq` in the proof,
    but this hypothesis would be wrapped by `is_true` that `Rlt_not_eq` cannot be applied directly. 
@@ -362,19 +372,11 @@ move => Hfy_neq_i.
 rewrite jPr_Pr.
 rewrite cpr_in1.
 rewrite /Z.
-(* Try to state that because `f y != i`,  `Pr[ (f `o Y) = i | Y = y ] = 0 *)
-have ->: `Pr[ (f `o Y) = i | Y = y ] = 0.
-  rewrite cpr_eqE.
-  rewrite pr_eqE.
-  rewrite (_: finset _ = set0).
-    by rewrite Pr_set0 mul0r. 
-  apply/setP => t.
-  rewrite !inE.
-  rewrite xpair_eqE.
-  rewrite /comp_RV.
-  apply/negbTE /negP => /andP [] /[swap] /eqP ->.
-  by apply/negP.
-by rewrite mul0r.
+apply/eqP.
+rewrite [X in X * _]cpr_eqE.
+rewrite [X in X / _ * _]pr_eq0 ?mul0r//.
+apply: contra Hfy_neq_i.
+by rewrite fin_img_imset/= => /imsetP[t _ [/= -> ->]].
 Qed.
 
 End lemma_3_8_proof.
@@ -1333,8 +1335,8 @@ Should RV2 supports to be traversed as a sequence??
 Variables (A: finType)(m n: nat)(P : R.-fdist A).
 Variables (TX VX: finType).
 Variables (x1 x2 s1 s2 r1 y2: {RV P -> TX}).
-  
-Hypothesis Hinde : {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> inde_rv i j}%nat.
+
+Hypothesis Hinde : {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> inde_rv i j}%N.
 
 Lemma x1_x2_inde:
     P|= x1 _|_ x2.
@@ -1352,7 +1354,7 @@ Proof.
 have H := @Hinde_all 0 0.
 apply H.
 Qed.
-  
+
 End mutual_indep.
 
 End smc_entropy_proofs.
