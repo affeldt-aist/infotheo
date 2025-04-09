@@ -221,15 +221,10 @@ Lemma cpr_eqE_mul a b :
   `Pr[ X = a | Y = b ] * `Pr[Y = b] = `Pr[ [% X, Y] = (a, b) ].
 Proof.
 rewrite cpr_eqE.
-rewrite -!mulrA.
-have [|?] := eqVneq `Pr[ Y = b ] 0.
-  move=>Y0.
-  rewrite Y0.
-  rewrite !mulr0.
-  rewrite pr_eq_pairC.
-  by rewrite pr_eq_domin_RV2.
-rewrite mulVr //.
-by rewrite mulr1.
+rewrite -mulrA.
+have [Y0|?] := eqVneq `Pr[ Y = b ] 0.
+  by rewrite Y0 !mulr0 pr_eq_domin_RV1.
+by rewrite mulVf// mulr1.
 Qed.
 
 Lemma inde_rv_cprP : P |= X _|_ Y <-> forall x y, `Pr[ Y = y ] != 0 -> `Pr[ X = x | Y = y] = `Pr[ X = x].
@@ -313,10 +308,9 @@ transitivity (\sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set i-k]) ]).
   apply: eq_bigl.
   move=>r /=.
   rewrite !inE /=.
-  rewrite /add_RV.
   rewrite andbC; apply: andb_id2l.
   rewrite /=.
-  move /eqP ->.
+  move /eqP <-.
   rewrite [RHS]eq_sym.
   by rewrite subr_eq addrC eq_sym.
 under eq_bigr do rewrite setX1 pr_in1 -cpr_eqE_mul.
@@ -339,7 +333,7 @@ done.
 Qed.
 
 (* Lemma 3.4 *)
-Lemma add_RV_unif : `p_ add_RV = fdist_uniform card_A . 
+Lemma add_RV_unif : `p_ add_RV = fdist_uniform card_A .
 Proof.
 apply: fdist_ext=> /= i.
 rewrite fdist_uniformE /=.
@@ -362,7 +356,7 @@ Section fdist_cond_prop.
 Variables T TX TY TZ : finType.
 Variables (P : R.-fdist T) (y : TY).
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
-                                                     
+
 Let E := finset (Y @^-1 y).
 Hypothesis E0 : Pr P E != 0.
 
@@ -388,7 +382,7 @@ Qed.
 End fdist_cond_prop.
 
 Section lemma_3_5.
-  
+
 Variable (T TY: finType) (TZ: finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
