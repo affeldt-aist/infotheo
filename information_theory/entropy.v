@@ -296,6 +296,9 @@ Section conditional_entropy_RV_lemmas.
 Context {R : realType} {U A B : finType} {P : R.-fdist U}.
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
+Lemma cond_entropy_RVE' : `H(Y | X) = \sum_(a in A) `Pr[X = a] * `H[Y | X = a].
+Proof. by apply: eq_bigr => a _; rewrite snd_RV2 -pr_eqE'. Qed.
+
 (* cover&thomas 2.12 *)
 Lemma cond_entropy_RVE : `H(Y | X) = - \sum_(a in A) \sum_(b in B)
   `p_[% X, Y] (a, b) * log (\Pr_`p_[% Y, X] [ [set b] | [set a]]).
@@ -828,8 +831,8 @@ rewrite fdistXE fdistAE /= -mulrN -mulrDr.
 have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0r.
 congr (_ * _).
 rewrite addrC -logDiv; last 2 first.
-  by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdistA_dominN H0.
-  by rewrite -Pr_jcPr_gt0 Pr_gt0P setX1 Pr_set1; exact: fdist_proj13_dominN H0.
+  by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1; exact: fdistA_dominN H0.
+  by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1; exact: fdist_proj13_dominN H0.
 congr (log _).
 rewrite [in RHS]invfM mulrCA [RHS]mulrC; congr (_ / _).
 rewrite -[in X in _ = X * _]setX1 jproduct_rule_cond setX1 -mulrA mulfV ?mulr1 //.
@@ -1080,7 +1083,7 @@ have -> : cond_entropy PY = \sum_(j < n.+1)
       (fdistA (fdistC12 (fdist_prod_take PY j))) (a, (v, b)).
       rewrite /YP /fdistX /fdist_belast_last_of_rV /fdist_take /fdist_rV_of_prod.
       rewrite /fdistA /fdistC12 /fdist_prod_take !fdistmap_comp !fdistmapE /=.
-      apply eq_bigl => -[w b0]; rewrite /= /swap /= !inE /=.
+      apply eq_bigl => -[w b0]; rewrite /= !inE /=.
       rewrite (_ : rlast _ = w ``_ j); last first.
         rewrite /rlast !mxE !castmxE /= cast_ord_id.
         rewrite (_ : cast_ord _ _ = rshift 1%nat j); last exact/val_inj.

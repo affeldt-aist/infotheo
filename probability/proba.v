@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra fingroup lra.
 From mathcomp Require boolp.
-From mathcomp Require Import reals exp.
+From mathcomp Require Import mathcomp_extra reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
 (**md**************************************************************************)
@@ -390,19 +390,28 @@ Qed.
 
 End Pr_extra.
 
-Lemma Pr_domin_setX {R : realType} (A B : finType) (P : R.-fdist (A * B)) E F :
+Lemma fst_Pr_domin_setX {R : realType} (A B : finType) (P : R.-fdist (A * B)) E F :
   Pr P`1 E = 0 -> Pr P (E `* F) = 0.
 Proof.
 move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
 by rewrite inE /= => /andP[/H /dom_by_fdist_fst ->].
+Qed.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `fst_Pr_domin_setX`")]
+Notation Pr_domin_setX := fst_Pr_domin_setX (only parsing).
+
+Lemma snd_Pr_domin_setX {R : realType} (A B : finType) (P : R.-fdist (A * B)) E F :
+  Pr P`2 F = 0 -> Pr P (E `* F) = 0.
+Proof.
+move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
+by rewrite inE /= => /andP[/[swap] /H /dom_by_fdist_snd].
 Qed.
 
 Lemma Pr_domin_setXN {R : realType} (A B : finType) (P : R.-fdist (A * B)) E F :
   Pr P (E `* F) != 0 -> Pr P`1 E != 0.
 Proof. by apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
 
-Lemma Pr_fdistmap {R : realType} (A B : finType) (f : A -> B) (d : R.-fdist A) (E : {set A}) :
-  injective f ->
+Lemma Pr_fdistmap {R : realType} (A B : finType) (f : A -> B) (d : R.-fdist A)
+    (E : {set A}) : injective f ->
   Pr d E = Pr (fdistmap f d) (f @: E).
 Proof.
 move=> bf; rewrite /Pr.
@@ -579,6 +588,12 @@ Local Notation "`p_ X" := (dist_of_RV X).
 Lemma pr_eqE' (X : {RV P -> A}) (a : A) : `Pr[ X = a ] = `p_X a.
 Proof.
 by rewrite /dist_of_RV fdistmapE pr_eqE /Pr /=; apply eq_bigl => i; rewrite inE.
+Qed.
+
+Lemma pr_eq1 (X : {RV P -> A}) : \sum_a `Pr[ X = a ] = 1.
+Proof.
+under eq_bigr do rewrite pr_eqE'.
+by rewrite FDist.f1.
 Qed.
 
 Lemma pr_inE' (X : {RV P -> A}) (E : {set A}) : `Pr[ X \in E ] = Pr `p_X E.
@@ -760,7 +775,7 @@ Variables (TX : {RV P -> TA}) (TY : {RV P -> TB}) (TZ : {RV P -> TC}).
 Lemma pr_in_pairC E F : `Pr[ [% Y, X] \in F `* E ] = `Pr[ [% X, Y] \in E `* F].
 Proof. by rewrite 2!pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbC. Qed.
 
-Lemma pr_eq_pairC a b : `Pr[ [% TY, TX] = (b, a) ] = `Pr[ [% TX, TY] = (a, b)].
+Lemma pr_eq_pairC x : `Pr[ [% TY, TX] = x ] = `Pr[ [% TX, TY] = swap x].
 Proof.
 by rewrite !pr_eqE; congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE andbC.
 Qed.
@@ -811,8 +826,8 @@ Qed.
 
 End pr_pair.
 
-Lemma pr_eq_pair_setT {R : realType} (U : finType) (P : R.-fdist U) (A B : finType) (E : {set A})
-    (X : {RV P -> A}) (Y : {RV P -> B}) :
+Lemma pr_eq_pair_setT {R : realType} (U : finType) (P : R.-fdist U)
+    (A B : finType) (E : {set A}) (X : {RV P -> A}) (Y : {RV P -> B}) :
   `Pr[ [% X, Y] \in E `*T ] = `Pr[ X \in E ].
 Proof.
 apply/esym.
@@ -828,14 +843,19 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 Variables (TX : {RV P -> A}) (TY : {RV P -> B}).
 
 Lemma pr_in_domin_RV2 E F : `Pr[ X \in E] = 0 -> `Pr[ [% X, Y] \in E `* F] = 0.
+Proof. by move=> H; rewrite pr_inE' Pr_domin_setX // fst_RV2 -pr_inE'. Qed.
+
+Lemma pr_eq_domin_RV1 a b : `Pr[ TY = b ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
-move=> H; by rewrite pr_inE' Pr_domin_setX // fst_RV2 -pr_inE'.
+move=> H.
+rewrite -pr_eq_set1 -setX1 pr_inE' snd_Pr_domin_setX // snd_RV2 -pr_inE'.
+by rewrite pr_eq_set1.
 Qed.
 
 Lemma pr_eq_domin_RV2 a b : `Pr[ TX = a ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
 move=> H.
-rewrite -pr_eq_set1 -setX1 pr_inE' Pr_domin_setX // fst_RV2 -pr_inE'.
+rewrite -pr_eq_set1 -setX1 pr_inE' fst_Pr_domin_setX // fst_RV2 -pr_inE'.
 by rewrite pr_eq_set1.
 Qed.
 
