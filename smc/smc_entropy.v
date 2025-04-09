@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import contra Rstruct ring reals.
+From mathcomp Require Import mathcomp_extra contra Rstruct ring reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba.
 
@@ -211,19 +211,16 @@ Qed.
 End joint_entropy_RVCA.
 
 Section pr_entropy.
-
-Variables (T TY1 TY2: finType) (TY3: finZmodType) (P : R.-fdist T).
+Variables (T TY1 TY2 : finType) (TY3 : finZmodType) (P : R.-fdist T).
 Variable n : nat.
-Notation p := n.+2.
-Variables (Y1: {RV P -> TY1}) (Y2: {RV P -> TY2}) (Y3: {RV P -> TY3}).
+Variables (Y1 : {RV P -> TY1}) (Y2 : {RV P -> TY2}) (Y3 : {RV P -> TY3}).
 
 Hypothesis card_Y3 : #|TY3| = n.+1.
 Hypothesis pY3_unif : `p_ Y3 = fdist_uniform card_Y3.
-Hypothesis Y2Y3indep : P|= Y2 _|_ Y3.
+Hypothesis Y2Y3indep : P |= Y2 _|_ Y3.
 
-Lemma cpr_cond_entropy1_RV y2 y3:
-  (forall y1 ,
-  `Pr[ Y1 = y1 | Y2 = y2 ] = `Pr[ Y1 = y1 | [%Y2, Y3] = (y2, y3) ]) ->
+Lemma cpr_cond_entropy1_RV y2 y3 :
+  (forall y1, `Pr[Y1 = y1 | Y2 = y2] = `Pr[Y1 = y1 | [%Y2, Y3] = (y2, y3)]) ->
   `H[ Y1 | Y2 = y2 ] = `H[ Y1 | [% Y2, Y3] = (y2, y3) ].
 Proof.
 move=> H.
@@ -236,10 +233,10 @@ Qed.
 Hypothesis Hy2y3 : forall y1 y2 y3, `Pr[[%Y2, Y3] = (y2, y3)] != 0 ->
   `Pr[ Y1 = y1 | [%Y2, Y3] = (y2, y3) ] = `Pr[ Y1 = y1 | Y2 = y2 ].
 
-Lemma Pr_neq0_cond_removal : forall y1 y2 y3, `Pr[Y3 = y3] != 0 ->
+Lemma Pr_neq0_cond_removal y1 y2 y3 : `Pr[Y3 = y3] != 0 ->
   `Pr[ Y1 = y1 | [%Y2, Y3] = (y2, y3) ] = `Pr[ Y1 = y1 | Y2 = y2 ].
 Proof.
-move => y1 y2 y3 Hy3neq0.
+move=> Hy3neq0.
 have [Hy2|Hy2] := eqVneq `Pr[Y2 = y2] 0.
   rewrite !cpr_eqE Y2Y3indep.
   rewrite Hy2 mul0r.
@@ -248,21 +245,24 @@ apply: Hy2y3.
 by rewrite Y2Y3indep mulf_eq0 negb_or Hy2.
 Qed.
 
-Lemma snd_extra_indep y2 y3 :
-  (`p_ [% Y1, [% Y2, Y3]])`2 (y2, y3) = (`p_ [% Y1, Y2])`2 y2 * `p_Y3 y3.
+(* TODO: rename because there is no snd anymore *)
+Lemma snd_extra_indep x :
+  `Pr[ [% Y2, Y3] = x ] = `Pr[ Y2 = x.1 ] * `Pr[ Y3 = x.2 ].
 Proof.
-rewrite !fdist_sndE big_distrl /=.
-apply eq_bigr => y1 _.
-have [Hy3|Hy3] := eqVneq `Pr[Y3 = y3] 0.
-  rewrite -!pr_eqE' Hy3 mulr0 pr_eq_pairC pr_eq_domin_RV2 //.
-  by rewrite pr_eq_pairC pr_eq_domin_RV2.
-have := Pr_neq0_cond_removal y1 y2 Hy3.
-rewrite !cpr_eqE Y2Y3indep -!pr_eqE'.
-have [Hy2 _|Hy2] := eqVneq `Pr[Y2 = y2] 0.
-  rewrite [in RHS]pr_eq_pairC [in LHS]pr_eq_pairC -pr_eq_pairA.
-  by rewrite !(pr_eq_domin_RV2 _ _ Hy2) mul0r.
-move/(f_equal (fun x => x * (`Pr[Y2 = y2] * `Pr[Y3 = y3]))).
-rewrite -[in LHS]mulrA mulVf //; last by rewrite mulf_eq0 negb_or Hy2.
+rewrite -!pr_in1 !(reasoning_by_cases _ Y1).
+rewrite big_distrl /=; apply: eq_bigr => y1 _.
+rewrite -reasoning_by_cases !setX1 !pr_in1.
+rewrite [LHS]pr_eq_pairC [in RHS]pr_eq_pairC.
+have [Hy3|Hy3] := eqVneq `Pr[Y3 = x.2] 0.
+  move: x => [x1 x2] /= in Hy3 *.
+  by rewrite Hy3 pr_eq_pairA/= pr_eq_domin_RV1// mulr0.
+have := Pr_neq0_cond_removal y1 x.1 Hy3.
+rewrite !cpr_eqE Y2Y3indep.
+have [Hy2 _|Hy2] := eqVneq `Pr[Y2 = x.1] 0.
+  case: x => [x1 x2] /= in Hy3 Hy2 *.
+  by rewrite pr_eq_pairCA pr_eq_domin_RV2// pr_eq_pairC pr_eq_domin_RV2// mul0r.
+move/(f_equal (fun z => z * (`Pr[Y2 = x.1] * `Pr[Y3 = x.2]))).
+rewrite -[in LHS]mulrA mulVf//; last by rewrite mulf_eq0 negb_or Hy2.
 rewrite mulrA -(mulrA _ _^-1). (* Coq identify the A / B is ^-1.*)
 by rewrite mulVf // !mulr1.
 (*
@@ -273,6 +273,7 @@ by rewrite mulrAC -H; field; apply/andP; split.*)
 Qed.
 
 End pr_entropy.
+Arguments snd_extra_indep {T TY1 TY2 TY3 P} Y1.
 
 Section cpr_cond_entropy_proof.
 
@@ -282,36 +283,28 @@ Variables (Y1 : {RV (P) -> (TY1)})(Y2 : {RV (P) -> (TY2)})(Y3 : {RV (P) -> (TY3)
 Lemma cpr_cond_entropy (n: nat)(card_TY3 : #|TY3| = n.+1):
   `p_ Y3 = fdist_uniform card_TY3 ->
   P |= Y2 _|_ Y3 ->
-  (forall (y1 : TY1) (y2 : TY2) (y3 : TY3),
-   `Pr[ [% Y2, Y3] = (y2, y3) ] != 0 ->
-       `Pr[ Y1 = y1 | [% Y2, Y3] = (y2, y3) ] =
-       `Pr[ Y1 = y1 | Y2 = y2 ]
-  ) ->
+  (forall y1 y2 y3, `Pr[ [% Y2, Y3] = (y2, y3) ] != 0 ->
+     `Pr[ Y1 = y1 | [% Y2, Y3] = (y2, y3) ] =
+     `Pr[ Y1 = y1 | Y2 = y2 ]) ->
   `H( Y1 | [% Y2, Y3]) = `H( Y1 | Y2).
 Proof.
-move => Hunif Hinde Hremoval.
-rewrite /centropy_RV /= /centropy /=.
-under eq_bigl do rewrite inE /=.
-set f : TY2 -> TY3 -> R := fun y2 y3 =>
-  (`p_[% Y1, Y2])`2 y2 * `p_Y3 y3 * centropy1 `p_ [% Y1, Y2] y2.
+move=> Hunif Hinde Hremoval.
+rewrite cond_entropy_RVE'/=.
+pose f y2 y3 := `Pr[Y2 = y2] * `Pr[Y3 = y3] * `H[Y1 | Y2 = y2].
 transitivity (\sum_a f a.1 a.2).
   apply eq_bigr => a _.
-  rewrite /f {1 2}(surjective_pairing a) /=.
-  have [Ha|Ha] := eqVneq ((`p_ [% Y1, Y2])`2 a.1 * `p_Y3 a.2) 0.
-    by rewrite Ha snd_extra_indep // Ha !mul0r.
-  rewrite snd_extra_indep //.
-  congr (_ * _ * _).
+  have [Ha|Ha] := eqVneq (`Pr[Y2 = a.1] * `Pr[Y3 = a.2]) 0.
+    by rewrite /f Ha mul0r (snd_extra_indep Y1)// Ha mul0r.
+  rewrite /f (snd_extra_indep Y1)//; congr (_ * _ * _).
   have [Hy3|Hy3] := eqVneq `Pr[Y3 = a.2] 0.
-    rewrite -pr_eqE' in Ha.
     by rewrite Hy3 mulr0 eqxx in Ha.
-  suff : `H[ Y1 | Y2 = a.1 ] = `H[ Y1 | [% Y2, Y3] = (a.1, a.2) ] by [].
-  apply: cpr_cond_entropy1_RV => y1.
+  rewrite [in LHS](surjective_pairing a).
+  apply/esym/cpr_cond_entropy1_RV => y1.
   by rewrite Pr_neq0_cond_removal.
-rewrite -pair_bigA /=.
-apply: eq_bigr => y2 _.
-by rewrite /f -big_distrl -big_distrr /= FDist.f1 mulr1.
+rewrite -pair_bigA /=; apply: eq_bigr => y2 _.
+rewrite snd_RV2 -pr_eqE' -/(`H[_ | _ = _]).
+by rewrite -big_distrl/= -big_distrr/= pr_eq1 mulr1.
 Qed.
-
 
 End cpr_cond_entropy_proof.
 
@@ -340,7 +333,7 @@ Proof. by move=> Yy0; rewrite cpr_eqE pr_eq_ZY_Y divff. Qed.
 
 Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
 (* TODO tried to define it as `Pr[ Y = y ] > 0 and then use `Rlt_not_eq` in the proof,
-   but this hypothesis would be wrapped by `is_true` that `Rlt_not_eq` cannot be applied directly. 
+   but this hypothesis would be wrapped by `is_true` that `Rlt_not_eq` cannot be applied directly.
 *)
 
 (* H(f(Y)|X,Y) = H(f(Y)|Y) = 0 *)
