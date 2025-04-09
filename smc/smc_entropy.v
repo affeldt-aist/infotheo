@@ -59,7 +59,7 @@ Reserved Notation "u \*d w" (at level 40).
 Local Definition R := Rdefinitions.R.
 
 Module smc_entropy_proofs.
-  
+
 Section extra_pr.
 
 Variables (T TX TY: finType)(TX': finZmodType).
@@ -150,17 +150,15 @@ Qed.
 
 End entropy_with_indeRV.
 
-Lemma imsetPn :
-  forall {aT rT : finType} {f : aT -> rT} {D : mem_pred aT} {y : rT},
-    reflect (forall x : aT, in_mem x D -> y != f x) (y \notin imset f D).
+Lemma imsetPn {aT rT : finType} {f : aT -> rT} {D : mem_pred aT} {y : rT} :
+  reflect (forall x : aT, in_mem x D -> y != f x) (y \notin imset f D).
 Proof.
-move=> *; apply: (iffP idP).
+apply: (iffP idP).
   move/imsetP=> H x xD; apply/eqP=> yfx; apply: H.
   by exists x.
 move=> H; apply/imsetP=> -[] x xD yfx.
 by have:= H x xD; rewrite yfx eqxx.
 Qed.
-
 
 Section entropy_fdistmap.
 Lemma entropy_fdistmap
@@ -463,36 +461,32 @@ Let rv_op (rv1:{RV P -> TX1})(rv2:{RV P -> TX2}) : {RV P -> TX3}  :=
 Hypothesis s1_s2_indep : P|= s1 _|_ s2.
 Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
 
-Lemma pr_eqM x : `Pr[ (rv_op s1 s2) = x ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
+Lemma pr_eqM x : `Pr[ (rv_op s1 s2) = x ] =
+  \sum_(a <- fin_img s1) (\sum_(b <- fin_img s2 | op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
 Proof.
 rewrite -[LHS]pr_in1.
 rewrite (reasoning_by_cases _ s1).
-apply eq_bigr => a _.
+apply: eq_bigr => a _.
 rewrite (reasoning_by_cases _ s2).
 rewrite [RHS]big_mkcond /=.
 apply eq_bigr => b _.
-case: ifPn.
-  move/eqP => <-.
+case: ifPn => [/eqP <-|Hneq].
   rewrite -s1_s2_indep.
-  rewrite setX1 setX1.
+  rewrite 2!setX1.
   rewrite pr_in1.
-  pose f (p:TX1 * TX2) := (op p.1 p.2, p.1, p.2). 
-  have f_inj : injective f.
-     by move => [x1 x2] [? ?] [] _ -> -> /=.
-  by rewrite (pr_eq_comp _ _ f_inj ).
-move => Hneq.
-rewrite setX1 setX1.
+  pose f (p : TX1 * TX2) := (op p.1 p.2, p.1, p.2).
+  have f_inj : injective f by move => [x1 x2] [? ?] [] _ -> ->.
+  by rewrite (pr_eq_comp _ _ f_inj).
+rewrite 2!setX1.
 rewrite pr_in1.
-rewrite pr_eqE.
-apply/Pr_set0P.
-move => a'.
-rewrite !inE /=.
-move/eqP => [].
-move => Heq1 Heq2 Heq3.
-by rewrite -Heq3 -Heq2 -Heq1 eqxx in Hneq.
+rewrite pr_eq0//.
+apply: contra Hneq.
+by rewrite fin_img_imset => /imsetP[a0 _ [] -> -> ->].
 Qed.
 
-Lemma pr_eqM2 x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] = \sum_(a<-fin_img s1) (\sum_(b<-fin_img s2|op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
+Lemma pr_eqM2 x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] =
+  \sum_(a <- fin_img s1)
+    (\sum_(b <- fin_img s2 | op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
 Proof.
 rewrite -[LHS]pr_in1.
 rewrite (reasoning_by_cases _ s1).
@@ -500,8 +494,7 @@ apply eq_bigr => a _.
 rewrite (reasoning_by_cases _ s2).
 rewrite [RHS]big_mkcond /=.
 apply eq_bigr => b _.
-case: ifPn.
-  move/eqP => <-.
+case: ifPn => [/eqP <-|Hneq].
   rewrite -s1_s2_indep -s1s2_r_indep.
   rewrite setX1 setX1.
   rewrite pr_in1.
@@ -509,19 +502,14 @@ case: ifPn.
   have f_inj : injective f.
      by move => [[x1 x2] ?] [[? ?] ?] [] _ -> -> -> /=.
   by rewrite (pr_eq_comp _ _ f_inj ).
-move => Hneq.
-rewrite setX1 setX1.
+rewrite 2!setX1.
 rewrite pr_in1.
-rewrite pr_eqE.
-apply/Pr_set0P.
-move => a'.
-rewrite !inE /=.
-move/eqP => [].
-move => Heq1 _ Heq2 Heq3.
-by rewrite -Heq3 -Heq2 -Heq1 eqxx in Hneq.
+rewrite pr_eq0//.
+apply: contra Hneq.
+by rewrite fin_img_imset => /imsetP[a0 _ [] -> _ -> ->].
 Qed.
 
-Lemma s1Ms2_r_indep : P|= (rv_op s1 s2) _|_ r.
+Lemma s1Ms2_r_indep : P |= (rv_op s1 s2) _|_ r.
 Proof.
 rewrite /inde_rv.
 move => x y.
