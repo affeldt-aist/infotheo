@@ -137,10 +137,10 @@ Proof. by split=> + x y => /(_ x y); rewrite !pr_eqE'. Qed.
 *)
 
 Lemma joint_entropy_indeRV (X : {RV P -> TX}) (Y : {RV P -> TY}):
-  inde_rv X Y -> joint_entropy `p_[%X, Y] = `H (`p_X) + `H (`p_Y).
+  inde_rv X Y -> `H(X, Y) = `H (`p_X) + `H (`p_Y).
 Proof.
 rewrite inde_rv_sym=> iYX.
-rewrite -/(`H(_, _)) chain_rule_RV; congr +%R.
+rewrite chain_rule_RV; congr +%R.
 rewrite /cond_entropy_RV dist_inde_rv_prod// condentropy_indep.
   by rewrite fdist_prod1.
 by rewrite fdist_prod1 -[in RHS]dist_inde_rv_prod// snd_RV2.
@@ -374,20 +374,11 @@ Qed.
 
 End lemma_3_8_proof.
 
-Lemma fun_cond_entropy_ZY_eq0:
-  `H( Z | Y) = 0.
+Lemma fun_cond_entropy_ZY_eq0 : `H( Z | Y) = 0.
 Proof.
-rewrite /cond_entropy_RV.
-rewrite /cond_entropy.
-rewrite big1 // => i _.
-rewrite snd_RV2.
-have [->|Hi] := eqVneq (`p_ Y i) 0.
-  by rewrite mul0r.
-have : `H[ Z | Y = i ] = `H `p_ [% Y, Z]`(|i).
-  by apply: cond_entropy1_RVE; rewrite fst_RV2.
-rewrite /cond_entropy1_RV => ->.
-rewrite -cond_entropy1_RVE ?fst_RV2//.
-by rewrite fun_cond_entropy_eq0_RV ?mulr0// pr_eqE'.
+rewrite cond_entropy_RVE' big1 // => y _.
+have [->|y0] := eqVneq `Pr[ Y = y ] 0; first by rewrite mul0r.
+by rewrite fun_cond_entropy_eq0_RV// mulr0.
 Qed.
 
 End lemma_3_8_prep.
@@ -442,7 +433,7 @@ have H:=cinde_alt x (b:=y) (c:=z) XYZ_cinde YZneq0.
 symmetry in H.
 apply H.
 Qed.
-                                     
+
 End cinde_rv_comp_removal.
 
 Section inde_ex.
@@ -500,7 +491,7 @@ case: ifPn.
   rewrite -s1_s2_indep -s1s2_r_indep.
   rewrite setX1 setX1.
   rewrite pr_eq_set1.
-  pose f (p:TX1 * TX2 * TX3) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2). 
+  pose f (p:TX1 * TX2 * TX3) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2).
   have f_inj : injective f.
      by move => [[x1 x2] ?] [[? ?] ?] [] _ -> -> -> /=.
   by rewrite (pr_eq_comp _ _ f_inj ).
@@ -539,7 +530,7 @@ Section neg_RV_lemmas.
 
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
-Hypothesis card_TX : #|TX| = m.+2. 
+Hypothesis card_TX : #|TX| = m.+2.
 
 Lemma sub_RV_eq (U : finZmodType) (X Y : {RV P -> U}):
   X \- Y = X \+ neg_RV Y.
@@ -593,14 +584,14 @@ End dotproduct.
 Notation "u *d w" := (dotproduct u w).
 Notation "u \*d w" := (dotproduct_rv u w).
 
-Arguments dotproduct {TX n}. 
+Arguments dotproduct {TX n}.
 
 Section unif_lemmas.
 
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Variables (s1 s2: {RV P -> 'rV[TX]_n})(r: {RV P -> TX}).
-Hypothesis card_TX : #|TX| = m.+2. 
+Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis pr_unif: `p_ r = fdist_uniform card_TX.
 Hypothesis s1_s2_indep : P|= s1 _|_ s2.
 Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
@@ -623,8 +614,8 @@ Qed.
 End unif_lemmas.
 
 Section pi2.
-  
-  
+
+
 Section scalar_product_def.
 
 Variables (T: finType)(m n: nat)(P : R.-fdist T).
@@ -923,42 +914,34 @@ apply Ha => w w2 wmz Hneq0.
 simpl in *.
 by have := mc_removal_pr snd Z_O_indep pZ_unif w Hneq0.
 Qed.
-  
+
 End eqn4_proof.
 
 Section eqn4_1_proof.
-
-Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
-Hypothesis card_TX: #|TX| = m.+2.
-Variables (r1: {RV P -> TX})(x1 x2 s1: {RV P -> 'rV[TX]_n}).
+Hypothesis card_TX : #|TX| = m.+2.
+Variables (r1 : {RV P -> TX}) (x1 x2 s1 : {RV P -> 'rV[TX]_n}).
 Hypothesis x2_indep : P |= [% x1, s1, r1] _|_ x2.
 
-Lemma eqn_4_1_proof : `H(x2|[%x1, s1, r1]) = `H `p_ x2.
+Lemma eqn_4_1_proof : `H(x2 | [%x1, s1, r1]) = `H `p_ x2.
 Proof.
-transitivity (joint_entropy `p_ [%x1, s1, r1, x2] - `H `p_ [%x1, s1, r1]).
-  apply/eqP.
-  rewrite eq_sym subr_eq addrC.
-  apply/eqP.
-  rewrite /cond_entropy_RV.
-  have -> : `p_[%x2, [%x1, s1, r1]] = fdistX `p_[%x1, s1, r1, x2].
-    by rewrite fdistX_RV2.
-  by rewrite chain_rule fst_RV2.
+transitivity (`H([%x1, s1, r1], x2) - `H `p_ [%x1, s1, r1]).
+  by rewrite chain_rule_RV addrAC subrr add0r.
 rewrite joint_entropy_indeRV.
   by rewrite addrAC subrr add0r.
-by exact: x2_indep.
+exact: x2_indep.
 Qed.
 
 End eqn4_1_proof.
 
 Section pi2_alice_is_leakage_free_proof.
-
-Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n)%nat.-1.+1.
 
-Variables (r1 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Variables (r1 y2 : {RV P -> TX}) (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
 Let x1' := x1 \+ s1.
 Let x2' := x2 \+ s2.
 Let r2  := s1 \*d s2 \- r1.
@@ -971,7 +954,7 @@ Hypothesis s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2].
 Hypothesis x1s2r1_x2_indep: P |= [% x1, s1, r1] _|_ x2.
 Hypothesis neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
 Hypothesis ps2_unif : `p_ s2 = fdist_uniform card_rVTX.
-  
+
 Let negy2_x1x2s1s2r1r2_eqn3_indep :
   P |= neg_RV y2 _|_ [%x1, x2, s1, s2, r1, r2].
 Proof.
@@ -1177,7 +1160,7 @@ Let eq_WmZ_RV:
   fm `o O `+ s1 = x1'.
 Proof. by rewrite /add_RV /neg_RV eq_Wm_RV /x1' //=. Qed.
 
-Hypothesis Z_O_indep : inde_rv Z O. 
+Hypothesis Z_O_indep : inde_rv Z O.
 
 (* Because s1 and x1 are generated by different participants *)
 Hypothesis Z_WmZ_indep: P |= Z _|_ WmZ.
@@ -1192,7 +1175,7 @@ apply: add_RV_unif; last first.
   rewrite (_:s1 = idfun `o s1) //.
   apply: inde_rv_comp.
   rewrite inde_rv_sym.
-  exact: Z_O_indep. 
+  exact: Z_O_indep.
 exact: pZ_unif.
 Qed.
 
@@ -1206,30 +1189,23 @@ apply: Ha => w w2 wm Hneq0.
 rewrite -/W1.
 by have := (mc_removal_pr f1 Z_O_indep pZ_unif w Hneq0).
 Qed.
-  
+ 
 End eqn8_proof.
 
 Section eqn8_1_proof.
-
-Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
-Hypothesis card_TX: #|TX| = m.+2.
-Hypothesis card_rVTX: #|'rV[TX]_n| = m.+2.
+Hypothesis card_TX : #|TX| = m.+2.
+Hypothesis card_rVTX : #|'rV[TX]_n| = m.+2.
 
-Variables (x1 x2 s2: {RV P -> 'rV[TX]_n}).
+Variables (x1 x2 s2 : {RV P -> 'rV[TX]_n}).
 
 Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
 
-Lemma eqn_8_1_proof : `H(x1|[%x2, s2]) = `H `p_ x1.
+Lemma eqn_8_1_proof : `H(x1 | [%x2, s2]) = `H `p_ x1.
 Proof.
-transitivity (joint_entropy `p_ [%x2, s2, x1] - `H `p_ [%x2, s2]).
-  apply/eqP.
-  rewrite eq_sym subr_eq addrC.
-  apply/eqP.
-  rewrite /cond_entropy_RV.
-  have -> : `p_ [%x1, [%x2, s2]] = fdistX `p_ [%[%x2, s2], x1].
-    by rewrite fdistX_RV2.
-  by rewrite chain_rule fst_RV2.
+transitivity (`H([%x2, s2], x1) - `H(x2, s2)).
+  by rewrite chain_rule_RV addrAC subrr add0r.
 rewrite joint_entropy_indeRV.
   by rewrite addrAC subrr add0r.
 exact: x2s2_x1_indep.
@@ -1246,7 +1222,7 @@ Hypothesis card_rVTX: #|'rV[TX]_n| = (m.+2 ^ n)%nat.-1.+1.
 Variables (r1 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
 Let x1' := x1 \+ s1.
 Let r2  := s1 \*d s2 \- r1.
-  
+
 (* Hypothese from the paper. *)
 Hypothesis x2s2_x1'_indep : P |= [% x2, s2] _|_ x1'.
 Hypothesis x2s2x1'r2_y2_eqn6_indep : P |= [%x2, s2, x1', r2] _|_ y2.
@@ -1262,7 +1238,7 @@ Hypothesis s1_s2_indep : P|= s1 _|_ s2.
 Hypothesis pr1_unif : `p_ r1 = fdist_uniform card_TX.
 Hypothesis py2_unif : `p_ y2 = fdist_uniform card_TX.
 Hypothesis ps1_unif : `p_ s1 = fdist_uniform card_rVTX.
-  
+
 Let pr2_unif := ps1_dot_s2_r_unif pr1_unif s1_s2_indep s1s2_r1_indep.
 Let BobView := [%x2, s2, x1', r2, y2].
 
@@ -1297,7 +1273,7 @@ Should RV2 supports to be traversed as a sequence??
 Variables (A: finType)(m n: nat)(P : R.-fdist A).
 Variables (TX VX: finType).
 Variables (x1 x2 s1 s2 r1 y2: {RV P -> TX}).
-  
+
 Hypothesis Hinde : {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> inde_rv i j}%nat.
 
 Lemma x1_x2_inde:
@@ -1316,7 +1292,7 @@ Proof.
 have H := @Hinde_all 0 0.
 apply H.
 Qed.
-  
+
 End mutual_indep.
 
 End smc_entropy_proofs.
