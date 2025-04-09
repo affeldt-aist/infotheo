@@ -118,7 +118,7 @@ Definition inde_rv_ev :=
 
 Lemma inde_rv_events' : inde_rv X Y <-> inde_rv_ev.
 Proof.
-split=> H; last by move=> *; rewrite -!pr_eq_set1 -H setX1.
+split=> H; last by move=> *; rewrite -!pr_in1 -H setX1.
 move=> E F; rewrite !pr_inE'.
 rewrite [LHS]/Pr; under eq_bigr=> *.
   rewrite fdistmapE.
@@ -162,19 +162,19 @@ Proof.
 move/inde_rv_events'.
 rewrite /inde_rv_ev.
 move=> H i j.
-rewrite -[LHS]pr_eq_set1.
+rewrite -[LHS]pr_in1.
 rewrite comp_RV2_ACA /=.
 rewrite pr_in_comp'.
 rewrite -setX1.
 rewrite preimsetX.
 rewrite H. (* second to third line in the pencil-paper proof *)
 rewrite -!pr_in_comp'.
-by rewrite !pr_eq_set1.
+by rewrite !pr_in1.
 Qed.
 
 Lemma inde_RV2_comp : P|= X _|_ [% Y, Z] -> P|= (f `o X) _|_ [% (g `o Y), (h `o Z)].
 Proof.
-pose gh := (fun '(y, z) => (g y, h z)).    
+pose gh := (fun '(y, z) => (g y, h z)).
 have ->: [% g `o Y, h `o Z] = gh `o [%Y, Z] by [].
 apply inde_rv_comp.
 Qed.
@@ -184,13 +184,13 @@ Lemma RV2_inde_rv_snd : P |= [% X, Y] _|_ Z -> P |= Y _|_ Z.
 Proof.
 move/inde_rv_events'.
 move=> H y z.
-rewrite -[LHS]pr_eq_set1 pr_inE'.
+rewrite -[LHS]pr_in1 pr_inE'.
 rewrite -(snd_RV2 X [% Y, Z]) Pr_fdist_snd.
 rewrite -pr_inE'.
 rewrite setTE -setX1.
 rewrite pr_in_pairA.
 rewrite H.
-by rewrite -setTE pr_inE' -Pr_fdist_snd snd_RV2 -pr_inE' !pr_eq_set1.
+by rewrite -setTE pr_inE' -Pr_fdist_snd snd_RV2 -pr_inE' !pr_in1.
 Qed.
 
 
@@ -308,7 +308,7 @@ transitivity (`Pr[add_RV \in [set i]]).
 rewrite (reasoning_by_cases _ X).
 transitivity (\sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set i-k]) ]).
   apply eq_bigr=> k _.
-  rewrite !pr_eq_setE.
+  rewrite !pr_inE.
   rewrite /Pr.
   apply: eq_bigl.
   move=>r /=.
@@ -319,7 +319,7 @@ transitivity (\sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set i-k]) ]).
   move /eqP ->.
   rewrite [RHS]eq_sym.
   by rewrite subr_eq addrC eq_sym.
-under eq_bigr do rewrite setX1 pr_eq_set1 -cpr_eqE_mul.
+under eq_bigr do rewrite setX1 pr_in1 -cpr_eqE_mul.
 under eq_bigr=> k _.
   (* Similar to `have->:`, set the wanted form *)
   rewrite (_ : _ * _ = `Pr[ X = k ] * `Pr[ Y = (i - k) ] ); last first.
