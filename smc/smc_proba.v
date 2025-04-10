@@ -1,23 +1,23 @@
-(* infotheo: information theory and error-correcting codes in Coq               *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later              *)
+(* infotheo: information theory and error-correcting codes in Coq             *)
+(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 
 From mathcomp Require Import all_ssreflect ssralg finalg ssrnum matrix.
-From mathcomp Require Import reals Rstruct zmodp ring lra.
+From mathcomp Require Import mathcomp_extra reals Rstruct zmodp ring lra.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond graphoid.
 
 Import GRing.Theory.
 Import Num.Theory.
 
-(************************************************************************************)
-(*                              SMC "Useful Tools" probability lemmas               *)
-(*                                                                                  *)
-(*     From: Information-theoretically Secure Number-product Protocol,              *)
-(*           Sec. III.B  "Useful Tools"                                             *)
-(*     SHEN, Chih-Hao, et al. In: 2007 International Conference on Machine          *)
-(*     Learning and Cybernetics. IEEE, 2007. p. 3006-3011.                          *)
-(*                                                                                  *)
-(************************************************************************************)
+(******************************************************************************)
+(*                  SMC "Useful Tools" probability lemmas                     *)
+(*                                                                            *)
+(*     From: Information-theoretically Secure Number-product Protocol,        *)
+(*           Sec. III.B  "Useful Tools"                                       *)
+(*     SHEN, Chih-Hao, et al. In: 2007 International Conference on Machine    *)
+(*     Learning and Cybernetics. IEEE, 2007. p. 3006-3011.                    *)
+(*                                                                            *)
+(******************************************************************************)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -32,12 +32,11 @@ Local Open Scope fdist_scope.
 Local Definition R := Rdefinitions.R.
 
 Section conditionnally_independent_discrete_random_variables_extra.
-
-Variables (U: finType) (P : R.-fdist U) (A B C: finType).
+Variables (U : finType) (P : R.-fdist U) (A B C : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
-Lemma cinde_rv_sym :  X _|_  Y | Z -> Y _|_  X | Z.
-Proof. move=>H a b c. by rewrite mulrC cpr_eq_pairC. Qed.
+Lemma cinde_rv_sym : X _|_ Y | Z -> Y _|_  X | Z.
+Proof. by move=> H a b c; rewrite mulrC cpr_eq_pairC. Qed.
 
 End conditionnally_independent_discrete_random_variables_extra.
 
@@ -134,15 +133,17 @@ by rewrite fdistmapE.
 Qed.
 End more_inde_rv.
 
-Section more_independent_rv_lemmas.
+Lemma preimg_tt {T TY : finType} (P : R.-fdist T) (Y : {RV P -> TY}) (y : TY) :
+  [% unit_RV P, Y] @^-1: [set (tt, y)] = Y @^-1: [set y].
+Proof. by apply/setP => ?; rewrite !inE. Qed.
 
+Section more_independent_rv_lemmas.
 Variables (A : finType) (P : R.-fdist A) (TA TB TC TD : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
 Variables (UA UB UC: finType) (f : TA -> UA) (g : TB -> UB) (h : TC -> UC).
 
 Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
-
 
 Lemma RV2_indeC :
   P |= [% X, X] _|_ [% Z, Y] ->
@@ -202,11 +203,9 @@ Undo 2.
 move=> + a  /[swap] b c.
 Undo 1.
 move=> + a b c => /(_ a b (tt,c)).
-rewrite 3!cPr_eq_def.
-have->: finset (preim [% unit_RV P, Z] (pred1 (tt, c))) = finset (preim Z (pred1 c)).
-  apply /setP => x.
-  by rewrite !inE.
-by rewrite -!cPr_eq_def.
+rewrite 3!cPr_eq_finType.
+rewrite !preimg_tt.
+by rewrite -!cPr_eq_finType.
 Qed.
 
 (* Lemma 3.3 *)
@@ -352,19 +351,19 @@ Global Arguments add_RV_unif [T A P n].
 
 Notation "X `+ Y" := (add_RV X Y) : proba_scope.
 
+
 Section fdist_cond_prop.
 Variables T TX TY TZ : finType.
 Variables (P : R.-fdist T) (y : TY).
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
 
-Let E := finset (Y @^-1 y).
-Hypothesis E0 : Pr P E != 0.
+Hypothesis E0 : Pr P (Y @^-1: [set y]) != 0.
 
-Variable (X': {RV (fdist_cond E0) -> TX}).
+Variable (X' : {RV (fdist_cond E0) -> TX}).
 Hypothesis EX' : X' = X :> (T -> TX).
 
 Lemma Pr_fdist_cond_RV x : `Pr[ X' = x ] = `Pr[ X = x | Y = y ].
-Proof. by rewrite pr_eqE Pr_fdist_cond cPr_eq_def EX'. Qed.
+Proof. by rewrite pr_eqE_finType Pr_fdist_cond cPr_eq_finType EX'. Qed.
 
 Hypothesis Z_XY_indep : inde_rv Z [%X, Y].
 
@@ -375,44 +374,40 @@ rewrite /cinde_rv /= => H.
 move => /= x z.
 rewrite mulrC pr_eq_pairC.
 have := H z x (tt,y).
-rewrite !pr_eqE !Pr_fdist_cond !cPr_eq_def.
-have -> // : finset (preim [% unit_RV P, Y] (pred1 (tt, y))) = E.
-by apply/setP => e; rewrite !inE.
+by rewrite !pr_eqE_finType !Pr_fdist_cond !cPr_eq_finType preimg_tt.
 Qed.
+
 End fdist_cond_prop.
 
 Section lemma_3_5.
-
-Variable (T TY: finType) (TZ: finZmodType).
-Variable P : R.-fdist T.
-Variable n : nat.
-
-Variables (X Z: {RV P -> TZ}) (Y : {RV P -> TY} ).
+Variable (T TY : finType) (TZ : finZmodType).
+Variables (P : R.-fdist T) (X Z : {RV P -> TZ}) (Y : {RV P -> TY}).
 Let XZ : {RV P -> TZ} := X `+ Z.
 
-Hypothesis card_TZ : #|TZ| = n.+1.
-Hypothesis pZ_unif : `p_ Z = fdist_uniform card_TZ.
-
-Variable Z_XY_indep : inde_rv Z [%X, Y].
+Variable Z_XY_indep : P |= Z _|_ [%X, Y].
 
 Let Z_X_indep : inde_rv Z X.
 Proof. exact/cinde_rv_unit/decomposition/cinde_rv_unit/Z_XY_indep. Qed.
+
 Let Z_Y_indep : inde_rv Z Y.
-Proof. exact/cinde_rv_unit/decomposition/cinde_drv_2C/cinde_rv_unit/Z_XY_indep.
+Proof.
+exact/cinde_rv_unit/decomposition/cinde_drv_2C/cinde_rv_unit/Z_XY_indep.
 Qed.
 
+Variable n : nat.
+Hypothesis card_TZ : #|TZ| = n.+1.
+Hypothesis pZ_unif : `p_ Z = fdist_uniform card_TZ.
 
 Section iy.
-Variables (i : TZ) (y : TY).
-Let E := finset (Y @^-1 y).
-Hypothesis Y0 : Pr P E != 0.
+Variable (y : TY).
+Hypothesis Y0 : Pr P (Y @^-1: [set y]) != 0.
 
-Let X': {RV (fdist_cond Y0) -> TZ} := X.
-Let Z': {RV (fdist_cond Y0) -> TZ} := Z.
-Let XZ': {RV (fdist_cond Y0) -> TZ} := X' `+ Z'.
+Let X' : {RV (fdist_cond Y0) -> TZ} := X.
+Let Z' : {RV (fdist_cond Y0) -> TZ} := Z.
+Let XZ' : {RV (fdist_cond Y0) -> TZ} := X' `+ Z'.
 
-
-Lemma lemma_3_5 : `Pr[ XZ = i | Y = y] = `Pr[ XZ = i].  (* The paper way to prove P |= X\+Z _|_ Y *)
+(* The paper way to prove P |= X \+ Z _|_ Y *)
+Lemma lemma_3_5 z : `Pr[ XZ = z | Y = y] = `Pr[ XZ = z].
 Proof.
 rewrite -(Pr_fdist_cond_RV (X':=XZ')) //.
 rewrite pr_eqE' (@add_RV_mul _ _ _ X' Z'); last exact: fdist_cond_indep.
@@ -421,33 +416,31 @@ under eq_bigr => k _.
   rewrite (Pr_fdist_cond_RV (X:=Z)) //.
   rewrite [X in _ * X]cpr_eqE.
   rewrite Z_Y_indep.
-  rewrite -[(_/_)]mulrA mulrV; last by rewrite pr_eqE.
+  rewrite -[(_/_)]mulrA mulfV; last by rewrite pr_eqE_finType.
   rewrite mulr1 [X in _ * X]pr_eqE' pZ_unif fdist_uniformE /=.
   over.
-rewrite -big_distrl /=.  (* Pull the const part `Pr[ Y = (i - k) ] from the \sum_k *)
-rewrite /X' cPr_1 ?mul1r //; last by rewrite pr_eqE.
+(* Pull the const part `Pr[ Y = (i - k) ] from the \sum_k *)
+rewrite -big_distrl /=.
+rewrite /X' cPr_1 ?mul1r//; last by rewrite pr_eqE_finType.
 rewrite pr_eqE' (add_RV_unif X Z (card_TZ)) //.
 - by rewrite fdist_uniformE.
-- rewrite /inde_rv /= => /= x z.
-  rewrite mulrC pr_eq_pairC. (* Swap X _|_ Z to Z _|_ X  so we can apply Z_X_indep *)
-  exact: Z_X_indep.
+- rewrite /inde_rv /= => /= z0 z1.
+  by rewrite pr_eq_pairC/= Z_X_indep/= mulrC.
 Qed.
 
 End iy.
 
 Lemma lemma_3_5' : P |= XZ _|_ Y.
 Proof.
-apply/inde_rv_cprP.
-move => /= x y0 Hy.
-rewrite lemma_3_5 //.
-by rewrite -pr_eqE.
+apply/inde_rv_cprP  => /= x y y0.
+rewrite lemma_3_5//.
+by rewrite -pr_eqE_finType.
 Qed.
 
 End lemma_3_5.
 
 Section lemma_3_6.
- 
-Variables (T TY TX : finType)(TZ : finZmodType).
+Variables (T TY TX : finType) (TZ : finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
 Variables (i : TZ) (x1 : TX) (y : TY).
@@ -464,31 +457,26 @@ Hypothesis X0 : `Pr[ [% XnZ, X2] = (i, y) ] != 0.
 
 Lemma lemma_3_6 : `Pr[ X1 = x1 | [% X2, XnZ] = (y , i)] = `Pr[ X1 = x1 | X2 = y].
 Proof.
-have:= inde_RV2_cinde (X:=X1) (Z:=X2) (Y:=XnZ).
-move => H.
+have H := inde_RV2_cinde (X:=X1) (Z:=X2) (Y:=XnZ).
 rewrite cpr_eq_pairCr.
-apply: cinde_alt.
+apply: cinde_alt; last exact: X0.
 rewrite (inde_RV2_sym X1 X2 XnZ) in H.
 apply: H.
-rewrite inde_RV2_sym. 
+rewrite inde_RV2_sym.
 rewrite inde_rv_sym.
-have:= (@lemma_3_5' _ _ TZ P n Xn Z [% X1, X2] card_TZ pZ_unif).
-apply.
+apply: (@lemma_3_5' _ _ _ P Xn Z [% X1, X2] _ n card_TZ pZ_unif).
 apply/cinde_rv_unit.
 apply: cinde_drv_2C.
-by apply/cinde_rv_unit.
-exact: X0.
+exact/cinde_rv_unit.
 Qed.
 
 End lemma_3_6.
 
 Section theorem_3_7.
-
-Variables (T TX TY1 TY2: finType)(TZ: finZmodType).
+Variables (T TX TY1 TY2 : finType)(TZ : finZmodType).
 Variable P : R.-fdist T.
-Variable n : nat.
 Variables (X: {RV P -> TX}) (Z : {RV P -> TZ}).
-Variables (f1 : TX -> TY1) (f2 : TX -> TY2) (fm : TX -> TZ). 
+Variables (f1 : TX -> TY1) (f2 : TX -> TY2) (fm : TX -> TZ).
 
 Variable Z_X_indep : inde_rv Z X.
 
@@ -499,6 +487,7 @@ Let YmZ := Ym `+ Z.
 Let f x := (f1 x, f2 x, fm x).
 Let Y := f `o X.
 
+Variable n : nat.
 Hypothesis card_TZ : #|TZ| = n.+1.
 Variable pZ_unif : `p_ Z = fdist_uniform card_TZ.
 
@@ -507,12 +496,12 @@ Theorem mc_removal_pr y1 y2 ymz:
   `Pr[ [% Y2, Ym `+ Z] = (y2, ymz) ] != 0 ->
   `Pr[Y1 = y1|[%Y2, YmZ] = (y2, ymz)] = `Pr[Y1 = y1 | Y2 = y2].
 Proof.
-have H:= (@lemma_3_6 _ _ _ TZ _ n ymz y1 y2 Y2 Y1 Ym Z card_TZ).
-rewrite pr_eq_pairC in H.
-apply H.
-apply: pZ_unif.
-rewrite (_:[%_ , _] = Y) //.
-rewrite (_:Z = idfun `o Z) //. (* id vs. idfun*)
+have := @lemma_3_6 _ _ _ _ _ n ymz y1 y2 Y2 Y1 Ym Z card_TZ.
+rewrite pr_eq_pairC.
+apply.
+  exact: pZ_unif.
+rewrite (_ : [%_ , _] = Y) //.
+rewrite (_ : Z = idfun `o Z) //. (* id vs. idfun*)
 exact: inde_rv_comp.
 Qed.
 
