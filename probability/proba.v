@@ -408,7 +408,7 @@ Qed.
 
 Lemma Pr_domin_setXN {R : realType} (A B : finType) (P : R.-fdist (A * B)) E F :
   Pr P (E `* F) != 0 -> Pr P`1 E != 0.
-Proof. by apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
+Proof. by apply/contra => /eqP/fst_Pr_domin_setX => ?; exact/eqP. Qed.
 
 Lemma Pr_fdistmap {R : realType} (A B : finType) (f : A -> B) (d : R.-fdist A)
     (E : {set A}) : injective f ->
@@ -524,7 +524,7 @@ Section random_variable_eqType.
 Context {R : realType}.
 Variables (U : finType) (A : eqType) (P : R.-fdist U).
 
-Definition pr_eq (X : {RV P -> A}) (a : A) := locked (Pr P (finset (X @^-1 a))).
+Definition pr_eq (X : {RV P -> A}) (a : A) := locked (Pr P ((finset (X @^-1 a)))).
 Local Notation "`Pr[ X = a ]" := (pr_eq X a).
 
 Lemma pr_eqE (X : {RV P -> A}) (a : A) : `Pr[ X = a ] = Pr P (finset (X @^-1 a)).
@@ -570,6 +570,11 @@ End random_variable_order.
 Notation "'`Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
 Notation "'`Pr[' X '<=' r ']'" := (pr_leq X r) : proba_scope.
 
+Lemma preimg_set1 {R : realType} (U : finType) (P : R.-fdist U) (A : finType)
+    (X : {RV P -> A}) (a : A) :
+  X @^-1: [set a] = finset (preim X (pred1 a)).
+Proof. by apply/setP => x; rewrite !inE. Qed.
+
 Section random_variable_finType.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A : finType).
@@ -585,9 +590,14 @@ Proof. by rewrite /pr_eq_set; unlock. Qed.
 Definition dist_of_RV (X : {RV P -> A}) : R.-fdist A := fdistmap X P.
 Local Notation "`p_ X" := (dist_of_RV X).
 
+(* TODO: rename *)
+Lemma pr_eqE_finType(X : {RV P -> A}) (a : A) :
+  `Pr[ X = a ] = Pr P (X @^-1: [set a]).
+Proof. by rewrite pr_eqE -preimg_set1. Qed.
+
 Lemma pr_eqE' (X : {RV P -> A}) (a : A) : `Pr[ X = a ] = `p_X a.
 Proof.
-by rewrite /dist_of_RV fdistmapE pr_eqE /Pr /=; apply eq_bigl => i; rewrite inE.
+by rewrite pr_eqE_finType /Pr fdistmapE//; apply eq_bigl => i; rewrite !inE.
 Qed.
 
 Lemma pr_eq1 (X : {RV P -> A}) : \sum_a `Pr[ X = a ] = 1.
@@ -843,7 +853,7 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 Variables (TX : {RV P -> A}) (TY : {RV P -> B}).
 
 Lemma pr_in_domin_RV2 E F : `Pr[ X \in E] = 0 -> `Pr[ [% X, Y] \in E `* F] = 0.
-Proof. by move=> H; rewrite pr_inE' Pr_domin_setX // fst_RV2 -pr_inE'. Qed.
+Proof. by move=> H; rewrite pr_inE' fst_Pr_domin_setX // fst_RV2 -pr_inE'. Qed.
 
 Lemma pr_eq_domin_RV1 a b : `Pr[ TY = b ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
@@ -1697,6 +1707,16 @@ Proof. by rewrite /cPr_eq; unlock. Qed.
 
 End crandom_variable_eqType.
 Notation "`Pr[ X = a | Y = b ]" := (cPr_eq X a Y b) : proba_scope.
+
+Section cPr_eq_finType.
+Context {R : realType}.
+Variables (U : finType) (A B : finType) (P : R.-fdist U).
+
+Lemma cPr_eq_finType (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :
+  `Pr[ X = a | Y = b ] = `Pr_P [ X @^-1: [set a] | Y @^-1: [set b] ].
+Proof. by rewrite cPr_eq_def !preimg_set1. Qed.
+
+End cPr_eq_finType.
 
 #[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_eq`")]
 Notation cpr_eq0 := cPr_eq (only parsing).

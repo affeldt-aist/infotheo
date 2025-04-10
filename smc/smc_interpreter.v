@@ -1,17 +1,19 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix Rstruct ring.
+From mathcomp Require Import all_ssreflect all_algebra fingroup finalg ring.
+From mathcomp Require Import Rstruct.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy smc_tactics.
-
-Import GRing.Theory.
-Import Num.Theory.
-Module scp := smc_entropy.smc_entropy_proofs.
+Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
+Require Import smc_tactics.
 
 (******************************************************************************)
 (*                                                                            *)
 (*     Interpreter for Secure Multiparty Protocols                            *)
 (*                                                                            *)
 (******************************************************************************)
+
+Import GRing.Theory.
+Import Num.Theory.
+Module scp := smc_entropy.smc_entropy_proofs.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -236,7 +238,7 @@ Lemma smc_scalar_product_ok :
            one t;
            vec xb';
            one ra;
-           vec sa; 
+           vec sa;
            vec xa];
        [:: one yb;
            vec xa';
@@ -278,9 +280,8 @@ Definition is_scalar_product (trs: smc_scalar_product_party_tracesT) :=
 End scalar_product.
 
 Section pi2.
-  
-Section information_leakage_proof.
 
+Section information_leakage_proof.
 Variable n m : nat.
 Variable T : finType.
 Variable P : R.-fdist T.
@@ -331,7 +332,7 @@ Record scalar_product_random_inputs :=
     s2 : {RV P -> VX};
     r1 : {RV P -> TX};
     y2 : {RV P -> TX};
-    
+ 
     (* TODO: prove others via these basic hypotheses
     x1_indep : P |= x1 _|_ [%x2, s1, s2, r1, y2];
     x2_indep : P |= x2 _|_ [%x1, s1, s2, r1, y2];
@@ -464,18 +465,18 @@ transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
 by rewrite bob_traces_ok cond_entropyC scp.fun_cond_removal.
 Qed.
 
-Let pnegy2_unif :
-  `p_ (neg_RV y2) = fdist_uniform card_TX.
-Proof. rewrite -(scp.neg_RV_dist_eq (py2_unif inputs)).
-exact: (py2_unif inputs). Qed.
+Let pnegy2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
+Proof.
+rewrite -(scp.neg_RV_dist_eq (py2_unif inputs)).
+exact: (py2_unif inputs).
+Qed.
 
-Let x2s2_x1'_indepP :
-  P |= [% x2, s2] _|_ x1'.
+Let x2s2_x1'_indepP : P |= [% x2, s2] _|_ x1'.
 Proof.
 have px1_s1_unif: `p_ (x1 \+ s1 : {RV P -> _}) = fdist_uniform card_VX.
   rewrite -(add_RV_unif x1 s1) ?ps1_unif //.
   exact: x1_s1_indep.
-have H:= @lemma_3_5' T (VX * VX)%type VX P q x1 s1 [%x2, s2] card_VX (ps1_unif inputs) (s1_x1x2s2_indep inputs).
+have H := @lemma_3_5' T (VX * VX)%type VX P x1 s1 [%x2, s2] (s1_x1x2s2_indep inputs) q card_VX (ps1_unif inputs).
 rewrite inde_rv_sym in H.
 exact: H.
 Qed.
@@ -521,8 +522,8 @@ Let x1x2s2x1'_r2_indep :
   P |= [% x1, [% x2, s2, x1']] _|_ r2.
 Proof.
 rewrite inde_rv_sym /r2 scp.sub_RV_eq.
-apply: (lemma_3_5' (card_TZ:=card_TX)).
-  by rewrite -(scp.neg_RV_dist_eq (card_TX:=card_TX)) pr1_unif.
+apply: (@lemma_3_5' _ _ _ _ _ _ _ _ _ card_TX); last first.
+  by rewrite -(@scp.neg_RV_dist_eq _ _ _ card_TX) pr1_unif.
 rewrite inde_rv_sym.
 apply: scp.neg_RV_inde_eq.
 pose f := fun (vs: (VX * VX * VX * VX)) =>
@@ -532,8 +533,7 @@ have := s1x2x1x2_r1_indep inputs.
 by apply_inde_rv_comp f g.
 Qed.
 
-Let x2s2x1'_r2_indep :
-  P |= [% x2, s2, x1'] _|_ r2.
+Let x2s2x1'_r2_indep : P |= [% x2, s2, x1'] _|_ r2.
 Proof.
 have := x1x2s2x1'_r2_indep.
 pose f := fun (vs: (VX * (VX * VX * VX))) =>
@@ -546,8 +546,8 @@ Qed.
    and all technical lemmas about intermediate results,
    to prove information leakage free equations in Sec.[III.C]{Shen2007}
 
-   H(x2 | VIEW_1^{\pi_2}) = H(x2) ... Alice obtain no new knowledge about `x2` from the protocol 
-   H(x1 | VIEW_2^{\pi_2}) = H(x1) ... Bob obtain no new knowledge about `x1` from the protocol 
+   H(x2 | VIEW_1^{\pi_2}) = H(x2) ... Alice obtain no new knowledge about `x2` from the protocol
+   H(x1 | VIEW_2^{\pi_2}) = H(x1) ... Bob obtain no new knowledge about `x1` from the protocol
 
   *)
 
@@ -570,10 +570,10 @@ Theorem scalar_product_is_leakage_freeP :
   scalar_product_is_leakage_free.
 Proof.
 split.
-  rewrite alice_traces_entropy.
+- rewrite alice_traces_entropy.
   exact: proof_alice.
-rewrite bob_traces_entropy.
-exact: proof_bob.
+- rewrite bob_traces_entropy.
+- exact: proof_bob.
 Qed.
 
 End information_leakage_proof.
