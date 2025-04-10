@@ -59,13 +59,11 @@ Local Open Scope vec_ext_scope.
 Reserved Notation "u *d w" (at level 40).
 Reserved Notation "u \*d w" (at level 40).
 
-Local Definition R := Rdefinitions.R.
-
 Module smc_entropy_proofs.
 
 Section extra_pr.
-
-Variables (T TX TY: finType)(TX': finZmodType).
+Context {R : realType}.
+Variables (T TX TY : finType) (TX' : finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
 
@@ -82,7 +80,7 @@ Qed.
 
 Lemma cpr_eq_id (U : eqType) (X : {RV P -> U}) (x : U) :
   `Pr[ X = x ] != 0 -> `Pr[ X = x | X = x ] = 1.
-Proof. by move=> ?; rewrite cpr_eqE pr_eq_diag divrr. Qed.
+Proof. by move=> ?; rewrite cpr_eqE pr_eq_diag divff. Qed.
 
 End extra_pr.
 
@@ -117,6 +115,8 @@ End extra_pr2.
 *)
 
 Section inde_rv.
+Context {R : realType}.
+
 Lemma dist_inde_rv_prod (T TX TY : finType) (P : R.-fdist T)
   (X : {RV P -> TX}) (Y : {RV P -> TY}) :
   inde_rv X Y -> `p_ [% X, Y] = `p_ X `x `p_ Y.
@@ -125,9 +125,11 @@ move=> iXY.
 apply: fdist_ext => -[x y] /=.
 by rewrite fdist_prodE/= -!pr_eqE' iXY.
 Qed.
+
 End inde_rv.
 
 Section entropy_with_indeRV.
+Context {R : realType}.
 Variables (T TX TY TZ : finType).
 Variable P : R.-fdist T.
 
@@ -160,8 +162,10 @@ by have:= H x xD; rewrite yfx eqxx.
 Qed.
 
 Section entropy_fdistmap.
+Context {R : realType}.
+
 Lemma entropy_fdistmap
-  (R : realType) (A B : finType) (f : A -> B) (P : R.-fdist A) :
+  (A B : finType) (f : A -> B) (P : R.-fdist A) :
   injective f -> `H (fdistmap f P) = `H P.
 Proof.
 move=> f_inj; congr -%R; set rhs := RHS.
@@ -179,7 +183,24 @@ rewrite fdistmapE/= big_pred0 ?mul0r// => a.
 rewrite inE/= eq_sym.
 exact/negP/negP/bfx.
 Qed.
+
 End entropy_fdistmap.
+
+Lemma cond_entropyC {R : realType} (T : finType) (P : R.-fdist T)
+    (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) :
+  `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
+Proof.
+rewrite /cond_entropy_RV /cond_entropy /=.
+rewrite (reindex (fun p : C * B => (p.2, p.1))) /=; last first.
+  by exists (fun p : B * C => (p.2, p.1)) => -[b c].
+apply: eq_bigr => -[c b] _ /=.
+rewrite !snd_RV2 -!pr_eqE' pr_eq_pairC.
+congr (_ * _).
+rewrite /cond_entropy1; congr (- _).
+rewrite /jcPr !snd_RV2.
+apply: eq_bigr => a _.
+by rewrite !setX1 !Pr_set1 -!pr_eqE' !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
+Qed.
 
 Section joint_entropyA.
 Context {R : realType} (A B C : finType) (P : R.-fdist (A * B * C)).
@@ -208,6 +229,7 @@ Qed.
 End joint_entropy_RVCA.
 
 Section cpr_cond_entropy1_RV.
+Context {R : realType}.
 Variables (T TY1 TY2 : finType) (TY3 : finType) (P : R.-fdist T).
 Variables (Y1 : {RV P -> TY1}) (Y2 : {RV P -> TY2}) (Y3 : {RV P -> TY3}).
 
@@ -225,8 +247,8 @@ Qed.
 End cpr_cond_entropy1_RV.
 
 Section cpr_cond_entropy_proof.
-
-Variables (T TY1 TY2 : finType)(TY3 : finZmodType) (P : R.-fdist T).
+Context {R : realType}.
+Variables (T TY1 TY2 : finType) (TY3 : finZmodType) (P : R.-fdist T).
 Variables (Y1 : {RV P -> TY1})(Y2 : {RV P -> TY2})(Y3 : {RV P -> TY3}).
 
 Lemma cpr_cond_entropy : P |= Y2 _|_ Y3 ->
@@ -255,8 +277,8 @@ Qed.
 End cpr_cond_entropy_proof.
 
 Section lemma_3_8_prep.
-
-Variables (T TX TY TZ: finType).
+Context {R : realType}.
+Variables (T TX TY TZ : finType).
 Variable P : R.-fdist T.
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
 Let Z := f `o Y.
@@ -279,7 +301,7 @@ Proof. by move=> Yy0; rewrite cpr_eqE pr_eq_ZY_Y divff. Qed.
 
 Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
 (* TODO tried to define it as `Pr[ Y = y ] > 0 and then use `Rlt_not_eq` in the proof,
-   but this hypothesis would be wrapped by `is_true` that `Rlt_not_eq` cannot be applied directly. 
+   but this hypothesis would be wrapped by `is_true` that `Rlt_not_eq` cannot be applied directly.
 *)
 
 (* H(f(Y)|X,Y) = H(f(Y)|Y) = 0 *)
@@ -332,6 +354,7 @@ Qed.
 End lemma_3_8_prep.
 
 Section fun_cond_entropy_proof.
+Context {R : realType}.
 Variables (T TX TY TZ : finType).
 Variable P : R.-fdist T.
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
@@ -365,13 +388,14 @@ Qed.
 End fun_cond_entropy_proof.
 
 Section cinde_rv_comp_removal.
+Context {R : realType}.
+Variables (T : finType) (TX TY TZ TO : finType) (x : TX) (y : TY) (z : TZ).
+Variables (P : R.-fdist T) (X : {RV P -> TX}) (Y : {RV P -> TY})
+  (Z : {RV P -> TZ})(O : {RV P -> TO}).
+Variables (fy : TO -> TY)(fz : TO -> TZ).
 
-Variables (T: finType)(TX TY TZ TO: finType)(x: TX)(y: TY)(z: TZ).
-Variables (P: R.-fdist T)(X: {RV P -> TX})(Y: {RV P -> TY})(Z: {RV P -> TZ})(O: {RV P -> TO}).
-Variables (fy: TO -> TY)(fz: TO -> TZ).
-
-Hypothesis XYZ_cinde: X _|_ (fy `o O) | (fz `o O).
-Hypothesis YZneq0: `Pr[ [% fy `o O, fz `o O] = (y, z) ] != 0.
+Hypothesis XYZ_cinde : X _|_ (fy `o O) | (fz `o O).
+Hypothesis YZneq0 : `Pr[ [% fy `o O, fz `o O] = (y, z) ] != 0.
 
 Lemma cinde_rv_comp_removal:
    `Pr[ X = x | (fz `o O) = z ] = `Pr[ X = x | [% fy `o O, fz `o O ] = (y, z) ].
@@ -384,13 +408,13 @@ Qed.
 End cinde_rv_comp_removal.
 
 Section inde_ex.
-
-Variables (A: finType)(m n: nat)(P : R.-fdist A).
+Context {R : realType}.
+Variables (A : finType) (m n : nat)(P : R.-fdist A).
 Variables (TX1 TX2 TX3 : finType).
 Variables (s1 : {RV P -> TX1}) (s2 : {RV P -> TX2}) (r: {RV P -> TX3}).
-Variable (op: TX1 -> TX2 -> TX3).
+Variable op : TX1 -> TX2 -> TX3.
 
-Let rv_op (rv1:{RV P -> TX1})(rv2:{RV P -> TX2}) : {RV P -> TX3}  :=
+Let rv_op (rv1 : {RV P -> TX1}) (rv2 : {RV P -> TX2}) : {RV P -> TX3}  :=
   fun p => op (rv1 p)(rv2 p).
 
 Hypothesis s1_s2_indep : P|= s1 _|_ s2.
@@ -459,9 +483,10 @@ Qed.
 
 End inde_ex.
 
-Arguments s1Ms2_r_indep [_ _ _ _ _] s1 s2 r.
+Arguments s1Ms2_r_indep [_ _ _ _ _ _] s1 s2 r.
 
 Section neg_RV_lemmas.
+Context {R : realType}.
 Variables (T : finType) (m n: nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Hypothesis card_TX : #|TX| = m.+2.
@@ -488,7 +513,8 @@ apply: eq_bigr=> a ?.
 by rewrite /neg_RV !fdist1E /= sub0r eqr_oppLR.
 Qed.
 
-Lemma neg_RV_inde_eq (U : finType)(V : finZmodType)(X : {RV P -> U})(Y : {RV P -> V}):
+Lemma neg_RV_inde_eq (U : finType) (V : finZmodType) (X : {RV P -> U})
+    (Y : {RV P -> V}):
   P |= X _|_ Y ->
   P |= X _|_ neg_RV Y.
 Proof.
@@ -503,7 +529,7 @@ Qed.
 End neg_RV_lemmas.
 
 Section dotproduct.
-
+Context {R : realType}.
 Variable TX : ringType.
 Variable n : nat.
 Variable T : finType.
@@ -521,12 +547,13 @@ Notation "u \*d w" := (dotproduct_rv u w).
 Arguments dotproduct {TX n}.
 
 Section unif_lemmas.
-Variables (T : finType) (m n : nat)(P : R.-fdist T).
+Context {R : realType}.
+Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Variables (s1 s2: {RV P -> 'rV[TX]_n})(r: {RV P -> TX}).
 
 Hypothesis card_TX : #|TX| = m.+2.
-Hypothesis pr_unif: `p_ r = fdist_uniform card_TX.
+Hypothesis pr_unif : `p_ r = fdist_uniform card_TX.
 Hypothesis s1_s2_indep : P|= s1 _|_ s2.
 Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
 
@@ -550,8 +577,8 @@ End unif_lemmas.
 Section pi2.
 
 Section scalar_product_def.
-
-Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Context {R : realType}.
+Variables (T : finType) (m n: nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 
 Definition SMC := 'rV[TX]_n -> 'rV[TX]_n -> (TX * TX).
@@ -603,7 +630,6 @@ rewrite dot_productC.
 rewrite (dot_productC xb sa).
 rewrite (dot_productC (xb+sb) sa).
 rewrite dot_productDr.
-
 ring.
 Qed.
 (*rewrite (@GRing.add R).[AC(2*2)(1*4*(3*2))].*)
@@ -611,10 +637,10 @@ Qed.
 End scalar_product_def.
 
 Section eqn2_proof.
-
-Variables (T: finType)(m n: nat)(P : R.-fdist T).
+Context {R : realType}.
+Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
-Variables (r1 r2 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Variables (r1 r2 y2 : {RV P -> TX}) (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
 Let x1' := x1 \+ s1.
 Let x2' := x2 \+ s2.
 Let t := x1' \*d x2 \+ r2 \- y2.
@@ -623,9 +649,8 @@ Let y1 := t \- x2' \*d s1 \+ r1.
 Let f: ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
   let '(xa, sa, ra, xb', t) := z in t - (xb' *d sa) + ra.
 
-Let y1_fcomp :
-  y1 = f `o [%x1, s1, r1, x2', t].
-Proof. by apply boolp.funext. Qed.
+Let y1_fcomp : y1 = f `o [%x1, s1, r1, x2', t].
+Proof. exact: boolp.funext. Qed.
 
 Lemma eqn2_proof:
   `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
@@ -634,10 +659,11 @@ Proof. by rewrite y1_fcomp; exact: fun_cond_removal. Qed.
 End eqn2_proof.
 
 Section eqn3_proof.
-Variables (T : finType) (m n: nat) (P : R.-fdist T).
+Context {R : realType}.
+Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 
-Variables (r1 r2 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
+Variables (r1 r2 y2 : {RV P -> TX}) (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
 Let x1' := x1 \+ s1.
 Let x2' := x2 \+ s2.
 Let t := x1' \*d x2 \+ r2 \- y2.
@@ -745,13 +771,14 @@ Qed.
 End eqn3_proof.
 
 Section eqn4_proof.
+Context {R : realType}.
 Variables (T : finType) (m n: nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n).-1.+1.
-(* Coq cannot unify `(m.+2^n)%nat.-1.+1` in the definition of fdist_uniform and `(m.+2^n)%nat`,
-   so we cannot assume `(m.+2^n)%nat` here.
+(* Coq cannot unify `(m.+2^n).-1.+1` in the definition of fdist_uniform and `(m.+2^n)%nat`,
+   so we cannot assume `(m.+2^n)` here.
 
-   Check fdist_uniform (n:=(m.+2^n)%nat.-1) card_rVTX.
+   Check fdist_uniform (n:=(m.+2^n).-1) card_rVTX.
 *)
 
 Variables (r1 : {RV P -> TX}) (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
@@ -823,6 +850,7 @@ Qed.
 End eqn4_proof.
 
 Section eqn4_1_proof.
+Context {R : realType}.
 Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Variables (r1 : {RV P -> TX}) (x1 x2 s1 : {RV P -> 'rV[TX]_n}).
@@ -841,6 +869,7 @@ Qed.
 End eqn4_1_proof.
 
 Section pi2_alice_is_leakage_free_proof.
+Context {R : realType}.
 Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Variables (r1 y2 : {RV P -> TX}) (x1 x2 s1 s2 : {RV P -> 'rV[TX]_n}).
@@ -856,7 +885,7 @@ Hypothesis s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2].
 Hypothesis x1s2r1_x2_indep: P |= [% x1, s1, r1] _|_ x2.
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
-Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n)%nat.-1.+1.
+Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n).-1.+1.
 Hypothesis ps2_unif : `p_ s2 = fdist_uniform card_rVTX.
 
 Let negy2_x1x2s1s2r1r2_eqn3_indep :
@@ -880,6 +909,7 @@ Qed.
 End pi2_alice_is_leakage_free_proof.
 
 Section eqn6_proof.
+Context {R : realType}.
 Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Hypothesis card_TX : #|TX| = m.+2.
@@ -946,6 +976,7 @@ Qed.
 End eqn6_proof.
 
 Section eqn7_proof.
+Context {R : realType}.
 Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 
@@ -1003,6 +1034,7 @@ Qed.
 End eqn7_proof.
 
 Section eqn8_proof.
+Context {R : realType}.
 Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 
@@ -1025,7 +1057,7 @@ Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> 'rV[TX]_n := fun z =
 
 Let Z := s1.
 (*Hypothesis card_TX: #|TX| = m.+2.*)
-Hypothesis card_rVTX: #|'rV[TX]_n| = (m.+2 ^ n)%nat.-1.+1.
+Hypothesis card_rVTX: #|'rV[TX]_n| = (m.+2 ^ n).-1.+1.
 Hypothesis pZ_unif : `p_ Z = fdist_uniform card_rVTX.
 
 Let W1 := f1 `o O.   (* x1 *)
@@ -1073,6 +1105,7 @@ Qed.
 End eqn8_proof.
 
 Section eqn8_1_proof.
+Context {R : realType}.
 Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Variables (x1 x2 s2 : {RV P -> 'rV[TX]_n}).
@@ -1091,6 +1124,7 @@ Qed.
 End eqn8_1_proof.
 
 Section pi2_bob_view_is_leakage_free_proof.
+Context {R : realType}.
 Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Variables (r1 y2: {RV P -> TX})(x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
@@ -1113,7 +1147,7 @@ Hypothesis s1_s2_indep : P |= s1 _|_ s2.
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis pr1_unif : `p_ r1 = fdist_uniform card_TX.
 (*Hypothesis py2_unif : `p_ y2 = fdist_uniform card_TX.*)
-Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n)%nat.-1.+1.
+Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n).-1.+1.
 Hypothesis ps1_unif : `p_ s1 = fdist_uniform card_rVTX.
 
 Let pr2_unif := ps1_dot_s2_r_unif pr1_unif s1_s2_indep s1s2_r1_indep.
@@ -1138,7 +1172,7 @@ End pi2.
 
 (* TODO: Using graphoid for combinations of independ random variables. *)
 Section mutual_indep.
-
+Context {R : realType}.
 (* Pairwise independence: Any collection of mutually independent random variables is pairwise independent
 
 (But pairwise independence does not imply mutual independence.
