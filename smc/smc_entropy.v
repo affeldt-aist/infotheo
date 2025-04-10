@@ -243,35 +243,7 @@ apply: Hy2y3.
 by rewrite Y2Y3indep mulf_eq0 negb_or Hy2.
 Qed.
 
-(* TODO: rename because there is no snd anymore *)
-Lemma snd_extra_indep x :
-  `Pr[ [% Y2, Y3] = x ] = `Pr[ Y2 = x.1 ] * `Pr[ Y3 = x.2 ].
-Proof.
-rewrite -!pr_in1 !(reasoning_by_cases _ Y1).
-rewrite big_distrl /=; apply: eq_bigr => y1 _.
-rewrite -reasoning_by_cases !setX1 !pr_in1.
-rewrite [LHS]pr_eq_pairC [in RHS]pr_eq_pairC.
-have [Hy3|Hy3] := eqVneq `Pr[Y3 = x.2] 0.
-  move: x => [x1 x2] /= in Hy3 *.
-  by rewrite Hy3 pr_eq_pairA/= pr_eq_domin_RV1// mulr0.
-have := Pr_neq0_cond_removal y1 x.1 Hy3.
-rewrite !cpr_eqE Y2Y3indep.
-have [Hy2 _|Hy2] := eqVneq `Pr[Y2 = x.1] 0.
-  case: x => [x1 x2] /= in Hy3 Hy2 *.
-  by rewrite pr_eq_pairCA pr_eq_domin_RV2// pr_eq_pairC pr_eq_domin_RV2// mul0r.
-move/(f_equal (fun z => z * (`Pr[Y2 = x.1] * `Pr[Y3 = x.2]))).
-rewrite -[in LHS]mulrA mulVf//; last by rewrite mulf_eq0 negb_or Hy2.
-rewrite mulrA -(mulrA _ _^-1). (* Coq identify the A / B is ^-1.*)
-by rewrite mulVf // !mulr1.
-(*
-the above 4 lines can be replaced by the following two,
-temporarily removed because for some reason it fails on my machine
-move=> H; apply: (@divIf _ `Pr[Y2=y2])=> //.
-by rewrite mulrAC -H; field; apply/andP; split.*)
-Qed.
-
 End pr_entropy.
-Arguments snd_extra_indep {T TY1 TY2 TY3 P} Y1.
 
 Section cpr_cond_entropy_proof.
 
@@ -292,8 +264,8 @@ pose f y2 y3 := `Pr[Y2 = y2] * `Pr[Y3 = y3] * `H[Y1 | Y2 = y2].
 transitivity (\sum_a f a.1 a.2).
   apply eq_bigr => a _.
   have [Ha|Ha] := eqVneq (`Pr[Y2 = a.1] * `Pr[Y3 = a.2]) 0.
-    by rewrite /f Ha mul0r (snd_extra_indep Y1)// Ha mul0r.
-  rewrite /f (snd_extra_indep Y1)//; congr (_ * _ * _).
+    by rewrite /f Ha mul0r [in X in X * _](surjective_pairing a) Hinde Ha mul0r.
+  rewrite /f [in X in X * _](surjective_pairing a) Hinde; congr (_ * _ * _).
   have [Hy3|Hy3] := eqVneq `Pr[Y3 = a.2] 0.
     by rewrite Hy3 mulr0 eqxx in Ha.
   rewrite [in LHS](surjective_pairing a).
@@ -396,8 +368,7 @@ Qed.
 End lemma_3_8_prep.
 
 Section fun_cond_entropy_proof.
-
-Variables (T TX TY TZ: finType).
+Variables (T TX TY TZ : finType).
 Variable P : R.-fdist T.
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
 Let Z := f `o Y.
