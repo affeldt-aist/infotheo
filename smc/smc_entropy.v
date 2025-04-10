@@ -208,14 +208,9 @@ Qed.
 
 End joint_entropy_RVCA.
 
-Section pr_entropy.
-Variables (T TY1 TY2 : finType) (TY3 : finZmodType) (P : R.-fdist T).
-Variable n : nat.
+Section cpr_cond_entropy1_RV.
+Variables (T TY1 TY2 : finType) (TY3 : finType) (P : R.-fdist T).
 Variables (Y1 : {RV P -> TY1}) (Y2 : {RV P -> TY2}) (Y3 : {RV P -> TY3}).
-
-Hypothesis card_Y3 : #|TY3| = n.+1.
-Hypothesis pY3_unif : `p_ Y3 = fdist_uniform card_Y3.
-Hypothesis Y2Y3indep : P |= Y2 _|_ Y3.
 
 Lemma cpr_cond_entropy1_RV y2 y3 :
   (forall y1, `Pr[Y1 = y1 | Y2 = y2] = `Pr[Y1 = y1 | [%Y2, Y3] = (y2, y3)]) ->
@@ -228,37 +223,19 @@ apply: eq_bigr => a _.
 by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_in1 H.
 Qed.
 
-Hypothesis Hy2y3 : forall y1 y2 y3, `Pr[[%Y2, Y3] = (y2, y3)] != 0 ->
-  `Pr[ Y1 = y1 | [%Y2, Y3] = (y2, y3) ] = `Pr[ Y1 = y1 | Y2 = y2 ].
-
-Lemma Pr_neq0_cond_removal y1 y2 y3 : `Pr[Y3 = y3] != 0 ->
-  `Pr[ Y1 = y1 | [%Y2, Y3] = (y2, y3) ] = `Pr[ Y1 = y1 | Y2 = y2 ].
-Proof.
-move=> Hy3neq0.
-have [Hy2|Hy2] := eqVneq `Pr[Y2 = y2] 0.
-  rewrite !cpr_eqE Y2Y3indep.
-  rewrite Hy2 mul0r.
-  by rewrite invr0 !mulr0.
-apply: Hy2y3.
-by rewrite Y2Y3indep mulf_eq0 negb_or Hy2.
-Qed.
-
-End pr_entropy.
+End cpr_cond_entropy1_RV.
 
 Section cpr_cond_entropy_proof.
 
-Variables (T TY1 TY2 : finType)(TY3 : finZmodType)(P : R.-fdist T).
-Variables (Y1 : {RV (P) -> (TY1)})(Y2 : {RV (P) -> (TY2)})(Y3 : {RV (P) -> (TY3)}).
+Variables (T TY1 TY2 : finType)(TY3 : finZmodType) (P : R.-fdist T).
+Variables (Y1 : {RV P -> TY1})(Y2 : {RV P -> TY2})(Y3 : {RV P -> TY3}).
 
-Lemma cpr_cond_entropy (n: nat)(card_TY3 : #|TY3| = n.+1):
-  `p_ Y3 = fdist_uniform card_TY3 ->
-  P |= Y2 _|_ Y3 ->
+Lemma cpr_cond_entropy : P |= Y2 _|_ Y3 ->
   (forall y1 y2 y3, `Pr[ [% Y2, Y3] = (y2, y3) ] != 0 ->
-     `Pr[ Y1 = y1 | [% Y2, Y3] = (y2, y3) ] =
-     `Pr[ Y1 = y1 | Y2 = y2 ]) ->
+     `Pr[ Y1 = y1 | [% Y2, Y3] = (y2, y3) ] = `Pr[ Y1 = y1 | Y2 = y2 ]) ->
   `H( Y1 | [% Y2, Y3]) = `H( Y1 | Y2).
 Proof.
-move=> Hunif Hinde Hremoval.
+move=> Hinde Hremoval.
 rewrite cond_entropy_RVE'/=.
 pose f y2 y3 := `Pr[Y2 = y2] * `Pr[Y3 = y3] * `H[Y1 | Y2 = y2].
 transitivity (\sum_a f a.1 a.2).
@@ -270,7 +247,7 @@ transitivity (\sum_a f a.1 a.2).
     by rewrite Hy3 mulr0 eqxx in Ha.
   rewrite [in LHS](surjective_pairing a).
   apply/esym/cpr_cond_entropy1_RV => y1.
-  by rewrite Pr_neq0_cond_removal.
+  by rewrite Hremoval// Hinde.
 rewrite -pair_bigA /=; apply: eq_bigr => y2 _.
 rewrite snd_RV2 -pr_eqE' -/(`H[_ | _ = _]).
 by rewrite -big_distrl/= -big_distrr/= pr_eq1 mulr1.
@@ -795,7 +772,7 @@ Lemma eqn3_proof:
   `H(x2|[%x1, s1, r1, x2', t]) = `H(x2|[%x1, s1, r1, x2']).
 Proof.
 rewrite -eq_W1_RV -eq_W2_RV -eq_WmZ_RV eq_Wm_RV.
-have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep.
+have Ha := cpr_cond_entropy W2_WmZ_indep.
 apply Ha => w w2 wmz Hneq0.
 by have := mc_removal_pr f1 Z_O_indep pZ_unif w Hneq0.
 Qed.
@@ -882,7 +859,7 @@ Qed.
 Lemma eqn4_proof: eqn4.
 Proof.
 rewrite /eqn4.
-have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep _.
+have Ha := cpr_cond_entropy W2_WmZ_indep _.
 apply Ha => w w2 wmz Hneq0.
 simpl in *.
 by have := mc_removal_pr snd Z_O_indep pZ_unif w Hneq0.
@@ -1007,7 +984,7 @@ Lemma eqn6_proof:
   `H(x1|[%[%x2, s2, x1', r2], y2]) = `H(x1|[%x2, s2, x1', r2]).
 Proof.
 rewrite -eq_W1_RV -eq_W2_RV -eq_Wm_RV.
-have Ha := cpr_cond_entropy pWm_unif W2_Wm_indep _.
+have Ha := cpr_cond_entropy W2_Wm_indep _.
 apply Ha => w w2 wm Hneq0.
 simpl in *.
 rewrite pr_eq_pairC in Hneq0.
@@ -1070,7 +1047,7 @@ Lemma eqn7_proof:
   `H(x1|[%[%x2, s2, x1'], r2]) = `H(x1|[%x2, s2, x1']).
 Proof.
 rewrite -eq_W1_RV -eq_W2_RV -eq_Wm_RV.
-have Ha := cpr_cond_entropy pWm_unif W2_Wm_indep _.
+have Ha := cpr_cond_entropy W2_Wm_indep _.
 apply Ha => w w2 wm Hneq0.
 simpl in *.
 rewrite pr_eq_pairC in Hneq0.
@@ -1157,7 +1134,7 @@ Lemma eqn8_proof:
 Proof.
 rewrite -eq_W1_RV -eq_W2_RV -eq_WmZ_RV.
 rewrite -/W1 -/W2 -/WmZ.
-have Ha := cpr_cond_entropy pWmZ_unif W2_WmZ_indep _.
+have Ha := cpr_cond_entropy W2_WmZ_indep _.
 apply: Ha => w w2 wm Hneq0.
 rewrite -/W1.
 by have := (mc_removal_pr f1 Z_O_indep pZ_unif w Hneq0).
@@ -1219,9 +1196,11 @@ Lemma pi2_bob_is_leakage_free_proof:
   `H( x1 | BobView) = `H `p_ x1.
 Proof.
 transitivity (`H( x1 | [% x2, s2, x1', r2])).
-  by rewrite (eqn6_proof x2s2x1'r2_y2_eqn6_indep x1x2s2x1'r2_y2_eqn6_indep py2_unif).
+  by rewrite eqn6_proof.
+  (*by rewrite (eqn6_proof x2s2x1'r2_y2_eqn6_indep x1x2s2x1'r2_y2_eqn6_indep py2_unif).*)
 transitivity (`H(x1|[%x2, s2, x1'])).
-  by rewrite (eqn7_proof x2_s2_x1'_r2_eqn7_indep x1x2_s2_x1'_r2_eqn7_indep pr2_unif).
+  by rewrite eqn7_proof.
+  (*by rewrite (eqn7_proof x2_s2_x1'_r2_eqn7_indep x1x2_s2_x1'_r2_eqn7_indep pr2_unif).*)
 transitivity (`H(x1|[%x2, s2])).
   by rewrite (eqn8_proof ps1_unif s1_x1x2s1s2_eqn8_indep).
 by rewrite eqn_8_1_proof.
