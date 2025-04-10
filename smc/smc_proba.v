@@ -29,9 +29,8 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 
-Local Definition R := Rdefinitions.R.
-
 Section conditionnally_independent_discrete_random_variables_extra.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B C : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
@@ -41,6 +40,7 @@ Proof. by move=> H a b c; rewrite mulrC cpr_eq_pairC. Qed.
 End conditionnally_independent_discrete_random_variables_extra.
 
 Section more_rv_lemmas.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Variables (TA TB TC UA UB UC : eqType) (f : TA -> UA) (g : TB -> UB) (h: TC -> UC).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
@@ -56,15 +56,15 @@ Proof. by []. Qed.
 End more_rv_lemmas.
 
 Section more_preimset.
-Variables (aT1 aT2 aT3 rT1 rT2 rT3: finType).
+Context {R : realType}.
+Variables (aT1 aT2 aT3 rT1 rT2 rT3 : finType).
 Variables (f : aT1 -> rT1)  (g : aT2 -> rT2) (h : aT3 -> rT3).
 Variables (A : {set rT1}) (B : {set rT2}) (C : {set rT3}).
 
 Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
 
-Lemma preimsetX :
-  f × g @^-1: (A `* B) = f @^-1: A `* g @^-1: B.
+Lemma preimsetX : f × g @^-1: (A `* B) = f @^-1: A `* g @^-1: B.
 Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
 
 Lemma preimsetX2 :
@@ -73,11 +73,14 @@ Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
 
 Lemma in_preimset x (Y : {set rT1}) : (x \in f @^-1: Y) = (f x \in Y).
 Proof. by rewrite !inE. Qed.
+
 Lemma in_preimset1 x y : (x \in f @^-1: [set y]) = (f x == y).
 Proof. by rewrite !inE. Qed.
+
 End more_preimset.
 
 Section more_pr_lemmas.
+Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Variables (TA UA : finType) (f : TA -> UA) (X : {RV P -> TA}).
 
@@ -96,18 +99,21 @@ rewrite -partition_big_preimset /= fdistmapE.
 apply: eq_bigl=> j.
 by rewrite !inE.
 Qed.
+
 End more_pr_lemmas.
 
 
 Section more_fdist.
+
 Lemma fdistmapE' (R : realType) (A B : finType) (g : A -> B)
   (p : fdist R A) (b : B):
   fdistmap g p b = (\sum_(a in g @^-1: [set b]) p a).
 Proof. by rewrite fdistmapE; apply: eq_bigl=> ?; rewrite !inE. Qed.
+
 End more_fdist.
 
-
 Section more_inde_rv.
+Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
@@ -131,13 +137,16 @@ under [RHS]eq_bigr=> i ?.
 rewrite -big_setX; apply: eq_bigr=> *.
 by rewrite fdistmapE.
 Qed.
+
 End more_inde_rv.
 
-Lemma preimg_tt {T TY : finType} (P : R.-fdist T) (Y : {RV P -> TY}) (y : TY) :
+Lemma preimg_tt {R : realType} {T TY : finType} (P : R.-fdist T)
+    (Y : {RV P -> TY}) (y : TY) :
   [% unit_RV P, Y] @^-1: [set (tt, y)] = Y @^-1: [set y].
 Proof. by apply/setP => ?; rewrite !inE. Qed.
 
 Section more_independent_rv_lemmas.
+Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB TC TD : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
 Variables (UA UB UC: finType) (f : TA -> UA) (g : TB -> UB) (h : TC -> UC).
@@ -193,7 +202,6 @@ rewrite pr_in_pairA.
 rewrite H.
 by rewrite -setTE pr_inE' -Pr_fdist_snd snd_RV2 -pr_inE' !pr_in1.
 Qed.
-
 
 Lemma cpr_prd_unit_RV : X _|_ Y | [% unit_RV P, Z] -> X _|_ Y | Z.
 Proof.
@@ -258,7 +266,7 @@ Abort.
 End more_independent_rv_lemmas.
 
 Section XY.
-
+Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB: finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
@@ -268,7 +276,7 @@ Proof. by split => /cinde_rv_unit/cinde_rv_sym/cinde_rv_unit. Qed.
 End XY.
 
 Section XYZ.
-
+Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB TC: finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
 
@@ -278,7 +286,7 @@ Proof. by split => /cinde_rv_unit/cinde_rv_sym/cinde_drv_2C/cinde_rv_sym/cinde_r
 End XYZ.
 
 Section lemma_3_4.
-
+Context {R : realType}.
 Variables (T : finType) (A: finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
@@ -322,7 +330,7 @@ under eq_bigr=> k _.
   (* case analysis on (`Pr[ Y = (i - k) ] == 0) *)
   have [|H] := eqVneq `Pr[ Y = (i - k) ] 0.
   - by move->; rewrite !mulr0.
-  - by rewrite mulVr ?mulr1 //.
+  - by rewrite mulVf ?mulr1.
   over.
 under eq_bigr=> k _.
   rewrite [X in _ * X]pr_eqE' /=.
@@ -347,12 +355,12 @@ Qed.
 
 End lemma_3_4.
 
-Global Arguments add_RV_unif [T A P n].
+Global Arguments add_RV_unif [R T A P n].
 
 Notation "X `+ Y" := (add_RV X Y) : proba_scope.
 
-
 Section fdist_cond_prop.
+Context {R : realType}.
 Variables T TX TY TZ : finType.
 Variables (P : R.-fdist T) (y : TY).
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
@@ -380,6 +388,7 @@ Qed.
 End fdist_cond_prop.
 
 Section lemma_3_5.
+Context {R : realType}.
 Variable (T TY : finType) (TZ : finZmodType).
 Variables (P : R.-fdist T) (X Z : {RV P -> TZ}) (Y : {RV P -> TY}).
 Let XZ : {RV P -> TZ} := X `+ Z.
@@ -410,7 +419,7 @@ Let XZ' : {RV (fdist_cond Y0) -> TZ} := X' `+ Z'.
 Lemma lemma_3_5 z : `Pr[ XZ = z | Y = y] = `Pr[ XZ = z].
 Proof.
 rewrite -(Pr_fdist_cond_RV (X':=XZ')) //.
-rewrite pr_eqE' (@add_RV_mul _ _ _ X' Z'); last exact: fdist_cond_indep.
+rewrite pr_eqE' (@add_RV_mul _ _ _ _ X' Z'); last exact: fdist_cond_indep.
 under eq_bigr => k _.
   rewrite (Pr_fdist_cond_RV (X:=X)) //.
   rewrite (Pr_fdist_cond_RV (X:=Z)) //.
@@ -440,6 +449,7 @@ Qed.
 End lemma_3_5.
 
 Section lemma_3_6.
+Context {R : realType}.
 Variables (T TY TX : finType) (TZ : finZmodType).
 Variable P : R.-fdist T.
 Variable n : nat.
@@ -464,7 +474,7 @@ rewrite (inde_RV2_sym X1 X2 XnZ) in H.
 apply: H.
 rewrite inde_RV2_sym.
 rewrite inde_rv_sym.
-apply: (@lemma_3_5' _ _ _ P Xn Z [% X1, X2] _ n card_TZ pZ_unif).
+apply: (@lemma_3_5' _ _ _ _ P Xn Z [% X1, X2] _ _ _ pZ_unif).
 apply/cinde_rv_unit.
 apply: cinde_drv_2C.
 exact/cinde_rv_unit.
@@ -473,6 +483,7 @@ Qed.
 End lemma_3_6.
 
 Section theorem_3_7.
+Context {R : realType}.
 Variables (T TX TY1 TY2 : finType)(TZ : finZmodType).
 Variable P : R.-fdist T.
 Variables (X: {RV P -> TX}) (Z : {RV P -> TZ}).
@@ -496,7 +507,7 @@ Theorem mc_removal_pr y1 y2 ymz:
   `Pr[ [% Y2, Ym `+ Z] = (y2, ymz) ] != 0 ->
   `Pr[Y1 = y1|[%Y2, YmZ] = (y2, ymz)] = `Pr[Y1 = y1 | Y2 = y2].
 Proof.
-have := @lemma_3_6 _ _ _ _ _ n ymz y1 y2 Y2 Y1 Ym Z card_TZ.
+have := @lemma_3_6 _ _ _ _ _ _ n ymz y1 y2 Y2 Y1 Ym Z card_TZ.
 rewrite pr_eq_pairC.
 apply.
   exact: pZ_unif.
@@ -506,6 +517,5 @@ exact: inde_rv_comp.
 Qed.
 
 (*TODO: the Entropy part needs to be done in another file, not inside the probability directory. *)
-
 
 End theorem_3_7.

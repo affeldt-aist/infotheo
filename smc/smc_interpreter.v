@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg ring.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import Rstruct reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
 Require Import smc_tactics.
@@ -25,8 +25,6 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
-
-Local Definition R := Rdefinitions.R.
 
 Reserved Notation "u *d w" (at level 40).
 Reserved Notation "u \*d w" (at level 40).
@@ -282,6 +280,7 @@ End scalar_product.
 Section pi2.
 
 Section information_leakage_proof.
+Context {R : realType}.
 Variable n m : nat.
 Variable T : finType.
 Variable P : R.-fdist T.
@@ -291,12 +290,10 @@ Let VX := 'rV[TX]_n.
 Lemma card_TX : #|TX| = m.+2.
 Proof. by rewrite card_ord. Qed.
 
-Let q := (m.+2 ^ n)%nat.-1.
+Let q := (m.+2 ^ n).-1.
 Lemma card_VX : #|VX| = q.+1.
 Proof.
-rewrite prednK.
-  by rewrite /VX card_mx card_TX mul1n.
-by rewrite expn_gt0.
+by rewrite prednK ?expn_gt0// /VX card_mx card_TX mul1n.
 Qed.
 
 Notation "u *d w" := (scp.dotproduct u w).
@@ -332,7 +329,7 @@ Record scalar_product_random_inputs :=
     s2 : {RV P -> VX};
     r1 : {RV P -> TX};
     y2 : {RV P -> TX};
- 
+
     (* TODO: prove others via these basic hypotheses
     x1_indep : P |= x1 _|_ [%x2, s1, s2, r1, y2];
     x2_indep : P |= x2 _|_ [%x1, s1, s2, r1, y2];
@@ -392,23 +389,6 @@ Let data := (sum TX VX).
 Let one x : data := inl x.
 Let vec x : data := inr x.
 
-(* TODO: move elsewhere *)
-Lemma cond_entropyC (A B C : finType)
-  (X: {RV P -> A}) (Y: {RV P -> B}) (Z: {RV P -> C}) :
-  `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
-Proof.
-rewrite /centropy_RV /centropy/=.
-rewrite (reindex (fun p : C * B => (p.2, p.1))) /=; last first.
-  by exists (fun p : B * C => (p.2, p.1)) => -[b c].
-apply: eq_bigr => -[c b] _ /=.
-rewrite !snd_RV2 -!pr_eqE' pr_eq_pairC.
-congr (_ * _).
-rewrite /centropy1; congr (- _).
-rewrite /jcPr !snd_RV2.
-apply: eq_bigr => a _.
-by rewrite !setX1 !Pr_set1 -!pr_eqE' !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
-Qed.
-
 Let alice_traces_from_view xs : 11.-bseq _ :=
   let '(x1, s1, r1, x2', t, y1) := xs in
   [bseq one y1; one t; vec x2'; one r1; vec s1; vec x1].
@@ -434,7 +414,7 @@ transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
   have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces.
     by apply: boolp.funext => x /=; rewrite alice_traces_ok /comp_RV fK.
   by rewrite scp.fun_cond_removal.
-by rewrite alice_traces_ok cond_entropyC scp.fun_cond_removal.
+by rewrite alice_traces_ok scp.cond_entropyC scp.fun_cond_removal.
 Qed.
 
 Let bob_traces_from_view xs : 11.-bseq _ :=
@@ -462,7 +442,7 @@ transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
   have -> : [%x2, s2, x1', r2, y2] = f `o bob_traces.
     by apply: boolp.funext => x; rewrite bob_traces_ok /comp_RV fK.
   by rewrite scp.fun_cond_removal.
-by rewrite bob_traces_ok cond_entropyC scp.fun_cond_removal.
+by rewrite bob_traces_ok scp.cond_entropyC scp.fun_cond_removal.
 Qed.
 
 Let pnegy2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
@@ -476,7 +456,7 @@ Proof.
 have px1_s1_unif: `p_ (x1 \+ s1 : {RV P -> _}) = fdist_uniform card_VX.
   rewrite -(add_RV_unif x1 s1) ?ps1_unif //.
   exact: x1_s1_indep.
-have H := @lemma_3_5' T (VX * VX)%type VX P x1 s1 [%x2, s2] (s1_x1x2s2_indep inputs) q card_VX (ps1_unif inputs).
+have H := @lemma_3_5' _ T (VX * VX)%type VX P x1 s1 [%x2, s2] (s1_x1x2s2_indep inputs) q card_VX (ps1_unif inputs).
 rewrite inde_rv_sym in H.
 exact: H.
 Qed.
@@ -522,11 +502,11 @@ Let x1x2s2x1'_r2_indep :
   P |= [% x1, [% x2, s2, x1']] _|_ r2.
 Proof.
 rewrite inde_rv_sym /r2 scp.sub_RV_eq.
-apply: (@lemma_3_5' _ _ _ _ _ _ _ _ _ card_TX); last first.
-  by rewrite -(@scp.neg_RV_dist_eq _ _ _ card_TX) pr1_unif.
+apply: (@lemma_3_5' _ _ _ _ _ _ _ _ _ _ card_TX); last first.
+  by rewrite -(@scp.neg_RV_dist_eq _ _ _ _ card_TX) pr1_unif.
 rewrite inde_rv_sym.
 apply: scp.neg_RV_inde_eq.
-pose f := fun (vs: (VX * VX * VX * VX)) =>
+pose f := fun vs : (VX * VX * VX * VX) =>
   let '(sa, sb, xa, xb) := vs in (sa *d sb, (xa, (xb, sb, xa + sa))).
 pose g := fun (ws : TX) => ws.
 have := s1x2x1x2_r1_indep inputs.
@@ -536,7 +516,7 @@ Qed.
 Let x2s2x1'_r2_indep : P |= [% x2, s2, x1'] _|_ r2.
 Proof.
 have := x1x2s2x1'_r2_indep.
-pose f := fun (vs: (VX * (VX * VX * VX))) =>
+pose f := fun vs : (VX * (VX * VX * VX)) =>
   let '(xa, (xb, sb, xa')) := vs in (xb, sb, xa').
 pose g := fun (ws : TX) => ws.
 by apply_inde_rv_comp f g.
