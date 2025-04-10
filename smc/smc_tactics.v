@@ -3,9 +3,9 @@ From Ltac2 Require Option.
 From Ltac2 Require Import Message.
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring.
-Require Import realType_ext realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_proba.
+From mathcomp Require Import reals Rstruct ring.
+Require Import realType_ext realType_ext realType_ln ssr_ext ssralg_ext.
+Require Import bigop_ext fdist proba jfdist_cond entropy graphoid smc_proba.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -19,8 +19,6 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
-
-Local Definition R := Rdefinitions.R.
 
 Ltac2 bar () := let x := '(3+4) in constr:($x + 5).
 
@@ -46,7 +44,7 @@ Abort.
 *)
 
 Section boole.
-
+Context {R : realType}.
 Variables (A: finType)(m n: nat)(P : R.-fdist A).
 Variables (TX VX: finType).
 Variables (x1 x2 s1 s2: {RV P -> TX})(y1 r1: {RV P -> VX}).
