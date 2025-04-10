@@ -1,16 +1,18 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup Rstruct ring boolp classical_sets finmap.
+From mathcomp Require Import all_ssreflect all_algebra fingroup ring finmap.
+From mathcomp Require Import reals Rstruct boolp classical_sets.
 Require Import realType_ln realType_ext ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy smc_tactics.
-
-Import GRing.Theory.
-Import Num.Theory.
+Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
+Require Import smc_tactics.
 
 (******************************************************************************)
 (*                                                                            *)
 (*  Party, RNG and independence experiments for Secure Multiparty Protocols   *)
 (*                                                                            *)
 (******************************************************************************)
+
+Import GRing.Theory.
+Import Num.Theory.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -23,8 +25,6 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 
-Local Definition R := Rdefinitions.R.
-
 Section party.
 
 Inductive party := Alice | Bob | Coserv.
@@ -33,7 +33,7 @@ Definition party_eqb_subproof (p1 p2: party) : { p1 = p2 } + { p1 <> p2 }.
 Proof. decide equality. Defined.
 
 Definition party_eqb (p1 p2: party) : bool :=
-  if party_eqb_subproof p1 p2 then true else false. 
+  if party_eqb_subproof p1 p2 then true else false.
 
 Print Module Equality.
 
@@ -126,10 +126,10 @@ Inductive CoservVar := S1 | S2 | R1. (* Once one RV is generated, RGN changes so
 ----
 
    (1, 0, 0, x1)    --> x1
-   
+
 *)
 
-
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 Variable TX : finComRingType.
@@ -168,4 +168,3 @@ by rewrite !inE eqxx orbT.
 Qed.
 
 End indep.
-
