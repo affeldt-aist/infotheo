@@ -559,12 +559,10 @@ Let proof_alice := scp.pi2_alice_is_leakage_free_proof
 Check proof_alice.
 
 Let proof_bob := scp.pi2_bob_is_leakage_free_proof
-      (card_TX:=card_TX)(card_rVTX:=card_VX)(r1:=r1)(y2:=y2)
+      (card_rVTX:=card_VX)(r1:=r1)(y2:=y2)
       x2s2_x1'_indepP x2s2x1'r2_y2_indepP x1x2s2x1'r2_y2_indepP
       x2s2x1'_r2_indep x1x2s2x1'_r2_indep
-      (s1_x1x2s1s2_indep inputs) (x2s2_x1_indep inputs) (s1s2_r1_indep inputs)
-      (s1_s2_indep inputs)
-      (pr1_unif inputs) (py2_unif inputs) (ps1_unif inputs).
+      (s1_x1x2s1s2_indep inputs) (x2s2_x1_indep inputs) (ps1_unif inputs).
 
 Check proof_bob.
 
