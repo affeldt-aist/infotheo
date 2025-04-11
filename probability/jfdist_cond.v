@@ -434,7 +434,7 @@ rewrite /den !fdistE [RHS]big_mkcond /=.
 under eq_bigl do rewrite inE.
 apply/eq_bigr => a _.
 rewrite !fdistE /= (big_pred1 (a,i)) ?fdistE /=;
-    last by case=> x y; rewrite /swap /= !xpair_eqE andbC.
+    last by case=> x y; rewrite /= !xpair_eqE andbC.
 rewrite eq_sym 2!inE.
 by case: eqP => // _; rewrite (mulr0,mulr1).
 Qed.
@@ -458,6 +458,7 @@ apply eq_bigr => k _.
 rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
 by case: ifP; rewrite (mulr1,mulr0).
 Qed.
+
 End fdistpart.
 
 Lemma dK {R : realType} n m K (e : R.-fdist 'I_m) j :
@@ -478,4 +479,5 @@ move=> /=.
 rewrite (bigD1 (K j)) //= eqxx mulr1.
 by rewrite big1 ?addr0 // => i /negbTE ->; rewrite mulr0.
 Qed.
+
 End FDistPart.

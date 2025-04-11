@@ -109,13 +109,6 @@ Declare Scope proba_scope.
 Notation "f @^-1 y" := (preim f (pred1 y)) : fdist_scope.
 Local Open Scope fdist_scope.
 
-Lemma bij_swap A B : bijective (@swap A B).
-Proof. apply Bijective with swap; by case. Qed.
-Arguments bij_swap {A B}.
-
-Lemma swapK A B : (@swap A B) \o swap = @id (B * A).
-Proof. by rewrite boolp.funeqE => -[]. Qed.
-
 Unset Printing Implicit Defensive.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
@@ -1081,7 +1074,10 @@ Variables (A B : finType) (P : fdist T A) (Q : fdist T B)
   (R S : T .-fdist (A * B)).
 
 Lemma fdistXI : fdistX (fdistX R) = R.
-Proof. by rewrite /fdistX fdistmap_comp swapK fdistmap_id. Qed.
+Proof.
+rewrite /fdistX fdistmap_comp (_ : _ \o _ = id) ?fdistmap_id//.
+by apply/funext => x; rewrite /= swapK.
+Qed.
 
 Lemma fdistX_prod : fdistX (Q `x P) = P `x Q.
 Proof. by apply/fdist_ext => -[a b]; rewrite fdistXE !fdist_prodE mulrC. Qed.

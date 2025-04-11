@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-From mathcomp Require Import reals.
-Require Import ssr_ext ssralg_ext bigop_ext  realType_ext fdist.
+From mathcomp Require Import mathcomp_extra reals.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext fdist.
 Require Import proba jfdist_cond.
 
 (**md**************************************************************************)
@@ -261,14 +261,14 @@ have <- : \sum_(d <- fin_img W)
     rewrite cpr_eq_product_rule.
     have H0 : `Pr[ W = d | [% Z, Y] = (c, b)] != 0.
       rewrite cpr_eqE pr_eq_pairA pr_eq_pairAC -pr_eq_pairA.
-      rewrite pr_eq_pairC mulf_eq0 negb_or invr_eq0.
-      apply/andP; split; first by rewrite pr_eq_pairC.
-      by move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 W d) ->.
+      rewrite pr_eq_pairC mulf_eq0 negb_or invr_eq0 P0/=.
+      move: (P0 b c d); apply: contra => /eqP.
+      by rewrite pr_eq_pairC/= => /(pr_eq_domin_RV2 W d) ->.
     move/mulIf => /(_ H0){H0}/esym.
     by rewrite (cpr_eq_pairCr X Z) cpr_eq_pairAr.
-  have {}H1 : forall d, `Pr[ X = a | [% W, Z] = (d, c)] =
-                     `Pr[ X = a | [% Y, W, Z] = (b, d, c)].
-    move=> d; move: {H1}(H1 a b (c, d)).
+  have {}H1 d : `Pr[ X = a | [% W, Z] = (d, c)] =
+                `Pr[ X = a | [% Y, W, Z] = (b, d, c)].
+    move: {H1}(H1 a b (c, d)).
     rewrite cpr_eq_product_rule.
     have H0 : `Pr[ Y = b | [% Z, W] = (c, d)] != 0.
       rewrite cpr_eqE pr_eq_pairA mulf_eq0 negb_or invr_eq0 P0 /=.
