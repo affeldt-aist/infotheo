@@ -460,7 +460,13 @@ Variables (X2 : {RV P -> TY}) (X1 : {RV P -> TX}) (Xn Z : {RV P -> TZ}).
 Hypothesis card_TZ : #|TZ| = n.+1.
 Variable pZ_unif : `p_ Z = fdist_uniform card_TZ.
 Variable Z_Xs_indep : inde_rv Z [%X1, X2, Xn].
-Variable Z_X1X2_indep : inde_rv Z [%X1, X2].
+Let Z_X1X2_indep : inde_rv Z [%X1, X2].
+Proof.
+change [% X1, X2] with (fst \o [% X1, X2, Xn]).
+change Z with (idfun \o Z).
+exact: inde_rv_comp.
+Qed.
+
 Let XnZ := Xn `+ Z.
 
 Hypothesis X0 : `Pr[ [% XnZ, X2] = (i, y) ] != 0.

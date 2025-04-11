@@ -235,6 +235,29 @@ Context {R : realType}.
 Variables (T TY1 TY2 : finType) (TY3 : finType) (P : R.-fdist T).
 Variables (Y1 : {RV P -> TY1}) (Y2 : {RV P -> TY2}) (Y3 : {RV P -> TY3}).
 
+Let reduce_inde23_to_inde123 y1 y2 y3 :
+  `Pr[ [% Y2, Y3] = (y2, y3) ] != 0 ->
+  P |= [%Y1, Y2] _|_ Y3 ->
+  `Pr[Y1 = y1 | Y2 = y2] = `Pr[Y1 = y1 | [%Y2, Y3] = (y2, y3)].
+Proof.
+move=> Y23neq0.
+have Y2neq0 : `Pr[Y2 = y2] != 0.
+  move: Y23neq0.
+  contra=> ?.
+  exact: pr_eq_domin_RV2.
+have Y3neq0 : `Pr[Y3 = y3] != 0.
+  move: Y23neq0.
+  contra=> ?.
+  exact: pr_eq_domin_RV1.
+move=> inde123.
+have inde23 : P |= Y2 _|_ Y3.
+  change Y2 with (snd \o [%Y1, Y2]).
+  change Y3 with (idfun \o Y3).
+  exact: inde_rv_comp.
+rewrite !cpr_eqE pr_eq_pairA inde123 inde23.
+by field; apply/andP; split.
+Qed.
+
 Lemma cpr_cond_entropy1_RV y2 y3 :
   (forall y1, `Pr[Y1 = y1 | Y2 = y2] = `Pr[Y1 = y1 | [%Y2, Y3] = (y2, y3)]) ->
   `H[ Y1 | Y2 = y2 ] = `H[ Y1 | [% Y2, Y3] = (y2, y3) ].
