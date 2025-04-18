@@ -153,67 +153,6 @@ Qed.
 
 End entropy_with_indeRV.
 
-Lemma imsetPn {aT rT : finType} {f : aT -> rT} {D : mem_pred aT} {y : rT} :
-  reflect (forall x : aT, in_mem x D -> y != f x) (y \notin imset f D).
-Proof.
-apply: (iffP idP).
-  move/imsetP=> H x xD; apply/eqP=> yfx; apply: H.
-  by exists x.
-move=> H; apply/imsetP=> -[] x xD yfx.
-by have:= H x xD; rewrite yfx eqxx.
-Qed.
-
-Section entropy_fdistmap.
-Context {R : realType}.
-
-Lemma entropy_fdistmap
-  (A B : finType) (f : A -> B) (P : R.-fdist A) :
-  injective f -> `H (fdistmap f P) = `H P.
-Proof.
-move=> f_inj; congr -%R; set rhs := RHS.
-rewrite (bigID (mem [set f a | a in A]))/=.
-rewrite big_imset/=; last by move=> *; exact: f_inj.
-under eq_bigr=> a _.
-  rewrite fdistmapE;
-  under eq_bigl do rewrite !inE/=;
-  rewrite big_pred1_inj//.
-  over.
-rewrite -[RHS]addr0; congr +%R.
-rewrite big1// => b.
-move/imsetPn=> bfx.
-rewrite fdistmapE/= big_pred0 ?mul0r// => a.
-rewrite inE/= eq_sym.
-exact/negP/negP/bfx.
-Qed.
-
-End entropy_fdistmap.
-
-Section joint_entropyA.
-Context {R : realType} (A B C : finType) (P : R.-fdist (A * B * C)).
-
-Lemma joint_entropyA : `H (fdistA P) = `H P.
-Proof. exact/entropy_fdistmap/inj_prodA. Qed.
-
-End joint_entropyA.
-
-(* TODO: move to entropy.v *)
-Section joint_entropy_RVCA.
-Context {R : realType} {U A B C : finType} {P : R.-fdist U}.
-Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
-
-Lemma joint_entropy_RVC : `H(X, Y) = `H(Y, X).
-Proof.
-rewrite /joint_entropy_RV [LHS]joint_entropyC; congr -%R.
-by apply: eq_bigr => -[a b] _; rewrite fdistX_RV2.
-Qed.
-
-Lemma joint_entropy_RVA : `H(X, [% Y, Z]) = `H([%X, Y], Z).
-Proof.
-by rewrite /joint_entropy_RV [in LHS]/joint_entropy -fdistA_RV3 joint_entropyA.
-Qed.
-
-End joint_entropy_RVCA.
-
 Section cpr_cond_entropy1_RV.
 Context {R : realType}.
 Variables (T TY1 TY2 : finType) (TY3 : finType) (P : R.-fdist T).
