@@ -55,14 +55,14 @@ Definition d : {fdist 'I_4 * 'I_4} := locked (FDist.make f0 f1).
 Lemma dE x : d x = f x.
 Proof. by rewrite /d; unlock. Qed.
 
-Lemma conditional_entropyE : cond_entropy d = 11/8.
+Lemma conditional_entropyE : centropy d = 11/8.
 Proof.
-rewrite /cond_entropy /=.
+rewrite /centropy /=.
 rewrite !big_ord_recl big_ord0 !fdist_sndE /=.
 rewrite !big_ord_recl !big_ord0.
 repeat (rewrite dE /f /= ffunE /=).
 rewrite !(add0r,addr0).
-rewrite /cond_entropy1 /=.
+rewrite /centropy1 /=.
 rewrite !big_ord_recl big_ord0.
 rewrite /jcPr /Pr.
 repeat (rewrite big_setX /= !big_set1 dE /f /= ffunE /=).
