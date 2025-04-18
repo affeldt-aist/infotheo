@@ -4,11 +4,8 @@ From mathcomp Require Import mathcomp_extra contra Rstruct ring reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba.
 
-Import GRing.Theory.
-Import Num.Theory.
-
-(******************************************************************************)
-(*                              SMC Proofs in entropy                         *)
+(**md**************************************************************************)
+(* # SMC Proofs in entropy                                                    *)
 (*                                                                            *)
 (*     From: Information-theoretically Secure Number-product Protocol         *)
 (*     SHEN, Chih-Hao, et al. In: 2007 International Conference on Machine    *)
@@ -26,6 +23,7 @@ Import Num.Theory.
 (*                                                                            *)
 (*                                                                            *)
 (* Lemmas:                                                                    *)
+(* ```                                                                        *)
 (*   pi2_bob_is_leakage_free_proof   == the proof shows that Bob's knowledge  *)
 (*                                      of Alice's secret input x1 does not   *)
 (*                                      increase by accessing random          *)
@@ -41,6 +39,7 @@ Import Num.Theory.
 (*                                      shows that with some conditions met,  *)
 (*                                      there exists a conditional entropy    *)
 (*                                      removal lemma H(X | (Y, Z))->H(X | Y) *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -48,8 +47,9 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Local Open Scope ring_scope.
+Import GRing.Theory Num.Theory.
 
+Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
@@ -84,23 +84,6 @@ Proof. by move=> ?; rewrite cpr_eqE pr_eq_diag divff. Qed.
 
 End extra_pr.
 
-(* generalization of proba.pr_eq_domin_RV2 *)
-Section RV_domin.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U) (TA TB : eqType).
-Variables (TX : {RV P -> TA}) (TY : {RV P -> TB}).
-
-Lemma pr_eq_domin_RV2 a b : `Pr[ TX = a ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
-Proof.
-rewrite !pr_eqE /Pr => /psumr_eq0P => a0.
-rewrite big1// => i.
-rewrite inE/= xpair_eqE => /andP [] ? ?.
-apply: a0 => //.
-by rewrite inE.
-Qed.
-
-End RV_domin.
-
 (* NOT USED, and easy to solve by contra
 Section extra_pr2.
 
@@ -114,19 +97,19 @@ Proof. by contra; exact: pr_eq_domin_RV2. Qed.
 End extra_pr2.
 *)
 
-Section inde_rv.
+Section inde_RV.
 Context {R : realType}.
 
 Lemma dist_inde_rv_prod (T TX TY : finType) (P : R.-fdist T)
   (X : {RV P -> TX}) (Y : {RV P -> TY}) :
-  inde_rv X Y -> `p_ [% X, Y] = `p_ X `x `p_ Y.
+  P |= X _|_ Y -> `p_ [% X, Y] = `p_ X `x `p_ Y.
 Proof.
 move=> iXY.
 apply: fdist_ext => -[x y] /=.
 by rewrite fdist_prodE/= -!pr_eqE' iXY.
 Qed.
 
-End inde_rv.
+End inde_RV.
 
 Section entropy_with_indeRV.
 Context {R : realType}.
@@ -139,7 +122,7 @@ Lemma inde_rv_alt (X : {RV P -> TX}) (Y : {RV P -> TY}):
 Proof. by split=> + x y => /(_ x y); rewrite !pr_eqE'. Qed.
 *)
 
-Lemma joint_entropy_indeRV (X : {RV P -> TX}) (Y : {RV P -> TY}):
+Lemma joint_entropy_inde_RV (X : {RV P -> TX}) (Y : {RV P -> TY}):
   P |= X _|_ Y -> `H(X, Y) = `H (`p_X) + `H (`p_Y).
 Proof.
 rewrite inde_RV_sym=> iYX.
@@ -197,7 +180,7 @@ End cpr_centropy1_RV.
 Section cpr_cond_entropy_proof.
 Context {R : realType}.
 Variables (T TY1 TY2 TY3 : finType) (P : R.-fdist T).
-Variables (Y1 : {RV P -> TY1})(Y2 : {RV P -> TY2})(Y3 : {RV P -> TY3}).
+Variables (Y1 : {RV P -> TY1}) (Y2 : {RV P -> TY2}) (Y3 : {RV P -> TY3}).
 
 Lemma cpr_cond_entropy_old : P |= Y2 _|_ Y3 ->
   (forall y1 y2 y3, `Pr[ [% Y2, Y3] = (y2, y3) ] != 0 ->
@@ -205,7 +188,7 @@ Lemma cpr_cond_entropy_old : P |= Y2 _|_ Y3 ->
   `H( Y1 | [% Y2, Y3]) = `H( Y1 | Y2).
 Proof.
 move=> Hinde Hremoval.
-rewrite cond_entropy_RVE'/=.
+rewrite centropy_RVE'/=.
 pose f y2 y3 := `Pr[Y2 = y2] * `Pr[Y3 = y3] * `H[Y1 | Y2 = y2].
 transitivity (\sum_a f a.1 a.2).
   apply eq_bigr => a _.
@@ -233,7 +216,7 @@ move=> H.
 rewrite /centropy1_RV /centropy1.
 congr -%R.
 apply: eq_bigr => a _.
-by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_eq_set1 H.
+by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_in1 H.
 Qed.
 
 Lemma cpr_centropy' :
@@ -242,7 +225,7 @@ Lemma cpr_centropy' :
   `H( Y1 | Y4 ) = `H( Y1 | f `o Y4 ).
 Proof.
 move=> Hremoval.
-rewrite 2!cond_entropy_RVE'/=.
+rewrite 2!centropy_RVE'/=.
 rewrite (partition_big f xpredT) //=.
 apply: eq_bigr => y3 _.
 transitivity (\sum_(i | f i == y3) `Pr[ Y4 = i ] * `H[ Y1 | (f `o Y4) = y3 ]).
@@ -262,8 +245,7 @@ rewrite (partition_big Y4 (fun y4 => f y4 == y3)) //=.
   have [ay4|] := eqVneq (Y4 a) y4.
     by rewrite /comp_RV ay4 y4y3.
   by rewrite andbF.
-move=> a.
-by rewrite !inE.
+by move=> a; rewrite !inE.
 Qed.
 
 End centropyf.
@@ -278,6 +260,7 @@ apply: (cpr_centropy' (f:=fst)).
 move=> y1 [y2 y3].
 exact: H.
 Qed.
+
 End cpr_cond_entropy_proof.
 
 Section lemma_3_8_prep.
@@ -304,21 +287,18 @@ Lemma pr_eqf1 : `Pr[ Y = y ] != 0 -> `Pr[ Z = (f y) | Y = y ] = 1.
 Proof. by move=> Yy0; rewrite cpr_eqE pr_eq_ZY_Y divff. Qed.
 
 Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
-(* TODO tried to define it as `Pr[ Y = y ] > 0 and then use `Rlt_not_eq` in the proof,
-   but this hypothesis would be wrapped by `is_true` that `Rlt_not_eq` cannot be applied directly.
-*)
 
 (* H(f(Y)|X,Y) = H(f(Y)|Y) = 0 *)
 (* Meaning: f(Y) is completely determined by Y.
    (Because `f` only has one input which is Y).
 
    And because it is completely determined by Y,
-   `(X, Y)` won't increase the uncertanty.
+   `(X, Y)` won't increase the uncertainty.
 *)
 (*
   Search (`Pr[ _ = _ ])(`p_ _ _).
 *)
-Lemma fun_cond_entropy_eq0_RV : `H[Z | Y = y] = 0.
+Lemma fun_centropy_eq0_RV : `H[Z | Y = y] = 0.
 Proof.
 (* If `Pr[Y = y] = 0, it makes the  \Pr_QP[[set b] | [set a]] zero because the condition will be never true; need to do this before the cond_entropy1RVE *)
 (*
@@ -331,11 +311,11 @@ have [H|] := eqVneq (`Pr[ Y = y]) 0.
       over.
     rewrite /jfdist_cond.
 *)
-rewrite cond_entropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
-rewrite -cond_entropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
+rewrite centropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
+rewrite -centropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
 rewrite /centropy1_RV /centropy1.
 rewrite big1 1?oppr0 // => i _.
-have [<-|] := eqVneq (f y) i.
+have [<-|Hfy_neq_i] := eqVneq (f y) i.
   set pZY := (X in (X * log X)).
   have HpZY: pZY = 1.
     rewrite /pZY.
@@ -343,11 +323,10 @@ have [<-|] := eqVneq (f y) i.
     rewrite cpr_in1.
     rewrite cpr_eqE.
     rewrite pr_eq_ZY_Y //=.
-    by rewrite divff //=.
+    by rewrite divff.
   rewrite HpZY.
   rewrite log1.
   by rewrite mulr0.
-move => Hfy_neq_i.
 rewrite jPr_Pr.
 rewrite cpr_in1.
 rewrite /Z.
@@ -360,16 +339,16 @@ Qed.
 
 End lemma_3_8_proof.
 
-Lemma fun_cond_entropy_ZY_eq0 : `H( Z | Y) = 0.
+Lemma fun_centropy_ZY_eq0 : `H( Z | Y) = 0.
 Proof.
-rewrite cond_entropy_RVE' big1 // => y _.
+rewrite centropy_RVE' big1 // => y _.
 have [->|y0] := eqVneq `Pr[ Y = y ] 0; first by rewrite mul0r.
-by rewrite fun_cond_entropy_eq0_RV// mulr0.
+by rewrite fun_centropy_eq0_RV// mulr0.
 Qed.
 
 End lemma_3_8_prep.
 
-Section fun_cond_entropy_proof.
+Section fun_centropy_proof.
 Context {R : realType}.
 Variables (T TX TY TZ : finType).
 Variable P : R.-fdist T.
@@ -392,16 +371,16 @@ transitivity (`H(X, Y) + `H( Z | [% X, Y]) - `H `p_Y - `H( Z | Y)).
   rewrite -[in RHS]addrA -opprD.
   by rewrite -[in RHS](chain_rule_RV Y Z).
 transitivity (`H(X, Y) - `H `p_Y).
-  rewrite (fun_cond_entropy_ZY_eq0 Y f) subr0.
+  rewrite (fun_centropy_ZY_eq0 Y f) subr0.
   suff : `H( Z | [% X, Y]) = 0 by move=> ->; rewrite addr0.
   have -> : Z = (f \o snd) `o [%X, Y] by exact/boolp.funext.
-  exact: fun_cond_entropy_ZY_eq0.
+  exact: fun_centropy_ZY_eq0.
 rewrite joint_entropy_RVC.
 rewrite chain_rule_RV.
 by rewrite addrAC subrr add0r.
 Qed.
 
-End fun_cond_entropy_proof.
+End fun_centropy_proof.
 
 Section cinde_RV_comp_removal.
 Context {R : realType}.
@@ -416,9 +395,8 @@ Hypothesis YZneq0 : `Pr[ [% fy `o O, fz `o O] = (y, z) ] != 0.
 Lemma cinde_rv_comp_removal:
    `Pr[ X = x | (fz `o O) = z ] = `Pr[ X = x | [% fy `o O, fz `o O ] = (y, z) ].
 Proof.
-have H:=cinde_alt x (b:=y) (c:=z) XYZ_cinde YZneq0.
-symmetry in H.
-apply H.
+have H := cinde_alt x (b:=y) (c:=z) XYZ_cinde YZneq0.
+exact/esym/H.
 Qed.
 
 End cinde_RV_comp_removal.
@@ -546,11 +524,9 @@ End neg_RV_lemmas.
 
 Section dotproduct.
 Context {R : realType}.
-Variable TX : ringType.
-Variable n : nat.
-Variable T : finType.
+Variables (TX : ringType) (n : nat) (T : finType).
 
-Definition dotproduct (a b:'rV[TX]_n) := (a *m b^T)``_ord0.
+Definition dotproduct (a b : 'rV[TX]_n) := (a *m b^T)``_ord0.
 
 Definition dotproduct_rv (P: R.-fdist T) (A B: {RV P -> 'rV[TX]_n}) : {RV P -> TX} :=
   fun p => dotproduct (A p) (B p).
@@ -609,7 +585,7 @@ Definition step_eqn2_ya : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX :=
 Definition step_eqn3_t_with_offset : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
   let '(xa, xb, sa, sb, ra, rb) := z in (xa + sa) *d xb + rb.
 
-Definition scalar_product (sa sb: 'rV[TX]_n)(ra yb: TX)(xa xb: 'rV[TX]_n): (TX * TX) :=
+Definition scalar_product (sa sb : 'rV[TX]_n) (ra yb : TX) (xa xb : 'rV[TX]_n) : (TX * TX) :=
   let xa' := xa + sa in (* Alice -> Bob *)
   let xb' := xb + sb in (* Bob -> Alice *)
   let rb := sa *d sb - ra in (* Commodity -> Bob *)
@@ -636,7 +612,7 @@ by rewrite !mxE mulrDr.
 Qed.
 
 (*   xb *d (xa + sa) + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra + yb = xa *d xb *)
-Lemma scalar_product_correct (sa sb: 'rV[TX]_n)(ra yb: TX) :
+Lemma scalar_product_correct (sa sb : 'rV[TX]_n) (ra yb : TX) :
   is_scalar_product (scalar_product sa sb ra yb).
 Proof.
 move=>/=xa xb/=.
@@ -725,7 +701,7 @@ by rewrite sub0r.
 Qed.
 
 (* Because y2 is generated by Bob -- not related to any other variables. *)
-Hypothesis Z_O_indep : inde_rv Z O.
+Hypothesis Z_O_indep : P |= Z _|_ O.
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis pZ_unif : `p_ Z = fdist_uniform card_TX. (* Assumption in the paper. *)
 
@@ -811,7 +787,7 @@ Let W2 := fst `o O.   (* [%x1, s1, r1] *)
 Let Wm := snd `o O.   (* x2 *)
 Let WmZ := Wm `+ s2. (* x2' = x2 + s2 *)
 
-Variable Z_O_indep : inde_rv Z O.
+Variable Z_O_indep : P |= Z _|_ O.
 
 Let Z_OO_indep : P |= Z _|_ [% O, O].
 Proof.
@@ -849,7 +825,7 @@ Proof.
 rewrite cinde_RV_unit.
 apply: cinde_RV_sym.
 rewrite -cinde_RV_unit.
-rewrite /inde_rv.
+rewrite /inde_RV/=.
 rewrite /WmZ.
 exact: (lemma_3_5' Z_WmW2_indep (n:=(m.+2 ^ n).-1) pZ_unif).
 Qed.
@@ -877,7 +853,7 @@ Lemma eqn_4_1_proof : `H(x2 | [%x1, s1, r1]) = `H `p_ x2.
 Proof.
 transitivity (`H([%x1, s1, r1], x2) - `H([%x1, s1], r1)).
   by rewrite chain_rule_RV addrAC subrr add0r.
-rewrite joint_entropy_indeRV.
+rewrite joint_entropy_inde_RV.
   by rewrite addrAC subrr add0r.
 exact: x2_indep.
 Qed.
@@ -907,7 +883,8 @@ Hypothesis ps2_unif : `p_ s2 = fdist_uniform card_rVTX.
 Let negy2_x1x2s1s2r1r2_eqn3_indep :
   P |= neg_RV y2 _|_ [%x1, x2, s1, s2, r1, r2].
 Proof.
-pose f (a: ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) ) := let '(x1, x2, s1, s2, r1) := a in (a, s1 *d s2 - r1).
+pose f (a: ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) ) :=
+  let '(x1, x2, s1, s2, r1) := a in (a, s1 *d s2 - r1).
 by move/(inde_RV_comp (fun (a : TX) => 0 - a) f):y2_x1x2s1s2r1_eqn3_indep.
 Qed.
 
@@ -1131,7 +1108,7 @@ Lemma eqn_8_1_proof : `H(x1 | [%x2, s2]) = `H `p_ x1.
 Proof.
 transitivity (`H([%x2, s2], x1) - `H(x2, s2)).
   by rewrite chain_rule_RV addrAC subrr add0r.
-rewrite joint_entropy_indeRV.
+rewrite joint_entropy_inde_RV.
   by rewrite addrAC subrr add0r.
 exact: x2s2_x1_indep.
 Qed.
@@ -1200,12 +1177,14 @@ Variables (A : finType) (m n : nat)(P : R.-fdist A).
 Variables (TX VX : finType).
 Variables (x1 x2 s1 s2 r1 y2 : {RV P -> TX}).
 
-Hypothesis Hinde : {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> P |= i _|_ j}%N.
+Hypothesis Hinde :
+  {homo nth x1 [:: x1; x2; s1; s2] : i j / i < j >-> P |= i _|_ j}%N.
 
 Lemma x1_x2_inde : P |= x1 _|_ x2.
 Proof. exact: (@Hinde 0 1). Qed.
 
-Hypothesis Hinde_all : forall i j, P|= nth x1 [:: x1; x2; s1; s2] i _|_ nth r1 [:: r1; y2] j.
+Hypothesis Hinde_all : forall i j,
+  P |= nth x1 [:: x1; x2; s1; s2] i _|_ nth r1 [:: r1; y2] j.
 
 Lemma x1_r1_inde : P |= x1 _|_ r1.
 Proof. exact: (@Hinde_all 0 0). Qed.

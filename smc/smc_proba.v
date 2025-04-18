@@ -200,17 +200,6 @@ Abort.
 
 End more_inde_RV_lemmas.
 
-Section XY.
-Context {R : realType}.
-Variables (A : finType) (P : R.-fdist A) (TA TB: finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
-
-(* TODO: move to proba.v *)
-Lemma inde_RV_sym : P |= X _|_ Y <-> P |= Y _|_ X.
-Proof. by split => /cinde_RV_unit/cinde_RV_sym/cinde_RV_unit. Qed.
-
-End XY.
-
 Section XYZ.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB TC: finType).
