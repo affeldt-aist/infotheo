@@ -465,7 +465,7 @@ have px1_s1_unif: `p_ (x1 \+ s1 : {RV P -> _}) = fdist_uniform card_VX.
   rewrite -(add_RV_unif x1 s1) ?ps1_unif //.
   exact: x1_s1_indep.
 have H := @lemma_3_5' _ T (VX * VX)%type VX P x1 s1 [%x2, s2] (s1_x1x2s2_indep inputs) q card_VX (ps1_unif inputs).
-rewrite inde_rv_sym in H.
+rewrite inde_RV_sym in H.
 exact: H.
 Qed.
 
@@ -509,10 +509,10 @@ Let x1x2s2x1'r2_y2_indepP :=
 Let x1x2s2x1'_r2_indep :
   P |= [% x1, [% x2, s2, x1']] _|_ r2.
 Proof.
-rewrite inde_rv_sym /r2 scp.sub_RV_eq.
+rewrite inde_RV_sym /r2 scp.sub_RV_eq.
 apply: (@lemma_3_5' _ _ _ _ _ _ _ _ _ _ card_TX); last first.
   by rewrite -(@scp.neg_RV_dist_eq _ _ _ _ card_TX) pr1_unif.
-rewrite inde_rv_sym.
+rewrite inde_RV_sym.
 apply: scp.neg_RV_inde_eq.
 pose f := fun vs : (VX * VX * VX * VX) =>
   let '(sa, sb, xa, xb) := vs in (sa *d sb, (xa, (xb, sb, xa + sa))).
