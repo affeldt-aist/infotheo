@@ -168,6 +168,39 @@ Qed.
 
 End entropy_theory.
 
+Section entropy_fdistmap.
+Context {R : realType}.
+
+Lemma entropy_fdistmap
+  (A B : finType) (f : A -> B) (P : R.-fdist A) :
+  injective f -> `H (fdistmap f P) = `H P.
+Proof.
+move=> f_inj; congr -%R; set rhs := RHS.
+rewrite (bigID (mem [set f a | a in A]))/=.
+rewrite big_imset/=; last by move=> *; exact: f_inj.
+under eq_bigr=> a _.
+  rewrite fdistmapE;
+  under eq_bigl do rewrite !inE/=;
+  rewrite big_pred1_inj//.
+  over.
+rewrite -[RHS]addr0; congr +%R.
+rewrite big1// => b.
+move/imsetPn=> bfx.
+rewrite fdistmapE/= big_pred0 ?mul0r// => a.
+rewrite inE/= eq_sym.
+exact/negP/negP/bfx.
+Qed.
+
+End entropy_fdistmap.
+
+Section entropy_fdistA.
+Context {R : realType} (A B C : finType) (P : R.-fdist (A * B * C)).
+
+Lemma entropy_fdistA : `H (fdistA P) = `H P.
+Proof. exact/entropy_fdistmap/inj_prodA. Qed.
+
+End entropy_fdistA.
+
 Section joint_entropy.
 Variables (R : realType) (A B : finType) (P : R.-fdist (A * B)).
 
@@ -203,6 +236,23 @@ Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B})
 Definition joint_entropy_RV := joint_entropy `p_[% X, Y].
 End joint_entropy_RV_def.
 Notation "'`H(' X ',' Y ')'" := (joint_entropy_RV X Y) : entropy_scope.
+
+Section joint_entropy_RVCA.
+Context {R : realType} {U A B C : finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+
+Lemma joint_entropy_RVC : `H(X, Y) = `H(Y, X).
+Proof.
+rewrite /joint_entropy_RV [LHS]joint_entropyC; congr -%R.
+by apply: eq_bigr => -[a b] _; rewrite fdistX_RV2.
+Qed.
+
+Lemma joint_entropy_RVA : `H(X, [% Y, Z]) = `H([%X, Y], Z).
+Proof.
+by rewrite /joint_entropy_RV [in LHS]/joint_entropy -fdistA_RV3 entropy_fdistA.
+Qed.
+
+End joint_entropy_RVCA.
 
 Section joint_entropy_RV_prop.
 Variable R : realType.
