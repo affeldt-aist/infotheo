@@ -2065,6 +2065,16 @@ Notation cinde_rv_unit := cinde_RV_unit (only parsing).
 #[deprecated(since="infotheo 0.9.2", note="renamed to `inde_RV_events`")]
 Notation inde_rv_events := inde_RV_events (only parsing).
 
+Section inde_RV_sym.
+Context {R : realType}.
+Variables (A : finType) (P : R.-fdist A) (TA TB: finType).
+Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
+
+Lemma inde_RV_sym : P |= X _|_ Y <-> P |= Y _|_ X.
+Proof. by split => /cinde_RV_unit/cinde_RV_sym/cinde_RV_unit. Qed.
+
+End inde_RV_sym.
+
 Lemma cinde_alt {R : realType} (U : finType) (P : R.-fdist U) (A B C : finType)
     (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
   P |= X _|_ Y | Z ->
