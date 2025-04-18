@@ -1,6 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect fingroup perm.
+From mathcomp Require Import mathcomp_extra.
 Import Coq.NArith.BinNatDef.
 
 (**md**************************************************************************)
@@ -170,7 +171,7 @@ Variables A B : Type.
 Implicit Types l : seq A.
 
 Lemma zip_swap : forall l (k : seq B),
-  zip l k = map (fun x => (x.2, x.1)) (zip k l).
+  zip l k = map swap (zip k l).
 Proof. elim => [ [] // | h t IH [|hd tl] //=]; by rewrite IH. Qed.
 
 Lemma sumn_big_addn s : sumn s = \sum_ ( i <- s ) i.
@@ -470,10 +471,12 @@ Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
 
 End finfun_ext.
 
+Lemma bij_swap A B : bijective (@swap A B).
+Proof. apply Bijective with swap; by case. Qed.
+Arguments bij_swap {A B}.
+
 Section finset_ext.
 Implicit Types A B : finType.
-
-Definition swap {A B : Type} (ab : A * B) := (ab.2, ab.1).
 
 Lemma injective_swap (A B : finType) (E : {set A * B}) : {in E &, injective swap}.
 Proof. by case=> a b [a0 b0] /= _ _ [-> ->]. Qed.

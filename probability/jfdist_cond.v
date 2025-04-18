@@ -135,7 +135,7 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (E : {set A}) (F : {set B}).
 
 Lemma jPr_Pr : \Pr_(`p_[% X, Y]) [E | F] = `Pr[X \in E |Y \in F].
 Proof.
-rewrite /jcPr Pr_fdistmap_RV2/= cpr_eq_setE /cPr; congr (_ / _).
+rewrite /jcPr Pr_fdistmap_RV2/= cpr_inE /cPr; congr (_ / _).
 rewrite Pr_fdist_snd setTE Pr_fdistmap_RV2/=.
 rewrite (_ : [set x | X x \in [set: A]] = setT) ?setTI//.
 by apply/setP => x; rewrite !inE.
@@ -238,7 +238,7 @@ Lemma jproduct_rule E F : Pr P (E `* F) = \Pr_P[E | F] * Pr (P`2) F.
 Proof.
 have [/eqP PF0|PF0] := boolP (Pr (P`2) F == 0).
   rewrite jcPrE /cPr -{1}(setIT E) -{1}(setIT F) -setIX.
-  rewrite [LHS]Pr_domin_setI; last by rewrite -Pr_fdistX Pr_domin_setX // fdistX1.
+  rewrite [LHS]Pr_domin_setI; last by rewrite -Pr_fdistX fst_Pr_domin_setX // fdistX1.
   by rewrite setIC Pr_domin_setI ?mul0r // setTE Pr_setTX.
 rewrite -{1}(setIT E) -{1}(setIT F) -setIX product_rule.
 rewrite -EsetT setTT cPrET Pr_setT mulr1 jcPrE.
@@ -355,7 +355,7 @@ Lemma cPr_1 {R : realType} (U : finType) (P : R.-fdist U) (A B : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) a : `Pr[X = a] != 0 ->
   \sum_(b <- fin_img Y) `Pr[ Y = b | X = a ] = 1.
 Proof.
-rewrite -pr_eq_set1 pr_inE' Pr_set1 -{1}(fst_RV2 _ Y) => Xa0.
+rewrite -pr_in1 pr_inE' Pr_set1 -{1}(fst_RV2 _ Y) => Xa0.
 set Q := `p_[% X, Y] `(| a ).
 rewrite -[RHS](FDist.f1 Q) [in RHS](bigID (mem (fin_img Y))) /=.
 rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
@@ -371,7 +371,7 @@ rewrite big_const iter_addr mul0rn !addr0.
 rewrite big_uniq; last by rewrite /fin_img undup_uniq.
 apply eq_bigr => b; rewrite mem_undup => /mapP[u _ bWu].
 rewrite /Q jfdist_condE // fdistX_RV2.
-by rewrite jcPrE -cpr_inE' cpr_eq_set1.
+by rewrite jcPrE -cpr_inE' cpr_in1.
 Qed.
 
 Lemma jcPr_1 {R : realType} (A B : finType) (P : R.-fdist (A * B)) a : P`1 a != 0 ->
@@ -434,7 +434,7 @@ rewrite /den !fdistE [RHS]big_mkcond /=.
 under eq_bigl do rewrite inE.
 apply/eq_bigr => a _.
 rewrite !fdistE /= (big_pred1 (a,i)) ?fdistE /=;
-    last by case=> x y; rewrite /swap /= !xpair_eqE andbC.
+    last by case=> x y; rewrite /= !xpair_eqE andbC.
 rewrite eq_sym 2!inE.
 by case: eqP => // _; rewrite (mulr0,mulr1).
 Qed.
@@ -458,6 +458,7 @@ apply eq_bigr => k _.
 rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
 by case: ifP; rewrite (mulr1,mulr0).
 Qed.
+
 End fdistpart.
 
 Lemma dK {R : realType} n m K (e : R.-fdist 'I_m) j :
@@ -478,4 +479,5 @@ move=> /=.
 rewrite (bigD1 (K j)) //= eqxx mulr1.
 by rewrite big1 ?addr0 // => i /negbTE ->; rewrite mulr0.
 Qed.
+
 End FDistPart.

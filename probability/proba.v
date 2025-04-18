@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra fingroup lra.
 From mathcomp Require boolp.
-From mathcomp Require Import reals exp.
+From mathcomp Require Import mathcomp_extra reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
 (**md**************************************************************************)
@@ -68,6 +68,8 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 (*                         E : Pr P E != 0                                    *)
 (*   cinde_events E F G == E and F are conditionally independent events       *)
 (*                         given an event G                                   *)
+(*              inde_rv == TODO                                               *)
+(*             cinde_rv == TODO                                               *)
 (* `Pr[ X = a | Y = b ] == conditional probability for random variables       *)
 (* `Pr[ X \in E | Y \in F ] == conditional probability for random variables   *)
 (*  P |= X _|_ Y | Z, X _|_  Y | Z == the RVs X and Y  are conditionally      *)
@@ -390,19 +392,28 @@ Qed.
 
 End Pr_extra.
 
-Lemma Pr_domin_setX {R : realType} (A B : finType) (P : R.-fdist (A * B)) E F :
+Lemma fst_Pr_domin_setX {R : realType} (A B : finType) (P : R.-fdist (A * B)) E F :
   Pr P`1 E = 0 -> Pr P (E `* F) = 0.
 Proof.
 move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
 by rewrite inE /= => /andP[/H /dom_by_fdist_fst ->].
 Qed.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `fst_Pr_domin_setX`")]
+Notation Pr_domin_setX := fst_Pr_domin_setX (only parsing).
+
+Lemma snd_Pr_domin_setX {R : realType} (A B : finType) (P : R.-fdist (A * B)) E F :
+  Pr P`2 F = 0 -> Pr P (E `* F) = 0.
+Proof.
+move/Pr_set0P => H; apply/Pr_set0P => -[? ?].
+by rewrite inE /= => /andP[/[swap] /H /dom_by_fdist_snd].
+Qed.
 
 Lemma Pr_domin_setXN {R : realType} (A B : finType) (P : R.-fdist (A * B)) E F :
   Pr P (E `* F) != 0 -> Pr P`1 E != 0.
-Proof. by apply/contra => /eqP/Pr_domin_setX => ?; exact/eqP. Qed.
+Proof. by apply/contra => /eqP/fst_Pr_domin_setX => ?; exact/eqP. Qed.
 
-Lemma Pr_fdistmap {R : realType} (A B : finType) (f : A -> B) (d : R.-fdist A) (E : {set A}) :
-  injective f ->
+Lemma Pr_fdistmap {R : realType} (A B : finType) (f : A -> B) (d : R.-fdist A)
+    (E : {set A}) : injective f ->
   Pr d E = Pr (fdistmap f d) (f @: E).
 Proof.
 move=> bf; rewrite /Pr.
@@ -515,7 +526,7 @@ Section random_variable_eqType.
 Context {R : realType}.
 Variables (U : finType) (A : eqType) (P : R.-fdist U).
 
-Definition pr_eq (X : {RV P -> A}) (a : A) := locked (Pr P (finset (X @^-1 a))).
+Definition pr_eq (X : {RV P -> A}) (a : A) := locked (Pr P ((finset (X @^-1 a)))).
 Local Notation "`Pr[ X = a ]" := (pr_eq X a).
 
 Lemma pr_eqE (X : {RV P -> A}) (a : A) : `Pr[ X = a ] = Pr P (finset (X @^-1 a)).
@@ -561,38 +572,60 @@ End random_variable_order.
 Notation "'`Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
 Notation "'`Pr[' X '<=' r ']'" := (pr_leq X r) : proba_scope.
 
+Lemma preimg_set1 {R : realType} (U : finType) (P : R.-fdist U) (A : finType)
+    (X : {RV P -> A}) (a : A) :
+  X @^-1: [set a] = finset (preim X (pred1 a)).
+Proof. by apply/setP => x; rewrite !inE. Qed.
+
 Section random_variable_finType.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A : finType).
 
-Definition pr_eq_set (X : {RV P -> A}) (E : {set A}) :=
+Definition pr_in (X : {RV P -> A}) (E : {set A}) :=
   locked (Pr P (X @^-1: E)).
-Local Notation "`Pr[ X '\in' E ]" := (pr_eq_set X E).
+Local Notation "`Pr[ X '\in' E ]" := (pr_in X E).
 
-Lemma pr_eq_setE (X : {RV P -> A}) (E : {set A}) :
+Lemma pr_inE (X : {RV P -> A}) (E : {set A}) :
   `Pr[ X \in E ] = Pr P (X @^-1: E).
-Proof. by rewrite /pr_eq_set; unlock. Qed.
+Proof. by rewrite /pr_in; unlock. Qed.
 
 Definition dist_of_RV (X : {RV P -> A}) : R.-fdist A := fdistmap X P.
 Local Notation "`p_ X" := (dist_of_RV X).
 
+(* TODO: rename *)
+Lemma pr_eqE_finType (X : {RV P -> A}) (a : A) :
+  `Pr[ X = a ] = Pr P (X @^-1: [set a]).
+Proof. by rewrite pr_eqE -preimg_set1. Qed.
+
 Lemma pr_eqE' (X : {RV P -> A}) (a : A) : `Pr[ X = a ] = `p_X a.
 Proof.
-by rewrite /dist_of_RV fdistmapE pr_eqE /Pr /=; apply eq_bigl => i; rewrite inE.
+by rewrite pr_eqE_finType /Pr fdistmapE//; apply eq_bigl => i; rewrite !inE.
+Qed.
+
+Lemma pr_eq1 (X : {RV P -> A}) : \sum_a `Pr[ X = a ] = 1.
+Proof.
+under eq_bigr do rewrite pr_eqE'.
+by rewrite FDist.f1.
 Qed.
 
 Lemma pr_inE' (X : {RV P -> A}) (E : {set A}) : `Pr[ X \in E ] = Pr `p_X E.
 Proof.
-rewrite pr_eq_setE /Pr partition_big_preimset /=.
+rewrite pr_inE /Pr partition_big_preimset /=.
 by apply eq_bigr => a aE; rewrite /dist_of_RV fdistmapE.
 Qed.
 
-Lemma pr_eq_set1 (X : {RV P -> A}) x : `Pr[ X \in [set x] ] = `Pr[ X = x ].
+Lemma pr_in1 (X : {RV P -> A}) x : `Pr[ X \in [set x] ] = `Pr[ X = x ].
 Proof. by rewrite pr_inE' Pr_set1 pr_eqE'. Qed.
 
 End random_variable_finType.
-Notation "`Pr[ X '\in' E ]" := (pr_eq_set X E) : proba_scope.
+Notation "`Pr[ X '\in' E ]" := (pr_in X E) : proba_scope.
 Notation "`p_ X" := (dist_of_RV X) : proba_scope.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `pr_in`")]
+Notation pr_eq_set := pr_in (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `pr_inE`")]
+Notation pr_eq_setE := pr_inE (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `pr_in1`")]
+Notation pr_eq_set1 := pr_in1 (only parsing).
 
 Section random_variables.
 Context {R : realType}.
@@ -758,9 +791,9 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 Variables (TX : {RV P -> TA}) (TY : {RV P -> TB}) (TZ : {RV P -> TC}).
 
 Lemma pr_in_pairC E F : `Pr[ [% Y, X] \in F `* E ] = `Pr[ [% X, Y] \in E `* F].
-Proof. by rewrite 2!pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbC. Qed.
+Proof. by rewrite 2!pr_inE; apply eq_bigl => u; rewrite !inE /= andbC. Qed.
 
-Lemma pr_eq_pairC a b : `Pr[ [% TY, TX] = (b, a) ] = `Pr[ [% TX, TY] = (a, b)].
+Lemma pr_eq_pairC x : `Pr[ [% TY, TX] = x ] = `Pr[ [% TX, TY] = swap x].
 Proof.
 by rewrite !pr_eqE; congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE andbC.
 Qed.
@@ -768,7 +801,7 @@ Qed.
 Lemma pr_in_pairA E F G :
   `Pr[ [% X, [% Y, Z]] \in E `* (F `* G) ] =
   `Pr[ [% [% X, Y], Z] \in (E `* F) `* G].
-Proof. by rewrite !pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbA. Qed.
+Proof. by rewrite !pr_inE; apply eq_bigl => u; rewrite !inE /= andbA. Qed.
 
 Lemma pr_eq_pairA a b c :
   `Pr[ [% TX, [% TY, TZ]] = (a, (b, c))] = `Pr[ [% TX, TY, TZ] = (a, b, c) ].
@@ -778,7 +811,7 @@ Qed.
 
 Lemma pr_in_pairAC E F G :
 `Pr[ [% X, Y, Z] \in (E `* F) `* G] = `Pr[ [% X, Z, Y] \in (E `* G) `* F].
-Proof. by rewrite !pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbAC. Qed.
+Proof. by rewrite !pr_inE; apply eq_bigl => u; rewrite !inE /= andbAC. Qed.
 
 Lemma pr_eq_pairAC a b c :
 `Pr[ [% TX, TY, TZ] = (a, b, c) ] = `Pr[ [% TX, TZ, TY] = (a, c, b)].
@@ -788,7 +821,7 @@ Qed.
 
 Lemma pr_in_pairCA E F G :
 `Pr[ [% X, [%Y, Z]] \in E `* (F `* G) ] = `Pr[ [% Y, [%X, Z]] \in F `* (E `* G)].
-Proof. by rewrite !pr_eq_setE; apply eq_bigl => u; rewrite !inE /= andbCA. Qed.
+Proof. by rewrite !pr_inE; apply eq_bigl => u; rewrite !inE /= andbCA. Qed.
 
 Lemma pr_eq_pairCA  a b c :
 `Pr[ [% TX, [%TY, TZ]] = (a, (b, c)) ] = `Pr[ [% TY, [% TX, TZ]] = (b, (a, c))].
@@ -806,18 +839,18 @@ Lemma pr_eq_comp (f : A -> B) a : injective f ->
   `Pr[ X = a ] = `Pr[ (f `o X) = f a ].
 Proof.
 move=> inj_f.
-by rewrite -!pr_eq_set1 !pr_inE' (Pr_fdistmap inj_f) fdistmap_comp imset_set1.
+by rewrite -!pr_in1 !pr_inE' (Pr_fdistmap inj_f) fdistmap_comp imset_set1.
 Qed.
 
 End pr_pair.
 
-Lemma pr_eq_pair_setT {R : realType} (U : finType) (P : R.-fdist U) (A B : finType) (E : {set A})
-    (X : {RV P -> A}) (Y : {RV P -> B}) :
+Lemma pr_eq_pair_setT {R : realType} (U : finType) (P : R.-fdist U)
+    (A B : finType) (E : {set A}) (X : {RV P -> A}) (Y : {RV P -> B}) :
   `Pr[ [% X, Y] \in E `*T ] = `Pr[ X \in E ].
 Proof.
 apply/esym.
 rewrite (@pr_in_comp _ _ _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
-rewrite 2!pr_eq_setE; congr Pr; apply/setP => u; rewrite !inE /=.
+rewrite 2!pr_inE; congr Pr; apply/setP => u; rewrite !inE /=.
 by apply/imsetP/idP => [[a aE [] ->//]|XuE]; exists (X u).
 Qed.
 
@@ -828,15 +861,20 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 Variables (TX : {RV P -> A}) (TY : {RV P -> B}).
 
 Lemma pr_in_domin_RV2 E F : `Pr[ X \in E] = 0 -> `Pr[ [% X, Y] \in E `* F] = 0.
+Proof. by move=> H; rewrite pr_inE' fst_Pr_domin_setX // fst_RV2 -pr_inE'. Qed.
+
+Lemma pr_eq_domin_RV1 a b : `Pr[ TY = b ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
-move=> H; by rewrite pr_inE' Pr_domin_setX // fst_RV2 -pr_inE'.
+move=> H.
+rewrite -pr_in1 -setX1 pr_inE' snd_Pr_domin_setX // snd_RV2 -pr_inE'.
+by rewrite pr_in1.
 Qed.
 
 Lemma pr_eq_domin_RV2 a b : `Pr[ TX = a ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
 move=> H.
-rewrite -pr_eq_set1 -setX1 pr_inE' Pr_domin_setX // fst_RV2 -pr_inE'.
-by rewrite pr_eq_set1.
+rewrite -pr_in1 -setX1 pr_inE' fst_Pr_domin_setX // fst_RV2 -pr_inE'.
+by rewrite pr_in1.
 Qed.
 
 End RV_domin.
@@ -1310,7 +1348,7 @@ Section k_wise_independence.
 Context {R : realType}.
 Variables (A I : finType) (k : nat) (d : R.-fdist A) (E : I -> {set A}).
 
-Definition kwise_inde := forall (J : {set I}), (#|J| <= k)%nat ->
+Definition kwise_inde := forall J : {set I}, (#|J| <= k)%N ->
   Pr d (\bigcap_(i in J) E i) = \prod_(i in J) Pr d (E i).
 
 End k_wise_independence.
@@ -1322,15 +1360,14 @@ Variables (A I : finType) (d : R.-fdist A) (E : I -> {set A}).
 Definition pairwise_inde := @kwise_inde R A I 2%nat d E.
 
 Lemma pairwise_indeE :
-  pairwise_inde <-> (forall i j, i != j -> inde_events d (E i) (E j)).
+  pairwise_inde <-> forall i j, i != j -> inde_events d (E i) (E j).
 Proof.
 split => [pi i j ij|].
-  red in pi.
-  red in pi.
-  have /pi : (#|[set i; j]| <= 2)%nat by rewrite cards2 ij.
+  rewrite /pairwise_inde in pi.
+  have /pi : (#|[set i; j]| <= 2)%N by rewrite cards2 ij.
   rewrite bigcap_setU !big_set1 => H.
-  rewrite /inde_events H (big_setD1 i) ?inE ?eqxx ?orTb //= setU1K ?inE//.
-  by rewrite big_set1.
+  rewrite /inde_events.
+  by rewrite H (big_setD1 i) ?inE ?eqxx ?orTb//= setU1K ?inE// big_set1.
 move=> H s.
 move sn : (#| s |) => n.
 case: n sn => [|[|[|//]]].
@@ -1347,7 +1384,7 @@ Section mutual_independence.
 Context {R : realType}.
 Variables (A I : finType) (d : R.-fdist A) (E : I -> {set A}).
 
-Definition mutual_inde := (forall k, @kwise_inde R A I k.+1 d E).
+Definition mutual_inde := forall k, @kwise_inde R A I k.+1 d E.
 
 Lemma mutual_indeE :
   mutual_inde <-> (forall J : {set I}, J \subset I ->
@@ -1679,6 +1716,16 @@ Proof. by rewrite /cPr_eq; unlock. Qed.
 End crandom_variable_eqType.
 Notation "`Pr[ X = a | Y = b ]" := (cPr_eq X a Y b) : proba_scope.
 
+Section cPr_eq_finType.
+Context {R : realType}.
+Variables (U : finType) (A B : finType) (P : R.-fdist U).
+
+Lemma cPr_eq_finType (X : {RV P -> A}) (a : A) (Y : {RV P -> B}) (b : B) :
+  `Pr[ X = a | Y = b ] = `Pr_P [ X @^-1: [set a] | Y @^-1: [set b] ].
+Proof. by rewrite cPr_eq_def !preimg_set1. Qed.
+
+End cPr_eq_finType.
+
 #[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_eq`")]
 Notation cpr_eq0 := cPr_eq (only parsing).
 #[deprecated(since="infotheo 0.7.2", note="renamed to `cPr_eq_def`")]
@@ -1703,42 +1750,49 @@ Context {R : realType}.
 Variables (U A B : finType) (P : R.-fdist U).
 Implicit Types X : {RV P -> A}.
 
-Definition cpr_eq_set X (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :=
+Definition cpr_in X (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :=
   locked (`Pr_P [ X @^-1: E | Y @^-1: F ]).
-Local Notation "`Pr[ X \in E | Y \in F ]" := (cpr_eq_set X E Y F).
+Local Notation "`Pr[ X \in E | Y \in F ]" := (cpr_in X E Y F).
 
-Lemma cpr_eq_setE X (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :
+Lemma cpr_inE X (E : {set A}) (Y : {RV P -> B}) (F : {set B}) :
   `Pr[ X \in E | Y \in F ] = `Pr_P [ X @^-1: E | Y @^-1: F ].
-Proof. by rewrite /cpr_eq_set; unlock. Qed.
+Proof. by rewrite /cpr_in; unlock. Qed.
 
-Lemma cpr_eq_set1 X x (Y : {RV P -> B}) y :
+Lemma cpr_in1 X x (Y : {RV P -> B}) y :
   `Pr[ X \in [set x] | Y \in [set y] ] = `Pr[ X = x | Y = y ].
 Proof.
-by rewrite cpr_eq_setE cPr_eq_def; congr cPr; apply/setP => u; rewrite !inE.
+by rewrite cpr_inE cPr_eq_def; congr cPr; apply/setP => u; rewrite !inE.
 Qed.
 
 End crandom_variable_finType.
-Notation "`Pr[ X '\in' E | Y '\in' F ]" := (cpr_eq_set X E Y F) : proba_scope.
+Notation "`Pr[ X '\in' E | Y '\in' F ]" := (cpr_in X E Y F) : proba_scope.
 Notation "`Pr[ X '\in' E | Y = b ]" :=
   (`Pr[ X \in E | Y \in [set b]]) : proba_scope.
 Notation "`Pr[ X = a | Y '\in' F ]" :=
   (`Pr[ X \in [set a] | Y \in F]) : proba_scope.
 
+#[deprecated(since="infotheo 0.9.2", note="renamed to `cpr_in`")]
+Notation cpr_eq_set := cpr_in (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `cpr_inE`")]
+Notation cpr_eq_setE := cpr_inE (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `cpr_in1`")]
+Notation cpr_eq_set1 := cpr_in1 (only parsing).
+
 Lemma cpr_in_unit_RV {R : realType} (U A : finType) (P : R.-fdist U) (X : {RV P -> A})
     (E : {set A}) :
   `Pr[ X \in E | (unit_RV P) = tt ] = `Pr[ X \in E ].
 Proof.
-rewrite cpr_eq_setE (_ : _ @^-1: [set tt] = setT); last first.
+rewrite cpr_inE (_ : _ @^-1: [set tt] = setT); last first.
   by apply/setP => u; rewrite !inE.
-by rewrite cPrET pr_eq_setE.
+by rewrite cPrET pr_inE.
 Qed.
 
-Lemma cpr_inE {R : realType} (U : finType) (P : R.-fdist U) (A B : finType)
+Lemma cpr_inEdiv {R : realType} (U : finType) (P : R.-fdist U) (A B : finType)
     (X : {RV P -> A}) (Z : {RV P -> B}) E F :
-  `Pr[X \in E | Z \in F] = `Pr[ [%X, Z] \in E `* F]  / `Pr[Z \in F].
+  `Pr[X \in E | Z \in F] = `Pr[ [%X, Z] \in E `* F] / `Pr[Z \in F].
 Proof.
-rewrite /cpr_eq_set; unlock.
-rewrite !pr_eq_setE /cPr; congr (Pr _ _ * _).
+rewrite /cpr_in; unlock.
+rewrite !pr_inE /cPr; congr (Pr _ _ * _).
 by apply/setP => u; rewrite !inE.
 Qed.
 
@@ -1746,7 +1800,7 @@ Lemma cpr_inE' {R : realType} (U : finType) (P : R.-fdist U) (A B : finType)
   (X : {RV P -> A}) (Y : {RV P -> B}) (E : {set A}) (F : {set B}) :
   `Pr[ X \in E | Y \in F ] = `Pr_(`p_ [% X, Y]) [E `*T | T`* F].
 Proof.
-rewrite cpr_eq_setE /cPr /dist_of_RV; congr (_ / _).
+rewrite cpr_inE /cPr /dist_of_RV; congr (_ / _).
   rewrite setTE EsetT setIX setIT setTI.
   by rewrite Pr_fdistmap_RV2.
 by rewrite setTE Pr_fdistmap_RV2; congr Pr; apply/setP => u; rewrite !inE.
@@ -1769,9 +1823,9 @@ Qed.
 Lemma cpr_in_pairC E F G :
   `Pr[ [% Y, X] \in E `* F | Z \in G ] = `Pr[ [% X, Y] \in F `* E | Z \in G ].
 Proof.
-rewrite cpr_inE.
+rewrite cpr_inEdiv.
 rewrite pr_in_pairC pr_in_pairA pr_in_pairAC -pr_in_pairA pr_in_pairC.
-by rewrite -cpr_inE.
+by rewrite -cpr_inEdiv.
 Qed.
 
 Lemma cpr_eq_pairA a b c d :
@@ -1786,7 +1840,7 @@ Lemma cpr_in_pairA E F G H :
   `Pr[ [% X, [% Y, Z]] \in E `* (F `* G) | W \in H] =
   `Pr[ [% X, Y, Z] \in E `* F `* G | W \in H].
 Proof.
-rewrite 2!cpr_inE; congr (_ / _).
+rewrite 2!cpr_inEdiv; congr (_ / _).
 rewrite !pr_inE' !Pr_fdistmap_RV2; congr Pr.
 by apply/setP => u; rewrite !inE /= !andbA.
 Qed.
@@ -1805,7 +1859,7 @@ Lemma cpr_in_pairAr E F G H :
   `Pr[ X \in E | [% Y, [% Z, W]] \in F `* (G `* H) ] =
   `Pr[ X \in E | [% Y, Z, W] \in F `* G `* H ].
 Proof.
-rewrite 2!cpr_inE; congr (_ / _).
+rewrite 2!cpr_inEdiv; congr (_ / _).
 rewrite !pr_inE' !Pr_fdistmap_RV2; congr Pr.
 by apply/setP => u; rewrite !inE /= !andbA.
 by rewrite -pr_in_pairA.
@@ -1825,7 +1879,7 @@ Lemma cpr_in_pairAC E F G H :
   `Pr[ [% X, Y, Z] \in (E `* F `* G) | W \in H] =
   `Pr[ [% X, Z, Y] \in (E `* G `* F) | W \in H].
 Proof.
-rewrite 2!cpr_inE; congr (_ / _).
+rewrite 2!cpr_inEdiv; congr (_ / _).
 rewrite !pr_inE' !Pr_fdistmap_RV2; congr Pr.
 apply/setP => u; rewrite !inE /=; congr (_ && _).
 by rewrite andbAC.
@@ -1846,7 +1900,7 @@ Lemma cpr_in_pairACr E F G H :
   `Pr[ X \in E | [% Y, Z, W] \in F `* G `* H ] =
   `Pr[ X \in E | [% Y, W, Z] \in F `* H `* G ].
 Proof.
-rewrite 2!cpr_inE; congr (_ / _).
+rewrite 2!cpr_inEdiv; congr (_ / _).
 rewrite !pr_inE' !Pr_fdistmap_RV2; congr Pr.
 by apply/setP => u; rewrite !inE /= !andbA /= andbAC.
 by rewrite pr_in_pairAC.
@@ -1863,7 +1917,7 @@ Qed.
 Lemma cpr_in_pairCr E F G :
   `Pr[ X \in E | [% Y, Z] \in F `* G ] = `Pr[ X \in E | [% Z, Y] \in G `* F ].
 Proof.
-rewrite 2!cpr_inE.
+rewrite 2!cpr_inEdiv.
 rewrite pr_in_pairA pr_in_pairAC -pr_in_pairA; congr (_ / _).
 by rewrite pr_in_pairC.
 Qed.
@@ -1888,7 +1942,7 @@ Lemma reasoning_by_cases {R : realType} (U : finType) (P : R.-fdist U)
   (A B : finType) (X : {RV P -> A}) (Y : {RV P -> B}) E :
   `Pr[ X \in E ] = \sum_(b <- fin_img Y) `Pr[ [% X, Y] \in (E `* [set b])].
 Proof.
-rewrite pr_eq_setE.
+rewrite pr_inE.
 have -> : X @^-1: E = \bigcup_d [% X, Y] @^-1: ((E `* [set d])).
   rewrite bigcup_preimset; apply/setP => u; rewrite !inE; apply/idP/bigcupP.
   by move=> XuE; exists (Y u) => //; rewrite !inE /= XuE /=.
@@ -1902,17 +1956,17 @@ transitivity (\sum_(b in B) F b).
   rewrite [in RHS](bigID (mem (fin_img Y))) /=.
   rewrite [X in _ = _ + X]big1 ?addr0 //.
     by rewrite big_uniq // undup_uniq.
-  by move=> b bY; rewrite {}/F pr_in_pairC pr_in_domin_RV2 // pr_eq_set1 pr_eq0.
-by apply eq_bigr => b _; rewrite /F pr_eq_setE /Pr partition_big_preimset.
+  by move=> b bY; rewrite {}/F pr_in_pairC pr_in_domin_RV2 // pr_in1 pr_eq0.
+by apply eq_bigr => b _; rewrite /F pr_inE /Pr partition_big_preimset.
 Qed.
 
 Lemma creasoning_by_cases {R : realType} (U : finType) (P : R.-fdist U)
   (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) E F :
   `Pr[ X \in E | Z \in F ] = \sum_(b <- fin_img Y) `Pr[ [% X, Y] \in (E `* [set b]) | Z \in F].
 Proof.
-rewrite cpr_inE; under eq_bigr do rewrite cpr_inE.
+rewrite cpr_inEdiv; under eq_bigr do rewrite cpr_inEdiv.
 rewrite -big_distrl /= (reasoning_by_cases _ Y); congr (_ / _).
-by apply eq_bigr => b _; rewrite pr_in_pairAC.
+by apply: eq_bigr => b _; rewrite pr_in_pairAC.
 Qed.
 
 Section conditionnally_independent_discrete_random_variables.
@@ -1938,12 +1992,22 @@ End conditionnally_independent_discrete_random_variables.
 Notation "P |= X _|_  Y | Z" := (@cinde_rv _ _ P _ _ _ X Y Z) : proba_scope.
 Notation "X _|_  Y | Z" := (cinde_rv X Y Z) : proba_scope.
 
+Section cinde_rv_sym.
+Context {R : realType}.
+Variables (U : finType) (P : R.-fdist U) (A B C : finType).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+
+Lemma cinde_rv_sym : X _|_ Y | Z -> Y _|_  X | Z.
+Proof. by move=> H a b c; rewrite mulrC cpr_eq_pairC. Qed.
+
+End cinde_rv_sym.
+
 Section independent_rv.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB : eqType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
-Definition inde_rv := forall (x : TA) (y : TB),
+Definition inde_rv := forall x y,
   `Pr[ [% X, Y] = (x, y)] = `Pr[ X = x ] * `Pr[ Y = y ].
 
 Lemma cinde_rv_unit : inde_rv <-> cinde_rv X Y (unit_RV P).

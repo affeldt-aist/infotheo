@@ -311,7 +311,7 @@ Lemma mutual_information_concave :
   concave_function (fun P : {fdist A} => mutual_info (P `X W)).
 Proof.
 suff : concave_function
-  (fun P : {fdist A} => let PQ := fdistX (P `X W) in `H PQ`1 - cond_entropy PQ).
+  (fun P : {fdist A} => let PQ := fdistX (P `X W) in `H PQ`1 - centropy PQ).
   set f := fun _ => _. set g := fun _ => _.
   suff -> : f = g by [].
   by rewrite boolp.funeqE => d; rewrite {}/f {}/g /= -mutual_infoE -mutual_info_sym.
@@ -322,10 +322,10 @@ apply: R_concave_functionB.
   apply: le_trans (concave_H (p `X W)`2 (q `X W)`2 t).
   under eq_bigr do rewrite fdist_prod2_conv.
   by rewrite lexx.
-suff : affine (fun x : {fdist A} => cond_entropy (fdistX (x `X W))).
+suff : affine (fun x : {fdist A} => centropy (fdistX (x `X W))).
   by case/affine_functionP.
 move=> t p q.
-rewrite /= avgRE /cond_entropy /cond_entropy1.
+rewrite /= avgRE /centropy /centropy1.
 rewrite 2!big_distrr -big_split /=; apply eq_bigr => a _.
 rewrite !fdistX2 !fdist_fstE !mulrN -opprD; congr (- _).
 rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
