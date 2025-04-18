@@ -653,6 +653,40 @@ move=> xB; case/(B_covered x)/imsetP: (xB) => y yI xhy.
 by apply/imsetP; exists y => //; rewrite inE -xhy.
 Qed.
 
+Section more_preimset.
+Context {R : Type}.
+Variables (aT1 aT2 aT3 rT1 rT2 rT3 : finType).
+Variables (f : aT1 -> rT1)  (g : aT2 -> rT2) (h : aT3 -> rT3).
+Variables (A : {set rT1}) (B : {set rT2}) (C : {set rT3}).
+
+Local Notation "f × g" :=
+  (fun xy => (f xy.1, g xy.2)) (at level 10).
+
+Lemma preimsetX : f × g @^-1: (A `* B) = f @^-1: A `* g @^-1: B.
+Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
+
+Lemma preimsetX2 :
+  h × (f × g) @^-1: (C `* (A `* B)) = h @^-1: C `* (f @^-1: A `* g @^-1: B).
+Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
+
+Lemma in_preimset x (Y : {set rT1}) : (x \in f @^-1: Y) = (f x \in Y).
+Proof. by rewrite !inE. Qed.
+
+Lemma in_preimset1 x y : (x \in f @^-1: [set y]) = (f x == y).
+Proof. by rewrite !inE. Qed.
+
+End more_preimset.
+
+Lemma imsetPn {aT rT : finType} {f : aT -> rT} {D : mem_pred aT} {y : rT} :
+  reflect (forall x : aT, in_mem x D -> y != f x) (y \notin imset f D).
+Proof.
+apply: (iffP idP).
+  move/imsetP=> H x xD; apply/eqP=> yfx; apply: H.
+  by exists x.
+move=> H; apply/imsetP=> -[] x xD yfx.
+by have:= H x xD; rewrite yfx eqxx.
+Qed.
+
 Lemma big_set2 (R : Type) (idx : R) (op : Monoid.com_law idx) (I : finType)
   (a b : I) (F : I -> R) :
   a != b -> \big[op/idx]_(i in [set a; b]) F i = op (F a) (F b).

@@ -572,6 +572,7 @@ End random_variable_order.
 Notation "'`Pr[' X '>=' r ']'" := (pr_geq X r) : proba_scope.
 Notation "'`Pr[' X '<=' r ']'" := (pr_leq X r) : proba_scope.
 
+(* TODO: move *)
 Lemma preimg_set1 {R : realType} (U : finType) (P : R.-fdist U) (A : finType)
     (X : {RV P -> A}) (a : A) :
   X @^-1: [set a] = finset (preim X (pred1 a)).
@@ -843,6 +844,30 @@ by rewrite -!pr_in1 !pr_inE' (Pr_fdistmap inj_f) fdistmap_comp imset_set1.
 Qed.
 
 End pr_pair.
+
+Section more_pr_lemmas.
+Context {R : realType}.
+Variables (U : finType) (P : R.-fdist U).
+Variables (TA UA : finType) (f : TA -> UA) (X : {RV P -> TA}).
+
+(* TODO: rename *)
+Lemma pr_in_comp' E :
+  `Pr[ (f `o X) \in E ]  = `Pr[ X \in f @^-1: E ].
+Proof.
+rewrite !pr_inE' /Pr.
+rewrite partition_big_preimset /=.
+apply: eq_bigr=> i iE.
+under [RHS]eq_bigr=> j ?.
+  rewrite fdistmapE.
+  under eq_bigl do rewrite /= inE /=.
+  over.
+under eq_bigl do rewrite -in_preimset1.
+rewrite -partition_big_preimset /= fdistmapE.
+apply: eq_bigl=> j.
+by rewrite !inE.
+Qed.
+
+End more_pr_lemmas.
 
 Lemma pr_eq_pair_setT {R : realType} (U : finType) (P : R.-fdist U)
     (A B : finType) (E : {set A}) (X : {RV P -> A}) (Y : {RV P -> B}) :
