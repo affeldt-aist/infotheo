@@ -68,8 +68,10 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 (*                         E : Pr P E != 0                                    *)
 (*   cinde_events E F G == E and F are conditionally independent events       *)
 (*                         given an event G                                   *)
-(*              inde_rv == TODO                                               *)
-(*             cinde_rv == TODO                                               *)
+(*         P |= X _|_ Y == X and Y are independent                            *)
+(*                         The corresponding identifier is inde_RV            *)
+(*          X _|_ Y | Z == X and Y are conditionally independent given Z      *)
+(*                         The corresponding identifier is cinde_RV           *)
 (* `Pr[ X = a | Y = b ] == conditional probability for random variables       *)
 (* `Pr[ X \in E | Y \in F ] == conditional probability for random variables   *)
 (*  P |= X _|_ Y | Z, X _|_  Y | Z == the RVs X and Y  are conditionally      *)
@@ -108,8 +110,8 @@ Reserved Notation "'`log' P" (at level 5).
 Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
   format "[%  x ,  y ,  .. ,  z ]").
 Reserved Notation "X '\=sum' Xs" (at level 50).
-Reserved Notation "'`E'" (at level 5).
-Reserved Notation "'`V'" (at level 5).
+Reserved Notation "'`E'" (at level 0).
+Reserved Notation "'`V'" (at level 0).
 Reserved Notation "`Pr_ P [ A | B ]" (at level 6, P, A, B at next level,
   format "`Pr_ P [ A  |  B ]").
 Reserved Notation "`Pr_[ A | B ]" (at level 6, A, B at next level,
@@ -1994,16 +1996,16 @@ rewrite -big_distrl /= (reasoning_by_cases _ Y); congr (_ / _).
 by apply: eq_bigr => b _; rewrite pr_in_pairAC.
 Qed.
 
-Section conditionnally_independent_discrete_random_variables.
+Section conditionnally_independent_discrete_RVs.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B C : eqType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
-Definition cinde_rv := forall a b c,
+Definition cinde_RV := forall a b c,
   `Pr[ [% X, Y] = (a, b) | Z = c ] = `Pr[ X = a | Z = c ] * `Pr[ Y = b | Z = c].
 
-Lemma cinde_rv_events : cinde_rv <->
-  (forall x y z, cinde_events P (finset (X @^-1 x)) (finset (Y @^-1 y)) (finset (Z @^-1 z))).
+Lemma cinde_RV_events : cinde_RV <-> (forall x y z,
+  cinde_events P (finset (X @^-1 x)) (finset (Y @^-1 y)) (finset (Z @^-1 z))).
 Proof.
 split=> [H /= x y z|/= H x y z].
 - rewrite /cinde_events -2!cPr_eq_def -H cPr_eq_def; congr cPr.
@@ -2012,46 +2014,56 @@ split=> [H /= x y z|/= H x y z].
   by apply/setP => /= ab; rewrite !inE.
 Qed.
 
-End conditionnally_independent_discrete_random_variables.
+End conditionnally_independent_discrete_RVs.
+Notation "P |= X _|_  Y | Z" := (@cinde_RV _ _ P _ _ _ X Y Z) : proba_scope.
+Notation "X _|_  Y | Z" := (cinde_RV X Y Z) : proba_scope.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `cinde_RV`")]
+Notation cinde_rv := cinde_RV (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `cinde_RV_events`")]
+Notation cinde_rv_events := cinde_RV_events (only parsing).
 
-Notation "P |= X _|_  Y | Z" := (@cinde_rv _ _ P _ _ _ X Y Z) : proba_scope.
-Notation "X _|_  Y | Z" := (cinde_rv X Y Z) : proba_scope.
-
-Section cinde_rv_sym.
+Section cinde_RV_sym.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B C : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
-Lemma cinde_rv_sym : X _|_ Y | Z -> Y _|_  X | Z.
+Lemma cinde_RV_sym : X _|_ Y | Z -> Y _|_  X | Z.
 Proof. by move=> H a b c; rewrite mulrC cpr_eq_pairC. Qed.
 
-End cinde_rv_sym.
+End cinde_RV_sym.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `cinde_RV_sym`")]
+Notation cinde_rv_sym := cinde_RV_sym (only parsing).
 
 Section independent_rv.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB : eqType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
-Definition inde_rv := forall x y,
+Definition inde_RV := forall x y,
   `Pr[ [% X, Y] = (x, y)] = `Pr[ X = x ] * `Pr[ Y = y ].
 
-Lemma cinde_rv_unit : inde_rv <-> cinde_rv X Y (unit_RV P).
+Lemma cinde_RV_unit : inde_RV <-> cinde_RV X Y (unit_RV P).
 Proof.
 split => [H a b []|H a b]; first by rewrite !cpr_eq_unit_RV H.
 by have := H a b tt; rewrite !cpr_eq_unit_RV.
 Qed.
 
-Lemma inde_rv_events : inde_rv <->
+Lemma inde_RV_events : inde_RV <->
   (forall x y, inde_events P (finset (X @^-1 x)) (finset (Y @^-1 y))).
 Proof.
-split => [/cinde_rv_unit/cinde_rv_events H a b|H].
+split => [/cinde_RV_unit/cinde_RV_events H a b|H].
   exact/cinde_events_unit/(H _ _ tt).
-by apply/cinde_rv_unit/cinde_rv_events => a b []; exact/cinde_events_unit/H.
+by apply/cinde_RV_unit/cinde_RV_events => a b []; exact/cinde_events_unit/H.
 Qed.
 
 End independent_rv.
-
-Notation "P |= X _|_ Y" := (@inde_rv _ _ P _ _ X Y) : proba_scope.
+Notation "P |= X _|_ Y" := (@inde_RV _ _ P _ _ X Y) : proba_scope.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `inde_RV`")]
+Notation inde_rv := inde_RV (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `cinde_RV_unit`")]
+Notation cinde_rv_unit := cinde_RV_unit (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `inde_RV_events`")]
+Notation inde_rv_events := inde_RV_events (only parsing).
 
 Lemma cinde_alt {R : realType} (U : finType) (P : R.-fdist U) (A B C : finType)
     (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
@@ -2132,7 +2144,8 @@ apply trans_eq with (\sum_(a in A) \sum_(j in 'rV[A]_n.+1)
   (X1 a * X2 j * P (row_mx (\row_(k < 1) a) j))).
   apply eq_bigr => a _; apply eq_bigr => ta _.
   by rewrite row_mx_row_ord0 rbehead_row_mx.
-rewrite (partition_big_undup_map _ X1); last by rewrite /index_enum -enumT; apply enum_uniq.
+rewrite (partition_big_undup_map _ X1); last first.
+  by rewrite /index_enum -enumT; apply enum_uniq.
 rewrite /index_enum -enumT.
 apply eq_bigr => /= r _.
 rewrite {1}enumT exchange_big /= (partition_big_undup_map _ X2); last first.
@@ -2218,7 +2231,7 @@ Let XmY : {RV P -> R} := (fun x => X x.1 * Y x.2).
 Let X' : {RV P -> R} := fun x => X x.1.
 Let Y' : {RV P -> R} := fun x => Y x.2.
 
-Lemma E_prod_2 : inde_rv X' Y' -> `E XmY = `E X * `E Y.
+Lemma E_prod_2 : P |= X' _|_ Y' -> `E XmY = `E X * `E Y.
 Proof.
 move=> Hinde.
 transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
@@ -2277,9 +2290,9 @@ Let X' : {RV P -> TA} := fun x => X x.1.
 Let Y' : {RV P -> TB} := fun x => Y x.2.
 Let XY : {RV P -> (TA * TB)%type} := fun x => (X' x, Y' x).
 
-Lemma prod_dist_inde_rv : inde_rv X' Y'.
+Lemma prod_dist_inde_RV : P |= X' _|_ Y'.
 Proof.
-apply/inde_rv_events => x y.
+apply/inde_RV_events => x y.
 rewrite (_ : [set _ | _ ] = finset (X @^-1 x) `*T); last first.
   by apply/setP => -[a b]; rewrite !inE.
 rewrite (_ : [set x | preim Y' (pred1 y) x] = T`* finset (Y @^-1 y)); last first.
@@ -2288,16 +2301,18 @@ by rewrite /P /inde_events -Pr_fdist_prod.
 Qed.
 
 End independent_rv_lemma.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `prod_dist_inde_RV`")]
+Notation prod_dist_inde_rv := prod_dist_inde_RV (only parsing).
 
 Local Open Scope vec_ext_scope.
-Lemma prod_dist_inde_rv_vec {R : realType} (A : finType) (P : R.-fdist A)
+Lemma prod_dist_inde_RV_rV {R : realType} (A : finType) (P : R.-fdist A)
     n (X : A -> R) (Y : {RV (P `^ n) -> R}) x y :
   `Pr[ ([% (fun v => X v ``_ ord0) : {RV (P`^n.+1) -> _},
            (fun v => Y (rbehead v) : _ )]) = (x, y) ] =
   `Pr[ ((fun v => X v ``_ ord0) : {RV (P`^n.+1) -> _}) = x ] *
   `Pr[ ((fun v => Y (rbehead v)) : {RV (P`^n.+1) -> _}) = y ].
 Proof.
-have /= := @prod_dist_inde_rv _ _ _ P (P `^ n) _ _ X Y x y.
+have /= := @prod_dist_inde_RV _ _ _ P (P `^ n) _ _ X Y x y.
 rewrite !pr_eqE -!fdist_prod_of_fdist_rV.
 rewrite (_ : [set x0 | _] = (finset (X @^-1 x)) `* (finset (Y @^-1 y))); last first.
   by apply/setP => -[a b]; rewrite !inE /= xpair_eqE.
@@ -2313,6 +2328,8 @@ by rewrite Pr_fdist_prod_of_rV2; congr (Pr _ _ * Pr (P `^ n.+1) _);
   apply/setP => v; rewrite !inE.
 Qed.
 Local Close Scope vec_ext_scope.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `prod_dist_inde_RV_rV`")]
+Notation prod_dist_inde_rv_vec := prod_dist_inde_RV_rV (only parsing).
 
 Section sum_n_rand_var.
 Context {R : realType}.
@@ -2363,8 +2380,9 @@ case=> [_ | n IH] Xsum Xs Hsum s Hs.
   subst Z n0 Xs.
   move: {IH}(IH Y _ H2) => IH.
   rewrite -[in RHS](add2n n) mulrDl -IH.
-  + rewrite mul1r (V_sum_2 H3) //; last exact: prod_dist_inde_rv_vec.
-    by rewrite -(Hs ord0) /= row_mx_row_ord0 // head_of_fdist_rV_fdist_rV tail_of_fdist_rV_fdist_rV.
+  + rewrite mul1r (V_sum_2 H3) //; last exact: prod_dist_inde_RV_rV.
+    rewrite -(Hs ord0) /= row_mx_row_ord0 // head_of_fdist_rV_fdist_rV.
+    by rewrite tail_of_fdist_rV_fdist_rV.
   + move=> i; rewrite -(Hs (lift ord0 i)).
     congr (`V _).
     rewrite (_ : lift _ _ = rshift 1 i); last exact: val_inj.

@@ -411,7 +411,7 @@ Proof.
 rewrite /cinde_preim /preim_vars.
 split.
 - move=> Hpreim.
-  apply/cinde_rv_events => a b c.
+  apply/cinde_RV_events => a b c.
   set vals := set_val a (set_val c (set_val b vals0)).
   have vi : vals i = a by rewrite /vals set_val_hd.
   move: (erefl vals) {Hpreim} (Hpreim vals).
@@ -429,7 +429,7 @@ split.
       rewrite (proj2 (cPr_eq0P _ _ _)); last first.
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /= /eqP ->; rewrite ac.
-      by rewrite GRing.mul0r.
+      by rewrite mul0r.
     move=> nik c vi HG Hvals; apply: HG => //.
     by rewrite Hvals set_val_tl // set_val_hd.
   move=> vk.
@@ -477,7 +477,7 @@ split.
     by rewrite Hvals set_val_tl // set_val_tl // set_val_hd.
   by rewrite vi vk => -> _.
 - move=> Hdrv vals.
-  move/cinde_rv_events/(_ (vals i) (vals j) (vals k)): Hdrv.
+  move/cinde_RV_events/(_ (vals i) (vals j) (vals k)): Hdrv.
   by rewrite !big_set1.
 Qed.
 
@@ -491,7 +491,7 @@ move=> /setP eg.
 apply/eq_bigr => /= i ig.
 apply/setP => u.
 rewrite !inE set_vals_tl //.
-move: (eg i); by rewrite !inE ig andbT => ->.
+by move: (eg i); rewrite !inE ig andbT => ->.
 Qed.
 
 Lemma preim_inter (T S : eqType) (e : U -> T) (g : U -> S) (A : T) (C : S) :
@@ -513,7 +513,7 @@ Lemma preim_vars_vals (e : {set 'I_n}) (A : prod_types types e) vals1 vals2 :
 Proof.
 move=> Hvals.
 apply/eq_bigr => /= i ie.
-apply/setP => u; by rewrite !inE Hvals.
+by apply/setP => u; rewrite !inE Hvals.
 Qed.
 
 Lemma disjoint_preim_vars (e f : {set 'I_n}) (A B : prod_types types f) vals :
@@ -722,7 +722,7 @@ Lemma cinde_preim_ok (e f g : {set 'I_n}) :
 Proof.
 split.
 - move=> Hpreim.
-  apply/cinde_rv_events => A B C.
+  apply/cinde_RV_events => A B C.
   set vals := set_vals C (set_vals A (set_vals B vals0)).
   case /boolP: [forall i in e, vals i == set_vals A vals0 i]; last first.
     case: (cinde_events_vals A B C) => // /forallP Heg /negP; elim.
@@ -780,7 +780,7 @@ split.
   (* cPr = 1 *)
   exact: (cinde_events_cPr1 (i:=i)).
 - move=> Hdrv vals.
-  move/cinde_rv_events: Hdrv.
+  move/cinde_RV_events: Hdrv.
   move/(_ (prod_vals e vals) (prod_vals f vals) (prod_vals g vals)).
   rewrite -(preim_vars_vals (prod_vals e vals) (set_vals_prod_vals _ vals)).
   rewrite -(preim_vars_vals (prod_vals f vals) (set_vals_prod_vals _ vals)).

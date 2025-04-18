@@ -97,18 +97,11 @@ Variable (U : finType) (P : R.-fdist U).
 Variables (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
 Lemma symmetry : P |= X _|_ Y | Z -> P |= Y _|_ X | Z.
-Proof.
-move=> H b a c.
-rewrite /cinde_rv in H.
-rewrite cpr_eq_pairC.
-rewrite H.
-by rewrite mulrC.
-Qed.
+Proof. by move=> H b a c; rewrite cpr_eq_pairC H mulrC. Qed.
 
 End symmetry.
 
 Section decomposition.
-
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
@@ -130,7 +123,6 @@ Qed.
 End decomposition.
 
 Section weak_union.
-
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
@@ -155,7 +147,6 @@ Qed.
 End weak_union.
 
 Section contraction.
-
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
@@ -180,7 +171,6 @@ End contraction.
 
 (* Probabilistic Reasoning in Intelligent Systems: Networks of Plausible Inference, Pearl, p.88 *)
 Section derived_rules.
-
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
@@ -203,7 +193,6 @@ Qed.
 End derived_rules.
 
 Section intersection.
-
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B C D : finType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}).
@@ -211,7 +200,8 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) (W : {RV P -> D}
 Hypothesis P0 : forall b c d, `Pr[ [% Y, Z, W] = (b, c, d) ] != 0.
 Hypothesis D_not_empty : D.
 
-Lemma intersection : P |= X _|_ Y | [% Z, W] -> P |= X _|_ W | [% Z, Y] -> P |= X _|_ [% Y, W] | Z.
+Lemma intersection :
+  P |= X _|_ Y | [% Z, W] -> P |= X _|_ W | [% Z, Y] -> P |= X _|_ [% Y, W] | Z.
 Proof.
 move=> H1 H2.
 suff : P |= X _|_ Y | Z by apply contraction.
