@@ -9,8 +9,8 @@ Require Import proba jfdist_cond graphoid.
 Import GRing.Theory.
 Import Num.Theory.
 
-(******************************************************************************)
-(*                  SMC "Useful Tools" probability lemmas                     *)
+(**md**************************************************************************)
+(* # SMC "Useful Tools" probability lemmas                                    *)
 (*                                                                            *)
 (*     From: Information-theoretically Secure Number-product Protocol,        *)
 (*           Sec. III.B  "Useful Tools"                                       *)
@@ -44,54 +44,6 @@ Proof. by []. Qed.
 Lemma comp_RV3_ACA : [%h `o Z, [% (f `o X), (g `o Y)]] = h × (f × g) `o [%Z, [%X, Y]].
 Proof. by []. Qed.
 End more_rv_lemmas.
-
-Section more_preimset.
-Context {R : realType}.
-Variables (aT1 aT2 aT3 rT1 rT2 rT3 : finType).
-Variables (f : aT1 -> rT1)  (g : aT2 -> rT2) (h : aT3 -> rT3).
-Variables (A : {set rT1}) (B : {set rT2}) (C : {set rT3}).
-
-Local Notation "f × g" :=
-  (fun xy => (f xy.1, g xy.2)) (at level 10).
-
-Lemma preimsetX : f × g @^-1: (A `* B) = f @^-1: A `* g @^-1: B.
-Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
-
-Lemma preimsetX2 :
-  h × (f × g) @^-1: (C `* (A `* B)) = h @^-1: C `* (f @^-1: A `* g @^-1: B).
-Proof. by apply/setP=> -[] a b /=; rewrite !inE. Qed.
-
-Lemma in_preimset x (Y : {set rT1}) : (x \in f @^-1: Y) = (f x \in Y).
-Proof. by rewrite !inE. Qed.
-
-Lemma in_preimset1 x y : (x \in f @^-1: [set y]) = (f x == y).
-Proof. by rewrite !inE. Qed.
-
-End more_preimset.
-
-Section more_pr_lemmas.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U).
-Variables (TA UA : finType) (f : TA -> UA) (X : {RV P -> TA}).
-
-Lemma pr_in_comp' E :
-  `Pr[ (f `o X) \in E ]  = `Pr[ X \in f @^-1: E ].
-Proof.
-rewrite !pr_inE' /Pr.
-rewrite partition_big_preimset /=.
-apply: eq_bigr=> i iE.
-under [RHS]eq_bigr=> j ?.
-  rewrite fdistmapE.
-  under eq_bigl do rewrite /= inE /=.
-  over.
-under eq_bigl do rewrite -in_preimset1.
-rewrite -partition_big_preimset /= fdistmapE.
-apply: eq_bigl=> j.
-by rewrite !inE.
-Qed.
-
-End more_pr_lemmas.
-
 
 Section more_fdist.
 
