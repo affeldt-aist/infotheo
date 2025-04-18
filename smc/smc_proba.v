@@ -29,16 +29,6 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 
-Section conditionnally_independent_discrete_random_variables_extra.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U) (A B C : finType).
-Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
-
-Lemma cinde_rv_sym : X _|_ Y | Z -> Y _|_  X | Z.
-Proof. by move=> H a b c; rewrite mulrC cpr_eq_pairC. Qed.
-
-End conditionnally_independent_discrete_random_variables_extra.
-
 Section more_rv_lemmas.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
