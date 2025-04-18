@@ -96,17 +96,6 @@ Variables (UA UB UC: finType) (f : TA -> UA) (g : TB -> UB) (h : TC -> UC).
 Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
 
-Lemma RV2_indeC :
-  P |= [% X, X] _|_ [% Z, Y] ->
-  P |= [% X, Y] _|_ [% X, Z].
-Proof.
-rewrite /inde_rv => H [x1 y] [x2 z].
-rewrite [LHS]pr_eq_pairAC.
-rewrite -[LHS]pr_eq_pairA.
-have H1 := H (x1, x2) (z, y).
-rewrite -[LHS]pr_eq_pairA in H1.
-Abort.
-
 (* Information-Theoretically Secure Number Protocol*)
 (* Lemma 3.1 *)
 Lemma inde_rv_comp (UB' TB' : finType) (g' : TB' -> UB')(Y' : {RV P -> TB'}): P|= X _|_ Y' -> P|= (f `o X) _|_ (g' `o Y').
