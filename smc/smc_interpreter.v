@@ -5,14 +5,22 @@ Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
 Require Import smc_tactics.
 
-(******************************************************************************)
+(**md**************************************************************************)
+(* # Interpreter for Secure Multiparty Protocols                              *)
 (*                                                                            *)
-(*     Interpreter for Secure Multiparty Protocols                            *)
+(* ```                                                                        *)
+(*                    proc == type of the participants                        *)
+(*   interp_traces h procs == returns a tuple of lists of size <= h           *)
+(*                            h has type nat. procs has type seq (prod data). *)
+(* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
 
-Import GRing.Theory.
-Import Num.Theory.
+Reserved Notation "u *d w" (at level 40).
+Reserved Notation "u \*d w" (at level 40).
+
+Import GRing.Theory Num.Theory.
+
 Module scp := smc_entropy.smc_entropy_proofs.
 
 Set Implicit Arguments.
@@ -26,11 +34,9 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 
-Reserved Notation "u *d w" (at level 40).
-Reserved Notation "u \*d w" (at level 40).
-
 Section interp.
 Variable data : Type.
+
 Inductive proc : Type :=
   | Init : data -> proc -> proc
   | Send : nat -> data -> proc -> proc
@@ -72,6 +78,7 @@ Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
   else (ps, traces).
 
 Definition run_interp h procs := interp h procs (nseq (size procs) [::]).
+
 End interp.
 
 Arguments Finish {data}.
@@ -151,6 +158,7 @@ rewrite (nth_map [bseq]) // /interp_traces.
 rewrite size_tuple in Hi.
 by rewrite (_ : i = Ordinal Hi) // nth_mktuple.
 Qed.
+
 End traces.
 
 Section scalar_product.
@@ -158,7 +166,7 @@ Variable m : nat.
 Variable TX : finComRingType.
 Variable VX : lmodType TX. (* vector is not ringType (mul)*)
 Variable dotproduct : VX -> VX -> TX.
-Notation "u *d w" := (dotproduct u w).
+Local Notation "u *d w" := (dotproduct u w).
 
 Definition alice : nat := 0.
 Definition bob : nat := 1.
@@ -540,8 +548,8 @@ Check proof_alice.
 
 Let proof_bob := scp.pi2_bob_is_leakage_free_proof
       (card_rVTX:=card_VX)(r1:=r1)(y2:=y2)
-      x2s2_x1'_indepP x2s2x1'r2_y2_indepP x1x2s2x1'r2_y2_indepP
-      x2s2x1'_r2_indep x1x2s2x1'_r2_indep
+      x1x2s2x1'r2_y2_indepP
+      x1x2s2x1'_r2_indep
       (s1_x1x2s1s2_indep inputs) (x2s2_x1_indep inputs) (ps1_unif inputs).
 
 Check proof_bob.
