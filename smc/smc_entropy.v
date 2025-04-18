@@ -63,7 +63,7 @@ Module smc_entropy_proofs.
 
 Section extra_pr.
 Context {R : realType}.
-Variables (T TX TY : finType) (TX' : finZmodType).
+Variables (T TX TY : finType) (TX' : finType).
 Variable P : R.-fdist T.
 Variable n : nat.
 
@@ -188,22 +188,6 @@ Qed.
 
 End entropy_fdistmap.
 
-Lemma cond_entropyC {R : realType} (T : finType) (P : R.-fdist T)
-    (A B C : finType) (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}) :
-  `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
-Proof.
-rewrite /centropy_RV /centropy /=.
-rewrite (reindex (fun p : C * B => (p.2, p.1))) /=; last first.
-  by exists (fun p : B * C => (p.2, p.1)) => -[b c].
-apply: eq_bigr => -[c b] _ /=.
-rewrite !snd_RV2 -!pr_eqE' pr_eq_pairC.
-congr (_ * _).
-rewrite /centropy1; congr (- _).
-rewrite /jcPr !snd_RV2.
-apply: eq_bigr => a _.
-by rewrite !setX1 !Pr_set1 -!pr_eqE' !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
-Qed.
-
 Section joint_entropyA.
 Context {R : realType} (A B C : finType) (P : R.-fdist (A * B * C)).
 
@@ -307,7 +291,7 @@ Lemma cpr_cond_entropy1_RV' y4 :
   `H[ Y1 | Y4 = y4 ] = `H[ Y1 | (f `o Y4) = f y4 ].
 Proof.
 move=> H.
-rewrite /cond_entropy1_RV /cond_entropy1.
+rewrite /centropy1_RV /cond_entropy1.
 congr -%R.
 apply: eq_bigr => a _.
 by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_eq_set1 H.
