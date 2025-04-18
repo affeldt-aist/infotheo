@@ -81,7 +81,7 @@ Ltac apply_inde_rv_comp f g :=
       move => H;
       (have-> : v2l = f `o v1l by apply: boolp.funext => ? //=);
       (have-> : v2r = g `o v1r by apply: boolp.funext => ? //=);
-      exact: (inde_rv_comp f g H)
+      exact: (inde_RV_comp f g H)
   | _ =>
       fail
   end.
