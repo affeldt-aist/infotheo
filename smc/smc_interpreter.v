@@ -14,6 +14,10 @@ Require Import smc_tactics.
 (*                            h has type nat. procs has type seq (prod data). *)
 (* ```                                                                        *)
 (*                                                                            *)
+(* The most important thing in this file is the Theorem                       *)
+(* scalar_product_is_leakage_freeP at the end of file:                        *)
+(* It proves the information leakage freedom property of the protocol.        *)
+(*                                                                            *)
 (******************************************************************************)
 
 Reserved Notation "u *d w" (at level 40).
@@ -288,6 +292,7 @@ End scalar_product.
 Section pi2.
 
 Section information_leakage_proof.
+
 Context {R : realType}.
 Variable n m : nat.
 Variable T : finType.
@@ -338,16 +343,21 @@ Record scalar_product_random_inputs :=
     r1 : {RV P -> TX};
     y2 : {RV P -> TX};
 
-    (* TODO: prove others via these basic hypotheses
+    (* Each random variable is independ of any others excluding itself;
+       other necessary independence premises can be proven from these
+       primitive ones.
+    *)
     x1_indep : P |= x1 _|_ [%x2, s1, s2, r1, y2];
     x2_indep : P |= x2 _|_ [%x1, s1, s2, r1, y2];
-    *)
+    y2_indep : P |= y2 _|_ [%x2, s2, x1, s1, r1];
+    s1_indep : P |= s1 _|_ [%x2, s2, x1, y2, r1];
+    s2_indep : P |= s1 _|_ [%x2, s1, x1, y2, r1];
+    r1_indep : P |= r1 _|_ [%x2, s1, x1, y2, s2];
 
     x2s2x1s1r1_y2_indep : P |= [% x2, s2, x1, s1, r1] _|_ y2;
     x1s1r1_x2_indep : P |= [%x1, s1, r1] _|_ x2;
     s1_s2_indep : P |= s1 _|_ s2;
     s1s2_r1_indep : P |= [% s1, s2] _|_ r1;
-    x2_indep : P |= [% x1, s1, r1] _|_ x2;
     y2_x1x2s1s2r1_indep : P |= y2 _|_ [% x1, x2, s1, s2, r1];
     s1_x1x2s1s2_indep : P |= s1 _|_ [% x1, x2, s1, s2];
     s2_x1s1r1x2_indep : P |= s2 _|_ [% x1, s1, r1, x2];
@@ -393,6 +403,7 @@ Let x2' : {RV P -> VX} := x2 \+ s2.
 Let r2 : {RV P -> TX} := (s1 \*d s2) \- r1.
 Let t : {RV P -> TX} := x1' \*d x2 \+ r2 \- y2.
 Let y1 : {RV P -> TX} := t \- (x2' \*d s1) \+ r1.
+
 Let data := (sum TX VX).
 Let one x : data := inl x.
 Let vec x : data := inr x.
