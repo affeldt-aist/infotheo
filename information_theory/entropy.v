@@ -19,11 +19,11 @@ Require Import fdist jfdist_cond proba binary_entropy_function divergence.
 (*             joint_entropy P := `H P with P : R.-fdist (A * B)              *)
 (*                                entropy of a joint distribution             *)
 (*                    `H(X, Y) := joint_entropy `p_[% X, Y]                   *)
-(*          cond_entropy1 QP a == H(Y | X = a)                                *)
+(*              centropy1 QP a == H(Y | X = a)                                *)
 (*                                with QP : R.-fdist (B * A) and a : A        *)
 (*                                conditional entropy of a joint distribution *)
-(*             cond_entropy QP == H(Y | X)                                    *)
-(*      cond_entropy1_RV X Y a := `H (`p_[% X, Y] `(| a )).                   *)
+(*                 centropy QP == H(Y | X)                                    *)
+(*          centropy1_RV X Y a := `H (`p_[% X, Y] `(| a )).                   *)
 (*              mutual_info PQ := D(PQ || P `x Q)                             *)
 (*                   `I(X ; Y) == mutual information between RVs              *)
 (*        cond_mutual_info PQR == conditional mutual information              *)
@@ -306,7 +306,7 @@ Let P := QP`2.
 Let PQ := fdistX QP.
 
 (* cover&thomas 2.12 *)
-Lemma cond_entropyE : centropy QP = - \sum_(a in A) \sum_(b in B)
+Lemma centropyE : centropy QP = - \sum_(a in A) \sum_(b in B)
   PQ (a, b) * log (\Pr_QP [ [set b] | [set a]]).
 Proof.
 rewrite /centropy big_morph_oppr /=; apply eq_bigr => a _.
@@ -315,7 +315,7 @@ rewrite mulrA; congr (_ * _).
 by rewrite mulrC -(Pr_set1 P a) -jproduct_rule setX1 fdistXE Pr_set1.
 Qed.
 
-Lemma cond_entropy1_ge0 a : 0 <= centropy1 QP a.
+Lemma centropy1_ge0 a : 0 <= centropy1 QP a.
 Proof.
 rewrite /centropy1 big_morph_oppr; apply/sumr_ge0 => b _; rewrite -mulrN.
 have [->|H0] := eqVneq (\Pr_QP[[set b]|[set a]]) 0.
@@ -324,15 +324,21 @@ apply/mulr_ge0; [exact: jcPr_ge0|].
 by rewrite -oppr0 -log1 lerNr opprK ler_log ?posrE// ?jcPr_gt0// jcPr_le1.
 Qed.
 
-Lemma cond_entropy_ge0 : 0 <= centropy QP.
+Lemma centropy_ge0 : 0 <= centropy QP.
 Proof.
-by apply/sumr_ge0 => a _; apply/mulr_ge0 => //; exact: cond_entropy1_ge0.
+by apply/sumr_ge0 => a _; apply/mulr_ge0 => //; exact: centropy1_ge0.
 Qed.
 
 End conditional_entropy_lemmas.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `centropyE`")]
+Notation cond_entropyE := centropyE (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `centropy1_ge0`")]
+Notation cond_entropy1_ge0 := centropy1_ge0 (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `centropy_ge0`")]
+Notation cond_entropy_ge0E:= centropy_ge0 (only parsing).
 
 (* definitions using RVs *)
-Section cond_entropy1_RV_def.
+Section centropy1_RV_def.
 Context {R : realType} {U A B : finType} {P : R.-fdist U}.
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
@@ -340,7 +346,7 @@ Definition centropy1_RV a := centropy1 `p_[% Y, X] a.
 
 Definition centropy_RV := centropy `p_[% Y, X].
 
-End cond_entropy1_RV_def.
+End centropy1_RV_def.
 Notation "`H[ Y | X = a ]" := (centropy1_RV X Y a).
 Notation "`H( Y | X )" := (centropy_RV X Y).
 
@@ -364,30 +370,30 @@ Section conditional_entropy_RV_lemmas.
 Context {R : realType} {U A B : finType} {P : R.-fdist U}.
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
-Lemma cond_entropy_RVE' : `H(Y | X) = \sum_(a in A) `Pr[X = a] * `H[Y | X = a].
+Lemma centropy_RVE' : `H(Y | X) = \sum_(a in A) `Pr[X = a] * `H[Y | X = a].
 Proof. by apply: eq_bigr => a _; rewrite snd_RV2 -pr_eqE'. Qed.
 
 (* cover&thomas 2.12 *)
-Lemma cond_entropy_RVE : `H(Y | X) = - \sum_(a in A) \sum_(b in B)
+Lemma centropy_RVE : `H(Y | X) = - \sum_(a in A) \sum_(b in B)
   `p_[% X, Y] (a, b) * log (\Pr_`p_[% Y, X] [ [set b] | [set a]]).
 Proof.
-rewrite /centropy_RV cond_entropyE; congr (- _); apply: eq_bigr => a _.
+rewrite /centropy_RV centropyE; congr (- _); apply: eq_bigr => a _.
 by apply: eq_bigr => b _; rewrite fdistX_RV2.
 Qed.
 
-Lemma cond_entropy1_RV_ge0 a : 0 <= `H[Y | X = a].
-Proof. by rewrite /centropy1_RV cond_entropy1_ge0. Qed.
+Lemma centropy1_RV_ge0 a : 0 <= `H[Y | X = a].
+Proof. by rewrite /centropy1_RV centropy1_ge0. Qed.
 
-Lemma cond_entropy_RV_ge0 : 0 <= `H(Y | X).
-Proof. by rewrite /centropy_RV cond_entropy_ge0. Qed.
+Lemma centropy_RV_ge0 : 0 <= `H(Y | X).
+Proof. by rewrite /centropy_RV centropy_ge0. Qed.
 
 End conditional_entropy_RV_lemmas.
 
-Section cond_entropy1_RV_prop.
+Section centropy1_RV_prop.
 Context {R : realType} {U A B : finType} {P : R.-fdist U}.
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
-Lemma cond_entropy1_RVE a : (`p_[% X, Y])`1 a != 0 ->
+Lemma centropy1_RVE a : (`p_[% X, Y])`1 a != 0 ->
   `H[Y | X = a] = `H (`p_[% X, Y] `(| a )).
 Proof.
 move=> a0.
@@ -395,19 +401,19 @@ rewrite /centropy1_RV /centropy1 /entropy; congr (- _).
 by apply: eq_bigr => b _; rewrite jfdist_condE// fdistX_RV2.
 Qed.
 
-End cond_entropy1_RV_prop.
+End centropy1_RV_prop.
 
 Section conditional_entropy_prop.
 Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 
-Lemma cond_entropy1_fdistAC b c : centropy1 (fdistA PQR) (b, c) =
-                                  centropy1 (fdistA (fdistAC PQR)) (c, b).
+Lemma centropy1_fdistAC b c : centropy1 (fdistA PQR) (b, c) =
+                              centropy1 (fdistA (fdistAC PQR)) (c, b).
 Proof.
 rewrite /centropy1; congr (- _).
 by apply eq_bigr => a _; rewrite -!setX1 jcPr_fdistA_AC.
 Qed.
 
-Lemma cond_entropy_fdistA :
+Lemma centropy_fdistA :
   centropy (fdistA PQR) = centropy (fdistA (fdistAC PQR)).
 Proof.
 rewrite /centropy /=.
@@ -417,16 +423,20 @@ rewrite -(pair_bigA _ (fun a1 a2 => (fdistA PQR)`2 (a1, a2) *
                                     centropy1 (fdistA PQR) (a1, a2))) /=.
 rewrite exchange_big pair_big /=; apply eq_bigr => -[c b] _ /=; congr (_ * _).
   by rewrite fdistA_AC_snd fdistXE.
-by rewrite cond_entropy1_fdistAC.
+by rewrite centropy1_fdistAC.
 Qed.
 
 End conditional_entropy_prop.
+#[deprecated(since="infotheo 0.9.2", note="renamed to `centropy1_fdistAC`")]
+Notation cond_entropy1_fdistAC := centropy1_fdistAC (only parsing).
+#[deprecated(since="infotheo 0.9.2", note="renamed to `centropy_fdistA`")]
+Notation cond_entropy_fdistA := centropy_fdistA (only parsing).
 
 Section conditional_entropy_RV_prop.
 Context {R : realType} {U A B C : finType} {P : R.-fdist U}.
 Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
-Let tmp : fdistA (fdistAC `p_ [% X, Y, Z]) = `p_ [% X, [% Z, Y]].
+Let fdistA_fdistAC : fdistA (fdistAC `p_ [% X, Y, Z]) = `p_ [% X, [% Z, Y]].
 Proof.
 rewrite /fdistAC.
 rewrite fdistC12_RV3.
@@ -435,15 +445,15 @@ rewrite fdistX_RV2.
 by rewrite fdistA_RV3.
 Qed.
 
-Lemma cond_entropy1_RV_fdistAC b c :
+Lemma centropy1_RV_fdistAC b c :
   `H[X | [% Y, Z] = (b, c)] = `H[X | [% Z, Y] = (c, b)].
 Proof.
-by rewrite /centropy1_RV -fdistA_RV3 cond_entropy1_fdistAC tmp.
+by rewrite /centropy1_RV -fdistA_RV3 centropy1_fdistAC fdistA_fdistAC.
 Qed.
 
-Lemma cond_entropy_RV_fdistA : `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
+Lemma centropy_RV_fdistA : `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
 Proof.
-by rewrite /centropy_RV -fdistA_RV3 cond_entropy_fdistA tmp.
+by rewrite /centropy_RV -fdistA_RV3 centropy_fdistA fdistA_fdistAC.
 Qed.
 
 End conditional_entropy_RV_prop.
@@ -476,7 +486,7 @@ transitivity (
 rewrite [in X in _ + X = _]big_morph_oppr; congr (_ + _).
 - rewrite /entropy; congr (- _); apply eq_bigr => a _.
   by rewrite -big_distrl /= -fdist_fstE.
-- rewrite cond_entropyE big_morph_oppr.
+- rewrite centropyE big_morph_oppr.
   by apply eq_bigr => a _; congr (- _); apply eq_bigr => b _; rewrite !fdistXE.
 Qed.
 
@@ -614,7 +624,7 @@ Let QPR : R.-fdist (B * (A * C)) := fdistA (fdistC12 PQR).
 Lemma chain_rule_corollary :
   centropy PQR = centropy PR + centropy QPR.
 Proof.
-rewrite !cond_entropyE -opprD; congr (- _).
+rewrite !centropyE -opprD; congr (- _).
 rewrite [in X in _ = _ + X](eq_bigr (fun j => \sum_(i in B) (fdistX QPR) ((j.1, j.2), i) *
                                                             log \Pr_QPR[[set i] | [set (j.1, j.2)]])); last by case.
 rewrite -[in RHS](pair_bigA _ (fun j1 j2 => \sum_(i in B) (fdistX QPR ((j1, j2), i) *
@@ -869,7 +879,7 @@ Lemma cond_mutual_infoE : cond_mutual_info PQR = \sum_(x in {: A * B * C}) PQR x
        (\Pr_(fdist_proj13 PQR)[[set x.1.1] | [set x.2]] *
         \Pr_(fdist_proj23 PQR)[[set x.1.2] | [set x.2]])).
 Proof.
-rewrite /cond_mutual_info 2!cond_entropyE /= big_morph_oppr.
+rewrite /cond_mutual_info 2!centropyE /= big_morph_oppr.
 rewrite (eq_bigr (fun a => \sum_(b in A) (fdistX (fdistA PQR)) (a.1, a.2, b) *
                                           log \Pr_(fdistA PQR)[[set b] | [set (a.1, a.2)]])); last by case.
 rewrite -(pair_bigA _ (fun a1 a2 => \sum_(b in A) (fdistX (fdistA PQR)) ((a1, a2), b) *
@@ -1302,9 +1312,10 @@ rewrite -[leLHS]opprB lerNl opprB lerD2r.
 rewrite -subr_ge0.
 move: (cond_mutual_info_ge0 (fdistC12 PQR)); rewrite /cond_mutual_info.
 rewrite /fdist_proj13 fdistC12I -/(fdist_proj23 _).
-by rewrite cond_entropy_fdistA /fdistAC fdistC12I.
+by rewrite centropy_fdistA /fdistAC fdistC12I.
 Qed.
 End prop2.
+
 End conditioning_reduces_entropy.
 
 (* TODO: example 2.6.1 *)
@@ -1400,7 +1411,7 @@ have H1 : mutual_info (fdistA PQR) = mutual_info PR + cond_mutual_info PQR.
   by rewrite -/PR subrK /PR fdist_proj13_fst.
 have H2 : mutual_info (fdistA PQR) = mutual_info PQ + cond_mutual_info PRQ.
   transitivity (mutual_info (fdistA PRQ)).
-    by rewrite !mutual_infoE fdistA_AC_fst cond_entropy_fdistA.
+    by rewrite !mutual_infoE fdistA_AC_fst centropy_fdistA.
   rewrite /cond_mutual_info !mutual_infoE addrA; congr (_ - _).
   by rewrite fdistA1 {1}/PRQ fdist_proj13_AC -/PQ subrK /PQ fdistAC_fst_fst.
 have H3 : cond_mutual_info PRQ = 0 by rewrite markov_cond_mutual_info.
@@ -1470,7 +1481,7 @@ have H1 : fdist_proj13 (fdistAC Q) = fdist_prod_of_rV (fdist_take P (lift ord0 i
     rewrite !mxE !castmxE /= !cast_ord_id !esymK mxE; congr (v ord0 _).
     exact: val_inj.
 have H2 : centropy (fdistA (fdistAC Q)) = centropy (fdist_prod_of_rV P).
-  rewrite -cond_entropy_fdistA /centropy /=.
+  rewrite -centropy_fdistA /centropy /=.
   rewrite (partition_big (@row_take A _ i) xpredT) //=.
   rewrite (eq_bigr (fun a => (fdistA Q)`2 (a.1, a.2) *
            centropy1 (fdistA Q) (a.1, a.2))%R); last by case.

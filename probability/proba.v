@@ -881,7 +881,7 @@ rewrite 2!pr_inE; congr Pr; apply/setP => u; rewrite !inE /=.
 by apply/imsetP/idP => [[a aE [] ->//]|XuE]; exists (X u).
 Qed.
 
-Section RV_domin.
+Section RV_domin_finType.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A B : finType) (TA TB : eqType).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
@@ -890,21 +890,30 @@ Variables (TX : {RV P -> A}) (TY : {RV P -> B}).
 Lemma pr_in_domin_RV2 E F : `Pr[ X \in E] = 0 -> `Pr[ [% X, Y] \in E `* F] = 0.
 Proof. by move=> H; rewrite pr_inE' fst_Pr_domin_setX // fst_RV2 -pr_inE'. Qed.
 
-Lemma pr_eq_domin_RV1 a b : `Pr[ TY = b ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
+End RV_domin_finType.
+
+Section RV_domin_eqType.
+Context {R : realType}.
+Variables (U : finType) (P : R.-fdist U) (TA TB : eqType).
+Variables (TX : {RV P -> TA}) (TY : {RV P -> TB}).
+
+Lemma pr_eq_domin_RV2 a b : `Pr[ TX = a] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
-move=> H.
-rewrite -pr_in1 -setX1 pr_inE' snd_Pr_domin_setX // snd_RV2 -pr_inE'.
-by rewrite pr_in1.
+rewrite !pr_eqE /Pr => /psumr_eq0P => a0.
+rewrite big1// => i.
+rewrite inE/= xpair_eqE => /andP [] ? ?.
+by apply: a0 => //; rewrite inE.
 Qed.
 
-Lemma pr_eq_domin_RV2 a b : `Pr[ TX = a ] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
+Lemma pr_eq_domin_RV1 a b : `Pr[ TY = b] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
-move=> H.
-rewrite -pr_in1 -setX1 pr_inE' fst_Pr_domin_setX // fst_RV2 -pr_inE'.
-by rewrite pr_in1.
+rewrite !pr_eqE /Pr => /psumr_eq0P => a0.
+rewrite big1// => i.
+rewrite inE/= xpair_eqE => /andP [] ? ?.
+by apply: a0 => //; rewrite inE.
 Qed.
 
-End RV_domin.
+End RV_domin_eqType.
 
 Local Open Scope vec_ext_scope.
 
@@ -2291,7 +2300,7 @@ End sum_n_rand_var_def.
 
 Notation "X '\=sum' Xs" := (sum_n X Xs) : proba_scope.
 
-Section independent_rv_lemma.
+Section inde_RV_lemma.
 Context {R : realType}.
 Variables (A B : finType) (P1 : R.-fdist A) (P2 : R.-fdist B) (TA TB : eqType).
 Variable (X : {RV P1 -> TA}) (Y : {RV P2 -> TB}).
@@ -2310,7 +2319,7 @@ rewrite (_ : [set x | preim Y' (pred1 y) x] = T`* finset (Y @^-1 y)); last first
 by rewrite /P /inde_events -Pr_fdist_prod.
 Qed.
 
-End independent_rv_lemma.
+End inde_RV_lemma.
 #[deprecated(since="infotheo 0.9.2", note="renamed to `prod_dist_inde_RV`")]
 Notation prod_dist_inde_rv := prod_dist_inde_RV (only parsing).
 

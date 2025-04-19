@@ -305,7 +305,7 @@ Qed.
 
 Lemma cond_entropy_chanE2 : (`H(W | P) = \sum_(a in A) P a * `H (W a))%channel.
 Proof.
-rewrite cond_entropy_chanE cond_entropyE big_morph_oppr; apply: eq_bigr => a _.
+rewrite cond_entropy_chanE centropyE big_morph_oppr; apply: eq_bigr => a _.
 rewrite big_morph_oppr /entropy mulrN -mulNr big_distrr/=; apply: eq_bigr => b _.
 rewrite fdistXI fdist_prodE /= mulNr (mulrA (P a)); congr (- _).
 have [->|Pa0] := eqVneq (P a) 0; first by rewrite !(mulr0,mul0r).
