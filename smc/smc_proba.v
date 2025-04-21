@@ -89,54 +89,55 @@ Proof. by apply/setP => ?; rewrite !inE. Qed.
 
 Section more_inde_RV_lemmas.
 Context {R : realType}.
-Variables (A : finType) (P : R.-fdist A) (TA TB TC TD : finType).
-Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
-Variables (UA UB UC: finType) (f : TA -> UA) (g : TB -> UB) (h : TC -> UC).
+Variables (A : finType) (P : R.-fdist A).
 
 Local Notation "f × g" :=
   (fun xy => (f xy.1, g xy.2)) (at level 10).
 
 (* Information-Theoretically Secure Number Protocol*)
 (* Lemma 3.1 *)
-Lemma inde_RV_comp (UB' TB' : finType) (g' : TB' -> UB') (Y' : {RV P -> TB'}) :
-  P |= X _|_ Y' -> P|= (f `o X) _|_ (g' `o Y').
+Lemma inde_RV_comp (TA TB UA UB : finType) (X : {RV P -> TA}) (Y : {RV P -> TB})
+  (f : TA -> UA) (g : TB -> UB) :
+  P |= X _|_ Y -> P|= (f `o X) _|_ (g `o Y).
 Proof.
 move=> /inde_RV_events' inde_XY'; apply/inde_RV_events' => E F.
-by rewrite (pr_in_comp' f) (pr_in_comp' g') -inde_XY' -preimsetX -pr_in_comp'.
+by rewrite (pr_in_comp' f) (pr_in_comp' g) -inde_XY' -preimsetX -pr_in_comp'.
 Qed.
 
-Lemma inde_RV2_comp : P|= X _|_ [% Y, Z] -> P|= (f `o X) _|_ [% (g `o Y), (h `o Z)].
+Lemma inde_RV2_comp (TA TB TC UA UB UC : finType)
+  (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC})
+  (f : TA -> UA) (g : TB -> UB) (h : TC -> UC) :
+  P|= X _|_ [% Y, Z] -> P|= (f `o X) _|_ [% (g `o Y), (h `o Z)].
 Proof.
 pose gh := (fun '(y, z) => (g y, h z)).
 have ->: [% g `o Y, h `o Z] = gh `o [%Y, Z] by [].
 exact: inde_RV_comp.
 Qed.
 
+Lemma inde_unit_RV (TA : finType) (X : {RV P -> TA}) : P |= unit_RV P _|_ X.
+Proof. by move=> [] b; rewrite pr_eq_unit mul1r !pr_eqE -preimg_set1. Qed.
+
+Lemma inde_RV_unit (TA : finType) (X : {RV P -> TA}) : P |= X _|_ unit_RV P.
+Proof. exact/inde_RV_sym/inde_unit_RV. Qed.
+
+Variables (TA TB TC TD : finType).
+Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
+Variables (UA UB UC: finType) (f : TA -> UA) (g : TB -> UB) (h : TC -> UC).
+
 (* Lemma 3.2 *)
 Lemma RV2_inde_RV_snd : P |= [% X, Y] _|_ Z -> P |= Y _|_ Z.
 Proof.
-move/inde_RV_events'.
-move=> H y z.
-rewrite -[LHS]pr_in1 pr_inE'.
-rewrite -(snd_RV2 X [% Y, Z]) Pr_fdist_snd.
-rewrite -pr_inE'.
-rewrite setTE -setX1.
-rewrite pr_in_pairA.
-rewrite H.
-by rewrite -setTE pr_inE' -Pr_fdist_snd snd_RV2 -pr_inE' !pr_in1.
+move=> H.
+change Y with (snd `o [% X, Y]).
+change Z with (idfun `o Z).
+exact: inde_RV_comp.
 Qed.
 
 Lemma cpr_prd_unit_RV : X _|_ Y | [% unit_RV P, Z] -> X _|_ Y | Z.
 Proof.
-move=>H a b c.
-have:=H a b (tt,c).
-Undo 2.
-move=> + a  /[swap] b c.
-Undo 1.
-move=> + a b c => /(_ a b (tt,c)).
-rewrite 3!cPr_eq_finType.
-rewrite !preimg_tt.
-by rewrite -!cPr_eq_finType.
+move=> + a b c => /(_ a b (tt, c))/=.
+rewrite !(cpr_eq_pairCr _ (unit_RV P)) !cpr_eqE !pr_eq_pairA.
+by rewrite !inde_RV_unit pr_eq_unit !mulr1.
 Qed.
 
 (* Lemma 3.3 *)
