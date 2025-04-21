@@ -230,40 +230,15 @@ Definition add_RV : {RV P -> A} := X \+ Y.
 Definition sub_RV : {RV P -> A} := X \- Y.
 Definition neg_RV : {RV P -> A} := \0 \- X.
 
-Lemma add_RV_mul i : `p_ add_RV i = (\sum_(k <- fin_img X) `Pr[ X = k ] * `Pr[ Y = (i - k)%R ]).
+Lemma pr_add_eqE i :
+  `Pr[ add_RV = i ] =
+  (\sum_(k <- fin_img X) `Pr[ X = k ] * `Pr[ Y = (i - k)%R ]).
 Proof.
-transitivity (`Pr[add_RV \in [set i]]).
-  by rewrite pr_inE' /Pr big_set1.
-rewrite (reasoning_by_cases _ X).
-transitivity (\sum_(k <- fin_img X) `Pr[ [% X, Y] \in ([set k] `* [set i-k]) ]).
-  apply eq_bigr=> k _.
-  rewrite !pr_inE.
-  rewrite /Pr.
-  apply: eq_bigl.
-  move=>r /=.
-  rewrite !inE /=.
-  rewrite andbC; apply: andb_id2l.
-  rewrite /=.
-  move /eqP <-.
-  rewrite [RHS]eq_sym.
-  by rewrite subr_eq addrC eq_sym.
-under eq_bigr do rewrite setX1 pr_in1 -cpr_eqE_mul.
-under eq_bigr=> k _.
-  (* Similar to `have->:`, set the wanted form *)
-  rewrite (_ : _ * _ = `Pr[ X = k ] * `Pr[ Y = (i - k) ] ); last first.
-  rewrite cpr_eqE.  (* To remove the form of conditional probability *)
-  rewrite XY_indep. (* So we can split it from `Pr [% X, Y] to `Pr X and `Pr Y*)
-  rewrite -!mulrA.
-  (* case analysis on (`Pr[ Y = (i - k) ] == 0) *)
-  have [|H] := eqVneq `Pr[ Y = (i - k) ] 0.
-  - by move->; rewrite !mulr0.
-  - by rewrite mulVf ?mulr1.
-  over.
-under eq_bigr=> k _.
-  rewrite [X in _ * X]pr_eqE' /=.
-  rewrite -cpr_eq_unit_RV.
-  over.
-done.
+rewrite -pr_in1 (reasoning_by_cases _ X); apply: eq_bigr=> a _.
+rewrite setX1 pr_in1 -XY_indep !pr_eqE /Pr; apply: eq_bigl=> t /=.
+rewrite !inE/= !xpair_eqE/= /add_RV/= andbC.
+apply: andb_id2l=> /eqP->.
+by rewrite [RHS]eq_sym subr_eq eq_sym addrC.
 Qed.
 
 (* Lemma 3.4 *)
@@ -271,7 +246,7 @@ Lemma add_RV_unif : `p_ add_RV = fdist_uniform card_A .
 Proof.
 apply: fdist_ext=> /= i.
 rewrite fdist_uniformE /=.
-rewrite add_RV_mul.
+rewrite -pr_eqE' pr_add_eqE.
 under eq_bigr=> k _.
   rewrite [X in _ * X]pr_eqE' pY_unif fdist_uniformE /=.
   rewrite -cpr_eq_unit_RV.
@@ -346,7 +321,7 @@ Let XZ' : {RV (fdist_cond Y0) -> TZ} := X' `+ Z'.
 Lemma lemma_3_5 z : `Pr[ XZ = z | Y = y] = `Pr[ XZ = z].
 Proof.
 rewrite -(Pr_fdist_cond_RV (X':=XZ')) //.
-rewrite pr_eqE' (@add_RV_mul _ _ _ _ X' Z'); last exact: fdist_cond_indep.
+rewrite /XZ' pr_add_eqE; last exact: fdist_cond_indep.
 under eq_bigr => k _.
   rewrite (Pr_fdist_cond_RV (X:=X)) //.
   rewrite (Pr_fdist_cond_RV (X:=Z)) //.
