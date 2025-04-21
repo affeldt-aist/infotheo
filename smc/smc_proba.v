@@ -212,6 +212,49 @@ Qed.
 
 End XYZ.
 
+Section add_RV.
+Context {R : realType}.
+Variables (T : finType) (A : finZmodType) (P : R.-fdist T).
+Variables (X Y : {RV P -> A}).
+
+Definition add_RV : {RV P -> A} := X \+ Y.
+
+(* better name? *)
+Lemma pr_add_eqE' i :
+  P |= X _|_ Y ->
+  `Pr[ add_RV = i ] =
+  (\sum_(k <- fin_img X) `Pr[ X = k ] * `Pr[ Y = (i - k)%R ]).
+Proof.
+move=> XY_indep.
+rewrite -pr_in1 (reasoning_by_cases _ X); apply: eq_bigr=> a _.
+rewrite setX1 pr_in1 -XY_indep !pr_eqE /Pr; apply: eq_bigl=> t /=.
+rewrite !inE/= !xpair_eqE/= /add_RV/= andbC.
+apply: andb_id2l=> /eqP->.
+by rewrite [RHS]eq_sym subr_eq eq_sym addrC.
+Qed.
+
+Lemma big_fin_img :
+  forall [R : Type] (op : SemiGroup.com_law R) (x : R) [I J : finType]
+         (h : J -> I) (F : I -> R),
+    \big[op/x]_(i <- fin_img h) F i = \big[op/x]_(i in fin_img h) F i.
+Proof.
+move=> *; rewrite -big_enum.
+apply/esym/perm_big/uniq_perm; [exact: enum_uniq | exact: undup_uniq |].
+exact: mem_enum.
+Qed.
+
+Lemma pr_add_eqE i :
+  P |= X _|_ Y ->
+  `Pr[ add_RV = i ] =
+  (\sum_(k in A) `Pr[ X = k ] * `Pr[ Y = (i - k)%R ]).
+Proof.
+move/(pr_add_eqE' i)->; apply/esym.
+rewrite big_fin_img/= (bigID (mem (fin_img X)))/= -[RHS]addr0.
+by congr +%R; apply: big1=> ? H; rewrite (pr_eq0 H) mul0r.
+Qed.
+
+End add_RV.
+
 Section lemma_3_4.
 Context {R : realType}.
 Variables (T : finType) (A: finZmodType).
@@ -226,33 +269,16 @@ Variable XY_indep : P |= X _|_ Y.
 
 (* Add two random variables = add results from two functions. *)
 (* We use this because add_RV is in coqR *)
-Definition add_RV : {RV P -> A} := X \+ Y.
 Definition sub_RV : {RV P -> A} := X \- Y.
 Definition neg_RV : {RV P -> A} := \0 \- X.
 
-Lemma pr_add_eqE i :
-  `Pr[ add_RV = i ] =
-  (\sum_(k <- fin_img X) `Pr[ X = k ] * `Pr[ Y = (i - k)%R ]).
-Proof.
-rewrite -pr_in1 (reasoning_by_cases _ X); apply: eq_bigr=> a _.
-rewrite setX1 pr_in1 -XY_indep !pr_eqE /Pr; apply: eq_bigl=> t /=.
-rewrite !inE/= !xpair_eqE/= /add_RV/= andbC.
-apply: andb_id2l=> /eqP->.
-by rewrite [RHS]eq_sym subr_eq eq_sym addrC.
-Qed.
-
 (* Lemma 3.4 *)
-Lemma add_RV_unif : `p_ add_RV = fdist_uniform card_A .
+Lemma add_RV_unif : `p_ (add_RV X Y) = fdist_uniform card_A .
 Proof.
 apply: fdist_ext=> /= i.
-rewrite fdist_uniformE /=.
-rewrite -pr_eqE' pr_add_eqE.
-under eq_bigr=> k _.
-  rewrite [X in _ * X]pr_eqE' pY_unif fdist_uniformE /=.
-  rewrite -cpr_eq_unit_RV.
-  over.
-rewrite -big_distrl /=.  (* Pull the const part `Pr[ Y = (i - k) ] from the \sum_k *)
-by rewrite cPr_1 ?mul1r // pr_eq_unit oner_neq0.
+rewrite fdist_uniformE -pr_eqE' pr_add_eqE; last exact: XY_indep.
+under eq_bigr do rewrite (pr_eqE' Y) pY_unif fdist_uniformE.
+by rewrite -big_distrl pr_eq1/= div1r.
 Qed.
 
 End lemma_3_4.
@@ -321,7 +347,7 @@ Let XZ' : {RV (fdist_cond Y0) -> TZ} := X' `+ Z'.
 Lemma lemma_3_5 z : `Pr[ XZ = z | Y = y] = `Pr[ XZ = z].
 Proof.
 rewrite -(Pr_fdist_cond_RV (X':=XZ')) //.
-rewrite /XZ' pr_add_eqE; last exact: fdist_cond_indep.
+rewrite /XZ' pr_add_eqE'; last exact: fdist_cond_indep.
 under eq_bigr => k _.
   rewrite (Pr_fdist_cond_RV (X:=X)) //.
   rewrite (Pr_fdist_cond_RV (X:=Z)) //.
