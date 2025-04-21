@@ -101,17 +101,8 @@ Local Notation "f × g" :=
 Lemma inde_RV_comp (UB' TB' : finType) (g' : TB' -> UB') (Y' : {RV P -> TB'}) :
   P |= X _|_ Y' -> P|= (f `o X) _|_ (g' `o Y').
 Proof.
-move/inde_RV_events'.
-rewrite /inde_RV_ev.
-move=> H i j.
-rewrite -[LHS]pr_in1.
-rewrite comp_RV2_ACA /=.
-rewrite pr_in_comp'.
-rewrite -setX1.
-rewrite preimsetX.
-rewrite H. (* second to third line in the pencil-paper proof *)
-rewrite -!pr_in_comp'.
-by rewrite !pr_in1.
+move=> /inde_RV_events' inde_XY'; apply/inde_RV_events' => E F.
+by rewrite (pr_in_comp' f) (pr_in_comp' g') -inde_XY' -preimsetX -pr_in_comp'.
 Qed.
 
 Lemma inde_RV2_comp : P|= X _|_ [% Y, Z] -> P|= (f `o X) _|_ [% (g `o Y), (h `o Z)].
