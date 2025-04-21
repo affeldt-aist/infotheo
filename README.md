@@ -35,8 +35,8 @@ information theory, and linear error-correcting codes.
   - [MathComp analysis](https://github.com/math-comp/analysis)
   - [MathComp analysis reals standard library](https://github.com/math-comp/analysis)
   - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
-  - MathComp algebra tactics
-  - A Coq tactic for proving bounds
+  - [MathComp algebra tactics](https://github.com/math-comp/algebra-tactics)
+  - [CoqInterval](https://gitlab.inria.fr/coqinterval)
 - Coq namespace: `infotheo`
 - Related publication(s):
   - [Robust Mean Estimation by All Means (short paper)]() 
