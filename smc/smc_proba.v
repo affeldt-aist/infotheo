@@ -161,18 +161,9 @@ Qed.
 Lemma inde_rv_cprP : P |= X _|_ Y <->
   forall x y, `Pr[ Y = y ] != 0 -> `Pr[ X = x | Y = y] = `Pr[ X = x].
 Proof.
-rewrite /inde_RV.
-split.
-  move => H x y Hy.
-  move/(_ x y):H. (* bring back H and apply it with x and y*)
-  rewrite -cpr_eqE_mul.
-  by apply /mulIf.
-move => H x y0.
-rewrite -cpr_eqE_mul.
-case /boolP: (`Pr[ Y = y0 ] == 0) => Hy.
-  rewrite (eqP Hy).
-  by rewrite mulr0 mulr0.
-by rewrite H.
+split=> + x y => /(_ x y); rewrite cpr_eqE; first by move=> -> ?; field.
+have[Hy _ |Hy <- //] := eqVneq `Pr[ Y = y ] 0; last by field.
+by rewrite pr_eq_domin_RV1 Hy// mulr0.
 Qed.
 
 Lemma cinde_rv_cprP : P |= X _|_ Y | Z <->
