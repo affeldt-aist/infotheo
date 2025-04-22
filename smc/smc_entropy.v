@@ -1034,19 +1034,19 @@ Let TX := [the finComRingType of 'I_m.+2].
 Variables (x1 x2 s1 s2: {RV P -> 'rV[TX]_n}).
 Let x1' := x1 \+ s1.
 
-Let O := [%x1, x2, s1, s2].
+Let O := [%x1, x2, s2].
 
 (* f1 `o X in mc_removal_pr must be x1 in eqn8 *)
-Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> 'rV[TX]_n := fun z =>
-  let '(x1, x2, s1, s2) := z in x1.
+Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> 'rV[TX]_n := fun z =>
+  let '(x1, x2, s2) := z in x1.
 
 (* f2 `o X in mc_removal_pr must be (x2, s2) in eqn8 *)
-Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> ('rV[TX]_n * 'rV[TX]_n) := fun z =>
-  let '(x1, x2, s1, s2) := z in (x2, s2).
+Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> ('rV[TX]_n * 'rV[TX]_n) := fun z =>
+  let '(x1, x2, s2) := z in (x2, s2).
 
 (* (fm `o X)+Z in mc_removal_pr must be x1 in eqn8 *)
-Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> 'rV[TX]_n := fun z =>
-  let '(x1, x2, s1, s2) := z in x1.
+Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> 'rV[TX]_n := fun z =>
+  let '(x1, x2, s2) := z in x1.
 
 Let Z := s1.
 (*Hypothesis card_TX: #|TX| = m.+2.*)
@@ -1097,6 +1097,7 @@ Qed.
 End eqn8_proof.
 
 Section eqn8_1_proof.
+  
 Context {R : realType}.
 Variables (T : finType) (m n : nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
@@ -1130,7 +1131,7 @@ Hypothesis x1x2s2x1'r2_y2_eqn6_indep : P |= [%x1, [%x2, s2, x1', r2]] _|_ y2.
 Hypothesis x2_s2_x1'_r2_eqn7_indep : P |= [%x2, s2, x1'] _|_ r2.
 Hypothesis x1x2_s2_x1'_r2_eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
 (* TODO: Reduce: longer one can imply others *)
-Hypothesis s1_x1x2s1s2_eqn8_indep : P |= s1 _|_ [%x1, x2, s1, s2].
+Hypothesis s1_x1x2s2_eqn8_indep : P |= s1 _|_ [%x1, x2, s2].
 Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
 
 Hypothesis s1s2_r1_indep : P |= [%s1, s2] _|_ r1.
@@ -1154,7 +1155,7 @@ transitivity (`H(x1|[%x2, s2, x1'])).
   by rewrite eqn7_proof.
   (*by rewrite (eqn7_proof x2_s2_x1'_r2_eqn7_indep x1x2_s2_x1'_r2_eqn7_indep pr2_unif).*)
 transitivity (`H(x1|[%x2, s2])).
-  by rewrite (eqn8_proof ps1_unif s1_x1x2s1s2_eqn8_indep).
+  by rewrite (eqn8_proof ps1_unif s1_x1x2s2_eqn8_indep).
 by rewrite eqn_8_1_proof.
 Qed.
 
@@ -1189,6 +1190,26 @@ Hypothesis Hinde_all : forall i j,
 Lemma x1_r1_inde : P |= x1 _|_ r1.
 Proof. exact: (@Hinde_all 0 0). Qed.
 
+
 End mutual_indep.
+
+Section more_indep_lemmas.
+Context {R : realType}.
+Variables (A : finType) (m n : nat)(P : R.-fdist A).
+Variables (T : finType).
+Variables (X Y Z: {RV P -> T}).
+
+Lemma inde_XYZ_trans:
+  P |= X _|_ Y -> P |= Y _|_ Z -> P |= X _|_ [% Y, Z] -> P |= [%X, Y] _|_ Z.
+Proof.
+move => H1 H2 Hx.
+rewrite /inde_RV => [[x y]] z.
+rewrite /inde_RV in H1.
+rewrite (H1 x y).
+rewrite /inde_RV in H2.
+by rewrite -mulrA -[in RHS](H2 y z) -Hx pr_eq_pairA.
+Qed.
+
+End more_indep_lemmas.
 
 End smc_entropy_proofs.

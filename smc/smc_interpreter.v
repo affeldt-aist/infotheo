@@ -346,26 +346,18 @@ Record scalar_product_random_inputs :=
     (* Each random variable is independ of any others excluding itself;
        other necessary independence premises can be proven from these
        primitive ones.
-    *)
-    x1_indep : P |= x1 _|_ [%x2, s1, s2, r1, y2];
-    x2_indep : P |= x2 _|_ [%x1, s1, s2, r1, y2];
-    y2_indep : P |= y2 _|_ [%x2, s2, x1, s1, r1];
-    s1_indep : P |= s1 _|_ [%x2, s2, x1, y2, r1];
-    s2_indep : P |= s1 _|_ [%x2, s1, x1, y2, r1];
-    r1_indep : P |= r1 _|_ [%x2, s1, x1, y2, s2];
 
-    x2s2x1s1r1_y2_indep : P |= [% x2, s2, x1, s1, r1] _|_ y2;
-    x1s1r1_x2_indep : P |= [%x1, s1, r1] _|_ x2;
-    s1_s2_indep : P |= s1 _|_ s2;
-    s1s2_r1_indep : P |= [% s1, s2] _|_ r1;
-    y2_x1x2s1s2r1_indep : P |= y2 _|_ [% x1, x2, s1, s2, r1];
-    s1_x1x2s1s2_indep : P |= s1 _|_ [% x1, x2, s1, s2];
-    s2_x1s1r1x2_indep : P |= s2 _|_ [% x1, s1, r1, x2];
-    x2s2_x1s1_indep : P |= [%x2, s2] _|_ [%x1, s1];
-    x1_s1_indep : P |= x1 _|_ s1;
-    s1_x1x2s2_indep : P |= s1 _|_ [%x1, [%x2, s2]];
-    s1x2x1x2_r1_indep : P |= [% s1, s2, x1, x2] _|_ r1;
-    x2s2_x1_indep : P |= [%x2, s2] _|_ x1;
+       TODO: the type difference between vector and scalar prevents us
+       from having something like:
+
+       Hindep : {homo nth x1 [:: x1; x2; s1; s2; r1; y2] : i j / i < j >-> P |= i _|_ j}%N.
+    *)
+    x1_indep : P |= [%x2, s1, s2, r1, y2] _|_ x1;
+    x2_indep : P |= [%x1, s1, s2, r1, y2] _|_ x2;
+    y2_indep : P |= [%x2, s2, x1, s1, r1] _|_ y2;
+    s1_indep : P |= [%x2, s2, x1, y2, r1] _|_ s1;
+    s2_indep : P |= [%x2, s1, x1, y2, r1] _|_ s2;
+    r1_indep : P |= [%x2, s1, x1, y2, s2] _|_ r1;
 
     neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX;
 
@@ -376,6 +368,7 @@ Record scalar_product_random_inputs :=
   }.
 
 Variable inputs: scalar_product_random_inputs.
+
 
 Definition scalar_product_RV (inputs : scalar_product_random_inputs) :
   {RV P -> smc_scalar_product_party_tracesT VX} :=
@@ -403,6 +396,16 @@ Let x2' : {RV P -> VX} := x2 \+ s2.
 Let r2 : {RV P -> TX} := (s1 \*d s2) \- r1.
 Let t : {RV P -> TX} := x1' \*d x2 \+ r2 \- y2.
 Let y1 : {RV P -> TX} := t \- (x2' \*d s1) \+ r1.
+
+Let x1s1r1_x2_indep :
+  P |= [%x1, s1, r1] _|_ x2.
+Proof.
+have := x2_indep inputs.
+pose f := fun (vs: (VX * VX * VX * TX * TX)) =>
+  let '(xa, sa, sb, ra, yb) := vs in (xa, sa, ra).
+pose g := fun (ws : VX) => ws.
+apply: (inde_RV_comp f g).
+Qed.
 
 Let data := (sum TX VX).
 Let one x : data := inl x.
@@ -472,18 +475,33 @@ Qed.
 
 Let x2s2_x1'_indepP : P |= [% x2, s2] _|_ x1'.
 Proof.
+have x1_s1_indep : P |= x1 _|_ s1.
+  have H := x1_indep inputs.
+  rewrite inde_RV_sym in H.
+  move : H.
+  pose f := fun (vs : (VX * VX * VX * TX * TX)) =>
+    let '(xb, sa, sb, ra, yb) := vs in sa.
+  pose g := fun (ws : VX) => ws.
+  by apply_inde_rv_comp g f.
+have s1_x1x2s2_indep : P |= s1 _|_ [%x1, [%x2, s2]].
+  have H := s1_indep inputs.
+  rewrite inde_RV_sym in H.
+  move : H.
+  pose f := fun (vs : (VX * VX * VX * TX * TX)) =>
+    let '(xb, sb, xa, yb, ra) := vs in (xa, (xb, sb)).
+  pose g := fun (ws : VX) => ws.
+  by apply_inde_rv_comp g f.
 have px1_s1_unif: `p_ (x1 \+ s1 : {RV P -> _}) = fdist_uniform card_VX.
-  rewrite -(add_RV_unif x1 s1) ?ps1_unif //.
-  exact: x1_s1_indep.
-have H := @lemma_3_5' _ T (VX * VX)%type VX P x1 s1 [%x2, s2] (s1_x1x2s2_indep inputs) q card_VX (ps1_unif inputs).
+  by rewrite -(add_RV_unif x1 s1) ?ps1_unif //.
+have H := @lemma_3_5' _ T (VX * VX)%type VX P x1 s1 [%x2, s2] s1_x1x2s2_indep q card_VX (ps1_unif inputs).
 rewrite inde_RV_sym in H.
 exact: H.
 Qed.
 
 Let x2s2x1s1r2_y2_indep :
-   P |= [% x2, s2, x1, s1, r1] _|_ y2 ->
    P |= [% x2, s2, x1, s1, r2] _|_ y2.
 Proof.
+have := y2_indep inputs.
 pose f := fun (vs : (VX * VX * VX * VX * TX)) =>
   let '(xb, sb, xa, sa, ra) := vs in (xb, sb, xa, sa, sa *d sb - ra).
 pose g := fun (ws : TX) => ws.    (* because idfun causes error. *)
@@ -501,7 +519,7 @@ by apply_inde_rv_comp f g.
 Qed.
 
 Let x2s2x1'r2_y2_indepP :=
-  x2s2x1'r2_y2_indep (x2s2x1s1r2_y2_indep (x2s2x1s1r1_y2_indep inputs)).
+  x2s2x1'r2_y2_indep x2s2x1s1r2_y2_indep.
 
 Let x1x2s2x1'r2_y2_indep :
   P |= [% x2, s2, x1, s1, r2] _|_ y2 ->
@@ -515,7 +533,7 @@ by apply_inde_rv_comp f g.
 Qed.
 
 Let x1x2s2x1'r2_y2_indepP :=
-  x1x2s2x1'r2_y2_indep (x2s2x1s1r2_y2_indep (x2s2x1s1r1_y2_indep inputs)).
+  x1x2s2x1'r2_y2_indep x2s2x1s1r2_y2_indep.
 
 Let x1x2s2x1'_r2_indep :
   P |= [% x1, [% x2, s2, x1']] _|_ r2.
@@ -525,10 +543,10 @@ apply: (@lemma_3_5' _ _ _ _ _ _ _ _ _ _ card_TX); last first.
   by rewrite -(@scp.neg_RV_dist_eq _ _ _ _ card_TX) pr1_unif.
 rewrite inde_RV_sym.
 apply: scp.neg_RV_inde_eq.
-pose f := fun vs : (VX * VX * VX * VX) =>
-  let '(sa, sb, xa, xb) := vs in (sa *d sb, (xa, (xb, sb, xa + sa))).
+have := r1_indep inputs.
+pose f := fun vs : (VX * VX * VX * TX * VX) =>
+  let '(xb, sa, xa, yb, sb) := vs in (sa *d sb, (xa, (xb, sb, xa + sa))).
 pose g := fun (ws : TX) => ws.
-have := s1x2x1x2_r1_indep inputs.
 by apply_inde_rv_comp f g.
 Qed.
 
@@ -538,6 +556,43 @@ have := x1x2s2x1'_r2_indep.
 pose f := fun vs : (VX * (VX * VX * VX)) =>
   let '(xa, (xb, sb, xa')) := vs in (xb, sb, xa').
 pose g := fun (ws : TX) => ws.
+by apply_inde_rv_comp f g.
+Qed.
+
+Let y2_x1x2s1s2r1_indep : P |= y2 _|_ [% x1, x2, s1, s2, r1].
+Proof.
+have := y2_indep inputs.
+move/inde_RV_sym.
+pose f := fun vs : (VX * VX * VX * VX * TX) =>
+  let '(xb, sb, xa, sa, ra) := vs in (xa, xb, sa, sb, ra).
+pose g := fun (ws : TX) => ws.
+by apply_inde_rv_comp g f.
+Qed.
+
+Let s1_x1x2s2_indep : P |= s1 _|_ [% x1, x2, s2].
+Proof.
+have := s1_indep inputs.
+move/inde_RV_sym.
+pose f := fun vs : (VX * VX * VX * TX * TX) =>
+  let '(xb, sb, xa, sa, ra) := vs in (xa, xb, sb).
+pose g := fun (ws : VX) => ws.
+by apply_inde_rv_comp g f.
+Qed.
+
+Let s2_x1s1r1x2_indep : P |= s2 _|_ [% x1, s1, r1, x2].
+have := s2_indep inputs.
+move/inde_RV_sym.
+pose f := fun vs : (VX * VX * VX * TX * TX) =>
+  let '(xb, sa, xa, ya, ra) := vs in (xa, sa, ra, xb).
+pose g := fun (ws : VX) => ws.
+by apply_inde_rv_comp g f.
+Qed.
+
+Let x2s2_x1_indep : P |= [%x2, s2] _|_ x1.
+move : (x1_indep inputs).
+pose f := fun vs : (VX * VX * VX * TX * TX) =>
+  let '(xb, sa, sb, ra, yb) := vs in (xb, sb).
+pose g := fun (ws : VX) => ws.
 by apply_inde_rv_comp f g.
 Qed.
 
@@ -551,9 +606,9 @@ Qed.
   *)
 
 Let proof_alice := scp.pi2_alice_is_leakage_free_proof
-      (y2_x1x2s1s2r1_indep inputs)
-      (s2_x1s1r1x2_indep inputs)
-      (x1s1r1_x2_indep inputs) pnegy2_unif (ps2_unif inputs).
+      y2_x1x2s1s2r1_indep
+      s2_x1s1r1x2_indep
+      x1s1r1_x2_indep pnegy2_unif (ps2_unif inputs).
 
 Check proof_alice.
 
@@ -561,7 +616,7 @@ Let proof_bob := scp.pi2_bob_is_leakage_free_proof
       (card_rVTX:=card_VX)(r1:=r1)(y2:=y2)
       x1x2s2x1'r2_y2_indepP
       x1x2s2x1'_r2_indep
-      (s1_x1x2s1s2_indep inputs) (x2s2_x1_indep inputs) (ps1_unif inputs).
+      s1_x1x2s2_indep x2s2_x1_indep (ps1_unif inputs).
 
 Check proof_bob.
 
