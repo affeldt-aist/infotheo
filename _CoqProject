@@ -95,5 +95,7 @@ smc/smc_proba.v
 smc/smc_entropy.v
 smc/smc_interpreter.v
 smc/smc_tactics.v
+smc/scalar_product_program.v
+smc/scalar_product_proof.v
 
 -R . infotheo
