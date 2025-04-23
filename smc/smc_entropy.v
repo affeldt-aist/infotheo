@@ -300,7 +300,8 @@ Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
 *)
 Lemma fun_centropy_eq0_RV : `H[Z | Y = y] = 0.
 Proof.
-(* If `Pr[Y = y] = 0, it makes the  \Pr_QP[[set b] | [set a]] zero because the condition will be never true; need to do this before the cond_entropy1RVE *)
+(* If `Pr[Y = y] = 0, it makes the  \Pr_QP[[set b] | [set a]] zero because the
+  condition will be never true; need to do this before the cond_entropy1RVE *)
 (*
 have [H|] := eqVneq (`Pr[ Y = y]) 0.
   rewrite /cond_entropy1_RV.
@@ -415,7 +416,8 @@ Hypothesis s1_s2_indep : P|= s1 _|_ s2.
 Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
 
 Lemma pr_eqM x : `Pr[ (rv_op s1 s2) = x ] =
-  \sum_(a <- fin_img s1) (\sum_(b <- fin_img s2 | op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
+  \sum_(a <- fin_img s1)
+    (\sum_(b <- fin_img s2 | op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
 Proof.
 rewrite -[LHS]pr_in1.
 rewrite (reasoning_by_cases _ s1).
@@ -439,7 +441,8 @@ Qed.
 
 Lemma pr_eqM2 x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] =
   \sum_(a <- fin_img s1)
-    (\sum_(b <- fin_img s2 | op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
+    (\sum_(b <- fin_img s2 | op a b == x)
+      `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
 Proof.
 rewrite -[LHS]pr_in1.
 rewrite (reasoning_by_cases _ s1).
@@ -472,8 +475,10 @@ rewrite big_distrl /=.
 by apply eq_bigr => b _.
 Qed.
 
-(* TODO: addition lemma; actually we didn't use anything about mul above (any binop works) *)
-(* reasoning_by_cases depends on another lemma that is not general before (2024/12/05) -- these proof are not trivial actually. *)
+(* TODO: addition lemma; actually we didn't use anything about mul above
+  (any binop works) *)
+(* reasoning_by_cases depends on another lemma that is not general before
+  (2024/12/05) -- these proof are not trivial actually. *)
 
 End inde_ex.
 
@@ -528,7 +533,8 @@ Variables (TX : ringType) (n : nat) (T : finType).
 
 Definition dotproduct (a b : 'rV[TX]_n) := (a *m b^T)``_ord0.
 
-Definition dotproduct_rv (P: R.-fdist T) (A B: {RV P -> 'rV[TX]_n}) : {RV P -> TX} :=
+Definition dotproduct_rv
+  (P: R.-fdist T) (A B: {RV P -> 'rV[TX]_n}) : {RV P -> TX} :=
   fun p => dotproduct (A p) (B p).
 
 End dotproduct.
@@ -579,13 +585,16 @@ Definition is_scalar_product (sp : SMC) :=
   forall (xa xb: 'rV[TX]_n),
   (sp xa xb).1 + (sp xa xb).2 = xa *d xb.
 
-Definition step_eqn2_ya : ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
+Definition step_eqn2_ya :
+  ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n * TX) -> TX := fun z =>
   let '(xa, sa, ra, xb', t) := z in t - (xb' *d sa) + ra.
 
-Definition step_eqn3_t_with_offset : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
+Definition step_eqn3_t_with_offset :
+  ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
   let '(xa, xb, sa, sb, ra, rb) := z in (xa + sa) *d xb + rb.
 
-Definition scalar_product (sa sb : 'rV[TX]_n) (ra yb : TX) (xa xb : 'rV[TX]_n) : (TX * TX) :=
+Definition scalar_product
+  (sa sb : 'rV[TX]_n) (ra yb : TX) (xa xb : 'rV[TX]_n) : (TX * TX) :=
   let xa' := xa + sa in (* Alice -> Bob *)
   let xb' := xb + sb in (* Bob -> Alice *)
   let rb := sa *d sb - ra in (* Commodity -> Bob *)
@@ -611,7 +620,8 @@ apply: eq_bigr=> *.
 by rewrite !mxE mulrDr.
 Qed.
 
-(*   xb *d (xa + sa) + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra + yb = xa *d xb *)
+(* xb *d (xa + sa) + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra + yb =
+   xa *d xb *)
 Lemma scalar_product_correct (sa sb : 'rV[TX]_n) (ra yb : TX) :
   is_scalar_product (scalar_product sa sb ra yb).
 Proof.
@@ -667,20 +677,26 @@ Let y1 := t \- x2' \*d s1 \+ r1.
 Let O := [%x1, x2, s1, s2, r1, r2].
 
 (* f1 `o X in mc_removal_pr must be x2 in eq3 *)
-Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> 'rV[TX]_n := fun z =>
+Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) ->
+  'rV[TX]_n := fun z =>
   let '(x1, x2, s1, s2, r1, r2) := z in x2.
 
 (* f2 `o X in mc_removal_pr must be (x1, s1, r1, x2 + s2) in eq3 *)
-Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) := fun z =>
+Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) ->
+  ('rV[TX]_n * 'rV[TX]_n * TX * 'rV[TX]_n) := fun z =>
   let '(x1, x2, s1, s2, r1, r2) := z in (x1, s1, r1, x2 + s2).
 
-Definition fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
+Definition fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) ->
+  TX := fun z =>
   let '(xa, xb, sa, sb, ra, rb) := z in (xa + sa) *d xb + rb.
 
-(* in mc_removal_pr they are named as Y1 Y2 Ym but we already have Y so renaming them. *)
+(* in mc_removal_pr they are named as Y1 Y2 Ym but we already have Y
+   so renaming them. *)
 Let Z := neg_RV y2.
-Let W1 := f1 `o O.  (* x2; It is okay in Alice's view has it because only used in condition. *)
-Let W2 := f2 `o O.  (* [%x1, s1, r1, x2']; cannot have x2, s2, r2 here otherwise Alice knows the secret*)
+(* x2; It is okay in Alice's view to have it because only used in condition. *)
+Let W1 := f1 `o O.
+(* [%x1, s1, r1, x2']; cannot have x2, s2, r2 otherwise Alice knows the secret*)
+Let W2 := f2 `o O.
 Let Wm := fm `o O.  (* t-(neg_RV y2); t before it addes (neg_RV y2) in WmZ*)
 Let WmZ := Wm `+ neg_RV y2. (* t *)
 
@@ -703,7 +719,9 @@ Qed.
 (* Because y2 is generated by Bob -- not related to any other variables. *)
 Hypothesis Z_O_indep : P |= Z _|_ O.
 Hypothesis card_TX : #|TX| = m.+2.
-Hypothesis pZ_unif : `p_ Z = fdist_uniform card_TX. (* Assumption in the paper. *)
+
+(* Assumption in the paper. *)
+Hypothesis pZ_unif : `p_ Z = fdist_uniform card_TX.
 
 Let Z_OO_indep : P |= Z _|_ [% O, O].
 Proof.
@@ -767,7 +785,8 @@ Context {R : realType}.
 Variables (T : finType) (m n: nat) (P : R.-fdist T).
 Let TX := [the finComRingType of 'I_m.+2].
 Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n).-1.+1.
-(* Coq cannot unify `(m.+2^n).-1.+1` in the definition of fdist_uniform and `(m.+2^n)%nat`,
+(* Coq cannot unify `(m.+2^n).-1.+1` in the definition of
+   fdist_uniform and `(m.+2^n)%nat`,
    so we cannot assume `(m.+2^n)` here.
 
    Check fdist_uniform (n:=(m.+2^n).-1) card_rVTX.
@@ -780,7 +799,8 @@ Let eqn4 := `H(x2|[%x1, s1, r1, x2']) = `H(x2|[%x1, s1, r1]).
 
 Let O := [%x1, s1, r1, x2].
 Let Z := s2.
-Hypothesis pZ_unif : `p_ Z = fdist_uniform card_rVTX. (* Assumption in the paper. *)
+(* Assumption in the paper. *)
+Hypothesis pZ_unif : `p_ Z = fdist_uniform card_rVTX. 
 
 Let W1 := snd `o O.   (* x2 *)
 Let W2 := fst `o O.   (* [%x1, s1, r1] *)
@@ -913,17 +933,22 @@ Let r2  := s1 \*d s2 \- r1.
 
 Let O := [%x1, x2, s1, s2, r2, y2].
 
-Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> 'rV[TX]_n := fun z =>
+Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) ->
+  'rV[TX]_n := fun z =>
   let '(x1, _, _, _, _, _) := z in x1.
 
-Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) := fun z =>
+Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) ->
+  ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) := fun z =>
   let '(x1, x2, s1, s2, r2, y2) := z in (x2, s2, x1 + s1, r2).
 
-Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) -> TX := fun z =>
+Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX * TX) ->
+  TX := fun z =>
   let '(_, _, _, _, _, y2) := z in y2.
 
-Let W1 := f1 `o O.  (* x1; It is okay in Bob's view has it because only used in condition. *)
-Let W2 := f2 `o O.  (* [%x2, s2, x1', r2]; cannot have x1, s1 here otherwise Bob knows the secret*)
+(* x1; It is okay in Bob's view has it because only used in condition. *)
+Let W1 := f1 `o O.
+(* [%x2, s2, x1', r2]; cannot have x1, s1 here otherwise Bob knows the secret*)
+Let W2 := f2 `o O.
 Let Wm := fm `o O.  (* y2 *)
 
 Let eq_W1_RV : f1 `o O = x1.
@@ -935,12 +960,12 @@ Proof. exact: boolp.funext. Qed.
 Let eq_Wm_RV : fm `o O = y2.
 Proof. exact: boolp.funext. Qed.
 
-(* Because y2 (Wm) is generated by Bob; not related to x2, s2, x1, s1, r2 at all*)
+(* y2 (Wm) is generated by Bob; not related to x2, s2, x1, s1, r2 at all*)
 Hypothesis W2_Wm_indep : P|= W2 _|_ Wm.
 (* Because x1 (W1) is from Alice and y2 (Wm) is from Bob *)
 Hypothesis W1_Wm_indep : P|= W1 _|_ Wm.
 
-(* Because y2 (Wm) is generated by Bob; not related to x2, s2, x1, s1, r2 at all*)
+(* y2 (Wm) is generated by Bob; not related to x2, s2, x1, s1, r2 at all*)
 Hypothesis W1W2_Wm_indep : P|= [%W1, W2] _|_ Wm.
 (* TODO: deduce other indeps from this one. *)
 
@@ -979,18 +1004,24 @@ Let r2  := s1 \*d s2 \- r1.
 
 Let O := [%x1, x2, s1, s2, r2].
 
-Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> 'rV[TX]_n := fun z =>
+Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) ->
+  'rV[TX]_n := fun z =>
   let '(x1, x2, s1, s2, r2) := z in x1.
 
-Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) := fun z =>
+Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) ->
+  ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) := fun z =>
   let '(x1, x2, s1, s2, r2) := z in (x2, s2, x1 + s1).
 
-Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) -> TX := fun z =>
+Let fm : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) ->
+  TX := fun z =>
   let '(x1, x2, s1, s2, r2) := z in r2.
 
-Let W1 := f1 `o O.  (* x1; It is okay in Bob's view has it because only used in condition. *)
-Let W2 := f2 `o O.  (* [%x2, s2, x1']; cannot have x1, s1 here otherwise Bob knows the secret*)
-Let Wm := fm `o O.  (* r2 *)
+(* x1; It is okay in Bob's view has it because only used in condition. *)
+Let W1 := f1 `o O.
+(* [%x2, s2, x1']; cannot have x1, s1 here otherwise Bob knows the secret*)
+Let W2 := f2 `o O.
+(* r2 *)
+Let Wm := fm `o O.
 
 Let eq_W1_RV : f1 `o O = x1. Proof. exact: boolp.funext. Qed.
 
@@ -1041,7 +1072,8 @@ Let f1 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> 'rV[TX]_n := fun z =>
   let '(x1, x2, s2) := z in x1.
 
 (* f2 `o X in mc_removal_pr must be (x2, s2) in eqn8 *)
-Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) -> ('rV[TX]_n * 'rV[TX]_n) := fun z =>
+Let f2 : ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n) ->
+  ('rV[TX]_n * 'rV[TX]_n) := fun z =>
   let '(x1, x2, s2) := z in (x2, s2).
 
 (* (fm `o X)+Z in mc_removal_pr must be x1 in eqn8 *)
@@ -1150,10 +1182,8 @@ Lemma pi2_bob_is_leakage_free_proof : `H( x1 | BobView) = `H `p_ x1.
 Proof.
 transitivity (`H( x1 | [% x2, s2, x1', r2])).
   by rewrite eqn6_proof.
-  (*by rewrite (eqn6_proof x2s2x1'r2_y2_eqn6_indep x1x2s2x1'r2_y2_eqn6_indep py2_unif).*)
 transitivity (`H(x1|[%x2, s2, x1'])).
   by rewrite eqn7_proof.
-  (*by rewrite (eqn7_proof x2_s2_x1'_r2_eqn7_indep x1x2_s2_x1'_r2_eqn7_indep pr2_unif).*)
 transitivity (`H(x1|[%x2, s2])).
   by rewrite (eqn8_proof ps1_unif s1_x1x2s2_eqn8_indep).
 by rewrite eqn_8_1_proof.
@@ -1166,12 +1196,15 @@ End pi2.
 (* TODO: Using graphoid for combinations of independ random variables. *)
 Section mutual_indep.
 Context {R : realType}.
-(* Pairwise independence: Any collection of mutually independent random variables is pairwise independent
+(* Pairwise independence: Any collection of mutually independent
+   random variables is pairwise independent
 
 (But pairwise independence does not imply mutual independence.
 
-How to express "a collection of any types of mutual independent random variables"?
-RV2 is a collection. But it is not a sequence so cannot be used to generate arbitrary pairs of RVs.
+How to express "a collection of any types of
+mutual independent random variables"?
+RV2 is a collection. But it is not a sequence so cannot be used to
+generate arbitrary pairs of RVs.
 Should RV2 supports to be traversed as a sequence??
 *)
 Variables (A : finType) (m n : nat)(P : R.-fdist A).
