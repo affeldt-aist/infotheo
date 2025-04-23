@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint archimedean.
 From mathcomp Require Import interval.
-From mathcomp Require Import mathcomp_extra boolp classical_sets functions.
+From mathcomp Require Import unstable mathcomp_extra boolp classical_sets functions.
 From mathcomp Require Import reals interval_inference topology normedtype.
 From mathcomp Require Import derive sequences exp realfun.
 Require Import ssralg_ext realType_ext derive_ext.
@@ -552,10 +552,9 @@ have [r_gt0|r_lt0|<-{r}] := ltgtP 0 r.
     rewrite ltrNr oppr0 => /(_ X_neg).
     rewrite expRN.
     rewrite -[X in X < _ -> _]invrK.
-    rewrite ltf_pV2 ?posrE ?expR_gt0 ?invr_gt0 ?mulr_gt0//=; last 3 first.
+    rewrite ltf_pV2 ?posrE ?expR_gt0 ?invr_gt0 ?mulr_gt0//=; last 2 first.
       by rewrite ltrNr oppr0.
       by rewrite ltrNr oppr0.
-      by rewrite invr_gt0.
     by rewrite lnK// sqrrN invf_div.
   + move: Hx2.
     rewrite -ltr_ln ?posrE ?expR_gt0//.
@@ -621,8 +620,7 @@ move=> /andP[x1 x2] /andP[y1 y2] xy.
 have [->|x0] := eqVneq x 0.
 - rewrite xlnx_0; apply xlnx_neg.
   rewrite (le_lt_trans x1 xy)/=.
-  rewrite (le_lt_trans y2)//.
-  by rewrite expR_lt1// ltrN10.
+  by rewrite (le_lt_trans y2).
 - rewrite -[X in _ < X]opprK ltrNr.
   have {}x0 : 0 < x.
     by rewrite lt_neqAle eq_sym x0 x1.
@@ -889,8 +887,7 @@ rewrite ler_norml; apply/andP; split.
   + rewrite Heps1/=.
     by rewrite (le_lt_trans Heps2)// expR_lt1// ltrNl oppr0//.
   + rewrite lexx/= subr_ge0.
-    rewrite (le_trans Heps2)//.
-    by rewrite ltW// expR_lt1// ltrNl oppr0//.
+    by rewrite (le_trans Heps2)//.
   + by rewrite Hx1.
   + by rewrite lt_neqAle eq_sym xnot0.
 - apply: (@le_trans _ _ (xlnx_delta eps (1 - eps))).
@@ -900,8 +897,7 @@ rewrite ler_norml; apply/andP; split.
       by rewrite (le_lt_trans Heps2)// expR_lt1// ltrNl oppr0//.
     + by rewrite Hx1.
     + rewrite lexx andbT subr_ge0.
-      rewrite (le_trans Heps2)//.
-      by rewrite ltW// expR_lt1// ltrNl oppr0//.
+      by rewrite (le_trans Heps2).
     + by rewrite lt_neqAle xnot0/=.
   rewrite /xlnx_delta subrK xlnx_1 sub0r lerNr opprK.
   apply: xlnx_ineq.

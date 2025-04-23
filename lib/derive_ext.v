@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum interval.
 From mathcomp Require Import ring lra.
-From mathcomp Require Import mathcomp_extra boolp classical_sets functions.
+From mathcomp Require Import unstable mathcomp_extra boolp classical_sets functions.
 From mathcomp Require Import set_interval.
 From mathcomp Require Import reals Rstruct topology normedtype.
 From mathcomp Require Import realfun derive exp.

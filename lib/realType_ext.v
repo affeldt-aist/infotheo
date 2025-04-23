@@ -3,7 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg archimedean ssrnum ssrint.
 From mathcomp Require Import reals normedtype sequences exp.
-From mathcomp Require Import mathcomp_extra boolp interval_inference.
+From mathcomp Require Import unstable mathcomp_extra boolp interval_inference.
 From mathcomp Require Import lra ring Rstruct.
 
 (**md**************************************************************************)

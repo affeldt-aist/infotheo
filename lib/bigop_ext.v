@@ -1,6 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra.
+From mathcomp Require Import unstable.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext.
 
