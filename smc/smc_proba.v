@@ -183,6 +183,25 @@ Abort.
 
 End more_inde_RV_lemmas.
 
+Section more_indep_lemmas.
+Context {R : realType}.
+Variables (A : finType) (P : R.-fdist A).
+Variables (TX TY TZ : finType).
+Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
+
+Lemma inde_XYZ_trans:
+  P |= X _|_ Y -> P |= Y _|_ Z -> P |= X _|_ [% Y, Z] -> P |= [%X, Y] _|_ Z.
+Proof.
+move => H1 H2 Hx.
+rewrite /inde_RV => [[x y]] z.
+rewrite /inde_RV in H1.
+rewrite (H1 x y).
+rewrite /inde_RV in H2.
+by rewrite -mulrA -[in RHS](H2 y z) -Hx pr_eq_pairA.
+Qed.
+
+End more_indep_lemmas.
+
 Section XYZ.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB TC: finType).
