@@ -1226,23 +1226,4 @@ Proof. exact: (@Hinde_all 0 0). Qed.
 
 End mutual_indep.
 
-Section more_indep_lemmas.
-Context {R : realType}.
-Variables (A : finType) (m n : nat)(P : R.-fdist A).
-Variables (T : finType).
-Variables (X Y Z: {RV P -> T}).
-
-Lemma inde_XYZ_trans:
-  P |= X _|_ Y -> P |= Y _|_ Z -> P |= X _|_ [% Y, Z] -> P |= [%X, Y] _|_ Z.
-Proof.
-move => H1 H2 Hx.
-rewrite /inde_RV => [[x y]] z.
-rewrite /inde_RV in H1.
-rewrite (H1 x y).
-rewrite /inde_RV in H2.
-by rewrite -mulrA -[in RHS](H2 y z) -Hx pr_eq_pairA.
-Qed.
-
-End more_indep_lemmas.
-
 End smc_entropy_proofs.
