@@ -32,7 +32,8 @@ Local Open Scope fdist_scope.
 Section more_rv_lemmas.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
-Variables (TA TB TC UA UB UC : eqType) (f : TA -> UA) (g : TB -> UB) (h: TC -> UC).
+Variables (TA TB TC UA UB UC : eqType).
+Variables (f : TA -> UA) (g : TB -> UB) (h: TC -> UC).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}).
 
 Local Notation "f × g" :=
@@ -41,7 +42,8 @@ Local Notation "f × g" :=
 Lemma comp_RV2_ACA : RV2 (f `o X) (g `o Y) = f × g `o RV2 X Y.
 Proof. by []. Qed.
 
-Lemma comp_RV3_ACA : [%h `o Z, [% (f `o X), (g `o Y)]] = h × (f × g) `o [%Z, [%X, Y]].
+Lemma comp_RV3_ACA :
+  [%h `o Z, [% (f `o X), (g `o Y)]] = h × (f × g) `o [%Z, [%X, Y]].
 Proof. by []. Qed.
 End more_rv_lemmas.
 
@@ -264,7 +266,6 @@ Variable P : R.-fdist T.
 Variable n : nat.
 Variables (X Y : {RV P -> A}).
 
-(* How to express "the distribution of random variable Y is uniform distribution" as a prop. *)
 Hypothesis card_A : #|A| = n.+1.
 Variable pY_unif : `p_ Y = fdist_uniform card_A.
 Variable XY_indep : P |= X _|_ Y.
@@ -395,7 +396,8 @@ Let XnZ := Xn `+ Z.
 
 Hypothesis X0 : `Pr[ [% XnZ, X2] = (i, y) ] != 0.
 
-Lemma lemma_3_6 : `Pr[ X1 = x1 | [% X2, XnZ] = (y , i)] = `Pr[ X1 = x1 | X2 = y].
+Lemma lemma_3_6 :
+  `Pr[ X1 = x1 | [% X2, XnZ] = (y , i)] = `Pr[ X1 = x1 | X2 = y].
 Proof.
 have H := inde_RV2_cinde (X:=X1) (Z:=X2) (Y:=XnZ).
 rewrite cpr_eq_pairCr.
@@ -445,7 +447,5 @@ rewrite (_ : [%_ , _] = Y) //.
 rewrite (_ : Z = idfun `o Z) //. (* id vs. idfun*)
 exact: inde_RV_comp.
 Qed.
-
-(*TODO: the Entropy part needs to be done in another file, not inside the probability directory. *)
 
 End theorem_3_7.
