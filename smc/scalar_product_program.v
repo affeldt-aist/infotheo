@@ -2,29 +2,30 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg ring.
 From mathcomp Require Import Rstruct reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy smc_interpreter.
+Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
+Require Import smc_interpreter.
 
-(**md***************************************************************************)
-(* # SMC Program for the SMC Scalar Product Protocol                           *)
-(*                                                                             *)
-(* |   Definitions     |    | Meaning                                        | *)
-(* |-------------------|----|------------------------------------------------| *)
-(* | pcoserv           | == | The Commodity server process in the protocol.  | *)
-(* | palice            | == | The Alice (Party#1) process in the protocol.   | *)
-(* | pbob              | == | The Bob (Party#2) process in the protocol.     | *)
-(* | is_scalar_product | == | The correctness of the SMC scalar product      | *)
-(* |                   |    | results                                        | *)
-(* |-------------------------------------------------------------------------| *)
-(*                                                                             *)
-(*                                                                             *)
-(* Formalization for:                                                          *)
-(* A practical approach to solve secure multi-party computation problems       *)
-(* Du, W., Zhan, J.Z.                                                          *)
-(* In: Workshop on New Security Paradigms (NSPW 2002), Virginia Beach, VA, USA *)
-(* September 23-26, 2002. pp. 127–135. ACM (2002).                             *)
-(* https://doi.org/10.1145/844102.844125                                       *)
-(*                                                                             *)
-(*******************************************************************************)
+(**md**************************************************************************)
+(* # SMC Program for the SMC Scalar Product Protocol                          *)
+(*                                                                            *)
+(* |   Definitions     |    | Meaning                                        |*)
+(* |-------------------|----|------------------------------------------------|*)
+(* | pcoserv           | == | The Commodity server process in the protocol.  |*)
+(* | palice            | == | The Alice (Party#1) process in the protocol.   |*)
+(* | pbob              | == | The Bob (Party#2) process in the protocol.     |*)
+(* | is_scalar_product | == | The correctness of the SMC scalar product      |*)
+(* |                   |    | results                                        |*)
+(* |-------------------------------------------------------------------------|*)
+(*                                                                            *)
+(*                                                                            *)
+(* Formalization for:                                                         *)
+(* A practical approach to solve secure multi-party computation problems      *)
+(* Du, W., Zhan, J.Z.                                                         *)
+(* In: Workshop on New Security Paradigms (NSPW 2002), Virginia Beach, VA, USA*)
+(* September 23-26, 2002. pp. 127–135. ACM (2002).                            *)
+(* https://doi.org/10.1145/844102.844125                                      *)
+(*                                                                            *)
+(******************************************************************************)
 
 
 Import GRing.Theory.
