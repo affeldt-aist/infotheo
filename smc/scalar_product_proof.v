@@ -2,38 +2,38 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg ring.
 From mathcomp Require Import Rstruct reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy smc_interpreter smc_tactics.
-Require Import scalar_product_program.
+Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
+Require Import scalar_product_program smc_interpreter smc_tactics.
 
-(********************************************************************************)
-(*                                                                              *)
-(* Lemmas:                                                                      *)
-(* ```                                                                          *)
-(* smc_scalar_product_ok           == the proof shows the interpretation of     *)
-(*                                    the SMC scalar program always terminates  *)
-(*                                    correctly                                 *)
-(* smc_scalar_product_traces_ok    == the proof shows the interpretation of the *)
-(*                                    SMC scalar program always yields          *)
-(*                                    input traces that match the specification *)
-(*                                    of fixed-length list                      *)
-(* scalar_product_is_leakage_freeP == the proof shows the information leakage   *)
-(*                                    freedom property of the protocol          *)
-(* ```                                                                          *)
-(*                                                                              *)
-(* The correct proofs are formalization of:                                     *)
-(* A practical approach to solve secure multi-party computation problems        *)
-(* Du, W., Zhan, J.Z.                                                           *)
-(* In: Workshop on New Security Paradigms (NSPW 2002), Virginia Beach, VA, USA  *)
-(* September 23-26, 2002. pp. 127–135. ACM (2002).                              *)
-(* https://doi.org/10.1145/844102.844125                                        *)
-(*                                                                              *)
-(* The information leakage freedom proof is formalization of:                   *)
-(* Information-theoretically secure number-product protocol                     *)
-(* Shen, C.H., Zhan, J., Wang, D.W., Hsu, T.S., Liau, C.J.                      *)
-(* In: 2007 International Conference on Machine Learning and Cybernetics.       *)
-(* vol. 5, pp. 3006–3011 (2007). https://doi.org/10.1109/ICMLC.2007.4370663     *)
-(*                                                                              *)
-(********************************************************************************)
+(******************************************************************************)
+(*                                                                            *)
+(* Lemmas:                                                                    *)
+(* ```                                                                        *)
+(* smc_scalar_product_ok           == the proof shows the interpretation of   *)
+(*                                    the SMC scalar program always terminates*)
+(*                                    correctly                               *)
+(* smc_scalar_product_traces_ok    == the proof shows the interpretation of   *)
+(*                                    the SMC scalar program always yields    *)
+(*                                    input traces that match the             *)
+(*                                    specification of fixed-length list      *)
+(* scalar_product_is_leakage_freeP == the proof shows the information leakage *)
+(*                                    freedom property of the protocol        *)
+(* ```                                                                        *)
+(*                                                                            *)
+(* The correct proofs are formalization of:                                   *)
+(* A practical approach to solve secure multi-party computation problems      *)
+(* Du, W., Zhan, J.Z.                                                         *)
+(* In: Workshop on New Security Paradigms (NSPW 2002), Virginia Beach, VA, USA*)
+(* September 23-26, 2002. pp. 127–135. ACM (2002).                            *)
+(* https://doi.org/10.1145/844102.844125                                      *)
+(*                                                                            *)
+(* The information leakage freedom proof is formalization of:                 *)
+(* Information-theoretically secure number-product protocol                   *)
+(* Shen, C.H., Zhan, J., Wang, D.W., Hsu, T.S., Liau, C.J.                    *)
+(* In: 2007 International Conference on Machine Learning and Cybernetics.     *)
+(* vol. 5, pp. 3006–3011 (2007). https://doi.org/10.1109/ICMLC.2007.4370663   *)
+(*                                                                            *)
+(******************************************************************************)
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -127,7 +127,8 @@ rewrite (scp.dot_productC xb sa).
 rewrite (scp.dot_productC (xb+sb) sa).
 rewrite scp.dot_productDr.
 (* Weird: without making it as a lemma, the ring tactic fails. *)
-have // ->: xa *d xb + sa *d xb + (sa *d sb - ra) - yb - (sa *d xb + sa *d sb) + ra + yb = xa *d xb.
+have // ->: xa *d xb + sa *d xb + (sa *d sb - ra) - yb -
+            (sa *d xb + sa *d sb) + ra + yb = xa *d xb.
   by ring.
 Qed.
 
@@ -170,7 +171,8 @@ Record scalar_product_random_inputs :=
        TODO: the type difference between vector and scalar prevents us
        from having something like:
 
-       Hindep : {homo nth x1 [:: x1; x2; s1; s2; r1; y2] : i j / i < j >-> P |= i _|_ j}%N.
+       Hindep : {homo nth x1 [:: x1; x2; s1; s2; r1; y2] :
+                  i j / i < j >-> P |= i _|_ j}%N.
     *)
     x1_indep : P |= [%x2, s1, s2, r1, y2] _|_ x1;
     x2_indep : P |= [%x1, s1, s2, r1, y2] _|_ x2;
@@ -313,7 +315,8 @@ have s1_x1x2s2_indep : P |= s1 _|_ [%x1, [%x2, s2]].
   by apply_inde_rv_comp g f.
 have px1_s1_unif: `p_ (x1 \+ s1 : {RV P -> _}) = fdist_uniform card_VX.
   by rewrite -(add_RV_unif x1 s1) ?ps1_unif //.
-have H := @lemma_3_5' _ T (VX * VX)%type VX P x1 s1 [%x2, s2] s1_x1x2s2_indep q card_VX (ps1_unif inputs).
+have H := @lemma_3_5' _ T (VX * VX)%type VX P x1 s1 [%x2, s2]
+            s1_x1x2s2_indep q card_VX (ps1_unif inputs).
 rewrite inde_RV_sym in H.
 exact: H.
 Qed.
@@ -420,8 +423,10 @@ Qed.
    and all technical lemmas about intermediate results,
    to prove information leakage free equations in Sec.[III.C]{Shen2007}
 
-   H(x2 | VIEW_1^{\pi_2}) = H(x2) ... Alice obtain no new knowledge about `x2` from the protocol
-   H(x1 | VIEW_2^{\pi_2}) = H(x1) ... Bob obtain no new knowledge about `x1` from the protocol
+   H(x2 | VIEW_1^{\pi_2}) = H(x2) ...
+         Alice obtain no new knowledge about `x2` from the protocol
+   H(x1 | VIEW_2^{\pi_2}) = H(x1) ...
+         Bob obtain no new knowledge about `x1` from the protocol
 
   *)
 
