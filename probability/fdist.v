@@ -3,7 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
 From mathcomp Require Import all_algebra vector reals normedtype.
-From mathcomp Require Import mathcomp_extra boolp.
+From mathcomp Require Import unstable mathcomp_extra boolp.
 From mathcomp Require Import Rstruct.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 

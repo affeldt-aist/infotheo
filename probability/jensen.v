@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
-From mathcomp Require Import mathcomp_extra boolp reals.
+From mathcomp Require Import unstable mathcomp_extra boolp reals.
 Require Import ssr_ext ssralg_ext realType_ext.
 Require Import fdist proba convex.
 

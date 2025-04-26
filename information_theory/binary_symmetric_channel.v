@@ -1,7 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum zmodp matrix lra.
-From mathcomp Require Import mathcomp_extra classical_sets Rstruct reals.
+From mathcomp Require Import unstable mathcomp_extra classical_sets Rstruct.
+From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist entropy binary_entropy_function channel hamming.
 Require Import channel_code pproba.

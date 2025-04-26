@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra archimedean.
-From mathcomp Require Import Rstruct mathcomp_extra reals exp.
+From mathcomp Require Import unstable mathcomp_extra Rstruct reals exp.
 Require Import ssr_ext bigop_ext realType_ext realType_ln fdist entropy kraft.
 
 (**md**************************************************************************)
@@ -118,7 +118,7 @@ apply (@lt_le_trans _ _ (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
   rewrite intrD lerB// ler_int.
   rewrite /x logV -?fdist_gt0//.
   rewrite -[leRHS]gez0_abs//.
-  rewrite -mathcomp_extra.ceil_ge0//.
+  rewrite ceil_ge0//.
   rewrite (@lt_le_trans _ _ 0)// ?ltrN10// lerNr oppr0.
   by rewrite -log1 ler_log// ?posrE// -fdist_gt0.
 under eq_bigr do rewrite mulrDr mulr1 mulrN.

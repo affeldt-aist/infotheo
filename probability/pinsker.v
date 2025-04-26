@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum interval ring lra.
-From mathcomp Require Import mathcomp_extra classical_sets functions.
+From mathcomp Require Import unstable mathcomp_extra classical_sets functions.
 From mathcomp Require Import set_interval reals Rstruct topology normedtype.
 From mathcomp Require Import sequences derive exp realfun.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
