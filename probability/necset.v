@@ -2,8 +2,8 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-From mathcomp Require Import mathcomp_extra boolp classical_sets reals.
 From mathcomp Require Import finmap.
+From mathcomp Require Import unstable mathcomp_extra boolp classical_sets reals.
 Require Import realType_ext classical_sets_ext fdist fsdist convex.
 
 (**md**************************************************************************)

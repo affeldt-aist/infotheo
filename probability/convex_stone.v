@@ -3,7 +3,7 @@
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix fingroup perm.
 From mathcomp Require Import lra ring.
 From mathcomp Require boolp.
-From mathcomp Require Import mathcomp_extra Rstruct reals.
+From mathcomp Require Import unstable mathcomp_extra Rstruct reals.
 Require Import ssr_ext ssralg_ext realType_ext fdist convex.
 
 (****************************************************************************)

@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssrnum ssrint ssralg matrix.
 From mathcomp Require Import lra ring archimedean.
-From mathcomp Require Import mathcomp_extra Rstruct reals exp.
+From mathcomp Require Import unstable mathcomp_extra Rstruct reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy aep typ_seq channel.
 

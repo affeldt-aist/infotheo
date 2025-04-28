@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
 From mathcomp Require Import archimedean lra ring.
-From mathcomp Require Import Rstruct reals sequences exp.
+From mathcomp Require Import unstable Rstruct reals sequences exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy divergence log_sum source_code.
 
@@ -835,11 +835,9 @@ apply: (@le_trans _ _ ((x ^ 2 / 2 - 1) * eps * n%:R)); last first.
     exact/ltW/exp_strict_lb.
   rewrite /m /x.
   rewrite lerBlDr.
-  rewrite (le_trans (ltW (mathcomp_extra.lt_succ_floor _)))//.
-  rewrite natr_absz.
-  rewrite mathcomp_extra.intrD1 ler_int.
-  rewrite lerD2r.
-  by rewrite ler_norm.
+  rewrite (le_trans (ltW (lt_succ_floor _)))//.
+  rewrite natr_absz intrD1 ler_int.
+  by rewrite lerD2r ler_norm.
 rewrite logM//; last exact: mpos.
 rewrite -(ler_pM2r ln2_gt0).
 rewrite mulrDl -(mulrA (ln alp)) (mulVf ln2_neq0).

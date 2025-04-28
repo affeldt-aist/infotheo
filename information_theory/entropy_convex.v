@@ -4,8 +4,8 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix interval.
 From mathcomp Require Import ring.
 From mathcomp Require boolp.
-From mathcomp Require Import mathcomp_extra Rstruct reals interval_inference.
-From mathcomp Require Import set_interval.
+From mathcomp Require Import unstable mathcomp_extra Rstruct reals.
+From mathcomp Require Import interval_inference set_interval.
 From mathcomp Require Import functions topology normedtype realfun derive exp.
 From mathcomp Require convex.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
