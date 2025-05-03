@@ -201,7 +201,8 @@ Extract Constant Rdefinitions.Ropp  => "(~-.)".
 Definition sumprod_ext := Eval compute in sumprod.
 Definition estimation_ext := Eval compute in estimation.
 
-Extraction "extraction/sumprod.ml" sumprod_ext estimation_ext.
+Set Extraction Output Directory "extraction".
+Extraction "sumprod.ml" sumprod_ext estimation_ext.
 
 Section ToGraph.
 

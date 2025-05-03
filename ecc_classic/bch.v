@@ -15,8 +15,8 @@ Require Import dft euclid grs f2.
 (* Cambridge University Press, 2002                                           *)
 (******************************************************************************)
 
-Reserved Notation "'\BCHsynp_(' a , e , t )" (at level 3).
-Reserved Notation "'\BCHomega_(' a , e )" (at level 3).
+Reserved Notation "'\BCHsynp_(' a , e , t )" (at level 0).
+Reserved Notation "'\BCHomega_(' a , e )" (at level 0).
 
 Declare Scope bch_scope.
 
