@@ -1,8 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From Coq Require Import NArith.
 From mathcomp Require Import all_ssreflect fingroup perm.
 From mathcomp Require Import unstable mathcomp_extra.
-Import Coq.NArith.BinNatDef.
+Require Import Coq.NArith.BinNatDef.
 
 (**md**************************************************************************)
 (* # Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, etc.*)
@@ -83,6 +84,9 @@ rewrite NatTrec.doubleE.
 contradict Ha.
 by destruct (nat_of_pos a).
 Qed.
+
+Local Lemma nat_of_mul_bin b1 b2 : (b1 * b2)%num = b1 * b2 :> nat.
+Proof. by case: b1 b2 => [|p] [|q]; rewrite ?muln0 //= nat_of_mul_pos. Qed.
 
 Lemma bin_of_nat_expn2 m : bin_of_nat (expn 2 m.+1) = BinNat.N.mul 2%num (bin_of_nat (expn 2 m)).
 Proof.
