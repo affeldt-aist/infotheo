@@ -462,6 +462,9 @@ Fixpoint xOs n cont :=
     | S m => BinNums.xO (xOs m cont)
   end.
 
+Local Lemma nat_of_mul_bin b1 b2 : (b1 * b2)%num = b1 * b2 :> nat.
+Proof. by case: b1 b2 => [|p] [|q]; rewrite ?muln0 //= nat_of_mul_pos. Qed.
+
 Lemma bin_of_nat_rev7 : forall n, 2 < n ->
   bin_of_nat (7 * 2 ^ (n - 3)) =
   BinNums.Npos (xOs (n - 3) (BinNums.xI (BinNums.xI (BinNums.xH)))).
