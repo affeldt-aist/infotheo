@@ -135,7 +135,7 @@ Proof. by field. Qed.
 Lemma x_x2_max {R : realFieldType} (q : R) : q * (1 - q) <= 4^-1.
 Proof.
 rewrite x_x2_eq.
-have : forall a b : R, 0 <= b -> a - b <= a. move=>  *; lra.
+have : forall a b : R, 0 <= b -> a - b <= a. move=> *; lra.
 apply; apply mulr_ge0; [lra | exact: exprn_even_ge0].
 Qed.
 
