@@ -403,6 +403,45 @@ Qed.
 
 End centropy1_RV_prop.
 
+Section conditional_entropy1_RV_comp0.
+Context {R : realType} {U A B C: finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+Variables (y : B) (f : B -> C).
+Let Z := f `o Y.
+
+Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
+
+Lemma centropy1_RV_comp0 :
+  `H[Z | Y = y ] = 0.
+Proof.
+rewrite /centropy1_RV /centropy1 big1 ?oppr0 // => z _.
+have [<-|Hfy_neq_z] := eqVneq (f y) z.
+  by rewrite jPr_comp_eq1 // log1 mulr0.
+rewrite jPr_Pr cpr_in1 /Z.
+apply/eqP.
+rewrite [X in X * _]cpr_eqE [X in X / _ * _]pr_eq0 ?mul0r//.
+apply: contra Hfy_neq_z.
+by rewrite fin_img_imset/= => /imsetP[t _ [/= -> ->]].
+Qed.
+
+End conditional_entropy1_RV_comp0.
+
+Section conditional_entropy_RV_comp0.
+Context {R : realType} {U A B C: finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+Variables (y : B) (f : B -> C).
+Let Z := f `o Y.
+
+Lemma centropy_RV_comp0 :
+  `H( Z | Y ) = 0.
+Proof.
+rewrite centropy_RVE' big1 // => y' _.
+have [->|Hy_eq0] := eqVneq `Pr[ Y = y' ] 0; first by rewrite mul0r.
+by rewrite centropy1_RV_comp0 // mulr0.
+Qed.
+
+End conditional_entropy_RV_comp0.
+
 Section conditional_entropy_prop.
 Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
 
@@ -673,6 +712,25 @@ by rewrite joint_entropy_self subrr.
 Qed.
 
 End conditional_entropy_prop3.
+
+Section conditional_entropy_RV_comp_removal.
+Context {R : realType}.
+Variables (U A B: finType) (f : A -> B).
+Variables (P : R.-fdist U).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Hypothesis HY : Y = f `o X.
+
+Lemma centropy_RV_comp_removal :
+  `H(X, Y) = `H `p_X.
+Proof.
+rewrite chain_rule_RV.
+rewrite HY.
+rewrite centropy_RV_comp0.
+by rewrite addr0.
+Qed.
+
+End conditional_entropy_RV_comp_removal.
 
 Section mutual_information.
 Local Open Scope divergence_scope.
