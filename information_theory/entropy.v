@@ -281,6 +281,31 @@ Qed.
 
 End joint_entropy_prop.
 
+Section joint_entropy_RVX.
+Context {R : realType}.
+Variables (U A B: finType) (f : A -> B).
+Variables (P : R.-fdist U).
+Variables (RA : {RV P -> A}) (RB : {RV P -> B}).
+
+Hypothesis HRB : RB = f `o RA.
+
+Lemma joint_entropy_RVX (TX : finType) (X : {RV P -> TX}):
+  injective f -> `H(RA, X) = `H(RB, X).
+Proof.
+move => f_inj.
+pose f' (a : A * TX) := (f a.1, a.2).
+rewrite /joint_entropy_RV /joint_entropy /dist_of_RV.
+have ->: [% RB, X] = f' `o [% RA, X].
+  rewrite HRB.
+  exact: boolp.funext.
+rewrite -[in RHS](fdistmap_comp f') [RHS]entropy_fdistmap //=.
+move => [a1 x1] [a2 x2].
+rewrite /f' /=.
+by rewrite /f' /= => -[] /f_inj -> ->.
+Qed.
+
+End joint_entropy_RVX.
+
 (* definitions using probability distributions, see below for RVs *)
 Section conditional_entropy_def.
 Context {R : realType} {A B : finType}.

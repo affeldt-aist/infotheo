@@ -1,3 +1,8 @@
+
+* added
+- in information_theory/entropy.v
+  + add joint_entropy_RVX
+
 -------------------
 from 0.9.2 to 0.9.3
 -------------------
