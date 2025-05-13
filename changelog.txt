@@ -1,3 +1,7 @@
+* added
+- in probability/proba.v
+  + pr_eq_diag, cPr_eq_id
+
 -------------------
 from 0.9.2 to 0.9.3
 -------------------

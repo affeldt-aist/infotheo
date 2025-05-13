@@ -786,6 +786,11 @@ apply eq_big => // -[a c]; rewrite inE => /andP[/= aE cF].
 by rewrite fdistmapE.
 Qed.
 
+Lemma pr_eq_diag {R : realType} (T : finType) (U : eqType) (P : R.-fdist T)
+(X : {RV P -> U}) (x : U) : `Pr[ [% X, X] = (x, x) ] = `Pr[ X = x ].
+Proof. by rewrite !pr_eqE /Pr; apply: eq_bigl=> a; rewrite !inE xpair_eqE andbb.
+Qed.
+
 Section pr_pair.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
@@ -1780,6 +1785,10 @@ Proof.
 rewrite cPr_eq_def /cPr /dist_of_RV 2!pr_eqE; congr (Pr _ _ / _).
 by apply/setP => u; rewrite !inE xpair_eqE.
 Qed.
+
+Lemma cPr_eq_id {R : realType} (T : finType) (U : eqType) (P : R.-fdist T)
+(X : {RV P -> U}) (x : U) : `Pr[ X = x ] != 0 -> `Pr[ X = x | X = x ] = 1.
+Proof. by move=> ?; rewrite cpr_eqE pr_eq_diag divff. Qed.
 
 Section crandom_variable_finType.
 Context {R : realType}.
