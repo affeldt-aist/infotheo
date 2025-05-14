@@ -18,6 +18,9 @@
 - in probability/proba.v
   + pr_eq_diag, cPr_eq_id
 
+- in /information_theory/entropy.v
+  + lemma mutual_info_RVE, mutual_info_RV0_indep
+
 -------------------
 from 0.9.2 to 0.9.3
 -------------------
