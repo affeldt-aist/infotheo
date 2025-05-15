@@ -859,7 +859,7 @@ Lemma mutual_info_RVE:
   `I(X;Y) = `H `p_X - `H(X | Y).
 Proof. by rewrite /mutual_info_RV mutual_infoE fst_RV2. Qed.
 
-Lemma mutual_info_RVX:
+Lemma mutual_info_RVC:
   `I(X; Y) = `I(Y; X).
 Proof. by rewrite /mutual_info_RV mutual_info_sym fdistX_RV2. Qed.
 
