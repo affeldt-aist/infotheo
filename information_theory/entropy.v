@@ -820,16 +820,6 @@ Definition mutual_info_RV := mutual_info `p_[% X, Y].
 End mutualinfo_RV_def.
 Notation "'`I(' X ';' Y ')'" := (mutual_info_RV X Y) : entropy_scope.
 
-Section mutual_info_RV_prop.
-Context {R : realType}.
-Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
-
-Lemma mutual_info_RVE:
-  `I(X;Y) = `H `p_X - `H(X | Y).
-Proof. by rewrite /mutual_info_RV mutual_infoE fst_RV2. Qed.
-
-End mutual_info_RV_prop.
-
 Section mutual_info_RV0_indep.
 Context {R : realType}.
 Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
@@ -860,6 +850,20 @@ Lemma mutual_info_self (R : realType) (A : finType) (P : R.-fdist A) :
 Proof. by rewrite mutual_infoE cond_entropy_self subr0 fdist_self1. Qed.
 
 End mutualinfo_prop.
+
+Section mutual_info_RV_prop.
+Context {R : realType}.
+Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Lemma mutual_info_RVE:
+  `I(X;Y) = `H `p_X - `H(X | Y).
+Proof. by rewrite /mutual_info_RV mutual_infoE fst_RV2. Qed.
+
+Lemma mutual_info_RVX:
+  `I(X; Y) = `I(Y; X).
+Proof. by rewrite /mutual_info_RV mutual_info_sym fdistX_RV2. Qed.
+
+End mutual_info_RV_prop.
 
 Section chain_rule_for_entropy.
 Local Open Scope vec_ext_scope.
