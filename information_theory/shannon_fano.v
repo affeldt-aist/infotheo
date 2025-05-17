@@ -108,7 +108,7 @@ apply (@lt_le_trans _ _ (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
     apply: fdist_card_neq0.
     exact: P.
   move=> i.
-  rewrite ltr_pM2l//; last by apply/fdist_gt0.
+  rewrite ltr_pM2l// ?fdist_gt0//.
   rewrite H.
   rewrite (_ : #|T|%:R = 2) // ?card_ord // -!/(log _).
   set x := log _.
@@ -116,11 +116,11 @@ apply (@lt_le_trans _ _ (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
   rewrite (le_lt_trans _ (gt_pred_ceil _))// ?num_real//.
   rewrite natr_absz.
   rewrite intrD lerB// ler_int.
-  rewrite /x logV -?fdist_gt0//.
+  rewrite /x logV ?fdist_gt0//.
   rewrite -[leRHS]gez0_abs//.
   rewrite ceil_ge0//.
   rewrite (@lt_le_trans _ _ 0)// ?ltrN10// lerNr oppr0.
-  by rewrite -log1 ler_log// ?posrE// -fdist_gt0.
+  by rewrite -log1 ler_log// ?posrE// fdist_gt0.
 under eq_bigr do rewrite mulrDr mulr1 mulrN.
 rewrite big_split /= FDist.f1 lerD2r.
 apply/eqW.

@@ -227,8 +227,7 @@ have [Wab0|Wab0] := eqVneq (W a b) 0.
     by rewrite nullV 2!mul0r oppr0 addr0 mulr0 powRr0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   by rewrite jtype_0_jtypef.
-rewrite -{1}(@LogK _ 2 (W a b))//; last first.
-  by rewrite -fdist_gt0.
+rewrite -{1}(@LogK _ 2 (W a b))// ?fdist_gt0//.
 have [Vab0|Vab0] := eqVneq (V a b) 0.
   suff -> : N( a, b | [seq x ``_ i | i <- enum 'I_n], [seq y ``_ i | i <- enum 'I_n]) = O.
     by rewrite expr0 Vab0 !(mulr0,mul0r,addr0,add0r,oppr0,powRr0).
@@ -238,9 +237,9 @@ rewrite -powR_mulrn ?powR_ge0// -powRrM//.
 congr (_ `^ _).
 rewrite -mulrN -mulrDr mulrA.
 rewrite logM; last 2 first.
-  by rewrite -fdist_gt0.
-  by rewrite invr_gt0 -fdist_gt0.
-rewrite logV; last by rewrite -fdist_gt0.
+  by rewrite fdist_gt0.
+  by rewrite invr_gt0 fdist_gt0.
+rewrite logV ?fdist_gt0//.
 rewrite addrAC subrr add0r.
 rewrite mulrN 3!mulNr opprK.
 rewrite mulrC.
@@ -266,10 +265,9 @@ Variable P : P_ n ( A ).
 Variable V : P_ n ( A , B ).
 Variable W : `Ch*(A, B).
 
-Definition exp_cdiv :=
-  if (type.d P) |- V <<b W
-  then 2 `^ (- n%:R * D(V || W | P))
-  else 0.
+Definition exp_cdiv := if (type.d P) |- V <<b W
+                       then 2 `^ (- n%:R * D(V || W | P))
+                       else 0.
 
 Lemma exp_cdiv_left (H : P |- V << W) : exp_cdiv = 2 `^ (- n%:R * D(V || W | P)).
 Proof.
