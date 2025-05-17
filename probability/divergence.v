@@ -103,10 +103,10 @@ Proof.
 rewrite /div [X in _ <= X](_ : _ =
     - \sum_(a | a \in A) P a * (log (Q a / P a))); last first.
   rewrite -sumrN; apply: eq_bigr => a _; rewrite -mulrN.
-  case/boolP : (P a == 0) => [/eqP ->|H0]; first by rewrite !mul0r.
+  have [->|H0] := eqVneq (P a) 0; first by rewrite !mul0r.
   congr (_ * _).
   have Qa0 := dominatesEN P_dom_by_Q H0.
-  by rewrite -logV ?invf_div// divr_gt0//; apply/fdist_gt0.
+  by rewrite -logV ?invf_div// divr_gt0// ?fdist_gt0.
 rewrite lerNr oppr0.
 apply (@le_trans _ _ ((\sum_(a | a \in A) (Q a - P a)) * log (expR 1))).
   rewrite big_distrl/=.
@@ -119,7 +119,7 @@ Qed.
 Lemma divPP : D(Q || Q) = 0.
 Proof.
 rewrite /div; apply big1 => a _.
-case/boolP : (Q a == 0) => [/eqP ->|H0]; first by rewrite mul0r.
+have [->|H0] := eqVneq (Q a) 0; first by rewrite mul0r.
 by rewrite divff // log1 mulr0.
 Qed.
 
@@ -135,10 +135,10 @@ apply log_id_diff => //.
   + apply: (@trans_eq _ _ 0%R); last first.
       rewrite -{1}oppr0 -{1}HPQ -sumrN.
       apply eq_bigr => a _; rewrite -mulrN.
-      case/boolP : (P a == 0) => [/eqP ->| H0]; first by rewrite !mul0r.
+      have [->|H0] := eqVneq (P a) 0; first by rewrite !mul0r.
       congr (_ * _).
       have Qa0 := dominatesEN P_dom_by_Q H0.
-      by rewrite -logV ?invf_div// divr_gt0// -fdist_gt0.
+      by rewrite -logV ?invf_div// divr_gt0// fdist_gt0.
     by rewrite -big_distrl/= big_split/= sumrN !FDist.f1 subrr mul0r.
 Qed.
 
