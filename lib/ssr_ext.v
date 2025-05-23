@@ -1217,7 +1217,9 @@ End fintype_extra.
 Section order_extra.
 (* eq_le would be a better name but it is already occupied:
    eq_le : (x == y) = (x <= y <= x)%O *)
-Lemma eqW {disp : order.Order.disp_t} {T : porderType disp} (x y : T) :
+
+Lemma eqW {disp : Order.disp_t} {T : porderType disp} (x y : T) :
   x = y -> (x <= y)%O.
 Proof. by move->; exact: Order.POrderTheory.lexx. Qed.
+
 End order_extra.
