@@ -215,7 +215,7 @@ rewrite inE /=; apply/negPn/negPn.
   + rewrite lerD2r -[leLHS](powRr0 2).
     rewrite ler_powR ?ler1n// mulr_ge0// addr_ge0//; first exact: entropy_ge0.
     by rewrite divr_ge0// ltW// lambda_gt0.
-  + rewrite -mulr2n -mulr_natl powRD; last by rewrite pnatr_eq0 implybT.
+  + rewrite -mulr2n -[leLHS]mulr_natl powRD; last by rewrite pnatr_eq0 implybT.
     by rewrite ler_pM2r ?powR_gt0// powRr1.
 Qed.
 

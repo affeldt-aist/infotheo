@@ -375,9 +375,9 @@ rewrite EX_ord -sum_exprz; last by rewrite lt_eqF.
 rewrite mulrC.
 rewrite big_distrl//=.
 rewrite -(@lerD2r _ (\sum_(i < Nmax.+1) i%:R * `Pr[ X = i%:R ] * log alp)).
-rewrite -addrA addrC (_ : - _ + _ = 0) ?addr0; last first.
+rewrite -addrA [leLHS]addrC (_ : - _ + _ = 0) ?addr0; last first.
   apply/eqP; rewrite addrC subr_eq0; apply/eqP.
-  by apply eq_bigr => i _; rewrite ffunE.
+  by apply: eq_bigr => i _; rewrite ffunE.
 rewrite (@eq_bigr _ _ _ 'I_Nmax.+1 _ _ _ (fun i => `Pr[ X = i%:R ] * log (alp ^ i)))=>[|i _]; last first.
   by rewrite log_exprz // [in RHS]mulrC -mulrA (mulrC _ (log alp)) mulrA.
 rewrite /entropy/=.
@@ -601,7 +601,7 @@ rewrite logM; last 2 first.
   rewrite /Pf.
   by case: pickP => //.
   rewrite invr_gt0.
-  by rewrite lt_neqAle eq_sym Pr_non0//= ffunE//.
+  by rewrite lt_neqAle eq_sym Pr_non0/= ffunE.
 rewrite logV; last by rewrite -fdist_gt0.
 by rewrite /PN /= ffunE addrAC -addrA subrr addr0.
 Qed.

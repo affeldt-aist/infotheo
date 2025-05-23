@@ -961,7 +961,7 @@ congr (_ == _).
 rewrite (row_setC _ _ _ n1_n0) (GRing.oppr_char2 _ x) //.
 rewrite {2}/checksubsum [in X in _ = X](bigD1 n0) /=; last by rewrite !inE eqxx.
 rewrite !mxE eqxx.
-rewrite GRing.addrC /checksubsum F2_of_bool_addr.
+rewrite [LHS]addrC /checksubsum F2_of_bool_addr.
 congr (F2_of_bool ((_ + _)%R == _)).
 apply congr_big => // i.
   rewrite !inE.

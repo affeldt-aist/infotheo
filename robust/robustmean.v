@@ -205,7 +205,7 @@ under eq_bigr => i _.
     \sum_(i0 in finset (preim X (pred1 i))) X i0 * Ind F i0 * P i0 =
     \sum_(i0 in finset (preim X (pred1 i)) :&: F) X i0 * Ind F i0 * P i0 +
     \sum_(i0 in finset (preim X (pred1 i)) :\: F) X i0 * Ind F i0 * P i0
-    by apply big_setID.
+    by apply: big_setID.
   rewrite H1 addr0 => <-.
   under eq_bigl do rewrite in_preim1'.
   by over.

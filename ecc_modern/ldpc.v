@@ -728,7 +728,7 @@ transitivity (\sum_(x = d [~('V m0) :\ n0])
       (\prod_(m1 in 'F n1 :\ m0)
           (W ``(y \# 'V(m1, n1) :\ n1 | x' \# 'V(m1, n1) :\ n1) *
           (\prod_(m2 in 'F(m1, n1)) (\delta ('V m2) x')%:R))))).
-  apply partition_big => /= t _.
+  apply: partition_big => /= t _.
   by apply freeon_dproj.
 apply eq_bigr => /= x Hx.
 transitivity

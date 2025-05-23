@@ -1087,7 +1087,7 @@ have -> : centropy PY = \sum_(j < n.+1)
   - have {}j0 : j = ord0 by move: j0 => /eqP j0; exact/val_inj.
     subst j.
     rewrite /centropy /=.
-    apply big_rV_1 => // a1.
+    apply: big_rV_1 => // a1.
     have H1 a : (fdistX (fdist_belast_last_of_rV (fdist_take YP (lift ord0 (lift ord0 ord0))))) (a, a1) =
        (fdist_prod_nth PY ord0) (a, a1 ``_ ord0).
       rewrite fdistXE fdist_belast_last_of_rVE.

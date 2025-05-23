@@ -445,9 +445,9 @@ apply (@le_trans _ _ ((Pr P S / 2 *
 under [X in _ <= X]eq_bigr do rewrite Weighted.dE /Weighted.total.
 rewrite -big_distrl /= ler_pM2r; last by rewrite invr_gt0.
 rewrite -lerN2.
-rewrite {2}pr_S addrA -addrA mulrDr opprD addrC.
+rewrite {2}pr_S addrA -[X in _ * X]addrA mulrDr opprD [leRHS]addrC.
 rewrite -lerBlDr.
-rewrite opprK -mulrN addrC -mulrA mulVf; last by apply/eqP; lra.
+rewrite opprK -mulrN [leLHS]addrC -mulrA mulVf; last by apply/eqP; lra.
 rewrite mulr1 opprD opprK.
 rewrite -!sumrN -!big_split /=.
 have H E : \sum_(i in E) (P i + - (C i * P i)) = \sum_(i in E) (1 - C i) * P i.
