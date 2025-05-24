@@ -1,3 +1,14 @@
+
+* added
+- in probability/proba.v
+  + pr_comp_removal
+
+- probability/jfdist_cond.v
+  + jPr_comp_eq1
+
+- in information_theory/entropy.v
+  + centropy1_RV_comp0, centropy_RV_comp0, centropy_RV_comp_removal
+
 -------------------
 from 0.9.2 to 0.9.3
 -------------------
