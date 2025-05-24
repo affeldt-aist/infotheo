@@ -559,7 +559,8 @@ Qed.
 
 End random_variable_eqType.
 Notation "`Pr[ X = a ]" := (pr_eq X a) : proba_scope.
-Global Hint Resolve pr_eq_ge0 : core.
+#[global] Hint Extern 0 (is_true (0 <= `Pr[ _ = _ ])) =>
+  solve [apply: pr_eq_ge0] : core.
 
 Section random_variable_order.
 Context {R : realType}.
@@ -1045,7 +1046,7 @@ End expected_value_prop.
 Lemma E_cast_RV_fdist_rV1 {R : realType} (A : finType) (P : R.-fdist A) :
   forall (X : {RV P -> R}), `E (cast_RV_fdist_rV1 X) = `E X.
 Proof.
-move=> f; rewrite /cast_RV_fdist_rV1 /=; apply big_rV_1 => // m.
+move=> f; rewrite /cast_RV_fdist_rV1 /=; apply: big_rV_1 => // m.
 by rewrite -fdist_rV1.
 Qed.
 
@@ -1237,8 +1238,8 @@ Theorem Pr_bigcup_incl_excl n (S : 'I_n -> {set A}) :
 Proof.
 rewrite -E_Ind /=.
 rewrite /Ex.
-under eq_bigr do rewrite Ind_bigcup_incl_excl.
-under eq_bigr do rewrite big_distrl.
+under [LHS]eq_bigr do rewrite Ind_bigcup_incl_excl.
+under [LHS]eq_bigr do rewrite big_distrl.
 rewrite /=.
 rewrite exchange_big /=.
 apply: eq_bigr => i _.

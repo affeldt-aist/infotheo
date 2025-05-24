@@ -3015,7 +3015,8 @@ move=> x0 y0 xy H; rewrite /convex_function_at.
 rewrite [in X in (_ <= X)%R]avgRE /= onemK addrC.
 rewrite /convex_function_at !avgRE in H.
 rewrite avgRE /= onemK addrC.
-by apply: (le_trans H); rewrite addrC lexx.
+apply: (le_trans H) || (rewrite [X in f X]addrC; apply: (le_trans H)).
+by rewrite addrC lexx.
 Qed.
 
 Lemma concavef_at_onem x y (t : {prob R}) f : (0 < x -> 0 < y -> x < y ->

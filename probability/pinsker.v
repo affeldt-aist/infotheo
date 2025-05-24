@@ -316,7 +316,7 @@ have [p1|p1] := eqVneq p 1%:pr.
     rewrite !fdist_binaryE /onem subrr eq_sym (negbTE (Set2.a_neq_b card_A)) /=.
     by move=> /(_ erefl)/eqP; rewrite oner_eq0.
   apply: le_trans.
-    have : 0 <= 1 - q < 1.
+    have : 0 <= 1 - Prob.p q < 1.
       apply/andP; split; first by rewrite subr_ge0.
       by rewrite ltrBlDr -{1}(addr0 1) ltrD2l; apply/prob_gt0.
     exact: pinsker_fun_p0_pos Hc.
@@ -324,7 +324,7 @@ have [p1|p1] := eqVneq p 1%:pr.
     by rewrite -[ltRHS]subr0 ltrD2l ltrN2 -prob_gt0.
   rewrite le_eqVlt; apply/orP; left; apply/eqP.
   rewrite mul1r div1r logV; [|by apply/prob_gt0].
-  by rewrite (_ : 1 - (1 - q) = q :> R) //=; by field.
+  by rewrite (_ : 1 - (1 - Prob.p q) = q :> R) //=; by field.
 have [q0|q0] := eqVneq q 0%:pr.
   subst q.
   rewrite /pinsker_fun.
@@ -375,18 +375,18 @@ set pi := P a.
 set pj := P b.
 set qi := Q a.
 set qj := Q b.
-have Hpi : pi = 1 - p by rewrite /pi /P fdist_binaryxx.
-have Hqi : qi = 1 - q by rewrite /qi /= fdist_binaryxx.
+have Hpi : pi = 1 - Prob.p p by rewrite /pi /P fdist_binaryxx.
+have Hqi : qi = 1 - Prob.p q by rewrite /qi /= fdist_binaryxx.
 have Hpj : pj = p.
   by rewrite /pj /= fdist_binaryE eq_sym (negbTE (Set2.a_neq_b card_A)).
 have Hqj : qj = q.
   by rewrite /qj /= fdist_binaryE eq_sym (negbTE (Set2.a_neq_b card_A)).
-transitivity (D(P || Q) - c * (`| (p : R) - q | + `| (1 - p) - (1 - q) |) ^+ 2).
+transitivity (D(P || Q) - c * (`| (p : R) - Prob.p q | + `| (1 - Prob.p p) - (1 - Prob.p q) |) ^+ 2).
   rewrite /pinsker_fun /div Set2sumE -/a -/b -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
   set tmp := (`| _ | + _) ^+ 2.
-  have -> : tmp = 4 * ((p : R) - q) ^+ 2.
-    rewrite /tmp (_ : 1 - p - (1 - q) = (q : R) - p); last by simpl; ring.
-    rewrite sqrrD (distrC (q : R) (p : R)) -{3}(expr1 `|(p : R) - q|).
+  have -> : tmp = 4 * ((p : R) - Prob.p q) ^+ 2.
+    rewrite /tmp (_ : 1 - Prob.p p - (1 - Prob.p q) = (q : R) - Prob.p p); last by simpl; ring.
+    rewrite sqrrD (distrC (q : R) (p : R)) -{3}(expr1 `|(p : R) - Prob.p q|).
     by rewrite -exprS real_normK ?num_real//; ring.
   rewrite [X in _ = _ + _ - X]mulrA.
   rewrite [in X in _ = _ + _ - X](mulrC c).

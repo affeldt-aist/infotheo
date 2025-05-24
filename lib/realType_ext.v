@@ -730,7 +730,7 @@ move=> H1 s0; apply/val_inj => /=.
 rewrite !(r_of_pqE,s_of_pqE,q_of_rsE,p_of_rsE) /onem.
 field.
 apply/andP; split; last first.
-  by rewrite mulrBl mul1r !opprB -!addrA addrC !addrA !subrK.
+  by rewrite mulrBl mul1r !opprB -!addrA addrC !addrA !subrK ?subrr ?add0r.
 rewrite subr_eq0.
 apply: contra H1 => /eqP H1.
 by apply/eqP/val_inj; rewrite /= p_of_rsE.

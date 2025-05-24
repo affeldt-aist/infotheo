@@ -568,7 +568,7 @@ Lemma classify_big (A : finType) n (f : A -> 'I_n) (F : 'I_n -> R) :
     \sum_(i < n) (#|f @^-1: [set i]|%:R * F i).
 Proof.
 transitivity (\sum_(i < n) \sum_(a | true && (f a == i)) F (f a)).
-  by apply partition_big.
+  by apply: partition_big.
 apply eq_bigr => i _ /=.
 transitivity (\sum_(a | f a == i) F i); first by apply eq_bigr => s /eqP ->.
 rewrite big_const iter_addr addr0 mulr_natl; congr GRing.natmul.

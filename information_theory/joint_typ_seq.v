@@ -239,7 +239,7 @@ apply (@le_trans _ _ (\sum_(i | i \in `JTS P W n epsilon)
 rewrite (_ : \sum_(_ | _) _ =
   #| `JTS P W n epsilon|%:R *
   2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W) - epsilon)));
-  last by rewrite big_const iter_addr addr0 -mulr_natl mulrA.
+  last by rewrite big_const iter_addr addr0 -[LHS]mulr_natl mulrA.
 apply (@le_trans _ _ (2 `^ (n%:R * (`H( P , W )%channel + epsilon)) *
   2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W ) - epsilon)))).
   by rewrite !ler_wpM2r ?powR_ge0 // JTS_sup.
