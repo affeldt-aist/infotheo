@@ -599,10 +599,10 @@ rewrite mulfV ?mulr1; last by rewrite /PN /= ffunE in Pr_non0.
 rewrite logM; last 2 first.
   rewrite lt_neqAle eq_sym Pfi0_non0//=.
   rewrite /Pf.
-  by case: pickP => //.
+  by case: pickP.
   rewrite invr_gt0.
   by rewrite lt_neqAle eq_sym Pr_non0/= ffunE.
-rewrite logV; last by rewrite -fdist_gt0.
+rewrite logV ?fdist_gt0//.
 by rewrite /PN /= ffunE addrAC -addrA subrr addr0.
 Qed.
 
@@ -936,8 +936,7 @@ rewrite ELC_TupleFDist mulrC (mulrC (m eps)%:R) card_mx mul1n.
 rewrite natrX log_exprz; last first.
   by rewrite ltr0n// (fdist_card_neq0 P).
 rewrite ltr_pM2r//; last exact: mpos.
-move=> /ltW.
-apply: le_trans.
+move=> /ltW; apply: le_trans.
 exact/le_1_EX.
 Qed.
 

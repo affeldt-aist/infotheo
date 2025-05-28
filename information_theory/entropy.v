@@ -132,9 +132,8 @@ transitivity (\sum_(a|a \in A) P a * log (P a) +
               \sum_(a|a \in A) P a * - log (fdist_uniform An1 a)).
   rewrite -big_split /=; apply eq_bigr => a _; rewrite -mulrDr.
   have [->|Pa0] := eqVneq (P a) 0; first by rewrite !mul0r.
-  congr (_ * _); rewrite logDiv//.
-    by rewrite -fdist_gt0.
-  by rewrite fdist_uniformE invr_gt0// An1 ltr0n.
+  congr (_ * _); rewrite logDiv// ?fdist_gt0//.
+  by rewrite fdist_uniformE invr_neq0// An1 pnatr_eq0.
 under [in X in _ + X]eq_bigr do rewrite fdist_uniformE.
 rewrite -[in X in _ + X = _]big_distrl /= FDist.f1 mul1r.
 by rewrite addrC /entropy logV ?opprK// An1 ltr0n.
@@ -481,8 +480,8 @@ transitivity (
   apply eq_bigr => a _; rewrite -big_split /=; apply eq_bigr => b _.
   have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0r addr0.
   rewrite -mulrDr; congr (_ * _); rewrite mulrC logM //.
-    by rewrite -Pr_jcPr_gt0 setX1 Pr_set1 fdistXE; rewrite -fdist_gt0.
-  by rewrite -fdist_gt0; exact: dom_by_fdist_fstN H0.
+    by rewrite -Pr_jcPr_gt0 setX1 Pr_set1 fdistXE fdist_gt0.
+  by rewrite fdist_gt0; exact: dom_by_fdist_fstN H0.
 rewrite [in X in _ + X = _]big_morph_oppr; congr (_ + _).
 - rewrite /entropy; congr (- _); apply eq_bigr => a _.
   by rewrite -big_distrl /= -fdist_fstE.
@@ -718,7 +717,7 @@ transitivity (- (\sum_(a in A) \sum_(b in B) PQ (a, b) * log (P a)) +
   have [->|H0] := eqVneq (PQ (a, b)) 0; first by rewrite !mul0r.
   congr (_ * _); rewrite logDiv //.
   - by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1.
-  - by rewrite -fdist_gt0; exact: dom_by_fdist_fstN H0.
+  - by rewrite fdist_gt0; exact: dom_by_fdist_fstN H0.
 congr (_ + _).
 - rewrite /entropy; congr (- _); apply/eq_bigr => a _.
   by rewrite -big_distrl /= -fdist_fstE.
@@ -1027,8 +1026,8 @@ have Qba0 := dominatesEN PQ H0.
 have Q2a0 : Q1 a != 0.
   apply: contra Qba0; rewrite /Q fdistXE fdist_prodE => /eqP ->; by rewrite mul0r.
 rewrite -logM; last 2 first.
-  by apply/divr_gt0; rewrite -fdist_gt0.
-  by apply/divr_gt0; by rewrite -Pr_jcPr_gt0 setX1 Pr_set1; rewrite -fdist_gt0.
+  by rewrite divr_gt0// fdist_gt0.
+  by rewrite divr_gt0// -Pr_jcPr_gt0 setX1 Pr_set1 fdist_gt0.
 congr (log _).
 rewrite /jcPr !setX1 !Pr_set1.
 rewrite !fdistXE !fdistX2 !fdist_prod1 !fdist_prodE /=.
@@ -1626,7 +1625,8 @@ case: ifPn => [/eqP|] i0.
   rewrite -tail_of_fdist_rV_fdist_col' /tail_of_fdist_rV /head_of_fdist_rV.
   rewrite -{1}(fdist_rV_of_prodK P) entropy_fdist_rV_of_prod.
   move: (chain_rule (fdist_prod_of_rV P)); rewrite /joint_entropy => ->.
-  by rewrite [in X in (_ <= X)%R]addrC lerD2l -fdistX1; exact: information_cant_hurt.
+  rewrite [in X in (_ <= X)%R]addrC lerD2l -fdistX1.
+  exact: information_cant_hurt.
 rewrite (chain_rule_multivar _ i0) lerD2l.
 exact/han_helper.
 Qed.

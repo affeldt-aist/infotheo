@@ -222,17 +222,11 @@ have [b Hb] : {b : A | d b != 0}.
 by refine (H1 n _ _ _ _ Hb) => // d' A2; apply IH.
 Qed.
 
-Lemma fdist_gt0 d a : (d a != 0) <-> (0 < d a).
-Proof.
-split => H; last by rewrite gt_eqF.
-by rewrite lt_neqAle eq_sym H /=.
-Qed.
+Lemma fdist_gt0 d a : (0 < d a) = (d a != 0).
+Proof. by rewrite lt_neqAle FDist.ge0 andbT eq_sym. Qed.
 
-Lemma fdist_lt1 d a : (d a != 1) <-> (d a < 1).
-Proof.
-split=> H; first by rewrite lt_neqAle H /=.
-by rewrite lt_eqF.
-Qed.
+Lemma fdist_lt1 d a : (d a < 1) = (d a != 1).
+Proof. by rewrite lt_neqAle FDist.le1 andbT. Qed.
 
 Lemma fdist_ext d d' : (forall x, d x = d' x) -> d = d'.
 Proof. by move=> ?; exact/val_inj/ffunP. Qed.
@@ -609,7 +603,7 @@ Let f0 : forall a, 0 <= f a.
 Proof.
 move=> a; rewrite /f ffunE.
 case: ifPn => [_ |ab]; first exact/lexx.
-by apply: mulr_ge0 => //; rewrite invr_ge0 subr_ge0 ltW// -fdist_lt1.
+by rewrite divr_ge0// subr_ge0 FDist.le1.
 Qed.
 
 Let f1 : \sum_(a in B) f a = 1.
@@ -620,7 +614,7 @@ rewrite (eq_bigr (fun c => X c / (1 - X b))); last first.
 rewrite -big_distrl /=.
 move: (FDist.f1 X); rewrite (bigD1 b) //=.
 move=> /esym /eqP. rewrite addrC -subr_eq => /eqP H.
-have ?: 1 - X b != 0 by rewrite subr_eq0 eq_sym.
+have ? : 1 - X b != 0 by rewrite subr_eq0 eq_sym.
 rewrite -H.
 exact: mulfV.
 Qed.

@@ -148,8 +148,7 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
     - have {}H : (P `^ n.+1)%fdist i = 0.
         apply/eqP.
         apply/negPn.
-        apply: contra H.
-        by have [+ _] := fdist_gt0 (P `^ n.+1)%fdist i.
+        by rewrite -fdist_gt0.
       by rewrite H eqxx.
     - rewrite /typ_seq negb_and => /orP[|] LHS.
       + have [//|H1] := eqVneq ((P `^ n.+1)%fdist i) 0.
