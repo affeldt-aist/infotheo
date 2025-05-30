@@ -410,7 +410,7 @@ Lemma jPr_comp_eq1 :
   \Pr_`p_ [% Z, Y][[set f y] | [set y]] = 1.
 Proof.
 rewrite jPr_Pr cpr_in1 cpr_eqE.
-rewrite pr_comp_removal //=.
+rewrite pr_RV2_comp //=.
 by rewrite divff.
 Qed.
 

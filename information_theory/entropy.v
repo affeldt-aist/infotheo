@@ -712,7 +712,7 @@ Qed.
 
 End conditional_entropy_prop3.
 
-Section conditional_entropy_RV_comp_removal.
+Section joint_entropy_RV_comp.
 Context {R : realType}.
 Variables (U A B: finType) (f : A -> B).
 Variables (P : R.-fdist U).
@@ -720,16 +720,11 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
 Hypothesis HY : Y = f `o X.
 
-Lemma centropy_RV_comp_removal :
+Lemma joint_entropy_RV_comp :
   `H(X, Y) = `H `p_X.
-Proof.
-rewrite chain_rule_RV.
-rewrite HY.
-rewrite centropy_RV_comp0.
-by rewrite addr0.
-Qed.
+Proof. by rewrite chain_rule_RV HY centropy_RV_comp0 addr0. Qed.
 
-End conditional_entropy_RV_comp_removal.
+End joint_entropy_RV_comp.
 
 Section mutual_information.
 Local Open Scope divergence_scope.
