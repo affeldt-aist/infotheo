@@ -1,4 +1,3 @@
-
 * changed:
 - fdist_gt0, fdist_lt1 (from Prop to bool)
 
