@@ -873,21 +873,15 @@ Qed.
 End pr_in_comp'.
 
 Section pr_RV2_comp.
-Context {R : realType}.
-Variables (T TX TY TZ : finType).
-Variable P : R.-fdist T.
-Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
-Variables (y : TY) (z : TZ).
-Let Z := f `o Y.
+Context {R : realType} (T A B : finType) (P : R.-fdist T).
+Variables (X : {RV P -> A}) (f : A -> B).
+Variables (a : A).
 
-Lemma pr_RV2_comp :
-  `Pr[ [% Z, Y] = (f y, y) ] = `Pr[ Y = y ].
+Lemma pr_RV2_comp : `Pr[ [% f `o X, X] = (f a, a) ] = `Pr[ X = a ].
 Proof.
-rewrite 2!pr_eqE.
-congr (Pr _ _).
+rewrite 2!pr_eqE; congr (Pr _ _).
 apply/setP => t.
-rewrite !inE xpair_eqE.
-by rewrite andb_idl// => /eqP <-.
+by rewrite !inE xpair_eqE andb_idl// => /eqP <-.
 Qed.
 
 End pr_RV2_comp.
