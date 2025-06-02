@@ -820,6 +820,18 @@ Definition mutual_info_RV := mutual_info `p_[% X, Y].
 End mutualinfo_RV_def.
 Notation "'`I(' X ';' Y ')'" := (mutual_info_RV X Y) : entropy_scope.
 
+Section mutual_info_RV0_indep.
+Context {R : realType} (U A B : finType) (P : R.-fdist U).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Lemma mutual_info_RV0_indep : `I(X ; Y) = 0 -> P |= X _|_ Y.
+Proof.
+move/mutual_info0P; rewrite fst_RV2 snd_RV2 => H x y.
+by rewrite !pr_eqE' H fdist_prodE.
+Qed.
+
+End mutual_info_RV0_indep.
+
 (* TODO: example 2.3.1 *)
 
 Section mutualinfo_prop.
@@ -837,6 +849,18 @@ Proof. by rewrite mutual_infoE cond_entropy_self subr0 fdist_self1. Qed.
 
 End mutualinfo_prop.
 
+Section mutual_info_RV_prop.
+Context {R : realType} (U A B : finType) (P : R.-fdist U).
+Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+
+Lemma mutual_info_RVE : `I(X ; Y) = `H `p_X - `H(X | Y).
+Proof. by rewrite /mutual_info_RV mutual_infoE fst_RV2. Qed.
+
+Lemma mutual_info_RVC : `I(X ; Y) = `I(Y ; X).
+Proof. by rewrite /mutual_info_RV mutual_info_sym fdistX_RV2. Qed.
+
+End mutual_info_RV_prop.
+
 Section chain_rule_for_entropy.
 Local Open Scope vec_ext_scope.
 
@@ -850,7 +874,7 @@ congr (P _ * log (P _)); apply/rowP => i.
 by rewrite (ord1 i) !mxE; case: splitP => // i0; rewrite (ord1 i0) mxE.
 Qed.
 
-Lemma chain_rule_rV (R : realType) (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+1) :
+Lemma chain_rule_rV (R : realType) (A : finType) n (P : R.-fdist 'rV[A]_n.+1) :
   `H P = \sum_(i < n.+1)
           if i == O :> nat then
             `H (head_of_fdist_rV P)
