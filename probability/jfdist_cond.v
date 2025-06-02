@@ -399,20 +399,14 @@ by rewrite fdist_prodE /= mulrAC mulfV ?mul1r //; exact/eqP.
 Qed.
 
 Section jPr_comp_eq1.
-Context {R : realType} {U A B C: finType} {P : R.-fdist U}.
-Variables (X : {RV P -> A}) (Y : {RV P -> B}).
-Variables (y : B) (f : B -> C).
-Let Z := f `o Y.
+Context {R : realType} {U A B : finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (a : A) .
 
-Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
+Hypothesis pr_Y_neq0 : `Pr[ X = a ] != 0.
 
-Lemma jPr_comp_eq1 :
-  \Pr_`p_ [% Z, Y][[set f y] | [set y]] = 1.
-Proof.
-rewrite jPr_Pr cpr_in1 cpr_eqE.
-rewrite pr_RV2_comp //=.
-by rewrite divff.
-Qed.
+Lemma jPr_comp_eq1 (f : A -> B) :
+  \Pr_`p_ [% f `o X, X][[set f a] | [set a]] = 1.
+Proof. by rewrite jPr_Pr cpr_in1 cpr_eqE pr_RV2_comp //= divff. Qed.
 
 End jPr_comp_eq1.
 
