@@ -848,7 +848,7 @@ Qed.
 
 End pr_pair.
 
-Section more_pr_lemmas.
+Section pr_in_comp'.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Variables (TA UA : finType) (f : TA -> UA) (X : {RV P -> TA}).
@@ -870,7 +870,21 @@ apply: eq_bigl=> j.
 by rewrite !inE.
 Qed.
 
-End more_pr_lemmas.
+End pr_in_comp'.
+
+Section pr_RV2_comp.
+Context {R : realType} (T A B : finType) (P : R.-fdist T).
+Variables (X : {RV P -> A}) (f : A -> B).
+Variables (a : A).
+
+Lemma pr_RV2_comp : `Pr[ [% f `o X, X] = (f a, a) ] = `Pr[ X = a ].
+Proof.
+rewrite 2!pr_eqE; congr (Pr _ _).
+apply/setP => t.
+by rewrite !inE xpair_eqE andb_idl// => /eqP <-.
+Qed.
+
+End pr_RV2_comp.
 
 Lemma pr_eq_pair_setT {R : realType} (U : finType) (P : R.-fdist U)
     (A B : finType) (E : {set A}) (X : {RV P -> A}) (Y : {RV P -> B}) :

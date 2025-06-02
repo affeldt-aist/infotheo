@@ -398,6 +398,18 @@ rewrite /jcPr setX1 fdistX2 2!Pr_set1 fdistXE fdist_prod1.
 by rewrite fdist_prodE /= mulrAC mulfV ?mul1r //; exact/eqP.
 Qed.
 
+Section jPr_comp_eq1.
+Context {R : realType} {U A B : finType} {P : R.-fdist U}.
+Variables (X : {RV P -> A}) (a : A) .
+
+Hypothesis pr_Y_neq0 : `Pr[ X = a ] != 0.
+
+Lemma jPr_comp_eq1 (f : A -> B) :
+  \Pr_`p_ [% f `o X, X][[set f a] | [set a]] = 1.
+Proof. by rewrite jPr_Pr cpr_in1 cpr_eqE pr_RV2_comp //= divff. Qed.
+
+End jPr_comp_eq1.
+
 Section fdist_split.
 Context {R : realType}.
 Variables (A B : finType).
