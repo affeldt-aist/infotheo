@@ -56,11 +56,8 @@ by case=> p H/=; case: (elimTF _ _) => _ ?; apply/val_inj.
 Qed.
 
 Lemma mc_convE (a b : R^o) (p : {prob R}) :
-  conv p a b = mathcomp.analysis.convex.conv (i01_of_prob p) b a :> R^o.
-Proof.
-rewrite [LHS]addrC.
-congr (_ .~  *: _ + _ *: _); by case: p.
-Qed.
+  conv p a b = mathcomp.analysis.convex.conv (i01_of_prob p) a b :> R^o.
+Proof. by case: p. Qed.
 
 (* TODO: already in MathComp-Analysis?*)
 Lemma log_concave : concave_function_in Rpos_interval (log : R^o -> R^o).
@@ -68,7 +65,7 @@ Proof.
 move=> /= x y p Hx Hy.
 rewrite /concave_function_at /convex_function_at.
 rewrite !inE in Hx Hy.
-have Hln := concave_ln (i01_of_prob p) Hy Hx.
+have Hln := concave_ln (i01_of_prob p) Hx Hy.
 rewrite -!mc_convE in Hln.
 rewrite conv_leoppD leoppP /= /log /Log /=.
 rewrite [in X in X <= _]avgRE !mulrA -mulrDl -avgRE.
