@@ -7,6 +7,7 @@ From mathcomp Require Import ssrnum archimedean ereal interval_inference.
 From mathcomp Require Import ring lra reals.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 From mathcomp Require vector.
+From mathcomp.analysis Require Import (canonicals)convex.
 
 (**md**************************************************************************)
 (* # Convexity                                                                *)
@@ -3224,3 +3225,15 @@ by apply/mulr_ge0; rewrite subr_ge0; exact/ltW.
 Qed.
 
 End twice_derivable_convex.
+
+(* mc_convRE == a <|p|> b (mathcomp_analysis) = a <|p|> b (infotheo) :> R *)
+Section mc_conv.
+Local Open Scope ring_scope.
+Import (canonicals) analysis.convex.
+Variable R : realType.
+
+Lemma mc_convRE (a b : R^o) (p : {prob R}) :
+  mathcomp.analysis.convex.conv (i01_of_prob p) a b = conv p a b :> R^o.
+Proof. by []. Qed.
+
+End mc_conv.
