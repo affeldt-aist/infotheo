@@ -893,14 +893,14 @@ Let y1 := t \- x2' \*d s1 \+ r1.
 Let AliceView := [%x1, s1, r1, x2', t, y1].
 
 Hypothesis y2_x1x2s1s2r1_eqn3_indep : P |= y2 _|_ [%x1, x2, s1, s2, r1].
-Hypothesis s2_x1s1r1x2_eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2].
+Hypothesis eqn4_indep : P |= s2 _|_ [%x1, s1, r1, x2].
 Hypothesis x1s2r1_x2_indep: P |= [% x1, s1, r1] _|_ x2.
 Hypothesis card_TX : #|TX| = m.+2.
 Hypothesis neg_py2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
 Hypothesis card_rVTX : #|'rV[TX]_n| = (m.+2 ^ n).-1.+1.
 Hypothesis ps2_unif : `p_ s2 = fdist_uniform card_rVTX.
 
-Let negy2_x1x2s1s2r1r2_eqn3_indep :
+Let eqn3_indep :
   P |= neg_RV y2 _|_ [%x1, x2, s1, s2, r1, r2].
 Proof.
 pose f (a: ('rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * 'rV[TX]_n * TX) ) :=
@@ -913,9 +913,9 @@ Proof.
 transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
   by rewrite eqn2_proof.
 transitivity (`H( x2 | [% x1, s1, r1, x2'])).
-  by rewrite (eqn3_proof negy2_x1x2s1s2r1r2_eqn3_indep neg_py2_unif).
+  by rewrite (eqn3_proof eqn3_indep neg_py2_unif).
 transitivity (`H( x2 | [% x1, s1, r1])).
-  by rewrite (eqn4_proof ps2_unif s2_x1s1r1x2_eqn4_indep).
+  by rewrite (eqn4_proof ps2_unif eqn4_indep).
 by rewrite eqn_4_1_proof.
 Qed.
 
@@ -1163,7 +1163,7 @@ Hypothesis x1x2s2x1'r2_y2_eqn6_indep : P |= [%x1, [%x2, s2, x1', r2]] _|_ y2.
 Hypothesis x2_s2_x1'_r2_eqn7_indep : P |= [%x2, s2, x1'] _|_ r2.
 Hypothesis x1x2_s2_x1'_r2_eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
 (* TODO: Reduce: longer one can imply others *)
-Hypothesis s1_x1x2s2_eqn8_indep : P |= s1 _|_ [%x1, x2, s2].
+Hypothesis eqn8_indep : P |= s1 _|_ [%x1, x2, s2].
 Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
 
 Hypothesis s1s2_r1_indep : P |= [%s1, s2] _|_ r1.
@@ -1185,7 +1185,7 @@ transitivity (`H( x1 | [% x2, s2, x1', r2])).
 transitivity (`H(x1|[%x2, s2, x1'])).
   by rewrite eqn7_proof.
 transitivity (`H(x1|[%x2, s2])).
-  by rewrite (eqn8_proof ps1_unif s1_x1x2s2_eqn8_indep).
+  by rewrite (eqn8_proof ps1_unif eqn8_indep).
 by rewrite eqn_8_1_proof.
 Qed.
 
