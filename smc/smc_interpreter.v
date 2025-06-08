@@ -39,12 +39,12 @@ Section interp.
 Variable data : Type.
 
 Inductive proc : Type :=
-  | Init : data -> proc -> proc
-  | Send : nat -> data -> proc -> proc
-  | Recv : nat -> (data -> proc) -> proc
-  | Ret : data -> proc
-  | Finish : proc
-  | Fail : proc.
+  | Init of data & proc
+  | Send of nat & data & proc
+  | Recv of nat & (data -> proc)
+  | Ret of data
+  | Finish
+  | Fail.
 
 Definition step (ps : seq proc) (trace : seq data) (i : nat) :=
   let ps := nth Fail ps in
