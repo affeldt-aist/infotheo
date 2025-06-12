@@ -1155,14 +1155,10 @@ Let r2  := s1 \*d s2 \- r1.
 
 (* Hypothese from the paper. *)
 Hypothesis x2s2_x1'_indep : P |= [% x2, s2] _|_ x1'.
-Hypothesis x2s2x1'r2_y2_eqn6_indep : P |= [%x2, s2, x1', r2] _|_ y2.
-Hypothesis x1x2s2x1'r2_y2_eqn6_indep : P |= [%x1, [%x2, s2, x1', r2]] _|_ y2.
-Hypothesis x2_s2_x1'_r2_eqn7_indep : P |= [%x2, s2, x1'] _|_ r2.
-Hypothesis x1x2_s2_x1'_r2_eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
-(* TODO: Reduce: longer one can imply others *)
+Hypothesis eqn6_indep : P |= [%x1, [%x2, s2, x1', r2]] _|_ y2.
+Hypothesis eqn7_indep : P |= [%x1, [%x2, s2, x1']] _|_ r2.
 Hypothesis eqn8_indep : P |= s1 _|_ [%x1, x2, s2].
 Hypothesis x2s2_x1_indep : P |= [% x2, s2] _|_ x1.
-
 Hypothesis s1s2_r1_indep : P |= [%s1, s2] _|_ r1.
 Hypothesis s1_s2_indep : P |= s1 _|_ s2.
 
@@ -1177,12 +1173,9 @@ Let BobView := [%x2, s2, x1', r2, y2].
 
 Lemma pi2_bob_is_leakage_free_proof : `H( x1 | BobView) = `H `p_ x1.
 Proof.
-transitivity (`H( x1 | [% x2, s2, x1', r2])).
-  by rewrite eqn6_proof.
-transitivity (`H(x1|[%x2, s2, x1'])).
-  by rewrite eqn7_proof.
-transitivity (`H(x1|[%x2, s2])).
-  by rewrite (eqn8_proof ps1_unif eqn8_indep).
+rewrite (eqn6_proof eqn6_indep).
+rewrite (eqn7_proof eqn7_indep).
+rewrite (eqn8_proof ps1_unif eqn8_indep).
 by rewrite eqn_8_1_proof.
 Qed.
 
