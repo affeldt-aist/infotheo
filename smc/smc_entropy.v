@@ -910,12 +910,9 @@ Qed.
 
 Lemma pi2_alice_is_leakage_free_proof : `H( x2 | AliceView) = `H `p_x2.
 Proof.
-transitivity (`H( x2 | [% x1, s1, r1, x2', t])).
-  by rewrite eqn2_proof.
-transitivity (`H( x2 | [% x1, s1, r1, x2'])).
-  by rewrite (eqn3_proof eqn3_indep neg_py2_unif).
-transitivity (`H( x2 | [% x1, s1, r1])).
-  by rewrite (eqn4_proof ps2_unif eqn4_indep).
+rewrite eqn2_proof.
+rewrite (eqn3_proof eqn3_indep neg_py2_unif).
+rewrite (eqn4_proof ps2_unif eqn4_indep).
 by rewrite eqn_4_1_proof.
 Qed.
 
