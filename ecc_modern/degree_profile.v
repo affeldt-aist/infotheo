@@ -463,11 +463,11 @@ Lemma size_integ_eq0 (p : {poly K}) :
 Proof.
 move=> p0.
 rewrite size_poly_eq0 => /eqP Hip.
-have : (integ p)`_(size p).-1 == 0 by rewrite Hip coef0.
+have : (integ p)`_((size p).-1) == 0 by rewrite Hip coef0.
 rewrite /integ coef_poly.
 have [Hp|] := ltnP 0 (size p).
   rewrite prednK // leqnn.
-  case/boolP : (p`_(size p).-1 > 0) => [Hp'|].
+  case/boolP : (p`_((size p).-1) > 0) => [Hp'|].
     move: Hp.
     rewrite -(ltr0n K) => /(divr_gt0 Hp') H1 /eqP H2.
     by rewrite H2 ltxx in H1.
@@ -1956,10 +1956,10 @@ Section prob_tree_like_border.
 Variables lambda : NormalizedDegreeDistribution.L K.
 
 Lemma sum_lambda_pred L :
-  (size lambda <= L)%nat -> \sum_(j < L.+1 | j != 0) lambda`_j.-1 = 1.
+  (size lambda <= L)%nat -> \sum_(j < L.+1 | j != 0) lambda`_(j.-1) = 1.
 Proof.
 move=> HL.
-transitivity (\sum_(0 <= j < L.+1 | j != 0%nat ) lambda`_j.-1).
+transitivity (\sum_(0 <= j < L.+1 | j != 0%nat ) lambda`_(j.-1)).
   by rewrite big_mkord.
 rewrite (@big_cat_nat _ _ _ 1%nat) //=.
 rewrite big1_seq //; last first.
@@ -2123,7 +2123,7 @@ Qed.
   probability matches the distribution we introduced on tree ensembles. *)
 Definition dest_dist (dn : {set port}) : K :=
   if dn \in conodes c then 1
-  else (lambda `_ #|dn|.-1) / ('C(#|port|.-1 - #|known_coports c|, #|dn|.-1))%:R.
+  else (lambda `_ (#|dn|.-1)) / ('C(#|port|.-1 - #|known_coports c|, #|dn|.-1))%:R.
 
 (* NB: was burried in a proof *)
 Lemma dest_dist1 s : s \in conodes c -> dest_dist s = 1.
@@ -2283,7 +2283,7 @@ case: ifP => /eqP Hk; last first.
   by rewrite (_ : #|j| = Ordinal (Hcj j Hij Hj)) // nth_ord_enum -val_eqE /= => ->.
 transitivity (\sum_(j : {set port} |
                     [&& #|j| == k, i \in j & trivIset (j |: conodes c)])
-               lambda`_k.-1 / ('C(#|port|.-1 - #|known_coports c|, k.-1))%:R * 1).
+               lambda`_(k.-1) / ('C(#|port|.-1 - #|known_coports c|, k.-1))%:R * 1).
   apply eq_big => j.
     rewrite andbC; apply andb_id2r => /andP[ij Htriv].
     by rewrite (_ : #|j| = Ordinal (Hcj _ ij Htriv)) // nth_ord_enum.
@@ -2293,7 +2293,7 @@ transitivity (\sum_(j : {set port} |
     apply/bigcupP.
     by exists j.
   by rewrite mulr1 -jk (_ : #|j| = Ordinal (Hcj _ ij Htriv)) // nth_ord_enum.
-rewrite -big_distrr /= -mulrA -{2}(mulr1 (lambda`_k.-1)).
+rewrite -big_distrr /= -mulrA -{2}(mulr1 (lambda`_(k.-1))).
 congr GRing.mul.
 set CE := 'C(_,_)%:R.
 have unitCE : (CE \is a GRing.unit).
@@ -2810,7 +2810,7 @@ Lemma cards_conode_out (c : comp_graph port) (s : {set port}) :
 Proof.
 move=> Hn0 Hs.
 rewrite /dest_dist (negbTE Hs) in Hn0.
-case Hlam': (lambda`_#|s|.-1 == 0).
+case Hlam': (lambda`_(#|s|.-1) == 0).
   by rewrite (eqP Hlam') !mul0r eqxx in Hn0.
 move/leq_sizeP/(_ #|s|.-1): Hmax.
 case Hdeg: (maxdeg <= _)%nat.
@@ -4268,7 +4268,7 @@ Let tree_max l : nat := \sum_(i < l) maxdeg.+1 ^ i.
 Hypothesis Hmaxlen : (maxdeg * tree_max l.+1 < #|port|)%nat.
 
 Definition start_dist (pn : {set port}) :=
-  if #|pn| == 0%nat then 0 else lam`_#|pn|.-1 / ('C(#|port|, #|pn|))%:R.
+  if #|pn| == 0%nat then 0 else lam`_(#|pn|.-1) / ('C(#|port|, #|pn|))%:R.
 
 Lemma start_dist_ge0 i : 0 <= start_dist i.
 Proof.
@@ -4402,7 +4402,7 @@ rewrite big1 /= ?add0r; last first.
   rewrite big1 // => j /eqP Hj.
   case: ifP => //.
   by rewrite Hj Hi eqxx.
-transitivity (\sum_(j < #|port|.+1 | j != 0) lam`_j.-1 *
+transitivity (\sum_(j < #|port|.+1 | j != 0) lam`_(j.-1) *
               \sum_(i : {set port} | #|i| == j) 1
                / ('C(#|port|, j))%:R).
   apply eq_bigr => k Hk.
@@ -4410,7 +4410,7 @@ transitivity (\sum_(j < #|port|.+1 | j != 0) lam`_j.-1 *
   apply eq_bigr => i /eqP -> /=.
   have -> : (k == O :> nat) = false by apply/negbTE.
   by rewrite mul1r.
-transitivity (\sum_(j < #|port|.+1 | j != 0) lam`_j.-1).
+transitivity (\sum_(j < #|port|.+1 | j != 0) lam`_(j.-1)).
   apply eq_bigr => k Hk.
   rewrite -[RHS]mulr1.
   f_equal.

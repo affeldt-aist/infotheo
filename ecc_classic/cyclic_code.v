@@ -79,7 +79,7 @@ Definition rcs_perm n : {perm 'I_n} :=
 Definition rcs (R : idomainType) n (x : 'rV[R]_n) := col_perm (rcs_perm n) x.
 
 Lemma size_rcs (R : idomainType) n (x : 'rV[R]_n.+1) :
-  size (rVpoly (rcs x)) < size ('X^n.+1 - 1%:P : {poly R}).
+  size (rVpoly (rcs x)) < size ('X^(n.+1) - 1%:P : {poly R}).
 Proof. by rewrite size_XnsubC // ltnS /rVpoly size_poly. Qed.
 
 Lemma map_mx_rcs (R0 R1 : idomainType) n (x : 'rV[R0]_n.+1) (f : R0 -> R1) :
@@ -124,7 +124,7 @@ by rewrite (ltn_trans _ (ltn_ord i)) // prednK // lt0n.
 Qed.
 
 Lemma sub_XrVpoly_rcs (R : idomainType) n (x : 'rV[R]_n.+1) :
-  'X * rVpoly x - rVpoly (rcs x) = (x 0 (inord n))%:P * ('X^n.+1 - 1).
+  'X * rVpoly x - rVpoly (rcs x) = (x 0 (inord n))%:P * ('X^(n.+1) - 1).
 Proof.
 apply/polyP => i.
 rewrite coef_add_poly coefXM coefCM coef_add_poly coefXn 2!coef_opp_poly coefC.
