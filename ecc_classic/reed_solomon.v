@@ -701,9 +701,9 @@ Lemma RS_enc_injective : injective (enc RS_code).
 Proof.
 move=> x1 x2 /=.
 rewrite /encoder 2!ffunE => x1x2.
-suff H : rVpoly x1 * 'X^d.+1 = rVpoly x2 * 'X^d.+1.
+suff H : rVpoly x1 * 'X^(d.+1) = rVpoly x2 * 'X^(d.+1).
   rewrite -(rVpolyK x1) -(rVpolyK x2).
-  have : (rVpoly x1 * 'X^d.+1) %/ 'X^d.+1 = (rVpoly x2 * 'X^d.+1) %/ 'X^d.+1 by rewrite H.
+  have : (rVpoly x1 * 'X^(d.+1)) %/ 'X^(d.+1) = (rVpoly x2 * 'X^(d.+1)) %/ 'X^(d.+1) by rewrite H.
   rewrite mulpK; last by rewrite -size_poly_gt0 size_polyXn.
   rewrite mulpK; last by rewrite -size_poly_gt0 size_polyXn.
   by move=> ->.

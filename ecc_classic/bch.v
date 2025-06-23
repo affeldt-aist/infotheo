@@ -446,7 +446,7 @@ transitivity (\sum_(i in supp y) y ``_ i *:
   apply eq_bigr => /= i ie; congr (_ *: _).
   rewrite -mulrA; congr (_ * _).
   rewrite mulrDl mul1r mulNr big_distrr /=.
-  rewrite [X in _ - X](eq_bigr (fun j : 'I_n => a ^+ (i * j.+1) *: 'X^j.+1)); last first.
+  rewrite [X in _ - X](eq_bigr (fun j : 'I_n => a ^+ (i * j.+1) *: 'X^(j.+1))); last first.
     move=> j _.
     rewrite !mxE -scalerAr -scalerAl scalerA -exprM -exprD.
     by rewrite inord_val addnC -mulSn mulnC -exprS.
@@ -496,7 +496,7 @@ Hypothesis (tn : t.*2 < n).
 Lemma BCH_key_equation y :
   \sigma_(rVexp a n, F2_to_GF2 m y) * \BCHsynp_(rVexp a n, y, t) =
     \BCHomega_(rVexp a n, twisted a (F2_to_GF2 m y)) +
-    BCH_mod (F2_to_GF2 m y) * 'X^t.*2.
+    BCH_mod (F2_to_GF2 m y) * 'X^(t.*2).
 Proof.
 move: (@GRS_key_equation F n (F2_to_GF2 m y) (rVexp a n) (rVexp a n) t.*2) => H0.
 rewrite BCH_syndromep_is_GRS_syndromep // H0; congr (_ + _ * _).
@@ -522,7 +522,7 @@ Qed.
 Local Notation "'v'" := (Euclid.v).
 
 Definition BCH_err y : {poly 'F_2} :=
-  let r0 : {poly F} := 'X^t.*2 in
+  let r0 : {poly F} := 'X^(t.*2) in
   let r1 := \BCHsynp_(rVexp a n, y, t) in
   let vstop := v r0 r1 (stop t r0 r1) in
   let s := vstop.[0]^-1 *: vstop in
@@ -536,7 +536,7 @@ Definition BCH_repair : repairT 'F_2 'F_2 n :=
     if \BCHsynp_(rVexp a n, ret, t) == 0 then Some ret else None].
 
 Lemma BCH_err_is_correct (a_not_uroot : not_uroot_on a n) l (e y : 'rV_n) :
-  let r0 := 'X^t.*2 : {poly F} in
+  let r0 := 'X^(t.*2) : {poly F} in
   let r1 := \BCHsynp_(rVexp a n, y, t) in
   let vj := Euclid.v r0 r1 (stop t r0 r1) in
   l <> 0 ->
@@ -570,7 +570,7 @@ Lemma BCH_repair_is_correct (C : BCH.code (rVexp a n) t) : not_uroot_on a n ->
 Proof.
 move=> a_not_uroot c e.
 set y := c + e.
-set r0 : {poly F} := 'X^t.*2.
+set r0 : {poly F} := 'X^(t.*2).
 set r1 := \BCHsynp_(rVexp a n, y, t).
 set vj := Euclid.v r0 r1 (stop t r0 r1).
 move=> Hc et.
@@ -594,9 +594,9 @@ case: ifPn => syn_y.
   apply Lcode0.aclosed => //; last by rewrite Lcode0.oclosed.
   apply: (proj2 (Rcode.P C _)).
   by rewrite mem_kernel_syndrome0 BCH_syndrome_synp.
-have size_r1 : size r1 <= size ('X^t.*2 : {poly F}).
+have size_r1 : size r1 <= size ('X^(t.*2) : {poly F}).
   by rewrite /r1 /BCH.syndromep size_polyXn (leq_trans (size_syndromep _ _ _)).
-have eqn : \sigma_(rVexp a n, F2_to_GF2 m e) * r1 = r + - - BCH_mod (F2_to_GF2 m e) * 'X^t.*2.
+have eqn : \sigma_(rVexp a n, F2_to_GF2 m e) * r1 = r + - - BCH_mod (F2_to_GF2 m e) * 'X^(t.*2).
   by rewrite opprK -(BCH_key_equation e) /r1 syn_y_e.
 have size_sigma : size \sigma_(rVexp a n, F2_to_GF2 m e) <= t.+1.
   by rewrite (leq_trans (size_errloc _ _)) // ltnS supp_F2_to_GF2 -wH_card_supp.
@@ -604,7 +604,7 @@ have size_r : size r <= t.
   move: et.
   rewrite /r wH_card_supp -(@supp_F2_to_GF2 _ m _) -(supp_twisted a_neq0) => et'.
   by rewrite (leq_trans (size_erreval (rVexp a n) (Errvec et') _)).
-have deg : (t.+1 + t)%N = size ('X^t.*2 : {poly F}).
+have deg : (t.+1 + t)%N = size ('X^(t.*2) : {poly F}).
   by rewrite size_polyXn addSn addnn.
 have cop : coprimep \sigma_(rVexp a n, F2_to_GF2 m e) r.
   have tmp : (forall i, ((const_mx 1) : 'rV[F]_n) ``_ i != 0 :> F).

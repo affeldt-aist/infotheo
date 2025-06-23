@@ -932,8 +932,8 @@ Qed.
 
 End fdistI_perm_prop.
 
-Reserved Notation "d `1" (at level 2, left associativity, format "d `1").
-Reserved Notation "d `2" (at level 2, left associativity, format "d `2").
+Reserved Notation "d `1" (format "d `1").
+Reserved Notation "d `2" (format "d `2").
 
 Section fdist_fst_snd.
 Local Open Scope ring_scope.

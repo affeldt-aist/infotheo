@@ -18,11 +18,11 @@ Require Import ssr_ext ssralg_ext f2.
 (* ```                                                                        *)
 (******************************************************************************)
 
-Reserved Notation "\sum_ ( x '=' d [~ s ] ) F" (at level 41,
-  F at level 41, x, s, d at level 50,
+Reserved Notation "\sum_ ( x '=' d [~ s ] ) F"
+  (F at level 41, s, d at level 60,
     format "'[' \sum_ ( x  '='  d  [~  s ] ) '/  '  F ']'").
-Reserved Notation "\sum_ ( x '=' d [~ s ] '|' P ) F" (at level 41,
-  F at level 41, x, s, d at level 50,
+Reserved Notation "\sum_ ( x '=' d [~ s ] '|' P ) F"
+  (F at level 41,
     format "'[' \sum_ ( x  '='  d  [~  s ]  '|'  P ) '/  '  F ']'").
 
 Declare Scope summary_scope.

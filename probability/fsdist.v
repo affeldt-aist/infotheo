@@ -91,7 +91,7 @@ Variable A : choiceType.
 Record t := mk {
   f :> {fsfun A -> R with 0} ;
   _ : all (fun x => 0 < f x) (finsupp f) &&
-      \sum_(a <- finsupp f) f a == 1}.
+      (\sum_(a <- finsupp f) f a == 1)}.
 
 Lemma ge0 (d : t) a : 0 <= d a.
 Proof.
@@ -1024,7 +1024,7 @@ Import GRing.Theory.
 Variable R : realType.
 Variable d : {fsfun T -> R with 0}.
 Hypothesis Hd : all (fun x => 0 < d x) (finsupp d) &&
-                \sum_(a <- finsupp d) d a == 1.
+                (\sum_(a <- finsupp d) d a == 1).
 
 Lemma d0' : forall (x : T), x \in finsupp d -> 0 < d x.
 Proof. by move => x xfsd; case/andP: Hd => /allP /(_ x xfsd). Qed.

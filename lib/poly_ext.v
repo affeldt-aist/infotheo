@@ -40,7 +40,7 @@ move=> q d r mon sz; apply/eqP/eqP => [sz0 | ->]; apply/eqP.
 Qed.
 
 Lemma poly_def_lead_coef : forall p : {poly R},
-  p = \sum_(i < (size p).-1) p`_i *: 'X^i + lead_coef p *: 'X^(size p).-1.
+  p = \sum_(i < (size p).-1) p`_i *: 'X^i + lead_coef p *: 'X^((size p).-1).
 Proof.
 move=> p; case sz_p : (size _) => [|n].
 - move/eqP: sz_p; rewrite size_poly_eq0; move/eqP => ->.
@@ -49,7 +49,7 @@ move=> p; case sz_p : (size _) => [|n].
 Qed.
 
 Lemma size_lead_coefK : forall n (p : {poly R}), size p <= n.+1 ->
-  size (p - lead_coef p *: 'X^(size p).-1) <= n.
+  size (p - lead_coef p *: 'X^((size p).-1)) <= n.
 Proof.
 elim=> [|n IHn] p sz_p.
 - rewrite (size1_polyC sz_p) lead_coefC size_polyC.
