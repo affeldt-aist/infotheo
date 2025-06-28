@@ -27,6 +27,11 @@ Require Import fdist jfdist_cond proba binary_entropy_function divergence.
 (*              mutual_info PQ := D(PQ || P `x Q)                             *)
 (*                   `I(X ; Y) == mutual information between RVs              *)
 (*        cond_mutual_info PQR == conditional mutual information              *)
+(*        cPr_centropy_RV_comp == given a conditional probability             *)
+(*                                removal lemma P(X|(Y, Z))->P(X | Y),        *)
+(*                                shows that with some conditions met,        *)
+(*                                there exists a conditional entropy          *)
+(*                                removal lemma H(X | (Y, Z))->H(X | Y)       *)
 (*       cond_relative_entropy == TODO                                        *)
 (*                markov_chain == TODO                                        *)
 (* ```                                                                        *)
@@ -486,11 +491,7 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
 Let fdistA_fdistAC : fdistA (fdistAC `p_ [% X, Y, Z]) = `p_ [% X, [% Z, Y]].
 Proof.
-rewrite /fdistAC.
-rewrite fdistC12_RV3.
-rewrite fdistA_RV3.
-rewrite fdistX_RV2.
-by rewrite fdistA_RV3.
+by rewrite /fdistAC fdistC12_RV3 fdistA_RV3 fdistX_RV2 fdistA_RV3.
 Qed.
 
 Lemma centropy1_RV_fdistAC b c :
@@ -504,14 +505,13 @@ Proof.
 by rewrite /centropy_RV -fdistA_RV3 centropy_fdistA fdistA_fdistAC.
 Qed.
 
-Section cpr_centropy_RV'.
+Section cPr_centropy_RV_comp.
 
-Variables (T TY1 TY2 TY3 : finType) (Y1 : {RV P -> TY1})
-  (Y2 : {RV P -> TY2}) (Y3 : {RV P -> TY3}) (f : TY3 -> TY2).
+Variable (f : B -> C).
 
-Lemma cpr_centropy1_RV' y3 :
-  (forall y1, `Pr[Y1 = y1 | Y3 = y3] = `Pr[Y1 = y1 | (f `o Y3) = f y3]) ->
-  `H[ Y1 | Y3 = y3 ] = `H[ Y1 | (f `o Y3) = f y3 ].
+Lemma cPr_centropy1_RV_comp y :
+  (forall x, `Pr[ X = x | Y = y ] = `Pr[ X = x | (f `o Y) = f y ]) ->
+  `H[ X | (f `o Y) = f y ] = `H[ X | Y = y ].
 Proof.
 move=> H.
 rewrite /centropy1_RV /centropy1.
@@ -520,54 +520,27 @@ apply: eq_bigr => a _.
 by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_in1 H.
 Qed.
 
-Lemma cpr_centropy_RV' :
-  (forall y1 y3, `Pr[ Y3 = y3 ] != 0 ->
-     `Pr[ Y1 = y1 | Y3 = y3 ] = `Pr[ Y1 = y1 | (f `o Y3) = f y3 ]) ->
-  `H( Y1 | Y3 ) = `H( Y1 | f `o Y3 ).
+Lemma cPr_centropy_RV_comp :
+  (forall x y, `Pr[ Y = y ] != 0 ->
+     `Pr[ X = x | Y = y ] = `Pr[ X = x | (f `o Y) = f y ]) ->
+  `H( X | f `o Y ) = `H( X | Y ).
 Proof.
 move=> Hremoval.
-rewrite 2!centropy_RVE'/=.
-rewrite (partition_big f xpredT) //=.
-apply: eq_bigr => y2 _.
-transitivity (\sum_(i | f i == y2) `Pr[ Y3 = i ] * `H[ Y1 | (f `o Y3) = y2 ]).
-  apply: eq_bigr => y3 /eqP y3y2.
-  have [->|] := eqVneq (`Pr[Y3=y3]) 0.
-    by rewrite !mul0r.
-  move/Hremoval => H.
-  by rewrite  -y3y2 cpr_centropy1_RV'.
-rewrite -big_distrl /=.
-congr (_ * _).
-rewrite pr_eqE /Pr.
-under eq_bigr do rewrite pr_eqE /Pr.
-rewrite (partition_big Y3 (fun y3 => f y3 == y2)) //=.
-  apply eq_bigr => y3 y3y2.
-  apply eq_bigl => a /=.
-  rewrite !inE.
-  have [ay3|] := eqVneq (Y3 a) y3.
-    by rewrite /comp_RV ay3 y3y2.
-  by rewrite andbF.
-by move=> a; rewrite !inE.
+rewrite 2!centropy_RVE' (partition_big f xpredT) //=.
+apply: eq_bigr => z _.
+under eq_bigr=> y /eqP fyz.
+  rewrite [_ * _](_ : _ = `Pr[ Y = y ] * `H[ X | (f `o Y) = z]); first over.
+  have [->|/Hremoval H] := eqVneq (`Pr[Y=y]) 0; first by rewrite !mul0r.
+  by rewrite -fyz cPr_centropy1_RV_comp.
+rewrite -big_distrl /=; congr (_ * _).
+rewrite pfwd1E /Pr.
+under [RHS]eq_bigr do rewrite pfwd1E /Pr.
+rewrite (partition_big Y (fun y => f y == z))/=; last by move=> ?; rewrite inE.
+apply: eq_bigr => y yz; apply: eq_bigl => a /=.
+by rewrite !inE /comp_RV andb_idl// => /eqP ->.
 Qed.
 
-End cpr_centropy_RV'.
-
-Section cpr_centropy_RV.
-
-Variables (T TY1 TY2 TY3 : finType) (Y1 : {RV P -> TY1})
-  (Y2 : {RV P -> TY2}) (Y3 : {RV P -> TY3}).
-
-Lemma cpr_centropy_RV :
-  (forall y1 y2 y3, `Pr[ [% Y2, Y3] = (y2, y3) ] != 0 ->
-     `Pr[ Y1 = y1 | [% Y2, Y3] = (y2, y3) ] = `Pr[ Y1 = y1 | Y2 = y2 ]) ->
-  `H( Y1 | [% Y2, Y3]) = `H( Y1 | Y2).
-Proof.
-move=> H.
-apply: (cpr_centropy_RV' (f:=fst)).
-move=> y1 [y2 y3].
-exact: H.
-Qed.
-
-End cpr_centropy_RV.
+End cPr_centropy_RV_comp.
 
 End conditional_entropy_RV_prop.
 
