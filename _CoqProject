@@ -97,5 +97,6 @@ smc/smc_interpreter.v
 smc/smc_tactics.v
 smc/scalar_product_program.v
 smc/scalar_product_proof.v
+dumas2017dual/dsdp_program.v
 
 -R . infotheo
