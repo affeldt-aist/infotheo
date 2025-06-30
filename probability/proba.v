@@ -2326,6 +2326,8 @@ Notation "X '\=sum' Xs" := (sum_n X Xs) : proba_scope.
 
 Section inde_RV_lemma.
 Context {R : realType}.
+
+Section prod_dist_inde_RV.
 Variables (A B : finType) (P1 : R.-fdist A) (P2 : R.-fdist B) (TA TB : eqType).
 Variable (X : {RV P1 -> TA}) (Y : {RV P2 -> TB}).
 Let P := P1 `x P2.
@@ -2341,6 +2343,17 @@ rewrite (_ : [set _ | _ ] = finset (X @^-1 x) `*T); last first.
 rewrite (_ : [set x | preim Y' (pred1 y) x] = T`* finset (Y @^-1 y)); last first.
   by apply/setP => -[a b]; rewrite !inE.
 by rewrite /P /inde_events -Pr_fdist_prod.
+Qed.
+
+End prod_dist_inde_RV.
+
+Lemma dist_inde_RV_prod (T TX TY : finType) (P : R.-fdist T)
+  (X : {RV P -> TX}) (Y : {RV P -> TY}) :
+  P |= X _|_ Y -> `p_ [% X, Y] = `p_ X `x `p_ Y.
+Proof.
+move=> iXY.
+apply: fdist_ext => -[x y] /=.
+by rewrite fdist_prodE/= -!pr_eqE' iXY.
 Qed.
 
 End inde_RV_lemma.
