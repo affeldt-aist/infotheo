@@ -722,7 +722,7 @@ Qed.
 
 End conditional_entropy_prop3.
 
-Section cPr_centropy_compE.
+Section cPr_centropy_compE.  (* NB: here because use chain rule *)
 Context {R : realType}.
 
 Lemma cPr_centropy_compE (T TX TY TZ : finType) (P : R.-fdist T)
