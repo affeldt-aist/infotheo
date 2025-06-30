@@ -263,92 +263,6 @@ Qed.
 
 End cpr_cond_entropy_proof.
 
-Section lemma_3_8_prep.
-Context {R : realType}.
-Variables (T TX TY TZ : finType).
-Variable P : R.-fdist T.
-Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
-Let Z := f `o Y.
-
-Section lemma_3_8_proof.
-Variables (y : TY) (z : TZ).
-
-Lemma pr_eq_ZY_Y : `Pr[ [% Z, Y] = (f y, y) ] = `Pr[ Y = y ].
-Proof.
-rewrite 2!pr_eqE.
-congr (Pr _ _).
-apply/setP => t.
-rewrite !inE.
-rewrite xpair_eqE.
-by rewrite andb_idl// => /eqP <-.
-Qed.
-
-Lemma pr_eqf1 : `Pr[ Y = y ] != 0 -> `Pr[ Z = (f y) | Y = y ] = 1.
-Proof. by move=> Yy0; rewrite cpr_eqE pr_eq_ZY_Y divff. Qed.
-
-Hypothesis pr_Y_neq0 : `Pr[ Y = y ] != 0.
-
-(* H(f(Y)|X,Y) = H(f(Y)|Y) = 0 *)
-(* Meaning: f(Y) is completely determined by Y.
-   (Because `f` only has one input which is Y).
-
-   And because it is completely determined by Y,
-   `(X, Y)` won't increase the uncertainty.
-*)
-(*
-  Search (`Pr[ _ = _ ])(`p_ _ _).
-*)
-Lemma fun_centropy_eq0_RV : `H[Z | Y = y] = 0.
-Proof.
-(* If `Pr[Y = y] = 0, it makes the  \Pr_QP[[set b] | [set a]] zero because the
-  condition will be never true; need to do this before the cond_entropy1RVE *)
-(*
-have [H|] := eqVneq (`Pr[ Y = y]) 0.
-  rewrite /cond_entropy1_RV.
-  rewrite /entropy.
-  under eq_bigr => a _ .
-    rewrite (_ : jfdist_cond _ _ _ = 0).
-      rewrite mul0R.
-      over.
-    rewrite /jfdist_cond.
-*)
-rewrite centropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
-rewrite -centropy1_RVE; last by rewrite fst_RV2 -pr_eqE'.
-rewrite /centropy1_RV /centropy1.
-rewrite big1 1?oppr0 // => i _.
-have [<-|Hfy_neq_i] := eqVneq (f y) i.
-  set pZY := (X in (X * log X)).
-  have HpZY: pZY = 1.
-    rewrite /pZY.
-    rewrite jPr_Pr.
-    rewrite cpr_in1.
-    rewrite cpr_eqE.
-    rewrite pr_eq_ZY_Y //=.
-    by rewrite divff.
-  rewrite HpZY.
-  rewrite log1.
-  by rewrite mulr0.
-rewrite jPr_Pr.
-rewrite cpr_in1.
-rewrite /Z.
-apply/eqP.
-rewrite [X in X * _]cpr_eqE.
-rewrite [X in X / _ * _]pr_eq0 ?mul0r//.
-apply: contra Hfy_neq_i.
-by rewrite fin_img_imset/= => /imsetP[t _ [/= -> ->]].
-Qed.
-
-End lemma_3_8_proof.
-
-Lemma fun_centropy_ZY_eq0 : `H( Z | Y) = 0.
-Proof.
-rewrite centropy_RVE' big1 // => y _.
-have [->|y0] := eqVneq `Pr[ Y = y ] 0; first by rewrite mul0r.
-by rewrite fun_centropy_eq0_RV// mulr0.
-Qed.
-
-End lemma_3_8_prep.
-
 Section fun_centropy_proof.
 Context {R : realType}.
 Variables (T TX TY TZ : finType).
@@ -359,7 +273,7 @@ Let Z := f `o Y.
 Local Open Scope ring_scope.
 Variable P' : R.-fdist (TX * TY * TZ).
 
-Lemma fun_cond_removal : `H(X | [% Y, Z]) = `H(X | Y).
+Lemma cPr_centropy_compE : `H(X | [% Y, f `o Y]) = `H(X | Y).
 Proof.
 transitivity (`H([% Y, Z], X) - `H(Y, Z)). (* joint PQ = H P + cond QP*)
   rewrite chain_rule_RV.
@@ -372,10 +286,10 @@ transitivity (`H(X, Y) + `H( Z | [% X, Y]) - `H `p_Y - `H( Z | Y)).
   rewrite -[in RHS]addrA -opprD.
   by rewrite -[in RHS](chain_rule_RV Y Z).
 transitivity (`H(X, Y) - `H `p_Y).
-  rewrite (fun_centropy_ZY_eq0 Y f) subr0.
+  rewrite (centropy_RV_comp0 Y f) subr0.
   suff : `H( Z | [% X, Y]) = 0 by move=> ->; rewrite addr0.
   have -> : Z = (f \o snd) `o [%X, Y] by exact/boolp.funext.
-  exact: fun_centropy_ZY_eq0.
+  exact: centropy_RV_comp0.
 rewrite joint_entropy_RVC.
 rewrite chain_rule_RV.
 by rewrite addrAC subrr add0r.
@@ -656,7 +570,7 @@ Proof. exact: boolp.funext. Qed.
 
 Lemma eqn2_proof:
   `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
-Proof. by rewrite y1_fcomp; exact: fun_cond_removal. Qed.
+Proof. by rewrite y1_fcomp; exact: cPr_centropy_compE. Qed.
 
 End eqn2_proof.
 
