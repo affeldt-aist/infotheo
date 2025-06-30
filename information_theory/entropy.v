@@ -722,6 +722,37 @@ Qed.
 
 End conditional_entropy_prop3.
 
+Section cPr_centropy_compE.
+Context {R : realType}.
+
+Lemma cPr_centropy_compE (T TX TY TZ : finType) (P : R.-fdist T)
+  (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ) :
+  `H(X | [% Y, f `o Y]) = `H(X | Y).
+Proof.
+(* joint PQ = H P + cond QP *)
+transitivity (`H([% Y, f `o Y], X) - `H(Y, f `o Y)).
+  rewrite chain_rule_RV.
+  by rewrite addrAC subrr add0r.
+(* H(Y,f(Y),X) -> H(X,Y,f(Y))*)
+transitivity (`H([% X, Y], f `o Y) - `H(Y, f `o Y)). 
+  rewrite joint_entropy_RVC.
+  by rewrite joint_entropy_RVA.
+transitivity (`H(X, Y) + `H( f `o Y | [% X, Y]) - `H `p_Y - `H( f `o Y | Y)).
+  rewrite [in LHS]chain_rule_RV.
+  rewrite -[in RHS]addrA -opprD.
+  by rewrite -[in RHS](chain_rule_RV Y (f `o Y)).
+transitivity (`H(X, Y) - `H `p_Y).
+  rewrite (centropy_RV_comp0 Y f) subr0.
+  suff : `H( f `o Y | [% X, Y]) = 0 by move=> ->; rewrite addr0.
+  have -> : f `o Y = (f \o snd) `o [%X, Y] by exact/boolp.funext.
+  exact: centropy_RV_comp0.
+rewrite joint_entropy_RVC.
+rewrite chain_rule_RV.
+by rewrite addrAC subrr add0r.
+Qed.
+
+End cPr_centropy_compE.
+
 Section joint_entropy_RV_comp.
 Context {R : realType} (U A B : finType) (P : R.-fdist U).
 Variables (X : {RV P -> A}).
