@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix interval.
 From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
 From mathcomp Require Import ssrnum archimedean ereal interval_inference.
 From mathcomp Require Import ring lra reals.
@@ -3107,8 +3107,6 @@ have -> : ((x - a) / (b - a) = (Prob.p t).~)%R.
   by rewrite addrC.
 by rewrite lexx.
 Qed.
-
-From mathcomp Require Import interval.
 
 Lemma second_derivative_convexf_pt : forall t : {prob R}, convex_function_at f a b t.
 Proof.
