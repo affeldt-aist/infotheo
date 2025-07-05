@@ -1,12 +1,13 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
+From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix interval.
 From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
 From mathcomp Require Import ssrnum archimedean ereal interval_inference.
 From mathcomp Require Import ring lra reals.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 From mathcomp Require vector.
+From mathcomp.analysis Require Import (canonicals)convex.
 
 (**md**************************************************************************)
 (* # Convexity                                                                *)
@@ -3107,8 +3108,6 @@ have -> : ((x - a) / (b - a) = (Prob.p t).~)%R.
 by rewrite lexx.
 Qed.
 
-From mathcomp Require Import interval.
-
 Lemma second_derivative_convexf_pt : forall t : {prob R}, convex_function_at f a b t.
 Proof.
 have note1 : forall x, 1%R = ((x - a) / (b - a) + (b - x) / (b - a))%R.
@@ -3224,3 +3223,15 @@ by apply/mulr_ge0; rewrite subr_ge0; exact/ltW.
 Qed.
 
 End twice_derivable_convex.
+
+(* mc_convRE == a <|p|> b (mathcomp_analysis) = a <|p|> b (infotheo) :> R *)
+Section mc_conv.
+Local Open Scope ring_scope.
+Import (canonicals) analysis.convex.
+Variable R : realType.
+
+Lemma mc_convRE (a b : R^o) (p : {prob R}) :
+  mathcomp.analysis.convex.conv (i01_of_prob p) a b = conv p a b :> R^o.
+Proof. by []. Qed.
+
+End mc_conv.

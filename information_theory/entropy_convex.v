@@ -228,22 +228,6 @@ Section realType.
 Variable R : realType.
 Local Notation H2 := (@H2 R^o : R^o -> R^o).
 
-From mathcomp Require Import -(notations) convex.
-
-(* TODO: introduce two notations and make two conventions more symmetric *)
-(* TODO: use mc_convE in string_entropy.v instead of conv_conv (or the other way) *)
-Definition prob_itv (p : {prob R}) :
-  Itv.def (@Itv.num_sem R) (Itv.Real `[(ssrint.Posz 0), (ssrint.Posz 1)]).
-Proof.
-exists (Prob.p p) => /=; apply/andP; split.
-  by rewrite num_real.
-by rewrite in_itv /=; apply/andP; split.
-Defined.
-
-Lemma conv_conv (x y : R^o) (p : {prob R}) :
-  x <| p |> y = mathcomp.analysis.convex.conv (prob_itv p) x y.
-Proof. by []. Qed.
-
 Lemma concavity_of_entropy_x_le_y x y (t : {prob R}) :
   x \in `]0, 1[%classic -> y \in `]0, 1[%classic -> x < y ->
   concave_function_at H2 x y t.
@@ -261,9 +245,8 @@ have cnH2: {within `[x, y], continuous (- H2)}%classic.
   by apply: continuous_in_subspaceT=> z /zxycc01 /continuous_H2 /continuousN.
 apply/RNconcave_function_at.
 rewrite /convex_function_at /=.
-rewrite !conv_conv.
-have:= @mathcomp.analysis.convex.second_derivative_convex R (fun z => - (H2 z)) x y.
-apply.
+rewrite -!mc_convRE.
+apply: (@analysis.convex.second_derivative_convex _ (fun z => - (H2 z))).
 - move=> z xzy.
   have/zxyoo01 z01: z \in `]x, y[%classic by rewrite inE.
   by rewrite DDnH2E// DDnH2_nonneg.
