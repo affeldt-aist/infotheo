@@ -27,8 +27,8 @@ depends: [
   "coq-mathcomp-algebra"
   "coq-mathcomp-solvable"
   "coq-mathcomp-field"
-  "coq-mathcomp-analysis" { (>= "1.11.0") }
-  "coq-mathcomp-reals-stdlib" { (>= "1.11.0") }
+  "coq-mathcomp-analysis" { (>= "1.12.0") | (= "dev") }
+  "coq-mathcomp-reals-stdlib" { (>= "1.12.0") | (= "dev") }
   "coq-hierarchy-builder" { >= "1.9.1" }
   "coq-mathcomp-algebra-tactics" { >= "1.2.0" }
   "coq-interval" { >= "4.10.0"}
