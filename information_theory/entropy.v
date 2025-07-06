@@ -511,14 +511,13 @@ Proof.
 by rewrite /centropy_RV -fdistA_RV3 centropy_fdistA fdistA_fdistAC.
 Qed.
 
-Section cPr_centropy_RV'.
+Section cPr_centropy_RV_comp.
 
-Variables (T TY1 TY2 TY3 : finType) (Y1 : {RV P -> TY1})
-  (Y2 : {RV P -> TY2}) (Y3 : {RV P -> TY3}) (f : TY3 -> TY2).
+Variable (f : B -> C).
 
-Lemma cPr_centropy1_RV' y3 :
-  (forall y1, `Pr[Y1 = y1 | Y3 = y3] = `Pr[Y1 = y1 | (f `o Y3) = f y3]) ->
-  `H[ Y1 | Y3 = y3 ] = `H[ Y1 | (f `o Y3) = f y3 ].
+Lemma cPr_centropy1_RV_comp y :
+  (forall x, `Pr[X = x | Y = y] = `Pr[X = x | (f `o Y) = f y]) ->
+  `H[ X | Y = y ] = `H[ X | (f `o Y) = f y ].
 Proof.
 move=> H.
 rewrite /centropy1_RV /centropy1.
@@ -527,54 +526,36 @@ apply: eq_bigr => a _.
 by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_in1 H.
 Qed.
 
-Lemma cPr_centropy_RV' :
-  (forall y1 y3, `Pr[ Y3 = y3 ] != 0 ->
-     `Pr[ Y1 = y1 | Y3 = y3 ] = `Pr[ Y1 = y1 | (f `o Y3) = f y3 ]) ->
-  `H( Y1 | Y3 ) = `H( Y1 | f `o Y3 ).
+Lemma cPr_centropy_RV_comp :
+  (forall x y, `Pr[ Y = y ] != 0 ->
+     `Pr[ X = x | Y = y ] = `Pr[ X = x | (f `o Y) = f y ]) ->
+  `H( X | Y ) = `H( X | f `o Y ).
 Proof.
 move=> Hremoval.
 rewrite 2!centropy_RVE'/=.
 rewrite (partition_big f xpredT) //=.
-apply: eq_bigr => y2 _.
-transitivity (\sum_(i | f i == y2) `Pr[ Y3 = i ] * `H[ Y1 | (f `o Y3) = y2 ]).
-  apply: eq_bigr => y3 /eqP y3y2.
-  have [->|] := eqVneq (`Pr[Y3=y3]) 0.
+apply: eq_bigr => z _.
+transitivity (\sum_(i | f i == z) `Pr[ Y = i ] * `H[ X | (f `o Y) = z ]).
+  apply: eq_bigr => y /eqP yz.
+  have [->|] := eqVneq (`Pr[Y=y]) 0.
     by rewrite !mul0r.
   move/Hremoval => H.
-  by rewrite  -y3y2 cPr_centropy1_RV'.
+  by rewrite  -yz cPr_centropy1_RV_comp.
 rewrite -big_distrl /=.
 congr (_ * _).
 rewrite pr_eqE /Pr.
 under eq_bigr do rewrite pr_eqE /Pr.
-rewrite (partition_big Y3 (fun y3 => f y3 == y2)) //=.
-  apply eq_bigr => y3 y3y2.
+rewrite (partition_big Y (fun y => f y == z)) //=.
+  apply eq_bigr => y yz.
   apply eq_bigl => a /=.
   rewrite !inE.
-  have [ay3|] := eqVneq (Y3 a) y3.
-    by rewrite /comp_RV ay3 y3y2.
+  have [ay|] := eqVneq (Y a) y.
+    by rewrite /comp_RV ay yz.
   by rewrite andbF.
 by move=> a; rewrite !inE.
 Qed.
 
-End cPr_centropy_RV'.
-
-Section cPr_centropy_RV.
-
-Variables (T TY1 TY2 TY3 : finType) (Y1 : {RV P -> TY1})
-  (Y2 : {RV P -> TY2}) (Y3 : {RV P -> TY3}).
-
-Lemma cPr_centropy_RV :
-  (forall y1 y2 y3, `Pr[ [% Y2, Y3] = (y2, y3) ] != 0 ->
-     `Pr[ Y1 = y1 | [% Y2, Y3] = (y2, y3) ] = `Pr[ Y1 = y1 | Y2 = y2 ]) ->
-  `H( Y1 | [% Y2, Y3]) = `H( Y1 | Y2).
-Proof.
-move=> H.
-apply: (cPr_centropy_RV' (f:=fst)).
-move=> y1 [y2 y3].
-exact: H.
-Qed.
-
-End cPr_centropy_RV.
+End cPr_centropy_RV_comp.
 
 End conditional_entropy_RV_prop.
 
