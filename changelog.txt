@@ -24,7 +24,7 @@ from 0.9.3 to 0.9.4
 
 - in information_theory/entropy.v
   + centropy1_RV_comp0, centropy_RV_comp0, joint_entropy_RV_comp,
-    joint_entropy_inde_RV
+    inde_RV_joint_entropyE
 
 - in information_theory/entropy.v
   + add injective_joint_entropy_RV

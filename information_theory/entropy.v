@@ -1399,12 +1399,10 @@ by rewrite centropy_fdistA /fdistAC fdistC12I.
 Qed.
 End prop2.
 
-Section joint_entropy_inde_RV.
-Context {R : realType}.
-
-Lemma joint_entropy_inde_RV  (T TX TY : finType) (P : R.-fdist T)
+(* Defined here because the proof has condentropy_indep. *)
+Lemma inde_RV_joint_entropyE {R : realType} (T TX TY : finType) (P : R.-fdist T)
   (X : {RV P -> TX}) (Y : {RV P -> TY}):
-  P |= X _|_ Y -> `H(X, Y) = `H (`p_X) + `H (`p_Y).
+  P |= X _|_ Y -> `H(X, Y) = `H `p_X + `H `p_Y.
 Proof.
 rewrite inde_RV_sym=> iYX.
 rewrite -/(`H(_, _)) chain_rule_RV; congr +%R.
@@ -1414,8 +1412,6 @@ rewrite condentropy_indep.
   by rewrite fdist_prod1.
 by rewrite fdist_prod1 -[in RHS]dist_inde_RV_prod// snd_RV2.
 Qed.
-
-End joint_entropy_inde_RV.
 
 End conditioning_reduces_entropy.
 
