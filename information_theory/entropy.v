@@ -722,10 +722,17 @@ Qed.
 
 End conditional_entropy_prop3.
 
-Section cPr_centropy_compE.  (* NB: here because use chain rule *)
-Context {R : realType}.
+(* Origin: Lemma 3.8 (Functional Condition Removal) in
+  "Information-Theoretically Secure Number-Product Protocol."
+  by Shen et al., 2007.
+  https://doi.org/10.1109/ICMLC.2007.4370663.
 
-Lemma cPr_centropy_compE (T TX TY TZ : finType) (P : R.-fdist T)
+  Used when proving information-theoretic security for SMC protocols:
+  "An Approach to Formalize Information-Theoretic Security of
+   Multiparty Computation Protocols" by Weng et al., 2025.
+  http://dx.doi.org/10.1007/978-3-031-95497-9_11.
+*)
+Lemma centropy_RV_comp {R : realType} (T TX TY TZ : finType) (P : R.-fdist T)
   (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ) :
   `H(X | [% Y, f `o Y]) = `H(X | Y).
 Proof.
@@ -750,8 +757,6 @@ rewrite joint_entropy_RVC.
 rewrite chain_rule_RV.
 by rewrite addrAC subrr add0r.
 Qed.
-
-End cPr_centropy_compE.
 
 Section joint_entropy_RV_comp.
 Context {R : realType} (U A B : finType) (P : R.-fdist U).

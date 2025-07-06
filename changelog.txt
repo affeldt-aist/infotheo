@@ -70,7 +70,7 @@ from 0.9.3 to 0.9.4
 
 - in /information_theory/entropy.v
   + lemma mutual_info_RVE, mutual_info_RVC, mutual_info_RV0_indep,
-    cPr_centropy_compE
+    centropy_RV_comp
 
 -------------------
 from 0.9.2 to 0.9.3
