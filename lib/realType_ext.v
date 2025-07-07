@@ -916,3 +916,22 @@ Lemma s_of_gt0_oprob  p q : 0 < Prob.p [s_of p, q].
 Proof. by rewrite s_of_gt0// oprob_neq0. Qed.
 
 End oprob_lemmas2.
+
+Section i01_prob.
+Variable R : realType.
+
+Definition i01_of_prob (p : {prob R}) : {i01 R} :=
+  Itv01 (prob_ge0 p) (prob_le1 p).
+
+Let _prob_of_i01 (p : {i01 R}) :=
+      fun q => @Prob.mk _ p%:num (introTF andP q).
+Definition prob_of_i01 (p : {i01 R}) : {prob R} :=
+  _prob_of_i01 (conj (ge0 p) (le1 p)).
+
+Lemma i01_of_probK : cancel i01_of_prob prob_of_i01.
+Proof. by move=> p; apply/val_inj. Qed.
+
+Lemma prob_of_i01K : cancel prob_of_i01 i01_of_prob.
+Proof. by move=>p; apply/val_inj. Qed.
+
+End i01_prob.
