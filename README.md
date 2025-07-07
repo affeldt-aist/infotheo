@@ -39,7 +39,7 @@ information theory, and linear error-correcting codes.
   - [CoqInterval](https://gitlab.inria.fr/coqinterval)
 - Coq namespace: `infotheo`
 - Related publication(s):
-  - [Robust Mean Estimation by All Means (short paper)]() 
+  - [Robust Mean Estimation by All Means (short paper)]()
   - [Trimming Data Sets: a Verified Algorithm for Robust Mean Estimation](https://dl.acm.org/doi/abs/10.1145/3479394.3479412) doi:[10.1145/3479394.3479412](https://doi.org/10.1145/3479394.3479412)
   - [Formal Adventures in Convex and Conical Spaces](https://arxiv.org/abs/2004.12713) doi:[10.1007/978-3-030-53518-6_2](https://doi.org/10.1007/978-3-030-53518-6_2)
   - [A Library for Formalization of Linear Error-Correcting Codes](https://link.springer.com/article/10.1007/s10817-019-09538-8) doi:[10.1007/s10817-019-09538-8](https://doi.org/10.1007/s10817-019-09538-8)
