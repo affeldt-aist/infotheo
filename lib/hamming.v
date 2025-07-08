@@ -648,33 +648,19 @@ Lemma wHb_1 : forall n l, size l = n ->
   exists i, (i < n /\ l `b_ i = true)%nat /\
     forall j, (j < n -> j <> i -> l `b_ j = false)%nat.
 Proof.
-elim.
-- by case.
-- move=> n IH [|[] t] // [Hsz] /=.
-  + case=> H.
-    exists O.
-    split; first by [].
-    move=> j Hj Hj'.
-    destruct j => //=.
-    move: (has_count (pred1 true) t).
-    rewrite /HammingBitstring.wH /num_occ in H.
-    rewrite H ltnn.
-    move/negbT/hasPn => K.
-    move: (@mem_nth _ false t j).
-    rewrite ltnS in Hj.
-    rewrite Hsz.
-    move/(_ Hj).
-    move/K => /= {}K.
-    apply Bool.not_true_is_false.
-    by apply/eqP.
-  + rewrite add0n.
-    case/(IH _ Hsz) => i [[H11 H12] H2].
-    exists i.+1%N.
-    split; first by [].
-    move=> j Hj Hj'.
-    destruct j => //=.
-    apply H2 => //.
-    contradict Hj'; by subst j.
+move=> n l <-.
+elim: l=> // -[] /= l IHl.
+  rewrite add1n; case => /eqP.
+  rewrite /HammingBitstring.wH -notin_num_occ_0.
+  move/(nthP false)/boolp.forallPNP => lfalse.
+  exists 0; split=> // j /[swap] /eqP.
+  rewrite -lt0n ltnS => /prednK <- jl /=.
+  have:= lfalse j.-1 jl.
+  by move/negP/negPf.
+rewrite add0n => /IHl -[] i [[il itrue] lfalse].
+exists i.+1; rewrite ltnS /=; split=> // -[] //= j.
+rewrite ltnS => jl /eqP /[!eqSS] /eqP ji.
+exact: lfalse.
 Qed.
 
 Lemma wH_1 n (x : 'rV['F_2]_n) : wH x = 1%nat ->

@@ -967,12 +967,13 @@ have D'1 : (\sum_(i < 3) (D' i) = 1).
     by rewrite prednK // (leq_trans _ j1).
   apply eq_big => //= i.
   rewrite /h' /h.
-  by apply/eqP/val_inj => /=; rewrite inordK.
+  by apply/eqP/val_inj => /=; rewrite add0n inordK.
 set D := FDist.make D'0 D'1.
 have H1 : (fdist_del dmax1) ord0 != 1%R.
   rewrite fdist_delE fdistD1E (eq_sym (lift _ _)) (negbTE (neq_lift _ _)).
   apply/eqP.
-  move/divr1_eq. exact/eqP.
+  move/divr1_eq.
+  exact/eqP.
 pose G : 'I_3 -> A := [eta (fun=>g ord0) with
   ord0 |-> g ord0,
   lift ord0 ord0 |-> g (lift ord0 ord0),
