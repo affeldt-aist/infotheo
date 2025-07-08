@@ -27,6 +27,11 @@ Require Import fdist jfdist_cond proba binary_entropy_function divergence.
 (*              mutual_info PQ := D(PQ || P `x Q)                             *)
 (*                   `I(X ; Y) == mutual information between RVs              *)
 (*        cond_mutual_info PQR == conditional mutual information              *)
+(*        cPr_centropy_RV      == given a conditional probability             *)
+(*                                removal lemma P(X|(Y, Z))->P(X | Y),        *)
+(*                                shows that with some conditions met,        *)
+(*                                there exists a conditional entropy          *)
+(*                                removal lemma H(X | (Y, Z))->H(X | Y)       *)
 (*       cond_relative_entropy == TODO                                        *)
 (*                markov_chain == TODO                                        *)
 (* ```                                                                        *)
@@ -503,6 +508,52 @@ Lemma centropy_RV_fdistA : `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
 Proof.
 by rewrite /centropy_RV -fdistA_RV3 centropy_fdistA fdistA_fdistAC.
 Qed.
+
+Section cPr_centropy_RV_comp.
+
+Variable (f : B -> C).
+
+Lemma cPr_centropy1_RV_comp y :
+  (forall x, `Pr[X = x | Y = y] = `Pr[X = x | (f `o Y) = f y]) ->
+  `H[ X | Y = y ] = `H[ X | (f `o Y) = f y ].
+Proof.
+move=> H.
+rewrite /centropy1_RV /centropy1.
+congr -%R.
+apply: eq_bigr => a _.
+by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_in1 H.
+Qed.
+
+Lemma cPr_centropy_RV_comp :
+  (forall x y, `Pr[ Y = y ] != 0 ->
+     `Pr[ X = x | Y = y ] = `Pr[ X = x | (f `o Y) = f y ]) ->
+  `H( X | Y ) = `H( X | f `o Y ).
+Proof.
+move=> Hremoval.
+rewrite 2!centropy_RVE'/=.
+rewrite (partition_big f xpredT) //=.
+apply: eq_bigr => z _.
+transitivity (\sum_(i | f i == z) `Pr[ Y = i ] * `H[ X | (f `o Y) = z ]).
+  apply: eq_bigr => y /eqP yz.
+  have [->|] := eqVneq (`Pr[Y=y]) 0.
+    by rewrite !mul0r.
+  move/Hremoval => H.
+  by rewrite  -yz cPr_centropy1_RV_comp.
+rewrite -big_distrl /=.
+congr (_ * _).
+rewrite pr_eqE /Pr.
+under eq_bigr do rewrite pr_eqE /Pr.
+rewrite (partition_big Y (fun y => f y == z)) //=.
+  apply eq_bigr => y yz.
+  apply eq_bigl => a /=.
+  rewrite !inE.
+  have [ay|] := eqVneq (Y a) y.
+    by rewrite /comp_RV ay yz.
+  by rewrite andbF.
+by move=> a; rewrite !inE.
+Qed.
+
+End cPr_centropy_RV_comp.
 
 End conditional_entropy_RV_prop.
 
