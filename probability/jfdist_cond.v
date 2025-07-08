@@ -361,7 +361,7 @@ rewrite -[RHS](FDist.f1 Q) [in RHS](bigID (mem (fin_img Y))) /=.
 rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   move=> b bY.
   rewrite /Q jfdist_condE // /jcPr /Pr !(big_setX,big_set1) /= fdistXE fdistX2 fst_RV2.
-  rewrite !dist_of_RVE !pr_eqE.
+  rewrite !dist_of_RVE !pfwd1E.
   rewrite /Pr big1 ?mul0r // => u.
   rewrite inE => /eqP[Yub ?].
   exfalso.
@@ -406,7 +406,7 @@ Hypothesis pr_Y_neq0 : `Pr[ X = a ] != 0.
 
 Lemma jPr_comp_eq1 (f : A -> B) :
   \Pr_`p_ [% f `o X, X][[set f a] | [set a]] = 1.
-Proof. by rewrite jPr_Pr cpr_in1 cpr_eqE pr_RV2_comp //= divff. Qed.
+Proof. by rewrite jPr_Pr cpr_in1 cpr_eqE pfwd1_RV2_compl //= divff. Qed.
 
 End jPr_comp_eq1.
 
