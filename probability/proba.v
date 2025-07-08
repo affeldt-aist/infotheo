@@ -528,10 +528,10 @@ Section random_variable_eqType.
 Context {R : realType}.
 Variables (U : finType) (A : eqType) (P : R.-fdist U).
 
-Definition pr_eq (X : {RV P -> A}) (a : A) := locked (Pr P ((finset (X @^-1 a)))).
+Definition pr_eq (X : {RV P -> A}) (a : A) := locked (Pr P (finset (X @^-1 a))).
 Local Notation "`Pr[ X = a ]" := (pr_eq X a).
 
-Lemma pr_eqE (X : {RV P -> A}) (a : A) : `Pr[ X = a ] = Pr P (finset (X @^-1 a)).
+Lemma pr_eqE (X : {RV P -> A}) a : `Pr[ X = a ] = Pr P (finset (X @^-1 a)).
 Proof. by rewrite /pr_eq; unlock. Qed.
 
 Lemma pr_eq_ge0 (X : {RV P -> A}) (a : A) : 0 <= `Pr[ X = a].
@@ -601,14 +601,14 @@ Lemma pr_eqE_finType (X : {RV P -> A}) (a : A) :
   `Pr[ X = a ] = Pr P (X @^-1: [set a]).
 Proof. by rewrite pr_eqE -preimg_set1. Qed.
 
-Lemma pr_eqE' (X : {RV P -> A}) (a : A) : `Pr[ X = a ] = `p_X a.
+Lemma dist_of_RVE (X : {RV P -> A}) (a : A) : `p_X a = `Pr[ X = a ].
 Proof.
 by rewrite pr_eqE_finType /Pr fdistmapE//; apply eq_bigl => i; rewrite !inE.
 Qed.
 
 Lemma pr_eq1 (X : {RV P -> A}) : \sum_a `Pr[ X = a ] = 1.
 Proof.
-under eq_bigr do rewrite pr_eqE'.
+under eq_bigr do rewrite -dist_of_RVE.
 by rewrite FDist.f1.
 Qed.
 
@@ -619,7 +619,7 @@ by apply eq_bigr => a aE; rewrite /dist_of_RV fdistmapE.
 Qed.
 
 Lemma pr_in1 (X : {RV P -> A}) x : `Pr[ X \in [set x] ] = `Pr[ X = x ].
-Proof. by rewrite pr_inE' Pr_set1 pr_eqE'. Qed.
+Proof. by rewrite pr_inE' Pr_set1 -dist_of_RVE. Qed.
 
 End random_variable_finType.
 Notation "`Pr[ X '\in' E ]" := (pr_in X E) : proba_scope.
@@ -771,8 +771,9 @@ Proof. by rewrite /fdistC12 /dist_of_RV /fdistA fdistmap_comp. Qed.
 
 End RV3_prop.
 
-Lemma pr_eq_unit {R : realType} (U : finType) (P : R.-fdist U) : `Pr[ (unit_RV P) = tt ] = 1.
-Proof. by rewrite pr_eqE'; apply/eqP/fdist1P; case. Qed.
+Lemma pr_eq_unit {R : realType} (U : finType) (P : R.-fdist U) :
+  `Pr[ (unit_RV P) = tt ] = 1.
+Proof. by rewrite -dist_of_RVE; apply/eqP/fdist1P => -[]. Qed.
 
 Lemma Pr_fdistmap_RV2 {R : realType} (U : finType) (P : R.-fdist U) (A B : finType)
   (E : {set A}) (F : {set B}) (X : {RV P -> A}) (Z : {RV P -> B}) :
@@ -2326,6 +2327,8 @@ Notation "X '\=sum' Xs" := (sum_n X Xs) : proba_scope.
 
 Section inde_RV_lemma.
 Context {R : realType}.
+
+Section prod_dist_inde_RV.
 Variables (A B : finType) (P1 : R.-fdist A) (P2 : R.-fdist B) (TA TB : eqType).
 Variable (X : {RV P1 -> TA}) (Y : {RV P2 -> TB}).
 Let P := P1 `x P2.
@@ -2341,6 +2344,16 @@ rewrite (_ : [set _ | _ ] = finset (X @^-1 x) `*T); last first.
 rewrite (_ : [set x | preim Y' (pred1 y) x] = T`* finset (Y @^-1 y)); last first.
   by apply/setP => -[a b]; rewrite !inE.
 by rewrite /P /inde_events -Pr_fdist_prod.
+Qed.
+
+End prod_dist_inde_RV.
+
+Lemma inde_dist_of_RV2 (A B C : finType) (P : R.-fdist A)
+  (X : {RV P -> B}) (Y : {RV P -> C}) :
+  P |= X _|_ Y -> `p_[% X, Y] = `p_ X `x `p_ Y.
+Proof.
+move=> PXY; apply: fdist_ext => -[x y] /=.
+by rewrite fdist_prodE/= !dist_of_RVE PXY.
 Qed.
 
 End inde_RV_lemma.

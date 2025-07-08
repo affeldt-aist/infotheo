@@ -1,3 +1,23 @@
+* added
+
+- in entropy.v
+  + inde_RV_joint_entropyE
+  + inde_dist_of_RV2
+
+* renamed
+
+- in entropy.v
+  + condentropy_indep -> centropy_indep
+  + information_cant_hurt -> le_centropy
+  + mutual_infoE3 -> mutual_infoEjoint_entropy
+  + mutual_infoE -> mutual_infoEcentropy1
+  + mutual_infoE2 -> mutual_infoEcentropy2
+
+* changed
+
+- in proba.v
+  + pr_eqE' -> dist_of_RVE
+
 -------------------
 from 0.9.3 to 0.9.4
 -------------------

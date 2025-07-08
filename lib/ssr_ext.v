@@ -475,6 +475,7 @@ Proof. move=> Hf; by rewrite -(@card_imset _ _ f) // max_card. Qed.
 
 End finfun_ext.
 
+(* TODO: move to MCA *)
 Lemma bij_swap A B : bijective (@swap A B).
 Proof. apply Bijective with swap; by case. Qed.
 Arguments bij_swap {A B}.
