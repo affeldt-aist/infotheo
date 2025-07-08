@@ -296,7 +296,8 @@ suff : concave_function
   (fun P : {fdist A} => let PQ := fdistX (P `X W) in `H PQ`1 - centropy PQ).
   set f := fun _ => _. set g := fun _ => _.
   suff -> : f = g by [].
-  by rewrite boolp.funeqE => d; rewrite {}/f {}/g /= -mutual_infoE -mutual_info_sym.
+  rewrite boolp.funeqE => d.
+  by rewrite {}/f {}/g /= -mutual_infoEcentropy1 -mutual_info_sym.
 apply: R_concave_functionB.
   have /RNconvex_function concave_H := @entropy_concave R B B_not_empty.
   apply: R_concave_functionN => p q t /=.

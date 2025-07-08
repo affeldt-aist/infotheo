@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import Rstruct reals classical_sets.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
@@ -332,7 +332,7 @@ Variables (A B : finType) (W : `Ch(A, B)) (P : {fdist A}).
 
 Lemma mutual_info_chanE : `I(P, W) = mutual_info (fdistX (P `X W)).
 Proof.
-rewrite /mutual_info_chan mutual_infoE -cond_entropy_chanE.
+rewrite /mutual_info_chan mutual_infoEcentropy1 -cond_entropy_chanE.
 by rewrite opprB addrCA addrA fdistX_prod_out.
 Qed.
 

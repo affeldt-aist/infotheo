@@ -361,7 +361,7 @@ rewrite -[RHS](FDist.f1 Q) [in RHS](bigID (mem (fin_img Y))) /=.
 rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   move=> b bY.
   rewrite /Q jfdist_condE // /jcPr /Pr !(big_setX,big_set1) /= fdistXE fdistX2 fst_RV2.
-  rewrite -!pr_eqE' !pr_eqE.
+  rewrite !dist_of_RVE !pr_eqE.
   rewrite /Pr big1 ?mul0r // => u.
   rewrite inE => /eqP[Yub ?].
   exfalso.

@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra fingroup perm.
 From mathcomp Require Import reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
@@ -373,15 +373,13 @@ Lemma centropyC {R : realType} (T : finType) (P : R.-fdist T)
   `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
 Proof.
 rewrite /centropy_RV /centropy /=.
-rewrite (reindex (fun p : C * B => (p.2, p.1))) /=; last first.
-  by exists (fun p : B * C => (p.2, p.1)) => -[b c].
+rewrite (reindex unstable.swap)/=; last exact/onW_bij/bij_swap.
 apply: eq_bigr => -[c b] _ /=.
-rewrite !snd_RV2 -!pr_eqE' pr_eq_pairC.
-congr (_ * _).
+rewrite !snd_RV2 !dist_of_RVE pr_eq_pairC; congr *%R.
 rewrite /centropy1; congr (- _).
 rewrite /jcPr !snd_RV2.
 apply: eq_bigr => a _.
-by rewrite !setX1 !Pr_set1 -!pr_eqE' !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
+by rewrite !setX1 !Pr_set1 !dist_of_RVE !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
 Qed.
 
 Section conditional_entropy_RV_lemmas.
@@ -389,7 +387,7 @@ Context {R : realType} {U A B : finType} {P : R.-fdist U}.
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
 Lemma centropy_RVE' : `H(Y | X) = \sum_(a in A) `Pr[X = a] * `H[Y | X = a].
-Proof. by apply: eq_bigr => a _; rewrite snd_RV2 -pr_eqE'. Qed.
+Proof. by apply: eq_bigr => a _; rewrite snd_RV2 dist_of_RVE. Qed.
 
 (* cover&thomas 2.12 *)
 Lemma centropy_RVE : `H(Y | X) = - \sum_(a in A) \sum_(b in B)
@@ -760,7 +758,7 @@ by rewrite fdist_prodE.
 Qed.
 
 (* 2.39 *)
-Lemma mutual_infoE : mutual_info PQ = `H P - centropy PQ.
+Lemma mutual_infoEcentropy1 : mutual_info PQ = `H P - centropy PQ.
 Proof.
 rewrite mutual_infoE0.
 transitivity (\sum_(a in A) \sum_(b in B)
@@ -789,12 +787,14 @@ congr (_ + _).
   by rewrite -[in LHS]Pr_set1 -setX1 jproduct_rule Pr_set1 -/Q mulrC.
 Qed.
 
-Lemma mutual_infoE2 : mutual_info PQ = `H Q - centropy QP. (* 2.40 *)
-Proof. by rewrite mutual_infoE entropyB. Qed.
+(* 2.40 *)
+Lemma mutual_infoEcentropy2 : mutual_info PQ = `H Q - centropy QP.
+Proof. by rewrite mutual_infoEcentropy1 entropyB. Qed.
 
-Lemma mutual_infoE3 : mutual_info PQ = `H P + `H Q - `H PQ. (* 2.41 *)
+(* 2.41 *)
+Lemma mutual_infoEjoint_entropy : mutual_info PQ = `H P + `H Q - `H PQ.
 Proof.
-rewrite mutual_infoE; have := chain_rule QP.
+rewrite mutual_infoEcentropy1; have := chain_rule QP.
 rewrite addrC => /eqP; rewrite -subr_eq -(fdistXI PQ) -/QP => /eqP <-.
 by rewrite opprB fdistX1 -/Q addrA joint_entropyC.
 Qed.
@@ -827,7 +827,7 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 Lemma mutual_info_RV0_indep : `I(X ; Y) = 0 -> P |= X _|_ Y.
 Proof.
 move/mutual_info0P; rewrite fst_RV2 snd_RV2 => H x y.
-by rewrite !pr_eqE' H fdist_prodE.
+by rewrite -!dist_of_RVE H fdist_prodE.
 Qed.
 
 End mutual_info_RV0_indep.
@@ -835,17 +835,18 @@ End mutual_info_RV0_indep.
 (* TODO: example 2.3.1 *)
 
 Section mutualinfo_prop.
+Context {R : realType}.
 Local Open Scope divergence_scope.
 
 (* eqn 2.46 *)
-Lemma mutual_info_sym (R : realType) (A B : finType) (PQ : R.-fdist (A * B)) :
+Lemma mutual_info_sym (A B : finType) (PQ : R.-fdist (A * B)) :
   mutual_info PQ = mutual_info (fdistX PQ).
-Proof. by rewrite !mutual_infoE entropyB fdistX1. Qed.
+Proof. by rewrite !mutual_infoEcentropy1 entropyB fdistX1. Qed.
 
 (* eqn 2.47 *)
-Lemma mutual_info_self (R : realType) (A : finType) (P : R.-fdist A) :
+Lemma mutual_info_self (A : finType) (P : R.-fdist A) :
   mutual_info (fdist_self P) = `H P.
-Proof. by rewrite mutual_infoE cond_entropy_self subr0 fdist_self1. Qed.
+Proof. by rewrite mutual_infoEcentropy1 cond_entropy_self subr0 fdist_self1. Qed.
 
 End mutualinfo_prop.
 
@@ -854,7 +855,7 @@ Context {R : realType} (U A B : finType) (P : R.-fdist U).
 Variables (X : {RV P -> A}) (Y : {RV P -> B}).
 
 Lemma mutual_info_RVE : `I(X ; Y) = `H `p_X - `H(X | Y).
-Proof. by rewrite /mutual_info_RV mutual_infoE fst_RV2. Qed.
+Proof. by rewrite /mutual_info_RV mutual_infoEcentropy1 fst_RV2. Qed.
 
 Lemma mutual_info_RVC : `I(X ; Y) = `I(Y ; X).
 Proof. by rewrite /mutual_info_RV mutual_info_sym fdistX_RV2. Qed.
@@ -1032,14 +1033,15 @@ Qed.
 Let P : R.-fdist A := (fdistA PQR)`1.
 Let Q : R.-fdist B := (PQR`1)`2.
 
-Lemma chain_rule_mutual_info : mutual_info PQR = mutual_info (fdist_proj13 PQR) +
-                                                 cond_mutual_info (fdistX (fdistA PQR)).
+Lemma chain_rule_mutual_info :
+  mutual_info PQR = mutual_info (fdist_proj13 PQR) +
+                    cond_mutual_info (fdistX (fdistA PQR)).
 Proof.
-rewrite mutual_infoE.
+rewrite mutual_infoEcentropy1.
 have := chain_rule (PQR`1); rewrite /joint_entropy => ->.
 rewrite (chain_rule_corollary PQR).
 rewrite opprD addrCA 2!addrA -(addrA (- _ + _)); congr (_ + _).
-  rewrite mutual_infoE addrC; congr (_ - _).
+  rewrite mutual_infoEcentropy1 addrC; congr (_ - _).
   by rewrite fdist_proj13_fst fdistA1.
 rewrite /cond_mutual_info; congr (centropy _ - _).
   by rewrite /fdist_proj13 -/(fdistC13 _) fdistA_C13_snd.
@@ -1148,7 +1150,7 @@ Lemma chain_rule_information :
     else
       cond_mutual_info (fAC i).
 Proof.
-rewrite mutual_infoE chain_rule_rV.
+rewrite mutual_infoEcentropy1 chain_rule_rV.
 have -> : centropy PY = \sum_(j < n.+1)
   if j == O :> nat then
     centropy (fdist_prod_nth PY ord0)
@@ -1329,7 +1331,7 @@ have -> : centropy PY = \sum_(j < n.+1)
     + by rewrite 2!fdist_sndE; apply eq_bigr => a' _; rewrite H2.
 rewrite big_morph_oppr -big_split /=; apply eq_bigr => j _ /=.
 case: ifPn => j0.
-- rewrite mutual_infoE; congr (`H _ - _).
+- rewrite mutual_infoEcentropy1; congr (`H _ - _).
   rewrite /head_of_fdist_rV /fdist_fst /fdist_rV_of_prod.
   by rewrite /fdist_prod_nth !fdistmap_comp.
 - rewrite /cond_mutual_info /fA -/P; congr (_ - _).
@@ -1352,34 +1354,38 @@ Qed.
 End chain_rule_for_information.
 
 Section conditioning_reduces_entropy.
-Section prop.
-Variables (R : realType) (A B : finType) (PQ : R.-fdist (A * B)).
+Context {R : realType}.
+
+Section centropy_prop.
+Variables (A B : finType) (PQ : R.-fdist (A * B)).
 Let P := PQ`1.
 Let Q := PQ`2.
 Let QP := fdistX PQ.
 
-(* 2.95 *)
-Lemma information_cant_hurt : centropy PQ <= `H P.
-Proof. by rewrite -subr_ge0 -mutual_infoE; exact: mutual_info_ge0. Qed.
+(* 2.95: "Information can't hurt" *)
+Lemma le_centropy : centropy PQ <= `H P.
+Proof. by rewrite -subr_ge0 -mutual_infoEcentropy1; exact: mutual_info_ge0. Qed.
 
-Lemma condentropy_indep : PQ = P `x Q -> centropy PQ = `H P.
+Lemma centropy_indep : PQ = P `x Q -> centropy PQ = `H P.
 Proof.
-by move/mutual_info0P; rewrite mutual_infoE => /eqP; rewrite subr_eq0 => /eqP <-.
+move/mutual_info0P; rewrite mutual_infoEcentropy1 => /eqP.
+by rewrite subr_eq0 => /eqP <-.
 Qed.
 
-End prop.
+End centropy_prop.
 
-Section prop2.
-Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
+Section mutual_info_prop.
+Variables (A B C : finType) (PQR : R.-fdist (A * B * C)).
 Let P : R.-fdist A := (fdistA PQR)`1.
 Let Q : R.-fdist B := (PQR`1)`2.
+
 Lemma mi_bound : PQR`1 = P `x Q (* P and Q independent *) ->
   mutual_info (fdist_proj13 PQR) +
   mutual_info (fdist_proj23 PQR) <= mutual_info PQR.
 Proof.
 move=> PQ; rewrite chain_rule_mutual_info lerD2l /cond_mutual_info.
 rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
-  rewrite condentropy_indep; last first.
+  rewrite centropy_indep; last first.
     rewrite fdist_proj13_fst fdistA1 fdistX1 fdistA21 -/Q.
     rewrite fdist_proj13_snd fdistX2 -/P.
     rewrite -[RHS]fdistXI fdistX_prod -PQ.
@@ -1387,7 +1393,7 @@ rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
     rewrite fdist_proj13E fdistXE fdist_fstE; apply eq_bigr => c _.
     by rewrite fdistXE fdistAE.
   by rewrite /fdist_proj13 fdistA21 fdistC12_fst fdistX1 fdistX2 fdistA21 -/Q.
-rewrite mutual_infoE.
+rewrite mutual_infoEcentropy1.
 rewrite fdist_proj23_fst -/Q.
 rewrite -[leLHS]opprB lerNl opprB lerD2r.
 (* conditioning cannot increase entropy *)
@@ -1397,20 +1403,18 @@ move: (cond_mutual_info_ge0 (fdistC12 PQR)); rewrite /cond_mutual_info.
 rewrite /fdist_proj13 fdistC12I -/(fdist_proj23 _).
 by rewrite centropy_fdistA /fdistAC fdistC12I.
 Qed.
-End prop2.
 
-(* Defined here because the proof has condentropy_indep. *)
-Lemma inde_RV_joint_entropyE {R : realType} (T TX TY : finType) (P : R.-fdist T)
-  (X : {RV P -> TX}) (Y : {RV P -> TY}):
+End mutual_info_prop.
+
+Lemma inde_RV_joint_entropyE (A B C : finType) (P : R.-fdist A)
+  (X : {RV P -> B}) (Y : {RV P -> C}):
   P |= X _|_ Y -> `H(X, Y) = `H `p_X + `H `p_Y.
 Proof.
-rewrite inde_RV_sym=> iYX.
-rewrite -/(`H(_, _)) chain_rule_RV; congr +%R.
-rewrite /centropy_RV.
-rewrite dist_inde_RV_prod//.
-rewrite condentropy_indep.
-  by rewrite fdist_prod1.
-by rewrite fdist_prod1 -[in RHS]dist_inde_RV_prod// snd_RV2.
+move=> PXY; apply/esym/subr0_eq.
+suff <- : mutual_info `p_ [% X, Y] = 0.
+  by rewrite mutual_infoEjoint_entropy fst_RV2 snd_RV2.
+apply/mutual_info0P/fdist_ext => -[x y] /=.
+by rewrite fst_RV2 snd_RV2 fdist_prodE/= !dist_of_RVE PXY.
 Qed.
 
 End conditioning_reduces_entropy.
@@ -1423,14 +1427,11 @@ Variables (R : realType) (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+1).
 (* thm 2.6.6 TODO: with equality in case of independence *)
 Lemma independence_bound_on_entropy : `H P <= \sum_(i < n.+1) `H (fdist_nth P i).
 Proof.
-rewrite chain_rule_rV; apply ler_sum => /= i _.
+rewrite chain_rule_rV; apply: ler_sum => /= i _.
 case: ifPn => [/eqP|] i0.
   rewrite (_ : i = ord0); last exact/val_inj.
-  rewrite head_of_fdist_rV_fdist_nth.
-  by rewrite lexx.
-apply: le_trans; first exact: information_cant_hurt.
-rewrite fdistX1 fdist_take_nth.
-by rewrite lexx.
+  by rewrite head_of_fdist_rV_fdist_nth lexx.
+by rewrite (le_trans (le_centropy _))// fdistX1 fdist_take_nth lexx.
 Qed.
 
 End independence_bound_on_entropy.
@@ -1503,18 +1504,17 @@ Lemma data_processing_inequality : markov_chain ->
   mutual_info PR <= mutual_info PQ.
 Proof.
 move=> H.
-have H1 : mutual_info (fdistA PQR) = mutual_info PR + cond_mutual_info PQR.
-  rewrite /cond_mutual_info !mutual_infoE addrA; congr (_ - _).
-  by rewrite -/PR subrK /PR fdist_proj13_fst.
-have H2 : mutual_info (fdistA PQR) = mutual_info PQ + cond_mutual_info PRQ.
+have : mutual_info (fdistA PQR) = mutual_info PQ + cond_mutual_info PRQ.
   transitivity (mutual_info (fdistA PRQ)).
-    by rewrite !mutual_infoE fdistA_AC_fst centropy_fdistA.
-  rewrite /cond_mutual_info !mutual_infoE addrA; congr (_ - _).
+    by rewrite !mutual_infoEcentropy1 fdistA_AC_fst centropy_fdistA.
+  rewrite /cond_mutual_info !mutual_infoEcentropy1 addrA; congr (_ - _).
   by rewrite fdistA1 {1}/PRQ fdist_proj13_AC -/PQ subrK /PQ fdistAC_fst_fst.
-have H3 : cond_mutual_info PRQ = 0 by rewrite markov_cond_mutual_info.
-have H4 : 0 <= cond_mutual_info PQR by exact: cond_mutual_info_ge0.
-move: H2; rewrite {}H3 addr0 => <-.
-by rewrite {}H1 addrC -lerBlDr subrr.
+have -> : cond_mutual_info PRQ = 0 by rewrite markov_cond_mutual_info.
+rewrite addr0 => <-.
+have -> : mutual_info (fdistA PQR) = mutual_info PR + cond_mutual_info PQR.
+  rewrite /cond_mutual_info !mutual_infoEcentropy1 addrA; congr (_ - _).
+  by rewrite -/PR subrK /PR fdist_proj13_fst.
+by rewrite addrC -lerBlDr subrr cond_mutual_info_ge0.
 Qed.
 
 End markov_chain.
@@ -1723,8 +1723,7 @@ case: ifPn => [/eqP|] i0.
   rewrite -tail_of_fdist_rV_fdist_col' /tail_of_fdist_rV /head_of_fdist_rV.
   rewrite -{1}(fdist_rV_of_prodK P) entropy_fdist_rV_of_prod.
   move: (chain_rule (fdist_prod_of_rV P)); rewrite /joint_entropy => ->.
-  rewrite [in X in (_ <= X)%R]addrC lerD2l -fdistX1.
-  exact: information_cant_hurt.
+  by rewrite [leRHS]addrC lerD2l -fdistX1 le_centropy.
 rewrite (chain_rule_multivar _ i0) lerD2l.
 exact/han_helper.
 Qed.

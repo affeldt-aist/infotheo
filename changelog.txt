@@ -1,3 +1,23 @@
+* added
+
+- in entropy.v
+  + inde_RV_joint_entropyE
+  + inde_dist_of_RV2
+
+* renamed
+
+- in entropy.v
+  + condentropy_indep -> centropy_indep
+  + information_cant_hurt -> le_centropy
+  + mutual_infoE3 -> mutual_infoEjoint_entropy
+  + mutual_infoE -> mutual_infoEcentropy1
+  + mutual_infoE2 -> mutual_infoEcentropy2
+
+* changed
+
+- in proba.v
+  + pr_eqE' -> dist_of_RVE
+
 -------------------
 from 0.9.3 to 0.9.4
 -------------------
@@ -17,14 +37,13 @@ from 0.9.3 to 0.9.4
 * added
 
 - in probability/proba.v
-  + pr_RV2_comp, dist_inde_RV_prod
+  + pr_RV2_comp
 
 - probability/jfdist_cond.v
   + jPr_comp_eq1
 
 - in information_theory/entropy.v
-  + centropy1_RV_comp0, centropy_RV_comp0, joint_entropy_RV_comp,
-    inde_RV_joint_entropyE
+  + centropy1_RV_comp0, centropy_RV_comp0, joint_entropy_RV_comp
 
 - in information_theory/entropy.v
   + add injective_joint_entropy_RV
