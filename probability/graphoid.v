@@ -136,12 +136,12 @@ transitivity (`Pr[ X = a | [% Y, Z, W] = (b, c, d)] *
 transitivity (`Pr[ X = a | Z = c] * `Pr[ Y = b | [% Z, W] = (c, d)]).
   rewrite cpr_eq_pairACr.
   case/boolP : (`Pr[ [% Y, W, Z] = (b, d, c)] == 0) => [/eqP|] H0.
-  - by rewrite [X in _ * X = _ * X]cpr_eqE pr_eq_pairA pr_eq_pairAC H0 mul0r !mulr0.
+  - by rewrite [X in _ * X = _ * X]cpr_eqE pfwd1_pairA pfwd1_pairAC H0 mul0r !mulr0.
   - by rewrite (cinde_alt _ H).
 case/boolP : (`Pr[ [% Z, W] = (c, d) ] == 0) => [/eqP|] ?.
-- by rewrite [X in _ * X = _ * X]cpr_eqE (pr_eq_pairC _ Y) (pr_eq_domin_RV2 Y) ?(mul0r,mulr0).
+- by rewrite [X in _ * X = _ * X]cpr_eqE (pfwd1_pairC _ Y) (pfwd1_domin_RV2 Y) ?(mul0r,mulr0).
 - have {}H : P |= X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
-  by rewrite [in X in _ = X * _]cpr_eq_pairCr (cinde_alt _ H) // pr_eq_pairC.
+  by rewrite [in X in _ = X * _]cpr_eq_pairCr (cinde_alt _ H) // pfwd1_pairC.
 Qed.
 
 End weak_union.
@@ -159,11 +159,11 @@ transitivity (`Pr[X = a | [% Y, Z] = (b, c)] * `Pr[[% Y, W] = (b, d) | Z = c]).
   rewrite -cpr_eq_pairAr [in X in X * _ = _]cpr_eq_pairCr -cpr_eq_pairAr.
   case/boolP : (`Pr[ [% W, [% Z, Y]] = (d, (c, b))] == 0) => [/eqP|] H0.
     rewrite [in X in _ * X = _ * X]cpr_eqE.
-    by rewrite -pr_eq_pairA pr_eq_pairC -pr_eq_pairA H0 mul0r !mulr0.
+    by rewrite -pfwd1_pairA pfwd1_pairC -pfwd1_pairA H0 mul0r !mulr0.
   by rewrite (cinde_alt _ H1) // cpr_eq_pairCr.
 case/boolP : (`Pr[ [% Y, Z] = (b, c) ] == 0) => [/eqP|] H0.
 - rewrite [X in _ * X = _ * X]cpr_eqE.
-  by rewrite pr_eq_pairAC pr_eq_domin_RV2 ?mul0r ?mulr0.
+  by rewrite pfwd1_pairAC pfwd1_domin_RV2 ?mul0r ?mulr0.
 - by rewrite (cinde_alt _ H2).
 Qed.
 
@@ -219,16 +219,16 @@ have <- : \sum_(d <- fin_img W)
     apply eq_bigr => d _.
     rewrite -eqr_divrMr; last first.
       rewrite cpr_eqE mulf_neq0 //.
-      - by move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 W d) ->.
+      - by move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 W d) ->.
       - move: (P0 b c d); apply: contra.
-        rewrite invr_eq0;  move/eqP/(pr_eq_domin_RV2 [% Y, W] (b, d)).
-        by rewrite pr_eq_pairCA pr_eq_pairA => ->.
+        rewrite invr_eq0; move/eqP/(pfwd1_domin_RV2 [% Y, W] (b, d)).
+        by rewrite pfwd1_pairCA pfwd1_pairA => ->.
     rewrite mulrAC (H d) -mulrA mulVf ?mulr1 //.
-    rewrite cpr_eqE mulf_eq0 negb_or invr_eq0 pr_eq_pairC; apply/andP; split.
-    - move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 Y b).
-      by rewrite pr_eq_pairC pr_eq_pairA pr_eq_pairAC => ->.
-    - move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 [% Y, W] (b, d)).
-      by rewrite pr_eq_pairCA -pr_eq_pairA => ->.
+    rewrite cpr_eqE mulf_eq0 negb_or invr_eq0 pfwd1_pairC; apply/andP; split.
+    - move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 Y b).
+      by rewrite pfwd1_pairC pfwd1_pairA pfwd1_pairAC => ->.
+    - move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 [% Y, W] (b, d)).
+      by rewrite pfwd1_pairCA -pfwd1_pairA => ->.
   suff H : forall d, `Pr[ X = a | [% Y, Z] = (b, c)] =
                 `Pr[ X = a | [% W, Z] = (d, c)].
     move=> d.
@@ -236,23 +236,23 @@ have <- : \sum_(d <- fin_img W)
     rewrite [in RHS]cpr_eq_product_rule.
     rewrite -mulrA mulfV; last first.
       rewrite cpr_eqE mulf_eq0 negb_or invr_eq0; apply/andP; split.
-      - by move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 W d) ->.
-      - move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 [% Y, W] (b, d)).
-        by rewrite pr_eq_pairCA -pr_eq_pairA => ->.
+      - by move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 W d) ->.
+      - move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 [% Y, W] (b, d)).
+        by rewrite pfwd1_pairCA -pfwd1_pairA => ->.
     rewrite -[in RHS]mulrA mulfV // cpr_eqE mulf_eq0 negb_or invr_eq0; apply/andP; split.
-    - move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 Y b).
-      by rewrite pr_eq_pairC pr_eq_pairA pr_eq_pairAC => ->.
-    - move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 [% Y, W] (b, d)).
-      by rewrite pr_eq_pairCA -pr_eq_pairA => ->.
+    - move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 Y b).
+      by rewrite pfwd1_pairC pfwd1_pairA pfwd1_pairAC => ->.
+    - move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 [% Y, W] (b, d)).
+      by rewrite pfwd1_pairCA -pfwd1_pairA => ->.
   have {}H2 : forall d, `Pr[ X = a | [% Y, Z] = (b, c)] =
                      `Pr[ X = a | [% W, Z, Y] = (d, c, b)].
     move=> d; move: {H2}(H2 a d (c, b)).
     rewrite cpr_eq_product_rule.
     have H0 : `Pr[ W = d | [% Z, Y] = (c, b)] != 0.
-      rewrite cpr_eqE pr_eq_pairA pr_eq_pairAC -pr_eq_pairA.
-      rewrite pr_eq_pairC mulf_eq0 negb_or invr_eq0 P0/=.
+      rewrite cpr_eqE pfwd1_pairA pfwd1_pairAC -pfwd1_pairA.
+      rewrite pfwd1_pairC mulf_eq0 negb_or invr_eq0 P0/=.
       move: (P0 b c d); apply: contra => /eqP.
-      by rewrite pr_eq_pairC/= => /(pr_eq_domin_RV2 W d) ->.
+      by rewrite pfwd1_pairC/= => /(pfwd1_domin_RV2 W d) ->.
     move/mulIf => /(_ H0){H0}/esym.
     by rewrite (cpr_eq_pairCr X Z) cpr_eq_pairAr.
   have {}H1 d : `Pr[ X = a | [% W, Z] = (d, c)] =
@@ -260,17 +260,17 @@ have <- : \sum_(d <- fin_img W)
     move: {H1}(H1 a b (c, d)).
     rewrite cpr_eq_product_rule.
     have H0 : `Pr[ Y = b | [% Z, W] = (c, d)] != 0.
-      rewrite cpr_eqE pr_eq_pairA mulf_eq0 negb_or invr_eq0 P0 /=.
-      move: (P0 b c d); apply: contra => /eqP/(pr_eq_domin_RV2 Y b).
-      by rewrite pr_eq_pairC -pr_eq_pairA => ->.
+      rewrite cpr_eqE pfwd1_pairA mulf_eq0 negb_or invr_eq0 P0 /=.
+      move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 Y b).
+      by rewrite pfwd1_pairC -pfwd1_pairA => ->.
     move/mulIf => /(_ H0){H0}/esym.
     by rewrite (cpr_eq_pairCr X Z) cpr_eq_pairAr cpr_eq_pairACr.
   by move=> d; rewrite {H2}(H2 d) {}H1 cpr_eq_pairCr cpr_eq_pairAr.
 rewrite -big_distrr /=.
 rewrite cPr_1 ?mulr1 //.
 move: (P0 b c D_not_empty); apply: contra.
-rewrite pr_eq_pairAC => /eqP/(pr_eq_domin_RV2 [% Y, W] (b, D_not_empty)).
-by rewrite pr_eq_pairC => ->.
+rewrite pfwd1_pairAC => /eqP/(pfwd1_domin_RV2 [% Y, W] (b, D_not_empty)).
+by rewrite pfwd1_pairC => ->.
 Qed.
 
 End intersection.

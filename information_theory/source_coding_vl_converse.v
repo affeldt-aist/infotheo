@@ -246,9 +246,7 @@ Lemma PN_sum1 :
 Proof.
 rewrite -(FDist.f1 P).
 rewrite [in RHS](partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
-apply: eq_bigr => i _; rewrite ffunE.
-rewrite /pr_eq; unlock.
-apply: eq_bigl => i0.
+apply: eq_bigr => i _; rewrite ffunE pfwd1E; apply: eq_bigl => i0.
 rewrite /= inE.
 apply/eqP/eqP=> [|<-]; last first.
   by rewrite inordfE /X /= FDist.f1.
@@ -262,9 +260,9 @@ Definition PN := FDist.make PN_ge0 PN_sum1.
 Lemma EX_ord : `E X = \sum_(i < Nmax.+1) i%:R * PN i.
 Proof.
 rewrite /Ex (partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=.
-apply : eq_bigr=> i _.
-rewrite /pr_eq; unlock.
-rewrite /Pr ffunE mulrC big_distrl /=.
+apply: eq_bigr => i _.
+rewrite ffunE pfwd1E.
+rewrite mulrC big_distrl /=.
 under eq_bigr do rewrite mulrC.
 apply: congr_big=>[//| x| x]; last by move/eqP<-; rewrite inordfE.
 rewrite inE; apply/eqP/eqP=> [<-|].
@@ -301,8 +299,7 @@ have eq_0_P : forall a, X a <> 1 -> 0 = P a.
 rewrite /entropy.
 apply/eqP; rewrite oppr_eq0; apply/eqP.
 rewrite big1//= => i _.
-rewrite /pr_eq; unlock.
-rewrite /Pr ffunE.
+rewrite ffunE pfwd1E.
 have [->|neq0] := eqVneq i%:R (1:R).
   rewrite [X in _ * log X = _](_ : _ = 1); first by rewrite log1 mulr0.
   rewrite -{2}(FDist.f1 P).
@@ -312,9 +309,9 @@ have [->|neq0] := eqVneq i%:R (1:R).
   rewrite big1// => j.
   by rewrite inE => /eqP/eq_0_P.
 rewrite [X in X * _ = _](_ : _ = 0); first by rewrite mul0r.
-rewrite big1 // => j.
-rewrite inE; move/eqP => eq_Xj_i.
-by move: neq0; rewrite -eq_Xj_i => /eqP/eq_0_P.
+rewrite /Pr big1 // => j.
+rewrite inE => /eqP Xji.
+by move: neq0; rewrite -Xji => /eqP/eq_0_P.
 Qed.
 
 Lemma le_entroPN_logeEX' :
@@ -396,9 +393,9 @@ have pmf1' : \sum_(i < Nmax) `Pr[X = i.+1%:R] = 1.
   rewrite [LHS](_ : _ = 0); last first.
     by apply/eqP; rewrite GRing.subr_eq0; apply/eqP/eq_bigr => i _ /=.
   apply/esym.
-  rewrite /pr_eq; unlock.
+  rewrite /pfwd1; unlock.
   rewrite /Pr big1 // => i.
-  rewrite inE; move/eqP =>  Xi_0.
+  rewrite inE => /eqP Xi_0.
   have := Xpos i.
   by rewrite Xi_0 ltxx.
 rewrite -{1}(log1).
@@ -418,8 +415,7 @@ have dom_by_hg : (fun i : nat => `Pr[ X = i%:R ]) `<< (fun i : nat => alp ^ i).
     by rewrite expf_eq0 => /andP[_ /eqP].
   by rewrite ltxx.
 rewrite big_ord_recl [X in _ <= X + _](_ : _ = 0) ?add0r; last first.
-  rewrite /pr_eq; unlock.
-  rewrite /Pr.
+  rewrite pfwd1E /Pr.
   have -> : [set x | X x == 0] = set0; last by rewrite big_set0 mul0r.
   apply/setP => i; rewrite inE /= in_set0.
   by apply/negbTE; rewrite gt_eqF //; exact: Xpos.
@@ -517,10 +513,8 @@ under eq_bigr do rewrite ffunE.
 rewrite -big_distrl.
 apply: (@mulIf _ (PN m)).
   exact/eqP.
-rewrite -mulrA mulVf ?mulr1 ?mul1r; last first.
-  exact/eqP.
-rewrite /= ffunE.
-rewrite /pr_eq; unlock.
+rewrite -mulrA mulVf ?mulr1 ?mul1r; last exact/eqP.
+rewrite /= ffunE pfwd1E.
 rewrite /Pr (eq_bigr (fun x => Pf (f x))) => [|a ain]; last first.
   rewrite /Pf.
   case:pickP; first by move =>x /eqP/ f_inj ->.
@@ -569,12 +563,10 @@ rewrite rewrite_HP_with_Pf; congr (- _).
 rewrite (eq_bigl (fun m => m \in [set : 'I_Nmax.+1]) _) => [|?]; last first.
   by rewrite /= in_setT.
 rewrite rsum_disjoints_set [Y in Y + _ = _]big1 ?add0r; last first.
-  move=> /= i; rewrite inE.
-  rewrite /pr_eq; unlock.
-  rewrite /Pr ffunE /= => /eqP/psumr_eq0P => H.
+  move=> /= i; rewrite inE ffunE pfwd1E.
+  move=> /eqP/psumr_eq0P H.
   have {}H : forall j : A, j \in [set x | (size (f x))%:R == i%:R :> R] -> P j = 0.
-    move=> a Ha.
-    by apply: H => //.
+    by move=> a Ha; exact: H.
   rewrite big1 // => i0 _.
   rewrite {1}/Pf.
   case: pickP => [a /eqP fai0|]; last by rewrite mul0r.
@@ -587,9 +579,8 @@ rewrite ffunE.
 rewrite {1}/Pf'.
 rewrite ffunE.
 rewrite [in RHS]mulrC -mulrA -mulrA.
-have [->|Pfi0_non0] := eqVneq (Pf i0) 0.
-  by rewrite !mul0r.
-congr (_ * _).
+have [->|Pfi0_non0] := eqVneq (Pf i0) 0; first by rewrite !mul0r.
+congr *%R.
 rewrite -mulrA.
 rewrite mulrC.
 rewrite -mulrA.

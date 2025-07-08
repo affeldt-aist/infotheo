@@ -12,6 +12,23 @@
   + mutual_infoE3 -> mutual_infoEjoint_entropy
   + mutual_infoE -> mutual_infoEcentropy1
   + mutual_infoE2 -> mutual_infoEcentropy2
+  + pr_eq -> pfwd1
+  + pr_eqE -> pfwd1E
+  + pr_eq_ge0 -> pfwd1_ge0
+  + pr_eq_neq0 -> pfwd1_neq0
+  + pr_eq0 -> pfwd1_eq0
+  + pr_eqE_finType -> pfwd1EfinType
+  + pr_eq1 -> sum_pfwd1
+  + pr_eq_diag -> pfwd1_diag
+  + pr_eq_pairC -> pfwd1_pairC
+  + pr_eq_pairA -> pfwd1_pairA
+  + pr_eq_pairAC -> pfwd1_pairAC
+  + pr_eq_pairCA -> pfwd1_pairCA
+  + pr_eq_comp -> pfwd1_comp
+  + pr_RV2_comp -> pfwd1_RV1_compl
+  + pr_eq_pair_setT -> pr_in_pair_setT
+  + pr_eq_domin_RV2 -> pfwd1_domin_RV2
+  + pr_eq_domin_RV1 -> pfwd1_domin_RV1
 
 * changed
 

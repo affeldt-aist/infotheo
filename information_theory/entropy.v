@@ -375,11 +375,11 @@ Proof.
 rewrite /centropy_RV /centropy /=.
 rewrite (reindex unstable.swap)/=; last exact/onW_bij/bij_swap.
 apply: eq_bigr => -[c b] _ /=.
-rewrite !snd_RV2 !dist_of_RVE pr_eq_pairC; congr *%R.
+rewrite !snd_RV2 !dist_of_RVE pfwd1_pairC; congr *%R.
 rewrite /centropy1; congr (- _).
 rewrite /jcPr !snd_RV2.
 apply: eq_bigr => a _.
-by rewrite !setX1 !Pr_set1 !dist_of_RVE !pr_eq_pairA pr_eq_pairAC (pr_eq_pairC Z).
+by rewrite !setX1 !Pr_set1 !dist_of_RVE !pfwd1_pairA pfwd1_pairAC (pfwd1_pairC Z).
 Qed.
 
 Section conditional_entropy_RV_lemmas.
@@ -431,7 +431,7 @@ rewrite /centropy1_RV /centropy1 big1 ?oppr0 // => b _.
 have [<-|fxb] := eqVneq (f x) b.
   by rewrite jPr_comp_eq1 // log1 mulr0.
 rewrite jPr_Pr cpr_in1; apply/eqP.
-rewrite [X in X * _]cpr_eqE [X in X / _ * _]pr_eq0 ?mul0r//.
+rewrite [X in X * _]cpr_eqE [X in X / _ * _]pfwd1_eq0 ?mul0r//.
 apply: contra fxb.
 by rewrite fin_img_imset/= => /imsetP[t _ [/= -> ->]].
 Qed.

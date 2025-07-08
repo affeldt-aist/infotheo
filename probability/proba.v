@@ -528,20 +528,20 @@ Section random_variable_eqType.
 Context {R : realType}.
 Variables (U : finType) (A : eqType) (P : R.-fdist U).
 
-Definition pr_eq (X : {RV P -> A}) (a : A) := locked (Pr P (finset (X @^-1 a))).
-Local Notation "`Pr[ X = a ]" := (pr_eq X a).
+Definition pfwd1 (X : {RV P -> A}) (a : A) := locked (Pr P (finset (X @^-1 a))).
+Local Notation "`Pr[ X = a ]" := (pfwd1 X a).
 
-Lemma pr_eqE (X : {RV P -> A}) a : `Pr[ X = a ] = Pr P (finset (X @^-1 a)).
-Proof. by rewrite /pr_eq; unlock. Qed.
+Lemma pfwd1E (X : {RV P -> A}) a : `Pr[ X = a ] = Pr P (finset (X @^-1 a)).
+Proof. by rewrite /pfwd1; unlock. Qed.
 
-Lemma pr_eq_ge0 (X : {RV P -> A}) (a : A) : 0 <= `Pr[ X = a].
-Proof. by rewrite pr_eqE. Qed.
+Lemma pfwd1_ge0 (X : {RV P -> A}) (a : A) : 0 <= `Pr[ X = a].
+Proof. by rewrite pfwd1E. Qed.
 
-Lemma pr_eq_neq0 (X : {RV P -> A}) (a : A) :
+Lemma pfwd1_neq0 (X : {RV P -> A}) (a : A) :
   `Pr[ X = a ] != 0 <-> exists i, i \in X @^-1 a /\ 0 < P i.
 Proof.
-split; rewrite pr_eqE /Pr => PXa0.
-  have H : forall i : U, 0 <= P i by move=> ?; apply/FDist.ge0.
+split; rewrite pfwd1E /Pr => PXa0.
+  have H i : 0 <= P i by apply/FDist.ge0.
   have := @psumr_neq0 R U (enum (finset (X @^-1 a))) xpredT _ (fun i _ => H i).
   rewrite big_enum PXa0 => /esym/hasP[i/=].
   by rewrite mem_enum inE/= => Xia Pi_gt0; exists i.
@@ -550,17 +550,17 @@ rewrite psumr_neq0//; apply/hasP; exists i => //.
 by rewrite inE; exact/andP.
 Qed.
 
-Lemma pr_eq0 (X : {RV P -> A}) (a : A) : a \notin fin_img X -> `Pr[ X = a ] = 0.
+Lemma pfwd1_eq0 (X : {RV P -> A}) (a : A) : a \notin fin_img X -> `Pr[ X = a ] = 0.
 Proof.
-move=> aX; apply/eqP/negPn; apply: contra aX => /pr_eq_neq0 [i [iXa Pi0]].
+move=> aX; apply/eqP/negPn; apply: contra aX => /pfwd1_neq0 [i [iXa Pi0]].
 rewrite mem_undup; apply/mapP; exists i; rewrite ?mem_enum //.
 by move: iXa; rewrite inE => /eqP.
 Qed.
 
 End random_variable_eqType.
-Notation "`Pr[ X = a ]" := (pr_eq X a) : proba_scope.
+Notation "`Pr[ X = a ]" := (pfwd1 X a) : proba_scope.
 #[global] Hint Extern 0 (is_true (0 <= `Pr[ _ = _ ])) =>
-  solve [apply: pr_eq_ge0] : core.
+  solve [apply: pfwd1_ge0] : core.
 
 Section random_variable_order.
 Context {R : realType}.
@@ -585,8 +585,7 @@ Section random_variable_finType.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (A : finType).
 
-Definition pr_in (X : {RV P -> A}) (E : {set A}) :=
-  locked (Pr P (X @^-1: E)).
+Definition pr_in (X : {RV P -> A}) (E : {set A}) := locked (Pr P (X @^-1: E)).
 Local Notation "`Pr[ X '\in' E ]" := (pr_in X E).
 
 Lemma pr_inE (X : {RV P -> A}) (E : {set A}) :
@@ -596,17 +595,16 @@ Proof. by rewrite /pr_in; unlock. Qed.
 Definition dist_of_RV (X : {RV P -> A}) : R.-fdist A := fdistmap X P.
 Local Notation "`p_ X" := (dist_of_RV X).
 
-(* TODO: rename *)
-Lemma pr_eqE_finType (X : {RV P -> A}) (a : A) :
+Lemma pfwd1EfinType (X : {RV P -> A}) (a : A) :
   `Pr[ X = a ] = Pr P (X @^-1: [set a]).
-Proof. by rewrite pr_eqE -preimg_set1. Qed.
+Proof. by rewrite pfwd1E -preimg_set1. Qed.
 
 Lemma dist_of_RVE (X : {RV P -> A}) (a : A) : `p_X a = `Pr[ X = a ].
 Proof.
-by rewrite pr_eqE_finType /Pr fdistmapE//; apply eq_bigl => i; rewrite !inE.
+by rewrite pfwd1EfinType /Pr fdistmapE//; apply eq_bigl => i; rewrite !inE.
 Qed.
 
-Lemma pr_eq1 (X : {RV P -> A}) : \sum_a `Pr[ X = a ] = 1.
+Lemma sum_pfwd1 (X : {RV P -> A}) : \sum_a `Pr[ X = a ] = 1.
 Proof.
 under eq_bigr do rewrite -dist_of_RVE.
 by rewrite FDist.f1.
@@ -788,9 +786,10 @@ apply eq_big => // -[a c]; rewrite inE => /andP[/= aE cF].
 by rewrite fdistmapE.
 Qed.
 
-Lemma pr_eq_diag {R : realType} (T : finType) (U : eqType) (P : R.-fdist T)
-(X : {RV P -> U}) (x : U) : `Pr[ [% X, X] = (x, x) ] = `Pr[ X = x ].
-Proof. by rewrite !pr_eqE /Pr; apply: eq_bigl=> a; rewrite !inE xpair_eqE andbb.
+Lemma pfwd1_diag {R : realType} (T : finType) (U : eqType) (P : R.-fdist T)
+  (X : {RV P -> U}) (x : U) : `Pr[ [% X, X] = (x, x) ] = `Pr[ X = x ].
+Proof.
+by rewrite !pfwd1E /Pr; apply: eq_bigl=> a; rewrite !inE xpair_eqE andbb.
 Qed.
 
 Section pr_pair.
@@ -803,9 +802,9 @@ Variables (TX : {RV P -> TA}) (TY : {RV P -> TB}) (TZ : {RV P -> TC}).
 Lemma pr_in_pairC E F : `Pr[ [% Y, X] \in F `* E ] = `Pr[ [% X, Y] \in E `* F].
 Proof. by rewrite 2!pr_inE; apply eq_bigl => u; rewrite !inE /= andbC. Qed.
 
-Lemma pr_eq_pairC x : `Pr[ [% TY, TX] = x ] = `Pr[ [% TX, TY] = swap x].
+Lemma pfwd1_pairC x : `Pr[ [% TY, TX] = x ] = `Pr[ [% TX, TY] = swap x].
 Proof.
-by rewrite !pr_eqE; congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE andbC.
+by rewrite !pfwd1E; congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE andbC.
 Qed.
 
 Lemma pr_in_pairA E F G :
@@ -813,30 +812,30 @@ Lemma pr_in_pairA E F G :
   `Pr[ [% [% X, Y], Z] \in (E `* F) `* G].
 Proof. by rewrite !pr_inE; apply eq_bigl => u; rewrite !inE /= andbA. Qed.
 
-Lemma pr_eq_pairA a b c :
+Lemma pfwd1_pairA a b c :
   `Pr[ [% TX, [% TY, TZ]] = (a, (b, c))] = `Pr[ [% TX, TY, TZ] = (a, b, c) ].
 Proof.
-by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbA.
+by rewrite !pfwd1E; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbA.
 Qed.
 
 Lemma pr_in_pairAC E F G :
 `Pr[ [% X, Y, Z] \in (E `* F) `* G] = `Pr[ [% X, Z, Y] \in (E `* G) `* F].
 Proof. by rewrite !pr_inE; apply eq_bigl => u; rewrite !inE /= andbAC. Qed.
 
-Lemma pr_eq_pairAC a b c :
+Lemma pfwd1_pairAC a b c :
 `Pr[ [% TX, TY, TZ] = (a, b, c) ] = `Pr[ [% TX, TZ, TY] = (a, c, b)].
 Proof.
-by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbAC.
+by rewrite !pfwd1E; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbAC.
 Qed.
 
 Lemma pr_in_pairCA E F G :
 `Pr[ [% X, [%Y, Z]] \in E `* (F `* G) ] = `Pr[ [% Y, [%X, Z]] \in F `* (E `* G)].
 Proof. by rewrite !pr_inE; apply eq_bigl => u; rewrite !inE /= andbCA. Qed.
 
-Lemma pr_eq_pairCA  a b c :
+Lemma pfwd1_pairCA  a b c :
 `Pr[ [% TX, [%TY, TZ]] = (a, (b, c)) ] = `Pr[ [% TY, [% TX, TZ]] = (b, (a, c))].
 Proof.
-by rewrite !pr_eqE; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbCA.
+by rewrite !pfwd1E; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbCA.
 Qed.
 
 Lemma pr_in_comp (f : A -> B) E : injective f ->
@@ -845,8 +844,8 @@ Proof.
 by move=> inj_f; rewrite 2!pr_inE' (Pr_fdistmap inj_f) fdistmap_comp.
 Qed.
 
-Lemma pr_eq_comp (f : A -> B) a : injective f ->
-  `Pr[ X = a ] = `Pr[ (f `o X) = f a ].
+Lemma pfwd1_comp (f : A -> B) a : injective f ->
+  `Pr[ (f `o X) = f a ] = `Pr[ X = a ].
 Proof.
 move=> inj_f.
 by rewrite -!pr_in1 !pr_inE' (Pr_fdistmap inj_f) fdistmap_comp imset_set1.
@@ -878,21 +877,20 @@ Qed.
 
 End pr_in_comp'.
 
-Section pr_RV2_comp.
+Section pfwd1_RV2_comp.
 Context {R : realType} (T A B : finType) (P : R.-fdist T).
 Variables (X : {RV P -> A}) (f : A -> B).
 Variables (a : A).
 
-Lemma pr_RV2_comp : `Pr[ [% f `o X, X] = (f a, a) ] = `Pr[ X = a ].
+Lemma pfwd1_RV2_compl : `Pr[ [% f `o X, X] = (f a, a) ] = `Pr[ X = a ].
 Proof.
-rewrite 2!pr_eqE; congr (Pr _ _).
-apply/setP => t.
+rewrite 2!pfwd1E; congr Pr; apply/setP => t.
 by rewrite !inE xpair_eqE andb_idl// => /eqP <-.
 Qed.
 
-End pr_RV2_comp.
+End pfwd1_RV2_comp.
 
-Lemma pr_eq_pair_setT {R : realType} (U : finType) (P : R.-fdist U)
+Lemma pr_in_pair_setT {R : realType} (U : finType) (P : R.-fdist U)
     (A B : finType) (E : {set A}) (X : {RV P -> A}) (Y : {RV P -> B}) :
   `Pr[ [% X, Y] \in E `*T ] = `Pr[ X \in E ].
 Proof.
@@ -918,17 +916,17 @@ Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (TA TB : eqType).
 Variables (TX : {RV P -> TA}) (TY : {RV P -> TB}).
 
-Lemma pr_eq_domin_RV2 a b : `Pr[ TX = a] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
+Lemma pfwd1_domin_RV2 a b : `Pr[ TX = a] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
-rewrite !pr_eqE /Pr => /psumr_eq0P => a0.
+rewrite !pfwd1E /Pr => /psumr_eq0P => a0.
 rewrite big1// => i.
 rewrite inE/= xpair_eqE => /andP [] ? ?.
 by apply: a0 => //; rewrite inE.
 Qed.
 
-Lemma pr_eq_domin_RV1 a b : `Pr[ TY = b] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
+Lemma pfwd1_domin_RV1 a b : `Pr[ TY = b] = 0 -> `Pr[ [% TX, TY] = (a, b) ] = 0.
 Proof.
-rewrite !pr_eqE /Pr => /psumr_eq0P => a0.
+rewrite !pfwd1E /Pr => /psumr_eq0P => a0.
 rewrite big1// => i.
 rewrite inE/= xpair_eqE => /andP [] ? ?.
 by apply: a0 => //; rewrite inE.
@@ -983,7 +981,7 @@ Lemma Ex_altE : Ex_alt = `E X.
 Proof.
 rewrite /Ex.
 transitivity (\sum_(r <- fin_img X) \sum_(u in U | X u == r) (X u * P u)).
-  apply eq_bigr => /= r _; rewrite pr_eqE big_distrr /=.
+  apply eq_bigr => /= r _; rewrite pfwd1E big_distrr /=.
   by apply eq_big => //= a; rewrite !inE // => /eqP ->.
 by rewrite -partition_big_fin_img.
 Qed.
@@ -1112,7 +1110,7 @@ rewrite -Boole_eq; last first.
   have [/= Xur|//] := eqVneq (X u) r.
   move: (dis ij); rewrite -setI_eq0 => /eqP/setP/(_ u).
   by rewrite !inE => /negbT; rewrite negb_and.
-rewrite pr_eqE; congr Pr.
+rewrite pfwd1E; congr Pr.
 move: cov; rewrite cover_imset => cov'.
 by rewrite -big_distrr /= cov' setIT.
 Qed.
@@ -1298,7 +1296,7 @@ Proof.
 rewrite /Ex.
 rewrite (partition_big_fin_img _ X (fun u => (phi `o X) u * P u)) /=.
 apply: eq_bigr => a _.
-rewrite pr_eqE /Pr big_distrr /=; apply eq_big.
+rewrite pfwd1E /Pr big_distrr /=; apply eq_big.
   by move=> u; rewrite inE.
 by move=> u /eqP Xua; rewrite /comp_RV -Xua.
 Qed.
@@ -1792,19 +1790,19 @@ Notation cpr_eqE' := cPr_eq_def (only parsing).
 Lemma cpr_eq_unit_RV {R : realType} (U : finType) (A : eqType) (P : R.-fdist U)
     (X : {RV P -> A}) (a : A) :
   `Pr[ X = a | (unit_RV P) = tt ] = `Pr[ X = a ].
-Proof. by rewrite cPr_eq_def cPrET pr_eqE. Qed.
+Proof. by rewrite cPr_eq_def cPrET pfwd1E. Qed.
 
 Lemma cpr_eqE {R : realType} (U : finType) (P : R.-fdist U) (TA TB : eqType)
   (X : {RV P -> TA}) (Y : {RV P -> TB}) a b :
   `Pr[ X = a | Y = b ] = `Pr[ [% X, Y] = (a, b) ] / `Pr[Y = b].
 Proof.
-rewrite cPr_eq_def /cPr /dist_of_RV 2!pr_eqE; congr (Pr _ _ / _).
+rewrite cPr_eq_def /cPr /dist_of_RV 2!pfwd1E; congr (Pr _ _ / _).
 by apply/setP => u; rewrite !inE xpair_eqE.
 Qed.
 
 Lemma cPr_eq_id {R : realType} (T : finType) (U : eqType) (P : R.-fdist T)
 (X : {RV P -> U}) (x : U) : `Pr[ X = x ] != 0 -> `Pr[ X = x | X = x ] = 1.
-Proof. by move=> ?; rewrite cpr_eqE pr_eq_diag divff. Qed.
+Proof. by move=> ?; rewrite cpr_eqE pfwd1_diag divff. Qed.
 
 Section crandom_variable_finType.
 Context {R : realType}.
@@ -1877,7 +1875,7 @@ Lemma cpr_eq_pairC a b c :
   `Pr[ [% TY, TX] = (b, a) | Z = c ] = `Pr[ [% TX, TY] = (a, b) | Z = c ].
 Proof.
 rewrite cpr_eqE.
-rewrite pr_eq_pairC pr_eq_pairA pr_eq_pairAC -pr_eq_pairA pr_eq_pairC.
+rewrite pfwd1_pairC pfwd1_pairA pfwd1_pairAC -pfwd1_pairA pfwd1_pairC.
 by rewrite -cpr_eqE.
 Qed.
 
@@ -1911,9 +1909,9 @@ Lemma cpr_eq_pairAr a b c d :
   `Pr[ TX = a | [% TY, TZ, TW] = (b, c, d) ].
 Proof.
 rewrite 2!cpr_eqE; congr (_ / _).
-rewrite !pr_eqE; congr Pr.
+rewrite !pfwd1E; congr Pr.
 by apply/setP => u; rewrite !inE /= !xpair_eqE !andbA.
-by rewrite pr_eq_pairA.
+by rewrite pfwd1_pairA.
 Qed.
 
 Lemma cpr_in_pairAr E F G H :
@@ -1931,7 +1929,7 @@ Lemma cpr_eq_pairAC a b c d :
   `Pr[ [% TX, TZ, TY] = (a, c, b) | TW = d ].
 Proof.
 rewrite 2!cpr_eqE; congr (_ / _).
-rewrite !pr_eqE; congr Pr.
+rewrite !pfwd1E; congr Pr.
 apply/setP => u; rewrite !inE /= !xpair_eqE /=; congr (_ && _).
 by rewrite andbAC.
 Qed.
@@ -1951,10 +1949,10 @@ Lemma cpr_eq_pairACr a b c d :
   `Pr[ TX = a | [% TY, TW, TZ] = (b, d, c) ].
 Proof.
 rewrite 2!cpr_eqE; congr (_ / _).
-  rewrite !pr_eqE; congr Pr.
+  rewrite !pfwd1E; congr Pr.
   apply/setP => u; rewrite !inE !xpair_eqE -!andbA; congr (_ && _).
   by rewrite !andbA andbAC.
-by rewrite pr_eq_pairAC.
+by rewrite pfwd1_pairAC.
 Qed.
 
 Lemma cpr_in_pairACr E F G H :
@@ -1971,8 +1969,8 @@ Lemma cpr_eq_pairCr a b c :
   `Pr[ TX = a | [% TY, TZ] = (b, c) ] = `Pr[ TX = a | [% TZ, TY] = (c, b) ].
 Proof.
 rewrite 2!cpr_eqE; congr (_ / _).
-by rewrite pr_eq_pairA pr_eq_pairAC -pr_eq_pairA.
-by rewrite pr_eq_pairC.
+  by rewrite pfwd1_pairA pfwd1_pairAC -pfwd1_pairA.
+by rewrite pfwd1_pairC.
 Qed.
 
 Lemma cpr_in_pairCr E F G :
@@ -2017,7 +2015,7 @@ transitivity (\sum_(b in B) F b).
   rewrite [in RHS](bigID (mem (fin_img Y))) /=.
   rewrite [X in _ = _ + X]big1 ?addr0 //.
     by rewrite big_uniq // undup_uniq.
-  by move=> b bY; rewrite {}/F pr_in_pairC pr_in_domin_RV2 // pr_in1 pr_eq0.
+  by move=> b bY; rewrite {}/F pr_in_pairC pr_in_domin_RV2 // pr_in1 pfwd1_eq0.
 by apply eq_bigr => b _; rewrite /F pr_inE /Pr partition_big_preimset.
 Qed.
 
@@ -2119,9 +2117,9 @@ move=> K H0.
 rewrite [in LHS]cpr_eqE; apply: (@mulIf _ _ H0).
 rewrite -mulrA mulVf ?mulr1//.
 have H1 : (`Pr[ Z = c ])^-1 != 0.
-  apply invr_neq0; rewrite pr_eq_pairC in H0.
-  by apply: contra H0 => /eqP/(pr_eq_domin_RV2 Y b)/eqP.
-rewrite pr_eq_pairA; apply: (@mulIf _ _ H1).
+  apply invr_neq0; rewrite pfwd1_pairC in H0.
+  by apply: contra H0 => /eqP/(pfwd1_domin_RV2 Y b)/eqP.
+rewrite pfwd1_pairA; apply: (@mulIf _ _ H1).
 by rewrite -mulrA -!cpr_eqE K.
 Qed.
 
@@ -2179,7 +2177,7 @@ move=> Hsum Hinde.
 rewrite -!Ex_altE.
 apply trans_eq with (\sum_(r <- undup (map X1 (enum A)))
    \sum_(r' <- undup (map X2 (enum ('rV[A]_n.+1))))
-   ( r * r' * @pr_eq _ _ _ P1 X1 r * @pr_eq _ _ _ P2 X2 r')); last first.
+   ( r * r' * `Pr[X1 = r] * `Pr[X2 = r'])); last first.
   rewrite [in RHS]big_distrl /=; apply eq_bigr => i _.
   rewrite big_distrr /=; apply eq_bigr => j _.
   by rewrite -!mulrA [in RHS](mulrCA _ j).
@@ -2206,13 +2204,13 @@ rewrite -[RHS]mulrA; congr (_ * _).
 rewrite exchange_big /=.
 have {}Hinde := Hinde r r'.
 have -> : `Pr[ X1 = r ] = `Pr[ X1' = r ].
-  rewrite 2!pr_eqE /P1 /head_of_fdist_rV Pr_fdist_fst Pr_fdist_prod_of_rV1; congr Pr.
+  rewrite 2!pfwd1E /P1 /head_of_fdist_rV Pr_fdist_fst Pr_fdist_prod_of_rV1; congr Pr.
   by apply/setP => /= v; rewrite !inE /X1'.
 have -> : `Pr[ X2 = r' ] = `Pr[ X2' = r' ].
-  rewrite 2!pr_eqE /P1 /tail_of_fdist_rV Pr_fdist_snd Pr_fdist_prod_of_rV2; congr Pr.
+  rewrite 2!pfwd1E /P1 /tail_of_fdist_rV Pr_fdist_snd Pr_fdist_prod_of_rV2; congr Pr.
   by apply/setP => /= v; rewrite !inE /X2'.
 rewrite -Hinde.
-rewrite pr_eqE /ambient_dist /Pr.
+rewrite pfwd1E /ambient_dist /Pr.
 transitivity (\sum_(a : 'rV_n.+2 | (X1 (a ``_ ord0) == r) && (X2 (rbehead a) == r')) P a).
   by rewrite -(big_rV_cons_behead _ [pred x | X1 x == r] [pred x | X2 x == r']) /=.
 apply eq_bigl => /= v.
@@ -2284,7 +2282,7 @@ transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
   rewrite -(pair_bigA _ (fun u1 u2 => X u1 * Y u2 * P (u1, u2))) /=.
   rewrite (partition_big_fin_img _ X) /=; apply eq_bigr => x _.
   rewrite exchange_big /= (partition_big_fin_img _ Y) /=; apply eq_bigr => y _.
-  rewrite pr_eqE /Pr big_distrr /= exchange_big pair_big /=.
+  rewrite pfwd1E /Pr big_distrr /= exchange_big pair_big /=.
   apply eq_big.
     by move=> -[a b] /=; rewrite inE.
   by case=> a b /= /andP[/eqP -> /eqP ->].
@@ -2296,11 +2294,11 @@ transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
   congr (_ * (_ * _)).
   transitivity (`Pr[ X' = x ] * `Pr[ Y' = y ]); last first.
     congr (_ * _).
-      rewrite !pr_eqE Pr_fdist_fst; congr Pr.
+      rewrite !pfwd1E Pr_fdist_fst; congr Pr.
       by apply/setP => -[a b]; rewrite !inE.
-    rewrite !pr_eqE Pr_fdist_snd; congr Pr.
+    rewrite !pfwd1E Pr_fdist_snd; congr Pr.
     by apply/setP => -[a b]; rewrite !inE.
-  by rewrite -Hinde !pr_eqE.
+  by rewrite -Hinde !pfwd1E.
 rewrite -!Ex_altE.
 rewrite /Ex_alt big_distrl; apply eq_bigr => x _ /=; rewrite big_distrr /=.
 apply eq_bigr=> y _.
@@ -2369,7 +2367,7 @@ Lemma prod_dist_inde_RV_rV {R : realType} (A : finType) (P : R.-fdist A)
   `Pr[ ((fun v => Y (rbehead v)) : {RV (P`^n.+1) -> _}) = y ].
 Proof.
 have /= := @prod_dist_inde_RV _ _ _ P (P `^ n) _ _ X Y x y.
-rewrite !pr_eqE -!fdist_prod_of_fdist_rV.
+rewrite !pfwd1E -!fdist_prod_of_fdist_rV.
 rewrite (_ : [set x0 | _] = (finset (X @^-1 x)) `* (finset (Y @^-1 y))); last first.
   by apply/setP => -[a b]; rewrite !inE /= xpair_eqE.
 rewrite Pr_fdist_prod_of_rV (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
@@ -2518,7 +2516,8 @@ Lemma prob_chain_rule : forall (n : nat) (X : 'rV[{RV P -> A}]_n.+1) x,
 Proof.
 elim => [X /= x|n ih X /= x].
   rewrite big_ord_recl big_ord0 mulr1.
-  rewrite /pr_eq; unlock.
+  (* TODO: lemma *)
+  rewrite /pfwd1; unlock.
   apply eq_bigl => u.
   rewrite !inE /RVn.
   apply/eqP/eqP => [<-|H]; first by rewrite mxE.
