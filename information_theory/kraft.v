@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-Require FunctionalExtensionality.
+Require FunctionalExtensionality Wf_nat.
 Require Import ssr_ext.
 
 (**md**************************************************************************)
