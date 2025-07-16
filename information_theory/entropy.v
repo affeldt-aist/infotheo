@@ -732,7 +732,7 @@ End conditional_entropy_prop3.
    Multiparty Computation Protocols" by Weng et al., 2025.
   http://dx.doi.org/10.1007/978-3-031-95497-9_11.
 *)
-Lemma centropy_RV_comp {R : realType} (T TX TY TZ : finType) (P : R.-fdist T)
+Lemma centropy_RV_contraction {R : realType} (T TX TY TZ : finType) (P : R.-fdist T)
   (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ) :
   `H(X | [% Y, f `o Y]) = `H(X | Y).
 Proof.
