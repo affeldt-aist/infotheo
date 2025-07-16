@@ -123,11 +123,11 @@ apply (@le_trans _ _ (2%R `^ n%:R)%R).
   have Hsubset : [set x | dec sc (enc sc x) == x] \subset dec sc @: (enc sc @: [set: 'rV[A]_k.+1]).
     apply/subsetP => x; rewrite inE => /eqP Hx.
     by apply/imsetP; exists (enc sc x) => //; rewrite imset_f.
-  apply (@le_trans _ _ #| dec sc @: (enc sc @: [set: 'rV[A]_k.+1]) |%:R).
+  apply: (@le_trans _ _ #| dec sc @: (enc sc @: [set: 'rV[A]_k.+1]) |%:R).
     by rewrite ler_nat; case/subset_leqif_cards : Hsubset.
-  apply (@le_trans _ _ #| dec sc @: [set: 'rV[bool]_n] |%:R).
+  apply: (@le_trans _ _ #| dec sc @: [set: 'rV[bool]_n] |%:R).
     by rewrite ler_nat; apply/subset_leqif_cards/imsetS/subsetP => x Hx; rewrite inE.
-  apply (@le_trans _ _ #| [set: 'rV[bool]_n] |%:R).
+  apply: (@le_trans _ _ #| [set: 'rV[bool]_n] |%:R).
     by rewrite ler_nat; exact/leq_imset_card.
   rewrite cardsT card_mx /= card_bool mul1n.
   by rewrite powR_mulrn// natrX.
