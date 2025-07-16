@@ -330,10 +330,8 @@ Qed.
 Lemma Ex_cExT (X : {RV P -> R}) : `E X = `E_[X | [set: U]].
 Proof.
 rewrite /cEx.
-under eq_bigr do rewrite setIT Pr_setT divr1 -pr_eqE.
-(* The names of lemmas for Pr are inconsistent:
-   some begin with "Pr" while others "pr" *)
-by rewrite -Ex_comp_RV; congr `E.
+under eq_bigr do rewrite setIT Pr_setT divr1 -pfwd1E.
+by rewrite -Ex_comp_RV.
 Qed.
 
 Definition cVar (X : {RV P -> R}) F :=
