@@ -722,6 +722,42 @@ Qed.
 
 End conditional_entropy_prop3.
 
+(* Origin: Lemma 3.8 (Functional Condition Removal) in
+  "Information-Theoretically Secure Number-Product Protocol."
+  by Shen et al., 2007.
+  https://doi.org/10.1109/ICMLC.2007.4370663.
+
+  Used when proving information-theoretic security for SMC protocols:
+  "An Approach to Formalize Information-Theoretic Security of
+   Multiparty Computation Protocols" by Weng et al., 2025.
+  http://dx.doi.org/10.1007/978-3-031-95497-9_11.
+*)
+Lemma centropy_RV_contraction {R : realType} (T TX TY TZ : finType) (P : R.-fdist T)
+  (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ) :
+  `H(X | [% Y, f `o Y]) = `H(X | Y).
+Proof.
+(* joint PQ = H P + cond QP *)
+transitivity (`H([% Y, f `o Y], X) - `H(Y, f `o Y)).
+  rewrite chain_rule_RV.
+  by rewrite addrAC subrr add0r.
+(* H(Y,f(Y),X) -> H(X,Y,f(Y))*)
+transitivity (`H([% X, Y], f `o Y) - `H(Y, f `o Y)). 
+  rewrite joint_entropy_RVC.
+  by rewrite joint_entropy_RVA.
+transitivity (`H(X, Y) + `H( f `o Y | [% X, Y]) - `H `p_Y - `H( f `o Y | Y)).
+  rewrite [in LHS]chain_rule_RV.
+  rewrite -[in RHS]addrA -opprD.
+  by rewrite -[in RHS](chain_rule_RV Y (f `o Y)).
+transitivity (`H(X, Y) - `H `p_Y).
+  rewrite (centropy_RV_comp0 Y f) subr0.
+  suff : `H( f `o Y | [% X, Y]) = 0 by move=> ->; rewrite addr0.
+  have -> : f `o Y = (f \o snd) `o [%X, Y] by exact/boolp.funext.
+  exact: centropy_RV_comp0.
+rewrite joint_entropy_RVC.
+rewrite chain_rule_RV.
+by rewrite addrAC subrr add0r.
+Qed.
+
 Section joint_entropy_RV_comp.
 Context {R : realType} (U A B : finType) (P : R.-fdist U).
 Variables (X : {RV P -> A}).
