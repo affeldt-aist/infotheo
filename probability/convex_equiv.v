@@ -19,7 +19,7 @@ Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 (*                   spaces such as [Bonchi 2017]; different axiomatics are   *)
 (*                   possible, they are provided with their equivalences in   *)
 (*                   this file                                                *)
-(*        <&>_d f == notation for the operator of naryConvType                *)
+(*        <&>_d f == notation for the operator of naryStdType                 *)
 (*    a <& p &> b == binary instance of the <&>_ operator                     *)
 (* ```                                                                        *)
 (*                                                                            *)
@@ -320,7 +320,7 @@ Import NaryToBin.
    the same construction (Convn) is already in convex.v with a
    handy notation <|>_ d g *)
 
-(* On Rocq 9.0, this intantiation can be done in Module NaryToBin *)
+(* On Rocq 9.0, this instantiation can be done in Module NaryToBin *)
 HB.instance Definition _ := binconv_mixin T.
 
 (* The LHS is native to T; the RHS is obtained through NaryToBin *)
