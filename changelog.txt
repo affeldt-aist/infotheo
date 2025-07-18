@@ -1,3 +1,15 @@
+* changed
+
+- in convex_equiv.v
+  + removed the large module NaryConvexSpace and
+    put its parts into separate modules;
+    replaced ML-style functors by HB structures and instances
+
+* renamed
+
+- in convex_equiv.v
+  + naryConvType -> naryStdType
+
 * added
 
 - in entropy.v
