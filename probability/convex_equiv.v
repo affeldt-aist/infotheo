@@ -14,12 +14,12 @@ Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 (*   conical spaces. CICM 2020                                                *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*    naryStdType == type that provides a nary operator intended to represent *)
+(*naryStdConvType == type that provides a nary operator intended to represent *)
 (*                   nary convex combinations as found in standard convex     *)
 (*                   spaces such as [Bonchi 2017]; different axiomatics are   *)
 (*                   possible, they are provided with their equivalences in   *)
 (*                   this file                                                *)
-(*        <&>_d f == notation for the operator of naryStdType                 *)
+(*        <&>_d f == notation for the operator of naryStdConvType             *)
 (*    a <& p &> b == binary instance of the <&>_ operator                     *)
 (* ```                                                                        *)
 (*                                                                            *)
@@ -53,22 +53,22 @@ Local Open Scope convex_scope.
 (* isNaryConv is a basic structure carrying just an n-ary convex opreator.
    This is going to be combined with various axioms *)
 
-HB.mixin Record hasNaryOp (R : realType) (T : Type) of Choice T := {
+HB.mixin Record hasNaryConvOp (R : realType) (T : Type) of Choice T := {
   convn : forall n, (R.-fdist 'I_n) -> ('I_n -> T) -> T
 }.
 
-#[short(type=naryOpType)]
-HB.structure Definition NaryOp R := {T of hasNaryOp R T &}.
+#[short(type=naryConvOpType)]
+HB.structure Definition NaryConvOp R := {T of hasNaryConvOp R T &}.
 
 Notation "'<&>_' d f" := (convn _ d f) : convex_scope.
 
 
 (* n-ary axioms we deal with in this file *)
 
-Module NaryLaws.
+Module NaryConvLaws.
 Section axioms.
 
-Variables (R : realType) (T : naryOpType R).
+Variables (R : realType) (T : naryConvOpType R).
 
 Definition ax_bary :=
   forall n m (d : R.-fdist 'I_n) (e : 'I_n -> R.-fdist 'I_m) (g : 'I_m -> T),
@@ -105,48 +105,48 @@ Definition ax_inj_map :=
     injective u -> <&>_d (g \o u) = <&>_(fdistmap u d) g.
 
 End axioms.
-End NaryLaws.
+End NaryConvLaws.
 
-Import NaryLaws.
+Import NaryConvLaws.
 
 
 (* What we refer to the "standard" theory in our CICM paper *)
 
-HB.mixin Record isNaryStd
-  (R : realType) (T : Type) of Choice T & NaryOp R T := {
+HB.mixin Record isNaryStdConv
+  (R : realType) (T : Type) of Choice T & NaryConvOp R T := {
   axbary : ax_bary T;
   axproj : ax_proj T;
 }.
 
-#[short(type=naryStdType)]
-HB.structure Definition NaryStd (R : realType) :=
-  {T of isNaryStd R T &}.
+#[short(type=naryStdConvType)]
+HB.structure Definition NaryStdConv (R : realType) :=
+  {T of isNaryStdConv R T &}.
 
 
 (* Another axiomatization by the map and const laws *)
 
-HB.mixin Record isNaryMapConst
-  (R : realType) (T : Type) of Choice T & NaryOp R T := {
+HB.mixin Record isNaryMapConstConv
+  (R : realType) (T : Type) of Choice T & NaryConvOp R T := {
   axmap : ax_map T;
   axconst : ax_const T;
 }.
 
-#[short(type=naryMapConstType)]
-HB.structure Definition NaryMapConst (R : realType) :=
-  {T of isNaryMapConst R T &}.
+#[short(type=naryMapConstConvType)]
+HB.structure Definition NaryMapConstConv (R : realType) :=
+  {T of isNaryMapConstConv R T &}.
 
 
 (* Beaulieu's axiomaization by the part and idem laws *)
 
-HB.mixin Record isNaryBeaulieu
-  (R : realType) (T : Type) of Choice T & NaryOp R T := {
+HB.mixin Record isNaryBeaulieuConv
+  (R : realType) (T : Type) of Choice T & NaryConvOp R T := {
   axpart : ax_part T;
   axidem : ax_idem T;
 }.
 
-#[short(type=naryBeaulieuType)]
-HB.structure Definition NaryBeaulieu (R : realType) :=
-  {T of isNaryBeaulieu R T &}.
+#[short(type=naryBeaulieuConvType)]
+HB.structure Definition NaryBeaulieuConv (R : realType) :=
+  {T of isNaryBeaulieuConv R T &}.
 
 
 (* First prove mutual definability between convType and naryConvSpace *)
@@ -155,19 +155,19 @@ Module BinToNary.
 Section instances.
 Variables (R : realType) (C : convType R).
 
-HB.instance Definition _ := @hasNaryOp.Build R C (@Convn R C conv).
+HB.instance Definition _ := @hasNaryConvOp.Build R C (@Convn R C conv).
 
 Definition axbary := @Convn_fdist_convn R C.
 Definition axproj := @Convn_fdist1 R C.
 
-HB.instance Definition  _ := @isNaryStd.Build R C axbary axproj.
+HB.instance Definition  _ := @isNaryStdConv.Build R C axbary axproj.
 
 End instances.
 End BinToNary.
 
 Module NaryToBin.
 Section instance.
-Variables (R : realType) (C : naryStdType R).
+Variables (R : realType) (C : naryStdConvType R).
 
 (* axmap, axconst and axidem are consequences of axbary + axproj *)
 Lemma axmap : ax_map C.
@@ -314,7 +314,7 @@ End BinToNaryToBin.
 
 Module NaryToBinToNary.
 Section proof.
-Variables (R : realType) (T : naryStdType R).
+Variables (R : realType) (T : naryStdConvType R).
 Import NaryToBin.
 (* We do not need to import BinToNary here because exactly
    the same construction (Convn) is already in convex.v with a
@@ -369,7 +369,7 @@ End NaryToBinToNary.
 (* axidem is a consequence of axmap + axconst *)
 Module MapConstToIdem.
 Section proof.
-Variables (R : realType) (T : naryMapConstType R).
+Variables (R : realType) (T : naryMapConstConvType R).
 
 Lemma axidem : ax_idem T.
 Proof.
@@ -409,7 +409,7 @@ End MapConstToIdem.
 
 Module StandardToBeaulieu.
 Section instance.
-Variables (R : realType) (T : naryStdType R).
+Variables (R : realType) (T : naryStdConvType R).
 
 Lemma axbarypart : ax_bary_part T.
 Proof. by move=> *; apply: axbary. Qed.
@@ -425,14 +425,14 @@ move=> n m K d g; rewrite axbary; congr (<&>_ _ _).
 by apply: fdist_ext => /= j; rewrite !fdistE -FDistPart.dK.
 Qed.
 
-HB.instance Definition _ := isNaryBeaulieu.Build R T axpart axidem.
+HB.instance Definition _ := isNaryBeaulieuConv.Build R T axpart axidem.
 
 End instance.
 End StandardToBeaulieu.
 
 Module BeaulieuToStandard.
 Section instance.
-Variables (R : realType) (T : naryBeaulieuType R).
+Variables (R : realType) (T : naryBeaulieuConvType R).
 
 Lemma axproj : ax_proj T.
 Proof. move=> *; apply: axidem => j; by rewrite supp_fdist1 inE => /eqP ->. Qed.
@@ -635,7 +635,7 @@ under eq_bigr do rewrite fdist_prodE /=.
 by rewrite -!mulrA mulVf ?mulr1.
 Qed.
 
-HB.instance Definition _ := isNaryStd.Build R T axbary axproj.
+HB.instance Definition _ := isNaryStdConv.Build R T axbary axproj.
 
 End instance.
 End BeaulieuToStandard.

@@ -8,7 +8,7 @@
 * renamed
 
 - in convex_equiv.v
-  + naryConvType -> naryStdType
+  + naryConvType -> naryStdConvType
 
 * added
 
