@@ -273,7 +273,12 @@ Qed.
 Lemma binconvmm p a : binconv p a a = a.
 Proof. by apply: axidem => i; case: ifP. Qed.
 
+(*
+(* This instantiation breaks the compilation of the next module on Coq 8.20 *)
 HB.instance Definition _ := @isConvexSpace.Build R C binconv
+  binconv1 binconvmm binconvC binconvA.
+*)
+Definition binconv_mixin := @isConvexSpace.Build R C binconv
   binconv1 binconvmm binconvC binconvA.
 
 End instance.
@@ -314,6 +319,9 @@ Import NaryToBin.
 (* We do not need to import BinToNary here because exactly
    the same construction (Convn) is already in convex.v with a
    handy notation <|>_ d g *)
+
+(* On Rocq 9.0, this intantiation can be done in Module NaryToBin *)
+HB.instance Definition _ := binconv_mixin T.
 
 (* The LHS is native to T; the RHS is obtained through NaryToBin *)
 Lemma equiv_convn n (d : R.-fdist 'I_n) (g : 'I_n -> T) : <&>_d g = <|>_d g.
