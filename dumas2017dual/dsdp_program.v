@@ -306,7 +306,7 @@ have Hpr : `Pr[ Z = c | [%X, E] = (a, b)] = `Pr[ Z = c | X = a].
   have H:=(inde_RV2_cinde (X:=Z)(Y:=E)(Z:=X) HindeZ_X).
   pose proof XE_neq0 as EX_neq0.
   move/(_ a b) in EX_neq0. (* Specialize forall...*)
-  rewrite pr_eq_pairC in EX_neq0.
+  rewrite pfwd1_pairC in EX_neq0.
   have H2:= (cinde_alt c H EX_neq0).
   rewrite cpr_eq_pairCr.
   exact: H2.
@@ -690,8 +690,8 @@ transitivity (`H(v | [%alice_traces, alice_view])).
   have -> : alice_view = alice_view_values_from_trace `o alice_traces.
     by apply: boolp.funext => x /= ;
        rewrite alice_traces_from_viewP /comp_RV alice_view_values_from_traceP.
-  by rewrite scp.fun_cond_removal.
-by rewrite alice_traces_from_viewP centropyC scp.fun_cond_removal.
+  by rewrite centropy_RV_contraction.
+by rewrite alice_traces_from_viewP centropyC centropy_RV_contraction.
 Qed.
 
 Let alice_input_view := [%dk_a, v1, u1, u2, u3, r2, r3].
@@ -874,13 +874,13 @@ pose h' := (fun o : (Alice.-key Dec msg * msg *
   msg * msg * msg * msg * msg * msg) =>
   let '(dk_a, v1, u1, u2, u3, r2, r3, s) := o in
   (dk_a, s, v1, u1, u2, u3, r2, r3)).
-rewrite -(scp.fun_cond_removal _ _ h).
+rewrite -(centropy_RV_contraction _ _ h).
 have ->: `H( v2 | [% dk_a, s, v1, u1, u2, u3, r2,
   r3, h `o [% dk_a, s, v1, u1, u2, u3, r2, r3]]) =
   `H( v2 | [% dk_a, s, v1, u1, u2, u3, r2, r3,
   [% dk_a, v1, u1, u2, u3, r2, r3, s]]).
   by [].
-rewrite centropyC (scp.fun_cond_removal _ _ h') -/alice_input_view.
+rewrite centropyC (centropy_RV_contraction _ _ h') -/alice_input_view.
 (* From the cond_entropy to the independence goal via mutual info *)
 move => H2.
 have: `I(v2;[%alice_input_view, s]) = 0.
