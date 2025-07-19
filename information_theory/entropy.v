@@ -27,11 +27,6 @@ Require Import fdist jfdist_cond proba binary_entropy_function divergence.
 (*              mutual_info PQ := D(PQ || P `x Q)                             *)
 (*                   `I(X ; Y) == mutual information between RVs              *)
 (*        cond_mutual_info PQR == conditional mutual information              *)
-(*        cPr_centropy_RV_comp == given a conditional probability             *)
-(*                                removal lemma P(X|(Y, Z))->P(X | Y),        *)
-(*                                shows that with some conditions met,        *)
-(*                                there exists a conditional entropy          *)
-(*                                removal lemma H(X | (Y, Z))->H(X | Y)       *)
 (*       cond_relative_entropy == TODO                                        *)
 (*                markov_chain == TODO                                        *)
 (* ```                                                                        *)
@@ -510,7 +505,7 @@ Section cPr_centropy_RV_comp.
 Variable (f : B -> C).
 
 Lemma cPr_centropy1_RV_comp y :
-  (forall x, `Pr[ X = x | Y = y ] = `Pr[ X = x | (f `o Y) = f y ]) ->
+  (forall x, `Pr[ X = x | (f `o Y) = f y ] = `Pr[ X = x | Y = y ]) ->
   `H[ X | (f `o Y) = f y ] = `H[ X | Y = y ].
 Proof.
 move=> H.
@@ -520,9 +515,11 @@ apply: eq_bigr => a _.
 by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_in1 H.
 Qed.
 
+(* conditional probability removal P(X|(Y,Z))->P(X|Y) implies *)
+(* conditional entropy removal H(X|(Y,Z))->H(X|Y) *)
 Lemma cPr_centropy_RV_comp :
   (forall x y, `Pr[ Y = y ] != 0 ->
-     `Pr[ X = x | Y = y ] = `Pr[ X = x | (f `o Y) = f y ]) ->
+     `Pr[ X = x | (f `o Y) = f y ] = `Pr[ X = x | Y = y ]) ->
   `H( X | f `o Y ) = `H( X | Y ).
 Proof.
 move=> Hremoval.
