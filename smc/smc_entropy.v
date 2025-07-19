@@ -70,7 +70,7 @@ Variable n : nat.
 Lemma pr_eq_diag (U : eqType) (X : {RV P -> U}) (x : U) :
   `Pr[ [% X, X] = (x, x) ] = `Pr[ X = x ].
 Proof.
-by rewrite !pr_eqE /Pr; apply: eq_bigl=> a; rewrite !inE xpair_eqE andbb.
+by rewrite !pfwd1E /Pr; apply: eq_bigl=> a; rewrite !inE xpair_eqE andbb.
 (* After unfolding Pr use eq_bigl to focus on the preim and pred,
    use inE to keep only the pred and as booleaning expression,
    use xpair_eqE to separate the RV2 to two conditions,
@@ -106,35 +106,10 @@ Lemma dist_inde_rv_prod (T TX TY : finType) (P : R.-fdist T)
 Proof.
 move=> iXY.
 apply: fdist_ext => -[x y] /=.
-by rewrite fdist_prodE/= -!pr_eqE' iXY.
+by rewrite fdist_prodE/= !dist_of_RVE iXY.
 Qed.
 
 End inde_RV.
-
-Section entropy_with_indeRV.
-Context {R : realType}.
-Variables (T TX TY TZ : finType).
-Variable P : R.-fdist T.
-
-(* NOT USED
-Lemma inde_rv_alt (X : {RV P -> TX}) (Y : {RV P -> TY}):
-  inde_rv X Y <-> forall x y,`p_ [%X, Y] (x, y) = `p_ X x * `p_ Y y.
-Proof. by split=> + x y => /(_ x y); rewrite !pr_eqE'. Qed.
-*)
-
-Lemma joint_entropy_inde_RV (X : {RV P -> TX}) (Y : {RV P -> TY}):
-  P |= X _|_ Y -> `H(X, Y) = `H (`p_X) + `H (`p_Y).
-Proof.
-rewrite inde_RV_sym=> iYX.
-rewrite -/(`H(_, _)) chain_rule_RV; congr +%R.
-rewrite /centropy_RV.
-rewrite dist_inde_rv_prod//.
-rewrite condentropy_indep.
-  by rewrite fdist_prod1.
-by rewrite fdist_prod1 -[in RHS]dist_inde_rv_prod// snd_RV2.
-Qed.
-
-End entropy_with_indeRV.
 
 Section cpr_centropy1_RV.
 Context {R : realType}.
@@ -150,17 +125,17 @@ move=> Y23neq0.
 have Y2neq0 : `Pr[Y2 = y2] != 0.
   move: Y23neq0.
   contra=> ?.
-  exact: pr_eq_domin_RV2.
+  exact: pfwd1_domin_RV2.
 have Y3neq0 : `Pr[Y3 = y3] != 0.
   move: Y23neq0.
   contra=> ?.
-  exact: pr_eq_domin_RV1.
+  exact: pfwd1_domin_RV1.
 move=> inde123.
 have inde23 : P |= Y2 _|_ Y3.
   change Y2 with (snd \o [%Y1, Y2]).
   change Y3 with (idfun \o Y3).
   exact: inde_RV_comp.
-rewrite !cpr_eqE pr_eq_pairA inde123 inde23.
+rewrite !cpr_eqE pfwd1_pairA inde123 inde23.
 by field; apply/andP; split.
 Qed.
 
@@ -201,8 +176,8 @@ transitivity (\sum_a f a.1 a.2).
   apply/esym/cpr_centropy1_RV => y1.
   by rewrite Hremoval// Hinde.
 rewrite -pair_bigA /=; apply: eq_bigr => y2 _.
-rewrite snd_RV2 -pr_eqE' -/(`H[_ | _ = _]).
-by rewrite -big_distrl/= -big_distrr/= pr_eq1 mulr1.
+rewrite snd_RV2 dist_of_RVE -/(`H[_ | _ = _]).
+by rewrite -big_distrl/= -big_distrr/= sum_pfwd1 mulr1.
 Qed.
 
 Section centropyf.
@@ -236,8 +211,8 @@ transitivity (\sum_(i | f i == y3) `Pr[ Y4 = i ] * `H[ Y1 | (f `o Y4) = y3 ]).
   by rewrite  -y4y3 cpr_centropy1_RV'.
 rewrite -big_distrl /=.
 congr (_ * _).
-rewrite pr_eqE /Pr.
-under eq_bigr do rewrite pr_eqE /Pr.
+rewrite pfwd1E /Pr.
+under eq_bigr do rewrite pfwd1E /Pr.
 rewrite (partition_big Y4 (fun y4 => f y4 == y3)) //=.
   apply eq_bigr => y4 y4y3.
   apply eq_bigl => a /=.
@@ -262,40 +237,6 @@ exact: H.
 Qed.
 
 End cpr_cond_entropy_proof.
-
-Section fun_centropy_proof.
-Context {R : realType}.
-Variables (T TX TY TZ : finType).
-Variable P : R.-fdist T.
-Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (f : TY -> TZ).
-Let Z := f `o Y.
-
-Local Open Scope ring_scope.
-Variable P' : R.-fdist (TX * TY * TZ).
-
-Lemma cPr_centropy_compE : `H(X | [% Y, f `o Y]) = `H(X | Y).
-Proof.
-transitivity (`H([% Y, Z], X) - `H(Y, Z)). (* joint PQ = H P + cond QP*)
-  rewrite chain_rule_RV.
-  by rewrite addrAC subrr add0r.
-transitivity (`H([% X, Y], Z) - `H(Y, Z)). (* H(Y,f(Y),X) -> H(X,Y,f(Y))*)
-  rewrite joint_entropy_RVC.
-  by rewrite joint_entropy_RVA.
-transitivity (`H(X, Y) + `H( Z | [% X, Y]) - `H `p_Y - `H( Z | Y)).
-  rewrite [in LHS]chain_rule_RV.
-  rewrite -[in RHS]addrA -opprD.
-  by rewrite -[in RHS](chain_rule_RV Y Z).
-transitivity (`H(X, Y) - `H `p_Y).
-  rewrite (centropy_RV_comp0 Y f) subr0.
-  suff : `H( Z | [% X, Y]) = 0 by move=> ->; rewrite addr0.
-  have -> : Z = (f \o snd) `o [%X, Y] by exact/boolp.funext.
-  exact: centropy_RV_comp0.
-rewrite joint_entropy_RVC.
-rewrite chain_rule_RV.
-by rewrite addrAC subrr add0r.
-Qed.
-
-End fun_centropy_proof.
 
 Section cinde_RV_comp_removal.
 Context {R : realType}.
@@ -345,10 +286,10 @@ case: ifPn => [/eqP <-|Hneq].
   rewrite pr_in1.
   pose f (p : TX1 * TX2) := (op p.1 p.2, p.1, p.2).
   have f_inj : injective f by move => [x1 x2] [? ?] [] _ -> ->.
-  by rewrite (pr_eq_comp _ _ f_inj).
+  by rewrite -(pfwd1_comp _ _ f_inj).
 rewrite 2!setX1.
 rewrite pr_in1.
-rewrite pr_eq0//.
+rewrite pfwd1_eq0//.
 apply: contra Hneq.
 by rewrite fin_img_imset => /imsetP[a0 _ [] -> -> ->].
 Qed.
@@ -371,10 +312,10 @@ case: ifPn => [/eqP <-|Hneq].
   pose f (p:TX1 * TX2 * TX3) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2).
   have f_inj : injective f.
      by move => [[x1 x2] ?] [[? ?] ?] [] _ -> -> -> /=.
-  by rewrite (pr_eq_comp _ _ f_inj ).
+  by rewrite -(pfwd1_comp _ _ f_inj ).
 rewrite 2!setX1.
 rewrite pr_in1.
-rewrite pr_eq0//.
+rewrite pfwd1_eq0//.
 apply: contra Hneq.
 by rewrite fin_img_imset => /imsetP[a0 _ [] -> _ -> ->].
 Qed.
@@ -570,7 +511,7 @@ Proof. exact: boolp.funext. Qed.
 
 Lemma eqn2_proof:
   `H(x2|[%[%x1, s1, r1, x2', t], y1]) = `H(x2|[%x1, s1, r1, x2', t]).
-Proof. by rewrite y1_fcomp; exact: cPr_centropy_compE. Qed.
+Proof. by rewrite y1_fcomp; exact: centropy_RV_contraction. Qed.
 
 End eqn2_proof.
 
@@ -787,7 +728,7 @@ Lemma eqn_4_1_proof : `H(x2 | [%x1, s1, r1]) = `H `p_ x2.
 Proof.
 transitivity (`H([%x1, s1, r1], x2) - `H([%x1, s1], r1)).
   by rewrite chain_rule_RV addrAC subrr add0r.
-rewrite joint_entropy_inde_RV.
+rewrite inde_RV_joint_entropyE.
   by rewrite addrAC subrr add0r.
 exact: x2_indep.
 Qed.
@@ -895,7 +836,7 @@ rewrite -eq_W1_RV -eq_W2_RV -eq_Wm_RV.
 have Ha := cpr_centropy (Y2:=W2) (Y3:=Wm) _.
 apply Ha => w w2 wm Hneq0.
 simpl in *.
-rewrite pr_eq_pairC in Hneq0.
+rewrite pfwd1_pairC in Hneq0.
 have Hb := @cinde_alt _ _ _ _ _ _ W1 Wm W2 w wm w2 W1WmW2_cinde Hneq0.
 rewrite -/W1.
 rewrite cpr_eq_pairCr.
@@ -956,7 +897,7 @@ rewrite -eq_W1_RV -eq_W2_RV -eq_Wm_RV.
 apply: cpr_centropy.
 move => w w2 wm Hneq0.
 simpl in *.
-rewrite pr_eq_pairC in Hneq0.
+rewrite pfwd1_pairC in Hneq0.
 have Hb := @cinde_alt _ _ _ _ _ _ W1 Wm W2 w wm w2 W1WmW2_cinde Hneq0.
 rewrite -/W1.
 rewrite cpr_eq_pairCr.
@@ -1052,7 +993,7 @@ Lemma eqn_8_1_proof : `H(x1 | [%x2, s2]) = `H `p_ x1.
 Proof.
 transitivity (`H([%x2, s2], x1) - `H(x2, s2)).
   by rewrite chain_rule_RV addrAC subrr add0r.
-rewrite joint_entropy_inde_RV.
+rewrite inde_RV_joint_entropyE.
   by rewrite addrAC subrr add0r.
 exact: x2s2_x1_indep.
 Qed.

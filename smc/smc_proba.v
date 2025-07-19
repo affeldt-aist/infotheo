@@ -76,7 +76,7 @@ rewrite [LHS]/Pr; under eq_bigr=> *.
 rewrite [in RHS]/Pr big_distrl /=.
 under [RHS]eq_bigr=> i ?.
   rewrite big_distrr /=.
-  under eq_bigr do rewrite -!pr_eqE' -H pr_eqE'.
+  under eq_bigr do rewrite !dist_of_RVE -H -dist_of_RVE.
   over.
 rewrite -big_setX; apply: eq_bigr=> *.
 by rewrite fdistmapE.
@@ -117,7 +117,7 @@ exact: inde_RV_comp.
 Qed.
 
 Lemma inde_unit_RV (TA : finType) (X : {RV P -> TA}) : P |= unit_RV P _|_ X.
-Proof. by move=> [] b; rewrite pr_eq_unit mul1r !pr_eqE -preimg_set1. Qed.
+Proof. by move=> [] b; rewrite pr_eq_unit mul1r !pfwd1E -preimg_set1. Qed.
 
 Lemma inde_RV_unit (TA : finType) (X : {RV P -> TA}) : P |= X _|_ unit_RV P.
 Proof. exact/inde_RV_sym/inde_unit_RV. Qed.
@@ -138,7 +138,7 @@ Qed.
 Lemma cpr_prd_unit_RV : X _|_ Y | [% unit_RV P, Z] -> X _|_ Y | Z.
 Proof.
 move=> + a b c => /(_ a b (tt, c))/=.
-rewrite !(cpr_eq_pairCr _ (unit_RV P)) !cpr_eqE !pr_eq_pairA.
+rewrite !(cpr_eq_pairCr _ (unit_RV P)) !cpr_eqE !pfwd1_pairA.
 by rewrite !inde_RV_unit pr_eq_unit !mulr1.
 Qed.
 
@@ -156,7 +156,7 @@ Proof.
 rewrite cpr_eqE.
 rewrite -mulrA.
 have [Y0|?] := eqVneq `Pr[ Y = b ] 0.
-  by rewrite Y0 !mulr0 pr_eq_domin_RV1.
+  by rewrite Y0 !mulr0 pfwd1_domin_RV1.
 by rewrite mulVf// mulr1.
 Qed.
 
@@ -165,7 +165,7 @@ Lemma inde_rv_cprP : P |= X _|_ Y <->
 Proof.
 split=> + x y => /(_ x y); rewrite cpr_eqE; first by move=> -> ?; field.
 have[Hy _ |Hy <- //] := eqVneq `Pr[ Y = y ] 0; last by field.
-by rewrite pr_eq_domin_RV1 Hy// mulr0.
+by rewrite pfwd1_domin_RV1 Hy// mulr0.
 Qed.
 
 Lemma cinde_rv_cprP : P |= X _|_ Y | Z <->
@@ -199,7 +199,7 @@ rewrite /inde_RV => [[x y]] z.
 rewrite /inde_RV in H1.
 rewrite (H1 x y).
 rewrite /inde_RV in H2.
-by rewrite -mulrA -[in RHS](H2 y z) -Hx pr_eq_pairA.
+by rewrite -mulrA -[in RHS](H2 y z) -Hx pfwd1_pairA.
 Qed.
 
 End more_indep_lemmas.
@@ -231,7 +231,7 @@ Lemma pr_add_eqE' i :
 Proof.
 move=> XY_indep.
 rewrite -pr_in1 (reasoning_by_cases _ X); apply: eq_bigr=> a _.
-rewrite setX1 pr_in1 -XY_indep !pr_eqE /Pr; apply: eq_bigl=> t /=.
+rewrite setX1 pr_in1 -XY_indep !pfwd1E /Pr; apply: eq_bigl=> t /=.
 rewrite !inE/= !xpair_eqE/= /add_RV/= andbC.
 apply: andb_id2l=> /eqP->.
 by rewrite [RHS]eq_sym subr_eq eq_sym addrC.
@@ -254,7 +254,7 @@ Lemma pr_add_eqE i :
 Proof.
 move/(pr_add_eqE' i)->; apply/esym.
 rewrite big_fin_img/= (bigID (mem (fin_img X)))/= -[RHS]addr0.
-by congr +%R; apply: big1=> ? H; rewrite (pr_eq0 H) mul0r.
+by congr +%R; apply: big1=> ? H; rewrite (pfwd1_eq0 H) mul0r.
 Qed.
 
 End add_RV.
@@ -279,9 +279,9 @@ Definition neg_RV : {RV P -> A} := \0 \- X.
 Lemma add_RV_unif : `p_ (add_RV X Y) = fdist_uniform card_A .
 Proof.
 apply: fdist_ext=> /= i.
-rewrite fdist_uniformE -pr_eqE' pr_add_eqE; last exact: XY_indep.
-under eq_bigr do rewrite (pr_eqE' Y) pY_unif fdist_uniformE.
-by rewrite -big_distrl pr_eq1/= div1r.
+rewrite fdist_uniformE dist_of_RVE pr_add_eqE; last exact: XY_indep.
+under eq_bigr do rewrite -(dist_of_RVE Y) pY_unif fdist_uniformE.
+by rewrite -big_distrl sum_pfwd1 /= div1r.
 Qed.
 
 End lemma_3_4.
@@ -302,7 +302,7 @@ Variable (X' : {RV (fdist_cond E0) -> TX}).
 Hypothesis EX' : X' = X :> (T -> TX).
 
 Lemma Pr_fdist_cond_RV x : `Pr[ X' = x ] = `Pr[ X = x | Y = y ].
-Proof. by rewrite pr_eqE_finType Pr_fdist_cond cPr_eq_finType EX'. Qed.
+Proof. by rewrite pfwd1EfinType Pr_fdist_cond cPr_eq_finType EX'. Qed.
 
 Hypothesis Z_XY_indep : P |= Z _|_ [%X, Y].
 
@@ -311,9 +311,9 @@ Proof.
 move: Z_XY_indep => /cinde_RV_unit /weak_union.
 rewrite /cinde_RV /= => H.
 move => /= x z.
-rewrite mulrC pr_eq_pairC.
+rewrite mulrC pfwd1_pairC.
 have := H z x (tt,y).
-by rewrite !pr_eqE_finType !Pr_fdist_cond !cPr_eq_finType preimg_tt.
+by rewrite !pfwd1EfinType !Pr_fdist_cond !cPr_eq_finType preimg_tt.
 Qed.
 
 End fdist_cond_prop.
@@ -356,16 +356,16 @@ under eq_bigr => k _.
   rewrite (Pr_fdist_cond_RV (X:=Z)) //.
   rewrite [X in _ * X]cpr_eqE.
   rewrite Z_Y_indep.
-  rewrite -[(_/_)]mulrA mulfV; last by rewrite pr_eqE_finType.
-  rewrite mulr1 [X in _ * X]pr_eqE' pZ_unif fdist_uniformE /=.
+  rewrite -[(_/_)]mulrA mulfV; last by rewrite pfwd1EfinType.
+  rewrite mulr1 -[X in _ * X]dist_of_RVE pZ_unif fdist_uniformE /=.
   over.
 (* Pull the const part `Pr[ Y = (i - k) ] from the \sum_k *)
 rewrite -big_distrl /=.
-rewrite /X' cPr_1 ?mul1r//; last by rewrite pr_eqE_finType.
-rewrite pr_eqE' (add_RV_unif X Z (card_TZ)) //.
+rewrite /X' cPr_1 ?mul1r//; last by rewrite pfwd1EfinType.
+rewrite -dist_of_RVE (add_RV_unif X Z (card_TZ)) //.
 - by rewrite fdist_uniformE.
 - rewrite /inde_RV /= => /= z0 z1.
-  by rewrite pr_eq_pairC/= Z_X_indep/= mulrC.
+  by rewrite pfwd1_pairC/= Z_X_indep/= mulrC.
 Qed.
 
 End iy.
@@ -374,7 +374,7 @@ Lemma lemma_3_5' : P |= XZ _|_ Y.
 Proof.
 apply/inde_rv_cprP  => /= x y y0.
 rewrite lemma_3_5//.
-by rewrite -pr_eqE_finType.
+by rewrite -pfwd1EfinType.
 Qed.
 
 End lemma_3_5.
@@ -440,7 +440,7 @@ Theorem mc_removal_pr y1 y2 ymz:
   `Pr[Y1 = y1|[%Y2, YmZ] = (y2, ymz)] = `Pr[Y1 = y1 | Y2 = y2].
 Proof.
 have := @lemma_3_6 _ _ _ _ _ _ n ymz y1 y2 Y2 Y1 Ym Z card_TZ.
-rewrite pr_eq_pairC.
+rewrite pfwd1_pairC.
 apply.
   exact: pZ_unif.
 rewrite (_ : [%_ , _] = Y) //.
