@@ -543,7 +543,7 @@ HB.end.
    the binary axiomatization formalized in convex.v.
    We prove this equivalence in two steps.
 
-   First prove mutual definability between convType and naryConvSpace *)
+   First prove mutual definability between convType and naryConvType *)
 
 Module BinToNary.
 Section instances.
