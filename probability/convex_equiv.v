@@ -474,9 +474,10 @@ Import NaryConvexSpaceTheory.
    - ax_part + ax_idem (Beaulieu)
    - ax_bary + ax_map + ax_const
    - ax_barypart + ax_idem
-   It is already shown (in Module NaryConvexSpace Theory) that Bonchi subsumes
-   the other three.  We prove the remaining equivalences by providing
-   Hierarchy-Builder factories for the others.
+   This has been implicitly shown as logical implications in Module NaryLaws.
+   Module NaryConvexSpaceTheory says that Bonchi subsumes the other three.
+   We now exhibit the remaining equivalences by providing Hierarchy-Builder
+   factories for the others.
 
    TODO: show that (ax_bary + ax_const) and (ax_part + ax_proj) are weaker.
  *)
