@@ -3,12 +3,12 @@
 - in convex_equiv.v
   + removed the large module NaryConvexSpace and
     put its parts into separate modules;
-    replaced ML-style functors by HB structures and instances
+    replaced ML-style functors by HB structures and factories.
 
-* renamed
+* added
 
 - in convex_equiv.v
-  + naryConvType -> naryStdConvType
+  + naryConvOpType
 
 * added
 
