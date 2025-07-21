@@ -745,12 +745,9 @@ HB.instance Definition _ := NaryConvOp.on T.
 HB.instance Definition A := isNaryBeaulieuConvexSpace.Build R T axpart axidem.
 
 (* `Succeed Check T : naryConvType R.` prints noise. Definition does not. *)
-Succeed Definition test := T = T :> naryConvType R.
-(* Fail Check T : convType R. *)
-Fail Definition    test := T = T :> convType R.
-(* Succeed Check (T : naryConvType R) : convType R. *)
-Succeed Definition test :=
-  (T : naryConvType R) = (T : naryConvType R) :> convType R.
+Succeed Definition test := T : naryConvType R.
+Fail Definition    test := T : convType R.
+Succeed Definition test := (T : naryConvType R) : convType R.
 
 End test.
 End test.
