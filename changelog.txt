@@ -4,6 +4,16 @@
   + inde_RVP, inde_RV_comp, RV_op,
     pfwd1_RV_op, pfwd1_RV2_op
 
+- in fdist.v
+  + lemmas fdist_card_prednK, fdist1_inj, fdist1C,
+           fdistmap1, fdistmap_eq0, fdistmap_neq0,
+	   fdist_uniform_eq1P
+
+- in jfdist_cond.v
+  + lemmas fdistpart1, fdistpart_unif, fdistpart1_unif,
+           fdistpart_eq1, fdistpart1_eq1P, fdistpart_eq0,
+	   fdistpart_neq0
+
 * renamed
 
 - in proba.v
