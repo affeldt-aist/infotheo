@@ -452,7 +452,7 @@ move=> c; rewrite fdist_uniformE invr_eq0 pnatr_eq0.
 by case domain_non_empty => x' ->.
 Qed.
 
-Lemma fdist_uniform_eq1P (A : finType) (a : A) n (cardA : #|A| = n.+1) :
+Lemma fdist_uniform_eq1 (A : finType) (a : A) n (cardA : #|A| = n.+1) :
   (fdist_uniform cardA = fdist1 a :> R.-fdist _) ->  #|A| = 1.
 Proof.
 move/eqP=> H; apply/eqP; move: H; apply: contraLR=> A1.
