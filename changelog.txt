@@ -16,7 +16,7 @@
     ax_idem_of_map_const, ax_barypart_of_bary,
     ax_part_of_bary, ax_proj_of_idem,
     ax_barypart_of_part_idem, ax_injmap_of_barypart_idem,
-    ax_injmap_of_ax_part_idem, ax_bary_of_injmap_barypart_idem,
+    ax_injmap_of_part_idem, ax_bary_of_injmap_barypart_idem,
     ax_bary_of_part_idem
 
 * added

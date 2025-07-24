@@ -330,7 +330,7 @@ rewrite -axbarypart.
   by rewrite eqtype.inj_eq //; exact: negbTE.
 Qed.
 
-Corollary ax_injmap_of_ax_part_idem : ax_part T -> ax_idem T -> ax_injmap T.
+Corollary ax_injmap_of_part_idem : ax_part T -> ax_idem T -> ax_injmap T.
 Proof.
 move=> axpart axidem.
 apply: ax_injmap_of_barypart_idem=> //.
@@ -416,7 +416,7 @@ Corollary ax_bary_of_part_idem : ax_part T -> ax_idem T -> ax_bary T.
 Proof.
 move=> axpart axidem.
 apply: ax_bary_of_injmap_barypart_idem => //.
-  exact: ax_injmap_of_ax_part_idem.
+  exact: ax_injmap_of_part_idem.
 exact: ax_barypart_of_part_idem.
 Qed.
 
@@ -461,7 +461,7 @@ Lemma axbarypart : ax_barypart T.
 Proof. exact/ax_barypart_of_bary/axbary. Qed.
 
 Lemma axinjmap : ax_injmap T.
-Proof. apply: ax_injmap_of_ax_part_idem; [exact: axpart | exact: axidem]. Qed.
+Proof. apply: ax_injmap_of_part_idem; [exact: axpart | exact: axidem]. Qed.
 
 End lemmas.
 End NaryConvexSpaceTheory.
