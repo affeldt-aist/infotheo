@@ -566,7 +566,7 @@ Lemma fdistpart1_eq1 (n m : nat) (f : 'I_m -> 'I_n) (i j : 'I_m) k :
   (FDistPart.d f (fdist1 i) k = fdist1 j :> R.-fdist 'I_m) -> i = j.
 Proof.
 have[]:= eqVneq k (f i); first by move/fdistpart1 -> => /fdist1_inj.
-move/fdistpart1_unif -> => /fdist_uniform_eq1P.
+move/fdistpart1_unif -> => /fdist_uniform_eq1.
 rewrite card_ord => m1; move: i j; rewrite m1 => i j.
 by rewrite (ord1 i) (ord1 j).
 Qed.

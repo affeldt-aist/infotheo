@@ -5,14 +5,18 @@
     pfwd1_RV_op, pfwd1_RV2_op
 
 - in fdist.v
-  + lemmas fdist_card_prednK, fdist1_inj, fdist1C,
-           fdistmap1, fdistmap_eq0, fdistmap_neq0,
-	   fdist_uniform_eq1P
+  + fdist_card_prednK, fdist1_inj, fdist1C,
+    fdistmap1, fdistmap_eq0, fdistmap_neq0,
+    fdist_uniform_eq1
 
 - in jfdist_cond.v
-  + lemmas fdistpart1, fdistpart_unif, fdistpart1_unif,
-           fdistpart_eq1, fdistpart1_eq1P, fdistpart_eq0,
-	   fdistpart_neq0
+  + fdistpart1, fdistpart_unif, fdistpart1_unif,
+    fdistpart_eq1, fdistpart1_eq1P, fdistpart_eq0,
+    fdistpart_neq0
+
+- in convex_equiv.v
+  + isNaryProjPartConstConvexSpace,
+    ax_idem_of_proj_part_const
 
 * renamed
 
