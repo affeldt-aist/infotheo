@@ -406,6 +406,10 @@ apply: ax_bary_of_injmap_barypart_idem => //.
 exact: ax_barypart_of_part_idem.
 Qed.
 
+(* Copied from Corelib of Rocq 9.0 for compatibility with Coq 8.20 *)
+Local Definition sumbool_of_bool (b : bool) : {b = true} + {b = false} :=
+  if b return {b = true} + {b = false} then left erefl else right erefl.
+
 (* Added on [2025-Jul-22]; a new combination? *)
 Lemma ax_idem_of_proj_part_const : ax_proj T -> ax_part T -> ax_const T -> ax_idem T.
 Proof.
