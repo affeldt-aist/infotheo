@@ -3,7 +3,8 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm matrix.
 From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import functions Rstruct reals.
+From mathcomp Require Import finmap.
 Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 
 (**md**************************************************************************)
@@ -19,7 +20,7 @@ Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 (* - ones with an n-ary operator                                              *)
 (*   + Bonchi's axiomatization   [Bonchi 2017]                                *)
 (*   + Beaulieu's axiomatization [Beaulieu PhD 2008]                          *)
-(*   + (and two others)                                                       *)
+(*   + (and three others)                                                     *)
 (*                                                                            *)
 (* The n-ary laws and their logical dependencies are listed in                *)
 (* `Module NaryConvLaws`.                                                     *)
@@ -37,8 +38,8 @@ Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 (*                == proofs that an naryConvType satisfies all the laws       *)
 (* isNaryBeaulieuConvexSpace                                                  *)
 (*                == HB factory for Beaulieu's axiomatization                 *)
-(* isNaryBaryMapConstConvexSpace, isNaryBarypartIdemConvexSpace               *)
-(*                == HB factory for two other combinations of the laws        *)
+(* isNary( BaryMapConst | BarypartIdem | ProjPartConst )ConvexSpace           *)
+(*                == HB factories for three other combinations of the laws    *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* The equivalence between `convType` and `naryConvType` is given as          *)
@@ -53,6 +54,9 @@ Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 (* ```                                                                        *)
 (* The instance in `NaryToBin` is exported, i.e.,                             *)
 (* `Check (T : naryConvType R) : convType R.` succeeds.                       *)
+(*                                                                            *)
+(* Some combinations of the laws are strictly weaker.  They are illustrated   *)
+(* in modules `counterexamples_*` at the end of this file.                    *)
 (******************************************************************************)
 
 Reserved Notation "'<&>_' d f" (at level 36, f at level 36, d at level 0,
@@ -61,13 +65,14 @@ Reserved Notation "x <& p &> y" (format "x  <& p &>  y", at level 49).
 
 Set Implicit Arguments.
 Unset Strict Implicit.
-Import Prenex Implicits.
+Unset Printing Implicit Defensive.
 
 Import GRing.Theory Num.Theory.
 
 Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
+Local Open Scope fset_scope.
 
 (* naryConvOpType is a basic structure carrying just an n-ary convex opreator.
    (This is actually a "structure" in the model-theoretic sense.)
@@ -401,6 +406,46 @@ apply: ax_bary_of_injmap_barypart_idem => //.
 exact: ax_barypart_of_part_idem.
 Qed.
 
+(* Added on [2025-Jul-22]; a new combination? *)
+Lemma ax_idem_of_proj_part_const : ax_proj T -> ax_part T -> ax_const T -> ax_idem T.
+Proof.
+move=> axproj axpart axconst.
+move=> a n d g gia.
+have[e esd]:= fdist_supp_mem d.
+pose supp := [fset i in fdist_supp d].
+have es: e \in supp by rewrite inE.
+pose m := #|` supp |.
+pose K' (i : 'I_n) : supp :=
+  match sumbool_of_bool (i \in supp) with
+  | left suppP => [` suppP]
+  | right _ => [` es]
+  end.
+have im (x : 'I_n) (xs : x \in supp) := eq_rect _ _ xs _ (esym (index_mem _ _)).
+pose os (s : supp) : 'I_m := Ordinal (im (\val s) (valP s)).
+pose K := os \o K'.
+have K_nth (i : 'I_m) : K (nth e supp i) = i.
+  apply/val_inj; rewrite /K /os /K'/=.
+  case: sumbool_of_bool; first by move=> ? /=; rewrite index_uniq// fset_uniq.
+  by rewrite mem_nth.
+rewrite (axpart _ _ K).
+under [F in <&>_ _ F]funext=> i.
+  rewrite [d in <&>_d _](_ : _ = fdist1 (nth e supp i)).
+    rewrite axproj gia; first by over.
+    suff: nth e supp i \in supp by rewrite inE.
+    by apply: mem_nth; rewrite -/m.
+  apply: fdistpart_eq1; apply/andP; split; last by rewrite K_nth.
+  rewrite finset.eqEsubset; apply/andP.
+  split; apply/fintype.subsetP=> j /[!inE]/=.
+    case/andP => dj0 /eqP.
+    rewrite /K /os /K' => /(congr1 \val)/=.
+    case: sumbool_of_bool => /=; first by move=> ? <-; rewrite nth_index.
+    by rewrite !inE dj0.
+  move/eqP->.
+  have: nth e supp i \in supp by rewrite mem_nth.
+  by rewrite K_nth !inE => -> /=.
+by rewrite axconst.
+Qed.
+
 End lemmas.
 End NaryConvLaws.
 
@@ -431,7 +476,7 @@ Proof. exact/ax_part_of_bary/axbary. Qed.
 Lemma axidem : ax_idem T.
 Proof. by apply: ax_idem_of_bary_proj; [exact: axbary | exact: axproj]. Qed.
 
-Lemma axmap  : ax_map T.
+Lemma axmap : ax_map T.
 Proof. by apply: ax_map_of_bary_proj; [exact: axbary | exact: axproj]. Qed.
 
 Lemma axconst : ax_const T.
@@ -453,12 +498,11 @@ Import NaryConvexSpaceTheory.
    - ax_part + ax_idem (Beaulieu)
    - ax_bary + ax_map + ax_const
    - ax_barypart + ax_idem
+   - ax_proj + ax_part + ax_const
    This has been implicitly shown as logical implications in Module NaryLaws.
    Module NaryConvexSpaceTheory says that Bonchi subsumes the other three.
    We now exhibit the remaining equivalences by providing Hierarchy-Builder
    factories for the others.
-
-   TODO: show that (ax_bary + ax_const) and (ax_part + ax_proj) are weaker.
  *)
 
 HB.factory Record isNaryBeaulieuConvexSpace
@@ -476,6 +520,7 @@ Lemma axbary : ax_bary T.
 Proof. apply/ax_bary_of_part_idem; [exact: axpart | exact: axidem]. Qed.
 
 HB.instance Definition _ := isNaryConvexSpace.Build R T axbary axproj.
+
 HB.end.
 
 HB.factory Record isNaryBaryMapConstConvexSpace
@@ -493,6 +538,7 @@ by apply/ax_proj_of_idem/ax_idem_of_map_const; [exact: axmap | exact: axconst].
 Qed.
 
 HB.instance Definition _ := isNaryConvexSpace.Build R T axbary axproj.
+
 HB.end.
 
 HB.factory Record isNaryBarypartIdemConvexSpace
@@ -513,6 +559,27 @@ Lemma axproj : ax_proj T.
 Proof. exact/ax_proj_of_idem/axidem. Qed.
 
 HB.instance Definition _ := isNaryConvexSpace.Build R T axbary axproj.
+
+HB.end.
+
+
+HB.factory Record isNaryProjPartConstConvexSpace
+  (R : realType) (T : Type) of NaryConvOp R T := {
+  axproj : ax_proj T;
+  axpart : ax_part T;
+  axconst : ax_const T;
+}.
+
+HB.builders Context R T of isNaryProjPartConstConvexSpace R T.
+
+Lemma axidem : ax_idem T.
+Proof.
+by apply: ax_idem_of_proj_part_const;
+   [exact: axproj | exact: axpart | exact: axconst].
+Qed.
+
+HB.instance Definition _ := isNaryBeaulieuConvexSpace.Build R T axpart axidem.
+
 HB.end.
 
 (* naryConvType is equivalent to convType,
@@ -713,8 +780,242 @@ HB.instance Definition A := isNaryBeaulieuConvexSpace.Build R T axpart axidem.
 
 (* `Succeed Check T : naryConvType R.` prints noise. Definition does not. *)
 Succeed Definition test := T : naryConvType R.
-Fail Definition    test := T : convType R.
+Fail    Definition test := T : convType R.
 Succeed Definition test := (T : naryConvType R) : convType R.
 
 End test.
 End test.
+
+
+(*
+Counterexamples to show that some combinations are strictly weaker:
+- ax_bary /\ ax_const /\ ~ ax_proj
+- ax_proj /\ ax_part /\ ~ ax_const (therefore, ~ ax_idem)
+- ax_part /\ ax_const /\ ~ ax_proj
+*)
+
+
+Module counterexample_bary_const_noproj.
+Section counterexample.
+Local Open Scope ring_scope.
+Variables (R : realType).
+
+(* first projection, ignoring d *)
+Example proj_1st n :=
+  if n is n'.+1 return (R.-fdist 'I_n) -> ('I_n -> bool) -> bool
+  then fun _ g => g ord0
+  else fun _ _ => 0.
+
+Fail Definition test := bool : naryConvOpType R.
+HB.instance Definition _ := hasNaryConvOp.Build R bool proj_1st.
+Succeed Definition test := bool : naryConvOpType R.
+
+Fact axbary : ax_bary bool.
+Proof.
+move=> n m d.
+have:= fdist_card_neq0 d => /prednK.
+rewrite card_ord; move: d => /[swap] <- d e.
+have:= fdist_card_neq0 (e ord0) => /prednK.
+by rewrite card_ord; move: e => /[swap] <- e g.
+Qed.
+
+Fact axconst : ax_const bool.
+Proof.
+move=> c n d.
+have:= fdist_card_neq0 d => /prednK.
+by rewrite card_ord; move: d => /[swap] <- d.
+Qed.
+
+Fact noproj : ~ ax_proj bool.
+Proof.
+rewrite /ax_proj.
+move/(_ 2 (inord 1) (fun o => o%:R)).
+by rewrite /convn inordK.
+Qed.
+
+End counterexample.
+End counterexample_bary_const_noproj.
+
+
+Module counterexample_proj_part_noconst_noidem.
+Section counterexample.
+Local Open Scope ring_scope.
+Variables (R : realType).
+
+(* flat sum, equalizing all probabilities to 1 *)
+Example weight1_sum n (d : R.-fdist 'I_n) (g : 'I_n -> nat) :=
+  \sum_(i < n) if d i == 0 then 0 else g i.
+
+Fail Definition test := nat : naryConvOpType R.
+HB.instance Definition _ := hasNaryConvOp.Build R nat weight1_sum.
+Succeed Definition test := nat : naryConvOpType R.
+
+Fact axproj : ax_proj nat.
+Proof.
+move=> n i g.
+rewrite /convn/= /weight1_sum/= (bigD1 i)//=.
+rewrite fdist1E eqxx/= (negPf (oner_neq0 _)) big1 ?addr0//.
+by move=> j ji; rewrite fdist1E (negPf ji) eqxx.
+Qed.
+
+Fact axpart : ax_part nat.
+Proof.
+move=> n m K d g.
+rewrite /convn/= /weight1_sum/=.
+rewrite (bigID (fun i => fdistmap K d i == 0))/=.
+rewrite [X in _ = X + _]big1 ?add0r/=; last by move=> ? ->.
+under [RHS]eq_bigr=> i /negPf -> do [].
+rewrite exchange_big/=; apply: eq_bigr=> i _.
+rewrite big_mkcond (bigD1 (K i))//=.
+rewrite big1; last first.
+  move=> j Kij; case: ifP=> //.
+  move/FDistPart.dE->; case: ifP=> //.
+  by rewrite (negPf Kij) mulr0 mul0r eqxx.
+rewrite addr0 -(if_neg (FDistPart.d _ _ _ _ == 0)) -if_and -if_neg.
+congr (if _ then _ else _).
+apply/idP/idP.
+  move=> di.
+  have: fdistmap K d (K i) != 0.
+    rewrite fdistmapE/= psumr_neq0/=; last by move=> *; exact: FDist.ge0.
+    apply/hasP; exists i; first by rewrite mem_index_enum.
+    by rewrite inE/= eqxx /= fdist_gt0.
+  move=> /[dup] map0 -> /=.
+  rewrite FDistPart.dE// eqxx ?mulf_neq0//= ?oner_neq0//.
+  rewrite invr_neq0// psumr_neq0/=; last by move=> *; exact: FDist.ge0.
+  apply/hasP; exists i; last by rewrite eqxx/= fdist_gt0.
+  by rewrite mem_index_enum.
+case/andP=> di.
+rewrite FDistPart.dE// eqxx mulr1.
+by apply: contraNN=> /eqP->; rewrite mul0r.
+Qed.
+
+Fact noconst : ~ ax_const nat.
+Proof.
+rewrite /ax_const.
+move/(_ 1 2 (fdist_uniform (fdist_card_prednK (@fdist1 R _ ord0)))).
+rewrite /convn/= /weight1_sum/=.
+under eq_bigr do rewrite fdist_uniformE invr_eq0 card_ord (_ : 0 = 0%:R)// eqr_nat/=.
+by rewrite big_const iter_addr_0 card_ord natn.
+Qed.
+
+Corollary noidem : ~ ax_idem nat.
+Proof. by move: noconst; exact/contra_not/ax_const_of_idem. Qed.
+
+End counterexample.
+End counterexample_proj_part_noconst_noidem.
+
+
+Module counterexample_part_const_noproj.
+Section counterexample.
+Local Open Scope ring_scope.
+Variables (R : realType).
+
+(* bad bigmin that does not respect d *)
+Example bigand n (d : R.-fdist 'I_n) (g : 'I_n -> bool) :=
+  \big[andb/true]_(i < n) g i.
+
+Fail Definition test := bool : naryConvOpType R.
+HB.instance Definition _ := hasNaryConvOp.Build R bool bigand.
+Succeed Definition test := bool : naryConvOpType R.
+
+Fact axconst : ax_const bool.
+Proof.
+move=> a n d.
+have[e]:= fdist_supp_mem d.
+rewrite !inE => de0.
+rewrite /convn/= /bigand/= big_const.
+rewrite -sum1_card (bigD1 e)//=.
+set k := (k in iter k).
+elim: k; first by rewrite iter0 andbT.
+by move=> k IHk; rewrite iterS IHk andbb.
+Qed.
+
+Fact axpart : ax_part bool.
+Proof.
+move=> n m K d g.
+rewrite /convn/= /bigand/=.
+rewrite exchange_big/=; apply: eq_bigr=> i _.
+rewrite big_const -sum1_card (bigD1 (K i))//=.
+set k := (k in iter k).
+elim: k; first by rewrite iter0 andbT.
+by move=> k IHk; rewrite iterS -IHk andbb.
+Qed.
+
+Fact noproj : ~ ax_proj bool.
+Proof.
+rewrite /ax_proj /convn/= /bigand/=.
+move/(_ 2 ord0 (fun o => if o == ord0 then true else false)).
+by rewrite big_ord_recl/= big_ord1.
+Qed.
+
+End counterexample.
+End counterexample_part_const_noproj.
+
+
+(* compare to the previous counterexample *)
+Module example_proj_part_const.
+Section example.
+Local Open Scope ring_scope.
+Variables (R : realType).
+
+(* (good) bigmin in bool *)
+Example bigand n (d : R.-fdist 'I_n) (g : 'I_n -> bool) :=
+  \big[andb/true]_(i < n) if d i == 0 then true else g i.
+
+Fail Definition test := bool : naryConvOpType R.
+HB.instance Definition _ := hasNaryConvOp.Build R bool bigand.
+Succeed Definition test := bool : naryConvOpType R.
+
+Fact axproj : ax_proj bool.
+Proof.
+move=> n i g.
+rewrite /convn/= /bigand/=.
+rewrite (bigD1 i)//= fdist1E eqxx/= (negPf (oner_neq0 _)) big1 ?andbT//.
+by move=> j; rewrite fdist1E => /negPf -> /=; rewrite eqxx.
+Qed.
+
+Fact axpart : ax_part bool.
+Proof.
+move=> n m K d g.
+rewrite /convn/= /bigand/=.
+rewrite [RHS](bigID (fun i => fdistmap K d i == 0))/=.
+rewrite [X in X && _]big1/=; last by move=> i ->.
+under [RHS]eq_bigr=> i /[dup] H /negPf-> /=.
+  under eq_bigr do rewrite FDistPart.dE//.
+  over.
+rewrite exchange_big/=; apply: eq_bigr=> i _.
+have[->|di0]:= eqVneq (d i) 0.
+  by rewrite big1// => ? ?; rewrite !mul0r eqxx.
+rewrite (bigID (fun j => j == K i))/=.
+under eq_bigr=> j /andP[] dj jKi.
+  move: dj; rewrite fdistmapE/=.
+  (under eq_bigl do rewrite inE/=) => dj.
+  rewrite (_ : (if _ then _ else _) = g i); first over.
+  rewrite !mulf_eq0 invr_eq0 (negPf di0) jKi (negPf dj) /=.
+  by rewrite (negPf (oner_neq0 _))/=.
+rewrite big_const/=.
+under eq_bigr=> j /andP [] dj /negPf -> do rewrite mulr0 mul0r eqxx.
+rewrite big1// andbT.
+rewrite -sum1_card (bigD1 (K i))/= ?add0n; last first.
+  apply/andP; split=> //.
+  rewrite fdistmapE/= psumr_neq0 ?FDist.ge0//.
+  apply/hasP; exists i; first by rewrite mem_index_enum.
+  by rewrite inE/= eqxx fdist_gt0.
+set k := (k in iter k).
+elim: k; first by rewrite iter0 andbT.
+by move=> k IHk; rewrite iterS -IHk andbb.
+Qed.
+
+Fact axconst : ax_const bool.
+Proof.
+move=> a n d.
+have[e]:= fdist_supp_mem d.
+rewrite !inE => de0.
+rewrite /convn/= /bigand/= (bigD1 e)//= (negPf de0).
+case: a=> //=.
+under eq_bigr do rewrite if_same.
+by rewrite big_const/= iter_fix.
+Qed.
+
+End example.
+End example_proj_part_const.
