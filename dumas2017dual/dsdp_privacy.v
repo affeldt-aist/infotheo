@@ -353,10 +353,35 @@ Qed.
 Hypothesis us_inde_vs : P |= us _|_ vs.
 Hypothesis us_vs_inde_r : P |= [% us, vs] _|_ r.
 
+(* TODO:
+
+   What we actually need is more complicated:
+   if `s` never produce the same value as `v2` then we know
+   the protocol is secure. But we cannot state that here easily:
+
+   1. We need to define a random variable of scalar product
+      that never produce the same value as v2. The reason
+      of that scalar product RV:
+
+           s := dotp2_rv us vs \+ r
+     
+      can generate the same value as `v2` is because `us: [%u2, u3]`
+      is a const RV that always output `(1, 0)`. Even if we exclude
+      this case by assuming that `us` never be that const RV,
+      `us` still can output that special value at a very small probability.
+
+      If we want to exclude that specia value from the co-domain of `us`,
+      we need the ability to define a RV with some values excluded.
+      I'm not sure if infotheo allows us to do so.
+
+  2. Even if we can define such RV, how that exclusion ensure
+     the independence here between `s` and `v2` is still unknown.
+*)
 Goal s != v2 -> P |= s _|_ v2.
 move => H.
 rewrite s_alt.
 About s1Ms2_r_indep.
+Abort.
 
 Lemma if_alice_is_fair_alice_is_secure :
   s != v2 -> `H(v2 | alice_view ) = `H `p_v2.
@@ -383,13 +408,10 @@ transitivity (`H([% alice_input_view, s], v2) - `H(alice_input_view, s)).
   by rewrite chain_rule_RV addrAC subrr add0r.
 rewrite inde_RV_joint_entropyE.
   by rewrite addrAC subrr add0r.
-Fail exact: alice_input_view_indep_v2.
 have [Ha|Hb] := eqVneq s v2.
   contradict Ha.
   move/eqP in H. (* from x != y to x <> y *)
   exact: H.
-  
-  
 Admitted.
 
 End alice_privacy_analysis.
