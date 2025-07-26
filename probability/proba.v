@@ -2097,6 +2097,34 @@ Notation cinde_rv_unit := cinde_RV_unit (only parsing).
 #[deprecated(since="infotheo 0.9.2", note="renamed to `inde_RV_events`")]
 Notation inde_rv_events := inde_RV_events (only parsing).
 
+Section inde_RV_in.
+Context {R : realType}.
+Variables (A : finType) (P : R.-fdist A) (TA TB : finType).
+Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
+
+Definition inde_RV_in :=
+  forall E F,
+    `Pr[ [% X, Y] \in E `* F] = `Pr[ X \in E ] * `Pr[ Y \in F ].
+
+Lemma inde_RV_inP : P |= X _|_ Y <-> inde_RV_in.
+Proof.
+split=> H; last by move=> *; rewrite -!pr_in1 -H setX1.
+move=> E F; rewrite !pr_inE'.
+rewrite [LHS]/Pr; under eq_bigr=> *.
+  rewrite fdistmapE.
+  under eq_bigl do rewrite !inE /=.
+  over.
+rewrite [in RHS]/Pr big_distrl /=.
+under [RHS]eq_bigr=> i ?.
+  rewrite big_distrr /=.
+  under eq_bigr do rewrite !dist_of_RVE -H -dist_of_RVE.
+  over.
+rewrite -big_setX; apply: eq_bigr=> *.
+by rewrite fdistmapE.
+Qed.
+
+End inde_RV_in.
+
 Section inde_RV_sym.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB: finType).
@@ -2107,23 +2135,40 @@ Proof. by split => /cinde_RV_unit/cinde_RV_sym/cinde_RV_unit. Qed.
 
 End inde_RV_sym.
 
+(* TODO: move up? *)
+Section inde_RV_comp.
+Context {R : realType}.
+Variables (A : finType) (P : R.-fdist A).
+
+(* Information-Theoretically Secure Number Protocol*)
+(* "The paper" Lemma 3.1 *)
+Lemma inde_RV_comp (TA TB UA UB : finType) (X : {RV P -> TA}) (Y : {RV P -> TB})
+  (f : TA -> UA) (g : TB -> UB) :
+  P |= X _|_ Y -> P|= (f `o X) _|_ (g `o Y).
+Proof.
+move=> /inde_RV_inP inde_XY'; apply/inde_RV_inP => E F.
+by rewrite (pr_in_comp' f) (pr_in_comp' g) -inde_XY' -preimsetX -pr_in_comp'.
+Qed.
+
+End inde_RV_comp.
+
 (* Put here because the use of reasoning_by_cases and
    the use of independence notation.
 *)
-Section s1Ms2_r_indep.
+Section pfwd1M.
 Context {R : realType}.
 Variables (A : finType) (m n : nat)(P : R.-fdist A).
 Variables (TX1 TX2 TX3 : finType).
 Variables (s1 : {RV P -> TX1}) (s2 : {RV P -> TX2}) (r: {RV P -> TX3}).
 Variable op : TX1 -> TX2 -> TX3.
 
-Let rv_op (rv1 : {RV P -> TX1}) (rv2 : {RV P -> TX2}) : {RV P -> TX3}  :=
-  fun p => op (rv1 p)(rv2 p).
+Let rv_op (rv1 : {RV P -> TX1}) (rv2 : {RV P -> TX2}) : {RV P -> TX3} :=
+  uncurry op `o [% rv1, rv2].
 
 Hypothesis s1_s2_indep : P|= s1 _|_ s2.
 Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
 
-Lemma pr_eqM x : `Pr[ (rv_op s1 s2) = x ] =
+Lemma pfwd1M x : `Pr[ (rv_op s1 s2) = x ] =
   \sum_(a <- fin_img s1)
     (\sum_(b <- fin_img s2 | op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
 Proof.
@@ -2147,43 +2192,17 @@ apply: contra Hneq.
 by rewrite fin_img_imset => /imsetP[a0 _ [] -> -> ->].
 Qed.
 
-Lemma pr_eqM2 x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] =
+Lemma pfwd1M2l x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] =
   \sum_(a <- fin_img s1)
     (\sum_(b <- fin_img s2 | op a b == x)
       `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
 Proof.
-rewrite -[LHS]pr_in1.
-rewrite (reasoning_by_cases _ s1).
-apply eq_bigr => a _.
-rewrite (reasoning_by_cases _ s2).
-rewrite [RHS]big_mkcond /=.
-apply eq_bigr => b _.
-case: ifPn => [/eqP <-|Hneq].
-  rewrite -s1_s2_indep -s1s2_r_indep.
-  rewrite setX1 setX1.
-  rewrite pr_in1.
-  pose f (p:TX1 * TX2 * TX3) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2).
-  have f_inj : injective f.
-     by move => [[x1 x2] ?] [[? ?] ?] [] _ -> -> -> /=.
-  by rewrite -(pfwd1_comp _ _ f_inj ).
-rewrite 2!setX1.
-rewrite pr_in1.
-rewrite pfwd1_eq0//.
-apply: contra Hneq.
-by rewrite fin_img_imset => /imsetP[a0 _ [] -> _ -> ->].
+rewrite (inde_RV_comp _ idfun)//.
+under eq_bigr do rewrite -big_distrl; rewrite -big_distrl/=.
+by congr (_ * _); exact: pfwd1M.
 Qed.
 
-Lemma s1Ms2_r_indep : P |= (rv_op s1 s2) _|_ r.
-Proof.
-rewrite /inde_RV  => x y.
-rewrite pr_eqM pr_eqM2.
-rewrite big_distrl /=.
-apply eq_bigr => a _.
-rewrite big_distrl /=.
-by apply eq_bigr => b _.
-Qed.
-
-End s1Ms2_r_indep.
+End pfwd1M.
 
 Lemma cinde_alt {R : realType} (U : finType) (P : R.-fdist U) (A B C : finType)
     (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :

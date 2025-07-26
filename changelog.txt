@@ -5,7 +5,8 @@
   + inde_dist_of_RV2
 
 - in proba.v
-  + pr_eqM, pr_eqM2, s1Ms2_r_indep
+  + inde_RV_in, inde_RV_inP, inde_RV_comp,
+    pfwd1M, pfwd1M2l
 
 * renamed
 
