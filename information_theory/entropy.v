@@ -520,7 +520,7 @@ Qed.
   by Shen et al., 2007.
   https://doi.org/10.1109/ICMLC.2007.4370663.
 
-  This is a generalized version that states:
+  cPr_centropy_RV_comp is a more generalized version that states:
 
      conditional probability contraction P(X|(Y,Z))->P(X|Y) implies
      conditional entropy contraction H(X|(Y,Z))->H(X|Y)
