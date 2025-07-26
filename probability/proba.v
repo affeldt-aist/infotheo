@@ -2140,8 +2140,11 @@ Section inde_RV_comp.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A).
 
-(* Information-Theoretically Secure Number Protocol*)
-(* "The paper" Lemma 3.1 *)
+(* Origin: Lemma 3.1 in
+  "Information-Theoretically Secure Number-Product Protocol."
+  by Shen et al., 2007.
+  https://doi.org/10.1109/ICMLC.2007.4370663.
+*)
 Lemma inde_RV_comp (TA TB UA UB : finType) (X : {RV P -> TA}) (Y : {RV P -> TB})
   (f : TA -> UA) (g : TB -> UB) :
   P |= X _|_ Y -> P|= (f `o X) _|_ (g `o Y).
@@ -2152,8 +2155,8 @@ Qed.
 
 End inde_RV_comp.
 
-(* Put here because the use of reasoning_by_cases and
-   the use of independence notation.
+(* We put the following section here because the use of reasoning_by_cases and
+   the independence notation.
 *)
 Section pfwd1M.
 Context {R : realType}.
@@ -2198,6 +2201,8 @@ Lemma pfwd1M2l x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] =
       `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
 Proof.
 rewrite (inde_RV_comp _ idfun)//.
+under eq_bigr do rewrite -big_distrl /=.
+rewrite -big_distrl /=.
 under eq_bigr do rewrite -big_distrl; rewrite -big_distrl/=.
 by congr (_ * _); exact: pfwd1M.
 Qed.
