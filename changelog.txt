@@ -4,6 +4,9 @@
   + inde_RV_joint_entropyE
   + inde_dist_of_RV2
 
+- in proba.v
+  + pr_eqM, pr_eqM2, s1Ms2_r_indep
+
 * renamed
 
 - in entropy.v
