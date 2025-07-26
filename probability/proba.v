@@ -2107,6 +2107,84 @@ Proof. by split => /cinde_RV_unit/cinde_RV_sym/cinde_RV_unit. Qed.
 
 End inde_RV_sym.
 
+(* Put here because the use of reasoning_by_cases and
+   the use of independence notation.
+*)
+Section s1Ms2_r_indep.
+Context {R : realType}.
+Variables (A : finType) (m n : nat)(P : R.-fdist A).
+Variables (TX1 TX2 TX3 : finType).
+Variables (s1 : {RV P -> TX1}) (s2 : {RV P -> TX2}) (r: {RV P -> TX3}).
+Variable op : TX1 -> TX2 -> TX3.
+
+Let rv_op (rv1 : {RV P -> TX1}) (rv2 : {RV P -> TX2}) : {RV P -> TX3}  :=
+  fun p => op (rv1 p)(rv2 p).
+
+Hypothesis s1_s2_indep : P|= s1 _|_ s2.
+Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
+
+Lemma pr_eqM x : `Pr[ (rv_op s1 s2) = x ] =
+  \sum_(a <- fin_img s1)
+    (\sum_(b <- fin_img s2 | op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
+Proof.
+rewrite -[LHS]pr_in1.
+rewrite (reasoning_by_cases _ s1).
+apply: eq_bigr => a _.
+rewrite (reasoning_by_cases _ s2).
+rewrite [RHS]big_mkcond /=.
+apply eq_bigr => b _.
+case: ifPn => [/eqP <-|Hneq].
+  rewrite -s1_s2_indep.
+  rewrite 2!setX1.
+  rewrite pr_in1.
+  pose f (p : TX1 * TX2) := (op p.1 p.2, p.1, p.2).
+  have f_inj : injective f by move => [x1 x2] [? ?] [] _ -> ->.
+  by rewrite -(pfwd1_comp _ _ f_inj).
+rewrite 2!setX1.
+rewrite pr_in1.
+rewrite pfwd1_eq0//.
+apply: contra Hneq.
+by rewrite fin_img_imset => /imsetP[a0 _ [] -> -> ->].
+Qed.
+
+Lemma pr_eqM2 x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] =
+  \sum_(a <- fin_img s1)
+    (\sum_(b <- fin_img s2 | op a b == x)
+      `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
+Proof.
+rewrite -[LHS]pr_in1.
+rewrite (reasoning_by_cases _ s1).
+apply eq_bigr => a _.
+rewrite (reasoning_by_cases _ s2).
+rewrite [RHS]big_mkcond /=.
+apply eq_bigr => b _.
+case: ifPn => [/eqP <-|Hneq].
+  rewrite -s1_s2_indep -s1s2_r_indep.
+  rewrite setX1 setX1.
+  rewrite pr_in1.
+  pose f (p:TX1 * TX2 * TX3) := (op p.1.1 p.1.2, p.2, p.1.1, p.1.2).
+  have f_inj : injective f.
+     by move => [[x1 x2] ?] [[? ?] ?] [] _ -> -> -> /=.
+  by rewrite -(pfwd1_comp _ _ f_inj ).
+rewrite 2!setX1.
+rewrite pr_in1.
+rewrite pfwd1_eq0//.
+apply: contra Hneq.
+by rewrite fin_img_imset => /imsetP[a0 _ [] -> _ -> ->].
+Qed.
+
+Lemma s1Ms2_r_indep : P |= (rv_op s1 s2) _|_ r.
+Proof.
+rewrite /inde_RV  => x y.
+rewrite pr_eqM pr_eqM2.
+rewrite big_distrl /=.
+apply eq_bigr => a _.
+rewrite big_distrl /=.
+by apply eq_bigr => b _.
+Qed.
+
+End s1Ms2_r_indep.
+
 Lemma cinde_alt {R : realType} (U : finType) (P : R.-fdist U) (A B C : finType)
     (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
   P |= X _|_ Y | Z ->
