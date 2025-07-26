@@ -177,7 +177,7 @@ have Ha : dsdp_program.k (Alice, Dec, (dk_a x).2) = k (dk_a x).
 rewrite  -[in RHS]Ha //=.
 Qed.
 
-Let alice_view_values_from_trace (xs : dsdp_traceT) : alice_view_valuesT :=
+Local Definition alice_view_values_from_trace (xs : dsdp_traceT) : alice_view_valuesT :=
     let failtrace := (KeyOf Alice Dec 0,
                         0, 0, 0, 0, 0, 0, 0,
                         E' Alice 0, E' Charlie 0, E' Bob 0) in
@@ -280,10 +280,11 @@ ring.
 Qed.
 
 (* TODO: the secure case *)
-Let dec_view := [%dk_a, s, v1 , u1, u2, u3, r2, r3].
-Let eqn1_view := [% dec_view, E_alice_d3, E_charlie_v3].
-Let eqn2_view := [% dec_view, E_alice_d3].
+Local Definition dec_view := [%dk_a, s, v1 , u1, u2, u3, r2, r3].
+Local Definition eqn1_view := [% dec_view, E_alice_d3, E_charlie_v3].
+Local Definition eqn2_view := [% dec_view, E_alice_d3].
  
+(* TODO: define types to simplify types in the proof context *)
 Hypothesis alice_view_neq0 :
   forall x e, `Pr[ [% dec_view, E_alice_d3, E_charlie_v3, E_bob_v2] =
         (x, e) ] != 0.
@@ -386,8 +387,9 @@ Abort.
 Lemma if_alice_is_fair_alice_is_secure :
   s != v2 -> `H(v2 | alice_view ) = `H `p_v2.
 Proof.
+simpl in *.
 move => H.
-rewrite !(E_enc_ce_removal v2 card_msg).
+rewrite !(E_enc_ce_removal v2 card_msg); simpl in *.
 pose h := (fun o : (Alice.-key Dec msg * msg *
   msg * msg * msg * msg * msg * msg) =>
   let '(dk_a, s, v1, u1, u2, u3, r2, r3) := o in
@@ -412,6 +414,9 @@ have [Ha|Hb] := eqVneq s v2.
   contradict Ha.
   move/eqP in H. (* from x != y to x <> y *)
   exact: H.
+(*all: simpl in *.*)  (* all: including all subgoals *)
+rewrite s_alt /vs /r.
+(* Lemma 3.5? v2 is Y and s is R. *)
 Admitted.
 
 End alice_privacy_analysis.
