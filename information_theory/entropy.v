@@ -515,8 +515,16 @@ apply: eq_bigr => a _.
 by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_in1 H.
 Qed.
 
-(* conditional probability removal P(X|(Y,Z))->P(X|Y) implies *)
-(* conditional entropy removal H(X|(Y,Z))->H(X|Y) *)
+(* Origin: Theorem 3.7 (Masked Condition Removal) in
+  "Information-Theoretically Secure Number-Product Protocol."
+  by Shen et al., 2007.
+  https://doi.org/10.1109/ICMLC.2007.4370663.
+
+  This is a generalized version that states:
+
+     conditional probability contraction P(X|(Y,Z))->P(X|Y) implies
+     conditional entropy contraction H(X|(Y,Z))->H(X|Y)
+*)
 Lemma cPr_centropy_RV_comp :
   (forall x y, `Pr[ Y = y ] != 0 ->
      `Pr[ X = x | (f `o Y) = f y ] = `Pr[ X = x | Y = y ]) ->
