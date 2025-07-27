@@ -355,29 +355,12 @@ exact: eqn1_view_neq0.
 exact: alice_view_neq0.
 Qed.
 
-(* TODO: the `pvu1_unif` hypothesis cannot hold since vu1 := v1 \* u1.
+
+(* First try to prove DSDP is information theoratically secure:
+
+   FAIL: the `pvu1_unif` hypothesis cannot hold since vu1 := v1 \* u1.
    The product of two random variables is not uniform distributed.
    Unless there is any math theorem backs this, which I don't know.
-   
-   On the other hand, in DSDP, Alice knows the result of the dot product.
-   So she anyway will know some new knowledge about v2 after the execution.
-   However, in the paper the security guarantee is kept by the fact that in
-   the equation of the dot product:
-
-       v1 * u1 + v2 * u2 + v3 * u3 = result
-
-   Alice doesn't v2 and v3, and by assuming she is a semi-honest party,
-   she cannot manipulate other values of u_i and v_i to force v2 being the only 
-   unknown term in this equation. Therefore, even if the combination of v2 and
-   v3 are known to Alice, she cannot make sure about the actual value of v2
-   or v3 individually \cite[\S4.1]{dumas2017dual}.
-
-   The meaning of the conclusion above for our method:
-   even if the execution of the protocol increases one's knowledge about
-   compound, like the compound of v2 and v3 here, maybe we can define a notion
-   for a variant of information-theoratically security to show that the
-   individual secret is still "secure", if inferring individual secret from
-   the compound is impossible by assuming that we have the real number.
 *)
 Hypothesis pvu1_unif : `p_ vu1 = fdist_uniform card_msg.
 Hypothesis vu1_indep :  P |= vu1 _|_ [% dotp2_rv us vs, v2].
@@ -439,6 +422,43 @@ rewrite inde_RV_joint_entropyE.
   clear.
   rewrite s_alt /vs.
 Admitted.
+
+(* Second try:
+
+   In DSDP, Alice knows the result of the dot product.
+   So she anyway will know some new knowledge about v2 after the execution.
+   However, in the paper the security guarantee is kept by the fact that in
+   the equation of the dot product:
+
+       v1 * u1 + v2 * u2 + v3 * u3 = result
+
+   Alice doesn't v2 and v3, and by assuming she is a semi-honest party,
+   she cannot manipulate other values of u_i and v_i to force v2 being the only 
+   unknown term in this equation. Therefore, even if the combination of v2 and
+   v3 are known to Alice, she cannot make sure about the actual value of v2
+   or v3 individually \cite[\S4.1]{dumas2017dual}.
+
+   For the case of "one equation but two or more unknown terms",
+   we should be able to assume hypotheses like:
+
+     `g` is a non trivial affine transform ->
+       (H(v2 | g `o [%v2, v3]) = H `p_v2  and
+        H(v3 | g `o [%v2, v3]) = H `p_v3)
+
+   However, how to define "`g` is a non trivial affine transform"
+   as a hypothesis in Coq, or in infotheo, is unknown.
+   So what we can do is to directly assume the two equations as hypotheses.
+*)
+
+Hypothesis centropy_dotp2_rv_v2_contraction : 
+  `H(v2| dotp2_rv us vs) = `H `p_v2.
+
+Hypothesis centropy_dotp2_rv_v3_contraction : 
+  `H(v3| dotp2_rv us vs) = `H `p_v3.
+
+(* TODO: if the VIEW can be reduced to one of these two hypotheses,
+   then we can prove the protocol is conditionally secure.
+*)
 
 End alice_privacy_analysis.
 
