@@ -69,7 +69,6 @@ Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
 
-
 (* naryConvOpType is a basic structure carrying just an n-ary convex opreator.
    (This is actually a "structure" in the model-theoretic sense.)
    Various laws are stated with respect to this. *)
@@ -83,7 +82,6 @@ HB.structure Definition NaryConvOp R := {T of hasNaryConvOp R T &}.
 
 Notation "'<&>_' d f" := (convn _ d f) : convex_scope.
 
-
 (* n-ary laws that we deal with in this file *)
 
 Module NaryConvLaws.
@@ -96,34 +94,33 @@ Definition ax_bary :=
   forall n m (d : R.-fdist 'I_n) (e : 'I_n -> R.-fdist 'I_m) (g : 'I_m -> T),
     <&>_d (fun i => <&>_(e i) g) = <&>_(fdist_convn d e) g.
 Definition ax_proj :=
-  forall  n (i : 'I_n) (g : 'I_n -> T), <&>_(fdist1 i) g = g i.
+  forall n (i : 'I_n) (g : 'I_n -> T), <&>_(fdist1 i) g = g i.
 
 (* Beaulieu's version [Beaulieu PhD 2008] *)
 Definition ax_part :=
   forall n m (K : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (g : 'I_m -> T),
     <&>_d g = <&>_(fdistmap K d) (fun i => <&>_(FDistPart.d K d i) g).
 Definition ax_idem :=
-  forall (a : T) (n : nat) (d : R.-fdist 'I_n) (g : 'I_n -> T),
+  forall (a : T) n (d : R.-fdist 'I_n) (g : 'I_n -> T),
     (forall i, i \in fdist_supp d -> g i = a) -> <&>_d g = a.
 
 (* Alternative to ax_proj *)
 Definition ax_map :=
-  forall (n m : nat) (u : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (g : 'I_n -> T),
+  forall n m (u : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (g : 'I_n -> T),
     <&>_d (g \o u) = <&>_(fdistmap u d) g.
 Definition ax_const :=
-  forall (a : T) (n : nat) (d : R.-fdist 'I_n),
-    <&>_d (fun _ => a) = a.
+  forall (a : T) n (d : R.-fdist 'I_n), <&>_d (fun _ => a) = a.
 
 (* Alternative to ax_part, just a restriction of ax_bary *)
 Definition ax_barypart :=
   forall n m (d : R.-fdist 'I_n) (e : 'I_n -> R.-fdist 'I_m) (g : 'I_m -> T),
     (forall i j, i != j ->
-                 fdist_supp (e i) :&: fdist_supp (e j) = finset.set0) ->
+      fdist_supp (e i) :&: fdist_supp (e j) = finset.set0) ->
     <&>_d (fun i => <&>_(e i) g) = <&>_(fdist_convn d e) g.
 
 (* Restriction of ax_map to injective maps *)
 Definition ax_injmap :=
-  forall (n m : nat) (u : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (g : 'I_n -> T),
+  forall n m (u : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (g : 'I_n -> T),
     injective u -> <&>_d (g \o u) = <&>_(fdistmap u d) g.
 
 End laws.
@@ -153,7 +150,7 @@ move=> axbary axproj a n d g Hd.
 have /=[k Hk] := fdist_supp_mem d.
 have -> : g = (fun i => <&>_(fdist1 (if i \in fdist_supp d then k else i)) g).
   apply: funext => i; rewrite axproj.
-  case: ifP => // /Hd ->; by rewrite (Hd k).
+  by case: ifP => // /Hd ->; rewrite (Hd k).
 rewrite axbary (_ : fdist_convn _ _ = fdist1 k) ?axproj ?Hd //.
 apply: fdist_ext => /= i.
 rewrite fdist_convnE sum_fdist_supp fdistE.
@@ -175,18 +172,16 @@ set d' := fdistmap f' d.
 have -> : d = fdistmap f d'.
   apply: fdist_ext => i /=.
   rewrite fdistmap_comp fdistmapE /=.
-  case/boolP: (i \in supp) => Hi.
-  - rewrite (bigD1 i) /=; last first.
-      by rewrite !inE /f /f' /= enum_rankK_in.
-    rewrite big1; first by rewrite addr0.
-    move=> j /andP[] /eqP <-.
-    case/boolP: (j \in supp).
-      by move=> Hj; rewrite /f /f' /= enum_rankK_in // eqxx.
+  have [isupp|isupp] := boolP (i \in supp).
+  - rewrite (bigD1 i) /=; last by rewrite inE /f /f' /= enum_rankK_in.
+    rewrite big1 ?addr0// => j /andP[] /eqP <-.
+    have [?|] := boolP (j \in supp).
+      by rewrite /f /f' /= enum_rankK_in // eqxx.
     by rewrite inE negbK => /eqP.
   - rewrite big_pred0.
-      move: Hi; by rewrite inE negbK => /eqP.
-    move=> j; apply/negP => /eqP Hj.
-    by move: Hi; rewrite -Hj enum_valP.
+      by move: isupp; rewrite inE negbK => /eqP.
+    move=> j; apply/negP => /eqP ff'ji.
+    by move: isupp; rewrite -ff'ji enum_valP.
 rewrite -axmap.
 have -> : g \o f = fun=> a.
   apply: funext => i; rewrite /f /= Ha //.
@@ -208,51 +203,47 @@ Proof. by move=> + ? *; apply => j; rewrite supp_fdist1 inE => /eqP ->. Qed.
 
 Lemma ax_barypart_of_part_idem : ax_part T -> ax_idem T -> ax_barypart T.
 Proof.
-move=> axpart axidem n m d e g HP.
+move=> axpart axidem n m d e g e0.
 have [n0 Hn0] := fdist_supp_mem d.
 set h' : 'I_n -> 'I_#|fdist_supp d| := enum_rank_in Hn0.
 set h : 'I_#|fdist_supp d| -> 'I_n := enum_val.
-have f j :
-  {i | [forall i, j \notin fdist_supp (e (h i))]||(j \in fdist_supp (e (h i)))}.
-  case/boolP: [forall i, j \notin fdist_supp (e (h i))].
-    by move=> _; exists (proj1_sig (fdist_supp_mem (fdistmap h' d))).
+have f j : {i | [forall i, j \notin fdist_supp (e (h i))] ||
+                (j \in fdist_supp (e (h i)))}.
+  have [_|] := boolP [forall i, j \notin fdist_supp (e (h i))].
+    by exists (proj1_sig (fdist_supp_mem (fdistmap h' d))).
   by rewrite -negb_exists negbK => /existsP; exact: sigW.
-rewrite /= in f.
 rewrite [LHS](axpart _ _ h').
 rewrite [RHS](axpart _ _ (fun j => proj1_sig (f j))).
 have trivIK i j x : x \in fdist_supp (e i) -> x \in fdist_supp (e j) -> i = j.
-  have [|] := eqVneq i j => [// | ij] xi xj.
-  move/setP/(_ x): (HP _ _ ij); by rewrite inE xi xj inE.
+  have [//| + xi xj] := eqVneq i j.
+  by move/e0 => /setP/(_ x); rewrite inE xi xj inE.
 have neqj j a k :
-  a \in fdist_supp (e (h j)) -> k != (h j) -> (d k * e k a = 0)%R.
-  move=> Haj kj.
-  case/boolP: (a \in fdist_supp (e k)) => [ak|].
-    by rewrite (trivIK _ _ _ Haj ak) eqxx in kj.
-  rewrite inE negbK => /eqP ->.
-  by rewrite mulr0.
-have Hmap' i : fdistmap h' d i = (\sum_j d (h i) * e (h i) j)%R.
+    a \in fdist_supp (e (h j)) -> k != h j -> (d k * e k a = 0)%R.
+  move=> aj kj.
+  have [ak|] := boolP (a \in fdist_supp (e k)).
+    by rewrite (trivIK _ _ _ aj ak) eqxx in kj.
+  by rewrite inE negbK => /eqP ->; rewrite mulr0.
+have maph' i : fdistmap h' d i = (\sum_j d (h i) * e (h i) j)%R.
   rewrite -big_distrr fdistE /= FDist.f1 /= mulr1.
   rewrite (bigD1 (h i)) /=; last by rewrite /h /h' !inE enum_valK_in eqxx.
   rewrite big1 /= ?addr0 // => j /andP[] /eqP <-.
-  case /boolP: (j \in fdist_supp d) => Hj.
-    by rewrite /h /h' (enum_rankK_in Hn0 Hj) eqxx.
-  move: Hj; by rewrite inE negbK => /eqP.
+  have [jd|] := boolP (j \in fdist_supp d).
+    by rewrite /h /h' (enum_rankK_in Hn0 jd) eqxx.
+  by rewrite inE negbK => /eqP.
 have Hmap i :
   fdistmap (fun j : 'I_m => sval (f j)) (fdist_convn d e) i =
-  fdistmap h' d i.
+    fdistmap h' d i.
   rewrite fdistE big_mkcond /=.
   under eq_bigr do rewrite fdistE.
   rewrite (eq_bigr (fun j => d (h i) * e (h i) j)%R).
-    by rewrite Hmap'.
+    by rewrite maph'.
   move=> /= a _; rewrite !inE; case: (f a) => j /= /orP[/forallP /= |] Ha.
-    have Ha0 k : (d k * e k a = 0)%R.
-      case/boolP: (k \in fdist_supp d) => [Hk|].
-        move: (Ha (h' k)).
+    have dea0 k : (d k * e k a = 0)%R.
+      have [Hk|] := boolP (k \in fdist_supp d).
+        have := Ha (h' k).
         by rewrite inE negbK /h/h' enum_rankK_in // => /eqP ->; rewrite mulr0.
       by rewrite inE negbK => /eqP -> ; rewrite mul0r.
-    case: ifPn => [/eqP|] _.
-      by rewrite Ha0 big1.
-    by rewrite Ha0.
+    by case: ifPn => [|] _; rewrite ?dea0// big1.
   case: ifPn => [/eqP/esym ->{i}|ji].
     by rewrite (bigD1 (h j)) //= big1 ?addr0 // => *; rewrite (neqj j).
   by rewrite (neqj j) //; apply: contra ji => /eqP/enum_val_inj ->.
@@ -261,13 +252,12 @@ apply: funext => i /=.
 have HF : fdistmap h' d i != 0%R.
   rewrite fdistE /=.
   apply/eqP => /psumr_eq0P H.
-  have: h i \in fdist_supp d by apply: enum_valP.
+  have : h i \in fdist_supp d by apply: enum_valP.
   by rewrite inE H ?eqxx // 2!inE /h /h' enum_valK_in.
 rewrite (axidem (<&>_(e (h i)) g)); last first.
-  move=> /= j; rewrite inE.
-  rewrite FDistPart.dE //.
-  case/boolP: (j \in fdist_supp d) => [Hj|].
-    case: (@eqP _ i) => [-> |].
+  move=> /= j; rewrite inE FDistPart.dE //.
+  have [Hj|] := boolP (j \in fdist_supp d).
+    have [->|] := eqVneq i (h' j).
       by rewrite /h /h' (enum_rankK_in _ Hj).
     by rewrite mulr0 mul0r eqxx.
   by rewrite inE negbK => /eqP ->; rewrite !mul0r eqxx.
@@ -280,60 +270,55 @@ rewrite FDistPart.dE; last first.
   rewrite -big_distrr big_mkcond /=.
   rewrite (eq_bigr (e (h i))).
     rewrite FDist.f1 mulr1 paddr_eq0 //.
-      by have:= enum_valP i=> /[!inE] /negPf ->.
+      by have := enum_valP i => /[!inE] /negPf ->.
     by apply/sumr_ge0 => *; apply/sumr_ge0 => *; rewrite mulr_ge0.
   move=> /= k _; rewrite 2!inE; case: ifP => //.
   case: (f k) => /= x /orP[/forallP/(_ i)|Hkx Hx].
     by rewrite inE negbK => /eqP ->.
-  case/boolP: (k \in fdist_supp (e (h i))) => [Hki |].
+  have [Hki|] := boolP (k \in fdist_supp (e (h i))).
     move/eqP: (trivIK _ _ _ Hkx Hki) Hx.
     by rewrite (can_eq (enum_valK_in Hn0)) => ->.
   by rewrite inE negbK => /eqP ->.
-move: (Hmap i).
+have := Hmap i.
 rewrite fdistE /= => ->.
 rewrite fdistE.
 case: (f j) => /= k /orP[Hn|jk].
   move/forallP/(_ i): (Hn).
   rewrite inE negbK => /eqP ->.
-  rewrite big1 ?mul0r //.
-  move=> a _.
-  move/forallP/(_ (h' a)): Hn.
+  rewrite big1 ?mul0r// => a _.
+  move/forallP/(_ (h' a)) : Hn.
   case/boolP: (a \in fdist_supp d).
     rewrite /h /h'.
     move/(enum_rankK_in _) ->.
     by rewrite inE negbK => /eqP ->; rewrite mulr0.
   by rewrite inE negbK => /eqP ->; rewrite mul0r.
 rewrite (bigD1 (h k)) //= big1 ?addr0; last first.
-  by move=> a Ha; apply: (neqj k).
-case/boolP: (j \in fdist_supp (e (h i))) => ji.
-  have /enum_val_inj H := trivIK _ _ _ jk ji.
-  subst k => {jk}.
-  move: HF; rewrite eqxx mulr1 Hmap'.
-  rewrite -big_distrr /= FDist.f1 mulr1 => HF.
-  by rewrite mulrAC mulfV // mul1r.
+  by move=> a ?; exact: (neqj k).
+have [|ji] := boolP (j \in fdist_supp (e (h i))).
+  move=> /(trivIK _ _ _ jk) /enum_val_inj ->.
+  move: HF; rewrite eqxx mulr1 maph'.
+  rewrite -big_distrr /= FDist.f1 mulr1 => dhi0.
+  by rewrite mulrAC mulfV// mul1r.
 case: eqP ji => [->|ik]; first by rewrite jk.
 by rewrite inE negbK => /eqP ->; rewrite mulr0 mul0r.
 Qed.
 
 Lemma ax_injmap_of_barypart_idem : ax_barypart T -> ax_idem T -> ax_injmap T.
 Proof.
-move=> axbarypart axidem n m u d g Hu.
-have -> : fdistmap u d = fdist_convn d (fun i : 'I_m => fdist1 (u i)).
+move=> axbarypart axidem n m u d g inju.
+have -> : fdistmap u d = fdist_convn d (fun i => fdist1 (u i)).
   by apply: fdist_ext => i; rewrite /fdistmap fdistbindE// fdist_convnE.
 rewrite -axbarypart.
 - congr (<&>_ _ _); apply: funext => j /=; symmetry; apply: axidem => i.
   by rewrite supp_fdist1 inE => /eqP ->.
-- move=> x y xy.
-  apply/setP => z.
-  rewrite !supp_fdist1 !inE.
-  case: eqP => //= ->.
-  by rewrite eqtype.inj_eq //; exact: negbTE.
+- move=> x y xy; apply/setP => z; rewrite !supp_fdist1 !inE.
+  by apply/negP => /andP[/eqP -> /eqP/inju]; exact/eqP.
 Qed.
 
 Corollary ax_injmap_of_part_idem : ax_part T -> ax_idem T -> ax_injmap T.
 Proof.
 move=> axpart axidem.
-apply: ax_injmap_of_barypart_idem=> //.
+apply: ax_injmap_of_barypart_idem => //.
 exact: ax_barypart_of_part_idem.
 Qed.
 
@@ -346,21 +331,17 @@ set f' : 'I_#|{: 'I_n * 'I_m}| -> 'I_n * 'I_m := enum_val.
 set h := fun k i => f (k, i).
 set h' := fun i => snd (f' i).
 rewrite (_ : (fun i => _) = (fun i => <&>_(fdistmap (h i) (e i)) (g \o h')));
-  last first.
+    last first.
   apply: funext => i.
   have {1}-> : g = (g \o h') \o h i.
     by apply: funext => j; rewrite /h' /h /= /f' /f enum_rankK.
-  rewrite axinjmap //.
-  by move=> x y; rewrite /h => /enum_rank_inj [].
+  by rewrite axinjmap // => x y; rewrite /h => /enum_rank_inj [].
 rewrite axbarypart; first last.
-- move=> i j ij.
-  apply/setP => x; rewrite !inE !fdistE.
-  case/boolP: (i == (f' x).1) ij => [/eqP ->|] ij.
-    rewrite [in X in _ && X]big_pred0 ?eqxx ?andbF //.
-    move=> k; apply/eqP => hjk.
-    move: ij; by rewrite -hjk /h /f /f' enum_rankK eqxx.
-  rewrite big_pred0 ?eqxx //.
-  move=> k; apply/eqP => hik.
+  move=> i j ij; apply/setP => x; rewrite !inE !fdistE.
+  move: ij; have [-> ij|ij] := eqVneq i (f' x).1.
+    rewrite [in X in _ && X]big_pred0 ?eqxx ?andbF // => k; apply/eqP.
+    by move: ij => /[swap] <-; rewrite /h /f /f' enum_rankK eqxx.
+  rewrite big_pred0 ?eqxx // => k; apply/eqP => hik.
   by move: ij; rewrite -hik /h /f /f' enum_rankK eqxx.
 set e' := fun j => fdistmap f (((fdistX (d `X e)) `(| j)) `x (fdist1 j)).
 have {2}-> : g = (fun j => <&>_(e' j) (g \o h')).
@@ -380,18 +361,18 @@ rewrite [RHS]axbarypart; last first.
   rewrite (big_pred1 (f' x)) in ky; last first.
     by move=> a; rewrite -{1}(enum_valK x) !inE (can_eq enum_rankK) eq_sym.
   move: kx ky; rewrite !fdistE.
-  case/boolP: ((f' x).2 == i) ij => [/eqP <-|] ij; last by rewrite mulr0 eqxx.
-  by case/boolP: ((f' x).2 == j) ij => [/eqP <-|] //; rewrite mulr0 eqxx.
+  move: ij; have [<-| ij] := eqVneq (f' x).2 i; last by rewrite mulr0 eqxx.
+  by have [<-//|_ _] := eqVneq (f' x).2 j; rewrite mulr0 eqxx.
 congr (<&>_ _ _); apply: fdist_ext => k.
 rewrite /d1 !fdistE.
 under eq_bigr do rewrite fdistE big_distrr big_mkcond /=.
 rewrite exchange_big /=; apply: eq_bigr => j _.
 rewrite !fdistE -big_mkcond /=.
-rewrite (big_pred1 (f' k));
-  last by move=> a; rewrite !inE -{1}(enum_valK k) /f (can_eq enum_rankK).
+rewrite (big_pred1 (f' k)); last first.
+  by move=> a; rewrite !inE -{1}(enum_valK k) /f (can_eq enum_rankK).
 set p := f' k => /=.
 have [->|Hj] := eqVneq j p.2; last first.
-  rewrite big_pred0; first last.
+  rewrite big_pred0; last first.
     move=> i; apply/negbTE; apply: contra Hj.
     rewrite !inE -(enum_valK k) (can_eq enum_rankK).
     by rewrite (surjective_pairing (enum_val k)) => /eqP [] _ /eqP.
@@ -424,7 +405,6 @@ End lemmas.
 End NaryConvLaws.
 
 Import NaryConvLaws.
-
 
 (* We endow naryConvOpType with Bonchi's axioms: naryConvType *)
 
@@ -468,7 +448,6 @@ End NaryConvexSpaceTheory.
 
 Import NaryConvexSpaceTheory.
 
-
 (* The following combinations of the laws are equivalent:
    - ax_bary + ax_proj (Bonchi)
    - ax_part + ax_idem (Beaulieu)
@@ -483,9 +462,9 @@ Import NaryConvexSpaceTheory.
  *)
 
 HB.factory Record isNaryBeaulieuConvexSpace
-  (R : realType) (T : Type) of NaryConvOp R T := {
-  axpart : ax_part T;
-  axidem : ax_idem T;
+    (R : realType) (T : Type) of NaryConvOp R T := {
+  axpart : ax_part T ;
+  axidem : ax_idem T
 }.
 
 HB.builders Context R T of isNaryBeaulieuConvexSpace R T.
@@ -499,12 +478,11 @@ Proof. apply/ax_bary_of_part_idem; [exact: axpart | exact: axidem]. Qed.
 HB.instance Definition _ := isNaryConvexSpace.Build R T axbary axproj.
 HB.end.
 
-
 HB.factory Record isNaryBaryMapConstConvexSpace
-  (R : realType) (T : Type) of NaryConvOp R T := {
-  axbary : ax_bary T;
-  axmap : ax_map T;
-  axconst : ax_const T;
+    (R : realType) (T : Type) of NaryConvOp R T := {
+  axbary : ax_bary T ;
+  axmap : ax_map T ;
+  axconst : ax_const T
 }.
 
 HB.builders Context R T of isNaryBaryMapConstConvexSpace R T.
@@ -516,7 +494,6 @@ Qed.
 
 HB.instance Definition _ := isNaryConvexSpace.Build R T axbary axproj.
 HB.end.
-
 
 HB.factory Record isNaryBarypartIdemConvexSpace
   (R : realType) (T : Type) of NaryConvOp R T := {
@@ -538,7 +515,6 @@ Proof. exact/ax_proj_of_idem/axidem. Qed.
 HB.instance Definition _ := isNaryConvexSpace.Build R T axbary axproj.
 HB.end.
 
-
 (* naryConvType is equivalent to convType,
    the binary axiomatization formalized in convex.v.
    We prove this equivalence in two steps.
@@ -559,7 +535,6 @@ HB.instance Definition  _ := @isNaryConvexSpace.Build R C axbary axproj.
 End instances.
 End BinToNary.
 
-
 Module NaryToBin.
 Section instance.
 Variables (R : realType) (C : naryConvType R).
@@ -576,7 +551,7 @@ set g2 := fun x => _.
 have -> : g1 = g2 \o tperm ord0 (Ordinal (erefl (1 < 2))).
   rewrite /g1 /g2 /=.
   apply: funext => i /=.
-  by case/orP: (ord2 i) => /eqP -> /=; rewrite (tpermL,tpermR).
+  by have /orP[|] := ord2 i => /eqP -> /=; rewrite (tpermL,tpermR).
 rewrite axmap.
 congr (<&>_ _ _); apply: fdist_ext => i.
 rewrite fdistmapE (bigD1 (tperm ord0 (Ordinal (erefl (1 < 2))) i)) /=; last first.
@@ -599,7 +574,7 @@ rewrite /binconv.
 set g := fun i : 'I_3 => if i <= 0 then a else if i <= 1 then b else c.
 rewrite [X in <&>_(fdistI2 q) X](_ : _ = g \o lift ord0); last first.
   by apply: funext => i; case/orP: (ord2 i) => /eqP ->.
-rewrite [X in <&>_(fdistI2 [r_of p, q]) X](_ : _ = g \o (widen_ord (leqnSn 2))); last first.
+rewrite [X in <&>_(fdistI2 [r_of p, q]) X](_ : _ = g \o widen_ord (leqnSn 2)); last first.
   by apply: funext => i; case/orP: (ord2 i) => /eqP ->.
 rewrite 2!axmap.
 set d1 := fdistmap _ _.
@@ -611,17 +586,13 @@ rewrite -2!axproj 2!convn_if 2!axbary.
 congr (<&>_ _ _); apply: fdist_ext => j.
 rewrite !fdist_convnE !big_ord_recl !big_ord0 /=.
 rewrite !fdistI2E !fdistmapE !fdist1E !addr0 /=.
-case: j => -[|[|[]]] //= Hj.
+case: j => -[|[|[]]] //= ?; rewrite ?(mulr1,mulr0,add0r).
 - rewrite [in RHS](big_pred1 ord0)// big1; last by move=> [] [].
-  by rewrite fdistI2E eqxx !(mulr0,addr0) mulr1 mulrC -p_is_rs.
+  by rewrite fdistI2E/= mulr0 !addr0 mulrC -p_is_rs.
 - rewrite (big_pred1 ord0) // (big_pred1 (Ordinal (ltnSn 1))) //.
-  rewrite !fdistI2E !eqxx !(mulr0,addr0,add0r)/=.
-  rewrite {2}/onem mulrDr mulr1 mulrN [in RHS]mulrC.
-  rewrite -p_is_rs s_of_pqE onemM !onemK /onem mulrBl mul1r.
-  by rewrite -!addrA (addrC (Prob.p p)) !addrA subrK.
-- rewrite (big_pred1 (Ordinal (ltnSn 1))) //.
-  rewrite big1; last by case => -[|[]].
-  by rewrite !fdistI2E 2!mulr0 2!add0r mulr1 s_of_pqE onemK.
+  by rewrite !fdistI2E/= addr0 pq_is_rs mulrC.
+- rewrite (big_pred1 (Ordinal (ltnSn 1)))// big1; last by case => -[|[]].
+  by rewrite !fdistI2E/= mulr0 add0r s_of_pqE onemK.
 Qed.
 
 Lemma binconv1 a b : binconv 1%:pr a b = a.
@@ -645,7 +616,6 @@ End instance.
 Notation "a <& p &> b" := (binconv p a b).
 End NaryToBin.
 
-
 (* Then prove the definitions of operators cancel each other *)
 
 Module BinToNaryToBin.
@@ -660,18 +630,17 @@ Proof. by []. Qed.
 (* The LHS is native to C; the RHS is obtained through BinToNary and NaryToBin *)
 Lemma equiv_conv p (a b : C) : a <| p |> b = a <& p &> b.
 Proof.
-pose g := fun (x : 'I_2) => if x == ord0 then a else b.
-change a with (g ord0).
-change b with (g (lift ord0 ord0)).
+pose g := fun x : 'I_2 => if x == ord0 then a else b.
+rewrite -[a]/(g ord0).
+rewrite -[b]/(g (lift ord0 ord0)).
 pose d := fdistI2 p.
-rewrite [in LHS](_ : p = probfdist d ord0); last first.
-  by apply: val_inj=> /=; rewrite fdistI2E eqxx.
-by rewrite -!ConvnI2E convnE.
+rewrite [in LHS](_ : p = probfdist d ord0).
+  by rewrite -!ConvnI2E convnE.
+by apply: val_inj=> /=; rewrite fdistI2E eqxx.
 Qed.
 
 End proof.
 End BinToNaryToBin.
-
 
 Module NaryToBinToNary.
 Section proof.
@@ -687,8 +656,8 @@ HB.instance Definition _ := binconv_mixin T.
 (* The LHS is native to T; the RHS is obtained through NaryToBin *)
 Lemma equiv_convn n (d : R.-fdist 'I_n) (g : 'I_n -> T) : <&>_d g = <|>_d g.
 Proof.
-elim: n d g => [|n IH d g /=].
-  by move=> d; move: (fdist_card_neq0 d); rewrite card_ord.
+elim: n d g => [d|n IH d g /=].
+  by have := fdist_card_neq0 d; rewrite card_ord.
 case: Bool.bool_dec => [|b].
   by rewrite fdist1E1 => /eqP ->; rewrite axproj.
 rewrite -{}IH.
@@ -706,19 +675,19 @@ case: (unliftP ord0 i) => //= [j|] -> // Hj.
 rewrite (big_pred1 j) //=.
 rewrite fdist_delE fdistD1E /= /onem.
 rewrite mulr0 add0r mulrA (mulrC (1 - d ord0)%R) mulfK //.
-apply/eqP=> /(congr1 (+%R (d ord0))).
-rewrite addrCA addrN !addr0 => b'.
-by elim b; rewrite -b' eqxx.
+apply/eqP => /(congr1 (+%R (d ord0))).
+rewrite addrCA addrN !addr0 => d01.
+by move: b {d'}; rewrite -d01 eqxx.
 Qed.
 
 #[local]
 Corollary _equiv_conv p (x y : T) : x <& p &> y = x <| p |> y.
 Proof.
 rewrite /binconv.
-set g := fun (o : 'I_2) => if o == ord0 then x else y.
+set g := fun o : 'I_2 => if o == ord0 then x else y.
 set d := fdistI2 p.
-change x with (g ord0).
-change y with (g (lift ord0 ord0)).
+rewrite -[x]/(g ord0).
+rewrite -[y]/(g (lift ord0 ord0)).
 have -> : p = probfdist d ord0 by apply: val_inj=> /=; rewrite fdistI2E eqxx.
 by rewrite -ConvnI2E convnE equiv_convn.
 Qed.
@@ -726,13 +695,11 @@ Qed.
 End proof.
 End NaryToBinToNary.
 
-
 (* Export the instantiation of convType from naryConvType *)
 Section naryConvType_convType.
 Variables (R : realType) (T : naryConvType R).
 HB.instance Definition _ := NaryToBin.binconv_mixin T.
 End naryConvType_convType.
-
 
 Module test.
 Section test.
