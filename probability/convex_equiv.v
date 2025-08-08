@@ -22,7 +22,7 @@ Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 (*   + (and two others)                                                       *)
 (*                                                                            *)
 (* The n-ary laws and their logical dependencies are listed in                *)
-(* `Module NaryLaws`.                                                         *)
+(* `Module NaryConvLaws`.                                                     *)
 (*                                                                            *)
 (* The equivalences between n-ary theories are provided as Hierarchy-Builder  *)
 (* structures and factories:                                                  *)
