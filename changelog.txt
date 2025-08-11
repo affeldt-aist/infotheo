@@ -1,3 +1,24 @@
+* changed
+
+- in convex_equiv.v
+  + removed the large module NaryConvexSpace and
+    put its parts into separate modules;
+    replaced ML-style functors by HB structures and factories.
+
+* added
+
+- in convex_equiv.v
+  + naryConvOpType, naryConvType,
+    isNaryBeaulieuConvexSpace, isNaryBaryMapConstConvexSpace,
+    isNaryBarypartIdemConvexSpace,
+    ax_map_of_bary_proj, ax_const_of_bary_proj,
+    ax_idem_of_bary_proj, ax_const_of_idem,
+    ax_idem_of_map_const, ax_barypart_of_bary,
+    ax_part_of_bary, ax_proj_of_idem,
+    ax_barypart_of_part_idem, ax_injmap_of_barypart_idem,
+    ax_injmap_of_part_idem, ax_bary_of_injmap_barypart_idem,
+    ax_bary_of_part_idem
+
 * added
 
 - in entropy.v
