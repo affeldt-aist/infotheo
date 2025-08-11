@@ -503,10 +503,11 @@ Import NaryConvexSpaceTheory.
    - ax_bary + ax_map + ax_const
    - ax_barypart + ax_idem
    - ax_proj + ax_part + ax_const
-   This has been implicitly shown as logical implications in Module NaryLaws.
-   Module NaryConvexSpaceTheory says that Bonchi subsumes the other three.
-   We now exhibit the remaining equivalences by providing Hierarchy-Builder
-   factories for the others.
+   This equivalence has been implicitly shown as logical implications in
+   Module NaryConvLaws.
+   Module NaryConvexSpaceTheory tells that Bonchi subsumes the other three.
+   We now exhibit the remaining part of the equivalence by providing
+   Hierarchy-Builder factories for the others.
  *)
 
 HB.factory Record isNaryBeaulieuConvexSpace
