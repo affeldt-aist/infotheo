@@ -486,11 +486,7 @@ Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
 
 Let fdistA_fdistAC : fdistA (fdistAC `p_ [% X, Y, Z]) = `p_ [% X, [% Z, Y]].
 Proof.
-rewrite /fdistAC.
-rewrite fdistC12_RV3.
-rewrite fdistA_RV3.
-rewrite fdistX_RV2.
-by rewrite fdistA_RV3.
+by rewrite /fdistAC fdistC12_RV3 fdistA_RV3 fdistX_RV2 fdistA_RV3.
 Qed.
 
 Lemma centropy1_RV_fdistAC b c :
@@ -503,6 +499,53 @@ Lemma centropy_RV_fdistA : `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
 Proof.
 by rewrite /centropy_RV -fdistA_RV3 centropy_fdistA fdistA_fdistAC.
 Qed.
+
+Section cPr_centropy_RV_comp.
+
+Variable (f : B -> C).
+
+Lemma cPr_centropy1_RV_comp y :
+  (forall x, `Pr[ X = x | (f `o Y) = f y ] = `Pr[ X = x | Y = y ]) ->
+  `H[ X | (f `o Y) = f y ] = `H[ X | Y = y ].
+Proof.
+move=> H.
+rewrite /centropy1_RV /centropy1.
+congr -%R.
+apply: eq_bigr => a _.
+by rewrite 2!jcPrE -2!cpr_inE' 2!cpr_in1 H.
+Qed.
+
+(* Origin: Theorem 3.7 (Masked Condition Removal) in
+  "Information-Theoretically Secure Number-Product Protocol."
+  by Shen et al., 2007.
+  https://doi.org/10.1109/ICMLC.2007.4370663.
+
+  cPr_centropy_RV_comp is a more generalized version that states:
+
+     conditional probability contraction P(X|(Y,Z))->P(X|Y) implies
+     conditional entropy contraction H(X|(Y,Z))->H(X|Y)
+*)
+Lemma cPr_centropy_RV_comp :
+  (forall x y, `Pr[ Y = y ] != 0 ->
+     `Pr[ X = x | (f `o Y) = f y ] = `Pr[ X = x | Y = y ]) ->
+  `H( X | f `o Y ) = `H( X | Y ).
+Proof.
+move=> Hremoval.
+rewrite 2!centropy_RVE' (partition_big f xpredT) //=.
+apply: eq_bigr => z _.
+under eq_bigr=> y /eqP fyz.
+  rewrite [_ * _](_ : _ = `Pr[ Y = y ] * `H[ X | (f `o Y) = z]); first over.
+  have [->|/Hremoval H] := eqVneq (`Pr[Y=y]) 0; first by rewrite !mul0r.
+  by rewrite -fyz cPr_centropy1_RV_comp.
+rewrite -big_distrl /=; congr (_ * _).
+rewrite pfwd1E /Pr.
+under [RHS]eq_bigr do rewrite pfwd1E /Pr.
+rewrite (partition_big Y (fun y => f y == z))/=; last by move=> ?; rewrite inE.
+apply: eq_bigr => y yz; apply: eq_bigl => a /=.
+by rewrite !inE /comp_RV andb_idl// => /eqP ->.
+Qed.
+
+End cPr_centropy_RV_comp.
 
 End conditional_entropy_RV_prop.
 

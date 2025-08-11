@@ -33,7 +33,7 @@
   + mutual_infoE3 -> mutual_infoEjoint_entropy
   + mutual_infoE -> mutual_infoEcentropy1
   + mutual_infoE2 -> mutual_infoEcentropy2
-  + pr_eq -> pfwd1
+  + pr_eq -> pfwd1 ("pushforward")
   + pr_eqE -> pfwd1E
   + pr_eq_ge0 -> pfwd1_ge0
   + pr_eq_neq0 -> pfwd1_neq0
@@ -75,23 +75,16 @@ from 0.9.3 to 0.9.4
 * added
 
 - in probability/proba.v
-  + pr_RV2_comp
+  + pr_RV2_comp, pr_eq_diag, cPr_eq_id
 
 - probability/jfdist_cond.v
   + jPr_comp_eq1
 
 - in information_theory/entropy.v
-  + centropy1_RV_comp0, centropy_RV_comp0, joint_entropy_RV_comp
-
-- in information_theory/entropy.v
-  + add injective_joint_entropy_RV
-
-- in probability/proba.v
-  + pr_eq_diag, cPr_eq_id
-
-- in /information_theory/entropy.v
-  + lemma mutual_info_RVE, mutual_info_RVC, mutual_info_RV0_indep,
-    centropy_RV_contraction
+  + lemma centropy1_RV_comp0, centropy_RV_comp0,
+    joint_entropy_RV_comp, injective_joint_entropy_RV,
+    mutual_info_RVE, mutual_info_RVC, mutual_info_RV0_indep,
+    centropy_RV_contraction, cPr_centropy1_RV_comp, cPr_centropy_RV_comp
 
 -------------------
 from 0.9.2 to 0.9.3
