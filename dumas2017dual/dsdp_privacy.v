@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap.
+From mathcomp Require Import Rstruct ring boolp finmap matrix.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption dsdp_program.
@@ -421,46 +421,143 @@ rewrite inde_RV_joint_entropyE.
     exact: H.
   clear.
   rewrite s_alt /vs.
-Admitted.
-
-(* Second try:
-
-   In DSDP, Alice knows the result of the dot product.
-   So she anyway will know some new knowledge about v2 after the execution.
-   However, in the paper the security guarantee is kept by the fact that in
-   the equation of the dot product:
-
-       v1 * u1 + v2 * u2 + v3 * u3 = result
-
-   Alice doesn't v2 and v3, and by assuming she is a semi-honest party,
-   she cannot manipulate other values of u_i and v_i to force v2 being the only 
-   unknown term in this equation. Therefore, even if the combination of v2 and
-   v3 are known to Alice, she cannot make sure about the actual value of v2
-   or v3 individually \cite[\S4.1]{dumas2017dual}.
-
-   For the case of "one equation but two or more unknown terms",
-   we should be able to assume hypotheses like:
-
-     `g` is a non trivial affine transform ->
-       (H(v2 | g `o [%v2, v3]) = H `p_v2  and
-        H(v3 | g `o [%v2, v3]) = H `p_v3)
-
-   However, how to define "`g` is a non trivial affine transform"
-   as a hypothesis in Coq, or in infotheo, is unknown.
-   So what we can do is to directly assume the two equations as hypotheses.
-*)
-
-Hypothesis centropy_dotp2_rv_v2_contraction : 
-  `H(v2| dotp2_rv us vs) = `H `p_v2.
-
-Hypothesis centropy_dotp2_rv_v3_contraction : 
-  `H(v3| dotp2_rv us vs) = `H `p_v3.
-
-(* TODO: if the VIEW can be reduced to one of these two hypotheses,
-   then we can prove the protocol is conditionally secure.
-*)
+Abort.
 
 End alice_privacy_analysis.
 
 End dsdp_privacy_analysis.
+
+Section safety_by_underdetermined_systems.
+(* The "safety" property of the DSDP protocol
+   is based on there is only one equation but N unknown terms
+   where N > 1. It is called linear underdetermined systems. 
+   And since we only consider integers, this problem is an
+   integer linear programming problem (ILP). But we don't need to
+   solve ILP to find the optimal result, we only need to confirm
+   there is more than one solution to the equation.
+*)
+
+Section rouché_capelli.
+  
+Variable F : fieldType.
+Variables (m n : nat).
+Implicit Types (A : 'M[F]_(m, n)) (b : 'cV[F]_m).
+
+Lemma rouché_capelli (A : 'M[F]_(m, n)) (b : 'cV[F]_m) :
+  (exists x : 'cV[F]_n, A *m x = b) <-> (\rank A = \rank (row_mx A b)).
+Proof.
+split.
+  move=> [x Ax].
+  rewrite -mxrank_tr -(mxrank_tr (row_mx A b)) tr_row_mx.
+  have sABT : (A^T <= col_mx A^T b^T)%MS.
+    apply/submxP; exists (row_mx 1 0).
+    by rewrite mul_row_col mul1mx mul0mx addr0.
+  have sBT : (b^T <= A^T)%MS.
+    apply/submxP; exists x^T.
+    by rewrite -trmx_mul Ax.
+  have eq_col_to_sum : (col_mx A^T b^T :=: A^T + b^T)%MS.
+    by apply: eqmx_sym; apply: addsmxE.
+  have /addsmx_idPl eq_sum : (b^T <= A^T)%MS by exact: sBT.
+  have eqABT : (col_mx A^T b^T :=: A^T)%MS := eqmx_trans eq_col_to_sum eq_sum.
+  have /eqmxP eqABTb := eqABT.
+  by exact: (esym (eqmx_rank eqABTb)).
+move=> Hrk.
+rewrite -mxrank_tr -(mxrank_tr (row_mx A b)) tr_row_mx in Hrk.
+have sABT : (A^T <= col_mx A^T b^T)%MS.
+  apply/submxP; exists (row_mx 1 0).
+  by rewrite mul_row_col mul1mx mul0mx addr0.
+have Heq : \rank A^T == \rank (col_mx A^T b^T) by apply/eqP; exact: Hrk.
+have eq_bool := geq_leqif (mxrank_leqif_sup sABT).
+have sLHS : (\rank (col_mx A^T b^T) <= \rank A^T)%N.
+  by move/eqP: Heq=> ->; exact: leqnn.
+have sBA : (col_mx A^T b^T <= A^T)%MS by move: eq_bool; rewrite sLHS.
+have sBT : (b^T <= A^T)%MS.
+  move: sBA; rewrite col_mx_sub.
+  by case/andP.
+have /submxP[xT defbT] : (b^T <= A^T)%MS by exact: sBT.
+exists (xT^T).
+have: b = (xT *m A^T)^T by rewrite -defbT trmxK.
+by rewrite trmx_mul trmxK.
+Qed.
+
+Lemma solution_affine_col (A : 'M[F]_(m, n)) (b : 'cV[F]_m) (x0 : 'cV[F]_n) :
+  A *m x0 = b ->
+  forall x : 'cV[F]_n, A *m x = b <-> exists y : 'cV[F]_n, A *m y = 0 /\ x = x0 + y.
+Proof.
+move=> Ax0 x; split.
+  move=> Ax.
+  exists (x - x0); split.
+    by rewrite mulmxBr Ax Ax0 subrr.
+  by rewrite addrC subrK.
+move=> [y [Ay0 ->]].
+by rewrite mulmxDr Ax0 Ay0 addr0.
+Qed.
+
+(* A local replacement for a missing MathComp lemma: if a matrix is nonzero,
+   then it has a nonzero entry at some row/column. *)
+Lemma mx0Pn (p q : nat) (M : 'M[F]_(p, q)) :
+  M != 0 -> exists i : 'I_p, exists j : 'I_q, M i j != 0.
+Proof.
+move=> Mnz.
+have M0_forall : (M == 0) = [forall i, [forall j, M i j == 0]].
+  apply/idP/idP.
+    move/eqP=> ->; apply/forallP=> i; apply/forallP=> j.
+    by rewrite !mxE eqxx.
+  move/forallP=> Hi; apply/eqP; apply/matrixP=> i j.
+  rewrite mxE.
+  move/forallP: (Hi i) => Hij; move/eqP: (Hij j) => ->.
+  by [].
+have Hneg : ~~ [forall i, [forall j, M i j == 0]].
+  apply/negP => Hforall.
+  move/negP: Mnz => Mnz0.
+  rewrite M0_forall in Mnz0.
+  exact: Mnz0 Hforall.
+move: Hneg; rewrite negb_forall => /existsP [i Hi].
+move: Hi; rewrite negb_forall => /existsP [j Hj].
+exists i; exists j.
+exact: Hj.
+Qed.
+
+(* From \rank A < n, exhibit a nonzero kernel vector: there exists y ≠ 0 with A *m y = 0 (rank-nullity / dependent columns). *)
+Lemma exists_nonzero_kernel (A : 'M[F]_(m, n)) :
+  (\rank A < n)%N -> exists y : 'cV[F]_n, A *m y = 0 /\ y != 0.
+Proof.
+move=> rkAltn.
+pose Kt := kermx A^T.
+have AK0 : A *m Kt^T = 0.
+  have h : Kt *m A^T = 0 by apply: mulmx_ker.
+  have := congr1 trmx h.
+  by rewrite trmx_mul trmxK trmx0.
+have rKt_gt0 : (0 < \rank Kt)%N.
+  by rewrite mxrank_ker mxrank_tr subn_gt0.
+have Kt_neq0 : Kt != 0.
+  apply/negP => /eqP Kt0.
+  move: rKt_gt0; by rewrite Kt0 mxrank0 ltn0.
+have /mx0Pn [i [j Hij]] : Kt != 0 by exact: Kt_neq0.
+pose K := Kt^T.
+pose e : 'M[F]_(n,1) := delta_mx i ord0.
+pose y := K *m e.
+exists y; split.
+  by rewrite /y mulmxA AK0 mul0mx.
+apply/negP => /eqP Hy0.
+have Hij' : K j i != 0.
+Abort.
+(*
+  move: Hij.
+  rewrite -{1}(mxE Kt i j) /K mxE.
+  by [].
+have Kjiz0 : K j i = 0.
+  rewrite -{1}(mxE y j 0) /y mxE (bigD1 i) //= !mxE eqxx /= mulr1.
+  have -> : \sum_(k | k != i) K j k * e k 0 = 0.
+    apply: big1 => k /negbTE kik.
+    by rewrite !mxE kik /= mulr0.
+  by rewrite addr0 Hy0 mxE.
+move: Hij'.
+by rewrite Kjiz0 eqxx.
+Qed.
+*)
+
+End rouché_capelli.
+
+End safety_by_underdetermined_systems.
 
