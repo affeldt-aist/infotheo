@@ -140,11 +140,10 @@ have [H'|H'] := eqVneq ((R `X Q) (a, b)) 0.
     by move/eqP : H; tauto.
   by rewrite !(mulr0,mul0r).
 rewrite 2!fdist_prod1 /=.
-set x := R _.
-set y := (R `X P _).
-set z := (R `X Q _).
-field.
-by rewrite H'.
+set x := R _; set y := (R `X P _); set z := (R `X Q _).
+have: x != 0 by rewrite H.
+have: z != 0 by rewrite H'.
+by move: x y z => x y z zn0 xn0; field; do ?[apply/andP; split].
 Qed.
 
 End conditional_divergence_vs_conditional_relative_entropy.

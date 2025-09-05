@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Rstruct.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra ring.
 From mathcomp Require Import Rstruct reals exp.
 Require Import realType_ext realType_ln fdist proba entropy aep.
@@ -148,7 +149,7 @@ Proof.
 rewrite /SrcErrRate /no_failure /Pr.
 set a := \sum_(_ | _) _.
 set b := \sum_(_ | _) _.
-suff : 1 = a + b by move=> ->; field.
+suff : 1 = a + b by move=> ->; ring.
 rewrite /a {a}.
 have -> : b = \sum_(i in [set i | dec sc (enc sc i) == i]) (P `^ k.+1)%fdist i.
   by apply eq_big => // i /=; rewrite inE.

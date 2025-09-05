@@ -1,3 +1,4 @@
+Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import lra ring.
 From mathcomp Require boolp.
@@ -815,7 +816,7 @@ apply: ler_pM.
 - rewrite ler_sqr ?nnegrE; lra.
 - rewrite -[leRHS]mulr1 ler_pdivlMl; last lra.
   rewrite [leLHS](_ : _ = 8 * eps * eps / (1 - 5 * eps)); last first.
-    rewrite /delta; field; apply/andP; split; lra.
+    rewrite /delta; field; do ?[apply/andP; split]; lra.
   rewrite ler_pdivrMr; last lra.
   rewrite mul1r (@le_trans _ _ eps) //; last lra.
   by rewrite ler_piMl //; lra.

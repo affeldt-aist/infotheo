@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Rstruct.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
 From mathcomp Require Import Rstruct reals classical_sets topology normedtype.
 From mathcomp Require Import sequences exp.
@@ -126,7 +127,7 @@ Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
 Proof.
 rewrite /mutual_info_chan.
 rewrite (_ : _ - _ =
-  `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last by field.
+  `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last ring.
 apply: le_trans; first exact: ler_normD.
 rewrite -mulrA mulrDl mulrDr lerD//.
 - by rewrite mulrA; apply out_entropy_dist_ub.

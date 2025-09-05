@@ -2,9 +2,9 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg archimedean ssrnum ssrint.
-From mathcomp Require Import reals normedtype sequences exp.
+From mathcomp Require Import Rstruct reals normedtype sequences exp.
 From mathcomp Require Import unstable mathcomp_extra boolp interval_inference.
-From mathcomp Require Import lra ring Rstruct.
+From mathcomp Require Import ring lra.
 
 (**md**************************************************************************)
 (* # Additional definitions and lemmas about numeric types                    *)
@@ -728,8 +728,7 @@ Lemma r_of_pqK {R : realType} (r s : {prob R}) :
 Proof.
 move=> H1 s0; apply/val_inj => /=.
 rewrite !(r_of_pqE,s_of_pqE,q_of_rsE,p_of_rsE) /onem.
-field.
-apply/andP; split; last first.
+field; do ?[apply/andP; split]; last first.
   by rewrite mulrBl mul1r !opprB -!addrA addrC !addrA !subrK ?subrr ?add0r.
 rewrite subr_eq0.
 apply: contra H1 => /eqP H1.
@@ -759,8 +758,7 @@ Lemma s_of_rpos_probA {R : realType} (p q r : {posnum R}%R) :
 Proof.
 apply val_inj; rewrite /= s_of_pqE.
 rewrite onemM !onemK/=.
-field.
-by apply/andP; split => //.
+by field; do ?[apply/andP; split].
 Qed.
 
 Lemma r_of_rpos_probA {R : realType} (p q r : {posnum R}%R) :
@@ -768,8 +766,7 @@ Lemma r_of_rpos_probA {R : realType} (p q r : {posnum R}%R) :
   divrposxxy p q%R.
 Proof.
 apply/val_inj; rewrite /= r_of_pqE s_of_pqE /onem /=.
-field.
-apply/and4P; split => //.
+field; do ?[apply/andP; split]; do ?[by []].
 rewrite (addrC p%:num (q%:num + r%:num)%:pos%:num)%R addrK {4}[in (q%:num + r%:num)%R]addrC addrK.
 by rewrite mulrC -mulrBr (addrC _ p%:num%R) addrA addrK mulf_neq0//.
 Qed.
