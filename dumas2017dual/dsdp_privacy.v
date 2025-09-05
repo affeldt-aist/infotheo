@@ -436,128 +436,224 @@ Section safety_by_underdetermined_systems.
    solve ILP to find the optimal result, we only need to confirm
    there is more than one solution to the equation.
 *)
+  
 
 Section rouché_capelli.
-  
-Variable F : fieldType.
-Variables (m n : nat).
-Implicit Types (A : 'M[F]_(m, n)) (b : 'cV[F]_m).
 
-Lemma rouché_capelli (A : 'M[F]_(m, n)) (b : 'cV[F]_m) :
-  (exists x : 'cV[F]_n, A *m x = b) <-> (\rank A = \rank (row_mx A b)).
+Lemma mxrank_sub_eqmx m n p (A : 'M[R]_(m,n)) (B : 'M[R]_(p,n)) :
+  \rank A = \rank B -> (A <= B)%MS -> (A == B)%MS.
+Proof. by move/eqP => Hr /mxrank_leqif_eq /eq_leqif; rewrite Hr => <-. Qed.
+
+Lemma rouche1 m n (A : 'M[R]_(m,n)) (B : 'rV_n) :
+  (exists x, x *m A = B) <-> (\rank A = \rank (col_mx A B)).
 Proof.
-split.
-  move=> [x Ax].
-  rewrite -mxrank_tr -(mxrank_tr (row_mx A b)) tr_row_mx.
-  have sABT : (A^T <= col_mx A^T b^T)%MS.
-    apply/submxP; exists (row_mx 1 0).
-    by rewrite mul_row_col mul1mx mul0mx addr0.
-  have sBT : (b^T <= A^T)%MS.
-    apply/submxP; exists x^T.
-    by rewrite -trmx_mul Ax.
-  have eq_col_to_sum : (col_mx A^T b^T :=: A^T + b^T)%MS.
-    by apply: eqmx_sym; apply: addsmxE.
-  have /addsmx_idPl eq_sum : (b^T <= A^T)%MS by exact: sBT.
-  have eqABT : (col_mx A^T b^T :=: A^T)%MS := eqmx_trans eq_col_to_sum eq_sum.
-  have /eqmxP eqABTb := eqABT.
-  by exact: (esym (eqmx_rank eqABTb)).
-move=> Hrk.
-rewrite -mxrank_tr -(mxrank_tr (row_mx A b)) tr_row_mx in Hrk.
-have sABT : (A^T <= col_mx A^T b^T)%MS.
-  apply/submxP; exists (row_mx 1 0).
-  by rewrite mul_row_col mul1mx mul0mx addr0.
-have Heq : \rank A^T == \rank (col_mx A^T b^T) by apply/eqP; exact: Hrk.
-have eq_bool := geq_leqif (mxrank_leqif_sup sABT).
-have sLHS : (\rank (col_mx A^T b^T) <= \rank A^T)%N.
-  by move/eqP: Heq=> ->; exact: leqnn.
-have sBA : (col_mx A^T b^T <= A^T)%MS by move: eq_bool; rewrite sLHS.
-have sBT : (b^T <= A^T)%MS.
-  move: sBA; rewrite col_mx_sub.
-  by case/andP.
-have /submxP[xT defbT] : (b^T <= A^T)%MS by exact: sBT.
-exists (xT^T).
-have: b = (xT *m A^T)^T by rewrite -defbT trmxK.
-by rewrite trmx_mul trmxK.
+rewrite -addsmxE; split.
+  case=> x AB; apply/eqmx_rank.
+  by rewrite -AB addsmx_sub submx_refl addsmxSl submxMl.
+move/mxrank_sub_eqmx/(_ (addsmxSl A B)).
+case/eqmxP/eqmx_sym/addsmx_idPl/submxP => x ->.
+by exists x.
 Qed.
 
-Lemma solution_affine_col (A : 'M[F]_(m, n)) (b : 'cV[F]_m) (x0 : 'cV[F]_n) :
-  A *m x0 = b ->
-  forall x : 'cV[F]_n, A *m x = b <-> exists y : 'cV[F]_n, A *m y = 0 /\ x = x0 + y.
+Lemma rouche2 m n (A : 'M[R]_(m,n)) (B : 'rV_n) :
+  \rank A = \rank (col_mx A B) -> \rank A = m ->
+  exists! x, x *m A = B.
 Proof.
-move=> Ax0 x; split.
-  move=> Ax.
-  exists (x - x0); split.
-    by rewrite mulmxBr Ax Ax0 subrr.
-  by rewrite addrC subrK.
-move=> [y [Ay0 ->]].
-by rewrite mulmxDr Ax0 Ay0 addr0.
+case/rouche1 => x Hx Am.
+exists x; split => // x' Hx'.
+move/eqP: Hx' (sub_kermx A (x'-x)).
+rewrite -Hx -GRing.subr_eq0 -mulmxBl => -> /submxP [y].
+have/eqP -> : kermx A == 0 by rewrite -mxrank_eq0 mxrank_ker Am subnn.
+by rewrite mulmx0 => /GRing.subr0_eq /esym.
 Qed.
 
-(* A local replacement for a missing MathComp lemma: if a matrix is nonzero,
-   then it has a nonzero entry at some row/column. *)
-Lemma mx0Pn (p q : nat) (M : 'M[F]_(p, q)) :
-  M != 0 -> exists i : 'I_p, exists j : 'I_q, M i j != 0.
+Lemma exists_nonzero_kernel m n (A : 'M[R]_(m, n)) :
+  (\rank A < m)%N -> exists2 y : 'rV_m, y *m A = 0 & y != 0.
 Proof.
-move=> Mnz.
-have M0_forall : (M == 0) = [forall i, [forall j, M i j == 0]].
-  apply/idP/idP.
-    move/eqP=> ->; apply/forallP=> i; apply/forallP=> j.
-    by rewrite !mxE eqxx.
-  move/forallP=> Hi; apply/eqP; apply/matrixP=> i j.
-  rewrite mxE.
-  move/forallP: (Hi i) => Hij; move/eqP: (Hij j) => ->.
-  by [].
-have Hneg : ~~ [forall i, [forall j, M i j == 0]].
-  apply/negP => Hforall.
-  move/negP: Mnz => Mnz0.
-  rewrite M0_forall in Mnz0.
-  exact: Mnz0 Hforall.
-move: Hneg; rewrite negb_forall => /existsP [i Hi].
-move: Hi; rewrite negb_forall => /existsP [j Hj].
-exists i; exists j.
-exact: Hj.
+rewrite -subn_gt0 -mxrank_ker lt0n mxrank_eq0 => /matrix0Pn [i] [j] Hij.
+exists (row i (kermx A)); first exact/sub_kermxP/row_sub.
+by apply/rV0Pn; exists j; rewrite mxE.
 Qed.
 
-(* From \rank A < n, exhibit a nonzero kernel vector: there exists y ≠ 0 with A *m y = 0 (rank-nullity / dependent columns). *)
-Lemma exists_nonzero_kernel (A : 'M[F]_(m, n)) :
-  (\rank A < n)%N -> exists y : 'cV[F]_n, A *m y = 0 /\ y != 0.
+Lemma kernel_membership m n p (A : 'M[R]_(m, n)) (X : 'M[R]_(n, p)) :
+  A *m X = 0 -> (X^T <= kermx A^T)%MS.
 Proof.
-move=> rkAltn.
-pose Kt := kermx A^T.
-have AK0 : A *m Kt^T = 0.
-  have h : Kt *m A^T = 0 by apply: mulmx_ker.
-  have := congr1 trmx h.
-  by rewrite trmx_mul trmxK trmx0.
-have rKt_gt0 : (0 < \rank Kt)%N.
-  by rewrite mxrank_ker mxrank_tr subn_gt0.
-have Kt_neq0 : Kt != 0.
-  apply/negP => /eqP Kt0.
-  move: rKt_gt0; by rewrite Kt0 mxrank0 ltn0.
-have /mx0Pn [i [j Hij]] : Kt != 0 by exact: Kt_neq0.
-pose K := Kt^T.
-pose e : 'M[F]_(n,1) := delta_mx i ord0.
-pose y := K *m e.
-exists y; split.
-  by rewrite /y mulmxA AK0 mul0mx.
-apply/negP => /eqP Hy0.
-have Hij' : K j i != 0.
-Abort.
-(*
-  move: Hij.
-  rewrite -{1}(mxE Kt i j) /K mxE.
-  by [].
-have Kjiz0 : K j i = 0.
-  rewrite -{1}(mxE y j 0) /y mxE (bigD1 i) //= !mxE eqxx /= mulr1.
-  have -> : \sum_(k | k != i) K j k * e k 0 = 0.
-    apply: big1 => k /negbTE kik.
-    by rewrite !mxE kik /= mulr0.
-  by rewrite addr0 Hy0 mxE.
-move: Hij'.
-by rewrite Kjiz0 eqxx.
+move=> HX; apply/sub_kermxP.
+by rewrite -(trmx_mul A X) HX trmx0.
 Qed.
-*)
+Lemma kernel_coeff_exists m n p (A : 'M[R]_(m, n)) (X : 'M[R]_(n, p)) :
+  A *m X = 0 -> exists P : 'M[R]_(p, n),
+    X^T = P *m kermx A^T.
+Proof.
+move=> HX.
+have /submxP [P ->] : (X^T <= kermx A^T)%MS.
+  by apply: kernel_membership.
+by exists P.
+Qed.
 
 End rouché_capelli.
+
+Section solution_counting.
+  
+(* Proving that if exists_nonzero_kernel in a finite domain,
+   the number of vectors satisify A *m X = 0 is (#| {:K} | ^ (n - \rank A))%N.
+*)
+
+Variable K : finFieldType.
+
+
+(* Column span of a matrix, as a set of column vectors (boolean-quantified). *)
+Definition colspan m n (B : 'M[K]_(m, n)) : {set 'cV[K]_m} :=
+  [set x | [exists y : 'cV[K]_n, B *m y == x]].
+
+Lemma sub_coker m n (A : 'M[K]_(m, n)) :
+  forall x : 'cV[K]_n, x \in colspan (cokermx A) -> A *m x == 0.
+Proof.
+move => x.
+rewrite inE => /existsP [y /eqP Ey].
+move: Ey. move/eqP.
+rewrite eq_sym => /eqP ->.
+apply/eqP.
+by rewrite mulmxA mulmx_coker mul0mx.
+Qed.
+
+Lemma kernel_cardinality_rank_nullity m n (A : 'M[K]_(m, n)) :
+  #| [set x : 'cV[K]_n | A *m x == 0] | = (#| {:K} | ^ (n - \rank A))%N.
+Proof.
+  (* Use rank-nullity theorem *)
+  have ker_dim := mxrank_ker A.
+  
+  (* The kernel has dimension n - rank(A) *)
+  (* We need to count the number of vectors in the kernel *)
+  
+  (* Method 1: Use the fact that kernel vectors are determined by their coordinates *)
+  (* in the basis where the first r coordinates are determined by the last n-r *)
+  
+  (* Get the echelon form to understand the structure *)
+  pose r := \rank A.
+  set L := col_ebase A.
+  set R := row_ebase A.
+  set P : 'M[K]_(m, n) := pid_mx r.
+  
+  have defA : A = L *m P *m R by rewrite mulmx_ebase.
+  have UR : R \in unitmx by apply: row_ebase_unit.
+  have UL : L \in unitmx by apply: col_ebase_unit.
+
+  (* The map x |-> R * x is a bijection *)
+  pose f := (fun x : 'cV[K]_n => R *m x).
+  (* Show bijection *)
+  have bij_f : bijective f.
+  exists (fun z => invmx (row_ebase A) *m z).
+    move=> x; rewrite mulmxA mulVmx ?mul1mx //; exact: row_ebase_unit.
+    move=> z; rewrite /f mulmxA mulmxV ?mul1mx //; exact: row_ebase_unit.
+
+  (* Kernel correspondence: A*x = 0 iff P*(R*x) = 0 *)
+  have ker_corr1: forall x, A *m x == 0 -> P *m (f x) == 0.
+    move=> x.
+    rewrite /f.
+    move/eqP => HAx0.
+    apply/eqP.
+    rewrite mulmxA.
+    rewrite defA in HAx0.
+    have HPR : P *m R *m x = 0.
+    have : invmx L *m (L *m P *m R *m x) = 0 by rewrite HAx0 mulmx0.
+    rewrite mulmxA mulmxA mulmxA mulVmx.
+    rewrite mul1mx //.
+    exact: UL.
+    exact: HPR.
+  have ker_corr2 : forall x, P *m (f x) == 0 -> A *m x == 0.
+    move=> x.
+    rewrite /f.
+    move => HPR.
+    rewrite mulmxA in HPR.
+    apply/eqP.
+    rewrite defA.
+    move: HPR.
+    move/eqP => HPR.
+    rewrite -mulmxA -mulmxA HPR.
+    by rewrite mulmx0.
+      
+  set Ax := [set x : 'cV_n | A *m x == 0].
+  set Pz := [set z : 'cV_n | P *m z == 0]. (* r decides how many diag 0 *)
+  have card_eq : #|Ax| = #|Pz|.
+    apply: eq_card => x.
+    rewrite !inE.
+    (*apply: ker_corr1.*)
+    admit.
+  rewrite card_eq -/r.
+  
+
+Abort.
+    
+
+Lemma count_kernel_vectors_gaussian_elimination m n (A : 'M[K]_(m, n)) :
+  #| [set x : 'cV[K]_n | A *m x == 0] | = (#| {:K} | ^ (n - \rank A))%N.
+Proof.
+(* Use Gaussian elimination: transform to echelon form *)
+pose r := \rank A.
+set L := col_ebase A.
+set R := row_ebase A.
+set P : 'M[K]_(m, n) := pid_mx r.
+(* The matrix decomposition A = L * P * R *)
+have defA : A = L *m P *m R by rewrite mulmx_ebase.
+(* Both L and R are invertible *)
+have Urow : row_ebase A \in unitmx by apply: row_ebase_unit.
+have Ucol : col_ebase A \in unitmx by apply: col_ebase_unit.
+
+have bij_row : bijective (fun x : 'cV[K]_n => row_ebase A *m x).
+  exists (fun z => invmx (row_ebase A) *m z).
+    move=> x; rewrite mulmxA mulVmx ?mul1mx //; exact: row_ebase_unit.
+  move=> z; rewrite mulmxA mulmxV ?mul1mx //; exact: row_ebase_unit.
+pose f := (fun x : 'cV[K]_n => row_ebase A *m x).
+set Ax := [set x : 'cV_n | A *m x == 0].
+set Pz := [set z : 'cV_n | P *m z == 0]. (* r decides how many diag 0 *)
+pose Rset : {set 'cV[K]_n} := [set z : 'cV[K]_n | P *m z == 0].
+have fS_eqR : f @: Pz = Rset.
+  apply/setP=> z; rewrite !inE; apply/idP/idP.
+  move/imsetP=> [x Hx ->].
+  rewrite inE in Hx.                 (* turn x \in S into A *m x == 0 *)
+  move/eqP: Hx => HAx0.              (* now HAx0 : A *m x = 0 *)
+  apply/eqP.                         (* goal becomes an equality *)
+  Fail have H0 : invmx L *m (A *m x) = 0 by rewrite HAx0 mulmx0.
+  Fail rewrite defA -!mulmxA (mulKmx Ucol) !mulmxA in H0.
+  rewrite mulmxA.
+  Fail exact: H0.
+Abort.
+
+(*
+High-level goal: count solutions x to A x = 0 over finite field K.
+
+  Step 1
+   Let r = rank(A). Use the standard ebase factorization
+      A = L · P · R, where L = col_ebase A (invertible m×m),
+      R = row_ebase A (invertible n×n), and
+      P = pid_mx r (n×n projector onto the first r coordinates).
+  This is the Gaussian elimination decomposition mulmx_ebase.
+
+  Step 2:
+    Define the change-of-coordinates map f: x ↦ R x.
+    It’s a bijection because R is invertible (row_ebase_unit).
+    So counting x is equivalent to counting their images z = R x.
+
+  Step 3:
+    Show f maps the kernel of A exactly to the kernel of P. Using A = L P R:
+      A x = 0 iff L P R x = 0.
+    Since L is invertible, this is equivalent to P (R x) = 0.
+    Let z = R x; then the condition is P z = 0.
+    This establishes f @: S = { z | P z = 0 } where S = { x | A x = 0 }.
+
+  Step 4:
+    Conclude |S| = |{ z | P z = 0 }| by bijection/cardinality preservation.
+
+  Step 5:
+    Count solutions to P z = 0 when P = pid_mx r.
+    This projector forces the first r coordinates of z to be zero
+    while leaving the remaining n − r coordinates free.
+    Therefore the number of such z is |K|^(n − r).
+
+Final result: |{ x | A x = 0 }| = |K|^(n − rank(A)).
+*)
+End solution_counting.
 
 End safety_by_underdetermined_systems.
 
