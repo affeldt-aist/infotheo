@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix perm.
 From mathcomp Require Import archimedean lra ring.
@@ -770,7 +771,7 @@ rewrite ltrD2l.
 have -> : #| M |%:R = 2 `^ (log #| M |%:R) :> R by rewrite LogK // card_ord.
 rewrite -powRD; last by rewrite (eqr_nat R 2 0) implybT.
 rewrite (_ : _ + _ = - n%:R * (`I(P, W) - log #| M |%:R / n%:R - 3 * epsilon0)); last first.
-  field.
+  move: (`I(_, _)) => i {lhs Cal_E Jtdec}; field.
   by case: Hn; rewrite -(ltr_nat R) => /lt0r_neq0.
 rewrite (_ : _ / _ = rate r); last by rewrite -Hk card_ord.
 apply (@lt_trans _ _ (2 `^ (- n%:R * epsilon0))).

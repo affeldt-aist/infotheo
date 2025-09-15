@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Rstruct.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
 From mathcomp Require Import archimedean lra ring.
 From mathcomp Require Import Rstruct reals exp.
@@ -164,8 +165,7 @@ set F := f n S.
 set PHI := @phi _ n _ S def.
 exists (mkScode F PHI); split.
   rewrite /SrcRate /r /n /k.
-  field.
-  by rewrite !nat1r/= !gt_eqF//=.
+  by clearbody k'; move=> {S F PHI def}; field; rewrite !nat1r/= !gt_eqF.
 set lhs := esrc(_, _).
 suff -> : lhs = 1 - Pr (P `^ k)%fdist (`TS P k (lambda / 2)).
   rewrite lerBlDr addrC -lerBlDr.
@@ -175,7 +175,7 @@ suff -> : lhs = 1 - Pr (P `^ k)%fdist (`TS P k (lambda / 2)).
 rewrite /lhs {lhs} /SrcErrRate /Pr /=.
 set lhs := \sum_(_ | _ ) _.
 suff -> : lhs = \sum_(x in 'rV[A]_k | x \notin S) (P `^ k)%fdist x.
-  have : forall a b : R, a + b = 1 -> b = 1 - a by move=> ? ? <-; field.
+  have : forall a b : R, a + b = 1 -> b = 1 - a by move=> ? ? <-; ring.
   apply.
   rewrite -[X in _ = X](Pr_cplt (P `^ k)%fdist (`TS P k (lambda / 2))).
   congr +%R.
@@ -195,9 +195,7 @@ rewrite inE /=; apply/negPn/negPn.
     apply: le_trans; first exact: card_S_bound.
     by rewrite gt1_ler_powRr ?ltr1n// ler_wpM2l// Hlambdar.
   apply (@le_trans _ _ (2 `^ (k%:R * (lambda / 2) + k%:R * (`H P + lambda / 2)))); last first.
-    rewrite -mulrDr addrC -addrA.
-    rewrite (_ : forall a, a / 2 + a / 2 = a); last by move=> ?; field.
-    by rewrite lexx.
+    by rewrite -mulrDr addrC -addrA -splitr lexx.
   apply (@le_trans _ _ (2 `^ (1 + k%:R * (`H P + lambda / 2)))); last first.
     rewrite gt1_ler_powRr ?ltr1n// lerD2r//.
     move: Hdelta; rewrite ge_max => /andP[_ Hlambda].

@@ -246,7 +246,7 @@ apply (@le_trans _ _ (2 `^ (n%:R * (`H( P , W )%channel + epsilon)) *
 apply/eqW.
 rewrite -!powRD; try by rewrite (@eqr_nat R 2 0) implybT.
 rewrite /mutual_info_chan !mulrDr !mulrNN; congr exp.powR.
-by rewrite (_ : 3 * epsilon = epsilon + epsilon + epsilon) //; field.
+by rewrite (_ : 3 * epsilon = epsilon + epsilon + epsilon) //; ring.
 Qed.
 
 End non_typicality.

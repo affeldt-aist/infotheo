@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum interval ring lra.
 From mathcomp Require Import unstable mathcomp_extra classical_sets functions.
 From mathcomp Require Import set_interval reals Rstruct topology normedtype.
@@ -123,16 +124,16 @@ rewrite mulrDl; apply: is_deriveD=> /=.
   apply: is_derive1_LogfM_eq=> //.
   - by apply: is_deriveV; rewrite gt_eqF.
   - by rewrite invr_gt0.
-  - rewrite mulr_algl -mulr_regl; field.
-    by rewrite ln2_neq0 /= subr_eq0 gt_eqF//= !gt_eqF.
+  - by rewrite mulr_algl -mulr_regl; field;
+      rewrite ?ln2_neq0 /= ?subr_eq0 ?gt_eqF//= !gt_eqF.
 rewrite -!mulrA; apply: is_deriveZ=> /=.
 rewrite invfM mulrA mulfV ?gt_eqF//.
 apply: is_derive1_LogfM_eq=> //=.
 - by apply: is_deriveV; rewrite subr_eq0 gt_eqF.
 - by rewrite subr_gt0.
 - by rewrite invr_gt0 subr_gt0.
-  rewrite -mulr_regl; field.
-  by rewrite ln2_neq0 /= !subr_eq0 !gt_eqF.
+  by rewrite -mulr_regl; field;
+    rewrite ?ln2_neq0 /= ?subr_eq0 ?gt_eqF.
 Qed.
 
 Lemma derive1_pinsker_fun (p : R) (Hp : 0 < p < 1) c q (Hq : 0 < q < 1) :
@@ -158,7 +159,7 @@ Proof.
 move: Hq=> /andP [q0 q1].
 apply: is_deriveB.
   apply: is_deriveN_eq; first by apply: is_derive1_Logf=> //; rewrite subr_gt0.
-  by simpl; field; rewrite ln2_neq0 subr_eq0 gt_eqF.
+  by simpl; field; rewrite ?ln2_neq0 ?subr_eq0 ?gt_eqF.
 have->: 8 * c = 4 * c * 2 by ring.
 apply: is_deriveZ_eq.
 by rewrite -!mulr_regr; ring.
@@ -188,7 +189,7 @@ rewrite -ler_pdivlMl ?mulr_gt0//; last lra.
 rewrite (le_trans Hc)//.
 rewrite !invfM mulrA ler_pM2r ?invr_gt0 ?ln2_gt0//.
 rewrite (_ : 8^-1 = 2^-1 * 4^-1); last by field.
-rewrite -[leLHS]mulr1 -!mulrA ler_pM2l; last lra.  
+rewrite -[leLHS]mulr1 -!mulrA ler_pM2l; last lra.
 rewrite -ler_pdivrMr -!invfM; last by rewrite invr_gt0 mulr_gt0; lra.
 by rewrite invrK mul1r x_x2_max.
 Qed.

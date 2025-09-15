@@ -1,5 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix fingroup perm.
 From mathcomp Require Import lra ring.
 From mathcomp Require boolp.
@@ -427,8 +428,7 @@ congr (_ <| _ |> _).
 apply val_inj => /=.
 rewrite -[in RHS](onemK (Prob.p p)); congr onem.
 rewrite q_of_rsE {1}p_of_rsE /= q_of_rsE p_of_rsE /= /onem.
-field.
-apply/andP; split.
+field; do 1?[apply/andP; split].
   by rewrite subr_eq0 eq_sym -p_of_rsE.
 rewrite mulrBl mul1r opprB addrA subrK mulrDr mulr1 mulrN opprB addrA subrK.
 by rewrite subr_eq0 eq_sym.
@@ -705,8 +705,8 @@ congr (_ <| _ |> _).
   rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
   set tmp1 := d _.
   set tmp2 := d _.
-  field.
-  rewrite oned0/= opprB opprB addrC addrA subrK.
+  field; rewrite ?oned0//=.
+  rewrite opprB opprB addrC addrA subrK.
   by rewrite gt_eqF// addrC.
 - by rewrite /= /S3.p01 permE /=; congr g; exact/val_inj.
 - congr (_ <| _ |> _).
@@ -716,12 +716,12 @@ congr (_ <| _ |> _).
     rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
     set tmp1 := d _.
     set tmp2 := d _.
-    field.
-    apply/andP; split.
-      rewrite subr_eq0 eq_sym.
-      apply: contra ds01.
-      rewrite /S3.p01 permE /= (_ : Ordinal _ = lift ord0 ord0) //; exact/val_inj.
-      by rewrite oned0/= !opprB addrC addrA subrK gt_eqF// addrC.
+    field; do 1?[apply/andP; split]; rewrite ?oned0//=; last first.
+      by rewrite !opprB addrC addrA subrK gt_eqF// addrC.
+    rewrite subr_eq0 eq_sym.
+    apply: contra ds01.
+    rewrite /S3.p01 permE /= (_ : Ordinal _ = lift ord0 ord0) //.
+    exact/val_inj.
   + by congr g; apply val_inj => /=; rewrite /S3.p01 permE.
   + by rewrite /= /S3.p01 permE.
 Qed.

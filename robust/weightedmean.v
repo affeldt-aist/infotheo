@@ -1,3 +1,4 @@
+From mathcomp Require Rstruct.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require Import lra ring.
 From mathcomp Require boolp.

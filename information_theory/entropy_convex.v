@@ -368,11 +368,11 @@ have -> : qlambdaxy = q1xy <| t |> q2xy.
   rewrite !fdist_prodE !fdist_convE /= /q1xy /q2xy !fdist_prodE /= /p1 /plambday.
   rewrite !fdist_sndE !big_distrr /= -big_split /=; apply eq_bigr => a0 _.
   rewrite /plambdaxy /= !fdist_prodE /= /p1xy /plambdayx fdist_convE /=.
-  by field.
+  ring.
 have -> : plambdaxy = p1xy <| t |> p2xy.
   apply/fdist_ext => -[a b].
   rewrite !fdist_prodE !fdist_convE /= /p1xy /p2xy !fdist_prodE /=.
-  by field.
+  ring.
 have -> : mutual_info (P `X p1yx) = D(p1xy || q1xy).
   rewrite mutual_infoE0 /div pair_big /=; apply: eq_bigr => -[a b] _ /=.
   congr (_ * log (_ / _)).
