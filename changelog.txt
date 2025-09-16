@@ -1,9 +1,6 @@
-* changed
-
-- in convex_equiv.v
-  + removed the large module NaryConvexSpace and
-    put its parts into separate modules;
-    replaced ML-style functors by HB structures and factories.
+-------------------
+from 0.9.4 to 0.9.5
+-------------------
 
 * added
 
@@ -18,8 +15,6 @@
     ax_barypart_of_part_idem, ax_injmap_of_barypart_idem,
     ax_injmap_of_part_idem, ax_bary_of_injmap_barypart_idem,
     ax_bary_of_part_idem
-
-* added
 
 - in entropy.v
   + inde_RV_joint_entropyE
@@ -51,10 +46,15 @@
   + pr_eq_domin_RV2 -> pfwd1_domin_RV2
   + pr_eq_domin_RV1 -> pfwd1_domin_RV1
 
-* changed
-
 - in proba.v
   + pr_eqE' -> dist_of_RVE
+
+* changed
+
+- in convex_equiv.v
+  + removed the large module NaryConvexSpace and
+    put its parts into separate modules;
+    replaced ML-style functors by HB structures and factories.
 
 -------------------
 from 0.9.3 to 0.9.4

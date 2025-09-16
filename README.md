@@ -25,7 +25,7 @@ information theory, and linear error-correcting codes.
   - Naruomi Obata, Titech (M2)
   - Alessandro Bruni, IT-University of Copenhagen
 - License: [LGPL-2.1-or-later](LICENSE)
-- Compatible Coq versions: Coq 8.19--8.20
+- Compatible Coq versions: Coq 8.20--9.1
 - Additional dependencies:
   - [MathComp ssreflect](https://math-comp.github.io)
   - [MathComp fingroup](https://math-comp.github.io)
@@ -39,7 +39,8 @@ information theory, and linear error-correcting codes.
   - [CoqInterval](https://gitlab.inria.fr/coqinterval)
 - Coq namespace: `infotheo`
 - Related publication(s):
-  - [Robust Mean Estimation by All Means (short paper)]()
+  - [An Approach to Formalize Information-Theoretic Security of Multiparty Computation Protocols](https://link.springer.com/chapter/10.1007/978-3-031-95497-9_11) doi:[10.1007/978-3-031-95497-9_11](https://doi.org/10.1007/978-3-031-95497-9_11)
+  - [Robust Mean Estimation by All Means (short paper)](https://drops.dagstuhl.de/storage/00lipics/lipics-vol309-itp2024/LIPIcs.ITP.2024.39/LIPIcs.ITP.2024.39.pdf) doi:[10.4230/LIPIcs.ITP.2024.39](https://doi.org/10.4230/LIPIcs.ITP.2024.39)
   - [Trimming Data Sets: a Verified Algorithm for Robust Mean Estimation](https://dl.acm.org/doi/abs/10.1145/3479394.3479412) doi:[10.1145/3479394.3479412](https://doi.org/10.1145/3479394.3479412)
   - [Formal Adventures in Convex and Conical Spaces](https://arxiv.org/abs/2004.12713) doi:[10.1007/978-3-030-53518-6_2](https://doi.org/10.1007/978-3-030-53518-6_2)
   - [A Library for Formalization of Linear Error-Correcting Codes](https://link.springer.com/article/10.1007/s10817-019-09538-8) doi:[10.1007/s10817-019-09538-8](https://doi.org/10.1007/s10817-019-09538-8)
