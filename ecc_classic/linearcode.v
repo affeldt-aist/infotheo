@@ -128,47 +128,47 @@ Proof. by rewrite memv_ker lfunE. Qed.
 Lemma dim_kernel (Hm : \rank H = m) (mn : m <= n) : \dim kernel = (n - m)%N.
 Proof.
 move: (limg_ker_dim hom_syndrome fullv).
-rewrite (_ : (fullv :&: _)%VS = kernel); last by apply/capv_idPr/subvf.
+rewrite (_ : (fullv :&: _)%VS = kernel); last exact/capv_idPr/subvf.
 rewrite (_ : \dim fullv = n); last by rewrite dimvf /dim /= mul1n.
-move=> H0; rewrite -{}[in RHS]H0.
+move=> kerimg; rewrite -{}[in RHS]kerimg.
 suff -> : \dim (limg hom_syndrome) = m by rewrite addnK.
 set K := castmx (erefl, Hm) (col_base H).
 have rankK : \rank K = m.
   rewrite /K mxrank_castmx.
-  by move: (col_base_full H) => /eqP ->.
+  by have /eqP -> := col_base_full H.
 set b := [tuple row i K^T | i < m].
-apply size_basis with b.
+apply: (@size_basis _ _ _ _ b).
 rewrite basisEfree; apply/and3P; split.
-- apply/freeP => k Hk m0.
-  apply/eqP/negPn/negP => abs.
-  have H1 : \row_i k i *m K^T = const_mx 0 *m K^T.
+- apply/freeP => k kb m0; apply/eqP/negPn/negP => abs.
+  have kK0 : \row_i k i *m K^T = const_mx 0 *m K^T.
     rewrite mul0mx; apply/rowP => m1.
     rewrite !mxE (eq_bigr (fun j => k j * b`_j 0 m1)); last first.
-      move=> m2 _; by rewrite !mxE /b nth_mktuple !mxE.
-    move/rowP : Hk => /(_ m1).
-    rewrite !mxE summxE => X; rewrite -[RHS]X.
-    apply eq_bigr => m2 _; by rewrite !mxE.
+      by move=> m2 _; rewrite !mxE /b nth_mktuple !mxE.
+    move/rowP : kb => /(_ m1).
+    rewrite !mxE summxE => kb0; rewrite -{}[RHS]kb0.
+    by under [in RHS]eq_bigr do rewrite mxE.
   move: rankK; rewrite -/K -mxrank_tr.
   move/(@full_rank_inj _ _ _ _ (leqnn _)).
-  move/(_ _ _ H1)/rowP/(_ m0).
-  rewrite !mxE; by apply/eqP.
-- apply/span_subvP => /= x.
-  case/mapP => /= m0 _ ->{x}.
+  move/(_ _ _ kK0)/rowP/(_ m0).
+  by rewrite !mxE; exact/eqP.
+- apply/span_subvP => /= _ /mapP[/= m0 _ ->].
   apply/memv_imgP.
-  move: (mulmx_ebase H) => HH.
+  have HH := mulmx_ebase H.
   set s := pid_mx _ in HH.
-  exists (row m0 K^T *m invmx (col_ebase H)^T *m s *m (invmx (row_ebase H)^T)).
+  exists (row m0 K^T *m invmx (col_ebase H)^T *m s *m invmx (row_ebase H)^T).
     by rewrite memvf.
   rewrite /hom_syndrome lfunE /= /syndrome.
   rewrite trmx_mul trmxK -{3}HH trmx_mul.
-  transitivity (row m0 K^T *m invmx (col_ebase H)^T *m s *m (col_ebase H *m s)^T); last first.
+  transitivity (row m0 K^T *m invmx (col_ebase H)^T *m s *m
+      (col_ebase H *m s)^T); last first.
     rewrite -!mulmxA; congr (_ *m (_ *m (_ *m _))).
     by rewrite mulmxA mulVmx ?mul1mx // unitmx_tr row_ebase_unit.
   rewrite trmx_mul.
-  transitivity (row m0 K^T *m invmx (col_ebase H)^T *m pid_mx m *m (col_ebase H)^T); last first.
+  transitivity (row m0 K^T *m invmx (col_ebase H)^T *m pid_mx m *m
+      (col_ebase H)^T); last first.
     rewrite -!mulmxA; congr (_ *m (_ *m _)); rewrite mulmxA.
     by rewrite tr_pid_mx pid_mx_id ?Hm.
-  by rewrite pid_mx_1 mulmx1 -mulmxA mulVmx ? mulmx1 // unitmx_tr col_ebase_unit.
+  by rewrite pid_mx_1 mulmx1 -mulmxA mulVmx ?mulmx1// unitmx_tr col_ebase_unit.
 - by rewrite size_tuple dim_hom_syndrome_ub.
 Qed.
 
