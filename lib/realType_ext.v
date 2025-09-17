@@ -728,7 +728,8 @@ Lemma r_of_pqK {R : realType} (r s : {prob R}) :
 Proof.
 move=> H1 s0; apply/val_inj => /=.
 rewrite !(r_of_pqE,s_of_pqE,q_of_rsE,p_of_rsE) /onem.
-field; do ?[apply/andP; split]; last first.
+suff rs_neq1 : (1 - (r : R) * (s : R) != 0)%R.
+  (field; do ?[apply/andP; split]) => //.
   by rewrite mulrBl mul1r !opprB -!addrA addrC !addrA !subrK ?subrr ?add0r.
 rewrite subr_eq0.
 apply: contra H1 => /eqP H1.

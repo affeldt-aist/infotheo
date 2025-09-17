@@ -428,8 +428,9 @@ congr (_ <| _ |> _).
 apply val_inj => /=.
 rewrite -[in RHS](onemK (Prob.p p)); congr onem.
 rewrite q_of_rsE {1}p_of_rsE /= q_of_rsE p_of_rsE /= /onem.
-field; do 1?[apply/andP; split].
+have qp_neq1 : (1 - (q : R) * (p : R) != 0)%R.
   by rewrite subr_eq0 eq_sym -p_of_rsE.
+(field; do 1?[apply/andP; split]) => //.
 rewrite mulrBl mul1r opprB addrA subrK mulrDr mulr1 mulrN opprB addrA subrK.
 by rewrite subr_eq0 eq_sym.
 Qed.
@@ -716,8 +717,9 @@ congr (_ <| _ |> _).
     rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
     set tmp1 := d _.
     set tmp2 := d _.
-    field; do 1?[apply/andP; split]; rewrite ?oned0//=; last first.
+    have tmp12_neq0 : 1 - (1 - tmp1 - tmp2) != 0.
       by rewrite !opprB addrC addrA subrK gt_eqF// addrC.
+    field; do 1?[apply/andP; split]; rewrite ?oned0//.
     rewrite subr_eq0 eq_sym.
     apply: contra ds01.
     rewrite /S3.p01 permE /= (_ : Ordinal _ = lift ord0 ord0) //.
