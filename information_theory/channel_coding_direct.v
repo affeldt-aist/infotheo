@@ -771,7 +771,7 @@ rewrite ltrD2l.
 have -> : #| M |%:R = 2 `^ (log #| M |%:R) :> R by rewrite LogK // card_ord.
 rewrite -powRD; last by rewrite (eqr_nat R 2 0) implybT.
 rewrite (_ : _ + _ = - n%:R * (`I(P, W) - log #| M |%:R / n%:R - 3 * epsilon0)); last first.
-  move: (`I(_, _)) => i {lhs Cal_E Jtdec}; field.
+  field.
   by case: Hn; rewrite -(ltr_nat R) => /lt0r_neq0.
 rewrite (_ : _ / _ = rate r); last by rewrite -Hk card_ord.
 apply (@lt_trans _ _ (2 `^ (- n%:R * epsilon0))).

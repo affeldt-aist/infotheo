@@ -165,7 +165,7 @@ set F := f n S.
 set PHI := @phi _ n _ S def.
 exists (mkScode F PHI); split.
   rewrite /SrcRate /r /n /k.
-  by clearbody k'; move=> {S F PHI def}; field; rewrite !nat1r/= !gt_eqF.
+  by field; rewrite !nat1r/= !gt_eqF.
 set lhs := esrc(_, _).
 suff -> : lhs = 1 - Pr (P `^ k)%fdist (`TS P k (lambda / 2)).
   rewrite lerBlDr addrC -lerBlDr.
