@@ -88,14 +88,14 @@ Definition L_not_typ := Num.ceil (log (#| [set : n.-tuple X]|%:R) : R).
 Lemma Lt_pos : 0 < L_typ%:~R :> R.
 Proof.
 apply: (@lt_le_trans _ _ (n%:R * (`H P + epsilon))); last first.
-  by rewrite le_ceil.
+  by rewrite ceil_ge.
 by rewrite mulr_gt0// ltr_pwDr// entropy_ge0.
 Qed.
 
 Lemma Lnt_nonneg : 0 <= L_not_typ%:~R :> R.
 Proof.
 apply: (@le_trans _ _ (log (#|[set: n.-tuple X]|%:R))); last first.
-  by rewrite le_ceil.
+  by rewrite ceil_ge.
 rewrite -log1 ler_log ?posrE// cardsT card_tuple.
   by rewrite natrX exprn_ege1// fdist_support_LB.
 rewrite natrX exprn_gt0//.
@@ -109,7 +109,7 @@ rewrite cardsT /= card_tuple /= card_bool.
 rewrite natrX.
 rewrite -exp.powR_mulrn//.
 rewrite exp.ler_powR ?ler1n//.
-rewrite (le_trans (le_ceil _))//.
+rewrite (le_trans (ceil_ge _))//.
 rewrite natr_absz ler_int.
 by rewrite ler_norm.
 Qed.
@@ -122,7 +122,7 @@ rewrite {1}(_ : (expn #|X| n)%:R = 2 `^ (log ((expn #|X| n)%:R))).
   rewrite [in leRHS]natrX.
   rewrite -powR_mulrn//.
   rewrite ler_powR ?ler1n//.
-  rewrite (le_trans (le_ceil _))//.
+  rewrite (le_trans (ceil_ge _))//.
   rewrite natr_absz ler_int.
   by rewrite (le_trans (ler_norm _)).
 - rewrite LogK// natrX exprn_gt0//.
@@ -314,7 +314,7 @@ move: n0_Le_n.
 rewrite -(ltr_nat R).
 apply: le_lt_trans.
 rewrite /n0.
-rewrite (le_trans (le_ceil _))//.
+rewrite (le_trans (ceil_ge _))//.
 rewrite (le_trans (ler_norm _))//.
 rewrite -intr_norm.
 rewrite -natr_absz ler_nat.
@@ -329,7 +329,7 @@ rewrite -ltr_pdivrMl ?divr_gt0//.
 rewrite -(ltr_nat R) in Hyp.
 rewrite (le_lt_trans _ Hyp)//.
 rewrite invfM -mulrA invrK -natrM/= mulrC.
-rewrite (le_trans (le_ceil _))//.
+rewrite (le_trans (ceil_ge _))//.
 rewrite (le_trans (ler_norm _))//.
 rewrite -intr_norm.
 by rewrite natr_absz.
@@ -350,7 +350,7 @@ move: n0_Le_n.
 rewrite -(ltr_nat R) => /ltW; apply: le_trans.
 rewrite /n0.
 rewrite /aep_bound.
-rewrite (le_trans (le_ceil _))//.
+rewrite (le_trans (ceil_ge _))//.
 rewrite (le_trans (ler_norm _))//.
 rewrite -intr_norm.
 rewrite -natr_absz.

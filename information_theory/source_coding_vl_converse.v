@@ -796,7 +796,7 @@ have xpos : 0 < x.
   apply: (@leq_trans (m'' eps)); last exact: leq_maxr.
   by apply: (@leq_trans 1); last exact: leq_maxr.
 have mpos': (0 < floor (expR x)).
-  rewrite lt_neqAle -floor_ge_int exp.expR_ge0 andbT.
+  rewrite lt_neqAle floor_ge_int_tmp exp.expR_ge0 andbT.
   rewrite eq_sym mathcomp_extra.floor_neq0.
   apply/orP; right.
   by rewrite -exp.expR0 exp.ler_expR//.
@@ -837,14 +837,14 @@ apply: (@le_trans _ _ (x + ln alp)).
   rewrite lerD2r ?mulr1 -(expRK x).
   rewrite ler_ln ?posrE ?expR_gt0//; last exact: mpos.
   rewrite /m /x.
-  rewrite (le_trans _ (ge_floor _))//.
+  rewrite (le_trans _ (floor_le_tmp _))//.
   rewrite natr_absz ler_int.
   by rewrite ger0_norm// mathcomp_extra.floor_ge0// expR_ge0.
 apply: (@le_trans _ _ (2 * x - (eps * n%:R * ln 2))).
   rewrite mulr_natl mulr2n -addrA lerD2l.
   rewrite lerBrDr (mulrC eps).
   apply: (@le_trans _ _ ((Num.ceil (ln alp + n%:R * eps * ln 2))%:~R)).
-    by rewrite le_ceil.
+    by rewrite ceil_ge.
   rewrite /x /m'.
   rewrite (le_trans (ler_norm _))//.
   rewrite -intr_norm.
@@ -868,7 +868,7 @@ apply: (@le_trans _ _ (m''' eps)%:R); last first.
 rewrite /m'''.
 rewrite (mulrC n%:R) -/Y.
 rewrite mulrC -natrM.
-rewrite (le_trans (le_ceil _))//.
+rewrite (le_trans (ceil_ge _))//.
 rewrite natr_absz.
 rewrite (le_trans (ler_norm _))//.
 by rewrite intr_norm.

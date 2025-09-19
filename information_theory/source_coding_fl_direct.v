@@ -88,7 +88,7 @@ Proof.
 exists `| Num.ceil D |%N.
 rewrite natrM.
 apply: (@le_trans _ _ `| Num.ceil D |%:R).
-  by rewrite (le_trans (le_ceil _))// natr_absz ler_int ler_norm.
+  by rewrite (le_trans (ceil_ge _))// natr_absz ler_int ler_norm.
 by rewrite ler_peMr// ler1n.
 Qed.
 
