@@ -20,6 +20,10 @@ from 0.9.4 to 0.9.5
   + inde_RV_joint_entropyE
   + inde_dist_of_RV2
 
+- in proba.v
+  + inde_RV_in, inde_RV_inP, inde_RV_comp,
+    pfwd1M, pfwd1M2l
+
 * renamed
 
 - in entropy.v
