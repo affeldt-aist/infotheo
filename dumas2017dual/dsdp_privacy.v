@@ -426,7 +426,7 @@ rewrite subrr.
     And if it is equal to 0:
       `H([% alice_input_view, s], v2) = `H(alice_input_view, s)
     which means `s` the dot product result already contains all
-    knowledge about v2.
+    knowledge about v2. Maybe it is a reasonable assumption.
 *)
 Abort.
 
@@ -507,25 +507,6 @@ rewrite inde_RV_joint_entropyE.
   rewrite s_alt /vs.
 Abort.
 
-Section safety.
-  
-Context {R : realType}.
-
-Variable (sols : {set (msg * msg) : finType} ).
-Variable (rv_sols : {RV P -> {set (msg * msg) : finType} } ).
-Variable P2 : R.-fdist {set (msg * msg) : finType}.
-
-
-Variable (m : nat).
-
-
-Hypothesis card_sols : #|sols| = m.
-
-About entropy_max.
-Check (@entropy_max R ({set (msg * msg) : finType})).
-
-
-End safety.
 End alice_privacy_analysis.
 
 (* Conclusion: we should prove the "safety" property
@@ -549,7 +530,6 @@ End alice_privacy_analysis.
    which can be inferred from the traces (how many equations and how many
    unknown terms).
 *)
-
 
 End dsdp_privacy_analysis.
 
