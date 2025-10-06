@@ -36,7 +36,7 @@ Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
 Section dsdp_privacy_analysis.
-
+  
 Variable T : finType.
 Variable P : R.-fdist T.
 
@@ -355,14 +355,98 @@ exact: eqn1_view_neq0.
 exact: alice_view_neq0.
 Qed.
 
+(* Prove this is because we already knew U . V is safe by Rouche-Capelli *)
+Lemma entropy_dot_product_result_leq_solutions
+  (S : {RV P -> msg}) (U V: {RV P -> (msg * msg)}) :
+  S = dotp2_rv U V ->
+  `H `p_S <= `H(U, V).
+Proof.
+move => HS.
+have centropy_S_UV_eq0 : `H(S | [%U, V]) = 0.
+  pose f := fun uv => dotp2 uv.1 uv.2.
+  have ->: S = f `o [%U, V].
+    rewrite HS /f /dotp2_rv /dotp2.
+    by apply: boolp.funext => i //=.
+  by rewrite centropy_RV_comp0.
+have joint_entropy_SUV_eq_UV : `H(S, [%U, V]) = `H(U, V).
+  rewrite joint_entropy_RVC chain_rule_RV centropy_S_UV_eq0.
+  by rewrite /joint_entropy_RV /joint_entropy addr0.
+rewrite -joint_entropy_SUV_eq_UV.
+rewrite chain_rule_RV.
+rewrite lerDl.
+have [-> //|Hneq] := eqVneq 0 (`H( [% U, V] | S)).
+by rewrite centropy_ge0.
+Qed.
+(*
+   Equaliy iff H([%V, U] | S) = 0, i.e. S uniquely determines (V, U).
+
+      Formally:
+
+      H(V, U | S) = 0 <-> forall s, Pr[S = s] > 0,
+          exists (v, u): Pr[V, U = (v, u) | S = s] = 1.
+
+      Given the value of S the pair (V, U) is determined uniquely (prob is 1.0) 
+*)
+
+Lemma alice_view_has_restricted_leakage:
+  `H(v2 | alice_view ) <= `H(v2 | [%us, vs]).
+Proof.
+simpl in *.
+rewrite !(E_enc_ce_removal v2 card_msg); simpl in *.
+pose h := (fun o : (Alice.-key Dec msg * msg *
+  msg * msg * msg * msg * msg * msg) =>
+  let '(dk_a, s, v1, u1, u2, u3, r2, r3) := o in
+   (dk_a, v1, u1, u2, u3, r2, r3, s)).
+pose h' := (fun o : (Alice.-key Dec msg * msg *
+  msg * msg * msg * msg * msg * msg) =>
+  let '(dk_a, v1, u1, u2, u3, r2, r3, s) := o in
+  (dk_a, s, v1, u1, u2, u3, r2, r3)).
+rewrite -(centropy_RV_contraction _ _ h).
+have ->: `H( v2 | [% dk_a, s, v1, u1, u2, u3, r2,
+  r3, h `o [% dk_a, s, v1, u1, u2, u3, r2, r3]]) =
+  `H( v2 | [% dk_a, s, v1, u1, u2, u3, r2, r3,
+  [% dk_a, v1, u1, u2, u3, r2, r3, s]]).
+  by [].
+rewrite centropyC (centropy_RV_contraction _ _ h').
+rewrite  -/alice_input_view.
+have ->: `H( v2 | [% alice_input_view, s]) =
+  `H([% alice_input_view, s], v2) - `H(alice_input_view, s).
+  by rewrite chain_rule_RV addrAC subrr add0r.
+have ->: `H(v2 | [% us, vs]) = `H([%us, vs], v2) - `H(us, vs).
+  by rewrite chain_rule_RV /joint_entropy_RV /joint_entropy addrAC subrr add0r.
+have ->: `H([% us, vs], v2)  = `H(us, vs).
+  pose f := fun uv : ((msg * msg) * (msg * msg)) => uv.2.1.
+  have ->: v2 = f `o [%us, vs].
+    rewrite /f /comp_RV.
+    by apply: boolp.funext => i.
+  by rewrite joint_entropy_RV_comp.
+rewrite subrr.
+(* `H([% alice_input_view, s], v2) - `H(alice_input_view, s) <= 0
+    only holds when it is equal to 0.
+    And if it is equal to 0:
+      `H([% alice_input_view, s], v2) = `H(alice_input_view, s)
+    which means `s` the dot product result already contains all
+    knowledge about v2.
+*)
+Abort.
+
+(* --------------- *)
+
 
 (* First try to prove DSDP is information theoratically secure:
 
    FAIL: the `pvu1_unif` hypothesis cannot hold since vu1 := v1 \* u1.
    The product of two random variables is not uniform distributed.
    Unless there is any math theorem backs this, which I don't know.
+
+   (If we assume v and u are numbers have inverse then this can be true;
+    since excluding 0 means the result of multiplication will not be
+    centralized to the same point.
+   )
 *)
 Hypothesis pvu1_unif : `p_ vu1 = fdist_uniform card_msg.
+
+(* This holds because v1, u1 are independant from v2, v3 and u2, u3. *)
 Hypothesis vu1_indep :  P |= vu1 _|_ [% dotp2_rv us vs, v2].
 
 Let dotp2_inde_v2 :
@@ -423,7 +507,49 @@ rewrite inde_RV_joint_entropyE.
   rewrite s_alt /vs.
 Abort.
 
+Section safety.
+  
+Context {R : realType}.
+
+Variable (sols : {set (msg * msg) : finType} ).
+Variable (rv_sols : {RV P -> {set (msg * msg) : finType} } ).
+Variable P2 : R.-fdist {set (msg * msg) : finType}.
+
+
+Variable (m : nat).
+
+
+Hypothesis card_sols : #|sols| = m.
+
+About entropy_max.
+Check (@entropy_max R ({set (msg * msg) : finType})).
+
+
+End safety.
 End alice_privacy_analysis.
+
+(* Conclusion: we should prove the "safety" property
+   by connecting rouch capelli and dot product here.
+   
+   Memo: case analysis may prove the equality of knowing dot product
+   result and knowing combinations.
+
+   Memo: even they are not equal, since we can assume/claim knowing
+   combinations are safe, if we can prove that knowing the result
+   the H is smaller than knowing combinations, we still can claim the safety.
+
+
+   Inequality can be proved because the type provides the info already:
+
+   {RV T -> R} vs. {RV T -> (R * R * R * R)}
+
+   But the problem is if the LHS can restrict RHS to be one.
+   So it must be inequality. To prove there is no restriction,
+   use Rouch-Capelli case 3 and give the condition as a premises,
+   which can be inferred from the traces (how many equations and how many
+   unknown terms).
+*)
+
 
 End dsdp_privacy_analysis.
 
