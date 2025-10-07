@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap matrix.
+From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption dsdp_program.
@@ -355,6 +355,18 @@ exact: eqn1_view_neq0.
 exact: alice_view_neq0.
 Qed.
 
+Lemma logr_eq1 (x : R) : 0 < x -> (log x = 0) <-> (x = 1).
+Proof.
+move=> Hpos; split.
+- (* log x = 0 -> x = 1 *)
+  move=> Hlog.
+  rewrite -[x]logK //.
+  by rewrite Hlog exp.powRr0.
+- (* x = 1 -> log x = 0 *)
+  move=> ->.
+  exact: log1.
+Qed.
+
 (* Prove this is because we already knew U . V is safe by Rouche-Capelli *)
 Lemma entropy_dot_product_result_leq_solutions
   (S : {RV P -> msg}) (U V: {RV P -> (msg * msg)}) :
@@ -383,51 +395,174 @@ Qed.
       Formally:
 
       H(V, U | S) = 0 <-> forall s, Pr[S = s] > 0,
-          exists (v, u): Pr[V, U = (v, u) | S = s] = 1.
+          exists! (v, u), Pr[V, U = (v, u) | S = s] = 1.
 
       Given the value of S the pair (V, U) is determined uniquely (prob is 1.0) 
 *)
-
-Lemma alice_view_has_restricted_leakage:
-  `H(v2 | alice_view ) <= `H(v2 | [%us, vs]).
+Lemma zero_entropy_eq_point_mass
+  (Z : {RV P -> msg}) :
+  `H `p_Z = 0 <-> exists! z, `Pr[Z = z] = 1.
 Proof.
 simpl in *.
-rewrite !(E_enc_ce_removal v2 card_msg); simpl in *.
-pose h := (fun o : (Alice.-key Dec msg * msg *
-  msg * msg * msg * msg * msg * msg) =>
-  let '(dk_a, s, v1, u1, u2, u3, r2, r3) := o in
-   (dk_a, v1, u1, u2, u3, r2, r3, s)).
-pose h' := (fun o : (Alice.-key Dec msg * msg *
-  msg * msg * msg * msg * msg * msg) =>
-  let '(dk_a, v1, u1, u2, u3, r2, r3, s) := o in
-  (dk_a, s, v1, u1, u2, u3, r2, r3)).
-rewrite -(centropy_RV_contraction _ _ h).
-have ->: `H( v2 | [% dk_a, s, v1, u1, u2, u3, r2,
-  r3, h `o [% dk_a, s, v1, u1, u2, u3, r2, r3]]) =
-  `H( v2 | [% dk_a, s, v1, u1, u2, u3, r2, r3,
-  [% dk_a, v1, u1, u2, u3, r2, r3, s]]).
-  by [].
-rewrite centropyC (centropy_RV_contraction _ _ h').
-rewrite  -/alice_input_view.
-have ->: `H( v2 | [% alice_input_view, s]) =
-  `H([% alice_input_view, s], v2) - `H(alice_input_view, s).
-  by rewrite chain_rule_RV addrAC subrr add0r.
-have ->: `H(v2 | [% us, vs]) = `H([%us, vs], v2) - `H(us, vs).
-  by rewrite chain_rule_RV /joint_entropy_RV /joint_entropy addrAC subrr add0r.
-have ->: `H([% us, vs], v2)  = `H(us, vs).
-  pose f := fun uv : ((msg * msg) * (msg * msg)) => uv.2.1.
-  have ->: v2 = f `o [%us, vs].
-    rewrite /f /comp_RV.
-    by apply: boolp.funext => i.
-  by rewrite joint_entropy_RV_comp.
-rewrite subrr.
-(* `H([% alice_input_view, s], v2) - `H(alice_input_view, s) <= 0
-    only holds when it is equal to 0.
-    And if it is equal to 0:
-      `H([% alice_input_view, s], v2) = `H(alice_input_view, s)
-    which means `s` the dot product result already contains all
-    knowledge about v2. Maybe it is a reasonable assumption.
-*)
+split.
+rewrite /entropy -sumrN.
+move/eqP.
+rewrite psumr_eq0.
+move/allP.
+move => Hall.
+have H_terms_zero: forall i : 'I_m, - (`p_ Z i * log (`p_ Z i)) = 0.
+  move=> i.
+  have := Hall i.
+  rewrite mem_index_enum inE /=.
+  move=> H. 
+  apply/eqP.
+  exact: H.
+have H_01: forall i : 'I_m, `p_ Z i = 0 \/ `p_ Z i = 1.
+  move=> i.
+  move: (H_terms_zero i).
+  move/eqP.
+  rewrite oppr_eq0.
+  rewrite dist_of_RVE.
+  move /eqP => HPrMul0.
+  case: (boolP (`Pr[ Z = i ] == 0)) => [/eqP H0 | H_neq0].
+    by left.
+    right.
+    move /eqP: HPrMul0.
+    rewrite mulf_eq0 => /orP [/eqP Hp0 | //].
+    by move: H_neq0; rewrite Hp0 eqxx.
+  - move/eqP.
+    move => Hlog0.
+    have Hpos: 0 < `Pr[ Z = i ].
+      rewrite lt0r; apply/andP; split.
+      - exact: H_neq0.
+      - by apply: pfwd1_ge0.
+    by rewrite -(logr_eq1 Hpos).
+have Hsum: \sum_i `Pr[ Z = i ] = 1.
+  exact: sum_pfwd1.
+
+(* Show that exactly one probability equals 1 *)
+have Hcard: #|[set i : 'I_m | `Pr[ Z = i ] == 1]| = 1%N.
+  (* Since each prob is 0 or 1, and sum = 1, exactly one is 1 *)
+  have: \sum_i `Pr[ Z = i ] = \sum_(i | `Pr[ Z = i ] == 1) `Pr[ Z = i ].
+    rewrite [LHS]big_mkcond [RHS]big_mkcond.
+    apply: eq_bigr => i _.
+    case: (H_01 i) => Hi.
+    - rewrite dist_of_RVE in Hi.
+      by rewrite Hi if_same.
+    - rewrite dist_of_RVE in Hi.
+      move/eqP in Hi.
+      by rewrite Hi.
+  move => Heq.
+  apply/eqP; rewrite eqn_leq; apply/andP; split.
+  - apply: contraT => /negP.
+    move=> Hnot.
+    have Hge2: (2 <= #|[set i | `Pr[ Z = i ] == 1%:R]|)%N.
+      move: Hnot => /negP.
+      rewrite -ltnNge.
+      have ->: [set i | `Pr[ Z = i ] == 1%R] = [set i | `Pr[ Z = i ] == 1] by [].
+      by [].
+    have Hset_eq: [set i | `Pr[ Z = i ] == 1%R] = [set i | `Pr[ Z = i ] == 1].
+      by apply/setP => y; rewrite !inE.
+    move: Hge2; rewrite Hset_eq => Hge2.
+    move: Hge2 => /card_gt1P [i [j [Hi Hj Hneq]]].
+    move: Hi Hj; rewrite !inE => /eqP Hi /eqP Hj.
+    have: 2 <= \sum_k `Pr[ Z = k ].
+      rewrite (bigD1 i) //= Hi (bigD1 j) /=; last by rewrite eq_sym.
+      rewrite Hj.
+      have: 0 <= \sum_(k | (k != i) && (k != j)) `Pr[ Z = k ].
+        apply: sumr_ge0 => t _.
+        exact: pfwd1_ge0.
+      by lra.
+    rewrite Hsum.
+    by lra.
+  - case: (posnP #|[set i | `Pr[ Z = i ] == 1]|) => [Hcard0 | //].
+    have Hall_not1: forall i : 'I_m, `Pr[ Z = i ] != 1.
+    move=> i; apply/negP => /eqP Hi.
+    have: i \in [set k | `Pr[ Z = k ] == 1] by rewrite inE; apply/eqP.
+    by rewrite (cards0_eq Hcard0) inE.
+
+  have Hall0: forall i : 'I_m, `Pr[ Z = i ] = 0.
+    move=> i; case: (H_01 i) => [// | Hi].
+    - move: (Hall_not1 i).
+      move => Hnot1.
+      rewrite dist_of_RVE.
+      move => H1.
+      exact: H1.
+    - rewrite dist_of_RVE in Hi.
+      have := Hall_not1 i.
+      rewrite Hi.
+      by lra.
+  have: \sum_i `Pr[ Z = i ] = 0.
+    by apply: big1 => i _; rewrite Hall0.
+  rewrite Hsum.
+  by lra.
+  
+have [z Hz]: exists z : 'I_m, [set i | `Pr[ Z = i ] == 1] = [set z].
+  by apply/cards1P; rewrite Hcard.
+exists z; split.
+- (* Show `Pr[Z = z] = 1 *)
+  have: z \in [set i | `Pr[ Z = i ] == 1].
+    by rewrite Hz inE.
+  by rewrite inE => /eqP.
+- (* Uniqueness *)
+  move=> z' Hz'.
+  have: z' \in [set i | `Pr[ Z = i ] == 1].
+    by rewrite inE; apply/eqP.
+by rewrite Hz inE => /eqP.
+move=> i _.
+case: (altP (`p_ Z i =P 0)) => [-> | Hneq0].
+- by rewrite mul0r oppr0.
+- have /andP [Hge0 Hle1] := fdist_ge0_le1 (`p_ Z) i.
+  have Hpos: 0 < `p_ Z i by rewrite lt0r Hneq0 Hge0.
+  have: log (`p_ Z i) <= 0.
+    rewrite -log1.
+    rewrite ler_log /=.
+    by rewrite Hle1.
+- by rewrite posrE.
+- by rewrite posrE.
+- move=> Hlog_neg.
+  rewrite -mulrN.
+  rewrite pmulr_rge0.
+  by lra.
+-by lra.
+
+(* Another direction:
+  (exists ! z : 'I_m, `Pr[ Z = z ] = 1) -> `H `p_ Z = 0
+*) 
+case=> z [Hz Huniq].
+apply/eqP; rewrite oppr_eq0.
+apply/eqP.
+apply: big1 => i _.
+case: (altP (i =P z)) => [-> | Hneq].
+- (* i = z *)
+  rewrite dist_of_RVE.
+  by rewrite Hz mul1r log1.
+- (* i != z: show `Pr[Z = i] = 0 *)
+have Hi0: `Pr[ Z = i ] = 0.
+  have Hsum: \sum_j `Pr[ Z = j ] = 1 by exact: sum_pfwd1.
+  move: Hsum; rewrite (bigD1 z) //= Hz => Hsum.
+  
+  (* The remaining sum equals 0 *)
+  have Hsum0: \sum_(j | j != z) `Pr[ Z = j ] = 0.
+    by move: Hsum => /(f_equal (fun x => x - 1)); lra.
+  have Hge0: forall j, j != z -> 0 <= `Pr[ Z = j ].
+    move => j _; exact: pfwd1_ge0.
+  move: Hsum0 => /eqP.
+  rewrite (psumr_eq0 _ Hge0) => /allP /(_ i).
+  rewrite mem_index_enum => /(_ erefl).
+  by rewrite Hneq /= => /eqP.
+by rewrite dist_of_RVE Hi0 mul0r.
+Qed.
+
+Lemma entropy_dot_product_result_determinates_solutions
+  (S : {RV P -> msg}) (U V: {RV P -> (msg * msg)}) :
+  S = dotp2_rv U V ->
+  `H([%V, U] | S) = 0 <-> (
+     forall x, `Pr[S = x] > 0 -> exists! vu, `Pr[[%V, U] = vu | S = x] = 1).
+Proof.
+split.
+move => HS x Pr_gt0.
+(* TODO: use zero_entropy_eq_point_mass here. *)
 Abort.
 
 (* --------------- *)
