@@ -5,10 +5,8 @@
   + inde_dist_of_RV2
 
 - in proba.v
-  + inde_RV_in, inde_RV_inP, inde_RV_comp,
-    pfwd1M, pfwd1M2l
-
-* renamed
+  + inde_RVE, inde_RV_comp, RV_op,
+    pfwd1_RV_op, pfwd1_RV2_op
 
 - in entropy.v
   + condentropy_indep -> centropy_indep
