@@ -2097,16 +2097,13 @@ Notation cinde_rv_unit := cinde_RV_unit (only parsing).
 #[deprecated(since="infotheo 0.9.2", note="renamed to `inde_RV_events`")]
 Notation inde_rv_events := inde_RV_events (only parsing).
 
-Section inde_RV_in.
+Section inde_RVE.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
-Definition inde_RV_in :=
-  forall E F,
+Lemma inde_RVE : P |= X _|_ Y <-> forall E F,
     `Pr[ [% X, Y] \in E `* F] = `Pr[ X \in E ] * `Pr[ Y \in F ].
-
-Lemma inde_RV_inP : P |= X _|_ Y <-> inde_RV_in.
 Proof.
 split=> H; last by move=> *; rewrite -!pr_in1 -H setX1.
 move=> E F; rewrite !pr_inE'.
@@ -2123,7 +2120,7 @@ rewrite -big_setX; apply: eq_bigr=> *.
 by rewrite fdistmapE.
 Qed.
 
-End inde_RV_in.
+End inde_RVE.
 
 Section inde_RV_sym.
 Context {R : realType}.
@@ -2149,7 +2146,7 @@ Lemma inde_RV_comp (TA TB UA UB : finType) (X : {RV P -> TA}) (Y : {RV P -> TB})
   (f : TA -> UA) (g : TB -> UB) :
   P |= X _|_ Y -> P|= (f `o X) _|_ (g `o Y).
 Proof.
-move=> /inde_RV_inP inde_XY'; apply/inde_RV_inP => E F.
+move=> /inde_RVE inde_XY'; apply/inde_RVE => E F.
 by rewrite (pr_in_comp' f) (pr_in_comp' g) -inde_XY' -preimsetX -pr_in_comp'.
 Qed.
 
@@ -2158,35 +2155,35 @@ End inde_RV_comp.
 (* We put the following section here because the use of reasoning_by_cases and
    the independence notation.
 *)
-Section pfwd1M.
+Section pfwd1_RV_op.
 Context {R : realType}.
 Variables (A : finType) (m n : nat)(P : R.-fdist A).
-Variables (TX1 TX2 TX3 : finType).
-Variables (s1 : {RV P -> TX1}) (s2 : {RV P -> TX2}) (r: {RV P -> TX3}).
-Variable op : TX1 -> TX2 -> TX3.
+Variables (TX1 TX2 TY : finType).
+Variables (X1 : {RV P -> TX1}) (X2 : {RV P -> TX2}) (Y: {RV P -> TY}).
+Variable op : TX1 -> TX2 -> TY.
 
-Let rv_op (rv1 : {RV P -> TX1}) (rv2 : {RV P -> TX2}) : {RV P -> TX3} :=
-  uncurry op `o [% rv1, rv2].
+Definition RV_op (A : {RV P -> TX1}) (B : {RV P -> TX2}) : {RV P -> TY} :=
+  uncurry op `o [% A, B].
 
-Hypothesis s1_s2_indep : P|= s1 _|_ s2.
-Hypothesis s1s2_r_indep : P|= [%s1, s2] _|_ r.
+Hypothesis X1_X2_indep : P|= X1 _|_ X2.
+Hypothesis X1X2_Y_indep : P|= [%X1, X2] _|_ Y.
 
-Lemma pfwd1M x : `Pr[ (rv_op s1 s2) = x ] =
-  \sum_(a <- fin_img s1)
-    (\sum_(b <- fin_img s2 | op a b == x) `Pr[ s1 = a ] * `Pr[ s2 = b]).
+Lemma pfwd1_RV_op y : `Pr[ (RV_op X1 X2) = y ] =
+  \sum_(x1 <- fin_img X1)
+    (\sum_(x2 <- fin_img X2 | op x1 x2 == y) `Pr[ X1 = x1 ] * `Pr[ X2 = x2]).
 Proof.
 rewrite -[LHS]pr_in1.
-rewrite (reasoning_by_cases _ s1).
-apply: eq_bigr => a _.
-rewrite (reasoning_by_cases _ s2).
+rewrite (reasoning_by_cases _ X1).
+apply: eq_bigr => x1 _.
+rewrite (reasoning_by_cases _ X2).
 rewrite [RHS]big_mkcond /=.
-apply eq_bigr => b _.
+apply eq_bigr => x2 _.
 case: ifPn => [/eqP <-|Hneq].
-  rewrite -s1_s2_indep.
+  rewrite -X1_X2_indep.
   rewrite 2!setX1.
   rewrite pr_in1.
   pose f (p : TX1 * TX2) := (op p.1 p.2, p.1, p.2).
-  have f_inj : injective f by move => [x1 x2] [? ?] [] _ -> ->.
+  have f_inj : injective f by move => [a b] [? ?] [] _ -> ->.
   by rewrite -(pfwd1_comp _ _ f_inj).
 rewrite 2!setX1.
 rewrite pr_in1.
@@ -2195,19 +2192,19 @@ apply: contra Hneq.
 by rewrite fin_img_imset => /imsetP[a0 _ [] -> -> ->].
 Qed.
 
-Lemma pfwd1M2l x y : `Pr[ [%(rv_op s1 s2), r] = (x, y) ] =
-  \sum_(a <- fin_img s1)
-    (\sum_(b <- fin_img s2 | op a b == x)
-      `Pr[ s1 = a ] * `Pr[ s2 = b ] * `Pr[ r = y ]).
+Lemma pfwd1_RV2_op y1 y2 : `Pr[ [%(RV_op X1 X2), Y] = (y1, y2) ] =
+  \sum_(x1 <- fin_img X1)
+    (\sum_(x2 <- fin_img X2 | op x1 x2 == y1)
+      `Pr[ X1 = x1 ] * `Pr[ X2 = x2 ] * `Pr[ Y = y2 ]).
 Proof.
 rewrite (inde_RV_comp _ idfun)//.
 under eq_bigr do rewrite -big_distrl /=.
 rewrite -big_distrl /=.
-under eq_bigr do rewrite -big_distrl; rewrite -big_distrl/=.
-by congr (_ * _); exact: pfwd1M.
+congr (_ * _).
+by exact: pfwd1_RV_op.
 Qed.
 
-End pfwd1M.
+End pfwd1_RV_op.
 
 Lemma cinde_alt {R : realType} (U : finType) (P : R.-fdist U) (A B C : finType)
     (X : {RV P -> A}) (Y : {RV P -> B}) {Z : {RV P -> C}} a b c :
