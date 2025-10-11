@@ -629,6 +629,17 @@ End alice_privacy_analysis.
    unknown terms).
 *)
 
+(*
+  NOTE: H(v2 | s `+ vu) = H(v2 | g(f(us, vs), vu));
+  and because function application won't increase nor decrease the uncertainty:
+  H(v2 | s `+ vu) = H(v2 | g(f(us, vs), vu)) = H(v2 | us, vs, vu)
+
+  We assumed H(v2 | us, vs) is safe, while vu is independent of us, vs, v2, so:
+   H(v2 | s `+ vu) = H(v2 | us, vs, vu) = H(v2 | us, vs) --> is safe w/ leakage.
+
+  
+*)
+
 End dsdp_privacy_analysis.
 
 
