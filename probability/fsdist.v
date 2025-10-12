@@ -693,7 +693,7 @@ End fsdist_convType.
 
 Section fsdist_conv_prop.
 Context {R : realType}.
-Variables (A : choiceType).
+Variable A : choiceType.
 Implicit Types (p : {prob R}) (a b c : R.-dist A).
 (*Local Open Scope reals_ext_scope.*)
 Local Open Scope convex_scope.
@@ -701,8 +701,7 @@ Local Open Scope convex_scope.
 Lemma finsupp_conv_subr a b p :
   p != 0%:pr -> finsupp a `<=` finsupp (a <|p|> b).
 Proof.
-move=> p0.
-rewrite /conv supp_fsdist_conv' (negPf p0).
+move=> p0; rewrite /conv supp_fsdist_conv' (negPf p0).
 by case: ifP=> ?; [exact: fsubset_refl | exact: fsubsetUl].
 Qed.
 
@@ -718,13 +717,22 @@ Lemma fsdist_conv_bind_left_distr (B : choiceType) p a b (f : A -> R.-dist B) :
   (a <| p |> b) >>= f = (a >>= f) <| p |> (b >>= f).
 Proof.
 apply/fsdist_ext => b0 /=; rewrite fsdistbindE fsdist_convE.
-have [->|p0] := eqVneq p 0%:pr.
-  by rewrite 2!conv0 fsdistbindE.
-have [->|p1] := eqVneq p 1%:pr.
-  by rewrite 2!conv1 fsdistbindE.
+have [->|p0] := eqVneq p 0%:pr; first by rewrite 2!conv0 fsdistbindE.
+have [->|p1] := eqVneq p 1%:pr; first by rewrite 2!conv1 fsdistbindE.
 under eq_bigr do rewrite fsdist_convE avgRE mulrDl -!mulrA.
-(*under eq_bigr do rewrite fsdist_convE avgR_mulDl avgRE.*)
 rewrite big_split -2!big_distrr /=.
+by rewrite -!fsdistbindEwiden // ?finsupp_conv_subl ?finsupp_conv_subr.
+Qed.
+
+Lemma fsdist_conv_bind_right_distr (B : choiceType) p (m : R.-dist A)
+    (a b : A -> R.-dist B):
+  m >>= (a <| p |> b) = (m >>= a) <| p |> (m >>= b).
+Proof.
+apply/fsdist_ext => b0 /=; rewrite fsdistbindE fsdist_convE.
+have [->|p0] := eqVneq p 0%:pr; first by rewrite 2!conv0 fsdistbindE.
+have [->|p1] := eqVneq p 1%:pr; first by rewrite 2!conv1 fsdistbindE.
+under eq_bigr do rewrite fsdist_convE avgRE mulrDr mulrCA (mulrCA _ p.~).
+rewrite big_split/= -2!big_distrr /=.
 by rewrite -!fsdistbindEwiden // ?finsupp_conv_subl ?finsupp_conv_subr.
 Qed.
 
@@ -732,15 +740,14 @@ Lemma supp_fsdist_conv p (p0 : p != 0%:pr) (p1 : p != 1%:pr) a b :
   finsupp (a <|p|> b) = finsupp a `|` finsupp b.
 Proof. by rewrite supp_fsdist_conv' (negPf p0) (negPf p1). Qed.
 
-Lemma fsdist_scalept_conv (C : convType R) (x y : R.-dist C) (p : {prob R}) (i : C) :
-  scalept ((x <|p|> y) i) (S1 i) = scalept (x i) (S1 i) <|p|> scalept (y i) (S1 i).
+Lemma fsdist_scalept_conv (C : convType R) (x y : R.-dist C) (p : {prob R})
+    (i : C) :
+  scalept ((x <|p|> y) i) (S1 i) =
+  scalept (x i) (S1 i) <|p|> scalept (y i) (S1 i).
 Proof. by rewrite fsdist_convE scalept_conv. Qed.
 
 End fsdist_conv_prop.
 
-(*Definition FSDist_to_convType (A : choiceType) :=
-  fun phT : phant (Choice.sort A) => conv_choiceType [the convType of FSDist.t A].
-Notation "{ 'dist' T }" := (FSDist_to_convType (Phant T)) : proba_scope.*)
 Notation "{ 'dist' T }" := (FSDist.t T) : proba_scope.
 
 Local Open Scope reals_ext_scope.
@@ -749,7 +756,7 @@ Local Open Scope convex_scope.
 
 Section FSDist_affine_instances.
 Context {R : realType}.
-Variable A B : choiceType.
+Variables A B : choiceType.
 
 Lemma fsdistmap_affine (f : A -> B) : @affine R _ _ (fsdistmap f).
 Proof. by move=> ? ? ?; rewrite /fsdistmap fsdist_conv_bind_left_distr. Qed.
@@ -757,7 +764,7 @@ Proof. by move=> ? ? ?; rewrite /fsdistmap fsdist_conv_bind_left_distr. Qed.
 HB.instance Definition _ (f : A -> B) :=
   isAffine.Build _ _ _ _ (fsdistmap_affine f).
 
-Definition fsdist_eval (x : A) := fun D : R.-dist A => (D x: R^o).
+Definition fsdist_eval (x : A) := fun D : R.-dist A => (D x : R^o).
 
 Lemma fsdist_eval_affine (x : A) : @affine R _ R^o (fsdist_eval x).
 Proof. by move=> a b p; rewrite /fsdist_eval fsdist_convE. Qed.
@@ -1101,7 +1108,8 @@ set f := fun t =>
 exists (\max_(t <- finsupp d | `[< (\bigcup_i F i)%classic t >]) f t).+1.
 move=> k Nk.
 rewrite P_fssum.
-suff : (\bigcup_n F n `&` [set` finsupp d] = \bigcup_(i < k) F i `&` [set` finsupp d])%classic by move ->.
+suff : (\bigcup_n F n `&` [set` finsupp d] =
+        \bigcup_(i < k) F i `&` [set` finsupp d])%classic by move ->.
 rewrite (bigcupID `I_k) setIUl 2!setTI -[RHS]setU0.
 congr setU.
 rewrite setI_bigcupl bigcup0 // => i.
