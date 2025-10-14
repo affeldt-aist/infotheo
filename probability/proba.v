@@ -838,7 +838,7 @@ Proof.
 by rewrite !pfwd1E; apply eq_bigl => u; rewrite !inE /= !xpair_eqE andbCA.
 Qed.
 
-Lemma pr_in_comp (f : A -> B) E : injective f ->
+Lemma pr_in_comp_image (f : A -> B) E : injective f ->
   `Pr[ X \in E ] = `Pr[ (f `o X) \in f @: E ].
 Proof.
 by move=> inj_f; rewrite 2!pr_inE' (Pr_fdistmap inj_f) fdistmap_comp.
@@ -852,15 +852,16 @@ by rewrite -!pr_in1 !pr_inE' (Pr_fdistmap inj_f) fdistmap_comp imset_set1.
 Qed.
 
 End pr_pair.
+#[deprecated(since="infotheo 0.9.6", note="renamed to `pr_in_comp_image`")]
+Notation pr_in_comp := pr_in_comp_image (only parsing).
 
 Section pr_in_comp'.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 Variables (TA UA : finType) (f : TA -> UA) (X : {RV P -> TA}).
 
-(* TODO: rename *)
-Lemma pr_in_comp' E :
-  `Pr[ (f `o X) \in E ]  = `Pr[ X \in f @^-1: E ].
+(* TODO: rename to pr_in_comp after releasing 0.9.7 *)
+Lemma pr_in_comp' E : `Pr[ (f `o X) \in E ]  = `Pr[ X \in f @^-1: E ].
 Proof.
 rewrite !pr_inE' /Pr.
 rewrite partition_big_preimset /=.
@@ -895,7 +896,7 @@ Lemma pr_in_pair_setT {R : realType} (U : finType) (P : R.-fdist U)
   `Pr[ [% X, Y] \in E `*T ] = `Pr[ X \in E ].
 Proof.
 apply/esym.
-rewrite (@pr_in_comp _ _ _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
+rewrite (@pr_in_comp_image _ _ _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
 rewrite 2!pr_inE; congr Pr; apply/setP => u; rewrite !inE /=.
 by apply/imsetP/idP => [[a aE [] ->//]|XuE]; exists (X u).
 Qed.
@@ -2097,15 +2098,15 @@ Notation cinde_rv_unit := cinde_RV_unit (only parsing).
 #[deprecated(since="infotheo 0.9.2", note="renamed to `inde_RV_events`")]
 Notation inde_rv_events := inde_RV_events (only parsing).
 
-Section inde_RVE.
+Section inde_RVP.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A) (TA TB : finType).
 Variables (X : {RV P -> TA}) (Y : {RV P -> TB}).
 
-Lemma inde_RVE : P |= X _|_ Y <-> forall E F,
-    `Pr[ [% X, Y] \in E `* F] = `Pr[ X \in E ] * `Pr[ Y \in F ].
+Lemma inde_RVP : P |= X _|_ Y <-> forall E F,
+  `Pr[ [% X, Y] \in E `* F] = `Pr[ X \in E ] * `Pr[ Y \in F ].
 Proof.
-split=> H; last by move=> *; rewrite -!pr_in1 -H setX1.
+split=> [PXY|H]; last by move=> *; rewrite -!pr_in1 -H setX1.
 move=> E F; rewrite !pr_inE'.
 rewrite [LHS]/Pr; under eq_bigr=> *.
   rewrite fdistmapE.
@@ -2114,13 +2115,31 @@ rewrite [LHS]/Pr; under eq_bigr=> *.
 rewrite [in RHS]/Pr big_distrl /=.
 under [RHS]eq_bigr=> i ?.
   rewrite big_distrr /=.
-  under eq_bigr do rewrite !dist_of_RVE -H -dist_of_RVE.
+  under eq_bigr do rewrite !dist_of_RVE -PXY -dist_of_RVE.
   over.
-rewrite -big_setX; apply: eq_bigr=> *.
-by rewrite fdistmapE.
+by rewrite -big_setX; apply: eq_bigr=> *; rewrite fdistmapE.
 Qed.
 
-End inde_RVE.
+End inde_RVP.
+
+Section inde_RV_comp.
+Context {R : realType}.
+Variables (A : finType) (P : R.-fdist A).
+
+(* Origin: Lemma 3.1 in
+  "Information-Theoretically Secure Number-Product Protocol."
+  by Shen et al., 2007.
+  https://doi.org/10.1109/ICMLC.2007.4370663.
+*)
+Lemma inde_RV_comp (TA TB UA UB : finType) (X : {RV P -> TA}) (Y : {RV P -> TB})
+    (f : TA -> UA) (g : TB -> UB) :
+  P |= X _|_ Y -> P|= (f `o X) _|_ (g `o Y).
+Proof.
+move=> /inde_RVP inde_XY; apply/inde_RVP => E F.
+by rewrite (pr_in_comp' f) (pr_in_comp' g) -inde_XY -preimsetX -pr_in_comp'.
+Qed.
+
+End inde_RV_comp.
 
 Section inde_RV_sym.
 Context {R : realType}.
@@ -2132,63 +2151,34 @@ Proof. by split => /cinde_RV_unit/cinde_RV_sym/cinde_RV_unit. Qed.
 
 End inde_RV_sym.
 
-(* TODO: move up? *)
-Section inde_RV_comp.
-Context {R : realType}.
-Variables (A : finType) (P : R.-fdist A).
-
-(* Origin: Lemma 3.1 in
-  "Information-Theoretically Secure Number-Product Protocol."
-  by Shen et al., 2007.
-  https://doi.org/10.1109/ICMLC.2007.4370663.
-*)
-Lemma inde_RV_comp (TA TB UA UB : finType) (X : {RV P -> TA}) (Y : {RV P -> TB})
-  (f : TA -> UA) (g : TB -> UB) :
-  P |= X _|_ Y -> P|= (f `o X) _|_ (g `o Y).
-Proof.
-move=> /inde_RVE inde_XY'; apply/inde_RVE => E F.
-by rewrite (pr_in_comp' f) (pr_in_comp' g) -inde_XY' -preimsetX -pr_in_comp'.
-Qed.
-
-End inde_RV_comp.
-
-(* We put the following section here because the use of reasoning_by_cases and
-   the independence notation.
-*)
+(* We put the following section here because it uses reasoning_by_cases and
+   the independence notation. *)
 Section pfwd1_RV_op.
 Context {R : realType}.
-Variables (A : finType) (m n : nat)(P : R.-fdist A).
-Variables (TX1 TX2 TY : finType).
+Variables (A : finType) (P : R.-fdist A) (TX1 TX2 TY : finType).
 Variables (X1 : {RV P -> TX1}) (X2 : {RV P -> TX2}) (Y: {RV P -> TY}).
 Variable op : TX1 -> TX2 -> TY.
 
 Definition RV_op (A : {RV P -> TX1}) (B : {RV P -> TX2}) : {RV P -> TY} :=
   uncurry op `o [% A, B].
 
-Hypothesis X1_X2_indep : P|= X1 _|_ X2.
-Hypothesis X1X2_Y_indep : P|= [%X1, X2] _|_ Y.
+Hypothesis X1_X2_inde : P|= X1 _|_ X2.
+Hypothesis X1X2_Y_inde : P|= [%X1, X2] _|_ Y.
 
 Lemma pfwd1_RV_op y : `Pr[ (RV_op X1 X2) = y ] =
   \sum_(x1 <- fin_img X1)
     (\sum_(x2 <- fin_img X2 | op x1 x2 == y) `Pr[ X1 = x1 ] * `Pr[ X2 = x2]).
 Proof.
-rewrite -[LHS]pr_in1.
-rewrite (reasoning_by_cases _ X1).
+rewrite -[LHS]pr_in1 (reasoning_by_cases _ X1).
 apply: eq_bigr => x1 _.
-rewrite (reasoning_by_cases _ X2).
-rewrite [RHS]big_mkcond /=.
+rewrite (reasoning_by_cases _ X2) [RHS]big_mkcond /=.
 apply eq_bigr => x2 _.
-case: ifPn => [/eqP <-|Hneq].
-  rewrite -X1_X2_indep.
-  rewrite 2!setX1.
-  rewrite pr_in1.
+case: ifPn => [/eqP <-|x1x2y].
+  rewrite -X1_X2_inde 2!setX1 pr_in1.
   pose f (p : TX1 * TX2) := (op p.1 p.2, p.1, p.2).
-  have f_inj : injective f by move => [a b] [? ?] [] _ -> ->.
-  by rewrite -(pfwd1_comp _ _ f_inj).
-rewrite 2!setX1.
-rewrite pr_in1.
-rewrite pfwd1_eq0//.
-apply: contra Hneq.
+  by have /pfwd1_comp <-: injective f by move => [a b] [? ?] [] _ -> ->.
+rewrite 2!setX1 pr_in1 pfwd1_eq0//.
+apply: contra x1x2y.
 by rewrite fin_img_imset => /imsetP[a0 _ [] -> -> ->].
 Qed.
 
@@ -2199,9 +2189,7 @@ Lemma pfwd1_RV2_op y1 y2 : `Pr[ [%(RV_op X1 X2), Y] = (y1, y2) ] =
 Proof.
 rewrite (inde_RV_comp _ idfun)//.
 under eq_bigr do rewrite -big_distrl /=.
-rewrite -big_distrl /=.
-congr (_ * _).
-by exact: pfwd1_RV_op.
+by rewrite -big_distrl /= -pfwd1_RV_op.
 Qed.
 
 End pfwd1_RV_op.

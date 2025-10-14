@@ -5,7 +5,7 @@
   + inde_dist_of_RV2
 
 - in proba.v
-  + inde_RVE, inde_RV_comp, RV_op,
+  + inde_RVP, inde_RV_comp, RV_op,
     pfwd1_RV_op, pfwd1_RV2_op
 
 - in entropy.v
@@ -36,6 +36,7 @@
 
 - in proba.v
   + pr_eqE' -> dist_of_RVE
+  + pr_in_comp -> pr_in_comp_image
 
 -------------------
 from 0.9.3 to 0.9.4
