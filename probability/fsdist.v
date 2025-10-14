@@ -728,12 +728,10 @@ Lemma fsdist_conv_bind_right_distr (B : choiceType) p (m : R.-dist A)
     (a b : A -> R.-dist B):
   m >>= (a <| p |> b) = (m >>= a) <| p |> (m >>= b).
 Proof.
-apply/fsdist_ext => b0 /=; rewrite fsdistbindE fsdist_convE.
-have [->|p0] := eqVneq p 0%:pr; first by rewrite 2!conv0 fsdistbindE.
-have [->|p1] := eqVneq p 1%:pr; first by rewrite 2!conv1 fsdistbindE.
-under eq_bigr do rewrite fsdist_convE avgRE mulrDr mulrCA (mulrCA _ p.~).
-rewrite big_split/= -2!big_distrr /=.
-by rewrite -!fsdistbindEwiden // ?finsupp_conv_subl ?finsupp_conv_subr.
+apply/fsdist_ext => b0.
+rewrite fsdist_convE 3!fsdistbindE avgRE 2!big_distrr -big_split/=.
+apply: eq_bigr=> a0 _; rewrite fsdist_convE avgRE/=.
+by rewrite !(mulrCA _ (m a0)) -mulrDr.
 Qed.
 
 Lemma supp_fsdist_conv p (p0 : p != 0%:pr) (p1 : p != 1%:pr) a b :
