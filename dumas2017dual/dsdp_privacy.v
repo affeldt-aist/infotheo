@@ -135,6 +135,63 @@ Qed.
 
 End cinde_centropy_eq.
 
+Lemma pfwd1_pair4_swap34 (T : finType) (P : R.-fdist T) (TA TB TC TD : finType) 
+    (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD})
+    a b c d :
+  `Pr[ [% X, Y, Z, W] = (a, b, c, d) ] = 
+  `Pr[ [% X, Y, W, Z] = (a, b, d, c) ].
+Proof.
+rewrite !pfwd1E; apply eq_bigl => u.
+by rewrite !inE /= !xpair_eqE; do ! case: (_ == _) => //=.
+Qed.
+
+Lemma pfwd1_nested3_AC (T : finType) (P : R.-fdist T) (TA TB TC TD : finType)
+    (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD})
+    a b c d :
+  `Pr[ [% X, [% Y, Z, W]] = (a, (b, c, d)) ] = 
+  `Pr[ [% X, [% Y, W, Z]] = (a, (b, d, c)) ].
+Proof.
+rewrite !pfwd1_pairA !pfwd1E.
+congr Pr.
+apply/setP => u.
+by rewrite !inE /= !xpair_eqE [in LHS]andbA [in RHS]andbA andbAC.
+Qed.
+
+Lemma centropyAC (T : finType) (P : R.-fdist T)
+    (A B C D : finType) (X : {RV P -> A}) (Y : {RV P -> B}) 
+    (Z : {RV P -> C}) (W : {RV P -> D}) :
+  `H(X | [% Y, Z, W]) = `H(X | [% Y, W, Z]).
+Proof.
+rewrite /centropy_RV /centropy /=.
+rewrite (reindex (fun '(a, b, c) => (a, c, b)))/=.
+  apply: eq_bigr => -[[b c] d] _ /=.
+  rewrite !snd_RV2 !dist_of_RVE pfwd1_pairAC.
+  congr *%R.
+  rewrite /centropy1; congr (- _).
+  rewrite /jcPr !snd_RV2.
+  apply: eq_bigr => a _.
+  by rewrite !setX1 !Pr_set1 !dist_of_RVE pfwd1_nested3_AC pfwd1_pairAC.
+- exists (fun '(a, b, c) => (a, c, b)) => -[[? ?] ?] //=.
+Qed.
+
+Lemma centropyA (T : finType) (P : R.-fdist T)
+    (A B C D : finType) (X : {RV P -> A}) (Y : {RV P -> B}) 
+    (Z : {RV P -> C}) (W : {RV P -> D}) :
+  `H(X | [% Y, [% Z, W]]) = `H(X | [% Y, Z, W]).
+Proof.
+rewrite /centropy_RV /centropy !snd_RV2.
+rewrite (reindex (fun '(b, (c, d)) => ((b, c), d)))/=.
+  apply: eq_bigr => [[b [c d]] H].
+  rewrite !dist_of_RVE.
+  rewrite pfwd1_pairA.
+  congr (_ * _).
+  rewrite /centropy1; congr (- _).
+  rewrite /jcPr.
+  apply: eq_bigr => a _.
+
+by [].
+Qed.
+
 End entropy_extra.
 
 Section dsdp_privacy_analysis.
@@ -512,7 +569,6 @@ rewrite v3_determined.
 have ->: `H([% u2, u3, s], [% v2, compute_v3 `o [% u2, u3, s, v2]]) =
   `H `p_[% u2, u3, s, v2].
   by rewrite joint_entropy_RVA joint_entropy_RV_comp.
-About chain_rule_RV.
 have ->: `H( v2 | [% u2, u3, s]) = `H([% u2, u3, s], v2) - `H `p_ [% u2, u3, s].
   by rewrite chain_rule_RV addrAC subrr add0r.
 by [].
@@ -529,12 +585,56 @@ Let comp_aiv_dotp2:
 Proof. rewrite /comp_RV. apply: boolp.funext => _ //=. Qed.
 
 Lemma safety_by_bonded_leakage :
-  P |= [% dk_a, v1, u1, r2, r3] _|_ v2 | [% u2, u3, s] ->
   `H([%v2, v3] | alice_view ) = `H(v2 | alice_view).
 Proof.
 set other_alice : {RV P -> (Alice.-key Dec msg) * msg * msg * msg * msg} :=
   [% dk_a, v1, u1, r2, r3].
-move => H.
+have ->: forall v, `H(v | alice_view ) = `H(v | [%other_alice, u2, u3, s] ).
+  move => t v.
+  rewrite /other_alice /alice_view.
+  rewrite !(E_enc_ce_removal v card_msg); last first.
+    exact: alice_view_neq0; last first.
+    exact: eqn1_view_neq0; last first.
+    exact: eqn2_view_neq0.
+  have ->: `H( v | [% dk_a, s, v1, u1, u2, u3, r2, r3]) =
+    `H( v | [% dk_a, v1, u1, r2, r3, u2, u3, s]).
+    rewrite centropyAC.  
+    rewrite centropyC. 
+
+
+    pose h := (fun o : (Alice.-key Dec msg * msg *
+      msg * msg * msg * msg * msg * msg) =>
+      let '(dk_a, s, v1, u1, u2, u3, r2, r3) := o in
+        (dk_a, v1, u1, r2, r3, u2, u3, s)).
+    rewrite -(centropy_RV_contraction _ _ h).
+    have ->: `H( v | [% dk_a, s, v1, u1, u2, u3, r2,
+      r3, h `o [% dk_a, s, v1, u1, u2, u3, r2, r3]]) =
+      `H( v | [% dk_a, s, v1, u1, u2, u3, r2, r3,
+      [% dk_a, v1, u1, r2, r3, u2, u3, s]]).
+      by [].
+    rewrite centropyC.
+    pose g := (fun o : (Alice.-key Dec msg * msg *
+      msg * msg * msg * msg * msg * msg) =>
+      let '(dk_a, v1, u1, u2, u3, r2, r3, s) := o in
+        (dk_a, s, v1, u1, u2, u3, r2, r3)).
+    have ->: `H( v | [% dk_a, v1, u1, r2, r3, u2, u3, s,
+                       [% dk_a, s, v1, u1, u2, u3, r2, r3]]) =
+      `H( v | [% dk_a, v1, u1, r2, r3, u2, u3, s,
+                       g `o [%dk_a, v1, u1, r2, r3, u2, u3, s]]).
+      rewrite /g /comp_RV //=.
+      by [].
+
+    have ->: `H( v | [% dk_a, s, v1, u1, u2, u3, r2, r3,
+      [% dk_a, v1, u1, r2, r3, u2, u3, s]]) =
+      `H( v | [% g `o [% dk_a, v1, u1, r2, r3, u2, u3, s],
+      [% dk_a, v1, u1, r2, r3, u2, u3, s]]).
+        rewrite /g /comp_RV //=.
+      by [].
+    rewrite centropyC (centropy_RV_contraction _ _ h').
+
+  
+
+
 have ->: `H(v2 | alice_view) = `H( v2 | [% alice_input_view, s]).
   rewrite !(E_enc_ce_removal v2 card_msg); last first.
     exact: alice_view_neq0; last first.
@@ -567,6 +667,7 @@ have ->: `H( v2 | [% alice_input_view, s]) = `H(v2 | [% u2, u3, s]).
     rewrite -(centropy_RV_contraction _ _ h').
     by rewrite centropyC (centropy_RV_contraction _ _ h').
   rewrite -/other_alice cinde_centropy_eq.
+  Search cinde_RV.
   pose g := (fun o : (msg * msg * msg * msg * msg) =>
     let '(v2, v3, u2, u3, vu1) := o in
     dotp2 (v2, v3) (u2, u3) + vu1).
@@ -578,7 +679,21 @@ have ->: `H( v2 | [% alice_input_view, s]) = `H(v2 | [% u2, u3, s]).
     by rewrite s_alt /dotp2_rv /dotp2 /add_RV /GRing.add_fun /g /dotp2 /comp_RV.
   have ->: `H( v2 | [% u2, u3, g `o [%v2, v3, u2, u3, vu1]]) =
     `H( v2 | [%q `o [%v2, v3, u2, u3, vu1], g `o [%v2, v3, u2, u3, vu1]]).
+    rewrite (centropy_RV_contraction v2 [%v2, v3, u2, u3, vu1] g).
+
+  
+  have ->: `H( v2 | s) = `H( v2 | g `o [%v2, v3, u2, u3, vu1]).
+    by rewrite s_alt /dotp2_rv /dotp2 /add_RV /GRing.add_fun /g /dotp2 /comp_RV.
+
+ rewrite (centropy_RV_contraction _ _ g).
+  
+exact: 
+Search cinde_RV.
+
 Abort.
+
+
+
    
 (* Prove this is because we already knew U . V is safe by Rouche-Capelli *)
 Lemma entropy_dot_product_result_leq_solutions
