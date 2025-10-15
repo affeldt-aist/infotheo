@@ -157,6 +157,17 @@ apply/setP => u.
 by rewrite !inE /= !xpair_eqE [in LHS]andbA [in RHS]andbA andbAC.
 Qed.
 
+Lemma pfwd1_pair4_mid_A (T : finType) (P : R.-fdist T) (TA TB TC TD : finType)
+    (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD})
+    a b c d :
+  `Pr[ [% X, Y, Z, W] = (a, b, c, d) ] = 
+  `Pr[ [% X, [% Y, Z], W] = (a, (b, c), d) ].
+Proof.
+rewrite !pfwd1E.
+congr Pr; apply/setP => u.
+by rewrite !inE /= !xpair_eqE andbA.
+Qed.
+
 Lemma centropyAC (T : finType) (P : R.-fdist T)
     (A B C D : finType) (X : {RV P -> A}) (Y : {RV P -> B}) 
     (Z : {RV P -> C}) (W : {RV P -> D}) :
@@ -188,8 +199,17 @@ rewrite (reindex (fun '(b, (c, d)) => ((b, c), d)))/=.
   rewrite /centropy1; congr (- _).
   rewrite /jcPr.
   apply: eq_bigr => a _.
-
-by [].
+  rewrite !snd_RV2.
+  rewrite !setX1 !Pr_set1 !dist_of_RVE !pfwd1_pairA.
+  congr (_ * _).
+    congr (_ / _).
+    by rewrite pfwd1_pair4_mid_A.
+  congr (_ * _).
+  congr exp.ln.
+    by rewrite pfwd1_pair4_mid_A.
+exists (fun '(b, c, d) => (b, (c, d))).
+by move => [b [c d]].
+by move => [[b c] d].
 Qed.
 
 End entropy_extra.
