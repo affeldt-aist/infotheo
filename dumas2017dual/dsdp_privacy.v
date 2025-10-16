@@ -212,6 +212,54 @@ by move => [b [c d]].
 by move => [[b c] d].
 Qed.
 
+Lemma centropyA_middle {T : finType} {P : R.-fdist T}
+    {A B C D E : finType} 
+    (X : {RV P -> A}) (W : {RV P -> B}) 
+    (V : {RV P -> C}) (Z : {RV P -> D}) (Y : {RV P -> E}) :
+  `H(X | [% W, [% V, Z], Y]) = `H(X | [% W, V, Z, Y]).
+Proof.
+rewrite /centropy_RV /centropy //=.
+rewrite (reindex (fun '((b, (c, e)), d) => ((b, c), e, d))) //=.
+  apply: eq_bigr => [] [] [] b [] c d e _ //=.
+  congr (_ * _).
+  by rewrite !snd_RV2 !dist_of_RVE pfwd1_pair4_mid_A.
+rewrite /centropy1; congr (- _).
+rewrite /jcPr; apply: eq_bigr => a _.
+rewrite !setX1 !Pr_set1 !snd_RV2 !dist_of_RVE !pfwd1_pairA.
+congr (_ * _).
+   congr (_ / _); last by rewrite -!pfwd1_pair4_mid_A.
+   - rewrite -!pfwd1_pair4_mid_A !pfwd1E.
+     congr Pr; apply/setP => u.
+     by rewrite !inE /= !xpair_eqE [in RHS]andbA.
+   congr (_ * _).
+   congr exp.ln.
+   congr (_ / _); last by rewrite -!pfwd1_pair4_mid_A.
+     rewrite -!pfwd1_pair4_mid_A !pfwd1E.
+     congr Pr; apply/setP => u.
+     by rewrite !inE /= !xpair_eqE [in RHS]andbA.
+exists (fun '(b, c, d, e) => (b, (c, d), e)).
+by move => [[] b [] c d e].
+by move => [[] [] b] c d e.
+Qed.
+
+Lemma centropy4_swap_2_4 (T : finType) (P : R.-fdist T)
+    (A B C D E : finType)
+    (X : {RV P -> A}) (W : {RV P -> B}) (Y : {RV P -> C}) 
+    (Z : {RV P -> D}) (V : {RV P -> E}) :
+  `H(X | [% W, Y, Z, V]) = `H(X | [% W, V, Z, Y]).
+Proof.
+rewrite centropyAC.
+rewrite centropyC.
+rewrite centropyC.
+rewrite centropyC.
+rewrite centropyC.
+rewrite -centropyA.
+rewrite centropyAC.
+rewrite -centropyA.
+rewrite centropyA.
+by rewrite centropyA_middle.
+Qed.
+
 End entropy_extra.
 
 Section dsdp_privacy_analysis.
@@ -558,13 +606,13 @@ exact: alice_view_neq0.
 Qed.
 
 (* The constraint function: given v2, s, u2, u3, compute v3 *)
-Definition compute_v3 (o : (msg * msg * msg * msg)) : msg :=
-  let '(u2_val, u3_val, s_val, v2_val) := o in
-    (s_val - u2_val * v2_val) / u3_val.  (* assuming u3 ≠ 0 *)
+Definition compute_v3 (o : (msg * msg * msg * msg * msg * msg)) : msg :=
+  let '(v1_val, u1_val, u2_val, u3_val, s_val, v2_val) := o in
+    (s_val - u2_val * v2_val) / u3_val - u1_val * v1_val.  (* assuming u3 ≠ 0 *)
 
 (* Key hypothesis: v3 is determined by v2 and the constraint *)
 Hypothesis v3_determined : 
-  v3 = compute_v3 `o [% u2, u3, s, v2].
+  v3 = compute_v3 `o [% v1, u1, u2, u3, s, v2].
 
 (** * Fundamental Principle of Constraint-Based Security
     
@@ -580,16 +628,18 @@ Hypothesis v3_determined :
     - Given constraint, [v3] is determined by [v2] (or vice versa)
 *)
 Lemma determined_auxiliary_adds_no_information_v2 :
-  `H([%v2, v3] | [% u2, u3, s]) = `H(v2 | [% u2, u3, s]).
+  `H([%v2, v3] | [% v1, u1, u2, u3, s]) = `H(v2 | [% v1, u1, u2, u3, s]).
 Proof.
-have ->: `H([%v2, v3] | [% u2, u3, s]) =
-  `H([%u2, u3, s], [%v2, v3]) - `H `p_ [% u2, u3, s].
+have ->: `H([%v2, v3] | [% v1, u1, u2, u3, s]) =
+  `H([% v1, u1, u2, u3, s], [%v2, v3]) - `H `p_ [% v1, u1, u2, u3, s].
   by rewrite chain_rule_RV addrAC subrr add0r.
 rewrite v3_determined.
-have ->: `H([% u2, u3, s], [% v2, compute_v3 `o [% u2, u3, s, v2]]) =
-  `H `p_[% u2, u3, s, v2].
+have ->: `H([% v1, u1, u2, u3, s],
+    [% v2, compute_v3 `o [% v1, u1, u2, u3, s, v2]]) =
+  `H `p_[% v1, u1, u2, u3, s, v2].
   by rewrite joint_entropy_RVA joint_entropy_RV_comp.
-have ->: `H( v2 | [% u2, u3, s]) = `H([% u2, u3, s], v2) - `H `p_ [% u2, u3, s].
+have ->: `H( v2 | [% v1, u1, u2, u3, s]) =
+  `H([% v1, u1, u2, u3, s], v2) - `H `p_ [% v1, u1, u2, u3, s].
   by rewrite chain_rule_RV addrAC subrr add0r.
 by [].
 Qed.
@@ -607,109 +657,66 @@ Proof. rewrite /comp_RV. apply: boolp.funext => _ //=. Qed.
 Lemma safety_by_bonded_leakage :
   `H([%v2, v3] | alice_view ) = `H(v2 | alice_view).
 Proof.
-set other_alice : {RV P -> (Alice.-key Dec msg) * msg * msg * msg * msg} :=
-  [% dk_a, v1, u1, r2, r3].
-have ->: forall v, `H(v | alice_view ) = `H(v | [%other_alice, u2, u3, s] ).
+set other_alice : {RV P -> (Alice.-key Dec msg) * msg * msg} :=
+  [% dk_a, r2, r3].
+have H: forall v, `H(v | alice_view ) =
+    `H(v | [%other_alice, v1, u1, u2, u3, s] ).
   move => t v.
   rewrite /other_alice /alice_view.
   rewrite !(E_enc_ce_removal v card_msg); last first.
     exact: alice_view_neq0; last first.
     exact: eqn1_view_neq0; last first.
     exact: eqn2_view_neq0.
-  have ->: `H( v | [% dk_a, s, v1, u1, u2, u3, r2, r3]) =
-    `H( v | [% dk_a, v1, u1, r2, r3, u2, u3, s]).
-    rewrite centropyAC.  
-    rewrite centropyC. 
-
-
-    pose h := (fun o : (Alice.-key Dec msg * msg *
-      msg * msg * msg * msg * msg * msg) =>
-      let '(dk_a, s, v1, u1, u2, u3, r2, r3) := o in
-        (dk_a, v1, u1, r2, r3, u2, u3, s)).
-    rewrite -(centropy_RV_contraction _ _ h).
-    have ->: `H( v | [% dk_a, s, v1, u1, u2, u3, r2,
-      r3, h `o [% dk_a, s, v1, u1, u2, u3, r2, r3]]) =
-      `H( v | [% dk_a, s, v1, u1, u2, u3, r2, r3,
-      [% dk_a, v1, u1, r2, r3, u2, u3, s]]).
-      by [].
-    rewrite centropyC.
-    pose g := (fun o : (Alice.-key Dec msg * msg *
-      msg * msg * msg * msg * msg * msg) =>
-      let '(dk_a, v1, u1, u2, u3, r2, r3, s) := o in
-        (dk_a, s, v1, u1, u2, u3, r2, r3)).
-    have ->: `H( v | [% dk_a, v1, u1, r2, r3, u2, u3, s,
-                       [% dk_a, s, v1, u1, u2, u3, r2, r3]]) =
-      `H( v | [% dk_a, v1, u1, r2, r3, u2, u3, s,
-                       g `o [%dk_a, v1, u1, r2, r3, u2, u3, s]]).
-      rewrite /g /comp_RV //=.
-      by [].
-
-    have ->: `H( v | [% dk_a, s, v1, u1, u2, u3, r2, r3,
-      [% dk_a, v1, u1, r2, r3, u2, u3, s]]) =
-      `H( v | [% g `o [% dk_a, v1, u1, r2, r3, u2, u3, s],
-      [% dk_a, v1, u1, r2, r3, u2, u3, s]]).
-        rewrite /g /comp_RV //=.
-      by [].
-    rewrite centropyC (centropy_RV_contraction _ _ h').
-
-  
-
-
-have ->: `H(v2 | alice_view) = `H( v2 | [% alice_input_view, s]).
-  rewrite !(E_enc_ce_removal v2 card_msg); last first.
-    exact: alice_view_neq0; last first.
-    exact: eqn1_view_neq0; last first.
-    exact: eqn2_view_neq0.
-  pose h := (fun o : (Alice.-key Dec msg * msg *
-    msg * msg * msg * msg * msg * msg) =>
-    let '(dk_a, s, v1, u1, u2, u3, r2, r3) := o in
-     (dk_a, v1, u1, u2, u3, r2, r3, s)).
-  pose h' := (fun o : (Alice.-key Dec msg * msg *
-    msg * msg * msg * msg * msg * msg) =>
-    let '(dk_a, v1, u1, u2, u3, r2, r3, s) := o in
-    (dk_a, s, v1, u1, u2, u3, r2, r3)).
-  rewrite -(centropy_RV_contraction _ _ h).
-  have ->: `H( v2 | [% dk_a, s, v1, u1, u2, u3, r2,
-    r3, h `o [% dk_a, s, v1, u1, u2, u3, r2, r3]]) =
-    `H( v2 | [% dk_a, s, v1, u1, u2, u3, r2, r3,
-    [% dk_a, v1, u1, u2, u3, r2, r3, s]]).
-    by [].
-  rewrite centropyC (centropy_RV_contraction _ _ h').
-  by rewrite -/alice_input_view.
-have ->: `H( v2 | [% alice_input_view, s]) = `H(v2 | [% u2, u3, s]).
-  rewrite /alice_input_view.
-  have ->: `H( v2 | [% dk_a, v1, u1, u2, u3, r2, r3, s]) =
-    `H( v2 | [% dk_a, v1, u1, r2, r3, u2, u3, s]).
-    pose h' := (fun o :
-        (Alice.-key Dec msg * msg * msg * msg * msg * msg * msg * msg) =>
-      let '(dk_a, v1, u1, u2, u3, r2, r3, s) := o in
-      (dk_a, v1, u1, r2, r3, u2, u3, s)).
-    rewrite -(centropy_RV_contraction _ _ h').
-    by rewrite centropyC (centropy_RV_contraction _ _ h').
-  rewrite -/other_alice cinde_centropy_eq.
-  Search cinde_RV.
-  pose g := (fun o : (msg * msg * msg * msg * msg) =>
-    let '(v2, v3, u2, u3, vu1) := o in
-    dotp2 (v2, v3) (u2, u3) + vu1).
-  pose q := (fun o : (msg * msg * msg * msg * msg) =>
-    let '(v2, v3, u2, u3, vu1) := o in
-    (u2, u3)).
-  have ->: `H( v2 | [%u2, u3, s]) =
-    `H( v2 | [% u2, u3, g `o [%v2, v3, u2, u3, vu1]]).
-    by rewrite s_alt /dotp2_rv /dotp2 /add_RV /GRing.add_fun /g /dotp2 /comp_RV.
-  have ->: `H( v2 | [% u2, u3, g `o [%v2, v3, u2, u3, vu1]]) =
-    `H( v2 | [%q `o [%v2, v3, u2, u3, vu1], g `o [%v2, v3, u2, u3, vu1]]).
-    rewrite (centropy_RV_contraction v2 [%v2, v3, u2, u3, vu1] g).
-
-  
-  have ->: `H( v2 | s) = `H( v2 | g `o [%v2, v3, u2, u3, vu1]).
-    by rewrite s_alt /dotp2_rv /dotp2 /add_RV /GRing.add_fun /g /dotp2 /comp_RV.
-
- rewrite (centropy_RV_contraction _ _ g).
-  
-exact: 
-Search cinde_RV.
-
+  have H_reorder: `H( v | [% dk_a, s, v1, u1, u2, u3, r2, r3]) =
+    `H( v | [% dk_a, r2, r3, v1, u1, u2, u3, s]).
+    rewrite /centropy_RV /centropy /= !snd_RV2.
+    rewrite (reindex (fun '(dk_a', r2', r3', v1', u1', u2', u3', s') => 
+                      (dk_a', s', v1', u1', u2', u3', r2', r3')))/=.
+      apply: eq_bigr => [] [] [] [] [] [] [] []
+        dk_a' s' v1' u1' u2' u3' r2' r3' _.
+      congr (_ * _).
+        rewrite !dist_of_RVE !pfwd1E.
+        congr Pr; apply/setP => u.
+        rewrite !inE /= !xpair_eqE.
+          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
+             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
+             case: (r2 u == s'); case: (r3 u == v1').
+        rewrite /centropy1; congr (- _).
+        rewrite /jcPr !snd_RV2.
+        apply: eq_bigr => a _.
+        rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
+        congr (_ * _).
+        f_equal.
+        congr Pr; apply/setP => u.
+        rewrite !inE /= !xpair_eqE.
+          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
+             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
+             case: (r2 u == s'); case: (r3 u == v1').
+        f_equal.
+        congr Pr; apply/setP => u.
+          rewrite !inE /= !xpair_eqE.
+          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
+             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
+             case: (r2 u == s'); case: (r3 u == v1').
+        congr log.
+        f_equal.
+        congr Pr; apply/setP => u.
+          rewrite !inE /= !xpair_eqE.
+          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
+             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
+             case: (r2 u == s'); case: (r3 u == v1').
+        f_equal.
+        congr Pr; apply/setP => u.
+          rewrite !inE /= !xpair_eqE.
+          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
+             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
+             case: (r2 u == s'); case: (r3 u == v1').
+      by exists (fun '(dk_a', s', v1', u1', u2', u3', r2', r3') =>
+             (dk_a', r2', r3', v1', u1', u2', u3', s')) 
+             => [] [] [] []  [] [] [] [] dk_a' v1' u1' r2' r3' u2' u3' s'.
+    exact: H_reorder.
+rewrite (H msg v2).
+rewrite (H (msg * msg)%type [%v2, v3]).
 Abort.
 
 
