@@ -655,8 +655,11 @@ Let comp_aiv_dotp2:
 Proof. rewrite /comp_RV. apply: boolp.funext => _ //=. Qed.
 
 Lemma safety_by_bonded_leakage :
+   P |= [% dk_a, r2, r3] _|_ [% v2, v3] | [% v1, u1, u2, u3, s] ->
+   P |= [% dk_a, r2, r3] _|_ v2 | [% v1, u1, u2, u3, s] ->
   `H([%v2, v3] | alice_view ) = `H(v2 | alice_view).
 Proof.
+move => H_cinde_v2v3 H_cinde_v2.
 set other_alice : {RV P -> (Alice.-key Dec msg) * msg * msg} :=
   [% dk_a, r2, r3].
 have H: forall v, `H(v | alice_view ) =
@@ -715,35 +718,61 @@ have H: forall v, `H(v | alice_view ) =
              (dk_a', r2', r3', v1', u1', u2', u3', s')) 
              => [] [] [] []  [] [] [] [] dk_a' v1' u1' r2' r3' u2' u3' s'.
     exact: H_reorder.
-rewrite (H msg v2).
-rewrite (H (msg * msg)%type [%v2, v3]).
-Abort.
+rewrite (H msg v2) (H (msg * msg)%type [%v2, v3]).
+have H_assoc: forall v, `H(v | [%other_alice, v1, u1, u2, u3, s] ) =
+    `H(v | [%other_alice, [%v1, u1, u2, u3, s]] ).
+  move => t v.
+  rewrite /centropy_RV /centropy /= !snd_RV2.
+  rewrite (reindex (fun '(o, (v1, u1, u2, u3, s)) =>
+                    (o, v1, u1, u2, u3, s))) /=.
+  apply: eq_bigr => [] [] [] [] dk_a' r2' r3' [] [] [] [] v1' u1' u2' u3' s' _.
+  congr (_ * _).
+    rewrite !dist_of_RVE !pfwd1E.
+    congr Pr; apply/setP => u.
+    rewrite !inE /= !xpair_eqE.
+      by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
+         case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
+         case: (u3 u == u3'); case: (s u == s').
+      rewrite /centropy1; congr (- _).
+      rewrite /jcPr !snd_RV2.
+      apply: eq_bigr => a _.
+      rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
+      congr (_ * _).
+      f_equal.
+      congr Pr; apply/setP => u.
+        rewrite !inE /= !xpair_eqE.
+        by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
+           case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
+           case: (u3 u == u3'); case: (s u == s').
+      f_equal.
+      congr Pr; apply/setP => u.
+        rewrite !inE /= !xpair_eqE.
+        by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
+           case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
+           case: (u3 u == u3'); case: (s u == s').
+      congr log.
+      f_equal.
+      congr Pr; apply/setP => u.
+        rewrite !inE /= !xpair_eqE.
+        by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
+           case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
+           case: (u3 u == u3'); case: (s u == s').
+      f_equal.
+      congr Pr; apply/setP => u.
+        rewrite !inE /= !xpair_eqE.
+        by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
+           case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
+           case: (u3 u == u3'); case: (s u == s').
+      exists (fun '(o, v1, u1, u2, u3, s) =>
+             (o, (v1, u1, u2, u3, s))).
+        - by move=> [] o [] [] [] [] a1 a2 a3 a4 a5.
+        - by move=> [] [] [] [] [] [] [] [] a1 a2 a3 a4 a5 o1 o2 o3.
+rewrite (H_assoc msg v2) (H_assoc (msg * msg)%type [%v2, v3]).
+rewrite (cinde_centropy_eq H_cinde_v2v3).
+rewrite (cinde_centropy_eq H_cinde_v2).
+exact: determined_auxiliary_adds_no_information_v2.
+Qed. (* TODO: opaque check takes very long. *)
 
-
-
-   
-(* Prove this is because we already knew U . V is safe by Rouche-Capelli *)
-Lemma entropy_dot_product_result_leq_solutions
-  (S : {RV P -> msg}) (U V: {RV P -> (msg * msg)}) :
-  S = dotp2_rv U V ->
-  `H `p_S <= `H(U, V).
-Proof.
-move => HS.
-have centropy_S_UV_eq0 : `H(S | [%U, V]) = 0.
-  pose f := fun uv => dotp2 uv.1 uv.2.
-  have ->: S = f `o [%U, V].
-    rewrite HS /f /dotp2_rv /dotp2.
-    by apply: boolp.funext => i //=.
-  by rewrite centropy_RV_comp0.
-have joint_entropy_SUV_eq_UV : `H(S, [%U, V]) = `H(U, V).
-  rewrite joint_entropy_RVC chain_rule_RV centropy_S_UV_eq0.
-  by rewrite /joint_entropy_RV /joint_entropy addr0.
-rewrite -joint_entropy_SUV_eq_UV.
-rewrite chain_rule_RV.
-rewrite lerDl.
-have [-> //|Hneq] := eqVneq 0 (`H( [% U, V] | S)).
-by rewrite centropy_ge0.
-Qed.
 (*
    Equaliy iff H([%V, U] | S) = 0, i.e. S uniquely determines (V, U).
 
