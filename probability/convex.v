@@ -102,6 +102,23 @@ From mathcomp.analysis Require Import (canonicals)convex.
 (*                                hull of the image                           *)
 (* ```                                                                        *)
 (*                                                                            *)
+(* Magnification:                                                             *)
+(* ```                                                                        *)
+(*   magnified_weight p q r == (r - q) / (r - p)                              *)
+(*   magnified_prob         == magnified_weight as a {prob R}                 *)
+(*                             given p < r and p <= q <= r                    *)
+(*                                                                            *)
+(*   0 ------------ p ------------ q ------------ r ------------ 1            *)
+(*                                                                            *)
+(*               x <|p|> y                     x <|r|> y                      *)
+(*                  //                            //                          *)
+(*   x ------------ u ------------ + ------------ v ------------ y            *)
+(*                                //                                          *)
+(*                            x <|q|> y                                       *)
+(*                                                                            *)
+(*   magnify_conv == x <|q|> y = u <|magnified_prob|> v                       *)
+(* ```                                                                        *)
+(*                                                                            *)
 (* Application to real analysis:                                              *)
 (* - Definition of convex sets for R                                          *)
 (* - twice derivable is convex (lemma `second_derivative_convexf_pt`)         *)
@@ -3223,6 +3240,95 @@ by apply/mulr_ge0; rewrite subr_ge0; exact/ltW.
 Qed.
 
 End twice_derivable_convex.
+
+Section magnified_weight.
+Local Open Scope ring_scope.
+Variables (R : fieldType).
+Variables (p q r : R).
+
+Definition magnified_weight := (r - q) / (r - p).
+
+Lemma magnified_weight_eq1 : p != r-> q = p -> magnified_weight = 1.
+Proof. by move=> ? pq; rewrite /magnified_weight pq divff// subr_eq0 eq_sym. Qed.
+
+Lemma magnified_weight_eq0 : q = r -> magnified_weight = 0.
+Proof. by move=> qr; rewrite /magnified_weight qr subrr mul0r. Qed.
+
+End magnified_weight.
+
+Section magnified_prob.
+Local Open Scope ring_scope.
+Variables (R : realType) (p q r : {prob R}).
+Variables (pr : Prob.p p < Prob.p r) (pqr : Prob.p p <= Prob.p q <= Prob.p r).
+
+Lemma magnified_prob_proof :
+  0 <= magnified_weight (Prob.p p) (Prob.p q) (Prob.p r) <= 1.
+Proof.
+have pr' := negbT (lt_eqF pr).
+have[|qnep]:= eqVneq q p.
+  by move/(congr1 \val) /magnified_weight_eq1 ->; first exact/andP.
+have[|qner]:= eqVneq q r.
+  by move/(congr1 \val) /magnified_weight_eq0 ->; exact/andP.
+case/andP: pqr => pq qr.
+have:= pr => /[dup] /gt_eqF /negbT rp; rewrite -subr_gt0 => rp'.
+have rq : 0 < Prob.p r - Prob.p q by rewrite subr_gt0 lt_def qr eq_sym qner.
+apply/andP; split; first by rewrite divr_ge0// subr_ge0// (le_trans pq).
+by rewrite -(ler_pM2r rp') -mulrA mulVf ?subr_eq0// mulr1 mul1r lerD2l lerN2.
+Qed.
+
+Definition magnified_prob : {prob R} :=
+  Eval hnf in Prob.mk_ magnified_prob_proof.
+
+Lemma magnified_prob_eq1 : q = p -> magnified_prob = 1%:pr.
+Proof.
+have ? := negbT (lt_eqF (pr)).
+move/(congr1 \val) => /= ?.
+exact/val_inj/magnified_weight_eq1.
+Qed.
+
+Lemma magnified_prob_eq0 : q = r -> magnified_prob = 0%:pr.
+Proof.
+have ? := negbT (lt_eqF (pr)).
+move/(congr1 \val) => /= ?.
+exact/val_inj/magnified_weight_eq0.
+Qed.
+
+End magnified_prob.
+
+Section magnify_conv.
+Local Open Scope ring_scope.
+Local Open Scope convex_scope.
+Variables (R : realType) (T : convType R) (p q r : {prob R}) (x y : T).
+Variables (pr : Prob.p p < Prob.p r) (pqr : Prob.p p <= Prob.p q <= Prob.p r).
+
+Local Notation m := (magnified_prob pr pqr).
+Local Notation "x +' y" := (addpt x y) (at level 50).
+Local Notation "a *' x" := (scalept a x) (at level 40).
+
+(* NB: should be simplifiable by a variant of convACA' *)
+Lemma magnify_conv : x <|q|> y = (x <|p|> y) <| m |> (x <|r|> y).
+Proof.
+apply/esym.
+have[|qnep]:= eqVneq q p.
+  by move/[dup]/magnified_prob_eq1->; rewrite conv1 => ->.
+have[|qner]:= eqVneq q r.
+  by move/[dup]/magnified_prob_eq0->; rewrite conv0 => ->.
+case/andP: (pqr) => pq qr.
+apply: (S1_inj R); rewrite ![in LHS]affine_conv/= convptE.
+rewrite !scaleptDr !scaleptA // (addptC ((Prob.p m * Prob.p p) *' S1 x)) addptA.
+rewrite addptC !addptA -scaleptDl//.
+rewrite -!addptA -scaleptDl//.
+have -> : ((Prob.p m).~ * (Prob.p r).~ + Prob.p m * (Prob.p p).~ =
+           (Prob.p m * Prob.p p + (Prob.p m).~ * Prob.p r).~).
+  rewrite /onem; ring.
+rewrite (_ : _ + _ = Prob.p q).
+  by rewrite affine_conv convptE addptC.
+rewrite /magnified_prob /magnified_weight /onem /=.
+have := negbT (gt_eqF pr); rewrite -subr_eq0 => ?.
+by field.
+Qed.
+
+End magnify_conv.
 
 (* mc_convRE == a <|p|> b (mathcomp_analysis) = a <|p|> b (infotheo) :> R *)
 Section mc_conv.

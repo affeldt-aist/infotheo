@@ -4,6 +4,11 @@ from 0.9.4 to 0.9.5
 
 * added
 
+- in convex.v
+  + magnified_weight, magnified_weight_eq0, magnified_weight_eq1,
+    magnified_prob, magnified_prob_eq0, magnified_prob_eq1,
+    magnify_conv
+
 - in convex_equiv.v
   + naryConvOpType, naryConvType,
     isNaryBeaulieuConvexSpace, isNaryBaryMapConstConvexSpace,
