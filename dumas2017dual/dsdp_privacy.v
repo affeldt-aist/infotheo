@@ -654,6 +654,97 @@ Let comp_aiv_dotp2:
     [% alice_input_view, dotp2_rv vs us `+ vu1].
 Proof. rewrite /comp_RV. apply: boolp.funext => _ //=. Qed.
 
+Lemma bool8_perm_A 
+    {T0 : finType} {P0 : R.-fdist T0}
+    {TDK0 TV0 TU0 : finType}
+    (dka0 : {RV P0 -> TDK0}) (s0 v10 u10 u20 u30 r20 r30 : {RV P0 -> TV0})
+    (u0 : T0)
+    (dka0' : TDK0) (r30' s0' v10' u10' u20' u30' r20' : TV0) :
+  (dka0 u0 == dka0') && (s0 u0 == r30') && (v10 u0 == u10') && 
+  (u10 u0 == u20') && (u20 u0 == u30') && (u30 u0 == r20') && 
+  (r20 u0 == s0') && (r30 u0 == v10') =
+  (dka0 u0 == dka0') && (r20 u0 == s0') && (r30 u0 == v10') && 
+  (v10 u0 == u10') && (u10 u0 == u20') && (u20 u0 == u30') && 
+  (u30 u0 == r20') && (s0 u0 == r30').
+Proof.
+by case: (dka0 u0 == dka0'); case: (s0 u0 == r30'); case: (v10 u0 == u10');
+   case: (u10 u0 == u20'); case: (u20 u0 == u30'); case: (u30 u0 == r20');
+   case: (r20 u0 == s0'); case: (r30 u0 == v10').
+Qed.
+
+Lemma bool8_flat_A
+    {T0 : finType} {P0 : R.-fdist T0}
+    {TDK0 TV0 : finType}
+    (dka0 : {RV P0 -> TDK0}) 
+    (s0 v10 u10 u20 u30 r20 r30 : {RV P0 -> TV0})
+    (u0 : T0)
+    (dka0' : TDK0) (r20' r30' v10' u10' u20' u30' s0' : TV0) :
+  (dka0 u0 == dka0') && (r20 u0 == r20') && (r30 u0 == r30') && 
+  (v10 u0 == v10') && (u10 u0 == u10') && (u20 u0 == u20') && 
+  (u30 u0 == u30') && (s0 u0 == s0') =
+  [&& (dka0 u0 == dka0') && (r20 u0 == r20') && (r30 u0 == r30'),
+      (v10 u0 == v10') && (u10 u0 == u10') && (u20 u0 == u20') && 
+      (u30 u0 == u30')
+    & s0 u0 == s0'].
+Proof.
+by case: (dka0 u0 == dka0'); case: (r20 u0 == r20'); case: (r30 u0 == r30');
+   case: (v10 u0 == v10'); case: (u10 u0 == u10'); case: (u20 u0 == u20');
+   case: (u30 u0 == u30'); case: (s0 u0 == s0').
+Qed.
+
+Lemma bool9_perm_A
+    {T0 : finType} {P0 : R.-fdist T0}
+    {TA0 TDK0 TV0 : finType}
+    (v0 : {RV P0 -> TA0})
+    (dka0 : {RV P0 -> TDK0}) 
+    (s0 v10 u10 u20 u30 r20 r30 : {RV P0 -> TV0})
+    (u0 : T0)
+    (a0 : TA0)
+    (dka0' : TDK0) (r30' s0' v10' u10' u20' u30' r20' : TV0) :
+  [&& v0 u0 == a0,
+      (dka0 u0 == dka0') && (s0 u0 == r30') && (v10 u0 == u10') && 
+      (u10 u0 == u20') && (u20 u0 == u30') && (u30 u0 == r20') && 
+      (r20 u0 == s0')
+    & r30 u0 == v10'] =
+  [&& v0 u0 == a0,
+      (dka0 u0 == dka0') && (r20 u0 == s0') && (r30 u0 == v10') && 
+      (v10 u0 == u10') && (u10 u0 == u20') && (u20 u0 == u30') && 
+      (u30 u0 == r20')
+    & s0 u0 == r30'].
+Proof.
+by case: (v0 u0 == a0); 
+   case: (dka0 u0 == dka0'); case: (s0 u0 == r30'); case: (v10 u0 == u10');
+   case: (u10 u0 == u20'); case: (u20 u0 == u30'); case: (u30 u0 == r20');
+   case: (r20 u0 == s0'); case: (r30 u0 == v10').
+Qed.
+
+Lemma bool9_regroup
+    {T0 : finType} {P0 : R.-fdist T0}
+    {TA0 TDK0 TV0 : finType}
+    (v0 : {RV P0 -> TA0})
+    (dka0 : {RV P0 -> TDK0}) 
+    (s0 v10 u10 u20 u30 r20 r30 : {RV P0 -> TV0})
+    (u0 : T0)
+    (a0 : TA0)
+    (dka0' : TDK0) (r20' r30' v10' u10' u20' u30' s0' : TV0) :
+  [&& v0 u0 == a0,
+      (dka0 u0 == dka0') && (r20 u0 == r20') && (r30 u0 == r30') && 
+      (v10 u0 == v10') && (u10 u0 == u10') && (u20 u0 == u20') && 
+      (u30 u0 == u30')
+    & s0 u0 == s0'] =
+  [&& v0 u0 == a0, 
+      (dka0 u0 == dka0') && (r20 u0 == r20') && (r30 u0 == r30'),
+      (v10 u0 == v10') && (u10 u0 == u10') && (u20 u0 == u20') && 
+      (u30 u0 == u30')
+    & s0 u0 == s0'].
+Proof.
+by case: (v0 u0 == a0);
+   case: (dka0 u0 == dka0'); case: (r20 u0 == r20'); case: (r30 u0 == r30');
+   case: (v10 u0 == v10'); case: (u10 u0 == u10'); case: (u20 u0 == u20');
+   case: (u30 u0 == u30'); case: (s0 u0 == s0').
+Qed.
+
+
 Lemma safety_by_bonded_leakage :
    P |= [% dk_a, r2, r3] _|_ [% v2, v3] | [% v1, u1, u2, u3, s] ->
    P |= [% dk_a, r2, r3] _|_ v2 | [% v1, u1, u2, u3, s] ->
@@ -678,42 +769,25 @@ have H: forall v, `H(v | alice_view ) =
       apply: eq_bigr => [] [] [] [] [] [] [] []
         dk_a' s' v1' u1' u2' u3' r2' r3' _.
       congr (_ * _).
-        rewrite !dist_of_RVE !pfwd1E.
-        congr Pr; apply/setP => u.
-        rewrite !inE /= !xpair_eqE.
-          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
-             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
-             case: (r2 u == s'); case: (r3 u == v1').
-        rewrite /centropy1; congr (- _).
-        rewrite /jcPr !snd_RV2.
-        apply: eq_bigr => a _.
-        rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
-        congr (_ * _).
+        by rewrite !dist_of_RVE !pfwd1E; congr Pr; apply/setP => u;
+           rewrite !inE /= !xpair_eqE; rewrite bool8_perm_A.
+      rewrite /centropy1; congr (- _).
+      rewrite /jcPr !snd_RV2.
+      apply: eq_bigr => a _.
+      rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
+      congr (_ * _).
         f_equal.
-        congr Pr; apply/setP => u.
-        rewrite !inE /= !xpair_eqE.
-          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
-             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
-             case: (r2 u == s'); case: (r3 u == v1').
+          by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+             rewrite bool9_perm_A.
+        by f_equal; congr Pr; apply/setP => u;
+           rewrite !inE /= !xpair_eqE; rewrite bool8_perm_A.
+      congr log.
         f_equal.
-        congr Pr; apply/setP => u.
-          rewrite !inE /= !xpair_eqE.
-          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
-             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
-             case: (r2 u == s'); case: (r3 u == v1').
-        congr log.
+          by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+             rewrite bool9_perm_A.
         f_equal.
-        congr Pr; apply/setP => u.
-          rewrite !inE /= !xpair_eqE.
-          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
-             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
-             case: (r2 u == s'); case: (r3 u == v1').
-        f_equal.
-        congr Pr; apply/setP => u.
-          rewrite !inE /= !xpair_eqE.
-          by case: (dk_a u == dk_a'); case: (s u == r3'); case: (v1 u == u1');
-             case: (u1 u == u2'); case: (u2 u == u3'); case: (u3 u == r2');
-             case: (r2 u == s'); case: (r3 u == v1').
+        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+           rewrite bool8_perm_A.
       by exists (fun '(dk_a', s', v1', u1', u2', u3', r2', r3') =>
              (dk_a', r2', r3', v1', u1', u2', u3', s')) 
              => [] [] [] []  [] [] [] [] dk_a' v1' u1' r2' r3' u2' u3' s'.
@@ -725,45 +799,25 @@ have H_assoc: forall v, `H(v | [%other_alice, v1, u1, u2, u3, s] ) =
   rewrite /centropy_RV /centropy /= !snd_RV2.
   rewrite (reindex (fun '(o, (v1, u1, u2, u3, s)) =>
                     (o, v1, u1, u2, u3, s))) /=.
-  apply: eq_bigr => [] [] [] [] dk_a' r2' r3' [] [] [] [] v1' u1' u2' u3' s' _.
-  congr (_ * _).
-    rewrite !dist_of_RVE !pfwd1E.
-    congr Pr; apply/setP => u.
-    rewrite !inE /= !xpair_eqE.
-      by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
-         case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
-         case: (u3 u == u3'); case: (s u == s').
-      rewrite /centropy1; congr (- _).
-      rewrite /jcPr !snd_RV2.
-      apply: eq_bigr => a _.
-      rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
-      congr (_ * _).
+    apply: eq_bigr => [] [] [] [] dk_a' r2' r3' [] [] [] [] v1' u1' u2' u3' s' _.
+    congr (_ * _).
+      rewrite !dist_of_RVE !pfwd1E.
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool8_flat_A.
+    rewrite /centropy1; congr (- _).
+    rewrite /jcPr !snd_RV2.
+    apply: eq_bigr => a _.
+    rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
+    congr (_ * _).
       f_equal.
-      congr Pr; apply/setP => u.
-        rewrite !inE /= !xpair_eqE.
-        by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
-           case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
-           case: (u3 u == u3'); case: (s u == s').
+        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool8_flat_A.
       f_equal.
-      congr Pr; apply/setP => u.
-        rewrite !inE /= !xpair_eqE.
-        by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
-           case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
-           case: (u3 u == u3'); case: (s u == s').
-      congr log.
-      f_equal.
-      congr Pr; apply/setP => u.
-        rewrite !inE /= !xpair_eqE.
-        by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
-           case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
-           case: (u3 u == u3'); case: (s u == s').
-      f_equal.
-      congr Pr; apply/setP => u.
-        rewrite !inE /= !xpair_eqE.
-        by case: (dk_a u == dk_a'); case: (r2 u == r2'); case: (r3 u == r3');
-           case: (v1 u == v1'); case: (u1 u == u1'); case: (u2 u == u2');
-           case: (u3 u == u3'); case: (s u == s').
-      exists (fun '(o, v1, u1, u2, u3, s) =>
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool8_flat_A.
+    congr log.
+    f_equal.
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool9_regroup.
+    f_equal.
+    by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool8_flat_A.
+  exists (fun '(o, v1, u1, u2, u3, s) =>
              (o, (v1, u1, u2, u3, s))).
         - by move=> [] o [] [] [] [] a1 a2 a3 a4 a5.
         - by move=> [] [] [] [] [] [] [] [] a1 a2 a3 a4 a5 o1 o2 o3.
@@ -772,6 +826,37 @@ rewrite (cinde_centropy_eq H_cinde_v2v3).
 rewrite (cinde_centropy_eq H_cinde_v2).
 exact: determined_auxiliary_adds_no_information_v2.
 Qed. (* TODO: opaque check takes very long. *)
+
+                                
+(*
+
+TODO:
+
+Theorem dsdp_security :
+  (* By Rouché-Capelli: multiple solutions exist *)
+  #|solution_set| > 1 ->
+  
+  (* Pair entropy = component entropy *)
+  `H([%v2, v3] | alice_view) = `H(v2 | alice_view) /\
+  
+  (* Bounded leakage *)
+  `H(v2 | alice_view) = log #|solution_set| > 0.
+Proof.
+  move=> multi_solutions.
+  split.
+  - (* Apply pair_entropy_eq_component *)
+    apply: pair_entropy_eq_component.
+    (* Show v3 = f(v2, s, u2, u3) *)
+    ...
+  - (* Uniform distribution by max entropy *)
+    rewrite uniform_over_solutions.
+    (* log #|solution_set| > log 1 by multi_solutions *)
+    ...
+Qed.                         
+
+
+*)
+
 
 (*
    Equaliy iff H([%V, U] | S) = 0, i.e. S uniquely determines (V, U).
