@@ -5,8 +5,11 @@ from 0.9.4 to 0.9.5
 * added
 
 - in convex.v
+  + Module probConvex (to instantiate {prob R} as a convType R)
   + magnified_weight, magnified_weight_eq0, magnified_weight_eq1,
+    onem_magnified_weight,
     magnified_prob, magnified_prob_eq0, magnified_prob_eq1,
+    prob_magnify_self, real_magnify_self,
     magnify_conv
 
 - in convex_equiv.v
