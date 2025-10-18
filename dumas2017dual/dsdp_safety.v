@@ -1,6 +1,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
+From rouche_capelli Require Import rouche_capelli.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption dsdp_program.
@@ -129,14 +130,11 @@ Lemma dsdp_kernel_cardinality u1 u2 u3 :
 Proof.
 move=> H.
 rewrite /dsdp_kernel.
-(* TODO: wait the rocq-rouche-capelli being published.
 rewrite count_kernel_vectors.
 rewrite mxrank_tr (dsdp_matrix_rank1 H).
 (* Show #|{:msg}| = m *)
 by rewrite card_Fp // pdiv_id.
 Qed.
-*)
-Abort.
 
 End linear_system.
 
