@@ -35,6 +35,110 @@ Local Definition R := Rdefinitions.R.
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
+Section linear_system.
+
+Variable F : finFieldType.
+Variable m_minus_2 : nat.
+Local Notation m := m_minus_2.+2.
+Hypothesis prime_m : prime m.
+(* The following line won't work for \rank.
+   And will make it report an unrelated
+   'rV[_]_n vs. 'M[_]_(n, m) issue.
+
+   Local Notation msg := 'I_m.
+*)
+Local Notation msg := 'F_m.  (* Finite field with m elements *)
+
+(** ** 1. DSDP Linear System Definition *)
+
+(* The DSDP constraint as a matrix equation
+
+     s = u2 * v2 + u3 * v3 + u1 * v1
+
+  As linear system:
+
+  [u1  u2  u3] * [v1]   [s]
+                 [v2] = [ ]
+                 [v3]   [ ]
+*)
+Definition dsdp_matrix (u1 u2 u3 : msg) : 'M[msg]_(1, 3)  :=
+  \matrix_(i < 1, j < 3) 
+    match j with
+    | Ordinal 0 _ => u1
+    | Ordinal 1 _ => u2
+    | Ordinal 2 _ => u3
+    | _ => 0
+    end.
+
+(* Vector of secret values *)
+Definition secret_vector (v1 v2 v3 : msg) : 'rV[msg]_3 :=
+  \row_(j < 3)
+    match j with
+    | Ordinal 0 _ => v1
+    | Ordinal 1 _ => v2
+    | Ordinal 2 _ => v3
+    | _ => 0
+    end.
+
+Definition dsdp_constraint (u1 u2 u3 v1 v2 v3 s : msg) : Prop :=
+  (secret_vector v1 v2 v3) *m (dsdp_matrix u1 u2 u3)^T =
+    \matrix_(i < 1, j < 1) s.
+
+Lemma dsdp_matrix_rank1 u1 u2 u3 :
+  (u1 != 0) || (u2 != 0) || (u3 != 0) ->
+  \rank (dsdp_matrix u1 u2 u3) = 1.
+Proof.
+move=> Hneq0.
+have rank_le1: (\rank (dsdp_matrix u1 u2 u3) <= 1)%N.
+  by rewrite rank_leq_row.
+have rank_ge1: (1 <= \rank (dsdp_matrix u1 u2 u3))%N.
+  rewrite lt0n mxrank_eq0.
+  move: Hneq0.
+  rewrite -orbA.
+  case/or3P => [Hu1 | Hu2 | Hu3].
+  - apply/eqP => /matrixP H.
+    move: (H ord0 ord0).
+    rewrite !mxE /=.
+    by move/eqP; rewrite (negbTE Hu1).
+  - apply/eqP => /matrixP H.
+    move: (H ord0 (lift ord0 ord0)).
+    rewrite !mxE /=.
+    by move/eqP; rewrite (negbTE Hu2).
+  - apply/eqP => /matrixP H.
+    move: (H ord0 (lift ord0 (lift ord0 ord0))).
+    rewrite !mxE /=.
+    by move/eqP; rewrite (negbTE Hu3).
+by apply/eqP; rewrite eqn_leq rank_le1 rank_ge1.
+Qed.
+
+(* All solutions to the homogeneous system (kernel) *)
+Definition dsdp_kernel (u1 u2 u3 : msg) : {set 'rV[msg]_3} :=
+  [set v : 'rV[msg]_3 | v *m (dsdp_matrix u1 u2 u3)^T == 0].
+
+(* All solutions to the inhomogeneous system *)
+Definition dsdp_solution_set (u1 u2 u3 v1 s : msg) : {set 'rV[msg]_3} :=
+  [set v : 'rV[msg]_3 | 
+    v *m (dsdp_matrix u1 u2 u3)^T == \matrix_(i < 1, j < 1) (s - u1 * v1)].
+
+Definition dsdp_solution_pairs (u1 u2 u3 v1 s : msg) : {set msg * msg} :=
+  [set v2v3 : msg * msg | u1 * v1 + u2 * v2v3.1 + u3 * v2v3.2 == s].
+
+Lemma dsdp_kernel_cardinality u1 u2 u3 :
+  (u1 != 0) || (u2 != 0) || (u3 != 0) ->
+  #|dsdp_kernel u1 u2 u3| = (m ^ (3 - 1))%N.
+Proof.
+move=> H.
+rewrite /dsdp_kernel.
+(* TODO: wait the rocq-rouche-capelli being published.
+rewrite count_kernel_vectors.
+rewrite mxrank_tr (dsdp_matrix_rank1 H).
+(* Show #|{:msg}| = m *)
+by rewrite card_Fp // pdiv_id.
+Qed.
+*)
+Abort.
+
+End linear_system.
 
 (*
   MEMO: move linear algebra part ("safety" part) and its connection with the
