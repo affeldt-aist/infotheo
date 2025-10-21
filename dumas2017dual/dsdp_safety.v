@@ -36,7 +36,7 @@ Local Definition R := Rdefinitions.R.
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
-Section linear_system.
+Section dsdp_safety.
 
 Variable F : finFieldType.
 Variable m_minus_2 : nat.
@@ -49,6 +49,8 @@ Hypothesis prime_m : prime m.
    Local Notation msg := 'I_m.
 *)
 Local Notation msg := 'F_m.  (* Finite field with m elements *)
+
+Section linear_system.
 
 (** ** 1. DSDP Linear System Definition *)
 
@@ -136,7 +138,89 @@ rewrite mxrank_tr (dsdp_matrix_rank1 H).
 by rewrite card_Fp // pdiv_id.
 Qed.
 
+Lemma dsdp_solution_pairs_cardinality u1 u2 u3 v1 s :
+  u3 != 0 ->
+  #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
+Proof.
+move=> Hu3neg0.
+rewrite /dsdp_solution_pairs.
+(* Rewrite equation to separate constant term *)
+have -> : [set v2v3 | u1 * v1 + u2 * v2v3.1 + u3 * v2v3.2 == s] =
+          [set v2v3 | u2 * v2v3.1 + u3 * v2v3.2 == s - u1 * v1].
+  apply/setP => [[v2 v3]]; rewrite !inE /=.
+  by rewrite -subr_eq opprK addrAC addrC addrAC addrA.
+rewrite (@count_affine_solutions_rank1 msg u2 u3 (s - u1 * v1) Hu3neg0).
+(* Show #|msg| = m *)
+by rewrite card_Fp // pdiv_id.
+Qed.
+
+Lemma dsdp_solution_set_card_full u1 u2 u3 v1 s :
+  u3 != 0 ->
+  #|dsdp_solution_set u1 u2 u3 v1 s| = (m ^ 2)%N.
+Proof.
+move=> Hu3neq0.
+rewrite /dsdp_solution_set.
+(* Step 1: Construct a particular solution x0 *)
+pose x0 := \row_(j < 3) 
+  (if j == ord0 then 0 
+   else if j == lift ord0 ord0 then 0 
+   else (s - u1 * v1) / u3).
+(* Step 2: Prove x0 is indeed a solution *)
+have Hx0 : x0 *m (dsdp_matrix u1 u2 u3)^T = 
+           \matrix_(i < 1, j < 1) (s - u1 * v1).
+  apply/matrixP => i j.
+  rewrite !mxE.
+  have -> : i = ord0 by apply: ord1.
+  have -> : j = ord0 by apply: ord1.
+  rewrite (bigD1 ord0) //= (bigD1 (lift ord0 ord0)) //=.
+  rewrite (bigD1 (lift ord0 (lift ord0 ord0))) //= big1; last first.
+    move=> k /andP [/andP [Hk1 Hk2] Hk3].
+    case: k Hk1 Hk2 Hk3 => [[|[|[|?]]] ?] //=.
+  by rewrite addr0 !mxE /= !mul0r !add0r divfK.
+(* Step 3: Apply the affine solutions counting lemma *)
+rewrite (@count_affine_solutions_explicit msg 3 1 
+         (dsdp_matrix u1 u2 u3)^T 
+         (\matrix_(i < 1, j < 1) (s - u1 * v1)) 
+         x0 Hx0).
+(* Step 4: Simplify using rank *)
+rewrite mxrank_tr.
+have -> : \rank (dsdp_matrix u1 u2 u3) = 1.
+  apply: dsdp_matrix_rank1.
+  by rewrite Hu3neq0 orbT.
+by rewrite card_Fp // pdiv_id.
+Qed.
+
 End linear_system.
+
+Section entropy_connection.
+
+Variable T : finType.
+Variable P : R.-fdist T.
+Variables (V1 V2 V3 U1 U2 U3 S : {RV P -> msg}).
+
+(* The constraint holds with probability 1 *)
+Hypothesis constraint_holds :
+  forall t, S t = U1 t * V1 t + U2 t * V2 t + U3 t * V3 t.
+
+(* Non-degeneracy assumption *)
+Hypothesis U3_nonzero : forall t, U3 t != 0.
+
+(* Given the constraint, (v2, v3) are uniformly distributed over solutions *)
+Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
+  U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
+  V1 t = v1 -> S t = s ->
+  forall v2 v3,
+    (v2, v3) \in dsdp_solution_pairs u1 u2 u3 v1 s ->
+    `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] = 
+         (v1, u1, u2, u3, s) ] =
+    1%:R / (#|dsdp_solution_pairs u1 u2 u3 v1 s|)%:R.
+
+Lemma conditional_entropy_uniform_solutions :
+  `H([% V2, V3] | [% V1, U1, U2, U3, S]) = log (m%:R : R).
+Proof.
+Admitted.
+
+End entropy_connection.
 
 (*
   MEMO: move linear algebra part ("safety" part) and its connection with the
