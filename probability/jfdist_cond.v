@@ -327,10 +327,7 @@ Variables (A B : finType) (PQ : R.-fdist (A * B)) (a : A).
 Let Ha := PQ`1 a != 0.
 
 Let sizeB : #|B| = #|B|.-1.+1.
-Proof.
-case HB: #|B| => //.
-by move: (fdist_card_neq0 PQ); rewrite card_prod HB muln0 ltnn.
-Qed.
+Proof. exact: (fdist_card_prednK (fdist_snd PQ)). Qed.
 
 Definition jfdist_cond :=
   match boolP Ha with
@@ -493,3 +490,130 @@ by rewrite big1 ?addr0 // => i /negbTE ->; rewrite mulr0.
 Qed.
 
 End FDistPart.
+
+
+Section fdistpart_lemmas.
+Local Open Scope ring_scope.
+Context {R : realType}.
+
+Lemma fdistpart1 (n m : nat) (f : 'I_m -> 'I_n) (i : 'I_m) j :
+  j = f i -> FDistPart.d f (fdist1 i) j = fdist1 i :> R.-fdist 'I_m.
+Proof.
+move=> jfi; apply/fdist_ext=> k.
+rewrite FDistPart.dE/=; last first.
+  by rewrite fdistmap1 jfi fdist1E eqxx/= oner_neq0.
+have[->|] := eqVneq k i; last first.
+  by rewrite fdist1E => /negPf -> /=; rewrite !mul0r.
+rewrite fdist1E jfi !eqxx/= !mul1r (bigD1 i) ?fij//= fdist1E eqxx/=.
+under eq_bigr => l /andP [] _ /negPf do rewrite fdist1E => -> /=.
+by rewrite big1// addr0 invr1.
+Qed.
+
+Lemma fdistpart_unif (n m : nat) (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (i : 'I_n) :
+  fdistmap f d i = 0 ->
+  FDistPart.d f d i =
+  fdist_uniform (fdist_card_prednK d) :> R.-fdist 'I_m.
+Proof.
+move=> fdi0.
+rewrite /FDistPart.d jfdist_cond_dflt.
+  by apply: fdist_ext=> ?; rewrite !fdist_uniformE.
+rewrite negbK; apply/eqP.
+rewrite fdist_fstE big1// => k ?.
+rewrite fdistXE fdist_prodE/= !fdist1E.
+have[|]:= eqVneq i (f k); last by rewrite mulr0.
+move: fdi0 => /[swap] -> /eqP.
+rewrite fdistmapE/= psumr_eq0 ?FDist_ge0//.
+move/allP/(_ k).
+rewrite mem_index_enum !inE/= eqxx => /(_ erefl) /eqP ->.
+by rewrite mul0r.
+Qed.
+
+Lemma fdistpart1_unif (n m : nat) (f : 'I_m -> 'I_n) (i : 'I_m) j :
+  j != f i ->
+  FDistPart.d f (fdist1 i) j =
+  fdist_uniform (fdist_card_prednK (@fdist1 R _ i)) :> R.-fdist 'I_m.
+Proof. by move=> jfi; rewrite fdistpart_unif// fdistmap1 fdist1E (negPf jfi). Qed.
+
+Lemma fdistpart_eq1 (n m : nat) (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (i : 'I_m) j :
+  (fdist_supp d :&: f @^-1: [set j] == [set i]) && (j == f i) ->
+  FDistPart.d f d j = fdist1 i :> R.-fdist 'I_m.
+Proof.
+case/andP=> /[swap] /eqP ->.
+rewrite eq_sym eqEsubset => /andP [].
+move=> /subsetP /(_ i) /= /[!inE] /[!eqxx] /(_ erefl) /[!andbT] di0 f_inj.
+apply/fdist_ext=> k.
+have:= f_inj => /subsetP /(_ k) /[!inE].
+rewrite FDistPart.dE ?fdistmap_neq0// fdist1E.
+have[dk0 _|dk0 /= f_inj_k]:= eqVneq (d k) 0 => /=.
+  suff /negPf->: k != i by rewrite dk0 !mul0r.
+  by apply/eqP/nesym => /(congr1 d) /eqP; rewrite dk0 (negPf di0).
+have[/eqP|fki]:= eqVneq (f k) (f i) => /=; last first.
+  suff /negPf->: k != i by rewrite mulr0 mul0r.
+  by move: fki; apply: contraNN => /eqP->.
+move=> /[dup] fki /f_inj_k ->.
+rewrite mulr1/= [X in X^-1](_ : _ = d k) ?divff//.
+rewrite (bigID (fun k => d k == 0))/= big1; last by move=> ? /andP[] _ /eqP.
+under eq_bigl=> l.
+  rewrite andbC (_ : _ && _ = (l == i)); first over.
+  apply/idP/idP; last by move/eqP->; rewrite di0 eqxx.
+  by have:= f_inj => /subsetP /(_ l) /[!inE] /[apply].
+rewrite add0r (big_pred1 k)// => ? /=.
+by rewrite (eqP (f_inj_k fki)).
+Qed.
+
+#[local]
+Lemma fdistpart1_eq1 (n m : nat) (f : 'I_m -> 'I_n) (i j : 'I_m) k :
+  (FDistPart.d f (fdist1 i) k = fdist1 j :> R.-fdist 'I_m) -> i = j.
+Proof.
+have[]:= eqVneq k (f i); first by move/fdistpart1 -> => /fdist1_inj.
+move/fdistpart1_unif -> => /fdist_uniform_eq1.
+rewrite card_ord => m1; move: i j; rewrite m1 => i j.
+by rewrite (ord1 i) (ord1 j).
+Qed.
+
+Lemma fdistpart1_eq1P (n m : nat) (f : 'I_m -> 'I_n) (i j : 'I_m) k :
+  reflect (FDistPart.d f (fdist1 i) k = fdist1 j :> R.-fdist 'I_m)
+          ((i == j) && ((k == f i) || (m == 1))).
+Proof.
+apply: (iffP idP).
+  case/andP => /eqP <-.
+  case/orP; first by move/eqP/fdistpart1.
+  move/eqP=> m1; move: f i; rewrite m1 => f i.
+  by rewrite [LHS]fdist1I1 [RHS]fdist1I1.
+move/eqP; apply: contraLR.
+rewrite negb_and negb_or.
+have[<- |ij _]/=:= eqVneq i j; last first.
+  by move: ij; apply: contraNN => /eqP /fdistpart1_eq1 /eqP.
+case/andP=> kfi.
+rewrite neq_ltn ltnS leqn0 => /orP [|m1].
+  move/eqP => m0; move: f i kfi; rewrite m0 => f + _.
+  by case=> i i0; have:= i0; rewrite ltn0.
+move: kfi => /fdistpart1_unif ->.
+apply/eqP => /(congr1 val) /(congr1 fun_of_fin) /(congr1 (fun f => f i)) /=.
+rewrite fdist_uniformE card_ord fdist1E eqxx/=.
+apply/eqP; rewrite real_neqr_lt ?num_real//.
+apply/orP; left.
+rewrite invf_lt1 ?[ltLHS](_ : 1 = 1%:R)// ?[ltLHS](_ : 0 = 0%:R)// ltr_nat//.
+exact: (ltn_trans _ m1).
+Qed.
+
+Lemma fdistpart_eq0 (n m : nat) (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) i j :
+  FDistPart.d f d j i = 0 -> (j != f i) || (d i == 0).
+Proof.
+move/eqP; apply: contraLR.
+rewrite negb_or => /andP[] /[!negbK] /eqP -> di0.
+rewrite FDistPart.dE ?fdistmap_neq0// eqxx !mulf_neq0 ?oner_neq0//.
+rewrite invr_neq0// psumr_neq0 ?FDist_ge0//.
+by apply/hasP; exists i => /=; rewrite ?mem_index_enum// eqxx fdist_gt0.
+Qed.
+
+Lemma fdistpart_neq0 (n m : nat) (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) i j :
+  fdistmap f d j != 0 -> FDistPart.d f d j i != 0 -> (j == f i) && (d i != 0).
+Proof.
+move=> mf pf; have:= conj mf pf => /andP; apply/contraLR.
+rewrite !negb_and !negbK => H.
+have[]:= eqVneq (fdistmap f d j) 0 => //= /FDistPart.dE->.
+by case/orP: H => [/negPf-> |/eqP->]; rewrite ?mulr0 !mul0r.
+Qed.
+
+End fdistpart_lemmas.

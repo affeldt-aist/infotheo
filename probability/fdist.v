@@ -182,6 +182,9 @@ apply/negP => aA.
 by move/card_gt0P : abs; apply; exists a.
 Qed.
 
+Lemma fdist_card_prednK d : #|A| = #|A|.-1.+1.
+Proof. by have:= fdist_card_neq0 d => /prednK /esym. Qed.
+
 Definition fdist_supp d := [set a | d a != 0].
 
 Lemma sum_fdist_supp (f : A -> R) d (P : pred A):
@@ -298,6 +301,17 @@ Proof. by rewrite fdist1E eqxx. Qed.
 Lemma fdist10 (a a0 : A) : a0 != a -> fdist1 a a0 = 0 :> R.
 Proof. by move=> a0a; rewrite fdist1E (negbTE a0a). Qed.
 
+Lemma fdist1_inj : injective (@fdist1 R A).
+Proof.
+move=> a b /eqP => H; apply/eqP; move: H; apply: contraLR => ab; apply/eqP.
+move=> /(congr1 val)/(congr1 fun_of_fin)/(congr1 (fun f => f b)).
+rewrite !fdist1E eqxx eq_sym (negPf ab)/=.
+by move/esym/eqP; exact/negP/oner_neq0.
+Qed.
+
+Lemma fdist1C (a b : A) : fdist1 a b = fdist1 b a :> R.
+Proof. by rewrite !fdist1E eq_sym. Qed.
+
 End fdist1_prop.
 
 Section fdistbind.
@@ -383,6 +397,22 @@ rewrite /fdistmap fdistbindA; congr (_ >>= _).
 by rewrite boolp.funeqE => x; rewrite fdist1bind.
 Qed.
 
+Lemma fdistmap1 (f : A -> B) (a : A) :
+  fdistmap f (fdist1 a) = fdist1 (f a) :> R.-fdist B.
+Proof. by rewrite /fdistmap fdist1bind. Qed.
+
+Lemma fdistmap_eq0 (f : A -> B) (d : fdist R A) (a : A) :
+  fdistmap f d (f a) = 0 -> d a = 0.
+Proof.
+move/eqP.
+rewrite fdistmapE psumr_eq0 ?FDist.ge0// => /allP /(_ a).
+by rewrite mem_index_enum !inE/= eqxx => /(_ erefl) /eqP.
+Qed.
+
+Lemma fdistmap_neq0 (f : A -> B) (d : fdist R A) (a : A) :
+  d a != 0 -> fdistmap f d (f a) != 0.
+Proof. by apply/contraNN => /eqP /fdistmap_eq0 /eqP. Qed.
+
 End fdistmap_prop.
 
 Section fdist_uniform.
@@ -420,6 +450,20 @@ Lemma fdist_uniform_neq0 (C : finType) (domain_non_empty : { m : nat | #| C | = 
 Proof.
 move=> c; rewrite fdist_uniformE invr_eq0 pnatr_eq0.
 by case domain_non_empty => x' ->.
+Qed.
+
+Lemma fdist_uniform_eq1 (A : finType) (a : A) n (cardA : #|A| = n.+1) :
+  (fdist_uniform cardA = fdist1 a :> R.-fdist _) ->  #|A| = 1.
+Proof.
+move/eqP=> H; apply/eqP; move: H; apply: contraLR=> A1.
+have:= fdist_card_neq0 (@fdist1 R _ a) => A0.
+apply/eqP => /(congr1 val) /(congr1 fun_of_fin) /(congr1 (fun f => f a)) /=.
+rewrite fdist_uniformE fdist1E eqxx/=.
+apply/eqP.
+suff: #|A|%:R^-1 < 1 :> R by rewrite lt_def => /andP []; rewrite eq_sym.
+rewrite invf_lt1 ?[ltLHS](_ : 1 = 1%:R)// ?[ltLHS](_ : 0 = 0%:R)// ltr_nat//.
+have:= A1; rewrite neq_ltn => /orP [] //.
+by rewrite ltnS leqn0 => /eqP; move: A0 => /[swap] ->.
 Qed.
 
 End fdist_uniform_prop.
