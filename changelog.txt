@@ -1,3 +1,14 @@
+* added
+
+- in proba.v
+  + inde_RVP, inde_RV_comp, RV_op,
+    pfwd1_RV_op, pfwd1_RV2_op
+
+* renamed
+
+- in proba.v
+  + pr_in_comp -> pr_in_comp_image
+
 -------------------
 from 0.9.4 to 0.9.5
 -------------------
@@ -19,10 +30,6 @@ from 0.9.4 to 0.9.5
 - in entropy.v
   + inde_RV_joint_entropyE
   + inde_dist_of_RV2
-
-- in proba.v
-  + inde_RVP, inde_RV_comp, RV_op,
-    pfwd1_RV_op, pfwd1_RV2_op
 
 - in entropy.v
   + condentropy_indep -> centropy_indep
@@ -50,7 +57,6 @@ from 0.9.4 to 0.9.5
 
 - in proba.v
   + pr_eqE' -> dist_of_RVE
-  + pr_in_comp -> pr_in_comp_image
 
 * changed
 
