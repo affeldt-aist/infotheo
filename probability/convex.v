@@ -75,14 +75,23 @@ From mathcomp.analysis Require Import (canonicals)convex.
 (*                   is convex                                                *)
 (* ```                                                                        *)
 (*                                                                            *)
-(* Instances of convex spaces:                                                *)
+(* Instances of convex spaces (for R : realType):                             *)
 (* ```                                                                        *)
-(*      R_convType == R                                                       *)
-(*     funConvType == functions A -> B with A a choiceType and B a convType   *)
-(*  depfunConvType == functions forall (a:A), B a with A a choiceType and B i *)
-(*                    is a A -> convType                                      *)
-(*    pairConvType == pairs of convTypes                                      *)
-(*  fdist_convType == finite distributions                                    *)
+(*               lmodType R;  in Module LmoduleConvex                         *)
+(*                      R^o;  in Module RConvex (exported)                    *)
+(*                   \bar R;  in Module ErealRConvex (exported)               *)
+(*                 {prob R};  in Module probConvex (exported)                 *)
+(*       pairs of convTypes;  in Module PairConvexSpace (exported)            *)
+(*     finite distributions;  in Section fdist_convex_space                   *)
+(* scaled A with A : convType R;                                              *)
+(*                            in Section convpt_convex_space                  *)
+(* oppT A with A : orderedConvType d R;                                       *)
+(*                            in Module OppositeOrderedConvexSpace (exported) *)
+(* functions of type A -> B with A : choiceType and B : convType R;           *)
+(*                            in Module FunConvexSpace (exported)             *)
+(* functions of type forall (a:A), B a with A : choiceType                    *)
+(*                                      and B : A -> convType R;              *)
+(*                            in Module DepfunConvexSpace (exported)          *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* ```                                                                        *)
@@ -100,6 +109,23 @@ From mathcomp.analysis Require Import (canonicals)convex.
 (* ```                                                                        *)
 (* image_preserves_convex_hull == the image of a convex hull is the convex    *)
 (*                                hull of the image                           *)
+(* ```                                                                        *)
+(*                                                                            *)
+(* Magnification:                                                             *)
+(* ```                                                                        *)
+(*   magnified_weight p q r == (r - q) / (r - p)                              *)
+(*   magnified_prob         == magnified_weight as a {prob R}                 *)
+(*                             given p < r and p <= q <= r                    *)
+(*                                                                            *)
+(*   0 ------------ p ------------ q ------------ r ------------ 1            *)
+(*                                                                            *)
+(*               x <|p|> y                     x <|r|> y                      *)
+(*                  //                            //                          *)
+(*   x ------------ u ------------ + ------------ v ------------ y            *)
+(*                                //                                          *)
+(*                            x <|q|> y                                       *)
+(*                                                                            *)
+(*   magnify_conv == x <|q|> y = u <|magnified_prob|> v                       *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* Application to real analysis:                                              *)
@@ -1751,6 +1777,7 @@ Qed.
   isConvexSpace.Build R E avg1 avgI avgC avgA.
 
 Lemma avgrE p (x y : E) : x <| p |> y = avg p x y. Proof. by []. Qed.
+
 End lmodR_convex_space.
 End LmoduleConvex.
 
@@ -2038,7 +2065,8 @@ Proof. by rewrite /avg convA. Qed.
 
 #[export]
 (* TODO(rei): attribute needed? *)
-(*#[non_forgetful_inheritance]*) HB.instance Definition _ := @isConvexSpace.Build R R^o avg avg1 avgI avgC avgA.
+(*#[non_forgetful_inheritance]*)
+HB.instance Definition _ := @isConvexSpace.Build R R^o avg avg1 avgI avgC avgA.
 
 Lemma avgRE p (x y : R^o) : x <| p |> y = (Prob.p p * x + (Prob.p p).~ * y)%R. Proof. by []. Qed.
 
@@ -2089,6 +2117,9 @@ rewrite -[LHS]Scaled1RK (@S1_Convn R R^o) big_scaleR.
 by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
 Qed.
 
+Lemma onem_affine : affine (fun (x : R^o) => (x.~ : R^o)).
+Proof. move=> p x y; rewrite !avgRE /= /onem; ring. Qed.
+
 End R_convex_space.
 End RConvex.
 HB.export RConvex.
@@ -2101,7 +2132,7 @@ Definition funT := A -> B.
 Local Notation T := funT.
 HB.instance Definition _ := Choice.on T.
 Implicit Types p q : {prob R}.
-Definition avg p (x y : T) := fun a : A => (x a <| p |> y a).
+Local Definition avg p (x y : T) := fun a : A => (x a <| p |> y a).
 Let avg1 (x y : T) : avg 1%:pr x y = x.
 Proof. rewrite funeqE => a; exact/conv1. Qed.
 Let avgI p (x : T) : avg p x x = x.
@@ -2146,7 +2177,8 @@ apply FunctionalExtensionality.functional_extensionality_dep => a.
 exact/convA.
 Qed.
 
-#[export] HB.instance Definition _ := isConvexSpace.Build R (forall x : A, B x) avg1 avgI avgC avgA.
+#[export] HB.instance Definition _ :=
+  isConvexSpace.Build R (forall x : A, B x) avg1 avgI avgC avgA.
 
 End depfun_convex_space.
 End DepfunConvexSpace.
@@ -2210,7 +2242,8 @@ congr (_ + _ + _);
 by rewrite pq_is_rs.
 Qed.
 
-HB.instance Definition _  := isConvexSpace.Build R (R.-fdist A) conv1 convmm convC convA.
+HB.instance Definition _  :=
+  isConvexSpace.Build R (R.-fdist A) conv1 convmm convC convA.
 
 End fdist_convex_space.
 
@@ -2390,15 +2423,14 @@ HB.instance Definition _ := Order.Le_isPOrder.Build d (T -> U)
 
 End fun_ordered_convex_space.
 
-
 Module OppositeOrderedConvexSpace.
 Section def.
 Context {R : realType} {d : Order.disp_t}.
 Variable A : orderedConvType d R.
 
-CoInductive oppT := mkOpp : A -> oppT.
+Variant oppT := mkOpp : A -> oppT.
 
-Lemma A_of_TK : cancel (fun t => let: mkOpp a := t in a) mkOpp.
+Local Lemma A_of_TK : cancel (fun t => let: mkOpp a := t in a) mkOpp.
 Proof. by case. Qed.
 
 HB.instance Definition _ := Choice.copy oppT (can_type A_of_TK).
@@ -2429,7 +2461,6 @@ Qed.
 
 End leopp.
 
-
 Section convtype.
 Local Open Scope convex_scope.
 Context {R : realType} {d : Order.disp_t}.
@@ -2437,22 +2468,22 @@ Variable A : orderedConvType d R.
 Notation T := (oppT A).
 Implicit Types p q : {prob R}.
 
-Definition unbox (x : T)  := match x with mkOpp x' => x' end.
+Definition unbox_oppT (x : T)  := match x with mkOpp x' => x' end.
 
-Definition avg p a b := mkOpp (unbox a <| p |> unbox b).
+Local Definition avg p a b := mkOpp (unbox_oppT a <| p |> unbox_oppT b).
 
-Lemma avg1 a b : avg 1%:pr a b = a.
-Proof. by case a;case b=>b' a';rewrite/avg/unbox/=conv1. Qed.
+Local Lemma avg1 a b : avg 1%:pr a b = a.
+Proof. by case a;case b=>b' a';rewrite/avg/unbox_oppT/=conv1. Qed.
 
-Lemma avgI p x : avg p x x = x.
-Proof. by case x=>x';rewrite/avg/unbox/=convmm. Qed.
+Local Lemma avgI p x : avg p x x = x.
+Proof. by case x=>x';rewrite/avg/unbox_oppT/=convmm. Qed.
 
-Lemma avgC p x y : avg p x y = avg (Prob.p p).~%:pr y x.
-Proof. by case x;case y=>y' x'; rewrite/avg/unbox/=convC. Qed.
+Local Lemma avgC p x y : avg p x y = avg (Prob.p p).~%:pr y x.
+Proof. by case x;case y=>y' x'; rewrite/avg/unbox_oppT/=convC. Qed.
 
-Lemma avgA p q d0 d1 d2 :
+Local Lemma avgA p q d0 d1 d2 :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
-Proof. by case d0;case d1;case d2=>d2' d1' d0';rewrite/avg/unbox/=convA. Qed.
+Proof. by case d0;case d1;case d2=>d2' d1' d0';rewrite/avg/unbox_oppT/=convA. Qed.
 
 #[export]
 HB.instance Definition _ := isConvexSpace.Build R T avg1 avgI avgC avgA.
@@ -2466,7 +2497,8 @@ Import OppositeOrderedConvexSpace.
 Context {R : realType} {d : Order.disp_t}.
 Variable A : orderedConvType d R.
 
-HB.instance Definition _ := Order.Le_isPOrder.Build d (@oppT R d A) (@leoppR R d A) (@eqopp_le R d A) (@leopp_trans R d A).
+HB.instance Definition _ :=
+  Order.Le_isPOrder.Build d (@oppT R d A) (@leoppR R d A) (@eqopp_le R d A) (@leopp_trans R d A).
 
 End opposite_ordered_convex_space.
 
@@ -2482,11 +2514,11 @@ Variable A : orderedConvType d R.
 Lemma conv_leoppD (a b : A) t : \opp{a} <|t|> \opp{b} = \opp{a <|t|> b}.
 Proof. by []. Qed.
 
-Lemma unboxK (a : A) : unbox (\opp{a}) = a.
+Lemma unbox_oppTK (a : A) : unbox_oppT (\opp{a}) = a.
 Proof. reflexivity. Qed.
 
-Lemma leoppP (a b : oppT A) : (a <= b)%O <-> (unbox b <= unbox a)%O.
-Proof. by case a;case b=>*;rewrite !unboxK. Qed.
+Lemma leoppP (a b : oppT A) : (a <= b)%O <-> (unbox_oppT b <= unbox_oppT a)%O.
+Proof. by case a;case b=>*;rewrite !unbox_oppTK. Qed.
 
 End opposite_ordered_convex_space_prop.
 
@@ -3223,6 +3255,135 @@ by apply/mulr_ge0; rewrite subr_ge0; exact/ltW.
 Qed.
 
 End twice_derivable_convex.
+
+Section magnified_weight.
+Local Open Scope ring_scope.
+Variables (R : fieldType) (p q r : R).
+
+Definition magnified_weight := (r - q) / (r - p).
+
+Lemma magnified_weight_eq1 : p != r -> q = p -> magnified_weight = 1.
+Proof. by move=> ? pq; rewrite /magnified_weight pq divff// subr_eq0 eq_sym. Qed.
+
+Lemma magnified_weight_eq0 : q = r -> magnified_weight = 0.
+Proof. by move=> qr; rewrite /magnified_weight qr subrr mul0r. Qed.
+
+End magnified_weight.
+
+Module probConvex.
+Section prob_convType.
+Local Open Scope ring_scope.
+Variables (R : realType).
+
+Let avg_proof (p x y : {prob R}) :
+  0 <= Prob.p p * Prob.p x + p.~ * Prob.p y <= 1.
+Proof.
+rewrite addr_ge0 ?mulr_ge0//=.
+rewrite -[leRHS](@convmm _ R^o p) avgRE.
+by rewrite lerD// ler_wpM2l//.
+Qed.
+
+Let avg p x y := Eval hnf in Prob.mk_ (avg_proof p x y).
+
+Let avg1 x y : avg 1%:pr x y = x.
+Proof. by apply/val_inj => /=; rewrite -avgRE conv1. Qed.
+
+Let avgI p x : avg p x x = x.
+Proof. by apply/val_inj => /=; rewrite -avgRE convmm. Qed.
+
+Let avgC p x y : avg p x y = avg (Prob.p p).~%:pr y x.
+Proof. by apply/val_inj => /=; rewrite -avgRE convC. Qed.
+
+Let avgA p q d0 d1 d2 :
+  avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
+Proof. by apply/val_inj => /=; rewrite -!avgRE convA. Qed.
+
+#[export]
+HB.instance Definition _ := isConvexSpace.Build R {prob R} avg1 avgI avgC avgA.
+
+Lemma avg_probE p (x y : {prob R}) :
+  x <|p|> y = Prob.p p * Prob.p x + p.~ * Prob.p y :> R.
+Proof. by []. Qed.
+
+End prob_convType.
+End probConvex.
+HB.export probConvex.
+
+Section magnified_prob.
+Local Open Scope ring_scope.
+Variables (R : realType) (p q r : {prob R}).
+Variables (pr : Prob.p p < Prob.p r) (pqr : Prob.p p <= Prob.p q <= Prob.p r).
+
+Lemma magnified_prob_proof :
+  0 <= magnified_weight (Prob.p p) (Prob.p q) (Prob.p r) <= 1.
+Proof.
+have pr' := negbT (lt_eqF pr).
+have[|qnep]:= eqVneq q p.
+  by move/(congr1 \val) /magnified_weight_eq1 ->; first exact/andP.
+have[|qner]:= eqVneq q r.
+  by move/(congr1 \val) /magnified_weight_eq0 ->; exact/andP.
+case/andP: pqr => pq qr.
+have:= pr => /[dup] /gt_eqF /negbT rp; rewrite -subr_gt0 => rp'.
+have rq : 0 < Prob.p r - Prob.p q by rewrite subr_gt0 lt_def qr eq_sym qner.
+apply/andP; split; first by rewrite divr_ge0// subr_ge0// (le_trans pq).
+by rewrite -(ler_pM2r rp') -mulrA mulVf ?subr_eq0// mulr1 mul1r lerD2l lerN2.
+Qed.
+
+Definition magnified_prob : {prob R} :=
+  Eval hnf in Prob.mk_ magnified_prob_proof.
+
+Lemma magnified_prob_eq1 : q = p -> magnified_prob = 1%:pr.
+Proof.
+have ? := negbT (lt_eqF (pr)).
+move/(congr1 \val) => /= ?.
+exact/val_inj/magnified_weight_eq1.
+Qed.
+
+Lemma magnified_prob_eq0 : q = r -> magnified_prob = 0%:pr.
+Proof.
+have ? := negbT (lt_eqF (pr)).
+move/(congr1 \val) => /= ?.
+exact/val_inj/magnified_weight_eq0.
+Qed.
+
+Lemma prob_magnify_self : p <|magnified_prob|> r = q.
+Proof.
+apply/val_inj; rewrite /= /magnified_weight /onem/=.
+have:= pr; rewrite -subr_gt0 => /gt_eqF /negbT ?.
+by field.
+Qed.
+
+Lemma real_magnify_self : (Prob.p p : R^o) <|magnified_prob|> Prob.p r = Prob.p q.
+Proof. by rewrite -prob_magnify_self. Qed.
+
+End magnified_prob.
+
+Section magnify_conv.
+Local Open Scope ring_scope.
+Local Open Scope convex_scope.
+Variables (R : realType) (T : convType R) (p q r : {prob R}) (x y : T).
+Variables (pr : Prob.p p < Prob.p r) (pqr : Prob.p p <= Prob.p q <= Prob.p r).
+
+Local Notation m := (magnified_prob pr pqr).
+Local Notation "x +' y" := (addpt x y) (at level 50).
+Local Notation "a *' x" := (scalept a x) (at level 40).
+
+(* NB: should be simplifiable by a variant of convACA' *)
+Lemma magnify_conv : (x <|p|> y) <| m |> (x <|r|> y) = x <|q|> y.
+Proof.
+have[|qnep]:= eqVneq q p.
+  by move/[dup]/magnified_prob_eq1->; rewrite conv1 => ->.
+have[|qner]:= eqVneq q r.
+  by move/[dup]/magnified_prob_eq0->; rewrite conv0 => ->.
+case/andP: (pqr) => pq qr.
+apply: (S1_inj R); rewrite ![in LHS]affine_conv/= convptE.
+rewrite !scaleptDr !scaleptA // (addptC ((Prob.p m * Prob.p p) *' S1 x)) addptA.
+rewrite addptC !addptA -scaleptDl// -!addptA -scaleptDl//.
+rewrite addrC -!avgRE -onem_affine real_magnify_self.
+by rewrite addptC -convptE affine_conv.
+Qed.
+
+End magnify_conv.
 
 (* mc_convRE == a <|p|> b (mathcomp_analysis) = a <|p|> b (infotheo) :> R *)
 Section mc_conv.
