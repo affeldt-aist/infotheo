@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption dsdp_program dsdp_extra.
+Require Import smc_proba homomorphic_encryption dsdp_program.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -431,7 +431,10 @@ Let comp_aiv_dotp2:
 Proof. rewrite /comp_RV. apply: boolp.funext => _ //=. Qed.
 
 Section perm_helpers.
-
+  
+(* TODO: define ring structure for boolean and use `ring` tactic
+   to avoid all these issues from the `reindex`.
+*)
 Lemma bool8_perm 
     {T0 : finType} {P0 : R.-fdist T0}
     {TDK0 TV0 TU0 : finType}
@@ -554,8 +557,8 @@ have H: forall V, `H(V | AliceView ) =
       apply: eq_bigr => [] [] [] [] [] [] [] []
         dk_a' s' v1' u1' u2' u3' r2' r3' _.
       congr (_ * _).
-        by rewrite !dist_of_RVE !pfwd1E; congr Pr; apply/setP => u;
-           rewrite !inE /= !xpair_eqE; rewrite bool8_perm.
+           rewrite !dist_of_RVE !pfwd1E; congr Pr; apply/setP => u;
+           rewrite !inE /= !xpair_eqE. rewrite bool8_perm.
       rewrite /centropy1; congr (- _).
       rewrite /jcPr !snd_RV2.
       apply: eq_bigr => a _.

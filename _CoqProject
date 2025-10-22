@@ -101,8 +101,6 @@ homomorphic_encryption/homomorphic_encryption.v
 dumas2017dual/dsdp_program.v
 dumas2017dual/dsdp_extra.v
 dumas2017dual/dsdp_privacy.v
-vendor/rocq-rouche-capelli/src/rouche_capelli.v
 dumas2017dual/dsdp_safety.v
-
--Q vendor/rocq-rouche-capelli/src rouche_capelli
+dumas2017dual/rouche_capelli.v
 -R . infotheo

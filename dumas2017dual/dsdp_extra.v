@@ -342,6 +342,7 @@ rewrite pmulr_rge0; first by rewrite oppr_ge0.
 exact: Hpos.
 Qed.
 
+(* TODO: extend to conditional entropy. *)
 Lemma zero_entropy_eq_point_mass
   (V: finType)
   (Z : {RV P -> V}) :
