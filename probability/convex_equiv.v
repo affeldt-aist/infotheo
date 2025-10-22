@@ -411,13 +411,14 @@ Local Definition sumbool_of_bool (b : bool) : {b = true} + {b = false} :=
   if b return {b = true} + {b = false} then left erefl else right erefl.
 
 (* Added on [2025-Jul-22]; a new combination? *)
-Lemma ax_idem_of_proj_part_const : ax_proj T -> ax_part T -> ax_const T -> ax_idem T.
+Lemma ax_idem_of_proj_part_const :
+  ax_proj T -> ax_part T -> ax_const T -> ax_idem T.
 Proof.
 move=> axproj axpart axconst.
 move=> a n d g gia.
-have[e esd]:= fdist_supp_mem d.
+have [e esd] := fdist_supp_mem d.
 pose supp := [fset i in fdist_supp d].
-have es: e \in supp by rewrite inE.
+have es : e \in supp by rewrite inE.
 pose m := #|` supp |.
 pose K' (i : 'I_n) : supp :=
   match sumbool_of_bool (i \in supp) with
@@ -444,8 +445,8 @@ under [F in <&>_ _ F]funext=> i.
     rewrite /K /os /K' => /(congr1 \val)/=.
     case: sumbool_of_bool => /=; first by move=> ? <-; rewrite nth_index.
     by rewrite !inE dj0.
-  move/eqP->.
-  have: nth e supp i \in supp by rewrite mem_nth.
+  move/eqP=> ->.
+  have : nth e supp i \in supp by rewrite mem_nth.
   by rewrite K_nth !inE => -> /=.
 by rewrite axconst.
 Qed.
@@ -466,7 +467,6 @@ HB.mixin Record isNaryConvexSpace
 #[short(type=naryConvType)]
 HB.structure Definition NaryConvexSpace (R : realType) :=
   {T of isNaryConvexSpace R T &}.
-
 
 (* An naryConvType actually validates all the laws *)
 
@@ -503,11 +503,10 @@ Import NaryConvexSpaceTheory.
    - ax_bary + ax_map + ax_const
    - ax_barypart + ax_idem
    - ax_proj + ax_part + ax_const
-   This equivalence has been implicitly shown as logical implications in
-   Module NaryConvLaws.
-   Module NaryConvexSpaceTheory tells that Bonchi subsumes the other three.
-   We now exhibit the remaining part of the equivalence by providing
-   Hierarchy-Builder factories for the others.
+   This has been implicitly shown as logical implications in Module NaryLaws.
+   Module NaryConvexSpaceTheory says that Bonchi subsumes the other three.
+   We now exhibit the remaining equivalences by providing Hierarchy-Builder
+   factories for the others.
  *)
 
 HB.factory Record isNaryBeaulieuConvexSpace
@@ -791,7 +790,6 @@ Succeed Definition test := (T : naryConvType R) : convType R.
 End test.
 End test.
 
-
 (*
 Counterexamples to show that some combinations are strictly weaker:
 - ax_bary /\ ax_const /\ ~ ax_proj
@@ -799,11 +797,10 @@ Counterexamples to show that some combinations are strictly weaker:
 - ax_part /\ ax_const /\ ~ ax_proj
 *)
 
-
 Module counterexample_bary_const_noproj.
 Section counterexample.
 Local Open Scope ring_scope.
-Variables (R : realType).
+Variable (R : realType).
 
 (* first projection, ignoring d *)
 Example proj_1st n :=
@@ -818,29 +815,26 @@ Succeed Definition test := bool : naryConvOpType R.
 Fact axbary : ax_bary bool.
 Proof.
 move=> n m d.
-have:= fdist_card_neq0 d => /prednK.
+have /prednK := fdist_card_neq0 d.
 rewrite card_ord; move: d => /[swap] <- d e.
-have:= fdist_card_neq0 (e ord0) => /prednK.
+have /prednK := fdist_card_neq0 (e ord0).
 by rewrite card_ord; move: e => /[swap] <- e g.
 Qed.
 
 Fact axconst : ax_const bool.
 Proof.
 move=> c n d.
-have:= fdist_card_neq0 d => /prednK.
+have /prednK := fdist_card_neq0 d.
 by rewrite card_ord; move: d => /[swap] <- d.
 Qed.
 
 Fact noproj : ~ ax_proj bool.
 Proof.
-rewrite /ax_proj.
-move/(_ 2 (inord 1) (fun o => o%:R)).
-by rewrite /convn inordK.
+by rewrite /ax_proj => /(_ 2 (inord 1) (fun o => o%:R)); rewrite /convn inordK.
 Qed.
 
 End counterexample.
 End counterexample_bary_const_noproj.
-
 
 Module counterexample_proj_part_noconst_noidem.
 Section counterexample.
@@ -858,9 +852,8 @@ Succeed Definition test := nat : naryConvOpType R.
 Fact axproj : ax_proj nat.
 Proof.
 move=> n i g.
-rewrite /convn/= /weight1_sum/= (bigD1 i)//=.
-rewrite fdist1E eqxx/= (negPf (oner_neq0 _)) big1 ?addr0//.
-by move=> j ji; rewrite fdist1E (negPf ji) eqxx.
+rewrite /convn/= /weight1_sum/= (bigD1 i)//= fdist1xx oner_eq0 big1 ?addr0//.
+by move=> j ji; rewrite fdist10// eqxx.
 Qed.
 
 Fact axpart : ax_part nat.
@@ -873,25 +866,22 @@ under [RHS]eq_bigr=> i /negPf -> do [].
 rewrite exchange_big/=; apply: eq_bigr=> i _.
 rewrite big_mkcond (bigD1 (K i))//=.
 rewrite big1; last first.
-  move=> j Kij; case: ifP=> //.
-  move/FDistPart.dE->; case: ifP=> //.
+  move=> j Kij; case: ifPn => // /FDistPart.dE ->.
   by rewrite (negPf Kij) mulr0 mul0r eqxx.
 rewrite addr0 -(if_neg (FDistPart.d _ _ _ _ == 0)) -if_and -if_neg.
 congr (if _ then _ else _).
-apply/idP/idP.
-  move=> di.
+apply/idP/idP => [di|/andP[di]].
   have: fdistmap K d (K i) != 0.
     rewrite fdistmapE/= psumr_neq0/=; last by move=> *; exact: FDist.ge0.
     apply/hasP; exists i; first by rewrite mem_index_enum.
     by rewrite inE/= eqxx /= fdist_gt0.
   move=> /[dup] map0 -> /=.
-  rewrite FDistPart.dE// eqxx ?mulf_neq0//= ?oner_neq0//.
-  rewrite invr_neq0// psumr_neq0/=; last by move=> *; exact: FDist.ge0.
+  rewrite FDistPart.dE// eqxx mulr1 mulf_neq0//= invr_neq0//.
+  rewrite psumr_neq0/=; last by move=> *; exact: FDist.ge0.
   apply/hasP; exists i; last by rewrite eqxx/= fdist_gt0.
   by rewrite mem_index_enum.
-case/andP=> di.
 rewrite FDistPart.dE// eqxx mulr1.
-by apply: contraNN=> /eqP->; rewrite mul0r.
+by apply: contraNneq => ->; rewrite mul0r.
 Qed.
 
 Fact noconst : ~ ax_const nat.
@@ -899,8 +889,11 @@ Proof.
 rewrite /ax_const.
 move/(_ 1 2 (fdist_uniform (fdist_card_prednK (@fdist1 R _ ord0)))).
 rewrite /convn/= /weight1_sum/=.
-under eq_bigr do rewrite fdist_uniformE invr_eq0 card_ord (_ : 0 = 0%:R)// eqr_nat/=.
-by rewrite big_const iter_addr_0 card_ord natn.
+under eq_bigr.
+  move=> i _.
+  rewrite fdist_uniformE invr_eq0 card_ord (_ : 0 = 0%:R)// eqr_nat/=.
+  over.
+by rewrite big_const_ord iter_addr_0 natn.
 Qed.
 
 Corollary noidem : ~ ax_idem nat.
@@ -908,7 +901,6 @@ Proof. by move: noconst; exact/contra_not/ax_const_of_idem. Qed.
 
 End counterexample.
 End counterexample_proj_part_noconst_noidem.
-
 
 Module counterexample_part_const_noproj.
 Section counterexample.
@@ -926,36 +918,28 @@ Succeed Definition test := bool : naryConvOpType R.
 Fact axconst : ax_const bool.
 Proof.
 move=> a n d.
-have[e]:= fdist_supp_mem d.
-rewrite !inE => de0.
-rewrite /convn/= /bigand/= big_const.
-rewrite -sum1_card (bigD1 e)//=.
-set k := (k in iter k).
-elim: k; first by rewrite iter0 andbT.
-by move=> k IHk; rewrite iterS IHk andbb.
+have [e] := fdist_supp_mem d.
+rewrite inE => de0.
+rewrite /convn/= /bigand/= big_const -sum1_card (bigD1 e)//=.
+by rewrite andb_idr// => ->; rewrite add0n iter_fix.
 Qed.
 
 Fact axpart : ax_part bool.
 Proof.
 move=> n m K d g.
-rewrite /convn/= /bigand/=.
-rewrite exchange_big/=; apply: eq_bigr=> i _.
-rewrite big_const -sum1_card (bigD1 (K i))//=.
-set k := (k in iter k).
-elim: k; first by rewrite iter0 andbT.
-by move=> k IHk; rewrite iterS -IHk andbb.
+rewrite /convn/= /bigand/= exchange_big/=; apply: eq_bigr=> i _.
+rewrite big_const -sum1_card (bigD1 (K i))//= add0n.
+by rewrite andb_idr// => ->; rewrite iter_fix.
 Qed.
 
 Fact noproj : ~ ax_proj bool.
 Proof.
-rewrite /ax_proj /convn/= /bigand/=.
-move/(_ 2 ord0 (fun o => if o == ord0 then true else false)).
+rewrite /ax_proj /convn/= /bigand/= => /(_ 2 ord0 (xpred1 ord0)).
 by rewrite big_ord_recl/= big_ord1.
 Qed.
 
 End counterexample.
 End counterexample_part_const_noproj.
-
 
 (* compare to the previous counterexample *)
 Module example_proj_part_const.
@@ -974,9 +958,8 @@ Succeed Definition test := bool : naryConvOpType R.
 Fact axproj : ax_proj bool.
 Proof.
 move=> n i g.
-rewrite /convn/= /bigand/=.
-rewrite (bigD1 i)//= fdist1E eqxx/= (negPf (oner_neq0 _)) big1 ?andbT//.
-by move=> j; rewrite fdist1E => /negPf -> /=; rewrite eqxx.
+rewrite /convn/= /bigand/= (bigD1 i)//= (fdist1xx _ i) oner_eq0/=.
+by rewrite big1 ?andbT// => j ij; rewrite fdist10// eqxx.
 Qed.
 
 Fact axpart : ax_part bool.
@@ -985,39 +968,35 @@ move=> n m K d g.
 rewrite /convn/= /bigand/=.
 rewrite [RHS](bigID (fun i => fdistmap K d i == 0))/=.
 rewrite [X in X && _]big1/=; last by move=> i ->.
-under [RHS]eq_bigr=> i /[dup] H /negPf-> /=.
+under [RHS]eq_bigr => i /[dup] H /negPf-> /=.
   under eq_bigr do rewrite FDistPart.dE//.
   over.
 rewrite exchange_big/=; apply: eq_bigr=> i _.
-have[->|di0]:= eqVneq (d i) 0.
+have [->|di0] := eqVneq (d i) 0.
   by rewrite big1// => ? ?; rewrite !mul0r eqxx.
-rewrite (bigID (fun j => j == K i))/=.
-under eq_bigr=> j /andP[] dj jKi.
+rewrite (bigID (xpred1 (K i)))/=.
+under eq_bigr => j /andP[] dj jKi.
   move: dj; rewrite fdistmapE/=.
   (under eq_bigl do rewrite inE/=) => dj.
-  rewrite (_ : (if _ then _ else _) = g i); first over.
-  rewrite !mulf_eq0 invr_eq0 (negPf di0) jKi (negPf dj) /=.
-  by rewrite (negPf (oner_neq0 _))/=.
+  rewrite !mulf_eq0 (negPf di0)/= invr_eq0 (negPf dj) jKi oner_eq0/=.
+  over.
 rewrite big_const/=.
-under eq_bigr=> j /andP [] dj /negPf -> do rewrite mulr0 mul0r eqxx.
+under eq_bigr => j /andP [] dj /negPf -> do rewrite mulr0 mul0r eqxx.
 rewrite big1// andbT.
 rewrite -sum1_card (bigD1 (K i))/= ?add0n; last first.
   apply/andP; split=> //.
-  rewrite fdistmapE/= psumr_neq0 ?FDist.ge0//.
+  rewrite fdistmapE/= psumr_neq0/= ?FDist.ge0//.
   apply/hasP; exists i; first by rewrite mem_index_enum.
   by rewrite inE/= eqxx fdist_gt0.
-set k := (k in iter k).
-elim: k; first by rewrite iter0 andbT.
-by move=> k IHk; rewrite iterS -IHk andbb.
+by rewrite andb_idr// => ->; rewrite iter_fix.
 Qed.
 
 Fact axconst : ax_const bool.
 Proof.
 move=> a n d.
-have[e]:= fdist_supp_mem d.
+have [e] := fdist_supp_mem d.
 rewrite !inE => de0.
-rewrite /convn/= /bigand/= (bigD1 e)//= (negPf de0).
-case: a=> //=.
+rewrite /convn/= /bigand/= (bigD1 e)//= (negPf de0) andb_idr// => ->.
 under eq_bigr do rewrite if_same.
 by rewrite big_const/= iter_fix.
 Qed.
