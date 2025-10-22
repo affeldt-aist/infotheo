@@ -2117,8 +2117,6 @@ rewrite -[LHS]Scaled1RK (@S1_Convn R R^o) big_scaleR.
 by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
 Qed.
 
-(* FIXTHEM: classical.unstable.onem is unnecessarily specialized to
-   numDomainType and prevents the following lemma to be stated for Lmodules *)
 Lemma onem_affine : affine (fun (x : R^o) => (x.~ : R^o)).
 Proof. move=> p x y; rewrite !avgRE /= /onem; ring. Qed.
 
