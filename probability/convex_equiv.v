@@ -921,14 +921,14 @@ move=> a n d.
 have [e] := fdist_supp_mem d.
 rewrite inE => de0.
 rewrite /convn/= /bigand/= big_const -sum1_card (bigD1 e)//=.
-by rewrite andb_idr// => ->; rewrite add0n iter_fix.
+by rewrite andb_idr// => ->; rewrite iter_fix.
 Qed.
 
 Fact axpart : ax_part bool.
 Proof.
 move=> n m K d g.
 rewrite /convn/= /bigand/= exchange_big/=; apply: eq_bigr=> i _.
-rewrite big_const -sum1_card (bigD1 (K i))//= add0n.
+rewrite big_const -sum1_card (bigD1 (K i))//=.
 by rewrite andb_idr// => ->; rewrite iter_fix.
 Qed.
 
@@ -983,7 +983,7 @@ under eq_bigr => j /andP[] dj jKi.
 rewrite big_const/=.
 under eq_bigr => j /andP [] dj /negPf -> do rewrite mulr0 mul0r eqxx.
 rewrite big1// andbT.
-rewrite -sum1_card (bigD1 (K i))/= ?add0n; last first.
+rewrite -sum1_card (bigD1 (K i))/=; last first.
   apply/andP; split=> //.
   rewrite fdistmapE/= psumr_neq0/= ?FDist.ge0//.
   apply/hasP; exists i; first by rewrite mem_index_enum.
