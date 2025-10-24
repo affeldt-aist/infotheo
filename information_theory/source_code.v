@@ -49,6 +49,7 @@ Variables (P : R.-fdist A) (f : {RV (P `^ n) -> seq bool}).
 Definition E_leng_cw := `E (((fun x => x%:R : R)%R \o size) `o f).
 
 End scode_vl_definition.
+Arguments E_leng_cw {R A n} _.
 
 Section scode_fl_definition.
 Variables (R : realType) (A : finType) (k n : nat).

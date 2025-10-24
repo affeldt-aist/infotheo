@@ -256,6 +256,20 @@ Qed.
 
 End log.
 
+Section low_pow_natmul.
+Local Open Scope ring_scope.
+Context {X : finType} {R : realType}.
+Variable f0 : X -> R.
+
+Lemma log_pow_natmul m k : (m > 0)%nat -> log (expn m k)%:R = k%:R * log m%:R :> R.
+Proof.
+move=> m0; elim: k => [|k ih]; first by rewrite expn0 /log Log1 mul0r.
+rewrite expnS natrM logM ?ltr0n // ?expn_gt0 ?m0 // ih.
+by rewrite -nat1r mulrDl mul1r.
+Qed.
+
+End low_pow_natmul.
+
 Lemma exists_frac_part {R : realType} (P : nat -> Prop) : (exists n, P n) ->
   forall num den, (0 < num)%N -> (0 < den)%N ->
   (forall n m, (n <= m)%N -> P n -> P m) ->

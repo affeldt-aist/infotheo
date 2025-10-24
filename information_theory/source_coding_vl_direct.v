@@ -29,40 +29,9 @@ Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope typ_seq_scope.
-
 Local Open Scope ring_scope.
 
-Import Order.POrderTheory GRing.Theory Num.Theory Num.Def Order.TotalTheory.
-
-Section R_lemma.
-Variable R : realType.
-Variable (X : finType) (n' : nat).
-Variable f0 : X -> R.
-Let n := n'.+1.
-Variable S : {set  X}.
-
-Lemma rsum_split:
-  \sum_(x| x \in X) f0 x = \sum_(x| x \in S) f0 x + \sum_(x| x \in ~: S) f0 x.
-Proof.
-rewrite (bigID (fun x => x \in S)) /=; congr (_ + _).
-by apply: eq_bigl => x /=; rewrite inE.
-Qed.
-
-Lemma log_pow_INR m k : (m > 0)%nat -> log (expn m k)%:R = k%:R * log m%:R :> R.
-Proof.
-move=> m0; elim: k => [|k ih]; first by rewrite expn0 /log Log1 mul0r.
-rewrite expnS natrM logM ?ltr0n // ?expn_gt0 ?m0 // ih.
-by rewrite -nat1r mulrDl mul1r.
-Qed.
-
-Lemma elevenOverTwelve_le_One : 4^-1 + 3^-1 + 3^-1 < 1 :> R.
-Proof.
-lra.
-Qed.
-
-End R_lemma.
-
-Import Order.POrderTheory GRing.Theory Num.Theory Num.Def Order.TotalTheory.
+Import Order.POrderTheory GRing.Theory Num.Theory Order.TotalTheory.
 
 Section Length.
 Variable R : realType.
@@ -107,8 +76,8 @@ Proof.
 apply: (le_trans (TS_sup _ _ _)).
 rewrite cardsT /= card_tuple /= card_bool.
 rewrite natrX.
-rewrite -exp.powR_mulrn//.
-rewrite exp.ler_powR ?ler1n//.
+rewrite -powR_mulrn//.
+rewrite ler_powR ?ler1n//.
 rewrite (le_trans (ceil_ge _))//.
 rewrite natr_absz ler_int.
 by rewrite ler_norm.
@@ -143,16 +112,12 @@ Local Notation "'L_typ'" := (L_typ n' P epsilon).
 Local Notation "'L_not_typ'" := (L_not_typ R X n').
 
 Definition enc_typ x :=
- let i := seq.index x (enum (`TS P n epsilon))
- in Tuple (size_bitseq_of_nat i (`|L_typ|%N)).
+  let i := seq.index x (enum (`TS P n epsilon))
+  in Tuple (size_bitseq_of_nat i (`|L_typ|%N)).
 
-Lemma  card_le_Xn_Lnt :
-  (#|[the finType of n.-tuple X] | <= #|[the finType of `|L_not_typ|%N.-tuple bool]|)%nat.
-Proof.
-rewrite -!cardsT.
-rewrite -(ler_nat R).
-by rewrite (card_le_Xn_Lnt' n' P).
-Qed.
+Lemma card_le_Xn_Lnt :
+  (#| n.-tuple X : finType | <= #|`|L_not_typ|.-tuple bool : finType|)%N.
+Proof. by rewrite -!cardsT -(ler_nat R) (card_le_Xn_Lnt' n' P). Qed.
 
 Definition enc_not_typ x := enum_val (widen_ord card_le_Xn_Lnt (enum_rank x)).
 
@@ -167,7 +132,7 @@ Definition f : encT X (seq bool) n := fun x =>
 
 Lemma f_inj : injective f.
 Proof.
-have card_TS_Lt : (#|`TS P n epsilon| <= (expn 2 (`|L_typ|)))%nat.
+have card_TS_Lt : (#|`TS P n epsilon| <= 2 ^ `|L_typ|)%N.
   rewrite -(ler_nat R).
   by move: (card_le_TS_Lt n' P epsilon);
        rewrite {1}cardsT card_tuple /= card_bool.
@@ -175,12 +140,11 @@ move=> t1 t2; rewrite /f.
 case/boolP : (t1 == t2) ; first by move /eqP.
 move=> mainCase.
 case: ifP=>?; case: ifP=>? //; case=> H; last by apply/tuple_of_row_inj/inj_enc_not_typ/val_inj.
--  have {}H : index t1 (enum (`TS P n epsilon)) =
-              index t2 (enum (`TS P n epsilon))
-     by apply: (@bitseq_of_nat_inj (`|L_typ|%N)) => //;  apply: (leq_trans _ card_TS_Lt);
-     apply: seq_index_enum_card => //;  apply: enum_uniq.
- rewrite -(@nth_index _ t1 t1 (enum (`TS P n epsilon))); last by rewrite mem_enum.
- rewrite -(@nth_index _ t1 t2 (enum (`TS P n epsilon))); last by rewrite mem_enum.
+- have {}H : index t1 (enum (`TS P n epsilon)) = index t2 (enum (`TS P n epsilon))
+    by apply: (@bitseq_of_nat_inj (`|L_typ|%N)) => //;  apply: (leq_trans _ card_TS_Lt);
+      apply: seq_index_enum_card => //;  apply: enum_uniq.
+  rewrite -(@nth_index _ t1 t1 (enum (`TS P n epsilon))); last by rewrite mem_enum.
+  rewrite -(@nth_index _ t1 t2 (enum (`TS P n epsilon))); last by rewrite mem_enum.
  by rewrite H.
 Qed.
 
@@ -263,16 +227,16 @@ rewrite -(ler_int R).
 by rewrite Lnt_nonneg.
 Qed.
 
-Lemma E_leng_cw_le_Length : @E_leng_cw _ _ _ P (f (n':=n') P epsilon) <=
+Lemma E_leng_cw_le_Length : E_leng_cw P (f (n':=n') P epsilon) <=
   (L_typ%:~R + 1) + epsilon * (L_not_typ%:~R + 1) .
 Proof.
 rewrite /E_leng_cw /Ex /=.
-rewrite (rsum_split _ (`TS P n'.+1 epsilon)).
+rewrite (bigID_setC _ (`TS P n'.+1 epsilon)).
 rewrite eq_sizef_Lnt eq_sizef_Lt.
 rewrite -!big_distrl/= mulrC.
 rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
  (P `^ n)%fdist i = 1 - \sum_(i | i \in `TS P n epsilon) (P `^ n)%fdist i); last first.
-- rewrite -(FDist.f1 (P `^ n)%fdist) (rsum_split _ (`TS P n epsilon)).
+- rewrite -(FDist.f1 (P `^ n)%fdist) (bigID_setC _ (`TS P n epsilon)).
   by rewrite addrAC subrr add0r.
 - apply: lerD => //.
   + rewrite -[X in _ <= X]mulr1; apply: ler_wpM2l => //.
@@ -293,12 +257,12 @@ Variable P : R.-fdist X.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon .
 Definition epsilon':= epsilon / (3 + (3 * log (#|X|)%:R)).
-Definition n0 := maxn (`|(ceil (2 / (1 + @log R (#|X|%:R))))|%N)
-                     (maxn (`|(ceil (8 / epsilon))|%N)
-                     (`|(ceil (aep_sigma2 P/ epsilon' ^ 3))|%N)).
-Hypothesis n0_Le_n : (n0 < n)%nat.
+Definition n0 := maxn (`|Num.ceil (2 / (1 + @log R (#|X|%:R)))|%N)
+                     (maxn (`|Num.ceil (8 / epsilon)|%N)
+                     (`|Num.ceil (aep_sigma2 P/ epsilon' ^ 3)|%N)).
+Hypothesis n0_Le_n : (n0 < n)%N.
 
-Lemma n0_eps3 :  2 * (epsilon / (3 * (1 + log (#|X|%:R)))) / n%:R < epsilon / 3.
+Lemma n0_eps3 : 2 * (epsilon / (3 * (1 + log (#|X|%:R)))) / n%:R < epsilon / 3.
 Proof.
 move: (fdist_supp_lg_add_1_neq_0 P) => ?.
 rewrite (mulrC 2) -!mulrA.
@@ -320,7 +284,7 @@ rewrite -natr_absz ler_nat.
 by rewrite leq_max leqnn.
 Qed.
 
-Lemma n0_eps4 :  2 / n%:R  < epsilon / 4.
+Lemma n0_eps4 : 2 / n%:R  < epsilon / 4.
 Proof.
 move: n0_Le_n; rewrite /n0 !gtn_max;  case/andP=> _;  case/andP=> Hyp _.
 rewrite ltr_pdivrMr//.
@@ -358,8 +322,8 @@ by rewrite !leq_max leqnn !orbT.
 Qed.
 
 Lemma lb_entro_plus_eps :
- (L_typ n' P epsilon')%:~R + 1 + epsilon' * ((L_not_typ R X n')%:~R + 1) <
-   (`H P + epsilon) * n%:R.
+  (L_typ n' P epsilon')%:~R + 1 + epsilon' * ((L_not_typ R X n')%:~R + 1) <
+  (`H P + epsilon) * n%:R.
 Proof.
 move : (fdist_supp_lg_add_1_neq_0 P) => ?.
 rewrite /L_typ /L_not_typ.
@@ -376,7 +340,7 @@ apply: (@le_lt_trans _ _  (n'.+1%:R * (`H P + epsilon') + 1 + 1 +
     rewrite -lerBlDr ltW//.
     rewrite [X in _ - X](_ : 1 = 1%:~R)//.
     by rewrite -intrB ceilB1_lt.
-- rewrite cardsT card_tuple log_pow_INR; last by apply: fdist_card_neq0; exact: P.
+- rewrite cardsT card_tuple log_pow_natmul; last by apply: fdist_card_neq0; exact: P.
   rewrite -![_ + 1 + 1]addrA.
   have ->: 1 + 1 = (1 + 1) * n%:R * n%:R^-1 :> R by rewrite mulfK// pnatr_eq0.
   rewrite (mulrC 2 _).
@@ -388,7 +352,7 @@ apply: (@le_lt_trans _ _  (n'.+1%:R * (`H P + epsilon') + 1 + 1 +
   rewrite -addrA -addrA ltrD2l.
   apply: (@le_lt_trans _ _ (epsilon / 4 + epsilon / 3 + epsilon / 3)); last first.
     rewrite -!mulrDr gtr_pMr//.
-    by apply: elevenOverTwelve_le_One.
+    lra.
   rewrite addrCA -addrA.
   rewrite lerD//.
     by rewrite ltW// n0_eps4.
@@ -407,43 +371,33 @@ apply: (@le_lt_trans _ _  (n'.+1%:R * (`H P + epsilon') + 1 + 1 +
   rewrite -mulrDl.
   rewrite -{1}(mulr1 3) -mulrDr mulrC.
   rewrite invfM -mulrA.
-  rewrite mulVf//.
-  by rewrite mulr1.
+  by rewrite mulVf// mulr1.
 Qed.
 
-Lemma v_scode' : exists sc : scode_vl _ n,
-  cancel (enc sc) (dec sc) /\
-  @E_leng_cw _ _ _ P (enc sc) / n%:R < `H P + epsilon.
+Lemma v_scode' : exists2 sc : scode_vl _ n,
+  cancel (enc sc) (dec sc) & E_leng_cw P (enc sc) / n%:R < `H P + epsilon.
 Proof.
 move : (fdist_supp_lg_add_1_neq_0 P) => ?.
 exists (mkScode (f P epsilon') (phi n' P epsilon')).
-split.
-  move=> x/=.
-  by rewrite phi_f.
-rewrite ltr_pdivrMr//.
-rewrite (le_lt_trans (E_leng_cw_le_Length eps'_pos le_aepbound_n))//.
-by apply: lb_entro_plus_eps.
+  by move=> x/=; rewrite phi_f.
+rewrite ltr_pdivrMr// (le_lt_trans (E_leng_cw_le_Length eps'_pos le_aepbound_n))//.
+by rewrite lb_entro_plus_eps.
 Qed.
 
 End v_scode.
 
 Section variable_length_source_coding.
-Variable R : realType.
-Variables (X : finType) (P : R.-fdist X).
-Variable epsilon : R.
+Context {R : realType} {X : finType}.
+Variables (P : R.-fdist X) (epsilon : R).
 Hypothesis eps_pos : 0 < epsilon.
+
 Local Notation "'n0'" := (n0 P epsilon).
 
-Theorem v_scode_direct : exists n : nat,
-  exists f : encT X (seq bool) n,
-    injective f /\
-    @E_leng_cw _ _ _ P f / n%:R < `H P + epsilon.
+Theorem v_scode_direct : exists n, exists2 f : encT X (seq bool) n,
+  injective f & E_leng_cw P f / n%:R < `H P + epsilon.
 Proof.
-apply: (ex_intro _ (n0.+1)).
-have: (n0 < n0.+1)%nat by[].
-case/v_scode'=> // sc [fphi ccl].
-apply: (ex_intro _ (enc sc)).
-by split => //; exact: (can_inj fphi).
+have [sc fphi ccl] := v_scode' eps_pos (ltnSn n0).
+by exists n0.+1, (enc sc) => //; exact: (can_inj fphi).
 Qed.
 
 End variable_length_source_coding.
