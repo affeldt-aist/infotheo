@@ -40,7 +40,7 @@ Definition aep_sigma2 : R := `E ((`-- (`log P)) `^2) - (`H P)^+2.
 Lemma aep_sigma2E : aep_sigma2 = \sum_(a in A) P a * (log (P a))^+2 - (`H P)^+2.
 Proof.
 rewrite /aep_sigma2 /Ex [in LHS]/log_RV /sq_RV /comp_RV.
-by under eq_bigr do rewrite mulrC /ambient_dist expr2 mulrNN -expr2.
+by under eq_bigr do rewrite /ambient_dist expr2 mulrNN -expr2.
 Qed.
 
 Lemma V_mlog : `V (`-- (`log P)) = aep_sigma2.
@@ -50,8 +50,8 @@ transitivity
     (\sum_(a in A) ((- log (P a))^+2 * P a - 2 * `H P * - log (P a) * P a +
                     `H P ^+ 2 * P a))%R.
   apply eq_bigr => a _.
-  rewrite /scalel_RV /log_RV /opp_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV.
-  by rewrite /ambient_dist -!mulrBl -mulrDl.
+  rewrite /scale_RV /log_RV /opp_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV.
+  by rewrite -mulr_regl mulrC /ambient_dist -!mulrBl -mulrDl.
 rewrite big_split /= big_split /= -big_distrr /= (FDist.f1 P) mulr1.
 rewrite (_ : \sum_(a in A) - _ = - (2 * `H P ^+ 2))%R; last first.
   rewrite -{1}big_morph_oppr; congr (- _)%R.
@@ -144,7 +144,7 @@ have H2 k i : `V ((\row_(i < k.+1) `-- (`log P)) ``_ i) = aep_sigma2 P.
 have {H1 H2} := (wlln (H1 n) (H2 n) Hsum Hepsilon).
 move/(le_trans _); apply.
 apply/subset_Pr/subsetP => ta; rewrite 2!inE => /andP[H1].
-rewrite /sum_mlog_prod [`-- (`log _)]lock /= -lock /scalel_RV /log_RV /opp_RV/=.
+rewrite /sum_mlog_prod [`-- (`log _)]lock /= -lock /scale_RV /log_RV /opp_RV/=.
 rewrite fdist_rVE log_prodr_sumr_mlog //.
 apply/prod_gt0_inv.
   by move=> x; exact: FDist.ge0.
