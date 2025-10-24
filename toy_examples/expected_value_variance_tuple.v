@@ -3,7 +3,7 @@
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ring lra.
 From mathcomp Require Import reals.
-Require Import realType_ext fdist proba.
+Require Import realType_ext fdist proba ssralg_ext.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, using tuple *)
 
@@ -41,13 +41,13 @@ Local Open Scope proba_scope.
 
 Definition P : {fdist 'I_3} := FDist.mk p_sum01.
 
-Definition X : {RV P -> R} := (fun i => i.+1%:R).
+Definition X : {RV P -> R^o} := (fun i => i.+1%:R).
 
 Lemma expected : `E X = 5/3.
 Proof.
 rewrite /Ex.
 rewrite 3!big_ord_recl big_ord0 /=.
-rewrite /X !ffunE !(tnth_nth 0) /=.
+rewrite /X !ffunE !(tnth_nth 0) -!mulr_regl /=.
 rewrite (_ : (bump 0 0).+1%:R = 2)//.
 rewrite (_ : (bump 0 _).+1%:R = 3)//.
 lra.
@@ -57,7 +57,7 @@ Lemma variance : `V X = 5/9.
 Proof.
 rewrite VarE expected /Ex /X /sq_RV /comp_RV /=.
 rewrite 3!big_ord_recl big_ord0 /=.
-rewrite !ffunE !(tnth_nth 0) /=.
+rewrite !ffunE !(tnth_nth 0) -!mulr_regl /=.
 rewrite (_ : (bump 0 0).+1%:R = 2)//.
 rewrite (_ : (bump 0 _).+1%:R = 3)//.
 lra.
