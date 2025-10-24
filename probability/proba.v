@@ -99,6 +99,7 @@ Reserved Notation "`Pr[ X <= r ]" (at level 6, X, r at next level,
   format "`Pr[  X  <=  r  ]").
 Reserved Notation "k `cst* X" (at level 49).
 Reserved Notation "X `*cst k" (at level 49).
+Reserved Notation "k `*: X" (at level 49).
 Reserved Notation "f `o X" (at level 50, format "f  `o '/ '  X").
 Reserved Notation "X '`/' n" (at level 49, format "X  '`/'  n").
 Reserved Notation "X `+ Y" (at level 50).
@@ -141,6 +142,9 @@ Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
+
+Delimit Scope set_scope with set.
+Delimit Scope proba_scope with proba.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
@@ -650,22 +654,27 @@ Notation "f `o X" := (comp_RV f X).
 
 Section zmod_random_variables.
 Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U) (V : zmodType).
+Variables (U : finType) (P : R.-fdist U).
+Implicit Types (V : zmodType).
 Local Open Scope ring_scope.
 
-Definition add_RV (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x + Y x.
-Definition sub_RV (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x - Y x.
+Definition add_RV V (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x + Y x.
+Definition sub_RV V (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x - Y x.
 
-Definition opp_RV (X : {RV P -> V}) : {RV P -> V} := fun x => - X x.
-Definition trans_add_RV (X : {RV P -> V}) m : {RV P -> V} := fun x => X x + m.
-Definition trans_sub_RV (X : {RV P -> V}) m : {RV P -> V} := fun x => X x - m.
-Definition sumR_RV I (r : seq I) (p : pred I) (X : I -> {RV P -> V}) : {RV P -> V} :=
+Definition mul_RV (V : lalgType R) (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x * Y x.
+
+Definition opp_RV V (X : {RV P -> V}) : {RV P -> V} := fun x => - X x.
+Definition trans_add_RV V (X : {RV P -> V}) m : {RV P -> V} := fun x => X x + m.
+Definition trans_sub_RV V (X : {RV P -> V}) m : {RV P -> V} := fun x => X x - m.
+Definition sumR_RV V I (r : seq I) (p : pred I) (X : I -> {RV P -> V}) : {RV P -> V} :=
   fun x => \sum_(i <- r | p i) X i x.
 
 Local Notation "X `+ Y" := (add_RV X Y) : proba_scope.
 Local Notation "X `- Y" := (sub_RV X Y) : proba_scope.
 
-Lemma sub_RV_neg (X Y : {RV P -> V}) :
+Local Notation "X `* Y" := (mul_RV X Y) : proba_scope.
+
+Lemma sub_RV_neg V (X Y : {RV P -> V}) :
   X `- Y = X `+ opp_RV Y.
 Proof. by []. Qed.
 
@@ -673,6 +682,7 @@ End zmod_random_variables.
 
 Notation "X `+ Y" := (add_RV X Y) : proba_scope.
 Notation "X `- Y" := (sub_RV X Y) : proba_scope.
+Notation "X `* Y" := (mul_RV X Y) : proba_scope.
 Notation "X '`+cst' m" := (trans_add_RV X m) : proba_scope.
 Notation "X '`-cst' m" := (trans_sub_RV X m) : proba_scope.
 Notation "'`--' P" := (opp_RV P) : proba_scope.
@@ -680,17 +690,18 @@ Notation "'`--' P" := (opp_RV P) : proba_scope.
 Section ring_random_variables.
 Local Open Scope ring_scope.
 Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U) (V : pzRingType).
+Variables (U : finType) (P : R.-fdist U).
 
-Definition scalel_RV k (X : {RV P -> V}) : {RV P -> V} := fun x => k * X x.
-Definition scaler_RV (X : {RV P -> V}) k : {RV P -> V} := fun x => X x * k.
-Definition sq_RV (X : {RV P -> V}) : {RV P -> V} := (fun x => x ^+ 2) `o X.
+Definition scale_RV (V : lmodType R) k (X : {RV P -> V}) : {RV P -> V} := fun x => k *: X x.
+(* fix scaler_RV / Definition scaler_RV (X : {RV P -> V}) k : {RV P -> V} := fun x => X x * k. *)
+Definition sq_RV (V : lalgType R) (X : {RV P -> V}) : {RV P -> V} := (fun x => x ^+ 2) `o X.
 
 End ring_random_variables.
 
-Notation "k `cst* X" := (scalel_RV k X) : proba_scope.
-Notation "X `*cst k" := (scaler_RV X k) : proba_scope.
-Notation "X '`/' n" := (scalel_RV n%:R^-1 X) : proba_scope.
+Notation "k `cst* X" := (scale_RV k X) : proba_scope.
+Notation "X `*cst k" := (scale_RV k X) : proba_scope.
+Notation "k `*: X" := (scale_RV k X) : proba_scope.
+Notation "X '`/' n" := (scale_RV n%:R^-1 X) : proba_scope.
 Notation "X '`^2' " := (sq_RV X) : proba_scope.
 
 Section real_random_variables.
@@ -706,13 +717,10 @@ Notation "'`log' P" := (log_RV P) : proba_scope.
 Section RV_lemmas.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
-Implicit Types X : {RV P -> R}.
+Implicit Types X : {RV P -> R^o}.
 
-Lemma scalel_RVA k l X : scalel_RV (k * l) X = scalel_RV k (scalel_RV l X).
-Proof. by rewrite /scalel_RV boolp.funeqE => u; rewrite mulrA. Qed.
-
-Lemma scaler_RVA X k l : scaler_RV X (k * l) = scaler_RV (scaler_RV X k) l.
-Proof. by rewrite /scaler_RV boolp.funeqE => u; rewrite mulrA. Qed.
+Lemma scale_RVA k l X : scale_RV (k * l) X = scale_RV k (scale_RV l X).
+Proof. by rewrite /scale_RV boolp.funeqE => u; rewrite scalerA. Qed.
 
 Lemma sq_RV_pow2 X x : sq_RV X x = (X x) ^+ 2.
 Proof. reflexivity. Qed.
@@ -785,7 +793,7 @@ Lemma Pr_fdistmap_RV2 {R : realType} (U : finType) (P : R.-fdist U) (A B : finTy
   Pr P ([set x | preim X (mem E) x] :&: [set x | preim Z (mem F) x]).
 Proof.
 rewrite /Pr.
-transitivity (\sum_(a in ([% X, Z] @^-1: (E `* F))) P a); last first.
+transitivity (\sum_(a in ([% X, Z] @^-1: (E `* F)%set)) P a); last first.
   by apply eq_bigl => u; rewrite !inE.
 rewrite [in RHS]partition_big_preimset /=.
 apply eq_big => // -[a c]; rewrite inE => /andP[/= aE cF].
@@ -994,31 +1002,38 @@ End Ex_alt.
 
 Section expected_value_prop.
 Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U) (X Y : {RV P -> R}).
+Variables (U : finType) (P : R.-fdist U).
 
-Lemma Ex_ge0 : (forall u, 0 <= X u) -> 0 <= `E X.
-Proof. move=> H; apply/sumr_ge0 => u _; rewrite mulr_ge0//; exact/RleP. Qed.
-
-Lemma E_opp_RV : `E (`-- X) = - `E X.
-Proof.
-by rewrite /Ex/= big_morph_oppr/=; apply: eq_bigr => u _; rewrite scalerN.
-Qed.
-
-Lemma E_scalel_RV k : `E (k `cst* X) = k * `E X.
-Proof.
-rewrite /scalel_RV {2}/Ex big_distrr /=.
-by apply eq_bigr => a _; rewrite scalerAr.
-Qed.
-
-Lemma E_scaler_RV k : `E (X `*cst k) = `E X * k.
-Proof.
-by rewrite big_distrl /=; apply: eq_bigr => i Hi; rewrite scalerAl.
-Qed.
-
-Lemma E_add_RV : `E (X `+ Y) = `E X + `E Y.
+Lemma E_add_RV {V : lmodType R} (X Y : {RV P -> V}) :
+  `E (X `+ Y) = `E X + `E Y.
 Proof. by rewrite -big_split; apply eq_bigr => a _ /=; rewrite scalerDr. Qed.
 
-Lemma E_sumR I r p (Z : I -> {RV P -> R}) :
+Lemma E_sub_RV {V : lmodType R} (X Y : {RV P -> V}) :
+  `E (X `- Y) = `E X - `E Y.
+Proof.
+rewrite {3}/Ex big_morph_oppr -big_split /=.
+by apply eq_bigr => u _; rewrite scalerDr scalerN.
+Qed.
+
+Lemma E_opp_RV {V : lmodType R} (X : {RV P -> V}) :
+  `E (`-- X) = - `E X.
+Proof.
+rewrite /Ex/=; under eq_bigr do rewrite scalerN.
+exact/esym/big_morph_oppr.
+Qed.
+
+Lemma E_scale_RV {V : lmodType R} (X : {RV P -> V}) k :
+  `E (k `cst* X) = k *: `E X.
+Proof.
+rewrite /scale_RV {2}/Ex scaler_sumr /=; apply eq_bigr => a _.
+by rewrite !scalerA mulrC.
+Qed.
+
+Lemma Ex_ge0 (X : {RV P -> R^o}) :
+  (forall u, 0 <= X u) -> 0 <= `E X.
+Proof. move=> H; apply/sumr_ge0 => u _; rewrite mulr_ge0//; exact/RleP. Qed.
+
+Lemma E_sumR {V : lmodType R} I r p (Z : I -> {RV P -> V}) :
   `E (sumR_RV r p Z) = \sum_(i <- r | p i) (`E (Z i)).
 Proof.
 rewrite /Ex.
@@ -1026,37 +1041,36 @@ under eq_bigr do rewrite scaler_sumr.
 by rewrite exchange_big /=; apply: eq_bigr => i Hi.
 Qed.
 
-Lemma E_sub_RV : `E (X `- Y) = `E X - `E Y.
-Proof.
-rewrite {3}/Ex big_morph_oppr -big_split /=.
-by apply eq_bigr => u _; rewrite scalerDr scalerN.
-Qed.
+Lemma E_const_RV {V : lmodType R} (k : V) :
+  `E (@const_RV _ U P V k) = k.
+Proof. by rewrite /Ex /const_RV /= -scaler_suml /= FDist.f1 scale1r. Qed.
 
-Lemma E_const_RV k : `E (const_RV P (T := R) k) = k.
-Proof. by rewrite /Ex /const_RV /= -big_distrl /= FDist.f1 mul1r. Qed.
-
-Lemma E_trans_add_RV m : `E (X `+cst m) = `E X + m.
+Lemma E_trans_add_RV {V : lmodType R} (X : {RV P -> V}) m :
+  `E (X `+cst m) = `E X + m.
 Proof.
 rewrite /trans_add_RV /=.
 transitivity (\sum_(u in U) (P u *: X u + P u *: m)).
   by apply eq_bigr => u _ /=; rewrite scalerDr.
-by rewrite big_split /= -big_distrl /= FDist.f1 mul1r.
+by rewrite big_split /= -scaler_suml /= FDist.f1 scale1r.
 Qed.
 
-Lemma E_trans_sub_RV m : `E (X `-cst m) = `E X - m.
+Lemma E_trans_sub_RV {V : lmodType R} (X : {RV P -> V}) m :
+  `E (X `-cst m) = `E X - m.
 Proof.
 rewrite /trans_sub_RV /=.
-transitivity (\sum_(u in U) (P u * X u + P u *: - m)).
+transitivity (\sum_(u in U) (P u *: X u + P u *: - m)).
   by apply eq_bigr => u _ /=; rewrite scalerDr.
-by rewrite big_split /= -big_distrl /= FDist.f1 mul1r.
+by rewrite big_split /= -scaler_suml /= FDist.f1 scale1r.
 Qed.
 
-Lemma E_trans_RV_id_rem m :
-  `E ((X `-cst m) `^2) = `E ((X `^2 `- (2 * m `cst* X)) `+cst m ^+ 2).
+Lemma E_trans_RV_id_rem {V : lalgType R} (X : {RV P -> V}) (m : V) :
+  `E ((X `-cst m) `^2) = `E ((X `^2 `- ((@const_RV _ U P V (2 * m)) `* X : {RV P -> V})) `+cst m ^+ 2).
 Proof.
 apply eq_bigr => a _.
-rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scalel_RV /=.
-by congr (_ *: _); lra.
+rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scale_RV /const_RV/=.
+congr (_ *: _).
+(* xxx here xxx *)
+rewrite sqrrB.
 Qed.
 
 Lemma E_comp_RV (f : R -> R) k : (forall x y, f (x * y) = f x * f y) ->
