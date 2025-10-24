@@ -752,6 +752,8 @@ Qed.
 End key_inequality.
 
 Local Open Scope ring_scope.
+
+(* TODO: PR to mathcomp *)
 Notation "x < y < z :> T" := ((x < y :> T) && (y < z :> T)) (at level 70, y, z at next level).
 Notation "x <= y <= z :> T" := ((x <= y :> T) && (y <= z :> T)) (at level 70, y, z at next level).
 Notation "x < y <= z :> T" := ((x < y :> T) && (y <= z :> T)) (at level 70, y, z at next level).

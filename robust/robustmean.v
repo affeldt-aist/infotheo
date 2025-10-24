@@ -168,7 +168,7 @@ Qed.
 Lemma cEx_ExInd (X : {RV P -> R}) F :
   `E_[X | F] = `E (X `* Ind (A:=U) F) / Pr P F.
 Proof.
-rewrite /Pr /cEx (* need some lemmas to avoid unfolds *) -big_distrl /=.
+rewrite /cEx (* need some lemmas to avoid unfolds *) -big_distrl /=.
 apply: congr2=> //.
 under eq_bigr => i _.
   rewrite big_distrl.
@@ -458,8 +458,8 @@ Proof.
 rewrite !cEx_ExInd -mulrDl.
 congr (_ * _).
 rewrite -E_add_RV.
-  apply congr_big => // i HiU.
-  by rewrite /mul_RV mulrDl.
+apply congr_big => // i HiU.
+by rewrite /mul_RV mulrDl.
 Qed.
 
 Lemma cEx_sub_RV (X Y: {RV P -> R}) F: `E_[X `- Y | F] = `E_[X|F] - `E_[Y|F].
