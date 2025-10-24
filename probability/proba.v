@@ -960,20 +960,20 @@ Definition cast_fun_rV10 U (T : eqType) (Xs : 'rV[U -> T]_1) : 'rV[U]_1 -> T :=
 Local Close Scope vec_ext_scope.
 
 Section expected_value_def.
-Context {R : realType} {R' : lmodType R}.
-Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R'}).
+Context {R : realType} {V : lmodType R}.
+Variables (U : finType) (P : R.-fdist U) (X : {RV P -> V}).
 
 Definition Ex := \sum_(u in U) P u *: X u.
 
 End expected_value_def.
-Arguments Ex {R R' U} _ _.
+Arguments Ex {R V U} _ _.
 
 Notation "'`E'" := (@Ex _ _ _ _) : proba_scope.
 
 (* Alternative definition of the expected value: *)
 Section Ex_alt.
-Context {R : realType} {R' : lmodType R}.
-Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R'}).
+Context {R : realType} {V : lmodType R}.
+Variables (U : finType) (P : R.-fdist U) (X : {RV P -> V}).
 
 Definition Ex_alt := \sum_(r <- fin_img X) `Pr[ X = r ] *: r.
 
