@@ -165,7 +165,7 @@ have -> : \big[op/idx]_(j <- bs) \big[op/idx]_(i <- h ++ t | f i == j) F i =
   apply/esym/eq_bigr => b0 b0bs.
   rewrite big_cat /=.
   rewrite (_ : \big[op/idx]_(i0 <- h | f i0 == b0) F i0 = idx) ?Monoid.simpm//.
-  transitivity (\big[op/idx]_(i0 <- h | false) F i0); last first. rewrite big_pred0//.
+  transitivity (\big[op/idx]_(i0 <- h | false) F i0); last by rewrite big_pred0.
   rewrite big_seq_cond; apply eq_bigl => /= a.
   apply/negP => /andP[ah /eqP fai]; subst b0.
   have fab : f a \in [:: b].
