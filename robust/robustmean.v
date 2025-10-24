@@ -182,34 +182,26 @@ move=> /[dup] /YsubX' /negbTE -> /negbTE ->.
 by rewrite subrr.
 Qed.
 
+Local Notation UnderBody := (_ : fun X => Under_rel _ _ X).
+
 Lemma cEx_ExInd (X : {RV P -> R^o}) F :
   `E_[X | F] = `E (X `* Ind (A:=U) F : {RV P -> R^o}) / Pr P F.
 Proof.
-rewrite /Pr /cEx (* need some lemmas to avoid unfolds *) -big_distrl /=.
+rewrite /cEx (* need some lemmas to avoid unfolds *) -big_distrl /=.
 apply: congr2=> //.
 under eq_bigr => i _.
-  rewrite big_distrl.
-  have -> :
-    \sum_(i0 in finset (preim X (pred1 i)) :&: F) (P i0 * i) =
-    \sum_(i0 in finset (preim X (pred1 i)) :&: F)
-     (P i0 * (X i0 * @Ind _ U F i0)).
-    apply congr_big => // i0.
-    rewrite in_setI /Ind => /andP[] /in_preim1 -> ->.
+  rewrite big_distrl/=.
+  rewrite [UnderBody](_ : _ = \sum_(i0 | X i0 == i) P i0 * (X i0 * Ind F i0));
+    first over.
+  under [RHS]eq_bigl do rewrite -in_preim1'.
+  rewrite [RHS](big_setID F)/= -[LHS]addr0.
+  apply: congr2.
+    apply: eq_bigr=> i0.
+    rewrite !inE /Ind => /andP[] /eqP-> ->.
     by rewrite mulr1.
-  have H1 :
-    \sum_(i0 in finset (preim X (pred1 i)) :\: F) P i0 * (X i0 * Ind F i0) = 0.
-  (* This should be true because all elements of the sum are 0 *)
-    rewrite big1 // => i1.
-    rewrite in_setD => /andP [H2 H3].
-    by rewrite /Ind (negbTE H2) !mulr0.
-  have :
-    \sum_(i0 in finset (preim X (pred1 i))) P i0 * (X i0 * Ind F i0) =
-    \sum_(i0 in finset (preim X (pred1 i)) :&: F) P i0 * (X i0 * Ind F i0) +
-    \sum_(i0 in finset (preim X (pred1 i)) :\: F) P i0 * (X i0 * Ind F i0)
-    by apply: big_setID.
-  rewrite H1 addr0 => <-.
-  under eq_bigl do rewrite in_preim1'.
-  by over.
+  apply/esym/big1 => i0.
+  rewrite !inE /Ind => /andP[] /negPf->.
+  by rewrite !mulr0.
 by rewrite -partition_big_fin_img.
 Qed.
 
@@ -475,8 +467,8 @@ Proof.
 rewrite !cEx_ExInd -mulrDl.
 congr (_ * _).
 rewrite -E_add_RV.
-  apply congr_big => // i HiU.
-  by rewrite /mul_RV mulrDl.
+apply congr_big => // i HiU.
+by rewrite /mul_RV mulrDl.
 Qed.
 
 Lemma cEx_sub_RV (X Y: {RV P -> R}) F: `E_[X `- Y | F] = `E_[X|F] - `E_[Y|F].
