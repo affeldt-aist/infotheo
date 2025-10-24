@@ -3,7 +3,7 @@
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
 From mathcomp Require Import reals.
-Require Import realType_ext fdist proba.
+Require Import realType_ext ssralg_ext fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, without inord *)
 
@@ -16,6 +16,10 @@ Local Open Scope tuple_ext_scope.
 Local Open Scope ring_scope.
 
 Import GRing.Theory Num.Theory Order.Theory.
+
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
 
 Section expected_value_variance_ordn.
 
@@ -55,7 +59,7 @@ Lemma expected : `E X = 5/3.
 Proof.
 rewrite /Ex.
 rewrite 3!big_ord_recl big_ord0 /=.
-rewrite /pmf /X !ffunE /= /bump /=.
+rewrite /pmf /X !ffunE /= /bump /= -!mulr_regl.
 by field.
 Qed.
 
@@ -63,7 +67,7 @@ Lemma variance : `V X = 5/9.
 Proof.
 rewrite VarE expected /Ex /X /sq_RV /comp_RV /=.
 rewrite 3!big_ord_recl big_ord0 /=.
-rewrite !ffunE /bump /=.
+rewrite !ffunE /bump /= -!mulr_regl.
 by field.
 Qed.
 

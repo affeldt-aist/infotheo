@@ -20,6 +20,10 @@ Local Open Scope proba_scope.
 
 Import Order.POrderTheory Order.Theory Num.Theory GRing.Theory.
 
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
+
 Require Import Interval.Tactic.
 Require Import Program.Wf.
 Require Import robustmean.
