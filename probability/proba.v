@@ -1061,14 +1061,12 @@ transitivity (\sum_(u in U) (P u *: X u + P u *: - m)).
 by rewrite big_split /= -scaler_suml /= FDist.f1 scale1r.
 Qed.
 
-Lemma E_trans_RV_id_rem {V : lalgType R} (X : {RV P -> V}) (m : V) :
-  `E ((X `-cst m) `^2) = `E ((X `^2 `- ((@const_RV _ U P V (2 * m)) `* X : {RV P -> V})) `+cst m ^+ 2).
+Lemma E_trans_RV_id_rem (X : {RV P -> R^o}) m :
+  `E ((X `-cst m) `^2) = `E ((X `^2 `- ((2 * m) `*: X)) `+cst m ^+ 2).
 Proof.
 apply eq_bigr => a _.
 rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scale_RV /const_RV/=.
-congr (_ *: _).
-(* xxx here xxx *)
-rewrite sqrrB.
+by congr (_ *: _); rewrite sqrrB- mulr_regl; lra.
 Qed.
 
 Lemma E_comp_RV (X : {RV P -> R^o}) (f : R^o -> R^o) k :
@@ -1076,25 +1074,26 @@ Lemma E_comp_RV (X : {RV P -> R^o}) (f : R^o -> R^o) k :
     `E (f `o (k `cst* X)) = `E ((f k) `cst* (f `o X)).
 Proof. by move=> H; rewrite /comp_RV /=; apply eq_bigr => u _; rewrite H. Qed.
 
-Lemma E_comp_RV_ext (X Y : {RV P -> R^o}) (f : R^o -> R^o) :
+Lemma E_comp_RV_ext {V W : lmodType R} (X Y : {RV P -> V}) (f : V -> W) :
   X = Y -> `E (f `o X) = `E (f `o Y).
 Proof. move=> H; by rewrite /comp_RV /= H. Qed.
 
 End expected_value_prop.
 
-Lemma E_cast_RV_fdist_rV1 {R : realType} (A : finType) (P : R.-fdist A) :
-  forall (X : {RV P -> R^o}), `E (cast_RV_fdist_rV1 X) = `E X.
+Lemma E_cast_RV_fdist_rV1 {R : realType} {V : lmodType R} (A : finType)
+    (P : R.-fdist A) :
+  forall (X : {RV P -> V}), `E (cast_RV_fdist_rV1 X) = `E X.
 Proof.
 move=> f; rewrite /cast_RV_fdist_rV1 /=; apply: big_rV_1 => // m.
 by rewrite -fdist_rV1.
 Qed.
 
 Section conditional_expectation_def.
-Context {R : realType}.
-Variable (U : finType) (P : R.-fdist U) (X : {RV P -> R}) (F : {set U}).
+Context {R : realType} {V : lmodType R}.
+Variable (U : finType) (P : R.-fdist U) (X : {RV P -> V}) (F : {set U}).
 
 Definition cEx :=
-  \sum_(r <- fin_img X) Pr P (finset (X @^-1 r) :&: F) * r / Pr P F.
+  \sum_(r <- fin_img X) Pr P (finset (X @^-1 r) :&: F) / Pr P F *: r.
 
 End conditional_expectation_def.
 Notation "`E_[ X | F ]" := (cEx X F).
@@ -1116,7 +1115,7 @@ rewrite [in X in _ + X = _]big1 ?addr0; last first.
 transitivity (\sum_(i in I | Pr P (F i) != 0)
   \sum_(j <- fin_img X) (Pr P (finset (X @^-1 j) :&: F i)) * j).
   apply: eq_bigr => i Fi0; apply eq_bigr => r _.
-  by rewrite -mulrCA mulfV ?mulr1.
+  by rewrite mulrCA mulrA -(mulrA _ (_^-1)) mulVf ?mulr1.
 rewrite -Ex_altE /Ex_alt exchange_big /=; apply: eq_bigr => r _.
 rewrite -big_distrl /=; congr (_ * _).
 transitivity (\sum_(i in I) Pr P (finset (X @^-1 r) :&: F i)).
@@ -1283,7 +1282,7 @@ under [LHS]eq_bigr => i _.
   over.
 rewrite exchange_big /=.
 apply: eq_bigr => i _.
-rewrite -E_SumIndCap -E_scalel_RV.
+rewrite -E_SumIndCap mulr_regl -E_scale_RV.
 by under [LHS]eq_bigr => j _ do rewrite -scalerAr.
 Qed.
 
@@ -1334,7 +1333,7 @@ Definition Var := let miu := `E X in `E ((X `-cst miu) `^2).
 
 Lemma VarE : Var = `E (X `^2)  - (`E X) ^+ 2.
 Proof.
-by rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV E_scalel_RV; lra.
+by rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV E_scale_RV -mulr_regl; lra.
 Qed.
 
 End variance_def.
@@ -1350,12 +1349,12 @@ Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R^o}).
 (** The variance is not linear: *)
 Lemma Var_scale k : `V (k `cst* X) = k ^+ 2 * `V X.
 Proof.
-rewrite {1}/`V [in X in X = _]/= E_scalel_RV.
+rewrite {1}/`V [in X in X = _]/= E_scale_RV.
 pose Y : {RV P -> R} := k `cst* (X `+cst - `E X).
-rewrite (@E_comp_RV_ext _ _ P ((k `cst* X) `-cst k * `E X) Y) //; last first.
+rewrite (@E_comp_RV_ext _ _ P _ _ ((k `cst* X) `-cst k * `E X) Y) //; last first.
   rewrite boolp.funeqE => /= x.
-  by rewrite /Y /scalel_RV /= /trans_sub_RV /trans_add_RV; lra.
-by rewrite E_comp_RV ?E_scalel_RV // => *; lra.
+  by rewrite /Y /scale_RV /= /trans_sub_RV /trans_add_RV -!mulr_regl; lra.
+by rewrite E_comp_RV ?E_scale_RV // => *; lra.
 Qed.
 
 Lemma Var_trans m : `V (X `+cst m) = `V X.
@@ -2478,7 +2477,7 @@ Lemma prod_dist_inde_RV_rV {R : realType} (A : finType) (P : R.-fdist A)
 Proof.
 have /= := @prod_dist_inde_RV _ _ _ P (P `^ n) _ _ X Y x y.
 rewrite !pfwd1E -!fdist_prod_of_fdist_rV.
-rewrite (_ : [set x0 | _] = (finset (X @^-1 x)) `* (finset (Y @^-1 y))); last first.
+rewrite (_ : [set x0 | _] = (finset (X @^-1 x)) `* (finset (Y @^-1 y)))%set; last first.
   by apply/setP => -[a b]; rewrite !inE /= xpair_eqE.
 rewrite Pr_fdist_prod_of_rV (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
   by apply/setP => a; rewrite !inE.
@@ -2553,7 +2552,7 @@ case=> [_ | n IH] Xsum Xs Hsum s Hs.
     by rewrite (@row_mxEr _ _ 1).
 Qed.
 
-Lemma Var_average n (X : {RV (P `^ n) -> R}) Xs (sum_Xs : X \=sum Xs) :
+Lemma Var_average n (X : {RV (P `^ n) -> R^o}) Xs (sum_Xs : X \=sum Xs) :
   forall sigma2, (forall i, `V (Xs ``_ i) = sigma2) ->
   n%:R * `V (X `/ n) = sigma2.
 Proof.
@@ -2591,7 +2590,7 @@ have <- : `V (X `/ n.+1) = sigma2 / n.+1%:R.
   rewrite -(Var_average X_Xs V_Xs) Var_scale //.
   by rewrite [RHS]mulrC (mulrA _ n.+1%:R) mulVf ?pnatr_eq0// !mul1r.
 have <- : `E (X `/ n.+1) = miu.
-  rewrite E_scalel_RV (E_sum_n X_Xs).
+  rewrite E_scale_RV (E_sum_n X_Xs) -mulr_regl.
   rewrite mulrC eqr_divrMr ?pnatr_eq0// (eq_bigr (fun=> miu)) //.
   by rewrite big_const /= iter_addr cardE /= size_enum_ord addr0 mulr_natr.
 move/le_trans: (chebyshev_inequality (X `/ n.+1) e0); apply.
