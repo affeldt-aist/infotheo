@@ -42,7 +42,7 @@ Definition scode_vl := scode A (seq bool) k.
 
 Variables (P : R.-fdist A) (f : {RV (P `^ n) -> seq bool}).
 
-Definition E_leng_cw := `E (((fun x => x%:R)%R \o size) `o f).
+Definition E_leng_cw := `E (((fun x => x%:R : R^o)%R \o size) `o f).
 
 End scode_vl_definition.
 
