@@ -13,7 +13,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Lemma morph_oppr {R : pzRingType} : {morph @GRing.opp R : x y / (x + y)%R : R}.
+Lemma morph_oppr {R : zmodType} : {morph @GRing.opp R : x y / (x + y)%R : R}.
 Proof. by move=> x y /=; rewrite GRing.opprD. Qed.
 
 #[deprecated(since="infotheo 0.9", note="use `big_distrr` instead of `big_morph` + `morph_mulRdr`")]
@@ -21,7 +21,7 @@ Lemma morph_mulRDr {R : pzRingType} a :
   {morph (GRing.mul a) : x y / (x + y)%R : R}.
 Proof. by move=> * /=; rewrite GRing.mulrDr. Qed.
 
-Definition big_morph_oppr {R : pzRingType} :=
+Definition big_morph_oppr {R : zmodType} :=
   big_morph _ morph_oppr (@GRing.oppr0 R).
 
 Section bigop_no_law.
