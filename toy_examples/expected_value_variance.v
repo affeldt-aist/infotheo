@@ -95,7 +95,7 @@ Local Open Scope proba_scope.
 
 Definition d : {fdist 'I_3} := FDist.mk pmf01.
 
-Definition X : {RV d -> R} := (fun i => i.+1%:R).
+Definition X : {RV d -> R^o} := (fun i => i.+1%:R).
 
 Lemma expected : `E X = 5/3.
 Proof.
@@ -121,7 +121,7 @@ rewrite VarE.
 rewrite expected.
 rewrite /Ex /X.
 do 3 rewrite big_ord_recl.
-rewrite big_ord0 addr0 /=.
+rewrite big_ord0 addr0 -!ssralg_ext.mulr_regl /=.
 rewrite /sq_RV /comp_RV /=.
 rewrite expr1n scaler1.
 rewrite {1}/pmf !ffunE /=.
