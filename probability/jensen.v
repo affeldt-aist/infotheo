@@ -75,14 +75,9 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Lemma Jensen (P : R.-fdist A) (X : {RV P -> R}) : (forall x, X x \in D) ->
+Lemma Jensen (P : R.-fdist A) (X : {RV P -> R^o}) : (forall x, X x \in D) ->
   f (`E X) <= `E (f `o X).
-Proof.
-move=> H.
-rewrite {2}/Ex; erewrite eq_bigr; last by move=> a _; rewrite mulrC.
-rewrite {1}/Ex; erewrite eq_bigr; last by move=> a _; rewrite mulrC.
-exact: jensen_dist H.
-Qed.
+Proof. exact: jensen_dist. Qed.
 
 End jensen_inequality.
 
