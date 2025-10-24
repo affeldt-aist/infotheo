@@ -72,7 +72,7 @@ Module Weighted.
 Section def.
 Local Open Scope ring_scope.
 Let R := Rdefinitions.R.
-Variables (A : finType) (d0 : {fdist A}) (g : {ffun A -> R}).
+Variables (A : finType) (d0 : {fdist A}) (g : {ffun A -> R^o}).
 Hypotheses g0 : forall a, 0 <= g a.
 
 Definition total := \sum_(a in A) g a * d0 a.
@@ -131,7 +131,7 @@ End def.
 End Weighted.
 
 Definition change_dist {R : realType} (T1 T2 : finType) (P : {fdist T1}) (Q : {fdist T2})
-  (f : T2 -> T1) (X : {RV P -> R}) : {RV Q -> R} := X \o f.
+  (f : T2 -> T1) (X : {RV P -> R^o}) : {RV Q -> R^o} := X \o f.
 
 Notation wgt := Weighted.d.
 Notation "Q .-RV X" := (change_dist Q idfun X)
@@ -198,7 +198,7 @@ rewrite !cExE -Pr_setXT; congr (_ / _).
 rewrite big_setX//=; apply: eq_bigr => u uS.
 rewrite setT_bool big_setU1//= ?inE// big_set1.
 rewrite !dE/= /fst_RV/=.
-by rewrite -mulrDr -mulrDl addrCA subrr addr0 mul1r.
+by rewrite -mulrDl -mulrDl addrCA subrr addr0 mul1r.
 Qed.
 
 Section fst_RV'.
@@ -212,7 +212,7 @@ rewrite Pr_XsetT.
 congr (_ / _).
 rewrite big_setX /=.
 apply: eq_bigr=> a aA.
-rewrite /fst_RV /fst_RV' /change_dist /= -big_distrr /=.
+rewrite /fst_RV /fst_RV' /change_dist /= -big_distrl /=.
 congr (_ * _).
 rewrite -Pr_set1 -PrX_fst /=.
 under [RHS]eq_bigr do rewrite setX1 Pr_set1 /=.
@@ -241,7 +241,7 @@ Lemma emean_condE :
   `E_[WP.-RV X | A] = (\sum_(i in A) C i * P i * X i) / (\sum_(i in A) C i * P i).
 Proof.
 rewrite /Var cExE /Pr /WP.
-under eq_bigr do rewrite Weighted.dE mulrA (mulrC (X _)).
+under eq_bigr => i _ do rewrite Weighted.dE mulrAC.
 rewrite -big_distrl -mulrA; congr (_ * _).
 rewrite -invfM mulrC big_distrl /=.
 by under eq_bigr do rewrite Weighted.dE -!mulrA mulVf // mulr1.
@@ -251,7 +251,7 @@ Lemma emean_cond_split : `E_[WP.-RV X | A] = `E_[Split.fst_RV C0 C01 X | A `* [s
 Proof.
 rewrite emean_condE cExE big_setX /=; congr (_ / _).
   apply: eq_bigr => u uA.
-  by rewrite big_set1 /Split.fst_RV/= Split.dE/= [RHS]mulrC.
+  by rewrite big_set1 /Split.fst_RV/= Split.dE/=.
 by rewrite /Pr big_setX/=; apply: eq_bigr => u uA; rewrite big_set1 Split.dE.
 Qed.
 
@@ -260,17 +260,17 @@ End emean_cond.
 Section emean.
 Local Open Scope ring_scope.
 Let R := Rdefinitions.R.
-Variables (U : finType) (P : {fdist U}) (X : {RV P -> R}) (C : {ffun U -> R})
+Variables (U : finType) (P : {fdist U}) (X : {RV P -> R^o}) (C : {ffun U -> R^o})
   (PC0 : Weighted.total P C != 0).
 Hypotheses C0 : forall u, 0 <= C u.
 Let WP := Weighted.d C0 PC0.
 
 (** emean expressed using big sums *)
 Lemma emean_sum :
-  `E (WP.-RV X) = (\sum_(i in U) C i * P i * X i) / \sum_(i in U) C i * P i.
+  `E (WP.-RV X : {RV WP -> R^o}) = (\sum_(i in U) C i * P i * X i) / \sum_(i in U) C i * P i.
 Proof.
 rewrite /Ex big_distrl/=.
-by under eq_bigr do rewrite Weighted.dE mulrCA mulrA.
+by apply: eq_bigr => i _; rewrite Weighted.dE [RHS]mulrAC -mulr_regl.
 Qed.
 
 End emean.
@@ -424,10 +424,9 @@ apply (@le_trans _ _ (`E_[tau | S])); last first.
   rewrite le_eqVlt/tau/sq_dev; apply/orP; left; exact/eqP/cVarDist.
 rewrite cExE ler_pM2r ?invr_gt0 //.
 apply: ler_suml=> i HiS //.
-  rewrite (mulrC (tau i)) ler_wpM2r ?sq_dev_ge0 //.
-  have /andP [_ c1] := C01 i.
-  have hp := FDist.ge0 P i.
-  by rewrite -{2}(mul1r (P i)); apply ler_wpM2r.
+  rewrite -mulrA -[leRHS]mul1r ler_wpM2r//.
+    by rewrite mulr_ge0 ?sq_dev_ge0.
+  by have /andP [_ c1] := C01 i.
 by rewrite mulr_ge0 // sq_dev_ge0.
 Qed.
 
@@ -790,7 +789,8 @@ have -> : \sum_(i in cplt_S) C i * P i * tau i =
   rewrite big_distrl /=; apply/eqP/eq_bigr=> i _.
   rewrite /tau [in RHS]mulrC !mulrA.
   rewrite Weighted.dE -/(Weighted.total P C).
-  by rewrite -!mulrA mulVf // mulr1//.
+  rewrite -mulr_regl -mulrAC -(mulrA _ _ (Weighted.total _ _)) mulVf// mulr1.
+  by rewrite -(mulrA _ (C i)) [RHS]mulrC.
 apply: (@le_trans _ _ (`V (WP.-RV X) * (1 - 3 / 2 * eps) -
                         \sum_(i in S) C i * P i * tau i)); last first.
   rewrite lerD2r ler_wpM2l // ?variance_ge0 //.
@@ -867,11 +867,13 @@ move: var_hat_gt0.
 rewrite /Var.
 move=> /fsumr_gt0[i _].
 rewrite Weighted.dE => /[dup]/wpmulr_lgt0 sq_dev_gt0.
-have /wpmulr_rgt0/[apply] := sq_RV_ge0 (X `-cst \sum_(v in U) X v * Weighted.d C0 PC0 v) i.
+rewrite -mulr_regl mulrC.
+have /wpmulr_rgt0 /[apply] := sq_RV_ge0 (X `-cst \sum_(v in U) Weighted.d C0 PC0 v * X v) i.
 have:= PCge0; rewrite -invr_ge0=> /wpmulr_lgt0 /[apply].
 have /[apply] Cigt0 := wpmulr_lgt0 (FDist.ge0 P i).
 rewrite gt_eqF //; apply/bigmax_gt0P_seq; exists i.
 split=> //; first by rewrite gt_eqF.
+(* XXX HERE XXX *)
 by rewrite sq_dev_gt0 // mulr_ge0 // ?mulr_ge0 // ?nneg_finfun_ge0 // invr_ge0 PCge0.
 Qed.
 
