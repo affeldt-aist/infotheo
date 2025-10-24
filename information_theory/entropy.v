@@ -83,10 +83,10 @@ Local Open Scope proba_scope.
 Context (R : realType) (A : finType).
 
 (** the entropy is the expectation of the negative logarithm: *)
-Lemma entropy_Ex (P : R.-fdist A) : `H P = `E (`-- (`log P)).
+Lemma entropy_Ex (P : R.-fdist A) : `H P = `E (`-- (`log P) : {RV P -> R^o}).
 Proof.
 rewrite /entropy /log_RV /= big_morph_oppr.
-by apply eq_bigr => a _; rewrite mulrC -mulNr.
+by apply eq_bigr => a _; rewrite -mulrN.
 Qed.
 
 (** the entropy is the natural entropy scaled by ln(2): *)
@@ -207,7 +207,7 @@ Variables (R : realType) (A B : finType) (P : R.-fdist (A * B)).
 Definition joint_entropy := `H P.
 
 (* eqn 2.9 *)
-Lemma joint_entropyE : joint_entropy = `E (`-- (`log P)).
+Lemma joint_entropyE : joint_entropy = `E (`-- (`log P) : {RV P -> R^o}).
 Proof. by rewrite /joint_entropy entropy_Ex. Qed.
 
 Lemma joint_entropyC : joint_entropy = `H (fdistX P).

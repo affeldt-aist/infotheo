@@ -693,7 +693,7 @@ Section real_random_variables.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 
-Definition log_RV : {RV P -> R} := fun x => log (P x).
+Definition log_RV : {RV P -> R^o} := fun x => log (P x).
 
 End real_random_variables.
 
