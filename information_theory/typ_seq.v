@@ -3,7 +3,7 @@
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra.
 From mathcomp Require Import reals exp.
-Require Import ssr_ext realType_ext realType_ln fdist proba entropy aep.
+Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist proba entropy aep.
 
 (******************************************************************************)
 (*                            Typical Sequences                               *)
@@ -186,7 +186,7 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
 rewrite {1}/Pr big1 ?add0r; last by move=> /= v; rewrite inE => /eqP.
 apply/(le_trans _ (aep He k0_k))/subset_Pr/subsetP => /= t.
 rewrite !inE /= => /andP[-> H3].
-by rewrite /log_RV /= /scalel_RV /= mulrN -mulNr ltW.
+by rewrite /log_RV /= /scale_RV /= -mulr_regl mulrN -mulNr ltW.
 Qed.
 
 Variable He1 : epsilon < 1.

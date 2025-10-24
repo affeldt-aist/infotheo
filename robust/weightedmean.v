@@ -177,7 +177,7 @@ Qed.
 
 Definition d : {fdist T * bool} := locked (FDist.make f0 f1).
 
-Definition fst_RV (X : {RV P -> R}) : {RV d -> R} := d.-RV X \o fst.
+Definition fst_RV (X : {RV P -> R^o}) : {RV d -> R^o} := d.-RV X \o fst.
 
 Lemma dE a : d a = (if a.2 then h a.1 else 1 - h a.1) * P a.1.
 Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
@@ -192,7 +192,7 @@ rewrite setT_bool big_setU1//= ?inE// big_set1.
 by rewrite !dE/= -mulrDl addrCA subrr addr0 mul1r.
 Qed.
 
-Lemma cEx (X : {RV P -> R}) A : `E_[X | A] = `E_[fst_RV X | A `* [set: bool]].
+Lemma cEx (X : {RV P -> R^o}) A : `E_[X | A] = `E_[fst_RV X | A `* [set: bool]].
 Proof.
 rewrite !cExE -Pr_setXT; congr (_ / _).
 rewrite big_setX//=; apply: eq_bigr => u uS.
@@ -202,9 +202,9 @@ by rewrite -mulrDl -mulrDl addrCA subrr addr0 mul1r.
 Qed.
 
 Section fst_RV'.
-Definition fst_RV' (X : {RV P -> R}) : {RV (d`1) -> R} := d`1.-RV X.
+Definition fst_RV' (X : {RV P -> R^o}) : {RV (d`1) -> R^o} := d`1.-RV X.
 
-Lemma cEx' (X : {RV P -> R}) A : `E_[X | A] = `E_[fst_RV' X | A].
+Lemma cEx' (X : {RV P -> R^o}) A : `E_[X | A] = `E_[fst_RV' X | A].
 Proof.
 rewrite cEx.
 rewrite !cExE.
@@ -221,8 +221,8 @@ by rewrite inE.
 Qed.
 End fst_RV'.
 
-Lemma cVar (X : {RV P -> R}) A : `V_[ fst_RV X | A `* [set: bool]] = `V_[X | A].
-Proof. by rewrite /cVar/= cEx -[in LHS]cEx. Qed.
+Lemma cVar (X : {RV P -> R^o}) A : `V_[ fst_RV X | A `* [set: bool]] = `V_[X | A].
+Proof. by rewrite /cVar/= -cEx [RHS]cEx. Qed.
 
 End def.
 End Split.
@@ -278,7 +278,7 @@ End emean.
 Section sq_dev.
 Local Open Scope ring_scope.
 Let R := Rdefinitions.R.
-Variables (U : finType) (P : {fdist U}) (X : {RV P -> R}) (C : {ffun U -> R})
+Variables (U : finType) (P : {fdist U}) (X : {RV P -> R^o}) (C : {ffun U -> R})
   (PC0 : Weighted.total P C != 0).
 Hypothesis C0 : forall u, 0 <= C u.
 Let WP := Weighted.d C0 PC0.
@@ -312,7 +312,7 @@ End sq_dev.
 Section evar.
 Local Open Scope ring_scope.
 Let R := Rdefinitions.R.
-Variables (U : finType) (P : {fdist U}) (X : {RV P -> R}) (C : {ffun U -> R})
+Variables (U : finType) (P : {fdist U}) (X : {RV P -> R^o}) (C : {ffun U -> R})
   (PC0 : Weighted.total P C != 0).
 Hypothesis C0 : forall u, 0 <= C u.
 Let WP := Weighted.d C0 PC0.
@@ -388,7 +388,7 @@ Section bounding_empirical_mean.
 Local Open Scope ring_scope.
 Let R := Rdefinitions.R.
 
-Variables (U : finType) (P : {fdist U}) (X : {RV P -> R}) (C : {ffun U -> R})
+Variables (U : finType) (P : {fdist U}) (X : {RV P -> R^o}) (C : {ffun U -> R})
   (S : {set U}) (eps_max : R).
 Hypothesis C0 : forall u, 0 <= C u.
 
@@ -609,7 +609,7 @@ End update.
 Section bounding_empirical_variance.
 Local Open Scope ring_scope.
 Let R := Rdefinitions.R.
-Variables (U : finType) (P : {fdist U}) (X : {RV P -> R}) (C : {ffun U -> R}) (S : {set U}).
+Variables (U : finType) (P : {fdist U}) (X : {RV P -> R^o}) (C : {ffun U -> R}) (S : {set U}).
 Hypothesis C0 : forall u, 0 <= C u.
 Local Notation cplt_S := (~: S).
 Local Notation eps := (Pr P cplt_S).
@@ -1021,7 +1021,7 @@ Section filter1D_correct.
 Local Open Scope ring_scope.
 Let R := Rdefinitions.R.
 
-Variables (U : finType) (P : {fdist U}) (X : {RV P -> R}) (S : {set U}).
+Variables (U : finType) (P : {fdist U}) (X : {RV P -> R^o}) (S : {set U}).
 Local Notation cplt_S := (~: S).
 Local Notation eps := (Pr P cplt_S).
 Hypothesis low_eps : eps <= eps_max.
