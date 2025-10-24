@@ -267,7 +267,6 @@ Lemma E_leng_cw_le_Length : @E_leng_cw _ _ _ P (f (n':=n') P epsilon) <=
   (L_typ%:~R + 1) + epsilon * (L_not_typ%:~R + 1) .
 Proof.
 rewrite /E_leng_cw /Ex /=.
-under eq_bigr do rewrite mulrC.
 rewrite (rsum_split _ (`TS P n'.+1 epsilon)).
 rewrite eq_sizef_Lnt eq_sizef_Lt.
 rewrite -!big_distrl/= mulrC.
