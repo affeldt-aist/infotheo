@@ -866,14 +866,12 @@ have PCge0 := ltW (weighted_total_gt0 C0 PC0).
 move: var_hat_gt0.
 rewrite /Var.
 move=> /fsumr_gt0[i _].
-rewrite Weighted.dE => /[dup]/wpmulr_lgt0 sq_dev_gt0.
-rewrite -mulr_regl mulrC.
+rewrite Weighted.dE -mulr_regl mulrC => /[dup]/wpmulr_lgt0 sq_dev_gt0.
 have /wpmulr_rgt0 /[apply] := sq_RV_ge0 (X `-cst \sum_(v in U) Weighted.d C0 PC0 v * X v) i.
 have:= PCge0; rewrite -invr_ge0=> /wpmulr_lgt0 /[apply].
 have /[apply] Cigt0 := wpmulr_lgt0 (FDist.ge0 P i).
 rewrite gt_eqF //; apply/bigmax_gt0P_seq; exists i.
 split=> //; first by rewrite gt_eqF.
-(* XXX HERE XXX *)
 by rewrite sq_dev_gt0 // mulr_ge0 // ?mulr_ge0 // ?nneg_finfun_ge0 // invr_ge0 PCge0.
 Qed.
 
