@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra archimedean.
-From mathcomp Require Import unstable mathcomp_extra Rstruct reals exp.
+From mathcomp Require Import unstable mathcomp_extra reals exp.
 Require Import ssr_ext bigop_ext realType_ext realType_ln fdist entropy kraft.
 
 (**md**************************************************************************)
@@ -38,7 +38,7 @@ Coercion encoding_coercion (A T : finType) (c : Encoding.t A T) : {ffun A -> seq
  let: @Encoding.mk _ _ f _ := c in f.
 
 Section shannon_fano_def.
-Variables (A T : finType) (P : {fdist A}).
+Variables (R : realType) (A T : finType) (P : R.-fdist A).
 
 Definition is_shannon_fano (f : Encoding.t A T) :=
   forall s, size (f s) = `| Num.ceil (Log #|T|%:R (P s)^-1%R) |%N.
@@ -46,7 +46,7 @@ Definition is_shannon_fano (f : Encoding.t A T) :=
 End shannon_fano_def.
 
 Section shannon_fano_is_kraft.
-Variables (A : finType) (P : {fdist A}).
+Variables (R : realType) (A : finType) (P : R.-fdist A).
 Hypothesis Pr0 : forall s, P s != 0.
 
 Let a : A. by move/card_gt0P: (fdist_card_neq0 P) => /sigW [i]. Qed.
@@ -57,11 +57,11 @@ Let T := 'I_t.
 Variable (f : Encoding.t A T).
 
 Let sizes := [seq (size \o f) a| a in A].
-Lemma shannon_fano_is_kraft : is_shannon_fano P f -> kraft_cond Rdefinitions.R T sizes.
+Lemma shannon_fano_is_kraft : is_shannon_fano P f -> kraft_cond R T sizes.
 Proof.
 move=> H.
 rewrite /kraft_cond.
-rewrite -(FDist.f1 P) /sizes size_map.
+rewrite -[leRHS](FDist.f1 P) /sizes size_map.
 rewrite (eq_bigr (fun i : 'I_(size(enum A)) =>
     #|'I_t|%:R ^- size (f (nth a (enum A) i)))); last first.
   by move=> i _; rewrite /= (nth_map a)// FDist.f1.
@@ -83,7 +83,7 @@ Qed.
 End shannon_fano_is_kraft.
 
 Section average_length.
-Variables (A T : finType) (P : {fdist A}).
+Variables (R : realType) (A T : finType) (P : R.-fdist A).
 Variable f : {ffun A -> seq T}. (* encoding function *)
 
 Definition average := \sum_(x in A) P x * (size (f x))%:R.
@@ -91,7 +91,7 @@ Definition average := \sum_(x in A) P x * (size (f x))%:R.
 End average_length.
 
 Section shannon_fano_suboptimal.
-Variables (A : finType) (P : {fdist A}).
+Variables (R : realType) (A : finType) (P : R.-fdist A).
 Hypothesis Pr_pos : forall s, P s != 0.
 
 Let T := 'I_2.
@@ -132,7 +132,7 @@ End shannon_fano_suboptimal.
 
 (* wip *)
 Section kraft_code_is_shannon_fano.
-Variables (A : finType) (P : {fdist A}).
+Variables (R : realType) (A : finType) (P : R.-fdist A).
 
 Variable t' : nat.
 Let n := #|A|.-1.+1.

@@ -36,8 +36,7 @@ Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Section scode_vl_definition.
-Let R := Rdefinitions.R.
-Variables (A : finType) (k n : nat).
+Variables (R : realType) (A : finType) (k n : nat).
 
 Definition scode_vl := scode A (seq bool) k.
 
@@ -48,8 +47,7 @@ Definition E_leng_cw := `E (((fun x => x%:R)%R \o size) `o f).
 End scode_vl_definition.
 
 Section scode_fl_definition.
-Let R := Rdefinitions.R.
-Variables (A : finType) (k n : nat).
+Variables (R : realType) (A : finType) (k n : nat).
 
 Definition scode_fl := scode A 'rV[bool]_n k.
 
@@ -58,8 +56,7 @@ Definition SrcRate (sc : scode_fl) : R := (n%:R / k%:R)%R.
 End scode_fl_definition.
 
 Section code_error_rate.
-Let R := Rdefinitions.R.
-Variables (A : finType) (B : Type) (P : R.-fdist A).
+Variables (R : realType) (A : finType) (B : Type) (P : R.-fdist A).
 Variables (k : nat) (sc : scode A B k).
 
 Definition SrcErrRate := Pr (P `^ k) [set ta | dec sc (enc sc ta) != ta].

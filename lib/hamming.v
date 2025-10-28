@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect fingroup zmodp ssralg ssrnum finalg.
 From mathcomp Require Import perm matrix poly mxalgebra mxpoly.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext f2 num_occ natbin bigop_ext.
 
 (**md**************************************************************************)

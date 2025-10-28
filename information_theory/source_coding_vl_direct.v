@@ -3,7 +3,7 @@
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
 From mathcomp Require Import archimedean lra ring.
-From mathcomp Require Import Rstruct reals exp.
+From mathcomp Require Import reals exp.
 Require Import  ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy aep typ_seq natbin source_code.
 
@@ -35,7 +35,7 @@ Local Open Scope ring_scope.
 Import Order.POrderTheory GRing.Theory Num.Theory Num.Def Order.TotalTheory.
 
 Section R_lemma.
-Let R := Rdefinitions.R.
+Variable R : realType.
 Variable (X : finType) (n' : nat).
 Variable f0 : X -> R.
 Let n := n'.+1.
@@ -65,7 +65,7 @@ End R_lemma.
 Import Order.POrderTheory GRing.Theory Num.Theory Num.Def Order.TotalTheory.
 
 Section Length.
-Let R := Rdefinitions.R.
+Variable R : realType.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
 Variable P : R.-fdist X.
@@ -132,7 +132,7 @@ Qed.
 End Length.
 
 Section Enc_Dec.
-Let R := Rdefinitions.R.
+Variable R : realType.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
 Variable P : R.-fdist X.
@@ -140,7 +140,7 @@ Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 
 Local Notation "'L_typ'" := (L_typ n' P epsilon).
-Local Notation "'L_not_typ'" := (L_not_typ X n').
+Local Notation "'L_not_typ'" := (L_not_typ R X n').
 
 Definition enc_typ x :=
  let i := seq.index x (enum (`TS P n epsilon))
@@ -222,17 +222,17 @@ Qed.
 End Enc_Dec.
 
 Section E_Leng_Cw_Lemma.
-Let R := Rdefinitions.R.
+Variable R : realType.
 Variables (X : finType).
 Variable (n' : nat).
 Let n := n'.+1.
-Variable P : {fdist X}.
+Variable P : R.-fdist X.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 Hypothesis aepbound_UB : aep_bound P epsilon <= n%:R.
 
 Local Notation "'L_typ'" := (L_typ n' P epsilon).
-Local Notation "'L_not_typ'" := (L_not_typ X n').
+Local Notation "'L_not_typ'" := (L_not_typ R X n').
 
 Lemma eq_sizef_Lt :
   \sum_(x| x \in `TS P n epsilon) (P `^ n)%fdist (x) * (size (f P epsilon x))%:R =
@@ -263,7 +263,7 @@ rewrite -(ler_int R).
 by rewrite Lnt_nonneg.
 Qed.
 
-Lemma E_leng_cw_le_Length : @E_leng_cw _ _ P (f (n':=n') P epsilon) <=
+Lemma E_leng_cw_le_Length : @E_leng_cw _ _ _ P (f (n':=n') P epsilon) <=
   (L_typ%:~R + 1) + epsilon * (L_not_typ%:~R + 1) .
 Proof.
 rewrite /E_leng_cw /Ex /=.
@@ -287,10 +287,10 @@ Qed.
 End E_Leng_Cw_Lemma.
 
 Section v_scode.
-Let R := Rdefinitions.R.
+Variable R : realType.
 Variable (X : finType) (n' : nat).
 Let n := n'.+1.
-Variable P : {fdist X}.
+Variable P : R.-fdist X.
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon .
 Definition epsilon':= epsilon / (3 + (3 * log (#|X|)%:R)).
@@ -359,7 +359,7 @@ by rewrite !leq_max leqnn !orbT.
 Qed.
 
 Lemma lb_entro_plus_eps :
- (L_typ n' P epsilon')%:~R + 1 + epsilon' * ((L_not_typ X n')%:~R + 1) <
+ (L_typ n' P epsilon')%:~R + 1 + epsilon' * ((L_not_typ R X n')%:~R + 1) <
    (`H P + epsilon) * n%:R.
 Proof.
 move : (fdist_supp_lg_add_1_neq_0 P) => ?.
@@ -415,7 +415,7 @@ Qed.
 
 Lemma v_scode' : exists sc : scode_vl _ n,
   cancel (enc sc) (dec sc) /\
-  @E_leng_cw _ _ P (enc sc) / n%:R < `H P + epsilon.
+  @E_leng_cw _ _ _ P (enc sc) / n%:R < `H P + epsilon.
 Proof.
 move : (fdist_supp_lg_add_1_neq_0 P) => ?.
 exists (mkScode (f P epsilon') (phi n' P epsilon')).
@@ -430,8 +430,8 @@ Qed.
 End v_scode.
 
 Section variable_length_source_coding.
-Variables (X : finType) (P : {fdist X}).
-Let R := Rdefinitions.R.
+Variable R : realType.
+Variables (X : finType) (P : R.-fdist X).
 Variable epsilon : R.
 Hypothesis eps_pos : 0 < epsilon.
 Local Notation "'n0'" := (n0 P epsilon).
@@ -439,7 +439,7 @@ Local Notation "'n0'" := (n0 P epsilon).
 Theorem v_scode_direct : exists n : nat,
   exists f : encT X (seq bool) n,
     injective f /\
-    @E_leng_cw _ _ P f / n%:R < `H P + epsilon.
+    @E_leng_cw _ _ _ P f / n%:R < `H P + epsilon.
 Proof.
 apply: (ex_intro _ (n0.+1)).
 have: (n0 < n0.+1)%nat by[].

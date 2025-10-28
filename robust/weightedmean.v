@@ -22,6 +22,8 @@ Require Import Interval.Tactic.
 Require Import Program.Wf.
 Require Import robustmean.
 
+Notation "{ 'fdist' T }" := ((Rdefinitions.R).-fdist T) : fdist_scope.
+
 (**md**************************************************************************)
 (* # lemmas 1.4, 1.5, etc.                                                    *)
 (*                                                                            *)

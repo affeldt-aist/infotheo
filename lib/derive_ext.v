@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect ssralg ssrnum interval.
 From mathcomp Require Import ring lra.
 From mathcomp Require Import unstable mathcomp_extra boolp classical_sets functions.
 From mathcomp Require Import set_interval.
-From mathcomp Require Import reals Rstruct topology normedtype.
+From mathcomp Require Import reals topology normedtype.
 From mathcomp Require Import realfun derive exp.
 Require Import realType_ext ssralg_ext.
 

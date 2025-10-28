@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ring lra.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import reals.
 Require Import realType_ext fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, using tuple *)
@@ -15,7 +15,8 @@ Local Open Scope reals_ext_scope.
 Local Open Scope tuple_ext_scope.
 Local Open Scope ring_scope.
 
-Local Definition R := Rdefinitions.R.
+Section expected_value_variance_tuple.
+Variable R : realType.
 
 Definition ps := [tuple (1/2:R); 1/3; 1/6].
 Definition p : {ffun 'I_3 -> R} := [ffun i => tnth ps i].
@@ -61,3 +62,5 @@ rewrite (_ : (bump 0 0).+1%:R = 2)//.
 rewrite (_ : (bump 0 _).+1%:R = 3)//.
 lra.
 Qed.
+
+End expected_value_variance_tuple.

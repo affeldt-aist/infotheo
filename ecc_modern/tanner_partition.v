@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
-From mathcomp Require Import matrix.
-From mathcomp Require Import Rstruct.
+From mathcomp Require Import ssrnum matrix.
+(*From mathcomp Require Import Rstruct.*)
 Require Import ssr_ext subgraph_partition tanner f2.
 
 (**md**************************************************************************)
@@ -519,8 +519,8 @@ have : exists cy, (2 < size cy)%nat /\ ucycleb (tanner_rel H) cy.
 case=> cy [] H1; exact: Hacyclic.
 Qed.
 
-Lemma rprod_Fgraph_part_fnode g n0:
-  \prod_(m0 < m) g m0 = \prod_(m0 in 'F n0) \prod_(m1 in 'F(m0, n0)) g m1 :> Rdefinitions.R.
+Lemma rprod_Fgraph_part_fnode (R : numDomainType) g n0:
+  \prod_(m0 < m) g m0 = \prod_(m0 in 'F n0) \prod_(m1 in 'F(m0, n0)) g m1 :> R.
 Proof.
 transitivity (\prod_(m0 in [set: 'I_m]) g m0).
   apply eq_bigl => /= ?; by rewrite in_set.
