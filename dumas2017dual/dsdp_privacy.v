@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption dsdp_program.
+Require Import smc_proba homomorphic_encryption dsdp_program dsdp_extra.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -430,103 +430,6 @@ Let comp_aiv_dotp2:
     [% AliceInputsView, Dotp2_rv VS US `+ VU1].
 Proof. rewrite /comp_RV. apply: boolp.funext => _ //=. Qed.
 
-Section perm_helpers.
-  
-(* TODO: define ring structure for boolean and use `ring` tactic
-   to avoid all these issues from the `reindex`.
-*)
-Lemma bool8_perm 
-    {T0 : finType} {P0 : R.-fdist T0}
-    {TDK0 TV0 TU0 : finType}
-    (dka0 : {RV P0 -> TDK0}) (s0 v10 u10 u20 u30 r20 r30 : {RV P0 -> TV0})
-    (u0 : T0)
-    (dka0' : TDK0) (r30' s0' v10' u10' u20' u30' r20' : TV0) :
-  (dka0 u0 == dka0') && (s0 u0 == r30') && (v10 u0 == u10') && 
-  (u10 u0 == u20') && (u20 u0 == u30') && (u30 u0 == r20') && 
-  (r20 u0 == s0') && (r30 u0 == v10') =
-  (dka0 u0 == dka0') && (r20 u0 == s0') && (r30 u0 == v10') && 
-  (v10 u0 == u10') && (u10 u0 == u20') && (u20 u0 == u30') && 
-  (u30 u0 == r20') && (s0 u0 == r30').
-Proof.
-by case: (dka0 u0 == dka0'); case: (s0 u0 == r30'); case: (v10 u0 == u10');
-   case: (u10 u0 == u20'); case: (u20 u0 == u30'); case: (u30 u0 == r20');
-   case: (r20 u0 == s0'); case: (r30 u0 == v10').
-Qed.
-
-Lemma bool8_flat
-    {T0 : finType} {P0 : R.-fdist T0}
-    {TDK0 TV0 : finType}
-    (dka0 : {RV P0 -> TDK0}) 
-    (s0 v10 u10 u20 u30 r20 r30 : {RV P0 -> TV0})
-    (u0 : T0)
-    (dka0' : TDK0) (r20' r30' v10' u10' u20' u30' s0' : TV0) :
-  (dka0 u0 == dka0') && (r20 u0 == r20') && (r30 u0 == r30') && 
-  (v10 u0 == v10') && (u10 u0 == u10') && (u20 u0 == u20') && 
-  (u30 u0 == u30') && (s0 u0 == s0') =
-  [&& (dka0 u0 == dka0') && (r20 u0 == r20') && (r30 u0 == r30'),
-      (v10 u0 == v10') && (u10 u0 == u10') && (u20 u0 == u20') && 
-      (u30 u0 == u30')
-    & s0 u0 == s0'].
-Proof.
-by case: (dka0 u0 == dka0'); case: (r20 u0 == r20'); case: (r30 u0 == r30');
-   case: (v10 u0 == v10'); case: (u10 u0 == u10'); case: (u20 u0 == u20');
-   case: (u30 u0 == u30'); case: (s0 u0 == s0').
-Qed.
-
-Lemma bool9_perm
-    {T0 : finType} {P0 : R.-fdist T0}
-    {TA0 TDK0 TV0 : finType}
-    (v0 : {RV P0 -> TA0})
-    (dka0 : {RV P0 -> TDK0}) 
-    (s0 v10 u10 u20 u30 r20 r30 : {RV P0 -> TV0})
-    (u0 : T0)
-    (a0 : TA0)
-    (dka0' : TDK0) (r30' s0' v10' u10' u20' u30' r20' : TV0) :
-  [&& v0 u0 == a0,
-      (dka0 u0 == dka0') && (s0 u0 == r30') && (v10 u0 == u10') && 
-      (u10 u0 == u20') && (u20 u0 == u30') && (u30 u0 == r20') && 
-      (r20 u0 == s0')
-    & r30 u0 == v10'] =
-  [&& v0 u0 == a0,
-      (dka0 u0 == dka0') && (r20 u0 == s0') && (r30 u0 == v10') && 
-      (v10 u0 == u10') && (u10 u0 == u20') && (u20 u0 == u30') && 
-      (u30 u0 == r20')
-    & s0 u0 == r30'].
-Proof.
-by case: (v0 u0 == a0); 
-   case: (dka0 u0 == dka0'); case: (s0 u0 == r30'); case: (v10 u0 == u10');
-   case: (u10 u0 == u20'); case: (u20 u0 == u30'); case: (u30 u0 == r20');
-   case: (r20 u0 == s0'); case: (r30 u0 == v10').
-Qed.
-
-Lemma bool9_regroup
-    {T0 : finType} {P0 : R.-fdist T0}
-    {TA0 TDK0 TV0 : finType}
-    (v0 : {RV P0 -> TA0})
-    (dka0 : {RV P0 -> TDK0}) 
-    (s0 v10 u10 u20 u30 r20 r30 : {RV P0 -> TV0})
-    (u0 : T0)
-    (a0 : TA0)
-    (dka0' : TDK0) (r20' r30' v10' u10' u20' u30' s0' : TV0) :
-  [&& v0 u0 == a0,
-      (dka0 u0 == dka0') && (r20 u0 == r20') && (r30 u0 == r30') && 
-      (v10 u0 == v10') && (u10 u0 == u10') && (u20 u0 == u20') && 
-      (u30 u0 == u30')
-    & s0 u0 == s0'] =
-  [&& v0 u0 == a0, 
-      (dka0 u0 == dka0') && (r20 u0 == r20') && (r30 u0 == r30'),
-      (v10 u0 == v10') && (u10 u0 == u10') && (u20 u0 == u20') && 
-      (u30 u0 == u30')
-    & s0 u0 == s0'].
-Proof.
-by case: (v0 u0 == a0);
-   case: (dka0 u0 == dka0'); case: (r20 u0 == r20'); case: (r30 u0 == r30');
-   case: (v10 u0 == v10'); case: (u10 u0 == u10'); case: (u20 u0 == u20');
-   case: (u30 u0 == u30'); case: (s0 u0 == s0').
-Qed.
-
-End perm_helpers.
-
 Hypothesis cinde_V2V3 :
   P |= [% Dk_a, R2, R3] _|_ [% V2, V3] | [% V1, U1, U2, U3, S].
 
@@ -536,6 +439,7 @@ Hypothesis cinde_V2 :
 Hypothesis V3_determined : 
   V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
 
+(* Entropy: set, and views to project to where we need orders. *)
 Lemma privacy_by_bonded_leakage :
   `H([% V2, V3] | AliceView ) = `H(V2 | AliceView).
 Proof.
@@ -558,7 +462,9 @@ have H: forall V, `H(V | AliceView ) =
         dk_a' s' v1' u1' u2' u3' r2' r3' _.
       congr (_ * _).
            rewrite !dist_of_RVE !pfwd1E; congr Pr; apply/setP => u;
-           rewrite !inE /= !xpair_eqE. rewrite bool8_perm.
+           rewrite !inE /= !xpair_eqE;
+           (* GRing.mul has many instances so specify it then ring works. *)
+           rewrite -[andb]/GRing.mul; ring.
       rewrite /centropy1; congr (- _).
       rewrite /jcPr !snd_RV2.
       apply: eq_bigr => a _.
@@ -566,16 +472,16 @@ have H: forall V, `H(V | AliceView ) =
       congr (_ * _).
         f_equal.
           by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-             rewrite bool9_perm.
+             rewrite -[andb]/GRing.mul; ring.
         by f_equal; congr Pr; apply/setP => u;
-           rewrite !inE /= !xpair_eqE; rewrite bool8_perm.
+           rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
       congr log.
         f_equal.
           by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-             rewrite bool9_perm.
+             rewrite -[andb]/GRing.mul; ring.
         f_equal.
         by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-           rewrite bool8_perm.
+           rewrite -[andb]/GRing.mul; ring.
       by exists (fun '(dk_a', s', v1', u1', u2', u3', r2', r3') =>
              (dk_a', r2', r3', v1', u1', u2', u3', s')) 
              => [] [] [] []  [] [] [] [] dk_a' v1' u1' r2' r3' u2' u3' s'.
@@ -590,21 +496,21 @@ have H_assoc: forall V, `H(V | [% OtherAlice, V1, U1, U2, U3, S] ) =
     apply: eq_bigr => [] [] [] [] dk_a' r2' r3' [] [] [] [] v1' u1' u2' u3' s' _.
     congr (_ * _).
       rewrite !dist_of_RVE !pfwd1E.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool8_flat.
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
     rewrite /centropy1; congr (- _).
     rewrite /jcPr !snd_RV2.
     apply: eq_bigr => a _.
     rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
     congr (_ * _).
       f_equal.
-        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool8_flat.
+        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
       f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool8_flat.
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
     congr log.
     f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool9_regroup.
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
     f_equal.
-    by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE bool8_flat.
+    by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
   exists (fun '(o, v1, u1, u2, u3, s) =>
              (o, (v1, u1, u2, u3, s))).
         - by move=> [] o [] [] [] [] a1 a2 a3 a4 a5.
