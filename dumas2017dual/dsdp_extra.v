@@ -342,7 +342,6 @@ rewrite pmulr_rge0; first by rewrite oppr_ge0.
 exact: Hpos.
 Qed.
 
-(* TODO: extend to conditional entropy. *)
 Lemma zero_entropy_eq_point_mass
   (V: finType)
   (Z : {RV P -> V}) :
@@ -369,6 +368,221 @@ case=> z [Hz _].
 apply/zero_entropy_eq_point_mass1.
 by exists z.
 Qed.
+
+(* TODO: the conditional version *)
+(* The conditional entropy H(Z | Y) equals zero
+   if and only if Z is completely determined by Y.
+
+   In other words: for every possible value that Y can actually take
+   (i.e., values with positive probability),
+   there is exactly one corresponding value of Z that will
+   occur with 100% certainty.
+*)
+
+(* Helper lemma. *)
+Lemma pair_notin_fin_img_fst (A B : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (a : A) (b : B) :
+  a \notin fin_img X -> (a, b) \notin fin_img [% X, Y].
+Proof.
+move=> a_notin_img.
+apply/memPn => p Hp.
+move: Hp.
+rewrite /fin_img mem_undup.
+move/mapP => [] t Ht ->.
+rewrite xpair_eqE.
+apply/nandP; left.
+apply/eqP => Xt_eq_a.
+move: a_notin_img.
+rewrite mem_undup => /negP.
+apply;apply/mapP.
+exists t.
+  exact: Ht.
+symmetry.
+exact: Xt_eq_a.
+Qed.
+
+Lemma notin_fin_img_of_Pr0 (A : finType) (X : {RV P -> A}) (a : A) :
+  `Pr[X = a] = 0 -> a \notin fin_img X.
+Proof.
+Admitted.
+
+(* Helper lemma. *)
+Lemma sum_cPr_eq 
+  (A B : finType)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (y : B) :
+  `Pr[Y = y] != 0 ->
+  \sum_(a in A) `Pr[X = a | Y = y] = 1.
+Proof.
+move=> Hy_neq0.
+(* Split sum over A into values in fin_img X and those not *)
+rewrite (bigID (mem (fin_img X))) /=.
+(* Values not in fin_img X have probability 0 *)
+rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
+  move=> a a_notin_img.
+  rewrite cpr_eqE.
+  have ->: `Pr[[% X, Y] = (a, y)] = 0.
+    apply/eqP; rewrite pfwd1_eq0; apply/eqP.
+      by [].
+    apply/eqP.
+    apply: pair_notin_fin_img_fst.
+    exact: a_notin_img.
+  by rewrite mul0r.
+rewrite [X in _ + X]big1 ?addr0; last by move=> i _.  
+rewrite -big_uniq /=.
+  apply: cPr_1.
+  exact: Hy_neq0.
+apply: undup_uniq.
+Qed.
+
+(* Helper lemma: if the conditional distribution Pr[Z | Y = y] is deterministic 
+   (i.e., there exists z with Pr[Z = z | Y = y] = 1),
+   then the corresponding term in the conditional entropy sum is zero. *)
+Lemma centropy_term_deterministic
+  (V W : finType)
+  (Y : {RV P -> V}) (Z : {RV P -> W})
+  (y : V) :
+  `Pr[Y = y] != 0 ->
+  (exists z, `Pr[Z = z | Y = y] = 1) ->
+  `p_Y y * centropy1 `p_[% Z, Y] y = 0.
+Proof.
+move=> Hy_neq0 [z Hz].
+rewrite /centropy1.
+transitivity (`p_Y y * (- \sum_(w in W) (0 : R))).
+  congr (_ * - _).
+  apply: eq_bigr => w _.
+  have [->|w_neq_z] := eqVneq w z; first by rewrite jPr_Pr cpr_in1 Hz mul1r log1.
+  have Hw0: `Pr[Z = w | Y = y] = 0.
+    (* Since Pr[Z = z | Y = y] = 1 and sum of probs = 1, 
+       all other values must have prob 0 *)
+    have Hsum := cPr_1 Y Hy_neq0.
+    (* Convert from sum over fin_img to sum over W *)
+    have Hsum': \sum_(w' in W) `Pr[Z = w' | Y = y] = 1.
+      (* Proof of sum = 1 over W *)
+      by rewrite sum_cPr_eq.
+    have: 1 + \sum_(w' | w' != z) `Pr[Z = w' | Y = y] = 1.
+      rewrite (bigD1 z) //= Hz in Hsum'.
+      exact: Hsum'.
+    move=> /(f_equal (fun x => x - 1)).
+    rewrite subrr addrAC subrr add0r.
+    move/eqP.
+    rewrite psumr_eq0; last first.
+      move => w2 _.
+      rewrite -cpr_in1 -jPr_Pr.
+      exact: jcPr_ge0.
+    move=> /allP /(_ w).
+    rewrite mem_index_enum => /(_ erefl).
+    by rewrite w_neq_z /= => /eqP.
+  by rewrite jPr_Pr cpr_in1 Hw0 mul0r.
+by rewrite big1 ?oppr0 ?mulr0.
+Qed.
+
+(* Main lemma 1: conditional entropy is zero iff there exists a function *)
+Lemma zero_centropy_eq_deterministic1
+  (V W : finType)
+  (Y : {RV P -> V}) (Z : {RV P -> W}) :
+  `H(Z | Y) = 0 <-> 
+    (forall y, `Pr[Y = y] != 0 -> exists z, `Pr[Z = z | Y = y] = 1).
+Proof.
+split; last first.
+  move => H.
+  rewrite /centropy_RV centropyE.
+  apply/eqP; rewrite oppr_eq0.
+  rewrite fdistX_RV2.
+  apply/eqP.
+  (* Step 1: Express joint probability in terms of conditional *)
+  transitivity (\sum_(a in V) \sum_(b in W) 
+                \Pr_`p_[% Z, Y][[set b] | [set a]] * `p_Y a * 
+                log \Pr_`p_[% Z, Y][[set b] | [set a]]).
+    apply: eq_bigr => a _.
+    apply: eq_bigr => b _.
+    have ->: `p_ [% Y, Z] (a, b) = \Pr_`p_[% Z, Y][[set b] | [set a]] * `p_Y a.
+      have ->: `p_ [% Y, Z] (a, b) = `p_ [% Z, Y] (b, a).
+        by rewrite !dist_of_RVE pfwd1_pairC.
+      rewrite -!Pr_set1.
+      rewrite (_ : [set (b, a)] = [set b] `* [set a]); last first.
+        by apply/setP => -[c d]; rewrite !inE xpair_eqE.
+      rewrite jproduct_rule.
+      by rewrite -(snd_RV2 Z Y) Pr_set1 dist_of_RVE.
+    by rewrite mulrCA.
+
+  (* Step 2: Factor out `p_Y a from inner sum *)
+  transitivity (\sum_(a in V) `p_Y a * 
+                \sum_(b in W) \Pr_`p_[% Z, Y][[set b] | [set a]] * 
+                log \Pr_`p_[% Z, Y][[set b] | [set a]]).
+    apply: eq_bigr => a _.
+    Fail rewrite -big_distrr /=.
+    admit.
+    
+  (* Step 3: Recognize as weighted conditional entropy (with minus sign) *)
+  transitivity (\sum_(a in V) `p_Y a * 
+                (- (- \sum_(b in W) \Pr_`p_[% Z, Y][[set b] | [set a]] * 
+                    log \Pr_`p_[% Z, Y][[set b] | [set a]]))).
+    apply: eq_bigr => a _.
+    by rewrite opprK.
+    
+  (* Step 4: This is centropy1 *)
+  transitivity (\sum_(a in V) `p_Y a * (- centropy1 `p_[% Z, Y] a)).
+    by [].
+
+  (* Step 5: Factor out minus sign *)
+  transitivity (- \sum_(a in V) `p_Y a * centropy1 `p_[% Z, Y] a).
+    by rewrite -sumrN; apply: eq_bigr => a _; rewrite mulrN.
+    
+
+  (* Step 6: Transform sum to explicit form where each term is 0 *)
+  transitivity (\sum_(y in V) 
+                (if `Pr[Y = y] == 0 then 0 
+                 else `p_Y y * centropy1 `p_[% Z, Y] y)).
+    Fail apply: eq_bigr => y _.
+    admit.
+
+  (* Step 7: Show this equals a sum of all zeros *)
+  transitivity (\sum_(y in V) (0 : R)).
+    apply: eq_bigr => y _.
+    case: ifP => [Hy_eq0 | Hy_neq0]; first by [].
+    rewrite centropy_term_deterministic; first by [].
+      by rewrite Hy_neq0.
+    by apply: H; rewrite Hy_neq0.
+  by rewrite big1.
+  
+(* The opposite direction*)
+rewrite /centropy_RV centropyE => /eqP.
+rewrite oppr_eq0 fdistX_RV2 psumr_eq0; last first.
+  move => i Hi.
+  rewrite big1.
+    by [].
+  move => w Hw.
+  have [HPyi_eq0 | HPyi_neq0] := eqVneq `Pr[Y = i] 0.
+    rewrite dist_of_RVE jPr_Pr.
+    rewrite pfwd1_eq0; first by rewrite mul0r.
+    have i_notin_Y: i \notin fin_img Y.
+      apply/memPn => t Ht.
+      move: Ht.
+      rewrite /fin_img mem_undup => /mapP[p Hp ->].
+Admitted.
+
+(* Main lemma: conditional entropy zero means Z is a unique function of Y *)
+Lemma zero_centropy_eq_deterministic
+  (V W : finType)
+  (Y : {RV P -> V}) (Z : {RV P -> W}) :
+  `H(Z | Y) = 0 <-> 
+    (forall y, `Pr[Y = y] != 0 -> exists! z, `Pr[Z = z | Y = y] = 1).
+Proof.
+split.
+  (* Forward: existence + uniqueness *)
+  move=> /zero_centropy_eq_deterministic1 H_ex y Hy_neq0.
+  have [z Hz] := H_ex y Hy_neq0.
+  exists z; split => // z' Hz'.
+  (* Show z = z' using sum = 1 *)
+  apply/eqP; apply/negPn/negP => Hneq.
+  (* If z != z', both have prob 1, so sum >= 2 *)
+  have: 2 <= \sum_w `Pr[Z = w | Y = y].
+    rewrite (bigD1 z) //= Hz (bigD1 z') /=; last by rewrite eq_sym.
+    rewrite Hz'.
+    have: 0 <= \sum_(w | (w != z) && (w != z')) `Pr[Z = w | Y = y].
+    admit.
+(* Backward: uniqueness implies existence *)
+Abort.
 
 End zero_entropy_eq_point_mass.
 
