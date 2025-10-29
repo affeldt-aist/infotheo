@@ -370,6 +370,8 @@ by exists z.
 Qed.
 
 (* TODO: the conditional version *)
+End zero_entropy_eq_point_mass.
+
 (* The conditional entropy H(Z | Y) equals zero
    if and only if Z is completely determined by Y.
 
@@ -379,8 +381,10 @@ Qed.
    occur with 100% certainty.
 *)
 
+Section zero_centropy_eq_point_mass.
+
 (* Helper lemma. *)
-Lemma pair_notin_fin_img_fst (A B : finType)
+Lemma pair_notin_fin_img_fst (T A B : finType) (P : R.-fdist T)
   (X : {RV P -> A}) (Y : {RV P -> B}) (a : A) (b : B) :
   a \notin fin_img X -> (a, b) \notin fin_img [% X, Y].
 Proof.
@@ -403,7 +407,7 @@ Qed.
 
 (* Helper lemma. *)
 Lemma sum_cPr_eq 
-  (A B : finType)
+  (T A B : finType) (P : R.-fdist T)
   (X : {RV P -> A}) (Y : {RV P -> B}) (y : B) :
   `Pr[Y = y] != 0 ->
   \sum_(a in A) `Pr[X = a | Y = y] = 1.
@@ -429,11 +433,11 @@ rewrite -big_uniq /=.
 apply: undup_uniq.
 Qed.
 
-(* Helper lemma: if the conditional distribution Pr[Z | Y = y] is deterministic 
+(* Helper: if the conditional distribution Pr[Z | Y = y] is deterministic 
    (i.e., there exists z with Pr[Z = z | Y = y] = 1),
    then the corresponding term in the conditional entropy sum is zero. *)
 Lemma centropy_term_deterministic
-  (V W : finType)
+  (V W T : finType) (P : R.-fdist T)
   (Y : {RV P -> V}) (Z : {RV P -> W})
   (y : V) :
   `Pr[Y = y] != 0 ->
@@ -471,9 +475,141 @@ transitivity (`p_Y y * (- \sum_(w in W) (0 : R))).
 by rewrite big1 ?oppr0 ?mulr0.
 Qed.
 
+(* Helper: Convert centropyE form (with joint prob) to pure conditional form *)
+Lemma centropy_joint_to_cond
+  (V W  T : finType) (P : R.-fdist T)
+  (Y : {RV P -> V}) (Z : {RV P -> W})
+  (y : V)
+  (Hy_neq0 : `Pr[Y = y] != 0)
+  (H_joint : 
+    - (\sum_(b in W) fdistX `p_[% Z, Y] (y, b) * 
+      log \Pr_`p_[% Z, Y][[set b] | [set y]]) = 0) :
+  - (\sum_(b in W) \Pr_`p_[% Z, Y][[set b] | [set y]] * 
+    log \Pr_`p_[% Z, Y][[set b] | [set y]]) = 0.
+Proof.
+(* Factor: fdistX `p_[% Z, Y] (y, b) = \Pr_[Z=b|Y=y] * \Pr[Y=y] *)
+have H_factor: forall b, 
+  fdistX `p_[% Z, Y] (y, b) = \Pr_`p_[% Z, Y][[set b] | [set y]] * `Pr[Y = y].
+  move=> b.
+  rewrite fdistX_RV2.
+  rewrite /jcPr.
+  rewrite snd_RV2 dist_of_RVE.
+  rewrite setX1 Pr_set1.
+  have [Py_eq0|Py_neq0] := eqVneq (`Pr[Y = y]) 0.
+    - by move: Hy_neq0; rewrite Py_eq0 eqxx.
+    - Fail field.
+      admit.
+Admitted.
+
+(* Helper: Conditional distribution has zero entropy when centropy1 is zero *)
+Lemma jfdist_cond_entropy_zero
+  (V W T : finType) (P : R.-fdist T)
+  (Y : {RV P -> V}) (Z : {RV P -> W})
+  (y : V)
+  (Hy_marginal : (`p_[% Y, Z])`1 y != 0)
+  (Hy_centropy_zero : 
+    - (\sum_(b in W) \Pr_`p_[% Z, Y][[set b] | [set y]] * 
+      log \Pr_`p_[% Z, Y][[set b] | [set y]]) = 0) :
+  let cond_dist := jfdist_cond0 `p_[% Y, Z] y Hy_marginal in
+  `H cond_dist = 0.
+Proof.
+rewrite /entropy.
+apply/eqP; rewrite oppr_eq0; apply/eqP.
+transitivity (\sum_(b in W) \Pr_`p_[% Z, Y][[set b] | [set y]] * 
+              log \Pr_`p_[% Z, Y][[set b] | [set y]]).
+  apply: eq_bigr => b _.
+  rewrite jfdist_cond0E.
+  (* Now we need to show \Pr_(fdistX `p_[% Y, Z])[[set b] | [set y]] = 
+     \Pr_`p_[% Z, Y][[set b] | [set y]] *)
+  rewrite fdistX_RV2.
+  by [].
+move: Hy_centropy_zero.
+move/eqP.
+rewrite oppr_eq0 => /eqP.
+exact.
+Qed.
+
+(* Helper: Point mass in conditional distribution implies
+  conditional probability = 1 *)
+Lemma point_mass_to_cond_prob
+  (V W T : finType) (P : R.-fdist T)
+  (Y : {RV P -> V}) (Z : {RV P -> W})
+  (y : V) (z : W)
+  (Hy_marginal : (`p_[% Y, Z])`1 y != 0)
+  (Hz : (jfdist_cond0 `p_[% Y, Z] y Hy_marginal) z = 1) :
+  `Pr[Z = z | Y = y] = 1.
+Proof.
+rewrite -cpr_in1 -jPr_Pr.
+rewrite -fdistX_RV2.
+rewrite -jfdist_cond0E.
+exact: Hz.
+Qed.
+
+(* Helper *)
+Lemma marginal_swap_YZ
+  (V W T : finType) (P : R.-fdist T)
+  (Y : {RV P -> V}) (Z : {RV P -> W}) :
+  forall y : V, (`p_[% Z, Y])`2 y = (`p_[% Y, Z])`1 y.
+Proof.
+move=> y.
+by rewrite -fdistX_RV2 fdistX2.
+Qed.
+
+(* Helper: If the conditional entropy at y equals zero (as a Prop equality = 0)
+   then there exists z with Pr[Z = z | Y = y] = 1. *)
+Lemma zero_centropy1_point_mass
+  (V W T : finType) (P : R.-fdist T)
+  (Y : {RV P -> V}) (Z : {RV P -> W})
+  (y : V)
+  (HPrYeq0 : `Pr[Y = y] != 0)
+  (Hy_centropy_zero : 
+    - (\sum_(b in W) \Pr_`p_[% Z, Y][[set b] | [set y]] * 
+      log \Pr_`p_[% Z, Y][[set b] | [set y]]) = 0) :
+  exists z : W, `Pr[Z = z | Y = y] = 1.
+Proof.
+(* Step 1: Get marginal for Y in the swapped distribution *)
+have Hy_marginal : (`p_[% Y, Z])`1 y != 0.
+  rewrite -marginal_swap_YZ snd_RV2 dist_of_RVE.
+  exact: HPrYeq0.
+
+(* Step 2: Construct conditional distribution *)
+set cond_dist := jfdist_cond0 `p_[% Y, Z] y Hy_marginal.
+
+(* Step 3: Show its entropy is zero *)
+have H_cond_zero : `H cond_dist = 0.
+  exact: jfdist_cond_entropy_zero Y Z y Hy_marginal Hy_centropy_zero.
+
+(* Step 4: Apply zero_entropy_eq_point_mass1 to get point mass *)
+have [z Hz] : exists z, cond_dist z = 1.
+  (* The identity function viewed as an RV on cond_dist (wrapper RV) *)
+  pose idRV : {RV cond_dist -> W} := idfun.
+  (* The distribution of idRV is cond_dist itself *)
+  have H_dist: `p_idRV = cond_dist.
+    apply/fdist_ext => w.
+    rewrite dist_of_RVE pfwd1E /idRV /=.
+    rewrite /Pr.
+    rewrite (eq_bigl (pred1 w)); last by move=> x; rewrite inE.
+    by rewrite big_pred1_eq.
+
+  (* With the wrapper RV, apply zero_entropy_eq_point_mass1 *)
+  have [z Hz_RV]: exists z, `Pr[idRV = z] = 1.
+    have := @zero_entropy_eq_point_mass1 _ cond_dist W idRV.
+    rewrite H_dist H_cond_zero.
+    by move=> [H_fwd _]; apply: H_fwd.
+
+  (* Convert back: Pr[idRV = z] equals cond_dist z *)
+  exists z.
+  rewrite -dist_of_RVE H_dist in Hz_RV.
+  exact Hz_RV.
+
+(* Step 5: Convert to conditional probability *)
+exists z.
+exact: point_mass_to_cond_prob Y Z y z Hy_marginal Hz.
+Qed.
+
 (* Main lemma 1: conditional entropy is zero iff there exists a function *)
 Lemma zero_centropy_eq_deterministic1
-  (V W : finType)
+  (V W T : finType) (P : R.-fdist T)
   (Y : {RV P -> V}) (Z : {RV P -> W}) :
   `H(Z | Y) = 0 <-> 
     (forall y, `Pr[Y = y] != 0 -> exists z, `Pr[Z = z | Y = y] = 1).
@@ -544,8 +680,12 @@ split; last first.
 rewrite /centropy_RV centropyE => /eqP.
 rewrite -sumrN.
 rewrite psumr_eq0.
-move/allP.
-move => /= Hall y HPrYeq0.
+  move/allP.
+  move => /= Hall y HPrYeq0.
+  apply: zero_centropy1_point_mass.
+    exact: HPrYeq0.
+  have Hy_cond := centropy_joint_to_cond HPrYeq0.
+  Fail exact (zero_centropy1_point_mass HPrYeq0 Hy_cond).
 Admitted.
 
 (* Main lemma: conditional entropy zero means Z is a unique function of Y *)
