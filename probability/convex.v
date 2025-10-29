@@ -3276,7 +3276,7 @@ Local Open Scope ring_scope.
 Variables (R : realType).
 
 Let avg_proof (p x y : {prob R}) :
-  0 <= Prob.p p * Prob.p x + p.~ * Prob.p y <= 1.
+  0 <= Prob.p p * Prob.p x + (Prob.p p).~ * Prob.p y <= 1.
 Proof.
 rewrite addr_ge0 ?mulr_ge0//=.
 rewrite -[leRHS](@convmm _ R^o p) avgRE.
@@ -3302,7 +3302,7 @@ Proof. by apply/val_inj => /=; rewrite -!avgRE convA. Qed.
 HB.instance Definition _ := isConvexSpace.Build R {prob R} avg1 avgI avgC avgA.
 
 Lemma avg_probE p (x y : {prob R}) :
-  x <|p|> y = Prob.p p * Prob.p x + p.~ * Prob.p y :> R.
+  x <|p|> y = Prob.p p * Prob.p x + (Prob.p p).~ * Prob.p y :> R.
 Proof. by []. Qed.
 
 End prob_convType.
