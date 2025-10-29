@@ -401,11 +401,6 @@ symmetry.
 exact: Xt_eq_a.
 Qed.
 
-Lemma notin_fin_img_of_Pr0 (A : finType) (X : {RV P -> A}) (a : A) :
-  `Pr[X = a] = 0 -> a \notin fin_img X.
-Proof.
-Admitted.
-
 (* Helper lemma. *)
 Lemma sum_cPr_eq 
   (A B : finType)
@@ -547,18 +542,10 @@ split; last first.
   
 (* The opposite direction*)
 rewrite /centropy_RV centropyE => /eqP.
-rewrite oppr_eq0 fdistX_RV2 psumr_eq0; last first.
-  move => i Hi.
-  rewrite big1.
-    by [].
-  move => w Hw.
-  have [HPyi_eq0 | HPyi_neq0] := eqVneq `Pr[Y = i] 0.
-    rewrite dist_of_RVE jPr_Pr.
-    rewrite pfwd1_eq0; first by rewrite mul0r.
-    have i_notin_Y: i \notin fin_img Y.
-      apply/memPn => t Ht.
-      move: Ht.
-      rewrite /fin_img mem_undup => /mapP[p Hp ->].
+rewrite -sumrN.
+rewrite psumr_eq0.
+move/allP.
+move => /= Hall y HPrYeq0.
 Admitted.
 
 (* Main lemma: conditional entropy zero means Z is a unique function of Y *)
