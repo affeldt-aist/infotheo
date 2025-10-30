@@ -159,7 +159,7 @@ Qed.
 End sets_functions.
 
 Section probability.
-Context {R : realType}.
+Context {R : realType} {V : lmodType R}.
 Variables (U : finType) (P : R.-fdist U).
 
 Lemma sq_RVE (X : {RV P -> R^o}) : X `^2 = X `* X.
@@ -205,14 +205,18 @@ under eq_bigr => i _.
 by rewrite -partition_big_fin_img.
 Qed.
 
-Lemma cExE (X : {RV P -> R^o}) F : `E_[X | F] = (\sum_(u in F) P u * X u) / Pr P F.
+Lemma cExE (X : {RV P -> V}) F : `E_[X | F] = (Pr P F)^-1 *: (\sum_(u in F) P u *: X u).
 Proof.
-rewrite cEx_ExInd.
-congr (_ / _).
-rewrite /Ex /ambient_dist /Ind.
-under eq_bigr do rewrite /mul_RV 2!fun_if mulr0 scaler0 mulr1.
-rewrite [in RHS]big_mkcond /=.
-exact: eq_bigr.
+rewrite /Ex /cEx.
+under eq_bigr => r _ do rewrite mulrC -scalerA.
+rewrite -scaler_sumr; congr (_ *: _).
+under eq_bigr => r _ do rewrite scaler_suml.
+rewrite [RHS](@partition_big_fin_img_set _ _ _ _ _ _ X)/=.
+apply: eq_bigr => r _.
+rewrite [RHS]big_mkcond [LHS]big_mkcond/=.
+apply: eq_bigr => i _.
+rewrite in_setI in_preim1' andbC.
+by case: ifPn => // /andP[? /eqP ->].
 Qed.
 
 Lemma Ex_square_expansion a b (X Y : {RV P -> R^o}):
@@ -300,25 +304,15 @@ Proof. by rewrite [LHS]I_square sq_RVE. Qed.
 Lemma I_mult_one F : (Ind (A:=U) F : {RV P -> R}) `* 1 = Ind (A:=U) F.
 (F: {RV P -> R}): (Ind (A:=U) F: {RV P -> R}) `* 1 = (Ind (A:=U) F : {RV P -> R}). *)
 
-Lemma cEx_trans_sub_RV (X : {RV P -> R^o}) m F : Pr P F != 0 ->
+Lemma cEx_trans_sub_RV (X : {RV P -> V}) m F : Pr P F != 0 ->
   `E_[ (X `-cst m) | F] = `E_[ X | F ] - m.
 Proof.
 move=> PF0.
 rewrite !cExE.
-under eq_bigr do rewrite /trans_sub_RV mulrDr.
-rewrite big_split/= mulrDl; congr (_ + _).
-by rewrite -big_distrl /= -mulrAC divff // mul1r.
-Qed.
-
-Lemma cEx_sub (X : {RV P -> R^o}) (F G: {set U}) :
-  0 < Pr P F ->
-  F \subset G ->
-  `| `E_[ X | F ] - `E_[X | G] |
-= `| `E ((X `-cst `E_[X | G]) `* Ind F : {RV P -> R^o}) | / Pr P F.
-Proof.
-move=> PrPF_gt0 FsubG.
-rewrite -[X in _ / X]ger0_norm ?ltW // -normf_div.
-by rewrite -cEx_ExInd cEx_trans_sub_RV // lt0r_neq0 // PrPF_gt0.
+under eq_bigr do rewrite /trans_sub_RV scalerBr.
+rewrite big_split/= scalerDr; congr (_ + _).
+under eq_bigr do rewrite -scaleNr.
+by rewrite -scaler_suml scalerA sumrN mulrN mulVf// scaleN1r.
 Qed.
 
 Lemma Ex_cExT (X : {RV P -> R^o}) : `E X = `E_[X | [set: U]].
@@ -350,6 +344,24 @@ Qed.
 
 Lemma variance_ge0 (X : {RV P -> R}) : 0 <= `V X.
 Proof. by have := cvariance_ge0 X setT; rewrite -Var_cVarT. Qed.
+
+End probability.
+Notation "`V_[ X | F ]" := (cVar X F) : proba_scope.
+
+Section probability.
+Context {R : realType} {V : lmodType R}.
+Variables (U : finType) (P : R.-fdist U).
+
+Lemma cEx_sub (X : {RV P -> R^o}) (F G: {set U}) :
+  0 < Pr P F ->
+  F \subset G ->
+  `| `E_[ X | F ] - `E_[X | G] |
+= `| `E ((X `-cst `E_[X | G]) `* Ind F : {RV P -> R^o}) | / Pr P F.
+Proof.
+move=> PrPF_gt0 FsubG.
+rewrite -[X in _ / X]ger0_norm ?ltW // -normf_div.
+by rewrite -cEx_ExInd cEx_trans_sub_RV // lt0r_neq0 // PrPF_gt0.
+Qed.
 
 Lemma cEx_cVar (X : {RV P -> R^o}) (F G: {set U}) : 0 < Pr P F  ->
   F \subset G ->
@@ -564,11 +576,11 @@ have[FIH0|FIHneq0]:= eqVneq (Pr P (F :&: H)) 0.
   rewrite FIH0 mulr0 !addr0=> FIGF.
   by congr (_ * _)=> //; apply: cEx_sub_eq=> //; exact: subsetIl.
 move=> FGHF.
-rewrite !cExE -!mulrA !mulVf // !mulr1 -big_union_nondisj /=; last first.
+rewrite !cExE !(mulrC _ (Pr _ _)) !mulrA !mulfV // !mul1r -big_union_nondisj /=; last first.
   have/setIidPl/(congr1 (Pr P)):= FsubGUH.
   rewrite setIUr Pr_setU FGHF=> /eqP.
   rewrite -subr_eq0 addrAC subrr add0r oppr_eq0 => /eqP /psumr_eq0P P0.
-  by rewrite big1 // => *; rewrite P0 // mul0r.
+  by rewrite big1 // => *; rewrite P0 // scale0r.
 by rewrite -setIUr; have/setIidPl->:= FsubGUH.
 Qed.
 
@@ -592,7 +604,6 @@ by rewrite -setIUr setUCr setIT.
 Qed.
 
 End probability.
-Notation "`V_[ X | F ]" := (cVar X F) : proba_scope.
 Arguments Ind_one {R U P}.
 Arguments cEx_sub_eq {R U P X} F G.
 
