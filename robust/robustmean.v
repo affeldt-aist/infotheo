@@ -207,7 +207,7 @@ Qed.
 
 Lemma cExE (X : {RV P -> V}) F : `E_[X | F] = (Pr P F)^-1 *: (\sum_(u in F) P u *: X u).
 Proof.
-rewrite /Ex /cEx.
+rewrite /cEx.
 under eq_bigr => r _ do rewrite mulrC -scalerA.
 rewrite -scaler_sumr; congr (_ *: _).
 under eq_bigr => r _ do rewrite scaler_suml.
