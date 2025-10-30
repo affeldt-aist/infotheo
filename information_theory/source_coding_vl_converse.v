@@ -778,7 +778,7 @@ Proof.
 rewrite /m => nnon0.
 rewrite ltr0n.
 rewrite absz_gt0.
-rewrite mathcomp_extra.floor_neq0; apply/orP; right.
+rewrite floor_neq0; apply/orP; right.
 by rewrite -expR0 ler_expR.
 Qed.
 
@@ -797,7 +797,7 @@ have xpos : 0 < x.
   by apply: (@leq_trans 1); last exact: leq_maxr.
 have mpos': (0 < floor (expR x)).
   rewrite lt_neqAle floor_ge_int_tmp exp.expR_ge0 andbT.
-  rewrite eq_sym mathcomp_extra.floor_neq0.
+  rewrite eq_sym floor_neq0.
   apply/orP; right.
   by rewrite -exp.expR0 exp.ler_expR//.
 have le_1_alp : 1 <= alp.
@@ -839,7 +839,7 @@ apply: (@le_trans _ _ (x + ln alp)).
   rewrite /m /x.
   rewrite (le_trans _ (floor_le_tmp _))//.
   rewrite natr_absz ler_int.
-  by rewrite ger0_norm// mathcomp_extra.floor_ge0// expR_ge0.
+  by rewrite ger0_norm// floor_ge0// expR_ge0.
 apply: (@le_trans _ _ (2 * x - (eps * n%:R * ln 2))).
   rewrite mulr_natl mulr2n -addrA lerD2l.
   rewrite lerBrDr (mulrC eps).
