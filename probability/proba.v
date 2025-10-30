@@ -1097,25 +1097,29 @@ End conditional_expectation_def.
 Notation "`E_[ X | F ]" := (cEx X F).
 
 Section conditional_expectation_prop.
-Context {R : realType}.
-Variable (U I : finType) (P : R.-fdist U) (X : {RV P -> R}) (F : I -> {set U}).
+Context {R : realType} {V : lmodType R}.
+Variable (U I : finType) (P : R.-fdist U) (X : {RV P -> V}) (F : I -> {set U}).
 Hypothesis dis : forall i j, i != j -> [disjoint F i & F j].
 Hypothesis cov : cover [set F i | i in I] = [set: U].
 
-Lemma Ex_cEx : `E X = \sum_(i in I) Pr P (F i) * `E_[X | F i].
+Lemma Ex_cEx : `E X = \sum_(i in I) Pr P (F i) *: `E_[X | F i].
 Proof.
 apply/esym; rewrite /cEx.
-evar (f : I -> R); rewrite (eq_bigr f); last first.
-  move=> i _; rewrite big_distrr /f; reflexivity.
+evar (f : I -> V); rewrite (eq_bigr f); last first.
+  by move=> i _; rewrite scaler_suml /f; reflexivity.
 rewrite {}/f /= (bigID (fun i => Pr P (F i) != 0)) /=.
 rewrite [in X in _ + X = _]big1 ?addr0; last first.
-  by move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _; rewrite mul0r.
+  move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _.
+  under eq_bigr => j _ do rewrite invr0 mulr0.
+  by rewrite -scaler_sumr scale0r scaler0.
 transitivity (\sum_(i in I | Pr P (F i) != 0)
-  \sum_(j <- fin_img X) (Pr P (finset (X @^-1 j) :&: F i)) * j).
-  apply: eq_bigr => i Fi0; apply eq_bigr => r _.
-  by rewrite mulrCA mulrA -(mulrA _ (_^-1)) mulVf ?mulr1.
+  \sum_(j <- fin_img X) (Pr P (finset (X @^-1 j) :&: F i)) *: j).
+  apply: eq_bigr => i Fi0.
+  rewrite -scaler_suml scaler_sumr.
+  apply eq_bigr => r _.
+  by rewrite scalerA mulrCA mulfV// mulr1.
 rewrite -Ex_altE /Ex_alt exchange_big /=; apply: eq_bigr => r _.
-rewrite -big_distrl /=; congr (_ * _).
+rewrite -scaler_suml /=; congr (_ *: _).
 transitivity (\sum_(i in I) Pr P (finset (X @^-1 r) :&: F i)).
   rewrite big_mkcond /=; apply eq_bigr => i _.
   case: ifPn => //; rewrite negbK => /eqP PFi0.
