@@ -140,7 +140,6 @@ Local Open Scope ring_scope.
 (* Let R := Rdefinitions.R. *)
 Context {R : realType}.
 Variables (T : finType) (P : R.-fdist T) (h : {ffun T -> R}).
-Hypothesis h0 : forall t, 0 <= h t.
 Hypothesis h01 : is01 h.
 
 Definition g := fun x => if x.2 then h x.1 else 1 - h x.1.
@@ -150,7 +149,7 @@ Definition f := [ffun x => g x * P x.1].
 Lemma g_ge0 x : 0 <= g x.
 Proof.
 rewrite /g; case: ifPn => _.
-  exact/h0.
+  exact: (andP (h01 x.1)).1.
 by have /andP [_ ?] := h01 x.1; rewrite subr_ge0.
 Qed.
 
@@ -246,7 +245,7 @@ apply: eq_bigr => i _.
 by rewrite Weighted.dE scalerA mulrCA mulfV// mulr1.
 Qed.
 
-Lemma emean_cond_split : `E_[WP.-RV X | A] = `E_[Split.fst_RV C0 C01 X | A `* [set true]].
+Lemma emean_cond_split : `E_[WP.-RV X | A] = `E_[Split.fst_RV C01 X | A `* [set true]].
 Proof.
 rewrite emean_condE cExE big_setX /= [LHS]mulrC. congr (_^-1 * _).
   by rewrite /Pr big_setX/=; apply: eq_bigr => u uA; rewrite big_set1 Split.dE.
@@ -515,14 +514,14 @@ Lemma bound_mean : invariant ->
   (`E_[X | S] - `E_[WP.-RV X | S])^+2 <= `V_[X | S] * 2 * eps / (2 - eps).
 Proof.
 move=> Hinv.
-have -> : `E_[X | S] = `E_[Split.fst_RV C0 C01 X | S `* [set: bool]].
+have -> : `E_[X | S] = `E_[Split.fst_RV C01 X | S `* [set: bool]].
   by rewrite -Split.cEx.
-have -> : `E_[WP.-RV X | S] = `E_[Split.fst_RV C0 C01 X | S `* [set true]].
+have -> : `E_[WP.-RV X | S] = `E_[Split.fst_RV C01 X | S `* [set true]].
   by rewrite emean_cond_split.
 rewrite sqrBC.
-apply: (@le_trans _ _ (`V_[ Split.fst_RV C0 C01 X | S `* [set: bool]] *
+apply: (@le_trans _ _ (`V_[ Split.fst_RV C01 X | S `* [set: bool]] *
                          2 * (1 - (1 - eps / 2)) / (1 - eps / 2))).
-  have V0: 0 <= `V_[ Split.fst_RV C0 C01 X | S `* [set: bool]] *
+  have V0: 0 <= `V_[ Split.fst_RV C01 X | S `* [set: bool]] *
                  2 * (1 - (1 - eps / 2)) / (1 - eps / 2).
     apply: mulr_ge0; last by rewrite invr_ge0; move: low_eps eps_max01; lra.
     apply: mulr_ge0; last by move: eps0 low_eps; lra.
