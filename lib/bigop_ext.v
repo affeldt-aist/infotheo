@@ -209,6 +209,27 @@ transitivity (\big[op/idx]_(i <- enum A) g i); first by rewrite enumT.
 by rewrite H; apply eq_bigr => i _; apply congr_big => //; rewrite enumT.
 Qed.
 
+Lemma partition_big_fin_img_set (F : {set A}) (f : A -> B) g :
+  \big[op/idx]_(i in F) (g i) =
+  \big[op/idx]_(r <- fin_img f) \big[op/idx]_(i in F | f i == r) (g i).
+Proof.
+have /= := @partition_big_undup_map (enum A) f (fun i => if i \notin F then idx else g i).
+rewrite enum_uniq => /(_ isT) H.
+transitivity (\big[op/idx]_(i in A) (if i \notin F then idx else g i)).
+rewrite bigID2.
+rewrite [X in op X _]big1_idem// ?Monoid.op1m//; first exact/Monoid.op1m.
+rewrite -big_enum.
+rewrite H.
+apply: eq_bigr => i _.
+rewrite big_mkcond.
+under [LHS]eq_bigr => j _ do rewrite if_neg -if_and.
+rewrite -big_mkcond big_enum_cond.
+apply: eq_big => //.
+move => j.
+congr (_ && _) => //.
+by rewrite andbC.
+Qed.
+
 End partition_big_finType_eqType.
 
 Section BigOps.
