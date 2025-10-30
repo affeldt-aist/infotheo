@@ -50,89 +50,144 @@ Qed.
 
 End log_extra.
 
-Section entropy_extra.
+Section bigop_extra.
 
-Section cinde_cond_mutual_info0.
+Lemma bigD1_filter {R : Type} {op : SemiGroup.com_law R} {idx : R}
+  {I : eqType} (r : seq I) (j : I) (P : pred I) (F : I -> R) :
+  j \in r -> P j -> uniq r ->
+  \big[op/idx]_(i <- [seq x <- r | P x]) F i = 
+    op (F j) (\big[op/idx]_(i <- [seq x <- r | P x] | i != j) F i).
+Proof.
+Proof.
+move=> j_in Pj uniq_r.
+apply: bigD1_seq; last by apply: filter_uniq.
+by rewrite mem_filter Pj j_in.
+Qed.
 
-Variables (T TX TY TZ : finType).
-Variable (P : R.-fdist T).
-Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
+Lemma bigD1_seq_cond {R : Type} {op : SemiGroup.com_law R} {idx : R}
+  {I : eqType} (r : seq I) (j : I) (P : pred I) (F : I -> R) :
+  j \in r -> P j -> uniq r ->
+  \big[op/idx]_(i <- r | P i) F i = 
+    op (F j) (\big[op/idx]_(i <- r | P i && (i != j)) F i).
+Proof.
+move=> j_in Pj uniq_r.
+rewrite (big_rem_AC op idx P F j_in) Pj /=.
+congr (op (F j) _).
+rewrite (rem_filter _ uniq_r).
+rewrite -(@big_filter _ _ _ _ r (predI P (predC1 j)) F).
+rewrite -(@big_filter _ _ _ _ [seq x <- r | predC1 j x] P F).
+congr (\big[op/idx]_(i <- _) F i).
+by rewrite filter_predI.
+Qed.
 
-Lemma fdist_proj23_RV3 : fdist_proj23 `p_[% X, Y, Z] = `p_[% Y, Z].
+End bigop_extra.
+
+Section proba_extra.
+
+Lemma pair_notin_fin_img_fst (T A B : finType) (P : R.-fdist T)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (a : A) (b : B) :
+  a \notin fin_img X -> (a, b) \notin fin_img [% X, Y].
+Proof.
+move=> a_notin_img.
+apply/memPn => p Hp.
+move: Hp.
+rewrite /fin_img mem_undup.
+move/mapP => [] t Ht ->.
+rewrite xpair_eqE.
+apply/nandP; left.
+apply/eqP => Xt_eq_a.
+move: a_notin_img.
+rewrite mem_undup => /negP.
+apply;apply/mapP.
+exists t.
+  exact: Ht.
+symmetry.
+exact: Xt_eq_a.
+Qed.
+
+Lemma sum_cPr_eq 
+  (T A B : finType) (P : R.-fdist T)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (y : B) :
+  `Pr[Y = y] != 0 ->
+  \sum_(a in A) `Pr[X = a | Y = y] = 1.
+Proof.
+move=> Hy_neq0.
+(* Split sum over A into values in fin_img X and those not *)
+rewrite (bigID (mem (fin_img X))) /=.
+(* Values not in fin_img X have probability 0 *)
+rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
+  move=> a a_notin_img.
+  rewrite cpr_eqE.
+  have ->: `Pr[[% X, Y] = (a, y)] = 0.
+    apply/eqP; rewrite pfwd1_eq0; apply/eqP.
+      by [].
+    apply/eqP.
+    apply: pair_notin_fin_img_fst.
+    exact: a_notin_img.
+  by rewrite mul0r.
+rewrite [X in _ + X]big1 ?addr0; last by move=> i _.  
+rewrite -big_uniq /=.
+  apply: cPr_1.
+  exact: Hy_neq0.
+apply: undup_uniq.
+Qed.
+
+(* Helper lemma: if z is not in the image of Z, then conditional probability is 0 *)
+Lemma cPr_eq_notin_fin_img (V W T : finType) (P : R.-fdist T)
+  (Y : {RV P -> V}) (Z : {RV P -> W}) (y : V) (z : W) :
+  z \notin fin_img Z -> `Pr[Z = z | Y = y] = 0.
+Proof.
+move=> z_notin.
+rewrite cpr_eqE !pfwd1E /Pr big1 ?mul0r //.
+move=> t; rewrite inE => /eqP Zt.
+exfalso; move/negP: z_notin; apply.
+rewrite mem_undup; apply/mapP; exists t => //.
+  by rewrite mem_enum.
+by move: Zt => [->].
+Qed.
+
+(* Helper: If two different values both have conditional probability 1, contradiction *)
+Lemma cPr_eq_two_ones_absurd (V W T : finType) (P : R.-fdist T)
+  (Y : {RV P -> V}) (Z : {RV P -> W}) (y : V) (z z' : W) :
+  `Pr[Y = y] != 0 ->
+  z != z' ->
+  `Pr[Z = z | Y = y] = 1 ->
+  `Pr[Z = z' | Y = y] = 1 ->
+  False.
+Proof.
+move=> Hy_neq0 Hneq Hz Hz'.
+(* All conditional probabilities sum to 1 *)
+have H_sum: \sum_(w <- fin_img Z) `Pr[Z = w | Y = y] = 1
+  by exact: (cPr_1 Z Hy_neq0).
+(* Both z and z' must be in fin_img Z *)
+have z_in: z \in fin_img Z by
+  apply/negPn/negP => z_notin; move: (cPr_eq_notin_fin_img Y y z_notin); rewrite Hz; lra.
+have z'_in: z' \in fin_img Z by
+  apply/negPn/negP => z'_notin; move: (cPr_eq_notin_fin_img Y y z'_notin); rewrite Hz'; lra.
+(* Extract z from sum: 1 = 1 + rest *)
+move: H_sum; rewrite (bigD1_seq z) ?undup_uniq //= Hz => H_sum.
+(* So rest = 0 *)
+have H_rest: \sum_(w <- fin_img Z | w != z) `Pr[Z = w | Y = y] = 0 by lra.
+(* But z' is in rest with value 1 *)
+move: H_rest.
+rewrite (@bigD1_seq_cond _ _ _ _ (fin_img Z) z' (fun w => w != z) (fun w => `Pr[Z = w | Y = y])) ?undup_uniq //=; last first.
+  - by rewrite eq_sym.
+rewrite Hz'.
+have: 0 <= \sum_(i <- fin_img Z | (i != z) && (i != z')) `Pr[ Z = i | Y = y ].
+  by apply: sumr_ge0 => w _; rewrite cPr_eq_def; exact: cPr_ge0.
+by lra.
+Qed.
+
+End proba_extra.
+
+Section perm_extra.
+
+Lemma fdist_proj23_RV3  (T : finType) (P : R.-fdist T) (TA TB TC : finType) 
+    (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC})
+ : fdist_proj23 `p_[% X, Y, Z] = `p_[% Y, Z].
 Proof.
 by rewrite /fdist_proj23 /fdist_snd /fdistA /dist_of_RV /fdistC12 !fdistmap_comp.
 Qed.
-
-Lemma cinde_cond_mutual_info0 :
-  P |= X _|_ Y | Z -> cond_mutual_info `p_[% X, Y, Z] = 0.
-Proof.
-move=> H_cinde.
-rewrite cond_mutual_infoE.
-apply/eqP.
-rewrite big1 //.
-case=> [[a b] c] _.
-rewrite //=.
-have [->|Habc_neq0] := eqVneq (`p_[% X, Y, Z] (a, b, c)) 0.
-  by rewrite mul0r.
-apply/eqP; rewrite mulf_eq0; apply/orP; right.
-apply/eqP.
-have H_pos: 0 < (\Pr_`p_ [% X, Y, Z][[set (a, b)] | [set c]] /
-              (\Pr_(fdist_proj13 `p_ [% X, Y, Z])[[set a] | [set c]] *
-               \Pr_(fdist_proj23 `p_ [% X, Y, Z])[[set b] | [set c]])).
-  rewrite divr_gt0; last first.
-  - apply: mulr_gt0.   
-    + rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1.
-      by rewrite (fdist_proj13_dominN (b:=b)).
-    + rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1.
-      by rewrite (fdist_proj23_dominN (a:=a)).
-  - rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1.
-    exact: Habc_neq0.
-  - by [].
-rewrite (logr_eq1 H_pos).
-move: (H_cinde a b c); rewrite /cinde_RV => H_eq.
-have Hzne0: `Pr[Z = c] != 0.
-  apply: contra_neq Habc_neq0 => Hz0.
-  rewrite dist_of_RVE pfwd1_pairC.
-  by rewrite (pfwd1_domin_RV2 [%X, Y] (a,b) Hz0).
-rewrite cpr_eqE in H_eq.
-rewrite /jcPr !setX1 !Pr_set1.
-have ->: (fdist_proj13 `p_ [% X, Y, Z])`2 = `p_ Z.
-  by rewrite fdist_proj13_snd; apply/fdist_ext => x; rewrite snd_RV3 snd_RV2.
-have ->: (fdist_proj23 `p_ [% X, Y, Z])`2 = `p_ Z.
-  by rewrite fdist_proj23_snd; apply/fdist_ext => y; rewrite snd_RV3 snd_RV2.
-rewrite fdist_proj13_RV3 fdist_proj23_RV3.
-rewrite snd_RV3 snd_RV2 !dist_of_RVE -!cpr_eqE -H_eq cpr_eqE //=.
-field.
-rewrite dist_of_RVE in Habc_neq0.
-by rewrite Hzne0 Habc_neq0.
-Qed.
-
-End cinde_cond_mutual_info0.
-
-Section cinde_centropy_eq.
-
-Variables (T TX TY TZ : finType).
-Variable (P : R.-fdist T).
-Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
-
-(* Main result: conditional independence implies conditional entropy equality *)
-Lemma cinde_centropy_eq :
-  P |= X _|_ Y | Z -> `H(Y | [% X, Z]) = `H(Y | Z).
-Proof.
-move=> H_cinde.
-have H_cinde_sym: P |= Y _|_ X | Z by apply: symmetry.
-have : cond_mutual_info `p_[% Y, X, Z] = 0.
-  by rewrite (cinde_cond_mutual_info0 H_cinde_sym).
-rewrite /cond_mutual_info.
-move/eqP; rewrite subr_eq0; move/eqP.
-rewrite /centropy_RV /centropy.
-rewrite fdist_proj13_snd snd_RV3 snd_RV2 fdistA_RV3 snd_RV2 fdist_proj13_RV3.
-move => H0.
-symmetry.
-exact: H0.
-Qed.
-
-End cinde_centropy_eq.
 
 Lemma pfwd1_pair4_swap34 (T : finType) (P : R.-fdist T) (TA TB TC TD : finType) 
     (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD})
@@ -259,6 +314,96 @@ rewrite centropyA.
 by rewrite centropyA_middle.
 Qed.
 
+Lemma marginal_swap_YZ
+  (V W T : finType) (P : R.-fdist T)
+  (Y : {RV P -> V}) (Z : {RV P -> W}) :
+  forall y : V, (`p_[% Z, Y])`2 y = (`p_[% Y, Z])`1 y.
+Proof.
+move=> y.
+by rewrite -fdistX_RV2 fdistX2.
+Qed.
+
+End perm_extra.
+
+Section entropy_extra.
+
+Section cinde_cond_mutual_info0.
+
+Variables (T TX TY TZ : finType).
+Variable (P : R.-fdist T).
+Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
+
+Lemma cinde_cond_mutual_info0 :
+  P |= X _|_ Y | Z -> cond_mutual_info `p_[% X, Y, Z] = 0.
+Proof.
+move=> H_cinde.
+rewrite cond_mutual_infoE.
+apply/eqP.
+rewrite big1 //.
+case=> [[a b] c] _.
+rewrite //=.
+have [->|Habc_neq0] := eqVneq (`p_[% X, Y, Z] (a, b, c)) 0.
+  by rewrite mul0r.
+apply/eqP; rewrite mulf_eq0; apply/orP; right.
+apply/eqP.
+have H_pos: 0 < (\Pr_`p_ [% X, Y, Z][[set (a, b)] | [set c]] /
+              (\Pr_(fdist_proj13 `p_ [% X, Y, Z])[[set a] | [set c]] *
+               \Pr_(fdist_proj23 `p_ [% X, Y, Z])[[set b] | [set c]])).
+  rewrite divr_gt0; last first.
+  - apply: mulr_gt0.   
+    + rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1.
+      by rewrite (fdist_proj13_dominN (b:=b)).
+    + rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1.
+      by rewrite (fdist_proj23_dominN (a:=a)).
+  - rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1.
+    exact: Habc_neq0.
+  - by [].
+rewrite (logr_eq1 H_pos).
+move: (H_cinde a b c); rewrite /cinde_RV => H_eq.
+have Hzne0: `Pr[Z = c] != 0.
+  apply: contra_neq Habc_neq0 => Hz0.
+  rewrite dist_of_RVE pfwd1_pairC.
+  by rewrite (pfwd1_domin_RV2 [%X, Y] (a,b) Hz0).
+rewrite cpr_eqE in H_eq.
+rewrite /jcPr !setX1 !Pr_set1.
+have ->: (fdist_proj13 `p_ [% X, Y, Z])`2 = `p_ Z.
+  by rewrite fdist_proj13_snd; apply/fdist_ext => x; rewrite snd_RV3 snd_RV2.
+have ->: (fdist_proj23 `p_ [% X, Y, Z])`2 = `p_ Z.
+  by rewrite fdist_proj23_snd; apply/fdist_ext => y; rewrite snd_RV3 snd_RV2.
+rewrite fdist_proj13_RV3 fdist_proj23_RV3.
+rewrite snd_RV3 snd_RV2 !dist_of_RVE -!cpr_eqE -H_eq cpr_eqE //=.
+field.
+rewrite dist_of_RVE in Habc_neq0.
+by rewrite Hzne0 Habc_neq0.
+Qed.
+
+End cinde_cond_mutual_info0.
+
+Section cinde_centropy_eq.
+
+Variables (T TX TY TZ : finType).
+Variable (P : R.-fdist T).
+Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
+
+(* Main result: conditional independence implies conditional entropy equality *)
+Lemma cinde_centropy_eq :
+  P |= X _|_ Y | Z -> `H(Y | [% X, Z]) = `H(Y | Z).
+Proof.
+move=> H_cinde.
+have H_cinde_sym: P |= Y _|_ X | Z by apply: symmetry.
+have : cond_mutual_info `p_[% Y, X, Z] = 0.
+  by rewrite (cinde_cond_mutual_info0 H_cinde_sym).
+rewrite /cond_mutual_info.
+move/eqP; rewrite subr_eq0; move/eqP.
+rewrite /centropy_RV /centropy.
+rewrite fdist_proj13_snd snd_RV3 snd_RV2 fdistA_RV3 snd_RV2 fdist_proj13_RV3.
+move => H0.
+symmetry.
+exact: H0.
+Qed.
+
+End cinde_centropy_eq.
+
 Section zero_entropy_eq_point_mass.
 
 Variables (T : finType) (P : R.-fdist T).
@@ -369,7 +514,6 @@ apply/zero_entropy_eq_point_mass1.
 by exists z.
 Qed.
 
-(* TODO: the conditional version *)
 End zero_entropy_eq_point_mass.
 
 (* The conditional entropy H(Z | Y) equals zero
@@ -382,56 +526,6 @@ End zero_entropy_eq_point_mass.
 *)
 
 Section zero_centropy_eq_point_mass.
-
-(* Helper lemma. *)
-Lemma pair_notin_fin_img_fst (T A B : finType) (P : R.-fdist T)
-  (X : {RV P -> A}) (Y : {RV P -> B}) (a : A) (b : B) :
-  a \notin fin_img X -> (a, b) \notin fin_img [% X, Y].
-Proof.
-move=> a_notin_img.
-apply/memPn => p Hp.
-move: Hp.
-rewrite /fin_img mem_undup.
-move/mapP => [] t Ht ->.
-rewrite xpair_eqE.
-apply/nandP; left.
-apply/eqP => Xt_eq_a.
-move: a_notin_img.
-rewrite mem_undup => /negP.
-apply;apply/mapP.
-exists t.
-  exact: Ht.
-symmetry.
-exact: Xt_eq_a.
-Qed.
-
-(* Helper lemma. *)
-Lemma sum_cPr_eq 
-  (T A B : finType) (P : R.-fdist T)
-  (X : {RV P -> A}) (Y : {RV P -> B}) (y : B) :
-  `Pr[Y = y] != 0 ->
-  \sum_(a in A) `Pr[X = a | Y = y] = 1.
-Proof.
-move=> Hy_neq0.
-(* Split sum over A into values in fin_img X and those not *)
-rewrite (bigID (mem (fin_img X))) /=.
-(* Values not in fin_img X have probability 0 *)
-rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
-  move=> a a_notin_img.
-  rewrite cpr_eqE.
-  have ->: `Pr[[% X, Y] = (a, y)] = 0.
-    apply/eqP; rewrite pfwd1_eq0; apply/eqP.
-      by [].
-    apply/eqP.
-    apply: pair_notin_fin_img_fst.
-    exact: a_notin_img.
-  by rewrite mul0r.
-rewrite [X in _ + X]big1 ?addr0; last by move=> i _.  
-rewrite -big_uniq /=.
-  apply: cPr_1.
-  exact: Hy_neq0.
-apply: undup_uniq.
-Qed.
 
 (* Helper: if the conditional distribution Pr[Z | Y = y] is deterministic 
    (i.e., there exists z with Pr[Z = z | Y = y] = 1),
@@ -475,32 +569,6 @@ transitivity (`p_Y y * (- \sum_(w in W) (0 : R))).
 by rewrite big1 ?oppr0 ?mulr0.
 Qed.
 
-(* Helper: Convert centropyE form (with joint prob) to pure conditional form *)
-Lemma centropy_joint_to_cond
-  (V W  T : finType) (P : R.-fdist T)
-  (Y : {RV P -> V}) (Z : {RV P -> W})
-  (y : V)
-  (Hy_neq0 : `Pr[Y = y] != 0)
-  (H_joint : 
-    - (\sum_(b in W) fdistX `p_[% Z, Y] (y, b) * 
-      log \Pr_`p_[% Z, Y][[set b] | [set y]]) = 0) :
-  - (\sum_(b in W) \Pr_`p_[% Z, Y][[set b] | [set y]] * 
-    log \Pr_`p_[% Z, Y][[set b] | [set y]]) = 0.
-Proof.
-(* Factor: fdistX `p_[% Z, Y] (y, b) = \Pr_[Z=b|Y=y] * \Pr[Y=y] *)
-have H_factor: forall b, 
-  fdistX `p_[% Z, Y] (y, b) = \Pr_`p_[% Z, Y][[set b] | [set y]] * `Pr[Y = y].
-  move=> b.
-  rewrite fdistX_RV2.
-  rewrite /jcPr.
-  rewrite snd_RV2 dist_of_RVE.
-  rewrite setX1 Pr_set1.
-  have [Py_eq0|Py_neq0] := eqVneq (`Pr[Y = y]) 0.
-    - by move: Hy_neq0; rewrite Py_eq0 eqxx.
-    - Fail field.
-      admit.
-Admitted.
-
 (* Helper: Conditional distribution has zero entropy when centropy1 is zero *)
 Lemma jfdist_cond_entropy_zero
   (V W T : finType) (P : R.-fdist T)
@@ -543,16 +611,6 @@ rewrite -cpr_in1 -jPr_Pr.
 rewrite -fdistX_RV2.
 rewrite -jfdist_cond0E.
 exact: Hz.
-Qed.
-
-(* Helper *)
-Lemma marginal_swap_YZ
-  (V W T : finType) (P : R.-fdist T)
-  (Y : {RV P -> V}) (Z : {RV P -> W}) :
-  forall y : V, (`p_[% Z, Y])`2 y = (`p_[% Y, Z])`1 y.
-Proof.
-move=> y.
-by rewrite -fdistX_RV2 fdistX2.
 Qed.
 
 (* Helper: If the conditional entropy at y equals zero (as a Prop equality = 0)
@@ -607,7 +665,7 @@ exists z.
 exact: point_mass_to_cond_prob Y Z y z Hy_marginal Hz.
 Qed.
 
-(* Main lemma 1: conditional entropy is zero iff there exists a function *)
+(* Main lemma 1: conditional entropy is zero iff Z is a function of Y *)
 Lemma zero_centropy_eq_deterministic1
   (V W T : finType) (P : R.-fdist T)
   (Y : {RV P -> V}) (Z : {RV P -> W}) :
@@ -641,8 +699,9 @@ split; last first.
                 \sum_(b in W) \Pr_`p_[% Z, Y][[set b] | [set a]] * 
                 log \Pr_`p_[% Z, Y][[set b] | [set a]]).
     apply: eq_bigr => a _.
-    Fail rewrite -big_distrr /=.
-    admit.
+    rewrite big_distrr /=.
+    apply: eq_bigr => b _.
+    by ring.
     
   (* Step 3: Recognize as weighted conditional entropy (with minus sign) *)
   transitivity (\sum_(a in V) `p_Y a * 
@@ -659,58 +718,80 @@ split; last first.
   transitivity (- \sum_(a in V) `p_Y a * centropy1 `p_[% Z, Y] a).
     by rewrite -sumrN; apply: eq_bigr => a _; rewrite mulrN.
     
-
-  (* Step 6: Transform sum to explicit form where each term is 0 *)
-  transitivity (\sum_(y in V) 
-                (if `Pr[Y = y] == 0 then 0 
-                 else `p_Y y * centropy1 `p_[% Z, Y] y)).
-    Fail apply: eq_bigr => y _.
-    admit.
-
-  (* Step 7: Show this equals a sum of all zeros *)
-  transitivity (\sum_(y in V) (0 : R)).
-    apply: eq_bigr => y _.
-    case: ifP => [Hy_eq0 | Hy_neq0]; first by [].
-    rewrite centropy_term_deterministic; first by [].
-      by rewrite Hy_neq0.
-    by apply: H; rewrite Hy_neq0.
-  by rewrite big1.
+  rewrite big1 ?oppr0 //.
+  move => y _.
+  case/boolP: (`Pr[Y = y] == 0) => [/eqP Hy_eq0 | Hy_neq0].
+    by rewrite dist_of_RVE Hy_eq0 mul0r.
+  rewrite centropy_term_deterministic //.
+  exact: H.
   
 (* The opposite direction*)
-rewrite /centropy_RV centropyE => /eqP.
-rewrite -sumrN.
-rewrite psumr_eq0.
-  move/allP.
-  move => /= Hall y HPrYeq0.
-  apply: zero_centropy1_point_mass.
-    exact: HPrYeq0.
-  have Hy_cond := centropy_joint_to_cond HPrYeq0.
-  Fail exact (zero_centropy1_point_mass HPrYeq0 Hy_cond).
-Admitted.
+move => H y Hyneq0.
+move: H.
+rewrite /centropy_RV.
+rewrite /centropy.
+rewrite snd_RV2.
+move/eqP.
+rewrite psumr_eq0 //; last first.
+  move => i _.
+  rewrite mulr_ge0 //.
+  by rewrite centropy1_ge0.
+move/allP.
+move => Hall.
+apply: zero_centropy1_point_mass => //.
+rewrite -/(centropy1 _ _).
+move: (Hall y (mem_index_enum _)).
+move/implyP/(_ isT).
+rewrite mulf_eq0.
+rewrite dist_of_RVE.
+rewrite (negbTE Hyneq0).
+by move/eqP.
+Qed.
 
 (* Main lemma: conditional entropy zero means Z is a unique function of Y *)
 Lemma zero_centropy_eq_deterministic
-  (V W : finType)
+  (V W T: finType) (P : R.-fdist T)
   (Y : {RV P -> V}) (Z : {RV P -> W}) :
   `H(Z | Y) = 0 <-> 
     (forall y, `Pr[Y = y] != 0 -> exists! z, `Pr[Z = z | Y = y] = 1).
 Proof.
-split.
-  (* Forward: existence + uniqueness *)
-  move=> /zero_centropy_eq_deterministic1 H_ex y Hy_neq0.
-  have [z Hz] := H_ex y Hy_neq0.
-  exists z; split => // z' Hz'.
-  (* Show z = z' using sum = 1 *)
-  apply/eqP; apply/negPn/negP => Hneq.
-  (* If z != z', both have prob 1, so sum >= 2 *)
-  have: 2 <= \sum_w `Pr[Z = w | Y = y].
-    rewrite (bigD1 z) //= Hz (bigD1 z') /=; last by rewrite eq_sym.
-    rewrite Hz'.
-    have: 0 <= \sum_(w | (w != z) && (w != z')) `Pr[Z = w | Y = y].
-    admit.
-(* Backward: uniqueness implies existence *)
-Abort.
+split; last first.
+  (* Backward: uniqueness implies existence *)
+  move => H.
+  apply/zero_centropy_eq_deterministic1.
+  move => y Hy.
+  case: (H y Hy).
+  move => z [] Hz _.
+  by exists z.
+(* Forward: existence + uniqueness *)
+move=> /zero_centropy_eq_deterministic1 H_ex y Hy_neq0.
+have [z Hz] := H_ex y Hy_neq0.
+exists z; split => // z' Hz'.
+move: Hz.
+rewrite cpr_eqE -dist_of_RVE -((snd_RV2 Z Y)).
+move/divr1_eq.
+rewrite/fdist_snd.
+rewrite fdistmapE /=.
+move=> H_joint_eq_marg.
 
-End zero_entropy_eq_point_mass.
+(* Step 1: Show that the sum equals the marginal Pr[Y = y] *)
+have H_marg: \sum_(a in preim snd (pred1 y)) `p_ [% Z, Y] a = `Pr[Y = y].
+  rewrite -dist_of_RVE -(snd_RV2 Z Y) /fdist_snd fdistmapE /=.
+  by apply: eq_bigl => [[w y']]; rewrite !inE.
+
+(* Step 2: Derive Pr[Z = z | Y = y] = 1 *)
+have Hz: `Pr[Z = z | Y = y] = 1.
+  rewrite cpr_eqE -!dist_of_RVE.
+  move: H_joint_eq_marg.
+  rewrite H_marg.
+  rewrite !dist_of_RVE => ->.
+  by rewrite divff // Hy_neq0.
+  
+(* Step 3: Uniqueness - both z and z' have cond prob 1 *)
+apply/eqP; apply/negPn/negP => Hneq.
+apply: (cPr_eq_two_ones_absurd Hy_neq0 Hneq Hz Hz').
+Qed.
+
+End zero_centropy_eq_point_mass.
 
 End entropy_extra.
