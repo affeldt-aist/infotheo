@@ -711,11 +711,11 @@ End real_random_variables.
 Notation "'`log' P" := (log_RV P) : proba_scope.
 
 Section RV_lemmas.
-Context {R : realType}.
+Context {R : realType} {V : lmodType R}.
 Variables (U : finType) (P : R.-fdist U).
 Implicit Types X : {RV P -> R^o}.
 
-Lemma scale_RVA k l X : scale_RV (k * l) X = scale_RV k (scale_RV l X).
+Lemma scale_RVA k l (X : {RV P -> V}) : scale_RV (k * l) X = scale_RV k (scale_RV l X).
 Proof. by rewrite /scale_RV boolp.funeqE => u; rewrite scalerA. Qed.
 
 Lemma sq_RV_pow2 X x : sq_RV X x = (X x) ^+ 2.
@@ -1069,7 +1069,7 @@ rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scale_RV /const_
 by congr (_ *: _); rewrite sqrrB- mulr_regl; lra.
 Qed.
 
-Lemma E_comp_RV (X : {RV P -> R^o}) (f : R^o -> R^o) k :
+Lemma E_comp_RV {V : lmodType R} {A : eqType} (X : {RV P -> A}) (f : A -> V) k :
   (forall x y, f (x * y) = f x * f y) ->
     `E (f `o (k `cst* X)) = `E ((f k) `cst* (f `o X)).
 Proof. by move=> H; rewrite /comp_RV /=; apply eq_bigr => u _; rewrite H. Qed.
@@ -1314,15 +1314,15 @@ Proof. by move=> r0; rewrite ler_pdivlMr //; exact/Ex_lb. Qed.
 End markov_inequality.
 
 Section thm61.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R^o}) (phi : R^o -> R^o).
+Context {R : realType} {V : lmodType R}.
+Variables (A : eqType) (U : finType) (P : R.-fdist U) (X : {RV P -> A}) (phi : A -> V).
 
-Lemma Ex_comp_RV : `E (phi `o X) = \sum_(r <- fin_img X) `Pr[ X = r ] * phi r.
+Lemma Ex_comp_RV : `E (phi `o X) = \sum_(r <- fin_img X) `Pr[ X = r ] *: phi r.
 Proof.
 rewrite /Ex.
 rewrite (partition_big_fin_img _ X (fun u => P u *: (phi `o X) u))/=.
 apply: eq_bigr => a _.
-rewrite pfwd1E /Pr big_distrl /=; apply eq_big.
+rewrite pfwd1E /Pr scaler_suml /=; apply eq_big.
   by move=> u; rewrite inE.
 by move=> u /eqP Xua; rewrite /comp_RV -Xua.
 Qed.
@@ -1335,7 +1335,7 @@ Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R^o}).
 
 Definition Var := let miu := `E X in `E ((X `-cst miu) `^2).
 
-Lemma VarE : Var = `E (X `^2)  - (`E X) ^+ 2.
+Lemma VarE : Var = `E (X `^2) - (`E X) ^+ 2.
 Proof.
 by rewrite /Var E_trans_RV_id_rem E_trans_add_RV E_sub_RV E_scale_RV -mulr_regl; lra.
 Qed.
@@ -2236,9 +2236,9 @@ by rewrite -mulrA -!cpr_eqE K.
 Qed.
 
 Section sum_two_rand_var_def.
-Context {R : realType}.
+Context {R : realType} {V : lmodType R}.
 Variables (A : finType) (n : nat).
-Variables (X : 'rV[A]_n.+2 -> R) (X1 : A -> R) (X2 : 'rV[A]_n.+1 -> R).
+Variables (X : 'rV[A]_n.+2 -> V) (X1 : A -> V) (X2 : 'rV[A]_n.+1 -> V).
 
 Local Open Scope vec_ext_scope.
 
@@ -2249,16 +2249,16 @@ End sum_two_rand_var_def.
 Notation "Z \= X '@+' Y" := (sum_2 Z X Y) : proba_scope.
 
 Section sum_two_rand_var.
-Context {R : realType}.
+Context {R : realType} {V : lmodType R}.
 Local Open Scope vec_ext_scope.
 
-Variables (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+2) (X : {RV P -> R^o}).
+Variables (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+2) (X : {RV P -> V}).
 Let P1 := head_of_fdist_rV P.
 Let P2 := tail_of_fdist_rV P.
-Variables (X1 : {RV P1 -> R^o}) (X2 : {RV P2 -> R^o}).
+Variables (X1 : {RV P1 -> V}) (X2 : {RV P2 -> V}).
 
-Let X1' : {RV P -> R^o} := fun x => X1 (x ``_ ord0).
-Let X2' : {RV P -> R^o} := fun x => X2 (rbehead x).
+Let X1' : {RV P -> V} := fun x => X1 (x ``_ ord0).
+Let X2' : {RV P -> V} := fun x => X2 (rbehead x).
 
 Lemma E_sum_2 : X \= X1 @+ X2 -> `E X = `E X1 + `E X2.
 Proof.
@@ -2267,18 +2267,32 @@ move=> Hsum; transitivity (\sum_(ta in 'rV[A]_n.+2)
   by apply eq_bigr => ta _; rewrite Hsum scalerDr.
 rewrite big_split => //=; congr (_ + _).
 - transitivity (\sum_(a in A)
-    (\sum_(ta in 'rV_n.+1) (fdist_prod_of_rV P (a, ta))) * X1 a).
+    (\sum_(ta in 'rV_n.+1) (fdist_prod_of_rV P (a, ta))) *: X1 a).
   + rewrite -(big_rV_cons_behead _ xpredT xpredT); apply eq_bigr => a _.
-    rewrite big_distrl /=; apply eq_bigr => i _.
+    rewrite scaler_suml /=; apply eq_bigr => i _.
     by rewrite row_mx_row_ord0 fdist_prod_of_rVE.
   + by apply eq_bigr => a _; rewrite fdist_fstE.
 - transitivity (\sum_(ta in 'rV_n.+1)
-    (\sum_(a in A) (fdist_prod_of_rV P (a, ta))) * X2 ta).
+    (\sum_(a in A) (fdist_prod_of_rV P (a, ta))) *: X2 ta).
   + rewrite -(big_rV_cons_behead _ xpredT xpredT) exchange_big /=.
-    apply eq_bigr => ta _; rewrite big_distrl /=.
+    apply eq_bigr => ta _; rewrite scaler_suml /=.
     by apply eq_bigr => a _; rewrite rbehead_row_mx fdist_prod_of_rVE.
   + by apply eq_bigr => ta _; rewrite fdist_sndE.
 Qed.
+
+End sum_two_rand_var.
+
+Section prod_two_rand_var.
+Context {R : realType}.
+Local Open Scope vec_ext_scope.
+
+Variables (A : finType) (n : nat) (P : R.-fdist 'rV[A]_n.+2) (X : {RV P -> R^o}).
+Let P1 := head_of_fdist_rV P.
+Let P2 := tail_of_fdist_rV P.
+Variables (X1 : {RV P1 -> R^o}) (X2 : {RV P2 -> R^o}).
+
+Let X1' : {RV P -> R} := fun x => X1 (x ``_ ord0).
+Let X2' : {RV P -> R} := fun x => X2 (rbehead x).
 
 Lemma E_id_rem_helper : X \= X1 @+ X2 ->
   P |= X1' _|_ X2' ->
@@ -2371,7 +2385,7 @@ move=> H ?; rewrite !VarE E_id_rem // (E_sum_2 H) sqrrD.
 by rewrite /Ex /= -/P1 -/P2; lra.
 Qed.
 
-End sum_two_rand_var.
+End prod_two_rand_var.
 
 Section expected_value_of_the_product.
 
@@ -2423,10 +2437,10 @@ End thm64.
 End expected_value_of_the_product.
 
 Section sum_n_rand_var_def.
-Context {R : realType}.
+Context {R : realType} {V : lmodType R}.
 Variables (A : finType) (P : R.-fdist A).
 
-Inductive sum_n : forall n, {RV (P `^ n) -> R} -> 'rV[{RV P -> R}]_n -> Prop :=
+Inductive sum_n : forall n, {RV (P `^ n) -> V} -> 'rV[{RV P -> V}]_n -> Prop :=
 | sum_n_1 : forall X, sum_n (cast_fun_rV10 X) X
 | sum_n_cons : forall n (Xs : 'rV_n.+1) Y X Z,
   Y \=sum Xs -> Z \= X @+ Y -> Z \=sum (row_mx (\row_(k < 1) X) Xs)
@@ -2499,12 +2513,12 @@ Local Close Scope vec_ext_scope.
 Notation prod_dist_inde_rv_vec := prod_dist_inde_RV_rV (only parsing).
 
 Section sum_n_rand_var.
-Context {R : realType}.
+Context {R : realType} {V : lmodType R}.
 Variable (A : finType) (P : R.-fdist A).
 
 Local Open Scope vec_ext_scope.
 
-Lemma E_sum_n : forall n (Xs : 'rV[{RV P -> R^o}]_n) (X : {RV (P `^ n) -> R^o}),
+Lemma E_sum_n : forall n (Xs : 'rV[{RV P -> V}]_n) (X : {RV (P `^ n) -> V}),
   X \=sum Xs -> `E X = \sum_(i < n) `E (Xs ``_ i).
 Proof.
 elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
@@ -2519,7 +2533,7 @@ elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
   apply Eqdep_dec.inj_pair2_eq_dec in H2; last exact Peano_dec.eq_nat_dec.
   subst Z Xs.
   rewrite big_ord_recl.
-  rewrite [X in _ = _ + X](_ : _ = \sum_(i < n.+1) `E (Xs0 ``_ i : {RV P -> R^o})); last first.
+  rewrite [X in _ = _ + X](_ : _ = \sum_(i < n.+1) `E (Xs0 ``_ i : {RV P -> V})); last first.
     apply eq_bigr => i _ /=.
     apply eq_bigr => a _ /=.
     rewrite (_ : lift _ _ = rshift 1 i); last exact: val_inj.
@@ -2528,7 +2542,7 @@ elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
   by rewrite /Ex head_of_fdist_rV_fdist_rV tail_of_fdist_rV_fdist_rV.
 Qed.
 
-Lemma V_sum_n : forall n (X : {RV (P `^ n) -> R}) (Xs : 'rV[{RV P -> R}]_n),
+Lemma V_sum_n : forall n (X : {RV (P `^ n) -> R^o}) (Xs : 'rV[{RV P -> R}]_n),
   X \=sum Xs ->
   forall sigma2, (forall i, `V (Xs ``_ i) = sigma2) ->
   `V X = n%:R * sigma2.
