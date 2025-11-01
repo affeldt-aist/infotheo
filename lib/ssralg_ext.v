@@ -680,12 +680,15 @@ Qed.
 
 End Det_mlinear.
 
+(* TODO?: PR to mathcomp; the generic ones in mathcomp (mulr_alg{l|r})
+   cannot replace mulr_reg{l|r} in some proofs (see robustmean.v),
+   where we do repeated backward rewrites (`rewrite -!mulr_regl`) *)
 Section regular_algebra.
 
-Lemma mulr_regl [R : ringType] (a : R) (x : R^o) : a * x = a *: x.
+Lemma mulr_regl [R : pzRingType] (a : R) (x : R^o) : a * x = a *: x.
 Proof. by []. Qed.
 
-Lemma mulr_regr [R : comRingType] (a : R) (x : R^o) : x * a = a *: x.
+Lemma mulr_regr [R : comPzRingType] (a : R) (x : R^o) : x * a = a *: x.
 Proof. by rewrite mulrC. Qed.
 
 End regular_algebra.
