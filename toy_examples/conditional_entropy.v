@@ -3,7 +3,7 @@
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg matrix.
 From mathcomp Require Import ring lra.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 Require Import proba jfdist_cond entropy.
 
@@ -23,7 +23,8 @@ Local Open Scope proba_scope.
 Import GRing.Theory Num.Theory Order.Theory.
 
 Module conditional_entropy_example.
-Definition R := Rdefinitions.R.
+Section example.
+Variable R : realType.
 Definition zero : 'I_4 := ord0.
 Definition one : 'I_4 := @Ordinal 4 1 isT.
 Definition two : 'I_4 := @Ordinal 4 2 isT.
@@ -84,4 +85,5 @@ rewrite log1 log4 log8 log16 log32.
 by field.
 Qed.
 
+End example.
 End conditional_entropy_example.

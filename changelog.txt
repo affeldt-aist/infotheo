@@ -1,3 +1,8 @@
+* changed
+- in proba.v
+  + Notation {fdist T} is no longer specialized to Rdefinitions.R,
+    now just an abbreviation of _.-fdist T
+
 * added
 
 - in proba.v

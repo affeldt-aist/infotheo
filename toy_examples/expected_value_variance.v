@@ -1,8 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Rstruct.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import reals.
 Require Import fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2 *)
@@ -17,7 +16,9 @@ Local Open Scope ring_scope.
 
 Import GRing.Theory.
 
-Local Definition R := Rdefinitions.R.
+Section expected_value_variance.
+
+Variable R : realType.
 
 Definition pmf : {ffun 'I_3 -> R} := [ffun i =>
   [fun x => 0 with inord 0 |-> 1/2, inord 1 |-> 1/3, inord 2 |-> 1/6] i].
@@ -56,14 +57,14 @@ Qed.
 
 Lemma pmf_ge0 : [forall a : 'I_3, 0 <= pmf a].
 Proof.
-apply/forallPP; first by move=> x; exact/RleP.
+apply/forallP.
 case/I3P.
-- rewrite /f ffunE /= eqxx; apply/RleP; lra.
+- rewrite /f ffunE /= eqxx; lra.
 - rewrite /f ffunE /= ifF; last by I3_neq.
-  rewrite eqxx; apply/RleP; lra.
+  rewrite eqxx; lra.
 - rewrite /f ffunE /= ifF; last by I3_neq.
   rewrite ifF; last by I3_neq.
-  rewrite eqxx; apply/RleP; lra.
+  rewrite eqxx; lra.
 Qed.
 
 Ltac I3_eq := rewrite (_ : _ == _ = true); last by
@@ -130,3 +131,6 @@ rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
 lra.
 Qed.
+
+End expected_value_variance.
+

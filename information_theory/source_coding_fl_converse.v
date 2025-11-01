@@ -1,8 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Rstruct.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra ring.
-From mathcomp Require Import Rstruct reals exp.
+From mathcomp Require Import reals exp.
 Require Import realType_ext realType_ln fdist proba entropy aep.
 Require Import typ_seq source_code.
 
@@ -46,8 +45,7 @@ by rewrite leNgt.
 Qed.
 
 Section source_coding_converse'.
-Let R := Rdefinitions.R.
-Variables (A : finType) (P : {fdist A}).
+Variables (R : realType) (A : finType) (P : R.-fdist A).
 Variables num den : nat.
 Let r : R := num%:R / den.+1%:R.
 Hypothesis Hr : 0 < r < `H P.
@@ -55,7 +53,7 @@ Hypothesis Hr : 0 < r < `H P.
 Variable n : nat.
 Variable k : nat.
 Variable sc : scode_fl A k.+1 n.
-Hypothesis r_sc : r = SrcRate sc.
+Hypothesis r_sc : r = SrcRate R sc.
 
 Variable epsilon : R.
 Hypothesis Hepsilon : 0 < epsilon < 1.
@@ -259,17 +257,17 @@ Qed.
 End source_coding_converse'.
 
 Section source_coding_converse.
-Variables (A : finType) (P : {fdist A}).
+Variables (R : realType) (A : finType) (P : R.-fdist A).
 
 Theorem source_coding_converse epsilon : 0 < epsilon < 1 ->
-  forall nu de : nat, 0 < (nu%:R / de.+1%:R : Rdefinitions.R) < `H P ->
+  forall nu de : nat, 0 < (nu%:R / de.+1%:R : R) < `H P ->
     forall n k (sc : scode_fl A k.+1 n),
-      SrcRate sc = nu%:R / de%:R ->
+      SrcRate R sc = nu%:R / de%:R ->
       SrcConverseBound P nu de n epsilon <= k.+1%:R ->
       epsilon <= esrc(P , sc).
 Proof.
 move=> espilon01 nu de r_HP n k sc r_sc Hk_bound.
-exact: (@source_coding_converse' _ _ nu de).
+exact: (@source_coding_converse' _ _ _ nu de).
 Qed.
 
 End source_coding_converse.

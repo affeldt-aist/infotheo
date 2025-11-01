@@ -3,7 +3,7 @@
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum interval ring lra.
 From mathcomp Require Import unstable mathcomp_extra classical_sets functions.
-From mathcomp Require Import set_interval reals Rstruct topology normedtype.
+From mathcomp Require Import set_interval reals topology normedtype.
 From mathcomp Require Import sequences derive exp realfun.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import derive_ext.
@@ -429,7 +429,7 @@ Qed.
 End Pinsker_2_bdist.
 
 Section Pinsker_2.
-Variables (A : finType) (P Q : {fdist A}).
+Variables (R : realType) (A : finType) (P Q : R.-fdist A).
 Hypothesis card_A : #|A| = 2%nat.
 Hypothesis P_dom_by_Q : P `<< Q.
 
@@ -445,7 +445,7 @@ Qed.
 End Pinsker_2.
 
 Section Pinsker.
-Variables (A : finType) (P Q : {fdist A}).
+Variables (R : realType) (A : finType) (P Q : R.-fdist A).
 Hypothesis P_dom_by_Q : P `<< Q.
 
 Local Notation "0" := (false).

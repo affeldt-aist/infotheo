@@ -59,6 +59,9 @@ Reserved Notation "`H( P , W )" (at level 10, P, W at next level,
 Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
 Reserved Notation "`I( P , W )" (at level 50, format "`I( P ,  W )").
 
+(* TODO: generalize the channel notations to (R:realType) *)
+Notation "{ 'fdist' T }" := ((Rdefinitions.R).-fdist T) : fdist_scope.
+
 Module Channel1.
 Section channel1.
 Variables A B : finType.

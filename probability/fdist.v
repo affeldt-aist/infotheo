@@ -4,7 +4,6 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix.
 From mathcomp Require Import all_algebra vector reals normedtype.
 From mathcomp Require Import unstable mathcomp_extra boolp.
-From mathcomp Require Import Rstruct.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 
 (**md**************************************************************************)
@@ -18,7 +17,7 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 (*                     type of x is an eqType                                 *)
 (*       R.-fdist T == the type of distributions over a finType T             *)
 (*                     w.r.t. R : realType                                    *)
-(*        {fdist T} := Rdefinitions.R.-fdist R                                *)
+(*        {fdist T} := _.-fdist T  (to be used when R can be inferred)        *)
 (*        probfdist == TODO                                                   *)
 (*       is_fdist f == the function f is a distribution (predicate in Prop)   *)
 (*     fdist_supp d := [set a | d a != 0]                                     *)
@@ -151,7 +150,7 @@ HB.instance Definition _ R A := [Choice of fdist R A by <:].
 #[global] Hint Extern 0 (is_true (_ <= 1)%R) => solve [exact: FDist.le1] : core.
 
 Notation "R '.-fdist' T" := (fdist R T%type) : fdist_scope.
-Notation "{ 'fdist' T }" := (fdist Rdefinitions.R T%type) : fdist_scope.
+Notation "{ 'fdist' T }" := (_.-fdist T) : fdist_scope.
 
 Lemma fdist_ge0_le1 (R : numDomainType) (A : finType) (d : fdist R A) a :
   (0 <= d a <= 1)%R.

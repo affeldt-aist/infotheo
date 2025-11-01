@@ -2,7 +2,7 @@ Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import lra ring.
 From mathcomp Require boolp.
-From mathcomp Require Import mathcomp_extra Rstruct reals.
+From mathcomp Require Import mathcomp_extra reals.
 From infotheo Require Import ssr_ext ssralg_ext bigop_ext.
 From infotheo Require Import realType_ext fdist proba.
 From HB Require Import structures.

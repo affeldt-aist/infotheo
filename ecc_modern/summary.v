@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg zmodp matrix.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext f2.
 
 (**md**************************************************************************)
@@ -100,7 +100,7 @@ Notation "\sum_ ( x '=' d [~ s ] '|' P ) F" :=
 Local Open Scope summary_scope.
 
 Section rsum_freeon.
-Let R := Rdefinitions.R.
+Variable R : realType.
 Variable n : nat.
 
 Lemma rsum_freeon0 (d : 'rV['F_2]_n) (F : 'rV_n -> R) :
@@ -127,7 +127,7 @@ Qed.
 End rsum_freeon.
 
 Section alternative_definitions_of_summary.
-Let R := Rdefinitions.R.
+Variable R : realType.
 Variables n : nat.
 
 Definition summary_powerset (X : {set 'I_n}) (d : 'rV['F_2]_n) (e : 'rV_n -> R) :=

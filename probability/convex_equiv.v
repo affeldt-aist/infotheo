@@ -3,7 +3,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm matrix.
 From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
-From mathcomp Require Import functions Rstruct reals.
+From mathcomp Require Import functions reals.
 From mathcomp Require Import finmap.
 Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 

@@ -174,8 +174,6 @@ Local Open Scope fdist_scope.
 
 Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
-Local Notation "{ 'fdist' T }" := (_ .-fdist T) : fdist_scope.
-
 #[export] Hint Extern 0 (0 <= _)%R =>
   solve [apply/(FDist.ge0 _)] : core.
 #[export] Hint Extern 0 (_ <= 1)%R =>
@@ -2156,24 +2154,24 @@ Implicit Types p q : {prob R}.
 Let avg p (x y : T) := fun a : A => (x a <| p |> y a).
 Let avg1 (x y : T) : avg 1%:pr x y = x.
 Proof.
-apply FunctionalExtensionality.functional_extensionality_dep => a.
+apply boolp.functional_extensionality_dep => a.
 exact/conv1.
 Qed.
 Let avgI p (x : T) : avg p x x = x.
 Proof.
-apply FunctionalExtensionality.functional_extensionality_dep => a.
+apply boolp.functional_extensionality_dep => a.
 exact/convmm.
 Qed.
 Let avgC p (x y : T) : avg p x y = avg (Prob.p p).~%:pr y x.
 Proof.
-apply FunctionalExtensionality.functional_extensionality_dep => a.
+apply boolp.functional_extensionality_dep => a.
 exact/convC.
 Qed.
 Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof.
 move => *.
-apply FunctionalExtensionality.functional_extensionality_dep => a.
+apply boolp.functional_extensionality_dep => a.
 exact/convA.
 Qed.
 

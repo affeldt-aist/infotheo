@@ -4,7 +4,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix interval.
 From mathcomp Require Import ring.
 From mathcomp Require boolp.
-From mathcomp Require Import unstable mathcomp_extra Rstruct reals.
+From mathcomp Require Import unstable mathcomp_extra reals.
 From mathcomp Require Import interval_inference set_interval.
 From mathcomp Require Import functions topology normedtype realfun derive exp.
 From mathcomp Require convex.
@@ -50,8 +50,6 @@ Local Open Scope entropy_scope.
 Import Order.POrderTheory GRing.Theory Num.Theory.
 Import numFieldTopology.Exports.
 Import numFieldNormedType.Exports.
-
-Local Notation "{ 'fdist' T }" := (_ .-fdist T) : fdist_scope.
 
 Section entropy_log_div.
 Variable R : realType.

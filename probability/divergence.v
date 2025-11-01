@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp Require Import Rstruct reals sequences exp.
+From mathcomp Require Import reals sequences exp.
 Require Import realType_ext realType_ln fdist proba.
 
 (**md**************************************************************************)

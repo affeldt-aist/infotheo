@@ -4,7 +4,7 @@ Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix fingroup perm.
 From mathcomp Require Import lra ring.
 From mathcomp Require boolp.
-From mathcomp Require Import unstable mathcomp_extra Rstruct reals.
+From mathcomp Require Import unstable mathcomp_extra reals.
 Require Import ssr_ext ssralg_ext realType_ext fdist convex.
 
 (****************************************************************************)
@@ -1095,9 +1095,9 @@ Qed.
 End affine_function_prop0.
 
 Section convn_convnfdist.
-Variable A : finType.
+Variables (R : realType) (A : finType).
 
-Lemma convn_convnfdist n (g : 'I_n -> {fdist A}) (d : {fdist 'I_n}) :
+Lemma convn_convnfdist n (g : 'I_n -> R.-fdist A) (d : R.-fdist 'I_n) :
   <|>_d g = fdist_convn d g.
 Proof.
 elim: n g d => /= [g d|n IH g d]; first by move: (fdistI0_False d).
