@@ -189,7 +189,7 @@ Qed.
 
 End linear_system.
 
-Section entropy_connection.
+Section dsdp_entropy_connection.
 
 Variable T : finType.
 Variable P : R.-fdist T.
@@ -215,8 +215,32 @@ Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
          (v1, u1, u2, u3, s) ] =
     1%:R / (#|dsdp_solution_pairs u1 u2 u3 v1 s|)%:R.
 
-
-Section centropy_uniform_solutions.
+Section dsdp_centropy_uniform_solutions.
+  
+(* If Y must satisfy a property determined by X,
+   then conditional probability is zero outside that property *)
+Lemma cond_prob_zero_outside_constraint 
+  {TX TY : finType} (X : {RV P -> TX}) (Y : {RV P -> TY})
+  (constraint : TX -> TY -> bool) :
+  (* The constraint must hold almost surely *)
+  (forall t, constraint (X t) (Y t)) ->
+  (* Then conditional probability is zero outside the constraint *)
+  forall x y,
+    `Pr[X = x] != 0 ->
+    ~~ constraint x y ->
+    `Pr[Y = y | X = x] = 0.
+Proof.
+move=> Hconstraint x y Hx_pos Hnot_constraint.
+rewrite cpr_eqE.
+have Hempty: finset ([%Y, X] @^-1 (y, x)) = set0.
+  apply/setP => t.
+  rewrite in_set0 inE /preim /pred1 /= xpair_eqE.
+  apply: contraTF Hnot_constraint => /andP[/eqP HY /eqP HX].
+  by rewrite -HY -HX Hconstraint.
+have ->: `Pr[[%Y, X] = (y, x)] = 0.
+  by rewrite pfwd1E Hempty Pr_set0.
+by rewrite mul0r.
+Qed.
 
 (* Helper 1: Pairs not satisfying the constraint have zero
    conditional probability *)
@@ -226,11 +250,19 @@ Lemma non_solution_zero_prob (v1 u1 u2 u3 s : msg) (v2 v3 : msg) :
   `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] =
   (v1, u1, u2, u3, s) ] = 0.
 Proof.
-move=> Hcond_pos Hnotsol.
-(* The constraint holds with probability 1, so impossible pairs have prob 0 *)
-(* Use constraint_holds: S t = U1 t * V1 t + U2 t * V2 t + U3 t * V3 t *)
-admit.
-Admitted.
+move=> Hcond_pos Hnot_solution.
+set constraint := fun (conds : msg * msg * msg * msg * msg)
+  (vals : msg * msg) =>
+  let '(v1, u1, u2, u3, s) := conds in
+  let '(v2, v3) := vals in
+  (v2, v3) \in dsdp_solution_pairs u1 u2 u3 v1 s.
+have Hconstraint: forall t, constraint ([%V1, U1, U2, U3, S] t) ([%V2, V3] t).
+  move=> t.
+  rewrite /constraint /=.
+  rewrite inE /=.
+  by rewrite constraint_holds.
+by rewrite (cond_prob_zero_outside_constraint Hconstraint Hcond_pos).
+Qed.
 
 (* Helper 2: Solutions have uniform probability 1/m *)
 Lemma solution_uniform_prob (v1 u1 u2 u3 s : msg) (v2 v3 : msg) :
@@ -245,10 +277,12 @@ move=> Hcond_pos Hu3_neq0 Hinsol.
 (* Then apply uniform_over_solutions hypothesis *)
 have card_m : #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
   by apply: dsdp_solution_pairs_cardinality.
-(* The challenge: instantiate uniform_over_solutions with
-   the right t and equalities *)
-admit.
-Admitted.
+move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
+move: Ht; rewrite inE => /eqP Ht.
+case: Ht => HV1 HU1 HU2 HU3 HS.
+by rewrite (@uniform_over_solutions
+  t v1 u1 u2 u3 s HU1 HU2 HU3 HV1 HS v2 v3 Hinsol) card_m.
+Qed.
 
 (* Helper 3a: Basic arithmetic - entropy of uniform distribution
    over n elements *)
@@ -335,7 +369,7 @@ apply: eq_bigr => a Hina.
 by rewrite Hin.
 Qed.
 
-(* Helper 3e: Entropy over finite set with uniform probability *)
+(* Helper: Entropy over finite set with uniform probability *)
 Lemma entropy_finite_set_uniform (SolSet : {set msg * msg}) (n : nat) :
   #|SolSet| = n ->
   (0 < n)%N ->
@@ -349,8 +383,8 @@ field.
 by rewrite pnatr_eq0 -lt0n.
 Qed.
 
-(* Helper 3: Main entropy calculation *)
-Lemma entropy_uniform_subset (v1 u1 u2 u3 s : msg) :
+(* Helper: Main entropy calculation *)
+Lemma dsdp_entropy_uniform_subset (v1 u1 u2 u3 s : msg) :
   `Pr[[% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] != 0 ->
   u3 != 0 ->
   (forall pair : msg * msg,
@@ -374,15 +408,15 @@ have card_m : #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
 by apply: entropy_finite_set_uniform.
 Qed.
 
-(* Helper 4: Each conditioning value gives entropy log(m) *)
-Lemma centropy1_uniform (v1 u1 u2 u3 s : msg) :
+(* Helper: Each conditioning value gives entropy log(m) *)
+Lemma dsdp_centropy1_uniform (v1 u1 u2 u3 s : msg) :
   `Pr[[% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] != 0 ->
   u3 != 0 ->
   `H[ [% V2, V3] | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s) ] =
     log (m%:R : R).
 Proof.
 move=> Hcond_pos Hu3_neq0.
-apply: entropy_uniform_subset => //.
+apply: dsdp_entropy_uniform_subset => //.
   move=> [v2 v3] Hpair.
   exact: solution_uniform_prob.
 move=> [v2 v3] Hpair.
@@ -390,7 +424,7 @@ exact: non_solution_zero_prob.
 Qed.
 
 (* Main lemma *)
-Lemma centropy_uniform_solutions :
+Lemma dsdp_centropy_uniform_solutions :
   `H([% V2, V3] | [% V1, U1, U2, U3, S]) = log (m%:R : R).
 Proof.
 (* Expand conditional entropy as weighted sum *)
@@ -398,7 +432,7 @@ rewrite centropy_RVE' /=.
 (* Transform each term in the sum *)
 transitivity (\sum_(a : msg * msg * msg * msg * msg) 
                `Pr[ [% V1, U1, U2, U3, S] = a ] * log (m%:R : R)).
-    (* Show each term equals Pr[...] * log(m) *)
+  (* Show each term equals Pr[...] * log(m) *)
   apply: eq_bigr => [] [] [] [] [] v1 u1 u2 u3 s H.
   have [->|Hcond_pos] := eqVneq (`Pr[[% V1, U1, U2, U3, S] =
     (v1, u1, u2, u3, s)]) 0.
@@ -409,14 +443,14 @@ transitivity (\sum_(a : msg * msg * msg * msg * msg)
     have HU3t : U3 t = u3.
       by case: Ht => _ _ _ ->.
     by rewrite -HU3t; apply: U3_nonzero.
-  by rewrite (centropy1_uniform Hcond_pos Hu3_neq0).
+  by rewrite (dsdp_centropy1_uniform Hcond_pos Hu3_neq0).
 under eq_bigr do rewrite mulrC.
 by rewrite -big_distrr /= sum_pfwd1 mulr1.
 Qed.
 
-End centropy_uniform_solutions.
+End dsdp_centropy_uniform_solutions.
 
-End entropy_connection.
+End dsdp_entropy_connection.
 
 (*
   MEMO: move linear algebra part ("safety" part) and its connection with the
