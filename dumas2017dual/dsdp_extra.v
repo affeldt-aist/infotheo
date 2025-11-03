@@ -178,6 +178,53 @@ have: 0 <= \sum_(i <- fin_img Z | (i != z) && (i != z')) `Pr[ Z = i | Y = y ].
 by lra.
 Qed.
 
+(* Conditional fdist equals conditional probability *)
+Lemma jfdist_cond_cPr_eq  {T TX TY : finType} (P : R.-fdist T)
+  (X : {RV P -> TX}) (Y : {RV P -> TY}) (x : TX) (y : TY) :
+  `Pr[X = x] != 0 ->
+  `p_[% X, Y]`(|x) y = `Pr[Y = y | X = x].
+Proof.
+Proof.
+move=> Hx_pos.
+rewrite jfdist_condE; last first.
+  by rewrite fst_RV2 dist_of_RVE.
+rewrite cpr_eqE.
+rewrite /jcPr.
+congr (_ / _).
+- rewrite Pr_fdistX.
+  rewrite setX1.
+  rewrite Pr_set1 dist_of_RVE.
+  by rewrite pfwd1_pairC.
+- rewrite fdistX2 fst_RV2.
+  by rewrite Pr_set1 dist_of_RVE.
+Qed.
+
+(* If Y must satisfy a property determined by X,
+   then conditional probability is zero outside that property *)
+Lemma cond_prob_zero_outside_constraint 
+  {T TX TY : finType} (P : R.-fdist T)
+  (X : {RV P -> TX}) (Y : {RV P -> TY})
+  (constraint : TX -> TY -> bool) :
+  (* The constraint must hold almost surely *)
+  (forall t, constraint (X t) (Y t)) ->
+  (* Then conditional probability is zero outside the constraint *)
+  forall x y,
+    `Pr[X = x] != 0 ->
+    ~~ constraint x y ->
+    `Pr[Y = y | X = x] = 0.
+Proof.
+move=> Hconstraint x y Hx_pos Hnot_constraint.
+rewrite cpr_eqE.
+have Hempty: finset ([%Y, X] @^-1 (y, x)) = set0.
+  apply/setP => t.
+  rewrite in_set0 inE /preim /pred1 /= xpair_eqE.
+  apply: contraTF Hnot_constraint => /andP[/eqP HY /eqP HX].
+  by rewrite -HY -HX Hconstraint.
+have ->: `Pr[[%Y, X] = (y, x)] = 0.
+  by rewrite pfwd1E Hempty Pr_set0.
+by rewrite mul0r.
+Qed.
+
 End proba_extra.
 
 Section perm_extra.
@@ -326,6 +373,28 @@ Qed.
 End perm_extra.
 
 Section entropy_extra.
+  
+(* Entropy sum over a subset with uniform probability *)
+Lemma entropy_sum_split (A : finType) 
+  (SolSet : {set A}) (p : R) (prob : A -> R) :
+  (forall a, a \in SolSet -> prob a = p) ->
+  (forall a, a \notin SolSet -> prob a = 0) ->
+  (- \sum_(a : A) prob a * log (prob a)) = (- \sum_(a in SolSet) p * log p).
+Proof.
+move=> Hin Hout.
+(* Split the sum *)
+rewrite (bigID (mem SolSet)) /=.
+(* Outside SolSet contributes 0 *)
+rewrite [X in _ + X]big1; last first.
+  move=> a Hnotin.
+  rewrite Hout //.
+  by rewrite mul0r.
+rewrite addr0.
+(* Inside SolSet, substitute p *)
+congr (- _).
+apply: eq_bigr => a Hina.
+by rewrite Hin.
+Qed.
 
 Section cinde_cond_mutual_info0.
 
