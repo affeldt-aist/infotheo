@@ -2756,11 +2756,10 @@ Lemma R_convex_functionB (f g : T -> R^o) :
   convex_function (fun x => f x - g x)%R.
 Proof.
 move=> Hf Hg p q t.
-rewrite /convex_function_at /= avgRE 2!mulrBr addrAC addrA.
-rewrite -addrA lerD//.
+rewrite /convex_function_at /= avgRE 2!mulrBr addrACA lerD//.
   have := Hf p q t.
   by rewrite /convex_function_at => ->.
-by rewrite -2!mulrN addrC; exact: (R_convex_functionN Hg).
+by rewrite -2!mulrN; exact: (R_convex_functionN Hg).
 Qed.
 
 Lemma R_concave_functionB (f g : T -> R^o) :
@@ -3156,19 +3155,9 @@ rewrite le_eqVlt => -/predU1P[->|xb].
 have {step1}step2 : (L x - f x =
   (x - a) * (b - x) / (b - a) * ((f b - f x) / (b - x)) -
   (b - x) * (x - a) / (b - a) * ((f x - f a) / (x - a)))%R.
-  rewrite {1}step1 {step1}.
-  rewrite opprD addrA addrC addrA.
-  rewrite LE //.
-  rewrite -(mulrN _ (f x)).
-  rewrite addrA -mulrDr (addrC _ (f a)).
-  rewrite -mulrN -addrA -mulrDr.
-  rewrite addrC.
-  rewrite -(opprK (f a - f x)) mulrN opprB.
-  congr (_ + _)%R.
-  - rewrite -!mulrA; congr (_ * _)%R; rewrite mulrCA; congr (_ * _)%R.
-    by rewrite mulrCA mulfV ?mulr1 // subr_eq0 gt_eqF.
-  - rewrite -!mulNr -!mulrA; congr (_ * _)%R; rewrite mulrCA; congr (_ * _)%R.
-    by rewrite mulrCA mulfV ?mulr1 // subr_eq0 gt_eqF.
+  rewrite 4![_ * (_ - _) * _]mulrAC -2![_ * (_ / _) * _]mulrA.
+  rewrite 2?divfK ?lt0r_neq0 ?subr_gt0// -mulrN opprB.
+  by rewrite {1}step1 {step1} LE opprD [X in X + _ = _]addrC addrACA -2!mulrBr.
 have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%R.
   have H : forall x0, (x <= x0 <= b)%R -> derivable f x0 1.
     move=> z /andP[z1 z2]; apply: HDf; apply/andP; split => //.
