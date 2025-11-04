@@ -84,7 +84,7 @@ End add_RV.
 Section scale.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
-Lemma scalel_RVE m (X : {RV P -> R^o}) : scale_RV m X = const_RV P m `* X.
+Lemma scalel_RVE m (X : {RV P -> R^o}) : scale_RV m X = m `* X.
 Proof. by apply: boolp.funext=> ? /=; rewrite /scale_RV /const_RV. Qed.
 End scale.
 
@@ -597,6 +597,15 @@ Qed.
 End probability.
 Arguments Ind_one {R U P}.
 Arguments cEx_sub_eq {R U P X} F G.
+
+Section covariance.
+Context {R : realType}.
+Variables (U : finType) (P : R.-fdist U) (m n : nat) (X : {RV P -> 'M[R]_(m, n)}).
+
+Definition Cov := 
+  `E ((fun i => (X i - `E X) *m (X i - `E X)^T) : {RV P -> 'M[R]_(m, m)}).
+
+End covariance.
 
 Section resilience.
 Context {R : realType}.
