@@ -1,3 +1,9 @@
+* changed
+
+- in realType_ext.v
+  + use [SubChoice_isSubOrder of ...] instead [Order of ...]
+    for the order structure on {prob R}
+
 * added
 
 - in proba.v
