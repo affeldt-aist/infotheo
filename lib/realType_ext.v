@@ -230,7 +230,8 @@ Lemma probpK R p H : Prob.p (@Prob.mk R p H) = p. Proof. by []. Qed.
 
 Notation "{ 'prob' T }" := (@prob T).
 
-HB.instance Definition _ (R : realType) := [Order of {prob R} by <:].
+HB.instance Definition _ (R : realType) :=
+  [SubChoice_isSubOrder of {prob R} by <: with ring_display].
 
 Definition to_numdomain (R : realType) (p : {prob R}) : Num.NumDomain.sort _ :=
   (p : R).
