@@ -190,7 +190,7 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
   rewrite big_ord_recl (_ : _ ``_ ord0 = i); last first.
     by rewrite mxE; case: splitP => // j Hj; rewrite mxE.
   rewrite -mulrA.
-  have:= FDist.ge0 P i; rewrite le_eqVlt => /orP[/eqP<-|pi_pos].
+  have:= FDist.ge0 P i; rewrite le_eqVlt => /predU1P[<-|pi_pos].
     by rewrite !mul0r.
   congr (P i * _).
   rewrite -mulrDr.
