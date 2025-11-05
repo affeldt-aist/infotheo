@@ -100,7 +100,8 @@ smc/scalar_product_proof.v
 homomorphic_encryption/homomorphic_encryption.v
 dumas2017dual/dsdp_program.v
 dumas2017dual/dsdp_extra.v
-dumas2017dual/dsdp_privacy.v
-dumas2017dual/dsdp_safety.v
+dumas2017dual/dsdp_algebra.v
+dumas2017dual/dsdp_entropy.v
+dumas2017dual/dsdp_security.v
 dumas2017dual/rouche_capelli.v
 -R . infotheo
