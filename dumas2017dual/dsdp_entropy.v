@@ -226,7 +226,8 @@ End dsdp_centropy_uniform_solutions.
 End dsdp_entropy_connection.
 
 Section dsdp_privacy_analysis.
-  
+
+Variable F : finFieldType.
 Variable T : finType.
 Variable P : R.-fdist T.
 
@@ -238,10 +239,11 @@ Hypothesis neg_self_indep : forall (TA : finType)
 
 Variable m_minus_2 : nat.
 Local Notation m := m_minus_2.+2.
+Hypothesis prime_m : prime m.
 
-Let msg := 'I_m.  (* = Z/mZ *)
+Local Notation msg := 'F_m.  (* Finite field - when m is prime, isomorphic to Z/mZ *)
 Let card_msg : #|msg| = m.
-Proof. by rewrite card_ord. Qed.
+Proof. by rewrite card_Fp // pdiv_id. Qed.
 
 Let enc := enc party msg.
 Let pkey := pkey party msg.
@@ -423,14 +425,14 @@ Local Definition Eqn2_view :
  
 Hypothesis Pr_AliceView_neq0 :
     forall
-      (x : alice_inputsT * msg * Alice.-enc msg * Charlie.-enc 'I_m)
-      (e : Bob.-enc 'I_m),
+      (x : alice_inputsT * msg * Alice.-enc msg * Charlie.-enc msg)
+      (e : Bob.-enc msg),
     `Pr[ [% Dec_view, E_alice_d3, E_charlie_v3, E_bob_v2] = (x, e) ] != 0.
 
 Hypothesis Pr_Eqn1View_neq0 :
     forall
       (x : alice_inputsT * msg * Alice.-enc msg)
-      (e : Charlie.-enc 'I_m),
+      (e : Charlie.-enc msg),
     `Pr[ [% Dec_view, E_alice_d3, E_charlie_v3] = (x, e) ] != 0.
 
 Hypothesis Pr_Eqn2View_neq0 :
@@ -686,21 +688,26 @@ have H_assoc: forall V, `H(V | [% OtherAlice, V1, U1, U2, U3, S] ) =
     apply: eq_bigr => [] [] [] [] dk_a' r2' r3' [] [] [] [] v1' u1' u2' u3' s' _.
     congr (_ * _).
       rewrite !dist_of_RVE !pfwd1E.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+         rewrite -[andb]/GRing.mul; ring.
     rewrite /centropy1; congr (- _).
     rewrite /jcPr !snd_RV2.
     apply: eq_bigr => a _.
     rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
     congr (_ * _).
       f_equal.
-        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
+        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+           rewrite -[andb]/GRing.mul; ring.
       f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+         rewrite -[andb]/GRing.mul; ring.
     congr log.
     f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+         rewrite -[andb]/GRing.mul; ring.
     f_equal.
-    by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
+    by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+       rewrite -[andb]/GRing.mul; ring.
   exists (fun '(o, v1, u1, u2, u3, s) =>
              (o, (v1, u1, u2, u3, s))).
         - by move=> [] o [] [] [] [] a1 a2 a3 a4 a5.

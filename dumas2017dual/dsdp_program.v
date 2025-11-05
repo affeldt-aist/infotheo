@@ -36,10 +36,15 @@ Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
 Section dsdp.
-  
+
+Variable F : finFieldType.
 Variable m_minus_2 : nat.
 Local Notation m := m_minus_2.+2.
-Let msg := 'I_m.  (* = Z/mZ *)
+Hypothesis prime_m : prime m.
+
+Local Notation msg := 'F_m.  (* Finite field with m elements *)
+Let card_msg : #|msg| = m.
+Proof. by rewrite card_Fp // pdiv_id. Qed.
 
 Let enc := enc party msg.
 Let pkey := pkey party msg.
