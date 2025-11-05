@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
 From mathcomp Require boolp.
-From mathcomp Require Import reals exp Rstruct.
+From mathcomp Require Import reals exp.
 Require Import realType_ext ssr_ext bigop_ext ssralg_ext realType_ln.
 Require Import fdist proba entropy.
 

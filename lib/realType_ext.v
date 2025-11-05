@@ -2,7 +2,7 @@
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg archimedean ssrnum ssrint.
-From mathcomp Require Import Rstruct reals normedtype sequences exp.
+From mathcomp Require Import reals normedtype sequences exp.
 From mathcomp Require Import unstable mathcomp_extra boolp interval_inference.
 From mathcomp Require Import ring lra.
 

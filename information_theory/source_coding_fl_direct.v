@@ -1,9 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Rstruct.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
 From mathcomp Require Import archimedean lra ring.
-From mathcomp Require Import Rstruct reals exp.
+From mathcomp Require Import reals exp.
 Require Import ssr_ext ssralg_ext realType_ln natbin fdist.
 Require Import proba entropy aep typ_seq source_code.
 
@@ -27,7 +26,7 @@ Local Open Scope fdist_scope.
 Local Open Scope ring_scope.
 
 Section encoder_and_decoder.
-Let R := Rdefinitions.R.
+Variable R : realType.
 Variables (A : finType) (P : R.-fdist A) (n k : nat).
 
 Variable S : {set 'rV[A]_k.+1}.
@@ -81,7 +80,7 @@ Qed.
 End encoder_and_decoder.
 
 Section source_direct_bound.
-Let R := Rdefinitions.R.
+Variable R : realType.
 
 Let source_direct_bound' d (D : R) : { k | D <= (k * d.+1)%:R }.
 Proof.
@@ -107,7 +106,7 @@ Local Open Scope entropy_scope.
 Local Open Scope reals_ext_scope.
 
 Section source_coding_direct'.
-Let R := Rdefinitions.R.
+Variable R : realType.
 Variables (A : finType) (P : R.-fdist A) (num den : nat).
 Let r : R := num%:R / den.+1%:R.
 Hypothesis Hr : `H P < r.
@@ -154,7 +153,7 @@ Qed.
 Local Open Scope typ_seq_scope.
 
 Theorem source_coding' : exists sc : scode_fl A k n,
-  SrcRate sc = r /\ esrc(P , sc) <= epsilon.
+  SrcRate R sc = r /\ esrc(P , sc) <= epsilon.
 Proof.
 move: (proj2_sig (source_direct_bound den delta)) => Hdelta.
 have Hk : aep_bound P (lambda / 2) <= k%:R.
@@ -220,11 +219,11 @@ Qed.
 End source_coding_direct'.
 
 Section source_coding_direct.
-Variables (A : finType) (P : {fdist A}).
+Variables (R : realType) (A : finType) (P : R.-fdist A).
 
 Theorem source_coding_direct epsilon : 0 < epsilon < 1 ->
   forall nu de : nat, `H P < nu%:R / de.+1%:R ->
-    exists k n (sc : scode_fl A k n), SrcRate sc = nu%:R/de.+1%:R /\
+    exists k n (sc : scode_fl A k n), SrcRate R sc = nu%:R/de.+1%:R /\
                                       esrc(P , sc) <= epsilon.
 Proof.
 move=> Heps nu de HP_r.
