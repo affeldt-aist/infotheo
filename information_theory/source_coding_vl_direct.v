@@ -378,9 +378,8 @@ apply: (@le_lt_trans _ _  (n'.+1%:R * (`H P + epsilon') + 1 + 1 +
     rewrite [X in _ - X](_ : 1 = 1%:~R)//.
     by rewrite -intrB gt_pred_ceil.
 - rewrite cardsT card_tuple log_pow_INR; last by apply: fdist_card_neq0; exact: P.
-  rewrite -addrA -addrA -addrA addrC addrA addrC addrA.
-  rewrite (_ : 1 + 1 = (1 + 1) * n%:R * n%:R^-1); last first.
-    by rewrite -mulrA divff ?mulr1// pnatr_eq0.
+  rewrite -![_ + 1 + 1]addrA.
+  have ->: 1 + 1 = (1 + 1) * n%:R * n%:R^-1 :> R by rewrite mulfK// pnatr_eq0.
   rewrite (mulrC 2 _).
   rewrite -mulrA -!mulrDr.
   rewrite (mulrC epsilon' _) -mulrA.
