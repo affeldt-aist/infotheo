@@ -230,23 +230,68 @@ Lemma probpK R p H : Prob.p (@Prob.mk R p H) = p. Proof. by []. Qed.
 
 Notation "{ 'prob' T }" := (@prob T).
 
+(* inherit the order structure from (R : realType) *)
 HB.instance Definition _ (R : realType) :=
   [SubChoice_isSubOrder of {prob R} by <: with ring_display].
 
-Definition to_numdomain (R : realType) (p : {prob R}) : Num.NumDomain.sort _ :=
-  (p : R).
-Coercion to_numdomain : prob >-> Num.NumDomain.sort.
-Arguments to_numdomain /.
+(* Detailed coercions are needed to apply algebraic operations to elements of {prob R};
+   for each operation, there must be a coercion pointing to the exact structure for which
+   the operation is defined. *)
+Section prob_structural_coercions.
 
+(* for GRing.add and GRing.zero *)
+Definition to_nmodule (R : realType) (p : {prob R}) : GRing.Nmodule.sort _ :=
+  (p : R).
+Coercion to_nmodule : prob >-> GRing.Nmodule.sort.
+Arguments to_nmodule /.
+
+(* for GRing.opp *)
 Definition to_zmodule (R : realType) (p : {prob R}) : GRing.Zmodule.sort _ :=
   (p : R).
 Coercion to_zmodule : prob >-> GRing.Zmodule.sort.
 Arguments to_zmodule /.
 
-Definition to_ring (R : realType) (p : {prob R}) : GRing.Ring.sort _ :=
+(* for Num.norm *)
+Definition prob_to_seminormedzmodule (R : realType) (p : {prob R}) :
+  Num.SemiNormedZmodule.sort _ := (p : R).
+Coercion prob_to_seminormedzmodule : prob >-> Num.SemiNormedZmodule.sort.
+Arguments prob_to_seminormedzmodule /.
+
+(* for onem *)
+Definition to_numdomain (R : realType) (p : {prob R}) : Num.NumDomain.sort _ :=
   (p : R).
-Coercion to_ring : prob >-> GRing.Ring.sort.
-Arguments to_ring /.
+Coercion to_numdomain : prob >-> Num.NumDomain.sort.
+Arguments to_numdomain /.
+
+(* for GRing.mul and GRing.one *)
+(* NB: PzSemiRing will be renamed to SemiRing in the near future *)
+Definition to_pzsemiring (R : realType) (p : {prob R}) : GRing.PzSemiRing.sort _ :=
+  (p : R).
+Coercion to_pzsemiring : prob >-> GRing.PzSemiRing.sort.
+Arguments to_pzsemiring /.
+
+(* for GRing.inv *)
+Definition to_unitring (R : realType) (p : {prob R}) : GRing.UnitRing.sort _ :=
+  (p : R).
+Coercion to_unitring : prob >-> GRing.UnitRing.sort.
+Arguments to_unitring /.
+
+End prob_structural_coercions.
+
+(* If any of the following fails, update the corresponding coercion *)
+Section prob_coercion_tests.
+Variables (R : realType) (x y : {prob R}).
+Local Open Scope ring_scope.
+Succeed Definition test := x <= y.
+Succeed Definition test := x < y.
+Succeed Definition test := x + y.
+Succeed Definition test := - x.
+Succeed Definition test := `|x|.
+Succeed Definition test := x.~.
+Succeed Definition test := x * y.
+Succeed Definition test := x^-1.
+Succeed Definition test := x *: ((y : R) : R^o). (* FIXME? *)
+End prob_coercion_tests.
 
 Section prob_lemmas.
 Local Open Scope ring_scope.
@@ -369,7 +414,7 @@ Module Exports.
 Notation oprob := t.
 Notation "q %:opr" := (@mk _ q%:pr (@O1 _ _)).
 HB.instance Definition _ (R : realType) := [isSub for @p R].
-HB.instance Definition _ (R : realType) := [Equality of t R by <:].
+HB.instance Definition _ (R : realType) := [Choice of t R by <:].
 End Exports.
 End OProb.
 Export OProb.Exports.
@@ -380,6 +425,23 @@ Canonical oprobcplt [R: realType] (p : oprob R) :=
 Reserved Notation "{ 'oprob' T }" (at level 0, format "{ 'oprob'  T }").
 Notation "{ 'oprob' T }" := (@oprob T).
 Notation oprob_to_real o := (Prob.p (OProb.p o)).
+
+HB.instance Definition _ (R : realType) :=
+  [SubChoice_isSubOrder of {oprob R} by <: with ring_display].
+
+Section oprob_coercion_tests.
+Variables (R : realType) (x y : {oprob R}).
+Local Open Scope ring_scope.
+Succeed Definition test := x <= y.
+Succeed Definition test := x < y.
+Succeed Definition test := x + y.
+Succeed Definition test := - x.
+Succeed Definition test := `|x|.
+Succeed Definition test := x.~.
+Succeed Definition test := x * y.
+Succeed Definition test := x^-1.
+Succeed Definition test := x *: ((y : R) : R^o). (* FIXME? *)
+End oprob_coercion_tests.
 
 Section oprob_lemmas.
 Local Open Scope ring_scope.
