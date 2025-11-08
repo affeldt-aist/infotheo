@@ -21,6 +21,33 @@ Import Num.Theory.
 (*                                                                            *)
 (******************************************************************************)
 
+(******************************************************************************)
+(* Security Analysis: Connecting Algebraic and Information-Theoretic Views   *)
+(*                                                                            *)
+(* This file bridges two perspectives on DSDP protocol security:              *)
+(*                                                                            *)
+(* 1. ALGEBRAIC (dsdp_algebra.v):                                             *)
+(*    - Linear constraint: s = u1*v1 + u2*v2 + u3*v3                          *)
+(*    - Solution pairs form affine subspace of size m                         *)
+(*    - Matrix rank and kernel dimension determine degrees of freedom         *)
+(*                                                                            *)
+(* 2. INFORMATION-THEORETIC (dsdp_entropy.v):                                 *)
+(*    - Conditional entropy: H(V2,V3 | V1,U1,U2,U3,S) = log(m)                *)
+(*    - Uniform distribution over solution pairs maximizes entropy            *)
+(*    - Independence properties ensure no information leakage                 *)
+(*                                                                            *)
+(* KEY INSIGHT: Algebraic structure determines information-theoretic bounds.  *)
+(* The constraint reduces joint space from m² to m solution pairs, giving     *)
+(* exactly log(m) bits of entropy. Uniform distribution over this affine      *)
+(* subspace provides maximum uncertainty for adversary.                       *)
+(*                                                                            *)
+(* FIELD APPROXIMATION: Uses finFieldType (prime field 'F_m) to model         *)
+(* Benaloh's Z/(p*q). For cryptographic p,q ≥ 2^1024, statistical distance   *)
+(* < 2^-1000 (negligible). Enables field-based linear algebra while           *)
+(* preserving security for ring-based implementation. See notes/ for details. *)
+(*                                                                            *)
+(******************************************************************************)
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.

@@ -51,6 +51,11 @@ Variables (V1 V2 V3 U1 U2 U3 S : {RV P -> msg}).
 Hypothesis constraint_holds :
   forall t, S t = U1 t * V1 t + U2 t * V2 t + U3 t * V3 t.
 
+(* TODO: since we only use all variables to infer V2 or V3 indivdually,
+   maybe a better abstraction can save the work to listing all of them
+   every time -- an abstraction not covered yet.
+*)
+
 (* Non-degeneracy assumption *)
 Hypothesis U3_nonzero : forall t, U3 t != 0.
 
@@ -197,6 +202,11 @@ exact: dsdp_non_solution_zero_prob.
 Qed.
 
 (* Main lemma *)
+(* TODO: centropy = log m -- means it is the max entropy
+   "information can't hurt".
+
+   entropy.v le_centropy.
+*)
 Lemma dsdp_centropy_uniform_solutions :
   `H([% V2, V3] | [% V1, U1, U2, U3, S]) = log (m%:R : R).
 Proof.
@@ -572,13 +582,51 @@ Section semi_honest_case_analysis.
 
 Section bonded_leakage_privacy.
 
-(* The constraint function: given v2, s, u2, u3, compute v3 *)
+(* When msg = 'I_m (Z/mZ) with composite m = p*q, if u3 is not coprime to m,
+   the constraint s = u1*v1 + u2*v2 + u3*v3 restricts v2 to m/gcd(u3,m) values
+   instead of m values. Over multiple protocol executions, this enables a
+   statistical attack: the adversary observes that v2 takes only m/d distinct
+   values (where d = gcd(u3,m)), revealing the factorization of m. Once p and q
+   are known, the marginal entropy H(V2|...) reduces from log(m) to log(m/d),
+   leaking log(d) bits of information about Bob's secret.
+
+   Example: m=15=3×5, u3=3. Then v2 ∈ {0,3,6,9,12} (only 5 values), while v3
+   takes 3 values for each v2. Joint entropy H(V2,V3|...)=log(15) is preserved,
+   but H(V2|...)=log(5), leaking log(3)≈1.58 bits compared to the uniform case.
+
+   In the semi-honest model with ZKP enforcement, we require u3 coprime to m to
+   prevent this attack. The ZKP check ensures non-triviality and coprimality,
+   maintaining uniform distribution over all m values of v2.
+   
+   NOTE: Current formalization uses 'F_m (prime field) where all non-zero
+   elements are coprime to m, so this attack does not apply. This comment
+   documents the security requirement for future extension to composite moduli.
+*)
+
 Definition compute_v3 (o : (msg * msg * msg * msg * msg * msg)) : msg :=
   let '(v1_val, u1_val, u2_val, u3_val, s_val, v2_val) := o in
-    (s_val - u2_val * v2_val) / u3_val - u1_val * v1_val.  (* assuming u3 ≠ 0 *)
+    (s_val - u2_val * v2_val - u1_val * v1_val) / u3_val.
 
-Hypothesis V3_determined : 
-  V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
+Let U3_nonzero : forall t, U3 t != 0.
+Proof.
+move=> t.
+have Hcoprime := U3_coprime_m t.
+case Hval: (val (U3 t)) => [|n] //.
+by move: Hcoprime; rewrite Hval /coprime gcd0n => /eqP.
+Qed.
+
+Let V3_determined : V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
+Proof.
+rewrite S_alt2 /compute_v3 /comp_RV /=.  
+apply/boolp.funext => i /=.
+field.
+exact: (U3_nonzero i).
+Qed.
+
+(* TODO: put an assumption so the lemma
+   determined_auxiliary_adds_no_information_v2 can be applied
+   when the assumption is true.
+*)
 
 (** * Fundamental Principle of Constraint-Based Security
     

@@ -34,6 +34,24 @@ Local Open Scope vec_ext_scope.
 
 Local Definition R := Rdefinitions.R.
 
+Section fail_ring_rV_vs_M.
+
+Variable m_minus_2 : nat.
+Local Notation m := m_minus_2.+2.
+Local Notation msg := 'I_m.
+
+Variable (mx : 'M[msg]_(1, 3)).
+Fail Check \rank mx.
+Locate "\rank".
+About mxrank.body.
+
+Variable F : finFieldType.
+Local Notation msgF := 'F_m.
+Variable (mxF : 'M[msgF]_(1, 3)).
+Check \rank mxF.
+
+End fail_ring_rV_vs_M.
+
 Section dsdp_algebra.
   
 Variable F : finFieldType.
