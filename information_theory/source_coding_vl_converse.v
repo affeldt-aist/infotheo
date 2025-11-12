@@ -827,7 +827,7 @@ apply: (@le_trans _ _ ((x ^ 2 / 2 - 1) * eps * n%:R)); last first.
     exact/ltW/exp_strict_lb.
   rewrite /m /x.
   rewrite lerBlDr.
-  rewrite (le_trans (ltW (lt_succ_floor _)))//.
+  rewrite (le_trans (ltW (floorD1_gt _)))//.
   rewrite natr_absz intrD1 ler_int.
   by rewrite lerD2r ler_norm.
 rewrite logM//; last exact: mpos.

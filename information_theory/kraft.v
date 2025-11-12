@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-Require FunctionalExtensionality Wf_nat.
+From Coq Require FunctionalExtensionality Wf_nat.
 Require Import ssr_ext.
 
 (**md**************************************************************************)
@@ -192,7 +192,7 @@ rewrite ary_of_nat_unfold; case: ifPn => //.
 rewrite -leqNgt => tm; rewrite size_rcons ltnS IH //.
   destruct n as [|n] => //.
   rewrite expn1 in mt; move: (leq_ltn_trans tm mt); by rewrite ltnn.
-by rewrite -(@ltn_pmul2r t) // -expnSr (leq_trans _ mt) // ltnS leq_trunc_div.
+by rewrite -(@ltn_pmul2r t) // -expnSr (leq_trans _ mt) // ltnS leq_divM.
 Qed.
 
 Definition nat_of_ary (s : seq 'I_t) : nat :=

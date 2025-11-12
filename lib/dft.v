@@ -1,5 +1,5 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg poly polydiv zmodp.
 From mathcomp Require Import matrix mxalgebra mxpoly vector cyclic perm.
 Require Import ssr_ext ssralg_ext hamming.
@@ -24,7 +24,7 @@ Require Import ssr_ext ssralg_ext hamming.
 (*                                                                            *)
 (******************************************************************************)
 
-Reserved Notation "v ^`_( f , i )" (at level 9).
+Reserved Notation "v ^`_( f , i )" (at level 1).
 
 Declare Scope dft_scope.
 
@@ -236,7 +236,7 @@ move=> j _; by rewrite mxE mul0r.
 Qed.
 
 (* the characteristic of F is not a prime divisor of n: *)
-Hypothesis Hchar : ([char F]^').-nat n.
+Hypothesis Hchar : ([pchar F]^').-nat n.
 
 Hypothesis an : n.-primitive_root a.
 Let a_neq0 : (a != 0) := primitive_uroot_neq0 an.
@@ -260,7 +260,7 @@ rename i into j.
 rewrite (bigD1 j) //= (eq_bigr (fun=> 1)); last first.
   by move=> k _; rewrite divff // expf_neq0.
 rewrite sumr_const card_ord mulrDr mulrCA mulVr ?mulr1; last first.
-  by rewrite unitfE natf_neq0.
+  by rewrite unitfE natf_neq0_pchar.
 rewrite [X in _ + _ * X = _](_ : _ = 0) ?mulr0 ?addr0 //.
 rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addr0 // => i ij.
 apply/eqP.
@@ -309,7 +309,7 @@ End inverse_dft.
 Section tdcoor_of_fdcoor.
 Variables (F : fieldType) (a : F) (n' : nat).
 Let n := n'.+1.
-Hypothesis Hchar : ([char F]^').-nat n.
+Hypothesis Hchar : ([pchar F]^').-nat n.
 
 Hypothesis an : n.-primitive_root a.
 
@@ -364,7 +364,7 @@ move/(congr1 (fun x => x - ((m + i) %/ n * n))%N); rewrite addnK => <-.
 rewrite -[in LHS]exprM -[in LHS]exprD.
 rewrite -[in RHS]exprM [in RHS]mulnBl.
 rewrite [in RHS]GRing.exprB; last 2 first.
-  by rewrite leq_mul // leq_trunc_div.
+  by rewrite leq_mul // leq_divM.
   by rewrite unitfE.
 rewrite [in X in _ = _ / X]mulnAC [in X in _ = _ / X]mulnC.
 by rewrite [in X in _ = _ / X]exprM an1 expr1n divr1 mulnDl.
@@ -397,7 +397,7 @@ Variables (F0 F : fieldType).
 Variable gmorph : {rmorphism F0 -> F}.
 Variable (n' : nat).
 Let n := n'.+1.
-Hypothesis (Hchar : ([char F]^').-nat n).
+Hypothesis (Hchar : ([pchar F]^').-nat n).
 
 Variable (a : F).
 Hypothesis an : n.-primitive_root a.
@@ -457,7 +457,7 @@ rewrite (_ : count _ _ = count (fun i : 'I_n =>
   rewrite -[RHS]orFb.
   congr (_ || _).
   apply/negbTE.
-  by rewrite natf_neq0.
+  by rewrite natf_neq0_pchar.
 rewrite ltnNge.
 apply/negP => abs.
 set rs := filter (fun i => root (rVpoly (dft (rVexp a n) n (\row_i0 gmorph w ``_ i0))) i)

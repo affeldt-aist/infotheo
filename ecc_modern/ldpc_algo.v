@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-Require Import Init.Wf Recdef.
+From Coq Require Import Init.Wf Recdef.
 From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg ssrnum.
 From mathcomp Require Import Rstruct reals ring lra.
 Require Import f2 subgraph_partition tanner.
@@ -372,7 +372,7 @@ Definition sumprod_spec := forall a b,
 
 Let estimations := estimation computed_tree.
 
-Definition esti_spec n0 b := `U C_not_empty '_ n0 `^^ W (b | y).
+Definition esti_spec n0 b := (`U C_not_empty) '_ n0 `^^ W (b | y).
 
 Definition estimation_spec := uniq (unzip1 estimations) /\
   forall n0, (inr n0, (esti_spec n0 0, esti_spec n0 1)) \in estimations.

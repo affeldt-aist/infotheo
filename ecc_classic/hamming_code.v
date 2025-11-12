@@ -173,14 +173,14 @@ have [X|[X|X]] : (x = m.-1 \/ x = m.-2 \/ x < m.-2)%N.
   rewrite {1}(_ : m = size p0); last by rewrite /p0 size_pad_seqL.
   rewrite {1}(_ : m = size p1); last by rewrite /p0 size_pad_seqL.
   rewrite {1}(_ : m = size p2); last by rewrite /p0 size_pad_seqL.
-  by rewrite 3!nth_last last_cat /= /p1 /p2 /= 2!last_cat /= add0r addrr_char2.
+  by rewrite 3!nth_last last_cat /= /p1 /p2 /= 2!last_cat /= add0r addrr_pchar2.
 - (* false true true *)
   rewrite X /= /p0 /pad_seqL /=.
   rewrite -cat1s catA nth_cat /= size_nseq /= ltnS leqnn.
   rewrite (_ : false :: _ = nseq m'.+1 false) // nth_nseq ltnS leqnn /=.
   rewrite /p1 /pad_seqL /= nth_cat size_nseq subn2 ltnn subnn /=.
   rewrite /p2 /pad_seqL /= nth_cat size_nseq subn2 ltnn subnn /=.
-  by rewrite addrr_char2 // addr0.
+  by rewrite addrr_pchar2 // addr0.
 - (* false false false *)
   rewrite /p0 /p1 /p2 /= /pad_seqL /=.
   rewrite -cat_cons -[_::_]/(nseq _.+1 _) cats1 nth_rcons size_nseq ltnW // nth_nseq ltnW //.

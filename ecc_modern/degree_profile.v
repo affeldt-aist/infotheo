@@ -1,5 +1,5 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup zmodp poly ssrnum.
 From mathcomp Require Import matrix perm.
@@ -1011,7 +1011,7 @@ Qed.
 End imset2.
 
 Section poly_ops.
-Variable K : ringType.
+Variable K : nzRingType.
 
 Lemma sum_poly_weaken (l : {poly K}) s :
   (size l <= s)%nat -> \sum_(0 <= i < s) l`_i = \sum_(i < size l) l`_i.
@@ -1022,6 +1022,7 @@ rewrite -{1}(subn0 (size l)) big_mkord // -[RHS]addr0; congr (_ + _).
 rewrite big_nat_cond big1 // add0n => i /andP[/andP[Hi _] _].
 by apply/leq_sizeP : Hi.
 Qed.
+
 End poly_ops.
 
 Section sum_ops.

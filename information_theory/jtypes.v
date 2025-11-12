@@ -1,6 +1,6 @@
 From HB Require Import structures.
 (* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals exp.
@@ -1314,7 +1314,7 @@ Qed.
 End shell_partition.
 
 Section sum_tuples_ctypes.
-Context {R : ringType}.
+Context {R : pzRingType}.
 Variables (A B : finType) (n' : nat).
 Let n := n'.+1.
 Variable ta : n.-tuple A.

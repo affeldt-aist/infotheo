@@ -145,7 +145,8 @@ Local Open Scope proba_scope.
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
 (* TODO: mv *)
-Lemma m1powD {R : ringType} k : k <> 0%nat -> (-1) ^+ (k-1) = - (-1) ^+ k :> R.
+Lemma m1powD {R : pzRingType} k :
+  k <> 0%nat -> (-1) ^+ (k-1) = - (-1) ^+ k :> R.
 Proof. by case: k => [//|k _]; rewrite subn1 /= exprS mulN1r opprK. Qed.
 
 Notation "E `*T" := ([set x | x.1 \in E]) : proba_scope.
@@ -675,7 +676,7 @@ Notation "'`--' P" := (opp_RV P) : proba_scope.
 Section ring_random_variables.
 Local Open Scope ring_scope.
 Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U) (V : ringType).
+Variables (U : finType) (P : R.-fdist U) (V : pzRingType).
 
 Definition scalel_RV k (X : {RV P -> V}) : {RV P -> V} := fun x => k * X x.
 Definition scaler_RV (X : {RV P -> V}) k : {RV P -> V} := fun x => X x * k.

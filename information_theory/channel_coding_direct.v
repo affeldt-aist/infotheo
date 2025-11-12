@@ -1,5 +1,5 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix perm.
@@ -845,7 +845,7 @@ have [n Hn] : exists n, n_condition W P r epsilon0 n.
     split; first by rewrite leq_max.
     split.
       apply (@lt_le_trans _ R (Num.floor (- log epsilon0 / epsilon0) + 1)%:~R).
-        exact: lt_succ_floor.
+        exact: floorD1_gt.
       apply (@le_trans _ R (Nup (- log epsilon0 / epsilon0))%:R).
         by rewrite /Nup -addn1 -mulrz_nat natz PoszD ler_int lerD // lez_abs.
       by rewrite ler_nat /supermax 2!leq_max leqnn orbT.

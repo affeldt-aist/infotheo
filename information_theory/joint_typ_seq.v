@@ -1,5 +1,5 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssrnum ssrint ssralg matrix.
 From mathcomp Require Import lra ring archimedean.
 From mathcomp Require Import unstable mathcomp_extra Rstruct reals exp.
@@ -104,10 +104,12 @@ End jtyp_seq_upper.
 Section jtyp_seq_transmitted.
 Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)).
 Variable epsilon : R.
+
 Definition Nup (x : R) := `| Num.floor x |.+1.
+
 Lemma Nup_gt x : x < (Nup x)%:R.
 Proof.
-apply: (lt_le_trans (lt_succ_floor x)).
+apply: (lt_le_trans (floorD1_gt x)).
 by rewrite /Nup -intrD1 -natr1 lerD // natr_absz ler_int ler_norm.
 Qed.
 

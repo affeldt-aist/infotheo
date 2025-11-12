@@ -1,5 +1,5 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
 Require Import hamming num_occ ssralg_ext f2 linearcode decoding channel_code.
@@ -50,7 +50,7 @@ rewrite (_ : tuple_of_row _ =
     [tuple of map (fun x => F2_of_bool (x != a%R)) (tuple_of_row v)]); last first.
   apply eq_from_tnth => i.
   rewrite tnth_mktuple tnth_map tnth_mktuple !mxE.
-  by case/F2P : a; case: F2P => //; rewrite ?subrr ?subr0 ?sub0r ?oppr_char2.
+  by case/F2P : a; case: F2P => //; rewrite ?subrr ?subr0 ?sub0r ?oppr_pchar2.
 rewrite {1}/num_occ count_map /preim.
 apply eq_count => /= x.
 rewrite !inE.
@@ -99,7 +99,7 @@ rewrite /row_of_tuple /Syslcode.encode /Syslcode.GEN ffunE.
 rewrite (mulmx_castmx_cols_comm subnKC); apply/rowP => i.
 rewrite mxE castmxE /= cast_ord_id mul_mx_row mulmx1 mxE.
 case: splitP => [j _| k /= bk]; first by rewrite mxE.
-rewrite mxE (bigD1 ord0) //= !mxE oppr_char2 // mulr1 big_pred0 ?addr0 //.
+rewrite mxE (bigD1 ord0) //= !mxE oppr_pchar2 // mulr1 big_pred0 ?addr0 //.
 by move=> x /=; rewrite (ord1 x) eqxx.
 Qed.
 
@@ -120,7 +120,7 @@ have : forall i : 'I_n.-1, x ``_ ord0 = x ``_ (lift ord0 i).
     rewrite /bump leq0n /= 2!add1n; case => ik.
     rewrite !mxE (_ : _ == _ = true) ?mul1r //; exact/eqP/val_inj.
   rewrite [X in _ + (_ + X) = _ -> _](_ : _ = 0).
-    by move/eqP; rewrite addr_eq0 ?addr0 oppr_char2 // => /eqP.
+    by move/eqP; rewrite addr_eq0 ?addr0 oppr_pchar2 // => /eqP.
   set F := BIG_F.
   rewrite big1 // => i1 /andP[i10 i11].
   rewrite {}/F castmxE /= cast_ord_id mxE.

@@ -1,5 +1,5 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra zmodp matrix.
 From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext realType_ext bigop_ext fdist proba.
@@ -23,9 +23,9 @@ Require Import channel jfdist_cond.
 (* ```                                                                        *)
 (******************************************************************************)
 
-Reserved Notation "P '`^^' W '(' x '|' y ')'" (at level 10,
+Reserved Notation "P '`^^' W '(' x '|' y ')'" (at level 1,
   W, x, y at next level).
-Reserved Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" (at level 10,
+Reserved Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" (at level 1,
   n0, W, a, y at next level).
 Reserved Notation "P .-receivable W" (at level 2, format "P .-receivable  W").
 

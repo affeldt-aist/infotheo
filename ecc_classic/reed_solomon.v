@@ -18,9 +18,9 @@ Require Import hamming dft poly_decoding euclid grs cyclic_code.
 (*   Nippon Hyoron Sha, 2012 (in Japanese)                                    *)
 (******************************************************************************)
 
-Reserved Notation "'\RSsynp_(' a , y , t )" (at level 3).
-Reserved Notation "'\RSomega_(' a , e )" (at level 3).
-Reserved Notation "'\gen_(' a , d )" (at level 3).
+Reserved Notation "'\RSsynp_(' a , y , t )" (at level 0).
+Reserved Notation "'\RSomega_(' a , e )" (at level 0).
+Reserved Notation "'\gen_(' a , d )" (at level 0).
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -409,8 +409,8 @@ Let n := n'.+1.
 Hypothesis dn : RS.redundancy_ub d n.
 Hypothesis qn : ~~ (q %| n)%nat.
 
-Lemma RS_Hchar : ([char F]^').-nat n.
-Proof. by rewrite -natf_neq0 -(@dvdn_charf _ q) ?char_GFqm. Qed.
+Lemma RS_Hchar : ([pchar F]^').-nat n.
+Proof. by rewrite -natf_neq0_pchar -(@dvdn_pcharf _ q) ?char_GFqm. Qed.
 
 Lemma RS_min_dist1 c : n.-primitive_root a -> c != 0 ->
   c \in RS.code a n d -> d.+1 <= wH c.
@@ -516,7 +516,7 @@ have Hm'' : 0 < size m by rewrite size_poly_gt0.
 exists m; split; [| by rewrite Hm].
 have : size (rVpoly c) <= n by apply size_poly.
 rewrite Hm.
-move : (size_mul_leq m \gen_(a, d)) => Hmg.
+move : (size_polyMleq m \gen_(a, d)) => Hmg.
 rewrite size_mul // -!subn1 addnC -addnBA // addnC.
 move /(leq_sub2r d.+1).
 rewrite Hg.
@@ -727,21 +727,21 @@ rewrite -(@rreg_div0 _ _ _ 'X^d).
   rewrite addr_eq0 opprB -subr_eq0.
   move/eqP : x1x2.
   rewrite -[in X in X -> _]subr_eq0 -linearB /= => /poly_rV_0_inv; apply.
-  rewrite (leq_trans (size_add _ _)) // size_opp geq_max.
+  rewrite (leq_trans (size_polyD _ _)) // size_polyN geq_max.
   have H : forall x : 'rV[F]_(n - d.+1).+1, size (rVpoly x * 'X^d) <= n.
     move=> x.
-    apply (leq_trans (size_mul_leq _ _)).
+    apply (leq_trans (size_polyMleq _ _)).
     rewrite size_polyXn addnS /=.
     rewrite (@leq_trans ((n - d.+1).+1 + d)) //.
       by rewrite leq_add2r size_poly.
     move: dn; rewrite /RS.redundancy_ub => ?.
     by rewrite subnS prednK // ?subn_gt0 // subnK // ltnW.
-  apply/andP; split; rewrite (leq_trans (size_add _ _)) // geq_max size_opp H /=.
+  apply/andP; split; rewrite (leq_trans (size_polyD _ _)) // geq_max size_polyN H /=.
     by rewrite (leq_trans _ dn) // ltnW.
     by rewrite (leq_trans _ dn) // ltnW.
 - by rewrite lead_coefXn; exact: GRing.rreg1.
-- rewrite size_polyXn ltnS (leq_trans (size_add _ _)) //.
-  by rewrite geq_max size_opp /=; apply/andP; split; rewrite -ltnS.
+- rewrite size_polyXn ltnS (leq_trans (size_polyD _ _)) //.
+  by rewrite geq_max size_polyN/=; apply/andP; split; rewrite -ltnS.
 Qed.
 
 Hypothesis a_neq0 : a != 0.
@@ -754,7 +754,7 @@ Proof.
 apply/subsetP => /= c /imsetP[/= m _] ->{c}.
 rewrite /encoder ffunE.
 have Htmp : size (rVpoly m * 'X^d) <= n.
-  eapply leq_trans; first by apply size_mul_leq.
+  eapply leq_trans; first by apply size_polyMleq.
   rewrite size_polyXn addnS /=.
   suff : size (rVpoly m) <= (n - d.+1).+1.
     rewrite -(leq_add2r d) => /leq_trans -> //.
@@ -774,7 +774,7 @@ split.
   apply leq_sub2l => //.
   rewrite size_rs_gen //; exact: d_pos.
 rewrite {1}(divp_eq (rVpoly m * 'X^d) \gen_(a, d)) addrK poly_rV_K //.
-by eapply leq_trans; first by apply leq_trunc_divp.
+by eapply leq_trans; first by apply leq_divMp.
 Qed.
 
 Lemma RS_repair_output_is_in_the_code (x y : 'rV_n) (an1 : a ^+ n = 1) :
@@ -789,7 +789,7 @@ rewrite RS.RS_syndromep_codeword // -RS.lcode0_codebook // inE => ?.
 by case=> <-.
 Qed.
 
-Lemma RS_repair_img (an1 : a ^+ n = 1) (Hchar : ([char F]^').-nat n'.+1) :
+Lemma RS_repair_img (an1 : a ^+ n = 1) (Hchar : ([pchar F]^').-nat n'.+1) :
   oimg (RS_repair a _ d) \subset RS.code a n d.
 Proof.
 apply/subsetP => /= y.
@@ -837,22 +837,22 @@ suff H : size (rVpoly (encoder m - c)) <= d.
     by case: (insub i) => // ?; rewrite mxE.
   by move=> /leq_trans/(_ H); rewrite ltnn.
 rewrite /encoder ffunE linearB /= poly_rV_K; last first.
-  rewrite (leq_trans (size_add _ _)) // geq_max.
+  rewrite (leq_trans (size_polyD _ _)) // geq_max.
   apply/andP; split.
-    rewrite (leq_trans (size_mul_leq _ _)) // size_polyXn addnS /=.
+    rewrite (leq_trans (size_polyMleq _ _)) // size_polyXn addnS /=.
     apply (@leq_trans ((n - d.+1).+1 + d)).
       by rewrite leq_add2r size_poly.
     by rewrite subnS prednK ?subn_gt0 // subnK // ltnW.
-  rewrite size_opp (@leq_trans d) //; last exact/ltnW.
+  rewrite size_polyN (@leq_trans d) //; last exact/ltnW.
   by rewrite -ltnS -[in X in _ <= X](size_rs_gen a d) ltn_modp gen_neq0.
 pose c1 := low c.
 rewrite (_ : _ - _ = - rVpoly c1 - (rVpoly m * 'X^d) %% \gen_(a, d)); last first.
   rewrite addrC addrA; congr (_ - _).
   by rewrite (decomp_codeword c) opprD subrK.
-rewrite (leq_trans (size_add _ _)) // geq_max.
+rewrite (leq_trans (size_polyD _ _)) // geq_max.
 apply/andP; split.
-  by rewrite size_opp /rVpoly size_poly.
-by rewrite size_opp -ltnS -[in X in _ <= X](size_rs_gen a d) ltn_modp gen_neq0.
+  by rewrite size_polyN /rVpoly size_poly.
+by rewrite size_polyN -ltnS -[in X in _ <= X](size_rs_gen a d) ltn_modp gen_neq0.
 Qed.
 
 Lemma RS_enc_discard_is_id : cancel_on (RS.code a n d) encoder RS_discard.
@@ -862,7 +862,7 @@ rewrite /RS_discard -/(high c); apply RS_enc_surjective.
 by rewrite -RS.lcode0_codebook // ?inE.
 Qed.
 
-Definition RS_as_lcode (an1 : a ^+ n = 1) (Hchar : ([char F]^').-nat n) :
+Definition RS_as_lcode (an1 : a ^+ n = 1) (Hchar : ([pchar F]^').-nat n) :
   Lcode.t _ _ _ 'rV_(n - d.+1).+1 :=
     @Lcode.mk _ _ _ _ _
       (Encoder.mk RS_enc_injective RS_enc_img)
