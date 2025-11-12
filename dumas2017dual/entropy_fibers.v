@@ -1,0 +1,296 @@
+From HB Require Import structures.
+From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
+From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
+Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
+Require Import proba jfdist_cond entropy graphoid dsdp_extra.
+
+Import GRing.Theory.
+Import Num.Theory.
+
+(******************************************************************************)
+(*  General Theory of Entropy over Fibers and Solution Sets                   *)
+(*                                                                            *)
+(*  This file provides an abstract framework for reasoning about conditional  *)
+(*  entropy when random variables are constrained by deterministic functions. *)
+(*                                                                            *)
+(*  Key concepts:                                                             *)
+(*  - fiber f c : the preimage (solution set) of c under f                    *)
+(*  - image_set f : the range of f                                            *)
+(*  - Uniform distribution over fibers leads to predictable entropy           *)
+(*                                                                            *)
+(*  Main results:                                                             *)
+(*  - entropy_uniform_fiber_size: H(X | Y=c) = log(|fiber(c)|)               *)
+(*    when X is uniformly distributed over fiber(c)                           *)
+(*  - functional_determinacy: H([X,Z] | Cond) = H(X | Cond)                   *)
+(*    when Z is functionally determined by X and Cond                         *)
+(*                                                                            *)
+(******************************************************************************)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Import Prenex Implicits.
+
+Local Open Scope ring_scope.
+Local Open Scope reals_ext_scope.
+Local Open Scope proba_scope.
+Local Open Scope fdist_scope.
+Local Open Scope entropy_scope.
+
+Local Definition R := Rdefinitions.R.
+
+Section AbstractFibers.
+
+(* Domain and codomain can be any finite types *)
+Variables (DomainT CodomainT : finType).
+
+(* An arbitrary function *)
+Variable f : DomainT -> CodomainT.
+
+(* Fiber (preimage/solution set): all x such that f(x) = c *)
+Definition fiber (c : CodomainT) : {set DomainT} :=
+  [set x | f x == c].
+
+(* Image (range): all values actually taken by f *)
+Definition image_set : {set CodomainT} :=
+  [set c | [exists x, f x == c]].
+
+(* Alternative characterization: c is in image iff fiber is non-empty *)
+Lemma mem_image_set c : 
+  (c \in image_set) = [exists x, f x == c].
+Proof. by rewrite inE. Qed.
+
+Lemma fiber_non_empty_image c :
+  (c \in image_set) = (fiber c != set0).
+Proof.
+rewrite mem_image_set.
+apply/existsP/set0Pn => [[x /eqP fx_eq_c] | [x]].
+- by exists x; rewrite inE fx_eq_c eqxx.
+- by rewrite inE => /eqP fx_eq_c; exists x; rewrite fx_eq_c.
+Qed.
+
+(* Membership in fiber *)
+Lemma mem_fiber x c : (x \in fiber c) = (f x == c).
+Proof. by rewrite inE. Qed.
+
+(* Values outside fiber have f(x) ≠ c *)
+Lemma nmem_fiber x c : (x \notin fiber c) = (f x != c).
+Proof. by rewrite mem_fiber. Qed.
+
+End AbstractFibers.
+
+Section FiberEntropy.
+
+Variable T : finType.
+Variable P : R.-fdist T.
+Variables (DomainT CodomainT : finType).
+Variable f : DomainT -> CodomainT.
+
+(* Random variables *)
+Variable X : {RV P -> DomainT}.
+Variable Y : {RV P -> CodomainT}.
+
+(* Y is determined by X through function f *)
+Hypothesis Y_eq_fX : Y = f `o X.
+
+(* Helper: values outside the fiber have zero conditional probability *)
+Lemma fiber_complement_zero_prob (c : CodomainT) (x : DomainT) :
+  `Pr[Y = c] != 0 ->
+  x \notin fiber f c ->
+  `Pr[X = x | Y = c] = 0.
+Proof.
+move=> Hcond_pos Hnot_solution.
+set constraint := fun (conds : CodomainT) (vals : DomainT) =>
+  vals \in fiber f conds.
+have Hconstraint: forall t, constraint (Y t) (X t).
+  move=> t.
+  rewrite /constraint /=.
+  rewrite inE /=.
+  by rewrite Y_eq_fX /comp_RV eqxx.
+by rewrite (cond_prob_zero_outside_constraint Hconstraint Hcond_pos).
+Qed.
+
+Lemma centropy1_as_sum (c : CodomainT) :
+  `Pr[Y = c] != 0 ->
+  `H[X | Y = c] = 
+    - \sum_(x : DomainT) `Pr[X = x | Y = c] * log (`Pr[X = x | Y = c]).
+Proof.
+move=> Hcond_pos.
+rewrite centropy1_RVE // /entropy.
+congr (- _); apply: eq_bigr => x _.
+  by rewrite jfdist_cond_cPr_eq // fst_RV2 dist_of_RVE.
+rewrite fst_RV2 dist_of_RVE.
+exact: Hcond_pos.
+Qed.
+
+Lemma entropy_uniform_set (S : {set DomainT}) (n : nat) :
+  #|S| = n ->
+  (0 < n)%N ->
+  (- \sum_(x in S) (1%:R / n%:R) * log ((1 / n%:R) : R)) = log (n%:R : R).
+Proof.
+move=> Hcard Hn_pos.
+rewrite big_const iter_addr addr0 Hcard -mulr_natr mul1r.
+rewrite logV; last by rewrite ltr0n.
+field.
+by rewrite pnatr_eq0 -lt0n.
+Qed.
+
+Lemma entropy_uniform_fiber_size (c : CodomainT) :
+  `Pr[Y = c] != 0 ->
+  let fiber_c := fiber f c in
+  (forall x, x \in fiber_c -> 
+    `Pr[X = x | Y = c] = 1%:R / #|fiber_c|%:R) ->
+  (forall x, x \notin fiber_c ->
+    `Pr[X = x | Y = c] = 0) ->
+  (0 < #|fiber_c|)%N ->
+  `H[X | Y = c] = log (#|fiber_c|%:R : R).
+Proof.
+move=> Hcond_pos /= Hsol_unif Hnonsol_zero Hcard_pos.
+rewrite (centropy1_as_sum Hcond_pos).
+rewrite (entropy_sum_split Hsol_unif Hnonsol_zero).
+by apply: entropy_uniform_set.
+Qed.
+
+End FiberEntropy.
+
+Section ConstantFiberSize.
+
+Variable T : finType.
+Variable P : R.-fdist T.
+
+Variables (DomainT CodomainT : finType).
+Variable f : DomainT -> CodomainT.
+Variable X : {RV P -> DomainT}.
+Variable Y : {RV P -> CodomainT}.
+
+Hypothesis Y_eq_fX : Y = f `o X.
+
+(* When all fibers have the same size *)
+Hypothesis constant_fiber_size : forall c1 c2,
+  c1 \in image_set f -> c2 \in image_set f ->
+  #|fiber f c1| = #|fiber f c2|.
+
+(* And X is uniformly distributed over each fiber *)
+Hypothesis uniform_on_fibers : forall c x,
+  `Pr[Y = c] != 0 ->
+  x \in fiber f c ->
+  `Pr[X = x | Y = c] = 1%:R / #|fiber f c|%:R.
+
+(* Then overall conditional entropy is constant *)
+Lemma centropy_constant_fibers (fiber_card : nat) :
+  (forall c, c \in image_set f -> #|fiber f c| = fiber_card) ->
+  (0 < fiber_card)%N ->
+  `H(X | Y) = log (fiber_card%:R : R).
+Proof.
+move=> Hcard Hcard_pos.
+rewrite centropy_RVE' /=.
+(* Each term in the sum equals Pr[Y = c] * log(fiber_card) *)
+transitivity (\sum_(c : CodomainT) `Pr[Y = c] * log (fiber_card%:R : R)).
+  apply: eq_bigr => c _.
+  have [Pc_eq0 | Pc_neq0] := eqVneq (`Pr[Y = c]) 0.
+    by rewrite Pc_eq0 !mul0r.
+  (* Y = c implies c is in the image *)
+  have c_in_image: c \in image_set f.
+    rewrite fiber_non_empty_image.
+    apply/set0Pn.
+    move/pfwd1_neq0: Pc_neq0 => [t [Ht _]].
+    move: Ht; rewrite inE => /eqP Yt_eq_c.
+    exists (X t).
+    rewrite Y_eq_fX /comp_RV in Yt_eq_c.
+    by rewrite -Yt_eq_c mem_fiber.
+  rewrite -(Hcard _ c_in_image).
+  congr (_ * _).
+  apply: entropy_uniform_fiber_size => //.
+  - move=> x x_in_fiber.
+    by apply: uniform_on_fibers.
+  - move=> x x_notin_fiber.
+    by apply: (fiber_complement_zero_prob Y_eq_fX Pc_neq0 x_notin_fiber).
+  - by rewrite Hcard.
+(* Factor out log(fiber_card) *)
+under eq_bigr do rewrite mulrC.
+by rewrite -big_distrr /= sum_pfwd1 mulr1.
+Qed.
+
+End ConstantFiberSize.
+
+Section FunctionalDeterminacy.
+
+(* When an auxiliary variable is functionally determined,
+   it adds no information to entropy *)
+
+Variable T : finType.
+Variable P : R.-fdist T.
+
+Variables (XT YT CondT : finType).
+Variable X : {RV P -> XT}.
+Variable Y : {RV P -> YT}.
+Variable Cond : {RV P -> CondT}.
+
+(* Y is determined by X and Cond through function g *)
+Variable g : XT -> CondT -> YT.
+Hypothesis Y_determined : Y = (fun t => g (X t) (Cond t)).
+
+(* Main result: auxiliary variable adds no entropy *)
+Lemma functional_determinacy_entropy :
+  `H([% X, Y] | Cond) = `H(X | Cond).
+Proof.
+(* Use chain rule *)
+have ->: `H([% X, Y] | Cond) = 
+  `H(Cond, [% X, Y]) - `H `p_Cond.
+  by rewrite chain_rule_RV addrAC subrr add0r.
+rewrite Y_determined.
+(* Expand the joint entropy *)
+have ->: `H(Cond, [% X, (fun t => g (X t) (Cond t))]) = 
+  `H `p_[% Cond, X].
+  rewrite joint_entropy_RVA.
+  
+  have ->: (fun t => g (X t) (Cond t)) = 
+           (fun cx => g cx.2 cx.1) `o [% Cond, X].
+    apply: boolp.funext => t /=.
+    by rewrite /comp_RV /=.
+  by rewrite joint_entropy_RV_comp.
+(* Use chain rule again *)
+have ->: `H(X | Cond) = `H(Cond, X) - `H `p_Cond.
+  by rewrite chain_rule_RV addrAC subrr add0r.
+by [].
+Qed.
+
+End FunctionalDeterminacy.
+
+(* Helper lemma: split entropy sum over subset *)
+Section EntropySumSplit.
+
+Variable T : finType.
+Variable P : R.-fdist T.
+Variables (DomainT CodomainT : finType).
+
+Lemma entropy_sum_split 
+  (f : DomainT -> CodomainT)
+  (X : {RV P -> DomainT})
+  (Y : {RV P -> CodomainT})
+  (c : CodomainT)
+  (S : {set DomainT}) :
+  
+  `Pr[Y = c] != 0 ->
+  
+  (forall x, x \in S -> 
+    `Pr[X = x | Y = c] = 1%:R / #|S|%:R) ->
+  
+  (forall x, x \notin S ->
+    `Pr[X = x | Y = c] = 0) ->
+  
+  (- \sum_(x : DomainT) `Pr[X = x | Y = c] * 
+     log (`Pr[X = x | Y = c])) =
+  (- \sum_(x in S) (1%:R / #|S|%:R) * log ((1 / #|S|%:R) : R)).
+Proof.
+move=> Pc_neq0 Hsol_unif Hnonsol_zero.
+rewrite (bigID (mem S)) /=.
+rewrite [X in _ + X]big1 ?addr0; last first.
+  move=> x x_notin.
+  by rewrite Hnonsol_zero // mul0r.
+apply/eqP; rewrite eqr_opp; apply/eqP.
+apply: eq_bigr => x x_in.
+by rewrite Hsol_unif.
+Qed.
+
+End EntropySumSplit.
+
