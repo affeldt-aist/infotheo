@@ -1,4 +1,4 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra archimedean.
 From mathcomp Require Import unstable mathcomp_extra reals exp.

@@ -10,7 +10,7 @@ dev-repo: "git+https://github.com/affeldt-aist/infotheo.git"
 bug-reports: "https://github.com/affeldt-aist/infotheo/issues"
 license: "LGPL-2.1-or-later"
 
-synopsis: "Discrete probabilities and information theory for Coq"
+synopsis: "Discrete probabilities and information theory for Rocq"
 description: """
 Infotheo is a Coq library for reasoning about discrete probabilities,
 information theory, and linear error-correcting codes."""
