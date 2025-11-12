@@ -1,7 +1,7 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-Require Import Wf_nat Init.Wf Recdef.
+From Coq Require Import Wf_nat Init.Wf Recdef.
 From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg ssrnum.
 From mathcomp Require Import Rstruct reals ring lra.
 Require Import ssr_ext ssralg_ext bigop_ext f2.
@@ -958,7 +958,7 @@ move=> n1_n0 n0_l n1_l.
 congr (negb _).
 rewrite GRing.addrC eq_sym -GRing.subr_eq eq_sym /=.
 congr (_ == _).
-rewrite (row_setC _ _ _ n1_n0) (GRing.oppr_char2 _ x) //.
+rewrite (row_setC _ _ _ n1_n0) (oppr_pchar2 _ x) //.
 rewrite {2}/checksubsum [in X in _ = X](bigD1 n0) /=; last by rewrite !inE eqxx.
 rewrite !mxE eqxx.
 rewrite [LHS]addrC /checksubsum F2_of_bool_addr.
@@ -968,10 +968,9 @@ apply congr_big => // i.
   have [->|] := eqVneq i n0; first exact/negbTE.
   by rewrite andbT.
 rewrite !inE !mxE.
-have [->|] := eqVneq i n0.
-  by rewrite (negbTE n0_l).
+have [->|] := eqVneq i n0; first by rewrite (negPf n0_l).
 have [->|//] := eqVneq i n1.
-by rewrite (negbTE n1_l).
+by rewrite (negPf n1_l).
 Qed.
 
 Lemma alpha_def_sub (R := Rdefinitions.R) m0 n1 n0 (x y : 'F_2) (l : seq 'I_n) d :
@@ -1087,7 +1086,7 @@ rewrite big_pred0; last by case/F2P.
 congr (_ + _).
   rewrite -[in X in _ * foldr _ _ _ X = _](GRing.add0r 1%R).
   by apply alpha_def_sub.
-rewrite -[in X in _ * foldr _ _ _ X = _](GRing.addrr_char2 (@char_Fp 2 erefl) 1%R).
+rewrite -[in X in _ * foldr _ _ _ X = _](addrr_pchar2 (@pchar_Fp 2 erefl) 1%R).
 by rewrite alpha_def_sub // addr0.
 Qed.
 

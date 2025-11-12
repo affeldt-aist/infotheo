@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum matrix lra.
 From mathcomp Require Import unstable.
 From mathcomp Require boolp.
@@ -13,14 +13,16 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Lemma morph_oppr {R : ringType} : {morph @GRing.opp R : x y / (x + y)%R : R}.
+Lemma morph_oppr {R : pzRingType} : {morph @GRing.opp R : x y / (x + y)%R : R}.
 Proof. by move=> x y /=; rewrite GRing.opprD. Qed.
 
 #[deprecated(since="infotheo 0.9", note="use `big_distrr` instead of `big_morph` + `morph_mulRdr`")]
-Lemma morph_mulRDr {R : ringType} a : {morph (GRing.mul a) : x y / (x + y)%R : R}.
+Lemma morph_mulRDr {R : pzRingType} a :
+  {morph (GRing.mul a) : x y / (x + y)%R : R}.
 Proof. by move=> * /=; rewrite GRing.mulrDr. Qed.
 
-Definition big_morph_oppr {R : ringType} := big_morph _ morph_oppr (@GRing.oppr0 R).
+Definition big_morph_oppr {R : pzRingType} :=
+  big_morph _ morph_oppr (@GRing.oppr0 R).
 
 Section bigop_no_law.
 Variables (R : Type) (idx : R) (op : R -> R -> R).
@@ -561,7 +563,7 @@ End prod_gt0_inv.
 
 Section classify_big.
 Local Open Scope ring_scope.
-Variable R : ringType.
+Variable R : pzRingType.
 
 Lemma classify_big (A : finType) n (f : A -> 'I_n) (F : 'I_n -> R) :
   \sum_a F (f a) =
@@ -574,6 +576,7 @@ transitivity (\sum_(a | f a == i) F i); first by apply eq_bigr => s /eqP ->.
 rewrite big_const iter_addr addr0 mulr_natl; congr GRing.natmul.
 apply eq_card => j /=; by rewrite !inE.
 Qed.
+
 End classify_big.
 
 Section num.

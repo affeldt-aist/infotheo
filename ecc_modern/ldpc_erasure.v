@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 Require Program.Wf.
 From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
@@ -527,7 +527,7 @@ rewrite Hrhs (_ : H _ _ = 1) ?mul1r ?mxE in Hc'; last first.
   move: m0n0; by rewrite FnextE VnextE tanner_relE => /eqP.
 move/eqP : Hc'.
 rewrite addr_eq0 => /eqP ->.
-rewrite (@sum_rowVnextD1 c) ?oppr_char2 // => *; by rewrite mxE H0.
+by rewrite (@sum_rowVnextD1 c) ?oppr_pchar2 // => *; rewrite mxE H0.
 Qed.
 
 Lemma sum_rowVnextD1_Bit m0 n0 (m0n0 : m0 \in 'F n0) (r : 'rV[letter]_n) :

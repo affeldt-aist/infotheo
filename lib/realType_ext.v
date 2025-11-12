@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg archimedean ssrnum ssrint.
 From mathcomp Require Import reals normedtype sequences exp.
@@ -25,12 +25,12 @@ From mathcomp Require Import ring lra.
 Declare Scope reals_ext_scope.
 
 Reserved Notation "+| r |" (at level 0, r at level 99, format "+| r |").
-Reserved Notation "p '.~'" (format "p .~", at level 5).
+Reserved Notation "p '.~'" (format "p .~", at level 1).
 Reserved Notation "P '`<<' Q" (at level 51).
 Reserved Notation "P '`<<b' Q" (at level 51).
 Reserved Notation "{ 'prob' T }" (at level 0, format "{ 'prob'  T }").
-Reserved Notation "x %:pr" (at level 0, format "x %:pr").
-Reserved Notation "x %:opr" (at level 0, format "x %:opr").
+Reserved Notation "x %:pr" (at level 1, format "x %:pr").
+Reserved Notation "x %:opr" (at level 1, format "x %:opr").
 Reserved Notation "[ 's_of' p , q ]" (format "[ 's_of'  p ,  q ]").
 Reserved Notation "[ 'r_of' p , q ]" (format "[ 'r_of'  p ,  q ]").
 Reserved Notation "[ 'p_of' r , s ]" (format "[ 'p_of'  r ,  s ]").
@@ -243,9 +243,9 @@ Definition to_zmodule (R : realType) (p : {prob R}) : GRing.Zmodule.sort _ :=
 Coercion to_zmodule : prob >-> GRing.Zmodule.sort.
 Arguments to_zmodule /.
 
-Definition to_ring (R : realType) (p : {prob R}) : GRing.Ring.sort _ :=
+Definition to_ring (R : realType) (p : {prob R}) : GRing.NzRing.sort _ :=
   (p : R).
-Coercion to_ring : prob >-> GRing.Ring.sort.
+Coercion to_ring : prob >-> GRing.NzRing.sort.
 Arguments to_ring /.
 
 Section prob_lemmas.

@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect fingroup zmodp ssralg ssrnum finalg.
 From mathcomp Require Import perm matrix poly mxalgebra mxpoly.
 From mathcomp Require Import reals.
@@ -76,7 +76,7 @@ Qed.
 End HammingBitstring.
 
 Section hamming_weight_distance.
-Variables (F : ringType) (n : nat).
+Variables (F : nzRingType) (n : nat).
 Implicit Types u v : 'rV[F]_n.
 
 Definition wH v := count (fun x => x != 0) (tuple_of_row v).
@@ -181,7 +181,7 @@ apply congr_big => //.
   by rewrite -F2_eq0 => /eqP ->.
 Qed.
 
-Lemma sum_wH_row (F : ringType) n m (H : 'M[F]_(m, n)) :
+Lemma sum_wH_row (F : nzRingType) n m (H : 'M[F]_(m, n)) :
   (\sum_(m0 : 'I_m) wH (row m0 H) = \sum_(n0 : 'I_n) wH (col n0 H)^T)%nat.
 Proof.
 transitivity (\sum_(m0 < m) \sum_(n0 < n) (H m0 n0 != 0%R))%nat.
@@ -213,7 +213,7 @@ Qed.
 
 End wH_num_occ_bitstring.
 
-Lemma wH_castmx n (F : ringType) (x : 'rV[F]_n) n' (H : (1 = 1)%N * (n = n')) :
+Lemma wH_castmx n (F : nzRingType) (x : 'rV[F]_n) n' (H : (1 = 1)%N * (n = n')) :
   wH (castmx H x) = wH x.
 Proof.
 case: H => H1 H2; subst n'.
@@ -221,7 +221,7 @@ rewrite /wH !count_map /=; apply eq_in_count => /= i _.
 by rewrite castmxE /= !cast_ord_id.
 Qed.
 
-Lemma wH_row_mx n (F : ringType) r (rn : (r <= n)%N) :
+Lemma wH_row_mx n (F : nzRingType) r (rn : (r <= n)%N) :
   wH (row_mx (const_mx 1) 0 : 'rV[F]_(r + (n - r))) = r.
 Proof.
 rewrite wH_sum (bigID (fun x : 'I__ => (x < r)%N)) /=.
@@ -248,7 +248,7 @@ by rewrite big_ord_narrow ?subnKC // sum1_card card_ord.
 Qed.
 
 Section hamming_triangular_inequality.
-Variables (F : ringType).
+Variables (F : nzRingType).
 
 Lemma tri_ine (a b c : F) : ((a != b) <= (c != b) + (a != c))%nat.
 Proof.
@@ -296,7 +296,7 @@ Qed.
 End hamming_triangular_inequality.
 
 Section wH_supp.
-Variables (n : nat) (F : ringType).
+Variables (n : nat) (F : nzRingType).
 Implicit Types x : 'rV[F]_n.
 
 Definition wH_supp x := [set i | x ``_ i != 0].
@@ -312,7 +312,7 @@ Proof. by rewrite inE. Qed.
 
 End wH_supp.
 
-Lemma nth_wH_supp k n (F : ringType) (y : 'rV[F]_n.+1) : (k <= n.+1)%N ->
+Lemma nth_wH_supp k n (F : nzRingType) (y : 'rV[F]_n.+1) : (k <= n.+1)%N ->
   wH y = k -> forall j : nat, (j < k)%N -> y ``_ (nth ord0 (enum (wH_supp y)) j) != 0.
 Proof.
 move=> kn yD j jk; rewrite mem_wH_supp -mem_enum; apply/mem_nth.
@@ -529,7 +529,7 @@ apply/eqP/cards1P; exists 0%R.
 apply/setP => i; by rewrite !inE wH_eq0.
 Qed.
 
-Lemma sphere_not_empty n (F : finRingType) r (rn : r <= n) (x : 'rV[F]_n) :
+Lemma sphere_not_empty n (F : finNzRingType) r (rn : r <= n) (x : 'rV[F]_n) :
   [set y | dH x y == r] != set0.
 Proof.
 destruct r as [|r'].

@@ -1,10 +1,10 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
 From mathcomp Require Import archimedean lra ring.
 From mathcomp Require Import reals exp.
-Require Import  ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
+Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy aep typ_seq natbin source_code.
 
 (**md**************************************************************************)
@@ -370,13 +370,13 @@ apply: (@le_lt_trans _ _  (n'.+1%:R * (`H P + epsilon') + 1 + 1 +
   + rewrite lerD//.
     rewrite -lerBlDr ltW//.
     rewrite [X in _ - X](_ : 1 = 1%:~R)//.
-    by rewrite -intrB gt_pred_ceil.
+    by rewrite -intrB ceilB1_lt.
   + rewrite ler_wpM2l//.
       by rewrite ltW// eps'_pos.
     rewrite lerD2r.
     rewrite -lerBlDr ltW//.
     rewrite [X in _ - X](_ : 1 = 1%:~R)//.
-    by rewrite -intrB gt_pred_ceil.
+    by rewrite -intrB ceilB1_lt.
 - rewrite cardsT card_tuple log_pow_INR; last by apply: fdist_card_neq0; exact: P.
   rewrite -![_ + 1 + 1]addrA.
   have ->: 1 + 1 = (1 + 1) * n%:R * n%:R^-1 :> R by rewrite mulfK// pnatr_eq0.

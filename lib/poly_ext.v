@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect fingroup perm ssralg zmodp.
 From mathcomp Require Import matrix mxalgebra poly polydiv mxpoly.
 Require Import ssralg_ext.
@@ -24,7 +24,7 @@ Lemma size_quot_eq0 : forall q d r : {poly R},
 Proof.
 move=> q d r mon sz; apply/eqP/eqP => [sz0 | ->]; apply/eqP.
 - apply/negPn; apply/negP=> ab_absurdo; move: sz0.
-  rewrite size_addl; last first.
+  rewrite size_polyDl; last first.
     rewrite mulrC size_monicM //.
     have Htmp : 0 < size q by rewrite lt0n size_poly_eq0.
     rewrite -subn1 -addnBA //.
@@ -64,7 +64,7 @@ Lemma size_sub (p q : {poly R}) : p <> 0 -> size p = size q ->
   lead_coef p = lead_coef q -> size (p - q) < size p.
 Proof.
 move=> p0 pq lc_pq.
-move: (size_add p (-q)); rewrite pq size_opp (maxn_idPr _) //.
+move: (size_polyD p (-q)); rewrite pq size_polyN (maxn_idPr _) //.
 rewrite leq_eqVlt; case/orP => // abs.
 rewrite (@leq_ltn_trans (size q).-1) //; last first.
   by rewrite -pq prednK // lt0n size_poly_eq0; apply/eqP.

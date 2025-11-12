@@ -941,7 +941,7 @@ Qed.
 
 End base_case.
 
-Require Import FunInd Recdef.
+From Coq Require Import FunInd Recdef.
 
 Notation "a '<=?' b" := (Bool.bool_dec (Rleb a b) true) (at level 70).
 Notation "a '!=?' b" := (Bool.bool_dec (a != b) true) (at level 70).

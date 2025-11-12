@@ -44,12 +44,12 @@ Local Open Scope channel_scope.
 Local Open Scope fdist_scope.
 Local Open Scope ring_scope.
 
-Reserved Notation "'`Ch(' A ',' B ')'" (at level 10, A, B at next level).
-Reserved Notation "'`Ch*(' A ',' B ')'" (at level 10, A, B at next level).
-Reserved Notation "W '`(' b '|' a ')'" (at level 10, b, a at next level).
+Reserved Notation "'`Ch(' A ',' B ')'" (at level 0, A, B at next level).
+Reserved Notation "'`Ch*(' A ',' B ')'" (at level 0, A, B at next level).
+Reserved Notation "W '`(' b '|' a ')'" (at level 1, b, a at next level).
 Reserved Notation "W '``^' n" (at level 10).
-Reserved Notation "W '``(|' x ')'" (at level 10, x at next level).
-Reserved Notation "W '``(' y '|' x ')'" (at level 10, y, x at next level).
+Reserved Notation "W '``(|' x ')'" (at level 1, x at next level).
+Reserved Notation "W '``(' y '|' x ')'" (at level 1, y, x at next level).
 Reserved Notation "'`O(' P , W )" (at level 10, P, W at next level,
   format "'`O(' P ,  W )").
 Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level,

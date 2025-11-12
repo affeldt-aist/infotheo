@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm.
 From mathcomp Require Import zmodp matrix vector.
 From mathcomp Require Import Rstruct reals.
@@ -34,7 +34,7 @@ Lemma checksubsum_set2 n n1 n2 (n1n2 : n1 != n2) (d : 'rV_n) :
   \delta [set n1; n2] d = (d ``_ n1 == d ``_ n2).
 Proof.
 rewrite /checksubsum big_setU1 ?inE //= big_set1.
-by rewrite -{1}(oppr_char2 (@char_Fp 2 erefl) (d ``_ n2)) subr_eq0.
+by rewrite -{1}(oppr_pchar2 (@pchar_Fp 2 erefl) (d ``_ n2)) subr_eq0.
 Qed.
 
 Section checksubsum_parity.
@@ -46,7 +46,7 @@ Proof.
 move=> iA; rewrite /checksubsum (bigD1 i) //=.
 rewrite (_ : \sum_(i0 in A | i0 != i) x ``_ i0 = \sum_(n0 in A :\ i) x ``_ n0); last first.
   apply eq_bigl => j; by rewrite in_setD1 andbC.
-rewrite addr_eq0 eq_sym oppr_char2 //.
+rewrite addr_eq0 eq_sym oppr_pchar2 //.
 case/F2P : (x ``_ i) => //=.
   apply/idP/idP; [by move=> ->|].
   by case/boolP : (\sum_(n0 in _) _ == _).

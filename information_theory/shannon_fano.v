@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra archimedean.
 From mathcomp Require Import unstable mathcomp_extra reals exp.
 Require Import ssr_ext bigop_ext realType_ext realType_ln fdist entropy kraft.
@@ -113,7 +113,7 @@ apply (@lt_le_trans _ _ (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
   rewrite (_ : #|T|%:R = 2) // ?card_ord // -!/(log _).
   set x := log _.
   rewrite -ltrBlDr.
-  rewrite (le_lt_trans _ (gt_pred_ceil _))// ?num_real//.
+  rewrite (le_lt_trans _ (ceilB1_lt _))// ?num_real//.
   rewrite natr_absz.
   rewrite intrD lerB// ler_int.
   rewrite /x logV ?fdist_gt0//.

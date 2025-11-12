@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint matrix.
 From mathcomp Require Import archimedean lra ring.
 From mathcomp Require Import unstable reals sequences exp.
@@ -827,7 +827,7 @@ apply: (@le_trans _ _ ((x ^ 2 / 2 - 1) * eps * n%:R)); last first.
     exact/ltW/exp_strict_lb.
   rewrite /m /x.
   rewrite lerBlDr.
-  rewrite (le_trans (ltW (lt_succ_floor _)))//.
+  rewrite (le_trans (ltW (floorD1_gt _)))//.
   rewrite natr_absz intrD1 ler_int.
   by rewrite lerD2r ler_norm.
 rewrite logM//; last exact: mpos.

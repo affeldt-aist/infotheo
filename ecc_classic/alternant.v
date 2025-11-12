@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv.
 From mathcomp Require Import cyclic perm matrix mxpoly vector mxalgebra zmodp.
 From mathcomp Require Import finfield falgebra fieldext.
@@ -62,7 +62,7 @@ Hypothesis primep : prime p.
 
 Let Fq : finFieldType := GF u primep.
 Let q := p ^ u.
-Let p_char : p \in [char Fq].
+Let p_char : p \in [pchar Fq].
 Proof. apply char_GFqm. Qed.
 
 (** declare F_{q^m} *)
@@ -94,7 +94,7 @@ Hypothesis primep : prime p.
 
 Let Fq : finFieldType := GF u primep.
 Let q := p ^ u.
-Let p_char : p \in [char Fq].
+Let p_char : p \in [pchar Fq].
 Proof. apply char_GFqm. Qed.
 
 (** declare F_{q^m} *)

@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv cyclic.
 From mathcomp Require Import perm matrix mxpoly.
 Require Import ssr_ext ssralg_ext cyclic_code dft.
@@ -53,9 +53,9 @@ Qed.
 Lemma size_one_minus_X (R : idomainType) (a : R) (a0 : a != 0) :
   size (1 - a *: 'X) = 2%N.
 Proof.
-rewrite addrC size_addl.
-  by rewrite size_opp size_scale ?size_polyX // expf_neq0.
-by rewrite size_opp size_scale ?expf_neq0 // size_polyX size_polyC oner_eq0.
+rewrite addrC size_polyDl.
+  by rewrite size_polyN size_scale ?size_polyX // expf_neq0.
+by rewrite size_polyN size_scale ?expf_neq0 // size_polyX size_polyC oner_eq0.
 Qed.
 
 Lemma one_minus_X_neq0 (R : idomainType) (a : R) : 1 - a *: 'X != 0.
@@ -141,7 +141,8 @@ Proof. apply/prodf_neq0 => /= i _; by rewrite one_minus_X_neq0. Qed.
 
 Lemma size_errloc a E : size (errloc a E) <= #| E |.+1.
 Proof.
-apply: (leq_trans (size_prod_leq (fun x => x \in E) (fun i => 1 - a ``_ i *: 'X))).
+apply: (leq_trans (size_poly_prod_leq (fun x => x \in E)
+  (fun i => 1 - a ``_ i *: 'X))).
 apply (@leq_trans (#|E|.*2.+1 - #|E|)); last first.
   by rewrite subSn -addnn ?leq_addr // addnK.
 rewrite leq_sub // ltnS.
@@ -233,7 +234,7 @@ Lemma size_erreval : size \omega_(f, a, e) <= t.
 Proof.
 eapply leq_trans; first by apply size_sum.
 apply/bigmax_leqP => i; rewrite inE => /= iE.
-eapply leq_trans; first by rewrite -mul_polyC; apply size_mul_leq.
+eapply leq_trans; first by rewrite -mul_polyC; apply size_polyMleq.
 rewrite size_polyC.
 apply (@leq_trans (1 + size \sigma_( a, e, i)).-1).
   rewrite add1n /= addnC; case: (_ != _) => //=.

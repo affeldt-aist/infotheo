@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint fingroup.
 From mathcomp Require Import finalg perm zmodp matrix mxalgebra vector.
@@ -44,7 +44,7 @@ Reserved Notation "v `[ i := x ]" (at level 20).
 Reserved Notation "t \# V" (at level 55, V at next level).
 
 Section AboutRingType.
-Variable R : ringType.
+Variable R : pzRingType.
 
 Lemma iter_addr0 : forall n x, iter n (+%R (0 : R)) x = x.
 Proof. elim=> //= n IH x. by rewrite IH add0r. Qed.
@@ -56,7 +56,7 @@ End AboutRingType.
 Local Open Scope vec_ext_scope.
 
 Section support_set.
-Variables (R : ringType) (n : nat).
+Variables (R : pzRingType) (n : nat).
 Implicit Types e : 'rV[R]_n.
 
 Definition supp e : {set 'I_n} := [set i | e ``_ i != 0].
@@ -90,9 +90,9 @@ Definition row_set B n (n0 : 'I_n) (x : B) (d : 'rV_n) :=
 
 Notation "v `[ i := x ]" := (row_set i x v) : vec_ext_scope.
 
-Lemma inj_row_set (A : ringType) n n0 (d : 'rV_n) :
+Lemma inj_row_set (A : pzRingType) n n0 (d : 'rV_n) :
   {in A &, injective ((row_set n0)^~ d)}.
-Proof. move=> a b _ _ /= /rowP /(_ n0); by rewrite mxE eqxx mxE eqxx. Qed.
+Proof. by move=> a b _ _ /= /rowP /(_ n0); rewrite mxE eqxx mxE eqxx. Qed.
 
 Lemma row_setC n A (i j : 'I_n) (a b : A) d :
   i != j -> d `[ j := b ] `[ i := a ] = d `[ i := a ] `[ j := b ].
@@ -343,7 +343,7 @@ rewrite (@row_mxEr _ _ 1%nat); congr (_ _ _); apply val_inj => /=; by rewrite su
 Qed.
 End row_mxA'.
 
-Lemma col_matrix (R : ringType) m n (A : 'I_m -> 'cV[R]_(n.+1)) (i : 'I_m) :
+Lemma col_matrix (R : pzRingType) m n (A : 'I_m -> 'cV[R]_(n.+1)) (i : 'I_m) :
   col i (\matrix_(a < n.+1, b < m) (A b) a ord0) = A i.
 Proof. by apply/colP => a; rewrite !mxE. Qed.
 
@@ -370,8 +370,7 @@ Qed.
 End rV_take_drop.
 
 Section AboutPermPid.
-
-Variable R : comRingType.
+Variable R : comPzRingType.
 
 (* s : 0 -> s0; 1 -> s1, etc.
 in column 0, there is a 1 at line s0
@@ -424,7 +423,7 @@ End AboutPermPid.
 
 (* NB: similar to mulmx_sum_row in matrix.v *)
 (* NB: used in hamming_code.v *)
-Lemma mulmx_sum_col {R : comRingType} m n (u : 'cV[R]_n) (A : 'M_(m, n)) :
+Lemma mulmx_sum_col {R : comPzRingType} m n (u : 'cV[R]_n) (A : 'M_(m, n)) :
   A *m u = \sum_i u i 0 *: col i A.
 Proof.
 apply/colP => j; rewrite mxE summxE; apply: eq_bigr => i _.
@@ -462,8 +461,8 @@ rewrite mulmxV //.
 by apply: col_ebase_unit.
 Qed.
 
-Lemma empty_rV (A : ringType) (a : 'rV[A]_O) : a = 0.
-Proof. apply/rowP; by case. Qed.
+Lemma empty_rV (A : pzRingType) (a : 'rV[A]_O) : a = 0.
+Proof. by apply/rowP; case. Qed.
 
 Lemma full_rank_inj m n (A : 'M[F]_(m, n)) : (m <= n)%N -> \rank A = m ->
   forall (a b : 'rV[F]_m),  a *m A = b *m A -> a = b.
@@ -555,11 +554,11 @@ Qed.
 
 End about_row_vectors_on_prime_fields.
 
-Lemma sum_sqr (F : fieldType) (_ : 2%N \in [char F]) k (f : 'I_k -> F) :
+Lemma sum_sqr (F : fieldType) (_ : 2%N \in [pchar F]) k (f : 'I_k -> F) :
   (\sum_(i < k) f i) ^+ 2 = \sum_(i < k) (f i) ^+ 2.
 Proof.
 elim/big_ind2 : _ => [|x1 x2 y1 y2 <- <-|//] /=; first by rewrite expr0n.
-by rewrite sqrrD mulr2n addrr_char2 // addr0.
+by rewrite sqrrD mulr2n addrr_pchar2 // addr0.
 Qed.
 
 From mathcomp Require Import finfield.
@@ -570,13 +569,13 @@ Variables (q m' : nat).
 Let m := m'.+1.
 Hypothesis primeq : prime q.
 
-Definition GF : finFieldType := sval (@PrimePowerField q m primeq isT).
+Definition GF : finFieldType := sval (@pPrimePowerField q m primeq isT).
 
-Lemma char_GFqm : q \in [char GF].
-Proof. exact (proj1 (proj2_sig (@PrimePowerField q m primeq isT))). Qed.
+Lemma char_GFqm : q \in [pchar GF].
+Proof. exact (proj1 (proj2_sig (@pPrimePowerField q m primeq isT))). Qed.
 
 Lemma card_GFqm : #| GF | = (q ^ m)%N.
-Proof. rewrite /GF; by case: (@PrimePowerField q m primeq isT). Qed.
+Proof. rewrite /GF; by case: (@pPrimePowerField q m primeq isT). Qed.
 
 End GFqm.
 
@@ -593,7 +592,7 @@ Proof.
 move=> x y; apply/esym; rewrite /GF2_of_F2 /=; case: ifPn=> [/eqP ->|].
 - rewrite !add0r; case: ifPn => [/eqP -> /=|]; first by rewrite oppr0.
   case: ifPn => [/eqP -> _ /=|].
-  + by rewrite oppr_char2 // char_GFqm.
+  + by rewrite oppr_pchar2 // char_GFqm.
   + by rewrite -F2_eq0 => /eqP ->.
 - rewrite -F2_eq1 => /eqP -> /=.
   case: ifPn => [/eqP -> /=|]; first by rewrite subr0.
@@ -631,7 +630,7 @@ by rewrite GF2_of_F2_eq0.
 Qed.
 
 Section Det_mlinear.
-Context {R : comRingType}.
+Context {R : comPzRingType}.
 
 Let det_mlinear_rec n (f : 'I_n.+1 -> 'I_n.+1 -> R) (g : 'I_n.+1 -> R) k :
   (k <= n.+1)%N ->
@@ -682,10 +681,10 @@ End Det_mlinear.
 
 Section regular_algebra.
 
-Lemma mulr_regl [R : ringType] (a : R) (x : R^o) : a * x = a *: x.
+Lemma mulr_regl [R : pzRingType] (a : R) (x : R^o) : a * x = a *: x.
 Proof. by []. Qed.
 
-Lemma mulr_regr [R : comRingType] (a : R) (x : R^o) : x * a = a *: x.
+Lemma mulr_regr [R : comPzRingType] (a : R) (x : R^o) : x * a = a *: x.
 Proof. by rewrite mulrC. Qed.
 
 End regular_algebra.

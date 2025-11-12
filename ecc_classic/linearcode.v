@@ -1,5 +1,5 @@
-(* infotheo: information theory and error-correcting codes in Coq             *)
-(* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg poly polydiv fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
@@ -577,10 +577,11 @@ Qed.
 End min_dist_decoding_prop.
 
 (* TODO: move? *)
-Definition vproj n (F : ringType) (x : 'rV[F]_n) (s : {set 'I_n}) :=
+Definition vproj n (F : pzRingType) (x : 'rV[F]_n) (s : {set 'I_n}) :=
   \row_(i < n) if i \in s then x ord0 i else 0.
 
-Lemma wH_vproj n (F : ringType) (x : 'rV[F]_n) (s : {set 'I_n}) : wH (vproj x s) <= #| s |.
+Lemma wH_vproj n (F : nzRingType) (x : 'rV[F]_n) (s : {set 'I_n}) :
+  wH (vproj x s) <= #| s |.
 Proof.
 rewrite /wH count_map (_ : #| s | = count (mem s) (enum 'I_n)); last first.
   rewrite cardE -count_predT !count_filter; apply eq_in_count => /= i _.
@@ -589,7 +590,7 @@ apply sub_count => /= i /=.
 rewrite mxE; case: ifPn => //; by rewrite eqxx.
 Qed.
 
-Lemma dH_vproj n (F : ringType) (x : 'rV[F]_n) (s : {set 'I_n}) :
+Lemma dH_vproj n (F : nzRingType) (x : 'rV[F]_n) (s : {set 'I_n}) :
   s \subset wH_supp x ->
   dH x (vproj x s) = #| (~: s) :&: (wH_supp x) |.
 Proof.
@@ -599,10 +600,10 @@ have -> : x - vproj x s = vproj x (~: s).
     [by rewrite subrr | by rewrite subr0].
 rewrite /vproj /wH count_map /= cardE size_filter -enumT /=.
 apply eq_in_count => /= i _; rewrite !mxE !inE.
-case: ifPn => //; by rewrite eqxx.
+by case: ifPn => //; rewrite eqxx.
 Qed.
 
-Lemma wH_vproj_take n (F : ringType) (x : 'rV[F]_n) t :
+Lemma wH_vproj_take n (F : nzRingType) (x : 'rV[F]_n) t :
   wH (vproj x [set i in take t (enum (wH_supp x))]) <= t.
 Proof.
 set s := take t (enum (wH_supp x)).
@@ -612,10 +613,10 @@ apply (@leq_trans (size s)); last first.
 rewrite cardsE; apply/eq_leq/card_uniqP.
 have : subseq s (enum (wH_supp x)).
   by rewrite -(cat_take_drop t (enum (wH_supp x))) prefix_subseq.
-move/subseq_uniq; apply; by apply enum_uniq.
+by move/subseq_uniq; apply; apply: enum_uniq.
 Qed.
 
-Lemma wH_vproj_take2 n (F : ringType) (x : 'rV[F]_n) t : t < wH x <= t.*2 ->
+Lemma wH_vproj_take2 n (F : nzRingType) (x : 'rV[F]_n) t : t < wH x <= t.*2 ->
   dH x (vproj x [set i in take t (enum (wH_supp x))]) <= t.
 Proof.
 move=> xt.
