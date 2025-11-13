@@ -435,25 +435,6 @@ rewrite count_affine_solutions_rank1; last by exact: u1_neq0.
 by rewrite card_Fp.
 Qed.
 
-(* 3D dot product using tuples *)
-Definition dotp3 (x y : msg * msg * msg) : msg :=
-  x.1.1 * y.1.1 + x.1.2 * y.1.2 + x.2 * y.2.
-
-(* Solution triples for 3D constraint *)
-Definition dotp3_solutions (u : msg * msg * msg) (s : msg) : 
-  {set msg * msg * msg} :=
-  [set v | dotp3 u v == s].
-
-(* Similar cardinality result for 3D *)
-Lemma dotp3_solutions_card (u : msg * msg * msg) (s : msg) :
-  u != (0, 0, 0) ->
-  #|dotp3_solutions u s| = (m ^ 2)%N.
-Proof.
-(* The fiber of a linear map R^3 -> R with non-zero u is a 2D plane *)
-(* Over F_m, this has m^2 points *)
-admit.
-Admitted.
-
 End TupleBilinearForm.
 
 Section BilinearEntropyApplications.
@@ -536,7 +517,7 @@ Qed.
 End BilinearEntropyApplications.
 
 Section MultiDimensionalSolutions.
-
+  
 (* Theory for joint solution sets (V2, V3) pairs *)
 
 Variable F : finFieldType.
@@ -565,11 +546,9 @@ Lemma constrained_pairs_card (u2 u3 target : msg) :
   #|constrained_pairs u2 u3 target| = m.
 Proof.
 move=> u3_neq0.
-(* Direct application of count_affine_solutions_rank1 *)
-rewrite -(@count_affine_solutions_rank1 msg u2 u3 target u3_neq0).
-(* Show constrained_pairs equals the set in the theorem *)
-apply: eq_card => p.
-by rewrite !inE.
+have ->: #|constrained_pairs u2 u3 target| = #|msg|.
+  exact: (count_affine_solutions_rank1 u2 target u3_neq0).
+by rewrite card_Fp.
 Qed.
 
 End MultiDimensionalSolutions.
