@@ -2,14 +2,14 @@
 This file was generated from `meta.yml`, please do not edit manually.
 Follow the instructions on https://github.com/coq-community/templates to regenerate.
 --->
-# A Coq formalization of information theory and linear error correcting codes
+# A Rocq formalization of information theory and linear error correcting codes
 
 [![Docker CI][docker-action-shield]][docker-action-link]
 
 [docker-action-shield]: https://github.com/affeldt-aist/infotheo/actions/workflows/docker-action.yml/badge.svg?branch=master
 [docker-action-link]: https://github.com/affeldt-aist/infotheo/actions?query=branch%3Amaster+event%3Apush
 
-Infotheo is a Coq library for reasoning about discrete probabilities,
+Infotheo is a Rocq library for reasoning about discrete probabilities,
 information theory, and linear error-correcting codes.
 
 ## Meta
@@ -25,7 +25,7 @@ information theory, and linear error-correcting codes.
   - Naruomi Obata, Titech (M2)
   - Alessandro Bruni, IT-University of Copenhagen
 - License: [LGPL-2.1-or-later](LICENSE)
-- Compatible Coq versions: Coq 8.20--9.1
+- Compatible Coq/Rocq versions: Coq 8.20--9.1
 - Additional dependencies:
   - [MathComp ssreflect](https://math-comp.github.io)
   - [MathComp fingroup](https://math-comp.github.io)
@@ -52,7 +52,7 @@ information theory, and linear error-correcting codes.
 
 ## Building and installation instructions
 
-The easiest way to install the latest released version of A Coq formalization of information theory and linear error correcting codes
+The easiest way to install the latest released version of A Rocq formalization of information theory and linear error correcting codes
 is via [OPAM](https://opam.ocaml.org/doc/Install.html):
 
 ```shell

@@ -12,7 +12,7 @@ license: "LGPL-2.1-or-later"
 
 synopsis: "Discrete probabilities and information theory for Rocq"
 description: """
-Infotheo is a Coq library for reasoning about discrete probabilities,
+Infotheo is a Rocq library for reasoning about discrete probabilities,
 information theory, and linear error-correcting codes."""
 
 build: [
