@@ -38,7 +38,7 @@ Local Open Scope entropy_scope.
 
 Local Definition R := Rdefinitions.R.
 
-Section AbstractFibers.
+Section abstract_fibers.
 
 (* Domain and codomain can be any finite types *)
 Variables (DomainT CodomainT : finType).
@@ -76,9 +76,9 @@ Proof. by rewrite inE. Qed.
 Lemma nmem_fiber x c : (x \notin fiber c) = (f x != c).
 Proof. by rewrite mem_fiber. Qed.
 
-End AbstractFibers.
+End abstract_fibers.
 
-Section FiberEntropy.
+Section fiber_entropy.
 
 Variable T : finType.
 Variable P : R.-fdist T.
@@ -150,9 +150,9 @@ rewrite (entropy_sum_split Hsol_unif Hnonsol_zero).
 by apply: entropy_uniform_set.
 Qed.
 
-End FiberEntropy.
+End fiber_entropy.
 
-Section ConstantFiberSize.
+Section constant_fiber_size.
 
 Variable T : finType.
 Variable P : R.-fdist T.
@@ -210,9 +210,9 @@ under eq_bigr do rewrite mulrC.
 by rewrite -big_distrr /= sum_pfwd1 mulr1.
 Qed.
 
-End ConstantFiberSize.
+End constant_fiber_size.
 
-Section FunctionalDeterminacy.
+Section functional_determinacy.
 
 (* When an auxiliary variable is functionally determined,
    it adds no information to entropy *)
@@ -254,10 +254,10 @@ have ->: `H(X | Cond) = `H(Cond, X) - `H `p_Cond.
 by [].
 Qed.
 
-End FunctionalDeterminacy.
+End functional_determinacy.
 
 (* Helper lemma: split entropy sum over subset *)
-Section EntropySumSplit.
+Section entropy_sum_split.
 
 Variable T : finType.
 Variable P : R.-fdist T.
@@ -291,9 +291,9 @@ apply: eq_bigr => x x_in.
 by rewrite Hsol_unif.
 Qed.
 
-End EntropySumSplit.
+End entropy_sum_split.
 
-Section ConditionalEntropyWithFunctionalConstraint.
+Section conditional_entropy_with_functional_constraint.
 
 (* When conditioning on (Y, Z) where Z = g(X, Y), 
    the conditional entropy H(X | Y, Z) can be computed from 
@@ -406,5 +406,5 @@ under eq_bigr do rewrite mulrC.
 by rewrite -big_distrr /= sum_pfwd1 mulr1.
 Qed.
 
-End ConditionalEntropyWithFunctionalConstraint.
+End conditional_entropy_with_functional_constraint.
 

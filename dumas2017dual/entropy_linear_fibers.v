@@ -68,7 +68,7 @@ Local Open Scope entropy_scope.
 
 Local Definition R := Rdefinitions.R.
 
-Section LinearFunctional.
+Section linear_functional.
 
 (* Work over a finite field *)
 Variable F : finFieldType.
@@ -309,9 +309,9 @@ have rank_u: \rank u = 1.
 by rewrite rank_u /= subn1.
 Qed.
 
-End LinearFunctional.
+End linear_functional.
 
-Section BilinearForm.
+Section bilinear_form.
 
 Variable F : finFieldType.
 Variable m_minus_2 : nat.
@@ -355,9 +355,9 @@ rewrite bilinear_solutions_eq_fiber.
 by rewrite linear_fiber_card.
 Qed.
 
-End BilinearForm.
+End bilinear_form.
 
-Section TupleBilinearForm.
+Section tuple_bilinear_form.
 
 (* Specialization to 2D and 3D cases using tuples *)
 
@@ -435,9 +435,9 @@ rewrite count_affine_solutions_rank1; last by exact: u1_neq0.
 by rewrite card_Fp.
 Qed.
 
-End TupleBilinearForm.
+End tuple_bilinear_form.
 
-Section BilinearEntropyApplications.
+Section bilinear_entropy_applications.
 
 (* Apply fiber entropy theory to bilinear constraints *)
 
@@ -514,9 +514,9 @@ apply: (@centropy_with_functional_constraint
 by rewrite expn_gt0; apply/orP; left; apply: prime_gt0 prime_m.
 Qed.
 
-End BilinearEntropyApplications.
+End bilinear_entropy_applications.
 
-Section MultiDimensionalSolutions.
+Section multi_dimensional_solutions.
   
 (* Theory for joint solution sets (V2, V3) pairs *)
 
@@ -551,5 +551,5 @@ have ->: #|constrained_pairs u2 u3 target| = #|msg|.
 by rewrite card_Fp.
 Qed.
 
-End MultiDimensionalSolutions.
+End multi_dimensional_solutions.
 
