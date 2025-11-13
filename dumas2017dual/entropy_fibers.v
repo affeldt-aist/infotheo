@@ -335,7 +335,7 @@ have ->: `Pr[[%X, [% Y, Z]] = (x, (y, z))] = 0.
   rewrite pfwd1_eq0.
     by [].
   rewrite fin_img_imset.
-  apply/imsetP => [[t _ [Xt_eq [Yt_eq Zt_eq]]]].
+  apply/imsetP => [[t _ [Xt_eq Yt_eq Zt_eq]]].
   move: x_notin_fiber.
   rewrite Zt_eq.
   by rewrite Z_determined /= Xt_eq Yt_eq eqxx.
