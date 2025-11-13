@@ -4,6 +4,7 @@ From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption dsdp_program dsdp_extra dsdp_algebra.
+Require Import entropy_fibers.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -116,52 +117,8 @@ by rewrite (@uniform_over_solutions
   t v1 u1 u2 u3 s HU1 HU2 HU3 HV1 HS v2 v3 Hinsol) card_m.
 Qed.
 
-(* Helper: Basic arithmetic - entropy of uniform distribution
-   over n elements *)
-Lemma entropy_uniform_count (n : nat) :
-  (0 < n)%N ->
-  (- \sum_(i < n) (1%:R / n%:R) * log ((1 / n%:R) : R)) = log (n%:R : R).
-Proof.
-move=> Hn_pos.
-rewrite big_const iter_addr addr0 card_ord.
-have Hn_gt0 : (0 < n%:R).
-  move => t.
-  by rewrite -[0]/(0%:R) ltr_nat.
-rewrite mul1r (logV (Hn_gt0 R)).
-field.
-by rewrite pnatr_eq0 -lt0n Hn_pos.
-Qed.
-
-(* Helper 3c: Entropy formula in terms of conditional probability *)
-Lemma dsdp_centropy1_as_sum (v1 u1 u2 u3 s : msg) :
-  `Pr[[% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] != 0 ->
-  `H[ [% V2, V3] | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s) ] =
-  - \sum_(pair : msg * msg)
-   `Pr[ [% V2, V3] = pair | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s) ] *
-   log (`Pr[ [% V2, V3] = pair | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s) ]).
-Proof.
-move=> Hcond_pos.
-rewrite centropy1_RVE // /entropy.
-congr (- _); apply: eq_bigr => [[v2 v3]] _.
-  by rewrite jfdist_cond_cPr_eq.
-by rewrite fst_RV2 dist_of_RVE.
-Qed.
-
-(* Helper: Entropy over finite set with uniform probability *)
-Lemma entropy_finite_set_uniform (SolSet : {set msg * msg}) (n : nat) :
-  #|SolSet| = n ->
-  (0 < n)%N ->
-  (- \sum_(pair in SolSet) (1%:R / n%:R) *  log ((1 / n%:R) : R)) =
-  log (n%:R : R).
-Proof.
-move=> Hcard Hn_pos.
-rewrite big_const iter_addr addr0 Hcard -mulr_natr mul1r.
-rewrite logV; last by rewrite ltr0n.
-field.
-by rewrite pnatr_eq0 -lt0n.
-Qed.
-
 (* Helper: Main entropy calculation *)
+(* Uses general framework from entropy_fibers.v *)
 Lemma dsdp_entropy_uniform_subset (v1 u1 u2 u3 s : msg) :
   `Pr[[% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] != 0 ->
   u3 != 0 ->
@@ -177,13 +134,30 @@ Lemma dsdp_entropy_uniform_subset (v1 u1 u2 u3 s : msg) :
     log (m%:R : R).
 Proof.
 move=> Hcond_pos Hu3_neq0 Hsol_unif Hnonsol_zero.
-(* Express as sum using helper 3c *)
-rewrite (dsdp_centropy1_as_sum Hcond_pos).
-(* Split into solutions vs non-solutions using helper 3d *)
-rewrite (entropy_sum_split Hsol_unif Hnonsol_zero).
+(* Express conditional entropy as sum *)
+have ->: `H[[% V2, V3] | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] =
+    - \sum_(pair : msg * msg)
+     `Pr[[% V2, V3] = pair | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] *
+     log (`Pr[[% V2, V3] = pair | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)]).
+  rewrite centropy1_RVE // /entropy.
+  congr (- _); apply: eq_bigr => [[v2 v3]] _.
+    by rewrite jfdist_cond_cPr_eq.
+  by rewrite fst_RV2 dist_of_RVE.
+(* Get cardinality *)
 have card_m : #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
   by apply: dsdp_solution_pairs_cardinality.
-by apply: entropy_finite_set_uniform.
+(* Adjust uniform hypothesis to match expected form *)
+have Hsol_unif': forall pair : msg * msg,
+    pair \in dsdp_solution_pairs u1 u2 u3 v1 s ->
+    `Pr[[% V2, V3] = pair | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] = 
+    1%:R / #|dsdp_solution_pairs u1 u2 u3 v1 s|%:R.
+  move=> pair Hin.
+  rewrite (Hsol_unif pair Hin).
+  by rewrite card_m.
+rewrite (entropy_sum_split Hcond_pos Hsol_unif' Hnonsol_zero).
+have ->: #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
+  by rewrite card_m.
+exact: entropy_uniform_set.
 Qed.
 
 (* Helper: Each conditioning value gives entropy log(m) *)
@@ -251,7 +225,8 @@ Variable m_minus_2 : nat.
 Local Notation m := m_minus_2.+2.
 Hypothesis prime_m : prime m.
 
-Local Notation msg := 'F_m.  (* Finite field - when m is prime, isomorphic to Z/mZ *)
+Local Notation msg := 'F_m. 
+(* Finite field - when m is prime, isomorphic to Z/mZ *)
 Let card_msg : #|msg| = m.
 Proof. by rewrite card_Fp // pdiv_id. Qed.
 
@@ -607,15 +582,25 @@ Definition compute_v3 (o : (msg * msg * msg * msg * msg * msg)) : msg :=
   let '(v1_val, u1_val, u2_val, u3_val, s_val, v2_val) := o in
     (s_val - u2_val * v2_val - u1_val * v1_val) / u3_val.
 
-Let U3_nonzero : forall t, U3 t != 0.
+Hypothesis U3_coprime_m :
+  forall t, coprime (val (U3 t)) m.
+
+Lemma U3_nonzero : forall t, U3 t != 0.
 Proof.
 move=> t.
 have Hcoprime := U3_coprime_m t.
 case Hval: (val (U3 t)) => [|n] //.
-by move: Hcoprime; rewrite Hval /coprime gcd0n => /eqP.
+(* If val = 0, derive contradiction from coprime 0 m *)
+exfalso.
+move: Hcoprime; rewrite Hval /coprime gcd0n => /eqP Hm1.
+(* m = 1 but m = m_minus_2.+2 >= 2, contradiction *)
+  by [].
+apply/eqP => H.
+move: Hval; rewrite H.
+by [].
 Qed.
 
-Let V3_determined : V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
+Lemma V3_determined : V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
 Proof.
 rewrite S_alt2 /compute_v3 /comp_RV /=.  
 apply/boolp.funext => i /=.
@@ -659,6 +644,9 @@ by [].
 Qed.
 
 End bonded_leakage_privacy.
+
+Hypothesis U3_coprime_m :
+  forall t, coprime (val (U3 t)) m.
 
 Let f := fun o :
   (Alice.-key Dec msg * msg * msg * msg * msg * msg * msg * msg) =>
@@ -763,7 +751,8 @@ have H_assoc: forall V, `H(V | [% OtherAlice, V1, U1, U2, U3, S] ) =
 rewrite (H_assoc msg V2) (H_assoc (msg * msg)%type [% V2, V3]).
 rewrite (cinde_centropy_eq cinde_V2V3).
 rewrite (cinde_centropy_eq cinde_V2).
-exact: determined_auxiliary_adds_no_information_v2.
+apply: determined_auxiliary_adds_no_information_v2.
+exact: U3_coprime_m.
 Qed. (* TODO: opaque check takes very long. *)
 
 End semi_honest_case_analysis.

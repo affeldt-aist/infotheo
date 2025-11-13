@@ -264,7 +264,6 @@ Variable P : R.-fdist T.
 Variables (DomainT CodomainT : finType).
 
 Lemma entropy_sum_split 
-  (f : DomainT -> CodomainT)
   (X : {RV P -> DomainT})
   (Y : {RV P -> CodomainT})
   (c : CodomainT)
