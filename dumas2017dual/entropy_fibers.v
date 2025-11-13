@@ -294,3 +294,118 @@ Qed.
 
 End EntropySumSplit.
 
+Section ConditionalEntropyWithFunctionalConstraint.
+
+(* When conditioning on (Y, Z) where Z = g(X, Y), 
+   the conditional entropy H(X | Y, Z) can be computed from 
+   H(X | Y) by restricting to the fibers where Z takes specific values *)
+
+Variable T : finType.
+Variable P : R.-fdist T.
+Variables (XT YT ZT : finType).
+Variable X : {RV P -> XT}.
+Variable Y : {RV P -> YT}.
+Variable Z : {RV P -> ZT}.
+
+(* Z is determined by X and Y *)
+Variable g : XT -> YT -> ZT.
+Hypothesis Z_determined : Z = (fun t => g (X t) (Y t)).
+
+(* For each (y, z) pair, X is uniformly distributed over the fiber *)
+Hypothesis uniform_over_fibers : forall y z x,
+  `Pr[[% Y, Z] = (y, z)] != 0 ->
+  x \in [set x' | g x' y == z] ->
+  `Pr[X = x | [% Y, Z] = (y, z)] = 
+    1%:R / #|[set x' | g x' y == z]|%:R.
+
+(* All fibers for a fixed y have constant size *)
+Hypothesis constant_fiber_size_per_y : forall y z1 z2,
+  [set x' | g x' y == z1] != set0 ->
+  [set x' | g x' y == z2] != set0 ->
+  #|[set x' | g x' y == z1]| = #|[set x' | g x' y == z2]|.
+
+(* Helper: values outside the fiber have zero conditional probability *)
+Lemma fiber_functional_zero_prob (y : YT) (z : ZT) (x : XT) :
+  `Pr[[% Y, Z] = (y, z)] != 0 ->
+  g x y != z ->
+  `Pr[X = x | [% Y, Z] = (y, z)] = 0.
+Proof.
+move=> Hyz_neq0 x_notin_fiber.
+rewrite cpr_eqE.
+have ->: `Pr[[%X, [% Y, Z]] = (x, (y, z))] = 0.
+  rewrite pfwd1_eq0.
+    by [].
+  rewrite fin_img_imset.
+  apply/imsetP => [[t _ [Xt_eq [Yt_eq Zt_eq]]]].
+  move: x_notin_fiber.
+  rewrite Zt_eq.
+  by rewrite Z_determined /= Xt_eq Yt_eq eqxx.
+field.
+exact: Hyz_neq0.
+Qed.
+
+Lemma centropy_with_functional_constraint (fiber_card : nat) :
+  (forall y z, 
+    `Pr[[% Y, Z] = (y, z)] != 0 ->
+    #|[set x' | g x' y == z]| = fiber_card) ->
+  (0 < fiber_card)%N ->
+  `H(X | [% Y, Z]) = log (fiber_card%:R : R).
+Proof.
+move=> Hcard Hcard_pos.
+rewrite centropy_RVE' /=.
+(* Show each term equals Pr * log(fiber_card) *)
+transitivity (\sum_(yz : YT * ZT) `Pr[[% Y, Z] = yz] * log (fiber_card%:R : R)).  
+  apply: eq_bigr => [[y z]] _.
+  have [Hyz_eq0 | Hyz_neq0] := eqVneq (`Pr[[% Y, Z] = (y, z)]) 0.
+    by rewrite Hyz_eq0 !mul0r.
+  congr (_ * _).
+  (* Define the fiber *)
+  pose fiber_yz := [set x' : XT | g x' y == z].
+  (* Fiber is non-empty *)
+  have fiber_nempty: fiber_yz != set0.
+    apply/set0Pn.
+    move/pfwd1_neq0: Hyz_neq0 => [t [/eqP [Yt_eq Zt_eq] _]].
+    exists (X t); rewrite inE.
+    rewrite Z_determined /= Yt_eq in Zt_eq.
+    apply/eqP.
+    by exact: Zt_eq.
+  rewrite /centropy1_RV /centropy1.
+  rewrite (bigID (mem fiber_yz)) /=.
+  rewrite [X in _ + X]big1 ?addr0; last first.
+    move=> x x_notin.
+    rewrite jPr_Pr cpr_in1.
+    have ->: `Pr[X = x | [% Y, Z] = (y, z)] = 0.
+      apply: fiber_functional_zero_prob => //.
+      by rewrite inE in x_notin.
+    by rewrite mul0r.
+    
+  (* Convert set-based conditional probability notation to equality notation *)
+  have ->: \sum_(i in fiber_yz)
+             \Pr_`p_ [% X, [% Y, Z]][[set i] | [set (y, z)]] *
+             log \Pr_`p_ [% X, [% Y, Z]][[set i] | [set (y, z)]] =
+           \sum_(i in fiber_yz)
+             `Pr[X = i | [% Y, Z] = (y, z)] *
+             log (`Pr[X = i | [% Y, Z] = (y, z)]).
+    apply: eq_bigr => x _.
+    by rewrite !jcPrE -!cpr_inE' !cpr_in1.    
+  
+  (* Replace conditional probabilities with uniform distribution over fiber *)
+  have ->: \sum_(i in fiber_yz)
+             `Pr[X = i | [% Y, Z] = (y, z)] *
+             log (`Pr[X = i | [% Y, Z] = (y, z)]) =
+           \sum_(i in fiber_yz)
+             (1%:R / fiber_card%:R) * log ((1 / fiber_card%:R) : R).
+    apply: eq_bigr => x x_in.
+    have ->: `Pr[X = x | [% Y, Z] = (y, z)] = 1 / fiber_card%:R.
+      rewrite uniform_over_fibers => //.
+      congr (_ / _).
+      by rewrite (Hcard y z Hyz_neq0).
+    by [].    
+  apply: entropy_uniform_set => //.
+  exact: (Hcard y z Hyz_neq0).  
+under eq_bigr do rewrite mulrC.
+by rewrite -big_distrr /= sum_pfwd1 mulr1.
+Qed.
+
+End ConditionalEntropyWithFunctionalConstraint.
+

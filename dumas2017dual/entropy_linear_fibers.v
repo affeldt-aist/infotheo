@@ -492,31 +492,46 @@ Theorem bilinear_centropy_uniform :
   `H(V | [% U, S]) = log ((m ^ n.-1)%:R : R).
 Proof.
 move=> n_pos.
-(* Apply the general fiber entropy theorem *)
 have card_m : #|msg| = m.
-  by rewrite card_Fp // pdiv_id.
-(* Each fiber has size m *)
-have fiber_size: forall u s, u != 0 -> #|linear_fiber u s| = m.
-  move=> u s u_neq0.
-  rewrite -card_m.
-  move => s0 H_uneq0.
-  rewrite (linear_fiber_card s0 H_uneq0).
-  by rewrite -card_m linear_fiber_card.
-(* Apply constant fiber size theorem *)
-apply: (@centropy_constant_fibers _ _ _ _ _ _ _ 
-         (fun t => (U t *m (V t)^T) 0 0) V [% U, S] _ m) => //.
-- (* Y = f(X) *)
-  apply: boolp.funext => t /=.
-  by rewrite S_eq_dotp.
-- (* Constant fiber size *)
-  admit.
-- (* Uniform on fibers *)
-  admit.
-- (* Fiber cardinality *)
-  admit.
-- (* m > 0 *)
-  by rewrite -card_m card_gt0.
-Admitted.
+  by rewrite card_Fp.
+have fiber_size: forall (u : 'rV[msg]_n) (s : msg),
+  u != 0 -> #|linear_fiber u s| = (m ^ n.-1)%N.
+  move=> u_vec s_val u_vec_neq0.
+  rewrite (@linear_fiber_card m_minus_2 n u_vec s_val u_vec_neq0 n_pos).
+  by rewrite card_m.
+apply: (@centropy_with_functional_constraint 
+         T P 'rV[msg]_n 'rV[msg]_n msg 
+         V U S 
+         (fun v u => (u *m v^T) 0 0)).
+  - by rewrite S_eq_dotp.
+  - move=> u s v Hus_neq0 v_in_fiber.
+    rewrite inE in v_in_fiber.
+    have ->: #|[set x' | (fun (v0 : 'rV[msg]_n) (u0 : 'rV[msg]_n) => 
+                         (u0 *m v0^T) 0 0) x' u == s]| = 
+             #|linear_fiber u s|.
+      by apply: eq_card => v0; rewrite !inE /linear_functional.
+    have [t [Ut_eq Us_eq]]: exists t, U t = u /\ S t = s.
+      move/pfwd1_neq0: Hus_neq0 => [t Ht].
+      exists t.
+      split.
+        case: Ht => [/= /eqP].
+        case => Ut _ _; exact: Ut.
+        case: Ht => [/= /eqP].
+        by case => _ St _; exact: St.
+    have v_in: v \in linear_fiber u s by rewrite inE.
+    by rewrite (uniform_over_solutions Ut_eq Us_eq v_in).
+  - move=> u s Hus_neq0.
+    rewrite /linear_fiber.
+    have u_neq0: u != 0.
+      move/pfwd1_neq0: Hus_neq0 => [t Ht].
+      move: Ht => [/= /eqP].
+      move => [Ut_eq_u _] _.
+      rewrite -Ut_eq_u.
+      exact: U_nonzero.
+    rewrite /linear_fiber.
+    exact: (fiber_size u s u_neq0).
+by rewrite expn_gt0; apply/orP; left; apply: prime_gt0 prime_m.
+Qed.
 
 End BilinearEntropyApplications.
 
