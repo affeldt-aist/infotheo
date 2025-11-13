@@ -30,8 +30,8 @@ like Benaloh homomorphic encryption. We show that for cryptographic-sized parame
 the statistical distance between the two settings is negligible ($< 2^{-1000}$), 
 allowing a simulation-based security reduction. Furthermore, we demonstrate that 
 the requirement for large primes serves three interconnected purposes: computational 
-security (factoring hardness), operational security (avoiding non-invertible elements 
-that could leak factorization), and information-theoretic validity (field approximation). 
+security (factoring hardness), operational security (ensuring correct decryption 
+per Fousse et al.), and information-theoretic validity (field approximation). 
 All three are satisfied by the standard cryptographic practice of using $p, q \geq 2^{1024}$.
 \end{abstract}
 
@@ -465,7 +465,7 @@ The requirement for large primes in Benaloh's cryptosystem serves three distinct
 \textbf{Security Type} & \textbf{Requirement} & \textbf{Why It Matters} \\ 
 \midrule
 \textbf{Computational} & $pq \approx 2^{2\lambda}$ & Adversary cannot factor $pq$ in polynomial time \\[0.5em]
-\textbf{Operational} & $\frac{\varphi(pq)}{pq} \approx 1$ & Random elements are invertible; avoids decryption ambiguities \\[0.5em]
+\textbf{Operational} & $\frac{\varphi(pq)}{pq} \approx 1$ & Negligible probability of sampling non-invertible elements during key generation \\[0.5em]
 \textbf{Information-theoretic} & $\frac{1}{p} + \frac{1}{q} \approx 2^{-\lambda}$ & Statistical closeness to field enables analytical tools \\
 \bottomrule
 \end{tabular}
@@ -575,11 +575,39 @@ The non-invertible element problem and the field approximation validity share th
 
 Both require the same solution: $p, q \geq 2^{\lambda}$ for cryptographic $\lambda$.
 
+\subsubsection{Clarification: Parties Do Not Avoid Non-Invertible Elements}
+
+It is important to clarify that in the DSDP protocol using Benaloh encryption:
+
+\begin{itemize}
+\item \textbf{Parties sample uniformly} from $\mathbb{Z}/(pq)$ without checking or avoiding non-invertible elements
+\item \textbf{No statistical bias}: The adversary cannot observe any bias from parties ``avoiding'' certain values, because no such avoidance occurs
+\item \textbf{Semi-honest model}: In the semi-honest security model, the adversary observes only encrypted values and cannot determine whether individual message values are invertible
+\end{itemize}
+
+\paragraph{Why Non-Invertibility Doesn't Break DSDP Security:}
+
+The DSDP protocol constraint $s = u_1v_1 + u_2v_2 + u_3v_3$ creates a functional relationship. The key security property is:
+\[
+H(V_2, V_3 \mid \text{constraint}) = H(V_2 \mid \text{constraint})
+\]
+
+This holds because $V_3$ is functionally determined by $V_2$ and the constraint, regardless of whether we express this determination via division (in $\mathbb{F}_m$ analysis) or via implicit constraint satisfaction (in $\mathbb{Z}/(pq)$ implementation).
+
+\paragraph{Division as Analytical Tool:}
+
+In our Coq formalization over $\mathbb{F}_m$, we express the functional determination as:
+\[
+v_3 = (s - u_2v_2 - u_1v_1) / u_3
+\]
+
+This division is a \emph{mathematical expression of functional determination} that enables us to apply composition lemmas in entropy analysis. It is \textbf{not} an operation performed by protocol parties. In the actual implementation over $\mathbb{Z}/(pq)$, parties satisfy the constraint through homomorphic computation without explicitly dividing.
+
 \textbf{Key insight:} The three security requirements (computational, operational, information-theoretic) are manifestations of the same underlying mathematical constraint, viewed through different lenses:
 \begin{itemize}
 \item \textbf{Benaloh (1994):} ``Choose large primes for computational hardness''
-\item \textbf{Fousse et al. (2011):} ``Large primes also prevent operational failures''
-\item \textbf{This work (2025):} ``Large primes also validate information-theoretic analysis''
+\item \textbf{Fousse et al. (2011):} ``Large primes prevent operational failures in key generation''
+\item \textbf{This work (2025):} ``Large primes validate information-theoretic analysis via field approximation''
 \end{itemize}
 
 All three are satisfied by the standard cryptographic practice of using $p, q \geq 2^{1024}$.
@@ -745,7 +773,7 @@ Use cryptographic-sized primes ($p, q \geq 2^{1024}$). Then:
 \textbf{Fousse et al. (Operational)} & \textbf{Our Work (Analytical)} \\ 
 \midrule
 \textbf{Problem:} & \textbf{Problem:} \\
-Non-invertible elements cause decryption ambiguity & Non-invertible elements invalidate field approximation \\[0.5em]
+Non-invertible key parameters cause decryption ambiguity & Need field structure for entropy analysis \\[0.5em]
 
 \textbf{Probability:} & \textbf{Probability:} \\
 Pr[faulty $y$] depends on prime factors of $r$ & $\|\mathcal{D}_{pq} - \mathcal{D}_m\| \leq 1/p + 1/q$ \\[0.5em]
@@ -761,18 +789,30 @@ Use large primes (implicit) & Enables field-based proofs in Coq \\[0.5em]
 Ensure correct decryption & Validate mathematical approximation \\
 \bottomrule
 \end{tabular}
-\caption{Comparison of the two approaches to handling non-invertible elements}
+\caption{Comparison of the two approaches (both address different aspects of non-invertible elements)}
 \end{table}
 
 \subsection{Key Insights}
 
 \begin{enumerate}
-\item \textbf{Different concerns, same root cause:} Both issues stem from non-invertible elements in $\mathbb{Z}/(pq)$
-
-\item \textbf{Complementary solutions:}
+\item \textbf{Different concerns, related probability bounds:} 
 \begin{itemize}
-\item \textbf{Small primes ($< 2^{128}$):} Must use Fousse et al.'s corrected conditions (field approximation invalid)
-\item \textbf{Cryptographic primes ($\geq 2^{1024}$):} Both concerns become negligible; can use field approximation
+\item Fousse et al. address \emph{key generation}: ensuring the key parameter $y$ doesn't cause decryption ambiguity
+\item Our work addresses \emph{entropy analysis}: enabling field-based linear algebra for information-theoretic proofs
+\item Both involve non-invertible elements, but in different contexts and for different purposes
+\end{itemize}
+
+\item \textbf{Parties do not avoid non-invertible message values:}
+\begin{itemize}
+\item In DSDP, parties sample uniformly from $\mathbb{Z}/(pq)$ without checking invertibility
+\item No statistical bias for adversaries to exploit
+\item The constraint $s = u_1v_1 + u_2v_2 + u_3v_3$ is satisfied through homomorphic computation, not explicit division
+\end{itemize}
+
+\item \textbf{Complementary perspectives:}
+\begin{itemize}
+\item \textbf{Small primes ($< 2^{128}$):} Must use Fousse et al.'s corrected key generation conditions; field approximation for analysis is invalid
+\item \textbf{Cryptographic primes ($\geq 2^{1024}$):} Key generation issues negligible; field approximation valid
 \end{itemize}
 
 \item \textbf{Aligned requirements:} Standard cryptographic practice ($p, q \geq 2^{1024}$) simultaneously:
@@ -786,7 +826,7 @@ Ensure correct decryption & Validate mathematical approximation \\
 \begin{itemize}
 \item We assume cryptographic parameters ($p, q \geq 2^{1024}$)
 \item Statistical distance $< 2^{-1023}$ is negligible
-\item Both operational correctness and analytical validity are ensured
+\item Field structure enables entropy analysis; division is an analytical tool, not a protocol operation
 \end{itemize}
 \end{enumerate}
 
@@ -1033,7 +1073,11 @@ Local Notation msg := 'F_m.
 This enables:
 \begin{itemize}
 \item Matrix rank via Gaussian elimination
-\item Division by any non-zero element
+\item Division by any non-zero element --- note that this division is a 
+  \emph{mathematical expression of functional determination} in our analysis, 
+  not an operation performed by protocol parties. In the actual DSDP protocol 
+  over $\mathbb{Z}/(pq)$, parties satisfy the constraint $s = u_1v_1 + u_2v_2 + u_3v_3$ 
+  through homomorphic computation without explicitly dividing
 \item Linear solution counting theorems
 \item Clean entropy calculations
 \end{itemize}
@@ -1077,7 +1121,7 @@ We have established that for cryptographic parameters ($p,q \geq 2^{1024}$):
   ensures:
   \begin{itemize}
   \item Computational security (factoring hardness)
-  \item Operational security (avoiding non-invertible elements per Fousse et al.)
+  \item Operational security (ensuring correct decryption per Fousse et al.)
   \item Information-theoretic validity (field approximation, this work)
   \end{itemize}
 

@@ -59,3 +59,4 @@ This justifies using field-based tools in the Coq formalization while maintainin
 - `dsdp_algebra.v`: Algebraic structure of solution spaces
 - `dsdp_entropy.v`: Information-theoretic security bounds
 
+
