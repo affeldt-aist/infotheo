@@ -221,6 +221,43 @@ move: Hx1 Hx2; rewrite !inE /linear_functional => /eqP Hx1 /eqP Hx2.
 by rewrite (linear_fiber_eq_kernel_card Hx1) (linear_fiber_eq_kernel_card Hx2).
 Qed.
 
+(* Helper: row vector kernel equals column vector kernel (via transpose) *)
+Local Lemma row_kernel_eq_col_kernel (u : 'rV[msg]_n) :
+  #|[set v : 'rV[msg]_n | (u *m v^T) ord0 ord0 == 0]| = 
+  #|[set w : 'cV[msg]_n | u *m w == 0]|.
+Proof.
+(* Bijection: v : 'rV_n <-> v^T : 'cV_n *)
+rewrite -(card_in_imset (f := fun (v : 'rV[msg]_n) => v^T)); last first.
+  (* Injectivity of transpose *)
+  by move=> v1 v2 _ _; exact: trmx_inj.
+
+(* Show: [set v^T | v in row_kernel] = col_kernel *)
+apply: eq_card => w.
+apply/imsetP/idP.
+
+(* Forward: if w = v^T and v in row kernel, then w in col kernel *)
+- case=> v; rewrite !inE => /eqP Hv ->.
+  (* Goal: u *m v^T == 0 *)
+  apply/eqP.
+  (* Use that (u *m v^T) ord0 ord0 = 0 implies u *m v^T = 0 *)
+  apply/matrixP => i j.
+  (* Both indices are ord0 since it's 1x1 matrix *)
+  have ->: i = ord0 by apply: ord1.
+  have ->: j = ord0 by apply: ord1.
+  (* Now: (u *m v^T) ord0 ord0 = 0 ord0 ord0 *)
+  by rewrite Hv mxE.
+
+(* Backward: if w in col kernel, then w = (w^T)^T with w^T in row kernel *)
+- rewrite inE => /eqP Hw.
+  exists w^T; last by rewrite trmxK.
+  rewrite inE; apply/eqP.
+  (* Goal: (u *m (w^T)^T) ord0 ord0 = 0 *)
+  rewrite trmxK.
+  (* Now: (u *m w) ord0 ord0 = 0 *)
+  move: Hw => /matrixP /(_ ord0 ord0) ->.
+  by rewrite mxE.
+Qed.
+
 (* Cardinality of linear fiber: |K|^(n-1) *)
 (*
    Thin wrapper around count_affine_solutions_explicit from rouche_capelli.v:
@@ -239,66 +276,37 @@ Lemma linear_fiber_card (u : 'rV[msg]_n) (s : msg) :
   #|linear_fiber u s| = (#|msg| ^ n.-1)%N.
 Proof.
 move=> u_neq0 n_pos.
-case: n n_pos u u_neq0 s => // n _ u u_neq0 s.
-(* Now n.+1, so n.+1.-1 = n *)
 
-(* The rank of a non-zero row vector is 1 *)
-have rank_u: \rank u = 1.
-  apply/eqP; rewrite eqn_leq; apply/andP; split.
-    (* rank ≤ 1: matrix has only 1 row *)
-    by rewrite rank_leq_row.
-  (* rank ≥ 1: u ≠ 0 means rank > 0 *)
-  rewrite lt0n mxrank_eq0.
-  by apply/eqP; apply/matrix0Pn; exists ord0, ord0; rewrite mxE; apply/eqP.
-
-(* Find a particular solution (exists by linear_fiber_nonzero) *)
+(* Find a particular solution *)
 have [x0 Hx0]: exists x, x \in linear_fiber u s.
-  by apply/card_gt0P; exact: linear_fiber_nonzero.
+  by apply/card_gt0P; exact: (linear_fiber_nonzero u_neq0 s).
 move: Hx0; rewrite inE /linear_functional => /eqP Hx0.
 
-(* Relate our problem to the transpose form for column vectors *)
-(* We need: count solutions to x *m u^T = s *)
-(* This is equivalent to u *m x^T = s *)
+(* Fiber cardinality equals kernel cardinality *)
+rewrite (linear_fiber_eq_kernel_card Hx0).
 
-(* Apply count_kernel_vectors_col: #|{v | A *m v = 0}| = |K|^(n - rank A) *)
-(* We use the affine version *)
-pose s_col := \matrix_(i < 1) s : 'cV[msg]_1.
-have x0_transpose_sol: u^T *m x0^T = s_col.
-  apply/matrixP => i j.
-  rewrite !mxE; have ->: j = ord0 by apply: ord1.
-  rewrite (bigD1 ord0) //= big_pred0 ?addr0; last by move=> k; rewrite andbC /=.
-  rewrite !mxE.
-  by move: Hx0; rewrite !mxE => ->.
+(* Apply row_kernel_eq_col_kernel *)
+rewrite row_kernel_eq_col_kernel.
 
-(* Show equivalence of fiber and column affine solutions *)
-have fiber_eq: #|linear_fiber u s| = 
-               #|[set v : 'cV[msg]_(n.+1) | u^T *m v == s_col]|.
-  rewrite -(card_in_imset (f := trmx)); last by apply: in2W; exact: trmx_inj.
-  apply: eq_card => v_col.
-  apply/imsetP/idP.
-    (* Forward *)
-    case=> v_row Hv_row ->.
-    rewrite inE in Hv_row *.
-    move/eqP: Hv_row => Hv_row.
-    apply/eqP.
-    apply/matrixP => i j.
-    rewrite !mxE; have ->: j = ord0 by apply: ord1.
-    rewrite (bigD1 ord0) //= big_pred0 ?addr0; last by move=> k; rewrite andbC /=.
-    by rewrite !mxE -Hv_row !mxE.
-  (* Backward *)
-  rewrite inE => /eqP Hv_col.
-  exists v_col^T; last by rewrite trmxK.
-  rewrite inE /linear_functional; apply/eqP.
-  move: Hv_col; rewrite !mxE => Hv_col.
-  rewrite !mxE.
-  move: Hv_col.
-  rewrite (bigD1 ord0) //= big_pred0 ?addr0; last by move=> k; rewrite andbC /=.
-  by rewrite !mxE.
+(* Now: #|[set w : 'cV_n | u *m w == 0]| = |msg|^(n-1) *)
+(* This is count_kernel_vectors_col *)
+rewrite count_kernel_vectors_col.
 
-(* Apply count_affine_solutions_explicit_col *)
-rewrite fiber_eq.
-rewrite (@count_affine_solutions_explicit_col msg 1 n.+1 u^T s_col x0^T x0_transpose_sol).
-by rewrite mxrank_tr rank_u.
+(* Show \rank u = 1 for non-zero row vector *)
+have rank_u: \rank u = 1.
+  apply/eqP; rewrite eqn_leq; apply/andP; split.
+    (* rank ≤ 1: only one row *)
+    by rewrite rank_leq_row.
+  (* rank ≥ 1: u ≠ 0 *)
+  rewrite lt0n mxrank_eq0.
+  apply/matrix0Pn.
+  (* u is a row vector (1 row), so row index is ord0 : 'I_1 *)
+  (* Find column index where u is non-zero *)
+  have [j uj_neq0]: exists j : 'I_n, u ord0 j != 0.
+    by exact: row_neq0_exists.
+  exists (ord0 : 'I_1), j.
+  exact: uj_neq0.
+by rewrite rank_u /= subn1.
 Qed.
 
 End LinearFunctional.
