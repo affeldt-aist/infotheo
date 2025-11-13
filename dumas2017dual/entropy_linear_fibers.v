@@ -319,14 +319,11 @@ Local Notation m := m_minus_2.+2.
 Hypothesis prime_m : prime m.
 Local Notation msg := 'F_m.
 
-(* Dot product (bilinear form) in n dimensions *)
-Variable n : nat.
-
-Definition dotp (u v : 'rV[msg]_n) : msg :=
+Definition dotp (n : nat) (u v : 'rV[msg]_n) : msg :=
   \sum_(i < n) u 0 i * v 0 i.
 
 (* Alternative matrix formulation *)
-Lemma dotpE (u v : 'rV[msg]_n) :
+Lemma dotpE (n : nat) (u v : 'rV[msg]_n) :
   dotp u v = (u *m v^T) 0 0.
 Proof.
 rewrite /dotp !mxE.
@@ -334,11 +331,12 @@ by apply: eq_bigr => i _; rewrite !mxE.
 Qed.
 
 (* Solution set for bilinear constraint *)
-Definition bilinear_solutions (u : 'rV[msg]_n) (s : msg) : {set 'rV[msg]_n} :=
+Definition bilinear_solutions (n : nat) (u : 'rV[msg]_n) (s : msg) :
+  {set 'rV[msg]_n} :=
   [set v | dotp u v == s].
 
 (* Connection to linear_fiber *)
-Lemma bilinear_solutions_eq_fiber (u : 'rV[msg]_n) (s : msg) :
+Lemma bilinear_solutions_eq_fiber (n : nat) (u : 'rV[msg]_n) (s : msg) :
   bilinear_solutions u s = linear_fiber u s.
 Proof.
 apply/setP => v.
@@ -346,16 +344,15 @@ by rewrite !inE /linear_functional dotpE.
 Qed.
 
 (* Inherit cardinality result *)
-(* For n=2, the fiber has |K|^1 = |K| elements *)
-Lemma bilinear_solutions_card (u : 'rV[msg]_2) (s : msg) :
+(* For general n, the fiber has |msg|^(n-1) elements *)
+Lemma bilinear_solutions_card (n : nat) (u : 'rV[msg]_n) (s : msg) :
   u != 0 ->
-  #|bilinear_solutions u s| = #|msg|.
+  (n > 0)%N ->
+  #|bilinear_solutions u s| = (#|msg| ^ n.-1)%N.
 Proof.
-move=> u_neq0.
+move=> u_neq0 n_pos.
 rewrite bilinear_solutions_eq_fiber.
-rewrite linear_fiber_card //.
-(* For n=2, n.-1 = 1, so |msg|^1 = |msg| *)
-by rewrite expn1 card_Fp // pdiv_id.
+by rewrite linear_fiber_card.
 Qed.
 
 End BilinearForm.
@@ -387,10 +384,13 @@ Lemma dotp2_eq_matrix (x y : msg * msg) :
   dotp2 x y = (tuple2_to_row x *m (tuple2_to_row y)^T) 0 0.
 Proof.
 rewrite /dotp2 !mxE.
-rewrite (bigD1 (Ordinal (isT : 0 < 2))) //=.
-rewrite (bigD1 (Ordinal (isT : 1 < 2))) //=.
-rewrite big_pred0 ?addr0; last by move=> i; rewrite !mxE /= andbF.
-by rewrite !mxE /=; ring.
+rewrite (bigD1 ord0) //=.
+rewrite (bigD1 (lift ord0 ord0)) //=.
+rewrite big_pred0 ?addr0; last first.
+  move => i.
+  rewrite andbC /=.
+  by case: i => [[|[|k]]] //= Hn.
+by rewrite !mxE.  
 Qed.
 
 (* Cardinality for 2D case *)
@@ -405,23 +405,34 @@ rewrite /dotp2_solutions.
 (* This is exactly the form proven in rouche_capelli.v *)
 case: (boolP (u.2 != 0)) => [u2_neq0 | /negbNE /eqP u2_eq0].
   (* Case u.2 ≠ 0: direct application *)
-  exact: count_affine_solutions_rank1.
+  have ->: [set v | dotp2 u v == s] = 
+           [set v : msg * msg | u.1 * v.1 + u.2 * v.2 == s].
+    apply/setP => v.
+    by rewrite !inE /dotp2.
+  rewrite (@count_affine_solutions_rank1 msg u.1 u.2 s u2_neq0).
+  by rewrite card_Fp // pdiv_id.
 (* Case u.2 = 0: then u.1 ≠ 0 since u ≠ (0,0) *)
 have u1_neq0: u.1 != 0.
-  move: u_neq0; rewrite xpair_eqE negb_and u2_eq0 eqxx orbF.
-  by [].
+  case: u u_neq0 u2_eq0 => [u1' u2'] /= u_neq0 u2_eq0.
+  apply/contra: u_neq0 => /eqP ->.
+  by rewrite xpair_eqE u2_eq0 eqxx.
 (* Swap roles and apply the theorem *)
 have ->: [set vv | u.1 * vv.1 + u.2 * vv.2 == s] =
          [set (vv.2, vv.1) | vv in [set vv' | u.2 * vv'.1 + u.1 * vv'.2 == s]].
   apply/setP => vv; rewrite !inE.
   apply/idP/imsetP.
     move/eqP => Hvv.
-    exists (vv.2, vv.1); last by [].
+    exists (vv.2, vv.1); last first.
+      rewrite /=.
+      exact: surjective_pairing.
     by rewrite inE /= addrC; apply/eqP.
   move=> [[v2' v1']] /=; rewrite inE => /eqP Hv' ->.
   by rewrite /= addrC; apply/eqP.
-rewrite card_imset; last by move=> [x1 x2] [y1 y2] _ _ [-> ->].
-exact: count_affine_solutions_rank1.
+rewrite card_imset; last first.
+  move=> [x1 x2] [y1 y2] /= [Heq2 Heq1].
+  by congr pair.
+rewrite count_affine_solutions_rank1; last by exact: u1_neq0.
+by rewrite card_Fp.
 Qed.
 
 (* 3D dot product using tuples *)
@@ -478,7 +489,7 @@ Hypothesis uniform_over_solutions : forall t u s,
 (* Main result: conditional entropy equals log(m) *)
 Theorem bilinear_centropy_uniform :
   (n > 0)%N ->
-  `H(V | [% U, S]) = log (m%:R : R).
+  `H(V | [% U, S]) = log ((m ^ n.-1)%:R : R).
 Proof.
 move=> n_pos.
 (* Apply the general fiber entropy theorem *)
@@ -487,7 +498,10 @@ have card_m : #|msg| = m.
 (* Each fiber has size m *)
 have fiber_size: forall u s, u != 0 -> #|linear_fiber u s| = m.
   move=> u s u_neq0.
-  by rewrite -card_m linear_fiber_card_prime.
+  rewrite -card_m.
+  move => s0 H_uneq0.
+  rewrite (linear_fiber_card s0 H_uneq0).
+  by rewrite -card_m linear_fiber_card.
 (* Apply constant fiber size theorem *)
 apply: (@centropy_constant_fibers _ _ _ _ _ _ _ 
          (fun t => (U t *m (V t)^T) 0 0) V [% U, S] _ m) => //.
