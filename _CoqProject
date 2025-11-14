@@ -100,9 +100,7 @@ smc/scalar_product_proof.v
 homomorphic_encryption/homomorphic_encryption.v
 dumas2017dual/dsdp_program.v
 dumas2017dual/dsdp_extra.v
-dumas2017dual/dsdp_approximation.v
 dumas2017dual/dsdp_algebra.v
-dumas2017dual/dsdp_mxrank.v
 dumas2017dual/entropy_fibers.v
 dumas2017dual/entropy_linear_fibers.v
 dumas2017dual/dsdp_entropy.v
