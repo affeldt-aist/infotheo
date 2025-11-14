@@ -125,10 +125,11 @@ Qed.
 Lemma entropy_uniform_set (S : {set DomainT}) (n : nat) :
   #|S| = n ->
   (0 < n)%N ->
-  (- \sum_(x in S) (1%:R / n%:R) * log ((1 / n%:R) : R)) = log (n%:R : R).
+  (- \sum_(x in S) n%:R^-1 * log (n%:R^-1 : R)) = log (n%:R : R).
+  (* ISSUE: x is not used; use infotheo entropy to improve the readability *)
 Proof.
 move=> Hcard Hn_pos.
-rewrite big_const iter_addr addr0 Hcard -mulr_natr mul1r.
+rewrite big_const iter_addr addr0 Hcard -mulr_natr.
 rewrite logV; last by rewrite ltr0n.
 field.
 by rewrite pnatr_eq0 -lt0n.

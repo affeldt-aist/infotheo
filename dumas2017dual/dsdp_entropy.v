@@ -594,6 +594,7 @@ Definition compute_v3 (o : (msg * msg * msg * msg * msg * msg)) : msg :=
   let '(v1_val, u1_val, u2_val, u3_val, s_val, v2_val) := o in
     (s_val - u2_val * v2_val - u1_val * v1_val) / u3_val.
 
+
 Hypothesis U3_coprime_m :
   forall t, coprime (val (U3 t)) m.
 

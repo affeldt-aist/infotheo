@@ -81,13 +81,14 @@ Local Notation msg := 'F_m.
 Variable n : nat.
 
 (* Linear functional: represented as dot product with a fixed vector *)
+(* TODO: reuse the coq-robot package when it is published *)
 Definition linear_functional (u : 'rV[msg]_n) (v : 'rV[msg]_n) : msg :=
   (u *m v^T) 0 0.
 
 (* Fiber of the linear functional *)
+(* TODO: use the fiber definition *)
 Definition linear_fiber (u : 'rV[msg]_n) (s : msg) : {set 'rV[msg]_n} :=
   [set v | linear_functional u v == s].
-
 
 (* Helper: non-zero row vectors have at least one non-zero entry *)
 (* This is a simple utility kept as-is for convenience *)
@@ -451,11 +452,9 @@ Local Notation msg := 'F_m.
 Variable n : nat.
 
 Variable U V : {RV P -> 'rV[msg]_n}.
-Variable S : {RV P -> msg}.
 
 (* S is the dot product of U and V *)
-Hypothesis S_eq_dotp : 
-  S = (fun t => (U t *m (V t)^T) 0 0).
+Let S : {RV P -> msg} := (fun t => (U t *m (V t)^T) 0 0).
 
 (* Non-degeneracy: U is not zero *)
 Hypothesis U_nonzero : forall t, U t != 0.
@@ -484,7 +483,7 @@ apply: (@centropy_with_functional_constraint
          T P 'rV[msg]_n 'rV[msg]_n msg 
          V U S 
          (fun v u => (u *m v^T) 0 0)).
-  - by rewrite S_eq_dotp.
+  - by [].
   - move=> u s v Hus_neq0 v_in_fiber.
     rewrite inE in v_in_fiber.
     have ->: #|[set x' | (fun (v0 : 'rV[msg]_n) (u0 : 'rV[msg]_n) => 
