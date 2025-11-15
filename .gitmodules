@@ -1,0 +1,3 @@
+[submodule "vendor/rocq-rouche-capelli"]
+	path = vendor/rocq-rouche-capelli
+	url = https://github.com/weng-chenghui/rocq-rouche-capelli.git
