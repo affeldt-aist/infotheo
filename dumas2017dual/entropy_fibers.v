@@ -139,7 +139,7 @@ Lemma entropy_uniform_fiber_size (c : CodomainT) :
   `Pr[Y = c] != 0 ->
   let fiber_c := fiber f c in
   (forall x, x \in fiber_c -> 
-    `Pr[X = x | Y = c] = 1%:R / #|fiber_c|%:R) ->
+    `Pr[X = x | Y = c] = #|fiber_c|%:R ^-1) ->
   (forall x, x \notin fiber_c ->
     `Pr[X = x | Y = c] = 0) ->
   (0 < #|fiber_c|)%N ->
@@ -148,7 +148,7 @@ Proof.
 move=> Hcond_pos /= Hsol_unif Hnonsol_zero Hcard_pos.
 rewrite (centropy1_as_sum Hcond_pos).
 rewrite (entropy_sum_split Hsol_unif Hnonsol_zero).
-by apply: entropy_uniform_set.
+exact: entropy_uniform_set.
 Qed.
 
 End fiber_entropy.
@@ -174,7 +174,7 @@ Hypothesis constant_fiber_size : forall c1 c2,
 Hypothesis uniform_on_fibers : forall c x,
   `Pr[Y = c] != 0 ->
   x \in fiber f c ->
-  `Pr[X = x | Y = c] = 1%:R / #|fiber f c|%:R.
+  `Pr[X = x | Y = c] = #|fiber f c|%:R ^-1.
 
 (* Then overall conditional entropy is constant *)
 Lemma centropy_constant_fibers (fiber_card : nat) :
@@ -257,43 +257,6 @@ Qed.
 
 End functional_determinacy.
 
-(* Helper lemma: split entropy sum over subset *)
-Section entropy_sum_split.
-
-Variable T : finType.
-Variable P : R.-fdist T.
-Variables (DomainT CodomainT : finType).
-
-Lemma entropy_sum_split 
-  (X : {RV P -> DomainT})
-  (Y : {RV P -> CodomainT})
-  (c : CodomainT)
-  (S : {set DomainT}) :
-  
-  `Pr[Y = c] != 0 ->
-  
-  (forall x, x \in S -> 
-    `Pr[X = x | Y = c] = 1%:R / #|S|%:R) ->
-  
-  (forall x, x \notin S ->
-    `Pr[X = x | Y = c] = 0) ->
-  
-  (- \sum_(x : DomainT) `Pr[X = x | Y = c] * 
-     log (`Pr[X = x | Y = c])) =
-  (- \sum_(x in S) (1%:R / #|S|%:R) * log ((1 / #|S|%:R) : R)).
-Proof.
-move=> Pc_neq0 Hsol_unif Hnonsol_zero.
-rewrite (bigID (mem S)) /=.
-rewrite [X in _ + X]big1 ?addr0; last first.
-  move=> x x_notin.
-  by rewrite Hnonsol_zero // mul0r.
-apply/eqP; rewrite eqr_opp; apply/eqP.
-apply: eq_bigr => x x_in.
-by rewrite Hsol_unif.
-Qed.
-
-End entropy_sum_split.
-
 Section conditional_entropy_with_functional_constraint.
 
 (* When conditioning on (Y, Z) where Z = g(X, Y), 
@@ -316,7 +279,7 @@ Hypothesis uniform_over_fibers : forall y z x,
   `Pr[[% Y, Z] = (y, z)] != 0 ->
   x \in [set x' | g x' y == z] ->
   `Pr[X = x | [% Y, Z] = (y, z)] = 
-    1%:R / #|[set x' | g x' y == z]|%:R.
+    #|[set x' | g x' y == z]|%:R^-1.
 
 (* All fibers for a fixed y have constant size *)
 Hypothesis constant_fiber_size_per_y : forall y z1 z2,
@@ -394,11 +357,10 @@ transitivity (\sum_(yz : YT * ZT) `Pr[[% Y, Z] = yz] * log (fiber_card%:R : R)).
              `Pr[X = i | [% Y, Z] = (y, z)] *
              log (`Pr[X = i | [% Y, Z] = (y, z)]) =
            \sum_(i in fiber_yz)
-             (1%:R / fiber_card%:R) * log ((1 / fiber_card%:R) : R).
+             fiber_card%:R^-1 * log (fiber_card%:R^-1 : R).
     apply: eq_bigr => x x_in.
-    have ->: `Pr[X = x | [% Y, Z] = (y, z)] = 1 / fiber_card%:R.
+    have ->: `Pr[X = x | [% Y, Z] = (y, z)] = fiber_card%:R ^-1.
       rewrite uniform_over_fibers => //.
-      congr (_ / _).
       by rewrite (Hcard y z Hyz_neq0).
     by [].    
   apply: entropy_uniform_set => //.

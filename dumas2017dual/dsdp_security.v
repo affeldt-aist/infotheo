@@ -123,7 +123,7 @@ Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
     (v2, v3) \in dsdp_solution_pairs u1 u2 u3 v1 s ->
     `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] = 
          (v1, u1, u2, u3, s) ] =
-    1%:R / (#|dsdp_solution_pairs u1 u2 u3 v1 s|)%:R.
+    #|dsdp_solution_pairs u1 u2 u3 v1 s|%:R^-1.
 
 (* Additional hypotheses for privacy_by_bonded_leakage *)
 Let Dec_view : {RV P -> (alice_inputsT * msg)} :=
@@ -166,7 +166,6 @@ Hypothesis V3_determined :
 Theorem dsdp_entropy_result :
   `H([% V2, V3] | [% V1, U1, U2, U3, S]) = log (m%:R : R).
 Proof.
-(* Now we can apply dsdp_centropy_uniform_solutions DIRECTLY - no type gap! *)
 exact (@dsdp_centropy_uniform_solutions m_minus_2 prime_m T P 
          V1 V2 V3 U1 U2 U3 S 
          constraint_holds U3_nonzero uniform_over_solutions).

@@ -71,7 +71,7 @@ Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
     (v2, v3) \in dsdp_solution_pairs u1 u2 u3 v1 s ->
     `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] = 
          (v1, u1, u2, u3, s) ] =
-    1%:R / (#|dsdp_solution_pairs u1 u2 u3 v1 s|)%:R.
+    (#|dsdp_solution_pairs u1 u2 u3 v1 s|)%:R^-1.
 
 Section dsdp_centropy_uniform_solutions.
 
@@ -103,7 +103,7 @@ Lemma dsdp_solution_uniform_prob (v1 u1 u2 u3 s : msg) (v2 v3 : msg) :
   u3 != 0 ->
   (v2, v3) \in dsdp_solution_pairs u1 u2 u3 v1 s ->
   `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s) ] =
-  1%:R / m%:R.
+  m%:R^-1.
 Proof.
 move=> Hcond_pos Hu3_neq0 Hinsol.
 (* Need to extract witnesses for the equalities from the conditioning event *)
@@ -125,7 +125,7 @@ Lemma dsdp_entropy_uniform_subset (v1 u1 u2 u3 s : msg) :
   (forall pair : msg * msg,
     pair \in dsdp_solution_pairs u1 u2 u3 v1 s ->
     `Pr[ [% V2, V3] = pair | [% V1, U1, U2, U3, S] =
-      (v1, u1, u2, u3, s) ] = 1%:R / m%:R) ->
+      (v1, u1, u2, u3, s) ] = m%:R^-1) ->
   (forall pair : msg * msg,
     pair \notin dsdp_solution_pairs u1 u2 u3 v1 s ->
     `Pr[ [% V2, V3] = pair | [% V1, U1, U2, U3, S] =
@@ -150,11 +150,11 @@ have card_m : #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
 have Hsol_unif': forall pair : msg * msg,
     pair \in dsdp_solution_pairs u1 u2 u3 v1 s ->
     `Pr[[% V2, V3] = pair | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] = 
-    1%:R / #|dsdp_solution_pairs u1 u2 u3 v1 s|%:R.
+    #|dsdp_solution_pairs u1 u2 u3 v1 s|%:R^-1.
   move=> pair Hin.
   rewrite (Hsol_unif pair Hin).
   by rewrite card_m.
-rewrite (entropy_sum_split Hcond_pos Hsol_unif' Hnonsol_zero).
+rewrite (entropy_sum_split Hsol_unif' Hnonsol_zero).
 have ->: #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
   by rewrite card_m.
 exact: entropy_uniform_set.
@@ -737,7 +737,8 @@ have H_assoc: forall V, `H(V | [% OtherAlice, V1, U1, U2, U3, S] ) =
   rewrite /centropy_RV /centropy /= !snd_RV2.
   rewrite (reindex (fun '(o, (v1, u1, u2, u3, s)) =>
                     (o, v1, u1, u2, u3, s))) /=.
-    apply: eq_bigr => [] [] [] [] dk_a' r2' r3' [] [] [] [] v1' u1' u2' u3' s' _.
+    apply: eq_bigr =>
+      [] [] [] [] dk_a' r2' r3' [] [] [] [] v1' u1' u2' u3' s' _.
     congr (_ * _).
       rewrite !dist_of_RVE !pfwd1E.
       by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;

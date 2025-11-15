@@ -257,8 +257,8 @@ transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
   have fK : cancel alice_traces_from_view f by move=> [] [] [] [] [].
   have -> : [% x1, s1, r1, x2', t, y1] = f `o alice_traces.
     by apply: boolp.funext => x /=; rewrite alice_traces_ok /comp_RV fK.
-  by rewrite scp.fun_cond_removal.
-by rewrite alice_traces_ok centropyC scp.fun_cond_removal.
+  by rewrite centropy_RV_contraction.
+by rewrite alice_traces_ok centropyC centropy_RV_contraction.
 Qed.
 
 Let bob_traces_from_view xs : 11.-bseq _ :=
@@ -285,8 +285,8 @@ transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
   have fK : cancel bob_traces_from_view f by move=> [] [] [] [] [].
   have -> : [%x2, s2, x1', r2, y2] = f `o bob_traces.
     by apply: boolp.funext => x; rewrite bob_traces_ok /comp_RV fK.
-  by rewrite scp.fun_cond_removal.
-by rewrite bob_traces_ok centropyC scp.fun_cond_removal.
+  by rewrite centropy_RV_contraction.
+by rewrite bob_traces_ok centropyC centropy_RV_contraction.
 Qed.
 
 Let pnegy2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.

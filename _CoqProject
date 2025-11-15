@@ -106,4 +106,5 @@ dumas2017dual/entropy_linear_fibers.v
 dumas2017dual/dsdp_entropy.v
 dumas2017dual/dsdp_security.v
 dumas2017dual/rouche_capelli.v
+
 -R . infotheo

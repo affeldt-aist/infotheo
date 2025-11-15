@@ -464,7 +464,7 @@ Hypothesis uniform_over_solutions : forall t u s,
   U t = u -> S t = s ->
   forall v,
     v \in linear_fiber u s ->
-    `Pr[V = v | [% U, S] = (u, s)] = 1%:R / #|linear_fiber u s|%:R.
+    `Pr[V = v | [% U, S] = (u, s)] = #|linear_fiber u s|%:R ^-1.
 
 (* Main result: conditional entropy equals log(m) *)
 Theorem bilinear_centropy_uniform :
