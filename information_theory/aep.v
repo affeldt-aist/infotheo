@@ -84,7 +84,7 @@ Lemma sum_mlog_prod_sum_map_mlog {R : realType} (A : finType) (P : R.-fdist A) n
   sum_mlog_prod P n.+1 \=sum (\row_(i < n.+1) `-- (`log P)).
 Proof.
 elim : n => [|n IH].
-- move: (@sum_n_1 _ _ A P (\row_i `-- (`log P))).
+- move: (@sum_n_1 _ A P (\row_i `-- (`log P))).
   set mlogP := cast_fun_rV10 _.
   move => HmlogP.
   set mlogprodP := @sum_mlog_prod _ _ _ 1.

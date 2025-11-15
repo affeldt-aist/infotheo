@@ -742,7 +742,8 @@ pose fm1 (x : 'rV['rV[A]_n]_(m''.+1)) := extension f (tuple_of_row x).
 pose Xm1 : {RV _ -> R^o} := (fun x => x%:R : R) \o size \o fm1.
 pose fm2 (x : 'rV['rV[A]_n]_(m''.+2)) := extension f (tuple_of_row x).
 pose Xm2 : {RV _ -> R^o} := (fun x => x%:R : R) \o size \o fm2.
-have X_Xm1_Xm2 : Xm2 \= X @+ Xm1.
+have X_Xm1_Xm2 : (Xm2 _ _) \= X @+ (Xm1 _ _).
+  move=> ? ? ? ?.
   rewrite /Xm2 => x /=.
   rewrite /X/= /Xm1/= -natrD.
   rewrite -size_cat.
@@ -757,7 +758,7 @@ have X_Xm1_Xm2 : Xm2 \= X @+ Xm1.
   rewrite (_ : tuple_of_row _ = [tuple of [:: x ``_ ord0]]); last first.
     by apply eq_from_tnth => i; rewrite {i}(ord1 i) /= tnth_mktuple mxE.
   by rewrite /= cats0.
-rewrite (E_sum_2 X_Xm1_Xm2).
+rewrite (E_sum_2 (X_Xm1_Xm2 _ _ _ _)).
 rewrite -natr1 mulrDl -IH addrC; congr +%R.
   by rewrite /Xm1 -/fm1 /Ex tail_of_fdist_rV_fdist_rV.
 by rewrite -/X mul1r /Ex head_of_fdist_rV_fdist_rV.
