@@ -136,7 +136,8 @@ have inde23 : P |= Y2 _|_ Y3.
   change Y3 with (idfun \o Y3).
   exact: inde_RV_comp.
 rewrite !cpr_eqE pfwd1_pairA inde123 inde23.
-by field; apply/andP; split.
+field.
+by apply/andP.
 Qed.
 
 Lemma cpr_centropy1_RV y2 y3 :
