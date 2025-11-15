@@ -137,6 +137,7 @@ have inde23 : P |= Y2 _|_ Y3.
   exact: inde_RV_comp.
 rewrite !cpr_eqE pfwd1_pairA inde123 inde23.
 field.
+Show.
 by apply/andP.
 Qed.
 
