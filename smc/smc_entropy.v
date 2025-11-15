@@ -138,7 +138,8 @@ have inde23 : P |= Y2 _|_ Y3.
 rewrite !cpr_eqE pfwd1_pairA inde123 inde23.
 field.
 Show.
-by apply/andP.
+apply/andP.
+by [].
 Qed.
 
 Lemma cpr_centropy1_RV y2 y3 :
