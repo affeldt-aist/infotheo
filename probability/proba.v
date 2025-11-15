@@ -2238,9 +2238,9 @@ by rewrite -mulrA -!cpr_eqE K.
 Qed.
 
 Section sum_two_rand_var_def.
-Context {R : realType}.
+Context {R : realType} {V : lmodType R}.
 Variables (A : finType) (n : nat).
-Variables (X : 'rV[A]_n.+2 -> R) (X1 : A -> R) (X2 : 'rV[A]_n.+1 -> R).
+Variables (X : 'rV[A]_n.+2 -> V) (X1 : A -> V) (X2 : 'rV[A]_n.+1 -> V).
 
 Local Open Scope vec_ext_scope.
 
@@ -2442,7 +2442,7 @@ Section sum_n_rand_var_def.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A).
 
-Inductive sum_n : forall n, {RV (P `^ n) -> R} -> 'rV[{RV P -> R}]_n -> Prop :=
+Inductive sum_n : forall n, {RV (P `^ n) -> R^o} -> 'rV[{RV P -> R^o}]_n -> Prop :=
 | sum_n_1 : forall X, sum_n (cast_fun_rV10 X) X
 | sum_n_cons : forall n (Xs : 'rV_n.+1) Y X Z,
   Y \=sum Xs -> Z \= X @+ Y -> Z \=sum (row_mx (\row_(k < 1) X) Xs)
