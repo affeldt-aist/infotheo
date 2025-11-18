@@ -3,8 +3,8 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption dsdp_program dsdp_extra dsdp_algebra.
-Require Import entropy_fibers.
+Require Import smc_proba homomorphic_encryption entropy_fibers.
+Require Import dsdp_program dsdp_extra dsdp_algebra.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -47,40 +47,46 @@ Local Notation msg := 'F_m.  (* Finite field with m elements *)
 Variable T : finType.
 Variable P : R.-fdist T.
 Variables (V1 V2 V3 U1 U2 U3 S : {RV P -> msg}).
+Let CondRV : {RV P -> (msg * msg * msg * msg * msg)} :=
+  [% V1, U1, U2, U3, S].
+Let VarRV : {RV P -> (msg * msg)} := [%V2, V3].
 
-(* The constraint holds with probability 1 *)
+Definition satisfies_constraint (cond : msg * msg * msg * msg * msg)
+  (var : msg * msg) : Prop :=
+  let '(v1, u1, u2, u3, s) := cond in
+  let '(v2, v3) := var in
+  s - u1 * v1 = u2 * v2 + u3 * v3.
+
 Hypothesis constraint_holds :
-  forall t, S t = U1 t * V1 t + U2 t * V2 t + U3 t * V3 t.
-
-(* TODO: since we only use all variables to infer V2 or V3 indivdually,
-   maybe a better abstraction can save the work to listing all of them
-   every time -- an abstraction not covered yet.
-*)
+  forall t, satisfies_constraint (CondRV t) (VarRV t).
 
 (* Non-degeneracy assumption *)
 Hypothesis U3_nonzero : forall t, U3 t != 0.
 
-(* Given the constraint, (v2, v3) are uniformly distributed over solutions *)
-(* By maximum entropy principle for any observer has no prior knowledge
-   about the distribution of solutions.
+(* Given the constraint (v2, v3) are uniformly distributed over solution pairs,
+   for non-solution pairs have the zero probability, it is proven in lemma
+   `dsdp_non_solution_zero_prob`.
+
+   This hypothesis matches the maximum entropy principle: for any observer
+   has no prior knowledge about the distribution of solutions, they choses
+   the distribution with the maximum entropy.
 *)
 Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
   U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
   V1 t = v1 -> S t = s ->
   forall v2 v3,
-    (v2, v3) \in dsdp_solution_pairs u1 u2 u3 v1 s ->
-    `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] = 
-         (v1, u1, u2, u3, s) ] =
-    (#|dsdp_solution_pairs u1 u2 u3 v1 s|)%:R^-1.
+    (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s ->
+    `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
+    (#|dsdp_fiber u1 u2 u3 v1 s|)%:R^-1.
 
 Section dsdp_centropy_uniform_solutions.
 
 (* Helper 1: Pairs not satisfying the constraint have zero
    conditional probability *)
 Lemma dsdp_non_solution_zero_prob (v1 u1 u2 u3 s : msg) (v2 v3 : msg) :
-  `Pr[[% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] != 0 ->
-  (v2, v3) \notin dsdp_solution_pairs u1 u2 u3 v1 s ->
-  `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] =
+  `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
+  (v2, v3) \notin dsdp_fiber u1 u2 u3 v1 s ->
+  `Pr[ VarRV = (v2, v3) | CondRV =
   (v1, u1, u2, u3, s) ] = 0.
 Proof.
 move=> Hcond_pos Hnot_solution.
@@ -88,8 +94,8 @@ set constraint := fun (conds : msg * msg * msg * msg * msg)
   (vals : msg * msg) =>
   let '(v1, u1, u2, u3, s) := conds in
   let '(v2, v3) := vals in
-  (v2, v3) \in dsdp_solution_pairs u1 u2 u3 v1 s.
-have Hconstraint: forall t, constraint ([%V1, U1, U2, U3, S] t) ([%V2, V3] t).
+  (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s.
+have Hconstraint: forall t, constraint (CondRV t) (VarRV t).
   move=> t.
   rewrite /constraint /=.
   rewrite inE /=.
@@ -99,17 +105,17 @@ Qed.
 
 (* Helper 2: Solutions have uniform probability 1/m *)
 Lemma dsdp_solution_uniform_prob (v1 u1 u2 u3 s : msg) (v2 v3 : msg) :
-  `Pr[[% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] != 0 ->
+  `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
   u3 != 0 ->
-  (v2, v3) \in dsdp_solution_pairs u1 u2 u3 v1 s ->
-  `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s) ] =
+  (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s ->
+  `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
   m%:R^-1.
 Proof.
 move=> Hcond_pos Hu3_neq0 Hinsol.
 (* Need to extract witnesses for the equalities from the conditioning event *)
 (* Then apply uniform_over_solutions hypothesis *)
-have card_m : #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
-  by apply: dsdp_solution_pairs_cardinality.
+have card_m : #|dsdp_fiber u1 u2 u3 v1 s| = m.
+  by apply: dsdp_fiber_cardinality.
 move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
 move: Ht; rewrite inE => /eqP Ht.
 case: Ht => HV1 HU1 HU2 HU3 HS.
@@ -119,52 +125,52 @@ Qed.
 
 (* Helper: Main entropy calculation *)
 (* Uses general framework from entropy_fibers.v *)
-Lemma dsdp_entropy_uniform_subset (v1 u1 u2 u3 s : msg) :
-  `Pr[[% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] != 0 ->
+Lemma dsdp_entropy_uniform_subset (u1 u2 u3 v1 s : msg) :
+  `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
   u3 != 0 ->
   (forall pair : msg * msg,
-    pair \in dsdp_solution_pairs u1 u2 u3 v1 s ->
-    `Pr[ [% V2, V3] = pair | [% V1, U1, U2, U3, S] =
+    pair \in dsdp_fiber u1 u2 u3 v1 s ->
+    `Pr[ VarRV = pair | CondRV =
       (v1, u1, u2, u3, s) ] = m%:R^-1) ->
   (forall pair : msg * msg,
-    pair \notin dsdp_solution_pairs u1 u2 u3 v1 s ->
-    `Pr[ [% V2, V3] = pair | [% V1, U1, U2, U3, S] =
+    pair \notin dsdp_fiber u1 u2 u3 v1 s ->
+    `Pr[ VarRV = pair | CondRV =
       (v1, u1, u2, u3, s) ] = 0) ->
-  `H[ [% V2, V3] | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s) ] =
+  `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] =
     log (m%:R : R).
 Proof.
 move=> Hcond_pos Hu3_neq0 Hsol_unif Hnonsol_zero.
 (* Express conditional entropy as sum *)
-have ->: `H[[% V2, V3] | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] =
+have ->: `H[VarRV | CondRV = (v1, u1, u2, u3, s)] =
     - \sum_(pair : msg * msg)
-     `Pr[[% V2, V3] = pair | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] *
-     log (`Pr[[% V2, V3] = pair | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)]).
+     `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] *
+     log (`Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)]).
   rewrite centropy1_RVE // /entropy.
   congr (- _); apply: eq_bigr => [[v2 v3]] _.
     by rewrite jfdist_cond_cPr_eq.
   by rewrite fst_RV2 dist_of_RVE.
 (* Get cardinality *)
-have card_m : #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
-  by apply: dsdp_solution_pairs_cardinality.
+have card_m : #|dsdp_fiber u1 u2 u3 v1 s| = m.
+  by apply: dsdp_fiber_cardinality.
 (* Adjust uniform hypothesis to match expected form *)
 have Hsol_unif': forall pair : msg * msg,
-    pair \in dsdp_solution_pairs u1 u2 u3 v1 s ->
-    `Pr[[% V2, V3] = pair | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] = 
-    #|dsdp_solution_pairs u1 u2 u3 v1 s|%:R^-1.
+    pair \in dsdp_fiber u1 u2 u3 v1 s ->
+    `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 
+    #|dsdp_fiber u1 u2 u3 v1 s|%:R^-1.
   move=> pair Hin.
   rewrite (Hsol_unif pair Hin).
   by rewrite card_m.
 rewrite (entropy_sum_split Hsol_unif' Hnonsol_zero).
-have ->: #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
+have ->: #|dsdp_fiber u1 u2 u3 v1 s| = m.
   by rewrite card_m.
 exact: entropy_uniform_set.
 Qed.
 
 (* Helper: Each conditioning value gives entropy log(m) *)
 Lemma dsdp_centropy1_uniform (v1 u1 u2 u3 s : msg) :
-  `Pr[[% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s)] != 0 ->
+  `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
   u3 != 0 ->
-  `H[ [% V2, V3] | [% V1, U1, U2, U3, S] = (v1, u1, u2, u3, s) ] =
+  `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] =
     log (m%:R : R).
 Proof.
 move=> Hcond_pos Hu3_neq0.
@@ -176,22 +182,17 @@ exact: dsdp_non_solution_zero_prob.
 Qed.
 
 (* Main lemma *)
-(* TODO: centropy = log m -- means it is the max entropy
-   "information can't hurt".
-
-   entropy.v le_centropy.
-*)
 Lemma dsdp_centropy_uniform_solutions :
-  `H([% V2, V3] | [% V1, U1, U2, U3, S]) = log (m%:R : R).
+  `H(VarRV | CondRV) = log (m%:R : R).
 Proof.
 (* Expand conditional entropy as weighted sum *)
 rewrite centropy_RVE' /=.
 (* Transform each term in the sum *)
 transitivity (\sum_(a : msg * msg * msg * msg * msg) 
-               `Pr[ [% V1, U1, U2, U3, S] = a ] * log (m%:R : R)).
+               `Pr[ CondRV = a ] * log (m%:R : R)).
   (* Show each term equals Pr[...] * log(m) *)
   apply: eq_bigr => [] [] [] [] [] v1 u1 u2 u3 s H.
-  have [->|Hcond_pos] := eqVneq (`Pr[[% V1, U1, U2, U3, S] =
+  have [->|Hcond_pos] := eqVneq (`Pr[CondRV =
     (v1, u1, u2, u3, s)]) 0.
     by rewrite !mul0r.
   have Hu3_neq0: u3 != 0.
@@ -206,6 +207,37 @@ by rewrite -big_distrr /= sum_pfwd1 mulr1.
 Qed.
 
 End dsdp_centropy_uniform_solutions.
+
+(* For showing that `H `p_[%V2, V3] > log m *)
+Section V2V3_marginal_distribution.
+  
+Lemma dsdp_conditional_matches_fiber (v1 u1 u2 u3 s v2 v3 : msg) :
+  `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
+  u3 != 0 ->
+  `Pr[VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s)] =
+    (if (v2, v3) \in (dsdp_fiber u1 u2 u3 v1 s)
+     then m%:R^-1 else 0).
+Proof.
+move=> Hcond_neq0 Hu3_neq0.
+case: ifP => [Hin | Hnotin].
+- by rewrite (dsdp_solution_uniform_prob Hcond_neq0 Hu3_neq0 Hin).
+apply: dsdp_non_solution_zero_prob.
+  exact: Hcond_neq0.
+by rewrite Hnotin.
+Qed.
+
+(* TODO *)
+Lemma V2V3_marginal_distribution (v2 v3 : msg) :
+  `Pr[VarRV = (v2, v3)] = 
+    \sum_(cond : msg * msg * msg * msg * msg)
+      let '(v1, u1, u2, u3, s) := cond in
+      `Pr[CondRV = (v1, u1, u2, u3, s)] *
+      (if (v2, v3) \in (dsdp_fiber u1 u2 u3 v1 s)
+       then m%:R^-1 else 0).
+Proof.
+Abort.
+
+End V2V3_marginal_distribution.
 
 End dsdp_entropy_connection.
 
@@ -264,7 +296,7 @@ Record dsdp_random_inputs :=
     R2 : {RV P -> msg};
     R3 : {RV P -> msg};
 
-    alice_indep : P |= [% Dk_a, V1, U1, U2, U3, R2, R3] _|_ [% V2, V3];
+    alice_indep : P |= [% Dk_a, V1, U1, U2, U3, R2, R3] _|_ [%V2, V3];
 
     pV1_unif : `p_ V1 = fdist_uniform card_msg;
     pV2_unif : `p_ V2 = fdist_uniform card_msg;

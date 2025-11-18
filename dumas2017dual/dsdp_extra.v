@@ -112,9 +112,7 @@ Lemma sum_cPr_eq
   \sum_(a in A) `Pr[X = a | Y = y] = 1.
 Proof.
 move=> Hy_neq0.
-(* Split sum over A into values in fin_img X and those not *)
 rewrite (bigID (mem (fin_img X))) /=.
-(* Values not in fin_img X have probability 0 *)
 rewrite [X in _ + X = _](eq_bigr (fun=> 0)); last first.
   move=> a a_notin_img.
   rewrite cpr_eqE.
@@ -223,6 +221,41 @@ have Hempty: finset ([%Y, X] @^-1 (y, x)) = set0.
 have ->: `Pr[[%Y, X] = (y, x)] = 0.
   by rewrite pfwd1E Hempty Pr_set0.
 by rewrite mul0r.
+Qed.
+
+Lemma PrX_fstRV  (A B T : finType) (P : R.-fdist T)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (x : A) :
+  \sum_(y : B) `Pr[[% X, Y] = (x, y)] = `Pr[X = x].
+Proof.
+have ->: `Pr[X = x] = Pr (`p_X) [set x].
+  by rewrite -pr_in1 Pr_set1 dist_of_RVE pr_in1.
+have ->: Pr (`p_X) [set x] = Pr (`p_[% X, Y])`1 [set x].
+  by rewrite fst_RV2.
+have ->: Pr (`p_[% X, Y])`1 [set x] = 
+         \sum_(y : B) Pr (`p_[% X, Y]) ([set x] `* [set y]).
+  by rewrite -PrX_fst.
+apply: eq_bigr => y _.
+have ->: Pr (`p_[% X, Y]) ([set x] `* [set y]) = 
+         Pr (`p_[% X, Y]) [set (x, y)].
+  congr (Pr (`p_[% X, Y]) _).
+  by apply/setP => -[a b]; rewrite !inE xpair_eqE.
+have ->: Pr (`p_[% X, Y]) [set (x, y)] = (`p_[% X, Y]) (x, y).
+   by rewrite Pr_set1.
+by rewrite dist_of_RVE.
+Qed.
+
+Lemma jproduct_ruleRV (A B T : finType) (P : R.-fdist T)
+  (X : {RV P -> A}) (Y : {RV P -> B}) (x : A) (y : B) :
+  `Pr[[% X, Y] = (x, y)] = `Pr[Y = y] * `Pr[X = x | Y = y].
+Proof.
+have ->: `Pr[[% X, Y] = (x, y)] = Pr (`p_[% X, Y]) [set (x, y)].
+  by rewrite -pr_in1 Pr_set1 dist_of_RVE pr_in1.
+have ->: [set (x, y)] = [set x] `* [set y].
+  by apply/setP => -[a b]; rewrite !inE xpair_eqE.
+rewrite jproduct_rule.
+rewrite mulrC; congr (_ * _).
+  by rewrite snd_RV2 Pr_set1 dist_of_RVE.
+by rewrite -cpr_in1 -jPr_Pr.
 Qed.
 
 End proba_extra.
@@ -376,24 +409,18 @@ Section entropy_extra.
   
 (* Entropy sum over a subset with uniform probability *)
 Lemma entropy_sum_split (A : finType) 
-  (SolSet : {set A}) (p : R) (prob : A -> R) :
-  (forall a, a \in SolSet -> prob a = p) ->
-  (forall a, a \notin SolSet -> prob a = 0) ->
-  (- \sum_(a : A) prob a * log (prob a)) = (- \sum_(a in SolSet) p * log p).
+  (S : pred A) (p : R) (prob : A -> R) :
+  (forall a, S a -> prob a = p) ->
+  (forall a, ~~ S a -> prob a = 0) ->
+  (- \sum_(a : A) prob a * log (prob a)) = (- \sum_(a : A | S a) p * log p).
 Proof.
 move=> Hin Hout.
-(* Split the sum *)
-rewrite (bigID (mem SolSet)) /=.
-(* Outside SolSet contributes 0 *)
-rewrite [X in _ + X]big1; last first.
-  move=> a Hnotin.
-  rewrite Hout //.
+rewrite (bigID S) /=.
+rewrite [X in _ + X]big1 ?addr0; last first.
+  move => a /Hout ->.
   by rewrite mul0r.
-rewrite addr0.
-(* Inside SolSet, substitute p *)
 congr (- _).
-apply: eq_bigr => a Hina.
-by rewrite Hin.
+by apply: eq_bigr => a /Hin ->.
 Qed.
 
 Section cinde_cond_mutual_info0.

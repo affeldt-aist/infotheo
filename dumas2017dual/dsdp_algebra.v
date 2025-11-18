@@ -4,7 +4,7 @@ From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
 Require Import rouche_capelli.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption.
+Require Import smc_proba homomorphic_encryption entropy_linear_fibers.
 Require Import dsdp_program dsdp_extra.
 
 Import GRing.Theory.
@@ -139,8 +139,9 @@ Definition dsdp_solution_set (u1 u2 u3 v1 s : msg) : {set 'rV[msg]_3} :=
   [set v : 'rV[msg]_3 | 
     v *m (dsdp_matrix u1 u2 u3)^T == \matrix_(i < 1, j < 1) (s - u1 * v1)].
 
-Definition dsdp_solution_pairs (u1 u2 u3 v1 s : msg) : {set msg * msg} :=
-  [set v2v3 : msg * msg | u1 * v1 + u2 * v2v3.1 + u3 * v2v3.2 == s].
+(* Fiber-ish definitions *)
+Definition dsdp_fiber (u1 u2 u3 v1 s : msg) : {set msg * msg} :=
+  constrained_pairs u2 u3 (s - u1 * v1).
 
 Lemma dsdp_kernel_cardinality u1 u2 u3 :
   (u1 != 0) || (u2 != 0) || (u3 != 0) ->
@@ -154,20 +155,12 @@ rewrite mxrank_tr (dsdp_matrix_rank1 H).
 by rewrite card_Fp // pdiv_id.
 Qed.
 
-Lemma dsdp_solution_pairs_cardinality u1 u2 u3 v1 s :
+Lemma dsdp_fiber_cardinality u1 u2 u3 v1 s :
   u3 != 0 ->
-  #|dsdp_solution_pairs u1 u2 u3 v1 s| = m.
+  #|dsdp_fiber u1 u2 u3 v1 s| = m.
 Proof.
 move=> Hu3neg0.
-rewrite /dsdp_solution_pairs.
-(* Rewrite equation to separate constant term *)
-have -> : [set v2v3 | u1 * v1 + u2 * v2v3.1 + u3 * v2v3.2 == s] =
-          [set v2v3 | u2 * v2v3.1 + u3 * v2v3.2 == s - u1 * v1].
-  apply/setP => [[v2 v3]]; rewrite !inE /=.
-  by rewrite -subr_eq opprK addrAC addrC addrAC addrA.
-rewrite (@count_affine_solutions_rank1 msg u2 u3 (s - u1 * v1) Hu3neg0).
-(* Show #|msg| = m *)
-by rewrite card_Fp // pdiv_id.
+by apply: constrained_pairs_card.
 Qed.
 
 Lemma dsdp_solution_set_card_full u1 u2 u3 v1 s :
