@@ -111,8 +111,13 @@ Let AliceView : {RV P -> alice_view_valuesT} :=
   [% Dk_a, S, V1, U1, U2, U3, R2, R3, E_alice_d3, E_charlie_v3, E_bob_v2].
 
 (* Protocol assumptions needed for security *)
+
+Let CondRV : {RV P -> (msg * msg * msg * msg * msg)} :=
+  [% V1, U1, U2, U3, S].
+Let VarRV : {RV P -> (msg * msg)} := [%V2, V3].
+
 Hypothesis constraint_holds :
-  forall t, S t = U1 t * V1 t + U2 t * V2 t + U3 t * V3 t.
+  forall t, satisfies_constraint (CondRV t) (VarRV t).
 
 Hypothesis U3_nonzero : forall t, U3 t != 0.
 
@@ -120,10 +125,10 @@ Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
   U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
   V1 t = v1 -> S t = s ->
   forall v2 v3,
-    (v2, v3) \in dsdp_solution_pairs u1 u2 u3 v1 s ->
+    (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s ->
     `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] = 
          (v1, u1, u2, u3, s) ] =
-    #|dsdp_solution_pairs u1 u2 u3 v1 s|%:R^-1.
+    #|dsdp_fiber u1 u2 u3 v1 s|%:R^-1.
 
 (* Additional hypotheses for privacy_by_bonded_leakage *)
 Let Dec_view : {RV P -> (alice_inputsT * msg)} :=
@@ -164,7 +169,7 @@ Hypothesis V3_determined :
 (** ** Intermediate Entropy Results *)
 
 Theorem dsdp_entropy_result :
-  `H([% V2, V3] | [% V1, U1, U2, U3, S]) = log (m%:R : R).
+  `H(VarRV | CondRV) = log (m%:R : R).
 Proof.
 exact (@dsdp_centropy_uniform_solutions m_minus_2 prime_m T P 
          V1 V2 V3 U1 U2 U3 S 
