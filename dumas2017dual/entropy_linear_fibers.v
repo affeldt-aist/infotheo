@@ -85,10 +85,9 @@ Variable n : nat.
 Definition linear_functional (u : 'rV[msg]_n) (v : 'rV[msg]_n) : msg :=
   (u *m v^T) 0 0.
 
-(* Fiber of the linear functional *)
-(* TODO: use the fiber definition *)
+(* Fiber of the linear functional: generate the set of solutions *)
 Definition linear_fiber (u : 'rV[msg]_n) (s : msg) : {set 'rV[msg]_n} :=
-  [set v | linear_functional u v == s].
+  @fiber 'rV[msg]_n msg (linear_functional u) s.
 
 (* Helper: non-zero row vectors have at least one non-zero entry *)
 (* This is a simple utility kept as-is for convenience *)
@@ -549,6 +548,28 @@ have ->: #|constrained_pairs u2 u3 target| = #|msg|.
   exact: (count_affine_solutions_rank1 u2 target u3_neq0).
 by rewrite card_Fp.
 Qed.
+
+(* 3D constraint: s = u1*v1 + u2*v2 + u3*v3 *)
+Definition constrained_triples (u1 u2 u3 : msg) (target : msg) : 
+  {set msg * msg * msg} :=
+  [set vvv | u1 * vvv.1.1 + u2 * vvv.1.2 + u3 * vvv.2 == target].
+
+(* Convert triple to row vector *)
+Definition tuple3_to_row (xyz : msg * msg * msg) : 'rV[msg]_3 :=
+  \row_(i < 3) [:: xyz.1.1; xyz.1.2; xyz.2]`_i.
+
+Definition triple_coeff_matrix (u1 u2 u3 : msg) : 'M[msg]_(1, 3) :=
+  \matrix_(i < 1, j < 3) 
+    (if j == ord0 then u1 
+     else if j == lift ord0 ord0 then u2 
+     else u3).
+
+(* TODO: backport dsdp_solution_set_card_full which is the specific version. *)
+Lemma constrained_triples_card (u1 u2 u3 target : msg) :
+  (u1 != 0) || (u2 != 0) || (u3 != 0) ->
+  #|constrained_triples u1 u2 u3 target| = (m ^ 2)%N.
+Proof.
+Abort.
 
 End multi_dimensional_solutions.
 

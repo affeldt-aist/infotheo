@@ -122,13 +122,41 @@ rewrite fst_RV2 dist_of_RVE.
 exact: Hcond_pos.
 Qed.
 
+(** Entropy unfolded: sum of uniform probabilities equals log |S|. *)
 Lemma entropy_uniform_set (S : {set DomainT}) (n : nat) :
   #|S| = n ->
   (0 < n)%N ->
   (- \sum_(x in S) n%:R^-1 * log (n%:R^-1 : R)) = log (n%:R : R).
-  (* ISSUE: x is not used; use infotheo entropy to improve the readability *)
 Proof.
 move=> Hcard Hn_pos.
+rewrite big_const iter_addr addr0 Hcard -mulr_natr.
+rewrite logV; last by rewrite ltr0n.
+field.
+by rewrite pnatr_eq0 -lt0n.
+Qed.
+
+(** Entropy version: fdist uniform on S with H(P) = log |S|. *)
+(*  Note: although this is the same as the lemma above,
+    it is difficult to use this version in the following
+    `entropy_uniform_fiber_size` proof. So both versions are kept. *)
+Lemma entropy_fdist_uniform_set (S : {set DomainT}) (n : nat) :
+  #|S| = n ->
+  (0 < n)%N ->
+  exists (P : R.-fdist DomainT),
+    (forall x, x \in S -> P x = n%:R^-1) ->
+    (forall x, x \notin S -> P x = 0) ->
+    `H P = log (n%:R : R).
+Proof.
+move=> Hcard Hn_pos.
+have HS_pos: (0 < #|S|)%N by rewrite Hcard.
+pose P0 := fdist_uniform_supp _ HS_pos.
+exists (P0 _) => _ _.
+rewrite /entropy /P0 fdist_uniform_supp_restrict.
+have ->: \sum_(i in S) (fdist_uniform_supp _ HS_pos)
+  i * log ((fdist_uniform_supp _ HS_pos) i) =
+     \sum_(i in S) (#|S|%:R : R)^-1 * log ((#|S|%:R : R)^-1).
+  apply: eq_bigr => i Hi.
+  by rewrite fdist_uniform_supp_in.
 rewrite big_const iter_addr addr0 Hcard -mulr_natr.
 rewrite logV; last by rewrite ltr0n.
 field.
