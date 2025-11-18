@@ -206,38 +206,43 @@ under eq_bigr do rewrite mulrC.
 by rewrite -big_distrr /= sum_pfwd1 mulr1.
 Qed.
 
+
 End dsdp_centropy_uniform_solutions.
 
-(* For showing that `H `p_[%V2, V3] > log m *)
-Section V2V3_marginal_distribution.
+Section dsdp_var_entropy.
   
-Lemma dsdp_conditional_matches_fiber (v1 u1 u2 u3 s v2 v3 : msg) :
-  `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
-  u3 != 0 ->
-  `Pr[VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s)] =
-    (if (v2, v3) \in (dsdp_fiber u1 u2 u3 v1 s)
-     then m%:R^-1 else 0).
+Let card_msg_pair : #|((msg * msg)%type : finType)| = (m ^ 2)%N.
+Proof. by rewrite card_prod /= !card_Fp. Qed.
+
+Check fdist_uniformE card_msg_pair.
+
+Search fdist_uniform.
+
+(* Assume all (v2, v3) are distributed uniformly since they are
+   private inputs from parties, we get the unconditional entropy of them.
+
+   So we get:
+
+     `H(VarRV | CondRV) = log m < `H `p_VarRV
+
+   Shows that the DSDP protocol indeed leaks information, but still secure by:
+
+    Lemma privacy_by_bonded_leakage :
+      `H([% V2, V3] | AliceView ) = `H(V2 | AliceView).
+
+   At the end of this file.
+*)
+Lemma dsdp_var_entropy :
+  `p_VarRV = fdist_uniform card_msg_pair ->
+  `H `p_VarRV = log (m%:R * m%:R : R).
 Proof.
-move=> Hcond_neq0 Hu3_neq0.
-case: ifP => [Hin | Hnotin].
-- by rewrite (dsdp_solution_uniform_prob Hcond_neq0 Hu3_neq0 Hin).
-apply: dsdp_non_solution_zero_prob.
-  exact: Hcond_neq0.
-by rewrite Hnotin.
+move->.
+rewrite entropy_uniform card_prod !card_Fp. 
+  by rewrite natrM.
+by [].
 Qed.
 
-(* TODO *)
-Lemma V2V3_marginal_distribution (v2 v3 : msg) :
-  `Pr[VarRV = (v2, v3)] = 
-    \sum_(cond : msg * msg * msg * msg * msg)
-      let '(v1, u1, u2, u3, s) := cond in
-      `Pr[CondRV = (v1, u1, u2, u3, s)] *
-      (if (v2, v3) \in (dsdp_fiber u1 u2 u3 v1 s)
-       then m%:R^-1 else 0).
-Proof.
-Abort.
-
-End V2V3_marginal_distribution.
+End dsdp_var_entropy.
 
 End dsdp_entropy_connection.
 
