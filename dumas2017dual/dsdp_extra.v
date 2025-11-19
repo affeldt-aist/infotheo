@@ -470,6 +470,7 @@ rewrite fdist_proj13_RV3 fdist_proj23_RV3.
 rewrite snd_RV3 snd_RV2 !dist_of_RVE -!cpr_eqE -H_eq cpr_eqE //=.
 field.
 rewrite dist_of_RVE in Habc_neq0.
+Show.
 by rewrite Hzne0 Habc_neq0.
 Qed.
 
