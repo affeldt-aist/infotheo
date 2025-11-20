@@ -31,6 +31,10 @@ Local Open Scope vec_ext_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
+
 Section mlog_prop.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A).

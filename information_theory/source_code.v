@@ -19,6 +19,10 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
+
 Declare Scope source_code_scope.
 
 Section scode_definition.
@@ -42,7 +46,7 @@ Definition scode_vl := scode A (seq bool) k.
 
 Variables (P : R.-fdist A) (f : {RV (P `^ n) -> seq bool}).
 
-Definition E_leng_cw := `E (((fun x => x%:R : R^o)%R \o size) `o f).
+Definition E_leng_cw := `E (((fun x => x%:R : R)%R \o size) `o f).
 
 End scode_vl_definition.
 

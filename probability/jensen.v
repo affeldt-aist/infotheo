@@ -19,11 +19,14 @@ Local Open Scope fdist_scope.
 
 Import Order.Theory GRing.Theory Num.Theory.
 
-Section jensen_inequality.
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
 
+Section jensen_inequality.
 Context {R : realType}.
 
-Variable f : R^o -> R^o.
+Variable f : R -> R^o.
 Variable D : {convex_set R^o}.
 Hypothesis convex_f : convex_function_in D f.
 Variables A : finType.
@@ -75,7 +78,7 @@ Qed.
 
 Local Open Scope proba_scope.
 
-Lemma Jensen (P : R.-fdist A) (X : {RV P -> R^o}) : (forall x, X x \in D) ->
+Lemma Jensen (P : R.-fdist A) (X : {RV P -> R}) : (forall x, X x \in D) ->
   f (`E X) <= `E (f `o X).
 Proof. exact: jensen_dist. Qed.
 
@@ -84,7 +87,7 @@ End jensen_inequality.
 Section jensen_concave.
 Context {R : realType}.
 
-Variable f : R^o -> R^o.
+Variable f : R -> R^o.
 Variable D : {convex_set R^o}.
 Hypothesis concave_f : concave_function_in D f.
 Variable A : finType.

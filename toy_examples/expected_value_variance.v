@@ -123,8 +123,8 @@ rewrite /Ex /X.
 do 3 rewrite big_ord_recl.
 rewrite big_ord0 addr0 -!ssralg_ext.mulr_regl /=.
 rewrite /sq_RV /comp_RV /=.
-rewrite expr1n scaler1.
 rewrite {1}/pmf !ffunE /=.
+rewrite expr1n.
 rewrite ifT; last by I3_eq.
 rewrite (_ : (bump 0 0).+1%:R = 2) //.
 rewrite /f /=.
@@ -134,7 +134,6 @@ rewrite (_ : (bump 0 (bump 0 0)).+1%:R = 3)//.
 rewrite ifF; last by I3_neq.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
-rewrite -!mulr_regl.
 lra.
 Qed.
 

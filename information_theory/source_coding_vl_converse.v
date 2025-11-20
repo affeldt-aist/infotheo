@@ -32,6 +32,10 @@ Local Open Scope ring_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory Num.Def Order.TotalTheory.
 
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
+
 (* TODO: move to log_sum? *)
 Section log_sum_ord.
 Variable R : realType.
@@ -220,7 +224,7 @@ Section le_entroPN_logeEX.
 Variable R : realType.
 
 Variable (A : finType) (P : R.-fdist A) (f : A -> seq bool).
-Let X : {RV P -> R^o} := (fun x => x%:R) \o size \o f.
+Let X : {RV P -> R} := (fun x => x%:R) \o size \o f.
 Definition Nmax := \max_(a in A) size (f a).
 Hypothesis f_uniq : uniquely_decodable f.
 
@@ -466,7 +470,7 @@ Variable R : realType.
 Variables (A : finType) (P : R.-fdist A).
 Variable f : A -> seq bool.
 Local Notation "'Nmax'" := (Nmax f).
-Let X : {RV P -> R^o} := ((fun x => x%:R) \o size \o f).
+Let X : {RV P -> R} := ((fun x => x%:R) \o size \o f).
 Local Notation "'PN'" := (PN P f).
 Hypothesis f_uniq : uniquely_decodable f.
 
