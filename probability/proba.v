@@ -1124,36 +1124,39 @@ End conditional_expectation_prop.
 Section Ind.
 Context {R : realType}.
 Variable A : finType.
+Implicit Types x : A.
 
-Definition Ind (s : {set A}) (x : A) : R := if x \in s then 1 else 0.
+Definition Ind (s : {set A}) x : R := if x \in s then 1 else 0.
 
-Lemma Ind_set0 (x : A) : Ind set0 x = 0.
+Lemma Ind_ge0 (X : {set A}) x : 0 <= Ind X x:> R.
+Proof. by rewrite /Ind; case: ifPn. Qed.
+
+Lemma Ind_set0 x : Ind set0 x = 0.
 Proof. by rewrite /Ind inE. Qed.
 
-Lemma Ind_inP (s : {set A}) (x : A) : reflect (Ind s x = 1) (x \in s).
+Lemma Ind_inP (s : {set A}) x : reflect (Ind s x = 1) (x \in s).
 Proof.
 apply: (iffP idP); rewrite /Ind; first by move->.
 by case: ifPn => // _ /eqP; rewrite eq_sym oner_eq0.
 Qed.
 
-Lemma Ind_notinP (s : {set A}) (x : A) : reflect (Ind s x = 0) (x \notin s).
+Lemma Ind_notinP (s : {set A}) x : reflect (Ind s x = 0) (x \notin s).
 Proof.
 apply: (iffP idP); rewrite /Ind => Hmain.
   by rewrite ifF //; exact: negbTE.
 by apply: negbT; case: ifP Hmain =>// _ /eqP; rewrite oner_eq0.
 Qed.
 
-Lemma Ind_cap (S1 S2 : {set A}) (x : A) :
+Lemma Ind_setI (S1 S2 : {set A}) x :
   Ind (S1 :&: S2) x = Ind S1 x * Ind S2 x.
 Proof. by rewrite /Ind inE; case: in_mem; case: in_mem=>/=; lra. Qed.
-
 
 Lemma Ind_bigcap I (e : I -> {set A}) (r : seq I) (p : pred I) x :
   Ind (\bigcap_(j <- r | p j) e j) x = \prod_(j <- r | p j) (Ind (e j) x).
 Proof.
 apply (big_ind2 (R1 := {set A}) (R2 := R)); last by [].
 - by rewrite /Ind inE.
-- by move=> sa a sb b Ha Hb; rewrite -Ha -Hb; apply: Ind_cap.
+- by move=> sa a sb b Ha Hb; rewrite -Ha -Hb; apply: Ind_setI.
 Qed.
 
 Lemma E_Ind (P : R.-fdist A) s : `E (Ind s : {RV P -> R}) = Pr P s.
@@ -1164,6 +1167,8 @@ by rewrite addr0; apply: eq_bigr => i ->; rewrite mul1r.
 Qed.
 
 End Ind.
+#[deprecated(since="infotheo 0.9.7", note="renamed to `Ind_setI`")]
+Notation Ind_cap := Ind_setI (only parsing).
 
 (** This section gathers a proof of the formula of inclusion-exclusion
     contributed by Erik Martin-Dorel: the corresponding theorem is named
