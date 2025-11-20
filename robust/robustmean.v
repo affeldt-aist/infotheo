@@ -1,3 +1,5 @@
+(* infotheo: information theory and error-correcting codes in Rocq            *)
+(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import lra ring.
@@ -84,7 +86,6 @@ Lemma scaler_RVE m (X : {RV P -> R}) : scaler_RV X m = X `* const_RV P m.
 Proof. by apply: boolp.funext=> ? /=; rewrite /scaler_RV /const_RV. Qed.
 End scalelr.
 
-
 Section conj_intro_pattern.
 (* /[conj] by Cyril Cohen : *)
 (*    https://coq.zulipchat.com/#narrow/stream/237664-math-comp-users/topic/how.20to.20combine.20two.20top.20assumptions.20with.20.60conj.60 *)
@@ -128,25 +129,6 @@ End RV_ring.
 
 Section sets_functions.
 
-Lemma set1I (X:finType) (x:X) (A:{set X}) :
-  [set x] :&: A = if x \in A then [set x] else set0.
-Proof.
-  case: ifPn => H0.
-  - by apply/setIidPl; rewrite sub1set.
-  - by apply/disjoint_setI0; rewrite disjoints1 H0.
-Qed.
-
-Lemma in_preim1 (A:finType) (B:eqType) (a:A) (b:B) X :
-  (a \in finset (T:=A) (preim X (pred1 b))) -> X a = b.
-Proof. by rewrite in_set => /eqP. Qed.
-
-Lemma in_preim1' (A:finType) (B:eqType) (a:A) (b:B) X :
-  (a \in finset (T:=A) (preim X (pred1 b))) = (X a == b).
-Proof.
-  apply/idP; case H: (X a == b); first by move/eqP: H <-; rewrite inE /= eqxx.
-  by move: H=> /[swap] /in_preim1 ->; rewrite eqxx.
-Qed.
-
 Lemma Ind_subset {R : realType} (A : finType) (X Y : {set A}) :
   X \subset Y <-> forall a, Ind X a <= Ind Y a :> R.
 Proof.
@@ -167,9 +149,6 @@ Variables (U : finType) (P : R.-fdist U).
 Lemma sq_RVE (X : {RV P -> R}) : X `^2 = X `* X.
 Proof. by []. Qed.
 
-Lemma Ind_ge0 (X : {set U}) (x : U) : 0 <= Ind X x:> R.
-Proof. by rewrite /Ind; case: ifPn. Qed.
-
 Lemma Ind_setD (X Y : {set U}) :
   Y \subset X -> Ind (X :\: Y) = Ind X `- Ind Y :> {RV P -> R}.
 Proof.
@@ -183,18 +162,18 @@ by rewrite subrr.
 Qed.
 
 Lemma cEx_ExInd (X : {RV P -> R}) F :
-  `E_[X | F] = `E (X `* Ind (A:=U) F : {RV P -> R}) / Pr P F.
+  `E_[X | F] = `E (X `* Ind (A:=U) F) / Pr P F.
 Proof.
 rewrite /Pr /cEx (* need some lemmas to avoid unfolds *) -big_distrl /=.
 apply: congr2=> //.
 under eq_bigr => i _.
-  rewrite big_distrr.
+  rewrite big_distrr/=.
   have -> :
     \sum_(i0 in finset (preim X (pred1 i)) :&: F) (i * P i0) =
     \sum_(i0 in finset (preim X (pred1 i)) :&: F)
      (X i0 * @Ind _ U F i0 * P i0).
     apply congr_big => // i0.
-    rewrite in_setI /Ind => /andP[] /in_preim1 -> ->.
+    rewrite in_setI /Ind inE/= => /andP[/eqP -> ->].
     by rewrite mulr1.
   have H1 :
     \sum_(i0 in finset (preim X (pred1 i)) :\: F) X i0 * Ind F i0 * P i0 = 0.
@@ -208,7 +187,7 @@ under eq_bigr => i _.
     \sum_(i0 in finset (preim X (pred1 i)) :\: F) X i0 * Ind F i0 * P i0
     by apply: big_setID.
   rewrite H1 addr0 => <-.
-  under eq_bigl do rewrite in_preim1'.
+  under eq_bigl do rewrite inE.
   by over.
 by rewrite -partition_big_fin_img.
 Qed.
